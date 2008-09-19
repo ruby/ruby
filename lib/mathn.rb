@@ -9,10 +9,14 @@
 #   
 #
 
-require "complex.rb"
-require "rational.rb"
+require "cmath.rb"
 require "matrix.rb"
 require "prime.rb"
+
+unless defined?(Math.exp!)
+  Object.instance_eval{remove_const :Math}
+  Math = CMath
+end
 
 class Fixnum
   remove_method :/

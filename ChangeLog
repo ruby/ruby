@@ -1,3 +1,16 @@
+Fri Sep 19 22:37:25 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: uses f_(in)?exact_p macro.
+
+	* rational.c: ditto.
+
+	* bignum.c (rb_big_pow): bignum**bignum - should calculate without
+	  rational.
+
+	* lib/complex.rb: should override Math module at most once.
+
+	* lib/mathn.rb: requires 'cmath' directly.
+
 Fri Sep 19 20:48:06 2008  Yuki Sonoda  <yugui@yugui.jp>
 
 	* prec.c: removed. Precision will be redesigned and be back again.

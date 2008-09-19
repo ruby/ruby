@@ -2102,9 +2102,6 @@ rb_big_pow(VALUE x, VALUE y)
 	break;
 
       case T_BIGNUM:
-	if (rb_funcall(y, '<', 1, INT2FIX(0)))
-	  return rb_funcall(rb_rational_raw1(x), rb_intern("**"), 1, y);
-
 	rb_warn("in a**b, b may be too big");
 	d = rb_big2dbl(y);
 	break;
@@ -2113,7 +2110,7 @@ rb_big_pow(VALUE x, VALUE y)
 	yy = FIX2LONG(y);
 
 	if (yy < 0)
-	  return rb_funcall(rb_rational_raw1(x), rb_intern("**"), 1, y);
+	    return rb_funcall(rb_rational_raw1(x), rb_intern("**"), 1, y);
 	else {
 	    VALUE z = 0;
 	    SIGNED_VALUE mask;

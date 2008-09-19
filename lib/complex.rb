@@ -1,7 +1,9 @@
 require 'cmath'
 
-Object.instance_eval{remove_const :Math}
-Math = CMath
+unless defined?(Math.exp!)
+  Object.instance_eval{remove_const :Math}
+  Math = CMath
+end
 
 def Complex.generic? (other)
   other.kind_of?(Integer) ||

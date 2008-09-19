@@ -247,6 +247,9 @@ k_complex_p(VALUE x)
     return f_kind_of_p(x, rb_cComplex);
 }
 
+#define k_exact_p(x) (!k_float_p(x))
+#define k_inexact_p(x) k_float_p(x)
+
 #define get_dat1(x) \
     struct RComplex *dat;\
     dat = ((struct RComplex *)(x))
@@ -334,7 +337,7 @@ nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE image)
 #define CL_CANON
 #ifdef CL_CANON
     if (f_zero_p(image) && f_unify_p(klass) &&
-	!k_float_p(real) && !k_float_p(image))
+	k_exact_p(real) && k_exact_p(image))
 	return real;
 #else
     if (f_zero_p(image) && f_unify_p(klass))
@@ -986,7 +989,7 @@ nucomp_to_i(VALUE self)
 {
     get_dat1(self);
 
-    if (k_float_p(dat->image) || !f_zero_p(dat->image)) {
+    if (k_inexact_p(dat->image) || !f_zero_p(dat->image)) {
 	VALUE s = f_to_s(self);
 	rb_raise(rb_eRangeError, "can't convert %s into Integer",
 		 StringValuePtr(s));
@@ -999,7 +1002,7 @@ nucomp_to_f(VALUE self)
 {
     get_dat1(self);
 
-    if (k_float_p(dat->image) || !f_zero_p(dat->image)) {
+    if (k_inexact_p(dat->image) || !f_zero_p(dat->image)) {
 	VALUE s = f_to_s(self);
 	rb_raise(rb_eRangeError, "can't convert %s into Float",
 		 StringValuePtr(s));
@@ -1012,7 +1015,7 @@ nucomp_to_r(VALUE self)
 {
     get_dat1(self);
 
-    if (k_float_p(dat->image) || !f_zero_p(dat->image)) {
+    if (k_inexact_p(dat->image) || !f_zero_p(dat->image)) {
 	VALUE s = f_to_s(self);
 	rb_raise(rb_eRangeError, "can't convert %s into Rational",
 		 StringValuePtr(s));
@@ -1183,7 +1186,6 @@ string_to_c_internal(VALUE self)
 	    return rb_assoc_new(rb_complex_polar(r, i), re);
 	else
 	    return rb_assoc_new(rb_complex_new2(r, i), re);
-
     }
 }
 
@@ -1257,7 +1259,7 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 	{
 	    get_dat1(a1);
 
-	    if (!k_float_p(dat->image) && f_zero_p(dat->image))
+	    if (k_exact_p(dat->image) && f_zero_p(dat->image))
 		a1 = dat->real;
 	}
     }
@@ -1267,7 +1269,7 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 	{
 	    get_dat1(a2);
 
-	    if (!k_float_p(dat->image) && f_zero_p(dat->image))
+	    if (k_exact_p(dat->image) && f_zero_p(dat->image))
 		a2 = dat->real;
 	}
     }
@@ -1338,7 +1340,7 @@ numeric_arg(VALUE self)
 static VALUE
 numeric_rect(VALUE self)
 {
-    return rb_assoc_new(self, ZERO);
+    return rb_assoc_new(self, INT2FIX(0));
 }
 
 static VALUE

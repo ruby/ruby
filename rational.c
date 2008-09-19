@@ -213,6 +213,9 @@ k_rational_p(VALUE x)
     return f_kind_of_p(x, rb_cRational);
 }
 
+#define k_exact_p(x) (!k_float_p(x))
+#define k_inexact_p(x) k_float_p(x)
+
 #ifndef NDEBUG
 #define f_gcd f_gcd_orig
 #endif
@@ -773,7 +776,7 @@ nurat_fdiv(VALUE self, VALUE other)
 static VALUE
 nurat_expt(VALUE self, VALUE other)
 {
-    if (f_zero_p(other))
+    if (k_exact_p(other) && f_zero_p(other))
 	return f_rational_new_bang1(CLASS_OF(self), ONE);
 
     if (k_rational_p(other)) {
@@ -1403,7 +1406,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 
     switch (TYPE(a1)) {
       case T_COMPLEX:
-	if (k_float_p(RCOMPLEX(a1)->image) || !f_zero_p(RCOMPLEX(a1)->image)) {
+	if (k_inexact_p(RCOMPLEX(a1)->image) || !f_zero_p(RCOMPLEX(a1)->image)) {
 	    VALUE s = f_to_s(a1);
 	    rb_raise(rb_eRangeError, "can't accept %s",
 		     StringValuePtr(s));
@@ -1413,7 +1416,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 
     switch (TYPE(a2)) {
       case T_COMPLEX:
-	if (k_float_p(RCOMPLEX(a2)->image) || !f_zero_p(RCOMPLEX(a2)->image)) {
+	if (k_inexact_p(RCOMPLEX(a2)->image) || !f_zero_p(RCOMPLEX(a2)->image)) {
 	    VALUE s = f_to_s(a2);
 	    rb_raise(rb_eRangeError, "can't accept %s",
 		     StringValuePtr(s));
