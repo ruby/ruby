@@ -146,17 +146,17 @@ class TestM17N < Test::Unit::TestCase
   # tests start
 
   def test_string_ascii_literal
-    assert_encoding("US-ASCII", eval(a(%{""})).encoding)
-    assert_encoding("US-ASCII", eval(a(%{"a"})).encoding)
+    assert_encoding("ASCII-8BIT", eval(a(%{""})).encoding)
+    assert_encoding("ASCII-8BIT", eval(a(%{"a"})).encoding)
   end
 
   def test_string_eucjp_literal
-    assert_encoding("US-ASCII", eval(e(%{""})).encoding)
-    assert_encoding("US-ASCII", eval(e(%{"a"})).encoding)
+    assert_encoding("EUC-JP", eval(e(%{""})).encoding)
+    assert_encoding("EUC-JP", eval(e(%{"a"})).encoding)
     assert_encoding("EUC-JP", eval(e(%{"\xa1\xa1"})).encoding)
     assert_encoding("EUC-JP", eval(e(%{"\\xa1\\xa1"})).encoding)
-    assert_encoding("US-ASCII", eval(e(%{"\\x20"})).encoding)
-    assert_encoding("US-ASCII", eval(e(%{"\\n"})).encoding)
+    assert_encoding("EUC-JP", eval(e(%{"\\x20"})).encoding)
+    assert_encoding("EUC-JP", eval(e(%{"\\n"})).encoding)
     assert_encoding("EUC-JP", eval(e(%{"\\x80"})).encoding)
   end
 

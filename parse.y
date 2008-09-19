@@ -264,12 +264,11 @@ struct parser_params {
 #define UTF8_ENC() (parser->utf8 ? parser->utf8 : \
 		    (parser->utf8 = rb_utf8_encoding()))
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),parser->enc)
-#define STR_NEW0() rb_usascii_str_new(0,0)
+#define STR_NEW0() rb_enc_str_new(0,0,parser->enc)
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
 #define STR_NEW3(p,n,e,func) parser_str_new((p),(n),(e),(func),parser->enc)
-#define STR_ENC(m) ((m)?parser->enc:rb_usascii_encoding())
 #define ENC_SINGLE(cr) ((cr)==ENC_CODERANGE_7BIT)
-#define TOK_INTERN(mb) rb_intern3(tok(), toklen(), STR_ENC(mb))
+#define TOK_INTERN(mb) rb_intern3(tok(), toklen(), parser->enc)
 
 #ifdef YYMALLOC
 void *rb_parser_malloc(struct parser_params *, size_t);
@@ -5150,7 +5149,6 @@ parser_str_new(const char *p, long n, rb_encoding *enc, int func, rb_encoding *e
     str = rb_enc_str_new(p, n, enc);
     if (!(func & STR_FUNC_REGEXP) && rb_enc_asciicompat(enc)) {
 	if (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
-	    rb_enc_associate(str, rb_usascii_encoding());
 	}
 	else if (enc0 == rb_usascii_encoding() && enc != rb_utf8_encoding()) {
 	    rb_enc_associate(str, rb_ascii8bit_encoding());

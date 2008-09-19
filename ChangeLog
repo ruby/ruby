@@ -1,3 +1,8 @@
+Sat Sep 20 08:07:34 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* parse.y: strings which contain only US-ASCII don't force to have
+	  US-ASCII encoding. [ruby-dev:36400]
+
 Sat Sep 20 07:59:31 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (rb_reg_desc): Regexps of ASCII Compatible encoding may
