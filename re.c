@@ -380,8 +380,12 @@ static VALUE
 rb_reg_desc(const char *s, long len, VALUE re)
 {
     VALUE str = rb_str_buf_new2("/");
-
-    rb_enc_associate(str, rb_usascii_encoding());
+    if (rb_enc_asciicompat(rb_enc_get(re))) {
+	rb_enc_copy(str, re);
+    }
+    else {
+	rb_enc_associate(str, rb_usascii_encoding());
+    }
     rb_reg_expr_str(str, s, len);
     rb_str_buf_cat2(str, "/");
     if (re) {

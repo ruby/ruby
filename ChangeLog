@@ -1,3 +1,9 @@
+Sat Sep 20 07:59:31 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_desc): Regexps of ASCII Compatible encoding may
+	  contain non-ASCII characters. So in that case its encoding
+	  must keep original encoding.
+
 Sat Sep 20 07:44:56 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk: prec.c is removed.
