@@ -1457,7 +1457,7 @@ if test "$with_dln_a_out" != yes; then
 	hiuxmpp)	: ${LDSHARED='ld -r'} ;;
 	atheos*) 	: ${LDSHARED="$CC -shared"}
 			rb_cv_dlopen=yes ;;
-	os2-emx*)	LDFLAGS="$LDFLAGS -Zbsd-signals"
+	os2-emx*)	LDFLAGS="$LDFLAGS -Zomf"
 			;;
 	*) 		: ${LDSHARED='ld'} ;;
   esac
@@ -1801,7 +1801,7 @@ case "$target_os" in
         MINIDLNOBJ=dmydln.o
 	;;
     os2-emx)
-	CFLAGS="$CFLAGS -DOS2 -Zmts"
+    	CFLAGS="$CFLAGS -DOS2"
 	LIBRUBY_A=`echo $LIBRUBY_A | sed 's/^lib//'`
 	LIBRUBY_SO=`echo $LIBRUBY_SO | sed 's/^lib//'`
 	LIBRUBY_ALIASES=`for i in $LIBRUBY_ALIASES; do echo "$i"; done | sed 's/^lib//'`
