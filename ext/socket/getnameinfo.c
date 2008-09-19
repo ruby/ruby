@@ -38,7 +38,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #ifndef _WIN32
-#if defined(__BEOS__)
+#if defined(__BEOS__) && !defined(BONE)
 # include <net/socket.h>
 #else
 # include <sys/socket.h>

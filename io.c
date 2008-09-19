@@ -91,7 +91,9 @@ extern void Init_File _((void));
 # ifndef NOFILE
 #  define NOFILE (OPEN_MAX)
 # endif
-#include <net/socket.h>
+#if !defined(BONE)
+#  include <net/socket.h>
+# endif
 #endif
 
 #include "util.h"

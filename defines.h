@@ -195,7 +195,7 @@ void xfree _((void*));
 #include "vms.h"
 #endif
 
-#if defined(__BEOS__)
+#if defined(__BEOS__) && !defined(BONE)
 #include <net/socket.h> /* intern.h needs fd_set definition */
 #endif
 

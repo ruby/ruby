@@ -1,3 +1,8 @@
+Fri Sep 19 09:29:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dln.c: newer BeOS support.  a patch from Pete Goodeve
+	  <pete.goodeve at computer.org> in [ruby-core:18712].
+
 Thu Sep 18 20:37:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::ParseError#set_backtrace): omits

@@ -38,7 +38,7 @@ if have_header("arpa/inet.h")
 end
 
 ipv6 = false
-default_ipv6 = /cygwin/ !~ RUBY_PLATFORM
+default_ipv6 = /cygwin|beos/ !~ RUBY_PLATFORM
 if enable_config("ipv6", default_ipv6)
   if checking_for("ipv6") {try_link(<<EOF)}
 #include <sys/types.h>

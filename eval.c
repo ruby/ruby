@@ -74,7 +74,7 @@ char *strrchr _((const char*,const char));
 
 #include <time.h>
 
-#ifdef __BEOS__
+#if defined(__BEOS__) && !defined(BONE)
 #include <net/socket.h>
 #endif
 

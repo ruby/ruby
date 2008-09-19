@@ -42,7 +42,7 @@
 #include <sys/types.h>
 #if !defined(_WIN32) && !defined(__VMS)
 #include <sys/param.h>
-#if defined(__BEOS__)
+#if defined(__BEOS__) && !defined(BONE)
 # include <net/socket.h>
 #else
 # include <sys/socket.h>
