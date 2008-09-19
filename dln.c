@@ -1442,7 +1442,8 @@ dln_load(const char *file)
       /* load extention module */
       img_id = load_add_on(file);
       if (img_id <= 0) {
-	rb_loaderror("Failed to load %.200s", file);
+	rb_loaderror("Failed to load add_on %.200s error_code=%x",
+	  file, img_id);
       }
       
       /* find symbol for module initialize function. */

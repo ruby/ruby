@@ -1,3 +1,8 @@
+Fri Sep 19 09:29:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dln.c: newer BeOS support.  a patch from Pete Goodeve
+	  <pete.goodeve at computer.org> in [ruby-core:18712].
+
 Fri Sep 19 03:41:25 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: fix memory violation. mentioned by mame [ruby-dev:36373]

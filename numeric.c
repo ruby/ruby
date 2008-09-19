@@ -78,6 +78,9 @@ round(double x)
     }
     return x;
 }
+#elif defined(__BEOS__)
+/* appears to be a bug in the BeOS headers */
+double round(double x);
 #endif
 
 static ID id_coerce, id_to_i, id_eq;

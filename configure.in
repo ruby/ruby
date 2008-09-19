@@ -1423,10 +1423,12 @@ if test "$with_dln_a_out" != yes; then
 			  powerpc*)
 			    : ${LDSHARED="ld -xms"}
 			    DLDFLAGS="$DLDFLAGS "'-export Init_$(TARGET) -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o'
-                            ;;
+			    LDFLAGS="$LDFLAGS -L/boot/home/config/lib -lbe -lroot"
+			    ;;
 			  i586*)
 			    : ${LDSHARED="ld -shared"}
-			    DLDFLAGS="$DLDFLAGS -L/boot/develop/lib/x86 -lbe -lroot"
+			    DLDFLAGS="$DLDFLAGS -L/boot/develop/lib/x86 -L/boot/home/config/lib \$(topdir)/_APP_ -lbe -lroot"
+			    LDFLAGS="$LDFLAGS -L/boot/develop/lib/x86 -L/boot/home/config/lib -lbe -lroot"
 			    ;;
 			esac
 			: ${LIBPATHENV=LIBRARY_PATH}
@@ -1826,6 +1828,7 @@ case "$target_os" in
 	    CFLAGS="$CFLAGS -relax_pointers"
 	    ;;
 	esac
+	CPPFLAGS="$CPPFLAGS -I/boot/home/config/include"
 	;;
     cygwin*|mingw*)
 	LIBRUBY_DLDFLAGS="${DLDFLAGS}"' -Wl,--out-implib=$(LIBRUBY)'
