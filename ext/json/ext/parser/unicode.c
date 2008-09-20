@@ -103,12 +103,12 @@ char *JSON_convert_UTF16_to_UTF8 (
                         + (ch2 - UNI_SUR_LOW_START) + halfBase;
                     ++tmpPtr;
                 } else if (flags == strictConversion) { /* it's an unpaired high surrogate */
-                    free(tmp);
+                    ruby_xfree(tmp);
                     rb_raise(rb_path2class("JSON::ParserError"),
                             "source sequence is illegal/malformed near %s", source);
                 }
             } else { /* We don't have the 16 bits following the high surrogate. */
-                free(tmp);
+                ruby_xfree(tmp);
                 rb_raise(rb_path2class("JSON::ParserError"),
                     "partial character in source, but hit end near %s", source);
                 break;
@@ -116,7 +116,7 @@ char *JSON_convert_UTF16_to_UTF8 (
         } else if (flags == strictConversion) {
             /* UTF-16 surrogate values are illegal in UTF-32 */
             if (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_END) {
-                free(tmp);
+                ruby_xfree(tmp);
                 rb_raise(rb_path2class("JSON::ParserError"),
                     "source sequence is illegal/malformed near %s", source);
             }
@@ -148,7 +148,7 @@ char *JSON_convert_UTF16_to_UTF8 (
         }
         rb_str_buf_cat(buffer, p, bytesToWrite);
     }
-    free(tmp);
+    ruby_xfree(tmp);
     source += 5 + (n - 1) * 6;
     return source;
 }

@@ -1708,7 +1708,7 @@ static void JSON_mark(JSON_Parser *json)
 
 static void JSON_free(JSON_Parser *json)
 {
-    free(json);
+    ruby_xfree(json);
 }
 
 static VALUE cJSON_parser_s_allocate(VALUE klass)
