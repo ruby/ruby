@@ -15,7 +15,7 @@ Sun Sep 21 07:43:16 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/mathn.rb: ditto.
 
-	* lib/complex.rb: ditto.
+	* lib/complex.rb: ditto. and provides some obsolate methods.
 
 Sun Sep 21 02:48:45 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 

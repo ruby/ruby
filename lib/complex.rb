@@ -16,3 +16,9 @@ class Complex
   alias image imag
 
 end
+
+class Numeric
+
+  def im() Complex(0, self) end
+
+end
