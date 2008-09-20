@@ -1406,7 +1406,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 
     switch (TYPE(a1)) {
       case T_COMPLEX:
-	if (k_inexact_p(RCOMPLEX(a1)->image) || !f_zero_p(RCOMPLEX(a1)->image)) {
+	if (k_inexact_p(RCOMPLEX(a1)->imag) || !f_zero_p(RCOMPLEX(a1)->imag)) {
 	    VALUE s = f_to_s(a1);
 	    rb_raise(rb_eRangeError, "can't accept %s",
 		     StringValuePtr(s));
@@ -1416,7 +1416,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 
     switch (TYPE(a2)) {
       case T_COMPLEX:
-	if (k_inexact_p(RCOMPLEX(a2)->image) || !f_zero_p(RCOMPLEX(a2)->image)) {
+	if (k_inexact_p(RCOMPLEX(a2)->imag) || !f_zero_p(RCOMPLEX(a2)->imag)) {
 	    VALUE s = f_to_s(a2);
 	    rb_raise(rb_eRangeError, "can't accept %s",
 		     StringValuePtr(s));

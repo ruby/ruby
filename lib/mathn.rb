@@ -37,7 +37,7 @@ class Rational
     if other.kind_of?(Rational)
       other2 = other
       if self < 0
-	return Complex.__send__(:new!, self, 0) ** other
+	return Complex(self, 0.0) ** other
       elsif other == 0
 	return Rational(1,1)
       elsif self == 0
@@ -99,7 +99,7 @@ module Math
   remove_method(:sqrt)
   def sqrt(a)
     if a.kind_of?(Complex)
-      abs = sqrt(a.real*a.real + a.image*a.image)
+      abs = sqrt(a.real*a.real + a.imag*a.imag)
 #      if not abs.kind_of?(Rational)
 #	return a**Rational(1,2)
 #      end
@@ -108,7 +108,7 @@ module Math
 #      if !(x.kind_of?(Rational) and y.kind_of?(Rational))
 #	return a**Rational(1,2)
 #      end
-      if a.image >= 0 
+      if a.imag >= 0 
 	Complex(x, y)
       else
 	Complex(x, -y)

@@ -10,3 +10,9 @@ def Complex.generic? (other)
   other.kind_of?(Float)   ||
   other.kind_of?(Rational)
 end
+
+class Complex
+
+  alias image imag
+
+end

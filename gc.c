@@ -1539,7 +1539,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 
       case T_COMPLEX:
 	gc_mark(objspace, obj->as.complex.real, lev);
-	gc_mark(objspace, obj->as.complex.image, lev);
+	gc_mark(objspace, obj->as.complex.imag, lev);
 	break;
 
       case T_STRUCT:

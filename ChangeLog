@@ -1,3 +1,22 @@
+Sun Sep 21 07:43:16 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: an instance method image has been removed and
+	  uses "imag" instead of "image".
+
+	* complex.c: two instance method re and im are removed.
+
+	* rational.c: follows the above changes.
+
+	* include/ruby/ruby.h: ditto.
+
+	* gc.c: ditto.
+
+	* lib/cmath.rb: ditto.
+
+	* lib/mathn.rb: ditto.
+
+	* lib/complex.rb: ditto.
+
 Sun Sep 21 02:48:45 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/ext/parser/parse.c: use ruby_xfree().

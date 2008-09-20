@@ -28,8 +28,8 @@ module CMath
     if z.real?
       exp!(z)
     else
-      Complex(exp!(z.real) * cos!(z.image),
-	      exp!(z.real) * sin!(z.image))
+      Complex(exp!(z.real) * cos!(z.imag),
+	      exp!(z.real) * sin!(z.imag))
     end
   end
 
@@ -60,10 +60,10 @@ module CMath
       if z >= 0
 	sqrt!(z)
       else
-	Complex(0,sqrt!(-z))
+	Complex(0, sqrt!(-z))
       end
     else
-      if z.image < 0
+      if z.imag < 0
 	sqrt(z.conjugate).conjugate
       else
 	r = z.abs
@@ -77,8 +77,8 @@ module CMath
     if z.real?
       sin!(z)
     else
-      Complex(sin!(z.real) * cosh!(z.image),
-	      cos!(z.real) * sinh!(z.image))
+      Complex(sin!(z.real) * cosh!(z.imag),
+	      cos!(z.real) * sinh!(z.imag))
     end
   end
 
@@ -86,8 +86,8 @@ module CMath
     if z.real?
       cos!(z)
     else
-      Complex(cos!(z.real) * cosh!(z.image),
-	      -sin!(z.real) * sinh!(z.image))
+      Complex(cos!(z.real) * cosh!(z.imag),
+	      -sin!(z.real) * sinh!(z.imag))
     end
   end
 
@@ -103,8 +103,8 @@ module CMath
     if z.real?
       sinh!(z)
     else
-      Complex(sinh!(z.real) * cos!(z.image),
-	      cosh!(z.real) * sin!(z.image))
+      Complex(sinh!(z.real) * cos!(z.imag),
+	      cosh!(z.real) * sin!(z.imag))
     end
   end
 
@@ -112,8 +112,8 @@ module CMath
     if z.real?
       cosh!(z)
     else
-      Complex(cosh!(z.real) * cos!(z.image),
-	      sinh!(z.real) * sin!(z.image))
+      Complex(cosh!(z.real) * cos!(z.imag),
+	      sinh!(z.real) * sin!(z.imag))
     end
   end
 
@@ -129,7 +129,7 @@ module CMath
     if z.real? and z >= -1 and z <= 1
       asin!(z)
     else
-      -1.0.im * log(1.0.im * z + sqrt(1.0 - z * z))
+      Complex(0, -1.0) * log(Complex(0, 1.0) * z + sqrt(1.0 - z * z))
     end
   end
 
@@ -137,7 +137,7 @@ module CMath
     if z.real? and z >= -1 and z <= 1
       acos!(z)
     else
-      -1.0.im * log(z + 1.0.im * sqrt(1.0 - z * z))
+      Complex(0, -1.0) * log(z + Complex(0, 1.0) * sqrt(1.0 - z * z))
     end
   end
 
@@ -145,7 +145,7 @@ module CMath
     if z.real?
       atan!(z)
     else
-      1.0.im * log((1.0.im + z) / (1.0.im - z)) / 2.0
+      Complex(0, 1.0) * log((Complex(0, 1.0) + z) / (Complex(0, 1.0) - z)) / 2.0
     end
   end
 
@@ -153,7 +153,7 @@ module CMath
     if y.real? and x.real?
       atan2!(y,x)
     else
-      -1.0.im * log((x + 1.0.im * y) / sqrt(x * x + y * y))
+      Complex(0, -1.0) * log((x + Complex(0, 1.0) * y) / sqrt(x * x + y * y))
     end
   end
 
