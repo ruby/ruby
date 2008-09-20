@@ -632,7 +632,7 @@ class OptionParser
       list.each do |opt|
         if opt.respond_to?(:summarize) # perhaps OptionParser::Switch
           opt.summarize(*args, &block)
-        elsif !opt
+        elsif !opt or opt.empty?
           yield("")
         elsif opt.respond_to?(:each_line)
           opt.each_line(&block)
