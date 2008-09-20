@@ -31,6 +31,10 @@ class TC_JSONAddition < Test::Unit::TestCase
   end
 
   class B
+    def self.json_creatable?
+      false
+    end
+
     def to_json(*args)
       {
         'json_class'  => self.class.name,
@@ -48,9 +52,6 @@ class TC_JSONAddition < Test::Unit::TestCase
         'json_class'  => 'TC_JSONAddition::Nix',
       }.to_json(*args)
     end
-  end
-
-  def setup
   end
 
   def test_extended_json
@@ -77,14 +78,14 @@ class TC_JSONAddition < Test::Unit::TestCase
     )
   end
 
-  def test_extended_json_fail
+  def test_extended_json_fail1
     b = B.new
     assert !B.json_creatable?
     json = generate(b)
-    assert_equal({ 'json_class' => B.name }, JSON.parse(json))
+    assert_equal({ "json_class"=>"TC_JSONAddition::B" }, JSON.parse(json))
   end
 
-  def test_extended_json_fail
+  def test_extended_json_fail2
     c = C.new
     assert !C.json_creatable?
     json = generate(c)
@@ -111,9 +112,11 @@ EOT
     assert_equal raw, raw_again
   end
 
+  MyJsonStruct = Struct.new 'MyJsonStruct', :foo, :bar
+
   def test_core
-    t = Time.at(1198254128, 895990)
-    assert_equal t, JSON(JSON(t))
+    t = Time.now
+    assert_equal t.inspect, JSON(JSON(t)).inspect
     d = Date.today
     assert_equal d, JSON(JSON(d))
     d = DateTime.civil(2007, 6, 14, 14, 57, 10, Rational(1, 12), 2299161)
@@ -122,8 +125,7 @@ EOT
     assert_equal 1...10, JSON(JSON(1...10))
     assert_equal "a".."c", JSON(JSON("a".."c"))
     assert_equal "a"..."c", JSON(JSON("a"..."c"))
-    struct = Struct.new 'MyJsonStruct', :foo, :bar
-    s = struct.new 4711, 'foot'
+    s = MyJsonStruct.new 4711, 'foot'
     assert_equal s, JSON(JSON(s))
     struct = Struct.new :foo, :bar
     s = struct.new 4711, 'foot'
@@ -137,7 +139,19 @@ EOT
       assert_equal e.message, e_again.message
       assert_equal e.backtrace, e_again.backtrace
     end
-    assert_equal /foo/, JSON(JSON(/foo/))
-    assert_equal /foo/i, JSON(JSON(/foo/i))
+    assert_equal(/foo/, JSON(JSON(/foo/)))
+    assert_equal(/foo/i, JSON(JSON(/foo/i)))
+  end
+
+  def test_utc_datetime
+    now = Time.now
+    d = DateTime.parse(now.to_s)                    # usual case
+    assert d, JSON.parse(d.to_json)
+    d = DateTime.parse(now.utc.to_s)                # of = 0
+    assert d, JSON.parse(d.to_json)
+    d = DateTime.civil(2008, 6, 17, 11, 48, 32, 1)  # of = 1 / 12 => 1/12
+    assert d, JSON.parse(d.to_json)
+    d = DateTime.civil(2008, 6, 17, 11, 48, 32, 12) # of = 12 / 12 => 12
+    assert d, JSON.parse(d.to_json)
   end
 end

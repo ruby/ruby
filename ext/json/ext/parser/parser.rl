@@ -1,9 +1,4 @@
-/* vim: set cin et sw=4 ts=4: */
-
 #include "ruby.h"
-#include "ruby/re.h"
-#include "ruby/st.h"
-#include "ruby/encoding.h"
 #include "unicode.h"
 
 #define EVIL 0x666
@@ -76,7 +71,7 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
         VALUE v = Qnil;
         char *np = JSON_parse_value(json, fpc, pe, &v); 
         if (np == NULL) {
-            fbreak;
+            fhold; fbreak;
         } else {
             rb_hash_aset(*result, last_name, v);
             fexec np;
@@ -85,10 +80,10 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
 
     action parse_name {
         char *np = JSON_parse_string(json, fpc, pe, &last_name);
-        if (np == NULL) fbreak; else fexec np;
+        if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
-    action exit { fbreak; }
+    action exit { fhold; fbreak; }
 
     a_pair  = ignore* begin_name >parse_name
         ignore* name_separator ignore*
@@ -148,19 +143,19 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
         if (json->allow_nan) {
             *result = CNaN;
         } else {
-            rb_raise(eParserError, "unexpected token at '%s'", p - 2);
+            rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p - 2);
         }
     }
     action parse_infinity {
         if (json->allow_nan) {
             *result = CInfinity;
         } else {
-            rb_raise(eParserError, "unexpected token at '%s'", p - 8);
+            rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p - 8);
         }
     }
     action parse_string {
         char *np = JSON_parse_string(json, fpc, pe, result);
-        if (np == NULL) fbreak; else fexec np;
+        if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
     action parse_number {
@@ -169,35 +164,35 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
             if (json->allow_nan) {
                 *result = CMinusInfinity;
                 fexec p + 10;
-                fbreak;
+                fhold; fbreak;
             } else {
-                rb_raise(eParserError, "unexpected token at '%s'", p);
+                rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p);
             }
         }
         np = JSON_parse_float(json, fpc, pe, result);
         if (np != NULL) fexec np;
         np = JSON_parse_integer(json, fpc, pe, result);
         if (np != NULL) fexec np;
-        fbreak;
+        fhold; fbreak;
     }
 
     action parse_array { 
         char *np;
-        json->current_nesting += 1;
+        json->current_nesting++;
         np = JSON_parse_array(json, fpc, pe, result);
-        json->current_nesting -= 1;
-        if (np == NULL) fbreak; else fexec np;
+        json->current_nesting--;
+        if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
     action parse_object { 
         char *np;
-        json->current_nesting += 1;
+        json->current_nesting++;
         np =  JSON_parse_object(json, fpc, pe, result);
-        json->current_nesting -= 1;
-        if (np == NULL) fbreak; else fexec np;
+        json->current_nesting--;
+        if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
-    action exit { fbreak; }
+    action exit { fhold; fbreak; }
 
 main := (
               Vnull @parse_null |
@@ -231,7 +226,7 @@ static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *resul
 
     write data;
 
-    action exit { fbreak; }
+    action exit { fhold; fbreak; }
 
     main := '-'? ('0' | [1-9][0-9]*) (^[0-9] @exit);
 }%%
@@ -259,7 +254,7 @@ static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *res
 
     write data;
 
-    action exit { fbreak; }
+    action exit { fhold; fbreak; }
 
     main := '-'? (
               (('0' | [1-9][0-9]*) '.' [0-9]+ ([Ee] [+\-]?[0-9]+)?)
@@ -295,14 +290,14 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
         VALUE v = Qnil;
         char *np = JSON_parse_value(json, fpc, pe, &v); 
         if (np == NULL) {
-            fbreak;
+            fhold; fbreak;
         } else {
             rb_ary_push(*result, v);
             fexec np;
         }
     }
 
-    action exit { fbreak; }
+    action exit { fhold; fbreak; }
 
     next_element  = value_separator ignore* begin_value >parse_value;
 
@@ -327,13 +322,13 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
     if(cs >= JSON_array_first_final) {
         return p + 1;
     } else {
-        rb_raise(eParserError, "unexpected token at '%s'", p);
+        rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p);
     }
 }
 
 static VALUE json_string_unescape(char *p, char *pe)
 {
-    VALUE result = rb_enc_str_new(0, pe - p + 1, rb_utf8_encoding());
+    VALUE result = rb_str_buf_new(pe - p + 1);
 
     while (p < pe) {
         if (*p == '\\') {
@@ -395,10 +390,10 @@ static VALUE json_string_unescape(char *p, char *pe)
 
     action parse_string {
         *result = json_string_unescape(json->memo + 1, p);
-        if (NIL_P(*result)) fbreak; else fexec p + 1;
+        if (NIL_P(*result)) { fhold; fbreak; } else fexec p + 1;
     }
 
-    action exit { fbreak; }
+    action exit { fhold; fbreak; }
 
     main := '"' ((^(["\\] | 0..0x1f) | '\\'["\\/bfnrt] | '\\u'[0-9a-fA-F]{4} | '\\'^(["\\/bfnrtu]|0..0x1f))* %parse_string) '"' @exit;
 }%%
@@ -407,7 +402,7 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 {
     int cs = EVIL;
 
-    *result = rb_enc_str_new("", 0, rb_utf8_encoding());
+    *result = rb_str_new("", 0);
     %% write init;
     json->memo = p;
     %% write exec;
@@ -431,14 +426,14 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
         char *np;
         json->current_nesting = 1;
         np = JSON_parse_object(json, fpc, pe, &result);
-        if (np == NULL) fbreak; else fexec np;
+        if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
     action parse_array {
         char *np;
         json->current_nesting = 1;
         np = JSON_parse_array(json, fpc, pe, &result);
-        if (np == NULL) fbreak; else fexec np;
+        if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
     main := ignore* (
@@ -574,7 +569,7 @@ static VALUE cParser_parse(VALUE self)
     if (cs >= JSON_first_final && p == pe) {
         return result;
     } else {
-        rb_raise(eParserError, "unexpected token at '%s'", p);
+        rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p);
     }
 }
 
@@ -593,7 +588,7 @@ static void JSON_mark(JSON_Parser *json)
 
 static void JSON_free(JSON_Parser *json)
 {
-    ruby_xfree(json);
+    free(json);
 }
 
 static VALUE cJSON_parser_s_allocate(VALUE klass)
@@ -616,6 +611,7 @@ static VALUE cParser_source(VALUE self)
 
 void Init_parser()
 {
+    rb_require("json/common");
     mJSON = rb_define_module("JSON");
     mExt = rb_define_module_under(mJSON, "Ext");
     cParser = rb_define_class_under(mExt, "Parser", rb_cObject);

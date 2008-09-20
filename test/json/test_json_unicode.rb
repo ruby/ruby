@@ -7,9 +7,6 @@ require 'json'
 class TC_JSONUnicode < Test::Unit::TestCase
   include JSON
 
-  def setup
-  end
-
   def test_unicode
     assert_equal '""', ''.to_json
     assert_equal '"\\b"', "\b".to_json
@@ -54,7 +51,7 @@ class TC_JSONUnicode < Test::Unit::TestCase
       end
     end
     assert_raises(JSON::GeneratorError) do
-      JSON.generate(["" << 0x80])
+      JSON.generate(["\x80"])
     end
     assert_equal "\302\200", JSON.parse('["\u0080"]').first
   end

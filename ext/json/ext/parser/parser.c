@@ -1,10 +1,5 @@
 #line 1 "parser.rl"
-/* vim: set cin et sw=4 ts=4: */
-
 #include "ruby.h"
-#include "ruby/re.h"
-#include "ruby/st.h"
-#include "ruby/encoding.h"
 #include "unicode.h"
 
 #define EVIL 0x666
@@ -39,18 +34,18 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
     JSON_Parser *json;                      \
     Data_Get_Struct(self, JSON_Parser, json);
 
-#line 67 "parser.rl"
+#line 64 "parser.rl"
 
 
 
-#line 47 "parser.c"
+#line 44 "parser.c"
 static const int JSON_object_start = 1;
 static const int JSON_object_first_final = 27;
 static const int JSON_object_error = 0;
 
 static const int JSON_object_en_main = 1;
 
-#line 100 "parser.rl"
+#line 97 "parser.rl"
 
 
 static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *result)
@@ -65,16 +60,16 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
     *result = rb_hash_new();
 
     
-#line 69 "parser.c"
+#line 66 "parser.c"
 	{
 	cs = JSON_object_start;
 	}
-#line 114 "parser.rl"
+#line 111 "parser.rl"
     
-#line 75 "parser.c"
+#line 72 "parser.c"
 	{
 	if ( p == pe )
-		goto _out;
+		goto _test_eof;
 	switch ( cs )
 	{
 case 1:
@@ -82,10 +77,11 @@ case 1:
 		goto st2;
 	goto st0;
 st0:
-	goto _out0;
+cs = 0;
+	goto _out;
 st2:
 	if ( ++p == pe )
-		goto _out2;
+		goto _test_eof2;
 case 2:
 	switch( (*p) ) {
 		case 13: goto st2;
@@ -98,17 +94,17 @@ case 2:
 		goto st2;
 	goto st0;
 tr2:
-#line 86 "parser.rl"
+#line 83 "parser.rl"
 	{
         char *np = JSON_parse_string(json, p, pe, &last_name);
-        if (np == NULL) goto _out3; else {p = (( np))-1;}
+        if (np == NULL) { p--; {p++; cs = 3; goto _out;} } else {p = (( np))-1;}
     }
 	goto st3;
 st3:
 	if ( ++p == pe )
-		goto _out3;
+		goto _test_eof3;
 case 3:
-#line 112 "parser.c"
+#line 110 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st3;
 		case 32: goto st3;
@@ -120,7 +116,7 @@ case 3:
 	goto st0;
 st4:
 	if ( ++p == pe )
-		goto _out4;
+		goto _test_eof4;
 case 4:
 	switch( (*p) ) {
 		case 42: goto st5;
@@ -129,14 +125,14 @@ case 4:
 	goto st0;
 st5:
 	if ( ++p == pe )
-		goto _out5;
+		goto _test_eof5;
 case 5:
 	if ( (*p) == 42 )
 		goto st6;
 	goto st5;
 st6:
 	if ( ++p == pe )
-		goto _out6;
+		goto _test_eof6;
 case 6:
 	switch( (*p) ) {
 		case 42: goto st6;
@@ -145,14 +141,14 @@ case 6:
 	goto st5;
 st7:
 	if ( ++p == pe )
-		goto _out7;
+		goto _test_eof7;
 case 7:
 	if ( (*p) == 10 )
 		goto st3;
 	goto st7;
 st8:
 	if ( ++p == pe )
-		goto _out8;
+		goto _test_eof8;
 case 8:
 	switch( (*p) ) {
 		case 13: goto st8;
@@ -175,12 +171,12 @@ case 8:
 		goto st8;
 	goto st0;
 tr11:
-#line 75 "parser.rl"
+#line 72 "parser.rl"
 	{
         VALUE v = Qnil;
         char *np = JSON_parse_value(json, p, pe, &v); 
         if (np == NULL) {
-            goto _out9;
+            p--; {p++; cs = 9; goto _out;}
         } else {
             rb_hash_aset(*result, last_name, v);
             {p = (( np))-1;}
@@ -189,9 +185,9 @@ tr11:
 	goto st9;
 st9:
 	if ( ++p == pe )
-		goto _out9;
+		goto _test_eof9;
 case 9:
-#line 195 "parser.c"
+#line 193 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st9;
 		case 32: goto st9;
@@ -204,7 +200,7 @@ case 9:
 	goto st0;
 st10:
 	if ( ++p == pe )
-		goto _out10;
+		goto _test_eof10;
 case 10:
 	switch( (*p) ) {
 		case 13: goto st10;
@@ -217,7 +213,7 @@ case 10:
 	goto st0;
 st11:
 	if ( ++p == pe )
-		goto _out11;
+		goto _test_eof11;
 case 11:
 	switch( (*p) ) {
 		case 42: goto st12;
@@ -226,14 +222,14 @@ case 11:
 	goto st0;
 st12:
 	if ( ++p == pe )
-		goto _out12;
+		goto _test_eof12;
 case 12:
 	if ( (*p) == 42 )
 		goto st13;
 	goto st12;
 st13:
 	if ( ++p == pe )
-		goto _out13;
+		goto _test_eof13;
 case 13:
 	switch( (*p) ) {
 		case 42: goto st13;
@@ -242,14 +238,14 @@ case 13:
 	goto st12;
 st14:
 	if ( ++p == pe )
-		goto _out14;
+		goto _test_eof14;
 case 14:
 	if ( (*p) == 10 )
 		goto st10;
 	goto st14;
 st15:
 	if ( ++p == pe )
-		goto _out15;
+		goto _test_eof15;
 case 15:
 	switch( (*p) ) {
 		case 42: goto st16;
@@ -258,14 +254,14 @@ case 15:
 	goto st0;
 st16:
 	if ( ++p == pe )
-		goto _out16;
+		goto _test_eof16;
 case 16:
 	if ( (*p) == 42 )
 		goto st17;
 	goto st16;
 st17:
 	if ( ++p == pe )
-		goto _out17;
+		goto _test_eof17;
 case 17:
 	switch( (*p) ) {
 		case 42: goto st17;
@@ -274,24 +270,24 @@ case 17:
 	goto st16;
 st18:
 	if ( ++p == pe )
-		goto _out18;
+		goto _test_eof18;
 case 18:
 	if ( (*p) == 10 )
 		goto st9;
 	goto st18;
 tr4:
-#line 91 "parser.rl"
-	{ goto _out27; }
+#line 88 "parser.rl"
+	{ p--; {p++; cs = 27; goto _out;} }
 	goto st27;
 st27:
 	if ( ++p == pe )
-		goto _out27;
+		goto _test_eof27;
 case 27:
-#line 291 "parser.c"
+#line 289 "parser.c"
 	goto st0;
 st19:
 	if ( ++p == pe )
-		goto _out19;
+		goto _test_eof19;
 case 19:
 	switch( (*p) ) {
 		case 42: goto st20;
@@ -300,14 +296,14 @@ case 19:
 	goto st0;
 st20:
 	if ( ++p == pe )
-		goto _out20;
+		goto _test_eof20;
 case 20:
 	if ( (*p) == 42 )
 		goto st21;
 	goto st20;
 st21:
 	if ( ++p == pe )
-		goto _out21;
+		goto _test_eof21;
 case 21:
 	switch( (*p) ) {
 		case 42: goto st21;
@@ -316,14 +312,14 @@ case 21:
 	goto st20;
 st22:
 	if ( ++p == pe )
-		goto _out22;
+		goto _test_eof22;
 case 22:
 	if ( (*p) == 10 )
 		goto st8;
 	goto st22;
 st23:
 	if ( ++p == pe )
-		goto _out23;
+		goto _test_eof23;
 case 23:
 	switch( (*p) ) {
 		case 42: goto st24;
@@ -332,14 +328,14 @@ case 23:
 	goto st0;
 st24:
 	if ( ++p == pe )
-		goto _out24;
+		goto _test_eof24;
 case 24:
 	if ( (*p) == 42 )
 		goto st25;
 	goto st24;
 st25:
 	if ( ++p == pe )
-		goto _out25;
+		goto _test_eof25;
 case 25:
 	switch( (*p) ) {
 		case 42: goto st25;
@@ -348,43 +344,43 @@ case 25:
 	goto st24;
 st26:
 	if ( ++p == pe )
-		goto _out26;
+		goto _test_eof26;
 case 26:
 	if ( (*p) == 10 )
 		goto st2;
 	goto st26;
 	}
-	_out0: cs = 0; goto _out; 
-	_out2: cs = 2; goto _out; 
-	_out3: cs = 3; goto _out; 
-	_out4: cs = 4; goto _out; 
-	_out5: cs = 5; goto _out; 
-	_out6: cs = 6; goto _out; 
-	_out7: cs = 7; goto _out; 
-	_out8: cs = 8; goto _out; 
-	_out9: cs = 9; goto _out; 
-	_out10: cs = 10; goto _out; 
-	_out11: cs = 11; goto _out; 
-	_out12: cs = 12; goto _out; 
-	_out13: cs = 13; goto _out; 
-	_out14: cs = 14; goto _out; 
-	_out15: cs = 15; goto _out; 
-	_out16: cs = 16; goto _out; 
-	_out17: cs = 17; goto _out; 
-	_out18: cs = 18; goto _out; 
-	_out27: cs = 27; goto _out; 
-	_out19: cs = 19; goto _out; 
-	_out20: cs = 20; goto _out; 
-	_out21: cs = 21; goto _out; 
-	_out22: cs = 22; goto _out; 
-	_out23: cs = 23; goto _out; 
-	_out24: cs = 24; goto _out; 
-	_out25: cs = 25; goto _out; 
-	_out26: cs = 26; goto _out; 
+	_test_eof2: cs = 2; goto _test_eof; 
+	_test_eof3: cs = 3; goto _test_eof; 
+	_test_eof4: cs = 4; goto _test_eof; 
+	_test_eof5: cs = 5; goto _test_eof; 
+	_test_eof6: cs = 6; goto _test_eof; 
+	_test_eof7: cs = 7; goto _test_eof; 
+	_test_eof8: cs = 8; goto _test_eof; 
+	_test_eof9: cs = 9; goto _test_eof; 
+	_test_eof10: cs = 10; goto _test_eof; 
+	_test_eof11: cs = 11; goto _test_eof; 
+	_test_eof12: cs = 12; goto _test_eof; 
+	_test_eof13: cs = 13; goto _test_eof; 
+	_test_eof14: cs = 14; goto _test_eof; 
+	_test_eof15: cs = 15; goto _test_eof; 
+	_test_eof16: cs = 16; goto _test_eof; 
+	_test_eof17: cs = 17; goto _test_eof; 
+	_test_eof18: cs = 18; goto _test_eof; 
+	_test_eof27: cs = 27; goto _test_eof; 
+	_test_eof19: cs = 19; goto _test_eof; 
+	_test_eof20: cs = 20; goto _test_eof; 
+	_test_eof21: cs = 21; goto _test_eof; 
+	_test_eof22: cs = 22; goto _test_eof; 
+	_test_eof23: cs = 23; goto _test_eof; 
+	_test_eof24: cs = 24; goto _test_eof; 
+	_test_eof25: cs = 25; goto _test_eof; 
+	_test_eof26: cs = 26; goto _test_eof; 
 
+	_test_eof: {}
 	_out: {}
 	}
-#line 115 "parser.rl"
+#line 112 "parser.rl"
 
     if (cs >= JSON_object_first_final) {
         if (RTEST(json->create_id)) {
@@ -403,14 +399,14 @@ case 26:
 }
 
 
-#line 407 "parser.c"
+#line 405 "parser.c"
 static const int JSON_value_start = 1;
 static const int JSON_value_first_final = 21;
 static const int JSON_value_error = 0;
 
 static const int JSON_value_en_main = 1;
 
-#line 213 "parser.rl"
+#line 210 "parser.rl"
 
 
 static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *result)
@@ -418,16 +414,16 @@ static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *resul
     int cs = EVIL;
 
     
-#line 422 "parser.c"
+#line 420 "parser.c"
 	{
 	cs = JSON_value_start;
 	}
-#line 220 "parser.rl"
+#line 217 "parser.rl"
     
-#line 428 "parser.c"
+#line 426 "parser.c"
 	{
 	if ( p == pe )
-		goto _out;
+		goto _test_eof;
 	switch ( cs )
 	{
 case 1:
@@ -446,259 +442,260 @@ case 1:
 		goto tr2;
 	goto st0;
 st0:
-	goto _out0;
+cs = 0;
+	goto _out;
 tr0:
-#line 161 "parser.rl"
+#line 158 "parser.rl"
 	{
         char *np = JSON_parse_string(json, p, pe, result);
-        if (np == NULL) goto _out21; else {p = (( np))-1;}
+        if (np == NULL) { p--; {p++; cs = 21; goto _out;} } else {p = (( np))-1;}
     }
 	goto st21;
 tr2:
-#line 166 "parser.rl"
+#line 163 "parser.rl"
 	{
         char *np;
         if(pe > p + 9 && !strncmp(MinusInfinity, p, 9)) {
             if (json->allow_nan) {
                 *result = CMinusInfinity;
                 {p = (( p + 10))-1;}
-                goto _out21;
+                p--; {p++; cs = 21; goto _out;}
             } else {
-                rb_raise(eParserError, "unexpected token at '%s'", p);
+                rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p);
             }
         }
         np = JSON_parse_float(json, p, pe, result);
         if (np != NULL) {p = (( np))-1;}
         np = JSON_parse_integer(json, p, pe, result);
         if (np != NULL) {p = (( np))-1;}
-        goto _out21;
+        p--; {p++; cs = 21; goto _out;}
     }
 	goto st21;
 tr5:
-#line 184 "parser.rl"
+#line 181 "parser.rl"
 	{ 
         char *np;
-        json->current_nesting += 1;
+        json->current_nesting++;
         np = JSON_parse_array(json, p, pe, result);
-        json->current_nesting -= 1;
-        if (np == NULL) goto _out21; else {p = (( np))-1;}
+        json->current_nesting--;
+        if (np == NULL) { p--; {p++; cs = 21; goto _out;} } else {p = (( np))-1;}
     }
 	goto st21;
 tr9:
-#line 192 "parser.rl"
+#line 189 "parser.rl"
 	{ 
         char *np;
-        json->current_nesting += 1;
+        json->current_nesting++;
         np =  JSON_parse_object(json, p, pe, result);
-        json->current_nesting -= 1;
-        if (np == NULL) goto _out21; else {p = (( np))-1;}
+        json->current_nesting--;
+        if (np == NULL) { p--; {p++; cs = 21; goto _out;} } else {p = (( np))-1;}
     }
 	goto st21;
 tr16:
-#line 154 "parser.rl"
+#line 151 "parser.rl"
 	{
         if (json->allow_nan) {
             *result = CInfinity;
         } else {
-            rb_raise(eParserError, "unexpected token at '%s'", p - 8);
+            rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p - 8);
         }
     }
 	goto st21;
 tr18:
-#line 147 "parser.rl"
+#line 144 "parser.rl"
 	{
         if (json->allow_nan) {
             *result = CNaN;
         } else {
-            rb_raise(eParserError, "unexpected token at '%s'", p - 2);
+            rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p - 2);
         }
     }
 	goto st21;
 tr22:
-#line 141 "parser.rl"
+#line 138 "parser.rl"
 	{
         *result = Qfalse;
     }
 	goto st21;
 tr25:
-#line 138 "parser.rl"
+#line 135 "parser.rl"
 	{
         *result = Qnil;
     }
 	goto st21;
 tr28:
-#line 144 "parser.rl"
+#line 141 "parser.rl"
 	{
         *result = Qtrue;
     }
 	goto st21;
 st21:
 	if ( ++p == pe )
-		goto _out21;
+		goto _test_eof21;
 case 21:
-#line 200 "parser.rl"
-	{ goto _out21; }
-#line 542 "parser.c"
+#line 197 "parser.rl"
+	{ p--; {p++; cs = 21; goto _out;} }
+#line 541 "parser.c"
 	goto st0;
 st2:
 	if ( ++p == pe )
-		goto _out2;
+		goto _test_eof2;
 case 2:
 	if ( (*p) == 110 )
 		goto st3;
 	goto st0;
 st3:
 	if ( ++p == pe )
-		goto _out3;
+		goto _test_eof3;
 case 3:
 	if ( (*p) == 102 )
 		goto st4;
 	goto st0;
 st4:
 	if ( ++p == pe )
-		goto _out4;
+		goto _test_eof4;
 case 4:
 	if ( (*p) == 105 )
 		goto st5;
 	goto st0;
 st5:
 	if ( ++p == pe )
-		goto _out5;
+		goto _test_eof5;
 case 5:
 	if ( (*p) == 110 )
 		goto st6;
 	goto st0;
 st6:
 	if ( ++p == pe )
-		goto _out6;
+		goto _test_eof6;
 case 6:
 	if ( (*p) == 105 )
 		goto st7;
 	goto st0;
 st7:
 	if ( ++p == pe )
-		goto _out7;
+		goto _test_eof7;
 case 7:
 	if ( (*p) == 116 )
 		goto st8;
 	goto st0;
 st8:
 	if ( ++p == pe )
-		goto _out8;
+		goto _test_eof8;
 case 8:
 	if ( (*p) == 121 )
 		goto tr16;
 	goto st0;
 st9:
 	if ( ++p == pe )
-		goto _out9;
+		goto _test_eof9;
 case 9:
 	if ( (*p) == 97 )
 		goto st10;
 	goto st0;
 st10:
 	if ( ++p == pe )
-		goto _out10;
+		goto _test_eof10;
 case 10:
 	if ( (*p) == 78 )
 		goto tr18;
 	goto st0;
 st11:
 	if ( ++p == pe )
-		goto _out11;
+		goto _test_eof11;
 case 11:
 	if ( (*p) == 97 )
 		goto st12;
 	goto st0;
 st12:
 	if ( ++p == pe )
-		goto _out12;
+		goto _test_eof12;
 case 12:
 	if ( (*p) == 108 )
 		goto st13;
 	goto st0;
 st13:
 	if ( ++p == pe )
-		goto _out13;
+		goto _test_eof13;
 case 13:
 	if ( (*p) == 115 )
 		goto st14;
 	goto st0;
 st14:
 	if ( ++p == pe )
-		goto _out14;
+		goto _test_eof14;
 case 14:
 	if ( (*p) == 101 )
 		goto tr22;
 	goto st0;
 st15:
 	if ( ++p == pe )
-		goto _out15;
+		goto _test_eof15;
 case 15:
 	if ( (*p) == 117 )
 		goto st16;
 	goto st0;
 st16:
 	if ( ++p == pe )
-		goto _out16;
+		goto _test_eof16;
 case 16:
 	if ( (*p) == 108 )
 		goto st17;
 	goto st0;
 st17:
 	if ( ++p == pe )
-		goto _out17;
+		goto _test_eof17;
 case 17:
 	if ( (*p) == 108 )
 		goto tr25;
 	goto st0;
 st18:
 	if ( ++p == pe )
-		goto _out18;
+		goto _test_eof18;
 case 18:
 	if ( (*p) == 114 )
 		goto st19;
 	goto st0;
 st19:
 	if ( ++p == pe )
-		goto _out19;
+		goto _test_eof19;
 case 19:
 	if ( (*p) == 117 )
 		goto st20;
 	goto st0;
 st20:
 	if ( ++p == pe )
-		goto _out20;
+		goto _test_eof20;
 case 20:
 	if ( (*p) == 101 )
 		goto tr28;
 	goto st0;
 	}
-	_out0: cs = 0; goto _out; 
-	_out21: cs = 21; goto _out; 
-	_out2: cs = 2; goto _out; 
-	_out3: cs = 3; goto _out; 
-	_out4: cs = 4; goto _out; 
-	_out5: cs = 5; goto _out; 
-	_out6: cs = 6; goto _out; 
-	_out7: cs = 7; goto _out; 
-	_out8: cs = 8; goto _out; 
-	_out9: cs = 9; goto _out; 
-	_out10: cs = 10; goto _out; 
-	_out11: cs = 11; goto _out; 
-	_out12: cs = 12; goto _out; 
-	_out13: cs = 13; goto _out; 
-	_out14: cs = 14; goto _out; 
-	_out15: cs = 15; goto _out; 
-	_out16: cs = 16; goto _out; 
-	_out17: cs = 17; goto _out; 
-	_out18: cs = 18; goto _out; 
-	_out19: cs = 19; goto _out; 
-	_out20: cs = 20; goto _out; 
+	_test_eof21: cs = 21; goto _test_eof; 
+	_test_eof2: cs = 2; goto _test_eof; 
+	_test_eof3: cs = 3; goto _test_eof; 
+	_test_eof4: cs = 4; goto _test_eof; 
+	_test_eof5: cs = 5; goto _test_eof; 
+	_test_eof6: cs = 6; goto _test_eof; 
+	_test_eof7: cs = 7; goto _test_eof; 
+	_test_eof8: cs = 8; goto _test_eof; 
+	_test_eof9: cs = 9; goto _test_eof; 
+	_test_eof10: cs = 10; goto _test_eof; 
+	_test_eof11: cs = 11; goto _test_eof; 
+	_test_eof12: cs = 12; goto _test_eof; 
+	_test_eof13: cs = 13; goto _test_eof; 
+	_test_eof14: cs = 14; goto _test_eof; 
+	_test_eof15: cs = 15; goto _test_eof; 
+	_test_eof16: cs = 16; goto _test_eof; 
+	_test_eof17: cs = 17; goto _test_eof; 
+	_test_eof18: cs = 18; goto _test_eof; 
+	_test_eof19: cs = 19; goto _test_eof; 
+	_test_eof20: cs = 20; goto _test_eof; 
 
+	_test_eof: {}
 	_out: {}
 	}
-#line 221 "parser.rl"
+#line 218 "parser.rl"
 
     if (cs >= JSON_value_first_final) {
         return p;
@@ -708,14 +705,14 @@ case 20:
 }
 
 
-#line 712 "parser.c"
+#line 711 "parser.c"
 static const int JSON_integer_start = 1;
 static const int JSON_integer_first_final = 5;
 static const int JSON_integer_error = 0;
 
 static const int JSON_integer_en_main = 1;
 
-#line 237 "parser.rl"
+#line 234 "parser.rl"
 
 
 static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *result)
@@ -723,17 +720,17 @@ static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *res
     int cs = EVIL;
 
     
-#line 727 "parser.c"
+#line 726 "parser.c"
 	{
 	cs = JSON_integer_start;
 	}
-#line 244 "parser.rl"
+#line 241 "parser.rl"
     json->memo = p;
     
-#line 734 "parser.c"
+#line 733 "parser.c"
 	{
 	if ( p == pe )
-		goto _out;
+		goto _test_eof;
 	switch ( cs )
 	{
 case 1:
@@ -745,10 +742,11 @@ case 1:
 		goto st4;
 	goto st0;
 st0:
-	goto _out0;
+cs = 0;
+	goto _out;
 st2:
 	if ( ++p == pe )
-		goto _out2;
+		goto _test_eof2;
 case 2:
 	if ( (*p) == 48 )
 		goto st3;
@@ -757,38 +755,38 @@ case 2:
 	goto st0;
 st3:
 	if ( ++p == pe )
-		goto _out3;
+		goto _test_eof3;
 case 3:
 	if ( 48 <= (*p) && (*p) <= 57 )
 		goto st0;
 	goto tr4;
 tr4:
-#line 234 "parser.rl"
-	{ goto _out5; }
+#line 231 "parser.rl"
+	{ p--; {p++; cs = 5; goto _out;} }
 	goto st5;
 st5:
 	if ( ++p == pe )
-		goto _out5;
+		goto _test_eof5;
 case 5:
 #line 774 "parser.c"
 	goto st0;
 st4:
 	if ( ++p == pe )
-		goto _out4;
+		goto _test_eof4;
 case 4:
 	if ( 48 <= (*p) && (*p) <= 57 )
 		goto st4;
 	goto tr4;
 	}
-	_out0: cs = 0; goto _out; 
-	_out2: cs = 2; goto _out; 
-	_out3: cs = 3; goto _out; 
-	_out5: cs = 5; goto _out; 
-	_out4: cs = 4; goto _out; 
+	_test_eof2: cs = 2; goto _test_eof; 
+	_test_eof3: cs = 3; goto _test_eof; 
+	_test_eof5: cs = 5; goto _test_eof; 
+	_test_eof4: cs = 4; goto _test_eof; 
 
+	_test_eof: {}
 	_out: {}
 	}
-#line 246 "parser.rl"
+#line 243 "parser.rl"
 
     if (cs >= JSON_integer_first_final) {
         long len = p - json->memo;
@@ -807,7 +805,7 @@ static const int JSON_float_error = 0;
 
 static const int JSON_float_en_main = 1;
 
-#line 268 "parser.rl"
+#line 265 "parser.rl"
 
 
 static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *result)
@@ -819,13 +817,13 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
 	{
 	cs = JSON_float_start;
 	}
-#line 275 "parser.rl"
+#line 272 "parser.rl"
     json->memo = p;
     
 #line 826 "parser.c"
 	{
 	if ( p == pe )
-		goto _out;
+		goto _test_eof;
 	switch ( cs )
 	{
 case 1:
@@ -837,10 +835,11 @@ case 1:
 		goto st9;
 	goto st0;
 st0:
-	goto _out0;
+cs = 0;
+	goto _out;
 st2:
 	if ( ++p == pe )
-		goto _out2;
+		goto _test_eof2;
 case 2:
 	if ( (*p) == 48 )
 		goto st3;
@@ -849,7 +848,7 @@ case 2:
 	goto st0;
 st3:
 	if ( ++p == pe )
-		goto _out3;
+		goto _test_eof3;
 case 3:
 	switch( (*p) ) {
 		case 46: goto st4;
@@ -859,14 +858,14 @@ case 3:
 	goto st0;
 st4:
 	if ( ++p == pe )
-		goto _out4;
+		goto _test_eof4;
 case 4:
 	if ( 48 <= (*p) && (*p) <= 57 )
 		goto st5;
 	goto st0;
 st5:
 	if ( ++p == pe )
-		goto _out5;
+		goto _test_eof5;
 case 5:
 	switch( (*p) ) {
 		case 69: goto st6;
@@ -879,18 +878,18 @@ case 5:
 		goto st0;
 	goto tr7;
 tr7:
-#line 262 "parser.rl"
-	{ goto _out10; }
+#line 259 "parser.rl"
+	{ p--; {p++; cs = 10; goto _out;} }
 	goto st10;
 st10:
 	if ( ++p == pe )
-		goto _out10;
+		goto _test_eof10;
 case 10:
-#line 890 "parser.c"
+#line 891 "parser.c"
 	goto st0;
 st6:
 	if ( ++p == pe )
-		goto _out6;
+		goto _test_eof6;
 case 6:
 	switch( (*p) ) {
 		case 43: goto st7;
@@ -901,14 +900,14 @@ case 6:
 	goto st0;
 st7:
 	if ( ++p == pe )
-		goto _out7;
+		goto _test_eof7;
 case 7:
 	if ( 48 <= (*p) && (*p) <= 57 )
 		goto st8;
 	goto st0;
 st8:
 	if ( ++p == pe )
-		goto _out8;
+		goto _test_eof8;
 case 8:
 	switch( (*p) ) {
 		case 69: goto st0;
@@ -922,7 +921,7 @@ case 8:
 	goto tr7;
 st9:
 	if ( ++p == pe )
-		goto _out9;
+		goto _test_eof9;
 case 9:
 	switch( (*p) ) {
 		case 46: goto st4;
@@ -933,20 +932,20 @@ case 9:
 		goto st9;
 	goto st0;
 	}
-	_out0: cs = 0; goto _out; 
-	_out2: cs = 2; goto _out; 
-	_out3: cs = 3; goto _out; 
-	_out4: cs = 4; goto _out; 
-	_out5: cs = 5; goto _out; 
-	_out10: cs = 10; goto _out; 
-	_out6: cs = 6; goto _out; 
-	_out7: cs = 7; goto _out; 
-	_out8: cs = 8; goto _out; 
-	_out9: cs = 9; goto _out; 
+	_test_eof2: cs = 2; goto _test_eof; 
+	_test_eof3: cs = 3; goto _test_eof; 
+	_test_eof4: cs = 4; goto _test_eof; 
+	_test_eof5: cs = 5; goto _test_eof; 
+	_test_eof10: cs = 10; goto _test_eof; 
+	_test_eof6: cs = 6; goto _test_eof; 
+	_test_eof7: cs = 7; goto _test_eof; 
+	_test_eof8: cs = 8; goto _test_eof; 
+	_test_eof9: cs = 9; goto _test_eof; 
 
+	_test_eof: {}
 	_out: {}
 	}
-#line 277 "parser.rl"
+#line 274 "parser.rl"
 
     if (cs >= JSON_float_first_final) {
         long len = p - json->memo;
@@ -959,14 +958,14 @@ case 9:
 
 
 
-#line 963 "parser.c"
+#line 964 "parser.c"
 static const int JSON_array_start = 1;
 static const int JSON_array_first_final = 17;
 static const int JSON_array_error = 0;
 
 static const int JSON_array_en_main = 1;
 
-#line 313 "parser.rl"
+#line 310 "parser.rl"
 
 
 static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result)
@@ -979,16 +978,16 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
     *result = rb_ary_new();
 
     
-#line 983 "parser.c"
+#line 984 "parser.c"
 	{
 	cs = JSON_array_start;
 	}
-#line 325 "parser.rl"
+#line 322 "parser.rl"
     
-#line 989 "parser.c"
+#line 990 "parser.c"
 	{
 	if ( p == pe )
-		goto _out;
+		goto _test_eof;
 	switch ( cs )
 	{
 case 1:
@@ -996,10 +995,11 @@ case 1:
 		goto st2;
 	goto st0;
 st0:
-	goto _out0;
+cs = 0;
+	goto _out;
 st2:
 	if ( ++p == pe )
-		goto _out2;
+		goto _test_eof2;
 case 2:
 	switch( (*p) ) {
 		case 13: goto st2;
@@ -1023,12 +1023,12 @@ case 2:
 		goto st2;
 	goto st0;
 tr2:
-#line 294 "parser.rl"
+#line 291 "parser.rl"
 	{
         VALUE v = Qnil;
         char *np = JSON_parse_value(json, p, pe, &v); 
         if (np == NULL) {
-            goto _out3;
+            p--; {p++; cs = 3; goto _out;}
         } else {
             rb_ary_push(*result, v);
             {p = (( np))-1;}
@@ -1037,9 +1037,9 @@ tr2:
 	goto st3;
 st3:
 	if ( ++p == pe )
-		goto _out3;
+		goto _test_eof3;
 case 3:
-#line 1043 "parser.c"
+#line 1045 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st3;
 		case 32: goto st3;
@@ -1052,7 +1052,7 @@ case 3:
 	goto st0;
 st4:
 	if ( ++p == pe )
-		goto _out4;
+		goto _test_eof4;
 case 4:
 	switch( (*p) ) {
 		case 13: goto st4;
@@ -1076,7 +1076,7 @@ case 4:
 	goto st0;
 st5:
 	if ( ++p == pe )
-		goto _out5;
+		goto _test_eof5;
 case 5:
 	switch( (*p) ) {
 		case 42: goto st6;
@@ -1085,14 +1085,14 @@ case 5:
 	goto st0;
 st6:
 	if ( ++p == pe )
-		goto _out6;
+		goto _test_eof6;
 case 6:
 	if ( (*p) == 42 )
 		goto st7;
 	goto st6;
 st7:
 	if ( ++p == pe )
-		goto _out7;
+		goto _test_eof7;
 case 7:
 	switch( (*p) ) {
 		case 42: goto st7;
@@ -1101,14 +1101,14 @@ case 7:
 	goto st6;
 st8:
 	if ( ++p == pe )
-		goto _out8;
+		goto _test_eof8;
 case 8:
 	if ( (*p) == 10 )
 		goto st4;
 	goto st8;
 st9:
 	if ( ++p == pe )
-		goto _out9;
+		goto _test_eof9;
 case 9:
 	switch( (*p) ) {
 		case 42: goto st10;
@@ -1117,14 +1117,14 @@ case 9:
 	goto st0;
 st10:
 	if ( ++p == pe )
-		goto _out10;
+		goto _test_eof10;
 case 10:
 	if ( (*p) == 42 )
 		goto st11;
 	goto st10;
 st11:
 	if ( ++p == pe )
-		goto _out11;
+		goto _test_eof11;
 case 11:
 	switch( (*p) ) {
 		case 42: goto st11;
@@ -1133,24 +1133,24 @@ case 11:
 	goto st10;
 st12:
 	if ( ++p == pe )
-		goto _out12;
+		goto _test_eof12;
 case 12:
 	if ( (*p) == 10 )
 		goto st3;
 	goto st12;
 tr4:
-#line 305 "parser.rl"
-	{ goto _out17; }
+#line 302 "parser.rl"
+	{ p--; {p++; cs = 17; goto _out;} }
 	goto st17;
 st17:
 	if ( ++p == pe )
-		goto _out17;
+		goto _test_eof17;
 case 17:
-#line 1150 "parser.c"
+#line 1152 "parser.c"
 	goto st0;
 st13:
 	if ( ++p == pe )
-		goto _out13;
+		goto _test_eof13;
 case 13:
 	switch( (*p) ) {
 		case 42: goto st14;
@@ -1159,14 +1159,14 @@ case 13:
 	goto st0;
 st14:
 	if ( ++p == pe )
-		goto _out14;
+		goto _test_eof14;
 case 14:
 	if ( (*p) == 42 )
 		goto st15;
 	goto st14;
 st15:
 	if ( ++p == pe )
-		goto _out15;
+		goto _test_eof15;
 case 15:
 	switch( (*p) ) {
 		case 42: goto st15;
@@ -1175,44 +1175,44 @@ case 15:
 	goto st14;
 st16:
 	if ( ++p == pe )
-		goto _out16;
+		goto _test_eof16;
 case 16:
 	if ( (*p) == 10 )
 		goto st2;
 	goto st16;
 	}
-	_out0: cs = 0; goto _out; 
-	_out2: cs = 2; goto _out; 
-	_out3: cs = 3; goto _out; 
-	_out4: cs = 4; goto _out; 
-	_out5: cs = 5; goto _out; 
-	_out6: cs = 6; goto _out; 
-	_out7: cs = 7; goto _out; 
-	_out8: cs = 8; goto _out; 
-	_out9: cs = 9; goto _out; 
-	_out10: cs = 10; goto _out; 
-	_out11: cs = 11; goto _out; 
-	_out12: cs = 12; goto _out; 
-	_out17: cs = 17; goto _out; 
-	_out13: cs = 13; goto _out; 
-	_out14: cs = 14; goto _out; 
-	_out15: cs = 15; goto _out; 
-	_out16: cs = 16; goto _out; 
+	_test_eof2: cs = 2; goto _test_eof; 
+	_test_eof3: cs = 3; goto _test_eof; 
+	_test_eof4: cs = 4; goto _test_eof; 
+	_test_eof5: cs = 5; goto _test_eof; 
+	_test_eof6: cs = 6; goto _test_eof; 
+	_test_eof7: cs = 7; goto _test_eof; 
+	_test_eof8: cs = 8; goto _test_eof; 
+	_test_eof9: cs = 9; goto _test_eof; 
+	_test_eof10: cs = 10; goto _test_eof; 
+	_test_eof11: cs = 11; goto _test_eof; 
+	_test_eof12: cs = 12; goto _test_eof; 
+	_test_eof17: cs = 17; goto _test_eof; 
+	_test_eof13: cs = 13; goto _test_eof; 
+	_test_eof14: cs = 14; goto _test_eof; 
+	_test_eof15: cs = 15; goto _test_eof; 
+	_test_eof16: cs = 16; goto _test_eof; 
 
+	_test_eof: {}
 	_out: {}
 	}
-#line 326 "parser.rl"
+#line 323 "parser.rl"
 
     if(cs >= JSON_array_first_final) {
         return p + 1;
     } else {
-        rb_raise(eParserError, "unexpected token at '%s'", p);
+        rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p);
     }
 }
 
 static VALUE json_string_unescape(char *p, char *pe)
 {
-    VALUE result = rb_enc_str_new("", 0, rb_utf8_encoding());
+    VALUE result = rb_str_buf_new(pe - p + 1);
 
     while (p < pe) {
         if (*p == '\\') {
@@ -1267,33 +1267,33 @@ static VALUE json_string_unescape(char *p, char *pe)
 }
 
 
-#line 1271 "parser.c"
+#line 1273 "parser.c"
 static const int JSON_string_start = 1;
 static const int JSON_string_first_final = 8;
 static const int JSON_string_error = 0;
 
 static const int JSON_string_en_main = 1;
 
-#line 404 "parser.rl"
+#line 401 "parser.rl"
 
 
 static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *result)
 {
     int cs = EVIL;
 
-    *result = rb_enc_str_new("", 0, rb_utf8_encoding());
+    *result = rb_str_new("", 0);
     
-#line 1287 "parser.c"
+#line 1289 "parser.c"
 	{
 	cs = JSON_string_start;
 	}
-#line 412 "parser.rl"
+#line 409 "parser.rl"
     json->memo = p;
     
-#line 1294 "parser.c"
+#line 1296 "parser.c"
 	{
 	if ( p == pe )
-		goto _out;
+		goto _test_eof;
 	switch ( cs )
 	{
 case 1:
@@ -1301,10 +1301,11 @@ case 1:
 		goto st2;
 	goto st0;
 st0:
-	goto _out0;
+cs = 0;
+	goto _out;
 st2:
 	if ( ++p == pe )
-		goto _out2;
+		goto _test_eof2;
 case 2:
 	switch( (*p) ) {
 		case 34: goto tr2;
@@ -1314,23 +1315,23 @@ case 2:
 		goto st0;
 	goto st2;
 tr2:
-#line 396 "parser.rl"
+#line 393 "parser.rl"
 	{
         *result = json_string_unescape(json->memo + 1, p);
-        if (NIL_P(*result)) goto _out8; else {p = (( p + 1))-1;}
+        if (NIL_P(*result)) { p--; {p++; cs = 8; goto _out;} } else {p = (( p + 1))-1;}
     }
-#line 401 "parser.rl"
-	{ goto _out8; }
+#line 398 "parser.rl"
+	{ p--; {p++; cs = 8; goto _out;} }
 	goto st8;
 st8:
 	if ( ++p == pe )
-		goto _out8;
+		goto _test_eof8;
 case 8:
-#line 1330 "parser.c"
+#line 1333 "parser.c"
 	goto st0;
 st3:
 	if ( ++p == pe )
-		goto _out3;
+		goto _test_eof3;
 case 3:
 	if ( (*p) == 117 )
 		goto st4;
@@ -1339,7 +1340,7 @@ case 3:
 	goto st2;
 st4:
 	if ( ++p == pe )
-		goto _out4;
+		goto _test_eof4;
 case 4:
 	if ( (*p) < 65 ) {
 		if ( 48 <= (*p) && (*p) <= 57 )
@@ -1352,7 +1353,7 @@ case 4:
 	goto st0;
 st5:
 	if ( ++p == pe )
-		goto _out5;
+		goto _test_eof5;
 case 5:
 	if ( (*p) < 65 ) {
 		if ( 48 <= (*p) && (*p) <= 57 )
@@ -1365,7 +1366,7 @@ case 5:
 	goto st0;
 st6:
 	if ( ++p == pe )
-		goto _out6;
+		goto _test_eof6;
 case 6:
 	if ( (*p) < 65 ) {
 		if ( 48 <= (*p) && (*p) <= 57 )
@@ -1378,7 +1379,7 @@ case 6:
 	goto st0;
 st7:
 	if ( ++p == pe )
-		goto _out7;
+		goto _test_eof7;
 case 7:
 	if ( (*p) < 65 ) {
 		if ( 48 <= (*p) && (*p) <= 57 )
@@ -1390,18 +1391,18 @@ case 7:
 		goto st2;
 	goto st0;
 	}
-	_out0: cs = 0; goto _out; 
-	_out2: cs = 2; goto _out; 
-	_out8: cs = 8; goto _out; 
-	_out3: cs = 3; goto _out; 
-	_out4: cs = 4; goto _out; 
-	_out5: cs = 5; goto _out; 
-	_out6: cs = 6; goto _out; 
-	_out7: cs = 7; goto _out; 
+	_test_eof2: cs = 2; goto _test_eof; 
+	_test_eof8: cs = 8; goto _test_eof; 
+	_test_eof3: cs = 3; goto _test_eof; 
+	_test_eof4: cs = 4; goto _test_eof; 
+	_test_eof5: cs = 5; goto _test_eof; 
+	_test_eof6: cs = 6; goto _test_eof; 
+	_test_eof7: cs = 7; goto _test_eof; 
 
+	_test_eof: {}
 	_out: {}
 	}
-#line 414 "parser.rl"
+#line 411 "parser.rl"
 
     if (cs >= JSON_string_first_final) {
         return p + 1;
@@ -1412,14 +1413,14 @@ case 7:
 
 
 
-#line 1416 "parser.c"
+#line 1419 "parser.c"
 static const int JSON_start = 1;
 static const int JSON_first_final = 10;
 static const int JSON_error = 0;
 
 static const int JSON_en_main = 1;
 
-#line 448 "parser.rl"
+#line 445 "parser.rl"
 
 
 /* 
@@ -1542,23 +1543,23 @@ static VALUE cParser_parse(VALUE self)
     GET_STRUCT;
 
     
-#line 1546 "parser.c"
+#line 1549 "parser.c"
 	{
 	cs = JSON_start;
 	}
-#line 570 "parser.rl"
+#line 567 "parser.rl"
     p = json->source;
     pe = p + json->len;
     
-#line 1554 "parser.c"
+#line 1557 "parser.c"
 	{
 	if ( p == pe )
-		goto _out;
+		goto _test_eof;
 	switch ( cs )
 	{
 st1:
 	if ( ++p == pe )
-		goto _out1;
+		goto _test_eof1;
 case 1:
 	switch( (*p) ) {
 		case 13: goto st1;
@@ -1571,10 +1572,11 @@ case 1:
 		goto st1;
 	goto st0;
 st0:
-	goto _out0;
+cs = 0;
+	goto _out;
 st2:
 	if ( ++p == pe )
-		goto _out2;
+		goto _test_eof2;
 case 2:
 	switch( (*p) ) {
 		case 42: goto st3;
@@ -1583,14 +1585,14 @@ case 2:
 	goto st0;
 st3:
 	if ( ++p == pe )
-		goto _out3;
+		goto _test_eof3;
 case 3:
 	if ( (*p) == 42 )
 		goto st4;
 	goto st3;
 st4:
 	if ( ++p == pe )
-		goto _out4;
+		goto _test_eof4;
 case 4:
 	switch( (*p) ) {
 		case 42: goto st4;
@@ -1599,34 +1601,34 @@ case 4:
 	goto st3;
 st5:
 	if ( ++p == pe )
-		goto _out5;
+		goto _test_eof5;
 case 5:
 	if ( (*p) == 10 )
 		goto st1;
 	goto st5;
 tr3:
-#line 437 "parser.rl"
+#line 434 "parser.rl"
 	{
         char *np;
         json->current_nesting = 1;
         np = JSON_parse_array(json, p, pe, &result);
-        if (np == NULL) goto _out10; else {p = (( np))-1;}
+        if (np == NULL) { p--; {p++; cs = 10; goto _out;} } else {p = (( np))-1;}
     }
 	goto st10;
 tr4:
-#line 430 "parser.rl"
+#line 427 "parser.rl"
 	{
         char *np;
         json->current_nesting = 1;
         np = JSON_parse_object(json, p, pe, &result);
-        if (np == NULL) goto _out10; else {p = (( np))-1;}
+        if (np == NULL) { p--; {p++; cs = 10; goto _out;} } else {p = (( np))-1;}
     }
 	goto st10;
 st10:
 	if ( ++p == pe )
-		goto _out10;
+		goto _test_eof10;
 case 10:
-#line 1630 "parser.c"
+#line 1634 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st10;
 		case 32: goto st10;
@@ -1637,7 +1639,7 @@ case 10:
 	goto st0;
 st6:
 	if ( ++p == pe )
-		goto _out6;
+		goto _test_eof6;
 case 6:
 	switch( (*p) ) {
 		case 42: goto st7;
@@ -1646,14 +1648,14 @@ case 6:
 	goto st0;
 st7:
 	if ( ++p == pe )
-		goto _out7;
+		goto _test_eof7;
 case 7:
 	if ( (*p) == 42 )
 		goto st8;
 	goto st7;
 st8:
 	if ( ++p == pe )
-		goto _out8;
+		goto _test_eof8;
 case 8:
 	switch( (*p) ) {
 		case 42: goto st8;
@@ -1662,32 +1664,32 @@ case 8:
 	goto st7;
 st9:
 	if ( ++p == pe )
-		goto _out9;
+		goto _test_eof9;
 case 9:
 	if ( (*p) == 10 )
 		goto st10;
 	goto st9;
 	}
-	_out1: cs = 1; goto _out; 
-	_out0: cs = 0; goto _out; 
-	_out2: cs = 2; goto _out; 
-	_out3: cs = 3; goto _out; 
-	_out4: cs = 4; goto _out; 
-	_out5: cs = 5; goto _out; 
-	_out10: cs = 10; goto _out; 
-	_out6: cs = 6; goto _out; 
-	_out7: cs = 7; goto _out; 
-	_out8: cs = 8; goto _out; 
-	_out9: cs = 9; goto _out; 
+	_test_eof1: cs = 1; goto _test_eof; 
+	_test_eof2: cs = 2; goto _test_eof; 
+	_test_eof3: cs = 3; goto _test_eof; 
+	_test_eof4: cs = 4; goto _test_eof; 
+	_test_eof5: cs = 5; goto _test_eof; 
+	_test_eof10: cs = 10; goto _test_eof; 
+	_test_eof6: cs = 6; goto _test_eof; 
+	_test_eof7: cs = 7; goto _test_eof; 
+	_test_eof8: cs = 8; goto _test_eof; 
+	_test_eof9: cs = 9; goto _test_eof; 
 
+	_test_eof: {}
 	_out: {}
 	}
-#line 573 "parser.rl"
+#line 570 "parser.rl"
 
     if (cs >= JSON_first_final && p == pe) {
         return result;
     } else {
-        rb_raise(eParserError, "unexpected token at '%s'", p);
+        rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p);
     }
 }
 
@@ -1706,7 +1708,7 @@ static void JSON_mark(JSON_Parser *json)
 
 static void JSON_free(JSON_Parser *json)
 {
-    ruby_xfree(json);
+    free(json);
 }
 
 static VALUE cJSON_parser_s_allocate(VALUE klass)
@@ -1729,6 +1731,7 @@ static VALUE cParser_source(VALUE self)
 
 void Init_parser()
 {
+    rb_require("json/common");
     mJSON = rb_define_module("JSON");
     mExt = rb_define_module_under(mJSON, "Ext");
     cParser = rb_define_class_under(mExt, "Parser", rb_cObject);

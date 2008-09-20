@@ -122,9 +122,8 @@ module JSON
       def parse_string
         if scan(STRING)
           return '' if self[1].empty?
-          self[1].gsub(%r((?:\\[\\bfnrt"/]|(?:\\u(?:[A-Fa-f\d]{4}))+|\\[\x20-\xff]))n) do
-            c = $&
-            if u = UNESCAPE_MAP[c[1]]
+          self[1].gsub(%r((?:\\[\\bfnrt"/]|(?:\\u(?:[A-Fa-f\d]{4}))+|\\[\x20-\xff]))n) do |c|
+            if u = UNESCAPE_MAP[$&[1]]
               u
             else # \uXXXX
               bytes = ''

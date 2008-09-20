@@ -2,7 +2,7 @@ require 'json/version'
 
 module JSON
   class << self
-    # If _object_ is string like parse the string and return the parsed result
+    # If _object_ is string-like parse the string and return the parsed result
     # as a Ruby data structure. Otherwise generate a JSON text from the Ruby
     # data structure object and return it.
     #
@@ -184,7 +184,8 @@ module JSON
   end
 
   # :stopdoc:
-  # I want to deprecate these later, so I'll first be silent about them, and later delete them.
+  # I want to deprecate these later, so I'll first be silent about them, and
+  # later delete them.
   alias unparse generate
   module_function :unparse
   # :startdoc:
@@ -238,7 +239,7 @@ module JSON
   # :startdoc:
 
   # Load a ruby data structure from a JSON _source_ and return it. A source can
-  # either be a string like object, an IO like object, or an object responding
+  # either be a string-like object, an IO like object, or an object responding
   # to the read method. If _proc_ was given, it will be called with any nested
   # Ruby object as an argument recursively in depth first order.
   #
@@ -327,7 +328,7 @@ module ::Kernel
     nil
   end
 
-  # If _object_ is string like parse the string and return the parsed result as
+  # If _object_ is string-like parse the string and return the parsed result as
   # a Ruby data structure. Otherwise generate a JSON text from the Ruby data
   # structure object and return it.
   #
@@ -351,4 +352,3 @@ class ::Class
     respond_to?(:json_create)
   end
 end
-  # vim: set et sw=2 ts=2:

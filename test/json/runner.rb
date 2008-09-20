@@ -23,4 +23,3 @@ class TS_AllTests
   end
 end
 Test::Unit::UI::Console::TestRunner.run(TS_AllTests)
-  # vim: set et sw=2 ts=2:

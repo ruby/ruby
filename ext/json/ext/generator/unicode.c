@@ -1,5 +1,3 @@
-/* vim: set cin et sw=4 ts=4: */
-
 #include "unicode.h"
 
 #define unicode_escape(buffer, character)          \

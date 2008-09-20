@@ -3,6 +3,7 @@
 
 require 'test/unit'
 require 'json'
+require 'stringio'
 
 class TC_JSON < Test::Unit::TestCase
   include JSON
@@ -61,6 +62,12 @@ class TC_JSON < Test::Unit::TestCase
     assert_equal_float [3.141], parse('[3141.0E-3]')
     assert_equal_float [-3.141], parse('[-3141.0e-3]')
     assert_equal_float [-3.141], parse('[-3141e-3]')
+    assert_raises(ParserError) { parse('[NaN]') }
+    assert parse('[NaN]', :allow_nan => true).first.nan?
+    assert_raises(ParserError) { parse('[Infinity]') }
+    assert_equal [1.0/0], parse('[Infinity]', :allow_nan => true)
+    assert_raises(ParserError) { parse('[-Infinity]') }
+    assert_equal [-1.0/0], parse('[-Infinity]', :allow_nan => true)
     assert_equal([""], parse('[""]'))
     assert_equal(["foobar"], parse('["foobar"]'))
     assert_equal([{}], parse('[{}]'))
@@ -238,18 +245,49 @@ EOT
   end
 
   def test_nesting
-    to_deep = '[[[[[[[[[[[[[[[[[[[["Too deep"]]]]]]]]]]]]]]]]]]]]'
-    assert_raises(JSON::NestingError) { JSON.parse to_deep }
-    assert_raises(JSON::NestingError) { JSON.parser.new(to_deep).parse }
-    assert_raises(JSON::NestingError) { JSON.parse to_deep, :max_nesting => 19 }
-    ok = JSON.parse to_deep, :max_nesting => 20
-    assert_kind_of Array, ok
-    ok = JSON.parse to_deep, :max_nesting => nil
-    assert_kind_of Array, ok
-    ok = JSON.parse to_deep, :max_nesting => false
-    assert_kind_of Array, ok
-    ok = JSON.parse to_deep, :max_nesting => 0
-    assert_kind_of Array, ok
+    assert_raises(JSON::NestingError) { JSON.parse '[[]]', :max_nesting => 1 }
+    assert_raises(JSON::NestingError) { JSON.parser.new('[[]]', :max_nesting => 1).parse }
+    assert_equal [[]], JSON.parse('[[]]', :max_nesting => 2)
+    too_deep = '[[[[[[[[[[[[[[[[[[[["Too deep"]]]]]]]]]]]]]]]]]]]]'
+    too_deep_ary = eval too_deep
+    assert_raises(JSON::NestingError) { JSON.parse too_deep }
+    assert_raises(JSON::NestingError) { JSON.parser.new(too_deep).parse }
+    assert_raises(JSON::NestingError) { JSON.parse too_deep, :max_nesting => 19 }
+    ok = JSON.parse too_deep, :max_nesting => 20
+    assert_equal too_deep_ary, ok
+    ok = JSON.parse too_deep, :max_nesting => nil
+    assert_equal too_deep_ary, ok
+    ok = JSON.parse too_deep, :max_nesting => false
+    assert_equal too_deep_ary, ok
+    ok = JSON.parse too_deep, :max_nesting => 0
+    assert_equal too_deep_ary, ok
+    assert_raises(JSON::NestingError) { JSON.generate [[]], :max_nesting => 1 }
+    assert_equal '[[]]', JSON.generate([[]], :max_nesting => 2)
+    assert_raises(JSON::NestingError) { JSON.generate too_deep_ary }
+    assert_raises(JSON::NestingError) { JSON.generate too_deep_ary, :max_nesting => 19 }
+    ok = JSON.generate too_deep_ary, :max_nesting => 20
+    assert_equal too_deep, ok
+    ok = JSON.generate too_deep_ary, :max_nesting => nil
+    assert_equal too_deep, ok
+    ok = JSON.generate too_deep_ary, :max_nesting => false
+    assert_equal too_deep, ok
+    ok = JSON.generate too_deep_ary, :max_nesting => 0
+    assert_equal too_deep, ok
+  end
+
+  def test_load_dump
+    too_deep = '[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]'
+    assert_equal too_deep, JSON.dump(eval(too_deep))
+    assert_kind_of String, Marshal.dump(eval(too_deep))
+    assert_raises(ArgumentError) { JSON.dump(eval(too_deep), 19) }
+    assert_raises(ArgumentError) { Marshal.dump(eval(too_deep), 19) }
+    assert_equal too_deep, JSON.dump(eval(too_deep), 20)
+    assert_kind_of String, Marshal.dump(eval(too_deep), 20)
+    output = StringIO.new
+    JSON.dump(eval(too_deep), output)
+    assert_equal too_deep, output.string
+    output = StringIO.new
+    JSON.dump(eval(too_deep), output, 20)
+    assert_equal too_deep, output.string
   end
 end
-  # vim: set et sw=2 ts=2:

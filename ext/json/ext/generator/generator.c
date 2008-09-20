@@ -1,14 +1,7 @@
-/* vim: set cin et sw=4 ts=4: */
-
-#include "ruby.h"
-#include "ruby/st.h"
-#include "unicode.h"
 #include <string.h>
+#include "ruby.h"
+#include "unicode.h"
 #include <math.h>
-
-#ifdef HAVE_IEEEFP_H
-#include <ieeefp.h>
-#endif
 
 #define check_max_nesting(state, depth) do {                                   \
     long current_nesting = 1 + depth;                                          \
@@ -297,14 +290,14 @@ static VALUE mFloat_to_json(int argc, VALUE *argv, VALUE self)
             return rb_funcall(self, i_to_s, 0);
         } else {
             tmp = rb_funcall(self, i_to_s, 0);
-            rb_raise(eGeneratorError, "%s not allowed in JSON", StringValueCStr(tmp));
+            rb_raise(eGeneratorError, "%u: %s not allowed in JSON", __LINE__, StringValueCStr(tmp));
         }
     } else if (isnan(value)) {
         if (!state || state->allow_nan) {
             return rb_funcall(self, i_to_s, 0);
         } else {
             tmp = rb_funcall(self, i_to_s, 0);
-            rb_raise(eGeneratorError, "%s not allowed in JSON", StringValueCStr(tmp));
+            rb_raise(eGeneratorError, "%u: %s not allowed in JSON", __LINE__, StringValueCStr(tmp));
         }
     } else {
         return rb_funcall(self, i_to_s, 0);
