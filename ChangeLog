@@ -1,3 +1,13 @@
+Sun Sep 21 10:19:04 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_s_canonicalize_internal): checks exactness of
+	  imag only.
+
+	* rational.c (nurat_s_convert): accepts non real value
+	  (Rational(a,b) as a/b).
+
+	* complex.c (nucomp_s_convert): refined.
+
 Sun Sep 21 09:37:57 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
   * lib/csv/csv.rb:  Reworked CSV's parser and generator to be m17n.  Data

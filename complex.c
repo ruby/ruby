@@ -336,8 +336,7 @@ nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
 {
 #define CL_CANON
 #ifdef CL_CANON
-    if (f_zero_p(imag) && f_unify_p(klass) &&
-	k_exact_p(real) && k_exact_p(imag))
+    if (f_zero_p(imag) && k_exact_p(imag) && f_unify_p(klass))
 	return real;
 #else
     if (f_zero_p(imag) && f_unify_p(klass))
@@ -657,7 +656,7 @@ nucomp_fdiv(VALUE self, VALUE other)
 static VALUE
 nucomp_expt(VALUE self, VALUE other)
 {
-    if (f_zero_p(other))
+    if (k_exact_p(other) && f_zero_p(other))
 	return f_complex_new_bang1(CLASS_OF(self), ONE);
 
     if (k_rational_p(other) && f_one_p(f_denominator(other)))
@@ -1225,9 +1224,10 @@ string_to_c(VALUE self)
 static VALUE
 nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 {
+    int c;
     VALUE a1, a2, backref;
 
-    rb_scan_args(argc, argv, "02", &a1, &a2);
+    c = rb_scan_args(argc, argv, "02", &a1, &a2);
 
     backref = rb_backref_get();
     rb_match_busy(backref);
@@ -1276,14 +1276,21 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 
     switch (TYPE(a1)) {
       case T_COMPLEX:
-	if (NIL_P(a2) || f_zero_p(a2))
+	if (c == 1 || (k_exact_p(a2) && f_zero_p(a2)))
 	    return a1;
     }
 
-    if ((k_numeric_p(a1) && !f_real_p(a1)) ||
-	(k_numeric_p(a2) && !f_real_p(a2)))
-	return f_add(a1,
-		     f_mul(a2, f_complex_new_bang2(rb_cComplex, ZERO, ONE)));
+    if (c == 1) {
+	if (k_numeric_p(a1) && !f_real_p(a1))
+	    return a1;
+    }
+    else {
+	if ((k_numeric_p(a1) && k_numeric_p(a2)) &&
+	    (!f_real_p(a1) || !f_real_p(a2)))
+	    return f_add(a1,
+			 f_mul(a2,
+			       f_complex_new_bang2(rb_cComplex, ZERO, ONE)));
+    }
 
     {
 	VALUE argv2[2];

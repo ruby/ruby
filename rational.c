@@ -1400,28 +1400,21 @@ string_to_r(VALUE self)
 static VALUE
 nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 {
+    int c;
     VALUE a1, a2, backref;
 
-    rb_scan_args(argc, argv, "02", &a1, &a2);
+    c = rb_scan_args(argc, argv, "02", &a1, &a2);
 
     switch (TYPE(a1)) {
       case T_COMPLEX:
-	if (k_inexact_p(RCOMPLEX(a1)->imag) || !f_zero_p(RCOMPLEX(a1)->imag)) {
-	    VALUE s = f_to_s(a1);
-	    rb_raise(rb_eRangeError, "can't accept %s",
-		     StringValuePtr(s));
-	}
-	a1 = RCOMPLEX(a1)->real;
+	if (k_exact_p(RCOMPLEX(a1)->imag) && f_zero_p(RCOMPLEX(a1)->imag))
+	    a1 = RCOMPLEX(a1)->real;
     }
 
     switch (TYPE(a2)) {
       case T_COMPLEX:
-	if (k_inexact_p(RCOMPLEX(a2)->imag) || !f_zero_p(RCOMPLEX(a2)->imag)) {
-	    VALUE s = f_to_s(a2);
-	    rb_raise(rb_eRangeError, "can't accept %s",
-		     StringValuePtr(s));
-	}
-	a2 = RCOMPLEX(a2)->real;
+	if (k_exact_p(RCOMPLEX(a2)->imag) && f_zero_p(RCOMPLEX(a2)->imag))
+	    a2 = RCOMPLEX(a2)->real;
     }
 
     backref = rb_backref_get();
@@ -1455,14 +1448,18 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 
     switch (TYPE(a1)) {
       case T_RATIONAL:
-	if (NIL_P(a2) || f_zero_p(a2))
+	if (c == 1 || (k_exact_p(a2) && f_one_p(a2)))
 	    return a1;
-	return f_div(a1, a2);
     }
 
-    switch (TYPE(a2)) {
-      case T_RATIONAL:
-	return f_div(a1, a2);
+    if (c == 1) {
+	if (k_numeric_p(a1) && !f_integer_p(a1))
+	    return a1;
+    }
+    else {
+	if ((k_numeric_p(a1) && k_numeric_p(a2)) &&
+	    (!f_integer_p(a1) || !f_integer_p(a2)))
+	    return f_div(a1, a2);
     }
 
     {
