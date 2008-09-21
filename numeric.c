@@ -2390,7 +2390,7 @@ fix_pow(VALUE x, VALUE y)
 	long b = FIX2LONG(y);
 
 	if (b < 0)
-	  return rb_funcall(rb_rational_raw1(x), rb_intern("**"), 1, y);
+	    return rb_funcall(rb_rational_raw1(x), rb_intern("**"), 1, y);
 
 	if (b == 0) return INT2FIX(1);
 	if (b == 1) return x;
@@ -2411,7 +2411,7 @@ fix_pow(VALUE x, VALUE y)
       case T_BIGNUM:
 
 	if (rb_funcall(y, '<', 1, INT2FIX(0)))
-	  return rb_funcall(rb_rational_raw1(x), rb_intern("**"), 1, y);
+	    return rb_funcall(rb_rational_raw1(x), rb_intern("**"), 1, y);
 
 	if (a == 0) return INT2FIX(0);
 	if (a == 1) return INT2FIX(1);
