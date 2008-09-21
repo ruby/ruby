@@ -1226,10 +1226,9 @@ string_to_c(VALUE self)
 static VALUE
 nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 {
-    int c;
     VALUE a1, a2, backref;
 
-    c = rb_scan_args(argc, argv, "02", &a1, &a2);
+    rb_scan_args(argc, argv, "11", &a1, &a2);
 
     backref = rb_backref_get();
     rb_match_busy(backref);
@@ -1278,11 +1277,11 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 
     switch (TYPE(a1)) {
       case T_COMPLEX:
-	if (c == 1 || (k_exact_p(a2) && f_zero_p(a2)))
+	if (argc == 1 || (k_exact_p(a2) && f_zero_p(a2)))
 	    return a1;
     }
 
-    if (c == 1) {
+    if (argc == 1) {
 	if (k_numeric_p(a1) && !f_real_p(a1))
 	    return a1;
     }

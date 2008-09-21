@@ -1400,10 +1400,9 @@ string_to_r(VALUE self)
 static VALUE
 nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 {
-    int c;
     VALUE a1, a2, backref;
 
-    c = rb_scan_args(argc, argv, "02", &a1, &a2);
+    rb_scan_args(argc, argv, "11", &a1, &a2);
 
     switch (TYPE(a1)) {
       case T_COMPLEX:
@@ -1448,11 +1447,11 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 
     switch (TYPE(a1)) {
       case T_RATIONAL:
-	if (c == 1 || (k_exact_p(a2) && f_one_p(a2)))
+	if (argc == 1 || (k_exact_p(a2) && f_one_p(a2)))
 	    return a1;
     }
 
-    if (c == 1) {
+    if (argc == 1) {
 	if (k_numeric_p(a1) && !f_integer_p(a1))
 	    return a1;
     }

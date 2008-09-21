@@ -1,3 +1,9 @@
+Sun Sep 21 18:06:38 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_s_convert): checks argc.
+
+	* rational.c (nurat_s_convert): ditto.
+
 Sun Sep 21 10:19:04 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_s_canonicalize_internal): checks exactness of
