@@ -167,6 +167,8 @@ f_negative_p(VALUE x)
     return rb_funcall(x, '<', 1, ZERO);
 }
 
+#define f_positive_p(x) (!f_negative_p(x))
+
 inline static VALUE
 f_zero_p(VALUE x)
 {
@@ -174,6 +176,8 @@ f_zero_p(VALUE x)
 	return f_boolcast(FIX2LONG(x) == 0);
     return rb_funcall(x, id_equal_p, 1, ZERO);
 }
+
+#define f_nonzero_p(x) (!f_zero_p(x))
 
 inline static VALUE
 f_one_p(VALUE x)
@@ -280,7 +284,7 @@ inline static VALUE
 f_gcd(VALUE x, VALUE y)
 {
     VALUE r = f_gcd_orig(x, y);
-    if (!f_zero_p(r)) {
+    if (f_nonzero_p(r)) {
 	assert(f_zero_p(f_mod(x, r)));
 	assert(f_zero_p(f_mod(y, r)));
     }
@@ -366,8 +370,8 @@ f_rational_new_bang1(VALUE klass, VALUE x)
 inline static VALUE
 f_rational_new_bang2(VALUE klass, VALUE x, VALUE y)
 {
-    assert(!f_negative_p(y));
-    assert(!f_zero_p(y));
+    assert(f_positive_p(y));
+    assert(f_nonzero_p(y));
     return nurat_s_new_internal(klass, x, y);
 }
 
@@ -955,7 +959,7 @@ nurat_quotrem(VALUE self, VALUE other)
 static VALUE
 nurat_abs(VALUE self)
 {
-    if (!f_negative_p(self))
+    if (f_positive_p(self))
 	return self;
     return f_negate(self);
 }

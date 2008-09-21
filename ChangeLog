@@ -1,3 +1,9 @@
+Sun Sep 21 21:20:24 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: added two macros.
+
+	* rational.c: ditto.
+
 Sun Sep 21 18:06:38 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_s_convert): checks argc.

@@ -195,6 +195,8 @@ f_negative_p(VALUE x)
     return rb_funcall(x, '<', 1, ZERO);
 }
 
+#define f_positive_p(x) (!f_negative_p(x))
+
 inline static VALUE
 f_zero_p(VALUE x)
 {
@@ -202,6 +204,8 @@ f_zero_p(VALUE x)
 	return f_boolcast(FIX2LONG(x) == 0);
     return rb_funcall(x, id_equal_p, 1, ZERO);
 }
+
+#define f_nonzero_p(x) (!f_zero_p(x))
 
 inline static VALUE
 f_one_p(VALUE x)
@@ -487,7 +491,7 @@ static VALUE
 m_sqrt(VALUE x)
 {
     if (f_real_p(x)) {
-	if (!f_negative_p(x))
+	if (f_positive_p(x))
 	    return m_sqrt_bang(x);
 	return f_complex_new2(rb_cComplex, ZERO, m_sqrt_bang(f_negate(x)));
     }
@@ -1326,7 +1330,7 @@ numeric_abs2(VALUE self)
 static VALUE
 numeric_arg(VALUE self)
 {
-    if (!f_negative_p(self))
+    if (f_positive_p(self))
 	return INT2FIX(0);
     return rb_const_get(rb_mMath, id_PI);
 }
