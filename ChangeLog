@@ -1,3 +1,28 @@
+Sun Sep 21 09:37:57 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+  * lib/csv/csv.rb:  Reworked CSV's parser and generator to be m17n.  Data
+    is now parsed in the Encoding it is in without need for translation.
+  * lib/csv/csv.rb:  Improved inspect() messages for better IRb support.
+  * lib/csv/csv.rb:  Fixed header writing bug reported by Dov Murik.
+  * lib/csv/csv.rb:  Use custom separators in parsing header Strings as
+    suggested by Shmulik Regev.
+  * lib/csv/csv.rb:  Added a :write_headers option for outputting headers.
+  * lib/csv/csv.rb:  Handle open() calls in binary mode whenever we can to
+    workaround a Windows issue where line-ending translation can cause an
+    off-by-one error in seeking back to a non-zero starting position after
+    auto-discovery for :row_sep as suggested by Robert Battle.
+  * lib/csv/csv.rb:  Improved the parser to fail faster when fed some forms
+    of invalid CSV that can be detected without reading ahead.
+  * lib/csv/csv.rb:  Added a :field_size_limit option to control CSV's
+    lookahead and prevent the parser from biting off more data than
+    it can chew.
+  * lib/csv/csv.rb:  Added readers for CSV attributes:  col_sep(), row_sep(),
+    quote_char(), field_size_limit(), converters(), unconverted_fields?(),
+    headers(), return_headers?(), write_headers?(), header_converters(),
+    skip_blanks?(), and force_quotes?().
+	* lib/csv/csv.rb:  Cleaned up code syntax to be more inline with
+	  Ruby 1.9 than 1.8.
+
 Sun Sep 21 07:43:16 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: an instance method image has been removed and

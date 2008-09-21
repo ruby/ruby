@@ -1,4 +1,5 @@
-#!/usr/local/bin/ruby -w
+#!/usr/bin/env ruby -w
+# encoding: UTF-8
 
 # tc_interface.rb
 #
@@ -42,8 +43,9 @@ class TestCSVInterface < Test::Unit::TestCase
     csv.close
     assert(csv.closed?)
     
-    ret = CSV.open(@path) do |csv|
-      assert_instance_of(CSV, csv)
+    ret = CSV.open(@path) do |new_csv|
+      csv = new_csv
+      assert_instance_of(CSV, new_csv)
       "Return value."
     end
     assert(csv.closed?)
@@ -161,7 +163,6 @@ class TestCSVInterface < Test::Unit::TestCase
 
     lines = [{:a => 1, :b => 2, :c => 3}, {:a => 4, :b => 5, :c => 6}]
     CSV.open( @path, "w", :headers           => true,
-                          :converters        => :all,
                           :header_converters => :symbol ) do |csv|
       csv << lines.first.keys
       lines.each { |line| csv << line }
@@ -169,6 +170,74 @@ class TestCSVInterface < Test::Unit::TestCase
     CSV.open( @path, "w", :headers           => true,
                           :converters        => :all,
                           :header_converters => :symbol ) do |csv|
+      csv.each { |line| assert_equal(lines.shift, line.to_hash) }
+    end
+  end
+  
+  def test_write_hash_with_headers_array
+    File.unlink(@path)
+
+    lines = [{:a => 1, :b => 2, :c => 3}, {:a => 4, :b => 5, :c => 6}]
+    CSV.open(@path, "w", :headers => [:b, :a, :c]) do |csv|
+      lines.each { |line| csv << line }
+    end
+
+    # test writing fields in the correct order
+    File.open(@path, "r") do |f|
+      assert_equal("2,1,3", f.gets.strip)
+      assert_equal("5,4,6", f.gets.strip)
+    end
+
+    # test reading CSV with headers
+    CSV.open( @path, "r", :headers    => [:b, :a, :c],
+                          :converters => :all ) do |csv|
+      csv.each { |line| assert_equal(lines.shift, line.to_hash) }
+    end
+  end
+
+  def test_write_hash_with_headers_string
+    File.unlink(@path)
+
+    lines = [{"a" => 1, "b" => 2, "c" => 3}, {"a" => 4, "b" => 5, "c" => 6}]
+    CSV.open(@path, "w", :headers => "b|a|c", :col_sep => "|") do |csv|
+      lines.each { |line| csv << line }
+    end
+
+    # test writing fields in the correct order
+    File.open(@path, "r") do |f|
+      assert_equal("2|1|3", f.gets.strip)
+      assert_equal("5|4|6", f.gets.strip)
+    end
+
+    # test reading CSV with headers
+    CSV.open( @path, "r", :headers    => "b|a|c",
+                          :col_sep    => "|",
+                          :converters => :all ) do |csv|
+      csv.each { |line| assert_equal(lines.shift, line.to_hash) }
+    end
+  end
+  
+  def test_write_headers
+    File.unlink(@path)
+
+    lines = [{"a" => 1, "b" => 2, "c" => 3}, {"a" => 4, "b" => 5, "c" => 6}]
+    CSV.open( @path, "w", :headers       => "b|a|c",
+                          :write_headers => true,
+                          :col_sep       => "|" ) do |csv|
+      lines.each { |line| csv << line }
+    end
+
+    # test writing fields in the correct order
+    File.open(@path, "r") do |f|
+      assert_equal("b|a|c", f.gets.strip)
+      assert_equal("2|1|3", f.gets.strip)
+      assert_equal("5|4|6", f.gets.strip)
+    end
+
+    # test reading CSV with headers
+    CSV.open( @path, "r", :headers    => true,
+                          :col_sep    => "|",
+                          :converters => :all ) do |csv|
       csv.each { |line| assert_equal(lines.shift, line.to_hash) }
     end
   end
@@ -230,6 +299,6 @@ class TestCSVInterface < Test::Unit::TestCase
     
     # shortcuts
     assert_equal(STDOUT, CSV.instance.instance_eval { @io })
-    assert_equal(STDOUT, CSV { |csv| csv.instance_eval { @io } })
+    assert_equal(STDOUT, CSV { |new_csv| new_csv.instance_eval { @io } })
   end
 end

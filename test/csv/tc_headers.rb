@@ -1,4 +1,5 @@
-#!/usr/local/bin/ruby -w
+#!/usr/bin/env ruby -w
+# encoding: UTF-8
 
 # tc_headers.rb
 #
@@ -129,6 +130,21 @@ class TestCSVHeaders < Test::Unit::TestCase
     assert(!row.field_row?)
   end
   
+  def test_csv_header_string_inherits_separators
+    # parse with custom col_sep
+    csv = nil
+    assert_nothing_raised(Exception) do 
+      csv = CSV.parse( @data.tr(",", "|"), :col_sep => "|",
+                                           :headers => "my|new|headers" )
+    end
+
+    # verify headers were recognized
+    row = csv[0]
+    assert_not_nil(row)
+    assert_instance_of(CSV::Row, row)
+    assert_equal([%w{my first}, %w{new second}, %w{headers third}], row.to_a)
+  end
+  
   def test_return_headers
     # activate headers and request they are returned
     csv = nil
@@ -248,6 +264,17 @@ class TestCSVHeaders < Test::Unit::TestCase
                :skip_blanks    => true ) do |row|
       assert_equal(expected.shift, row.fields)
     end
+  end
+  
+  def test_headers_reader
+    # no headers
+    assert_nil(CSV.new(@data).headers)
+    
+    # headers
+    csv = CSV.new(@data, :headers => true)
+    assert_equal(true, csv.headers)                    # before headers are read
+    csv.shift                                          # set headers
+    assert_equal(%w[first second third], csv.headers)  # after headers are read
   end
   
   def test_blank_row_bug_fix

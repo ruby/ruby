@@ -1,4 +1,5 @@
-#!/usr/local/bin/ruby -w
+#!/usr/bin/env ruby -w
+# encoding: UTF-8
 
 # tc_csv_parsing.rb
 #
@@ -7,6 +8,7 @@
 #  under the terms of Ruby's license.
 
 require "test/unit"
+require "timeout"
 
 require "csv"
 
@@ -17,6 +19,8 @@ require "csv"
 # separator <tt>$/</tt>.
 # 
 class TestCSVParsing < Test::Unit::TestCase
+  BIG_DATA = "123456789\n" * 1024
+  
   def test_mastering_regex_example
     ex = %Q{Ten Thousand,10000, 2710 ,,"10,000","It's ""10 Grand"", baby",10K}
     assert_equal( [ "Ten Thousand", "10000", " 2710 ", nil, "10,000",
@@ -158,7 +162,31 @@ class TestCSVParsing < Test::Unit::TestCase
         assert_send([csv.lineno, :<, 4])
       end
     rescue CSV::MalformedCSVError
-      assert_equal("Unclosed quoted field on line 4.", $!.message)
+      assert_equal("Illegal quoting on line 4.", $!.message)
+    end
+  end
+  
+  def test_the_parse_fails_fast_when_it_can_for_unquoted_fields
+    assert_parse_errors_out('valid,fields,bad start"' + BIG_DATA)
+  end
+  
+  def test_the_parse_fails_fast_when_it_can_for_unescaped_quotes
+    assert_parse_errors_out('valid,fields,"bad start"unescaped' + BIG_DATA)
+  end
+  
+  def test_field_size_limit_controls_lookahead
+    assert_parse_errors_out( 'valid,fields,"' + BIG_DATA + '"',
+                             :field_size_limit => 2048 )
+  end
+  
+  private
+  
+  def assert_parse_errors_out(*args)
+    assert_raise(CSV::MalformedCSVError) do
+      Timeout.timeout(0.2) do
+        CSV.parse(*args)
+        fail("Parse didn't error out")
+      end
     end
   end
 end

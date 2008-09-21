@@ -1,4 +1,5 @@
-#!/usr/local/bin/ruby -w
+#!/usr/bin/env ruby -w
+# encoding: UTF-8
 
 # tc_table.rb
 #
@@ -388,5 +389,18 @@ class TestCSVTable < Test::Unit::TestCase
     assert(!@table.empty?, "Table was empty.")
     
     assert_equal(@rows.size, @table.size)
+  end
+  
+  def test_inspect_shows_current_mode
+    str = @table.inspect
+    assert(str.include?("mode:#{@table.mode}"), "Mode not shown.")
+    
+    @table.by_col!
+    str = @table.inspect
+    assert(str.include?("mode:#{@table.mode}"), "Mode not shown.")
+  end
+  
+  def test_inspect_is_us_ascii_encoded
+    assert_equal("US-ASCII", @table.inspect.encoding.name)
   end
 end

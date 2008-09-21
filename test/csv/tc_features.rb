@@ -1,4 +1,5 @@
-#!/usr/local/bin/ruby -w
+#!/usr/bin/env ruby -w
+# encoding: UTF-8
 
 # tc_features.rb
 #
@@ -67,18 +68,25 @@ class TestCSVFeatures < Test::Unit::TestCase
     end
   end
   
+  def test_csv_char_readers
+    %w[col_sep row_sep quote_char].each do |reader|
+      csv = CSV.new("abc,def", reader.to_sym => "|")
+      assert_equal("|", csv.send(reader))
+    end
+  end
+  
   def test_row_sep_auto_discovery
     ["\r\n", "\n", "\r"].each do |line_end|
       data       = "1,2,3#{line_end}4,5#{line_end}"
-      discovered = CSV.new(data).instance_eval { @row_sep }
+      discovered = CSV.new(data).row_sep
       assert_equal(line_end, discovered)
     end
     
-    assert_equal("\n", CSV.new("\n\r\n\r").instance_eval { @row_sep })
+    assert_equal("\n", CSV.new("\n\r\n\r").row_sep)
     
-    assert_equal($/, CSV.new("").instance_eval { @row_sep })
+    assert_equal($/, CSV.new("").row_sep)
     
-    assert_equal($/, CSV.new(STDERR).instance_eval { @row_sep })
+    assert_equal($/, CSV.new(STDERR).row_sep)
   end
   
   def test_lineno
@@ -117,6 +125,51 @@ class TestCSVFeatures < Test::Unit::TestCase
     assert_equal(3, count)
   end
   
+  def test_csv_behavior_readers
+    %w[ unconverted_fields return_headers write_headers
+        skip_blanks        force_quotes ].each do |behavior|
+      assert( !CSV.new("abc,def").send("#{behavior}?"),
+              "Behavior defaulted to on." )
+      csv = CSV.new("abc,def", behavior.to_sym => true)
+      assert(csv.send("#{behavior}?"), "Behavior change now registered.")
+    end
+  end
+  
+  def test_converters_reader
+    # no change
+    assert_equal( [:integer],
+                  CSV.new("abc,def", :converters => [:integer]).converters )
+    
+    # just one
+    assert_equal( [:integer],
+                  CSV.new("abc,def", :converters => :integer).converters )
+    
+    # expanded
+    assert_equal( [:integer, :float],
+                  CSV.new("abc,def", :converters => :numeric).converters )
+    
+    # custom
+    csv = CSV.new("abc,def", :converters => [:integer, lambda {  }])
+    assert_equal(2, csv.converters.size)
+    assert_equal(:integer, csv.converters.first)
+    assert_instance_of(Proc, csv.converters.last)
+  end
+  
+  def test_header_converters_reader
+    # no change
+    hc = :header_converters
+    assert_equal([:downcase], CSV.new("abc,def", hc => [:downcase]).send(hc))
+    
+    # just one
+    assert_equal([:downcase], CSV.new("abc,def", hc => :downcase).send(hc))
+    
+    # custom
+    csv = CSV.new("abc,def", hc => [:symbol, lambda {  }])
+    assert_equal(2, csv.send(hc).size)
+    assert_equal(:symbol, csv.send(hc).first)
+    assert_instance_of(Proc, csv.send(hc).last)
+  end
+  
   # reported by Kev Jackson
   def test_failing_to_escape_col_sep_bug_fix
     assert_nothing_raised(Exception) { CSV.new(String.new, :col_sep => "|") }
@@ -149,7 +202,7 @@ class TestCSVFeatures < Test::Unit::TestCase
                  )
                )
     end
-    assert_equal("\r\n", zipped.instance_eval { @row_sep })
+    assert_equal("\r\n", zipped.row_sep)
   end
   
   def test_gzip_writer_bug_fix
@@ -166,6 +219,41 @@ class TestCSVFeatures < Test::Unit::TestCase
                              include?($INPUT_RECORD_SEPARATOR),
             "@row_sep did not default" )
     File.unlink(file)
+  end
+  
+  def test_inspect_is_smart_about_io_types
+    str = CSV.new("string,data").inspect
+    assert(str.include?("io_type:StringIO"), "IO type not detected.")
+
+    str = CSV.new($stderr).inspect
+    assert(str.include?("io_type:$stderr"), "IO type not detected.")
+
+    path = File.join(File.dirname(__FILE__), "temp.csv")
+    File.open(path, "w") { |csv| csv << "one,two,three\n1,2,3\n" }
+    str  = CSV.open(path) { |csv| csv.inspect }
+    assert(str.include?("io_type:File"), "IO type not detected.")
+    File.unlink(path)
+  end
+  
+  def test_inspect_shows_key_attributes
+    str = @csv.inspect
+    %w[lineno col_sep row_sep quote_char].each do |attr_name|
+      assert_match(/\b#{attr_name}:[^\s>]+/, str)
+    end
+  end
+  
+  def test_inspect_shows_headers_when_available
+    CSV.new("one,two,three\n1,2,3\n", :headers => true) do |csv|
+      assert(csv.inspect.include?("headers:true"), "Header hint not shown.")
+      csv.shift  # load headers
+      assert_match(/headers:\[[^\]]+\]/, csv.inspect)
+    end
+  end
+  
+  def test_inspect_is_ascii_8bit_encoded
+    CSV.new("one,two,three\n1,2,3\n".encode("UTF-16BE")) do |csv|
+      assert_equal("ASCII-8BIT", csv.inspect.encoding.name)
+    end
   end
   
   def test_version

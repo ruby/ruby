@@ -1,4 +1,5 @@
-#!/usr/local/bin/ruby -w
+#!/usr/bin/env ruby -w
+# encoding: UTF-8
 
 # tc_row.rb
 #
@@ -285,5 +286,25 @@ class TestCSVRow < Test::Unit::TestCase
     assert(!@row.empty?, "Row was empty.")
     
     assert_equal([@row.headers.size, @row.fields.size].max, @row.size)
+  end
+  
+  def test_inspect_shows_header_field_pairs
+    str = @row.inspect
+    @row.each do |header, field|
+      assert( str.include?("#{header.inspect}:#{field.inspect}"),
+              "Header field pair not found." )
+    end
+  end
+  
+  def test_inspect_is_ascii_8bit_encoded
+    assert_equal("ASCII-8BIT", @row.inspect.encoding.name)
+  end
+  
+  def test_inspect_shows_symbol_headers_as_bare_attributes
+    str = CSV::Row.new(@row.headers.map { |h| h.to_sym }, @row.fields).inspect
+    @row.each do |header, field|
+      assert( str.include?("#{header}:#{field.inspect}"),
+              "Header field pair not found." )
+    end
   end
 end

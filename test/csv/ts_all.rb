@@ -1,4 +1,5 @@
-#!/usr/local/bin/ruby -w
+#!/usr/bin/env ruby -w
+# encoding: UTF-8
 
 # ts_all.rb
 #
@@ -17,3 +18,4 @@ require "tc_row"
 require "tc_table"
 require "tc_headers"
 require "tc_serialization"
+require "tc_encodings"
