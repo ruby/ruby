@@ -456,29 +456,31 @@ m_log_bang(VALUE x)
 static VALUE
 m_cos(VALUE x)
 {
-    get_dat1(x);
-
     if (f_real_p(x))
 	return m_cos_bang(x);
-    return f_complex_new2(rb_cComplex,
-			  f_mul(m_cos_bang(dat->real),
-				m_cosh_bang(dat->imag)),
-			  f_mul(f_negate(m_sin_bang(dat->real)),
-				m_sinh_bang(dat->imag)));
+    {
+	get_dat1(x);
+	return f_complex_new2(rb_cComplex,
+			      f_mul(m_cos_bang(dat->real),
+				    m_cosh_bang(dat->imag)),
+			      f_mul(f_negate(m_sin_bang(dat->real)),
+				    m_sinh_bang(dat->imag)));
+    }
 }
 
 static VALUE
 m_sin(VALUE x)
 {
-    get_dat1(x);
-
     if (f_real_p(x))
 	return m_sin_bang(x);
-    return f_complex_new2(rb_cComplex,
-			  f_mul(m_sin_bang(dat->real),
-				m_cosh_bang(dat->imag)),
-			  f_mul(m_cos_bang(dat->real),
-				m_sinh_bang(dat->imag)));
+    {
+	get_dat1(x);
+	return f_complex_new2(rb_cComplex,
+			      f_mul(m_sin_bang(dat->real),
+				    m_cosh_bang(dat->imag)),
+			      f_mul(m_cos_bang(dat->real),
+				    m_sinh_bang(dat->imag)));
+    }
 }
 
 static VALUE
