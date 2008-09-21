@@ -1,3 +1,7 @@
+Sun Sep 21 21:52:41 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* math.c (math_log): should check argc.
+
 Sun Sep 21 21:20:24 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: added two macros.

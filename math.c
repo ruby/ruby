@@ -353,7 +353,7 @@ math_log(int argc, VALUE *argv)
     Need_Float(x);
     errno = 0;
     d = log(RFLOAT_VALUE(x));
-    if (!NIL_P(base)) {
+    if (argc == 2) {
 	Need_Float(base);
 	d /= log(RFLOAT_VALUE(base));
     }

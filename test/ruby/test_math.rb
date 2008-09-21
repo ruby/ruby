@@ -113,6 +113,7 @@ class TestMath < Test::Unit::TestCase
     assert_equal(1.0/0, Math.log(1.0/0))
     assert_raise(Errno::EDOM, Errno::ERANGE) { Math.log(0) }
     assert_raise(Errno::EDOM, Errno::ERANGE) { Math.log(-1) }
+    assert_raise(TypeError) { Math.log(1,nil) }
   end
 
   def test_log2
