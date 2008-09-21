@@ -1011,7 +1011,8 @@ rb_enc_default_external(void)
  *
  * Returns default external encoding.
  *
- * It is initialized by the locale or -E option.
+ * It is initialized by the locale or -E option,
+ * and can't be modified after that.
  */
 static VALUE
 get_default_external(VALUE klass)
