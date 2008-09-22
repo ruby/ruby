@@ -1,3 +1,8 @@
+Tue Sep 23 02:05:34 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/readline.c (Init_readline): used remove_history to
+	  check offset of history if unsupported clear_history.
+
 Mon Sep 22 17:39:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile#open): should return a value from the

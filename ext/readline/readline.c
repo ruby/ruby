@@ -1272,14 +1272,22 @@ Init_readline()
     history_get_offset_func = history_get_offset_history_base;
 #if defined HAVE_RL_LIBRARY_VERSION
     version = rb_str_new2(rl_library_version);
-#if defined HAVE_CLEAR_HISTORY
+#if defined HAVE_CLEAR_HISTORY || defined HAVE_REMOVE_HISTORY
     if (strncmp(rl_library_version, EDIT_LINE_LIBRARY_VERSION, 
 		strlen(EDIT_LINE_LIBRARY_VERSION)) == 0) {
 	add_history("1");
 	if (history_get(history_get_offset_func(0)) == NULL) {
 	    history_get_offset_func = history_get_offset_0;
 	}
+#if !defined HAVE_CLEAR_HISTORY
 	clear_history();
+#else
+	{
+	    HIST_ENTRY *entry = remove_history(0);
+	    free(entry->line);
+	    free(entry);
+	}
+#endif
     }
 #endif
 #else
