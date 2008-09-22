@@ -2052,7 +2052,8 @@ env_aset(VALUE obj, VALUE nm, VALUE val)
     }
 
     if (NIL_P(val)) {
-	rb_raise(rb_eTypeError, "cannot assign nil; use Hash#delete instead");
+	env_delete(obj, nm);
+	return Qnil;
     }
     StringValue(nm);
     StringValue(val);
