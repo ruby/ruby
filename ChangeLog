@@ -1,3 +1,16 @@
+Tue Sep 23 08:20:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el: updated to the latest trunk (without encoding
+	  magic comment hook).
+
+	* misc/ruby-mode.el (ruby-keyword-end-re): emacs21 support.  a
+	  patch from Hiroshi Moriyama <hiroshi at kvd.biglobe.ne.jp> in
+	  [ruby-dev:36471].
+
+	* misc/ruby-mode.el (ruby-in-ppss-context-p): ditto.
+
+	* misc/ruby-mode.el (ruby-here-doc-end-syntax): 
+
 Fri Sep 19 17:41:56 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: applied OS/2 support patch from Brendan Oakley
