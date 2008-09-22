@@ -5,18 +5,50 @@ All the files in this distribution are covered under either the Ruby's
 license (see the file COPYING) or public-domain except some files
 mentioned below.
 
-oniguruma.h:
+include/ruby/oniguruma.h:
 regcomp.c:
 regenc.[ch]:
 regerror.c:
-regex.c:
 regexec.c:
 regint.h:
 regparse.[ch]:
-ascii.c:
-euc_jp.c:
-sjis.c:
-utf8.c:
+enc/ascii.c
+enc/big5.c
+enc/cp949.c
+enc/emacs_mule.c
+enc/encdb.c
+enc/euc_jp.c
+enc/euc_kr.c
+enc/euc_tw.c
+enc/gb18030.c
+enc/gb2312.c
+enc/gbk.c
+enc/iso_8859_1.c
+enc/iso_8859_10.c
+enc/iso_8859_11.c
+enc/iso_8859_13.c
+enc/iso_8859_14.c
+enc/iso_8859_15.c
+enc/iso_8859_16.c
+enc/iso_8859_2.c
+enc/iso_8859_3.c
+enc/iso_8859_4.c
+enc/iso_8859_5.c
+enc/iso_8859_6.c
+enc/iso_8859_7.c
+enc/iso_8859_8.c
+enc/iso_8859_9.c
+enc/koi8_r.c
+enc/koi8_u.c
+enc/shift_jis.c
+enc/unicode.c
+enc/us_ascii.c
+enc/utf_16be.c
+enc/utf_16le.c
+enc/utf_32be.c
+enc/utf_32le.c
+enc/utf_8.c
+enc/windows_1251.c
 
 Oniguruma  ----   (C) K.Kosako <sndgk393 AT ybb DOT ne DOT jp>
 
@@ -149,8 +181,6 @@ missing/isnan.c:
 missing/memcmp.c:
 missing/memmove.c:
 missing/strchr.c:
-missing/streror.c:
-missing/strftime.c:
 missing/strstr.c:
 missing/strtol.c:
 ext/digest/sha1/sha1.[ch]:
@@ -269,18 +299,7 @@ ext/digest/rmd160/rmd160.[ch]:
     Copyright (c) Katholieke Universiteit Leuven
     1996, All Rights Reserved
 
-ext/digest/rmd160/rmd160hl.c:
-ext/digest/sha1/sha1hl.c:
-
-  These files are under the beer-ware license.
-
-    "THE BEER-WARE LICENSE" (Revision 42):
-    <phk@login.dkuug.dk> wrote this file.  As long as you retain this notice you
-    can do whatever you want with this stuff. If we meet some day, and you think
-    this stuff is worth it, you can buy me a beer in return.   Poul-Henning Kamp
-
 ext/digest/sha2/sha2.[ch]:
-ext/digest/sha2/sha2hl.c:
 
   These files are under the new-style BSD license.
 
