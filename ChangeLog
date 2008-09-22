@@ -1,3 +1,8 @@
+Mon Sep 22 11:17:51 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* include/ruby/encoding.h (enum): ISO C forbids comma at end of
+	  enumerator list
+
 Mon Sep 22 10:15:24 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* LEGAL: updated file names removed and added.  [ruby-dev:36426]

@@ -203,7 +203,7 @@ typedef enum {
     econv_source_buffer_empty,
     econv_finished,
     econv_after_output,
-    econv_incomplete_input,
+    econv_incomplete_input
 } rb_econv_result_t;
 
 typedef struct rb_econv_t rb_econv_t;
