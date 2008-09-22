@@ -13,6 +13,11 @@
        (substring ruby-mode-revision (match-beginning 0) (match-end 0)))
   "Ruby mode version number.")
 
+(defconst ruby-keyword-end-re
+  (if (string-match "\\_>" "ruby")
+      "\\_>"
+    "\\>"))
+
 (defconst ruby-block-beg-keywords
   '("class" "module" "def" "if" "unless" "case" "while" "until" "for" "begin" "do")
   "Keywords at the beginning of blocks.")
@@ -22,7 +27,7 @@
   "Regexp to match the beginning of blocks.")
 
 (defconst ruby-non-block-do-re
-  (concat (regexp-opt '("while" "until" "for" "rescue") t) "\\_>")
+  (concat (regexp-opt '("while" "until" "for" "rescue") t) ruby-keyword-end-re)
   "Regexp to match")
 
 (defconst ruby-indent-beg-re
@@ -570,7 +575,7 @@ The variable ruby-indent-level controls the amount of indentation.
        ((looking-at (concat "\\<\\(" ruby-block-beg-re "\\)\\>"))
         (and
          (save-match-data
-           (or (not (looking-at "do\\_>"))
+           (or (not (looking-at (concat "do" ruby-keyword-end-re)))
                (save-excursion
                  (back-to-indentation)
                  (not (looking-at ruby-non-block-do-re)))))
@@ -1140,13 +1145,33 @@ balanced expression is found."
            (ruby-here-doc-beg-syntax))
           (,ruby-here-doc-end-re 3 (ruby-here-doc-end-syntax))))
 
-  (defun ruby-in-non-here-doc-string-p ()
-    (let ((syntax (syntax-ppss)))
-      (or (nth 4 syntax)
-          ;; In a string *without* a generic delimiter
-          ;; If it's generic, it's a heredoc and we don't care
-          ;; See `parse-partial-sexp'
-          (numberp (nth 3 syntax)))))
+  (unless (functionp 'syntax-ppss)
+    (defun syntax-ppss (&optional pos)
+      (parse-partial-sexp (point-min) (or pos (point)))))
+
+  (defun ruby-in-ppss-context-p (context &optional ppss)
+    (let ((ppss (or ppss (syntax-ppss (point)))))
+      (if (cond
+           ((eq context 'anything)
+            (or (nth 3 ppss)
+                (nth 4 ppss)))
+           ((eq context 'string)
+            (nth 3 ppss))
+           ((eq context 'heredoc)
+            (and (nth 3 ppss)
+                 ;; If it's generic string, it's a heredoc and we don't care
+                 ;; See `parse-partial-sexp'
+                 (not (numberp (nth 3 ppss)))))
+           ((eq context 'non-heredoc)
+            (and (ruby-in-ppss-context-p 'anything)
+                 (not (ruby-in-ppss-context-p 'heredoc))))
+           ((eq context 'comment)
+            (nth 4 ppss))
+           (t
+            (error (concat
+                    "Internal error on `ruby-in-ppss-context-p': "
+                    "context name `" (symbol-name context) "' is unknown"))))
+          t)))
 
   (defun ruby-in-here-doc-p ()
     (save-excursion
@@ -1154,7 +1179,7 @@ balanced expression is found."
         (beginning-of-line)
         (catch 'found-beg
           (while (re-search-backward ruby-here-doc-beg-re nil t)
-            (if (not (or (syntax-ppss-context (syntax-ppss))
+            (if (not (or (ruby-in-ppss-context-p 'anything)
                          (ruby-here-doc-find-end old-point)))
                 (throw 'found-beg t)))))))
 
@@ -1189,19 +1214,19 @@ buffer position `limit' or the end of the buffer."
   (defun ruby-here-doc-beg-syntax ()
     (save-excursion
       (goto-char (match-beginning 0))
-      (unless (or (ruby-in-non-here-doc-string-p)
+      (unless (or (ruby-in-ppss-context-p 'non-heredoc)
                   (ruby-in-here-doc-p))
         (string-to-syntax "|"))))
 
   (defun ruby-here-doc-end-syntax ()
     (let ((pss (syntax-ppss)) (case-fold-search nil))
-      (when (eq (syntax-ppss-context pss) 'string)
+      (when (ruby-in-ppss-context-p 'heredoc pss)
         (save-excursion
-          (goto-char (nth 8 pss))
+          (goto-char (nth 8 pss))     ; Go to the beginning of heredoc.
           (let ((eol (point)))
             (beginning-of-line)
             (if (and (re-search-forward (ruby-here-doc-beg-match) eol t) ; If there is a heredoc that matches this line...
-                     (null (syntax-ppss-context (syntax-ppss))) ; And that's not inside a heredoc/string/comment...
+                     (not (ruby-in-ppss-context-p 'anything)) ; And that's not inside a heredoc/string/comment...
                      (progn (goto-char (match-end 0)) ; And it's the last heredoc on its line...
                             (not (re-search-forward ruby-here-doc-beg-re eol t))))
                 (string-to-syntax "|")))))))
@@ -1291,7 +1316,8 @@ buffer position `limit' or the end of the buffer."
                "yield"
                )
              t)
-            "\\_>\\)")
+            "\\)"
+            ruby-keyword-end-re)
            2)
      ;; here-doc beginnings
      (list ruby-here-doc-beg-re 0 'font-lock-string-face)

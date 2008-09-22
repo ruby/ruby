@@ -1,3 +1,13 @@
+Tue Sep 23 08:07:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-keyword-end-re): emacs21 support.  a
+	  patch from Hiroshi Moriyama <hiroshi at kvd.biglobe.ne.jp> in
+	  [ruby-dev:36471].
+
+	* misc/ruby-mode.el (ruby-in-ppss-context-p): ditto.
+
+	* misc/ruby-mode.el (ruby-here-doc-end-syntax):
+
 Tue Sep 23 02:07:52 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* test/readline/test_readline_history.rb
