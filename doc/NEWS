@@ -164,7 +164,7 @@ Compatible
     * Readline
           o Readline.vi_editing_mode?
           o Readline.emacs_editing_mode?
-          o Readline.HISTORY::clear
+          o Readline::HISTORY.clear
     * Misc. new methods
           o public_send
           o GC.count
