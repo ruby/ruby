@@ -118,7 +118,8 @@ class TestEnv < Test::Unit::TestCase
         ENV["test"] = "foo"
       end.join
     end
-    assert_raise(TypeError) { ENV["test"] = nil }
+    assert_nothing_raised { ENV["test"] = nil }
+    assert_equal(nil, ENV["test"])
     assert_raise(ArgumentError) { ENV["foo\0bar"] = "test" }
     assert_raise(ArgumentError) { ENV["test"] = "foo\0bar" }
     ENV[PATH_ENV] = "/tmp/".taint

@@ -3,6 +3,8 @@ Tue Sep 23 08:25:56 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* hash.c (env_aset): allow nil value to remove an entry.
 	  [ruby-dev:36465]
 
+	* test/ruby/test_env.rb (TestEnv#test_aset): test updated.
+
 Tue Sep 23 08:07:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-keyword-end-re): emacs21 support.  a
