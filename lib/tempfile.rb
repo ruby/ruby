@@ -187,8 +187,6 @@ class Tempfile < DelegateClass(File)
 	ensure
 	  tempfile.close
 	end
-
-	nil
       else
 	tempfile
       end
