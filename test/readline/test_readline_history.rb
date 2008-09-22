@@ -205,16 +205,18 @@ class Readline::TestHistory < Test::Unit::TestCase
   end
 
   def test_each
-    HISTORY.each do |s|
+    e = HISTORY.each do |s|
       assert(false) # not reachable
     end
+    assert_equal(HISTORY, e)
     lines = push_history(5)
     i = 0
-    HISTORY.each do |s|
+    e = HISTORY.each do |s|
       assert_equal(HISTORY[i], s)
       assert_equal(lines[i], s)
       i += 1
     end
+    assert_equal(HISTORY, e)
   end
 
   def test_each__enumerator

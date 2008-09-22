@@ -1,3 +1,8 @@
+Tue Sep 23 02:07:52 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* test/readline/test_readline_history.rb
+	  (Readline::TestHistory#test_each): checked return value.
+
 Tue Sep 23 02:05:34 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/readline.c (Init_readline): used remove_history to
