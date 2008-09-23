@@ -1799,6 +1799,13 @@ extern char **environ;
 #define GET_ENVIRON(e) (e)
 #define FREE_ENVIRON(e)
 #endif
+#ifdef ENV_IGNORECASE
+#define ENVMATCH(s1, s2) (STRCASECMP(s1, s2) == 0)
+#define ENVNMATCH(s1, s2, n) (STRNCASECMP(s1, s2, n) == 0)
+#else
+#define ENVMATCH(n1, n2) (strcmp(n1, n2) == 0)
+#define ENVNMATCH(s1, s2, n) (memcmp(s1, s2, n) == 0)
+#endif
 
 static VALUE
 env_str_new(const char *ptr, long len)
@@ -1832,12 +1839,7 @@ env_delete(VALUE obj, VALUE name)
 	VALUE value = env_str_new2(val);
 
 	ruby_setenv(nam, 0);
-#ifdef ENV_IGNORECASE
-	if (STRCASECMP(nam, PATH_ENV) == 0)
-#else
-	if (strcmp(nam, PATH_ENV) == 0)
-#endif
-	{
+	if (ENVMATCH(nam, PATH_ENV)) {
 	    path_tainted = 0;
 	}
 	return value;
@@ -1868,12 +1870,7 @@ rb_f_getenv(VALUE obj, VALUE name)
     }
     env = getenv(nam);
     if (env) {
-#ifdef ENV_IGNORECASE
-	if (STRCASECMP(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
-#else
-	if (strcmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
-#endif
-	{
+	if (ENVMATCH(nam, PATH_ENV) && !rb_env_path_tainted()) {
 	    VALUE str = rb_str_new2(env);
 
 	    rb_obj_freeze(str);
@@ -1910,11 +1907,7 @@ env_fetch(int argc, VALUE *argv)
 	}
 	return if_none;
     }
-#ifdef ENV_IGNORECASE
-    if (STRCASECMP(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
-#else
-    if (strcmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
-#endif
+    if (ENVMATCH(nam, PATH_ENV) && !rb_env_path_tainted())
 	return rb_str_new2(env);
     return env_str_new2(env);
 }
@@ -1943,13 +1936,7 @@ envix(const char *nam)
 
     env = GET_ENVIRON(environ);
     for (i = 0; env[i]; i++) {
-	if (
-#ifdef ENV_IGNORECASE
-	    STRNCASECMP(env[i],nam,len) == 0
-#else
-	    memcmp(env[i],nam,len) == 0
-#endif
-	    && env[i][len] == '=')
+	if (ENVNMATCH(env[i],nam,len) && env[i][len] == '=')
 	    break;			/* memcmp must come first to avoid */
     }					/* potential SEGV's */
     FREE_ENVIRON(environ);
@@ -2066,11 +2053,7 @@ env_aset(VALUE obj, VALUE nm, VALUE val)
 	rb_raise(rb_eArgError, "bad environment variable value");
 
     ruby_setenv(name, value);
-#ifdef ENV_IGNORECASE
-    if (STRCASECMP(name, PATH_ENV) == 0) {
-#else
-    if (strcmp(name, PATH_ENV) == 0) {
-#endif
+    if (ENVMATCH(name, PATH_ENV)) {
 	if (OBJ_TAINTED(val)) {
 	    /* already tainted, no check */
 	    path_tainted = 1;
