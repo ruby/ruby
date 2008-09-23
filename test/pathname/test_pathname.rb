@@ -481,6 +481,7 @@ class TestPathname < Test::Unit::TestCase
     result = []
     Pathname.new("/usr/bin/ruby").each_filename {|f| result << f }
     assert_equal(%w[usr bin ruby], result)
+    assert_equal(%w[usr bin ruby], Pathname.new("/usr/bin/ruby").each_filename.to_a)
   end
 
   def test_kernel_pathname

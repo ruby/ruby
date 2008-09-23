@@ -517,6 +517,7 @@ class Pathname
   #     # yields "usr", "bin", and "ruby".
   #
   def each_filename # :yield: filename
+    return to_enum(__method__) unless block_given?
     prefix, names = split_names(@path)
     names.each {|filename| yield filename }
     nil

@@ -1,3 +1,10 @@
+Tue Sep 23 09:01:15 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/pathname.rb (each_filename): return Enumerator if no block
+	  given.
+
+	* test/pathname/test_pathname.rb: add a test for above.
+
 Tue Sep 23 08:25:56 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (env_aset): allow nil value to remove an entry.
