@@ -1,3 +1,7 @@
+Tue Sep 23 17:05:14 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c, vm_core.h: move decl of rb_iseq_clone() to class.c.
+
 Tue Sep 23 17:02:47 2008  Tanaka Akira  <akr@fsij.org>
 
 	* debug.h (ruby_set_debug_option): declared.

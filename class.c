@@ -70,6 +70,8 @@ struct clone_method_data {
     VALUE klass;
 };
 
+VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
+
 static int
 clone_method(ID mid, NODE *body, struct clone_method_data *data)
 {
