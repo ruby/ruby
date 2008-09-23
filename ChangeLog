@@ -13,6 +13,13 @@ Tue Sep 23 19:21:03 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c: ditto.
 
+Tue Sep 23 19:20:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_s_binread): a new method to read binary chunk from a
+	  file.  [ruby-core:18674]
+
+	* io.c (open_key_args): wrong permission specified for read-open.
+
 Tue Sep 23 18:24:34 2008  Tanaka Akira  <akr@fsij.org>
 
 	* hash.c (rb_obj_is_proc): declaration moved for rdoc.

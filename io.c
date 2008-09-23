@@ -6824,7 +6824,7 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	arg->io = rb_io_open_with_args(RARRAY_LEN(args), RARRAY_PTR(args));
 	return;
     }
-    arg->io = rb_io_open(argv[0], Qnil, INT2NUM(O_RDONLY), opt);
+    arg->io = rb_io_open(argv[0], Qnil, Qnil, opt);
 }
 
 static VALUE
@@ -6959,6 +6959,37 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
 	rb_io_binmode(arg.io);
 	rb_io_seek(arg.io, offset, SEEK_SET);
 	if (arg.argc == 2) arg.argc = 1;
+    }
+    return rb_ensure(io_s_read, (VALUE)&arg, rb_io_close, arg.io);
+}
+
+/*
+ *  call-seq:
+ *     IO.binread(name, [length [, offset]] )   => string
+ *
+ *  Opens the file, optionally seeks to the given offset, then returns
+ *  <i>length</i> bytes (defaulting to the rest of the file).
+ *  <code>read</code> ensures the file is closed before returning.
+ *  The open mode would be "rb:ASCII-8BIT".
+ *
+ *     IO.binread("testfile")           #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
+ *     IO.binread("testfile", 20)       #=> "This is line one\nThi"
+ *     IO.binread("testfile", 20, 10)   #=> "ne one\nThis is line "
+ */
+
+static VALUE
+rb_io_s_binread(int argc, VALUE *argv, VALUE io)
+{
+    VALUE offset;
+    struct foreach_arg arg;
+
+    rb_scan_args(argc, argv, "12", NULL, NULL, &offset);
+    arg.io = rb_io_open(argv[0], rb_str_new_cstr("rb:ASCII-8BIT"), Qnil, Qnil);
+    if (NIL_P(arg.io)) return Qnil;
+    arg.argv = argv+1;
+    arg.argc = (argc > 2) ? 2 : argc;
+    if (!NIL_P(offset)) {
+	rb_io_seek(arg.io, offset, SEEK_SET);
     }
     return rb_ensure(io_s_read, (VALUE)&arg, rb_io_close, arg.io);
 }
@@ -8185,6 +8216,7 @@ Init_IO(void)
     rb_define_singleton_method(rb_cIO, "foreach", rb_io_s_foreach, -1);
     rb_define_singleton_method(rb_cIO, "readlines", rb_io_s_readlines, -1);
     rb_define_singleton_method(rb_cIO, "read", rb_io_s_read, -1);
+    rb_define_singleton_method(rb_cIO, "binread", rb_io_s_binread, -1);
     rb_define_singleton_method(rb_cIO, "select", rb_f_select, -1);
     rb_define_singleton_method(rb_cIO, "pipe", rb_io_s_pipe, -1);
     rb_define_singleton_method(rb_cIO, "try_convert", rb_io_s_try_convert, 1);
