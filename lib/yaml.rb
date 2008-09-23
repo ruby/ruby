@@ -213,7 +213,7 @@ module YAML
     #     end
     #   end
 	#
-	def YAML.each_document( io, &block )
+    def YAML.each_document( io, &block )
 		yp = parser.load_documents( io, &block )
     end
 
@@ -228,7 +228,7 @@ module YAML
     #     end
     #   end
 	#
-	def YAML.load_documents( io, &doc_proc )
+    def YAML.load_documents( io, &doc_proc )
 		YAML.each_document( io, &doc_proc )
     end
 
@@ -243,7 +243,7 @@ module YAML
     #     end
     #   end
 	#
-	def YAML.each_node( io, &doc_proc )
+    def YAML.each_node( io, &doc_proc )
 		yp = generic_parser.load_documents( io, &doc_proc )
     end
 
@@ -258,7 +258,7 @@ module YAML
     #     end
     #   end
 	#
-	def YAML.parse_documents( io, &doc_proc )
+    def YAML.parse_documents( io, &doc_proc )
 		YAML.each_node( io, &doc_proc )
     end
 

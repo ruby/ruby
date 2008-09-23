@@ -1,3 +1,10 @@
+Wed Sep 24 03:08:58 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/uri/mailto.rb: fix indentation.
+	* lib/uri/generic.rb: ditto.
+	* lib/yaml.rb: ditto.
+	* lib/uri/cgi/core.rb: fix indentation and ambiguous argument warning.
+
 Tue Sep 23 23:39:25 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv/csv.rb:  Improved the idea of whitespace and word characters used

@@ -516,7 +516,7 @@ module URI
       if v && v != '' && @parser.regexp[:QUERY] !~ v
           raise InvalidComponentError, 
             "bad component(expected query component): #{v}"
-        end
+      end
 
       return true
     end

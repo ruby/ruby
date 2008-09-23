@@ -217,14 +217,14 @@ class CGI
         buf << "Set-Cookie: #{cookie}#{EOL}"
       when Array
         arr = cookie
-        arr.each {|cookie| buf << "Set-Cookie: #{cookie}#{EOL}" }
+        arr.each {|c| buf << "Set-Cookie: #{c}#{EOL}" }
       when Hash
         hash = cookie
-        hash.each {|name, cookie| buf << "Set-Cookie: #{cookie}#{EOL}" }
+        hash.each {|name, c| buf << "Set-Cookie: #{c}#{EOL}" }
       end
     end
     if @output_cookies
-      @output_cookies.each {|cookie| buf << "Set-Cookie: #{cookie}#{EOL}" }
+      @output_cookies.each {|c| buf << "Set-Cookie: #{c}#{EOL}" }
     end
     ## other headers
     options.each do |key, value|
@@ -463,9 +463,9 @@ class CGI
 
         /Content-Disposition:.* filename=(?:"((?:\\.|[^\"])*)"|([^;\s]*))/i.match(head)
 	filename = ($1 or $2 or "")
-	if /Mac/i.match(env_table['HTTP_USER_AGENT']) and
-	    /Mozilla/i.match(env_table['HTTP_USER_AGENT']) and
-	    (not /MSIE/i.match(env_table['HTTP_USER_AGENT']))
+	if /Mac/i =~ env_table['HTTP_USER_AGENT'] and
+	   /Mozilla/i =~ env_table['HTTP_USER_AGENT'] and
+	   /MSIE/i !~ env_table['HTTP_USER_AGENT']
 	  filename = CGI::unescape(filename)
 	end
         
