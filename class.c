@@ -12,7 +12,6 @@
 #include "ruby/ruby.h"
 #include "ruby/node.h"
 #include "ruby/st.h"
-#include "vm_core.h"
 #include <ctype.h>
 
 extern st_table *rb_class_tbl;

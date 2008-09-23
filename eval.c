@@ -12,6 +12,7 @@
 **********************************************************************/
 
 #include "eval_intern.h"
+#include "iseq.h"
 
 VALUE proc_invoke(VALUE, VALUE, VALUE, VALUE);
 VALUE rb_binding_new(void);
@@ -1175,56 +1176,3 @@ Init_eval(void)
     OBJ_TAINT(exception_error);
     OBJ_FREEZE(exception_error);
 }
-
-
-/* for parser */
-
-int
-rb_dvar_defined(ID id)
-{
-    rb_thread_t *th = GET_THREAD();
-    rb_iseq_t *iseq;
-    if (th->base_block && (iseq = th->base_block->iseq)) {
-	while (iseq->type == ISEQ_TYPE_BLOCK ||
-	       iseq->type == ISEQ_TYPE_RESCUE ||
-	       iseq->type == ISEQ_TYPE_ENSURE ||
-	       iseq->type == ISEQ_TYPE_EVAL) {
-	    int i;
-
-	    for (i = 0; i < iseq->local_table_size; i++) {
-		if (iseq->local_table[i] == id) {
-		    return 1;
-		}
-	    }
-	    iseq = iseq->parent_iseq;
-	}
-    }
-    return 0;
-}
-
-int
-rb_local_defined(ID id)
-{
-    rb_thread_t *th = GET_THREAD();
-    rb_iseq_t *iseq;
-
-    if (th->base_block && th->base_block->iseq) {
-	int i;
-	iseq = th->base_block->iseq->local_iseq;
-
-	for (i=0; i<iseq->local_table_size; i++) {
-	    if (iseq->local_table[i] == id) {
-		return 1;
-	    }
-	}
-    }
-    return 0;
-}
-
-int
-rb_parse_in_eval(void)
-{
-    return GET_THREAD()->parse_in_eval != 0;
-}
-
-

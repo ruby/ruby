@@ -481,6 +481,8 @@ typedef struct RNode {
 #define CALL_VCALL  2
 #define CALL_SUPER  3
 
+#define RUBY_VM_METHOD_NODE NODE_METHOD
+
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);
 VALUE rb_parser_encoding(VALUE);

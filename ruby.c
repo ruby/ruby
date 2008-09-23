@@ -1142,8 +1142,8 @@ process_options(VALUE arg)
 	tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
     }
 
-    iseq = rb_iseq_new(tree, rb_str_new2("<main>"),
-		       opt->script_name, Qfalse, ISEQ_TYPE_TOP);
+    iseq = rb_iseq_new_top(tree, rb_str_new2("<main>"),
+			   opt->script_name, Qfalse);
 
     if (opt->dump & DUMP_BIT(insns)) {
 	rb_io_write(rb_stdout, ruby_iseq_disasm(iseq));

@@ -52,14 +52,6 @@ void *alloca();
 # endif	/* HAVE_ALLOCA_H */
 #endif /* __GNUC__ */
 
-#ifdef HAVE_STDARG_PROTOTYPES
-#include <stdarg.h>
-#define va_init_list(a,b) va_start(a,b)
-#else
-#include <varargs.h>
-#define va_init_list(a,b) va_start(a)
-#endif
-
 #ifndef HAVE_STRING_H
 char *strrchr(const char *, const char);
 #endif

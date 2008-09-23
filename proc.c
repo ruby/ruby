@@ -629,7 +629,7 @@ rb_proc_location(VALUE self)
     if (!iseq) return Qnil;
     loc[0] = iseq->filename;
     if (iseq->insn_info_table) {
-	loc[1] = INT2FIX(iseq->insn_info_table[0].line_no);
+	loc[1] = INT2FIX(rb_iseq_first_lineno(iseq));
     }
     else {
 	loc[1] = Qnil;
@@ -710,7 +710,7 @@ proc_to_s(VALUE self)
 	int line_no = 0;
 	
 	if (iseq->insn_info_table) {
-	    line_no = iseq->insn_info_table[0].line_no;
+	    line_no = rb_iseq_first_lineno(iseq);
 	}
 	str = rb_sprintf("#<%s:%p@%s:%d%s>", cname, (void *)self,
 			 RSTRING_PTR(iseq->filename),

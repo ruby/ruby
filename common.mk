@@ -445,7 +445,7 @@ VM_CORE_H_INCLUDES = {$(VPATH)}vm_core.h {$(VPATH)}vm_opts.h \
 
 array.$(OBJEXT): {$(VPATH)}array.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h
 bignum.$(OBJEXT): {$(VPATH)}bignum.c $(RUBY_H_INCLUDES)
-class.$(OBJEXT): {$(VPATH)}class.c $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES)
+class.$(OBJEXT): {$(VPATH)}class.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h
 compar.$(OBJEXT): {$(VPATH)}compar.c $(RUBY_H_INCLUDES)
 complex.$(OBJEXT): {$(VPATH)}complex.c $(RUBY_H_INCLUDES)
 dir.$(OBJEXT): {$(VPATH)}dir.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
@@ -537,14 +537,14 @@ variable.$(OBJEXT): {$(VPATH)}variable.c $(RUBY_H_INCLUDES) \
 version.$(OBJEXT): {$(VPATH)}version.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}version.h $(srcdir)/revision.h
 
-compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}compile.h \
+compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}iseq.h \
   $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) \
   {$(VPATH)}insns.inc {$(VPATH)}insns_info.inc {$(VPATH)}optinsn.inc
-iseq.$(OBJEXT): {$(VPATH)}iseq.c {$(VPATH)}gc.h \
+iseq.$(OBJEXT): {$(VPATH)}iseq.c {$(VPATH)}gc.h {$(VPATH)}iseq.h \
   $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) \
   {$(VPATH)}insns.inc {$(VPATH)}insns_info.inc {$(VPATH)}node_name.inc
-vm.$(OBJEXT): {$(VPATH)}vm.c $(RUBY_H_INCLUDES) $(ENCODING_H_INCLUDES) \
-  {$(VPATH)}gc.h {$(VPATH)}eval_intern.h  $(VM_CORE_H_INCLUDES) \
+vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}gc.h {$(VPATH)}iseq.h {$(VPATH)}eval_intern.h \
+  $(RUBY_H_INCLUDES) $(ENCODING_H_INCLUDES) $(VM_CORE_H_INCLUDES) \
   {$(VPATH)}vm_method.c {$(VPATH)}vm_eval.c \
   {$(VPATH)}vm_insnhelper.c {$(VPATH)}vm_insnhelper.h \
   {$(VPATH)}vm_exec.c {$(VPATH)}vm_exec.h \

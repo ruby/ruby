@@ -1,3 +1,29 @@
+Tue Sep 23 16:41:31 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/node.h, vm_core.h: move definition of
+	  RUBY_VM_METHOD_NODE to node.h.
+
+	* class.c, common.mk: remove useless inclusion.
+
+	* compile.h, iseq.h, vm_core.h: rename compile.h to iseq.h.
+	  move some definitions from vm_core.h to iseq.h.
+
+	* compile.c, iseq.c, vm.c: ditto.
+
+	* eval.c, compile.c: move some functions for parser
+	  from eval.c to compile.c.
+
+	* eval_intern.h, vm_core.h: move va_init_list() macro to
+	  vm_core.h.
+
+	* iseq.c (rb_iseq_new_top, rb_iseq_first_lineno): added.
+
+	* load.c, ruby.c: use rb_iseq_new_top() instead of
+	  rb_iseq_new() with ISEQ_TYPE_TOP constant directly.
+
+	* proc.c: use rb_iseq_first_lineno() instead of accessing
+	  iseq structure.
+
 Tue Sep 23 16:17:54 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/ripper/eventids2.c (token_to_eventid): supper __ENCODING__

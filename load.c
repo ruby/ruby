@@ -280,8 +280,7 @@ rb_load(VALUE fname, int wrap)
 	th->mild_compile_error++;
 	node = (NODE *)rb_load_file(RSTRING_PTR(fname));
 	loaded = Qtrue;
-	iseq = rb_iseq_new(node, rb_str_new2("<top (required)>"),
-			   fname, Qfalse, ISEQ_TYPE_TOP);
+	iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, Qfalse);
 	th->mild_compile_error--;
 	rb_iseq_eval(iseq);
     }

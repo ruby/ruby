@@ -15,6 +15,7 @@
 /* #define MARK_FREE_DEBUG 1 */
 #include "gc.h"
 #include "vm_core.h"
+#include "iseq.h"
 
 #include "insns.inc"
 #include "insns_info.inc"
@@ -307,6 +308,13 @@ rb_iseq_new(NODE *node, VALUE name, VALUE filename,
 				&COMPILE_OPTION_DEFAULT);
 }
 
+VALUE
+rb_iseq_new_top(NODE *node, VALUE name, VALUE filename, VALUE parent)
+{
+    return rb_iseq_new_with_opt(node, name, filename, parent, ISEQ_TYPE_TOP,
+				&COMPILE_OPTION_DEFAULT);
+}
+
 static VALUE
 rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE filename,
 				VALUE parent, VALUE type, VALUE bopt,
@@ -569,6 +577,12 @@ iseq_to_a(VALUE self)
     rb_iseq_t *iseq = iseq_check(self);
     rb_secure(1);
     return iseq_data_to_ary(iseq);
+}
+
+int
+rb_iseq_first_lineno(rb_iseq_t *iseq)
+{
+    return iseq->insn_info_table[0].line_no;
 }
 
 /* TODO: search algorithm is brute force.
