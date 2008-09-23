@@ -939,6 +939,34 @@ rb_thread_schedule(void)
     }
 }
 
+/*
+ * rb_thread_blocking_region - permit concurrent/parallel execution.
+ *
+ * This function does:
+ *   (1) release GVL.
+ *       Other Ruby threads may run in parallel.
+ *   (2) call func with data1.
+ *   (3) aquire GVL.
+ *       Other Ruby threads can not run in parallel any more.
+ *
+ *   If another thread interrupts this thread (Thread#kill, signal deliverly,
+ *   VM-shutdown request, and so on), `ubf()' is called (`ubf()' means
+ *   "un-blocking function").  `ubf()' should interrupt `func()' execution.
+ *   There are built-in ubfs and you can specify these ubfs.
+ *   However, we can not guarantee our built-in ubfs interrupt
+ *   your `func()' correctly.  Becareful to use rb_thread_blocking_region().
+ *
+ *     * RUBY_UBF_IO: ubf for IO operation
+ *     * RUBY_UBF_PROCESS: ubf for process operation
+ *
+ *   NOTE: You can not execute most of Ruby C API and touch Ruby objects
+ *         in `func()' and `ubf()' because current thread doesn't acquire
+ *         GVL (cause synchronization problem).  If you need to do it,
+ *         read source code of C APIs and confirm by yourself.
+ *
+ *   Safe C API:
+ *     * rb_thread_interrupted() - check interrupt flag
+ */
 VALUE
 rb_thread_blocking_region(
     rb_blocking_function_t *func, void *data1,
