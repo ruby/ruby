@@ -1,3 +1,11 @@
+Tue Sep 23 17:02:47 2008  Tanaka Akira  <akr@fsij.org>
+
+	* debug.h (ruby_set_debug_option): declared.
+
+	* main.c: include debug.h.
+
+	* common.mk (main.$(OBJEXT)): dependency updated.
+
 Tue Sep 23 16:59:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (ENVMATCH, ENVNMATCH): reduced same code.

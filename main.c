@@ -11,6 +11,7 @@
 
 #undef RUBY_EXPORT
 #include "ruby.h"
+#include "debug.h"
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
 #endif
