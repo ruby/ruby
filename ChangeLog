@@ -1,3 +1,8 @@
+Tue Sep 23 21:26:32 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_casecmp): make the ordering consistent with
+	  String#<=>.
+
 Tue Sep 23 20:52:25 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_binwrite): add nosync argument.
