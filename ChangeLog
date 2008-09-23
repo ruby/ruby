@@ -1,3 +1,7 @@
+Tue Sep 23 20:24:41 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* signal.c (signal_exec): fix to use rb_proc_call().
+
 Tue Sep 23 20:06:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rexml/formatters/pretty.rb (REXML::Formatters::Pretty#wrap):

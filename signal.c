@@ -565,15 +565,13 @@ sigpipe(int sig)
 static void
 signal_exec(VALUE cmd, int safe, int sig)
 {
-    rb_proc_t *proc;
-    VALUE signum = INT2FIX(sig);
+    VALUE signumary = rb_ary_new3(1, INT2FIX(sig));
 
     if (TYPE(cmd) == T_STRING) {
-	rb_eval_cmd(cmd, rb_ary_new3(1, signum), safe);
+	rb_eval_cmd(cmd, signumary, safe);
 	return;
     }
-    GetProcPtr(cmd, proc);
-    vm_invoke_proc(GET_THREAD(), proc, proc->block.self, 1, &signum, 0);
+    rb_proc_call(cmd, signumary);
 }
 
 void
