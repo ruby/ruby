@@ -659,6 +659,7 @@ VALUE rb_struct_define_without_accessor(const char *, VALUE, rb_alloc_func_t, ..
 typedef void rb_unblock_function_t(void *);
 typedef VALUE rb_blocking_function_t(void *);
 void rb_thread_check_ints(void);
+int rb_thread_interrupted(VALUE thval);
 VALUE rb_thread_blocking_region(rb_blocking_function_t *func, void *data1,
 				rb_unblock_function_t *ubf, void *data2);
 #define RUBY_UBF_IO ((rb_unblock_function_t *)-1)

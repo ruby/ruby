@@ -1,3 +1,9 @@
+Tue Sep 23 17:14:31 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c, include/ruby/intern.h (rb_thread_interrupted): added.
+
+	* io.c: use VALUE of thead instead of rb_tread_t to check interrupts.
+
 Tue Sep 23 17:05:14 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* class.c, vm_core.h: move decl of rb_iseq_clone() to class.c.

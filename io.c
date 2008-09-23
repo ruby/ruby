@@ -13,7 +13,6 @@
 
 #include "ruby/ruby.h"
 #include "ruby/io.h"
-#include "vm_core.h"
 #include <ctype.h>
 #include <errno.h>
 
@@ -6979,7 +6978,7 @@ struct copy_stream_struct {
     int error_no;
     const char *notimp;
     rb_fdset_t fds;
-    rb_thread_t *th;
+    VALUE th;
 };
 
 static int
@@ -7107,7 +7106,7 @@ copy_stream_sendfile(struct copy_stream_struct *stp)
 #endif
             if (copy_stream_wait_write(stp) == -1)
                 return -1;
-            if (RUBY_VM_INTERRUPTED(stp->th))
+            if (rb_thread_interrupted(stp->th))
                 return -1;
             goto retry_sendfile;
         }
@@ -7237,7 +7236,7 @@ copy_stream_read_write(struct copy_stream_struct *stp)
         if (!use_eof)
             copy_length -= ss;
 
-        if (RUBY_VM_INTERRUPTED(stp->th))
+        if (rb_thread_interrupted(stp->th))
             return;
     }
 }
@@ -7340,7 +7339,7 @@ copy_stream_body(VALUE arg)
     rb_io_t *src_fptr = 0, *dst_fptr = 0;
     int src_fd, dst_fd;
 
-    stp->th = GET_THREAD();
+    stp->th = rb_thread_current();
 
     stp->total = 0;
 

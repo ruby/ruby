@@ -899,6 +899,15 @@ rb_thread_check_trap_pending(void)
     return GET_THREAD()->exec_signal != 0;
 }
 
+/* This function can be called in blocking region. */
+int
+rb_thread_interrupted(VALUE thval)
+{
+    rb_thread_t *th;
+    GetThreadPtr(thval, th);
+    return RUBY_VM_INTERRUPTED(th);
+}
+
 struct timeval rb_time_timeval();
 
 void
