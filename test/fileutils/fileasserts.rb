@@ -4,6 +4,10 @@ module Test
   module Unit
     module Assertions   # redefine
 
+      def _wrap_assertion
+        yield
+      end
+
       def assert_same_file(from, to)
         _wrap_assertion {
           assert_block("file #{from} != #{to}") {

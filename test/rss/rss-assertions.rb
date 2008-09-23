@@ -2,6 +2,10 @@ require 'erb'
 
 module RSS
   module Assertions
+    def _wrap_assertion
+      yield
+    end
+
     def assert_parse(rss, assert_method, *args)
       __send__("assert_#{assert_method}", *args) do
         ::RSS::Parser.parse(rss)

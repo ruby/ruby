@@ -577,7 +577,6 @@ end
 __END__
 
 require 'test/unit'
-require 'test/unit/ui/console/testrunner'
 
 class TC_IPAddr < Test::Unit::TestCase
   def test_s_new
