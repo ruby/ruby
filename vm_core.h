@@ -14,8 +14,6 @@
 
 #define RUBY_VM_THREAD_MODEL 2
 
-#include <setjmp.h>
-
 #include "ruby/ruby.h"
 #include "ruby/vm.h"
 #include "ruby/st.h"
@@ -33,6 +31,7 @@
 #error "unsupported thread type"
 #endif
 
+#include <setjmp.h>
 #include <signal.h>
 
 #ifndef NSIG

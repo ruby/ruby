@@ -1,3 +1,9 @@
+Wed Sep 24 07:38:23 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* vm_core.h: ruby/ruby.h should be included at the very first
+	  place in an entire compilation unit, as it includes
+	  ruby/config.h
+
 Wed Sep 24 06:41:24 2008  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/test/*: removed test/unit.

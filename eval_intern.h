@@ -1,7 +1,7 @@
-
 #ifndef RUBY_EVAL_INTERN_H
 #define RUBY_EVAL_INTERN_H
 
+#include "ruby/ruby.h"
 #include "vm_core.h"
 
 #define PASS_PASSED_BLOCK_TH(th) do { \
