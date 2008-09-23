@@ -9,7 +9,6 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
-#include "ruby/node.h"
 #include "vm_core.h"
 
 static VALUE

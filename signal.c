@@ -12,7 +12,6 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
-#include "ruby/node.h"
 #include "vm_core.h"
 #include <signal.h>
 #include <stdio.h>

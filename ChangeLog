@@ -1,3 +1,16 @@
+Wed Sep 24 04:45:35 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/node.h, node.h: move node.h from include path.
+	  This change stop to install node.h beacuase of saving ABI
+	  (node.h will be changed. Extensions should not depends on
+	   this file).
+
+	* blockinlining.c, class.c, compile.c, debug.h, enum.c,
+	  gc.c, iseq.c, parse.y, ruby.c, signal.c, variable.c,
+	  vm.c, vm_core.h, vm_dump.c: ditto.
+
+	* ext/ripper/depend: ditto.
+
 Wed Sep 24 04:09:13 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: remove unused frame values.

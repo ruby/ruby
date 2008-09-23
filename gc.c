@@ -13,7 +13,6 @@
 
 #include "ruby/ruby.h"
 #include "ruby/st.h"
-#include "ruby/node.h"
 #include "ruby/re.h"
 #include "ruby/io.h"
 #include "ruby/util.h"

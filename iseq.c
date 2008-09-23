@@ -10,7 +10,6 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
-#include "ruby/node.h"
 
 /* #define MARK_FREE_DEBUG 1 */
 #include "gc.h"

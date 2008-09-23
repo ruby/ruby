@@ -12,9 +12,9 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
-#include "ruby/node.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "node.h"
 
 void rb_vm_change_state(void);
 st_table *rb_global_tbl;

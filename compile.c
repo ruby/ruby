@@ -10,7 +10,6 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
-#include "ruby/node.h"
 
 #define USE_INSN_STACK_INCREASE 1
 #include "vm_core.h"

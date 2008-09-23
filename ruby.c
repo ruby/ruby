@@ -20,7 +20,6 @@
 #include "ruby/wince.h"
 #endif
 #include "ruby/ruby.h"
-#include "ruby/node.h"
 #include "ruby/encoding.h"
 #include "eval_intern.h"
 #include "dln.h"

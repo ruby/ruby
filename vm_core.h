@@ -19,8 +19,8 @@
 #include "ruby/ruby.h"
 #include "ruby/vm.h"
 #include "ruby/st.h"
-#include "ruby/node.h"
 
+#include "node.h"
 #include "debug.h"
 #include "vm_opts.h"
 #include "id.h"

@@ -10,7 +10,6 @@
 
 
 #include "ruby/ruby.h"
-#include "ruby/node.h"
 #include "vm_core.h"
 
 #define MAX_POSBUF 128

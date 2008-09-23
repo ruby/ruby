@@ -16,9 +16,9 @@
 #define YYSTACK_USE_ALLOCA 0
 
 #include "ruby/ruby.h"
-#include "ruby/node.h"
 #include "ruby/st.h"
 #include "ruby/encoding.h"
+#include "node.h"
 #include "id.h"
 #include "regenc.h"
 #include <stdio.h>

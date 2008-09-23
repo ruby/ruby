@@ -13,7 +13,7 @@
 #define RUBY_DEBUG_H
 
 #include "ruby/ruby.h"
-#include "ruby/node.h"
+#include "node.h"
 
 #define dpv(h,v) ruby_debug_print_value(-1, 0, h, v)
 #define dp(v)    ruby_debug_print_value(-1, 0, "", v)
