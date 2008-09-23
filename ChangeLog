@@ -1,3 +1,8 @@
+Tue Sep 23 16:17:54 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/ripper/eventids2.c (token_to_eventid): supper __ENCODING__
+	  keyword.  [ruby-dev:36478]
+
 Tue Sep 23 15:30:53 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk, hash.c: remove unused inclusion.

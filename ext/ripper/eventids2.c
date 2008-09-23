@@ -182,6 +182,7 @@ static const struct token_assoc {
     {keyword_yield,	&ripper_id_kw},
     {keyword__FILE__,	&ripper_id_kw},
     {keyword__LINE__,	&ripper_id_kw},
+    {keyword__ENCODING__, &ripper_id_kw},
     {keyword_BEGIN,	&ripper_id_kw},
     {keyword_END,	&ripper_id_kw},
     {tAMPER,		&ripper_id_op},
