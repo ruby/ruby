@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  ruby/mvm.h -
+  ruby.h -
 
   $Author$
   created at: Sun 10 12:06:15 Jun JST 2007
@@ -17,7 +17,7 @@
 #define HAVE_RUBY_INTERN_H      1
 #define HAVE_RUBY_IO_H          1
 #define HAVE_RUBY_MISSING_H     1
-#define HAVE_RUBY_MVM_H         1
+#define HAVE_RUBY_VM_H          1
 #define HAVE_RUBY_NODE_H        1
 #define HAVE_RUBY_ONIGURUMA_H   1
 #define HAVE_RUBY_RE_H          1

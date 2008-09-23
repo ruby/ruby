@@ -1,3 +1,8 @@
+Tue Sep 23 16:55:11 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* ruby.h: fix comment and rename macro HAVE_RUBY_MVM_H to
+	  HAVE_RUBY_VM_H.
+
 Tue Sep 23 16:41:31 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/node.h, vm_core.h: move definition of
