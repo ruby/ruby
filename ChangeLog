@@ -1,3 +1,7 @@
+Tue Sep 23 21:45:02 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (copy_stream_body): use io_binwrite instead of io_fwrite.
+
 Tue Sep 23 21:31:16 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/ruby/test_rational2.rb: updated.

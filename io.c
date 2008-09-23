@@ -7464,7 +7464,7 @@ copy_stream_body(VALUE arg)
         rb_str_resize(str,len);
         read_buffered_data(RSTRING_PTR(str), len, src_fptr);
         if (dst_fptr) /* IO or filename */
-            io_fwrite(str, dst_fptr, 0);
+            io_binwrite(str, dst_fptr, 0);
         else /* others such as StringIO */
             rb_io_write(stp->dst, str);
         stp->total += len;
