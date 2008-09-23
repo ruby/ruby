@@ -1,3 +1,8 @@
+Tue Sep 23 23:39:25 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv/csv.rb:  Improved the idea of whitespace and word characters used
+	  in substitutions during header conversion as suggested by Michael Selig.
+
 Tue Sep 23 21:50:53 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_binwrite): allocate wbuf if nosync.

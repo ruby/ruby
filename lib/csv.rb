@@ -199,7 +199,7 @@ require "stringio"
 # 
 class CSV
   # The version of the installed library.
-  VERSION = "2.4.0".freeze
+  VERSION = "2.4.1".freeze
   
   # 
   # A CSV::Row is part Array and part Hash.  It retains an order for the fields
@@ -933,8 +933,8 @@ class CSV
   HeaderConverters = {
     :downcase => lambda { |h| h.encode(ConverterEncoding).downcase },
     :symbol   => lambda { |h|
-      h.encode(ConverterEncoding).
-        downcase.tr(" ", "_").delete("^a-z0-9_").to_sym
+      h.encode(ConverterEncoding).downcase.gsub(/\s+/, "_").
+                                           gsub(/\W+/, "").to_sym
     }
   }
   
