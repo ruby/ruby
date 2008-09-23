@@ -1,3 +1,11 @@
+Tue Sep 23 21:31:16 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/ruby/test_rational2.rb: updated.
+
+	* test/ruby/test_complex2.rb: added.
+
+	* test/ruby/test_complexrational.rb: added.
+
 Tue Sep 23 21:26:32 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_casecmp): make the ordering consistent with
