@@ -13,25 +13,21 @@ class Complex_Test < Test::Unit::TestCase
   end
 
   def test_compsub
-    c = ComplexSub.__send__(:new, 1)
-    cc = ComplexSub.__send__(:convert, 1)
+    c = ComplexSub.__send__(:convert, 1)
 
     assert_kind_of(Numeric, c)
-    assert_kind_of(Numeric, cc)
 
     if @unify
       assert_instance_of(Fixnum, c)
-      assert_instance_of(Fixnum, cc)
     else
       assert_instance_of(ComplexSub, c)
-      assert_instance_of(ComplexSub, cc)
 
       c2 = c + 1
       assert_instance_of(ComplexSub, c2)
       c2 = c - 1
       assert_instance_of(ComplexSub, c2)
 
-      c3 = c - c2
+      c3 = c - c
       assert_instance_of(ComplexSub, c3)
 
       s = Marshal.dump(c)
@@ -86,97 +82,43 @@ class Complex_Test < Test::Unit::TestCase
     assert_instance_of(String, c.to_s)
   end
 
-  def test_new_bang # no unify
-    assert_instance_of(Complex, Complex.__send__(:new!, 2,0))
-    assert_equal([2,0], Complex.__send__(:new!, 2,0).
-		 instance_eval{[real, imag]})
-    assert_equal([2,4], Complex.__send__(:new!, 2,4).
-		 instance_eval{[real, imag]})
-    assert_equal([-2,4], Complex.__send__(:new!, -2,4).
-		 instance_eval{[real, imag]})
-    assert_equal([2,-4], Complex.__send__(:new!, 2,-4).
-		 instance_eval{[real, imag]})
-    assert_equal([-2,-4], Complex.__send__(:new!, -2,-4).
-		 instance_eval{[real, imag]})
-
-    assert_equal([2,0], Complex.__send__(:new!, Complex(2)).
-		 instance_eval{[real, imag]})
-    assert_equal([2,3], Complex.__send__(:new!, Complex(2), Complex(3)).
-		 instance_eval{[real, imag]})
-    assert_equal([2,3], Complex.__send__(:new!, 2, Complex(3)).
-		 instance_eval{[real, imag]})
-
-    assert_equal([1.1,0], Complex.__send__(:new!, 1.1).
-		 instance_eval{[real, imag]})
-    assert_equal([-1.1,0], Complex.__send__(:new!, -1.1).
-		 instance_eval{[real, imag]})
-    assert_equal([1,0], Complex.__send__(:new!, '1').
-		 instance_eval{[real, imag]})
-    assert_equal([0,0], Complex.__send__(:new!, nil).
-		 instance_eval{[real, imag]})
-  end
-
-  def test_new
-    assert_instance_of(Complex, Complex.__send__(:new, 2,0.0))
-    if @unify
-      assert_instance_of(Fixnum, Complex.__send__(:new, 2,0))
-    else
-      assert_instance_of(Complex, Complex.__send__(:new, 2,0))
-      assert_equal([2,0], Complex.__send__(:new, 2,0). instance_eval{[real, imag]})
-    end
-    assert_equal([2,4], Complex.__send__(:new, 2,4).instance_eval{[real, imag]})
-    assert_equal([-2,4], Complex.__send__(:new, -2,4).instance_eval{[real, imag]})
-    assert_equal([2,-4], Complex.__send__(:new, 2,-4).instance_eval{[real, imag]})
-    assert_equal([-2,-4], Complex.__send__(:new, -2,-4).instance_eval{[real, imag]})
-
-    assert_raise(ArgumentError){Complex.__send__(:new, Complex(1,2),2)}
-    assert_raise(ArgumentError){Complex.__send__(:new, 2,Complex(1,2))}
-    assert_raise(ArgumentError){Complex.__send__(:new, Complex(1,2),Complex(1,2))}
-
-    assert_raise(ArgumentError){Complex.__send__(:new, '1')}
-    assert_raise(ArgumentError){Complex.__send__(:new, nil)}
-=begin
-    assert_raise(ArgumentError){Complex.__send__(:new, Complex(1))}
-=end
-  end
-
   def test_conv
     c = Complex(0,0)
-    assert_equal(Complex.__send__(:new, 0,0), c)
+    assert_equal(Complex(0,0), c)
 
     c = Complex(2**32, 2**32)
-    assert_equal(Complex.__send__(:new, 2**32,2**32), c)
+    assert_equal(Complex(2**32,2**32), c)
     assert_equal([2**32,2**32], [c.real,c.imag])
 
     c = Complex(-2**32, 2**32)
-    assert_equal(Complex.__send__(:new, -2**32,2**32), c)
+    assert_equal(Complex(-2**32,2**32), c)
     assert_equal([-2**32,2**32], [c.real,c.imag])
 
     c = Complex(2**32, -2**32)
-    assert_equal(Complex.__send__(:new, 2**32,-2**32), c)
+    assert_equal(Complex(2**32,-2**32), c)
     assert_equal([2**32,-2**32], [c.real,c.imag])
 
     c = Complex(-2**32, -2**32)
-    assert_equal(Complex.__send__(:new, -2**32,-2**32), c)
+    assert_equal(Complex(-2**32,-2**32), c)
     assert_equal([-2**32,-2**32], [c.real,c.imag])
 
     c = Complex(Complex(1,2),2)
-    assert_equal(Complex.__send__(:new, 1,4), c)
+    assert_equal(Complex(1,4), c)
 
     c = Complex(2,Complex(1,2))
-    assert_equal(Complex.__send__(:new, 0,1), c)
+    assert_equal(Complex(0,1), c)
 
     c = Complex(Complex(1,2),Complex(1,2))
-    assert_equal(Complex.__send__(:new, -1,3), c)
+    assert_equal(Complex(-1,3), c)
 
     c = Complex::I
-    assert_equal(Complex.__send__(:new, 0,1), c)
+    assert_equal(Complex(0,1), c)
 
-    assert_equal(Complex.__send__(:new, 1),Complex(1))
-    assert_equal(Complex.__send__(:new, 1),Complex('1'))
-    assert_equal(Complex.__send__(:new, 3.0,3.0),Complex('3.0','3.0'))
+    assert_equal(Complex(1),Complex(1))
+    assert_equal(Complex(1),Complex('1'))
+    assert_equal(Complex(3.0,3.0),Complex('3.0','3.0'))
     if @rational && !@keiju
-      assert_equal(Complex.__send__(:new, 1,1),Complex('3/3','3/3'))
+      assert_equal(Complex(1,1),Complex('3/3','3/3'))
     end
     assert_raise(ArgumentError){Complex(nil)}
     assert_raise(ArgumentError){Complex(Object.new)}
@@ -202,39 +144,39 @@ class Complex_Test < Test::Unit::TestCase
       assert_equal('-0.0', c.imag.to_s)
     end
 
-    c = Complex.__send__(:new, 4)
+    c = Complex(4)
 
     assert_equal(4, c.real)
     assert_equal(0, c.imag)
     assert_equal(c.imag, c.imaginary)
 
-    c = Complex.__send__(:new, 4,5)
+    c = Complex(4,5)
 
     assert_equal(4, c.real)
     assert_equal(5, c.imag)
     assert_equal(c.imag, c.imaginary)
 
     if -0.0.to_s == '-0.0'
-      c = Complex.__send__(:new, -0.0,-0.0)
+      c = Complex(-0.0,-0.0)
 
       assert_equal('-0.0', c.real.to_s)
       assert_equal('-0.0', c.imag.to_s)
       assert_equal(c.imag.to_s, c.imaginary.to_s)
     end
 
-    c = Complex.__send__(:new!, 4)
+    c = Complex(4)
 
     assert_equal(4, c.real)
     assert_equal(c.imag, c.imaginary)
     assert_equal(0, c.imag)
 
-    c = Complex.__send__(:new!, 4,5)
+    c = Complex(4,5)
 
     assert_equal(4, c.real)
     assert_equal(5, c.imag)
     assert_equal(c.imag, c.imaginary)
 
-    c = Complex.__send__(:new!, -0.0,-0.0)
+    c = Complex(-0.0,-0.0)
 
     assert_equal('-0.0', c.real.to_s)
     assert_equal('-0.0', c.imag.to_s)
@@ -535,16 +477,7 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_equal
     assert(Complex(1,0) == Complex(1))
-    assert(Complex(1,0) == Complex.__send__(:new, 1))
-    assert(Complex(1,0) == Complex.__send__(:new, 1,0))
-    assert(Complex(1,0) == Complex.__send__(:new!, 1))
-    assert(Complex(1,0) == Complex.__send__(:new!, 1,0))
-
     assert(Complex(-1,0) == Complex(-1))
-    assert(Complex(-1,0) == Complex.__send__(:new, -1))
-    assert(Complex(-1,0) == Complex.__send__(:new, -1,0))
-    assert(Complex(-1,0) == Complex.__send__(:new!, -1))
-    assert(Complex(-1,0) == Complex.__send__(:new!, -1,0))
 
     assert_equal(false, Complex(2,1) == Complex(1))
     assert_equal(true, Complex(2,1) != Complex(1))

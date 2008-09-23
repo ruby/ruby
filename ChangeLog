@@ -1,3 +1,14 @@
+Tue Sep 23 19:21:03 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_s_canonicalize_internal): does no apply
+	  canonicalization rule anymore.
+
+	* rational.c (nurat_s_canonicalize_internal(_no_reduce)?): ditto.
+
+	* complex.c: removed class method new! and new.
+
+	* rational.c: ditto.
+
 Tue Sep 23 18:24:34 2008  Tanaka Akira  <akr@fsij.org>
 
 	* hash.c (rb_obj_is_proc): declaration moved for rdoc.

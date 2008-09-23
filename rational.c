@@ -26,9 +26,9 @@
 
 VALUE rb_cRational;
 
-static ID id_Unify, id_abs, id_cmp, id_convert, id_equal_p, id_expt,
-    id_floor, id_format, id_hash, id_idiv, id_inspect, id_integer_p,
-    id_negate, id_to_f, id_to_i, id_to_s, id_truncate;
+static ID id_abs, id_cmp, id_convert, id_equal_p, id_expt, id_floor,
+    id_format, id_hash, id_idiv, id_inspect, id_integer_p, id_negate,
+    id_to_f, id_to_i, id_to_s, id_truncate;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -329,6 +329,7 @@ nurat_s_alloc(VALUE klass)
 
 #define rb_raise_zerodiv() rb_raise(rb_eZeroDivError, "divided by zero")
 
+#if 0
 static VALUE
 nurat_s_new_bang(int argc, VALUE *argv, VALUE klass)
 {
@@ -360,6 +361,7 @@ nurat_s_new_bang(int argc, VALUE *argv, VALUE klass)
 
     return nurat_s_new_internal(klass, num, den);
 }
+#endif
 
 inline static VALUE
 f_rational_new_bang1(VALUE klass, VALUE x)
@@ -418,8 +420,10 @@ nurat_s_canonicalize_internal(VALUE klass, VALUE num, VALUE den)
     num = f_idiv(num, gcd);
     den = f_idiv(den, gcd);
 
+#ifdef CANON
     if (f_one_p(den) && f_unify_p(klass))
 	return num;
+#endif
     return nurat_s_new_internal(klass, num, den);
 }
 
@@ -436,31 +440,12 @@ nurat_s_canonicalize_internal_no_reduce(VALUE klass, VALUE num, VALUE den)
 	break;
     }
 
+#ifdef CANON
     if (f_one_p(den) && f_unify_p(klass))
 	return num;
+#endif
     return nurat_s_new_internal(klass, num, den);
 }
-
-#if 0
-static VALUE
-nurat_s_canonicalize(int argc, VALUE *argv, VALUE klass)
-{
-    VALUE num, den;
-
-    switch (rb_scan_args(argc, argv, "11", &num, &den)) {
-      case 1:
-	num = nurat_int_value(num);
-	den = ONE;
-	break;
-      default:
-	num = nurat_int_value(num);
-	den = nurat_int_value(den);
-	break;
-    }
-
-    return nurat_s_canonicalize_internal(klass, num, den);
-}
-#endif
 
 static VALUE
 nurat_s_new(int argc, VALUE *argv, VALUE klass)
@@ -1481,7 +1466,6 @@ Init_Rational(void)
 
     assert(fprintf(stderr, "assert() is now active\n"));
 
-    id_Unify = rb_intern("Unify");
     id_abs = rb_intern("abs");
     id_cmp = rb_intern("<=>");
     id_convert = rb_intern("convert");
@@ -1507,6 +1491,7 @@ Init_Rational(void)
     rb_funcall(rb_cRational, rb_intern("private_class_method"), 1,
 	       ID2SYM(rb_intern("allocate")));
 
+#if 0
     rb_define_singleton_method(rb_cRational, "new!", nurat_s_new_bang, -1);
     rb_funcall(rb_cRational, rb_intern("private_class_method"), 1,
 	       ID2SYM(rb_intern("new!")));
@@ -1514,6 +1499,9 @@ Init_Rational(void)
     rb_define_singleton_method(rb_cRational, "new", nurat_s_new, -1);
     rb_funcall(rb_cRational, rb_intern("private_class_method"), 1,
 	       ID2SYM(rb_intern("new")));
+#else
+    rb_undef_method(CLASS_OF(rb_cRational), "new");
+#endif
 
     rb_define_global_function(RATIONAL_NAME, nurat_f_rational, -1);
 

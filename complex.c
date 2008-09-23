@@ -21,7 +21,7 @@
 
 VALUE rb_cComplex;
 
-static ID id_Unify, id_abs, id_abs2, id_arg, id_cmp, id_conj, id_convert,
+static ID id_abs, id_abs2, id_arg, id_cmp, id_conj, id_convert,
     id_denominator, id_divmod, id_equal_p, id_expt, id_floor, id_hash,
     id_idiv, id_inspect, id_negate, id_numerator, id_polar, id_quo,
     id_real_p, id_to_f, id_to_i, id_to_r, id_to_s;
@@ -281,6 +281,7 @@ nucomp_s_alloc(VALUE klass)
     return nucomp_s_new_internal(klass, ZERO, ZERO);
 }
 
+#if 0
 static VALUE
 nucomp_s_new_bang(int argc, VALUE *argv, VALUE klass)
 {
@@ -302,6 +303,7 @@ nucomp_s_new_bang(int argc, VALUE *argv, VALUE klass)
 
     return nucomp_s_new_internal(klass, real, imag);
 }
+#endif
 
 inline static VALUE
 f_complex_new_bang1(VALUE klass, VALUE x)
@@ -338,6 +340,7 @@ nucomp_real_check(VALUE num)
 inline static VALUE
 nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
 {
+#ifdef CANON
 #define CL_CANON
 #ifdef CL_CANON
     if (f_zero_p(imag) && k_exact_p(imag) && f_unify_p(klass))
@@ -346,7 +349,8 @@ nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
     if (f_zero_p(imag) && f_unify_p(klass))
 	return real;
 #endif
-    else if (f_real_p(real) && f_real_p(imag))
+#endif
+    if (f_real_p(real) && f_real_p(imag))
 	return nucomp_s_new_internal(klass, real, imag);
     else if (f_real_p(real)) {
 	get_dat1(imag);
@@ -370,27 +374,6 @@ nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
 				     f_add(adat->imag, bdat->real));
     }
 }
-
-#if 0
-static VALUE
-nucomp_s_canonicalize(int argc, VALUE *argv, VALUE klass)
-{
-    VALUE real, imag;
-
-    switch (rb_scan_args(argc, argv, "11", &real, &imag)) {
-      case 1:
-	nucomp_real_check(real);
-	imag = ZERO;
-	break;
-      default:
-	nucomp_real_check(real);
-	nucomp_real_check(imag);
-	break;
-    }
-
-    return nucomp_s_canonicalize_internal(klass, real, imag);
-}
-#endif
 
 static VALUE
 nucomp_s_new(int argc, VALUE *argv, VALUE klass)
@@ -1361,7 +1344,6 @@ Init_Complex(void)
 
     assert(fprintf(stderr, "assert() is now active\n"));
 
-    id_Unify = rb_intern("Unify");
     id_abs = rb_intern("abs");
     id_abs2 = rb_intern("abs2");
     id_arg = rb_intern("arg");
@@ -1392,6 +1374,7 @@ Init_Complex(void)
     rb_funcall(rb_cComplex, rb_intern("private_class_method"), 1,
 	       ID2SYM(rb_intern("allocate")));
 
+#if 0
     rb_define_singleton_method(rb_cComplex, "new!", nucomp_s_new_bang, -1);
     rb_funcall(rb_cComplex, rb_intern("private_class_method"), 1,
 	       ID2SYM(rb_intern("new!")));
@@ -1399,6 +1382,9 @@ Init_Complex(void)
     rb_define_singleton_method(rb_cComplex, "new", nucomp_s_new, -1);
     rb_funcall(rb_cComplex, rb_intern("private_class_method"), 1,
 	       ID2SYM(rb_intern("new")));
+#else
+    rb_undef_method(CLASS_OF(rb_cComplex), "new");
+#endif
 
     rb_define_singleton_method(rb_cComplex, "rectangular", nucomp_s_new, -1);
     rb_define_singleton_method(rb_cComplex, "rect", nucomp_s_new, -1);
