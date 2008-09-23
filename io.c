@@ -745,7 +745,7 @@ make_writeconv(rb_io_t *fptr)
 /* writing functions */
 
 static long
-io_binwrite(VALUE str, rb_io_t *fptr)
+io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
 {
     long len, n, r, l, offset = 0;
 
@@ -757,7 +757,7 @@ io_binwrite(VALUE str, rb_io_t *fptr)
         fptr->wbuf_capa = 8192;
         fptr->wbuf = ALLOC_N(char, fptr->wbuf_capa);
     }
-    if ((fptr->mode & (FMODE_SYNC|FMODE_TTY)) ||
+    if ((!nosync && (fptr->mode & (FMODE_SYNC|FMODE_TTY))) ||
         (fptr->wbuf && fptr->wbuf_capa <= fptr->wbuf_len + len)) {
         /* xxx: use writev to avoid double write if available */
         if (fptr->wbuf_len && fptr->wbuf_len+len <= fptr->wbuf_capa) {
@@ -811,8 +811,8 @@ io_binwrite(VALUE str, rb_io_t *fptr)
     return len;
 }
 
-static long
-io_fwrite(VALUE str, rb_io_t *fptr)
+static VALUE
+do_writeconv(VALUE str, rb_io_t *fptr)
 {
     if (NEED_WRITECONV(fptr)) {
         VALUE common_encoding = Qnil;
@@ -842,8 +842,14 @@ io_fwrite(VALUE str, rb_io_t *fptr)
             str = rb_econv_str_convert(fptr->writeconv, str, ECONV_PARTIAL_INPUT);
         }
     }
+    return str;
+}
 
-    return io_binwrite(str, fptr);
+static long
+io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
+{
+    str = do_writeconv(str, fptr);
+    return io_binwrite(str, fptr, nosync);
 }
 
 long
@@ -855,7 +861,34 @@ rb_io_fwrite(const char *ptr, long len, FILE *f)
     of.stdio_file = f;
     of.mode = FMODE_WRITABLE;
     of.pathv = Qnil;
-    return io_fwrite(rb_str_new(ptr, len), &of);
+    return io_fwrite(rb_str_new(ptr, len), &of, 0);
+}
+
+static VALUE
+io_write(VALUE io, VALUE str, int nosync)
+{
+    rb_io_t *fptr;
+    long n;
+    VALUE tmp;
+
+    rb_secure(4);
+    io = GetWriteIO(io);
+    str = rb_obj_as_string(str);
+    tmp = rb_io_check_io(io);
+    if (NIL_P(tmp)) {
+	/* port is not IO, call write method for it. */
+	return rb_funcall(io, id_write, 1, str);
+    }
+    io = tmp;
+    if (RSTRING_LEN(str) == 0) return INT2FIX(0);
+
+    GetOpenFile(io, fptr);
+    rb_io_check_writable(fptr);
+
+    n = io_fwrite(str, fptr, nosync);
+    if (n == -1L) rb_sys_fail_path(fptr->pathv);
+
+    return LONG2FIX(n);
 }
 
 /*
@@ -877,30 +910,9 @@ rb_io_fwrite(const char *ptr, long len, FILE *f)
  */
 
 static VALUE
-io_write(VALUE io, VALUE str)
+io_write_m(VALUE io, VALUE str)
 {
-    rb_io_t *fptr;
-    long n;
-    VALUE tmp;
-
-    rb_secure(4);
-    io = GetWriteIO(io);
-    str = rb_obj_as_string(str);
-    tmp = rb_io_check_io(io);
-    if (NIL_P(tmp)) {
-	/* port is not IO, call write method for it. */
-	return rb_funcall(io, id_write, 1, str);
-    }
-    io = tmp;
-    if (RSTRING_LEN(str) == 0) return INT2FIX(0);
-
-    GetOpenFile(io, fptr);
-    rb_io_check_writable(fptr);
-
-    n = io_fwrite(str, fptr);
-    if (n == -1L) rb_sys_fail_path(fptr->pathv);
-
-    return LONG2FIX(n);
+    return io_write(io, str, 0);
 }
 
 VALUE
@@ -5417,8 +5429,15 @@ void
 rb_p(VALUE obj) /* for debug print within C code */
 {
     VALUE str = rb_obj_as_string(rb_inspect(obj));
-    rb_str_buf_append(str, rb_default_rs);
-    rb_io_write(rb_stdout, str);
+    if (TYPE(rb_stdout) == T_FILE &&
+        rb_method_basic_definition_p(CLASS_OF(rb_stdout), id_write)) {
+        io_write(rb_stdout, str, 1);
+        io_write(rb_stdout, rb_default_rs, 0);
+    }
+    else {
+        rb_io_write(rb_stdout, str);
+        rb_io_write(rb_stdout, rb_default_rs);
+    }
 }
 
 /*
@@ -7445,7 +7464,7 @@ copy_stream_body(VALUE arg)
         rb_str_resize(str,len);
         read_buffered_data(RSTRING_PTR(str), len, src_fptr);
         if (dst_fptr) /* IO or filename */
-            io_fwrite(str, dst_fptr);
+            io_fwrite(str, dst_fptr, 0);
         else /* others such as StringIO */
             rb_io_write(stp->dst, str);
         stp->total += len;
@@ -8273,7 +8292,7 @@ Init_IO(void)
     rb_define_method(rb_cIO, "write_nonblock", rb_io_write_nonblock, 1);
     rb_define_method(rb_cIO, "readpartial",  io_readpartial, -1);
     rb_define_method(rb_cIO, "read",  io_read, -1);
-    rb_define_method(rb_cIO, "write", io_write, 1);
+    rb_define_method(rb_cIO, "write", io_write_m, 1);
     rb_define_method(rb_cIO, "gets",  rb_io_gets_m, -1);
     rb_define_method(rb_cIO, "readline",  rb_io_readline, -1);
     rb_define_method(rb_cIO, "getc",  rb_io_getc, 0);

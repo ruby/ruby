@@ -1,3 +1,12 @@
+Tue Sep 23 20:52:25 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_binwrite): add nosync argument.
+	  (do_writeconv): extracted from io_fwrite.
+	  (io_fwrite): add nosync argument.  use do_writeconv.
+	  (io_write): add nosync argument.
+	  (io_write_m): new function for IO#write.
+	  (rb_p): don't append record separator.
+
 Tue Sep 23 20:24:41 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* signal.c (signal_exec): fix to use rb_proc_call().
