@@ -13,7 +13,6 @@
 ************************************************/
 
 #include "ruby/ruby.h"
-#include "debug.h"
 
 /*
  * Document-class: Enumerator

@@ -2,6 +2,9 @@
  * load methods from eval.c
  */
 
+#include "ruby/ruby.h"
+#include "ruby/util.h"
+#include "dln.h"
 #include "eval_intern.h"
 
 VALUE ruby_dln_librefs;

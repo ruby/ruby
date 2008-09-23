@@ -18,34 +18,6 @@ typedef unsigned long dindex_t;
 typedef rb_num_t GENTRY;
 typedef rb_iseq_t *ISEQ;
 
-extern VALUE rb_cEnv;
-extern VALUE ruby_vm_global_state_version;
-extern VALUE ruby_vm_redefined_flag;
-
-
-/**
- * VM Debug Level
- *
- * debug level:
- *  0: no debug output
- *  1: show instruction name
- *  2: show stack frame when control stack frame is changed
- *  3: show stack status
- *  4: show register
- *  5:
- * 10: gc check
- */
-
-
-#ifndef VMDEBUG
-#define VMDEBUG 0
-#endif
-
-#if 0
-#undef  VMDEBUG
-#define VMDEBUG 3
-#endif
-
 #ifdef  COLLECT_USAGE_ANALYSIS
 #define USAGE_ANALYSIS_INSN(insn)           vm_analysis_insn(insn)
 #define USAGE_ANALYSIS_OPERAND(insn, n, op) vm_analysis_operand(insn, n, (VALUE)op)
@@ -199,25 +171,7 @@ default:                        \
 
 #endif
 
-
-/************************************************/
-/************************************************/
-
-#define VM_CFP_CNT(th, cfp) \
-  ((rb_control_frame_t *)(th->stack + th->stack_size) - (rb_control_frame_t *)(cfp))
 #define VM_SP_CNT(th, sp) ((sp) - (th)->stack)
-
-/*
-  env{
-    env[0] // special (block or prev env)
-    env[1] // env object
-    env[2] // prev env val
-  };
- */
-
-#define ENV_IN_HEAP_P(th, env)  \
-  (!((th)->stack < (env) && (env) < ((th)->stack + (th)->stack_size)))
-#define ENV_VAL(env)        ((env)[1])
 
 #if OPT_CALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \
@@ -229,29 +183,5 @@ default:                        \
 #endif
 
 #define SCREG(r) (reg_##r)
-
-/* VM state version */
-
-#define GET_VM_STATE_VERSION() (ruby_vm_global_state_version)
-#define INC_VM_STATE_VERSION() \
-  (ruby_vm_global_state_version = (ruby_vm_global_state_version+1) & 0x8fffffff)
-
-#define BOP_PLUS     0x01
-#define BOP_MINUS    0x02
-#define BOP_MULT     0x04
-#define BOP_DIV      0x08
-#define BOP_MOD      0x10
-#define BOP_EQ       0x20
-#define BOP_LT       0x40
-#define BOP_LE       0x80
-#define BOP_LTLT    0x100
-#define BOP_AREF    0x200
-#define BOP_ASET    0x400
-#define BOP_LENGTH  0x800
-#define BOP_SUCC   0x1000
-#define BOP_GT     0x2000
-#define BOP_GE     0x4000
-#define BOP_NOT    0x8000
-#define BOP_NEQ   0x10000
 
 #endif /* RUBY_VM_H */

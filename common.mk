@@ -71,7 +71,6 @@ COMMONOBJS    = array.$(OBJEXT) \
 		util.$(OBJEXT) \
 		variable.$(OBJEXT) \
 		version.$(OBJEXT) \
-		blockinlining.$(OBJEXT) \
 		compile.$(OBJEXT) \
 		debug.$(OBJEXT) \
 		iseq.$(OBJEXT) \
@@ -435,232 +434,133 @@ win32.$(OBJEXT): {$(VPATH)}win32.c
 
 ###
 
-RUBY_H_INCLUDES = {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
-		  {$(VPATH)}intern.h {$(VPATH)}missing.h
-ID_H_INCLUDES = {$(VPATH)}id.h {$(VPATH)}parse.h
+RUBY_H_INCLUDES    = {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
+		     {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}st.h
+ENCODING_H_INCLDUES= {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
+ID_H_INCLUDES      = {$(VPATH)}id.h {$(VPATH)}parse.h
+VM_CORE_H_INCLUDES = {$(VPATH)}vm_core.h {$(VPATH)}vm_opts.h \
+	             {$(VPATH)}vm.h {$(VPATH)}thread_$(THREAD_MODEL).h \
+		     {$(VPATH)}node.h $(ID_H_INCLUDES)
 
-array.$(OBJEXT): {$(VPATH)}array.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}util.h
-bignum.$(OBJEXT): {$(VPATH)}bignum.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h
-class.$(OBJEXT): {$(VPATH)}class.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}node.h {$(VPATH)}vm_core.h \
-  {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
-  {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}mvm.h {$(VPATH)}parse.h \
-  {$(VPATH)}parse.y
-compar.$(OBJEXT): {$(VPATH)}compar.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h
-complex.$(OBJEXT): {$(VPATH)}complex.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}mvm.h
-dir.$(OBJEXT): {$(VPATH)}dir.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}util.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
-dln.$(OBJEXT): {$(VPATH)}dln.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}dln.h
+array.$(OBJEXT): {$(VPATH)}array.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h
+bignum.$(OBJEXT): {$(VPATH)}bignum.c $(RUBY_H_INCLUDES)
+class.$(OBJEXT): {$(VPATH)}class.c $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES)
+compar.$(OBJEXT): {$(VPATH)}compar.c $(RUBY_H_INCLUDES)
+complex.$(OBJEXT): {$(VPATH)}complex.c $(RUBY_H_INCLUDES)
+dir.$(OBJEXT): {$(VPATH)}dir.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
+  $(ENCODING_H_INCLDUES)
+dln.$(OBJEXT): {$(VPATH)}dln.c {$(VPATH)}dln.h $(RUBY_H_INCLUDES)
 dmydln.$(OBJEXT): {$(VPATH)}dmydln.c dln.$(OBJEXT)
 dmyext.$(OBJEXT): {$(VPATH)}dmyext.c
-dmyencoding.$(OBJEXT): {$(VPATH)}dmyencoding.c {$(VPATH)}encoding.c \
-  $(RUBY_H_INCLUDES) {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}regenc.h {$(VPATH)}util.h
+dmyencoding.$(OBJEXT): {$(VPATH)}dmyencoding.c $(RUBY_H_INCLUDES) \
+  {$(VPATH)}regenc.h {$(VPATH)}util.h $(ENCODING_H_INCLDUES)
 encoding.$(OBJEXT): {$(VPATH)}encoding.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}regenc.h {$(VPATH)}util.h
-enum.$(OBJEXT): {$(VPATH)}enum.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
+  $(ENCODING_H_INCLDUES) {$(VPATH)}regenc.h {$(VPATH)}util.h
+enum.$(OBJEXT): {$(VPATH)}enum.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}node.h {$(VPATH)}util.h
 enumerator.$(OBJEXT): {$(VPATH)}enumerator.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}st.h {$(VPATH)}debug.h {$(VPATH)}node.h
-error.$(OBJEXT): {$(VPATH)}error.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}vm_core.h {$(VPATH)}node.h \
-  {$(VPATH)}debug.h {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) \
-  {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}mvm.h {$(VPATH)}parse.y
+  {$(VPATH)}node.h
+error.$(OBJEXT): {$(VPATH)}error.c $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES)
 eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}eval_intern.h \
-  $(RUBY_H_INCLUDES) {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}util.h \
-  {$(VPATH)}vm_core.h {$(VPATH)}debug.h \
-  {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) {$(VPATH)}thread_$(THREAD_MODEL).h \
-  {$(VPATH)}dln.h {$(VPATH)}eval_error.c {$(VPATH)}eval_safe.c \
-  {$(VPATH)}eval_jump.c {$(VPATH)}mvm.h {$(VPATH)}parse.y
+  $(RUBY_H_INCLUDES) {$(VPATH)}util.h $(VM_CORE_H_INCLUDES) \
+  {$(VPATH)}eval_error.c {$(VPATH)}eval_safe.c {$(VPATH)}eval_jump.c
 load.$(OBJEXT): {$(VPATH)}load.c {$(VPATH)}eval_intern.h \
-  $(RUBY_H_INCLUDES) {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}util.h \
-  {$(VPATH)}vm_core.h {$(VPATH)}debug.h \
-  {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) {$(VPATH)}thread_$(THREAD_MODEL).h \
-  {$(VPATH)}dln.h {$(VPATH)}mvm.h {$(VPATH)}parse.y
-file.$(OBJEXT): {$(VPATH)}file.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}io.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}util.h {$(VPATH)}dln.h
-gc.$(OBJEXT): {$(VPATH)}gc.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}node.h {$(VPATH)}re.h {$(VPATH)}regex.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}io.h {$(VPATH)}encoding.h \
-  {$(VPATH)}vm_core.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h \
-  $(ID_H_INCLUDES) {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}gc.h \
-  {$(VPATH)}eval_intern.h {$(VPATH)}util.h {$(VPATH)}mvm.h \
-  {$(VPATH)}parse.y {$(VPATH)}dln.h
-hash.$(OBJEXT): {$(VPATH)}hash.c $(RUBY_H_INCLUDES) $(ID_H_INCLUDES) \
-  {$(VPATH)}st.h {$(VPATH)}util.h \
-  {$(VPATH)}eval_intern.h {$(VPATH)}node.h {$(VPATH)}vm_core.h \
-  {$(VPATH)}mvm.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}parse.y \
-  {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}dln.h
-inits.$(OBJEXT): {$(VPATH)}inits.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h
-io.$(OBJEXT): {$(VPATH)}io.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}io.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}util.h {$(VPATH)}vm_core.h \
-  {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
-  {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}mvm.h {$(VPATH)}node.h \
-  {$(VPATH)}parse.h {$(VPATH)}parse.y
-main.$(OBJEXT): {$(VPATH)}main.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}mvm.h
-marshal.$(OBJEXT): {$(VPATH)}marshal.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}io.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}util.h
-math.$(OBJEXT): {$(VPATH)}math.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h
-numeric.$(OBJEXT): {$(VPATH)}numeric.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
-object.$(OBJEXT): {$(VPATH)}object.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}util.h {$(VPATH)}debug.h {$(VPATH)}node.h
-pack.$(OBJEXT): {$(VPATH)}pack.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h
+  {$(VPATH)}util.h $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES)
+file.$(OBJEXT): {$(VPATH)}file.c $(RUBY_H_INCLUDES) {$(VPATH)}io.h \
+  $(ENCODING_H_INCLDUES) {$(VPATH)}util.h {$(VPATH)}dln.h
+gc.$(OBJEXT): {$(VPATH)}gc.c $(RUBY_H_INCLUDES) \
+  {$(VPATH)}re.h {$(VPATH)}regex.h \
+  $(ENCODING_H_INCLDUES) $(VM_CORE_H_INCLUDES) \
+  {$(VPATH)}gc.h {$(VPATH)}io.h {$(VPATH)}eval_intern.h {$(VPATH)}util.h
+hash.$(OBJEXT): {$(VPATH)}hash.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
+  {$(VPATH)}eval_intern.h $(VM_CORE_H_INCLUDES)
+inits.$(OBJEXT): {$(VPATH)}inits.c $(RUBY_H_INCLUDES)
+io.$(OBJEXT): {$(VPATH)}io.c $(RUBY_H_INCLUDES) {$(VPATH)}io.h \
+  {$(VPATH)}util.h $(VM_CORE_H_INCLUDES) $(ENCODING_H_INCLDUES)
+main.$(OBJEXT): {$(VPATH)}main.c $(RUBY_H_INCLUDES) {$(VPATH)}vm.h
+marshal.$(OBJEXT): {$(VPATH)}marshal.c $(RUBY_H_INCLUDES) \
+  {$(VPATH)}io.h $(ENCODING_H_INCLDUES) {$(VPATH)}util.h
+math.$(OBJEXT): {$(VPATH)}math.c $(RUBY_H_INCLUDES)
+numeric.$(OBJEXT): {$(VPATH)}numeric.c $(RUBY_H_INCLUDES) $(ENCODING_H_INCLDUES)
+object.$(OBJEXT): {$(VPATH)}object.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h
+pack.$(OBJEXT): {$(VPATH)}pack.c $(RUBY_H_INCLUDES)
 parse.$(OBJEXT): {$(VPATH)}parse.c {$(VPATH)}parse.y $(RUBY_H_INCLUDES) \
-  {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h $(ID_H_INCLUDES) {$(VPATH)}regenc.h \
+  {$(VPATH)}node.h $(ENCODING_H_INCLDUES) $(ID_H_INCLUDES) {$(VPATH)}regenc.h \
   {$(VPATH)}regex.h {$(VPATH)}util.h {$(VPATH)}lex.c {$(VPATH)}keywords \
-  {$(VPATH)}debug.h {$(VPATH)}id.c
-proc.$(OBJEXT): {$(VPATH)}proc.c {$(VPATH)}eval_intern.h \
-  $(RUBY_H_INCLUDES) {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}util.h \
-  {$(VPATH)}vm_core.h {$(VPATH)}debug.h \
-  {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) {$(VPATH)}thread_$(THREAD_MODEL).h \
-  {$(VPATH)}dln.h {$(VPATH)}gc.h {$(VPATH)}mvm.h {$(VPATH)}parse.y
-process.$(OBJEXT): {$(VPATH)}process.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}vm_core.h {$(VPATH)}util.h {$(VPATH)}node.h \
-  {$(VPATH)}debug.h {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) \
-  {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}io.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}mvm.h {$(VPATH)}parse.y {$(VPATH)}dln.h
-random.$(OBJEXT): {$(VPATH)}random.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h
-range.$(OBJEXT): {$(VPATH)}range.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
-rational.$(OBJEXT): {$(VPATH)}rational.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}st.h {$(VPATH)}mvm.h
-re.$(OBJEXT): {$(VPATH)}re.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}re.h {$(VPATH)}regex.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}encoding.h {$(VPATH)}util.h {$(VPATH)}regint.h \
-  {$(VPATH)}regenc.h
-regcomp.$(OBJEXT): {$(VPATH)}regcomp.c {$(VPATH)}regparse.h \
-  {$(VPATH)}regint.h {$(VPATH)}config.h {$(VPATH)}defines.h \
-  {$(VPATH)}regenc.h {$(VPATH)}oniguruma.h {$(VPATH)}st.h {$(VPATH)}ruby.h \
-  {$(VPATH)}missing.h {$(VPATH)}intern.h
-regenc.$(OBJEXT): {$(VPATH)}regenc.c {$(VPATH)}regint.h \
-  {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}st.h {$(VPATH)}ruby.h \
-  {$(VPATH)}missing.h {$(VPATH)}intern.h
+  {$(VPATH)}id.c
+proc.$(OBJEXT): {$(VPATH)}proc.c {$(VPATH)}eval_intern.h  {$(VPATH)}util.h \
+  $(RUBY_H_INCLUDES) {$(VPATH)}gc.h $(VM_CORE_H_INCLUDES)
+process.$(OBJEXT): {$(VPATH)}process.c $(RUBY_H_INCLUDES) \
+  {$(VPATH)}util.h {$(VPATH)}io.h $(ENCODING_H_INCLDUES) \
+  {$(VPATH)}dln.h $(VM_CORE_H_INCLUDES)
+random.$(OBJEXT): {$(VPATH)}random.c $(RUBY_H_INCLUDES)
+range.$(OBJEXT): {$(VPATH)}range.c $(RUBY_H_INCLUDES) $(ENCODING_H_INCLDUES)
+rational.$(OBJEXT): {$(VPATH)}rational.c $(RUBY_H_INCLUDES)
+re.$(OBJEXT): {$(VPATH)}re.c $(RUBY_H_INCLUDES) \
+  {$(VPATH)}re.h {$(VPATH)}regex.h $(ENCODING_H_INCLDUES) \
+  {$(VPATH)}util.h {$(VPATH)}regint.h {$(VPATH)}regenc.h
+regcomp.$(OBJEXT): {$(VPATH)}regcomp.c {$(VPATH)}regparse.h {$(VPATH)}regint.h \
+  {$(VPATH)}regenc.h $(ENCODING_H_INCLDUES) $(RUBY_H_INCLUDES)
+regenc.$(OBJEXT): {$(VPATH)}regenc.c {$(VPATH)}regint.h {$(VPATH)}regenc.h \
+  $(ENCODING_H_INCLDUES) $(RUBY_H_INCLUDES)
 regerror.$(OBJEXT): {$(VPATH)}regerror.c {$(VPATH)}regint.h \
-  {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}st.h {$(VPATH)}ruby.h \
-  {$(VPATH)}missing.h {$(VPATH)}intern.h
+  {$(VPATH)}regenc.h $(ENCODING_H_INCLDUES) $(RUBY_H_INCLUDES)
 regexec.$(OBJEXT): {$(VPATH)}regexec.c {$(VPATH)}regint.h \
-  {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}st.h {$(VPATH)}ruby.h \
-  {$(VPATH)}missing.h {$(VPATH)}intern.h
+  {$(VPATH)}regenc.h $(ENCODING_H_INCLDUES) $(RUBY_H_INCLUDES)
 regparse.$(OBJEXT): {$(VPATH)}regparse.c {$(VPATH)}regparse.h \
-  {$(VPATH)}regint.h {$(VPATH)}config.h {$(VPATH)}defines.h \
-  {$(VPATH)}regenc.h {$(VPATH)}oniguruma.h {$(VPATH)}st.h {$(VPATH)}ruby.h \
-  {$(VPATH)}missing.h {$(VPATH)}intern.h
+  {$(VPATH)}regint.h {$(VPATH)}regenc.h $(ENCODING_H_INCLDUES) $(RUBY_H_INCLUDES)
 regsyntax.$(OBJEXT): {$(VPATH)}regsyntax.c {$(VPATH)}regint.h \
-  {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}st.h {$(VPATH)}ruby.h \
-  {$(VPATH)}missing.h {$(VPATH)}intern.h
-ruby.$(OBJEXT): {$(VPATH)}ruby.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}node.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}eval_intern.h {$(VPATH)}util.h \
-  {$(VPATH)}vm_core.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h \
-  $(ID_H_INCLUDES) {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}dln.h \
-  {$(VPATH)}mvm.h {$(VPATH)}parse.y
-signal.$(OBJEXT): {$(VPATH)}signal.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}node.h {$(VPATH)}vm_core.h \
-  {$(VPATH)}debug.h {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) \
-  {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}mvm.h {$(VPATH)}parse.y
-sprintf.$(OBJEXT): {$(VPATH)}sprintf.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}re.h {$(VPATH)}regex.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}encoding.h {$(VPATH)}vsnprintf.c
+  {$(VPATH)}regenc.h $(ENCODING_H_INCLDUES) $(RUBY_H_INCLUDES)
+ruby.$(OBJEXT): {$(VPATH)}ruby.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
+  $(ENCODING_H_INCLDUES) {$(VPATH)}eval_intern.h \
+  $(VM_CORE_H_INCLUDES) {$(VPATH)}dln.h
+signal.$(OBJEXT): {$(VPATH)}signal.c $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES)
+sprintf.$(OBJEXT): {$(VPATH)}sprintf.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h \
+  {$(VPATH)}regex.h {$(VPATH)}vsnprintf.c $(ENCODING_H_INCLDUES)
 st.$(OBJEXT): {$(VPATH)}st.c {$(VPATH)}config.h {$(VPATH)}defines.h \
   {$(VPATH)}st.h
-strftime.$(OBJEXT): {$(VPATH)}strftime.c {$(VPATH)}config.h \
-  {$(VPATH)}ruby.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h
-string.$(OBJEXT): {$(VPATH)}string.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}re.h {$(VPATH)}regex.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}encoding.h
-struct.$(OBJEXT): {$(VPATH)}struct.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h
+strftime.$(OBJEXT): {$(VPATH)}strftime.c $(RUBY_H_INCLDUES)
+string.$(OBJEXT): {$(VPATH)}string.c $(RUBY_H_INCLUDES) \
+  {$(VPATH)}re.h {$(VPATH)}regex.h $(ENCODING_H_INCLDUES)
+struct.$(OBJEXT): {$(VPATH)}struct.c $(RUBY_H_INCLUDES)
 thread.$(OBJEXT): {$(VPATH)}thread.c {$(VPATH)}eval_intern.h \
-  $(RUBY_H_INCLUDES) {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}util.h \
-  {$(VPATH)}vm_core.h {$(VPATH)}debug.h \
-  {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) {$(VPATH)}thread_$(THREAD_MODEL).h \
-  {$(VPATH)}dln.h {$(VPATH)}vm.h {$(VPATH)}gc.h \
-  {$(VPATH)}thread_$(THREAD_MODEL).c {$(VPATH)}mvm.h {$(VPATH)}parse.y
+  $(RUBY_H_INCLUDES) {$(VPATH)}util.h {$(VPATH)}gc.h $(VM_CORE_H_INCLUDES)
 transcode.$(OBJEXT): {$(VPATH)}transcode.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}transcode_data.h
-cont.$(OBJEXT): {$(VPATH)}cont.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}vm_core.h {$(VPATH)}node.h \
-  {$(VPATH)}debug.h {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) \
-  {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}gc.h \
-  {$(VPATH)}eval_intern.h {$(VPATH)}util.h {$(VPATH)}dln.h {$(VPATH)}mvm.h \
-  {$(VPATH)}parse.y
-time.$(OBJEXT): {$(VPATH)}time.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
-util.$(OBJEXT): {$(VPATH)}util.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}util.h
+  $(ENCODING_H_INCLDUES) {$(VPATH)}transcode_data.h
+cont.$(OBJEXT): {$(VPATH)}cont.c $(RUBY_H_INCLUDES) \
+  $(VM_CORE_H_INCLUDES) {$(VPATH)}gc.h {$(VPATH)}eval_intern.h
+time.$(OBJEXT): {$(VPATH)}time.c $(RUBY_H_INCLUDES) $(ENCODING_H_INCLDUES)
+util.$(OBJEXT): {$(VPATH)}util.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h
 variable.$(OBJEXT): {$(VPATH)}variable.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}util.h
-version.$(OBJEXT): {$(VPATH)}version.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
+  {$(VPATH)}node.h {$(VPATH)}util.h
+version.$(OBJEXT): {$(VPATH)}version.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}version.h $(srcdir)/revision.h
 
-compile.$(OBJEXT): {$(VPATH)}compile.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}node.h {$(VPATH)}vm_core.h \
-  {$(VPATH)}debug.h {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) \
-  {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}compile.h \
-  {$(VPATH)}insns.inc {$(VPATH)}insns_info.inc {$(VPATH)}optinsn.inc \
-  {$(VPATH)}mvm.h {$(VPATH)}parse.y
-iseq.$(OBJEXT): {$(VPATH)}iseq.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}node.h {$(VPATH)}gc.h {$(VPATH)}vm_core.h \
-  {$(VPATH)}debug.h {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) \
-  {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}insns.inc \
-  {$(VPATH)}insns_info.inc {$(VPATH)}node_name.inc {$(VPATH)}mvm.h \
-  {$(VPATH)}parse.y
-vm.$(OBJEXT): {$(VPATH)}vm.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}node.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}gc.h {$(VPATH)}insnhelper.h {$(VPATH)}eval_intern.h \
-  {$(VPATH)}util.h {$(VPATH)}vm_core.h \
-  {$(VPATH)}debug.h {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) \
-  {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}dln.h {$(VPATH)}vm.h \
-  {$(VPATH)}vm_insnhelper.c {$(VPATH)}insns.inc {$(VPATH)}vm_evalbody.c \
-  {$(VPATH)}vmtc.inc {$(VPATH)}vm.inc {$(VPATH)}insns.def \
-  {$(VPATH)}vm_method.c {$(VPATH)}vm_eval.c {$(VPATH)}mvm.h \
-  {$(VPATH)}parse.y
-vm_dump.$(OBJEXT): {$(VPATH)}vm_dump.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}node.h {$(VPATH)}vm_core.h \
-  {$(VPATH)}debug.h {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) \
-  {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}vm.h {$(VPATH)}mvm.h \
-  {$(VPATH)}parse.y
-debug.$(OBJEXT): {$(VPATH)}debug.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h {$(VPATH)}debug.h \
-  {$(VPATH)}node.h {$(VPATH)}vm_core.h \
-  {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) {$(VPATH)}thread_$(THREAD_MODEL).h \
-  {$(VPATH)}util.h {$(VPATH)}eval_intern.h {$(VPATH)}mvm.h \
-  {$(VPATH)}parse.y {$(VPATH)}dln.h
-blockinlining.$(OBJEXT): {$(VPATH)}blockinlining.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}vm_core.h \
-  {$(VPATH)}debug.h {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) \
-  {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}mvm.h {$(VPATH)}parse.y
-id.$(OBJEXT): {$(VPATH)}id.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}st.h $(ID_H_INCLUDES)
+compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}compile.h \
+  $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) \
+  {$(VPATH)}insns.inc {$(VPATH)}insns_info.inc {$(VPATH)}optinsn.inc
+iseq.$(OBJEXT): {$(VPATH)}iseq.c {$(VPATH)}gc.h \
+  $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) \
+  {$(VPATH)}insns.inc {$(VPATH)}insns_info.inc {$(VPATH)}node_name.inc
+vm.$(OBJEXT): {$(VPATH)}vm.c $(RUBY_H_INCLUDES) $(ENCODING_H_INCLDUES) \
+  {$(VPATH)}gc.h {$(VPATH)}eval_intern.h  $(VM_CORE_H_INCLUDES) \
+  {$(VPATH)}vm_method.c {$(VPATH)}vm_eval.c \
+  {$(VPATH)}vm_insnhelper.c {$(VPATH)}vm_insnhelper.h \
+  {$(VPATH)}vm_exec.c {$(VPATH)}vm_exec.h \
+  {$(VPATH)}insns.def {$(VPATH)}vmtc.inc {$(VPATH)}vm.inc {$(VPATH)}insns.inc
+vm_dump.$(OBJEXT): {$(VPATH)}vm_dump.c $(RUBY_H_INCLUDES) \
+  $(VM_CORE_H_INCLUDES)
+debug.$(OBJEXT): {$(VPATH)}debug.c $(RUBY_H_INCLUDES) $(ENCODING_H_INCLDUES) \
+  $(VM_CORE_H_INCLUDES) {$(VPATH)}eval_intern.h
+id.$(OBJEXT): {$(VPATH)}id.c $(RUBY_H_INCLUDES) $(ID_H_INCLUDES)
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}st.h {$(VPATH)}vm_core.h {$(VPATH)}node.h \
-  {$(VPATH)}debug.h {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) \
-  {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}mvm.h {$(VPATH)}parse.y
-prelude.$(OBJEXT): {$(VPATH)}prelude.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}vm_core.h {$(VPATH)}node.h \
-  {$(VPATH)}debug.h {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) \
-  {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}mvm.h {$(VPATH)}parse.y
-golf_prelude.$(OBJEXT): {$(VPATH)}golf_prelude.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}st.h {$(VPATH)}vm_core.h {$(VPATH)}node.h \
-  {$(VPATH)}debug.h {$(VPATH)}vm_opts.h $(ID_H_INCLUDES) \
-  {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}mvm.h {$(VPATH)}parse.y
+  $(VM_CORE_H_INCLUDES)
+prelude.$(OBJEXT): {$(VPATH)}prelude.c $(RUBY_H_INCLUDES) \
+  $(VM_CORE_H_INCLUDES)
+golf_prelude.$(OBJEXT): {$(VPATH)}golf_prelude.c $(RUBY_H_INCLUDES)\
+   $(VM_CORE_H_INCLUDES)
 goruby.$(OBJEXT): {$(VPATH)}goruby.c {$(VPATH)}main.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}st.h {$(VPATH)}mvm.h
+  {$(VPATH)}vm.h
 
 ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}oniguruma.h
@@ -811,6 +711,12 @@ dist: $(PREP) $(PROGRAM)
 up:
 	@$(VCS) up "$(srcdir)"
 	-@$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(srcdir)/revision.h"
+
+depends: PHONY
+	gcc $(XCFLAGS) -MM $(srcdir)/*.c > depends.txt
+
+vm_test.o: vm_test.c $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) \
+  vm_exec.c vm_insnhelper.c vm_insnhelper.h
 
 help: PHONY
 	@echo "                Makefile of Ruby"

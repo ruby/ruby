@@ -17,7 +17,7 @@
 #include <setjmp.h>
 
 #include "ruby/ruby.h"
-#include "ruby/mvm.h"
+#include "ruby/vm.h"
 #include "ruby/st.h"
 #include "ruby/node.h"
 
@@ -402,7 +402,7 @@ struct rb_unblock_callback {
 
 struct rb_mutex_struct;
 
-struct rb_thread_struct
+typedef struct rb_thread_struct
 {
     VALUE self;
     rb_vm_t *vm;
@@ -501,7 +501,7 @@ struct rb_thread_struct
     /* misc */
     int method_missing_reason;
     int abort_on_exception;
-};
+} rb_thread_t;
 
 /* iseq.c */
 VALUE rb_iseq_new(NODE*, VALUE, VALUE, VALUE, VALUE);

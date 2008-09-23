@@ -1,3 +1,38 @@
+Tue Sep 23 09:20:00 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: clean up
+	  - remove blockinlining.$(OBJEXT) to built
+	  - make ENCODING_H_INCLDUES variable (include/ruby/encoding.h)
+	  - make VM_CORE_H_INCLUDES variable (vm_core.h)
+	  - simplify rules.
+	  - make depends rule to output depend status using gcc -MM.
+
+	* include/ruby/mvm.h, include/ruby/vm.h: rename mvm.h to vm.h.
+
+	* include/ruby.h: ditto.
+
+	* load.c: add inclusion explicitly.
+
+	* enumerator.c, object.c, parse.y, thread.c, vm_dump.c:
+	  remove useless inclusion.
+
+	* eval_intern.h: cleanup inclusion.
+
+	* vm_core.h: rb_thread_t should be defined in this file.
+
+	* vm_evalbody.c, vm_exec.c: rename vm_evalbody.c to vm_exec.c.
+
+	* vm.h, vm_exec.h: rename vm.h to vm_exec.h.
+
+	* insnhelper.h, vm_insnhelper.h: rename insnhelper.h to vm_insnhelper.h.
+
+	* vm.c, vm_insnhelper.c, vm_insnhelper.h:
+	  - rename vm_eval() to vm_exec_core().
+	  - rename vm_eval_body() to vm_exec().
+	  - cleanup include order.
+
+	* vm_method.c: fix comment.
+
 Tue Sep 23 09:01:15 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/pathname.rb (each_filename): return Enumerator if no block

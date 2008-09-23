@@ -12,11 +12,54 @@
 #ifndef RUBY_INSNHELPER_H
 #define RUBY_INSNHELPER_H
 
-#include "ruby/ruby.h"
-#include "ruby/node.h"
-#include "eval_intern.h"
-#include "vm_core.h"
-#include "vm.h"
+/**
+ * VM Debug Level
+ *
+ * debug level:
+ *  0: no debug output
+ *  1: show instruction name
+ *  2: show stack frame when control stack frame is changed
+ *  3: show stack status
+ *  4: show register
+ *  5:
+ * 10: gc check
+ */
+
+#ifndef VMDEBUG
+#define VMDEBUG 0
+#endif
+
+#if 0
+#undef  VMDEBUG
+#define VMDEBUG 3
+#endif
+
+/* VM state version */
+
+extern VALUE ruby_vm_global_state_version;
+extern VALUE ruby_vm_redefined_flag;
+
+#define GET_VM_STATE_VERSION() (ruby_vm_global_state_version)
+#define INC_VM_STATE_VERSION() \
+  (ruby_vm_global_state_version = (ruby_vm_global_state_version+1) & 0x8fffffff)
+
+#define BOP_PLUS     0x01
+#define BOP_MINUS    0x02
+#define BOP_MULT     0x04
+#define BOP_DIV      0x08
+#define BOP_MOD      0x10
+#define BOP_EQ       0x20
+#define BOP_LT       0x40
+#define BOP_LE       0x80
+#define BOP_LTLT    0x100
+#define BOP_AREF    0x200
+#define BOP_ASET    0x400
+#define BOP_LENGTH  0x800
+#define BOP_SUCC   0x1000
+#define BOP_GT     0x2000
+#define BOP_GE     0x4000
+#define BOP_NOT    0x8000
+#define BOP_NEQ   0x10000
 
 /**********************************************************/
 /* deal with stack                                        */

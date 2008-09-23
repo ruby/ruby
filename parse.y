@@ -8725,7 +8725,6 @@ local_tbl_gen(struct parser_params *parser)
     return buf;
 }
 
-#include "debug.h"
 static int
 arg_var_gen(struct parser_params *parser, ID id)
 {

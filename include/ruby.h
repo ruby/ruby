@@ -31,9 +31,5 @@
 #endif
 
 #include "ruby/ruby.h"
-#if RUBY_VM
-#include "ruby/mvm.h"
-#endif
 
-extern void ruby_set_debug_option(const char *);
 #endif /* RUBY_H */

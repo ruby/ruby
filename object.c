@@ -14,7 +14,6 @@
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
-#include "debug.h"
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>

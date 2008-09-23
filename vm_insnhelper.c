@@ -10,11 +10,9 @@
 
 /* finish iseq array */
 #include "insns.inc"
-
 #include <math.h>
 
 /* control stack frame */
-
 
 #ifndef INLINE
 #define INLINE inline
@@ -967,6 +965,36 @@ vm_get_cref(const rb_iseq_t *iseq, const VALUE *lfp, const VALUE *dfp)
     return cref;
 }
 
+static NODE *
+vm_cref_push(rb_thread_t *th, VALUE klass, int noex)
+{
+    rb_control_frame_t *cfp = vm_get_ruby_level_caller_cfp(th, th->cfp);
+    NODE *cref = NEW_BLOCK(klass);
+    cref->nd_file = 0;
+    cref->nd_visi = noex;
+
+    if (cfp) {
+	cref->nd_next = vm_get_cref(cfp->iseq, cfp->lfp, cfp->dfp);
+    }
+
+    return cref;
+}
+
+static inline VALUE
+vm_get_cbase(const rb_iseq_t *iseq, const VALUE *lfp, const VALUE *dfp)
+{
+    NODE *cref = vm_get_cref(iseq, lfp, dfp);
+    VALUE klass = Qundef;
+
+    while (cref) {
+	if ((klass = cref->nd_clss) != 0) {
+	    break;
+	}
+	cref = cref->nd_next;
+    }
+
+    return klass;
+}
 
 static inline void
 vm_check_if_namespace(VALUE klass)

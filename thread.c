@@ -45,7 +45,6 @@
 /* for model 2 */
 
 #include "eval_intern.h"
-#include "vm.h"
 #include "gc.h"
 
 #ifndef USE_NATIVE_THREAD_PRIORITY

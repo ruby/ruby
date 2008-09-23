@@ -25,9 +25,17 @@
 #endif
 /* #define DECL_SC_REG(r, reg) VALUE reg_##r */
 
+#if OPT_STACK_CACHING
+static VALUE finish_insn_seq[1] = { BIN(finish_SC_ax_ax) };
+#elif OPT_CALL_THREADED_CODE
+static VALUE const finish_insn_seq[1] = { 0 };
+#else
+static VALUE finish_insn_seq[1] = { BIN(finish) };
+#endif
+
 #if !OPT_CALL_THREADED_CODE
 static VALUE
-vm_eval(rb_thread_t *th, VALUE initial)
+vm_exec_core(rb_thread_t *th, VALUE initial)
 {
 
 #if OPT_STACK_CACHING
@@ -104,19 +112,25 @@ vm_eval(rb_thread_t *th, VALUE initial)
     goto first;
 }
 
+const void **
+vm_get_insns_address_table(void)
+{
+    return (const void **)vm_exec_core(0, 0);
+}
+
 #else
 
 #include "vm.inc"
 #include "vmtc.inc"
 
 const void *const *
-get_insns_address_table()
+vm_get_insns_address_table(void)
 {
     return insns_address_table;
 }
 
-VALUE
-vm_eval(rb_thread_t *th, VALUE initial)
+static VALUE
+vm_exec_core(rb_thread_t *th, VALUE initial)
 {
     register rb_control_frame_t *reg_cfp = th->cfp;
     VALUE ret;
@@ -140,9 +154,3 @@ vm_eval(rb_thread_t *th, VALUE initial)
     return ret;
 }
 #endif
-
-const void **
-vm_get_insns_address_table(void)
-{
-    return (const void **)vm_eval(0, 0);
-}

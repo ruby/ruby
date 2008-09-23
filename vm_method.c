@@ -1,6 +1,5 @@
-/* -*-c-*- */
 /*
- * This file is included by vm_eval.c
+ * This file is included by vm.h
  */
 
 #define CACHE_SIZE 0x800

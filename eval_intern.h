@@ -2,6 +2,8 @@
 #ifndef RUBY_EVAL_INTERN_H
 #define RUBY_EVAL_INTERN_H
 
+#include "vm_core.h"
+
 #define PASS_PASSED_BLOCK_TH(th) do { \
     (th)->passed_block = GC_GUARDED_PTR_REF((rb_block_t *)(th)->cfp->lfp[0]); \
     (th)->cfp->flag |= VM_FRAME_FLAG_PASSED; \
@@ -11,11 +13,6 @@
     rb_thread_t * const __th__ = GET_THREAD(); \
     PASS_PASSED_BLOCK_TH(__th__); \
 } while (0)
-
-#include "ruby/ruby.h"
-#include "ruby/node.h"
-#include "ruby/util.h"
-#include "vm_core.h"
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
@@ -29,9 +26,6 @@
 
 #include <stdio.h>
 #include <setjmp.h>
-
-#include "ruby/st.h"
-#include "dln.h"
 
 #ifdef __APPLE__
 #include <crt_externs.h>
