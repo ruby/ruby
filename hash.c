@@ -1820,6 +1820,13 @@ extern char **environ;
 #define GET_ENVIRON(e) (e)
 #define FREE_ENVIRON(e)
 #endif
+#ifdef ENV_IGNORECASE
+#define ENVMATCH(s1, s2) (strcasecmp(s1, s2) == 0)
+#define ENVNMATCH(s1, s2, n) (strncasecmp(s1, s2, n) == 0)
+#else
+#define ENVMATCH(n1, n2) (strcmp(n1, n2) == 0)
+#define ENVNMATCH(s1, s2, n) (memcmp(s1, s2, n) == 0)
+#endif
 
 static VALUE
 env_str_new(ptr, len)
@@ -1857,12 +1864,7 @@ env_delete(obj, name)
 	VALUE value = env_str_new2(val);
 
 	ruby_setenv(nam, 0);
-#ifdef ENV_IGNORECASE
-	if (strcasecmp(nam, PATH_ENV) == 0)
-#else
-	if (strcmp(nam, PATH_ENV) == 0)
-#endif
-	{
+	if (ENVMATCH(nam, PATH_ENV)) {
 	    path_tainted = 0;
 	}
 	return value;
@@ -1895,12 +1897,7 @@ rb_f_getenv(obj, name)
     }
     env = getenv(nam);
     if (env) {
-#ifdef ENV_IGNORECASE
-	if (strcasecmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
-#else
-	if (strcmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
-#endif
-	{
+	if (ENVMATCH(nam, PATH_ENV) && !rb_env_path_tainted()) {
 	    VALUE str = rb_str_new2(env);
 
 	    rb_obj_freeze(str);
@@ -1939,11 +1936,7 @@ env_fetch(argc, argv)
 	}
 	return if_none;
     }
-#ifdef ENV_IGNORECASE
-    if (strcasecmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
-#else
-    if (strcmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
-#endif
+    if (ENVMATCH(nam, PATH_ENV) && !rb_env_path_tainted())
 	return rb_str_new2(env);
     return env_str_new2(env);
 }
@@ -1974,13 +1967,7 @@ envix(nam)
 
     env = GET_ENVIRON(environ);
     for (i = 0; env[i]; i++) {
-	if (
-#ifdef ENV_IGNORECASE
-	    strncasecmp(env[i],nam,len) == 0
-#else
-	    memcmp(env[i],nam,len) == 0
-#endif
-	    && env[i][len] == '=')
+	if (ENVNMATCH(env[i],nam,len) && env[i][len] == '=')
 	    break;			/* memcmp must come first to avoid */
     }					/* potential SEGV's */
     FREE_ENVIRON(environ);
@@ -2102,11 +2089,7 @@ env_aset(obj, nm, val)
 	rb_raise(rb_eArgError, "bad environment variable value");
 
     ruby_setenv(name, value);
-#ifdef ENV_IGNORECASE
-    if (strcasecmp(name, PATH_ENV) == 0) {
-#else
-    if (strcmp(name, PATH_ENV) == 0) {
-#endif
+    if (ENVMATCH(name, PATH_ENV)) {
 	if (OBJ_TAINTED(val)) {
 	    /* already tainted, no check */
 	    path_tainted = 1;
