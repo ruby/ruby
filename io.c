@@ -751,7 +751,7 @@ io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
 
     len = RSTRING_LEN(str);
     if ((n = len) <= 0) return n;
-    if (fptr->wbuf == NULL && !(fptr->mode & FMODE_SYNC)) {
+    if (fptr->wbuf == NULL && !(!nosync && (fptr->mode & FMODE_SYNC))) {
         fptr->wbuf_off = 0;
         fptr->wbuf_len = 0;
         fptr->wbuf_capa = 8192;

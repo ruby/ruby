@@ -1,3 +1,7 @@
+Tue Sep 23 21:50:53 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_binwrite): allocate wbuf if nosync.
+
 Tue Sep 23 21:45:02 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (copy_stream_body): use io_binwrite instead of io_fwrite.
