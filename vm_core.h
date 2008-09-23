@@ -125,12 +125,6 @@ typedef struct rb_compile_option_struct {
 #define GetISeqPtr(obj, ptr) \
   GetCoreDataFromValue(obj, rb_iseq_t, ptr)
 
-typedef struct rb_iseq_profile_struct {
-    VALUE count;
-    VALUE time_self;
-    VALUE time_cumu; /* cumulative */
-} rb_iseq_profile_t;
-
 struct rb_iseq_struct;
 
 struct rb_iseq_struct {
@@ -221,7 +215,6 @@ struct rb_iseq_struct {
 
     /* misc */
     ID defined_method_id;	/* for define_method */
-    rb_iseq_profile_t profile;
 
     /* used at compile time */
     struct iseq_compile_data *compile_data;
@@ -299,8 +292,6 @@ typedef struct {
     VALUE proc;			/* cfp[9] / block[4] */
     ID method_id;               /* cfp[10] saved in special case */
     VALUE method_class;         /* cfp[11] saved in special case */
-    VALUE prof_time_self;       /* cfp[12] */
-    VALUE prof_time_chld;       /* cfp[13] */
 } rb_control_frame_t;
 
 typedef struct rb_block_struct {
