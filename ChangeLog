@@ -1,3 +1,7 @@
+Wed Sep 24 04:07:07 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* signal.c (signal_exec): execute rb_eval_cmd() directly.
+
 Wed Sep 24 03:08:58 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/uri/mailto.rb: fix indentation.

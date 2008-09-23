@@ -565,13 +565,8 @@ sigpipe(int sig)
 static void
 signal_exec(VALUE cmd, int safe, int sig)
 {
-    VALUE signumary = rb_ary_new3(1, INT2FIX(sig));
-
-    if (TYPE(cmd) == T_STRING) {
-	rb_eval_cmd(cmd, signumary, safe);
-	return;
-    }
-    rb_proc_call(cmd, signumary);
+    VALUE signum = INT2NUM(sig);
+    rb_eval_cmd(cmd, rb_ary_new3(1, signum), safe);
 }
 
 void
