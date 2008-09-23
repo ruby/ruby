@@ -612,6 +612,8 @@ rb_hash_default_proc(VALUE hash)
     return Qnil;
 }
 
+VALUE rb_obj_is_proc(VALUE proc);
+
 /*
  *  call-seq:
  *     hsh.default_proc = proc_obj     => proc_obj
@@ -624,8 +626,6 @@ rb_hash_default_proc(VALUE hash)
  *     h[2]       #=> 4
  *     h["cat"]   #=> "catcat"
  */
-
-VALUE rb_obj_is_proc(VALUE proc);
 
 static VALUE
 rb_hash_set_default_proc(VALUE hash, VALUE proc)

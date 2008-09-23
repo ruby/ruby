@@ -1,3 +1,7 @@
+Tue Sep 23 18:24:34 2008  Tanaka Akira  <akr@fsij.org>
+
+	* hash.c (rb_obj_is_proc): declaration moved for rdoc.
+
 Tue Sep 23 18:07:55 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk (io.o): remove dependency for vm_core.h.
