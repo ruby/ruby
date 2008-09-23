@@ -1,3 +1,7 @@
+Tue Sep 23 19:50:24 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (subtruct): check tv_sec.
+
 Tue Sep 23 19:30:41 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (filetime_to_timeval): new function, split from
