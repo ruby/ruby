@@ -2975,16 +2975,14 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 
 #include <sys/timeb.h>
 
-int _cdecl
-gettimeofday(struct timeval *tv, struct timezone *tz)
+static int
+filetime_to_timeval(const FILETIME* ft, struct timeval *tv)
 {
-    FILETIME ft;
     ULARGE_INTEGER tmp;
     unsigned LONG_LONG lt;
 
-    GetSystemTimeAsFileTime(&ft);
-    tmp.LowPart = ft.dwLowDateTime;
-    tmp.HighPart = ft.dwHighDateTime;
+    tmp.LowPart = ft->dwLowDateTime;
+    tmp.HighPart = ft->dwHighDateTime;
     lt = tmp.QuadPart;
 
     /* lt is now 100-nanosec intervals since 1601/01/01 00:00:00 UTC,
@@ -2996,6 +2994,17 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
 
     tv->tv_sec = lt / (1000 * 1000);
     tv->tv_usec = lt % (1000 * 1000);
+
+    return tv->tv_sec > 0 ? 0 : -1;
+}
+
+int _cdecl
+gettimeofday(struct timeval *tv, struct timezone *tz)
+{
+    FILETIME ft;
+
+    GetSystemTimeAsFileTime(&ft);
+    filetime_to_timeval(&ft, tv);
 
     return 0;
 }
@@ -3270,27 +3279,12 @@ isUNCRoot(const char *path)
 static time_t
 filetime_to_unixtime(const FILETIME *ft)
 {
-    FILETIME loc;
-    SYSTEMTIME st;
-    struct tm tm;
-    time_t t;
+    struct timeval tv;
 
-    if (!FileTimeToLocalFileTime(ft, &loc)) {
+    if (filetime_to_timeval(ft, &tv) == (time_t)-1)
 	return 0;
-    }
-    if (!FileTimeToSystemTime(&loc, &st)) {
-	return 0;
-    }
-    memset(&tm, 0, sizeof(tm));
-    tm.tm_year = st.wYear - 1900;
-    tm.tm_mon = st.wMonth - 1;
-    tm.tm_mday = st.wDay;
-    tm.tm_hour = st.wHour;
-    tm.tm_min = st.wMinute;
-    tm.tm_sec = st.wSecond;
-    tm.tm_isdst = -1;
-    t = mktime(&tm);
-    return t == -1 ? 0 : t;
+    else
+	return tv.tv_sec;
 }
 
 static unsigned
