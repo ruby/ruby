@@ -1,3 +1,9 @@
+Wed Sep 24 06:41:24 2008  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/test/*: removed test/unit.
+	* lib/test/*: added miniunit.
+	* lib/mini/*: ditto.
+
 Wed Sep 24 04:45:35 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/node.h, node.h: move node.h from include path.
