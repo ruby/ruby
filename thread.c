@@ -952,9 +952,10 @@ rb_thread_schedule(void)
  *   If another thread interrupts this thread (Thread#kill, signal deliverly,
  *   VM-shutdown request, and so on), `ubf()' is called (`ubf()' means
  *   "un-blocking function").  `ubf()' should interrupt `func()' execution.
+ *
  *   There are built-in ubfs and you can specify these ubfs.
  *   However, we can not guarantee our built-in ubfs interrupt
- *   your `func()' correctly.  Becareful to use rb_thread_blocking_region().
+ *   your `func()' correctly.  Be careful to use rb_thread_blocking_region().
  *
  *     * RUBY_UBF_IO: ubf for IO operation
  *     * RUBY_UBF_PROCESS: ubf for process operation
