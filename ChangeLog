@@ -1,3 +1,7 @@
+Tue Sep 23 15:30:53 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk, hash.c: remove unused inclusion.
+
 Tue Sep 23 09:52:07 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_safe.c, safe.c: rename eval_safe.c to safe.c.
