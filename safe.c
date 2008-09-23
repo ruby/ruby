@@ -1,7 +1,13 @@
-/* -*-c-*- */
-/*
- * This file is included by eval.c
- */
+/**********************************************************************
+
+  eval.c -
+
+  $Author$
+  created at: Tue Sep 23 09:44:32 JST 2008
+
+  Copyright (C) 2008 Yukihiro Matsumoto
+
+**********************************************************************/
 
 /* safe-level:
    0 - strings from streams/environment/ARGV are tainted (default)
@@ -12,6 +18,9 @@
 */
 
 #define SAFE_LEVEL_MAX 4
+
+#include "ruby/ruby.h"
+#include "vm_core.h"
 
 /* $SAFE accessor */
 
@@ -108,4 +117,10 @@ rb_check_safe_str(VALUE x)
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected String)",
 		 rb_obj_classname(x));
     }
+}
+
+void
+Init_safe(void)
+{
+    rb_define_virtual_variable("$SAFE", safe_getter, safe_setter);
 }

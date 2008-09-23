@@ -23,6 +23,7 @@ void Init_Enumerator(void);
 void Init_Exception(void);
 void Init_syserr(void);
 void Init_eval(void);
+void Init_safe(void);
 void Init_load(void);
 void Init_Proc(void);
 void Init_File(void);
@@ -68,6 +69,7 @@ rb_call_inits()
     Init_String();
     Init_Exception();
     Init_eval();
+    Init_safe();
     Init_jump();
     Init_Numeric();
     Init_Bignum();

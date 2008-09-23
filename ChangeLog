@@ -1,3 +1,10 @@
+Tue Sep 23 09:52:07 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_safe.c, safe.c: rename eval_safe.c to safe.c.
+
+	* common.mk, eval.c, safe.c, inits.c: separate safe.c from eval.c and
+	  make Init_safe().
+
 Tue Sep 23 09:20:00 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: clean up
