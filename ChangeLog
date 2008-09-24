@@ -1,3 +1,8 @@
+Wed Sep 24 17:44:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c (Init_Complex), rational.c (Init_Rational): undefines
+	  default #allocate methods which call the allocater.
+
 Wed Sep 24 17:02:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* complex.c (Init_Complex), rational.c (Init_Rational): ID_ALLOCATOR
