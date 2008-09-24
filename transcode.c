@@ -2943,10 +2943,15 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  *     :universal_newline => true         # decorator for converting CRLF and CR to LF
  *     :crlf_newline => true              # decorator for converting LF to CRLF
  *     :cr_newline => true                # decorator for converting LF to CR
+ *     :xml => :text                      # escape as XML CharData (AMPERSAND, LESS-THAN SIGN and GREATER-THAN SIGN are escaped as &amp;, &lt; and &gt;, respectively)
+ *     :xml => :attr                      # escape as XML AttValue (AMPERSAND, LESS-THAN SIGN, GREATER-THAN SIGN and QUOTATION MARK are escaped as &amp;, &lt;, &gt; and &quote;.  quoted by QUOTATION MARK.) 
  *   integer form:
  *     Encoding::Converter::UNIVERSAL_NEWLINE_DECORATOR
  *     Encoding::Converter::CRLF_NEWLINE_DECORATOR
  *     Encoding::Converter::CR_NEWLINE_DECORATOR
+ *     Encoding::Converter::XML_TEXT_DECORATOR
+ *     Encoding::Converter::XML_ATTR_CONTENT_DECORATOR
+ *     Encoding::Converter::XML_ATTR_QUOTE_DECORATOR
  *
  * Encoding::Converter.new creates an instance of Encoding::Converter.
  *
