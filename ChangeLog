@@ -1,3 +1,9 @@
+Wed Sep 24 14:11:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rexml/formatters/pretty.rb (REXML::Formatters::Pretty#wrap):
+	  abandon wrapping if the line contains no space.  [ruby-dev:36045]
+	  fix: #342
+
 Tue Sep 23 19:50:24 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (subtruct): check tv_sec.
