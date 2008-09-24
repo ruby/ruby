@@ -1,3 +1,8 @@
+Wed Sep 24 14:40:21 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/tmpdir.rb: setup buffer with nul characters instead of spaces.
+	  fixed [ruby-dev:36493]
+
 Wed Sep 24 14:11:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rexml/formatters/pretty.rb (REXML::Formatters::Pretty#wrap):
