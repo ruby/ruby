@@ -20,7 +20,10 @@ $:.push(*Dir[File.join(test_dir, '*')].find_all { |path| File.directory? path })
 test_files = (Dir[File.join(test_dir, "test_*.rb")] +
               Dir[File.join(test_dir, "**/test_*.rb")])
 
-test_files = test_files.grep(Regexp.union(*ARGV)) unless ARGV.empty?
+flags, files = ARGV.partition { |arg| arg =~ /^-/ }
+test_files = test_files.grep(Regexp.union(*files)) unless files.empty?
+
+ARGV.replace flags
 
 test_files.each do |test|
   require test
