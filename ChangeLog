@@ -1,3 +1,8 @@
+Wed Sep 24 15:58:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_rstrip_bang): removing mixed spaces and nuls at
+	  the end of strings.  [ruby-dev:36497]
+
 Wed Sep 24 15:13:04 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* test/cgi/test_cgi_multipart.rb : test for miniunit.

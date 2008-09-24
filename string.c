@@ -5861,11 +5861,8 @@ rb_str_rstrip_bang(VALUE str)
     t = e = RSTRING_END(str);
 
     if (single_byte_optimizable(str)) {
-        /* remove trailing '\0's */
-        while (s < t && t[-1] == '\0') t--;
-      
-	/* remove trailing spaces */
-	while (s < t && rb_enc_isspace(*(t-1), enc)) t--;
+	/* remove trailing spaces or '\0's */
+	while (s < t && (t[-1] == '\0' || rb_enc_isspace(*(t-1), enc))) t--;
     }
     else {
 	char *tp;
