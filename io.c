@@ -7006,7 +7006,7 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
     arg.io = rb_io_open(argv[0], rb_str_new_cstr("rb:ASCII-8BIT"), Qnil, Qnil);
     if (NIL_P(arg.io)) return Qnil;
     arg.argv = argv+1;
-    arg.argc = (argc > 2) ? 2 : argc;
+    arg.argc = (argc > 1) ? 1 : 0;
     if (!NIL_P(offset)) {
 	rb_io_seek(arg.io, offset, SEEK_SET);
     }
