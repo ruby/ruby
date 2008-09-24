@@ -149,7 +149,7 @@ module TupleSpaceTestModule
     assert(!tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
     assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
 
-    assert_raises(Rinda::InvalidHashTupleKey) do
+    assert_raise(Rinda::InvalidHashTupleKey) do
       tmpl = Rinda::Template.new({:message=>String, "name"=>String})
     end
     tmpl = Rinda::Template.new({"name"=>String})
@@ -182,7 +182,7 @@ module TupleSpaceTestModule
     assert(!tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
     assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
 
-    assert_raises(Rinda::InvalidHashTupleKey) do
+    assert_raise(Rinda::InvalidHashTupleKey) do
       @ts.write({:message=>String, "name"=>String})
     end
 
@@ -193,7 +193,7 @@ module TupleSpaceTestModule
     assert_equal({'1'=>1, '2'=>2, '3'=>3}, @ts.take({'1'=>1, '2'=>2, '3'=>3}))
 
     entry = @ts.write(['1'=>1, '2'=>2, '3'=>3])
-    assert_raises(Rinda::RequestExpiredError) do
+    assert_raise(Rinda::RequestExpiredError) do
       assert_equal({'1'=>1, '2'=>2, '3'=>3}, @ts.read({'1'=>1}, 0))
     end
     entry.cancel
@@ -230,11 +230,11 @@ module TupleSpaceTestModule
   end
 
   def test_inp_rdp
-    assert_raises(Rinda::RequestExpiredError) do
+    assert_raise(Rinda::RequestExpiredError) do
       @ts.take([:empty], 0)
     end
 
-    assert_raises(Rinda::RequestExpiredError) do
+    assert_raise(Rinda::RequestExpiredError) do
       @ts.read([:empty], 0)
     end
   end
@@ -242,13 +242,13 @@ module TupleSpaceTestModule
   def test_ruby_talk_264062
     th = Thread.new { @ts.take([:empty], 1) }
     sleep(10)
-    assert_raises(Rinda::RequestExpiredError) do
+    assert_raise(Rinda::RequestExpiredError) do
       thread_join(th)
     end
 
     th = Thread.new { @ts.read([:empty], 1) }
     sleep(10)
-    assert_raises(Rinda::RequestExpiredError) do
+    assert_raise(Rinda::RequestExpiredError) do
       thread_join(th)
     end
   end
@@ -429,7 +429,7 @@ module TupleSpaceTestModule
     
     sleep(2)
 
-    assert_raises(Rinda::RequestCanceledError) do
+    assert_raise(Rinda::RequestCanceledError) do
       assert_nil(thread_join(taker))
     end
 
@@ -458,7 +458,7 @@ module TupleSpaceTestModule
 
     sleep(2)
 
-    assert_raises(Rinda::RequestCanceledError) do
+    assert_raise(Rinda::RequestCanceledError) do
       assert_nil(thread_join(reader))
     end
 

@@ -50,7 +50,7 @@ class TC_JSONUnicode < Test::Unit::TestCase
         assert_equal json, JSON.generate(["" << i])
       end
     end
-    assert_raises(JSON::GeneratorError) do
+    assert_raise(JSON::GeneratorError) do
       JSON.generate(["\x80"])
     end
     assert_equal "\302\200", JSON.parse('["\u0080"]').first

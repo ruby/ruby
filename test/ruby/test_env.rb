@@ -36,13 +36,13 @@ class TestEnv < Test::Unit::TestCase
       assert_equal('foo', ENV['test'])
     end
 
-    assert_raises(TypeError) {
+    assert_raise(TypeError) {
       tmp = ENV[1]
     }
-    assert_raises(TypeError) {
+    assert_raise(TypeError) {
       ENV[1] = 'foo'
     }
-    assert_raises(TypeError) {
+    assert_raise(TypeError) {
       ENV['test'] = 0
     }
   end

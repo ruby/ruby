@@ -534,7 +534,7 @@ if defined? DBM
       v = DBM.open("#{@tmproot}/a", nil, DBM::READER) {|d|
         # Errno::EPERM is raised on Solaris which use ndbm.
         # DBMError is raised on Debian which use gdbm. 
-        assert_raises(Errno::EPERM, DBMError) { d["k"] = "v" }
+        assert_raise(Errno::EPERM, DBMError) { d["k"] = "v" }
         true
       }
       assert(v)
@@ -555,7 +555,7 @@ if defined? DBM
     def test_freeze
       DBM.open("#{@tmproot}/a") {|d|
         d.freeze
-        assert_raises(RuntimeError) { d["k"] = "v" }
+        assert_raise(RuntimeError) { d["k"] = "v" }
       }
     end
   end

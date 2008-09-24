@@ -128,7 +128,7 @@ module MarshalTestLib
 
   def test_hash_default_proc
     h = Hash.new {}
-    assert_raises(TypeError) { marshaltest(h) }
+    assert_raise(TypeError) { marshaltest(h) }
   end
 
   def test_hash_ivar
@@ -418,16 +418,16 @@ module MarshalTestLib
   def test_singleton
     o = Object.new
     def o.m() end
-    assert_raises(TypeError) { marshaltest(o) }
+    assert_raise(TypeError) { marshaltest(o) }
     o = Object.new
     c = class << o
       @v = 1
       class C; self; end
     end
-    assert_raises(TypeError) { marshaltest(o) }
-    assert_raises(TypeError) { marshaltest(c) }
-    assert_raises(TypeError) { marshaltest(ARGF) }
-    assert_raises(TypeError) { marshaltest(ENV) }
+    assert_raise(TypeError) { marshaltest(o) }
+    assert_raise(TypeError) { marshaltest(c) }
+    assert_raise(TypeError) { marshaltest(ARGF) }
+    assert_raise(TypeError) { marshaltest(ENV) }
   end
 
   def test_extend
@@ -440,7 +440,7 @@ module MarshalTestLib
     marshal_equal(o) {|obj| class << obj; ancestors end}
     o = Object.new
     o.extend Module.new
-    assert_raises(TypeError) { marshaltest(o) }
+    assert_raise(TypeError) { marshaltest(o) }
   end
 
   def test_extend_string
@@ -453,16 +453,16 @@ module MarshalTestLib
     marshal_equal(o) {|obj| class << obj; ancestors end}
     o = ""
     o.extend Module.new
-    assert_raises(TypeError) { marshaltest(o) }
+    assert_raise(TypeError) { marshaltest(o) }
   end
 
   def test_anonymous
     c = Class.new
-    assert_raises(TypeError) { marshaltest(c) }
+    assert_raise(TypeError) { marshaltest(c) }
     o = c.new
-    assert_raises(TypeError) { marshaltest(o) }
+    assert_raise(TypeError) { marshaltest(o) }
     m = Module.new
-    assert_raises(TypeError) { marshaltest(m) }
+    assert_raise(TypeError) { marshaltest(m) }
   end
 
   def test_string_empty

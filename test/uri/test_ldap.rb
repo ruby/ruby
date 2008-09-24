@@ -90,7 +90,7 @@ class TestLDAP < Test::Unit::TestCase
   def test_select
     u = URI.parse('ldap:///??sub??!bindname=cn=Manager%2co=Foo')
     assert_equal(uri_to_ary(u), u.select(*u.component))
-    assert_raises(ArgumentError) do
+    assert_raise(ArgumentError) do
       u.select(:scheme, :host, :not_exist, :port)
     end
   end

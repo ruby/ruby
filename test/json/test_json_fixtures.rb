@@ -20,7 +20,7 @@ class TC_JSONFixtures < Test::Unit::TestCase
 
   def test_failing
     for name, source in @failed
-      assert_raises(JSON::ParserError, JSON::NestingError,
+      assert_raise(JSON::ParserError, JSON::NestingError,
         "Did not fail for fixture '#{name}'") do
         JSON.parse(source)
       end

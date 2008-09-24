@@ -21,7 +21,7 @@ class TestSignal < Test::Unit::TestCase
       assert_equal 2, x
 
       Signal.trap(:INT) { raise "Interrupt" }
-      ex = assert_raises(RuntimeError) {
+      ex = assert_raise(RuntimeError) {
         Process.kill :INT, Process.pid
         sleep 0.1
       }

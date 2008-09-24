@@ -192,7 +192,7 @@ end
     TARGETS.each do |fname|
       assert cmp(fname, fname), 'not same?'
     end
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       cmp TARGETS[0], TARGETS[0], :undefinedoption => true
     }
 
@@ -225,21 +225,21 @@ end
 
     # src==dest (1) same path
     touch 'tmp/cptmp'
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       cp 'tmp/cptmp', 'tmp/cptmp'
     }
 if have_symlink?
     # src==dest (2) symlink and its target
     File.symlink 'cptmp', 'tmp/cptmp_symlink'
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       cp 'tmp/cptmp', 'tmp/cptmp_symlink'
     }
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       cp 'tmp/cptmp_symlink', 'tmp/cptmp'
     }
     # src==dest (3) looped symlink
     File.symlink 'symlink', 'tmp/symlink'
-    assert_raises(Errno::ELOOP) {
+    assert_raise(Errno::ELOOP) {
       cp 'tmp/symlink', 'tmp/symlink'
     }
 end
@@ -328,31 +328,31 @@ end
 
     mkdir 'tmp/tmpdir'
     mkdir_p 'tmp/dest2/tmpdir'
-    assert_raises(Errno::EEXIST) {
+    assert_raise(Errno::EEXIST) {
       mv 'tmp/tmpdir', 'tmp/dest2'
     }
     mkdir 'tmp/dest2/tmpdir/junk'
-    assert_raises(Errno::EEXIST, "[ruby-talk:124368]") {
+    assert_raise(Errno::EEXIST, "[ruby-talk:124368]") {
       mv 'tmp/tmpdir', 'tmp/dest2'
     }
 
     # src==dest (1) same path
     touch 'tmp/cptmp'
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       mv 'tmp/cptmp', 'tmp/cptmp'
     }
 if have_symlink?
     # src==dest (2) symlink and its target
     File.symlink 'cptmp', 'tmp/cptmp_symlink'
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       mv 'tmp/cptmp', 'tmp/cptmp_symlink'
     }
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       mv 'tmp/cptmp_symlink', 'tmp/cptmp'
     }
     # src==dest (3) looped symlink
     File.symlink 'symlink', 'tmp/symlink'
-    assert_raises(Errno::ELOOP) {
+    assert_raise(Errno::ELOOP) {
       mv 'tmp/symlink', 'tmp/symlink'
     }
 end
@@ -589,16 +589,16 @@ if have_hardlink?
 
     # src==dest (1) same path
     touch 'tmp/cptmp'
-    assert_raises(Errno::EEXIST) {
+    assert_raise(Errno::EEXIST) {
       ln 'tmp/cptmp', 'tmp/cptmp'
     }
 if have_symlink?
     # src==dest (2) symlink and its target
     File.symlink 'cptmp', 'tmp/symlink'
-    assert_raises(Errno::EEXIST) {
+    assert_raise(Errno::EEXIST) {
       ln 'tmp/cptmp', 'tmp/symlink'   # normal file -> symlink
     }
-    assert_raises(Errno::EEXIST) {
+    assert_raise(Errno::EEXIST) {
       ln 'tmp/symlink', 'tmp/cptmp'   # symlink -> normal file
     }
     # src==dest (3) looped symlink
@@ -796,21 +796,21 @@ end
 
     # src==dest (1) same path
     touch 'tmp/cptmp'
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       install 'tmp/cptmp', 'tmp/cptmp'
     }
 if have_symlink?
     # src==dest (2) symlink and its target
     File.symlink 'cptmp', 'tmp/cptmp_symlink'
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       install 'tmp/cptmp', 'tmp/cptmp_symlink'
     }
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       install 'tmp/cptmp_symlink', 'tmp/cptmp'
     }
     # src==dest (3) looped symlink
     File.symlink 'symlink', 'tmp/symlink'
-    assert_raises(Errno::ELOOP) {
+    assert_raise(Errno::ELOOP) {
       # File#install invokes open(2), always ELOOP must be raised
       install 'tmp/symlink', 'tmp/symlink'
     }

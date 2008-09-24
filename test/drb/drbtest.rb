@@ -127,23 +127,23 @@ module DRbCore
       assert_equal('DRbEx', obj.name)
     end
 
-    assert_raises(DRb::DRbUnknownError) do
+    assert_raise(DRb::DRbUnknownError) do
       @there.unknown_error
     end
 
     onecky = FailOnecky.new('3')
 
-    assert_raises(FailOnecky::OneckyError) do
+    assert_raise(FailOnecky::OneckyError) do
       @there.sample(onecky, 1, 2)
     end
   end
 
   def test_03
     assert_equal(8, @there.sum(1, 1, 1, 1, 1, 1, 1, 1))
-    assert_raises(ArgumentError) do
+    assert_raise(ArgumentError) do
       @there.sum(1, 1, 1, 1, 1, 1, 1, 1, 1)
     end
-    assert_raises(DRb::DRbConnError) do
+    assert_raise(DRb::DRbConnError) do
       @there.sum('1' * 4096)
     end
   end
@@ -168,10 +168,10 @@ module DRbCore
 
   def test_06_timeout
     ten = Onecky.new(10)
-    assert_raises(TimeoutError) do
+    assert_raise(TimeoutError) do
       @there.do_timeout(ten)
     end
-    assert_raises(TimeoutError) do
+    assert_raise(TimeoutError) do
       @there.do_timeout(ten)
     end
   end
@@ -208,7 +208,7 @@ module DRbCore
 	assert_match(/^undefined method \`undefined_method_test\'/, $!.message)
       end
     }
-    assert_raises(DRb::DRbConnError) do
+    assert_raise(DRb::DRbConnError) do
       @there.method_missing(:__send__, :to_s)
     end
     assert_equal(true, @there.missing)
@@ -261,7 +261,7 @@ module DRbCore
   end
 
   def test_11_remote_no_method_error
-    assert_raises(DRb::DRbRemoteError) do
+    assert_raise(DRb::DRbRemoteError) do
       @there.remote_no_method_error
     end
     begin

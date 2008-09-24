@@ -24,7 +24,7 @@ class TestException < Test::Unit::TestCase
 
     # exception in rescue clause
     $string = "this must be handled no.3"
-    e = assert_raises(RuntimeError) do
+    e = assert_raise(RuntimeError) do
       begin
         raise "exception in rescue clause"
       rescue
@@ -36,7 +36,7 @@ class TestException < Test::Unit::TestCase
 
     # exception in ensure clause
     $string = "exception in ensure clause"
-    e = assert_raises(RuntimeError) do
+    e = assert_raise(RuntimeError) do
       begin
         raise "this must be handled no.4"
       ensure

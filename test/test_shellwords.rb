@@ -18,21 +18,21 @@ class TestShellwords < Test::Unit::TestCase
   
   def test_unmatched_double_quote
     bad_cmd = 'one two "three'
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       shellwords(bad_cmd)
     end
   end
   
   def test_unmatched_single_quote
     bad_cmd = "one two 'three"
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       shellwords(bad_cmd)
     end
   end
   
   def test_unmatched_quotes
     bad_cmd = "one '"'"''""'""
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       shellwords(bad_cmd)
     end
   end

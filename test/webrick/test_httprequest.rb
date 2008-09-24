@@ -61,7 +61,7 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
       GET /#{"a"*1024} HTTP/1.1
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-    assert_raises(WEBrick::HTTPStatus::RequestURITooLarge){
+    assert_raise(WEBrick::HTTPStatus::RequestURITooLarge){
       req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
     }
   end
@@ -314,7 +314,7 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
 
       #{param}
     _end_of_message_
-    assert_raises(WEBrick::HTTPStatus::LengthRequired){
+    assert_raise(WEBrick::HTTPStatus::LengthRequired){
       req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
       req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
       req.body
@@ -327,7 +327,7 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
 
       body is too short.
     _end_of_message_
-    assert_raises(WEBrick::HTTPStatus::BadRequest){
+    assert_raise(WEBrick::HTTPStatus::BadRequest){
       req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
       req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
       req.body
@@ -340,7 +340,7 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
 
       body is too short.
     _end_of_message_
-    assert_raises(WEBrick::HTTPStatus::NotImplemented){
+    assert_raise(WEBrick::HTTPStatus::NotImplemented){
       req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
       req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
       req.body

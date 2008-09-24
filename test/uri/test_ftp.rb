@@ -52,7 +52,7 @@ class TestFTP < Test::Unit::TestCase
     u = URI.parse('ftp://a.b.c/')
     ary = u.component.collect {|c| u.send(c)}
     assert_equal(ary, u.select(*u.component))
-    assert_raises(ArgumentError) do
+    assert_raise(ArgumentError) do
       u.select(:scheme, :host, :not_exist, :port)
     end
   end

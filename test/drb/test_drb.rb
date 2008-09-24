@@ -219,21 +219,21 @@ class TestDRbEval # < Test::Unit::TestCase
   end
   
   def test_01_safe1_safe4_eval
-    assert_raises(SecurityError) do
+    assert_raise(SecurityError) do
       @there.method_missing(:instance_eval, 'ENV.inspect')
     end
 
-    assert_raises(SecurityError) do
+    assert_raise(SecurityError) do
       @there.method_missing(:send, :eval, 'ENV.inspect')
     end
 
     remote_class = @there.remote_class
 
-    assert_raises(SecurityError) do
+    assert_raise(SecurityError) do
       remote_class.class_eval('ENV.inspect')
     end
 
-    assert_raises(SecurityError) do
+    assert_raise(SecurityError) do
       remote_class.module_eval('ENV.inspect')
     end
 
@@ -246,11 +246,11 @@ class TestDRbEval # < Test::Unit::TestCase
 
     assert_equal(1, remote_class.module_eval('1'))
 
-    assert_raises(SecurityError) do
+    assert_raise(SecurityError) do
       remote_class.class_eval('ENV = {}')
     end
 
-    assert_raises(SecurityError) do
+    assert_raise(SecurityError) do
       remote_class.module_eval('ENV = {}')
     end
   end
@@ -283,7 +283,7 @@ class TestDRbLarge < Test::Unit::TestCase
   end
 
   def test_04_many_arg
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       @there.arg_test(1, 2, 3, 4, 5, 6, 7, 8, 9, 0)
     }
   end

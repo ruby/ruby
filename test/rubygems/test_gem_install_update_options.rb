@@ -52,7 +52,7 @@ class TestGemInstallUpdateOptions < GemInstallerTestCase
     File.chmod 0755, @userhome
     FileUtils.chmod 0000, @gemhome
 
-    assert_raises(Gem::FilePermissionError) do
+    assert_raise(Gem::FilePermissionError) do
       @installer = Gem::Installer.new @gem, @cmd.options
     end
   ensure

@@ -32,7 +32,7 @@ module TestOptionParser::ReqArg
   end
 
   def test_short
-    assert_raises(OptionParser::MissingArgument) {@opt.parse!(%w"-x")}
+    assert_raise(OptionParser::MissingArgument) {@opt.parse!(%w"-x")}
     assert_equal(%w"", no_error {@opt.parse!(%w"-x foo")})
     assert_equal("foo", @flag)
     assert_equal(%w"", no_error {@opt.parse!(%w"-xbar")})
@@ -42,7 +42,7 @@ module TestOptionParser::ReqArg
   end
 
   def test_abbrev
-    assert_raises(OptionParser::MissingArgument) {@opt.parse!(%w"-o")}
+    assert_raise(OptionParser::MissingArgument) {@opt.parse!(%w"-o")}
     assert_equal(%w"", no_error {@opt.parse!(%w"-o foo")})
     assert_equal("foo", @flag)
     assert_equal(%w"", no_error {@opt.parse!(%w"-obar")})
@@ -52,7 +52,7 @@ module TestOptionParser::ReqArg
   end
 
   def test_long
-    assert_raises(OptionParser::MissingArgument) {@opt.parse!(%w"--opt")}
+    assert_raise(OptionParser::MissingArgument) {@opt.parse!(%w"--opt")}
     assert_equal(%w"", no_error {@opt.parse!(%w"--opt foo")})
     assert_equal("foo", @flag)
     assert_equal(%w"foo", no_error {@opt.parse!(%w"--opt= foo")})

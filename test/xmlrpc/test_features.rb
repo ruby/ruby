@@ -15,7 +15,7 @@ class Test_Features < Test::Unit::TestCase
 
       XMLRPC::Config.module_eval {remove_const(:ENABLE_NIL_CREATE)}
       XMLRPC::Config.const_set(:ENABLE_NIL_CREATE, false)
-      assert_raises(RuntimeError) { str = c.methodCall("test", *@params) }
+      assert_raise(RuntimeError) { str = c.methodCall("test", *@params) }
 
       XMLRPC::Config.module_eval {remove_const(:ENABLE_NIL_CREATE)}
       XMLRPC::Config.const_set(:ENABLE_NIL_CREATE, true)
@@ -35,7 +35,7 @@ class Test_Features < Test::Unit::TestCase
 
         XMLRPC::Config.module_eval {remove_const(:ENABLE_NIL_PARSER)}
         XMLRPC::Config.const_set(:ENABLE_NIL_PARSER, false)
-        assert_raises(RuntimeError) { para = parser.parseMethodCall(str) }
+        assert_raise(RuntimeError) { para = parser.parseMethodCall(str) }
 
         XMLRPC::Config.module_eval {remove_const(:ENABLE_NIL_PARSER)}
         XMLRPC::Config.const_set(:ENABLE_NIL_PARSER, true)

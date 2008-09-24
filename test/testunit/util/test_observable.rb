@@ -18,7 +18,7 @@ module Test
         end
         
         def test_simple_observation
-          assert_raises(ArgumentError, "add_listener should throw an exception if no callback is supplied") do
+          assert_raise(ArgumentError, "add_listener should throw an exception if no callback is supplied") do
             @observable.add_listener(:property, "a")
           end
       
@@ -71,7 +71,7 @@ module Test
         end
         
         def test_add_remove_with_default_listener
-          assert_raises(ArgumentError, "add_listener should throw an exception if no callback is supplied") do
+          assert_raise(ArgumentError, "add_listener should throw an exception if no callback is supplied") do
             @observable.add_listener(:property)
           end
       

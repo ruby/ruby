@@ -215,7 +215,7 @@ class HTTPHeaderTest < Test::Unit::TestCase
     try_content_length 123, '  123'
     try_content_length 1,   '1 23'
     try_content_length 500, '(OK)500'
-    assert_raises(Net::HTTPHeaderSyntaxError, 'here is no digit, but') {
+    assert_raise(Net::HTTPHeaderSyntaxError, 'here is no digit, but') {
       @c['content-length'] = 'no digit'
       @c.content_length
     }

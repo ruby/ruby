@@ -66,7 +66,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
     tmpfile = Tempfile.new("test_webrick_auth")
     tmpfile.puts("webrick:{SHA}GJYFRpBbdchp595jlh3Bhfmgp8k=")
     tmpfile.flush
-    assert_raises(NotImplementedError){
+    assert_raise(NotImplementedError){
       WEBrick::HTTPAuth::Htpasswd.new(tmpfile.path)
     }
     tmpfile.close(true)
@@ -74,7 +74,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
     tmpfile = Tempfile.new("test_webrick_auth")
     tmpfile.puts("webrick:$apr1$IOVMD/..$rmnOSPXr0.wwrLPZHBQZy0")
     tmpfile.flush
-    assert_raises(NotImplementedError){
+    assert_raise(NotImplementedError){
       WEBrick::HTTPAuth::Htpasswd.new(tmpfile.path)
     }
     tmpfile.close(true)

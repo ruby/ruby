@@ -157,15 +157,15 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
     cert.not_after = Time.now 
     assert_equal(false, cert.verify(@dsa512))
 
-    assert_raises(OpenSSL::X509::CertificateError){
+    assert_raise(OpenSSL::X509::CertificateError){
       cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
                         nil, nil, OpenSSL::Digest::DSS1.new) 
     }
-    assert_raises(OpenSSL::X509::CertificateError){
+    assert_raise(OpenSSL::X509::CertificateError){
       cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
                         nil, nil, OpenSSL::Digest::MD5.new) 
     }
-    assert_raises(OpenSSL::X509::CertificateError){
+    assert_raise(OpenSSL::X509::CertificateError){
       cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
                         nil, nil, OpenSSL::Digest::SHA1.new) 
     }

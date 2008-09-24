@@ -68,7 +68,7 @@ class Test_Webrick < Test::Unit::TestCase
     assert_equal 9, @s.call('test.add', 4, 5)
 
     # fault exception
-    assert_raises(XMLRPC::FaultException) { @s.call('test.div', 1, 0) }
+    assert_raise(XMLRPC::FaultException) { @s.call('test.div', 1, 0) }
 
     # fault exception via call2
     ok, param = @s.call2('test.div', 1, 0)

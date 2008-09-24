@@ -63,7 +63,7 @@ class TestReadline < Test::Unit::TestCase
        ["filename_quote_characters"],
       ]
     method_args.each do |method_name, *args|
-      assert_raises(SecurityError, NotImplementedError,
+      assert_raise(SecurityError, NotImplementedError,
                     "method=<#{method_name}>") do
         Thread.start {
           $SAFE = 4
@@ -90,7 +90,7 @@ class TestReadline < Test::Unit::TestCase
       assert_equal("> ", stdout.read(2))
       assert_equal(1, Readline::HISTORY.length)
       assert_equal("hello", Readline::HISTORY[0])
-      assert_raises(SecurityError) do
+      assert_raise(SecurityError) do
         Thread.start {
           $SAFE = 1
           replace_stdio(stdin.path, stdout.path) do
@@ -98,7 +98,7 @@ class TestReadline < Test::Unit::TestCase
           end
         }.join
       end
-      assert_raises(SecurityError) do
+      assert_raise(SecurityError) do
         Thread.start {
           $SAFE = 4
           replace_stdio(stdin.path, stdout.path) { Readline.readline("> ") }

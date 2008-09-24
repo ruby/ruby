@@ -53,7 +53,7 @@ class TestHTTP < Test::Unit::TestCase
     assert_equal(['http', 'a.b.c', 80], URI.parse('http://a.b.c/').select(:scheme, :host, :port))
     u = URI.parse('http://a.b.c/')
     assert_equal(uri_to_ary(u), u.select(*u.component))
-    assert_raises(ArgumentError) do
+    assert_raise(ArgumentError) do
       u.select(:scheme, :host, :not_exist, :port)
     end
   end

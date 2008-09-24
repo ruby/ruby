@@ -71,7 +71,7 @@ class TestThread < Test::Unit::TestCase
     mutex = Mutex.new
     condvar = ConditionVariable.new
 
-    assert_raises(ThreadError) { condvar.wait(mutex) }
+    assert_raise(ThreadError) { condvar.wait(mutex) }
   end
 
   def test_condvar_wait_exception_handling
@@ -98,7 +98,7 @@ class TestThread < Test::Unit::TestCase
     end
 
     thread.raise Interrupt, "interrupt a dead condition variable"
-    assert_raises(Interrupt) { thread.value }
+    assert_raise(Interrupt) { thread.value }
     assert(locked)
   end
 

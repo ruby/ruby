@@ -687,7 +687,7 @@ if defined? GDBM
     def test_reader_open
       GDBM.open("#{@tmproot}/a.dbm") {} # create a db.
       v = GDBM.open("#{@tmproot}/a.dbm", nil, GDBM::READER) {|d|
-        assert_raises(GDBMError) { d["k"] = "v" }
+        assert_raise(GDBMError) { d["k"] = "v" }
         true
       }
       assert(v)
@@ -708,7 +708,7 @@ if defined? GDBM
     def test_freeze
       GDBM.open("#{@tmproot}/a.dbm") {|d|
         d.freeze
-        assert_raises(RuntimeError) { d["k"] = "v" }
+        assert_raise(RuntimeError) { d["k"] = "v" }
       }
     end
   end

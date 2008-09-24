@@ -198,7 +198,7 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
                           nil, nil, OpenSSL::Digest::SHA1.new)
     store = OpenSSL::X509::Store.new
     store.add_cert(ca1_cert)
-    assert_raises(OpenSSL::X509::StoreError){
+    assert_raise(OpenSSL::X509::StoreError){
       store.add_cert(ca1_cert)  # add same certificate twice
     }
 
@@ -209,7 +209,7 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
     crl2 = issue_crl(revoke_info, 2, now+1800, now+3600, [],
                      ca1_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
     store.add_crl(crl1)
-    assert_raises(OpenSSL::X509::StoreError){
+    assert_raise(OpenSSL::X509::StoreError){
       store.add_crl(crl2) # add CRL issued by same CA twice.
     }
   end

@@ -25,7 +25,7 @@ class TestGemBuilder < RubyGemTestCase
   def test_build_validates
     builder = Gem::Builder.new Gem::Specification.new
 
-    assert_raises Gem::InvalidSpecificationException do
+    assert_raise Gem::InvalidSpecificationException do
       builder.build
     end
   end

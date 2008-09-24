@@ -236,7 +236,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
   def test_client_auth
     vflag = OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
     start_server(PORT, vflag, true){|server, port|
-      assert_raises(OpenSSL::SSL::SSLError){
+      assert_raise(OpenSSL::SSL::SSLError){
         sock = TCPSocket.new("127.0.0.1", port)
         ssl = OpenSSL::SSL::SSLSocket.new(sock)
         ssl.connect
@@ -375,10 +375,10 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
       sock = TCPSocket.new("127.0.0.1", port)
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
       ssl.connect
-      assert_raises(sslerr){ssl.post_connection_check("localhost.localdomain")}
-      assert_raises(sslerr){ssl.post_connection_check("127.0.0.1")}
+      assert_raise(sslerr){ssl.post_connection_check("localhost.localdomain")}
+      assert_raise(sslerr){ssl.post_connection_check("127.0.0.1")}
       assert(ssl.post_connection_check("localhost"))
-      assert_raises(sslerr){ssl.post_connection_check("foo.example.com")}
+      assert_raise(sslerr){ssl.post_connection_check("foo.example.com")}
 
       cert = ssl.peer_cert
       assert(!OpenSSL::SSL.verify_certificate_identity(cert, "localhost.localdomain"))
@@ -401,8 +401,8 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
       ssl.connect
       assert(ssl.post_connection_check("localhost.localdomain"))
       assert(ssl.post_connection_check("127.0.0.1"))
-      assert_raises(sslerr){ssl.post_connection_check("localhost")}
-      assert_raises(sslerr){ssl.post_connection_check("foo.example.com")}
+      assert_raise(sslerr){ssl.post_connection_check("localhost")}
+      assert_raise(sslerr){ssl.post_connection_check("foo.example.com")}
 
       cert = ssl.peer_cert
       assert(OpenSSL::SSL.verify_certificate_identity(cert, "localhost.localdomain"))
@@ -423,9 +423,9 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
       ssl.connect
       assert(ssl.post_connection_check("localhost.localdomain"))
-      assert_raises(sslerr){ssl.post_connection_check("127.0.0.1")}
-      assert_raises(sslerr){ssl.post_connection_check("localhost")}
-      assert_raises(sslerr){ssl.post_connection_check("foo.example.com")}
+      assert_raise(sslerr){ssl.post_connection_check("127.0.0.1")}
+      assert_raise(sslerr){ssl.post_connection_check("localhost")}
+      assert_raise(sslerr){ssl.post_connection_check("foo.example.com")}
       cert = ssl.peer_cert
       assert(OpenSSL::SSL.verify_certificate_identity(cert, "localhost.localdomain"))
       assert(!OpenSSL::SSL.verify_certificate_identity(cert, "127.0.0.1"))

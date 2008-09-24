@@ -8,8 +8,8 @@ class TestCall < Test::Unit::TestCase
   end
 
   def test_call
-    assert_raises(ArgumentError) {aaa()}
-    assert_raises(ArgumentError) {aaa}
+    assert_raise(ArgumentError) {aaa()}
+    assert_raise(ArgumentError) {aaa}
 
     assert_equal([1, 100], aaa(1))
     assert_equal([1, 2], aaa(1, 2))

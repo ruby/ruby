@@ -107,7 +107,7 @@ class TestGemVersion < RubyGemTestCase
 
   def test_illformed_requirements
     [ ">>> 1.3.5", "> blah" ].each do |rq|
-      assert_raises(ArgumentError, "req [#{rq}] should fail") {
+      assert_raise(ArgumentError, "req [#{rq}] should fail") {
         Gem::Version::Requirement.new(rq)
       }
     end

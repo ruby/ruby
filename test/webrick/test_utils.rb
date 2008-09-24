@@ -16,9 +16,9 @@ class TestWEBrickUtils < Test::Unit::TestCase
     assert_expired(true, m)
 
     i = 0
-    assert_raises(Timeout::Error){
+    assert_raise(Timeout::Error){
       m.timeout(2){
-        assert_raises(Timeout::Error){ m.timeout(1){ i += 1; sleep } }
+        assert_raise(Timeout::Error){ m.timeout(1){ i += 1; sleep } }
         assert_expired(false, m)
         i += 1
         sleep
@@ -27,14 +27,14 @@ class TestWEBrickUtils < Test::Unit::TestCase
     assert_equal(2, i)
     assert_expired(true, m)
 
-    assert_raises(Timeout::Error){ m.timeout(0.1){ sleep } }
+    assert_raise(Timeout::Error){ m.timeout(0.1){ sleep } }
     assert_expired(true, m)
 
-    assert_raises(ex){ m.timeout(0.1, ex){ sleep } }
+    assert_raise(ex){ m.timeout(0.1, ex){ sleep } }
     assert_expired(true, m)
 
     i = 0
-    assert_raises(ex){
+    assert_raise(ex){
       m.timeout(10){
         m.timeout(1, ex){ i += 1; sleep }
       }
@@ -44,7 +44,7 @@ class TestWEBrickUtils < Test::Unit::TestCase
     assert_expired(true, m)
 
     i = 0
-    assert_raises(Timeout::Error){
+    assert_raise(Timeout::Error){
       m.timeout(1){
         m.timeout(10, ex){ i += 1; sleep }
       }

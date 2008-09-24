@@ -101,7 +101,7 @@ class TestMailTo < Test::Unit::TestCase
     end
 
     bad.each do |x|
-      assert_raises(URI::InvalidComponentError) {
+      assert_raise(URI::InvalidComponentError) {
 	@u.build(x)
       }
     end
@@ -112,7 +112,7 @@ class TestMailTo < Test::Unit::TestCase
   def test_select
     u = URI.parse('mailto:joe@example.com?cc=bob@example.com&body=hello')
     assert_equal(uri_to_ary(u), u.select(*u.component))
-    assert_raises(ArgumentError) do
+    assert_raise(ArgumentError) do
       u.select(:scheme, :host, :not_exist, :port)
     end
   end

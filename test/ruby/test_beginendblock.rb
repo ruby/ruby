@@ -32,11 +32,11 @@ class TestBeginEndBlock < Test::Unit::TestCase
   end
 
   def test_begininmethod
-    assert_raises(SyntaxError) do
+    assert_raise(SyntaxError) do
       eval("def foo; BEGIN {}; end")
     end
 
-    assert_raises(SyntaxError) do
+    assert_raise(SyntaxError) do
       eval('eval("def foo; BEGIN {}; end")')
     end
   end

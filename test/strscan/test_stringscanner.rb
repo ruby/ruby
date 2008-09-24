@@ -31,8 +31,8 @@ class TestStringScanner < Test::Unit::TestCase
   def test_s_allocate
     s = StringScanner.allocate
     assert_equal '#<StringScanner (uninitialized)>', s.inspect.sub(/StringScanner_C/, 'StringScanner')
-    assert_raises(UNINIT_ERROR) { s.eos? }
-    assert_raises(UNINIT_ERROR) { s.scan(/a/) }
+    assert_raise(UNINIT_ERROR) { s.eos? }
+    assert_raise(UNINIT_ERROR) { s.scan(/a/) }
     s.string = 'test'
     assert_equal '#<StringScanner 0/4 @ "test">', s.inspect.sub(/StringScanner_C/, 'StringScanner')
     assert_nothing_raised(UNINIT_ERROR) { s.eos? }

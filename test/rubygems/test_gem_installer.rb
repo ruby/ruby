@@ -287,7 +287,7 @@ load 'my_exec'
     Dir.mkdir util_inst_bindir
     File.chmod 0000, util_inst_bindir
 
-    assert_raises Gem::FilePermissionError do
+    assert_raise Gem::FilePermissionError do
       @installer.generate_bin
     end
 
@@ -372,7 +372,7 @@ load 'my_exec'
     Dir.mkdir util_inst_bindir
     File.chmod 0000, util_inst_bindir
 
-    assert_raises Gem::FilePermissionError do
+    assert_raise Gem::FilePermissionError do
       @installer.generate_bin
     end
 

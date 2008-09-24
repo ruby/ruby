@@ -54,7 +54,7 @@ class TestIterator < Test::Unit::TestCase
     tt{|i| break if i == 5}
     assert_equal(0, i)
 
-    assert_raises(ArgumentError) do
+    assert_raise(ArgumentError) do
       tt3{}
     end
   end
@@ -64,7 +64,7 @@ class TestIterator < Test::Unit::TestCase
   end
 
   def test_block_argument_without_paren
-    assert_raises(ArgumentError) do
+    assert_raise(ArgumentError) do
       tt4{}
     end
   end
@@ -216,10 +216,10 @@ class TestIterator < Test::Unit::TestCase
 
   def test_argument
     assert_nothing_raised {lambda{||}.call}
-    assert_raises(ArgumentError) {lambda{||}.call(1)}
+    assert_raise(ArgumentError) {lambda{||}.call(1)}
     assert_nothing_raised {lambda{|a,|}.call(1)}
-    assert_raises(ArgumentError) {lambda{|a,|}.call()}
-    assert_raises(ArgumentError) {lambda{|a,|}.call(1,2)}
+    assert_raise(ArgumentError) {lambda{|a,|}.call()}
+    assert_raise(ArgumentError) {lambda{|a,|}.call(1,2)}
   end
 
   def get_block(&block)
@@ -235,9 +235,9 @@ class TestIterator < Test::Unit::TestCase
     assert_nothing_raised {get_block{|a,|}.call(1,2)}
 
     assert_nothing_raised {get_block(&lambda{||}).call()}
-    assert_raises(ArgumentError) {get_block(&lambda{||}).call(1)}
+    assert_raise(ArgumentError) {get_block(&lambda{||}).call(1)}
     assert_nothing_raised {get_block(&lambda{|a,|}).call(1)}
-    assert_raises(ArgumentError) {get_block(&lambda{|a,|}).call(1,2)}
+    assert_raise(ArgumentError) {get_block(&lambda{|a,|}).call(1,2)}
 
     block = get_block{11}
     assert_instance_of(Proc, block)
@@ -298,7 +298,7 @@ class TestIterator < Test::Unit::TestCase
   end
 
   def test_ljump
-    assert_raises(LocalJumpError) {get_block{break}.call}
+    assert_raise(LocalJumpError) {get_block{break}.call}
 
     # cannot use assert_nothing_raised due to passing block.
     begin
@@ -483,7 +483,7 @@ class TestIterator < Test::Unit::TestCase
     assert_equal(1, e.next)
     assert_equal(2, e.next)
     assert_equal(3, e.next)
-    assert_raises(StopIteration){e.next}
+    assert_raise(StopIteration){e.next}
     e.rewind
     assert_equal(1, e.next)
     e.rewind

@@ -65,7 +65,7 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
 
   def test_empty_data
     @c1.encrypt
-    assert_raises(ArgumentError){ @c1.update("") }
+    assert_raise(ArgumentError){ @c1.update("") }
   end
 
   if OpenSSL::OPENSSL_VERSION_NUMBER > 0x00907000

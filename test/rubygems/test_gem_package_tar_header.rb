@@ -62,19 +62,19 @@ class TestGemPackageTarHeader < TarTestCase
   end
 
   def test_initialize_bad
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       Gem::Package::TarHeader.new :name => '', :size => '', :mode => ''
     end
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       Gem::Package::TarHeader.new :name => '', :size => '', :prefix => ''
     end
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       Gem::Package::TarHeader.new :name => '', :prefix => '', :mode => ''
     end
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       Gem::Package::TarHeader.new :prefix => '', :size => '', :mode => ''
     end
   end

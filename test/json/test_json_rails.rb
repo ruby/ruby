@@ -85,7 +85,7 @@ class TC_JSONRails < Test::Unit::TestCase
     c = C.new # with rails addition all objects are theoretically creatable
     assert C.json_creatable?
     json = generate(c)
-    assert_raises(ArgumentError) { JSON.parse(json) }
+    assert_raise(ArgumentError) { JSON.parse(json) }
   end
 
   def test_raw_strings

@@ -10,18 +10,18 @@ class Test_DateTime < Test::Unit::TestCase
   end
 
   def test_new_exception
-    assert_raises(ArgumentError) { XMLRPC::DateTime.new(4.5, 13, 32, 25, 60, 60) }
-    assert_raises(ArgumentError) { XMLRPC::DateTime.new(2001, 12, 32, 25, 60, 60) }
-    assert_raises(ArgumentError) { XMLRPC::DateTime.new(2001, 12, 31, 25, 60, 60) }
-    assert_raises(ArgumentError) { XMLRPC::DateTime.new(2001, 12, 31, 24, 60, 60) }
-    assert_raises(ArgumentError) { XMLRPC::DateTime.new(2001, 12, 31, 24, 59, 60) }
+    assert_raise(ArgumentError) { XMLRPC::DateTime.new(4.5, 13, 32, 25, 60, 60) }
+    assert_raise(ArgumentError) { XMLRPC::DateTime.new(2001, 12, 32, 25, 60, 60) }
+    assert_raise(ArgumentError) { XMLRPC::DateTime.new(2001, 12, 31, 25, 60, 60) }
+    assert_raise(ArgumentError) { XMLRPC::DateTime.new(2001, 12, 31, 24, 60, 60) }
+    assert_raise(ArgumentError) { XMLRPC::DateTime.new(2001, 12, 31, 24, 59, 60) }
     assert_nothing_raised(ArgumentError) { XMLRPC::DateTime.new(2001, 12, 31, 24, 59, 59) }
 
-    assert_raises(ArgumentError) { XMLRPC::DateTime.new(2001, 0, 0, -1, -1, -1) }
-    assert_raises(ArgumentError) { XMLRPC::DateTime.new(2001, 1, 0, -1, -1, -1) }
-    assert_raises(ArgumentError) { XMLRPC::DateTime.new(2001, 1, 1, -1, -1, -1) }
-    assert_raises(ArgumentError) { XMLRPC::DateTime.new(2001, 1, 1, 0, -1, -1) }
-    assert_raises(ArgumentError) { XMLRPC::DateTime.new(2001, 1, 1, 0, 0, -1) }
+    assert_raise(ArgumentError) { XMLRPC::DateTime.new(2001, 0, 0, -1, -1, -1) }
+    assert_raise(ArgumentError) { XMLRPC::DateTime.new(2001, 1, 0, -1, -1, -1) }
+    assert_raise(ArgumentError) { XMLRPC::DateTime.new(2001, 1, 1, -1, -1, -1) }
+    assert_raise(ArgumentError) { XMLRPC::DateTime.new(2001, 1, 1, 0, -1, -1) }
+    assert_raise(ArgumentError) { XMLRPC::DateTime.new(2001, 1, 1, 0, 0, -1) }
     assert_nothing_raised(ArgumentError) { XMLRPC::DateTime.new(2001, 1, 1, 0, 0, 0) }
   end
 
@@ -68,31 +68,31 @@ class Test_DateTime < Test::Unit::TestCase
   def test_set_exception
     dt = createDateTime()
     
-    assert_raises(ArgumentError)    { dt.year = 4.5 }
+    assert_raise(ArgumentError)    { dt.year = 4.5 }
     assert_nothing_raised(ArgumentError) { dt.year = -2000 }
  
-    assert_raises(ArgumentError) { dt.month = 0 }
-    assert_raises(ArgumentError) { dt.month = 13 }
+    assert_raise(ArgumentError) { dt.month = 0 }
+    assert_raise(ArgumentError) { dt.month = 13 }
     assert_nothing_raised(ArgumentError) { dt.month = 7 }
 
-    assert_raises(ArgumentError) { dt.mon = 0 }
-    assert_raises(ArgumentError) { dt.mon = 13 }
+    assert_raise(ArgumentError) { dt.mon = 0 }
+    assert_raise(ArgumentError) { dt.mon = 13 }
     assert_nothing_raised(ArgumentError) { dt.mon = 7 }
 
-    assert_raises(ArgumentError) { dt.day = 0 }
-    assert_raises(ArgumentError) { dt.day = 32 }
+    assert_raise(ArgumentError) { dt.day = 0 }
+    assert_raise(ArgumentError) { dt.day = 32 }
     assert_nothing_raised(ArgumentError) { dt.day = 16 }
 
-    assert_raises(ArgumentError) { dt.hour = -1 }
-    assert_raises(ArgumentError) { dt.hour = 25 }
+    assert_raise(ArgumentError) { dt.hour = -1 }
+    assert_raise(ArgumentError) { dt.hour = 25 }
     assert_nothing_raised(ArgumentError) { dt.hour = 12 }
 
-    assert_raises(ArgumentError) { dt.min = -1 }
-    assert_raises(ArgumentError) { dt.min = 60 }
+    assert_raise(ArgumentError) { dt.min = -1 }
+    assert_raise(ArgumentError) { dt.min = 60 }
     assert_nothing_raised(ArgumentError) { dt.min = 30 }
 
-    assert_raises(ArgumentError) { dt.sec = -1 }
-    assert_raises(ArgumentError) { dt.sec = 60 }
+    assert_raise(ArgumentError) { dt.sec = -1 }
+    assert_raise(ArgumentError) { dt.sec = 60 }
     assert_nothing_raised(ArgumentError) { dt.sec = 30 }
   end
 

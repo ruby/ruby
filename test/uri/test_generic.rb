@@ -121,8 +121,8 @@ class URI::TestGeneric < Test::Unit::TestCase
 
     # 7
     # reported by Mr. Kubota <em6t-kbt@asahi-net.or.jp>
-    assert_raises(URI::InvalidURIError) { URI.parse('http://a_b:80/') }
-    assert_raises(URI::InvalidURIError) { URI.parse('http://a_b/') }
+    assert_raise(URI::InvalidURIError) { URI.parse('http://a_b:80/') }
+    assert_raise(URI::InvalidURIError) { URI.parse('http://a_b/') }
 
     # 8
     # reported by m_seki
@@ -680,19 +680,19 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://foo:bar@zab:8080/?a=1#b123', uri.to_s)
 
     uri = URI.parse('http://example.com')
-    assert_raises(URI::InvalidURIError) { uri.password = 'bar' }
+    assert_raise(URI::InvalidURIError) { uri.password = 'bar' }
     uri.userinfo = 'foo:bar'
     assert_equal('http://foo:bar@example.com', uri.to_s)
-    assert_raises(URI::InvalidURIError) { uri.registry = 'bar' }
-    assert_raises(URI::InvalidURIError) { uri.opaque = 'bar' }
+    assert_raise(URI::InvalidURIError) { uri.registry = 'bar' }
+    assert_raise(URI::InvalidURIError) { uri.opaque = 'bar' }
 
     uri = URI.parse('mailto:foo@example.com')
-    assert_raises(URI::InvalidURIError) { uri.user = 'bar' }
-    assert_raises(URI::InvalidURIError) { uri.password = 'bar' }
-    assert_raises(URI::InvalidURIError) { uri.userinfo = ['bar', 'baz'] }
-    assert_raises(URI::InvalidURIError) { uri.host = 'bar' }
-    assert_raises(URI::InvalidURIError) { uri.port = 'bar' }
-    assert_raises(URI::InvalidURIError) { uri.path = 'bar' }
-    assert_raises(URI::InvalidURIError) { uri.query = 'bar' }
+    assert_raise(URI::InvalidURIError) { uri.user = 'bar' }
+    assert_raise(URI::InvalidURIError) { uri.password = 'bar' }
+    assert_raise(URI::InvalidURIError) { uri.userinfo = ['bar', 'baz'] }
+    assert_raise(URI::InvalidURIError) { uri.host = 'bar' }
+    assert_raise(URI::InvalidURIError) { uri.port = 'bar' }
+    assert_raise(URI::InvalidURIError) { uri.path = 'bar' }
+    assert_raise(URI::InvalidURIError) { uri.query = 'bar' }
   end
 end
