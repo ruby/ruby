@@ -371,7 +371,7 @@ test-knownbug: miniruby$(EXEEXT) $(PROGRAM) PHONY
 test: test-sample btest-miniruby test-knownbug
 
 test-all:
-	$(RUNRUBY) "$(srcdir)/test/runner.rb" --basedir="$(TESTSDIR)" --runner=$(TESTUI) $(TESTS)
+	$(RUNRUBY) "$(srcdir)/test/runner.rb" $(TESTS)
 
 extconf: $(PREP)
 	$(MAKEDIRS) "$(EXTCONFDIR)"
