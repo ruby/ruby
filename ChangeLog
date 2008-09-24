@@ -1,3 +1,7 @@
+Thu Sep 25 02:08:47 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_mode_enc): make it static.
+
 Thu Sep 25 01:22:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mini/test.rb (Mini::Assertions#assert_raise): fixed typo.

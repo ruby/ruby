@@ -3802,7 +3802,7 @@ mode_enc(rb_io_t *fptr, const char *estr)
     parse_mode_enc(estr, &fptr->encs.enc, &fptr->encs.enc2);
 }
 
-void
+static void
 rb_io_mode_enc(rb_io_t *fptr, const char *modestr)
 {
     const char *p = strchr(modestr, ':');
