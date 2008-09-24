@@ -59,29 +59,32 @@ module Mini
     def assert test, msg = nil
       msg ||= "Failed assertion, no message given."
       self._assertions += 1
-      raise Mini::Assertion, msg unless test
+      unless test then
+        msg = msg.call if Proc === msg
+        raise Mini::Assertion, msg
+      end
       true
     end
 
     def assert_block msg = nil
-      msg = message msg, "Expected block to return true value"
+      msg = message(msg) { "Expected block to return true value" }
       assert yield, msg
     end
 
     def assert_empty obj, msg = nil
-      msg = message msg, "Expected #{obj.inspect} to be empty"
+      msg = message(msg) { "Expected #{obj.inspect} to be empty" }
       assert_respond_to obj, :empty?
       assert obj.empty?, msg
     end
 
     def assert_equal exp, act, msg = nil
-      msg = message msg, "Expected #{mu_pp(exp)}, not #{mu_pp(act)}"
+      msg = message(msg) { "Expected #{mu_pp(exp)}, not #{mu_pp(act)}" }
       assert(exp == act, msg)
     end
 
     def assert_in_delta exp, act, delta = 0.001, msg = nil
       n = (exp - act).abs
-      msg = message msg, "Expected #{exp} - #{act} (#{n}) to be < #{delta}"
+      msg = message(msg) { "Expected #{exp} - #{act} (#{n}) to be < #{delta}" }
       assert delta > n, msg
     end
 
@@ -90,39 +93,39 @@ module Mini
     end
 
     def assert_includes collection, obj, msg = nil
-      msg = message msg, "Expected #{mu_pp(collection)} to include #{mu_pp(obj)}"
+      msg = message(msg) { "Expected #{mu_pp(collection)} to include #{mu_pp(obj)}" }
       assert_respond_to collection, :include?
       assert collection.include?(obj), msg
     end
 
     def assert_instance_of cls, obj, msg = nil
-      msg = message msg, "Expected #{mu_pp(obj)} to be an instance of #{cls}"
+      msg = message(msg) { "Expected #{mu_pp(obj)} to be an instance of #{cls}" }
       flip = (Module === obj) && ! (Module === cls) # HACK for specs
       obj, cls = cls, obj if flip
       assert cls === obj, msg
     end
 
     def assert_kind_of cls, obj, msg = nil # TODO: merge with instance_of
-      msg = message msg, "Expected #{mu_pp(obj)} to be a kind of #{cls}"
+      msg = message(msg) { "Expected #{mu_pp(obj)} to be a kind of #{cls}" }
       flip = (Module === obj) && ! (Module === cls) # HACK for specs
       obj, cls = cls, obj if flip
       assert obj.kind_of?(cls), msg
     end
 
     def assert_match exp, act, msg = nil
-      msg = message msg, "Expected #{mu_pp(act)} to match #{mu_pp(exp)}"
+      msg = message(msg) { "Expected #{mu_pp(act)} to match #{mu_pp(exp)}" }
       assert_respond_to act, :=~
       exp = /#{exp}/ if String === exp && String === act
       assert act =~ exp, msg
     end
 
     def assert_nil obj, msg = nil
-      msg = message msg, "Expected #{mu_pp(obj)} to be nil"
+      msg = message(msg) { "Expected #{mu_pp(obj)} to be nil" }
       assert obj.nil?, msg
     end
 
     def assert_operator o1, op, o2, msg = nil
-      msg = message msg, "Expected #{mu_pp(o1)} to be #{op} #{mu_pp(o2)}"
+      msg = message(msg) { "Expected #{mu_pp(o1)} to be #{op} #{mu_pp(o2)}" }
       assert o1.__send__(op, o2), msg
     end
 
@@ -143,20 +146,20 @@ module Mini
     end
 
     def assert_respond_to obj, meth, msg = nil
-      msg = message msg, "Expected #{mu_pp(obj)} to respond to #{meth}"
+      msg = message(msg) { "Expected #{mu_pp(obj)} to respond to #{meth}" }
       flip = (Symbol === obj) && ! (Symbol === meth) # HACK for specs
       obj, meth = meth, obj if flip
       assert obj.respond_to?(meth), msg
     end
 
     def assert_same exp, act, msg = nil
-      msg = message msg, "Expected #{mu_pp(act)} to be the same as #{mu_pp(exp)}"
+      msg = message(msg) { "Expected #{mu_pp(act)} to be the same as #{mu_pp(exp)}" }
       assert exp.equal?(act), msg
     end
 
     def assert_send send_ary, msg = nil
       recv, msg, *args = send_ary
-      msg = message msg, "Expected ##{msg} on #{mu_pp(recv)} to return true"
+      msg = message(msg) { "Expected ##{msg} on #{mu_pp(recv)} to return true" }
       assert recv.__send__(msg, *args), msg
     end
 
@@ -174,7 +177,7 @@ module Mini
         caught = false
       end
 
-      assert caught, message(msg, default)
+      assert caught, message(msg) { default }
     end
 
     def capture_io
@@ -203,15 +206,17 @@ module Mini
 
     alias :flunk :fail
 
-    def message msg, default
-      if msg then
-        msg = msg.to_s unless String === msg
-        msg += '.' unless msg.empty?
-        msg += "\n#{default}."
-        msg.strip
-      else
-        "#{default}."
-      end
+    def message msg = nil, &default
+      proc {
+        if msg then
+          msg = msg.to_s unless String === msg
+          msg += '.' unless msg.empty?
+          msg += "\n#{default.call}."
+          msg.strip
+        else
+          "#{default.call}."
+        end
+      }
     end
 
     # used for counting assertions
@@ -225,19 +230,19 @@ module Mini
     end
 
     def refute_empty obj, msg = nil
-      msg = message msg, "Expected #{obj.inspect} to not be empty"
+      msg = message(msg) { "Expected #{obj.inspect} to not be empty" }
       assert_respond_to obj, :empty?
       refute obj.empty?, msg
     end
 
     def refute_equal exp, act, msg = nil
-      msg = message msg, "Expected #{mu_pp(act)} to not be equal to #{mu_pp(exp)}"
+      msg = message(msg) { "Expected #{mu_pp(act)} to not be equal to #{mu_pp(exp)}" }
       refute exp == act, msg
     end
 
     def refute_in_delta exp, act, delta = 0.001, msg = nil
       n = (exp - act).abs
-      msg = message msg, "Expected #{exp} - #{act} (#{n}) to not be < #{delta}"
+      msg = message(msg) { "Expected #{exp} - #{act} (#{n}) to not be < #{delta}" }
       refute delta > n, msg
     end
 
@@ -246,49 +251,49 @@ module Mini
     end
 
     def refute_includes collection, obj, msg = nil
-      msg = message msg, "Expected #{mu_pp(collection)} to not include #{mu_pp(obj)}"
+      msg = message(msg) { "Expected #{mu_pp(collection)} to not include #{mu_pp(obj)}" }
       assert_respond_to collection, :include?
       refute collection.include?(obj), msg
     end
 
     def refute_instance_of cls, obj, msg = nil
-      msg = message msg, "Expected #{mu_pp(obj)} to not be an instance of #{cls}"
+      msg = message(msg) { "Expected #{mu_pp(obj)} to not be an instance of #{cls}" }
       flip = (Module === obj) && ! (Module === cls) # HACK for specs
       obj, cls = cls, obj if flip
       refute cls === obj, msg
     end
 
     def refute_kind_of cls, obj, msg = nil # TODO: merge with instance_of
-      msg = message msg, "Expected #{mu_pp(obj)} to not be a kind of #{cls}"
+      msg = message(msg) { "Expected #{mu_pp(obj)} to not be a kind of #{cls}" }
       flip = (Module === obj) && ! (Module === cls) # HACK for specs
       obj, cls = cls, obj if flip
       refute obj.kind_of?(cls), msg
     end
 
     def refute_match exp, act, msg = nil
-      msg = message msg, "Expected #{mu_pp(act)} to not match #{mu_pp(exp)}"
+      msg = message(msg) { "Expected #{mu_pp(act)} to not match #{mu_pp(exp)}" }
       refute act =~ exp, msg
     end
 
     def refute_nil obj, msg = nil
-      msg = message msg, "Expected #{mu_pp(obj)} to not be nil"
+      msg = message(msg) { "Expected #{mu_pp(obj)} to not be nil" }
       refute obj.nil?, msg
     end
 
     def refute_operator o1, op, o2, msg = nil
-      msg = message msg, "Expected #{mu_pp(o1)} to not be #{op} #{mu_pp(o2)}"
+      msg = message(msg) { "Expected #{mu_pp(o1)} to not be #{op} #{mu_pp(o2)}" }
       refute o1.__send__(op, o2), msg
     end
 
     def refute_respond_to obj, meth, msg = nil
-      msg = message msg, "Expected #{mu_pp(obj)} to not respond to #{meth}"
+      msg = message(msg) { "Expected #{mu_pp(obj)} to not respond to #{meth}" }
       flip = (Symbol === obj) && ! (Symbol === meth) # HACK for specs
       obj, meth = meth, obj if flip
       refute obj.respond_to?(meth), msg
     end
 
     def refute_same exp, act, msg = nil
-      msg = message msg, "Expected #{mu_pp(act)} to not be the same as #{mu_pp(exp)}"
+      msg = message(msg) { "Expected #{mu_pp(act)} to not be the same as #{mu_pp(exp)}" }
       refute exp.equal?(act), msg
     end
   end
