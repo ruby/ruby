@@ -122,7 +122,7 @@ class CGICoreTest < Test::Unit::TestCase
       assert_equal({"str"=>"\xBE\xBE\xB9\xBE".force_encoding("ASCII-8BIT")},hash)
 
       $stdin.rewind
-      assert_raises(CGI::InvalidEncoding) do 
+      assert_raise(CGI::InvalidEncoding) do 
         cgi = CGI.new(:accept_charset=>"UTF-8")
       end
 
@@ -148,7 +148,7 @@ class CGICoreTest < Test::Unit::TestCase
     }
     ENV.update(@environ)
     cgi = CGI.new
-    refute_nil(cgi.cookies)
+    assert_not_equal(nil,cgi.cookies)
     [ ['_session_id', ['12345'],        ],
       ['name1',       ['val1', 'val2'], ],
     ].each do |key, expected|
@@ -169,7 +169,7 @@ class CGICoreTest < Test::Unit::TestCase
       'CONTENT_LENGTH'  => (64 * 1024 * 1024).to_s
     }
     ENV.update(@environ)
-    ex = assert_raises(StandardError) do
+    ex = assert_raise(StandardError) do
       cgi = CGI.new
     end
     assert_equal("too large post data.", ex.message)
@@ -323,7 +323,7 @@ class CGICoreTest < Test::Unit::TestCase
     ENV.update(@environ)
     ## no htmltype
     cgi = CGI.new
-    assert_raises(NoMethodError) do cgi.doctype end
+    assert_raise(NoMethodError) do cgi.doctype end
     ## html3
     cgi = CGI.new('html3')
     expected = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">'

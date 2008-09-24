@@ -1,3 +1,10 @@
+Wed Sep 24 23:39:00 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
+
+	* test/cgi/test_cgi_multipart.rb : revert last change.
+	  ( deprecated is assert_raises. )
+	* test/cgi/test_cgi_core.rb      : ditto.
+	* test/cgi/test_cgi_header.rb    : ditto.
+
 Wed Sep 24 23:12:49 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb (CGI::new, CGI::{accept_charset,accept_charset=}) :
