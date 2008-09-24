@@ -1371,17 +1371,10 @@ Init_Complex(void)
     rb_cComplex = rb_define_class(COMPLEX_NAME, rb_cNumeric);
 
     rb_define_alloc_func(rb_cComplex, nucomp_s_alloc);
-    rb_funcall(rb_cComplex, rb_intern("private_class_method"), 1,
-	       ID2SYM(rb_intern("allocate")));
 
 #if 0
-    rb_define_singleton_method(rb_cComplex, "new!", nucomp_s_new_bang, -1);
-    rb_funcall(rb_cComplex, rb_intern("private_class_method"), 1,
-	       ID2SYM(rb_intern("new!")));
-
-    rb_define_singleton_method(rb_cComplex, "new", nucomp_s_new, -1);
-    rb_funcall(rb_cComplex, rb_intern("private_class_method"), 1,
-	       ID2SYM(rb_intern("new")));
+    rb_define_private_method(CLASS_OF(rb_cComplex), "new!", nucomp_s_new_bang, -1);
+    rb_define_private_method(CLASS_OF(rb_cComplex), "new", nucomp_s_new, -1);
 #else
     rb_undef_method(CLASS_OF(rb_cComplex), "new");
 #endif
@@ -1472,9 +1465,7 @@ Init_Complex(void)
 
     rb_define_method(rb_cString, "to_c", string_to_c, 0);
 
-    rb_define_singleton_method(rb_cComplex, "convert", nucomp_s_convert, -1);
-    rb_funcall(rb_cComplex, rb_intern("private_class_method"), 1,
-	       ID2SYM(rb_intern("convert")));
+    rb_define_private_method(CLASS_OF(rb_cComplex), "convert", nucomp_s_convert, -1);
 
     /* --- */
 

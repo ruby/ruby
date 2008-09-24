@@ -1488,17 +1488,10 @@ Init_Rational(void)
     rb_cRational = rb_define_class(RATIONAL_NAME, rb_cNumeric);
 
     rb_define_alloc_func(rb_cRational, nurat_s_alloc);
-    rb_funcall(rb_cRational, rb_intern("private_class_method"), 1,
-	       ID2SYM(rb_intern("allocate")));
 
 #if 0
-    rb_define_singleton_method(rb_cRational, "new!", nurat_s_new_bang, -1);
-    rb_funcall(rb_cRational, rb_intern("private_class_method"), 1,
-	       ID2SYM(rb_intern("new!")));
-
-    rb_define_singleton_method(rb_cRational, "new", nurat_s_new, -1);
-    rb_funcall(rb_cRational, rb_intern("private_class_method"), 1,
-	       ID2SYM(rb_intern("new")));
+    rb_define_private_method(CLASS_OF(rb_cRational), "new!", nurat_s_new_bang, -1);
+    rb_define_private_method(CLASS_OF(rb_cRational), "new", nurat_s_new, -1);
 #else
     rb_undef_method(CLASS_OF(rb_cRational), "new");
 #endif
@@ -1574,9 +1567,7 @@ Init_Rational(void)
 
     rb_define_method(rb_cString, "to_r", string_to_r, 0);
 
-    rb_define_singleton_method(rb_cRational, "convert", nurat_s_convert, -1);
-    rb_funcall(rb_cRational, rb_intern("private_class_method"), 1,
-	       ID2SYM(rb_intern("convert")));
+    rb_define_private_method(CLASS_OF(rb_cRational), "convert", nurat_s_convert, -1);
 }
 
 /*

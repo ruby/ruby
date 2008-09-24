@@ -1,3 +1,8 @@
+Wed Sep 24 17:02:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c (Init_Complex), rational.c (Init_Rational): ID_ALLOCATOR
+	  differs from :allocate, and invisible in ruby level.
+
 Wed Sep 24 15:58:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_rstrip_bang): removing mixed spaces and nuls at
