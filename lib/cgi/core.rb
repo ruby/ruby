@@ -462,12 +462,12 @@ class CGI
         body.rewind
 
         /Content-Disposition:.* filename=(?:"((?:\\.|[^\"])*)"|([^;\s]*))/i.match(head)
-	filename = ($1 or $2 or "")
-	if /Mac/i =~ env_table['HTTP_USER_AGENT'] and
-	   /Mozilla/i =~ env_table['HTTP_USER_AGENT'] and
-	   /MSIE/i !~ env_table['HTTP_USER_AGENT']
-	  filename = CGI::unescape(filename)
-	end
+      	filename = ($1 or $2 or "")
+	      if /Mac/i =~ env_table['HTTP_USER_AGENT'] and
+	          /Mozilla/i =~ env_table['HTTP_USER_AGENT'] and
+	          /MSIE/i !~ env_table['HTTP_USER_AGENT']
+	        filename = CGI::unescape(filename)
+	      end
         
         /Content-Type: ([^\s]*)/i.match(head)
         content_type = ($1 or "")
@@ -598,8 +598,21 @@ class CGI
                       stdinput.read(Integer(env_table['CONTENT_LENGTH'])) or ''
                     else
                       read_from_cmdline
-                    end
+                    end.dup.force_encoding(@accept_charset)
                   )
+        if @accept_charset!="ASCII-8BIT" || @accept_charset!=Encoding::ASCII_8BIT
+          @params.each do |key,values|
+            values.each do |value|
+              unless value.valid_encoding?
+                if @accept_charset_error_block
+                  @accept_charset_error_block.call(key,value)
+                else
+                  raise InvalidEncoding,"Accept-Charset encoding error"
+                end
+              end
+            end
+          end
+        end
       end
 
       @cookies = CGI::Cookie::parse((env_table['HTTP_COOKIE'] or env_table['COOKIE']))
@@ -646,10 +659,66 @@ class CGI
 
   end # QueryExtension
 
+  # InvalidEncoding Exception class
+  class InvalidEncoding < Exception; end
 
-  # Creates a new CGI instance.
+  # @@accept_charset is default accept character set.
+  # This default value default is "UTF-8"
+  # If you want to change the default accept character set
+  # when create a new CGI instance, set this:
+  # 
+  #   CGI.accept_charset = "EUC-JP"
   #
-  # +type+ specifies which version of HTML to load the HTML generation
+
+  @@accept_charset="UTF-8"
+
+  def self.accept_charset
+    @@accept_charset
+  end
+
+  def self.accept_charset=(accept_charset)
+    @@accept_charset=accept_charset
+  end
+
+  # Create a new CGI instance.
+  #
+  # CGI accept constructor parameters either in a hash, string as a block.
+  # But string is as same as using :tag_maker of hash.
+  #
+  #   CGI.new("html3") #=>  CGI.new(:tag_maker=>"html3")
+  #
+  # And, if you specify string, @accept_charset cannot be changed.
+  # Instead, please use hash parameter.
+  #
+  # == accept_charset
+  #
+  # :accept_charset specifies encoding of received query string.
+  # ( Default value is @@accept_charset. )
+  # If not valid, raise CGI::InvalidEncoding
+  #
+  # Example. Suppose @@accept_charset # => "UTF-8"
+  #
+  # when not specified:
+  #
+  #   cgi=CGI.new      # @accept_charset # => "UTF-8"
+  #
+  # when specified "EUC-JP":
+  #
+  #   cgi=CGI.new(:accept_charset => "EUC-JP") # => "EUC-JP"
+  #
+  # == block
+  #
+  # When you use a block, you can write a process 
+  # that query encoding is invalid. Example:
+  #
+  #   encoding_error={}
+  #   cgi=CGI.new(:accept_charset=>"EUC-JP") do |name,value| 
+  #     encoding_error[key] = value
+  #   end
+  #
+  # == tag_maker
+  #
+  # :tag_maker specifies which version of HTML to load the HTML generation
   # methods for.  The following versions of HTML are supported:
   #
   # html3:: HTML 3.x
@@ -664,8 +733,25 @@ class CGI
   # it will run in "offline" mode.  In this mode, it reads its parameters
   # from the command line or (failing that) from standard input.  Otherwise,
   # cookies and other parameters are parsed automatically from the standard
-  # CGI locations, which varies according to the REQUEST_METHOD.
-  def initialize(type = "query")
+  # CGI locations, which varies according to the REQUEST_METHOD. It works this:
+  #
+  #   CGI.new(:tag_maker=>"html3")
+  #
+  # This will be obsolete:
+  #
+  #   CGI.new("html3")
+  #
+  attr_reader :accept_charset
+  def initialize(options = {},&block)
+    @accept_charset_error_block=block if block_given?
+    @options={:accept_charset=>@@accept_charset}
+    case options
+    when Hash
+      @options.merge!(options)
+    when String
+      @options[:tag_maker]=options
+    end
+    @accept_charset=@options[:accept_charset]
     if defined?(MOD_RUBY) && !ENV.key?("GATEWAY_INTERFACE")
       Apache.request.setup_cgi_env
     end
@@ -677,7 +763,7 @@ class CGI
     @output_cookies = nil
     @output_hidden = nil
 
-    case type
+    case @options[:tag_maker]
     when "html3"
       require 'cgi/html'
       extend Html3

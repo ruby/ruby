@@ -1,3 +1,10 @@
+Wed Sep 24 23:12:49 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
+
+	* lib/cgi/core.rb (CGI::new, CGI::{accept_charset,accept_charset=}) :
+	  accept parameters either in a hash,
+	  string as a block. add the encoding validation process. 
+	* test/cgi/test_cgi_core.rb : test for query encoding check.
+
 Wed Sep 24 22:58:18 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* string.c (rb_str_rstrip_bang): raise exception when the encoding of

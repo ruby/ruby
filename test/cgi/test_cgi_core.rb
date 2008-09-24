@@ -99,6 +99,44 @@ class CGICoreTest < Test::Unit::TestCase
     assert_equal([], cgi.params['*notfound*'])
   end
 
+  def test_cgi_core_params_encoding_check
+    query_str = 'str=%BE%BE%B9%BE'
+    @environ = {
+        'REQUEST_METHOD'  => 'POST',
+        'CONTENT_LENGTH'  => query_str.length.to_s,
+        'SERVER_SOFTWARE' => 'Apache 2.2.0',
+        'SERVER_PROTOCOL' => 'HTTP/1.1',
+    }
+    ENV.update(@environ)
+    $stdin = StringIO.new
+    $stdin << query_str
+    $stdin.rewind
+    if RUBY_VERSION>="1.9.0"
+      hash={}
+      cgi = CGI.new(:accept_charset=>"UTF-8"){|key,val|hash[key]=val}
+      ## cgi[]
+      assert_equal("\xBE\xBE\xB9\xBE".force_encoding("ASCII-8BIT"), cgi['str'])
+      ## cgi.params
+      assert_equal(["\xBE\xBE\xB9\xBE".force_encoding("ASCII-8BIT")], cgi.params['str'])
+      ## accept-charset error
+      assert_equal({"str"=>"\xBE\xBE\xB9\xBE".force_encoding("ASCII-8BIT")},hash)
+
+      $stdin.rewind
+      assert_raises(CGI::InvalidEncoding) do 
+        cgi = CGI.new(:accept_charset=>"UTF-8")
+      end
+
+      $stdin.rewind
+      cgi = CGI.new(:accept_charset=>"EUC-JP")
+      ## cgi[]
+      assert_equal("\xBE\xBE\xB9\xBE".force_encoding("EUC-JP"), cgi['str'])
+      ## cgi.params
+      assert_equal(["\xBE\xBE\xB9\xBE".force_encoding("EUC-JP")], cgi.params['str'])
+    else
+      assert(true)
+    end
+  end
+
 
   def test_cgi_core_cookie
     @environ = {
