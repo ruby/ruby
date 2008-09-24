@@ -30,10 +30,10 @@ extern "C" {
 typedef struct rb_io_t {
     int fd;                     /* file descriptor */
     FILE *stdio_file;		/* stdio ptr for read/write if available */
-    int mode;			/* mode flags */
+    int mode;			/* mode flags: FMODE_XXXs */
     rb_pid_t pid;		/* child's pid (for pipes) */
     int lineno;			/* number of lines read */
-    VALUE pathv;			/* pathname for file */
+    VALUE pathv;		/* pathname for file */
     void (*finalize)(struct rb_io_t*,int); /* finalize proc */
 
     char *wbuf;                 /* wbuf_off + wbuf_len <= wbuf_capa */
