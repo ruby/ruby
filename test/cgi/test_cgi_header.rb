@@ -76,7 +76,7 @@ class CGIHeaderTest < Test::Unit::TestCase
     else
       expected = NoMethodError   # for Ruby1.8
     end
-    ex = assert_raise(expected) do
+    ex = assert_raises(expected) do
       cgi.header(nil)
     end
   end

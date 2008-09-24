@@ -213,7 +213,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     ]
     original = _set_const(CGI, :MAX_MULTIPART_LENGTH, 2 * 1024)
     begin
-      ex = assert_raise(StandardError) do
+      ex = assert_raises(StandardError) do
         _test_multipart()
       end
       assert_equal("too large multipart data.", ex.message)
@@ -232,7 +232,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     500.times { @data << item }
     #original = _set_const(CGI, :MAX_MULTIPART_COUNT, 128)
     begin
-      ex = assert_raise(StandardError) do
+      ex = assert_raises(StandardError) do
         _test_multipart()
       end
       assert_equal("too many parameters.", ex.message)
@@ -253,7 +253,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       #p input2
       input2
     end
-    ex = assert_raise(EOFError) do
+    ex = assert_raises(EOFError) do
       cgi = CGI.new
     end
     assert_equal("bad boundary end of body part", ex.message)
@@ -264,7 +264,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       #p input2
       input2
     end
-    ex = assert_raise(EOFError) do
+    ex = assert_raises(EOFError) do
       cgi = CGI.new
     end
     assert_equal("bad content body", ex.message)

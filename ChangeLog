@@ -1,3 +1,9 @@
+Wed Sep 24 15:13:04 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
+
+	* test/cgi/test_cgi_multipart.rb : test for miniunit.
+	* test/cgi/test_cgi_core.rb      : ditto.
+	* test/cgi/test_cgi_header.rb    : ditto.
+
 Wed Sep 24 14:38:29 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/tmpdir.rb: setup buffer with nul characters instead of spaces.
