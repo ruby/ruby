@@ -1,3 +1,7 @@
+Thu Sep 25 01:22:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mini/test.rb (Mini::Assertions#assert_raise): fixed typo.
+
 Wed Sep 24 23:39:00 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* test/cgi/test_cgi_multipart.rb : revert last change.

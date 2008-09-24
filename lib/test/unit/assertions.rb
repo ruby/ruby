@@ -34,7 +34,7 @@ end
 module Test::Unit
   module Assertions # deprecations
     tu_deprecate :assert_nothing_thrown, :assert_nothing_raised # 2009-06-01
-    tu_deprecate :assert_raise,          :assert_raises         # 2010-06-01
+    tu_deprecate :assert_raises,         :assert_raise          # 2010-06-01
     tu_deprecate :assert_not_equal,      :refute_equal          # 2009-06-01
     tu_deprecate :assert_no_match,       :refute_match          # 2009-06-01
     tu_deprecate :assert_not_nil,        :refute_nil            # 2009-06-01

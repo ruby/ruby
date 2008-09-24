@@ -129,7 +129,7 @@ module Mini
       assert o1.__send__(op, o2), msg
     end
 
-    def assert_raises *exp
+    def assert_raise *exp
       msg = String === exp.last ? exp.pop : nil
       should_raise = false
       begin
