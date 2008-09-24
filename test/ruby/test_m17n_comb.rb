@@ -105,9 +105,8 @@ class TestM17NComb < Test::Unit::TestCase
     u("\xc2"), u("\x80"),
 
     # for transitivity test
-    u("\xe0\xa0\xa1"),
-    e("\xe0\xa0\xa1"),
-    s("\xe0\xa0\xa1"),
+    u("\xe0\xa0\xa1"), e("\xe0\xa0\xa1"), s("\xe0\xa0\xa1"), # [ruby-dev:32693]
+    e("\xa1\xa1"), a("\xa1\xa1"), s("\xa1\xa1"), # [ruby-dev:36484]
 
     #"aa".force_encoding("utf-16be"),
     #"aaaa".force_encoding("utf-32be"),
