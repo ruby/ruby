@@ -5856,19 +5856,23 @@ rb_str_rstrip_bang(VALUE str)
     char *s, *t, *e;
 
     enc = STR_ENC_GET(str);
+    if (rb_enc_dummy_p(enc)) {
+	rb_raise(rb_eEncCompatError, "incompatible encoding with this operation: %s", rb_enc_name(enc));
+    }
     s = RSTRING_PTR(str);
     if (!s || RSTRING_LEN(str) == 0) return Qnil;
     t = e = RSTRING_END(str);
 
+    /* remove trailing spaces or '\0's */
     if (single_byte_optimizable(str)) {
-	/* remove trailing spaces or '\0's */
 	while (s < t && (*(t-1) == '\0' || rb_enc_isspace(*(t-1), enc))) t--;
     }
     else {
 	char *tp;
 
         while ((tp = rb_enc_prev_char(s, t, e, enc)) != NULL) {
-	    if (!rb_enc_isspace(rb_enc_codepoint(tp, e, enc), enc)) break;
+	    unsigned int c = rb_enc_codepoint(tp, e, enc);
+	    if (c && !rb_enc_isspace(c, enc)) break;
 	    t = tp;
 	}
     }
