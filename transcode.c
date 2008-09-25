@@ -14,9 +14,9 @@
 #include "transcode_data.h"
 #include <ctype.h>
 
-VALUE rb_eConversionUndefinedError;
+VALUE rb_eUndefinedConversionError;
 VALUE rb_eInvalidByteSequenceError;
-VALUE rb_eNoConverterError;
+VALUE rb_eConverterNotFoundError;
 
 VALUE rb_cEncodingConverter;
 
@@ -1960,7 +1960,7 @@ rb_econv_open_exc(const char *sname, const char *dname, int ecflags)
     mesg = rb_str_new_cstr("code converter not found (");
     econv_description(sname, dname, ecflags, mesg);
     rb_str_cat2(mesg, ")");
-    exc = rb_exc_new3(rb_eNoConverterError, mesg);
+    exc = rb_exc_new3(rb_eConverterNotFoundError, mesg);
     return exc;
 }
 
@@ -2023,7 +2023,7 @@ make_econv_exception(rb_econv_t *ec)
                 StringValueCStr(dumped),
                 ec->last_error.source_encoding,
                 ec->last_error.destination_encoding);
-        exc = rb_exc_new3(rb_eConversionUndefinedError, mesg);
+        exc = rb_exc_new3(rb_eUndefinedConversionError, mesg);
         idx = rb_enc_find_index(ec->last_error.source_encoding);
         if (0 <= idx)
             rb_enc_associate_index(bytes, idx);
@@ -3431,7 +3431,7 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
  *   puts ec.finish.dump                #=> "\e(B".force_encoding("ISO-2022-JP")
  *
  * If a conversion error occur,
- * Encoding::ConversionUndefinedError or
+ * Encoding::UndefinedConversionError or
  * Encoding::InvalidByteSequenceError is raised.
  *
  */
@@ -3733,7 +3733,7 @@ econv_putback(int argc, VALUE *argv, VALUE self)
  * It returns nil if the last conversion is not an error. 
  *
  * "error" means that
- * Encoding::InvalidByteSequenceError and Encoding::ConversionUndefinedError for
+ * Encoding::InvalidByteSequenceError and Encoding::UndefinedConversionError for
  * Encoding::Converter#convert and
  * :invalid_byte_sequence, :incomplete_input and :undefined_conversion for
  * Encoding::Converter#primitive_convert.
@@ -3778,7 +3778,7 @@ econv_get_replacement(VALUE self)
 
     ret = make_replacement(ec);
     if (ret == -1) {
-        rb_raise(rb_eConversionUndefinedError, "replacement character setup failed");
+        rb_raise(rb_eUndefinedConversionError, "replacement character setup failed");
     }
 
     enc = rb_enc_find(ec->replacement_enc);
@@ -3813,7 +3813,7 @@ econv_set_replacement(VALUE self, VALUE arg)
 
     if (ret == -1) {
         /* xxx: rb_eInvalidByteSequenceError? */
-        rb_raise(rb_eConversionUndefinedError, "replacement character setup failed");
+        rb_raise(rb_eUndefinedConversionError, "replacement character setup failed");
     }
 
     return arg;
@@ -3854,7 +3854,7 @@ ecerr_source_encoding_name(VALUE self)
  *  ec = Encoding::Converter.new("ISO-8859-1", "EUC-JP") # ISO-8859-1 -> UTF-8 -> EUC-JP
  *  begin
  *    ec.convert("\xa0") # NO-BREAK SPACE, which is available in UTF-8 but not in EUC-JP.
- *  rescue Encoding::ConversionUndefinedError
+ *  rescue Encoding::UndefinedConversionError
  *    p $!.source_encoding              #=> #<Encoding:UTF-8>
  *    p $!.destination_encoding         #=> #<Encoding:EUC-JP>
  *    p $!.source_encoding_name         #=> "UTF-8"
@@ -3896,12 +3896,12 @@ ecerr_destination_encoding(VALUE self)
  * call-seq:
  *   ecerr.error_char         -> string
  *
- * returns the one-character string which cause Encoding::ConversionUndefinedError.
+ * returns the one-character string which cause Encoding::UndefinedConversionError.
  *
  *  ec = Encoding::Converter.new("ISO-8859-1", "EUC-JP")
  *  begin
  *    ec.convert("\xa0")
- *  rescue Encoding::ConversionUndefinedError
+ *  rescue Encoding::UndefinedConversionError
  *    puts $!.error_char.dump   #=> "\xC2\xA0"
  *    p $!.error_char.encoding  #=> #<Encoding:UTF-8>
  *  end
@@ -3981,9 +3981,9 @@ extern void Init_newline(void);
 void
 Init_transcode(void)
 {
-    rb_eConversionUndefinedError = rb_define_class_under(rb_cEncoding, "ConversionUndefinedError", rb_eStandardError);
+    rb_eUndefinedConversionError = rb_define_class_under(rb_cEncoding, "UndefinedConversionError", rb_eStandardError);
     rb_eInvalidByteSequenceError = rb_define_class_under(rb_cEncoding, "InvalidByteSequenceError", rb_eStandardError);
-    rb_eNoConverterError = rb_define_class_under(rb_cEncoding, "NoConverterError", rb_eStandardError);
+    rb_eConverterNotFoundError = rb_define_class_under(rb_cEncoding, "ConverterNotFoundError", rb_eStandardError);
 
     transcoder_table = st_init_strcasetable();
 
@@ -4043,11 +4043,11 @@ Init_transcode(void)
     rb_define_const(rb_cEncodingConverter, "XML_ATTR_CONTENT_DECORATOR", INT2FIX(ECONV_XML_ATTR_CONTENT_DECORATOR));
     rb_define_const(rb_cEncodingConverter, "XML_ATTR_QUOTE_DECORATOR", INT2FIX(ECONV_XML_ATTR_QUOTE_DECORATOR));
 
-    rb_define_method(rb_eConversionUndefinedError, "source_encoding_name", ecerr_source_encoding_name, 0);
-    rb_define_method(rb_eConversionUndefinedError, "destination_encoding_name", ecerr_destination_encoding_name, 0);
-    rb_define_method(rb_eConversionUndefinedError, "source_encoding", ecerr_source_encoding, 0);
-    rb_define_method(rb_eConversionUndefinedError, "destination_encoding", ecerr_destination_encoding, 0);
-    rb_define_method(rb_eConversionUndefinedError, "error_char", ecerr_error_char, 0);
+    rb_define_method(rb_eUndefinedConversionError, "source_encoding_name", ecerr_source_encoding_name, 0);
+    rb_define_method(rb_eUndefinedConversionError, "destination_encoding_name", ecerr_destination_encoding_name, 0);
+    rb_define_method(rb_eUndefinedConversionError, "source_encoding", ecerr_source_encoding, 0);
+    rb_define_method(rb_eUndefinedConversionError, "destination_encoding", ecerr_destination_encoding, 0);
+    rb_define_method(rb_eUndefinedConversionError, "error_char", ecerr_error_char, 0);
 
     rb_define_method(rb_eInvalidByteSequenceError, "source_encoding_name", ecerr_source_encoding_name, 0);
     rb_define_method(rb_eInvalidByteSequenceError, "destination_encoding_name", ecerr_destination_encoding_name, 0);

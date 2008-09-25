@@ -80,7 +80,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     name1 = "encoding-which-is-not-exist-1"
     name2 = "encoding-which-is-not-exist-2"
 
-    assert_raise(Encoding::NoConverterError) {
+    assert_raise(Encoding::ConverterNotFoundError) {
       Encoding::Converter.new(name1, name2)
     }
 
@@ -513,7 +513,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec.primitive_convert("", dst, nil, 10, :partial_input=>true)
     assert_equal("\e$B!!\e(B???\e$B!\"!!!\#$\"".force_encoding("ISO-2022-JP"), dst)
 
-    assert_raise(Encoding::ConversionUndefinedError) {
+    assert_raise(Encoding::UndefinedConversionError) {
       ec.insert_output("\uFFFD")
     }
 
@@ -550,7 +550,7 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_exc_undef
-    err = assert_raise(Encoding::ConversionUndefinedError) {
+    err = assert_raise(Encoding::UndefinedConversionError) {
       "abc\xa4\xa2def".encode("ISO-8859-1", "EUC-JP")
     }
     assert_equal("UTF-8", err.source_encoding_name)
@@ -658,7 +658,7 @@ class TestEncodingConverter < Test::Unit::TestCase
   def test_convert
     ec = Encoding::Converter.new("utf-8", "euc-jp")
     assert_raise(Encoding::InvalidByteSequenceError) { ec.convert("a\x80") }
-    assert_raise(Encoding::ConversionUndefinedError) { ec.convert("\ufffd") }
+    assert_raise(Encoding::UndefinedConversionError) { ec.convert("\ufffd") }
     ret = ec.primitive_convert(nil, "", nil, nil)
     assert_equal(:finished, ret)
     assert_raise(ArgumentError) { ec.convert("a") }
@@ -695,7 +695,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec = Encoding::Converter.new("UTF-8", "US-ASCII")
     ec.primitive_convert(src="\u{3042}", dst="")
     err = ec.last_error
-    assert_kind_of(Encoding::ConversionUndefinedError, err)
+    assert_kind_of(Encoding::UndefinedConversionError, err)
     assert_equal("\u{3042}", err.error_char)
   end
 
@@ -703,7 +703,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec = Encoding::Converter.new("UTF-8", "ISO-8859-1")
     ec.primitive_convert(src="\u{3042}", dst="")
     err = ec.last_error
-    assert_kind_of(Encoding::ConversionUndefinedError, err)
+    assert_kind_of(Encoding::UndefinedConversionError, err)
     assert_equal("\u{3042}", err.error_char)
   end
 

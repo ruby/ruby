@@ -1,3 +1,9 @@
+Thu Sep 25 21:46:48 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_eUndefinedConversionError): renamed from
+	  rb_eConversionUndefinedError.
+	  (rb_eConverterNotFoundError): renamed from rb_eNoConverterError.
+
 Thu Sep 25 21:23:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* pack.c (pack_pack, pack_unpack): 'm0' format (base64) complies with

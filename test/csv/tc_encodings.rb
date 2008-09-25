@@ -57,7 +57,7 @@ class TestEncodings < Test::Unit::TestCase
       begin
         assert_parses( [ %w[ abc def ],
                          %w[ ghi jkl ] ], encoding )
-      rescue Encoding::NoConverterError
+      rescue Encoding::ConverterNotFoundError
         fail("Failed to support #{encoding.name}.")
       end
     end
@@ -68,7 +68,7 @@ class TestEncodings < Test::Unit::TestCase
       begin
         assert_parses( [ %w[ abc def ],
                          %w[ ghi jkl ] ], encoding, :col_sep => "|" )
-      rescue Encoding::NoConverterError
+      rescue Encoding::ConverterNotFoundError
         fail("Failed to properly escape #{encoding.name}.")
       end
     end
