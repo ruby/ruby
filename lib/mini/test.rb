@@ -142,7 +142,7 @@ module Mini
       end
 
       exp = exp.first if exp.size == 1
-      flunk "#{mu_pp(exp)} expected but nothing was raised." if should_raise
+      fail "#{mu_pp(exp)} expected but nothing was raised." if should_raise
     end
 
     def assert_respond_to obj, meth, msg = nil
@@ -322,7 +322,7 @@ module Mini
       if Mini::Assertion === e then
         @failures += 1
 
-        loc = e.backtrace.find { |s| s !~ /in .(assert|flunk|pass|fail|raise)/ }
+        loc = e.backtrace.find { |s| s !~ /in .(assert|refute|flunk|pass|fail|raise)/ }
         loc.sub!(/:in .*$/, '')
 
         @report << "Failure:\n#{meth}(#{klass}) [#{loc}]:\n#{e.message}\n"
@@ -376,7 +376,7 @@ module Mini
       return failures + errors if @test_count > 0 # or return nil...
     end
 
-    def run_test_suites filter = /^test/
+    def run_test_suites filter = /./
       @test_count, @assertion_count = 0, 0
       old_sync, @@out.sync = @@out.sync, true if @@out.respond_to? :sync=
       TestCase.test_suites.each do |suite|
@@ -405,9 +405,12 @@ module Mini
       def run runner
         result = '.'
         begin
+          @passed = nil
           self.setup
           self.__send__ self.name
+          @passed = true
         rescue Exception => e
+          @passed = false
           result = runner.puke(self.class, self.name, e)
         ensure
           begin
@@ -421,6 +424,7 @@ module Mini
 
       def initialize name
         @name = name
+        @passed = nil
       end
 
       def self.reset
@@ -456,6 +460,10 @@ module Mini
 
       def setup; end
       def teardown; end
+
+      def passed?
+        @passed
+      end
 
       include Mini::Assertions
     end # class TestCase
