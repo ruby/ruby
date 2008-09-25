@@ -2974,40 +2974,40 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  * The option integer should be logical-or of constants such as
  * Encoding::Converter::INVALID_REPLACE, etc.
  *
- * :invalid => nil ::
+ * [:invalid => nil]
  *   raise error on invalid byte sequence.  This is a default behavior.
- * :invalid => :replace ::
+ * [:invalid => :replace]
  *   replace invalid byte sequence as a replacement string.
- * :undef => nil ::
+ * [:undef => nil]
  *   raise error on conversion failure due to an character in source_encoding is not defined in destination_encoding.
  *   This is a default behavior.
- * :undef => :replace ::
+ * [:undef => :replace]
  *   replace undefined character in destination_encoding as a replacement string.
- * :replace => string ::
+ * [:replace => string]
  *   specify the replacement string.
  *   If not specified, "\uFFFD" is used for Unicode encodings and "?" for others.
- * :universal_newline => true ::
+ * [:universal_newline => true]
  *   convert CRLF and CR to LF.
- * :crlf_newline => true ::
+ * [:crlf_newline => true]
  *   convert LF to CRLF.
- * :cr_newline => true ::
+ * [:cr_newline => true]
  *   convert LF to CR.
- * :xml => :text ::
+ * [:xml => :text]
  *   escape as XML CharData.
+ *   This form can be used as a HTML 4.0 #PCDATA.
  *   - '&' -> '&amp;'
  *   - '<' -> '&lt;'
  *   - '>' -> '&gt;'
  *   - undefined characters in destination_encoding -> hexadecimal CharRef such as &#xHH;
- *   This form can be used as a HTML 4.0 #PCDATA.
- * :xml => :attr ::
+ * [:xml => :attr]
  *   escape as XML AttValue.
  *   The converted result is quoted as "...".
+ *   This form can be used as a HTML 4.0 attribute value.
  *   - '&' -> '&amp;'
  *   - '<' -> '&lt;'
  *   - '>' -> '&gt;'
  *   - '"' -> '&quot;'
  *   - undefined characters in destination_encoding -> hexadecimal CharRef such as &#xHH;
- *   This form can be used as a HTML 4.0 attribute value.
  *
  * example:
  *   # UTF-16BE to UTF-8
