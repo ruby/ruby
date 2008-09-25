@@ -14,7 +14,7 @@ class TestRDocRIDriver < Test::Unit::TestCase
     FileUtils.mkdir_p @home_ri
     FileUtils.mkdir_p @cache_dir
 
-    @driver = RDoc::RI::Driver.new
+    @driver = RDoc::RI::Driver.new(RDoc::RI::Driver.process_args([]))
     @driver.homepath = @home_ri
   end
 

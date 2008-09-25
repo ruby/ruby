@@ -45,7 +45,7 @@ class RDoc::RI::Reader
 
   def get_method(method_entry)
     path = method_entry.path_name
-    File.open(path) { |f| RI::Description.deserialize(f) }
+    File.open(path) { |f| RDoc::RI::Description.deserialize(f) }
   end
 
   ##
@@ -54,8 +54,8 @@ class RDoc::RI::Reader
   def get_class(class_entry)
     result = nil
     for path in class_entry.path_names
-      path = RiWriter.class_desc_path(path, class_entry)
-      desc = File.open(path) {|f| RI::Description.deserialize(f) }
+      path = RDoc::RI::Writer.class_desc_path(path, class_entry)
+      desc = File.open(path) {|f| RDoc::RI::Description.deserialize(f) }
       if result
         result.merge_in(desc)
       else

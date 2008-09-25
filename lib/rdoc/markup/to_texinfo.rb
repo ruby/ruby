@@ -30,7 +30,7 @@ class RDoc::Markup::ToTexInfo < RDoc::Markup::Formatter
 
   def accept_heading(attributes, text)
     heading = ['@majorheading', '@chapheading'][text.head_level - 1] || '@heading'
-    @text << "#{heading}{#{format(text)}}"
+    @text << "#{heading} #{format(text)}"
   end
 
   def accept_list_start(attributes, text)

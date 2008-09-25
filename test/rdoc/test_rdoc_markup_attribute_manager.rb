@@ -1,5 +1,6 @@
 require "test/unit"
 require "rdoc/markup/inline"
+require "rdoc/markup/to_html_crossref"
 
 class TestRDocMarkupAttributeManager < Test::Unit::TestCase
 
@@ -201,24 +202,23 @@ class TestRDocMarkupAttributeManager < Test::Unit::TestCase
   end
 
   def test_special
-    # class names, variable names, file names, or instance variables
-    @am.add_special(/(
-                       \b([A-Z]\w+(::\w+)*)
-                       | \#\w+[!?=]?
-                       | \b\w+([_\/\.]+\w+)+[!?=]?
-                      )/x,
-                    :CROSSREF)
+    @am.add_special(RDoc::Markup::ToHtmlCrossref::CROSSREF_REGEXP, :CROSSREF)
 
-    assert_equal(["cat"], @am.flow("cat"))
+    #
+    # The apostrophes in "cats'" and "dogs'" suppress the flagging of these
+    # words as potential cross-references, which is necessary for the unit
+    # tests.  Unfortunately, the markup engine right now does not actually
+    # check whether a cross-reference is valid before flagging it.
+    #
+    assert_equal(["cats'"], @am.flow("cats'"))
 
-    assert_equal(["cat ", crossref("#fred"), " dog"].flatten,
-                  @am.flow("cat #fred dog"))
+    assert_equal(["cats' ", crossref("#fred"), " dogs'"].flatten,
+                  @am.flow("cats' #fred dogs'"))
 
-    assert_equal([crossref("#fred"), " dog"].flatten,
-                  @am.flow("#fred dog"))
+    assert_equal([crossref("#fred"), " dogs'"].flatten,
+                  @am.flow("#fred dogs'"))
 
-    assert_equal(["cat ", crossref("#fred")].flatten, @am.flow("cat #fred"))
+    assert_equal(["cats' ", crossref("#fred")].flatten, @am.flow("cats' #fred"))
   end
 
 end
-

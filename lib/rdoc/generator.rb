@@ -127,7 +127,7 @@ module RDoc::Generator
     # * a complete list of all hyperlinkable terms (file, class, module, and
     #   method names)
 
-    def self.build_indicies(toplevels, options)
+    def self.build_indices(toplevels, options)
       files = []
       classes = []
 
@@ -215,7 +215,7 @@ module RDoc::Generator
       @methods.sort.map do |meth|
         {
           "name" => CGI.escapeHTML(meth.name),
-          "aref" => "#{path_prefix}\##{meth.aref}"
+          "aref" => "##{meth.aref}"
         }
       end
     end
@@ -614,9 +614,9 @@ module RDoc::Generator
     def class_attribute_values
       h_name = CGI.escapeHTML(name)
 
-      @values["path"]      = @path
+      @values["href"]      = @path
       @values["classmod"]  = @is_module ? "Module" : "Class"
-      @values["title"]     = "#{@values['classmod']}: #{h_name}"
+      @values["title"]     = "#{@values['classmod']}: #{h_name} [#{@options.title}]"
 
       c = @context
       c = c.parent while c and not c.diagram
@@ -704,7 +704,7 @@ module RDoc::Generator
 
     def filename_to_label
       @context.file_relative_name.gsub(/%|\/|\?|\#/) do
-        '%%%x' % $&[0].unpack('C')
+        ('%%%x' % $&[0]).unpack('C')
       end
     end
 
@@ -791,7 +791,7 @@ module RDoc::Generator
       full_path = @context.file_absolute_name
       short_name = ::File.basename full_path
 
-      @values["title"] = CGI.escapeHTML("File: #{short_name}")
+      @values["title"] = CGI.escapeHTML("File: #{short_name} [#{@options.title}]")
 
       if @context.diagram then
         @values["diagram"] = diagram_reference(@context.diagram)
@@ -821,17 +821,17 @@ module RDoc::Generator
     attr_reader :img_url
     attr_reader :source_code
 
-    @@seq = "M000000"
-
-    @@all_methods = []
-
     def self.all_methods
       @@all_methods
     end
 
     def self.reset
       @@all_methods = []
+      @@seq = "M000000"
     end
+
+    # Initialize the class variables.
+    self.reset
 
     def initialize(context, html_class, options)
       # TODO: rethink the class hierarchy here...
@@ -1043,12 +1043,18 @@ module RDoc::Generator
         first = $1.to_i - 1
         last  = first + src.count("\n")
         size = last.to_s.length
-        real_fmt = "%#{size}d: "
-        fmt = " " * (size+2)
+        fmt = "%#{size}d: "
+        is_first_line = true
+        line_num = first
         src.gsub!(/^/) do
-          res = sprintf(fmt, first)
-          first += 1
-          fmt = real_fmt
+          if is_first_line then
+            is_first_line = false
+            res = " " * (size+2)
+          else
+            res = sprintf(fmt, line_num)
+          end
+
+          line_num += 1
           res
         end
       end

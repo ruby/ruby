@@ -77,7 +77,9 @@ end
 class RDoc::RI::ModuleDescription < RDoc::RI::Description
 
   attr_accessor :class_methods
+  attr_accessor :class_method_extensions
   attr_accessor :instance_methods
+  attr_accessor :instance_method_extensions
   attr_accessor :attributes
   attr_accessor :constants
   attr_accessor :includes
@@ -148,6 +150,7 @@ class RDoc::RI::MethodDescription < RDoc::RI::Description
   attr_accessor :aliases
   attr_accessor :is_alias_for
   attr_accessor :params
+  attr_accessor :source_path
 
 end
 

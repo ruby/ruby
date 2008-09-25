@@ -17,11 +17,23 @@ module RDoc::Generator::XML::XML
                         href="<%= requires["aref"] %>"
 <% end %>
          />
-<% end # files["requires"] %>
+<% end %><%# files["requires"] %>
       </required-file-list>
 <% end %>
 <% if defined? classes and classes["sections"] then %>
 <% classes["sections"].each do |sections| %>
+<% if sections["constants"] then %>
+      <constant-list>
+<% sections["constants"].each do |constant| %>
+        <constant name="<%= constant["name"] %>">
+<% if constant["value"] then %>
+          <value><%= constant["value"] %></value>
+<% end %>
+          <description><%= constant["a_desc"] %></description>
+        </constant>
+<% end %><%# sections["constants"] %>
+      </constant-list>
+<% end %>
 <% if sections["attributes"] then %>
       <attribute-list>
 <% sections["attributes"].each do |attributes| %>
@@ -31,7 +43,7 @@ module RDoc::Generator::XML::XML
 <% end %>
           <description><%= attributes["a_desc"] %></description>
         </attribute>
-<% end # sections["attributes"] %>
+<% end %><%# sections["attributes"] %>
       </attribute-list>
 <% end %>
 <% if sections["method_list"] then %>
@@ -52,12 +64,12 @@ module RDoc::Generator::XML::XML
           </source-code-listing>
 <% end %>
         </method>
-<% end # method_list["methods"] %>
+<% end %><%# method_list["methods"] %>
 <% end %>
-<% end # sections["method_list"] %>
+<% end %><%# sections["method_list"] %>
       </method-list>
 <% end %>
-<% end # classes["sections"] %>
+<% end %><%# classes["sections"] %>
 <% end %>
 <% if defined? classes and classes["includes"] then %>
       <included-module-list>
@@ -67,7 +79,7 @@ module RDoc::Generator::XML::XML
                          href="<%= includes["aref"] %>"
 <% end %>
         />
-<% end # classes["includes"] %>
+<% end %><%# classes["includes"] %>
       </included-module-list>
 <% end %>
     </contents>
@@ -84,7 +96,7 @@ module RDoc::Generator::XML::XML
     </file-info>
 } + CONTENTS_XML + %{
   </file>
-<% end # values["files"] %>
+<% end %><%# values["files"] %>
 </file-list>
 <class-module-list>
 <% values["classes"].each do |classes| %>
@@ -94,7 +106,7 @@ module RDoc::Generator::XML::XML
       <infiles>
 <% classes["infiles"].each do |infiles|  %>
         <infile><%= href infiles["full_path_url"], infiles["full_path"] %></infile>
-<% end # classes["infiles"] %>
+<% end %><%# classes["infiles"] %>
       </infiles>
 <% end %>
 <% if classes["parent"] then %>
@@ -103,7 +115,7 @@ module RDoc::Generator::XML::XML
     </classmod-info>
 } + CONTENTS_XML + %{
   </<%= classes["classmod"] %>>
-<% end # values["classes"] %>
+<% end %><%# values["classes"] %>
 </class-module-list>
 </rdoc>
 }

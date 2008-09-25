@@ -134,7 +134,7 @@ module RDoc::RubyToken
 
   TokenDefinitions = [
     [:TkCLASS,      TkKW,  "class",  EXPR_CLASS],
-    [:TkMODULE,     TkKW,  "module", EXPR_BEG],
+    [:TkMODULE,     TkKW,  "module", EXPR_CLASS],
     [:TkDEF,        TkKW,  "def",    EXPR_FNAME],
     [:TkUNDEF,      TkKW,  "undef",  EXPR_FNAME],
     [:TkBEGIN,      TkKW,  "begin",  EXPR_BEG],
@@ -1945,9 +1945,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
         case tk
         when TkSEMICOLON
           break
-        when TkLPAREN, TkfLPAREN
+        when TkLPAREN, TkfLPAREN, TkLBRACE, TkLBRACK, TkDO
           nest += 1
-        when TkRPAREN
+        when TkRPAREN, TkRBRACE, TkRBRACK, TkEND
           nest -= 1
         when TkCOMMENT
           if nest <= 0 && @scanner.lex_state == EXPR_END
@@ -1955,7 +1955,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
             break
           end
         when TkNL
-          if (@scanner.lex_state == EXPR_END and nest <= 0) || !@scanner.continue
+          if (nest <= 0) && ((@scanner.lex_state == EXPR_END) || (!@scanner.continue))
             unget_tk(tk)
             break
           end
@@ -2683,8 +2683,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
   def remove_private_comments(comment)
-    comment.gsub!(/^#--.*?^#\+\+/m, '')
-    comment.sub!(/^#--.*/m, '')
+    comment.gsub!(/^#--\n.*?^#\+\+/m, '')
+    comment.sub!(/^#--\n.*/m, '')
   end
 
   def remove_token_listener(obj)

@@ -220,6 +220,22 @@ module RDoc
     end
 
     ##
+    # return the classes Hash (only to be used internally)
+
+    def classes_hash
+      @classes
+    end
+    protected :classes_hash
+
+    ##
+    # return the modules Hash (only to be used internally)
+
+    def modules_hash
+      @modules
+    end
+    protected :modules_hash
+
+    ##
     # Change the default visibility for new methods
 
     def ongoing_visibility=(vis)
@@ -272,7 +288,24 @@ module RDoc
     end
 
     def add_class(class_type, name, superclass)
-      add_class_or_module @classes, class_type, name, superclass
+      klass = add_class_or_module @classes, class_type, name, superclass
+
+      #
+      # If the parser encounters Container::Item before encountering
+      # Container, then it assumes that Container is a module.  This
+      # may not be the case, so remove Container from the module list
+      # if present and transfer any contained classes and modules to
+      # the new class.
+      #
+      mod = @modules.delete(name)
+
+      if mod then
+        klass.classes_hash.update(mod.classes_hash)
+        klass.modules_hash.update(mod.modules_hash)
+        klass.method_list.concat(mod.method_list)
+      end
+
+      return klass
     end
 
     def add_module(class_type, name)
@@ -282,25 +315,41 @@ module RDoc
     def add_method(a_method)
       a_method.visibility = @visibility
       add_to(@method_list, a_method)
+
+      unmatched_alias_list = @unmatched_alias_lists[a_method.name]
+      if unmatched_alias_list then
+        unmatched_alias_list.each do |unmatched_alias|
+          add_alias_impl unmatched_alias, a_method
+          @aliases.delete unmatched_alias
+        end
+
+        @unmatched_alias_lists.delete a_method.name
+      end
     end
 
     def add_attribute(an_attribute)
       add_to(@attributes, an_attribute)
     end
 
+    def add_alias_impl(an_alias, meth)
+      new_meth = AnyMethod.new(an_alias.text, an_alias.new_name)
+      new_meth.is_alias_for = meth
+      new_meth.singleton    = meth.singleton
+      new_meth.params       = meth.params
+      new_meth.comment = "Alias for \##{meth.name}"
+      meth.add_alias(new_meth)
+      add_method(new_meth)
+    end
+    
     def add_alias(an_alias)
       meth = find_instance_method_named(an_alias.old_name)
 
       if meth then
-        new_meth = AnyMethod.new(an_alias.text, an_alias.new_name)
-        new_meth.is_alias_for = meth
-        new_meth.singleton    = meth.singleton
-        new_meth.params       = meth.params
-        new_meth.comment = "Alias for \##{meth.name}"
-        meth.add_alias(new_meth)
-        add_method(new_meth)
+        add_alias_impl(an_alias, meth)
       else
         add_to(@aliases, an_alias)
+        unmatched_alias_list = @unmatched_alias_lists[an_alias.old_name] ||= []
+        unmatched_alias_list.push(an_alias)
       end
 
       an_alias
@@ -360,6 +409,10 @@ module RDoc
       @requires    = []
       @includes    = []
       @constants   = []
+
+      # This Hash maps a method name to a list of unmatched
+      # aliases (aliases of a method not yet encountered).
+      @unmatched_alias_lists = {}
     end
 
     # and remove classes and modules when we see a :nodoc: all
@@ -374,9 +427,12 @@ module RDoc
 
     # Find a named module
     def find_module_named(name)
-      return self if self.name == name
+      # First check the enclosed modules, then check the module itself,
+      # then check the enclosing modules (this mirrors the check done by
+      # the Ruby parser)
       res = @modules[name] || @classes[name]
       return res if res
+      return self if self.name == name
       find_enclosing_module_named(name)
     end
 
@@ -435,6 +491,7 @@ module RDoc
         unless modules.empty? then
           module_name = modules.shift
           result = find_module_named(module_name)
+
           if result then
             modules.each do |name|
               result = result.find_module_named(name)
@@ -573,9 +630,18 @@ module RDoc
 
         cls = all[name]
 
-        unless cls then
+        if !cls then
           cls = class_type.new name, superclass
           all[name] = cls unless @done_documenting
+        else
+          # If the class has been encountered already, check that its
+          # superclass has been set (it may not have been, depending on
+          # the context in which it was encountered).
+          if class_type == NormalClass
+            if !cls.superclass then
+              cls.superclass = superclass
+            end
+          end
         end
 
         collection[name] = cls unless @done_documenting

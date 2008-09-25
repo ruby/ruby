@@ -93,7 +93,7 @@ class RDoc::RI::Formatter
   end
 
   def raw_print_line(txt)
-    @output.puts txt
+    @output.print txt
   end
 
   ##

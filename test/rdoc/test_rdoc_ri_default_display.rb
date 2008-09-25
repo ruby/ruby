@@ -4,7 +4,7 @@ require 'rdoc/ri/formatter'
 require 'rdoc/ri/display'
 require 'rdoc/ri/driver'
 
-class TestRdocRiDefaultDisplay < Test::Unit::TestCase
+class TestRDocRiDefaultDisplay < Test::Unit::TestCase
 
   def setup
     @output = StringIO.new
@@ -27,7 +27,6 @@ class TestRdocRiDefaultDisplay < Test::Unit::TestCase
   end
 
   def test_display_class_info
-    ri_reader = nil
     klass = h \
       'attributes' => [
         { 'name' => 'attribute', 'rw' => 'RW',
@@ -43,9 +42,9 @@ class TestRdocRiDefaultDisplay < Test::Unit::TestCase
       ],
       'comment' => [RDoc::Markup::Flow::P.new('SomeClass comment')],
       'constants' => [
-        { 'name' => 'CONSTANT', 'value' => '"value"',
+        { 'name' => 'CONSTANT', 'value' => '"value1"',
           'comment' => [RDoc::Markup::Flow::P.new('CONSTANT value')] },
-        { 'name' => 'CONSTANT_NOCOMMENT', 'value' => '"value"',
+        { 'name' => 'CONSTANT_NOCOMMENT', 'value' => '"value2"',
           'comment' => nil },
       ],
       'display_name' => 'Class',
@@ -59,7 +58,7 @@ class TestRdocRiDefaultDisplay < Test::Unit::TestCase
       ],
       'superclass_string' => 'Object'
 
-    @dd.display_class_info klass, ri_reader
+    @dd.display_class_info klass
 
     expected = <<-EOF
 ---------------------------------------------------- Class: SomeClass < Object
@@ -71,10 +70,19 @@ class TestRdocRiDefaultDisplay < Test::Unit::TestCase
 Constants:
 ----------
 
-     CONSTANT:
+     CONSTANT = "value1"
           CONSTANT value
 
-     CONSTANT_NOCOMMENT
+     CONSTANT_NOCOMMENT = "value2"
+
+
+Attributes:
+-----------
+
+     attribute (RW):
+          attribute comment
+
+     attribute_no_comment (RW)
 
 
 Class methods:
@@ -99,15 +107,6 @@ Instance method extensions:
 ---------------------------
 
      instance_method_extension
-
-
-Attributes:
------------
-
-     attribute (RW):
-          attribute comment
-
-     attribute_no_comment (RW)
     EOF
 
     assert_equal expected, @output.string
@@ -140,7 +139,7 @@ Attributes:
 -------------------------------------------------------- SomeClass#some_method
      some_method(arg1, arg2) {|block_param| ...}
 
-     Extension from /nonexistent
+     From /nonexistent
 ------------------------------------------------------------------------------
      some comment
 
@@ -152,7 +151,7 @@ Attributes:
   end
 
   def test_display_method_info_singleton
-    method = RDoc::RI::Driver::Hash.new.update \
+    method = RDoc::RI::Driver::OpenStructHash.new.update \
       'aliases' => [],
       'block_params' => nil,
       'comment' => nil,
@@ -167,6 +166,8 @@ Attributes:
     expected = <<-EOF
 ------------------------------------------------------- SomeClass::some_method
      SomeClass::some_method(arg1, arg2)
+
+     From 
 ------------------------------------------------------------------------------
      [no description]
     EOF
@@ -176,7 +177,7 @@ Attributes:
 
   def test_display_method_list
     methods = [
-      RDoc::RI::Driver::Hash.new.update(
+      RDoc::RI::Driver::OpenStructHash.new.update(
         "aliases" => [],
         "block_params" => nil,
         "comment" =>  nil,
@@ -186,7 +187,7 @@ Attributes:
         "params" => "()",
         "visibility" => "public"
       ),
-      RDoc::RI::Driver::Hash.new.update(
+      RDoc::RI::Driver::OpenStructHash.new.update(
         "aliases" => [],
         "block_params" => nil,
         "comment" => nil,
@@ -204,7 +205,8 @@ Attributes:
      More than one method matched your request.  You can refine your search by
      asking for information on one of:
 
-     SomeClass#some_method, SomeClass#some_other_method
+SomeClass#some_method []
+SomeClass#some_other_method []
     EOF
 
     assert_equal expected, @output.string
@@ -216,7 +218,7 @@ Attributes:
     expected = <<-EOF
      some_method(arg1, arg2) {|block_param| ...}
 
-     Extension from /nonexistent
+     From /nonexistent
     EOF
 
     assert_equal expected, @output.string
@@ -234,7 +236,7 @@ some_method(start, length)
      some_method(index)
      some_method(start, length)
 
-     Extension from /nonexistent
+     From /nonexistent
     EOF
 
     assert_equal expected, @output.string
@@ -249,7 +251,7 @@ some_method(start, length)
     expected = <<-EOF
      SomeClass::some_method(arg1, arg2) {|block_param| ...}
 
-     Extension from /nonexistent
+     From /nonexistent
     EOF
 
     assert_equal expected, @output.string
@@ -289,8 +291,7 @@ install an additional package, or ask the packager to enable ri generation.
   end
 
   def h(hash)
-    RDoc::RI::Driver::Hash.convert hash
+    RDoc::RI::Driver::OpenStructHash.convert hash
   end
 
 end
-

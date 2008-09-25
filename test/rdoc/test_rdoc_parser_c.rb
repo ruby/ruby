@@ -10,7 +10,7 @@ class RDoc::Parser::C
   public :do_classes, :do_constants
 end
 
-class TestRdocParserC < Test::Unit::TestCase
+class TestRDocParserC < Test::Unit::TestCase
 
   def setup
     @tempfile = Tempfile.new self.class.name
@@ -244,9 +244,36 @@ Init_Foo(void) {
     assert_equal "  \n   a comment for class Foo on Init\n   \n", klass.comment
   end
 
+  def test_define_method
+    content = <<-EOF
+/*Method Comment! */
+static VALUE
+rb_io_s_read(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+}
+
+void
+Init_IO(void) {
+    /*
+     * a comment for class Foo on rb_define_class
+     */
+    VALUE rb_cIO = rb_define_class("IO", rb_cObject);
+    rb_define_singleton_method(rb_cIO, "read", rb_io_s_read, -1);
+}
+    EOF
+
+    klass = util_get_class content, 'rb_cIO'
+    read_method = klass.method_list.first
+    assert_equal "read", read_method.name
+    assert_equal "  Method Comment!   \n", read_method.comment
+  end
+
   def util_get_class(content, name)
     parser = util_parser content
-    parser.do_classes
+    parser.scan
     parser.classes[name]
   end
 

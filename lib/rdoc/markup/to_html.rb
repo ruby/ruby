@@ -57,7 +57,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
 
   ##
   # Generate a hyperlink for url, labeled with text. Handle the
-  # special cases for img: and link: described under handle_special_HYPEDLINK
+  # special cases for img: and link: described under handle_special_HYPERLINK
 
   def gen_url(url, text)
     if url =~ /([A-Za-z]+):(.*)/ then
@@ -304,9 +304,12 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   # some of these patterns are taken from SmartyPants...
 
   def convert_string_fancy(item)
-    # convert -- to em-dash, (-- to en-dash)
-    item.gsub(/---?/, '&#8212;'). #gsub(/--/, '&#8211;').
+    # convert ampersand before doing anything else
+    item.gsub(/&/, '&amp;').
 
+    # convert -- to em-dash, (-- to en-dash)
+      gsub(/---?/, '&#8212;'). #gsub(/--/, '&#8211;').
+      
     # convert ... to elipsis (and make sure .... becomes .<elipsis>)
       gsub(/\.\.\.\./, '.&#8230;').gsub(/\.\.\./, '&#8230;').
 
@@ -318,15 +321,15 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
       gsub(/'/, '&#8216;').
 
     # convert double closing quote
-      gsub(%r{([^ \t\r\n\[\{\(])\'(?=\W)}, '\1&#8221;'). # }
+      gsub(%r{([^ \t\r\n\[\{\(])\"(?=\W)}, '\1&#8221;'). # }
 
     # convert double opening quote
-      gsub(/'/, '&#8220;').
+      gsub(/"/, '&#8220;').
 
     # convert copyright
       gsub(/\(c\)/, '&#169;').
 
-    # convert and registered trademark
+    # convert registered trademark
       gsub(/\(r\)/, '&#174;')
   end
 

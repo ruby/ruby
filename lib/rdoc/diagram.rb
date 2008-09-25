@@ -311,28 +311,30 @@ module RDoc
     # inclusion on the page
 
     def wrap_in_image_map(src, dot)
-      res = %{<map id="map" name="map">\n}
+      res = ""
       dot_map = `dot -Tismap #{src}`
-      dot_map.split($/).each do |area|
-        unless area =~ /^rectangle \((\d+),(\d+)\) \((\d+),(\d+)\) ([\/\w.]+)\s*(.*)/
-          $stderr.puts "Unexpected output from dot:\n#{area}"
-          return nil
+      
+      if(!dot_map.empty?)
+        res << %{<map id="map" name="map">\n}
+        dot_map.split($/).each do |area|
+          unless area =~ /^rectangle \((\d+),(\d+)\) \((\d+),(\d+)\) ([\/\w.]+)\s*(.*)/
+            $stderr.puts "Unexpected output from dot:\n#{area}"
+            return nil
+          end
+
+          xs, ys = [$1.to_i, $3.to_i], [$2.to_i, $4.to_i]
+          url, area_name = $5, $6
+
+          res <<  %{  <area shape="rect" coords="#{xs.min},#{ys.min},#{xs.max},#{ys.max}" }
+          res <<  %{     href="#{url}" alt="#{area_name}" />\n}
         end
-
-        xs, ys = [$1.to_i, $3.to_i], [$2.to_i, $4.to_i]
-        url, area_name = $5, $6
-
-        res <<  %{  <area shape="rect" coords="#{xs.min},#{ys.min},#{xs.max},#{ys.max}" }
-        res <<  %{     href="#{url}" alt="#{area_name}" />\n}
+        res << "</map>\n"
       end
-      res << "</map>\n"
-#      map_file = src.sub(/.dot/, '.map')
-#      system("dot -Timap #{src} -o #{map_file}")
-      res << %{<img src="#{dot}" usemap="#map" border="0" alt="#{dot}">}
+
+      res << %{<img src="#{dot}" usemap="#map" alt="#{dot}" />}
       return res
     end
 
   end
 
 end
-

@@ -1,7 +1,5 @@
 require 'rdoc/ri'
 
-class RDoc::RI::Error < RuntimeError; end
-
 ##
 # Break argument into its constituent class or module names, an
 # optional method type, and a method name

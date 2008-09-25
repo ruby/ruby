@@ -6,11 +6,15 @@ require 'rdoc/options'
 require 'rdoc/parser/ruby'
 require 'rdoc/stats'
 
-class TestRdocParserRuby < Test::Unit::TestCase
+class TestRDocParserRuby < Test::Unit::TestCase
 
   def setup
     @tempfile = Tempfile.new self.class.name
     @filename = @tempfile.path
+
+    # Some tests need two paths.
+    @tempfile2 = Tempfile.new self.class.name
+    @filename2 = @tempfile2.path
 
     util_toplevel
     @options = RDoc::Options.new
@@ -20,6 +24,7 @@ class TestRdocParserRuby < Test::Unit::TestCase
 
   def teardown
     @tempfile.close
+    @tempfile2.close
   end
 
   def test_look_for_directives_in_commented
@@ -156,6 +161,105 @@ class TestRdocParserRuby < Test::Unit::TestCase
 
     bar = foo.classes.first
     assert_equal 'Super', bar.superclass
+  end
+
+  def test_parse_module
+    comment = "##\n# my module\n"
+
+    util_parser 'module Foo; end'
+
+    tk = @parser.get_tk
+
+    @parser.parse_module @top_level, RDoc::Parser::Ruby::NORMAL, tk, comment
+
+    foo = @top_level.modules.first
+    assert_equal 'Foo', foo.full_name
+    assert_equal comment, foo.comment
+  end
+  
+  def test_parse_class_mistaken_for_module
+#
+# The code below is not strictly legal Ruby (Foo must have been defined
+# before Foo::Bar is encountered), but RDoc might encounter Foo::Bar before
+# Foo if they live in different files.
+#
+    code = <<-EOF
+class Foo::Bar
+end
+
+module Foo::Baz
+end
+
+class Foo
+end
+EOF
+
+    util_parser code
+
+    @parser.scan()
+
+    assert(@top_level.modules.empty?)
+    foo = @top_level.classes.first
+    assert_equal 'Foo', foo.full_name
+
+    bar = foo.classes.first
+    assert_equal 'Foo::Bar', bar.full_name
+
+    baz = foo.modules.first
+    assert_equal 'Foo::Baz', baz.full_name
+  end
+
+  def test_parse_class_definition_encountered_after_class_reference
+#
+# The code below is not strictly legal Ruby (Foo must have been defined
+# before Foo.bar is encountered), but RDoc might encounter Foo.bar before
+# Foo if they live in different files.
+#
+    code = <<-EOF
+def Foo.bar
+end
+
+class Foo < IO
+end
+EOF
+
+    util_parser code
+
+    @parser.scan()
+
+    assert(@top_level.modules.empty?)
+
+    foo = @top_level.classes.first
+    assert_equal 'Foo', foo.full_name
+    assert_equal 'IO', foo.superclass
+
+    bar = foo.method_list.first
+    assert_equal 'bar', bar.name
+  end
+
+  def test_parse_module_relative_to_top_level_namespace
+    comment = <<-EOF
+#
+# Weirdly named module
+#
+EOF
+
+    code = comment + <<-EOF
+module ::Foo
+  class Helper
+  end
+end
+EOF
+
+    util_parser code
+    @parser.scan()
+
+    foo = @top_level.modules.first
+    assert_equal 'Foo', foo.full_name
+    assert_equal comment, foo.comment
+
+    helper = foo.classes.first
+    assert_equal 'Foo::Helper', helper.full_name
   end
 
   def test_parse_comment
@@ -416,9 +520,107 @@ end
 
     @parser.parse_statements @top_level, RDoc::Parser::Ruby::NORMAL, nil, ''
 
+    foo = @top_level.classes.first.method_list[0]
+    assert_equal 'foo', foo.name
+
     foo2 = @top_level.classes.first.method_list.last
     assert_equal 'foo2', foo2.name
     assert_equal 'foo', foo2.is_alias_for.name
+    assert @top_level.classes.first.aliases.empty?
+  end
+
+  def test_parse_statements_identifier_alias_method_before_original_method
+    # This is not strictly legal Ruby code, but it simulates finding an alias
+    # for a method before finding the original method, which might happen
+    # to rdoc if the alias is in a different file than the original method
+    # and rdoc processes the alias' file first.
+    content = <<-EOF
+class Foo
+  alias_method :foo2, :foo
+
+  alias_method :foo3, :foo
+
+  def foo()
+  end
+
+  alias_method :foo4, :foo
+
+  alias_method :foo5, :unknown
+end
+EOF
+
+    util_parser content
+
+    @parser.parse_statements @top_level, RDoc::Parser::Ruby::NORMAL, nil, ''
+
+    foo = @top_level.classes.first.method_list[0]
+    assert_equal 'foo', foo.name
+
+    foo2 = @top_level.classes.first.method_list[1]
+    assert_equal 'foo2', foo2.name
+    assert_equal 'foo', foo2.is_alias_for.name
+
+    foo3 = @top_level.classes.first.method_list[2]
+    assert_equal 'foo3', foo3.name
+    assert_equal 'foo', foo3.is_alias_for.name
+
+    foo4 = @top_level.classes.first.method_list.last
+    assert_equal 'foo4', foo4.name
+    assert_equal 'foo', foo4.is_alias_for.name
+
+    assert_equal 'unknown', @top_level.classes.first.aliases[0].old_name
+  end
+
+  def test_parse_statements_identifier_constant
+    content = <<-EOF
+class Foo
+  FIRST_CONSTANT = 5
+
+  SECOND_CONSTANT = [
+     1,
+     2,
+     3
+  ]
+
+  THIRD_CONSTANT = {
+     :foo => 'bar',
+     :x => 'y'
+  }
+
+  FOURTH_CONSTANT = SECOND_CONSTANT.map do |element|
+    element + 1
+    element + 2
+  end
+
+  FIFTH_CONSTANT = SECOND_CONSTANT.map { |element| element + 1 }
+end
+EOF
+
+    util_parser content
+
+    @parser.parse_statements @top_level, RDoc::Parser::Ruby::NORMAL, nil, ''
+
+    constants = @top_level.classes.first.constants
+
+    constant = constants[0]
+    assert_equal 'FIRST_CONSTANT', constant.name
+    assert_equal '5', constant.value
+
+    constant = constants[1]
+    assert_equal 'SECOND_CONSTANT', constant.name
+    assert_equal '[      1,      2,      3   ]', constant.value
+
+    constant = constants[2]
+    assert_equal 'THIRD_CONSTANT', constant.name
+    assert_equal "{      :foo => 'bar',      :x => 'y'   }", constant.value
+
+    constant = constants[3]
+    assert_equal 'FOURTH_CONSTANT', constant.name
+    assert_equal 'SECOND_CONSTANT.map do |element|     element + 1     element + 2   end', constant.value
+
+    constant = constants.last
+    assert_equal 'FIFTH_CONSTANT', constant.name
+    assert_equal 'SECOND_CONSTANT.map { |element| element + 1 }', constant.value
   end
 
   def test_parse_statements_identifier_attr
@@ -530,9 +732,17 @@ end
                                      @stats
   end
 
+  def util_two_parsers(first_file_content, second_file_content)
+    util_parser first_file_content
+
+    @parser2 = RDoc::Parser::Ruby.new @top_level2, @filename,
+                                      second_file_content, @options, @stats
+  end
+
   def util_toplevel
     RDoc::TopLevel.reset
     @top_level = RDoc::TopLevel.new @filename
+    @top_level2 = RDoc::TopLevel.new @filename2
   end
 
 end

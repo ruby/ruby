@@ -14,7 +14,7 @@ class RDoc::RI::ClassEntry
     @inferior_classes = []
   end
 
-  # We found this class in more tha one place, so add
+  # We found this class in more than one place, so add
   # in the name from there.
   def add_path(path)
     @path_names << path
@@ -37,10 +37,10 @@ class RDoc::RI::ClassEntry
       if name =~ /^(.*?)-(c|i).yaml$/
         external_name = $1
         is_class_method = $2 == "c"
-        internal_name = RiWriter.external_to_internal(external_name)
+        internal_name = RDoc::RI::Writer.external_to_internal(external_name)
         list = is_class_method ? @class_methods : @instance_methods
         path = File.join(dir, name)
-        list << MethodEntry.new(path, internal_name, is_class_method, self)
+        list << RDoc::RI::MethodEntry.new(path, internal_name, is_class_method, self)
       else
         full_name = File.join(dir, name)
         if File.directory?(full_name)
@@ -48,7 +48,7 @@ class RDoc::RI::ClassEntry
           if inf_class
             inf_class.add_path(full_name)
           else
-            inf_class = ClassEntry.new(full_name, name, self)
+            inf_class = RDoc::RI::ClassEntry.new(full_name, name, self)
             @inferior_classes << inf_class
           end
           inf_class.load_from(full_name)
@@ -168,7 +168,7 @@ class RDoc::RI::MethodEntry
 end
 
 ##
-# We represent everything know about all 'ri' files accessible to this program
+# We represent everything known about all 'ri' files accessible to this program
 
 class RDoc::RI::Cache
 
@@ -185,4 +185,3 @@ class RDoc::RI::Cache
   end
 
 end
-

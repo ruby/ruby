@@ -63,10 +63,31 @@ class RDoc::Parser
   end
 
   ##
+  # Shamelessly stolen from the ptools gem (since RDoc cannot depend on
+  # the gem).
+
+  def self.binary?(file)
+    s = (File.read(file, File.stat(file).blksize) || "").split(//)
+    ((s.size - s.grep(" ".."~").size) / s.size.to_f) > 0.30
+  end
+  private_class_method :binary?
+
+  ##
   # Return a parser that can handle a particular extension
 
   def self.can_parse(file_name)
-    RDoc::Parser.parsers.find { |regexp, parser| regexp =~ file_name }.last
+    parser = RDoc::Parser.parsers.find { |regexp,| regexp =~ file_name }.last
+
+    #
+    # The default parser should *NOT* parse binary files.
+    #
+    if parser == RDoc::Parser::Simple then
+      if binary? file_name then
+        return nil
+      end
+    end
+
+    return parser
   end
 
   ##

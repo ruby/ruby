@@ -1,15 +1,17 @@
 require 'rdoc/generator/html'
-require 'rdoc/generator/html/one_page_html'
+require 'rdoc/generator/html/common'
 
 ##
 # = CSS2 RDoc HTML template
 #
-# This is a template for RDoc that uses XHTML 1.0 Transitional and dictates a
+# This is a template for RDoc that uses XHTML 1.0 Strict and dictates a
 # bit more of the appearance of the output to cascading stylesheets than the
 # default. It was designed for clean inline code display, and uses DHTMl to
 # toggle the visibility of each method's source with each click on the
 # '[source]' link.
 #
+# This template *also* forms the basis of the frameless template.
+# 
 # == Authors
 #
 # * Michael Granger <ged@FaerieMUD.org>
@@ -23,34 +25,54 @@ require 'rdoc/generator/html/one_page_html'
 
 module RDoc::Generator::HTML::HTML
 
+  include RDoc::Generator::HTML::Common
+
   FONTS = "Verdana,Arial,Helvetica,sans-serif"
 
   STYLE = <<-EOF
 body {
-    font-family: Verdana,Arial,Helvetica,sans-serif;
-    font-size:   90%;
-    margin: 0;
-    margin-left: 40px;
-    padding: 0;
-    background: white;
+  font-family: #{FONTS};
+  font-size: 90%;
+  margin: 0;
+  margin-left: 40px;
+  padding: 0;
+  background: white;
+  color: black;
 }
 
-h1,h2,h3,h4 { margin: 0; color: #efefef; background: transparent; }
-h1 { font-size: 150%; }
-h2,h3,h4 { margin-top: 1em; }
+h1, h2, h3, h4 {
+  margin: 0;
+  background: transparent;
+}
 
-a { background: #eef; color: #039; text-decoration: none; }
-a:hover { background: #039; color: #eef; }
+h1 {
+  font-size: 150%;
+}
+
+h2,h3,h4 {
+  margin-top: 1em;
+}
+
+:link, :visited {
+  background: #eef;
+  color: #039;
+  text-decoration: none;
+}
+
+:link:hover, :visited:hover {
+  background: #039;
+  color: #eef;
+}
 
 /* Override the base stylesheet's Anchor inside a table cell */
-td > a {
+td > :link, td > :visited {
   background: transparent;
   color: #039;
   text-decoration: none;
 }
 
 /* and inside a section title */
-.section-title > a {
+.section-title > :link, .section-title > :visited {
   background: transparent;
   color: #eee;
   text-decoration: none;
@@ -58,181 +80,255 @@ td > a {
 
 /* === Structural elements =================================== */
 
-div#index {
-    margin: 0;
-    margin-left: -40px;
-    padding: 0;
-    font-size: 90%;
+.index {
+  margin: 0;
+  margin-left: -40px;
+  padding: 0;
+  font-size: 90%;
 }
 
-
-div#index a {
-    margin-left: 0.7em;
+.index :link, .index :visited {
+  margin-left: 0.7em;
 }
 
-div#index .section-bar {
-   margin-left: 0px;
-   padding-left: 0.7em;
-   background: #ccc;
-   font-size: small;
+.index .section-bar {
+  margin-left: 0px;
+  padding-left: 0.7em;
+  background: #ccc;
+  font-size: small;
 }
 
-
-div#classHeader, div#fileHeader {
-    width: auto;
-    color: white;
-    padding: 0.5em 1.5em 0.5em 1.5em;
-    margin: 0;
-    margin-left: -40px;
-    border-bottom: 3px solid #006;
+#classHeader, #fileHeader {
+  width: auto;
+  color: white;
+  padding: 0.5em 1.5em 0.5em 1.5em;
+  margin: 0;
+  margin-left: -40px;
+  border-bottom: 3px solid #006;
 }
 
-div#classHeader a, div#fileHeader a {
-    background: inherit;
-    color: white;
+#classHeader :link, #fileHeader :link,
+#classHeader :visited, #fileHeader :visited {
+  background: inherit;
+  color: white;
 }
 
-div#classHeader td, div#fileHeader td {
-    background: inherit;
-    color: white;
+#classHeader td, #fileHeader td {
+  background: inherit;
+  color: white;
 }
 
-
-div#fileHeader {
-    background: #057;
+#fileHeader {
+  background: #057;
 }
 
-div#classHeader {
-    background: #048;
+#classHeader {
+  background: #048;
 }
-
 
 .class-name-in-header {
   font-size:  180%;
   font-weight: bold;
 }
 
-
-div#bodyContent {
-    padding: 0 1.5em 0 1.5em;
+#bodyContent {
+  padding: 0 1.5em 0 1.5em;
 }
 
-div#description {
-    padding: 0.5em 1.5em;
-    background: #efefef;
-    border: 1px dotted #999;
+#description {
+  padding: 0.5em 1.5em;
+  background: #efefef;
+  border: 1px dotted #999;
 }
 
-div#description h1,h2,h3,h4,h5,h6 {
-    color: #125;;
-    background: transparent;
+#description h1, #description h2, #description h3,
+#description h4, #description h5, #description h6 {
+  color: #125;
+  background: transparent;
 }
 
-div#validator-badges {
-    text-align: center;
-}
-div#validator-badges img { border: 0; }
-
-div#copyright {
-    color: #333;
-    background: #efefef;
-    font: 0.75em sans-serif;
-    margin-top: 5em;
-    margin-bottom: 0;
-    padding: 0.5em 2em;
+#validator-badges {
+  text-align: center;
 }
 
+#validator-badges img {
+  border: 0;
+}
+
+#copyright {
+  color: #333;
+  background: #efefef;
+  font: 0.75em sans-serif;
+  margin-top: 5em;
+  margin-bottom: 0;
+  padding: 0.5em 2em;
+}
 
 /* === Classes =================================== */
 
 table.header-table {
-    color: white;
-    font-size: small;
+  color: white;
+  font-size: small;
 }
 
 .type-note {
-    font-size: small;
-    color: #DEDEDE;
-}
-
-.xxsection-bar {
-    background: #eee;
-    color: #333;
-    padding: 3px;
+  font-size: small;
+  color: #dedede;
 }
 
 .section-bar {
-   color: #333;
-   border-bottom: 1px solid #999;
-    margin-left: -20px;
+  color: #333;
+  border-bottom: 1px solid #999;
+  margin-left: -20px;
 }
-
 
 .section-title {
-    background: #79a;
-    color: #eee;
-    padding: 3px;
-    margin-top: 2em;
-    margin-left: -30px;
-    border: 1px solid #999;
+  background: #79a;
+  color: #eee;
+  padding: 3px;
+  margin-top: 2em;
+  margin-left: -30px;
+  border: 1px solid #999;
 }
 
-.top-aligned-row {  vertical-align: top }
-.bottom-aligned-row { vertical-align: bottom }
+.top-aligned-row {
+  vertical-align: top
+}
+
+.bottom-aligned-row {
+  vertical-align: bottom
+}
+
+#diagram img {
+  border: 0;
+}
 
 /* --- Context section classes ----------------------- */
 
 .context-row { }
-.context-item-name { font-family: monospace; font-weight: bold; color: black; }
-.context-item-value { font-size: small; color: #448; }
-.context-item-desc { color: #333; padding-left: 2em; }
+
+.context-item-name {
+  font-family: monospace;
+  font-weight: bold;
+  color: black;
+}
+
+.context-item-value {
+  font-size: small;
+  color: #448;
+}
+
+.context-item-desc {
+  color: #333;
+  padding-left: 2em;
+}
 
 /* --- Method classes -------------------------- */
+
 .method-detail {
-    background: #efefef;
-    padding: 0;
-    margin-top: 0.5em;
-    margin-bottom: 1em;
-    border: 1px dotted #ccc;
+  background: #efefef;
+  padding: 0;
+  margin-top: 0.5em;
+  margin-bottom: 1em;
+  border: 1px dotted #ccc;
 }
+
 .method-heading {
   color: black;
   background: #ccc;
   border-bottom: 1px solid #666;
   padding: 0.2em 0.5em 0 0.5em;
 }
-.method-signature { color: black; background: inherit; }
-.method-name { font-weight: bold; }
-.method-args { font-style: italic; }
-.method-description { padding: 0 0.5em 0 0.5em; }
+
+.method-signature {
+  color: black;
+  background: inherit;
+}
+
+.method-name {
+  font-weight: bold;
+}
+
+.method-args {
+  font-style: italic;
+}
+
+.method-description {
+  padding: 0 0.5em 0 0.5em;
+}
 
 /* --- Source code sections -------------------- */
 
-a.source-toggle { font-size: 90%; }
-div.method-source-code {
-    background: #262626;
-    color: #ffdead;
-    margin: 1em;
-    padding: 0.5em;
-    border: 1px dashed #999;
-    overflow: hidden;
+:link.source-toggle, :visited.source-toggle {
+  font-size: 90%;
 }
 
-div.method-source-code pre { color: #ffdead; overflow: hidden; }
+div.method-source-code {
+  background: #262626;
+  color: #ffdead;
+  margin: 1em;
+  padding: 0.5em;
+  border: 1px dashed #999;
+  overflow: auto;
+}
+
+div.method-source-code pre {
+  color: #ffdead;
+}
 
 /* --- Ruby keyword styles --------------------- */
 
-.standalone-code { background: #221111; color: #ffdead; overflow: hidden; }
+.standalone-code {
+  background: #221111;
+  color: #ffdead;
+  overflow: auto;
+}
 
-.ruby-constant  { color: #7fffd4; background: transparent; }
-.ruby-keyword { color: #00ffff; background: transparent; }
-.ruby-ivar    { color: #eedd82; background: transparent; }
-.ruby-operator  { color: #00ffee; background: transparent; }
-.ruby-identifier { color: #ffdead; background: transparent; }
-.ruby-node    { color: #ffa07a; background: transparent; }
-.ruby-comment { color: #b22222; font-weight: bold; background: transparent; }
-.ruby-regexp  { color: #ffa07a; background: transparent; }
-.ruby-value   { color: #7fffd4; background: transparent; }
+.ruby-constant {
+  color: #7fffd4;
+  background: transparent;
+}
+
+.ruby-keyword {
+  color: #00ffff;
+  background: transparent;
+}
+
+.ruby-ivar {
+  color: #eedd82;
+  background: transparent;
+}
+
+.ruby-operator {
+  color: #00ffee;
+  background: transparent;
+}
+
+.ruby-identifier {
+  color: #ffdead;
+  background: transparent;
+}
+
+.ruby-node {
+  color: #ffa07a;
+  background: transparent;
+}
+
+.ruby-comment {
+  color: #b22222;
+  font-weight: bold;
+  background: transparent;
+}
+
+.ruby-regexp {
+  color: #ffa07a;
+  background: transparent;
+}
+
+.ruby-value {
+  color: #7fffd4;
+  background: transparent;
+}
 EOF
 
 
@@ -240,15 +336,7 @@ EOF
 ### H E A D E R   T E M P L A T E
 #####################################################################
 
-  XHTML_PREAMBLE = <<-EOF
-<?xml version="1.0" encoding="<%= values["charset"] %>"?>
-<!DOCTYPE html
-     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  EOF
-
-  HEADER = XHTML_PREAMBLE + <<-EOF
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  HEADER = XHTML_STRICT_PREAMBLE + HTML_ELEMENT + <<-EOF
 <head>
   <title><%= values["title"] %></title>
   <meta http-equiv="Content-Type" content="text/html; charset=<%= values["charset"] %>" />
@@ -281,7 +369,7 @@ EOF
   }
 
   // Make codeblocks hidden by default
-  document.writeln( "<style type=\\"text/css\\">div.method-source-code { display: none }</style>" )
+  document.writeln( "<style type=\\"text/css\\">div.method-source-code { display: none }<\\/style>" )
 
   // ]]>
   </script>
@@ -289,13 +377,6 @@ EOF
 </head>
 <body>
 EOF
-
-#####################################################################
-### C O N T E X T   C O N T E N T   T E M P L A T E
-#####################################################################
-
-  CONTEXT_CONTENT = %{
-}
 
 #####################################################################
 ### F O O T E R   T E M P L A T E
@@ -480,8 +561,8 @@ EOF
           <td class="context-item-name"><%= constants["name"] %></td>
           <td>=</td>
           <td class="context-item-value"><%= constants["value"] %></td>
-<%       if sections["desc"] then %>
-          <td width="3em">&nbsp;</td>
+<%       if constants["desc"] then %>
+          <td>&nbsp;</td>
           <td class="context-item-desc"><%= constants["desc"] %></td>
 <%       end %>
         </tr>
@@ -616,8 +697,7 @@ EOF
 ### S O U R C E   C O D E   T E M P L A T E
 #####################################################################
 
-  SRC_PAGE = XHTML_PREAMBLE + <<-EOF
-<html>
+  SRC_PAGE = XHTML_STRICT_PREAMBLE + HTML_ELEMENT + <<-EOF
 <head>
   <title><%= values["title"] %></title>
   <meta http-equiv="Content-Type" content="text/html; charset=<%= values["charset"] %>" />
@@ -634,25 +714,22 @@ EOF
 ### I N D E X   F I L E   T E M P L A T E S
 #####################################################################
 
-  FR_INDEX_BODY = %{
-<%= template_include %>
-}
+  FR_INDEX_BODY = %{<%= template_include %>}
 
-  FILE_INDEX = XHTML_PREAMBLE + <<-EOF
+  FILE_INDEX = XHTML_STRICT_PREAMBLE + HTML_ELEMENT + <<-EOF
 <!--
 
-    <%= values["list_title"] %>
+    <%= values["title"] %>
 
   -->
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-  <title><%= values["list_title"] %></title>
+  <title><%= values["title"] %></title>
   <meta http-equiv="Content-Type" content="text/html; charset=<%= values["charset"] %>" />
   <link rel="stylesheet" href="<%= values["style_url"] %>" type="text/css" />
   <base target="docwin" />
 </head>
 <body>
-<div id="index">
+<div class="index">
   <h1 class="section-bar"><%= values["list_title"] %></h1>
   <div id="index-entries">
 <% values["entries"].each do |entries| %>
@@ -667,18 +744,12 @@ EOF
   CLASS_INDEX = FILE_INDEX
   METHOD_INDEX = FILE_INDEX
 
-  INDEX = <<-EOF
-<?xml version="1.0" encoding="<%= values["charset"] %>"?>
-<!DOCTYPE html
-     PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN"
-     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
-
+  INDEX = XHTML_FRAME_PREAMBLE + HTML_ELEMENT + <<-EOF
 <!--
 
     <%= values["title"] %>
 
   -->
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
   <title><%= values["title"] %></title>
   <meta http-equiv="Content-Type" content="text/html; charset=<%= values["charset"] %>" />

@@ -7,6 +7,7 @@ require 'rdoc/parser/simple'
 require 'rdoc/parser/ruby'
 require 'rdoc/parser/c'
 require 'rdoc/parser/f95'
+require 'rdoc/parser/perl'
 
 require 'rdoc/stats'
 require 'rdoc/options'
@@ -189,11 +190,11 @@ module RDoc
 
     def parse_files(options)
       @stats = Stats.new options.verbosity
-      
+
       files = options.files
       files = ["."] if files.empty?
 
-      file_list = normalized_file_list(options, files, true)
+      file_list = normalized_file_list(options, files, true, options.exclude)
 
       return [] if file_list.empty?
 
@@ -288,6 +289,5 @@ module RDoc
       end
     end
   end
-
 end
 

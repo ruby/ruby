@@ -47,7 +47,7 @@ class RDoc::Markup
 
   class AttrChanger
     def to_s
-      "Attr: +#{Attribute.as_string(@turn_on)}/-#{Attribute.as_string(@turn_on)}"
+      "Attr: +#{Attribute.as_string(turn_on)}/-#{Attribute.as_string(turn_on)}"
     end
   end
 

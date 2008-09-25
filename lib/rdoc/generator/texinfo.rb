@@ -3,13 +3,10 @@ require 'rdoc/generator'
 require 'rdoc/markup/to_texinfo'
 
 module RDoc
-  RDoc::GENERATORS['texinfo'] = RDoc::Generator.new("rdoc/generator/texinfo",
-                                                    :Texinfo,
-                                                    'texinfo')
   module Generator
     # This generates Texinfo files for viewing with GNU Info or Emacs
     # from RDoc extracted from Ruby source files.
-    class Texinfo
+    class TEXINFO
       # What should the .info file be named by default?
       DEFAULT_INFO_FILENAME = 'rdoc.info'
 
@@ -26,8 +23,8 @@ module RDoc
       # Generate the +texinfo+ files
       def generate(toplevels)
         @toplevels = toplevels
-        @files, @classes = ::RDoc::Generator::Context.build_indicies(@toplevels,
-                                                                     @options)
+        @files, @classes = ::RDoc::Generator::Context.build_indices(@toplevels,
+                                                                    @options)
 
         (@files + @classes).each { |x| x.value_hash }
 

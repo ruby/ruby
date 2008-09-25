@@ -245,7 +245,7 @@ class TestRDocRIFormatter < Test::Unit::TestCase
   def test_raw_print_line
     @f.raw_print_line 'a b c'
 
-    assert_equal "a b c\n", @output.string
+    assert_equal "a b c", @output.string
   end
 
   def test_strip_attributes_b

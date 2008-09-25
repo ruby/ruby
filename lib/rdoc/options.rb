@@ -184,7 +184,7 @@ class RDoc::Options
     @css = nil
     @webcvs = nil
 
-    @charset = 'iso-8859-1'
+    @charset = 'utf-8'
   end
 
   ##
@@ -196,6 +196,7 @@ class RDoc::Options
     opts = OptionParser.new do |opt|
       opt.program_name = File.basename $0
       opt.version = RDoc::VERSION
+      opt.release = nil
       opt.summary_indent = ' ' * 4
       opt.banner = <<-EOF
 Usage: #{opt.program_name} [options] [names...]
@@ -257,7 +258,7 @@ Usage: #{opt.program_name} [options] [names...]
       opt.separator nil
 
       opt.on("--charset=CHARSET", "-c",
-             "Specifies the HTML character-set.") do |value|
+             "Specifies the output HTML character-set.") do |value|
         @charset = value
       end
 
@@ -283,9 +284,7 @@ Usage: #{opt.program_name} [options] [names...]
 
       opt.on("--exclude=PATTERN", "-x", Regexp,
              "Do not process files or directories",
-             "matching PATTERN. Files given explicitly",
-             "on the command line will never be",
-             "excluded.") do |value|
+             "matching PATTERN.") do |value|
         @exclude << value
       end
 

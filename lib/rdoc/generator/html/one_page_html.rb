@@ -1,6 +1,9 @@
 require 'rdoc/generator/html'
+require 'rdoc/generator/html/common'
 
 module RDoc::Generator::HTML::ONE_PAGE_HTML
+
+  include RDoc::Generator::HTML::Common
 
   CONTENTS_XML = <<-EOF
 <% if defined? classes and classes["description"] then %>
@@ -76,16 +79,14 @@ module RDoc::Generator::HTML::ONE_PAGE_HTML
 <% end %>
   EOF
 
-  ONE_PAGE = %{
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
+  ONE_PAGE = XHTML_STRICT_PREAMBLE + HTML_ELEMENT + %{
 <head>
   <title><%= values["title"] %></title>
   <meta http-equiv="Content-Type" content="text/html; charset=<%= values["charset"] %>" />
 </head>
 <body>
 <% values["files"].each do |files| %>
-<h2>File: <%= files["short_name"] %></h2>
+<h2>File: <a name="<%= files["href"] %>"><%= files["short_name"] %></a></h2>
 <table>
   <tr><td>Path:</td><td><%= files["full_path"] %></td></tr>
   <tr><td>Modified:</td><td><%= files["dtm_modified"] %></td></tr>
@@ -97,7 +98,7 @@ module RDoc::Generator::HTML::ONE_PAGE_HTML
 <h2>Classes</h2>
 <% values["classes"].each do |classes| %>
 <% if classes["parent"] then %>
-<h3><%= classes["classmod"] %> <%= classes["full_name"] %> &lt; <%= href classes["par_url"], classes["parent"] %></h3>
+<h3><%= classes["classmod"] %> <a name="<%= classes["href"] %>"><%= classes["full_name"] %></a> &lt; <%= href classes["par_url"], classes["parent"] %></h3>
 <% end %>
 <% unless classes["parent"] then %>
 <h3><%= classes["classmod"] %> <%= classes["full_name"] %></h3>

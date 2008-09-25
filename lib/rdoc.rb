@@ -1,14 +1,14 @@
 $DEBUG_RDOC = nil
 
 ##
-# RDoc - Ruby Documentation System
+# = \RDoc - Ruby Documentation System
 #
 # This package contains RDoc and RDoc::Markup.  RDoc is an application that
-# produces documentation for one or more Ruby source files.  We work similarly
+# produces documentation for one or more Ruby source files.  It works similarly
 # to JavaDoc, parsing the source, and extracting the definition for classes,
-# modules, and methods (along with includes and requires).  We associate with
+# modules, and methods (along with includes and requires).  It associates with
 # these optional documentation contained in the immediately preceding comment
-# block, and then render the result using a pluggable output formatter.
+# block, and then renders the result using a pluggable output formatter.
 # RDoc::Markup is a library that converts plain text into various output
 # formats.  The markup library is used to interpret the comment blocks that
 # RDoc uses to document methods, classes, and so on.
@@ -18,8 +18,6 @@ $DEBUG_RDOC = nil
 # * If you want to use RDoc to create documentation for your Ruby source files,
 #   read on.
 # * If you want to include extensions written in C, see RDoc::Parser::C
-# * For information on the various markups available in comment blocks, see
-#   RDoc::Markup.
 # * If you want to drive RDoc programmatically, see RDoc::RDoc.
 # * If you want to use the library to format text blocks into HTML, have a look
 #   at RDoc::Markup.
@@ -28,21 +26,21 @@ $DEBUG_RDOC = nil
 #
 # == Summary
 #
-# Once installed, you can create documentation using the 'rdoc' command
-# (the command is 'rdoc.bat' under Windows)
+# Once installed, you can create documentation using the +rdoc+ command
 #
 #   % rdoc [options] [names...]
 #
-# Type "rdoc --help" for an up-to-date option summary.
+# For an up-to-date option summary, type
+#   % rdoc --help
 #
 # A typical use might be to generate documentation for a package of Ruby
-# source (such as rdoc itself).
+# source (such as RDoc itself).
 #
 #   % rdoc
 #
 # This command generates documentation for all the Ruby and C source
 # files in and below the current directory.  These will be stored in a
-# documentation tree starting in the subdirectory 'doc'.
+# documentation tree starting in the subdirectory +doc+.
 #
 # You can make this slightly more useful for your readers by having the
 # index page contain the documentation for the primary file.  In our
@@ -54,20 +52,46 @@ $DEBUG_RDOC = nil
 # in comment blocks in the documentation this generates.
 #
 # RDoc uses file extensions to determine how to process each file.  File names
-# ending +.rb+ and <tt>.rbw</tt> are assumed to be Ruby source.  Files
+# ending +.rb+ and +.rbw+ are assumed to be Ruby source.  Files
 # ending +.c+ are parsed as C files.  All other files are assumed to
 # contain just Markup-style markup (with or without leading '#' comment
 # markers).  If directory names are passed to RDoc, they are scanned
 # recursively for C and Ruby source files only.
 #
-# = Markup
+# == \Options
+# rdoc can be passed a variety of command-line options.  In addition,
+# options can be specified via the +RDOCOPT+ environment variable, which
+# functions similarly to the +RUBYOPT+ environment variable.
 #
-# For information on how to make lists, hyperlinks, etc. with RDoc, see
-# RDoc::Markup.
+#   % export RDOCOPT="-S"
 #
-# Comment blocks can be written fairly naturally, either using '#' on
+# will make rdoc default to inline method source code.  Command-line options
+# always will override those in +RDOCOPT+.
+#
+# Run
+# 
+#   % rdoc --help
+#
+# for full details on rdoc's options.
+#
+# Here are some of the most commonly used options.
+# [-d, --diagram]
+#   Generate diagrams showing modules and
+#   classes. You need dot V1.8.6 or later to
+#   use the --diagram option correctly. Dot is
+#   available from http://graphviz.org
+#
+# [-S, --inline-source]
+#   Show method source code inline, rather than via a popup link.
+#
+# [-T, --template=NAME]
+#   Set the template used when generating output.
+#
+# == Documenting Source Code
+#
+# Comment blocks can be written fairly naturally, either using +#+ on
 # successive lines of the comment, or by including the comment in
-# an =begin/=end block.  If you use the latter form, the =begin line must be
+# a =begin/=end block.  If you use the latter form, the =begin line must be
 # flagged with an RDoc tag:
 #
 #   =begin rdoc
@@ -93,7 +117,7 @@ $DEBUG_RDOC = nil
 #     # ...
 #   end
 #
-# Names of classes, source files, and any method names containing an
+# Names of classes, files, and any method names containing an
 # underscore or preceded by a hash character are automatically hyperlinked
 # from comment text to their description.
 #
@@ -124,15 +148,109 @@ $DEBUG_RDOC = nil
 # +:yields:+ is an example of a documentation directive.  These appear
 # immediately after the start of the document element they are modifying.
 #
+# == \Markup
+#
+# * The markup engine looks for a document's natural left margin.  This is
+#   used as the initial margin for the document.
+#
+# * Consecutive lines starting at this margin are considered to be a
+#   paragraph.
+#
+# * If a paragraph starts with a "*", "-", or with "<digit>.", then it is
+#   taken to be the start of a list.  The margin in increased to be the first
+#   non-space following the list start flag.  Subsequent lines should be
+#   indented to this new margin until the list ends.  For example:
+#
+#      * this is a list with three paragraphs in
+#        the first item.  This is the first paragraph.
+#
+#        And this is the second paragraph.
+#
+#        1. This is an indented, numbered list.
+#        2. This is the second item in that list
+#
+#        This is the third conventional paragraph in the
+#        first list item.
+#
+#      * This is the second item in the original list
+#
+# * You can also construct labeled lists, sometimes called description
+#   or definition lists.  Do this by putting the label in square brackets
+#   and indenting the list body:
+#
+#       [cat]  a small furry mammal
+#              that seems to sleep a lot
+#
+#       [ant]  a little insect that is known
+#              to enjoy picnics
+#
+#   A minor variation on labeled lists uses two colons to separate the
+#   label from the list body:
+#
+#       cat::  a small furry mammal
+#              that seems to sleep a lot
+#
+#       ant::  a little insect that is known
+#              to enjoy picnics
+#
+#   This latter style guarantees that the list bodies' left margins are
+#   aligned: think of them as a two column table.
+#
+# * Any line that starts to the right of the current margin is treated
+#   as verbatim text.  This is useful for code listings.  The example of a
+#   list above is also verbatim text.
+#
+# * A line starting with an equals sign (=) is treated as a
+#   heading.  Level one headings have one equals sign, level two headings
+#   have two,and so on.
+#
+# * A line starting with three or more hyphens (at the current indent)
+#   generates a horizontal rule.  The more hyphens, the thicker the rule
+#   (within reason, and if supported by the output device)
+#
+# * You can use markup within text (except verbatim) to change the
+#   appearance of parts of that text.  Out of the box, RDoc::Markup
+#   supports word-based and general markup.
+#
+#   Word-based markup uses flag characters around individual words:
+#
+#   [\*word*]  displays word in a *bold* font
+#   [\_word_]  displays word in an _emphasized_ font
+#   [\+word+]  displays word in a +code+ font
+#
+#   General markup affects text between a start delimiter and and end
+#   delimiter.  Not surprisingly, these delimiters look like HTML markup.
+#
+#   [\<b>text...</b>]    displays word in a *bold* font
+#   [\<em>text...</em>]  displays word in an _emphasized_ font
+#   [\\<i>text...</i>]    displays word in an <i>italicized</i> font
+#   [\<tt>text...</tt>]  displays word in a +code+ font
+#
+#   Unlike conventional Wiki markup, general markup can cross line
+#   boundaries.  You can turn off the interpretation of markup by
+#   preceding the first character with a backslash.  This only works for
+#   simple markup, not HTML-style markup.
+#
+# * Hyperlinks to the web starting http:, mailto:, ftp:, or www. are
+#   recognized.  An HTTP url that references an external image file is
+#   converted into an inline <IMG..>.  Hyperlinks starting 'link:' are
+#   assumed to refer to local files whose path is relative to the --op
+#   directory.
+#
+#   Hyperlinks can also be of the form <tt>label</tt>[url], in which
+#   case the label is used in the displayed text, and +url+ is
+#   used as the target.  If +label+ contains multiple words,
+#   put it in braces: <em>{multi word label}[</em>url<em>]</em>.
+#
 # == Directives
 #
 # [+:nodoc:+ / +:nodoc:+ all]
-#   Don't include this element in the documentation.  For classes
-#   and modules, the methods, aliases, constants, and attributes
-#   directly within the affected class or module will also be
-#   omitted.  By default, though, modules and classes within that
-#   class of module _will_ be documented.  This is turned off by
-#   adding the +all+ modifier.
+#   This directive prevents documentation for the element from
+#   being generated.  For classes and modules, the methods, aliases,
+#   constants, and attributes directly within the affected class or
+#   module also will be omitted.  By default, though, modules and
+#   classes within that class of module _will_ be documented.  This is
+#   turned off by adding the +all+ modifier.
 #   
 #     module MyModule # :nodoc:
 #       class Input
@@ -144,22 +262,22 @@ $DEBUG_RDOC = nil
 #       end
 #     end
 #
-#   In the above code, only class +MyModule::Input+ will be documented.The
-#   The :nodoc: directive is global across all files the class or module
-#   appears in, so use :stopdoc:/:startdoc: to only omit documentation for a
-#   particular set of methods, etc.
+#   In the above code, only class <tt>MyModule::Input</tt> will be documented.
+#   The +:nodoc:+ directive is global across all files for the class or module
+#   to which it applies, so use +:stopdoc:+/+:startdoc:+ to suppress
+#   documentation only for a particular set of methods, etc.
 #
 # [+:doc:+]
-#   Force a method or attribute to be documented even if it wouldn't otherwise
-#   be.  Useful if, for example, you want to include documentation of a
+#   Forces a method or attribute to be documented even if it wouldn't be
+#   otherwise.  Useful if, for example, you want to include documentation of a
 #   particular private method.
 #
 # [+:notnew:+]
 #   Only applicable to the +initialize+ instance method.  Normally RDoc
-#   assumes that the documentation and parameters for #initialize are
-#   actually for the ::new method, and so fakes out a ::new for the class.
-#   The :notnew: modifier stops this.  Remember that #initialize is protected,
-#   so you won't see the documentation unless you use the -a command line
+#   assumes that the documentation and parameters for +initialize+ are
+#   actually for the +new+ method, and so fakes out a +new+ for the class.
+#   The +:notnew:+ modifier stops this.  Remember that +initialize+ is private,
+#   so you won't see the documentation unless you use the +-a+ command line
 #   option.
 #
 # Comment blocks can contain other directives:
@@ -209,7 +327,7 @@ $DEBUG_RDOC = nil
 #   last.  If you don't specify a +:startdoc:+ by the end of the container,
 #   disables documentation for the entire class or module.
 #
-# = Other stuff
+# == Other stuff
 #
 # RDoc is currently being maintained by Eric Hodel <drbrain@segment7.net>
 #
@@ -254,7 +372,7 @@ module RDoc
   ##
   # RDoc version you are using
 
-  VERSION = "2.1.0"
+  VERSION = "2.2.1"
 
   ##
   # Name of the dotfile that contains the description of files to be processed
