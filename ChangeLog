@@ -1,3 +1,7 @@
+Thu Sep 25 23:59:56 2008  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk: dependency updated.
+
 Thu Sep 25 21:46:48 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_eUndefinedConversionError): renamed from
