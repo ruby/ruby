@@ -1,10 +1,17 @@
-2008-09-25  Jim Weirich  <jim@tardis.local>
+Thu Sep 25 18:40:42 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* class.c (rb_make_metaclass): Made class of class of class
+	  from Class into its own eigenclass. Now meta^(n)-class
+	  hierarchy regresses infinitely, again.
+	  (This feature was decided on developer-meeting-20080922.)
+
+Thu Sep 25 16:01:07 2008  Jim Weirich  <jim@tardis.local>
 
 	* lib/rake.rb: Update rake source to version 0.8.3.  This
-	version includes some fixes for running Rake on windows. (1)
-	better APPDATA/HOMExxx/USERPROFILE integration for system
-	rakefiles, (2) Better handling of the :ruby command when
-	installed in directory containing spaces.
+	  version includes some fixes for running Rake on windows. 
+	  (1) better APPDATA/HOMExxx/USERPROFILE integration for 
+	  system rakefiles, (2) Better handling of the :ruby command 
+	  when installed in directory containing spaces.
 
 Thu Sep 25 11:22:51 2008
 
