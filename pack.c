@@ -362,7 +362,7 @@ num2i32(VALUE x)
 #endif
 static const char toofew[] = "too few arguments";
 
-static void encodes(VALUE,const char*,long,int);
+static void encodes(VALUE,const char*,long,int,int);
 static void qpencode(VALUE,VALUE,long);
 
 static unsigned long utf8_to_uv(const char*,long*);
@@ -414,7 +414,8 @@ static unsigned long utf8_to_uv(const char*,long*);
  *       L     |  Unsigned long
  *       l     |  Long
  *       M     |  Quoted printable, MIME encoding (see RFC2045)
- *       m     |  Base64 encoded string
+ *       m     |  Base64 encoded string (see RFC 2045, count is width)
+ *             |  (if count is 0, no line feed are added, see RFC 4648)
  *       N     |  Long, network (big-endian) byte order
  *       n     |  Short, network (big-endian) byte-order
  *       P     |  Pointer to a structure (fixed-length string)
@@ -887,6 +888,11 @@ pack_pack(VALUE ary, VALUE fmt)
 	    ptr = RSTRING_PTR(from);
 	    plen = RSTRING_LEN(from);
 
+	    if (len == 0) {
+		encodes(res, ptr, plen, type, 0);
+		ptr += plen;
+		break;
+	    }
 	    if (len <= 2)
 		len = 45;
 	    else
@@ -898,7 +904,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		    todo = len;
 		else
 		    todo = plen;
-		encodes(res, ptr, todo, type);
+		encodes(res, ptr, todo, type, 1);
 		plen -= todo;
 		ptr += todo;
 	    }
@@ -1007,7 +1013,7 @@ static const char b64_table[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 static void
-encodes(VALUE str, const char *s, long len, int type)
+encodes(VALUE str, const char *s, long len, int type, int tail_lf)
 {
     char buff[4096];
     long i = 0;
@@ -1048,7 +1054,7 @@ encodes(VALUE str, const char *s, long len, int type)
 	buff[i++] = padding;
 	buff[i++] = padding;
     }
-    buff[i++] = '\n';
+    if (tail_lf) buff[i++] = '\n';
     rb_str_buf_cat(str, buff, i);
 }
 
@@ -1242,7 +1248,8 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *     -------+---------+-----------------------------------------
  *       M    | String  | quoted-printable
  *     -------+---------+-----------------------------------------
- *       m    | String  | base64-encoded
+ *       m    | String  | base64-encoded (RFC 2045) (default)
+ *            |         | base64-encoded (RFC 4648) if followed by 0
  *     -------+---------+-----------------------------------------
  *       N    | Integer | treat four characters as an unsigned
  *            |         | long in network byte order
@@ -1793,7 +1800,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    {
 		VALUE buf = infected_str_new(0, (send - s)*3/4, str);
 		char *ptr = RSTRING_PTR(buf);
-		int a = -1,b = -1,c = 0,d;
+		int a = -1,b = -1,c = 0,d = 0;
 		static signed char b64_xtable[256];
 
 		if (b64_xtable['/'] <= 0) {
@@ -1806,30 +1813,62 @@ pack_unpack(VALUE str, VALUE fmt)
 			b64_xtable[(unsigned char)b64_table[i]] = i;
 		    }
 		}
-		while (s < send) {
-		    a = b = c = d = -1;
-		    while ((a = b64_xtable[(unsigned char)*s]) == -1 && s < send) {s++;}
-		    if (s >= send) break;
-		    s++;
-		    while ((b = b64_xtable[(unsigned char)*s]) == -1 && s < send) {s++;}
-		    if (s >= send) break;
-		    s++;
-		    while ((c = b64_xtable[(unsigned char)*s]) == -1 && s < send) {if (*s == '=') break; s++;}
-		    if (*s == '=' || s >= send) break;
-		    s++;
-		    while ((d = b64_xtable[(unsigned char)*s]) == -1 && s < send) {if (*s == '=') break; s++;}
-		    if (*s == '=' || s >= send) break;
-		    s++;
-		    *ptr++ = a << 2 | b >> 4;
-		    *ptr++ = b << 4 | c >> 2;
-		    *ptr++ = c << 6 | d;
-		}
-		if (a != -1 && b != -1) {
-		    if (c == -1 && *s == '=')
-			*ptr++ = a << 2 | b >> 4;
-		    else if (c != -1 && *s == '=') {
+		if (len == 0) {
+		    while (s < send) {
+			a = b = c = d = -1;
+			a = b64_xtable[(unsigned char)*s++];
+			if (s >= send || a == -1) rb_raise(rb_eArgError, "invalid base64");
+			b = b64_xtable[(unsigned char)*s++];
+			if (s >= send || b == -1) rb_raise(rb_eArgError, "invalid base64");
+			if (*s == '=') {
+			    if (s + 2 == send && *(s + 1) == '=') break;
+			    rb_raise(rb_eArgError, "invalid base64");
+			}
+			c = b64_xtable[(unsigned char)*s++];
+			if (s >= send || c == -1) rb_raise(rb_eArgError, "invalid base64");
+			if (s + 1 == send && *s == '=') break;
+			d = b64_xtable[(unsigned char)*s++];
+			if (d == -1) rb_raise(rb_eArgError, "invalid base64");
 			*ptr++ = a << 2 | b >> 4;
 			*ptr++ = b << 4 | c >> 2;
+			*ptr++ = c << 6 | d;
+		    }
+		    if (c == -1) {
+			*ptr++ = a << 2 | b >> 4;
+			if (b & 0xf) rb_raise(rb_eArgError, "invalid base64");
+		    }
+		    else if (d == -1) {
+			*ptr++ = a << 2 | b >> 4;
+			*ptr++ = b << 4 | c >> 2;
+			if (c & 0x3) rb_raise(rb_eArgError, "invalid base64");
+		    }
+		}
+		else {
+		    while (s < send) {
+			a = b = c = d = -1;
+			while ((a = b64_xtable[(unsigned char)*s]) == -1 && s < send) {s++;}
+			if (s >= send) break;
+			s++;
+			while ((b = b64_xtable[(unsigned char)*s]) == -1 && s < send) {s++;}
+			if (s >= send) break;
+			s++;
+			while ((c = b64_xtable[(unsigned char)*s]) == -1 && s < send) {if (*s == '=') break; s++;}
+			if (*s == '=' || s >= send) break;
+			s++;
+			while ((d = b64_xtable[(unsigned char)*s]) == -1 && s < send) {if (*s == '=') break; s++;}
+			if (*s == '=' || s >= send) break;
+			s++;
+			*ptr++ = a << 2 | b >> 4;
+			*ptr++ = b << 4 | c >> 2;
+			*ptr++ = c << 6 | d;
+		    }
+		    if (a != -1 && b != -1) {
+			if (c == -1 && *s == '=')
+			    *ptr++ = a << 2 | b >> 4;
+			else if (c != -1 && *s == '=') {
+			    *ptr++ = a << 2 | b >> 4;
+			    *ptr++ = b << 4 | c >> 2;
+			}
 		    }
 		}
 		rb_str_set_len(buf, ptr - RSTRING_PTR(buf));

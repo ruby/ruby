@@ -379,6 +379,36 @@ class TestPack < Test::Unit::TestCase
     assert_equal(["\377\377\377"], "////\n".unpack("m"))
   end
 
+  def test_pack_unpack_m0
+    assert_equal("", [""].pack("m0"))
+    assert_equal("AA==", ["\0"].pack("m0"))
+    assert_equal("AAA=", ["\0\0"].pack("m0"))
+    assert_equal("AAAA", ["\0\0\0"].pack("m0"))
+    assert_equal("/w==", ["\377"].pack("m0"))
+    assert_equal("//8=", ["\377\377"].pack("m0"))
+    assert_equal("////", ["\377\377\377"].pack("m0"))
+
+    assert_equal([""], "".unpack("m0"))
+    assert_equal(["\0"], "AA==".unpack("m0"))
+    assert_equal(["\0\0"], "AAA=".unpack("m0"))
+    assert_equal(["\0\0\0"], "AAAA".unpack("m0"))
+    assert_equal(["\377"], "/w==".unpack("m0"))
+    assert_equal(["\377\377"], "//8=".unpack("m0"))
+    assert_equal(["\377\377\377"], "////".unpack("m0"))
+
+    assert_raise(ArgumentError) { "^".unpack("m0") }
+    assert_raise(ArgumentError) { "A".unpack("m0") }
+    assert_raise(ArgumentError) { "A^".unpack("m0") }
+    assert_raise(ArgumentError) { "AA".unpack("m0") }
+    assert_raise(ArgumentError) { "AA=".unpack("m0") }
+    assert_raise(ArgumentError) { "AA===".unpack("m0") }
+    assert_raise(ArgumentError) { "AA=x".unpack("m0") }
+    assert_raise(ArgumentError) { "AAA".unpack("m0") }
+    assert_raise(ArgumentError) { "AAA^".unpack("m0") }
+    assert_raise(ArgumentError) { "AB==".unpack("m0") }
+    assert_raise(ArgumentError) { "AAB=".unpack("m0") }
+  end
+
   def test_pack_unpack_M
     assert_equal("a b c\td =\n\ne=\n", ["a b c\td \ne"].pack("M"))
     assert_equal(["a b c\td \ne"], "a b c\td =\n\ne=\n".unpack("M"))

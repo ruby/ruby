@@ -1,3 +1,15 @@
+Thu Sep 25 21:23:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* pack.c (pack_pack, pack_unpack): 'm0' format (base64) complies with
+	  RFC 4648.  It adds no line feed when encoding, and raise ArgumentError
+	  if the encoded string contains non-alphabet (including CR and LF).
+
+	* lib/base64.rb: added.  This provides encoding/decoding method for
+	  Base64 in standard RFC 2045, Base64 in standard RFC 4648 and ``Base 64
+	  Encoding with URL and Filename SafeAlphabet'' in RFC 4648.
+
+	* test_pack.c, test/base64/test_base64.rb: add tests for above.
+
 Thu Sep 25 21:00:32 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: fix btest-* rules [ruby-dev:36528].
