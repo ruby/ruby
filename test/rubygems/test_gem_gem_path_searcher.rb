@@ -5,10 +5,6 @@ require 'rubygems/gem_path_searcher'
 class Gem::GemPathSearcher
   attr_accessor :gemspecs
   attr_accessor :lib_dirs
-
-  public :init_gemspecs
-  public :matching_file
-  public :lib_dirs_for
 end
 
 class TestGemGemPathSearcher < RubyGemTestCase
@@ -40,6 +36,10 @@ class TestGemGemPathSearcher < RubyGemTestCase
     assert_equal @foo1, @gps.find('foo')
   end
 
+  def test_find_all
+    assert_equal [@foo1], @gps.find_all('foo')
+  end
+
   def test_init_gemspecs
     assert_equal [@bar2, @bar1, @foo2, @foo1], @gps.init_gemspecs
   end
@@ -51,9 +51,17 @@ class TestGemGemPathSearcher < RubyGemTestCase
     assert_equal expected, lib_dirs
   end
 
-  def test_matching_file
-    assert !@gps.matching_file(@foo1, 'bar')
-    assert @gps.matching_file(@foo1, 'foo')
+  def test_matching_file_eh
+    assert !@gps.matching_file?(@foo1, 'bar')
+    assert @gps.matching_file?(@foo1, 'foo')
+  end
+
+  def test_matching_files
+    assert_equal [], @gps.matching_files(@foo1, 'bar')
+
+    expected = File.join @foo1.full_gem_path, 'lib', 'foo.rb'
+
+    assert_equal [expected], @gps.matching_files(@foo1, 'foo')
   end
 
 end

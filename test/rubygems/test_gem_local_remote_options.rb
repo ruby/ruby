@@ -19,6 +19,18 @@ class TestGemLocalRemoteOptions < RubyGemTestCase
     assert @cmd.handles?(args)
   end
 
+  def test_both_eh
+    assert_equal false, @cmd.both?
+
+    @cmd.options[:domain] = :local
+
+    assert_equal false, @cmd.both?
+
+    @cmd.options[:domain] = :both
+
+    assert_equal true, @cmd.both?
+  end
+
   def test_local_eh
     assert_equal false, @cmd.local?
 

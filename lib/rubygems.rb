@@ -104,6 +104,11 @@ module Gem
   @ruby = nil
   @sources = []
 
+  @post_install_hooks = []
+  @post_uninstall_hooks = []
+  @pre_uninstall_hooks = []
+  @pre_install_hooks = []
+
   ##
   # Activates an installed gem matching +gem+.  The gem must satisfy
   # +version_requirements+.
@@ -244,7 +249,10 @@ module Gem
   def self.clear_paths
     @gem_home = nil
     @gem_path = nil
+    @user_home = nil
+
     @@source_index = nil
+
     MUTEX.synchronize do
       @searcher = nil
     end
@@ -261,9 +269,7 @@ module Gem
   # The standard configuration object for gems.
 
   def self.configuration
-    return @configuration if @configuration
-    require 'rubygems/config_file'
-    @configuration = Gem::ConfigFile.new []
+    @configuration ||= Gem::ConfigFile.new []
   end
 
   ##
@@ -337,6 +343,22 @@ module Gem
   end
 
   ##
+  # Returns a list of paths matching +file+ that can be used by a gem to pick
+  # up features from other gems.  For example:
+  #
+  #   Gem.find_files('rdoc/discover').each do |path| load path end
+  #
+  # find_files does not search $LOAD_PATH for files, only gems.
+
+  def self.find_files(path)
+    specs = searcher.find_all path
+
+    specs.map do |spec|
+      searcher.matching_files spec, path
+    end.flatten
+  end
+
+  ##
   # Finds the user's home directory.
   #--
   # Some comments from the ruby-talk list regarding finding the home
@@ -353,7 +375,7 @@ module Gem
     end
 
     if ENV['HOMEDRIVE'] && ENV['HOMEPATH'] then
-      return "#{ENV['HOMEDRIVE']}:#{ENV['HOMEPATH']}"
+      return "#{ENV['HOMEDRIVE']}#{ENV['HOMEPATH']}"
     end
 
     begin
@@ -466,13 +488,11 @@ module Gem
 
   ##
   # manage_gems is useless and deprecated.  Don't call it anymore.
-  #--
-  # TODO warn w/ RubyGems 1.2.x release.
 
-  def self.manage_gems
-    #file, lineno = location_of_caller
+  def self.manage_gems # :nodoc:
+    file, lineno = location_of_caller
 
-    #warn "#{file}:#{lineno}:Warning: Gem#manage_gems is deprecated and will be removed on or after September 2008."
+    warn "#{file}:#{lineno}:Warning: Gem::manage_gems is deprecated and will be removed on or after March 2009."
   end
 
   ##
@@ -489,11 +509,7 @@ module Gem
     @gem_path ||= nil
 
     unless @gem_path then
-      paths = if ENV['GEM_PATH'] then
-                [ENV['GEM_PATH']]
-              else
-                [default_path]
-              end
+      paths = [ENV['GEM_PATH'] || Gem.configuration.path || default_path]
 
       if defined?(APPLE_GEM_HOME) and not ENV['GEM_PATH'] then
         paths << APPLE_GEM_HOME
@@ -521,6 +537,40 @@ module Gem
       @platforms = [Gem::Platform::RUBY, Gem::Platform.local]
     end
     @platforms
+  end
+
+  ##
+  # Adds a post-install hook that will be passed an Gem::Installer instance
+  # when Gem::Installer#install is called
+
+  def self.post_install(&hook)
+    @post_install_hooks << hook
+  end
+
+  ##
+  # Adds a post-uninstall hook that will be passed a Gem::Uninstaller instance
+  # and the spec that was uninstalled when Gem::Uninstaller#uninstall is
+  # called
+
+  def self.post_uninstall(&hook)
+    @post_uninstall_hooks << hook
+  end
+
+  ##
+  # Adds a pre-install hook that will be passed an Gem::Installer instance
+  # when Gem::Installer#install is called
+
+  def self.pre_install(&hook)
+    @pre_install_hooks << hook
+  end
+
+  ##
+  # Adds a pre-uninstall hook that will be passed an Gem::Uninstaller instance
+  # and the spec that will be uninstalled when Gem::Uninstaller#uninstall is
+  # called
+
+  def self.pre_uninstall(&hook)
+    @pre_uninstall_hooks << hook
   end
 
   ##
@@ -600,6 +650,9 @@ module Gem
       @ruby = File.join(ConfigMap[:bindir],
                         ConfigMap[:ruby_install_name])
       @ruby << ConfigMap[:EXEEXT]
+
+      # escape string in case path to ruby executable contain spaces.
+      @ruby.sub!(/.*\s.*/m, '"\&"')
     end
 
     @ruby
@@ -655,7 +708,13 @@ module Gem
     end
 
     @gem_path.uniq!
-    @gem_path.each do |gp| ensure_gem_subdirectories(gp) end
+    @gem_path.each do |path|
+      if 0 == File.expand_path(path).index(Gem.user_home) and
+         Etc.getpwuid.uid != File::Stat.new(Gem.user_home).uid then
+        next # only create by matching user
+      end
+      ensure_gem_subdirectories path
+    end
   end
 
   private_class_method :set_paths
@@ -683,6 +742,14 @@ module Gem
     end
 
     @sources
+  end
+
+  ##
+  # Need to be able to set the sources without calling
+  # Gem.sources.replace since that would cause an infinite loop.
+
+  def self.sources=(new_sources)
+    @sources = new_sources
   end
 
   ##
@@ -730,6 +797,27 @@ module Gem
   class << self
 
     attr_reader :loaded_specs
+
+    ##
+    # The list of hooks to be run before Gem::Install#install does any work
+
+    attr_reader :post_install_hooks
+
+    ##
+    # The list of hooks to be run before Gem::Uninstall#uninstall does any
+    # work
+
+    attr_reader :post_uninstall_hooks
+
+    ##
+    # The list of hooks to be run after Gem::Install#install is finished
+
+    attr_reader :pre_install_hooks
+
+    ##
+    # The list of hooks to be run after Gem::Uninstall#uninstall is finished
+
+    attr_reader :pre_uninstall_hooks
 
     # :stopdoc:
 
@@ -781,7 +869,10 @@ if defined?(RUBY_ENGINE) then
   end
 end
 
+require 'rubygems/config_file'
+
 if RUBY_VERSION < '1.9' then
   require 'rubygems/custom_require'
 end
 
+Gem.clear_paths

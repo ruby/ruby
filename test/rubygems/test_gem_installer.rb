@@ -70,7 +70,10 @@ load 'my_exec'
 #{Gem.ruby}: No such file or directory -- extconf.rb (LoadError)
     EOF
 
-    assert_equal expected, File.read(gem_make_out)
+    assert_match %r%#{Regexp.escape Gem.ruby} extconf.rb%,
+                 File.read(gem_make_out)
+    assert_match %r%#{Regexp.escape Gem.ruby}: No such file%,
+                 File.read(gem_make_out)
   end
 
   def test_build_extensions_unsupported
@@ -287,7 +290,7 @@ load 'my_exec'
     Dir.mkdir util_inst_bindir
     File.chmod 0000, util_inst_bindir
 
-    assert_raise Gem::FilePermissionError do
+    assert_raises Gem::FilePermissionError do
       @installer.generate_bin
     end
 
@@ -372,7 +375,7 @@ load 'my_exec'
     Dir.mkdir util_inst_bindir
     File.chmod 0000, util_inst_bindir
 
-    assert_raise Gem::FilePermissionError do
+    assert_raises Gem::FilePermissionError do
       @installer.generate_bin
     end
 
@@ -529,6 +532,16 @@ load 'my_exec'
     Dir.mkdir util_inst_bindir
     util_setup_gem
 
+    cache_file = File.join @gemhome, 'cache', "#{@spec.full_name}.gem"
+
+    Gem.pre_install do |installer|
+      assert !File.exist?(cache_file), 'cache file should not exist yet'
+    end
+
+    Gem.post_install do |installer|
+      assert File.exist?(cache_file), 'cache file should exist'
+    end
+
     build_rake_in do
       use_ui @ui do
         assert_equal @spec, @installer.install
@@ -552,6 +565,9 @@ load 'my_exec'
 
     assert_equal spec_file, @spec.loaded_from
     assert File.exist?(spec_file)
+
+    assert_same @installer, @pre_install_hook_arg
+    assert_same @installer, @post_install_hook_arg
   end
 
   def test_install_bad_gem
@@ -584,6 +600,29 @@ load 'my_exec'
         @installer.install
       end
     end
+  end
+
+  def test_install_check_dependencies_install_dir
+    gemhome2 = "#{@gemhome}2"
+    @spec.add_dependency 'b'
+
+    b2 = quick_gem 'b', 2
+
+    FileUtils.mv @gemhome, gemhome2
+    Gem.source_index.gems.delete b2.full_name
+    source_index = Gem::SourceIndex.from_gems_in File.join(gemhome2,
+                                                           'specifications')
+
+    util_setup_gem
+
+    @installer = Gem::Installer.new @gem, :install_dir => gemhome2,
+                                    :source_index => source_index
+
+    use_ui @ui do
+      @installer.install
+    end
+
+    assert File.exist?(File.join(gemhome2, 'gems', @spec.full_name))
   end
 
   def test_install_force
@@ -641,13 +680,13 @@ load 'my_exec'
     assert File.exist?(File.join(@gemhome, 'specifications',
                                  "#{@spec.full_name}.gemspec"))
   end
+
   unless win_platform? # File.chmod doesn't work
     def test_install_user_local_fallback
       Dir.mkdir util_inst_bindir
       File.chmod 0755, @userhome
       File.chmod 0000, util_inst_bindir
       File.chmod 0000, Gem.dir
-      install_dir = File.join @userhome, '.gem', 'gems', @spec.full_name
       @spec.executables = ["executable"]
 
       build_rake_in do
@@ -656,9 +695,10 @@ load 'my_exec'
           @installer.install
         end
       end
-    
-      assert File.exist?(File.join(install_dir, 'lib', 'code.rb'))
-      assert File.exist?(File.join(@userhome, '.gem', 'bin', 'executable'))
+
+      assert File.exist?(File.join(Gem.user_dir, 'gems',
+                                   @spec.full_name, 'lib', 'code.rb'))
+      assert File.exist?(File.join(Gem.user_dir, 'bin', 'executable'))
     ensure
       File.chmod 0755, Gem.dir
       File.chmod 0755, util_inst_bindir
@@ -676,13 +716,13 @@ load 'my_exec'
           @installer.install
         end
       end
-      
-      assert File.exist?(File.join(@userhome, '.gem', 'bin', 'executable'))
+
+      assert File.exist?(File.join(Gem.user_dir, 'bin', 'executable'))
     ensure
       File.chmod 0755, util_inst_bindir
     end
   end
-  
+
   def test_install_with_message
     @spec.post_install_message = 'I am a shiny gem!'
 

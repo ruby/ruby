@@ -45,7 +45,12 @@ class TestGem < RubyGemTestCase
 
   def test_self_bindir_default_dir
     default = Gem.default_dir
-    bindir = (defined? RUBY_FRAMEWORK_VERSION) ? '/usr/bin' : Config::CONFIG['bindir']    
+    bindir = if defined?(RUBY_FRAMEWORK_VERSION) then
+               '/usr/bin'
+             else
+               Config::CONFIG['bindir']
+             end
+
     assert_equal bindir, Gem.bindir(default)
     assert_equal bindir, Gem.bindir(Pathname.new(default))
   end
@@ -218,6 +223,36 @@ class TestGem < RubyGemTestCase
     Gem.ssl_available = orig_Gem_ssl_available
   end
 
+  def test_self_find_files
+    foo1 = quick_gem 'foo', '1' do |s|
+      s.files << 'lib/foo/discover.rb'
+    end
+
+    foo2 = quick_gem 'foo', '2' do |s|
+      s.files << 'lib/foo/discover.rb'
+    end
+
+    path = File.join 'gems', foo1.full_name, 'lib', 'foo', 'discover.rb'
+    write_file(path) { |fp| fp.puts "# #{path}" }
+
+    path = File.join 'gems', foo2.full_name, 'lib', 'foo', 'discover.rb'
+    write_file(path) { |fp| fp.puts "# #{path}" }
+
+    @fetcher = Gem::FakeFetcher.new
+    Gem::RemoteFetcher.fetcher = @fetcher
+
+    Gem.source_index = util_setup_spec_fetcher foo1, foo2
+
+    Gem.searcher = nil
+
+    expected = [
+      File.join(foo1.full_gem_path, 'lib', 'foo', 'discover.rb'),
+      File.join(foo2.full_gem_path, 'lib', 'foo', 'discover.rb'),
+    ]
+
+    assert_equal expected, Gem.find_files('foo/discover').sort
+  end
+
   def test_self_latest_load_paths
     util_make_gems
 
@@ -261,20 +296,21 @@ class TestGem < RubyGemTestCase
   unless win_platform?
     def test_self_path_APPLE_GEM_HOME
       Gem.clear_paths
-      Dir.mktmpdir("apple_gem_home") {|d|
-        Gem.const_set :APPLE_GEM_HOME, d
-        assert Gem.path.include?(d)
-      }
+      apple_gem_home = File.join @tempdir, 'apple_gem_home'
+      Gem.const_set :APPLE_GEM_HOME, apple_gem_home
+
+      assert Gem.path.include?(apple_gem_home)
     ensure
       Gem.send :remove_const, :APPLE_GEM_HOME
     end
-  
+
     def test_self_path_APPLE_GEM_HOME_GEM_PATH
       Gem.clear_paths
       ENV['GEM_PATH'] = @gemhome
-      Gem.const_set :APPLE_GEM_HOME, '/tmp/apple_gem_home'
-  
-      assert !Gem.path.include?('/tmp/apple_gem_home')
+      apple_gem_home = File.join @tempdir, 'apple_gem_home'
+      Gem.const_set :APPLE_GEM_HOME, apple_gem_home
+
+      assert !Gem.path.include?(apple_gem_home)
     ensure
       Gem.send :remove_const, :APPLE_GEM_HOME
     end
@@ -291,7 +327,7 @@ class TestGem < RubyGemTestCase
 
     assert_equal path_count + @additional.size, Gem.path.size,
                  "extra path components: #{Gem.path[2..-1].inspect}"
-    assert_match Gem.dir, Gem.path.last
+    assert_equal Gem.dir, Gem.path.last
   end
 
   def test_self_path_duplicate
@@ -390,6 +426,44 @@ class TestGem < RubyGemTestCase
                  Gem.required_location("a", "code.rb", "= 2")
   end
 
+  def test_self_ruby_escaping_spaces_in_path
+    orig_ruby = Gem.ruby
+    orig_bindir = Gem::ConfigMap[:bindir]
+    orig_ruby_install_name = Gem::ConfigMap[:ruby_install_name]
+    orig_exe_ext = Gem::ConfigMap[:EXEEXT]
+
+    Gem::ConfigMap[:bindir] = "C:/Ruby 1.8/bin"
+    Gem::ConfigMap[:ruby_install_name] = "ruby"
+    Gem::ConfigMap[:EXEEXT] = ".exe"
+    Gem.instance_variable_set("@ruby", nil)
+
+    assert_equal "\"C:/Ruby 1.8/bin/ruby.exe\"", Gem.ruby
+  ensure
+    Gem.instance_variable_set("@ruby", orig_ruby)
+    Gem::ConfigMap[:bindir] = orig_bindir
+    Gem::ConfigMap[:ruby_install_name] = orig_ruby_install_name
+    Gem::ConfigMap[:EXEEXT] = orig_exe_ext
+  end
+
+  def test_self_ruby_path_without_spaces
+    orig_ruby = Gem.ruby
+    orig_bindir = Gem::ConfigMap[:bindir]
+    orig_ruby_install_name = Gem::ConfigMap[:ruby_install_name]
+    orig_exe_ext = Gem::ConfigMap[:EXEEXT]
+
+    Gem::ConfigMap[:bindir] = "C:/Ruby18/bin"
+    Gem::ConfigMap[:ruby_install_name] = "ruby"
+    Gem::ConfigMap[:EXEEXT] = ".exe"
+    Gem.instance_variable_set("@ruby", nil)
+
+    assert_equal "C:/Ruby18/bin/ruby.exe", Gem.ruby
+  ensure
+    Gem.instance_variable_set("@ruby", orig_ruby)
+    Gem::ConfigMap[:bindir] = orig_bindir
+    Gem::ConfigMap[:ruby_install_name] = orig_ruby_install_name
+    Gem::ConfigMap[:EXEEXT] = orig_exe_ext
+  end
+
   def test_self_ruby_version
     version = RUBY_VERSION.dup
     version << ".#{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
@@ -430,12 +504,39 @@ class TestGem < RubyGemTestCase
     assert_equal @additional + [Gem.dir], Gem.path
   end
 
+  def test_self_user_dir
+    assert_equal File.join(@userhome, '.gem', Gem.ruby_engine,
+                           Gem::ConfigMap[:ruby_version]), Gem.user_dir
+  end
+
   def test_self_user_home
     if ENV['HOME'] then
       assert_equal ENV['HOME'], Gem.user_home
     else
       assert true, 'count this test'
     end
+  end
+
+  def test_self_user_home_user_drive_and_path
+    Gem.clear_paths
+
+    # safe-keep env variables
+    orig_home, orig_user_profile = ENV['HOME'], ENV['USERPROFILE']
+    orig_user_drive, orig_user_path = ENV['HOMEDRIVE'], ENV['HOMEPATH']
+
+    # prepare the environment
+    ENV.delete('HOME')
+    ENV.delete('USERPROFILE')
+    ENV['HOMEDRIVE'] = 'Z:'
+    ENV['HOMEPATH'] = '\\Users\\RubyUser'
+
+    assert_equal "Z:\\Users\\RubyUser", Gem.user_home
+
+  ensure
+    ENV['HOME'] = orig_home
+    ENV['USERPROFILE'] = orig_user_profile
+    ENV['USERDRIVE'] = orig_user_drive
+    ENV['USERPATH'] = orig_user_path
   end
 
   def util_ensure_gem_dirs

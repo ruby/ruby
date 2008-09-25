@@ -199,7 +199,7 @@ ERROR:  Only reverse dependencies for local gems are supported.
     @fetcher.data["#{@gem_repo}Marshal.#{Gem.marshal_version}"] =
       si.dump
 
-    @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"] = nil
+    @fetcher.data.delete "#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"
 
     FileUtils.rm File.join(@gemhome, 'specifications',
                            "#{foo.full_name}.gemspec")

@@ -59,11 +59,15 @@ module Gem
         if specs.empty?
           fail "Failed to find gem #{gem_name} to generate RDoc for #{options[:version]}"
         end
+
         if options[:include_ri]
           specs.each do |spec|
             Gem::DocManager.new(spec).generate_ri
           end
+
+          Gem::DocManager.update_ri_cache
         end
+
         if options[:include_rdoc]
           specs.each do |spec|
             Gem::DocManager.new(spec).generate_rdoc
@@ -73,6 +77,6 @@ module Gem
         true
       end
     end
-    
+
   end
 end

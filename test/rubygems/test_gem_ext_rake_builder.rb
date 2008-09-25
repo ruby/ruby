@@ -32,6 +32,8 @@ class TestGemExtRakeBuilder < RubyGemTestCase
       end
     end
 
+    output = output.join "\n"
+
     expected = [
       "#{@@ruby} mkrf_conf.rb",
       "",
@@ -39,7 +41,9 @@ class TestGemExtRakeBuilder < RubyGemTestCase
       "(in #{realdir})\n"
     ]
 
-    assert_equal expected, output
+    assert_no_match %r%^rake failed:%, output
+    assert_match %r%^#{Regexp.escape @@ruby} mkrf_conf\.rb%, output
+    assert_match %r%^#{Regexp.escape @@rake} RUBYARCHDIR=#{Regexp.escape @dest_path} RUBYLIBDIR=#{Regexp.escape @dest_path}%, output
   end
 
   def test_class_build_fail
@@ -69,7 +73,9 @@ rake failed:
 #{@@rake} RUBYARCHDIR=#{@dest_path} RUBYLIBDIR=#{@dest_path}
     EOF
 
-    assert_equal expected, error.message.split("\n")[0..4].join("\n")
+    assert_match %r%^rake failed:%, error.message
+    assert_match %r%^#{Regexp.escape @@ruby} mkrf_conf\.rb%, error.message
+    assert_match %r%^#{Regexp.escape @@rake} RUBYARCHDIR=#{Regexp.escape @dest_path} RUBYLIBDIR=#{Regexp.escape @dest_path}%, error.message
   end
 
 end

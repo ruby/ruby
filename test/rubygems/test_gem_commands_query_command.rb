@@ -180,7 +180,7 @@ pl (1)
     @fetcher.data["#{@gem_repo}Marshal.#{Gem.marshal_version}"] =
       si.dump
 
-    @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"] = nil
+    @fetcher.data.delete "#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"
 
     @cmd.handle_options %w[-r]
 
@@ -265,6 +265,27 @@ pl (1)
     assert_equal '', @ui.error
   end
 
+  def test_execute_local_notty
+    @cmd.handle_options %w[]
+
+    @ui.outs.tty = false
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+a (2, 1)
+a_evil (9)
+b (2)
+c (1.2)
+pl (1)
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
   def test_execute_no_versions
     @cmd.handle_options %w[-r --no-versions]
 
@@ -278,6 +299,24 @@ pl (1)
 
 a
 pl
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
+  def test_execute_notty
+    @cmd.handle_options %w[-r]
+
+    @ui.outs.tty = false
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+a (2)
+pl (1)
     EOF
 
     assert_equal expected, @ui.output

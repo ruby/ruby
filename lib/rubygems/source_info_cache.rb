@@ -284,6 +284,10 @@ class Gem::SourceInfoCache
 
     cache_data.map do |source_uri, sic_entry|
       next unless Gem.sources.include? source_uri
+      # TODO - Remove this gunk after 2008/11
+      unless pattern.kind_of?(Gem::Dependency)
+        pattern = Gem::Dependency.new(pattern, Gem::Requirement.default) 
+      end
       sic_entry.source_index.search pattern, platform_only
     end.flatten.compact
   end
@@ -299,6 +303,11 @@ class Gem::SourceInfoCache
 
     cache_data.map do |source_uri, sic_entry|
       next unless Gem.sources.include? source_uri
+
+      # TODO - Remove this gunk after 2008/11
+      unless pattern.kind_of?(Gem::Dependency)
+        pattern = Gem::Dependency.new(pattern, Gem::Requirement.default) 
+      end
 
       sic_entry.source_index.search(pattern, only_platform).each do |spec|
         results << [spec, source_uri]

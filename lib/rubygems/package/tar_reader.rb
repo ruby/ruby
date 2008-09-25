@@ -46,17 +46,17 @@ class Gem::Package::TarReader
       yield entry
 
       skip = (512 - (size % 512)) % 512
+      pending = size - entry.bytes_read
 
-      if @io.respond_to? :seek then
+      begin
         # avoid reading...
-        @io.seek(size - entry.bytes_read, IO::SEEK_CUR)
-      else
-        pending = size - entry.bytes_read
-
+        @io.seek pending, IO::SEEK_CUR
+        pending = 0
+      rescue Errno::EINVAL, NameError
         while pending > 0 do
-          bread = @io.read([pending, 4096].min).size
+          bytes_read = @io.read([pending, 4096].min).size
           raise UnexpectedEOF if @io.eof?
-          pending -= bread
+          pending -= bytes_read
         end
       end
 

@@ -18,6 +18,46 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
     return args.gsub(/^\s+/, '')
   end
 
+  def description # :nodoc:
+    <<-EOF
+The RubyGems environment can be controlled through command line arguments,
+gemrc files, environment variables and built-in defaults.
+
+Command line argument defaults and some RubyGems defaults can be set in
+~/.gemrc file for individual users and a /etc/gemrc for all users.  A gemrc
+is a YAML file with the following YAML keys:
+
+  :sources: A YAML array of remote gem repositories to install gems from
+  :verbose: Verbosity of the gem command.  false, true, and :really are the
+            levels
+  :update_sources: Enable/disable automatic updating of repository metadata
+  :backtrace: Print backtrace when RubyGems encounters an error
+  :bulk_threshold: Switch to a bulk update when this many sources are out of
+                   date (legacy setting)
+  :gempath: The paths in which to look for gems
+  gem_command: A string containing arguments for the specified gem command
+
+Example:
+
+  :verbose: false
+  install: --no-wrappers
+  update: --no-wrappers
+
+RubyGems' default local repository can be overriden with the GEM_PATH and
+GEM_HOME environment variables.  GEM_HOME sets the default repository to
+install into.  GEM_PATH allows multiple local repositories to be searched for
+gems.
+
+If you are behind a proxy server, RubyGems uses the HTTP_PROXY,
+HTTP_PROXY_USER and HTTP_PROXY_PASS environment variables to discover the
+proxy server.
+
+If you are packaging RubyGems all of RubyGems' defaults are in
+lib/rubygems/defaults.rb.  You may override these in
+lib/rubygems/defaults/operating_system.rb
+    EOF
+  end
+
   def usage # :nodoc:
     "#{program_name} [arg]"
   end

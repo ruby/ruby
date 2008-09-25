@@ -63,7 +63,7 @@ class TestGemStreamUI < RubyGemTestCase
     @in.tty = false
 
     timeout(0.1) do
-      assert_raise(Gem::OperationNotSupportedError) do
+      assert_raises(Gem::OperationNotSupportedError) do
         @sui.ask_yes_no("do coconuts migrate?")
       end
     end

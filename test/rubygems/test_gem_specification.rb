@@ -500,7 +500,7 @@ end
   end
 
   def test_has_rdoc_eh
-    assert_equal true, @a1.has_rdoc?
+    assert @a1.has_rdoc?
   end
 
   def test_hash
@@ -634,7 +634,10 @@ end
 
     ruby_code = @a2.to_ruby
 
-    expected = "Gem::Specification.new do |s|
+    expected = <<-SPEC
+# -*- encoding: utf-8 -*-
+
+Gem::Specification.new do |s|
   s.name = %q{a}
   s.version = \"2\"
 
@@ -654,7 +657,7 @@ end
     current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
     s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 
-    if current_version >= 3 then
+    if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<b>, [\"= 1\"])
     else
       s.add_dependency(%q<b>, [\"= 1\"])
@@ -663,7 +666,7 @@ end
     s.add_dependency(%q<b>, [\"= 1\"])
   end
 end
-"
+    SPEC
 
     assert_equal expected, ruby_code
 
@@ -679,7 +682,10 @@ end
     local = Gem::Platform.local
     expected_platform = "[#{local.cpu.inspect}, #{local.os.inspect}, #{local.version.inspect}]"
 
-    expected = "Gem::Specification.new do |s|
+    expected = <<-SPEC
+# -*- encoding: utf-8 -*-
+
+Gem::Specification.new do |s|
   s.name = %q{a}
   s.version = \"1\"
   s.platform = Gem::Platform.new(#{expected_platform})
@@ -706,7 +712,7 @@ end
     current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
     s.specification_version = 2
 
-    if current_version >= 3 then
+    if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<rake>, [\"> 0.4\"])
       s.add_runtime_dependency(%q<jabber4r>, [\"> 0.0.0\"])
       s.add_runtime_dependency(%q<pqa>, [\"> 0.4\", \"<= 0.6\"])
@@ -721,7 +727,7 @@ end
     s.add_dependency(%q<pqa>, [\"> 0.4\", \"<= 0.6\"])
   end
 end
-"
+    SPEC
 
     assert_equal expected, ruby_code
 

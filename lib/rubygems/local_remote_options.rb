@@ -110,6 +110,13 @@ module Gem::LocalRemoteOptions
   end
 
   ##
+  # Is fetching of local and remote information enabled?
+
+  def both?
+    options[:domain] == :both
+  end
+
+  ##
   # Is local fetching enabled?
 
   def local?

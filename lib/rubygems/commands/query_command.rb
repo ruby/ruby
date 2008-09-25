@@ -59,7 +59,7 @@ class Gem::Commands::QueryCommand < Gem::Command
       if name.source.empty? then
         alert_error "You must specify a gem name"
         exit_code |= 4
-      elsif installed? name.source, options[:version] then
+      elsif installed? name, options[:version] then
         say "true"
       else
         say "false"
@@ -69,12 +69,16 @@ class Gem::Commands::QueryCommand < Gem::Command
       raise Gem::SystemExitException, exit_code
     end
 
-    if local? then
-      say
-      say "*** LOCAL GEMS ***"
-      say
+    dep = Gem::Dependency.new name, Gem::Requirement.default
 
-      specs = Gem.source_index.search name
+    if local? then
+      if ui.outs.tty? or both? then
+        say
+        say "*** LOCAL GEMS ***"
+        say
+      end
+
+      specs = Gem.source_index.search dep
 
       spec_tuples = specs.map do |spec|
         [[spec.name, spec.version, spec.original_platform, spec], :local]
@@ -84,13 +88,14 @@ class Gem::Commands::QueryCommand < Gem::Command
     end
 
     if remote? then
-      say
-      say "*** REMOTE GEMS ***"
-      say
+      if ui.outs.tty? or both? then
+        say
+        say "*** REMOTE GEMS ***"
+        say
+      end
 
       all = options[:all]
 
-      dep = Gem::Dependency.new name, Gem::Requirement.default
       begin
         fetcher = Gem::SpecFetcher.fetcher
         spec_tuples = fetcher.find_matching dep, all, false

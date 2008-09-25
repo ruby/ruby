@@ -53,12 +53,13 @@ class TestGemExtConfigureBuilder < RubyGemTestCase
     expected = %r(configure failed:
 
 #{Regexp.escape sh_prefix_configure}#{Regexp.escape @dest_path}
-.*?: #{shell_error_msg})
+.*?: #{shell_error_msg}
+)
 
     assert_match expected, error.message
 
     assert_equal "#{sh_prefix_configure}#{@dest_path}", output.shift
-    assert_match %r(#{shell_error_msg}\n), output.shift
+    assert_match %r(#{shell_error_msg}), output.shift
     assert_equal true, output.empty?
   end
 

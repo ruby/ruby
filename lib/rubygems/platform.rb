@@ -13,23 +13,6 @@ class Gem::Platform
 
   attr_accessor :version
 
-  DEPRECATED_CONSTS = [
-    :DARWIN,
-    :LINUX_586,
-    :MSWIN32,
-    :PPC_DARWIN,
-    :WIN32,
-    :X86_LINUX
-  ]
-
-  def self.const_missing(name) # TODO remove six months from 2007/12
-    if DEPRECATED_CONSTS.include? name then
-      raise NameError, "#{name} has been removed, use CURRENT instead"
-    else
-      super
-    end
-  end
-
   def self.local
     arch = Gem::ConfigMap[:arch]
     arch = "#{arch}_60" if arch =~ /mswin32$/
@@ -73,7 +56,7 @@ class Gem::Platform
              else cpu
              end
 
-      if arch.length == 2 and arch.last =~ /^\d+$/ then # for command-line
+      if arch.length == 2 and arch.last =~ /^\d+(\.\d+)?$/ then # for command-line
         @os, @version = arch
         return
       end

@@ -20,6 +20,7 @@ require 'rubygems/require_paths_builder'
 # filesystem including unpacking the gem into its gem dir, installing the
 # gemspec in the specifications dir, storing the cached gem in the cache dir,
 # and installing either wrappers or symlinks for executables.
+
 class Gem::Installer
 
   ##
@@ -31,7 +32,35 @@ class Gem::Installer
 
   include Gem::RequirePathsBuilder
 
+  ##
+  # The directory a gem's executables will be installed into
+
+  attr_reader :bin_dir
+
+  ##
+  # The gem repository the gem will be installed into
+
+  attr_reader :gem_home
+
+  ##
+  # The Gem::Specification for the gem being installed
+
+  attr_reader :spec
+
+  @home_install_warning = false
+  @path_warning = false
+
   class << self
+
+    ##
+    # True if we've warned about ~/.gems install
+
+    attr_accessor :home_install_warning
+
+    ##
+    # True if we've warned about PATH not including Gem.bindir
+
+    attr_accessor :path_warning
 
     attr_writer :exec_format
 
@@ -61,11 +90,12 @@ class Gem::Installer
     @gem = gem
 
     options = {
-      :force => false,
-      :install_dir => Gem.dir,
-      :exec_format => false,
-      :env_shebang => false,
-      :bin_dir => nil
+      :bin_dir      => nil,
+      :env_shebang  => false,
+      :exec_format  => false,
+      :force        => false,
+      :install_dir  => Gem.dir,
+      :source_index => Gem.source_index,
     }.merge options
 
     @env_shebang = options[:env_shebang]
@@ -78,6 +108,7 @@ class Gem::Installer
     @wrappers = options[:wrappers]
     @bin_dir = options[:bin_dir]
     @development = options[:development]
+    @source_index = options[:source_index]
 
     begin
       @format = Gem::Format.from_file_by_path @gem, @security_policy
@@ -85,30 +116,41 @@ class Gem::Installer
       raise Gem::InstallError, "invalid gem format for #{@gem}"
     end
 
+    begin
+      FileUtils.mkdir_p @gem_home
+    rescue Errno::EACCESS, Errno::ENOTDIR
+      # We'll divert to ~/.gems below
+    end
+
     if not File.writable? @gem_home or
         # TODO: Shouldn't have to test for existence of bindir; tests need it.
-        (@gem_home.to_s == Gem.dir and File.exist? Gem.bindir and 
-         not File.writable? Gem.bindir)
-      if options[:user_install] == false # You explicitly don't want to use ~
+        (@gem_home.to_s == Gem.dir and File.exist? Gem.bindir and
+         not File.writable? Gem.bindir) then
+      if options[:user_install] == false then # You don't want to use ~
         raise Gem::FilePermissionError, @gem_home
-      elsif options[:user_install].nil?
-        say "Warning: falling back to user-level install since #{@gem_home} and #{@bin_dir} aren't both writable."
+      elsif options[:user_install].nil? then
+        unless self.class.home_install_warning then
+          alert_warning "Installing to ~/.gem since #{@gem_home} and\n\t  #{Gem.bindir} aren't both writable."
+          self.class.home_install_warning = true
+        end
       end
       options[:user_install] = true
     end
 
-    if options[:user_install]
-      @gem_home = File.join(ENV['HOME'], '.gem')
+    if options[:user_install] then
+      @gem_home = Gem.user_dir
 
-      user_bin_dir = File.join(@gem_home, 'gems', 'bin')
-      if !ENV['PATH'].split(':').include?(user_bin_dir)
-        say "You don't have #{user_bin_dir} in your PATH."
-        say "You won't be able to run gem-installed executables until you add it."
+      user_bin_dir = File.join(@gem_home, 'bin')
+      unless ENV['PATH'].split(File::PATH_SEPARATOR).include? user_bin_dir then
+        unless self.class.path_warning then
+          alert_warning "You don't have #{user_bin_dir} in your PATH,\n\t  gem executables will not run."
+          self.class.path_warning = true
+        end
       end
-      
-      Dir.mkdir @gem_home if ! File.directory? @gem_home
+
+      FileUtils.mkdir_p @gem_home unless File.directory? @gem_home
       # If it's still not writable, you've got issues.
-      raise Gem::FilePermissionError, @gem_home if ! File.writable? @gem_home
+      raise Gem::FilePermissionError, @gem_home unless File.writable? @gem_home
     end
 
     @spec = @format.spec
@@ -157,6 +199,10 @@ class Gem::Installer
       end
     end
 
+    Gem.pre_install_hooks.each do |hook|
+      hook.call self
+    end
+
     FileUtils.mkdir_p @gem_home unless File.directory? @gem_home
 
     Gem.ensure_gem_subdirectories @gem_home
@@ -181,7 +227,11 @@ class Gem::Installer
     @spec.loaded_from = File.join(@gem_home, 'specifications',
                                   "#{@spec.full_name}.gemspec")
 
-    Gem.source_index.add_spec @spec
+    @source_index.add_spec @spec
+
+    Gem.post_install_hooks.each do |hook|
+      hook.call self
+    end
 
     return @spec
   rescue Zlib::GzipFile::Error
@@ -204,10 +254,10 @@ class Gem::Installer
   end
 
   ##
-  # True if the gems in Gem.source_index satisfy +dependency+.
+  # True if the gems in the source_index satisfy +dependency+.
 
   def installation_satisfies_dependency?(dependency)
-    Gem.source_index.find_name(dependency.name, dependency.version_requirements).size > 0
+    @source_index.find_name(dependency.name, dependency.version_requirements).size > 0
   end
 
   ##

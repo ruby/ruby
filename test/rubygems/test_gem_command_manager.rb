@@ -31,7 +31,7 @@ class TestGemCommandManager < RubyGemTestCase
   def test_run_interrupt
     use_ui @ui do
       @command_manager.register_command :interrupt
-      assert_raise MockGemUi::TermError do
+      assert_raises MockGemUi::TermError do
         @command_manager.run 'interrupt'
       end
       assert_equal '', ui.output
@@ -41,7 +41,7 @@ class TestGemCommandManager < RubyGemTestCase
 
   def test_process_args_bad_arg
     use_ui @ui do
-      assert_raise(MockGemUi::TermError) {
+      assert_raises(MockGemUi::TermError) {
         @command_manager.process_args("--bad-arg")
       }
     end

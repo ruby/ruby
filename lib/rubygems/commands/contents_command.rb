@@ -51,7 +51,7 @@ class Gem::Commands::ContentsCommand < Gem::Command
 
     si = Gem::SourceIndex.from_gems_in(*s)
 
-    gem_spec = si.search(/\A#{gem}\z/, version).last
+    gem_spec = si.find_name(gem, version).last
 
     unless gem_spec then
       say "Unable to find gem '#{gem}' in #{path_kind}"

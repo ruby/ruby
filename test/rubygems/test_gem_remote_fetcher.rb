@@ -268,15 +268,15 @@ gems:
     ensure
       File.chmod 0755, File.join(@gemhome, 'cache')
     end
-    
+
     def test_download_read_only
       File.chmod 0555, File.join(@gemhome, 'cache')
       File.chmod 0555, File.join(@gemhome)
 
       fetcher = util_fuck_with_fetcher File.read(@a1_gem)
       fetcher.download(@a1, 'http://gems.example.com')
-      assert File.exist?(File.join(@userhome, '.gem',
-                                   'cache', "#{@a1.full_name}.gem"))
+      assert File.exist?(File.join(Gem.user_dir, 'cache',
+                                   "#{@a1.full_name}.gem"))
     ensure
       File.chmod 0755, File.join(@gemhome)
       File.chmod 0755, File.join(@gemhome, 'cache')
@@ -391,6 +391,16 @@ gems:
     assert_equal 'foo', fetcher.fetch_path(@uri + 'foo.gz')
   end
 
+  def test_fetch_path_gzip_unmodified
+    fetcher = Gem::RemoteFetcher.new nil
+
+    def fetcher.open_uri_or_path(uri, mtime, head = nil)
+      nil
+    end
+
+    assert_equal nil, fetcher.fetch_path(@uri + 'foo.gz', Time.at(0))
+  end
+
   def test_fetch_path_io_error
     fetcher = Gem::RemoteFetcher.new nil
 
@@ -441,10 +451,10 @@ gems:
     fetcher = Gem::RemoteFetcher.new nil
 
     def fetcher.open_uri_or_path(uri, mtime, head = nil)
-      ''
+      nil
     end
 
-    assert_equal '', fetcher.fetch_path(URI.parse(@gem_repo), Time.at(0))
+    assert_equal nil, fetcher.fetch_path(URI.parse(@gem_repo), Time.at(0))
   end
 
   def test_get_proxy_from_env_empty
@@ -504,7 +514,7 @@ gems:
     def conn.request(req)
       unless defined? @requested then
         @requested = true
-        res = Net::HTTPRedirection.new nil, 301, nil
+        res = Net::HTTPMovedPermanently.new nil, 301, nil
         res.add_field 'Location', 'http://gems.example.com/real_path'
         res
       else
@@ -528,7 +538,7 @@ gems:
     conn = Object.new
     def conn.started?() true end
     def conn.request(req)
-      res = Net::HTTPRedirection.new nil, 301, nil
+      res = Net::HTTPMovedPermanently.new nil, 301, nil
       res.add_field 'Location', 'http://gems.example.com/redirect'
       res
     end

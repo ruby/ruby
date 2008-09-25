@@ -43,7 +43,7 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
       orig_dir = Dir.pwd
       begin
         Dir.chdir @tempdir
-        e = assert_raise Gem::SystemExitException do
+        e = assert_raises Gem::SystemExitException do
           @cmd.execute
         end
         assert_equal 0, e.exit_code
@@ -65,7 +65,7 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
     @cmd.options[:args] = %w[no_such_gem]
 
     use_ui @ui do
-      e = assert_raise Gem::SystemExitException do
+      e = assert_raises Gem::SystemExitException do
         @cmd.execute
       end
       assert_equal 2, e.exit_code
@@ -91,7 +91,7 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
     @cmd.options[:args] = %w[nonexistent]
 
     use_ui @ui do
-      e = assert_raise Gem::SystemExitException do
+      e = assert_raises Gem::SystemExitException do
         @cmd.execute
       end
       assert_equal 2, e.exit_code
@@ -114,7 +114,7 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
     @cmd.options[:args] = [@a2.name]
 
     use_ui @ui do
-      e = assert_raise Gem::SystemExitException do
+      e = assert_raises Gem::SystemExitException do
         @cmd.execute
       end
       assert_equal 0, e.exit_code
@@ -146,7 +146,7 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
       orig_dir = Dir.pwd
       begin
         Dir.chdir @tempdir
-        e = assert_raise Gem::SystemExitException do
+        e = assert_raises Gem::SystemExitException do
           @cmd.execute
         end
         assert_equal 0, e.exit_code

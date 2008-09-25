@@ -64,6 +64,54 @@ class TestGemSourceIndex < RubyGemTestCase
     assert_equal a1.author, spec.author
   end
 
+  def test_self_load_specification_utf_8
+    spec_dir = File.join @gemhome, 'specifications'
+
+    FileUtils.rm_r spec_dir
+
+    FileUtils.mkdir_p spec_dir
+
+    spec_file = File.join spec_dir, "utf-8.gemspec"
+    spec_data = <<-SPEC
+Gem::Specification.new do |s|
+  s.name = %q{utf}
+  s.version = "8"
+
+  s.required_rubygems_version = Gem::Requirement.new(">= 0")
+  s.authors = ["\317\200"]
+  s.date = %q{2008-09-10}
+  s.description = %q{This is a test description}
+  s.email = %q{example@example.com}
+  s.has_rdoc = true
+  s.homepage = %q{http://example.com}
+  s.require_paths = ["lib"]
+  s.rubygems_version = %q{1.2.0}
+  s.summary = %q{this is a summary}
+
+  if s.respond_to? :specification_version then
+    current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
+    s.specification_version = 2
+
+    if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
+    else
+    end
+  else
+  end
+end
+    SPEC
+
+    spec_data.force_encoding 'UTF-8'
+
+    File.open spec_file, 'w' do |io| io.write spec_data end
+
+    spec = Gem::SourceIndex.load_specification spec_file
+
+    pi = "\317\200"
+    pi.force_encoding 'UTF-8' if pi.respond_to? :force_encoding
+
+    assert_equal pi, spec.author
+  end if Gem.ruby_version > Gem::Version.new('1.9')
+
   def test_self_load_specification_exception
     spec_dir = File.join @gemhome, 'specifications'
 
@@ -437,6 +485,27 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
     assert_equal [], missing
   end
 
+  def test_find_name
+    assert_equal [@a1, @a2], @source_index.find_name('a')
+    assert_equal [@a2], @source_index.find_name('a', '= 2')
+    assert_equal [], @source_index.find_name('bogusstring')
+    assert_equal [], @source_index.find_name('a', '= 3')
+
+    source_index = Gem::SourceIndex.new
+    source_index.add_spec @a1
+    source_index.add_spec @a2
+
+    assert_equal [@a1], source_index.find_name(@a1.name, '= 1')
+
+    r1 = Gem::Requirement.create '= 1'
+    assert_equal [@a1], source_index.find_name(@a1.name, r1)
+  end
+
+  def test_find_name_empty_cache
+    empty_source_index = Gem::SourceIndex.new({})
+    assert_equal [], empty_source_index.find_name("foo")
+  end
+
   def test_latest_specs
     p1_ruby = quick_gem 'p', '1'
     p1_platform = quick_gem 'p', '1' do |spec|
@@ -573,28 +642,12 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
   end
 
   def test_search
-    assert_equal [@a1, @a2, @a_evil9], @source_index.search('a')
-    assert_equal [@a2], @source_index.search('a', '= 2')
+    requirement = Gem::Requirement.create '= 9'
+    with_version = Gem::Dependency.new(/^a/, requirement)
+    assert_equal [@a_evil9], @source_index.search(with_version)
 
-    assert_equal [], @source_index.search('bogusstring')
-    assert_equal [], @source_index.search('a', '= 3')
-
-    source_index = Gem::SourceIndex.new
-    source_index.add_spec @a1
-    source_index.add_spec @a2
-
-    assert_equal [@a1], source_index.search(@a1.name, '= 1')
-
-    r1 = Gem::Requirement.create '= 1'
-    assert_equal [@a1], source_index.search(@a1.name, r1)
-
-    dep = Gem::Dependency.new @a1.name, r1
-    assert_equal [@a1], source_index.search(dep)
-  end
-
-  def test_search_empty_cache
-    empty_source_index = Gem::SourceIndex.new({})
-    assert_equal [], empty_source_index.search("foo")
+    with_default = Gem::Dependency.new(/^a/, Gem::Requirement.default)
+    assert_equal [@a1, @a2, @a_evil9], @source_index.search(with_default)
   end
 
   def test_search_platform

@@ -20,9 +20,9 @@ Some examples of 'gem' usage.
     gem install --remote rake --test --rdoc --ri
 
 * Install 'rake', but only version 0.3.1, even if dependencies
-  are not met, and into a specific directory:
+  are not met, and into a user-specific directory:
 
-    gem install rake --version 0.3.1 --force --install-dir $HOME/.gems
+    gem install rake --version 0.3.1 --force --user-install
 
 * List local gems whose name begins with 'D':
 

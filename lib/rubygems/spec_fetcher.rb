@@ -167,7 +167,7 @@ class Gem::SpecFetcher
 
       if all and @specs.include? source_uri then
         list[source_uri] = @specs[source_uri]
-      elsif @latest_specs.include? source_uri then
+      elsif not all and @latest_specs.include? source_uri then
         list[source_uri] = @latest_specs[source_uri]
       else
         specs = load_specs source_uri, file
@@ -182,6 +182,10 @@ class Gem::SpecFetcher
     list
   end
 
+  ##
+  # Loads specs in +file+, fetching from +source_uri+ if the on-disk cache is
+  # out of date.
+
   def load_specs(source_uri, file)
     file_name  = "#{file}.#{Gem.marshal_version}"
     spec_path  = source_uri + "#{file_name}.gz"
@@ -192,7 +196,7 @@ class Gem::SpecFetcher
     if File.exist? local_file then
       spec_dump = @fetcher.fetch_path spec_path, File.mtime(local_file)
 
-      if spec_dump.empty? then
+      if spec_dump.nil? then
         spec_dump = Gem.read_binary local_file
       else
         loaded = true

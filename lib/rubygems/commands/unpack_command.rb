@@ -68,7 +68,7 @@ class Gem::Commands::UnpackCommand < Gem::Command
   def get_path(gemname, version_req)
     return gemname if gemname =~ /\.gem$/i
 
-    specs = Gem::source_index.search(/\A#{gemname}\z/, version_req)
+    specs = Gem::source_index.find_name gemname, version_req
 
     selected = specs.sort_by { |s| s.version }.last
 

@@ -49,6 +49,9 @@ class Gem::ConfigFile
   # List of arguments supplied to the config file object.
   attr_reader :args
 
+  # Where to look for gems
+  attr_accessor :path
+
   # True if we print backtraces on errors.
   attr_writer :backtrace
 
@@ -123,9 +126,10 @@ class Gem::ConfigFile
     @backtrace = @hash[:backtrace] if @hash.key? :backtrace
     @benchmark = @hash[:benchmark] if @hash.key? :benchmark
     @bulk_threshold = @hash[:bulk_threshold] if @hash.key? :bulk_threshold
-    Gem.sources.replace @hash[:sources] if @hash.key? :sources
+    Gem.sources = @hash[:sources] if @hash.key? :sources
     @verbose = @hash[:verbose] if @hash.key? :verbose
     @update_sources = @hash[:update_sources] if @hash.key? :update_sources
+    @path = @hash[:gempath]
 
     handle_arguments arg_list
   end

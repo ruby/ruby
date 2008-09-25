@@ -41,8 +41,8 @@ class TestGemInstallUpdateOptions < GemInstallerTestCase
 
     @installer = Gem::Installer.new @gem, @cmd.options
     @installer.install
-    assert File.exist?(File.join(@userhome, '.gem', 'gems'))
-    assert File.exist?(File.join(@userhome, '.gem', 'gems', 
+    assert File.exist?(File.join(Gem.user_dir, 'gems'))
+    assert File.exist?(File.join(Gem.user_dir, 'gems',
                                  @spec.full_name))
   end
 
@@ -52,7 +52,7 @@ class TestGemInstallUpdateOptions < GemInstallerTestCase
     File.chmod 0755, @userhome
     FileUtils.chmod 0000, @gemhome
 
-    assert_raise(Gem::FilePermissionError) do
+    assert_raises(Gem::FilePermissionError) do
       @installer = Gem::Installer.new @gem, @cmd.options
     end
   ensure

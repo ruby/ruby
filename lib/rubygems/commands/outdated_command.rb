@@ -19,7 +19,7 @@ class Gem::Commands::OutdatedCommand < Gem::Command
     locals = Gem::SourceIndex.from_installed_gems
 
     locals.outdated.sort.each do |name|
-      local = locals.search(/^#{name}$/).last
+      local = locals.find_name(name).last
 
       dep = Gem::Dependency.new local.name, ">= #{local.version}"
       remotes = Gem::SpecFetcher.fetcher.fetch dep

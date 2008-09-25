@@ -58,15 +58,15 @@ lock it down to the exact version.
   end
 
   def complain(message)
-    if options.strict then
-      raise message
+    if options[:strict] then
+      raise Gem::Exception, message
     else
       say "# #{message}"
     end
   end
 
   def execute
-    say 'require "rubygems"'
+    say "require 'rubygems'"
 
     locked = {}
 
@@ -77,15 +77,20 @@ lock it down to the exact version.
 
       spec = Gem::SourceIndex.load_specification spec_path(full_name)
 
+      if spec.nil? then
+        complain "Could not find gem #{full_name}, try using the full name"
+        next
+      end
+
       say "gem '#{spec.name}', '= #{spec.version}'" unless locked[spec.name]
       locked[spec.name] = true
 
       spec.runtime_dependencies.each do |dep|
         next if locked[dep.name]
-        candidates = Gem.source_index.search dep.name, dep.requirement_list
+        candidates = Gem.source_index.search dep
 
         if candidates.empty? then
-          complain "Unable to satisfy '#{dep}' from currently installed gems."
+          complain "Unable to satisfy '#{dep}' from currently installed gems"
         else
           pending << candidates.last.full_name
         end
@@ -94,7 +99,11 @@ lock it down to the exact version.
   end
 
   def spec_path(gem_full_name)
-    File.join Gem.path, "specifications", "#{gem_full_name }.gemspec"
+    gemspecs = Gem.path.map do |path|
+      File.join path, "specifications", "#{gem_full_name}.gemspec"
+    end
+
+    gemspecs.find { |gemspec| File.exist? gemspec }
   end
 
 end

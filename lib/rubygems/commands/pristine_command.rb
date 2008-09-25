@@ -57,7 +57,7 @@ revert the gem.
               end
             else
               gem_name = get_one_gem_name
-              Gem::SourceIndex.from_installed_gems.search(gem_name,
+              Gem::SourceIndex.from_installed_gems.find_name(gem_name,
                                                           options[:version])
             end
 

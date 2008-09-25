@@ -224,7 +224,8 @@ class TestGemSourceInfoCache < RubyGemTestCase
 
     @sic.set_cache_data @gem_repo => sice
     latest = @sic.latest_cache_data
-    gems = latest[@gem_repo].source_index.search('a').map { |s| s.full_name }
+    beginning_with_a = Gem::Dependency.new(/^a/, Gem::Requirement.default)
+    gems = latest[@gem_repo].source_index.search(beginning_with_a).map { |s| s.full_name }
 
     assert_equal %w[a-2 a_evil-9], gems
   end

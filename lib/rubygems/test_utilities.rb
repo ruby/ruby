@@ -34,16 +34,20 @@ class Gem::FakeFetcher
     path = path.to_s
     @paths << path
     raise ArgumentError, 'need full URI' unless path =~ %r'^http://'
-    data = @data[path]
 
-    if data.nil? then
-      raise Gem::RemoteFetcher::FetchError.new('no data', path)
+    unless @data.key? path then
+      raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
     end
+
+    data = @data[path]
 
     if data.respond_to?(:call) then
       data.call
     else
-      data = Gem.gunzip data if path.to_s =~ /gz$/ unless data.empty?
+      if path.to_s =~ /gz$/ and not data.nil? and not data.empty? then
+        data = Gem.gunzip data
+      end
+
       data
     end
   end
@@ -51,12 +55,14 @@ class Gem::FakeFetcher
   def fetch_size(path)
     path = path.to_s
     @paths << path
-    raise ArgumentError, 'need full URI' unless path =~ %r'^http://'
-    data = @data[path]
 
-    if data.nil? then
-      raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", nil)
+    raise ArgumentError, 'need full URI' unless path =~ %r'^http://'
+
+    unless @data.key? path then
+      raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
     end
+
+    data = @data[path]
 
     data.respond_to?(:call) ? data.call : data.length
   end

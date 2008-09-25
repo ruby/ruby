@@ -1,36 +1,52 @@
 module Gem
 
-  # An Array of the default sources that come with RubyGems.
+  ##
+  # An Array of the default sources that come with RubyGems
+
   def self.default_sources
     %w[http://gems.rubyforge.org/]
   end
 
+  ##
   # Default home directory path to be used if an alternate value is not
-  # specified in the environment.
+  # specified in the environment
+
   def self.default_dir
     if defined? RUBY_FRAMEWORK_VERSION then
       File.join File.dirname(ConfigMap[:sitedir]), 'Gems',
                 ConfigMap[:ruby_version]
-    elsif defined? RUBY_ENGINE then
-      File.join ConfigMap[:libdir], RUBY_ENGINE, 'gems',
-                ConfigMap[:ruby_version]
     else
-      File.join ConfigMap[:libdir], 'ruby', 'gems', ConfigMap[:ruby_version]
+      File.join(ConfigMap[:libdir], ruby_engine, 'gems',
+                ConfigMap[:ruby_version])
     end
   end
 
-  # Default gem load path.
-  def self.default_path
-    [File.join(ENV['HOME'], '.gem'), default_dir]
+  ##
+  # Path for gems in the user's home directory
+
+  def self.user_dir
+    File.join(Gem.user_home, '.gem', ruby_engine,
+              ConfigMap[:ruby_version])
   end
 
-  # Deduce Ruby's --program-prefix and --program-suffix from its install name.
+  ##
+  # Default gem load path
+
+  def self.default_path
+    [user_dir, default_dir]
+  end
+
+  ##
+  # Deduce Ruby's --program-prefix and --program-suffix from its install name
+
   def self.default_exec_format
     baseruby = ConfigMap[:BASERUBY] || 'ruby'
     ConfigMap[:RUBY_INSTALL_NAME].sub(baseruby, '%s') rescue '%s'
   end
 
+  ##
   # The default directory for binaries
+
   def self.default_bindir
     if defined? RUBY_FRAMEWORK_VERSION then # mac framework support
       '/usr/bin'
@@ -39,14 +55,29 @@ module Gem
     end
   end
 
-  # The default system-wide source info cache directory.
+  ##
+  # The default system-wide source info cache directory
+
   def self.default_system_source_cache_dir
     File.join Gem.dir, 'source_cache'
   end
 
-  # The default user-specific source info cache directory.
+  ##
+  # The default user-specific source info cache directory
+
   def self.default_user_source_cache_dir
     File.join Gem.user_home, '.gem', 'source_cache'
+  end
+
+  ##
+  # A wrapper around RUBY_ENGINE const that may not be defined
+
+  def self.ruby_engine
+    if defined? RUBY_ENGINE then
+      RUBY_ENGINE
+    else
+      'ruby'
+    end
   end
 
 end
