@@ -1,3 +1,8 @@
+Fri Sep 26 00:40:30 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* range.c (range_inspect): fix SEGV for cyclic range object.
+	  [ruby-core:18835]
+
 Thu Sep 25 23:59:56 2008  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk: dependency updated.
