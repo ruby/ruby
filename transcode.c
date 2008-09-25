@@ -2935,17 +2935,20 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  *
  * possible options elements:
  *   hash form:
- *     :invalid => nil                    # error on invalid byte sequence (default)
- *     :invalid => :replace               # replace invalid byte sequence
- *     :undef => nil                      # error on undefined conversion (default)
- *     :undef => :replace                 # replace undefined conversion
- *     :replace => string                 # replacement string ("?" or "\uFFFD" if not specified)
- *     :universal_newline => true         # decorator for converting CRLF and CR to LF
- *     :crlf_newline => true              # decorator for converting LF to CRLF
- *     :cr_newline => true                # decorator for converting LF to CR
- *     :xml => :text                      # escape as XML CharData (AMPERSAND, LESS-THAN SIGN and GREATER-THAN SIGN are escaped as &amp;, &lt; and &gt;, respectively)
- *     :xml => :attr                      # escape as XML AttValue (AMPERSAND, LESS-THAN SIGN, GREATER-THAN SIGN and QUOTATION MARK are escaped as &amp;, &lt;, &gt; and &quote;.  quoted by QUOTATION MARK.) 
+ *     :invalid => nil            # raise error on invalid byte sequence (default)
+ *     :invalid => :replace       # replace invalid byte sequence
+ *     :undef => nil              # raise error on undefined conversion (default)
+ *     :undef => :replace         # replace undefined conversion
+ *     :replace => string         # replacement string ("?" or "\uFFFD" if not specified)
+ *     :universal_newline => true # decorator for converting CRLF and CR to LF
+ *     :crlf_newline => true      # decorator for converting LF to CRLF
+ *     :cr_newline => true        # decorator for converting LF to CR
+ *     :xml => :text              # escape as XML CharData.
+ *     :xml => :attr              # escape as XML AttValue
  *   integer form:
+ *     Encoding::Converter::INVALID_REPLACE
+ *     Encoding::Converter::UNDEF_REPLACE
+ *     Encoding::Converter::UNDEF_HEX_CHARREF
  *     Encoding::Converter::UNIVERSAL_NEWLINE_DECORATOR
  *     Encoding::Converter::CRLF_NEWLINE_DECORATOR
  *     Encoding::Converter::CR_NEWLINE_DECORATOR
@@ -2964,6 +2967,47 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  * convpath should contains
  * - two-element array which contains encoding or encoding name, or
  * - a string of decorator name.
+ *
+ * Encoding::Converter.new optionally takes an option.
+ * The option should be a hash or an integer.
+ * The option hash can contain :invalid => nil, etc.
+ * The option integer should be logical-or of constants such as
+ * Encoding::Converter::INVALID_REPLACE, etc.
+ *
+ * :invalid => nil ::
+ *   raise error on invalid byte sequence.  This is a default behavior.
+ * :invalid => :replace ::
+ *   replace invalid byte sequence as a replacement string.
+ * :undef => nil ::
+ *   raise error on conversion failure due to an character in source_encoding is not defined in destination_encoding.
+ *   This is a default behavior.
+ * :undef => :replace ::
+ *   replace undefined character in destination_encoding as a replacement string.
+ * :replace => string ::
+ *   specify the replacement string.
+ *   If not specified, "\uFFFD" is used for Unicode encodings and "?" for others.
+ * :universal_newline => true ::
+ *   convert CRLF and CR to LF.
+ * :crlf_newline => true ::
+ *   convert LF to CRLF.
+ * :cr_newline => true ::
+ *   convert LF to CR.
+ * :xml => :text ::
+ *   escape as XML CharData.
+ *   - '&' -> '&amp;'
+ *   - '<' -> '&lt;'
+ *   - '>' -> '&gt;'
+ *   - undefined characters in destination_encoding -> hexadecimal CharRef such as &#xHH;
+ *   This form can be used as a HTML 4.0 #PCDATA.
+ * :xml => :attr ::
+ *   escape as XML AttValue.
+ *   The converted result is quoted as "...".
+ *   - '&' -> '&amp;'
+ *   - '<' -> '&lt;'
+ *   - '>' -> '&gt;'
+ *   - '"' -> '&quot;'
+ *   - undefined characters in destination_encoding -> hexadecimal CharRef such as &#xHH;
+ *   This form can be used as a HTML 4.0 attribute value.
  *
  * example:
  *   # UTF-16BE to UTF-8
