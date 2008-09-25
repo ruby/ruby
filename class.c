@@ -190,7 +190,7 @@ VALUE
 rb_make_metaclass(VALUE obj, VALUE super)
 {
     if (BUILTIN_TYPE(obj) == T_CLASS && FL_TEST(obj, FL_SINGLETON)) {
-        VALUE metaclass;
+        VALUE metaclass, meta_of_super;
         if (RBASIC(obj)->klass == obj) { /* for meta^(n)-class of Class */
             metaclass = rb_class_boot(obj);
             RBASIC(metaclass)->klass = metaclass;
@@ -202,7 +202,12 @@ rb_make_metaclass(VALUE obj, VALUE super)
         FL_SET(metaclass, FL_SINGLETON);
         rb_singleton_class_attached(metaclass, obj);
         RBASIC(obj)->klass = metaclass;
-        RCLASS(metaclass)->ptr->super = rb_singleton_class(RCLASS(obj)->ptr->super);
+
+        meta_of_super = RCLASS(obj)->ptr->super;
+        while (FL_TEST(meta_of_super, T_ICLASS)) {
+            meta_of_super = RCLASS(meta_of_super)->ptr->super;
+        }
+        RCLASS(metaclass)->ptr->super = rb_singleton_class(meta_of_super);
         return metaclass;
     }
     else {
