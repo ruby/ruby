@@ -1,3 +1,8 @@
+Thu Sep 25 21:00:32 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: fix btest-* rules [ruby-dev:36528].
+	  and remove obsolete rules.
+
 Thu Sep 25 20:27:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* class.c (rb_make_metaclass): [BUG] Fixed a bus error

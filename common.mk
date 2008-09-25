@@ -359,16 +359,16 @@ check: test test-all
 btest: miniruby$(EXEEXT) PHONY
 	$(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(MINIRUBY)" $(OPTS)
 
-btest-miniruby: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
-	@$(MINIRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(MINIRUBY)" -q
+btest-ruby: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
+	@$(MINIRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib" -q
 
 test-sample: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 	@$(MINIRUBY) $(srcdir)/rubytest.rb
 
-test-knownbug: miniruby$(EXEEXT) $(PROGRAM) PHONY
-	$(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM)" $(OPTS) $(srcdir)/KNOWNBUGS.rb
+test-knownbug: miniruby$(EXEEXT) $(PROGRAM) $(RBCONFIG) PHONY
+	$(MINIRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM)" $(OPTS) $(srcdir)/KNOWNBUGS.rb
 
-test: test-sample btest-miniruby test-knownbug
+test: test-sample btest-ruby test-knownbug
 
 test-all:
 	$(RUNRUBY) "$(srcdir)/test/runner.rb" $(TESTS)
@@ -680,13 +680,6 @@ tbench: $(PROGRAM) PHONY
 	            --executables="$(COMPARE_RUBY); $(RUNRUBY)" \
 	            --pattern='bmx_' --directory=$(srcdir)/benchmark $(OPTS)
 
-aotc: $(PROGRAM) PHONY
-	./$(PROGRAM) -I$(srcdir)/lib $(srcdir)/bin/ruby2cext $(srcdir)/test.rb
-
-vmasm: vm.$(ASMEXT)
-
-# vm.o : CFLAGS += -fno-crossjumping
-
 run.gdb:
 	echo b ruby_debug_breakpoint           > run.gdb
 	echo '# handle SIGINT nostop'         >> run.gdb
@@ -699,25 +692,12 @@ run.gdb:
 gdb: miniruby$(EXEEXT) run.gdb PHONY
 	gdb -x run.gdb --quiet --args $(MINIRUBY) $(srcdir)/test.rb
 
-# Intel VTune
-
-vtune: miniruby$(EXEEXT)
-	vtl activity -c sampling -app ".\miniruby$(EXEEXT)","-I$(srcdir)/lib $(srcdir)/test.rb" run
-	vtl view -hf -mn miniruby$(EXEEXT) -sum -sort -cd
-	vtl view -ha -mn miniruby$(EXEEXT) -sum -sort -cd | $(RUNRUBY) $(srcdir)/tool/vtlh.rb > ha.lines
-
 dist: $(PREP) $(PROGRAM)
 	$(srcdir)/tool/make-snapshot . $(TARNAME)
 
 up:
 	@$(VCS) up "$(srcdir)"
 	-@$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(srcdir)/revision.h"
-
-depends: PHONY
-	gcc $(XCFLAGS) -MM $(srcdir)/*.c > depends.txt
-
-vm_test.o: vm_test.c $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) \
-  vm_exec.c vm_insnhelper.c vm_insnhelper.h
 
 help: PHONY
 	@echo "                Makefile of Ruby"
