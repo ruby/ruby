@@ -17,7 +17,7 @@ Thu Sep 25 16:01:07 2008  Jim Weirich  <jim@tardis.local>
 	  system rakefiles, (2) Better handling of the :ruby command 
 	  when installed in directory containing spaces.
 
-Thu Sep 25 11:22:51 2008
+Thu Sep 25 11:22:51 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc*: Update to RDoc 2.2.1 r185.
 
@@ -6790,7 +6790,7 @@ Fri Jul 18 14:52:14 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/win32.c (open_ifs_socket): set overlapped mode. this is the
 	  default mode of winsock's socket(), so lacking it is an old bug.
 
-Fri Jul 18 09:44:30 2008
+Fri Jul 18 09:44:30 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/*: Import RDoc r101.
 
@@ -13960,7 +13960,7 @@ Tue Feb 12 11:38:57 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (DoSomeOne): add function name argument.
 
-Tue Feb 12 10:25:02 2008
+Tue Feb 12 10:25:02 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/rdoc.rb:  Wrap parse_files' read in version check for
 	  backwards compatibility.
