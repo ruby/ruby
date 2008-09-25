@@ -1319,6 +1319,7 @@ rb_make_backtrace(void)
 void
 Init_vm_eval(void)
 {
+    rb_define_global_function("eval", rb_f_eval, -1);
     rb_define_global_function("catch", rb_f_catch, -1);
     rb_define_global_function("throw", rb_f_throw, -1);
 
@@ -1334,6 +1335,8 @@ Init_vm_eval(void)
 
     rb_define_method(rb_cModule, "module_exec", rb_mod_module_exec, -1);
     rb_define_method(rb_cModule, "class_exec", rb_mod_module_exec, -1);
+    rb_define_method(rb_cModule, "module_eval", rb_mod_module_eval, -1);
+    rb_define_method(rb_cModule, "class_eval", rb_mod_module_eval, -1);
 
     rb_define_global_function("caller", rb_f_caller, -1);
 }
