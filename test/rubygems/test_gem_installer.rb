@@ -618,8 +618,10 @@ load 'my_exec'
     @installer = Gem::Installer.new @gem, :install_dir => gemhome2,
                                     :source_index => source_index
 
-    use_ui @ui do
-      @installer.install
+    build_rake_in do
+      use_ui @ui do
+        @installer.install
+      end
     end
 
     assert File.exist?(File.join(gemhome2, 'gems', @spec.full_name))
