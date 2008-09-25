@@ -500,7 +500,7 @@ Fri Sep 19 19:43:40 2008  Yuki Sonoda  <yugui@yugui.jp>
 Fri Sep 19 17:41:56 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: applied OS/2 support patch from Brendan Oakley
-	  <gentux2@gmail.com> in [ruby-core:18707].
+	  <gentux2 at gmail.com> in [ruby-core:18707].
 
 Fri Sep 19 09:29:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
