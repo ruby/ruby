@@ -474,8 +474,8 @@ rb_define_hooked_variable(
     id = global_id(name);
     gvar = rb_global_entry(id)->var;
     gvar->data = (void*)var;
-    gvar->getter = getter?getter:var_getter;
-    gvar->setter = setter?setter:var_setter;
+    gvar->getter = getter?(gvar_getter_t *)getter:var_getter;
+    gvar->setter = setter?(gvar_setter_t *)setter:var_setter;
     gvar->marker = var_marker;
 
     RB_GC_GUARD(tmp);
