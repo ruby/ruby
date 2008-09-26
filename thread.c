@@ -86,9 +86,18 @@ st_delete_wrap(st_table *table, st_data_t key)
 
 #define THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
+struct rb_blocking_region_buffer {
+    enum rb_thread_status prev_status;
+    struct rb_unblock_callback oldubf;
+};
+
 static void set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func, void *arg,
 				 struct rb_unblock_callback *old);
 static void reset_unblock_function(rb_thread_t *th, const struct rb_unblock_callback *old);
+
+static void blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
+				  rb_unblock_function_t *func, void *arg);
+static void blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region);
 
 #define GVL_UNLOCK_BEGIN() do { \
   rb_thread_t *_th_stored = GET_THREAD(); \
@@ -109,18 +118,10 @@ static void reset_unblock_function(rb_thread_t *th, const struct rb_unblock_call
 
 #define BLOCKING_REGION(exec, ubf, ubfarg) do { \
     rb_thread_t *__th = GET_THREAD(); \
-    enum rb_thread_status __prev_status = __th->status; \
-    struct rb_unblock_callback __oldubf; \
-    set_unblock_function(__th, ubf, ubfarg, &__oldubf); \
-    __th->status = THREAD_STOPPED; \
-    thread_debug("enter blocking region (%p)\n", __th); \
-    BLOCKING_REGION_CORE(exec); \
-    thread_debug("leave blocking region (%p)\n", __th); \
-    remove_signal_thread_list(__th); \
-    reset_unblock_function(__th, &__oldubf); \
-    if (__th->status == THREAD_STOPPED) { \
-	__th->status = __prev_status; \
-    } \
+    struct rb_blocking_region_buffer __region; \
+    blocking_region_begin(__th, &__region, ubf, ubfarg); \
+    exec; \
+    blocking_region_end(__th, &__region); \
     RUBY_VM_CHECK_INTS(); \
 } while(0)
 
@@ -937,6 +938,50 @@ rb_thread_schedule(void)
 
 	RUBY_VM_CHECK_INTS();
     }
+}
+
+/* blocking region */
+static inline void
+blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
+		      rb_unblock_function_t *func, void *arg)
+{
+    region->prev_status = th->status;
+    set_unblock_function(th, func, arg, &region->oldubf);
+    th->status = THREAD_STOPPED;
+    thread_debug("enter blocking region (%p)\n", th);
+    rb_gc_save_machine_context(th);
+    native_mutex_unlock(&th->vm->global_vm_lock);
+}
+
+static inline void
+blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
+{
+    native_mutex_lock(&th->vm->global_vm_lock);
+    rb_thread_set_current(th);
+    thread_debug("leave blocking region (%p)\n", th);
+    remove_signal_thread_list(th);
+    reset_unblock_function(th, &region->oldubf);
+    if (th->status == THREAD_STOPPED) {
+	th->status = region->prev_status;
+    }
+}
+
+struct rb_blocking_region_buffer *
+rb_thread_blocking_region_begin(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    struct rb_blocking_region_buffer *region = ALLOC(struct rb_blocking_region_buffer);
+    blocking_region_begin(th, region, ubf_select, th);
+    return region;
+}
+
+void
+rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
+{
+    rb_thread_t *th = GET_THREAD();
+    blocking_region_end(th, region);
+    xfree(region);
+    RUBY_VM_CHECK_INTS();
 }
 
 /*

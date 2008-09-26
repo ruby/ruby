@@ -1,3 +1,9 @@
+Fri Sep 26 09:47:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/rubysig.h: old macros for backward compatibility.
+
+	* thread.c (BLOCKING_REGION): rewritten using helper functions.
+
 Fri Sep 26 03:03:32 2008  Tanaka Akira  <akr@fsij.org>
 
 	* vm_eval.c (Init_vm_eval): define module_eval, class_eval and eval
