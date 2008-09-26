@@ -632,6 +632,14 @@ Thu Sep 18 22:35:03 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/bigdecimal/test_bigdecimal.rb: add tests for above.
 
+Thu Sep 18 22:20:08 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (Init_Exception): introduce EncodingError which is a
+	  superclass for all encoding related exception classes,
+	  e.g. Encoding::CompatibilityError.  [ruby-dev:36371]
+
+	* transcode.c (Init_transcode): ditto.
+
 Thu Sep 18 21:57:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_comparable): make ascii8bit string to be
