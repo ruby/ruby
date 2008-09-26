@@ -834,7 +834,7 @@ do_writeconv(VALUE str, rb_io_t *fptr)
         }
 
         if (!NIL_P(common_encoding)) {
-            str = rb_str_transcode(str, common_encoding,
+            str = rb_str_encode(str, common_encoding,
                 fptr->writeconv_pre_ecflags, fptr->writeconv_pre_ecopts);
         }
 
@@ -4683,7 +4683,7 @@ rb_scan_open_args(int argc, VALUE *argv,
 	    static VALUE fs_enc;
 	    if (!fs_enc)
 		fs_enc = rb_enc_from_encoding(fs_encoding);
-	    fname = rb_str_transcode(fname, fs_enc, 0, Qnil);
+	    fname = rb_str_encode(fname, fs_enc, 0, Qnil);
 	}
     }
 #endif

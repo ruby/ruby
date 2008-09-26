@@ -1,3 +1,13 @@
+Fri Sep 26 19:33:36 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_str_encode): renamed from
+	  rb_str_transcode.  [ruby-dev:36593]
+	  (rb_econv_has_convpath_p): renamed from rb_transcode_convertible.
+
+	* transcode.c: follow the renaming.
+
+	* io.c: ditto.
+
 Fri Sep 26 19:01:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/bigdecimal/test_bigdecimal.rb (test_inspect): fixed CPU bit

@@ -2596,7 +2596,7 @@ str_encode(int argc, VALUE *argv, VALUE str)
 }
 
 VALUE
-rb_str_transcode(VALUE str, VALUE to, int ecflags, VALUE ecopts)
+rb_str_encode(VALUE str, VALUE to, int ecflags, VALUE ecopts)
 {
     int argc = 1;
     VALUE *argv = &to;
@@ -2845,7 +2845,7 @@ econv_s_search_convpath(int argc, VALUE *argv, VALUE klass)
  * result: >=0:success -1:failure
  */
 int
-rb_transcode_convertible(const char* from_encoding, const char* to_encoding)
+rb_econv_has_convpath_p(const char* from_encoding, const char* to_encoding)
 {
     VALUE convpath = Qnil;
     transcode_search_path(from_encoding, to_encoding, search_convpath_i,
@@ -3676,7 +3676,7 @@ econv_insert_output(VALUE self, VALUE string)
 
     StringValue(string);
     insert_enc = rb_econv_encoding_to_insert_output(ec);
-    string = rb_str_transcode(string, rb_enc_from_encoding(rb_enc_find(insert_enc)), 0, Qnil);
+    string = rb_str_encode(string, rb_enc_from_encoding(rb_enc_find(insert_enc)), 0, Qnil);
 
     ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(string), RSTRING_LEN(string), insert_enc);
     if (ret == -1) {
