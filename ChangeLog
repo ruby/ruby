@@ -33,7 +33,7 @@ Fri Sep 26 17:07:04 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	* error.c (Init_syserr): moved to the template.
 	  (errno_missing): removed. fixed [ruby-dev:35958].
 
-	* defs/knwon_errors.def: added. extracted from Init_syserr.
+	* defs/known_errors.def: added. extracted from Init_syserr.
 
 	* templates/known_errors.inc.tmpl: added. Template for Init_syserr.
 	  c.f. [ruby-dev:35958].
@@ -629,7 +629,7 @@ Fri Sep 19 20:48:06 2008  Yuki Sonoda  <yugui@yugui.jp>
 
 	* ext/bigdecimal/bigdecimal.c: ditto.
 
-	* lib/rdoc/knwon_classes.rb: removed the entry for Precision.
+	* lib/rdoc/known_classes.rb: removed the entry for Precision.
 
 	* test/ruby/test_prec.rb: removed.
 
@@ -23692,11 +23692,11 @@ Thu Aug 23 00:04:45 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Aug 22 15:59:44 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_knownbug.rb:
-	  fix typo of filename (test_knwonbug.rb).
+	  fix typo of filename (test_knownbug.rb).
 
 Wed Aug 22 14:04:53 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* bootstraptest/test_knwonbug.rb: added.  This file will contain
+	* bootstraptest/test_knownbug.rb: added.  This file will contain
 	  test cases which point out known bug.  If bug is fixed, tests
 	  should move to the suitable place.
 
