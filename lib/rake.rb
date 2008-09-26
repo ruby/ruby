@@ -60,7 +60,7 @@ class Module
   #   end
   #
   def rake_extension(method)
-    if instance_methods.include?(method.to_s) || instance_methods.include?(method.to_sym)
+    if method_defined?(method)
       $stderr.puts "WARNING: Possible conflict with Rake extension: #{self}##{method} already exists"
     else
       yield
@@ -84,7 +84,7 @@ class String
       if newext != ''
         newext = (newext =~ /^\./) ? newext : ("." + newext)
       end
-      dup.sub!(%r(([^/\\])\.[^./\\]*$)) { $1 + newext } || self + newext
+      self.chomp(File.extname(self)) << newext
     end
   end
 
@@ -161,7 +161,7 @@ class String
     #   'a/b/c/d/file.txt'.pathmap("%2d")   => 'a/b'
     #   'a/b/c/d/file.txt'.pathmap("%-2d")  => 'c/d'
     #
-    # Also the %d, %p, $f, $n, %x, and %X operators can take a
+    # Also the %d, %p, %f, %n, %x, and %X operators can take a
     # pattern/replacement argument to perform simple string substititions on a
     # particular part of the path.  The pattern and replacement are speparated
     # by a comma and are enclosed by curly braces.  The replacement spec comes
@@ -203,17 +203,13 @@ class String
         when '%f'
           result << File.basename(self)
         when '%n'
-          result << File.basename(self).ext
+          result << File.basename(self, '.*')
         when '%d'
           result << File.dirname(self)
         when '%x'
-          result << $1 if self =~ /[^\/](\.[^.]+)$/
+          result << File.extname(self)
         when '%X'
-          if self =~ /^(.*[^\/])(\.[^.]+)$/
-            result << $1
-          else
-            result << self
-          end
+          result << self.ext
         when '%p'
           result << self
         when '%s'

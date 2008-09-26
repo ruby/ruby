@@ -1,3 +1,10 @@
+Sat Sep 27 06:22:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rake.rb (Module#rake_extension, String#ext, String#pathmap): use
+	  built-in methods.
+
+	* lib/rake.rb (String#pathmap): fixed typo in rdoc.
+
 Sat Sep 27 04:28:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rmext): preceding dots are not a part of extension.
