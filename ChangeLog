@@ -1,3 +1,8 @@
+Sat Sep 27 03:12:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (host_str): numeric address should be unsigned.
+	  [ruby-core:18971]
+
 Fri Sep 26 22:46:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (primary, brace_block): fix for line number.
