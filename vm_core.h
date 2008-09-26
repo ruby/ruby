@@ -571,7 +571,6 @@ typedef rb_control_frame_t *
   ((rb_control_frame_t *)((VALUE *)(b) - 5))
 
 /* VM related object allocate functions */
-/* TODO: should be static functions */
 VALUE rb_thread_alloc(VALUE klass);
 VALUE rb_proc_alloc(VALUE klass);
 
@@ -624,8 +623,7 @@ extern rb_vm_t *ruby_current_vm;
 void rb_thread_execute_interrupts(rb_thread_t *);
 
 #define RUBY_VM_CHECK_INTS_TH(th) do { \
-  if (th->interrupt_flag) { \
-    /* TODO: trap something event */ \
+  if (UNLIKELY(th->interrupt_flag)) { \
     rb_thread_execute_interrupts(th); \
   } \
 } while (0)

@@ -1,3 +1,7 @@
+Fri Sep 26 21:36:33 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h (RUBY_VM_CHECK_INTS_TH): add an UNLIKELY hint.
+
 Fri Sep 26 19:33:36 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_str_encode): renamed from
