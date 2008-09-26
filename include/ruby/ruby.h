@@ -965,7 +965,6 @@ int ruby_run_node(void *);
 RUBY_EXTERN VALUE rb_mKernel;
 RUBY_EXTERN VALUE rb_mComparable;
 RUBY_EXTERN VALUE rb_mEnumerable;
-RUBY_EXTERN VALUE rb_mPrecision;
 RUBY_EXTERN VALUE rb_mErrno;
 RUBY_EXTERN VALUE rb_mFileTest;
 RUBY_EXTERN VALUE rb_mGC;
