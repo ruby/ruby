@@ -1,3 +1,19 @@
+Fri Sep 26 17:07:04 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* error.c (Init_syserr): moved to the template.
+	  (errno_missing): removed. fixed [ruby-dev:35958].
+
+	* defs/knwon_errors.def: added. extracted from Init_syserr.
+
+	* templates/known_errors.inc.tmpl: added. Template for Init_syserr.
+	  c.f. [ruby-dev:35958].
+
+	* tools/generic_erb.rb: added. general purpose mapper which maps
+	  data+template into source code.
+
+	* common.mk (error.$(OBJEXT), incs, known_errors.inc):
+	  Fixed dependencies.
+
 Fri Sep 26 17:02:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thlist_signal): clears the woken thread if nothing woke.

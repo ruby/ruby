@@ -462,7 +462,7 @@ encoding.$(OBJEXT): {$(VPATH)}encoding.c $(RUBY_H_INCLUDES) \
 enum.$(OBJEXT): {$(VPATH)}enum.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h \
   {$(VPATH)}util.h
 enumerator.$(OBJEXT): {$(VPATH)}enumerator.c $(RUBY_H_INCLUDES)
-error.$(OBJEXT): {$(VPATH)}error.c $(RUBY_H_INCLUDES) \
+error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}known_errors.inc $(RUBY_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h {$(VPATH)}parse.y
 eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}eval_intern.h \
   $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) {$(VPATH)}eval_error.c \
@@ -629,7 +629,7 @@ srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}newline.c $(srcdir)/ext/ripper
 srcs-enc: $(ENC_MK)
 	$(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
 
-incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h $(srcdir)/revision.h
+incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(VPATH)}known_errors.inc $(srcdir)/revision.h
 
 insns: $(INSNS)
 
@@ -643,6 +643,9 @@ encdb.h: $(PREP)
 transdb.h: $(PREP) srcs-enc
 	$(MINIRUBY) $(srcdir)/enc/trans/make_transdb.rb $@.new $(srcdir)/enc/trans enc/trans
 	$(IFCHANGE) "$@" "$@.new"
+
+known_errors.inc: $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def
+	$(BASERUBY) $(srcdir)/tool/generic_erb.rb $+ > $@
 
 miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
