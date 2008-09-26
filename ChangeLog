@@ -1,3 +1,8 @@
+Fri Sep 26 10:35:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (global_variable, struct trace_var): made function
+	  members more strict.
+
 Fri Sep 26 09:55:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby{io,sig}.h: moved to include/ruby/backward.
