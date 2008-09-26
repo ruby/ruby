@@ -257,17 +257,17 @@ class TestPathname < Test::Unit::TestCase
   defassert(:relative_path_from, "a", "a", "b/..")
   defassert(:relative_path_from, "b/c", "b/c", "b/..")
 
-  def self.defassert_raise(name, exc, *args)
+  def self.defassert_raises(name, exc, *args)
     define_assertion(name) {
       message = "#{name}(#{args.map {|a| a.inspect }.join(', ')})"
-      assert_raise(exc, message) { self.send(name, *args) }
+      assert_raises(exc, message) { self.send(name, *args) }
     }
   end
 
-  defassert_raise(:relative_path_from, ArgumentError, "/", ".")
-  defassert_raise(:relative_path_from, ArgumentError, ".", "/")
-  defassert_raise(:relative_path_from, ArgumentError, "a", "..")
-  defassert_raise(:relative_path_from, ArgumentError, ".", "..")
+  defassert_raises(:relative_path_from, ArgumentError, "/", ".")
+  defassert_raises(:relative_path_from, ArgumentError, ".", "/")
+  defassert_raises(:relative_path_from, ArgumentError, "a", "..")
+  defassert_raises(:relative_path_from, ArgumentError, ".", "..")
 
   def realpath(path)
     Pathname.new(path).realpath.to_s
@@ -282,9 +282,9 @@ class TestPathname < Test::Unit::TestCase
     end
     Dir.mktmpdir('rubytest-pathname') {|dir|
       File.symlink("not-exist-target", "#{dir}/not-exist")
-      assert_raise(Errno::ENOENT) { realpath("#{dir}/not-exist") }
+      assert_raises(Errno::ENOENT) { realpath("#{dir}/not-exist") }
       File.symlink("loop", "#{dir}/loop")
-      assert_raise(Errno::ELOOP) { realpath("#{dir}/loop") }
+      assert_raises(Errno::ELOOP) { realpath("#{dir}/loop") }
     }
   end
 
@@ -314,7 +314,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_initialize_nul
-    assert_raise(ArgumentError) { Pathname.new("a\0") }
+    assert_raises(ArgumentError) { Pathname.new("a\0") }
   end
 
   class AnotherStringLike # :nodoc:
@@ -409,7 +409,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_null_character
-    assert_raise(ArgumentError) { Pathname.new("\0") }
+    assert_raises(ArgumentError) { Pathname.new("\0") }
   end
 
   def test_taint
@@ -462,8 +462,8 @@ class TestPathname < Test::Unit::TestCase
     str = "a"
     obj = Pathname.new(str)
     assert_equal(str, obj.to_s)
-    assert_not_same(str, obj.to_s)
-    assert_not_same(obj.to_s, obj.to_s)
+    refute_same(str, obj.to_s)
+    refute_same(obj.to_s, obj.to_s)
   end
 
   def test_kernel_open
