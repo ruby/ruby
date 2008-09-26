@@ -11,7 +11,7 @@
 **********************************************************************/
 
 #include "ruby.h"
-#include "rubyio.h"
+#include "ruby/io.h"
 
 #include <sys/types.h>
 #if defined(FIONREAD_HEADER)

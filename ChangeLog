@@ -1,3 +1,11 @@
+Fri Sep 26 12:04:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/curses/curses.c: should include <ruby/io.h>.
+
+	* ext/io/wait/wait.c: ditto.
+
+	* ext/openssl/ossl.h: ditto.
+
 Fri Sep 26 11:34:08 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* variable.c (rb_define_hooked_variable): cast to get rid of compiler

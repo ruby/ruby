@@ -29,7 +29,7 @@ extern "C" {
 #  undef RFILE
 #endif
 #include <ruby.h>
-#include <rubyio.h>
+#include <ruby/io.h>
 
 /*
  * Check the OpenSSL version

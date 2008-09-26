@@ -14,7 +14,7 @@
  */
 
 #include "ruby.h"
-#include "rubyio.h"
+#include "ruby/io.h"
 
 #if defined(HAVE_NCURSES_H)
 # include <ncurses.h>
