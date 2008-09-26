@@ -2955,16 +2955,19 @@ rb_file_s_absolute_path(int argc, VALUE *argv)
 static int
 rmext(const char *p, int l1, const char *e)
 {
-    int l2;
+    int l0, l2;
 
     if (!e) return 0;
 
+    for (l0 = 0; l0 < l1; ++l0) {
+	if (p[l0] != '.') break;
+    }
     l2 = strlen(e);
     if (l2 == 2 && e[1] == '*') {
 	unsigned char c = *e;
 	e = p + l1;
 	do {
-	    if (e <= p) return 0;
+	    if (e <= p + l0) return 0;
 	} while (*--e != c);
 	return e - p;
     }
