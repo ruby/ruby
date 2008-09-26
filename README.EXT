@@ -876,7 +876,6 @@ class library
   math.c        : Math
   numeric.c     : Numeric, Integer, Fixnum, Float
   pack.c        : Array#pack, String#unpack
-  prec.c        : Precision
   proc.c        : Binding, Proc
   process.c     : Process
   random.c      : random number
@@ -889,6 +888,9 @@ class library
   struct.c      : Struct
   time.c        : Time
 
+  defs/knwon_errors.def  : Errno::* exception classes
+    -> known_errors.inc  : automatically generated
+
 multilingualization
   encoding.c    : Encoding
   transcode.c   : Encoding::Converter
@@ -898,7 +900,8 @@ multilingualization
 goruby interpreter implementation
   
   goruby.c
-  golf_prelude.rb
+  golf_prelude.rb     : goruby specific libraries.
+    -> golf_prelude.c : automatically generated
 
 
 Appendix B. Ruby extension API reference
