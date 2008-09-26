@@ -3017,6 +3017,7 @@ rb_file_s_extname(klass, fname)
 	name = ++p;
 
     e = 0;
+    while (*p && *p == '.') p++;
     while (*p) {
 	if (*p == '.' || istrailinggabage(*p)) {
 #if USE_NTFS
