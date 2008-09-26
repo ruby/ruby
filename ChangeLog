@@ -1,3 +1,7 @@
+Fri Sep 26 09:55:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby{io,sig}.h: moved to include/ruby/backward.
+
 Fri Sep 26 09:47:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/rubysig.h: old macros for backward compatibility.
