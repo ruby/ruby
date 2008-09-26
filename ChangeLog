@@ -1,3 +1,8 @@
+Fri Sep 26 17:25:10 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* common.mk (dist): Changed its dependencies and 
+	  action.
+
 Fri Sep 26 17:07:04 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* error.c (Init_syserr): moved to the template.
