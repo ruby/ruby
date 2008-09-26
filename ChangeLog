@@ -1,3 +1,7 @@
+Fri Sep 26 18:24:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el: safe custimizable variables.
+
 Fri Sep 26 17:37:18 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* include/ruby/ruby.h (rb_mPrecision): removed.

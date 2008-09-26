@@ -168,19 +168,23 @@
 (defcustom ruby-indent-tabs-mode nil
   "*Indentation can insert tabs in ruby mode if this is non-nil."
   :type 'boolean :group 'ruby)
+(put 'ruby-indent-tabs-mode 'safe-local-variable 'booleanp)
 
 (defcustom ruby-indent-level 2
   "*Indentation of ruby statements."
   :type 'integer :group 'ruby)
+(put 'ruby-indent-level 'safe-local-variable 'integerp)
 
 (defcustom ruby-comment-column 32
   "*Indentation column of comments."
   :type 'integer :group 'ruby)
+(put 'ruby-comment-column 'safe-local-variable 'integerp)
 
 (defcustom ruby-deep-arglist t
   "*Deep indent lists in parenthesis when non-nil.
 Also ignores spaces after parenthesis when 'space."
   :group 'ruby)
+(put 'ruby-deep-arglist 'safe-local-variable 'booleanp)
 
 (defcustom ruby-deep-indent-paren '(?\( ?\[ ?\] t)
   "*Deep indent lists in parenthesis when non-nil. t means continuous line.
