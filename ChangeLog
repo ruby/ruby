@@ -20,13 +20,13 @@ Fri Sep 26 18:57:33 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 Fri Sep 26 18:39:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* common.mk (dist): nothing is need to run BASERUBY.
+	* common.mk (dist): nothing is needed to run BASERUBY.
 
 	* tool/make-snapshot: new option -archname.
 
 Fri Sep 26 18:24:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* misc/ruby-mode.el: safe custimizable variables.
+	* misc/ruby-mode.el: safe customizable variables.
 
 Fri Sep 26 17:37:18 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
@@ -35,8 +35,7 @@ Fri Sep 26 17:37:18 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 Fri Sep 26 17:25:10 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* common.mk (dist): Changed its dependencies and 
-	  action.
+	* common.mk (dist): Changed its dependencies and action.
 
 Fri Sep 26 17:07:04 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
