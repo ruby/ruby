@@ -1,3 +1,9 @@
+Fri Sep 26 19:01:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/bigdecimal/test_bigdecimal.rb (test_inspect): fixed CPU bit
+	  size dependent test.  pointed out by TAKANO Mitsuhiro <takano32 AT
+	  jus.or.jp>.
+
 Fri Sep 26 18:39:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (dist): nothing is need to run BASERUBY.

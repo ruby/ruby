@@ -572,7 +572,8 @@ class TestBigDecimal < Test::Unit::TestCase
 
   def test_inspect
     x = BigDecimal.new("1234.5678")
-    assert_match(/^#<BigDecimal:[0-9a-f]+,'0.12345678E4',8\(12\)>$/, x.inspect)
+    prec, maxprec = x.precs
+    assert_match(/^#<BigDecimal:[0-9a-f]+,'0.12345678E4',#{prec}\(#{maxprec}\)>$/, x.inspect)
   end
 
   def test_power
