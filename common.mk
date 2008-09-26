@@ -24,6 +24,7 @@ MAINOBJ       = $(NORMALMAINOBJ)
 EXTOBJS	      = 
 DLDOBJS	      = $(DMYEXT)
 MINIOBJS      = $(ARCHMINIOBJS) dmyencoding.$(OBJEXT) miniprelude.$(OBJEXT)
+ENC_MK        = enc.mk
 
 COMMONOBJS    = array.$(OBJEXT) \
 		bignum.$(OBJEXT) \
@@ -332,7 +333,7 @@ clean-local::
 	@$(RM) *.inc y.tab.c y.output encdb.h transdb.h
 clean-ext::
 clean-enc:
-	@-$(MAKE) -f enc.mk $(MFLAGS) clean
+	@-$(MAKE) -f $(ENC_MK) $(MFLAGS) clean
 clean-golf:
 	@$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
 
@@ -343,7 +344,7 @@ distclean-local:: clean-local
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 distclean-ext::
 distclean-enc: clean-enc
-	@-$(MAKE) -f enc.mk $(MFLAGS) distclean
+	@-$(MAKE) -f $(ENC_MK) $(MFLAGS) distclean
 distclean-golf: clean-golf
 	@$(RM) $(GOLFPRELUDES)
 
@@ -382,10 +383,10 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 		-install_name=$(RUBY_INSTALL_NAME) \
 		-so_name=$(RUBY_SO_NAME) rbconfig.rb
 
-encs: enc.mk $(LIBRUBY) $(PREP) transdb.h
-	$(MAKE) -f enc.mk MINIRUBY="$(MINIRUBY)" $(MFLAGS)
+encs: $(ENC_MK) $(LIBRUBY) $(PREP) transdb.h
+	$(MAKE) -f $(ENC_MK) MINIRUBY="$(MINIRUBY)" $(MFLAGS)
 
-enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
+$(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
 	$(srcdir)/lib/mkmf.rb $(RBCONFIG)
 	$(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" --builtin-transes="$(BUILTIN_TRANSOBJS)" $@ $(ENCS)
 
@@ -625,8 +626,8 @@ vm.inc: $(srcdir)/template/vm.inc.tmpl
 
 srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}newline.c $(srcdir)/ext/ripper/ripper.c srcs-enc
 
-srcs-enc: enc.mk
-	$(MAKE) -f enc.mk RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
+srcs-enc: $(ENC_MK)
+	$(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
 
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h $(srcdir)/revision.h
 
