@@ -841,8 +841,8 @@ vm_make_jump_tag_but_local_jump(int state, VALUE val)
 void
 vm_jump_tag_but_local_jump(int state, VALUE val)
 {
-    VALUE exc = vm_make_jump_tag_but_local_jump(state, val);
     if (val != Qnil) {
+	VALUE exc = vm_make_jump_tag_but_local_jump(state, val);
 	rb_exc_raise(exc);
     }
     JUMP_TAG(state);
