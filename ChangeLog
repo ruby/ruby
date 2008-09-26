@@ -1,3 +1,8 @@
+Fri Sep 26 11:05:41 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* transcode.c, include/ruby/encoding.c (rb_transcode_convertible):
+	  new function. checking the existance of converter.
+
 Fri Sep 26 10:35:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (global_variable, struct trace_var): made function

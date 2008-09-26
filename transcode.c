@@ -2839,6 +2839,20 @@ econv_s_search_convpath(int argc, VALUE *argv, VALUE klass)
     return convpath;
 }
 
+/*
+ * check the existance of converter.
+ * returns the count of the converting paths.
+ * result: >=0:success -1:failure
+ */
+int
+rb_transcode_convertible(const char* from_encoding, const char* to_encoding)
+{
+    VALUE convpath = Qnil;
+    transcode_search_path(from_encoding, to_encoding, search_convpath_i,
+			  &convpath);
+    return RTEST(convpath);
+}
+
 struct rb_econv_init_by_convpath_t {
     rb_econv_t *ec;
     int index;
