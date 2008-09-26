@@ -4,6 +4,10 @@ Fri Sep 26 19:01:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  size dependent test.  pointed out by TAKANO Mitsuhiro <takano32 AT
 	  jus.or.jp>.
 
+Fri Sep 26 18:57:33 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/pathname/test_pathname.rb: Fix use of deprecated methods.
+
 Fri Sep 26 18:39:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (dist): nothing is need to run BASERUBY.
