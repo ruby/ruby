@@ -1,3 +1,8 @@
+Sat Sep 27 03:12:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (host_str): numeric address should be unsigned.
+	  [ruby-core:18971]
+
 Fri Sep 26 18:24:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el: safe custimizable variables.

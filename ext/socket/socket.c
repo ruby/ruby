@@ -840,7 +840,7 @@ host_str(host, hbuf, len)
 	return NULL;
     }
     else if (rb_obj_is_kind_of(host, rb_cInteger)) {
-	long i = NUM2LONG(host);
+	unsigned long i = NUM2ULONG(host);
 
 	make_inetaddr(htonl(i), hbuf, len);
 	return hbuf;
