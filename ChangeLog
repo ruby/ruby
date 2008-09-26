@@ -1,3 +1,10 @@
+Fri Sep 26 17:02:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thlist_signal): clears the woken thread if nothing woke.
+
+	* thread.c (rb_barrier_wait): achieves the lock if no thread was
+	  waiting yet.
+
 Fri Sep 26 12:04:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/curses/curses.c: should include <ruby/io.h>.

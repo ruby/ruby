@@ -3076,6 +3076,7 @@ thlist_signal(rb_thread_list_t **list, unsigned int maxth, rb_thread_t **woken_t
 	    if (++woken >= maxth && maxth) break;
 	}
     }
+    if (!woken && woken_thread) *woken_thread = 0;
     return woken;
 }
 
@@ -3128,23 +3129,25 @@ rb_barrier_wait(VALUE self)
 {
     rb_barrier_t *barrier;
     rb_thread_list_t *q;
+    rb_thread_t *th = GET_THREAD();
 
     Data_Get_Struct(self, rb_barrier_t, barrier);
     if (!barrier->owner || barrier->owner->status == THREAD_KILLED) {
 	barrier->owner = 0;
 	if (thlist_signal(&barrier->waiting, 1, &barrier->owner)) return Qfalse;
+	barrier->owner = th;
 	return Qtrue;
     }
-    else if (barrier->owner == GET_THREAD()) {
+    else if (barrier->owner == th) {
 	return Qfalse;
     }
     else {
 	*barrier->tail = q = ALLOC(rb_thread_list_t);
-	q->th = GET_THREAD();
+	q->th = th;
 	q->next = 0;
 	barrier->tail = &q->next;
 	rb_thread_sleep_forever();
-	return barrier->owner == GET_THREAD() ? Qtrue : Qfalse;
+	return barrier->owner == th ? Qtrue : Qfalse;
     }
 }
 
