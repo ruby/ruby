@@ -1,3 +1,10 @@
+Fri Sep 26 22:46:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (primary, brace_block): fix for line number.
+
+	* proc.c (rb_proc_location, rb_method_location): new methods
+	  {Proc,Method,UnboundMethod}#source_location.  [ruby-core:18452]
+
 Fri Sep 26 21:36:33 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h (RUBY_VM_CHECK_INTS_TH): add an UNLIKELY hint.

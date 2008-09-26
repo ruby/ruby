@@ -2886,6 +2886,7 @@ primary		: literal
 			reduce_nodes(&body);
 			$$ = NEW_DEFN($2, $4, body, NOEX_PRIVATE);
 			fixpos($$, $4);
+			fixpos($$->nd_defn, $4);
 			local_pop();
 			in_def--;
 			cur_mid = $<id>3;
@@ -2913,6 +2914,7 @@ primary		: literal
 			reduce_nodes(&body);
 			$$ = NEW_DEFS($2, $5, $7, body);
 			fixpos($$, $2);
+			fixpos($$->nd_defn, $2);
 			local_pop();
 			in_single--;
 		    /*%
@@ -3611,6 +3613,8 @@ brace_block	: '{'
 		    /*%%%*/
 			$$ = NEW_ITER($3,$4);
 			nd_set_line($$, $<num>2);
+			nd_set_line($$->nd_body, $<num>2);
+			nd_set_line($$->nd_body->nd_body, $<num>2);
 			dyna_pop();
 		    /*%
 			$$ = dispatch2(brace_block, escape_Qundef($3), $4);
