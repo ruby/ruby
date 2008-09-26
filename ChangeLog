@@ -1,3 +1,9 @@
+Fri Sep 26 18:39:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (dist): nothing is need to run BASERUBY.
+
+	* tool/make-snapshot: new option -archname.
+
 Fri Sep 26 18:24:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el: safe custimizable variables.
