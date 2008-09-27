@@ -18,18 +18,75 @@ unless defined?(Math.exp!)
   Math = CMath
 end
 
+class Object
+
+  def canon
+    if Rational === self
+      if denominator == 1
+	return numerator
+      end
+    elsif Complex === self
+      if Integer === imag && imag == 0
+	return real
+      end
+    end
+    self
+  end
+
+  private :canon
+
+end
+
+class Numeric
+
+  class << self
+
+    def def_canon(*ids)
+      for id in ids
+	module_eval <<-"end;"
+	  alias_method :__#{id.object_id}__, :#{id.to_s}
+	  private :__#{id.object_id}__
+	  def #{id.to_s}(*args, &block)
+	    __#{id.object_id}__(*args, &block).__send__(:canon)
+	  end
+	end;
+      end
+    end
+
+  end
+
+end
+
 class Fixnum
   remove_method :/
   alias / quo
+
+  def_canon *(instance_methods - Object.methods - [:canon])
+
 end
 
 class Bignum
   remove_method :/
   alias / quo
+
+  def_canon *(instance_methods - Object.methods - [:canon])
+
 end
+
+alias RationalOrig Rational
+private :RationalOrig
+def Rational(*args) RationalOrig(*args).__send__(:canon) end
 
 class Rational
   Unify = true
+
+  class << self
+    alias convert_orig convert
+    private :convert_orig
+    def convert(*args) convert_orig(*args).__send__(:canon) end
+  end
+
+  def_canon *(instance_methods - Object.methods - [:canon])
 
   alias power! **
 
@@ -169,6 +226,39 @@ module Math
   module_function :rsqrt
 end
 
+alias ComplexOrig Complex
+private :ComplexOrig
+def Complex(*args) ComplexOrig(*args).__send__(:canon) end
+
 class Complex
   Unify = true
+
+  class << self
+    alias convert_orig convert
+    private :convert_orig
+    def convert(*args) convert_orig(*args).__send__(:canon) end
+  end
+
+  def_canon *(instance_methods - Object.methods - [:canon])
+
+end
+
+class NilClass
+
+  def to_r() 0 end
+  def to_c() 0 end
+
+end
+
+class Integer
+
+  def to_r() self end
+  def to_c() self end
+
+end
+
+class Float
+
+  def_canon *(instance_methods - Object.methods - [:canon])
+
 end
