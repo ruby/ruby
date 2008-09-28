@@ -199,7 +199,7 @@ require "stringio"
 # 
 class CSV
   # The version of the installed library.
-  VERSION = "2.4.1".freeze
+  VERSION = "2.4.2".freeze
   
   # 
   # A CSV::Row is part Array and part Hash.  It retains an order for the fields
@@ -831,7 +831,7 @@ class CSV
     
     # Shows the mode and size of this table in a US-ASCII String.
     def inspect
-      "#<#{self.class} mode:#{@mode} row_count:#{to_a.size}>"
+      "#<#{self.class} mode:#{@mode} row_count:#{to_a.size}>".encode("US-ASCII")
     end
   end
 
@@ -1244,9 +1244,9 @@ class CSV
     encoding = options.delete(:encoding)
     str      = ""
     if encoding
-      str.encode!(encoding)
+      str.force_encoding(encoding)
     elsif field = row.find { |f| not f.nil? }
-      str.encode!(String(field).encoding)
+      str.force_encoding(String(field).encoding)
     end
     (new(str, options) << row).string
   end

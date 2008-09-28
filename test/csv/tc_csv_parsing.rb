@@ -141,7 +141,7 @@ class TestCSVParsing < Test::Unit::TestCase
       assert_equal( "Unquoted fields do not allow \\r or \\n (line 4).",
                     $!.message )
     end
-
+  
     assert_raise(CSV::MalformedCSVError) { CSV.parse_line('1,2,"3...') }
     
     bad_data = <<-END_DATA.gsub(/^ +/, "")

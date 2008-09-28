@@ -207,8 +207,8 @@ class TestEncodings < Test::Unit::TestCase
       
       # writing to files
       data = encode_ary([%w[abc d,ef], %w[123 456 ]], encoding)
-      CSV.open(@temp_csv_path, "wb:#{encoding.name}") do |csv|
-        data.each { |row| csv << row }
+      CSV.open(@temp_csv_path, "wb:#{encoding.name}") do |f|
+        data.each { |row| f << row }
       end
       assert_equal(data, CSV.read(@temp_csv_path, :encoding => encoding.name))
     end
@@ -221,8 +221,9 @@ class TestEncodings < Test::Unit::TestCase
     fields   = encode_ary(fields, encoding)
     parsed   = CSV.parse(ary_to_data(fields, options), options)
     assert_equal(fields, parsed)
-    assert( parsed.flatten.all? { |field| field.encoding == encoding },
-            "Fields were transcoded." )
+    parsed.flatten.each_with_index do |field, i|
+      assert_equal(encoding, field.encoding, "Field[#{i + 1}] was transcoded.")
+    end
   end
   
   def encode_ary(ary, encoding)
