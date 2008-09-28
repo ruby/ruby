@@ -1,3 +1,8 @@
+Sun Sep 28 23:08:38 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
+
+	* lib/cgi/html.rb (CGI::HtmlExtension::popup_menu):
+	fix the calls #bytesize on array parameters. [ruby-core:18919]
+
 Sun Sep 28 22:44:26 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb (CGI::parse): ignore illegal query params.

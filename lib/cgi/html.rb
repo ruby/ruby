@@ -624,13 +624,13 @@ class CGI
           if value.kind_of?(String)
             option({ "VALUE" => value }){ value }
           else
-            if value[value.bytesize - 1] == true
+            if value[value.size - 1] == true
               option({ "VALUE" => value[0], "SELECTED" => true }){
-                value[value.bytesize - 2]
+                value[value.size - 2]
               }
             else
               option({ "VALUE" => value[0] }){
-                value[value.bytesize - 1]
+                value[value.size - 1]
               }
             end
           end
