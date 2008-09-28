@@ -395,6 +395,9 @@ str_new(VALUE klass, const char *ptr, long len)
 	RSTRING(str)->as.heap.ptr = ALLOC_N(char,len+1);
 	STR_SET_NOEMBED(str);
     }
+    else if (len == 0) {
+	ENC_CODERANGE_SET(str, ENC_CODERANGE_7BIT);
+    }
     if (ptr) {
 	memcpy(RSTRING_PTR(str), ptr, len);
     }
