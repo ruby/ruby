@@ -1,3 +1,7 @@
+Sun Sep 28 19:04:03 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/date/*.rb: imported a date test suite ruby 1.9 limited ed.
+
 Sun Sep 28 18:40:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mini/test.rb (MINI_DIR): loaded path is expanded.
