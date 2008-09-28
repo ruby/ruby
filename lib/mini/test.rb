@@ -13,28 +13,18 @@
 module Mini
   class Assertion < Exception; end
 
-  file = if __FILE__ =~ /^[^\.]/ then # OMG ruby 1.9 is so lame (rubinius too)
-           require 'pathname'
-           pwd = Pathname.new(Dir.pwd)
-           pn = Pathname.new(File.expand_path(__FILE__))
-           pn = File.join(".", pn.relative_path_from(pwd)) unless pn.relative?
-           pn.to_s
-         else
-           __FILE__
-         end
-
-  MINI_DIR = File.dirname(File.dirname(file))
+  MINI_DIR = File.expand_path("../..", __FILE__)
 
   def self.filter_backtrace bt
     return ["No backtrace"] unless bt
 
     new_bt = []
     bt.each do |line|
-      break if line.index(MINI_DIR) == 0
+      break if line.index(MINI_DIR, 0)
       new_bt << line
     end
 
-    new_bt = bt.reject { |line| line.index(MINI_DIR) == 0 } if
+    new_bt = bt.reject { |line| line.index(MINI_DIR, 0) } if
       new_bt.empty?
     new_bt = bt.dup if new_bt.empty?
 

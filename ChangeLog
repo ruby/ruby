@@ -1,3 +1,7 @@
+Sun Sep 28 18:39:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mini/test.rb (MINI_DIR): loaded path is expanded.
+
 Sun Sep 28 12:36:09 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_exec.c (vm_exec_core): add an UNLIKELY() hint.
