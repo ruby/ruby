@@ -1,3 +1,8 @@
+Sun Sep 28 22:05:07 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* compile.c (iseq_set_sequence): check duplicated when clause.
+	  [ruby-dev:36616]
+
 Sun Sep 28 19:04:03 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/date/*.rb: imported a date test suite ruby 1.9 limited ed.

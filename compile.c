@@ -1349,7 +1349,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 				    rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
 						     "unknown label");
 				}
-				rb_hash_aset(map, obj, INT2FIX(lobj->position - (pos+len)));
+				if (!st_lookup(rb_hash_tbl(map), obj, 0)) {
+				    rb_hash_aset(map, obj, INT2FIX(lobj->position - (pos+len)));
+				}
+				else {
+				    rb_warning("duplicated when clause is ignored");
+				}
 			    }
 			    generated_iseq[pos + 1 + j] = map;
 			    iseq_add_mark_object(iseq, map);
