@@ -1,3 +1,8 @@
+Sun Sep 28 22:44:26 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
+
+	* lib/cgi/core.rb (CGI::parse): ignore illegal query params.
+	[ruby-dev:36618]
+
 Sun Sep 28 22:05:07 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (iseq_set_sequence): check duplicated when clause.
