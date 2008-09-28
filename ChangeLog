@@ -1,3 +1,8 @@
+Sun Sep 28 09:39:48 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/mathn.rb ({Fixnum,Bignum,Float}#**): may produce complex
+	  value.
+
 Sun Sep 28 09:05:53 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv/csv.rb:  Worked around some minor encoding changes in Ruby

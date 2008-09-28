@@ -61,6 +61,16 @@ class Fixnum
   remove_method :/
   alias / quo
 
+  alias power! **
+
+  def ** (other)
+    if self < 0 && other.round != other
+      Complex(self, 0.0) ** other
+    else
+      power!(other)
+    end
+  end
+
   def_canon *(instance_methods - Object.methods - [:canon])
 
 end
@@ -68,6 +78,16 @@ end
 class Bignum
   remove_method :/
   alias / quo
+
+  alias power! **
+
+  def ** (other)
+    if self < 0 && other.round != other
+      Complex(self, 0.0) ** other
+    else
+      power!(other)
+    end
+  end
 
   def_canon *(instance_methods - Object.methods - [:canon])
 
@@ -260,5 +280,15 @@ end
 class Float
 
   def_canon *(instance_methods - Object.methods - [:canon])
+
+  alias power! **
+
+  def ** (other)
+    if self < 0 && other.round != other
+      Complex(self, 0.0) ** other
+    else
+      power!(other)
+    end
+  end
 
 end
