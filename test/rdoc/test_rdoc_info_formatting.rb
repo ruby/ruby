@@ -19,7 +19,7 @@ class TestRDocInfoFormatting < Test::Unit::TestCase
   end
 
   def teardown
-    # FileUtils.rm_rf @output_dir
+    FileUtils.rm_rf @output_dir
   end
 
   # Make sure tags like *this* do not make HTML

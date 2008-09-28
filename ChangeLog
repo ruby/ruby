@@ -1,3 +1,8 @@
+Mon Sep 29 01:51:54 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/rdoc/test_rdoc_info_formatting.rb (teardown): delete tmpdir for
+	  test.
+
 Mon Sep 29 00:30:20 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* lib/cgi/html.rb (CGI::HtmlExtension::{radio_group, checkbox_group}):
