@@ -83,7 +83,7 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 
 #if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 #include "vmtc.inc"
-    if (th == 0) {
+    if (UNLIKELY(th == 0)) {
 #if OPT_STACK_CACHING
 	finish_insn_seq[0] = (VALUE)&&LABEL (finish_SC_ax_ax);
 #else

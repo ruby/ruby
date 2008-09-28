@@ -180,7 +180,7 @@ extern VALUE ruby_vm_redefined_flag;
 
 /* optimize insn */
 #define FIXNUM_2_P(a, b) ((a) & (b) & 1)
-#define BASIC_OP_UNREDEFINED_P(op) ((ruby_vm_redefined_flag & (op)) == 0)
+#define BASIC_OP_UNREDEFINED_P(op) (LIKELY((ruby_vm_redefined_flag & (op)) == 0))
 #define HEAP_CLASS_OF(obj) RBASIC(obj)->klass
 
 #define CALL_SIMPLE_METHOD(num, id, recv) do { \
