@@ -248,12 +248,12 @@ class CGI
         if value.kind_of?(String)
           checkbox(name, value) + value
         else
-          if value[value.size - 1] == true
-            checkbox(name, value[0], true) +
-            value[value.size - 2]
+          if value[-1] == true || value[-1] == false
+            checkbox(name, value[0],  value[-1]) +
+            value[-2]
           else
             checkbox(name, value[0]) +
-            value[value.size - 1]
+            value[-1]
           end
         end
       }.join
@@ -703,12 +703,12 @@ class CGI
         if value.kind_of?(String)
           radio_button(name, value) + value
         else
-          if value[value.size - 1] == true
-            radio_button(name, value[0], true) +
-            value[value.size - 2]
+          if value[-1] == true || value[-1] == false
+            radio_button(name, value[0],  value[-1]) +
+            value[-2]
           else
             radio_button(name, value[0]) +
-            value[value.size - 1]
+            value[-1]
           end
         end
       }.join

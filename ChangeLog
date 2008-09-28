@@ -1,3 +1,11 @@
+Mon Sep 29 00:30:20 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
+
+	* lib/cgi/html.rb (CGI::HtmlExtension::{radio_group, checkbox_group}):
+	can specify the false as checked or selected value.
+	[ruby-core:18306], [ruby-core:18307]
+
+	* test/cgi/test_cgi_tag_helper.rb: add a test.
+
 Sun Sep 28 23:08:38 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* lib/cgi/html.rb (CGI::HtmlExtension::popup_menu):
