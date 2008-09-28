@@ -104,8 +104,8 @@ module Mini
 
     def assert_match exp, act, msg = nil
       msg = message(msg) { "Expected #{mu_pp(act)} to match #{mu_pp(exp)}" }
-      assert_respond_to act, :=~
-      exp = /#{exp}/ if String === exp && String === act
+      assert_respond_to(act, :"=~")
+      (exp = /#{exp}/) if String === exp && String === act
       assert act =~ exp, msg
     end
 
