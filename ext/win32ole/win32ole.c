@@ -118,7 +118,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.3.1"
+#define WIN32OLE_VERSION "1.3.2"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -7542,11 +7542,13 @@ static VALUE
 rescue_callback(VALUE arg)
 {
     
+    VALUE error;
     VALUE e = rb_errinfo();
     VALUE bt = rb_funcall(e, rb_intern("backtrace"), 0);
     VALUE msg = rb_funcall(e, rb_intern("message"), 0);
     bt = rb_ary_entry(bt, 0);
-    fprintf(stdout, "%s: %s (%s)\n", StringValuePtr(bt), StringValuePtr(msg), rb_obj_classname(e));
+    error = rb_sprintf("%s: %s (%s)\n", StringValuePtr(bt), StringValuePtr(msg), rb_obj_classname(e));
+    rb_write_error(StringValuePtr(error));
     rb_backtrace();
     ruby_finalize();
     exit(-1);
