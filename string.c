@@ -1285,8 +1285,9 @@ rb_str_subseq(VALUE str, long beg, long len)
 {
     VALUE str2;
 
-    if (RSTRING_LEN(str) == beg + len) {
-        str2 = rb_str_new_shared(str);
+    if (RSTRING_LEN(str) == beg + len &&
+        RSTRING_EMBED_LEN_MAX < len) {
+        str2 = rb_str_new_shared(rb_str_new_frozen(str));
         rb_str_drop_bytes(str2, beg);
     }
     else {

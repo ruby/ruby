@@ -1,3 +1,8 @@
+Mon Sep 29 23:32:25 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_subseq): don't use rb_str_drop_bytes for short
+	  string.
+
 Mon Sep 29 22:54:29 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/mathn.rb: added String#to_[rc].  moved def_canon.
