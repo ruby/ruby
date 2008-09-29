@@ -125,7 +125,6 @@ class TestDateStrftime < Test::Unit::TestCase
   def test_strftime__3_2
     s = Time.now.strftime('%G')
     if s.empty? || s == '%G'
-      skip_mesg
       return
     end
     (Date.new(1970,1,1)..Date.new(2037,12,31)).each do |d|
