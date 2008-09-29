@@ -33,6 +33,8 @@ until ARGV.empty? do
     other.push(*ARGV)
     ARGV.clear
     break
+  when /^-(n|-name)$/ then
+    other.push arg, ARGV.shift
   when /^-/ then
     other << arg
   else

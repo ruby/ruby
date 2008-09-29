@@ -5,6 +5,9 @@ require "rdoc/markup/to_html_crossref"
 class TestRDocMarkupAttributeManager < Test::Unit::TestCase
 
   def setup
+    @orig_special = RDoc::Markup::AttributeManager::SPECIAL
+    RDoc::Markup::AttributeManager::SPECIAL.replace Hash.new
+
     @am = RDoc::Markup::AttributeManager.new
 
     @bold_on  = @am.changed_attribute_by_name([], [:BOLD])
@@ -26,6 +29,10 @@ class TestRDocMarkupAttributeManager < Test::Unit::TestCase
     @am.add_word_pair("{", "}", :WOMBAT)
     @wombat_on    = @am.changed_attribute_by_name([], [:WOMBAT])
     @wombat_off   = @am.changed_attribute_by_name([:WOMBAT], [])
+  end
+
+  def teardown
+    RDoc::Markup::AttributeManager::SPECIAL.replace @orig_special
   end
 
   def crossref(text)

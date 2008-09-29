@@ -57,6 +57,7 @@ class RubyGemTestCase < Test::Unit::TestCase
     @latest_usrcache = File.join(@gemhome, ".gem", "latest_user_cache")
     @userhome = File.join @tempdir, 'userhome'
 
+    @orig_ENV_HOME = ENV['HOME']
     ENV['HOME'] = @userhome
     Gem.instance_variable_set :@user_home, nil
 
@@ -131,6 +132,12 @@ class RubyGemTestCase < Test::Unit::TestCase
     ENV.delete 'GEM_PATH'
 
     Gem.clear_paths
+
+    if @orig_ENV_HOME then
+      ENV['HOME'] = @orig_ENV_HOME
+    else
+      ENV.delete 'HOME'
+    end
   end
 
   def install_gem gem

@@ -1,3 +1,10 @@
+Tue Sep 30 07:46:07 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* test/rdoc/test_rdoc_markup_attribute_manager.rb: Test with clean
+	  SPECIALS.
+	* test/rubygems/gemutilities.rb: Restore ENV['HOME'] after test.
+	* test/runner.rb: Pass -n argument down to miniunit.
+
 Tue Sep 30 01:02:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (token_info_push, token_info_pop): do nothing for evaled
