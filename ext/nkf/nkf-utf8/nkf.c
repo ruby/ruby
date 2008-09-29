@@ -318,7 +318,7 @@ extern POINT _BufferSize;
 #endif
 
 struct input_code{
-    char *name;
+    const char *name;
     nkf_char stat;
     nkf_char score;
     nkf_char index;
@@ -328,7 +328,7 @@ struct input_code{
     int _file_stat;
 };
 
-static char *input_codename = NULL; /* NULL: unestablished, "": BINARY */
+static const char *input_codename = NULL; /* NULL: unestablished, "": BINARY */
 static nkf_encoding *input_encoding = NULL;
 static nkf_encoding *output_encoding = NULL;
 
@@ -438,7 +438,7 @@ static nkf_char (*iconv_for_check)(nkf_char c2,nkf_char c1,nkf_char c0) = 0;
 #endif
 
 static int guess_f = 0; /* 0: OFF, 1: ON, 2: VERBOSE */
-static  void    set_input_codename(char *codename);
+static  void    set_input_codename(const char *codename);
 
 #ifdef EXEC_IO
 static int exec_f = 0;
@@ -3501,7 +3501,7 @@ z_conv(nkf_char c2, nkf_char c1)
 
     if (alpha_f&8 && c2 == 0) {
 	/* HTML Entity */
-	char *entity = 0;
+	const char *entity = 0;
 	switch (c1){
 	case '>': entity = "&gt;"; break;
 	case '<': entity = "&lt;"; break;
@@ -3984,7 +3984,7 @@ debug(const char *str)
 #endif
 
 static void
-set_input_codename(char *codename)
+set_input_codename(const char *codename)
 {
     if (!input_codename) {
 	input_codename = codename;
@@ -3993,7 +3993,7 @@ set_input_codename(char *codename)
     }
 }
 
-static char*
+static const char*
 get_guessed_code(void)
 {
     if (input_codename && !*input_codename) {
@@ -6043,7 +6043,8 @@ options(unsigned char *cp)
 		} else if (cp[0] == 'B') {
 		    cp++;
 		} else {
-		    goto utf_no_endian;
+		    output_encoding = nkf_enc_from_index(enc_idx);
+		    continue;
 		}
 		if (cp[0] == '0'){
 		    cp++;
@@ -6052,7 +6053,6 @@ options(unsigned char *cp)
 			: (output_endian == ENDIAN_LITTLE ? UTF_32LE : UTF_32BE);
 		} else {
 		    output_bom_f = TRUE;
-		  utf_no_endian:
 		    enc_idx = enc_idx == UTF_16
 			? (output_endian == ENDIAN_LITTLE ? UTF_16LE_BOM : UTF_16BE_BOM)
 			: (output_endian == ENDIAN_LITTLE ? UTF_32LE_BOM : UTF_32BE_BOM);
