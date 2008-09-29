@@ -61,6 +61,8 @@ class Fixnum
   remove_method :/
   alias / quo
 
+  def_canon *(instance_methods - Object.methods - [:canon])
+
   alias power! **
 
   def ** (other)
@@ -70,8 +72,6 @@ class Fixnum
       power!(other)
     end
   end
-
-  def_canon *(instance_methods - Object.methods - [:canon])
 
 end
 
@@ -79,6 +79,8 @@ class Bignum
   remove_method :/
   alias / quo
 
+  def_canon *(instance_methods - Object.methods - [:canon])
+
   alias power! **
 
   def ** (other)
@@ -88,8 +90,6 @@ class Bignum
       power!(other)
     end
   end
-
-  def_canon *(instance_methods - Object.methods - [:canon])
 
 end
 
@@ -274,6 +274,18 @@ class Integer
 
   def to_r() self end
   def to_c() self end
+
+end
+
+class String
+
+  alias to_r_orig to_r
+  private :to_r_orig
+  def to_r() to_r_orig.__send__(:canon) end
+
+  alias to_c_orig to_c
+  private :to_c_orig
+  def to_c() to_c_orig.__send__(:canon) end
 
 end
 
