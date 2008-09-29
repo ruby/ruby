@@ -4814,8 +4814,10 @@ token_info_has_nonspaces(struct parser_params *parser, const char *token)
 static void
 token_info_push(struct parser_params *parser, const char *token)
 {
-    token_info *ptinfo = ALLOC(token_info);
+    token_info *ptinfo;
 
+    if (compile_for_eval) return;
+    ptinfo = ALLOC(token_info);
     ptinfo->token = token;
     ptinfo->linenum = ruby_sourceline;
     ptinfo->column = token_info_get_column(parser, token);
@@ -4831,6 +4833,7 @@ token_info_pop(struct parser_params *parser, const char *token)
     int linenum;
     token_info *ptinfo = parser->parser_token_info;
 
+    if (!ptinfo) return;
     parser->parser_token_info = ptinfo->next;
     if (token_info_get_column(parser, token) == ptinfo->column) { /* OK */
 	goto finish;

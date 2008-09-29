@@ -1,70 +1,7 @@
-Tue Sep 30 00:47:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Sep 30 01:02:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* ext/nkf/nkf-utf8/nkf.c: constified.
-
-Mon Sep 29 23:32:25 2008  Tanaka Akira  <akr@fsij.org>
-
-	* string.c (rb_str_subseq): don't use rb_str_drop_bytes for short
-	  string.
-
-Mon Sep 29 22:54:29 2008  Tadayoshi Funaba  <tadf@dotrb.org>
-
-	* lib/mathn.rb: added String#to_[rc].  moved def_canon.
-
-Mon Sep 29 20:41:19 2008  Tanaka Akira  <akr@fsij.org>
-
-	* string.c (rb_str_subseq): use rb_str_drop_bytes if possible.
-
-Mon Sep 29 20:22:20 2008  Tadayoshi Funaba  <tadf@dotrb.org>
-
-	* test/date/*.rb: imported additional tests and some adjustments.
-
-Mon Sep 29 20:13:05 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
-
-	* ext/win32ole/win32ole.c (fev_initialize): initialization
-	  handler instance variable.
-
-	* test/win32ole/test_win32ole_typelib.rb (test_s_typelibs):
-	  fix the warning of shadowing outer local variable.
-
-Mon Sep 29 19:59:00 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
-
-	* ext/win32ole/win32ole.c (rescue_callback): use rb_write_error
-	  instead of fprintf.
-
-Mon Sep 29 01:51:54 2008  Yusuke Endoh  <mame@tsg.ne.jp>
-
-	* test/rdoc/test_rdoc_info_formatting.rb (teardown): delete tmpdir for
-	  test.
-
-Mon Sep 29 00:30:20 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
-
-	* lib/cgi/html.rb (CGI::HtmlExtension::{radio_group, checkbox_group}):
-	can specify the false as checked or selected value.
-	[ruby-core:18306], [ruby-core:18307]
-
-	* test/cgi/test_cgi_tag_helper.rb: add a test.
-
-Sun Sep 28 23:08:38 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
-
-	* lib/cgi/html.rb (CGI::HtmlExtension::popup_menu):
-	fix the calls #bytesize on array parameters. [ruby-core:18919]
-
-Sun Sep 28 22:44:26 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
-
-	* lib/cgi/core.rb (CGI::parse): ignore illegal query params.
-	[ruby-dev:36618]
-
-Sun Sep 28 22:05:07 2008  Yusuke Endoh  <mame@tsg.ne.jp>
-
-	* compile.c (iseq_set_sequence): check duplicated when clause.
-	  [ruby-dev:36616]
-
-Sun Sep 28 19:04:03 2008  Tadayoshi Funaba  <tadf@dotrb.org>
-
-	* test/date/*.rb: imported a date test suite ruby 1.9 limited ed.
-
-Sun Sep 28 18:40:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+	* parse.y (token_info_push, token_info_pop): do nothing for evaled
+	  source.
 
 	* lib/mini/test.rb (MINI_DIR): loaded path is expanded.
 
