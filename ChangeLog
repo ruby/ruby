@@ -1,6 +1,6 @@
 Mon Sep 29 22:54:29 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
-	* lib/mathn.rb: added String#to_[rc].
+	* lib/mathn.rb: added String#to_[rc].  moved def_canon.
 
 Mon Sep 29 20:41:19 2008  Tanaka Akira  <akr@fsij.org>
 

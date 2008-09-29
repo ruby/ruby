@@ -35,10 +35,6 @@ class Object
 
   private :canon
 
-end
-
-class Numeric
-
   class << self
 
     def def_canon(*ids)
@@ -52,6 +48,8 @@ class Numeric
 	end;
       end
     end
+
+    private :def_canon
 
   end
 
@@ -265,27 +263,19 @@ end
 
 class NilClass
 
-  def to_r() 0 end
-  def to_c() 0 end
+  def_canon :to_r, :to_c
 
 end
 
 class Integer
 
-  def to_r() self end
-  def to_c() self end
+  def_canon :to_r, :to_c
 
 end
 
 class String
 
-  alias to_r_orig to_r
-  private :to_r_orig
-  def to_r() to_r_orig.__send__(:canon) end
-
-  alias to_c_orig to_c
-  private :to_c_orig
-  def to_c() to_c_orig.__send__(:canon) end
+  def_canon :to_r, :to_c
 
 end
 
