@@ -1,3 +1,7 @@
+Mon Sep 29 20:22:20 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/date/*.rb: imported additional tests and some adjustments.
+
 Mon Sep 29 20:13:05 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (fev_initialize): initialization

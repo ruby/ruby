@@ -435,6 +435,7 @@ class TestDateParse < Test::Unit::TestCase
 
   def test__parse_slash_exp
     [
+     # little
      [['2/5/1999',false],[1999,5,2,nil,nil,nil,nil,nil,nil]],
      [['02/05/1999',false],[1999,5,2,nil,nil,nil,nil,nil,nil]],
      [['02/05/-1999',false],[-1999,5,2,nil,nil,nil,nil,nil,nil]],

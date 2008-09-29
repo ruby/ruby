@@ -350,7 +350,7 @@ class TestDateStrftime < Test::Unit::TestCase
     assert_equal('M45.07.29', Date.parse('1912-07-29').jisx0301)
     assert_equal('T01.07.30', Date.parse('1912-07-30').jisx0301)
     assert_equal('T15.12.24', Date.parse('1926-12-24').jisx0301)
-      assert_equal('S01.12.25', Date.parse('1926-12-25').jisx0301)
+    assert_equal('S01.12.25', Date.parse('1926-12-25').jisx0301)
     assert_equal('S64.01.07', Date.parse('1989-01-07').jisx0301)
     assert_equal('H01.01.08', Date.parse('1989-01-08').jisx0301)
     assert_equal('H18.09.01', Date.parse('2006-09-01').jisx0301)
@@ -366,9 +366,6 @@ class TestDateStrftime < Test::Unit::TestCase
       assert_equal(s, Date.parse(s).jisx0301)
     end
   
-    d = Date.new(2001,2,3)
-    d2 = DateTime.new(2001,2,3,2)
-
   end
 
 end
