@@ -255,11 +255,12 @@ class TestDateNew < Test::Unit::TestCase
   end
 
   def test_today
+    z = Time.now
     d = Date.today
     t = Time.now
     t2 = Time.utc(t.year, t.mon, t.mday)
     t3 = Time.utc(d.year, d.mon, d.mday)
-    assert_in_delta(t2, t3, 10)
+    assert_in_delta(t2, t3, t - z + 2)
 
     assert_equal(false, DateTime.respond_to?(:today))
   end
@@ -267,10 +268,11 @@ class TestDateNew < Test::Unit::TestCase
   def test_now
     assert_equal(false, Date.respond_to?(:now))
 
+    z = Time.now
     d = DateTime.now
     t = Time.now
     t2 = Time.local(d.year, d.mon, d.mday, d.hour, d.min, d.sec)
-    assert_in_delta(t, t2, 10)
+    assert_in_delta(t, t2, t - z + 2)
   end
 
 end
