@@ -118,7 +118,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.3.2"
+#define WIN32OLE_VERSION "1.3.3"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -8116,6 +8116,7 @@ fev_initialize(int argc, VALUE *argv, VALUE self)
     ev_advise(argc, argv, self);
     evs_push(self);
     rb_ivar_set(self, id_events, rb_ary_new());
+    fev_set_handler(self, Qnil);
     return self;
 }
 

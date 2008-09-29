@@ -1,3 +1,11 @@
+Mon Sep 29 20:13:05 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (fev_initialize): initialization
+	  handler instance variable.
+
+	* test/win32ole/test_win32ole_typelib.rb (test_s_typelibs):
+	  fix the warning of shadowing outer local variable.
+
 Mon Sep 29 19:59:00 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (rescue_callback): use rb_write_error

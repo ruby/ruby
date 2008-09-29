@@ -10,7 +10,7 @@ if defined?(WIN32OLE_TYPELIB)
       tlibs = WIN32OLE_TYPELIB.typelibs
       assert_instance_of(Array, tlibs)
       assert(tlibs.size > 0)
-      tlib = tlibs.find {|tlib| tlib.name == "Microsoft Shell Controls And Automation"}
+      tlib = tlibs.find {|t| t.name == "Microsoft Shell Controls And Automation"}
       assert(tlib)
     end
 
