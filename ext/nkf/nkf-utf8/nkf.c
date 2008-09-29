@@ -6043,8 +6043,7 @@ options(unsigned char *cp)
 		} else if (cp[0] == 'B') {
 		    cp++;
 		} else {
-		    output_encoding = nkf_enc_from_index(enc_idx);
-		    continue;
+		    goto utf_no_endian;
 		}
 		if (cp[0] == '0'){
 		    cp++;
@@ -6053,6 +6052,7 @@ options(unsigned char *cp)
 			: (output_endian == ENDIAN_LITTLE ? UTF_32LE : UTF_32BE);
 		} else {
 		    output_bom_f = TRUE;
+		  utf_no_endian:
 		    enc_idx = enc_idx == UTF_16
 			? (output_endian == ENDIAN_LITTLE ? UTF_16LE_BOM : UTF_16BE_BOM)
 			: (output_endian == ENDIAN_LITTLE ? UTF_32LE_BOM : UTF_32BE_BOM);

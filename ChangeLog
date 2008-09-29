@@ -1,3 +1,7 @@
+Tue Sep 30 00:47:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: constified.
+
 Mon Sep 29 23:32:25 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_subseq): don't use rb_str_drop_bytes for short
