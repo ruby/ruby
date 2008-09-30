@@ -713,7 +713,6 @@ load 'my_exec'
 
       build_rake_in do
         use_ui @ui do
-          setup
           util_setup_gem
           @installer.install
         end
