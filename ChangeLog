@@ -1,3 +1,8 @@
+Wed Oct  1 00:54:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_split_m): should use rb_str_subseq() which use
+	  offset and length by bytes.  [ruby-dev:36641]
+
 Wed Oct  1 00:29:48 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_settracefunc.rb (test_call, test_class): line number

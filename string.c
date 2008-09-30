@@ -5148,7 +5148,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		spat = rb_reg_regcomp(spat);
 		split_type = regexp;
 	    }
-	    else if (rb_enc_mbminlen(enc2) == 1) {
+	    else if (rb_enc_asciicompat(enc2) == 1) {
 		if (RSTRING_LEN(spat) == 1 && RSTRING_PTR(spat)[0] == ' '){
 		    split_type = awk;
 		}
@@ -5224,7 +5224,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		ptr = t;
 		continue;
 	    }
-	    rb_ary_push(result, rb_str_substr(str, ptr - RSTRING_PTR(str), end));
+	    rb_ary_push(result, rb_str_subseq(str, ptr - RSTRING_PTR(str), end));
 	    ptr += end + slen;
 	    if (!NIL_P(limit) && lim <= ++i) break;
 	}
