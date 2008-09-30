@@ -1,3 +1,15 @@
+Tue Sep 30 23:06:58 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/mini/test_mini_test.rb: removed.
+	  Temporarily removed the tests for miniunit because of
+	  they depend on the miniunit version of test/unit,
+	  where test/unit was temporarily reverted to the state
+	  before importing miniunit.
+
+	* test/mini/test_mini_mock.rb: ditto.
+
+	* test/mini/test_mini_spec.rb: ditto.
+
 Tue Sep 30 23:04:30 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/test/**/*: recovered.
