@@ -1,3 +1,17 @@
+Tue Sep 30 23:00:05 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/test/unit.rb: removed. 
+	  Temporarily reverts the changes of lib/test/unit/* in 
+	  r19543, r19534 and r19503, in order to release 1.9.0-5.
+
+	* lib/test/unit/assertions.rb: ditto.
+
+	* lib/test/unit/deprecate.rb: ditto.
+
+	* lib/test/unit/error.rb: ditto.
+
+	* lib/test/unit/testcase.rb: ditto.
+
 Tue Sep 30 17:04:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/bigdecimal/test_bigdecimal.rb (test_sqrt_bigdecimal): wrong
