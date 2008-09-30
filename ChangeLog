@@ -1,3 +1,9 @@
+Tue Sep 30 17:04:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/bigdecimal/test_bigdecimal.rb (test_sqrt_bigdecimal): wrong
+	  precision specification.  a patch from TAKANO Mitsuhiro
+	  <takano32 at jus.or.jp> in [ruby-dev:36634].
+
 Tue Sep 30 16:53:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt): returns non zero.  [ruby-dev:36633]
