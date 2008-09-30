@@ -1334,8 +1334,9 @@ check_exec_redirect(VALUE key, VALUE val, VALUE options)
         index = EXEC_OPTION_OPEN;
         path = val;
         FilePathValue(path);
-        if ((FIXNUM_P(key) && (FIX2INT(key) == 1 || FIX2INT(key) == 2)) ||
-            key == rb_stdout || key == rb_stderr)
+        if (TYPE(key) == T_FILE)
+            key = check_exec_redirect_fd(key);
+        if (FIXNUM_P(key) && (FIX2INT(key) == 1 || FIX2INT(key) == 2))
             flags = INT2NUM(O_WRONLY|O_CREAT|O_TRUNC);
         else
             flags = INT2NUM(O_RDONLY);

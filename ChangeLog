@@ -1,3 +1,8 @@
+Wed Oct  1 00:20:38 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (check_exec_redirect): don't depend on rb_stdout and
+	  rb_stderr.
+
 Tue Sep 30 23:06:58 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/mini/test_mini_test.rb: removed.
