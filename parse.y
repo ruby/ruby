@@ -979,7 +979,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 							    $4);
 			/* NEW_PREEXE($4)); */
 			/* local_pop(); */
-			$$ = 0;
+			$$ = NEW_BEGIN(0);
 		    /*%
 			$$ = dispatch1(BEGIN, $4);
 		    %*/
