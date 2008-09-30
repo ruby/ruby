@@ -1,3 +1,9 @@
+Tue Sep 30 23:04:30 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/test/**/*: recovered.
+	  Temporarily reverts the changes of lib/test/unit/* in 
+	  r19502 and r19501, in order to release 1.9.0-5.
+
 Tue Sep 30 23:00:05 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/test/unit.rb: removed. 
