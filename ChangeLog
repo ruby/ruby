@@ -2,6 +2,20 @@ Tue Sep 30 16:53:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt): returns non zero.  [ruby-dev:36633]
 
+Tue Sep 30 16:52:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): add %<name>s style named argument
+	  support.  a patch from Yusuke Endoh <mame at tsg.ne.jp>
+	  in [ruby-dev:35851].
+
+	* sprintf.c (rb_str_format): add gettext style named format
+	  (%{name}) support.  inspired by [ruby-dev:35852].
+
+	* sprintf.c (GETNAMEARG): should raise KeyError exception when no
+	  named argument found.
+
+	* hash.c (rb_hash_fetch): export fetch function.
+
 Tue Sep 30 13:19:01 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rubygems/test_gem_installer.rb: remove extra call to setup to

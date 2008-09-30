@@ -103,17 +103,27 @@ sign_bits(int base, const char *p)
 } while (0)
 
 #define GETARG() (nextvalue != Qundef ? nextvalue : \
-    posarg < 0 ? \
+    posarg == -1 ? \
     (rb_raise(rb_eArgError, "unnumbered(%d) mixed with numbered", nextarg), 0) : \
+    posarg == -2 ? \
+    (rb_raise(rb_eArgError, "unnumbered(%d) mixed with named", nextarg), 0) : \
     (posarg = nextarg++, GETNTHARG(posarg)))
 
 #define GETPOSARG(n) (posarg > 0 ? \
     (rb_raise(rb_eArgError, "numbered(%d) after unnumbered(%d)", n, posarg), 0) : \
+    posarg == -2 ? \
+    (rb_raise(rb_eArgError, "numbered(%d) after named", n), 0) : \
     ((n < 1) ? (rb_raise(rb_eArgError, "invalid index - %d$", n), 0) : \
 	       (posarg = -1, GETNTHARG(n))))
 
 #define GETNTHARG(nth) \
     ((nth >= argc) ? (rb_raise(rb_eArgError, "too few arguments"), 0) : argv[nth])
+
+#define GETNAMEARG(id) (posarg > 0 ? \
+    (rb_raise(rb_eArgError, "named after unnumbered(%d)", posarg), 0) : \
+    posarg == -1 ? \
+    (rb_raise(rb_eArgError, "named after numbered"), 0) : \
+    rb_hash_fetch(get_hash(&hash, argc, argv), id))
 
 #define GETNUM(n, val) \
     for (; p < end && rb_enc_isdigit(*p, enc); p++) {	\
@@ -141,6 +151,21 @@ sign_bits(int base, const char *p)
     val = NUM2INT(tmp); \
 } while (0)
 
+static VALUE
+get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
+{
+    VALUE tmp;
+
+    if (*hash != Qundef) return *hash;
+    if (argc != 2) {
+	rb_raise(rb_eArgError, "one hash required");
+    }
+    tmp = rb_check_convert_type(argv[1], T_HASH, "Hash", "to_hash");
+    if (NIL_P(tmp)) {
+	rb_raise(rb_eArgError, "one hash required");
+    }
+    return (*hash = tmp);
+}
 
 /*
  *  call-seq:
@@ -412,6 +437,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     VALUE nextvalue;
     VALUE tmp;
     VALUE str;
+    volatile VALUE hash = Qundef;
 
 #define CHECK_FOR_WIDTH(f)				 \
     if ((f) & FWIDTH) {					 \
@@ -513,6 +539,26 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    flags |= FWIDTH;
 	    goto retry;
 
+	  case '<':
+	  case '{':
+	    {
+		const char *start = p;
+		char term = (*p == '<') ? '>' : '}';
+		ID id;
+
+		for (; p < end && *p != term; ) {
+		    p += rb_enc_mbclen(p, end, enc);
+		}
+		if (p >= end) {
+		    rb_raise(rb_eArgError, "malformed name - unmatched parenthesis");
+		}
+		id = rb_intern3(start + 1, p - start - 1, enc);
+		nextvalue = GETNAMEARG(ID2SYM(id));
+		if (term == '}') goto format_s;
+		p++;
+		goto retry;
+	    }
+
 	  case '*':
 	    CHECK_FOR_WIDTH(flags);
 	    flags |= FWIDTH;
@@ -597,6 +643,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 
 	  case 's':
 	  case 'p':
+	  format_s:
 	    {
 		VALUE arg = GETARG();
 		long len, slen;

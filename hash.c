@@ -503,7 +503,7 @@ rb_hash_lookup(VALUE hash, VALUE key)
  */
 
 static VALUE
-rb_hash_fetch(int argc, VALUE *argv, VALUE hash)
+rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
 {
     VALUE key, if_none;
     VALUE val;
@@ -523,6 +523,12 @@ rb_hash_fetch(int argc, VALUE *argv, VALUE hash)
 	return if_none;
     }
     return val;
+}
+
+VALUE
+rb_hash_fetch(VALUE hash, VALUE key)
+{
+    return rb_hash_fetch_m(1, &key, hash);
 }
 
 /*
@@ -2597,7 +2603,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"[]", rb_hash_aref, 1);
     rb_define_method(rb_cHash,"hash", rb_hash_hash, 0);
     rb_define_method(rb_cHash,"eql?", rb_hash_eql, 1);
-    rb_define_method(rb_cHash,"fetch", rb_hash_fetch, -1);
+    rb_define_method(rb_cHash,"fetch", rb_hash_fetch_m, -1);
     rb_define_method(rb_cHash,"[]=", rb_hash_aset, 2);
     rb_define_method(rb_cHash,"store", rb_hash_aset, 2);
     rb_define_method(rb_cHash,"default", rb_hash_default, -1);
