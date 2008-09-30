@@ -9,11 +9,6 @@ require 'mini/test'
 
 Mini::Test.autorun
 
-class Mini::Test
-  attr_accessor :test_count
-  attr_accessor :assertion_count
-end
-
 class TestMiniTest < Mini::Test::TestCase
 
   def setup
@@ -47,11 +42,23 @@ class TestMiniTest < Mini::Test::TestCase
           BT_MIDDLE +
           ["./lib/mini/test.rb:29",
            "test/test_autotest.rb:422"])
+    bt = util_expand_bt bt
+
     ex = ["lib/autotest.rb:571:in `add_exception'",
           "test/test_autotest.rb:62:in `test_add_exception'"]
+    ex = util_expand_bt ex
+
     fu = Mini::filter_backtrace(bt)
 
     assert_equal ex, fu
+  end
+
+  def util_expand_bt bt
+    if RUBY_VERSION =~ /^1\.9/ then
+      bt.map { |f| (f =~ /^\./) ? File.expand_path(f) : f }
+    else
+      bt
+    end
   end
 
   def test_filter_backtrace_all_unit
@@ -68,6 +75,9 @@ class TestMiniTest < Mini::Test::TestCase
           BT_MIDDLE +
           ["./lib/mini/test.rb:29",
            "-e:1"])
+
+    bt = util_expand_bt bt
+
     ex = ["-e:1"]
     fu = Mini::filter_backtrace(bt)
     assert_equal ex, fu

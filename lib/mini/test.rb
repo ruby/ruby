@@ -14,13 +14,15 @@ module Mini
   class Assertion < Exception; end
   class Skip < Assertion; end
 
-  file = if __FILE__ =~ /^[^\.]/ then # OMG ruby 1.9 is so lame (rubinius too)
+  file = if RUBY_VERSION =~ /^1\.9/ then  # bt's expanded, but __FILE__ isn't :(
+           File.expand_path __FILE__
+         elsif  __FILE__ =~ /^[^\.]/ then # assume both relative
            require 'pathname'
-           pwd = Pathname.new(Dir.pwd)
-           pn = Pathname.new(File.expand_path(__FILE__))
+           pwd = Pathname.new Dir.pwd
+           pn = Pathname.new File.expand_path(__FILE__)
            pn = File.join(".", pn.relative_path_from(pwd)) unless pn.relative?
            pn.to_s
-         else
+         else                             # assume both are expanded
            __FILE__
          end
 
@@ -36,10 +38,8 @@ module Mini
       new_bt << line
     end
 
-    new_bt = bt.reject { |line| line.rindex(MINI_DIR, 0) } if
-      new_bt.empty?
+    new_bt = bt.reject { |line| line.rindex(MINI_DIR, 0) } if new_bt.empty?
     new_bt = bt.dup if new_bt.empty?
-
     new_bt
   end
 

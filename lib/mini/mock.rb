@@ -17,9 +17,9 @@ class Mini::Mock
   def expect(name, retval, args=[])
     n, r, a = name, retval, args # for the closure below
     @expected_calls[name] = { :retval => retval, :args => args }
-    self.class.__send__(:define_method, name) { |*a|
-      raise ArgumentError unless @expected_calls[n][:args].size == a.size
-      @actual_calls[n] << { :retval => r, :args => a }
+    self.class.__send__(:define_method, name) { |*x|
+      raise ArgumentError unless @expected_calls[n][:args].size == x.size
+      @actual_calls[n] << { :retval => r, :args => x }
       retval
     }
     self
