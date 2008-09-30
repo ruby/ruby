@@ -1,3 +1,8 @@
+Wed Oct  1 00:29:48 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_settracefunc.rb (test_call, test_class): line number
+	  was changed at r19592.
+
 Wed Oct  1 00:20:38 2008  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (check_exec_redirect): don't depend on rb_stdout and
