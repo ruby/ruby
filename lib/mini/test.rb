@@ -24,6 +24,7 @@ module Mini
            __FILE__
          end
 
+  # './lib' in project dir, or '/usr/local/blahblah' if installed
   MINI_DIR = File.dirname(File.dirname(file))
 
   def self.filter_backtrace bt
@@ -31,11 +32,11 @@ module Mini
 
     new_bt = []
     bt.each do |line|
-      break if line.index(MINI_DIR) == 0
+      break if line.rindex(MINI_DIR, 0)
       new_bt << line
     end
 
-    new_bt = bt.reject { |line| line.index(MINI_DIR) == 0 } if
+    new_bt = bt.reject { |line| line.rindex(MINI_DIR, 0) } if
       new_bt.empty?
     new_bt = bt.dup if new_bt.empty?
 
@@ -320,7 +321,7 @@ module Mini
     def self.autorun
       at_exit {
         exit_code = Mini::Test.new.run(ARGV)
-        exit false if exit_code
+        exit false if exit_code && exit_code != 0
       } unless @@installed_at_exit
       @@installed_at_exit = true
     end
