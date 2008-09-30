@@ -3922,10 +3922,10 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
     else {
 	VALUE v;
 	v = rb_hash_aref(opthash, sym_textmode);
-	if (!NIL_P(v))
+	if (!NIL_P(v) && RTEST(v))
             fmode |= FMODE_TEXTMODE;
 	v = rb_hash_aref(opthash, sym_binmode);
-	if (!NIL_P(v)) {
+	if (!NIL_P(v) && RTEST(v)) {
             fmode |= FMODE_BINMODE;
 #ifdef O_BINARY
             oflags |= O_BINARY;

@@ -45,6 +45,11 @@ Tue Sep 30 23:00:05 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/test/unit/testcase.rb: ditto.
 
+Tue Sep 30 20:17:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_extract_modeenc): should honor value of the
+	  textmode: and binmode: options.
+
 Tue Sep 30 17:04:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/bigdecimal/test_bigdecimal.rb (test_sqrt_bigdecimal): wrong
