@@ -1,4 +1,6 @@
-Wed Oct  1 19:13:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Oct  1 21:36:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_gc_call_finalizer_at_exit): finalize deferred IO and Data.
 
 	* gc.c (rb_gc_call_finalizer_at_exit): deffers IO finalization.
 	  [ruby-dev:36646]

@@ -2357,13 +2357,13 @@ rb_gc_call_finalizer_at_exit(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
     RVALUE *p, *pend;
+    RVALUE *final_list = 0;
     size_t i;
 
     /* run finalizers */
     if (finalizer_table) {
 	finalize_deferred(objspace);
 	while (finalizer_table->num_entries > 0) {
-	    RVALUE *final_list = 0;
 	    st_foreach(finalizer_table, chain_finalized_object,
 		       (st_data_t)&final_list);
 	    if (!(p = final_list)) break;
@@ -2390,18 +2390,24 @@ rb_gc_call_finalizer_at_exit(void)
 		}
 		else if (RANY(p)->as.data.dfree) {
 		    make_deferred(RANY(p));
+		    RANY(p)->as.free.next = final_list;
+		    final_list = p;
 		}
 	    }
 	    else if (BUILTIN_TYPE(p) == T_FILE) {
 		if (RANY(p)->as.file.fptr) {
 		    make_io_deferred(RANY(p));
+		    RANY(p)->as.free.next = final_list;
+		    final_list = p;
 		}
 	    }
 	    p++;
 	}
     }
     during_gc = 0;
-    finalize_deferred(objspace);
+    if (final_list) {
+	finalize_list(objspace, final_list);
+    }
 }
 
 void
