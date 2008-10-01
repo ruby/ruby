@@ -1464,7 +1464,7 @@ EOA
       _assert_maker_atom_element(feed_type, maker_readers, feed_readers,
                                  maker_extractor, feed_extractor,
                                  &block)
-     end
+    end
 
     def assert_maker_atom_generator(feed_type, maker_readers, feed_readers,
                                     not_set_error_name=nil, &block)

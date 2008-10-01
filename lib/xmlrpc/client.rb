@@ -605,16 +605,16 @@ module XMLRPC
     class Proxy
 
       def initialize(server, prefix, args=[], meth=:call, delim=".")
-	@server = server
-	@prefix = prefix ? prefix + delim : ""
-	@args   = args 
+        @server = server
+        @prefix = prefix ? prefix + delim : ""
+        @args   = args 
         @meth   = meth
       end
 
       def method_missing(mid, *args)
-	pre = @prefix + mid.to_s
-	arg = @args + args
-	@server.send(@meth, pre, *arg)
+        pre = @prefix + mid.to_s
+        arg = @args + args
+        @server.send(@meth, pre, *arg)
       end
 
     end # class Proxy

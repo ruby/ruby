@@ -419,10 +419,10 @@ module REXML
           return @variables[ var_name ]
 
         # :and, :or, :eq, :neq, :lt, :lteq, :gt, :gteq
-				# TODO: Special case for :or and :and -- not evaluate the right
-				# operand if the left alone determines result (i.e. is true for
-				# :or and false for :and).
-        when :eq, :neq, :lt, :lteq, :gt, :gteq, :and, :or
+        # TODO: Special case for :or and :and -- not evaluate the right
+        # operand if the left alone determines result (i.e. is true for
+        # :or and false for :and).
+        when :eq, :neq, :lt, :lteq, :gt, :gteq, :or
           left = expr( path_stack.shift, nodeset.dup, context )
           #puts "LEFT => #{left.inspect} (#{left.class.name})"
           right = expr( path_stack.shift, nodeset.dup, context )
@@ -675,7 +675,7 @@ module REXML
     def equality_relational_compare( set1, op, set2 )
       #puts "EQ_REL_COMP(#{set1.inspect} #{op.inspect} #{set2.inspect})"
       if set1.kind_of? Array and set2.kind_of? Array
-			  #puts "#{set1.size} & #{set2.size}"
+        #puts "#{set1.size} & #{set2.size}"
         if set1.size == 1 and set2.size == 1
           set1 = set1[0]
           set2 = set2[0]
@@ -696,7 +696,7 @@ module REXML
           return res
         end
       end
-		  #puts "EQ_REL_COMP: #{set1.inspect} (#{set1.class.name}), #{op}, #{set2.inspect} (#{set2.class.name})"
+      #puts "EQ_REL_COMP: #{set1.inspect} (#{set1.class.name}), #{op}, #{set2.inspect} (#{set2.class.name})"
       #puts "COMPARING VALUES"
       # If one is nodeset and other is number, compare number to each item
       # in nodeset s.t. number op number(string(item))
@@ -705,7 +705,7 @@ module REXML
       # If one is nodeset and other is boolean, compare boolean to each item
       # in nodeset s.t. boolean op boolean(item)
       if set1.kind_of? Array or set2.kind_of? Array
-			  #puts "ISA ARRAY"
+        #puts "ISA ARRAY"
         if set1.kind_of? Array
           a = set1
           b = set2
@@ -724,7 +724,7 @@ module REXML
           #puts "B = #{b.inspect}"
           return a.collect {|v| compare( Functions::number(v), op, b )}
         else
-				  #puts "Functions::string( #{b}(#{b.class.name}) ) = #{Functions::string(b)}"
+          #puts "Functions::string( #{b}(#{b.class.name}) ) = #{Functions::string(b)}"
           b = Functions::string( b )
           return a.collect { |v| compare( Functions::string(v), op, b ) }
         end

@@ -3,12 +3,12 @@
 #
 module REXML
   module Encoding
-  	register( "CP-1252" ) do |o|
-  		class << o
-  			alias encode encode_cp1252
-			alias decode decode_cp1252
-  		end
-  	end
+    register( "CP-1252" ) do |o|
+      class << o
+        alias encode encode_cp1252
+      alias decode decode_cp1252
+      end
+    end
 
     # Convert from UTF-8
     def encode_cp1252(content)

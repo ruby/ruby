@@ -1,3 +1,9 @@
+Wed Oct  1 22:43:59 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/xmlrpc, lib/rexml, test/ruby/test_array.rb,
+	  test/ruby/test_unicode_escape.rb, test/scanf/test_scanf.rb,
+	  test/rss/rss-assertions.rb: fix indentation to remove warning.
+
 Wed Oct  1 21:36:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_gc_call_finalizer_at_exit): finalize deferred IO and Data.

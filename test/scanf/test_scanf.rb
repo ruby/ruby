@@ -16,7 +16,7 @@ class TestIOScanf < Test::Unit::TestCase;end
 
 module ScanfTests
 
-def tests
+  def tests
     [
 
 # Scratchpad
@@ -284,8 +284,8 @@ def tests
       [" [%d,%f", " [10,1.1", [10,1.1] ],
 
      ]
-    end
   end
+end
 
 class TestStringScanf
   include Scanf

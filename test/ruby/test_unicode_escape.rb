@@ -263,5 +263,5 @@ EOS
 #     assert_raise(SyntaxError) { "\uDFFF" }       # surrogate block
 #     assert_raise(SyntaxError) { "\uD847\uDD9A" } # surrogate pair
 
-   end
+  end
 end

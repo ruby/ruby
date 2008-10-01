@@ -16,59 +16,59 @@ module REXML
   # Document has a single child that can be accessed by root().
   # Note that if you want to have an XML declaration written for a document
   # you create, you must add one; REXML documents do not write a default
-	# declaration for you.  See |DECLARATION| and |write|.
-	class Document < Element
-		# A convenient default XML declaration.  If you want an XML declaration,
-		# the easiest way to add one is mydoc << Document::DECLARATION
+  # declaration for you.  See |DECLARATION| and |write|.
+  class Document < Element
+    # A convenient default XML declaration.  If you want an XML declaration,
+    # the easiest way to add one is mydoc << Document::DECLARATION
     # +DEPRECATED+
     # Use: mydoc << XMLDecl.default
-		DECLARATION = XMLDecl.default
+    DECLARATION = XMLDecl.default
 
-		# Constructor
-		# @param source if supplied, must be a Document, String, or IO. 
-		# Documents have their context and Element attributes cloned.
-	  # Strings are expected to be valid XML documents.  IOs are expected
-	  # to be sources of valid XML documents.
-	  # @param context if supplied, contains the context of the document;
-	  # this should be a Hash.
-		def initialize( source = nil, context = {} )
+    # Constructor
+    # @param source if supplied, must be a Document, String, or IO. 
+    # Documents have their context and Element attributes cloned.
+    # Strings are expected to be valid XML documents.  IOs are expected
+    # to be sources of valid XML documents.
+    # @param context if supplied, contains the context of the document;
+    # this should be a Hash.
+    def initialize( source = nil, context = {} )
       @entity_expansion_count = 0
-			super()
-			@context = context
-			return if source.nil?
-			if source.kind_of? Document
-				@context = source.context
-				super source
-			else
-				build(  source )
-			end
-		end
+      super()
+      @context = context
+      return if source.nil?
+      if source.kind_of? Document
+        @context = source.context
+        super source
+      else
+        build(  source )
+      end
+    end
 
     def node_type
       :document
     end
 
-		# Should be obvious
-		def clone
-			Document.new self
-		end
+    # Should be obvious
+    def clone
+      Document.new self
+    end
 
-		# According to the XML spec, a root node has no expanded name
-		def expanded_name
-			''
-			#d = doc_type
-			#d ? d.name : "UNDEFINED"
-		end
+    # According to the XML spec, a root node has no expanded name
+    def expanded_name
+      ''
+      #d = doc_type
+      #d ? d.name : "UNDEFINED"
+    end
 
-		alias :name :expanded_name
+    alias :name :expanded_name
 
-		# We override this, because XMLDecls and DocTypes must go at the start
-		# of the document
-		def add( child )
-			if child.kind_of? XMLDecl
-				@children.unshift child
+    # We override this, because XMLDecls and DocTypes must go at the start
+    # of the document
+    def add( child )
+      if child.kind_of? XMLDecl
+        @children.unshift child
         child.parent = self
-			elsif child.kind_of? DocType
+      elsif child.kind_of? DocType
         # Find first Element or DocType node and insert the decl right 
         # before it.  If there is no such node, just insert the child at the
         # end.  If there is a child and it is an DocType, then replace it.
@@ -86,60 +86,60 @@ module REXML
         else  # Insert at end of list
           @children[insert_before_index] = child
         end
-				child.parent = self
-			else
-				rv = super
-				raise "attempted adding second root element to document" if @elements.size > 1
-				rv
-			end
-		end
-		alias :<< :add
+        child.parent = self
+      else
+        rv = super
+        raise "attempted adding second root element to document" if @elements.size > 1
+        rv
+      end
+    end
+    alias :<< :add
 
-		def add_element(arg=nil, arg2=nil)
-			rv = super
-			raise "attempted adding second root element to document" if @elements.size > 1
-			rv
-		end
+    def add_element(arg=nil, arg2=nil)
+      rv = super
+      raise "attempted adding second root element to document" if @elements.size > 1
+      rv
+    end
 
-		# @return the root Element of the document, or nil if this document
-		# has no children.
-		def root
+    # @return the root Element of the document, or nil if this document
+    # has no children.
+    def root
       elements[1]
       #self
       #@children.find { |item| item.kind_of? Element }
-		end
+    end
 
-		# @return the DocType child of the document, if one exists,
-		# and nil otherwise.
-		def doctype
-			@children.find { |item| item.kind_of? DocType }
-		end
+    # @return the DocType child of the document, if one exists,
+    # and nil otherwise.
+    def doctype
+      @children.find { |item| item.kind_of? DocType }
+    end
 
-		# @return the XMLDecl of this document; if no XMLDecl has been
-		# set, the default declaration is returned.
-		def xml_decl
-			rv = @children[0]
+    # @return the XMLDecl of this document; if no XMLDecl has been
+    # set, the default declaration is returned.
+    def xml_decl
+      rv = @children[0]
       return rv if rv.kind_of? XMLDecl
       rv = @children.unshift(XMLDecl.default)[0]
-		end
+    end
 
-		# @return the XMLDecl version of this document as a String.
-		# If no XMLDecl has been set, returns the default version.
-		def version
-			xml_decl().version
-		end
+    # @return the XMLDecl version of this document as a String.
+    # If no XMLDecl has been set, returns the default version.
+    def version
+      xml_decl().version
+    end
 
-		# @return the XMLDecl encoding of this document as a String.
-		# If no XMLDecl has been set, returns the default encoding.
-		def encoding
-			xml_decl().encoding
-		end
+    # @return the XMLDecl encoding of this document as a String.
+    # If no XMLDecl has been set, returns the default encoding.
+    def encoding
+      xml_decl().encoding
+    end
 
-		# @return the XMLDecl standalone value of this document as a String.
-		# If no XMLDecl has been set, returns the default setting.
-		def stand_alone?
-			xml_decl().stand_alone?
-		end
+    # @return the XMLDecl standalone value of this document as a String.
+    # If no XMLDecl has been set, returns the default setting.
+    def stand_alone?
+      xml_decl().stand_alone?
+    end
 
     # Write the XML tree out, optionally with indent.  This writes out the
     # entire XML document, including XML declarations, doctype declarations,
@@ -194,12 +194,12 @@ module REXML
           REXML::Formatters::Default.new( ie_hack )
         end
       formatter.write( self, output )
-		end
+    end
 
-		
-		def Document::parse_stream( source, listener )
-			Parsers::StreamParser.new( source, listener ).parse
-		end
+    
+    def Document::parse_stream( source, listener )
+      Parsers::StreamParser.new( source, listener ).parse
+    end
 
     @@entity_expansion_limit = 10_000
 
@@ -222,9 +222,9 @@ module REXML
       end
     end
 
-		private
-		def build( source )
+    private
+    def build( source )
       Parsers::TreeParser.new( source, self ).parse
-		end
-	end
+    end
+  end
 end

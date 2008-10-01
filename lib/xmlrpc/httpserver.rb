@@ -156,7 +156,7 @@ private
     # parse HTTP headers
     while (line=io.gets) !~ /^(\n|\r)/
       if line =~ /^([\w-]+):\s*(.*)$/
-	request.header[$1] = $2.strip
+        request.header[$1] = $2.strip
       end
     end
 

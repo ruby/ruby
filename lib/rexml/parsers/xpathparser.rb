@@ -39,10 +39,10 @@ module REXML
           case op
           when :node
           when :attribute
-						string << "/" if string.size > 0
-						string << "@"
+            string << "/" if string.size > 0
+            string << "@"
           when :child
-						string << "/" if string.size > 0
+            string << "/" if string.size > 0
           when :descendant_or_self
             string << "/"
           when :self
@@ -51,8 +51,8 @@ module REXML
             string << ".."
           when :any
             string << "*"
-					when :text
-						string << "text()"
+          when :text
+            string << "text()"
           when :following, :following_sibling, 
                 :ancestor, :ancestor_or_self, :descendant, 
                 :namespace, :preceding, :preceding_sibling
@@ -70,13 +70,13 @@ module REXML
             string << ']'
           when :document
             document = true
-					when :function
-						string << path.shift
-						string << "( "
-						string << predicate_to_string( path.shift[0] ) {|x| abbreviate( x )}
-						string << " )"
-					when :literal
-						string << %Q{ "#{path.shift}" }
+          when :function
+            string << path.shift
+            string << "( "
+            string << predicate_to_string( path.shift[0] ) {|x| abbreviate( x )}
+            string << " )"
+          when :literal
+            string << %Q{ "#{path.shift}" }
           else
             string << "/" unless string.size == 0
             string << "UNKNOWN("
@@ -84,7 +84,7 @@ module REXML
             string << ")"
           end
         end
-				string = "/"+string if document
+        string = "/"+string if document
         return string
       end
 
@@ -653,39 +653,39 @@ module REXML
       def parse_args( string )
         arguments = []
         ind = 0
-				inquot = false
-				inapos = false
+        inquot = false
+        inapos = false
         depth = 1
         begin
           case string[ind]
           when ?"
-          	inquot = !inquot unless inapos
+            inquot = !inquot unless inapos
           when ?'
-          	inapos = !inapos unless inquot
+            inapos = !inapos unless inquot
           else
-          	unless inquot or inapos
-          		case string[ind]
-							when ?(
-								depth += 1
+            unless inquot or inapos
+              case string[ind]
+              when ?(
+                depth += 1
                 if depth == 1
-                	string = string[1..-1]
-                	ind -= 1
+                  string = string[1..-1]
+                  ind -= 1
                 end
-							when ?)
-								depth -= 1
-								if depth == 0
-									s = string[0,ind].strip
-									arguments << s unless s == ""
-									string = string[ind+1..-1]
-								end
-							when ?,
-								if depth == 1
-									s = string[0,ind].strip
-									arguments << s unless s == ""
-									string = string[ind+1..-1]
-									ind = -1 
-								end
-							end
+              when ?)
+                depth -= 1
+                if depth == 0
+                  s = string[0,ind].strip
+                  arguments << s unless s == ""
+                  string = string[ind+1..-1]
+                end
+              when ?,
+                if depth == 1
+                  s = string[0,ind].strip
+                  arguments << s unless s == ""
+                  string = string[ind+1..-1]
+                  ind = -1 
+                end
+              end
             end
           end
           ind += 1

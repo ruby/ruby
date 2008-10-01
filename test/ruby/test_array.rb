@@ -1260,7 +1260,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1,2], @cls[1, 2] | @cls[1, 2])
   end
 
- def test_combination
+  def test_combination
     assert_equal(@cls[[]], @cls[1,2,3,4].combination(0).to_a)
     assert_equal(@cls[[1],[2],[3],[4]], @cls[1,2,3,4].combination(1).to_a)
     assert_equal(@cls[[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]], @cls[1,2,3,4].combination(2).to_a)

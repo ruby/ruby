@@ -37,7 +37,7 @@ module XMLRPC
     def create
       # if set_writer was not already called then call it now
       if @create.nil? then
-	set_writer(Config::DEFAULT_WRITER.new)
+        set_writer(Config::DEFAULT_WRITER.new)
       end
       @create
     end
@@ -45,7 +45,7 @@ module XMLRPC
     def parser
       # if set_parser was not already called then call it now
       if @parser.nil? then
-	set_parser(Config::DEFAULT_PARSER.new)
+        set_parser(Config::DEFAULT_PARSER.new)
       end
       @parser
     end
