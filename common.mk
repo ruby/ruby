@@ -403,7 +403,7 @@ parse.h {$(VPATH)}parse.h: {$(VPATH)}parse.c
 	$(YACC) -d $(YFLAGS) -o y.tab.c $(<:\\=/)
 	sed -f $(srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@.new
 	@$(MV) $@.new $@
-	sed -e "/^#/s!y\.tab\.h!$(@:.c=.h)!" y.tab.h > $(@:.c=.h).new
+	sed -e "/^#line.*y\.tab\.h/d;/^#line.*parse\.y/d" y.tab.h > $(@:.c=.h).new
 	@$(IFCHANGE) $(@:.c=.h) $(@:.c=.h).new
 	@$(RM) y.tab.c y.tab.h
 
