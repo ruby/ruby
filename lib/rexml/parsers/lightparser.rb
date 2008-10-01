@@ -26,8 +26,6 @@ module REXML
           case event[0]
           when :end_document
             break
-          when :end_doctype
-            context = context[1]
           when :start_element, :start_doctype
             new_node = event
             context << new_node

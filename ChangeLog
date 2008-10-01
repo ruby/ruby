@@ -1,3 +1,8 @@
+Wed Oct  1 22:54:09 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/rexml/parsers/lightparser.rb, lib/debug.rb: remove unused when
+	  clauses.
+
 Wed Oct  1 22:43:59 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/xmlrpc, lib/rexml, test/ruby/test_array.rb,

@@ -711,9 +711,6 @@ EOHELP
       end
       @frames.shift
 
-    when 'end'
-      @frames.shift
-
     when 'raise' 
       excn_handle(file, line, id, binding)
 
