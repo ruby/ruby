@@ -1,3 +1,8 @@
+Wed Oct  1 18:57:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (marshal_dump): initializes dump_arg before any funcall.
+	  [ruby-dev:36648]
+
 Wed Oct  1 00:54:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_split_m): should use rb_str_subseq() which use

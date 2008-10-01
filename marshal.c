@@ -865,29 +865,30 @@ marshal_dump(int argc, VALUE *argv)
 	else port = a1;
     }
     arg.dest = 0;
-    if (!NIL_P(port)) {
-	if (!rb_respond_to(port, s_write)) {
-	  type_error:
-	    rb_raise(rb_eTypeError, "instance of IO needed");
-	}
-	arg.str = rb_str_buf_new(0);
-	arg.dest = port;
-	if (rb_respond_to(port, s_binmode)) {
-	    rb_funcall2(port, s_binmode, 0, 0);
-	}
-    }
-    else {
-	port = rb_str_buf_new(0);
-	arg.str = port;
-    }
-
     arg.symbols = st_init_numtable();
     arg.data    = st_init_numtable();
     arg.taint   = Qfalse;
     arg.untrust = Qfalse;
     arg.compat_tbl = st_init_numtable();
-    arg.wrapper = Data_Wrap_Struct(rb_cData, mark_dump_arg, 0, &arg);
     arg.encodings = 0;
+    arg.str = rb_str_buf_new(0);
+    RBASIC(arg.str)->klass = 0;
+    arg.wrapper = Data_Wrap_Struct(rb_cData, mark_dump_arg, 0, &arg);
+    if (!NIL_P(port)) {
+	if (!rb_respond_to(port, s_write)) {
+	  type_error:
+	    rb_raise(rb_eTypeError, "instance of IO needed");
+	}
+	arg.dest = port;
+	if (rb_respond_to(port, s_binmode)) {
+	    rb_funcall2(port, s_binmode, 0, 0);
+	    check_dump_arg(&arg, s_dump_data);
+	}
+    }
+    else {
+	port = arg.str;
+    }
+
     c_arg.obj   = obj;
     c_arg.arg   = &arg;
     c_arg.limit = limit;
@@ -896,6 +897,7 @@ marshal_dump(int argc, VALUE *argv)
     w_byte(MARSHAL_MINOR, &arg);
 
     rb_ensure(dump, (VALUE)&c_arg, dump_ensure, (VALUE)&arg);
+    RBASIC(arg.str)->klass = rb_cString;
 
     return port;
 }
