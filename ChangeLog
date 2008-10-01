@@ -1,3 +1,8 @@
+Wed Oct  1 19:13:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_gc_call_finalizer_at_exit): deffers IO finalization.
+	  [ruby-dev:36646]
+
 Wed Oct  1 19:11:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (marshal_dump): fixed for check_dump_arg.

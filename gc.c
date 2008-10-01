@@ -1728,6 +1728,15 @@ make_deferred(RVALUE *p)
     p->as.basic.flags = (p->as.basic.flags & ~T_MASK) | T_ZOMBIE;
 }
 
+static inline void
+make_io_deferred(RVALUE *p)
+{
+    rb_io_t *fptr = p->as.file.fptr;
+    make_deferred(p);
+    p->as.data.dfree = (void (*)(void*))rb_io_fptr_finalize;
+    p->as.data.data = fptr;
+}
+
 static int
 obj_free(rb_objspace_t *objspace, VALUE obj)
 {
@@ -1802,10 +1811,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_FILE:
 	if (RANY(obj)->as.file.fptr) {
-	    rb_io_t *fptr = RANY(obj)->as.file.fptr;
-	    make_deferred(RANY(obj));
-	    RDATA(obj)->dfree = (void (*)(void*))rb_io_fptr_finalize;
-	    RDATA(obj)->data = fptr;
+	    make_io_deferred(RANY(obj));
 	    return 1;
 	}
 	break;
@@ -2305,7 +2311,7 @@ run_final(rb_objspace_t *objspace, VALUE obj)
 }
 
 static void
-gc_finalize_deferred(rb_objspace_t *objspace)
+finalize_deferred(rb_objspace_t *objspace)
 {
     RVALUE *p = deferred_final_list;
     deferred_final_list = 0;
@@ -2313,6 +2319,12 @@ gc_finalize_deferred(rb_objspace_t *objspace)
     if (p) {
 	finalize_list(objspace, p);
     }
+}
+
+static void
+gc_finalize_deferred(rb_objspace_t *objspace)
+{
+    finalize_deferred(objspace);
     free_unused_heaps(objspace);
 }
 
@@ -2349,9 +2361,7 @@ rb_gc_call_finalizer_at_exit(void)
 
     /* run finalizers */
     if (finalizer_table) {
-	p = deferred_final_list;
-	deferred_final_list = 0;
-	finalize_list(objspace, p);
+	finalize_deferred(objspace);
 	while (finalizer_table->num_entries > 0) {
 	    RVALUE *final_list = 0;
 	    st_foreach(finalizer_table, chain_finalized_object,
@@ -2379,20 +2389,19 @@ rb_gc_call_finalizer_at_exit(void)
 		    xfree(DATA_PTR(p));
 		}
 		else if (RANY(p)->as.data.dfree) {
-		    (*RANY(p)->as.data.dfree)(DATA_PTR(p));
+		    make_deferred(RANY(p));
 		}
-                VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
 	    }
 	    else if (BUILTIN_TYPE(p) == T_FILE) {
-		if (rb_io_fptr_finalize(RANY(p)->as.file.fptr)) {
-		    p->as.free.flags = 0;
-                    VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
+		if (RANY(p)->as.file.fptr) {
+		    make_io_deferred(RANY(p));
 		}
 	    }
 	    p++;
 	}
     }
     during_gc = 0;
+    finalize_deferred(objspace);
 }
 
 void
