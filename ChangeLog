@@ -1,3 +1,12 @@
+Thu Oct  2 21:22:43 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/core.rb (CGI::QueryExtension): delete MorphingBody
+	  and replace like as 1.8's in multipart reading.
+		see [ruby-dev:36443],
+	  reference from CGIAlt http://cgialt.rubyforge.org/
+
+	* test/cgi/test_cgi_multipart.rb : fixed multipart test.
+
 Thu Oct  2 20:46:17 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_sub_bang): fix coderange.

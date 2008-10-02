@@ -345,6 +345,15 @@ class CGI
     params
   end
 
+  # Maximum content length of post data
+  ##MAX_CONTENT_LENGTH  = 2 * 1024 * 1024
+
+  # Maximum content length of multipart data
+  MAX_MULTIPART_LENGTH  = 128 * 1024 * 1024
+
+  # Maximum number of request parameters when multipart
+  MAX_MULTIPART_COUNT = 128
+
   # Mixin module. It provides the follow functionality groups:
   #
   # 1. Access to CGI environment variables as methods.  See 
@@ -404,98 +413,105 @@ class CGI
     end
 
     def read_multipart(boundary, content_length)
-      params = Hash.new([])
-      boundary = "--" + boundary
-      quoted_boundary = Regexp.quote(boundary)
-      buf = ""
+      ## read first boundary
+      stdin = $stdin
+      first_line = "--#{boundary}#{EOL}"
+      content_length -= first_line.bytesize
+      status = stdin.read(first_line.bytesize)
+      raise EOFError.new("no content body")  unless status
+      raise EOFError.new("bad content body") unless first_line == status
+      ## parse and set params
+      params = {}
+      boundary_rexp = /--#{Regexp.quote(boundary)}(#{EOL}|--)/
+      boundary_size = "#{EOL}--#{boundary}#{EOL}".bytesize
+      boundary_end  = nil
+      buf = ''
       bufsize = 10 * 1024
-      boundary_end=""
-
-      # start multipart/form-data
-      stdinput.binmode if defined? stdinput.binmode
-      boundary_size = boundary.bytesize + EOL.bytesize
-      content_length -= boundary_size
-      status = stdinput.read(boundary_size)
-      if nil == status
-        raise EOFError, "no content body"
-      elsif boundary + EOL != status
-        raise EOFError, "bad content body"
-      end
-
-      loop do
-        head = nil
-        body = MorphingBody.new
-
-        until head and /#{quoted_boundary}(?:#{EOL}|--)/.match(buf)
-          if (not head) and /#{EOL}#{EOL}/.match(buf)
-            buf = buf.sub(/\A((?:.|\n)*?#{EOL})#{EOL}/) do
-              head = $1.dup
-              ""
-            end
-            next
-          end
-
-          if head and ( (EOL + boundary + EOL).bytesize < buf.bytesize )
-            body.print buf[0 ... (buf.bytesize - (EOL + boundary + EOL).bytesize)]
-            buf[0 ... (buf.bytesize - (EOL + boundary + EOL).bytesize)] = ""
-          end
-
-          c = if bufsize < content_length
-                stdinput.read(bufsize)
-              else
-                stdinput.read(content_length)
-              end
-          if c.nil? || c.empty?
-            raise EOFError, "bad content body"
-          end
-          buf.concat(c)
-          content_length -= c.bytesize
-        end
-
-        buf = buf.sub(/\A((?:.|\n)*?)(?:[\r\n]{1,2})?#{quoted_boundary}([\r\n]{1,2}|--)/) do
-          body.print $1
-          if "--" == $2
-            content_length = -1
-          end
-          boundary_end = $2.dup
-          ""
-        end
-
-        body.rewind
-
-        /Content-Disposition:.* filename=(?:"((?:\\.|[^\"])*)"|([^;\s]*))/i.match(head)
-      	filename = ($1 or $2 or "")
-	      if /Mac/i =~ env_table['HTTP_USER_AGENT'] and
-	          /Mozilla/i =~ env_table['HTTP_USER_AGENT'] and
-	          /MSIE/i !~ env_table['HTTP_USER_AGENT']
-	        filename = CGI::unescape(filename)
-	      end
-        
-        /Content-Type: ([^\s]*)/i.match(head)
-        content_type = ($1 or "")
-
-        (class << body; self; end).class_eval do
+      max_count = MAX_MULTIPART_COUNT
+      n = 0
+      while true
+        (n += 1) < max_count or raise StandardError.new("too many parameters.")
+        ## create body (StringIO or Tempfile)
+        body = create_body(bufsize < content_length)
+        class << body
           alias local_path path
-          define_method(:original_filename) {filename.dup.taint}
-          define_method(:content_type) {content_type.dup.taint}
+          attr_reader :original_filename, :content_type
         end
-
-        /Content-Disposition:.* name="?([^\";\s]*)"?/i.match(head)
-        name = ($1 || "").dup
-
-        if params.has_key?(name)
-          params[name].push(body)
-        else
-          params[name] = [body]
+        ## find head and boundary
+        head = nil
+        separator = EOL * 2
+        until head && matched = boundary_rexp.match(buf)
+          if !head && pos = buf.index(separator)
+            len  = pos + EOL.bytesize
+            head = buf[0, len]
+            buf  = buf[(pos+separator.bytesize)..-1]
+          else
+            if head && buf.size > boundary_size
+              len = buf.size - boundary_size
+              body.print(buf[0, len])
+              buf[0, len] = ''
+            end
+            c = stdin.read(bufsize < content_length ? bufsize : content_length)
+            raise EOFError.new("bad content body") if c.nil? || c.empty?
+            buf << c
+            content_length -= c.bytesize
+          end
         end
-        break if buf.bytesize == 0
+        ## read to end of boundary
+        m = matched
+        len = m.begin(0)
+        s = buf[0, len]
+        if s =~ /(\r?\n)\z/
+          s = buf[0, len - $1.bytesize]
+        end
+        body.print(s)
+        buf = buf[m.end(0)..-1]
+        boundary_end = m[1]
+        content_length = -1 if boundary_end == '--'
+        ## reset file cursor position
+        body.rewind
+        ## original filename
+        /Content-Disposition:.* filename=(?:"(.*?)"|([^;\r\n]*))/i.match(head)
+        filename = $1 || $2 || ''
+        filename = CGI.unescape(filename) if unescape_filename?()
+        body.instance_variable_set('@original_filename', filename.taint)
+        ## content type
+        /Content-Type: (.*)/i.match(head)
+        (content_type = $1 || '').chomp!
+        body.instance_variable_set('@content_type', content_type.taint)
+        ## query parameter name
+        /Content-Disposition:.* name=(?:"(.*?)"|([^;\r\n]*))/i.match(head)
+        name = $1 || $2 || ''
+        (params[name] ||= []) << body
+        ## break loop
+        break if buf.size == 0
         break if content_length == -1
       end
-      raise EOFError, "bad boundary end of body part" unless boundary_end=~/--/
-
+      raise EOFError, "bad boundary end of body part" unless boundary_end =~ /--/
+      params.default = []
       params
     end # read_multipart
     private :read_multipart
+    def create_body(is_large)  #:nodoc:
+      if is_large
+        require 'tempfile'
+        body = Tempfile.new('CGI')
+      else
+        begin
+          require 'stringio'
+          body = StringIO.new
+        rescue LoadError
+          require 'tempfile'
+          body = Tempfile.new('CGI')
+        end
+      end
+      body.binmode if defined? body.binmode
+      return body
+    end
+    def unescape_filename?  #:nodoc:
+      user_agent = $CGI_ENV['HTTP_USER_AGENT']
+      return /Mac/i.match(user_agent) && /Mozilla/i.match(user_agent) && !/MSIE/i.match(user_agent)
+    end
 
     # offline mode. read name=value pairs on standard input.
     def read_from_cmdline
@@ -524,57 +540,6 @@ class CGI
 
     # A wrapper class to use a StringIO object as the body and switch
     # to a TempFile when the passed threshold is passed.
-    class MorphingBody
-      begin
-        require "stringio"
-        @@small_buffer = lambda{StringIO.new}
-      rescue LoadError
-        require "tempfile"
-        @@small_buffer = lambda{
-          n = Tempfile.new("CGI")
-          n.binmode
-          n
-        }
-      end
-
-      def initialize(morph_threshold = 10240)
-        @threshold = morph_threshold
-        @body = @@small_buffer.call
-        @cur_size = 0
-        @morph_check = true
-      end
-
-      def print(data)
-        if @morph_check && (@cur_size + data.bytesize > @threshold)
-          convert_body
-        end
-        @body.print data
-      end
-      def rewind
-        @body.rewind
-      end
-      def path
-        @body.path
-      end
-
-      # returns the true body object.
-      def extract
-        @body
-      end
-
-      private
-      def convert_body
-        new_body = TempFile.new("CGI")
-        new_body.binmode if defined? @body.binmode
-        new_body.binmode if defined? new_body.binmode
-
-        @body.rewind
-        new_body.print @body.read
-        @body = new_body
-        @morph_check = false
-      end
-    end
-
     # Initialize the data from the query.
     #
     # Handles multipart forms (in particular, forms that involve file uploads).
@@ -582,6 +547,7 @@ class CGI
     def initialize_query()
       if ("POST" == env_table['REQUEST_METHOD']) and
          %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|.match(env_table['CONTENT_TYPE'])
+        raise StandardError.new("too large multipart data.") if env_table['CONTENT_LENGTH'].to_i > MAX_MULTIPART_LENGTH
         boundary = $1.dup
         @multipart = true
         @params = read_multipart(boundary, Integer(env_table['CONTENT_LENGTH']))
