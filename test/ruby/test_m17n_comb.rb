@@ -115,6 +115,7 @@ class TestM17NComb < Test::Unit::TestCase
 
   def combination(*args, &b)
     AllPairs.each(*args, &b)
+    #AllPairs.exhaustive_each(*args, &b)
   end
 
   def encdump(str)
@@ -1395,21 +1396,25 @@ class TestM17NComb < Test::Unit::TestCase
       [
         [
           "#{encdump s1}.sub(Regexp.new(#{encdump s2}), #{encdump s3})",
-          lambda { s1.sub(r2, s3) }
+          lambda { s1.sub(r2, s3) },
+          false
         ],
         [
           "#{encdump s1}.sub(Regexp.new(#{encdump s2}), #{encdump s3})",
-          lambda { s1.sub(r2) { s3 } }
+          lambda { s1.sub(r2) { s3 } },
+          false
         ],
         [
           "#{encdump s1}.gsub(Regexp.new(#{encdump s2}), #{encdump s3})",
-          lambda { s1.gsub(r2, s3) }
+          lambda { s1.gsub(r2, s3) },
+          true
         ],
         [
           "#{encdump s1}.gsub(Regexp.new(#{encdump s2}), #{encdump s3})",
-          lambda { s1.gsub(r2) { s3 } }
+          lambda { s1.gsub(r2) { s3 } },
+          true
         ]
-      ].each {|desc, doit|
+      ].each {|desc, doit, g|
         if !s1.valid_encoding?
           assert_raise(ArgumentError, desc) { doit.call }
           next
@@ -1422,7 +1427,7 @@ class TestM17NComb < Test::Unit::TestCase
           assert_equal(s1, doit.call)
           next
         end
-        if !str_enc_compatible?(s1.gsub(r2, ''), s3)
+        if !str_enc_compatible?(g ? s1.gsub(r2, '') : s1.sub(r2, ''), s3)
           assert_raise(Encoding::CompatibilityError, desc) { doit.call }
           next
         end
@@ -1449,21 +1454,25 @@ class TestM17NComb < Test::Unit::TestCase
       [
         [
           "t=#{encdump s1}.dup;t.sub!(Regexp.new(#{encdump s2}), #{encdump s3})",
-          lambda { t=s1.dup; [t, t.sub!(r2, s3)] }
+          lambda { t=s1.dup; [t, t.sub!(r2, s3)] },
+          false
         ],
         [
           "t=#{encdump s1}.dup;t.sub!(Regexp.new(#{encdump s2}), #{encdump s3})",
-          lambda { t=s1.dup; [t, t.sub!(r2) { s3 }] }
+          lambda { t=s1.dup; [t, t.sub!(r2) { s3 }] },
+          false
         ],
         [
           "t=#{encdump s1}.dup;t.gsub!(Regexp.new(#{encdump s2}), #{encdump s3})",
-          lambda { t=s1.dup; [t, t.gsub!(r2, s3)] }
+          lambda { t=s1.dup; [t, t.gsub!(r2, s3)] },
+          true
         ],
         [
           "t=#{encdump s1}.dup;t.gsub!(Regexp.new(#{encdump s2}), #{encdump s3})",
-          lambda { t=s1.dup; [t, t.gsub!(r2) { s3 }] }
+          lambda { t=s1.dup; [t, t.gsub!(r2) { s3 }] },
+          true
         ]
-      ].each {|desc, doit|
+      ].each {|desc, doit, g|
         if !s1.valid_encoding?
           assert_raise(ArgumentError, desc) { doit.call }
           next
@@ -1476,7 +1485,7 @@ class TestM17NComb < Test::Unit::TestCase
           assert_equal([s1, nil], doit.call)
           next
         end
-        if !str_enc_compatible?(s1.gsub(r2, ''), s3)
+        if !str_enc_compatible?(g ? s1.gsub(r2, '') : s1.sub(r2, ''), s3)
           assert_raise(Encoding::CompatibilityError, desc) { doit.call }
           next
         end

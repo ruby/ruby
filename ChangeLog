@@ -1,3 +1,7 @@
+Thu Oct  2 20:46:17 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_sub_bang): fix coderange.
+
 Wed Oct  1 22:54:09 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/rexml/parsers/lightparser.rb, lib/debug.rb: remove unused when

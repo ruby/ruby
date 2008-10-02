@@ -959,6 +959,21 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(Encoding::EUC_JP, "\xa4\xa2".force_encoding("euc-jp").gsub(/./, '\&').encoding)
   end
 
+  def test_sub2
+    s = "\x80".force_encoding("ASCII-8BIT")     
+    r = Regexp.new("\x80".force_encoding("ASCII-8BIT")) 
+    s2 = s.sub(r, "")
+    assert(s2.empty?)
+    assert(s2.ascii_only?)
+  end
+
+  def test_sub3
+    repl = "\x81".force_encoding("sjis")
+    assert_equal(false, repl.valid_encoding?)
+    s = "a@".sub(/a/, repl)
+    assert(s.valid_encoding?)
+  end
+
   def test_insert
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
     assert_equal(e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4a"), s.insert(-1, "a"))

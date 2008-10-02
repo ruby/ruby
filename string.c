@@ -3307,7 +3307,11 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	if (OBJ_UNTRUSTED(repl)) untrusted = 1;
 	if (ENC_CODERANGE_UNKNOWN < cr && cr < ENC_CODERANGE_BROKEN) {
 	    int cr2 = ENC_CODERANGE(repl);
-	    if (cr2 == ENC_CODERANGE_UNKNOWN || cr2 > cr) cr = cr2;
+            if (cr2 == ENC_CODERANGE_BROKEN ||
+                (cr == ENC_CODERANGE_VALID && cr2 == ENC_CODERANGE_7BIT))
+                cr = ENC_CODERANGE_UNKNOWN;
+            else
+                cr = cr2;
 	}
 	plen = end0 - beg0;
 	if (RSTRING_LEN(repl) > plen) {
