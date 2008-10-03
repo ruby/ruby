@@ -18,6 +18,7 @@ if "%1" == "srcdir" goto :srcdir
 if "%1" == "--target" goto :target
 if "%1" == "target" goto :target
 if "%1" == "--with-static-linked-ext" goto :extstatic
+if "%1" == "--program-prefix" goto :pprefix
 if "%1" == "--program-suffix" goto :suffix
 if "%1" == "--program-name" goto :installname
 if "%1" == "--install-name" goto :installname
@@ -40,6 +41,12 @@ goto :loop
 goto :loop
 :prefix
   echo>> ~tmp~.mak 	"prefix=%2" \
+  echo>>confargs.tmp %1=%2 \
+  shift
+  shift
+goto :loop
+:pprefix
+  echo>> ~tmp~.mak 	"RUBY_PREFIX=%2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift

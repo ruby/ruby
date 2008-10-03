@@ -154,6 +154,9 @@ MSC_VER = _MSC_VER
 
 -program-name-:
 	@type << >>$(MAKEFILE)
+!ifdef RUBY_PREFIX
+RUBY_PREFIX = $(RUBY_PREFIX)
+!endif
 !ifdef RUBY_SUFFIX
 RUBY_SUFFIX = $(RUBY_SUFFIX)
 !endif
