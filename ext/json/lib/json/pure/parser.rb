@@ -126,20 +126,30 @@ module JSON
             if u = UNESCAPE_MAP[$&[1]]
               u
             else # \uXXXX
-              bytes = ''
-              i = 0
-              while c[6 * i] == ?\\ && c[6 * i + 1] == ?u 
-                bytes << c[6 * i + 2, 2].to_i(16) << c[6 * i + 4, 2].to_i(16)
-                i += 1
+              res = []
+              stack = nil
+              [c.delete!('\\\\u')].pack("H*").unpack("n*").each do |c|
+                case c
+                when 0xD800..0xDBFF
+                  raise JSON::ParserError, "partial character in source" if stack
+                  stack = c
+                when 0xDC00..0xDFFF
+                  raise JSON::ParserError,
+                    "partial character in source" unless (0xD800..0xDBFF).include?(stack)
+                  res << (stack << 10) - 0x35fdc00 + c
+                  stack = nil
+                else
+                  raise JSON::ParserError, "partial character in source" if stack
+                  res << c
+                end
               end
-              JSON::UTF16toUTF8.iconv(bytes)
+              raise JSON::ParserError, "partial character in source" if stack
+              res.pack("U*")
             end
           end
         else
           UNPARSED
         end
-      rescue Iconv::Failure => e
-        raise GeneratorError, "Caught #{e.class}: #{e}"
       end
 
       def parse_value
