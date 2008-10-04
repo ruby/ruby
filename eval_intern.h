@@ -64,10 +64,6 @@ char *strrchr(const char *, const char);
 #include <net/socket.h>
 #endif
 
-#ifdef __MACOS__
-#include "macruby_private.h"
-#endif
-
 #ifdef __VMS
 #include "vmsruby_private.h"
 #endif

@@ -156,8 +156,6 @@ class TkTreeCtrl_demo
     @src_top = TkToplevel.new
     f = TkFrame.new(@src_top, :borderwidth=>0)
     case @thisPlatform
-    when 'macintosh', 'macos'
-      font = TkFont.new(['Geneva', 9])
     when 'unix'
       font = TkFont.new(['Courier', -12])
     else
@@ -198,10 +196,6 @@ class TkTreeCtrl_demo
   def tree_plus_scrollbars_in_a_frame(parent, h, v)
     f = TkFrame.new(parent, :borderwidth=>1, :relief=>:sunken)
     case @thisPlatform
-    when 'macintosh'
-      font = TkFont.new(['Geneva', 9])
-    when 'macos'
-      font = TkFont.new(['Lucida Grande', 11])
     when 'unix'
       font = TkFont.new(['Helvetica', -12])
     else
@@ -244,7 +238,7 @@ class TkTreeCtrl_demo
     Tk.root.title('Tk::TreeCtrl Demo')
 
     case @thisPlatform
-    when 'macintosh', 'macosx'
+    when 'macosx'
       Tk.root.geometry('+40+40')
     else
       Tk.root.geometry('+0+30')

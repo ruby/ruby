@@ -245,8 +245,6 @@ void rb_ia64_flushrs(void);
 
 #if defined(DOSISH)
 #define PATH_SEP ";"
-#elif defined(riscos)
-#define PATH_SEP ","
 #else
 #define PATH_SEP ":"
 #endif

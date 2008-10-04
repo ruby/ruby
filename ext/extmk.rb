@@ -39,7 +39,7 @@ load File.expand_path("lib/mkmf.rb", srcdir)
 require 'optparse/shellwords'
 
 def sysquote(x)
-  @quote ||= /os2|macos/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
+  @quote ||= /os2/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
   @quote ? x.quote : x
 end
 

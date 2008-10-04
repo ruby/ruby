@@ -298,10 +298,8 @@ interrupt_init(int argc, VALUE *argv, VALUE self)
 void
 ruby_default_signal(int sig)
 {
-#ifndef MACOS_UNUSE_SIGNAL
     signal(sig, SIG_DFL);
     raise(sig);
-#endif
 }
 
 /*
@@ -1033,7 +1031,6 @@ int ruby_enable_coredump = 0;
 void
 Init_signal(void)
 {
-#ifndef MACOS_UNUSE_SIGNAL
     VALUE mSignal = rb_define_module("Signal");
 
     rb_define_global_function("trap", sig_trap, -1);
@@ -1085,6 +1082,4 @@ Init_signal(void)
 #elif defined(SIGCHLD)
     init_sigchld(SIGCHLD);
 #endif
-
-#endif /* MACOS_UNUSE_SIGNAL */
 }

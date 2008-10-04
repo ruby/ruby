@@ -35,11 +35,7 @@
 #include <signal.h>
 
 #ifndef NSIG
-# if defined MACOS_UNUSE_SIGNAL
-#  define NSIG 1
-# else
-#  define NSIG (_SIGMAX + 1)      /* For QNX */
-# endif
+# define NSIG (_SIGMAX + 1)      /* For QNX */
 #endif
 
 #define RUBY_NSIG NSIG

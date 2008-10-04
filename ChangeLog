@@ -1,3 +1,29 @@
+Sat Oct  4 22:35:06 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* dln.c: Ruby no longer supports MacOS 9 or before.
+
+	* eval.c: ditto.
+
+	* eval_intern.h: ditto.
+
+	* ext/extmk.rb: ditto.
+
+	* ext/tk/sample/tkextlib/treectrl/demo.rb: ditto.
+
+	* ext/tk/stubs.c: ditto.
+
+	* file.c: ditto.
+
+	* hash.c: ditto.
+
+	* include/ruby/defines.h: ditto.
+
+	* ruby.c: ditto.
+
+	* signal.c: ditto.
+
+	* vm_core.h: ditto.
+
 Sat Oct  4 22:30:28 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* dln.c: Ruby no longer supports MS-DOS.

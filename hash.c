@@ -2640,7 +2640,6 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"compare_by_identity", rb_hash_compare_by_id, 0);
     rb_define_method(rb_cHash,"compare_by_identity?", rb_hash_compare_by_id_p, 0);
 
-#ifndef __MACOS__ /* environment variables nothing on MacOS. */
     origenviron = environ;
     envtbl = rb_obj_alloc(rb_cObject);
     rb_extend_object(envtbl, rb_mEnumerable);
@@ -2686,8 +2685,4 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl,"rassoc", env_rassoc, 1);
 
     rb_define_global_const("ENV", envtbl);
-#else /* __MACOS__ */
-	envtbl = rb_hash_s_new(0, NULL, rb_cHash);
-    rb_define_global_const("ENV", envtbl);
-#endif  /* ifndef __MACOS__  environment variables nothing on MacOS. */
 }

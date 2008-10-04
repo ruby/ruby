@@ -31,7 +31,7 @@ VALUE rb_eSysStackError;
 
 #if defined(__APPLE__)
 #define environ (*_NSGetEnviron())
-#elif !defined(_WIN32) && !defined(__MACOS__) || defined(_WIN32_WCE)
+#elif !defined(_WIN32) && defined(_WIN32_WCE)
 extern char **environ;
 #endif
 char **rb_origenviron;
@@ -54,11 +54,7 @@ ruby_init(void)
 	return;
     initialized = 1;
 
-#ifdef __MACOS__
-    rb_origenviron = 0;
-#else
     rb_origenviron = environ;
-#endif
 
     Init_stack((void *)&state);
     Init_BareVM();
@@ -68,9 +64,7 @@ ruby_init(void)
     if ((state = EXEC_TAG()) == 0) {
 	rb_call_inits();
 
-#ifdef __MACOS__
-	_macruby_init();
-#elif defined(__VMS)
+#if defined(__VMS)
 	_vmsruby_init();
 #endif
 

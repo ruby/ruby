@@ -46,10 +46,6 @@
 # define MAXPATHLEN 1024
 #endif
 
-#if defined(__MACOS__) && defined(__MWERKS__)
-#include <console.h>
-#endif
-
 #include "ruby/util.h"
 
 #ifndef HAVE_STDLIB_H
@@ -1554,8 +1550,6 @@ ruby_sysinit(int *argc, char ***argv)
     }
     v2[n] = 0;
     *argv = v2;
-#elif defined(__MACOS__) && defined(__MWERKS__)
-    *argc = ccommand(argv);
 #elif defined(_WIN32)
     void rb_w32_sysinit(int *argc, char ***argv);
     rb_w32_sysinit(argc, argv);

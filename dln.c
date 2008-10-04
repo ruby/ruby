@@ -75,13 +75,6 @@ char *getenv();
 #include <dlfcn.h>
 #endif
 
-#ifdef __MACOS__
-# include <TextUtils.h>
-# include <CodeFragments.h>
-# include <Aliases.h>
-# include "macruby_private.h"
-#endif
-
 #if defined(__APPLE__) && defined(__MACH__)   /* Mac OS X */
 # if defined(HAVE_DLOPEN)
    /* Mac OS X with dlopen (10.3 or later) */
@@ -119,11 +112,7 @@ init_funcname_len(char **buf, const char *file)
 
     /* Load the file as an object one */
     for (slash = file-1; *file; file++) /* Find position of last '/' */
-#ifdef __MACOS__
-	if (*file == ':') slash = file;
-#else
 	if (*file == '/') slash = file;
-#endif
 
     len = strlen(FUNCNAME_PATTERN) + strlen(slash + 1);
     *buf = xmalloc(len);
@@ -1480,53 +1469,6 @@ dln_load(const char *file)
     }
 #endif /* __BEOS__*/
 
-#ifdef __MACOS__   /* Mac OS 9 or before */
-# define DLN_DEFINED
-    {
-      OSErr err;
-      FSSpec libspec;
-      CFragConnectionID connID;
-      Ptr mainAddr;
-      char errMessage[1024];
-      Boolean isfolder, didsomething;
-      Str63 fragname;
-      Ptr symAddr;
-      CFragSymbolClass class;
-      void (*init_fct)();
-      char fullpath[MAXPATHLEN];
-
-      strcpy(fullpath, file);
-
-      /* resolve any aliases to find the real file */
-      c2pstr(fullpath);
-      (void)FSMakeFSSpec(0, 0, fullpath, &libspec);
-      err = ResolveAliasFile(&libspec, 1, &isfolder, &didsomething);
-      if (err) {
-	  rb_loaderror("Unresolved Alias - %s", file);
-      }
-
-      /* Load the fragment (or return the connID if it is already loaded */
-      fragname[0] = 0;
-      err = GetDiskFragment(&libspec, 0, 0, fragname, 
-			    kLoadCFrag, &connID, &mainAddr,
-			    errMessage);
-      if (err) {
-	  p2cstr(errMessage);
-	  rb_loaderror("%s - %s",errMessage , file);
-      }
-
-      /* Locate the address of the correct init function */
-      c2pstr(buf);
-      err = FindSymbol(connID, buf, &symAddr, &class);
-      if (err) {
-	  rb_loaderror("Unresolved symbols - %s" , file);
-      }
-      init_fct = (void (*)())symAddr;
-      (*init_fct)();
-      return (void*)init_fct;
-    }
-#endif /* __MACOS__ */
-
 #if defined(__VMS)
 #define DLN_DEFINED
     {
@@ -1581,7 +1523,7 @@ dln_find_exe_r(const char *fname, const char *path, char *buf, int size)
     }
 
     if (!path) {
-#if defined(_WIN32) || defined(__MACOS__)
+#if defined(_WIN32)
 	path = "/usr/local/bin;/usr/ucb;/usr/bin;/bin;.";
 #else
 	path = "/usr/local/bin:/usr/ucb:/usr/bin:/bin:.";
@@ -1593,13 +1535,8 @@ dln_find_exe_r(const char *fname, const char *path, char *buf, int size)
 char *
 dln_find_file_r(const char *fname, const char *path, char *buf, int size)
 {
-#ifndef __MACOS__
     if (!path) path = ".";
     return dln_find_1(fname, path, buf, size, 0);
-#else
-    if (!path) path = ".";
-    return _macruby_path_conv_posix_to_macos(dln_find_1(fname, path, buf, size, 0));
-#endif
 }
 
 static char fbuf[MAXPATHLEN];
@@ -1624,9 +1561,6 @@ dln_find_1(const char *fname, const char *path, char *fbuf, int size,
     register const char *ep;
     register char *bp;
     struct stat st;
-#ifdef __MACOS__
-    const char* mac_fullpath;
-#endif
 
 #define RETURN_IF(expr) if (expr) return (char *)fname;
 
@@ -1728,37 +1662,19 @@ dln_find_1(const char *fname, const char *path, char *fbuf, int size,
 		    continue;
 		}
 		strcpy(bp + i, extension[j]);
-#ifndef __MACOS__
 		if (stat(fbuf, &st) == 0)
 		    return fbuf;
-#else
-		if (mac_fullpath = _macruby_exist_file_in_libdir_as_posix_name(fbuf))
-		    return mac_fullpath;
-
-#endif
 	    }
 	    goto next;
 	}
 #endif /* _WIN32 or __EMX__ */
 
-#ifndef __MACOS__
 	if (stat(fbuf, &st) == 0) {
 	    if (exe_flag == 0) return fbuf;
 	    /* looking for executable */
 	    if (!S_ISDIR(st.st_mode) && eaccess(fbuf, X_OK) == 0)
 		return fbuf;
 	}
-#else
-	if (mac_fullpath = _macruby_exist_file_in_libdir_as_posix_name(fbuf)) {
-	    if (exe_flag == 0) return mac_fullpath;
-	    /* looking for executable */
-	    if (stat(mac_fullpath, &st) == 0) {
-		if (!S_ISDIR(st.st_mode) && eaccess(mac_fullpath, X_OK) == 0)
-		    return mac_fullpath;
-	    }
-	}
-#endif
-
       next:
 	/* if not, and no other alternatives, life is bleak */
 	if (*ep == '\0') {
