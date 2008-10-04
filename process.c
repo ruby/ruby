@@ -2256,15 +2256,10 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
     int ep[2];
 #endif
 
-#ifndef __VMS
 #define prefork() (		\
 	rb_io_flush(rb_stdout), \
 	rb_io_flush(rb_stderr)	\
 	)
-#else
-#define prefork() ((void)0)
-#endif
-
     prefork();
 
 #ifdef FD_CLOEXEC

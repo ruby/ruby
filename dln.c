@@ -45,7 +45,7 @@ void *xrealloc();
 #define free(x) xfree(x)
 
 #include <stdio.h>
-#if defined(_WIN32) || defined(__VMS)
+#if defined(_WIN32)
 #include "missing/file.h"
 #endif
 #include <sys/types.h>
@@ -68,11 +68,6 @@ void *xrealloc();
 
 #ifndef _WIN32
 char *getenv();
-#endif
-
-#if defined(__VMS)
-#pragma builtins
-#include <dlfcn.h>
 #endif
 
 #if defined(__APPLE__) && defined(__MACH__)   /* Mac OS X */
@@ -1459,35 +1454,6 @@ dln_load(const char *file)
       return (void*)img_id;
     }
 #endif /* __BEOS__*/
-
-#if defined(__VMS)
-#define DLN_DEFINED
-    {
-	void *handle, (*init_fct)();
-	char *fname, *p1, *p2;
-
-	fname = (char *)__alloca(strlen(file)+1);
-	strcpy(fname,file);
-	if (p1 = strrchr(fname,'/'))
-	    fname = p1 + 1;
-	if (p2 = strrchr(fname,'.'))
-	    *p2 = '\0';
-
-	if ((handle = (void*)dlopen(fname, 0)) == NULL) {
-	    error = dln_strerror();
-	    goto failed;
-	}
-
-	if ((init_fct = (void (*)())dlsym(handle, buf)) == NULL) {
-	    error = DLN_ERROR();
-	    dlclose(handle);
-	    goto failed;
-	}
-	/* Call the init code */
-	(*init_fct)();
-	return handle;
-    }
-#endif /* __VMS */
 
 #ifndef DLN_DEFINED
     rb_notimplement();

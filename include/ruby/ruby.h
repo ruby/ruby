@@ -77,11 +77,6 @@ extern "C" {
 #  endif
 #endif
 
-#if defined(__VMS)
-# pragma builtins
-# define alloca __alloca
-#endif
-
 #if SIZEOF_LONG == SIZEOF_VOIDP
 typedef unsigned long VALUE;
 typedef unsigned long ID;

@@ -159,14 +159,8 @@ static int max_file_descriptor = NOFILE;
 #  define STDIO_READ_DATA_PENDING(fp) ((fp)->FILE_READPTR < (fp)->FILE_READEND)
 #elif defined(__BEOS__)
 #  define STDIO_READ_DATA_PENDING(fp) (fp->_state._eof == 0)
-#elif defined(__VMS)
-#  define STDIO_READ_DATA_PENDING(fp) (((unsigned int)(*(fp))->_cnt) > 0)
 #else
 #  define STDIO_READ_DATA_PENDING(fp) (!feof(fp))
-#endif
-
-#if defined(__VMS)
-#define open(file_spec, flags, mode)  open(file_spec, flags, mode, "rfm=stmlf")
 #endif
 
 #define GetWriteIO(io) rb_io_get_write_io(io)

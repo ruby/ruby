@@ -1,3 +1,31 @@
+Sat Oct  4 22:50:14 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* dln.c: Ruby no longer supports VMS.
+
+	* error.c: ditto.
+
+	* eval.c: ditto.
+
+	* eval_intern.h: ditto.
+
+	* include/ruby/defines.h: ditto.
+
+	* include/ruby/ruby.h: ditto.
+
+	* io.c: ditto.
+
+	* process.c: ditto.
+
+	* ruby.c: ditto.
+
+	* vms/config.h: removed.
+
+	* vms/vms.h: ditto.
+
+	* vms/vmsruby_private.c: ditto.
+
+	* vms/vmsruby_private.h: ditto.
+
 Sat Oct  4 22:44:23 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* dln.c: Ruby no longer supports Windows CE.

@@ -64,10 +64,6 @@ char *strrchr(const char *, const char);
 #include <net/socket.h>
 #endif
 
-#ifdef __VMS
-#include "vmsruby_private.h"
-#endif
-
 #define ruby_setjmp(env) RUBY_SETJMP(env)
 #define ruby_longjmp(env,val) RUBY_LONGJMP(env,val)
 #ifdef __CYGWIN__
@@ -77,10 +73,6 @@ int _setjmp(), _longjmp();
 #include <sys/types.h>
 #include <signal.h>
 #include <errno.h>
-
-#if defined(__VMS)
-#pragma nostandard
-#endif
 
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>

@@ -61,11 +61,6 @@ ruby_init(void)
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	rb_call_inits();
-
-#if defined(__VMS)
-	_vmsruby_init();
-#endif
-
 	ruby_prog_init();
     }
     POP_TAG();

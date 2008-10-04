@@ -898,7 +898,7 @@ get_syserr(int n)
 static VALUE
 syserr_initialize(int argc, VALUE *argv, VALUE self)
 {
-#if !defined(_WIN32) && !defined(__VMS)
+#if !defined(_WIN32)
     char *strerror();
 #endif
     const char *err;

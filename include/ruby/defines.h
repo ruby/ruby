@@ -192,10 +192,6 @@ void xfree(void*);
 #include "ruby/win32.h"
 #endif
 
-#if defined(__VMS)
-#include "vms/vms.h"
-#endif
-
 #if defined(__BEOS__) && !defined(__HAIKU__) && !defined(BONE)
 #include <net/socket.h> /* intern.h needs fd_set definition */
 #endif
@@ -255,7 +251,7 @@ void rb_ia64_flushrs(void);
 #endif
 
 #ifndef CASEFOLD_FILESYSTEM
-# if defined DOSISH || defined __VMS
+# if defined DOSISH
 #   define CASEFOLD_FILESYSTEM 1
 # else
 #   define CASEFOLD_FILESYSTEM 0

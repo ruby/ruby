@@ -1404,10 +1404,6 @@ init_ids(struct cmdline_options *opt)
     rb_gid_t gid = getgid();
     rb_gid_t egid = getegid();
 
-#ifdef VMS
-    uid |= gid << 16;
-    euid |= egid << 16;
-#endif
     if (uid != euid) opt->setids |= 1;
     if (egid != gid) opt->setids |= 2;
     if (uid && opt->setids) {
