@@ -103,7 +103,7 @@ void xfree(void*);
 #undef _WIN32
 #endif
 
-#if defined(MSDOS) || defined(_WIN32) || defined(__human68k__) || defined(__EMX__)
+#if defined(MSDOS) || defined(_WIN32) || defined(__EMX__)
 #define DOSISH 1
 #ifndef _WIN32_WCE
 # define DOSISH_DRIVE_LETTER
@@ -252,13 +252,9 @@ void rb_ia64_flushrs(void);
 #endif
 #define PATH_SEP_CHAR PATH_SEP[0]
 
-#if defined(__human68k__)
-#define PATH_ENV "path"
-#else
 #define PATH_ENV "PATH"
-#endif
 
-#if defined(DOSISH) && !defined(__human68k__) && !defined(__EMX__)
+#if defined(DOSISH) && !defined(__EMX__)
 #define ENV_IGNORECASE
 #endif
 

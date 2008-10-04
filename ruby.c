@@ -359,9 +359,6 @@ ruby_init_loadpath(void)
 #elif defined(DJGPP)
     extern char *__dos_argv0;
     strncpy(libpath, __dos_argv0, sizeof(libpath) - 1);
-#elif defined(__human68k__)
-    extern char **_argv;
-    strncpy(libpath, _argv[0], sizeof(libpath) - 1);
 #elif defined(__EMX__)
     _execname(libpath, sizeof(libpath) - 1);
 #endif

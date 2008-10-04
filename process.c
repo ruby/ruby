@@ -1004,11 +1004,8 @@ proc_exec_v(char **argv, const char *prog)
 	return -1;
     }
 
-#if (defined(MSDOS) && !defined(DJGPP)) || defined(__human68k__) || defined(__EMX__) || defined(OS2)
+#if (defined(MSDOS) && !defined(DJGPP)) || defined(__EMX__) || defined(OS2)
     {
-#if defined(__human68k__)
-#define COMMAND "command.x"
-#endif
 #if defined(__EMX__) || defined(OS2) /* OS/2 emx */
 #define COMMAND "cmd.exe"
 #endif
@@ -1040,7 +1037,7 @@ proc_exec_v(char **argv, const char *prog)
 	    }
 	}
     }
-#endif /* MSDOS or __human68k__ or __EMX__ */
+#endif /* MSDOS or __EMX__ */
     before_exec();
     execv(prog, argv);
     preserving_errno(after_exec());
@@ -1098,7 +1095,7 @@ rb_proc_exec(const char *str)
 	    after_exec();
 	    if (status != -1)
 		exit(status);
-#elif defined(__human68k__) || defined(__CYGWIN32__) || defined(__EMX__)
+#elif defined(__CYGWIN32__) || defined(__EMX__)
 	    char fbuf[MAXPATHLEN];
 	    char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
 	    int status = -1;
@@ -1158,30 +1155,6 @@ proc_spawn_v(char **argv, char *prog)
     if (!prog)
 	return -1;
 
-#if defined(__human68k__)
-    if ((extension = strrchr(prog, '.')) != NULL && STRCASECMP(extension, ".bat") == 0) {
-	char **new_argv;
-	char *p;
-	int n;
-
-	for (n = 0; argv[n]; n++)
-	    /* no-op */;
-	new_argv = ALLOCA_N(char*, n + 2);
-	for (; n > 0; n--)
-	    new_argv[n + 1] = argv[n];
-	new_argv[1] = strcpy(ALLOCA_N(char, strlen(argv[0]) + 1), argv[0]);
-	for (p = new_argv[1]; *p != '\0'; p++)
-	    if (*p == '/')
-		*p = '\\';
-	new_argv[0] = COMMAND;
-	argv = new_argv;
-	prog = dln_find_exe_r(argv[0], 0, fbuf, sizeof(fbuf));
-	if (!prog) {
-	    errno = ENOENT;
-	    return -1;
-	}
-    }
-#endif
     before_exec();
     status = spawnv(P_WAIT, prog, argv);
     rb_last_status_set(status == -1 ? 127 : status, 0);
@@ -2694,7 +2667,7 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others)
 # else
     if (argc) prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
     status = system(StringValuePtr(prog));
-#  if defined(__human68k__) || defined(__DJGPP__)
+#  if defined(__DJGPP__)
     rb_last_status_set(status == -1 ? 127 : status, 0);
 #  else
     rb_last_status_set((status & 0xff) << 8, 0);

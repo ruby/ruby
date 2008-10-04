@@ -1,3 +1,44 @@
+Sat Oct  4 21:59:39 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* x68/_dtos18.c: removed. Ruby no longer supports human68k.
+
+	* x68/_round.c: ditto.
+
+	* x68/fconvert.c: ditto.
+
+	* x68/select.c: ditto.
+
+	* ext/Setup.x68: ditto.
+
+	* missing/x68.c: ditto.
+
+	* dln.c (dln_find_exe_r): removed human68k supports.
+	  (dln_find_1): ditto.
+
+	* lib/mkmf.rb: ditto.
+
+	* ext/extmk.rb (Init_ext): ditto.
+
+	* ext/socket/socket.c (init_sock): ditto.
+
+	* gc.c (GC_MALLOC_LIMIT): ditto.
+	  (rb_setjmp, rb_jmpbuf): ditto.
+	  (mark_current_machine_context): ditto.
+
+	* include/ruby/defines.h (PATH_ENV): ditto.
+
+	* io.c: ditto.
+
+	* process.c: ditto.
+
+	* ruby.c: ditto.
+
+	* test/ruby/test_env.rb: ditto.
+
+	* test/ruby/test_path.rb: ditto.
+
+	* LEGAL
+
 Sat Oct  4 19:02:36 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb: no need to require the "lib/rational.rb".

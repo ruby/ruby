@@ -171,7 +171,6 @@ random.c
     email: matumoto@math.keio.ac.jp
 
 st.[ch]:
-x68/*:
 missing/alloca.c:
 missing/dup2.c:
 missing/finite.c:

@@ -9,7 +9,7 @@ CONFIG = RbConfig::MAKEFILE_CONFIG
 ORIG_LIBPATH = ENV['LIB']
 
 CXX_EXT = %w[cc cxx cpp]
-if /mswin|bccwin|mingw|msdosdjgpp|human|os2/ !~ CONFIG['build_os']
+if /mswin|bccwin|mingw|msdosdjgpp|os2/ !~ CONFIG['build_os']
   CXX_EXT.concat(%w[C])
 end
 SRC_EXT = %w[c m] << CXX_EXT
@@ -59,7 +59,6 @@ $mswin = /mswin/ =~ RUBY_PLATFORM
 $bccwin = /bccwin/ =~ RUBY_PLATFORM
 $mingw = /mingw/ =~ RUBY_PLATFORM
 $cygwin = /cygwin/ =~ RUBY_PLATFORM
-$human = /human/ =~ RUBY_PLATFORM
 $netbsd = /netbsd/ =~ RUBY_PLATFORM
 $os2 = /os2/ =~ RUBY_PLATFORM
 $beos = /beos/ =~ RUBY_PLATFORM

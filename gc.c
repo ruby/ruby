@@ -75,7 +75,7 @@ void *alloca ();
 #endif /* __GNUC__ */
 
 #ifndef GC_MALLOC_LIMIT
-#if defined(MSDOS) || defined(__human68k__)
+#if defined(MSDOS)
 #define GC_MALLOC_LIMIT 200000
 #else
 #define GC_MALLOC_LIMIT 8000000
@@ -1859,18 +1859,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 }
 
 #ifdef __GNUC__
-#if defined(__human68k__) || defined(DJGPP)
+#if defined(DJGPP)
 #undef rb_setjmp
 #undef rb_jmp_buf
-#if defined(__human68k__)
-typedef unsigned long rb_jmp_buf[8];
-__asm__ (".even\n\
-_rb_setjmp:\n\
-	move.l	4(sp),a0\n\
-	movem.l	d3-d7/a3-a5,(a0)\n\
-	moveq.l	#0,d0\n\
-	rts");
-#else
 #if defined(DJGPP)
 typedef unsigned long rb_jmp_buf[6];
 __asm__ (".align 4\n\
@@ -1888,9 +1879,8 @@ _rb_setjmp:\n\
 	xorl	%eax,%eax\n\
 	ret");
 #endif
-#endif
 int rb_setjmp (rb_jmp_buf);
-#endif /* __human68k__ or DJGPP */
+#endif /* DJGPP */
 #endif /* __GNUC__ */
 
 #define GC_NOTIFY 0
@@ -1932,7 +1922,7 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 #ifdef __ia64
     rb_gc_mark_locations(th->machine_register_stack_start, th->machine_register_stack_end);
 #endif
-#if defined(__human68k__) || defined(__mc68000__)
+#if defined(__mc68000__)
     mark_locations_array((VALUE*)((char*)STACK_END + 2),
 			 (STACK_START - STACK_END));
 #endif

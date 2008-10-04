@@ -1581,7 +1581,7 @@ dln_find_exe_r(const char *fname, const char *path, char *buf, int size)
     }
 
     if (!path) {
-#if defined(MSDOS) || defined(_WIN32) || defined(__human68k__) || defined(__MACOS__)
+#if defined(MSDOS) || defined(_WIN32) || defined(__MACOS__)
 	path = "/usr/local/bin;/usr/ucb;/usr/bin;/bin;.";
 #else
 	path = "/usr/local/bin:/usr/ucb:/usr/bin:/bin:.";
@@ -1721,9 +1721,6 @@ dln_find_1(const char *fname, const char *path, char *fbuf, int size,
 #elif defined(__EMX__) || defined(_WIN32)
 		".exe", ".com", ".cmd", ".bat",
 /* end of __EMX__ or _WIN32 */
-#else
-		".r", ".R", ".x", ".X", ".bat", ".BAT",
-/* __human68k__ */
 #endif
 	    };
 	    int j;
@@ -1747,7 +1744,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, int size,
 	    }
 	    goto next;
 	}
-#endif /* MSDOS or _WIN32 or __human68k__ or __EMX__ */
+#endif /* MSDOS or _WIN32 or __EMX__ */
 
 #ifndef __MACOS__
 	if (stat(fbuf, &st) == 0) {
