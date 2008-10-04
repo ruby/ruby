@@ -52,11 +52,11 @@ module IRB
     def HistorySavingAbility.create_finalizer
       proc do
 	if num = IRB.conf[:SAVE_HISTORY] and (num = num.to_i) > 0
-	  if hf = IRB.conf[:HISTORY_FILE]
-	    file = File.expand_path(hf)
+	  if history_file = IRB.conf[:HISTORY_FILE]
+	    history_file = File.expand_path(history_file)
 	  end
-	  file = IRB.rc_file("_history") unless file
-	  open(file, 'w' ) do |f|
+	  history_file = IRB.rc_file("_history") unless history_file
+	  open(history_file, 'w' ) do |f|
 	    hist = HISTORY.to_a
 	    f.puts(hist[-num..-1] || hist)
 	  end
@@ -71,10 +71,12 @@ module IRB
     end
 
     def load_history
-      hist = IRB.conf[:HISTORY_FILE]
-      hist = IRB.rc_file("_history") unless hist
-      if File.exist?(hist)
-	open(hist) do |f|
+      if history_file = IRB.conf[:HISTORY_FILE]
+	history_file = File.expand_path(history_file)
+      end
+      history_file = IRB.rc_file("_history") unless history_file
+      if File.exist?(history_file)
+	open(history_file) do |f|
 	  f.each {|l| HISTORY << l.chomp}
 	end
       end
