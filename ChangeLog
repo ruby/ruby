@@ -1,3 +1,7 @@
+Sat Oct  4 19:02:36 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/format.rb: no need to require the "lib/rational.rb".
+
 Sat Oct  4 19:02:59 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf.c (rb_nkf_enc_get): don't replicate encoding.
