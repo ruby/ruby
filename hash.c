@@ -2015,18 +2015,7 @@ ruby_setenv(const char *name, const char *value)
     }
     len = strlen(name) + strlen(value) + 2;
     environ[i] = ALLOC_N(char, len);
-#ifndef MSDOS
     snprintf(environ[i],len,"%s=%s",name,value); /* all that work just for this */
-#else
-    /* MS-DOS requires environment variable names to be in uppercase */
-    /* [Tom Dinger, 27 August 1990: Well, it doesn't _require_ it, but
-     * some utilities and applications may break because they only look
-     * for upper case strings. (Fixed strupr() bug here.)]
-     */
-    strcpy(environ[i],name); strupr(environ[i]);
-    sprintf(environ[i] + strlen(name),"=%s", value);
-#endif /* MSDOS */
-
 #endif /* WIN32 */
 }
 

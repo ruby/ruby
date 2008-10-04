@@ -52,7 +52,7 @@ typedef struct {
 
 extern datum nullitem;
 
-#if defined(__STDC__) || defined(MSDOS)
+#if defined(__STDC__)
 #define proto(p) p
 #else
 #define proto(p) ()

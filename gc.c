@@ -75,11 +75,7 @@ void *alloca ();
 #endif /* __GNUC__ */
 
 #ifndef GC_MALLOC_LIMIT
-#if defined(MSDOS)
-#define GC_MALLOC_LIMIT 200000
-#else
 #define GC_MALLOC_LIMIT 8000000
-#endif
 #endif
 
 #define nomem_error GET_VM()->special_exceptions[ruby_error_nomemory]

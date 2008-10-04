@@ -29,11 +29,11 @@
 # include <sys/socket.h>
 #endif
 
-#if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__EMX__) || defined(__BEOS__)
+#if defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__EMX__) || defined(__BEOS__)
 # define NO_SAFE_RENAME
 #endif
 
-#if defined(MSDOS) || defined(__CYGWIN__) || defined(_WIN32)
+#if defined(__CYGWIN__) || defined(_WIN32)
 # define NO_LONG_FNAME
 #endif
 
@@ -6397,7 +6397,6 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
 
 }
 
-#if !defined(MSDOS)
 static int
 io_cntl(int fd, int cmd, long narg, int io_p)
 {
@@ -6417,12 +6416,10 @@ io_cntl(int fd, int cmd, long narg, int io_p)
 #endif
     return retval;
 }
-#endif
 
 static VALUE
 rb_io_ctl(VALUE io, VALUE req, VALUE arg, int io_p)
 {
-#if !defined(MSDOS)
     int cmd = NUM2ULONG(req);
     rb_io_t *fptr;
     long len = 0;
@@ -6488,10 +6485,6 @@ rb_io_ctl(VALUE io, VALUE req, VALUE arg, int io_p)
     }
 
     return INT2NUM(retval);
-#else
-    rb_notimplement();
-    return Qnil;		/* not reached */
-#endif
 }
 
 

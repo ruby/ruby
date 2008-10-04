@@ -103,7 +103,7 @@ void xfree(void*);
 #undef _WIN32
 #endif
 
-#if defined(MSDOS) || defined(_WIN32) || defined(__EMX__)
+#if defined(_WIN32) || defined(__EMX__)
 #define DOSISH 1
 #ifndef _WIN32_WCE
 # define DOSISH_DRIVE_LETTER

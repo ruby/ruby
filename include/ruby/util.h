@@ -45,7 +45,7 @@ unsigned long ruby_scan_oct(const char *, int, int *);
 #define scan_hex ruby_scan_hex
 unsigned long ruby_scan_hex(const char *, int, int *);
 
-#if defined(MSDOS) || defined(__CYGWIN32__) || defined(_WIN32)
+#if defined(__CYGWIN32__) || defined(_WIN32)
 void ruby_add_suffix(VALUE str, const char *suffix);
 #endif
 

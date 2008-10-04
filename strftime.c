@@ -126,7 +126,7 @@ extern char *strchr();
 #ifndef DLL_IMPORT
 #define DLL_IMPORT
 #endif
-#if !defined(OS2) && !defined(MSDOS) && defined(HAVE_TZNAME)
+#if !defined(OS2) && defined(HAVE_TZNAME)
 extern DLL_IMPORT char *tzname[2];
 #ifdef HAVE_DAYLIGHT
 extern DLL_IMPORT int daylight;

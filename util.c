@@ -191,7 +191,7 @@ ruby_strtoul(const char *str, char **endptr, int base)
 #   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
 #endif
 
-#if defined(MSDOS) || defined(__CYGWIN32__) || defined(_WIN32)
+#if defined(__CYGWIN32__) || defined(_WIN32)
 /*
  *  Copyright (c) 1993, Intergraph Corporation
  *

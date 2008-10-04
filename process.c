@@ -1001,14 +1001,9 @@ proc_exec_v(char **argv, const char *prog)
 	return -1;
     }
 
-#if defined(MSDOS) || defined(__EMX__) || defined(OS2)
+#if defined(__EMX__) || defined(OS2)
     {
-#if defined(__EMX__) || defined(OS2) /* OS/2 emx */
 #define COMMAND "cmd.exe"
-#endif
-#if defined(MSDOS)
-#define COMMAND "command.com"
-#endif
 	char *extension;
 
 	if ((extension = strrchr(prog, '.')) != NULL && STRCASECMP(extension, ".bat") == 0) {
@@ -1034,7 +1029,7 @@ proc_exec_v(char **argv, const char *prog)
 	    }
 	}
     }
-#endif /* MSDOS or __EMX__ */
+#endif /* __EMX__ */
     before_exec();
     execv(prog, argv);
     preserving_errno(after_exec());
@@ -1085,14 +1080,7 @@ rb_proc_exec(const char *str)
 	    if (nl) s = nl;
 	}
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
-#if defined(MSDOS)
-	    int status;
-	    before_exec();
-	    status = system(str);
-	    after_exec();
-	    if (status != -1)
-		exit(status);
-#elif defined(__CYGWIN32__) || defined(__EMX__)
+#if defined(__CYGWIN32__) || defined(__EMX__)
 	    char fbuf[MAXPATHLEN];
 	    char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
 	    int status = -1;
@@ -1663,10 +1651,9 @@ rb_exec_arg_fixup(struct rb_exec_arg *e)
  *  expansion. If +command+ is a two-element array, the first
  *  element is the command to be executed, and the second argument is
  *  used as the <code>argv[0]</code> value, which may show up in process
- *  listings. In MSDOS environments, the command is executed in a
- *  subshell; otherwise, one of the <code>exec(2)</code> system calls is
- *  used, so the running command may inherit some of the environment of
- *  the original program (including open file descriptors).
+ *  listings. In order to execute the command, one of the <code>exec(2)</code> 
+ *  system calls is used, so the running command may inherit some of the environment 
+ *  of the original program (including open file descriptors).
  *
  *  The hash arguments, env and options, are same as
  *  <code>system</code> and <code>spawn</code>.

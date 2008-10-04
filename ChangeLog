@@ -1,3 +1,29 @@
+Sat Oct  4 22:30:28 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* dln.c: Ruby no longer supports MS-DOS.
+
+	* ext/sdbm/_sdbm.c: ditto.
+
+	* ext/sdbm/sdbm.h: ditto.
+
+	* gc.c: ditto.
+
+	* hash.c: ditto.
+
+	* include/ruby/defines.h: ditto.
+
+	* include/ruby/util.h: ditto.
+
+	* io.c: ditto.
+
+	* process.c: ditto.
+
+	* ruby.c: ditto.
+
+	* strftime.c: ditto.
+
+	* util.c: ditto.
+
 Sat Oct  4 22:14:15 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* djgpp/GNUmakefile.in: removed. Ruby no longer supports djgpp.
