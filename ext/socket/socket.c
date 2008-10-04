@@ -241,7 +241,7 @@ init_sock(VALUE sock, int fd)
     MakeOpenFile(sock, fp);
     fp->fd = fd;
     fp->mode = FMODE_READWRITE|FMODE_DUPLEX;
-#if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__EMX__)
+#if defined(_WIN32) || defined(__CYGWIN__) || defined(__EMX__)
     fp->mode |= FMODE_BINMODE;
 #endif
     if (do_not_reverse_lookup) {

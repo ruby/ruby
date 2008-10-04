@@ -1715,9 +1715,6 @@ dln_find_1(const char *fname, const char *path, char *fbuf, int size,
 	    static const char extension[][5] = {
 #if defined(MSDOS)
 		".com", ".exe", ".bat",
-#if defined(DJGPP)
-		".btm", ".sh", ".ksh", ".pl", ".sed",
-#endif
 #elif defined(__EMX__) || defined(_WIN32)
 		".exe", ".com", ".cmd", ".bat",
 /* end of __EMX__ or _WIN32 */

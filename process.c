@@ -28,9 +28,6 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
-#ifdef __DJGPP__
-#include <process.h>
-#endif
 
 #include <time.h>
 #include <ctype.h>
@@ -1004,12 +1001,12 @@ proc_exec_v(char **argv, const char *prog)
 	return -1;
     }
 
-#if (defined(MSDOS) && !defined(DJGPP)) || defined(__EMX__) || defined(OS2)
+#if defined(MSDOS) || defined(__EMX__) || defined(OS2)
     {
 #if defined(__EMX__) || defined(OS2) /* OS/2 emx */
 #define COMMAND "cmd.exe"
 #endif
-#if (defined(MSDOS) && !defined(DJGPP))
+#if defined(MSDOS)
 #define COMMAND "command.com"
 #endif
 	char *extension;
@@ -2667,11 +2664,7 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others)
 # else
     if (argc) prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
     status = system(StringValuePtr(prog));
-#  if defined(__DJGPP__)
-    rb_last_status_set(status == -1 ? 127 : status, 0);
-#  else
     rb_last_status_set((status & 0xff) << 8, 0);
-#  endif
 # endif
 
     rb_run_exec_options(&sarg, NULL);

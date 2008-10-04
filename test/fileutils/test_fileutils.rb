@@ -16,11 +16,11 @@ Dir.mkdir tmproot unless File.directory?(tmproot)
 Dir.chdir tmproot
 
 def have_drive_letter?
-  /djgpp|mswin(?!ce)|mingw|bcc|emx/ =~ RUBY_PLATFORM
+  /mswin(?!ce)|mingw|bcc|emx/ =~ RUBY_PLATFORM
 end
 
 def have_file_perm?
-  /djgpp|mswin|mingw|bcc|wince|emx/ !~ RUBY_PLATFORM
+  /mswin|mingw|bcc|wince|emx/ !~ RUBY_PLATFORM
 end
 
 $fileutils_rb_have_symlink = nil

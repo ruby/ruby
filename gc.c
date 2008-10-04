@@ -1858,31 +1858,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
     return 0;
 }
 
-#ifdef __GNUC__
-#if defined(DJGPP)
-#undef rb_setjmp
-#undef rb_jmp_buf
-#if defined(DJGPP)
-typedef unsigned long rb_jmp_buf[6];
-__asm__ (".align 4\n\
-_rb_setjmp:\n\
-	pushl	%ebp\n\
-	movl	%esp,%ebp\n\
-	movl	8(%ebp),%ebp\n\
-	movl	%eax,(%ebp)\n\
-	movl	%ebx,4(%ebp)\n\
-	movl	%ecx,8(%ebp)\n\
-	movl	%edx,12(%ebp)\n\
-	movl	%esi,16(%ebp)\n\
-	movl	%edi,20(%ebp)\n\
-	popl	%ebp\n\
-	xorl	%eax,%eax\n\
-	ret");
-#endif
-int rb_setjmp (rb_jmp_buf);
-#endif /* DJGPP */
-#endif /* __GNUC__ */
-
 #define GC_NOTIFY 0
 
 void rb_vm_mark(void *ptr);

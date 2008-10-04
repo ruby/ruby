@@ -283,15 +283,11 @@ ruby_add_suffix(VALUE str, const char *suffix)
         rb_fatal("Cannot do inplace edit on long filename (%ld characters)",
 		 RSTRING_LEN(str));
 
-#if defined(DJGPP) || defined(__CYGWIN32__) || defined(_WIN32)
+#if defined(__CYGWIN32__) || defined(_WIN32)
     /* Style 0 */
     slen = RSTRING_LEN(str);
     rb_str_cat(str, suffix, extlen);
-#if defined(DJGPP)
-    if (_USE_LFN) return;
-#else
     if (valid_filename(RSTRING_PTR(str))) return;
-#endif
 
     /* Fooey, style 0 failed.  Fix str before continuing. */
     rb_str_resize(str, slen);
@@ -363,136 +359,6 @@ valid_filename(const char *s)
 #endif
 #endif
 
-#if defined __DJGPP__
-
-#include <dpmi.h>
-
-static char dbcs_table[256];
-
-int
-make_dbcs_table()
-{
-    __dpmi_regs r;
-    struct {
-	unsigned char start;
-	unsigned char end;
-    } vec;
-    int offset;
-
-    memset(&r, 0, sizeof(r));
-    r.x.ax = 0x6300;
-    __dpmi_int(0x21, &r);
-    offset = r.x.ds * 16 + r.x.si;
-
-    for (;;) {
-	int i;
-	dosmemget(offset, sizeof vec, &vec);
-	if (!vec.start && !vec.end)
-	    break;
-	for (i = vec.start; i <= vec.end; i++)
-	    dbcs_table[i] = 1;
-	offset += 2;
-    }
-}
-
-int
-mblen(const char *s, size_t n)
-{
-    static int need_init = 1;
-    if (need_init) {
-	make_dbcs_table();
-	need_init = 0;
-    }
-    if (s) {
-	if (n == 0 || *s == 0)
-	    return 0;
-	else if (!s[1])
-	    return 1;
-	return dbcs_table[(unsigned char)*s] + 1;
-    }
-    else
-	return 1;
-}
-
-struct PathList {
-    struct PathList *next;
-    char *path;
-};
-
-struct PathInfo {
-    struct PathList *head;
-    int count;
-};
-
-static int
-push_element(const char *path, VALUE vinfo)
-{
-    struct PathList *p;
-    struct PathInfo *info = (struct PathInfo *)vinfo;
-
-    p = ALLOC(struct PathList);
-    MEMZERO(p, struct PathList, 1);
-    p->path = ruby_strdup(path);
-    p->next = info->head;
-    info->head = p;
-    info->count++;
-
-    return 0;
-}
-
-#include <dirent.h>
-int __opendir_flags = __OPENDIR_PRESERVE_CASE;
-
-char **
-__crt0_glob_function(char *path)
-{
-    int len = strlen(path);
-    int i;
-    char **rv;
-    char path_buffer[PATH_MAX];
-    char *buf = path_buffer;
-    char *p;
-    struct PathInfo info;
-    struct PathList *plist;
-
-    if (PATH_MAX <= len)
-	buf = ruby_xmalloc(len + 1);
-
-    strncpy(buf, path, len);
-    buf[len] = '\0';
-
-    for (p = buf; *p; p += mblen(p, RUBY_MBCHAR_MAXSIZE))
-	if (*p == '\\')
-	    *p = '/';
-
-    info.count = 0;
-    info.head = 0;
-
-    ruby_glob(buf, 0, push_element, (VALUE)&info);
-
-    if (buf != path_buffer)
-	ruby_xfree(buf);
-
-    if (info.count == 0)
-	return 0;
-
-    rv = ruby_xmalloc((info.count + 1) * sizeof (char *));
-
-    plist = info.head;
-    i = 0;
-    while (plist) {
-	struct PathList *cur;
-	rv[i] = plist->path;
-	cur = plist;
-	plist = plist->next;
-	ruby_xfree(cur);
-	i++;
-    }
-    rv[i] = 0;
-    return rv;
-}
-
-#endif
 
 /* mm.c */
 

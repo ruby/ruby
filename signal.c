@@ -44,11 +44,7 @@ typedef int rb_atomic_t;
 #endif
 
 #ifndef NSIG
-# ifdef DJGPP
-#  define NSIG SIGMAX
-# else
-#  define NSIG (_SIGMAX + 1)      /* For QNX */
-# endif
+# define NSIG (_SIGMAX + 1)      /* For QNX */
 #endif
 
 static const struct signals {

@@ -9,7 +9,7 @@ CONFIG = RbConfig::MAKEFILE_CONFIG
 ORIG_LIBPATH = ENV['LIB']
 
 CXX_EXT = %w[cc cxx cpp]
-if /mswin|bccwin|mingw|msdosdjgpp|os2/ !~ CONFIG['build_os']
+if /mswin|bccwin|mingw|os2/ !~ CONFIG['build_os']
   CXX_EXT.concat(%w[C])
 end
 SRC_EXT = %w[c m] << CXX_EXT
@@ -1299,7 +1299,7 @@ def configuration(srcdir)
       if CONFIG['target_os'] != 'cygwin'
         vpath = vpath.map {|p| p.sub(/.*/, '$(shell cygpath -u \&)')}
       end
-    when 'msdosdjgpp', 'mingw32'
+    when 'mingw32'
       CONFIG['PATH_SEPARATOR'] = ';'
     end
   end

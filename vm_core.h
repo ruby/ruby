@@ -35,9 +35,7 @@
 #include <signal.h>
 
 #ifndef NSIG
-# ifdef DJGPP
-#  define NSIG SIGMAX
-# elif defined MACOS_UNUSE_SIGNAL
+# if defined MACOS_UNUSE_SIGNAL
 #  define NSIG 1
 # else
 #  define NSIG (_SIGMAX + 1)      /* For QNX */

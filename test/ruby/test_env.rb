@@ -1,7 +1,7 @@
 require 'test/unit'
 
 class TestEnv < Test::Unit::TestCase
-  IGNORE_CASE = /djgpp|bccwin|mswin|mingw/ =~ RUBY_PLATFORM
+  IGNORE_CASE = /bccwin|mswin|mingw/ =~ RUBY_PLATFORM
   PATH_ENV = "PATH"
 
   def setup

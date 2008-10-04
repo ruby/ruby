@@ -186,7 +186,7 @@ translate_char(char *p, int from, int to)
 }
 #endif
 
-#if defined _WIN32 || defined __CYGWIN__ || defined __DJGPP__
+#if defined _WIN32 || defined __CYGWIN__
 static VALUE
 rubylib_mangled_path(const char *s, unsigned int l)
 {
@@ -356,9 +356,6 @@ ruby_init_loadpath(void)
 
 #if defined _WIN32 || defined __CYGWIN__
     GetModuleFileName(libruby, libpath, sizeof libpath);
-#elif defined(DJGPP)
-    extern char *__dos_argv0;
-    strncpy(libpath, __dos_argv0, sizeof(libpath) - 1);
 #elif defined(__EMX__)
     _execname(libpath, sizeof(libpath) - 1);
 #endif

@@ -1,3 +1,49 @@
+Sat Oct  4 22:14:15 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* djgpp/GNUmakefile.in: removed. Ruby no longer supports djgpp.
+
+	* djgpp/README.djgpp: ditto.
+
+	* djgpp/config.hin: ditto.
+
+	* djgpp/config.sed: ditto.
+
+	* djgpp/configure.bat: ditto.
+
+	* djgpp/mkver.sed: ditto.
+
+	* ext/Setup.dj: ditto.
+
+	* dln.c: removed djgpp supports.
+
+	* file.c: ditto.
+
+	* gc.c: ditto.
+
+	* io.c: ditto.
+
+	* process.c: ditto.
+
+	* ruby.c: ditto.
+
+	* signal.c: ditto.
+
+	* util.c: ditto.
+
+	* vm_core.h: ditto.
+
+	* lib/fileutils.rb: ditto.
+
+	* lib/mkmf.rb: ditto.
+
+	* ext/socket/socket.c: ditto.
+
+	* test/fileutils/test_fileutils.rb: ditto.
+
+	* test/ruby/test_env.rb: ditto.
+
+	* test/ruby/test_path.rb: ditto.
+
 Sat Oct  4 21:59:39 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* x68/_dtos18.c: removed. Ruby no longer supports human68k.

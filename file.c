@@ -1989,7 +1989,7 @@ rb_file_chown(VALUE obj, VALUE owner, VALUE group)
     o = NIL_P(owner) ? -1 : NUM2INT(owner);
     g = NIL_P(group) ? -1 : NUM2INT(group);
     GetOpenFile(obj, fptr);
-#if defined(DJGPP) || defined(__CYGWIN32__) || defined(_WIN32) || defined(__EMX__)
+#if defined(__CYGWIN32__) || defined(_WIN32) || defined(__EMX__)
     if (NIL_P(fptr->pathv)) return Qnil;
     if (chown(RSTRING_PTR(fptr->pathv), o, g) == -1)
 	rb_sys_fail_path(fptr->pathv);
@@ -2413,11 +2413,7 @@ rb_file_s_umask(int argc, VALUE *argv)
 #endif
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
-# if defined(DJGPP)
-#   define CharNext(p) ((p) + mblen(p, RUBY_MBCHAR_MAXSIZE))
-# else
-#   define CharNext(p) ((p) + 1)
-# endif
+# define CharNext(p) ((p) + 1)
 #endif
 
 #ifdef DOSISH_DRIVE_LETTER

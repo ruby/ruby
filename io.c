@@ -46,7 +46,7 @@
 #endif
 
 #include <sys/types.h>
-#if defined(HAVE_SYS_IOCTL_H) && !defined(DJGPP) && !defined(_WIN32)
+#if defined(HAVE_SYS_IOCTL_H) && !defined(_WIN32)
 #include <sys/ioctl.h>
 #endif
 #if defined(HAVE_FCNTL_H) || defined(_WIN32)
@@ -4195,9 +4195,6 @@ pipe_finalize(rb_io_t *fptr, int noraise)
     }
     fptr->fd = -1;
     fptr->stdio_file = 0;
-#if defined DJGPP
-    status <<= 8;
-#endif
     rb_last_status_set(status, fptr->pid);
 #else
     fptr_finalize(fptr, noraise);
@@ -8418,7 +8415,7 @@ Init_IO(void)
     rb_define_hooked_variable("$-i", &argf, opt_i_get, opt_i_set);
     rb_define_hooked_variable("$*", &argf, argf_argv_getter, 0);
 
-#if defined (_WIN32) || defined(DJGPP) || defined(__CYGWIN__)
+#if defined (_WIN32) || defined(__CYGWIN__)
     atexit(pipe_atexit);
 #endif
 
