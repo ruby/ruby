@@ -1217,6 +1217,34 @@ strio_truncate(VALUE self, VALUE len)
 }
 
 /*
+ *  call-seq:
+ *     strio.external_encoding   => encoding
+ *
+ *  Returns the Encoding object that represents the encoding of the file.
+ *  If strio is write mode and no encoding is specified, returns <code>nil</code>.
+ */
+
+static VALUE
+strio_external_encoding(VALUE self)
+{
+    return rb_enc_from_encoding(rb_enc_get(StringIO(self)->string));
+}
+
+/*
+ *  call-seq:
+ *     strio.internal_encoding   => encoding
+ *
+ *  Returns the Encoding of the internal string if conversion is
+ *  specified.  Otherwise returns nil.
+ */
+
+static VALUE
+strio_internal_encoding(VALUE self)
+{
+     return Qnil;
+}
+
+/*
  * Pseudo I/O on String object.
  */
 void
@@ -1291,4 +1319,7 @@ Init_stringio()
     rb_define_method(StringIO, "size", strio_size, 0);
     rb_define_method(StringIO, "length", strio_size, 0);
     rb_define_method(StringIO, "truncate", strio_truncate, 1);
+
+    rb_define_method(StringIO, "external_encoding", strio_external_encoding, 0);
+    rb_define_method(StringIO, "internal_encoding", strio_internal_encoding, 0);
 }
