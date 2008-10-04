@@ -3,7 +3,7 @@
 #   save-history.rb - 
 #   	$Release Version: 0.9.5$
 #   	$Revision$
-#   	by Keiju ISHITSUKAkeiju@ruby-lang.org)
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
