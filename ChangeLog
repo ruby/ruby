@@ -1,3 +1,8 @@
+Sat Oct  4 19:02:59 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf.c (rb_nkf_enc_get): don't replicate encoding.
+	  [ruby-dev:36575]
+
 Sat Oct  4 18:47:22 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_external_encoding): defined.

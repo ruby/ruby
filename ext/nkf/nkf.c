@@ -69,9 +69,6 @@ rb_encoding* rb_nkf_enc_get(const char *name)
 	idx = rb_enc_find_index(nkf_enc_name(nkf_enc_to_base_encoding(nkf_enc)));
 	if (idx < 0) {
 	    idx = rb_define_dummy_encoding(name);
-	} else {
-	    rb_encoding *rb_enc = rb_enc_from_index(idx);
-	    idx = rb_enc_replicate(name, rb_enc);
 	}
     }
     return rb_enc_from_index(idx);
