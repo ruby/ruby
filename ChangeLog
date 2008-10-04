@@ -1,3 +1,11 @@
+Sat Oct  4 15:33:26 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* common.mk (gdb-ruby): new target. it runs ruby under controlled by
+	  gdb.
+
+	* common.mk (dist): accepts RELNAME variable as the second argument of
+	  make-snapshot.rb.
+
 Sat Oct  4 12:17:46 2008  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb/irb/ext/save-history.rb: change load_history using File.expand_path. see [ruby-dev:36660]. Thanks Kouhei Sutou.

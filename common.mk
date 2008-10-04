@@ -715,8 +715,11 @@ run.gdb:
 gdb: miniruby$(EXEEXT) run.gdb PHONY
 	gdb -x run.gdb --quiet --args $(MINIRUBY) $(srcdir)/test.rb
 
+gdb-ruby: $(PROGRAM) run.gdb PHONY
+	gdb -x run.gdb --quiet --args $(PROGRAM) $(srcdir)/test.rb
+
 dist:
-	$(BASERUBY) $(srcdir)/tool/make-snapshot .
+	$(BASERUBY) $(srcdir)/tool/make-snapshot tmp $(RELNAME)
 
 up:
 	@$(VCS) up "$(srcdir)"
