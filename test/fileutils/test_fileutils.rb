@@ -20,7 +20,7 @@ def have_drive_letter?
 end
 
 def have_file_perm?
-  /mswin|mingw|bcc|wince|emx/ !~ RUBY_PLATFORM
+  /mswin|mingw|bcc|emx/ !~ RUBY_PLATFORM
 end
 
 $fileutils_rb_have_symlink = nil

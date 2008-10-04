@@ -1105,15 +1105,6 @@ dln_sym(const char *name)
 #include <windows.h>
 #endif
 
-#ifdef _WIN32_WCE
-#undef FormatMessage
-#define FormatMessage FormatMessageA
-#undef LoadLibrary
-#define LoadLibrary LoadLibraryA
-#undef GetProcAddress
-#define GetProcAddress GetProcAddressA
-#endif
-
 static const char *
 dln_strerror(void)
 {

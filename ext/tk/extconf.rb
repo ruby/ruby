@@ -2,7 +2,7 @@
 
 require 'mkmf'
 
-is_win32 = (/mswin|mingw|cygwin|bccwin|wince/ =~ RUBY_PLATFORM)
+is_win32 = (/mswin|mingw|cygwin|bccwin/ =~ RUBY_PLATFORM)
 #is_macosx = (/darwin/ =~ RUBY_PLATFORM)
 
 have_func("ruby_native_thread_p", "ruby.h")

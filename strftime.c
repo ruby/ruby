@@ -57,7 +57,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #endif
-#if defined(TM_IN_SYS_TIME) || !defined(GAWK) && !defined(_WIN32_WCE)
+#if defined(TM_IN_SYS_TIME) || !defined(GAWK)
 #include <sys/types.h>
 #if HAVE_SYS_TIME_H
 #include <sys/time.h>

@@ -33,9 +33,6 @@
 #endif
 #include "ruby/win32.h"
 #include "win32/dir.h"
-#ifdef _WIN32_WCE
-#include "wince.h"
-#endif
 #ifndef index
 #define index(x, y) strchr((x), (y))
 #endif
@@ -46,7 +43,7 @@
 #undef close
 #undef setsockopt
 
-#if defined __BORLANDC__ || defined _WIN32_WCE
+#if defined __BORLANDC__
 #  define _filbuf _fgetc
 #  define _flsbuf _fputc
 #  define enough_to_get(n) (--(n) >= 0)
@@ -67,11 +64,7 @@
 static struct ChildRecord *CreateChild(const char *, const char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
 static int has_redirection(const char *);
 int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
-#if !defined(_WIN32_WCE)
 static int rb_w32_open_osfhandle(intptr_t osfhandle, int flags);
-#else
-#define rb_w32_open_osfhandle(osfhandle, flags) _open_osfhandle(osfhandle, flags)
-#endif
 
 #define RUBY_CRITICAL(expr) do { expr; } while (0)
 
@@ -508,11 +501,6 @@ rb_w32_sysinit(int *argc, char ***argv)
 
     // Initialize Winsock
     StartSockets();
-
-#ifdef _WIN32_WCE
-    // free commandline buffer
-    wce_FreeCommandLine();
-#endif
 }
 
 char *
@@ -1698,7 +1686,7 @@ typedef struct	{
 #define _CRTIMP __declspec(dllimport)
 #endif
 
-#if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
+#if !defined(__BORLANDC__)
 EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 
 #define IOINFO_L2E			5
@@ -3759,7 +3747,7 @@ catch_interrupt(void)
     RUBY_CRITICAL(rb_w32_wait_events(NULL, 0, 0));
 }
 
-#if defined __BORLANDC__ || defined _WIN32_WCE
+#if defined __BORLANDC__
 #undef read
 int
 read(int fd, void *buf, size_t size)
@@ -3779,15 +3767,13 @@ int
 rb_w32_getc(FILE* stream)
 {
     int c;
-#ifndef _WIN32_WCE
     if (enough_to_get(stream->FILE_COUNT)) {
 	c = (unsigned char)*stream->FILE_READPTR++;
     }
     else 
-#endif
     {
 	c = _filbuf(stream);
-#if defined __BORLANDC__ || defined _WIN32_WCE
+#if defined __BORLANDC__
         if ((c == EOF) && (errno == EPIPE)) {
 	    clearerr(stream);
         }
@@ -3801,12 +3787,10 @@ rb_w32_getc(FILE* stream)
 int
 rb_w32_putc(int c, FILE* stream)
 {
-#ifndef _WIN32_WCE
     if (enough_to_put(stream->FILE_COUNT)) {
 	c = (unsigned char)(*stream->FILE_READPTR++ = (char)c);
     }
     else 
-#endif
     {
 	c = _flsbuf(c, stream);
 	catch_interrupt();
@@ -4673,7 +4657,7 @@ rb_w32_unlink(const char *path)
     return ret;
 }
 
-#if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
+#if !defined(__BORLANDC__)
 int
 rb_w32_isatty(int fd)
 {

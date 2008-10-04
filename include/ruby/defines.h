@@ -105,9 +105,7 @@ void xfree(void*);
 
 #if defined(_WIN32) || defined(__EMX__)
 #define DOSISH 1
-#ifndef _WIN32_WCE
 # define DOSISH_DRIVE_LETTER
-#endif
 #endif
 
 #if defined(__NeXT__) || defined(__APPLE__)

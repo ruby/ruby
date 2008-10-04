@@ -15,10 +15,6 @@
 #include <windows.h>
 #include <sys/cygwin.h>
 #endif
-#ifdef _WIN32_WCE
-#include <winsock.h>
-#include "ruby/wince.h"
-#endif
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
 #include "eval_intern.h"

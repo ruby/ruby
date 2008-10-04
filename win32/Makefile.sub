@@ -373,9 +373,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define FUNC_FASTCALL(x) __fastcall x
 #define RUBY_EXTERN extern __declspec(dllimport)
 #define HAVE_DECL_SYS_NERR 1
-!if !defined(WIN32_WCE)
 #define HAVE_LIMITS_H 1
-!endif
 #define HAVE_FCNTL_H 1
 #define HAVE_SYS_UTIME_H 1
 #define HAVE_FLOAT_H 1
@@ -409,9 +407,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define GETGROUPS_T int
 #define RETSIGTYPE void
-!if !defined(WIN32_WCE)
 #define HAVE_ALLOCA 1
-!endif
 #define HAVE_DUP2 1
 #define HAVE_MEMCMP 1
 #define HAVE_MEMMOVE 1
@@ -444,9 +440,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_TIMES 1
 #define HAVE_FCNTL 1
 #define HAVE_LINK 1
-!if !defined(WIN32_WCE)
 #define HAVE__SETJMP 1
-!endif
 #define HAVE_TELLDIR 1
 #define HAVE_SEEKDIR 1
 #define HAVE_MKTIME 1
@@ -484,29 +478,6 @@ $(BANG)if "$(RUBY_SO_NAME)"!="$$(RUBY_SO_NAME)" || "$(ARCH)-$(PLATFORM)"!="$$(AR
 config.h: nul
 $(BANG)endif
 #endif
-!if defined(WIN32_WCE)
-#define GC_MALLOC_LIMIT 4000000
-#define stricmp _stricmp
-#define fopen   wce_fopen
-#define open	   _open
-#define read	   _read
-#define write	   _write
-#define lseek      _lseek
-
-#if _WIN32_WCE < 300
-  #define isascii(c) ( (c>=0x00&&c<=0x7f)?1:0 )
-  #define isspace(c) ( ((c>=0x09&&c<=0x0d)||c==0x20)?1:0 )
-  #define isdigit(c) ( (c>=0x30&&c<=0x39)?1:0 )
-  #define isupper(c) ( (c>='A'&&c<='Z')?1:0 )
-  #define isalpha(c) ( ((c>='A'&&c<='Z')||(c>='a'&&c<='z'))?1:0 )
-  #define isprint(c) ( (c>=0x20&&c<=0x7e)?1:0 )
-  #define isalnum(c) ( (isalpha(c)||isdigit(c))?1:0 )
-  #define iscntrl(c) ( ((c>=0x00&&c<=0x1f)||c==0x7f)?1:0 )
-  #define islower(c) ( (c>='a'&&c<='z')?1:0 )
-  #define ispunct(c) ( !(isalnum(c)||isspace(c))?1:0 )
-  #define isxdigit(c) ( ((c>=0&&c<=9)||(c>='A'&&c<='F')||(c>='a'&&c<='f'))?1:0 )
-#endif
-!endif
 <<
 	@exit > $(@:/=\)
 
@@ -529,9 +500,6 @@ config.status: $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.su
 	@exit <<$@
 # Generated automatically by Makefile.sub.
 s,@SHELL@,$$(COMSPEC),;t t
-!if defined(WIN32_WCE)
-s,@MAIN_DOES_NOTHING@,int WinMain(HINSTANCE h, HINSTANCE hp, LPWSTR s, int n) {return 0;},;t t
-!endif
 s,@BUILD_FILE_SEPARATOR@,\,;t t
 s,@PATH_SEPARATOR@,;,;t t
 s,@CFLAGS@,$(CFLAGS),;t t
@@ -733,9 +701,6 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: $(RBCONFIG)
 			-ruby_name=$(RUBY_INSTALL_NAME) \
 			-rubyw_name=$(RUBYW_INSTALL_NAME) \
 			-so_name=$(RUBY_SO_NAME) \
-!if defined(WIN32_WCE)
-			-wce_ver=$(SUBSYSVERSION) \
-!endif
 			. $(icondirs) $(win_srcdir)
 
 fake.rb: $(MKFILES)

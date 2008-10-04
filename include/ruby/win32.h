@@ -33,11 +33,6 @@ extern "C" {
 
 #define NT 1			/* deprecated */
 
-#ifdef _WIN32_WCE
-#undef CharNext
-#define CharNext CharNextA
-#endif
-
 //
 // We're not using Microsoft's "extensions" to C for
 // Structured Exception Handling (SEH) so we can nuke these
@@ -164,7 +159,7 @@ extern DWORD rb_w32_osid(void);
 
 #undef execv
 #define execv(path,argv)	rb_w32_aspawn(P_OVERLAY,path,argv)
-#if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
+#if !defined(__BORLANDC__)
 #undef isatty
 #define isatty(h)		rb_w32_isatty(h)
 #endif
@@ -265,7 +260,7 @@ extern int kill(int, int);
 extern int fcntl(int, int, ...);
 extern rb_pid_t rb_w32_getpid(void);
 extern rb_pid_t rb_w32_getppid(void);
-#if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
+#if !defined(__BORLANDC__)
 extern int rb_w32_isatty(int);
 #endif
 extern int rb_w32_mkdir(const char *, int);

@@ -31,8 +31,6 @@ VALUE rb_eSysStackError;
 
 #if defined(__APPLE__)
 #define environ (*_NSGetEnviron())
-#elif !defined(_WIN32) && defined(_WIN32_WCE)
-extern char **environ;
 #endif
 char **rb_origenviron;
 

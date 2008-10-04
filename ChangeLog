@@ -1,3 +1,29 @@
+Sat Oct  4 22:44:23 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* dln.c: Ruby no longer supports Windows CE.
+
+	* eval.c: ditto.
+
+	* include/ruby/defines.h: ditto.
+
+	* include/ruby/win32.h: ditto.
+
+	* ruby.c: ditto.
+
+	* strftime.c: ditto.
+
+	* win32/Makefile.sub: ditto.
+
+	* win32/win32.c: ditto.
+	
+	* ext/tk/extconf.rb: ditto.
+	
+	* lib/fileutils.rb: ditto.
+	
+	* test/fileutils/test_fileutils.rb: ditto.
+
+	* wince/*: removed.
+
 Sat Oct  4 22:35:06 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* dln.c: Ruby no longer supports MacOS 9 or before.
