@@ -1,3 +1,16 @@
+Sat Oct  4 15:52:17 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/mini/test_mini_test.rb: recovered.
+	  It had been temporarily removed at r19645.
+
+	* test/mini/test_mini_mock.rb: ditto.
+
+	* test/mini/test_mini_spec.rb: ditto.
+
+	* lib/test/**/*: replaced by miniunit.
+	  miniunit had been temporarily reverted at r19643 but
+	  now recovred.
+
 Sat Oct  4 15:33:26 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* common.mk (gdb-ruby): new target. it runs ruby under controlled by

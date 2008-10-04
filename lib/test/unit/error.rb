@@ -1,56 +1,17 @@
-#--
-#
-# Author:: Nathaniel Talbott.
-# Copyright:: Copyright (c) 2000-2002 Nathaniel Talbott. All rights reserved.
-# License:: Ruby license.
+############################################################
+# This file is imported from a different project.
+# DO NOT make modifications in this repo.
+# File a patch instead and assign it to Ryan Davis
+############################################################
 
-require 'test/unit/util/backtracefilter'
+require 'test/unit/deprecate'
 
-module Test
-  module Unit
-
-    # Encapsulates an error in a test. Created by
-    # Test::Unit::TestCase when it rescues an exception thrown
-    # during the processing of a test.
-    class Error
-      include Util::BacktraceFilter
-
-      attr_reader(:test_name, :exception)
-
-      SINGLE_CHARACTER = 'E'
-
-      # Creates a new Error with the given test_name and
-      # exception.
-      def initialize(test_name, exception)
-        @test_name = test_name
-        @exception = exception
-      end
-
-      # Returns a single character representation of an error.
-      def single_character_display
-        SINGLE_CHARACTER
-      end
-
-      # Returns the message associated with the error.
-      def message
-        "#{@exception.class.name}: #{@exception.message}"
-      end
-
-      # Returns a brief version of the error description.
-      def short_display
-        "#@test_name: #{message.split("\n")[0]}"
-      end
-
-      # Returns a verbose version of the error description.
-      def long_display
-        backtrace = filter_backtrace(@exception.backtrace).join("\n    ")
-        "Error:\n#@test_name:\n#{message}\n    #{backtrace}"
-      end
-
-      # Overridden to return long_display.
-      def to_s
-        long_display
-      end
+# rails currently needs this file and this one method.
+module Test::Unit
+  class Error
+    def message
+      self.class.tu_deprecation_warning :message # 2009-06-01
+      "you're a loser"
     end
   end
 end
