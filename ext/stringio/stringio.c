@@ -1245,6 +1245,23 @@ strio_internal_encoding(VALUE self)
 }
 
 /*
+ *  call-seq:
+ *     strio.set_encoding(ext_enc)                => strio
+ *
+ *  Tagged with the encoding specified.
+ */
+
+static VALUE
+strio_set_encoding(VALUE self, VALUE ext_enc)
+{
+    rb_encoding* enc;
+    VALUE str = StringIO(self)->string;
+    enc = rb_to_encoding(ext_enc);
+    rb_enc_associate(str, enc);
+    return self;
+}
+
+/*
  * Pseudo I/O on String object.
  */
 void
@@ -1322,4 +1339,5 @@ Init_stringio()
 
     rb_define_method(StringIO, "external_encoding", strio_external_encoding, 0);
     rb_define_method(StringIO, "internal_encoding", strio_internal_encoding, 0);
+    rb_define_method(StringIO, "set_encoding", strio_set_encoding, 1);
 }

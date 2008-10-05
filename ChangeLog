@@ -1,3 +1,8 @@
+Sun Oct  5 17:39:21 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_set_encoding): defined for
+	  StringIO#set_encoding.
+
 Sun Oct  5 11:24:42 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* eval.c: come back definition of environ.
