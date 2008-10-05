@@ -1,3 +1,8 @@
+Sun Oct  5 23:05:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_mod_modfunc): method undefined in included module
+	  may not have nd_body.  [ruby-core:18738]
+
 Wed Oct  1 19:11:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (marshal_dump): fixed for check_dump_arg.
