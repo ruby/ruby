@@ -1,3 +1,8 @@
+Sun Oct  5 23:06:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_mod_modfunc): method undefined in included module
+	  may not have nd_body.  [ruby-core:18738]
+
 Sun Oct  5 21:28:58 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/rational.rb: resolved conflicts of aliases.
