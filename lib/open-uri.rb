@@ -132,6 +132,11 @@ module OpenURI
     options ||= {}
     OpenURI.check_options(options)
 
+    if /\Arb?(?:\Z|:([^:]+))/ =~ mode
+      encoding, = $1,Encoding.find($1) if $1
+      mode = nil
+    end
+
     unless mode == nil ||
            mode == 'r' || mode == 'rb' ||
            mode == File::RDONLY
@@ -139,6 +144,8 @@ module OpenURI
     end
 
     io = open_loop(uri, options)
+    io.set_encoding(encoding) if encoding
+    p [encoding, io.external_encoding]
     if block_given?
       begin
         yield io

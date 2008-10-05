@@ -1,3 +1,7 @@
+Sun Oct  5 17:49:35 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/open-uri.rb (OpenURI.open_uri): set encoding to strio.
+
 Sun Oct  5 17:39:21 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_set_encoding): defined for
