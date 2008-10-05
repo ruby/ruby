@@ -1,3 +1,7 @@
+Sun Oct  5 11:24:42 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* eval.c: come back definition of environ.
+
 Sun Oct  5 09:19:49 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/utf8tbl.c: update table.
