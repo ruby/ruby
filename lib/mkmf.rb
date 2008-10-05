@@ -13,7 +13,8 @@ if /mswin|bccwin|mingw|os2/ !~ CONFIG['build_os']
   CXX_EXT.concat(%w[C])
 end
 SRC_EXT = %w[c m] << CXX_EXT
-$static = $config_h = nil
+$static = nil
+$config_h = '$(arch_hdrdir)/ruby/config.h'
 $default_static = $static
 
 unless defined? $configure_args
@@ -1441,7 +1442,7 @@ def depend_rules(depend)
   end
   depend.each_line do |line|
     line.gsub!(/\.o\b/, ".#{$OBJEXT}")
-    line.gsub!(/\$\((?:hdr|top)dir\)\/config.h/, $config_h) if $config_h
+    line.gsub!(/\$\((?:hdr|top)dir\)\/config.h/, $config_h)
     line.gsub!(%r"\$\(hdrdir\)/(?!ruby(?![^:;/\s]))(?=[-\w]+\.h)", '\&ruby/')
     if $nmake && /\A\s*\$\(RM|COPY\)/ =~ line
       line.gsub!(%r"[-\w\./]{2,}"){$&.tr("/", "\\")}
@@ -1742,7 +1743,7 @@ site-install-rb: install-rb
     if RULE_SUBST
       headers.each {|h| h.sub!(/.*/, &RULE_SUBST.method(:%))}
     end
-    headers << $config_h if $config_h
+    headers << $config_h
     headers << '$(RUBY_EXTCONF_H)' if $extconf_h
     mfile.print "$(OBJS): ", headers.join(' '), "\n"
   end

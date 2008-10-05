@@ -1,3 +1,7 @@
+Sun Oct  5 23:34:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb ($config_h): now always defines for old libraries.
+
 Sun Oct  5 23:06:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (rb_mod_modfunc): method undefined in included module

@@ -343,7 +343,6 @@ unless CROSS_COMPILING
   ENV["RUBYLIB"] = "-"
   ENV["RUBYOPT"] = "-r#{File.expand_path('ext/purelib.rb', $top_srcdir)}"
 end
-$config_h = '$(arch_hdrdir)/ruby/config.h'
 $mflags << "ruby=#$ruby"
 
 MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtime(f)}
