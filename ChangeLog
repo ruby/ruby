@@ -1,3 +1,7 @@
+Sun Oct  5 18:51:50 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb: remove debug code introduced by previous change.
+
 Sun Oct  5 17:49:35 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/open-uri.rb (OpenURI.open_uri): set encoding to strio.

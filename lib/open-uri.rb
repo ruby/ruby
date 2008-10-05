@@ -145,7 +145,6 @@ module OpenURI
 
     io = open_loop(uri, options)
     io.set_encoding(encoding) if encoding
-    p [encoding, io.external_encoding]
     if block_given?
       begin
         yield io
