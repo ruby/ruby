@@ -1131,7 +1131,7 @@ free_unused_heaps()
     }
 }
 
-#define T_DEFERRED 0x3a
+#define T_ZOMBIE 0x3a
 
 void rb_gc_abort_threads(void);
 
@@ -1185,7 +1185,7 @@ gc_sweep()
 		    ((deferred = obj_free((VALUE)p)) ||
 		     ((FL_TEST(p, FL_FINALIZE)) && need_call_final))) {
 		    if (!deferred) {
-			p->as.free.flags = T_DEFERRED;
+			p->as.free.flags = T_ZOMBIE;
 			RDATA(p)->dfree = 0;
 		    }
 		    p->as.free.flags |= FL_MARK;
@@ -1197,7 +1197,7 @@ gc_sweep()
 		}
 		n++;
 	    }
-	    else if (BUILTIN_TYPE(p) == T_DEFERRED) {
+	    else if (BUILTIN_TYPE(p) == T_ZOMBIE) {
 		/* objects to be finalized */
 		/* do nothing remain marked */
 	    }
@@ -1250,7 +1250,7 @@ static inline void
 make_deferred(p)
     RVALUE *p;
 {
-    p->as.basic.flags = (p->as.basic.flags & ~T_MASK) | T_DEFERRED;
+    p->as.basic.flags = (p->as.basic.flags & ~T_MASK) | T_ZOMBIE;
 }
 
 static int
@@ -1728,7 +1728,7 @@ os_obj_of(of)
 		  case T_VARMAP:
 		  case T_SCOPE:
 		  case T_NODE:
-		  case T_DEFERRED:
+		  case T_ZOMBIE:
 		    continue;
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;

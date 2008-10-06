@@ -1,3 +1,7 @@
+Mon Oct  6 11:21:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c: renamed T_DEFERRED to T_ZOMBIE.
+
 Sun Oct  5 23:05:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_mod_modfunc): method undefined in included module
