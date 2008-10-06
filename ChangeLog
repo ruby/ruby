@@ -1,3 +1,7 @@
+Mon Oct  6 15:26:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (gc_mark_children): ignores T_ZOMBIE.
+
 Mon Oct  6 11:21:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c: renamed T_DEFERRED to T_ZOMBIE.

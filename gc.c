@@ -80,6 +80,8 @@ void *alloca ();
 #endif
 #endif
 
+#define T_ZOMBIE 0x3a
+
 static unsigned long malloc_increase = 0;
 static unsigned long malloc_limit = GC_MALLOC_LIMIT;
 static void run_final();
@@ -1044,6 +1046,7 @@ gc_mark_children(ptr, lev)
       case T_FLOAT:
       case T_BIGNUM:
       case T_BLKTAG:
+      case T_ZOMBIE:
 	break;
 
       case T_MATCH:
@@ -1130,8 +1133,6 @@ free_unused_heaps()
 	}
     }
 }
-
-#define T_ZOMBIE 0x3a
 
 void rb_gc_abort_threads(void);
 
