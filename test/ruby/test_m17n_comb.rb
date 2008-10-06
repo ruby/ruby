@@ -320,9 +320,7 @@ class TestM17NComb < Test::Unit::TestCase
       desc_eq = "#{encdump s1} == #{encdump s2}"
       if a(s1) == a(s2) and
           (s1.ascii_only? && s2.ascii_only? or
-           s1.encoding == s2.encoding or
-           s1.encoding == (enc = Encoding.find("ASCII-8BIT")) or
-           s2.encoding == enc) then
+           s1.encoding == s2.encoding) then
         assert(s1 == s2, desc_eq)
         assert(!(s1 != s2))
         assert_equal(0, s1 <=> s2)

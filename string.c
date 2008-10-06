@@ -1938,7 +1938,6 @@ rb_str_comparable(VALUE str1, VALUE str2)
 {
     int idx1, idx2;
     int rc1, rc2;
-    int a8;
 
     if (RSTRING_LEN(str1) == 0) return Qtrue;
     if (RSTRING_LEN(str2) == 0) return Qtrue;
@@ -1956,8 +1955,6 @@ rb_str_comparable(VALUE str1, VALUE str2)
 	if (rb_enc_asciicompat(rb_enc_from_index(idx1)))
 	    return Qtrue;
     }
-    a8 = rb_ascii8bit_encindex();
-    if (idx1 == a8 || idx2 == a8) return Qtrue;
     return Qfalse;
 }
 
