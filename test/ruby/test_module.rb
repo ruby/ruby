@@ -5,6 +5,10 @@ require_relative 'envutil'
 $m0 = Module.nesting
 
 class TestModule < Test::Unit::TestCase
+  def _wrap_assertion
+    yield
+  end
+
   def assert_method_defined?(klass, mid, message="")
     message = build_message(message, "#{klass}\##{mid} expected to be defined.")
     _wrap_assertion do
