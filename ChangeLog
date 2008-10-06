@@ -1,3 +1,9 @@
+Mon Oct  6 09:00:58 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/bigdecimal/test_bigdecimal.rb (test_sqrt_bigdecimal): test
+	  updated.  a patch from TAKANO Mitsuhiro <takano32 at jus.or.jp>
+	  in [ruby-dev:36669].
+
 Sun Oct  5 23:34:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb ($config_h): now always defines for old libraries.

@@ -466,9 +466,7 @@ class TestBigDecimal < Test::Unit::TestCase
     x = BigDecimal.new("0.09")
     assert_in_delta(0.3, x.sqrt(1), 0.001)
     x = BigDecimal.new((2**100).to_s)
-    assert_equal(1125899906842624, x.sqrt(100))
-    assert_equal(1125899906842624, x.sqrt(200))
-    assert_equal(1125899906842624, x.sqrt(300)) # I don't understand the meaning of argument...
+    assert_equal(true, x.sqrt(300).precs.last < x.sqrt(1200).precs.last)
     x = BigDecimal.new("-" + (2**100).to_s)
     assert_raise(FloatDomainError) { x.sqrt(1) }
     x = BigDecimal.new((2**200).to_s)
