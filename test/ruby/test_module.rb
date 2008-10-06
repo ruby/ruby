@@ -544,10 +544,11 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_mod_constants
-    Module.const_set(:Foo, :foo)
-    assert_equal([:Foo], Module.constants(true))
-    assert_equal([:Foo], Module.constants(false))
-    Module.instance_eval { remove_const(:Foo) }
+    m = Module.new
+    m.const_set(:Foo, :foo)
+    assert_equal([:Foo], m.constants(true))
+    assert_equal([:Foo], m.constants(false))
+    m.instance_eval { remove_const(:Foo) }
   end
 
   def test_frozen_class

@@ -3,6 +3,9 @@ Mon Oct  6 12:45:20 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* test/ruby/test_module.rb (TestModule#_wrap_assertion): add
 	  definition.  is this really needed?
 
+	* test/ruby/test_module.rb (TestModule#test_mod_constants): should
+	  not depend on global Module constants.
+
 Mon Oct  6 12:38:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (Test::Assertions#assert_nothing_raised): 
