@@ -40,7 +40,7 @@ module Test::Unit
     tu_deprecate :assert_not_nil,        :refute_nil            # 2009-06-01
     tu_deprecate :assert_not_same,       :refute_same           # 2009-06-01
 
-    def assert_nothing_raised _ = :ignored                      # 2009-06-01
+    def assert_nothing_raised _ = :ignored, msg = nil           # 2009-06-01
       self.class.tu_deprecation_warning :assert_nothing_raised
       self._assertions += 1
       yield
