@@ -1,3 +1,13 @@
+Mon Oct  6 16:44:52 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/core.rb (CGI::QueryExtension::initialize_query): fix the
+	  condition.
+
+	* test/cgi/test_cgi_core.rb: bug fix encoding.
+	  thaks to TAKANO Mitsuhiro <takano32 at jus.or.jp> .
+
+	* test/cgi/test_cgi_multipart.rb: temporary comment in.
+
 Mon Oct  6 15:22:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (gc_mark_children): ignores T_ZOMBIE.
