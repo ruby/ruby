@@ -1,3 +1,13 @@
+Wed Oct  8 02:38:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* encoding.c (rb_default_internal_encoding): merged a patch from
+	  Michael Selig <michael.selig at fs.com.au> in [ruby-core:18985].
+
+	* io.c (rb_io_ext_int_to_encs): ditto.
+
+	* ruby.c (proc_options): support default internal encoding in -E
+	  option.
+
 Wed Oct  8 00:03:39 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (today,now): should produce own instances.

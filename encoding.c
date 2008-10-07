@@ -1027,6 +1027,55 @@ rb_enc_set_default_external(VALUE encoding)
     default_external = 0;
 }
 
+/* -2 => not yet set, -1 => nil */
+static int default_internal_index = -2;
+static rb_encoding *default_internal;
+
+rb_encoding *
+rb_default_internal_encoding(void)
+{
+    if (!default_internal && default_internal_index >= 0) {
+	default_internal = rb_enc_from_index(default_internal_index);
+    }
+    return default_internal;
+}
+
+VALUE
+rb_enc_default_internal(void)
+{
+    /* Note: These functions cope with default_internal not being set */
+    return rb_enc_from_encoding(rb_default_internal_encoding());
+}
+
+/*
+ * call-seq:
+ *   Encoding.default_internal => enc
+ *
+ * Returns default internal encoding.
+ *
+ * It is initialized by the source internal_encoding or -E option,
+ * and can't be modified after that.
+ */
+static VALUE
+get_default_internal(VALUE klass)
+{
+    return rb_enc_default_internal();
+}
+
+void
+rb_enc_set_default_internal(VALUE encoding)
+{
+    if (default_internal_index != -2)
+	/* Already set */
+	return;
+    default_internal_index = encoding == Qnil ?
+				-1 :rb_enc_to_index(rb_to_encoding(encoding));
+    /* Convert US-ASCII => UTF-8 */
+    if (default_internal_index == rb_usascii_encindex())
+	default_internal_index = rb_utf8_encindex();
+    default_internal = 0;
+}
+
 /*
  * call-seq:
  *   Encoding.locale_charmap => string
@@ -1212,6 +1261,7 @@ Init_Encoding(void)
     rb_define_singleton_method(rb_cEncoding, "_load", enc_load, 1);
 
     rb_define_singleton_method(rb_cEncoding, "default_external", get_default_external, 0);
+    rb_define_singleton_method(rb_cEncoding, "default_internal", get_default_internal, 0);
     rb_define_singleton_method(rb_cEncoding, "locale_charmap", rb_locale_charmap, 0);
 
     list = rb_ary_new2(enc_table.count);

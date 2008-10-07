@@ -168,11 +168,14 @@ rb_encoding *rb_usascii_encoding(void);
 rb_encoding *rb_locale_encoding(void);
 rb_encoding *rb_filesystem_encoding(void);
 rb_encoding *rb_default_external_encoding(void);
+rb_encoding *rb_default_internal_encoding(void);
 int rb_ascii8bit_encindex(void);
 int rb_utf8_encindex(void);
 int rb_usascii_encindex(void);
 VALUE rb_enc_default_external(void);
+VALUE rb_enc_default_internal(void);
 void rb_enc_set_default_external(VALUE encoding);
+void rb_enc_set_default_internal(VALUE encoding);
 VALUE rb_locale_charmap(VALUE klass);
 long rb_memsearch(const void*,long,const void*,long,rb_encoding*);
 

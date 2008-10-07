@@ -86,7 +86,7 @@ struct cmdline_options {
 	    VALUE name;
 	    int index;
 	} enc;
-    } src, ext;
+    } src, ext, intern;
     VALUE req_list;
 };
 
@@ -855,6 +855,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		ruby_each_words(s, disable_option, &opt->disable);
 	    }
 	    else if (strncmp("encoding", s, n = 8) == 0 && (!s[n] || s[n] == '=')) {
+		char *p;
 		s += n;
 		if (!*s++) {
 		  next_encoding:
@@ -863,7 +864,15 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		    }
 		}
 	      encoding:
-		opt->ext.enc.name = rb_str_new2(s);
+		p = strchr(s, ':');
+		if (p) {
+		    if (p > s)
+			opt->ext.enc.name = rb_str_new(s, p-s);
+		    if (*++p)
+			opt->intern.enc.name = rb_str_new2(p);
+		}
+		else    
+		    opt->ext.enc.name = rb_str_new2(s);
 	    }
 	    else if (strcmp("version", s) == 0)
 		opt->version = 1;
@@ -966,6 +975,7 @@ process_options(VALUE arg)
 	rb_safe_level() == 0 && (s = getenv("RUBYOPT"))) {
 	VALUE src_enc_name = opt->src.enc.name;
 	VALUE ext_enc_name = opt->ext.enc.name;
+	VALUE int_enc_name = opt->intern.enc.name;
 
 	while (ISSPACE(*s))
 	    s++;
@@ -1005,6 +1015,8 @@ process_options(VALUE arg)
 	    opt->src.enc.name = src_enc_name;
 	if (ext_enc_name)
 	    opt->ext.enc.name = ext_enc_name;
+	if (int_enc_name)
+	    opt->intern.enc.name = int_enc_name;
     }
 
     if (opt->version) {
@@ -1073,6 +1085,9 @@ process_options(VALUE arg)
     if (opt->ext.enc.name != 0) {
 	opt->ext.enc.index = opt_enc_index(opt->ext.enc.name);
     }
+    if (opt->intern.enc.name != 0) {
+	opt->intern.enc.index = opt_enc_index(opt->intern.enc.name);
+    }
     if (opt->src.enc.name != 0) {
 	opt->src.enc.index = opt_enc_index(opt->src.enc.name);
 	src_encoding_index = opt->src.enc.index;
@@ -1084,6 +1099,11 @@ process_options(VALUE arg)
 	enc = lenc;
     }
     rb_enc_set_default_external(rb_enc_from_encoding(enc));
+    if (opt->intern.enc.index >= 0) {
+	enc = rb_enc_from_index(opt->intern.enc.index);
+	rb_enc_set_default_internal(rb_enc_from_encoding(enc));
+	opt->intern.enc.index = -1;
+    }
 
     rb_set_safe_level_force(safe);
     if (opt->e_script) {
@@ -1104,6 +1124,15 @@ process_options(VALUE arg)
 	}
 	tree = load_file(parser, opt->script, 1, opt);
     }
+
+    if (opt->intern.enc.index >= 0) {
+	/* Set in the shebang line */
+	enc = rb_enc_from_index(opt->intern.enc.index);
+	rb_enc_set_default_internal(rb_enc_from_encoding(enc));
+    }
+    else
+	/* Freeze default_internal */
+	rb_enc_set_default_internal(Qnil);
 
     if (!tree) return Qfalse;
 
@@ -1175,6 +1204,7 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 	char *p;
 	int no_src_enc = !opt->src.enc.name;
 	int no_ext_enc = !opt->ext.enc.name;
+	int no_int_enc = !opt->intern.enc.name;
 
 	enc = rb_usascii_encoding();
 	rb_funcall(f, rb_intern("set_encoding"), 1, rb_enc_from_encoding(enc));
@@ -1260,6 +1290,9 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 	    }
 	    if (no_ext_enc && opt->ext.enc.name) {
 		opt->ext.enc.index = opt_enc_index(opt->ext.enc.name);
+	    }
+	    if (no_int_enc && opt->intern.enc.name) {
+		opt->intern.enc.index = opt_enc_index(opt->intern.enc.name);
 	    }
 	}
 	else if (!NIL_P(c)) {
@@ -1511,6 +1544,7 @@ ruby_process_options(int argc, char **argv)
     args.argv = argv;
     args.opt = cmdline_options_init(&opt);
     opt.ext.enc.index = -1;
+    opt.intern.enc.index = -1;
     tree = (NODE *)rb_vm_call_cfunc(rb_vm_top_self(),
 				    process_options, (VALUE)&args,
 				    0, rb_progname);

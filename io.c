@@ -2177,10 +2177,8 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	}
 	newline = (unsigned char)rsptr[rslen - 1];
 
-        if (fptr->encs.enc2)
-            enc = fptr->encs.enc;
-        else
-            enc = io_input_encoding(fptr);
+	/* MS - Optimisation */
+        enc = io_read_encoding(fptr);
 	while ((c = appendline(fptr, newline, &str, &limit)) != EOF) {
             const char *s, *p, *pp, *e;
 
@@ -3740,52 +3738,87 @@ rb_io_oflags_modestr(int oflags)
     return NULL;		/* not reached */
 }
 
+/*
+ * Convert external/internal encodings to enc/enc2
+ * NULL => use default encoding
+ * Qnil => no encoding specified (internal only)
+ */
+static void
+rb_io_ext_int_to_encs(rb_encoding *ext, rb_encoding *intern, rb_encoding **enc, rb_encoding **enc2)
+{
+    int default_ext = 0;
+
+    if (ext == NULL) {
+	ext = rb_default_external_encoding();
+	default_ext = 1;
+    }
+    if (intern == NULL && ext != rb_ascii8bit_encoding())
+	/* If external is ASCII-8BIT, no default transcoding */
+	intern = rb_default_internal_encoding();
+    if (intern == NULL || intern == (rb_encoding *)Qnil || intern == ext) {
+	/* No internal encoding => use external + no transcoding */
+	*enc = default_ext ? NULL : ext;
+	*enc2 = NULL;
+    }
+    else {
+	*enc = intern;
+	*enc2 = ext;
+    }
+}
+
 static void
 parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p)
 {
-    const char *p0, *p1;
-    char *enc2name;
+    const char *p;
+    char encname[ENCODING_MAXNAMELEN+1];
     int idx, idx2;
+    rb_encoding *ext_enc, *int_enc;
 
-    /* parse estr as "enc" or "enc2:enc" */
+    /* parse estr as "enc" or "enc2:enc" or "enc:-" */
 
-    *enc_p = 0;
-    *enc2_p = 0;
-
-    p0 = strrchr(estr, ':');
-    if (!p0) p1 = estr;
-    else     p1 = p0 + 1;
-    idx = rb_enc_find_index(p1);
-    if (idx >= 0) {
-	*enc_p = rb_enc_from_index(idx);
+    p = strrchr(estr, ':');
+    if (p) {
+	int len = (p++) - estr;
+	if (len == 0 || len > ENCODING_MAXNAMELEN)
+	    idx = -1;
+	else {
+	    memcpy(encname, estr, len);
+	    encname[len] = '\0';
+	    estr = encname;
+	    idx = rb_enc_find_index(encname);
+	}
     }
+    else
+	idx = rb_enc_find_index(estr);
+
+    if (idx >= 0)
+	ext_enc = rb_enc_from_index(idx);
     else {
-	rb_warn("Unsupported encoding %s ignored", p1);
+	if (idx != -2)
+	    rb_warn("Unsupported encoding %s ignored", estr);
+	ext_enc = NULL;
     }
 
-    if (*enc_p && p0) {
-	int n = p0 - estr;
-	if (n > ENCODING_MAXNAMELEN) {
-	    idx2 = -1;
+    int_enc = NULL;
+    if (p) {
+	if (*p == '-' && *(p+1) == '\0') {
+	    /* Special case - "-" => no transcoding */
+	    int_enc = (rb_encoding *)Qnil;
 	}
 	else {
-	    enc2name = ALLOCA_N(char, n+1);
-	    memcpy(enc2name, estr, n);
-	    enc2name[n] = '\0';
-	    estr = enc2name;
-	    idx2 = rb_enc_find_index(enc2name);
-	}
-	if (idx2 < 0) {
-	    rb_warn("Unsupported encoding %.*s ignored", n, estr);
-	}
-	else if (idx2 == idx) {
-	    rb_warn("Ignoring internal encoding %.*s: it is identical to external encoding %s",
-		    n, estr, p1);
-	}
-	else {
-	    *enc2_p = rb_enc_from_index(idx2);
+	    idx2 = rb_enc_find_index(p);
+	    if (idx2 < 0)
+		rb_warn("Unsupported encoding %s ignored", p);
+	    else if (idx2 == idx) {
+		rb_warn("Ignoring internal encoding %s: it is identical to external encoding %s", p, estr);
+		int_enc = (rb_encoding *)Qnil;
+	    }
+	    else
+		int_enc = rb_enc_from_index(idx2);
 	}
     }
+
+    rb_io_ext_int_to_encs(ext_enc, int_enc, enc_p, enc2_p);
 }
 
 static void
@@ -3821,28 +3854,32 @@ io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p)
     }
     if (!NIL_P(extenc)) {
 	rb_encoding *extencoding = rb_to_encoding(extenc);
+	rb_encoding *intencoding = NULL;
         extracted = 1;
-        *enc_p = 0;
-        *enc2_p = 0;
 	if (!NIL_P(encoding)) {
 	    rb_warn("Ignoring encoding parameter '%s': external_encoding is used",
 		    RSTRING_PTR(encoding));
 	}
 	if (!NIL_P(intenc)) {
-	    rb_encoding *intencoding = rb_to_encoding(intenc);
+	    if (!NIL_P(encoding = rb_check_string_type(intenc))) {
+		char *p = StringValueCStr(encoding);
+		if (*p == '-' && *(p+1) == '\0') {
+		    /* Special case - "-" => no transcoding */
+		    intencoding = (rb_encoding *)Qnil;
+		}
+		else
+		    intencoding = rb_to_encoding(intenc);
+	    }
+	    else
+		intencoding = rb_to_encoding(intenc);
 	    if (extencoding == intencoding) {
 		rb_warn("Ignoring internal encoding '%s': it is identical to external encoding '%s'",
 			RSTRING_PTR(rb_inspect(intenc)),
 			RSTRING_PTR(rb_inspect(extenc)));
-	    }
-	    else {
-		*enc_p = intencoding;
-                *enc2_p = extencoding;
+		intencoding = (rb_encoding *)Qnil;
 	    }
 	}
-        else {
-            *enc_p = extencoding;
-        }
+	rb_io_ext_int_to_encs(extencoding, intencoding, enc_p, enc2_p);
     }
     else {
 	if (!NIL_P(intenc)) {
@@ -3882,8 +3919,8 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 
     vmode = *vmode_p;
 
-    enc = NULL;
-    enc2 = NULL;
+    /* Set to defaults */
+    rb_io_ext_int_to_encs(NULL, NULL, &enc, &enc2);
 
     if (NIL_P(vmode)) {
         fmode = FMODE_READABLE;
@@ -4070,8 +4107,8 @@ rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode, convconfig
     rb_io_t *fptr;
     convconfig_t cc;
     if (!convconfig) {
-        cc.enc = NULL;
-        cc.enc2 = NULL;
+	/* Set to default encodings */
+	rb_io_ext_int_to_encs(NULL, NULL, &cc.enc, &cc.enc2);
         cc.ecflags = 0;
         cc.ecopts = Qnil;
         convconfig = &cc;
@@ -4099,8 +4136,8 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
         parse_mode_enc(p+1, &convconfig.enc, &convconfig.enc2);
     }
     else {
-        convconfig.enc = NULL;
-        convconfig.enc2 = NULL;
+	/* Set to default encodings */
+	rb_io_ext_int_to_encs(NULL, NULL, &convconfig.enc, &convconfig.enc2);
         convconfig.ecflags = 0;
         convconfig.ecopts = Qnil;
     }
@@ -6661,29 +6698,40 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 {
     rb_encoding *enc, *enc2;
     int ecflags;
-    VALUE ecopts;
+    VALUE ecopts, tmp;
 
     if (!NIL_P(v2)) {
 	enc2 = rb_to_encoding(v1);
-	enc = rb_to_encoding(v2);
+	tmp = rb_check_string_type(v2);
+	if (!NIL_P(tmp)) {
+	    char *p = StringValueCStr(tmp);
+	    if (*p == '-' && *(p+1) == '\0') {
+		/* Special case - "-" => no transcoding */
+		enc = enc2;
+		enc2 = NULL;
+	    }
+	    else
+		enc = rb_to_encoding(v2);
+	}
+	else
+	    enc = rb_to_encoding(v2);
         ecflags = rb_econv_prepare_opts(opt, &ecopts);
     }
     else {
 	if (NIL_P(v1)) {
-	    enc = NULL;
-	    enc2 = NULL;
+	    /* Set to default encodings */
+	    rb_io_ext_int_to_encs(NULL, NULL, &enc, &enc2);
             ecflags = 0;
             ecopts = Qnil;
 	}
 	else {
-	    VALUE tmp = rb_check_string_type(v1);
+	    tmp = rb_check_string_type(v1);
 	    if (!NIL_P(tmp)) {
                 parse_mode_enc(StringValueCStr(tmp), &enc, &enc2);
                 ecflags = rb_econv_prepare_opts(opt, &ecopts);
 	    }
 	    else {
-		enc = rb_to_encoding(v1);
-		enc2 = NULL;
+		rb_io_ext_int_to_encs(rb_to_encoding(v1), NULL, &enc, &enc2);
                 ecflags = 0;
                 ecopts = Qnil;
 	    }
