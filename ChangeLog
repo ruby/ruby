@@ -1,3 +1,8 @@
+Wed Oct  8 00:09:13 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb (today,now): should produce own instances.
+	  [ruby-talk:317020]
+
 Mon Oct  6 15:26:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (gc_mark_children): ignores T_ZOMBIE.
