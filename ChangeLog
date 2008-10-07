@@ -1,3 +1,8 @@
+Tue Oct  7 16:35:41 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json/lib/json/pure/generator.rb (utf8_to_json):
+	  downcase the result of Unicode escape.
+
 Mon Oct  6 16:44:52 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb (CGI::QueryExtension::initialize_query): fix the

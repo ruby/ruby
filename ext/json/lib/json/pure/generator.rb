@@ -52,7 +52,7 @@ module JSON
                   )/nx) { |c|
       c.size == 1 and raise GeneratorError, "invalid utf8 byte: '#{c}'"
       c = c.unpack("U*")[0]
-      c > 0xFFFF ? ('\uD%03X\uD%03X' % [0x7C0+c/1024, 0xC00+c%1024]) : ('\u%04X'%c)
+      c > 0xFFFF ? ('\ud%03x\ud%03x' % [0x7C0+c/1024, 0xC00+c%1024]) : ('\u%04x'%c)
     }
     string
   end
