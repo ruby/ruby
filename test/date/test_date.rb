@@ -36,6 +36,11 @@ class TestDate < Test::Unit::TestCase
     dt = DateTimeSub.new
 
     assert_instance_of(DateSub, d)
+    assert_instance_of(DateTimeSub, dt)
+
+    assert_instance_of(DateSub, DateSub.today)
+    assert_instance_of(DateTimeSub, DateTimeSub.now)
+
     assert_equal('#<DateSub: -1/2,0,2299161>', d.inspect)
     assert_equal('-4712-01-01', d.to_s)
     assert_equal('-4712-01-01T00:00:00+00:00', dt.to_s)
