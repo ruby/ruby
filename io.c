@@ -1760,10 +1760,10 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
  *  Note that readpartial behaves similar to sysread.
  *  The differences are:
  *  * If the buffer is not empty, read from the buffer instead of "sysread for buffered IO (IOError)".
- *  * It doesn't cause Errno::EAGAIN and Errno::EINTR.  When readpartial meets EAGAIN and EINTR by read system call, readpartial retry the system call.
+ *  * It doesn't cause Errno::EWOULDBLOCK and Errno::EINTR.  When readpartial meets EWOULDBLOCK and EINTR by read system call, readpartial retry the system call.
  *
  *  The later means that readpartial is nonblocking-flag insensitive.
- *  It blocks on the situation IO#sysread causes Errno::EAGAIN as if the fd is blocking mode.
+ *  It blocks on the situation IO#sysread causes Errno::EWOULDBLOCK as if the fd is blocking mode.
  *
  */
 
@@ -1792,7 +1792,7 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
  *  it must reference a String, which will receive the data.
  *
  *  read_nonblock just calls read(2).
- *  It causes all errors read(2) causes: EAGAIN, EINTR, etc.
+ *  It causes all errors read(2) causes: Errno::EWOULDBLOCK, Errno::EINTR, etc.
  *  The caller should care such errors.
  *
  *  read_nonblock causes EOFError on EOF.
@@ -1826,7 +1826,7 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
  *  It returns the number of bytes written.
  *
  *  write_nonblock just calls write(2).
- *  It causes all errors write(2) causes: EAGAIN, EINTR, etc.
+ *  It causes all errors write(2) causes: Errno::EWOULDBLOCK, Errno::EINTR, etc.
  *  The result may also be smaller than string.length (partial write).
  *  The caller should care such errors and partial write.
  *
