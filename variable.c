@@ -143,6 +143,7 @@ classname(VALUE klass)
     if (RCLASS_IV_TBL(klass)) {
 	if (!st_lookup(RCLASS_IV_TBL(klass), classpath, &path)) {
 	    ID classid;
+	    st_data_t n;
 
 	    CONST_ID(classid, "__classid__");
 
@@ -152,7 +153,8 @@ classname(VALUE klass)
 	    path = rb_str_dup(rb_id2str(SYM2ID(path)));
 	    OBJ_FREEZE(path);
 	    st_insert(RCLASS_IV_TBL(klass), classpath, path);
-	    st_delete(RCLASS_IV_TBL(klass), (st_data_t*)&classid, 0);
+	    n = classid;
+	    st_delete(RCLASS_IV_TBL(klass), &n, 0);
 	}
 	if (TYPE(path) != T_STRING) {
 	    rb_bug("class path is not set properly");
@@ -1220,7 +1222,8 @@ VALUE
 rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 {
     VALUE val = Qnil;
-    ID id = rb_to_id(name);
+    const ID id = rb_to_id(name);
+    st_data_t n, v;
     struct st_table *iv_index_tbl;
     st_data_t index;
 
@@ -1245,8 +1248,9 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 	break;
       case T_CLASS:
       case T_MODULE:
-	if (RCLASS_IV_TBL(obj) && st_delete(RCLASS_IV_TBL(obj), (st_data_t*)&id, &val)) {
-	    return val;
+	n = id;
+	if (RCLASS_IV_TBL(obj) && st_delete(RCLASS_IV_TBL(obj), &n, &v)) {
+	    return (VALUE)v;
 	}
 	break;
       default:
@@ -1364,18 +1368,17 @@ rb_autoload(VALUE mod, ID id, const char *file)
 static NODE*
 autoload_delete(VALUE mod, ID id)
 {
-    VALUE val;
-    st_data_t load = 0;
+    st_data_t val, load = 0, n = id;
 
-    st_delete(RCLASS_IV_TBL(mod), (st_data_t*)&id, 0);
+    st_delete(RCLASS_IV_TBL(mod), &n, 0);
     if (st_lookup(RCLASS_IV_TBL(mod), autoload, &val)) {
-	struct st_table *tbl = check_autoload_table(val);
+	struct st_table *tbl = check_autoload_table((VALUE)val);
 
-	st_delete(tbl, (st_data_t*)&id, &load);
+	st_delete(tbl, &n, &load);
 
 	if (tbl->num_entries == 0) {
-	    id = autoload;
-	    st_delete(RCLASS_IV_TBL(mod), (st_data_t*)&id, &val);
+	    n = autoload;
+	    st_delete(RCLASS_IV_TBL(mod), &n, &val);
 	}
     }
 
@@ -1397,12 +1400,12 @@ rb_autoload_load(VALUE klass, ID id)
 static VALUE
 autoload_file(VALUE mod, ID id)
 {
-    VALUE val, file;
+    VALUE file;
     struct st_table *tbl;
-    st_data_t load;
+    st_data_t val, load, n = id;
 
     if (!st_lookup(RCLASS_IV_TBL(mod), autoload, &val) ||
-	!(tbl = check_autoload_table(val)) || !st_lookup(tbl, id, &load)) {
+	!(tbl = check_autoload_table((VALUE)val)) || !st_lookup(tbl, n, &load)) {
 	return Qnil;
     }
     file = ((NODE *)load)->nd_lit;
@@ -1415,10 +1418,10 @@ autoload_file(VALUE mod, ID id)
     }
 
     /* already loaded but not defined */
-    st_delete(tbl, (st_data_t*)&id, 0);
+    st_delete(tbl, &n, 0);
     if (!tbl->num_entries) {
-	id = autoload;
-	st_delete(RCLASS_IV_TBL(mod), (st_data_t*)&id, &val);
+	n = autoload;
+	st_delete(RCLASS_IV_TBL(mod), &n, &val);
     }
     return Qnil;
 }
@@ -1497,8 +1500,9 @@ rb_const_get_at(VALUE klass, ID id)
 VALUE
 rb_mod_remove_const(VALUE mod, VALUE name)
 {
-    ID id = rb_to_id(name);
+    const ID id = rb_to_id(name);
     VALUE val;
+    st_data_t v, n = id;
 
     rb_vm_change_state();
 
@@ -1509,7 +1513,8 @@ rb_mod_remove_const(VALUE mod, VALUE name)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove constant");
     if (OBJ_FROZEN(mod)) rb_error_frozen("class/module");
 
-    if (RCLASS_IV_TBL(mod) && st_delete(RCLASS_IV_TBL(mod), (st_data_t*)&id, &val)) {
+    if (RCLASS_IV_TBL(mod) && st_delete(RCLASS_IV_TBL(mod), &n, &v)) {
+	val = (VALUE)v;
 	if (val == Qundef) {
 	    autoload_delete(mod, id);
 	    val = Qnil;
@@ -1916,8 +1921,8 @@ rb_mod_class_variables(VALUE obj)
 VALUE
 rb_mod_remove_cvar(VALUE mod, VALUE name)
 {
-    ID id = rb_to_id(name);
-    VALUE val;
+    const ID id = rb_to_id(name);
+    st_data_t val, n;
 
     if (!rb_is_class_id(id)) {
 	rb_name_error(id, "wrong class variable name %s", rb_id2name(id));
@@ -1926,8 +1931,8 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove class variable");
     if (OBJ_FROZEN(mod)) rb_error_frozen("class/module");
 
-    if (RCLASS_IV_TBL(mod) && st_delete(RCLASS_IV_TBL(mod), (st_data_t*)&id, &val)) {
-	return val;
+    if (RCLASS_IV_TBL(mod) && st_delete(RCLASS_IV_TBL(mod), &n, &val)) {
+	return (VALUE)val;
     }
     if (rb_cvar_defined(mod, id)) {
 	rb_name_error(id, "cannot remove %s for %s",
