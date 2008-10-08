@@ -149,14 +149,16 @@ classname(klass)
     if (!klass) klass = rb_cObject;
     if (ROBJECT(klass)->iv_tbl) {
 	if (!st_lookup(ROBJECT(klass)->iv_tbl, classpath, &path)) {
-	    ID classid = rb_intern("__classid__");
+	    const ID classid = rb_intern("__classid__");
+	    st_data_t n;
 
 	    if (!st_lookup(ROBJECT(klass)->iv_tbl, classid, &path)) {
 		return find_class_path(klass);
 	    }
 	    path = rb_str_new2(rb_id2name(SYM2ID(path)));
 	    st_insert(ROBJECT(klass)->iv_tbl, classpath, path);
-	    st_delete(RCLASS(klass)->iv_tbl, (st_data_t*)&classid, 0);
+	    n = classid;
+	    st_delete(RCLASS(klass)->iv_tbl, &n, 0);
 	}
 	if (TYPE(path) != T_STRING) {
 	    rb_bug("class path is not set properly");
@@ -1186,7 +1188,8 @@ rb_obj_remove_instance_variable(obj, name)
     VALUE obj, name;
 {
     VALUE val = Qnil;
-    ID id = rb_to_id(name);
+    const ID id = rb_to_id(name);
+    st_data_t n = id;
 
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
@@ -1199,7 +1202,7 @@ rb_obj_remove_instance_variable(obj, name)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
-	if (ROBJECT(obj)->iv_tbl && st_delete(ROBJECT(obj)->iv_tbl, (st_data_t*)&id, &val)) {
+	if (ROBJECT(obj)->iv_tbl && st_delete(ROBJECT(obj)->iv_tbl, &n, &val)) {
 	    return val;
 	}
 	break;
@@ -1328,18 +1331,16 @@ autoload_delete(mod, id)
     VALUE mod;
     ID id;
 {
-    VALUE val;
-    st_data_t load = 0;
+    st_data_t val, load = 0, n = id;
 
-    st_delete(RCLASS(mod)->iv_tbl, (st_data_t*)&id, 0);
+    st_delete(RCLASS(mod)->iv_tbl, &n, 0);
     if (st_lookup(RCLASS(mod)->iv_tbl, autoload, &val)) {
-	struct st_table *tbl = check_autoload_table(val);
+	struct st_table *tbl = check_autoload_table((VALUE)val);
 
-	st_delete(tbl, (st_data_t*)&id, &load);
-
+	st_delete(tbl, &n, &load);
 	if (tbl->num_entries == 0) {
-	    id = autoload;
-	    st_delete(RCLASS(mod)->iv_tbl, (st_data_t*)&id, &val);
+	    n = autoload;
+	    st_delete(RCLASS(mod)->iv_tbl, &n, &val);
 	}
     }
 
@@ -1365,12 +1366,12 @@ autoload_file(mod, id)
     VALUE mod;
     ID id;
 {
-    VALUE val, file;
+    VALUE file;
     struct st_table *tbl;
-    st_data_t load;
+    st_data_t val, load, n = id;
 
     if (!st_lookup(RCLASS(mod)->iv_tbl, autoload, &val) ||
-	!(tbl = check_autoload_table(val)) || !st_lookup(tbl, id, &load)) {
+	!(tbl = check_autoload_table((VALUE)val)) || !st_lookup(tbl, n, &load)) {
 	return Qnil;
     }
     file = ((NODE *)load)->nd_lit;
@@ -1383,10 +1384,10 @@ autoload_file(mod, id)
     }
 
     /* already loaded but not defined */
-    st_delete(tbl, (st_data_t*)&id, 0);
+    st_delete(tbl, &n, 0);
     if (!tbl->num_entries) {
-	id = autoload;
-	st_delete(RCLASS(mod)->iv_tbl, (st_data_t*)&id, &val);
+	n = autoload;
+	st_delete(RCLASS(mod)->iv_tbl, &n, &val);
     }
     return Qnil;
 }
@@ -1477,8 +1478,9 @@ VALUE
 rb_mod_remove_const(mod, name)
     VALUE mod, name;
 {
-    ID id = rb_to_id(name);
+    const ID id = rb_to_id(name);
     VALUE val;
+    st_data_t v, n = id;
 
     if (!rb_is_const_id(id)) {
 	rb_name_error(id, "`%s' is not allowed as a constant name", rb_id2name(id));
@@ -1487,7 +1489,8 @@ rb_mod_remove_const(mod, name)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove constant");
     if (OBJ_FROZEN(mod)) rb_error_frozen("class/module");
 
-    if (RCLASS(mod)->iv_tbl && st_delete(ROBJECT(mod)->iv_tbl, (st_data_t*)&id, &val)) {
+    if (RCLASS(mod)->iv_tbl && st_delete(ROBJECT(mod)->iv_tbl, &n, &v)) {
+	val = (VALUE)v;
 	if (val == Qundef) {
 	    autoload_delete(mod, id);
 	    val = Qnil;
@@ -1927,8 +1930,8 @@ VALUE
 rb_mod_remove_cvar(mod, name)
     VALUE mod, name;
 {
-    ID id = rb_to_id(name);
-    VALUE val;
+    const ID id = rb_to_id(name);
+    st_data_t val, n;
 
     if (!rb_is_class_id(id)) {
 	rb_name_error(id, "wrong class variable name %s", rb_id2name(id));
@@ -1937,8 +1940,8 @@ rb_mod_remove_cvar(mod, name)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove class variable");
     if (OBJ_FROZEN(mod)) rb_error_frozen("class/module");
 
-    if (RCLASS(mod)->iv_tbl && st_delete(ROBJECT(mod)->iv_tbl, (st_data_t*)&id, &val)) {
-	return val;
+    if (RCLASS(mod)->iv_tbl && st_delete(ROBJECT(mod)->iv_tbl, &n, &val)) {
+	return (VALUE)val;
     }
     if (rb_cvar_defined(mod, id)) {
 	rb_name_error(id, "cannot remove %s for %s",
