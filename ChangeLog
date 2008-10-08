@@ -1,3 +1,8 @@
+Wed Oct  8 17:02:21 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json/lib/json/pure/generator.rb (utf8_to_json):
+	  process each unpacked Unicode character.
+
 Wed Oct  8 15:00:22 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/lib/json/pure/parser.rb
