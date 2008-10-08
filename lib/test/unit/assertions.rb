@@ -5,7 +5,6 @@
 ############################################################
 
 require 'mini/test'
-require 'test/unit/deprecate'
 
 module Test; end
 module Test::Unit # patch up bastards that that extend improperly.
@@ -32,28 +31,40 @@ module Test::Unit # patch up bastards that that extend improperly.
 end
 
 module Test::Unit
-  module Assertions # deprecations
-    tu_deprecate :assert_nothing_thrown, :assert_nothing_raised # 2009-06-01
-    tu_deprecate :assert_raise,          :assert_raises         # 2010-06-01
-    tu_deprecate :assert_not_equal,      :refute_equal          # 2009-06-01
-    tu_deprecate :assert_no_match,       :refute_match          # 2009-06-01
-    tu_deprecate :assert_not_nil,        :refute_nil            # 2009-06-01
-    tu_deprecate :assert_not_same,       :refute_same           # 2009-06-01
-
-    def assert_nothing_raised _ = :ignored, msg = nil           # 2009-06-01
-      self.class.tu_deprecation_warning :assert_nothing_raised
+  module Assertions
+    def assert_nothing_raised(*exp)
+      msg = (Module === exp.last) ? "" : exp.pop
+      noexc = exp.select {|e| not (Module === e and Exception >= e)}
+      unless noexc.empty?
+        noexc = *noexc if noexc.size == 1
+        raise TypeError, "Should expect a class of exception, #{noexc.inspect}"
+      end
       self._assertions += 1
-      yield
-    rescue => e
-      raise Mini::Assertion, exception_details(e, "Exception raised:")
+      begin
+        yield
+      rescue Exception => e
+        exp.include?(e.class) or raise
+        raise(Mini::Assertion, exception_details(e, "#{msg}#{msg.empty? ? '' : ' '}Exception raised:"))
+      end
     end
 
-    def build_message(user_message, template_message, *args)    # 2009-06-01
-      self.class.tu_deprecation_warning :build_message
+    def build_message(user_message, template_message, *args)
       user_message ||= ''
       user_message += ' ' unless user_message.empty?
       msg = template_message.split(/<\?>/).zip(args.map { |o| o.inspect })
       user_message + msg.join
+    end
+
+    alias assert_nothing_thrown assert_nothing_raised
+    alias assert_raise          assert_raises
+    alias assert_not_equal      refute_equal
+    alias assert_no_match       refute_match
+    alias assert_not_nil        refute_nil
+    alias assert_not_same       refute_same
+
+    private
+    def _wrap_assertion
+      yield
     end
   end
 end

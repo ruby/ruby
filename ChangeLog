@@ -1,3 +1,9 @@
+Wed Oct  8 11:56:15 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb: assert_nothing_thrown, 
+	  assert_raise, assert_not_equal, assert_no_match, assert_not_nil,
+	  assert_not_same are coming back as alias.
+
 Wed Oct  8 11:18:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (autoload_delete, autoload_file): should not delete
