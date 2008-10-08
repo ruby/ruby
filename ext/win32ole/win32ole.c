@@ -118,7 +118,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.3.3"
+#define WIN32OLE_VERSION "1.3.4"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -961,7 +961,10 @@ ole_init_cp()
 {
     UINT cp;
     rb_encoding *encdef;
-    encdef = rb_default_external_encoding();
+    encdef = rb_default_internal_encoding();
+    if (!encdef) {
+	encdef = rb_default_external_encoding();
+    }
     cp = ole_encoding2cp(encdef);
     if (code_page_installed(cp)) {
         cWIN32OLE_cp = cp;
@@ -2908,9 +2911,14 @@ code_page_installed(UINT cp)
  *  call-seq:
  *     WIN32OLE.codepage = CP
  * 
- *  Sets current codepage.
+ *  Sets current codepage. 
+ *  The WIN32OLE.codepage is initialized according to 
+ *  Encoding.default_internal.
+ *  If Encoding.default_internal is nil then WIN32OLE.codepage
+ *  is initialized according to Encoding.default_external.
+ *
  *     WIN32OLE.codepage = WIN32OLE::CP_UTF8
- *     WIN32OLE.codepage = 20932
+ *     WIN32OLE.codepage = 65001
  */
 static VALUE
 fole_s_set_code_page(VALUE self, VALUE vcp)
