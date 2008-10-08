@@ -1,3 +1,8 @@
+Thu Oct  9 08:47:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* thread.c (rb_thread_wait_fd_rw): should not block by select if
+	  there's only one thread living.  fixed [ruby-dev:36646].
+
 Wed Oct  8 20:59:52 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_init_cp): initialize WIN32OLE.codepage

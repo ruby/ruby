@@ -2235,6 +2235,7 @@ rb_thread_wait_fd_rw(int fd, int read)
     if (fd < 0) {
 	rb_raise(rb_eIOError, "closed stream");
     }
+    if (rb_thread_alone()) return;
     while (result <= 0) {
 	rb_fdset_t set;
 	rb_fd_init(&set);
