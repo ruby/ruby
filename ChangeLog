@@ -1,3 +1,8 @@
+Wed Oct  8 15:00:22 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json/lib/json/pure/parser.rb
+	  (JSON::Pure::Parser#parse_string): force_encoding("UTF-8").
+
 Wed Oct  8 11:56:15 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb: assert_nothing_thrown, 

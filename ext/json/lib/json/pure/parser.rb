@@ -146,7 +146,7 @@ module JSON
               raise JSON::ParserError, "partial character in source" if stack
               res.pack("U*")
             end
-          end
+          end.force_encoding("UTF-8")
         else
           UNPARSED
         end
