@@ -1,3 +1,9 @@
+Wed Oct  8 11:18:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (autoload_delete, autoload_file): should not delete
+	  autoload table, since it may be shared with duplicated modules.
+	  [ruby-core:19181]
+
 Wed Oct  8 00:09:13 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (today,now): should produce own instances.
