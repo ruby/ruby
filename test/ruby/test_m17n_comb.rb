@@ -322,6 +322,7 @@ class TestM17NComb < Test::Unit::TestCase
           (s1.ascii_only? && s2.ascii_only? or
            s1.encoding == s2.encoding) then
         assert(s1 == s2, desc_eq)
+        assert(s1.eql?(s2), desc_eq)
         assert(!(s1 != s2))
         assert_equal(0, s1 <=> s2)
         assert(s1.eql?(s2), desc_eq)
