@@ -1,3 +1,9 @@
+Wed Oct  8 11:18:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (autoload_delete, autoload_file): should not delete
+	  autoload table, since it may be shared with duplicated modules.
+	  [ruby-core:19181]
+
 Wed Oct  8 02:38:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* encoding.c (rb_default_internal_encoding): merged a patch from

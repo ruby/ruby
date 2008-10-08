@@ -1374,12 +1374,8 @@ autoload_delete(VALUE mod, ID id)
 	st_delete(tbl, (st_data_t*)&id, &load);
 
 	if (tbl->num_entries == 0) {
-	    DATA_PTR(val) = 0;
-	    st_free_table(tbl);
 	    id = autoload;
-	    if (st_delete(RCLASS_IV_TBL(mod), (st_data_t*)&id, &val)) {
-		rb_gc_force_recycle(val);
-	    }
+	    st_delete(RCLASS_IV_TBL(mod), (st_data_t*)&id, &val);
 	}
     }
 
@@ -1421,12 +1417,8 @@ autoload_file(VALUE mod, ID id)
     /* already loaded but not defined */
     st_delete(tbl, (st_data_t*)&id, 0);
     if (!tbl->num_entries) {
-	DATA_PTR(val) = 0;
-	st_free_table(tbl);
 	id = autoload;
-	if (st_delete(RCLASS_IV_TBL(mod), (st_data_t*)&id, &val)) {
-	    rb_gc_force_recycle(val);
-	}
+	st_delete(RCLASS_IV_TBL(mod), (st_data_t*)&id, &val);
     }
     return Qnil;
 }
