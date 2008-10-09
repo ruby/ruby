@@ -1,3 +1,8 @@
+Fri Oct 10 00:21:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (ParseError.filter_backtrace): removes internal
+	  backtrace.
+
 Fri Oct 10 00:11:16 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* transcode.c (rb_econv_add_coverter): remove unnecessary NULL check.

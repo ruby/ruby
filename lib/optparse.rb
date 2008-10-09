@@ -301,7 +301,8 @@ class OptionParser
     end
 
     def self.incompatible_argument_styles(arg, t)
-      raise ArgumentError, "#{arg}: incompatible argument styles\n  #{self}, #{t}"
+      raise(ArgumentError, "#{arg}: incompatible argument styles\n  #{self}, #{t}",
+            ParseError.filter_backtrace(caller(2)))
     end
 
     def self.pattern
@@ -529,7 +530,8 @@ class OptionParser
     #
     def accept(t, pat = /.*/nm, &block)
       if pat
-        pat.respond_to?(:match) or raise TypeError, "has no `match'"
+        pat.respond_to?(:match) or
+          raise TypeError, "has no `match'", ParseError.filter_backtrace(caller(2))
       else
         pat = t if t.respond_to?(:match)
       end
@@ -987,12 +989,8 @@ class OptionParser
   #
   def notwice(obj, prv, msg)
     unless !prv or prv == obj
-      begin
-        raise ArgumentError, "argument #{msg} given twice: #{obj}"
-      rescue
-        $@[0, 2] = nil
-        raise
-      end
+      raise(ArgumentError, "argument #{msg} given twice: #{obj}",
+            ParseError.filter_backtrace(caller(2)))
     end
     obj
   end
@@ -1097,7 +1095,7 @@ class OptionParser
         end
         o.each {|pat, *v| pattern[pat] = v.fetch(0) {pat}}
       when Module
-        raise ArgumentError, "unsupported argument type: #{o}"
+        raise ArgumentError, "unsupported argument type: #{o}", ParseError.filter_backtrace(caller(4))
       when *ArgumentStyle.keys
         style = notwice(ArgumentStyle[o], style, 'style')
       when /^--no-([^\[\]=\s]*)(.+)?/
@@ -1162,7 +1160,9 @@ class OptionParser
       s = (style || default_style).new(pattern || default_pattern,
                                        conv, sdesc, ldesc, arg, desc, block)
     elsif !block
-      raise ArgumentError, "no switch given" if style or pattern
+      if style or pattern
+        raise ArgumentError, "no switch given", ParseError.filter_backtrace(caller)
+      end
       s = desc
     else
       short << pattern
@@ -1605,11 +1605,15 @@ class OptionParser
       argv
     end
 
-    def set_backtrace(array)
+    def self.filter_backtrace(array)
       unless $DEBUG
         array.delete_if(&%r"\A#{Regexp.quote(__FILE__)}:"o.method(:=~))
       end
-      super(array)
+      array
+    end
+
+    def set_backtrace(array)
+      super(self.class.filter_backtrace(array))
     end
 
     def set_option(opt, eq)
