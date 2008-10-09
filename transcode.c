@@ -1800,8 +1800,6 @@ rb_econv_add_converter(rb_econv_t *ec, const char *sname, const char *dname, int
         return -1;
 
     tr = load_transcoder_entry(entry);
-    if (!entry)
-        return -1;
 
     return rb_econv_add_transcoder_at(ec, tr, n);
 }

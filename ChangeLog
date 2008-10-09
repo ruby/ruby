@@ -1,3 +1,7 @@
+Fri Oct 10 00:11:16 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* transcode.c (rb_econv_add_coverter): remove unnecessary NULL check.
+
 Thu Oct  9 23:53:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-style.el (ruby-style-c-mode): buffer may not have file
