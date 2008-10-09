@@ -1,3 +1,8 @@
+Fri Oct 10 00:21:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (ParseError.filter_backtrace): removes internal
+	  backtrace.
+
 Thu Oct  9 23:53:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-style.el (ruby-style-c-mode): buffer may not have file
