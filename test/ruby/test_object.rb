@@ -170,6 +170,13 @@ class TestObject < Test::Unit::TestCase
     assert_raise(NameError) { o.instance_variable_defined?(:foo) }
   end
 
+  def test_remove_instance_variable
+    o = Object.new
+    o.instance_eval { @foo = :foo }
+    o.instance_eval { remove_instance_variable(:@foo) }
+    assert_equal(false, o.instance_variable_defined?(:@foo))
+  end
+
   def test_convert_type
     o = Object.new
     def o.to_s; 1; end

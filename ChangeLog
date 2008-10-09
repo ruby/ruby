@@ -1,3 +1,11 @@
+Thu Oct  9 22:13:58 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_module.rb (test_remove_class_variable): add a test
+	  for Class#remove_class_variable.
+
+	* test/ruby/test_object.rb (test_remove_instance_variable): add a test
+	  for Object#remove_instance_variable.
+
 Thu Oct  9 22:04:38 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* variable.c (rb_mod_remove_cvar): fix r19711.

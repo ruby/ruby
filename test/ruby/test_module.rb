@@ -210,14 +210,6 @@ class TestModule < Test::Unit::TestCase
     assert(Other.constants.include?(:CLASS_EVAL))
   end
 
-  def test_class_variable_set
-    # TODO
-  end
-
-  def test_class_variable_get
-    # TODO
-  end
-
   def test_const_defined?
     assert(Math.const_defined?(:PI))
     assert(Math.const_defined?("PI"))
@@ -445,7 +437,7 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c1.const_defined?(:foo) }
   end
 
-  def test_class_variable_get2
+  def test_class_variable_get
     c = Class.new
     c.class_eval { @@foo = :foo }
     assert_equal(:foo, c.class_variable_get(:@@foo))
@@ -453,7 +445,7 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c.class_variable_get(:foo) }
   end
 
-  def test_class_variable_set2
+  def test_class_variable_set
     c = Class.new
     c.class_variable_set(:@@foo, :foo)
     assert_equal(:foo, c.class_eval { @@foo })
@@ -466,6 +458,13 @@ class TestModule < Test::Unit::TestCase
     assert_equal(true, c.class_variable_defined?(:@@foo))
     assert_equal(false, c.class_variable_defined?(:@@bar))
     assert_raise(NameError) { c.class_variable_defined?(:foo) }
+  end
+
+  def test_remove_class_variable
+    c = Class.new
+    c.class_eval { @@foo = :foo }
+    c.class_eval { remove_class_variable(:@@foo) }
+    assert_equal(false, c.class_variable_defined?(:@@foo))
   end
 
   def test_export_method
