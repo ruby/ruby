@@ -1,3 +1,7 @@
+Thu Oct  9 23:19:02 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* process.c (rb_run_exec_options): fix resource leak.
+
 Thu Oct  9 22:13:58 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_module.rb (test_remove_class_variable): add a test

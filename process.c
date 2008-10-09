@@ -2089,6 +2089,7 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
             char *cwd = my_getcwd();
             rb_ary_store(soptions, EXEC_OPTION_CHDIR,
                          hide_obj(rb_str_new2(cwd)));
+            xfree(cwd);
         }
         if (chdir(RSTRING_PTR(obj)) == -1)
             return -1;
