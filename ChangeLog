@@ -1,3 +1,8 @@
+Thu Oct  9 23:53:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-style.el (ruby-style-c-mode): buffer may not have file
+	  name.
+
 Thu Oct  9 23:30:47 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* process.c (run_exec_dup2): fix resource leak.
