@@ -1909,7 +1909,7 @@ rb_mod_class_variables(VALUE obj)
  *       @@var = 99
  *       puts @@var
  *       remove_class_variable(:@@var)
- *       puts(defined? @@var)
+ *       p(defined? @@var)
  *     end
  *     
  *  <em>produces:</em>
@@ -1922,7 +1922,7 @@ VALUE
 rb_mod_remove_cvar(VALUE mod, VALUE name)
 {
     const ID id = rb_to_id(name);
-    st_data_t val, n;
+    st_data_t val, n = id;
 
     if (!rb_is_class_id(id)) {
 	rb_name_error(id, "wrong class variable name %s", rb_id2name(id));

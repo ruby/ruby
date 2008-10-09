@@ -1,3 +1,7 @@
+Thu Oct  9 22:04:38 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* variable.c (rb_mod_remove_cvar): fix r19711.
+
 Thu Oct  9 21:17:50 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/syck/syck.c (syck_lookup_sym): remove reading uninitialized
