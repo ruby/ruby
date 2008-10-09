@@ -1,3 +1,8 @@
+Fri Oct 10 03:41:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): check if codepoint for %c is valid.
+	  [ruby-dev:36691]
+
 Fri Oct 10 01:55:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_names): minor improvement.

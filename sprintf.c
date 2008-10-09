@@ -618,7 +618,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    c = NUM2INT(val);
 		}
 		n = rb_enc_codelen(c, enc);
-		if (n == 0) {
+		if (n <= 0) {
 		    rb_raise(rb_eArgError, "invalid character");
 		}
 		if (!(flags & FWIDTH)) {
