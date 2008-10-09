@@ -1854,7 +1854,7 @@ run_exec_dup2(VALUE ary, VALUE save)
         int j = i;
         while (j != -1 && pairs[j].oldfd != -1 && pairs[j].num_newer == 0) {
             if (save_redirect_fd(pairs[j].newfd, save) < 0)
-                return -1;
+                goto fail;
             ret = redirect_dup2(pairs[j].oldfd, pairs[j].newfd);
             if (ret == -1)
                 goto fail;
