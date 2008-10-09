@@ -823,6 +823,35 @@ enc_name(VALUE self)
     return rb_usascii_str_new2(rb_enc_name((rb_encoding*)DATA_PTR(self)));
 }
 
+static int
+enc_names_i(st_data_t name, st_data_t idx, st_data_t ary)
+{
+    if ((int)idx == FIX2INT(rb_ary_entry(ary, 0))) {
+	VALUE str = rb_usascii_str_new2((char *)name);
+	OBJ_FREEZE(str);
+	rb_ary_push(ary, str);
+    }
+    return ST_CONTINUE;
+}
+
+/*
+ * call-seq:
+ *   enc.names => array
+ *
+ * Returns the list of name and aliases of the encoding.
+ *
+ *   Encoding::WINDOWS_31J.names => ["Windows-31J", "CP932", "csWindows31J"]
+ */
+static VALUE
+enc_names(VALUE self)
+{
+    VALUE ary = rb_ary_new2(0);
+    rb_ary_push(ary, INT2FIX(rb_to_encoding_index(self)));
+    st_foreach(enc_table.names, enc_names_i, (st_data_t)ary);
+    rb_ary_shift(ary);
+    return ary;
+}
+
 /*
  * call-seq:
  *   Encoding.list => [enc1, enc2, ...]
@@ -1250,6 +1279,7 @@ Init_Encoding(void)
     rb_define_method(rb_cEncoding, "to_s", enc_name, 0);
     rb_define_method(rb_cEncoding, "inspect", enc_inspect, 0);
     rb_define_method(rb_cEncoding, "name", enc_name, 0);
+    rb_define_method(rb_cEncoding, "names", enc_names, 0);
     rb_define_method(rb_cEncoding, "dummy?", enc_dummy_p, 0);
     rb_define_singleton_method(rb_cEncoding, "list", enc_list, 0);
     rb_define_singleton_method(rb_cEncoding, "name_list", rb_enc_name_list, 0);

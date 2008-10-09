@@ -1,3 +1,12 @@
+Thu Oct  9 11:29:33 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (Init_Encoding): new instance method Encoding#names,
+	  returns its name and alias names.
+
+	* encoding.c (enc_names): defined for Encoding#names.
+
+	* encoding.c (enc_names_i): defined for enc_names.
+
 Thu Oct  9 08:47:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* thread.c (rb_thread_wait_fd_rw): should not block by select if
