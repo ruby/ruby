@@ -772,7 +772,7 @@ bsock_recv(int argc, VALUE *argv, VALUE sock)
  * 	c = TCPSocket.new(addr, port)
  * 	s = serv.accept
  * 	c.send "aaa", 0
- * 	IO.select([s])
+ * 	IO.select([s]) # emulate blocking recv.
  * 	p s.recv_nonblock(10) #=> "aaa"
  *
  * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
@@ -1598,7 +1598,7 @@ tcp_accept(VALUE sock)
  * === Example
  * 	require 'socket'
  * 	serv = TCPServer.new(2202)
- * 	begin
+ * 	begin # emulate blocking accept
  * 	  sock = serv.accept_nonblock
  * 	rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
  * 	  IO.select([serv])
@@ -1899,7 +1899,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
  * 	s2.connect(*s1.addr.values_at(3,1))
  * 	s1.connect(*s2.addr.values_at(3,1))
  * 	s1.send "aaa", 0
- * 	IO.select([s2])
+ * 	IO.select([s2]) # emulate blocking recvfrom
  * 	p s2.recvfrom_nonblock(10)  #=> ["aaa", ["AF_INET", 33302, "localhost.localdomain", "127.0.0.1"]]
  *
  * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
@@ -2187,7 +2187,7 @@ unix_accept(VALUE sock)
  * === Example
  * 	require 'socket'
  * 	serv = UNIXServer.new("/tmp/sock")
- * 	begin
+ * 	begin # emulate blocking accept
  * 	  sock = serv.accept_nonblock
  * 	rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
  * 	  IO.select([serv])
@@ -2560,7 +2560,7 @@ sock_connect(VALUE sock, VALUE addr)
  * 	include Socket::Constants
  * 	socket = Socket.new(AF_INET, SOCK_STREAM, 0)
  * 	sockaddr = Socket.sockaddr_in(80, 'www.google.com')
- * 	begin
+ * 	begin # emulate blocking connect
  * 	  socket.connect_nonblock(sockaddr)
  * 	rescue Errno::EINPROGRESS
  * 	  IO.select(nil, [socket])
@@ -2916,7 +2916,7 @@ sock_recvfrom(int argc, VALUE *argv, VALUE sock)
  * 	socket.bind(sockaddr)
  * 	socket.listen(5)
  * 	client, client_sockaddr = socket.accept
- * 	begin
+ * 	begin # emulate blocking recvfrom
  * 	  pair = client.recvfrom_nonblock(20)
  * 	rescue Errno::EAGAIN, Errno::EWOULDBLOCK
  * 	  IO.select([client])
@@ -2984,7 +2984,7 @@ sock_accept(VALUE sock)
  * 	sockaddr = Socket.sockaddr_in(2200, 'localhost')
  * 	socket.bind(sockaddr)
  * 	socket.listen(5)
- * 	begin
+ * 	begin # emulate blocking accept
  * 	  client_socket, client_sockaddr = socket.accept_nonblock
  * 	rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
  * 	  IO.select([socket])
