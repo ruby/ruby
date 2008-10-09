@@ -1,3 +1,8 @@
+Thu Oct  9 21:17:50 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/syck/syck.c (syck_lookup_sym): remove reading uninitialized
+	  variable.
+
 Thu Oct  9 16:34:15 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/ext/generator/extconf.rb: fix target.
