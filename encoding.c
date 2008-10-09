@@ -824,12 +824,14 @@ enc_name(VALUE self)
 }
 
 static int
-enc_names_i(st_data_t name, st_data_t idx, st_data_t ary)
+enc_names_i(st_data_t name, st_data_t idx, st_data_t args)
 {
-    if ((int)idx == FIX2INT(rb_ary_entry(ary, 0))) {
+    VALUE *arg = (VALUE *)args;
+
+    if ((int)idx == (int)arg[0]) {
 	VALUE str = rb_usascii_str_new2((char *)name);
 	OBJ_FREEZE(str);
-	rb_ary_push(ary, str);
+	rb_ary_push(arg[1], str);
     }
     return ST_CONTINUE;
 }
@@ -845,11 +847,12 @@ enc_names_i(st_data_t name, st_data_t idx, st_data_t ary)
 static VALUE
 enc_names(VALUE self)
 {
-    VALUE ary = rb_ary_new2(0);
-    rb_ary_push(ary, INT2FIX(rb_to_encoding_index(self)));
-    st_foreach(enc_table.names, enc_names_i, (st_data_t)ary);
-    rb_ary_shift(ary);
-    return ary;
+    VALUE args[2];
+
+    args[0] = (VALUE)rb_to_encoding_index(self);
+    args[1] = rb_ary_new2(0);
+    st_foreach(enc_table.names, enc_names_i, (st_data_t)args);
+    return args[1];
 }
 
 /*

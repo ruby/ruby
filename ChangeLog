@@ -1,3 +1,7 @@
+Fri Oct 10 01:55:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_names): minor improvement.
+
 Fri Oct 10 00:21:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (ParseError.filter_backtrace): removes internal
