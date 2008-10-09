@@ -1,3 +1,20 @@
+Thu Oct  9 14:37:59 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* include/ruby/ruby.h: embeds the elements of an array into its 
+	  struct RArray for # of elements <= 3. 
+
+	* array.c: ditto.
+
+	* gc.c (gc_mark_children): following the change of struct RArray.
+
+	* ext/tk/tcltklib.c (ip_ruby_cmp): ditto.
+
+	* parse.y (coverage): ditto.
+
+	* proc.c (curry): ditto.
+
+	* .gdbinit: ditto.
+
 Thu Oct  9 11:29:33 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (Init_Encoding): new instance method Encoding#names,

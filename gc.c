@@ -1462,7 +1462,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 
       case T_ARRAY:
 	if (FL_TEST(obj, ELTS_SHARED)) {
-	    ptr = obj->as.array.aux.shared;
+	    ptr = obj->as.array.as.heap.aux.shared;
 	    goto again;
 	}
 	else {

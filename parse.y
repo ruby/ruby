@@ -4945,7 +4945,7 @@ coverage(const char *f, int n)
 	int i;
 	RBASIC(lines)->klass = 0;
 	for (i = 0; i < n; i++) RARRAY_PTR(lines)[i] = Qnil;
-	RARRAY(lines)->len = n;
+	RARRAY(lines)->as.heap.len = n;
 	rb_hash_aset(coverages, fname, lines);
 	return lines;
     }

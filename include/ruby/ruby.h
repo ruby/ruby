@@ -504,7 +504,7 @@ VALUE rb_newobj(void);
     if (FL_TEST(obj, FL_EXIVAR)) rb_copy_generic_ivar((VALUE)clone,(VALUE)obj);\
 } while (0)
 #define DUPSETUP(dup,obj) do {\
-    OBJSETUP(dup,rb_obj_class(obj),(RBASIC(obj)->flags)&(T_MASK|FL_EXIVAR|FL_TAINT|FL_UNTRUSTED));\
+    OBJSETUP(dup,rb_obj_class(obj), (RBASIC(obj)->flags)&(T_MASK|FL_EXIVAR|FL_TAINT|FL_UNTRUSTED)); \
     if (FL_TEST(obj, FL_EXIVAR)) rb_copy_generic_ivar((VALUE)dup,(VALUE)obj);\
 } while (0)
 
@@ -596,17 +596,34 @@ struct RString {
      RSTRING(str)->as.heap.ptr)
 #define RSTRING_END(str) (RSTRING_PTR(str)+RSTRING_LEN(str))
 
+#define RARRAY_EMBED_LEN_MAX 3
 struct RArray {
     struct RBasic basic;
-    long len;
     union {
-	long capa;
-	VALUE shared;
-    } aux;
-    VALUE *ptr;
+	struct {
+	    long len;
+	    union {
+		long capa;
+		VALUE shared;
+	    } aux;
+	    VALUE *ptr;
+	} heap;
+	VALUE ary[RARRAY_EMBED_LEN_MAX];
+    } as;
 };
-#define RARRAY_LEN(a) RARRAY(a)->len
-#define RARRAY_PTR(a) RARRAY(a)->ptr
+#define RARRAY_EMBED_FLAG FL_USER1
+/* FL_USER2 is for ELTS_SHARED */
+#define RARRAY_EMBED_LEN_MASK (FL_USER4|FL_USER3)
+#define RARRAY_EMBED_LEN_SHIFT (FL_USHIFT+3)
+#define RARRAY_LEN(a) \
+    ((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ? \
+     (long)((RBASIC(a)->flags >> RARRAY_EMBED_LEN_SHIFT) & \
+	 (RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT)) : \
+     RARRAY(a)->as.heap.len)
+#define RARRAY_PTR(a) \
+    ((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ? \
+     RARRAY(a)->as.ary : \
+     RARRAY(a)->as.heap.ptr)
 
 struct RRegexp {
     struct RBasic basic;
