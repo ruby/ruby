@@ -14,6 +14,15 @@ class TestEncoding < Test::Unit::TestCase
       assert_equal(e, Encoding.find(e.name.downcase))
     end
   end
+  
+  def test_enc_names
+    aliases = Encoding.aliases
+    aliases.each do |a, en|
+      e = Encoding.find(a)
+      assert_equal(e.name, en)
+      assert(e.names.include?(a))
+    end
+  end
 
   # Test that Encoding objects can't be copied
   # And that they can be compared by object_id
