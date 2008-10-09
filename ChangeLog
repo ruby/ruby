@@ -1,3 +1,9 @@
+Thu Oct  9 16:34:15 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json/ext/generator/extconf.rb: fix target.
+
+	* ext/json/ext/parser/extconf.rb: ditto.
+
 Thu Oct  9 14:37:59 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* include/ruby/ruby.h: embeds the elements of an array into its 

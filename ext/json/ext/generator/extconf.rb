@@ -6,4 +6,4 @@ if CONFIG['CC'] =~ /gcc/
   #$CFLAGS += ' -O0 -ggdb'
 end
 
-create_makefile 'generator'
+create_makefile 'json/ext/generator'
