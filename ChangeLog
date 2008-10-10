@@ -1,3 +1,7 @@
+Fri Oct 10 22:16:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (comment_at_top): needed for ripper too.
+
 Fri Oct 10 22:07:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby.h: updated macros for headers.  [ruby-core:19275]

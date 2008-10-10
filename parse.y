@@ -6065,10 +6065,6 @@ parser_set_encode(struct parser_params *parser, const char *name)
     parser->enc = enc;
 }
 
-#ifndef RIPPER
-typedef int (*rb_magic_comment_length_t)(struct parser_params *parser, const char *name, int len);
-typedef void (*rb_magic_comment_setter_t)(struct parser_params *parser, const char *name, const char *val);
-
 static int
 comment_at_top(struct parser_params *parser)
 {
@@ -6080,6 +6076,10 @@ comment_at_top(struct parser_params *parser)
     }
     return 1;
 }
+
+#ifndef RIPPER
+typedef int (*rb_magic_comment_length_t)(struct parser_params *parser, const char *name, int len);
+typedef void (*rb_magic_comment_setter_t)(struct parser_params *parser, const char *name, const char *val);
 
 static void
 magic_comment_encoding(struct parser_params *parser, const char *name, const char *val)
