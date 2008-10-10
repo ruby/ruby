@@ -5166,6 +5166,7 @@ parser_str_new(const char *p, long n, rb_encoding *enc, int func, rb_encoding *e
 }
 
 #define lex_goto_eol(parser) (parser->parser_lex_p = parser->parser_lex_pend)
+#define peek(c) (lex_p < lex_pend && (c) == *lex_p)
 
 static inline int
 parser_nextc(struct parser_params *parser)
@@ -5216,7 +5217,7 @@ parser_nextc(struct parser_params *parser)
 	}
     }
     c = (unsigned char)*lex_p++;
-    if (c == '\r' && lex_p < lex_pend && *lex_p == '\n') {
+    if (c == '\r' && peek('\n')) {
 	lex_p++;
 	c = '\n';
     }
@@ -5235,7 +5236,6 @@ parser_pushback(struct parser_params *parser, int c)
 }
 
 #define was_bol() (lex_p == lex_pbeg + 1)
-#define peek(c) (lex_p != lex_pend && (c) == *lex_p)
 
 #define tokfix() (tokenbuf[tokidx]='\0')
 #define tok() tokenbuf
@@ -6069,11 +6069,26 @@ parser_set_encode(struct parser_params *parser, const char *name)
 typedef int (*rb_magic_comment_length_t)(struct parser_params *parser, const char *name, int len);
 typedef void (*rb_magic_comment_setter_t)(struct parser_params *parser, const char *name, const char *val);
 
+static int
+comment_at_top(struct parser_params *parser)
+{
+    const char *p = lex_pbeg, *pend = lex_p - 1;
+    if (parser->line_count != (parser->has_shebang ? 2 : 1)) return 0;
+    while (p < pend) {
+	if (!ISSPACE(*p)) return 0;
+	p++;
+    }
+    return 1;
+}
+
 static void
 magic_comment_encoding(struct parser_params *parser, const char *name, const char *val)
 {
-    if (parser->line_count != (parser->has_shebang ? 2 : 1))
+    if (!comment_at_top(parser)) {
+	rb_warning("encoding '%s' is ignored, valid only in the first line except for shebang line.",
+		   val);
 	return;
+    }
     parser_set_encode(parser, val);
 }
 
@@ -6143,7 +6158,8 @@ parser_magic_comment(struct parser_params *parser, const char *str, int len)
 #ifndef RIPPER
 	const struct magic_comment *p = magic_comments;
 #endif
-	int n = 0;
+	char *s;
+	int i, n = 0;
 
 	for (; len > 0 && *str; str++, --len) {
 	    switch (*str) {
@@ -6189,15 +6205,19 @@ parser_magic_comment(struct parser_params *parser, const char *str, int len)
 
 	n = end - beg;
 	str_copy(name, beg, n);
+	s = RSTRING_PTR(name);
+	for (i = 0; i < n; ++i) {
+	    if (*s == '-') *s = '_';
+	}
 #ifndef RIPPER
 	do {
-	    if (STRNCASECMP(p->name, RSTRING_PTR(name), n) == 0) {
+	    if (STRNCASECMP(p->name, s, n) == 0) {
 		n = vend - vbeg;
 		if (p->length) {
 		    n = (*p->length)(parser, vbeg, n);
 		}
 		str_copy(val, vbeg, n);
-		(*p->func)(parser, RSTRING_PTR(name), RSTRING_PTR(val));
+		(*p->func)(parser, s, RSTRING_PTR(val));
 		break;
 	    }
 	} while (++p < magic_comments + sizeof(magic_comments) / sizeof(*p));
@@ -6344,9 +6364,8 @@ parser_yylex(struct parser_params *parser)
 
       case '#':		/* it's a comment */
 	/* no magic_comment in shebang line */
-	if (parser->line_count == (parser->has_shebang ? 2 : 1)
-	    && (lex_p - lex_pbeg) == 1) {
-	    if (!parser_magic_comment(parser, lex_p, lex_pend - lex_p)) {
+	if (!parser_magic_comment(parser, lex_p, lex_pend - lex_p)) {
+	    if (comment_at_top(parser)) {
 		set_file_encoding(parser, lex_p, lex_pend);
 	    }
 	}
