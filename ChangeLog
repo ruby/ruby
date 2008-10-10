@@ -1,3 +1,9 @@
+Sat Oct 11 08:51:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rake.rb (Rake::Application#standard_exception_handling): removed
+	  unnecessary SystemExit, and exits with false instead of system
+	  dependent value.  [ruby-talk:317330]
+
 Sat Oct 11 03:54:05 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y: optimize 'for' statement when one variable given.
