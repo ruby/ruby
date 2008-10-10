@@ -145,7 +145,7 @@ class TestCSVRow < Test::Unit::TestCase
                     %w{Header Field} ], @row.to_a )
     
     # a pair with Hash syntax
-    assert_equal(@row, @row << {:key => :value})
+    assert_equal(@row, @row << {key: :value})
     assert_equal( [ ["A", 1],
                     ["B", 2],
                     ["C", 3],
@@ -279,7 +279,7 @@ class TestCSVRow < Test::Unit::TestCase
     
     # with options
     assert_equal( "1|2|3|4|\r\n",
-                  @row.to_csv(:col_sep => "|", :row_sep => "\r\n") )
+                  @row.to_csv(col_sep: "|", row_sep: "\r\n") )
   end
   
   def test_array_delegation

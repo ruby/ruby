@@ -79,19 +79,19 @@ class TestCSVWriting < Test::Unit::TestCase
   
   def test_col_sep
     assert_equal( "a;b;;c\n", CSV.generate_line( ["a", "b", nil, "c"],
-                                                 :col_sep => ";" ) )
+                                                 col_sep: ";" ) )
     assert_equal( "a\tb\t\tc\n", CSV.generate_line( ["a", "b", nil, "c"],
-                                                    :col_sep => "\t" ) )
+                                                    col_sep: "\t" ) )
   end
   
   def test_row_sep
     assert_equal( "a,b,,c\r\n", CSV.generate_line( ["a", "b", nil, "c"],
-                                                   :row_sep => "\r\n" ) )
+                                                   row_sep: "\r\n" ) )
   end
   
   def test_force_quotes
     assert_equal( %Q{"1","b","","already ""quoted"""\n},
                   CSV.generate_line( [1, "b", nil, %Q{already "quoted"}],
-                                     :force_quotes => true ) )
+                                     force_quotes: true ) )
   end
 end

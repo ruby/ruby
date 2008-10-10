@@ -117,7 +117,7 @@ class TestCSVParsing < Test::Unit::TestCase
   
   def test_malformed_csv
     assert_raise(CSV::MalformedCSVError) do
-      CSV.parse_line("1,2\r,3", :row_sep => "\n")
+      CSV.parse_line("1,2\r,3", row_sep: "\n")
     end
     
     bad_data = <<-END_DATA.gsub(/^ +/, "")
@@ -176,7 +176,7 @@ class TestCSVParsing < Test::Unit::TestCase
   
   def test_field_size_limit_controls_lookahead
     assert_parse_errors_out( 'valid,fields,"' + BIG_DATA + '"',
-                             :field_size_limit => 2048 )
+                             field_size_limit: 2048 )
   end
   
   private

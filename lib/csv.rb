@@ -199,7 +199,7 @@ require "stringio"
 # 
 class CSV
   # The version of the installed library.
-  VERSION = "2.4.2".freeze
+  VERSION = "2.4.3".freeze
   
   # 
   # A CSV::Row is part Array and part Hash.  It retains an order for the fields
@@ -885,14 +885,14 @@ class CSV
   # To add a combo field, the value should be an Array of names.  Combo fields
   # can be nested with other combo fields.
   # 
-  Converters  = { :integer   => lambda { |f|
+  Converters  = { integer:   lambda { |f|
                     Integer(f.encode(ConverterEncoding)) rescue f
                   },
-                  :float     => lambda { |f|
+                  float:     lambda { |f|
                     Float(f.encode(ConverterEncoding)) rescue f
                   },
-                  :numeric   => [:integer, :float],
-                  :date      => lambda { |f|
+                  numeric:   [:integer, :float],
+                  date:      lambda { |f|
                     begin
                       e = f.encode(ConverterEncoding)
                       e =~ DateMatcher ? Date.parse(e) : f
@@ -900,7 +900,7 @@ class CSV
                       f
                     end
                   },
-                  :date_time => lambda { |f|
+                  date_time: lambda { |f|
                     begin
                       e = f.encode(ConverterEncoding)
                       e =~ DateTimeMatcher ? DateTime.parse(e) : f
@@ -908,7 +908,7 @@ class CSV
                       f
                     end
                   },
-                  :all       => [:date_time, :numeric] }
+                  all:       [:date_time, :numeric] }
 
   # 
   # This Hash holds the built-in header converters of CSV that can be accessed
@@ -931,8 +931,8 @@ class CSV
   # can be nested with other combo fields.
   # 
   HeaderConverters = {
-    :downcase => lambda { |h| h.encode(ConverterEncoding).downcase },
-    :symbol   => lambda { |h|
+    downcase: lambda { |h| h.encode(ConverterEncoding).downcase },
+    symbol:   lambda { |h|
       h.encode(ConverterEncoding).downcase.gsub(/\s+/, "_").
                                            gsub(/\W+/, "").to_sym
     }
@@ -953,17 +953,17 @@ class CSV
   # <b><tt>:skip_blanks</tt></b>::        +false+
   # <b><tt>:force_quotes</tt></b>::       +false+
   # 
-  DEFAULT_OPTIONS = { :col_sep            => ",",
-                      :row_sep            => :auto,
-                      :quote_char         => '"', 
-                      :field_size_limit   => nil,
-                      :converters         => nil,
-                      :unconverted_fields => nil,
-                      :headers            => false,
-                      :return_headers     => false,
-                      :header_converters  => nil,
-                      :skip_blanks        => false,
-                      :force_quotes       => false }.freeze
+  DEFAULT_OPTIONS = { col_sep:            ",",
+                      row_sep:            :auto,
+                      quote_char:         '"', 
+                      field_size_limit:   nil,
+                      converters:         nil,
+                      unconverted_fields: nil,
+                      headers:            false,
+                      return_headers:     false,
+                      header_converters:  nil,
+                      skip_blanks:        false,
+                      force_quotes:       false }.freeze
   
   # 
   # This method will return a CSV instance, just like CSV::new(), but the
@@ -1143,7 +1143,7 @@ class CSV
   # 
   def self.filter(*args)
     # parse options for input, output, or both
-    in_options, out_options = Hash.new, {:row_sep => $INPUT_RECORD_SEPARATOR}
+    in_options, out_options = Hash.new, {row_sep: $INPUT_RECORD_SEPARATOR}
     if args.last.is_a? Hash
       args.pop.each do |key, value|
         case key.to_s
@@ -1179,8 +1179,8 @@ class CSV
   # this unless your data is in Encoding::default_external().  CSV will use this
   # to deterime how to parse the data.  You may provide a second Encoding to
   # have the data transcoded as it is read.  For example,
-  # <tt>:encoding => "UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the
-  # file but transcode it to UTF-8 before CSV parses it.
+  # <tt>encoding: "UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file
+  # but transcode it to UTF-8 before CSV parses it.
   # 
   def self.foreach(path, options = Hash.new, &block)
     encoding =  options.delete(:encoding)
@@ -1240,7 +1240,7 @@ class CSV
   # (<tt>$/</tt>) when calling this method.
   # 
   def self.generate_line(row, options = Hash.new)
-    options  = {:row_sep => $INPUT_RECORD_SEPARATOR}.merge(options)
+    options  = {row_sep: $INPUT_RECORD_SEPARATOR}.merge(options)
     encoding = options.delete(:encoding)
     str      = ""
     if encoding
@@ -1378,8 +1378,8 @@ class CSV
   # your data is in Encoding::default_external().  CSV will use this to deterime
   # how to parse the data.  You may provide a second Encoding to have the data
   # transcoded as it is read.  For example,
-  # <tt>:encoding => "UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the
-  # file but transcode it to UTF-8 before CSV parses it.
+  # <tt>encoding: "UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file
+  # but transcode it to UTF-8 before CSV parses it.
   # 
   def self.read(path, options = Hash.new)
     encoding =  options.delete(:encoding)
@@ -1396,14 +1396,14 @@ class CSV
   # 
   # A shortcut for:
   # 
-  #   CSV.read( path, { :headers           => true,
-  #                     :converters        => :numeric,
-  #                     :header_converters => :symbol }.merge(options) )
+  #   CSV.read( path, { headers:           true,
+  #                     converters:        :numeric,
+  #                     header_converters: :symbol }.merge(options) )
   # 
   def self.table(path, options = Hash.new)
-    read( path, { :headers           => true,
-                  :converters        => :numeric,
-                  :header_converters => :symbol }.merge(options) )
+    read( path, { headers:           true,
+                  converters:        :numeric,
+                  header_converters: :symbol }.merge(options) )
   end
   
   # 
@@ -1544,12 +1544,12 @@ class CSV
     # create the IO object we will read from
     @io       =   if data.is_a? String then StringIO.new(data) else data end
     # honor the IO encoding if we can, otherwise default to ASCII-8BIT
-    @encoding =   if    @io.respond_to? :internal_encoding
+    @encoding =   if @io.respond_to? :internal_encoding
                     @io.internal_encoding || @io.external_encoding
                   elsif @io.is_a? StringIO
                     @io.string.encoding
                   end
-    @encoding ||= Encoding.default_external
+    @encoding ||= Encoding.default_internal || Encoding.default_external
     # 
     # prepare for build safe regular expressions in the target encoding,
     # if we can transcode the needed characters
@@ -2038,9 +2038,9 @@ class CSV
     esc_quote   = escape_re(@quote_char)
     @parsers = {
       # for empty leading fields
-      :leading_fields => encode_re("\\A(?:", esc_col_sep, ")+"),
+      leading_fields: encode_re("\\A(?:", esc_col_sep, ")+"),
       # The Primary Parser
-      :csv_row        => encode_re(
+      csv_row:        encode_re(
         "\\G(?:\\A|", esc_col_sep, ")",                # anchor the match
         "(?:", esc_quote,                              # find quoted fields
                "((?>[^", esc_quote, "]*)",             # "unrolling the loop"
@@ -2052,7 +2052,7 @@ class CSV
         "(?=", esc_col_sep, "|\\z)"                    # ensure field is ended
       ),
       # a test for unescaped quotes
-      :bad_field      => encode_re(
+      bad_field:      encode_re(
         "\\A", esc_col_sep, "?",                   # an optional comma
         "(?:", esc_quote,                          # a quoted field
                "(?>[^", esc_quote, "]*)",          # "unrolling the loop"
@@ -2065,9 +2065,9 @@ class CSV
                esc_quote, ")"                      # an extra quote
       ),
       # safer than chomp!()
-      :line_end       => encode_re(esc_row_sep, "\\z"),
+      line_end:       encode_re(esc_row_sep, "\\z"),
       # illegal unquoted characters
-      :return_newline => encode_str("\r\n")
+      return_newline: encode_str("\r\n")
     }
   end
   
@@ -2189,9 +2189,9 @@ class CSV
                  # CSV header String
                  when String
                    self.class.parse_line( @use_headers,
-                                          :col_sep    => @col_sep,
-                                          :row_sep    => @row_sep,
-                                          :quote_char => @quote_char )
+                                          col_sep:    @col_sep,
+                                          row_sep:    @row_sep,
+                                          quote_char: @quote_char )
                  # first row is headers
                  else            row
                  end

@@ -1,3 +1,8 @@
+Sat Oct 11 12:09:05 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv/csv.rb:  Added support for Encoding::default_internal.
+	* lib/csv/csv.rb:  Switched to new Hash syntax.
+
 Fri Oct 10 22:16:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (comment_at_top): needed for ripper too.

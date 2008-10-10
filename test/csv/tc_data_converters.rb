@@ -159,7 +159,7 @@ class TestDataConverters < Test::Unit::TestCase
   end
   
   def test_convert_with_custom_code_using_field_info_header
-    @parser = CSV.new(@data, :headers => %w{one two three four five})
+    @parser = CSV.new(@data, headers: %w{one two three four five})
     
     # define custom converter that uses field header information...
     assert_nothing_raised(Exception) do
@@ -175,13 +175,13 @@ class TestDataConverters < Test::Unit::TestCase
   
   def test_shortcut_interface
     assert_equal( ["Numbers", ":integer", 1, ":float", 3.015],
-                  CSV.parse_line(@data, :converters => :numeric) )
+                  CSV.parse_line(@data, converters: :numeric) )
 
     assert_equal( ["Numbers", ":integer", 1, ":float", 3.015],
-                  CSV.parse_line(@data, :converters => [:integer, :float]) )
+                  CSV.parse_line(@data, converters: [:integer, :float]) )
 
     assert_equal( ["Numbers", :integer, 1, :float, 3.015],
-                  CSV.parse_line(@data, :converters => [:numeric, @custom]) )
+                  CSV.parse_line(@data, converters: [:numeric, @custom]) )
   end
   
   def test_unconverted_fields
@@ -192,8 +192,8 @@ class TestDataConverters < Test::Unit::TestCase
       row = nil
       assert_nothing_raised(Exception) do 
         row = CSV.parse_line( test,
-                              :converters         => [:numeric, @custom],
-                              :unconverted_fields => true )
+                              converters:         [:numeric, @custom],
+                              unconverted_fields: true )
       end
       assert_not_nil(row)
       assert_equal(fields, row)
@@ -208,9 +208,9 @@ class TestDataConverters < Test::Unit::TestCase
     row = nil
     assert_nothing_raised(Exception) do 
       row = CSV.parse_line( data,
-                            :converters         => :numeric,
-                            :unconverted_fields => true,
-                            :headers            => :first_row )
+                            converters:         :numeric,
+                            unconverted_fields: true,
+                            headers:            :first_row )
     end
     assert_not_nil(row)
     assert_equal([["first", 1], ["second", 2], ["third", 3]], row.to_a)
@@ -219,10 +219,10 @@ class TestDataConverters < Test::Unit::TestCase
 
     assert_nothing_raised(Exception) do 
       row = CSV.parse_line( data,
-                            :converters         => :numeric,
-                            :unconverted_fields => true,
-                            :headers            => :first_row,
-                            :return_headers     => true )
+                            converters:         :numeric,
+                            unconverted_fields: true,
+                            headers:            :first_row,
+                            return_headers:     true )
     end
     assert_not_nil(row)
     assert_equal( [%w{first first}, %w{second second}, %w{third third}],
@@ -232,11 +232,11 @@ class TestDataConverters < Test::Unit::TestCase
 
     assert_nothing_raised(Exception) do 
       row = CSV.parse_line( data,
-                            :converters         => :numeric,
-                            :unconverted_fields => true,
-                            :headers            => :first_row,
-                            :return_headers     => true,
-                            :header_converters  => :symbol )
+                            converters:         :numeric,
+                            unconverted_fields: true,
+                            headers:            :first_row,
+                            return_headers:     true,
+                            header_converters:  :symbol )
     end
     assert_not_nil(row)
     assert_equal( [[:first, "first"], [:second, "second"], [:third, "third"]],
@@ -246,11 +246,11 @@ class TestDataConverters < Test::Unit::TestCase
 
     assert_nothing_raised(Exception) do 
       row = CSV.parse_line( data,
-                            :converters         => :numeric,
-                            :unconverted_fields => true,
-                            :headers            => %w{my new headers},
-                            :return_headers     => true,
-                            :header_converters  => :symbol )
+                            converters:         :numeric,
+                            unconverted_fields: true,
+                            headers:            %w{my new headers},
+                            return_headers:     true,
+                            header_converters:  :symbol )
     end
     assert_not_nil(row)
     assert_equal( [[:my, "my"], [:new, "new"], [:headers, "headers"]],

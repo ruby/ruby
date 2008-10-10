@@ -150,7 +150,7 @@ class TestSerialization < Test::Unit::TestCase
   end
   
   def test_custom_dump_and_load
-    obj = {1 => "simple", :test => Hash}
+    obj = {1 => "simple", test: Hash}
     assert_equal(obj, CSV.load(CSV.dump([obj])).first)
   end
 end

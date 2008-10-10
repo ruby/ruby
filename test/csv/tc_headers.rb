@@ -25,7 +25,7 @@ class TestCSVHeaders < Test::Unit::TestCase
       # activate headers
       csv = nil
       assert_nothing_raised(Exception) do 
-        csv = CSV.parse(@data, :headers => setting)
+        csv = CSV.parse(@data, headers: setting)
       end
 
       # first data row - skipping headers
@@ -49,7 +49,7 @@ class TestCSVHeaders < Test::Unit::TestCase
     # activate headers
     csv = nil
     assert_nothing_raised(Exception) do 
-      csv = CSV.parse(@data, :headers => [:my, :new, :headers])
+      csv = CSV.parse(@data, headers: [:my, :new, :headers])
     end
 
     # first data row - skipping headers
@@ -76,9 +76,9 @@ class TestCSVHeaders < Test::Unit::TestCase
     
     # with return and convert
     assert_nothing_raised(Exception) do
-      csv = CSV.parse(@data, :headers           => [:my, :new, :headers],
-                             :return_headers    => true,
-                             :header_converters => lambda { |h| h.to_s } )
+      csv = CSV.parse( @data, headers:           [:my, :new, :headers],
+                              return_headers:    true,
+                              header_converters: lambda { |h| h.to_s } )
     end
     row = csv[0]
     assert_not_nil(row)
@@ -92,7 +92,7 @@ class TestCSVHeaders < Test::Unit::TestCase
     # activate headers
     csv = nil
     assert_nothing_raised(Exception) do 
-      csv = CSV.parse(@data, :headers => "my,new,headers")
+      csv = CSV.parse(@data, headers: "my,new,headers")
     end
 
     # first data row - skipping headers
@@ -118,9 +118,9 @@ class TestCSVHeaders < Test::Unit::TestCase
     
     # with return and convert
     assert_nothing_raised(Exception) do
-      csv = CSV.parse(@data, :headers           => "my,new,headers",
-                             :return_headers    => true,
-                             :header_converters => :symbol )
+      csv = CSV.parse( @data, headers:           "my,new,headers",
+                              return_headers:    true,
+                              header_converters: :symbol )
     end
     row = csv[0]
     assert_not_nil(row)
@@ -134,8 +134,8 @@ class TestCSVHeaders < Test::Unit::TestCase
     # parse with custom col_sep
     csv = nil
     assert_nothing_raised(Exception) do 
-      csv = CSV.parse( @data.tr(",", "|"), :col_sep => "|",
-                                           :headers => "my|new|headers" )
+      csv = CSV.parse( @data.tr(",", "|"), col_sep: "|",
+                                           headers: "my|new|headers" )
     end
 
     # verify headers were recognized
@@ -149,7 +149,7 @@ class TestCSVHeaders < Test::Unit::TestCase
     # activate headers and request they are returned
     csv = nil
     assert_nothing_raised(Exception) do
-      csv = CSV.parse(@data, :headers => true, :return_headers => true)
+      csv = CSV.parse(@data, headers: true, return_headers: true)
     end
 
     # header row
@@ -189,19 +189,19 @@ class TestCSVHeaders < Test::Unit::TestCase
     END_MATCHING_CSV
     
     # normal converters do not affect headers
-    csv = CSV.parse( data, :headers        => true,
-                           :return_headers => true,
-                           :converters     => :numeric )
+    csv = CSV.parse( data, headers:        true,
+                           return_headers: true,
+                           converters:     :numeric )
     assert_equal([%w{1 1}, %w{2 2}, %w{3 3}], csv[0].to_a)
     assert_equal([["1", 1], ["2", 2], ["3", 3]], csv[1].to_a)
     assert_nil(csv[2])
     
     # header converters do affect headers (only)
     assert_nothing_raised(Exception) do 
-      csv = CSV.parse( data, :headers           => true,
-                             :return_headers    => true,
-                             :converters        => :numeric,
-                             :header_converters => :symbol )
+      csv = CSV.parse( data, headers:           true,
+                             return_headers:    true,
+                             converters:        :numeric,
+                             header_converters: :symbol )
     end
     assert_equal([[:"1", "1"], [:"2", "2"], [:"3", "3"]], csv[0].to_a)
     assert_equal([[:"1", 1], [:"2", 2], [:"3", 3]], csv[1].to_a)
@@ -209,32 +209,32 @@ class TestCSVHeaders < Test::Unit::TestCase
   end
   
   def test_builtin_downcase_converter
-    csv = CSV.parse( "One,TWO Three", :headers           => true,
-                                      :return_headers    => true,
-                                      :header_converters => :downcase )
+    csv = CSV.parse( "One,TWO Three", headers:           true,
+                                      return_headers:    true,
+                                      header_converters: :downcase )
     assert_equal(%w{one two\ three}, csv.headers)
   end
   
   def test_builtin_symbol_converter
-    csv = CSV.parse( "One,TWO Three", :headers           => true,
-                                      :return_headers    => true,
-                                      :header_converters => :symbol )
+    csv = CSV.parse( "One,TWO Three", headers:           true,
+                                      return_headers:    true,
+                                      header_converters: :symbol )
     assert_equal([:one, :two_three], csv.headers)
   end
   
   def test_custom_converter
     converter = lambda { |header| header.tr(" ", "_") }
     csv       = CSV.parse( "One,TWO Three",
-                           :headers           => true,
-                           :return_headers    => true,
-                           :header_converters => converter )
+                           headers:           true,
+                           return_headers:    true,
+                           header_converters: converter )
     assert_equal(%w{One TWO_Three}, csv.headers)
   end
   
   def test_table_support
     csv = nil
     assert_nothing_raised(Exception) do 
-      csv = CSV.parse(@data, :headers => true)
+      csv = CSV.parse(@data, headers: true)
     end
     
     assert_instance_of(CSV::Table, csv)
@@ -253,15 +253,15 @@ class TestCSVHeaders < Test::Unit::TestCase
     END_CSV
     
     expected = [%w[1 2 3]]
-    CSV.parse(@data, :headers => true, :skip_blanks => true) do |row|
+    CSV.parse(@data, headers: true, skip_blanks: true) do |row|
       assert_equal(expected.shift, row.fields)
     end
     
     expected = [%w[A B C], %w[1 2 3]]
     CSV.parse( @data,
-               :headers        => true,
-               :return_headers => true, 
-               :skip_blanks    => true ) do |row|
+               headers:        true,
+               return_headers: true, 
+               skip_blanks:    true ) do |row|
       assert_equal(expected.shift, row.fields)
     end
   end
@@ -271,7 +271,7 @@ class TestCSVHeaders < Test::Unit::TestCase
     assert_nil(CSV.new(@data).headers)
     
     # headers
-    csv = CSV.new(@data, :headers => true)
+    csv = CSV.new(@data, headers: true)
     assert_equal(true, csv.headers)                    # before headers are read
     csv.shift                                          # set headers
     assert_equal(%w[first second third], csv.headers)  # after headers are read
@@ -281,7 +281,7 @@ class TestCSVHeaders < Test::Unit::TestCase
     @data += "\n#{@data}"  # add a blank row
     
     # ensure that everything returned is a Row object
-    CSV.parse(@data, :headers => true) do |row|
+    CSV.parse(@data, headers: true) do |row|
       assert_instance_of(CSV::Row, row)
     end
   end

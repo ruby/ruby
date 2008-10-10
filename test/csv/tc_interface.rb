@@ -30,13 +30,13 @@ class TestCSVInterface < Test::Unit::TestCase
   ### Test Read Interface ###
   
   def test_foreach
-    CSV.foreach(@path, :col_sep => "\t", :row_sep => "\r\n") do |row|
+    CSV.foreach(@path, col_sep: "\t", row_sep: "\r\n") do |row|
       assert_equal(@expected.shift, row)
     end
   end
   
   def test_open_and_close
-    csv = CSV.open(@path, "r+", :col_sep => "\t", :row_sep => "\r\n")
+    csv = CSV.open(@path, "r+", col_sep: "\t", row_sep: "\r\n")
     assert_not_nil(csv)
     assert_instance_of(CSV, csv)
     assert_equal(false, csv.closed?)
@@ -55,21 +55,21 @@ class TestCSVInterface < Test::Unit::TestCase
   def test_parse
     data = File.read(@path)
     assert_equal( @expected,
-                  CSV.parse(data, :col_sep => "\t", :row_sep => "\r\n") )
+                  CSV.parse(data, col_sep: "\t", row_sep: "\r\n") )
 
-    CSV.parse(data, :col_sep => "\t", :row_sep => "\r\n") do |row|
+    CSV.parse(data, col_sep: "\t", row_sep: "\r\n") do |row|
       assert_equal(@expected.shift, row)
     end
   end
   
   def test_parse_line
-    row = CSV.parse_line("1;2;3", :col_sep => ";")
+    row = CSV.parse_line("1;2;3", col_sep: ";")
     assert_not_nil(row)
     assert_instance_of(Array, row)
     assert_equal(%w{1 2 3}, row)
     
     # shortcut interface
-    row = "1;2;3".parse_csv(:col_sep => ";")
+    row = "1;2;3".parse_csv(col_sep: ";")
     assert_not_nil(row)
     assert_instance_of(Array, row)
     assert_equal(%w{1 2 3}, row)
@@ -77,29 +77,29 @@ class TestCSVInterface < Test::Unit::TestCase
   
   def test_read_and_readlines
     assert_equal( @expected,
-                  CSV.read(@path, :col_sep => "\t", :row_sep => "\r\n") )
+                  CSV.read(@path, col_sep: "\t", row_sep: "\r\n") )
     assert_equal( @expected,
-                  CSV.readlines(@path, :col_sep => "\t", :row_sep => "\r\n") )
+                  CSV.readlines(@path, col_sep: "\t", row_sep: "\r\n") )
     
     
-    data = CSV.open(@path, :col_sep => "\t", :row_sep => "\r\n") do |csv|
+    data = CSV.open(@path, col_sep: "\t", row_sep: "\r\n") do |csv|
       csv.read
     end
     assert_equal(@expected, data)
-    data = CSV.open(@path, :col_sep => "\t", :row_sep => "\r\n") do |csv|
+    data = CSV.open(@path, col_sep: "\t", row_sep: "\r\n") do |csv|
       csv.readlines
     end
     assert_equal(@expected, data)
   end
   
   def test_table
-    table = CSV.table(@path, :col_sep => "\t", :row_sep => "\r\n")
+    table = CSV.table(@path, col_sep: "\t", row_sep: "\r\n")
     assert_instance_of(CSV::Table, table)
     assert_equal([[:"1", :"2", :"3"], [4, 5, nil]], table.to_a)
   end
   
   def test_shift  # aliased as gets() and readline()
-    CSV.open(@path, "r+", :col_sep => "\t", :row_sep => "\r\n") do |csv|
+    CSV.open(@path, "r+", col_sep: "\t", row_sep: "\r\n") do |csv|
       assert_equal(@expected.shift, csv.shift)
       assert_equal(@expected.shift, csv.shift)
       assert_equal(nil, csv.shift)
@@ -125,13 +125,13 @@ class TestCSVInterface < Test::Unit::TestCase
   end
   
   def test_generate_line
-    line = CSV.generate_line(%w{1 2 3}, :col_sep => ";")
+    line = CSV.generate_line(%w{1 2 3}, col_sep: ";")
     assert_not_nil(line)
     assert_instance_of(String, line)
     assert_equal("1;2;3\n", line)
     
     # shortcut interface
-    line = %w{1 2 3}.to_csv(:col_sep => ";")
+    line = %w{1 2 3}.to_csv(col_sep: ";")
     assert_not_nil(line)
     assert_instance_of(String, line)
     assert_equal("1;2;3\n", line)
@@ -141,7 +141,7 @@ class TestCSVInterface < Test::Unit::TestCase
     File.unlink(@path)
 
     headers = %w{a b c}
-    CSV.open(@path, "w", :headers => true) do |csv|
+    CSV.open(@path, "w", headers: true) do |csv|
       csv << headers
       csv << %w{1 2 3}
       assert_equal(headers, csv.instance_variable_get(:@headers))
@@ -161,15 +161,15 @@ class TestCSVInterface < Test::Unit::TestCase
   def test_write_hash
     File.unlink(@path)
 
-    lines = [{:a => 1, :b => 2, :c => 3}, {:a => 4, :b => 5, :c => 6}]
-    CSV.open( @path, "w", :headers           => true,
-                          :header_converters => :symbol ) do |csv|
+    lines = [{a: 1, b: 2, c: 3}, {a: 4, b: 5, c: 6}]
+    CSV.open( @path, "w", headers:           true,
+                          header_converters: :symbol ) do |csv|
       csv << lines.first.keys
       lines.each { |line| csv << line }
     end
-    CSV.open( @path, "w", :headers           => true,
-                          :converters        => :all,
-                          :header_converters => :symbol ) do |csv|
+    CSV.open( @path, "w", headers:           true,
+                          converters:        :all,
+                          header_converters: :symbol ) do |csv|
       csv.each { |line| assert_equal(lines.shift, line.to_hash) }
     end
   end
@@ -177,8 +177,8 @@ class TestCSVInterface < Test::Unit::TestCase
   def test_write_hash_with_headers_array
     File.unlink(@path)
 
-    lines = [{:a => 1, :b => 2, :c => 3}, {:a => 4, :b => 5, :c => 6}]
-    CSV.open(@path, "w", :headers => [:b, :a, :c]) do |csv|
+    lines = [{a: 1, b: 2, c: 3}, {a: 4, b: 5, c: 6}]
+    CSV.open(@path, "w", headers: [:b, :a, :c]) do |csv|
       lines.each { |line| csv << line }
     end
 
@@ -189,8 +189,8 @@ class TestCSVInterface < Test::Unit::TestCase
     end
 
     # test reading CSV with headers
-    CSV.open( @path, "r", :headers    => [:b, :a, :c],
-                          :converters => :all ) do |csv|
+    CSV.open( @path, "r", headers:    [:b, :a, :c],
+                          converters: :all ) do |csv|
       csv.each { |line| assert_equal(lines.shift, line.to_hash) }
     end
   end
@@ -199,7 +199,7 @@ class TestCSVInterface < Test::Unit::TestCase
     File.unlink(@path)
 
     lines = [{"a" => 1, "b" => 2, "c" => 3}, {"a" => 4, "b" => 5, "c" => 6}]
-    CSV.open(@path, "w", :headers => "b|a|c", :col_sep => "|") do |csv|
+    CSV.open(@path, "w", headers: "b|a|c", col_sep: "|") do |csv|
       lines.each { |line| csv << line }
     end
 
@@ -210,9 +210,9 @@ class TestCSVInterface < Test::Unit::TestCase
     end
 
     # test reading CSV with headers
-    CSV.open( @path, "r", :headers    => "b|a|c",
-                          :col_sep    => "|",
-                          :converters => :all ) do |csv|
+    CSV.open( @path, "r", headers:    "b|a|c",
+                          col_sep:    "|",
+                          converters: :all ) do |csv|
       csv.each { |line| assert_equal(lines.shift, line.to_hash) }
     end
   end
@@ -221,9 +221,9 @@ class TestCSVInterface < Test::Unit::TestCase
     File.unlink(@path)
 
     lines = [{"a" => 1, "b" => 2, "c" => 3}, {"a" => 4, "b" => 5, "c" => 6}]
-    CSV.open( @path, "w", :headers       => "b|a|c",
-                          :write_headers => true,
-                          :col_sep       => "|" ) do |csv|
+    CSV.open( @path, "w", headers:       "b|a|c",
+                          write_headers: true,
+                          col_sep:       "|" ) do |csv|
       lines.each { |line| csv << line }
     end
 
@@ -235,9 +235,9 @@ class TestCSVInterface < Test::Unit::TestCase
     end
 
     # test reading CSV with headers
-    CSV.open( @path, "r", :headers    => true,
-                          :col_sep    => "|",
-                          :converters => :all ) do |csv|
+    CSV.open( @path, "r", headers:    true,
+                          col_sep:    "|",
+                          converters: :all ) do |csv|
       csv.each { |line| assert_equal(lines.shift, line.to_hash) }
     end
   end
@@ -245,7 +245,7 @@ class TestCSVInterface < Test::Unit::TestCase
   def test_append  # aliased add_row() and puts()
     File.unlink(@path)
     
-    CSV.open(@path, "w", :col_sep => "\t", :row_sep => "\r\n") do |csv|
+    CSV.open(@path, "w", col_sep: "\t", row_sep: "\r\n") do |csv|
       @expected.each { |row| csv << row }
     end
 
@@ -254,7 +254,7 @@ class TestCSVInterface < Test::Unit::TestCase
     # same thing using CSV::Row objects
     File.unlink(@path)
     
-    CSV.open(@path, "w", :col_sep => "\t", :row_sep => "\r\n") do |csv|
+    CSV.open(@path, "w", col_sep: "\t", row_sep: "\r\n") do |csv|
       @expected.each { |row| csv << CSV::Row.new(Array.new, row) }
     end
 
@@ -268,8 +268,8 @@ class TestCSVInterface < Test::Unit::TestCase
     
     expected = [[1, 2, 3], [4, 5]]
     CSV.filter( "1;2;3\n4;5\n", (result = String.new),
-                :in_col_sep => ";", :out_col_sep => ",",
-                :converters => :all ) do |row|
+                in_col_sep: ";", out_col_sep: ",",
+                converters: :all ) do |row|
       assert_equal(row, expected.shift)
       row.map! { |n| n * 2 }
       row << "Added\r"
@@ -282,7 +282,7 @@ class TestCSVInterface < Test::Unit::TestCase
     
     first = nil
     assert_nothing_raised(Exception) do 
-      first =  CSV.instance(csv, :col_sep => ";")
+      first =  CSV.instance(csv, col_sep: ";")
       first << %w{a b c}
     end
     
@@ -290,7 +290,7 @@ class TestCSVInterface < Test::Unit::TestCase
     
     second = nil
     assert_nothing_raised(Exception) do 
-      second =  CSV.instance(csv, :col_sep => ";")
+      second =  CSV.instance(csv, col_sep: ";")
       second << [1, 2, 3]
     end
     

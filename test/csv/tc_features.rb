@@ -46,25 +46,25 @@ class TestCSVFeatures < Test::Unit::TestCase
       TEST_CASES.each do |test_case|
         assert_equal( test_case.last.map { |t| t.tr(",", sep) unless t.nil? },
                       CSV.parse_line( test_case.first.tr(",", sep),
-                                      :col_sep => sep ) )
+                                      col_sep: sep ) )
       end
     end
-    assert_equal([",,,", nil], CSV.parse_line(",,,;", :col_sep => ";"))
+    assert_equal([",,,", nil], CSV.parse_line(",,,;", col_sep: ";"))
   end
   
   def test_row_sep
     assert_raise(CSV::MalformedCSVError) do
-        CSV.parse_line("1,2,3\n,4,5\r\n", :row_sep => "\r\n")
+        CSV.parse_line("1,2,3\n,4,5\r\n", row_sep: "\r\n")
     end
     assert_equal( ["1", "2", "3\n", "4", "5"],
-                  CSV.parse_line(%Q{1,2,"3\n",4,5\r\n}, :row_sep => "\r\n"))
+                  CSV.parse_line(%Q{1,2,"3\n",4,5\r\n}, row_sep: "\r\n"))
   end
   
   def test_quote_char
     TEST_CASES.each do |test_case|
       assert_equal( test_case.last.map { |t| t.tr('"', "'") unless t.nil? },
                     CSV.parse_line( test_case.first.tr('"', "'"),
-                                    :quote_char => "'" ) )
+                                    quote_char: "'" ) )
     end
   end
   
@@ -109,13 +109,13 @@ class TestCSVFeatures < Test::Unit::TestCase
   end
   
   def test_unknown_options
-    assert_raise(ArgumentError) { CSV.new(String.new, :unknown => :error) }
+    assert_raise(ArgumentError) { CSV.new(String.new, unknown: :error) }
   end
   
   def test_skip_blanks
     assert_equal(4, @csv.to_a.size)
 
-    @csv  = CSV.new(@sample_data, :skip_blanks => true)
+    @csv  = CSV.new(@sample_data, skip_blanks: true)
     
     count = 0
     @csv.each do |row|
@@ -138,18 +138,18 @@ class TestCSVFeatures < Test::Unit::TestCase
   def test_converters_reader
     # no change
     assert_equal( [:integer],
-                  CSV.new("abc,def", :converters => [:integer]).converters )
+                  CSV.new("abc,def", converters: [:integer]).converters )
     
     # just one
     assert_equal( [:integer],
-                  CSV.new("abc,def", :converters => :integer).converters )
+                  CSV.new("abc,def", converters: :integer).converters )
     
     # expanded
     assert_equal( [:integer, :float],
-                  CSV.new("abc,def", :converters => :numeric).converters )
+                  CSV.new("abc,def", converters: :numeric).converters )
     
     # custom
-    csv = CSV.new("abc,def", :converters => [:integer, lambda {  }])
+    csv = CSV.new("abc,def", converters: [:integer, lambda {  }])
     assert_equal(2, csv.converters.size)
     assert_equal(:integer, csv.converters.first)
     assert_instance_of(Proc, csv.converters.last)
@@ -172,12 +172,12 @@ class TestCSVFeatures < Test::Unit::TestCase
   
   # reported by Kev Jackson
   def test_failing_to_escape_col_sep_bug_fix
-    assert_nothing_raised(Exception) { CSV.new(String.new, :col_sep => "|") }
+    assert_nothing_raised(Exception) { CSV.new(String.new, col_sep: "|") }
   end
   
   # reported by Chris Roos
   def test_failing_to_reset_headers_in_rewind_bug_fix
-    csv = CSV.new("forename,surname", :headers => true, :return_headers => true)
+    csv = CSV.new("forename,surname", headers: true, return_headers: true)
     csv.each { |row| assert row.header_row? }
     csv.rewind
     csv.each { |row| assert row.header_row? }
@@ -189,7 +189,7 @@ class TestCSVFeatures < Test::Unit::TestCase
     <=><=>A<=>B<=>C
     1<=>2<=>3
     END_DATA
-    parsed = CSV.parse(data, :col_sep => "<=>")
+    parsed = CSV.parse(data, col_sep: "<=>")
     assert_equal([[nil, nil, "A", "B", "C"], ["1", "2", "3"]], parsed)
   end
   
@@ -243,7 +243,7 @@ class TestCSVFeatures < Test::Unit::TestCase
   end
   
   def test_inspect_shows_headers_when_available
-    CSV.new("one,two,three\n1,2,3\n", :headers => true) do |csv|
+    CSV.new("one,two,three\n1,2,3\n", headers: true) do |csv|
       assert(csv.inspect.include?("headers:true"), "Header hint not shown.")
       csv.shift  # load headers
       assert_match(/headers:\[[^\]]+\]/, csv.inspect)
