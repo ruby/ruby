@@ -1,5 +1,6 @@
 #line 1 "parser.rl"
 #include "ruby.h"
+#include "ruby/encoding.h"
 #include "unicode.h"
 
 #define EVIL 0x666
@@ -1405,7 +1406,8 @@ case 7:
 #line 411 "parser.rl"
 
     if (cs >= JSON_string_first_final) {
-        return p + 1;
+	rb_enc_associate(*result, rb_utf8_encoding());
+	return p + 1;
     } else {
         return NULL;
     }

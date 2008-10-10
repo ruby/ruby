@@ -1,3 +1,8 @@
+Fri Oct 10 17:26:50 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json/ext/parser/parser.c (JSON_parse_string):
+	  associate encoding.
+
 Fri Oct 10 10:18:21 2008  Ryan Davis  <ryan@wrath.local>
 
 	* lib/test/*: reverted back to test/unit.
