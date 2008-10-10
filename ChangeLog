@@ -1,3 +1,9 @@
+Fri Oct 10 10:18:21 2008  Ryan Davis  <ryan@wrath.local>
+
+	* lib/test/*: reverted back to test/unit.
+	* test/test/*: ditto
+	* lib/minitest/*: Imported minitest 1.3.0 r4333.
+
 Fri Oct 10 03:41:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): check if codepoint for %c is valid.
