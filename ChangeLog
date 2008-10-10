@@ -42,7 +42,7 @@ Fri Oct 10 00:21:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Oct 10 00:11:16 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	* transcode.c (rb_econv_add_coverter): remove unnecessary NULL check.
+	* transcode.c (rb_econv_add_converter): remove unnecessary NULL check.
 
 Thu Oct  9 23:53:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -170,7 +170,7 @@ Mon Oct  6 16:44:52 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 	  condition.
 
 	* test/cgi/test_cgi_core.rb: bug fix encoding.
-	  thaks to TAKANO Mitsuhiro <takano32 at jus.or.jp> .
+	  thanks to TAKANO Mitsuhiro <takano32 at jus.or.jp> .
 
 	* test/cgi/test_cgi_multipart.rb: temporary comment in.
 
@@ -462,7 +462,7 @@ Sat Oct  4 15:52:17 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/test/**/*: replaced by miniunit.
 	  miniunit had been temporarily reverted at r19643 but
-	  now recovred.
+	  now recovered.
 
 Sat Oct  4 15:33:26 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
@@ -524,7 +524,7 @@ Wed Oct  1 21:36:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_gc_call_finalizer_at_exit): finalize deferred IO and Data.
 
-	* gc.c (rb_gc_call_finalizer_at_exit): deffers IO finalization.
+	* gc.c (rb_gc_call_finalizer_at_exit): defers IO finalization.
 	  [ruby-dev:36646]
 
 Wed Oct  1 19:11:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -842,7 +842,7 @@ Fri Sep 26 11:34:08 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 Fri Sep 26 11:05:41 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* transcode.c, include/ruby/encoding.c (rb_transcode_convertible):
-	  new function. checking the existance of converter.
+	  new function. checking the existence of converter.
 
 Fri Sep 26 10:35:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -968,7 +968,7 @@ Wed Sep 24 19:01:45 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 Wed Sep 24 17:44:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* complex.c (Init_Complex), rational.c (Init_Rational): undefines
-	  default #allocate methods which call the allocater.
+	  default #allocate methods which call the allocator.
 
 Wed Sep 24 17:02:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -1011,7 +1011,7 @@ Wed Sep 24 06:41:24 2008  Ryan Davis  <ryand-ruby@zenspider.com>
 Wed Sep 24 04:45:35 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/node.h, node.h: move node.h from include path.
-	  This change stop to install node.h beacuase of saving ABI
+	  This change stop to install node.h because of saving ABI
 	  (node.h will be changed. Extensions should not depends on
 	   this file).
 
@@ -1082,7 +1082,7 @@ Tue Sep 23 20:06:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Sep 23 19:38:03 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* win32/win32.c (subtruct): check tv_sec. reported by ko1.
+	* win32/win32.c (subtract): check tv_sec. reported by ko1.
 
 Tue Sep 23 19:21:03 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
@@ -1342,7 +1342,7 @@ Sun Sep 21 07:43:16 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/mathn.rb: ditto.
 
-	* lib/complex.rb: ditto. and provides some obsolate methods.
+	* lib/complex.rb: ditto. and provides some obsolete methods.
 
 Sun Sep 21 02:48:45 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
