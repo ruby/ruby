@@ -1,3 +1,11 @@
+Sat Oct 11 03:54:05 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y: optimize 'for' statement when one variable given.
+
+	* benchmark/bm_loop_for.rb: added.
+
+	* benchmark/bm_loop_times.rb: modified.
+
 Sat Oct 11 12:09:05 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv/csv.rb:  Added support for Encoding::default_internal.
