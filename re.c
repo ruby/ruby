@@ -2569,11 +2569,13 @@ reg_match_pos(VALUE re, VALUE *strp, long pos)
  *     p rhs    #=> nil
  *
  *  This assignment is implemented in the Ruby parser.
- *  So a regexp literal is required for the assignment. 
+ *  The parser detects 'regexp-literal =~ expression' for the assignment.
+ *  The regexp must be a literal without interpolation and placed at left hand side.
+ *
  *  The assignment is not occur if the regexp is not a literal.
  *
  *     re = /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/
- *     re =~ "  x = "
+ *     re =~ "  x = y  "
  *     p lhs    # undefined local variable
  *     p rhs    # undefined local variable
  *
@@ -2583,6 +2585,11 @@ reg_match_pos(VALUE re, VALUE *strp, long pos)
  *     rhs_pat = /(?<rhs>\w+)/
  *     /(?<lhs>\w+)\s*=\s*#{rhs_pat}/ =~ "x = y"
  *     p lhs    # undefined local variable
+ *
+ *  The assignment is not occur if the regexp is placed at right hand side.
+ *
+ *    "  x = y  " =~ /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/
+ *    p lhs, rhs # undefined local variable
  *
  */
 
