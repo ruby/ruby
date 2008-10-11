@@ -1287,7 +1287,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
   else
     sep = ""
   end
-  extconf_h = $extconf_h ? "-DRUBY_EXTCONF_H=\\\"$(RUBY_EXTCONF_H)\\\" " : $defs.join(" ")<<" "
+  extconf_h = $extconf_h ? "-DRUBY_EXTCONF_H=\\\"$(RUBY_EXTCONF_H)\\\" " : $defs.join(" ") << " "
   mk << %{
 CC = #{CONFIG['CC']}
 LIBRUBY = #{CONFIG['LIBRUBY']}
@@ -1497,8 +1497,8 @@ TARGET_SO     = #{($extout ? '$(RUBYARCHDIR)/' : '')}$(DLLIB)
 CLEANLIBS     = #{n}.#{CONFIG['DLEXT']} #{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
 CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, '$(TARGET)')}} *.bak
 
-all:		#{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}
-static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
+all:    #{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}
+static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
 "
   mfile.print CLEANINGS
   dirs = []
@@ -1808,13 +1808,13 @@ MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main() {return 0;
 sep = config_string('BUILD_FILE_SEPARATOR') {|sep| ":/=#{sep}" if sep != "/"} || ""
 CLEANINGS = "
 clean:
-		@-$(RM) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep})
+\t@-$(RM) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep})
 
-distclean:	clean
-		@-$(RM) Makefile $(RUBY_EXTCONF_H) conftest.* mkmf.log
-		@-$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES#{sep})
+distclean: clean
+\t@-$(RM) Makefile $(RUBY_EXTCONF_H) conftest.* mkmf.log
+\t@-$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES#{sep})
 
-realclean:	distclean
+realclean: distclean
 "
 
 if not $extmk and /\A(extconf|makefile).rb\z/ =~ File.basename($0)

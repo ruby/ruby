@@ -1,3 +1,8 @@
+Sat Oct 11 10:20:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (CLEANINGS): uses escaped form tabs to preventing the
+	  confusion.  [ruby-talk:317345]
+
 Fri Oct 10 11:34:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_mdump, time_mload): preserves GMT status.
