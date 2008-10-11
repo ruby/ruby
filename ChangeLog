@@ -1,3 +1,7 @@
+Sat Oct 11 19:49:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_prepare): use utf-8 encoding directly.
+
 Sat Oct 11 10:20:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (CLEANINGS): uses escaped form tabs to preventing the

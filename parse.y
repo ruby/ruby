@@ -6295,7 +6295,7 @@ parser_prepare(struct parser_params *parser)
 	if (lex_pend - lex_p >= 2 &&
 	    (unsigned char)lex_p[0] == 0xbb &&
 	    (unsigned char)lex_p[1] == 0xbf) {
-	    parser_set_encode(parser, "UTF-8");
+	    parser->enc = rb_utf8_encoding();
 	    lex_p += 2;
 	    lex_pbeg = lex_p;
 	    return;
