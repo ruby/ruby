@@ -1801,6 +1801,16 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
  *  read_nonblock reads from the buffer like readpartial.
  *  In this case, read(2) is not called.
  *
+ *  read_nonblock can emulate blocking read as follows.
+ *
+ *    begin
+ *      result = io.read_nonblock(maxlen)
+ *    rescue Errno::EINTR
+ *      retry
+ *    rescue Errno::EWOULDBLOCK, Errno::EAGAIN
+ *      IO.select([io])
+ *      retry
+ *    end
  */
 
 static VALUE
@@ -1832,6 +1842,16 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
  *
  *  If the write buffer is not empty, it is flushed at first.
  *
+ *  write_nonblock can emulate blocking write as follows.
+ *
+ *    begin
+ *      result = io.write_nonblock(string)
+ *    rescue Errno::EINTR
+ *      retry
+ *    rescue Errno::EWOULDBLOCK, Errno::EAGAIN
+ *      IO.select(nil, [io])
+ *      retry
+ *    end
  */
 
 static VALUE
