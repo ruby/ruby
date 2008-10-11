@@ -1,3 +1,8 @@
+Sat Oct 11 10:20:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (CLEANINGS): uses escaped form tabs to preventing the
+	  confusion.  [ruby-talk:317345]
+
 Sat Oct 11 08:51:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rake.rb (Rake::Application#standard_exception_handling): removed
