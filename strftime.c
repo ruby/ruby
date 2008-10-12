@@ -195,12 +195,11 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 #endif /* POSIX_SEMANTICS */
 #ifndef HAVE_TM_ZONE
 #ifndef HAVE_TM_NAME
-#if !defined HAVE_VAR_TIMEZONE || defined HAVE_TIMEZONE
+#if ((defined(MAILHEADER_EXT) && !HAVE_VAR_TIMEZONE && HAVE_GETTIMEOFDAY) || \
+     (!HAVE_TZNAME && HAVE_TIMEZONE))
 	struct timeval tv;
-#endif
-#ifdef HAVE_TIMEZONE
 	struct timezone zone;
-#endif /* HAVE_TIMEZONE */
+#endif
 #endif /* HAVE_TM_NAME */
 #endif /* HAVE_TM_ZONE */
 	int precision, flags;
@@ -473,7 +472,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 #else
 				off = -timezone / 60;
 #endif
-#else /* !HAVE_TIMEZONE */
+#else /* !HAVE_VAR_TIMEZONE */
 #ifdef HAVE_GETTIMEOFDAY
 				gettimeofday(&tv, &zone);
 				off = -zone.tz_minuteswest;
@@ -487,7 +486,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 					off = (now - mktime(&utc)) / 60;
 				}
 #endif
-#endif /* !HAVE_TIMEZONE */
+#endif /* !HAVE_VAR_TIMEZONE */
 #endif /* !HAVE_TM_ZONE */
 #endif /* !HAVE_TM_NAME */
 			}

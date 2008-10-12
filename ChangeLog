@@ -1,3 +1,7 @@
+Sun Oct 12 09:46:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (rb_strftime): suppressed warnings on cygwin.
+
 Sat Oct 11 19:49:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_prepare): use utf-8 encoding directly.

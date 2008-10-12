@@ -1,7 +1,7 @@
 #define RUBY_VERSION "1.9.0"
-#define RUBY_RELEASE_DATE "2008-10-11"
+#define RUBY_RELEASE_DATE "2008-10-12"
 #define RUBY_VERSION_CODE 190
-#define RUBY_RELEASE_CODE 20081011
+#define RUBY_RELEASE_CODE 20081012
 #define RUBY_PATCHLEVEL 0
 
 #define RUBY_VERSION_MAJOR 1
@@ -9,7 +9,7 @@
 #define RUBY_VERSION_TEENY 0
 #define RUBY_RELEASE_YEAR 2008
 #define RUBY_RELEASE_MONTH 10
-#define RUBY_RELEASE_DAY 11
+#define RUBY_RELEASE_DAY 12
 
 #ifdef RUBY_EXTERN
 RUBY_EXTERN const char ruby_version[];
@@ -32,23 +32,26 @@ RUBY_EXTERN const char ruby_copyright[];
 #define RUBY_REVISION 0
 #endif
 
-#if RUBY_VERSION_TEENY > 0 && RUBY_PATCHLEVEL < 5000 && !RUBY_REVISION
-#define RUBY_RELEASE_STR "patchlevel"
-#define RUBY_RELEASE_NUM RUBY_PATCHLEVEL
+#if RUBY_PATCHLEVEL
+#define RUBY_PATCHLEVEL_STR " patchlevel "STRINGIZE(RUBY_PATCHLEVEL)
 #else
-#ifdef RUBY_BRANCH_NAME
-#define RUBY_RELEASE_STR RUBY_BRANCH_NAME
-#else
-#define RUBY_RELEASE_STR "revision"
+#define RUBY_PATCHLEVEL_STR ""
 #endif
-#define RUBY_RELEASE_NUM RUBY_REVISION
+#if RUBY_REVISION
+#ifdef RUBY_BRANCH_NAME
+#define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "STRINGIZE(RUBY_REVISION)
+#else
+#define RUBY_REVISION_STR " revision "STRINGIZE(RUBY_REVISION)
+#endif
+#else
+#define RUBY_REVISION_STR ""
 #endif
 
 # define RUBY_DESCRIPTION	    \
     "ruby "RUBY_VERSION		    \
     " ("RUBY_RELEASE_DATE" "	    \
-    RUBY_RELEASE_STR" "		    \
-    STRINGIZE(RUBY_RELEASE_NUM)") " \
+    RUBY_PATCHLEVEL_STR		    \
+    RUBY_REVISION_STR") "	    \
     "["RUBY_PLATFORM"]"
 # define RUBY_COPYRIGHT 	    \
     "ruby - Copyright (C) "	    \
