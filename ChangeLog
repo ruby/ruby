@@ -1,3 +1,10 @@
+Sun Oct 12 18:00:18 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (set_ole_codepage, ole_cp2encoding,
+	  ole_wc2mb, ole_vstr2wc, ole_mb2wc): support CP51932 (only mswin32).
+
+	* test/win32ole/test_win32ole.rb: ditto.
+
 Sun Oct 12 12:03:38 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c, vm_insnhelper.h (ruby_vm_redefined_flag): apply optimization

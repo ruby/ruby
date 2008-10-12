@@ -361,6 +361,30 @@ if defined?(WIN32OLE)
       end
     end
 
+    def test_cp51932
+      cp = WIN32OLE.codepage
+      begin
+        obj = WIN32OLE_VARIANT.new([0x3042].pack("U*").force_encoding("UTF-8"))
+        # mswin32 ruby only supports CP51932 
+        if /mswin/ =~ RUBY_PLATFORM
+          begin
+            WIN32OLE.codepage = 51932
+          rescue
+          end
+          if WIN32OLE.codepage == 51932
+            assert_equal("\xA4\xA2".force_encoding("CP51932"), obj.value)
+          end
+        else
+          # cygwin, mingw32 ruby does not support CP51932
+          assert_raise(WIN32OLERuntimeError) {
+            WIN32OLE.codepage = 51932
+          }
+        end
+      ensure
+        WIN32OLE.codepage = cp
+      end
+    end
+
     def test_s_locale
       assert_equal(WIN32OLE::LOCALE_SYSTEM_DEFAULT, WIN32OLE.locale)
     end
