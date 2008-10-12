@@ -2448,12 +2448,20 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     const char *sname, *dname;
     int dencidx;
 
-    if (argc < 1 || argc > 2) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
+    if (argc <0 || argc > 2) {
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0..2)", argc);
     }
 
-    arg1 = argv[0];
-    arg2 = argc==1 ? Qnil : argv[1];
+    if (argc == 0) {
+	arg1 = rb_enc_default_internal();
+	if (NIL_P(arg1)) {
+	    rb_raise(rb_eArgError, "Encoding.default_internal is not specified");
+	}
+    }
+    else {
+	arg1 = argv[0];
+    }
+    arg2 = argc<=1 ? Qnil : argv[1];
     dencidx = str_transcode_enc_args(str, &arg1, &arg2, &sname, &senc, &dname, &denc);
 
     if ((ecflags & (ECONV_UNIVERSAL_NEWLINE_DECORATOR|
@@ -2568,6 +2576,7 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *     str.encode(encoding [, options] )   => str
  *     str.encode(dst_encoding, src_encoding [, options] )   => str
+ *     str.encode([options])   => str
  *
  *  The first form returns a copy of <i>str</i> transcoded
  *  to encoding +encoding+.
@@ -2575,6 +2584,8 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
  *  from src_encoding to dst_encoding.
  *  The options Hash gives details for conversion. Details
  *  to be added.
+ *  The last form returns a copy of <i>str</i> transcoded to
+ *  <code>Encoding.default_internal</code>.
  */
 
 static VALUE

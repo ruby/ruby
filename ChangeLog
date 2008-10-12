@@ -1,3 +1,9 @@
+Mon Oct 13 07:42:57 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* transcode.c (str_transcode0): String#encode() with no encoding
+	  specified transcode the string into Encoding.default_internal.
+	  inspired by [ruby-core:19298].
+
 Sun Oct 12 18:00:18 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (set_ole_codepage, ole_cp2encoding,
