@@ -34,32 +34,35 @@
 #define VMDEBUG 3
 #endif
 
-/* VM state version */
+enum {
+  BOP_PLUS,
+  BOP_MINUS,
+  BOP_MULT,
+  BOP_DIV,
+  BOP_MOD,
+  BOP_EQ,
+  BOP_LT,
+  BOP_LE,
+  BOP_LTLT,
+  BOP_AREF,
+  BOP_ASET,
+  BOP_LENGTH,
+  BOP_SUCC,
+  BOP_GT,
+  BOP_GE,
+  BOP_NOT,
+  BOP_NEQ,
 
+  BOP_LAST_,
+};
+
+extern char ruby_vm_redefined_flag[BOP_LAST_];
 extern VALUE ruby_vm_global_state_version;
-extern VALUE ruby_vm_redefined_flag;
 
 #define GET_VM_STATE_VERSION() (ruby_vm_global_state_version)
 #define INC_VM_STATE_VERSION() \
   (ruby_vm_global_state_version = (ruby_vm_global_state_version+1) & 0x8fffffff)
 
-#define BOP_PLUS     0x01
-#define BOP_MINUS    0x02
-#define BOP_MULT     0x04
-#define BOP_DIV      0x08
-#define BOP_MOD      0x10
-#define BOP_EQ       0x20
-#define BOP_LT       0x40
-#define BOP_LE       0x80
-#define BOP_LTLT    0x100
-#define BOP_AREF    0x200
-#define BOP_ASET    0x400
-#define BOP_LENGTH  0x800
-#define BOP_SUCC   0x1000
-#define BOP_GT     0x2000
-#define BOP_GE     0x4000
-#define BOP_NOT    0x8000
-#define BOP_NEQ   0x10000
 
 /**********************************************************/
 /* deal with stack                                        */
@@ -180,7 +183,7 @@ extern VALUE ruby_vm_redefined_flag;
 
 /* optimize insn */
 #define FIXNUM_2_P(a, b) ((a) & (b) & 1)
-#define BASIC_OP_UNREDEFINED_P(op) (LIKELY((ruby_vm_redefined_flag & (op)) == 0))
+#define BASIC_OP_UNREDEFINED_P(op) (LIKELY(ruby_vm_redefined_flag[op] == 0))
 #define HEAP_CLASS_OF(obj) RBASIC(obj)->klass
 
 #define CALL_SIMPLE_METHOD(num, id, recv) do { \

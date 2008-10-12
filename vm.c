@@ -34,7 +34,7 @@ VALUE rb_cEnv;
 VALUE rb_mRubyVMFrozenCore;
 
 VALUE ruby_vm_global_state_version = 1;
-VALUE ruby_vm_redefined_flag = 0;
+char ruby_vm_redefined_flag[BOP_LAST_];
 
 rb_thread_t *ruby_current_thread = 0;
 rb_vm_t *ruby_current_vm = 0;
@@ -877,7 +877,7 @@ rb_vm_check_redefinition_opt_method(const NODE *node)
     VALUE bop;
 
     if (st_lookup(vm_opt_method_table, (st_data_t)node, &bop)) {
-	ruby_vm_redefined_flag |= bop;
+	ruby_vm_redefined_flag[bop] = 1;
     }
 }
 
@@ -902,7 +902,7 @@ vm_init_redefined_flag(void)
 
     vm_opt_method_table = st_init_numtable();
 
-#define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_)
+#define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
     OP(PLUS, PLUS), (C(Fixnum), C(Float), C(String), C(Array));
     OP(MINUS, MINUS), (C(Fixnum));
