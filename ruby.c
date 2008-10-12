@@ -758,6 +758,10 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 	    if (!*++s) goto next_encoding;
 	    goto encoding;
 
+	  case 'U':
+	    opt->intern.enc.name = rb_str_new2("utf-8");
+	    break;
+
 	  case 'K':
 	    if (*++s) {
 		const char *enc_name = 0;

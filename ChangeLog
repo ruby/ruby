@@ -1,3 +1,8 @@
+Mon Oct 13 07:54:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (proc_options): add -U command line option to specify
+	  utf-8 as default_internal.
+
 Mon Oct 13 07:42:57 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* transcode.c (str_transcode0): String#encode() with no encoding
