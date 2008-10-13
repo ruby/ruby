@@ -2891,7 +2891,7 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
     long i;
     int ret, first=1;
     VALUE elt;
-    rb_encoding *senc, *denc;
+    rb_encoding *senc = 0, *denc = 0;
     const char *sname, *dname;
 
     ec = rb_econv_alloc(RARRAY_LEN(convpath));
