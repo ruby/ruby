@@ -470,6 +470,7 @@ m_sin(VALUE x)
     }
 }
 
+#if 0
 static VALUE
 m_sqrt(VALUE x)
 {
@@ -491,6 +492,7 @@ m_sqrt(VALUE x)
 	}
     }
 }
+#endif
 
 inline static VALUE
 f_complex_polar(VALUE klass, VALUE x, VALUE y)
