@@ -1,3 +1,7 @@
+Mon Oct 13 19:07:52 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* parse.y (token_info_pop): show source filename. [ruby-dev:36710]
+
 Mon Oct 13 08:59:08 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (load_conv_function51932): support

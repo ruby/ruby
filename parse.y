@@ -4856,8 +4856,9 @@ token_info_pop(struct parser_params *parser, const char *token)
     if (token_info_has_nonspaces(parser, token) || ptinfo->nonspc) { /* SKIP */
 	goto finish;
     }
-    rb_warning("mismatched indentations: line %d:'%s' and line %d:'%s'",
-	       ptinfo->linenum, ptinfo->token, linenum, token);
+    rb_compile_warning(ruby_sourcefile, linenum,
+               "mismatched indentations at '%s' with '%s' at %d",
+	       token, ptinfo->token, ptinfo->linenum);
 
   finish:
     xfree(ptinfo);
