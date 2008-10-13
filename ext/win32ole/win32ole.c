@@ -82,6 +82,15 @@
 #define V_UINTREF(X) V_UNION(X, puintVal)
 #endif
 
+/*
+ * unfortunately IID_IMultiLanguage2 is not included in any libXXX.a 
+ * in Cygwin(mingw32).
+ */
+#if defined(__CYGWIN__) ||  defined(__MINGW32__)
+#undef IID_IMultiLanguage2
+const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 0xC0, 0x4F, 0x8F, 0x5D, 0x9A}};
+#endif
+
 #define OLE_RELEASE(X) (X) ? ((X)->lpVtbl->Release(X)) : 0
 
 #define OLE_ADDREF(X) (X) ? ((X)->lpVtbl->AddRef(X)) : 0
@@ -119,7 +128,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.3.5"
+#define WIN32OLE_VERSION "1.3.6"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -965,15 +974,8 @@ load_conv_function51932()
     HRESULT hr;
     void *p;
     if (!pIMultiLanguage2) {
-#ifdef _MSC_VER
 	hr = CoCreateInstance(&CLSID_CMultiLanguage, NULL, CLSCTX_INPROC_SERVER,
 		              &IID_IMultiLanguage2, &p);
-#else
-	/* 
-	 * unfortunately, fail to link IID_IMultiLanguage2 on Cygwin or mingw32.
-	 */
-	hr = E_FAIL;
-#endif
 	if (FAILED(hr)) {
 	    rb_raise(eWIN32OLERuntimeError, "fail to load convert function for CP51932");
 	}

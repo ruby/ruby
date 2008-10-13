@@ -1,3 +1,10 @@
+Mon Oct 13 08:59:08 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (load_conv_function51932): support
+	  CP51932 on cygwin and mingw32. thanks to arton.
+
+	* test/win32ole/test_win32ole.rb (test_cp51932): ditto.
+
 Mon Oct 13 07:54:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (proc_options): add -U command line option to specify
