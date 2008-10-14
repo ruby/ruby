@@ -24,6 +24,9 @@ def create_win32ole_makefile
      have_library("kernel32") and
      have_library("advapi32") and
      have_header("windows.h")
+    unless have_type("IMultiLanguage2", "mlang.h")
+      have_type("IMultiLanguage", "mlang.h")
+    end
     create_makefile("win32ole")
     create_docfile(SRCFILES)
   else

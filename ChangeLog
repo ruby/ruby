@@ -1,3 +1,10 @@
+Tue Oct 14 21:36:29 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (load_conv_function51932): check
+	  having IMultiLanguage2 or IMultiLanguage. [ruby-dev:36716]
+
+	* ext/win32ole/extconf.rb: ditto.
+
 Tue Oct 14 20:45:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (Init_IO): $FILENAME and $* must be read-only.  [ruby-dev:36698]

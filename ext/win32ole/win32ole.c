@@ -128,7 +128,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.3.6"
+#define WIN32OLE_VERSION "1.3.7"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -217,7 +217,14 @@ static st_table *enc2cp_table;
 static IMessageFilterVtbl message_filter;
 static IMessageFilter imessage_filter = { &message_filter };
 static IMessageFilter* previous_filter;
-static IMultiLanguage2 *pIMultiLanguage2 = NULL;
+
+#if defined(HAVE_TYPE_IMULTILANGUAGE2)
+static IMultiLanguage2 *pIMultiLanguage = NULL;
+#elif defined(HAVE_TYPE_IMULTILANGUAGE)
+static IMultiLanguage *pIMultiLanguage = NULL;
+#else
+static void *pIMultiLanguage = NULL; /* dummy */
+#endif
 
 struct oledata {
     IDispatch *pDispatch;
@@ -971,15 +978,23 @@ static UINT ole_encoding2cp(rb_encoding *enc)
 static void
 load_conv_function51932()
 {
-    HRESULT hr;
+    HRESULT hr = E_NOINTERFACE;
     void *p;
-    if (!pIMultiLanguage2) {
+    if (!pIMultiLanguage) {
+#if defined(HAVE_TYPE_IMULTILANGUAGE2)
 	hr = CoCreateInstance(&CLSID_CMultiLanguage, NULL, CLSCTX_INPROC_SERVER,
 		              &IID_IMultiLanguage2, &p);
+#elif defined(HAVE_TYPE_IMULTILANGUAGE)
+	hr = CoCreateInstance(&CLSID_CMultiLanguage, NULL, CLSCTX_INPROC_SERVER,
+		              &IID_IMultiLanguage, &p);
+#else
+	hr = E_NOINTERFACE;
+	p = NULL;
+#endif
 	if (FAILED(hr)) {
 	    rb_raise(eWIN32OLERuntimeError, "fail to load convert function for CP51932");
 	}
-	pIMultiLanguage2 = p;
+	pIMultiLanguage = p;
     }
 }
 
@@ -1098,13 +1113,13 @@ ole_wc2mb(LPWSTR pw)
     DWORD dw = 0;
     if (cWIN32OLE_cp == 51932) {
 	load_conv_function51932();
-	hr = pIMultiLanguage2->lpVtbl->ConvertStringFromUnicode(pIMultiLanguage2,
+	hr = pIMultiLanguage->lpVtbl->ConvertStringFromUnicode(pIMultiLanguage,
 		&dw, cWIN32OLE_cp, pw, NULL, NULL, &size);
 	if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert Unicode to CP%d", cWIN32OLE_cp);
 	}
 	pm = ALLOC_N(char, size + 1);
-	hr = pIMultiLanguage2->lpVtbl->ConvertStringFromUnicode(pIMultiLanguage2,
+	hr = pIMultiLanguage->lpVtbl->ConvertStringFromUnicode(pIMultiLanguage,
 		&dw, cWIN32OLE_cp, pw, NULL, pm, &size);
 	if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert Unicode to CP%d", cWIN32OLE_cp);
@@ -1340,14 +1355,14 @@ ole_vstr2wc(VALUE vstr)
 	load_conv_function51932();
 	len = RSTRING_LEN(vstr);
 	size = 0;
-	hr = pIMultiLanguage2->lpVtbl->ConvertStringToUnicode(pIMultiLanguage2,
+	hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
 		&dw, cp, RSTRING_PTR(vstr), &len, NULL, &size);
 	if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cp);
 	}
 	pw = SysAllocStringLen(NULL, size);
 	len = RSTRING_LEN(vstr);
-	hr = pIMultiLanguage2->lpVtbl->ConvertStringToUnicode(pIMultiLanguage2,
+	hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
 		&dw, cp, RSTRING_PTR(vstr), &len, pw, &size);
 	if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cp);
@@ -1372,13 +1387,13 @@ ole_mb2wc(char *pm, int len)
     if (cWIN32OLE_cp == 51932) {
 	load_conv_function51932();
 	size = 0;
-	hr = pIMultiLanguage2->lpVtbl->ConvertStringToUnicode(pIMultiLanguage2,
+	hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
 		&dw, cWIN32OLE_cp, pm, &n, NULL, &size);
 	if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cWIN32OLE_cp);
 	}
 	pw = SysAllocStringLen(NULL, size);
-	hr = pIMultiLanguage2->lpVtbl->ConvertStringToUnicode(pIMultiLanguage2,
+	hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
 		&dw, cWIN32OLE_cp, pm, &n, pw, &size);
 	if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cWIN32OLE_cp);
@@ -9139,7 +9154,4 @@ Init_win32ole()
     init_enc2cp();
     atexit((void (*)(void))free_enc2cp);
     ole_init_cp();
-    /*
-    cWIN32OLE_enc = ole_cp2encoding(cWIN32OLE_cp);
-    */
 }
