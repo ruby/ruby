@@ -1,3 +1,10 @@
+Tue Oct 14 11:14:26 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/net/pop.rb: check for invalid APOP timestamp. (CVE-2007-1558)
+	  [ruby-dev:36631]
+
+	* test/net/pop/test_pop.rb: ditto.
+
 Tue Oct 14 09:39:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (set_internal_encoding_once): check double contradicted
