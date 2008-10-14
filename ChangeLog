@@ -1,3 +1,15 @@
+Tue Oct 14 13:30:30 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/trans/single_byte.trans: added windows-1252
+
+	* enc/trans/windows-1252-tbl.rb: new file
+	  (contributed by Yoshihiro Kambayashi)
+
+	* tool/transcode-tblgen.rb: listed windows-1252 as '1byte'
+
+	* test/ruby/test_transcode.rb: added test_windows_1252
+	  (contributed by Yoshihiro Kambayashi)
+
 Tue Oct 14 12:22:32 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_variable.rb (TestVariable#test_variable): add

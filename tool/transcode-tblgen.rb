@@ -742,6 +742,7 @@ ValidEncoding = {
   'ISO-8859-13' => '1byte',
   'ISO-8859-14' => '1byte',
   'ISO-8859-15' => '1byte',
+  'WINDOWS-1252' => '1byte',
   'Windows-31J' => 'Shift_JIS',
   'eucJP-ms'    => 'EUC-JP'
 }.each {|k, v|

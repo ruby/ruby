@@ -133,6 +133,33 @@ class TestTranscode < Test::Unit::TestCase
     end
   end
 
+  def test_windows_1252
+    check_both_ways("\u20AC", "\x80", 'windows-1252') # €
+    assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1252') }
+    check_both_ways("\u201A", "\x82", 'windows-1252') # ‚
+    check_both_ways("\u0152", "\x8C", 'windows-1252') # >Œ
+    assert_raise(Encoding::UndefinedConversionError) { "\x8D".encode("utf-8", 'windows-1252') }
+    check_both_ways("\u017D", "\x8E", 'windows-1252') # Ž
+	assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'windows-1252') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'windows-1252') }
+    check_both_ways("\u2018", "\x91", 'windows-1252') #‘
+    check_both_ways("\u0153", "\x9C", 'windows-1252') # œ
+    assert_raise(Encoding::UndefinedConversionError) { "\x9D".encode("utf-8", 'windows-1252') }
+    check_both_ways("\u017E", "\x9E", 'windows-1252') # ž
+    check_both_ways("\u00A0", "\xA0", 'windows-1252') # non-breaking space 
+    check_both_ways("\u00AF", "\xAF", 'windows-1252') # ¯
+    check_both_ways("\u00B0", "\xB0", 'windows-1252') # °
+    check_both_ways("\u00BF", "\xBF", 'windows-1252') # ¿
+    check_both_ways("\u00C0", "\xC0", 'windows-1252') # À
+    check_both_ways("\u00CF", "\xCF", 'windows-1252') # Ï
+    check_both_ways("\u00D0", "\xD0", 'windows-1252') # Ð
+    check_both_ways("\u00DF", "\xDF", 'windows-1252') # ß
+    check_both_ways("\u00E0", "\xE0", 'windows-1252') # à
+    check_both_ways("\u00EF", "\xEF", 'windows-1252') # ï
+    check_both_ways("\u00F0", "\xF0", 'windows-1252') # ð
+    check_both_ways("\u00FF", "\xFF", 'windows-1252') # ÿ
+  end
+
   def check_utf_16_both_ways(utf8, raw)
     copy = raw.dup
     0.step(copy.length-1, 2) { |i| copy[i+1], copy[i] = copy[i], copy[i+1] }
