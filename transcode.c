@@ -2455,7 +2455,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     if (argc == 0) {
 	arg1 = rb_enc_default_internal();
 	if (NIL_P(arg1)) {
-	    rb_raise(rb_eArgError, "Encoding.default_internal is not specified");
+	    return -1;
 	}
     }
     else {
