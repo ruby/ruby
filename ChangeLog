@@ -1,3 +1,8 @@
+Tue Oct 14 12:22:32 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_variable.rb (TestVariable#test_variable): add
+	  a test of [ruby-dev:36698].
+
 Tue Oct 14 11:14:26 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/net/pop.rb: check for invalid APOP timestamp. (CVE-2007-1558)

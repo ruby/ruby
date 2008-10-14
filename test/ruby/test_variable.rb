@@ -40,6 +40,7 @@ class TestVariable < Test::Unit::TestCase
     assert_raise(NameError) do
       $$ = 5
     end
+    assert_normal_exit("$*=0; $*", "[ruby-dev:36698]")
 
     foobar = "foobar"
     $_ = foobar
