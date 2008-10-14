@@ -586,6 +586,38 @@ dump_option(const char *str, int len, void *arg)
     rb_warn("don't know how to dump `%.*s', (insns)", len, str);
 }
 
+static void
+set_internal_encoding_once(struct cmdline_options *opt, const char *e, int elen)
+{
+    VALUE ename;
+
+    if (!elen) elen = strlen(e);
+    ename = rb_str_new(e, elen);
+
+    if (opt->intern.enc.name &&
+	rb_funcall(ename, rb_intern("casecmp"), 1, opt->intern.enc.name) != INT2FIX(0)) {
+	rb_raise(rb_eRuntimeError,
+		 "default_intenal already set to %s", RSTRING_PTR(opt->intern.enc.name));
+    }
+    opt->intern.enc.name = ename;
+}
+
+static void
+set_external_encoding_once(struct cmdline_options *opt, const char *e, int elen)
+{
+    VALUE ename;
+
+    if (!elen) elen = strlen(e);
+    ename = rb_str_new(e, elen);
+
+    if (opt->ext.enc.name &&
+	rb_funcall(ename, rb_intern("casecmp"), 1, opt->ext.enc.name) != INT2FIX(0)) {
+	rb_raise(rb_eRuntimeError,
+		 "default_external already set to %s", RSTRING_PTR(opt->ext.enc.name));
+    }
+    opt->ext.enc.name = ename;
+}
+
 static int
 proc_options(int argc, char **argv, struct cmdline_options *opt)
 {
@@ -759,7 +791,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 	    goto encoding;
 
 	  case 'U':
-	    opt->intern.enc.name = rb_str_new2("utf-8");
+	    set_internal_encoding_once(opt, "UTF-8", 0);
 	    break;
 
 	  case 'K':
@@ -781,7 +813,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		}
 		if (enc_name) {
 		    opt->src.enc.name = rb_str_new2(enc_name);
-		    opt->ext.enc.name = opt->src.enc.name;
+		    set_external_encoding_once(opt, enc_name, 0);
 		}
 		s++;
 	    }
@@ -871,12 +903,12 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		p = strchr(s, ':');
 		if (p) {
 		    if (p > s)
-			opt->ext.enc.name = rb_str_new(s, p-s);
+			set_external_encoding_once(opt, s, p-s);
 		    if (*++p)
-			opt->intern.enc.name = rb_str_new2(p);
+			set_internal_encoding_once(opt, p, 0);
 		}
 		else    
-		    opt->ext.enc.name = rb_str_new2(s);
+		    set_external_encoding_once(opt, s, 0);
 	    }
 	    else if (strcmp("version", s) == 0)
 		opt->version = 1;
@@ -981,6 +1013,7 @@ process_options(VALUE arg)
 	VALUE ext_enc_name = opt->ext.enc.name;
 	VALUE int_enc_name = opt->intern.enc.name;
 
+	opt->src.enc.name = opt->ext.enc.name = opt->intern.enc.name = 0;
 	while (ISSPACE(*s))
 	    s++;
 	if (*s == 'T' || (*s == '-' && *(s + 1) == 'T')) {

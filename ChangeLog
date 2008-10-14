@@ -1,3 +1,10 @@
+Tue Oct 14 09:39:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (set_internal_encoding_once): check double contradicted
+	  specification of the encoding from command line.
+
+	* ruby.c (set_external_encoding_once): ditto. 
+
 Tue Oct 14 08:28:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (parser_yylex): allow reserved word to be keyword argument.
