@@ -1,3 +1,8 @@
+Tue Oct 14 23:18:15 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator): simplified and restored 1.8
+	  behavior.  [ruby-dev:35986]
+
 Tue Oct 14 21:50:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (TESTS): skips minitest by default, since it interferes

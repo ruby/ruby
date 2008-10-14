@@ -115,12 +115,7 @@
 # implementation, see SimpleDelegator.
 #
 class Delegator
-  preserved = [
-    :__id__, :object_id, :__send__, :public_send, :respond_to?, :send,
-    :instance_eval, :instance_exec, :extend,
-  ]
-  instance_methods.each do |m|
-    next if preserved.include?(m)
+  [:to_s,:inspect,:=~,:!~,:===].each do |m|
     undef_method m
   end
 
@@ -163,13 +158,6 @@ class Delegator
     def ==(obj)
       return true if obj.equal?(self)
       self.__getobj__ == obj
-    end
-
-    # 
-    # Returns true only if two objects are identical.
-    # 
-    def equal?(obj)
-      self.object_id == obj.object_id
     end
 
     #
