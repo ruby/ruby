@@ -26,9 +26,7 @@
   transcode_tblgen "ASCII-8BIT", "UTF-8", us_ascii_map
   transcode_tblgen "UTF-8", "ASCII-8BIT", us_ascii_map
 
-  def transcode_tblgen_iso8859(name, tbl_to_ucs)
-    tbl_to_ucs = CONTROL1_TO_UCS_TBL + tbl_to_ucs
-    name_ident = name.tr('-','_')
+  def transcode_tblgen_singlebyte(name, tbl_to_ucs)
     code = ''
     code << transcode_tblgen(name, "UTF-8", [["{00-7f}", :nomap], *tbl_to_ucs])
     code << "\n"
@@ -36,13 +34,8 @@
     code
   end
 
-  def transcode_tblgen_windows(name, tbl_to_ucs)
-    name_ident = name.tr('-','_')
-    code = ''
-    code << transcode_tblgen(name, "UTF-8", [["{00-7f}", :nomap], *tbl_to_ucs])
-    code << "\n"
-    code << transcode_tblgen("UTF-8", name, [["{00-7f}", :nomap], *tbl_to_ucs.map {|a,b| [b,a] }])
-    code
+  def transcode_tblgen_iso8859(name, tbl_to_ucs)
+    transcode_tblgen_singlebyte(name, CONTROL1_TO_UCS_TBL + tbl_to_ucs)
   end
 
   transcode_tblgen_iso8859("ISO-8859-1", ISO_8859_1_TO_UCS_TBL)
@@ -59,7 +52,7 @@
   transcode_tblgen_iso8859("ISO-8859-13", ISO_8859_13_TO_UCS_TBL)
   transcode_tblgen_iso8859("ISO-8859-14", ISO_8859_14_TO_UCS_TBL)
   transcode_tblgen_iso8859("ISO-8859-15", ISO_8859_15_TO_UCS_TBL)
-  transcode_tblgen_windows("WINDOWS-1252", WINDOWS_1252_TO_UCS_TBL)
+  transcode_tblgen_singlebyte("WINDOWS-1252", WINDOWS_1252_TO_UCS_TBL)
 %>
 
 <%= transcode_generated_code %>

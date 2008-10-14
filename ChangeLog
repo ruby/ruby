@@ -1,3 +1,9 @@
+Tue Oct 14 20:32:09 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/single_byte.trans (transcode_tblgen_singlebyte): renamed
+	  from transcode_tblgen_windows.
+	  (transcode_tblgen_iso8859): use transcode_tblgen_singlebyte.
+
 Tue Oct 14 14:11:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options): -U can be followed by other options.
