@@ -1,3 +1,8 @@
+Tue Oct 14 21:50:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (TESTS): skips minitest by default, since it interferes
+	  with test/unit.
+
 Tue Oct 14 21:36:29 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (load_conv_function51932): check

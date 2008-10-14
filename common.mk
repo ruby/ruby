@@ -110,6 +110,7 @@ INSTALL_DATA_MODE = 0644
 PRE_LIBRUBY_UPDATE = $(MINIRUBY) -e 'ARGV[1] or File.unlink(ARGV[0]) rescue nil' -- \
 			$(LIBRUBY_EXTS) $(LIBRUBY_SO_UPDATE)
 
+TESTS         = -x minitest
 TESTSDIR      = $(srcdir)/test
 TESTWORKDIR   = testwork
 
