@@ -131,6 +131,11 @@ class TestSprintfComb < Test::Unit::TestCase
     zr = nil if mi && zr
 
     case type
+    when 'B'
+      radix = 2
+      digitmap = {0 => '0', 1 => '1'}
+      complement = !pl && !sp
+      prefix = '0B' if hs && v != 0
     when 'b'
       radix = 2
       digitmap = {0 => '0', 1 => '1'}
@@ -265,7 +270,7 @@ class TestSprintfComb < Test::Unit::TestCase
 
   def test_format_integer
     combination(
-        %w[b d o X x],
+        %w[B b d o X x],
         [nil, 0, 5, 20],
         ["", ".", ".0", ".8", ".20"],
         ['', ' '],
