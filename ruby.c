@@ -792,7 +792,8 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 
 	  case 'U':
 	    set_internal_encoding_once(opt, "UTF-8", 0);
-	    break;
+	    ++s;
+	    goto reswitch;
 
 	  case 'K':
 	    if (*++s) {
