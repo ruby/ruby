@@ -8464,11 +8464,11 @@ Init_IO(void)
     rb_define_global_const("ARGF", argf);
 
     rb_define_hooked_variable("$.", &argf, argf_lineno_getter, argf_lineno_setter);
-    rb_define_hooked_variable("$FILENAME", &argf, argf_filename_getter, 0);
+    rb_define_hooked_variable("$FILENAME", &argf, argf_filename_getter, rb_gvar_readonly_setter);
     ARGF.filename = rb_str_new2("-");
 
     rb_define_hooked_variable("$-i", &argf, opt_i_get, opt_i_set);
-    rb_define_hooked_variable("$*", &argf, argf_argv_getter, 0);
+    rb_define_hooked_variable("$*", &argf, argf_argv_getter, rb_gvar_readonly_setter);
 
 #if defined (_WIN32) || defined(__CYGWIN__)
     atexit(pipe_atexit);

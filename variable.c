@@ -286,11 +286,11 @@ rb_obj_classname(VALUE obj)
     return rb_class2name(CLASS_OF(obj));
 }
 
-struct global_variable;
+#define global_variable rb_global_variable
 
-typedef VALUE gvar_getter_t(ID id, void *data, struct global_variable *gvar);
-typedef void  gvar_setter_t(VALUE val, ID id, void *data, struct global_variable *gvar);
-typedef void  gvar_marker_t(VALUE *var);
+#define gvar_getter_t rb_gvar_getter_t
+#define gvar_setter_t rb_gvar_setter_t
+#define gvar_marker_t rb_gvar_marker_t
 
 struct trace_var {
     int removed;
@@ -314,17 +314,19 @@ struct global_entry {
     ID id;
 };
 
-static VALUE undef_getter(ID id, void *data, struct global_variable *gvar);
-static void  undef_setter(VALUE val, ID id, void *data, struct global_variable *gvar);
-static void  undef_marker(VALUE *var);
+#define undef_getter	rb_gvar_undef_getter
+#define undef_setter	rb_gvar_undef_setter
+#define undef_marker	rb_gvar_undef_marker
 
-static VALUE val_getter(ID id, void *data, struct global_variable *gvar);
-static void  val_setter(VALUE val, ID id, void *data, struct global_variable *gvar);
-static void  val_marker(VALUE *var);
+#define val_getter	rb_gvar_val_getter
+#define val_setter	rb_gvar_val_setter
+#define val_marker	rb_gvar_val_marker
 
-static VALUE var_getter(ID id, void *data, struct global_variable *gvar);
-static void  var_setter(VALUE val, ID id, void *data, struct global_variable *gvar);
-static void  var_marker(VALUE *var);
+#define var_getter	rb_gvar_var_getter
+#define var_setter	rb_gvar_var_setter
+#define var_marker	rb_gvar_var_marker
+
+#define readonly_setter rb_gvar_readonly_setter
 
 struct global_entry*
 rb_global_entry(ID id)
@@ -354,7 +356,7 @@ rb_global_entry(ID id)
     return entry;
 }
 
-static VALUE
+VALUE
 undef_getter(ID id, void *data, struct global_variable *var)
 {
     rb_warning("global variable `%s' not initialized", rb_id2name(id));
@@ -362,7 +364,7 @@ undef_getter(ID id, void *data, struct global_variable *var)
     return Qnil;
 }
 
-static void
+void
 undef_setter(VALUE val, ID id, void *data, struct global_variable *var)
 {
     var->getter = val_getter;
@@ -372,31 +374,31 @@ undef_setter(VALUE val, ID id, void *data, struct global_variable *var)
     var->data = (void*)val;
 }
 
-static void
+void
 undef_marker(VALUE *var)
 {
 }
 
-static VALUE
+VALUE
 val_getter(ID id, void *data, struct global_variable *var)
 {
     return (VALUE)data;
 }
 
-static void
+void
 val_setter(VALUE val, ID id, void *data, struct global_variable *var)
 {
     var->data = (void*)val;
 }
 
-static void
+void
 val_marker(VALUE *var)
 {
     VALUE data = (VALUE)var;
     if (data) rb_gc_mark_maybe(data);
 }
 
-static VALUE
+VALUE
 var_getter(ID id, void *data, struct global_variable *gvar)
 {
     VALUE *var = data;
@@ -404,19 +406,19 @@ var_getter(ID id, void *data, struct global_variable *gvar)
     return *var;
 }
 
-static void
+void
 var_setter(VALUE val, ID id, void *data, struct global_variable *gvar)
 {
     *(VALUE *)data = val;
 }
 
-static void
+void
 var_marker(VALUE *var)
 {
     if (var) rb_gc_mark_maybe(*var);
 }
 
-static void
+void
 readonly_setter(VALUE val, ID id, void *data, struct global_variable *gvar)
 {
     rb_name_error(id, "%s is a read-only variable", rb_id2name(id));

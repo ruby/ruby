@@ -846,6 +846,26 @@ VALUE rb_define_module_under(VALUE, const char*);
 void rb_include_module(VALUE,VALUE);
 void rb_extend_object(VALUE,VALUE);
 
+struct rb_global_variable;
+
+typedef VALUE rb_gvar_getter_t(ID id, void *data, struct rb_global_variable *gvar);
+typedef void  rb_gvar_setter_t(VALUE val, ID id, void *data, struct rb_global_variable *gvar);
+typedef void  rb_gvar_marker_t(VALUE *var);
+
+VALUE rb_gvar_undef_getter(ID id, void *data, struct rb_global_variable *gvar);
+void  rb_gvar_undef_setter(VALUE val, ID id, void *data, struct rb_global_variable *gvar);
+void  rb_gvar_undef_marker(VALUE *var);
+
+VALUE rb_gvar_val_getter(ID id, void *data, struct rb_global_variable *gvar);
+void  rb_gvar_val_setter(VALUE val, ID id, void *data, struct rb_global_variable *gvar);
+void  rb_gvar_val_marker(VALUE *var);
+
+VALUE rb_gvar_var_getter(ID id, void *data, struct rb_global_variable *gvar);
+void  rb_gvar_var_setter(VALUE val, ID id, void *data, struct rb_global_variable *gvar);
+void  rb_gvar_var_marker(VALUE *var);
+
+void  rb_gvar_readonly_setter(VALUE val, ID id, void *data, struct rb_global_variable *gvar);
+
 void rb_define_variable(const char*,VALUE*);
 void rb_define_virtual_variable(const char*,VALUE(*)(ANYARGS),void(*)(ANYARGS));
 void rb_define_hooked_variable(const char*,VALUE*,VALUE(*)(ANYARGS),void(*)(ANYARGS));
