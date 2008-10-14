@@ -7523,6 +7523,16 @@ parser_yylex(struct parser_params *parser)
 		}
 	    }
 
+	    if ((lex_state == EXPR_BEG && !cmd_state) ||
+		lex_state == EXPR_ARG ||
+		lex_state == EXPR_CMDARG) {
+		if (peek(':') && !(lex_p + 1 < lex_pend && lex_p[1] == ':')) {
+		    lex_state = EXPR_BEG;
+		    nextc();
+		    set_yylval_id(TOK_INTERN(!ENC_SINGLE(mb)));
+		    return tLABEL;
+		}
+	    }
 	    if (mb == ENC_CODERANGE_7BIT && lex_state != EXPR_DOT) {
 		const struct kwtable *kw;
 
@@ -7559,16 +7569,6 @@ parser_yylex(struct parser_params *parser)
 		}
 	    }
 
-	    if ((lex_state == EXPR_BEG && !cmd_state) ||
-		lex_state == EXPR_ARG ||
-		lex_state == EXPR_CMDARG) {
-		if (peek(':') && !(lex_p + 1 < lex_pend && lex_p[1] == ':')) {
-		    lex_state = EXPR_BEG;
-		    nextc();
-		    set_yylval_id(TOK_INTERN(!ENC_SINGLE(mb)));
-		    return tLABEL;
-		}
-	    }
 	    if (IS_BEG() ||
 		lex_state == EXPR_DOT ||
 		IS_ARG()) {
