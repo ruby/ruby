@@ -125,6 +125,7 @@ memfill(register VALUE *mem, register long size, register VALUE val)
 static void
 RESIZE_CAPA(VALUE ary, long capacity)
 {
+    assert(RARRAY_LEN(ary) <= capacity);
     assert(!OBJ_FROZEN(ary)); 
     assert(!ARY_SHARED_P(ary)); 
     if (capacity > RARRAY_EMBED_LEN_MAX) {
@@ -2927,10 +2928,10 @@ rb_ary_compact_bang(VALUE ary)
     if (RARRAY_LEN(ary) == n) {
 	return Qnil;
     }
+    ARY_SET_LEN(ary, n);
     if (n * 2 < ARY_CAPA(ary) && ARY_DEFAULT_SIZE * 2 < ARY_CAPA(ary)) {
 	RESIZE_CAPA(ary, n * 2);
     }
-    ARY_SET_LEN(ary, n);
 
     return ary;
 }
