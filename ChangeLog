@@ -1,3 +1,7 @@
+Wed Oct 15 16:57:30 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* version.h (RUBY_DESCRIPTION): remove unnecessary space.
+
 Tue Oct 14 23:18:15 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator): simplified and restored 1.8
