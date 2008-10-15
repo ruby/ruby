@@ -19,8 +19,6 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_errors
-    assert_raise(ArgumentError) { 'abc'.encode }
-    assert_raise(ArgumentError) { 'abc'.encode! }
     assert_raise(Encoding::ConverterNotFoundError) { 'abc'.encode('foo', 'bar') }
     assert_raise(Encoding::ConverterNotFoundError) { 'abc'.encode!('foo', 'bar') }
     assert_raise(Encoding::ConverterNotFoundError) { 'abc'.force_encoding('utf-8').encode('foo') }
