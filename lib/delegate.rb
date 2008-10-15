@@ -119,86 +119,83 @@ class Delegator
     undef_method m
   end
 
-  module MethodDelegation
-    #
-    # Pass in the _obj_ to delegate method calls to.  All methods supported by
-    # _obj_ will be delegated to.
-    #
-    def initialize(obj)
-      __setobj__(obj)
-    end
+  #
+  # Pass in the _obj_ to delegate method calls to.  All methods supported by
+  # _obj_ will be delegated to.
+  #
+  def initialize(obj)
+    __setobj__(obj)
+  end
 
-    # Handles the magic of delegation through \_\_getobj\_\_.
-    def method_missing(m, *args, &block)
-      begin
-        target = self.__getobj__
-        unless target.respond_to?(m)
-          super(m, *args, &block)
-        else
-          target.__send__(m, *args, &block)
-        end
-      rescue Exception
-        $@.delete_if{|s| %r"\A#{__FILE__}:\d+:in `method_missing'\z"o =~ s}
-        ::Kernel::raise
+  # Handles the magic of delegation through \_\_getobj\_\_.
+  def method_missing(m, *args, &block)
+    begin
+      target = self.__getobj__
+      unless target.respond_to?(m)
+        super(m, *args, &block)
+      else
+        target.__send__(m, *args, &block)
       end
-    end
-
-    # 
-    # Checks for a method provided by this the delegate object by fowarding the 
-    # call through \_\_getobj\_\_.
-    # 
-    def respond_to?(m, include_private = false)
-      return true if super
-      return self.__getobj__.respond_to?(m, include_private)
-    end
-
-    # 
-    # Returns true if two objects are considered same.
-    # 
-    def ==(obj)
-      return true if obj.equal?(self)
-      self.__getobj__ == obj
-    end
-
-    #
-    # This method must be overridden by subclasses and should return the object
-    # method calls are being delegated to.
-    #
-    def __getobj__
-      raise NotImplementedError, "need to define `__getobj__'"
-    end
-
-    #
-    # This method must be overridden by subclasses and change the object delegate
-    # to _obj_.
-    #
-    def __setobj__(obj)
-      raise NotImplementedError, "need to define `__setobj__'"
-    end
-
-    # Serialization support for the object returned by \_\_getobj\_\_.
-    def marshal_dump
-      __getobj__
-    end
-    # Reinitializes delegation from a serialized object.
-    def marshal_load(obj)
-      __setobj__(obj)
-    end
-
-    # Clone support for the object returned by \_\_getobj\_\_.
-    def clone
-      new = super
-      new.__setobj__(__getobj__.clone)
-      new
-    end
-    # Duplication support for the object returned by \_\_getobj\_\_.
-    def dup
-      new = super
-      new.__setobj__(__getobj__.dup)
-      new
+    rescue Exception
+      $@.delete_if{|s| %r"\A#{__FILE__}:\d+:in `method_missing'\z"o =~ s}
+      ::Kernel::raise
     end
   end
-  include MethodDelegation
+
+  # 
+  # Checks for a method provided by this the delegate object by fowarding the 
+  # call through \_\_getobj\_\_.
+  # 
+  def respond_to?(m, include_private = false)
+    return true if super
+    return self.__getobj__.respond_to?(m, include_private)
+  end
+
+  # 
+  # Returns true if two objects are considered same.
+  # 
+  def ==(obj)
+    return true if obj.equal?(self)
+    self.__getobj__ == obj
+  end
+
+  #
+  # This method must be overridden by subclasses and should return the object
+  # method calls are being delegated to.
+  #
+  def __getobj__
+    raise NotImplementedError, "need to define `__getobj__'"
+  end
+
+  #
+  # This method must be overridden by subclasses and change the object delegate
+  # to _obj_.
+  #
+  def __setobj__(obj)
+    raise NotImplementedError, "need to define `__setobj__'"
+  end
+
+  # Serialization support for the object returned by \_\_getobj\_\_.
+  def marshal_dump
+    __getobj__
+  end
+  # Reinitializes delegation from a serialized object.
+  def marshal_load(obj)
+    __setobj__(obj)
+  end
+
+  # Clone support for the object returned by \_\_getobj\_\_.
+  def clone
+    new = super
+    new.__setobj__(__getobj__.clone)
+    new
+  end
+  # Duplication support for the object returned by \_\_getobj\_\_.
+  def dup
+    new = super
+    new.__setobj__(__getobj__.dup)
+    new
+  end
 end
 
 #
@@ -258,16 +255,11 @@ end
 #   end
 #
 def DelegateClass(superclass)
-  klass = Class.new
+  klass = Class.new(Delegator)
   methods = superclass.public_instance_methods(true)
-  methods -= [
-    :__id__, :object_id, :__send__, :public_send, :respond_to?, :send,
-    :==, :equal?, :initialize, :method_missing, :__getobj__, :__setobj__,
-    :clone, :dup, :marshal_dump, :marshal_load, :instance_eval, :instance_exec,
-    :extend,
-  ]
+  methods -= ::Delegator.public_instance_methods
+  methods -= [:to_s,:inspect,:=~,:!~,:===]
   klass.module_eval {
-    include Delegator::MethodDelegation
     def __getobj__  # :nodoc:
       @delegate_dc_obj
     end

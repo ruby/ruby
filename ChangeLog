@@ -1,3 +1,8 @@
+Wed Oct 15 23:11:10 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (DelegateClass): restored 1.8 behavior for
+	  DelegateClass as well.  [ruby-dev:36739]
+
 Wed Oct 15 22:19:14 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* array.c (RESIZE_CAPA): check whether len is longer than capacity.
