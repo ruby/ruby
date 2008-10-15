@@ -29,6 +29,11 @@ Tue Oct 14 20:32:09 2008  Tanaka Akira  <akr@fsij.org>
 	  from transcode_tblgen_windows.
 	  (transcode_tblgen_iso8859): use transcode_tblgen_singlebyte.
 
+Tue Oct 14 19:32:14 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (process_options): -U should be allowed in RUBYOPT
+	  environment variable.  [ruby-dev:36720]
+
 Tue Oct 14 14:11:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options): -U can be followed by other options.

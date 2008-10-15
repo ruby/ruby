@@ -1043,7 +1043,7 @@ process_options(VALUE arg)
 		}
 		if (!*s)
 		    break;
-		if (!strchr("EIdvwWrK", *s))
+		if (!strchr("EIdvwWrKU", *s))
 		    rb_raise(rb_eRuntimeError,
 			     "invalid switch in RUBYOPT: -%c", *s);
 		s = moreswitches(s, opt);
