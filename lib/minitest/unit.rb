@@ -318,12 +318,16 @@ module MiniTest
     @@installed_at_exit ||= false
     @@out = $stdout
 
+    def self.disable_autorun
+      @@installed_at_exit = true
+    end
+
     def self.autorun
       at_exit {
         exit_code = MiniTest::Unit.new.run(ARGV)
         exit false if exit_code && exit_code != 0
       } unless @@installed_at_exit
-      @@installed_at_exit = true
+      disable_autorun
     end
 
     def self.output= stream
