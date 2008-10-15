@@ -1785,32 +1785,36 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
  *     ios.read_nonblock(maxlen, outbuf)      => outbuf
  *
  *  Reads at most <i>maxlen</i> bytes from <em>ios</em> using
- *  read(2) system call after O_NONBLOCK is set for
+ *  the read(2) system call after O_NONBLOCK is set for
  *  the underlying file descriptor.
  *
  *  If the optional <i>outbuf</i> argument is present,
  *  it must reference a String, which will receive the data.
  *
- *  read_nonblock just calls read(2).
- *  It causes all errors read(2) causes: Errno::EWOULDBLOCK, Errno::EINTR, etc.
+ *  read_nonblock just calls the read(2) system call.
+ *  It causes all errors the read(2) system call causes: Errno::EWOULDBLOCK, Errno::EINTR, etc.
  *  The caller should care such errors.
  *
  *  read_nonblock causes EOFError on EOF.
  *
  *  If the read buffer is not empty,
  *  read_nonblock reads from the buffer like readpartial.
- *  In this case, read(2) is not called.
+ *  In this case, the read(2) system call is not called.
  *
- *  read_nonblock can emulate blocking read as follows.
+ *  When read_nonblock raises EWOULDBLOCK,
+ *  read_nonblock should not be called
+ *  until io is readable for avoiding busy loop.
+ *  This can be done as follows.
  *
  *    begin
  *      result = io.read_nonblock(maxlen)
- *    rescue Errno::EINTR
- *      retry
- *    rescue Errno::EWOULDBLOCK, Errno::EAGAIN
+ *    rescue Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EINTR
  *      IO.select([io])
  *      retry
  *    end
+ *
+ *  Note that this is identical to readpartial
+ *  except the non-blocking flag is set.
  */
 
 static VALUE
@@ -1830,28 +1834,33 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
  *     ios.write_nonblock(string)   => integer
  *
  *  Writes the given string to <em>ios</em> using
- *  write(2) system call after O_NONBLOCK is set for
+ *  the write(2) system call after O_NONBLOCK is set for
  *  the underlying file descriptor.
  *
  *  It returns the number of bytes written.
  *
- *  write_nonblock just calls write(2).
- *  It causes all errors write(2) causes: Errno::EWOULDBLOCK, Errno::EINTR, etc.
+ *  write_nonblock just calls the write(2) system call.
+ *  It causes all errors the write(2) system call causes: Errno::EWOULDBLOCK, Errno::EINTR, etc.
  *  The result may also be smaller than string.length (partial write).
  *  The caller should care such errors and partial write.
  *
  *  If the write buffer is not empty, it is flushed at first.
  *
- *  write_nonblock can emulate blocking write as follows.
+ *  When write_nonblock raises EWOULDBLOCK,
+ *  write_nonblock should not be called
+ *  until io is writable for avoiding busy loop.
+ *  This can be done as follows.
  *
  *    begin
  *      result = io.write_nonblock(string)
- *    rescue Errno::EINTR
- *      retry
- *    rescue Errno::EWOULDBLOCK, Errno::EAGAIN
+ *    rescue Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EINTR
  *      IO.select(nil, [io])
  *      retry
  *    end
+ *
+ *  Note that this doesn't guarantee to write all data in string.
+ *  The length written is reported as result and it should be checked later.
+ *
  */
 
 static VALUE
