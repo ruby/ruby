@@ -51,6 +51,11 @@ Thu Oct 16 14:30:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb (lib): installs all files other than README etc.
 
+Thu Oct 16 09:48:03 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_initialize_m): changed the message to clarify the
+	  third option argument is now ignored.  [ruby-dev:36753]
+
 Thu Oct 16 08:14:39 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (proc_options): no warning when default_external already

@@ -2798,7 +2798,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 		flags |= ARG_ENCODING_FIXED;
 	    }
 	    else {
-		rb_warning("encoding option is obsolete - %s", kcode);
+		rb_warn("encoding option is ignored - %s", kcode);
 	    }
 	}
 	str = argv[0];
