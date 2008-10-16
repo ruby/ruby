@@ -102,6 +102,16 @@ module Test
               exp_comment = " (nsec=#{exp.nsec})"
               act_comment = " (nsec=#{act.nsec})"
             end
+          elsif !Encoding.compatible?(exp_str, act_str)
+            if exp.is_a?(String) && act.is_a?(String)
+              exp_str = exp.dump
+              act_str = act.dump
+              exp_comment = " (#{exp.encoding})"
+              act_comment = " (#{act.encoding})"
+            else
+              exp_str = exp_str.dump
+              act_str = act_str.dump
+            end
           end
           "<#{exp_str}>#{exp_comment} expected but was\n<#{act_str}>#{act_comment}"
         }

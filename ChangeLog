@@ -1,3 +1,8 @@
+Thu Oct 16 23:27:27 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/test/unit.rb (assert_equal): avoid incompatible character
+	  encodings error.
+
 Thu Oct 16 23:23:27 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit.rb (assert_equal): failure message changed.
