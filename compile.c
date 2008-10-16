@@ -1309,6 +1309,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		    rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
 				     "operand size miss! (%d for %d)",
 				     iobj->operand_size, len - 1);
+		    xfree(generated_iseq);
+		    xfree(insn_info_table);
 		    return 0;
 		}
 
@@ -1403,6 +1405,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		      default:
 			rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
 					 "unknown operand type: %c", type);
+			xfree(generated_iseq);
+			xfree(insn_info_table);
 			return 0;
 		    }
 		}

@@ -1,3 +1,7 @@
+Thu Oct 16 23:37:11 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* compile.c (iseq_set_sequence): fix memory leak.
+
 Thu Oct 16 23:27:27 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit.rb (assert_equal): avoid incompatible character
