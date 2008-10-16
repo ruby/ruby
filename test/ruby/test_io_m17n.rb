@@ -678,7 +678,6 @@ EOT
 
   def test_getc_invalid3
     with_pipe("utf-16le:euc-jp") {|r, w|
-      w.binmode
       before1 = "\x42\x30".force_encoding("utf-16le")
       before2 = "\x44\x30".force_encoding("utf-16le")
       invalid = "\x00\xd8".force_encoding("utf-16le")
@@ -1535,6 +1534,18 @@ EOT
         assert_equal("\r", f.getc)
         assert_equal("\n", f.getc)
         assert_equal(nil, f.getc)
+      }
+    }
+  end
+
+  def test_binmode3
+    with_tmpdir {
+      src = "\u3042\r\n"
+      generate_file("t.txt", src)
+      srcbin = src.dup.force_encoding("ascii-8bit")
+      open("t.txt", "rt:utf-8:euc-jp") {|f|
+        f.binmode
+        assert_str_equal(srcbin, f.read)
       }
     }
   end

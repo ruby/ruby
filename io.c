@@ -3503,13 +3503,24 @@ rb_io_binmode(VALUE io)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
-    if (fptr->readconv)
-        rb_econv_binmode(fptr->readconv);
-    if (fptr->writeconv)
-        rb_econv_binmode(fptr->writeconv);
+
+    if (fptr->readconv) {
+        rb_econv_close(fptr->readconv);
+        fptr->readconv = NULL;
+    }
+    if (fptr->writeconv) {
+        rb_econv_close(fptr->writeconv);
+        fptr->writeconv = NULL;
+    }
     fptr->mode |= FMODE_BINMODE;
     fptr->mode &= ~FMODE_TEXTMODE;
-    fptr->writeconv_pre_ecflags &= ~(ECONV_UNIVERSAL_NEWLINE_DECORATOR|ECONV_CRLF_NEWLINE_DECORATOR|ECONV_CR_NEWLINE_DECORATOR);
+
+    fptr->encs.enc = rb_ascii8bit_encoding();
+    fptr->encs.enc2 = NULL;
+    fptr->encs.ecflags = 0;
+    fptr->encs.ecopts = Qnil;
+    clear_codeconv(fptr);
+
     return io;
 }
 
