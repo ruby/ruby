@@ -51,6 +51,14 @@ Thu Oct 16 14:30:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb (lib): installs all files other than README etc.
 
+Thu Oct 16 08:14:39 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (proc_options): no warning when default_external already
+	  set by -E.
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_rubyopt):
+	  put -K after -E to set script encoding.
+
 Thu Oct 16 06:20:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_transcode.rb (TestTranscode#test_errors):

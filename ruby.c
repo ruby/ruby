@@ -814,7 +814,8 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		}
 		if (enc_name) {
 		    opt->src.enc.name = rb_str_new2(enc_name);
-		    set_external_encoding_once(opt, enc_name, 0);
+		    if (!opt->ext.enc.name)
+			opt->ext.enc.name = opt->src.enc.name;
 		}
 		s++;
 	    }
