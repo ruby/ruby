@@ -384,8 +384,11 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 		-install_name=$(RUBY_INSTALL_NAME) \
 		-so_name=$(RUBY_SO_NAME) rbconfig.rb
 
-encs: $(ENC_MK) $(LIBRUBY) $(PREP) transdb.h
-	$(MAKE) -f $(ENC_MK) MINIRUBY="$(MINIRUBY)" $(MFLAGS)
+encs enc trans: $(ENC_MK) $(LIBRUBY) $(PREP)
+	$(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) $@
+
+enc: {$(VPATH)}encdb.h
+trans: {$(VPATH)}transdb.h
 
 $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
 	$(srcdir)/lib/mkmf.rb $(RBCONFIG)

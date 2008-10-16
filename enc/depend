@@ -62,7 +62,10 @@ TRANSCLEANOBJS = <%=cleanobjs.map {|clean|
   clean.gsub(/\$\*(\.\w+)?/) {"$(TRANSOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
 }.join(" ")%>
 
-all: $(ENCSOS) $(TRANSSOS)
+encs: all
+all: enc trans
+enc: $(ENCSOS)
+trans: $(TRANSSOS)
 
 srcs: $(TRANSCSRCS)
 
