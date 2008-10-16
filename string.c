@@ -2355,7 +2355,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
       case T_REGEXP:
 	/* enc = rb_get_check(str, sub); */
 	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
-		     rb_enc_check(str, sub), single_byte_optimizable(str));
+			 STR_ENC_GET(str), single_byte_optimizable(str));
 
 	if (!RREGEXP(sub)->ptr || RREGEXP_SRC_LEN(sub)) {
 	    pos = rb_reg_adjust_startpos(sub, str, pos, 1);

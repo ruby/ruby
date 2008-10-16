@@ -64,6 +64,16 @@ Thu Oct 16 06:20:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* test/ruby/test_transcode.rb (TestTranscode#test_errors):
 	  String#encode now works without any argument. [ruby-dev:36740]
 
+Wed Oct 15 23:48:22 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* .gdbinit (rp): REGEXP handling fixed.
+
+	* string.c (rb_str_rindex_m): need not to call rb_enc_check on
+	  regexp.
+
+	* re.c (unescape_escaped_nonascii): try ASCII-8BIT encoding for
+	  broken strings.
+
 Wed Oct 15 23:11:10 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/delegate.rb (DelegateClass): restored 1.8 behavior for

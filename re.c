@@ -1967,8 +1967,12 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
 
     l = rb_enc_precise_mbclen(chbuf, chbuf+chlen, enc);
     if (MBCLEN_INVALID_P(l)) {
-        strcpy(err, "invalid multibyte escape");
-        return -1;
+        if (*encp == 0)
+            enc = *encp = rb_ascii8bit_encoding();
+        else if (*encp != rb_ascii8bit_encoding()) {
+	    strcpy(err, "invalid multibyte escape");
+            return -1;
+        }
     }
     if (1 < chlen || (chbuf[0] & 0x80)) {
         rb_str_buf_cat(buf, chbuf, chlen);

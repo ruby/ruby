@@ -86,11 +86,17 @@ define rp
     print (struct RString *)$arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_REGEXP
+    set $regsrc = ((struct RRegexp*)$arg0)->src
+    set $rsflags = ((struct RBasic*)$regsrc)->flags
     printf "T_REGEXP: "
     set print address off
-    output ((struct RRegexp*)$arg0)->str
+    output (char *)(($rsflags & RUBY_FL_USER1) ? \
+	    ((struct RString*)$regsrc)->as.heap.ptr : \
+	    ((struct RString*)$regsrc)->as.ary)
     set print address on
-    printf " len:%ld ", ((struct RRegexp*)$arg0)->len
+    printf " len:%ld ", ($rsflags & RUBY_FL_USER1) ? \
+            ((struct RString*)$regsrc)->as.heap.len : \
+            (($rsflags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
     if $flags & RUBY_FL_USER6
       printf "(none) "
     end
