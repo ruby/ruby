@@ -345,14 +345,9 @@ end
 install?(:local, :comm, :lib) do
   puts "installing library scripts"
 
-  Dir.chdir srcdir
   makedirs [rubylibdir]
-
-  for f in Dir["lib/**/*{.rb,help-message}"]
-    dir = File.dirname(f).sub!(/\Alib/, rubylibdir) || rubylibdir
-    makedirs dir
-    install f, dir, :mode => $data_mode
-  end
+  noinst = %w[README* *.txt *.rdoc]
+  install_recursive(File.join(srcdir, "lib"), rubylibdir, :no_install => noinst, :mode => $data_mode)
 end
 
 install?(:local, :arch, :lib) do
