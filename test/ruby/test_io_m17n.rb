@@ -1545,7 +1545,9 @@ EOT
       srcbin = src.dup.force_encoding("ascii-8bit")
       open("t.txt", "rt:utf-8:euc-jp") {|f|
         f.binmode
-        assert_str_equal(srcbin, f.read)
+        result = f.read
+        assert_str_equal(srcbin, result)
+        assert_equal(Encoding::ASCII_8BIT, result.encoding)
       }
     }
   end
