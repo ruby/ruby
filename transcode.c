@@ -437,19 +437,6 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 
     unsigned char *out_p;
 
-    unsigned char empty_buf;
-    unsigned char *empty_ptr = &empty_buf;
-
-    if (!in_pos) {
-        in_pos = (const unsigned char **)&empty_ptr;
-        in_stop = empty_ptr;
-    }
-
-    if (!out_pos) {
-        out_pos = &empty_ptr;
-        out_stop = empty_ptr;
-    }
-
     in_p = inchar_start = *in_pos;
 
     out_p = *out_pos;
