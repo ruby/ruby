@@ -9,12 +9,6 @@ require 'rake/packagetask'
 require 'rubygems/user_interaction'
 require 'rubygems/builder'
 
-begin
-  Gem.manage_gems
-rescue NoMethodError => ex
-  # Using rubygems prior to 0.6.1
-end
-
 module Rake
 
   # Create a package based upon a Gem spec.  Gem packages, as well as
