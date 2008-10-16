@@ -1,3 +1,7 @@
+Thu Oct 16 23:23:27 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/test/unit.rb (assert_equal): failure message changed.
+
 Thu Oct 16 22:52:54 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit: removed test/unit.

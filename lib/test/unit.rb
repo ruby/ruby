@@ -89,7 +89,22 @@ module Test
       end
 
       def assert_equal(exp, act, msg = nil)
-        msg = message(msg) { "Expected\n<#{mu_pp(exp)}> but\n<#{mu_pp(act)}>" }
+        msg = message(msg) {
+          exp_str = mu_pp(exp)
+          act_str = mu_pp(act)
+          exp_comment = ''
+          act_comment = ''
+          if exp_str == act_str
+            if exp.is_a?(String) && act.is_a?(String)
+              exp_comment = " (#{exp.encoding})"
+              act_comment = " (#{act.encoding})"
+            elsif exp.is_a?(Time) && act.is_a?(Time)
+              exp_comment = " (nsec=#{exp.nsec})"
+              act_comment = " (nsec=#{act.nsec})"
+            end
+          end
+          "<#{exp_str}>#{exp_comment} expected but was\n<#{act_str}>#{act_comment}"
+        }
         assert(exp == act, msg)
       end
 
