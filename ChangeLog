@@ -1,3 +1,7 @@
+Thu Oct 16 23:48:34 2008  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk (TESTS): removed to re-enable test for minitest.
+
 Thu Oct 16 23:37:11 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (iseq_set_sequence): fix memory leak.
