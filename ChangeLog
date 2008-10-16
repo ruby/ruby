@@ -1,3 +1,8 @@
+Fri Oct 17 00:16:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* io.c (rb_getc, rb_io_fread, rb_io_fwrite, rb_read_pending):
+	  remove deprecated functions which do not work.  [ruby-dev:36697]
+
 Thu Oct 16 23:48:34 2008  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk (TESTS): removed to re-enable test for minitest.

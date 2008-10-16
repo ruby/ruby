@@ -404,12 +404,6 @@ rb_io_check_writable(rb_io_t *fptr)
 }
 
 int
-rb_read_pending(FILE *fp)
-{
-    return STDIO_READ_DATA_PENDING(fp);
-}
-
-int
 rb_io_read_pending(rb_io_t *fptr)
 {
     return READ_DATA_PENDING(fptr);
@@ -844,18 +838,6 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 {
     str = do_writeconv(str, fptr);
     return io_binwrite(str, fptr, nosync);
-}
-
-long
-rb_io_fwrite(const char *ptr, long len, FILE *f)
-{
-    rb_io_t of;
-
-    of.fd = fileno(f);
-    of.stdio_file = f;
-    of.mode = FMODE_WRITABLE;
-    of.pathv = Qnil;
-    return io_fwrite(rb_str_new(ptr, len), &of, 0);
 }
 
 static VALUE
@@ -1406,22 +1388,6 @@ io_fread(VALUE str, long offset, rb_io_t *fptr)
 	}
     }
     return len - n;
-}
-
-long
-rb_io_fread(char *ptr, long len, FILE *f)
-{
-    rb_io_t of;
-    VALUE str;
-    long n;
-
-    of.fd = fileno(f);
-    of.stdio_file = f;
-    of.mode = FMODE_READABLE;
-    str = rb_str_new(ptr, len);
-    n = io_fread(str, 0, &of);
-    MEMCPY(ptr, RSTRING_PTR(str), char, n);
-    return n;
 }
 
 #define SMALLBUF 100
@@ -2704,16 +2670,6 @@ rb_io_getc(VALUE io)
     enc = io_input_encoding(fptr);
     READ_CHECK(fptr);
     return io_getc(fptr, enc);
-}
-int
-rb_getc(FILE *f)
-{
-    int c;
-
-    rb_read_check(f);
-    c = getc(f);
-
-    return c;
 }
 
 /*
