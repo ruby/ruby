@@ -152,6 +152,9 @@ EOT
 
     class TestCase < MiniTest::Unit::TestCase
       include Assertions
+      def self.test_order
+        :sorted
+      end
     end
   end
 end
