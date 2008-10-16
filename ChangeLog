@@ -1,3 +1,13 @@
+Thu Oct 16 22:52:54 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/test/unit: removed test/unit.
+
+	* lib/test/unit.rb: new compatibility layer using minitest.
+
+	* bin/testrb: use above.
+ 
+	* test/runner.rb: ditto.
+
 Thu Oct 16 14:34:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk, enc/depend (enc, trans): targets for sources.
