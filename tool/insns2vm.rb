@@ -1,4 +1,4 @@
-#!ruby -Kn
+#!ruby
 
 require 'optparse'
 
