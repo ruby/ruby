@@ -1,5 +1,5 @@
 include Makefile
-include uncommon.mk
+-include uncommon.mk
 
 ENABLE_SHARED=@ENABLE_SHARED@
 DLLWRAP = @DLLWRAP@ --target=@target_os@

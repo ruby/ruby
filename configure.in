@@ -1897,7 +1897,7 @@ dnl (
     dnl (
     *yes*)
 	echo "include Makefile" > GNUmakefile
-	echo "include uncommon.mk" >> GNUmakefile
+	echo "-include uncommon.mk" >> GNUmakefile
 	gnumake=yes;;
     dnl (
     *)
