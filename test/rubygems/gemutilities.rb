@@ -430,6 +430,8 @@ class RubyGemTestCase < Test::Unit::TestCase
     Gem.module_eval {@ruby = ruby}
     env_rake = ENV["rake"]
     ENV["rake"] = @@rake
+    argv = ARGV.dup
+    ARGV.clear
     yield @@rake
   ensure
     Gem.module_eval {@ruby = gem_ruby}
@@ -438,6 +440,7 @@ class RubyGemTestCase < Test::Unit::TestCase
     else
       ENV.delete("rake")
     end
+    ARGV.replace(argv) if argv
   end
 
   def self.rubybin
