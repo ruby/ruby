@@ -1,3 +1,7 @@
+Fri Oct 17 22:04:38 2008  wanabe  <s.wanabe@gmail.com>
+
+	* array.c: recycle shared-array when it isn't referenced.
+
 Fri Oct 17 19:46:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/ifchange, win32/ifchange.bat: --timestamp option added.
