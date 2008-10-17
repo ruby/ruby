@@ -3,6 +3,11 @@
 
 if "%1" == "" goto :end
 
+set timestamp=
+if "%1" == "--timestamp" (
+    set timestamp=yes
+    shift
+)
 set dest=%1
 set src=%2
 set dest=%dest:/=\%
@@ -47,13 +52,18 @@ goto :end
 if not exist %src% goto :end
 if exist %dest% (
     fc.exe %dest% %src% > nul && (
-	echo %dest% unchanged.
+	echo %1 unchanged.
 	del %src%
-	goto :end
+	goto :nt_end
     )
 )
-echo %dest% updated.
+echo %1 updated.
 copy %src% %dest% > nul
 del %src%
 
+:nt_end
+if "%timestamp%" == "" goto :end
+    for %%I in ("%dest%") do set timestamp=%%~dpI\.time.%%~nxI
+    if not exist "%timestamp%" copy nul "%timestamp%" > nul
+    goto :end >> "%timestamp%"
 :end

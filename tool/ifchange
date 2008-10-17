@@ -1,6 +1,11 @@
 #!/bin/sh
 # usage: ifchange target temporary
 
+unset timestamp
+if [ "$1" = --timestamp ]; then
+    timestamp=yes
+    shift
+fi
 target="$1"
 temp="$2"
 if [ "$temp" = - ]; then
@@ -14,4 +19,7 @@ if cmp "$target" "$temp" >/dev/null 2>&1; then
 else
     echo "$target updated"
     mv -f "$temp" "$target"
+fi
+if [ $timestamp ]; then
+    touch `dirname "$target"`/.time.`basename "$target"`
 fi

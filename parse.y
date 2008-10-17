@@ -19,6 +19,7 @@
 #include "ruby/st.h"
 #include "ruby/encoding.h"
 #include "node.h"
+#include "parse.h"
 #include "id.h"
 #include "regenc.h"
 #include <stdio.h>
