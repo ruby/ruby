@@ -3,6 +3,14 @@ Fri Oct 17 18:07:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* test/rubygems/gemutilities.rb (RubyGemTestCase#build_rake_in):
 	  get rid of interference with other tests.
 
+Fri Oct 17 18:06:39 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* transcode.c (str_transcode0): String#encode without argument now
+	  behave as if :undef => :replace, :invalid => :replace specified.
+
+	* transcode.c (rb_econv_prepare_opts): should preserve options in
+	  any case.
+
 Fri Oct 17 11:48:18 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/socket/socket.c (init_sock): sockets should be binmode.
