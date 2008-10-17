@@ -1,3 +1,9 @@
+Fri Oct 17 18:16:51 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/bigdecimal/test_bigdecimal.rb (TestBigDecimal#test_sqrt_bigdecimal): 
+	  test updated.  a patch from TAKANO Mitsuhiro <takano32 at jus.or.jp> in
+	  [ruby-dev:36736].
+
 Fri Oct 17 18:14:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (uncommon.mk): ignores failures at loading.

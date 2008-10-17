@@ -466,7 +466,11 @@ class TestBigDecimal < Test::Unit::TestCase
     x = BigDecimal.new("0.09")
     assert_in_delta(0.3, x.sqrt(1), 0.001)
     x = BigDecimal.new((2**100).to_s)
-    assert_equal(true, x.sqrt(300).precs.last < x.sqrt(1200).precs.last)
+    y = BigDecimal("1125899906842624")
+    e = y.exponent
+    assert_equal(true, (x.sqrt(100) - y).abs < BigDecimal("1E#{e-100}"))
+    assert_equal(true, (x.sqrt(200) - y).abs < BigDecimal("1E#{e-200}"))
+    assert_equal(true, (x.sqrt(300) - y).abs < BigDecimal("1E#{e-300}"))
     x = BigDecimal.new("-" + (2**100).to_s)
     assert_raise(FloatDomainError) { x.sqrt(1) }
     x = BigDecimal.new((2**200).to_s)
