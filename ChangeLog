@@ -1,3 +1,7 @@
+Sat Oct 18 01:33:22 2008  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* common.mk: use added options for generic_erb.rb.
+
 Sat Oct 18 00:47:51 2008  wanabe  <s.wanabe@gmail.com>
 
 	* array.c: don't recycle shared-array while sort!.

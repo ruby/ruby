@@ -650,7 +650,7 @@ transdb.h: $(PREP) srcs-enc
 # 		$(srcdir)/template/id.h.tmpl --vpath=$(VPATH) parse.h
 
 known_errors.inc: $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def
-	$(BASERUBY) $(srcdir)/tool/generic_erb.rb $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def > $@
+	$(BASERUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def
 
 miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
