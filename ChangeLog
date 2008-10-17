@@ -1,3 +1,7 @@
+Sat Oct 18 00:47:51 2008  wanabe  <s.wanabe@gmail.com>
+
+	* array.c: don't recycle shared-array while sort!.
+
 Fri Oct 17 22:04:38 2008  wanabe  <s.wanabe@gmail.com>
 
 	* array.c: recycle shared-array when it isn't referenced.

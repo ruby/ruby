@@ -177,7 +177,7 @@ rb_ary_decrement_share(VALUE shared)
 {
     if (shared) {
 	int num = ARY_SHARED_NUM(shared) - 1;
-	if (num == 0) {
+	if (num == 0 && RBASIC(shared)->klass) {
 	    rb_ary_free(shared);
 	    rb_gc_force_recycle(shared);
 	}
