@@ -645,11 +645,9 @@ transdb.h: $(PREP) srcs-enc
 	$(MINIRUBY) $(srcdir)/enc/trans/make_transdb.rb $@.new $(srcdir)/enc/trans enc/trans
 	$(IFCHANGE) "$@" "$@.new"
 
-{$(VPATH)}id.h:
-	$(CPP) $(CPPFLAGS) -DUSE_PARSE_H $@
-
-$(ID_H_TARGET): {$(VPATH)}parse.c $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
-	$(BASERUBY) $(srcdir)/tool/generic_erb.rb --if-change --output=$(srcdir)/id.h $(srcdir)/template/id.h.tmpl --vpath=$(VPATH) parse.c
+# {$(VPATH)}id.h: {$(VPATH)}parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
+# 	$(BASERUBY) $(srcdir)/tool/generic_erb.rb --if-change --output=$@ \
+# 		$(srcdir)/template/id.h.tmpl --vpath=$(VPATH) parse.h
 
 known_errors.inc: $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def
 	$(BASERUBY) $(srcdir)/tool/generic_erb.rb $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def > $@

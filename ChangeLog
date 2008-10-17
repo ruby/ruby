@@ -1,13 +1,9 @@
 Fri Oct 17 19:46:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* common.mk (ID_H_TARGET): phony target to update id.h.
-
 	* tool/ifchange, win32/ifchange.bat: --timestamp option added.
 
 	* tool/generic_erb.rb: --timestamp, --output and --if-change options
 	  added.
-
-	* template/id.h.tmpl: moved from id.h.
 
 Fri Oct 17 18:33:12 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
