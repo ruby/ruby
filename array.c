@@ -14,6 +14,10 @@
 #include "ruby/ruby.h"
 #include "ruby/util.h"
 #include "ruby/st.h"
+
+#ifndef ARRAY_DEBUG
+# define NDEBUG
+#endif
 #include <assert.h>
 
 VALUE rb_cArray;
@@ -123,7 +127,7 @@ memfill(register VALUE *mem, register long size, register VALUE val)
 } while (0)
 
 static void
-RESIZE_CAPA(VALUE ary, long capacity)
+ary_resize_capa(VALUE ary, long capacity)
 {
     assert(RARRAY_LEN(ary) <= capacity);
     assert(!OBJ_FROZEN(ary)); 
@@ -456,7 +460,7 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
 	rb_raise(rb_eArgError, "array size too big");
     }
     rb_ary_modify(ary);
-    RESIZE_CAPA(ary, len);
+    ary_resize_capa(ary, len);
     if (rb_block_given_p()) {
 	long i;
 
@@ -521,7 +525,7 @@ rb_ary_store(VALUE ary, long idx, VALUE val)
 	    new_capa = (ARY_MAX_SIZE - idx) / 2;
 	}
 	new_capa += idx;
-	RESIZE_CAPA(ary, new_capa);
+	ary_resize_capa(ary, new_capa);
     }
     if (idx > RARRAY_LEN(ary)) {
 	rb_mem_clear(RARRAY_PTR(ary) + RARRAY_LEN(ary),
@@ -633,7 +637,7 @@ rb_ary_pop(VALUE ary)
 	RARRAY_LEN(ary) * 3 < ARY_CAPA(ary) &&
 	ARY_CAPA(ary) > ARY_DEFAULT_SIZE)
     {
-	RESIZE_CAPA(ary, RARRAY_LEN(ary) * 2);
+	ary_resize_capa(ary, RARRAY_LEN(ary) * 2);
     }
     n = RARRAY_LEN(ary)-1;
     ARY_SET_LEN(ary, n);
@@ -762,7 +766,7 @@ rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
     if (argc == 0) return ary;
     rb_ary_modify(ary);
     if (ARY_CAPA(ary) <= (len = RARRAY_LEN(ary)) + argc) {
-	RESIZE_CAPA(ary, len + argc + ARY_DEFAULT_SIZE);
+	ary_resize_capa(ary, len + argc + ARY_DEFAULT_SIZE);
     }
 
     /* sliding items */
@@ -1126,7 +1130,7 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	}
 	len = beg + rlen;
 	if (len >= ARY_CAPA(ary)) {
-	    RESIZE_CAPA(ary, len);
+	    ary_resize_capa(ary, len);
 	}
 	rb_mem_clear(RARRAY_PTR(ary) + RARRAY_LEN(ary), beg - RARRAY_LEN(ary));
 	if (rlen > 0) {
@@ -1143,7 +1147,7 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 
 	alen = RARRAY_LEN(ary) + rlen - len;
 	if (alen >= ARY_CAPA(ary)) {
-	    RESIZE_CAPA(ary, alen);
+	    ary_resize_capa(ary, alen);
 	}
 
 	if (len != rlen) {
@@ -1933,7 +1937,7 @@ rb_ary_delete(VALUE ary, VALUE item)
 	ARY_SET_LEN(ary, i2);
 	if (i2 * 2 < ARY_CAPA(ary) &&
 	    ARY_CAPA(ary) > ARY_DEFAULT_SIZE) {
-	    RESIZE_CAPA(ary, i2*2);
+	    ary_resize_capa(ary, i2*2);
 	}
     }
 
@@ -2284,7 +2288,7 @@ rb_ary_clear(VALUE ary)
     rb_ary_modify(ary);
     ARY_SET_LEN(ary, 0);
     if (ARY_DEFAULT_SIZE * 2 < ARY_CAPA(ary)) {
-	RESIZE_CAPA(ary, ARY_DEFAULT_SIZE * 2);
+	ary_resize_capa(ary, ARY_DEFAULT_SIZE * 2);
     }
     return ary;
 }
@@ -2358,7 +2362,7 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
     end = beg + len;
     if (RARRAY_LEN(ary) < end) {
 	if (end >= ARY_CAPA(ary)) {
-	    RESIZE_CAPA(ary, end);
+	    ary_resize_capa(ary, end);
 	}
 	rb_mem_clear(RARRAY_PTR(ary) + RARRAY_LEN(ary), end - RARRAY_LEN(ary));
 	ARY_SET_LEN(ary, end);
@@ -2930,7 +2934,7 @@ rb_ary_compact_bang(VALUE ary)
     }
     ARY_SET_LEN(ary, n);
     if (n * 2 < ARY_CAPA(ary) && ARY_DEFAULT_SIZE * 2 < ARY_CAPA(ary)) {
-	RESIZE_CAPA(ary, n * 2);
+	ary_resize_capa(ary, n * 2);
     }
 
     return ary;

@@ -1,3 +1,7 @@
+Fri Oct 17 18:33:12 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* array.c (ary_resize_capa): renamed RESIZE_CAPA.
+
 Fri Oct 17 18:16:51 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/bigdecimal/test_bigdecimal.rb (TestBigDecimal#test_sqrt_bigdecimal): 
