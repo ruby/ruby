@@ -1,3 +1,8 @@
+Sun Oct 19 12:28:01 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* test/csv/*:  Renamed tc_* files to test_* to fit in within Ruby's
+	  testing process.
+
 Sun Oct 19 00:15:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit.rb (assert_nothing_thrown): don't intern.
