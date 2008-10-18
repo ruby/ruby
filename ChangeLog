@@ -1,3 +1,7 @@
+Sat Oct 18 13:40:27 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/test/unit.rb (assert_nothing_thrown): implemented.
+
 Sat Oct 18 01:33:22 2008  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* common.mk: use added options for generic_erb.rb.

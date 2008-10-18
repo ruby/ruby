@@ -48,7 +48,7 @@ module Test
         begin
           require f
         rescue LoadError
-          puts $!
+          puts "#{f}: #{$!}"
         end
       }
 
@@ -79,13 +79,24 @@ module Test
         rescue Exception => e
           if ((args.empty? && !e.instance_of?(MiniTest::Assertion)) ||
               args.any? {|a| a.instance_of?(Module) ? e.is_a?(a) : e.class == a })
-            msg = message(msg) { "Exception raised:\n<#{mu_pp(act)}>" }
+            msg = message(msg) { "Exception raised:\n<#{mu_pp(e)}>" }
             assert(false, msg)
           else
             raise
           end
         end
         nil
+      end
+
+      def assert_nothing_thrown(msg=nil)
+        begin
+          yield
+        rescue ArgumentError => error
+          raise error if /^uncaught throw (.+)$/ !~ error.message
+          msg = message(msg) { "<#{$1.intern}> was thrown when nothing was expected" }
+          flunk(msg)
+        end
+        assert(true, "Expected nothing to be thrown")
       end
 
       def assert_equal(exp, act, msg = nil)
