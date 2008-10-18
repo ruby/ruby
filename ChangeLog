@@ -1,3 +1,8 @@
+Sat Oct 18 14:40:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (num_sadded): remove newly defined singleton method
+	  that should not exist after exception handling.  [ruby-dev:36569]
+
 Sat Oct 18 13:30:53 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_external_str_new): a new function to convert from

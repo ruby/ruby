@@ -202,11 +202,13 @@ rb_num_coerce_relop(VALUE x, VALUE y, ID func)
 static VALUE
 num_sadded(VALUE x, VALUE name)
 {
+    const char *nstr = rb_id2name(rb_to_id(name));
     /* ruby_frame = ruby_frame->prev; */ /* pop frame for "singleton_method_added" */
     /* Numerics should be values; singleton_methods should not be added to them */
+    rb_remove_method(rb_singleton_class(x), nstr);
     rb_raise(rb_eTypeError,
 	     "can't define singleton method \"%s\" for %s",
-	     rb_id2name(rb_to_id(name)),
+	     nstr,
 	     rb_obj_classname(x));
     return Qnil;		/* not reached */
 }
