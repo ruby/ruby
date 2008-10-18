@@ -277,7 +277,7 @@ transcode_search_path(const char *sname, const char *dname,
     st_data_t val;
     st_table *table2;
     int found;
-    int pathlen;
+    int pathlen = -1;
 
     if (encoding_equal(sname, dname))
         return -1;
@@ -349,10 +349,7 @@ transcode_search_path(const char *sname, const char *dname,
 
     st_free_table(bfs.visited);
 
-    if (found)
-        return pathlen;
-    else
-        return -1;
+    return pathlen; /* is -1 if !found */
 }
 
 static const rb_transcoder *

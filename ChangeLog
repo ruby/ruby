@@ -1,3 +1,8 @@
+Tue Oct 14 16:39:39 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode.c: in transcode_search_path, elimintated a warning
+	  on cygwin about pathlen potentially not being initialized
+
 Sat Oct 18 13:40:27 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit.rb (assert_nothing_thrown): implemented.
