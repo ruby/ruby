@@ -92,6 +92,8 @@ char* rb_enc_nth(const char*, const char*, int, rb_encoding*);
 VALUE rb_obj_encoding(VALUE);
 VALUE rb_enc_str_buf_cat(VALUE str, const char *ptr, long len, rb_encoding *enc);
 
+VALUE rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *enc);
+
 /* index -> rb_encoding */
 rb_encoding* rb_enc_from_index(int idx);
 

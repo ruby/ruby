@@ -1,3 +1,16 @@
+Sat Oct 18 13:30:53 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_external_str_new): a new function to convert from
+	  external encoding to internal encoding.  if something went
+	  wrong, it returns a string with the external encoding.
+
+	* string.c (rb_external_str_new_with_enc): same as above besides
+	  you can specify the source encoding.
+
+	* ruby.c (ruby_set_argv): use rb_external_str_new()
+
+	* ruby.c (set_arg0, ruby_script): ditto.
+
 Sat Oct 18 04:08:18 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile#initialize): now Tempfile.new takes

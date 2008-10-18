@@ -999,7 +999,6 @@ process_options(VALUE arg)
     NODE *tree = 0;
     VALUE parser;
     VALUE iseq;
-    VALUE args;
     rb_encoding *enc, *lenc;
     const char *s;
     char fbuf[MAXPATHLEN];
@@ -1108,17 +1107,12 @@ process_options(VALUE arg)
     opt->script = RSTRING_PTR(opt->script_name);
     safe = rb_safe_level();
     rb_set_safe_level_force(0);
-    ruby_set_argv(argc, argv);
-    process_sflag(opt);
 
     ruby_init_loadpath();
     ruby_init_gems(!(opt->disable & DISABLE_BIT(gems)));
     lenc = rb_locale_encoding();
     rb_enc_associate(rb_progname, lenc);
     opt->script_name = rb_str_new4(rb_progname);
-    for (i = 0, args = rb_argv; i < RARRAY_LEN(args); i++) {
-	rb_enc_associate(RARRAY_PTR(args)[i], lenc);
-    }
     parser = rb_parser_new();
     if (opt->yydebug) rb_parser_set_yydebug(parser, Qtrue);
     if (opt->ext.enc.name != 0) {
@@ -1143,6 +1137,8 @@ process_options(VALUE arg)
 	rb_enc_set_default_internal(rb_enc_from_encoding(enc));
 	opt->intern.enc.index = -1;
     }
+    ruby_set_argv(argc, argv);
+    process_sflag(opt);
 
     rb_set_safe_level_force(safe);
     if (opt->e_script) {
@@ -1457,14 +1453,14 @@ set_arg0(VALUE val, ID id)
 	}
     }
 #endif
-    rb_progname = rb_obj_freeze(rb_tainted_str_new(s, i));
+    rb_progname = rb_obj_freeze(rb_external_str_new(s, i));
 }
 
 void
 ruby_script(const char *name)
 {
     if (name) {
-	rb_progname = rb_obj_freeze(rb_tainted_str_new2(name));
+	rb_progname = rb_obj_freeze(rb_external_str_new(name, strlen(name)));
     }
 }
 
@@ -1547,7 +1543,7 @@ ruby_set_argv(int argc, char **argv)
 #endif
     rb_ary_clear(av);
     for (i = 0; i < argc; i++) {
-	VALUE arg = rb_tainted_str_new2(argv[i]);
+	VALUE arg = rb_external_str_new(argv[i], strlen(argv[i]));
 
 	OBJ_FREEZE(arg);
 	rb_ary_push(av, arg);
