@@ -21,19 +21,6 @@ Sat Oct 18 04:08:18 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* lib/tempfile.rb (Tempfile#initialize): now Tempfile.new takes
 	  keyword arguments to open().  [ruby-dev:36756]
 
-Tue Oct 14 17:10:10 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
-
-	* tool/transcode-tblgen.rb: added set_valid_byte_pattern
-	  to reduce coupling between table generation script and
-	  specific encodings.
-
-	* enc/trans/single_byte.trans: using set_valid_byte_pattern
-
-Tue Oct 14 16:39:39 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
-
-	* transcode.c: in transcode_search_path, elimintated a warning
-	  on cygwin about pathlen potentially not being initialized
-
 Sat Oct 18 13:40:27 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit.rb (assert_nothing_thrown): implemented.
@@ -233,6 +220,19 @@ Tue Oct 14 19:32:14 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (process_options): -U should be allowed in RUBYOPT
 	  environment variable.  [ruby-dev:36720]
+
+Tue Oct 14 17:10:10 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* tool/transcode-tblgen.rb: added set_valid_byte_pattern
+	  to reduce coupling between table generation script and
+	  specific encodings.
+
+	* enc/trans/single_byte.trans: using set_valid_byte_pattern
+
+Tue Oct 14 16:39:39 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode.c: in transcode_search_path, elimintated a warning
+	  on cygwin about pathlen potentially not being initialized
 
 Tue Oct 14 14:11:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
