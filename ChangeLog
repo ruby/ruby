@@ -1,3 +1,8 @@
+Sat Oct 18 04:08:18 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile#initialize): now Tempfile.new takes
+	  keyword arguments to open().  [ruby-dev:36756]
+
 Tue Oct 14 17:10:10 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* tool/transcode-tblgen.rb: added set_valid_byte_pattern
