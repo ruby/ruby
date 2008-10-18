@@ -272,8 +272,9 @@ class TestRegexp < Test::Unit::TestCase
       Thread.new { $SAFE = 4; re.instance_eval { initialize(re) } }.join
     end
 
-    assert_equal(Encoding.find("ASCII-8BIT"), Regexp.new("b..", nil, "n").encoding)
+    assert_equal(Encoding.find("US-ASCII"), Regexp.new("b..", nil, "n").encoding)
     assert_equal("bar", "foobarbaz"[Regexp.new("b..", nil, "n")])
+    assert_equal(//n, Regexp.new("", nil, "n"))
 
     assert_raise(RegexpError) { Regexp.new(")(") }
   end

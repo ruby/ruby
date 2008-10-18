@@ -2795,7 +2795,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	    char *kcode = StringValuePtr(argv[2]);
 	    if (kcode[0] == 'n' || kcode[1] == 'N') {
 		enc = rb_ascii8bit_encoding();
-		flags |= ARG_ENCODING_FIXED;
+		flags |= ARG_ENCODING_NONE;
 	    }
 	    else {
 		rb_warn("encoding option is ignored - %s", kcode);

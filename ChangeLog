@@ -27,6 +27,14 @@ Fri Oct 17 22:04:38 2008  wanabe  <s.wanabe@gmail.com>
 
 	* array.c: recycle shared-array when it isn't referenced.
 
+Fri Oct 17 20:29:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_initialize_m): specify ARG_ENCODING_NONE instead of
+	  ARG_ENCODING_FIXED for Regexp.new("", nil, "n").  [ruby-dev:36761]
+
+	* test/ruby/test_regexp.rb (TestRegexp#test_initialize): test
+	  updated.
+
 Fri Oct 17 19:46:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/ifchange, win32/ifchange.bat: --timestamp option added.
