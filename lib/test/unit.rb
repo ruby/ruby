@@ -92,8 +92,8 @@ module Test
         begin
           yield
         rescue ArgumentError => error
-          raise error if /^uncaught throw (.+)$/ !~ error.message
-          msg = message(msg) { "<#{$1.intern}> was thrown when nothing was expected" }
+          raise error if /\Auncaught throw (.+)\z/m !~ error.message
+          msg = message(msg) { "<#{$1}> was thrown when nothing was expected" }
           flunk(msg)
         end
         assert(true, "Expected nothing to be thrown")

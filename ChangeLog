@@ -1,3 +1,7 @@
+Sun Oct 19 00:15:03 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/test/unit.rb (assert_nothing_thrown): don't intern.
+
 Sat Oct 18 14:40:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (num_sadded): remove newly defined singleton method
