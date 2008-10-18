@@ -1,3 +1,15 @@
+Sun Oct 19 07:25:08 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* keywords, lex.c.src, opt_insn_unif.def, opt_operand.def: moved rarely changed
+	  input files for code generators into defs/ directory.
+
+	* Makefile.in (lex.c): followed keywords and lex.c.src.
+
+	* common.mk (parser.o): followed keywords.
+	  (INSNS): followed opt_*.def
+
+	* tools/instruction.rb: followed opt_*.def.
+
 Sun Oct 19 12:28:01 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* test/csv/*:  Renamed tc_* files to test_* to fit in within Ruby's

@@ -185,16 +185,16 @@ $(srcdir)/configure: $(srcdir)/configure.in
 # * GNU make v.s. HP-UX make	# HP-UX make invokes the action if lex.c and keywords has same mtime.
 # * svn checkout generate a file with mtime as current time
 # * XFS has a mtime with fractional part
-lex.c: keywords
+lex.c: defs/keywords
 	@\
-	if cmp -s $(srcdir)/lex.c.src $?; then \
+	if cmp -s $(srcdir)/defs/lex.c.src $?; then \
 	  set -x; \
 	  cp $(srcdir)/lex.c.blt $@; \
 	else \
 	  set -x; \
 	  gperf -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? > $@.tmp && \
 	  mv $@.tmp $@ && \
-	  cp $? $(srcdir)/lex.c.src && \
+	  cp $? $(srcdir)/defs/lex.c.src && \
 	  cp $@ $(srcdir)/lex.c.blt; \
 	fi
 

@@ -496,7 +496,7 @@ pack.$(OBJEXT): {$(VPATH)}pack.c $(RUBY_H_INCLUDES)
 parse.$(OBJEXT): {$(VPATH)}parse.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}node.h $(ENCODING_H_INCLUDES) $(ID_H_INCLUDES) \
   {$(VPATH)}regenc.h {$(VPATH)}regex.h {$(VPATH)}util.h {$(VPATH)}lex.c \
-  {$(VPATH)}keywords {$(VPATH)}id.c
+  {$(VPATH)}defs/keywords {$(VPATH)}id.c
 proc.$(OBJEXT): {$(VPATH)}proc.c {$(VPATH)}eval_intern.h \
   $(RUBY_H_INCLUDES) {$(VPATH)}gc.h $(VM_CORE_H_INCLUDES) \
   {$(VPATH)}debug.h
@@ -605,7 +605,7 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 
 INSNS2VMOPT = --srcdir="$(srcdir)"
 
-$(INSNS): $(srcdir)/insns.def {$(VPATH)}vm_opts.h
+$(INSNS): $(srcdir)/insns.def {$(VPATH)}vm_opts.h $(srcdir)/defs/opt_operand.def $(srcdir)/defs/opt_insn_unif.def
 	@$(RM) $(PROGRAM)
 	$(BASERUBY) -Ks $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) $@
 
