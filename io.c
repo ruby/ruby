@@ -3528,9 +3528,13 @@ rb_io_binmode(VALUE io)
  *  call-seq:
  *     ios.binmode    => ios
  *
- *  Puts <em>ios</em> into binary mode. This is useful only in
- *  MS-DOS/Windows environments. Once a stream is in binary mode, it
- *  cannot be reset to nonbinary mode.
+ *  Puts <em>ios</em> into binary mode.
+ *  Once a stream is in binary mode, it cannot be reset to nonbinary mode.
+ *
+ *  - newline conversion disabled
+ *  - encoding conversion disabled
+ *  - content is treated as ASCII-8BIT
+ *
  */
 
 static VALUE
