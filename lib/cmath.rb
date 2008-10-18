@@ -220,4 +220,14 @@ module CMath
   module_function :atanh!
   module_function :atanh
 
+  module_function :log2
+  module_function :cbrt
+  module_function :frexp
+  module_function :ldexp
+  module_function :hypot
+  module_function :erf
+  module_function :erfc
+  module_function :gamma
+  module_function :lgamma
+
 end
