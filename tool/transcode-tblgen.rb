@@ -726,28 +726,23 @@ ValidEncoding = {
                     {81-fe}{30-39}{81-fe}{30-39}',
 }
 
-{
-  'ASCII-8BIT'  => '1byte',
-  'ISO-8859-1'  => '1byte',
-  'ISO-8859-2'  => '1byte',
-  'ISO-8859-3'  => '1byte',
-  'ISO-8859-4'  => '1byte',
-  'ISO-8859-5'  => '1byte',
-  'ISO-8859-6'  => '1byte',
-  'ISO-8859-7'  => '1byte',
-  'ISO-8859-8'  => '1byte',
-  'ISO-8859-9'  => '1byte',
-  'ISO-8859-10' => '1byte',
-  'ISO-8859-11' => '1byte',
-  'ISO-8859-13' => '1byte',
-  'ISO-8859-14' => '1byte',
-  'ISO-8859-15' => '1byte',
-  'WINDOWS-1252' => '1byte',
-  'Windows-31J' => 'Shift_JIS',
-  'eucJP-ms'    => 'EUC-JP'
-}.each {|k, v|
-  ValidEncoding[k] = ValidEncoding.fetch(v)
-}
+def set_valid_byte_pattern (encoding, pattern_or_label)
+  pattern =
+    if ValidEncoding[pattern_or_label]
+      ValidEncoding[pattern_or_label]
+    else
+      pattern_or_label
+    end
+  if ValidEncoding[encoding] and ValidEncoding[encoding]!=pattern
+    raise ArgumentError, "trying to change valid byte pattern for encoding #{encoding} from #{ValidEncoding[encoding]} to #{pattern}"
+  end
+  ValidEncoding[encoding] = pattern
+end
+
+# the following may be used in different places, so keep them here for the moment
+set_valid_byte_pattern 'ASCII-8BIT', '1byte'
+set_valid_byte_pattern 'Windows-31J', 'Shift_JIS'
+set_valid_byte_pattern 'eucJP-ms', 'EUC-JP'
 
 def make_signature(filename, src)
   "src=#{filename.dump}, len=#{src.length}, checksum=#{src.sum}"

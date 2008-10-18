@@ -1,3 +1,11 @@
+Tue Oct 14 17:10:10 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* tool/transcode-tblgen.rb: added set_valid_byte_pattern
+	  to reduce coupling between table generation script and
+	  specific encodings.
+
+	* enc/trans/single_byte.trans: using set_valid_byte_pattern
+
 Tue Oct 14 16:39:39 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* transcode.c: in transcode_search_path, elimintated a warning
