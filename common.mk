@@ -625,7 +625,7 @@ vmtc.inc: $(srcdir)/template/vmtc.inc.tmpl
 
 vm.inc: $(srcdir)/template/vm.inc.tmpl
 
-srcs: {$(VPATH)}parse.c $(ID_H_TARGET) {$(VPATH)}lex.c {$(VPATH)}newline.c $(srcdir)/ext/ripper/ripper.c srcs-enc
+srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}newline.c $(srcdir)/ext/ripper/ripper.c srcs-enc
 
 srcs-enc: $(ENC_MK)
 	$(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs

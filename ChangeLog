@@ -1,3 +1,11 @@
+Sun Oct 19 21:12:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (srcs): removed ID_H_TARGET.
+
+	* tool/generic_erb.rb: always overwrites if no if-change option.
+
+	* template/id.h.tmpl: shows which token differs.
+
 Sun Oct 19 18:15:15 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/trans/single_byte.trans: adding WINDOWS-wwww encodings

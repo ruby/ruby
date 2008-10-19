@@ -16,13 +16,11 @@ erb = ERB.new(File.read(template), nil, '%')
 erb.filename = template
 result = erb.result
 if output
-  if ifchange
-    if (IO.read(output) rescue nil) == result
-      puts "#{output} unchanged"
-    else
-      open(output, "wb") {|f| f.print result}
-      puts "#{output} updated"
-    end
+  if ifchange and (IO.read(output) rescue nil) == result
+    puts "#{output} unchanged"
+  else
+    open(output, "wb") {|f| f.print result}
+    puts "#{output} updated"
   end
   if timestamp
     if timestamp == true
