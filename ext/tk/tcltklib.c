@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2008-06-17"
+#define TCLTKLIB_RELEASE_DATE "2008-10-20"
 
 #include "ruby.h"
 
@@ -44,9 +44,9 @@
 #include "stubs.h"
 
 #ifndef TCL_ALPHA_RELEASE
-#define TCL_ALPHA_RELEASE       0
-#define TCL_BETA_RELEASE        1
-#define TCL_FINAL_RELEASE       2
+#define TCL_ALPHA_RELEASE       0  /* "alpha" */
+#define TCL_BETA_RELEASE        1  /* "beta"  */
+#define TCL_FINAL_RELEASE       2  /* "final" */
 #endif
 
 static VALUE rb_thread_critical; /* dummy */
@@ -55,8 +55,8 @@ int rb_thread_check_trap_pending();
 static struct {
   int major;
   int minor;
+  int type;  /* ALPHA==0, BETA==1, FINAL==2 */
   int patchlevel;
-  int type;
 } tcltk_version = {0, 0, 0, 0};
 
 static void
@@ -9070,28 +9070,30 @@ static VALUE
 lib_getversion(self)
     VALUE self;
 {
-    volatile VALUE type_name;
+    set_tcltk_version();
 
+    return rb_ary_new3(4, INT2NUM(tcltk_version.major), 
+		          INT2NUM(tcltk_version.minor), 
+		          INT2NUM(tcltk_version.type), 
+		          INT2NUM(tcltk_version.patchlevel));
+}
+
+static VALUE
+lib_get_reltype_name(self)
+    VALUE self;
+{
     set_tcltk_version();
 
     switch(tcltk_version.type) {
     case TCL_ALPHA_RELEASE:
-      type_name = rb_str_new2("alpha");
-      break;
+      return rb_str_new2("alpha");
     case TCL_BETA_RELEASE:
-      type_name = rb_str_new2("beta");
-      break;
+      return rb_str_new2("beta");
     case TCL_FINAL_RELEASE:
-      type_name = rb_str_new2("final");
-      break;
+      return rb_str_new2("final");
     default:
-      type_name = rb_str_new2("unknown");
+      rb_raise(rb_eRuntimeError, "tcltklib has invalid release type number");
     }
-
-    return rb_ary_new3(5, INT2NUM(tcltk_version.major), 
-		          INT2NUM(tcltk_version.minor), 
-		          INT2NUM(tcltk_version.type), type_name, 
-		          INT2NUM(tcltk_version.patchlevel));
 }
 
 
@@ -9294,13 +9296,21 @@ encoding_table_get_name_core(table, enc_arg, error_mode)
       enc = rb_funcall(interp, ID_encoding_name, 0, 0);
     }
   }
-  /* 2nd: encoding system of Tcl/Tk */
+  /* 2nd: Encoding.default_internal */
+  if (NIL_P(enc)) {
+    enc = rb_enc_default_internal();
+  }
+  /* 3rd: encoding system of Tcl/Tk */
   if (NIL_P(enc)) {
     enc = rb_str_new2(Tcl_GetEncodingName((Tcl_Encoding)NULL));
   }
-  /* 3rd: Encoding.default_external */
+  /* 4th: Encoding.default_external */
   if (NIL_P(enc)) {
     enc = rb_enc_default_external();
+  }
+  /* 5th: Encoding.locale_charmap */
+  if (NIL_P(enc)) {
+    enc = rb_locale_charmap(rb_cEncoding);
   }
 
   if (RTEST(rb_obj_is_kind_of(enc, cRubyEncoding))) {
@@ -9870,6 +9880,24 @@ Init_tcltklib()
 
    /* --------------------------------------------------------------- */
 
+#ifdef __WIN32__
+#define TK_WINDOWING_SYSTEM "win32"
+#else
+#ifdef MAC_TCL
+#define TK_WINDOWING_SYSTEM "classic"
+#else
+#ifdef MAC_OSX_TK
+#define TK_WINDOWING_SYSTEM "aqua"
+#else
+#define TK_WINDOWING_SYSTEM "x11"
+#endif
+#endif
+#endif
+    rb_define_const(lib, "WINDOWING_SYSTEM", 
+                    rb_obj_freeze(rb_str_new2(TK_WINDOWING_SYSTEM)));
+
+   /* --------------------------------------------------------------- */
+
     rb_define_const(ev_flag, "NONE",      INT2FIX(0));
     rb_define_const(ev_flag, "WINDOW",    INT2FIX(TCL_WINDOW_EVENTS));
     rb_define_const(ev_flag, "FILE",      INT2FIX(TCL_FILE_EVENTS));
@@ -9899,6 +9927,8 @@ Init_tcltklib()
     /* --------------------------------------------------------------- */
 
     rb_define_module_function(lib, "get_version", lib_getversion, -1);
+    rb_define_module_function(lib, "get_release_type_name", 
+			      lib_get_reltype_name, -1);
 
     rb_define_const(release_type, "ALPHA", INT2FIX(TCL_ALPHA_RELEASE));
     rb_define_const(release_type, "BETA",  INT2FIX(TCL_BETA_RELEASE));

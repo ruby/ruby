@@ -26,7 +26,7 @@ class TkVariable
     TkVar_ID_TBL.mutex.synchronize{ TkVar_ID_TBL.clear }
   }
 
-  major, minor, type, type_name, patchlevel = TclTkLib.get_version
+  major, minor, type, patchlevel = TclTkLib.get_version
   USE_OLD_TRACE_OPTION_STYLE = (major < 8) || (major == 8 && minor < 4)
 
   #TkCore::INTERP.add_tk_procs('rb_var', 'args', 

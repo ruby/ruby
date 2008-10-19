@@ -1,3 +1,11 @@
+Mon Oct 20 08:20:01 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: support Encoding.default_internal.
+
+	* ext/tk/tcltklib.c: ditto.
+
+	* ext/tk/extconf.rb: improve the strategy for searching Tcl/Tk headers.
+
 Mon Oct 20 00:57:04 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit.rb (Test::Unit.setup_argv): call given block for

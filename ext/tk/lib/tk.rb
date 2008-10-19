@@ -1112,7 +1112,15 @@ module TkCore
   WITH_RUBY_VM  = Object.const_defined?(:VM) && ::VM.class == Class
   WITH_ENCODING = defined?(::Encoding.default_external) && true
   #WITH_ENCODING = Object.const_defined?(:Encoding) && ::Encoding.class == Class
-
+  #if TclTkLib::WINDOWING_SYSTEM == 'aqua'
+  #  if (TclTkLib.get_version <=> [8, 4, TclTkLib::RELEASE_TYPE::FINAL, 9]) > 0
+  #    # *** KNOWN BUG ***
+  #    #   Main event loop thread of TkAqua (> Tk8.4.9) must be the main 
+  #    #   application thread. So, ruby1.9 users must call Tk.mainloop on 
+  #    #   the main application thread.
+  #    RUN_EVENTLOOP_ON_MAIN_THREAD = true
+  #  end
+  #end
   unless self.const_defined? :RUN_EVENTLOOP_ON_MAIN_THREAD
     ### Ruby 1.9 !!!!!!!!!!!!!!!!!!!!!!!!!!
     RUN_EVENTLOOP_ON_MAIN_THREAD = false
@@ -1671,8 +1679,18 @@ module TkCore
   end
 
   def mainloop(check_root = true)
-    if !TkCore::WITH_RUBY_VM || TkCore::RUN_EVENTLOOP_ON_MAIN_THREAD
+    if !TkCore::WITH_RUBY_VM
       TclTkLib.mainloop(check_root)
+
+    elsif TkCore::RUN_EVENTLOOP_ON_MAIN_THREAD
+      #if TclTkLib::WINDOWING_SYSTEM == 'aqua' && 
+      #    Thread.current != Thread.main && 
+      #    (TclTkLib.get_version <=> [8,4,TclTkLib::RELEASE_TYPE::FINAL,9]) > 0
+      #  raise RuntimeError, 
+      #       "eventloop on TkAqua ( > Tk8.4.9 ) works on the main thread only"
+      #end
+      TclTkLib.mainloop(check_root)
+
     else ### Ruby 1.9 !!!!!
       unless TkCore::INTERP.default_master?
         # [MultiTkIp] slave interp ?
@@ -2389,6 +2407,7 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
         BINARY_NAME  = 'binary'.freeze
         UTF8_NAME    = 'utf-8'.freeze
         DEFAULT_EXTERNAL_NAME = RubyEncoding.default_external.name.freeze
+        DEFAULT_INTERNAL_NAME = RubyEncoding.default_internal.name.freeze rescue nil
 
         BINARY  = RubyEncoding.find(BINARY_NAME)
         UNKNOWN = RubyEncoding.find('ASCII-8BIT')
@@ -2528,7 +2547,7 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
         def tk_encoding_names
           #TkComm.simplelist(TkCore::INTERP._invoke_without_enc(Tk::Encoding::ENCNAMES_CMD[0], Tk::Encoding::ENCNAMES_CMD[1]))
           TkComm.simplelist(TkCore::INTERP._invoke_without_enc('encoding', 'names'))
-       end
+        end
         def encoding_names
           self.tk_encoding_names.find_all{|name|
             Tk::Encoding::ENCODING_TABLE.get_name(name) rescue false
@@ -2721,7 +2740,12 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
         enc_name ||= 
           Tk::Encoding::ENCODING_TABLE.get_name(str.encoding) rescue nil
 
-        unless enc_name
+        if enc_name
+          # str has its encoding information
+          encstr = __toUTF8(str, enc_name)
+          encstr.force_encoding(Tk::Encoding::UTF8_NAME)
+          return encstr
+        else
           # str.encoding isn't supported by Tk -> try to convert on Ruby
           begin
             return str.encode(Tk::Encoding::UTF8_NAME) # new string
@@ -2976,6 +3000,7 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
   else ### Ruby 1.9 !!!!!!!!!!!!
     loc_enc_obj = ::Encoding.find(::Encoding.locale_charmap)
     ext_enc_obj = ::Encoding.default_external
+    int_enc_obj = ::Encoding.default_internal || ext_enc_obj
     tksys_enc_name = Tk::Encoding::ENCODING_TABLE.get_name(Tk.encoding_system)
     # p [Tk.encoding, Tk.encoding_system, loc_enc_obj, ext_enc_obj]
 
@@ -3052,7 +3077,8 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
     end
 
     unless enc_name
-      if ext_enc_obj == Tk::Encoding::UNKNOWN
+      #if ext_enc_obj == Tk::Encoding::UNKNOWN
+      if int_enc_obj == Tk::Encoding::UNKNOWN
         if loc_enc_obj == Tk::Encoding::UNKNOWN
           # use Tk.encoding_system
           enc_name = tksys_enc_name
@@ -3060,7 +3086,7 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
           # use locale_charmap
           begin
             loc_enc_name = Tk::Encoding::ENCODING_TABLE.get_name(loc_enc_obj)
-            if loc_enc_name && loc_enc_name != tksys_enc_name
+            if loc_enc_name
               # use locale_charmap
               enc_name = loc_enc_name
             else
@@ -3074,10 +3100,12 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
         end
       else
         begin
-          ext_enc_name = Tk::Encoding::ENCODING_TABLE.get_name(ext_enc_obj)
-          if ext_enc_name && ext_enc_name != tksys_enc_name
+          #ext_enc_name = Tk::Encoding::ENCODING_TABLE.get_name(ext_enc_obj)
+          #if ext_enc_name && ext_enc_name != tksys_enc_name
+          int_enc_name = Tk::Encoding::ENCODING_TABLE.get_name(int_enc_obj)
+          if int_enc_name
             # use default_external
-            enc_name = ext_enc_name
+            enc_name = int_enc_name
           else
             # use Tk.encoding_system
             enc_name = tksys_enc_name
@@ -5501,7 +5529,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2008-06-17'.freeze
+  RELEASE_DATE = '2008-10-20'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

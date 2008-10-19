@@ -64,6 +64,18 @@ tcltk_version = with_config("tcltkversion")
 
 use_X = with_config("X11", (! is_win32))
 
+def parse_tclConfig(file)
+  # check tclConfig.sh/tkConfig.sh
+  tbl = {}
+  IO.foreach(file){|line|
+    line.strip!
+    next if line !~ /^([^\#=][^=]*)=(['"]|)(.*)\2$/
+    key, val = $1, $3
+    tbl[key] = val.gsub(/\$\{([^}]+)\}/){|s| tbl[$1]} rescue nil
+  }
+  tbl
+end
+
 def check_tcltk_version(version)
   return [nil, nil] unless version
 
@@ -118,7 +130,7 @@ def find_tcl(tcllib, stubs, version, *opt_paths)
   if version && ! version.empty?
     versions = [version]
   else
-    versions = %w[8.6 8.5 8.4 8.3 8.2 8.1 8.0 7.6]
+    versions = %w[8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0 7.6]
   end
 
   if tcllib
@@ -161,7 +173,7 @@ def find_tk(tklib, stubs, version, *opt_paths)
   if version && ! version.empty?
     versions = [version]
   else
-    versions = %w[8.6 8.5 8.4 8.3 8.2 8.1 8.0 4.2]
+    versions = %w[8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0 4.2]
   end
 
   if tklib
@@ -183,6 +195,35 @@ def find_tk(tklib, stubs, version, *opt_paths)
     puts("Warning:: cannot find Tk library. tcltklib will not be compiled (tcltklib is disabled on your Ruby == Ruby/Tk will not work). Please check configure options.")
   end
   st
+end
+
+def find_tcltk_header(tclver, tkver)
+  base_dir = ['/usr/local/include', '/usr/pkg/include', '/usr/include']
+  base_dir << '/Tcl/include' # default for ActiveTcl
+
+  unless have_tcl_h = have_header('tcl.h')
+    if tclver && ! tclver.empty?
+      versions = [tclver]
+    else
+      versions = %w[8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0 7.6]
+    end
+    paths = base_dir.dup
+    versions.each{|ver| paths.concat(base_dir.map{|dir| dir + '/tcl' + ver})}
+    have_tcl_h = find_header('tcl.h', *paths)
+  end
+
+  unless have_tk_h  = have_header("tk.h")
+    if tkver && ! tkver.empty?
+      versions = [tkver]
+    else
+      versions = %w[8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0 4.2]
+    end
+    paths = base_dir.dup
+    versions.each{|ver| paths.concat(base_dir.map{|dir| dir + '/tk' + ver})}
+    have_tk_h = find_header('tk.h', *paths)
+  end
+
+  have_tcl_h && have_tk_h
 end
 
 def find_X11(*opt_paths)
@@ -218,37 +259,19 @@ def pthread_check()
     else
       # tcl-thread is unknown and tclConfig.sh is given
       begin
-        open(tclConfig, "r") do |cfg|
-          while line = cfg.gets()
-            if line =~ /^\s*TCL_THREADS=(0|1)/
-              tcl_enable_thread = ($1 == "1")
-              break
-            end
-
-            if line =~ /^\s*TCL_MAJOR_VERSION=("|')(\d+)\1/
-              tcl_major_ver = $2
-              if tcl_major_ver =~ /^[1-7]$/
-                tcl_enable_thread = false
-                break
-              end
-              if tcl_major_ver == "8" && tcl_minor_ver == "0"
-                tcl_enable_thread = false
-                break
-              end
-            end
-
-            if line =~ /^\s*TCL_MINOR_VERSION=("|')(\d+)\1/
-              tcl_minor_ver = $2
-              if tcl_major_ver == "8" && tcl_minor_ver == "0"
-                tcl_enable_thread = false
-                break
-              end
-            end
+        tbl = parse_tclConfig(tclConfig)
+        if tbl['TCL_THREADS']
+          tcl_enable_thread = (tbl['TCL_THREADS'] == "1")
+        else
+          tcl_major_ver = tbl['TCL_MAJOR_VERSION'].to_i
+          tcl_minor_ver = tbl['TCL_MINOR_VERSION'].to_i
+          if tcl_major_ver < 8 || (tcl_major_ver == 8 && tcl_minor_ver == 0)
+            tcl_enable_thread = false
           end
         end
 
         if tcl_enable_thread == nil
-          # not find definition
+          # cannot find definition
           if tcl_major_ver
             puts("Warning: '#{tclConfig}' doesn't include TCL_THREADS definition.")
           else
@@ -376,11 +399,11 @@ end
 
 tclver, tkver = check_tcltk_version(tcltk_version)
 
-if have_header("tcl.h") && have_header("tk.h") && 
-    ( tcltk_framework || 
-        ( ( !use_X || find_X11(x11_ldir2, x11_ldir) ) &&
-            find_tcl(tcllib, stubs, tclver, *tcl_ldir_list) &&
-            find_tk(tklib, stubs, tkver, *tk_ldir_list) ) )
+if ( tcltk_framework || 
+       ( find_tcltk_header(tclver, tkver) && 
+           ( !use_X || find_X11(x11_ldir2, x11_ldir) ) &&
+           find_tcl(tcllib, stubs, tclver, *tcl_ldir_list) &&
+           find_tk(tklib, stubs, tkver, *tk_ldir_list) ) )
   $CPPFLAGS += ' -DUSE_TCL_STUBS -DUSE_TK_STUBS' if stubs
   $CPPFLAGS += ' -D_WIN32' if /cygwin/ =~ RUBY_PLATFORM
 

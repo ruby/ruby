@@ -394,7 +394,7 @@ Tk.default_widget_set = :Tk
 
 ############################################
 #  depend on the version of Tcl/Tk
-# major, minor, type, type_name, patchlevel = TclTkLib.get_version
+# major, minor, type, patchlevel = TclTkLib.get_version
 
 ############################################
 # Ttk (Tile) support
