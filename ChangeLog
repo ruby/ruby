@@ -1,3 +1,15 @@
+Sun Oct 19 18:15:15 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/trans/single_byte.trans: adding WINDOWS-wwww encodings
+	  (wwww = 874/1250/1251/1253/1254/1255/1256/1257)
+	  (contributed by Yoshihiro Kambayashi)
+
+	* enc/trans/windows-wwww-tbl.rb: 8 new files
+	  (contributed by Yoshihiro Kambayashi)
+
+	* test/ruby/test_transcode.rb: added test_windows_wwww
+	  (contributed by Yoshihiro Kambayashi)
+
 Sun Oct 19 07:37:13 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/cmath.rb (log2,cbrt,frexp,ldexp,hypot,erf,erfc,gamma,lgamma):

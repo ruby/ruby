@@ -131,6 +131,87 @@ class TestTranscode < Test::Unit::TestCase
     end
   end
 
+  def test_windows_874
+    check_both_ways("\u20AC", "\x80", 'windows-874') # €
+    assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-874') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x84".encode("utf-8", 'windows-874') }
+    check_both_ways("\u2026", "\x85", 'windows-874') # …
+    assert_raise(Encoding::UndefinedConversionError) { "\x86".encode("utf-8", 'windows-874') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'windows-874') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'windows-874') }
+    check_both_ways("\u2018", "\x91", 'windows-874') # ‘
+    check_both_ways("\u2014", "\x97", 'windows-874') # —
+    assert_raise(Encoding::UndefinedConversionError) { "\x98".encode("utf-8", 'windows-874') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x9F".encode("utf-8", 'windows-874') }
+    check_both_ways("\u00A0", "\xA0", 'windows-874') # non-breaking space
+    check_both_ways("\u0E0F", "\xAF", 'windows-874') # ฏ
+    check_both_ways("\u0E10", "\xB0", 'windows-874') # ฐ
+    check_both_ways("\u0E1F", "\xBF", 'windows-874') # ฟ
+    check_both_ways("\u0E20", "\xC0", 'windows-874') # ภ
+    check_both_ways("\u0E2F", "\xCF", 'windows-874') # ฯ
+    check_both_ways("\u0E30", "\xD0", 'windows-874') # ะ
+    check_both_ways("\u0E3A", "\xDA", 'windows-874') # ฺ
+    assert_raise(Encoding::UndefinedConversionError) { "\xDB".encode("utf-8", 'windows-874') }
+    assert_raise(Encoding::UndefinedConversionError) { "\xDE".encode("utf-8", 'windows-874') }
+    check_both_ways("\u0E3F", "\xDF", 'windows-874') # ฿
+    check_both_ways("\u0E40", "\xE0", 'windows-874') # เ
+    check_both_ways("\u0E4F", "\xEF", 'windows-874') # ๏
+    check_both_ways("\u0E50", "\xF0", 'windows-874') # ๐
+    check_both_ways("\u0E5B", "\xFB", 'windows-874') # ๛
+    assert_raise(Encoding::UndefinedConversionError) { "\xFC".encode("utf-8", 'windows-874') }
+    assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'windows-874') }
+  end
+  
+  def test_windows_1250
+    check_both_ways("\u20AC", "\x80", 'windows-1250') # €
+    assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1250') }
+    check_both_ways("\u201A", "\x82", 'windows-1250') # ‚
+    assert_raise(Encoding::UndefinedConversionError) { "\x83".encode("utf-8", 'windows-1250') }
+    check_both_ways("\u201E", "\x84", 'windows-1250') # „
+    check_both_ways("\u2021", "\x87", 'windows-1250') # ‡
+    assert_raise(Encoding::UndefinedConversionError) { "\x88".encode("utf-8", 'windows-1250') }
+    check_both_ways("\u2030", "\x89", 'windows-1250') # ‰
+    check_both_ways("\u0179", "\x8F", 'windows-1250') # Ź
+    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'windows-1250') }
+    check_both_ways("\u2018", "\x91", 'windows-1250') # ‘
+    check_both_ways("\u2014", "\x97", 'windows-1250') # —
+    assert_raise(Encoding::UndefinedConversionError) { "\x98".encode("utf-8", 'windows-1250') }
+    check_both_ways("\u2122", "\x99", 'windows-1250') # ™
+    check_both_ways("\u00A0", "\xA0", 'windows-1250') # non-breaking space
+    check_both_ways("\u017B", "\xAF", 'windows-1250') # Ż
+    check_both_ways("\u00B0", "\xB0", 'windows-1250') # °
+    check_both_ways("\u017C", "\xBF", 'windows-1250') # ż
+    check_both_ways("\u0154", "\xC0", 'windows-1250') # Ŕ
+    check_both_ways("\u010E", "\xCF", 'windows-1250') # Ď
+    check_both_ways("\u0110", "\xD0", 'windows-1250') # Đ
+    check_both_ways("\u00DF", "\xDF", 'windows-1250') # ß
+    check_both_ways("\u0155", "\xE0", 'windows-1250') # ŕ
+    check_both_ways("\u010F", "\xEF", 'windows-1250') # ď
+    check_both_ways("\u0111", "\xF0", 'windows-1250') # đ
+    check_both_ways("\u02D9", "\xFF", 'windows-1250') # ˙
+  end
+  
+  def test_windows_1251
+    check_both_ways("\u0402", "\x80", 'windows-1251') # Ђ
+    check_both_ways("\u20AC", "\x88", 'windows-1251') # €
+    check_both_ways("\u040F", "\x8F", 'windows-1251') # Џ
+    check_both_ways("\u0452", "\x90", 'windows-1251') # ђ
+    assert_raise(Encoding::UndefinedConversionError) { "\x98".encode("utf-8", 'windows-1251') }
+    check_both_ways("\u045F", "\x9F", 'windows-1251') # џ
+    check_both_ways("\u00A0", "\xA0", 'windows-1251') # non-breaking space
+    check_both_ways("\u0407", "\xAF", 'windows-1251') # Ї
+    check_both_ways("\u00B0", "\xB0", 'windows-1251') # °
+    check_both_ways("\u0457", "\xBF", 'windows-1251') # ї
+    check_both_ways("\u0410", "\xC0", 'windows-1251') # А
+    check_both_ways("\u041F", "\xCF", 'windows-1251') # П
+    check_both_ways("\u0420", "\xD0", 'windows-1251') # Р
+    check_both_ways("\u042F", "\xDF", 'windows-1251') # Я
+    check_both_ways("\u0430", "\xE0", 'windows-1251') # а
+    check_both_ways("\u043F", "\xEF", 'windows-1251') # п
+    check_both_ways("\u0440", "\xF0", 'windows-1251') # р
+    check_both_ways("\u044F", "\xFF", 'windows-1251') # я
+  end
+  
   def test_windows_1252
     check_both_ways("\u20AC", "\x80", 'windows-1252') # €
     assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1252') }
@@ -156,6 +237,184 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00EF", "\xEF", 'windows-1252') # ï
     check_both_ways("\u00F0", "\xF0", 'windows-1252') # ð
     check_both_ways("\u00FF", "\xFF", 'windows-1252') # ÿ
+  end
+
+  def test_windows_1253
+    check_both_ways("\u20AC", "\x80", 'windows-1253') # €
+    assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1253') }
+    check_both_ways("\u201A", "\x82", 'windows-1253') # ‚
+    check_both_ways("\u2021", "\x87", 'windows-1253') # ‡
+    assert_raise(Encoding::UndefinedConversionError) { "\x88".encode("utf-8", 'windows-1253') }
+    check_both_ways("\u2030", "\x89", 'windows-1253') # ‰
+    assert_raise(Encoding::UndefinedConversionError) { "\x8A".encode("utf-8", 'windows-1253') }
+    check_both_ways("\u2039", "\x8B", 'windows-1253') # ‹
+    assert_raise(Encoding::UndefinedConversionError) { "\x8C".encode("utf-8", 'windows-1253') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'windows-1253') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'windows-1253') }
+    check_both_ways("\u2018", "\x91", 'windows-1253') # ‘
+    check_both_ways("\u2014", "\x97", 'windows-1253') # —
+    assert_raise(Encoding::UndefinedConversionError) { "\x98".encode("utf-8", 'windows-1253') }
+    check_both_ways("\u2122", "\x99", 'windows-1253') # ™
+    assert_raise(Encoding::UndefinedConversionError) { "\x9A".encode("utf-8", 'windows-1253') }
+    check_both_ways("\u203A", "\x9B", 'windows-1253') # ›
+    assert_raise(Encoding::UndefinedConversionError) { "\x9C".encode("utf-8", 'windows-1253') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x9F".encode("utf-8", 'windows-1253') }
+    check_both_ways("\u00A0", "\xA0", 'windows-1253') # non-breaking space
+    check_both_ways("\u2015", "\xAF", 'windows-1253') # ―
+    check_both_ways("\u00B0", "\xB0", 'windows-1253') # °
+    check_both_ways("\u038F", "\xBF", 'windows-1253') # Ώ
+    check_both_ways("\u0390", "\xC0", 'windows-1253') # ΐ
+    check_both_ways("\u039F", "\xCF", 'windows-1253') # Ο
+    check_both_ways("\u03A0", "\xD0", 'windows-1253') # Π
+    check_both_ways("\u03A1", "\xD1", 'windows-1253') # Ρ
+    assert_raise(Encoding::UndefinedConversionError) { "\xD2".encode("utf-8", 'windows-1253') }
+    check_both_ways("\u03A3", "\xD3", 'windows-1253') # Σ
+    check_both_ways("\u03AF", "\xDF", 'windows-1253') # ί
+    check_both_ways("\u03B0", "\xE0", 'windows-1253') # ΰ
+    check_both_ways("\u03BF", "\xEF", 'windows-1253') # ο
+    check_both_ways("\u03C0", "\xF0", 'windows-1253') # π
+    check_both_ways("\u03CE", "\xFE", 'windows-1253') # ώ
+    assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'windows-1253') }
+  end
+  
+  def test_windows_1254
+    check_both_ways("\u20AC", "\x80", 'windows-1254') # €
+    assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1254') }
+    check_both_ways("\u201A", "\x82", 'windows-1254') # ‚
+    check_both_ways("\u0152", "\x8C", 'windows-1254') # Œ
+    assert_raise(Encoding::UndefinedConversionError) { "\x8D".encode("utf-8", 'windows-1254') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'windows-1254') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'windows-1254') }
+    check_both_ways("\u2018", "\x91", 'windows-1254') # ‘
+    check_both_ways("\u0153", "\x9C", 'windows-1254') # œ
+    assert_raise(Encoding::UndefinedConversionError) { "\x9D".encode("utf-8", 'windows-1254') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x9E".encode("utf-8", 'windows-1254') }
+    check_both_ways("\u0178", "\x9F", 'windows-1254') # Ÿ
+    check_both_ways("\u00A0", "\xA0", 'windows-1254') # non-breaking space
+    check_both_ways("\u00AF", "\xAF", 'windows-1254') # ¯
+    check_both_ways("\u00B0", "\xB0", 'windows-1254') # °
+    check_both_ways("\u00BF", "\xBF", 'windows-1254') # ¿
+    check_both_ways("\u00C0", "\xC0", 'windows-1254') # À
+    check_both_ways("\u00CF", "\xCF", 'windows-1254') # Ï
+    check_both_ways("\u011E", "\xD0", 'windows-1254') # Ğ
+    check_both_ways("\u00DF", "\xDF", 'windows-1254') # ß
+    check_both_ways("\u00E0", "\xE0", 'windows-1254') # à
+    check_both_ways("\u00EF", "\xEF", 'windows-1254') # ï
+    check_both_ways("\u011F", "\xF0", 'windows-1254') # ğ
+    check_both_ways("\u00FF", "\xFF", 'windows-1254') # ÿ
+  end
+  
+  def test_windows_1255
+  	check_both_ways("\u20AC", "\x80", 'windows-1255') # €
+	assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1255') }
+  	check_both_ways("\u201A", "\x82", 'windows-1255') # ‚
+ 	check_both_ways("\u2030", "\x89", 'windows-1255') # ‰
+    assert_raise(Encoding::UndefinedConversionError) { "\x8A".encode("utf-8", 'windows-1255') }
+    check_both_ways("\u2039", "\x8B", 'windows-1255') # ‹
+    assert_raise(Encoding::UndefinedConversionError) { "\x8C".encode("utf-8", 'windows-1255') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'windows-1255') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'windows-1255') }
+    check_both_ways("\u2018", "\x91", 'windows-1255') # ‘
+    check_both_ways("\u2122", "\x99", 'windows-1255') # ™
+    assert_raise(Encoding::UndefinedConversionError) { "\x9A".encode("utf-8", 'windows-1255') }
+    check_both_ways("\u203A", "\x9B", 'windows-1255') # ›
+    assert_raise(Encoding::UndefinedConversionError) { "\x9C".encode("utf-8", 'windows-1255') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x9F".encode("utf-8", 'windows-1255') }
+    check_both_ways("\u00A0", "\xA0", 'windows-1255') # non-breaking space
+    check_both_ways("\u00A1", "\xA1", 'windows-1255') # ¡
+    check_both_ways("\u00D7", "\xAA", 'windows-1255') # ×
+    check_both_ways("\u00AF", "\xAF", 'windows-1255') # ¯
+    check_both_ways("\u00B0", "\xB0", 'windows-1255') # °
+    check_both_ways("\u00B8", "\xB8", 'windows-1255') # ¸
+    check_both_ways("\u00F7", "\xBA", 'windows-1255') # ÷
+    check_both_ways("\u00BF", "\xBF", 'windows-1255') # ¿
+    check_both_ways("\u05B0", "\xC0", 'windows-1255') # ְ
+    check_both_ways("\u05B9", "\xC9", 'windows-1255') # ֹ
+    assert_raise(Encoding::UndefinedConversionError) { "\xCA".encode("utf-8", 'windows-1255') }
+    check_both_ways("\u05BB", "\xCB", 'windows-1255') # ֻ
+    check_both_ways("\u05BF", "\xCF", 'windows-1255') # ֿ
+    check_both_ways("\u05C0", "\xD0", 'windows-1255') # ׀
+    check_both_ways("\u05F3", "\xD7", 'windows-1255') # ׳
+    check_both_ways("\u05F4", "\xD8", 'windows-1255') # ״
+    assert_raise(Encoding::UndefinedConversionError) { "\xD9".encode("utf-8", 'windows-1255') }
+    assert_raise(Encoding::UndefinedConversionError) { "\xDF".encode("utf-8", 'windows-1255') }
+    check_both_ways("\u05D0", "\xE0", 'windows-1255') # א
+    check_both_ways("\u05DF", "\xEF", 'windows-1255') # ן
+    check_both_ways("\u05E0", "\xF0", 'windows-1255') # נ
+    check_both_ways("\u05EA", "\xFA", 'windows-1255') # ת
+    assert_raise(Encoding::UndefinedConversionError) { "\xFB".encode("utf-8", 'windows-1255') }
+    assert_raise(Encoding::UndefinedConversionError) { "\xFC".encode("utf-8", 'windows-1255') }
+    check_both_ways("\u200E", "\xFD", 'windows-1255') # left-to-right mark
+    check_both_ways("\u200F", "\xFE", 'windows-1255') # right-to-left mark
+    assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'windows-1255') }
+  end
+  
+  def test_windows_1256
+    check_both_ways("\u20AC", "\x80", 'windows-1256') # €
+    check_both_ways("\u0679", "\x8A", 'windows-1256') # ٹ
+    check_both_ways("\u0688", "\x8F", 'windows-1256') # ڈ
+    check_both_ways("\u06AF", "\x90", 'windows-1256') # گ
+    check_both_ways("\u06A9", "\x98", 'windows-1256') # ک
+    check_both_ways("\u0691", "\x9A", 'windows-1256') # ڑ
+    check_both_ways("\u06BA", "\x9F", 'windows-1256') # ں
+    check_both_ways("\u00A0", "\xA0", 'windows-1256') # non-breaking space
+    check_both_ways("\u06BE", "\xAA", 'windows-1256') # ھ
+    check_both_ways("\u00AF", "\xAF", 'windows-1256') # ¯
+    check_both_ways("\u00B0", "\xB0", 'windows-1256') # °
+    check_both_ways("\u061F", "\xBF", 'windows-1256') # ؟
+    check_both_ways("\u06C1", "\xC0", 'windows-1256') # ہ
+    check_both_ways("\u062F", "\xCF", 'windows-1256') # د
+    check_both_ways("\u0630", "\xD0", 'windows-1256') # ذ
+    check_both_ways("\u0643", "\xDF", 'windows-1256') # ك
+    check_both_ways("\u00E0", "\xE0", 'windows-1256') # à
+    check_both_ways("\u00EF", "\xEF", 'windows-1256') # ï
+    check_both_ways("\u064B", "\xF0", 'windows-1256') #  ًً
+    check_both_ways("\u06D2", "\xFF", 'windows-1256') # ے
+  end
+  
+  def test_windows_1257
+    check_both_ways("\u20AC", "\x80", 'windows-1257') # €
+    assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1257') }
+    check_both_ways("\u201A", "\x82", 'windows-1257') # ‚
+    assert_raise(Encoding::UndefinedConversionError) { "\x83".encode("utf-8", 'windows-1257') }
+    check_both_ways("\u201E", "\x84", 'windows-1257') # „
+    check_both_ways("\u2021", "\x87", 'windows-1257') # ‡
+    assert_raise(Encoding::UndefinedConversionError) { "\x88".encode("utf-8", 'windows-1257') }
+    check_both_ways("\u2030", "\x89", 'windows-1257') # ‰
+    assert_raise(Encoding::UndefinedConversionError) { "\x8A".encode("utf-8", 'windows-1257') }
+    check_both_ways("\u2039", "\x8B", 'windows-1257') # ‹
+    assert_raise(Encoding::UndefinedConversionError) { "\x8C".encode("utf-8", 'windows-1257') }
+    check_both_ways("\u00A8", "\x8D", 'windows-1257') # ¨
+    check_both_ways("\u02C7", "\x8E", 'windows-1257') # ˇ
+    check_both_ways("\u00B8", "\x8F", 'windows-1257') # ¸
+    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'windows-1257') }
+    check_both_ways("\u2018", "\x91", 'windows-1257') # ‘
+    check_both_ways("\u2014", "\x97", 'windows-1257') # —
+    assert_raise(Encoding::UndefinedConversionError) { "\x98".encode("utf-8", 'windows-1257') }
+    check_both_ways("\u2122", "\x99", 'windows-1257') # ™
+    assert_raise(Encoding::UndefinedConversionError) { "\x9A".encode("utf-8", 'windows-1257') }
+    check_both_ways("\u203A", "\x9B", 'windows-1257') # ›
+    assert_raise(Encoding::UndefinedConversionError) { "\x9C".encode("utf-8", 'windows-1257') }
+    check_both_ways("\u00AF", "\x9D", 'windows-1257') # ¯
+    check_both_ways("\u02DB", "\x9E", 'windows-1257') # ˛
+    assert_raise(Encoding::UndefinedConversionError) { "\x9F".encode("utf-8", 'windows-1257') }
+    check_both_ways("\u00A0", "\xA0", 'windows-1257') # non-breaking space
+    assert_raise(Encoding::UndefinedConversionError) { "\xA1".encode("utf-8", 'windows-1257') }
+    check_both_ways("\u00A2", "\xA2", 'windows-1257') # ¢
+    check_both_ways("\u00A4", "\xA4", 'windows-1257') # ¤
+    assert_raise(Encoding::UndefinedConversionError) { "\xA5".encode("utf-8", 'windows-1257') }
+    check_both_ways("\u00A6", "\xA6", 'windows-1257') # ¦
+    check_both_ways("\u00C6", "\xAF", 'windows-1257') # Æ
+    check_both_ways("\u00B0", "\xB0", 'windows-1257') # °
+    check_both_ways("\u00E6", "\xBF", 'windows-1257') # æ
+    check_both_ways("\u0104", "\xC0", 'windows-1257') # Ą
+    check_both_ways("\u013B", "\xCF", 'windows-1257') # Ļ
+    check_both_ways("\u0160", "\xD0", 'windows-1257') # Š
+    check_both_ways("\u00DF", "\xDF", 'windows-1257') # ß
+    check_both_ways("\u0105", "\xE0", 'windows-1257') # ą
+    check_both_ways("\u013C", "\xEF", 'windows-1257') # ļ
+    check_both_ways("\u0161", "\xF0", 'windows-1257') # š
+    check_both_ways("\u02D9", "\xFF", 'windows-1257') # ˙
   end
 
   def check_utf_16_both_ways(utf8, raw)

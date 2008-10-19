@@ -19,7 +19,15 @@
   require 'iso-8859-13-tbl'
   require 'iso-8859-14-tbl'
   require 'iso-8859-15-tbl'
+  require 'windows-874-tbl'
+  require 'windows-1250-tbl'
+  require 'windows-1251-tbl'
   require 'windows-1252-tbl'
+  require 'windows-1253-tbl'
+  require 'windows-1254-tbl'
+  require 'windows-1255-tbl'
+  require 'windows-1256-tbl'
+  require 'windows-1257-tbl'
 
   transcode_tblgen "US-ASCII", "UTF-8", us_ascii_map
   transcode_tblgen "UTF-8", "US-ASCII", us_ascii_map
@@ -53,7 +61,15 @@
   transcode_tblgen_iso8859("ISO-8859-13", ISO_8859_13_TO_UCS_TBL)
   transcode_tblgen_iso8859("ISO-8859-14", ISO_8859_14_TO_UCS_TBL)
   transcode_tblgen_iso8859("ISO-8859-15", ISO_8859_15_TO_UCS_TBL)
+  transcode_tblgen_singlebyte("WINDOWS-874", WINDOWS_874_TO_UCS_TBL)
+  transcode_tblgen_singlebyte("WINDOWS-1250", WINDOWS_1250_TO_UCS_TBL)
+  transcode_tblgen_singlebyte("WINDOWS-1251", WINDOWS_1251_TO_UCS_TBL)
   transcode_tblgen_singlebyte("WINDOWS-1252", WINDOWS_1252_TO_UCS_TBL)
+  transcode_tblgen_singlebyte("WINDOWS-1253", WINDOWS_1253_TO_UCS_TBL)
+  transcode_tblgen_singlebyte("WINDOWS-1254", WINDOWS_1254_TO_UCS_TBL)
+  transcode_tblgen_singlebyte("WINDOWS-1255", WINDOWS_1255_TO_UCS_TBL)
+  transcode_tblgen_singlebyte("WINDOWS-1256", WINDOWS_1256_TO_UCS_TBL)
+  transcode_tblgen_singlebyte("WINDOWS-1257", WINDOWS_1257_TO_UCS_TBL)
 %>
 
 <%= transcode_generated_code %>
