@@ -8,34 +8,38 @@ module Test
     TEST_UNIT_IMPLEMENTATION = 'test/unit compatibility layer using minitest'
 
     def self.setup_argv(original_argv=ARGV)
-      argv = []
-      files = nil
+      minitest_argv = []
+      files = []
       reject = []
       original_argv = original_argv.dup
       while arg = original_argv.shift
         case arg
         when '-v'
-          argv << '-v'
+          minitest_argv << '-v'
         when '-n', '--name'
-          argv << arg
-          argv << original_argv.shift
+          minitest_argv << arg
+          minitest_argv << original_argv.shift
         when '-x'
           reject << original_argv.shift
         else
-          files ||= []
-          if File.directory? arg
-            files.concat Dir["#{arg}/**/test_*.rb"]
-          elsif File.file? arg
-            files << arg
-          else
-            raise ArgumentError, "file not found: #{arg}"
-          end
+          files << arg
         end
       end
 
-      if files == nil
-        files = Dir["test/**/test_*.rb"]
+      if block_given?
+        files = yield files
       end
+
+      files.map! {|f|
+        if File.directory? f
+          Dir["#{f}/**/test_*.rb"]
+        elsif File.file? f
+          f
+        else
+          raise ArgumentError, "file not found: #{f}"
+        end
+      }
+      files.flatten!
 
       reject_pat = Regexp.union(reject.map {|r| /#{r}/ })
       files.reject! {|f| reject_pat =~ f }
@@ -52,9 +56,7 @@ module Test
         end
       }
 
-      argv.concat files
-
-      ARGV.replace argv
+      ARGV.replace minitest_argv
     end
 
     module Assertions

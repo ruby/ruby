@@ -1,3 +1,12 @@
+Mon Oct 20 00:57:04 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/test/unit.rb (Test::Unit.setup_argv): call given block for
+	  filtering files.
+
+	* test/runner.rb: search srcdir/test/arg, srcdir/arg.
+
+	* bin/testrb: show usage if no files given.
+	
 Sun Oct 19 21:19:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (srcs): removed ID_H_TARGET.
