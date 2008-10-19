@@ -31,7 +31,7 @@ Sun Oct 19 18:15:15 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 Sun Oct 19 07:37:13 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/cmath.rb (log2,cbrt,frexp,ldexp,hypot,erf,erfc,gamma,lgamma):
-	  should be also privided as module function.  [ruby-dev:36787]
+	  should be also provided as module function.  [ruby-dev:36787]
 
 Sun Oct 19 07:25:08 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
@@ -92,7 +92,7 @@ Sat Oct 18 17:10:10 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 Sat Oct 18 16:39:39 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-	* transcode.c: in transcode_search_path, elimintated a warning
+	* transcode.c: in transcode_search_path, eliminated a warning
 	  on cygwin about pathlen potentially not being initialized
 
 Sat Oct 18 13:40:27 2008  Tanaka Akira  <akr@fsij.org>
