@@ -29,4 +29,6 @@ if output
     end
     FileUtils.touch(timestamp)
   end
+else
+  print result
 end

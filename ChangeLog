@@ -1,8 +1,9 @@
-Sun Oct 19 21:12:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Oct 19 21:19:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (srcs): removed ID_H_TARGET.
 
 	* tool/generic_erb.rb: always overwrites if no if-change option.
+	  sends the result to stdout if no output option.
 
 	* template/id.h.tmpl: shows which token differs.
 
