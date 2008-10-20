@@ -31,12 +31,11 @@ class MultiPart
 
   def initialize(boundary=nil)
     @boundary = boundary || create_boundary()
-    @buf = ''
+    @buf = ''.force_encoding("ascii-8bit")
   end
   attr_reader :boundary
 
   def append(name, value, filename=nil, content_type=nil)
-    value.force_encoding("ASCII-8BIT") if RUBY_VERSION>="1.9"
     content_type = detect_content_type(filename) if filename && content_type.nil?
     s = filename ? "; filename=\"#{filename}\"" : ''
     buf = @buf
@@ -44,7 +43,7 @@ class MultiPart
     buf << "Content-Disposition: form-data: name=\"#{name}\"#{s}\r\n"
     buf << "Content-Type: #{content_type}\r\n" if content_type
     buf << "\r\n"
-    buf << value
+    buf <<  value
     buf << "\r\n"
     return self
   end
@@ -142,7 +141,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     testname = $1
     #$stderr.puts "*** debug: testname=#{testname.inspect}"
     _prepare(@data)
-    cgi = CGI.new
+    cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
     expected_names = @data.collect{|hash| hash[:name] }.sort
     assert_equal(expected_names, cgi.params.keys.sort)
     threshold = 1024*10
@@ -151,7 +150,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       expected = hash[:value]
       expected_class = @expected_class || (hash[:value].length < threshold ? StringIO : Tempfile)
       assert_kind_of(expected_class, cgi[name])
-      # assert_equal(expected, cgi[name].read())
+      assert_equal(expected, cgi[name].read())
       assert_equal(hash[:filename] || '', cgi[name].original_filename)  #if hash[:filename]
       assert_equal(hash[:content_type] || '', cgi[name].content_type)  #if hash[:content_type]
     end
@@ -160,7 +159,12 @@ class CGIMultipartTest < Test::Unit::TestCase
 
   def _read(basename)
     filename = File.join(File.dirname(__FILE__), 'testdata', basename)
-    s = File.open(filename, 'rb') {|f| f.read() }
+    if RUBY_VERSION>="1.9"
+      s = File.open(filename, 'r:ascii-8bit') {|f| f.read() }
+    else
+      s = File.open(filename, 'rb') {|f| f.read() }
+    end
+
     return s
   end
 
@@ -169,7 +173,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     @boundary = '----WebKitFormBoundaryAAfvAII+YL9102cX'
     @data = [
       {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\202\240\202\242\202\244\202\246\202\250"},
+      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
       {:name=>'file1',   :value=>_read('file1.html'),
        :filename=>'file1.html', :content_type=>'text/html'},
       {:name=>'image1',  :value=>_read('small.png'),
@@ -184,7 +188,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     @boundary = '----WebKitFormBoundaryAAfvAII+YL9102cX'
     @data = [
       {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\202\240\202\242\202\244\202\246\202\250"},
+      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
       {:name=>'file1',   :value=>_read('file1.html'),
        :filename=>'file1.html', :content_type=>'text/html'},
       {:name=>'image1',  :value=>_read('large.png'),
@@ -192,7 +196,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     ]
     @expected_class = Tempfile
     _test_multipart()
-  end if RUBY_VERSION < "1.9"
+  end
 
 
   def _set_const(klass, name, value)
@@ -254,7 +258,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       input2
     end
     ex = assert_raise(EOFError) do
-      cgi = CGI.new
+      cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
     end
     assert_equal("bad boundary end of body part", ex.message)
     #
@@ -265,7 +269,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       input2
     end
     ex = assert_raise(EOFError) do
-      cgi = CGI.new
+      cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
     end
     assert_equal("bad content body", ex.message)
   end
@@ -275,14 +279,14 @@ class CGIMultipartTest < Test::Unit::TestCase
     @boundary = '(.|\n)*'
     @data = [
       {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\202\240\202\242\202\244\202\246\202\250"},
+      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
       {:name=>'file1',   :value=>_read('file1.html'),
        :filename=>'file1.html', :content_type=>'text/html'},
       {:name=>'image1',  :value=>_read('small.png'),
        :filename=>'small.png',  :content_type=>'image/png'},  # small image
     ]
     _prepare(@data)
-    cgi = CGI.new
+    cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
     assert_equal('file1.html', cgi['file1'].original_filename)
   end
 
