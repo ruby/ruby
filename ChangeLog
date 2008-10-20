@@ -1,4 +1,4 @@
-Tue Oct 21 07:45:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 21 08:56:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regparse.c (parse_char_class): CCV_SB is only for single
 	  byte.  [ruby-dev:36786]

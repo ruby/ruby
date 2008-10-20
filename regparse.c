@@ -4218,9 +4218,8 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
     fetched = 0;
     switch (r) {
     case TK_CHAR:
-      if (tok->u.code >= SINGLE_BYTE_SIZE) goto code_point;
-      len = ONIGENC_CODE_TO_MBCLEN(env->enc, tok->u.c);
-      if (len > 1) {
+      if ((tok->u.code >= SINGLE_BYTE_SIZE) ||
+	  (len = ONIGENC_CODE_TO_MBCLEN(env->enc, tok->u.c)) > 1) {
 	in_type = CCV_CODE_POINT;
       }
       else if (len < 0) {
@@ -4292,7 +4291,6 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
       break;
 
     case TK_CODE_POINT:
-    code_point:
       v = tok->u.code;
       in_israw = 1;
     val_entry:
