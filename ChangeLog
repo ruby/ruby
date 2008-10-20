@@ -1,3 +1,8 @@
+Tue Oct 21 07:45:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regparse.c (parse_char_class): CCV_SB is only for single
+	  byte.  [ruby-dev:36786]
+
 Tue Oct 21 01:49:55 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_extract_modeenc): plain rb/wb should set ASCII-8BIT
