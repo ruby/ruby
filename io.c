@@ -3503,7 +3503,22 @@ rb_io_binmode(VALUE io)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
+    if (fptr->readconv)
+        rb_econv_binmode(fptr->readconv);
+    if (fptr->writeconv)
+        rb_econv_binmode(fptr->writeconv);
+    fptr->mode |= FMODE_BINMODE;
+    fptr->mode &= ~FMODE_TEXTMODE;
+    fptr->writeconv_pre_ecflags &= ~(ECONV_UNIVERSAL_NEWLINE_DECORATOR|ECONV_CRLF_NEWLINE_DECORATOR|ECONV_CR_NEWLINE_DECORATOR);
+    return io;
+}
 
+static VALUE
+rb_io_ascii8bit_binmode(VALUE io)
+{
+    rb_io_t *fptr;
+
+    GetOpenFile(io, fptr);
     if (fptr->readconv) {
         rb_econv_close(fptr->readconv);
         fptr->readconv = NULL;
@@ -3542,11 +3557,11 @@ rb_io_binmode_m(VALUE io)
 {
     VALUE write_io;
 
-    rb_io_binmode(io);
+    rb_io_ascii8bit_binmode(io);
 
     write_io = GetWriteIO(io);
     if (write_io != io)
-        rb_io_binmode(write_io);
+        rb_io_ascii8bit_binmode(write_io);
     return io;
 }
 

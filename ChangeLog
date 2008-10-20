@@ -1,3 +1,9 @@
+Tue Oct 21 00:51:59 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_ascii8bit_binmode): renamed from rb_io_binmode.
+	  (rb_io_binmode): don't change encoding conversion.
+	  (rb_io_binmode_m): call rb_io_ascii8bit_binmode.
+
 Mon Oct 20 21:19:00 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb (read_multipart): file's encoding is ascii-8bit
