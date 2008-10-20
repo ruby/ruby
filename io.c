@@ -669,7 +669,7 @@ rb_io_wait_writable(int f)
 # define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) 0
 #endif
 #define NEED_READCONV(fptr) (fptr->encs.enc2 != NULL || NEED_NEWLINE_DECORATOR_ON_READ(fptr))
-#define NEED_WRITECONV(fptr) (fptr->encs.enc != NULL || NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) || (fptr->encs.ecflags & (ECONV_DECORATOR_MASK|ECONV_STATEFUL_DECORATOR_MASK)))
+#define NEED_WRITECONV(fptr) ((fptr->encs.enc != NULL && fptr->encs.enc != rb_ascii8bit_encoding()) || NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) || (fptr->encs.ecflags & (ECONV_DECORATOR_MASK|ECONV_STATEFUL_DECORATOR_MASK)))
 
 static void
 make_writeconv(rb_io_t *fptr)
@@ -689,7 +689,7 @@ make_writeconv(rb_io_t *fptr)
             ecflags |= TEXTMODE_NEWLINE_DECORATOR_ON_WRITE;
 #endif
 
-        if (!fptr->encs.enc) {
+        if (!fptr->encs.enc || (fptr->encs.enc == rb_ascii8bit_encoding() && !fptr->encs.enc2)) {
             /* no encoding conversion */
             fptr->writeconv_pre_ecflags = 0;
             fptr->writeconv_pre_ecopts = Qnil;
@@ -804,6 +804,7 @@ do_writeconv(VALUE str, rb_io_t *fptr)
 {
     if (NEED_WRITECONV(fptr)) {
         VALUE common_encoding = Qnil;
+
         make_writeconv(fptr);
 
         if (fptr->writeconv) {
@@ -817,7 +818,7 @@ do_writeconv(VALUE str, rb_io_t *fptr)
         else {
             if (fptr->encs.enc2)
                 common_encoding = rb_enc_from_encoding(fptr->encs.enc2);
-            else
+            else if (fptr->encs.enc != rb_ascii8bit_encoding())
                 common_encoding = rb_enc_from_encoding(fptr->encs.enc);
         }
 
@@ -3959,6 +3960,12 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
             has_enc = 1;
             parse_mode_enc(p+1, &enc, &enc2);
         }
+	else {
+	    rb_encoding *e;
+
+	    e = (fmode & FMODE_BINMODE) ? rb_ascii8bit_encoding() : NULL;
+	    rb_io_ext_int_to_encs(e, NULL, &enc, &enc2);
+	}
     }
 
     if (NIL_P(opthash)) {
@@ -4151,8 +4158,11 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
         parse_mode_enc(p+1, &convconfig.enc, &convconfig.enc2);
     }
     else {
+	rb_encoding *e;
 	/* Set to default encodings */
-	rb_io_ext_int_to_encs(NULL, NULL, &convconfig.enc, &convconfig.enc2);
+
+	e = (fmode & FMODE_BINMODE) ? rb_ascii8bit_encoding() : NULL;
+	rb_io_ext_int_to_encs(e, NULL, &convconfig.enc, &convconfig.enc2);
         convconfig.ecflags = 0;
         convconfig.ecopts = Qnil;
     }

@@ -59,7 +59,7 @@ EOT
     with_tmpdir {
       generate_file('tmp', "")
       open("tmp", "rb") {|f|
-        assert_equal(Encoding.default_external, f.external_encoding)
+        assert_equal(Encoding.find("ASCII-8BIT"), f.external_encoding)
         assert_equal(nil, f.internal_encoding)
       }
     }
@@ -137,7 +137,7 @@ EOT
   def test_open_wb
     with_tmpdir {
       open("tmp", "wb") {|f|
-        assert_equal(nil, f.external_encoding)
+        assert_equal(Encoding.find("ASCII-8BIT"), f.external_encoding)
         assert_equal(nil, f.internal_encoding)
       }
     }
@@ -1314,7 +1314,7 @@ EOT
       #   0xA1F1        0xC2A2          U+00A2
 
       open("t","rt") {|f| assert_equal("a\nb\nc\n\xc2\xa2".force_encoding(Encoding.default_external), f.read) }
-      open("t","rb") {|f| assert_equal("a\rb\r\nc\n\xc2\xa2".force_encoding(Encoding.default_external), f.read) }
+      open("t","rb") {|f| assert_equal("a\rb\r\nc\n\xc2\xa2".force_encoding(Encoding::ASCII_8BIT), f.read) }
 
       open("t","rt:euc-jp") {|f| assert_equal("a\nb\nc\n\xc2\xa2".force_encoding("EUC-JP"), f.read) }
       open("t","rb:euc-jp") {|f| assert_equal("a\rb\r\nc\n\xc2\xa2".force_encoding("EUC-JP"), f.read) }

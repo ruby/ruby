@@ -1,3 +1,15 @@
+Tue Oct 21 01:49:55 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_extract_modeenc): plain rb/wb should set ASCII-8BIT
+	  to the external_encoding.
+
+	* io.c (rb_file_open_internal): ditto.
+
+	* io.c (NEED_WRITECONV): no conversion when the external_encoding
+	  is ASCII-8BIT.
+
+	* io.c (do_writeconv): skip ASCII-8BIT.
+
 Tue Oct 21 00:51:59 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_ascii8bit_binmode): renamed from rb_io_binmode.
