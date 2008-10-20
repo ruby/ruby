@@ -526,6 +526,12 @@ rb_external_str_new(const char *ptr, long len)
     return rb_external_str_new_with_enc(ptr, len, rb_default_external_encoding());
 }
 
+VALUE
+rb_locale_str_new(const char *ptr, long len)
+{
+    return rb_external_str_new_with_enc(ptr, len, rb_locale_encoding());
+}
+
 static VALUE
 str_replace_shared(VALUE str2, VALUE str)
 {
