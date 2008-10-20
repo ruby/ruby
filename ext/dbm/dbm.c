@@ -109,7 +109,7 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
     if (!NIL_P(vflags))
         flags = NUM2INT(vflags);
 
-    SafeStringValue(file);
+    FilePathValue(file);
 
     if (flags & RUBY_DBM_RW_BIT) {
         flags &= ~RUBY_DBM_RW_BIT;
@@ -164,7 +164,7 @@ fdbm_fetch(VALUE obj, VALUE keystr, VALUE ifnone)
     struct dbmdata *dbmp;
     DBM *dbm;
 
-    StringValue(keystr);
+    ExportStringValue(keystr);
     key.dptr = RSTRING_PTR(keystr);
     key.dsize = RSTRING_LEN(keystr);
 
@@ -204,7 +204,7 @@ fdbm_index(VALUE obj, VALUE valstr)
     struct dbmdata *dbmp;
     DBM *dbm;
 
-    StringValue(valstr);
+    ExportStringValue(valstr);
     val.dptr = RSTRING_PTR(valstr);
     val.dsize = RSTRING_LEN(valstr);
 
@@ -272,7 +272,7 @@ fdbm_delete(VALUE obj, VALUE keystr)
     VALUE valstr;
 
     fdbm_modify(obj);
-    StringValue(keystr);
+    ExportStringValue(keystr);
     key.dptr = RSTRING_PTR(keystr);
     key.dsize = RSTRING_LEN(keystr);
 
@@ -346,7 +346,7 @@ fdbm_delete_if(VALUE obj)
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
 	keystr = RARRAY_PTR(ary)[i];
-	StringValue(keystr);
+	ExportStringValue(keystr);
 	key.dptr = RSTRING_PTR(keystr);
 	key.dsize = RSTRING_LEN(keystr);
 	if (dbm_delete(dbm, key)) {
@@ -599,7 +599,7 @@ fdbm_has_key(VALUE obj, VALUE keystr)
     struct dbmdata *dbmp;
     DBM *dbm;
 
-    StringValue(keystr);
+    ExportStringValue(keystr);
     key.dptr = RSTRING_PTR(keystr);
     key.dsize = RSTRING_LEN(keystr);
 
@@ -616,7 +616,7 @@ fdbm_has_value(VALUE obj, VALUE valstr)
     struct dbmdata *dbmp;
     DBM *dbm;
 
-    StringValue(valstr);
+    ExportStringValue(valstr);
     val.dptr = RSTRING_PTR(valstr);
     val.dsize = RSTRING_LEN(valstr);
 

@@ -472,52 +472,61 @@ rb_tainted_str_new_cstr(const char *ptr)
 RUBY_ALIAS_FUNCTION(rb_tainted_str_new2(const char *ptr), rb_tainted_str_new_cstr, (ptr))
 #define rb_tainted_str_new2 rb_tainted_str_new_cstr
 
+static VALUE
+str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
+{
+    rb_econv_t *ec;
+    rb_econv_result_t ret;
+    long len;
+    VALUE newstr;
+    const unsigned char *sp;
+    unsigned char *dp;
+
+    if (!to) return str;
+    if (from == to) return str;
+    if (rb_enc_asciicompat(to) && ENC_CODERANGE(str) == ENC_CODERANGE_7BIT)
+	return str;
+
+    len = RSTRING_LEN(str);
+    newstr = rb_str_new(0, len);
+
+  retry:
+    ec = rb_econv_open_opts(from->name, to->name, 0, Qnil);
+    if (!ec) return str;
+
+    sp = (unsigned char*)RSTRING_PTR(str);
+    dp = (unsigned char*)RSTRING_PTR(newstr);
+    ret = rb_econv_convert(ec, &sp, (unsigned char*)RSTRING_END(str),
+			   &dp, (unsigned char*)RSTRING_END(newstr), 0);
+    rb_econv_close(ec);
+    switch (ret) {
+      case econv_destination_buffer_full:
+	/* destination buffer short */
+	len *= 2;
+	rb_str_resize(newstr, len);
+	goto retry;
+
+      case econv_finished:
+	len = dp - (unsigned char*)RSTRING_PTR(newstr);
+	rb_str_set_len(newstr, len);
+	rb_enc_associate(newstr, to);
+	return newstr;
+
+      default:
+	/* some error, return original */
+	return str;
+    }
+}
+
 VALUE
 rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
 {
     VALUE str;
-    rb_encoding *ienc;
 
     if (len == 0 && !ptr) len = strlen(ptr);
     str = rb_tainted_str_new(ptr, len);
     rb_enc_associate(str, eenc);
-    ienc = rb_default_internal_encoding();
-    if (ienc) {
-	rb_econv_t *ec;
-	rb_econv_result_t ret;
-	VALUE newstr = rb_str_new(0, len);
-	long nlen = len;
-	const unsigned char *sp;
-	unsigned char *dp;
-
-      retry:
-	ec = rb_econv_open_opts(eenc->name, ienc->name, 0, Qnil);
-	if (!ec) return str;
-
-	sp = (unsigned char*)RSTRING_PTR(str);
-	dp = (unsigned char*)RSTRING_PTR(newstr);
-	ret = rb_econv_convert(ec, &sp, (unsigned char*)RSTRING_END(str),
-			       &dp, (unsigned char*)RSTRING_END(newstr), 0);
-	rb_econv_close(ec);
-        switch (ret) {
-          case econv_destination_buffer_full:
-	    /* destination buffer short */
-	    nlen *= 2;
-	    rb_str_resize(newstr, nlen);
-	    goto retry;
-
-          case econv_finished:
-	    nlen = dp - (unsigned char*)RSTRING_PTR(newstr);
-	    rb_str_set_len(newstr, nlen);
-	    rb_enc_associate(newstr, ienc);
-	    return newstr;
-
-	  default:
-	    /* some error, return original */
-	    return str;
-	}
-    }
-    return str;
+    return str_conv_enc(str, eenc, rb_default_internal_encoding());
 }
 
 VALUE
@@ -530,6 +539,18 @@ VALUE
 rb_locale_str_new(const char *ptr, long len)
 {
     return rb_external_str_new_with_enc(ptr, len, rb_locale_encoding());
+}
+
+VALUE
+rb_str_export(VALUE str)
+{
+    return str_conv_enc(str, STR_ENC_GET(str), rb_default_external_encoding());
+}
+
+VALUE
+rb_str_export_to_enc(VALUE str, rb_encoding *enc)
+{
+    return str_conv_enc(str, STR_ENC_GET(str), enc);
 }
 
 static VALUE

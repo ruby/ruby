@@ -373,6 +373,12 @@ void rb_check_safe_str(VALUE);
 /* obsolete macro - use SafeStringValue(v) */
 #define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
 
+VALUE rb_str_export(VALUE);
+#define ExportStringValue(v) do {\
+    SafeStringValue(v);\
+   (v) = rb_str_export(v);\
+} while (0)
+
 VALUE rb_get_path(VALUE);
 #define FilePathValue(v) ((v) = rb_get_path(v))
 
