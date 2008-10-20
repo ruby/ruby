@@ -11,12 +11,12 @@ Test::Unit.setup_argv {|files|
     [src_testdir]
   else
     files.map {|f|
-      if File.exist? f
-        f
-      elsif File.exist? "#{src_testdir}/#{f}"
+      if File.exist? "#{src_testdir}/#{f}"
         "#{src_testdir}/#{f}"
       elsif File.exist? "#{srcdir}/#{f}"
         "#{srcdir}/#{f}"
+      elsif File.exist? f
+        f
       else
         raise ArgumentError, "not found: #{f}"
       end
