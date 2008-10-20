@@ -558,7 +558,7 @@ exc_equal(VALUE exc, VALUE obj)
 
     if (exc == obj) return Qtrue;
     if (rb_obj_class(exc) != rb_obj_class(obj))
-	return rb_equal(obj, exc);
+	return Qfalse;
     CONST_ID(id_mesg, "mesg");
     if (!rb_equal(rb_attr_get(exc, id_mesg), rb_attr_get(obj, id_mesg)))
 	return Qfalse;

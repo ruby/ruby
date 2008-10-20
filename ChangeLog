@@ -1,3 +1,8 @@
+Mon Oct 20 17:31:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (exc_equal): should not compare recursively.
+	  [ruby-dev:36796]
+
 Mon Oct 20 16:48:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/ruby.h (ExportStringValue): new macro to convert
