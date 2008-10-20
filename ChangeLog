@@ -1,3 +1,8 @@
+Mon Oct 20 21:19:00 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/core.rb (read_multipart): file's encoding is ascii-8bit
+	  from file field of multipart form.
+
 Mon Oct 20 20:16:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/zlib/zlib.c (Init_zlib): add getbyte as an alias to getc.

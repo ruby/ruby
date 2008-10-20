@@ -495,14 +495,14 @@ class CGI
     def create_body(is_large)  #:nodoc:
       if is_large
         require 'tempfile'
-        body = Tempfile.new('CGI')
+        body = Tempfile.new('CGI', encoding: "ascii-8bit")
       else
         begin
           require 'stringio'
-          body = StringIO.new
+          body = StringIO.new("".force_encoding("ascii-8bit"))
         rescue LoadError
           require 'tempfile'
-          body = Tempfile.new('CGI')
+          body = Tempfile.new('CGI', encoding: "ascii-8bit")
         end
       end
       body.binmode if defined? body.binmode
@@ -568,7 +568,7 @@ class CGI
                       read_from_cmdline
                     end.dup.force_encoding(@accept_charset)
                   )
-        unless @accept_charset=="ASCII-8BIT" || @accept_charset==Encoding::ASCII_8BIT
+        unless @accept_charset=~/ASCII-8BIT/i || @accept_charset==Encoding::ASCII_8BIT
           @params.each do |key,values|
             values.each do |value|
               unless value.valid_encoding?
@@ -603,9 +603,9 @@ class CGI
         if value
           return value
         elsif defined? StringIO
-          StringIO.new("")
+          StringIO.new("".force_encoding("ascii-8bit"))
         else
-          Tempfile.new("CGI")
+          Tempfile.new("CGI",encoding:"ascii-8bit")
         end
       else
         str = if value then value.dup else "" end
