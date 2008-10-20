@@ -3373,6 +3373,7 @@ void Init_zlib()
     rb_define_method(cGzipReader, "read", rb_gzreader_read, -1);
     rb_define_method(cGzipReader, "readpartial", rb_gzreader_readpartial, -1);
     rb_define_method(cGzipReader, "getc", rb_gzreader_getc, 0);
+    rb_define_method(cGzipReader, "getbyte", rb_gzreader_getc, 0);
     rb_define_method(cGzipReader, "readchar", rb_gzreader_readchar, 0);
     rb_define_method(cGzipReader, "each_byte", rb_gzreader_each_byte, 0);
     rb_define_method(cGzipReader, "bytes", rb_gzreader_each_byte, 0);

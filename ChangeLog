@@ -1,3 +1,8 @@
+Mon Oct 20 20:16:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/zlib/zlib.c (Init_zlib): add getbyte as an alias to getc.
+	  [ruby-dev:36801]
+
 Mon Oct 20 17:31:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* error.c (exc_equal): should not compare recursively.
