@@ -79,7 +79,7 @@ rb_any_hash(VALUE a)
       default:
 	hval = rb_funcall(a, id_hash, 0);
 	if (!FIXNUM_P(hval)) {
-	    hval = rb_funcall(hval, '%', 1, INT2FIX(536870923));
+	    hval = rb_funcall(hval, '%', 1, INT2FIX(5368709231));
 	}
 	hnum = (int)FIX2LONG(hval);
     }

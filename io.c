@@ -4597,12 +4597,12 @@ pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig
 }
 
 static VALUE
-pop_last_hash(int *argc_p, VALUE **argv_p)
+pop_last_hash(int *argc_p, VALUE *argv)
 {
     VALUE last, tmp;
     if (*argc_p == 0)
         return Qnil;
-    last = (*argv_p)[*argc_p-1];
+    last = argv[*argc_p-1];
     tmp = rb_check_convert_type(last, T_HASH, "Hash", "to_hash");
     if (NIL_P(tmp))
         return Qnil;
@@ -4673,7 +4673,7 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
     int oflags, fmode;
     convconfig_t convconfig;
 
-    opt = pop_last_hash(&argc, &argv);
+    opt = pop_last_hash(&argc, argv);
     rb_scan_args(argc, argv, "11", &pname, &pmode);
 
     rb_io_extract_modeenc(&pmode, 0, opt, &oflags, &fmode, &convconfig);
@@ -4716,7 +4716,7 @@ rb_scan_open_args(int argc, VALUE *argv,
     int oflags, fmode;
     mode_t perm;
 
-    opt = pop_last_hash(&argc, &argv);
+    opt = pop_last_hash(&argc, argv);
     rb_scan_args(argc, argv, "12", &fname, &vmode, &vperm);
     FilePathValue(fname);
 #if defined _WIN32 || defined __APPLE__
@@ -5688,7 +5688,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 
     rb_secure(4);
 
-    opt = pop_last_hash(&argc, &argv);
+    opt = pop_last_hash(&argc, argv);
     rb_scan_args(argc, argv, "11", &fnum, &vmode);
     rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &fmode, &convconfig);
 
@@ -6828,7 +6828,7 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     VALUE opt;
     rb_io_t *fptr;
 
-    opt = pop_last_hash(&argc, &argv);
+    opt = pop_last_hash(&argc, argv);
     rb_scan_args(argc, argv, "02", &v1, &v2);
     if (rb_pipe(pipes) == -1)
         rb_sys_fail(0);
@@ -6877,7 +6877,7 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	arg->io = rb_io_open(argv[0], INT2NUM(O_RDONLY), INT2FIX(0666), Qnil);
 	return;
     }
-    opt = pop_last_hash(&argc, &argv);
+    opt = pop_last_hash(&arg->argc, arg->argv);
     if (NIL_P(opt)) goto no_key;
 
     v = rb_hash_aref(opt, sym_open_args);
@@ -7684,7 +7684,7 @@ rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr;
     VALUE v1, v2, opt;
 
-    opt = pop_last_hash(&argc, &argv);
+    opt = pop_last_hash(&argc, argv);
     rb_scan_args(argc, argv, "11", &v1, &v2);
     GetOpenFile(io, fptr);
     io_encoding_set(fptr, v1, v2, opt);

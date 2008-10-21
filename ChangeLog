@@ -1,3 +1,8 @@
+Tue Oct 21 22:38:58 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (open_key_args): should adjust argc, argv in struct
+	  foreach_arg.
+
 Tue Oct 21 21:52:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/zlib/zlib.c (rb_gzwriter_write): conversion should be done
