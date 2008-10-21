@@ -4150,10 +4150,10 @@ rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode, convconfig
 static VALUE
 rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
 {
-    int fmode;
-
+    int fmode = rb_io_modestr_fmode(modestr);
     const char *p = strchr(modestr, ':');
     convconfig_t convconfig;
+
     if (p) {
         parse_mode_enc(p+1, &convconfig.enc, &convconfig.enc2);
     }
@@ -4167,7 +4167,6 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
         convconfig.ecopts = Qnil;
     }
 
-    fmode = rb_io_modestr_fmode(modestr);
     return rb_file_open_generic(io, filename,
             rb_io_fmode_oflags(fmode),
             fmode,

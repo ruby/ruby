@@ -1,3 +1,7 @@
+Tue Oct 21 10:40:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_file_open_internal): should initialize fmode before using.
+
 Tue Oct 21 08:56:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regparse.c (parse_char_class): CCV_SB is only for single
