@@ -597,7 +597,7 @@ if defined? Zlib
       assert_equal("foo", Zlib::GzipReader.open(t.path) {|gz| gz.read })
 
       o = Object.new
-      def o.to_str; "bar"; end
+      def o.to_s; "bar"; end
       Zlib::GzipWriter.open(t.path) {|gz| gz.print(o) }
       assert_equal("bar", Zlib::GzipReader.open(t.path) {|gz| gz.read })
     end

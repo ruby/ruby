@@ -13,6 +13,7 @@
 
 #include "ruby.h"
 #include "ruby/io.h"
+#include "ruby/encoding.h"
 #if defined(HAVE_FCNTL_H) || defined(_WIN32)
 #include <fcntl.h>
 #elif defined(HAVE_SYS_FCNTL_H)
@@ -992,9 +993,15 @@ strio_write(VALUE self, VALUE str)
 {
     struct StringIO *ptr = writable(StringIO(self));
     long len, olen;
+    rb_encoding *enc, *enc2;
 
     if (TYPE(str) != T_STRING)
 	str = rb_obj_as_string(str);
+    enc = rb_enc_get(ptr->string);
+    enc2 = rb_enc_get(str);
+    if (enc != enc2 && enc != rb_ascii8bit_encoding()) {
+	str = rb_str_conv_enc(str, enc2, enc);
+    }
     len = RSTRING_LEN(str);
     if (len == 0) return INT2FIX(0);
     check_modifiable(ptr);

@@ -1,3 +1,13 @@
+Tue Oct 21 23:12:24 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_write): should convert writing
+	  string to the encoding of the buffer.
+
+	* hash.c (rb_any_hash): typo fixed.
+
+	* ext/zlib/zlib.c (rb_gzwriter_write): oops, IO string conversion
+	  need to be done by to_s.
+
 Tue Oct 21 22:38:58 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (open_key_args): should adjust argc, argv in struct
