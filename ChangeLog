@@ -1,3 +1,10 @@
+Tue Oct 21 13:28:42 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* io.c, include/ruby/intern.h (rb_io_ascii8bit_binmode): externed.
+
+	* ext/socket/socket.c (init_sock): use rb_io_ascii8bit_binmode()
+	  instead of rb_io_binmode().
+
 Tue Oct 21 13:17:39 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* mdoc2man.rb: moved into tools/.

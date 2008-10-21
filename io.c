@@ -3514,7 +3514,7 @@ rb_io_binmode(VALUE io)
     return io;
 }
 
-static VALUE
+VALUE
 rb_io_ascii8bit_binmode(VALUE io)
 {
     rb_io_t *fptr;

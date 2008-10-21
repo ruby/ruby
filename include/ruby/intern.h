@@ -382,6 +382,7 @@ VALUE rb_io_close(VALUE);
 VALUE rb_io_flush(VALUE);
 VALUE rb_io_eof(VALUE);
 VALUE rb_io_binmode(VALUE);
+VALUE rb_io_ascii8bit_binmode(VALUE);
 VALUE rb_io_addstr(VALUE, VALUE);
 VALUE rb_io_printf(int, VALUE*, VALUE);
 VALUE rb_io_print(int, VALUE*, VALUE);
