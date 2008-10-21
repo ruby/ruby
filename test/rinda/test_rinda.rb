@@ -355,7 +355,6 @@ module TupleSpaceTestModule
 	  lv = lv - 1
 	elsif ev[0] == 'close'
 	  result = [lv, n]
-	else
 	  break
 	end
 	assert(lv >= 0)

@@ -1,3 +1,8 @@
+Wed Oct 22 00:29:13 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/rinda/test_rinda.c (test_core_03_notify): Fixed test failures
+	  [ruby-dev:36837].
+
 Tue Oct 21 23:12:24 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_write): should convert writing
