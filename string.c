@@ -484,7 +484,8 @@ rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
 
     if (!to) return str;
     if (from == to) return str;
-    if (rb_enc_asciicompat(to) && ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
+    if ((rb_enc_asciicompat(to) && ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) ||
+	to == rb_ascii8bit_encoding()) {
 	if (STR_ENC_GET(str) != to) {
 	    str = rb_str_dup(str);
 	    rb_enc_associate(str, to);
@@ -528,7 +529,7 @@ rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
 {
     VALUE str;
 
-    if (len == 0 && !ptr) len = strlen(ptr);
+    if (len == 0 && ptr) len = strlen(ptr);
     str = rb_tainted_str_new(ptr, len);
     rb_enc_associate(str, eenc);
     return rb_str_conv_enc(str, eenc, rb_default_internal_encoding());
