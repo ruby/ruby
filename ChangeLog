@@ -1,3 +1,7 @@
+Tue Oct 21 21:33:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (assert_nothing_raised): raise with backtrace.
+
 Tue Oct 21 20:12:19 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit.rb (assert_nothing_raised): set backtrace.
