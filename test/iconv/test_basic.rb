@@ -43,6 +43,13 @@ class TestIconv::Basic < TestIconv
     assert_equal("#{SJIS_STR}\n"*2, output)
   end
 
+  def test_invalid_arguments
+    assert_raise(TypeError) { Iconv.new(nil, 'Shift_JIS') }
+    assert_raise(TypeError) { Iconv.new('Shift_JIS', nil) }
+    assert_raise(TypeError) { Iconv.open(nil, 'Shift_JIS') }
+    assert_raise(TypeError) { Iconv.open('Shift_JIS', nil) }
+  end
+
   def test_unknown_encoding
     assert_raise(Iconv::InvalidEncoding) { Iconv.iconv("utf-8", "X-UKNOWN", "heh") }
   end

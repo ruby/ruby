@@ -1,3 +1,11 @@
+Tue Oct 21 11:34:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (strip_glibc_option, map_charset): check if
+	  encoding is a string.  based on the patch by Hiroshi Moriyama at
+	  [ruby-dev:36811].
+
+	* test/iconv/test_basic.rb (test_invalid_arguments): added tests.
+
 Tue Oct 21 10:40:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_file_open_internal): should initialize fmode before using.
