@@ -1,3 +1,8 @@
+Wed Oct 22 00:33:15 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/rinda/test_rinda.c (test_core_03_notify): Fixed test failures
+	  [ruby-dev:36837].
+
 Tue Oct 14 11:14:26 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/net/pop.rb: check for invalid APOP timestamp. (CVE-2007-1558)
