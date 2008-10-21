@@ -3854,8 +3854,8 @@ rb_io_mode_enc(rb_io_t *fptr, const char *modestr)
     }
 }
 
-static int
-io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p)
+int
+rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p)
 {
     VALUE encoding=Qnil, extenc=Qnil, intenc=Qnil;
     int extracted = 0;
@@ -4009,7 +4009,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 	}
         ecflags = rb_econv_prepare_opts(opthash, &ecopts);
 
-        if (io_extract_encoding_option(opthash, &enc, &enc2)) {
+        if (rb_io_extract_encoding_option(opthash, &enc, &enc2)) {
             if (has_enc) {
                 rb_raise(rb_eArgError, "encoding specified twice");
             }
@@ -4717,7 +4717,6 @@ rb_scan_open_args(int argc, VALUE *argv,
     mode_t perm;
 
     opt = pop_last_hash(&argc, &argv);
-
     rb_scan_args(argc, argv, "12", &fname, &vmode, &vperm);
     FilePathValue(fname);
 #if defined _WIN32 || defined __APPLE__
@@ -6878,9 +6877,8 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	arg->io = rb_io_open(argv[0], INT2NUM(O_RDONLY), INT2FIX(0666), Qnil);
 	return;
     }
-    opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
+    opt = pop_last_hash(&argc, &argv);
     if (NIL_P(opt)) goto no_key;
-    arg->argc--;
 
     v = rb_hash_aref(opt, sym_open_args);
     if (!NIL_P(v)) {

@@ -472,8 +472,8 @@ rb_tainted_str_new_cstr(const char *ptr)
 RUBY_ALIAS_FUNCTION(rb_tainted_str_new2(const char *ptr), rb_tainted_str_new_cstr, (ptr))
 #define rb_tainted_str_new2 rb_tainted_str_new_cstr
 
-static VALUE
-str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
+VALUE
+rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
 {
     rb_econv_t *ec;
     rb_econv_result_t ret;
@@ -484,8 +484,13 @@ str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
 
     if (!to) return str;
     if (from == to) return str;
-    if (rb_enc_asciicompat(to) && ENC_CODERANGE(str) == ENC_CODERANGE_7BIT)
+    if (rb_enc_asciicompat(to) && ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
+	if (STR_ENC_GET(str) != to) {
+	    str = rb_str_dup(str);
+	    rb_enc_associate(str, to);
+	}
 	return str;
+    }
 
     len = RSTRING_LEN(str);
     newstr = rb_str_new(0, len);
@@ -526,7 +531,7 @@ rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
     if (len == 0 && !ptr) len = strlen(ptr);
     str = rb_tainted_str_new(ptr, len);
     rb_enc_associate(str, eenc);
-    return str_conv_enc(str, eenc, rb_default_internal_encoding());
+    return rb_str_conv_enc(str, eenc, rb_default_internal_encoding());
 }
 
 VALUE
@@ -544,13 +549,13 @@ rb_locale_str_new(const char *ptr, long len)
 VALUE
 rb_str_export(VALUE str)
 {
-    return str_conv_enc(str, STR_ENC_GET(str), rb_default_external_encoding());
+    return rb_str_conv_enc(str, STR_ENC_GET(str), rb_default_external_encoding());
 }
 
 VALUE
 rb_str_export_to_enc(VALUE str, rb_encoding *enc)
 {
-    return str_conv_enc(str, STR_ENC_GET(str), enc);
+    return rb_str_conv_enc(str, STR_ENC_GET(str), enc);
 }
 
 static VALUE

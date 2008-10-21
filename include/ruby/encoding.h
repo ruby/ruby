@@ -94,6 +94,7 @@ VALUE rb_enc_str_buf_cat(VALUE str, const char *ptr, long len, rb_encoding *enc)
 
 VALUE rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *);
 VALUE rb_str_export_to_enc(VALUE, rb_encoding *);
+VALUE rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to);
 
 /* index -> rb_encoding */
 rb_encoding* rb_enc_from_index(int idx);

@@ -1,3 +1,23 @@
+Tue Oct 21 18:17:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/zlib/zlib.c: remove obsolete prototype macros.
+
+	* ext/zlib/zlib.c (struct gzfile): add encoding field to gzfile
+	  structure.
+
+	* ext/zlib/zlib.c (rb_gzreader_getc): now works on characters.
+
+	* ext/zlib/zlib.c (rb_gzreader_getbyte): new method to retrieve
+	  single byte.
+
+	* ext/zlib/zlib.c (rb_gzreader_readbyte): ditto.
+
+	* ext/zlib/zlib.c (rb_gzreader_each_byte): renamed from each_char
+
+	* ext/zlib/zlib.c (rb_gzreader_ungetc): allow unget strings.
+
+	* ext/zlib/zlib.c (rb_gzreader_ungetbyte): renamed from ungetc.
+
 Tue Oct 21 13:28:42 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* io.c, include/ruby/intern.h (rb_io_ascii8bit_binmode): externed.

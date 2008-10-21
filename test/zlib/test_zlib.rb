@@ -470,8 +470,18 @@ if defined? Zlib
       Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
 
       f = Zlib::GzipReader.open(t.path)
-      "foobar".each_byte {|c| assert_equal(c, f.getc) }
+      "foobar".each_char {|c| assert_equal(c, f.getc) }
       assert_nil(f.getc)
+    end
+
+    def test_getbyte
+      t = Tempfile.new("test_zlib_gzip_reader")
+      t.close
+      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
+
+      f = Zlib::GzipReader.open(t.path)
+      "foobar".each_byte {|c| assert_equal(c, f.getbyte) }
+      assert_nil(f.getbyte)
     end
 
     def test_readchar
