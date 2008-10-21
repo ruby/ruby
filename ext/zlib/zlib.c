@@ -2747,10 +2747,10 @@ rb_gzwriter_write(VALUE obj, VALUE str)
 {
     struct gzfile *gz = get_gzfile(obj);
 
-    if (TYPE(str) != T_STRING) {
-       str = rb_obj_as_string(str);
+    StringValue(str);
+    if (gz->enc2 && gz->enc2 != rb_ascii8bit_encoding()) {
+	str = rb_str_conv_enc(str, rb_enc_get(str), gz->enc2);
     }
-    str = rb_str_export(str);
     gzfile_write(gz, (Bytef*)RSTRING_PTR(str), RSTRING_LEN(str));
     return INT2FIX(RSTRING_LEN(str));
 }
@@ -3075,6 +3075,11 @@ static VALUE
 rb_gzreader_ungetc(VALUE obj, VALUE s)
 {
     struct gzfile *gz = get_gzfile(obj);
+
+    StringValue(s);
+    if (gz->enc2 && gz->enc2 != rb_ascii8bit_encoding()) {
+	s = rb_str_conv_enc(s, rb_enc_get(s), gz->enc2);
+    }
     gzfile_ungets(gz, (const Bytef*)RSTRING_PTR(s), RSTRING_LEN(s));
     return Qnil;
 }

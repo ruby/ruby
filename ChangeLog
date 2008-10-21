@@ -1,3 +1,14 @@
+Tue Oct 21 21:52:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/zlib/zlib.c (rb_gzwriter_write): conversion should be done
+	  using to_str, not to_s.
+
+	* ext/zlib/zlib.c (rb_gzwriter_write): need proper conversion
+	  according to gz encoding.
+
+	* ext/zlib/zlib.c (rb_gzreader_ungetc): convert string encoding
+	  before unget.
+
 Tue Oct 21 21:33:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (assert_nothing_raised): raise with backtrace.
