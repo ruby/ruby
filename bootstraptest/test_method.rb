@@ -1069,3 +1069,18 @@ assert_equal 'ok', %q{
     break :ok
   end
 }, '[ruby-dev:36028]'
+
+assert_equal '[1, 2, [3, 4]]', %q{
+  def regular(a, b, *c)
+    [a, b, c]
+  end
+  regular(*[], 1, *[], *[2, 3], *[], 4) 
+}, '[ruby-core:19413]'
+
+assert_equal '[1, [:foo, 3, 4, :foo]]', %q{
+  def regular(a, *b)
+    [a, b]
+  end
+  a = b = [:foo]
+  regular(1, *a, *[3, 4], *b)
+}
