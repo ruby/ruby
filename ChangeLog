@@ -1,3 +1,13 @@
+Wed Oct 22 07:09:19 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/zlib/zlib.c (rb_gzreader_ungetc): should be able to unget
+	  Fixnum.
+
+	* ext/stringio/stringio.c (strio_ungetc): should convert unget
+	  string.
+
+	* ext/stringio/stringio.c (strio_ungetbyte): new method.
+
 Wed Oct 22 05:46:25 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/vm.h: write a comment.

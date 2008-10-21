@@ -701,7 +701,7 @@ strio_ungetc(VALUE self, VALUE c)
     struct StringIO *ptr = readable(StringIO(self));
     long lpos, clen;
     char *p, *pend;
-    rb_encoding *enc;
+    rb_encoding *enc, *enc2;
 
     if (NIL_P(c)) return Qnil;
     if (FIXNUM_P(c)) {
@@ -714,7 +714,11 @@ strio_ungetc(VALUE self, VALUE c)
     }
     else {
 	SafeStringValue(c);
-	enc = rb_enc_check(ptr->string, c);
+	enc = rb_enc_get(ptr->string);
+	enc2 = rb_enc_get(c);
+	if (enc != enc2 && enc != rb_ascii8bit_encoding()) {
+	    c = rb_str_conv_enc(c, enc2, enc);
+	}
     }
     /* get logical position */
     lpos = 0; p = RSTRING_PTR(ptr->string); pend = p + ptr->pos - 1;
@@ -728,6 +732,19 @@ strio_ungetc(VALUE self, VALUE c)
     ptr->pos = p - RSTRING_PTR(ptr->string);
 
     return Qnil;
+}
+
+/*
+ * call-seq:
+ *   strio.ungetbyte(fixnum)   -> nil
+ *
+ * See IO#ungetbyte
+ */
+static VALUE
+strio_ungetbyte(VALUE self, VALUE c)
+{
+    NUM2INT(c);
+    return strio_ungetc(self, c);
 }
 
 /*
@@ -1318,6 +1335,7 @@ Init_stringio()
     rb_define_method(StringIO, "chars", strio_each_char, 0);
     rb_define_method(StringIO, "getc", strio_getc, 0);
     rb_define_method(StringIO, "ungetc", strio_ungetc, 1);
+    rb_define_method(StringIO, "ungetbyte", strio_ungetbyte, 1);
     rb_define_method(StringIO, "readchar", strio_readchar, 0);
     rb_define_method(StringIO, "getbyte", strio_getbyte, 0);
     rb_define_method(StringIO, "readbyte", strio_readbyte, 0);

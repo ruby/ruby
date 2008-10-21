@@ -3075,8 +3075,11 @@ rb_gzreader_each_byte(VALUE obj)
 static VALUE
 rb_gzreader_ungetc(VALUE obj, VALUE s)
 {
-    struct gzfile *gz = get_gzfile(obj);
+    struct gzfile *gz;
 
+    if (FIXNUM_P(s))
+	return rb_gzreader_ungetbyte(obj, s);
+    gz = get_gzfile(obj);
     StringValue(s);
     if (gz->enc2 && gz->enc2 != rb_ascii8bit_encoding()) {
 	s = rb_str_conv_enc(s, rb_enc_get(s), gz->enc2);
