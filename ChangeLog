@@ -1,3 +1,7 @@
+Tue Oct 21 20:12:19 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/test/unit.rb (assert_nothing_raised): set backtrace.
+
 Tue Oct 21 18:17:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/zlib/zlib.c: remove obsolete prototype macros.

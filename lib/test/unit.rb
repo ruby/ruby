@@ -82,7 +82,9 @@ module Test
           if ((args.empty? && !e.instance_of?(MiniTest::Assertion)) ||
               args.any? {|a| a.instance_of?(Module) ? e.is_a?(a) : e.class == a })
             msg = message(msg) { "Exception raised:\n<#{mu_pp(e)}>" }
-            assert(false, msg)
+            exc = MiniTest::Assertion.new(msg.call)
+            exc.set_backtrace(e.backtrace)
+            raise exc
           else
             raise
           end
