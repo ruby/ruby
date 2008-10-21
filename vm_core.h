@@ -15,7 +15,6 @@
 #define RUBY_VM_THREAD_MODEL 2
 
 #include "ruby/ruby.h"
-#include "ruby/vm.h"
 #include "ruby/st.h"
 
 #include "node.h"
@@ -225,8 +224,7 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #define GetVMPtr(obj, ptr) \
   GetCoreDataFromValue(obj, rb_vm_t, ptr)
 
-struct rb_vm_struct
-{
+typedef struct rb_vm_struct {
     VALUE self;
 
     rb_thread_lock_t global_vm_lock;
@@ -270,7 +268,7 @@ struct rb_vm_struct
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     struct rb_objspace *objspace;
 #endif
-};
+} rb_vm_t;
 
 typedef struct {
     VALUE *pc;			/* cfp[0] */

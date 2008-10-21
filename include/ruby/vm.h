@@ -9,9 +9,14 @@
 
 **********************************************************************/
 
-#ifndef RUBY_MVM_H
-#define RUBY_MVM_H 1
+#ifndef RUBY_VM_H
+#define RUBY_VM_H 1
 
-typedef struct rb_vm_struct rb_vm_t;
+/* Place holder.
+ *
+ * We will prepare VM creation/control APIs on 1.9.2 or later.
+ * If you have an interest about it, please see mvm branch.
+ * http://svn.ruby-lang.org/cgi-bin/viewvc.cgi/branches/mvm/
+ */
 
-#endif /* RUBY_MVM_H */
+#endif /* RUBY_VM_H */
