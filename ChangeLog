@@ -1,3 +1,10 @@
+Wed Oct 22 05:39:39 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y (arg_concat_gen): concat target node should be NODE_ARRAY.
+	  [ruby-core:19413]
+
+	* bootstraptest/test_method.rb: add tests.
+
 Wed Oct 22 00:29:13 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.c (test_core_03_notify): Fixed test failures
