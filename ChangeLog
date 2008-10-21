@@ -1,3 +1,9 @@
+Tue Oct 21 13:17:39 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* mdoc2man.rb: moved into tools/.
+
+	* instruby.rb: followed the change of mdoc2man.
+
 Tue Oct 21 11:34:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (strip_glibc_option, map_charset): check if
