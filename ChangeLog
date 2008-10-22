@@ -1,3 +1,8 @@
+Wed Oct 22 16:27:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_yield_setup_args): should not drop arguments
+	  corresponding to default paramters.
+
 Wed Oct 22 14:59:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (f_larglist): should not allow semicolon separated local

@@ -728,12 +728,13 @@ vm_yield_setup_args(rb_thread_t * const th, const rb_iseq_t *iseq,
 	}
 
 	if (iseq->arg_rest == -1) {
-	    if (m < argc) {
+	    const int arg_size = iseq->arg_size;
+	    if (arg_size < argc) {
 		/*
 		 * yield 1, 2
 		 * => {|a|} # truncate
 		 */
-		th->mark_stack_len = argc = m;
+		th->mark_stack_len = argc = arg_size;
 	    }
 	}
 	else {
