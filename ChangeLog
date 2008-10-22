@@ -1,3 +1,9 @@
+Thu Oct 23 00:10:01 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c: separate data structure between rb_fiber_t and
+	  rb_context_t (rb_fiber_t includes rb_context_t).
+	  rb_fiber_t has double linked list of fibers in same threads.
+
 Wed Oct 22 17:25:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (pipe_open): remove unnecessary flush before fork.
