@@ -365,14 +365,11 @@ class TestSDBM < Test::Unit::TestCase
   def test_delete_with_block
     key = 'no called block'
     @sdbm[key] = 'foo'
-    assert_equal('foo', @sdbm.delete(key) {|k| k.replace 'called block'})
-    assert_equal('no called block', key)
+    assert_equal('foo', @sdbm.delete(key) {|k| k.replace 'called block'; :blockval})
     assert_equal(0, @sdbm.size)
 
     key = 'no called block'
-    assert_equal(:blockval,
-		  @sdbm.delete(key) {|k| k.replace 'called block'; :blockval})
-    assert_equal('called block', key)
+    assert_equal(:blockval, @sdbm.delete(key) {|k| k.replace 'called block'; :blockval})
     assert_equal(0, @sdbm.size)
   end
 

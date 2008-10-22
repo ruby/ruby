@@ -246,7 +246,7 @@ readline_readline(int argc, VALUE *argv, VALUE self)
 	add_history(buff);
     }
     if (buff) {
-	result = rb_locale_str_new(buff, strlen(buff));
+	result = rb_locale_str_new_cstr(buff);
     }
     else
 	result = Qnil;
@@ -385,7 +385,7 @@ readline_attempted_completion_function(const char *text, int start, int end)
     rl_attempted_completion_over = 1;
 #endif
     case_fold = RTEST(rb_attr_get(mReadline, completion_case_fold));
-    ary = rb_funcall(proc, rb_intern("call"), 1, rb_locale_str_new(text, strlen(text)));
+    ary = rb_funcall(proc, rb_intern("call"), 1, rb_locale_str_new_cstr(text));
     if (TYPE(ary) != T_ARRAY)
 	ary = rb_Array(ary);
     matches = RARRAY_LEN(ary);
@@ -608,7 +608,7 @@ readline_s_get_completion_append_character(VALUE self)
     if (rl_completion_append_character == '\0')
 	return Qnil;
 
-    str = rb_str_new("", 1);
+    str = rb_str_new(0, 1);
     RSTRING_PTR(str)[0] = rl_completion_append_character;
     return str;
 #else
@@ -673,7 +673,7 @@ readline_s_get_basic_word_break_characters(VALUE self, VALUE str)
     rb_secure(4);
     if (rl_basic_word_break_characters == NULL)
 	return Qnil;
-    return rb_locale_str_new(rl_basic_word_break_characters, 0);
+    return rb_locale_str_new_cstr(rl_basic_word_break_characters);
 #else
     rb_notimplement();
     return Qnil; /* not reached */
@@ -736,7 +736,7 @@ readline_s_get_completer_word_break_characters(VALUE self, VALUE str)
     rb_secure(4);
     if (rl_completer_word_break_characters == NULL)
 	return Qnil;
-    return rb_locale_str_new(rl_completer_word_break_characters, 0);
+    return rb_locale_str_new_cstr(rl_completer_word_break_characters);
 #else
     rb_notimplement();
     return Qnil; /* not reached */
@@ -797,7 +797,7 @@ readline_s_get_basic_quote_characters(VALUE self, VALUE str)
     rb_secure(4);
     if (rl_basic_quote_characters == NULL)
 	return Qnil;
-    return rb_locale_str_new(rl_basic_quote_characters, 0);
+    return rb_locale_str_new_cstr(rl_basic_quote_characters);
 #else
     rb_notimplement();
     return Qnil; /* not reached */
@@ -861,7 +861,7 @@ readline_s_get_completer_quote_characters(VALUE self, VALUE str)
     rb_secure(4);
     if (rl_completer_quote_characters == NULL)
 	return Qnil;
-    return rb_locale_str_new(rl_completer_quote_characters, 0);
+    return rb_locale_str_new_cstr(rl_completer_quote_characters);
 #else
     rb_notimplement();
     return Qnil; /* not reached */
@@ -923,7 +923,7 @@ readline_s_get_filename_quote_characters(VALUE self, VALUE str)
     rb_secure(4);
     if (rl_filename_quote_characters == NULL)
 	return Qnil;
-    return rb_locale_str_new(rl_filename_quote_characters, 0);
+    return rb_locale_str_new_cstr(rl_filename_quote_characters);
 #else
     rb_notimplement();
     return Qnil; /* not reached */
@@ -933,7 +933,7 @@ readline_s_get_filename_quote_characters(VALUE self, VALUE str)
 static VALUE
 hist_to_s(VALUE self)
 {
-    return rb_str_new2("HISTORY");
+    return rb_str_new_cstr("HISTORY");
 }
 
 static int
@@ -965,7 +965,7 @@ hist_get(VALUE self, VALUE index)
     if (entry == NULL) {
 	rb_raise(rb_eIndexError, "invalid index");
     }
-    return rb_locale_str_new(entry->line, 0);
+    return rb_locale_str_new_cstr(entry->line);
 }
 
 static VALUE
@@ -1027,7 +1027,7 @@ rb_remove_history(int index)
     rb_secure(4);
     entry = remove_history(index);
     if (entry) {
-        val = rb_locale_str_new(entry->line, 0);
+        val = rb_locale_str_new_cstr(entry->line);
         free((void *) entry->line);
         free(entry);
         return val;
@@ -1074,7 +1074,7 @@ hist_each(VALUE self)
         entry = history_get(history_get_offset_func(i));
         if (entry == NULL)
             break;
-	rb_yield(rb_locale_str_new(entry->line, 0));
+	rb_yield(rb_locale_str_new_cstr(entry->line));
     }
     return self;
 }
@@ -1133,7 +1133,7 @@ filename_completion_proc_call(VALUE self, VALUE str)
     if (matches) {
 	result = rb_ary_new();
 	for (i = 0; matches[i]; i++) {
-	    rb_ary_push(result, rb_locale_str_new(matches[i], 0));
+	    rb_ary_push(result, rb_locale_str_new_cstr(matches[i]));
 	    free(matches[i]);
 	}
 	free(matches);
@@ -1158,7 +1158,7 @@ username_completion_proc_call(VALUE self, VALUE str)
     if (matches) {
 	result = rb_ary_new();
 	for (i = 0; matches[i]; i++) {
-	    rb_ary_push(result, rb_locale_str_new(matches[i], 0));
+	    rb_ary_push(result, rb_locale_str_new_cstr(matches[i]));
 	    free(matches[i]);
 	}
 	free(matches);
@@ -1275,7 +1275,7 @@ Init_readline()
     rb_define_const(mReadline, "USERNAME_COMPLETION_PROC", ucomp);
     history_get_offset_func = history_get_offset_history_base;
 #if defined HAVE_RL_LIBRARY_VERSION
-    version = rb_str_new2(rl_library_version);
+    version = rb_str_new_cstr(rl_library_version);
 #if defined HAVE_CLEAR_HISTORY || defined HAVE_REMOVE_HISTORY
     if (strncmp(rl_library_version, EDIT_LINE_LIBRARY_VERSION, 
 		strlen(EDIT_LINE_LIBRARY_VERSION)) == 0) {
@@ -1295,7 +1295,7 @@ Init_readline()
     }
 #endif
 #else
-    version = rb_str_new2("2.0 or prior version");
+    version = rb_str_new_cstr("2.0 or prior version");
 #endif
     /* Version string of GNU Readline or libedit. */
     rb_define_const(mReadline, "VERSION", version);

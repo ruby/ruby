@@ -1,3 +1,20 @@
+Wed Oct 22 14:52:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_external_str_new_with_enc): no implicit strlen call.
+	  [ruby-dev:36854]
+	
+	* string.c (rb_external_str_new_cstr): new function to create
+	  string from external NUL terminated C string.
+
+	* string.c (rb_locale_str_new_cstr): ditto.
+
+	* ext/readline/readline.c: now use rb_locale_str_new_cstr().
+
+	* test/sdbm/test_sdbm.rb (TestSDBM#test_delete_with_block):
+	  deleted key to the block may be a copy of specified key.
+
+	* test/dbm/test_dbm.rb (TestDBM#test_delete_with_block): ditto.
+
 Wed Oct 22 13:16:47 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (unescape_escaped_nonascii): back out the last change on

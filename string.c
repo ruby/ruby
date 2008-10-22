@@ -529,7 +529,6 @@ rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
 {
     VALUE str;
 
-    if (len == 0 && ptr) len = strlen(ptr);
     str = rb_tainted_str_new(ptr, len);
     rb_enc_associate(str, eenc);
     return rb_str_conv_enc(str, eenc, rb_default_internal_encoding());
@@ -542,9 +541,21 @@ rb_external_str_new(const char *ptr, long len)
 }
 
 VALUE
+rb_external_str_new_cstr(const char *ptr)
+{
+    return rb_external_str_new_with_enc(ptr, strlen(ptr), rb_default_external_encoding());
+}
+
+VALUE
 rb_locale_str_new(const char *ptr, long len)
 {
     return rb_external_str_new_with_enc(ptr, len, rb_locale_encoding());
+}
+
+VALUE
+rb_locale_str_new_cstr(const char *ptr)
+{
+    return rb_external_str_new_with_enc(ptr, strlen(ptr), rb_locale_encoding());
 }
 
 VALUE

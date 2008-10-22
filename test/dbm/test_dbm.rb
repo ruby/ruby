@@ -334,14 +334,11 @@ if defined? DBM
     def test_delete_with_block
       key = 'no called block'
       @dbm[key] = 'foo'
-      assert_equal('foo', @dbm.delete(key) {|k| k.replace 'called block'})
-      assert_equal('no called block', key)
+      assert_equal('foo', @dbm.delete(key) {|k| k.replace 'called block'; :blockval})
       assert_equal(0, @dbm.size)
 
       key = 'no called block'
-      assert_equal(:blockval,
-                    @dbm.delete(key) {|k| k.replace 'called block'; :blockval})
-      assert_equal('called block', key)
+      assert_equal(:blockval, @dbm.delete(key) {|k| k.replace 'called block'; :blockval})
       assert_equal(0, @dbm.size)
     end
 
