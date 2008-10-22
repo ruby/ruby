@@ -473,7 +473,7 @@ RUBY_ALIAS_FUNCTION(rb_tainted_str_new2(const char *ptr), rb_tainted_str_new_cst
 #define rb_tainted_str_new2 rb_tainted_str_new_cstr
 
 VALUE
-rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
+rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags, VALUE ecopts)
 {
     rb_econv_t *ec;
     rb_econv_result_t ret;
@@ -497,7 +497,7 @@ rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
     newstr = rb_str_new(0, len);
 
   retry:
-    ec = rb_econv_open_opts(from->name, to->name, 0, Qnil);
+    ec = rb_econv_open_opts(from->name, to->name, ecflags, ecopts);
     if (!ec) return str;
 
     sp = (unsigned char*)RSTRING_PTR(str);
@@ -522,6 +522,12 @@ rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
 	/* some error, return original */
 	return str;
     }
+}
+
+VALUE
+rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
+{
+    return rb_str_conv_enc_opts(str, from, to, 0, Qnil);
 }
 
 VALUE

@@ -194,6 +194,7 @@ static VALUE rb_gzreader_readlines(int, VALUE*, VALUE);
 void Init_zlib(void);
 
 int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p);
+VALUE rb_str_conv_enc_opts(VALUE, rb_encoding*, rb_encoding*, int, VALUE);
 
 /*--------- Exceptions --------*/
 
@@ -540,7 +541,7 @@ zstream_shift_buffer(struct zstream *z, int len)
 	return zstream_detach_buffer(z);
     }
 
-    dst = rb_str_substr(z->buf, 0, len);
+    dst = rb_str_subseq(z->buf, 0, len);
     RBASIC(dst)->klass = rb_cString;
     z->buf_filled -= len;
     memmove(RSTRING_PTR(z->buf), RSTRING_PTR(z->buf) + len,
@@ -1670,7 +1671,12 @@ struct gzfile {
     void (*end)(struct gzfile *);
     rb_encoding *enc;
     rb_encoding *enc2;
+    rb_econv_t *ec;
+    int ecflags;
+    VALUE ecopts;
+    char *cbuf;
 };
+#define GZFILE_CBUF_CAPA 10
 
 #define GZFILE_FLAG_SYNC             ZSTREAM_FLAG_UNUSED
 #define GZFILE_FLAG_HEADER_FINISHED  (ZSTREAM_FLAG_UNUSED << 1)
@@ -1689,6 +1695,7 @@ gzfile_mark(struct gzfile *gz)
     rb_gc_mark(gz->orig_name);
     rb_gc_mark(gz->comment);
     zstream_mark(&gz->z);
+    rb_gc_mark(gz->ecopts);
 }
 
 static void
@@ -1701,6 +1708,9 @@ gzfile_free(struct gzfile *gz)
 	    finalizer_warn("Zlib::GzipWriter object must be closed explicitly.");
 	}
 	zstream_finalize(z);
+    }
+    if (gz->cbuf) {
+	xfree(gz->cbuf);
     }
     xfree(gz);
 }
@@ -1728,6 +1738,10 @@ gzfile_new(klass, funcs, endfunc)
     gz->end = endfunc;
     gz->enc = rb_default_external_encoding();
     gz->enc2 = 0;
+    gz->ec = NULL;
+    gz->ecflags = 0;
+    gz->ecopts = Qnil;
+    gz->cbuf = 0;
 
     return obj;
 }
@@ -1742,6 +1756,11 @@ gzfile_reset(struct gzfile *gz)
     gz->crc = crc32(0, Z_NULL, 0);
     gz->lineno = 0;
     gz->ungetc = 0;
+    if (gz->ec) {
+	rb_econv_close(gz->ec);
+	gz->ec = rb_econv_open_opts(gz->enc2->name, gz->enc->name,
+				    gz->ecflags, gz->ecopts);
+    }
 }
 
 static void
@@ -2076,12 +2095,19 @@ gzfile_calc_crc(struct gzfile *gz, VALUE str)
 static VALUE
 gzfile_newstr(struct gzfile *gz, VALUE str)
 {
-    OBJ_TAINT(str);  /* for safe */
-    if (gz->enc && !gz->enc2) {
+    if (!gz->enc2) {
 	rb_enc_associate(str, gz->enc);
+	OBJ_TAINT(str);  /* for safe */
 	return str;
     }
-    return rb_str_conv_enc(str, gz->enc2, gz->enc);
+    if (gz->ec && rb_enc_dummy_p(gz->enc2)) {
+        str = rb_econv_str_convert(gz->ec, str, ECONV_PARTIAL_INPUT);
+	rb_enc_associate(str, gz->enc);
+	OBJ_TAINT(str);
+	return str;
+    }
+    return rb_str_conv_enc_opts(str, gz->enc2, gz->enc,
+				gz->ecflags, gz->ecopts);
 }
 
 static VALUE
@@ -2105,7 +2131,7 @@ gzfile_read(struct gzfile *gz, int len)
 
     dst = zstream_shift_buffer(&gz->z, len);
     gzfile_calc_crc(gz, dst);
-    return gzfile_newstr(gz, dst);
+    return dst;
 }
 
 static VALUE
@@ -2142,15 +2168,13 @@ gzfile_readpartial(struct gzfile *gz, int len, VALUE outbuf)
     dst = zstream_shift_buffer(&gz->z, len);
     gzfile_calc_crc(gz, dst);
 
-    if (NIL_P(outbuf)) {
-        OBJ_TAINT(dst);  /* for safe */
-    }
-    else {
+    if (!NIL_P(outbuf)) {
         rb_str_resize(outbuf, RSTRING_LEN(dst));
         memcpy(RSTRING_PTR(outbuf), RSTRING_PTR(dst), RSTRING_LEN(dst));
 	dst = outbuf;
     }
-    return gzfile_newstr(gz, dst);
+    OBJ_TAINT(dst);  /* for safe */
+    return dst;
 }
 
 static VALUE
@@ -2170,13 +2194,14 @@ gzfile_read_all(struct gzfile *gz)
 
     dst = zstream_detach_buffer(&gz->z);
     gzfile_calc_crc(gz, dst);
-    return gzfile_newstr(gz, dst);
+    OBJ_TAINT(dst);
+    return dst;
 }
 
 static VALUE
 gzfile_getc(struct gzfile *gz)
 {
-    VALUE buf, dst;
+    VALUE buf, dst = 0;
     int len;
 
     len = rb_enc_mbmaxlen(gz->enc);
@@ -2190,11 +2215,33 @@ gzfile_getc(struct gzfile *gz)
 	return Qnil;
     }
 
-    buf = gz->z.buf;
-    len = rb_enc_mbclen(RSTRING_PTR(buf), RSTRING_PTR(buf)+len, gz->enc);
-    dst = zstream_shift_buffer(&gz->z, len);
-    gzfile_calc_crc(gz, dst);
-    return gzfile_newstr(gz, dst);
+    if (gz->ec && rb_enc_dummy_p(gz->enc2)) {
+	const unsigned char *ss, *sp, *se;
+	unsigned char *ds, *dp, *de;
+	rb_econv_result_t res;
+
+	if (!gz->cbuf) {
+	    gz->cbuf = ALLOC_N(char, GZFILE_CBUF_CAPA);
+	}
+        ss = sp = (const unsigned char*)RSTRING_PTR(gz->z.buf);
+        se = sp + gz->z.buf_filled;
+        ds = dp = (unsigned char *)gz->cbuf;
+        de = (unsigned char *)ds + GZFILE_CBUF_CAPA;
+        res = rb_econv_convert(gz->ec, &sp, se, &dp, de, ECONV_PARTIAL_INPUT|ECONV_AFTER_OUTPUT);
+        rb_econv_check_error(gz->ec);
+	dst = zstream_shift_buffer(&gz->z, sp - ss);
+	gzfile_calc_crc(gz, dst);
+	dst = rb_str_new(gz->cbuf, dp - ds);
+	rb_enc_associate(dst, gz->enc);
+	OBJ_TAINT(dst);
+	return dst;
+    }
+    else {
+	buf = gz->z.buf;
+	len = rb_enc_mbclen(RSTRING_PTR(buf), RSTRING_END(buf), gz->enc);
+	dst = gzfile_read(gz, len);
+	return gzfile_newstr(gz, dst);
+    }
 }
 
 static void
@@ -2624,6 +2671,20 @@ rb_gzfile_total_out(VALUE obj)
 }
 
 
+static void
+rb_gzfile_ecopts(struct gzfile *gz, VALUE opts)
+{
+    if (!NIL_P(opts)) {
+	rb_io_extract_encoding_option(opts, &gz->enc, &gz->enc2);
+    }
+    if (gz->enc2) {
+	gz->ecflags = rb_econv_prepare_opts(opts, &opts);
+	gz->ec = rb_econv_open_opts(gz->enc2->name, gz->enc->name,
+				    gz->ecflags, opts);
+	gz->ecopts = opts;
+    }
+}
+
 /* ------------------------------------------------------------------------- */
 
 /*
@@ -2704,9 +2765,7 @@ rb_gzwriter_initialize(int argc, VALUE *argv, VALUE obj)
     }
     gz->io = io;
     ZSTREAM_READY(&gz->z);
-    if (!NIL_P(opt)) {
-	rb_io_extract_encoding_option(opt, &gz->enc, &gz->enc2);
-    }
+    rb_gzfile_ecopts(gz, opt);
 
     return obj;
 }
@@ -2901,9 +2960,7 @@ rb_gzreader_initialize(int argc, VALUE *argv, VALUE obj)
     gz->io = io;
     ZSTREAM_READY(&gz->z);
     gzfile_read_header(gz);
-    if (!NIL_P(opt)) {
-	rb_io_extract_encoding_option(opt, &gz->enc, &gz->enc2);
-    }
+    rb_gzfile_ecopts(gz, opt);
 
     return obj;
 }
@@ -3214,7 +3271,7 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
 	gzreader_skip_linebreaks(gz);
     }
 
-    return dst;
+    return gzfile_newstr(gz, dst);
 }
 
 /*
