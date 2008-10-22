@@ -1,3 +1,8 @@
+Wed Oct 22 13:16:47 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (unescape_escaped_nonascii): back out the last change on
+	  the function.  [ruby-dev:36818]
+
 Wed Oct 22 07:09:19 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/zlib/zlib.c (rb_gzreader_ungetc): should be able to unget
