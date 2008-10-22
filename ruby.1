@@ -10,10 +10,10 @@
 .Nm
 .Op Fl -copyright
 .Op Fl -version
-.Op Fl Sacdlnpswvy
+.Op Fl SUacdlnpswvy
 .Op Fl 0 Ns Op Ar octal
 .Op Fl C Ar directory
-.Op Fl E Ar encoding
+.Op Fl E Ar external Ns Op : Ns Ar internal
 .Op Fl F Ar pattern
 .Op Fl I Ar directory
 .Op Fl K Ar c
@@ -92,8 +92,18 @@ In Ruby, you can objectify the procedure.
 .It Sy "Text processing and regular expression"
 Ruby has a bunch of text processing features like in Perl.
 .Pp
+.It Sy "M17N, character set independent"
+Ruby supports multilingualized programming. Easy to process texts
+written in many different natural languages and encoded in many 
+different character encodings, without dependence on Unicode.
+.Pp
 .It Sy "Bignums"
 With built-in bignums, you can for example calculate factorial(400).
+.Pp
+.It Sy "Reflection and domain specific languages"
+Class is also an instance of Class class. Definition of classes and methods
+is just an expression as 1+1 is. So your programs can even write and modify programs.
+Thus you can write your application in your own programming language on top of Ruby.
 .Pp
 .It Sy "Exception handling"
 As in Java(tm).
@@ -108,6 +118,13 @@ On most
 .Ux
 systems, you can load object files into the Ruby interpreter
 on-the-fly.
+.It Sy "Rich libraries"
+Libraries called "builtin libraries" and "standard libraries" are bundled with Ruby.
+And you can obtain more libraries via the package management system called `RubyGems'.
+
+Moreover there are thousands of Ruby projects in Rubyforge
+.Pf ( "http://www.rubyforge.org" ) and RAA
+.Pf ( "http://raa.ruby-lang.org" ) Ns .
 .El
 .Pp
 .Sh OPTIONS
@@ -139,9 +156,12 @@ no legal character with that value.
 .It Fl X Ar directory
 Causes Ruby to switch to the directory.
 .Pp
-.It Fl E Ar encname
-.It Fl -encoding Ar encname
-Specifies the encoding for the program codes.
+.It Fl E Ar external Ns Op : Ns Ar internal
+.It Fl -encoding Ar external Ns Op : Ns Ar internal
+Specifies the default value(s) for external encodings and internal encoding. Values should be separated with colon (:).
+
+You can ommit the one for internal encodings, then the value
+.Pf ( Li "Encoding.default_internal" ) will be nil.
 .Pp
 .It Fl F Ar pattern
 Specifies input field separator
@@ -153,7 +173,23 @@ will be added to the load-path variable
 .Pf ( Li "$:" ) .
 .Pp
 .It Fl K Ar kcode
-Specifies KANJI (Japanese) encoding.
+Specifies KANJI (Japanese) encoding. The default value for script encodings
+.Pf ( Li "__ENCODING__" ) and external encodings ( Li "Encoding.default_external" ) will be the specified one.
+.Ar kcode
+can be one of 
+.Bl -hang -offset indent
+.It Sy e
+EUC-JP
+.Pp
+.It Sy s
+Windows-31J (CP932)
+.Pp
+.It Sy u
+UTF-8
+.Pp
+.It Sy n
+ASCII-8BIT (BINARY)
+.El
 .Pp
 .It Fl S
 Makes Ruby use the
@@ -170,6 +206,10 @@ on machines that don't support it, in the following manner:
 .Pp
 .It Fl T Ns Op Ar level
 Turns on taint checks at the specified level (default 1).
+.Pp
+.It Fl U
+Sets the defalut value for internal encodings
+.Pf ( Li "Encoding.default_internal" ) to UTF-8.
 .Pp
 .It Fl W Ns Op Ar level
 Turns on verbose mode at the specified level, without printing version 
@@ -342,12 +382,12 @@ this switch, unless you are going to debug the Ruby interpreter.
 Disables (or enables) the specified
 .Ar FEATURE Ns
 \&.
-.Pp
+.Bl -tag -width "--disable-rubyopt" -compact
 .It Fl -disable-gems
 .It Fl -enable-gems
 Disables (or enables) RubyGems libraries.  By default, Ruby will load the latest
 version of each installed gem. The
-.Li Gem::Enable
+.Li Gem
 constant is true if RubyGems is enabled, false if otherwise.
 .Pp
 .It Fl -disable-rubyopt
@@ -359,6 +399,8 @@ environment variable. By default, Ruby considers the variable.
 .It Fl -disable-all
 .It Fl -enable-all
 Disables (or enables) all features.
+.Pp
+.El
 .Pp
 .It Fl -verbose
 Enables verbose mode without printing version message at the
@@ -409,6 +451,28 @@ environment variable on calling Kernel#system.
 This variable is obsolete.
 .El
 .Pp
+.Sh SEE ALSO
+.Bl -hang -compact -width "http://www.ruby-lang.org/123"
+.It http://www.ruby-lang.org
+The official web site.
+.It http://www.rubyforge.org
+hosting many open source ruby projects.
+.It http://raa.ruby-lang.org
+Ruby Application Archive.
+.El
+.Pp
+.Sh BUGS
+.Bl -bullet
+.Li Security vulnerabilities should be reported via an email to 
+.Aq security@ruby-lang.org Ns
+.Li .
+Reported problems will be published after fixed.
+.Pp
+.Li And you can report other bugs and feature requests via the
+Ruby Issue Tracking System (http://redmine.ruby-lang.org).
+Do not report security vulnerabilities
+via the system because it publishes the vulnerabilities immedately.
+.El
 .Sh AUTHORS
 Ruby is designed and implemented by
 .An Yukihiro Matsumoto Aq matz@netlab.jp .
