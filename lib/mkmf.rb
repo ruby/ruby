@@ -323,9 +323,11 @@ EOM
 end
 
 def create_tmpsrc(src)
+  src = "#{COMMON_HEADERS}\n#{src}"
   src = yield(src) if block_given?
-  src[0, 0] = COMMON_HEADERS + "\n"
-  src = src.gsub(/[ \t]+$/, '').gsub(/\A\n+|^\n+$/, '').sub(/[^\n]\z/, "\\&\n")
+  src.gsub!(/[ \t]+$/, '')
+  src.gsub!(/\A\n+|^\n+$/, '')
+  src.sub!(/[^\n]\z/, "\\&\n")
   count = 0
   begin
     open(CONFTEST_C, "wb") do |cfile|
