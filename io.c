@@ -4445,8 +4445,6 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     }
     else {
 	fflush(stdin);		/* is it really needed? */
-	rb_io_flush(rb_stdout);
-	rb_io_flush(rb_stderr);
 	pid = rb_fork(&status, 0, 0, Qnil);
 	if (pid == 0) {		/* child */
 	    popen_redirect(&arg);

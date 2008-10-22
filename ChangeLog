@@ -1,3 +1,9 @@
+Wed Oct 22 17:25:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (pipe_open): remove unnecessary flush before fork.
+	  a patch from Kazuhiro NISHIYAMA <zn at mbf.nifty.com>
+	  in [ruby-dev:36840].
+
 Wed Oct 22 16:27:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_yield_setup_args): should not drop arguments
