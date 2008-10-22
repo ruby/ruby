@@ -3453,7 +3453,7 @@ f_larglist	: '(' f_args opt_bv_decl rparen
 			$$ = dispatch1(paren, $2);
 		    %*/
 		    }
-		| f_args opt_bv_decl
+		| f_args
 		    {
 		    /*%%%*/
 			$$ = NEW_LAMBDA($1);

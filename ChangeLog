@@ -1,3 +1,10 @@
+Wed Oct 22 14:59:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (f_larglist): should not allow semicolon separated local
+	  variable declarations if formal argument list is not surrounded
+	  by parentheses, mostly because semicolon outside of parentheses
+	  appears to terminate the expression.
+
 Wed Oct 22 14:52:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_external_str_new_with_enc): no implicit strlen call.
