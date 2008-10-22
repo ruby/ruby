@@ -3254,7 +3254,7 @@ sock_s_getservbyport(int argc, VALUE *argv)
     if (NIL_P(proto)) proto = rb_str_new2("tcp");
     StringValue(proto);
 
-    sp = getservbyport(NUM2INT(port),  StringValueCStr(proto));
+    sp = getservbyport(htons(NUM2INT(port)),  StringValueCStr(proto));
     if (!sp) {
 	rb_raise(rb_eSocket, "no such service for port %d/%s", NUM2INT(port), RSTRING_PTR(proto));
     }
