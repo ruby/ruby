@@ -247,8 +247,8 @@ module IRB
     for m in @CONF[:LOAD_MODULES]
       begin
 	require m
-      rescue # StandardError, ScriptError
-	print $@[0], ":", $!.class, ": ", $!, "\n"
+      rescue LoadError => err
+	warn err.backtrace[0] << ":#{err.class}: #{err}"
       end
     end
   end

@@ -1,3 +1,9 @@
+Thu Oct 23 16:19:33 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/init.rb (IRB.load_modules): catch LoadError explicitly.
+	  a patch from Daniel Berger <Daniel.Berger at qwest.com> in
+	  [ruby-core:19451].  fix [ruby-core:19450]
+
 Thu Oct 23 16:16:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/socket.c (sock_s_getservbyport): check if the port range.
