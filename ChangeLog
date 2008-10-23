@@ -1,4 +1,7 @@
-Thu Oct 23 11:17:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Oct 23 14:08:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_s_getservbyname): unuse unnecessary
+	  object.
 
 	* ext/socket/socket.c (sock_s_getservbyport): the port should be
 	  converted before the proto so that the #to_int of the former cannot

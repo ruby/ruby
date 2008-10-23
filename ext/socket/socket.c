@@ -3222,23 +3222,23 @@ sock_s_getservbyname(int argc, VALUE *argv)
     VALUE service, proto;
     struct servent *sp;
     int port;
+    const char *servicename, *protoname = "tcp";
 
     rb_scan_args(argc, argv, "11", &service, &proto);
-    if (NIL_P(proto)) proto = rb_str_new2("tcp");
     StringValue(service);
-    StringValue(proto);
-
-    sp = getservbyname(StringValueCStr(service),  StringValueCStr(proto));
+    if (!NIL_P(proto)) StringValue(proto);
+    servicename = StringValueCStr(service);
+    if (!NIL_P(proto)) protoname = StringValueCStr(proto);
+    sp = getservbyname(servicename, protoname);
     if (sp) {
 	port = ntohs(sp->s_port);
     }
     else {
-	char *s = RSTRING_PTR(service);
 	char *end;
 
-	port = STRTOUL(s, &end, 0);
+	port = STRTOUL(servicename, &end, 0);
 	if (*end != '\0') {
-	    rb_raise(rb_eSocket, "no such service %s/%s", s, RSTRING_PTR(proto));
+	    rb_raise(rb_eSocket, "no such service %s/%s", servicename, protoname);
 	}
     }
     return INT2FIX(port);
