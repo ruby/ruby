@@ -3249,14 +3249,16 @@ sock_s_getservbyport(int argc, VALUE *argv)
 {
     VALUE port, proto;
     struct servent *sp;
+    long portnum;
+    const char *protoname = "tcp";
 
     rb_scan_args(argc, argv, "11", &port, &proto);
-    if (NIL_P(proto)) proto = rb_str_new2("tcp");
-    StringValue(proto);
+    portnum = NUM2LONG(port);
+    if (!NIL_P(proto)) protoname = StringValueCStr(proto);
 
-    sp = getservbyport(htons((uint16_t)NUM2INT(port)), StringValueCStr(proto));
+    sp = getservbyport((int)htons((uint16_t)portnum), protoname);
     if (!sp) {
-	rb_raise(rb_eSocket, "no such service for port %d/%s", NUM2INT(port), RSTRING_PTR(proto));
+	rb_raise(rb_eSocket, "no such service for port %d/%s", (int)portnum, protoname);
     }
     return rb_tainted_str_new2(sp->s_name);
 }
