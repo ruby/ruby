@@ -1,3 +1,8 @@
+Thu Oct 23 22:06:23 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* distruby.rb: removed. "make dist" uses tool/make-snapshot for the 1.9
+	  series. distruby.rb has been no longer used.
+
 Thu Oct 23 17:30:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_class_instance_methods): rdoc fixed.  [ruby-core:19458]
