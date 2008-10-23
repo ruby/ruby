@@ -1,3 +1,8 @@
+Thu Oct 23 09:26:22 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_s_getservbyport): cast to get rid of
+	  warning.
+
 Thu Oct 23 08:06:03 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (sock_s_getservbyport): port should be
