@@ -4090,11 +4090,12 @@ rb_str_inspect(VALUE str)
 VALUE
 rb_str_dump(VALUE str)
 {
-    rb_encoding *enc0 = rb_enc_get(str);
+    rb_encoding *enc = rb_enc_get(str);
     long len;
     const char *p, *pend;
     char *q, *qend;
     VALUE result;
+    int u8 = (enc == rb_utf8_encoding());
 
     len = 2;			/* "" */
     p = RSTRING_PTR(str); pend = p + RSTRING_LEN(str);
@@ -4117,14 +4118,25 @@ rb_str_dump(VALUE str)
 		len++;
 	    }
 	    else {
-		len += 4;		/* \xNN */
+		if (u8) {	/* \u{NN} */
+		    char buf[32];
+		    int n = rb_enc_precise_mbclen(p-1, pend, enc) - 1;
+		    if (MBCLEN_CHARFOUND_P(n)) {
+			int cc = rb_enc_codepoint(p-1, pend, enc);
+			sprintf(buf, "%x", cc);
+			len += strlen(buf)+4;
+			p += n;
+			break;
+		    }
+		}
+		len += 4;	/* \xNN */
 	    }
 	    break;
 	}
     }
-    if (!rb_enc_asciicompat(enc0)) {
+    if (!rb_enc_asciicompat(enc)) {
 	len += 19;		/* ".force_encoding('')" */
-	len += strlen(enc0->name);
+	len += strlen(enc->name);
     }
 
     result = rb_str_new5(str, 0, len);
@@ -4180,19 +4192,31 @@ rb_str_dump(VALUE str)
 	}
 	else {
 	    *q++ = '\\';
+	    if (u8) {
+		int n = rb_enc_precise_mbclen(p-1, pend, enc) - 1;
+		if (MBCLEN_CHARFOUND_P(n)) {
+		    int cc = rb_enc_codepoint(p-1, pend, enc);
+		    p += n;
+		    sprintf(q, "u{%x}", cc);
+		    q += strlen(q);
+		    continue;
+		}
+	    }
 	    sprintf(q, "x%02X", c);
 	    q += 3;
 	}
     }
     *q++ = '"';
-    if (!rb_enc_asciicompat(enc0)) {
-	sprintf(q, ".force_encoding(\"%s\")", enc0->name);
-	enc0 = rb_ascii8bit_encoding();
+    *q = '\0';
+    if (!rb_enc_asciicompat(enc)) {
+	sprintf(q, ".force_encoding(\"%s\")", enc->name);
+	enc = rb_ascii8bit_encoding();
     }
-
+//    STR_SET_LEN(result, strlen(RSTRING_PTR(result)));
     OBJ_INFECT(result, str);
     /* result from dump is ASCII */
-    rb_enc_associate(result, enc0);
+    rb_enc_associate(result, enc);
+    ENC_CODERANGE_SET(result, ENC_CODERANGE_7BIT);
     return result;
 }
 
