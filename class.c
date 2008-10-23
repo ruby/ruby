@@ -641,9 +641,9 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int (*func) (ID, lo
  *  call-seq:
  *     mod.instance_methods(include_super=true)   => array
  *  
- *  Returns an array containing the names of public instance methods in
- *  the receiver. For a module, these are the public methods; for a
- *  class, they are the instance (not singleton) methods. With no
+ *  Returns an array containing the names of instance methods that is callable
+ *  from outside in the receiver. For a module, these are the public methods;
+ *  for a class, they are the instance (not singleton) methods. With no
  *  argument, or with an argument that is <code>false</code>, the
  *  instance methods in <i>mod</i> are returned, otherwise the methods
  *  in <i>mod</i> and <i>mod</i>'s superclasses are returned.
