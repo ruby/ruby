@@ -1,3 +1,8 @@
+Thu Oct 23 16:16:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_s_getservbyport): check if the port range.
+	  [ruby-core:19460]
+
 Thu Oct 23 14:08:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/socket.c (sock_s_getservbyname): unuse unnecessary
