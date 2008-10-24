@@ -3426,19 +3426,19 @@ bvar		: tIDENTIFIER
 lambda		:   {
 		    /*%%%*/
 			dyna_push();
+		    /*%
 			$<num>$ = lpar_beg;
 			lpar_beg = ++paren_nest;
-		    /*%
 		    %*/
 		    }
 		  f_larglist
 		  lambda_body
 		    {
+			lpar_beg = $<num>1;
 		    /*%%%*/
 			$$ = $2;
 			$$->nd_body = NEW_SCOPE($2->nd_head, $3);
 			dyna_pop();
-			lpar_beg = $<num>1;
 		    /*%
 			$$ = dispatch2(lambda, $2, $3);
 		    %*/

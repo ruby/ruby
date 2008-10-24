@@ -1,3 +1,8 @@
+Fri Oct 24 17:43:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (lambda): need to adjust lpar_beg for ripper as well.  
+	  [ruby-dev:36702]
+
 Fri Oct 24 16:13:12 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb (read_multipart): change field value as String
