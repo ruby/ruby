@@ -120,7 +120,8 @@ COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) -rrbconfig $(srcdir)/tool/compile_prel
 
 VCS           = svn
 
-all: $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY) encs
+all: encs ext
+ext: $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
 

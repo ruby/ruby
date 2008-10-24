@@ -1,4 +1,6 @@
-Fri Oct 24 14:13:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Oct 24 14:22:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (ext): split out the target for extension library.
 
 	* common.mk (encs): depends on enc and trans.
 
