@@ -1,15 +1,16 @@
-require 'test/unit'
+require 'rubygems'
+require 'minitest/unit'
 require 'rdoc/markup/attribute_manager'
 
-class TestAttributeManager < Test::Unit::TestCase
+class TestAttributeManager < MiniTest::Unit::TestCase
 
   def setup
     @am = RDoc::Markup::AttributeManager.new
     @klass = RDoc::Markup::AttributeManager
   end
-  
+
   def teardown
-    silently do 
+    silently do
       @klass.const_set(:MATCHING_WORD_PAIRS, {})
       @klass.const_set(:WORD_PAIR_MAP, {})
       @klass.const_set(:HTML_TAGS, {})
@@ -34,9 +35,9 @@ class TestAttributeManager < Test::Unit::TestCase
     assert_equal(4,word_pairs.size)
     assert(word_pairs.has_key?("x"))
   end
-  
+
   def test_add_invalid_word_pair
-    assert_raise ArgumentError do
+    assert_raises ArgumentError do
       @am.add_word_pair("<", "<", :TEST)
     end
   end
@@ -71,3 +72,5 @@ class TestAttributeManager < Test::Unit::TestCase
   end
 
 end
+
+MiniTest::Unit.autorun

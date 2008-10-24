@@ -1,8 +1,9 @@
-require "test/unit"
+require "rubygems"
+require "minitest/unit"
 require "rdoc/markup/inline"
 require "rdoc/markup/to_html_crossref"
 
-class TestRDocMarkupAttributeManager < Test::Unit::TestCase
+class TestRDocMarkupAttributeManager < MiniTest::Unit::TestCase
 
   def setup
     @orig_special = RDoc::Markup::AttributeManager::SPECIAL
@@ -60,7 +61,7 @@ class TestRDocMarkupAttributeManager < Test::Unit::TestCase
   end
 
   def test_add_word_pair_angle
-    e = assert_raise ArgumentError do
+    e = assert_raises ArgumentError do
       @am.add_word_pair '<', '>', 'angles'
     end
 
@@ -229,3 +230,5 @@ class TestRDocMarkupAttributeManager < Test::Unit::TestCase
   end
 
 end
+
+MiniTest::Unit.autorun

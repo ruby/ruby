@@ -1,10 +1,11 @@
 require 'stringio'
-require 'test/unit'
+require 'rubygems'
+require 'minitest/unit'
 require 'rdoc/ri/formatter'
 require 'rdoc/markup/fragments'
 require 'rdoc/markup/to_flow'
 
-class TestRDocRIOverstrikeFormatter < Test::Unit::TestCase
+class TestRDocRIOverstrikeFormatter < MiniTest::Unit::TestCase
 
   def setup
     @output = StringIO.new
@@ -67,3 +68,4 @@ class TestRDocRIOverstrikeFormatter < Test::Unit::TestCase
 
 end
 
+MiniTest::Unit.autorun

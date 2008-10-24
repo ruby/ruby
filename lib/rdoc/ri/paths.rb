@@ -28,15 +28,13 @@ module RDoc::RI::Paths
 
   VERSION = RbConfig::CONFIG['ruby_version']
 
-  ri = RbConfig::CONFIG['RUBY_INSTALL_NAME'].sub(/ruby/, 'ri')
-  base    = File.join(RbConfig::CONFIG['datadir'], ri, VERSION)
+  base    = File.join(RbConfig::CONFIG['datadir'], "ri", VERSION)
   SYSDIR  = File.join(base, "system")
   SITEDIR = File.join(base, "site")
   homedir = ENV['HOME'] || ENV['USERPROFILE'] || ENV['HOMEPATH']
 
   if homedir then
-    rdoc = RbConfig::CONFIG['RUBY_INSTALL_NAME'].sub(/ruby/, 'rdoc')
-    HOMEDIR = File.join(homedir, ".#{rdoc}")
+    HOMEDIR = File.join(homedir, ".rdoc")
   else
     HOMEDIR = nil
   end

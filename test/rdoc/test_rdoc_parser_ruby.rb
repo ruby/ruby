@@ -1,12 +1,13 @@
 require 'stringio'
 require 'tempfile'
-require 'test/unit'
+require 'rubygems'
+require 'minitest/unit'
 
 require 'rdoc/options'
 require 'rdoc/parser/ruby'
 require 'rdoc/stats'
 
-class TestRDocParserRuby < Test::Unit::TestCase
+class TestRDocParserRuby < MiniTest::Unit::TestCase
 
   def setup
     @tempfile = Tempfile.new self.class.name
@@ -747,3 +748,4 @@ EOF
 
 end
 
+MiniTest::Unit.autorun

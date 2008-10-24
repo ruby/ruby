@@ -1,10 +1,11 @@
 require 'stringio'
-require 'test/unit'
+require 'rubygems'
+require 'minitest/unit'
 require 'rdoc/ri/formatter'
 require 'rdoc/ri/display'
 require 'rdoc/ri/driver'
 
-class TestRDocRiDefaultDisplay < Test::Unit::TestCase
+class TestRDocRiDefaultDisplay < MiniTest::Unit::TestCase
 
   def setup
     @output = StringIO.new
@@ -52,11 +53,12 @@ class TestRDocRiDefaultDisplay < Test::Unit::TestCase
       'includes' => [],
       'instance_methods' => [
         { 'name' => 'instance_method' },
+        { 'name' => 'instance_method2' },
       ],
       'instance_method_extensions' => [
         { 'name' => 'instance_method_extension' },
       ],
-      'superclass_string' => 'Object'
+      'superclass' => 'Object'
 
     @dd.display_class_info klass
 
@@ -100,7 +102,7 @@ Class method extensions:
 Instance methods:
 -----------------
 
-     instance_method
+     instance_method, instance_method2
 
 
 Instance method extensions:
@@ -295,3 +297,5 @@ install an additional package, or ask the packager to enable ri generation.
   end
 
 end
+
+MiniTest::Unit.autorun

@@ -1,8 +1,9 @@
-require 'test/unit'
+require 'rubygems'
+require 'minitest/unit'
 require 'rdoc/markup'
 require 'rdoc/markup/to_test'
 
-class TestRDocMarkup < Test::Unit::TestCase
+class TestRDocMarkup < MiniTest::Unit::TestCase
 
   def basic_conv(str)
     sm = RDoc::Markup.new
@@ -611,3 +612,4 @@ class TestRDocMarkup < Test::Unit::TestCase
 
 end
 
+MiniTest::Unit.autorun

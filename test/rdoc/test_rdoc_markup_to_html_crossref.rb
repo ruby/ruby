@@ -1,10 +1,14 @@
-require 'test/unit'
+require 'rubygems'
+require 'minitest/unit'
 require 'rdoc/generator'
+require 'rdoc/stats'
+require 'rdoc/code_objects'
 require 'rdoc/markup/to_html_crossref'
+require 'rdoc/parser/ruby'
 
 require 'pathname'
 
-class TestRDocMarkupToHtmlCrossref < Test::Unit::TestCase
+class TestRDocMarkupToHtmlCrossref < MiniTest::Unit::TestCase
 
   #
   # This method parses a source file and returns a Hash mapping
@@ -286,3 +290,5 @@ class TestRDocMarkupToHtmlCrossref < Test::Unit::TestCase
     verify_class_crossref xref, "Ref_Class4", "Ref_Class4::Ref_Class4"
   end
 end
+
+MiniTest::Unit.autorun

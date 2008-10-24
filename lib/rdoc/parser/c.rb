@@ -1,4 +1,5 @@
 require 'rdoc/parser'
+require 'rdoc/parser/ruby'
 require 'rdoc/known_classes'
 
 ##

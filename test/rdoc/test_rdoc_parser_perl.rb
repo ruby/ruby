@@ -1,10 +1,11 @@
 require 'stringio'
 require 'tempfile'
-require 'test/unit'
+require 'rubygems'
+require 'minitest/unit'
 require 'rdoc/options'
 require 'rdoc/parser/perl'
 
-class TestRdocParserPerlPOD < Test::Unit::TestCase
+class TestRdocParserPerlPOD < MiniTest::Unit::TestCase
 
   def setup
     @tempfile = Tempfile.new self.class.name
@@ -70,3 +71,4 @@ This just contains plain old documentation
 
 end
 
+MiniTest::Unit.autorun

@@ -1,8 +1,9 @@
 require 'stringio'
-require 'test/unit'
+require 'rubygems'
+require 'minitest/unit'
 require 'rdoc/ri/formatter'
 
-class TestRDocRIAttributeFormatter < Test::Unit::TestCase
+class TestRDocRIAttributeFormatter < MiniTest::Unit::TestCase
 
   def setup
     @output = StringIO.new
@@ -40,3 +41,4 @@ class TestRDocRIAttributeFormatter < Test::Unit::TestCase
 
 end
 
+MiniTest::Unit.autorun

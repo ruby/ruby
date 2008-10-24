@@ -1,8 +1,9 @@
-require 'test/unit'
+require 'rubygems'
+require 'minitest/unit'
 require 'rdoc/markup'
 require 'rdoc/markup/to_html'
 
-class TestRDocMarkupToHtml < Test::Unit::TestCase
+class TestRDocMarkupToHtml < MiniTest::Unit::TestCase
 
   def setup
     @am = RDoc::Markup::AttributeManager.new
@@ -40,3 +41,5 @@ class TestRDocMarkupToHtml < Test::Unit::TestCase
   end
 
 end
+
+MiniTest::Unit.autorun

@@ -5,8 +5,8 @@ require 'rdoc/ri'
 begin
   require('readline')
   require('abbrev')
-  CAN_USE_READLINE = true
-rescue
+  CAN_USE_READLINE = true # HACK use an RDoc namespace constant
+rescue LoadError
   CAN_USE_READLINE = false
 end
 
@@ -53,7 +53,7 @@ class RDoc::RI::DefaultDisplay
 
   def display_class_info(klass)
     page do
-      superclass = klass.superclass_string
+      superclass = klass.superclass
 
       if superclass
         superclass = " < " + superclass
@@ -217,7 +217,7 @@ class RDoc::RI::DefaultDisplay
         end
         method_names.sort!
 
-        @formatter.wrap method_names.join(',')
+        @formatter.wrap method_names.join(', ')
       end
     end
 
@@ -390,4 +390,3 @@ class RDoc::RI::DefaultDisplay
   end
 
 end
-

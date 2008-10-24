@@ -68,7 +68,12 @@ class RDoc::Parser
 
   def self.binary?(file)
     s = (File.read(file, File.stat(file).blksize) || "").split(//)
-    ((s.size - s.grep(" ".."~").size) / s.size.to_f) > 0.30
+
+    if s.size > 0 then
+      ((s.size - s.grep(" ".."~").size) / s.size.to_f) > 0.30
+    else
+      false
+    end
   end
   private_class_method :binary?
 
@@ -105,6 +110,13 @@ class RDoc::Parser
     end
 
     parser = can_parse file_name
+
+    #
+    # This method must return a parser.
+    #
+    if !parser then
+      parser = RDoc::Parser::Simple
+    end
 
     parser.new top_level, file_name, body, options, stats
   end

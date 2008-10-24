@@ -1,8 +1,9 @@
-require 'test/unit'
+require 'rubygems'
+require 'minitest/unit'
 require 'tmpdir'
 require 'rdoc/ri/driver'
 
-class TestRDocRIDriver < Test::Unit::TestCase
+class TestRDocRIDriver < MiniTest::Unit::TestCase
 
   def setup
     @tmpdir = File.join Dir.tmpdir, "test_rdoc_ri_driver_#{$$}"
@@ -90,3 +91,4 @@ class TestRDocRIDriver < Test::Unit::TestCase
 
 end
 
+MiniTest::Unit.autorun

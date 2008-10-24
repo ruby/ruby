@@ -1,6 +1,7 @@
 require 'fileutils'
 require 'tempfile'
-require 'test/unit'
+require 'rubygems'
+require 'minitest/unit'
 require 'tmpdir'
 
 require 'rdoc/generator/texinfo'
@@ -9,7 +10,7 @@ require 'rdoc/generator/texinfo'
 class RDoc::Generator::TEXINFO; attr_reader :files, :classes; end
 class RDoc::RDoc; attr_reader :options; attr_reader :gen; end
 
-class TestRDocInfoSections < Test::Unit::TestCase
+class TestRDocInfoSections < MiniTest::Unit::TestCase
 
   def setup
     @output_dir = File.join Dir.tmpdir, "test_rdoc_info_sections_#{$$}"
@@ -134,3 +135,5 @@ end
   DOC
 
 end
+
+MiniTest::Unit.autorun
