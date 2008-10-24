@@ -174,10 +174,10 @@ enum ruby_method_ids {
     TOKEN2ID(Lambda),
     TOKEN2ID(Send),
     TOKEN2ID(__send__),
-    TOKEN2ID(Initialize),
+    TOKEN2ID(Initialize)
 #if SUPPORT_JOKE
-    TOKEN2ID(Bitblt),
-    TOKEN2ID(Answer),
+    ,TOKEN2ID(Bitblt)
+    ,TOKEN2ID(Answer)
 #endif
 };
 
