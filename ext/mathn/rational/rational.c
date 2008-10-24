@@ -1151,7 +1151,7 @@ nurat_marshal_load(VALUE self, VALUE a)
 
 /* --- */
 
-#ifndef EXT_MATHN
+#ifdef EXT_MATHN
 static
 #endif
 VALUE
@@ -1161,7 +1161,7 @@ rb_gcd(VALUE self, VALUE other)
     return f_gcd(self, other);
 }
 
-#ifndef EXT_MATHN
+#ifdef EXT_MATHN
 static
 #endif
 VALUE
@@ -1171,7 +1171,7 @@ rb_lcm(VALUE self, VALUE other)
     return f_lcm(self, other);
 }
 
-#ifndef EXT_MATHN
+#ifdef EXT_MATHN
 static
 #endif
 VALUE
@@ -1181,29 +1181,35 @@ rb_gcdlcm(VALUE self, VALUE other)
     return rb_assoc_new(f_gcd(self, other), f_lcm(self, other));
 }
 
-#ifndef EXT_MATHN
-static
-#endif
+#ifdef EXT_MATHN
 VALUE
 rb_rational_raw(VALUE x, VALUE y)
 {
     return nurat_s_new_internal(rb_cRational, x, y);
 }
-
-#ifndef EXT_MATHN
-static
 #endif
+
+#ifdef EXT_MATHN
+
+#define rb_rational_new1(x) rb_rational_new_mathn(x, INT2FIX(1))
+#define rb_rational_new2(x,y) rb_rational_new_mathn(x, y)
+
+static
+rb_rational_new_mathn(VALUE x, VALUE y)
+{
+    return nurat_s_canonicalize_internal(rb_cRational, x, y);
+}
+#else
 VALUE
 rb_rational_new(VALUE x, VALUE y)
 {
     return nurat_s_canonicalize_internal(rb_cRational, x, y);
 }
+#endif
 
 static VALUE nurat_s_convert(int argc, VALUE *argv, VALUE klass);
 
-#ifndef EXT_MATHN
-static
-#endif
+#ifdef EXT_MATHN
 VALUE
 rb_Rational(VALUE x, VALUE y)
 {
@@ -1212,6 +1218,8 @@ rb_Rational(VALUE x, VALUE y)
     a[1] = y;
     return nurat_s_convert(2, a, rb_cRational);
 }
+#endif
+
 
 static VALUE
 nilclass_to_r(VALUE self)
