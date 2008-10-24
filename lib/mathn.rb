@@ -13,53 +13,17 @@ require "cmath.rb"
 require "matrix.rb"
 require "prime.rb"
 
+require "mathn/rational"
+require "mathn/complex"
+
 unless defined?(Math.exp!)
   Object.instance_eval{remove_const :Math}
   Math = CMath
 end
 
-class Object
-
-  def canon
-    if Rational === self
-      if denominator == 1
-	return numerator
-      end
-    elsif Complex === self
-      if Integer === imag && imag == 0
-	return real
-      end
-    end
-    self
-  end
-
-  private :canon
-
-  class << self
-
-    def def_canon(*ids)
-      for id in ids
-	module_eval <<-"end;"
-	  alias_method :__#{id.object_id}__, :#{id.to_s}
-	  private :__#{id.object_id}__
-	  def #{id.to_s}(*args, &block)
-	    __#{id.object_id}__(*args, &block).__send__(:canon)
-	  end
-	end;
-      end
-    end
-
-    private :def_canon
-
-  end
-
-end
-
 class Fixnum
   remove_method :/
   alias / quo
-
-  def_canon(*(instance_methods - Object.methods - [:canon]))
 
   alias power! ** unless defined?(0.power!)
 
@@ -77,8 +41,6 @@ class Bignum
   remove_method :/
   alias / quo
 
-  def_canon(*(instance_methods - Object.methods - [:canon]))
-
   alias power! ** unless defined?(0.power!)
 
   def ** (other)
@@ -91,23 +53,7 @@ class Bignum
 
 end
 
-alias RationalOrig Rational
-private :RationalOrig
-def Rational(*args) RationalOrig(*args).__send__(:canon) end
-
 class Rational
-  Unify = true
-
-  class << self
-    alias convert_orig convert
-    private :convert_orig
-    def convert(*args) convert_orig(*args).__send__(:canon) end
-  end
-
-  def_canon(*(instance_methods - Object.methods - [:canon]))
-
-  alias power! **
-
   def ** (other)
     if other.kind_of?(Rational)
       other2 = other
@@ -244,45 +190,7 @@ module Math
   module_function :rsqrt
 end
 
-alias ComplexOrig Complex
-private :ComplexOrig
-def Complex(*args) ComplexOrig(*args).__send__(:canon) end
-
-class Complex
-  Unify = true
-
-  class << self
-    alias convert_orig convert
-    private :convert_orig
-    def convert(*args) convert_orig(*args).__send__(:canon) end
-  end
-
-  def_canon(*(instance_methods - Object.methods - [:canon]))
-
-end
-
-class NilClass
-
-  def_canon :to_r, :to_c
-
-end
-
-class Integer
-
-  def_canon :to_r, :to_c
-
-end
-
-class String
-
-  def_canon :to_r, :to_c
-
-end
-
 class Float
-
-  def_canon(*(instance_methods - Object.methods - [:canon]))
-
   alias power! **
 
   def ** (other)

@@ -1,3 +1,9 @@
+Fri Oct 24 18:29:00 2008  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* lib/mathn.rb: moved into ext/mathn/rational/rational.c and
+	  ext/mathn/complex/complex.c.
+	* ext/mathn: new mathn ext-libralies.
+
 Fri Oct 24 18:21:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_array.rb (TestArray#test_join): should restore
