@@ -3275,33 +3275,30 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
       case 2:
 	i = rb_genrand_real()*len;
 	j = rb_genrand_real()*(len-1);
-	if (j == i) j++;
+	if (j >= i) j++;
 	return rb_ary_new3(2, ptr[i], ptr[j]);
       case 3:
 	i = rb_genrand_real()*len;
 	j = rb_genrand_real()*(len-1);
 	k = rb_genrand_real()*(len-2);
-	if (j == i) j++;
-	if ((k == i) ? (++k == j) : (k == j) ? (++k == i): 0) ++k;
+	{
+	    long l = j, g = i;
+	    if (j >= i) l = i, g = ++j;
+	    if (k >= l && (++k >= g)) ++k;
+	}
 	return rb_ary_new3(3, ptr[i], ptr[j], ptr[k]);
     }
     if (n < sizeof(idx)/sizeof(idx[0])) {
-	idx[0] = rb_genrand_real()*len;
+	long sorted[sizeof(idx)/sizeof(idx[0])];
+	sorted[0] = idx[0] = rb_genrand_real()*len;
 	for (i=1; i<n; i++) {
-	    long p = i;
 	    k = rb_genrand_real()*--len;
-	  retry:
-	    j = 0;
-	    do {
-		if (idx[j] == k) {
-		    ++k;
-		    if (p < j) goto retry;
-		}
-		else if (idx[j] > k) {
-		    if (p > j) p = j;
-		}
-	    } while (++j < i);
-	    idx[i] = k;
+	    for (j = 0; j < i; ++j) {
+		if (k < sorted[j]) break;
+		++k;
+	    }
+	    memmove(&sorted[j+1], &sorted[j], sizeof(sorted[0])*(i-j));
+	    sorted[j] = idx[i] = k;
 	}
 	result = rb_ary_new2(n);
 	for (i=0; i<n; i++) {
@@ -3318,6 +3315,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	    RARRAY_PTR(result)[i] = nv;
 	}
     }
+    ARY_SET_LEN(result, n);
 
     return result;
 }

@@ -1,3 +1,7 @@
+Sat Oct 25 00:14:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_sample): fixed sizes and randomness.
+
 Fri Oct 24 23:04:42 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* configure.in (sitedir): considers --program-prefix and
