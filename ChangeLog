@@ -1,3 +1,8 @@
+Fri Oct 24 22:59:27 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_array.rb (test_sample): add tests for size of
+	  returned array and randomness.
+
 Fri Oct 24 21:50:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* id.h, template/id.h.tmpl (enum ruby_method_ids): reordered.
