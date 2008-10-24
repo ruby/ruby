@@ -31,7 +31,8 @@ class MultiPart
 
   def initialize(boundary=nil)
     @boundary = boundary || create_boundary()
-    @buf = ''.force_encoding("ascii-8bit")
+    @buf = ''
+    @buf.force_encoding("ascii-8bit") if RUBY_VERSION>="1.9"
   end
   attr_reader :boundary
 
@@ -43,7 +44,11 @@ class MultiPart
     buf << "Content-Disposition: form-data: name=\"#{name}\"#{s}\r\n"
     buf << "Content-Type: #{content_type}\r\n" if content_type
     buf << "\r\n"
-    buf <<  value
+    if RUBY_VERSION>="1.9"
+      buf <<  value.dup.force_encoding("ASCII-8BIT")
+    else
+      buf << value
+    end
     buf << "\r\n"
     return self
   end
@@ -148,7 +153,18 @@ class CGIMultipartTest < Test::Unit::TestCase
     @data.each do |hash|
       name = hash[:name]
       expected = hash[:value]
-      expected_class = @expected_class || (hash[:value].length < threshold ? StringIO : Tempfile)
+      if RUBY_VERSION>="1.9"
+        if hash[:filename] #if file
+          expected_class = @expected_class || (hash[:value].length < threshold ? StringIO : Tempfile)
+          assert(cgi.files.keys.member?(hash[:name]))
+        else
+          expected_class = String
+          assert_equal(expected, cgi[name])
+          assert_equal(false,cgi.files.keys.member?(hash[:name]))
+        end
+      else
+        expected_class = @expected_class || (hash[:value].length < threshold ? StringIO : Tempfile)
+      end
       assert_kind_of(expected_class, cgi[name])
       assert_equal(expected, cgi[name].read())
       assert_equal(hash[:filename] || '', cgi[name].original_filename)  #if hash[:filename]
@@ -173,7 +189,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     @boundary = '----WebKitFormBoundaryAAfvAII+YL9102cX'
     @data = [
       {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
+      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A".force_encoding("UTF-8")},
       {:name=>'file1',   :value=>_read('file1.html'),
        :filename=>'file1.html', :content_type=>'text/html'},
       {:name=>'image1',  :value=>_read('small.png'),
@@ -188,7 +204,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     @boundary = '----WebKitFormBoundaryAAfvAII+YL9102cX'
     @data = [
       {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
+      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A".force_encoding("UTF-8")},
       {:name=>'file1',   :value=>_read('file1.html'),
        :filename=>'file1.html', :content_type=>'text/html'},
       {:name=>'image1',  :value=>_read('large.png'),
@@ -279,7 +295,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     @boundary = '(.|\n)*'
     @data = [
       {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
+      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A".force_encoding("UTF-8")},
       {:name=>'file1',   :value=>_read('file1.html'),
        :filename=>'file1.html', :content_type=>'text/html'},
       {:name=>'image1',  :value=>_read('small.png'),

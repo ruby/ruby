@@ -406,6 +406,9 @@ class CGI
     # values is an Array.
     attr_reader :params
 
+    # Get the uploaed files as a hash of name=>values pairs
+    attr_reader :files
+
     # Set all the parameters.
     def params=(hash)
       @params.clear
@@ -422,6 +425,7 @@ class CGI
       raise EOFError.new("bad content body") unless first_line == status
       ## parse and set params
       params = {}
+      @files = {}
       boundary_rexp = /--#{Regexp.quote(boundary)}(#{EOL}|--)/
       boundary_size = "#{EOL}--#{boundary}#{EOL}".bytesize
       boundary_end  = nil
@@ -482,7 +486,25 @@ class CGI
         ## query parameter name
         /Content-Disposition:.* name=(?:"(.*?)"|([^;\r\n]*))/i.match(head)
         name = $1 || $2 || ''
-        (params[name] ||= []) << body
+        if body.original_filename.empty?
+          value=body.read.dup.force_encoding(@accept_charset)
+          (params[name] ||= []) << value
+          unless value.valid_encoding?
+            if @accept_charset_error_block
+              @accept_charset_error_block.call(name,value)
+            else
+              raise InvalidEncoding,"Accept-Charset encoding error"
+            end
+          end
+          class << params[name].last;self;end.class_eval do
+            define_method(:read){self}
+            define_method(:original_filename){""}
+            define_method(:content_type){""}
+          end
+        else
+          (params[name] ||= []) << body
+          @files[name]=body
+        end
         ## break loop
         break if buf.size == 0
         break if content_length == -1
