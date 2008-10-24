@@ -463,15 +463,15 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define DEFAULT_KCODE KCODE_NONE
 #define DLEXT ".so"
-#define RUBY_LIB "/lib/ruby/$(ruby_version)"
-#define RUBY_SITE_LIB "/lib/ruby/site_ruby"
-#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/$(ruby_version)"
-#define RUBY_VENDOR_LIB "/lib/ruby/vendor_ruby"
-#define RUBY_VENDOR_LIB2 "/lib/ruby/vendor_ruby/$(ruby_version)"
+#define RUBY_LIB "/lib/$(RUBY_INSTALL_NAME)/$(ruby_version)"
+#define RUBY_SITE_LIB "/lib/$(RUBY_INSTALL_NAME)/site_ruby"
+#define RUBY_SITE_LIB2 "/lib/$(RUBY_INSTALL_NAME)/site_ruby/$(ruby_version)"
+#define RUBY_VENDOR_LIB "/lib/$(RUBY_INSTALL_NAME)/vendor_ruby"
+#define RUBY_VENDOR_LIB2 "/lib/$(RUBY_INSTALL_NAME)/vendor_ruby/$(ruby_version)"
 #define RUBY_PLATFORM "$(arch)"
-#define RUBY_ARCHLIB "/lib/ruby/$(ruby_version)/$(ARCH)-$(PLATFORM)"
-#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(ruby_version)/$(ARCH)-$(RT)"
-#define RUBY_VENDOR_ARCHLIB "/lib/ruby/vendor_ruby/$(ruby_version)/$(ARCH)-$(RT)"
+#define RUBY_ARCHLIB "/lib/$(RUBY_INSTALL_NAME)/$(ruby_version)/$(ARCH)-$(PLATFORM)"
+#define RUBY_SITE_ARCHLIB "/lib/$(RUBY_INSTALL_NAME)/site_ruby/$(ruby_version)/$(ARCH)-$(RT)"
+#define RUBY_VENDOR_ARCHLIB "/lib/$(RUBY_INSTALL_NAME)/vendor_ruby/$(ruby_version)/$(ARCH)-$(RT)"
 #define LIBRUBY_SO "$(LIBRUBY_SO)"
 #if 0
 $(BANG)if "$(RUBY_SO_NAME)"!="$$(RUBY_SO_NAME)" || "$(ARCH)-$(PLATFORM)"!="$$(ARCH)-$$(PLATFORM)"
@@ -617,9 +617,9 @@ s,@EXPORT_PREFIX@, ,;t t
 s,@arch@,$(ARCH)-$(PLATFORM),;t t
 s,@sitearch@,$(ARCH)-$(RT),;t t
 s,@ruby_version@,$(ruby_version),;t t
-s,@sitedir@,$${prefix}/lib/ruby/site_ruby,;t t
-s,@vendordir@,$${prefix}/lib/ruby/vendor_ruby,;t t
-s,@rubyhdrdir@,$$(includedir)/ruby-$$(ruby_version),;t t
+s,@sitedir@,$${prefix}/lib/$${RUBY_INSTALL_NAME}/site_ruby,;t t
+s,@vendordir@,$${prefix}/lib/$${RUBY_INSTALL_NAME}/vendor_ruby,;t t
+s,@rubyhdrdir@,$$(includedir)/$${RUBY_INSTALL_NAME}-$$(ruby_version),;t t
 s,@sitehdrdir@,$$(rubyhdrdir)/site_ruby,;t t
 s,@vendorhdrdir@,$$(rubyhdrdir)/vendor_ruby,;t t
 s,@configure_args@,--with-make-prog=nmake --enable-shared $(configure_args),;t t

@@ -2,6 +2,7 @@
 
 load "./rbconfig.rb"
 include RbConfig
+$".unshift File.expand_path("./rbconfig.rb")
 
 srcdir = File.dirname(__FILE__)
 $:.unshift File.expand_path("lib", srcdir)
@@ -10,6 +11,7 @@ require 'shellwords'
 require 'optparse'
 require 'optparse/shellwords'
 require 'tempfile'
+require 'rdoc/ri/paths'
 
 STDOUT.sync = true
 File.umask(0)
@@ -280,7 +282,7 @@ install?(:rdoc) do
   if $rdocdir
     puts "installing rdoc"
 
-    ridatadir = File.join(CONFIG['datadir'], 'ri/$(MAJOR).$(MINOR).$(TEENY)/system')
+    ridatadir = RDoc::RI::Paths::SYSDIR
     Config.expand(ridatadir)
     makedirs [ridatadir]
     install_recursive($rdocdir, ridatadir, :mode => $data_mode)

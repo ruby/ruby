@@ -1963,7 +1963,7 @@ case "$target_os" in
     rubyw_install_name="$RUBYW_INSTALL_NAME"
     ;;
 esac
-RUBY_LIB_PREFIX=`eval echo \\"${libdir}/ruby\\"`
+RUBY_LIB_PREFIX=`eval echo \\"${libdir}/${RUBY_INSTALL_NAME}\\"`
 
 AC_ARG_WITH(ruby-version,
 	    [  --with-ruby-version=STR ruby version string for version specific directories [[full]] (full|minor|STR)],
@@ -1981,13 +1981,13 @@ esac
 AC_ARG_WITH(sitedir,
 	    [  --with-sitedir=DIR      site libraries in DIR [[LIBDIR/ruby/site_ruby]]],
             [sitedir=$withval],
-            [sitedir='${libdir}/ruby/site_ruby'])
+            [sitedir='${libdir}/${RUBY_INSTALL_NAME}/site_ruby'])
 SITE_DIR=`eval echo \\"${sitedir}\\"`
 
 AC_ARG_WITH(vendordir,
 	    [  --with-vendordir=DIR    vendor libraries in DIR [[LIBDIR/ruby/vendor_ruby]]],
             [vendordir=$withval],
-            [vendordir='${libdir}/ruby/vendor_ruby'])
+            [vendordir='${libdir}/${RUBY_INSTALL_NAME}/vendor_ruby'])
 VENDOR_DIR=`eval echo \\"${vendordir}\\"`
 
 case "$target_os" in
@@ -2056,7 +2056,7 @@ fi
 AC_ARG_WITH(rubyhdrdir,
 	    [  --with-ruby-hdrdir=DIR  core headers in DIR [INCLUDEDIR]],
 	    [rubyhdrdir=$withval],
-	    [rubyhdrdir='${includedir}/ruby-${ruby_version}'])
+	    [rubyhdrdir='${includedir}/${RUBY_INSTALL_NAME}-${ruby_version}'])
 
 AC_ARG_WITH(sitehdrdir,
 	    [  --with-site-hdrdir=DIR  core headers in DIR [INCLUDEDIR]],

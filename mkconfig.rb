@@ -141,7 +141,7 @@ end
 print(*v_fast)
 print(*v_others)
 print <<EOS
-  CONFIG["rubylibdir"] = "$(libdir)/ruby/$(ruby_version)"
+  CONFIG["rubylibdir"] = "$(libdir)/$(ruby_install_name)/$(ruby_version)"
   CONFIG["archdir"] = "$(rubylibdir)/$(arch)"
   CONFIG["sitelibdir"] = "$(sitedir)/$(ruby_version)"
   CONFIG["sitearchdir"] = "$(sitelibdir)/$(sitearch)"
