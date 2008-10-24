@@ -627,6 +627,7 @@ class TestHash < Test::Unit::TestCase
     assert_equal(h.inspect, h.to_s)
     h = @cls[]
     assert_equal(h.inspect, h.to_s)
+  ensure
     $, = nil
   end
 

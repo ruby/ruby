@@ -1,3 +1,10 @@
+Fri Oct 24 18:21:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_array.rb (TestArray#test_join): should restore
+	  global variable after the test.  [ruby-dev:36896]
+
+	* test/ruby/test_hash.rb (TestHash#test_to_s): ditto.
+
 Fri Oct 24 17:43:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (lambda): need to adjust lpar_beg for ripper as well.  

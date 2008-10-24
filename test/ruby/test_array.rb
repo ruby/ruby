@@ -814,6 +814,8 @@ class TestArray < Test::Unit::TestCase
     s = a.join
     assert_equal(true, s.tainted?)
     assert_equal(true, s.untrusted?)
+  ensure
+    $, = nil
   end
 
   def test_last
@@ -1220,8 +1222,8 @@ class TestArray < Test::Unit::TestCase
     $, = ":"
     a = @cls[1, 2, 3]
     assert_equal("[1, 2, 3]", a.to_s)
-
-    $, = ""
+  ensure
+    $, = nil
   end
 
   def test_uniq
