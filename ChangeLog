@@ -1,3 +1,8 @@
+Fri Oct 24 20:45:41 2008  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* ext/mathn/rational.c: change several global functions to static
+	  function.
+
 Fri Oct 24 19:57:19 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_dump): should have removed commented out
