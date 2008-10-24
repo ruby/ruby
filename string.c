@@ -4212,7 +4212,6 @@ rb_str_dump(VALUE str)
 	sprintf(q, ".force_encoding(\"%s\")", enc->name);
 	enc = rb_ascii8bit_encoding();
     }
-    /* STR_SET_LEN(result, strlen(RSTRING_PTR(result))); */
     OBJ_INFECT(result, str);
     /* result from dump is ASCII */
     rb_enc_associate(result, enc);

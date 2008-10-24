@@ -1,6 +1,7 @@
-Fri Oct 24 19:29:22 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+Fri Oct 24 19:57:19 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* string.c (rb_str_dump): do not use C++ comment.
+	* string.c (rb_str_dump): should have removed commented out
+	  unnecessary code.  [ruby-cvs:27131]
 
 Fri Oct 24 19:16:36 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
