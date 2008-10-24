@@ -165,6 +165,10 @@ enum ruby_method_ids {
 #endif
     tLAST_ID,
 #define TOKEN2ID(n) id##n = ((t##n<<ID_SCOPE_SHIFT)|ID_LOCAL)
+#if SUPPORT_JOKE
+    TOKEN2ID(Bitblt),
+    TOKEN2ID(Answer),
+#endif
     TOKEN2ID(Intern),
     TOKEN2ID(MethodMissing),
     TOKEN2ID(Length),
@@ -175,10 +179,6 @@ enum ruby_method_ids {
     TOKEN2ID(Send),
     TOKEN2ID(__send__),
     TOKEN2ID(Initialize)
-#if SUPPORT_JOKE
-    ,TOKEN2ID(Bitblt)
-    ,TOKEN2ID(Answer)
-#endif
 };
 
 #endif /* RUBY_ID_H */
