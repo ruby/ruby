@@ -1083,7 +1083,7 @@ fmt_setup(char *buf, int c, int flags, int width, int prec)
 #undef vsnprintf
 #undef snprintf
 #define FLOATING_POINT 1
-#define BSD__dtoa dtoa
+#define BSD__dtoa ruby_dtoa
 #include "missing/vsnprintf.c"
 
 static int

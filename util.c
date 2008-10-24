@@ -3092,7 +3092,7 @@ nrv_alloc(const char *s, char **rve, int n)
  * when MULTIPLE_THREADS is not defined.
  */
 
-void
+static void
 freedtoa(char *s)
 {
     Bigint *b = (Bigint *)((int *)s - 1);
@@ -3139,7 +3139,7 @@ freedtoa(char *s)
  */
 
 char *
-dtoa(double d, int mode, int ndigits, int *decpt, int *sign, char **rve)
+ruby_dtoa(double d, int mode, int ndigits, int *decpt, int *sign, char **rve)
 {
  /* Arguments ndigits, decpt, sign are similar to those
     of ecvt and fcvt; trailing zeros are suppressed from
