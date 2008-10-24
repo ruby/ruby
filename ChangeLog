@@ -1,3 +1,8 @@
+Sat Oct 25 03:43:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lambda): need to adjust lpar_beg for both of the parser and
+	  ripper.
+
 Sat Oct 25 01:29:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/mathn/rational/rational.c: undef duplicated macro definition

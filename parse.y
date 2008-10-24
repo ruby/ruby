@@ -3427,9 +3427,9 @@ lambda		:   {
 		    /*%%%*/
 			dyna_push();
 		    /*%
+		    %*/
 			$<num>$ = lpar_beg;
 			lpar_beg = ++paren_nest;
-		    %*/
 		    }
 		  f_larglist
 		  lambda_body
