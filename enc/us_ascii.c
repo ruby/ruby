@@ -1,6 +1,6 @@
 #include "regenc.h"
 
-extern int
+static int
 us_ascii_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
 {
     if (*p & 0x80)
