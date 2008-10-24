@@ -1,3 +1,7 @@
+Fri Oct 24 19:29:22 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* string.c (rb_str_dump): do not use C++ comment.
+
 Fri Oct 24 19:16:36 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* id.h (enum ruby_method_ids): ISO C forbids comma at end of
