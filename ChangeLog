@@ -1,8 +1,8 @@
 Fri Oct 24 16:13:12 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb (read_multipart): change field value as String
-	  from StringIO of Tempfile when multipart parse without file field.
-		add files method that can uploaded files. [ruby-dev:36547] 
+	  from StringIO or Tempfile when multipart parse except file field.
+		add files method that can get uploaded files. [ruby-dev:36547] 
 
   * test/cgi/test_cgi_multipart.rb: fix the test for core.rb.
 
