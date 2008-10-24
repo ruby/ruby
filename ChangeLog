@@ -1,4 +1,7 @@
-Sat Oct 25 03:56:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Oct 25 03:58:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (signal_buff): made static.  a patch by Tadashi Saito
+	  <shiba AT mail2.accsnet.ne.jp> at [ruby-dev:36915]
 
 	* util.c (freedtoa): made static to get rid of name clash.  a patch by
 	  Tadashi Saito <shiba AT mail2.accsnet.ne.jp> at [ruby-dev:36913]

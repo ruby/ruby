@@ -398,7 +398,7 @@ rb_f_kill(int argc, VALUE *argv)
     return INT2FIX(i-1);
 }
 
-struct {
+static struct {
     rb_atomic_t cnt[RUBY_NSIG];
     rb_atomic_t size;
 } signal_buff;
