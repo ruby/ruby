@@ -1,3 +1,11 @@
+Sat Oct 25 01:29:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/mathn/rational/rational.c: undef duplicated macro definition
+	  first to shut up the warning.
+
+	* ext/mathn/rational/rational.c (rb_rational_new_mathn): specify
+	  omitted return value.
+
 Sat Oct 25 00:14:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_sample): fixed sizes and randomness.

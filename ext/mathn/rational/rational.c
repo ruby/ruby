@@ -1191,10 +1191,12 @@ rb_rational_raw(VALUE x, VALUE y)
 
 #ifdef EXT_MATHN
 
+#undef rb_rational_new1
+#undef rb_rational_new2
 #define rb_rational_new1(x) rb_rational_new_mathn(x, INT2FIX(1))
 #define rb_rational_new2(x,y) rb_rational_new_mathn(x, y)
 
-static
+static VALUE
 rb_rational_new_mathn(VALUE x, VALUE y)
 {
     return nurat_s_canonicalize_internal(rb_cRational, x, y);
