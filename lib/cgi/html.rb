@@ -27,11 +27,11 @@ class CGI
           attributes={attributes=>nil} if attributes.kind_of?(String)
           "<#{element.upcase}" + attributes.collect{|name, value|
             next unless value
-            " " + CGI::escapeHTML(name) +
+            " " + CGI::escapeHTML(name.to_s) +
             if true == value
               ""
             else
-              '="' + CGI::escapeHTML(value) + '"'
+              '="' + CGI::escapeHTML(value.to_s) + '"'
             end
           }.join + ">"
       END

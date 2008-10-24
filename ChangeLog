@@ -1,3 +1,9 @@
+Fri Oct 24 21:05:38 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/html.rb: allow symbolized key. 
+
+	* test/cgi/test_cgi_tag_helper.rb: add a test.
+
 Fri Oct 24 20:54:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (exts): renamed to get rid of the existent directory.
