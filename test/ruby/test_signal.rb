@@ -41,7 +41,7 @@ class TestSignal < Test::Unit::TestCase
         Signal.trap(:USR1, "EXIT")
         w0.close
         w.syswrite("a")
-        Thread.start { Thread.pass }
+        Thread.start { sleep(2) }
         r0.sysread(4096)
       }
       r.sysread(1)
