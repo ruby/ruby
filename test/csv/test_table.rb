@@ -400,7 +400,9 @@ class TestCSVTable < Test::Unit::TestCase
     assert(str.include?("mode:#{@table.mode}"), "Mode not shown.")
   end
   
-  def test_inspect_is_us_ascii_encoded
-    assert_equal("US-ASCII", @table.inspect.encoding.name)
+  def test_inspect_encoding_is_ascii_compatible
+    assert( Encoding.compatible?( Encoding.find("US-ASCII"),
+                                  @table.inspect.encoding ),
+            "inspect() was not ASCII compatible." )
   end
 end

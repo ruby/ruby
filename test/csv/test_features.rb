@@ -250,9 +250,11 @@ class TestCSVFeatures < Test::Unit::TestCase
     end
   end
   
-  def test_inspect_is_ascii_8bit_encoded
+  def test_inspect_encoding_is_ascii_compatible
     CSV.new("one,two,three\n1,2,3\n".encode("UTF-16BE")) do |csv|
-      assert_equal("ASCII-8BIT", csv.inspect.encoding.name)
+      assert( Encoding.compatible?( Encoding.find("US-ASCII"),
+                                    csv.inspect.encoding ),
+              "inspect() was not ASCII compatible." )
     end
   end
   

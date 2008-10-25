@@ -296,8 +296,10 @@ class TestCSVRow < Test::Unit::TestCase
     end
   end
   
-  def test_inspect_is_ascii_8bit_encoded
-    assert_equal("ASCII-8BIT", @row.inspect.encoding.name)
+  def test_inspect_encoding_is_ascii_compatible
+    assert( Encoding.compatible?( Encoding.find("US-ASCII"),
+                                  @row.inspect.encoding ),
+            "inspect() was not ASCII compatible." )
   end
   
   def test_inspect_shows_symbol_headers_as_bare_attributes

@@ -1,3 +1,13 @@
+Sat Oct 25 09:54:10 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+  * lib/csv.rb:  Fixed a bug in read_to_char() that would slurp
+    whole files if the encoding was invalid.  It will now read
+    up to 10 bytes ahead to find a valid character boundary or
+    give up.  [ruby-core:19465]
+  * test/csv/test_features.rb, test/csv/test_table.rb, test/csv/test_row.rb:
+    Loosened some tests to check for a compatible? Encoding instea
+    of an exact Encoding.  [ruby-core:19470]
+
 Sat Oct 25 07:42:49 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc*: Update to RDoc 2.2.2 r192.

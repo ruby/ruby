@@ -199,7 +199,7 @@ require "stringio"
 # 
 class CSV
   # The version of the installed library.
-  VERSION = "2.4.3".freeze
+  VERSION = "2.4.4".freeze
   
   # 
   # A CSV::Row is part Array and part Hash.  It retains an order for the fields
@@ -1551,7 +1551,7 @@ class CSV
                   end
     @encoding ||= Encoding.default_internal || Encoding.default_external
     # 
-    # prepare for build safe regular expressions in the target encoding,
+    # prepare for building safe regular expressions in the target encoding,
     # if we can transcode the needed characters
     # 
     @re_esc   =   "\\".encode(@encoding) rescue ""
@@ -2251,10 +2251,11 @@ class CSV
   end
 
   # 
-  # Reads at least +bytes+ from <tt>@io</tt>, but will read on until the data
-  # read is valid in the ecoding of that data.  This should ensure that it is
-  # safe to use regular expressions on the read data.  The read data will be
-  # returned in <tt>@encoding</tt>.
+  # Reads at least +bytes+ from <tt>@io</tt>, but will read up 10 bytes ahead if
+  # needed to ensure the data read is valid in the ecoding of that data.  This
+  # should ensure that it is safe to use regular expressions on the read data,
+  # unless it is actually a broken encoding.  The read data will be returned in
+  # <tt>@encoding</tt>.
   # 
   def read_to_char(bytes)
     return "" if @io.eof?
@@ -2264,10 +2265,12 @@ class CSV
       raise unless encoded.valid_encoding?
       return encoded
     rescue  # encoding error or my invalid data raise
-      if @io.eof?
+      if @io.eof? or data.size >= bytes + 10
         return data
       else
-        data += @io.read(1) until data.valid_encoding? or @io.eof?
+        data += @io.read(1) until data.valid_encoding? or
+                                  @io.eof?             or
+                                  data.size >= bytes + 10
         retry
       end
     end
