@@ -4,7 +4,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/version'
 
@@ -70,7 +69,7 @@ class TestGemDependency < RubyGemTestCase
   end
 
   def test_type_is_restricted
-    assert_raise(ArgumentError) do
+    assert_raises ArgumentError do
       Gem::Dependency.new("pkg", [:sometimes])
     end
   end
@@ -79,21 +78,21 @@ class TestGemDependency < RubyGemTestCase
     assert_equal @pkg1_0, @pkg1_0.dup
     assert_equal @pkg1_0.dup, @pkg1_0
 
-    assert_not_equal @pkg1_0, @pkg1_1, "requirements different"
-    assert_not_equal @pkg1_1, @pkg1_0, "requirements different"
+    refute_equal @pkg1_0, @pkg1_1, "requirements different"
+    refute_equal @pkg1_1, @pkg1_0, "requirements different"
 
-    assert_not_equal @pkg1_0, @oth1_0, "names different"
-    assert_not_equal @oth1_0, @pkg1_0, "names different"
+    refute_equal @pkg1_0, @oth1_0, "names different"
+    refute_equal @oth1_0, @pkg1_0, "names different"
 
-    assert_not_equal @pkg1_0, Object.new
-    assert_not_equal Object.new, @pkg1_0
+    refute_equal @pkg1_0, Object.new
+    refute_equal Object.new, @pkg1_0
   end
 
   def test_equals2_type
     runtime = Gem::Dependency.new("pkg", [])
     development = Gem::Dependency.new("pkg", [], :development)
 
-    assert_not_equal(runtime, development)
+    refute_equal(runtime, development)
   end
 
   def test_equals_tilde
@@ -123,18 +122,18 @@ class TestGemDependency < RubyGemTestCase
     assert_equal @pkg1_0.hash, @pkg1_0.dup.hash
     assert_equal @pkg1_0.dup.hash, @pkg1_0.hash
 
-    assert_not_equal @pkg1_0.hash, @pkg1_1.hash, "requirements different"
-    assert_not_equal @pkg1_1.hash, @pkg1_0.hash, "requirements different"
+    refute_equal @pkg1_0.hash, @pkg1_1.hash, "requirements different"
+    refute_equal @pkg1_1.hash, @pkg1_0.hash, "requirements different"
 
-    assert_not_equal @pkg1_0.hash, @oth1_0.hash, "names different"
-    assert_not_equal @oth1_0.hash, @pkg1_0.hash, "names different"
+    refute_equal @pkg1_0.hash, @oth1_0.hash, "names different"
+    refute_equal @oth1_0.hash, @pkg1_0.hash, "names different"
   end
 
   def test_hash_type
     runtime = Gem::Dependency.new("pkg", [])
     development = Gem::Dependency.new("pkg", [], :development)
 
-    assert_not_equal(runtime.hash, development.hash)
+    refute_equal(runtime.hash, development.hash)
   end
 end
 

@@ -1,4 +1,3 @@
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/commands/lock_command'
 
@@ -56,7 +55,7 @@ gem 'd', '= 1'
   def test_execute_strict
     @cmd.handle_options %w[c-1 --strict]
 
-    e = assert_raise Gem::Exception do
+    e = assert_raises Gem::Exception do
       use_ui @ui do
         @cmd.execute
       end

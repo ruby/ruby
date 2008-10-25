@@ -4,7 +4,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/source_index'
 require 'rubygems/config_file'
@@ -150,7 +149,7 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
     end
 
     use_ui @ui do
-      assert_raise Interrupt do
+      assert_raises Interrupt do
         Gem::SourceIndex.load_specification(spec_file)
       end
     end
@@ -192,7 +191,7 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
     end
 
     use_ui @ui do
-      assert_raise SystemExit do
+      assert_raises SystemExit do
         Gem::SourceIndex.load_specification(spec_file)
       end
     end
@@ -232,7 +231,7 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
     @fetcher.data["#{@gem_repo}yaml.Z"] = proc { raise SocketError }
     @fetcher.data["#{@gem_repo}yaml"] = proc { raise SocketError }
 
-    e = assert_raise Gem::RemoteSourceException do
+    e = assert_raises Gem::RemoteSourceException do
       use_ui @ui do
         @source_index.fetch_bulk_index @uri
       end
@@ -357,7 +356,7 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
     @fetcher.data["#{@gem_repo}quick/index.rz"] =
       proc { raise Exception }
 
-    e = assert_raise Gem::OperationNotSupportedError do
+    e = assert_raises Gem::OperationNotSupportedError do
       @source_index.fetch_quick_index @uri, true
     end
 
@@ -613,7 +612,7 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
   def test_refresh_bang_not_from_dir
     source_index = Gem::SourceIndex.new
 
-    e = assert_raise RuntimeError do
+    e = assert_raises RuntimeError do
       source_index.refresh!
     end
 

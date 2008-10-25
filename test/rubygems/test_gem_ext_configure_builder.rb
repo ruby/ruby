@@ -1,4 +1,3 @@
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/ext'
 
@@ -41,7 +40,7 @@ class TestGemExtConfigureBuilder < RubyGemTestCase
     return if RUBY_PLATFORM =~ /mswin/ # HACK
     output = []
 
-    error = assert_raise Gem::InstallError do
+    error = assert_raises Gem::InstallError do
       Dir.chdir @ext do
         Gem::Ext::ConfigureBuilder.build nil, nil, @dest_path, output
       end

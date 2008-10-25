@@ -1,4 +1,3 @@
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/commands/environment_command'
 
@@ -109,7 +108,7 @@ class TestGemCommandsEnvironmentCommand < RubyGemTestCase
   def test_execute_unknown
     @cmd.send :handle_options, %w[unknown]
 
-    assert_raise Gem::CommandLineError do
+    assert_raises Gem::CommandLineError do
       use_ui @ui do
         @cmd.execute
       end

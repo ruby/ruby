@@ -4,7 +4,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 
 require 'rubygems/indexer'
@@ -217,8 +216,8 @@ Compressing indicies
     assert_same specs[0].last, specs[1].last,
                 'identical platforms not identical'
 
-    assert_not_same specs[1][1], specs[5][1],
-                    'different versions not different'
+    refute_same specs[1][1], specs[5][1],
+                'different versions not different'
   end
 
   def test_generate_index_latest_specs

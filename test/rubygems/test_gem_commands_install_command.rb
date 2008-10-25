@@ -1,4 +1,3 @@
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/commands/install_command'
 
@@ -16,7 +15,7 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
     @cmd.options[:include_dependencies] = true
     @cmd.options[:args] = []
 
-    assert_raise Gem::CommandLineError do
+    assert_raises Gem::CommandLineError do
       use_ui @ui do
         @cmd.execute
       end
@@ -79,7 +78,7 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
   def test_execute_no_gem
     @cmd.options[:args] = %w[]
 
-    assert_raise Gem::CommandLineError do
+    assert_raises Gem::CommandLineError do
       @cmd.execute
     end
   end

@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -9,8 +8,14 @@ at_exit { $SAFE = 1 }
 
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
+require 'rubygems'
 require 'fileutils'
-require 'test/unit'
+begin
+  require 'minitest/unit'
+rescue LoadError
+  warn "Install minitest gem"
+  raise
+end
 require 'tmpdir'
 require 'uri'
 require 'rubygems/package'
@@ -36,7 +41,7 @@ module Gem
   end
 end
 
-class RubyGemTestCase < Test::Unit::TestCase
+class RubyGemTestCase < MiniTest::Unit::TestCase
 
   include Gem::DefaultUserInteraction
 
@@ -430,8 +435,6 @@ class RubyGemTestCase < Test::Unit::TestCase
     Gem.module_eval {@ruby = ruby}
     env_rake = ENV["rake"]
     ENV["rake"] = @@rake
-    argv = ARGV.dup
-    ARGV.clear
     yield @@rake
   ensure
     Gem.module_eval {@ruby = gem_ruby}
@@ -440,7 +443,6 @@ class RubyGemTestCase < Test::Unit::TestCase
     else
       ENV.delete("rake")
     end
-    ARGV.replace(argv) if argv
   end
 
   def self.rubybin
@@ -481,4 +483,6 @@ class RubyGemTestCase < Test::Unit::TestCase
            end
 
 end
+
+MiniTest::Unit.autorun
 

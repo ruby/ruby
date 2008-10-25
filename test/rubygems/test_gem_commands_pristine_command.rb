@@ -1,4 +1,3 @@
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/commands/pristine_command'
 
@@ -96,7 +95,7 @@ class TestGemCommandsPristineCommand < RubyGemTestCase
   def test_execute_no_gem
     @cmd.options[:args] = %w[]
 
-    e = assert_raise Gem::CommandLineError do
+    e = assert_raises Gem::CommandLineError do
       use_ui @ui do
         @cmd.execute
       end

@@ -43,7 +43,7 @@ class Gem::Commands::UnpackCommand < Gem::Command
       basename = File.basename(path).sub(/\.gem$/, '')
       target_dir = File.expand_path File.join(options[:target], basename)
       FileUtils.mkdir_p target_dir
-      Gem::Installer.new(path).unpack target_dir
+      Gem::Installer.new(path, :unpack => true).unpack target_dir
       say "Unpacked gem: '#{target_dir}'"
     else
       alert_error "Gem '#{gemname}' not installed."

@@ -1,5 +1,10 @@
 module Gem
 
+  @post_install_hooks   ||= []
+  @post_uninstall_hooks ||= []
+  @pre_uninstall_hooks  ||= []
+  @pre_install_hooks    ||= []
+
   ##
   # An Array of the default sources that come with RubyGems
 

@@ -5,7 +5,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/command'
 
@@ -63,7 +62,7 @@ class TestGemCommand < RubyGemTestCase
 
     assert_match %r|-x, --zip|, @cmd.parser.to_s
     assert_match %r|-z, --exe|, @cmd.parser.to_s
-    assert_no_match %r|-x, --exe|, @cmd.parser.to_s
+    refute_match %r|-x, --exe|, @cmd.parser.to_s
   end
 
   def test_basic_accessors
@@ -109,7 +108,7 @@ class TestGemCommand < RubyGemTestCase
     use_ui @ui do
       @cmd.when_invoked do true end
 
-      ex = assert_raise(OptionParser::InvalidOption) do
+      ex = assert_raises OptionParser::InvalidOption do
         @cmd.invoke('-zzz')
       end
 

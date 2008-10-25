@@ -61,7 +61,7 @@ class TestTarWriter < TarTestCase
   end
 
   def test_add_file_simple_size
-    assert_raise Gem::Package::TarWriter::FileOverflow do 
+    assert_raises Gem::Package::TarWriter::FileOverflow do 
       @tar_writer.add_file_simple("lib/foo/bar", 0, 10) do |io|
         io.write "1" * 11
       end
@@ -69,7 +69,7 @@ class TestTarWriter < TarTestCase
   end
 
   def test_add_file_unseekable
-    assert_raise Gem::Package::NonSeekableIO do 
+    assert_raises Gem::Package::NonSeekableIO do 
       Gem::Package::TarWriter.new(Object.new).add_file 'x', 0
     end
   end
@@ -79,27 +79,27 @@ class TestTarWriter < TarTestCase
 
     assert_equal "\0" * 1024, @io.string
 
-    e = assert_raise IOError do
+    e = assert_raises IOError do
       @tar_writer.close
     end
     assert_equal 'closed Gem::Package::TarWriter', e.message
 
-    e = assert_raise IOError do
+    e = assert_raises IOError do
       @tar_writer.flush
     end
     assert_equal 'closed Gem::Package::TarWriter', e.message
 
-    e = assert_raise IOError do
+    e = assert_raises IOError do
       @tar_writer.add_file 'x', 0
     end
     assert_equal 'closed Gem::Package::TarWriter', e.message
 
-    e = assert_raise IOError do
+    e = assert_raises IOError do
       @tar_writer.add_file_simple 'x', 0, 0
     end
     assert_equal 'closed Gem::Package::TarWriter', e.message
 
-    e = assert_raise IOError do
+    e = assert_raises IOError do
       @tar_writer.mkdir 'x', 0
     end
     assert_equal 'closed Gem::Package::TarWriter', e.message
@@ -125,7 +125,7 @@ class TestTarWriter < TarTestCase
     name = File.join 'a', 'b' * 100
     assert_equal ['b' * 100, 'a'], @tar_writer.split_name(name)
 
-    assert_raise Gem::Package::TooLongFileName do
+    assert_raises Gem::Package::TooLongFileName do
       name = File.join 'a', 'b' * 101
       @tar_writer.split_name name
     end
@@ -135,14 +135,14 @@ class TestTarWriter < TarTestCase
     name = File.join 'a' * 155, 'b'
     assert_equal ['b', 'a' * 155], @tar_writer.split_name(name)
 
-    assert_raise Gem::Package::TooLongFileName do
+    assert_raises Gem::Package::TooLongFileName do
       name = File.join 'a' * 156, 'b'
       @tar_writer.split_name name
     end
   end
 
   def test_split_name_too_long_total
-    assert_raise Gem::Package::TooLongFileName do
+    assert_raises Gem::Package::TooLongFileName do
       @tar_writer.split_name 'a' * 257
     end
   end

@@ -52,6 +52,8 @@ class Gem::ConfigFile
   # Where to look for gems
   attr_accessor :path
 
+  attr_accessor :home
+
   # True if we print backtraces on errors.
   attr_writer :backtrace
 
@@ -129,7 +131,8 @@ class Gem::ConfigFile
     Gem.sources = @hash[:sources] if @hash.key? :sources
     @verbose = @hash[:verbose] if @hash.key? :verbose
     @update_sources = @hash[:update_sources] if @hash.key? :update_sources
-    @path = @hash[:gempath]
+    @path = @hash[:gempath] if @hash.key? :gempath
+    @home = @hash[:gemhome] if @hash.key? :gemhome
 
     handle_arguments arg_list
   end

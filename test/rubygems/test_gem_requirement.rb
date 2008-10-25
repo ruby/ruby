@@ -4,7 +4,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/version'
 
@@ -32,19 +31,19 @@ class TestGemRequirement < RubyGemTestCase
     assert_equal @r1_2, @r1_2.dup
     assert_equal @r1_2.dup, @r1_2
 
-    assert_not_equal @r1_3, @r1_2
-    assert_not_equal @r1_2, @r1_3
+    refute_equal @r1_3, @r1_2
+    refute_equal @r1_2, @r1_3
 
-    assert_not_equal Object.new, @r1_2
-    assert_not_equal @r1_2, Object.new
+    refute_equal Object.new, @r1_2
+    refute_equal @r1_2, Object.new
   end
 
   def test_hash
     assert_equal @r1_2.hash, @r1_2.dup.hash
     assert_equal @r1_2.dup.hash, @r1_2.hash
 
-    assert_not_equal @r1_2.hash, @r1_3.hash
-    assert_not_equal @r1_3.hash, @r1_2.hash
+    refute_equal @r1_2.hash, @r1_3.hash
+    refute_equal @r1_3.hash, @r1_2.hash
   end
 
   # We may get some old gems that have requirements in old formats.
@@ -80,13 +79,13 @@ class TestGemRequirement < RubyGemTestCase
   end
 
   def test_parse_illformed
-    e = assert_raise ArgumentError do
+    e = assert_raises ArgumentError do
       @r1_2.parse(nil)
     end
 
     assert_equal 'Illformed requirement [nil]', e.message
 
-    e = assert_raise ArgumentError do
+    e = assert_raises ArgumentError do
       @r1_2.parse('')
     end
 
@@ -139,7 +138,7 @@ class TestGemRequirement < RubyGemTestCase
     assert_equal false, r1_2.satisfied_by?(v1_2)
     assert_equal true,  r1_2.satisfied_by?(v1_3)
 
-    assert_raise NoMethodError do
+    assert_raises NoMethodError do
       assert_equal true,  r1_2.satisfied_by?(nil)
     end
   end
@@ -154,7 +153,7 @@ class TestGemRequirement < RubyGemTestCase
     assert_equal true,  r1_2.satisfied_by?(v1_2)
     assert_equal true,  r1_2.satisfied_by?(v1_3)
 
-    assert_raise NoMethodError do
+    assert_raises NoMethodError do
       assert_equal true,  r1_2.satisfied_by?(nil)
     end
   end
@@ -169,7 +168,7 @@ class TestGemRequirement < RubyGemTestCase
     assert_equal true,  r.satisfied_by?(v1_2)
     assert_equal false, r.satisfied_by?(v1_3)
 
-    assert_raise NoMethodError do
+    assert_raises NoMethodError do
       assert_equal true,  r.satisfied_by?(nil)
     end
   end
@@ -184,7 +183,7 @@ class TestGemRequirement < RubyGemTestCase
     assert_equal false, r1_2.satisfied_by?(v1_2)
     assert_equal false, r1_2.satisfied_by?(v1_3)
 
-    assert_raise NoMethodError do
+    assert_raises NoMethodError do
       assert_equal true,  r1_2.satisfied_by?(nil)
     end
   end
@@ -199,7 +198,7 @@ class TestGemRequirement < RubyGemTestCase
     assert_equal true,  r1_2.satisfied_by?(v1_2)
     assert_equal false, r1_2.satisfied_by?(v1_3)
 
-    assert_raise NoMethodError do
+    assert_raises NoMethodError do
       assert_equal true,  r1_2.satisfied_by?(nil)
     end
   end
@@ -214,7 +213,7 @@ class TestGemRequirement < RubyGemTestCase
     assert_equal true,  r1_2.satisfied_by?(v1_2)
     assert_equal true,  r1_2.satisfied_by?(v1_3)
 
-    assert_raise NoMethodError do
+    assert_raises NoMethodError do
       assert_equal true,  r1_2.satisfied_by?(nil)
     end
   end

@@ -5,13 +5,14 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'test/unit'
 require 'rubygems'
+require 'minitest/unit'
 require 'test/insure_session'
 require 'rubygems/format'
 require 'rubygems/command_manager'
 
-class FunctionalTest < Test::Unit::TestCase
+class FunctionalTest < MiniTest::Unit::TestCase
+
   def setup
     @gem_path = File.expand_path("bin/gem")
     lib_path = File.expand_path("lib")
@@ -93,3 +94,6 @@ class FunctionalTest < Test::Unit::TestCase
   end
 
 end
+
+MiniTest::Unit.autorun
+

@@ -1,11 +1,9 @@
-#!/usr/bin/env ruby
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/package'
 
@@ -48,7 +46,7 @@ class TestKernel < RubyGemTestCase
   def test_gem_conflicting
     assert gem('a', '= 1'), "Should load"
 
-    ex = assert_raise Gem::Exception do
+    ex = assert_raises Gem::Exception do
       gem 'a', '= 2'
     end
 

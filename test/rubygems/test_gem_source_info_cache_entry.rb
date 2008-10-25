@@ -1,4 +1,3 @@
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/source_info_cache_entry'
 
@@ -56,7 +55,7 @@ class TestGemSourceInfoCacheEntry < RubyGemTestCase
   end
 
   def test_refresh_bad_uri
-    assert_raise URI::BadURIError do
+    assert_raises URI::BadURIError do
       @sic_e.refresh 'gems.example.com', true
     end
   end

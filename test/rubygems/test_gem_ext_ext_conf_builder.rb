@@ -1,4 +1,3 @@
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/ext'
 
@@ -55,7 +54,7 @@ class TestGemExtExtConfBuilder < RubyGemTestCase
 
     output = []
 
-    error = assert_raise Gem::InstallError do
+    error = assert_raises Gem::InstallError do
       Dir.chdir @ext do
         Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
       end
@@ -103,7 +102,7 @@ install:
   end
 
   def test_class_make_no_Makefile
-    error = assert_raise Gem::InstallError do
+    error = assert_raises Gem::InstallError do
       Dir.chdir @ext do
         Gem::Ext::ExtConfBuilder.make @ext, ['output']
       end

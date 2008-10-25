@@ -4,7 +4,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require File.join(File.expand_path(File.dirname(__FILE__)), 'simple_gem')
 require 'rubygems/validator'
@@ -26,7 +25,7 @@ class TestGemValidator < RubyGemTestCase
   end
 
   def test_verify_gem_file_empty
-    e = assert_raise Gem::VerificationError do
+    e = assert_raises Gem::VerificationError do
       @validator.verify_gem_file ''
     end
 
@@ -35,7 +34,7 @@ class TestGemValidator < RubyGemTestCase
 
   def test_verify_gem_file_nonexistent
     file = '/nonexistent/nonexistent.gem'
-    e = assert_raise Gem::VerificationError do
+    e = assert_raises Gem::VerificationError do
       @validator.verify_gem_file file
     end
 
@@ -47,7 +46,7 @@ class TestGemValidator < RubyGemTestCase
   end
 
   def test_verify_gem_empty
-    e = assert_raise Gem::VerificationError do
+    e = assert_raises Gem::VerificationError do
       @validator.verify_gem ''
     end
 
@@ -55,7 +54,7 @@ class TestGemValidator < RubyGemTestCase
   end
 
   def test_verify_gem_invalid_checksum
-    e = assert_raise Gem::VerificationError do
+    e = assert_raises Gem::VerificationError do
       @validator.verify_gem @simple_gem.upcase
     end
 

@@ -5,7 +5,6 @@
 #++
 
 require 'stringio'
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/specification'
 
@@ -336,8 +335,8 @@ end
   def test_equals2
     assert_equal @a1, @a1
     assert_equal @a1, @a1.dup
-    assert_not_equal @a1, @a2
-    assert_not_equal @a1, Object.new
+    refute_equal @a1, @a2
+    refute_equal @a1, Object.new
   end
 
   # The cgikit specification was reported to be causing trouble in at least
@@ -369,16 +368,16 @@ end
     spec = @a1.dup
     spec.default_executable = 'xx'
 
-    assert_not_equal @a1, spec
-    assert_not_equal spec, @a1
+    refute_equal @a1, spec
+    refute_equal spec, @a1
   end
 
   def test_equals2_extensions
     spec = @a1.dup
     spec.extensions = 'xx'
 
-    assert_not_equal @a1, spec
-    assert_not_equal spec, @a1
+    refute_equal @a1, spec
+    refute_equal spec, @a1
   end
 
   def test_executables
@@ -506,7 +505,7 @@ end
   def test_hash
     assert_equal @a1.hash, @a1.hash
     assert_equal @a1.hash, @a1.dup.hash
-    assert_not_equal @a1.hash, @a2.hash
+    refute_equal @a1.hash, @a2.hash
   end
 
   def test_lib_files
@@ -815,7 +814,7 @@ end
 
       @a1.authors = [Object.new]
 
-      e = assert_raise Gem::InvalidSpecificationException do
+      e = assert_raises Gem::InvalidSpecificationException do
         @a1.validate
       end
 
@@ -849,7 +848,7 @@ end
   end
 
   def test_validate_empty
-    e = assert_raise Gem::InvalidSpecificationException do
+    e = assert_raises Gem::InvalidSpecificationException do
       Gem::Specification.new.validate
     end
 
@@ -872,7 +871,7 @@ end
 
   def test_validate_empty_require_paths
     @a1.require_paths = []
-    e = assert_raise Gem::InvalidSpecificationException do
+    e = assert_raises Gem::InvalidSpecificationException do
       @a1.validate
     end
 
@@ -932,7 +931,7 @@ end
 
   def test_validate_rubygems_version
     @a1.rubygems_version = "3"
-    e = assert_raise Gem::InvalidSpecificationException do
+    e = assert_raises Gem::InvalidSpecificationException do
       @a1.validate
     end
 

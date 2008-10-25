@@ -137,7 +137,7 @@ class Gem::Installer
       options[:user_install] = true
     end
 
-    if options[:user_install] then
+    if options[:user_install] and not options[:unpack] then
       @gem_home = Gem.user_dir
 
       user_bin_dir = File.join(@gem_home, 'bin')

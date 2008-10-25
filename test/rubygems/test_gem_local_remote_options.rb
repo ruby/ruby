@@ -1,4 +1,3 @@
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/local_remote_options'
 require 'rubygems/command'
@@ -86,7 +85,7 @@ class TestGemLocalRemoteOptions < RubyGemTestCase
 
     s1 = 'htp://more-gems.example.com'
 
-    assert_raise OptionParser::InvalidArgument do
+    assert_raises OptionParser::InvalidArgument do
       @cmd.handle_options %W[--source #{s1}]
     end
 

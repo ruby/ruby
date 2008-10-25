@@ -1,4 +1,3 @@
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/commands/contents_command'
 
@@ -28,7 +27,7 @@ class TestGemCommandsContentsCommand < RubyGemTestCase
   def test_execute_bad_gem
     @cmd.options[:args] = %w[foo]
 
-    assert_raise MockGemUi::TermError do
+    assert_raises MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -71,7 +70,7 @@ class TestGemCommandsContentsCommand < RubyGemTestCase
     end
 
     assert_match %r|lib/foo\.rb|, @ui.output
-    assert_no_match %r|Rakefile|, @ui.output
+    refute_match %r|Rakefile|, @ui.output
 
     assert_equal "", @ui.error
   end

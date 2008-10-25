@@ -1,4 +1,3 @@
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/commands/list_command'
 
@@ -21,7 +20,7 @@ class TestGemCommandsListCommand < RubyGemTestCase
   def test_execute_installed
     @cmd.handle_options %w[c --installed]
 
-    e = assert_raise Gem::SystemExitException do
+    e = assert_raises Gem::SystemExitException do
       use_ui @ui do
         @cmd.execute
       end

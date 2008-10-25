@@ -43,11 +43,13 @@ module Kernel
   #
   #   GEM_SKIP=libA:libB ruby -I../libA -I../libB ./mycode.rb
 
-  def gem(gem_name, *version_requirements)
+  def gem(gem_name, *version_requirements) # :doc:
     skip_list = (ENV['GEM_SKIP'] || "").split(/:/)
     raise Gem::LoadError, "skipping #{gem_name}" if skip_list.include? gem_name
     Gem.activate(gem_name, *version_requirements)
   end
+
+  private :gem
 
 end
 
@@ -104,10 +106,10 @@ module Gem
   @ruby = nil
   @sources = []
 
-  @post_install_hooks = []
-  @post_uninstall_hooks = []
-  @pre_uninstall_hooks = []
-  @pre_install_hooks = []
+  @post_install_hooks   ||= []
+  @post_uninstall_hooks ||= []
+  @pre_uninstall_hooks  ||= []
+  @pre_install_hooks    ||= []
 
   ##
   # Activates an installed gem matching +gem+.  The gem must satisfy
@@ -294,6 +296,7 @@ module Gem
   # A Zlib::Deflate.deflate wrapper
 
   def self.deflate(data)
+    require 'zlib'
     Zlib::Deflate.deflate data
   end
 
@@ -302,7 +305,7 @@ module Gem
 
   def self.dir
     @gem_home ||= nil
-    set_home(ENV['GEM_HOME'] || default_dir) unless @gem_home
+    set_home(ENV['GEM_HOME'] || Gem.configuration.home || default_dir) unless @gem_home
     @gem_home
   end
 
@@ -395,6 +398,8 @@ module Gem
   # Zlib::GzipReader wrapper that unzips +data+.
 
   def self.gunzip(data)
+    require 'stringio'
+    require 'zlib'
     data = StringIO.new data
 
     Zlib::GzipReader.new(data).read
@@ -404,6 +409,8 @@ module Gem
   # Zlib::GzipWriter wrapper that zips +data+.
 
   def self.gzip(data)
+    require 'stringio'
+    require 'zlib'
     zipped = StringIO.new
 
     Zlib::GzipWriter.wrap zipped do |io| io.write data end
@@ -415,6 +422,7 @@ module Gem
   # A Zlib::Inflate#inflate wrapper
 
   def self.inflate(data)
+    require 'zlib'
     Zlib::Inflate.inflate data
   end
 
@@ -479,12 +487,12 @@ module Gem
   # The file name and line number of the caller of the caller of this method.
 
   def self.location_of_caller
-    file, lineno = caller[1].split(':')
-    lineno = lineno.to_i
+    caller[1] =~ /(.*?):(\d+)$/i
+    file = $1
+    lineno = $2.to_i
+
     [file, lineno]
   end
-
-  private_class_method :location_of_caller
 
   ##
   # manage_gems is useless and deprecated.  Don't call it anymore.
@@ -709,9 +717,11 @@ module Gem
 
     @gem_path.uniq!
     @gem_path.each do |path|
-      if 0 == File.expand_path(path).index(Gem.user_home) and
-         Etc.getpwuid.uid != File::Stat.new(Gem.user_home).uid then
-        next # only create by matching user
+      if 0 == File.expand_path(path).index(Gem.user_home)
+        unless win_platform? then
+          # only create by matching user
+          next if Etc.getpwuid.uid != File::Stat.new(Gem.user_home).uid
+        end
       end
       ensure_gem_subdirectories path
     end

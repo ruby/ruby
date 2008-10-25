@@ -1,4 +1,3 @@
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/commands/specification_command'
 
@@ -46,7 +45,7 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
   def test_execute_bad_name
     @cmd.options[:args] = %w[foo]
 
-    assert_raise MockGemUi::TermError do
+    assert_raises MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end

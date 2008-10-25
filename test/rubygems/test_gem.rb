@@ -65,8 +65,8 @@ class TestGem < RubyGemTestCase
 
     assert_equal nil, Gem.instance_variable_get(:@gem_home)
     assert_equal nil, Gem.instance_variable_get(:@gem_path)
-    assert_not_equal searcher, Gem.searcher
-    assert_not_equal source_index.object_id, Gem.source_index.object_id
+    refute_equal searcher, Gem.searcher
+    refute_equal source_index.object_id, Gem.source_index.object_id
   end
 
   def test_self_configuration
@@ -214,10 +214,10 @@ class TestGem < RubyGemTestCase
     orig_Gem_ssl_available = Gem.ssl_available?
 
     Gem.ssl_available = true
-    assert_nothing_raised do Gem.ensure_ssl_available end
+    Gem.ensure_ssl_available
 
     Gem.ssl_available = false
-    e = assert_raise Gem::Exception do Gem.ensure_ssl_available end
+    e = assert_raises Gem::Exception do Gem.ensure_ssl_available end
     assert_equal 'SSL is not installed on this system', e.message
   ensure
     Gem.ssl_available = orig_Gem_ssl_available

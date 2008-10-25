@@ -257,8 +257,7 @@ class Gem::SourceIndex
 
     # TODO - Remove support and warning for legacy arguments after 2008/11
     unless Gem::Dependency === gem_pattern
-      warn "Gem::SourceIndex#search support for #{gem_pattern.class} patterns is deprecated"
-      warn "#{caller[0]} is outdated" 
+      warn "#{Gem.location_of_caller.join ':'}:Warning: Gem::SourceIndex#search support for #{gem_pattern.class} patterns is deprecated"
     end
 
     case gem_pattern

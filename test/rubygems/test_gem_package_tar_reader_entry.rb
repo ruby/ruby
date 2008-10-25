@@ -36,19 +36,19 @@ class TestGemPackageTarReaderEntry < TarTestCase
 
     assert @entry.bytes_read
 
-    e = assert_raise IOError do @entry.eof? end
+    e = assert_raises IOError do @entry.eof? end
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raise IOError do @entry.getc end
+    e = assert_raises IOError do @entry.getc end
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raise IOError do @entry.pos end
+    e = assert_raises IOError do @entry.pos end
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raise IOError do @entry.read end
+    e = assert_raises IOError do @entry.read end
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raise IOError do @entry.rewind end
+    e = assert_raises IOError do @entry.rewind end
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
   end
 

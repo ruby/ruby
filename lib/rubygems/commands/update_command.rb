@@ -54,11 +54,10 @@ class Gem::Commands::UpdateCommand < Gem::Command
         fail "No gem names are allowed with the --system option"
       end
 
-      spec = Gem::Specification.new
-      spec.name = 'rubygems-update'
-      spec.version = Gem::Version.new Gem::RubyGemsVersion
-      spec.version = Gem::Version.new '1.1.1'
-      hig['rubygems-update'] = spec
+      rubygems_update = Gem::Specification.new
+      rubygems_update.name = 'rubygems-update'
+      rubygems_update.version = Gem::Version.new Gem::RubyGemsVersion
+      hig['rubygems-update'] = rubygems_update
 
       options[:user_install] = false
     else

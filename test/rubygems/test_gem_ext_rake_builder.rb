@@ -1,4 +1,3 @@
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/ext'
 
@@ -41,7 +40,7 @@ class TestGemExtRakeBuilder < RubyGemTestCase
       "(in #{realdir})\n"
     ]
 
-    assert_no_match %r%^rake failed:%, output
+    refute_match %r%^rake failed:%, output
     assert_match %r%^#{Regexp.escape @@ruby} mkrf_conf\.rb%, output
     assert_match %r%^#{Regexp.escape @@rake} RUBYARCHDIR=#{Regexp.escape @dest_path} RUBYLIBDIR=#{Regexp.escape @dest_path}%, output
   end
@@ -57,7 +56,7 @@ class TestGemExtRakeBuilder < RubyGemTestCase
 
     output = []
 
-    error = assert_raise Gem::InstallError do
+    error = assert_raises Gem::InstallError do
       build_rake_in do
         Dir.chdir @ext do
           Gem::Ext::RakeBuilder.build "mkrf_conf.rb", nil, @dest_path, output

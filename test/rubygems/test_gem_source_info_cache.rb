@@ -1,11 +1,9 @@
-#!/usr/bin/env ruby
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/source_info_cache'
 
@@ -49,7 +47,7 @@ class TestGemSourceInfoCache < RubyGemTestCase
     Gem.sources.replace %W[#{@gem_repo}]
 
     use_ui @ui do
-      assert_not_nil Gem::SourceInfoCache.cache
+      refute_nil Gem::SourceInfoCache.cache
       assert_kind_of Gem::SourceInfoCache, Gem::SourceInfoCache.cache
       assert_equal Gem::SourceInfoCache.cache.object_id,
                    Gem::SourceInfoCache.cache.object_id
@@ -68,11 +66,11 @@ class TestGemSourceInfoCache < RubyGemTestCase
     Gem.sources.replace %w[#{@gem_repo}]
 
     use_ui @ui do
-      assert_not_nil Gem::SourceInfoCache.cache
+      refute_nil Gem::SourceInfoCache.cache
       assert_kind_of Gem::SourceInfoCache, Gem::SourceInfoCache.cache
       assert_equal Gem::SourceInfoCache.cache.object_id,
                    Gem::SourceInfoCache.cache.object_id
-      assert_no_match %r|Bulk updating|, @ui.output
+      refute_match %r|Bulk updating|, @ui.output
     end
   end
 
@@ -147,7 +145,7 @@ class TestGemSourceInfoCache < RubyGemTestCase
   def test_cache_data_none_writable
     FileUtils.chmod 0444, @sic.system_cache_file
     FileUtils.chmod 0444, @sic.user_cache_file
-    e = assert_raise RuntimeError do
+    e = assert_raises RuntimeError do
       @sic.cache_data
     end
     assert_equal 'unable to locate a writable cache file', e.message
@@ -202,7 +200,7 @@ class TestGemSourceInfoCache < RubyGemTestCase
   def test_cache_file_none_writable
     FileUtils.chmod 0444, @sic.system_cache_file
     FileUtils.chmod 0444, @sic.user_cache_file
-    e = assert_raise RuntimeError do
+    e = assert_raises RuntimeError do
       @sic.cache_file
     end
     assert_equal 'unable to locate a writable cache file', e.message

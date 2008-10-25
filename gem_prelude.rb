@@ -24,14 +24,6 @@ if defined?(Gem) then
       :ruby_install_name => RbConfig::CONFIG["ruby_install_name"]
     }
 
-    def self.default_dir
-      if defined? RUBY_FRAMEWORK_VERSION
-        return File.join(File.dirname(ConfigMap[:sitedir]), "Gems")
-      else
-        File.join(ConfigMap[:libdir], 'ruby', 'gems', ConfigMap[:ruby_version])
-      end
-    end
-
     def self.dir
       @gem_home ||= nil
       set_home(ENV['GEM_HOME'] || default_dir) unless @gem_home
@@ -48,7 +40,22 @@ if defined?(Gem) then
       @gem_path
     end
 
-    # Set the Gem home directory (as reported by +dir+).
+    def self.post_install(&hook)
+      @post_install_hooks << hook
+    end
+
+    def self.post_uninstall(&hook)
+      @post_uninstall_hooks << hook
+    end
+
+    def self.pre_install(&hook)
+      @pre_install_hooks << hook
+    end
+
+    def self.pre_uninstall(&hook)
+      @pre_uninstall_hooks << hook
+    end
+
     def self.set_home(home)
       @gem_home = home
       ensure_gem_subdirectories(@gem_home)
@@ -68,7 +75,24 @@ if defined?(Gem) then
     def self.ensure_gem_subdirectories(path)
     end
 
+    # Methods before this line will be removed when QuickLoader is replaced
+    # with the real RubyGems
+
     GEM_PRELUDE_METHODS = Gem.methods(false)
+
+    require 'rubygems/defaults'
+
+    begin
+      require 'rubygems/defaults/operating_system'
+    rescue LoadError
+    end
+
+    if defined?(RUBY_ENGINE) then
+      begin
+        require 'rubygems/defaults/#{RUBY_ENGINE}'
+      rescue LoadError
+      end
+    end
 
     module QuickLoader
 

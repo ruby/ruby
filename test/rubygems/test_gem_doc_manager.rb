@@ -4,7 +4,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/doc_manager'
 
@@ -21,7 +20,7 @@ class TestGemDocManager < RubyGemTestCase
     orig_mode = File.stat(@spec.installation_path).mode
     File.chmod 0, @spec.installation_path
 
-    assert_raise Gem::FilePermissionError do
+    assert_raises Gem::FilePermissionError do
       @manager.uninstall_doc
     end
   ensure

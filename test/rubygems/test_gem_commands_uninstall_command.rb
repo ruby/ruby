@@ -1,4 +1,3 @@
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require File.join(File.expand_path(File.dirname(__FILE__)),
                   'gem_installer_test_case')
@@ -48,7 +47,7 @@ class TestGemCommandsUninstallCommand < GemInstallerTestCase
 
   def test_execute_not_installed
     @cmd.options[:args] = ["foo"]
-    e = assert_raise(Gem::InstallError) do
+    e = assert_raises Gem::InstallError do
       use_ui @ui do
         @cmd.execute
       end

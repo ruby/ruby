@@ -31,7 +31,8 @@ class Gem::Commands::CheckCommand < Gem::Command
   def execute
     if options[:test]
       version = options[:version] || Gem::Requirement.default
-      gem_spec = Gem::SourceIndex.from_installed_gems.search(get_one_gem_name, version).first
+      dep = Gem::Dependency.new get_one_gem_name, version
+      gem_spec = Gem::SourceIndex.from_installed_gems.search(dep).first
       Gem::Validator.new.unit_test(gem_spec)
     end
 
