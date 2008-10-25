@@ -451,6 +451,14 @@ environment variable on calling Kernel#system.
 This variable is obsolete.
 .El
 .Pp
+And Ruby depends on some RubyGems related environment variables unless disabled RubyGems.
+See the help of
+.Xr gem 1
+as bellow.
+.Bd -literal -offset indent
+% gem help
+.Ed
+.Pp
 .Sh SEE ALSO
 .Bl -hang -compact -width "http://www.ruby-lang.org/123"
 .It http://www.ruby-lang.org
@@ -461,7 +469,7 @@ hosting many open source ruby projects.
 Ruby Application Archive.
 .El
 .Pp
-.Sh BUGS
+.Sh REPORTING BUGS
 .Bl -bullet
 .Li Security vulnerabilities should be reported via an email to 
 .Aq security@ruby-lang.org Ns
