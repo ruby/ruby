@@ -2086,7 +2086,7 @@ AC_ARG_WITH(mantype,
 		])
 if test -z "$MANTYPE"; then
 	AC_PATH_PROGS(NROFF, nroff awf, /bin/false, "/usr/bin:/usr/ucb")
-	if ${NROFF} -mdoc ${srcdir}/ruby.1 >/dev/null 2>&1; then
+	if ${NROFF} -mdoc ${srcdir}/man/ruby.1 >/dev/null 2>&1; then
 		MANTYPE=doc
 	else
 		MANTYPE=man

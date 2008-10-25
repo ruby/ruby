@@ -386,7 +386,7 @@ install?(:local, :comm, :man) do
     if $mantype == "doc"
       install mdoc, destfile, :mode => $data_mode
     else
-      require 'tool/mdoc2man.rb'
+      require "../tool/mdoc2man.rb"
 
       w = Tempfile.open(mdoc)
 

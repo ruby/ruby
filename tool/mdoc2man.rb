@@ -190,7 +190,7 @@ class Mdoc2Man
 	next
       when 'Xr'
 	retval << '\\fB' << words.shift <<
-	  '\\fP(' << words.shift << ')' << words.shift
+	  '\\fP(' << words.shift << ')' << (words.shift||'')
 	break
       when 'Rs'
 	@refauthors = []
