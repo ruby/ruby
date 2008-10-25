@@ -368,12 +368,18 @@ end
 install?(:local, :comm, :man) do
   puts "installing manpages"
 
-  Dir.chdir(srcdir)
+  has_goruby = File.exist?(goruby_install_name+exeext)
+  Dir.chdir("#{srcdir}/man")
   for mdoc in Dir["*.[1-9]"]
     next unless File.file?(mdoc) and open(mdoc){|fh| fh.read(1) == '.'}
+    if mdoc == "goruby.1"
+      next unless has_goruby
+    end
 
     destdir = mandir + mdoc[/(\d+)$/]
-    destfile = File.join(destdir, mdoc.sub(/ruby/, ruby_install_name))
+    section = $1
+    destname = ruby_install_name.sub(/ruby/, File.basename(mdoc, ".#{section}"))
+    destfile = File.join(destdir, "#{destname}.#{section}")
 
     makedirs destdir
 

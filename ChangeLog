@@ -1,3 +1,11 @@
+Sun Oct 26 00:11:48 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* man/ruby.1: moved into man/. added some descriptions.
+
+	* man/goruby.1: new file.
+
+	* instruby.rb (:man): followed ruby.1.
+
 Sat Oct 25 20:05:22 2008  Narihiro Nakamura  <authorNari@gmail.com>
 
 	* gc.c (gc_profile_result): bug fix. The millisecond is 1/1000.
