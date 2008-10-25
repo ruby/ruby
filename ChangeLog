@@ -1,3 +1,7 @@
+Sun Oct 26 01:42:45 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* man/irb.1: new manual page.
+
 Sun Oct 26 00:11:48 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* man/ruby.1: moved into man/. added some descriptions.
