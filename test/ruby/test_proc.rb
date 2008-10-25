@@ -309,4 +309,11 @@ class TestProc < Test::Unit::TestCase
   def test_binding2
     assert_raise(ArgumentError) { proc {}.curry.binding }
   end
+
+  def test_proc_args_unleashed
+    r = proc {|a,b=1,*c,d,e|
+      [a,b,c,d,e]
+    }.call(1,2,3,4,5)
+    assert_equal([1,2,[3],4,5], r, "[ruby-core:19485]")
+  end
 end

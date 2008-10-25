@@ -72,6 +72,17 @@ class TestRubyYield < Test::Unit::TestCase
     obj.each{|*v| assert_equal([], [], '[ruby-dev:32392]')}
     obj.to_enum.each{|*v| assert_equal([], [], '[ruby-dev:32392]')}
   end
+
+  def block_args_unleashed
+    yield(1,2,3,4,5)
+  end
+
+  def test_block_args_unleashed
+    r = block_args_unleashed {|a,b=1,*c,d,e|
+      [a,b,c,d,e]
+    }
+    assert_equal([1,2,[3],4,5], r, "[ruby-core:19485]")
+  end
 end
 
 require_relative 'sentence'
