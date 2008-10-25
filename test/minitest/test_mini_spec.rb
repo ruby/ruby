@@ -10,7 +10,7 @@ MiniTest::Unit.autorun
 
 describe MiniTest::Spec do
   before do
-    @assertion_count = 5
+    @assertion_count = 4
   end
 
   after do
@@ -65,7 +65,7 @@ describe MiniTest::Spec do
   end
 
   it "needs to verify kinds of objects" do
-    @assertion_count = 7
+    @assertion_count = 6
 
     (6 * 7).must_be_kind_of(Fixnum).must_equal true
     (6 * 7).must_be_kind_of(Numeric).must_equal true
@@ -73,7 +73,8 @@ describe MiniTest::Spec do
   end
 
   it "needs to verify regexp matches" do
-    @assertion_count = 7
+    @assertion_count = 6
+
     "blah".must_match(/\w+/).must_equal true
     proc { "blah".must_match(/\d+/) }.must_raise MiniTest::Assertion
   end
@@ -89,14 +90,14 @@ describe MiniTest::Spec do
   end
 
   it "needs to catch an expected exception" do
-    @assertion_count = 4
+    @assertion_count = 2
 
     proc { raise "blah" }.must_raise RuntimeError
     proc { raise MiniTest::Assertion }.must_raise MiniTest::Assertion
   end
 
   it "needs to catch an unexpected exception" do
-    @assertion_count = 4
+    @assertion_count = 2
 
     proc {
       proc { raise MiniTest::Assertion }.must_raise(RuntimeError)
@@ -104,13 +105,13 @@ describe MiniTest::Spec do
   end
 
   it "needs raise if an expected exception is not raised" do
-    @assertion_count = 3
+    @assertion_count = 2
 
     proc { proc { 42 }.must_raise(RuntimeError) }.must_raise MiniTest::Assertion
   end
 
   it "needs to be able to catch a MiniTest::Assertion exception" do
-    @assertion_count = 3
+    @assertion_count = 2
 
     proc { 1.wont_equal 1 }.must_raise MiniTest::Assertion
   end
@@ -126,7 +127,7 @@ describe MiniTest::Spec do
   end
 
   it "needs to verify throw" do
-    @assertion_count = 8
+    @assertion_count = 6
 
     proc { throw :blah }.must_throw(:blah).must_equal true
     proc { proc { }.must_throw(:blah) }.must_raise MiniTest::Assertion

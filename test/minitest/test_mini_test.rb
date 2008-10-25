@@ -9,8 +9,10 @@ require 'minitest/unit'
 
 MiniTest::Unit.autorun
 
-class TestMiniTest < MiniTest::Unit::TestCase
+module M; end
+class E < StandardError; include M; end
 
+class TestMiniTest < MiniTest::Unit::TestCase
   def setup
     srand 42
     MiniTest::Unit::TestCase.reset
@@ -248,10 +250,10 @@ Finished in 0.00
 "
     output = @output.string.sub(/Finished in .*/, "Finished in 0.00")
     output.sub!(/Loaded suite .*/, 'Loaded suite blah')
-    output.sub!(/[\w\/\.]+:\d+/, 'FILE:LINE')
+    output.sub!(/^(\s+)(?:#{Regexp.union(__FILE__, File.expand_path(__FILE__))}):\d+:/o, '\1FILE:LINE:')
+    output.sub!(/\[(?:#{Regexp.union(__FILE__, File.expand_path(__FILE__))}):\d+\]/o, '[FILE:LINE]')
     assert_equal(expected, output)
-  end
-
+ end
   def test_run_failing_filtered
     tc = Class.new(MiniTest::Unit::TestCase) do
       def test_something
@@ -426,7 +428,7 @@ class TestMiniTestTestCase < MiniTest::Unit::TestCase
   end
 
   def test_assert_includes_triggered
-    @assertion_count = 4
+    @assertion_count = 3
 
     e = @tc.assert_raises MiniTest::Assertion do
       @tc.assert_includes [true], false
@@ -489,31 +491,35 @@ class TestMiniTestTestCase < MiniTest::Unit::TestCase
   end
 
   def test_assert_raises
-    @assertion_count = 2
-
     @tc.assert_raises RuntimeError do
       raise "blah"
     end
   end
 
-  def test_assert_raises_triggered_different
-    @assertion_count = 2
+  def test_assert_raises_module
+    @tc.assert_raises M do
+      raise E
+    end
+  end
 
+  def test_assert_raises_triggered_different
     e = assert_raises MiniTest::Assertion do
       @tc.assert_raises RuntimeError do
         raise SyntaxError, "icky"
       end
     end
 
-    expected = "<[RuntimeError]> exception expected, not
+    expected = "[RuntimeError] exception expected, not
 Class: <SyntaxError>
 Message: <\"icky\">
 ---Backtrace---
 FILE:LINE:in `test_assert_raises_triggered_different'
----------------.
-Expected [RuntimeError] to include SyntaxError."
+---------------"
 
-    assert_equal expected, expected.gsub(/[\w\/\.]+:\d+/, 'FILE:LINE')
+    actual = e.message.gsub(/[\w\/\.]+:\d+/, 'FILE:LINE')
+    actual.gsub!(/block \(\d+ levels\) in /, '') if RUBY_VERSION =~ /^1\.9/
+
+    assert_equal expected, actual
   end
 
   def test_assert_raises_triggered_none
@@ -526,6 +532,26 @@ Expected [RuntimeError] to include SyntaxError."
     expected = "MiniTest::Assertion expected but nothing was raised."
 
     assert_equal expected, e.message
+  end
+
+  def test_assert_raises_triggered_subclass
+    e = assert_raises MiniTest::Assertion do
+      @tc.assert_raises StandardError do
+        raise E
+      end
+    end
+
+    expected = "[StandardError] exception expected, not
+Class: <E>
+Message: <\"E\">
+---Backtrace---
+FILE:LINE:in `test_assert_raises_triggered_subclass'
+---------------"
+
+    actual = e.message.gsub(/[\w\/\.]+:\d+/, 'FILE:LINE')
+    actual.gsub!(/block \(\d+ levels\) in /, '') if RUBY_VERSION =~ /^1\.9/
+
+    assert_equal expected, actual
   end
 
   def test_assert_respond_to
@@ -733,7 +759,7 @@ Expected [RuntimeError] to include SyntaxError."
   end
 
   def test_refute_includes_triggered
-    @assertion_count = 4
+    @assertion_count = 3
 
     e = @tc.assert_raises MiniTest::Assertion do
       @tc.refute_includes [true], true
