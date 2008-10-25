@@ -1,3 +1,7 @@
+Sat Oct 25 20:05:22 2008  Narihiro Nakamura  <authorNari@gmail.com>
+
+	* gc.c (gc_profile_result): bug fix. The millisecond is 1/1000.
+
 Sat Oct 25 11:12:40 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* ruby.c (usage): updated the description of -E option.
