@@ -1,3 +1,7 @@
+Sat Oct 25 11:12:40 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ruby.c (usage): updated the description of -E option.
+
 Sat Oct 25 09:54:10 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
   * lib/csv.rb:  Fixed a bug in read_to_char() that would slurp

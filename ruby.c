@@ -134,7 +134,7 @@ usage(const char *name)
 	"-Cdirectory     cd to directory, before executing your script",
 	"-d              set debugging flags (set $DEBUG to true)",
 	"-e 'command'    one line of script. Several -e's allowed. Omit [programfile]",
-	"-Eencoding      specifies the character encoding for the program codes",
+	"-Eex[:in]       specify the default external and internal character encodings",
 	"-Fpattern       split() pattern for autosplit (-a)",
 	"-i[extension]   edit ARGV files in place (make backup if extension supplied)",
 	"-Idirectory     specify $LOAD_PATH directory (may be used more than once)",
