@@ -68,13 +68,14 @@ Sat Oct 25 11:12:40 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 Sat Oct 25 09:54:10 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
-  * lib/csv.rb:  Fixed a bug in read_to_char() that would slurp
-    whole files if the encoding was invalid.  It will now read
-    up to 10 bytes ahead to find a valid character boundary or
-    give up.  [ruby-core:19465]
-  * test/csv/test_features.rb, test/csv/test_table.rb, test/csv/test_row.rb:
-    Loosened some tests to check for a compatible? Encoding instea
-    of an exact Encoding.  [ruby-core:19470]
+	* lib/csv.rb:  Fixed a bug in read_to_char() that would slurp
+	  whole files if the encoding was invalid.  It will now read
+	  up to 10 bytes ahead to find a valid character boundary or
+	  give up.  [ruby-core:19465]
+
+	* test/csv/test_features.rb, test/csv/test_table.rb, test/csv/test_row.rb:
+	  Loosened some tests to check for a compatible? Encoding instea
+	  of an exact Encoding.  [ruby-core:19470]
 
 Sat Oct 25 07:42:49 2008  Eric Hodel  <drbrain@segment7.net>
 
@@ -140,7 +141,7 @@ Fri Oct 24 21:19:45 2008  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 Fri Oct 24 21:05:38 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
-	* lib/cgi/html.rb: allow symbolized key. 
+	* lib/cgi/html.rb: allow symbolized key.
 
 	* test/cgi/test_cgi_tag_helper.rb: add a test.
 
@@ -178,14 +179,14 @@ Fri Oct 24 18:21:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Oct 24 17:43:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* parse.y (lambda): need to adjust lpar_beg for ripper as well.  
+	* parse.y (lambda): need to adjust lpar_beg for ripper as well.
 	  [ruby-dev:36702]
 
 Fri Oct 24 16:13:12 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb (read_multipart): change field value as String
 	  from StringIO or Tempfile when multipart parse except file field.
-	  add files method that can get uploaded files. [ruby-dev:36547] 
+	  add files method that can get uploaded files. [ruby-dev:36547]
 
 	* test/cgi/test_cgi_multipart.rb: fix the test for core.rb.
 
@@ -290,7 +291,7 @@ Wed Oct 22 14:52:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_external_str_new_with_enc): no implicit strlen call.
 	  [ruby-dev:36854]
-	
+
 	* string.c (rb_external_str_new_cstr): new function to create
 	  string from external NUL terminated C string.
 
@@ -501,7 +502,7 @@ Mon Oct 20 00:57:04 2008  Tanaka Akira  <akr@fsij.org>
 	* test/runner.rb: search srcdir/test/arg, srcdir/arg.
 
 	* bin/testrb: show usage if no files given.
-	
+
 Sun Oct 19 21:19:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (srcs): removed ID_H_TARGET.
@@ -627,7 +628,7 @@ Fri Oct 17 18:33:12 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 Fri Oct 17 18:16:51 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* test/bigdecimal/test_bigdecimal.rb (TestBigDecimal#test_sqrt_bigdecimal): 
+	* test/bigdecimal/test_bigdecimal.rb (TestBigDecimal#test_sqrt_bigdecimal):
 	  test updated.  a patch from TAKANO Mitsuhiro <takano32 at jus.or.jp> in
 	  [ruby-dev:36736].
 
@@ -699,7 +700,7 @@ Thu Oct 16 22:52:54 2008  Tanaka Akira  <akr@fsij.org>
 	* lib/test/unit.rb: new compatibility layer using minitest.
 
 	* bin/testrb: use above.
- 
+
 	* test/runner.rb: ditto.
 
 Thu Oct 16 14:34:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -828,7 +829,7 @@ Tue Oct 14 09:39:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* ruby.c (set_internal_encoding_once): check double contradicted
 	  specification of the encoding from command line.
 
-	* ruby.c (set_external_encoding_once): ditto. 
+	* ruby.c (set_external_encoding_once): ditto.
 
 Tue Oct 14 08:28:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -984,8 +985,8 @@ Thu Oct  9 16:34:15 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Thu Oct  9 14:37:59 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* include/ruby/ruby.h: embeds the elements of an array into its 
-	  struct RArray for # of elements <= 3. 
+	* include/ruby/ruby.h: embeds the elements of an array into its
+	  struct RArray for # of elements <= 3.
 
 	* array.c: ditto.
 
@@ -1031,7 +1032,7 @@ Wed Oct  8 15:00:22 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Wed Oct  8 11:56:15 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* lib/test/unit/assertions.rb: assert_nothing_thrown, 
+	* lib/test/unit/assertions.rb: assert_nothing_thrown,
 	  assert_raise, assert_not_equal, assert_no_match, assert_not_nil,
 	  assert_not_same are coming back as alias.
 
@@ -1090,7 +1091,7 @@ Mon Oct  6 12:45:20 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Oct  6 12:38:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* lib/test/unit/assertions.rb (Test::Assertions#assert_nothing_raised): 
+	* lib/test/unit/assertions.rb (Test::Assertions#assert_nothing_raised):
 	  should take optional message argument.
 
 Mon Oct  6 12:18:23 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1188,11 +1189,11 @@ Sat Oct  4 22:44:23 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	* win32/Makefile.sub: ditto.
 
 	* win32/win32.c: ditto.
-	
+
 	* ext/tk/extconf.rb: ditto.
-	
+
 	* lib/fileutils.rb: ditto.
-	
+
 	* test/fileutils/test_fileutils.rb: ditto.
 
 	* wince/*: removed.
@@ -1466,13 +1467,13 @@ Tue Sep 30 23:06:58 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 Tue Sep 30 23:04:30 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/test/**/*: recovered.
-	  Temporarily reverts the changes of lib/test/unit/* in 
+	  Temporarily reverts the changes of lib/test/unit/* in
 	  r19502 and r19501, in order to release 1.9.0-5.
 
 Tue Sep 30 23:00:05 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* lib/test/unit.rb: removed. 
-	  Temporarily reverts the changes of lib/test/unit/* in 
+	* lib/test/unit.rb: removed.
+	  Temporarily reverts the changes of lib/test/unit/* in
 	  r19543, r19534 and r19503, in order to release 1.9.0-5.
 
 	* lib/test/unit/assertions.rb: ditto.
@@ -1823,9 +1824,9 @@ Thu Sep 25 18:40:42 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 Thu Sep 25 16:01:07 2008  Jim Weirich  <jim@tardis.local>
 
 	* lib/rake.rb: Update rake source to version 0.8.3.  This
-	  version includes some fixes for running Rake on windows. 
-	  (1) better APPDATA/HOMExxx/USERPROFILE integration for 
-	  system rakefiles, (2) Better handling of the :ruby command 
+	  version includes some fixes for running Rake on windows.
+	  (1) better APPDATA/HOMExxx/USERPROFILE integration for
+	  system rakefiles, (2) Better handling of the :ruby command
 	  when installed in directory containing spaces.
 
 Thu Sep 25 11:22:51 2008  Eric Hodel  <drbrain@segment7.net>
@@ -1851,7 +1852,7 @@ Wed Sep 24 23:12:49 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb (CGI::new, CGI::{accept_charset,accept_charset=}) :
 	  accept parameters either in a hash,
-	  string as a block. add the encoding validation process. 
+	  string as a block. add the encoding validation process.
 	* test/cgi/test_cgi_core.rb : test for query encoding check.
 
 Wed Sep 24 22:58:18 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -2420,7 +2421,7 @@ Thu Sep 18 18:23:23 2008  Tanaka Akira  <akr@fsij.org>
 	    GC.stress = true
 	    def (o=Object.new).to_str()
 	      "universal"+"_newline"
-	    end                         
+	    end
 	    "\u3042".encode(o, "")
 	  causes curious warning:
 	    rb_define_const: invalid name `' for constant
@@ -2535,7 +2536,7 @@ Wed Sep 17 01:33:11 2008  Tanaka Akira  <akr@fsij.org>
 	  (mbc_to_code): use mbc_to_code0.
 	  (left_adjust_combchar_head): defined.
 	  (utf_8): use a extended grapheme cluster as a unit.
-	
+
 	* enc/unicode.c (onigenc_unicode_mbc_case_fold): use
 	  ONIGENC_MBC_PRECISE_CODEPOINT to extract codepoints.
 	  (onigenc_unicode_get_case_fold_codes_by_str): ditto.
@@ -2576,7 +2577,7 @@ Wed Sep 17 01:17:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Tue Sep 16 22:23:24 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
-	* lib/cgi/core.rb (CGI#header): performance improvement. 
+	* lib/cgi/core.rb (CGI#header): performance improvement.
 	  From CGIAlt http://cgialt.rubyforge.org/
 
 	* test/cgi/test_cgi_header.rb: exception class fixed.
@@ -2696,7 +2697,7 @@ Mon Sep 15 23:52:45 2008  Koichi Sasada  <ko1@atdot.net>
 	  Init_top_self().
 
 	* bignum.c, complex.c, encoding.c, ext/win32ole/win32ole.c,
-	  io.c, load.c, marshal.c, rational.c, ruby.c, vm.c: 
+	  io.c, load.c, marshal.c, rational.c, ruby.c, vm.c:
 	  use rb_gc_register_mark_object() instead of
 	  rb_global_variable() or rb_gc_register_address().
 
@@ -2847,10 +2848,10 @@ Sun Sep 14 16:07:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Sep 14 13:48:03 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* object.c (Init_Object): added metameta-class initialization for 
+	* object.c (Init_Object): added metameta-class initialization for
 	  BasicObject, Object, and Module.
-	  The metameta-classes of them are now the metaclass of Class, as the 
-	  metameta-class of Class is. 
+	  The metameta-classes of them are now the metaclass of Class, as the
+	  metameta-class of Class is.
 
 	* object.c (boot_defmetametaclass): added.
 
@@ -3027,7 +3028,7 @@ Sat Sep 13 02:58:05 2008  Tanaka Akira  <akr@fsij.org>
 Sat Sep 13 02:50:34 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_prepare_opts): initialize *opt and return 0
-	  if opthash is nil. 
+	  if opthash is nil.
 
 Sat Sep 13 02:29:19 2008  Tanaka Akira  <akr@fsij.org>
 
@@ -3072,7 +3073,7 @@ Fri Sep 12 21:55:43 2008  Tanaka Akira  <akr@fsij.org>
 	  (rb_econv_alloc): extracted from
 	  rb_econv_open_by_transcoder_entries.
 	  (rb_econv_add_transcoder_at): extracted from rb_econv_decorate_at
-	  and generalized 
+	  and generalized
 	  (rb_econv_open_by_transcoder_entries): use rb_econv_alloc and
 	  rb_econv_add_transcoder_at.
 	  (rb_econv_add_converter): extracted from rb_econv_decorate_at.
@@ -3174,7 +3175,7 @@ Thu Sep 11 19:09:25 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 Thu Sep 11 15:23:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bigdivrem): adjust length for division and remainder.
-	  a patch from TOYOFUKU Chikanobu <nobu_toyofuku at nifty.com> in 
+	  a patch from TOYOFUKU Chikanobu <nobu_toyofuku at nifty.com> in
 	  [ruby-dev:36231].
 
 Thu Sep 11 02:59:47 2008  Tanaka Akira  <akr@fsij.org>
@@ -3214,11 +3215,11 @@ Wed Sep 10 21:09:32 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 Wed Sep 10 18:25:19 2008  akira yamada  <akira@rice.p.arika.org>
 
 	* lib/uri/common.rb (URI::Parser): new class.
-	
+
 	* lib/uri/mailto.rb, lib/uri/generic.rb: follow the above change.
 
 	* test/uri/test_parser.rb: added tests for URI::Parser.
-	
+
 Wed Sep 10 10:35:32 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* lib/cgi/cookie.rb (CGI::Cookie#to_s): performance improvement
@@ -3413,7 +3414,7 @@ Mon Sep  8 22:30:03 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Mon Sep  8 22:16:20 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
-	* lib/cgi.rb : obsolete regex "n" option. [ruby-dev:36130] 
+	* lib/cgi.rb : obsolete regex "n" option. [ruby-dev:36130]
 
 Mon Sep  8 18:13:20 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -9930,6 +9931,7 @@ Tue Jun 24 00:21:53 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	  Adam Strzelecki <ono@java.pl> in [ruby-core:17220].
 
 Tue Jun 24 00:10:53 2008  wanabe  <s.wanabe@gmail.com>
+
 	* compile.c (iseq_build_from_ary): fix expression to obtain
 	  iseq->local_size and iseq->local_table_size.  [ruby-dev:35205]
 
