@@ -1,4 +1,4 @@
-Sun Oct 26 18:07:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Oct 26 18:11:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (blocking_region_{begin,end}): declared as inline.
 
@@ -7,6 +7,9 @@ Sun Oct 26 18:07:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* win32/win32.c (rb_w32_pipe): serial is DWORD.
 
 	* ext/etc/etc.c (sGroup): getgrent may not be available.
+
+	* ext/io/wait/{extconf.rb,wait.c}: needs sys/ioctl.h for fcntl on
+	  cygwin.
 
 Sun Oct 26 13:30:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

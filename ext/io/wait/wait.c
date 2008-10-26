@@ -14,6 +14,9 @@
 #include "ruby/io.h"
 
 #include <sys/types.h>
+#if defined(HAVE_SYS_IOCTL_H)
+#include <sys/ioctl.h>
+#endif
 #if defined(FIONREAD_HEADER)
 #include FIONREAD_HEADER
 #endif
