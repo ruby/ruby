@@ -1556,7 +1556,7 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     int cr;
 
     if (NEED_READCONV(fptr)) {
-        VALUE str = rb_str_new(NULL, 0);
+        if (!NIL_P(str)) rb_str_set_len(str, 0);
         make_readconv(fptr);
         while (1) {
             if (fptr->cbuf_len) {
