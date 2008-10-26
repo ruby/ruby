@@ -1,3 +1,7 @@
+Mon Oct 27 01:29:55 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/nkf/test_nkf.rb: add a test for [ruby-dev:36909].
+
 Mon Oct 27 01:05:48 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf.c (rb_nkf_convert): avoid GC.

@@ -13,4 +13,10 @@ Ruby"
     assert_equal(::NKF::EUC, NKF.guess(str_euc))
   end
 
+  def test_ruby_dev_36909
+    assert_nothing_raised do
+      1000.times { NKF.nkf("--oc=eucJP-nkf", "foo") }
+    end
+  end
+
 end
