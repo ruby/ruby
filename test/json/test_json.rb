@@ -90,30 +90,22 @@ class TC_JSON < Test::Unit::TestCase
     assert_equal({ "a" => 0.23 }, parse('  {  "a"  :  0.23  }  '))
   end
 
-  begin
-    require 'permutation'
-    def test_parse_more_complex_arrays
-      a = [ nil, false, true, "foßbar", [ "n€st€d", true ], { "nested" => true, "n€ßt€ð2" => {} }]
-      perms = Permutation.for a
-      perms.each do |perm|
-        orig_ary = perm.project
-        json = pretty_generate(orig_ary)
-        assert_equal orig_ary, parse(json)
-      end
+  def test_parse_more_complex_arrays
+    a = [ nil, false, true, "foßbar", [ "n€st€d", true ], { "nested" => true, "n€ßt€ð2" => {} }]
+    a.permutation do |orig_ary|
+      json = pretty_generate(orig_ary)
+      assert_equal orig_ary, parse(json)
     end
+  end
 
-    def test_parse_complex_objects
-      a = [ nil, false, true, "foßbar", [ "n€st€d", true ], { "nested" => true, "n€ßt€ð2" => {} }]
-      perms = Permutation.for a
-      perms.each do |perm|
-        s = "a"
-        orig_obj = perm.project.inject({}) { |h, x| h[s.dup] = x; s = s.succ; h }
-        json = pretty_generate(orig_obj)
-        assert_equal orig_obj, parse(json)
-      end
+  def test_parse_complex_objects
+    a = [ nil, false, true, "foßbar", [ "n€st€d", true ], { "nested" => true, "n€ßt€ð2" => {} }]
+    a.permutation do |orig_ary|
+      s = "a"
+      orig_obj = orig_ary.inject({}) { |h, x| h[s.dup] = x; s = s.succ; h }
+      json = pretty_generate(orig_obj)
+      assert_equal orig_obj, parse(json)
     end
-  rescue LoadError
-    warn "Skipping permutation tests."
   end
 
   def test_parse_arrays

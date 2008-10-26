@@ -1,3 +1,7 @@
+Sun Oct 26 21:28:42 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/json/test_json.rb: remove dependency on permutation gem.
+
 Sun Oct 26 19:18:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (blocking_region_{begin,end}): declared as inline.
