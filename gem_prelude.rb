@@ -80,18 +80,24 @@ if defined?(Gem) then
 
     GEM_PRELUDE_METHODS = Gem.methods(false)
 
-    require 'rubygems/defaults'
-
     begin
-      require 'rubygems/defaults/operating_system'
-    rescue LoadError
-    end
+      verbose, debug = $VERBOSE, $DEBUG
+      $VERBOSE = $DEBUG = nil
+      require 'rubygems/defaults'
 
-    if defined?(RUBY_ENGINE) then
       begin
-        require 'rubygems/defaults/#{RUBY_ENGINE}'
+        require 'rubygems/defaults/operating_system'
       rescue LoadError
       end
+
+      if defined?(RUBY_ENGINE) then
+        begin
+          require "rubygems/defaults/#{RUBY_ENGINE}"
+        rescue LoadError
+        end
+      end
+    ensure
+      $VERBOSE, $DEBUG = verbose, debug
     end
 
     module QuickLoader
@@ -183,12 +189,12 @@ if defined?(Gem) then
 
         require_paths = []
 
-        GemPaths.values.each do |path|
-          if File.exist?(File.join(path, ".require_paths"))
-            require_paths.concat(File.read(File.join(path, ".require_paths")).split.map {|require_path| File.join(path, require_path)})
+        GemPaths.each_value do |path|
+          if File.exist?(file = File.join(path, ".require_paths"))
+            require_paths.concat(File.read(file).split.map {|require_path| File.join(path, require_path)})
           else
-            require_paths << File.join(path, "bin") if File.exist?(File.join(path, "bin"))
-            require_paths << File.join(path, "lib") if File.exist?(File.join(path, "lib"))
+            require_paths << file if File.exist?(file = File.join(path, "bin"))
+            require_paths << file if File.exist?(file = File.join(path, "lib"))
           end
         end
 
