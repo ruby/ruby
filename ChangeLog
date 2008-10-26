@@ -1,4 +1,4 @@
-Sun Oct 26 18:11:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Oct 26 18:42:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (blocking_region_{begin,end}): declared as inline.
 
@@ -10,6 +10,11 @@ Sun Oct 26 18:11:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/wait/{extconf.rb,wait.c}: needs sys/ioctl.h for fcntl on
 	  cygwin.
+
+	* test/ruby/envutil.rb (assert_in_out_err): disables builtin rubygems
+	  to get rid of the interference.
+
+	* test/ruby/test_io.rb (ruby): ditto.
 
 Sun Oct 26 13:30:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
