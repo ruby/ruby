@@ -135,6 +135,7 @@ int nkf_split_options(const char *arg)
 static VALUE
 rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
 {
+    volatile tmp;
     reinit();
     StringValue(opt);
     nkf_split_options(RSTRING_PTR(opt));
@@ -155,7 +156,7 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     StringValue(src);
     input = (unsigned char *)RSTRING_PTR(src);
     i_len = RSTRING_LEN(src);
-    result = rb_str_new(0, i_len*3 + 10);
+    tmp = result = rb_str_new(0, i_len*3 + 10);
 
     output_ctr = 0;
     output     = (unsigned char *)RSTRING_PTR(result);
