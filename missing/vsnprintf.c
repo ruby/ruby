@@ -238,7 +238,7 @@ static int BSD__sfvwrite(fp, uio)
 	register struct __suio *uio;
 {
 	register size_t len;
-	register char *p;
+	register const char *p;
 	register struct __siov *iov;
 	register int w;
 
