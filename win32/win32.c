@@ -4182,7 +4182,7 @@ rb_w32_pipe(int fds[2])
 	return _pipe(fds, 65536L, _O_NOINHERIT);
 
     p = strchr(name, '0');
-    snprintf(p, strlen(p) + 1, "%x-%x", rb_w32_getpid(), serial++);
+    snprintf(p, strlen(p) + 1, "%x-%lx", rb_w32_getpid(), serial++);
 
     sec.nLength = sizeof(sec);
     sec.lpSecurityDescriptor = NULL;

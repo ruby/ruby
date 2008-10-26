@@ -1,3 +1,11 @@
+Sun Oct 26 18:01:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (blocking_region_{begin,end}): declared as inline.
+
+	* util.c (freedtoa): used only when MULTIPLE_THREADS is not defined.
+
+	* win32/win32.c (rb_w32_pipe): serial is DWORD.
+
 Sun Oct 26 13:30:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (read_all): use the given buffer to read when needs readconv.

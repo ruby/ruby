@@ -95,9 +95,9 @@ static void set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func, v
 				 struct rb_unblock_callback *old);
 static void reset_unblock_function(rb_thread_t *th, const struct rb_unblock_callback *old);
 
-static void blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
-				  rb_unblock_function_t *func, void *arg);
-static void blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region);
+static void inline blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
+					 rb_unblock_function_t *func, void *arg);
+static void inline blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region);
 
 #define GVL_UNLOCK_BEGIN() do { \
   rb_thread_t *_th_stored = GET_THREAD(); \
