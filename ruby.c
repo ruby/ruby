@@ -1203,10 +1203,22 @@ process_options(VALUE arg)
     return iseq;
 }
 
-static NODE *
-load_file(VALUE parser, const char *fname, int script, struct cmdline_options *opt)
+struct load_file_arg {
+    VALUE parser;
+    const char *fname;
+    int script;
+    struct cmdline_options *opt;
+};
+
+static VALUE
+load_file_internal(VALUE arg)
 {
     extern VALUE rb_stdin;
+    struct load_file_arg *argp = (struct load_file_arg *)arg;
+    VALUE parser = argp->parser;
+    const char *fname = argp->fname;
+    int script = argp->script;
+    struct cmdline_options *opt = argp->opt;
     VALUE f;
     int line_start = 1;
     NODE *tree = 0;
@@ -1353,7 +1365,24 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
     else if (f != rb_stdin) {
 	rb_io_close(f);
     }
-    return tree;
+    return (VALUE)tree;
+}
+
+static VALUE
+restore_lineno(VALUE lineno)
+{
+    return rb_gv_set("$.", lineno);
+}
+
+static NODE *
+load_file(VALUE parser, const char *fname, int script, struct cmdline_options *opt)
+{
+    struct load_file_arg arg;
+    arg.parser = parser;
+    arg.fname = fname;
+    arg.script = script;
+    arg.opt = opt;
+    return (NODE *)rb_ensure(load_file_internal, (VALUE)&arg, restore_lineno, rb_gv_get("$."));
 }
 
 void *

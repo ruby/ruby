@@ -1,4 +1,6 @@
-Mon Oct 27 15:55:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Oct 27 15:58:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file): preserves $..  [ruby-dev:36937]
 
 	* io.c (argf_init): initial value of $. should be 0.
 	  see [ruby-dev:36937].
