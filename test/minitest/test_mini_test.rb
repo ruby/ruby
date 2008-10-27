@@ -5,6 +5,7 @@
 ############################################################
 
 require 'stringio'
+require 'pathname'
 require 'minitest/unit'
 
 MiniTest::Unit.autorun
@@ -27,22 +28,24 @@ class TestMiniTest < MiniTest::Unit::TestCase
     Object.send :remove_const, :ATestCase if defined? ATestCase
   end
 
-  BT_MIDDLE = ["./lib/mini/test.rb:165:in `run_test_suites'",
-               "./lib/mini/test.rb:161:in `each'",
-               "./lib/mini/test.rb:161:in `run_test_suites'",
-               "./lib/mini/test.rb:158:in `each'",
-               "./lib/mini/test.rb:158:in `run_test_suites'",
-               "./lib/mini/test.rb:139:in `run'",
-               "./lib/mini/test.rb:106:in `run'"]
+  pwd = Pathname.new(Dir.pwd)
+  MINITEST_BASE_DIR = Pathname.new(File.expand_path(MiniTest::MINI_DIR)).relative_path_from(pwd)
+  BT_MIDDLE = ["#{MINITEST_BASE_DIR}/test.rb:165:in `run_test_suites'",
+               "#{MINITEST_BASE_DIR}/test.rb:161:in `each'",
+               "#{MINITEST_BASE_DIR}/test.rb:161:in `run_test_suites'",
+               "#{MINITEST_BASE_DIR}/test.rb:158:in `each'",
+               "#{MINITEST_BASE_DIR}/test.rb:158:in `run_test_suites'",
+               "#{MINITEST_BASE_DIR}/test.rb:139:in `run'",
+               "#{MINITEST_BASE_DIR}/test.rb:106:in `run'"]
 
   def test_filter_backtrace
     # this is a semi-lame mix of relative paths.
     # I cheated by making the autotest parts not have ./
     bt = (["lib/autotest.rb:571:in `add_exception'",
            "test/test_autotest.rb:62:in `test_add_exception'",
-           "./lib/mini/test.rb:165:in `__send__'"] +
+           "#{MINITEST_BASE_DIR}/test.rb:165:in `__send__'"] +
           BT_MIDDLE +
-          ["./lib/mini/test.rb:29",
+          ["#{MINITEST_BASE_DIR}/test.rb:29",
            "test/test_autotest.rb:422"])
     bt = util_expand_bt bt
 
@@ -73,9 +76,9 @@ class TestMiniTest < MiniTest::Unit::TestCase
   end
 
   def test_filter_backtrace_unit_starts
-    bt = (["./lib/mini/test.rb:165:in `__send__'"] +
+    bt = (["#{MINITEST_BASE_DIR}/test.rb:165:in `__send__'"] +
           BT_MIDDLE +
-          ["./lib/mini/test.rb:29",
+          ["#{MINITEST_BASE_DIR}/mini/test.rb:29",
            "-e:1"])
 
     bt = util_expand_bt bt
