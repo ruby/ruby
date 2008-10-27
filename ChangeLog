@@ -37,11 +37,17 @@ Sun Oct 26 19:18:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (sGroup): getgrent may not be available.
 
+Sun Oct 26 18:11:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
 	* ext/io/wait/{extconf.rb,wait.c}: needs sys/ioctl.h for fcntl on
 	  cygwin.
 
+Sun Oct 26 18:18:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
 	* gem_prelude.rb: disables debug and verbose flags to suppress failure
 	  messages.  interpolation does not occur inside single quotes.
+
+Sun Oct 26 18:42:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (assert_in_out_err): disables builtin rubygems
 	  to get rid of the interference.
