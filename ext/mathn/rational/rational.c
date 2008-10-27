@@ -30,7 +30,9 @@
 #define ONE INT2FIX(1)
 #define TWO INT2FIX(2)
 
+#if 0
 VALUE rb_cRational;
+#endif
 
 static ID id_abs, id_cmp, id_convert, id_equal_p, id_expt, id_floor,
     id_format, id_hash, id_idiv, id_inspect, id_integer_p, id_negate,

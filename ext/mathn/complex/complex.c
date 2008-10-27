@@ -24,7 +24,9 @@
 #define ONE INT2FIX(1)
 #define TWO INT2FIX(2)
 
+#if 0
 VALUE rb_cComplex;
+#endif
 
 static ID id_abs, id_abs2, id_arg, id_cmp, id_conj, id_convert,
     id_denominator, id_divmod, id_equal_p, id_expt, id_floor, id_hash,
