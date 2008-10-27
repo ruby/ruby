@@ -87,7 +87,7 @@ Sat Oct 25 09:54:10 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 	  give up.  [ruby-core:19465]
 
 	* test/csv/test_features.rb, test/csv/test_table.rb, test/csv/test_row.rb:
-	  Loosened some tests to check for a compatible? Encoding instea
+	  Loosened some tests to check for a compatible? Encoding instead
 	  of an exact Encoding.  [ruby-core:19470]
 
 Sat Oct 25 07:42:49 2008  Eric Hodel  <drbrain@segment7.net>
@@ -3824,7 +3824,7 @@ Fri Sep  5 18:37:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri Sep  5 18:16:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_create): strips glibc style option before
-	  charset mapping.  retris without options if they seemed causing
+	  charset mapping.  retries without options if they seemed causing
 	  error, and warns.  [ruby-dev:36147]
 
 Fri Sep  5 03:09:48 2008  Koichi Sasada  <ko1@atdot.net>
