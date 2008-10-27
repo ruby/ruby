@@ -1,3 +1,13 @@
+Mon Oct 27 15:38:38 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/minitest/test_mini_test.rb
+	  (test_assert_raises_triggered_different): the test failed when a
+	  file path in the backtrace contontains something except [\w\/\.],
+	  e.g. hyphen, Japanese characters or backslash.
+
+	* test/minitest/test_mini_test.rb
+	  (test_assert_raises_triggered_subclass): ditto.
+
 Mon Oct 27 15:32:08 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/minitest/test_mini_test.rb: fixed that r19958 made
