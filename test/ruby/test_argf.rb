@@ -55,7 +55,7 @@ class TestArgf < Test::Unit::TestCase
   end
 
   def test_argf
-    ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
+    src = <<-SRC
       a = ARGF
       b = a.dup
       p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["1", 1, "1", 1]
@@ -72,23 +72,20 @@ class TestArgf < Test::Unit::TestCase
       p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["5", 5, "5", 8]
       p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["6", 6, "6", 9]
     SRC
-      a = f.read.split("\n")
-      assert_equal('["1", 1, "1", 1]', a.shift)
-      assert_equal('["2", 2, "2", 2]', a.shift)
-      assert_equal('["1", 1, "1", 3]', a.shift)
-      assert_equal('["2", 2, "2", 4]', a.shift)
-      assert_equal('["3", 3, "3", 5]', a.shift)
-      assert_equal('["4", 4, "4", 6]', a.shift)
-      assert_equal('["5", 5, "5", 7]', a.shift)
-      assert_equal('["5", 5, "5", 8]', a.shift)
-      assert_equal('["6", 6, "6", 9]', a.shift)
+    expected = src.scan(/\#=> *(.*+)/).flatten
+    ruby('-e', src, @t1.path, @t2.path, @t3.path) do |f|
+      f.each_with_index do |a, i|
+        assert_equal(expected.shift, a.chomp, "[ruby-dev:34445]: line #{i}")
+      end
+
+      assert_empty(expected, "[ruby-dev:34445]: remained")
 
       # is this test OK? [ruby-dev:34445]
     end
   end
 
   def test_lineno
-    ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
+    src = <<-SRC
       a = ARGF
       a.gets; p $.  #=> 1
       a.gets; p $.  #=> 2
@@ -105,12 +102,14 @@ class TestArgf < Test::Unit::TestCase
       a.gets; p $.  #=> 2001
       a.gets; p $.  #=> 2001
     SRC
-      assert_equal("1,2,3,3,3,4,4,3,1000,1001,1002,2001,2001", f.read.chomp.gsub("\n", ","))
+    expected = src.scan(/\#=> *(.*+)/).join(",")
+    ruby('-e', src, @t1.path, @t2.path, @t3.path) do |f|
+      assert_equal(expected, f.read.chomp.gsub("\n", ","))
     end
   end
 
   def test_lineno2
-    ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
+    src = <<-SRC
       a = ARGF.dup
       a.gets; p $.  #=> 1
       a.gets; p $.  #=> 2
@@ -123,10 +122,12 @@ class TestArgf < Test::Unit::TestCase
       a.gets; p $.  #=> 2
       a.gets; p $.  #=> 2
       $. = 2000
-      a.gets; p $.  #=> 2001
+      a.gets; p $.  #=> 2000
       a.gets; p $.  #=> 2000
     SRC
-      assert_equal("1,2,1,1,1,2,1,1,2,2,2000,2000", f.read.chomp.gsub("\n", ","))
+    expected = src.scan(/\#=> *(.*+)/).join(",")
+    ruby('-e', src, @t1.path, @t2.path, @t3.path) do |f|
+      assert_equal(expected, f.read.chomp.gsub("\n", ","))
     end
   end
 
