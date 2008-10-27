@@ -310,6 +310,166 @@ class TestProc < Test::Unit::TestCase
     assert_raise(ArgumentError) { proc {}.curry.binding }
   end
 
+  def test_proc_args_plain
+    pr = proc {|a,b,c,d,e|
+      [a,b,c,d,e]
+    }
+    assert_equal [nil,nil,nil,nil,nil],  pr.call()
+    assert_equal [1,nil,nil,nil,nil],  pr.call(1)
+    assert_equal [1,2,nil,nil,nil],  pr.call(1,2)
+    assert_equal [1,2,3,nil,nil],  pr.call(1,2,3)
+    assert_equal [1,2,3,4,nil],  pr.call(1,2,3,4)
+    assert_equal [1,2,3,4,5],  pr.call(1,2,3,4,5)
+    assert_equal [1,2,3,4,5],  pr.call(1,2,3,4,5,6)
+
+    assert_equal [nil,nil,nil,nil,nil],  pr.call([])
+    assert_equal [1,nil,nil,nil,nil],  pr.call([1])
+    assert_equal [1,2,nil,nil,nil],  pr.call([1,2])
+    assert_equal [1,2,3,nil,nil],  pr.call([1,2,3])
+    assert_equal [1,2,3,4,nil],  pr.call([1,2,3,4])
+    assert_equal [1,2,3,4,5],  pr.call([1,2,3,4,5])
+    assert_equal [1,2,3,4,5],  pr.call([1,2,3,4,5,6])
+
+    r = proc{|a| a}.call([1,2,3])
+    assert_equal [1,2,3], r
+
+    r = proc{|a,| a}.call([1,2,3])
+    assert_equal 1, r
+
+    r = proc{|a,| a}.call([])
+    assert_equal nil, r
+  end
+
+
+  def test_proc_args_rest
+    pr = proc {|a,b,c,*d|
+      [a,b,c,d]
+    }
+    assert_equal [nil,nil,nil,[]],  pr.call()
+    assert_equal [1,nil,nil,[]],  pr.call(1)
+    assert_equal [1,2,nil,[]],  pr.call(1,2)
+    assert_equal [1,2,3,[]],  pr.call(1,2,3)
+    assert_equal [1,2,3,[4]], pr.call(1,2,3,4)
+    assert_equal [1,2,3,[4,5]], pr.call(1,2,3,4,5)
+    assert_equal [1,2,3,[4,5,6]], pr.call(1,2,3,4,5,6)
+
+    assert_equal [nil,nil,nil,[]],  pr.call([])
+    assert_equal [1,nil,nil,[]],  pr.call([1])
+    assert_equal [1,2,nil,[]],  pr.call([1,2])
+    assert_equal [1,2,3,[]],  pr.call([1,2,3])
+    assert_equal [1,2,3,[4]], pr.call([1,2,3,4])
+    assert_equal [1,2,3,[4,5]], pr.call([1,2,3,4,5])
+    assert_equal [1,2,3,[4,5,6]], pr.call([1,2,3,4,5,6])
+
+    r = proc{|*a| a}.call([1,2,3])
+    assert [1,2,3], r
+  end
+
+  def test_proc_args_rest_and_post
+    pr = proc {|a,b,*c,d,e|
+      [a,b,c,d,e]
+    }
+    assert_equal [nil, nil, [], nil, nil], pr.call()
+    assert_equal [1, nil, [], nil, nil], pr.call(1)
+    assert_equal [1, 2, [], nil, nil], pr.call(1,2)
+    assert_equal [1, 2, [], 3, nil], pr.call(1,2,3)
+    assert_equal [1, 2, [], 3, 4], pr.call(1,2,3,4)
+    assert_equal [1, 2, [3], 4, 5], pr.call(1,2,3,4,5)
+    assert_equal [1, 2, [3, 4], 5, 6], pr.call(1,2,3,4,5,6)
+    assert_equal [1, 2, [3, 4, 5], 6,7], pr.call(1,2,3,4,5,6,7)
+
+    assert_equal [nil, nil, [], nil, nil], pr.call([])
+    assert_equal [1, nil, [], nil, nil], pr.call([1])
+    assert_equal [1, 2, [], nil, nil], pr.call([1,2])
+    assert_equal [1, 2, [], 3, nil], pr.call([1,2,3])
+    assert_equal [1, 2, [], 3, 4], pr.call([1,2,3,4])
+    assert_equal [1, 2, [3], 4, 5], pr.call([1,2,3,4,5])
+    assert_equal [1, 2, [3, 4], 5, 6], pr.call([1,2,3,4,5,6])
+    assert_equal [1, 2, [3, 4, 5], 6,7], pr.call([1,2,3,4,5,6,7])
+  end
+
+  def test_proc_args_opt
+    pr = proc {|a,b,c=:c|
+      [a,b,c]
+    }
+    assert_equal [nil, nil, :c], pr.call()
+    assert_equal [1, nil, :c], pr.call(1)
+    assert_equal [1, 2, :c], pr.call(1,2)
+    assert_equal [1, 2, 3], pr.call(1,2,3)
+    assert_equal [1, 2, 3], pr.call(1,2,3,4)
+    assert_equal [1, 2, 3], pr.call(1,2,3,4,5)
+    assert_equal [1, 2, 3], pr.call(1,2,3,4,5,6)
+
+    assert_equal [nil, nil, :c], pr.call([])
+    assert_equal [1, nil, :c], pr.call([1])
+    assert_equal [1, 2, :c], pr.call([1,2])
+    assert_equal [1, 2, 3], pr.call([1,2,3])
+    assert_equal [1, 2, 3], pr.call([1,2,3,4])
+    assert_equal [1, 2, 3], pr.call([1,2,3,4,5])
+    assert_equal [1, 2, 3], pr.call([1,2,3,4,5,6])
+  end
+
+  def test_proc_args_opt_and_post
+    pr = proc {|a,b,c=:c,d,e|
+      [a,b,c,d,e]
+    }
+    assert_equal [nil, nil, :c, nil, nil], pr.call()
+    assert_equal [1, nil, :c, nil, nil], pr.call(1)
+    assert_equal [1, 2, :c, nil, nil], pr.call(1,2)
+    assert_equal [1, 2, :c, 3, nil], pr.call(1,2,3)
+    assert_equal [1, 2, :c, 3, 4], pr.call(1,2,3,4)
+    assert_equal [1, 2, 3, 4, 5], pr.call(1,2,3,4,5)
+    assert_equal [1, 2, 3, 4, 5], pr.call(1,2,3,4,5,6)
+
+    assert_equal [nil, nil, :c, nil, nil], pr.call([])
+    assert_equal [1, nil, :c, nil, nil], pr.call([1])
+    assert_equal [1, 2, :c, nil, nil], pr.call([1,2])
+    assert_equal [1, 2, :c, 3, nil], pr.call([1,2,3])
+    assert_equal [1, 2, :c, 3, 4], pr.call([1,2,3,4])
+    assert_equal [1, 2, 3, 4, 5], pr.call([1,2,3,4,5])
+    assert_equal [1, 2, 3, 4, 5], pr.call([1,2,3,4,5,6])
+  end
+
+  def test_proc_args_opt_and_rest
+    pr = proc {|a,b,c=:c,*d|
+      [a,b,c,d]
+    }
+    assert_equal [nil, nil, :c, []], pr.call()
+    assert_equal [1, nil, :c, []], pr.call(1)
+    assert_equal [1, 2, :c, []], pr.call(1,2)
+    assert_equal [1, 2, 3, []], pr.call(1,2,3)
+    assert_equal [1, 2, 3, [4]], pr.call(1,2,3,4)
+    assert_equal [1, 2, 3, [4, 5]], pr.call(1,2,3,4,5)
+
+    assert_equal [nil, nil, :c, []], pr.call([])
+    assert_equal [1, nil, :c, []], pr.call([1])
+    assert_equal [1, 2, :c, []], pr.call([1,2])
+    assert_equal [1, 2, 3, []], pr.call([1,2,3])
+    assert_equal [1, 2, 3, [4]], pr.call([1,2,3,4])
+    assert_equal [1, 2, 3, [4, 5]], pr.call([1,2,3,4,5])
+  end
+
+  def test_proc_args_opt_and_rest_and_post
+    pr = proc {|a,b,c=:c,*d,e|
+      [a,b,c,d,e]
+    }
+    assert_equal [nil, nil, :c, [], nil], pr.call()
+    assert_equal [1, nil, :c, [], nil], pr.call(1)
+    assert_equal [1, 2, :c, [], nil], pr.call(1,2)
+    assert_equal [1, 2, :c, [], 3], pr.call(1,2,3)
+    assert_equal [1, 2, 3, [], 4], pr.call(1,2,3,4)
+    assert_equal [1, 2, 3, [4], 5], pr.call(1,2,3,4,5)
+    assert_equal [1, 2, 3, [4,5], 6], pr.call(1,2,3,4,5,6)
+
+    assert_equal [nil, nil, :c, [], nil], pr.call([])
+    assert_equal [1, nil, :c, [], nil], pr.call([1])
+    assert_equal [1, 2, :c, [], nil], pr.call([1,2])
+    assert_equal [1, 2, :c, [], 3], pr.call([1,2,3])
+    assert_equal [1, 2, 3, [], 4], pr.call([1,2,3,4])
+    assert_equal [1, 2, 3, [4], 5], pr.call([1,2,3,4,5])
+    assert_equal [1, 2, 3, [4,5], 6], pr.call([1,2,3,4,5,6])
+  end
+
   def test_proc_args_unleashed
     r = proc {|a,b=1,*c,d,e|
       [a,b,c,d,e]

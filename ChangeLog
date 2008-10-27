@@ -1,3 +1,16 @@
+Mon Oct 27 22:29:11 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* vm_insnhelper.c (vm_yield_setup_args): supports optional parameters.
+	  Fixed [ruby-core:19503].
+
+	* vm_insnhelper.c (vm_yield_setup_block_args): a new function. extracted
+	  from vm_yield_setup_args.
+
+	* vm_insnhelper.c (vm_yield_setup_block_args_complex): ditto.
+
+	* test/ruby/test_proc.rb: added tests for arguments on a Proc from
+	  Kernel#proc called.
+
 Mon Oct 27 20:03:05 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/mathn/complex/complex.c: no need to define rb_cComplex because

@@ -678,13 +678,157 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
     return val;
 }
 
+
+/*--
+ * @brief on supplied all of optional, rest and post parameters.
+ * @pre iseq is block style (not lambda style)
+ */
+static inline int
+vm_yield_setup_block_args_complex(rb_thread_t *th, const rb_iseq_t * iseq,
+	int argc, VALUE * argv)
+{
+    int opt_pc = 0;
+    int i;
+    const int m = iseq->argc;
+    const int r = iseq->arg_rest;
+    int len = iseq->arg_post_len;
+    int start = iseq->arg_post_start;
+    int rsize = argc > m ? argc - m : 0;    /* # of arguments which did not consumed yet */
+    int psize = rsize > len ? len : rsize;  /* # of post arguments */
+    int osize = 0;  /* # of opt arguments */
+    VALUE ary;
+
+    /* reserves arguments for post parameters */
+    rsize -= psize;
+
+    if (iseq->arg_opts) {
+	const int opts = iseq->arg_opts - 1;
+	if (rsize > opts) {
+            osize = opts;
+	    opt_pc = iseq->arg_opt_table[opts];
+	}
+	else {
+            osize = rsize;
+	    opt_pc = iseq->arg_opt_table[rsize];
+	}
+    }
+    rsize -= osize;
+
+    if (0) {
+	printf(" argc: %d\n", argc);
+	printf("  len: %d\n", len);
+	printf("start: %d\n", start);
+	printf("rsize: %d\n", rsize);
+    }
+
+    if (r == -1) {
+        /* copy post argument */
+        MEMMOVE(&argv[start], &argv[m+osize], VALUE, psize);
+    }
+    else {
+        ary = rb_ary_new4(rsize, &argv[r]);
+
+        /* copy post argument */
+        MEMMOVE(&argv[start], &argv[m+rsize+osize], VALUE, psize);
+        argv[r] = ary;
+    }
+
+    for (i=psize; i<len; i++) {
+	argv[start + i] = Qnil;
+    }
+
+    return opt_pc;
+}
+
+static inline int
+vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
+	int orig_argc, VALUE * argv,
+	const rb_block_t *blockptr)
+{
+    int i;
+    int argc = orig_argc;
+    const int m = iseq->argc;
+    VALUE ary;
+    int opt_pc = 0;
+
+    th->mark_stack_len = argc;
+
+    /*
+     * yield [1, 2]
+     *  => {|a|} => a = [1, 2]
+     *  => {|a, b|} => a, b = [1, 2]
+     */
+    if (!(iseq->arg_simple & 0x02) &&          /* exclude {|a|} */
+            (m + iseq->arg_post_len) > 0 &&    /* this process is meaningful */
+            argc == 1 && !NIL_P(ary = rb_check_array_type(argv[0]))) { /* rhs is only an array */
+        th->mark_stack_len = argc = RARRAY_LEN(ary);
+
+        CHECK_STACK_OVERFLOW(th->cfp, argc);
+
+        MEMCPY(argv, RARRAY_PTR(ary), VALUE, argc);
+    }
+
+    for (i=argc; i<m; i++) {
+        argv[i] = Qnil;
+    }
+
+    if (iseq->arg_rest == -1 && iseq->arg_opts == 0) {
+        const int arg_size = iseq->arg_size;
+        if (arg_size < argc) {
+            /*
+             * yield 1, 2
+             * => {|a|} # truncate
+             */
+            th->mark_stack_len = argc = arg_size;
+        }
+    }
+    else {
+        int r = iseq->arg_rest;
+
+        if (iseq->arg_post_len || 
+                iseq->arg_opts) { /* TODO: implement simple version for (iseq->arg_post_len==0 && iseq->arg_opts > 0) */
+	    opt_pc = vm_yield_setup_block_args_complex(th, iseq, argc, argv);
+        }
+        else {
+            if (argc < r) {
+                /* yield 1
+                 * => {|a, b, *r|}
+                 */
+                for (i=argc; i<r; i++) {
+                    argv[i] = Qnil;
+                }
+                argv[r] = rb_ary_new();
+            }
+            else {
+                argv[r] = rb_ary_new4(argc-r, &argv[r]);
+            }
+        }
+
+        th->mark_stack_len = iseq->arg_size;
+    }
+
+    /* {|&b|} */
+    if (iseq->arg_block != -1) {
+        VALUE procval = Qnil;
+
+        if (blockptr) {
+            procval = blockptr->proc;
+        }
+
+        argv[iseq->arg_block] = procval;
+    }
+
+    th->mark_stack_len = 0;
+    return opt_pc;
+}
+
 static inline int
 vm_yield_setup_args(rb_thread_t * const th, const rb_iseq_t *iseq,
-		    int orig_argc, VALUE *argv,
+		    int argc, VALUE *argv,
 		    const rb_block_t *blockptr, int lambda)
 {
     if (0) { /* for debug */
-	printf("     argc: %d\n", orig_argc);
+	printf("     argc: %d\n", argc);
 	printf("iseq argc: %d\n", iseq->argc);
 	printf("iseq opts: %d\n", iseq->arg_opts);
 	printf("iseq rest: %d\n", iseq->arg_rest);
@@ -697,106 +841,11 @@ vm_yield_setup_args(rb_thread_t * const th, const rb_iseq_t *iseq,
     if (lambda) {
 	/* call as method */
 	int opt_pc;
-	VM_CALLEE_SETUP_ARG(opt_pc, th, iseq, orig_argc, argv, &blockptr);
+	VM_CALLEE_SETUP_ARG(opt_pc, th, iseq, argc, argv, &blockptr);
 	return opt_pc;
     }
     else {
-	int i;
-	int argc = orig_argc;
-	const int m = iseq->argc;
-	VALUE ary;
-
-	th->mark_stack_len = argc;
-
-	/*
-	 * yield [1, 2]
-	 *  => {|a|} => a = [1, 2]
-	 *  => {|a, b|} => a, b = [1, 2]
-	 */
-	if (!(iseq->arg_simple & 0x02) &&
-	    (m + iseq->arg_post_len) > 0 &&
-	    argc == 1 && !NIL_P(ary = rb_check_array_type(argv[0]))) {
-	    th->mark_stack_len = argc = RARRAY_LEN(ary);
-
-	    CHECK_STACK_OVERFLOW(th->cfp, argc);
-
-	    MEMCPY(argv, RARRAY_PTR(ary), VALUE, argc);
-	}
-
-	for (i=argc; i<m; i++) {
-	    argv[i] = Qnil;
-	}
-
-	if (iseq->arg_rest == -1) {
-	    const int arg_size = iseq->arg_size;
-	    if (arg_size < argc) {
-		/*
-		 * yield 1, 2
-		 * => {|a|} # truncate
-		 */
-		th->mark_stack_len = argc = arg_size;
-	    }
-	}
-	else {
-	    int r = iseq->arg_rest;
-
-	    if (iseq->arg_post_len) {
-		int len = iseq->arg_post_len;
-		int start = iseq->arg_post_start;
-		int rsize = argc > m ? argc - m : 0;
-		int psize = rsize;
-		VALUE ary;
-
-		if (psize > len) psize = len;
-
-		ary = rb_ary_new4(rsize - psize, &argv[r]);
-
-		if (0) {
-		    printf(" argc: %d\n", argc);
-		    printf("  len: %d\n", len);
-		    printf("start: %d\n", start);
-		    printf("rsize: %d\n", rsize);
-		}
-
-		/* copy post argument */
-		MEMMOVE(&argv[start], &argv[r + rsize - psize], VALUE, psize);
-
-		for (i=psize; i<len; i++) {
-		    argv[start + i] = Qnil;
-		}
-		argv[r] = ary;
-	    }
-	    else {
-		if (argc < r) {
-		    /* yield 1
-		     * => {|a, b, *r|}
-		     */
-		    for (i=argc; i<r; i++) {
-			argv[i] = Qnil;
-		    }
-		    argv[r] = rb_ary_new();
-		}
-		else {
-		    argv[r] = rb_ary_new4(argc-r, &argv[r]);
-		}
-	    }
-
-	    th->mark_stack_len = iseq->arg_size;
-	}
-
-	/* {|&b|} */
-	if (iseq->arg_block != -1) {
-	    VALUE procval = Qnil;
-
-	    if (blockptr) {
-		procval = blockptr->proc;
-	    }
-
-	    argv[iseq->arg_block] = procval;
-	}
-
-	th->mark_stack_len = 0;
-	return 0;
+	return vm_yield_setup_block_args(th, iseq, argc, argv, blockptr);
     }
 }
 
