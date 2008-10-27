@@ -812,7 +812,7 @@ class TestIO < Test::Unit::TestCase
         f.gets; p $.
       end
     SRC
-      assert_equal("nil,1,2,2,1001,1001,1001,1,2,3,3", f.read.chomp.gsub("\n", ","))
+      assert_equal("0,1,2,2,1001,1001,1001,1,2,3,3", f.read.chomp.gsub("\n", ","))
     end
 
     pipe(proc do |w|

@@ -1,3 +1,8 @@
+Mon Oct 27 15:55:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_init): initial value of $. should be 0.
+	  see [ruby-dev:36937].
+
 Mon Oct 27 15:38:38 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/minitest/test_mini_test.rb

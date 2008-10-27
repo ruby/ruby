@@ -5821,7 +5821,7 @@ argf_init(struct argf *p, VALUE v)
 {
     p->filename = Qnil;
     p->current_file = Qnil;
-    p->lineno = Qnil;
+    p->lineno = INT2FIX(0);
     p->argv = v;
 }
 
