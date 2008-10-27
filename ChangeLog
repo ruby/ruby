@@ -1,3 +1,8 @@
+Mon Oct 27 15:32:08 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/minitest/test_mini_test.rb: fixed that r19958 made
+	  test-all fail when the ruby was built at $(srcdir).
+
 Mon Oct 27 12:04:58 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/envutil.rb: reverted the changeset 19948 because it

@@ -28,8 +28,10 @@ class TestMiniTest < MiniTest::Unit::TestCase
     Object.send :remove_const, :ATestCase if defined? ATestCase
   end
 
-  pwd = Pathname.new(Dir.pwd)
-  MINITEST_BASE_DIR = Pathname.new(File.expand_path(MiniTest::MINI_DIR)).relative_path_from(pwd)
+  pwd = Pathname.new(File.expand_path Dir.pwd)
+  basedir = Pathname.new(File.expand_path(MiniTest::MINI_DIR)) + 'mini'
+  basedir = basedir.relative_path_from(pwd).to_s
+  MINITEST_BASE_DIR = basedir[/\A\./] ? basedir : "./#{basedir}"
   BT_MIDDLE = ["#{MINITEST_BASE_DIR}/test.rb:165:in `run_test_suites'",
                "#{MINITEST_BASE_DIR}/test.rb:161:in `each'",
                "#{MINITEST_BASE_DIR}/test.rb:161:in `run_test_suites'",
