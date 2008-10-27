@@ -1,3 +1,10 @@
+Mon Oct 27 12:04:58 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/ruby/envutil.rb: reverted the changeset 19948 because it
+	  concealed unexpected behaviours of ruby.
+
+	* test/ruby/test_io.rb: ditto.
+
 Mon Oct 27 12:02:53 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/nkf/nkf.c (rb_nkf_convert): should specify type of variable.

@@ -122,7 +122,7 @@ module Test
         c = "C"
         env = {}
         LANG_ENVS.each {|lc| env[lc], ENV[lc] = ENV[lc], c}
-        pid = spawn(EnvUtil.rubybin, "--disable-gems", *args, STDIN=>in_c, STDOUT=>out_c, STDERR=>err_c)
+        pid = spawn(EnvUtil.rubybin, *args, STDIN=>in_c, STDOUT=>out_c, STDERR=>err_c)
         in_c.close
         out_c.close
         err_c.close

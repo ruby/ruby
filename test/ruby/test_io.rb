@@ -581,7 +581,7 @@ class TestIO < Test::Unit::TestCase
   def ruby(*args)
     args = ['-e', '$>.write($<.read)'] if args.empty?
     ruby = EnvUtil.rubybin
-    f = IO.popen([ruby, "--disable-gems"] + args, 'r+')
+    f = IO.popen([ruby] + args, 'r+')
     yield(f)
   ensure
     f.close unless !f || f.closed?
