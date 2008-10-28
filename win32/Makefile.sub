@@ -214,7 +214,7 @@ MINIRUBY = $(RUBY) -I$(MAKEDIR) -rfake
 RUNRUBY = $(MINIRUBY)
 !else
 MINIRUBY = .\miniruby$(EXEEXT) -I$(srcdir)/lib
-RUNRUBY = .\$(PROGRAM) -I"$(EXTOUT)/$(arch)"
+RUNRUBY = .\$(PROGRAM) -I$(srcdir)/lib -I"$(EXTOUT)/$(arch)"
 !endif
 MINIRUBY = $(MINIRUBY) $(MINIRUBYOPT)
 RUNRUBY = $(RUNRUBY) "$(srcdir)/runruby.rb" --extout="$(EXTOUT)" --
