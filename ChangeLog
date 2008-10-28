@@ -1,3 +1,7 @@
+Tue Oct 28 17:21:18 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* tool/make-snapshot.rb: merged from ruby_1_9_1.
+
 Tue Oct 28 16:56:31 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* gem_prelude.rb: merged from ruby_1_9_1 branch.

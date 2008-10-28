@@ -197,11 +197,14 @@ end
 
 revisions.collect {|rev| package(rev, destdir)}.flatten.each do |name|
   name or next
-  str = open(name, "rb") {|f| f.read}
+  str = open(name, "rb:binary") {|f| f.read}
   md5 = Digest::MD5.hexdigest str
   sha = Digest::SHA256.hexdigest str
-  puts "MD5(#{name})= #{md5}"
-  puts "SHA256(#{name})= #{sha}"
-  puts "SIZE(name)= #{str.bytesize}"
+  puts "* #{name}"
+  puts "  SIZE:   #{str.bytesize} bytes"
+  puts "  MD5:    #{md5}" 
+  puts "  SHA256: #{sha}"
   puts
 end
+
+# vim:fileencoding=US-ASCII sw=2 ts=4 noexpandtab ff=unix
