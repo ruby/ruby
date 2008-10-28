@@ -1,3 +1,11 @@
+Tue Oct 28 23:29:06 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (kanji_convert): output unicode chars.
+	  [ruby-dev:36957]
+
+	* ext/nkf/nkf-utf8/nkf.c (numchar_getc): increase buffer size.
+	  reported and patched at [ruby-dev:36957] by mame.
+
 Tue Oct 28 23:03:46 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_proc.rb: filled all patterns for testing
