@@ -4129,8 +4129,10 @@ rb_w32_open(const char *file, int oflag, ...)
 	    fd = -1;
 	    goto quit;
 	}
-	if (!(flags & (FDEV | FPIPE)) && (oflag & O_APPEND))
+	if (!(flags & (FDEV | FPIPE)) && (oflag & O_APPEND)) {
 	    flags |= FAPPEND;
+	    SetFilePointer(h, 0, NULL, FILE_END);
+	}
 
 	_set_osfhnd(fd, (long)h);
 	_osfile(fd) = flags | FOPEN;
