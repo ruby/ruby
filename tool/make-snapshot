@@ -1,4 +1,5 @@
 #!/usr/bin/ruby -s
+# -*- encoding: us-ascii -*-
 require 'uri'
 require 'digest/md5'
 require 'digest/sha2'
@@ -19,6 +20,11 @@ ENV["BASERUBY"] ||= "ruby"
 ENV["RUBY"] ||= "ruby"
 ENV["MV"] ||= "mv"
 ENV["MINIRUBY"] ||= "ruby"
+
+class String
+  # for older ruby
+  alias bytesize size unless method_defined?(:bytesize)
+end
 
 $patch_file &&= File.expand_path($patch_file)
 path = ENV["PATH"].split(File::PATH_SEPARATOR)
@@ -56,7 +62,7 @@ def package(rev, destdir)
   when /\Astable\z/
     url = SVNURL + "branches/"
     url = url + `svn ls #{url}`[/.*^(ruby_\d+_\d+)\//m, 1]
-  when /\A(.*)\.(.*)\.(.*)-(p)?(.*)/
+  when /\A(.*)\.(.*)\.(.*)-((?!preview)p)?(.*)/
     patchlevel = !!$4
     tag = "#{$4}#{$5}"
     url = SVNURL + "tags/v#{$1}_#{$2}_#{$3}_#{$5}"
@@ -196,6 +202,6 @@ revisions.collect {|rev| package(rev, destdir)}.flatten.each do |name|
   sha = Digest::SHA256.hexdigest str
   puts "MD5(#{name})= #{md5}"
   puts "SHA256(#{name})= #{sha}"
-  puts "SIZE(name)= #{str.size}"
+  puts "SIZE(name)= #{str.bytesize}"
   puts
 end
