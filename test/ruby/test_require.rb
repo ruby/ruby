@@ -27,11 +27,15 @@ class TestRequire < Test::Unit::TestCase
       end
     INPUT
 
-    assert_in_out_err(["-S", "foo/" * 10000 + "foo"], "") do |r, e|
-      assert_equal([], r)
-      assert_operator(2, :<=, e.size)
-      assert_equal("openpath: pathname too long (ignored)", e.first)
-      assert_match(/\(LoadError\)/, e.last)
+    begin
+      assert_in_out_err(["-S", "foo/" * 10000 + "foo"], "") do |r, e|
+        assert_equal([], r)
+        assert_operator(2, :<=, e.size)
+        assert_equal("openpath: pathname too long (ignored)", e.first)
+        assert_match(/\(LoadError\)/, e.last)
+      end
+    rescue Errno::EINVAL
+      # too long commandline may be blocked by OS.
     end
   end
 
