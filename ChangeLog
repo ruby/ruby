@@ -1,3 +1,8 @@
+Tue Oct 28 23:03:46 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/ruby/test_proc.rb: filled all patterns for testing
+	  vm_yield_setup_args.
+
 Tue Oct 28 21:31:55 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* parse.y (parser_yylex): check EOF explicitly.
