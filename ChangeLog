@@ -2,7 +2,7 @@ Tue Oct 28 23:05:35 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: continues to support canonicalization *unofficially*
 	  for an odd library mathn for the time being (only 1.9.x).
-	  since grand mathn is must be very very special library for us.
+	  since grand mathn must be very very special library for us.
 
 	* rational.c: ditto.
 
