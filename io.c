@@ -3923,6 +3923,23 @@ validate_enc_binmode(int fmode, rb_encoding *enc, rb_encoding *enc2)
 }
 
 static void
+extract_binmode(VALUE opthash, int *fmode)
+{
+    if (!NIL_P(opthash)) {
+	VALUE v;
+	v = rb_hash_aref(opthash, sym_textmode);
+	if (!NIL_P(v) && RTEST(v))
+            *fmode |= FMODE_TEXTMODE;
+	v = rb_hash_aref(opthash, sym_binmode);
+	if (!NIL_P(v) && RTEST(v))
+            *fmode |= FMODE_BINMODE;
+
+	if ((*fmode & FMODE_BINMODE) && (*fmode & FMODE_TEXTMODE))
+	    rb_raise(rb_eArgError, "both textmode and binmode specified");
+    }
+}
+
+static void
 rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
         int *oflags_p, int *fmode_p, convconfig_t *convconfig_p)
 {
@@ -3975,16 +3992,11 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
     }
     else {
 	VALUE v;
-	v = rb_hash_aref(opthash, sym_textmode);
-	if (!NIL_P(v) && RTEST(v))
-            fmode |= FMODE_TEXTMODE;
-	v = rb_hash_aref(opthash, sym_binmode);
-	if (!NIL_P(v) && RTEST(v)) {
-            fmode |= FMODE_BINMODE;
+	extract_binmode(opthash, &fmode);
 #ifdef O_BINARY
+	if (fmode & FMODE_BINMODE)
             oflags |= O_BINARY;
 #endif
-        }
 	if (!has_vmode) {
 	    v = rb_hash_aref(opthash, sym_mode);
 	    if (!NIL_P(v)) {
@@ -4016,9 +4028,6 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
             }
         }
     }
-
-    if ((fmode & FMODE_BINMODE) && (fmode & FMODE_TEXTMODE))
-        rb_raise(rb_eArgError, "both textmode and binmode specified");
 
     validate_enc_binmode(fmode, enc, enc2);
 
@@ -6825,7 +6834,8 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     int pipes[2], state;
     VALUE r, w, args[3], v1, v2;
     VALUE opt;
-    rb_io_t *fptr;
+    rb_io_t *fptr, *fptr2;
+    int fmode = 0;
 
     opt = pop_last_hash(&argc, argv);
     rb_scan_args(argc, argv, "02", &v1, &v2);
@@ -6851,7 +6861,12 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
 	if (!NIL_P(r)) rb_io_close(r);
 	rb_jump_tag(state);
     }
-    rb_io_synchronized(RFILE(w)->fptr);
+    GetOpenFile(w, fptr2);
+    rb_io_synchronized(fptr2);
+
+    extract_binmode(opt, &fmode);
+    fptr->mode |= fmode;
+    fptr2->mode |= fmode;
 
     return rb_assoc_new(r, w);
 }
