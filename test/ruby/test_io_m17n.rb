@@ -677,7 +677,7 @@ EOT
   end
 
   def test_getc_invalid3
-    with_pipe("utf-16le:euc-jp") {|r, w|
+    with_pipe("utf-16le:euc-jp", binmode: true) {|r, w|
       before1 = "\x42\x30".force_encoding("utf-16le")
       before2 = "\x44\x30".force_encoding("utf-16le")
       invalid = "\x00\xd8".force_encoding("utf-16le")
