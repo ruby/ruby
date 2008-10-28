@@ -6790,7 +6790,7 @@ parser_yylex(struct parser_params *parser)
 	    if (IS_ARG()) arg_ambiguous();
 	    lex_state = EXPR_BEG;
 	    pushback(c);
-	    if (ISDIGIT(c)) {
+	    if (c != -1 && ISDIGIT(c)) {
 		c = '+';
 		goto start_num;
 	    }
@@ -6824,7 +6824,7 @@ parser_yylex(struct parser_params *parser)
 	    if (IS_ARG()) arg_ambiguous();
 	    lex_state = EXPR_BEG;
 	    pushback(c);
-	    if (ISDIGIT(c)) {
+	    if (c != -1 && ISDIGIT(c)) {
 		return tUMINUS_NUM;
 	    }
 	    return tUMINUS;
@@ -6843,7 +6843,7 @@ parser_yylex(struct parser_params *parser)
 	    return tDOT2;
 	}
 	pushback(c);
-	if (ISDIGIT(c)) {
+	if (c != -1 && ISDIGIT(c)) {
 	    yyerror("no .<digit> floating literal anymore; put 0 before dot");
 	}
 	lex_state = EXPR_DOT;
@@ -6868,7 +6868,7 @@ parser_yylex(struct parser_params *parser)
 		if (c == 'x' || c == 'X') {
 		    /* hexadecimal */
 		    c = nextc();
-		    if (ISXDIGIT(c)) {
+		    if (c != -1 && ISXDIGIT(c)) {
 			do {
 			    if (c == '_') {
 				if (nondigit) break;
@@ -6916,7 +6916,7 @@ parser_yylex(struct parser_params *parser)
 		if (c == 'd' || c == 'D') {
 		    /* decimal */
 		    c = nextc();
-		    if (ISDIGIT(c)) {
+		    if (c != -1 && ISDIGIT(c)) {
 			do {
 			    if (c == '_') {
 				if (nondigit) break;
@@ -6944,7 +6944,7 @@ parser_yylex(struct parser_params *parser)
 		if (c == 'o' || c == 'O') {
 		    /* prefixed octal */
 		    c = nextc();
-		    if (c == '_' || !ISDIGIT(c)) {
+		    if (c == -1 || c == '_' || !ISDIGIT(c)) {
 			yyerror("numeric literal without digits");
 		    }
 		}
@@ -7003,7 +7003,7 @@ parser_yylex(struct parser_params *parser)
 		    }
 		    else {
 			int c0 = nextc();
-			if (!ISDIGIT(c0)) {
+			if (c == -1 || !ISDIGIT(c0)) {
 			    pushback(c0);
 			    goto decode_num;
 			}
@@ -7092,7 +7092,7 @@ parser_yylex(struct parser_params *parser)
 	    lex_state = EXPR_DOT;
 	    return tCOLON2;
 	}
-	if (lex_state == EXPR_END || lex_state == EXPR_ENDARG || ISSPACE(c)) {
+	if (lex_state == EXPR_END || lex_state == EXPR_ENDARG || (c != -1 && ISSPACE(c))) {
 	    pushback(c);
 	    lex_state = EXPR_BEG;
 	    return ':';
@@ -7251,7 +7251,7 @@ parser_yylex(struct parser_params *parser)
 
 	    c = nextc();
 	  quotation:
-	    if (!ISALNUM(c)) {
+	    if (c == -1 || !ISALNUM(c)) {
 		term = c;
 		c = 'Q';
 	    }
@@ -7401,7 +7401,7 @@ parser_yylex(struct parser_params *parser)
 	    do {
 		tokadd(c);
 		c = nextc();
-	    } while (ISDIGIT(c));
+	    } while (c != -1 && ISDIGIT(c));
 	    pushback(c);
 	    if (last_state == EXPR_FNAME) goto gvar;
 	    tokfix();
@@ -7426,7 +7426,7 @@ parser_yylex(struct parser_params *parser)
 	    tokadd('@');
 	    c = nextc();
 	}
-	if (ISDIGIT(c)) {
+	if (c != -1 && ISDIGIT(c)) {
 	    if (tokidx == 1) {
 		compile_error(PARSER_ARG "`@%c' is not allowed as an instance variable name", c);
 	    }

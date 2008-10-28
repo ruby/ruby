@@ -1,3 +1,7 @@
+Tue Oct 28 21:31:55 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* parse.y (parser_yylex): check EOF explicitly.
+
 Tue Oct 28 21:11:58 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (extract_binmode): new function to extract binmode/textmode
