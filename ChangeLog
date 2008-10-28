@@ -1,3 +1,12 @@
+Tue Oct 28 16:56:31 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* gem_prelude.rb: merged from ruby_1_9_1 branch.
+	  considers --program-suffix and prefix configure options.
+
+	* lib/rubygems/defaults.rb: ditto.
+
+	* test/rubygems/test_gem.rb (@default_dir_re): ditto.
+
 Tue Oct 28 16:13:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/make-snapshot: use String#bytesize.

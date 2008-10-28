@@ -11,7 +11,7 @@ class TestGem < RubyGemTestCase
     super
 
     @additional = %w[a b].map { |d| File.join @tempdir, d }
-    @default_dir_re = %r|/[Rr]uby/[Gg]ems/[0-9.]+|
+    @default_dir_re = %r|/\.*?[Rr]uby.*?/[Gg]ems/[0-9.]+|
   end
 
   def test_self_all_load_paths
