@@ -1430,7 +1430,7 @@ io_enc_str(VALUE str, rb_io_t *fptr)
 }
 
 static void
-make_readconv(rb_io_t *fptr)
+make_readconv(rb_io_t *fptr, int size)
 {
     if (!fptr->readconv) {
         int ecflags;
@@ -1452,7 +1452,7 @@ make_readconv(rb_io_t *fptr)
             rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
         fptr->cbuf_off = 0;
         fptr->cbuf_len = 0;
-        fptr->cbuf_capa = 1024;
+        fptr->cbuf_capa = size < 1024 ? 1024 : size;
         fptr->cbuf = ALLOC_N(char, fptr->cbuf_capa);
     }
 }
@@ -1558,7 +1558,7 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     if (NEED_READCONV(fptr)) {
         if (NIL_P(str)) str = rb_str_new(NULL, 0);
         else rb_str_set_len(str, 0);
-        make_readconv(fptr);
+        make_readconv(fptr, 0);
         while (1) {
             if (fptr->cbuf_len) {
                 io_shift_cbuf(fptr, fptr->cbuf_len, &str);
@@ -1940,7 +1940,7 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
     long limit = *lp;
 
     if (NEED_READCONV(fptr)) {
-        make_readconv(fptr);
+        make_readconv(fptr, 0);
         while (1) {
             const char *p, *e;
             int searchlen;
@@ -2473,7 +2473,7 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
     if (NEED_READCONV(fptr)) {
         VALUE str = Qnil;
 
-        make_readconv(fptr);
+        make_readconv(fptr, 0);
 
         while (1) {
             if (fptr->cbuf_len) {
@@ -2825,8 +2825,8 @@ rb_io_ungetc(VALUE io, VALUE c)
 	SafeStringValue(c);
     }
     if (NEED_READCONV(fptr)) {
-        make_readconv(fptr);
         len = RSTRING_LEN(c);
+        make_readconv(fptr, len);
         if (fptr->cbuf_capa - fptr->cbuf_len < len)
             rb_raise(rb_eIOError, "ungetc failed");
         if (fptr->cbuf_off < len) {
