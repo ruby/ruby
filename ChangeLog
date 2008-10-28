@@ -1,3 +1,8 @@
+Tue Oct 28 12:42:28 2008   Yuki Sonoda  <yugui@yugui.jp>
+
+	* tool/make-snapshot.rb (package): did not accept tagnames with the
+	  prefix "previewN"
+
 Tue Oct 28 12:06:07 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/rubygems/test_gem.rb (@default_dir_re): considers 

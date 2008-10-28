@@ -56,7 +56,7 @@ def package(rev, destdir)
   when /\Astable\z/
     url = SVNURL + "branches/"
     url = url + `svn ls #{url}`[/.*^(ruby_\d+_\d+)\//m, 1]
-  when /\A(.*)\.(.*)\.(.*)-(p)?(.*)/
+  when /\A(.*)\.(.*)\.(.*)-((?!preview)p)?(.*)/
     patchlevel = !!$4
     tag = "#{$4}#{$5}"
     url = SVNURL + "tags/v#{$1}_#{$2}_#{$3}_#{$5}"
