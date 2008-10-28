@@ -1,4 +1,9 @@
-Tue Oct 28 12:42:28 2008   Yuki Sonoda  <yugui@yugui.jp>
+Tue Oct 28 16:43:05 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* tool/make-snapshot.rb: had returned wrong sizes for generated
+	  archives.
+
+Tue Oct 28 12:42:28 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* tool/make-snapshot.rb (package): did not accept tagnames with the
 	  prefix "previewN"
