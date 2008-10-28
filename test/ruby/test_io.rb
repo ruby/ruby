@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'tmpdir'
+require "fcntl"
 require 'io/nonblock'
 require 'socket'
 require 'stringio'
@@ -722,6 +723,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_write_nonblock
+    skip "IO#write_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     pipe(proc do |w|
       w.write_nonblock(1)
       w.close
@@ -1052,7 +1054,11 @@ class TestIO < Test::Unit::TestCase
     
     fd = IO.sysopen(t.path, "w", 0666)
     assert_kind_of(Integer, fd)
-    f = IO.for_fd(fd)
+    if defined?(Fcntl::F_GETFL)
+      f = IO.for_fd(fd)
+    else
+      f = IO.for_fd(fd, 0666)
+    end
     f.write("FOO\n")
     f.close
     
