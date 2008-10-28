@@ -363,5 +363,9 @@ assert_equal 'ok', %q{
 }, '[ruby-dev:35414]'
 
 assert_equal 'ok', %q{
-  10000.times { Thread.new(true) {|x| x == false } }; :ok
+  begin
+    10000.times { Thread.new(true) {|x| x == false } }
+  rescue NoMemoryError, StandardError
+  end
+  :ok
 }

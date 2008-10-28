@@ -1,3 +1,8 @@
+Tue Oct 28 09:51:48 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* bootstraptest/test_thread.rb: ignore some exceptions.
+	  [ruby-dev:36951]
+
 Tue Oct 28 09:19:40 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (RUNRUBY): now ruby requires something from
