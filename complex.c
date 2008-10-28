@@ -320,7 +320,19 @@ f_complex_new_bang2(VALUE klass, VALUE x, VALUE y)
     return nucomp_s_new_internal(klass, x, y);
 }
 
-#define f_unify_p(klass) rb_const_defined(klass, id_Unify)
+#if RUBY_VERSION_CODE < 200
+#define CANON
+#endif
+
+#ifdef CANON
+static int canonicalization = 0;
+
+void
+nucomp_canonicalize(int f)
+{
+    canonicalization = f;
+}
+#endif
 
 inline static void
 nucomp_real_check(VALUE num)
@@ -343,10 +355,10 @@ nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
 #ifdef CANON
 #define CL_CANON
 #ifdef CL_CANON
-    if (f_zero_p(imag) && k_exact_p(imag) && f_unify_p(klass))
+    if (f_zero_p(imag) && k_exact_p(imag) && canonicalization)
 	return real;
 #else
-    if (f_zero_p(imag) && f_unify_p(klass))
+    if (f_zero_p(imag) && canonicalization)
 	return real;
 #endif
 #endif
