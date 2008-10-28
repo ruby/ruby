@@ -85,6 +85,15 @@ class TestFile < Test::Unit::TestCase
     assert_equal("a", f.gets(""))
   end
 
+  def test_each_char_extended_file
+    f = Tempfile.new("test-extended-file")
+    assert_nil(f.getc)
+    open(f.path, "w") {|g| g.print "a" }
+    result = []
+    f.each_char {|b| result << b }
+    assert_equal([?a], result)
+  end
+
   def test_each_byte_extended_file
     f = Tempfile.new("test-extended-file")
     assert_nil(f.getc)
@@ -99,6 +108,13 @@ class TestFile < Test::Unit::TestCase
     assert_nil(f.getc)
     open(f.path, "w") {|g| g.print "a" }
     assert_equal(?a, f.getc)
+  end
+
+  def test_getbyte_extended_file
+    f = Tempfile.new("test-extended-file")
+    assert_nil(f.getc)
+    open(f.path, "w") {|g| g.print "a" }
+    assert_equal(?a, f.getbyte.chr)
   end
 
   def test_s_chown
