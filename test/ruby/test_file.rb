@@ -69,7 +69,7 @@ class TestFile < Test::Unit::TestCase
       f = Tempfile.new("test-extended-file", mode)
       assert_nil(f.getc)
       open(f.path, "w") {|g| g.print "a" }
-      assert_equal("a", f.read)
+      assert_equal("a", f.read, "mode = <#{mode}>")
     end
   end
 
@@ -78,56 +78,56 @@ class TestFile < Test::Unit::TestCase
       f = Tempfile.new("test-extended-file", mode)
       assert_nil(f.getc)
       open(f.path, "w") {|g| g.print "a" }
-      assert_equal("a", f.gets("a"))
+      assert_equal("a", f.gets("a"), "mode = <#{mode}>")
     end
   end
 
   def test_gets_para_extended_file
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      f = Tempfile.new("test-extended-file")
+      f = Tempfile.new("test-extended-file", mode)
       assert_nil(f.getc)
-      open(f.path, "w") {|g| g.print "\na" }
-      assert_equal("a", f.gets(""))
+      open(f.path, "wb") {|g| g.print "\na" }
+      assert_equal("a", f.gets(""), "mode = <#{mode}>")
     end
   end
 
   def test_each_char_extended_file
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      f = Tempfile.new("test-extended-file")
+      f = Tempfile.new("test-extended-file", mode)
       assert_nil(f.getc)
       open(f.path, "w") {|g| g.print "a" }
       result = []
       f.each_char {|b| result << b }
-      assert_equal([?a], result)
+      assert_equal([?a], result, "mode = <#{mode}>")
     end
   end
 
   def test_each_byte_extended_file
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      f = Tempfile.new("test-extended-file")
+      f = Tempfile.new("test-extended-file", mode)
       assert_nil(f.getc)
       open(f.path, "w") {|g| g.print "a" }
       result = []
       f.each_byte {|b| result << b.chr }
-      assert_equal([?a], result)
+      assert_equal([?a], result, "mode = <#{mode}>")
     end
   end
 
   def test_getc_extended_file
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      f = Tempfile.new("test-extended-file")
+      f = Tempfile.new("test-extended-file", mode)
       assert_nil(f.getc)
       open(f.path, "w") {|g| g.print "a" }
-      assert_equal(?a, f.getc)
+      assert_equal(?a, f.getc, "mode = <#{mode}>")
     end
   end
 
   def test_getbyte_extended_file
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      f = Tempfile.new("test-extended-file")
+      f = Tempfile.new("test-extended-file", mode)
       assert_nil(f.getc)
       open(f.path, "w") {|g| g.print "a" }
-      assert_equal(?a, f.getbyte.chr)
+      assert_equal(?a, f.getbyte.chr, "mode = <#{mode}>")
     end
   end
 
