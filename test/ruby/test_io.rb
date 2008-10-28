@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'tmpdir'
+require "fcntl"
 require 'io/nonblock'
 require 'socket'
 require 'stringio'
@@ -8,6 +9,19 @@ require 'tempfile'
 require_relative 'envutil'
 
 class TestIO < Test::Unit::TestCase
+  def have_close_on_exec?
+    begin
+      $stdin.close_on_exec?
+      true
+    rescue NotImplementedError
+      false
+    end
+  end
+
+  def have_nonblock?
+    IO.instance_methods.index(:"nonblock=")
+  end
+
   def test_gets_rs
     # default_rs
     r, w = IO.pipe
@@ -236,18 +250,20 @@ class TestIO < Test::Unit::TestCase
         assert_equal(content[1,1], r.read)
       }
 
-      with_read_pipe("abc") {|r1|
-        assert_equal("a", r1.getc)
-        with_pipe {|r2, w2|
-          w2.nonblock = true
-          s = w2.syswrite("a" * 100000)
-          t = Thread.new { sleep 0.1; r2.read }
-          ret = IO.copy_stream(r1, w2)
-          w2.close
-          assert_equal(2, ret)
-          assert_equal("a" * s + "bc", t.value)
+      if have_nonblock?
+        with_read_pipe("abc") {|r1|
+          assert_equal("a", r1.getc)
+          with_pipe {|r2, w2|
+            w2.nonblock = true
+            s = w2.syswrite("a" * 100000)
+            t = Thread.new { sleep 0.1; r2.read }
+            ret = IO.copy_stream(r1, w2)
+            w2.close
+            assert_equal(2, ret)
+            assert_equal("a" * s + "bc", t.value)
+          }
         }
-      }
+      end
 
       bigcontent = "abc" * 123456
       File.open("bigsrc", "w") {|f| f << bigcontent }
@@ -266,15 +282,19 @@ class TestIO < Test::Unit::TestCase
       assert_equal(bigcontent[100, 30000], File.read("bigdst"))
 
       File.open("bigsrc") {|f|
-        assert_equal(0, f.pos)
-        ret = IO.copy_stream(f, "bigdst", nil, 10)
-        assert_equal(bigcontent.bytesize-10, ret)
-        assert_equal(bigcontent[10..-1], File.read("bigdst"))
-        assert_equal(0, f.pos)
-        ret = IO.copy_stream(f, "bigdst", 40, 30)
-        assert_equal(40, ret)
-        assert_equal(bigcontent[30, 40], File.read("bigdst"))
-        assert_equal(0, f.pos)
+        begin
+          assert_equal(0, f.pos)
+          ret = IO.copy_stream(f, "bigdst", nil, 10)
+          assert_equal(bigcontent.bytesize-10, ret)
+          assert_equal(bigcontent[10..-1], File.read("bigdst"))
+          assert_equal(0, f.pos)
+          ret = IO.copy_stream(f, "bigdst", 40, 30)
+          assert_equal(40, ret)
+          assert_equal(bigcontent[30, 40], File.read("bigdst"))
+          assert_equal(0, f.pos)
+        rescue NotImplementedError
+          #skip "pread(2) is not implemtented."
+        end
       }
 
       with_pipe {|r, w|
@@ -285,19 +305,21 @@ class TestIO < Test::Unit::TestCase
       megacontent = "abc" * 1234567
       File.open("megasrc", "w") {|f| f << megacontent }
 
-      with_pipe {|r1, w1|
-        with_pipe {|r2, w2|
-          t1 = Thread.new { w1 << megacontent; w1.close }
-          t2 = Thread.new { r2.read }
-          r1.nonblock = true
-          w2.nonblock = true
-          ret = IO.copy_stream(r1, w2)
-          assert_equal(megacontent.bytesize, ret)
-          w2.close
-          t1.join
-          assert_equal(megacontent, t2.value)
+      if have_nonblock?
+        with_pipe {|r1, w1|
+          with_pipe {|r2, w2|
+            t1 = Thread.new { w1 << megacontent; w1.close }
+            t2 = Thread.new { r2.read }
+            r1.nonblock = true
+            w2.nonblock = true
+            ret = IO.copy_stream(r1, w2)
+            assert_equal(megacontent.bytesize, ret)
+            w2.close
+            t1.join
+            assert_equal(megacontent, t2.value)
+          }
         }
-      }
+      end
 
       with_pipe {|r1, w1|
         with_pipe {|r2, w2|
@@ -323,15 +345,19 @@ class TestIO < Test::Unit::TestCase
 
   def test_copy_stream_rbuf
     mkcdtmpdir {
-      with_pipe {|r, w|
-        File.open("foo", "w") {|f| f << "abcd" }
-        File.open("foo") {|f|
-          f.read(1)
-          assert_equal(3, IO.copy_stream(f, w, 10, 1))
+      begin
+        with_pipe {|r, w|
+          File.open("foo", "w") {|f| f << "abcd" }
+          File.open("foo") {|f|
+            f.read(1)
+            assert_equal(3, IO.copy_stream(f, w, 10, 1))
+          }
+          w.close
+          assert_equal("bcd", r.read)
         }
-        w.close
-        assert_equal("bcd", r.read)
-      }
+      rescue NotImplementedError
+        skip "pread(2) is not implemtented."
+      end
     }
   end
 
@@ -410,15 +436,17 @@ class TestIO < Test::Unit::TestCase
       megacontent = "abc" * 1234567
       File.open("megasrc", "w") {|f| f << megacontent }
 
-      with_socketpair {|s1, s2|
-        t = Thread.new { s2.read }
-        s1.nonblock = true
-        ret = IO.copy_stream("megasrc", s1)
-        assert_equal(megacontent.bytesize, ret)
-        s1.close
-        result = t.value
-        assert_equal(megacontent, result)
-      }
+      if have_nonblock?
+        with_socketpair {|s1, s2|
+          t = Thread.new { s2.read }
+          s1.nonblock = true
+          ret = IO.copy_stream("megasrc", s1)
+          assert_equal(megacontent.bytesize, ret)
+          s1.close
+          result = t.value
+          assert_equal(megacontent, result)
+        }
+      end
     }
   end
 
@@ -695,6 +723,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_write_nonblock
+    skip "IO#write_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     pipe(proc do |w|
       w.write_nonblock(1)
       w.close
@@ -874,6 +903,7 @@ class TestIO < Test::Unit::TestCase
 
   def test_bytes
     pipe(proc do |w|
+      w.binmode
       w.puts "foo"
       w.puts "bar"
       w.puts "baz"
@@ -904,11 +934,13 @@ class TestIO < Test::Unit::TestCase
 
   def test_readbyte
     pipe(proc do |w|
+      w.binmode
       w.puts "foo"
       w.puts "bar"
       w.puts "baz"
       w.close
     end, proc do |r|
+      r.binmode
       (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
         assert_equal(c.ord, r.readbyte)
       end
@@ -931,7 +963,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_close_on_exec
-    # xxx
+    skip "IO\#close_on_exec is not implemented." unless have_close_on_exec?
     ruby do |f|
       assert_equal(false, f.close_on_exec?)
       f.close_on_exec = true
@@ -1022,7 +1054,11 @@ class TestIO < Test::Unit::TestCase
     
     fd = IO.sysopen(t.path, "w", 0666)
     assert_kind_of(Integer, fd)
-    f = IO.for_fd(fd)
+    if defined?(Fcntl::F_GETFL)
+      f = IO.for_fd(fd)
+    else
+      f = IO.for_fd(fd, 0666)
+    end
     f.write("FOO\n")
     f.close
     
