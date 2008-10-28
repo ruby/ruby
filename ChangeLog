@@ -1,3 +1,7 @@
+Tue Oct 28 11:06:48 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* version.h: set 1.9.1 into Ruby's version number.
+
 Tue Oct 28 10:42:50 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* gem_prelude.rb: considers --program-suffix and prefix configure
