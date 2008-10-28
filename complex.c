@@ -426,31 +426,31 @@ nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
     return rb_funcall2(rb_cComplex, id_convert, argc, argv);
 }
 
-extern VALUE math_atan2(VALUE obj, VALUE x, VALUE y);
-extern VALUE math_cos(VALUE obj, VALUE x);
-extern VALUE math_cosh(VALUE obj, VALUE x);
-extern VALUE math_exp(VALUE obj, VALUE x);
-extern VALUE math_hypot(VALUE obj, VALUE x, VALUE y);
-extern VALUE math_log(int argc, VALUE *argv);
-extern VALUE math_sin(VALUE obj, VALUE x);
-extern VALUE math_sinh(VALUE obj, VALUE x);
-extern VALUE math_sqrt(VALUE obj, VALUE x);
+extern VALUE rb_math_atan2(VALUE x, VALUE y);
+extern VALUE rb_math_cos(VALUE x);
+extern VALUE rb_math_cosh(VALUE x);
+extern VALUE rb_math_exp(VALUE x);
+extern VALUE rb_math_hypot(VALUE x, VALUE y);
+extern VALUE rb_math_log(int argc, VALUE *argv);
+extern VALUE rb_math_sin(VALUE x);
+extern VALUE rb_math_sinh(VALUE x);
+extern VALUE rb_math_sqrt(VALUE x);
 
-#define m_atan2_bang(x,y) math_atan2(Qnil,x,y)
-#define m_cos_bang(x) math_cos(Qnil,x)
-#define m_cosh_bang(x) math_cosh(Qnil,x)
-#define m_exp_bang(x) math_exp(Qnil,x)
-#define m_hypot(x,y) math_hypot(Qnil,x,y)
+#define m_atan2_bang(x,y) rb_math_atan2(x,y)
+#define m_cos_bang(x) rb_math_cos(x)
+#define m_cosh_bang(x) rb_math_cosh(x)
+#define m_exp_bang(x) rb_math_exp(x)
+#define m_hypot(x,y) rb_math_hypot(x,y)
 
 static VALUE
 m_log_bang(VALUE x)
 {
-    return math_log(1, &x);
+    return rb_math_log(1, &x);
 }
 
-#define m_sin_bang(x) math_sin(Qnil,x)
-#define m_sinh_bang(x) math_sinh(Qnil,x)
-#define m_sqrt_bang(x) math_sqrt(Qnil,x)
+#define m_sin_bang(x) rb_math_sin(x)
+#define m_sinh_bang(x) rb_math_sinh(x)
+#define m_sqrt_bang(x) rb_math_sqrt(x)
 
 static VALUE
 m_cos(VALUE x)

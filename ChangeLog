@@ -1,3 +1,9 @@
+Wed Oct 29 00:08:05 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* math.c (rb_math_{atan2,cos,cosh,hypot,log,sin,sinh,sqrt}): added.
+
+	* complex.c: follows the above change.
+
 Tue Oct 28 23:29:06 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (kanji_convert): output unicode chars.

@@ -81,7 +81,7 @@ infinity_check(VALUE arg, double res, const char *msg)
  *     
  */
 
-VALUE
+static VALUE
 math_atan2(VALUE obj, VALUE y, VALUE x)
 {
     Need_Float2(y, x);
@@ -97,7 +97,7 @@ math_atan2(VALUE obj, VALUE y, VALUE x)
  *  -1..1.
  */
 
-VALUE
+static VALUE
 math_cos(VALUE obj, VALUE x)
 {
     Need_Float(x);
@@ -112,7 +112,7 @@ math_cos(VALUE obj, VALUE x)
  *  -1..1.
  */
 
-VALUE
+static VALUE
 math_sin(VALUE obj, VALUE x)
 {
     Need_Float(x);
@@ -203,7 +203,7 @@ cosh(double x)
  *  Computes the hyperbolic cosine of <i>x</i> (expressed in radians).
  */
 
-VALUE
+static VALUE
 math_cosh(VALUE obj, VALUE x)
 {
     Need_Float(x);
@@ -227,7 +227,7 @@ sinh(double x)
  *  radians).
  */
 
-VALUE
+static VALUE
 math_sinh(VALUE obj, VALUE x)
 {
     Need_Float(x);
@@ -317,7 +317,7 @@ math_atanh(VALUE obj, VALUE x)
  *  Returns e**x.
  */
 
-VALUE
+static VALUE
 math_exp(VALUE obj, VALUE x)
 {
     Need_Float(x);
@@ -343,7 +343,7 @@ math_exp(VALUE obj, VALUE x)
  *  of logarithm.
  */
 
-VALUE
+static VALUE
 math_log(int argc, VALUE *argv)
 {
     VALUE x, base;
@@ -438,7 +438,7 @@ math_log10(VALUE obj, VALUE x)
  *
  */
 
-VALUE
+static VALUE
 math_sqrt(VALUE obj, VALUE x)
 {
     double d;
@@ -540,7 +540,7 @@ math_ldexp(VALUE obj, VALUE x, VALUE n)
  *     Math.hypot(3, 4)   #=> 5.0
  */
 
-VALUE
+static VALUE
 math_hypot(VALUE obj, VALUE x, VALUE y)
 {
     Need_Float2(x, y);
@@ -652,6 +652,37 @@ math_lgamma(VALUE obj, VALUE x)
     v = DBL2NUM(d);
     return rb_assoc_new(v, INT2FIX(sign));
 }
+
+
+#define exp1(n) \
+VALUE \
+rb_math_##n(VALUE x)\
+{\
+    return math_##n(rb_mMath, x);\
+}
+
+#define exp2(n) \
+VALUE \
+rb_math_##n(VALUE x, VALUE y)\
+{\
+    return math_##n(rb_mMath, x, y);\
+}
+
+exp2(atan2)
+exp1(cos)
+exp1(cosh)
+exp1(exp)
+exp2(hypot)
+
+VALUE rb_math_log(int argc, VALUE *argv)
+{
+    return math_log(argc, argv);
+}
+
+exp1(sin)
+exp1(sinh)
+exp1(sqrt)
+
 
 /*
  *  The <code>Math</code> module contains module functions for basic
