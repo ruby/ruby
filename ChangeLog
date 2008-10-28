@@ -1,3 +1,8 @@
+Tue Oct 28 23:03:46 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/ruby/test_proc.rb: filled all patterns for testing
+	  vm_yield_setup_args.
+
 Tue Oct 28 23:05:35 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: continues to support canonicalization *unofficially*
