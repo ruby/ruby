@@ -674,7 +674,8 @@ exp1(cosh)
 exp1(exp)
 exp2(hypot)
 
-VALUE rb_math_log(int argc, VALUE *argv)
+VALUE
+rb_math_log(int argc, VALUE *argv)
 {
     return math_log(argc, argv);
 }
