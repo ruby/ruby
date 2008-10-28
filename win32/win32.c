@@ -764,9 +764,8 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe,
 	reading = TRUE;
 	writing = FALSE;
     }
-    mode &= ~(O_RDWR|O_RDONLY|O_WRONLY);
-    if (!(mode & O_BINARY))
-	mode |= O_TEXT;
+    mode &= ~(O_RDWR|O_RDONLY|O_WRONLY|O_TEXT);
+    mode |= O_BINARY;
 
     sa.nLength              = sizeof (SECURITY_ATTRIBUTES);
     sa.lpSecurityDescriptor = NULL;

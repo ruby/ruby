@@ -1,3 +1,8 @@
+Tue Oct 28 19:00:51 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_pipe_exec): internal fds should be always
+	  binmode.
+
 Tue Oct 28 17:21:18 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* tool/make-snapshot.rb: merged from ruby_1_9_1.
