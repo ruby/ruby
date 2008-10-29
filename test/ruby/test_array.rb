@@ -1624,4 +1624,33 @@ class TestArray < Test::Unit::TestCase
     assert_equal(true, s.tainted?)
     assert_equal(true, s.untrusted?)
   end
+
+  def test_initialize2
+    a = [1] * 1000
+    a.instance_eval { initialize }
+    assert_equal([], a)
+  end
+
+  def test_shift_shared_ary
+    a = (1..100).to_a
+    b = []
+    b.replace(a)
+    assert_equal((1..10).to_a, a.shift(10))
+    assert_equal((11..100).to_a, a)
+  end
+
+  def test_replace_shared_ary
+    a = [1] * 100
+    b = []
+    b.replace(a)
+    a.replace([1, 2, 3])
+    assert_equal([1, 2, 3], a)
+    assert_equal([1] * 100, b)
+  end
+
+  def test_fill_negative_length
+    a = (1..10).to_a
+    a.fill(:foo, 5, -3)
+    assert_equal((1..10).to_a, a)
+  end
 end
