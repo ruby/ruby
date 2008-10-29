@@ -21,41 +21,41 @@ class TestWEBrickCGI < Test::Unit::TestCase
     if RUBY_PLATFORM =~ /mswin32|mingw|cygwin|bccwin32/
       config[:CGIPathEnv] = ENV['PATH'] # runtime dll may not be in system dir.
     end
-    TestWEBrick.start_httpserver(config){|server, addr, port|
-      block.call(server, addr, port)
+    TestWEBrick.start_httpserver(config){|server, addr, port, log|
+      block.call(server, addr, port, log)
     }
   end
 
   def test_cgi
-    start_cgi_server{|server, addr, port|
+    start_cgi_server{|server, addr, port, log|
       http = Net::HTTP.new(addr, port)
       req = Net::HTTP::Get.new("/webrick.cgi")
-      http.request(req){|res| assert_equal("/webrick.cgi", res.body)}
+      http.request(req){|res| assert_equal("/webrick.cgi", res.body, log.call)}
       req = Net::HTTP::Get.new("/webrick.cgi/path/info")
-      http.request(req){|res| assert_equal("/path/info", res.body)}
+      http.request(req){|res| assert_equal("/path/info", res.body, log.call)}
       req = Net::HTTP::Get.new("/webrick.cgi/%3F%3F%3F?foo=bar")
-      http.request(req){|res| assert_equal("/???", res.body)}
+      http.request(req){|res| assert_equal("/???", res.body, log.call)}
       req = Net::HTTP::Get.new("/webrick.cgi/%A4%DB%A4%B2/%A4%DB%A4%B2")
       http.request(req){|res|
-        assert_equal("/\xA4\xDB\xA4\xB2/\xA4\xDB\xA4\xB2", res.body)}
+        assert_equal("/\xA4\xDB\xA4\xB2/\xA4\xDB\xA4\xB2", res.body, log.call)}
       req = Net::HTTP::Get.new("/webrick.cgi?a=1;a=2;b=x")
-      http.request(req){|res| assert_equal("a=1, a=2, b=x", res.body)}
+      http.request(req){|res| assert_equal("a=1, a=2, b=x", res.body, log.call)}
       req = Net::HTTP::Get.new("/webrick.cgi?a=1&a=2&b=x")
-      http.request(req){|res| assert_equal("a=1, a=2, b=x", res.body)}
+      http.request(req){|res| assert_equal("a=1, a=2, b=x", res.body, log.call)}
 
       req = Net::HTTP::Post.new("/webrick.cgi?a=x;a=y;b=1")
       req["Content-Type"] = "application/x-www-form-urlencoded"
       http.request(req, "a=1;a=2;b=x"){|res|
-        assert_equal("a=1, a=2, b=x", res.body)}
+        assert_equal("a=1, a=2, b=x", res.body, log.call)}
       req = Net::HTTP::Post.new("/webrick.cgi?a=x&a=y&b=1")
       req["Content-Type"] = "application/x-www-form-urlencoded"
       http.request(req, "a=1&a=2&b=x"){|res|
-        assert_equal("a=1, a=2, b=x", res.body)}
+        assert_equal("a=1, a=2, b=x", res.body, log.call)}
       req = Net::HTTP::Get.new("/")
       http.request(req){|res|
         ary = res.body.lines.to_a
-        assert_match(%r{/$}, ary[0])
-        assert_match(%r{/webrick.cgi$}, ary[1])
+        assert_match(%r{/$}, ary[0], log.call)
+        assert_match(%r{/webrick.cgi$}, ary[1], log.call)
       }
 
       req = Net::HTTP::Get.new("/webrick.cgi")
@@ -63,7 +63,7 @@ class TestWEBrickCGI < Test::Unit::TestCase
       http.request(req){|res|
         assert_equal(
           "CUSTOMER=WILE_E_COYOTE\nPART_NUMBER=ROCKET_LAUNCHER_0001\n",
-          res.body)
+          res.body, log.call)
       }
 
       req = Net::HTTP::Get.new("/webrick.cgi")
@@ -74,16 +74,16 @@ class TestWEBrickCGI < Test::Unit::TestCase
       req["Cookie"] = cookie
       http.request(req){|res|
         assert_equal("Customer=WILE_E_COYOTE, Shipping=FedEx",
-                     res["Set-Cookie"])
+                     res["Set-Cookie"], log.call)
         assert_equal("Customer=WILE_E_COYOTE\n" +
                      "Part_Number=Rocket_Launcher_0001\n" +
-                     "Shipping=FedEx\n", res.body)
+                     "Shipping=FedEx\n", res.body, log.call)
       }
     }
   end
 
   def test_bad_request
-    start_cgi_server{|server, addr, port|
+    start_cgi_server{|server, addr, port, log|
       sock = TCPSocket.new(addr, port)
       begin
         sock << "POST /webrick.cgi HTTP/1.0" << CRLF
@@ -92,7 +92,7 @@ class TestWEBrickCGI < Test::Unit::TestCase
         sock << CRLF
         sock << "a=1&a=2&b=x"
         sock.close_write
-        assert_match(%r{\AHTTP/\d.\d 400 Bad Request}, sock.read)
+        assert_match(%r{\AHTTP/\d.\d 400 Bad Request}, sock.read, log.call)
       ensure
         sock.close
       end

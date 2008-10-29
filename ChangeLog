@@ -1,3 +1,13 @@
+Wed Oct 29 20:45:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/webrick/utils.rb (start_server): provide a reference to log of
+	  webrick.
+
+	* test/webrick/test_httpproxy.rb, test/webrick/test_httpauth.rb,
+	  test/webrick/test_cgi.rb, test/webrick/test_httpserver.rb,
+	  test/webrick/test_server.rb, test/webrick/test_filehandler.rb: use
+	  webrick log as an assertion message.
+
 Wed Oct 29 16:41:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (pack_pack): set encoding from packing string and UTF-8 for
