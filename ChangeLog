@@ -12,6 +12,14 @@ Thu Oct 30 01:10:32 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	* test/ruby/test_array (test_permutation): add a test that replaces
 	  array during permutation.
 
+Wed Oct 29 23:31:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_check_dummy_enc): new function to check dummy
+	  encoding.
+
+	* string.c (rb_str_upcase_bang): case conversion functions should
+	  not be applicable to strings in dummy encoding.  [ruby-dev:36985]
+
 Wed Oct 29 23:57:29 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (rb_ary_sort_bang): replacing array during sort broke
