@@ -223,7 +223,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
       :StopCallback => Proc.new{ stopped += 1 },
       :RequestCallback => Proc.new{|req, res| requested0 += 1 },
     }
-    TestWEBrick.start_httpserver(config){|server, addr, port|
+    TestWEBrick.start_httpserver(config){|server, addr, port, log|
       vhost_config = {
         :ServerName => "myhostname",
         :BindAddress => addr,
@@ -236,23 +236,23 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
       server.virtual_host(WEBrick::HTTPServer.new(vhost_config))
 
       true while server.status != :Running
-      assert_equal(started, 1)
-      assert_equal(stopped, 0)
-      assert_equal(accepted, 0)
+      assert_equal(started, 1, log.call)
+      assert_equal(stopped, 0, log.call)
+      assert_equal(accepted, 0, log.call)
 
       http = Net::HTTP.new(addr, port)
       req = Net::HTTP::Get.new("/")
       req["Host"] = "myhostname:#{port}"
-      http.request(req){|res| assert_equal("404", res.code)}
-      http.request(req){|res| assert_equal("404", res.code)}
-      http.request(req){|res| assert_equal("404", res.code)}
+      http.request(req){|res| assert_equal("404", res.code, log.call)}
+      http.request(req){|res| assert_equal("404", res.code, log.call)}
+      http.request(req){|res| assert_equal("404", res.code, log.call)}
       req["Host"] = "localhost:#{port}"
-      http.request(req){|res| assert_equal("404", res.code)}
-      http.request(req){|res| assert_equal("404", res.code)}
-      http.request(req){|res| assert_equal("404", res.code)}
-      assert_equal(6, accepted)
-      assert_equal(3, requested0)
-      assert_equal(3, requested1)
+      http.request(req){|res| assert_equal("404", res.code, log.call)}
+      http.request(req){|res| assert_equal("404", res.code, log.call)}
+      http.request(req){|res| assert_equal("404", res.code, log.call)}
+      assert_equal(6, accepted, log.call)
+      assert_equal(3, requested0, log.call)
+      assert_equal(3, requested1, log.call)
     }
     assert_equal(started, 1)
     assert_equal(stopped, 1)

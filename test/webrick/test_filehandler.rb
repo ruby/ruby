@@ -75,19 +75,19 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   def test_filehandler
     config = { :DocumentRoot => File.dirname(__FILE__), }
     this_file = File.basename(__FILE__)
-    TestWEBrick.start_httpserver(config) do |server, addr, port|
+    TestWEBrick.start_httpserver(config) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
       req = Net::HTTP::Get.new("/")
       http.request(req){|res|
-        assert_equal("200", res.code)
-        assert_equal("text/html", res.content_type)
-        assert_match(/HREF="#{this_file}"/, res.body)
+        assert_equal("200", res.code, log.call)
+        assert_equal("text/html", res.content_type, log.call)
+        assert_match(/HREF="#{this_file}"/, res.body, log.call)
       }
       req = Net::HTTP::Get.new("/#{this_file}")
       http.request(req){|res|
-        assert_equal("200", res.code)
-        assert_equal("text/plain", res.content_type)
-        assert_equal(File.read(__FILE__), res.body)
+        assert_equal("200", res.code, log.call)
+        assert_equal("text/plain", res.content_type, log.call)
+        assert_equal(File.read(__FILE__), res.body, log.call)
       }
     end
   end
@@ -95,23 +95,23 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   def test_non_disclosure_name
     config = { :DocumentRoot => File.dirname(__FILE__), }
     this_file = File.basename(__FILE__)
-    TestWEBrick.start_httpserver(config) do |server, addr, port|
+    TestWEBrick.start_httpserver(config) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
       doc_root_opts = server[:DocumentRootOptions]
       doc_root_opts[:NondisclosureName] = %w(.ht* *~ test_*)
       req = Net::HTTP::Get.new("/")
       http.request(req){|res|
-        assert_equal("200", res.code)
-        assert_equal("text/html", res.content_type)
+        assert_equal("200", res.code, log.call)
+        assert_equal("text/html", res.content_type, log.call)
         assert_no_match(/HREF="#{File.basename(__FILE__)}"/, res.body)
       }
       req = Net::HTTP::Get.new("/#{this_file}")
       http.request(req){|res|
-        assert_equal("404", res.code)
+        assert_equal("404", res.code, log.call)
       }
       doc_root_opts[:NondisclosureName] = %w(.ht* *~ TEST_*)
       http.request(req){|res|
-        assert_equal("404", res.code)
+        assert_equal("404", res.code, log.call)
       }
     end
   end
@@ -119,14 +119,14 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   def test_directory_traversal
     config = { :DocumentRoot => File.dirname(__FILE__), }
     this_file = File.basename(__FILE__)
-    TestWEBrick.start_httpserver(config) do |server, addr, port|
+    TestWEBrick.start_httpserver(config) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
       req = Net::HTTP::Get.new("/../../")
-      http.request(req){|res| assert_equal("400", res.code) }
+      http.request(req){|res| assert_equal("400", res.code, log.call) }
       req = Net::HTTP::Get.new("/..%5c../#{File.basename(__FILE__)}")
-      http.request(req){|res| assert_equal(windows? ? "200" : "404", res.code) }
+      http.request(req){|res| assert_equal(windows? ? "200" : "404", res.code, log.call) }
       req = Net::HTTP::Get.new("/..%5c..%5cruby.c")
-      http.request(req){|res| assert_equal("404", res.code) }
+      http.request(req){|res| assert_equal("404", res.code, log.call) }
     end
   end
 
@@ -134,10 +134,10 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     if windows?
       config = { :DocumentRoot => File.dirname(__FILE__), }
       this_file = File.basename(__FILE__)
-      TestWEBrick.start_httpserver(config) do |server, addr, port|
+      TestWEBrick.start_httpserver(config) do |server, addr, port, log|
         http = Net::HTTP.new(addr, port)
         req = Net::HTTP::Get.new("/..%5c..")
-        http.request(req){|res| assert_equal("301", res.code) }
+        http.request(req){|res| assert_equal("301", res.code, log.call) }
       end
     end
   end
@@ -148,25 +148,25 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       :DocumentRoot => File.dirname(__FILE__),
       :CGIPathEnv => ENV['PATH'],
     }
-    TestWEBrick.start_httpserver(config) do |server, addr, port|
+    TestWEBrick.start_httpserver(config) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
 
       req = Net::HTTP::Get.new("/webric~1.cgi/test")
       http.request(req) do |res|
         if windows?
-          assert_equal("200", res.code)
-          assert_equal("/test", res.body)
+          assert_equal("200", res.code, log.call)
+          assert_equal("/test", res.body, log.call)
         else
-          assert_equal("404", res.code)
+          assert_equal("404", res.code, log.call)
         end
       end
 
       req = Net::HTTP::Get.new("/.htaccess")
-      http.request(req) {|res| assert_equal("404", res.code) }
+      http.request(req) {|res| assert_equal("404", res.code, log.call) }
       req = Net::HTTP::Get.new("/htacce~1")
-      http.request(req) {|res| assert_equal("404", res.code) }
+      http.request(req) {|res| assert_equal("404", res.code, log.call) }
       req = Net::HTTP::Get.new("/HTACCE~1")
-      http.request(req) {|res| assert_equal("404", res.code) }
+      http.request(req) {|res| assert_equal("404", res.code, log.call) }
     end
   end
 
@@ -176,21 +176,21 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       :DocumentRoot => File.dirname(__FILE__),
       :CGIPathEnv => ENV['PATH'],
     }
-    TestWEBrick.start_httpserver(config) do |server, addr, port|
+    TestWEBrick.start_httpserver(config) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
 
       req = Net::HTTP::Get.new("/webrick.cgi/test")
       http.request(req) do |res|
-        assert_equal("200", res.code)
-        assert_equal("/test", res.body)
+        assert_equal("200", res.code, log.call)
+        assert_equal("/test", res.body, log.call)
       end
 
       response_assertion = Proc.new do |res|
         if windows?
-          assert_equal("200", res.code)
-          assert_equal("/test", res.body)
+          assert_equal("200", res.code, log.call)
+          assert_equal("/test", res.body, log.call)
         else
-          assert_equal("404", res.code)
+          assert_equal("404", res.code, log.call)
         end
       end
       req = Net::HTTP::Get.new("/webrick.cgi%20/test")

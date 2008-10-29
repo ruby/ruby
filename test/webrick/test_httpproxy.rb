@@ -35,7 +35,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
       :ProxyContentHandler => Proc.new{|req, res| proxy_handler_called += 1 },
       :RequestHandler => Proc.new{|req, res| request_handler_called += 1 }
     }
-    TestWEBrick.start_httpproxy(config){|server, addr, port|
+    TestWEBrick.start_httpproxy(config){|server, addr, port, log|
       server.mount_proc("/"){|req, res|
         res.body = "#{req.request_method} #{req.path} #{req.body}"
       }
@@ -43,28 +43,28 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
 
       req = Net::HTTP::Get.new("/")
       http.request(req){|res|
-        assert_equal("1.1 localhost.localdomain:#{port}", res["via"])
-        assert_equal("GET / ", res.body)
+        assert_equal("1.1 localhost.localdomain:#{port}", res["via"], log.call)
+        assert_equal("GET / ", res.body, log.call)
       }
-      assert_equal(1, proxy_handler_called)
-      assert_equal(2, request_handler_called)
+      assert_equal(1, proxy_handler_called, log.call)
+      assert_equal(2, request_handler_called, log.call)
 
       req = Net::HTTP::Head.new("/")
       http.request(req){|res|
-        assert_equal("1.1 localhost.localdomain:#{port}", res["via"])
-        assert_nil(res.body)
+        assert_equal("1.1 localhost.localdomain:#{port}", res["via"], log.call)
+        assert_nil(res.body, log.call)
       }
-      assert_equal(2, proxy_handler_called)
-      assert_equal(4, request_handler_called)
+      assert_equal(2, proxy_handler_called, log.call)
+      assert_equal(4, request_handler_called, log.call)
 
       req = Net::HTTP::Post.new("/")
       req.body = "post-data"
       http.request(req){|res|
-        assert_equal("1.1 localhost.localdomain:#{port}", res["via"])
-        assert_equal("POST / post-data", res.body)
+        assert_equal("1.1 localhost.localdomain:#{port}", res["via"], log.call)
+        assert_equal("POST / post-data", res.body, log.call)
       }
-      assert_equal(3, proxy_handler_called)
-      assert_equal(6, request_handler_called)
+      assert_equal(3, proxy_handler_called, log.call)
+      assert_equal(6, request_handler_called, log.call)
     }
   end
 
@@ -80,7 +80,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
       :ProxyContentHandler => Proc.new{|req, res| proxy_handler_called += 1 },
       :RequestHandler => Proc.new{|req, res| request_handler_called += 1 }
     }
-    TestWEBrick.start_httpproxy(config){|server, addr, port|
+    TestWEBrick.start_httpproxy(config){|server, addr, port, log|
       server.mount_proc("/"){|req, res|
         res.body = "#{req.request_method} #{req.path} #{req.body}"
       }
@@ -88,28 +88,28 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
 
       req = Net::HTTP::Get.new("/")
       http.request(req){|res|
-        assert_nil(res["via"])
-        assert_equal("GET / ", res.body)
+        assert_nil(res["via"], log.call)
+        assert_equal("GET / ", res.body, log.call)
       }
-      assert_equal(0, proxy_handler_called)
-      assert_equal(1, request_handler_called)
+      assert_equal(0, proxy_handler_called, log.call)
+      assert_equal(1, request_handler_called, log.call)
 
       req = Net::HTTP::Head.new("/")
       http.request(req){|res|
-        assert_nil(res["via"])
-        assert_nil(res.body)
+        assert_nil(res["via"], log.call)
+        assert_nil(res.body, log.call)
       }
-      assert_equal(0, proxy_handler_called)
-      assert_equal(2, request_handler_called)
+      assert_equal(0, proxy_handler_called, log.call)
+      assert_equal(2, request_handler_called, log.call)
 
       req = Net::HTTP::Post.new("/")
       req.body = "post-data"
       http.request(req){|res|
-        assert_nil(res["via"])
-        assert_equal("POST / post-data", res.body)
+        assert_nil(res["via"], log.call)
+        assert_equal("POST / post-data", res.body, log.call)
       }
-      assert_equal(0, proxy_handler_called)
-      assert_equal(3, request_handler_called)
+      assert_equal(0, proxy_handler_called, log.call)
+      assert_equal(3, request_handler_called, log.call)
     }
   end
 
@@ -147,11 +147,11 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
         assert_equal("CONNECT", req.request_method)
       },
     }
-    TestWEBrick.start_httpserver(s_config){|s_server, s_addr, s_port|
+    TestWEBrick.start_httpserver(s_config){|s_server, s_addr, s_port, s_log|
       s_server.mount_proc("/"){|req, res|
         res.body = "SSL #{req.request_method} #{req.path} #{req.body}"
       }
-      TestWEBrick.start_httpproxy(config){|server, addr, port|
+      TestWEBrick.start_httpproxy(config){|server, addr, port, log|
         http = Net::HTTP.new("127.0.0.1", s_port, addr, port)
         http.use_ssl = true
         http.verify_callback = Proc.new do |preverify_ok, store_ctx|
@@ -160,13 +160,13 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
 
         req = Net::HTTP::Get.new("/")
         http.request(req){|res|
-          assert_equal("SSL GET / ", res.body)
+          assert_equal("SSL GET / ", res.body, s_log.call + log.call)
         }
 
         req = Net::HTTP::Post.new("/")
         req.body = "post-data"
         http.request(req){|res|
-          assert_equal("SSL POST / post-data", res.body)
+          assert_equal("SSL POST / post-data", res.body, s_log.call + log.call)
         }
       }
     }
@@ -187,7 +187,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
       :ProxyContentHandler => Proc.new{|req, res| up_proxy_handler_called += 1},
       :RequestHandler => Proc.new{|req, res| up_request_handler_called += 1}
     }
-    TestWEBrick.start_httpproxy(up_config){|up_server, up_addr, up_port|
+    TestWEBrick.start_httpproxy(up_config){|up_server, up_addr, up_port, up_log|
       up_server.mount_proc("/"){|req, res|
         res.body = "#{req.request_method} #{req.path} #{req.body}"
       }
@@ -197,45 +197,45 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
         :ProxyContentHandler => Proc.new{|req, res| proxy_handler_called += 1},
         :RequestHandler => Proc.new{|req, res| request_handler_called += 1},
       }
-      TestWEBrick.start_httpproxy(config){|server, addr, port|
+      TestWEBrick.start_httpproxy(config){|server, addr, port, log|
         http = Net::HTTP.new(up_addr, up_port, addr, port)
 
         req = Net::HTTP::Get.new("/")
         http.request(req){|res|
           via = res["via"].split(/,\s+/)
-          assert(via.include?("1.1 localhost.localdomain:#{up_port}"))
-          assert(via.include?("1.1 localhost.localdomain:#{port}"))
+          assert(via.include?("1.1 localhost.localdomain:#{up_port}"), up_log.call + log.call)
+          assert(via.include?("1.1 localhost.localdomain:#{port}"), up_log.call + log.call)
           assert_equal("GET / ", res.body)
         }
-        assert_equal(1, up_proxy_handler_called)
-        assert_equal(2, up_request_handler_called)
-        assert_equal(1, proxy_handler_called)
-        assert_equal(1, request_handler_called)
+        assert_equal(1, up_proxy_handler_called, up_log.call + log.call)
+        assert_equal(2, up_request_handler_called, up_log.call + log.call)
+        assert_equal(1, proxy_handler_called, up_log.call + log.call)
+        assert_equal(1, request_handler_called, up_log.call + log.call)
 
         req = Net::HTTP::Head.new("/")
         http.request(req){|res|
           via = res["via"].split(/,\s+/)
-          assert(via.include?("1.1 localhost.localdomain:#{up_port}"))
-          assert(via.include?("1.1 localhost.localdomain:#{port}"))
-          assert_nil(res.body)
+          assert(via.include?("1.1 localhost.localdomain:#{up_port}"), up_log.call + log.call)
+          assert(via.include?("1.1 localhost.localdomain:#{port}"), up_log.call + log.call)
+          assert_nil(res.body, up_log.call + log.call)
         }
-        assert_equal(2, up_proxy_handler_called)
-        assert_equal(4, up_request_handler_called)
-        assert_equal(2, proxy_handler_called)
-        assert_equal(2, request_handler_called)
+        assert_equal(2, up_proxy_handler_called, up_log.call + log.call)
+        assert_equal(4, up_request_handler_called, up_log.call + log.call)
+        assert_equal(2, proxy_handler_called, up_log.call + log.call)
+        assert_equal(2, request_handler_called, up_log.call + log.call)
 
         req = Net::HTTP::Post.new("/")
         req.body = "post-data"
         http.request(req){|res|
           via = res["via"].split(/,\s+/)
-          assert(via.include?("1.1 localhost.localdomain:#{up_port}"))
-          assert(via.include?("1.1 localhost.localdomain:#{port}"))
-          assert_equal("POST / post-data", res.body)
+          assert(via.include?("1.1 localhost.localdomain:#{up_port}"), up_log.call + log.call)
+          assert(via.include?("1.1 localhost.localdomain:#{port}"), up_log.call + log.call)
+          assert_equal("POST / post-data", res.body, up_log.call + log.call)
         }
-        assert_equal(3, up_proxy_handler_called)
-        assert_equal(6, up_request_handler_called)
-        assert_equal(3, proxy_handler_called)
-        assert_equal(3, request_handler_called)
+        assert_equal(3, up_proxy_handler_called, up_log.call + log.call)
+        assert_equal(6, up_request_handler_called, up_log.call + log.call)
+        assert_equal(3, proxy_handler_called, up_log.call + log.call)
+        assert_equal(3, request_handler_called, up_log.call + log.call)
 
         if defined?(OpenSSL)
           # Testing CONNECT to the upstream proxy server
@@ -253,11 +253,11 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
             :SSLCertificate => cert,
             :SSLPrivateKey => key,
           }
-          TestWEBrick.start_httpserver(s_config){|s_server, s_addr, s_port|
+          TestWEBrick.start_httpserver(s_config){|s_server, s_addr, s_port, s_log|
             s_server.mount_proc("/"){|req, res|
               res.body = "SSL #{req.request_method} #{req.path} #{req.body}"
             }
-            http = Net::HTTP.new("127.0.0.1", s_port, addr, port)
+            http = Net::HTTP.new("127.0.0.1", s_port, addr, port, up_log.call + log.call + s_log.call)
             http.use_ssl = true
             http.verify_callback = Proc.new do |preverify_ok, store_ctx|
               store_ctx.current_cert.to_der == cert.to_der
@@ -265,13 +265,13 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
 
             req = Net::HTTP::Get.new("/")
             http.request(req){|res|
-              assert_equal("SSL GET / ", res.body)
+              assert_equal("SSL GET / ", res.body, up_log.call + log.call + s_log.call)
             }
 
             req = Net::HTTP::Post.new("/")
             req.body = "post-data"
             http.request(req){|res|
-              assert_equal("SSL POST / post-data", res.body)
+              assert_equal("SSL POST / post-data", res.body, up_log.call + log.call + s_log.call)
             }
           }
         end
