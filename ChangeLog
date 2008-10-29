@@ -35,6 +35,16 @@ Tue Oct 28 23:03:46 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	* test/ruby/test_proc.rb: filled all patterns for testing
 	  vm_yield_setup_args.
 
+Tue Oct 28 23:05:35 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: continues to support canonicalization *unofficially*
+	  for an odd library mathn for the time being (only 1.9.x).
+	  since grand mathn must be very very special library for us.
+
+	* rational.c: ditto.
+
+	* ext/mathn/*/*: follow the above changes.
+
 Tue Oct 28 21:31:55 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* parse.y (parser_yylex): check EOF explicitly.

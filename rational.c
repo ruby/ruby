@@ -377,7 +377,19 @@ f_rational_new_bang2(VALUE klass, VALUE x, VALUE y)
     return nurat_s_new_internal(klass, x, y);
 }
 
-#define f_unify_p(klass) rb_const_defined(klass, id_Unify)
+#if RUBY_VERSION_CODE < 200
+#define CANON
+#endif
+
+#ifdef CANON
+static int canonicalization = 0;
+
+void
+nurat_canonicalize(int f)
+{
+    canonicalization = f;
+}
+#endif
 
 inline static void
 nurat_int_check(VALUE num)
@@ -421,7 +433,7 @@ nurat_s_canonicalize_internal(VALUE klass, VALUE num, VALUE den)
     den = f_idiv(den, gcd);
 
 #ifdef CANON
-    if (f_one_p(den) && f_unify_p(klass))
+    if (f_one_p(den) && canonicalization)
 	return num;
 #endif
     return nurat_s_new_internal(klass, num, den);
@@ -441,7 +453,7 @@ nurat_s_canonicalize_internal_no_reduce(VALUE klass, VALUE num, VALUE den)
     }
 
 #ifdef CANON
-    if (f_one_p(den) && f_unify_p(klass))
+    if (f_one_p(den) && canonicalization)
 	return num;
 #endif
     return nurat_s_new_internal(klass, num, den);
