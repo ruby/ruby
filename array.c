@@ -1198,10 +1198,6 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
     else {
 	long alen;
 
-	if (beg + len > RARRAY_LEN(ary)) {
-	    len = RARRAY_LEN(ary) - beg;
-	}
-
 	alen = RARRAY_LEN(ary) + rlen - len;
 	if (alen >= ARY_CAPA(ary)) {
 	    ary_resize_capa(ary, alen);

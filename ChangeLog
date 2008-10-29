@@ -1,3 +1,7 @@
+Thu Oct 30 01:32:15 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* array.c (rb_ary_splice): remove redundant check.
+
 Thu Oct 30 01:24:55 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* string.c (rb_str_cmp): fix condition which always returned true
