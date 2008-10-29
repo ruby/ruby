@@ -1758,10 +1758,12 @@ rb_ary_sort_bang(VALUE ary)
         }
         else {
             assert(!ARY_EMBED_P(tmp));
-            if (ARY_EMBED_P(ary)) FL_UNSET_EMBED(ary);
-            if (RARRAY_PTR(ary) != RARRAY_PTR(tmp)) {
+            if (ARY_EMBED_P(ary) || RARRAY_PTR(ary) != RARRAY_PTR(tmp)) {
                 assert(!ARY_SHARED_P(tmp));
-                if (ARY_SHARED_P(ary)) {
+                if (ARY_EMBED_P(ary)) {
+                    FL_UNSET_EMBED(ary);
+                }
+                else if (ARY_SHARED_P(ary)) {
                     rb_ary_unshare(ary);
                 }
                 else {
