@@ -888,7 +888,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal("aGVsbG8K\n",  @cls["hello\n"].pack("m"))
     assert_equal(",:&5L;&\\*:&5L;&\\*\n",  @cls["hello\nhello\n"].pack("u"))
 
-    assert_equal("\xc2\xa9B\xe2\x89\xa0", @cls[0xa9, 0x42, 0x2260].pack("U*"))
+    assert_equal("\u{a9 42 2260}", @cls[0xa9, 0x42, 0x2260].pack("U*"))
 
 
     format = "c2x5CCxsdils_l_a6";

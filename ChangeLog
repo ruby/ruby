@@ -18,6 +18,11 @@ Wed Oct 29 20:45:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	  test/webrick/test_server.rb, test/webrick/test_filehandler.rb: use
 	  webrick log as an assertion message.
 
+Wed Oct 29 16:41:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (pack_pack): set encoding from packing string and UTF-8 for
+	  "U".  [ruby-core:19590]
+
 Wed Oct  29 15:50:00 2008  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* complex.c (imp1, imp2): should declare type.
