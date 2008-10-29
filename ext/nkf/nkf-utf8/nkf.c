@@ -33,7 +33,7 @@
  ***********************************************************************/
 #define NKF_IDENT "$Id$"
 #define NKF_VERSION "2.0.8"
-#define NKF_RELEASE_DATE "2008-02-08"
+#define NKF_RELEASE_DATE "2008-10-28"
 #define COPY_RIGHT \
     "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa),2000 S. Kono, COW\n" \
     "Copyright (C) 2002-2008 Kono, Furukawa, Naruse, mastodon"
@@ -41,6 +41,10 @@
 #include "config.h"
 #include "nkf.h"
 #include "utf8tbl.h"
+#ifdef __WIN32__
+#include <windows.h>
+#include <locale.h>
+#endif
 
 /* state of output_mode and input_mode
 
@@ -718,7 +722,16 @@ nkf_locale_charmap()
 #ifdef HAVE_LANGINFO_H
     return nl_langinfo(CODESET);
 #elif defined(__WIN32__)
-    return sprintf("CP%d", GetACP());
+    char buf[16];
+    char *str;
+    int len = sprintf(buf, "CP%d", GetACP());
+    if (len > 0) {
+      str = malloc(len + 1);
+      strcpy(str, buf);
+      str[len] = '\0';
+      return str;
+    }
+    else return NULL;
 #else
     return NULL;
 #endif
@@ -4100,7 +4113,7 @@ numchar_getc(FILE *f)
     nkf_char (*g)(FILE *) = i_ngetc;
     nkf_char (*u)(nkf_char c ,FILE *f) = i_nungetc;
     int i = 0, j;
-    nkf_char buf[8];
+    nkf_char buf[12];
     long c = -1;
 
     buf[i] = (*g)(f);
@@ -5327,6 +5340,10 @@ kanji_convert(FILE *f)
 		/* 2nd byte of 7 bit code or SJIS */
 		SEND;
 	    }
+	}
+	else if (nkf_char_unicode_p(c1)) {
+	    (*oconv)(0, c1);
+	    NEXT;
 	}
 	else {
 	    /* first byte */
