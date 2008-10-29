@@ -1751,14 +1751,18 @@ rb_ary_sort_bang(VALUE ary)
 	ruby_qsort(RARRAY_PTR(tmp), RARRAY_LEN(tmp), sizeof(VALUE),
 		   rb_block_given_p()?sort_1:sort_2, &data);
 
-        if (ARY_EMBED_P(ary) || ARY_EMBED_P(tmp)) {
+        if (ARY_EMBED_P(tmp)) {
             assert(ARY_EMBED_P(tmp));
+            if (ARY_SHARED_P(ary)) { /* ary might be destructively operated in the given block */
+                rb_ary_unshare(ary);
+                FL_SET_EMBED(ary);
+            }
             MEMCPY(RARRAY_PTR(ary), ARY_EMBED_PTR(tmp), VALUE, ARY_EMBED_LEN(tmp));
             ARY_SET_LEN(ary, ARY_EMBED_LEN(tmp));
         }
         else {
-            assert(!ARY_EMBED_P(ary));
             assert(!ARY_EMBED_P(tmp));
+            if (ARY_EMBED_P(ary)) FL_UNSET_EMBED(ary);
             if (RARRAY_PTR(ary) != RARRAY_PTR(tmp)) {
                 assert(!ARY_SHARED_P(tmp));
                 if (ARY_SHARED_P(ary)) {
