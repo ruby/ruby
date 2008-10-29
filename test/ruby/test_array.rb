@@ -1157,6 +1157,14 @@ class TestArray < Test::Unit::TestCase
 
     assert_equal(@cls[1], @cls[1].sort!)
     assert_equal(@cls[], @cls[].sort!)
+
+    a = @cls[4, 3, 2, 1]
+    a.sort! {|m, n| a.replace([9, 8, 7, 6]); m <=> n }
+    assert_equal([1, 2, 3, 4], a)
+
+    a = @cls[4, 3, 2, 1]
+    a.sort! {|m, n| a.replace([9, 8, 7]); m <=> n }
+    assert_equal([1, 2, 3, 4], a)
   end
 
   def test_sort_with_callcc
