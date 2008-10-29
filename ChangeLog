@@ -1,3 +1,8 @@
+Wed Oct 29 11:50:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (dln-a-out): cannot make shared library nor work with
+	  ELF.  [ruby-core:19571]
+
 Wed Oct 29 11:00:25 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_open): shouldn't seek here.

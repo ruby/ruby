@@ -1253,7 +1253,13 @@ dnl wheather use dln_a_out or not
 AC_ARG_WITH(dln-a-out, 
 	[  --with-dln-a-out        use dln_a_out if possible], [
 	case $withval in
-	yes) with_dln_a_out=yes;;
+	dnl (
+	yes)
+	    if test "$enable_shared" = yes; then
+		AC_MSG_ERROR(dln_a_out can not make shared library)
+	    fi
+	    with_dln_a_out=yes;;
+	dnl (
 	*)   with_dln_a_out=no;;
 	esac], [with_dln_a_out=no])
 
@@ -1271,6 +1277,9 @@ rb_cv_binary_elf=no)])
 
 if test "$rb_cv_binary_elf" = yes; then
   AC_DEFINE(USE_ELF)
+  if test "$with_dln_a_out" = yes; then
+    AC_MSG_ERROR(dln_a_out does not work with ELF)
+  fi
 fi
 
 case "$target_os" in
