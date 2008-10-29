@@ -1255,7 +1255,7 @@ load_file_internal(VALUE arg)
 	int no_ext_enc = !opt->ext.enc.name;
 	int no_int_enc = !opt->intern.enc.name;
 
-	enc = rb_usascii_encoding();
+	enc = rb_ascii8bit_encoding();
 	rb_funcall(f, set_encoding, 1, rb_enc_from_encoding(enc));
 
 	if (opt->xflag) {
@@ -1356,7 +1356,7 @@ load_file_internal(VALUE arg)
 	enc = rb_locale_encoding();
     }
     else {
-	enc = rb_usascii_encoding();
+	enc = rb_ascii8bit_encoding();
     }
     rb_funcall(f, set_encoding, 1, rb_enc_from_encoding(enc));
     tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);

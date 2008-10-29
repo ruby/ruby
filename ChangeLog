@@ -1,4 +1,7 @@
-Wed Oct 29 09:23:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Oct 29 09:30:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file_internal): use ASCII-8BIT to prevent conversion.
+	  [ruby-core:19579]
 
 	* ruby.c (load_file_internal): cache common interned IDs.
 
