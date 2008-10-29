@@ -1297,6 +1297,11 @@ class TestArray < Test::Unit::TestCase
                  "edcba".each_char.to_a.permutation(5).sort)
     assert_equal(@cls[].permutation(0).to_a, @cls[[]])
 
+    a = @cls[1, 2, 3, 4]
+    b = @cls[]
+    a.permutation {|x| b << x; a.replace(@cls[9, 8, 7, 6]) }
+    assert_equal(@cls[9, 8, 7, 6], a)
+    assert_equal(@cls[1, 2, 3, 4].permutation.to_a, b)
   end
 
   def test_take
