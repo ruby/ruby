@@ -1223,6 +1223,7 @@ load_file_internal(VALUE arg)
     int line_start = 1;
     NODE *tree = 0;
     rb_encoding *enc;
+    ID set_encoding;
 
     if (!fname)
 	rb_load_fail(fname);
@@ -1245,6 +1246,7 @@ load_file_internal(VALUE arg)
 	f = rb_io_fdopen(fd, mode, fname);
     }
 
+    CONST_ID(set_encoding, "set_encoding");
     if (script) {
 	VALUE c = 1;		/* something not nil */
 	VALUE line;
@@ -1253,8 +1255,8 @@ load_file_internal(VALUE arg)
 	int no_ext_enc = !opt->ext.enc.name;
 	int no_int_enc = !opt->intern.enc.name;
 
-	enc = rb_usascii_encoding();
-	rb_funcall(f, rb_intern("set_encoding"), 1, rb_enc_from_encoding(enc));
+	enc = rb_ascii8bit_encoding();
+	rb_funcall(f, set_encoding, 1, rb_enc_from_encoding(enc));
 
 	if (opt->xflag) {
 	    forbid_setid("-x");
@@ -1354,11 +1356,11 @@ load_file_internal(VALUE arg)
 	enc = rb_locale_encoding();
     }
     else {
-	enc = rb_usascii_encoding();
+	enc = rb_ascii8bit_encoding();
     }
-    rb_funcall(f, rb_intern("set_encoding"), 1, rb_enc_from_encoding(enc));
+    rb_funcall(f, set_encoding, 1, rb_enc_from_encoding(enc));
     tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);
-    rb_funcall(f, rb_intern("set_encoding"), 1, rb_parser_encoding(parser));
+    rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
     if (script && rb_parser_end_seen_p(parser)) {
 	rb_define_global_const("DATA", f);
     }

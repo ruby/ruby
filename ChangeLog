@@ -25,6 +25,13 @@ Wed Oct 29 11:01:46 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/win32.c (rb_w32_write): write to the end of the file when
 	  FAPPEND is specified.
 
+Wed Oct 29 09:30:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file_internal): use ASCII-8BIT to prevent conversion.
+	  [ruby-core:19579]
+
+	* ruby.c (load_file_internal): cache common interned IDs.
+
 Wed Oct 29 00:43:39 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: uses macro in declarations.
