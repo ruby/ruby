@@ -30,6 +30,12 @@ Wed Oct 29 00:29:46 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/win32.c (rb_w32_open): need to seek to the end of the file when
 	  O_APPEND is specified.
 
+Wed Oct 29 00:08:05 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* math.c (rb_math_{atan2,cos,cosh,hypot,log,sin,sinh,sqrt}): added.
+
+	* complex.c: follows the above change.
+
 Tue Oct 28 23:29:06 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (kanji_convert): output unicode chars.
