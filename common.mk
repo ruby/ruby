@@ -671,7 +671,7 @@ prereq: incs srcs preludes
 preludes: {$(VPATH)}miniprelude.c
 preludes: {$(srcdir)}golf_prelude.c
 
-$(srcdir)/revision.h: $(REVISION_FORCE)
+$(srcdir)/revision.h: $(srcdir)/version.h $(srcdir)/ChangeLog $(REVISION_FORCE)
 	@set LC_MESSAGES=C
 	-@$(SET_LC_MESSAGES) $(VCS) info "$(@D)" | \
 	sed -n "s/.*Rev:/#define RUBY_REVISION/p" > "$@.tmp"
