@@ -608,21 +608,6 @@ bsdi*)          LIBS="-lm $LIBS"
 		AC_DEFINE(BROKEN_SETREGID, 1)
                 ac_cv_sizeof_rlim_t=8;;
 freebsd*)	LIBS="-lm $LIBS"
-		AC_CACHE_CHECK([whether -lxpg4 has to be linked],
-		  rb_cv_lib_xpg4_needed,
-		  [AC_TRY_CPP([
-#include <osreldate.h>
-#if __FreeBSD_version < 400020 || \
-   (__FreeBSD_version >= 500000 && __FreeBSD_version < 500005)
-#error needs libxpg4
-#endif
-		   ],
-		   rb_cv_lib_xpg4_needed=no,
-		   rb_cv_lib_xpg4_needed=yes,
-		   rb_cv_lib_xpg4_needed=yes)])
-		if test "$rb_cv_lib_xpg4_needed" = yes; then
-			AC_CHECK_LIB(xpg4, setlocale)
-		fi
 		;;
 dragonfly*)	LIBS="-lm $LIBS"
 		;;
