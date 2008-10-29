@@ -1,3 +1,8 @@
+Wed Oct 29 11:50:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (dln-a-out): cannot make shared library nor work with
+	  ELF.  [ruby-core:19571]
+
 Thu Oct 23 01:24:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_tmpsrc): get rid of side effects.
