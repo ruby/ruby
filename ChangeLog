@@ -1,3 +1,7 @@
+Thu Oct 30 01:44:23 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_array.rb: add some tests.
+
 Thu Oct 30 01:32:15 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (rb_ary_splice): remove redundant check.
@@ -9,7 +13,7 @@ Thu Oct 30 01:24:55 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 Thu Oct 30 01:10:32 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	* test/ruby/test_array (test_permutation): add a test that replaces
+	* test/ruby/test_array.rb (test_permutation): add a test that replaces
 	  array during permutation.
 
 Wed Oct 29 23:57:29 2008  Yusuke Endoh  <mame@tsg.ne.jp>
