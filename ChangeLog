@@ -1,3 +1,7 @@
+Wed Oct 29 09:23:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file_internal): cache common interned IDs.
+
 Wed Oct 29 00:43:39 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: uses macro in declarations.
