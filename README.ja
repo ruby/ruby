@@ -20,9 +20,9 @@ Rubyはテキスト処理関係の能力などに優れ，Perlと同じくらい強力
   + イテレータとクロージャ
   + ガーベージコレクタ
   + ダイナミックローディング (アーキテクチャによる)
-  + 移植性が高い．多くのUNIX上で動くだけでなく，DOSやWindows，
-    Mac，BeOSなどの上でも動く
-
+  + 移植性が高い．多くのUnix-like/POSIX互換プラットフォーム上で
+    動くだけでなく，Windows， Mac OS X，BeOSなどの上でも動く
+    cf. http://redmine.ruby-lang.org/wiki/ruby-19/SupportedPlatformsJa
 
 * 入手法
 
