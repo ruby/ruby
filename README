@@ -16,8 +16,9 @@ Perl).  It is simple, straight-forward, and extensible.
   + Iterators and Closures
   + Garbage Collection
   + Dynamic Loading of Object files(on some architecture)
-  + Highly Portable(works on many UNIX machines, and on DOS,
-    Windows, Mac, BeOS etc.)
+  + Highly Portable (works on many Unix-like/POSIX compatible platforms
+    as well as Windows, Mac OS X, BeOS etc.)
+    cf. http://redmine.ruby-lang.org/wiki/ruby-19/SupportedPlatforms
 
 
 * How to get Ruby
