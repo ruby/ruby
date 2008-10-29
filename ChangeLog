@@ -17,6 +17,16 @@ Wed Oct 29 23:57:29 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	* array.c (rb_ary_sort_bang): replacing array during sort broke
           invariant of array.
 
+Wed Oct 29 21:06:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_rewind): should reset fptr->readconv if it's
+	  available.
+
+	* io.c (more_char): clear readconv at EOF.
+
+	* test/ruby/test_file.rb: should not read after EOF.  use rewind
+	  instead.
+
 Wed Oct 29 20:45:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/webrick/utils.rb (start_server): provide a reference to log of
