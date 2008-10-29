@@ -429,7 +429,7 @@ nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
 #define imp1(n) \
 extern VALUE rb_math_##n(VALUE x);\
 inline static VALUE \
-m_##n##_bang(x)\
+m_##n##_bang(VALUE x)\
 {\
     return rb_math_##n(x);\
 }
@@ -437,7 +437,7 @@ m_##n##_bang(x)\
 #define imp2(n) \
 extern VALUE rb_math_##n(VALUE x, VALUE y);\
 inline static VALUE \
-m_##n##_bang(x, y)\
+m_##n##_bang(VALUE x, VALUE y)\
 {\
     return rb_math_##n(x, y);\
 }
