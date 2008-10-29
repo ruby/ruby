@@ -10,6 +10,7 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
+#include "ruby/encoding.h"
 #include <sys/types.h>
 #include <ctype.h>
 #include <errno.h>
@@ -443,6 +444,7 @@ pack_pack(VALUE ary, VALUE fmt)
     char type;
     long items, len, idx, plen;
     const char *ptr;
+    rb_encoding *enc;
 #ifdef NATINT_PACK
     int natint;		/* native integer */
 #endif
@@ -517,6 +519,8 @@ pack_pack(VALUE ary, VALUE fmt)
 		ptr = RSTRING_PTR(from);
 		plen = RSTRING_LEN(from);
 		OBJ_INFECT(res, from);
+		enc = rb_enc_compatible(res, from);
+		rb_enc_associate(res, enc);
 	    }
 
 	    if (p[-1] == '*')
@@ -865,6 +869,8 @@ pack_pack(VALUE ary, VALUE fmt)
 	    break;
 
 	  case 'U':		/* Unicode character */
+	    enc = rb_enc_compatible(res, rb_enc_from_encoding(rb_utf8_encoding()));
+	    rb_enc_associate(res, enc);
 	    while (len-- > 0) {
 		SIGNED_VALUE l;
 		char buf[8];
