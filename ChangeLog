@@ -1,7 +1,7 @@
 Thu Oct 30 02:20:33 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (rb_ary_sort_bang): remove SEGV when replacing array with
-	  embedded one during sort.
+	  embedded one during sort.  [ruby-dev:36983]
 
 	* test/ruby/test_array.rb (test_sort!): add tests for above.
 
@@ -26,7 +26,7 @@ Thu Oct 30 01:10:32 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 Wed Oct 29 23:57:29 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (rb_ary_sort_bang): replacing array during sort broke
-          invariant of array.
+          invariant of array.  [ruby-dev:36983]
 
 Wed Oct 29 20:45:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
