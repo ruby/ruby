@@ -490,9 +490,11 @@ class TestArgf < Test::Unit::TestCase
           t = ""; ARGF.readpartial(1, t); s << t
         end
       rescue EOFError
+        $stdout.binmode
         puts s
       end
     SRC
+      f.binmode
       f.puts("foo")
       f.puts("bar")
       f.puts("baz")
