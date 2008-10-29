@@ -51,9 +51,9 @@ class TestPack < Test::Unit::TestCase
     assert_raise(RangeError) { [-0x40000000].pack("U") }
     assert_raise(RangeError) { [-1].pack("U") }
     assert_equal "\000", [0].pack("U")
-    assert_equal "\374\277\277\277\277\277", [0x3fffffff].pack("U")
-    assert_equal "\375\200\200\200\200\200", [0x40000000].pack("U")
-    assert_equal "\375\277\277\277\277\277", [0x7fffffff].pack("U")
+    assert_equal "\374\277\277\277\277\277".force_encoding(Encoding::UTF_8), [0x3fffffff].pack("U")
+    assert_equal "\375\200\200\200\200\200".force_encoding(Encoding::UTF_8), [0x40000000].pack("U")
+    assert_equal "\375\277\277\277\277\277".force_encoding(Encoding::UTF_8), [0x7fffffff].pack("U")
     assert_raise(RangeError) { [0x80000000].pack("U") }
     assert_raise(RangeError) { [0x100000000].pack("U") }
   end
