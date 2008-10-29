@@ -1,3 +1,8 @@
+Thu Oct 30 01:24:55 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* string.c (rb_str_cmp): fix condition which always returned true
+	  because ENCODING_GET returns unsigned long.
+
 Thu Oct 30 01:10:32 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_array (test_permutation): add a test that replaces

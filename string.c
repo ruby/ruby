@@ -2073,7 +2073,7 @@ rb_str_cmp(VALUE str1, VALUE str2)
     if (retval == 0) {
 	if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) {
 	    if (!rb_str_comparable(str1, str2)) {
-		if (ENCODING_GET(str1) - ENCODING_GET(str2) > 0)
+		if (ENCODING_GET(str1) > ENCODING_GET(str2))
 		    return 1;
 		return -1;
 	    }
