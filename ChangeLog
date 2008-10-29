@@ -18,6 +18,13 @@ Wed Oct 29 20:45:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	  test/webrick/test_server.rb, test/webrick/test_filehandler.rb: use
 	  webrick log as an assertion message.
 
+Wed Oct 29 13:02:17 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in (rb_cv_lib_xpg4_needed): Drop legacy FreeBSD
+	  support regarding libxpg4.  Those old versions of FreeBSD
+	  shipped with the library don't have a working pthread library
+	  anyway.
+
 Wed Oct 29 11:50:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (dln-a-out): cannot make shared library nor work with
