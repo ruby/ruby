@@ -519,8 +519,15 @@ pack_pack(VALUE ary, VALUE fmt)
 		ptr = RSTRING_PTR(from);
 		plen = RSTRING_LEN(from);
 		OBJ_INFECT(res, from);
-		enc = rb_enc_compatible(res, from);
-		rb_enc_associate(res, enc);
+		switch (type) {
+		  case 'a': case 'A': case 'Z':
+		    enc = rb_enc_compatible(res, from);
+		    rb_enc_associate(res, enc);
+		    break;
+		  default:
+		    rb_enc_associate(res, rb_ascii8bit_encoding());
+		    break;
+		}
 	    }
 
 	    if (p[-1] == '*')
