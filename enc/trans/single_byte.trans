@@ -3,38 +3,25 @@
 <%
   us_ascii_map = [["{00-7f}", :nomap]]
 
-  ISO_8859_1_TO_UCS_TBL = (0x80..0xff).map {|c| ["%02X" % c, c] }
-  CONTROL1_TO_UCS_TBL = (0x80..0x9f).map {|c| ["%02X" % c, c] }
-
-  require 'iso-8859-2-tbl'
-  require 'iso-8859-3-tbl'
-  require 'iso-8859-4-tbl'
-  require 'iso-8859-5-tbl'
-  require 'iso-8859-6-tbl'
-  require 'iso-8859-7-tbl'
-  require 'iso-8859-8-tbl'
-  require 'iso-8859-9-tbl'
-  require 'iso-8859-10-tbl'
-  require 'iso-8859-11-tbl'
-  require 'iso-8859-13-tbl'
-  require 'iso-8859-14-tbl'
-  require 'iso-8859-15-tbl'
-  require 'windows-874-tbl'
-  require 'windows-1250-tbl'
-  require 'windows-1251-tbl'
-  require 'windows-1252-tbl'
-  require 'windows-1253-tbl'
-  require 'windows-1254-tbl'
-  require 'windows-1255-tbl'
-  require 'windows-1256-tbl'
-  require 'windows-1257-tbl'
-
   transcode_tblgen "US-ASCII", "UTF-8", us_ascii_map
   transcode_tblgen "UTF-8", "US-ASCII", us_ascii_map
   transcode_tblgen "ASCII-8BIT", "UTF-8", us_ascii_map
   transcode_tblgen "UTF-8", "ASCII-8BIT", us_ascii_map
 
-  def transcode_tblgen_singlebyte(name, tbl_to_ucs)
+  CONTROL1_TO_UCS_TBL = (0x80..0x9f).map {|c| ["%02X" % c, c] }
+
+  # Generate transcoding tables for single byte encoding from
+  # encoding name using table file.
+  #
+  # Conventions:
+  #   name: encoding name as string, UPPER case, hyphens (e.g. 'ISO-8859-3')
+  #   file name: lower case, hyphens, -tbl.rb suffix (e.g. iso-8859-3-tbl.rb)
+  #   variable name: UPPER case, underscores, _TO_UCS_TBL suffix (e.g. ISO_8859_3_TO_UCS_TBL)
+  # If the name starts with "ISO-8859", the C1 control code area is added automatically.
+  def transcode_tblgen_singlebyte (name)
+    require(name.downcase + "-tbl")
+    control1_if_needed = (name =~ /^ISO-8859/) ? CONTROL1_TO_UCS_TBL : []
+    tbl_to_ucs = control1_if_needed + eval(name.gsub(/-/, '_') + "_TO_UCS_TBL")
     set_valid_byte_pattern(name, '1byte')
     code = ''
     code << transcode_tblgen(name, "UTF-8", [["{00-7f}", :nomap], *tbl_to_ucs])
@@ -43,33 +30,29 @@
     code
   end
 
-  def transcode_tblgen_iso8859(name, tbl_to_ucs)
-    transcode_tblgen_singlebyte(name, CONTROL1_TO_UCS_TBL + tbl_to_ucs)
-  end
-
-  transcode_tblgen_iso8859("ISO-8859-1", ISO_8859_1_TO_UCS_TBL)
-  transcode_tblgen_iso8859("ISO-8859-2", ISO_8859_2_TO_UCS_TBL)
-  transcode_tblgen_iso8859("ISO-8859-3", ISO_8859_3_TO_UCS_TBL)
-  transcode_tblgen_iso8859("ISO-8859-4", ISO_8859_4_TO_UCS_TBL)
-  transcode_tblgen_iso8859("ISO-8859-5", ISO_8859_5_TO_UCS_TBL)
-  transcode_tblgen_iso8859("ISO-8859-6", ISO_8859_6_TO_UCS_TBL)
-  transcode_tblgen_iso8859("ISO-8859-7", ISO_8859_7_TO_UCS_TBL)
-  transcode_tblgen_iso8859("ISO-8859-8", ISO_8859_8_TO_UCS_TBL)
-  transcode_tblgen_iso8859("ISO-8859-9", ISO_8859_9_TO_UCS_TBL)
-  transcode_tblgen_iso8859("ISO-8859-10", ISO_8859_10_TO_UCS_TBL)
-  transcode_tblgen_iso8859("ISO-8859-11", ISO_8859_11_TO_UCS_TBL)
-  transcode_tblgen_iso8859("ISO-8859-13", ISO_8859_13_TO_UCS_TBL)
-  transcode_tblgen_iso8859("ISO-8859-14", ISO_8859_14_TO_UCS_TBL)
-  transcode_tblgen_iso8859("ISO-8859-15", ISO_8859_15_TO_UCS_TBL)
-  transcode_tblgen_singlebyte("WINDOWS-874", WINDOWS_874_TO_UCS_TBL)
-  transcode_tblgen_singlebyte("WINDOWS-1250", WINDOWS_1250_TO_UCS_TBL)
-  transcode_tblgen_singlebyte("WINDOWS-1251", WINDOWS_1251_TO_UCS_TBL)
-  transcode_tblgen_singlebyte("WINDOWS-1252", WINDOWS_1252_TO_UCS_TBL)
-  transcode_tblgen_singlebyte("WINDOWS-1253", WINDOWS_1253_TO_UCS_TBL)
-  transcode_tblgen_singlebyte("WINDOWS-1254", WINDOWS_1254_TO_UCS_TBL)
-  transcode_tblgen_singlebyte("WINDOWS-1255", WINDOWS_1255_TO_UCS_TBL)
-  transcode_tblgen_singlebyte("WINDOWS-1256", WINDOWS_1256_TO_UCS_TBL)
-  transcode_tblgen_singlebyte("WINDOWS-1257", WINDOWS_1257_TO_UCS_TBL)
+  transcode_tblgen_singlebyte "ISO-8859-1"
+  transcode_tblgen_singlebyte "ISO-8859-2"
+  transcode_tblgen_singlebyte "ISO-8859-3"
+  transcode_tblgen_singlebyte "ISO-8859-4"
+  transcode_tblgen_singlebyte "ISO-8859-5"
+  transcode_tblgen_singlebyte "ISO-8859-6"
+  transcode_tblgen_singlebyte "ISO-8859-7"
+  transcode_tblgen_singlebyte "ISO-8859-8"
+  transcode_tblgen_singlebyte "ISO-8859-9"
+  transcode_tblgen_singlebyte "ISO-8859-10"
+  transcode_tblgen_singlebyte "ISO-8859-11"
+  transcode_tblgen_singlebyte "ISO-8859-13"
+  transcode_tblgen_singlebyte "ISO-8859-14"
+  transcode_tblgen_singlebyte "ISO-8859-15"
+  transcode_tblgen_singlebyte "WINDOWS-874"
+  transcode_tblgen_singlebyte "WINDOWS-1250"
+  transcode_tblgen_singlebyte "WINDOWS-1251"
+  transcode_tblgen_singlebyte "WINDOWS-1252"
+  transcode_tblgen_singlebyte "WINDOWS-1253"
+  transcode_tblgen_singlebyte "WINDOWS-1254"
+  transcode_tblgen_singlebyte "WINDOWS-1255"
+  transcode_tblgen_singlebyte "WINDOWS-1256"
+  transcode_tblgen_singlebyte "WINDOWS-1257"
 %>
 
 <%= transcode_generated_code %>
