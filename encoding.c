@@ -996,11 +996,11 @@ rb_locale_encoding(void)
     int idx;
 
     if (NIL_P(charmap))
-        return rb_usascii_encoding();
-    else
-        idx = rb_enc_find_index(StringValueCStr(charmap));
-    if (idx < 0)
-        return rb_ascii8bit_encoding();
+        idx = rb_usascii_encindex();
+    else if ((idx = rb_enc_find_index(StringValueCStr(charmap))) < 0)
+        idx = rb_ascii8bit_encindex();
+
+    if (rb_enc_registered("locale") < 0) enc_alias("locale", idx);
 
     return rb_enc_from_index(idx);
 }
@@ -1057,6 +1057,7 @@ rb_enc_set_default_external(VALUE encoding)
 {
     default_external_index = rb_enc_to_index(rb_to_encoding(encoding));
     default_external = 0;
+    enc_alias("external", default_external_index);
 }
 
 /* -2 => not yet set, -1 => nil */
@@ -1106,6 +1107,7 @@ rb_enc_set_default_internal(VALUE encoding)
     if (default_internal_index == rb_usascii_encindex())
 	default_internal_index = rb_utf8_encindex();
     default_internal = 0;
+    enc_alias("internal", default_internal_index);
 }
 
 /*
