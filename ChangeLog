@@ -1,3 +1,7 @@
+Thu Oct 30 21:32:15 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* array.c (rb_ary_permutation): hide temporal array.
+
 Thu Oct 30 14:45:45 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/trans/single_byte.trans: refactoring to make it easier
