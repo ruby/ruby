@@ -1,3 +1,8 @@
+Thu Oct 30 23:32:17 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/test_delegate.rb (test_syscallerror_eq): ignored because the
+	  behaviour is now unspecified.
+
 Thu Oct 30 21:32:15 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (rb_ary_permutation): hide temporal array.
