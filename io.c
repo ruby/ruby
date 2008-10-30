@@ -1057,6 +1057,8 @@ rb_io_set_pos(VALUE io, VALUE offset)
     return OFFT2NUM(pos);
 }
 
+static void clear_readconv(rb_io_t *fptr);
+
 /*
  *  call-seq:
  *     ios.rewind    => 0
@@ -1082,6 +1084,9 @@ rb_io_rewind(VALUE io)
 	ARGF.gets_lineno -= fptr->lineno;
     }
     fptr->lineno = 0;
+    if (fptr->readconv) {
+	clear_readconv(fptr);
+    }
 
     return INT2FIX(0);
 }
@@ -1499,8 +1504,10 @@ more_char(rb_io_t *fptr)
         if (cbuf_len0 != fptr->cbuf_len)
             return 0;
 
-        if (res == econv_finished)
+        if (res == econv_finished) {
+	    clear_readconv(fptr);
             return -1;
+	}
 
         if (res == econv_source_buffer_empty) {
             if (fptr->rbuf_len == 0) {

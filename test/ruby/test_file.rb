@@ -42,8 +42,9 @@ class TestFile < Test::Unit::TestCase
     f.print "abc"
     f.truncate(0)
     f.print "def"
-    f.close
+    f.flush
     assert_equal("\0\0\0def", File.read(f.path), "[ruby-dev:24191]")
+    f.close
   end
 
   def test_truncate_rbuf
@@ -68,7 +69,8 @@ class TestFile < Test::Unit::TestCase
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
       f = Tempfile.new("test-extended-file", mode)
       assert_nil(f.getc)
-      open(f.path, "w") {|g| g.print "a" }
+      f.print "a"
+      f.rewind
       assert_equal("a", f.read, "mode = <#{mode}>")
     end
   end
@@ -77,7 +79,8 @@ class TestFile < Test::Unit::TestCase
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
       f = Tempfile.new("test-extended-file", mode)
       assert_nil(f.getc)
-      open(f.path, "w") {|g| g.print "a" }
+      f.print "a"
+      f.rewind
       assert_equal("a", f.gets("a"), "mode = <#{mode}>")
     end
   end
@@ -86,7 +89,8 @@ class TestFile < Test::Unit::TestCase
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
       f = Tempfile.new("test-extended-file", mode)
       assert_nil(f.getc)
-      open(f.path, "wb") {|g| g.print "\na" }
+      f.print "\na"
+      f.rewind
       assert_equal("a", f.gets(""), "mode = <#{mode}>")
     end
   end
@@ -95,7 +99,8 @@ class TestFile < Test::Unit::TestCase
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
       f = Tempfile.new("test-extended-file", mode)
       assert_nil(f.getc)
-      open(f.path, "w") {|g| g.print "a" }
+      f.print "a"
+      f.rewind
       result = []
       f.each_char {|b| result << b }
       assert_equal([?a], result, "mode = <#{mode}>")
@@ -106,7 +111,8 @@ class TestFile < Test::Unit::TestCase
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
       f = Tempfile.new("test-extended-file", mode)
       assert_nil(f.getc)
-      open(f.path, "w") {|g| g.print "a" }
+      f.print "a"
+      f.rewind
       result = []
       f.each_byte {|b| result << b.chr }
       assert_equal([?a], result, "mode = <#{mode}>")
@@ -117,7 +123,8 @@ class TestFile < Test::Unit::TestCase
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
       f = Tempfile.new("test-extended-file", mode)
       assert_nil(f.getc)
-      open(f.path, "w") {|g| g.print "a" }
+      f.print "a"
+      f.rewind
       assert_equal(?a, f.getc, "mode = <#{mode}>")
     end
   end
@@ -126,7 +133,8 @@ class TestFile < Test::Unit::TestCase
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
       f = Tempfile.new("test-extended-file", mode)
       assert_nil(f.getc)
-      open(f.path, "w") {|g| g.print "a" }
+      f.print "a"
+      f.rewind
       assert_equal(?a, f.getbyte.chr, "mode = <#{mode}>")
     end
   end
