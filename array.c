@@ -3463,12 +3463,14 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 	volatile VALUE t1 = tmpbuf(n,sizeof(int));
 	int *used = (int*)RSTRING_PTR(t1);
 	VALUE ary0 = ary_make_substitution(ary); /* private defensive copy of ary */
+	RBASIC(ary0)->klass = 0;
 
 	for (i = 0; i < n; i++) used[i] = 0; /* initialize array */
 
 	permute0(n, r, p, 0, used, ary0); /* compute and yield permutations */
 	RB_GC_GUARD(t0);
 	RB_GC_GUARD(t1);
+	RBASIC(ary0)->klass = rb_cArray;
     }
     return ary;
 }

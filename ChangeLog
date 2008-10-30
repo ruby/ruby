@@ -1,3 +1,7 @@
+Thu Oct 30 21:32:15 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* array.c (rb_ary_permutation): hide temporal array.
+
 Thu Oct 30 09:31:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_locale_encoding): makes an alias for locale.
