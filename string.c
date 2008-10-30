@@ -4220,6 +4220,15 @@ rb_str_dump(VALUE str)
 }
 
 
+static void
+rb_str_check_dummy_enc(rb_encoding *enc)
+{
+    if (rb_enc_dummy_p(enc)) {
+	rb_raise(rb_eEncCompatError, "incompatible encoding with this operation: %s",
+		 rb_enc_name(enc));
+    }
+}
+
 /*
  *  call-seq:
  *     str.upcase!   => str or nil
@@ -4238,6 +4247,7 @@ rb_str_upcase_bang(VALUE str)
 
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
+    rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
     if (single_byte_optimizable(str)) {
 	while (s < send) {
@@ -4319,6 +4329,7 @@ rb_str_downcase_bang(VALUE str)
 
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
+    rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
     if (single_byte_optimizable(str)) {
 	while (s < send) {
@@ -4406,6 +4417,7 @@ rb_str_capitalize_bang(VALUE str)
 
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
+    rb_str_check_dummy_enc(enc);
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
     s = RSTRING_PTR(str); send = RSTRING_END(str);
 
@@ -4469,6 +4481,7 @@ rb_str_swapcase_bang(VALUE str)
 
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
+    rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
     while (s < send) {
 	unsigned int c = rb_enc_codepoint(s, send, enc);
@@ -5996,9 +6009,7 @@ rb_str_rstrip_bang(VALUE str)
     char *s, *t, *e;
 
     enc = STR_ENC_GET(str);
-    if (rb_enc_dummy_p(enc)) {
-	rb_raise(rb_eEncCompatError, "incompatible encoding with this operation: %s", rb_enc_name(enc));
-    }
+    rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str);
     if (!s || RSTRING_LEN(str) == 0) return Qnil;
     t = e = RSTRING_END(str);
