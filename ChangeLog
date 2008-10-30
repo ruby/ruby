@@ -25,6 +25,14 @@ Thu Oct 30 09:31:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_set_default_internal): ditto for internal.
 
+Thu Oct 30 03:30:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (load_file_internal): should not set script encoding to
+	  ASCII-8BIT.
+
+	* ruby.c (load_file_internal): do not auto convert scripts even
+	  when default_internal is set.  [ruby-core:19579]
+
 Thu Oct 30 02:20:33 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (rb_ary_sort_bang): remove SEGV when replacing array with
@@ -122,9 +130,6 @@ Wed Oct 29 11:00:25 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 	  FAPPEND is specified.
 
 Wed Oct 29 09:30:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* ruby.c (load_file_internal): use ASCII-8BIT to prevent conversion.
-	  [ruby-core:19579]
 
 	* ruby.c (load_file_internal): cache common interned IDs.
 
