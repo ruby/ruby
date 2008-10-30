@@ -1,3 +1,8 @@
+Fri Oct 31 08:16:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): delays setting safe level.
+	  [ruby-dev:36997]
+
 Thu Oct 30 21:32:15 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (rb_ary_permutation): hide temporal array.

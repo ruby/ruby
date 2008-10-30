@@ -76,6 +76,7 @@ struct cmdline_options {
     unsigned int disable;
     int verbose;
     int yydebug;
+    int safe_level;
     unsigned int setids;
     unsigned int dump;
     const char *script;
@@ -337,8 +338,16 @@ DllMain(HINSTANCE dll, DWORD reason, LPVOID reserved)
 }
 #endif
 
+void ruby_init_loadpath_safe(int safe_level);
+
 void
 ruby_init_loadpath(void)
+{
+    ruby_init_loadpath_safe(0);
+}
+
+void
+ruby_init_loadpath_safe(int safe_level)
 {
     VALUE load_path;
 #if defined LOAD_RELATIVE
@@ -384,7 +393,7 @@ ruby_init_loadpath(void)
 #define incpush(path) rb_ary_push(load_path, rubylib_mangled_path2(path))
     load_path = GET_VM()->load_path;
 
-    if (rb_safe_level() == 0) {
+    if (safe_level == 0) {
 	ruby_incpush(getenv("RUBYLIB"));
     }
 
@@ -412,7 +421,7 @@ ruby_init_loadpath(void)
 #endif
     incpush(RUBY_RELATIVE(RUBY_ARCHLIB));
 
-    if (rb_safe_level() == 0) {
+    if (safe_level == 0) {
 	incpush(".");
     }
 }
@@ -874,7 +883,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 			v = 1;
 		    s += numlen;
 		}
-		rb_set_safe_level(v);
+		if (v > opt->safe_level) opt->safe_level = v;
 	    }
 	    goto reswitch;
 
@@ -1064,13 +1073,12 @@ process_options(VALUE arg)
     const char *s;
     char fbuf[MAXPATHLEN];
     int i = proc_options(argc, argv, opt, 0);
-    int safe;
 
     argc -= i;
     argv += i;
 
     if (!(opt->disable & DISABLE_BIT(rubyopt)) &&
-	rb_safe_level() == 0 && (s = getenv("RUBYOPT"))) {
+	opt->safe_level == 0 && (s = getenv("RUBYOPT"))) {
 	VALUE src_enc_name = opt->src.enc.name;
 	VALUE ext_enc_name = opt->ext.enc.name;
 	VALUE int_enc_name = opt->intern.enc.name;
@@ -1093,7 +1101,7 @@ process_options(VALUE arg)
 	ruby_show_copyright();
     }
 
-    if (rb_safe_level() >= 4) {
+    if (opt->safe_level >= 4) {
 	OBJ_TAINT(rb_argv);
 	OBJ_TAINT(GET_VM()->load_path);
     }
@@ -1133,10 +1141,8 @@ process_options(VALUE arg)
 #endif
     opt->script_name = rb_progname;
     opt->script = RSTRING_PTR(opt->script_name);
-    safe = rb_safe_level();
-    rb_set_safe_level_force(0);
 
-    ruby_init_loadpath();
+    ruby_init_loadpath_safe(opt->safe_level);
     ruby_init_gems(!(opt->disable & DISABLE_BIT(gems)));
     lenc = rb_locale_encoding();
     rb_enc_associate(rb_progname, lenc);
@@ -1168,7 +1174,6 @@ process_options(VALUE arg)
     ruby_set_argv(argc, argv);
     process_sflag(opt);
 
-    rb_set_safe_level_force(safe);
     if (opt->e_script) {
 	rb_encoding *eenc;
 	if (opt->src.enc.index >= 0) {
@@ -1202,7 +1207,7 @@ process_options(VALUE arg)
     process_sflag(opt);
     opt->xflag = 0;
 
-    if (rb_safe_level() >= 4) {
+    if (opt->safe_level >= 4) {
 	FL_UNSET(rb_argv, FL_TAINT);
 	FL_UNSET(GET_VM()->load_path, FL_TAINT);
     }
@@ -1227,6 +1232,8 @@ process_options(VALUE arg)
 	rb_io_flush(rb_stdout);
 	return Qtrue;
     }
+
+    rb_set_safe_level(opt->safe_level);
 
     return iseq;
 }
@@ -1531,7 +1538,7 @@ init_ids(struct cmdline_options *opt)
     if (uid != euid) opt->setids |= 1;
     if (egid != gid) opt->setids |= 2;
     if (uid && opt->setids) {
-	rb_set_safe_level(1);
+	if (opt->safe_level < 1) opt->safe_level = 1;
     }
 }
 
@@ -1543,7 +1550,7 @@ forbid_setid(const char *s, struct cmdline_options *opt)
         rb_raise(rb_eSecurityError, "no %s allowed while running setuid", s);
     if (opt->setids & 2)
         rb_raise(rb_eSecurityError, "no %s allowed while running setgid", s);
-    if (rb_safe_level() > 0)
+    if (opt->safe_level > 0)
         rb_raise(rb_eSecurityError, "no %s allowed in tainted mode", s);
 }
 
