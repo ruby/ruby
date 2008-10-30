@@ -1,3 +1,13 @@
+Thu Oct 30 10:34:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (moreswitches): splits option string and passes arguments.
+
+	* ruby.c (proc_options): checks if allowed in RUBYOPT.
+
+	* ruby.c (process_options): allows long style options in RUBYOPT.
+
+	* ruby.c (load_file_internal): ditto in shebang.  [ruby-dev:36979]
+
 Thu Oct 30 09:31:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_locale_encoding): makes an alias for locale.
