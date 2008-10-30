@@ -1356,9 +1356,9 @@ load_file_internal(VALUE arg)
 	enc = rb_locale_encoding();
     }
     else {
-	enc = rb_ascii8bit_encoding();
+	enc = rb_usascii_encoding();
     }
-    rb_funcall(f, set_encoding, 1, rb_enc_from_encoding(enc));
+    rb_funcall(f, set_encoding, 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
     tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);
     rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
     if (script && rb_parser_end_seen_p(parser)) {
