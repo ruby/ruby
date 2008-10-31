@@ -1,3 +1,8 @@
+Fri Oct 31 11:35:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_set_default_internal): no alias "internal" if
+	  defalt internal is not set.  [ruby-dev:37000]
+
 Fri Oct 31 21:28:14 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/webrick/httpauth/digestauth.rb
