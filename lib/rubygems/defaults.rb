@@ -20,8 +20,11 @@ module Gem
     if defined? RUBY_FRAMEWORK_VERSION then
       File.join File.dirname(ConfigMap[:sitedir]), 'Gems',
                 ConfigMap[:ruby_version]
-    else
+    elsif RUBY_VERSION > '1.9' then
       File.join(ConfigMap[:libdir], ConfigMap[:ruby_install_name], 'gems',
+                ConfigMap[:ruby_version])
+    else
+      File.join(ConfigMap[:libdir], ruby_engine, 'gems',
                 ConfigMap[:ruby_version])
     end
   end
