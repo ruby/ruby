@@ -1,3 +1,7 @@
+Fri Oct 31 12:27:52 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* spec/default.mspec: supports that the build directory != srcdir.
+
 Thu Oct 30 23:32:17 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/test_delegate.rb (test_syscallerror_eq): ignored because the
