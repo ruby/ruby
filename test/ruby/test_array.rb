@@ -1622,6 +1622,8 @@ class TestArray < Test::Unit::TestCase
 
   def test_array_subclass
     assert_equal(Array2, Array2[1,2,3].uniq.class, "[ruby-dev:34581]")
+    assert_equal(Array2, Array2[1,2][0,1].class) # embeded
+    assert_equal(Array2, Array2[*(1..100)][1..99].class) #not embeded
   end
 
   def test_inspect
