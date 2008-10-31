@@ -1,3 +1,9 @@
+Fri Oct 31 18:42:19 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* array.c (ary_partial0): recovers mistakenly feature change at r19723.
+	  Array#[m,n] had returned an Array even for an instance of a
+	  subclass.
+
 Fri Oct 31 18:05:05 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/trans/single_byte.trans, maccroatioan-tbl.rb,
