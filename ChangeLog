@@ -1,3 +1,10 @@
+Fri Oct 31 12:42:45 2008  wanabe  <s.wanabe@gmail.com>
+
+	* array.c (rb_ary_decrement_share): fix to work recycling
+	  shared-array without the following.  [ruby-dev:36991]
+
+	* array.c (ary_make_substitution): don't recycle substitution array.
+
 Fri Oct 31 11:35:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_set_default_internal): no alias "internal" if

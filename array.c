@@ -177,7 +177,7 @@ rb_ary_decrement_share(VALUE shared)
 {
     if (shared) {
 	int num = ARY_SHARED_NUM(shared) - 1;
-	if (num == 0 && RBASIC(shared)->klass) {
+	if (num == 0) {
 	    rb_ary_free(shared);
 	    rb_gc_force_recycle(shared);
 	}
@@ -202,13 +202,19 @@ rb_ary_unshare_safe(VALUE ary) {
     }
 }
 
-static void
-rb_ary_set_shared(VALUE ary, VALUE shared)
-{
+static VALUE
+rb_ary_increment_share(VALUE shared) {
     int num = ARY_SHARED_NUM(shared);
     if (num >= 0) {
 	ARY_SET_SHARED_NUM(shared, num + 1);
     }
+    return shared;
+}
+
+static void
+rb_ary_set_shared(VALUE ary, VALUE shared)
+{
+    rb_ary_increment_share(shared);
     FL_SET_SHARED(ary);
     ARY_SET_SHARED(ary, shared);
 }
@@ -396,7 +402,7 @@ ary_make_substitution(VALUE ary)
         return subst;
     }
     else {
-        return ary_make_shared(ary);
+        return rb_ary_increment_share(ary_make_shared(ary));
     }
 }
 
