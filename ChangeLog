@@ -1,3 +1,12 @@
+Fri Oct 31 18:05:05 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/trans/single_byte.trans, maccroatioan-tbl.rb,
+	  maccyrillic-tbl.rb, maciceland-tbl.rb: new single-byte
+	  transcodings (from Yoshihiro Kambayashi)
+
+	* test/ruby/test_transcode.rb: added tests for the above
+	  (from Yoshihiro Kambayashi)
+
 Fri Oct 31 12:51:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (dir_globs): need taint check.  reported by steve

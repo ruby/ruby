@@ -417,6 +417,79 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u02D9", "\xFF", 'windows-1257') # ˙
   end
 
+  def test_macCroatian
+    check_both_ways("\u00C4", "\x80", 'macCroatian') # Ä
+    check_both_ways("\u00E8", "\x8F", 'macCroatian') # è
+    check_both_ways("\u00EA", "\x90", 'macCroatian') # ê
+    check_both_ways("\u00FC", "\x9F", 'macCroatian') # ü
+    check_both_ways("\u2020", "\xA0", 'macCroatian') # †
+    check_both_ways("\u00D8", "\xAF", 'macCroatian') # Ø
+    check_both_ways("\u221E", "\xB0", 'macCroatian') # ∞
+    check_both_ways("\u00F8", "\xBF", 'macCroatian') # ø
+    check_both_ways("\u00BF", "\xC0", 'macCroatian') # ¿
+    check_both_ways("\u0153", "\xCF", 'macCroatian') # œ
+    check_both_ways("\u0110", "\xD0", 'macCroatian') # Đ
+    check_both_ways("\u00A9", "\xD9", 'macCroatian') # ©
+    check_both_ways("\u2044", "\xDA", 'macCroatian') # ⁄
+    check_both_ways("\u203A", "\xDD", 'macCroatian') # ›
+    check_both_ways("\u00C6", "\xDE", 'macCroatian') # Æ
+    check_both_ways("\u00BB", "\xDF", 'macCroatian') # »
+    check_both_ways("\u2013", "\xE0", 'macCroatian') # –
+    check_both_ways("\u00B7", "\xE1", 'macCroatian') # ·
+    check_both_ways("\u00C2", "\xE5", 'macCroatian') # Â
+    check_both_ways("\u0107", "\xE6", 'macCroatian') # ć
+    check_both_ways("\u00C1", "\xE7", 'macCroatian') # Á
+    check_both_ways("\u010D", "\xE8", 'macCroatian') # č
+    check_both_ways("\u00C8", "\xE9", 'macCroatian') # È
+    check_both_ways("\u00D4", "\xEF", 'macCroatian') # Ô
+    check_both_ways("\u0111", "\xF0", 'macCroatian') # đ
+    check_both_ways("\u00D2", "\xF1", 'macCroatian') # Ò
+    check_both_ways("\u00AF", "\xF8", 'macCroatian') # ¯
+    check_both_ways("\u03C0", "\xF9", 'macCroatian') # π
+    check_both_ways("\u00CB", "\xFA", 'macCroatian') # Ë
+    check_both_ways("\u00CA", "\xFD", 'macCroatian') # Ê
+    check_both_ways("\u00E6", "\xFE", 'macCroatian') # æ
+    check_both_ways("\u02C7", "\xFF", 'macCroatian') # ˇ
+  end
+  
+  def test_macCyrillic
+    check_both_ways("\u0410", "\x80", 'macCyrillic') # А
+    check_both_ways("\u041F", "\x8F", 'macCyrillic') # П
+    check_both_ways("\u0420", "\x90", 'macCyrillic') # Р
+    check_both_ways("\u042F", "\x9F", 'macCyrillic') # Я
+    check_both_ways("\u2020", "\xA0", 'macCyrillic') # †
+    check_both_ways("\u0453", "\xAF", 'macCyrillic') # ѓ
+    check_both_ways("\u221E", "\xB0", 'macCyrillic') # ∞
+    check_both_ways("\u045A", "\xBF", 'macCyrillic') # њ
+    check_both_ways("\u0458", "\xC0", 'macCyrillic') # ј
+    check_both_ways("\u0455", "\xCF", 'macCyrillic') # ѕ
+    check_both_ways("\u2013", "\xD0", 'macCyrillic') # –
+    check_both_ways("\u044F", "\xDF", 'macCyrillic') # я
+    check_both_ways("\u0430", "\xE0", 'macCyrillic') # а
+    check_both_ways("\u043F", "\xEF", 'macCyrillic') # п
+    check_both_ways("\u0440", "\xF0", 'macCyrillic') # р
+    check_both_ways("\u00A4", "\xFF", 'macCyrillic') # ¤
+  end
+  
+  def test_macIceland
+    check_both_ways("\u00C4", "\x80", 'macIceland') # Ä
+    check_both_ways("\u00E8", "\x8F", 'macIceland') # è
+    check_both_ways("\u00EA", "\x90", 'macIceland') # ê
+    check_both_ways("\u00FC", "\x9F", 'macIceland') # ü
+    check_both_ways("\u00DD", "\xA0", 'macIceland') # Ý
+    check_both_ways("\u00D8", "\xAF", 'macIceland') # Ø
+    check_both_ways("\u221E", "\xB0", 'macIceland') # ∞
+    check_both_ways("\u00F8", "\xBF", 'macIceland') # ø
+    check_both_ways("\u00BF", "\xC0", 'macIceland') # ¿
+    check_both_ways("\u0153", "\xCF", 'macIceland') # œ
+    check_both_ways("\u2013", "\xD0", 'macIceland') # –
+    check_both_ways("\u00FE", "\xDF", 'macIceland') # þ
+    check_both_ways("\u00FD", "\xE0", 'macIceland') # ý
+    check_both_ways("\u00D4", "\xEF", 'macIceland') # Ô
+    #check_both_ways("\uF8FF", "\xF0", 'macIceland') # Apple logo
+    check_both_ways("\u02C7", "\xFF", 'macIceland') # ˇ
+  end
+
   def check_utf_16_both_ways(utf8, raw)
     copy = raw.dup
     0.step(copy.length-1, 2) { |i| copy[i+1], copy[i] = copy[i], copy[i+1] }
