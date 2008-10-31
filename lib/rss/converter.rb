@@ -7,6 +7,10 @@ module RSS
     include Utils
 
     def initialize(to_enc, from_enc=nil)
+      if "".respond_to?(:encode)
+        @to_encoding = to_enc
+        return
+      end
       normalized_to_enc = to_enc.downcase.gsub(/-/, '_')
       from_enc ||= 'utf-8'
       normalized_from_enc = from_enc.downcase.gsub(/-/, '_')
@@ -23,7 +27,11 @@ module RSS
     end
 
     def convert(value)
-      value
+      if value.is_a?(String) and value.respond_to?(:encode)
+        value.encode(@to_encoding)
+      else
+        value
+      end
     end
 
     def def_convert(depth=0)
