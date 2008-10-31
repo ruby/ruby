@@ -604,7 +604,10 @@ ary_make_partial0(VALUE ary, long offset, long len)
     assert(offset+len <= RARRAY_LEN(ary));
 
     if (len <= RARRAY_EMBED_LEN_MAX) {
-        return rb_ary_new4(len, RARRAY_PTR(ary) + offset);
+        VALUE result = ary_alloc(rb_obj_class(ary));
+        MEMCPY(ARY_EMBED_PTR(result), RARRAY_PTR(ary) + offset, VALUE, len);
+        ARY_SET_EMBED_LEN(result, len);
+        return result;
     }
     else {
         VALUE shared, result = ary_alloc(rb_obj_class(ary));
