@@ -52,7 +52,7 @@ module WEBrick
         when 'SHA1','SHA1-sess'  # it is a bonus feature :-)
           @h = Digest::SHA1
         else
-          msg = format('Alogrithm "%s" is not supported.', @algorithm)
+          msg = format('Algorithm "%s" is not supported.', @algorithm)
           raise ArgumentError.new(msg)
         end
 
