@@ -1,3 +1,8 @@
+Fri Oct 31 12:51:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_globs): need taint check.  reported by steve
+	  <oksteev at gmail.com>
+
 Fri Oct 31 12:42:45 2008  wanabe  <s.wanabe@gmail.com>
 
 	* array.c (rb_ary_decrement_share): fix to work recycling
