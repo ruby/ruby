@@ -1,3 +1,8 @@
+Fri Oct 31 11:35:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_set_default_internal): no alias "internal" if
+	  defalt internal is not set.  [ruby-dev:37000]
+
 Fri Oct 31 08:16:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): delays setting safe level.

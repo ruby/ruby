@@ -1101,8 +1101,13 @@ rb_enc_set_default_internal(VALUE encoding)
     if (default_internal_index != -2)
 	/* Already set */
 	return;
-    default_internal_index = encoding == Qnil ?
-				-1 :rb_enc_to_index(rb_to_encoding(encoding));
+    if (NIL_P(encoding)) {
+	default_internal_index = -1;
+	default_internal = 0;
+	return;
+    }
+
+    default_internal_index = rb_enc_to_index(rb_to_encoding(encoding));
     /* Convert US-ASCII => UTF-8 */
     if (default_internal_index == rb_usascii_encindex())
 	default_internal_index = rb_utf8_encindex();
