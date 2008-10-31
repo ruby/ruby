@@ -1660,7 +1660,7 @@ dir_globs(argc, argv, flags)
     for (i = 0; i < argc; ++i) {
 	int status;
 	VALUE str = argv[i];
-	StringValue(str);
+	SafeStringValue(str);
 	status = push_glob(ary, RSTRING(str)->ptr, flags);
 	if (status) GLOB_JUMP_TAG(status);
     }
