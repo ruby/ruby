@@ -1,3 +1,7 @@
+Fri Oct 31 21:58:50 2008  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/converter.rb (RSS::Converter): use String#encode.
+
 Fri Oct 31 18:05:05 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/trans/single_byte.trans, maccroatioan-tbl.rb,
