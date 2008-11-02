@@ -3415,7 +3415,8 @@ rb_gzreader_readlines(int argc, VALUE *argv, VALUE obj)
  *   Zlib::OS_UNKNOWN
  *       The return values of Zlib::GzipFile#os_code method.
  */
-void Init_zlib()
+void
+Init_zlib()
 {
     VALUE mZlib, cZStream, cDeflate, cInflate;
 #if GZIP_SUPPORT
@@ -3571,7 +3572,7 @@ void Init_zlib()
     rb_define_method(cGzipReader, "getc", rb_gzreader_getc, 0);
     rb_define_method(cGzipReader, "getbyte", rb_gzreader_getbyte, 0);
     rb_define_method(cGzipReader, "readchar", rb_gzreader_readchar, 0);
-    rb_define_method(cGzipReader, "readchar", rb_gzreader_readbyte, 0);
+    rb_define_method(cGzipReader, "readbyte", rb_gzreader_readbyte, 0);
     rb_define_method(cGzipReader, "each_byte", rb_gzreader_each_byte, 0);
     rb_define_method(cGzipReader, "each_char", rb_gzreader_each_char, 0);
     rb_define_method(cGzipReader, "bytes", rb_gzreader_each_byte, 0);

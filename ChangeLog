@@ -1,3 +1,8 @@
+Sun Nov  2 16:41:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/zlib/zlib.c (Init_zlib): defines readbyte instead redefining
+	  readchar.
+
 Fri Oct 31 21:58:50 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/converter.rb (RSS::Converter): use String#encode.
