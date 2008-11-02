@@ -1,3 +1,8 @@
+Sun Nov  2 16:41:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/zlib/zlib.c (Init_zlib): defines readbyte instead redefining
+	  readchar.
+
 Sat Nov  1 07:09:40 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* gem_prelude.rb:  Don't require rubygems/defaults.rb.
