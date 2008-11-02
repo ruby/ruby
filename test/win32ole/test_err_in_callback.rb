@@ -36,5 +36,9 @@ if defined?(WIN32OLE)
       end
     end
 
+    def teardown
+      File.unlink("test_err_in_callback.log")
+    end
+
   end
 end

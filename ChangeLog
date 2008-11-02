@@ -1,3 +1,7 @@
+Sun Nov  2 23:08:08 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_err_in_callback.rb: add teardown.
+
 Sun Nov  2 22:12:41 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_event_free): invoke IConnectionPoint::Unadvise
