@@ -1,3 +1,13 @@
+Mon Nov  3 00:36:44 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_event.rb: rename test class.
+
+	* test/win32ole/test_win32ole_variant_outarg.rb: add in order
+	  to use ADO instead of Internet Explorer.
+	  remove test/win32ole/test_win32ole_variant_with_ie.rb.
+
+	* test/win32ole/orig_data.csv: ditto.
+
 Sun Nov  2 23:08:08 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_err_in_callback.rb: add teardown.

@@ -27,7 +27,7 @@ if defined?(WIN32OLE_EVENT)
     STDERR.puts("\n#{__FILE__} skipped(ActiveX Data Object Library not found.)")
   end
   if dotest
-    class TestWIN32OLE_EVENT_ADO < Test::Unit::TestCase
+    class TestWIN32OLE_EVENT < Test::Unit::TestCase
       CONNSTR="Driver={Microsoft Text Driver (*.txt; *.csv)};DefaultDir=.;"
       module ADO
       end
