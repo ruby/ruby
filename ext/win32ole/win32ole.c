@@ -128,7 +128,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.3.7"
+#define WIN32OLE_VERSION "1.3.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -8124,7 +8124,11 @@ find_default_source(VALUE ole, IID *piid, ITypeInfo **ppTypeInfo)
 static void
 ole_event_free(struct oleeventdata *poleev)
 {
-    OLE_FREE(poleev->pConnectionPoint);
+    if (poleev->pConnectionPoint) {
+        poleev->pConnectionPoint->lpVtbl->Unadvise(poleev->pConnectionPoint, poleev->dwCookie);
+        OLE_RELEASE(poleev->pConnectionPoint);
+        poleev->pConnectionPoint = NULL;
+    }
     free(poleev);
 }
 

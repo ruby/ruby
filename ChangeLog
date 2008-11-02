@@ -1,3 +1,15 @@
+Mon Nov  3 06:41:19 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_event_free): invoke IConnectionPoint::Unadvise
+	  before invoking IConnectionPoint::Release.
+
+	* test/win32ole/test_win32ole_event.rb, test/win32ole/err_in_callback.rb,
+	  test/win32ole/test_err_in_callback.rb, 
+	  test/win32ole/test_win32ole_variant_outarg.rb,
+	  test/win32ole/orig_data.csv: Use ActiveX Data Object
+	  Library instead of InternetExplorer.
+	  remove test/win32ole/test_win32ole_variant_with_ie.rb.
+
 Sun Nov  2 16:41:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/zlib/zlib.c (Init_zlib): defines readbyte instead redefining
