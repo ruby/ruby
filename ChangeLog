@@ -1,3 +1,12 @@
+Sun Nov  2 22:12:41 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_event_free): invoke IConnectionPoint::Unadvise
+	  before invoking IConnectionPoint::Release.
+
+	* test/win32ole/test_win32ole_event.rb, test/win32ole/err_in_callback.rb,
+	  test/win32ole/test_err_in_callback.rb: Use ActiveX Data Object
+	  Library instead of InternetExplorer.
+
 Sun Nov  2 22:06:55 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* win32/Makefile.sub: add RUNRUBYOPT. [ruby-dev:37009]
