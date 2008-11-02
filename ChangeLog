@@ -1,3 +1,7 @@
+Sun Nov  2 22:06:55 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* win32/Makefile.sub: add RUNRUBYOPT. [ruby-dev:37009]
+
 Sun Nov  2 16:41:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/zlib/zlib.c (Init_zlib): defines readbyte instead redefining
