@@ -1,3 +1,8 @@
+Mon Nov  3 13:00:26 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* range.c (rb_range_beg_len): rb_raise takes C values as arguments.
+	  [BUG] ranges turned into other value in a message of RangeError.
+
 Mon Nov  3 06:41:19 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_event_free): invoke IConnectionPoint::Unadvise
