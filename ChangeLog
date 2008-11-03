@@ -1,3 +1,7 @@
+Mon Nov  3 16:32:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing.h: needs RUBY_EXTERN instead of extern for mswin.
+
 Mon Nov  3 13:01:13 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* array.c (rb_ary_take_first_or_last): renamed rb_ary_partial more

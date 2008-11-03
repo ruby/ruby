@@ -38,57 +38,61 @@ struct timespec {
 };
 #endif
 
+#ifndef RUBY_EXTERN
+#define RUBY_EXTERN extern
+#endif
+
 #ifndef HAVE_ACOSH
-extern double acosh(double);
-extern double asinh(double);
-extern double atanh(double);
+RUBY_EXTERN double acosh(double);
+RUBY_EXTERN double asinh(double);
+RUBY_EXTERN double atanh(double);
 #endif
 
 #ifndef HAVE_CRYPT
-extern char *crypt(const char *, const char *);
+RUBY_EXTERN char *crypt(const char *, const char *);
 #endif
 
 #ifndef HAVE_DUP2
-extern int dup2(int, int);
+RUBY_EXTERN int dup2(int, int);
 #endif
 
 #ifndef HAVE_EACCESS
-extern int eaccess(const char*, int);
+RUBY_EXTERN int eaccess(const char*, int);
 #endif
 
 #ifndef HAVE_FINITE
-extern int finite(double);
+RUBY_EXTERN int finite(double);
 #endif
 
 #ifndef HAVE_FLOCK
-extern int flock(int, int);
+RUBY_EXTERN int flock(int, int);
 #endif
 
 /*
 #ifndef HAVE_FREXP
-extern double frexp(double, int *);
+RUBY_EXTERN double frexp(double, int *);
 #endif
 */
 
 #ifndef HAVE_HYPOT
-extern double hypot(double, double);
+RUBY_EXTERN double hypot(double, double);
 #endif
 
 #ifndef HAVE_ERF
-extern double erf(double);
-extern double erfc(double);
+RUBY_EXTERN double erf(double);
+RUBY_EXTERN double erfc(double);
 #endif
 
 #ifndef HAVE_TGAMMA
-extern double tgamma(double);
+RUBY_EXTERN double tgamma(double);
 #endif
 
 #ifndef HAVE_LGAMMA_R
-extern double lgamma_r(double, int *);
+RUBY_EXTERN double lgamma_r(double, int *);
 #endif
 
 #ifndef HAVE_CBRT
-extern double cbrt(double);
+RUBY_EXTERN double cbrt(double);
 #endif
 
 #ifndef isinf
@@ -96,62 +100,62 @@ extern double cbrt(double);
 #  if defined(HAVE_FINITE) && defined(HAVE_ISNAN)
 #  define isinf(x) (!finite(x) && !isnan(x))
 #  else
-extern int isinf(double);
+RUBY_EXTERN int isinf(double);
 #  endif
 # endif
 #endif
 
 #ifndef HAVE_ISNAN
-extern int isnan(double);
+RUBY_EXTERN int isnan(double);
 #endif
 
 /*
 #ifndef HAVE_MEMCMP
-extern int memcmp(const void *, const void *, size_t);
+RUBY_EXTERN int memcmp(const void *, const void *, size_t);
 #endif
 */
 
 #ifndef HAVE_MEMMOVE
-extern void *memmove(void *, const void *, size_t);
+RUBY_EXTERN void *memmove(void *, const void *, size_t);
 #endif
 
 /*
 #ifndef HAVE_MODF
-extern double modf(double, double *);
+RUBY_EXTERN double modf(double, double *);
 #endif
 */
 
 #ifndef HAVE_STRCHR
-extern char *strchr(const char *, int);
-extern char *strrchr(const char *, int);
+RUBY_EXTERN char *strchr(const char *, int);
+RUBY_EXTERN char *strrchr(const char *, int);
 #endif
 
 #ifndef HAVE_STRERROR
-extern char *strerror(int);
+RUBY_EXTERN char *strerror(int);
 #endif
 
 #ifndef HAVE_STRSTR
-extern char *strstr(const char *, const char *);
+RUBY_EXTERN char *strstr(const char *, const char *);
 #endif
 
 /*
 #ifndef HAVE_STRTOL
-extern long strtol(const char *, char **, int);
+RUBY_EXTERN long strtol(const char *, char **, int);
 #endif
 */
 
 #ifndef HAVE_VSNPRINTF
 # include <stdarg.h>
-extern int snprintf(char *, size_t n, char const *, ...);
-extern int vsnprintf(char *, size_t n, char const *, va_list);
+RUBY_EXTERN int snprintf(char *, size_t n, char const *, ...);
+RUBY_EXTERN int vsnprintf(char *, size_t n, char const *, va_list);
 #endif
 
 #ifndef HAVE_STRLCPY
-extern size_t strlcpy(char *, const char*, size_t);
+RUBY_EXTERN size_t strlcpy(char *, const char*, size_t);
 #endif
 
 #ifndef HAVE_STRLCAT
-extern size_t strlcat(char *, const char*, size_t);
+RUBY_EXTERN size_t strlcat(char *, const char*, size_t);
 #endif
 
 #if defined(__cplusplus)
