@@ -1,4 +1,7 @@
-Mon Nov  3 16:04:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Nov  3 16:18:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (XLDFLAGS): added --enable-auto-import for cygwin and
+	  mingw.
 
 	* common.mk (revision.h): have to be updated daily or by non-trivial
 	  commits.
