@@ -676,7 +676,7 @@ VALUE rb_mutex_try_lock(VALUE mutex);
 VALUE rb_mutex_lock(VALUE mutex);
 VALUE rb_mutex_unlock(VALUE mutex);
 VALUE rb_mutex_sleep(VALUE self, VALUE timeout);
-VALUE rb_mutex_synchronize(VALUE self);
+VALUE rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg);
 VALUE rb_barrier_new(void);
 VALUE rb_barrier_wait(VALUE self);
 VALUE rb_barrier_release(VALUE self);

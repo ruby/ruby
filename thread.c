@@ -3023,7 +3023,7 @@ mutex_sleep(int argc, VALUE *argv, VALUE self)
  */
 
 VALUE
-rb_thread_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg)
+rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg)
 {
     rb_mutex_lock(mutex);
     return rb_ensure(func, arg, rb_mutex_unlock, mutex);
