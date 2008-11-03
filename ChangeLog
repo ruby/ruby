@@ -1,3 +1,12 @@
+Mon Nov  3 13:01:13 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* array.c (rb_ary_take_first_or_last): renamed rb_ary_partial more
+	  appropriately.
+	  (ary_take_pos_flags): new enum. makes the fourth argument of
+	  rb_ary_take_first_or_last more descriptive.
+	  (rb_ary_partial): renamed rb_ary_partial0 more appropriately.
+	  takes a new parameter klass for what class to instanciate.
+
 Mon Nov  3 13:00:26 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
  
  	* range.c (rb_range_beg_len): rb_raise takes C values as arguments.

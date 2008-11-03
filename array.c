@@ -603,20 +603,20 @@ rb_ary_store(VALUE ary, long idx, VALUE val)
 }
 
 static VALUE
-ary_make_partial0(VALUE ary, long offset, long len)
+ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
 {
     assert(offset >= 0);
     assert(len >= 0);
     assert(offset+len <= RARRAY_LEN(ary));
 
     if (len <= RARRAY_EMBED_LEN_MAX) {
-        VALUE result = ary_alloc(rb_obj_class(ary));
+        VALUE result = ary_alloc(klass);
         MEMCPY(ARY_EMBED_PTR(result), RARRAY_PTR(ary) + offset, VALUE, len);
         ARY_SET_EMBED_LEN(result, len);
         return result;
     }
     else {
-        VALUE shared, result = ary_alloc(rb_obj_class(ary));
+        VALUE shared, result = ary_alloc(klass);
         FL_UNSET_EMBED(result);
 
         shared = ary_make_shared(ary);
@@ -630,8 +630,14 @@ ary_make_partial0(VALUE ary, long offset, long len)
     }
 }
 
+enum ary_take_pos_flags
+{
+    ARY_TAKE_FIRST = 0,
+    ARY_TAKE_LAST = 1
+};
+
 static VALUE
-ary_make_partial(int argc, VALUE *argv, VALUE ary, int last)
+ary_take_first_or_last(int argc, VALUE *argv, VALUE ary, enum ary_take_pos_flags last)
 {
     VALUE nv;
     long n;
@@ -648,7 +654,7 @@ ary_make_partial(int argc, VALUE *argv, VALUE ary, int last)
     if (last) {
 	offset = RARRAY_LEN(ary) - n;
     }
-    return ary_make_partial0(ary, offset, n);
+    return ary_make_partial(ary, rb_cArray, offset, n);
 }
 
 /*
@@ -737,7 +743,7 @@ rb_ary_pop_m(int argc, VALUE *argv, VALUE ary)
     }
 
     rb_ary_modify_check(ary);
-    result = ary_make_partial(argc, argv, ary, Qtrue);
+    result = ary_take_first_or_last(argc, argv, ary, Qtrue);
     ARY_INCREASE_LEN(ary, -RARRAY_LEN(result));
     return result;
 }
@@ -799,7 +805,7 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
     }
 
     rb_ary_modify_check(ary);
-    result = ary_make_partial(argc, argv, ary, Qfalse);
+    result = ary_take_first_or_last(argc, argv, ary, ARY_TAKE_FIRST);
     n = RARRAY_LEN(result);
     if (ARY_SHARED_P(ary)) {
         ARY_INCREASE_PTR(ary, n);
@@ -883,7 +889,7 @@ rb_ary_subseq(VALUE ary, long beg, long len)
     klass = rb_obj_class(ary);
     if (len == 0) return ary_new(klass, 0);
 
-    return ary_make_partial0(ary, beg, len);
+    return ary_make_partial(ary, klass, beg, len);
 }
 
 /* 
@@ -993,7 +999,7 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
 	return RARRAY_PTR(ary)[0];
     }
     else {
-	return ary_make_partial(argc, argv, ary, Qfalse);
+	return ary_take_first_or_last(argc, argv, ary, ARY_TAKE_FIRST);
     }
 }
 
@@ -1018,7 +1024,7 @@ rb_ary_last(int argc, VALUE *argv, VALUE ary)
 	return RARRAY_PTR(ary)[RARRAY_LEN(ary)-1];
     }
     else {
-	return ary_make_partial(argc, argv, ary, Qtrue);
+	return ary_take_first_or_last(argc, argv, ary, ARY_TAKE_LAST);
     }
 }
 
