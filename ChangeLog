@@ -1,3 +1,8 @@
+Tue Nov  4 03:28:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_join): do not repeat self in a recursive array.
+	  [ruby-dev:37019]
+
 Mon Nov  3 16:32:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing.h: needs RUBY_EXTERN instead of extern for mswin.
