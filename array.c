@@ -1487,7 +1487,10 @@ rb_ary_join(VALUE ary, VALUE sep)
 	  case T_STRING:
 	    break;
 	  case T_ARRAY:
-	    {
+	    if (tmp == ary) {
+		tmp = rb_usascii_str_new2("[...]");
+	    }
+	    else {
 		VALUE args[2];
 
 		args[0] = tmp;

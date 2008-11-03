@@ -1,3 +1,8 @@
+Tue Nov  4 03:28:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_join): do not repeat self in a recursive array.
+	  [ruby-dev:37019]
+
 Tue Nov  4 01:56:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_mutex_synchronize): fixed prototype.
