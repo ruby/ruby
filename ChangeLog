@@ -1,3 +1,9 @@
+Mon Nov  3 15:52:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (marshal_load): arg.data is no longer a VALUE but a
+	  st_table, and freed in load_ensure.  pointed out by pegacorn.
+	  [ruby-dev:37008]
+
 Fri Oct 31 12:51:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (dir_globs): need taint check.  reported by steve

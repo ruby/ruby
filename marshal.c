@@ -1493,7 +1493,6 @@ marshal_load(argc, argv)
 
     if (!NIL_P(proc)) arg.proc = proc;
     v = rb_ensure(load, (VALUE)&arg, load_ensure, (VALUE)&arg);
-    RBASIC(arg.data)->klass = rb_cHash;
 
     return v;
 }
