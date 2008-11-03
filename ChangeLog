@@ -1,3 +1,8 @@
+Mon Nov  3 13:00:26 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+ 
+ 	* range.c (rb_range_beg_len): rb_raise takes C values as arguments.
+ 	  [BUG] ranges turned into other value in a message of RangeError.
+ 
 Mon Nov  3 00:36:44 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_event.rb: rename test class.
