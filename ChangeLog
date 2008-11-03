@@ -1,3 +1,7 @@
+Mon Nov  3 16:32:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing.h: needs RUBY_EXTERN instead of extern for mswin.
+
 Mon Nov  3 16:18:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (XLDFLAGS): added --enable-auto-import for cygwin and

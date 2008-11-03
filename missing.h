@@ -25,108 +25,112 @@ struct timeval {
 #  include <sys/types.h>
 #endif
 
+#ifndef RUBY_EXTERN
+#define RUBY_EXTERN extern
+#endif
+
 #ifndef HAVE_ACOSH
-extern double acosh _((double));
-extern double asinh _((double));
-extern double atanh _((double));
+RUBY_EXTERN double acosh _((double));
+RUBY_EXTERN double asinh _((double));
+RUBY_EXTERN double atanh _((double));
 #endif
 
 #ifndef HAVE_CRYPT
-extern char *crypt _((const char *, const char *));
+RUBY_EXTERN char *crypt _((const char *, const char *));
 #endif
 
 #ifndef HAVE_DUP2
-extern int dup2 _((int, int));
+RUBY_EXTERN int dup2 _((int, int));
 #endif
 
 #ifndef HAVE_EACCESS
-extern int eaccess _((const char*, int));
+RUBY_EXTERN int eaccess _((const char*, int));
 #endif
 
 #ifndef HAVE_FINITE
-extern int finite _((double));
+RUBY_EXTERN int finite _((double));
 #endif
 
 #ifndef HAVE_FLOCK
-extern int flock _((int, int));
+RUBY_EXTERN int flock _((int, int));
 #endif
 
 /*
 #ifndef HAVE_FREXP
-extern double frexp _((double, int *));
+RUBY_EXTERN double frexp _((double, int *));
 #endif
 */
 
 #ifndef HAVE_HYPOT
-extern double hypot _((double, double));
+RUBY_EXTERN double hypot _((double, double));
 #endif
 
 #ifndef HAVE_ERF
-extern double erf _((double));
-extern double erfc _((double));
+RUBY_EXTERN double erf _((double));
+RUBY_EXTERN double erfc _((double));
 #endif
 
 #ifndef HAVE_ISINF
 # if defined(HAVE_FINITE) && defined(HAVE_ISNAN)
 # define isinf(x) (!finite(x) && !isnan(x))
 # else
-extern int isinf _((double));
+RUBY_EXTERN int isinf _((double));
 # endif
 #endif
 
 #ifndef HAVE_ISNAN
-extern int isnan _((double));
+RUBY_EXTERN int isnan _((double));
 #endif
 
 /*
 #ifndef HAVE_MEMCMP
-extern int memcmp _((char *, char *, int));
+RUBY_EXTERN int memcmp _((char *, char *, int));
 #endif
 */
 
 #ifndef HAVE_MEMMOVE
-extern void *memmove _((void *, void *, int));
+RUBY_EXTERN void *memmove _((void *, void *, int));
 #endif
 
 /*
 #ifndef HAVE_MODF
-extern double modf _((double, double *));
+RUBY_EXTERN double modf _((double, double *));
 #endif
 */
 
 #ifndef HAVE_STRCASECMP
-extern int strcasecmp _((char *, char *));
+RUBY_EXTERN int strcasecmp _((char *, char *));
 #endif
 
 #ifndef HAVE_STRNCASECMP
-extern int strncasecmp _((char *, char *, int));
+RUBY_EXTERN int strncasecmp _((char *, char *, int));
 #endif
 
 #ifndef HAVE_STRCHR
-extern char *strchr _((char *, int));
-extern char *strrchr _((char *, int));
+RUBY_EXTERN char *strchr _((char *, int));
+RUBY_EXTERN char *strrchr _((char *, int));
 #endif
 
 #ifndef HAVE_STRERROR
-extern char *strerror _((int));
+RUBY_EXTERN char *strerror _((int));
 #endif
 
 #ifndef HAVE_STRFTIME
-extern size_t strftime _((char *, size_t, const char *, const struct tm *));
+RUBY_EXTERN size_t strftime _((char *, size_t, const char *, const struct tm *));
 #endif
 
 #ifndef HAVE_STRSTR
-extern char *strstr _((char *, char *));
+RUBY_EXTERN char *strstr _((char *, char *));
 #endif
 
 /*
 #ifndef HAVE_STRTOL
-extern long strtol _((char *, char **, int));
+RUBY_EXTERN long strtol _((char *, char **, int));
 #endif
 */
 
 #ifndef HAVE_STRTOUL
-extern unsigned long strtoul _((char *, char **, int));
+RUBY_EXTERN unsigned long strtoul _((char *, char **, int));
 #endif
 
 #ifndef HAVE_VSNPRINTF
@@ -135,8 +139,8 @@ extern unsigned long strtoul _((char *, char **, int));
 # else
 #  include <varargs.h>
 # endif
-extern int snprintf __((char *, size_t n, char const *, ...));
-extern int vsnprintf _((char *, size_t n, char const *, va_list));
+RUBY_EXTERN int snprintf __((char *, size_t n, char const *, ...));
+RUBY_EXTERN int vsnprintf _((char *, size_t n, char const *, va_list));
 #endif
 
 #endif /* MISSING_H */
