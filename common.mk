@@ -436,7 +436,7 @@ version.$(OBJEXT): {$(VPATH)}version.c $(RUBY_H_INCLUDES) \
 dist: $(PROGRAM)
 	$(RUNRUBY) $(srcdir)/distruby.rb
 
-{$(VPATH)}revision.h:
+{$(VPATH)}revision.h: $(srcdir)/version.h $(srcdir)/ChangeLog $(REVISION_FORCE)
 	@$(MAKE) revision.h.tmp
 	@if [ -f $(srcdir)/revision.h ] && \
 	    { [ ! -s revision.h.tmp ] || cmp $(srcdir)/revision.h revision.h.tmp >/dev/null; }; then \

@@ -1,3 +1,8 @@
+Mon Nov  3 16:04:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (revision.h): have to be updated daily or by non-trivial
+	  commits.
+
 Mon Nov  3 15:52:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (marshal_load): arg.data is no longer a VALUE but a
