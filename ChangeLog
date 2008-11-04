@@ -1,3 +1,7 @@
+Sat Nov  1 07:09:40 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* gem_prelude.rb:  Don't require rubygems/defaults.rb.
+
 Mon Nov  3 13:01:13 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* array.c (rb_ary_take_first_or_last): renamed rb_ary_partial more
