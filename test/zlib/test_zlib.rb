@@ -490,7 +490,7 @@ if defined? Zlib
       Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
 
       f = Zlib::GzipReader.open(t.path)
-      "foobar".each_byte {|c| assert_equal(c, f.readchar) }
+      "foobar".each_byte {|c| assert_equal(c, f.readchar.ord) }
       assert_raise(EOFError) { f.readchar }
     end
 

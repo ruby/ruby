@@ -1,3 +1,7 @@
+Tue Nov  4 08:00:00 2008  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
+
+	* test/zlib/test_zlib.rb(test_readchar): compare in same type.
+
 Tue Nov  4 03:28:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_join): do not repeat self in a recursive array.
