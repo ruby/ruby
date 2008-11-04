@@ -15,12 +15,13 @@ module Test
       while arg = original_argv.shift
         case arg
         when '-v'
-          minitest_argv << '-v'
-        when '-n', '--name'
           minitest_argv << arg
-          minitest_argv << original_argv.shift
-        when '-x'
-          reject << original_argv.shift
+        when /\A(-n)(.+)?/, /\A(--name)=?\b(.+)?/
+          p [$1, $2]
+          minitest_argv << $1
+          minitest_argv << ($2 || original_argv.shift)
+        when /\A-x(.+)?/
+          reject << ($1 || original_argv.shift)
         else
           files << arg
         end
