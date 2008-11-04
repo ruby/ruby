@@ -1,3 +1,7 @@
+Mon Nov  3 16:32:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing.h: needs RUBY_EXTERN instead of extern for mswin.
+
 Sat Nov  1 07:09:40 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* gem_prelude.rb:  Don't require rubygems/defaults.rb.
