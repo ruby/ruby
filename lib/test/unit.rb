@@ -17,7 +17,6 @@ module Test
         when '-v'
           minitest_argv << arg
         when /\A(-n)(.+)?/, /\A(--name)=?\b(.+)?/
-          p [$1, $2]
           minitest_argv << $1
           minitest_argv << ($2 || original_argv.shift)
         when /\A-x(.+)?/
