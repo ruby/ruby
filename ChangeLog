@@ -1,3 +1,8 @@
+Fri Nov  7 07:12:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (thread_timer): uses pthread_cond_timedwait always
+	  instead of pthread_kill.
+
 Fri Nov  7 04:02:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thread_timer): uses timedwait on cygwin.
