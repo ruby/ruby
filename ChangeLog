@@ -3,6 +3,10 @@ Fri Nov  7 07:12:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* thread_pthread.c (thread_timer): uses pthread_cond_timedwait always
 	  instead of pthread_kill.
 
+Fri Nov  7 06:58:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (Init_String): remove Symbol#===.  [ruby-dev:37026]
+
 Fri Nov  7 04:02:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thread_timer): uses timedwait on cygwin.

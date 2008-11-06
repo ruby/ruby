@@ -6942,13 +6942,6 @@ sym_match(VALUE sym, VALUE other)
 }
 
 static VALUE
-sym_eqq(VALUE sym, VALUE other)
-{
-    if (sym == other) return Qtrue;
-    return rb_str_equal(rb_sym_to_s(sym), other);
-}
-
-static VALUE
 sym_aref(int argc, VALUE *argv, VALUE sym)
 {
     return rb_str_aref_m(argc, argv, rb_sym_to_s(sym));
@@ -7188,7 +7181,6 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "<=>", sym_cmp, 1);
     rb_define_method(rb_cSymbol, "casecmp", sym_casecmp, 1);
     rb_define_method(rb_cSymbol, "=~", sym_match, 1);
-    rb_define_method(rb_cSymbol, "===", sym_eqq, 1);
 
     rb_define_method(rb_cSymbol, "[]", sym_aref, -1);
     rb_define_method(rb_cSymbol, "slice", sym_aref, -1);
