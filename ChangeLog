@@ -1,3 +1,8 @@
+Fri Nov  7 07:32:55 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/yaml/rubytypes.rb: support Rational and Complex as 1.8
+	  does.  a patch from Hiroshi Moriyama in [ruby-dev:36899].
+
 Fri Nov  7 07:12:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (thread_timer): uses pthread_cond_timedwait always

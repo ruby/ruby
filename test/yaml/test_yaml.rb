@@ -1107,6 +1107,30 @@ EOY
 
 	end
 
+	def test_ruby_rational
+		assert_to_yaml( Rational(1, 2), <<EOY )
+--- !ruby/object:Rational 
+numerator: 1
+denominator: 2
+EOY
+
+		# Read YAML dumped by the ruby 1.8.3.
+		assert_to_yaml( Rational(1, 2), "!ruby/object:Rational 1/2\n" )
+		assert_raise( ArgumentError ) { YAML.load("!ruby/object:Rational INVALID/RATIONAL\n") }
+	end
+
+	def test_ruby_complex
+		assert_to_yaml( Complex(3, 4), <<EOY )
+--- !ruby/object:Complex 
+image: 4
+real: 3
+EOY
+
+		# Read YAML dumped by the ruby 1.8.3.
+		assert_to_yaml( Complex(3, 4), "!ruby/object:Complex 3+4i\n" )
+		assert_raise( ArgumentError ) { YAML.load("!ruby/object:Complex INVALID+COMPLEXi\n") }
+	end
+
 	def test_emitting_indicators
 		assert_to_yaml( "Hi, from Object 1. You passed: please, pretty please", <<EOY
 --- "Hi, from Object 1. You passed: please, pretty please"
