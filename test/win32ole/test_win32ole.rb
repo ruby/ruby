@@ -153,6 +153,15 @@ if defined?(WIN32OLE)
       assert_instance_of(WIN32OLE, @dict2)
     end
 
+    def test_s_new_exc
+      assert_raise(TypeError) {
+        WIN32OLE.new(1)
+      }
+      assert_raise(TypeError) {
+        WIN32OLE.new("Scripting.Dictionary", 1)
+      }
+    end
+
     def test_s_new_DCOM
       rshell = WIN32OLE.new("Shell.Application")
       assert_instance_of(WIN32OLE, rshell)
@@ -170,6 +179,12 @@ if defined?(WIN32OLE)
     def test_s_connect
       obj = WIN32OLE.connect("winmgmts:")
       assert_instance_of(WIN32OLE, obj)
+    end
+
+    def test_s_connect_exc
+      assert_raise(TypeError) {
+        WIN32OLE.connect(1)
+      }
     end
 
     def test_invoke_accept_symbol_hash_key

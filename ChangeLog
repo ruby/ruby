@@ -1,3 +1,17 @@
+Thu Nov  6 22:05:36 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (fole_s_connect, fole_initialize,
+	  folevariant_initialize): check argument type of WIN32OLE.connect,
+	  WIN32OLE.new, WIN32OLE_VARIANT.new.
+
+	* test/win32ole/test_win32ole.rb (test_s_new_exc, test_s_connect_exc):
+	  ditto.
+
+	* test/win32ole/test_win32ole_variant.rb (test_s_new_exc): ditto.
+
+	* test/win32ole/test_win32ole_method.rb: add assertion of
+	  WIN32OLE_METHOD.new.
+
 Tue Nov  4 08:00:00 2008  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* test/zlib/test_zlib.rb(test_readchar): compare in same type.
