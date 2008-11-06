@@ -503,6 +503,8 @@ ubf_select(void *ptr)
 #define ubf_select 0
 #endif
 
+#define PER_NANO 1000000000
+
 static void
 native_sleep(rb_thread_t *th, struct timeval *tv)
 {
@@ -513,10 +515,10 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	gettimeofday(&tvn, NULL);
 	ts.tv_sec = tvn.tv_sec + tv->tv_sec;
 	ts.tv_nsec = (tvn.tv_usec + tv->tv_usec) * 1000;
-        if (ts.tv_nsec >= 1000000000){
+	if (ts.tv_nsec >= PER_NANO){
 	    ts.tv_sec += 1;
-	    ts.tv_nsec -= 1000000000;
-        }
+	    ts.tv_nsec -= PER_NANO;
+	}
     }
 
     thread_debug("native_sleep %ld\n", tv ? tv->tv_sec : -1);
@@ -535,7 +537,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 		int r;
 		thread_debug("native_sleep: pthread_cond_wait start\n");
 		r = pthread_cond_wait(&th->native_thread_data.sleep_cond,
-				  &th->interrupt_lock);
+				      &th->interrupt_lock);
                 if (r) rb_bug("pthread_cond_wait: %d", r);
 		thread_debug("native_sleep: pthread_cond_wait end\n");
 	    }
@@ -651,18 +653,18 @@ static pthread_t timer_thread_id;
 static void *
 thread_timer(void *dummy)
 {
-    while (system_working) {
 #ifdef HAVE_NANOSLEEP
-	struct timespec req, rem;
-	req.tv_sec = 0;
-	req.tv_nsec = 10 * 1000 * 1000;	/* 10 ms */
-	nanosleep(&req, &rem);
+    struct timespec req, rem;
+    req.tv_sec = 0;
+    req.tv_nsec = 10 * 1000 * 1000;	/* 10 ms */
+#define WAIT_FOR_10MS() nanosleep(&req, &rem)
 #else
-	struct timeval tv;
-	tv.tv_sec = 0;
-	tv.tv_usec = 10000;     	/* 10 ms */
-	select(0, NULL, NULL, NULL, &tv);
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 10000;     	/* 10 ms */
+#define WAIT_FOR_10MS() select(0, NULL, NULL, NULL, &tv)
 #endif
+    while (WAIT_FOR_10MS() != -1) {
 #ifndef __CYGWIN__
 	if (signal_thread_list_anchor.next) {
 	    FGLOCK(&signal_thread_list_lock, {
@@ -694,12 +696,14 @@ rb_thread_create_timer_thread(void)
 	pthread_attr_setstacksize(&attr,
 				  PTHREAD_STACK_MIN + (THREAD_DEBUG ? BUFSIZ : 0));
 #endif
-	err = pthread_create(&timer_thread_id, &attr, thread_timer, GET_VM());
+	err = pthread_create(&timer_thread_id, &attr, thread_timer, 0);
 	if (err != 0) {
 	    rb_bug("rb_thread_create_timer_thread: return non-zero (%d)", err);
 	}
     }
     rb_disable_interrupt(); /* only timer thread recieve signal */
 }
+
+#define native_stop_timer_thread() pthread_kill(timer_thread_id, SIGTERM)
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
