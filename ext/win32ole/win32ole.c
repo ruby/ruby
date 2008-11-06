@@ -128,7 +128,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.3.8"
+#define WIN32OLE_VERSION "1.3.9"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -2733,6 +2733,7 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
     ole_initialize();
 
     rb_scan_args(argc, argv, "1*", &svr_name, &others);
+    Check_SafeStr(svr_name);
     if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
         rb_raise(rb_eSecurityError, "Insecure Object Connection - %s",
                  StringValuePtr(svr_name));
@@ -3220,11 +3221,13 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     rb_call_super(0, 0);
     rb_scan_args(argc, argv, "11*", &svr_name, &host, &others);
 
+    Check_SafeStr(svr_name);
     if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
         rb_raise(rb_eSecurityError, "Insecure Object Creation - %s",
                  StringValuePtr(svr_name));
     }
     if (!NIL_P(host)) {
+	Check_SafeStr(host);
         if (rb_safe_level() > 0 && OBJ_TAINTED(host)) {
             rb_raise(rb_eSecurityError, "Insecure Object Creation - %s",
                      StringValuePtr(svr_name));
@@ -8621,6 +8624,26 @@ folevariant_initialize(VALUE self, VALUE args)
     }
     VariantInit(&var);
     val = rb_ary_entry(args, 0);
+
+    if(!rb_obj_is_kind_of(val, cWIN32OLE) && 
+       !rb_obj_is_kind_of(val, cWIN32OLE_VARIANT) &&
+       !rb_obj_is_kind_of(val, rb_cTime)) {
+	switch (TYPE(val)) {
+	case T_ARRAY:
+	case T_STRING:
+	case T_FIXNUM:
+	case T_BIGNUM:
+	case T_FLOAT:
+	case T_TRUE:
+	case T_FALSE:
+	case T_NIL:
+	    break;
+	default:
+	    rb_raise(rb_eTypeError, "can not convert WIN32OLE_VARIANT from type %s",
+		     rb_obj_classname(val));
+	}
+    }
+
     Data_Get_Struct(self, struct olevariantdata, pvar);
     if (len == 1) {
         ole_val2variant(val, &(pvar->var));

@@ -1,3 +1,17 @@
+Thu Nov  6 21:21:46 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (fole_s_connect, fole_initialize,
+	  folevariant_initialize): check argument type of WIN32OLE.connect,
+	  WIN32OLE.new, WIN32OLE_VARIANT.new.
+
+	* test/win32ole/test_win32ole.rb (test_s_new_exc, test_s_connect_exc):
+	  ditto.
+
+	* test/win32ole/test_win32ole_variant.rb (test_s_new_exc): ditto.
+
+	* test/win32ole/test_win32ole_method.rb: add assertion of
+	  WIN32OLE_METHOD.new.
+
 Tue Nov  4 13:08:01 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit.setup_argv): now can specify ``-xname''

@@ -24,6 +24,9 @@ if defined?(WIN32OLE_METHOD)
 
     def test_initialize
       ole_type = WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "Shell")
+      assert_raise(TypeError) {
+        WIN32OLE_METHOD.new(1, 2)
+      }
       assert_raise(ArgumentError) {
         method = WIN32OLE_METHOD.new("foo")
       }

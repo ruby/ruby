@@ -18,6 +18,12 @@ if defined?(WIN32OLE_VARIANT)
       assert_instance_of(WIN32OLE_VARIANT, obj)
     end
 
+    def test_s_new_exc
+      assert_raise(TypeError) {
+        WIN32OLE_VARIANT.new(/foo/)
+      }
+    end
+
     def test_s_new_no_argument
       ex = nil
       begin
