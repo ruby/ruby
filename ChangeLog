@@ -1,3 +1,8 @@
+Fri Nov  7 07:43:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_timer): pthread_cond_timedwait returns ETIMEDOUT
+	  when timed out.
+
 Fri Nov  7 07:32:55 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb: support Rational and Complex as 1.8

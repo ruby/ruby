@@ -672,7 +672,7 @@ thread_timer(void *dummy)
     static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
     pthread_mutex_lock(&lock);
-#define WAIT_FOR_10MS() (pthread_cond_timedwait(&timer_thread_cond, &lock, get_ts(&ts, PER_NANO/100)) == 0)
+#define WAIT_FOR_10MS() (pthread_cond_timedwait(&timer_thread_cond, &lock, get_ts(&ts, PER_NANO/100)) == ETIMEDOUT)
     while (WAIT_FOR_10MS()) {
 #ifndef __CYGWIN__
 	if (signal_thread_list_anchor.next) {
