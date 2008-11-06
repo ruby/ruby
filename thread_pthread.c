@@ -650,21 +650,51 @@ remove_signal_thread_list(rb_thread_t *th)
 
 static pthread_t timer_thread_id;
 
+#ifdef __CYGWIN__
+#define TIMER_USE_TIMEDWAIT 1
+#endif
+#ifndef TIMER_USE_TIMEDWAIT
+#define TIMER_USE_TIMEDWAIT 0
+#endif
+#if TIMER_USE_TIMEDWAIT
+static pthread_cond_t timer_thread_cond = PTHREAD_COND_INITIALIZER;
+
+static struct timespec *
+get_ts(struct timespec *ts, unsigned long nsec)
+{
+    struct timeval tv;
+    gettimeofday(&tv, 0);
+    ts->tv_sec = tv.tv_sec;
+    ts->tv_nsec = tv.tv_usec * 1000 + nsec;
+    if (ts->tv_nsec >= PER_NANO) {
+	ts->tv_sec++;
+	ts->tv_nsec -= PER_NANO;
+    }
+    return ts;
+}
+#endif
+
 static void *
 thread_timer(void *dummy)
 {
-#ifdef HAVE_NANOSLEEP
+#if TIMER_USE_TIMEDWAIT
+    struct timespec ts;
+    static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+    pthread_mutex_lock(&lock);
+#define WAIT_FOR_10MS() (pthread_cond_timedwait(&timer_thread_cond, &lock, get_ts(&ts, PER_NANO/100)) == 0)
+#elif defined HAVE_NANOSLEEP
     struct timespec req, rem;
     req.tv_sec = 0;
     req.tv_nsec = 10 * 1000 * 1000;	/* 10 ms */
-#define WAIT_FOR_10MS() nanosleep(&req, &rem)
+#define WAIT_FOR_10MS() (nanosleep(&req, &rem) != -1)
 #else
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = 10000;     	/* 10 ms */
-#define WAIT_FOR_10MS() select(0, NULL, NULL, NULL, &tv)
+#define WAIT_FOR_10MS() (select(0, NULL, NULL, NULL, &tv) != -1)
 #endif
-    while (WAIT_FOR_10MS() != -1) {
+    while (WAIT_FOR_10MS()) {
 #ifndef __CYGWIN__
 	if (signal_thread_list_anchor.next) {
 	    FGLOCK(&signal_thread_list_lock, {
@@ -679,6 +709,10 @@ thread_timer(void *dummy)
 #endif
 	timer_thread_function(dummy);
     }
+#if TIMER_USE_TIMEDWAIT
+    pthread_mutex_unlock(&lock);
+    pthread_mutex_destroy(&lock);
+#endif
     return NULL;
 }
 
@@ -704,6 +738,10 @@ rb_thread_create_timer_thread(void)
     rb_disable_interrupt(); /* only timer thread recieve signal */
 }
 
+#if TIMER_USE_TIMEDWAIT
+#define native_stop_timer_thread() pthread_cond_signal(&timer_thread_cond)
+#else
 #define native_stop_timer_thread() pthread_kill(timer_thread_id, SIGTERM)
+#endif
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
