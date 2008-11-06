@@ -1,3 +1,7 @@
+Fri Nov  7 01:24:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot: binary encoding spec is no longer needed in 1.9.
+
 Thu Nov  6 22:21:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_stop_timer_thread): terminates timer thread
