@@ -35,6 +35,7 @@ EOF
 <member>
 &a;
 &a2;
+&lt;
 </member>
 EOF
 
@@ -53,7 +54,7 @@ EOF
 
     REXML::Document.entity_expansion_limit = 4
     doc = REXML::Document.new(XML_WITH_4_ENTITY_EXPANSION)
-    assert_equal("\na\na a\n", doc.root.children.first.value)
+    assert_equal("\na\na a\n<\n", doc.root.children.first.value)
     REXML::Document.entity_expansion_limit = 3
     doc = REXML::Document.new(XML_WITH_4_ENTITY_EXPANSION)
     assert_raise(RuntimeError) do
