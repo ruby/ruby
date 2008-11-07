@@ -1,3 +1,8 @@
+Sat Nov  8 01:14:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (thread_timer, rb_thread_create_timer_thread):
+	  handshakes properly.
+
 Fri Nov  7 22:51:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* inits.c (rb_call_inits): do not repeat.

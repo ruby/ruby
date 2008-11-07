@@ -116,6 +116,12 @@ native_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
     pthread_cond_wait(cond, mutex);
 }
 
+static void
+native_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, struct timespec *ts)
+{
+    pthread_cond_timedwait(cond, mutex, ts);
+}
+
 
 #define native_cleanup_push pthread_cleanup_push
 #define native_cleanup_pop  pthread_cleanup_pop
@@ -650,6 +656,7 @@ remove_signal_thread_list(rb_thread_t *th)
 
 static pthread_t timer_thread_id;
 static pthread_cond_t timer_thread_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t timer_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static struct timespec *
 get_ts(struct timespec *ts, unsigned long nsec)
@@ -669,12 +676,15 @@ static void *
 thread_timer(void *dummy)
 {
     struct timespec ts;
-    pthread_mutex_t lock;
+    int err;
 
-    pthread_mutex_init(&lock, 0);
-    pthread_mutex_lock(&lock);
-#define WAIT_FOR_10MS() (pthread_cond_timedwait(&timer_thread_cond, &lock, get_ts(&ts, PER_NANO/100)) == ETIMEDOUT)
-    while (WAIT_FOR_10MS()) {
+    native_mutex_lock(&timer_thread_lock);
+    native_cond_signal(&timer_thread_cond);
+#define WAIT_FOR_10MS() native_cond_timedwait(&timer_thread_cond, &timer_thread_lock, get_ts(&ts, PER_NANO/100)
+    while ((err = WAIT_FOR_10MS()) != 0) {
+	if (err != ETIMEDOUT) {
+	    rb_bug("thread_timer/timedwait: %d", err);
+	}
 #ifndef __CYGWIN__
 	if (signal_thread_list_anchor.next) {
 	    FGLOCK(&signal_thread_list_lock, {
@@ -689,8 +699,7 @@ thread_timer(void *dummy)
 #endif
 	timer_thread_function(dummy);
     }
-    pthread_mutex_unlock(&lock);
-    pthread_mutex_destroy(&lock);
+    native_mutex_unlock(&timer_thread_lock);
     return NULL;
 }
 
@@ -708,7 +717,10 @@ rb_thread_create_timer_thread(void)
 	pthread_attr_setstacksize(&attr,
 				  PTHREAD_STACK_MIN + (THREAD_DEBUG ? BUFSIZ : 0));
 #endif
+	native_mutex_lock(&timer_thread_lock);
 	err = pthread_create(&timer_thread_id, &attr, thread_timer, 0);
+	native_cond_wait(&timer_thread_cond, &timer_thread_lock);
+	native_mutex_unlock(&timer_thread_lock);
 	if (err != 0) {
 	    rb_bug("rb_thread_create_timer_thread: return non-zero (%d)", err);
 	}
@@ -716,6 +728,12 @@ rb_thread_create_timer_thread(void)
     rb_disable_interrupt(); /* only timer thread recieve signal */
 }
 
-#define native_stop_timer_thread() pthread_cond_signal(&timer_thread_cond)
+static void
+native_stop_timer_thread(void)
+{
+    native_mutex_lock(&timer_thread_lock);
+    native_cond_signal(&timer_thread_cond);
+    native_mutex_unlock(&timer_thread_lock);
+}
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
