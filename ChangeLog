@@ -1,3 +1,7 @@
+Fri Nov  7 22:42:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (thread_timer): initializes mutex each time.
+
 Fri Nov  7 21:23:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_win32.c (thread_start_func_1): use already gotten stack info.
