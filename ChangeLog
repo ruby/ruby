@@ -1,3 +1,8 @@
+Sat Nov  8 01:38:07 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (h_conv): can't guess UTF-8 input in
+	  conversion. [ruby-list:45609]
+
 Fri Nov  7 18:29:09 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* hash.c (rb_hash_key, env_key): Hash#index is renamed to
