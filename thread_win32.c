@@ -451,26 +451,10 @@ native_thread_destroy(rb_thread_t *th)
     w32_close_handle(intr);
 }
 
-static void *
-get_stack_info(const void *ptr, size_t *maxsize)
-{
-    MEMORY_BASIC_INFORMATION mi;
-    DWORD size;
-    DWORD space;
-
-    if (!VirtualQuery(ptr, &mi, sizeof(mi))) return 0;
-    size = (char *)mi.BaseAddress - (char *)mi.AllocationBase;
-    space = size / 5;
-    if (space > 1024*1024) space = 1024*1024;
-    *maxsize = size - space;
-    return (VALUE *)mi.BaseAddress - 1;
-}
-
 static unsigned long _stdcall
 thread_start_func_1(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
-    VALUE *stack_start;
     volatile HANDLE thread_id = th->thread_id;
 
     native_thread_init_stack(th);
@@ -480,8 +464,7 @@ thread_start_func_1(void *th_ptr)
     thread_debug("thread created (th: %p, thid: %p, event: %p)\n", th,
 		 th->thread_id, th->native_thread_data.interrupt_event);
 
-    stack_start = get_stack_info(&stack_start, &th->machine_stack_maxsize);
-    thread_start_func_2(th, stack_start, rb_ia64_bsp());
+    thread_start_func_2(th, th->machine_stack_start, rb_ia64_bsp());
 
     w32_close_handle(thread_id);
     thread_debug("thread deleted (th: %p)\n", th);

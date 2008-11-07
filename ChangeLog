@@ -1,3 +1,7 @@
+Fri Nov  7 21:23:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_win32.c (thread_start_func_1): use already gotten stack info.
+
 Fri Nov  7 12:26:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb.rb (IRB::Irb#eval_input): remove extra  @context.prompt_i.
