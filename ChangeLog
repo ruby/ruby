@@ -1,3 +1,7 @@
+Sat Nov  8 05:31:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* safe.c (safe_setter): add warning for $SAFE=3.
+
 Sat Nov  8 01:48:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (rb_thread_create_timer_thread): do not wait never
