@@ -1,3 +1,8 @@
+Fri Nov  7 18:29:09 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* hash.c (rb_hash_key, env_key): Hash#index is renamed to
+	  Hash#key, and ENV.index to ENV.key. [ruby-dev:37028]
+
 Fri Nov  7 02:08:04 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/rexml/entity.rb (unnormalized): do not call

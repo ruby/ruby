@@ -30,6 +30,14 @@ with all sufficient information, see the ChangeLog file.
 
     New method.
 
+  * Hash#key
+
+    Renamed from Hash#index.
+
+  * ENV.key
+
+    Renamed from ENV.index.
+
 * set
 
   Set#classify

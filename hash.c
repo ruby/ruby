@@ -646,7 +646,7 @@ rb_hash_set_default_proc(hash, proc)
 }
 
 static int
-index_i(key, value, args)
+key_i(key, value, args)
     VALUE key, value;
     VALUE *args;
 {
@@ -676,18 +676,18 @@ rb_hash_delete_key(hash, key)
 
 /*
  *  call-seq:
- *     hsh.index(value)    => key
+ *     hsh.key(value)    => key
  *
  *  Returns the key for a given value. If not found, returns <code>nil</code>.
  *
  *     h = { "a" => 100, "b" => 200 }
- *     h.index(200)   #=> "b"
- *     h.index(999)   #=> nil
+ *     h.key(200)   #=> "b"
+ *     h.key(999)   #=> nil
  *
  */
 
 static VALUE
-rb_hash_index(hash, value)
+rb_hash_key(hash, value)
     VALUE hash, value;
 {
     VALUE args[2];
@@ -695,9 +695,18 @@ rb_hash_index(hash, value)
     args[0] = value;
     args[1] = Qnil;
 
-    rb_hash_foreach(hash, index_i, (st_data_t)args);
+    rb_hash_foreach(hash, key_i, (st_data_t)args);
 
     return args[1];
+}
+
+/* :nodoc: */
+static VALUE
+rb_hash_index(hash, value)
+    VALUE hash, value;
+{
+    rb_warning("Hash#index is deprecated and will be removed in 1.9; use Hash#key");
+    return rb_hash_key(hash, value);
 }
 
 /*
@@ -2446,7 +2455,7 @@ env_has_value(dmy, value)
 }
 
 static VALUE
-env_index(dmy, value)
+env_key(dmy, value)
     VALUE dmy, value;
 {
     char **env;
@@ -2469,6 +2478,14 @@ env_index(dmy, value)
     }
     FREE_ENVIRON(environ);
     return Qnil;
+}
+
+static VALUE
+env_index(dmy, value)
+    VALUE dmy, value;
+{
+    rb_warning("ENV.index is deprecated and will be removed in 1.9; use ENV.key");
+    return env_key(dmy, value);
 }
 
 static VALUE
@@ -2682,6 +2699,7 @@ Init_Hash()
     rb_define_method(rb_cHash,"default=", rb_hash_set_default, 1);
     rb_define_method(rb_cHash,"default_proc", rb_hash_default_proc, 0);
     rb_define_method(rb_cHash,"default_proc=", rb_hash_set_default_proc, 1);
+    rb_define_method(rb_cHash,"key", rb_hash_key, 1);
     rb_define_method(rb_cHash,"index", rb_hash_index, 1);
     rb_define_method(rb_cHash,"indexes", rb_hash_indexes, -1);
     rb_define_method(rb_cHash,"indices", rb_hash_indexes, -1);
@@ -2746,6 +2764,7 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"rehash", env_none, 0);
     rb_define_singleton_method(envtbl,"to_a", env_to_a, 0);
     rb_define_singleton_method(envtbl,"to_s", env_to_s, 0);
+    rb_define_singleton_method(envtbl,"key", env_key, 1);
     rb_define_singleton_method(envtbl,"index", env_index, 1);
     rb_define_singleton_method(envtbl,"indexes", env_indexes, -1);
     rb_define_singleton_method(envtbl,"indices", env_indexes, -1);
