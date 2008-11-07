@@ -107,7 +107,7 @@ module IRB
 	  f = @context.prompt_c
 	elsif indent > 0
 	  f = @context.prompt_n
-	else @context.prompt_i
+	else
 	  f = @context.prompt_i
 	end
 	f = "" unless f
