@@ -671,7 +671,7 @@ thread_timer(void *dummy)
     struct timespec ts;
     pthread_mutex_t lock;
 
-    pthread_mutex_initializer(&lock, 0);
+    pthread_mutex_init(&lock, 0);
     pthread_mutex_lock(&lock);
 #define WAIT_FOR_10MS() (pthread_cond_timedwait(&timer_thread_cond, &lock, get_ts(&ts, PER_NANO/100)) == ETIMEDOUT)
     while (WAIT_FOR_10MS()) {
