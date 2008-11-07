@@ -1,3 +1,11 @@
+Sat Nov  8 06:20:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/curses/curses.c: curses encoding should obey locale.
+
+	* ext/curses/curses.c (curses_getch): 1.9 getch should return one
+	  character string for single byte string.  wchar_t support may
+	  follow in the future.
+
 Sat Nov  8 05:46:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/io.h (rb_io_t): added write_lock to serialize.

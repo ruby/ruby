@@ -48,7 +48,7 @@ while TRUE
   explicit = FALSE
   n = 0
   while TRUE
-    c = getch.chr
+    c = getch
     if c =~ /[0-9]/
       n = 10 * n + c.to_i
     else
