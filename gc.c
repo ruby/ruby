@@ -396,6 +396,7 @@ rb_objspace_alloc(void)
 
 #define HEAP_OBJ_LIMIT (HEAP_SIZE / sizeof(struct RVALUE))
 
+extern VALUE rb_cMutex;
 extern st_table *rb_class_tbl;
 
 int ruby_disable_gc_stress = 0;
@@ -1508,6 +1509,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
             gc_mark(objspace, obj->as.file.fptr->writeconv_asciicompat, lev);
             gc_mark(objspace, obj->as.file.fptr->writeconv_pre_ecopts, lev);
             gc_mark(objspace, obj->as.file.fptr->encs.ecopts, lev);
+            gc_mark(objspace, obj->as.file.fptr->write_lock, lev);
         }
         break;
 
@@ -2345,7 +2347,7 @@ rb_gc_call_finalizer_at_exit(void)
 	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
 		DATA_PTR(p) && RANY(p)->as.data.dfree &&
-		RANY(p)->as.basic.klass != rb_cThread) {
+		RANY(p)->as.basic.klass != rb_cThread && RANY(p)->as.basic.klass != rb_cMutex) {
 		p->as.free.flags = 0;
 		if ((long)RANY(p)->as.data.dfree == -1) {
 		    xfree(DATA_PTR(p));

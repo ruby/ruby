@@ -1,3 +1,15 @@
+Sat Nov  8 05:46:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/io.h (rb_io_t): added write_lock to serialize.
+	  [ruby-core:19668]
+
+	* gc.c (gc_mark_children): mark write_lock.
+
+	* gc.c (rb_gc_call_finalizer_at_exit): Mutex also needs to be
+	  deferred.
+
+	* io.c (io_fflush, io_binwrite, fptr_finalize): serializes writing.
+
 Sat Nov  8 05:31:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* safe.c (safe_setter): add warning for $SAFE=3.
