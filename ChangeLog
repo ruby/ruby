@@ -1,3 +1,9 @@
+Sat Nov  8 07:07:48 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* configure.in: detect stdio buffer pointers for uClibc.  a patch
+	  from Brian Candler <B.Candler at pobox.com> in [ruby-core:12020].
+	  [ruby-core:19713]
+
 Sat Nov  8 06:51:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/dbm/dbm.c (fdbm_index): make #index warn like Hash.
