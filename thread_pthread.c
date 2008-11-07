@@ -719,11 +719,12 @@ rb_thread_create_timer_thread(void)
 #endif
 	native_mutex_lock(&timer_thread_lock);
 	err = pthread_create(&timer_thread_id, &attr, thread_timer, 0);
-	native_cond_wait(&timer_thread_cond, &timer_thread_lock);
-	native_mutex_unlock(&timer_thread_lock);
 	if (err != 0) {
+	    native_mutex_unlock(&timer_thread_lock);
 	    rb_bug("rb_thread_create_timer_thread: return non-zero (%d)", err);
 	}
+	native_cond_wait(&timer_thread_cond, &timer_thread_lock);
+	native_mutex_unlock(&timer_thread_lock);
     }
     rb_disable_interrupt(); /* only timer thread recieve signal */
 }

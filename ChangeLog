@@ -1,4 +1,7 @@
-Sat Nov  8 01:42:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Nov  8 01:48:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (rb_thread_create_timer_thread): do not wait never
+	  coming signal if failed to create tiemr thread.
 
 	* thread_pthread.c (native_cond_timedwait): returns error code.
 
