@@ -25,6 +25,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     ptrdiff_t dfp = cfp->dfp - th->stack;
     char lfp_in_heap = ' ', dfp_in_heap = ' ';
     char posbuf[MAX_POSBUF+1];
+    int nopos = 0;
 
     const char *magic, *iseq_name = "-", *selfstr = "-", *biseq_name = "-";
     VALUE tmp;
@@ -60,6 +61,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	break;
       case VM_FRAME_MAGIC_FINISH:
 	magic = "FINISH";
+	nopos = 1;
 	break;
       case VM_FRAME_MAGIC_CFUNC:
 	magic = "CFUNC";
@@ -92,7 +94,10 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	selfstr = "";
     }
 
-    if (cfp->iseq != 0) {
+    if (nopos) {
+	/* no name */
+    }
+    else if (cfp->iseq != 0) {
 	if (RUBY_VM_IFUNC_P(cfp->iseq)) {
 	    iseq_name = "<ifunc>";
 	}
@@ -103,9 +108,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	    iseq_name = RSTRING_PTR(cfp->iseq->name);
 	    line = vm_get_sourceline(cfp);
 	    if (line) {
-		char fn[MAX_POSBUF+1];
-		snprintf(fn, MAX_POSBUF, "%s", RSTRING_PTR(cfp->iseq->filename));
-		snprintf(posbuf, MAX_POSBUF, "%s:%d", fn, line);
+		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(cfp->iseq->filename), line);
 	    }
 	}
     }
@@ -126,12 +129,12 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     fprintf(stderr, "s:%04"PRIdPTRDIFF" b:%04d ", (cfp->sp - th->stack), bp);
     fprintf(stderr, lfp_in_heap == ' ' ? "l:%06"PRIdPTRDIFF" " : "l:%06"PRIxPTRDIFF" ", lfp % 10000);
     fprintf(stderr, dfp_in_heap == ' ' ? "d:%06"PRIdPTRDIFF" " : "d:%06"PRIxPTRDIFF" ", dfp % 10000);
-    fprintf(stderr, "%-6s ", magic);
-    if (line) {
-	fprintf(stderr, "%s", posbuf);
+    fprintf(stderr, "%-6s", magic);
+    if (line && !nopos) {
+	fprintf(stderr, " %s", posbuf);
     }
     if (0) {
-	fprintf(stderr, "             \t");
+	fprintf(stderr, "              \t");
 	fprintf(stderr, "iseq: %-24s ", iseq_name);
 	fprintf(stderr, "self: %-24s ", selfstr);
 	fprintf(stderr, "%-1s ", biseq_name);
