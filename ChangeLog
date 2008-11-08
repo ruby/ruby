@@ -1,3 +1,10 @@
+Sat Nov  8 12:10:15 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/gdbm/gdbm.c (fgdbm_index): make #index warn like Hash.
+	  [ruby-dev:37039]
+
+	* ext/sdbm/init.c (Init_sdbm): typo fixed.  [ruby-dev:37039]
+
 Sat Nov  8 07:07:48 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: detect stdio buffer pointers for uClibc.  a patch
