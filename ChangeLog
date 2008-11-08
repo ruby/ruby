@@ -1,3 +1,7 @@
+Sat Nov  8 21:33:53 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/session.rb: fix indentation. 
+
 Sat Nov  8 18:11:14 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/webrick/httpproxy.rb (WEBrick::HTTPProxyServer#do_CONNECT):
