@@ -2,10 +2,6 @@ require 'test/unit'
 require 'cgi'
 require 'cgi/session'
 require 'stringio'
-def d(obj)
-  STDERR.write(obj.inspect+"\n")
-end
-
 
 class CGISessionTest < Test::Unit::TestCase
 
@@ -18,7 +14,7 @@ class CGISessionTest < Test::Unit::TestCase
   def teardown
     @environ.each do |key, val| ENV.delete(key) end
     $stdout = STDOUT
-#    FileUtils.rm(Dir::glob(File.dirname(__FILE__)+"/session_dir/*"))
+   FileUtils.rm(Dir::glob(File.dirname(__FILE__)+"/session_dir/*"))
   end
 
   def test_cgi_session_core
