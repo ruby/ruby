@@ -721,7 +721,7 @@ strio_ungetc(VALUE self, VALUE c)
 	}
     }
     /* get logical position */
-    lpos = 0; p = RSTRING_PTR(ptr->string); pend = p + ptr->pos - 1;
+    lpos = 0; p = RSTRING_PTR(ptr->string); pend = p + ptr->pos;
     for (;;) {
 	clen = rb_enc_mbclen(p, pend, enc);
 	if (p+clen >= pend) break;
