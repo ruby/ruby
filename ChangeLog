@@ -1,3 +1,11 @@
+Sat Nov  8 23:47:45 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/session.rb (FileStore): use marshalized data.
+
+	* test/cgi/session_dir: add a session directory in test.
+
+	* test/cgi/test_cgi_session.rb: add a test. 
+
 Sat Nov  8 21:57:03 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/session.rb: remove debug code. 
