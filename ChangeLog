@@ -1,3 +1,7 @@
+Sun Nov  9 00:02:01 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/session/pstore.rb: fix indentation.
+
 Sat Nov  8 23:47:45 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/session.rb (FileStore): use marshalized data.
