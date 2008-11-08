@@ -1,3 +1,7 @@
+Sat Nov  8 21:57:03 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/session.rb: remove debug code. 
+
 Sat Nov  8 21:33:53 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/session.rb: fix indentation. 
