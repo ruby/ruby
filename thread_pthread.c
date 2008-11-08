@@ -679,9 +679,9 @@ thread_timer(void *dummy)
     int err;
 
     native_mutex_lock(&timer_thread_lock);
-    native_cond_signal(&timer_thread_cond);
+    native_cond_broadcast(&timer_thread_cond);
 #define WAIT_FOR_10MS() native_cond_timedwait(&timer_thread_cond, &timer_thread_lock, get_ts(&ts, PER_NANO/100))
-    while ((err = WAIT_FOR_10MS()) != 0 && err != EINTR) {
+    while (system_working > 0 && (err = WAIT_FOR_10MS()) != 0 && err != EINTR) {
 	if (err != ETIMEDOUT) {
 	    rb_bug("thread_timer/timedwait: %d", err);
 	}
@@ -729,12 +729,17 @@ rb_thread_create_timer_thread(void)
     rb_disable_interrupt(); /* only timer thread recieve signal */
 }
 
-static void
+static int
 native_stop_timer_thread(void)
 {
+    int stopped;
     native_mutex_lock(&timer_thread_lock);
-    native_cond_signal(&timer_thread_cond);
+    stopped = --system_working <= 0;
+    if (stopped) {
+	native_cond_signal(&timer_thread_cond);
+    }
     native_mutex_unlock(&timer_thread_lock);
+    return stopped;
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

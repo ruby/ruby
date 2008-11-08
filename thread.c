@@ -75,6 +75,7 @@ void rb_thread_stop_timer_thread(void);
 
 static const VALUE eKillSignal = INT2FIX(0);
 static const VALUE eTerminateSignal = INT2FIX(1);
+static volatile int system_working = 1;
 
 inline static void
 st_delete_wrap(st_table *table, st_data_t key)
@@ -2355,8 +2356,7 @@ timer_thread_function(void *arg)
 void
 rb_thread_stop_timer_thread(void)
 {
-    if (timer_thread_id) {
-	native_stop_timer_thread();
+    if (timer_thread_id && native_stop_timer_thread()) {
 	native_thread_join(timer_thread_id);
 	timer_thread_id = 0;
     }

@@ -558,6 +558,15 @@ rb_thread_create_timer_thread(void)
     }
 }
 
-#define native_stop_timer_thread() (CloseHandle(timer_thread_lock), timer_thread_lock = 0)
+static int
+native_stop_timer_thread(void)
+{
+    int stopped = --system_working <= 0;
+    if (stopped) {
+	CloseHandle(timer_thread_lock);
+	timer_thread_lock = 0;
+    }
+    return stopped;
+}
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

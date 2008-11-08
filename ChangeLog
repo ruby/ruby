@@ -1,3 +1,7 @@
+Sun Nov  9 00:30:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (thread_timer): checks working flags again.
+
 Sun Nov  9 00:02:01 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/session/pstore.rb: fix indentation.
