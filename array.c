@@ -1769,19 +1769,25 @@ rb_ary_sort_bang(VALUE ary)
             assert(ARY_EMBED_P(tmp));
             if (ARY_SHARED_P(ary)) { /* ary might be destructively operated in the given block */
                 rb_ary_unshare(ary);
-                FL_SET_EMBED(ary);
             }
+            FL_SET_EMBED(ary);
             MEMCPY(RARRAY_PTR(ary), ARY_EMBED_PTR(tmp), VALUE, ARY_EMBED_LEN(tmp));
             ARY_SET_LEN(ary, ARY_EMBED_LEN(tmp));
         }
         else {
             assert(!ARY_EMBED_P(tmp));
-            if (ARY_EMBED_P(ary) || RARRAY_PTR(ary) != RARRAY_PTR(tmp)) {
+            if (ARY_HEAP_PTR(ary) == ARY_HEAP_PTR(tmp)) {
+                assert(!ARY_EMBED_P(ary));
+                FL_UNSET_SHARED(ary);
+                ARY_SET_CAPA(ary, ARY_CAPA(tmp));
+            }
+            else {
                 assert(!ARY_SHARED_P(tmp));
                 if (ARY_EMBED_P(ary)) {
                     FL_UNSET_EMBED(ary);
                 }
                 else if (ARY_SHARED_P(ary)) {
+                    /* ary might be destructively operated in the given block */
                     rb_ary_unshare(ary);
                 }
                 else {
@@ -1791,10 +1797,6 @@ rb_ary_sort_bang(VALUE ary)
                 ARY_SET_HEAP_LEN(ary, RARRAY_LEN(tmp));
                 ARY_SET_CAPA(ary, ARY_CAPA(tmp));
             } 
-            else {
-                FL_UNSET_SHARED(ary);
-                ARY_SET_CAPA(ary, ARY_CAPA(tmp));
-            }
             /* tmp was lost ownership for the ptr */
             FL_UNSET(tmp, FL_FREEZE);
             FL_SET_EMBED(tmp);
