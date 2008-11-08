@@ -135,7 +135,11 @@ class CGIMultipartTest < Test::Unit::TestCase
     ENV['CONTENT_LENGTH'] = input.length.to_s
     ENV['REQUEST_METHOD'] = 'POST'
     ## set $stdin
-    tmpfile = Tempfile.new(self.name, :binmode => true)
+    tmpfile = if RUBY_VERSION >="1.9"
+                Tempfile.new(self.name, :binmode => true)
+              else
+                Tempfile.new(self.name)
+              end
     tmpfile << input
     tmpfile.rewind()
     $stdin = tmpfile
