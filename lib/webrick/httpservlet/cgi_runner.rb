@@ -13,7 +13,7 @@ def sysread(io, size)
   while size > 0
     tmp = io.sysread(size)
     buf << tmp
-    size -= tmp.size
+    size -= tmp.bytesize
   end
   return buf
 end

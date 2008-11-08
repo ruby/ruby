@@ -89,7 +89,7 @@ module WEBrick
                  "abcdefghijklmnopqrstuvwxyz" 
 
     def random_string(len)
-      rand_max = RAND_CHARS.size
+      rand_max = RAND_CHARS.bytesize
       ret = "" 
       len.times{ ret << RAND_CHARS[rand(rand_max)] }
       ret 

@@ -1,3 +1,14 @@
+Sat Nov  8 18:11:14 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/webrick/httpproxy.rb (WEBrick::HTTPProxyServer#do_CONNECT):
+	  use #bytesize instead of #size.  a patch submitted from
+	  raspberry lemon in  [ruby-core:18571].
+
+	* lib/webrick/httpauth/digestauth.rb, lib/webrick/httpproxy.rb,
+	  lib/webrick/httprequest.rb, lib/webrick/httpservlet/cgi_runner.rb,
+	  lib/webrick/httpservlet/abstract.rb, lib/webrick/httpresponse.rb,
+	  lib/webrick/httpservlet/cgihandler.rb, lib/webrick/utils.rb: ditto.
+
 Sat Nov  8 17:31:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_ungetc): ungetc position should

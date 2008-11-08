@@ -244,7 +244,7 @@ module WEBrick
 
     def read_request_line(socket)
       @request_line = read_line(socket, 1024) if socket
-      if @request_line.size >= 1024 and @request_line[-1, 1] != LF
+      if @request_line.bytesize >= 1024 and @request_line[-1, 1] != LF
         raise HTTPStatus::RequestURITooLarge
       end
       @request_time = Time.now
@@ -307,7 +307,7 @@ module WEBrick
         while @remaining_size > 0 
           sz = [@buffer_size, @remaining_size].min
           break unless buf = read_data(socket, sz)
-          @remaining_size -= buf.size
+          @remaining_size -= buf.bytesize
           block.call(buf)
         end
         if @remaining_size > 0 && @socket.eof?
@@ -334,7 +334,7 @@ module WEBrick
       chunk_size, = read_chunk_size(socket)
       while chunk_size > 0
         data = read_data(socket, chunk_size) # read chunk-data
-        if data.nil? || data.size != chunk_size
+        if data.nil? || data.bytesize != chunk_size
           raise BadRequest, "bad chunk data size."
         end
         read_line(socket)                    # skip CRLF

@@ -229,7 +229,7 @@ module WEBrick
 
       def split_param_value(string)
         ret = {}
-        while string.size != 0
+        while string.bytesize != 0
           case string           
           when /^\s*([\w\-\.\*\%\!]+)=\s*\"((\\.|[^\"])*)\"\s*,?/
             key = $1
