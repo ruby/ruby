@@ -1,3 +1,9 @@
+Mon Nov 10 09:54:21 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (ifs_open_socket): should retry without proto_buffer
+	  if cannot find the suitable protocol. a patch from Heesob Park.
+	  fixed [ruby-core:19713]
+
 Sun Nov  9 13:04:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (rb_struct_initialize_m): avoid unnecessary array

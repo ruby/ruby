@@ -2642,6 +2642,8 @@ open_ifs_socket(int af, int type, int protocol)
 				    WSA_FLAG_OVERLAPPED);
 		    break;
 		}
+		if (out == INVALID_SOCKET)
+		    out = WSASocket(af, type, protocol, NULL, 0, 0);
 	    }
 
 	    free(proto_buffers);
