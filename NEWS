@@ -38,6 +38,24 @@ with all sufficient information, see the ChangeLog file.
 
     Renamed from ENV.index.
 
+* dbm
+
+  DBM#key
+
+    Renamed from DBM#index.
+
+* gdbm
+
+  GDBM#key
+
+    Renamed from GDBM#index.
+
+* sdbm
+
+  SDBM#key
+
+    Renamed from SDBM#index.
+
 * set
 
   Set#classify

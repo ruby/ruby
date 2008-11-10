@@ -436,13 +436,13 @@ fgdbm_fetch_m(argc, argv, obj)
 
 /*
  * call-seq:
- *      gdbm.index(value) -> key
+ *      gdbm.key(value) -> key
  *
  * Returns the _key_ for a given _value_. If several keys may map to the
  * same value, the key that is found first will be returned.
  */
 static VALUE
-fgdbm_index(obj, valstr)
+fgdbm_key(obj, valstr)
     VALUE obj, valstr;
 {
     struct dbmdata *dbmp;
@@ -465,6 +465,15 @@ fgdbm_index(obj, valstr)
     return Qnil;
 }
 
+/* :nodoc: */
+static VALUE
+fgdbm_index(obj, value)
+    VALUE obj, value;
+{
+    rb_warning("GDBM#index is deprecated; use GDBM#key");
+    return fgdbm_key(obj, value);
+}
+
 static VALUE
 fgdbm_indexes(argc, argv, obj)
     int argc;
@@ -474,6 +483,8 @@ fgdbm_indexes(argc, argv, obj)
     VALUE new;
     int i;
 
+    rb_warn("GDBM#%s is deprecated; use GDBM#values_at",
+	    rb_id2name(rb_frame_last_func()));
     new = rb_ary_new2(argc);
     for (i=0; i<argc; i++) {
 	rb_ary_push(new, rb_gdbm_fetch3(obj, argv[i]));
@@ -1291,6 +1302,7 @@ Init_gdbm()
     rb_define_method(rb_cGDBM, "[]=", fgdbm_store, 2);
     rb_define_method(rb_cGDBM, "store", fgdbm_store, 2);
     rb_define_method(rb_cGDBM, "index",  fgdbm_index, 1);
+    rb_define_method(rb_cGDBM, "key",  fgdbm_key, 1);
     rb_define_method(rb_cGDBM, "indexes",  fgdbm_indexes, -1);
     rb_define_method(rb_cGDBM, "indices",  fgdbm_indexes, -1);
     rb_define_method(rb_cGDBM, "select",  fgdbm_select, -1);

@@ -193,7 +193,7 @@ fsdbm_fetch_m(argc, argv, obj)
 }
 
 static VALUE
-fsdbm_index(obj, valstr)
+fsdbm_key(obj, valstr)
     VALUE obj, valstr;
 {
     datum key, val;
@@ -215,6 +215,14 @@ fsdbm_index(obj, valstr)
 }
 
 static VALUE
+fsdbm_index(hash, value)
+    VALUE hash, value;
+{
+    rb_warning("SDBM#index is deprecated; use SDBM#key");
+    return fsdbm_key(hash, value);
+}
+
+static VALUE
 fsdbm_indexes(argc, argv, obj)
     int argc;
     VALUE *argv;
@@ -223,6 +231,8 @@ fsdbm_indexes(argc, argv, obj)
     VALUE new;
     int i;
 
+    rb_warn("SDBM#%s is deprecated; use SDBM#values_at",
+	    rb_id2name(rb_frame_last_func()));
     new = rb_ary_new2(argc);
     for (i=0; i<argc; i++) {
 	rb_ary_push(new, fsdbm_fetch(obj, argv[i], Qnil));
@@ -753,6 +763,7 @@ Init_sdbm()
     rb_define_method(rb_cDBM, "[]=", fsdbm_store, 2);
     rb_define_method(rb_cDBM, "store", fsdbm_store, 2);
     rb_define_method(rb_cDBM, "index",  fsdbm_index, 1);
+    rb_define_method(rb_cDBM, "key",  fsdbm_key, 1);
     rb_define_method(rb_cDBM, "indexes",  fsdbm_indexes, -1);
     rb_define_method(rb_cDBM, "indices",  fsdbm_indexes, -1);
     rb_define_method(rb_cDBM, "select",  fsdbm_select, -1);

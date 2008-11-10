@@ -158,17 +158,10 @@ if defined? DBM
       }
     end
 
-    def test_index
+    def test_key
       assert_equal('bar', @dbm['foo'] = 'bar')
-      assert_equal('foo', @dbm.index('bar'))
+      assert_equal('foo', @dbm.key('bar'))
       assert_nil(@dbm['bar'])
-    end
-
-    def test_indexes
-      keys = %w(foo bar baz)
-      values = %w(FOO BAR BAZ)
-      @dbm[keys[0]], @dbm[keys[1]], @dbm[keys[2]] = values
-      assert_equal(values.reverse, @dbm.indexes(*keys.reverse))
     end
 
     def test_values_at
@@ -243,7 +236,7 @@ if defined? DBM
 
       n = 0
       ret = @dbm.each_value {|val|
-        assert_not_nil(key = @dbm.index(val))
+        assert_not_nil(key = @dbm.key(val))
         assert_not_nil(i = keys.index(key))
         assert_equal(val, values[i])
 
