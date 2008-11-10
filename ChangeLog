@@ -1,3 +1,7 @@
+Tue Nov 11 07:55:57 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb (inspect): changed the format.
+
 Mon Nov 10 17:34:50 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/sdbm/test_sdbm.rb (TestSDBM#test_index): Reflect the method
