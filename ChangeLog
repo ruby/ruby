@@ -1,3 +1,8 @@
+Sun Nov  9 13:04:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (rb_struct_initialize_m): avoid unnecessary array
+	  allocation.
+
 Sun Nov  9 04:10:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_dump.c (control_frame_dump): suppresses finished method name.
