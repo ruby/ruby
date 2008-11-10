@@ -1,3 +1,9 @@
+Mon Nov 10 17:34:50 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/sdbm/test_sdbm.rb (TestSDBM#test_index): Reflect the method
+	  name change from #index to #key and remove a duplicated test
+	  method.
+
 Mon Nov 10 10:50:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator.delegating_block): should not refer
