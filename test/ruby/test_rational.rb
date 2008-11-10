@@ -9,7 +9,7 @@ class Rational_Test < Test::Unit::TestCase
     if @complex
       @keiju = Complex.instance_variable_get('@RCS_ID')
     end
-    @unify = defined?(Rational::Unify)
+    @unify = $".grep(/mathn/).size != 0
   end
 
   def test_ratsub
