@@ -234,7 +234,7 @@ end
 def Delegator.delegating_block(mid)
   lambda do |*args, &block|
     begin
-      @delegate_dc_obj.__send__(mid, *args, &block)
+      __getobj__.__send__(mid, *args, &block)
     rescue
       re = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:/o
       $!.backtrace.delete_if {|t| re =~ t}

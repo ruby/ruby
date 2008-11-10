@@ -1,3 +1,9 @@
+Mon Nov 10 10:50:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator.delegating_block): should not refer
+	  DelegateClass specific @delegate_dc_obj.  a patch from Erik
+	  Hollensbe in [ruby-core:19671].
+
 Mon Nov 10 09:54:21 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (ifs_open_socket): should retry without proto_buffer
