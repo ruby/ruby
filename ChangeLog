@@ -1,3 +1,8 @@
+Fri Nov  7 07:32:55 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/yaml/rubytypes.rb: support Rational and Complex as 1.8
+	  does.  a patch from Hiroshi Moriyama in [ruby-dev:36899].
+
 Fri Nov  7 06:58:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (Init_String): remove Symbol#===.  [ruby-dev:37026]

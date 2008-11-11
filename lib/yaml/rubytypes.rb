@@ -379,6 +379,44 @@ class Float
 	end
 end
 
+class Rational
+	yaml_as "tag:ruby.yaml.org,2002:object:Rational"
+	def Rational.yaml_new( klass, tag, val )
+		if val.is_a? String
+			Rational( val )
+		else
+			Rational( val['numerator'], val['denominator'] )
+		end
+	end
+	def to_yaml( opts = {} ) 
+		YAML::quick_emit( self, opts ) do |out|
+			out.map( taguri, nil ) do |map| 
+				map.add( 'denominator', denominator )
+				map.add( 'numerator', numerator )
+			end
+		end
+	end
+end
+
+class Complex
+	yaml_as "tag:ruby.yaml.org,2002:object:Complex"
+	def Complex.yaml_new( klass, tag, val )
+		if val.is_a? String
+			Complex( val )
+		else
+			Complex( val['real'], val['image'] )
+		end
+	end
+	def to_yaml( opts = {} )
+		YAML::quick_emit( self, opts ) do |out|
+			out.map( taguri, nil ) do |map|
+				map.add( 'image', imaginary )
+				map.add( 'real', real )
+			end
+		end
+	end
+end
+
 class TrueClass
     yaml_as "tag:yaml.org,2002:bool#yes"
 	def to_yaml( opts = {} )
