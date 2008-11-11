@@ -1,3 +1,7 @@
+Sun Nov  9 04:10:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_dump.c (control_frame_dump): suppresses finished method name.
+
 Sun Nov  9 00:02:01 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/session/pstore.rb: fix indentation.
