@@ -39,18 +39,6 @@ class BigDecimal < Numeric
        i + "." + ("0"*(-z)) + f
      end
   end
-
-  # Converts a BigDecimal to a Rational.
-  def to_r 
-     sign,digits,base,power = self.split
-     numerator = sign*digits.to_i
-     denomi_power = power - digits.size # base is always 10
-     if denomi_power < 0
-        Rational(numerator,base ** (-denomi_power))
-     else
-        Rational(numerator * (base ** denomi_power),1)
-     end
-  end
 end
 
 class Rational < Numeric

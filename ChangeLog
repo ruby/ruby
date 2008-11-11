@@ -22,6 +22,11 @@ Tue Nov 11 14:25:25 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 	* test/ruby/test_transcode.rb: added tests for the above
 	  (from Yoshihiro Kambayashi)
 
+Tue Nov 11 13:20:23 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_r): moved from
+	  bigdecimal/util, converted into C.  [ruby-dev:36805]
+
 Tue Nov 11 07:55:57 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (inspect): changed the format.
