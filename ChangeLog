@@ -1,3 +1,15 @@
+Sat Nov  8 05:46:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/io.h (rb_io_t): added write_lock to serialize.
+	  [ruby-core:19668]
+
+	* gc.c (gc_mark_children): mark write_lock.
+
+	* gc.c (rb_gc_call_finalizer_at_exit): Mutex also needs to be
+	  deferred.
+
+	* io.c (io_fflush, io_binwrite, fptr_finalize): serializes writing.
+
 Tue Nov 11 17:37:47 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_accept): secure fd before accept because if

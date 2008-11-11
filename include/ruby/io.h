@@ -73,6 +73,7 @@ typedef struct rb_io_t {
     VALUE writeconv_pre_ecopts;
     int writeconv_initialized;
 
+    VALUE write_lock;
 } rb_io_t;
 
 #define HAVE_RB_IO_T 1
@@ -133,6 +134,7 @@ typedef struct rb_io_t {
     fp->encs.enc2 = NULL;\
     fp->encs.ecflags = 0;\
     fp->encs.ecopts = Qnil;\
+    fp->write_lock = 0;\
 } while (0)
 
 FILE *rb_io_stdio_file(rb_io_t *fptr);
