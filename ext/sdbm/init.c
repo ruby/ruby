@@ -678,7 +678,7 @@ Init_sdbm()
     rb_define_method(rb_cDBM, "[]=", fsdbm_store, 2);
     rb_define_method(rb_cDBM, "store", fsdbm_store, 2);
     rb_define_method(rb_cDBM, "index",  fsdbm_index, 1);
-    rb_define_method(rb_cDBM, "index",  fsdbm_key, 1);
+    rb_define_method(rb_cDBM, "key",  fsdbm_key, 1);
     rb_define_method(rb_cDBM, "select",  fsdbm_select, 0);
     rb_define_method(rb_cDBM, "values_at",  fsdbm_values_at, -1);
     rb_define_method(rb_cDBM, "length", fsdbm_length, 0);
