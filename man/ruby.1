@@ -24,6 +24,7 @@
 .Op Fl r Ar library
 .Op Fl x Ns Op Ar directory
 .Op - Ns Bro Cm enable Ns | Ns Cm disable Brc Ns - Ns Ar FEATURE
+.Op Fl -dump Ns = Ns Ar target
 .Op Fl -verbose
 .Op Fl -
 .Op Ar program_file
@@ -373,6 +374,8 @@ before executing script.
 .Pp
 .It Fl y
 .It Fl -yydebug
+DO NOT USE.
+
 Turns on compiler debug mode.  Ruby will print a bunch of internal
 state messages during compiling scripts.  You don't have to specify
 this switch, unless you are going to debug the Ruby interpreter.
@@ -402,6 +405,20 @@ Disables (or enables) all features.
 .Pp
 .El
 .Pp
+.It Fl -dump Ns = Ns Ar target
+DO NOT USE. 
+
+Prints the specified target.
+.Ar target
+can be one of;
+.Bl -hang -offset indent
+.It Sy insns
+disassembed instructions
+.Pp
+.El
+.Pp
+You don't have to specify this switch, unless you are going to debug the Ruby interpreter.
+.Pp
 .It Fl -verbose
 Enables verbose mode without printing version message at the
 beginning.  It sets the
@@ -427,6 +444,12 @@ Additional Ruby options.
 .Pp
 e.g.
 .Dl RUBYOPT="-w -Ke"
+.Pp
+Note that RUBYOPT can contain only
+.Fl d , Fl E , Fl I , Fl K , Fl r , Fl T , Fl U , Fl v , Fl w , Fl W, Fl -debug ,
+.Fl -disable- Ns Ar FEATURE
+and
+.Fl -enable- Ns Ar FEATURE .
 .Pp
 .It Ev RUBYPATH
 A colon-separated list of directories that Ruby searches for
