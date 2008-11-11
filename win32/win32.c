@@ -2296,25 +2296,33 @@ int WSAAPI
 rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
 {
     SOCKET r;
+    int fd;
 
     if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
-	r = accept(TO_SOCKET(s), addr, addrlen);
-	if (r == INVALID_SOCKET) {
-	    errno = map_errno(WSAGetLastError());
-	    s = -1;
-	}
-	else {
-	    s = rb_w32_open_osfhandle(r, O_RDWR|O_BINARY|O_NOINHERIT);
-	    if (s != -1)
+	HANDLE h = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
+	fd = rb_w32_open_osfhandle((intptr_t)h, O_RDWR|O_BINARY|O_NOINHERIT);
+	if (fd != -1) {
+	    r = accept(TO_SOCKET(s), addr, addrlen);
+	    if (r != INVALID_SOCKET) {
+		MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
+		_set_osfhnd(fd, r);
+		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		CloseHandle(h);
 		st_insert(socklist, (st_data_t)r, (st_data_t)0);
-	    else
-		closesocket(r);
+	    }
+	    else {
+		errno = map_errno(WSAGetLastError());
+		close(fd);
+		fd = -1;
+	    }
 	}
+	else
+	    CloseHandle(h);
     });
-    return s;
+    return fd;
 }
 
 #undef bind

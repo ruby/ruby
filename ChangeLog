@@ -1,3 +1,10 @@
+Tue Nov 11 17:35:25 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_accept): secure fd before accept because if
+	  error causes in securing, cannot restore the state of accepted
+	  socket.
+	  fixed [ruby-core:19728]
+
 Tue Nov 11 14:40:40 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/test_transcode.rb: unnecessary setup method
