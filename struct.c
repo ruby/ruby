@@ -352,23 +352,28 @@ num_members(VALUE klass)
 /*
  */
 
-VALUE
-rb_struct_initialize(VALUE self, VALUE values)
+static VALUE
+rb_struct_initialize_m(int argc, VALUE *argv, VALUE self)
 {
     VALUE klass = rb_obj_class(self);
     long n;
 
     rb_struct_modify(self);
     n = num_members(klass);
-    if (n < RARRAY_LEN(values)) {
+    if (n < argc) {
 	rb_raise(rb_eArgError, "struct size differs");
     }
-    MEMCPY(RSTRUCT_PTR(self), RARRAY_PTR(values), VALUE, RARRAY_LEN(values));
-    if (n > RARRAY_LEN(values)) {
-	rb_mem_clear(RSTRUCT_PTR(self)+RARRAY_LEN(values),
-		     n-RARRAY_LEN(values));
+    MEMCPY(RSTRUCT_PTR(self), argv, VALUE, argc);
+    if (n > argc) {
+	rb_mem_clear(RSTRUCT_PTR(self)+argc, n-argc);
     }
     return Qnil;
+}
+
+VALUE
+rb_struct_initialize(VALUE self, VALUE values)
+{
+    return rb_struct_initialize_m(RARRAY_LEN(values), RARRAY_PTR(values), self);
 }
 
 static VALUE
@@ -879,7 +884,7 @@ Init_Struct(void)
     rb_undef_alloc_func(rb_cStruct);
     rb_define_singleton_method(rb_cStruct, "new", rb_struct_s_def, -1);
 
-    rb_define_method(rb_cStruct, "initialize", rb_struct_initialize, -2);
+    rb_define_method(rb_cStruct, "initialize", rb_struct_initialize_m, -1);
     rb_define_method(rb_cStruct, "initialize_copy", rb_struct_init_copy, 1);
 
     rb_define_method(rb_cStruct, "==", rb_struct_equal, 1);
