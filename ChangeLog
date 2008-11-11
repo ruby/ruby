@@ -1,3 +1,7 @@
+Fri Nov  7 01:24:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot: binary encoding spec is no longer needed in 1.9.
+
 Mon Nov 10 09:56:20 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (ifs_open_socket): should retry without proto_buffer
