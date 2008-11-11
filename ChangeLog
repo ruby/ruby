@@ -1,3 +1,12 @@
+Fri Nov  7 02:00:12 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/rexml/entity.rb (unnormalized): do not call
+	  document.record_entity_expansion if document is nil.
+	  see <http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=502535>.
+	  Thanks, Naohisa Goto.
+
+	* test/rexml/test_document.rb: ditto.
+
 Fri Nov  7 01:24:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/make-snapshot: binary encoding spec is no longer needed in 1.9.
