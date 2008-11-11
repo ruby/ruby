@@ -407,13 +407,13 @@ module WEBrick
         list.each{ |name, time, size|
           if name == ".."
             dname = "Parent Directory"
-          elsif name.size > 25
+          elsif name.bytesize > 25
             dname = name.sub(/^(.{23})(?:.*)/, '\1..')
           else
             dname = name
           end
           s =  " <A HREF=\"#{HTTPUtils::escape(name)}\">#{dname}</A>"
-          s << " " * (30 - dname.size)
+          s << " " * (30 - dname.bytesize)
           s << (time ? time.strftime("%Y/%m/%d %H:%M      ") : " " * 22)
           s << (size >= 0 ? size.to_s : "-") << "\n"
           res.body << s

@@ -146,11 +146,11 @@ module WEBrick
         while fds = IO::select([ua, os])
           if fds[0].member?(ua)
             buf = ua.sysread(1024);
-            @logger.debug("CONNECT: #{buf.size} byte from User-Agent")
+            @logger.debug("CONNECT: #{buf.bytesize} byte from User-Agent")
             os.syswrite(buf)
           elsif fds[0].member?(os)
             buf = os.sysread(1024);
-            @logger.debug("CONNECT: #{buf.size} byte from #{host}:#{port}")
+            @logger.debug("CONNECT: #{buf.bytesize} byte from #{host}:#{port}")
             ua.syswrite(buf)
           end
         end

@@ -59,7 +59,7 @@ module WEBrick
       def redirect_to_directory_uri(req, res)
         if req.path[-1] != ?/
           location = WEBrick::HTTPUtils.escape_path(req.path + "/")
-          if req.query_string && req.query_string.size > 0
+          if req.query_string && req.query_string.bytesize > 0
             location << "?" << req.query_string
           end
           res.set_redirect(HTTPStatus::MovedPermanently, location)

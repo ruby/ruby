@@ -142,7 +142,7 @@ module WEBrick
         @header.delete('content-length')
       elsif @header['content-length'].nil?
         unless @body.is_a?(IO)
-          @header['content-length'] = @body ? @body.size : 0
+          @header['content-length'] = @body ? @body.bytesize : 0
         end
       end
 
@@ -260,10 +260,10 @@ module WEBrick
           while buf = @body.read(@buffer_size)
             next if buf.empty?
             data = ""
-            data << format("%x", buf.size) << CRLF
+            data << format("%x", buf.bytesize) << CRLF
             data << buf << CRLF
             _write_data(socket, data)
-            @sent_size += buf.size
+            @sent_size += buf.bytesize
           end
           _write_data(socket, "0#{CRLF}#{CRLF}")
         else
@@ -280,20 +280,20 @@ module WEBrick
       if @request_method == "HEAD"
         # do nothing
       elsif chunked?
-        remain = body ? @body.size : 0
+        remain = body ? @body.bytesize : 0
         while buf = @body[@sent_size, @buffer_size]
           break if buf.empty?
           data = ""
-          data << format("%x", buf.size) << CRLF
+          data << format("%x", buf.bytesize) << CRLF
           data << buf << CRLF
           _write_data(socket, data)
-          @sent_size += buf.size
+          @sent_size += buf.bytesize
         end
         _write_data(socket, "0#{CRLF}#{CRLF}")
       else
-        if @body && @body.size > 0
+        if @body && @body.bytesize > 0
           _write_data(socket, @body)
-          @sent_size = @body.size
+          @sent_size = @body.bytesize
         end
       end
     end
@@ -302,7 +302,7 @@ module WEBrick
       while offset > 0
         sz = @buffer_size < size ? @buffer_size : size
         buf = input.read(sz)
-        offset -= buf.size
+        offset -= buf.bytesize
       end
 
       if size == 0
@@ -314,7 +314,7 @@ module WEBrick
           sz = @buffer_size < size ? @buffer_size : size
           buf = input.read(sz)
           _write_data(output, buf)
-          size -= buf.size
+          size -= buf.bytesize
         end
       end
     end
