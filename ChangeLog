@@ -1,3 +1,8 @@
+Wed Nov 12 03:49:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (load_lock): makes circular require deadlock.
+	  [ruby-core:19821]
+
 Tue Nov 11 23:54:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_feature_p): returns found feature name if loading.
