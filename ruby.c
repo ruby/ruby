@@ -76,6 +76,7 @@ struct cmdline_options {
     unsigned int disable;
     int verbose;
     int yydebug;
+    int safe_level;
     unsigned int setids;
     unsigned int dump;
     const char *script;
@@ -337,8 +338,16 @@ DllMain(HINSTANCE dll, DWORD reason, LPVOID reserved)
 }
 #endif
 
+void ruby_init_loadpath_safe(int safe_level);
+
 void
 ruby_init_loadpath(void)
+{
+    ruby_init_loadpath_safe(0);
+}
+
+void
+ruby_init_loadpath_safe(int safe_level)
 {
     VALUE load_path;
 #if defined LOAD_RELATIVE
@@ -384,7 +393,7 @@ ruby_init_loadpath(void)
 #define incpush(path) rb_ary_push(load_path, rubylib_mangled_path2(path))
     load_path = GET_VM()->load_path;
 
-    if (rb_safe_level() == 0) {
+    if (safe_level == 0) {
 	ruby_incpush(getenv("RUBYLIB"));
     }
 
@@ -412,7 +421,7 @@ ruby_init_loadpath(void)
 #endif
     incpush(RUBY_RELATIVE(RUBY_ARCHLIB));
 
-    if (rb_safe_level() == 0) {
+    if (safe_level == 0) {
 	incpush(".");
     }
 }
@@ -514,27 +523,53 @@ process_sflag(struct cmdline_options *opt)
 
 NODE *rb_parser_append_print(VALUE, NODE *);
 NODE *rb_parser_while_loop(VALUE, NODE *, int, int);
-static int proc_options(int argc, char **argv, struct cmdline_options *opt);
+static int proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt);
 
-static char *
-moreswitches(const char *s, struct cmdline_options *opt)
+static void
+moreswitches(const char *s, struct cmdline_options *opt, int envopt)
 {
-    int argc;
-    char *argv[3];
-    const char *p = s;
+    int argc, i;
+    char **argv, *p;
+    const char *ap = 0;
+    VALUE argstr, argary;
 
-    argc = 2;
-    argv[0] = argv[2] = 0;
-    while (*s && !ISSPACE(*s))
-	s++;
-    argv[1] = ALLOCA_N(char, s - p + 2);
-    argv[1][0] = '-';
-    strncpy(argv[1] + 1, p, s - p);
-    argv[1][s - p + 1] = '\0';
-    proc_options(argc, argv, opt);
-    while (*s && ISSPACE(*s))
-	s++;
-    return (char *)s;
+    while (ISSPACE(*s)) s++;
+    if (!*s) return;
+    argstr = rb_str_tmp_new(strlen(s) + 2);
+    argary = rb_str_tmp_new(0);
+
+    p = RSTRING_PTR(argstr);
+    *p++ = ' ';
+    strcpy(p, s);
+    ap = 0;
+    rb_str_cat(argary, (char *)&ap, sizeof(ap));
+    while (*p) {
+	ap = p;
+	rb_str_cat(argary, (char *)&ap, sizeof(ap));
+	while (*p && !ISSPACE(*p)) ++p;
+	if (!*p) break;
+	*p++ = '\0';
+	while (ISSPACE(*p)) ++p; 
+    }
+    argc = RSTRING_LEN(argary) / sizeof(ap);
+    ap = 0;
+    rb_str_cat(argary, (char *)&ap, sizeof(ap));
+    argv = (char **)RSTRING_PTR(argary);
+
+    while ((i = proc_options(argc, argv, opt, envopt)) > 1 && (argc -= i) > 0) {
+	argv += i;
+	if (**argv != '-') {
+	    *--*argv = '-';
+	}
+	if ((*argv)[1]) {
+	    ++argc;
+	    --argv;
+	}
+    }
+
+    /* get rid of GC */
+    rb_str_resize(argary, 0);
+    rb_str_resize(argstr, 0);
 }
 
 #define NAME_MATCH_P(name, str, len) \
@@ -619,7 +654,7 @@ set_external_encoding_once(struct cmdline_options *opt, const char *e, int elen)
 }
 
 static int
-proc_options(int argc, char **argv, struct cmdline_options *opt)
+proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 {
     int n, argc0 = argc;
     const char *s;
@@ -635,14 +670,17 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
       reswitch:
 	switch (*s) {
 	  case 'a':
+	    if (envopt) goto noenvopt;
 	    opt->do_split = Qtrue;
 	    s++;
 	    goto reswitch;
 
 	  case 'p':
+	    if (envopt) goto noenvopt;
 	    opt->do_print = Qtrue;
 	    /* through */
 	  case 'n':
+	    if (envopt) goto noenvopt;
 	    opt->do_loop = Qtrue;
 	    s++;
 	    goto reswitch;
@@ -654,6 +692,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 	    goto reswitch;
 
 	  case 'y':
+	    if (envopt) goto noenvopt;
 	    opt->yydebug = 1;
 	    s++;
 	    goto reswitch;
@@ -696,34 +735,40 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 	    goto reswitch;
 
 	  case 'c':
+	    if (envopt) goto noenvopt;
 	    opt->do_check = Qtrue;
 	    s++;
 	    goto reswitch;
 
 	  case 's':
+	    if (envopt) goto noenvopt;
 	    forbid_setid("-s");
 	    opt->sflag = 1;
 	    s++;
 	    goto reswitch;
 
 	  case 'h':
+	    if (envopt) goto noenvopt;
 	    usage(origarg.argv[0]);
 	    rb_exit(EXIT_SUCCESS);
 	    break;
 
 	  case 'l':
+	    if (envopt) goto noenvopt;
 	    opt->do_line = Qtrue;
 	    rb_output_rs = rb_rs;
 	    s++;
 	    goto reswitch;
 
 	  case 'S':
+	    if (envopt) goto noenvopt;
 	    forbid_setid("-S");
 	    opt->do_search = Qtrue;
 	    s++;
 	    goto reswitch;
 
 	  case 'e':
+	    if (envopt) goto noenvopt;
 	    forbid_setid("-e");
 	    if (!*++s) {
 		s = argv[1];
@@ -753,11 +798,13 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 	    break;
 
 	  case 'i':
+	    if (envopt) goto noenvopt;
 	    forbid_setid("-i");
 	    ruby_set_inplace_mode(s + 1);
 	    break;
 
 	  case 'x':
+	    if (envopt) goto noenvopt;
 	    opt->xflag = Qtrue;
 	    s++;
 	    if (*s && chdir(s) < 0) {
@@ -767,6 +814,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 
 	  case 'C':
 	  case 'X':
+	    if (envopt) goto noenvopt;
 	    s++;
 	    if (!*s) {
 		s = argv[1];
@@ -781,13 +829,16 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 	    break;
 
 	  case 'F':
+	    if (envopt) goto noenvopt;
 	    if (*++s) {
 		rb_fs = rb_reg_new(s, strlen(s), 0);
 	    }
 	    break;
 
 	  case 'E':
-	    if (!*++s) goto next_encoding;
+	    if (!*++s && (!--argc || !(s = *++argv))) {
+		rb_raise(rb_eRuntimeError, "missing argument for -E");
+	    }
 	    goto encoding;
 
 	  case 'U':
@@ -832,7 +883,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 			v = 1;
 		    s += numlen;
 		}
-		rb_set_safe_level(v);
+		if (v > opt->safe_level) opt->safe_level = v;
 	    }
 	    goto reswitch;
 
@@ -847,6 +898,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 	    break;
 
 	  case '0':
+	    if (envopt) goto noenvopt;
 	    {
 		int numlen;
 		int v;
@@ -872,35 +924,36 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		goto switch_end;
 	    }
 	    s++;
-	    if (strcmp("copyright", s) == 0)
+
+#	define is_option_end(c, allow_hyphen) \
+	    (!(c) || (allow_hyphen && (c) == '-') || (c) == '=')
+#	define check_envopt(name, allow_envopt) \
+	    ((allow_envopt || !envopt) ? (void)0 : \
+	     rb_raise(rb_eRuntimeError, "invalid switch in RUBYOPT: --" name))
+#	define need_argument(name, s) \
+	    ((*s++ ? !*s : (!--argc || !(s = *++argv))) ?		\
+	     rb_raise(rb_eRuntimeError, "missing argument for --" name) \
+	     : (void)0)
+#	define is_option_with_arg(name, allow_hyphen, allow_envopt) \
+	    (strncmp(name, s, n = sizeof(name) - 1) == 0 && is_option_end(s[n], allow_hyphen) ? \
+	     (check_envopt(name, allow_envopt), s += n, need_argument(name, s), 1) : 0)
+
+	    if (strcmp("copyright", s) == 0) {
+		if (envopt) goto noenvopt_long;
 		opt->copyright = 1;
+	    }
 	    else if (strcmp("debug", s) == 0) {
 		ruby_debug = Qtrue;
                 ruby_verbose = Qtrue;
             }
-	    else if (strncmp("enable", s, n = 6) == 0 &&
-		     (!s[n] || s[n] == '-' || s[n] == '=')) {
-		if ((s += n + 1)[-1] ? !*s : (!--argc || !(s = *++argv))) {
-		    rb_raise(rb_eRuntimeError, "missing argument for --enable");
-		}
+	    else if (is_option_with_arg("enable", Qtrue, Qtrue)) {
 		ruby_each_words(s, enable_option, &opt->disable);
 	    }
-	    else if (strncmp("disable", s, n = 7) == 0 &&
-		     (!s[n] || s[n] == '-' || s[n] == '=')) {
-		if ((s += n + 1)[-1] ? !*s : (!--argc || !(s = *++argv))) {
-		    rb_raise(rb_eRuntimeError, "missing argument for --disable");
-		}
+	    else if (is_option_with_arg("disable", Qtrue, Qtrue)) {
 		ruby_each_words(s, disable_option, &opt->disable);
 	    }
-	    else if (strncmp("encoding", s, n = 8) == 0 && (!s[n] || s[n] == '=')) {
+	    else if (is_option_with_arg("encoding", Qfalse, Qtrue)) {
 		char *p;
-		s += n;
-		if (!*s++) {
-		  next_encoding:
-		    if (!--argc || !(s = *++argv)) {
-			rb_raise(rb_eRuntimeError, "missing argument for --encoding");
-		    }
-		}
 	      encoding:
 		p = strchr(s, ':');
 		if (p) {
@@ -912,19 +965,23 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		else    
 		    set_external_encoding_once(opt, s, 0);
 	    }
-	    else if (strcmp("version", s) == 0)
+	    else if (strcmp("version", s) == 0) {
+		if (envopt) goto noenvopt_long;
 		opt->version = 1;
+	    }
 	    else if (strcmp("verbose", s) == 0) {
 		opt->verbose = 1;
 		ruby_verbose = Qtrue;
 	    }
-	    else if (strcmp("yydebug", s) == 0)
+	    else if (strcmp("yydebug", s) == 0) {
+		if (envopt) goto noenvopt_long;
 		opt->yydebug = 1;
-	    else if (strncmp("dump", s, n = 4) == 0 && (!s[n] || s[n] == '=')) {
-		if (!(s += n + 1)[-1] && (!--argc || !(s = *++argv)) && *s != '-') break;
+	    }
+	    else if (is_option_with_arg("dump", Qfalse, Qfalse)) {
 		ruby_each_words(s, dump_option, &opt->dump);
 	    }
 	    else if (strcmp("help", s) == 0) {
+		if (envopt) goto noenvopt_long;
 		usage(origarg.argv[0]);
 		rb_exit(EXIT_SUCCESS);
 	    }
@@ -953,8 +1010,21 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 	    }
 	    goto switch_end;
 
+	  noenvopt:
+	    /* "EIdvwWrKU" only */
+	    rb_raise(rb_eRuntimeError, "invalid switch in RUBYOPT: -%c", *s);
+	    break;
+
+	  noenvopt_long:
+	    rb_raise(rb_eRuntimeError, "invalid switch in RUBYOPT: --%s", s);
+	    break;
+
 	  case 0:
 	    break;
+#	undef is_option_end
+#	undef check_envopt
+#	undef need_argument
+#	undef is_option_with_arg
 	}
     }
 
@@ -1002,53 +1072,19 @@ process_options(VALUE arg)
     rb_encoding *enc, *lenc;
     const char *s;
     char fbuf[MAXPATHLEN];
-    int i = proc_options(argc, argv, opt);
-    int safe;
+    int i = proc_options(argc, argv, opt, 0);
 
     argc -= i;
     argv += i;
 
     if (!(opt->disable & DISABLE_BIT(rubyopt)) &&
-	rb_safe_level() == 0 && (s = getenv("RUBYOPT"))) {
+	opt->safe_level == 0 && (s = getenv("RUBYOPT"))) {
 	VALUE src_enc_name = opt->src.enc.name;
 	VALUE ext_enc_name = opt->ext.enc.name;
 	VALUE int_enc_name = opt->intern.enc.name;
 
 	opt->src.enc.name = opt->ext.enc.name = opt->intern.enc.name = 0;
-	while (ISSPACE(*s))
-	    s++;
-	if (*s == 'T' || (*s == '-' && *(s + 1) == 'T')) {
-	    int numlen;
-	    int v = 1;
-
-	    if (*s != 'T')
-		++s;
-	    if (*++s) {
-		v = scan_oct(s, 2, &numlen);
-		if (numlen == 0)
-		    v = 1;
-	    }
-	    rb_set_safe_level(v);
-	}
-	else {
-	    while (s && *s) {
-		if (*s == '-') {
-		    s++;
-		    if (ISSPACE(*s)) {
-			do {
-			    s++;
-			} while (ISSPACE(*s));
-			continue;
-		    }
-		}
-		if (!*s)
-		    break;
-		if (!strchr("EIdvwWrKU", *s))
-		    rb_raise(rb_eRuntimeError,
-			     "invalid switch in RUBYOPT: -%c", *s);
-		s = moreswitches(s, opt);
-	    }
-	}
+	moreswitches(s, opt, 1);
 	if (src_enc_name)
 	    opt->src.enc.name = src_enc_name;
 	if (ext_enc_name)
@@ -1065,7 +1101,7 @@ process_options(VALUE arg)
 	ruby_show_copyright();
     }
 
-    if (rb_safe_level() >= 4) {
+    if (opt->safe_level >= 4) {
 	OBJ_TAINT(rb_argv);
 	OBJ_TAINT(GET_VM()->load_path);
     }
@@ -1105,10 +1141,8 @@ process_options(VALUE arg)
 #endif
     opt->script_name = rb_progname;
     opt->script = RSTRING_PTR(opt->script_name);
-    safe = rb_safe_level();
-    rb_set_safe_level_force(0);
 
-    ruby_init_loadpath();
+    ruby_init_loadpath_safe(opt->safe_level);
     ruby_init_gems(!(opt->disable & DISABLE_BIT(gems)));
     lenc = rb_locale_encoding();
     rb_enc_associate(rb_progname, lenc);
@@ -1140,7 +1174,6 @@ process_options(VALUE arg)
     ruby_set_argv(argc, argv);
     process_sflag(opt);
 
-    rb_set_safe_level_force(safe);
     if (opt->e_script) {
 	rb_encoding *eenc;
 	if (opt->src.enc.index >= 0) {
@@ -1174,7 +1207,7 @@ process_options(VALUE arg)
     process_sflag(opt);
     opt->xflag = 0;
 
-    if (rb_safe_level() >= 4) {
+    if (opt->safe_level >= 4) {
 	FL_UNSET(rb_argv, FL_TAINT);
 	FL_UNSET(GET_VM()->load_path, FL_TAINT);
     }
@@ -1199,6 +1232,8 @@ process_options(VALUE arg)
 	rb_io_flush(rb_stdout);
 	return Qtrue;
     }
+
+    rb_set_safe_level(opt->safe_level);
 
     return iseq;
 }
@@ -1320,10 +1355,7 @@ load_file_internal(VALUE arg)
 		if (RSTRING_PTR(line)[RSTRING_LEN(line) - 2] == '\r')
 		    RSTRING_PTR(line)[RSTRING_LEN(line) - 2] = '\0';
 		if ((p = strstr(p, " -")) != 0) {
-		    p++;	/* skip space before `-' */
-		    while (*p == '-') {
-			p = moreswitches(p + 1, opt);
-		    }
+		    moreswitches(p + 1, opt, 0);
 		}
 
 		/* push back shebang for pragma may exist in next line */
@@ -1506,7 +1538,7 @@ init_ids(struct cmdline_options *opt)
     if (uid != euid) opt->setids |= 1;
     if (egid != gid) opt->setids |= 2;
     if (uid && opt->setids) {
-	rb_set_safe_level(1);
+	if (opt->safe_level < 1) opt->safe_level = 1;
     }
 }
 
@@ -1518,7 +1550,7 @@ forbid_setid(const char *s, struct cmdline_options *opt)
         rb_raise(rb_eSecurityError, "no %s allowed while running setuid", s);
     if (opt->setids & 2)
         rb_raise(rb_eSecurityError, "no %s allowed while running setgid", s);
-    if (rb_safe_level() > 0)
+    if (opt->safe_level > 0)
         rb_raise(rb_eSecurityError, "no %s allowed in tainted mode", s);
 }
 
