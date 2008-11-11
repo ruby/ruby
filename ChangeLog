@@ -1,3 +1,10 @@
+Tue Nov 11 17:37:47 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_accept): secure fd before accept because if
+	  error causes in securing, cannot restore the state of accepted
+	  socket.
+	  fixed [ruby-core:19728]
+
 Sat Nov  8 05:31:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* safe.c (safe_setter): add warning for $SAFE=3.
