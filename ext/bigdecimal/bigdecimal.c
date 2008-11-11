@@ -606,6 +606,41 @@ BigDecimal_to_f(VALUE self)
     return rb_float_new(d);
 }
 
+
+static VALUE BigDecimal_split(VALUE self);
+
+/* Converts a BigDecimal to a Rational.
+ */
+static VALUE
+BigDecimal_to_r(VALUE self)
+{
+    Real *p;
+    S_LONG sign, power, denomi_power;
+    VALUE a, digits, numerator;
+
+    p = GetVpValue(self,1);
+    sign = VpGetSign(p);
+    power = VpExponent10(p);
+    a = BigDecimal_split(self);
+    digits = RARRAY_PTR(a)[1];
+    denomi_power = power - RSTRING_LEN(digits);
+    numerator = rb_funcall(digits, rb_intern("to_i"), 0);
+    
+    if (sign < 0) {
+	numerator = rb_funcall(numerator, '*', 1, INT2FIX(-1));
+    }
+    if (denomi_power < 0) {
+	return rb_Rational(numerator,
+			   rb_funcall(INT2FIX(10), rb_intern("**"), 1,
+				      INT2FIX(-denomi_power)));
+    }
+    else {
+        return rb_Rational1(rb_funcall(numerator, '*', 1,
+				       rb_funcall(INT2FIX(10), rb_intern("**"), 1,
+						  INT2FIX(denomi_power))));
+    }
+}
+
 /* The coerce method provides support for Ruby type coercion. It is not
  * enabled by default.
  * 
@@ -1918,6 +1953,7 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "to_s", BigDecimal_to_s, -1);
     rb_define_method(rb_cBigDecimal, "to_i", BigDecimal_to_i, 0);
     rb_define_method(rb_cBigDecimal, "to_int", BigDecimal_to_i, 0);
+    rb_define_method(rb_cBigDecimal, "to_r", BigDecimal_to_r, 0);
     rb_define_method(rb_cBigDecimal, "split", BigDecimal_split, 0);
     rb_define_method(rb_cBigDecimal, "+", BigDecimal_add, 1);
     rb_define_method(rb_cBigDecimal, "-", BigDecimal_sub, 1);
