@@ -366,7 +366,7 @@ load_lock(const char *ftptr)
 }
 
 static void
-load_unlock(const char *ftptr)
+load_unlock(const char *ftptr, int done)
 {
     if (ftptr) {
 	st_data_t key = (st_data_t)ftptr;
@@ -374,8 +374,12 @@ load_unlock(const char *ftptr)
 	st_table *loading_tbl = get_loading_table();
 
 	if (st_delete(loading_tbl, &key, &data)) {
+	    VALUE barrier = (VALUE)data;
 	    xfree((char *)key);
-	    rb_barrier_release((VALUE)data);
+	    if (done)
+		rb_barrier_destroy(barrier);
+	    else
+		rb_barrier_release(barrier);
 	}
     }
 }
@@ -561,7 +565,7 @@ rb_require_safe(VALUE fname, int safe)
 	}
     }
     POP_TAG();
-    load_unlock(ftptr);
+    load_unlock(ftptr, !state);
 
     rb_set_safe_level_force(saved.safe);
     if (state) {
@@ -600,7 +604,7 @@ ruby_init_ext(const char *name, void (*init)(void))
 	rb_vm_call_cfunc(rb_vm_top_self(), init_ext_call, (VALUE)init,
 			 0, rb_str_new2(name));
 	rb_provide(name);
-	load_unlock(name);
+	load_unlock(name, 1);
     }
 }
 

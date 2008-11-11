@@ -3125,6 +3125,14 @@ rb_barrier_new(void)
     return barrier_alloc(rb_cBarrier);
 }
 
+static int
+rb_barrier_signal(rb_barrier_t *barrier, unsigned int maxth)
+{
+    int n = thlist_signal(&barrier->waiting, maxth, &barrier->owner);
+    if (!barrier->waiting) barrier->tail = &barrier->waiting;
+    return n;
+}
+
 VALUE
 rb_barrier_wait(VALUE self)
 {
@@ -3133,9 +3141,10 @@ rb_barrier_wait(VALUE self)
     rb_thread_t *th = GET_THREAD();
 
     Data_Get_Struct(self, rb_barrier_t, barrier);
+    if (!barrier->tail) return Qfalse;
     if (!barrier->owner || barrier->owner->status == THREAD_KILLED) {
 	barrier->owner = 0;
-	if (thlist_signal(&barrier->waiting, 1, &barrier->owner)) return Qfalse;
+	if (rb_barrier_signal(barrier, 1)) return Qfalse;
 	barrier->owner = th;
 	return Qtrue;
     }
@@ -3148,21 +3157,38 @@ rb_barrier_wait(VALUE self)
 	q->next = 0;
 	barrier->tail = &q->next;
 	rb_thread_sleep_forever();
+	if (!barrier->tail) return Qfalse;
 	return barrier->owner == th ? Qtrue : Qfalse;
     }
 }
 
-VALUE
-rb_barrier_release(VALUE self)
+static rb_barrier_t *
+rb_barrier_owned_ptr(VALUE self)
 {
     rb_barrier_t *barrier;
-    unsigned int n;
 
     Data_Get_Struct(self, rb_barrier_t, barrier);
     if (barrier->owner != GET_THREAD()) {
 	rb_raise(rb_eThreadError, "not owned");
     }
-    n = thlist_signal(&barrier->waiting, 0, &barrier->owner);
+    return barrier;
+}
+
+VALUE
+rb_barrier_release(VALUE self)
+{
+    rb_barrier_t *barrier = rb_barrier_owned_ptr(self);
+    unsigned int n = rb_barrier_signal(barrier, 0);
+    return n ? UINT2NUM(n) : Qfalse;
+}
+
+VALUE
+rb_barrier_destroy(VALUE self)
+{
+    rb_barrier_t *barrier = rb_barrier_owned_ptr(self);
+    int n = thlist_signal(&barrier->waiting, 0, 0);
+    barrier->owner = 0;
+    barrier->tail = 0;
     return n ? UINT2NUM(n) : Qfalse;
 }
 
