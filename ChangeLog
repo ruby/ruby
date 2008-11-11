@@ -1,3 +1,15 @@
+Tue Nov 11 14:25:25 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/trans/single_byte.trans, macgreek-tbl.rb, macroman-tbl.rb,
+	  macromania-tbl.rb, macturkish-tbl.rb, macukraine-tbl.rb,
+	  ibm437-tbl.rb, ibm852-tbl.rb, ibm855-tbl.rb, ibm857-tbl.rb,
+	  ibm860-tbl.rb, ibm861-tbl.rb, ibm862-tbl.rb, ibm863-tbl.rb,
+	  ibm865-tbl.rb, ibm866-tbl.rb, ibm869-tbl.rb, ibm775-tbl.rb:
+	  new single-byte transcodings (from Yoshihiro Kambayashi)
+
+	* test/ruby/test_transcode.rb: added tests for the above
+	  (from Yoshihiro Kambayashi)
+
 Tue Nov 11 07:55:57 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (inspect): changed the format.
