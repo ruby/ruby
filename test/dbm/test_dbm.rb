@@ -160,9 +160,9 @@ if defined? DBM
       }
     end
 
-    def test_index
+    def test_key
       assert_equal('bar', @dbm['foo'] = 'bar')
-      assert_equal('foo', @dbm.index('bar'))
+      assert_equal('foo', @dbm.key('bar'))
       assert_nil(@dbm['bar'])
     end
 
@@ -217,7 +217,7 @@ if defined? DBM
 
       n = 0
       ret = @dbm.each_pair {|key, val|
-        assert_not_nil(i = keys.index(key))
+        assert_not_nil(i = keys.key(key))
         assert_equal(val, values[i])
 
         n += 1
@@ -238,8 +238,8 @@ if defined? DBM
 
       n = 0
       ret = @dbm.each_value {|val|
-        assert_not_nil(key = @dbm.index(val))
-        assert_not_nil(i = keys.index(key))
+        assert_not_nil(key = @dbm.key(val))
+        assert_not_nil(i = keys.key(key))
         assert_equal(val, values[i])
 
         n += 1
@@ -260,7 +260,7 @@ if defined? DBM
 
       n = 0
       ret = @dbm.each_key {|key|
-        assert_not_nil(i = keys.index(key))
+        assert_not_nil(i = keys.key(key))
         assert_equal(@dbm[key], values[i])
 
         n += 1

@@ -198,7 +198,7 @@ fdbm_fetch_m(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
-fdbm_index(VALUE obj, VALUE valstr)
+fdbm_key(VALUE obj, VALUE valstr)
 {
     datum key, val;
     struct dbmdata *dbmp;
@@ -217,6 +217,13 @@ fdbm_index(VALUE obj, VALUE valstr)
 	}
     }
     return Qnil;
+}
+
+static VALUE
+fdbm_index(VALUE hash, VALUE value)
+{
+    rb_warn("DBM#index is deprecated; use DBM#key");
+    return fdbm_key(hash, value);
 }
 
 static VALUE
@@ -692,6 +699,7 @@ Init_dbm(void)
     rb_define_method(rb_cDBM, "[]=", fdbm_store, 2);
     rb_define_method(rb_cDBM, "store", fdbm_store, 2);
     rb_define_method(rb_cDBM, "index",  fdbm_index, 1);
+    rb_define_method(rb_cDBM, "key",  fdbm_key, 1);
     rb_define_method(rb_cDBM, "select",  fdbm_select, 0);
     rb_define_method(rb_cDBM, "values_at", fdbm_values_at, -1);
     rb_define_method(rb_cDBM, "length", fdbm_length, 0);
