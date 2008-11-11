@@ -517,7 +517,7 @@ darwin*)	LIBS="-lobjc $LIBS"
 		    #endif
 		    ],
 		    [
-		    test "x$target_cpu" = xppc && ac_cv_header_ucontext_h=no
+		    test "x$target_cpu" = xpowerpc && ac_cv_header_ucontext_h=no
 		    ],
 		    [
 		    AC_DEFINE(BROKEN_SETREUID, 1)
