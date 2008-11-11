@@ -51,7 +51,7 @@ typedef int nkf_char;
 #define NKF_INT32_C(n)   (n)
 #endif
 
-#if (defined(__TURBOC__) || defined(_MSC_VER) || defined(LSI_C) || defined(__MINGW32__) || defined(__EMX__) || defined(__MSDOS__) || defined(__WINDOWS__) || defined(__DOS__) || defined(__OS2__)) && !defined(MSDOS)
+#if (defined(__TURBOC__) || defined(_MSC_VER) || defined(LSI_C) || (defined(__WATCOMC__) && defined(__386__) && !defined(__LINUX__)) || defined(__MINGW32__) || defined(__EMX__) || defined(__MSDOS__) || defined(__WINDOWS__) || defined(__DOS__) || defined(__OS2__)) && !defined(MSDOS)
 #define MSDOS
 #if (defined(__Win32__) || defined(_WIN32)) && !defined(__WIN32__)
 #define __WIN32__
@@ -143,15 +143,34 @@ void  setbinmode(FILE *fp)
 #endif
 #endif
 
+#if !defined(DEFAULT_CODE_JIS) && !defined(DEFAULT_CODE_SJIS) && \
+	!defined(DEFAULT_CODE_WINDOWS_31J) && !defined(DEFAULT_CODE_EUC) && \
+	!defined(DEFAULT_CODE_UTF8) && !defined(DEFAULT_CODE_LOCALE)
+#define DEFAULT_CODE_LOCALE
+#endif
+
 #ifdef DEFAULT_CODE_LOCALE
 
-#ifndef __WIN32__ /* not win32 is posix */
-#ifndef HAVE_LANGINFO_H
-#define HAVE_LANGINFO_H
-#endif
-#ifndef HAVE_LOCALE_H
-#define HAVE_LOCALE_H
-#endif
+#if defined(__WIN32__) /* not win32 should be posix */
+# ifndef HAVE_LOCALE_H
+#  define HAVE_LOCALE_H
+# endif
+#elif defined(__OS2__)
+# undef HAVE_LANGINFO_H /* We do not use kLIBC's langinfo. */
+# ifndef HAVE_LOCALE_H
+#  define HAVE_LOCALE_H
+# endif
+#elif defined(MSDOS)
+# ifndef HAVE_LOCALE_H
+#  define HAVE_LOCALE_H
+# endif
+#else
+# ifndef HAVE_LANGINFO_H
+#  define HAVE_LANGINFO_H
+# endif
+# ifndef HAVE_LOCALE_H
+#  define HAVE_LOCALE_H
+# endif
 #endif
 
 #ifdef HAVE_LANGINFO_H
@@ -171,4 +190,3 @@ void  setbinmode(FILE *fp)
 #endif
 
 #endif /* NKF_H */
-
