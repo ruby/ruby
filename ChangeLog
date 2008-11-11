@@ -4,6 +4,11 @@ Tue Nov 11 23:02:27 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	  (--yydebug): wrote "do not use".
 	  (--dump): wrote "do not use".
 
+Tue Nov 11 21:22:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic#check_path): REL_PATH should a
+	  symbol.  [ruby-core:19805]
+
 Tue Nov 11 20:49:29 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* configure.in: fix SEGV on Mac OS X 10.5.3 with pthread.

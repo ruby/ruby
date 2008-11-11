@@ -481,7 +481,7 @@ module URI
             "bad component(expected absolute path component): #{v}"
         end
       else
-        if v && v != '' && @parser.regexp[:ABS_PATH] !~ v && @parser.regexp[REL_PATH] !~ v
+        if v && v != '' && @parser.regexp[:ABS_PATH] !~ v && @parser.regexp[:REL_PATH] !~ v
           raise InvalidComponentError, 
             "bad component(expected relative path component): #{v}"
         end
