@@ -1,3 +1,8 @@
+Tue Nov 11 20:49:29 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* configure.in: fix SEGV on Mac OS X 10.5.3 with pthread.
+	  a patch from Wataru Kimura in Bug #193 [ruby-core:17333].
+
 Tue Nov 11 20:39:27 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (inspect): reverted the previous change.
