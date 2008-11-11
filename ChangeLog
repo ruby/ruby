@@ -1,3 +1,7 @@
+Fri Nov  7 22:51:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* inits.c (rb_call_inits): do not repeat.
+
 Fri Nov  7 12:26:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb.rb (IRB::Irb#eval_input): remove extra  @context.prompt_i.
