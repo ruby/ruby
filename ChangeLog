@@ -1,3 +1,9 @@
+Mon Nov 10 10:50:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator.delegating_block): should not refer
+	  DelegateClass specific @delegate_dc_obj.  a patch from Erik
+	  Hollensbe in [ruby-core:19671].
+
 Sun Nov  9 13:04:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (rb_struct_initialize_m): avoid unnecessary array
