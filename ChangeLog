@@ -1,3 +1,8 @@
+Sat Nov  8 17:31:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_ungetc): ungetc position should
+	  not be changed from 1.8.   [ruby-core:19632]
+
 Sat Nov  8 17:15:08 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#make_switch): 1.9 Symbols respond
