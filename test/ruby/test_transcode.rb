@@ -3,21 +3,6 @@
 
 require 'test/unit'
 class TestTranscode < Test::Unit::TestCase
-  def setup_really_needed? # trick to create all the necessary encodings
-    all_encodings = [ 'ISO-8859-1', 'ISO-8859-2',
-                      'ISO-8859-3', 'ISO-8859-4',
-                      'ISO-8859-5', 'ISO-8859-6',
-                      'ISO-8859-7', 'ISO-8859-8',
-                      'ISO-8859-9', 'ISO-8859-10',
-                      'ISO-8859-11', 'ISO-8859-13',
-                      'ISO-8859-14', 'ISO-8859-15',
-                      'UTF-16BE'
-                    ]
-    all_encodings.each do |enc|
-      'abc'.encode(enc, 'UTF-8')
-    end
-  end
-
   def test_errors
     assert_raise(Encoding::ConverterNotFoundError) { 'abc'.encode('foo', 'bar') }
     assert_raise(Encoding::ConverterNotFoundError) { 'abc'.encode!('foo', 'bar') }
