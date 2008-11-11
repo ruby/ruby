@@ -307,13 +307,35 @@ curses_flash(VALUE obj)
     return Qnil;
 }
 
+static int
+curses_char(VALUE c)
+{
+    if (FIXNUM_P(c)) {
+	return NUM2INT(c);
+    }
+    else {
+	int cc;
+
+	StringValue(c);
+	if (RSTRING_LEN(c) == 0 || RSTRING_LEN(c) > 1) {
+	    rb_raise(rb_eArgError, "string not corresponding a character");
+	}
+	cc = RSTRING_PTR(c)[0];
+	if (cc > 0x7f) {
+	    rb_raise(rb_eArgError, "no multibyte string supported (yet)");
+	}
+	return cc;
+    }
+}
+
 /* def ungetch */
 static VALUE
 curses_ungetch(VALUE obj, VALUE ch)
 {
 #ifdef HAVE_UNGETCH
+    int c = curses_char(ch);
     curses_stdscr();
-    ungetch(NUM2INT(ch));
+    ungetch(c);
 #else
     rb_notimplement();
 #endif
@@ -375,9 +397,11 @@ curses_insch(VALUE obj, VALUE ch)
 static VALUE
 curses_addstr(VALUE obj, VALUE str)
 {
+    StringValue(str);
+    str = rb_str_export_locale(str);
     curses_stdscr();
     if (!NIL_P(str)) {
-	addstr(STR2CSTR(str));
+	addstr(StringValueCStr(str));
     }
     return Qnil;
 }
@@ -386,9 +410,18 @@ curses_addstr(VALUE obj, VALUE str)
 static VALUE
 curses_getch(VALUE obj)
 {
+    int c;
+
     rb_read_check(stdin);
     curses_stdscr();
-    return UINT2NUM(getch());
+    c = getch();
+    if (c == EOF) return Qnil;
+    if (ISPRINT(c)) {
+	char ch = (char)c;
+
+	return rb_locale_str_new(&ch, 1);
+    }
+    return UINT2NUM(c);
 }
 
 /* def getstr */
@@ -403,7 +436,7 @@ curses_getstr(VALUE obj)
 #else
     getstr(rtn);
 #endif
-    return rb_tainted_str_new2(rtn);
+    return rb_locale_str_new_cstr(rtn);
 }
 
 /* def delch */
@@ -439,16 +472,18 @@ static VALUE
 curses_keyname(VALUE obj, VALUE c)
 {
 #ifdef HAVE_KEYNAME
-  const char *name;
+    int cc = curses_char(c);
+    const char *name;
 
-  name = keyname(NUM2INT(c));
-  if (name) {
-    return rb_str_new2(name);
-  } else {
-    return Qnil;
-  }
+    name = keyname(cc);
+    if (name) {
+	return rb_str_new_cstr(name);
+    }
+    else {
+	return Qnil;
+    }
 #else
-  return Qnil;
+    return Qnil;
 #endif
 }
 
@@ -1048,8 +1083,10 @@ window_addstr(VALUE obj, VALUE str)
     if (!NIL_P(str)) {
 	struct windata *winp;
 
+	StringValue(str);
+	str = rb_str_export_locale(str);
 	GetWINDOW(obj, winp);
-	waddstr(winp->window, STR2CSTR(str));
+	waddstr(winp->window, StringValueCStr(str));
     }
     return Qnil;
 }
@@ -1067,10 +1104,18 @@ static VALUE
 window_getch(VALUE obj)
 {
     struct windata *winp;
-    
+    int c;
+
     rb_read_check(stdin);
     GetWINDOW(obj, winp);
-    return UINT2NUM(wgetch(winp->window));
+    c = wgetch(winp->window);
+    if (c == EOF) return Qnil;
+    if (ISPRINT(c)) {
+	char ch = (char)c;
+
+	return rb_locale_str_new(&ch, 1);
+    }
+    return UINT2NUM(c);
 }
 
 /* def getstr */
@@ -1087,7 +1132,7 @@ window_getstr(VALUE obj)
 #else
     wgetstr(winp->window, rtn);
 #endif
-    return rb_tainted_str_new2(rtn);
+    return rb_locale_str_new_cstr(rtn);
 }
 
 /* def delch */

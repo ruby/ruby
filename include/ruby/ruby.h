@@ -378,6 +378,7 @@ VALUE rb_str_export(VALUE);
     SafeStringValue(v);\
    (v) = rb_str_export(v);\
 } while (0)
+VALUE rb_str_export_locale(VALUE);
 
 VALUE rb_get_path(VALUE);
 #define FilePathValue(v) ((v) = rb_get_path(v))
