@@ -1038,6 +1038,7 @@ AC_CACHE_VAL(rb_cv_frptr,
      __ptr	dnl
      bufpos	dnl
      _p	dnl
+     __bufpos	dnl
 ; do
     AC_TRY_COMPILE([#include <stdio.h>
 ],
@@ -1057,6 +1058,7 @@ else
     [for frend in	dnl
          _IO_read_end	dnl
          bufread 	dnl
+         __bufread 	dnl
     ; do
         AC_TRY_COMPILE([#include <stdio.h>
     ],
