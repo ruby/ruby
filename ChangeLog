@@ -1,6 +1,6 @@
 Tue Nov 11 01:07:32 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
-	* configure.in: fix SEGV on Mac OS X 10.5.3 with --enable-shared.
+	* configure.in: fix SEGV on Mac OS X 10.5.3 with --enable-pthread.
 	  a patch from Wataru Kimura in Bug #193 [ruby-core:17333].
 
 Mon Aug 11 09:37:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
