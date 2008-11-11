@@ -163,7 +163,7 @@ class CGI
 
     def Session::callback(dbman)  #:nodoc:
       Proc.new{
-	dbman[0].close unless dbman.empty?
+        dbman[0].close unless dbman.empty?
       }
     end
 
@@ -254,24 +254,24 @@ class CGI
       session_key = option['session_key'] || '_session_id'
       session_id = option['session_id']
       unless session_id
-	if option['new_session']
-	  session_id = create_new_id
-	end
+        if option['new_session']
+          session_id = create_new_id
+        end
       end
       unless session_id
-	if request.key?(session_key)
-	  session_id = request[session_key]
-	  session_id = session_id.read if session_id.respond_to?(:read)
-	end
-	unless session_id
-	  session_id, = request.cookies[session_key]
-	end
-	unless session_id
-	  unless option.fetch('new_session', true)
-	    raise ArgumentError, "session_key `%s' should be supplied"%session_key
-	  end
-	  session_id = create_new_id
-	end
+        if request.key?(session_key)
+          session_id = request[session_key]
+          session_id = session_id.read if session_id.respond_to?(:read)
+        end
+        unless session_id
+          session_id, = request.cookies[session_key]
+        end
+        unless session_id
+          unless option.fetch('new_session', true)
+            raise ArgumentError, "session_key `%s' should be supplied"%session_key
+          end
+          session_id = create_new_id
+        end
       end
       @session_id = session_id
       dbman = option['database_manager'] || FileStore
@@ -285,20 +285,21 @@ class CGI
         retry
       end
       request.instance_eval do
-	@output_hidden = {session_key => session_id} unless option['no_hidden']
-	@output_cookies =  [
+        @output_hidden = {session_key => session_id} unless option['no_hidden']
+        @output_cookies =  [
           Cookie::new("name" => session_key,
-		      "value" => session_id,
-		      "expires" => option['session_expires'],
-		      "domain" => option['session_domain'],
-		      "secure" => option['session_secure'],
-		      "path" => if option['session_path'] then
-				  option['session_path']
-		                elsif ENV["SCRIPT_NAME"] then
-				  File::dirname(ENV["SCRIPT_NAME"])
-				else
-				  ""
-				end)
+          "value" => session_id,
+          "expires" => option['session_expires'],
+          "domain" => option['session_domain'],
+          "secure" => option['session_secure'],
+          "path" => 
+          if option['session_path']
+            option['session_path']
+          elsif ENV["SCRIPT_NAME"]
+            File::dirname(ENV["SCRIPT_NAME"])
+          else
+          ""
+          end)
         ] unless option['no_cookies']
       end
       @dbprot = [@dbman]
@@ -373,56 +374,56 @@ class CGI
       # This session's FileStore file will be created if it does
       # not exist, or opened if it does.
       def initialize(session, option={})
-	dir = option['tmpdir'] || Dir::tmpdir
-	prefix = option['prefix'] || 'cgi_sid_'
-	suffix = option['suffix'] || ''
-	id = session.session_id
+        dir = option['tmpdir'] || Dir::tmpdir
+        prefix = option['prefix'] || 'cgi_sid_'
+        suffix = option['suffix'] || ''
+        id = session.session_id
         require 'digest/md5'
         md5 = Digest::MD5.hexdigest(id)[0,16]
-	@path = dir+"/"+prefix+md5+suffix
-	if File::exist? @path
-	  @hash = nil
-	else
+        @path = dir+"/"+prefix+md5+suffix
+        if File::exist? @path
+          @hash = nil
+        else
           unless session.new_session
             raise CGI::Session::NoSession, "uninitialized session"
           end
-	  @hash = {}
-	end
+          @hash = {}
+        end
       end
 
       # Restore session state from the session's FileStore file.
       #
       # Returns the session state as a hash.
       def restore
-	unless @hash
-	  @hash = {}
+        unless @hash
+          @hash = {}
           begin
             lockf = File.open(@path+".lock", "r")
             lockf.flock File::LOCK_SH
-	    f = File.open(@path, 'r')
-	    for line in f
-	      line.chomp!
-	      k, v = line.split('=',2)
-	      @hash[CGI::unescape(k)] = CGI::unescape(v)
-	    end
+            f = File.open(@path, 'r')
+            for line in f
+              line.chomp!
+              k, v = line.split('=',2)
+              @hash[CGI::unescape(k)] = Marshal.restore(CGI::unescape(v))
+            end
           ensure
-	    f.close unless f.nil?
+            f.close unless f.nil?
             lockf.close if lockf
           end
-	end
-	@hash
+        end
+        @hash
       end
 
       # Save session state to the session's FileStore file.
       def update
-	return unless @hash
+        return unless @hash
         begin
           lockf = File.open(@path+".lock", File::CREAT|File::RDWR, 0600)
-	  lockf.flock File::LOCK_EX
+          lockf.flock File::LOCK_EX
           f = File.open(@path+".new", File::CREAT|File::TRUNC|File::WRONLY, 0600)
-   	  for k,v in @hash
-	    f.printf "%s=%s\n", CGI::escape(k), CGI::escape(String(v))
-	  end
+          for k,v in @hash
+            f.printf "%s=%s\n", CGI::escape(k), CGI::escape(String(Marshal.dump(v)))
+          end
           f.close
           File.rename @path+".new", @path
         ensure
@@ -433,15 +434,14 @@ class CGI
 
       # Update and close the session's FileStore file.
       def close
-	update
+        update
       end
 
       # Close and delete the session's FileStore file.
       def delete
         File::unlink @path+".lock" rescue nil
         File::unlink @path+".new" rescue nil
-        File::unlink @path
-      rescue Errno::ENOENT
+        File::unlink @path rescue Errno::ENOENT
       end
     end
 
@@ -459,7 +459,7 @@ class CGI
       # +option+ is a list of initialisation options.  None are
       # currently recognised.
       def initialize(session, option=nil)
-	@session_id = session.session_id
+        @session_id = session.session_id
         unless GLOBAL_HASH_TABLE.key?(@session_id)
           unless session.new_session
             raise CGI::Session::NoSession, "uninitialized session"
@@ -472,26 +472,26 @@ class CGI
       #
       # Returns session data as a hash.
       def restore
-	GLOBAL_HASH_TABLE[@session_id]
+        GLOBAL_HASH_TABLE[@session_id]
       end
 
       # Update session state.
       #
       # A no-op.
       def update
-	# don't need to update; hash is shared
+        # don't need to update; hash is shared
       end
 
       # Close session storage.
       #
       # A no-op.
       def close
-	# don't need to close
+        # don't need to close
       end
 
       # Delete the session state.
       def delete
-	GLOBAL_HASH_TABLE.delete(@session_id)
+        GLOBAL_HASH_TABLE.delete(@session_id)
       end
     end
 

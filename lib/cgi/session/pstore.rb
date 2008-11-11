@@ -43,55 +43,55 @@ class CGI
       # This session's PStore file will be created if it does
       # not exist, or opened if it does.
       def initialize(session, option={})
-	dir = option['tmpdir'] || Dir::tmpdir
-	prefix = option['prefix'] || ''
-	id = session.session_id
+        dir = option['tmpdir'] || Dir::tmpdir
+        prefix = option['prefix'] || ''
+        id = session.session_id
         require 'digest/md5'
         md5 = Digest::MD5.hexdigest(id)[0,16]
-	path = dir+"/"+prefix+md5
-	path.untaint
-	if File::exist?(path)
-	  @hash = nil
-	else
+        path = dir+"/"+prefix+md5
+        path.untaint
+        if File::exist?(path)
+          @hash = nil
+        else
           unless session.new_session
             raise CGI::Session::NoSession, "uninitialized session"
           end
-	  @hash = {}
-	end
-	@p = ::PStore.new(path)
-	@p.transaction do |p|
-	  File.chmod(0600, p.path)
-	end
+          @hash = {}
+        end
+        @p = ::PStore.new(path)
+        @p.transaction do |p|
+          File.chmod(0600, p.path)
+        end
       end
 
       # Restore session state from the session's PStore file.
       #
       # Returns the session state as a hash.
       def restore
-	unless @hash
-	  @p.transaction do
+        unless @hash
+          @p.transaction do
             @hash = @p['hash'] || {}
-	  end
-	end
-	@hash
+          end
+        end
+        @hash
       end
 
       # Save session state to the session's PStore file.
       def update 
-	@p.transaction do
-	    @p['hash'] = @hash
-	end
+        @p.transaction do
+          @p['hash'] = @hash
+        end
       end
 
       # Update and close the session's PStore file.
       def close
-	update
+        update
       end
 
       # Close and delete the session's PStore file.
       def delete
-	path = @p.path
-	File::unlink path
+        path = @p.path
+        File::unlink path
       end
 
     end
