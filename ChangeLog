@@ -1,3 +1,8 @@
+Fri Nov  7 12:26:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb.rb (IRB::Irb#eval_input): remove extra  @context.prompt_i.
+	  [ruby-core:19718]
+
 Fri Nov  7 11:55:30 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* nkf.c: update to r1.188. fixes for 16bit environment.
