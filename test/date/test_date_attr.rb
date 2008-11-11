@@ -9,10 +9,10 @@ class TestDateAttr < Test::Unit::TestCase
 
     [date, datetime].each_with_index do |d, i|
       if i == 0
-	assert_match(/\#<Date\d?: 1965-05-23 \(4877807\/2,0,2299161\)>/,
+	assert_match(/\#<Date\d?: 4877807\/2,0,2299161>/,
 		     d.inspect)
       else
-	assert_match(/\#<DateTime\d?: 1965-05-23T22:31:59\+00:00 \(210721343519\/86400,0,2299161\)>/,
+	assert_match(/\#<DateTime\d?: 210721343519\/86400,0,2299161>/,
 		     d.inspect)
       end
 

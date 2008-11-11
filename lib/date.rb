@@ -1470,9 +1470,7 @@ class Date
   def hash() @ajd.hash end
 
   # Return internal object state as a programmer-readable string.
-  def inspect
-    format('#<%s: %s (%s,%s,%s)>', self.class, to_s, @ajd, @of, @sg)
-  end
+  def inspect() format('#<%s: %s,%s,%s>', self.class, @ajd, @of, @sg) end
 
   # Return the date as a human-readable string.
   #
