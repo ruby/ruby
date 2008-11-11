@@ -28,6 +28,8 @@
 #undef rb_str_new_cstr
 #undef rb_tainted_str_new_cstr
 #undef rb_usascii_str_new_cstr
+#undef rb_external_str_new_cstr
+#undef rb_locale_str_new_cstr
 #undef rb_str_new2
 #undef rb_str_new3
 #undef rb_str_new4
