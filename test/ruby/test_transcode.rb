@@ -417,6 +417,251 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u02D9", "\xFF", 'windows-1257') # ˙
   end
 
+  def test_IBM437
+    check_both_ways("\u00C7", "\x80", 'IBM437') # Ç
+    check_both_ways("\u00C5", "\x8F", 'IBM437') # Å
+    check_both_ways("\u00C9", "\x90", 'IBM437') # É
+    check_both_ways("\u0192", "\x9F", 'IBM437') # ƒ
+    check_both_ways("\u00E1", "\xA0", 'IBM437') # á
+    check_both_ways("\u00BB", "\xAF", 'IBM437') # »
+    check_both_ways("\u2591", "\xB0", 'IBM437') # ░
+    check_both_ways("\u2510", "\xBF", 'IBM437') # ┐
+    check_both_ways("\u2514", "\xC0", 'IBM437') # └
+    check_both_ways("\u2567", "\xCF", 'IBM437') # ╧
+    check_both_ways("\u2568", "\xD0", 'IBM437') # ╨
+    check_both_ways("\u2580", "\xDF", 'IBM437') # ▀
+    check_both_ways("\u03B1", "\xE0", 'IBM437') # α
+    check_both_ways("\u2229", "\xEF", 'IBM437') # ∩
+    check_both_ways("\u2261", "\xF0", 'IBM437') # ≡
+    check_both_ways("\u00A0", "\xFF", 'IBM437') # non-breaking space 
+  end
+  
+  def test_IBM775
+    check_both_ways("\u0106", "\x80", 'IBM775') # Ć
+    check_both_ways("\u00C5", "\x8F", 'IBM775') # Å
+    check_both_ways("\u00C9", "\x90", 'IBM775') # É
+    check_both_ways("\u00A4", "\x9F", 'IBM775') # ¤
+    check_both_ways("\u0100", "\xA0", 'IBM775') # Ā
+    check_both_ways("\u00BB", "\xAF", 'IBM775') # »
+    check_both_ways("\u2591", "\xB0", 'IBM775') # ░
+    check_both_ways("\u2510", "\xBF", 'IBM775') # ┐
+    check_both_ways("\u2514", "\xC0", 'IBM775') # └
+    check_both_ways("\u017D", "\xCF", 'IBM775') # Ž
+    check_both_ways("\u0105", "\xD0", 'IBM775') # ą
+    check_both_ways("\u2580", "\xDF", 'IBM775') # ▀
+    check_both_ways("\u00D3", "\xE0", 'IBM775') # Ó
+    check_both_ways("\u2019", "\xEF", 'IBM775') # ’
+    check_both_ways("\u00AD", "\xF0", 'IBM775') # osft hyphen
+    check_both_ways("\u00A0", "\xFF", 'IBM775') # non-breaking space 
+  end
+  
+  def test_IBM852
+    check_both_ways("\u00C7", "\x80", 'IBM852') # Ç
+    check_both_ways("\u0106", "\x8F", 'IBM852') # Ć
+    check_both_ways("\u00C9", "\x90", 'IBM852') # É
+    check_both_ways("\u010D", "\x9F", 'IBM852') # č
+    check_both_ways("\u00E1", "\xA0", 'IBM852') # á
+    check_both_ways("\u00BB", "\xAF", 'IBM852') # »
+    check_both_ways("\u2591", "\xB0", 'IBM852') # ░
+    check_both_ways("\u2510", "\xBF", 'IBM852') # ┐
+    check_both_ways("\u2514", "\xC0", 'IBM852') # └
+    check_both_ways("\u00A4", "\xCF", 'IBM852') # ¤
+    check_both_ways("\u0111", "\xD0", 'IBM852') # đ
+    check_both_ways("\u2580", "\xDF", 'IBM852') # ▀
+    check_both_ways("\u00D3", "\xE0", 'IBM852') # Ó
+    check_both_ways("\u00B4", "\xEF", 'IBM852') # ´
+    check_both_ways("\u00AD", "\xF0", 'IBM852') # osft hyphen
+    check_both_ways("\u00A0", "\xFF", 'IBM852') # non-breaking space 
+  end
+  
+  def test_IBM855
+    check_both_ways("\u0452", "\x80", 'IBM855') # ђ
+    check_both_ways("\u0408", "\x8F", 'IBM855') # Ј
+    check_both_ways("\u0459", "\x90", 'IBM855') # љ
+    check_both_ways("\u042A", "\x9F", 'IBM855') # Ъ
+    check_both_ways("\u0430", "\xA0", 'IBM855') # а
+    check_both_ways("\u00BB", "\xAF", 'IBM855') # »
+    check_both_ways("\u2591", "\xB0", 'IBM855') # ░
+    check_both_ways("\u2510", "\xBF", 'IBM855') # ┐
+    check_both_ways("\u2514", "\xC0", 'IBM855') # └
+    check_both_ways("\u00A4", "\xCF", 'IBM855') # ¤
+    check_both_ways("\u043B", "\xD0", 'IBM855') # л
+    check_both_ways("\u2580", "\xDF", 'IBM855') # ▀
+    check_both_ways("\u042F", "\xE0", 'IBM855') # Я
+    check_both_ways("\u2116", "\xEF", 'IBM855') # №
+    check_both_ways("\u00AD", "\xF0", 'IBM855') # osft hyphen
+    check_both_ways("\u00A0", "\xFF", 'IBM855') # non-breaking space 
+  end
+
+  def test_IBM857
+    check_both_ways("\u00C7", "\x80", 'IBM857') # Ç
+    check_both_ways("\u00C5", "\x8F", 'IBM857') # Å
+    check_both_ways("\u00C9", "\x90", 'IBM857') # É
+    check_both_ways("\u015F", "\x9F", 'IBM857') # ş
+    check_both_ways("\u00E1", "\xA0", 'IBM857') # á
+    check_both_ways("\u00BB", "\xAF", 'IBM857') # »
+    check_both_ways("\u2591", "\xB0", 'IBM857') # ░
+    check_both_ways("\u2510", "\xBF", 'IBM857') # ┐
+    check_both_ways("\u2514", "\xC0", 'IBM857') # └
+    check_both_ways("\u00A4", "\xCF", 'IBM857') # ¤
+    check_both_ways("\u00BA", "\xD0", 'IBM857') # º
+    check_both_ways("\u00C8", "\xD4", 'IBM857') # È
+    assert_raise(Encoding::UndefinedConversionError) { "\xD5".encode("utf-8", 'IBM857') }
+    check_both_ways("\u00CD", "\xD6", 'IBM857') # Í
+    check_both_ways("\u2580", "\xDF", 'IBM857') # ▀
+    check_both_ways("\u00D3", "\xE0", 'IBM857') # Ó
+    check_both_ways("\u00B5", "\xE6", 'IBM857') # µ
+    assert_raise(Encoding::UndefinedConversionError) { "\xE7".encode("utf-8", 'IBM857') }
+    check_both_ways("\u00D7", "\xE8", 'IBM857') # ×
+    check_both_ways("\u00B4", "\xEF", 'IBM857') # ´
+    check_both_ways("\u00AD", "\xF0", 'IBM857') # soft hyphen
+    check_both_ways("\u00B1", "\xF1", 'IBM857') # ±
+    assert_raise(Encoding::UndefinedConversionError) { "\xF2".encode("utf-8", 'IBM857') }
+    check_both_ways("\u00BE", "\xF3", 'IBM857') # ¾
+    check_both_ways("\u00A0", "\xFF", 'IBM857') # non-breaking space 
+  end
+  
+  def test_IBM860
+    check_both_ways("\u00C7", "\x80", 'IBM860') # Ç
+    check_both_ways("\u00C2", "\x8F", 'IBM860') # Â
+    check_both_ways("\u00C9", "\x90", 'IBM860') # É
+    check_both_ways("\u00D3", "\x9F", 'IBM860') # Ó
+    check_both_ways("\u00E1", "\xA0", 'IBM860') # á
+    check_both_ways("\u00BB", "\xAF", 'IBM860') # »
+    check_both_ways("\u2591", "\xB0", 'IBM860') # ░
+    check_both_ways("\u2510", "\xBF", 'IBM860') # ┐
+    check_both_ways("\u2514", "\xC0", 'IBM860') # └
+    check_both_ways("\u2567", "\xCF", 'IBM860') # ╧
+    check_both_ways("\u2568", "\xD0", 'IBM860') # ╨
+    check_both_ways("\u2580", "\xDF", 'IBM860') # ▀
+    check_both_ways("\u03B1", "\xE0", 'IBM860') # α
+    check_both_ways("\u2229", "\xEF", 'IBM860') # ∩
+    check_both_ways("\u2261", "\xF0", 'IBM860') # ≡
+    check_both_ways("\u00A0", "\xFF", 'IBM860') # non-breaking space 
+  end
+  
+  def test_IBM861
+    check_both_ways("\u00C7", "\x80", 'IBM861') # Ç
+    check_both_ways("\u00C5", "\x8F", 'IBM861') # Å
+    check_both_ways("\u00C9", "\x90", 'IBM861') # É
+    check_both_ways("\u0192", "\x9F", 'IBM861') # ƒ
+    check_both_ways("\u00E1", "\xA0", 'IBM861') # á
+    check_both_ways("\u00BB", "\xAF", 'IBM861') # »
+    check_both_ways("\u2591", "\xB0", 'IBM861') # ░
+    check_both_ways("\u2510", "\xBF", 'IBM861') # ┐
+    check_both_ways("\u2514", "\xC0", 'IBM861') # └
+    check_both_ways("\u2567", "\xCF", 'IBM861') # ╧
+    check_both_ways("\u2568", "\xD0", 'IBM861') # ╨
+    check_both_ways("\u2580", "\xDF", 'IBM861') # ▀
+    check_both_ways("\u03B1", "\xE0", 'IBM861') # α
+    check_both_ways("\u2229", "\xEF", 'IBM861') # ∩
+    check_both_ways("\u2261", "\xF0", 'IBM861') # ≡
+    check_both_ways("\u00A0", "\xFF", 'IBM861') # non-breaking space 
+  end
+  
+  def test_IBM862
+    check_both_ways("\u05D0", "\x80", 'IBM862') # א
+    check_both_ways("\u05DF", "\x8F", 'IBM862') # ן
+    check_both_ways("\u05E0", "\x90", 'IBM862') # נ
+    check_both_ways("\u0192", "\x9F", 'IBM862') # ƒ
+    check_both_ways("\u00E1", "\xA0", 'IBM862') # á
+    check_both_ways("\u00BB", "\xAF", 'IBM862') # »
+    check_both_ways("\u2591", "\xB0", 'IBM862') # ░
+    check_both_ways("\u2510", "\xBF", 'IBM862') # ┐
+    check_both_ways("\u2514", "\xC0", 'IBM862') # └
+    check_both_ways("\u2567", "\xCF", 'IBM862') # ╧
+    check_both_ways("\u2568", "\xD0", 'IBM862') # ╨
+    check_both_ways("\u2580", "\xDF", 'IBM862') # ▀
+    check_both_ways("\u03B1", "\xE0", 'IBM862') # α
+    check_both_ways("\u2229", "\xEF", 'IBM862') # ∩
+    check_both_ways("\u2261", "\xF0", 'IBM862') # ≡
+    check_both_ways("\u00A0", "\xFF", 'IBM862') # non-breaking space 
+  end
+  
+  def test_IBM863
+    check_both_ways("\u00C7", "\x80", 'IBM863') # Ç
+    check_both_ways("\u00A7", "\x8F", 'IBM863') # §
+    check_both_ways("\u00C9", "\x90", 'IBM863') # É
+    check_both_ways("\u0192", "\x9F", 'IBM863') # ƒ
+    check_both_ways("\u00A6", "\xA0", 'IBM863') # ¦
+    check_both_ways("\u00BB", "\xAF", 'IBM863') # »
+    check_both_ways("\u2591", "\xB0", 'IBM863') # ░
+    check_both_ways("\u2510", "\xBF", 'IBM863') # ┐
+    check_both_ways("\u2514", "\xC0", 'IBM863') # └
+    check_both_ways("\u2567", "\xCF", 'IBM863') # ╧
+    check_both_ways("\u2568", "\xD0", 'IBM863') # ╨
+    check_both_ways("\u2580", "\xDF", 'IBM863') # ▀
+    check_both_ways("\u03B1", "\xE0", 'IBM863') # α
+    check_both_ways("\u2229", "\xEF", 'IBM863') # ∩
+    check_both_ways("\u2261", "\xF0", 'IBM863') # ≡
+    check_both_ways("\u00A0", "\xFF", 'IBM863') # non-breaking space 
+  end
+  
+  def test_IBM865
+    check_both_ways("\u00C7", "\x80", 'IBM865') # Ç
+    check_both_ways("\u00C5", "\x8F", 'IBM865') # Å
+    check_both_ways("\u00C9", "\x90", 'IBM865') # É
+    check_both_ways("\u0192", "\x9F", 'IBM865') # ƒ
+    check_both_ways("\u00E1", "\xA0", 'IBM865') # á
+    check_both_ways("\u00A4", "\xAF", 'IBM865') # ¤
+    check_both_ways("\u2591", "\xB0", 'IBM865') # ░
+    check_both_ways("\u2510", "\xBF", 'IBM865') # ┐
+    check_both_ways("\u2514", "\xC0", 'IBM865') # └
+    check_both_ways("\u2567", "\xCF", 'IBM865') # ╧
+    check_both_ways("\u2568", "\xD0", 'IBM865') # ╨
+    check_both_ways("\u2580", "\xDF", 'IBM865') # ▀
+    check_both_ways("\u03B1", "\xE0", 'IBM865') # α
+    check_both_ways("\u2229", "\xEF", 'IBM865') # ∩
+    check_both_ways("\u2261", "\xF0", 'IBM865') # ≡
+    check_both_ways("\u00A0", "\xFF", 'IBM865') # non-breaking space 
+  end
+  
+  def test_IBM866
+    check_both_ways("\u0410", "\x80", 'IBM866') # А
+    check_both_ways("\u041F", "\x8F", 'IBM866') # П
+    check_both_ways("\u0420", "\x90", 'IBM866') # Р
+    check_both_ways("\u042F", "\x9F", 'IBM866') # Я
+    check_both_ways("\u0430", "\xA0", 'IBM866') # а
+    check_both_ways("\u043F", "\xAF", 'IBM866') # п
+    check_both_ways("\u2591", "\xB0", 'IBM866') # ░
+    check_both_ways("\u2510", "\xBF", 'IBM866') # ┐
+    check_both_ways("\u2514", "\xC0", 'IBM866') # └
+    check_both_ways("\u2567", "\xCF", 'IBM866') # ╧
+    check_both_ways("\u2568", "\xD0", 'IBM866') # ╨
+    check_both_ways("\u2580", "\xDF", 'IBM866') # ▀
+    check_both_ways("\u0440", "\xE0", 'IBM866') # р
+    check_both_ways("\u044F", "\xEF", 'IBM866') # я
+    check_both_ways("\u0401", "\xF0", 'IBM866') # Ё
+    check_both_ways("\u00A0", "\xFF", 'IBM866') # non-breaking space 
+  end
+  
+  def test_IBM869
+    assert_raise(Encoding::UndefinedConversionError) { "\x80".encode("utf-8", 'IBM869') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x85".encode("utf-8", 'IBM869') }
+    check_both_ways("\u0386", "\x86", 'IBM869') # Ά
+    assert_raise(Encoding::UndefinedConversionError) { "\x87".encode("utf-8", 'IBM869') }
+    check_both_ways("\u00B7", "\x88", 'IBM869') # ·
+    check_both_ways("\u0389", "\x8F", 'IBM869') # Ή
+    check_both_ways("\u038A", "\x90", 'IBM869') # Ί
+    check_both_ways("\u038C", "\x92", 'IBM869') # Ό
+    assert_raise(Encoding::UndefinedConversionError) { "\x93".encode("utf-8", 'IBM869') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x94".encode("utf-8", 'IBM869') }
+    check_both_ways("\u038E", "\x95", 'IBM869') # Ύ
+    check_both_ways("\u03AF", "\x9F", 'IBM869') # ί
+    check_both_ways("\u03CA", "\xA0", 'IBM869') # ϊ
+    check_both_ways("\u00BB", "\xAF", 'IBM869') # »
+    check_both_ways("\u2591", "\xB0", 'IBM869') # ░
+    check_both_ways("\u2510", "\xBF", 'IBM869') # ┐
+    check_both_ways("\u2514", "\xC0", 'IBM869') # └
+    check_both_ways("\u03A3", "\xCF", 'IBM869') # Σ
+    check_both_ways("\u03A4", "\xD0", 'IBM869') # Τ
+    check_both_ways("\u2580", "\xDF", 'IBM869') # ▀
+    check_both_ways("\u03B6", "\xE0", 'IBM869') # ζ
+    check_both_ways("\u0384", "\xEF", 'IBM869') # ΄
+    check_both_ways("\u00AD", "\xF0", 'IBM869') # soft hyphen
+    check_both_ways("\u00A0", "\xFF", 'IBM869') # non-breaking space 
+  end
+  
   def test_macCroatian
     check_both_ways("\u00C4", "\x80", 'macCroatian') # Ä
     check_both_ways("\u00E8", "\x8F", 'macCroatian') # è
@@ -471,6 +716,27 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00A4", "\xFF", 'macCyrillic') # ¤
   end
   
+  def test_macGreek
+    check_both_ways("\u00C4", "\x80", 'macGreek') # Ä
+    check_both_ways("\u00E8", "\x8F", 'macGreek') # è
+    check_both_ways("\u00EA", "\x90", 'macGreek') # ê
+    check_both_ways("\u00FC", "\x9F", 'macGreek') # ü
+    check_both_ways("\u2020", "\xA0", 'macGreek') # †
+    check_both_ways("\u0393", "\xA1", 'macGreek') # Γ
+    check_both_ways("\u0387", "\xAF", 'macGreek') # ·
+    check_both_ways("\u0391", "\xB0", 'macGreek') # Α
+    check_both_ways("\u03A9", "\xBF", 'macGreek') # Ω
+    check_both_ways("\u03AC", "\xC0", 'macGreek') # ά
+    check_both_ways("\u0153", "\xCF", 'macGreek') # œ
+    check_both_ways("\u2013", "\xD0", 'macGreek') # –
+    check_both_ways("\u038F", "\xDF", 'macGreek') # Ώ
+    check_both_ways("\u03CD", "\xE0", 'macGreek') # ύ
+    check_both_ways("\u03BF", "\xEF", 'macGreek') # ο
+    check_both_ways("\u03C0", "\xF0", 'macGreek') # π
+    check_both_ways("\u03B0", "\xFE", 'macGreek') # ΰ
+    assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'macGreek') }
+  end
+  
   def test_macIceland
     check_both_ways("\u00C4", "\x80", 'macIceland') # Ä
     check_both_ways("\u00E8", "\x8F", 'macIceland') # è
@@ -490,6 +756,87 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u02C7", "\xFF", 'macIceland') # ˇ
   end
 
+  def test_macRoman
+    check_both_ways("\u00C4", "\x80", 'macRoman') # Ä
+    check_both_ways("\u00E8", "\x8F", 'macRoman') # è
+    check_both_ways("\u00EA", "\x90", 'macRoman') # ê
+    check_both_ways("\u00FC", "\x9F", 'macRoman') # ü
+    check_both_ways("\u2020", "\xA0", 'macRoman') # †
+    #check_both_ways("\u00DB", "\xAF", 'macRoman') # Ø
+    check_both_ways("\u221E", "\xB0", 'macRoman') # ∞
+    check_both_ways("\u00F8", "\xBF", 'macRoman') # ø
+    check_both_ways("\u00BF", "\xC0", 'macRoman') # ¿
+    check_both_ways("\u0153", "\xCF", 'macRoman') # œ
+    check_both_ways("\u2013", "\xD0", 'macRoman') # –
+    check_both_ways("\u00A4", "\xDB", 'macRoman') # ¤
+    check_both_ways("\uFB02", "\xDF", 'macRoman') # ﬂ
+    check_both_ways("\u2021", "\xE0", 'macRoman') # ‡
+    check_both_ways("\u00D4", "\xEF", 'macRoman') # Ô
+    #check_both_ways("\uF8FF", "\xF0", 'macRoman') # Apple logo
+    check_both_ways("\u02C7", "\xFF", 'macRoman') # ˇ
+  end
+  
+  def test_macRomania
+    check_both_ways("\u00C4", "\x80", 'macRomania') # Ä
+    check_both_ways("\u00E8", "\x8F", 'macRomania') # è
+    check_both_ways("\u00EA", "\x90", 'macRomania') # ê
+    check_both_ways("\u00FC", "\x9F", 'macRomania') # ü
+    check_both_ways("\u2020", "\xA0", 'macRomania') # †
+    check_both_ways("\u015E", "\xAF", 'macRomania') # Ş
+    check_both_ways("\u221E", "\xB0", 'macRomania') # ∞
+    check_both_ways("\u015F", "\xBF", 'macRomania') # ş
+    check_both_ways("\u00BF", "\xC0", 'macRomania') # ¿
+    check_both_ways("\u0153", "\xCF", 'macRomania') # œ
+    check_both_ways("\u2013", "\xD0", 'macRomania') # –
+    check_both_ways("\u00A4", "\xDB", 'macRomania') # €
+    check_both_ways("\u0163", "\xDF", 'macRomania') # ţ
+    check_both_ways("\u2021", "\xE0", 'macRomania') # ‡
+    check_both_ways("\u00D4", "\xEF", 'macRomania') # Ô
+    #check_both_ways("\uF8FF", "\xF0", 'macRomania') # Apple logo
+    check_both_ways("\u02C7", "\xFF", 'macRomania') # ˇ
+  end
+  
+  def test_macTurkish
+    check_both_ways("\u00C4", "\x80", 'macTurkish') # Ä
+    check_both_ways("\u00E8", "\x8F", 'macTurkish') # è
+    check_both_ways("\u00EA", "\x90", 'macTurkish') # ê
+    check_both_ways("\u00FC", "\x9F", 'macTurkish') # ü
+    check_both_ways("\u2020", "\xA0", 'macTurkish') # †
+    check_both_ways("\u00D8", "\xAF", 'macTurkish') # Ø
+    check_both_ways("\u221E", "\xB0", 'macTurkish') # ∞
+    check_both_ways("\u00F8", "\xBF", 'macTurkish') # ø
+    check_both_ways("\u00BF", "\xC0", 'macTurkish') # ¿
+    check_both_ways("\u0153", "\xCF", 'macTurkish') # œ
+    check_both_ways("\u2013", "\xD0", 'macTurkish') # –
+    check_both_ways("\u015F", "\xDF", 'macTurkish') # ş
+    check_both_ways("\u2021", "\xE0", 'macTurkish') # ‡
+    check_both_ways("\u00D4", "\xEF", 'macTurkish') # Ô
+    #check_both_ways("\uF8FF", "\xF0", 'macTurkish') # Apple logo
+    check_both_ways("\u00D9", "\xF4", 'macTurkish') # Ù
+    assert_raise(Encoding::UndefinedConversionError) { "\xF5".encode("utf-8", 'macTurkish') }
+    check_both_ways("\u02C6", "\xF6", 'macTurkish') # ˆ
+    check_both_ways("\u02C7", "\xFF", 'macTurkish') # ˇ
+  end
+  
+  def test_macUkraine
+    check_both_ways("\u0410", "\x80", 'macUkraine') # А
+    check_both_ways("\u041F", "\x8F", 'macUkraine') # П
+    check_both_ways("\u0420", "\x90", 'macUkraine') # Р
+    check_both_ways("\u042F", "\x9F", 'macUkraine') # Я
+    check_both_ways("\u2020", "\xA0", 'macUkraine') # †
+    check_both_ways("\u0453", "\xAF", 'macUkraine') # ѓ
+    check_both_ways("\u221E", "\xB0", 'macUkraine') # ∞
+    check_both_ways("\u045A", "\xBF", 'macUkraine') # њ
+    check_both_ways("\u0458", "\xC0", 'macUkraine') # ј
+    check_both_ways("\u0455", "\xCF", 'macUkraine') # ѕ
+    check_both_ways("\u2013", "\xD0", 'macUkraine') # –
+    check_both_ways("\u044F", "\xDF", 'macUkraine') # я
+    check_both_ways("\u0430", "\xE0", 'macUkraine') # а
+    check_both_ways("\u043F", "\xEF", 'macUkraine') # п
+    check_both_ways("\u0440", "\xF0", 'macUkraine') # р
+    check_both_ways("\u00A4", "\xFF", 'macUkraine') # ¤
+  end
+  
   def check_utf_16_both_ways(utf8, raw)
     copy = raw.dup
     0.step(copy.length-1, 2) { |i| copy[i+1], copy[i] = copy[i], copy[i+1] }
