@@ -2310,6 +2310,7 @@ rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
 		MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
 		_set_osfhnd(fd, r);
 		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		CloseHandle(h);
 		st_insert(socklist, (st_data_t)r, (st_data_t)0);
 	    }
 	    else {
@@ -2318,6 +2319,8 @@ rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
 		fd = -1;
 	    }
 	}
+	else
+	    CloseHandle(h);
     });
     return fd;
 }
