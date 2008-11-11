@@ -1074,7 +1074,7 @@ class OptionParser
       end
 
       # directly specified pattern(any object possible to match)
-      if !(String === o) and o.respond_to?(:match)
+      if (!(String === o || Symbol === o)) and o.respond_to?(:match)
         pattern = notwice(o, pattern, 'pattern')
         conv = pattern.method(:convert).to_proc if pattern.respond_to?(:convert)
         next
