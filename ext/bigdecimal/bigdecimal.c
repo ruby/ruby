@@ -4349,6 +4349,11 @@ VpMidRound(Real *y, int f, int nf)
     nf += y->exponent*((int)BASE_FIG);
     exptoadd=0;
     if (nf < 0) {
+	/* rounding position too left(large). */
+	if((f!=VP_ROUND_CEIL) && (f!=VP_ROUND_FLOOR)) {
+	    VpSetZero(y,VpGetSign(y)); /* truncate everything */
+	    return 0;
+	}
         exptoadd = -nf;
         nf = 0;
     }
