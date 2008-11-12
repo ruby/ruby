@@ -1,3 +1,8 @@
+Thu Nov 13 06:08:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_barrier_{new,wait,release,destroy}): use Mutex so that
+	  circular requires fail with deadlock.  [ruby-core:19821]
+
 Wed Nov 12 07:16:01 2008  David Flanagan  <david@think32>
 
 	* ruby.c (set_internal_encoding_once): fix typo in error string
