@@ -1,3 +1,8 @@
+Thu Nov 13 14:51:34 2008  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* shell/command-processor.rb: undefined method `top_level_test' in
+  	  Shell#test. [ruby-list:45634]
+
 Wed Nov 12 03:49:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (load_lock): makes circular require deadlock.
