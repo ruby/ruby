@@ -3050,8 +3050,11 @@ VALUE
 rb_barrier_wait(VALUE self)
 {
     VALUE mutex = (VALUE)DATA_PTR(self);
+    mutex_t *m;
 
     if (!mutex) return Qfalse;
+    GetMutexPtr(mutex, m);
+    if (m->th == GET_THREAD()) return Qfalse;
     rb_mutex_lock(mutex);
     if (DATA_PTR(self)) return Qtrue;
     rb_mutex_unlock(mutex);

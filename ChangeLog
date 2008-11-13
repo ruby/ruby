@@ -1,3 +1,7 @@
+Thu Nov 13 11:31:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_barrier_wait): gets rid of recursive deadlock.
+
 Thu Nov 13 06:08:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_barrier_{new,wait,release,destroy}): use Mutex so that
