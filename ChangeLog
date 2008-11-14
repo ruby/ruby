@@ -1,3 +1,8 @@
+Fri Nov 14 20:27:46 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* README.EXT, README.EXT.ja, vm_exec.c, vm_insnhelper.c: update
+	  filenames.
+
 Thu Nov 13 11:31:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_barrier_wait): gets rid of recursive deadlock.

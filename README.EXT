@@ -816,7 +816,7 @@ ruby evaluator (a.k.a. YARV)
   vm.c
   vm_dump.c
   vm_eval.c
-  vm_evalbody.c
+  vm_exec.c
   vm_insnhelper.c
   vm_method.c
 

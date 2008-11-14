@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  insnhelper.c - instruction helper functions.
+  vm_insnhelper.c - instruction helper functions.
 
   $Author$
 
