@@ -1,3 +1,8 @@
+Sat Nov 15 22:23:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LDSHARED): do not suppress debug info if higher debug
+	  level is given, on cygwin and mingw.
+
 Fri Nov 14 20:27:46 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* README.EXT, README.EXT.ja, vm_exec.c, vm_insnhelper.c: update
