@@ -1,3 +1,8 @@
+Sat Nov 15 22:46:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (rb_reg_regsub): returns -1 unless ascii as well as
+	  rb_enc_ascget().  [ruby-dev:37097]
+
 Sat Nov 15 22:23:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LDSHARED): do not suppress debug info if higher debug
