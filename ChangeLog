@@ -1,3 +1,8 @@
+Sat Nov 15 22:23:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LDSHARED): do not suppress debug info if higher debug
+	  level is given, on cygwin and mingw.
+
 Thu Nov 13 14:51:34 2008  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* shell/command-processor.rb: undefined method `top_level_test' in
