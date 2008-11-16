@@ -1673,9 +1673,9 @@ ENABLE_SHARED=no
 AC_ARG_ENABLE(shared,
        [  --enable-shared         build a shared library for Ruby. ],
        [enable_shared=$enableval])
+LIBRUBYARG_SHARED='-l$(RUBY_SO_NAME)'
 if test "$enable_shared" = 'yes'; then
   LIBRUBY='$(LIBRUBY_SO)'
-  LIBRUBYARG_SHARED='-l$(RUBY_SO_NAME)'
   LIBRUBYARG='$(LIBRUBYARG_SHARED)'
   CFLAGS="$CFLAGS $CCDLFLAGS"
   ENABLE_SHARED=yes
@@ -1752,7 +1752,9 @@ if test "$enable_shared" = 'yes'; then
   esac
 fi
 if test "$enable_rpath" = yes; then
-    LIBRUBYARG_SHARED="${linker_flag}-R ${linker_flag}\$(libdir) -L\$(libdir) $LIBRUBYARG_SHARED"
+    LIBRUBY_RPATHFLAGS="${linker_flag}-R ${linker_flag}\$(libdir) -L\$(libdir)"
+    LIBRUBYARG_SHARED="$LIBRUBY_RPATHFLAGS $LIBRUBYARG_SHARED"
+    LIBRUBYARG_STATIC="$LIBRUBY_RPATHFLAGS $LIBRUBYARG_STATIC"
 fi
 
 LDFLAGS="-L. $LDFLAGS"
