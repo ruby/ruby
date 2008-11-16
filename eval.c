@@ -6773,8 +6773,10 @@ yield_under(under, self, args)
 	return exec_under(yield_under_i, under, 0, self);
     }
     else {
-	VALUE info[2] = { args, self };
+	VALUE info[2];
 
+	info[0] = args;
+	info[1] = self;
 	return exec_under(yield_args_under_i, under, 0, (VALUE)info);
     }
 }
