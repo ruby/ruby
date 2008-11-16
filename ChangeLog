@@ -1,3 +1,7 @@
+Mon Nov 17 02:19:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBRUBYARG_STATIC): fixed for --enable-rpath.
+
 Sun Nov 16 10:02:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (yield_under): fixed initialization not being allowed in C90.
