@@ -1,3 +1,4 @@
+% enable_shared = CONFIG['ENABLE_SHARED'] == 'yes'
 % deffile = (true if /\$\(DEFFILE\)/ =~ CONFIG["LINK_SO"])
 % encs = Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)} - BUILTIN_ENCS
 % encs.each {|e| e.chomp!(".c")}
@@ -40,6 +41,12 @@
 
 VPATH = <%=%w[$(arch_hdrdir)/ruby $(hdrdir)/ruby $(srcdir) $(encsrcdir)].join(CONFIG["PATH_SEPARATOR"])%>
 LIBPATH = <%=libpathflag($DEFLIBPATH)%>
+LIBS = <%=
+if enable_shared or RbConfig.expand(CONFIG["LIBRUBY"].dup) != RbConfig.expand(CONFIG["LIBRUBY_A"].dup)
+  CONFIG['LIBRUBYARG']
+else
+  ''
+end %> <%=CONFIG['LIBS']%> $(EXTLIBS)
 
 ENCOBJS = <%=encs.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t  ")%><%="\n" if encs.size>1%>
 ENCSOS = <%=encs.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t ")%><%="\n" if encs.size>1%>
