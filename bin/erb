@@ -72,20 +72,6 @@ class ERB
             end
             raise "invalid trim mode #{arg.dump}" unless arg =~ /^[0-2]$/
             trim_mode = arg.to_i
-          when '-K'                        # KCODE
-            arg = ARGV.req_arg
-            case arg.downcase
-            when 'e', '-e', 'euc'
-              $KCODE = 'EUC'
-            when 's', '-s', 'sjis'
-              $KCODE = 'SJIS'
-            when 'u', '-u', 'utf8'
-              $KCODE = 'UTF8'
-            when 'n', '-n', 'none'
-              $KCODE = 'NONE'
-            else
-              raise "invalid KCODE #{arg.dump}"
-            end
           when '-P'
             disable_percent = true
           when '--help'
@@ -104,7 +90,6 @@ class ERB
   -v               enable verbose mode
   -d               set $DEBUG to true
   -r [library]     load a library
-  -K [kcode]       specify KANJI code-set
   -S [safe_level]  set $SAFE (0..4)
   -T [trim_mode]   specify trim_mode (0..2, -)
   -P               ignore lines which start with "%"
