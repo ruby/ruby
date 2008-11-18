@@ -632,7 +632,7 @@ set_internal_encoding_once(struct cmdline_options *opt, const char *e, int elen)
     if (opt->intern.enc.name &&
 	rb_funcall(ename, rb_intern("casecmp"), 1, opt->intern.enc.name) != INT2FIX(0)) {
 	rb_raise(rb_eRuntimeError,
-		 "default_intenal already set to %s", RSTRING_PTR(opt->intern.enc.name));
+		 "default_internal already set to %s", RSTRING_PTR(opt->intern.enc.name));
     }
     opt->intern.enc.name = ename;
 }
