@@ -51,7 +51,7 @@ onig_error_code_to_format(int code)
   case ONIG_NO_SUPPORT_CONFIG:
     p = "no support in this configuration"; break;
   case ONIGERR_MEMORY:
-    p = "fail to memory allocation"; break;
+    p = "failed to allocate memory"; break;
   case ONIGERR_MATCH_STACK_LIMIT_OVER:
     p = "match-stack limit over"; break;
   case ONIGERR_TYPE_BUG:
