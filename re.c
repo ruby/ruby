@@ -380,7 +380,7 @@ static VALUE
 rb_reg_desc(const char *s, long len, VALUE re)
 {
     VALUE str = rb_str_buf_new2("/");
-    if (rb_enc_asciicompat(rb_enc_get(re))) {
+    if (re && rb_enc_asciicompat(rb_enc_get(re))) {
 	rb_enc_copy(str, re);
     }
     else {
