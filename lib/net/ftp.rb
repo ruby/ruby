@@ -170,9 +170,9 @@ module Net
     end
 
     def open_socket(host, port)
-      if defined? SOCKSsocket and ENV["SOCKS_SERVER"]
+      if defined? SOCKSSocket and ENV["SOCKS_SERVER"]
 	@passive = true
-	return SOCKSsocket.open(host, port)
+	return SOCKSSocket.open(host, port)
       else
 	return TCPSocket.open(host, port)
       end
