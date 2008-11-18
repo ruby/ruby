@@ -3,6 +3,12 @@ Tue Nov 18 16:18:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/logger.rb (ProgName): fixed for svn, based on a patch from
 	  Nobuhiro IMAI at [ruby-dev:37108].
 
+Tue Nov 18 15:59:37 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#read_request_line):
+	  use non-greedy match for path retrieval to avoid huge recursion
+	  for insanely long path.
+
 Tue Nov 18 09:42:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::make_switch): makes default
