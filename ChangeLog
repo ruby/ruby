@@ -1155,7 +1155,7 @@ Wed Oct 22 05:39:39 2008  Koichi Sasada  <ko1@atdot.net>
 
 Wed Oct 22 00:29:13 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* test/rinda/test_rinda.c (test_core_03_notify): Fixed test failures
+	* test/rinda/test_rinda.rb (test_core_03_notify): Fixed test failures
 	  [ruby-dev:36837].
 
 Wed Oct 22 00:22:06 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
