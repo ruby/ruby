@@ -996,6 +996,7 @@ class OptionParser
   end
   private :notwice
 
+  SPLAT_PROC = proc {|*a| a}
   #
   # Creates an OptionParser::Switch from the parameters. The parsed argument
   # value is passed to the given block, where it can be processed.
@@ -1076,7 +1077,11 @@ class OptionParser
       # directly specified pattern(any object possible to match)
       if (!(String === o || Symbol === o)) and o.respond_to?(:match)
         pattern = notwice(o, pattern, 'pattern')
-        conv = pattern.method(:convert).to_proc if pattern.respond_to?(:convert)
+        if pattern.respond_to?(:convert)
+          conv = pattern.method(:convert).to_proc
+        else
+          conv = SPLAT_PROC
+        end
         next
       end
 
