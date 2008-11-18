@@ -3032,164 +3032,47 @@ rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg)
 /*
  * Document-class: Barrier
  */
-typedef struct rb_thread_list_struct rb_thread_list_t;
-
-struct rb_thread_list_struct {
-    rb_thread_t *th;
-    rb_thread_list_t *next;
-};
-
-static void
-thlist_mark(void *ptr)
-{
-    rb_thread_list_t *q = ptr;
-
-    for (; q; q = q->next) {
-	rb_gc_mark(q->th->self);
-    }
-}
-
-static void
-thlist_free(void *ptr)
-{
-    rb_thread_list_t *q = ptr, *next;
-
-    for (; q; q = next) {
-	next = q->next;
-	ruby_xfree(q);
-    }
-}
-
-static int
-thlist_signal(rb_thread_list_t **list, unsigned int maxth, rb_thread_t **woken_thread)
-{
-    int woken = 0;
-    rb_thread_list_t *q;
-
-    while ((q = *list) != NULL) {
-	rb_thread_t *th = q->th;
-
-	*list = q->next;
-	ruby_xfree(q);
-	if (th->status != THREAD_KILLED) {
-	    rb_thread_ready(th);
-	    if (!woken && woken_thread) *woken_thread = th;
-	    if (++woken >= maxth && maxth) break;
-	}
-    }
-    if (!woken && woken_thread) *woken_thread = 0;
-    return woken;
-}
-
-typedef struct {
-    rb_thread_t *owner;
-    rb_thread_list_t *waiting, **tail;
-} rb_barrier_t;
-
-static void
-barrier_mark(void *ptr)
-{
-    rb_barrier_t *b = ptr;
-
-    if (b->owner) rb_gc_mark(b->owner->self);
-    thlist_mark(b->waiting);
-}
-
-static void
-barrier_free(void *ptr)
-{
-    rb_barrier_t *b = ptr;
-
-    b->owner = 0;
-    thlist_free(b->waiting);
-    b->waiting = 0;
-    ruby_xfree(ptr);
-}
-
 static VALUE
 barrier_alloc(VALUE klass)
 {
-    VALUE volatile obj;
-    rb_barrier_t *barrier;
-
-    obj = Data_Make_Struct(klass, rb_barrier_t, barrier_mark, barrier_free, barrier);
-    barrier->owner = GET_THREAD();
-    barrier->waiting = 0;
-    barrier->tail = &barrier->waiting;
-    return obj;
+    return Data_Wrap_Struct(klass, rb_gc_mark, 0, (void *)mutex_alloc(0));
 }
 
 VALUE
 rb_barrier_new(void)
 {
-    return barrier_alloc(rb_cBarrier);
-}
-
-static int
-rb_barrier_signal(rb_barrier_t *barrier, unsigned int maxth)
-{
-    int n = thlist_signal(&barrier->waiting, maxth, &barrier->owner);
-    if (!barrier->waiting) barrier->tail = &barrier->waiting;
-    return n;
+    VALUE barrier = barrier_alloc(rb_cBarrier);
+    rb_mutex_lock((VALUE)DATA_PTR(barrier));
+    return barrier;
 }
 
 VALUE
 rb_barrier_wait(VALUE self)
 {
-    rb_barrier_t *barrier;
-    rb_thread_list_t *q;
-    rb_thread_t *th = GET_THREAD();
+    VALUE mutex = (VALUE)DATA_PTR(self);
+    mutex_t *m;
 
-    Data_Get_Struct(self, rb_barrier_t, barrier);
-    if (!barrier->tail) return Qfalse;
-    if (!barrier->owner || barrier->owner->status == THREAD_KILLED) {
-	barrier->owner = 0;
-	if (rb_barrier_signal(barrier, 1)) return Qfalse;
-	barrier->owner = th;
-	return Qtrue;
-    }
-    else if (barrier->owner == th) {
-	return Qfalse;
-    }
-    else {
-	*barrier->tail = q = ALLOC(rb_thread_list_t);
-	q->th = th;
-	q->next = 0;
-	barrier->tail = &q->next;
-	rb_thread_sleep_forever();
-	if (!barrier->tail) return Qfalse;
-	return barrier->owner == th ? Qtrue : Qfalse;
-    }
-}
-
-static rb_barrier_t *
-rb_barrier_owned_ptr(VALUE self)
-{
-    rb_barrier_t *barrier;
-
-    Data_Get_Struct(self, rb_barrier_t, barrier);
-    if (barrier->owner != GET_THREAD()) {
-	rb_raise(rb_eThreadError, "not owned");
-    }
-    return barrier;
+    if (!mutex) return Qfalse;
+    GetMutexPtr(mutex, m);
+    if (m->th == GET_THREAD()) return Qfalse;
+    rb_mutex_lock(mutex);
+    if (DATA_PTR(self)) return Qtrue;
+    rb_mutex_unlock(mutex);
+    return Qfalse;
 }
 
 VALUE
 rb_barrier_release(VALUE self)
 {
-    rb_barrier_t *barrier = rb_barrier_owned_ptr(self);
-    unsigned int n = rb_barrier_signal(barrier, 0);
-    return n ? UINT2NUM(n) : Qfalse;
+    return rb_mutex_unlock((VALUE)DATA_PTR(self));
 }
 
 VALUE
 rb_barrier_destroy(VALUE self)
 {
-    rb_barrier_t *barrier = rb_barrier_owned_ptr(self);
-    int n = thlist_signal(&barrier->waiting, 0, 0);
-    barrier->owner = 0;
-    barrier->tail = 0;
-    return n ? UINT2NUM(n) : Qfalse;
+    VALUE mutex = (VALUE)DATA_PTR(self);
+    DATA_PTR(self) = 0;
+    return rb_mutex_unlock(mutex);
 }
 
 /* variables for recursive traversals */
