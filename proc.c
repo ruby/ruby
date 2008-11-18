@@ -666,12 +666,15 @@ proc_eq(VALUE self, VALUE other)
     }
     else {
 	if (TYPE(other)          == T_DATA &&
-	    RBASIC(other)->klass == rb_cProc &&
-	    CLASS_OF(self)       == CLASS_OF(other)) {
+	    RDATA(other)->dmark  == proc_mark) {
 	    rb_proc_t *p1, *p2;
 	    GetProcPtr(self, p1);
 	    GetProcPtr(other, p2);
-	    if (p1->block.iseq == p2->block.iseq && p1->envval == p2->envval) {
+	    if (p1->envval == p2->envval &&
+		p1->block.iseq->iseq_size == p2->block.iseq->iseq_size &&
+		p1->block.iseq->local_size == p2->block.iseq->local_size &&
+		MEMCMP(p1->block.iseq->iseq, p2->block.iseq->iseq, VALUE,
+		       p1->block.iseq->iseq_size) == 0) {
 		return Qtrue;
 	    }
 	}
