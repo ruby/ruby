@@ -1,3 +1,8 @@
+Wed Nov 12 03:30:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_{external,locale}_str_new_cstr): optimized
+	  versions for literal strings.
+
 Wed Nov 12 03:28:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_require_safe): destroys barrier after successfully

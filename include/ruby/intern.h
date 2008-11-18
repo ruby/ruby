@@ -621,6 +621,18 @@ size_t rb_str_capacity(VALUE);
 	rb_usascii_str_new(str, strlen(str)) : \
 	rb_usascii_str_new_cstr(str);	       \
 })
+#define rb_external_str_new_cstr(str) __extension__ ( \
+{						\
+    (__builtin_constant_p(str)) ?		\
+	rb_external_str_new(str, strlen(str)) : \
+	rb_external_str_new_cstr(str);		\
+})
+#define rb_locale_str_new_cstr(str) __extension__ ( \
+{					       \
+    (__builtin_constant_p(str)) ?	       \
+	rb_locale_str_new(str, strlen(str)) :  \
+	rb_locale_str_new_cstr(str);	       \
+})
 #define rb_str_buf_new_cstr(str) __extension__ ( \
 {						\
     (__builtin_constant_p(str)) ?		\
