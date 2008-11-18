@@ -1,3 +1,7 @@
+Mon Nov 17 11:12:24 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* bin/erb: remove -K option.
+
 Mon Nov 17 02:19:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LIBRUBYARG_STATIC): fixed for --enable-rpath.
