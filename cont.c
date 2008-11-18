@@ -14,6 +14,8 @@
 #include "gc.h"
 #include "eval_intern.h"
 
+#define CAPTURE_JUST_VALID_VM_STACK 1
+
 enum context_type {
     CONTINUATION_CONTEXT = 0,
     FIBER_CONTEXT = 1,
@@ -25,6 +27,10 @@ typedef struct rb_context_struct {
     VALUE self;
     VALUE value;
     VALUE *vm_stack;
+#ifdef CAPTURE_JUST_VALID_VM_STACK
+    int vm_stack_slen;  /* length of stack (head of th->stack) */
+    int vm_stack_clen;  /* length of control frames (tail of th->stack) */
+#endif
     VALUE *machine_stack;
     VALUE *machine_stack_src;
 #ifdef __ia64
@@ -75,8 +81,13 @@ cont_mark(void *ptr)
 	rb_thread_mark(&cont->saved_thread);
 
 	if (cont->vm_stack) {
+#ifdef CAPTURE_JUST_VALID_VM_STACK
 	    rb_gc_mark_locations(cont->vm_stack,
-				 cont->vm_stack + cont->saved_thread.stack_size);
+				 cont->vm_stack + cont->vm_stack_slen + cont->vm_stack_clen);
+#elif
+	    rb_gc_mark_localtion(cont->vm_stack,
+				 cont->vm_stack, cont->saved_thread.stack_size);
+#endif
 	}
 
 	if (cont->machine_stack) {
@@ -247,8 +258,16 @@ cont_capture(volatile int *stat)
     contval = cont->self;
     sth = &cont->saved_thread;
 
+#ifdef CAPTURE_JUST_VALID_VM_STACK
+    cont->vm_stack_slen = th->cfp->sp + th->mark_stack_len - th->stack;
+    cont->vm_stack_clen = th->stack + th->stack_size - (VALUE*)th->cfp;
+    cont->vm_stack = ALLOC_N(VALUE, cont->vm_stack_slen + cont->vm_stack_clen);
+    MEMCPY(cont->vm_stack, th->stack, VALUE, cont->vm_stack_slen);
+    MEMCPY(cont->vm_stack + cont->vm_stack_slen, (VALUE*)th->cfp, VALUE, cont->vm_stack_clen);
+#elif
     cont->vm_stack = ALLOC_N(VALUE, th->stack_size);
     MEMCPY(cont->vm_stack, th->stack, VALUE, th->stack_size);
+#endif
     sth->stack = 0;
 
     cont_save_machine_stack(th, cont);
@@ -288,7 +307,13 @@ cont_restore_1(rb_context_t *cont)
 	    th->stack_size = fcont->saved_thread.stack_size;
 	    th->stack = fcont->saved_thread.stack;
 	}
+#ifdef CAPTURE_JUST_VALID_VM_STACK
+	MEMCPY(th->stack, cont->vm_stack, VALUE, cont->vm_stack_slen);
+	MEMCPY(th->stack + sth->stack_size - cont->vm_stack_clen,
+	       cont->vm_stack + cont->vm_stack_slen, VALUE, cont->vm_stack_clen);
+#elif
 	MEMCPY(th->stack, cont->vm_stack, VALUE, sth->stack_size);
+#endif
     }
     else {
 	/* fiber */

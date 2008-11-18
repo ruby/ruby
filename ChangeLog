@@ -1,3 +1,8 @@
+Wed Nov 19 01:05:26 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* cont.c (cont_mark, cont_capture, cont_restore_1): speed up
+	  continuation by copying only valid YARV stack.  [ruby-dev:37106]
+
 Wed Nov 19 00:03:13 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/time.rb: according to RFC2822, -0000 means local time, +0000
