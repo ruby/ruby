@@ -1,3 +1,8 @@
+Tue Nov 18 09:42:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::make_switch): makes default
+	  conversion to splat.  [ruby-list:45645]
+
 Mon Nov 17 02:19:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LIBRUBYARG_STATIC): fixed for --enable-rpath.
