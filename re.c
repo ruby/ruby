@@ -3141,7 +3141,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     rb_encoding *str_enc = rb_enc_get(str);
     rb_encoding *src_enc = rb_enc_get(src);
     int acompat = rb_enc_asciicompat(str_enc);
-#define ASCGET(s,e,cl) (acompat ? (*cl=1,s[0]) : rb_enc_ascget(s, e, cl, str_enc))
+#define ASCGET(s,e,cl) (acompat ? (*cl=1,ISASCII(s[0])?s[0]:-1) : rb_enc_ascget(s, e, cl, str_enc))
 
     p = s = RSTRING_PTR(str);
     e = s + RSTRING_LEN(str);
