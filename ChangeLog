@@ -1,3 +1,8 @@
+Wed Nov 19 02:39:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (Init_syserr): moved function definition itself from
+	  template/known_errors.inc.tmpl.
+
 Wed Nov 19 01:10:52 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb (DRbConn::alive?): fixed NoMethodError problem

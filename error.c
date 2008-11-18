@@ -1157,7 +1157,11 @@ rb_check_frozen(VALUE obj)
     if (OBJ_FROZEN(obj)) rb_error_frozen(rb_obj_classname(obj));
 }
 
+void Init_syserr(void)
+{
+    rb_eNOERROR = set_syserr(0, "NOERROR");
 #include "known_errors.inc"
+}
 
 static void
 err_append(const char *s)
