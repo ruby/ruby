@@ -1208,6 +1208,7 @@ module DRb
     end
 
     def alive?  # :nodoc:
+      return false unless @protocol
       @protocol.alive?
     end
   end
