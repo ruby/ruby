@@ -1,3 +1,9 @@
+Tue Nov 18 20:30:08 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/net/ftp.rb (Net::FTP#open_socket): SOCKSsocket is obsolete.
+	  a patch from Alan Johnson <alan.wayne.johnson at gmail.com> in
+	  [ruby-core:19982].
+
 Tue Nov 18 16:18:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/logger.rb (ProgName): fixed for svn, based on a patch from
