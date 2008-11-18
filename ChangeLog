@@ -1,3 +1,13 @@
+Wed Nov 12 03:28:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_require_safe): destroys barrier after successfully
+	  loaded, to get rid of loading same library again.  [ruby-core:19798]
+
+	* thread.c (rb_barrier_wait): can not wait destroyed barrier.
+
+	* thread.c (rb_barrier_destroy): destroys barrier so that no longer
+	  waited.
+
 Tue Nov 11 21:22:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic#check_path): REL_PATH should a
