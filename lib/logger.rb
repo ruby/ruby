@@ -182,7 +182,7 @@ require 'monitor'
 class Logger
   VERSION = "1.2.6"
   id, name, rev = %w$Id$
-  ProgName = "#{name.chomp(",")}/#{rev}"
+  ProgName = "#{name.chomp(",v")}/#{rev}"
 
   class Error < RuntimeError; end
   class ShiftingError < Error; end
