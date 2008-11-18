@@ -1,3 +1,7 @@
+Mon Nov 17 18:05:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend (LIBS): fixed for disable-shared.  [ruby-dev:37103]
+
 Mon Nov 17 11:12:24 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* bin/erb: remove -K option.

@@ -38,7 +38,6 @@ INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(top_srcdir)
 DEFS = @DEFS@
 CPPFLAGS = @CPPFLAGS@ -DONIG_ENC_REGISTER=rb_enc_register
 LDFLAGS = @LDFLAGS@
-LIBS = @LIBRUBYARG@ @LIBS@ $(EXTLIBS)
 LDSHARED = @LDSHARED@
 ldflags  = $(LDFLAGS)
 dldflags = @DLDFLAGS@
