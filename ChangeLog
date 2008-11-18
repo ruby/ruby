@@ -1,3 +1,9 @@
+Tue Nov 18 15:56:55 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#read_request_line): 
+	  use possessive match for path retrieval to avoid huge recursion
+	  for insanely long path.
+
 Tue Nov 18 15:50:11 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_desc): re might be NULL.
