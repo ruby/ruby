@@ -1,3 +1,8 @@
+Tue Nov 18 23:02:23 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* proc.c (proc_eq): equivalence check should not done by pointer
+	  comparison, but should be based on iseq contents.   [ruby-dev:37101]
+
 Tue Nov 18 20:30:08 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/net/ftp.rb (Net::FTP#open_socket): SOCKSsocket is obsolete.
