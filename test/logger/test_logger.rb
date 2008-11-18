@@ -23,6 +23,10 @@ class TestLogger < Test::Unit::TestCase
     @logger = Logger.new(nil)
   end
 
+  def test_const_progname
+    assert %r!\Alogger\.rb/\S+\z! === Logger::ProgName
+  end
+
   class Log
     attr_reader :label, :datetime, :pid, :severity, :progname, :msg
     def initialize(line)
