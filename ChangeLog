@@ -1,6 +1,6 @@
 Wed Nov 19 00:58:55 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* lib/drb/drb.eb (DRbConn::alive?): fixed NoMethodError problem
+	* lib/drb/drb.rb (DRbConn::alive?): fixed NoMethodError problem
 	  from NaHi [ruby-dev:37110].
 
 Tue Nov 18 20:30:08 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
