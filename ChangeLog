@@ -1,3 +1,8 @@
+Thu Nov 20 07:27:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/minitest/unit.rb (MiniTest::Assertions#capture_io): adjust
+	  indentation to shut up warning.  [ruby-core:19993]
+
 Wed Nov 19 17:48:05 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/syck/rubyext.c (rb_syck_mktime): return DateTime for a value
