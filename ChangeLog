@@ -1,3 +1,8 @@
+Wed Nov 19 14:14:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* node.h (NOEX_MODFUNC): should be include NOEX_PRIVATE. 
+	  [ruby-dev:37124]
+
 Wed Nov 19 03:01:04 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.rb: fixed fails occasionally [ruby-dev:37119].
