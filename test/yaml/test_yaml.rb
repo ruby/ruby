@@ -1306,6 +1306,10 @@ EOY
       raise "id collision in ordered map" if omap.to_yaml =~ /id\d+/
     end
 
+    def test_date_out_of_range
+      assert_nothing_raised{YAML::load('1900-01-01T00:00:00+00:00')}
+    end
+
     def test_normal_exit
       YAML.load("2000-01-01 00:00:00.#{"0"*1000} +00:00\n")
       # '[ruby-core:13735]'

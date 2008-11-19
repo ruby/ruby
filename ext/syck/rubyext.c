@@ -50,11 +50,11 @@ typedef struct {
  * symbols and constants
  */
 static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_unpack, s_tr_bang, s_default_set, s_tag_read_class, s_tag_subclasses, s_resolver, s_push, s_emitter, s_level, s_detect_implicit, s_node_import, s_out, s_input, s_intern, s_transform, s_yaml_new, s_yaml_initialize, s_node_export, s_to_yaml, s_write, s_set_resolver, s_each;
-static ID s_tags, s_kind, s_name, s_options, s_type_id, s_type_id_set, s_style, s_style_set, s_value, s_value_set;
+static ID s_tags, s_kind, s_name, s_options, s_type_id, s_type_id_set, s_style, s_style_set, s_value, s_value_set, s_parse;
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
 static VALUE sym_1quote, sym_2quote, sym_fold, sym_literal, sym_plain, sym_inline;
-static VALUE cDate, cNode, cMap, cSeq, cScalar, cOut, cParser, cResolver, cPrivateType, cDomainType, cYObject, cBadAlias, cDefaultKey, cMergeKey, cEmitter;
+static VALUE cDate, cNode, cMap, cSeq, cScalar, cOut, cParser, cResolver, cPrivateType, cDomainType, cYObject, cBadAlias, cDefaultKey, cMergeKey, cEmitter, cDateTime;
 static VALUE oDefaultResolver, oGenericResolver;
 
 /*
@@ -207,10 +207,17 @@ syck_get_hash_aref(VALUE hsh, VALUE key)
 /*
  * creating timestamps
  */
+struct mktime_arg {
+    char *str;
+    long len;
+};
+
 SYMID
-rb_syck_mktime(char *str, long len)
+mktime_do(struct mktime_arg *arg)
 {
     VALUE time;
+    char *str = arg->str;
+    long len = arg->len;
     char *ptr = str;
     VALUE year = INT2FIX(0);
     VALUE mon = INT2FIX(0);
@@ -310,6 +317,29 @@ rb_syck_mktime(char *str, long len)
         /* Make UTC time*/
         return rb_funcall(rb_cTime, s_utc, 7, year, mon, day, hour, min, sec, LONG2NUM(usec));
     }
+}
+
+SYMID
+mktime_r(struct mktime_arg *arg)
+{
+    if (!cDateTime) {
+        /*
+         * Load Date module
+         */
+        rb_require("date");
+        cDateTime = rb_const_get(rb_cObject, rb_intern("DateTime"));
+    }
+    return rb_funcall(cDateTime, s_parse, 1, rb_str_new(arg->str, arg->len));
+}
+
+SYMID
+rb_syck_mktime(char *str, long len)
+{
+    struct mktime_arg a;
+
+    a.str = str;
+    a.len = len;
+    return rb_rescue2(mktime_do, (VALUE)&a, mktime_r, (VALUE)&a, rb_eArgError, NULL);
 }
 
 /*
@@ -2112,6 +2142,7 @@ Init_syck()
     s_yaml_new = rb_intern("yaml_new");
     s_yaml_initialize = rb_intern("yaml_initialize");
     s_each = rb_intern("each");
+    s_parse = rb_intern("parse");
 
     s_tags = rb_intern("@tags");
     s_name = rb_intern("@name");

@@ -1,3 +1,8 @@
+Wed Nov 19 17:48:05 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syck/rubyext.c (rb_syck_mktime): return DateTime for a value
+	  out of range of Time.   [ruby-core:19919]
+
 Wed Nov 19 14:14:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* node.h (NOEX_MODFUNC): should be include NOEX_PRIVATE. 
