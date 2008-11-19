@@ -1,3 +1,11 @@
+Wed Nov 19 17:52:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_s_alloc, rb_str_replace): use null_str as well as
+	  rb_string_value so that extension libraries do not segfault.
+	  [ruby-core:19971]
+
+	* string.c (rb_str_replace): reduced unnecessary malloc and copy.
+
 Wed Nov 19 03:13:36 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.rb: fixed fails occasionally [ruby-dev:37119].
