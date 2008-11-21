@@ -1,3 +1,9 @@
+Fri Nov 21 22:24:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/curses/curses.c (curses_escdelay_set): support ESCDELAY.  a
+	  patch from Giancarlo F Bellido <support@coaxialhost.com> in
+	  [ruby-core:19961].
+
 Fri Nov 21 22:17:15 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (usage): -W description updated.  [ruby-core:19858]

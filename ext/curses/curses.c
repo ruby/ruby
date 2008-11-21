@@ -573,6 +573,27 @@ curses_bkgd(VALUE obj, VALUE ch)
 }
 
 static VALUE
+curses_escdelay_set(VALUE obj, VALUE val)
+{
+#if defined(HAVE_ESCDELAY)
+	ESCDELAY=NUM2INT(val);
+	return INT2NUM(ESCDELAY);
+#else
+	rb_notimplement();
+#endif
+}
+
+static VALUE
+curses_escdelay_get(VALUE obj)
+{
+#if defined(HAVE_ESCDELAY)
+	return INT2NUM(ESCDELAY);
+#else
+	rb_notimplement();
+#endif
+}
+
+static VALUE
 curses_resizeterm(VALUE obj, VALUE lin, VALUE col)
 {
 #if defined(HAVE_RESIZETERM)
@@ -1419,6 +1440,8 @@ Init_curses(void)
     rb_define_method(cMouseEvent, "bstate", curs_mouse_bstate, 0);
 #endif /* USE_MOUSE */
 
+    rb_define_module_function(mCurses, "ESCDELAY=", curses_escdelay_set, 1);
+    rb_define_module_function(mCurses, "ESCDELAY", curses_escdelay_get, 0);
     rb_define_module_function(mCurses, "init_screen", curses_init_screen, 0);
     rb_define_module_function(mCurses, "close_screen", curses_close_screen, 0);
     rb_define_module_function(mCurses, "closed?", curses_closed, 0);
