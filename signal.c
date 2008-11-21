@@ -47,6 +47,11 @@ typedef int rb_atomic_t;
 # define NSIG (_SIGMAX + 1)      /* For QNX */
 #endif
 
+#if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK)
+#define USE_SIGALTSTACK
+int is_altstack_defined = 0;
+#endif
+
 static const struct signals {
     const char *signm;
     int  signo;
@@ -410,6 +415,28 @@ static struct {
 typedef RETSIGTYPE (*sighandler_t)(int);
 
 #ifdef POSIX_SIGNAL
+#ifdef USE_SIGALTSTACK
+#define ALT_STACK_SIZE (4*1024)
+/* alternate stack for SIGSEGV */
+static void register_sigaltstack() {
+    stack_t newSS, oldSS;
+
+    if(is_altstack_defined)
+      return;
+
+    newSS.ss_sp = malloc(ALT_STACK_SIZE);
+    if(newSS.ss_sp == NULL)
+      /* should handle error */
+       rb_bug("register_sigaltstack. malloc error\n");
+    newSS.ss_size = ALT_STACK_SIZE;
+    newSS.ss_flags = 0;
+
+    if (sigaltstack(&newSS, &oldSS) < 0) 
+        rb_bug("register_sigaltstack. error\n");
+    is_altstack_defined = 1;
+}
+#endif
+
 static sighandler_t
 ruby_signal(int signum, sighandler_t handler)
 {
@@ -432,7 +459,12 @@ ruby_signal(int signum, sighandler_t handler)
     if (signum == SIGCHLD && handler == SIG_IGN)
 	sigact.sa_flags |= SA_NOCLDWAIT;
 #endif
-    sigaction(signum, &sigact, &old);
+#if defined(SA_ONSTACK) && defined(USE_SIGALTSTACK)
+    if (signum == SIGSEGV)
+        sigact.sa_flags |= SA_ONSTACK;
+#endif
+    if (sigaction(signum, &sigact, &old) < 0)
+        rb_bug("sigaction error.\n");
     return old.sa_handler;
 }
 
@@ -663,6 +695,7 @@ default_handler(int sig)
 #ifdef SIGSEGV
       case SIGSEGV:
         func = sigsegv;
+        register_sigaltstack();
         break;
 #endif
 #ifdef SIGPIPE
@@ -1070,6 +1103,7 @@ Init_signal(void)
     install_sighandler(SIGBUS, sigbus);
 #endif
 #ifdef SIGSEGV
+    register_sigaltstack();
     install_sighandler(SIGSEGV, sigsegv);
 #endif
     }

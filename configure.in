@@ -786,7 +786,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot fsync getcwd
 	      setsid telldir seekdir fchmod cosh sinh tanh log2 round signbit\
 	      setuid setgid daemon select_large_fdset setenv unsetenv\
               mktime timegm gmtime_r clock_gettime gettimeofday\
-              pread sendfile shutdown)
+              pread sendfile shutdown sigaltstack)
 
 AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
 [AC_TRY_LINK([@%:@include <setjmp.h>
