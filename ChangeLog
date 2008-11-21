@@ -1,3 +1,7 @@
+Fri Nov 21 22:17:15 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (usage): -W description updated.  [ruby-core:19858]
+
 Fri Nov 21 21:50:54 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (register_sigaltstack): use alternative stack for
