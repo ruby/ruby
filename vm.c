@@ -1486,7 +1486,7 @@ thread_free(void *ptr)
 	}
 #endif
 
-	if (th->vm->main_thread == th) {
+	if (th->vm && th->vm->main_thread == th) {
 	    RUBY_GC_INFO("main thread\n");
 	}
 	else {

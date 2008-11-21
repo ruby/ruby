@@ -1,3 +1,8 @@
+Fri Nov 21 16:06:54 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* vm.c (thread_free): th->vm may be NULL when pthread_create
+	  failed for ENOMEM.  [ruby-dev:37095]
+
 Thu Nov 20 07:33:15 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/logger.rb (Logger): should handle the case that cvs/svn do
