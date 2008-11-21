@@ -1,3 +1,13 @@
+Sat Nov 22 03:41:22 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/pty/pty.c (get_device_once): abandon asynchronous exception
+	  that might cause serious problem if a program terminated early.
+	  asynchronous exception is a very bad thing anyway.  use
+	  Process.waitpid(pid) or PTY.check(pid) to poll program
+	  termination. if PTY.check is called with optional second
+	  argument being true, it raises an exception same as one from
+	  previous behavior.  [incompatible] fix: [ruby-core:19583]
+
 Fri Nov 21 22:24:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/curses/curses.c (curses_escdelay_set): support ESCDELAY.  a

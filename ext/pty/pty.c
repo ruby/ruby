@@ -127,50 +127,7 @@ echild_status(VALUE self)
 struct pty_info {
     int fd;
     rb_pid_t child_pid;
-    VALUE thread;
 };
-
-static void
-raise_from_wait(const char *state, const struct pty_info *info)
-{
-    char buf[1024];
-    VALUE exc;
-
-    snprintf(buf, sizeof(buf), "pty - %s: %ld", state, (long)info->child_pid);
-    exc = rb_exc_new2(eChildExited, buf);
-    rb_iv_set(exc, "status", rb_last_status_get());
-    rb_funcall(info->thread, rb_intern("raise"), 1, exc);
-}
-
-static VALUE
-pty_syswait(void *arg)
-{
-    const struct pty_info *const info = arg;
-    rb_pid_t cpid;
-    int status;
-
-    for (;;) {
-	cpid = rb_waitpid(info->child_pid, &status, WUNTRACED);
-	if (cpid == -1) return Qnil;
-
-#if defined(WIFSTOPPED)
-#elif defined(IF_STOPPED)
-#define WIFSTOPPED(status) IF_STOPPED(status)
-#else
----->> Either IF_STOPPED or WIFSTOPPED is needed <<----
-#endif /* WIFSTOPPED | IF_STOPPED */
-	if (WIFSTOPPED(status)) { /* suspend */
-	    raise_from_wait("stopped", info);
-	}
-	else if (kill(info->child_pid, 0) == 0) {
-	    raise_from_wait("changed", info);
-	}
-	else {
-	    raise_from_wait("exited", info);
-	    return Qnil;
-	}
-    }
-}
 
 static void getDevice(int*, int*, char [DEVICELEN]);
 
@@ -217,7 +174,6 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     }
     getDevice(&master, &slave, SlaveName);
 
-    info->thread = rb_thread_current();
     if ((pid = fork()) < 0) {
 	close(master);
 	close(slave);
@@ -286,15 +242,6 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 
     info->child_pid = pid;
     info->fd = master;
-}
-
-static VALUE
-pty_finalize_syswait(struct pty_info *info)
-{
-    rb_thread_kill(info->thread);
-    rb_funcall(info->thread, rb_intern("value"), 0);
-    rb_detach_process(info->child_pid);
-    return Qnil;
 }
 
 static int
@@ -396,13 +343,19 @@ getDevice(int *master, int *slave, char SlaveName[DEVICELEN])
     }
 }
 
+static VALUE
+pty_detach_process(struct pty_info *info)
+{
+    rb_detach_process(info->child_pid);
+    return Qnil;
+}
+
 /* ruby function: getpty */
 static VALUE
 pty_getpty(int argc, VALUE *argv, VALUE self)
 {
     VALUE res;
     struct pty_info info;
-    struct pty_info thinfo;
     rb_io_t *wfptr,*rfptr;
     VALUE rport = rb_obj_alloc(rb_cFile);
     VALUE wport = rb_obj_alloc(rb_cFile);
@@ -426,32 +379,55 @@ pty_getpty(int argc, VALUE *argv, VALUE self)
     rb_ary_store(res,1,(VALUE)wport);
     rb_ary_store(res,2,PIDT2NUM(info.child_pid));
 
-    thinfo.thread = rb_thread_create(pty_syswait, (void*)&info);
-    thinfo.child_pid = info.child_pid;
-    rb_thread_schedule();
-
     if (rb_block_given_p()) {
-	rb_ensure(rb_yield, res, pty_finalize_syswait, (VALUE)&thinfo);
+	rb_ensure(rb_yield, res, pty_detach_process, (VALUE)&info);
 	return Qnil;
     }
     return res;
 }
 
-/* ruby function: protect_signal - obsolete */
-static VALUE
-pty_protect(VALUE self)
+static void
+raise_from_check(pid_t pid, int status)
 {
-    rb_warn("PTY::protect_signal is no longer needed");
-    rb_yield(Qnil);
-    return self;
+    const char *state;
+    char buf[1024];
+    VALUE exc;
+
+#if defined(WIFSTOPPED)
+#elif defined(IF_STOPPED)
+#define WIFSTOPPED(status) IF_STOPPED(status)
+#else
+---->> Either IF_STOPPED or WIFSTOPPED is needed <<----
+#endif /* WIFSTOPPED | IF_STOPPED */
+    if (WIFSTOPPED(status)) { /* suspend */
+	state = "stopped";
+    }
+    else if (kill(pid, 0) == 0) {
+	state = "changed";
+    }
+    else {
+	state = "exited";
+    }
+    snprintf(buf, sizeof(buf), "pty - %s: %ld", state, (long)pid);
+    exc = rb_exc_new2(eChildExited, buf);
+    rb_iv_set(exc, "status", rb_last_status_get());
+    rb_exc_raise(exc);
 }
 
-/* ruby function: reset_signal - obsolete */
 static VALUE
-pty_reset_signal(VALUE self)
+pty_check(int argc, VALUE *argv, VALUE self)
 {
-    rb_warn("PTY::reset_signal is no longer needed");
-    return self;
+    VALUE pid, exc;
+    pid_t cpid;
+    int status;
+
+    rb_scan_args(argc, argv, "11", &pid, &exc);
+    cpid = rb_waitpid(NUM2PIDT(pid), &status, WUNTRACED);
+    if (cpid == -1) return Qnil;
+
+    if (!RTEST(exc)) return status;
+    raise_from_check(pid, status);
+    return Qnil;		/* not reached */
 }
 
 static VALUE cPTY;
@@ -462,8 +438,7 @@ Init_pty()
     cPTY = rb_define_module("PTY");
     rb_define_module_function(cPTY,"getpty",pty_getpty,-1);
     rb_define_module_function(cPTY,"spawn",pty_getpty,-1);
-    rb_define_module_function(cPTY,"protect_signal",pty_protect,0);
-    rb_define_module_function(cPTY,"reset_signal",pty_reset_signal,0);
+    rb_define_singleton_function(cPTY,"check",pty_check,-1);
 
     eChildExited = rb_define_class_under(cPTY,"ChildExited",rb_eRuntimeError);
     rb_define_method(eChildExited,"status",echild_status,0);
