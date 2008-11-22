@@ -27,6 +27,15 @@ class TestMethod < Test::Unit::TestCase
   class Derived < Base
     def foo() :derived end
   end
+  class T
+    def initialize; end
+    def normal_method; end
+  end
+  module M
+    def func; end
+    module_function :func
+    def meth; end
+  end
 
   def test_arity
     assert_equal(0, method(:m0).arity)
@@ -220,5 +229,12 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(42, o.foo)
     assert_raise(ArgumentError) { o.method(:foo=).call(1, 2, 3) }
     assert_raise(ArgumentError) { o.method(:foo).call(1) }
+  end
+
+  def test_default_accessibility
+    assert T.public_instance_methods.include?(:normal_method)
+    assert !T.public_instance_methods.include?(:initialize)
+    assert M.public_instance_methods.include?(:func)
+    assert !M.public_instance_methods.include?(:meth)
   end
 end
