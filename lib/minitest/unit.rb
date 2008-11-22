@@ -191,12 +191,12 @@ module MiniTest
       assert caught, message(msg) { default }
     end
 
-   def capture_io
-     require 'stringio'
+    def capture_io
+      require 'stringio'
 
-     orig_stdout, orig_stderr         = $stdout, $stderr
-     captured_stdout, captured_stderr = StringIO.new, StringIO.new
-     $stdout, $stderr                 = captured_stdout, captured_stderr
+      orig_stdout, orig_stderr         = $stdout, $stderr
+      captured_stdout, captured_stderr = StringIO.new, StringIO.new
+      $stdout, $stderr                 = captured_stdout, captured_stderr
 
       yield
 
