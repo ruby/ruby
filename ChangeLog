@@ -1,3 +1,8 @@
+Sat Nov 22 23:03:47 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* signal.c (ALT_STACK_SIZE): 4KB is not enough on Mac OS X.
+	  Uses SIGSTKSZ.
+
 Fri Nov 21 21:50:54 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (register_sigaltstack): use alternative stack for
