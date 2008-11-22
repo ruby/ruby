@@ -1,3 +1,10 @@
+Fri Nov 21 21:50:54 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* signal.c (register_sigaltstack): use alternative stack for
+	  SIGSEGV to avoid uncaught stack overflow. based on a patch from
+	  Hiro Yoshioka <hyoshiok at miraclelinux.com> in [ruby-dev:37134].
+	  [ruby-dev:36993]
+
 Fri Nov 21 16:06:54 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* vm.c (thread_free): th->vm may be NULL when pthread_create
