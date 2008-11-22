@@ -1299,7 +1299,7 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
 #ifdef S_IWOTH
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return Qfalse;
+    if (rb_stat(fname, &st) < 0) return Qnil;
     if ((st.st_mode & (S_IWOTH)) == S_IWOTH) {
 	return UINT2NUM(st.st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
     }
