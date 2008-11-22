@@ -232,9 +232,9 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_default_accessibility
-    assert T.public_instance_methods.include?(:normal_method)
-    assert !T.public_instance_methods.include?(:initialize)
-    assert M.public_instance_methods.include?(:func)
-    assert !M.public_instance_methods.include?(:meth)
+    assert T.public_instance_methods.include?(:normal_method), 'normal methods are public by default'
+    assert !T.public_instance_methods.include?(:initialize), '#initialize is private'
+    assert !M.public_instance_methods.include?(:func), 'module methods are private by default'
+    assert M.public_instance_methods.include?(:meth), 'normal methods are public by default'
   end
 end
