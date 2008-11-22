@@ -1,3 +1,7 @@
+Sat Nov 22 23:59:06 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/time.rb: reverts r20305. [ruby-dev:37144].
+
 Sat Nov 22 18:24:24 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (rb_file_world_writable_p): should return nil for non
