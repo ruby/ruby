@@ -3,19 +3,18 @@ require 'cgi'
 require 'cgi/session'
 require 'cgi/session/pstore'
 require 'stringio'
+require 'tmpdir'
 
 class CGISessionTest < Test::Unit::TestCase
-
-
   def setup
-    FileUtils.rm(Dir::glob(File.dirname(__FILE__)+"/session_dir/*"))
+    @session_dir = Dir.mktmpdir('__test_dir__')+'/session_dir/'
+    FileUtils.mkdir_p @session_dir
   end
-
 
   def teardown
     @environ.each do |key, val| ENV.delete(key) end
     $stdout = STDOUT
-#    FileUtils.rm(Dir::glob(File.dirname(__FILE__)+"/session_dir/*"))
+    FileUtils.rm_rf(@session_dir)
   end
 
   def test_cgi_session_filestore
@@ -31,7 +30,7 @@ class CGISessionTest < Test::Unit::TestCase
     value2.force_encoding("SJIS") if RUBY_VERSION>="1.9"
     ENV.update(@environ)
     cgi = CGI.new
-    session = CGI::Session.new(cgi,"tmpdir"=>File.dirname(__FILE__)+"/session_dir")
+    session = CGI::Session.new(cgi,"tmpdir"=>@session_dir)
     session["key1"]=value1
     session["key2"]=value2
     assert_equal(value1,session["key1"])
@@ -49,7 +48,7 @@ class CGISessionTest < Test::Unit::TestCase
     }
     ENV.update(@environ)
     cgi = CGI.new
-    session = CGI::Session.new(cgi,"tmpdir"=>File.dirname(__FILE__)+"/session_dir")
+    session = CGI::Session.new(cgi,"tmpdir"=>@session_dir)
     $stdout = StringIO.new
     assert_equal(value1,session["key1"])
     assert_equal(value2,session["key2"])
@@ -69,7 +68,7 @@ class CGISessionTest < Test::Unit::TestCase
     value2.force_encoding("SJIS") if RUBY_VERSION>="1.9"
     ENV.update(@environ)
     cgi = CGI.new
-    session = CGI::Session.new(cgi,"tmpdir"=>File.dirname(__FILE__)+"/session_dir","database_manager"=>CGI::Session::PStore)
+    session = CGI::Session.new(cgi,"tmpdir"=>@session_dir,"database_manager"=>CGI::Session::PStore)
     session["key1"]=value1
     session["key2"]=value2
     assert_equal(value1,session["key1"])
@@ -87,7 +86,7 @@ class CGISessionTest < Test::Unit::TestCase
     }
     ENV.update(@environ)
     cgi = CGI.new
-    session = CGI::Session.new(cgi,"tmpdir"=>File.dirname(__FILE__)+"/session_dir","database_manager"=>CGI::Session::PStore)
+    session = CGI::Session.new(cgi,"tmpdir"=>@session_dir,"database_manager"=>CGI::Session::PStore)
     $stdout = StringIO.new
     assert_equal(value1,session["key1"])
     assert_equal(value2,session["key2"])
