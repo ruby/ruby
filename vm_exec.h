@@ -9,8 +9,8 @@
 
 **********************************************************************/
 
-#ifndef RUBY_VM_H
-#define RUBY_VM_H
+#ifndef RUBY_VM_EXEC_H
+#define RUBY_VM_EXEC_H
 
 typedef long OFFSET;
 typedef unsigned long lindex_t;
@@ -184,4 +184,4 @@ default:                        \
 
 #define SCREG(r) (reg_##r)
 
-#endif /* RUBY_VM_H */
+#endif /* RUBY_VM_EXEC_H */
