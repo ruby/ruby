@@ -1,3 +1,8 @@
+Wed Nov 19 01:10:52 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb (DRbConn::alive?): fixed NoMethodError problem
+	  from NaHi [ruby-dev:37110].
+
 Wed Nov 19 01:05:26 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* cont.c (cont_mark, cont_capture, cont_restore_1): speed up
