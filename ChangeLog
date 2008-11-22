@@ -3590,7 +3590,7 @@ Mon Sep 15 02:37:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* transcode.c (str_encode): returns duplicated string if nothing
 	  changed.  [ruby-core:18578]
 
-Sun Sep  14 22:09:01 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
+Sun Sep 14 22:09:01 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb (CGI::parse): performance improvement
 
@@ -8665,7 +8665,7 @@ Fri Aug  1 23:26:45 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	* transcode.c (transcode_loop): undefined character is replaced with
 	  only one character. [ruby-dev:35709]
 
-Fri Aug 01 23:26:22 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+Fri Aug  1 23:26:22 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	Merged r16430(akr), r16431(akr), r16433(akr), r16469(nobu), and
 	r17874(akr) from ruby_1_8.
@@ -8709,7 +8709,7 @@ Fri Aug  1 20:55:27 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	* enc/trans/japanese.c (to_EUC_JP_EF_infos): change size.
 	  [ruby-dev:35714]
 
-Fri Aug 01 18:27:15 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+Fri Aug  1 18:27:15 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* parse.y (parser_yylex): removed an useless conditional, and magic
 	  comment are ignored unless at the first of line.
@@ -16705,7 +16705,7 @@ Sat Feb  9 10:03:07 2008  Tanaka Akira  <akr@fsij.org>
 	* string.c (rb_str_new4): copy encoding from orig, instead of shared
 	  one.
 
-Sat Feb 09 01:01:38 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+Sat Feb  9 01:01:38 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (lchmod_internal): fix warning cast from pointer to integer of
 	  different size.
