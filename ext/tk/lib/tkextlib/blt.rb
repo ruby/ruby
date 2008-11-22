@@ -26,14 +26,14 @@ module Tk
     PATCH_LEVEL = tk_call('set', 'blt_patchLevel')
 
     begin
-      lib = INTERP._invoke('set', 'blt_library')
+      lib = TkCore::INTERP._invoke('set', 'blt_library')
     rescue
       lib = ''
     end
     LIBRARY  = TkVarAccess.new('blt_library', lib)
 
     begin
-      lib = INTERP._invoke('set', 'blt_libPath')
+      lib = TkCore::INTERP._invoke('set', 'blt_libPath')
     rescue
       lib = ''
     end
