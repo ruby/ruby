@@ -1,3 +1,8 @@
+Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/blt.rb, ext/tk/lib/tkextlib/blt/vector.rb: 
+	  fix NameError bug.
+
 Sat Nov 22 03:41:22 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/pty/pty.c (get_device_once): abandon asynchronous exception

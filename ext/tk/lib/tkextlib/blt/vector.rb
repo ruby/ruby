@@ -49,11 +49,11 @@ module Tk::BLT
         size = size.join(':')
       end
       if size
-        @id = INTERP._invoke('::blt::vector', 'create', 
-                             "#auto(#{size})", *hash_kv(keys))
+        @id = TkCore::INTERP._invoke('::blt::vector', 'create', 
+                                     "#auto(#{size})", *hash_kv(keys))
       else
-        @id = INTERP._invoke('::blt::vector', 'create', 
-                             "#auto", *hash_kv(keys))
+        @id = TkCore::INTERP._invoke('::blt::vector', 'create', 
+                                     "#auto", *hash_kv(keys))
       end
 
       TkVar_ID_TBL.mutex.synchronize{
@@ -68,7 +68,7 @@ module Tk::BLT
       @trace_opts = nil
 
       # teach Tk-ip that @id is global var
-      INTERP._invoke_without_enc('global', @id)
+      TkCore::INTERP._invoke_without_enc('global', @id)
     end
 
     def destroy
@@ -250,7 +250,7 @@ module Tk::BLT
       @trace_opts = nil
 
       # teach Tk-ip that @id is global var
-      INTERP._invoke_without_enc('global', @id)
+      TkCore::INTERP._invoke_without_enc('global', @id)
     end
   end
 end
