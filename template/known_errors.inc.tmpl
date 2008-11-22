@@ -5,8 +5,6 @@
  */
 
 % error_names = ARGF.read.split(/\s+/)
-void Init_syserr(void) {
-    rb_eNOERROR = set_syserr(0, "NOERROR");
 % error_names.each do |name|
 #ifdef <%=name%>
         set_syserr(<%=name%>, "<%=name%>");
@@ -14,4 +12,3 @@ void Init_syserr(void) {
         set_syserr(0, "<%=name%>");
 #endif
 % end
-}
