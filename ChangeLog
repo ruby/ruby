@@ -1,3 +1,8 @@
+Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/blt.rb, ext/tk/lib/tkextlib/blt/vector.rb: 
+	  fix NameError bug.
+
 Wed Nov 19 17:52:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_s_alloc, rb_str_replace): use null_str as well as
