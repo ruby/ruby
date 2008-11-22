@@ -468,7 +468,7 @@ typedef struct RNode {
 
 #define NOEX_UNDEF     NOEX_NOSUPER
 
-#define NOEX_MODFUNC   0x10
+#define NOEX_MODFUNC   0x12
 #define NOEX_SUPER     0x20
 #define NOEX_VCALL     0x40
 
