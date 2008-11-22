@@ -1,3 +1,8 @@
+Wed Nov 19 17:48:05 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syck/rubyext.c (rb_syck_mktime): return DateTime for a value
+	  out of range of Time.   [ruby-core:19919]
+
 Sat Nov 22 21:29:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_method.rb (test_default_accessiblity): test case for
