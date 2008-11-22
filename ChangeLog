@@ -1,3 +1,8 @@
+Sat Nov 22 21:29:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/ruby/test_method.rb (test_default_accessiblity): test case for
+	  [ruby-dev:37124].
+
 Wed Nov 19 14:14:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* node.h (NOEX_MODFUNC): should be include NOEX_PRIVATE. 
