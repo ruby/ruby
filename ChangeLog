@@ -1,3 +1,8 @@
+Sun Nov 23 16:04:05 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* signal.c (default_handler, Init_signal): compile error if
+	  USE_SIGALTSTACK is not defined.
+
 Sun Nov 23 00:04:14 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* signal.c (ALT_STACK_SIZE): 4KB is not enough on Mac OS X.
