@@ -1,3 +1,7 @@
+Sun Nov 23 13:39:49 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ext/pty/pty.c: reverts 20326. [ruby-dev:37146].
+
 Sat Nov 22 23:59:06 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/time.rb: reverts r20305. [ruby-dev:37144].
