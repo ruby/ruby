@@ -699,7 +699,9 @@ default_handler(int sig)
 #ifdef SIGSEGV
       case SIGSEGV:
         func = sigsegv;
+#ifdef USE_SIGALTSTACK
         register_sigaltstack();
+#endif
         break;
 #endif
 #ifdef SIGPIPE
@@ -1107,7 +1109,9 @@ Init_signal(void)
     install_sighandler(SIGBUS, sigbus);
 #endif
 #ifdef SIGSEGV
+#ifdef USE_SIGALTSTACK
     register_sigaltstack();
+#endif
     install_sighandler(SIGSEGV, sigsegv);
 #endif
     }
