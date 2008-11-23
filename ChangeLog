@@ -1,3 +1,8 @@
+Sun Nov 23 00:04:14 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* signal.c (ALT_STACK_SIZE): 4KB is not enough on Mac OS X.
+	  Uses SIGSTKSZ.
+
 Sat Nov 22 21:29:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_method.rb (test_default_accessiblity): test case for

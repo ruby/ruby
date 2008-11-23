@@ -416,7 +416,11 @@ typedef RETSIGTYPE (*sighandler_t)(int);
 
 #ifdef POSIX_SIGNAL
 #ifdef USE_SIGALTSTACK
+#ifdef SIGSTKSZ
+#define ALT_STACK_SIZE SIGSTKSZ
+#else
 #define ALT_STACK_SIZE (4*1024)
+#endif
 /* alternate stack for SIGSEGV */
 static void register_sigaltstack() {
     stack_t newSS, oldSS;
