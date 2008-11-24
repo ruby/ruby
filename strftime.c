@@ -318,6 +318,10 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			continue;
 
 		case 'a':	/* abbreviated weekday name */
+			if (flags & BIT_OF(CHCASE)) {
+				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
+				flags |= BIT_OF(UPPER);
+			}
 			if (timeptr->tm_wday < 0 || timeptr->tm_wday > 6)
 				i = 1, tp = "?";
 			else
@@ -325,6 +329,10 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			break;
 
 		case 'A':	/* full weekday name */
+			if (flags & BIT_OF(CHCASE)) {
+				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
+				flags |= BIT_OF(UPPER);
+			}
 			if (timeptr->tm_wday < 0 || timeptr->tm_wday > 6)
 				i = 1, tp = "?";
 			else
@@ -335,6 +343,10 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 		case 'h':	/* abbreviated month name */
 #endif
 		case 'b':	/* abbreviated month name */
+			if (flags & BIT_OF(CHCASE)) {
+				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
+				flags |= BIT_OF(UPPER);
+			}
 			if (timeptr->tm_mon < 0 || timeptr->tm_mon > 11)
 				i = 1, tp = "?";
 			else
@@ -342,6 +354,10 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			break;
 
 		case 'B':	/* full month name */
+			if (flags & BIT_OF(CHCASE)) {
+				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
+				flags |= BIT_OF(UPPER);
+			}
 			if (timeptr->tm_mon < 0 || timeptr->tm_mon > 11)
 				i = 1, tp = "?";
 			else
