@@ -299,6 +299,24 @@ class TestDateStrftime < Test::Unit::TestCase
     assert_equal('-2000', d.strftime('%05Y'))
   end
 
+  def test_strftime__gnuext_LN # coreutils
+    d = DateTime.parse('2008-11-25T00:11:22.0123456789')
+    assert_equal('012', d.strftime('%L'))
+    assert_equal('012', d.strftime('%0L'))
+    assert_equal('0', d.strftime('%1L'))
+    assert_equal('01', d.strftime('%2L'))
+    assert_equal('01234567890', d.strftime('%11L'))
+    assert_equal('01234567890', d.strftime('%011L'))
+    assert_equal('01234567890', d.strftime('%_11L'))
+    assert_equal('012345678', d.strftime('%N'))
+    assert_equal('012345678', d.strftime('%0N'))
+    assert_equal('0', d.strftime('%1N'))
+    assert_equal('01', d.strftime('%2N'))
+    assert_equal('01234567890', d.strftime('%11N'))
+    assert_equal('01234567890', d.strftime('%011N'))
+    assert_equal('01234567890', d.strftime('%_11N'))
+  end
+
   def test_strftime__gnuext_z # coreutils
     d = DateTime.parse('2006-08-08T23:15:33+09:08:07')
     assert_equal('+0908', d.strftime('%z'))

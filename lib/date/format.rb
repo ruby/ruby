@@ -255,6 +255,7 @@ class Date
       when 'j'; emit_n(yday, 3, f)
       when 'k'; emit_a(hour, 2, f)
       when 'L'
+	f[:p] = nil
 	w = f[:w] || 3
 	u = 10**w
 	emit_n((sec_fraction * u).floor, w, f)
@@ -262,6 +263,7 @@ class Date
       when 'M', 'OM'; emit_n(min, 2, f)
       when 'm', 'Om'; emit_n(mon, 2, f)
       when 'N'
+	f[:p] = nil
 	w = f[:w] || 9
 	u = 10**w
 	emit_n((sec_fraction * u).floor, w, f)
