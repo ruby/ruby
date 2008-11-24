@@ -1,8 +1,12 @@
 # logger.rb - simple logging utility
-# Copyright (C) 2000-2003, 2005  NAKAMURA, Hiroshi <nakahiro@sarion.co.jp>.
+# Copyright (C) 2000-2003, 2005, 2008  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+
 
 require 'monitor'
 
+
+# = logger.rb
+#
 # Simple logging utility.
 #
 # Author:: NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
@@ -11,6 +15,11 @@ require 'monitor'
 #   You can redistribute it and/or modify it under the same terms of Ruby's
 #   license; either the dual license version in 2003, or any later version.
 # Revision:: $Id$
+#
+# See Logger for documentation.
+#
+
+
 #
 # == Description
 #
@@ -143,14 +152,14 @@ require 'monitor'
 # 2. Log4r (somewhat) compatible interface.
 #
 #      logger.level = Logger::INFO
-#      
+#
 #      DEBUG < INFO < WARN < ERROR < FATAL < UNKNOWN
 #
 #
 # == Format
 #
-# Log messages are rendered in the output stream in a certain format.  The
-# default format and a sample are shown below:
+# Log messages are rendered in the output stream in a certain format by
+# default.  The default format and a sample are shown below:
 #
 # Log format:
 #   SeverityID, [Date Time mSec #pid] SeverityLabel -- ProgName: message
@@ -163,18 +172,22 @@ require 'monitor'
 #   logger.datetime_format = "%Y-%m-%d %H:%M:%S"
 #         # e.g. "2004-01-03 00:54:26"
 #
-# There is currently no supported way to change the overall format, but you may
-# have some luck hacking the Format constant.
+# You may change the overall format with Logger#formatter= method.
+#
+#   logger.formatter = proc { |severity, datetime, progname, msg|
+#     "#{datetime}: #{msg}\n"
+#   }
+#         # e.g. "Thu Sep 22 08:51:08 GMT+9:00 2005: hello world"
 #
 
 
 class Logger
-  VERSION = "1.2.6"
-  id, name, rev = %w$Id$
-  ProgName = "#{name.chomp(",v")}/#{rev}"
+  VERSION = "1.2.7"
+  /: (\S+) (\S+)/ =~ %q$Id$
+  ProgName = "#{$1}/#{$2}"
 
   class Error < RuntimeError; end
-  class ShiftingError < Error; end
+  class ShiftingError < Error; end # not used after 1.2.7. just for compat.
 
   # Logging severity.
   module Severity
@@ -494,20 +507,27 @@ private
 
     def write(message)
       @mutex.synchronize do
-        if @shift_age and @dev.respond_to?(:stat)
-          begin
-            check_shift_log
-          rescue
-            raise Logger::ShiftingError.new("Shifting failed. #{$!}")
+        begin
+          if @shift_age and @dev.respond_to?(:stat)
+            begin
+              check_shift_log
+            rescue
+              warn("log shifting failed. #{$!}")
+            end
           end
+          begin
+            @dev.write(message)
+          rescue
+            warn("log writing failed. #{$!}")
+          end
+        rescue Exception => ignored
         end
-        @dev.write(message)
       end
     end
 
     def close
       @mutex.synchronize do
-        @dev.close
+        @dev.close rescue nil
       end
     end
 
@@ -530,8 +550,8 @@ private
 
     def add_log_header(file)
       file.write(
-     	"# Logfile created on %s by %s\n" % [Time.now.to_s, Logger::ProgName]
-    )
+        "# Logfile created on %s by %s\n" % [Time.now.to_s, Logger::ProgName]
+      )
     end
 
     SiD = 24 * 60 * 60
@@ -544,8 +564,9 @@ private
         end
       else
         now = Time.now
-        if @dev.stat.mtime <= previous_period_end(now)
-          shift_log_period(now)
+        period_end = previous_period_end(now)
+        if @dev.stat.mtime <= period_end
+          shift_log_period(period_end)
         end
       end
     end
@@ -556,19 +577,26 @@ private
           File.rename("#{@filename}.#{i}", "#{@filename}.#{i+1}")
         end
       end
-      @dev.close
+      @dev.close rescue nil
       File.rename("#{@filename}", "#{@filename}.0")
       @dev = create_logfile(@filename)
       return true
     end
 
-    def shift_log_period(now)
-      postfix = previous_period_end(now).strftime("%Y%m%d")	# YYYYMMDD
+    def shift_log_period(period_end)
+      postfix = period_end.strftime("%Y%m%d")	# YYYYMMDD
       age_file = "#{@filename}.#{postfix}"
       if FileTest.exist?(age_file)
-        raise RuntimeError.new("'#{ age_file }' already exists.")
+        # try to avoid filename crash caused by Timestamp change.
+        idx = 0
+        # .99 can be overriden; avoid too much file search with 'loop do'
+        while idx < 100
+          idx += 1
+          age_file = "#{@filename}.#{postfix}.#{idx}"
+          break unless FileTest.exist?(age_file)
+        end
       end
-      @dev.close
+      @dev.close rescue nil
       File.rename("#{@filename}", age_file)
       @dev = create_logfile(@filename)
       return true
@@ -625,8 +653,8 @@ private
   class Application
     include Logger::Severity
 
+    # Name of the application given at initialize.
     attr_reader :appname
-    attr_reader :logdev
 
     #
     # == Synopsis
@@ -665,9 +693,23 @@ private
       status
     end
 
+    # Logger for this application.  See the class Logger for an explanation.
+    def logger
+      @log
+    end
+
     #
-    # Sets the log device for this application.  See the class Logger for an
-    # explanation of the arguments.
+    # Sets the logger for this application.  See the class Logger for an explanation.
+    #
+    def logger=(logger)
+      @log = logger
+      @log.progname = @appname
+      @log.level = @level
+    end
+
+    #
+    # Sets the log device for this application.  See <tt>Logger.new</tt> for an explanation
+    # of the arguments.
     #
     def set_log(logdev, shift_age = 0, shift_size = 1024000)
       @log = Logger.new(logdev, shift_age, shift_size)
@@ -697,6 +739,7 @@ private
   private
 
     def run
+      # TODO: should be an NotImplementedError
       raise RuntimeError.new('Method run must be defined in the derived class.')
     end
   end
