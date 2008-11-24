@@ -975,6 +975,8 @@ void rb_thread_reset_timer_thread(void);
   (rb_enable_interrupt(), rb_thread_stop_timer_thread())
 #define after_exec() \
   (rb_thread_start_timer_thread(), rb_disable_interrupt())
+#define before_fork() before_exec()
+#define after_fork() after_exec()
 
 #include "dln.h"
 
@@ -2272,7 +2274,8 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
 	}
     }
 #endif
-    for (; (pid = fork()) < 0; prefork()) {
+    for (; before_fork(), (pid = fork()) < 0; prefork()) {
+	after_fork();
 	switch (errno) {
 	  case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
@@ -2298,7 +2301,6 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
 	}
     }
     if (!pid) {
-	rb_thread_reset_timer_thread();
 	if (chfunc) {
 #ifdef FD_CLOEXEC
 	    close(ep[0]);
@@ -2314,10 +2316,10 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
 	    _exit(127);
 #endif
 	}
-	rb_thread_start_timer_thread();
     }
+    after_fork();
 #ifdef FD_CLOEXEC
-    else if (chfunc) {
+    if (pid && chfunc) {
 	close(ep[1]);
 	if ((state = read(ep[0], &err, sizeof(err))) < 0) {
 	    err = errno;
