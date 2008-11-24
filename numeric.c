@@ -1503,10 +1503,15 @@ num_step(int argc, VALUE *argv, VALUE from)
 	double err = (fabs(beg) + fabs(end) + fabs(end-beg)) / fabs(unit) * epsilon;
 	long i;
 
-	if (err>0.5) err=0.5;
-	n = floor(n + err) + 1;
-	for (i=0; i<n; i++) {
-	    rb_yield(DBL2NUM(i*unit+beg));
+	if (isinf(unit)) {
+	    if (unit > 0) rb_yield(DBL2NUM(beg));
+	}
+	else {
+	    if (err>0.5) err=0.5;
+	    n = floor(n + err) + 1;
+	    for (i=0; i<n; i++) {
+		rb_yield(DBL2NUM(i*unit+beg));
+	    }
 	}
     }
     else {
