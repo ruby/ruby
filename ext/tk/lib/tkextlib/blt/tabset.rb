@@ -27,7 +27,7 @@ module Tk::BLT
         tpath = tabset.path
         TabID_TBL.mutex.synchronize{
           if TabID_TBL[tpath]
-            TabID_TBL[tpath][id]? TabID_TBL[tpath]: id
+            TabID_TBL[tpath][id]? TabID_TBL[tpath][id]: id
           else
             id
           end
@@ -48,6 +48,13 @@ module Tk::BLT
         TabID_TBL.mutex.synchronize{
           if name && TabID_TBL[parent.path] && TabID_TBL[parent.path][name]
             obj = TabID_TBL[parent.path][name]
+            if pos
+              if pos.to_s == 'end'
+                obj.move_after('end')
+              else
+                obj.move_before(pos)
+              end
+            end
             obj.configure if keys && ! keys.empty?
           else
             (obj = self.allocate).instance_eval{
@@ -69,9 +76,9 @@ module Tk::BLT
             if pos
               idx = tk_call(@tpath, 'index', '-name', @id)
               if pos.to_s == 'end'
-                tk_call(@tpath, idx, 'moveto', 'after', 'end')
+                tk_call(@tpath, 'move', idx, 'after', 'end')
               else
-                tk_call(@tpath, idx, 'moveto', 'before', pos)
+                tk_call(@tpath, 'move', idx, 'before', pos)
               end
             end
             tk_call(@tpath, 'tab', 'configure', @id, keys)
@@ -80,11 +87,11 @@ module Tk::BLT
             tk_call(@tpath, 'insert', pos, @id, keys)
           end
         else
+          pos = 'end' unless pos
           TabsetTab_ID.mutex.synchronize{
             @path = @id = TabsetTab_ID.join(TkCore::INTERP._ip_id_)
             TabsetTab_ID[1].succ!
           }
-          pos = 'end' unless pos
           tk_call(@tpath, 'insert', pos, @id, keys)
         end
       end
@@ -173,10 +180,10 @@ module Tk::BLT
       end
 
       def perforation_highlight(mode)
-        @t.perforation.highlight(self.index, mode)
+        @t.perforation_highlight(self.index, mode)
       end
       def perforation_invoke()
-        @t.perforation.invoke(self.index)
+        @t.perforation_invoke(self.index)
       end
 
       def see()
@@ -335,18 +342,42 @@ module Tk::BLT
     end
 
     def get_tab(index)
-      Tk::BLT::Tabset::Tab.id2obj(tk_send_without_enc('get', tagindex(index)))
+      if (idx = tk_send_without_enc('get', tagindex(index))).empty?
+        nil
+      else
+        Tk::BLT::Tabset::Tab.id2obj(self, idx)
+      end
+    end
+    def get_tabobj(index)
+      if (idx = tk_send_without_enc('get', tagindex(index))).empty?
+        nil
+      else
+       Tk::BLT::Tabset::Tab.new(self, nil, name, {})
+      end
     end
 
     def index(str)
       num_or_str(tk_send('index', str))
     end
     def index_name(tab)
-      num_or_str(tk_send('index', '-mame', tagid(tab)))
+      num_or_str(tk_send('index', '-name', tagid(tab)))
     end
 
     def insert(pos, tab, keys={})
+      pos = 'end' if pos.nil?
       Tk::BLT::Tabset::Tab.new(self, tagindex(pos), tagid(tab), keys)
+    end
+    def insert_tabs(pos, *tabs)
+      pos = 'end' if pos.nil?
+      if tabs[-1].kind_of?(Hash)
+        keys = tabs.pop
+      else
+        keys = {}
+      end
+      fail ArgumentError, 'no tabs is given' if tabs.empty?
+      tabs.map!{|tab| tagid(tab)}
+      tk_send('insert', tagindex(pos), *(tabs + [keys]))
+      tabs.collect{|tab| Tk::BLT::Tabset::Tab.new(self, nil, tagid(tab))}
     end
 
     def invoke(index)
@@ -363,15 +394,31 @@ module Tk::BLT
     end
 
     def nearest(x, y)
-      Tk::BLT::Tabset::Tab.id2obj(num_or_str(tk_send_without_enc('nearest', x, y)))
+      Tk::BLT::Tabset::Tab.id2obj(self, num_or_str(tk_send_without_enc('nearest', x, y)))
     end
 
-    def perforation_highlight(index, mode)
-      tk_send('perforation', 'highlight', tagindex(index), mode)
+    def perforation_activate(mode)
+      tk_send('perforation', 'activate', mode)
       self
     end
-    def perforation_invoke(index)
-      tk_send('perforation', 'invoke', tagindex(index))
+    def perforation_highlight(index, *args)
+      if args.empty?
+        # index --> mode
+        tk_send('perforation', 'highlight', index)
+      elsif args.size == 1
+        # args[0] --> mode
+        tk_send('perforation', 'highlight', tagindex(index), args[0])
+      else # Error: call to get Tcl's error message
+        tk_send('perforation', 'highlight', tagindex(index), *args)
+      end
+      self
+    end
+    def perforation_invoke(index=nil)
+      if index
+        tk_send('perforation', 'invoke', tagindex(index))
+      else
+        tk_send('perforation', 'invoke')
+      end
     end
 
     def scan_mark(x, y)
@@ -397,14 +444,37 @@ module Tk::BLT
       self
     end
 
+    def tab_dockall
+      tk_send('tab', 'dockall')
+      self
+    end
+
     def tab_names(pat=None)
       simplelist(tk_send('tab', 'names', pat)).collect{|name|
-        Tk::BLT::Tabset::Tab.id2obj(name)
+        Tk::BLT::Tabset::Tab.id2obj(self, name)
       }
     end
 
-    def tab_tearoff(index, name=None)
-      window(tk_send('tab', 'tearoff', tagindex(index), name))
+    def tab_objs(pat=None)
+      simplelist(tk_send('tab', 'names', pat)).collect{|name|
+        Tk::BLT::Tabset::Tab.new(self, nil, name, {})
+      }
+    end
+
+    def tab_ids(pat=None)
+      simplelist(tk_send('tab', 'names', pat))
+    end
+
+    def tab_pageheight
+      number(tk_send('tab', 'pageheight'))
+    end
+
+    def tab_pagewidth
+      number(tk_send('tab', 'pagewidth'))
+    end
+
+    def tab_tearoff(index, parent=None)
+      window(tk_send('tab', 'tearoff', tagindex(index), parent))
     end
 
     def xscrollcommand(cmd=Proc.new)

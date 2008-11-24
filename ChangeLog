@@ -1,3 +1,9 @@
+Tue Nov 25 03:37:42 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/blt/tabset.rb, 
+	  ext/tk/lib/tkextlib/blt/tabnotebook.rb: 
+	  fix many bugs. Now, those work properly.
+
 Mon Nov 24 23:53:44 2008  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/logger.rb: imported upstream version (logger/1.2.7)
