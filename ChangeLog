@@ -1,3 +1,8 @@
+Mon Nov 24 23:16:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* signal.c (register_sigaltstack): should not add external
+	  variable (with some cosmetic changes).  [ruby-dev:37158]
+
 Mon Nov 24 22:57:25 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* strftime.c (rb_strftime): A width specifier for %t and %n should

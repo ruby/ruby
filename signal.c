@@ -47,11 +47,6 @@ typedef int rb_atomic_t;
 # define NSIG (_SIGMAX + 1)      /* For QNX */
 #endif
 
-#if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK)
-#define USE_SIGALTSTACK
-int is_altstack_defined = 0;
-#endif
-
 static const struct signals {
     const char *signm;
     int  signo;
@@ -415,6 +410,10 @@ static struct {
 typedef RETSIGTYPE (*sighandler_t)(int);
 
 #ifdef POSIX_SIGNAL
+#if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK)
+#define USE_SIGALTSTACK
+#endif
+
 #ifdef USE_SIGALTSTACK
 #ifdef SIGSTKSZ
 #define ALT_STACK_SIZE SIGSTKSZ
@@ -422,14 +421,17 @@ typedef RETSIGTYPE (*sighandler_t)(int);
 #define ALT_STACK_SIZE (4*1024)
 #endif
 /* alternate stack for SIGSEGV */
-static void register_sigaltstack() {
+static void
+register_sigaltstack()
+{
+    static int is_altstack_defined = 0;
     stack_t newSS, oldSS;
 
-    if(is_altstack_defined)
+    if (is_altstack_defined)
       return;
 
     newSS.ss_sp = malloc(ALT_STACK_SIZE);
-    if(newSS.ss_sp == NULL)
+    if (newSS.ss_sp == NULL)
       /* should handle error */
        rb_bug("register_sigaltstack. malloc error\n");
     newSS.ss_size = ALT_STACK_SIZE;
