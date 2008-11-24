@@ -396,7 +396,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal("123456", t.strftime("%6N"))
     assert_equal("123456789", t.strftime("%9N"))
     assert_equal("1234567890", t.strftime("%10N"))
-    assert_equal("", t.strftime("%0N"))
+    assert_equal("123456789", t.strftime("%0N"))
     assert_equal("000", t.strftime("%3S"))
     assert_equal("946684800", t.strftime("%s"))
     assert_equal("946684800", t.utc.strftime("%s"))
