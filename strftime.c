@@ -270,6 +270,16 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 				goto unknown; \
 		} while (0)
 #define NEEDS(n) do if (s + (n) >= endp - 1) goto err; while (0)
+#define FILL_PADDING(i) do { \
+	if (!(flags & BIT_OF(LEFT)) && precision > i) { \
+		NEEDS(precision); \
+		memset(s, padding ? padding : ' ', precision - i); \
+		s += precision - i; \
+	} \
+	else { \
+		NEEDS(i); \
+	} \
+} while (0);
 #define FMT(def_pad, def_prec, fmt, val) \
 		do { \
 			int l; \
@@ -540,12 +550,12 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 
 #ifdef SYSV_EXT
 		case 'n':	/* same as \n */
-			NEEDS(1);
+			FILL_PADDING(1);
 			*s++ = '\n';
 			continue;
 
 		case 't':	/* same as \t */
-			NEEDS(1);
+			FILL_PADDING(1);
 			*s++ = '\t';
 			continue;
 
@@ -741,14 +751,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			break;
 		}
 		if (i) {
-			if (!(flags & BIT_OF(LEFT)) && precision > i) {
-				NEEDS(precision);
-				memset(s, padding ? padding : ' ', precision - i);
-				s += precision - i;
-			}
-			else {
-				NEEDS(i);
-			}
+			FILL_PADDING(i);
 			memcpy(s, tp, i);
 			switch (flags & (BIT_OF(UPPER)|BIT_OF(LOWER))) {
 			case BIT_OF(UPPER):
