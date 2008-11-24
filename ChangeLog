@@ -1,3 +1,8 @@
+Mon Nov 24 18:35:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/time.rb: r20251 reverted.  The patched behavior do not round
+	  trip.  [ruby-core:19988]
+
 Sun Nov 23 16:04:05 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* signal.c (default_handler, Init_signal): compile error if
