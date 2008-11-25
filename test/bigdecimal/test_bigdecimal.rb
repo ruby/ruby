@@ -303,9 +303,9 @@ class TestBigDecimal < Test::Unit::TestCase
     x = BigDecimal.new("0")
     assert_kind_of(Integer, x.to_i)
     assert_equal(0, x.to_i)
-    assert_nil(( 1 / x).to_i)
-    assert_nil((-1 / x).to_i)
-    assert_nil(( 0 / x).to_i)
+    assert_raise(FloatDomainError){( 1 / x).to_i}
+    assert_raise(FloatDomainError){(-1 / x).to_i}
+    assert_raise(FloatDomainError){( 0 / x).to_i}
     x = BigDecimal.new("1")
     assert_equal(1, x.to_i)
     x = BigDecimal.new((2**100).to_s)

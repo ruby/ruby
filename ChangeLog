@@ -1,3 +1,16 @@
+Wed Nov 26 03:00:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (VpAlloc): avoid ALLOCA_N() to avoid
+	  segmentation fault caused by (insanely) long decimal values.
+	  [ruby-dev:37189] fix #794
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_dump, BigDecimal_to_i,
+	  BigDecimal_to_f, BigDecimal_to_s, BigDecimal_split,
+	  BigDecimal_inspect): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (VpToString): small performance
+	  improvement.
+
 Wed Nov 26 00:26:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* strftime.c (STRFTIME): should add padding for %[xXrR] etc.
