@@ -1,3 +1,11 @@
+Tue Nov 25 07:51:18 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* strftime.c (FMT): use "%0d" formatter for zero padding, not "%.d".
+	  [ruby-dev:37168]  fix: #768
+
+	* strftime.c (rb_strftime): %s to use zero padding by default.
+	  [ruby-dev:37180]
+
 Tue Nov 25 03:37:42 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/blt/tabset.rb, 
