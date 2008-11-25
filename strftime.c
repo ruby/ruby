@@ -404,7 +404,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 		case 'p':	/* AM or PM based on 12-hour clock */
 		case 'P':	/* am or pm based on 12-hour clock */
 			if ((*format == 'p' && (flags & BIT_OF(CHCASE))) ||
-			    (*format == 'P' && !(flags & BIT_OF(CHCASE)))) {
+			    (*format == 'P' && !(flags & (BIT_OF(CHCASE)|BIT_OF(UPPER))))) {
 				flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(LOWER);
 			}
