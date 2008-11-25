@@ -521,6 +521,18 @@ BigDecimal_IsFinite(VALUE self)
     return Qtrue;
 }
 
+static void
+BigDecimal_check_num(Real *p)
+{
+    if(VpIsNaN(p)) {
+       VpException(VP_EXCEPTION_NaN,"Computation results to 'NaN'(Not a Number)",1);
+    } else if(VpIsPosInf(p)) {
+       VpException(VP_EXCEPTION_INFINITY,"Computation results to 'Infinity'",1);
+    } else if(VpIsNegInf(p)) {
+       VpException(VP_EXCEPTION_INFINITY,"Computation results to '-Infinity'",1);
+    }
+}
+
 /* Returns the value as an integer (Fixnum or Bignum).
  *
  * If the BigNumber is infinity or NaN, returns nil.
@@ -536,18 +548,7 @@ BigDecimal_to_i(VALUE self)
     Real *p;
 
     GUARD_OBJ(p,GetVpValue(self,1));
-
-    /* Infinity or NaN not converted. */
-    if(VpIsNaN(p)) {
-       VpException(VP_EXCEPTION_NaN,"Computation results to 'NaN'(Not a Number)",1);
-       return Qnil;		/* not reached */
-    } else if(VpIsPosInf(p)) {
-       VpException(VP_EXCEPTION_INFINITY,"Computation results to 'Infinity'",1);
-       return Qnil;		/* not reached */
-    } else if(VpIsNegInf(p)) {
-       VpException(VP_EXCEPTION_INFINITY,"Computation results to '-Infinity'",1);
-       return Qnil;		/* not reached */
-    }
+    BigDecimal_check_num(p);
 
     e = VpExponent10(p);
     if(e<=0) return INT2FIX(0);
@@ -625,6 +626,8 @@ BigDecimal_to_r(VALUE self)
     VALUE a, digits, numerator;
 
     p = GetVpValue(self,1);
+    BigDecimal_check_num(p);
+
     sign = VpGetSign(p);
     power = VpExponent10(p);
     a = BigDecimal_split(self);
