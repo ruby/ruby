@@ -1,3 +1,8 @@
+Wed Nov 26 00:26:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* strftime.c (STRFTIME): should add padding for %[xXrR] etc.
+	  [ruby-dev:37185] fix: #792
+
 Tue Nov 25 16:26:12 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_times): taint (and untrust) status should be

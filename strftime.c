@@ -295,7 +295,12 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 		do { \
 			i = strftime(s, endp - s, fmt, tm); \
 			if (!i) return 0; \
-			s += i; \
+			if (precision > i) {\
+				memmove(s + precision - i, s, i);\
+				memset(s, padding ? padding : ' ', precision - i); \
+				s += precision;	\
+	                }\
+			else s += i; \
 		} while (0)
 
 		if (*format != '%') {
