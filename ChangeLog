@@ -1,3 +1,11 @@
+Tue Nov 25 15:54:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* strftime.c (rb_strftime): should not swallow incomplete
+	  formatter, e.g. "%E".  [ruby-dev:37170] fix: #787
+
+	* strftime.c (rb_strftime): clear flags before processing unknown
+	  formatter, e.g. "%i".  [ruby-dev:37180]
+
 Tue Nov 25 10:35:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* strftime.c (rb_strftime): "%^P" should convert to upper case.

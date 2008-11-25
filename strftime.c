@@ -310,8 +310,8 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 	again:
 		switch (*++format) {
 		case '\0':
-			*s++ = '%';
-			goto out;
+			format--;
+			goto unknown;
 
 		case '%':
 			*s++ = '%';
@@ -762,8 +762,11 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 
 		default:
 		unknown:
-			tp = sp;
 			i = format - sp + 1;
+			tp = sp;
+			precision = -1;
+			flags = 0;
+			padding = 0;
 			break;
 		}
 		if (i) {
@@ -786,7 +789,6 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			}
 		}
 	}
-out:
 	if (s >= endp) {
 		goto err;
 	}
