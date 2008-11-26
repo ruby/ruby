@@ -1,3 +1,7 @@
+Wed Nov 26 15:16:07 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/gdbm/gdbm.c (rb_gdbm_nextkey): fix memory leak.
+
 Wed Nov 26 03:17:48 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_r): raise exception
