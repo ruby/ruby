@@ -45,7 +45,7 @@ extern "C" {
 #define VP_EXCEPTION_NaN        ((unsigned short)0x0002)
 #define VP_EXCEPTION_UNDERFLOW  ((unsigned short)0x0004)
 #define VP_EXCEPTION_OVERFLOW   ((unsigned short)0x0001) /* 0x0008) */
-#define VP_EXCEPTION_ZERODIVIDE ((unsigned short)0x0001) /* 0x0010) */
+#define VP_EXCEPTION_ZERODIVIDE ((unsigned short)0x0010)
 
 /* Following 2 exceptions cann't controlled by user */
 #define VP_EXCEPTION_OP         ((unsigned short)0x0020)
