@@ -303,14 +303,10 @@ rb_gdbm_fetch(dbm, key)
     if (val.dptr == 0)
         return Qnil;
 
-    str = rb_obj_alloc(rb_cString);
-    RSTRING(str)->len = val.dsize;
-    RSTRING(str)->aux.capa = val.dsize;
-    RSTRING(str)->ptr = REALLOC_N(val.dptr,char,val.dsize+1);
-    RSTRING(str)->ptr[val.dsize] = '\0';
-
+    str = rb_str_new(val.dptr, val.dsize);
+    free(val.dptr);
     OBJ_TAINT(str);
-    return (VALUE)str;
+    return str;
 }
 
 static VALUE
@@ -349,12 +345,8 @@ rb_gdbm_firstkey(dbm)
     if (key.dptr == 0)
         return Qnil;
 
-    str = rb_obj_alloc(rb_cString);
-    RSTRING(str)->len = key.dsize;
-    RSTRING(str)->aux.capa = key.dsize;
-    RSTRING(str)->ptr = REALLOC_N(key.dptr,char,key.dsize+1);
-    RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
-
+    str = rb_str_new(key.dptr, key.dsize);
+    free(key.dptr);
     OBJ_TAINT(str);
     return str;
 }
@@ -373,12 +365,8 @@ rb_gdbm_nextkey(dbm, keystr)
     if (key2.dptr == 0)
         return Qnil;
 
-    str = rb_obj_alloc(rb_cString);
-    RSTRING(str)->len = key2.dsize;
-    RSTRING(str)->aux.capa = key2.dsize;
-    RSTRING(str)->ptr = REALLOC_N(key2.dptr,char,key2.dsize+1);
-    RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
-
+    str = rb_str_new(key2.dptr, key2.dsize);
+    free(key2.dptr);
     OBJ_TAINT(str);
     return str;
 }
