@@ -1047,12 +1047,9 @@ ruby_stack_length(VALUE **p)
     return STACK_LENGTH;
 }
 
-int
-ruby_stack_check(void)
+static int
+stack_check(void)
 {
-#if defined(POSIX_SIGNAL) && defined(SIGSEGV) && defined(HAVE_SIGALTSTACK)
-    return 0;
-#else
     int ret;
     rb_thread_t *th = GET_THREAD();
     SET_STACK_END;
@@ -1064,6 +1061,15 @@ ruby_stack_check(void)
     }
 #endif
     return ret;
+}
+
+int
+ruby_stack_check(void)
+{
+#if defined(POSIX_SIGNAL) && defined(SIGSEGV) && defined(HAVE_SIGALTSTACK)
+    return 0;
+#else
+    return stack_check();
 #endif
 }
 
@@ -1273,7 +1279,7 @@ gc_mark(rb_objspace_t *objspace, VALUE ptr, int lev)
     if (obj->as.basic.flags & FL_MARK) return;  /* already marked */
     obj->as.basic.flags |= FL_MARK;
 
-    if (lev > GC_LEVEL_MAX || (lev == 0 && ruby_stack_check())) {
+    if (lev > GC_LEVEL_MAX || (lev == 0 && stack_check())) {
 	if (!mark_stack_overflow) {
 	    if (mark_stack_ptr - mark_stack < MARK_STACK_MAX) {
 		*mark_stack_ptr = ptr;

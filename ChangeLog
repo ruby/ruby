@@ -1,3 +1,9 @@
+Thu Nov 27 23:54:37 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (gc_mark): still needs to check stack depth during GC.
+
+	* gc.c (stack_check): ditto.
+
 Thu Nov 27 21:41:29 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* strftime.c (rb_strftime): should add padding for %%.
