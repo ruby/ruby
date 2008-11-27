@@ -1,3 +1,18 @@
+Thu Nov 27 15:59:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (ruby_stack_check): no check if using sigaltstack.
+
+	* signal.c (ALT_STACK_SIZE): default minimum size is insufficient
+	  for method calls.
+
+	* signal.c (sigsegv): handles stack overflow if possible.
+
+	* thread.c (ruby_thread_stack_overflow): helper function to raise
+	  sysstack_error.
+
+	* thread_pthread.c (ruby_stack_overflowed_p): checks for stack
+	  overflow.
+
 Thu Nov 27 10:40:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_div2): should return

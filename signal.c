@@ -417,7 +417,7 @@ typedef RETSIGTYPE (*sighandler_t)(int);
 #ifdef USE_SIGALTSTACK
 #define SIGINFO_ARG , siginfo_t *info, void *ctx
 #ifdef SIGSTKSZ
-#define ALT_STACK_SIZE SIGSTKSZ
+#define ALT_STACK_SIZE (SIGSTKSZ*2)
 #else
 #define ALT_STACK_SIZE (4*1024)
 #endif
@@ -431,7 +431,7 @@ register_sigaltstack()
     if (is_altstack_defined)
       return;
 
-    newSS.ss_sp = malloc(ALT_STACK_SIZE * 2);
+    newSS.ss_sp = malloc(ALT_STACK_SIZE);
     if (newSS.ss_sp == NULL)
       /* should handle error */
        rb_bug("register_sigaltstack. malloc error\n");
