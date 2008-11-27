@@ -419,9 +419,7 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal([0, 0], BigDecimal.new("0").divmod(2))
 
     BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
-    a, b = BigDecimal.new("0").divmod(0)
-    assert_equal(true, a.nan?)
-    assert_equal(true, b.nan?)
+    assert_raise(ZeroDivisionError){BigDecimal.new("0").divmod(0)}
   end
 
   def test_add_bigdecimal

@@ -1012,7 +1012,9 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
 
     if(VpIsNaN(a) || VpIsNaN(b)) goto NaN;
     if(VpIsInf(a) || VpIsInf(b)) goto NaN;
-    if(VpIsZero(b))              goto NaN;
+    if(VpIsZero(b)) {
+	rb_raise(rb_eZeroDivError, "divided by 0");
+    }
     if(VpIsZero(a)) {
        GUARD_OBJ(c,VpCreateRbObject(1, "0"));
        GUARD_OBJ(d,VpCreateRbObject(1, "0"));
@@ -1169,9 +1171,6 @@ BigDecimal_div2(int argc, VALUE *argv, VALUE self)
        Real *mod;
        obj = BigDecimal_DoDivmod(self,b,&div,&mod);
        if(obj!=(VALUE)0) return obj;
-       if(VpIsNaN(div) && rb_equal(b, INT2FIX(0))) {
-	   rb_raise(rb_eZeroDivError, "divided by 0");
-       }
        return BigDecimal_to_i(ToValue(div));
     } else {    /* div in BigDecimal sense */
        U_LONG ix = (U_LONG)GetPositiveInt(n);

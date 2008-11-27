@@ -1,3 +1,9 @@
+Fri Nov 28 02:18:47 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_DoDivmod): bigdecimal
+	  division (including modulo) should raise ZeroDivisionError as
+	  integer division. [incompatible]
+
 Fri Nov 28 00:12:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (flodivmod): floating point division should raise
