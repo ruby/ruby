@@ -172,9 +172,7 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(TypeError) { 2.0.divmod(nil) }
 
     inf = 1.0 / 0.0
-    a, b = inf.divmod(0)
-    assert(a.infinite?)
-    assert(b.nan?)
+    assert_raise(ZeroDivisionError) {inf.divmod(0)}
 
     a, b = (2.0**32).divmod(1.0)
     assert_equal(2**32, a)

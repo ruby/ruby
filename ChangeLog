@@ -1,3 +1,8 @@
+Fri Nov 28 00:12:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (flodivmod): floating point division should raise
+	  ZeroDivisionError as integer division. [incompatible]
+
 Thu Nov 27 23:54:37 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (gc_mark): still needs to check stack depth during GC.

@@ -678,6 +678,7 @@ flodivmod(double x, double y, double *divp, double *modp)
 {
     double div, mod;
 
+    if (y == 0.0) rb_num_zerodiv();
 #ifdef HAVE_FMOD
     mod = fmod(x, y);
 #else
