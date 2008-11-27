@@ -1,3 +1,9 @@
+Thu Nov 27 11:25:04 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* range.c: Add Range#cover? as a new alias to #include? for the
+	  forward compatibility with 1.9, in which the behavior of
+	  Range#include? has changed.
+
 Wed Nov 26 13:31:07 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/gdbm/gdbm.c: do not set members of RSTRING(str) directly.

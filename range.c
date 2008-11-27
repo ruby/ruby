@@ -695,6 +695,7 @@ Init_Range()
 
     rb_define_method(rb_cRange, "member?", range_include, 1);
     rb_define_method(rb_cRange, "include?", range_include, 1);
+    rb_define_method(rb_cRange, "cover?", range_include, 1);
 
     id_cmp = rb_intern("<=>");
     id_succ = rb_intern("succ");

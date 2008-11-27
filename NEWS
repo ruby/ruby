@@ -38,6 +38,11 @@ with all sufficient information, see the ChangeLog file.
 
     Renamed from ENV.index.
 
+  * Range#cover?
+
+    New alias to #include? for the forward compatibility with 1.9, in
+    which the behavior of Range#include? has changed.
+
 * dbm
 
   DBM#key
