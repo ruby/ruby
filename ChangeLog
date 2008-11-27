@@ -1,3 +1,7 @@
+Thu Nov 27 21:41:29 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* strftime.c (rb_strftime): should add padding for %%.
+
 Thu Nov 27 16:32:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (register_sigaltstack): stores alt stack for debug
