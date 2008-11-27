@@ -1,3 +1,11 @@
+Thu Nov 27 10:40:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_div2): should return
+	  Integer for #div operation.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_div2): should raise
+	  ZeroDivisionError if divisor is zero.  [ruby-dev:37207]
+
 Wed Nov 26 23:15:47 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* strftime.c (STRFTIME): use rb_strftime() recursively, instead of

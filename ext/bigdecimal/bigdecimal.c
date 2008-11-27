@@ -1169,7 +1169,10 @@ BigDecimal_div2(int argc, VALUE *argv, VALUE self)
        Real *mod;
        obj = BigDecimal_DoDivmod(self,b,&div,&mod);
        if(obj!=(VALUE)0) return obj;
-       return ToValue(div);
+       if(VpIsNaN(div) && rb_equal(b, INT2FIX(0))) {
+	   rb_raise(rb_eZeroDivError, "divided by 0");
+       }
+       return BigDecimal_to_i(ToValue(div));
     } else {    /* div in BigDecimal sense */
        U_LONG ix = (U_LONG)GetPositiveInt(n);
        if(ix==0) return BigDecimal_div(self,b);
