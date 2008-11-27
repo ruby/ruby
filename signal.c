@@ -429,25 +429,25 @@ typedef RETSIGTYPE ruby_sigaction_t(int);
 #endif
 /* alternate stack for SIGSEGV */
 static void
-register_sigaltstack()
+register_sigaltstack(void)
 {
-    static int is_altstack_defined = 0;
+    static void *altstack = 0;
     stack_t newSS, oldSS;
 
-    if (is_altstack_defined)
-      return;
+    if (altstack) return;
 
-    newSS.ss_sp = malloc(ALT_STACK_SIZE);
+    newSS.ss_sp = altstack = malloc(ALT_STACK_SIZE);
     if (newSS.ss_sp == NULL)
-      /* should handle error */
-       rb_bug("register_sigaltstack. malloc error\n");
+	/* should handle error */
+	rb_bug("register_sigaltstack. malloc error\n");
     newSS.ss_size = ALT_STACK_SIZE;
     newSS.ss_flags = 0;
 
     if (sigaltstack(&newSS, &oldSS) < 0) 
-        rb_bug("register_sigaltstack. error\n");
-    is_altstack_defined = 1;
+	rb_bug("register_sigaltstack. error\n");
 }
+#else
+#define register_sigaltstack() ((void)0)
 #endif
 
 static sighandler_t
@@ -474,7 +474,7 @@ ruby_signal(int signum, sighandler_t handler)
 #endif
 #if defined(SA_ONSTACK) && defined(USE_SIGALTSTACK)
     if (signum == SIGSEGV)
-        sigact.sa_flags |= SA_ONSTACK;
+	sigact.sa_flags |= SA_ONSTACK;
 #endif
     if (sigaction(signum, &sigact, &old) < 0)
         rb_bug("sigaction error.\n");
@@ -716,9 +716,7 @@ default_handler(int sig)
 #ifdef SIGSEGV
       case SIGSEGV:
         func = (sighandler_t)sigsegv;
-#ifdef USE_SIGALTSTACK
         register_sigaltstack();
-#endif
         break;
 #endif
 #ifdef SIGPIPE
@@ -1126,9 +1124,7 @@ Init_signal(void)
     install_sighandler(SIGBUS, sigbus);
 #endif
 #ifdef SIGSEGV
-#ifdef USE_SIGALTSTACK
     register_sigaltstack();
-#endif
     install_sighandler(SIGSEGV, (sighandler_t)sigsegv);
 #endif
     }
