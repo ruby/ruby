@@ -1050,6 +1050,9 @@ ruby_stack_length(VALUE **p)
 int
 ruby_stack_check(void)
 {
+#if defined(POSIX_SIGNAL) && defined(SIGSEGV) && defined(HAVE_SIGALTSTACK)
+    return 0;
+#else
     int ret;
     rb_thread_t *th = GET_THREAD();
     SET_STACK_END;
@@ -1061,6 +1064,7 @@ ruby_stack_check(void)
     }
 #endif
     return ret;
+#endif
 }
 
 static void
