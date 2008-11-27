@@ -408,6 +408,13 @@ static struct {
 #endif
 
 typedef RETSIGTYPE (*sighandler_t)(int);
+#ifdef SA_SIGINFO
+typedef void ruby_sigaction_t(int, siginfo_t*, void*);
+#define SIGINFO_ARG , siginfo_t *info, void *ctx
+#else
+typedef RETSIGTYPE ruby_sigaction_t(int);
+#define SIGINFO_ARG
+#endif
 
 #ifdef POSIX_SIGNAL
 #if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK)
@@ -415,7 +422,6 @@ typedef RETSIGTYPE (*sighandler_t)(int);
 #endif
 
 #ifdef USE_SIGALTSTACK
-#define SIGINFO_ARG , siginfo_t *info, void *ctx
 #ifdef SIGSTKSZ
 #define ALT_STACK_SIZE (SIGSTKSZ*2)
 #else
@@ -442,8 +448,6 @@ register_sigaltstack()
         rb_bug("register_sigaltstack. error\n");
     is_altstack_defined = 1;
 }
-#else
-#define SIGINFO_ARG
 #endif
 
 static sighandler_t
@@ -457,7 +461,7 @@ ruby_signal(int signum, sighandler_t handler)
 
     sigemptyset(&sigact.sa_mask);
 #ifdef SA_SIGINFO
-    sigact.sa_sigaction = (void (*)(int, siginfo_t*, void*))handler;
+    sigact.sa_sigaction = (ruby_sigaction_t*)handler;
     sigact.sa_flags = SA_SIGINFO;
 #else
     sigact.sa_handler = handler;
