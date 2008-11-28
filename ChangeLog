@@ -1,6 +1,6 @@
 Fri Nov 28 17:52:26 2008  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
-	* lib/foerwardable.rb: should be usable def_single_delegator for
+	* lib/forwardable.rb: should be usable def_single_delegator for
 	  Class and Module.
 
 Fri Nov 28 13:19:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
