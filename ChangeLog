@@ -1,3 +1,16 @@
+Fri Nov 28 13:19:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (simple_default_value): extracts simplest default
+	  argument value.
+
+	* iseq.c (rb_iseq_parameters): returns parameter list.
+
+	* proc.c (get_proc_iseq, get_method_iseq): handles ifunc and
+	  bmethod.
+
+	* proc.c (rb_proc_parameters, rb_method_parameters): added
+	  Proc#parameters and Method#parameters.  [ruby-core:19759]
+
 Fri Nov 28 02:18:47 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_DoDivmod): bigdecimal

@@ -673,4 +673,47 @@ class TestProc < Test::Unit::TestCase
     }.call(1,2,3,4,5)
     assert_equal([1,2,[3],4,5], r, "[ruby-core:19485]")
   end
+
+  def test_parameters
+    assert_equal([], proc {}.parameters)
+    assert_equal([], proc {||}.parameters)
+    assert_equal([[:req, :a]], proc {|a|}.parameters)
+    assert_equal([[:req, :a], [:req, :b]], proc {|a, b|}.parameters)
+    assert_equal([[:opt, :a, :a], [:block, :b]], proc {|a=:a, &b|}.parameters)
+    assert_equal([[:req, :a], [:opt, :b, :b]], proc {|a, b=:b|}.parameters)
+    assert_equal([[:rest, :a]], proc {|*a|}.parameters)
+    assert_equal([[:req, :a], [:rest, :b], [:block, :c]], proc {|a, *b, &c|}.parameters)
+    assert_equal([[:req, :a], [:rest, :b], [:req, :c]], proc {|a, *b, c|}.parameters)
+    assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], proc {|a, *b, c, &d|}.parameters)
+    assert_equal([[:req, :a], [:opt, :b, :b], [:rest, :c], [:req, :d], [:block, :e]], proc {|a, b=:b, *c, d, &e|}.parameters)
+    assert_equal([[:req], [:block, :b]], proc {|(a), &b|}.parameters)
+    assert_equal([[:req, :a], [:req, :b], [:opt, :c, :c], [:opt, :d, :d], [:rest, :e], [:req, :f], [:req, :g], [:block, :h]], proc {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters) 
+  end
+
+  def pm0() end
+  def pm1(a) end
+  def pm2(a, b) end
+  def pmo1(a = :a, &b) end
+  def pmo2(a, b = :b) end
+  def pmo3(*a) end
+  def pmo4(a, *b, &c) end
+  def pmo5(a, *b, c) end
+  def pmo6(a, *b, c, &d) end
+  def pmo7(a, b = :b, *c, d, &e) end
+  def pma1((a), &b) end
+
+
+  def test_bound_parameters
+    assert_equal([], method(:pm0).to_proc.parameters)
+    assert_equal([[:req, :a]], method(:pm1).to_proc.parameters)
+    assert_equal([[:req, :a], [:req, :b]], method(:pm2).to_proc.parameters)
+    assert_equal([[:opt, :a, :a], [:block, :b]], method(:pmo1).to_proc.parameters)
+    assert_equal([[:req, :a], [:opt, :b, :b]], method(:pmo2).to_proc.parameters)
+    assert_equal([[:rest, :a]], method(:pmo3).to_proc.parameters)
+    assert_equal([[:req, :a], [:rest, :b], [:block, :c]], method(:pmo4).to_proc.parameters)
+    assert_equal([[:req, :a], [:rest, :b], [:req, :c]], method(:pmo5).to_proc.parameters)
+    assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], method(:pmo6).to_proc.parameters)
+    assert_equal([[:req, :a], [:opt, :b, :b], [:rest, :c], [:req, :d], [:block, :e]], method(:pmo7).to_proc.parameters)
+    assert_equal([[:req], [:block, :b]], method(:pma1).to_proc.parameters)
+  end
 end

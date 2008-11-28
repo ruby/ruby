@@ -1274,6 +1274,84 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
     return newiseq;
 }
 
+static VALUE
+simple_default_value(const VALUE *seq, const VALUE *eseq)
+{
+    VALUE val;
+
+  again:
+    switch (*seq++) {
+      case BIN(trace):
+	if (++seq >= eseq) return Qundef;
+	goto again;
+      case BIN(putnil):
+	val = Qnil;
+	goto got;
+      case BIN(putobject):
+	val = *seq++;
+      got:
+	switch (*seq++) {
+	  case BIN(setlocal):
+	    if ((seq+=1) != eseq) return Qundef;
+	    break;
+	  case BIN(setdynamic):
+	    if ((seq+=2) != eseq) return Qundef;
+	    break;
+	}
+	return val;
+      default:
+	return Qundef;
+    }
+}
+
+VALUE
+rb_iseq_parameters(const rb_iseq_t *iseq)
+{
+    int i, r, s;
+    VALUE a, args = rb_ary_new2(iseq->arg_size);
+    ID req, opt, rest, block;
+#define PARAM_TYPE(type) rb_ary_push(a = rb_ary_new2(2), ID2SYM(type))
+#define PARAM_ID(i) iseq->local_table[i]
+#define PARAM(i, type) (		      \
+	PARAM_TYPE(type),		      \
+	rb_id2name(PARAM_ID(i)) ?	      \
+	rb_ary_push(a, ID2SYM(PARAM_ID(i))) : \
+	a)
+
+    CONST_ID(req, "req");
+    for (i = 0; i < iseq->argc; i++) {
+	rb_ary_push(args, PARAM(i, req));
+    }
+    r = iseq->arg_rest != -1 ? iseq->arg_rest :
+	iseq->arg_post_len > 0 ? iseq->arg_post_start :
+	iseq->arg_block != -1 ? iseq->arg_block :
+	iseq->arg_size;
+    CONST_ID(opt, "opt");
+    for (s = i; i < r; i++) {
+	PARAM_TYPE(opt);
+	if (rb_id2name(PARAM_ID(i))) {
+	    VALUE defval = simple_default_value(iseq->iseq + iseq->arg_opt_table[i-s],
+						iseq->iseq + iseq->arg_opt_table[i-s+1]);
+	    rb_ary_push(a, ID2SYM(PARAM_ID(i)));
+	    if (defval != Qundef) rb_ary_push(a, defval);
+	}
+	rb_ary_push(args, a);
+    }
+    if (iseq->arg_rest != -1) {
+	CONST_ID(rest, "rest");
+	rb_ary_push(args, PARAM(iseq->arg_rest, rest));
+    }
+    r = iseq->arg_post_start + iseq->arg_post_len;
+    for (i = iseq->arg_post_start; i < r; i++) {
+	rb_ary_push(args, PARAM(i, req));
+    }
+    if (iseq->arg_block != -1) {
+	CONST_ID(block, "block");
+	rb_ary_push(args, PARAM(iseq->arg_block, block));
+    }
+    return args;
+}
+
 /* ruby2cext */
 
 VALUE
