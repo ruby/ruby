@@ -1,3 +1,8 @@
+Fri Nov 28 18:31:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_s_getaddrinfo): refactored to remove
+	  code duplication regarding getaddrinfo.
+
 Fri Nov 28 17:52:26 2008  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/forwardable.rb: should be usable def_single_delegator for

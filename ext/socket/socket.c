@@ -926,9 +926,8 @@ port_str(VALUE port, char *pbuf, size_t len)
 #endif
 
 static struct addrinfo*
-sock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
+sock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints)
 {
-    struct addrinfo hints;
     struct addrinfo* res = NULL;
     char *hostp, *portp;
     int error;
@@ -937,15 +936,11 @@ sock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
     hostp = host_str(host, hbuf, sizeof(hbuf));
     portp = port_str(port, pbuf, sizeof(pbuf));
 
-    if (socktype == 0 && flags == 0 && str_isnumber(portp)) {
-       socktype = SOCK_DGRAM;
+    if (hints->ai_socktype == 0 && hints->ai_flags == 0 && str_isnumber(portp)) {
+       hints->ai_socktype = SOCK_DGRAM;
     }
 
-    MEMZERO(&hints, struct addrinfo, 1);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = socktype;
-    hints.ai_flags = flags;
-    error = getaddrinfo(hostp, portp, &hints, &res);
+    error = getaddrinfo(hostp, portp, hints, &res);
     if (error) {
 	if (hostp && hostp[strlen(hostp)-1] == '\n') {
 	    rb_raise(rb_eSocket, "newline at the end of hostname");
@@ -972,6 +967,18 @@ sock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
     }
 #endif
     return res;
+}
+
+static struct addrinfo*
+sock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
+{
+    struct addrinfo hints;
+
+    MEMZERO(&hints, struct addrinfo, 1);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = socktype;
+    hints.ai_flags = flags;
+    return sock_getaddrinfo(host, port, &hints);
 }
 
 static VALUE
@@ -3271,33 +3278,10 @@ static VALUE
 sock_s_getaddrinfo(int argc, VALUE *argv)
 {
     VALUE host, port, family, socktype, protocol, flags, ret;
-    char hbuf[1024], pbuf[1024];
-    char *hptr, *pptr, *ap;
+    char *ap;
     struct addrinfo hints, *res;
-    int error;
 
-    host = port = family = socktype = protocol = flags = Qnil;
     rb_scan_args(argc, argv, "24", &host, &port, &family, &socktype, &protocol, &flags);
-    if (NIL_P(host)) {
-	hptr = NULL;
-    }
-    else {
-	strncpy(hbuf, StringValuePtr(host), sizeof(hbuf));
-	hbuf[sizeof(hbuf) - 1] = '\0';
-	hptr = hbuf;
-    }
-    if (NIL_P(port)) {
-	pptr = NULL;
-    }
-    else if (FIXNUM_P(port)) {
-	snprintf(pbuf, sizeof(pbuf), "%ld", FIX2LONG(port));
-	pptr = pbuf;
-    }
-    else {
-	strncpy(pbuf, StringValuePtr(port), sizeof(pbuf));
-	pbuf[sizeof(pbuf) - 1] = '\0';
-	pptr = pbuf;
-    }
 
     MEMZERO(&hints, struct addrinfo, 1);
     if (NIL_P(family)) {
@@ -3326,10 +3310,7 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
     if (!NIL_P(flags)) {
 	hints.ai_flags = NUM2INT(flags);
     }
-    error = getaddrinfo(hptr, pptr, &hints, &res);
-    if (error) {
-	raise_socket_error("getaddrinfo", error);
-    }
+    res = sock_getaddrinfo(host, port, &hints);
 
     ret = make_addrinfo(res);
     freeaddrinfo(res);
