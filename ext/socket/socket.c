@@ -953,7 +953,7 @@ sock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints)
 	struct addrinfo *r;
 	r = res;
 	while (r) {
-	    if (! r->ai_socktype) r->ai_socktype = hints.ai_socktype;
+	    if (! r->ai_socktype) r->ai_socktype = hints->ai_socktype;
 	    if (! r->ai_protocol) {
 		if (r->ai_socktype == SOCK_DGRAM) {
 		    r->ai_protocol = IPPROTO_UDP;

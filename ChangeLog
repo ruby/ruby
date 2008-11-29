@@ -1,3 +1,8 @@
+Sat Nov 29 18:28:57 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_getaddrinfo): should have updated for
+	  Mac OS X.  a patch from Shumpei Akai in [ruby-dev:37234]
+
 Sat Nov 29 00:18:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* cont.c (fiber_alloc): separate allocation and initialization.
