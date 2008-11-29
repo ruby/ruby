@@ -1,3 +1,7 @@
+Sat Nov 29 23:56:44 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* man/irb.1 (EXAMPLES): new section
+
 Sat Nov 29 19:19:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regparse.c (is_invalid_quantifier_target): Perl and old Ruby
