@@ -344,6 +344,7 @@ rb_gdbm_nextkey(GDBM_FILE dbm, VALUE keystr)
         return Qnil;
 
     str = rb_str_new(key2.dptr, key2.dsize);
+    free(key2.dptr);
     OBJ_TAINT(str);
     return str;
 }
