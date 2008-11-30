@@ -1,3 +1,7 @@
+Sun Nov 30 21:41:10 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* man/rake.1: new manual page
+
 Sun Nov 30 18:01:50 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_regexp.rb (TestRegexp#test_parse_curly_brace):
