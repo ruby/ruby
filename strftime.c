@@ -405,7 +405,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 
 		case 'w':	/* weekday, Sunday == 0, 0 - 6 */
 			i = range(0, timeptr->tm_wday, 6);
-			FMT('0', 0, "d", i);
+			FMT('0', 1, "d", i);
 			continue;
 
 		case 'W':	/* week of year, Monday is first day of week */
@@ -426,7 +426,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			continue;
 
 		case 'Y':	/* year with century */
-			FMT('0', 0, "ld", 1900L + timeptr->tm_year);
+			FMT('0', 1, "ld", 1900L + timeptr->tm_year);
 			continue;
 
 #ifdef MAILHEADER_EXT
@@ -623,7 +623,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 
 		case 'u':
 		/* ISO 8601: Weekday as a decimal number [1 (Monday) - 7] */
-			FMT('0', 0, "d", timeptr->tm_wday == 0 ? 7 : timeptr->tm_wday);
+			FMT('0', 1, "d", timeptr->tm_wday == 0 ? 7 : timeptr->tm_wday);
 			continue;
 #endif	/* POSIX2_DATE */
 
@@ -648,7 +648,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 				y = 1900L + timeptr->tm_year;
 
 			if (*format == 'G')
-				FMT('0', 0, "ld", y);
+				FMT('0', 1, "ld", y);
 			else
 				FMT('0', 2, "ld", y % 100);
 			continue;

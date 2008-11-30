@@ -444,5 +444,10 @@ class TestTime < Test::Unit::TestCase
     assert_equal(" 2", t.strftime("%l"))
     assert_equal("02", t.strftime("%0l"))
     assert_equal(" 2", t.strftime("%_l"))
+
+    # [ruby-dev:37155]
+    t = Time.mktime(1970, 1, 18)
+    assert_equal("0", t.strftime("%w"))
+    assert_equal("7", t.strftime("%u"))
   end
 end
