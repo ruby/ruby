@@ -71,6 +71,7 @@ static void rb_check_deadlock(rb_vm_t *vm);
 
 void rb_signal_exec(rb_thread_t *th, int sig);
 void rb_disable_interrupt(void);
+void rb_thread_stop_timer_thread(void);
 
 static const VALUE eKillSignal = INT2FIX(0);
 static const VALUE eTerminateSignal = INT2FIX(1);
@@ -318,7 +319,7 @@ rb_thread_terminate_all(void)
 	}
 	POP_TAG();
     }
-    system_working = 0;
+    rb_thread_stop_timer_thread();
 }
 
 static void
@@ -2322,7 +2323,7 @@ int rb_get_next_signal(void);
 static void
 timer_thread_function(void *arg)
 {
-    rb_vm_t *vm = arg; /* TODO: fix me for Multi-VM */
+    rb_vm_t *vm = GET_VM(); /* TODO: fix me for Multi-VM */
     int sig;
 
     /* for time slice */
@@ -2355,8 +2356,7 @@ timer_thread_function(void *arg)
 void
 rb_thread_stop_timer_thread(void)
 {
-    if (timer_thread_id) {
-	system_working = 0;
+    if (timer_thread_id && native_stop_timer_thread()) {
 	native_thread_join(timer_thread_id);
 	timer_thread_id = 0;
     }

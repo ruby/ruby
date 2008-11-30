@@ -116,6 +116,12 @@ native_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
     pthread_cond_wait(cond, mutex);
 }
 
+static int
+native_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, struct timespec *ts)
+{
+    return pthread_cond_timedwait(cond, mutex, ts);
+}
+
 
 #define native_cleanup_push pthread_cleanup_push
 #define native_cleanup_pop  pthread_cleanup_pop
@@ -503,6 +509,8 @@ ubf_select(void *ptr)
 #define ubf_select 0
 #endif
 
+#define PER_NANO 1000000000
+
 static void
 native_sleep(rb_thread_t *th, struct timeval *tv)
 {
@@ -513,10 +521,10 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	gettimeofday(&tvn, NULL);
 	ts.tv_sec = tvn.tv_sec + tv->tv_sec;
 	ts.tv_nsec = (tvn.tv_usec + tv->tv_usec) * 1000;
-        if (ts.tv_nsec >= 1000000000){
+	if (ts.tv_nsec >= PER_NANO){
 	    ts.tv_sec += 1;
-	    ts.tv_nsec -= 1000000000;
-        }
+	    ts.tv_nsec -= PER_NANO;
+	}
     }
 
     thread_debug("native_sleep %ld\n", tv ? tv->tv_sec : -1);
@@ -535,7 +543,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 		int r;
 		thread_debug("native_sleep: pthread_cond_wait start\n");
 		r = pthread_cond_wait(&th->native_thread_data.sleep_cond,
-				  &th->interrupt_lock);
+				      &th->interrupt_lock);
                 if (r) rb_bug("pthread_cond_wait: %d", r);
 		thread_debug("native_sleep: pthread_cond_wait end\n");
 	    }
@@ -647,22 +655,36 @@ remove_signal_thread_list(rb_thread_t *th)
 }
 
 static pthread_t timer_thread_id;
+static pthread_cond_t timer_thread_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t timer_thread_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static struct timespec *
+get_ts(struct timespec *ts, unsigned long nsec)
+{
+    struct timeval tv;
+    gettimeofday(&tv, 0);
+    ts->tv_sec = tv.tv_sec;
+    ts->tv_nsec = tv.tv_usec * 1000 + nsec;
+    if (ts->tv_nsec >= PER_NANO) {
+	ts->tv_sec++;
+	ts->tv_nsec -= PER_NANO;
+    }
+    return ts;
+}
 
 static void *
 thread_timer(void *dummy)
 {
-    while (system_working) {
-#ifdef HAVE_NANOSLEEP
-	struct timespec req, rem;
-	req.tv_sec = 0;
-	req.tv_nsec = 10 * 1000 * 1000;	/* 10 ms */
-	nanosleep(&req, &rem);
-#else
-	struct timeval tv;
-	tv.tv_sec = 0;
-	tv.tv_usec = 10000;     	/* 10 ms */
-	select(0, NULL, NULL, NULL, &tv);
-#endif
+    struct timespec ts;
+    int err;
+
+    native_mutex_lock(&timer_thread_lock);
+    native_cond_broadcast(&timer_thread_cond);
+#define WAIT_FOR_10MS() native_cond_timedwait(&timer_thread_cond, &timer_thread_lock, get_ts(&ts, PER_NANO/100))
+    while (system_working > 0 && (err = WAIT_FOR_10MS()) != 0 && err != EINTR) {
+	if (err != ETIMEDOUT) {
+	    rb_bug("thread_timer/timedwait: %d", err);
+	}
 #ifndef __CYGWIN__
 	if (signal_thread_list_anchor.next) {
 	    FGLOCK(&signal_thread_list_lock, {
@@ -677,6 +699,7 @@ thread_timer(void *dummy)
 #endif
 	timer_thread_function(dummy);
     }
+    native_mutex_unlock(&timer_thread_lock);
     return NULL;
 }
 
@@ -694,12 +717,29 @@ rb_thread_create_timer_thread(void)
 	pthread_attr_setstacksize(&attr,
 				  PTHREAD_STACK_MIN + (THREAD_DEBUG ? BUFSIZ : 0));
 #endif
-	err = pthread_create(&timer_thread_id, &attr, thread_timer, GET_VM());
+	native_mutex_lock(&timer_thread_lock);
+	err = pthread_create(&timer_thread_id, &attr, thread_timer, 0);
 	if (err != 0) {
+	    native_mutex_unlock(&timer_thread_lock);
 	    rb_bug("rb_thread_create_timer_thread: return non-zero (%d)", err);
 	}
+	native_cond_wait(&timer_thread_cond, &timer_thread_lock);
+	native_mutex_unlock(&timer_thread_lock);
     }
     rb_disable_interrupt(); /* only timer thread recieve signal */
+}
+
+static int
+native_stop_timer_thread(void)
+{
+    int stopped;
+    native_mutex_lock(&timer_thread_lock);
+    stopped = --system_working <= 0;
+    if (stopped) {
+	native_cond_signal(&timer_thread_cond);
+    }
+    native_mutex_unlock(&timer_thread_lock);
+    return stopped;
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

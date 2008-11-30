@@ -1,3 +1,34 @@
+Sat Nov 29 00:27:33 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* thread.c, thread_pthread.c, thread_win32.c: merges nobu's commits - 
+	  r20117, r20123, r20124, r20127, r20132-r20134, r20138, r20140, r20141 
+	  and r20160 - from trunk into ruby_1_9_1.
+
+	* thread_pthread.c (thread_timer): checks working flags again.
+
+	* thread_pthread.c (rb_thread_create_timer_thread): do not wait never
+	  coming signal if failed to create tiemr thread.
+
+	* thread_pthread.c (native_cond_timedwait): returns error code.
+
+	* thread_pthread.c (thread_timer, rb_thread_create_timer_thread):
+	  handshakes properly.
+
+	* thread_pthread.c (thread_timer): initializes mutex each time.
+
+	* thread_win32.c (thread_start_func_1): use already gotten stack info.
+
+	* thread.c (thread_timer): pthread_cond_timedwait returns ETIMEDOUT
+	  when timed out.
+
+	* thread_pthread.c (thread_timer): uses pthread_cond_timedwait always
+	  instead of pthread_kill.
+
+	* thread.c (thread_timer): uses timedwait on cygwin.
+
+	* thread.c (rb_thread_stop_timer_thread): terminates timer thread
+	  immediately.
+
 Tue Nov 25 00:08:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_fork): stops the timer thread during fork.
