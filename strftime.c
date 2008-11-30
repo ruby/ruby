@@ -291,9 +291,9 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			if (l < 0) goto err; \
 			s += l; \
 		} while (0)
-#define STRFTIME(fmt, tm) \
+#define STRFTIME(fmt) \
 		do { \
-			i = strftime(s, endp - s, fmt, tm); \
+			i = rb_strftime(s, endp - s, fmt, timeptr, ts, gmt); \
 			if (!i) return 0; \
 			if (precision > i) {\
 				memmove(s + precision - i, s, i);\
@@ -370,7 +370,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			break;
 
 		case 'c':	/* appropriate date and time representation */
-			STRFTIME("%a %b %e %H:%M:%S %Y", timeptr);
+			STRFTIME("%a %b %e %H:%M:%S %Y");
 			continue;
 
 		case 'd':	/* day of the month, 01 - 31 */
@@ -444,11 +444,11 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			continue;
 
 		case 'x':	/* appropriate date representation */
-			STRFTIME("%m/%d/%y", timeptr);
+			STRFTIME("%m/%d/%y");
 			continue;
 
 		case 'X':	/* appropriate time representation */
-			STRFTIME("%H:%M:%S", timeptr);
+			STRFTIME("%H:%M:%S");
 			continue;
 
 		case 'y':	/* year without a century, 00 - 99 */
@@ -581,7 +581,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			continue;
 
 		case 'D':	/* date as %m/%d/%y */
-			STRFTIME("%m/%d/%y", timeptr);
+			STRFTIME("%m/%d/%y");
 			continue;
 
 		case 'e':	/* day of month, blank padded */
@@ -589,15 +589,15 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			continue;
 
 		case 'r':	/* time as %I:%M:%S %p */
-			STRFTIME("%I:%M:%S %p", timeptr);
+			STRFTIME("%I:%M:%S %p");
 			continue;
 
 		case 'R':	/* time as %H:%M */
-			STRFTIME("%H:%M", timeptr);
+			STRFTIME("%H:%M");
 			continue;
 
 		case 'T':	/* time as %H:%M:%S */
-			STRFTIME("%H:%M:%S", timeptr);
+			STRFTIME("%H:%M:%S");
 			continue;
 #endif
 
