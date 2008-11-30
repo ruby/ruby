@@ -1,3 +1,10 @@
+Wed Nov 26 03:17:48 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_r): raise exception
+	  for nan/inf conversion.  [ruby-dev:37187] fix #793
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_i): ditto.
+
 Wed Nov 26 03:00:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (VpAlloc): avoid ALLOCA_N() to avoid
