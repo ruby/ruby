@@ -604,11 +604,13 @@ class TestRegexp < Test::Unit::TestCase
     check(/\Aa{0}+\z/, "", %w(a aa aab))
     check(/\Aa{1}+\z/, %w(a aa), ["", "aab"])
     check(/\Aa{1,2}b{1,2}\z/, %w(ab aab abb aabb), ["", "aaabb", "abbb"])
+    check(/(?!x){0,1}/, [ ['', 'ab'], ['', ''] ])
+    check(/c\z{0,1}/, [ ['c', 'abc'], ['c', 'cab']], ['abd'])
+    check(/\A{0,1}a/, [ ['a', 'abc'], ['a', '____abc']], ['bcd'])
     failcheck('.{100001}')
     failcheck('.{0,100001}')
     failcheck('.{1,0}')
     failcheck('{0}')
-    failcheck('(?!x){0,1}')
   end
 
   def test_parse_comment
