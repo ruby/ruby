@@ -286,7 +286,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			if (precision <= 0) precision = (def_prec); \
 			if (flags & BIT_OF(LEFT)) precision = 1; \
 			l = snprintf(s, endp - s, \
-				     ((padding == '0' || (!padding && def_pad == '0')) ? "%.*"fmt : "%*"fmt), \
+				     ((padding == '0' || (!padding && def_pad == '0')) ? "%0*"fmt : "%*"fmt), \
 				     precision, val); \
 			if (l < 0) goto err; \
 			s += l; \
@@ -417,7 +417,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			break;
 
 		case 's':
-			FMT(' ', 1, "d", (int) ts->tv_sec);
+			FMT('0', 1, "d", (int) ts->tv_sec);
 			continue;
 
 		case 'S':	/* second, 00 - 60 */
