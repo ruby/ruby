@@ -461,5 +461,12 @@ class TestTime < Test::Unit::TestCase
     assert_equal("\n", T2000.strftime("%1n"))
     assert_equal("  \n", T2000.strftime("%3n"))
     assert_equal("00\n", T2000.strftime("%03n"))
+
+    # [ruby-dev:37162]
+    assert_equal("SAT", T2000.strftime("%#a"))
+    assert_equal("SATURDAY", T2000.strftime("%#A"))
+    assert_equal("JAN", T2000.strftime("%#b"))
+    assert_equal("JANUARY", T2000.strftime("%#B"))
+    assert_equal("JAN", T2000.strftime("%#h"))
   end
 end
