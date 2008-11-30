@@ -1,3 +1,11 @@
+Tue Nov 25 00:08:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_fork): stops the timer thread during fork.
+	  [ruby-dev:37117]
+
+	* thread.c (rb_thread_start_timer_thread): timer thread needs
+	  system_working to be set.
+
 Mon Nov 24 23:27:28 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* strftime.c (rb_strftime): The # flag should work with %a, %A, %b,

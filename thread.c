@@ -2371,6 +2371,7 @@ rb_thread_reset_timer_thread(void)
 void
 rb_thread_start_timer_thread(void)
 {
+    system_working = 1;
     rb_thread_create_timer_thread();
 }
 
