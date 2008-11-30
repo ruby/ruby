@@ -673,8 +673,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			{
 				long n = ts->tv_nsec;
 
-				if (precision == 0) continue;
-				if (precision < 0) {
+				if (precision <= 0) {
 				    precision = w;
 				}
 				NEEDS(precision);
