@@ -1,3 +1,33 @@
+Thu Nov 27 23:54:37 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (gc_mark): still needs to check stack depth during GC.
+
+	* gc.c (stack_check): ditto.
+
+Thu Nov 27 16:32:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (register_sigaltstack): stores alt stack for debug
+	  purpose.
+
+Thu Nov 27 16:12:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (ruby_sigaction_t): added.
+
+Thu Nov 27 15:59:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (ruby_stack_check): no check if using sigaltstack.
+
+	* signal.c (ALT_STACK_SIZE): default minimum size is insufficient
+	  for method calls.
+
+	* signal.c (sigsegv): handles stack overflow if possible.
+
+	* thread.c (ruby_thread_stack_overflow): helper function to raise
+	  sysstack_error.
+
+	* thread_pthread.c (ruby_stack_overflowed_p): checks for stack
+	  overflow.
+
 Wed Nov 26 23:15:47 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* strftime.c (STRFTIME): use rb_strftime() recursively, instead of

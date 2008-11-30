@@ -1184,6 +1184,14 @@ rb_thread_signal_exit(void *thptr)
     rb_thread_raise(2, argv, th->vm->main_thread);
 }
 
+void
+ruby_thread_stack_overflow(rb_thread_t *th)
+{
+    th->errinfo = sysstack_error;
+    th->raised_flag = 0;
+    TH_JUMP_TAG(th, TAG_RAISE);
+}
+
 int
 rb_thread_set_raised(rb_thread_t *th)
 {

@@ -408,6 +408,13 @@ static struct {
 #endif
 
 typedef RETSIGTYPE (*sighandler_t)(int);
+#ifdef SA_SIGINFO
+typedef void ruby_sigaction_t(int, siginfo_t*, void*);
+#define SIGINFO_ARG , siginfo_t *info, void *ctx
+#else
+typedef RETSIGTYPE ruby_sigaction_t(int);
+#define SIGINFO_ARG
+#endif
 
 #ifdef POSIX_SIGNAL
 #if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK)
@@ -416,31 +423,31 @@ typedef RETSIGTYPE (*sighandler_t)(int);
 
 #ifdef USE_SIGALTSTACK
 #ifdef SIGSTKSZ
-#define ALT_STACK_SIZE SIGSTKSZ
+#define ALT_STACK_SIZE (SIGSTKSZ*2)
 #else
 #define ALT_STACK_SIZE (4*1024)
 #endif
 /* alternate stack for SIGSEGV */
 static void
-register_sigaltstack()
+register_sigaltstack(void)
 {
-    static int is_altstack_defined = 0;
+    static void *altstack = 0;
     stack_t newSS, oldSS;
 
-    if (is_altstack_defined)
-      return;
+    if (altstack) return;
 
-    newSS.ss_sp = malloc(ALT_STACK_SIZE);
+    newSS.ss_sp = altstack = malloc(ALT_STACK_SIZE);
     if (newSS.ss_sp == NULL)
-      /* should handle error */
-       rb_bug("register_sigaltstack. malloc error\n");
+	/* should handle error */
+	rb_bug("register_sigaltstack. malloc error\n");
     newSS.ss_size = ALT_STACK_SIZE;
     newSS.ss_flags = 0;
 
     if (sigaltstack(&newSS, &oldSS) < 0) 
-        rb_bug("register_sigaltstack. error\n");
-    is_altstack_defined = 1;
+	rb_bug("register_sigaltstack. error\n");
 }
+#else
+#define register_sigaltstack() ((void)0)
 #endif
 
 static sighandler_t
@@ -454,7 +461,7 @@ ruby_signal(int signum, sighandler_t handler)
 
     sigemptyset(&sigact.sa_mask);
 #ifdef SA_SIGINFO
-    sigact.sa_sigaction = (void (*)(int, siginfo_t*, void*))handler;
+    sigact.sa_sigaction = (ruby_sigaction_t*)handler;
     sigact.sa_flags = SA_SIGINFO;
 #else
     sigact.sa_handler = handler;
@@ -467,7 +474,7 @@ ruby_signal(int signum, sighandler_t handler)
 #endif
 #if defined(SA_ONSTACK) && defined(USE_SIGALTSTACK)
     if (signum == SIGSEGV)
-        sigact.sa_flags |= SA_ONSTACK;
+	sigact.sa_flags |= SA_ONSTACK;
 #endif
     if (sigaction(signum, &sigact, &old) < 0)
         rb_bug("sigaction error.\n");
@@ -570,8 +577,16 @@ sigbus(int sig)
 #ifdef SIGSEGV
 static int segv_received = 0;
 static RETSIGTYPE
-sigsegv(int sig)
+sigsegv(int sig SIGINFO_ARG)
 {
+#ifdef USE_SIGALTSTACK
+    int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
+    NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
+    rb_thread_t *th = GET_THREAD();
+    if (ruby_stack_overflowed_p(th, info->si_addr)) {
+	ruby_thread_stack_overflow(th);
+    }
+#endif
     if (segv_received) {
 	fprintf(stderr, "SEGV recieved in SEGV handler\n");
 	exit(EXIT_FAILURE);
@@ -700,10 +715,8 @@ default_handler(int sig)
 #endif
 #ifdef SIGSEGV
       case SIGSEGV:
-        func = sigsegv;
-#ifdef USE_SIGALTSTACK
+        func = (sighandler_t)sigsegv;
         register_sigaltstack();
-#endif
         break;
 #endif
 #ifdef SIGPIPE
@@ -1111,10 +1124,8 @@ Init_signal(void)
     install_sighandler(SIGBUS, sigbus);
 #endif
 #ifdef SIGSEGV
-#ifdef USE_SIGALTSTACK
     register_sigaltstack();
-#endif
-    install_sighandler(SIGSEGV, sigsegv);
+    install_sighandler(SIGSEGV, (sighandler_t)sigsegv);
 #endif
     }
 #ifdef SIGPIPE

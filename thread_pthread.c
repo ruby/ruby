@@ -180,6 +180,75 @@ native_thread_destroy(rb_thread_t *th)
 
 #define USE_THREAD_CACHE 0
 
+#if STACK_GROW_DIRECTION
+#define STACK_GROW_DIR_DETECTION
+#define STACK_DIR_UPPER(a,b) STACK_UPPER(0, a, b)
+#else
+#define STACK_GROW_DIR_DETECTION VALUE stack_grow_dir_detection
+#define STACK_DIR_UPPER(a,b) STACK_UPPER(&stack_grow_dir_detection, a, b)
+#endif
+
+#if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
+#define STACKADDR_AVAILABLE 1
+#elif defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP
+#define STACKADDR_AVAILABLE 1
+#elif defined HAVE_THR_STKSEGMENT || defined HAVE_PTHREAD_STACKSEG_NP
+#define STACKADDR_AVAILABLE 1
+#endif
+
+#ifdef STACKADDR_AVAILABLE
+static int
+get_stack(void **addr, size_t *size)
+{
+#define CHECK_ERR(expr)				\
+    {int err = (expr); if (err) return err;}
+#if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
+    pthread_attr_t attr;
+    size_t guard = 0;
+
+# ifdef HAVE_PTHREAD_GETATTR_NP
+    CHECK_ERR(pthread_getattr_np(pthread_self(), &attr));
+#   ifdef HAVE_PTHREAD_ATTR_GETSTACK
+    CHECK_ERR(pthread_attr_getstack(&attr, addr, size));
+#   else
+    CHECK_ERR(pthread_attr_getstackaddr(&attr, addr));
+    CHECK_ERR(pthread_attr_getstacksize(&attr, size));
+#   endif
+    if (pthread_attr_getguardsize(&attr, &guard) == 0) {
+	STACK_GROW_DIR_DETECTION;
+	STACK_DIR_UPPER((void)0, *addr = (char *)*addr + guard);
+	*size -= guard;
+    }
+# else
+    CHECK_ERR(pthread_attr_init(&attr));
+    CHECK_ERR(pthread_attr_get_np(pthread_self(), &attr));
+    CHECK_ERR(pthread_attr_getstackaddr(&attr, addr));
+    CHECK_ERR(pthread_attr_getstacksize(&attr, size));
+# endif
+    CHECK_ERR(pthread_attr_getguardsize(&attr, &guard));
+# ifndef HAVE_PTHREAD_GETATTR_NP
+    pthread_attr_destroy(&attr);
+# endif
+    size -= guard;
+#elif defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP
+    pthread_t th = pthread_self();
+    *addr = pthread_get_stackaddr_np(th);
+    *size = pthread_get_stacksize_np(th);
+#elif defined HAVE_THR_STKSEGMENT || defined HAVE_PTHREAD_STACKSEG_NP
+    stack_t stk;
+# if defined HAVE_THR_STKSEGMENT
+    CHECK_ERR(thr_stksegment(&stk));
+# else
+    CHECK_ERR(pthread_stackseg_np(pthread_self(), &stk));
+# endif
+    *addr = stk.ss_sp;
+    *size = stk.ss_size;
+#endif
+    return 0;
+#undef CHECK_ERR
+}
+#endif
+
 static struct {
     rb_thread_id_t id;
     size_t stack_maxsize;
@@ -741,5 +810,40 @@ native_stop_timer_thread(void)
     native_mutex_unlock(&timer_thread_lock);
     return stopped;
 }
+
+#ifdef HAVE_SIGALTSTACK
+int
+ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
+{
+    void *base;
+    size_t size;
+    const size_t water_mark = 1024 * 1024;
+    STACK_GROW_DIR_DETECTION;
+
+    if (th) {
+	size = th->machine_stack_maxsize;
+	base = (char *)th->machine_stack_start - STACK_DIR_UPPER(0, size);
+    }
+#ifdef STACKADDR_AVAILABLE
+    else if (get_stack(&base, &size) == 0) {
+	STACK_DIR_UPPER(base = (char *)base + size, (void)0);
+    }
+#endif
+    else {
+	return 0;
+    }
+    size /= 5;
+    if (size > water_mark) size = water_mark;
+    if (STACK_DIR_UPPER(1, 0)) {
+	if (size > ~(size_t)base+1) size = ~(size_t)base+1;
+	if (addr > base && addr <= (void *)((char *)base + size)) return 1;
+    }
+    else {
+	if (size > (size_t)base) size = (size_t)base;
+	if (addr > (void *)((char *)base - size) && addr <= base) return 1;
+    }
+    return 0;
+}
+#endif
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
