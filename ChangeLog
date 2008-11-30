@@ -1,3 +1,12 @@
+Wed Nov 26 22:46:23 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (VpException): bigdecimal zero
+	  division should raise FloatDomainError if mode
+	  VP_EXCEPTION_ZERODIVIDE is set.  [ruby-dev:37204]
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_mode): should handle
+	  VP_EXCEPTION_ZERODIVIDE.
+
 Wed Nov 26 15:16:07 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/gdbm/gdbm.c (rb_gdbm_nextkey): fix memory leak.

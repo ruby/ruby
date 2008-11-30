@@ -77,6 +77,7 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_exception_zerodivide
+    BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
     _test_mode(BigDecimal::EXCEPTION_ZERODIVIDE) { 1 / BigDecimal.new("0") }
     _test_mode(BigDecimal::EXCEPTION_ZERODIVIDE) { -1 / BigDecimal.new("0") }
   end
@@ -275,6 +276,7 @@ class TestBigDecimal < Test::Unit::TestCase
 
   def test_finite_infinite_nan
     BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+    BigDecimal.mode(BigDecimal::EXCEPTION_ZERODIVIDE, false)
 
     x = BigDecimal.new("0")
     assert_equal(true, x.finite?)
@@ -305,7 +307,7 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(0, x.to_i)
     assert_raise(FloatDomainError){( 1 / x).to_i}
     assert_raise(FloatDomainError){(-1 / x).to_i}
-    assert_raise(FloatDomainError){( 0 / x).to_i}
+    assert_raise(FloatDomainError) {( 0 / x).to_i}
     x = BigDecimal.new("1")
     assert_equal(1, x.to_i)
     x = BigDecimal.new((2**100).to_s)
@@ -315,6 +317,7 @@ class TestBigDecimal < Test::Unit::TestCase
   def test_to_f
     BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
     BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+    BigDecimal.mode(BigDecimal::EXCEPTION_ZERODIVIDE, false)
 
     x = BigDecimal.new("0")
     assert_instance_of(Float, x.to_f)
@@ -616,6 +619,7 @@ class TestBigDecimal < Test::Unit::TestCase
   def test_sign
     BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
     BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+    BigDecimal.mode(BigDecimal::EXCEPTION_ZERODIVIDE, false)
 
     assert_equal(BigDecimal::SIGN_POSITIVE_ZERO, BigDecimal.new("0").sign)
     assert_equal(BigDecimal::SIGN_NEGATIVE_ZERO, BigDecimal.new("-0").sign)

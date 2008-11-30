@@ -425,6 +425,11 @@ BigDecimal_mode(int argc, VALUE *argv, VALUE self)
                            (fo&(~VP_EXCEPTION_UNDERFLOW))));
         }
         fo = VpGetException();
+        if(f&VP_EXCEPTION_ZERODIVIDE) {
+            VpSetException((unsigned short)((val==Qtrue)?(fo|VP_EXCEPTION_ZERODIVIDE):
+                           (fo&(~VP_EXCEPTION_ZERODIVIDE))));
+        }
+        fo = VpGetException();
         return INT2FIX(fo);
     }
     if(VP_ROUND_MODE==f) {
@@ -2270,18 +2275,12 @@ VpException(unsigned short f, const char *str,int always)
         switch(f)
         {
         /*
-        case VP_EXCEPTION_ZERODIVIDE:
         case VP_EXCEPTION_OVERFLOW:
         */
+        case VP_EXCEPTION_ZERODIVIDE:
         case VP_EXCEPTION_INFINITY:
-             exc = rb_eFloatDomainError;
-             goto raise;
         case VP_EXCEPTION_NaN:
-             exc = rb_eFloatDomainError;
-             goto raise;
         case VP_EXCEPTION_UNDERFLOW:
-             exc = rb_eFloatDomainError;
-             goto raise;
         case VP_EXCEPTION_OP:
              exc = rb_eFloatDomainError;
              goto raise;
