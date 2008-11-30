@@ -108,6 +108,24 @@ Personal irb initialization.
 .Pp
 .El
 .Pp
+.Sh EXAMPLES
+.Dl % irb
+.Dl irb(main):001:0> Ic 1 + 1
+.Dl 2
+.Dl irb(main):002:0> Ic def t(x)
+.Dl irb(main):003:1> Ic   x+1
+.Dl irb(main):004:1> Ic end
+.Dl => nil
+.Dl irb(main):005:0> Ic t(3)
+.Dl => 4
+.Dl irb(main):006:0> Ic if t(3) == 4
+.Dl irb(main):007:1> Ic p :ok
+.Dl irb(main):008:1> Ic end
+.Dl :ok
+.Dl => :ok
+.Dl irb(main):009:0> Ic quit
+.Dl % 
+.Pp
 .Sh SEE ALSO
 .Xr ruby 1 .
 .Pp
