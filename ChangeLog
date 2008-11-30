@@ -1,3 +1,8 @@
+Mon Nov 24 22:57:25 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* strftime.c (rb_strftime): A width specifier for %t and %n should
+	  work.  [ruby-dev:37160]
+
 Mon Nov 24 22:07:07 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* strftime.c (rb_strftime): The precision of %0N should be 9.
