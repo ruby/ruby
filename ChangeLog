@@ -1,3 +1,8 @@
+Sat Nov 29 00:18:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* cont.c (fiber_alloc): separate allocation and initialization.
+	  allow subclass to override #initialize.   [ruby-core:20086]
+
 Fri Nov 28 18:31:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (sock_s_getaddrinfo): refactored to remove
