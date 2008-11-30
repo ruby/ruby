@@ -319,6 +319,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			goto unknown;
 
 		case '%':
+			FILL_PADDING(1);
 			*s++ = '%';
 			continue;
 
