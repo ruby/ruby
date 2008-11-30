@@ -1,3 +1,7 @@
+Tue Nov 25 01:23:25 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/format.rb (strftime): ignores '_' flag for %[LN].
+
 Sat Nov 29 00:27:33 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* thread.c, thread_pthread.c, thread_win32.c: merges nobu's commits - 
