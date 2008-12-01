@@ -1,3 +1,8 @@
+Mon Dec  1 12:00:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (rb_fiber_start): calls with exact argument number.
+	  [ruby-core:20088]
+
 Sun Nov 30 21:41:10 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* man/rake.1: new manual page

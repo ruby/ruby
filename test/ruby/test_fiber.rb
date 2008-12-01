@@ -14,6 +14,10 @@ class TestFiber < Test::Unit::TestCase
     assert_equal([:a, :b], Fiber.new{|a, b| [a, b]}.resume(:a, :b))
   end
 
+  def test_argument
+    assert_equal(4, Fiber.new {|i=4| i}.resume)
+  end
+
   def test_term
     assert_equal(:ok, Fiber.new{:ok}.resume)
     assert_equal([:a, :b, :c, :d, :e],
