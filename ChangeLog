@@ -1,3 +1,8 @@
+Mon Dec  1 12:00:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (rb_fiber_start): calls with exact argument number.
+	  [ruby-core:20088]
+
 Mon Dec  1 16:06:15 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* signal.c (register_sigaltstack): no need to define on non-sigaltstack

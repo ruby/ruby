@@ -25,6 +25,7 @@ enum context_type {
 typedef struct rb_context_struct {
     enum context_type type;
     VALUE self;
+    int argc;
     VALUE value;
     VALUE *vm_stack;
 #ifdef CAPTURE_JUST_VALID_VM_STACK
@@ -558,6 +559,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 	}
     }
 
+    cont->argc = argc;
     cont->value = make_passing_arg(argc, argv);
 
     cont_restore_0(cont, &contval);
@@ -685,7 +687,6 @@ rb_fiber_start(void)
     rb_fiber_t *fib;
     rb_context_t *cont;
     rb_proc_t *proc;
-    VALUE args;
     int state;
 
     GetFiberPtr(th->fiber, fib);
@@ -693,15 +694,18 @@ rb_fiber_start(void)
 
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
+	int argc;
+	VALUE *argv, args;
 	GetProcPtr(cont->saved_thread.first_proc, proc);
 	args = cont->value;
+	argv = (argc = cont->argc) > 1 ? RARRAY_PTR(args) : &args;
 	cont->value = Qnil;
 	th->errinfo = Qnil;
 	th->local_lfp = proc->block.lfp;
 	th->local_svar = Qnil;
 
 	fib->status = RUNNING;
-	cont->value = vm_invoke_proc(th, proc, proc->block.self, 1, &args, 0);
+	cont->value = vm_invoke_proc(th, proc, proc->block.self, argc, argv, 0);
     }
     TH_POP_TAG();
 
@@ -798,6 +802,7 @@ fiber_switch(VALUE fibval, int argc, VALUE *argv, int is_resume)
 	fib->prev = rb_fiber_current();
     }
 
+    cont->argc = argc;
     cont->value = make_passing_arg(argc, argv);
 
     if ((value = fiber_store(fib)) == Qundef) {
