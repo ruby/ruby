@@ -1,3 +1,7 @@
+Mon Dec  1 23:23:52 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* set 1.9.1-p5000 into version number. [ruby-dev:36998]
+
 Mon Dec  1 15:48:47 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* signal.c (register_sigaltstack): no need to define on non-sigaltstack
