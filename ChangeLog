@@ -3,6 +3,10 @@ Mon Dec  1 16:06:15 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* signal.c (register_sigaltstack): no need to define on non-sigaltstack
 	  platform.
 
+Sun Nov 30 21:41:10 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* man/rake.1: new manual page
+
 Sat Nov 29 23:56:44 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* man/irb.1 (EXAMPLES): new section
