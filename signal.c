@@ -446,8 +446,6 @@ register_sigaltstack(void)
     if (sigaltstack(&newSS, &oldSS) < 0) 
 	rb_bug("register_sigaltstack. error\n");
 }
-#else
-#define register_sigaltstack() ((void)0)
 #endif
 
 static sighandler_t
@@ -716,7 +714,9 @@ default_handler(int sig)
 #ifdef SIGSEGV
       case SIGSEGV:
         func = (sighandler_t)sigsegv;
+# ifdef USE_SIGALTSTACK
         register_sigaltstack();
+# endif
         break;
 #endif
 #ifdef SIGPIPE
@@ -1124,7 +1124,9 @@ Init_signal(void)
     install_sighandler(SIGBUS, sigbus);
 #endif
 #ifdef SIGSEGV
+# ifdef USE_SIGALTSTACK
     register_sigaltstack();
+# endif
     install_sighandler(SIGSEGV, (sighandler_t)sigsegv);
 #endif
     }
