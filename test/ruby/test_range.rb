@@ -267,4 +267,13 @@ class TestRange < Test::Unit::TestCase
     def o.end; 0; end
     assert_equal([], [0, 1, 2][o])
   end
+
+  class CyclicRange < Range
+    def <=>(other); true; end
+  end
+  def test_cyclic_range_inspect
+    o = CyclicRange.allocate
+    o.instance_eval { initialize(o, 1) }
+    assert_equal("(... .. ...)..1", o.inspect)
+  end
 end
