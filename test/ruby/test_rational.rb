@@ -129,6 +129,9 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(ArgumentError){Rational(Object.new)}
     assert_raise(ArgumentError){Rational()}
     assert_raise(ArgumentError){Rational(1,2,3)}
+
+    assert_equal(Complex(Rational(1, 2), Rational(1, 2)), Rational(Complex(1, 1), Complex(2, 0)))
+    assert_instance_of(Numeric, Rational.class_eval { convert(Numeric.new) })
   end
 
   def test_attr

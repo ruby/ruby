@@ -1,3 +1,7 @@
+Wed Dec  3 02:56:34 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_rational.rb: add a test.
+
 Wed Dec  3 02:53:24 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_range.rb: add a test.
