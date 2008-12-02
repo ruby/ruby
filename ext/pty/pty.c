@@ -438,7 +438,7 @@ Init_pty()
     cPTY = rb_define_module("PTY");
     rb_define_module_function(cPTY,"getpty",pty_getpty,-1);
     rb_define_module_function(cPTY,"spawn",pty_getpty,-1);
-    rb_define_singleton_function(cPTY,"check",pty_check,-1);
+    rb_define_singleton_method(cPTY,"check",pty_check,-1);
 
     eChildExited = rb_define_class_under(cPTY,"ChildExited",rb_eRuntimeError);
     rb_define_method(eChildExited,"status",echild_status,0);

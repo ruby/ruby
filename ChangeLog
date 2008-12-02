@@ -1,3 +1,7 @@
+Wed Dec  3 02:04:21 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/pty/pty.c (Init_pty): fix typo.
+
 Tue Dec  2 19:22:13 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open3.rb (Open3.popen3): merge hash options if given. 
