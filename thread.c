@@ -2003,6 +2003,34 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
 /* for IO */
 
 #if defined(NFDBITS) && defined(HAVE_RB_FD_INIT)
+
+/*
+ * several Unix platform supports file descriptors bigger than FD_SETSIZE
+ * in select(2) system call.
+ *
+ * - Linux 2.2.12 (?)
+ * - NetBSD 1.2 (src/sys/kern/sys_generic.c:1.25)
+ *   select(2) documents how to allocate fd_set dynamically.
+ *   http://netbsd.gw.com/cgi-bin/man-cgi?select++NetBSD-4.0
+ * - FreeBSD 2.2 (src/sys/kern/sys_generic.c:1.19)
+ * - OpenBSD 2.0 (src/sys/kern/sys_generic.c:1.4)
+ *   select(2) documents how to allocate fd_set dynamically.
+ *   http://www.openbsd.org/cgi-bin/man.cgi?query=select&manpath=OpenBSD+4.4
+ * - HP-UX documents how to allocate fd_set dynamically. 
+ *   http://docs.hp.com/en/B2355-60105/select.2.html
+ * - Solaris 8 has select_large_fdset
+ *
+ * When fd_set is not big enough to hold big file descriptors,
+ * it should be allocated dynamically.
+ * Note that this assumes fd_set is structured as bitmap.
+ *
+ * rb_fd_init allocates the memory.
+ * rb_fd_term free the memory.
+ * rb_fd_set may re-allocates bitmap.
+ *
+ * So rb_fd_set doesn't reject file descriptors bigger than FD_SETSIZE.
+ */
+
 void
 rb_fd_init(volatile rb_fdset_t *fds)
 {
