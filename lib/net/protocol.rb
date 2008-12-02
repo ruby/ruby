@@ -131,9 +131,15 @@ module Net # :nodoc:
     BUFSIZE = 1024 * 16
 
     def rbuf_fill
-      timeout(@read_timeout) {
-        @rbuf << @io.sysread(BUFSIZE)
-      }
+      begin
+        @rbuf << @io.read_nonblock(BUFSIZE)
+      rescue Errno::EWOULDBLOCK
+        if IO.select([@io], nil, nil, @read_timeout)
+          @rbuf << @io.read_nonblock(BUFSIZE)
+        else
+          raise Timeout::TimeoutError
+        end
+      end
     end
 
     def rbuf_consume(len)

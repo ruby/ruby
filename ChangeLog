@@ -1,3 +1,10 @@
+Tue Dec  2 15:31:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/net/protocol.rb (Net::BufferedIO#rbuf_fill): use
+	  read_nonblock instead of sysread wrapped by timeout to boost
+	  performance.  a patch from Aaron Patterson in [ruby-core:20191].
+	  fix #806
+
 Mon Dec  1 23:23:52 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* set 1.9.1-p5000 into version number. [ruby-dev:36998]
