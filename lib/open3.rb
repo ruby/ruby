@@ -32,15 +32,23 @@
 #
 
 module Open3
-  # 
+
   # Open stdin, stdout, and stderr streams and start external executable.
   # In addition, a thread for waiting the started process is noticed.
-  # The thread has a thread variable :pid which is the pid of the started
-  # process.
+  # The thread has a pid method and thread variable :pid which is the pid of
+  # the started process.
+  #
+  # Block form:
+  #
+  #   Open3.popen3(cmd... [, opts]) {|stdin, stdout, stderr, wait_thr|
+  #     pid = wait_thr.pid # pid of the started process.
+  #     ...
+  #     exit_status = wait_thr.value # Process::Status object returned.
+  #   }
   #
   # Non-block form:
   #   
-  #   stdin, stdout, stderr, wait_thr = Open3.popen3(cmd)
+  #   stdin, stdout, stderr, wait_thr = Open3.popen3(cmd... [, opts])
   #   pid = wait_thr[:pid]  # pid of the started process.
   #   ...
   #   stdin.close  # stdin, stdout and stderr should be closed in this form.
@@ -48,11 +56,43 @@ module Open3
   #   stderr.close
   #   exit_status = wait_thr.value  # Process::Status object returned.
   #
-  # Block form:
+  # The parameters +cmd...+ is passed to Kernel#spawn.
+  # So a commandline string and list of argument strings can be accepted as follows.
   #
-  #   Open3.popen3(cmd) { |stdin, stdout, stderr, wait_thr| ... }
+  #   Open3.popen3("echo a") {|i, o, e, t| ... }
+  #   Open3.popen3("echo", "a") {|i, o, e, t| ... }
   #
-  # The parameter +cmd+ is passed directly to Kernel#spawn.
+  # If the last parameter, opts, is a Hash, it is recognized as an option for Kernel#spawn.
+  #
+  #   Open3.popen3("pwd", :chdir=>"/") {|i,o,e,t|
+  #     p o.read.chomp #=> "/"
+  #   }
+  #
+  # opts[STDIN], opts[STDOUT] and opts[STDERR] in the option are set for redirection.
+  #
+  # If some of the three elements in opts are specified,
+  # pipes for them are not created.
+  # In that case, block arugments for the block form and
+  # return values for the non-block form are decreased.
+  #
+  #   # No pipe "e" for stderr
+  #   Open3.popen3("echo a", STDERR=>nil) {|i,o,t| ... }
+  #   i,o,t = Open3.popen3("echo a", STDERR=>nil)
+  #
+  # If the value is nil as above, the elements of opts are removed.
+  # So standard input/output/error of current process are inherited.
+  #
+  # If the value is not nil, it is passed as is to Kernel#spawn.
+  # So pipeline of commands can be constracted as follows.
+  #
+  #   Open3.popen3("yes", STDIN=>nil, STDERR=>nil) {|o1,t1|
+  #     Open3.popen3("head -10", STDIN=>o1, STDERR=>nil) {|o2,t2|
+  #       o1.close
+  #       p o2.read     #=> "y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n"
+  #       p t1.value    #=> #<Process::Status: pid 13508 SIGPIPE (signal 13)>
+  #       p t2.value    #=> #<Process::Status: pid 13510 exit 0>
+  #     } 
+  #   }
   #
   # wait_thr.value waits the termination of the process.
   # The block form also waits the process when it returns.
@@ -60,26 +100,56 @@ module Open3
   # Closing stdin, stdout and stderr does not wait the process.
   #
   def popen3(*cmd)
-    pw = IO::pipe   # pipe[0] for read, pipe[1] for write
-    pr = IO::pipe
-    pe = IO::pipe
+    if Hash === cmd.last
+      opts = cmd.pop.dup
+    else
+      opts = {}
+    end
 
-    pid = spawn(*cmd, STDIN=>pw[0], STDOUT=>pr[1], STDERR=>pe[1])
+    child_io = []
+    parent_io = []
+
+    if !opts.include?(STDIN)
+      pw = IO.pipe   # pipe[0] for read, pipe[1] for write
+      opts[STDIN] = pw[0]
+      pw[1].sync = true
+      child_io << pw[0]
+      parent_io << pw[1]
+    elsif opts[STDIN] == nil
+      opts.delete(STDIN)
+    end
+
+    if !opts.include?(STDOUT)
+      pr = IO.pipe
+      opts[STDOUT] = pr[1]
+      child_io << pr[1]
+      parent_io << pr[0]
+    elsif opts[STDOUT] == nil
+      opts.delete(STDOUT)
+    end
+
+    if !opts.include?(STDERR)
+      pe = IO.pipe
+      opts[STDERR] = pe[1]
+      child_io << pe[1]
+      parent_io << pe[0]
+    elsif opts[STDERR] == nil
+      opts.delete(STDERR)
+    end
+
+    pid = spawn(*cmd, opts)
     wait_thr = Process.detach(pid)
-    pw[0].close
-    pr[1].close
-    pe[1].close
-    pi = [pw[1], pr[0], pe[0], wait_thr]
-    pw[1].sync = true
+    child_io.each {|io| io.close }
+    result = [*parent_io, wait_thr]
     if defined? yield
       begin
-	return yield(*pi)
+	return yield(*result)
       ensure
-	[pw[1], pr[0], pe[0]].each{|p| p.close unless p.closed?}
+	parent_io.each{|io| io.close unless io.closed?}
         wait_thr.join
       end
     end
-    pi
+    result
   end
   module_function :popen3
 end

@@ -1,3 +1,7 @@
+Tue Dec  2 19:22:13 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open3.rb (Open3.popen3): merge hash options if given. 
+
 Tue Dec  2 15:31:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/net/protocol.rb (Net::BufferedIO#rbuf_fill): use
