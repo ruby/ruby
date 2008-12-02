@@ -1714,4 +1714,47 @@ class TestString < Test::Unit::TestCase
   def test_gsub_enumerator
     assert_normal_exit %q{"abc".gsub(/./).next}, "[ruby-dev:34828]"
   end
+
+  def test_clear_nonasciicompat
+    assert_equal("", "\u3042".encode("ISO-2022-JP").clear)
+  end
+
+  def test_try_convert
+    assert_equal(nil, String.try_convert(1))
+    assert_equal("foo", String.try_convert("foo"))
+  end
+
+  def test_substr_negative_begin
+    assert_equal("\u3042", ("\u3042" * 100)[-1])
+  end
+
+  def test_compare_different_encoding_string
+    s1 = "\xff".force_encoding("UTF-8")
+    s2 = "\xff".force_encoding("ISO-2022-JP")
+    #assert_equal([-1, 1], [s1 <=> s2, s2 <=> s1].sort)
+  end
+
+  def test_casecmp
+    assert_equal(1, "\u3042B".casecmp("\u3042a"))
+  end
+
+  def test_upcase2
+    assert_equal("\u3042AB", "\u3042aB".upcase)
+  end
+
+  def test_downcase2
+    assert_equal("\u3042ab", "\u3042aB".downcase)
+  end
+
+  def test_rstrip
+    assert_equal("\u3042", "\u3042   ".rstrip)
+    assert_raise(Encoding::CompatibilityError) { "\u3042".encode("ISO-2022-JP").rstrip }
+  end
+
+  def test_symbol_table_overflow
+    return
+    assert_in_out_err([], <<-INPUT, [], /symbol table overflow \(symbol [a-z]{8}\) \(RuntimeError\)/)
+      ("aaaaaaaa".."zzzzzzzz").each {|s| s.to_sym }
+    INPUT
+  end
 end
