@@ -3090,21 +3090,19 @@ ip_ruby_cmd(clientData, interp, argc, argv)
     /* get args */
     args = rb_ary_new2(argc - 2);
     for(i = 3; i < argc; i++) {
+        VALUE s;
 #if TCL_MAJOR_VERSION >= 8
         str = Tcl_GetStringFromObj(argv[i], &len);
+        s = rb_tainted_str_new(str, len);
+#else /* TCL_MAJOR_VERSION < 8 */
+        str = argv[i];
+        s = rb_tainted_str_new2(str);
+#endif
         DUMP2("arg:%s",str);
 #ifndef HAVE_STRUCT_RARRAY_LEN
-	rb_ary_push(args, rb_tainted_str_new(str, len));
+        rb_ary_push(args, s);
 #else
-        RARRAY(args)->as.heap.ptr[RARRAY(args)->as.heap.len++] = rb_tainted_str_new(str, len);
-#endif
-#else /* TCL_MAJOR_VERSION < 8 */
-        DUMP2("arg:%s",argv[i]);
-#ifndef HAVE_STRUCT_RARRAY_LEN
-	rb_ary_push(args, rb_tainted_str_new2(argv[i]));
-#else
-        RARRAY(args)->as.heap.ptr[RARRAY(args)->as.heap.len++] = rb_tainted_str_new2(argv[i]);
-#endif
+        RARRAY(args)->ptr[RARRAY(args)->len++] = s;
 #endif
     }
 
@@ -8295,7 +8293,7 @@ ip_invoke_with_position(argc, argv, obj, position)
     DUMP2("back from handler (current thread:%lx)", current);
 
     /* get result & free allocated memory */
-    ret = RARRAY(result)->as.heap.ptr[0];
+    ret = RARRAY_PTR(result)[0];
 #if 0 /* use Tcl_EventuallyFree */
     Tcl_EventuallyFree((ClientData)alloc_done, TCL_DYNAMIC); /* XXXXXXXX */
 #else
