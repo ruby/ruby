@@ -1,3 +1,8 @@
+Wed Dec  3 22:40:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (simple_default_value): returns simplest assignment only.
+	  [ruby-core:20237]
+
 Wed Dec  3 21:30:06 2008  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (check_exec_redirect): accept :in, :out, :err as redirect

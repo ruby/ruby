@@ -1292,13 +1292,12 @@ simple_default_value(const VALUE *seq, const VALUE *eseq)
       got:
 	switch (*seq++) {
 	  case BIN(setlocal):
-	    if ((seq+=1) != eseq) return Qundef;
+	    if ((seq+=1) == eseq) return val;
 	    break;
 	  case BIN(setdynamic):
-	    if ((seq+=2) != eseq) return Qundef;
+	    if ((seq+=2) == eseq) return val;
 	    break;
 	}
-	return val;
       default:
 	return Qundef;
     }
