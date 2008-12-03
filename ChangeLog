@@ -1,3 +1,10 @@
+Wed Dec  3 09:26:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rexml/xpath.rb (REXML::XPath.first): apply documentation
+	  patch from Ken Bloom in [ruby-core:20213].
+
+	* lib/rexml/xpath.rb (REXML::XPath.each): ditto.
+
 Tue Dec  2 18:23:33 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: detect stdio buffer pointers for uClibc.  a patch
