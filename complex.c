@@ -887,15 +887,17 @@ f_signbit(VALUE x)
     switch (TYPE(x)) {
       case T_FLOAT:
 #ifdef HAVE_SIGNBIT
-	return f_boolcast(signbit(RFLOAT_VALUE(x)));
+      {
+	  double f = RFLOAT_VALUE(x);
+	  return f_boolcast(!isnan(f) && signbit(f));
+      }
 #else
-	{
-	    char s[2];
+      {
+	  char s[2];
 
-	    (void)snprintf(s, sizeof s, "%.0f", RFLOAT_VALUE(x));
-
-	    return f_boolcast(s[0] == '-');
-	}
+	  (void)snprintf(s, sizeof s, "%.0f", RFLOAT_VALUE(x));
+	  return f_boolcast(s[0] == '-');
+      }
 #endif
     }
     return f_negative_p(x);
