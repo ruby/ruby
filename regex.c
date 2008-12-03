@@ -4689,5 +4689,5 @@ utf8_startpos(string, pos)
   mode		 : C
   c-file-style	 : "gnu"
   tab-width	 : 8
-  End
+  End:
 */
