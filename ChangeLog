@@ -1,3 +1,10 @@
+Wed Dec  3 09:26:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rexml/xpath.rb (REXML::XPath.first): apply documentation
+	  patch from Ken Bloom in [ruby-core:20213].
+
+	* lib/rexml/xpath.rb (REXML::XPath.each): ditto.
+
 Wed Dec  3 02:56:34 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_rational.rb: add a test.
