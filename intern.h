@@ -344,6 +344,8 @@ VALUE rb_String _((VALUE));
 VALUE rb_Array _((VALUE));
 double rb_cstr_to_dbl _((const char*, int));
 double rb_str_to_dbl _((VALUE, int));
+/* pack.c */
+unsigned long rb_utf8_to_uv _((char *, long *));
 /* parse.y */
 RUBY_EXTERN int   ruby_sourceline;
 RUBY_EXTERN char *ruby_sourcefile;

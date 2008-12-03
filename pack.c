@@ -370,7 +370,6 @@ static void encodes _((VALUE,const char*,long,int));
 static void qpencode _((VALUE,VALUE,long));
 
 static int uv_to_utf8 _((char*,unsigned long));
-static unsigned long utf8_to_uv _((char*,long*));
 
 /*
  *  call-seq:
@@ -1722,7 +1721,7 @@ pack_unpack(str, fmt)
 		long alen = send - s;
 		unsigned long l;
 
-		l = utf8_to_uv(s, &alen);
+		l = rb_utf8_to_uv(s, &alen);
 		s += alen; len--;
 		rb_ary_push(ary, ULONG2NUM(l));
 	    }
@@ -2054,8 +2053,8 @@ static const unsigned long utf8_limits[] = {
     0x80000000,			/* 7 */
 };
 
-static unsigned long
-utf8_to_uv(p, lenp)
+unsigned long
+rb_utf8_to_uv(p, lenp)
     char *p;
     long *lenp;
 {

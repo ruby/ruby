@@ -96,4 +96,48 @@ class TestString < Test::Unit::TestCase
     s.setbyte(-4, 0x84)
     assert_equal("\xE3\x81\x84\xE3\x81\x84", s)
   end
+
+  def test_ord
+    original_kcode = $KCODE
+
+    assert_raise(ArgumentError) { "".ord }
+
+    str_abc = "ABC"
+    str_a_i_U = "\xE3\x81\x82\xE3\x81\x84"
+    str_a_i_E = "\xA4\xA2\xA4\xA4"
+    str_a_i_S = "\x82\xA0\x82\xA2"
+    str_ai_U = "\xEF\xBD\xB1\xEF\xBD\xB2"
+    str_ai_E = "\x8E\xB1\x8E\xB2"
+    str_ai_S = "\xB1\xB2"
+
+    $KCODE = 'n'
+    assert_equal(0x41, str_abc.ord)
+    assert_equal(0xE3, str_a_i_U.ord)
+    assert_equal(0xA4, str_a_i_E.ord)
+    assert_equal(0x82, str_a_i_S.ord)
+    assert_equal(0xEF, str_ai_U.ord)
+    assert_equal(0x8E, str_ai_E.ord)
+    assert_equal(0xB1, str_ai_S.ord)
+
+    $KCODE = 'u'
+    assert_equal(0x41, str_abc.ord)
+    assert_equal(0x3042, str_a_i_U.ord)
+    assert_raise(ArgumentError) { str_a_i_U[0..0].ord }
+    assert_raise(ArgumentError) { str_a_i_U[0..1].ord }
+    assert_equal(0xFF71, str_ai_U.ord)
+
+    $KCODE = 's'
+    assert_equal(0x41, str_abc.ord)
+    assert_equal(0x82A0, str_a_i_S.ord)
+    assert_raise(ArgumentError) { str_a_i_S[0..0].ord }
+    assert_equal(0xB1, str_ai_S.ord)
+
+    $KCODE = 'e'
+    assert_equal(0x41, str_abc.ord)
+    assert_equal(0xA4A2, str_a_i_E.ord)
+    assert_raise(ArgumentError) { str_a_i_E[0..0].ord }
+    assert_equal(0x8EB1, str_ai_E.ord)
+  ensure
+    $KCODE = original_kcode
+  end
 end

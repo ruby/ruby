@@ -45,9 +45,11 @@ with all sufficient information, see the ChangeLog file.
 
   * String#getbyte
   * String#setbyte
+  * String#ord
 
     New methods for the forward compatibility with 1.9, in which the
-    behavior of String#[] and String#[]= have changed.
+    behavior of String#[] and String#[]= have changed.  String#ord is
+    $KCODE aware.
 
 * dbm
 

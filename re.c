@@ -2281,6 +2281,48 @@ rb_reg_s_last_match(argc, argv)
     return match_getter();
 }
 
+/*
+ *  call-seq:
+ *     str.ord   => integer
+ *  
+ *  Return the <code>Integer</code> ordinal of a one-character string.
+ *     
+ *     "a".ord         #=> 97
+ */
+
+static VALUE
+str_ord(str)
+    VALUE str;
+{
+    char *p = RSTRING(str)->ptr;
+    long len = RSTRING(str)->len;
+    unsigned long cp;
+    int charlen;
+
+    if (len <= 0)
+	rb_raise(rb_eArgError, "empty string");
+
+    switch (reg_kcode) {
+      case KCODE_NONE:
+	return INT2FIX((unsigned char)p[0]);
+      case KCODE_UTF8:
+	cp = rb_utf8_to_uv(p, &len);
+	break;
+      default:
+	charlen = mbclen(p[0]);
+	if (len < charlen)
+	    rb_raise(rb_eArgError,
+		     "malformed %s character (expected %d bytes, given %ld bytes)",
+		     rb_get_kcode(), charlen, len);
+	for (cp = 0; charlen--; ) {
+	    cp <<= 8;
+	    cp |= (unsigned char)*p++;
+	}
+	break;
+    }
+
+    return ULONG2NUM(cp);
+}
 
 /*
  *  Document-class: Regexp
@@ -2373,4 +2415,6 @@ Init_Regexp()
     rb_define_method(rb_cMatch, "to_s", match_to_s, 0);
     rb_define_method(rb_cMatch, "inspect", match_inspect, 0);
     rb_define_method(rb_cMatch, "string", match_string, 0);
+
+    rb_define_method(rb_cString, "ord", str_ord, 0);
 }

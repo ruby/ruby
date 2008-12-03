@@ -1,3 +1,11 @@
+Wed Dec  3 16:25:55 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* pack.c (rb_utf8_to_uv), intern.h: Rename utf8_to_uv to
+	  rb_utf8_to_uv and export.
+
+	* re.c (str_ord): Backport String#ord from 1.9 (sort of);
+	  requested by Shinichiro Hamaji in [ruby-dev:37247].
+
 Wed Dec  3 16:17:36 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* string.c (rb_str_getbyte, rb_str_setbyte): Add String#getbyte
