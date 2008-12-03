@@ -1,3 +1,8 @@
+Wed Dec  3 21:30:06 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (check_exec_redirect): accept :in, :out, :err as redirect
+	  target.
+
 Wed Dec  3 21:18:27 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/ruby/test_rational.rb: revert.

@@ -306,6 +306,11 @@ class TestProcess < Test::Unit::TestCase
       Process.wait Process.spawn(*ECHO["e"], STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644],
                                  3=>STDOUT, 4=>STDOUT, 5=>STDOUT, 6=>STDOUT, 7=>STDOUT)
       assert_equal("e", File.read("out").chomp)
+      Process.wait Process.spawn(*ECHO["ee"], STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644],
+                                 3=>0, 4=>:in, 5=>STDIN,
+                                 6=>1, 7=>:out, 8=>STDOUT,
+                                 9=>2, 10=>:err, 11=>STDERR)
+      assert_equal("ee", File.read("out").chomp)
       File.open("out", "w") {|f|
         h = {STDOUT=>f, f=>STDOUT}
         3.upto(30) {|i| h[i] = STDOUT if f.fileno != i }

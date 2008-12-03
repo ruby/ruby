@@ -1259,6 +1259,18 @@ check_exec_redirect(VALUE key, VALUE val, VALUE options)
             index = EXEC_OPTION_CLOSE;
             param = Qnil;
         }
+        else if (id == rb_intern("in")) {
+            index = EXEC_OPTION_DUP2;
+            param = INT2FIX(0);
+        }
+        else if (id == rb_intern("out")) {
+            index = EXEC_OPTION_DUP2;
+            param = INT2FIX(1);
+        }
+        else if (id == rb_intern("err")) {
+            index = EXEC_OPTION_DUP2;
+            param = INT2FIX(2);
+        }
         else {
             rb_raise(rb_eArgError, "wrong exec redirect symbol: %s",
                                    rb_id2name(id));
