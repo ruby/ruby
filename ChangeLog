@@ -1,9 +1,9 @@
-Wed Dec  3 12:22:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Dec  3 12:24:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_getc, rb_io_readchar): documentation correction from
 	  Emiel van de Laar.  [ruby-core:20212]
 
-	* ext/stringio/stringio.c (strio_ungetbyte): ditto.
+	* ext/stringio/stringio.c (strio_readchar): ditto.
 
 Wed Dec  3 09:26:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
