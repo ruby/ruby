@@ -1,3 +1,12 @@
+Wed Dec  3 23:59:32 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (EXEC_OPTION_DUP2_CHILD): defined.
+	  (check_exec_redirect_fd): check :in, :out and :err.
+	  (check_exec_redirect): check [:child, fd].
+	  (check_exec_fds): validate EXEC_OPTION_DUP2_CHILD array.
+	  (run_exec_dup2_child): new function.
+	  (rb_run_exec_options): call run_exec_dup2_child.
+
 Wed Dec  3 22:54:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (expr): keyword_not can continue across newline.

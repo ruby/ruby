@@ -1217,6 +1217,7 @@ enum {
     EXEC_OPTION_DUP2,
     EXEC_OPTION_CLOSE,
     EXEC_OPTION_OPEN,
+    EXEC_OPTION_DUP2_CHILD,
     EXEC_OPTION_CLOSE_OTHERS
 };
 
@@ -1227,6 +1228,17 @@ check_exec_redirect_fd(VALUE v)
     int fd;
     if (FIXNUM_P(v)) {
         fd = FIX2INT(v);
+    }
+    else if (SYMBOL_P(v)) {
+        ID id = SYM2ID(v);
+        if (id == rb_intern("in"))
+            fd = 0;
+        else if (id == rb_intern("out"))
+            fd = 1;
+        else if (id == rb_intern("err"))
+            fd = 2;
+        else
+            goto wrong;
     }
     else if (!NIL_P(tmp = rb_check_convert_type(v, T_FILE, "IO", "to_io"))) {
         rb_io_t *fptr;
@@ -1239,6 +1251,7 @@ check_exec_redirect_fd(VALUE v)
         rb_raise(rb_eArgError, "wrong exec redirect");
     }
     if (fd < 0) {
+      wrong:
         rb_raise(rb_eArgError, "negative file descriptor");
     }
     return INT2FIX(fd);
@@ -1286,20 +1299,27 @@ check_exec_redirect(VALUE key, VALUE val, VALUE options)
         break;
 
       case T_ARRAY:
-        index = EXEC_OPTION_OPEN;
         path = rb_ary_entry(val, 0);
-        FilePathValue(path);
-        flags = rb_ary_entry(val, 1);
-        if (NIL_P(flags))
-            flags = INT2NUM(O_RDONLY);
-        else if (TYPE(flags) == T_STRING)
-            flags = INT2NUM(rb_io_modestr_oflags(StringValueCStr(flags)));
-        else
-            flags = rb_to_int(flags);
-        perm = rb_ary_entry(val, 2);
-        perm = NIL_P(perm) ? INT2FIX(0644) : rb_to_int(perm);
-        param = hide_obj(rb_ary_new3(3, hide_obj(rb_str_dup(path)),
-                                        flags, perm));
+        if (RARRAY_LEN(val) == 2 && SYMBOL_P(path) &&
+            SYM2ID(path) == rb_intern("child")) {
+            index = EXEC_OPTION_DUP2_CHILD;
+            param = check_exec_redirect_fd(rb_ary_entry(val, 1));
+        }
+        else {
+            index = EXEC_OPTION_OPEN;
+            FilePathValue(path);
+            flags = rb_ary_entry(val, 1);
+            if (NIL_P(flags))
+                flags = INT2NUM(O_RDONLY);
+            else if (TYPE(flags) == T_STRING)
+                flags = INT2NUM(rb_io_modestr_oflags(StringValueCStr(flags)));
+            else
+                flags = rb_to_int(flags);
+            perm = rb_ary_entry(val, 2);
+            perm = NIL_P(perm) ? INT2FIX(0644) : rb_to_int(perm);
+            param = hide_obj(rb_ary_new3(3, hide_obj(rb_str_dup(path)),
+                                            flags, perm));
+        }
         break;
 
       case T_STRING:
@@ -1486,7 +1506,7 @@ check_exec_fds(VALUE options)
     int index, i;
     int maxhint = -1;
 
-    for (index = EXEC_OPTION_DUP2; index <= EXEC_OPTION_OPEN; index++) {
+    for (index = EXEC_OPTION_DUP2; index <= EXEC_OPTION_DUP2_CHILD; index++) {
         ary = rb_ary_entry(options, index);
         if (NIL_P(ary))
             continue;
@@ -1496,16 +1516,35 @@ check_exec_fds(VALUE options)
             if (RTEST(rb_hash_lookup(h, INT2FIX(fd)))) {
                 rb_raise(rb_eArgError, "fd %d specified twice", fd);
             }
-            rb_hash_aset(h, INT2FIX(fd), Qtrue);
+            rb_hash_aset(h, INT2FIX(fd), INT2FIX(index));
             if (maxhint < fd)
                 maxhint = fd;
-            if (index == EXEC_OPTION_DUP2) {
+            if (index == EXEC_OPTION_DUP2 || index == EXEC_OPTION_DUP2_CHILD) {
                 fd = FIX2INT(RARRAY_PTR(elt)[1]);
                 if (maxhint < fd)
                     maxhint = fd;
             }
         }
     }
+
+    /* support cascaded mapping in future?
+     * fd1 => [:child, fd2],
+     * fd2 => [:child, fd3],
+     * fd3 => "/dev/null"
+     */
+    ary = rb_ary_entry(options, EXEC_OPTION_DUP2_CHILD);
+    if (!NIL_P(ary)) {
+        for (i = 0; i < RARRAY_LEN(ary); i++) {
+            VALUE elt = RARRAY_PTR(ary)[i];
+            int oldfd = FIX2INT(RARRAY_PTR(elt)[1]);
+            VALUE vindex = rb_hash_lookup(h, INT2FIX(oldfd));
+            if (vindex != INT2FIX(EXEC_OPTION_DUP2) &&
+                vindex != INT2FIX(EXEC_OPTION_OPEN)) {
+                rb_raise(rb_eArgError, "child fd %d is not redirected", oldfd);
+            }
+        }
+    }
+
     if (rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS) != Qfalse) {
         rb_ary_store(options, EXEC_OPTION_CLOSE_OTHERS, INT2FIX(maxhint));
     }
@@ -1987,6 +2026,23 @@ run_exec_open(VALUE ary, VALUE save)
     return 0;
 }
 
+static int
+run_exec_dup2_child(VALUE ary, VALUE save)
+{
+    int i, ret;
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+        VALUE elt = RARRAY_PTR(ary)[i];
+        int newfd = FIX2INT(RARRAY_PTR(elt)[0]);
+        int oldfd = FIX2INT(RARRAY_PTR(elt)[1]);
+
+        if (save_redirect_fd(newfd, save) < 0)
+            return -1;
+        ret = redirect_dup2(oldfd, newfd);
+        if (ret == -1) return -1;
+    }
+    return 0;
+}
+
 #ifdef HAVE_SETPGID
 static int
 run_exec_pgroup(VALUE obj, VALUE save)
@@ -2143,6 +2199,12 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
     obj = rb_ary_entry(options, EXEC_OPTION_OPEN);
     if (!NIL_P(obj)) {
         if (run_exec_open(obj, soptions) == -1)
+            return -1;
+    }
+
+    obj = rb_ary_entry(options, EXEC_OPTION_DUP2_CHILD);
+    if (!NIL_P(obj)) {
+        if (run_exec_dup2_child(obj, soptions) == -1)
             return -1;
     }
 
@@ -2788,11 +2850,37 @@ rb_f_system(int argc, VALUE *argv)
  *  The :in, :out, :err, a fixnum, an IO and an array key specifies a redirect.
  *  The redirection maps a file descriptor in the child process.
  *
- *  For example, stderr can be merged into stdout:
+ *  For example, stderr can be merged into stdout as follows:
+ *
+ *    pid = spawn(command, STDERR=>STDOUT)
+ *
+ *  key and value of a redirection option is follows.
+ *
+ *    hash key:
+ *      FD              single file descriptor in child process
+ *      [FD, FD, ...]   multiple file descriptor in child process
+ *
+ *    hash value:
+ *      FD                        redirect to a file descriptor in parent process
+ *      string                    redirect to file with open(string, "r" or "w")
+ *      [string]                  redirect to file with open(string, File::RDONLY)
+ *      [string, open_mode]       redirect to file with open(string, open_mode, 0644)
+ *      [string, open_mode, perm] redirect to file with open(string, open_mode, perm)
+ *      [:child, FD]              redirect to a redirected file descriptor
+ *      :close                    close a file descriptor in child process
+ *
+ *    FD is one of follows
+ *      :in     the file descriptor 0
+ *      :out    the file descriptor 1
+ *      :err    the file descriptor 2
+ *      integer the file descriptor of specified the integer
+ *      io      the file descriptor specified as io.fileno
+ *
+ * So stderr can also be merged into stdout as follows:
  *
  *    pid = spawn(command, :err=>:out)
- *    pid = spawn(command, STDERR=>STDOUT)
  *    pid = spawn(command, 2=>1)
+ *    pid = spawn(command, STDERR=>:out)
  *
  *  The hash keys specifies a file descriptor
  *  in the child process started by <code>spawn</code>.
@@ -2802,7 +2890,8 @@ rb_f_system(int argc, VALUE *argv)
  *  in the parent process which invokes <code>spawn</code>.
  *  :out, STDOUT and 1 specifies the standard output stream.
  *
- *  The standard output in the child process is not specified.
+ *  In the above example,
+ *  the standard output in the child process is not specified.
  *  So it is inherited from the parent process.
  *
  *  The standard input stream can be specifed by :in, STDIN and 0.
@@ -2837,7 +2926,24 @@ rb_f_system(int argc, VALUE *argv)
  *  all the elemetns are redirected.
  *
  *    # standard output and standard error is redirected to log file.
+ *    # The file "log" is opened just once.
  *    pid = spawn(command, [STDOUT, STDERR]=>["log", "w"])
+ *
+ *  Another way to merge multiple file descriptors is [:child, fd].
+ *  [:child, fd] means the file descriptor in the child process.
+ *  This is different from fd.
+ *  For example, STDERR=>STDOUT means redirecting child STDERR to parent STDOUT.
+ *  But STDERR=>[:child, STDOUT] means redirecting child STDERR to child STDOUT.
+ *  They differs if STDOUT is redirected in the child process as follows.
+ *
+ *    # standard output and standard error is redirected to log file.
+ *    # The file "log" is opened just once.
+ *    pid = spawn(command, STDOUT=>["log", "w"], STDERR=>[:child, STDOUT])
+ *
+ *  [:child, STDOUT] can be used to merge STDERR into STDOUT in IO.popen.
+ *
+ *    io = IO.popen(["sh", "-c", "echo out; echo err >&2", STDERR=>[:child, STDOUT]])
+ *    p io.read #=> "out\nerr\n"
  *
  *  spawn closes all non-standard unspecified descriptors by default.
  *  The "standard" descriptors are 0, 1 and 2.
