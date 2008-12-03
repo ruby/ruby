@@ -43,6 +43,12 @@ with all sufficient information, see the ChangeLog file.
     New alias to #include? for the forward compatibility with 1.9, in
     which the behavior of Range#include? has changed.
 
+  * String#getbyte
+  * String#setbyte
+
+    New methods for the forward compatibility with 1.9, in which the
+    behavior of String#[] and String#[]= have changed.
+
 * dbm
 
   DBM#key

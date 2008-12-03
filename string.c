@@ -2473,6 +2473,55 @@ rb_str_reverse_bang(str)
 
 /*
  *  call-seq:
+ *     str.getbyte(index)          => 0 .. 255
+ *
+ *  returns the <i>index</i>th byte as an integer.
+ */
+static VALUE
+rb_str_getbyte(str, index)
+    VALUE str, index;
+{
+    long pos = NUM2LONG(index);
+    long len = RSTRING(str)->len;
+
+    if (pos < -len || len <= pos)
+	return Qnil;
+    if (pos < 0)
+	pos += len;
+
+    return INT2FIX((unsigned char)RSTRING(str)->ptr[pos]);
+}
+
+
+/*
+ *  call-seq:
+ *     str.setbyte(index, int) => int
+ *
+ *  modifies the <i>index</i>th byte as <i>int</i>.
+ */
+static VALUE
+rb_str_setbyte(str, index, value)
+    VALUE str, index, value;
+{
+    long pos = NUM2LONG(index);
+    long len = RSTRING(str)->len;
+    int byte = NUM2INT(value);
+
+    rb_str_modify(str);
+
+    if (pos < -len || len <= pos)
+	rb_raise(rb_eIndexError, "index %ld out of string", pos);
+    if (pos < 0)
+	pos += len;
+
+    RSTRING(str)->ptr[pos] = byte;
+
+    return value;
+}
+
+
+/*
+ *  call-seq:
  *     str.reverse   => new_str
  *  
  *  Returns a new string with the characters from <i>str</i> in reverse order.
@@ -4959,6 +5008,8 @@ Init_String()
     rb_define_method(rb_cString, "index", rb_str_index_m, -1);
     rb_define_method(rb_cString, "rindex", rb_str_rindex_m, -1);
     rb_define_method(rb_cString, "replace", rb_str_replace, 1);
+    rb_define_method(rb_cString, "getbyte", rb_str_getbyte, 1);
+    rb_define_method(rb_cString, "setbyte", rb_str_setbyte, 2);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);

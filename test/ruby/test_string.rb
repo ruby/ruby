@@ -77,4 +77,23 @@ class TestString < Test::Unit::TestCase
     assert_equal("aaaaaaaaaaaa", "zzzzzzzzzzz".succ!)
     assert_equal("aaaaaaaaaaaaaaaaaaaaaaaa", "zzzzzzzzzzzzzzzzzzzzzzz".succ!)
   end
+
+  def test_getbyte
+    assert_equal(0x82, "\xE3\x81\x82\xE3\x81\x84".getbyte(2))
+    assert_equal(0x82, "\xE3\x81\x82\xE3\x81\x84".getbyte(-4))
+    assert_nil("\xE3\x81\x82\xE3\x81\x84".getbyte(100))
+  end
+
+  def test_setbyte
+    s = "\xE3\x81\x82\xE3\x81\x84"
+    s.setbyte(2, 0x84)
+    assert_equal("\xE3\x81\x84\xE3\x81\x84", s)
+
+    s = "\xE3\x81\x82\xE3\x81\x84"
+    assert_raise(IndexError) { s.setbyte(100, 0) }
+
+    s = "\xE3\x81\x82\xE3\x81\x84"
+    s.setbyte(-4, 0x84)
+    assert_equal("\xE3\x81\x84\xE3\x81\x84", s)
+  end
 end

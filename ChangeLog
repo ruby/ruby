@@ -1,3 +1,10 @@
+Wed Dec  3 16:17:36 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* string.c (rb_str_getbyte, rb_str_setbyte): Add String#getbyte
+	  and String#setbyte for the forward compatibility with 1.9, where
+	  the behavior of String#[] and String#[]= have changed; based on
+	  a patch from Shinichiro Hamaji in  [ruby-dev:37247].
+
 Wed Dec  3 09:26:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rexml/xpath.rb (REXML::XPath.first): apply documentation
