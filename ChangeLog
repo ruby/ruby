@@ -1,3 +1,7 @@
+Wed Dec  3 21:18:27 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/ruby/test_rational.rb: revert.
+
 Wed Dec  3 14:48:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/tcltklib.c (ip_ruby_cmd, ip_invoke_with_position): must
