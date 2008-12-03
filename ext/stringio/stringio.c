@@ -749,7 +749,7 @@ strio_ungetbyte(VALUE self, VALUE c)
 
 /*
  * call-seq:
- *   strio.readchar   -> fixnum
+ *   strio.readchar   -> string
  *
  * See IO#readchar.
  */
