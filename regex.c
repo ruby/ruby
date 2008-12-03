@@ -1364,8 +1364,8 @@ re_compile_pattern(pattern, size, bufp)
       /* If there is no previous pattern, char not special. */
       if (!laststart) {
 	snprintf(error_msg, ERROR_MSG_MAX_SIZE, 
-		 "invalid regular expression; there's no previous pattern, to which '%c' would define cardinality at %d", 
-		 c, p-pattern);
+		 "invalid regular expression; there's no previous pattern, to which '%c' would define cardinality at %ld", 
+		 c, (long)(p-pattern));
 	FREE_AND_RETURN(stackb, error_msg);
       }
       /* If there is a sequence of repetition chars,
@@ -2028,8 +2028,8 @@ re_compile_pattern(pattern, size, bufp)
       /* If there is no previous pattern, this is an invalid pattern.  */
       if (!laststart) {
 	snprintf(error_msg, ERROR_MSG_MAX_SIZE, 
-		 "invalid regular expression; there's no previous pattern, to which '{' would define cardinality at %d", 
-		 p-pattern);
+		 "invalid regular expression; there's no previous pattern, to which '{' would define cardinality at %ld", 
+		 (long)(p-pattern));
 	FREE_AND_RETURN(stackb, error_msg);
       }
       if( p == pend)
