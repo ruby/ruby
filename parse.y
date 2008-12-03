@@ -1174,12 +1174,12 @@ expr		: command_call
 			$$ = dispatch3(binary, $1, ripper_intern("or"), $3);
 		    %*/
 		    }
-		| keyword_not expr
+		| keyword_not opt_nl expr
 		    {
 		    /*%%%*/
-			$$ = call_uni_op(cond($2), '!');
+			$$ = call_uni_op(cond($3), '!');
 		    /*%
-			$$ = dispatch2(unary, ripper_intern("not"), $2);
+			$$ = dispatch2(unary, ripper_intern("not"), $3);
 		    %*/
 		    }
 		| '!' command_call
