@@ -1098,7 +1098,7 @@ module TkCore
   include TkComm
   extend TkComm
 
-  WITH_RUBY_VM  = Object.const_defined?(:VM) && ::VM.class == Class
+  WITH_RUBY_VM  = Object.const_defined?(:RubyVM) && ::RubyVM.class == Class
   WITH_ENCODING = Object.const_defined?(:Encoding) && ::Encoding.class == Class
 
   unless self.const_defined? :RUN_EVENTLOOP_ON_MAIN_THREAD
@@ -5466,7 +5466,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2008-05-23'.freeze
+  RELEASE_DATE = '2008-12-04'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
