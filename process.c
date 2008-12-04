@@ -1767,7 +1767,11 @@ ttyprintf(const char *fmt, ...)
     va_list ap;
     FILE *tty;
     int save = errno;
+#ifdef _WIN32
+    tty = fopen("con", "w");
+#else
     tty = fopen("/dev/tty", "w");
+#endif
     if (!tty)
         return;
 
@@ -1876,6 +1880,12 @@ intcmp(const void *a, const void *b)
 }
 
 static int
+intrcmp(const void *a, const void *b)
+{
+    return *(int*)b - *(int*)a;
+}
+
+static int
 run_exec_dup2(VALUE ary, VALUE save)
 {
     int n, i;
@@ -1900,7 +1910,10 @@ run_exec_dup2(VALUE ary, VALUE save)
     }
 
     /* sort the table by oldfd: O(n log n) */
-    qsort(pairs, n, sizeof(struct fd_pair), intcmp);
+    if (!save)
+        qsort(pairs, n, sizeof(struct fd_pair), intcmp);
+    else
+        qsort(pairs, n, sizeof(struct fd_pair), intrcmp);
 
     /* initialize older_index and num_newer: O(n log n) */
     for (i = 0; i < n; i++) {
