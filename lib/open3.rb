@@ -195,6 +195,13 @@ module Open3
   #
   # If opts[:stdin_data] is specified, it is sent to the command's standard input.
   #
+  # Example:
+  #
+  #   o, e, s = Open3.poutput3("echo a; sort >&2", :stdin_data=>"foo\nbar\nbaz\n")
+  #   p o #=> "a\n"
+  #   p e #=> "bar\nbaz\nfoo\n"
+  #   p s #=> #<Process::Status: pid 32682 exit 0>
+  #
   def poutput3(*cmd, &block)
     if Hash === cmd.last
       opts = cmd.pop.dup
