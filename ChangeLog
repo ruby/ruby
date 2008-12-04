@@ -1,3 +1,8 @@
+Wed Dec  3 22:54:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (expr): keyword_not can continue across newline.
+	  [ruby-core:20252]
+
 Wed Dec  3 14:48:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/tcltklib.c (ip_ruby_cmd, ip_invoke_with_position): must
