@@ -2811,10 +2811,56 @@ rb_f_system(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     spawn([env,] cmd [, arg, ...] [,options])     => pid
+ *     spawn([env,] command... [,options])     => pid
+ *     Process.spawn([env,] command... [,options])     => pid
  *
- *  Similar to <code>Kernel::system</code> except for not waiting for
- *  end of _cmd_, but returns its <i>pid</i>.
+ *  spawn executes specified command and return its pid.
+ *  It doesn't wait for end of the command.
+ *
+ *  spawn has bunch of options to specify process attributes:
+ *
+ *    env: hash
+ *      name => val : set the environment variable
+ *      name => nil : unset the environment variable
+ *    command...:
+ *      commandline                 : command line string which is passed to a shell
+ *      cmdname, arg1, ...          : command name and one or more arguments
+ *      [cmdname, argv0], arg1, ... : command name and arguments including argv[0]
+ *    options: hash
+ *      clearing environment variables:
+ *        :unsetenv_others => true   : clear environment variables except specified by env
+ *        :unsetenv_others => false  : don't clear (default)
+ *      process group:
+ *        :pgroup => true or 0 : process leader
+ *        :pgroup => pgid      : join to specified process group 
+ *      resource limit: xxx is core, cpu, data, etc.  See Process.setrlimit.
+ *        :rlimit_xxx => limit
+ *        :rlimit_xxx => [cur_limit, max_limit]
+ *      current directory:
+ *        :chdir => str
+ *      umask:
+ *        :umask => int
+ *      redirection:
+ *        key:
+ *          FD              : single file descriptor in child process
+ *          [FD, FD, ...]   : multiple file descriptor in child process
+ *        value:
+ *          FD                        : redirect to the file descriptor in parent process
+ *          string                    : redirect to file with open(string, "r" or "w")
+ *          [string]                  : redirect to file with open(string, File::RDONLY)
+ *          [string, open_mode]       : redirect to file with open(string, open_mode, 0644)
+ *          [string, open_mode, perm] : redirect to file with open(string, open_mode, perm)
+ *          [:child, FD]              : redirect to the redirected file descriptor
+ *          :close                    : close the file descriptor in child process
+ *        FD is one of follows
+ *          :in     : the file descriptor 0
+ *          :out    : the file descriptor 1
+ *          :err    : the file descriptor 2
+ *          integer : the file descriptor of specified the integer
+ *          io      : the file descriptor specified as io.fileno
+ *      file descriptor inheritance: close non-redirected non-standard fds (3, 4, 5, ...) or not
+ *        :close_others => false : inherit fds (default for system and exec)
+ *        :close_others => true  : don't inherit (default for spawn and IO.popen)
  *
  *  If a hash is given as +env+, the environment is
  *  updated by +env+ before <code>exec(2)</code> in the child process.
@@ -2871,31 +2917,6 @@ rb_f_system(int argc, VALUE *argv)
  *  For example, stderr can be merged into stdout as follows:
  *
  *    pid = spawn(command, STDERR=>STDOUT)
- *
- *  key and value of a redirection option is follows.
- *
- *    hash key:
- *      FD              single file descriptor in child process
- *      [FD, FD, ...]   multiple file descriptor in child process
- *
- *    hash value:
- *      FD                        redirect to a file descriptor in parent process
- *      string                    redirect to file with open(string, "r" or "w")
- *      [string]                  redirect to file with open(string, File::RDONLY)
- *      [string, open_mode]       redirect to file with open(string, open_mode, 0644)
- *      [string, open_mode, perm] redirect to file with open(string, open_mode, perm)
- *      [:child, FD]              redirect to a redirected file descriptor
- *      :close                    close a file descriptor in child process
- *
- *    FD is one of follows
- *      :in     the file descriptor 0
- *      :out    the file descriptor 1
- *      :err    the file descriptor 2
- *      integer the file descriptor of specified the integer
- *      io      the file descriptor specified as io.fileno
- *
- * So stderr can also be merged into stdout as follows:
- *
  *    pid = spawn(command, :err=>:out)
  *    pid = spawn(command, 2=>1)
  *    pid = spawn(command, STDERR=>:out)
