@@ -1,12 +1,5 @@
+load File.dirname(__FILE__) + '/rubyspec/ruby.1.9.mspec'
 class MSpecScript
-  # An ordered list of the directories containing specs to run
-  # as the CI process.
-  set :ci_files, %w[
-    spec/rubyspec/1.9/core
-    spec/rubyspec/1.9/language
-    spec/rubyspec/1.9/library
-  ]
-
   builddir = File.expand_path(File.join(File.dirname(__FILE__), '..'))
   srcdir = ENV['SRCDIR']
   srcdir ||= $1 if File.read("#{builddir}/Makefile")[/^\s*srcdir\s*=\s*(.+)/i]
