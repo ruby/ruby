@@ -1,3 +1,9 @@
+Thu Dec  4 23:24:05 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open3.rb (Open3.poutput3): new method.
+	  (Open3.poutput2): ditto.
+	  (Open3.poutput2e): ditto.
+
 Thu Dec  4 23:02:13 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* spec/default.mspec: follows changes in rubyspec project.

@@ -187,17 +187,96 @@ module Open3
     private :popen_run
   end
 
+  # Open3.poutput3 captures the standard output and the standard error of a command.
+  #
+  #   stdout_str, stderr_str, status = Open3.poutput3(cmd... [, opts])
+  #
+  # The arguments cmd and opts are passed to Open3.popen3 except opts[:stdin_data].
+  #
+  # If opts[:stdin_data] is specified, it is sent to the command's standard input.
+  #
+  def poutput3(*cmd, &block)
+    if Hash === cmd.last
+      opts = cmd.pop.dup
+    else
+      opts = {}
+    end
+
+    stdin_data = opts.delete(:stdin_data) || ''
+
+    popen3(*cmd, opts) {|i, o, e, t|
+      out_reader = Thread.new { o.read }
+      err_reader = Thread.new { e.read }
+      i.write stdin_data
+      i.close
+      [out_reader.value, err_reader.value, t.value]
+    }
+  end
+  module_function :poutput3
+
+  # Open3.poutput2 captures the standard output of a command.
+  #
+  #   stdout_str, status = Open3.poutput2(cmd... [, opts])
+  #
+  # The arguments cmd and opts are passed to Open3.popen2 except opts[:stdin_data].
+  #
+  # If opts[:stdin_data] is specified, it is sent to the command's standard input.
+  #
+  def poutput2(*cmd, &block)
+    if Hash === cmd.last
+      opts = cmd.pop.dup
+    else
+      opts = {}
+    end
+
+    stdin_data = opts.delete(:stdin_data) || ''
+
+    popen2(*cmd, opts) {|i, o, t|
+      out_reader = Thread.new { o.read }
+      i.write stdin_data
+      i.close
+      [out_reader.value, t.value]
+    }
+  end
+  module_function :poutput2
+
+  # Open3.poutput2e captures the standard output and the standard error of a command.
+  #
+  #   stdout_and_stderr_str, status = Open3.poutput2e(cmd... [, opts])
+  #
+  # The arguments cmd and opts are passed to Open3.popen2e except opts[:stdin_data].
+  #
+  # If opts[:stdin_data] is specified, it is sent to the command's standard input.
+  #
+  def poutput2e(*cmd, &block)
+    if Hash === cmd.last
+      opts = cmd.pop.dup
+    else
+      opts = {}
+    end
+
+    stdin_data = opts.delete(:stdin_data) || ''
+
+    popen2e(*cmd, opts) {|i, oe, t|
+      outerr_reader = Thread.new { oe.read }
+      i.write stdin_data
+      i.close
+      [outerr_reader.value, t.value]
+    }
+  end
+  module_function :poutput2e
+
   # Open3.pipeline_rw starts list of commands as a pipeline with pipes
   # which connects stdin of the first command and stdout of the last command.
   #
-  #   Open3.pipeline_rw(cmd1, cmd2, ... [, opts]) {|stdin, stdout, wait_threads|
+  #   Open3.pipeline_rw(cmd1, cmd2, ... [, opts]) {|first_stdin, last_stdout, wait_threads|
   #     ...
   #   }
   #
-  #   stdin, stdout, wait_threads = Open3.pipeline_rw(cmd1, cmd2, ... [, opts])
+  #   first_stdin, last_stdout, wait_threads = Open3.pipeline_rw(cmd1, cmd2, ... [, opts])
   #   ...
-  #   stdin.close
-  #   stdout.close
+  #   first_stdin.close
+  #   last_stdout.close
   #
   # Each cmd is a string or an array.
   # If it is an array, the elements are passed to Kernel#spawn.
@@ -236,13 +315,13 @@ module Open3
   # Open3.pipeline_r starts list of commands as a pipeline with a pipe
   # which connects stdout of the last command.
   #
-  #   Open3.pipeline_r(cmd1, cmd2, ... [, opts]) {|stdout, wait_threads|
+  #   Open3.pipeline_r(cmd1, cmd2, ... [, opts]) {|last_stdout, wait_threads|
   #     ...
   #   }
   #
-  #   stdout, wait_threads = Open3.pipeline_r(cmd1, cmd2, ... [, opts])
+  #   last_stdout, wait_threads = Open3.pipeline_r(cmd1, cmd2, ... [, opts])
   #   ...
-  #   stdout.close
+  #   last_stdout.close
   #
   # Example:
   #
@@ -269,13 +348,13 @@ module Open3
   # Open3.pipeline_w starts list of commands as a pipeline with a pipe
   # which connects stdin of the first command.
   #
-  #   Open3.pipeline_w(cmd1, cmd2, ... [, opts]) {|stdin, wait_threads|
+  #   Open3.pipeline_w(cmd1, cmd2, ... [, opts]) {|first_stdin, wait_threads|
   #     ...
   #   }
   #
-  #   stdin, wait_threads = Open3.pipeline_w(cmd1, cmd2, ... [, opts])
+  #   first_stdin, wait_threads = Open3.pipeline_w(cmd1, cmd2, ... [, opts])
   #   ...
-  #   stdin.close
+  #   first_stdin.close
   #
   # Example:
   #
