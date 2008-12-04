@@ -1,6 +1,12 @@
+Thu Dec  4 16:19:18 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_read_nonblock):
+	  OpenSSL::SSL::SSLSocket should implement read_nonblock.  a patch
+	  from Aaron Patterson in [ruby-core:20277].  fix: #814 [ruby-core:20241]
+
 Thu Dec  4 06:04:16 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk/menu.rb: TkOptionMenubutton.new fails to treat 
+	* ext/tk/lib/tk/menu.rb: TkOptionMenubutton.new fails to treat
 	  'parent' and 'variable' options on a Hash argument.
 
 Wed Dec  3 16:38:11 2008  Akinori MUSHA  <knu@iDaemons.org>
