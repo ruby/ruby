@@ -127,6 +127,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopts_pgroup
+    skip "system(:pgroup) is not supported" if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     assert_nothing_raised { system(*TRUECOMMAND, :pgroup=>false) }
 
     io = IO.popen([RUBY, "-e", "print Process.getpgrp"])
@@ -495,6 +496,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_fd_inheritance
+    skip "inheritance of fd>=3 is not supported" if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     with_pipe {|r, w|
       system(RUBY, '-e', 'IO.new(ARGV[0].to_i).puts(:ba)', w.fileno.to_s)
       w.close
@@ -598,14 +600,18 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopts_redirect_self
-    with_pipe {|r, w|
-      w << "haha\n"
-      w.close
-      r.close_on_exec = true
-      IO.popen([RUBY, "-e", "print IO.new(#{r.fileno}).read", r.fileno=>r.fileno, :close_others=>false]) {|io|
-        assert_equal("haha\n", io.read)
+    begin
+      with_pipe {|r, w|
+        w << "haha\n"
+        w.close
+        r.close_on_exec = true
+        IO.popen([RUBY, "-e", "print IO.new(#{r.fileno}).read", r.fileno=>r.fileno, :close_others=>false]) {|io|
+          assert_equal("haha\n", io.read)
+        }
       }
-    }
+    rescue NotImplementedError
+      skip "IO#close_on_exec= is not supported"
+    end
   end
 
   def test_execopts_duplex_io
