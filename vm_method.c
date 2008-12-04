@@ -1054,15 +1054,6 @@ rb_method_basic_definition_p(VALUE klass, ID id)
     return 0;
 }
 
-/*
- *  call-seq:
- *     obj.respond_to?(symbol, include_private=false) => true or false
- *
- *  Returns +true+> if _obj_ responds to the given
- *  method. Private methods are included in the search only if the
- *  optional second parameter evaluates to +true+.
- */
-
 int
 rb_obj_respond_to(VALUE obj, ID id, int priv)
 {
@@ -1091,7 +1082,7 @@ rb_respond_to(VALUE obj, ID id)
  *  call-seq:
  *     obj.respond_to?(symbol, include_private=false) => true or false
  *
- *  Returns +true+> if _obj_ responds to the given
+ *  Returns +true+ if _obj_ responds to the given
  *  method. Private methods are included in the search only if the
  *  optional second parameter evaluates to +true+.
  */
