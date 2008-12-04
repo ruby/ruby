@@ -1,3 +1,21 @@
+Fri Dec  5 03:29:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_get_load_path): returns the load path without
+	  touching.
+
+	* load.c (rb_feature_provided): new function to return the loading
+	  path in addition to rb_provided().
+
+	* load.c (search_required): sets path if loading.
+
+	* variable.c (autoload_provided): load paths are expanded to check
+	  if loading.
+
+	* variable.c (autoload_node): keeps autoload mark while loading.
+	  [ruby-core:20235]
+
+	* variable.c (rb_const_get_0): loops while autoload mark is set.
+
 Fri Dec  5 01:37:02 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_read): ERROR_BROKEN_PIPE is not a real error

@@ -1387,57 +1387,76 @@ autoload_delete(VALUE mod, ID id)
     return (NODE *)load;
 }
 
-VALUE
-rb_autoload_load(VALUE klass, ID id)
+static VALUE
+autoload_provided(VALUE arg)
 {
-    VALUE file;
-    NODE *load = autoload_delete(klass, id);
-
-    if (!load || !(file = load->nd_lit)) {
-	return Qfalse;
-    }
-    return rb_require_safe(file, load->nd_nth);
+    const char **p = (const char **)arg;
+    return rb_feature_provided(*p, p);
 }
 
 static VALUE
-autoload_file(VALUE mod, ID id)
+reset_safe(VALUE safe)
+{
+    rb_set_safe_level_force((int)safe);
+    return safe;
+}
+
+static NODE *
+autoload_node(VALUE mod, ID id, int noload)
 {
     VALUE file;
     struct st_table *tbl;
-    st_data_t val, load, n = id;
+    st_data_t val;
+    NODE *load;
+    const char *loading;
+    int safe;
 
     if (!st_lookup(RCLASS_IV_TBL(mod), autoload, &val) ||
-	!(tbl = check_autoload_table((VALUE)val)) || !st_lookup(tbl, n, &load)) {
-	return Qnil;
+	!(tbl = check_autoload_table((VALUE)val)) || !st_lookup(tbl, (st_data_t)id, &val)) {
+	return 0;
     }
-    file = ((NODE *)load)->nd_lit;
+    load = (NODE *)val;
+    file = load->nd_lit;
     Check_Type(file, T_STRING);
     if (!RSTRING_PTR(file) || !*RSTRING_PTR(file)) {
 	rb_raise(rb_eArgError, "empty file name");
     }
-    if (!rb_provided(RSTRING_PTR(file))) {
-	return file;
+    loading = RSTRING_PTR(file);
+    safe = rb_safe_level();
+    rb_set_safe_level_force(0);
+    if (!rb_ensure(autoload_provided, (VALUE)&loading, reset_safe, (VALUE)safe)) {
+	return load;
     }
+    if (!noload && loading) {
+	return load;
+    }
+    return 0;
+}
 
-    /* already loaded but not defined */
-    st_delete(tbl, &n, 0);
-    if (!tbl->num_entries) {
-	n = autoload;
-	st_delete(RCLASS_IV_TBL(mod), &n, &val);
-    }
-    return Qnil;
+VALUE
+rb_autoload_load(VALUE klass, ID id)
+{
+    VALUE file;
+    NODE *load = autoload_node(klass, id, 0);
+
+    if (!load) return Qfalse;
+    file = load->nd_lit;
+    return rb_require_safe(file, load->nd_nth);
 }
 
 VALUE
 rb_autoload_p(VALUE mod, ID id)
 {
     struct st_table *tbl = RCLASS_IV_TBL(mod);
-    VALUE val;
+    st_data_t val;
+    NODE *load;
+    VALUE file;
 
     if (!tbl || !st_lookup(tbl, id, &val) || val != Qundef) {
 	return Qnil;
     }
-    return autoload_file(mod, id);
+    load = autoload_node(mod, id, 0);
+    return load && (file = load->nd_lit) ? file : Qnil;
 }
 
 static VALUE
@@ -1451,7 +1470,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
     while (RTEST(tmp)) {
 	while (RCLASS_IV_TBL(tmp) && st_lookup(RCLASS_IV_TBL(tmp),id,&value)) {
 	    if (value == Qundef) {
-		if (!RTEST(rb_autoload_load(tmp, id))) break;
+		rb_autoload_load(tmp, id);
 		continue;
 	    }
 	    if (exclude && tmp == rb_cObject && klass != rb_cObject) {
@@ -1636,7 +1655,7 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse)
   retry:
     while (tmp) {
 	if (RCLASS_IV_TBL(tmp) && st_lookup(RCLASS_IV_TBL(tmp), id, &value)) {
-	    if (value == Qundef && NIL_P(autoload_file(klass, id)))
+	    if (value == Qundef && !autoload_node(klass, id, 1))
 		return Qfalse;
 	    return Qtrue;
 	}
@@ -1675,7 +1694,7 @@ mod_av_set(VALUE klass, ID id, VALUE val, int isconst)
     const char *dest = isconst ? "constant" : "class variable";
 
     if (!OBJ_UNTRUSTED(klass) && rb_safe_level() >= 4)
-      rb_raise(rb_eSecurityError, "Insecure: can't set %s", dest);
+	rb_raise(rb_eSecurityError, "Insecure: can't set %s", dest);
     if (OBJ_FROZEN(klass)) {
 	if (BUILTIN_TYPE(klass) == T_MODULE) {
 	    rb_error_frozen("module");
@@ -1698,7 +1717,7 @@ mod_av_set(VALUE klass, ID id, VALUE val, int isconst)
 	}
     }
 
-    if(isconst){
+    if (isconst){
 	rb_vm_change_state();
     }
     st_insert(RCLASS_IV_TBL(klass), id, val);
