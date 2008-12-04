@@ -12,23 +12,15 @@
 # Open3 grants you access to stdin, stdout, stderr and a thread to wait the
 # child process when running another program.
 #
-# Example:
-#
-#   require "open3"
-#   include Open3
-#   
-#   stdin, stdout, stderr, wait_thr = popen3('nroff -man')
-#
-# Open3.popen3 can also take a block which will receive stdin, stdout,
-# stderr and wait_thr as parameters.
-# This ensures stdin, stdout and stderr are closed and
-# the process is terminated once the block exits.
-#
-# Example:
-#
-#   require "open3"
-#
-#   Open3.popen3('nroff -man') { |stdin, stdout, stderr, wait_thr| ... }
+# - Open3.popen3 : pipes for stdin, stdout, stderr
+# - Open3.popen2 : pipes for stdin, stdout
+# - Open3.popen2e : pipes for stdin, merged stdout and stderr
+# - Open3.poutput3 : give a string for stdin.  get strings for stdout, stderr
+# - Open3.poutput2 : give a string for stdin.  get a string for stdout
+# - Open3.poutput2e : give a string for stdin.  get a string for merged stdout and stderr
+# - Open3.pipeline_rw : pipes for stdin of the first and stdout of the last of a pipeline
+# - Open3.pipeline_r : pipe for stdout of the last of a pipeline
+# - Open3.pipeline_w : pipe for stdin of the first of a pipeline
 #
 
 module Open3
@@ -331,6 +323,11 @@ module Open3
   #   last_stdout.close
   #
   # Example:
+  #
+  #   fname = "/usr/share/man/man1/ls.1.gz"
+  #   Open3.pipeline_r(["zcat", fname], "nroff -man", "colcrt") {|r, ts|
+  #     IO.copy_stream(r, STDOUT)
+  #   }
   #
   #   Open3.pipeline_r("yes", "head -10") {|r, ts|
   #     p r.read      #=> "y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n"
