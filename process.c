@@ -2833,9 +2833,9 @@ rb_f_system(int argc, VALUE *argv)
  *      process group:
  *        :pgroup => true or 0 : process leader
  *        :pgroup => pgid      : join to specified process group 
- *      resource limit: xxx is core, cpu, data, etc.  See Process.setrlimit.
- *        :rlimit_xxx => limit
- *        :rlimit_xxx => [cur_limit, max_limit]
+ *      resource limit: resourcename is core, cpu, data, etc.  See Process.setrlimit.
+ *        :rlimit_resourcename => limit
+ *        :rlimit_resourcename => [cur_limit, max_limit]
  *      current directory:
  *        :chdir => str
  *      umask:

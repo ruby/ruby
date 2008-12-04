@@ -4684,14 +4684,27 @@ pop_last_hash(int *argc_p, VALUE *argv)
  *
  *  Runs the specified command as a subprocess; the subprocess's
  *  standard input and output will be connected to the returned
- *  <code>IO</code> object.  If _cmd_ is a +String+
- *  ``<code>-</code>'', then a new instance of Ruby is started as the
- *  subprocess.  If <i>cmd</i> is an +Array+ of +String+, then it will
- *  be used as the subprocess's +argv+ bypassing a shell.
+ *  <code>IO</code> object.
+ *
+ *  _cmd_ is a string or an array as follows.
+ *
+ *    cmd:
+ *      "-"                                      : fork
+ *      commandline                              : command line string which is passed to a shell
+ *      [env, cmdname, arg1, ..., opts]          : command name and arguments (no shell)
+ *      [env, [cmdname, argv0], arg1, ..., opts] : command name and arguments including argv[0] (no shell)
+ *    (env and opts are optional.)
+ *
+ *  If _cmd_ is a +String+ ``<code>-</code>'',
+ *  then a new instance of Ruby is started as the subprocess.
+ *
+ *  If <i>cmd</i> is an +Array+ of +String+,
+ *  then it will be used as the subprocess's +argv+ bypassing a shell.
  *  The array can contains a hash at first for environments and
- *  a hash at last for options similar to <code>spawn</code>.  The default
- *  mode for the new file object is ``r'', but <i>mode</i> may be set
- *  to any of the modes listed in the description for class IO.
+ *  a hash at last for options similar to <code>spawn</code>.
+ *
+ *  The default mode for the new file object is ``r'',
+ *  but <i>mode</i> may be set to any of the modes listed in the description for class IO.
  *  The last argument <i>opt</i> qualifies <i>mode</i>.
  *
  *    # set IO encoding
