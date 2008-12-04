@@ -1,3 +1,8 @@
+Thu Dec  4 11:38:40 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* vm_method.c (rb_obj_respond_to): Remove a duplicated rdoc
+	  comment and fix a markup error.
+
 Thu Dec  4 06:04:16 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/menu.rb: TkOptionMenubutton.new fails to treat 
