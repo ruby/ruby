@@ -27,7 +27,7 @@ class Complex_Test < Test::Unit::TestCase
       c2 = c - 1
       assert_instance_of(ComplexSub, c2)
 
-      c3 = c - c
+      c3 = c - c2
       assert_instance_of(ComplexSub, c3)
 
       s = Marshal.dump(c)
@@ -71,6 +71,12 @@ class Complex_Test < Test::Unit::TestCase
 
     h[Complex(0.0,0.0)] = 9.0
     assert_equal(5, h.size)
+
+    if (0.0/0).nan? && !((0.0/0).eql?(0.0/0))
+      h = {}
+      3.times{h[Complex(0.0/0)] = 1}
+      assert_equal(3, h.size)
+    end
   end
 
   def test_freeze
@@ -124,6 +130,13 @@ class Complex_Test < Test::Unit::TestCase
     assert_raise(ArgumentError){Complex(Object.new)}
     assert_raise(ArgumentError){Complex()}
     assert_raise(ArgumentError){Complex(1,2,3)}
+
+    if (0.0/0).nan?
+      assert_nothing_raised{Complex(0.0/0)}
+    end
+    if (1.0/0).infinite?
+      assert_nothing_raised{Complex(1.0/0)}
+    end
   end
 
   def test_attr
@@ -483,6 +496,13 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(true, Complex(2,1) != Complex(1))
     assert_equal(false, Complex(1) == nil)
     assert_equal(false, Complex(1) == '')
+
+    nan = 0.0 / 0
+    if nan.nan? && nan != nan
+      assert_equal(false, Complex(nan, 0) == Complex(nan, 0))
+      assert_equal(false, Complex(0, nan) == Complex(0, nan))
+      assert_equal(false, Complex(nan, nan) == Complex(nan, nan))
+    end
   end
 
   def test_unify
@@ -822,6 +842,13 @@ class Complex_Test < Test::Unit::TestCase
 
     c = Complex(1,2).to_c
     assert_equal([1, 2], [c.real, c.imag])
+
+    if (0.0/0).nan?
+      assert_nothing_raised{(0.0/0).to_c}
+    end
+    if (1.0/0).infinite?
+      assert_nothing_raised{(1.0/0).to_c}
+    end
   end
 
   def test_supp
