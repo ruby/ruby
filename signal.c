@@ -15,6 +15,7 @@
 #include "vm_core.h"
 #include <signal.h>
 #include <stdio.h>
+#include <errno.h>
 
 #ifdef _WIN32
 typedef LONG rb_atomic_t;
@@ -474,8 +475,11 @@ ruby_signal(int signum, sighandler_t handler)
     if (signum == SIGSEGV)
 	sigact.sa_flags |= SA_ONSTACK;
 #endif
-    if (sigaction(signum, &sigact, &old) < 0)
-        rb_bug("sigaction error.\n");
+    if (sigaction(signum, &sigact, &old) < 0) {
+	if (errno != 0 && errno != EINVAL) {
+	    rb_bug("sigaction error.\n");
+	}
+    }
     return old.sa_handler;
 }
 

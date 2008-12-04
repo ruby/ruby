@@ -1,3 +1,10 @@
+Thu Dec  4 13:56:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/curses/curses.c (window_getch): avoid ISPRINT() macro which
+	  has an issue with OpenSolaris.  [ruby-core:20189]
+
+	* signal.c (ruby_signal): EINVAL from sigaction(2) is not a bug.
+
 Thu Dec  4 11:40:56 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (inspect_enumerator): Implement #inspect.
