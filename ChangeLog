@@ -1,3 +1,8 @@
+Thu Dec  4 16:58:12 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rubygems/validator.rb (Gem#remove_leading_dot_dir): make
+	  this method private.  a patch from okkez in [ruby-dev:37245]
+
 Thu Dec  4 16:16:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/gserver.rb: fixed type in sample code.  a report from Oleg

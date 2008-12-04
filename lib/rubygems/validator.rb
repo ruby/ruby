@@ -200,6 +200,7 @@ class Gem::Validator
     Dir.chdir(start_dir)
   end
 
+  private
   def remove_leading_dot_dir(path)
     path.sub(/^\.\//, "")
   end
