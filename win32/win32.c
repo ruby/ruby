@@ -4391,11 +4391,15 @@ rb_w32_read(int fd, void *buf, size_t size)
 
 	    if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE) &&
 		(err = GetLastError()) != ERROR_HANDLE_EOF) {
-		errno = map_errno(err);
+		int ret = 0;
+		if (err != ERROR_BROKEN_PIPE) {
+		    errno = map_errno(err);
+		    ret = -1;
+		}
 		CloseHandle(ol.hEvent);
 		cancel_io((HANDLE)_osfhnd(fd));
 		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
-		return -1;
+		return ret;
 	    }
 	}
     }
