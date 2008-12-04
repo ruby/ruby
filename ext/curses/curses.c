@@ -416,7 +416,7 @@ curses_getch(VALUE obj)
     curses_stdscr();
     c = getch();
     if (c == EOF) return Qnil;
-    if (ISPRINT(c)) {
+    if (rb_isprint(c)) {
 	char ch = (char)c;
 
 	return rb_locale_str_new(&ch, 1);
