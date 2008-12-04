@@ -1,3 +1,8 @@
+Thu Dec  4 14:54:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rubygems/local_remote_options.rb (Gem#add_update_sources_option): 
+	  little documentation fix.  a patch from okkez.  [ruby-dev:37271]
+
 Thu Dec  4 13:56:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/curses/curses.c (window_getch): avoid ISPRINT() macro which
