@@ -99,7 +99,7 @@ module Gem::LocalRemoteOptions
   end
 
   ##
-  # Add the --source option
+  # Add the --update-source option
 
   def add_update_sources_option
 
