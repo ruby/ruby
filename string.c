@@ -6922,8 +6922,8 @@ sym_to_proc(VALUE sym)
     VALUE *aryp;
 
     if (!sym_proc_cache) {
+        sym_proc_cache = rb_ary_tmp_new(SYM_PROC_CACHE_SIZE * 2);
         rb_gc_register_mark_object(sym_proc_cache);
-        sym_proc_cache = rb_ary_new2(SYM_PROC_CACHE_SIZE * 2);
         rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE*2 - 1, Qnil);
     }
 
