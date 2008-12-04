@@ -40,7 +40,7 @@ require "thread"
 #       super(port, *args)
 #     end
 #     def serve(io)
-#       io.puts(Time.now.to_i)
+#       io.puts(Time.now.to_s)
 #     end
 #   end
 #
