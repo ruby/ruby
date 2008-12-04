@@ -1,3 +1,7 @@
+Wed Dec  3 02:26:07 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_string.rb: add some tests.
+
 Mon Dec  1 12:00:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (rb_fiber_start): calls with exact argument number.
