@@ -1313,7 +1313,7 @@ rb_io_fileno(VALUE io)
  *     ios.pid    => fixnum
  *
  *  Returns the process ID of a child process associated with
- *  <em>ios</em>. This will be set by <code>IO::popen</code>.
+ *  <em>ios</em>. This will be set by <code>IO.popen</code>.
  *
  *     pipe = IO.popen("-")
  *     if pipe
@@ -4692,15 +4692,25 @@ pop_last_hash(int *argc_p, VALUE *argv)
  *  a hash at last for options similar to <code>spawn</code>.  The default
  *  mode for the new file object is ``r'', but <i>mode</i> may be set
  *  to any of the modes listed in the description for class IO.
+ *  The last argument <i>opt</i> qualifies <i>mode</i>.
  *
- *  Raises exceptions which <code>IO::pipe</code> and
- *  <code>Kernel::system</code> raise.
+ *    # set IO encoding
+ *    nkf_io = IO.popen("nkf -e filename", :external_encoding=>"EUC-JP")
+ *    euc_jp_string = nkf_io.read
+ *
+ *    # merge standard output and standard error using
+ *    # spawn option.  See the document of Kernel.spawn.
+ *    ls_io = IO.popen(["ls", "/", STDERR=>[:child, STDOUT]])
+ *    ls_result_with_error = ls_io.read
+ *
+ *  Raises exceptions which <code>IO.pipe</code> and
+ *  <code>Kernel.spawn</code> raise.
  *
  *  If a block is given, Ruby will run the command as a child connected
  *  to Ruby with a pipe. Ruby's end of the pipe will be passed as a
  *  parameter to the block.
  *  At the end of block, Ruby close the pipe and sets <code>$?</code>.
- *  In this case <code>IO::popen</code> returns
+ *  In this case <code>IO.popen</code> returns
  *  the value of the block.
  *
  *  If a block is given with a _cmd_ of ``<code>-</code>'',
@@ -4836,10 +4846,10 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
  *     IO.open(fd, mode_string="r" [, opt] ) {|io| block } => obj
  *
  *  With no associated block, <code>open</code> is a synonym for
- *  <code>IO::new</code>. If the optional code block is given, it will
+ *  <code>IO.new</code>. If the optional code block is given, it will
  *  be passed <i>io</i> as an argument, and the IO object will
  *  automatically be closed when the block terminates. In this instance,
- *  <code>IO::open</code> returns the value of the block.
+ *  <code>IO.open</code> returns the value of the block.
  *
  */
 
@@ -5730,7 +5740,7 @@ rb_io_stdio_file(rb_io_t *fptr)
  *  Returns a new <code>IO</code> object (a stream) for the given
  *  <code>IO</code> object or integer file descriptor and mode
  *  string. See also <code>IO#fileno</code> and
- *  <code>IO::for_fd</code>.
+ *  <code>IO.for_fd</code>.
  *
  *     puts IO.new($stdout).fileno # => 1
  *
@@ -5825,7 +5835,7 @@ rb_file_initialize(int argc, VALUE *argv, VALUE io)
  *
  *  Returns a new <code>IO</code> object (a stream) for the given
  *  integer file descriptor and mode string. See also
- *  <code>IO#fileno</code> and <code>IO::for_fd</code>.
+ *  <code>IO#fileno</code> and <code>IO.for_fd</code>.
  *
  *     a = IO.new(2,"w")      # '2' is standard error
  *     $stderr.puts "Hello"
@@ -5854,7 +5864,7 @@ rb_io_s_new(int argc, VALUE *argv, VALUE klass)
  *  call-seq:
  *     IO.for_fd(fd, mode [, opt])    => io
  *
- *  Synonym for <code>IO::new</code>.
+ *  Synonym for <code>IO.new</code>.
  *
  */
 
