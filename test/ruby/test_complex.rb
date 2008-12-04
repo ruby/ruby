@@ -564,6 +564,16 @@ class Complex_Test < Test::Unit::TestCase
       assert_equal('1-2/3i', Complex(1,Rational(-2,3)).to_s)
       assert_equal('-1-2/3i', Complex(-1,Rational(-2,3)).to_s)
     end
+
+    nan = 0.0 / 0
+    inf = 1.0 / 0
+    if nan.nan?
+      assert_equal('NaN+NaN*i', Complex(nan,nan).to_s)
+    end
+    if inf.infinite?
+      assert_equal('Infinity+Infinity*i', Complex(inf,inf).to_s)
+      assert_equal('Infinity-Infinity*i', Complex(inf,-inf).to_s)
+    end
   end
 
   def test_inspect
