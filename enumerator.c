@@ -545,6 +545,68 @@ enumerator_rewind(VALUE obj)
     return obj;
 }
 
+static VALUE
+inspect_enumerator(VALUE obj, VALUE dummy, int recur)
+{
+    struct enumerator *e = enumerator_ptr(obj);
+    const char *cname = rb_obj_classname(obj);
+    VALUE eobj, str;
+    int tainted, untrusted;
+
+    if (recur) {
+	str = rb_sprintf("#<%s: ...>", cname);
+	OBJ_TAINT(str);
+	return str;
+    }
+
+    eobj = e->obj;
+
+    tainted   = OBJ_TAINTED(eobj);
+    untrusted = OBJ_UNTRUSTED(eobj);
+
+    /* (1..100).each_cons(2) => "#<Enumerator: 1..100:each_cons(2)>" */
+    str = rb_sprintf("#<%s: ", cname);
+    rb_str_concat(str, rb_inspect(eobj));
+    rb_str_buf_cat2(str, ":");
+    rb_str_buf_cat2(str, rb_id2name(e->meth));
+
+    if (e->args) {
+	int    argc = RARRAY_LEN(e->args);
+	VALUE *argv = RARRAY_PTR(e->args);
+
+	rb_str_buf_cat2(str, "(");
+
+	while (argc--) {
+	    VALUE arg = *argv++;
+
+	    rb_str_concat(str, rb_inspect(arg));
+	    rb_str_buf_cat2(str, argc > 0 ? ", " : ")");
+
+	    if (OBJ_TAINTED(arg)) tainted = Qtrue;
+	    if (OBJ_UNTRUSTED(arg)) untrusted = Qtrue;
+	}
+    }
+
+    rb_str_buf_cat2(str, ">");
+
+    if (tainted) OBJ_TAINT(str);
+    if (untrusted) OBJ_UNTRUST(str);
+    return str;
+}
+
+/*
+ * call-seq:
+ *   e.inspect  => string
+ *
+ *  Create a printable version of <i>e</i>.
+ */
+
+static VALUE
+enumerator_inspect(VALUE obj)
+{
+    return rb_exec_recursive(inspect_enumerator, obj, 0);
+}
+
 /*
  * Yielder
  */
@@ -779,6 +841,7 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "with_object", enumerator_with_object, 1);
     rb_define_method(rb_cEnumerator, "next", enumerator_next, 0);
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
+    rb_define_method(rb_cEnumerator, "inspect", enumerator_inspect, 0);
 
     rb_eStopIteration = rb_define_class("StopIteration", rb_eIndexError);
 
