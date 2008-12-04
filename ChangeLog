@@ -1,3 +1,8 @@
+Fri Dec  5 01:19:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): propagate taint status from format string to
+	  result string.
+
 Fri Dec  5 00:34:10 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* process.c (run_exec_dup2): need to sort by reverted order when
