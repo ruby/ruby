@@ -1516,7 +1516,12 @@ check_exec_fds(VALUE options)
             if (RTEST(rb_hash_lookup(h, INT2FIX(fd)))) {
                 rb_raise(rb_eArgError, "fd %d specified twice", fd);
             }
-            rb_hash_aset(h, INT2FIX(fd), INT2FIX(index));
+            if (index == EXEC_OPTION_OPEN || index == EXEC_OPTION_DUP2)
+                rb_hash_aset(h, INT2FIX(fd), Qtrue);
+            else if (index == EXEC_OPTION_DUP2_CHILD)
+                rb_hash_aset(h, INT2FIX(fd), RARRAY_PTR(elt)[1]);
+            else /* index == EXEC_OPTION_CLOSE */
+                rb_hash_aset(h, INT2FIX(fd), INT2FIX(-1));
             if (maxhint < fd)
                 maxhint = fd;
             if (index == EXEC_OPTION_DUP2 || index == EXEC_OPTION_DUP2_CHILD) {
@@ -1527,20 +1532,33 @@ check_exec_fds(VALUE options)
         }
     }
 
-    /* support cascaded mapping in future?
-     * fd1 => [:child, fd2],
-     * fd2 => [:child, fd3],
-     * fd3 => "/dev/null"
-     */
     ary = rb_ary_entry(options, EXEC_OPTION_DUP2_CHILD);
     if (!NIL_P(ary)) {
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_PTR(ary)[i];
+            int newfd = FIX2INT(RARRAY_PTR(elt)[0]);
             int oldfd = FIX2INT(RARRAY_PTR(elt)[1]);
-            VALUE vindex = rb_hash_lookup(h, INT2FIX(oldfd));
-            if (vindex != INT2FIX(EXEC_OPTION_DUP2) &&
-                vindex != INT2FIX(EXEC_OPTION_OPEN)) {
+            int lastfd = oldfd;
+            VALUE val = rb_hash_lookup(h, INT2FIX(lastfd));
+            long depth = 0;
+            while (FIXNUM_P(val) && 0 <= FIX2INT(val)) {
+                lastfd = FIX2INT(val);
+                val = rb_hash_lookup(h, val);
+                if (RARRAY_LEN(ary) < depth)
+                    rb_raise(rb_eArgError, "cyclic child fd redirection from %d", oldfd);
+                depth++;
+            }
+            if (val != Qtrue)
                 rb_raise(rb_eArgError, "child fd %d is not redirected", oldfd);
+            if (oldfd != lastfd) {
+                VALUE val2;
+                rb_ary_store(elt, 1, INT2FIX(lastfd));
+                rb_hash_aset(h, INT2FIX(newfd), INT2FIX(lastfd));
+                val = INT2FIX(oldfd);
+                while (FIXNUM_P(val2 = rb_hash_lookup(h, val))) {
+                    rb_hash_aset(h, val, INT2FIX(lastfd));
+                    val = val2;
+                }
             }
         }
     }
@@ -2941,6 +2959,8 @@ rb_f_system(int argc, VALUE *argv)
  *    pid = spawn(command, STDOUT=>["log", "w"], STDERR=>[:child, STDOUT])
  *
  *  [:child, STDOUT] can be used to merge STDERR into STDOUT in IO.popen.
+ *  In this case, IO.popen redirects STDOUT to a pipe in the child process
+ *  and [:child, STDOUT] refers the redirected STDOUT.
  *
  *    io = IO.popen(["sh", "-c", "echo out; echo err >&2", STDERR=>[:child, STDOUT]])
  *    p io.read #=> "out\nerr\n"

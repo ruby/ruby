@@ -417,21 +417,30 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_redirect_dup2_child
     with_tmpchdir {|d|
-      Process.wait spawn(RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'", STDOUT=>"out", STDERR=>[:child, STDOUT])
+      Process.wait spawn(RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'",
+                         STDOUT=>"out", STDERR=>[:child, STDOUT])
       assert_equal("errout", File.read("out"))
-      Process.wait spawn(RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'", STDERR=>"out", STDOUT=>[:child, STDERR])
+
+      Process.wait spawn(RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'",
+                         STDERR=>"out", STDOUT=>[:child, STDERR])
+      assert_equal("errout", File.read("out"))
+
+      Process.wait spawn(RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'",
+                         STDOUT=>"out", 
+                         STDERR=>[:child, 3],
+                         3=>[:child, 4], 
+                         4=>[:child, STDOUT]
+                        )
       assert_equal("errout", File.read("out"))
 
       IO.popen([RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'", STDERR=>[:child, STDOUT]]) {|io|
         assert_equal("errout", io.read)
       }
 
-      assert_raise(ArgumentError) {
-        Process.wait spawn(*TRUECOMMAND, STDOUT=>[:child, STDOUT])
-      }
-      assert_raise(ArgumentError) {
-        Process.wait spawn(*TRUECOMMAND, STDOUT=>[:child, 3])
-      }
+      assert_raise(ArgumentError) { Process.wait spawn(*TRUECOMMAND, STDOUT=>[:child, STDOUT]) }
+      assert_raise(ArgumentError) { Process.wait spawn(*TRUECOMMAND, 3=>[:child, 4], 4=>[:child, 3]) }
+      assert_raise(ArgumentError) { Process.wait spawn(*TRUECOMMAND, 3=>[:child, 4], 4=>[:child, 5], 5=>[:child, 3]) }
+      assert_raise(ArgumentError) { Process.wait spawn(*TRUECOMMAND, STDOUT=>[:child, 3]) }
     }
   end
 
