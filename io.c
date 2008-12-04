@@ -2688,14 +2688,14 @@ rb_io_chars(VALUE io)
 
 /*
  *  call-seq:
- *     ios.getc   => fixnum or nil
+ *     ios.getc   => string or nil
  *
  *  Reads a one-character string from <em>ios</em>. Returns
  *  <code>nil</code> if called at end of file.
  *
  *     f = File.new("testfile")
- *     f.getc   #=> "8"
- *     f.getc   #=> "1"
+ *     f.getc   #=> "h"
+ *     f.getc   #=> "e"
  */
 
 static VALUE
@@ -2720,8 +2720,8 @@ rb_io_getc(VALUE io)
  *  <code>EOFError</code> on end of file.
  *
  *     f = File.new("testfile")
- *     f.readchar   #=> "8"
- *     f.readchar   #=> "1"
+ *     f.readchar   #=> "h"
+ *     f.readchar   #=> "e"
  */
 
 static VALUE
