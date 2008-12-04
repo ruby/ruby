@@ -569,7 +569,7 @@ class Tk::OptionMenubutton<Tk::Menubutton
     keys = _symbolkey2str(keys)
 
     parent = nil
-    if args[0].kind_of?(TkWindow) || args[0] == nil
+    if !args.empty? && (args[0].kind_of?(TkWindow) || args[0] == nil)
       keys.delete('parent') # ignore
       parent = args.shift 
     else
@@ -577,7 +577,7 @@ class Tk::OptionMenubutton<Tk::Menubutton
     end
 
     @variable = nil
-    if args[0].kind_of?(TkVariable) || args[0] == nil
+    if !args.empty? && (args[0].kind_of?(TkVariable) || args[0] == nil)
       keys.delete('variable') # ignore
       @variable = args.shift 
     else
