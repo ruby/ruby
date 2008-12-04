@@ -1109,7 +1109,7 @@ module TkCore
   include TkComm
   extend TkComm
 
-  WITH_RUBY_VM  = Object.const_defined?(:VM) && ::VM.class == Class
+  WITH_RUBY_VM  = Object.const_defined?(:RubyVM) && ::RubyVM.class == Class
   WITH_ENCODING = defined?(::Encoding.default_external) && true
   #WITH_ENCODING = Object.const_defined?(:Encoding) && ::Encoding.class == Class
   #if TclTkLib::WINDOWING_SYSTEM == 'aqua'
@@ -5529,7 +5529,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2008-10-20'.freeze
+  RELEASE_DATE = '2008-12-04'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
