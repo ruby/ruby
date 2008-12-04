@@ -1,3 +1,7 @@
+Fri Dec  5 07:58:30 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_binwrite): arg.offset should be updated after retry.
+
 Fri Dec  5 03:29:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_get_load_path): returns the load path without

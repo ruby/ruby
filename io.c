@@ -795,8 +795,8 @@ io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
 	}
 	arg.fptr = fptr;
 	arg.str = str;
-	arg.offset = offset;
       retry:
+	arg.offset = offset;
 	arg.length = n;
 	if (fptr->write_lock) {
 	    r = rb_mutex_synchronize(fptr->write_lock, io_binwrite_string, (VALUE)&arg);
