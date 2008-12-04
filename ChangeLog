@@ -1,3 +1,14 @@
+Thu Dec  4 19:56:20 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open3.rb (Open3.popen3): simplified.
+	  (Open3.popen_run): extracted from Open3.popen3.
+	  (Open3.popen2): new method.
+	  (Open3.popen2e): new method.
+	  (Open3.pipeline_rw): new method.
+	  (Open3.pipeline_r): new method.
+	  (Open3.pipeline_w): new method.
+	  (Open3.pipeline_run): new private method.
+
 Thu Dec  4 19:16:28 2008  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (check_exec_fds): resolve cascaded child fd reference.

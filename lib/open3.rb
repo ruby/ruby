@@ -51,7 +51,7 @@ module Open3
   #   stdin, stdout, stderr, wait_thr = Open3.popen3(cmd... [, opts])
   #   pid = wait_thr[:pid]  # pid of the started process.
   #   ...
-  #   stdin.close  # stdin, stdout and stderr should be closed in this form.
+  #   stdin.close  # stdin, stdout and stderr should be closed explicitly in this form.
   #   stdout.close
   #   stderr.close
   #   exit_status = wait_thr.value  # Process::Status object returned.
@@ -61,6 +61,7 @@ module Open3
   #
   #   Open3.popen3("echo a") {|i, o, e, t| ... }
   #   Open3.popen3("echo", "a") {|i, o, e, t| ... }
+  #   Open3.popen3(["echo", "argv0"], "a") {|i, o, e, t| ... }
   #
   # If the last parameter, opts, is a Hash, it is recognized as an option for Kernel#spawn.
   #
@@ -68,75 +69,105 @@ module Open3
   #     p o.read.chomp #=> "/"
   #   }
   #
-  # opts[STDIN], opts[STDOUT] and opts[STDERR] in the option are set for redirection.
-  #
-  # If some of the three elements in opts are specified,
-  # pipes for them are not created.
-  # In that case, block arugments for the block form and
-  # return values for the non-block form are decreased.
-  #
-  #   # No pipe "e" for stderr
-  #   Open3.popen3("echo a", STDERR=>nil) {|i,o,t| ... }
-  #   i,o,t = Open3.popen3("echo a", STDERR=>nil)
-  #
-  # If the value is nil as above, the elements of opts are removed.
-  # So standard input/output/error of current process are inherited.
-  #
-  # If the value is not nil, it is passed as is to Kernel#spawn.
-  # So pipeline of commands can be constracted as follows.
-  #
-  #   Open3.popen3("yes", STDIN=>nil, STDERR=>nil) {|o1,t1|
-  #     Open3.popen3("head -10", STDIN=>o1, STDERR=>nil) {|o2,t2|
-  #       o1.close
-  #       p o2.read     #=> "y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n"
-  #       p t1.value    #=> #<Process::Status: pid 13508 SIGPIPE (signal 13)>
-  #       p t2.value    #=> #<Process::Status: pid 13510 exit 0>
-  #     } 
-  #   }
-  #
   # wait_thr.value waits the termination of the process.
   # The block form also waits the process when it returns.
   #
   # Closing stdin, stdout and stderr does not wait the process.
   #
-  def popen3(*cmd)
+  def popen3(*cmd, &block)
     if Hash === cmd.last
       opts = cmd.pop.dup
     else
       opts = {}
     end
 
-    child_io = []
-    parent_io = []
+    in_r, in_w = IO.pipe
+    opts[STDIN] = in_r
+    in_w.sync = true
 
-    if !opts.include?(STDIN)
-      pw = IO.pipe   # pipe[0] for read, pipe[1] for write
-      opts[STDIN] = pw[0]
-      pw[1].sync = true
-      child_io << pw[0]
-      parent_io << pw[1]
-    elsif opts[STDIN] == nil
-      opts.delete(STDIN)
+    out_r, out_w = IO.pipe
+    opts[STDOUT] = out_w
+
+    err_r, err_w = IO.pipe
+    opts[STDERR] = err_w
+
+    popen_run(cmd, opts, [in_r, out_w, err_w], [in_w, out_r, err_r], &block)
+  end
+  module_function :popen3
+
+  # Open3.popen2 is similer to Open3.popen3 except it doesn't make a pipe for
+  # the standard error stream.
+  #
+  # Block form:
+  #
+  #   Open3.popen2(cmd... [, opts]) {|stdin, stdout, wait_thr|
+  #     pid = wait_thr.pid # pid of the started process.
+  #     ...
+  #     exit_status = wait_thr.value # Process::Status object returned.
+  #   }
+  #
+  # Non-block form:
+  #   
+  #   stdin, stdout, wait_thr = Open3.popen2(cmd... [, opts])
+  #   ...
+  #   stdin.close  # stdin and stdout should be closed explicitly in this form.
+  #   stdout.close
+  #
+  def popen2(*cmd, &block)
+    if Hash === cmd.last
+      opts = cmd.pop.dup
+    else
+      opts = {}
     end
 
-    if !opts.include?(STDOUT)
-      pr = IO.pipe
-      opts[STDOUT] = pr[1]
-      child_io << pr[1]
-      parent_io << pr[0]
-    elsif opts[STDOUT] == nil
-      opts.delete(STDOUT)
+    in_r, in_w = IO.pipe
+    opts[STDIN] = in_r
+    in_w.sync = true
+
+    out_r, out_w = IO.pipe
+    opts[STDOUT] = out_w
+
+    popen_run(cmd, opts, [in_r, out_w], [in_w, out_r], &block)
+  end
+  module_function :popen2
+
+  # Open3.popen2e is similer to Open3.popen3 except it merges
+  # the standard output stream and the standard error stream.
+  #
+  # Block form:
+  #
+  #   Open3.popen2e(cmd... [, opts]) {|stdin, stdout_and_stderr, wait_thr|
+  #     pid = wait_thr.pid # pid of the started process.
+  #     ...
+  #     exit_status = wait_thr.value # Process::Status object returned.
+  #   }
+  #
+  # Non-block form:
+  #   
+  #   stdin, stdout_and_stderr, wait_thr = Open3.popen2e(cmd... [, opts])
+  #   ...
+  #   stdin.close  # stdin and stdout_and_stderr should be closed explicitly in this form.
+  #   stdout_and_stderr.close
+  #
+  def popen2e(*cmd, &block)
+    if Hash === cmd.last
+      opts = cmd.pop.dup
+    else
+      opts = {}
     end
 
-    if !opts.include?(STDERR)
-      pe = IO.pipe
-      opts[STDERR] = pe[1]
-      child_io << pe[1]
-      parent_io << pe[0]
-    elsif opts[STDERR] == nil
-      opts.delete(STDERR)
-    end
+    in_r, in_w = IO.pipe
+    opts[STDIN] = in_r
+    in_w.sync = true
 
+    out_r, out_w = IO.pipe
+    opts[[STDOUT, STDERR]] = out_w
+
+    popen_run(cmd, opts, [in_r, out_w], [in_w, out_r], &block)
+  end
+  module_function :popen2e
+
+  def popen_run(cmd, opts, child_io, parent_io) # :nodoc:
     pid = spawn(*cmd, opts)
     wait_thr = Process.detach(pid)
     child_io.each {|io| io.close }
@@ -151,7 +182,185 @@ module Open3
     end
     result
   end
-  module_function :popen3
+  module_function :popen_run
+  class << self
+    private :popen_run
+  end
+
+  # Open3.pipeline_rw starts list of commands as a pipeline with pipes
+  # which connects stdin of the first command and stdout of the last command.
+  #
+  #   Open3.pipeline_rw(cmd1, cmd2, ... [, opts]) {|stdin, stdout, wait_threads|
+  #     ...
+  #   }
+  #
+  #   stdin, stdout, wait_threads = Open3.pipeline_rw(cmd1, cmd2, ... [, opts])
+  #   ...
+  #   stdin.close
+  #   stdout.close
+  #
+  # Each cmd is a string or an array.
+  # If it is an array, the elements are passed to Kernel#spawn.
+  #
+  # The option to pass Kernel#spawn is constructed by merging
+  # +opts+, the last hash element of the array and
+  # specification for the pipe between each commands.
+  #
+  # Example:
+  #
+  #   Open3.pipeline_rw("sort", "cat -n") {|stdin, stdout, wait_thrs|
+  #     stdin.puts "foo"
+  #     stdin.puts "bar"
+  #     stdin.puts "baz"
+  #     stdin.close     # send EOF to sort.
+  #     p stdout.read   #=> "     1\tbar\n     2\tbaz\n     3\tfoo\n"
+  #   }
+  def pipeline_rw(*cmds, &block)
+    if Hash === cmds.last
+      opts = cmds.pop.dup
+    else
+      opts = {}
+    end
+
+    in_r, in_w = IO.pipe
+    opts[STDIN] = in_r
+    in_w.sync = true
+
+    out_r, out_w = IO.pipe
+    opts[STDOUT] = out_w
+
+    pipeline_run(cmds, opts, [in_r, out_w], [in_w, out_r], &block)
+  end
+  module_function :pipeline_rw
+
+  # Open3.pipeline_r starts list of commands as a pipeline with a pipe
+  # which connects stdout of the last command.
+  #
+  #   Open3.pipeline_r(cmd1, cmd2, ... [, opts]) {|stdout, wait_threads|
+  #     ...
+  #   }
+  #
+  #   stdout, wait_threads = Open3.pipeline_r(cmd1, cmd2, ... [, opts])
+  #   ...
+  #   stdout.close
+  #
+  # Example:
+  #
+  #   Open3.pipeline_r("yes", "head -10") {|r, ts|
+  #     p r.read      #=> "y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n"
+  #     p ts[0].value #=> #<Process::Status: pid 24910 SIGPIPE (signal 13)>
+  #     p ts[1].value #=> #<Process::Status: pid 24913 exit 0>
+  #   }
+  #
+  def pipeline_r(*cmds, &block)
+    if Hash === cmds.last
+      opts = cmds.pop.dup
+    else
+      opts = {}
+    end
+
+    out_r, out_w = IO.pipe
+    opts[STDOUT] = out_w
+
+    pipeline_run(cmds, opts, [out_w], [out_r], &block)
+  end
+  module_function :pipeline_r
+
+  # Open3.pipeline_w starts list of commands as a pipeline with a pipe
+  # which connects stdin of the first command.
+  #
+  #   Open3.pipeline_w(cmd1, cmd2, ... [, opts]) {|stdin, wait_threads|
+  #     ...
+  #   }
+  #
+  #   stdin, wait_threads = Open3.pipeline_w(cmd1, cmd2, ... [, opts])
+  #   ...
+  #   stdin.close
+  #
+  # Example:
+  #
+  #   Open3.pipeline_w("cat -n", "bzip2 -c", STDOUT=>"/tmp/z.bz2") {|w, ts|
+  #     w.puts "hello" 
+  #     w.close
+  #     p ts[0].value
+  #     p ts[1].value
+  #   }
+  #
+  def pipeline_w(*cmds, &block)
+    if Hash === cmds.last
+      opts = cmds.pop.dup
+    else
+      opts = {}
+    end
+
+    in_r, in_w = IO.pipe
+    opts[STDIN] = in_r
+    in_w.sync = true
+
+    pipeline_run(cmds, opts, [in_r], [in_w], &block)
+  end
+  module_function :pipeline_w
+
+  def pipeline_run(cmds, pipeline_opts, child_io, parent_io, &block) # :nodoc:
+    if cmds.empty?
+      raise ArgumentError, "no commands"
+    end
+
+    opts_base = pipeline_opts.dup
+    opts_base.delete STDIN
+    opts_base.delete STDOUT
+
+    wait_thrs = []
+    r = nil
+    cmds.each_with_index {|cmd, i|
+      cmd_opts = opts_base.dup
+      if String === cmd
+        cmd = [cmd]
+      else
+        cmd_opts.update cmd.pop if Hash === cmd.last
+      end
+      if i == 0
+        if !cmd_opts.include?(STDIN)
+          if pipeline_opts.include?(STDIN)
+            cmd_opts[STDIN] = pipeline_opts[STDIN]
+          end
+        end
+      else
+        cmd_opts[STDIN] = r
+      end
+      if i != cmds.length - 1
+        r2, w2 = IO.pipe
+        cmd_opts[STDOUT] = w2
+      else
+        if !cmd_opts.include?(STDOUT)
+          if pipeline_opts.include?(STDOUT)
+            cmd_opts[STDOUT] = pipeline_opts[STDOUT]
+          end
+        end
+      end
+      pid = spawn(*cmd, cmd_opts)
+      wait_thrs << Process.detach(pid)
+      r.close if r
+      w2.close if w2
+      r = r2
+    }
+    result = parent_io + [wait_thrs]
+    child_io.each {|io| io.close }
+    if defined? yield
+      begin
+	return yield(*result)
+      ensure
+	parent_io.each{|io| io.close unless io.closed?}
+        wait_thrs.each {|t| t.join }
+      end
+    end
+    result
+  end
+  module_function :pipeline_run
+  class << self
+    private :pipeline_run
+  end
+
 end
 
 if $0 == __FILE__

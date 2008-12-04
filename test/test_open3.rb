@@ -74,21 +74,6 @@ class TestOpen3 < Test::Unit::TestCase
     }
   end
 
-  def test_disable
-    Open3.popen3(RUBY, '-e', '', STDIN=>nil) {|o,e,t|
-      assert_kind_of(Thread, t)
-    }
-    Open3.popen3(RUBY, '-e', '', STDOUT=>nil) {|i,e,t|
-      assert_kind_of(Thread, t)
-    }
-    Open3.popen3(RUBY, '-e', '', STDERR=>nil) {|i,o,t|
-      assert_kind_of(Thread, t)
-    }
-    Open3.popen3(RUBY, '-e', '', STDIN=>nil, STDOUT=>nil, STDERR=>nil) {|t|
-      assert_kind_of(Thread, t)
-    }
-  end
-
   def with_pipe
     r, w = IO.pipe
     yield r, w
@@ -106,100 +91,83 @@ class TestOpen3 < Test::Unit::TestCase
     old.close if old && !old.closed?
   end
 
-  def test_disable_stdin
-    with_pipe {|r, w|
-      with_reopen(STDIN, r) {|old|
-        Open3.popen3(RUBY, '-e', 's=STDIN.read; STDOUT.print s+"o"; STDERR.print s+"e"', STDIN=>nil) {|o,e,t|
-          assert_kind_of(Thread, t)
-          w.print "x"
-          w.close
-          assert_equal("xo", o.read)
-          assert_equal("xe", e.read)
-        }
-      }
-    }
-  end
-
-  def test_disable_stdout
-    with_pipe {|r, w|
-      with_reopen(STDOUT, w) {|old|
-        w.close
-        Open3.popen3(RUBY, '-e', 's=STDIN.read; STDOUT.print s+"o"; STDERR.print s+"e"', STDOUT=>nil) {|i,e,t|
-          assert_kind_of(Thread, t)
-          i.print "y"
-          i.close
-          STDOUT.reopen(old)
-          assert_equal("yo", r.read)
-          assert_equal("ye", e.read)
-        }
-      }
-    }
-  end
-
-  def test_disable_stderr
+  def test_popen2
     with_pipe {|r, w|
       with_reopen(STDERR, w) {|old|
         w.close
-        Open3.popen3(RUBY, '-e', 's=STDIN.read; STDOUT.print s+"o"; STDERR.print s+"e"', STDERR=>nil) {|i,o,t|
+        Open3.popen2(RUBY, '-e', 's=STDIN.read; STDOUT.print s+"o"; STDERR.print s+"e"') {|i,o,t|
+          assert_kind_of(Thread, t)
+          i.print "z"
+          i.close
+          STDERR.reopen(old)
+          assert_equal("zo", o.read)
+          assert_equal("ze", r.read)
+        }
+      }
+    }
+  end
+
+  def test_popen2e
+    with_pipe {|r, w|
+      with_reopen(STDERR, w) {|old|
+        w.close
+        Open3.popen2e(RUBY, '-e', 's=STDIN.read; STDOUT.print s+"o"; STDOUT.flush; STDERR.print s+"e"') {|i,o,t|
           assert_kind_of(Thread, t)
           i.print "y"
           i.close
           STDERR.reopen(old)
-          assert_equal("yo", o.read)
-          assert_equal("ye", r.read)
+          assert_equal("yoye", o.read)
+          assert_equal("", r.read)
         }
       }
     }
   end
 
-  def test_plug_pipe
-    Open3.popen3(RUBY, '-e', 'STDOUT.print "1"') {|i1,o1,e1,t1|
-      Open3.popen3(RUBY, '-e', 'STDOUT.print STDIN.read+"2"', STDIN=>o1) {|o2,e2,t2|
-        assert_equal("12", o2.read)
+  def test_pipeline_rw
+    Open3.pipeline_rw([RUBY, '-e', 'print STDIN.read + "1"'],
+                      [RUBY, '-e', 'print STDIN.read + "2"']) {|i,o,ts|
+      assert_kind_of(IO, i)
+      assert_kind_of(IO, o)
+      assert_kind_of(Array, ts)
+      assert_equal(2, ts.length)
+      ts.each {|t| assert_kind_of(Thread, t) }
+      i.print "0"
+      i.close
+      assert_equal("012", o.read)
+      ts.each {|t|
+        assert(t.value.success?)
       }
     }
   end
 
-  def test_tree_pipe
-    ia,oa,ea,ta = Open3.popen3(RUBY, '-e', 'i=STDIN.read; STDOUT.print i+"a"; STDERR.print i+"A"')
-    ob,eb,tb = Open3.popen3(RUBY, '-e', 'i=STDIN.read; STDOUT.print i+"b"; STDERR.print i+"B"', STDIN=>oa)
-    oc,ec,tc = Open3.popen3(RUBY, '-e', 'i=STDIN.read; STDOUT.print i+"c"; STDERR.print i+"C"', STDIN=>ob)
-    od,ed,td = Open3.popen3(RUBY, '-e', 'i=STDIN.read; STDOUT.print i+"d"; STDERR.print i+"D"', STDIN=>eb)
-    oe,ee,te = Open3.popen3(RUBY, '-e', 'i=STDIN.read; STDOUT.print i+"e"; STDERR.print i+"E"', STDIN=>ea)
-    of,ef,tf = Open3.popen3(RUBY, '-e', 'i=STDIN.read; STDOUT.print i+"f"; STDERR.print i+"F"', STDIN=>oe)
-    og,eg,tg = Open3.popen3(RUBY, '-e', 'i=STDIN.read; STDOUT.print i+"g"; STDERR.print i+"G"', STDIN=>ee)
-    oa.close
-    ea.close
-    ob.close
-    eb.close
-    oe.close
-    ee.close
-
-    ia.print "0"
-    ia.close
-    assert_equal("0abc", oc.read)
-    assert_equal("0abC", ec.read)
-    assert_equal("0aBd", od.read)
-    assert_equal("0aBD", ed.read)
-    assert_equal("0Aef", of.read)
-    assert_equal("0AeF", ef.read)
-    assert_equal("0AEg", og.read)
-    assert_equal("0AEG", eg.read)
-  ensure
-    ia.close if !ia.closed?
-    oa.close if !oa.closed?
-    ea.close if !ea.closed?
-    ob.close if !ob.closed?
-    eb.close if !eb.closed?
-    oc.close if !oc.closed?
-    ec.close if !ec.closed?
-    od.close if !od.closed?
-    ed.close if !ed.closed?
-    oe.close if !oe.closed?
-    ee.close if !ee.closed?
-    of.close if !of.closed?
-    ef.close if !ef.closed?
-    og.close if !og.closed?
-    eg.close if !eg.closed?
+  def test_pipeline_r
+    Open3.pipeline_r([RUBY, '-e', 'print "1"'],
+                     [RUBY, '-e', 'print STDIN.read + "2"']) {|o,ts|
+      assert_kind_of(IO, o)
+      assert_kind_of(Array, ts)
+      assert_equal(2, ts.length)
+      ts.each {|t| assert_kind_of(Thread, t) }
+      assert_equal("12", o.read)
+      ts.each {|t|
+        assert(t.value.success?)
+      }
+    }
   end
+
+  def test_pipeline_w
+    command = [RUBY, '-e', 's=STDIN.read; print s[1..-1]; exit s[0] == ?t']
+    str = 'ttftff'
+    Open3.pipeline_w(*[command]*str.length) {|i,ts|
+      assert_kind_of(IO, i)
+      assert_kind_of(Array, ts)
+      assert_equal(str.length, ts.length)
+      ts.each {|t| assert_kind_of(Thread, t) }
+      i.print str
+      i.close
+      ts.each_with_index {|t, i|
+        assert_equal(str[i] == ?t, t.value.success?)
+      }
+    }
+  end
+
 end
