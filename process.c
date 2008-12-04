@@ -2824,8 +2824,8 @@ rb_f_system(int argc, VALUE *argv)
  *      name => nil : unset the environment variable
  *    command...:
  *      commandline                 : command line string which is passed to a shell
- *      cmdname, arg1, ...          : command name and one or more arguments
- *      [cmdname, argv0], arg1, ... : command name and arguments including argv[0]
+ *      cmdname, arg1, ...          : command name and one or more arguments (no shell)
+ *      [cmdname, argv0], arg1, ... : command name and arguments including argv[0] (no shell)
  *    options: hash
  *      clearing environment variables:
  *        :unsetenv_others => true   : clear environment variables except specified by env
