@@ -1,3 +1,8 @@
+Fri Dec  5 01:19:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): propagate taint status from format string to
+	  result string.
+
 Thu Dec  4 16:19:18 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_read_nonblock):

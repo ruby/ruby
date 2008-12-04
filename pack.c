@@ -1000,6 +1000,7 @@ pack_pack(ary, fmt)
     if (associates) {
 	rb_str_associate(res, associates);
     }
+    OBJ_INFECT(res, fmt);
     return res;
 }
 
