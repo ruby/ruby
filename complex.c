@@ -910,7 +910,7 @@ f_tpositive_p(VALUE x)
 }
 
 static VALUE
-nucomp_to_s(VALUE self)
+nucomp_format(VALUE self, VALUE (*func)(VALUE))
 {
     VALUE s, impos;
 
@@ -918,10 +918,10 @@ nucomp_to_s(VALUE self)
 
     impos = f_tpositive_p(dat->imag);
 
-    s = f_to_s(dat->real);
+    s = (*func)(dat->real);
     rb_str_cat2(s, !impos ? "-" : "+");
 
-    rb_str_concat(s, f_to_s(f_abs(dat->imag)));
+    rb_str_concat(s, (*func)(f_abs(dat->imag)));
     if (!rb_isdigit(RSTRING_PTR(s)[RSTRING_LEN(s) - 1]))
 	rb_str_cat2(s, "*");
     rb_str_cat2(s, "i");
@@ -930,12 +930,18 @@ nucomp_to_s(VALUE self)
 }
 
 static VALUE
+nucomp_to_s(VALUE self)
+{
+    return nucomp_format(self, f_to_s);
+}
+
+static VALUE
 nucomp_inspect(VALUE self)
 {
     VALUE s;
 
     s = rb_str_new2("(");
-    rb_str_concat(s, nucomp_to_s(self));
+    rb_str_concat(s, nucomp_format(self, f_inspect));
     rb_str_cat2(s, ")");
 
     return s;
