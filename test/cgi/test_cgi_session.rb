@@ -7,7 +7,7 @@ require 'tmpdir'
 
 class CGISessionTest < Test::Unit::TestCase
   def setup
-    @session_dir = Dir.mktmpdir('__test_dir__')+'/session_dir/'
+    @session_dir = Dir.tmpdir+'/__test_dir__/session_dir/'
     FileUtils.mkdir_p @session_dir
   end
 
