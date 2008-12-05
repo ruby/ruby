@@ -1,3 +1,7 @@
+Fri Dec  5 21:45:45 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c (nurat_{to_s,inspect}): performance improvement.
+
 Fri Dec  5 21:42:44 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: inpsect should not depend on to_s.

@@ -27,8 +27,8 @@
 VALUE rb_cRational;
 
 static ID id_abs, id_cmp, id_convert, id_equal_p, id_expt, id_floor,
-    id_format, id_hash, id_idiv, id_inspect, id_integer_p, id_negate,
-    id_to_f, id_to_i, id_to_s, id_truncate;
+    id_hash, id_idiv, id_inspect, id_integer_p, id_negate, id_to_f,
+    id_to_i, id_to_s, id_truncate;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -1111,19 +1111,34 @@ nurat_hash(VALUE self)
 }
 
 static VALUE
+nurat_format(VALUE self, VALUE (*func)(VALUE))
+{
+    VALUE s;
+    get_dat1(self);
+
+    s = (*func)(dat->num);
+    rb_str_cat2(s, "/");
+    rb_str_concat(s, (*func)(dat->den));
+
+    return s;
+}
+
+static VALUE
 nurat_to_s(VALUE self)
 {
-    get_dat1(self);
-    return rb_funcall(rb_mKernel, id_format, 3,
-		      rb_str_new2("%d/%d"), dat->num, dat->den);
+    return nurat_format(self, f_to_s);
 }
 
 static VALUE
 nurat_inspect(VALUE self)
 {
-    get_dat1(self);
-    return rb_funcall(rb_mKernel, id_format, 3,
-		      rb_str_new2("(%d/%d)"), dat->num, dat->den);
+    VALUE s;
+
+    s = rb_str_new2("(");
+    rb_str_concat(s, nurat_format(self, f_inspect));
+    rb_str_cat2(s, ")");
+
+    return s;
 }
 
 static VALUE
@@ -1484,7 +1499,6 @@ Init_Rational(void)
     id_equal_p = rb_intern("==");
     id_expt = rb_intern("**");
     id_floor = rb_intern("floor");
-    id_format = rb_intern("format");
     id_hash = rb_intern("hash");
     id_idiv = rb_intern("div");
     id_inspect = rb_intern("inspect");
