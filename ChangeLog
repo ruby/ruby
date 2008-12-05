@@ -1,3 +1,8 @@
+Fri Dec  5 10:01:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_cmp_m): fixed rdoc.  pointed out by <Thomas
+	  C. Mitchell AT gmail.com> at [ruby-talk:321967]
+
 Fri Dec  5 01:19:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_pack): propagate taint status from format string to
