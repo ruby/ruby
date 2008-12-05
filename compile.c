@@ -415,7 +415,7 @@ iseq_add_mark_object_compile_time(rb_iseq_t *iseq, VALUE v)
 }
 
 VALUE
-iseq_compile(VALUE self, NODE *node)
+ruby_iseq_compile(VALUE self, NODE *node)
 {
     DECL_ANCHOR(ret);
     rb_iseq_t *iseq;
@@ -502,7 +502,7 @@ iseq_compile(VALUE self, NODE *node)
 }
 
 int
-iseq_translate_threaded_code(rb_iseq_t *iseq)
+ruby_iseq_translate_threaded_code(rb_iseq_t *iseq)
 {
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     extern const void **vm_get_insns_address_table(void);
@@ -960,7 +960,7 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     iseq_set_optargs_table(iseq);
 
     debugs("[compile step 5 (iseq_translate_threaded_code)] \n");
-    iseq_translate_threaded_code(iseq);
+    ruby_iseq_translate_threaded_code(iseq);
 
     if (compile_debug > 1) {
 	VALUE str = ruby_iseq_disasm(iseq->self);
@@ -4974,14 +4974,14 @@ dump_disasm_list(struct iseq_link_element *link)
 }
 
 VALUE
-insns_name_array(void)
+ruby_insns_name_array(void)
 {
     VALUE ary = rb_ary_new();
     int i;
     for (i = 0; i < sizeof(insn_name_info) / sizeof(insn_name_info[0]); i++) {
-	rb_ary_push(ary, rb_str_new2(insn_name_info[i]));
+	rb_ary_push(ary, rb_obj_freeze(rb_str_new2(insn_name_info[i])));
     }
-    return ary;
+    return rb_obj_freeze(ary);
 }
 
 static LABEL *
@@ -5051,7 +5051,7 @@ iseq_build_exception(rb_iseq_t *iseq, struct st_table *labels_table,
 	    eiseqval = 0;
 	}
 	else {
-	    eiseqval = iseq_load(0, ptr[1], iseq->self, Qnil);
+	    eiseqval = ruby_iseq_load(ptr[1], iseq->self, Qnil);
 	}
 
 	lstart = register_label(iseq, labels_table, ptr[2]);
@@ -5063,8 +5063,6 @@ iseq_build_exception(rb_iseq_t *iseq, struct st_table *labels_table,
     }
     return COMPILE_OK;
 }
-
-struct st_table *insn_make_insn_table(void);
 
 static int
 iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
@@ -5081,7 +5079,7 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
     static struct st_table *insn_table;
 
     if (insn_table == 0) {
-	insn_table = insn_make_insn_table();
+	insn_table = ruby_insn_make_insn_table();
     }
 
     for (i=0; i<len; i++) {
@@ -5137,7 +5135,7 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			{
 			    if (op != Qnil) {
 				if (TYPE(op) == T_ARRAY) {
-				    argv[j] = iseq_load(0, op, iseq->self, Qnil);
+				    argv[j] = ruby_iseq_load(op, iseq->self, Qnil);
 				}
 				else if (CLASS_OF(op) == rb_cISeq) {
 				    argv[j] = op;
@@ -5202,8 +5200,8 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 static inline VALUE CHECK_INTEGER(VALUE v) {NUM2LONG(v); return v;}
 
 VALUE
-iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
-		    VALUE exception, VALUE body)
+ruby_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
+			 VALUE exception, VALUE body)
 {
     int i;
     ID *tbl;
