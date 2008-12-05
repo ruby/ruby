@@ -18,9 +18,11 @@
 # - Open3.poutput3 : give a string for stdin.  get strings for stdout, stderr
 # - Open3.poutput2 : give a string for stdin.  get a string for stdout
 # - Open3.poutput2e : give a string for stdin.  get a string for merged stdout and stderr
-# - Open3.pipeline_rw : pipes for stdin of the first and stdout of the last of a pipeline
-# - Open3.pipeline_r : pipe for stdout of the last of a pipeline
-# - Open3.pipeline_w : pipe for stdin of the first of a pipeline
+# - Open3.pipeline_rw : pipes for first stdin and last stdout of a pipeline
+# - Open3.pipeline_r : pipe for last stdout of a pipeline
+# - Open3.pipeline_w : pipe for first stdin of a pipeline
+# - Open3.pipeline_start : a pipeline
+# - Open3.pipeline : run a pipline and wait
 #
 
 module Open3
@@ -74,14 +76,14 @@ module Open3
     end
 
     in_r, in_w = IO.pipe
-    opts[STDIN] = in_r
+    opts[:in] = in_r
     in_w.sync = true
 
     out_r, out_w = IO.pipe
-    opts[STDOUT] = out_w
+    opts[:out] = out_w
 
     err_r, err_w = IO.pipe
-    opts[STDERR] = err_w
+    opts[:err] = err_w
 
     popen_run(cmd, opts, [in_r, out_w, err_w], [in_w, out_r, err_r], &block)
   end
@@ -105,6 +107,26 @@ module Open3
   #   stdin.close  # stdin and stdout should be closed explicitly in this form.
   #   stdout.close
   #
+  # Example:
+  #
+  #   Open3.popen2("wc -c") {|i,o,t|
+  #     i.print "answer to life the universe and everything"
+  #     i.close
+  #     p o.gets #=> "42\n"
+  #   }
+  #
+  #   Open3.popen2("bc -q") {|i,o,t| 
+  #     i.puts "obase=13"
+  #     i.puts "6 * 9"
+  #     p o.gets #=> "42\n"
+  #   }
+  #
+  #   Open3.popen2("dc") {|i,o,t|
+  #     i.print "42P"                                       
+  #     i.close
+  #     p o.read #=> "*"
+  #   }
+  #
   def popen2(*cmd, &block)
     if Hash === cmd.last
       opts = cmd.pop.dup
@@ -113,11 +135,11 @@ module Open3
     end
 
     in_r, in_w = IO.pipe
-    opts[STDIN] = in_r
+    opts[:in] = in_r
     in_w.sync = true
 
     out_r, out_w = IO.pipe
-    opts[STDOUT] = out_w
+    opts[:out] = out_w
 
     popen_run(cmd, opts, [in_r, out_w], [in_w, out_r], &block)
   end
@@ -149,11 +171,11 @@ module Open3
     end
 
     in_r, in_w = IO.pipe
-    opts[STDIN] = in_r
+    opts[:in] = in_r
     in_w.sync = true
 
     out_r, out_w = IO.pipe
-    opts[[STDOUT, STDERR]] = out_w
+    opts[[:out, :err]] = out_w
 
     popen_run(cmd, opts, [in_r, out_w], [in_w, out_r], &block)
   end
@@ -189,6 +211,14 @@ module Open3
   #
   # Example:
   #
+  #   # dot is a command of graphviz.
+  #   graph = <<'End'
+  #     digraph g {
+  #       a -> b
+  #     }
+  #   End
+  #   layouted_graph, dot_log = Open3.poutput3("dot -v", :stdin_data=>graph)
+  #
   #   o, e, s = Open3.poutput3("echo a; sort >&2", :stdin_data=>"foo\nbar\nbaz\n")
   #   p o #=> "a\n"
   #   p e #=> "bar\nbaz\nfoo\n"
@@ -220,6 +250,10 @@ module Open3
   # The arguments cmd and opts are passed to Open3.popen2 except opts[:stdin_data].
   #
   # If opts[:stdin_data] is specified, it is sent to the command's standard input.
+  #
+  #   # factor is a command for integer factorization
+  #   o, s = Open3.poutput2("factor", :stdin_data=>"42")    
+  #   p o #=> "42: 2 3 7\n"
   #
   def poutput2(*cmd, &block)
     if Hash === cmd.last
@@ -286,6 +320,12 @@ module Open3
   #
   # Example:
   #
+  #   Open3.pipeline_rw("tr -dc A-Za-z", "wc -c") {|i,o,ts|
+  #     i.puts "All persons more than a mile high to leave the court."
+  #     i.close
+  #     p o.gets #=> "42\n"
+  #   }
+  #
   #   Open3.pipeline_rw("sort", "cat -n") {|stdin, stdout, wait_thrs|
   #     stdin.puts "foo"
   #     stdin.puts "bar"
@@ -301,11 +341,11 @@ module Open3
     end
 
     in_r, in_w = IO.pipe
-    opts[STDIN] = in_r
+    opts[:in] = in_r
     in_w.sync = true
 
     out_r, out_w = IO.pipe
-    opts[STDOUT] = out_w
+    opts[:out] = out_w
 
     pipeline_run(cmds, opts, [in_r, out_w], [in_w, out_r], &block)
   end
@@ -329,6 +369,14 @@ module Open3
   #     IO.copy_stream(r, STDOUT)
   #   }
   #
+  #   Open3.pipeline_r("zcat /var/log/apache2/access.log.*.gz",
+  #                    [{"LANG"=>"C"}, "grep", "GET /favicon.ico"],
+  #                    "logresolve") {|r, ts|
+  #     r.each_line {|line|
+  #       ...
+  #     }
+  #   }
+  #
   #   Open3.pipeline_r("yes", "head -10") {|r, ts|
   #     p r.read      #=> "y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n"
   #     p ts[0].value #=> #<Process::Status: pid 24910 SIGPIPE (signal 13)>
@@ -343,7 +391,7 @@ module Open3
     end
 
     out_r, out_w = IO.pipe
-    opts[STDOUT] = out_w
+    opts[:out] = out_w
 
     pipeline_run(cmds, opts, [out_w], [out_r], &block)
   end
@@ -362,11 +410,8 @@ module Open3
   #
   # Example:
   #
-  #   Open3.pipeline_w("cat -n", "bzip2 -c", STDOUT=>"/tmp/z.bz2") {|w, ts|
+  #   Open3.pipeline_w("bzip2 -c", :out=>"/tmp/hello.bz2") {|w, ts|
   #     w.puts "hello" 
-  #     w.close
-  #     p ts[0].value
-  #     p ts[1].value
   #   }
   #
   def pipeline_w(*cmds, &block)
@@ -377,12 +422,65 @@ module Open3
     end
 
     in_r, in_w = IO.pipe
-    opts[STDIN] = in_r
+    opts[:in] = in_r
     in_w.sync = true
 
     pipeline_run(cmds, opts, [in_r], [in_w], &block)
   end
   module_function :pipeline_w
+
+  # Open3.pipeline_start starts list of commands as a pipeline.
+  # No pipe made for stdin of the first command and
+  # stdout of the last command.
+  #
+  #   Open3.pipeline_start(cmd1, cmd2, ... [, opts]) {|wait_threads|
+  #     ...
+  #   }
+  #
+  #   wait_threads = Open3.pipeline_start(cmd1, cmd2, ... [, opts])
+  #   ...
+  #
+  def pipeline_start(*cmds, &block)
+    if Hash === cmds.last
+      opts = cmds.pop.dup
+    else
+      opts = {}
+    end
+
+    pipeline_run(cmds, opts, [], [], &block)
+  end
+  module_function :pipeline_start
+
+  # Open3.pipeline starts list of commands as a pipeline.
+  # It waits the finish of the commands.
+  # No pipe made for stdin of the first command and
+  # stdout of the last command.
+  #
+  #   status_list = Open3.pipeline(cmd1, cmd2, ... [, opts])
+  #
+  # Example:
+  #
+  #   fname = "/usr/share/man/man1/ruby.1.gz"
+  #   p Open3.pipeline(["zcat", fname], "nroff -man", "less")   
+  #   #=> [#<Process::Status: pid 11817 exit 0>,
+  #   #    #<Process::Status: pid 11820 exit 0>,
+  #   #    #<Process::Status: pid 11828 exit 0>]
+  #
+  #   # count lines
+  #   Open3.pipeline("sort", "uniq -c", :in=>"names.txt", :out=>"count")
+  #
+  def pipeline(*cmds)
+    if Hash === cmds.last
+      opts = cmds.pop.dup
+    else
+      opts = {}
+    end
+
+    pipeline_run(cmds, opts, [], []) {|ts|
+      ts.map {|t| t.value }
+    }
+  end
+  module_function :pipeline
 
   def pipeline_run(cmds, pipeline_opts, child_io, parent_io, &block) # :nodoc:
     if cmds.empty?
@@ -390,8 +488,8 @@ module Open3
     end
 
     opts_base = pipeline_opts.dup
-    opts_base.delete STDIN
-    opts_base.delete STDOUT
+    opts_base.delete :in
+    opts_base.delete :out
 
     wait_thrs = []
     r = nil
@@ -403,21 +501,21 @@ module Open3
         cmd_opts.update cmd.pop if Hash === cmd.last
       end
       if i == 0
-        if !cmd_opts.include?(STDIN)
-          if pipeline_opts.include?(STDIN)
-            cmd_opts[STDIN] = pipeline_opts[STDIN]
+        if !cmd_opts.include?(:in)
+          if pipeline_opts.include?(:in)
+            cmd_opts[:in] = pipeline_opts[:in]
           end
         end
       else
-        cmd_opts[STDIN] = r
+        cmd_opts[:in] = r
       end
       if i != cmds.length - 1
         r2, w2 = IO.pipe
-        cmd_opts[STDOUT] = w2
+        cmd_opts[:out] = w2
       else
-        if !cmd_opts.include?(STDOUT)
-          if pipeline_opts.include?(STDOUT)
-            cmd_opts[STDOUT] = pipeline_opts[STDOUT]
+        if !cmd_opts.include?(:out)
+          if pipeline_opts.include?(:out)
+            cmd_opts[:out] = pipeline_opts[:out]
           end
         end
       end

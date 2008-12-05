@@ -196,4 +196,39 @@ class TestOpen3 < Test::Unit::TestCase
     }
   end
 
+  def test_pipeline_start
+    command = [RUBY, '-e', 's=STDIN.read; print s[1..-1]; exit s[0] == ?t']
+    str = 'ttftff'
+    Open3.pipeline_start([RUBY, '-e', 'print ARGV[0]', str],
+                         *([command]*str.length)) {|ts|
+      assert_kind_of(Array, ts)
+      assert_equal(str.length+1, ts.length)
+      ts.each {|t| assert_kind_of(Thread, t) }
+      ts.each_with_index {|t, i|
+        if i == 0
+          assert(t.value.success?)
+        else
+          assert_equal(str[i-1] == ?t, t.value.success?)
+        end
+      }
+    }
+  end
+
+  def test_pipeline
+    command = [RUBY, '-e', 's=STDIN.read; print s[1..-1]; exit s[0] == ?t']
+    str = 'ttftff'
+    ss = Open3.pipeline([RUBY, '-e', 'print ARGV[0]', str],
+                        *([command]*str.length))
+    assert_kind_of(Array, ss)
+    assert_equal(str.length+1, ss.length)
+    ss.each {|s| assert_kind_of(Process::Status, s) }
+    ss.each_with_index {|s, i|
+      if i == 0
+        assert(s.success?)
+      else
+        assert_equal(str[i-1] == ?t, s.success?)
+      end
+    }
+  end
+
 end

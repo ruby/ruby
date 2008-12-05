@@ -1,3 +1,8 @@
+Fri Dec  5 19:06:04 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open3.rb (Open3.pipeline_start): new method.
+	  (Open3.pipeline): ditto.
+
 Fri Dec  5 18:55:25 2008  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (run_exec_dup2): !save is false if Qnil.
