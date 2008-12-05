@@ -25,7 +25,7 @@ VALUE rb_cMethod;
 VALUE rb_cBinding;
 VALUE rb_cProc;
 
-VALUE rb_iseq_parameters(const rb_iseq_t *iseq);
+VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 
 static VALUE bmcall(VALUE, VALUE);
 static int method_arity(VALUE);
@@ -611,19 +611,21 @@ rb_proc_arity(VALUE proc)
 }
 
 static rb_iseq_t *
-get_proc_iseq(VALUE self)
+get_proc_iseq(VALUE self, int *is_proc)
 {
     rb_proc_t *proc;
     rb_iseq_t *iseq;
 
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
+    if (is_proc) *is_proc = !proc->is_lambda;
     if (!RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	NODE *node = (NODE *)iseq;
 	iseq = 0;
 	if (nd_type(node) == NODE_IFUNC && node->nd_cfnc == bmcall) {
 	    /* method(:foo).to_proc */
 	    iseq = get_method_iseq(node->nd_tval);
+	    if (is_proc) *is_proc = 0;
 	}
     }
     return iseq;
@@ -656,7 +658,7 @@ iseq_location(rb_iseq_t *iseq)
 VALUE
 rb_proc_location(VALUE self)
 {
-    return iseq_location(get_proc_iseq(self));
+    return iseq_location(get_proc_iseq(self, 0));
 }
 
 static VALUE
@@ -688,11 +690,12 @@ unnamed_parameters(int arity)
 static VALUE
 rb_proc_parameters(VALUE self)
 {
-    rb_iseq_t *iseq = get_proc_iseq(self);
+    int is_proc;
+    rb_iseq_t *iseq = get_proc_iseq(self, &is_proc);
     if (!iseq) {
 	return unnamed_parameters(proc_arity(self));
     }
-    return rb_iseq_parameters(iseq);
+    return rb_iseq_parameters(iseq, is_proc);
 }
 
 /*
@@ -1509,7 +1512,7 @@ get_method_iseq(VALUE method)
     body = data->body;
     switch (nd_type(body)) {
       case NODE_BMETHOD:
-	return get_proc_iseq(body->nd_cval);
+	return get_proc_iseq(body->nd_cval, 0);
       case RUBY_VM_METHOD_NODE:
 	GetISeqPtr((VALUE)body->nd_body, iseq);
 	if (RUBY_VM_NORMAL_ISEQ_P(iseq)) break;
@@ -1547,7 +1550,7 @@ rb_method_parameters(VALUE method)
     if (!iseq) {
 	return unnamed_parameters(method_arity(method));
     }
-    return rb_iseq_parameters(iseq);
+    return rb_iseq_parameters(iseq, 0);
 }
 
 /*

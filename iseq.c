@@ -1303,7 +1303,7 @@ simple_default_value(const VALUE *seq, const VALUE *eseq)
 }
 
 VALUE
-rb_iseq_parameters(const rb_iseq_t *iseq)
+rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 {
     int i, r, s;
     VALUE a, args = rb_ary_new2(iseq->arg_size);
@@ -1317,14 +1317,24 @@ rb_iseq_parameters(const rb_iseq_t *iseq)
 	a)
 
     CONST_ID(req, "req");
-    for (i = 0; i < iseq->argc; i++) {
-	rb_ary_push(args, PARAM(i, req));
+    CONST_ID(opt, "opt");
+    if (is_proc) {
+	for (i = 0; i < iseq->argc; i++) {
+	    PARAM_TYPE(opt);
+	    rb_ary_push(a, rb_id2name(PARAM_ID(i)) ? ID2SYM(PARAM_ID(i)) : Qnil);
+	    rb_ary_push(a, Qnil);
+	    rb_ary_push(args, a);
+	}
+    }
+    else {
+	for (i = 0; i < iseq->argc; i++) {
+	    rb_ary_push(args, PARAM(i, req));
+	}
     }
     r = iseq->arg_rest != -1 ? iseq->arg_rest :
 	iseq->arg_post_len > 0 ? iseq->arg_post_start :
 	iseq->arg_block != -1 ? iseq->arg_block :
 	iseq->arg_size;
-    CONST_ID(opt, "opt");
     for (s = i; i < r; i++) {
 	PARAM_TYPE(opt);
 	if (rb_id2name(PARAM_ID(i))) {
@@ -1340,8 +1350,18 @@ rb_iseq_parameters(const rb_iseq_t *iseq)
 	rb_ary_push(args, PARAM(iseq->arg_rest, rest));
     }
     r = iseq->arg_post_start + iseq->arg_post_len;
-    for (i = iseq->arg_post_start; i < r; i++) {
-	rb_ary_push(args, PARAM(i, req));
+    if (is_proc) {
+	for (i = iseq->arg_post_start; i < r; i++) {
+	    PARAM_TYPE(opt);
+	    rb_ary_push(a, rb_id2name(PARAM_ID(i)) ? ID2SYM(PARAM_ID(i)) : Qnil);
+	    rb_ary_push(a, Qnil);
+	    rb_ary_push(args, a);
+	}
+    }
+    else {
+	for (i = iseq->arg_post_start; i < r; i++) {
+	    rb_ary_push(args, PARAM(i, req));
+	}
     }
     if (iseq->arg_block != -1) {
 	CONST_ID(block, "block");

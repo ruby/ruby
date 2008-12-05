@@ -677,17 +677,17 @@ class TestProc < Test::Unit::TestCase
   def test_parameters
     assert_equal([], proc {}.parameters)
     assert_equal([], proc {||}.parameters)
-    assert_equal([[:req, :a]], proc {|a|}.parameters)
-    assert_equal([[:req, :a], [:req, :b]], proc {|a, b|}.parameters)
+    assert_equal([[:opt, :a, nil]], proc {|a|}.parameters)
+    assert_equal([[:opt, :a, nil], [:opt, :b, nil]], proc {|a, b|}.parameters)
     assert_equal([[:opt, :a, :a], [:block, :b]], proc {|a=:a, &b|}.parameters)
-    assert_equal([[:req, :a], [:opt, :b, :b]], proc {|a, b=:b|}.parameters)
+    assert_equal([[:opt, :a, nil], [:opt, :b, :b]], proc {|a, b=:b|}.parameters)
     assert_equal([[:rest, :a]], proc {|*a|}.parameters)
-    assert_equal([[:req, :a], [:rest, :b], [:block, :c]], proc {|a, *b, &c|}.parameters)
-    assert_equal([[:req, :a], [:rest, :b], [:req, :c]], proc {|a, *b, c|}.parameters)
-    assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], proc {|a, *b, c, &d|}.parameters)
-    assert_equal([[:req, :a], [:opt, :b, :b], [:rest, :c], [:req, :d], [:block, :e]], proc {|a, b=:b, *c, d, &e|}.parameters)
-    assert_equal([[:req], [:block, :b]], proc {|(a), &b|}.parameters)
-    assert_equal([[:req, :a], [:req, :b], [:opt, :c, :c], [:opt, :d, :d], [:rest, :e], [:req, :f], [:req, :g], [:block, :h]], proc {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters) 
+    assert_equal([[:opt, :a, nil], [:rest, :b], [:block, :c]], proc {|a, *b, &c|}.parameters)
+    assert_equal([[:opt, :a, nil], [:rest, :b], [:opt, :c, nil]], proc {|a, *b, c|}.parameters)
+    assert_equal([[:opt, :a, nil], [:rest, :b], [:opt, :c, nil], [:block, :d]], proc {|a, *b, c, &d|}.parameters)
+    assert_equal([[:opt, :a, nil], [:opt, :b, :b], [:rest, :c], [:opt, :d, nil], [:block, :e]], proc {|a, b=:b, *c, d, &e|}.parameters)
+    assert_equal([[:opt, nil, nil], [:block, :b]], proc {|(a), &b|}.parameters)
+    assert_equal([[:opt, :a, nil], [:opt, :b, nil], [:opt, :c, :c], [:opt, :d, :d], [:rest, :e], [:opt, :f, nil], [:opt, :g, nil], [:block, :h]], proc {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters) 
   end
 
   def pm0() end

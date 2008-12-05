@@ -1,3 +1,9 @@
+Fri Dec  5 13:05:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (rb_iseq_parameters): proc arguments are always optional.
+
+	* proc.c (get_proc_iseq, rb_proc_parameters): ditto.
+
 Fri Dec  5 12:38:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_set_sequence): uses rb_compile_warning() for
