@@ -1910,7 +1910,7 @@ run_exec_dup2(VALUE ary, VALUE save)
     }
 
     /* sort the table by oldfd: O(n log n) */
-    if (!save)
+    if (!RTEST(save))
         qsort(pairs, n, sizeof(struct fd_pair), intcmp);
     else
         qsort(pairs, n, sizeof(struct fd_pair), intrcmp);

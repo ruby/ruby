@@ -1,3 +1,7 @@
+Fri Dec  5 18:55:25 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (run_exec_dup2): !save is false if Qnil.
+
 Fri Dec  5 18:07:32 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_read, rb_w32_write, rb_w32_isatty): check
