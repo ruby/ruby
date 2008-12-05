@@ -30,13 +30,7 @@ VALUE
 rb_get_load_path(void)
 {
     VALUE load_path = GET_VM()->load_path;
-    VALUE ary = rb_ary_new2(RARRAY_LEN(load_path));
-    long i;
-
-    for (i = 0; i < RARRAY_LEN(load_path); ++i) {
-	rb_ary_push(ary, rb_file_expand_path(RARRAY_PTR(load_path)[i], Qnil));
-    }
-    return ary;
+    return load_path;
 }
 
 static VALUE
@@ -198,6 +192,12 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 int
 rb_provided(const char *feature)
 {
+    return rb_feature_provided(feature, 0);
+}
+
+int
+rb_feature_provided(const char *feature, const char **loading)
+{
     const char *ext = strrchr(feature, '.');
     volatile VALUE fullpath = 0;
 
@@ -208,15 +208,15 @@ rb_provided(const char *feature)
     }
     if (ext && !strchr(ext, '/')) {
 	if (IS_RBEXT(ext)) {
-	    if (rb_feature_p(feature, ext, Qtrue, Qfalse, 0)) return Qtrue;
+	    if (rb_feature_p(feature, ext, Qtrue, Qfalse, loading)) return Qtrue;
 	    return Qfalse;
 	}
 	else if (IS_SOEXT(ext) || IS_DLEXT(ext)) {
-	    if (rb_feature_p(feature, ext, Qfalse, Qfalse, 0)) return Qtrue;
+	    if (rb_feature_p(feature, ext, Qfalse, Qfalse, loading)) return Qtrue;
 	    return Qfalse;
 	}
     }
-    if (rb_feature_p(feature, feature + strlen(feature), Qtrue, Qfalse, 0))
+    if (rb_feature_p(feature, feature + strlen(feature), Qtrue, Qfalse, loading))
 	return Qtrue;
     return Qfalse;
 }
@@ -430,9 +430,8 @@ search_required(VALUE fname, volatile VALUE *path)
 		return 'r';
 	    }
 	    if ((tmp = rb_find_file(fname)) != 0) {
-		tmp = rb_file_expand_path(tmp, Qnil);
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, Qtrue, Qtrue, 0))
+		if (!rb_feature_p(ftptr, ext, Qtrue, Qtrue, &loading) || loading)
 		    *path = tmp;
 		return 'r';
 	    }
@@ -447,9 +446,8 @@ search_required(VALUE fname, volatile VALUE *path)
 #ifdef DLEXT2
 	    OBJ_FREEZE(tmp);
 	    if (rb_find_file_ext(&tmp, loadable_ext + 1)) {
-		tmp = rb_file_expand_path(tmp, Qnil);
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue, 0))
+		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue, &loading) || loading)
 		    *path = tmp;
 		return 's';
 	    }
@@ -457,9 +455,8 @@ search_required(VALUE fname, volatile VALUE *path)
 	    rb_str_cat2(tmp, DLEXT);
 	    OBJ_FREEZE(tmp);
 	    if ((tmp = rb_find_file(tmp)) != 0) {
-		tmp = rb_file_expand_path(tmp, Qnil);
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue, 0))
+		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue, &loading) || loading)
 		    *path = tmp;
 		return 's';
 	    }
@@ -471,9 +468,8 @@ search_required(VALUE fname, volatile VALUE *path)
 		return 's';
 	    }
 	    if ((tmp = rb_find_file(fname)) != 0) {
-		tmp = rb_file_expand_path(tmp, Qnil);
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue, 0))
+		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue, &loading) || loading)
 		    *path = tmp;
 		return 's';
 	    }
