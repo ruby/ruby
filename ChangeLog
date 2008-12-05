@@ -1,3 +1,8 @@
+Fri Dec  5 12:38:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_set_sequence): uses rb_compile_warning() for
+	  warning at compilation time.
+
 Fri Dec  5 12:35:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (ruby_iseq_compile, ruby_iseq_translate_threaded_code),
