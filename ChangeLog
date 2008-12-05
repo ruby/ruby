@@ -1,3 +1,9 @@
+Fri Dec  5 12:49:24 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (waitpid): fix bug of checking child slot.
+
+	* win32/win32.c (FindChildSlotByHandle): new.
+
 Fri Dec  5 10:01:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_cmp_m): fixed rdoc.  pointed out by <Thomas
