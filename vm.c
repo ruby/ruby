@@ -1737,7 +1737,6 @@ m_core_set_postexe(VALUE self, VALUE iseqval)
     return Qnil;
 }
 
-VALUE insns_name_array(void);
 extern VALUE *rb_gc_stack_start;
 extern size_t rb_gc_stack_maxsize;
 #ifdef __ia64
@@ -1845,7 +1844,7 @@ Init_VM(void)
 #endif
 
     /* ::VM::InsnNameArray */
-    rb_define_const(rb_cRubyVM, "INSTRUCTION_NAMES", insns_name_array());
+    rb_define_const(rb_cRubyVM, "INSTRUCTION_NAMES", ruby_insns_name_array());
 
     /* debug functions ::VM::SDR(), ::VM::NSDR() */
 #if VMDEBUG

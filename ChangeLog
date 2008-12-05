@@ -1,3 +1,11 @@
+Fri Dec  5 12:35:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (ruby_iseq_compile, ruby_iseq_translate_threaded_code),
+	  (ruby_insns_name_array, ruby_iseq_build_from_ary): prefixed with
+	  ruby_.
+
+	* iseq.c (ruby_iseq_load, ruby_insn_make_insn_table): ditto.
+
 Fri Dec  5 10:01:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_cmp_m): fixed rdoc.  pointed out by <Thomas

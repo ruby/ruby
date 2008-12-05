@@ -12,7 +12,16 @@
 #ifndef RUBY_COMPILE_H
 #define RUBY_COMPILE_H
 
-VALUE iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt);
+/* compile.c */
+VALUE ruby_iseq_compile(VALUE self, NODE *node);
+int ruby_iseq_translate_threaded_code(rb_iseq_t *iseq);
+VALUE ruby_insns_name_array(void);
+VALUE ruby_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
+			       VALUE exception, VALUE body);
+
+/* iseq.c */
+VALUE ruby_iseq_load(VALUE data, VALUE parent, VALUE opt);
+struct st_table *ruby_insn_make_insn_table(void);
 
 #define ISEQ_TYPE_TOP    INT2FIX(1)
 #define ISEQ_TYPE_METHOD INT2FIX(2)

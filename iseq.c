@@ -19,10 +19,6 @@
 #include "insns.inc"
 #include "insns_info.inc"
 
-/* compile.c */
-void iseq_compile(VALUE self, NODE *node);
-int iseq_translate_threaded_code(rb_iseq_t *iseq);
-
 VALUE rb_cISeq;
 
 static void
@@ -326,7 +322,7 @@ rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE filename,
     iseq->self = self;
 
     prepare_iseq_build(iseq, name, filename, parent, type, bopt, option);
-    iseq_compile(self, node);
+    ruby_iseq_compile(self, node);
     cleanup_iseq_build(iseq);
     return self;
 }
@@ -348,17 +344,14 @@ rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE filename,
 					   bopt, &COMPILE_OPTION_DEFAULT);
 }
 
-VALUE iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
-			  VALUE exception, VALUE body);
-
 #define CHECK_ARRAY(v)   rb_convert_type(v, T_ARRAY, "Array", "to_ary")
 #define CHECK_STRING(v)  rb_convert_type(v, T_STRING, "String", "to_str")
 #define CHECK_SYMBOL(v)  rb_convert_type(v, T_SYMBOL, "Symbol", "to_sym")
 static inline VALUE CHECK_INTEGER(VALUE v) {NUM2LONG(v); return v;}
-VALUE
+static VALUE
 iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 {
-    VALUE iseqval = iseq_alloc(rb_cISeq);
+    VALUE iseqval = iseq_alloc(self);
 
     VALUE magic, version1, version2, format_type, misc;
     VALUE name, filename;
@@ -428,7 +421,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     prepare_iseq_build(iseq, name, filename,
 		       parent, iseq_type, 0, &option);
 
-    iseq_build_from_ary(iseq, locals, args, exception, body);
+    ruby_iseq_build_from_ary(iseq, locals, args, exception, body);
 
     cleanup_iseq_build(iseq);
     return iseqval;
@@ -441,6 +434,12 @@ iseq_s_load(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &data, &opt);
 
     return iseq_load(self, data, 0, opt);
+}
+
+VALUE
+ruby_iseq_load(VALUE data, VALUE parent, VALUE opt)
+{
+    return iseq_load(rb_cISeq, data, parent, opt);
 }
 
 static NODE *
@@ -1237,7 +1236,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 }
 
 struct st_table *
-insn_make_insn_table(void)
+ruby_insn_make_insn_table(void)
 {
     struct st_table *table;
     int i;
@@ -1306,7 +1305,7 @@ rb_iseq_build_for_ruby2cext(
 	iseq->iseq[i+1] = (VALUE)func;
     }
 
-    iseq_translate_threaded_code(iseq);
+    ruby_iseq_translate_threaded_code(iseq);
 
 #define ALLOC_AND_COPY(dst, src, type, size) do { \
   if (size) { \
