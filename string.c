@@ -2149,8 +2149,8 @@ rb_str_eql(VALUE str1, VALUE str2)
  *  call-seq:
  *     str <=> other_str   => -1, 0, +1
  *  
- *  Comparison---Returns -1 if <i>other_str</i> is less than, 0 if
- *  <i>other_str</i> is equal to, and +1 if <i>other_str</i> is greater than
+ *  Comparison---Returns -1 if <i>other_str</i> is greater than, 0 if
+ *  <i>other_str</i> is equal to, and +1 if <i>other_str</i> is less than
  *  <i>str</i>. If the strings are of different lengths, and the strings are
  *  equal when compared up to the shortest length, then the longer string is
  *  considered greater than the shorter one. In older versions of Ruby, setting
