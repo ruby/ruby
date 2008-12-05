@@ -1712,25 +1712,34 @@ rb_exec_arg_fixup(struct rb_exec_arg *e)
 
 /*
  *  call-seq:
- *     exec([env,] command [, arg, ...] [,options])
+ *     exec([env,] command... [,options])
  *
  *  Replaces the current process by running the given external _command_.
- *  If optional arguments, sequence of +arg+, are not given, that argument is
- *  taken as a line that is subject to shell expansion before being
- *  executed. If one or more +arg+ given, they
- *  are passed as parameters to _command_ with no shell
- *  expansion. If +command+ is a two-element array, the first
- *  element is the command to be executed, and the second argument is
- *  used as the <code>argv[0]</code> value, which may show up in process
- *  listings. In order to execute the command, one of the <code>exec(2)</code> 
+ *  _command..._ is one of following forms.
+ *
+ *    commandline                 : command line string which is passed to a shell
+ *    cmdname, arg1, ...          : command name and one or more arguments (no shell)
+ *    [cmdname, argv0], arg1, ... : command name and arguments including argv[0] (no shell)
+ *
+ *  If single string is given as the command,
+ *  it is taken as a line that is subject to shell expansion before being executed.
+ *
+ *  If two or more +string+ given,
+ *  the first is taken as a command name and
+ *  the rest are passed as parameters to command with no shell expansion.
+ *
+ *  If a two-element array at the beginning of the command,
+ *  the first element is the command to be executed,
+ *  and the second argument is used as the <code>argv[0]</code> value,
+ *  which may show up in process listings.
+ *
+ *  In order to execute the command, one of the <code>exec(2)</code> 
  *  system calls is used, so the running command may inherit some of the environment 
  *  of the original program (including open file descriptors).
- *
- *  The hash arguments, env and options, are same as
- *  <code>system</code> and <code>spawn</code>.
+ *  This behavior is modified by env and options.
  *  See <code>spawn</code> for details.
  *
- *  Raises SystemCallError if the _command_ couldn't execute (typically
+ *  Raises SystemCallError if the command couldn't execute (typically
  *  <code>Errno::ENOENT</code> when it was not found).
  *
  *     exec "echo *"       # echoes list of files in current directory
@@ -2770,17 +2779,25 @@ rb_spawn(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     system([env,] cmd [, arg, ...] [,options])    => true, false or nil
+ *     system([env,] command... [,options])    => true, false or nil
  *
- *  Executes _cmd_ in a subshell, returning +true+ if the command
- *  gives zero exit status, +false+ for non zero exit status. Returns
- *  +nil+ if command execution fails.  An error status is available in
- *  <code>$?</code>. The arguments are processed in the same way as
- *  for <code>Kernel::exec</code>.
+ *  Executes _command..._ in a subshell.
+ *  _command..._ is one of following forms.
+ *
+ *    commandline                 : command line string which is passed to a shell
+ *    cmdname, arg1, ...          : command name and one or more arguments (no shell)
+ *    [cmdname, argv0], arg1, ... : command name and arguments including argv[0] (no shell)
+ *
+ *  system returns +true+ if the command gives zero exit status,
+ *  +false+ for non zero exit status.
+ *  Returns +nil+ if command execution fails.
+ *  An error status is available in <code>$?</code>.
+ *  The arguments are processed in the same way as
+ *  for <code>Kernel.spawn</code>.
  *
  *  The hash arguments, env and options, are same as
  *  <code>exec</code> and <code>spawn</code>.
- *  See <code>spawn</code> for details.
+ *  See <code>Kernel.spawn</code> for details.
  *
  *     system("echo *")
  *     system("echo", "*")
