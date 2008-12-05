@@ -1017,6 +1017,7 @@ pack_pack(VALUE ary, VALUE fmt)
     if (associates) {
 	rb_str_associate(res, associates);
     }
+    OBJ_INFECT(res, fmt);
     return res;
 }
 

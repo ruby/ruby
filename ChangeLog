@@ -1,3 +1,8 @@
+Fri Dec  5 01:19:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): propagate taint status from format string to
+	  result string.
+
 Thu Dec  4 23:02:13 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* spec/default.mspec: follows changes in rubyspec project.
