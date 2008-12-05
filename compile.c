@@ -1355,7 +1355,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 				    rb_hash_aset(map, obj, INT2FIX(lobj->position - (pos+len)));
 				}
 				else {
-				    rb_warning("duplicated when clause is ignored");
+				    rb_compile_warning(RSTRING_PTR(iseq->filename), iobj->line_no,
+						       "duplicated when clause is ignored");
 				}
 			    }
 			    generated_iseq[pos + 1 + j] = map;
