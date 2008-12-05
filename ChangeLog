@@ -1,3 +1,8 @@
+Fri Dec  5 10:01:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_cmp_m): fixed rdoc.  pointed out by <Thomas
+	  C. Mitchell AT gmail.com> at [ruby-talk:321967]
+
 Fri Dec  5 07:58:30 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_binwrite): arg.offset should be updated after retry.
