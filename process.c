@@ -2929,44 +2929,44 @@ rb_f_system(int argc, VALUE *argv)
  *
  *  For example, stderr can be merged into stdout as follows:
  *
- *    pid = spawn(command, STDERR=>STDOUT)
  *    pid = spawn(command, :err=>:out)
  *    pid = spawn(command, 2=>1)
  *    pid = spawn(command, STDERR=>:out)
+ *    pid = spawn(command, STDERR=>STDOUT)
  *
  *  The hash keys specifies a file descriptor
  *  in the child process started by <code>spawn</code>.
- *  :err, STDERR and 2 specifies the standard error stream.
+ *  :err, 2 and STDERR specifies the standard error stream (stderr).
  *
  *  The hash values specifies a file descriptor
  *  in the parent process which invokes <code>spawn</code>.
- *  :out, STDOUT and 1 specifies the standard output stream.
+ *  :out, 1 and STDOUT specifies the standard output stream (stdout).
  *
  *  In the above example,
  *  the standard output in the child process is not specified.
  *  So it is inherited from the parent process.
  *
- *  The standard input stream can be specifed by :in, STDIN and 0.
+ *  The standard input stream (stdin) can be specifed by :in, 0 and STDIN.
  *  
  *  A filename can be specified as a hash value.
  *
- *    pid = spawn(command, STDIN=>"/dev/null") # read mode
- *    pid = spawn(command, STDOUT=>"/dev/null") # write mode
- *    pid = spawn(command, STDERR=>"log") # write mode
+ *    pid = spawn(command, :in=>"/dev/null") # read mode
+ *    pid = spawn(command, :out=>"/dev/null") # write mode
+ *    pid = spawn(command, :err=>"log") # write mode
  *    pid = spawn(command, 3=>"/dev/null") # read mode
  *
- *  For standard output and standard error,
+ *  For stdout and stderr,
  *  it is opened in write mode.
  *  Otherwise read mode is used.
  *
  *  For specifying flags and permission of file creation explicitly,
  *  an array is used instead.
  *
- *    pid = spawn(command, STDIN=>["file"]) # read mode is assumed
- *    pid = spawn(command, STDIN=>["file", "r"])
- *    pid = spawn(command, STDOUT=>["log", "w"]) # 0644 assumed
- *    pid = spawn(command, STDOUT=>["log", "w", 0600])
- *    pid = spawn(command, STDOUT=>["log", File::WRONLY|File::EXCL|File::CREAT, 0600])
+ *    pid = spawn(command, :in=>["file"]) # read mode is assumed
+ *    pid = spawn(command, :in=>["file", "r"])
+ *    pid = spawn(command, :out=>["log", "w"]) # 0644 assumed
+ *    pid = spawn(command, :out=>["log", "w", 0600])
+ *    pid = spawn(command, :out=>["log", File::WRONLY|File::EXCL|File::CREAT, 0600])
  *
  *  The array specifies a filename, flags and permission.
  *  The flags can be a string or an integer.
@@ -2977,26 +2977,26 @@ rb_f_system(int argc, VALUE *argv)
  *  If an array of IOs and integers are specified as a hash key,
  *  all the elemetns are redirected.
  *
- *    # standard output and standard error is redirected to log file.
+ *    # stdout and stderr is redirected to log file.
  *    # The file "log" is opened just once.
- *    pid = spawn(command, [STDOUT, STDERR]=>["log", "w"])
+ *    pid = spawn(command, [:out, :err]=>["log", "w"])
  *
  *  Another way to merge multiple file descriptors is [:child, fd].
  *  [:child, fd] means the file descriptor in the child process.
  *  This is different from fd.
- *  For example, STDERR=>STDOUT means redirecting child STDERR to parent STDOUT.
- *  But STDERR=>[:child, STDOUT] means redirecting child STDERR to child STDOUT.
- *  They differs if STDOUT is redirected in the child process as follows.
+ *  For example, :err=>:out means redirecting child stderr to parent stdout.
+ *  But :err=>[:child, :out] means redirecting child stderr to child stdout.
+ *  They differs if stdout is redirected in the child process as follows.
  *
- *    # standard output and standard error is redirected to log file.
+ *    # stdout and stderr is redirected to log file.
  *    # The file "log" is opened just once.
- *    pid = spawn(command, STDOUT=>["log", "w"], STDERR=>[:child, STDOUT])
+ *    pid = spawn(command, :out=>["log", "w"], :err=>[:child, :out])
  *
- *  [:child, STDOUT] can be used to merge STDERR into STDOUT in IO.popen.
- *  In this case, IO.popen redirects STDOUT to a pipe in the child process
- *  and [:child, STDOUT] refers the redirected STDOUT.
+ *  [:child, :out] can be used to merge stderr into stdout in IO.popen.
+ *  In this case, IO.popen redirects stdout to a pipe in the child process
+ *  and [:child, :out] refers the redirected stdout.
  *
- *    io = IO.popen(["sh", "-c", "echo out; echo err >&2", STDERR=>[:child, STDOUT]])
+ *    io = IO.popen(["sh", "-c", "echo out; echo err >&2", :err=>[:child, :out]])
  *    p io.read #=> "out\nerr\n"
  *
  *  spawn closes all non-standard unspecified descriptors by default.
@@ -3014,7 +3014,7 @@ rb_f_system(int argc, VALUE *argv)
  *
  *    # similar to r = IO.popen(command)
  *    r, w = IO.pipe
- *    pid = spawn(command, STDOUT=>w)   # r, w is closed in the child process.
+ *    pid = spawn(command, :out=>w)   # r, w is closed in the child process.
  *    w.close
  *
  *  :close is specified as a hash value to close a fd individualy.
@@ -3022,13 +3022,23 @@ rb_f_system(int argc, VALUE *argv)
  *    f = open(foo)
  *    system(command, f=>:close)        # don't inherit f.
  *
+ *  If a file descriptor need to be inherited,
+ *  io=>io can be used.
+ *
+ *    # valgrind has --log-fd option for log destination.
+ *    # log_w=>log_w indicates log_w.fileno inherits to child process.
+ *    log_r, log_w = IO.pipe
+ *    pid = spawn("valgrind", "--log-fd=#{log_w.fileno}", "echo", "a", log_w=>log_w)
+ *    log_w.close
+ *    p log_r.read
+ *
  *  It is also possible to exchange file descriptors.
  *
- *    pid = spawn(command, STDOUT=>STDERR, STDERR=>STDOUT)
+ *    pid = spawn(command, :out=>:err, :err=>:out)
  *
  *  The hash keys specify file descriptors in the child process.
  *  The hash values specifies file descriptors in the parent process.
- *  So the above specifies exchanging STDOUT and STDERR.
+ *  So the above specifies exchanging stdout and stderr.
  *  Internally, +spawn+ uses an extra file descriptor to resolve such cyclic
  *  file descriptor mapping.
  *
