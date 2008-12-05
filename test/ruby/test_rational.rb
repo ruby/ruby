@@ -129,6 +129,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(ArgumentError){Rational(Object.new)}
     assert_raise(ArgumentError){Rational()}
     assert_raise(ArgumentError){Rational(1,2,3)}
+
+    if (0.0/0).nan?
+      assert_raise(FloatDomainError){Rational(0.0/0)}
+    end
+    if (1.0/0).infinite?
+      assert_raise(FloatDomainError){Rational(1.0/0)}
+    end
   end
 
   def test_attr
@@ -934,6 +941,13 @@ class Rational_Test < Test::Unit::TestCase
       else
 	assert_raise(RangeError){Complex(1,2).to_r}
       end
+    end
+
+    if (0.0/0).nan?
+      assert_raise(FloatDomainError){(0.0/0).to_r}
+    end
+    if (1.0/0).infinite?
+      assert_raise(FloatDomainError){(1.0/0).to_r}
     end
   end
 
