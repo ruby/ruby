@@ -1,3 +1,8 @@
+Thu Dec  4 23:02:13 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* spec/default.mspec: follows changes in rubyspec project.
+	  inherits configurations from ruby.1.9.mspec.
+
 Thu Dec  4 22:13:55 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/ruby/test_complex.rb: added some tests.
