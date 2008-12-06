@@ -1,3 +1,11 @@
+Sat Dec  6 14:35:06 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* pack.c (pack_pack): set US-ASCII and CODERANGE_7BIT
+	  when quoted-printable ('M') and base64 ('m').
+	  [ruby-dev:37284]
+
+	* pack.c (pack_unpack): ditto.
+
 Fri Dec  5 21:45:45 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_{to_s,inspect}): performance improvement.

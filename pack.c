@@ -921,6 +921,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		plen -= todo;
 		ptr += todo;
 	    }
+	    ENCODING_CODERANGE_SET(res, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
 	    break;
 
 	  case 'M':		/* quoted-printable encoded string */
@@ -928,6 +929,7 @@ pack_pack(VALUE ary, VALUE fmt)
 	    if (len <= 1)
 		len = 72;
 	    qpencode(res, from, len);
+	    ENCODING_CODERANGE_SET(res, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
 	    break;
 
 	  case 'P':		/* pointer to packed byte string */
@@ -1886,6 +1888,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		    }
 		}
 		rb_str_set_len(buf, ptr - RSTRING_PTR(buf));
+		ENCODING_CODERANGE_SET(buf, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
 		UNPACK_PUSH(buf);
 	    }
 	    break;
@@ -1914,6 +1917,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		    s++;
 		}
 		rb_str_set_len(buf, ptr - RSTRING_PTR(buf));
+		ENCODING_CODERANGE_SET(buf, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
 		UNPACK_PUSH(buf);
 	    }
 	    break;
