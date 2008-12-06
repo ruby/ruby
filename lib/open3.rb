@@ -34,7 +34,7 @@ module Open3
   #
   # Block form:
   #
-  #   Open3.popen3(cmd... [, opts]) {|stdin, stdout, stderr, wait_thr|
+  #   Open3.popen3([env,] cmd... [, opts]) {|stdin, stdout, stderr, wait_thr|
   #     pid = wait_thr.pid # pid of the started process.
   #     ...
   #     exit_status = wait_thr.value # Process::Status object returned.
@@ -42,7 +42,7 @@ module Open3
   #
   # Non-block form:
   #   
-  #   stdin, stdout, stderr, wait_thr = Open3.popen3(cmd... [, opts])
+  #   stdin, stdout, stderr, wait_thr = Open3.popen3([env,] cmd... [, opts])
   #   pid = wait_thr[:pid]  # pid of the started process.
   #   ...
   #   stdin.close  # stdin, stdout and stderr should be closed explicitly in this form.
@@ -94,7 +94,7 @@ module Open3
   #
   # Block form:
   #
-  #   Open3.popen2(cmd... [, opts]) {|stdin, stdout, wait_thr|
+  #   Open3.popen2([env,] cmd... [, opts]) {|stdin, stdout, wait_thr|
   #     pid = wait_thr.pid # pid of the started process.
   #     ...
   #     exit_status = wait_thr.value # Process::Status object returned.
@@ -102,7 +102,7 @@ module Open3
   #
   # Non-block form:
   #   
-  #   stdin, stdout, wait_thr = Open3.popen2(cmd... [, opts])
+  #   stdin, stdout, wait_thr = Open3.popen2([env,] cmd... [, opts])
   #   ...
   #   stdin.close  # stdin and stdout should be closed explicitly in this form.
   #   stdout.close
@@ -150,7 +150,7 @@ module Open3
   #
   # Block form:
   #
-  #   Open3.popen2e(cmd... [, opts]) {|stdin, stdout_and_stderr, wait_thr|
+  #   Open3.popen2e([env,] cmd... [, opts]) {|stdin, stdout_and_stderr, wait_thr|
   #     pid = wait_thr.pid # pid of the started process.
   #     ...
   #     exit_status = wait_thr.value # Process::Status object returned.
@@ -158,7 +158,7 @@ module Open3
   #
   # Non-block form:
   #   
-  #   stdin, stdout_and_stderr, wait_thr = Open3.popen2e(cmd... [, opts])
+  #   stdin, stdout_and_stderr, wait_thr = Open3.popen2e([env,] cmd... [, opts])
   #   ...
   #   stdin.close  # stdin and stdout_and_stderr should be closed explicitly in this form.
   #   stdout_and_stderr.close
@@ -203,7 +203,7 @@ module Open3
 
   # Open3.poutput3 captures the standard output and the standard error of a command.
   #
-  #   stdout_str, stderr_str, status = Open3.poutput3(cmd... [, opts])
+  #   stdout_str, stderr_str, status = Open3.poutput3([env,] cmd... [, opts])
   #
   # The arguments cmd and opts are passed to Open3.popen3 except opts[:stdin_data].
   #
@@ -245,7 +245,7 @@ module Open3
 
   # Open3.poutput2 captures the standard output of a command.
   #
-  #   stdout_str, status = Open3.poutput2(cmd... [, opts])
+  #   stdout_str, status = Open3.poutput2([env,] cmd... [, opts])
   #
   # The arguments cmd and opts are passed to Open3.popen2 except opts[:stdin_data].
   #
@@ -275,7 +275,7 @@ module Open3
 
   # Open3.poutput2e captures the standard output and the standard error of a command.
   #
-  #   stdout_and_stderr_str, status = Open3.poutput2e(cmd... [, opts])
+  #   stdout_and_stderr_str, status = Open3.poutput2e([env,] cmd... [, opts])
   #
   # The arguments cmd and opts are passed to Open3.popen2e except opts[:stdin_data].
   #
@@ -299,7 +299,7 @@ module Open3
   end
   module_function :poutput2e
 
-  # Open3.pipeline_rw starts list of commands as a pipeline with pipes
+  # Open3.pipeline_rw starts a list of commands as a pipeline with pipes
   # which connects stdin of the first command and stdout of the last command.
   #
   #   Open3.pipeline_rw(cmd1, cmd2, ... [, opts]) {|first_stdin, last_stdout, wait_threads|
@@ -351,7 +351,7 @@ module Open3
   end
   module_function :pipeline_rw
 
-  # Open3.pipeline_r starts list of commands as a pipeline with a pipe
+  # Open3.pipeline_r starts a list of commands as a pipeline with a pipe
   # which connects stdout of the last command.
   #
   #   Open3.pipeline_r(cmd1, cmd2, ... [, opts]) {|last_stdout, wait_threads|
@@ -397,7 +397,7 @@ module Open3
   end
   module_function :pipeline_r
 
-  # Open3.pipeline_w starts list of commands as a pipeline with a pipe
+  # Open3.pipeline_w starts a list of commands as a pipeline with a pipe
   # which connects stdin of the first command.
   #
   #   Open3.pipeline_w(cmd1, cmd2, ... [, opts]) {|first_stdin, wait_threads|
@@ -429,7 +429,7 @@ module Open3
   end
   module_function :pipeline_w
 
-  # Open3.pipeline_start starts list of commands as a pipeline.
+  # Open3.pipeline_start starts a list of commands as a pipeline.
   # No pipe made for stdin of the first command and
   # stdout of the last command.
   #
@@ -439,6 +439,16 @@ module Open3
   #
   #   wait_threads = Open3.pipeline_start(cmd1, cmd2, ... [, opts])
   #   ...
+  #
+  # Example:
+  #
+  #   # run xeyes in 10 seconds.
+  #   Open3.pipeline_start("xeyes") {|ts|   
+  #     sleep 10
+  #     t = ts[0]
+  #     Process.kill("TERM", t.pid) 
+  #     p t.value #=> #<Process::Status: pid 911 SIGTERM (signal 15)>
+  #   }
   #
   def pipeline_start(*cmds, &block)
     if Hash === cmds.last
@@ -451,7 +461,7 @@ module Open3
   end
   module_function :pipeline_start
 
-  # Open3.pipeline starts list of commands as a pipeline.
+  # Open3.pipeline starts a list of commands as a pipeline.
   # It waits the finish of the commands.
   # No pipe made for stdin of the first command and
   # stdout of the last command.
