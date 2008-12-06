@@ -151,6 +151,8 @@ def package(rev, destdir)
         f.puts "s,@OBJEXT@,|#_!!_#|o,g"
         f.puts "s,@LIBRUBY@,|#_!!_#|liburyb.a,g"
         f.puts "s,@LIBRUBY_A@,|#_!!_#|liburyb.a,g"
+        f.puts "s,@RM@,|#_!!_#|rm -f,g"
+        f.puts "s,@CP@,|#_!!_#|cp,g"
       }
       FileUtils.mkpath(hdrdir = "#{extout}/include/ruby")
       File.open("#{hdrdir}/config.h", "w") {}

@@ -1,3 +1,7 @@
+Sat Dec  6 18:33:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot (package): added RM and CP.  [ruby-dev:37288]
+
 Sat Dec  6 17:51:35 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* pack.c (pack_pack): 'u0' is not special differently from 'm0'.

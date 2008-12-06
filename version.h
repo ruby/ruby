@@ -32,7 +32,7 @@ RUBY_EXTERN const char ruby_copyright[];
 #define RUBY_REVISION 0
 #endif
 
-#if RUBY_PATCHLEVEL
+#if RUBY_PATCHLEVEL && RUBY_PATCHLEVEL < 5000
 #define RUBY_PATCHLEVEL_STR " patchlevel "STRINGIZE(RUBY_PATCHLEVEL)
 #else
 #define RUBY_PATCHLEVEL_STR ""
