@@ -1722,7 +1722,7 @@ rb_exec_arg_fixup(struct rb_exec_arg *e)
  *    [cmdname, argv0], arg1, ... : command name and arguments including argv[0] (no shell)
  *
  *  If single string is given as the command,
- *  it is taken as a line that is subject to shell expansion before being executed.
+ *  it is taken as a command line that is subject to shell expansion before being executed.
  *
  *  If two or more +string+ given,
  *  the first is taken as a command name and
