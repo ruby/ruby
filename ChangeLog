@@ -1,3 +1,7 @@
+Sat Dec  6 18:33:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot (package): added RM and CP.  [ruby-dev:37288]
+
 Fri Dec  5 21:45:45 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_{to_s,inspect}): performance improvement.
