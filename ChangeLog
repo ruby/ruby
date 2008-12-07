@@ -1,3 +1,9 @@
+Sun Dec  7 17:44:06 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open3.rb (Open3.capture3): renamed from Open3.poutput3.
+	  (Open3.capture2): renamed from Open3.poutput2.
+	  (lOpen3.capture2e): renamed from Open3.poutput2e.
+
 Sun Dec  7 11:48:04 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open3.rb (Open3.poutput3): :binmode option implemented.
