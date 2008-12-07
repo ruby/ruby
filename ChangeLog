@@ -1,3 +1,9 @@
+Sun Dec  7 11:48:04 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open3.rb (Open3.poutput3): :binmode option implemented.
+	  (Open3.poutput2): ditto.
+	  (Open3.poutput2e): ditto.
+
 Sat Dec  6 18:33:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/make-snapshot (package): added RM and CP.  [ruby-dev:37288]
