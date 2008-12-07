@@ -285,6 +285,8 @@ module Open3
   #
   # If opts[:binmode] is true, internal pipes are set to binary mode.
   #
+  # Example:
+  #
   #   # factor is a command for integer factorization.
   #   o, s = Open3.capture2("factor", :stdin_data=>"42")    
   #   p o #=> "42: 2 3 7\n"
