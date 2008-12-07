@@ -1,3 +1,8 @@
+Sun Dec  7 23:47:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBPATHFLAG): use numbered specifier if RPATHFLAG
+	  is set.  [ruby-talk:322136]
+
 Fri Dec  5 18:13:39 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_isatty): check whether fd is valid.
