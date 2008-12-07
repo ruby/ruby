@@ -163,6 +163,17 @@ module Open3
   #   stdin.close  # stdin and stdout_and_stderr should be closed explicitly in this form.
   #   stdout_and_stderr.close
   #
+  # Example:
+  #   # check gcc warnings
+  #   source = "foo.c"
+  #   Open3.popen2e("gcc", "-Wall", source) {|i,oe,t|
+  #     oe.each {|line|
+  #       if /warning/ =~ line
+  #         ...
+  #       end
+  #     }
+  #   }
+  #
   def popen2e(*cmd, &block)
     if Hash === cmd.last
       opts = cmd.pop.dup
