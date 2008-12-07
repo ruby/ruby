@@ -214,6 +214,9 @@ AC_CHECK_TOOL(AS, as)
 ASFLAGS=$ASFLAGS
 AC_SUBST(ASFLAGS)
 
+AC_CHECK_TOOL(OBJDUMP, objdump)
+AC_CHECK_TOOL(OBJCOPY, objcopy)
+
 case "$target_os" in
 cygwin*|mingw*)
     AC_CHECK_TOOL(NM, nm)
@@ -223,7 +226,6 @@ cygwin*|mingw*)
     case "$target_os" in
     mingw*)
 	test "$rb_cv_msvcrt" = "" && unset rb_cv_msvcrt
-	AC_CHECK_TOOL(OBJDUMP, objdump)
 	AC_CACHE_CHECK(for mingw32 runtime DLL, rb_cv_msvcrt, [
 	AC_TRY_LINK([#include <stdio.h>],
 		    [FILE* volatile f = stdin; return 0;],
