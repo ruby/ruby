@@ -1,3 +1,7 @@
+Tue Dec  9 00:17:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend (clean-srcs): split out from clean.
+
 Mon Dec  8 23:34:18 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* pack.c (pack_pack): fixed odd act of 'm*', 'M*', and 'P*'.
