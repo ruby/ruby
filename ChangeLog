@@ -1,3 +1,8 @@
+Mon Dec  8 18:31:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (pack_pack): fixed length for odd length string.
+	  [ruby-dev:37283]
+
 Mon Dec  8 11:28:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options): added version, copyright, usage, yydebug,

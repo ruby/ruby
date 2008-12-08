@@ -620,7 +620,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		    long i, j = 0;
 
 		    if (len > plen) {
-			j = (len - plen + 1)/2;
+			j = (len + 1) / 2 - (plen + 1) / 2;
 			len = plen;
 		    }
 		    for (i=0; i++ < len; ptr++) {
@@ -651,7 +651,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		    long i, j = 0;
 
 		    if (len > plen) {
-			j = (len - plen + 1)/2;
+			j = (len + 1) / 2 - (plen + 1) / 2;
 			len = plen;
 		    }
 		    for (i=0; i++ < len; ptr++) {
