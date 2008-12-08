@@ -1,3 +1,8 @@
+Tue Dec  9 03:21:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb: fix for continued lines.  based on a patch from
+	  Marcus Rueckert <darix AT opensu.se> at [ruby-core:20420].
+
 Mon Dec  8 23:34:18 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* pack.c (pack_pack): fixed odd act of 'm*', 'M*', and 'P*'.

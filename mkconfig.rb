@@ -55,14 +55,13 @@ File.foreach "config.status" do |line|
       continued_name = name
       next
     end
-  when /^"(.+)"\s*(\\)?$/
+  when /^"(.*)"\s*(\\)?$/
     if continued_line
       continued_line <<  $1
-      unless $2
-	val = continued_line.join("")
-	name = continued_name
-	continued_line = nil
-      end
+      next if $2
+      val = continued_line.join("")
+      name = continued_name
+      continued_line = nil
     end
   when /^(?:ac_given_)?INSTALL=(.*)/
     v_fast << "  CONFIG[\"INSTALL\"] = " + $1 + "\n"
