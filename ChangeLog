@@ -1,3 +1,8 @@
+Tue Dec  9 03:21:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb: fix for continued lines.  based on a patch from
+	  Marcus Rueckert <darix AT opensu.se> at [ruby-core:20420].
+
 Tue Dec  9 00:54:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/make-snapshot (package): enc.mk in snapshot is dummy and should
