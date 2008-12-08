@@ -57,25 +57,28 @@ void ruby_set_inplace_mode(const char *);
 #define DISABLE_BIT(bit) (1U << disable_##bit)
 enum disable_flag_bits {
     disable_gems,
-    disable_rubyopt
+    disable_rubyopt,
+    disable_flag_count
 };
 
 #define DUMP_BIT(bit) (1U << dump_##bit)
 enum dump_flag_bits {
-    dump_insns
+    dump_version,
+    dump_copyright,
+    dump_usage,
+    dump_yydebug,
+    dump_syntax,
+    dump_insns,
+    dump_flag_count
 };
 
 struct cmdline_options {
     int sflag, xflag;
     int do_loop, do_print;
-    int do_check, do_line;
-    int do_split, do_search;
-    int usage;
-    int version;
-    int copyright;
+    int do_line, do_split;
+    int do_search;
     unsigned int disable;
     int verbose;
-    int yydebug;
     int safe_level;
     unsigned int setids;
     unsigned int dump;
@@ -617,8 +620,14 @@ static void
 dump_option(const char *str, int len, void *arg)
 {
 #define SET_WHEN_DUMP(bit) SET_WHEN(#bit, DUMP_BIT(bit), str, len)
+    SET_WHEN_DUMP(version);
+    SET_WHEN_DUMP(copyright);
+    SET_WHEN_DUMP(usage);
+    SET_WHEN_DUMP(yydebug);
+    SET_WHEN_DUMP(syntax);
     SET_WHEN_DUMP(insns);
-    rb_warn("don't know how to dump `%.*s', (insns)", len, str);
+    rb_warn("don't know how to dump `%.*s',", len, str);
+    rb_warn("but only [version, copyright, usage, yydebug, syntax, insns].");
 }
 
 static void
@@ -685,7 +694,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 
 	  case 'y':
 	    if (envopt) goto noenvopt;
-	    opt->yydebug = 1;
+	    opt->dump |= DUMP_BIT(yydebug);
 	    s++;
 	    goto reswitch;
 
@@ -728,7 +737,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 
 	  case 'c':
 	    if (envopt) goto noenvopt;
-	    opt->do_check = Qtrue;
+	    opt->dump |= DUMP_BIT(syntax);
 	    s++;
 	    goto reswitch;
 
@@ -741,9 +750,8 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 
 	  case 'h':
 	    if (envopt) goto noenvopt;
-	    usage(origarg.argv[0]);
-	    rb_exit(EXIT_SUCCESS);
-	    break;
+	    opt->dump |= DUMP_BIT(usage);
+	    goto switch_end;
 
 	  case 'l':
 	    if (envopt) goto noenvopt;
@@ -932,7 +940,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 
 	    if (strcmp("copyright", s) == 0) {
 		if (envopt) goto noenvopt_long;
-		opt->copyright = 1;
+		opt->dump |= DUMP_BIT(copyright);
 	    }
 	    else if (strcmp("debug", s) == 0) {
 		ruby_debug = Qtrue;
@@ -982,7 +990,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 #endif
 	    else if (strcmp("version", s) == 0) {
 		if (envopt) goto noenvopt_long;
-		opt->version = 1;
+		opt->dump |= DUMP_BIT(version);
 	    }
 	    else if (strcmp("verbose", s) == 0) {
 		opt->verbose = 1;
@@ -990,15 +998,15 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 	    }
 	    else if (strcmp("yydebug", s) == 0) {
 		if (envopt) goto noenvopt_long;
-		opt->yydebug = 1;
+		opt->dump |= DUMP_BIT(yydebug);
 	    }
 	    else if (is_option_with_arg("dump", Qfalse, Qfalse)) {
 		ruby_each_words(s, dump_option, &opt->dump);
 	    }
 	    else if (strcmp("help", s) == 0) {
 		if (envopt) goto noenvopt_long;
-		usage(origarg.argv[0]);
-		rb_exit(EXIT_SUCCESS);
+		opt->dump |= DUMP_BIT(usage);
+		goto switch_end;
 	    }
 	    else {
 		rb_raise(rb_eRuntimeError,
@@ -1075,6 +1083,21 @@ opt_enc_index(VALUE enc_name)
 VALUE rb_argv0;
 
 static VALUE
+false_value(void)
+{
+    return Qfalse;
+}
+
+static VALUE
+true_value(void)
+{
+    return Qtrue;
+}
+
+#define rb_define_readonly_boolean(name, val) \
+    rb_define_virtual_variable((name), (val) ? true_value : false_value, 0)
+
+static VALUE
 process_options(VALUE arg)
 {
     struct cmdline_arguments *argp = (struct cmdline_arguments *)arg;
@@ -1092,6 +1115,11 @@ process_options(VALUE arg)
     argc -= i;
     argv += i;
 
+    if (opt->dump & DUMP_BIT(usage)) {
+	usage(origarg.argv[0]);
+	return Qtrue;
+    }
+
     if (!(opt->disable & DISABLE_BIT(rubyopt)) &&
 	opt->safe_level == 0 && (s = getenv("RUBYOPT"))) {
 	VALUE src_enc_name = opt->src.enc.name;
@@ -1108,11 +1136,11 @@ process_options(VALUE arg)
 	    opt->intern.enc.name = int_enc_name;
     }
 
-    if (opt->version) {
+    if (opt->dump & DUMP_BIT(version)) {
 	ruby_show_version();
 	return Qtrue;
     }
-    if (opt->copyright) {
+    if (opt->dump & DUMP_BIT(copyright)) {
 	ruby_show_copyright();
     }
 
@@ -1163,7 +1191,9 @@ process_options(VALUE arg)
     rb_enc_associate(rb_progname, lenc);
     opt->script_name = rb_str_new4(rb_progname);
     parser = rb_parser_new();
-    if (opt->yydebug) rb_parser_set_yydebug(parser, Qtrue);
+    if (opt->dump & DUMP_BIT(yydebug)) {
+	rb_parser_set_yydebug(parser, Qtrue);
+    }
     if (opt->ext.enc.name != 0) {
 	opt->ext.enc.index = opt_enc_index(opt->ext.enc.name);
     }
@@ -1207,6 +1237,7 @@ process_options(VALUE arg)
 	}
 	tree = load_file(parser, opt->script, 1, opt);
     }
+    if (opt->dump & DUMP_BIT(yydebug)) return Qtrue;
 
     if (opt->intern.enc.index >= 0) {
 	/* Set in the shebang line */
@@ -1227,7 +1258,7 @@ process_options(VALUE arg)
 	FL_UNSET(GET_VM()->load_path, FL_TAINT);
     }
 
-    if (opt->do_check) {
+    if (opt->dump & DUMP_BIT(syntax)) {
 	printf("Syntax OK\n");
 	return Qtrue;
     }
@@ -1247,6 +1278,10 @@ process_options(VALUE arg)
 	rb_io_flush(rb_stdout);
 	return Qtrue;
     }
+
+    rb_define_readonly_boolean("$-p", opt->do_print);
+    rb_define_readonly_boolean("$-l", opt->do_line);
+    rb_define_readonly_boolean("$-a", opt->do_split);
 
     rb_set_safe_level(opt->safe_level);
 
@@ -1628,21 +1663,6 @@ ruby_set_argv(int argc, char **argv)
     }
 }
 
-static VALUE
-false_value(void)
-{
-    return Qfalse;
-}
-
-static VALUE
-true_value(void)
-{
-    return Qtrue;
-}
-
-#define rb_define_readonly_boolean(name, val) \
-    rb_define_virtual_variable((name), (val) ? true_value : false_value, 0)
-
 void *
 ruby_process_options(int argc, char **argv)
 {
@@ -1661,11 +1681,6 @@ ruby_process_options(int argc, char **argv)
     tree = (NODE *)rb_vm_call_cfunc(rb_vm_top_self(),
 				    process_options, (VALUE)&args,
 				    0, rb_progname);
-
-    rb_define_readonly_boolean("$-p", opt.do_print);
-    rb_define_readonly_boolean("$-l", opt.do_line);
-    rb_define_readonly_boolean("$-a", opt.do_split);
-
     return tree;
 }
 

@@ -1,3 +1,12 @@
+Mon Dec  8 11:28:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options): added version, copyright, usage, yydebug,
+	  syntax to --dump option.
+
+Mon Dec  8 11:15:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options): source-encoding option.
+
 Mon Dec  8 10:32:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (set_option_encoding_once): dry.
