@@ -477,13 +477,13 @@ rb_make_exception(int argc, VALUE *argv)
     mesg = Qnil;
     switch (argc) {
       case 0:
-	mesg = Qnil;
 	break;
       case 1:
 	if (NIL_P(argv[0]))
 	    break;
-	if (TYPE(argv[0]) == T_STRING) {
-	    mesg = rb_exc_new3(rb_eRuntimeError, argv[0]);
+	mesg = rb_check_string_type(argv[0]);
+	if (!NIL_P(mesg)) {
+	    mesg = rb_exc_new3(rb_eRuntimeError, mesg);
 	    break;
 	}
 	n = 0;

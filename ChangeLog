@@ -72,6 +72,11 @@ Sat Dec  6 14:35:06 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* pack.c (pack_unpack): ditto.
 
+Fri Dec  5 22:56:24 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_make_exception): single argument to raise may be
+	  string compatible object.
+
 Fri Dec  5 21:45:45 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_{to_s,inspect}): performance improvement.
