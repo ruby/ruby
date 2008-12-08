@@ -622,36 +622,27 @@ dump_option(const char *str, int len, void *arg)
 }
 
 static void
-set_internal_encoding_once(struct cmdline_options *opt, const char *e, int elen)
+set_option_encoding_once(const char *type, VALUE *name, const char *e, int elen)
 {
     VALUE ename;
 
     if (!elen) elen = strlen(e);
     ename = rb_str_new(e, elen);
 
-    if (opt->intern.enc.name &&
-	rb_funcall(ename, rb_intern("casecmp"), 1, opt->intern.enc.name) != INT2FIX(0)) {
+    if (*name &&
+	rb_funcall(ename, rb_intern("casecmp"), 1, *name) != INT2FIX(0)) {
 	rb_raise(rb_eRuntimeError,
-		 "default_internal already set to %s", RSTRING_PTR(opt->intern.enc.name));
+		 "%s already set to %s", type, RSTRING_PTR(*name));
     }
-    opt->intern.enc.name = ename;
+    *name = ename;
 }
 
-static void
-set_external_encoding_once(struct cmdline_options *opt, const char *e, int elen)
-{
-    VALUE ename;
-
-    if (!elen) elen = strlen(e);
-    ename = rb_str_new(e, elen);
-
-    if (opt->ext.enc.name &&
-	rb_funcall(ename, rb_intern("casecmp"), 1, opt->ext.enc.name) != INT2FIX(0)) {
-	rb_raise(rb_eRuntimeError,
-		 "default_external already set to %s", RSTRING_PTR(opt->ext.enc.name));
-    }
-    opt->ext.enc.name = ename;
-}
+#define set_internal_encoding_once(opt, e, elen) \
+    set_option_encoding_once("default_intenal", &opt->intern.enc.name, e, elen)
+#define set_external_encoding_once(opt, e, elen) \
+    set_option_encoding_once("default_extenal", &opt->ext.enc.name, e, elen)
+#define set_source_encoding_once(opt, e, elen) \
+    set_option_encoding_once("source", &opt->src.enc.name, e, elen)
 
 static int
 proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
@@ -663,10 +654,11 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 	return 0;
 
     for (argc--, argv++; argc > 0; argc--, argv++) {
-	if (argv[0][0] != '-' || !argv[0][1])
+	const char *const arg = argv[0];
+	if (arg[0] != '-' || !arg[1])
 	    break;
 
-	s = argv[0] + 1;
+	s = arg + 1;
       reswitch:
 	switch (*s) {
 	  case 'a':
@@ -955,15 +947,29 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 	    else if (is_option_with_arg("encoding", Qfalse, Qtrue)) {
 		char *p;
 	      encoding:
-		p = strchr(s, ':');
-		if (p) {
-		    if (p > s)
-			set_external_encoding_once(opt, s, p-s);
-		    if (*++p)
-			set_internal_encoding_once(opt, p, 0);
-		}
-		else    
-		    set_external_encoding_once(opt, s, 0);
+		do {
+#	define set_encoding_part(type) \
+		    if (!(p = strchr(s, ':'))) { \
+			set_##type##_encoding_once(opt, s, 0); \
+			break; \
+		    } \
+		    else if (p > s) { \
+			set_##type##_encoding_once(opt, s, p-s); \
+		    }
+		    set_encoding_part(external);
+		    if (!*(s = ++p)) break;
+		    set_encoding_part(internal);
+		    if (!*(s = ++p)) break;
+		    rb_raise(rb_eRuntimeError, "extra argument for %s: %s",
+			     (arg[1] == '-' ? "--encoding" : "-E"), s);
+#	undef set_encoding_part
+		} while (0);
+	    }
+	    else if (is_option_with_arg("internal-encoding", Qfalse, Qtrue)) {
+		set_internal_encoding_once(opt, s, 0);
+	    }
+	    else if (is_option_with_arg("external-encoding", Qfalse, Qtrue)) {
+		set_external_encoding_once(opt, s, 0);
 	    }
 	    else if (strcmp("version", s) == 0) {
 		if (envopt) goto noenvopt_long;
