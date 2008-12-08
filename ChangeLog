@@ -80,6 +80,15 @@ Fri Dec  5 21:42:44 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: inpsect should not depend on to_s.
 
+Fri Dec  5 21:18:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_truncate): return
+	  integer if no optional argument given. [incompatible]
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_floor): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_ceil): ditto.
+
 Fri Dec  5 19:06:04 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open3.rb (Open3.pipeline_start): new method.

@@ -1413,6 +1413,9 @@ BigDecimal_truncate(int argc, VALUE *argv, VALUE self)
     GUARD_OBJ(c,VpCreateRbObject(mx, "0"));
     VpSetPrecLimit(pl);
     VpActiveRound(c,a,VP_ROUND_DOWN,iLoc); /* 0: truncate */
+    if (argc == 0) {
+	return BigDecimal_to_i(ToValue(c));
+    }
     return ToValue(c);
 }
 
@@ -1473,6 +1476,9 @@ BigDecimal_floor(int argc, VALUE *argv, VALUE self)
     GUARD_OBJ(c,VpCreateRbObject(mx, "0"));
     VpSetPrecLimit(pl);
     VpActiveRound(c,a,VP_ROUND_FLOOR,iLoc);
+    if (argc == 0) {
+	return BigDecimal_to_i(ToValue(c));
+    }
     return ToValue(c);
 }
 
@@ -1517,6 +1523,9 @@ BigDecimal_ceil(int argc, VALUE *argv, VALUE self)
     GUARD_OBJ(c,VpCreateRbObject(mx, "0"));
     VpSetPrecLimit(pl);
     VpActiveRound(c,a,VP_ROUND_CEIL,iLoc);
+    if (argc == 0) {
+	return BigDecimal_to_i(ToValue(c));
+    }
     return ToValue(c);
 }
 
