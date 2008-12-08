@@ -960,6 +960,10 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 		    if (!*(s = ++p)) break;
 		    set_encoding_part(internal);
 		    if (!*(s = ++p)) break;
+#if ALLOW_DEFAULT_SOURCE_ENCODING
+		    set_encoding_part(source);
+		    if (!*(s = ++p)) break;
+#endif
 		    rb_raise(rb_eRuntimeError, "extra argument for %s: %s",
 			     (arg[1] == '-' ? "--encoding" : "-E"), s);
 #	undef set_encoding_part
@@ -971,6 +975,11 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 	    else if (is_option_with_arg("external-encoding", Qfalse, Qtrue)) {
 		set_external_encoding_once(opt, s, 0);
 	    }
+#if ALLOW_DEFAULT_SOURCE_ENCODING
+	    else if (is_option_with_arg("source-encoding", Qfalse, Qtrue)) {
+		set_source_encoding_once(opt, s, 0);
+	    }
+#endif
 	    else if (strcmp("version", s) == 0) {
 		if (envopt) goto noenvopt_long;
 		opt->version = 1;
