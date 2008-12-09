@@ -196,7 +196,7 @@ vm_env_dump_raw(rb_env_t *env, VALUE *lfp, VALUE *dfp)
 	fprintf(stderr, "--\n");
 	for (i = 0; i < env->env_size; i++) {
 	    fprintf(stderr, "%04d: %08lx (%p)", -env->local_size + i, env->env[i],
-		   &env->env[i]);
+		   (void *)&env->env[i]);
 	    if (&env->env[i] == lfp)
 		fprintf(stderr, " <- lfp");
 	    if (&env->env[i] == dfp)
@@ -295,12 +295,12 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	for (i = 0; i < argc; i++) {
 	    rstr = rb_inspect(*ptr);
 	    fprintf(stderr, "  arg   %2d: %8s (%p)\n", i, StringValueCStr(rstr),
-		   ptr++);
+		   (void *)ptr++);
 	}
 	for (; i < local_size - 1; i++) {
 	    rstr = rb_inspect(*ptr);
 	    fprintf(stderr, "  local %2d: %8s (%p)\n", i, StringValueCStr(rstr),
-		   ptr++);
+		   (void *)ptr++);
 	}
 
 	ptr = cfp->bp;
@@ -562,8 +562,8 @@ vm_thread_dump_state(VALUE self)
     cfp = th->cfp;
 
     fprintf(stderr, "Thread state dump:\n");
-    fprintf(stderr, "pc : %p, sp : %p\n", cfp->pc, cfp->sp);
-    fprintf(stderr, "cfp: %p, lfp: %p, dfp: %p\n", cfp, cfp->lfp, cfp->dfp);
+    fprintf(stderr, "pc : %p, sp : %p\n", (void *)cfp->pc, (void *)cfp->sp);
+    fprintf(stderr, "cfp: %p, lfp: %p, dfp: %p\n", (void *)cfp, (void *)cfp->lfp, (void *)cfp->dfp);
 
     return Qnil;
 }

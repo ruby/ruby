@@ -29,7 +29,7 @@ vm_call0(rb_thread_t * th, VALUE klass, VALUE recv, VALUE id, ID oid,
 
     if (0) printf("id: %s, nd: %s, argc: %d, passed: %p\n",
 		  rb_id2name(id), ruby_node_name(nd_type(body)),
-		  argc, th->passed_block);
+		  argc, (void *)th->passed_block);
 
     if (th->passed_block) {
 	blockptr = th->passed_block;

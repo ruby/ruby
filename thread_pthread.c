@@ -461,7 +461,7 @@ native_thread_create(rb_thread_t *th)
     int err = 0;
 
     if (use_cached_thread(th)) {
-	thread_debug("create (use cached thread): %p\n", th);
+	thread_debug("create (use cached thread): %p\n", (void *)th);
     }
     else {
 	pthread_attr_t attr;
@@ -494,7 +494,7 @@ native_thread_create(rb_thread_t *th)
 	CHECK_ERR(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED));
 
 	err = pthread_create(&th->thread_id, &attr, thread_start_func_1, th);
-	thread_debug("create: %p (%d)", th, err);
+	thread_debug("create: %p (%d)", (void *)th, err);
 	CHECK_ERR(pthread_attr_destroy(&attr));
 
 	if (!err) {
@@ -553,7 +553,7 @@ static void
 ubf_pthread_cond_signal(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
-    thread_debug("ubf_pthread_cond_signal (%p)\n", th);
+    thread_debug("ubf_pthread_cond_signal (%p)\n", (void *)th);
     pthread_cond_signal(&th->native_thread_data.sleep_cond);
 }
 

@@ -4629,7 +4629,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	LABEL *lfin = NEW_LABEL(nd_line(node));
 	LABEL *ltrue = NEW_LABEL(nd_line(node));
 	VALUE key = rb_sprintf("flipflag/%s-%p-%d",
-			       RSTRING_PTR(iseq->name), iseq,
+			       RSTRING_PTR(iseq->name), (void *)iseq,
 			       iseq->compile_data->flip_cnt++);
 
 	iseq_add_mark_object_compile_time(iseq, key);
