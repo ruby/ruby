@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  vm_core.h - 
+  vm_core.h -
 
   $Author$
   created at: 04/01/01 19:41:38 JST
@@ -141,7 +141,7 @@ struct rb_iseq_struct {
     int local_table_size;
 
     /* method, class frame: sizeof(vars) + 1, block frame: sizeof(vars) */
-    int local_size; 
+    int local_size;
 
     /**
      * argument information
@@ -194,7 +194,7 @@ struct rb_iseq_struct {
     VALUE orig;			/* non-NULL if its data have origin */
 
     /* block inlining */
-    /* 
+    /*
      * NODE *node;
      * void *special_block_builder;
      * void *cached_special_block_builder;
@@ -250,7 +250,7 @@ typedef struct rb_vm_struct {
     VALUE load_path;
     VALUE loaded_features;
     struct st_table *loading_table;
-    
+
     /* signal */
     struct {
 	VALUE cmd;
@@ -339,7 +339,7 @@ typedef struct rb_thread_struct
     int safe_level;
     int raised_flag;
     VALUE last_status; /* $? */
-    
+
     /* passing state */
     int state;
 
