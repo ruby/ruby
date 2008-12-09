@@ -1,3 +1,9 @@
+Tue Dec  9 11:50:46 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* pack.c (pack_pck): fixed [ruby-dev:37295]. 
+	  Array#pack always has returned an US-ASCII string when
+	  the given format ended with 'u', 'M' or 'm'.
+
 Tue Dec  9 03:21:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb: fix for continued lines.  based on a patch from

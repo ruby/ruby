@@ -898,6 +898,8 @@ pack_pack(VALUE ary, VALUE fmt)
 
 	  case 'u':		/* uuencoded string */
 	  case 'm':		/* base64 encoded string */
+	    enc = rb_enc_compatible(res, rb_enc_from_encoding(rb_usascii_encoding()));
+	    rb_enc_associate(res, enc);
 	    from = NEXTFROM;
 	    StringValue(from);
 	    ptr = RSTRING_PTR(from);
@@ -923,15 +925,15 @@ pack_pack(VALUE ary, VALUE fmt)
 		plen -= todo;
 		ptr += todo;
 	    }
-	    ENCODING_CODERANGE_SET(res, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
 	    break;
 
 	  case 'M':		/* quoted-printable encoded string */
+	    enc = rb_enc_compatible(res, rb_enc_from_encoding(rb_usascii_encoding()));
+	    rb_enc_associate(res, enc);
 	    from = rb_obj_as_string(NEXTFROM);
 	    if (len <= 1)
 		len = 72;
 	    qpencode(res, from, len);
-	    ENCODING_CODERANGE_SET(res, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
 	    break;
 
 	  case 'P':		/* pointer to packed byte string */
