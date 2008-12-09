@@ -6,6 +6,16 @@ Tue Dec  9 13:25:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (check_cfunc): use function pointer.
 
+Tue Dec  9 13:23:55 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/curses/curses.c (curses_use_default_colors): add new
+	  method.  a patch from Giancarlo F Bellido
+	  <support at coaxialhost.com> in [ruby-core:20434].
+
+	* ext/curses/curses.c (curses_tabsize_set): ditto.
+
+	* ext/curses/curses.c (curses_tabsize_get): ditto.
+
 Tue Dec  9 12:08:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* .gdbinit (rp): fixed typo for T_STRUCT.

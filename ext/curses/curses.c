@@ -499,6 +499,12 @@ curses_cols(void)
     return INT2FIX(COLS);
 }
 
+/**
+ * Sets Cursor Visibility.
+ * 0: invisible
+ * 1: visible
+ * 2: very visible
+ */
 static VALUE
 curses_curs_set(VALUE obj, VALUE visibility)
 {
@@ -569,6 +575,38 @@ curses_bkgd(VALUE obj, VALUE ch)
   return (bkgd(NUM2CH(ch)) == OK) ? Qtrue : Qfalse;
 #else
   return Qfalse;
+#endif
+}
+
+static VALUE
+curses_use_default_colors(VALUE obj)
+{
+#if defined(HAVE_USE_DEFAULT_COLORS)
+	use_default_colors();
+	return Qnil;
+#else
+	rb_notimplement();
+#endif
+}
+
+static VALUE
+curses_tabsize_set(VALUE obj, VALUE val)
+{
+#if defined(HAVE_TABSIZE)
+	TABSIZE=NUM2INT(val);
+	return INT2NUM(TABSIZE);
+#else
+	rb_notimplement();
+#endif
+}
+
+static VALUE
+curses_tabsize_get(VALUE ojb)
+{
+#if defined(HAVE_TABSIZE)
+	return INT2NUM(TABSIZE);
+#else
+	rb_notimplement();
 #endif
 }
 
@@ -1442,6 +1480,10 @@ Init_curses(void)
 
     rb_define_module_function(mCurses, "ESCDELAY=", curses_escdelay_set, 1);
     rb_define_module_function(mCurses, "ESCDELAY", curses_escdelay_get, 0);
+    rb_define_module_function(mCurses, "TABSIZE", curses_tabsize_get, 0);
+    rb_define_module_function(mCurses, "TABSIZE=", curses_tabsize_set, 1);
+
+    rb_define_module_function(mCurses, "use_default_colors", curses_use_default_colors, 0);
     rb_define_module_function(mCurses, "init_screen", curses_init_screen, 0);
     rb_define_module_function(mCurses, "close_screen", curses_close_screen, 0);
     rb_define_module_function(mCurses, "closed?", curses_closed, 0);
