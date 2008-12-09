@@ -28,7 +28,7 @@ extern "C" {
 #endif
 #include "ruby/st.h"
 
-/* 
+/*
  * Functions and variables that are used by more than one source file of
  * the kernel.
  */
