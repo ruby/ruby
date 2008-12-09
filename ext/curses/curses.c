@@ -2,7 +2,7 @@
  * $Id$
  *
  * ext/curses/curses.c
- * 
+ *
  * by MAEDA Shugo (ender@pic-internet.or.jp)
  * modified by Yukihiro Matsumoto (matz@netlab.co.jp),
  *         Toki Yoshinori,
@@ -110,8 +110,8 @@ prep_window(VALUE class, WINDOW *window)
     obj = rb_obj_alloc(class);
     Data_Get_Struct(obj, struct windata, winp);
     winp->window = window;
-    
-    return obj;    
+
+    return obj;
 }
 
 /*-------------------------- module Curses --------------------------*/
@@ -541,7 +541,7 @@ curses_setscrreg(VALUE obj, VALUE top, VALUE bottom)
 static VALUE
 curses_attroff(VALUE obj, VALUE attrs)
 {
-    return window_attroff(rb_stdscr,attrs);  
+    return window_attroff(rb_stdscr,attrs);
     /* return INT2FIX(attroff(NUM2INT(attrs))); */
 }
 
@@ -866,7 +866,7 @@ static VALUE
 window_close(VALUE obj)
 {
     struct windata *winp;
-    
+
     GetWINDOW(obj, winp);
     delwin(winp->window);
     winp->window = 0;
@@ -879,10 +879,10 @@ static VALUE
 window_clear(VALUE obj)
 {
     struct windata *winp;
-    
+
     GetWINDOW(obj, winp);
     wclear(winp->window);
-    
+
     return Qnil;
 }
 
@@ -891,10 +891,10 @@ static VALUE
 window_clrtoeol(VALUE obj)
 {
     struct windata *winp;
-    
+
     GetWINDOW(obj, winp);
     wclrtoeol(winp->window);
-    
+
     return Qnil;
 }
 
@@ -903,10 +903,10 @@ static VALUE
 window_refresh(VALUE obj)
 {
     struct windata *winp;
-    
+
     GetWINDOW(obj, winp);
     wrefresh(winp->window);
-    
+
     return Qnil;
 }
 
@@ -931,7 +931,7 @@ static VALUE
 window_move(VALUE obj, VALUE y, VALUE x)
 {
     struct windata *winp;
-    
+
     GetWINDOW(obj, winp);
     mvwin(winp->window, NUM2INT(y), NUM2INT(x));
 
@@ -943,7 +943,7 @@ static VALUE
 window_setpos(VALUE obj, VALUE y, VALUE x)
 {
     struct windata *winp;
-    
+
     GetWINDOW(obj, winp);
     wmove(winp->window, NUM2INT(y), NUM2INT(x));
     return Qnil;
@@ -1049,7 +1049,7 @@ window_begx(VALUE obj)
 static VALUE
 window_box(int argc, VALUE *argv, VALUE self)
 {
-    struct windata *winp; 
+    struct windata *winp;
     VALUE vert, hor, corn;
 
     rb_scan_args(argc, argv, "21", &vert, &hor, &corn);
@@ -1075,7 +1075,7 @@ window_box(int argc, VALUE *argv, VALUE self)
 	waddch(winp->window, c);
 	wmove(winp->window, cur_y, cur_x);
     }
-    
+
     return Qnil;
 }
 
@@ -1084,7 +1084,7 @@ static VALUE
 window_standout(VALUE obj)
 {
     struct windata *winp;
-    
+
     GetWINDOW(obj, winp);
     wstandout(winp->window);
     return Qnil;
@@ -1095,7 +1095,7 @@ static VALUE
 window_standend(VALUE obj)
 {
     struct windata *winp;
-    
+
     GetWINDOW(obj, winp);
     wstandend(winp->window);
     return Qnil;
@@ -1106,7 +1106,7 @@ static VALUE
 window_inch(VALUE obj)
 {
     struct windata *winp;
-    
+
     GetWINDOW(obj, winp);
     return CH2FIX(winch(winp->window));
 }
@@ -1116,10 +1116,10 @@ static VALUE
 window_addch(VALUE obj, VALUE ch)
 {
     struct windata *winp;
-    
+
     GetWINDOW(obj, winp);
     waddch(winp->window, NUM2CH(ch));
-    
+
     return Qnil;
 }
 
@@ -1128,10 +1128,10 @@ static VALUE
 window_insch(VALUE obj, VALUE ch)
 {
     struct windata *winp;
-    
+
     GetWINDOW(obj, winp);
     winsch(winp->window, NUM2CH(ch));
-    
+
     return Qnil;
 }
 
@@ -1183,7 +1183,7 @@ window_getstr(VALUE obj)
 {
     struct windata *winp;
     char rtn[1024]; /* This should be big enough.. I hope */
-    
+
     GetWINDOW(obj, winp);
     rb_read_check(stdin);
 #if defined(HAVE_WGETNSTR)
@@ -1199,7 +1199,7 @@ static VALUE
 window_delch(VALUE obj)
 {
     struct windata *winp;
-    
+
     GetWINDOW(obj, winp);
     wdelch(winp->window);
     return Qnil;
@@ -1211,7 +1211,7 @@ window_deleteln(VALUE obj)
 {
 #if defined(HAVE_WDELETELN) || defined(wdeleteln)
     struct windata *winp;
-    
+
     GetWINDOW(obj, winp);
     wdeleteln(winp->window);
 #endif
@@ -1224,7 +1224,7 @@ window_insertln(VALUE obj)
 {
 #if defined(HAVE_WINSERTLN) || defined(winsertln)
     struct windata *winp;
-    
+
     GetWINDOW(obj, winp);
     winsertln(winp->window);
 #endif
@@ -1269,7 +1269,7 @@ window_setscrreg(VALUE obj, VALUE top, VALUE bottom)
 
 #if defined(USE_COLOR) && defined(HAVE_WCOLOR_SET)
 static VALUE
-window_color_set(VALUE obj, VALUE col) 
+window_color_set(VALUE obj, VALUE col)
 {
     struct windata *winp;
     int res;
@@ -1326,7 +1326,7 @@ window_attron(VALUE obj, VALUE attrs)
 
     GetWINDOW(obj,winp);
     val = INT2FIX(wattron(winp->window,NUM2INT(attrs)));
-    if( rb_block_given_p() ){
+    if (rb_block_given_p()) {
 	rb_yield(val);
 	wattroff(winp->window,NUM2INT(attrs));
 	return val;
@@ -1775,7 +1775,7 @@ Init_curses(void)
     {
 	int i;
 	char c[8];
-	for( i=0; i<64; i++ ){
+	for (i=0; i<64; i++) {
 	    sprintf(c, "KEY_F%d", i);
 	    rb_define_const(mCurses, c, INT2NUM(KEY_F(i)));
 	    sprintf(c, "F%d", i);
@@ -2118,8 +2118,8 @@ Init_curses(void)
     {
 	int c;
 	char name[] = "KEY_CTRL_x";
-	for( c = 'A'; c <= 'Z'; c++ ){
-	    sprintf(name, "KEY_CTRL_%c", c);
+	for (c = 'A'; c <= 'Z'; c++) {
+	    name[sizeof(name) - 2] = c;
 	    rb_define_const(mCurses, name, INT2FIX(c - 'A' + 1));
 	}
     }
