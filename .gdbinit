@@ -158,7 +158,7 @@ define rp
     print (struct RStruct *)$arg0
     x/xw (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
           ((struct RStruct *)$arg0)->as.ary : \
-          ((struct RStruct *)$arg0)->as.heap.len)
+          ((struct RStruct *)$arg0)->as.heap.ptr)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_BIGNUM
     printf "T_BIGNUM: sign=%d len=%ld ", \

@@ -1,3 +1,7 @@
+Tue Dec  9 12:08:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* .gdbinit (rp): fixed typo for T_STRUCT.
+
 Tue Dec  9 11:50:46 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* pack.c (pack_pck): fixed [ruby-dev:37295]. 
