@@ -47,7 +47,7 @@ typedef struct rb_context_struct {
 enum fiber_status {
     CREATED,
     RUNNING,
-    TERMINATED,
+    TERMINATED
 };
 
 typedef struct rb_fiber_struct {

@@ -15,7 +15,6 @@
 
 enum ruby_vminsn_type {
 <%= insns %>
+  VM_INSTRUCTION_SIZE            = <%= @insns.size %>
 };
-
-#define VM_INSTRUCTION_SIZE <%= @insns.size %>
 

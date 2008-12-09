@@ -53,7 +53,7 @@ enum {
   BOP_NOT,
   BOP_NEQ,
 
-  BOP_LAST_,
+  BOP_LAST_
 };
 
 extern char ruby_vm_redefined_flag[BOP_LAST_];

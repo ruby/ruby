@@ -1,4 +1,8 @@
-Tue Dec  9 13:23:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Dec  9 13:25:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (fiber_status), template/insns.inc.tmpl (ruby_vminsn_type),
+	  vm_insnhelper.h (BOP): ISO C forbids comma at end of enumerator
+	  list.
 
 	* vm_insnhelper.c (check_cfunc): use function pointer.
 
