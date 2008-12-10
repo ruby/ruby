@@ -4759,7 +4759,7 @@ pop_last_hash(int *argc_p, VALUE *argv)
  *
  *    # merge standard output and standard error using
  *    # spawn option.  See the document of Kernel.spawn.
- *    ls_io = IO.popen(["ls", "/", STDERR=>[:child, STDOUT]])
+ *    ls_io = IO.popen(["ls", "/", :err=>[:child, :out]])
  *    ls_result_with_error = ls_io.read
  *
  *  Raises exceptions which <code>IO.pipe</code> and
