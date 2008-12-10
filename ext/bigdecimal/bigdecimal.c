@@ -1155,7 +1155,7 @@ BigDecimal_divmod(VALUE self, VALUE r)
     obj = BigDecimal_DoDivmod(self,r,&div,&mod);
     if(obj!=(VALUE)0) return obj;
     SAVE(div);SAVE(mod);
-    obj = rb_assoc_new(ToValue(div), ToValue(mod));
+    obj = rb_assoc_new(BigDecimal_to_i(ToValue(div)), ToValue(mod));
     return obj;
 }
 
@@ -1369,6 +1369,9 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
     GUARD_OBJ(c,VpCreateRbObject(mx, "0"));
     VpSetPrecLimit(pl);
     VpActiveRound(c,a,sw,iLoc);
+    if (argc == 0) {
+	return BigDecimal_to_i(ToValue(c));
+    }
     return ToValue(c);
 }
 
@@ -1983,7 +1986,7 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "add", BigDecimal_add2, 2);
     rb_define_method(rb_cBigDecimal, "sub", BigDecimal_sub2, 2);
     rb_define_method(rb_cBigDecimal, "mult", BigDecimal_mult2, 2);
-    rb_define_method(rb_cBigDecimal, "div",BigDecimal_div2, -1);
+    rb_define_method(rb_cBigDecimal, "div", BigDecimal_div2, -1);
     rb_define_method(rb_cBigDecimal, "hash", BigDecimal_hash, 0);
     rb_define_method(rb_cBigDecimal, "to_s", BigDecimal_to_s, -1);
     rb_define_method(rb_cBigDecimal, "to_i", BigDecimal_to_i, 0);

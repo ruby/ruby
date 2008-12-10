@@ -1,3 +1,11 @@
+Thu Dec 11 01:48:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_round): should be round
+	  to integer.  [ruby-dev:37355]
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_divmod): division should
+	  be integer.  [incompatible] [ruby-dev:37355]
+
 Thu Dec 11 01:21:58 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* thread.c (rb_mutex_unlock): shut up warning.  a patch from
