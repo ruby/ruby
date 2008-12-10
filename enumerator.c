@@ -386,7 +386,7 @@ enumerator_with_index(obj)
  *
  * Returns the next object in the enumerator, and move the internal
  * position forward.  When the position reached at the end, internal
- * position is rewinded then StopIteration is raised.
+ * position is rewound then StopIteration is raised.
  *
  * Note that enumeration sequence by next method does not affect other
  * non-external enumeration methods, unless underlying iteration

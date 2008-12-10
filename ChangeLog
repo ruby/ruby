@@ -1,3 +1,9 @@
+Wed Dec 10 12:51:14 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (enumerator_next): Fix a typo: s/rewinded/rewound/.
+
+	* lib/generator.rb (Enumerator#next): Ditto.
+
 Tue Dec  9 03:21:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb: fix for continued lines.  based on a patch from
