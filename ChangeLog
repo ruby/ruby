@@ -1,3 +1,8 @@
+Wed Dec 10 11:25:53 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_initialize): raise RegexpError when encoding
+	  is dummy encoding. [ruby-dev:37091]
+
 Wed Dec 10 01:28:16 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk (win32.obj): depend on headers.
