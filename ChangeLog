@@ -1,3 +1,8 @@
+Wed Dec 10 21:32:02 2008  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker.rb (RSS::Maker.[]): add.
+	Suggested by Akinori MUSHA. Thanks!!! [ruby-dev:37210]
+
 Wed Dec 10 12:56:32 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (enumerator_rewind): If the enclosed object
