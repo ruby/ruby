@@ -1,3 +1,8 @@
+Thu Dec 11 02:23:51 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open3.rb (Open3.pipeline_start): return an array of threads if a
+	  block is not given.
+
 Thu Dec 11 01:48:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_round): should be round

@@ -214,6 +214,15 @@ class TestOpen3 < Test::Unit::TestCase
     }
   end
 
+  def test_pipeline_start_noblock
+    ts = Open3.pipeline_start([RUBY, '-e', ''])
+    assert_kind_of(Array, ts)
+    assert_equal(1, ts.length)
+    ts.each {|t| assert_kind_of(Thread, t) }
+    t = ts[0]
+    assert(t.value.success?)
+  end
+
   def test_pipeline
     command = [RUBY, '-e', 's=STDIN.read; print s[1..-1]; exit s[0] == ?t']
     str = 'ttftff'

@@ -11,6 +11,8 @@
 #
 # Open3 grants you access to stdin, stdout, stderr and a thread to wait the
 # child process when running another program.
+# You can specify various attributes, redirections, current directory, etc., of
+# the program as Process.spawn.
 #
 # - Open3.popen3 : pipes for stdin, stdout, stderr
 # - Open3.popen2 : pipes for stdin, stdout
@@ -41,7 +43,7 @@ module Open3
   #   }
   #
   # Non-block form:
-  #   
+  #
   #   stdin, stdout, stderr, wait_thr = Open3.popen3([env,] cmd... [, opts])
   #   pid = wait_thr[:pid]  # pid of the started process.
   #   ...
@@ -50,14 +52,14 @@ module Open3
   #   stderr.close
   #   exit_status = wait_thr.value  # Process::Status object returned.
   #
-  # The parameters +cmd...+ is passed to Kernel#spawn.
+  # The parameters +cmd...+ is passed to Process.spawn.
   # So a commandline string and list of argument strings can be accepted as follows.
   #
   #   Open3.popen3("echo a") {|i, o, e, t| ... }
   #   Open3.popen3("echo", "a") {|i, o, e, t| ... }
   #   Open3.popen3(["echo", "argv0"], "a") {|i, o, e, t| ... }
   #
-  # If the last parameter, opts, is a Hash, it is recognized as an option for Kernel#spawn.
+  # If the last parameter, opts, is a Hash, it is recognized as an option for Process.spawn.
   #
   #   Open3.popen3("pwd", :chdir=>"/") {|i,o,e,t|
   #     p o.read.chomp #=> "/"
@@ -101,11 +103,13 @@ module Open3
   #   }
   #
   # Non-block form:
-  #   
+  #
   #   stdin, stdout, wait_thr = Open3.popen2([env,] cmd... [, opts])
   #   ...
   #   stdin.close  # stdin and stdout should be closed explicitly in this form.
   #   stdout.close
+  #
+  # See Process.spawn for the optional hash arguments _env_ and _opts_.
   #
   # Example:
   #
@@ -115,14 +119,14 @@ module Open3
   #     p o.gets #=> "42\n"
   #   }
   #
-  #   Open3.popen2("bc -q") {|i,o,t| 
+  #   Open3.popen2("bc -q") {|i,o,t|
   #     i.puts "obase=13"
   #     i.puts "6 * 9"
   #     p o.gets #=> "42\n"
   #   }
   #
   #   Open3.popen2("dc") {|i,o,t|
-  #     i.print "42P"                                       
+  #     i.print "42P"
   #     i.close
   #     p o.read #=> "*"
   #   }
@@ -157,11 +161,13 @@ module Open3
   #   }
   #
   # Non-block form:
-  #   
+  #
   #   stdin, stdout_and_stderr, wait_thr = Open3.popen2e([env,] cmd... [, opts])
   #   ...
   #   stdin.close  # stdin and stdout_and_stderr should be closed explicitly in this form.
   #   stdout_and_stderr.close
+  #
+  # See Process.spawn for the optional hash arguments _env_ and _opts_.
   #
   # Example:
   #   # check gcc warnings
@@ -216,7 +222,8 @@ module Open3
   #
   #   stdout_str, stderr_str, status = Open3.capture3([env,] cmd... [, opts])
   #
-  # The arguments cmd and opts are passed to Open3.popen3 except opts[:stdin_data].
+  # The arguments env, cmd and opts are passed to Open3.popen3 except
+  # opts[:stdin_data] and opts[:stdin_data].  See Process.spawn.
   #
   # If opts[:stdin_data] is specified, it is sent to the command's standard input.
   #
@@ -279,7 +286,8 @@ module Open3
   #
   #   stdout_str, status = Open3.capture2([env,] cmd... [, opts])
   #
-  # The arguments cmd and opts are passed to Open3.popen2 except opts[:stdin_data].
+  # The arguments env, cmd and opts are passed to Open3.popen3 except
+  # opts[:stdin_data] and opts[:stdin_data].  See Process.spawn.
   #
   # If opts[:stdin_data] is specified, it is sent to the command's standard input.
   #
@@ -288,7 +296,7 @@ module Open3
   # Example:
   #
   #   # factor is a command for integer factorization.
-  #   o, s = Open3.capture2("factor", :stdin_data=>"42")    
+  #   o, s = Open3.capture2("factor", :stdin_data=>"42")
   #   p o #=> "42: 2 3 7\n"
   #
   #   # generate x**2 graph in png using gnuplot.
@@ -296,12 +304,12 @@ module Open3
   #     set terminal png
   #     plot x**2, "-" with lines
   #     1 14
-  #     2 1 
+  #     2 1
   #     3 8
   #     4 5
   #     e
   #   End
-  #   image, s = Open3.capture2("gnuplot", :stdin_data=>gnuplot_commands, :binmode=>true)        
+  #   image, s = Open3.capture2("gnuplot", :stdin_data=>gnuplot_commands, :binmode=>true)
   #
   def capture2(*cmd, &block)
     if Hash === cmd.last
@@ -330,7 +338,8 @@ module Open3
   #
   #   stdout_and_stderr_str, status = Open3.capture2e([env,] cmd... [, opts])
   #
-  # The arguments cmd and opts are passed to Open3.popen2e except opts[:stdin_data].
+  # The arguments env, cmd and opts are passed to Open3.popen3 except
+  # opts[:stdin_data] and opts[:stdin_data].  See Process.spawn.
   #
   # If opts[:stdin_data] is specified, it is sent to the command's standard input.
   #
@@ -377,9 +386,17 @@ module Open3
   #   last_stdout.close
   #
   # Each cmd is a string or an array.
-  # If it is an array, the elements are passed to Kernel#spawn.
+  # If it is an array, the elements are passed to Process.spawn.
   #
-  # The option to pass Kernel#spawn is constructed by merging
+  #   cmd:
+  #     commandline                              command line string which is passed to a shell
+  #     [env, commandline, opts]                 command line string which is passed to a shell
+  #     [env, cmdname, arg1, ..., opts]          command name and one or more arguments (no shell)
+  #     [env, [cmdname, argv0], arg1, ..., opts] command name and arguments including argv[0] (no shell)
+  #
+  #   Note that env and opts are optional, as Process.spawn.
+  #
+  # The option to pass Process.spawn is constructed by merging
   # +opts+, the last hash element of the array and
   # specification for the pipe between each commands.
   #
@@ -427,6 +444,17 @@ module Open3
   #   ...
   #   last_stdout.close
   #
+  # Each cmd is a string or an array.
+  # If it is an array, the elements are passed to Process.spawn.
+  #
+  #   cmd:
+  #     commandline                              command line string which is passed to a shell
+  #     [env, commandline, opts]                 command line string which is passed to a shell
+  #     [env, cmdname, arg1, ..., opts]          command name and one or more arguments (no shell)
+  #     [env, [cmdname, argv0], arg1, ..., opts] command name and arguments including argv[0] (no shell)
+  #
+  #   Note that env and opts are optional, as Process.spawn.
+  #
   # Example:
   #
   #   Open3.pipeline_r("zcat /var/log/apache2/access.log.*.gz",
@@ -468,10 +496,21 @@ module Open3
   #   ...
   #   first_stdin.close
   #
+  # Each cmd is a string or an array.
+  # If it is an array, the elements are passed to Process.spawn.
+  #
+  #   cmd:
+  #     commandline                              command line string which is passed to a shell
+  #     [env, commandline, opts]                 command line string which is passed to a shell
+  #     [env, cmdname, arg1, ..., opts]          command name and one or more arguments (no shell)
+  #     [env, [cmdname, argv0], arg1, ..., opts] command name and arguments including argv[0] (no shell)
+  #
+  #   Note that env and opts are optional, as Process.spawn.
+  #
   # Example:
   #
   #   Open3.pipeline_w("bzip2 -c", :out=>"/tmp/hello.bz2") {|w, ts|
-  #     w.puts "hello" 
+  #     w.puts "hello"
   #   }
   #
   def pipeline_w(*cmds, &block)
@@ -500,14 +539,37 @@ module Open3
   #   wait_threads = Open3.pipeline_start(cmd1, cmd2, ... [, opts])
   #   ...
   #
+  # Each cmd is a string or an array.
+  # If it is an array, the elements are passed to Process.spawn.
+  #
+  #   cmd:
+  #     commandline                              command line string which is passed to a shell
+  #     [env, commandline, opts]                 command line string which is passed to a shell
+  #     [env, cmdname, arg1, ..., opts]          command name and one or more arguments (no shell)
+  #     [env, [cmdname, argv0], arg1, ..., opts] command name and arguments including argv[0] (no shell)
+  #
+  #   Note that env and opts are optional, as Process.spawn.
+  #
   # Example:
   #
   #   # run xeyes in 10 seconds.
-  #   Open3.pipeline_start("xeyes") {|ts|   
+  #   Open3.pipeline_start("xeyes") {|ts|
   #     sleep 10
   #     t = ts[0]
-  #     Process.kill("TERM", t.pid) 
+  #     Process.kill("TERM", t.pid)
   #     p t.value #=> #<Process::Status: pid 911 SIGTERM (signal 15)>
+  #   }
+  #
+  #   # convert pdf to ps and send it to a printer.
+  #   # collect error message of pdftops and lpr.
+  #   pdf_file = "paper.pdf"
+  #   printer = "printer-name"
+  #   err_r, err_w = IO.pipe
+  #   Open3.pipeline_start(["pdftops", pdf_file, "-"],
+  #                        ["lpr", "-P#{printer}"],
+  #                        :err=>err_w) {|ts|
+  #     err_w.close
+  #     p err_r.read # error messages of pdftops and lpr.
   #   }
   #
   def pipeline_start(*cmds, &block)
@@ -517,7 +579,12 @@ module Open3
       opts = {}
     end
 
-    pipeline_run(cmds, opts, [], [], &block)
+    if block
+      pipeline_run(cmds, opts, [], [], &block)
+    else
+      ts, = pipeline_run(cmds, opts, [], [])
+      ts
+    end
   end
   module_function :pipeline_start
 
@@ -528,10 +595,21 @@ module Open3
   #
   #   status_list = Open3.pipeline(cmd1, cmd2, ... [, opts])
   #
+  # Each cmd is a string or an array.
+  # If it is an array, the elements are passed to Process.spawn.
+  #
+  #   cmd:
+  #     commandline                              command line string which is passed to a shell
+  #     [env, commandline, opts]                 command line string which is passed to a shell
+  #     [env, cmdname, arg1, ..., opts]          command name and one or more arguments (no shell)
+  #     [env, [cmdname, argv0], arg1, ..., opts] command name and arguments including argv[0] (no shell)
+  #
+  #   Note that env and opts are optional, as Process.spawn.
+  #
   # Example:
   #
   #   fname = "/usr/share/man/man1/ruby.1.gz"
-  #   p Open3.pipeline(["zcat", fname], "nroff -man", "less")   
+  #   p Open3.pipeline(["zcat", fname], "nroff -man", "less")
   #   #=> [#<Process::Status: pid 11817 exit 0>,
   #   #    #<Process::Status: pid 11820 exit 0>,
   #   #    #<Process::Status: pid 11828 exit 0>]
