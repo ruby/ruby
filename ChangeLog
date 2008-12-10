@@ -1,3 +1,9 @@
+Wed Dec 10 23:58:56 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: avoided warnings on cpp.
+
+	* rational.c: ditto.
+
 Wed Dec 10 21:32:02 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker.rb (RSS::Maker.[]): add.
