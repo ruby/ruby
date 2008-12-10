@@ -6,13 +6,14 @@ module RSS
 
     class << self
       def make(version, &block)
-        m = maker(version)
-        raise UnsupportedMakerVersionError.new(version) if m.nil?
-        m[:maker].make(m[:version], &block)
+        maker_info = self[version]
+        maker_info[:maker].make(maker_info[:version], &block)
       end
 
-      def maker(version)
-        MAKERS[version]
+      def [](version)
+        maker_info = maker(version)
+        raise UnsupportedMakerVersionError.new(version) if maker_info.nil?
+        maker_info
       end
 
       def add_maker(version, normalized_version, maker)
@@ -25,6 +26,12 @@ module RSS
 
       def makers
         MAKERS.values.collect {|info| info[:maker]}.uniq
+      end
+
+      private
+      # Can I remove this method?
+      def maker(version)
+        MAKERS[version]
       end
     end
   end

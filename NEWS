@@ -88,6 +88,9 @@ with all sufficient information, see the ChangeLog file.
     * raise an exception not returns nil for invalid feed making.
     * requires block.
 
+  * RSS::Maker.[]
+    * new method to return maker class.
+
 * REXML
 
   * REXML::Document.entity_expansion_limit=

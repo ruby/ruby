@@ -1,3 +1,10 @@
+Wed Dec 10 21:35:12 2008  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker.rb (RSS::Maker.[]): add.
+	Suggested by Akinori MUSHA. Thanks!!! [ruby-dev:37210]
+
+	* NEWS: add an entry for the above change.
+
 Wed Dec 10 12:51:14 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (enumerator_next): Fix a typo: s/rewinded/rewound/.
