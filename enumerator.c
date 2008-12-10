@@ -22,6 +22,7 @@
  */
 VALUE rb_cEnumerator;
 static VALUE sym_each;
+static ID id_rewind;
 
 VALUE rb_eStopIteration;
 
@@ -532,12 +533,17 @@ enumerator_next(VALUE obj)
  *   e.rewind   => e
  *
  * Rewinds the enumeration sequence by the next method.
+ *
+ * If the enclosed object responds to a "rewind" method, it is called.
  */
 
 static VALUE
 enumerator_rewind(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
+
+    if (rb_respond_to(e->obj, id_rewind))
+	rb_funcall(e->obj, id_rewind, 0);
 
     e->fib = 0;
     e->dst = Qnil;
@@ -861,6 +867,7 @@ Init_Enumerator(void)
     rb_define_method(rb_cYielder, "<<", yielder_yield, -2);
 
     sym_each = ID2SYM(rb_intern("each"));
+    id_rewind = rb_intern("rewind");
 
     rb_provide("enumerator.so");	/* for backward compatibility */
 }
