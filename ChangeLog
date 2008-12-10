@@ -1,6 +1,6 @@
 Wed Dec 10 23:58:56 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
-	* complex.c: avoided warnings on cpp.
+	* complex.c: avoided warnings on cpp. [ruby-dev:37344]
 
 	* rational.c: ditto.
 
