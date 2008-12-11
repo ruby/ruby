@@ -1,3 +1,8 @@
+Thu Dec 11 11:11:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/st.h (size_t): needs stddef.h or stdlib.h.
+	  [ruby-core:20339]
+
 Thu Dec 11 10:25:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_bignum.rb (TestBignum#test_convert): remove

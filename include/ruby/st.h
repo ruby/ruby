@@ -12,6 +12,19 @@ extern "C" {
 #endif
 #endif
 
+#ifndef RUBY_LIB
+#include "ruby/config.h"
+#ifdef RUBY_EXTCONF_H
+#include RUBY_EXTCONF_H
+#endif
+#endif
+
+#if   defined STDC_HEADERS
+#include <stddef.h>
+#elif defined HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
 #if SIZEOF_LONG == SIZEOF_VOIDP
 typedef unsigned long st_data_t;
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
