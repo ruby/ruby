@@ -41,6 +41,9 @@ Incompatible (Trivial)
           o Hash#to_s is equivalent to Hash#inspect
           o Semantics for Hash#each and Hash#each_pair
           o Hash#select
+          o Hash#key is the new name for #index which has been deprecated.
+          o Most of the changes in Hash apply to hash like interfaces such as
+            ENV and *DBM.
     * Integer
           o Integer(nil) raises TypeError
     * Struct
