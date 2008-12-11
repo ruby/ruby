@@ -1,3 +1,11 @@
+Thu Dec 11 11:51:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_locale_encoding): removed Encoding::LOCALE.
+
+	* encoding.c (rb_enc_set_default_external): ditto.
+
+	* encoding.c (rb_enc_set_default_internal): ditto.
+
 Thu Dec 11 11:11:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/st.h (size_t): needs stddef.h or stdlib.h.
