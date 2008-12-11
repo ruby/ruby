@@ -111,9 +111,6 @@ Compatible
     * Enumerable and Enumerator
           o Enumerable#map,collect_all called without a block returns
             an enumerator.
-          o Enumerable#each_with_object [experimental]
-          o Enumerator#with_object [experimental]
-          o Enumerator.new { ... } [experimental]
     * Regexp#match, String#match
           o Regexp#match, String#match
     * Encoding
@@ -134,7 +131,6 @@ Compatible
           o Numeric#div
           o Numeric#fdiv
     * Range
-          o Range#cover?
           o Range#include? iterates over elements and compares the
             given value with each element unless the range is numeric.
             Use Range#cover? for the old behavior, i.e. comparison
@@ -145,7 +141,6 @@ Compatible
           o Regexp.try_convert
     * String
           o String#clear
-          o String#ord
           o String#encoding
           o String#force_encoding
           o String#unpack with a block
