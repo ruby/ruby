@@ -1,3 +1,8 @@
+Thu Dec 11 19:33:10 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (enumerator_initialize): Add an ability to generate
+	  an enumerator from a block. [ruby-dev:35903]
+
 Thu Dec 11 19:08:38 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (enum_each_with_object): Add

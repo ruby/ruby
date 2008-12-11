@@ -27,12 +27,14 @@ with all sufficient information, see the ChangeLog file.
     New method with which replaces #choice.
 
   * Enumerable#each_with_object
-
-    New method.
-
   * Enumerator#with_object
 
-    New method.
+    New methods.
+
+  * Enumerator.new { |y| ... }
+
+    Now can generate an enumerator from a block that defines
+    enumeration instead of an enumerable object.
 
   * Hash#default_proc=
 
