@@ -26,6 +26,14 @@ with all sufficient information, see the ChangeLog file.
 
     New method with which replaces #choice.
 
+  * Enumerable#each_with_object
+
+    New method.
+
+  * Enumerator#with_object
+
+    New method.
+
   * Hash#default_proc=
 
     New method.

@@ -1,3 +1,8 @@
+Thu Dec 11 19:08:38 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (enum_each_with_object): Add
+	  Enumerable#each_with_object and Enumerator#with_object.
+
 Wed Dec 10 21:35:12 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker.rb (RSS::Maker.[]): add.
