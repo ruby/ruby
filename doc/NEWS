@@ -135,7 +135,10 @@ Compatible
           o Numeric#fdiv
     * Range
           o Range#cover?
-          o Range#include?
+          o Range#include? iterates over elements and compares the
+            given value with each element unless the range is numeric.
+            Use Range#cover? for the old behavior, i.e. comparison
+            with boundary values.
           o Range#min, Range#max
     * Regexp
           o Regexp#=== matches symbols
