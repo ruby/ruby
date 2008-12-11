@@ -38,6 +38,7 @@ Incompatible (Trivial)
     * Array
           o Array#[m,n] = nil places nil in the array.
     * Hash
+          o Hash#default_proc=
           o Hash#to_s is equivalent to Hash#inspect
           o Semantics for Hash#each and Hash#each_pair
           o Hash#select
