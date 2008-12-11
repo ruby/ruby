@@ -1,3 +1,8 @@
+Thu Dec 11 19:16:30 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pathname.rb (Pathname#=~): undefed.  at asakusa.rb.
+	  [ruby-core:19690]
+
 Thu Dec 11 13:09:01 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (reg_enc_error): raise EncodingCompatibilityError for
