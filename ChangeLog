@@ -1,3 +1,14 @@
+Thu Dec 11 10:18:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rexml/document.rb (REXML::Document#write): require
+	  rexml/formatters/transitive if transitive flag is on.  a patch
+	  from akira yamada in [ruby-dev:36230].  fix #553
+
+	* lib/rexml/element.rb (REXML::Element#write): ditto.
+
+	* lib/rexml/formatters/transitive.rb (REXML::Formatters::Transitive#write_element): 
+	  add hack for IE.  [ruby-dev:36230]
+
 Thu Dec 11 02:37:22 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* math.c (domain_check): should not raise EDOM exception for NaN
