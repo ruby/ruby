@@ -146,6 +146,7 @@ Compatible
     * String
           o String#clear
           o String#ord
+          o String#getbyte, String#setbyte
           o String#encoding
           o String#force_encoding
           o String#unpack with a block
