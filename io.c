@@ -4698,9 +4698,9 @@ pop_last_hash(int *argc_p, VALUE *argv)
  *    nkf_io = IO.popen("nkf -e filename", :external_encoding=>"EUC-JP")
  *    euc_jp_string = nkf_io.read
  *
- *    # merge standard output and standard error using
- *    # spawn option.  See the document of Kernel.spawn.
- *    ls_io = IO.popen(["ls", "/", STDERR=>[:child, STDOUT]])
+ *    # discard standard error using spawn option.
+ *    # See the document of Kernel.spawn.
+ *    ls_io = IO.popen(["ls", "/", :err=>"/dev/null"])
  *    ls_result_with_error = ls_io.read
  *
  *  Raises exceptions which <code>IO.pipe</code> and
