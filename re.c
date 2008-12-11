@@ -1168,7 +1168,7 @@ rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
 static void
 reg_enc_error(VALUE re, VALUE str)
 {
-    rb_raise(rb_eArgError,
+    rb_raise(rb_eEncCompatError,
 	     "incompatible encoding regexp match (%s regexp with %s string)",
 	     rb_enc_name(RREGEXP(re)->ptr->enc),
 	     rb_enc_name(rb_enc_get(str)));
@@ -1181,7 +1181,7 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
 
     if (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN) {
         rb_raise(rb_eArgError,
-            "broken %s string",
+            "invalid byte sequence in %s",
             rb_enc_name(rb_enc_get(str)));
     }
 
