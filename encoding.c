@@ -1297,6 +1297,7 @@ rb_enc_aliases_enc_i(st_data_t name, st_data_t orig, st_data_t arg)
     if (NIL_P(str)) {
 	rb_encoding *enc = rb_enc_from_index(idx);
 
+	if (!enc) return ST_CONTINUE;
 	if (STRCASECMP((char*)name, rb_enc_name(enc)) == 0) {
 	    return ST_CONTINUE;
 	}

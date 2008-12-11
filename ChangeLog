@@ -1,3 +1,7 @@
+Thu Dec 11 20:05:17 2008    <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_aliases_enc_i): skips default internal.
+
 Thu Dec 11 19:31:45 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit/assertions.rb: extracted from lib/test/unit.rb.
