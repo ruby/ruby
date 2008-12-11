@@ -58,12 +58,17 @@ class TestEnumerator < Test::Unit::TestCase
   def test_initialize
     assert_equal([1, 2, 3], @obj.to_enum(:foo, 1, 2, 3).to_a)
     assert_equal([1, 2, 3], Enumerator.new(@obj, :foo, 1, 2, 3).to_a)
+    assert_equal([1, 2, 3], Enumerator.new { |y| i = 0; loop { y << (i += 1) } }.take(3))
     assert_raise(ArgumentError) { Enumerator.new }
   end
 
   def test_initialize_copy
     assert_equal([1, 2, 3], @obj.to_enum(:foo, 1, 2, 3).dup.to_a)
     e = @obj.to_enum(:foo, 1, 2, 3)
+    assert_nothing_raised { assert_equal(1, e.next) }
+    #assert_raise(TypeError) { e.dup }
+
+    e = Enumerator.new { |y| i = 0; loop { y << (i += 1) } }.dup
     assert_nothing_raised { assert_equal(1, e.next) }
     #assert_raise(TypeError) { e.dup }
   end
@@ -89,6 +94,29 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_with_index
     assert_equal([[1,0],[2,1],[3,2]], @obj.to_enum(:foo, 1, 2, 3).with_index.to_a)
+  end
+
+  def test_with_object
+    obj = [0, 1]
+    ret = (1..10).each.with_object(obj) {|i, memo|
+      memo[0] += i
+      memo[1] *= i
+    }
+    assert_same(obj, ret)
+    assert_equal([55, 3628800], ret)
+
+    a = [2,5,2,1,5,3,4,2,1,0]
+    obj = {}
+    ret = a.delete_if.with_object(obj) {|i, seen|
+      if seen.key?(i)
+        true
+      else
+        seen[i] = true
+        false
+      end
+    }
+    assert_same(obj, ret)
+    assert_equal([2, 5, 1, 3, 4, 0], a)
   end
 
   def test_next_rewind
