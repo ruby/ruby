@@ -1,3 +1,9 @@
+Thu Dec 11 21:09:47 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (enumerator_next, enumerator_rewind),
+	  lib/generator.rb (Enumerator#rewind): If the enclosed object
+	  responds to a "rewind" method, call it.
+
 Thu Dec 11 21:07:56 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker.rb, lib/rss/maker/0.9.rb, lib/rss/maker/base.rb:

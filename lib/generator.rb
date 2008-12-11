@@ -193,12 +193,18 @@ class Enumerator
     raise StopIteration, 'iteration reached at end' 
   end
 
+  # :nodoc:
+  alias __orig_rewind rewind
+
   # call-seq:
   #   e.rewind   => e
   #
   # Rewinds the enumeration sequence by the next method.
+  #
+  # If the enclosed object responds to a "rewind" method, it is called.
   def rewind
     __generator.rewind
+    __orig_rewind
     self
   end
 end

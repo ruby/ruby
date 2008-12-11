@@ -22,6 +22,7 @@
  */
 VALUE rb_cEnumerator;
 static VALUE sym_each;
+static ID id_rewind;
 
 VALUE rb_eStopIteration;
 
@@ -497,6 +498,18 @@ enumerator_with_object(obj, memo)
     return memo;
 }
 
+static int
+require_generator()
+{
+    static int done = 0;
+
+    if (done)
+	return 0; /* not the first time */
+    rb_require("generator");
+    done = 1;
+    return 1; /* the first time */
+}
+
 /*
  * call-seq:
  *   e.next   => object
@@ -517,8 +530,15 @@ static VALUE
 enumerator_next(obj)
     VALUE obj;
 {
-    rb_require("generator");
-    return rb_funcall(obj, rb_intern("next"), 0, 0);
+    if (require_generator()) {
+	/*
+	 * Call the new rewind method that the generator library
+	 * redefines.
+	 */
+	return rb_funcall(obj, rb_intern("next"), 0, 0);
+    } else {
+	rb_raise(rb_eRuntimeError, "unexpected call; the generator library must have failed in redefining this method");
+    }
 }
 
 /*
@@ -526,14 +546,33 @@ enumerator_next(obj)
  *   e.rewind   => e
  *
  * Rewinds the enumeration sequence by the next method.
+ *
+ * If the enclosed object responds to a "rewind" method, it is called.
  */
 
 static VALUE
 enumerator_rewind(obj)
     VALUE obj;
 {
-    rb_require("generator");
-    return rb_funcall(obj, rb_intern("rewind"), 0, 0);
+    if (require_generator()) {
+	/*
+	 * Call the new rewind method that the generator library
+	 * redefines.
+	 */
+	return rb_funcall(obj, rb_intern("rewind"), 0, 0);
+    } else {
+	/*
+	 * Once the generator library is loaded and the rewind method
+	 * is overridden, this method changes itself to a secret knob
+	 * to rewind the internal object. (black magic!)
+	 */
+	struct enumerator *e;
+
+	e = enumerator_ptr(obj);
+	if (rb_respond_to(e->obj, id_rewind))
+	    rb_funcall(e->obj, id_rewind, 0);
+	return obj;
+    }
 }
 
 /*
@@ -815,7 +854,8 @@ Init_Enumerator()
     rb_define_method(rb_cYielder, "yield", yielder_yield, -2);
     rb_define_method(rb_cYielder, "<<", yielder_yield, -2);
 
-    sym_each	 	= ID2SYM(rb_intern("each"));
+    sym_each = ID2SYM(rb_intern("each"));
+    id_rewind = rb_intern("rewind");
 
     /* backward compatibility */
     rb_provide("enumerator.so");
