@@ -349,11 +349,18 @@ enc_dummy_p(VALUE enc)
     return ENC_DUMMY_P(enc_table.list[must_encoding(enc)].enc) ? Qtrue : Qfalse;
 }
 
-static int
-enc_alias(const char *alias, int idx)
+static const char *
+enc_alias_internal(const char *alias, int idx)
 {
     alias = strdup(alias);
     st_insert(enc_table.names, (st_data_t)alias, (st_data_t)idx);
+    return alias;
+}
+
+static int
+enc_alias(const char *alias, int idx)
+{
+    alias = enc_alias_internal(alias, idx);
     set_encoding_const(alias, rb_enc_from_index(idx));
     return idx;
 }
@@ -1000,7 +1007,7 @@ rb_locale_encoding(void)
     else if ((idx = rb_enc_find_index(StringValueCStr(charmap))) < 0)
         idx = rb_ascii8bit_encindex();
 
-    if (rb_enc_registered("locale") < 0) enc_alias("locale", idx);
+    if (rb_enc_registered("locale") < 0) enc_alias_internal("locale", idx);
 
     return rb_enc_from_index(idx);
 }
@@ -1057,7 +1064,7 @@ rb_enc_set_default_external(VALUE encoding)
 {
     default_external_index = rb_enc_to_index(rb_to_encoding(encoding));
     default_external = 0;
-    enc_alias("external", default_external_index);
+    enc_alias_internal("external", default_external_index);
 }
 
 /* -2 => not yet set, -1 => nil */
@@ -1112,7 +1119,7 @@ rb_enc_set_default_internal(VALUE encoding)
     if (default_internal_index == rb_usascii_encindex())
 	default_internal_index = rb_utf8_encindex();
     default_internal = 0;
-    enc_alias("internal", default_internal_index);
+    enc_alias_internal("internal", default_internal_index);
 }
 
 /*
