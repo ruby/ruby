@@ -1,3 +1,9 @@
+Thu Dec 11 19:31:45 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/test/unit/assertions.rb: extracted from lib/test/unit.rb.
+	  lib/test/unit/testcase.rb: ditto.
+	  at asakusa.rb.  [ruby-core:20014]
+
 Thu Dec 11 19:23:09 2008  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_io.rb (test_dup_many): extracted from test_dup.
