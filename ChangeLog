@@ -1,3 +1,10 @@
+Thu Dec 11 21:04:04 2008  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker.rb, lib/rss/maker/0.9.rb, lib/rss/maker/base.rb:
+	RSS::Maker.[] returns a maker class corresponds to passed version.
+
+	* test/rss/test_maker_*.rb: add tests for RSS::Maker.[].
+
 Thu Dec 11 20:05:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_aliases_enc_i): skips default internal.

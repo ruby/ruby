@@ -6,14 +6,13 @@ module RSS
 
     class << self
       def make(version, &block)
-        maker_info = self[version]
-        maker_info[:maker].make(maker_info[:version], &block)
+        self[version].make(&block)
       end
 
       def [](version)
         maker_info = maker(version)
         raise UnsupportedMakerVersionError.new(version) if maker_info.nil?
-        maker_info
+        maker_info[:maker]
       end
 
       def add_maker(version, normalized_version, maker)
