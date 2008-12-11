@@ -1,3 +1,8 @@
+Thu Dec 11 11:11:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/st.h (size_t): needs stddef.h or stdlib.h.
+	  [ruby-core:20339]
+
 Wed Dec 10 01:28:46 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk (win32.obj): depend on headers.
