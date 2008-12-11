@@ -57,7 +57,7 @@ module CMath
 
   def sqrt(z)
     if z.real?
-      if z >= 0
+      if z >= 0 || (Float === z && (z.nan? || z.infinite?))
 	sqrt!(z)
       else
 	Complex(0, sqrt!(-z))

@@ -1,3 +1,8 @@
+Thu Dec 11 23:48:00 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/cmath.rb (sqrt): should pass nan or infinity to the original
+	  method.
+
 Thu Dec 11 21:04:04 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker.rb, lib/rss/maker/0.9.rb, lib/rss/maker/base.rb:
