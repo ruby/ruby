@@ -1,7 +1,7 @@
-Thu Dec 11 13:17:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Dec 11 13:36:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* encoding.c (rb_enc_set_default_internal): defines internal
-	  encoding as nil.
+	* encoding.c (enc_set_default_encoding): allowed to set default
+	  encoding.
 
 	* encoding.c (rb_locale_encoding): removed Encoding::LOCALE.
 
