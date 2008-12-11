@@ -196,18 +196,6 @@ class TestBignum < Test::Unit::TestCase
     assert_equal([255], [T_MONE].pack("C").unpack("C"))
     assert_equal([0], [T32].pack("C").unpack("C"))
     assert_raise(RangeError) { 0.to_s(T32) }
-    assert_raise(Errno::EINVAL) do
-      begin Process.wait(0, T32P); rescue Errno::ECHILD; end
-      begin Process.wait(0, T64P); rescue Errno::ECHILD; end
-    end
-    assert_raise(RangeError) do
-      begin Process.wait(0, T32); rescue Errno::ECHILD; end
-      begin Process.wait(0, T64); rescue Errno::ECHILD; end
-    end
-    assert_raise(RangeError) do
-      begin Process.wait(0, -T32P); rescue Errno::ECHILD; end
-      begin Process.wait(0, -T64P); rescue Errno::ECHILD; end
-    end
   end
 
   def test_sub
