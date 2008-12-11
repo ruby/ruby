@@ -7,7 +7,7 @@ module RSS
     
     class RSS09 < RSSBase
       
-      def initialize(feed_version="0.92")
+      def initialize(feed_version)
         super
         @feed_type = "rss"
       end
@@ -457,11 +457,51 @@ module RSS
         end
       end
     end
-    
-    add_maker("0.9", "0.92", RSS09)
-    add_maker("0.91", "0.91", RSS09)
-    add_maker("0.92", "0.92", RSS09)
-    add_maker("rss0.91", "0.91", RSS09)
-    add_maker("rss0.92", "0.92", RSS09)
+
+    class RSS091 < RSS09
+      def initialize(feed_version="0.91")
+        super
+      end
+
+      class Channel < RSS09::Channel
+      end
+
+      class Items < RSS09::Items
+        class Item < RSS09::Items::Item
+        end
+      end
+
+      class Image < RSS09::Image
+      end
+
+      class Textinput < RSS09::Textinput
+      end
+    end
+
+    class RSS092 < RSS09
+      def initialize(feed_version="0.92")
+        super
+      end
+
+      class Channel < RSS09::Channel
+      end
+
+      class Items < RSS09::Items
+        class Item < RSS09::Items::Item
+        end
+      end
+
+      class Image < RSS09::Image
+      end
+
+      class Textinput < RSS09::Textinput
+      end
+    end
+
+    add_maker("0.9", "0.92", RSS092)
+    add_maker("0.91", "0.91", RSS091)
+    add_maker("0.92", "0.92", RSS092)
+    add_maker("rss0.91", "0.91", RSS091)
+    add_maker("rss0.92", "0.92", RSS092)
   end
 end

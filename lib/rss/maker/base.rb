@@ -374,8 +374,8 @@ module RSS
 
     class RSSBase < Base
       class << self
-        def make(version, &block)
-          new(version).make(&block)
+        def make(*args, &block)
+          new(*args).make(&block)
         end
       end
 
@@ -384,7 +384,7 @@ module RSS
         add_need_initialize_variable(element) do |object|
           object.send("make_#{element}")
         end
-        module_eval(<<-EOC, __FILE__, __LINE__)
+        module_eval(<<-EOC, __FILE__, __LINE__ + 1)
           private
           def setup_#{element}(feed)
             @#{element}.to_feed(feed)

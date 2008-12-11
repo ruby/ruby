@@ -4,6 +4,11 @@ require "rss/maker"
 
 module RSS
   class TestMakerAtomEntry < TestCase
+    def test_find_class
+      assert_equal(RSS::Maker::Atom::Entry, RSS::Maker["atom:entry"])
+      assert_equal(RSS::Maker::Atom::Entry, RSS::Maker["atom1.0:entry"])
+    end
+
     def test_root_element
       entry = Maker.make("atom:entry") do |maker|
         setup_dummy_channel_atom(maker)

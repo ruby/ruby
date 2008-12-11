@@ -4,6 +4,10 @@ require "rss/maker"
 
 module RSS
   class TestMaker10 < TestCase
+    def test_find_class
+      assert_equal(RSS::Maker::RSS10, RSS::Maker["1.0"])
+      assert_equal(RSS::Maker::RSS10, RSS::Maker["rss1.0"])
+    end
 
     def test_rdf
       assert_raise(LocalJumpError) do
