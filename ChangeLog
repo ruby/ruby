@@ -1,3 +1,9 @@
+Thu Dec 11 20:36:26 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/generator.rb (Enumerator#__generator): Now that
+	  Enumerator::Generator is defined, the Generator here must be
+	  referred to as ::Generator.
+
 Thu Dec 11 19:33:10 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (enumerator_initialize): Add an ability to generate

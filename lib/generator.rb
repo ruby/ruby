@@ -167,7 +167,7 @@ end
 
 class Enumerator
   def __generator
-    @generator ||= Generator.new(self)
+    @generator ||= ::Generator.new(self)
   end
   private :__generator
 
