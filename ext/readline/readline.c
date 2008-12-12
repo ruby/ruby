@@ -602,15 +602,14 @@ static VALUE
 readline_s_get_completion_append_character(VALUE self)
 {
 #ifdef HAVE_RL_COMPLETION_APPEND_CHARACTER
-    VALUE str;
+    char buf[1];
 
     rb_secure(4);
     if (rl_completion_append_character == '\0')
 	return Qnil;
 
-    str = rb_str_new(0, 1);
-    RSTRING_PTR(str)[0] = rl_completion_append_character;
-    return str;
+    buf[0] = (char) rl_completion_append_character;
+    return rb_locale_str_new(buf, 1);
 #else
     rb_notimplement();
     return Qnil; /* not reached */
