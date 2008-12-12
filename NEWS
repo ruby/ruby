@@ -1,28 +1,28 @@
-Changes for 1.9
+= NEWS
 
-Incompatible (Severe)
+This document is a list of user visible feature changes made between
+releases except for bug fixes.
+
+Note that each entry is kept so brief that no reason behind or
+reference information is supplied with.  For a full list of changes
+with all sufficient information, see the ChangeLog file.
+
+== Changes since the 1.8.7 release
+
+=== Compatibility issues
+
+* language core
 
     * New syntax and semantics
           o Block arguments are always local
           o Block arguments
           o New semantics for block arguments
           o Block local variables
-    * Array
-          o Array#nitems was removed (use count {|i| !i.nil?})
-          o Array#choice was removed (use sample)
-    * String
-          o No longer an Enumerable
-          o ?c semantics
-          o "One-char-wide" semantics for String#[] and String#[]= [Ruby2]
-          o Encoding-awareness
-    * IO operations
-          o IO#getc
-
-Incompatible (Trivial)
-
-    * New syntax and semantics
           o Method used for splat arguments: #to_splat
           o defined? and local variables
+
+* builtin classes and objects
+
     * Kernel and Object
           o Kernel#require
     * Class and Module
@@ -35,25 +35,34 @@ Incompatible (Trivial)
           o SystemStackError
           o SecurityError
           o Removed Exception#to_str [Ruby2]
+
     * Array
+          o Array#nitems was removed (use count {|i| !i.nil?})
+          o Array#choice was removed (use sample)
           o Array#[m,n] = nil places nil in the array.
+    * Enumerable and Enumerator
+          o Enumerable#map,collect_all called without a block returns
+            an enumerator.
+    * File and Dir operations
+          o #to_path in File.path, File.chmod, File.lchmod, File.chown, File.lchown, File.utime, File.unlink... [Ruby2]
+          o Dir.[], Dir.glob
+          o Dir.exist?
+    * String
+          o No longer an Enumerable
+          o ?c semantics
+          o "One-char-wide" semantics for String#[] and String#[]= [Ruby2]
+          o Encoding-awareness
     * Hash
-          o Hash#default_proc=
           o Hash#to_s is equivalent to Hash#inspect
           o Semantics for Hash#each and Hash#each_pair
-          o Hash#select
+          o Hash#select returns a hash
           o Hash#key is the new name for #index which has been deprecated.
           o Most of the changes in Hash apply to hash like interfaces such as
             ENV and *DBM.
     * Integer
           o Integer(nil) raises TypeError
-    * Struct
-          o Struct#inspect
-    * File and Dir operations
-          o #to_path in File.path, File.chmod, File.lchmod, File.chown, File.lchown, File.utime, File.unlink... [Ruby2]
-          o Dir.[], Dir.glob
-          o Dir.exist?
     * IO operations
+          o IO#getc
           o Non-blocking IO
           o Kernel#open takes "t" for newline conversion
           o Kernel#open takes encoding specified
@@ -67,9 +76,9 @@ Incompatible (Trivial)
     * Time
           o New format in Time#to_s
           o Timezone information preserved on Marshal.dump/load
+    * Struct
+          o Struct#inspect
     * Symbols: restriction on literal symbols
-    * Readline
-          o If Readline uses libedit, Readline::HISTORY[0] returns the first of the history.
     * $SAFE and bound methods
     * Deprecation
           o VERSION and friends
@@ -82,7 +91,12 @@ Incompatible (Trivial)
           o Removed Array and Hash #indices, #indexes
 	  o libraries: base64, mailread, getopts, parsearg, soap, wsdl
 
-Compatible
+* bundled libraries
+
+    * Readline
+          o If Readline uses libedit, Readline::HISTORY[0] returns the first of the history.
+
+=== Language core changes
 
     * New syntax and semantics
           o New literal hash syntax
@@ -93,6 +107,9 @@ Compatible
           o Arguments to #[]
           o printf-style formatted strings (%)
           o Newlines allowed before ternary colon
+
+=== Library updates
+
     * Kernel and Object
           o BasicObject
           o Object#=~
@@ -113,11 +130,9 @@ Compatible
           o Passing blocks to #[]
           o Proc#lambda?
     * Enumerable and Enumerator
-          o Enumerable#map,collect_all called without a block returns
-            an enumerator.
           o Enumerable#each_with_object [experimental]
-          o Enumerator#with_object [experimental]
-          o Enumerator.new { ... } [experimental]
+          o Enumerator#with_object
+          o Enumerator.new { ... }
     * Regexp#match, String#match
           o Regexp#match, String#match
     * Encoding
@@ -130,6 +145,7 @@ Compatible
           o Array.try_convert
     * Hash
           o preserving item insertion order
+          o Hash#default_proc=
           o Hash#_compare_by_identity and Hash#compare_by_identity?
           o Hash.try_convert
     * Numeric
@@ -180,7 +196,8 @@ Compatible
           o Method#hash, Proc#hash
           o __callee__
 
-* Implementation
+=== Implementation changes
+
     * Memory Diet
       * Object Compaction - Object, Array, String, Hash, Struct, Class, Module
       * st_table compaction (inlining small tables)
