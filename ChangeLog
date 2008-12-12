@@ -1,3 +1,8 @@
+Sun Dec  7 23:47:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBPATHFLAG): use numbered specifier if RPATHFLAG
+	  is set.  [ruby-talk:322136]
+
 Sat Dec  6 17:51:35 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* pack.c (pack_pack): 'u0' is not special differently from 'm0'.

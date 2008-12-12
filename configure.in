@@ -1291,7 +1291,6 @@ AC_SUBST(DLEXT2)dnl
 AC_SUBST(LIBEXT)dnl
 
 STATIC=
-: ${LIBPATHFLAG=' -L%s'}
 : ${PATHFLAG=''}
 
 if test "$with_dln_a_out" != yes; then
@@ -1321,7 +1320,6 @@ if test "$with_dln_a_out" != yes; then
        [  --disable-rpath         embed run path into extension libraries.],
        [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
   if test "$enable_rpath" = yes; then
-    LIBPATHFLAG=" -L%1\$-s"
     RPATHFLAG=" ${linker_flag}-R%1\$-s"
   fi
 
@@ -1474,6 +1472,12 @@ if test "${LDSHAREDXX}" = ""; then
 	    ;;
     esac
 fi
+case ${RPATHFLAG} in
+*'%1$'*)
+    : ${LIBPATHFLAG=' -L%1$-s'};;
+*)
+    : ${LIBPATHFLAG=' -L%s'};;
+esac
 
 AC_SUBST(LINK_SO)
 AC_SUBST(LIBPATHFLAG)
