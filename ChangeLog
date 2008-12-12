@@ -1,3 +1,7 @@
+Fri Dec 12 22:12:46 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c, rational.c: do not use RUBY_VERSION_CODE.
+
 Fri Dec 12 21:41:36 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/readline.c: r20662 reverted.
