@@ -1,3 +1,9 @@
+Mon Dec  8 10:32:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (set_option_encoding_once): dry.
+
+	* ruby.c (proc_options): checks extra argument for -E/--encoding.
+
 Sun Dec  7 23:47:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LIBPATHFLAG): use numbered specifier if RPATHFLAG
