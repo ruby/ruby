@@ -1,3 +1,8 @@
+Tue Dec  9 00:54:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot (package): enc.mk in snapshot is dummy and should
+	  not deal with objects.  [ruby-core:20422]
+
 Tue Dec  9 00:17:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/depend (clean-srcs): split out from clean.

@@ -161,6 +161,14 @@ def package(rev, destdir)
         f.puts(IO.read("Makefile.in")[/^lex\.c.*?^$/m])
         f.puts(commonmk.gsub(/\{[^{}]*\}/, ""))
       end
+      File.open("enc.mk", "r+b") do |f|
+        data = f.read
+        data.gsub!(/^((?:ENC|TRANS)(?:OBJ|SO)(?:S|DIR)\s*=)(?:.*\\\n)*.*/, '\1')
+        data.sub!(/^(clean:.*)(?:\n\t.*)+/, '\1')
+        f.rewind
+        f.truncate(0)
+        f.print data
+      end
       clean.push("rbconfig.rb", ".rbconfig.time")
       print "prerequisites"
     else
