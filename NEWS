@@ -1,0 +1,51 @@
+= NEWS
+
+This document is a list of user visible feature changes made between
+releases except for bug fixes.
+
+Note that each entry is kept so brief that no reason behind or
+reference information is supplied with.  For a full list of changes
+with all sufficient information, see the ChangeLog file.
+
+== Changes since the 1.9.1 release
+
+=== Library updates (outstanding ones only)
+
+* builtin classes
+
+  * Enumerator#rewind
+
+    Now calls the "rewind" method of the enclosed object if defined.
+
+* rss
+
+  * 0.2.4 -> 0.2.5
+
+  * RSS::Maker.make
+    * raise an exception not returns nil for invalid feed making.
+    * requires block.
+
+  * RSS::Maker.[]
+    * new method to return maker class.
+
+* REXML
+
+  * REXML::Document.entity_expansion_limit=
+
+    New method to set the entity expansion limit. By default the limit is
+    set to 10000.  See the following URL for details.
+
+    http://www.ruby-lang.org/en/news/2008/08/23/dos-vulnerability-in-rexml/
+
+* logger
+
+  * imported upstream version (logger/1.2.7)
+    * do not raise an exception even if log writing failed.
+    * do not raise ShiftingError if an aged file already exists.
+      (no ShiftingError will be raised from 1.2.7, just warn() instead)
+
+=== Compatibility issues (excluding feature bug fixes)
+
+  * Enumerator#rewind
+
+    See above.
