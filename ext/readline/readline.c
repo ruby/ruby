@@ -218,7 +218,7 @@ readline_readline(int argc, VALUE *argv, VALUE self)
 	prompt = RSTRING_PTR(tmp);
     }
 
-    if (!isatty(0) && errno == EBADF) rb_raise(rb_eIOError, "stdin closed");
+    if (!isatty(0) && errno == EBADF) rb_raise(rb_eIOError, "closed stdin");
 
     buff = (char*)rb_protect((VALUE(*)_((VALUE)))readline, (VALUE)prompt,
                               &status);

@@ -1,3 +1,9 @@
+Fri Dec 12 19:13:43 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/readline.c (readline_readline): changed the message
+	  of IOError to 'closed stdin' from 'stdin closed' if stdin was
+	  closed.
+
 Fri Dec 12 19:00:49 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/readline.c: used the ExportStringValue macro
