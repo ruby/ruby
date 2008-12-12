@@ -1,3 +1,17 @@
+Tue Dec  9 11:50:46 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* pack.c (pack_pck): fixed [ruby-dev:37295]. 
+	  Array#pack always has returned an US-ASCII string when
+	  the given format ended with 'u', 'M' or 'm'.
+
+Sat Dec  6 14:35:06 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* pack.c (pack_pack): set US-ASCII and CODERANGE_7BIT
+	  when quoted-printable ('M') and base64 ('m').
+	  [ruby-dev:37284]
+
+	* pack.c (pack_unpack): ditto.
+
 Thu Dec 11 11:51:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_locale_encoding): removed Encoding::LOCALE.
