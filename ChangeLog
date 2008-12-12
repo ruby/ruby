@@ -1,3 +1,14 @@
+Fri Dec 12 11:00:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_feature_p): load path must be expanded.
+	  [ruby-dev:37388]
+
+Fri Dec 12 10:28:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_version): greps only the line that defines version.
+
+	* version.h (RUBY_VERSION_CODE, RUBY_RELEASE_CODE): removed.
+
 Fri Dec 12 10:20:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* complex.c, rational.c: do not use RUBY_VERSION_CODE.
