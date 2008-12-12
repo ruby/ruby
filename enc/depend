@@ -128,9 +128,15 @@ enc/encdb.$(OBJEXT): encdb.h
 enc/trans/transdb.$(OBJEXT): transdb.h
 
 clean:
-% %w[$(ENCSOS) $(ENCOBJS) $(ENCCLEANOBJS) $(ENCCLEANLIBS) $(TRANSSOS) $(TRANSOBJS) $(TRANSCLEANOBJS) $(TRANSCLEANLIBS) $(TRANSCSRCS)].each do |clean|
+% %w[$(ENCSOS) $(ENCOBJS) $(ENCCLEANOBJS) $(ENCCLEANLIBS) $(TRANSSOS) $(TRANSOBJS) $(TRANSCLEANOBJS) $(TRANSCLEANLIBS)].each do |clean|
 	@$(RM) <%=pathrep[clean]%>
 % end
-% %w[$(ENCSODIR)/trans $(ENCSODIR) enc/trans enc].each do|dir|
+% %w[$(TRANSSODIR) $(ENCSODIR)].each do|dir|
+	@-rmdir <%=pathrep[dir]%>
+% end
+
+clean-srcs:
+	@$(RM) <%=pathrep['$(TRANSCSRCS)']%>
+% %w[enc/trans enc].each do|dir|
 	@-rmdir <%=pathrep[dir]%>
 % end
