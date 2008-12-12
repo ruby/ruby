@@ -905,6 +905,9 @@ enc_list(VALUE klass)
  *   Encoding.find("US-ASCII")  => #<Encoding:US-ASCII>
  *   Encoding.find(:Shift_JIS)  => #<Encoding:Shift_JIS>
  *
+ * An ArgumentError is raised when no encoding with <i>name</i>.
+ * Only +Encoding.find("internal")+ however returns nil when no encoding named "internal",
+ * in other words, when Ruby has no default internal encoding.
  */
 static VALUE
 enc_find(VALUE klass, VALUE enc)
@@ -1102,6 +1105,9 @@ get_default_external(VALUE klass)
 void
 rb_enc_set_default_external(VALUE encoding)
 {
+    if (NIL_P(encoding)) {
+        rb_raise(rb_eArgError, "default external can not be nil");
+    }
     enc_set_default_encoding(&default_external, encoding,
 			     "external", ENCINDEX_US_ASCII);
 }
@@ -1161,9 +1167,10 @@ rb_enc_set_default_internal(VALUE encoding)
 
 /*
  * call-seq:
- *   Encoding.default_internal = enc
+ *   Encoding.default_internal = enc or nil
  *
  * Sets default internal encoding.
+ * Or removes default internal encoding when passed nil.
  */
 static VALUE
 set_default_internal(VALUE klass, VALUE encoding)

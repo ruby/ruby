@@ -1,3 +1,12 @@
+Fri Dec 12 19:29:07 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* encoding.c (rb_enc_set_default_external): default_internal can be
+	  nil, but default_external cannot.
+
+	* encoding.c (rb_set_default_internal): adds rdoc.
+
+	* encoding.c (enc_find): ditto.
+
 Fri Dec 12 19:24:47 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* common.mk (run, runruby, parse, gdb, gdb-ruby): you can also run
