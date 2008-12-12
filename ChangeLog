@@ -1,3 +1,8 @@
+Fri Dec  5 22:56:24 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_make_exception): single argument to raise may be
+	  string compatible object.
+
 Tue Dec  9 00:54:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/make-snapshot (package): enc.mk in snapshot is dummy and should
