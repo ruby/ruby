@@ -903,7 +903,7 @@ pack_pack(VALUE ary, VALUE fmt)
 	    ptr = RSTRING_PTR(from);
 	    plen = RSTRING_LEN(from);
 
-	    if (len == 0) {
+	    if (len == 0 && type == 'm') {
 		encodes(res, ptr, plen, type, 0);
 		ptr += plen;
 		break;

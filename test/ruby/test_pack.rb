@@ -349,6 +349,10 @@ class TestPack < Test::Unit::TestCase
     assert_equal("M86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A\n!80``\n", ["a"*46].pack("u"))
     assert_equal("&86)C9&5F\n#9VAI\n", ["abcdefghi"].pack("u6"))
 
+    assert_equal("M86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A\n!80``\n", ["a"*46].pack("u0"))
+    assert_equal("M86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A\n!80``\n", ["a"*46].pack("u1"))
+    assert_equal("M86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A\n!80``\n", ["a"*46].pack("u2"))
+
     assert_equal([""], "".unpack("u"))
     assert_equal(["a"], "!80``\n".unpack("u"))
     assert_equal(["abc"], "#86)C\n".unpack("u"))

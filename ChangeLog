@@ -1,3 +1,7 @@
+Sat Dec  6 17:51:35 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* pack.c (pack_pack): 'u0' is not special differently from 'm0'.
+
 Tue Dec  9 11:50:46 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* pack.c (pack_pck): fixed [ruby-dev:37295]. 
