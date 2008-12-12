@@ -5015,16 +5015,8 @@ yycompile0(VALUE arg, int tracing)
     if (!tree) {
 	tree = NEW_NIL();
     }
-    if (ruby_eval_tree_begin) {
-	NODE *scope = ruby_eval_tree;
-
-        if (scope) {
-	    scope->nd_body = NEW_PRELUDE(ruby_eval_tree_begin, scope->nd_body);
-	}
-	tree = scope;
-    }
-    else {
-	tree = ruby_eval_tree;
+    else if (ruby_eval_tree_begin) {
+	tree->nd_body = NEW_PRELUDE(ruby_eval_tree_begin, tree->nd_body);
     }
     return (VALUE)tree;
 }

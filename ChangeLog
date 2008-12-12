@@ -1,3 +1,8 @@
+Fri Dec 12 16:23:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (yycompile0): ruby_eval_tree_begin is always 0 when
+	  ruby_eval_tree is 0.
+
 Fri Dec 12 14:09:55 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* encoding.c (enc_get_default_encoding): removed.
