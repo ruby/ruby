@@ -1,3 +1,7 @@
+Fri Dec 12 21:41:36 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/readline.c: r20662 reverted.
+
 Fri Dec 12 19:29:07 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* encoding.c (rb_enc_set_default_external): default_internal can be
