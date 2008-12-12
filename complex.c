@@ -320,9 +320,7 @@ f_complex_new_bang2(VALUE klass, VALUE x, VALUE y)
     return nucomp_s_new_internal(klass, x, y);
 }
 
-#ifndef RUBY_VERSION_CODE
-#include "version.h"
-#endif
+#define RUBY_VERSION_CODE 0
 
 #if RUBY_VERSION_CODE < 200
 #define CANON

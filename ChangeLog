@@ -1,3 +1,7 @@
+Fri Dec 12 10:20:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c, rational.c: do not use RUBY_VERSION_CODE.
+
 Fri Dec 12 10:19:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_string_value_ptr, rb_to_id): do not use a side
