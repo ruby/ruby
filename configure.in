@@ -80,6 +80,9 @@ fi
 AC_SUBST(MAJOR)
 AC_SUBST(MINOR)
 AC_SUBST(TEENY)
+if test "$MAJOR" = "1"; then
+  AC_DEFINE(CANONICALIZATION_FOR_MATHN)
+fi
 dnl checks for alternative programs
 AC_ARG_WITH(gcc, [  --without-gcc           never use gcc], [
 	case $withval in

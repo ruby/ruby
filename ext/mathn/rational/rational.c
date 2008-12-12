@@ -1,7 +1,7 @@
-extern void nurat_canonicalize(int);
+extern void nurat_canonicalization(int);
 
 void
 Init_rational(void)
 {
-    nurat_canonicalize(1);
+    nurat_canonicalization(1);
 }

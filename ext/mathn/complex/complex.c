@@ -1,7 +1,7 @@
-extern void nucomp_canonicalize(int);
+extern void nucomp_canonicalization(int);
 
 void
 Init_complex(void)
 {
-    nucomp_canonicalize(1);
+    nucomp_canonicalization(1);
 }

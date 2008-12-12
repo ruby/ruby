@@ -1,3 +1,15 @@
+Sat Dec 13 08:35:14 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_canonicalization): renamed.
+
+	* ext/math/complex.c: followed the above change.
+
+	* rational.c (nurat_canonicalization): renamed.
+
+	* ext/math/rational.c: followed the above change.
+
+	* configure.in: defines a new macro.
+
 Sat Dec 13 01:10:03 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/readline.c
