@@ -1,3 +1,8 @@
+Tue Dec  9 03:21:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb: fix for continued lines.  based on a patch from
+	  Marcus Rueckert <darix AT opensu.se> at [ruby-core:20420].
+
 Fri Dec  5 22:56:24 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_make_exception): single argument to raise may be
