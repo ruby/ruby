@@ -1240,7 +1240,8 @@ rb_string_value(volatile VALUE *ptr)
 char *
 rb_string_value_ptr(volatile VALUE *ptr)
 {
-    return RSTRING_PTR(rb_string_value(ptr));
+    VALUE str = rb_string_value(ptr);
+    return RSTRING_PTR(str);
 }
 
 char *
@@ -5433,8 +5434,9 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	rb_ary_push(result, tmp);
     }
     if (NIL_P(limit) && lim == 0) {
-	while (RARRAY_LEN(result) > 0 &&
-	       RSTRING_LEN(RARRAY_PTR(result)[RARRAY_LEN(result)-1]) == 0)
+	long len;
+	while ((len = RARRAY_LEN(result)) > 0 &&
+	       (tmp = RARRAY_PTR(result)[len-1], RSTRING_LEN(tmp) == 0))
 	    rb_ary_pop(result);
     }
 
@@ -7030,8 +7032,9 @@ rb_to_id(VALUE name)
       default:
 	tmp = rb_check_string_type(name);
 	if (NIL_P(tmp)) {
+	    tmp = rb_inspect(name);
 	    rb_raise(rb_eTypeError, "%s is not a symbol",
-		     RSTRING_PTR(rb_inspect(name)));
+		     RSTRING_PTR(tmp));
 	}
 	name = tmp;
 	/* fall through */
