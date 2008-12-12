@@ -1,3 +1,9 @@
+Sat Dec 13 01:10:03 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/readline.c
+	  (readline_s_get_completion_append_character): uses locale
+	  encoding but not ASCII-8BIT.
+
 Fri Dec 12 22:12:46 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c, rational.c: do not use RUBY_VERSION_CODE.
