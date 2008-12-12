@@ -213,9 +213,9 @@ rubylib_mangled_path(const char *s, unsigned int l)
 	}
     }
     if (!newp || l < oldl || STRNCASECMP(oldp, s, oldl) != 0) {
-	return rb_str_new(s, l);
+	return rb_locale_str_new(s, l);
     }
-    ret = rb_str_new(0, l + newl - oldl);
+    ret = rb_locale_str_new(0, l + newl - oldl);
     ptr = RSTRING_PTR(ret);
     memcpy(ptr, newp, newl);
     memcpy(ptr + newl, s + oldl, l - oldl);
@@ -229,8 +229,8 @@ rubylib_mangled_path2(const char *s)
     return rubylib_mangled_path(s, strlen(s));
 }
 #else
-#define rubylib_mangled_path rb_str_new
-#define rubylib_mangled_path2 rb_str_new2
+#define rubylib_mangled_path rb_locale_str_new
+#define rubylib_mangled_path2 rb_locale_str_new_cstr
 #endif
 
 static void
@@ -1178,7 +1178,7 @@ process_options(VALUE arg)
 	}
     }
 
-    ruby_script(opt->script);
+    rb_progname = rb_obj_freeze(rb_str_new_cstr(opt->script));
 #if defined DOSISH || defined __CYGWIN__
     translate_char(RSTRING_PTR(rb_progname), '\\', '/');
 #endif
@@ -1670,7 +1670,7 @@ ruby_process_options(int argc, char **argv)
     struct cmdline_options opt;
     NODE *tree;
 
-    ruby_script(argv[0]);	/* for the time being */
+    ruby_script(argv[0]);  /* for the time being */
     rb_argv0 = rb_str_new4(rb_progname);
     rb_gc_register_mark_object(rb_argv0);
     args.argc = argc;

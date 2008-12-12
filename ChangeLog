@@ -1,3 +1,22 @@
+Fri Dec 12 14:09:55 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* encoding.c (enc_get_default_encoding): removed.
+	  Generalizing rb_default_{external,internal}_encoding seems to be
+	  difficult. 
+	  default_external cannot be NULL even before detected. [ruby-dev:37390]
+
+	* encoding.c (rb_default_external_encoding): has its own
+	  implementation again.
+
+	* encoding.c (rb_default_internal_encoding): ditto.
+
+	* gem_prelude.rb: added notice.
+
+	* ruby.c (rubylib_mangled_path, rubylib_mangled_path2): uses locale
+	  encoding but not ASCII-8BIT.
+
+	* ruby.c (process_options): refers less to default_external.
+
 Fri Dec 12 11:00:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_feature_p): load path must be expanded.

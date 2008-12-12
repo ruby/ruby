@@ -1037,15 +1037,6 @@ struct default_encoding {
     rb_encoding *enc;
 };
 
-static rb_encoding *
-enc_get_default_encoding(struct default_encoding *def)
-{
-    if (!def->enc && def->index >= 0) {
-	def->enc = rb_enc_from_index(def->index);
-    }
-    return def->enc;
-}
-
 static int
 enc_set_default_encoding(struct default_encoding *def, VALUE encoding,
 			 const char *name, int defindex)
@@ -1077,7 +1068,15 @@ static struct default_encoding default_external = {-2};
 rb_encoding *
 rb_default_external_encoding(void)
 {
-    return enc_get_default_encoding(&default_external);
+    if (default_external.enc) return default_external.enc;
+
+    if (default_external.index >= 0) {
+        default_external.enc = rb_enc_from_index(default_external.index);
+        return default_external.enc;
+    }
+    else {
+        return rb_locale_encoding();
+    }
 }
 
 VALUE
@@ -1126,7 +1125,10 @@ static struct default_encoding default_internal = {-2};
 rb_encoding *
 rb_default_internal_encoding(void)
 {
-    return enc_get_default_encoding(&default_internal);
+    if (!default_internal.enc && default_internal.index >= 0) {
+        default_internal.enc = rb_enc_from_index(default_internal.index);
+    }
+    return default_internal.enc; /* can be NULL */
 }
 
 VALUE
