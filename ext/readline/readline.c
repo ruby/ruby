@@ -63,11 +63,6 @@ static int (*history_get_offset_func)(int);
 static char **readline_attempted_completion_function(const char *text,
                                                      int start, int end);
 
-#define OutputStringValue(str) do {\
-    SafeStringValue(str);\
-    str = rb_str_conv_enc(str, rb_enc_get(str), rb_locale_encoding());\
-} while (0)\
-
 #ifdef HAVE_RL_EVENT_HOOK
 #define BUSY_WAIT 0
 
@@ -219,7 +214,7 @@ readline_readline(int argc, VALUE *argv, VALUE self)
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "02", &tmp, &add_hist) > 0) {
-	OutputStringValue(tmp);
+	ExportStringValue(tmp);
 	prompt = RSTRING_PTR(tmp);
     }
 
@@ -573,7 +568,7 @@ readline_s_set_completion_append_character(VALUE self, VALUE str)
 	rl_completion_append_character = '\0';
     }
     else {
-	OutputStringValue(str);
+	ExportStringValue(str);
 	if (RSTRING_LEN(str) == 0) {
 	    rl_completion_append_character = '\0';
 	} else {
@@ -636,7 +631,7 @@ readline_s_set_basic_word_break_characters(VALUE self, VALUE str)
     static char *basic_word_break_characters = NULL;
 
     rb_secure(4);
-    OutputStringValue(str);
+    ExportStringValue(str);
     if (basic_word_break_characters == NULL) {
 	basic_word_break_characters =
 	    ALLOC_N(char, RSTRING_LEN(str) + 1);
@@ -699,7 +694,7 @@ readline_s_set_completer_word_break_characters(VALUE self, VALUE str)
     static char *completer_word_break_characters = NULL;
 
     rb_secure(4);
-    OutputStringValue(str);
+    ExportStringValue(str);
     if (completer_word_break_characters == NULL) {
 	completer_word_break_characters =
 	    ALLOC_N(char, RSTRING_LEN(str) + 1);
@@ -760,7 +755,7 @@ readline_s_set_basic_quote_characters(VALUE self, VALUE str)
     static char *basic_quote_characters = NULL;
 
     rb_secure(4);
-    OutputStringValue(str);
+    ExportStringValue(str);
     if (basic_quote_characters == NULL) {
 	basic_quote_characters =
 	    ALLOC_N(char, RSTRING_LEN(str) + 1);
@@ -824,7 +819,7 @@ readline_s_set_completer_quote_characters(VALUE self, VALUE str)
     static char *completer_quote_characters = NULL;
 
     rb_secure(4);
-    OutputStringValue(str);
+    ExportStringValue(str);
     if (completer_quote_characters == NULL) {
 	completer_quote_characters =
 	    ALLOC_N(char, RSTRING_LEN(str) + 1);
@@ -886,7 +881,7 @@ readline_s_set_filename_quote_characters(VALUE self, VALUE str)
     static char *filename_quote_characters = NULL;
 
     rb_secure(4);
-    OutputStringValue(str);
+    ExportStringValue(str);
     if (filename_quote_characters == NULL) {
 	filename_quote_characters =
 	    ALLOC_N(char, RSTRING_LEN(str) + 1);
@@ -977,7 +972,7 @@ hist_set(VALUE self, VALUE index, VALUE str)
 
     rb_secure(4);
     i = NUM2INT(index);
-    OutputStringValue(str);
+    ExportStringValue(str);
     if (i < 0) {
         i += history_length;
     }
@@ -998,7 +993,7 @@ static VALUE
 hist_push(VALUE self, VALUE str)
 {
     rb_secure(4);
-    OutputStringValue(str);
+    ExportStringValue(str);
     add_history(RSTRING_PTR(str));
     return self;
 }
@@ -1011,7 +1006,7 @@ hist_push_method(int argc, VALUE *argv, VALUE self)
     rb_secure(4);
     while (argc--) {
 	str = *argv++;
-	OutputStringValue(str);
+	ExportStringValue(str);
 	add_history(RSTRING_PTR(str));
     }
     return self;

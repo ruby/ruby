@@ -1,3 +1,9 @@
+Fri Dec 12 19:00:49 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/readline.c: used the ExportStringValue macro
+	  instead of the OutputStringValue macro. removed the
+	  OutputStringValue macro.
+
 Fri Dec 12 16:23:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (yycompile0): ruby_eval_tree_begin is always 0 when
