@@ -33,6 +33,22 @@ rb_get_load_path(void)
     return load_path;
 }
 
+VALUE
+rb_get_expanded_load_path(void)
+{
+    VALUE load_path = rb_get_load_path();
+    VALUE ary = rb_ary_new2(RARRAY_LEN(load_path));
+    long i;
+
+    for (i = 0; i < RARRAY_LEN(load_path); ++i) {
+	VALUE path = rb_file_expand_path(RARRAY_PTR(load_path)[i], Qnil);
+	rb_str_freeze(path);
+	rb_ary_push(ary, path);
+    }
+    rb_obj_freeze(ary);
+    return ary;
+}
+
 static VALUE
 load_path_getter(ID id, rb_vm_t *vm)
 {
@@ -128,9 +144,10 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	if ((n = RSTRING_LEN(v)) < len) continue;
 	if (strncmp(f, feature, len) != 0) {
 	    if (expanded) continue;
-	    if (!load_path) load_path = rb_get_load_path();
+	    if (!load_path) load_path = rb_get_expanded_load_path();
 	    if (!(p = loaded_feature_path(f, n, feature, len, type, load_path)))
 		continue;
+	    expanded = 1;
 	    f += RSTRING_LEN(p) + 1;
 	}
 	if (!*(e = f + len)) {
