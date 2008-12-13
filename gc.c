@@ -819,7 +819,7 @@ assign_heap_slot(rb_objspace_t *objspace)
 	    hi = mid;
 	}
 	else {
-	    rb_bug("same heap slot is allocated: %p at %"PRIuVALUE, membase, (VALUE)mid);
+	    rb_bug("same heap slot is allocated: %p at %"PRIuVALUE, (void *)membase, (VALUE)mid);
 	}
     }
     if (hi < heaps_used) {
@@ -1563,7 +1563,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 
       default:
 	rb_bug("rb_gc_mark(): unknown data type 0x%lx(%p) %s",
-	       BUILTIN_TYPE(obj), obj,
+	       BUILTIN_TYPE(obj), (void *)obj,
 	       is_pointer_to_heap(objspace, obj) ? "corrupted object" : "non object");
     }
 }

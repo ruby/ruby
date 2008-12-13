@@ -205,15 +205,15 @@ static int
 check_env(rb_env_t * const env)
 {
     printf("---\n");
-    printf("envptr: %p\n", &env->block.dfp[0]);
+    printf("envptr: %p\n", (void *)&env->block.dfp[0]);
     printf("orphan: %p\n", (void *)env->block.dfp[1]);
     printf("inheap: %p\n", (void *)env->block.dfp[2]);
     printf("envval: %10p ", (void *)env->block.dfp[3]);
     dp(env->block.dfp[3]);
     printf("penvv : %10p ", (void *)env->block.dfp[4]);
     dp(env->block.dfp[4]);
-    printf("lfp:    %10p\n", env->block.lfp);
-    printf("dfp:    %10p\n", env->block.dfp);
+    printf("lfp:    %10p\n", (void *)env->block.lfp);
+    printf("dfp:    %10p\n", (void *)env->block.dfp);
     if (env->block.dfp[4]) {
 	printf(">>\n");
 	check_env_value(env->block.dfp[4]);
@@ -1464,10 +1464,10 @@ thread_free(void *ptr)
 	}
 
 	if (th->locking_mutex != Qfalse) {
-	    rb_bug("thread_free: locking_mutex must be NULL (%p:%ld)", th, th->locking_mutex);
+	    rb_bug("thread_free: locking_mutex must be NULL (%p:%ld)", (void *)th, th->locking_mutex);
 	}
 	if (th->keeping_mutexes != NULL) {
-	    rb_bug("thread_free: keeping_mutexes must be NULL (%p:%ld)", th, th->locking_mutex);
+	    rb_bug("thread_free: keeping_mutexes must be NULL (%p:%ld)", (void *)th, th->locking_mutex);
 	}
 
 	if (th->local_storage) {

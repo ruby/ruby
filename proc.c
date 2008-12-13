@@ -733,7 +733,7 @@ proc_to_s(VALUE self)
 			 line_no, is_lambda);
     }
     else {
-	str = rb_sprintf("#<%s:%p%s>", cname, proc->block.iseq,
+	str = rb_sprintf("#<%s:%p%s>", cname, (void *)proc->block.iseq,
 			 is_lambda);
     }
 

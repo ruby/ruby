@@ -1,4 +1,13 @@
-Tue Dec  9 13:25:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Dec  9 13:33:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each), gc.c (assign_heap_slot),
+	  (gc_mark_children), parse.y (vtable_alloc, vtable_free, vtable_add),
+	  proc.c (proc_to_s), thread.c (terminate_i, rb_thread_terminate_all),
+	  (thread_start_func_2, blocking_region_begin, blocking_region_end),
+	  (rb_thread_kill), thread_pthread.c (native_thread_create),
+	  (ubf_pthread_cond_signal), vm.c (check_env, thread_free), vm_dump.c
+	  (vm_env_dump_raw, vm_stack_dump_each, vm_thread_dump_state),
+	  (vm_call0): use void pointer for %p.
 
 	* cont.c (fiber_status), template/insns.inc.tmpl (ruby_vminsn_type),
 	  vm_insnhelper.h (BOP): ISO C forbids comma at end of enumerator

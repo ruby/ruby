@@ -129,14 +129,14 @@ vtable_alloc(struct vtable *prev)
     tbl->capa = 8;
     tbl->tbl = ALLOC_N(ID, tbl->capa);
     tbl->prev = prev;
-    if (VTBL_DEBUG) printf("vtable_alloc: %p\n", tbl);
+    if (VTBL_DEBUG) printf("vtable_alloc: %p\n", (void *)tbl);
     return tbl;
 }
 
 static void
 vtable_free(struct vtable *tbl)
 {
-    if (VTBL_DEBUG)printf("vtable_free: %p\n", tbl);
+    if (VTBL_DEBUG)printf("vtable_free: %p\n", (void *)tbl);
     if (POINTER_P(tbl)) {
         if (tbl->tbl) {
             xfree(tbl->tbl);
@@ -149,9 +149,9 @@ static void
 vtable_add(struct vtable *tbl, ID id)
 {
     if (!POINTER_P(tbl)) {
-        rb_bug("vtable_add: vtable is not allocated (%p)", tbl);
+        rb_bug("vtable_add: vtable is not allocated (%p)", (void *)tbl);
     }
-    if (VTBL_DEBUG) printf("vtable_add: %p, %s\n", tbl, rb_id2name(id));
+    if (VTBL_DEBUG) printf("vtable_add: %p, %s\n", (void *)tbl, rb_id2name(id));
 
     if (tbl->pos == tbl->capa) {
         tbl->capa = tbl->capa * 2;

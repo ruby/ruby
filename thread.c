@@ -270,13 +270,13 @@ terminate_i(st_data_t key, st_data_t val, rb_thread_t *main_thread)
     GetThreadPtr(thval, th);
 
     if (th != main_thread) {
-	thread_debug("terminate_i: %p\n", th);
+	thread_debug("terminate_i: %p\n", (void *)th);
 	rb_thread_interrupt(th);
 	th->thrown_errinfo = eTerminateSignal;
 	th->status = THREAD_TO_KILL;
     }
     else {
-	thread_debug("terminate_i: main thread (%p)\n", th);
+	thread_debug("terminate_i: main thread (%p)\n", (void *)th);
     }
     return ST_CONTINUE;
 }
@@ -298,7 +298,8 @@ rb_thread_terminate_all(void)
     rb_thread_t *th = GET_THREAD(); /* main thread */
     rb_vm_t *vm = th->vm;
     if (vm->main_thread != th) {
-	rb_bug("rb_thread_terminate_all: called by child thread (%p, %p)", vm->main_thread, th);
+	rb_bug("rb_thread_terminate_all: called by child thread (%p, %p)",
+	       (void *)vm->main_thread, (void *)th);
     }
 
     /* unlock all locking mutexes */
@@ -306,7 +307,7 @@ rb_thread_terminate_all(void)
 	rb_mutex_unlock_all(th->keeping_mutexes);
     }
 
-    thread_debug("rb_thread_terminate_all (main thread: %p)\n", th);
+    thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
     st_foreach(vm->living_threads, terminate_i, (st_data_t)th);
 
     while (!rb_thread_alone()) {
@@ -365,11 +366,11 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 #ifdef __ia64
     th->machine_register_stack_start = register_stack_start;
 #endif
-    thread_debug("thread start: %p\n", th);
+    thread_debug("thread start: %p\n", (void *)th);
 
     native_mutex_lock(&th->vm->global_vm_lock);
     {
-	thread_debug("thread start (get lock): %p\n", th);
+	thread_debug("thread start (get lock): %p\n", (void *)th);
 	rb_thread_set_current(th);
 
 	TH_PUSH_TAG(th);
@@ -413,7 +414,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	}
 
 	th->status = THREAD_KILLED;
-	thread_debug("thread end: %p\n", th);
+	thread_debug("thread end: %p\n", (void *)th);
 
 	main_th = th->vm->main_thread;
 	if (th != main_th) {
@@ -427,7 +428,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	/* locking_mutex must be Qfalse */
 	if (th->locking_mutex != Qfalse) {
 	    rb_bug("thread_start_func_2: locking_mutex must not be set (%p:%"PRIxVALUE")",
-		   th, th->locking_mutex);
+		   (void *)th, th->locking_mutex);
 	}
 
 	/* unlock all locking mutexes */
@@ -949,7 +950,7 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
     region->prev_status = th->status;
     set_unblock_function(th, func, arg, &region->oldubf);
     th->status = THREAD_STOPPED;
-    thread_debug("enter blocking region (%p)\n", th);
+    thread_debug("enter blocking region (%p)\n", (void *)th);
     rb_gc_save_machine_context(th);
     native_mutex_unlock(&th->vm->global_vm_lock);
 }
@@ -959,7 +960,7 @@ blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
 {
     native_mutex_lock(&th->vm->global_vm_lock);
     rb_thread_set_current(th);
-    thread_debug("leave blocking region (%p)\n", th);
+    thread_debug("leave blocking region (%p)\n", (void *)th);
     remove_signal_thread_list(th);
     reset_unblock_function(th, &region->oldubf);
     if (th->status == THREAD_STOPPED) {
@@ -1276,7 +1277,7 @@ rb_thread_kill(VALUE thread)
 	rb_exit(EXIT_SUCCESS);
     }
 
-    thread_debug("rb_thread_kill: %p (%p)\n", th, (void *)th->thread_id);
+    thread_debug("rb_thread_kill: %p (%p)\n", (void *)th, (void *)th->thread_id);
 
     rb_thread_interrupt(th);
     th->thrown_errinfo = eKillSignal;
