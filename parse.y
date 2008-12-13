@@ -57,11 +57,11 @@ static ID register_symid(ID, const char *, long, rb_encoding *);
 
 enum lex_state_e {
     EXPR_BEG,			/* ignore newline, +/- is a sign. */
-    EXPR_END,			/* newline significant, +/- is a operator. */
+    EXPR_END,			/* newline significant, +/- is an operator. */
     EXPR_ENDARG,		/* ditto, and unbound braces. */
-    EXPR_ARG,			/* newline significant, +/- is a operator. */
-    EXPR_CMDARG,		/* newline significant, +/- is a operator. */
-    EXPR_MID,			/* newline significant, +/- is a operator. */
+    EXPR_ARG,			/* newline significant, +/- is an operator. */
+    EXPR_CMDARG,		/* newline significant, +/- is an operator. */
+    EXPR_MID,			/* newline significant, +/- is an operator. */
     EXPR_FNAME,			/* ignore newline, no reserved words. */
     EXPR_DOT,			/* right after `.' or `::', no reserved words. */
     EXPR_CLASS,			/* immediate after `class', no here document. */
@@ -10125,7 +10125,7 @@ ripper_s_allocate(VALUE klass)
  *    Ripper.new(src, filename="(ripper)", lineno=1) -> ripper
  *
  *  Create a new Ripper object.
- *  _src_ must be a String, a IO, or an Object which has #gets method.
+ *  _src_ must be a String, an IO, or an Object which has #gets method.
  *
  *  This method does not starts parsing.
  *  See also Ripper#parse and Ripper.parse.
