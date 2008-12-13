@@ -1,3 +1,9 @@
+Sat Dec 13 12:38:16 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/minitest/test.rb (MinTest::Unit#location): 
+	  skips user-defined assertions as MiniTest's.
+	  e.g. for test/ruby/test_m17n.rb.
+
 Sat Dec 13 09:17:33 2008  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*.rb: Imported minitest 1.3.2 r4503.
