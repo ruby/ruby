@@ -1,3 +1,8 @@
+Wed Dec 10 12:56:32 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (enumerator_rewind): If the enclosed object
+	  responds to a "rewind" method, call it; cf. [ruby-dev:37268]
+
 Sat Dec 13 09:17:33 2008  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*.rb: Imported minitest 1.3.2 r4503.
