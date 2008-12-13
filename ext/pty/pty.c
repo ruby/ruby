@@ -143,6 +143,79 @@ pty_exec(VALUE v)
     return rb_f_exec(arg->argc, arg->argv);
 }
 
+struct child_info {
+    int master, slave;
+    int argc;
+    VALUE *argv;
+};
+
+int chfunc(void *data)
+{
+    struct child_info *carg = data;
+    int master = carg->master;
+    int slave = carg->slave;
+    int argc = carg->argc;
+    VALUE *argv = carg->argv;
+
+    struct exec_info arg;
+    int status;
+
+    /*
+     * Set free from process group and controlling terminal
+     */
+#ifdef HAVE_SETSID
+    (void) setsid();
+#else /* HAS_SETSID */
+# ifdef HAVE_SETPGRP
+#  ifdef SETGRP_VOID
+    if (setpgrp() == -1)
+        perror("setpgrp()");
+#  else /* SETGRP_VOID */
+    if (setpgrp(0, getpid()) == -1)
+        rb_sys_fail("setpgrp()");
+    {
+        int i = open("/dev/tty", O_RDONLY);
+        if (i < 0) rb_sys_fail("/dev/tty");
+        if (ioctl(i, TIOCNOTTY, (char *)0))
+            perror("ioctl(TIOCNOTTY)");
+        close(i);
+    }
+#  endif /* SETGRP_VOID */
+# endif /* HAVE_SETPGRP */
+#endif /* HAS_SETSID */
+
+    /*
+     * obtain new controlling terminal
+     */
+#if defined(TIOCSCTTY)
+    close(master);
+    (void) ioctl(slave, TIOCSCTTY, (char *)0);
+    /* errors ignored for sun */
+#else
+    close(slave);
+    slave = open(SlaveName, O_RDWR);
+    if (slave < 0) {
+        perror("open: pty slave");
+        _exit(1);
+    }
+    close(master);
+#endif
+    write(slave, "", 1);
+    dup2(slave,0);
+    dup2(slave,1);
+    dup2(slave,2);
+    close(slave);
+#if defined(HAVE_SETEUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRESUID)
+    seteuid(getuid());
+#endif
+
+    arg.argc = argc;
+    arg.argv = argv;
+    rb_protect(pty_exec, (VALUE)&arg, &status);
+    sleep(1);
+    _exit(1);
+}
+
 static void
 establishShell(int argc, VALUE *argv, struct pty_info *info,
 	       char SlaveName[DEVICELEN])
@@ -152,8 +225,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     char		*p, tmp, *getenv();
     struct passwd	*pwent;
     VALUE		v;
-    struct exec_info	arg;
-    int			status;
+    struct child_info   carg;
 
     if (argc == 0) {
 	const char *shellname;
@@ -172,69 +244,19 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 	argc = 1;
 	argv = &v;
     }
+
     getDevice(&master, &slave, SlaveName);
 
-    if ((pid = fork()) < 0) {
+    carg.master = master;
+    carg.slave = slave;
+    carg.argc = argc;
+    carg.argv = argv;
+    pid = rb_fork(0, chfunc, &carg, Qnil);
+
+    if (pid < 0) {
 	close(master);
 	close(slave);
 	rb_sys_fail("fork failed");
-    }
-
-    if (pid == 0) {	/* child */
-	/*
-	 * Set free from process group and controlling terminal
-	 */
-#ifdef HAVE_SETSID
-	(void) setsid();
-#else /* HAS_SETSID */
-# ifdef HAVE_SETPGRP
-#  ifdef SETGRP_VOID
-	if (setpgrp() == -1)
-	    perror("setpgrp()");
-#  else /* SETGRP_VOID */
-	if (setpgrp(0, getpid()) == -1)
-	    rb_sys_fail("setpgrp()");
-	{
-	    int i = open("/dev/tty", O_RDONLY);
-	    if (i < 0) rb_sys_fail("/dev/tty");
-	    if (ioctl(i, TIOCNOTTY, (char *)0))
-		perror("ioctl(TIOCNOTTY)");
-	    close(i);
-	}
-#  endif /* SETGRP_VOID */
-# endif /* HAVE_SETPGRP */
-#endif /* HAS_SETSID */
-
-	/*
-	 * obtain new controlling terminal
-	 */
-#if defined(TIOCSCTTY)
-	close(master);
-	(void) ioctl(slave, TIOCSCTTY, (char *)0);
-	/* errors ignored for sun */
-#else
-	close(slave);
-	slave = open(SlaveName, O_RDWR);
-	if (slave < 0) {
-	    perror("open: pty slave");
-	    _exit(1);
-	}
-	close(master);
-#endif
-	write(slave, "", 1);
-	dup2(slave,0);
-	dup2(slave,1);
-	dup2(slave,2);
-	close(slave);
-#if defined(HAVE_SETEUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRESUID)
-	seteuid(getuid());
-#endif
-
-	arg.argc = argc;
-	arg.argv = argv;
-	rb_protect(pty_exec, (VALUE)&arg, &status);
-	sleep(1);
-	_exit(1);
     }
 
     read(master, &tmp, 1);

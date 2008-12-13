@@ -1,3 +1,16 @@
+Sun Dec 14 01:35:48 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (forked_child): new variable.
+	  (before_exec): don't call rb_thread_stop_timer_thread if
+	  forked_child.
+	  (after_exec): reset forked_child after rb_thread_start_timer_thread.
+	  (rb_fork): set forked_child just after fork in child.
+
+	* ext/pty/pty.c (chfunc): extracted from establishShell.
+	  (establishShell): use rb_fork.
+
+	  [ruby-dev:37418]
+
 Sat Dec 13 22:17:30 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* common.mk (help): describes more targets.
