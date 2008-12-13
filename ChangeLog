@@ -1,3 +1,9 @@
+Sat Dec 13 16:04:48 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* encoding.c (default_external): endless recursion during
+	  loading a locale encoding on some locale.
+	  fixed by Nobuyuki Nakada.
+
 Sat Dec 13 14:24:38 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/enc/test_utf16.rb: feature changed in r20626.
