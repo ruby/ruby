@@ -1,3 +1,9 @@
+Sat Dec 13 09:17:33 2008  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*.rb: Imported minitest 1.3.2 r4503.
+	* test/minitest/test_mini_test.rb: ditto.
+	* lib/miniunit/autorun.rb: added (as part of r4503).
+	
 Sat Dec 13 01:10:03 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/readline.c
