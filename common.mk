@@ -114,6 +114,8 @@ PRE_LIBRUBY_UPDATE = $(MINIRUBY) -e 'ARGV[1] or File.unlink(ARGV[0]) rescue nil'
 TESTSDIR      = $(srcdir)/test
 TESTWORKDIR   = testwork
 
+TESTRUN_SCRIPT = $(srcdir)/test.rb
+
 BOOTSTRAPRUBY = $(BASERUBY)
 
 COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) -rrbconfig $(srcdir)/tool/compile_prelude.rb
@@ -683,13 +685,13 @@ $(srcdir)/ext/ripper/ripper.c:
 ##
 
 run: miniruby$(EXEEXT) PHONY
-	$(MINIRUBY) $(srcdir)/test.rb $(RUNOPT)
+	$(MINIRUBY) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 runruby: $(PROGRAM) PHONY
-	$(RUNRUBY) $(srcdir)/test.rb
+	$(RUNRUBY) $(TESTRUN_SCRIPT)
 
 parse: miniruby$(EXEEXT) PHONY
-	$(MINIRUBY) $(srcdir)/tool/parse.rb $(srcdir)/test.rb
+	$(MINIRUBY) $(srcdir)/tool/parse.rb $(TESTRUN_SCRIPT)
 
 COMPARE_RUBY = $(BASERUBY)
 ITEM = 
@@ -720,10 +722,10 @@ run.gdb:
 	echo run                              >> run.gdb
 
 gdb: miniruby$(EXEEXT) run.gdb PHONY
-	gdb -x run.gdb --quiet --args $(MINIRUBY) $(srcdir)/test.rb
+	gdb -x run.gdb --quiet --args $(MINIRUBY) $(TESTRUN_SCRIPT)
 
 gdb-ruby: $(PROGRAM) run.gdb PHONY
-	gdb -x run.gdb --quiet --args $(PROGRAM) $(srcdir)/test.rb
+	gdb -x run.gdb --quiet --args $(PROGRAM) $(TESTRUN_SCRIPT)
 
 dist:
 	$(BASERUBY) $(srcdir)/tool/make-snapshot tmp $(RELNAME)
