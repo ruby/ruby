@@ -1,3 +1,8 @@
+Sat Dec 13 22:17:30 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* common.mk (help): describes more targets.
+	  based on a patch by Michael Klishin. [ruby-core:20523].
+
 Sat Dec 13 18:34:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (sym_printable): wrong condition for string iteration.
