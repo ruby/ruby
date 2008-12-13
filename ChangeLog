@@ -1,3 +1,17 @@
+Thu Dec 11 13:17:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_set_default_internal): defines internal
+	  encoding as nil.
+
+	* encoding.c (rb_locale_encoding): removed Encoding::LOCALE.
+
+	* encoding.c (rb_enc_set_default_external): ditto.
+
+	* encoding.c (rb_enc_set_default_internal): ditto.
+
+	* encoding.c (rb_enc_set_default_internal): defines internal
+	  encoding as nil.
+
 Thu Dec 11 10:25:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_bignum.rb (TestBignum#test_convert): remove

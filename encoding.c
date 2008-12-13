@@ -38,6 +38,7 @@ static struct {
 void rb_enc_init(void);
 
 #define ENCODING_COUNT ENCINDEX_BUILTIN_MAX
+#define UNSPECIFIED_ENCODING INT_MAX
 
 #define enc_autoload_p(enc) (!rb_enc_mbmaxlen(enc))
 
@@ -507,7 +508,12 @@ rb_enc_find_index(const char *name)
     if (i < 0) {
 	i = load_encoding(name);
     }
-    else if (enc_autoload_p(enc = rb_enc_from_index(i))) {
+    else if (!(enc = rb_enc_from_index(i))) {
+	if (i != UNSPECIFIED_ENCODING) {
+	    rb_raise(rb_eArgError, "encoding %s is not registered", name);
+	}
+    }
+    else if (enc_autoload_p(enc)) {
 	if (enc_autoload(enc) < 0) {
 	    rb_warn("failed to load encoding (%s); use ASCII-8BIT instead",
 		    name);
@@ -1111,6 +1117,8 @@ rb_enc_set_default_internal(VALUE encoding)
     if (NIL_P(encoding)) {
 	default_internal_index = -1;
 	default_internal = 0;
+	st_insert(enc_table.names, (st_data_t)strdup("internal"),
+		  (st_data_t)UNSPECIFIED_ENCODING);
 	return;
     }
 
