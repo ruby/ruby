@@ -450,7 +450,7 @@ class Prime
     # Overwrites Prime#each.
     #
     # Iterates the given block over all prime numbers. Note that enumeration starts from
-    # the current position of internal pointer, not rewinded.
+    # the current position of internal pointer, not rewound.
     def each(&block)
       return @generator.dup unless block_given?
       loop do

@@ -1,3 +1,9 @@
+Wed Dec 10 12:46:52 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (enumerator_next): Fix a typo: s/rewinded/rewound/.
+
+	* lib/prime.rb (Prime::OldCompatibility#each): Ditto.
+
 Wed Dec 10 11:25:53 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (rb_reg_initialize): raise RegexpError when encoding
