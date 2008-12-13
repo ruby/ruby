@@ -69,9 +69,9 @@ class TestMiniTest < MiniTest::Unit::TestCase
   end
 
   def test_filter_backtrace_all_unit
-    bt = (["./lib/mini/test.rb:165:in `__send__'"] +
+    bt = (["#{MINITEST_BASE_DIR}/test.rb:165:in `__send__'"] +
           BT_MIDDLE +
-          ["./lib/mini/test.rb:29"])
+          ["#{MINITEST_BASE_DIR}/test.rb:29"])
     ex = bt.clone
     fu = MiniTest::filter_backtrace(bt)
     assert_equal ex, fu
