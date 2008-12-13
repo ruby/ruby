@@ -1,3 +1,9 @@
+Sat Dec 13 12:38:16 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/minitest/test.rb (MinTest::Unit#location): 
+	  skips user-defined assertions as MiniTest's.
+	  e.g. for test/ruby/test_m17n.rb.
+
 Wed Dec 10 12:56:32 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (enumerator_rewind): If the enclosed object
