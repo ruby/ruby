@@ -1099,7 +1099,11 @@ class TestM17NComb < Test::Unit::TestCase
         next
       end
       if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
-        assert_raise(ArgumentError) { s1.scan(s2) }
+        if s1.valid_encoding?
+          assert_raise(Encoding::CompatibilityError) { s1.scan(s2) }
+        else
+          assert_raise(ArgumentError, /invalid byte sequence/) { s1.scan(s2) }
+        end
         next
       end
       if !s1.valid_encoding?
@@ -1418,7 +1422,7 @@ class TestM17NComb < Test::Unit::TestCase
           next
         end
         if !str_enc_compatible?(s1, s2)
-          assert_raise(ArgumentError, desc) { doit.call }
+          assert_raise(Encoding::CompatibilityError, desc) { doit.call }
           next
         end
         if !enccall(s1, :include?, s2)
@@ -1476,7 +1480,7 @@ class TestM17NComb < Test::Unit::TestCase
           next
         end
         if !str_enc_compatible?(s1, s2)
-          assert_raise(ArgumentError, desc) { doit.call }
+          assert_raise(Encoding::CompatibilityError, desc) { doit.call }
           next
         end
         if !enccall(s1, :include?, s2)

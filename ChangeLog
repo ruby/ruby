@@ -1,3 +1,8 @@
+Sat Dec 13 13:41:44 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/ruby/test_m17n_comb.rb: feature changed in r20626.
+	  follows it.
+ 
 Sat Dec 13 12:48:57 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_m17n.rb: feature changed in r20626.
