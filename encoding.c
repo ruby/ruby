@@ -1066,7 +1066,7 @@ enc_set_default_encoding(struct default_encoding *def, VALUE encoding,
     return overridden;
 }
 
-static struct default_encoding default_external = {-2};
+static struct default_encoding default_external = {0};
 
 rb_encoding *
 rb_default_external_encoding(void)
