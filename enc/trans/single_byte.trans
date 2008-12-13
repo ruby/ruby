@@ -73,6 +73,12 @@
   transcode_tblgen_singlebyte "MACROMANIA"
   transcode_tblgen_singlebyte "MACTURKISH"
   transcode_tblgen_singlebyte "MACUKRAINE"
+  transcode_tblgen_singlebyte "KOI8-U"
+  transcode_tblgen_singlebyte "KOI8-R"
+  transcode_tblgen_singlebyte "TIS-620"
+  transcode_tblgen_singlebyte "CP850"
+  transcode_tblgen_singlebyte "CP852"
+  transcode_tblgen_singlebyte "CP855"
 %>
 
 <%= transcode_generated_code %>

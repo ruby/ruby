@@ -146,7 +146,7 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(Encoding::UndefinedConversionError) { "\xFC".encode("utf-8", 'windows-874') }
     assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'windows-874') }
   end
-  
+
   def test_windows_1250
     check_both_ways("\u20AC", "\x80", 'windows-1250') # €
     assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1250') }
@@ -175,7 +175,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u0111", "\xF0", 'windows-1250') # đ
     check_both_ways("\u02D9", "\xFF", 'windows-1250') # ˙
   end
-  
+
   def test_windows_1251
     check_both_ways("\u0402", "\x80", 'windows-1251') # Ђ
     check_both_ways("\u20AC", "\x88", 'windows-1251') # €
@@ -196,7 +196,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u0440", "\xF0", 'windows-1251') # р
     check_both_ways("\u044F", "\xFF", 'windows-1251') # я
   end
-  
+
   def test_windows_1252
     check_both_ways("\u20AC", "\x80", 'windows-1252') # €
     assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1252') }
@@ -204,7 +204,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u0152", "\x8C", 'windows-1252') # >Œ
     assert_raise(Encoding::UndefinedConversionError) { "\x8D".encode("utf-8", 'windows-1252') }
     check_both_ways("\u017D", "\x8E", 'windows-1252') # Ž
-	assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'windows-1252') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'windows-1252') }
     assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'windows-1252') }
     check_both_ways("\u2018", "\x91", 'windows-1252') #‘
     check_both_ways("\u0153", "\x9C", 'windows-1252') # œ
@@ -261,7 +261,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u03CE", "\xFE", 'windows-1253') # ώ
     assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'windows-1253') }
   end
-  
+
   def test_windows_1254
     check_both_ways("\u20AC", "\x80", 'windows-1254') # €
     assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1254') }
@@ -288,12 +288,12 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u011F", "\xF0", 'windows-1254') # ğ
     check_both_ways("\u00FF", "\xFF", 'windows-1254') # ÿ
   end
-  
+
   def test_windows_1255
-  	check_both_ways("\u20AC", "\x80", 'windows-1255') # €
-	assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1255') }
-  	check_both_ways("\u201A", "\x82", 'windows-1255') # ‚
- 	check_both_ways("\u2030", "\x89", 'windows-1255') # ‰
+    check_both_ways("\u20AC", "\x80", 'windows-1255') # €
+    assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1255') }
+    check_both_ways("\u201A", "\x82", 'windows-1255') # ‚
+    check_both_ways("\u2030", "\x89", 'windows-1255') # ‰
     assert_raise(Encoding::UndefinedConversionError) { "\x8A".encode("utf-8", 'windows-1255') }
     check_both_ways("\u2039", "\x8B", 'windows-1255') # ‹
     assert_raise(Encoding::UndefinedConversionError) { "\x8C".encode("utf-8", 'windows-1255') }
@@ -333,7 +333,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u200F", "\xFE", 'windows-1255') # right-to-left mark
     assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'windows-1255') }
   end
-  
+
   def test_windows_1256
     check_both_ways("\u20AC", "\x80", 'windows-1256') # €
     check_both_ways("\u0679", "\x8A", 'windows-1256') # ٹ
@@ -356,7 +356,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u064B", "\xF0", 'windows-1256') #  ًً
     check_both_ways("\u06D2", "\xFF", 'windows-1256') # ے
   end
-  
+
   def test_windows_1257
     check_both_ways("\u20AC", "\x80", 'windows-1257') # €
     assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1257') }
@@ -420,7 +420,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2261", "\xF0", 'IBM437') # ≡
     check_both_ways("\u00A0", "\xFF", 'IBM437') # non-breaking space 
   end
-  
+
   def test_IBM775
     check_both_ways("\u0106", "\x80", 'IBM775') # Ć
     check_both_ways("\u00C5", "\x8F", 'IBM775') # Å
@@ -439,7 +439,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00AD", "\xF0", 'IBM775') # osft hyphen
     check_both_ways("\u00A0", "\xFF", 'IBM775') # non-breaking space 
   end
-  
+
   def test_IBM852
     check_both_ways("\u00C7", "\x80", 'IBM852') # Ç
     check_both_ways("\u0106", "\x8F", 'IBM852') # Ć
@@ -458,7 +458,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00AD", "\xF0", 'IBM852') # osft hyphen
     check_both_ways("\u00A0", "\xFF", 'IBM852') # non-breaking space 
   end
-  
+
   def test_IBM855
     check_both_ways("\u0452", "\x80", 'IBM855') # ђ
     check_both_ways("\u0408", "\x8F", 'IBM855') # Ј
@@ -505,7 +505,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00BE", "\xF3", 'IBM857') # ¾
     check_both_ways("\u00A0", "\xFF", 'IBM857') # non-breaking space 
   end
-  
+
   def test_IBM860
     check_both_ways("\u00C7", "\x80", 'IBM860') # Ç
     check_both_ways("\u00C2", "\x8F", 'IBM860') # Â
@@ -524,7 +524,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2261", "\xF0", 'IBM860') # ≡
     check_both_ways("\u00A0", "\xFF", 'IBM860') # non-breaking space 
   end
-  
+
   def test_IBM861
     check_both_ways("\u00C7", "\x80", 'IBM861') # Ç
     check_both_ways("\u00C5", "\x8F", 'IBM861') # Å
@@ -543,7 +543,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2261", "\xF0", 'IBM861') # ≡
     check_both_ways("\u00A0", "\xFF", 'IBM861') # non-breaking space 
   end
-  
+
   def test_IBM862
     check_both_ways("\u05D0", "\x80", 'IBM862') # א
     check_both_ways("\u05DF", "\x8F", 'IBM862') # ן
@@ -562,7 +562,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2261", "\xF0", 'IBM862') # ≡
     check_both_ways("\u00A0", "\xFF", 'IBM862') # non-breaking space 
   end
-  
+
   def test_IBM863
     check_both_ways("\u00C7", "\x80", 'IBM863') # Ç
     check_both_ways("\u00A7", "\x8F", 'IBM863') # §
@@ -581,7 +581,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2261", "\xF0", 'IBM863') # ≡
     check_both_ways("\u00A0", "\xFF", 'IBM863') # non-breaking space 
   end
-  
+
   def test_IBM865
     check_both_ways("\u00C7", "\x80", 'IBM865') # Ç
     check_both_ways("\u00C5", "\x8F", 'IBM865') # Å
@@ -600,7 +600,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2261", "\xF0", 'IBM865') # ≡
     check_both_ways("\u00A0", "\xFF", 'IBM865') # non-breaking space 
   end
-  
+
   def test_IBM866
     check_both_ways("\u0410", "\x80", 'IBM866') # А
     check_both_ways("\u041F", "\x8F", 'IBM866') # П
@@ -619,7 +619,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u0401", "\xF0", 'IBM866') # Ё
     check_both_ways("\u00A0", "\xFF", 'IBM866') # non-breaking space 
   end
-  
+
   def test_IBM869
     assert_raise(Encoding::UndefinedConversionError) { "\x80".encode("utf-8", 'IBM869') }
     assert_raise(Encoding::UndefinedConversionError) { "\x85".encode("utf-8", 'IBM869') }
@@ -646,7 +646,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00AD", "\xF0", 'IBM869') # soft hyphen
     check_both_ways("\u00A0", "\xFF", 'IBM869') # non-breaking space 
   end
-  
+
   def test_macCroatian
     check_both_ways("\u00C4", "\x80", 'macCroatian') # Ä
     check_both_ways("\u00E8", "\x8F", 'macCroatian') # è
@@ -681,7 +681,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00E6", "\xFE", 'macCroatian') # æ
     check_both_ways("\u02C7", "\xFF", 'macCroatian') # ˇ
   end
-  
+
   def test_macCyrillic
     check_both_ways("\u0410", "\x80", 'macCyrillic') # А
     check_both_ways("\u041F", "\x8F", 'macCyrillic') # П
@@ -700,7 +700,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u0440", "\xF0", 'macCyrillic') # р
     check_both_ways("\u00A4", "\xFF", 'macCyrillic') # ¤
   end
-  
+
   def test_macGreek
     check_both_ways("\u00C4", "\x80", 'macGreek') # Ä
     check_both_ways("\u00E8", "\x8F", 'macGreek') # è
@@ -721,7 +721,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u03B0", "\xFE", 'macGreek') # ΰ
     assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'macGreek') }
   end
-  
+
   def test_macIceland
     check_both_ways("\u00C4", "\x80", 'macIceland') # Ä
     check_both_ways("\u00E8", "\x8F", 'macIceland') # è
@@ -760,7 +760,7 @@ class TestTranscode < Test::Unit::TestCase
     #check_both_ways("\uF8FF", "\xF0", 'macRoman') # Apple logo
     check_both_ways("\u02C7", "\xFF", 'macRoman') # ˇ
   end
-  
+
   def test_macRomania
     check_both_ways("\u00C4", "\x80", 'macRomania') # Ä
     check_both_ways("\u00E8", "\x8F", 'macRomania') # è
@@ -780,7 +780,7 @@ class TestTranscode < Test::Unit::TestCase
     #check_both_ways("\uF8FF", "\xF0", 'macRomania') # Apple logo
     check_both_ways("\u02C7", "\xFF", 'macRomania') # ˇ
   end
-  
+
   def test_macTurkish
     check_both_ways("\u00C4", "\x80", 'macTurkish') # Ä
     check_both_ways("\u00E8", "\x8F", 'macTurkish') # è
@@ -802,7 +802,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u02C6", "\xF6", 'macTurkish') # ˆ
     check_both_ways("\u02C7", "\xFF", 'macTurkish') # ˇ
   end
-  
+
   def test_macUkraine
     check_both_ways("\u0410", "\x80", 'macUkraine') # А
     check_both_ways("\u041F", "\x8F", 'macUkraine') # П
@@ -821,7 +821,135 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u0440", "\xF0", 'macUkraine') # р
     check_both_ways("\u00A4", "\xFF", 'macUkraine') # ¤
   end
+
+  def test_koi8_u
+    check_both_ways("\u2500", "\x80", 'KOI8-U') # ─
+    check_both_ways("\u2590", "\x8F", 'KOI8-U') # ▐
+    check_both_ways("\u2591", "\x90", 'KOI8-U') # ░
+    check_both_ways("\u00F7", "\x9F", 'KOI8-U') # ÷
+    check_both_ways("\u2550", "\xA0", 'KOI8-U') # ═
+    check_both_ways("\u0454", "\xA4", 'KOI8-U') # є
+    check_both_ways("\u0456", "\xA6", 'KOI8-U') # і
+    check_both_ways("\u0457", "\xA7", 'KOI8-U') # ї
+    check_both_ways("\u0491", "\xAD", 'KOI8-U') # ґ
+    check_both_ways("\u255E", "\xAF", 'KOI8-U') # ╞
+    check_both_ways("\u255F", "\xB0", 'KOI8-U') # ╟
+    check_both_ways("\u0404", "\xB4", 'KOI8-U') # Є
+    check_both_ways("\u0406", "\xB6", 'KOI8-U') # І
+    check_both_ways("\u0407", "\xB7", 'KOI8-U') # Ї
+    check_both_ways("\u0490", "\xBD", 'KOI8-U') # Ґ
+    check_both_ways("\u00A9", "\xBF", 'KOI8-U') # ©
+    check_both_ways("\u044E", "\xC0", 'KOI8-U') # ю
+    check_both_ways("\u043E", "\xCF", 'KOI8-U') # о
+    check_both_ways("\u043F", "\xD0", 'KOI8-U') # п
+    check_both_ways("\u044A", "\xDF", 'KOI8-U') # ъ
+    check_both_ways("\u042E", "\xE0", 'KOI8-U') # Ю
+    check_both_ways("\u041E", "\xEF", 'KOI8-U') # О
+    check_both_ways("\u041F", "\xF0", 'KOI8-U') # П
+    check_both_ways("\u042A", "\xFF", 'KOI8-U') # Ъ
+  end
+
+  def test_koi8_r
+    check_both_ways("\u2500", "\x80", 'KOI8-R') # ─
+    check_both_ways("\u2590", "\x8F", 'KOI8-R') # ▐
+    check_both_ways("\u2591", "\x90", 'KOI8-R') # ░
+    check_both_ways("\u00F7", "\x9F", 'KOI8-R') # ÷
+    check_both_ways("\u2550", "\xA0", 'KOI8-R') # ═
+    check_both_ways("\u255E", "\xAF", 'KOI8-R') # ╞
+    check_both_ways("\u255F", "\xB0", 'KOI8-R') # ╟
+    check_both_ways("\u00A9", "\xBF", 'KOI8-R') # ©
+    check_both_ways("\u044E", "\xC0", 'KOI8-R') # ю
+    check_both_ways("\u043E", "\xCF", 'KOI8-R') # о
+    check_both_ways("\u043F", "\xD0", 'KOI8-R') # п
+    check_both_ways("\u044A", "\xDF", 'KOI8-R') # ъ
+    check_both_ways("\u042E", "\xE0", 'KOI8-R') # Ю
+    check_both_ways("\u041E", "\xEF", 'KOI8-R') # О
+    check_both_ways("\u041F", "\xF0", 'KOI8-R') # П
+    check_both_ways("\u042A", "\xFF", 'KOI8-R') # Ъ
+  end
+
+  def test_TIS_620
+    assert_raise(Encoding::UndefinedConversionError) { "\x80".encode("utf-8", 'TIS-620') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'TIS-620') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'TIS-620') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x9F".encode("utf-8", 'TIS-620') }
+    assert_raise(Encoding::UndefinedConversionError) { "\xA0".encode("utf-8", 'TIS-620') }
+    check_both_ways("\u0E01", "\xA1", 'TIS-620') # ก
+    check_both_ways("\u0E0F", "\xAF", 'TIS-620') # ฏ
+    check_both_ways("\u0E10", "\xB0", 'TIS-620') # ฐ
+    check_both_ways("\u0E1F", "\xBF", 'TIS-620') # ฟ
+    check_both_ways("\u0E20", "\xC0", 'TIS-620') # ภ
+    check_both_ways("\u0E2F", "\xCF", 'TIS-620') # ฯ
+    check_both_ways("\u0E30", "\xD0", 'TIS-620') # ะ
+    check_both_ways("\u0E3A", "\xDA", 'TIS-620') #  ฺ
+    assert_raise(Encoding::UndefinedConversionError) { "\xDB".encode("utf-8", 'TIS-620') }
+    assert_raise(Encoding::UndefinedConversionError) { "\xDE".encode("utf-8", 'TIS-620') }
+    check_both_ways("\u0E3F", "\xDF", 'TIS-620') # ฿
+    check_both_ways("\u0E40", "\xE0", 'TIS-620') # เ
+    check_both_ways("\u0E4F", "\xEF", 'TIS-620') # ๏
+    check_both_ways("\u0E50", "\xF0", 'TIS-620') # ๐
+    check_both_ways("\u0E5B", "\xFB", 'TIS-620') # ๛
+    assert_raise(Encoding::UndefinedConversionError) { "\xFC".encode("utf-8", 'TIS-620') }
+    assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'TIS-620') }
+  end
   
+    def test_CP850
+    check_both_ways("\u00C7", "\x80", 'CP850') # Ç
+    check_both_ways("\u00C5", "\x8F", 'CP850') # Å
+    check_both_ways("\u00C9", "\x90", 'CP850') # É
+    check_both_ways("\u0192", "\x9F", 'CP850') # ƒ
+    check_both_ways("\u00E1", "\xA0", 'CP850') # á
+    check_both_ways("\u00BB", "\xAF", 'CP850') # »
+    check_both_ways("\u2591", "\xB0", 'CP850') # ░
+    check_both_ways("\u2510", "\xBF", 'CP850') # ┐
+    check_both_ways("\u2514", "\xC0", 'CP850') # └
+    check_both_ways("\u00A4", "\xCF", 'CP850') # ¤
+    check_both_ways("\u00F0", "\xD0", 'CP850') # ð
+    check_both_ways("\u2580", "\xDF", 'CP850') # ▀
+    check_both_ways("\u00D3", "\xE0", 'CP850') # Ó
+    check_both_ways("\u00B4", "\xEF", 'CP850') # ´
+    check_both_ways("\u00AD", "\xF0", 'CP850') # soft hyphen
+    check_both_ways("\u00A0", "\xFF", 'CP850') # non-breaking space
+  end
+
+  def test_CP852
+    check_both_ways("\u00C7", "\x80", 'CP852') # Ç
+    check_both_ways("\u0106", "\x8F", 'CP852') # Ć
+    check_both_ways("\u00C9", "\x90", 'CP852') # É
+    check_both_ways("\u010D", "\x9F", 'CP852') # č
+    check_both_ways("\u00E1", "\xA0", 'CP852') # á
+    check_both_ways("\u00BB", "\xAF", 'CP852') # »
+    check_both_ways("\u2591", "\xB0", 'CP852') # ░
+    check_both_ways("\u2510", "\xBF", 'CP852') # ┐
+    check_both_ways("\u2514", "\xC0", 'CP852') # └
+    check_both_ways("\u00A4", "\xCF", 'CP852') # ¤
+    check_both_ways("\u0111", "\xD0", 'CP852') # đ
+    check_both_ways("\u2580", "\xDF", 'CP852') # ▀
+    check_both_ways("\u00D3", "\xE0", 'CP852') # Ó
+    check_both_ways("\u00B4", "\xEF", 'CP852') # ´
+    check_both_ways("\u00AD", "\xF0", 'CP852') # soft hyphen
+    check_both_ways("\u00A0", "\xFF", 'CP852') # non-breaking space
+  end
+
+  def test_CP855
+    check_both_ways("\u0452", "\x80", 'CP855') # ђ
+    check_both_ways("\u0408", "\x8F", 'CP855') # Ј
+    check_both_ways("\u0459", "\x90", 'CP855') # љ
+    check_both_ways("\u042A", "\x9F", 'CP855') # Ъ
+    check_both_ways("\u0430", "\xA0", 'CP855') # а
+    check_both_ways("\u00BB", "\xAF", 'CP855') # »
+    check_both_ways("\u2591", "\xB0", 'CP855') # ░
+    check_both_ways("\u2510", "\xBF", 'CP855') # ┐
+    check_both_ways("\u2514", "\xC0", 'CP855') # └
+    check_both_ways("\u00A4", "\xCF", 'CP855') # ¤
+    check_both_ways("\u043B", "\xD0", 'CP855') # л
+    check_both_ways("\u2580", "\xDF", 'CP855') # ▀
+    check_both_ways("\u042F", "\xE0", 'CP855') # Я
+    check_both_ways("\u2116", "\xEF", 'CP855') # №
+    check_both_ways("\u00AD", "\xF0", 'CP855') # soft hyphen
+    check_both_ways("\u00A0", "\xFF", 'CP855') # non-breaking space
+  end
+
   def check_utf_16_both_ways(utf8, raw)
     copy = raw.dup
     0.step(copy.length-1, 2) { |i| copy[i+1], copy[i] = copy[i], copy[i+1] }
@@ -933,7 +1061,7 @@ class TestTranscode < Test::Unit::TestCase
     check_utf_32_both_ways("\u{8FF00}", "\x00\x08\xFF\x00")
     check_utf_32_both_ways("\u{F00FF}", "\x00\x0F\x00\xFF")
   end
-  
+
   def test_invalid_ignore
     # arguments only
     assert_nothing_raised { 'abc'.encode('utf-8', invalid: :replace, replace: "") }
@@ -1212,11 +1340,11 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("\e$B!!\e(B".force_encoding("ISO-2022-JP"),
                  "\xA1\xA1".encode("ISO-2022-JP", "EUC-JP"))
   end
-  
+
   def test_iso_2022_jp_1
     # check_both_ways("\u9299", "\x1b$(Dd!\x1b(B", "iso-2022-jp-1") # JIS X 0212 区68 点01 銙
   end
-  
+
   def test_unicode_public_review_issue_121 # see http://www.unicode.org/review/pr-121.html
     # assert_equal("\x00\x61\xFF\xFD\x00\x62".force_encoding('UTF-16BE'),
     #   "\x61\xF1\x80\x80\xE1\x80\xC2\x62".encode('UTF-16BE', 'UTF-8', invalid: :replace)) # option 1

@@ -1,3 +1,13 @@
+Tue Dec  9 18:35:35 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/trans/single_byte.trans, cp850-tbl.rb, cp852-tbl.rb,
+	  cp855-tbl.rb, koi8-r-tbl.rb, koi8-u-tbl.rb, tis-620-tbl.rb:
+	  new single-byte transcodings (from Yoshihiro Kambayashi)
+
+	* test/ruby/test_transcode.rb: added tests for the above
+	  (from Yoshihiro Kambayashi), small cosmetic fixes
+
+
 Tue Dec  9 13:33:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each), gc.c (assign_heap_slot),
