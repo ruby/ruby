@@ -1,3 +1,9 @@
+Thu Dec 11 10:25:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_bignum.rb (TestBignum#test_convert): remove
+	  platform dependent call of Process.wait.  coverage should be
+	  accomplished by other method.  [ruby-dev:36062]
+
 Thu Dec 11 10:18:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rexml/document.rb (REXML::Document#write): require
