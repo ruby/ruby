@@ -1,3 +1,8 @@
+Sat Dec 13 15:55:37 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* ruby.c (process_options): fixed default_internal is nil.
+	  (closes #862)
+
 Sat Dec 13 14:24:38 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/enc/test_utf16.rb: feature changed in r20626.
