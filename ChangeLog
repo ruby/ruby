@@ -1,3 +1,9 @@
+Thu Dec 11 02:37:22 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* math.c (domain_check): should not raise EDOM exception for NaN
+	  value if operand is also NaN.  affects acos, asin, acosh, atanh,
+	  log, log2, log10, sqrt, gamma, lgamma. [ruby-dev:37357]
+
 Thu Dec 11 01:21:58 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* thread.c (rb_mutex_unlock): shut up warning.  a patch from
