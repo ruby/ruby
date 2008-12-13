@@ -270,7 +270,7 @@ EOT
   end
 
   def test_regexp_match
-    assert_raise(ArgumentError) { Regexp.new("aa".force_encoding("utf-16be")) =~ "aa" }
+    assert_raise(Encoding::CompatibilityError) { Regexp.new("aa".force_encoding("utf-16be")) =~ "aa" }
   end
 
   def test_gsub
