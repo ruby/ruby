@@ -905,6 +905,9 @@ enc_list(VALUE klass)
  *   Encoding.find("US-ASCII")  => #<Encoding:US-ASCII>
  *   Encoding.find(:Shift_JIS)  => #<Encoding:Shift_JIS>
  *
+ * An ArgumentError is raised when no encoding with <i>name</i>.
+ * Only +Encoding.find("internal")+ however returns nil when no encoding named "internal",
+ * in other words, when Ruby has no default internal encoding.
  */
 static VALUE
 enc_find(VALUE klass, VALUE enc)
@@ -1032,16 +1035,51 @@ rb_filesystem_encoding(void)
     return enc;
 }
 
-static int default_external_index;
-static rb_encoding *default_external;
+struct default_encoding {
+    int index;			/* -2 => not yet set, -1 => nil */
+    rb_encoding *enc;
+};
+
+static int
+enc_set_default_encoding(struct default_encoding *def, VALUE encoding,
+			 const char *name, int defindex)
+{
+    int overridden = Qfalse;
+    if (def->index != -2)
+	/* Already set */
+	overridden = Qtrue;
+
+    if (NIL_P(encoding)) {
+	def->index = -1;
+	def->enc = 0;
+	st_insert(enc_table.names, (st_data_t)strdup(name),
+		  (st_data_t)UNSPECIFIED_ENCODING);
+    }
+    else {
+	def->index = rb_enc_to_index(rb_to_encoding(encoding));
+	if (def->index == ENCINDEX_US_ASCII)
+	    def->index = defindex;
+	def->enc = 0;
+	enc_alias_internal(name, def->index);
+    }
+
+    return overridden;
+}
+
+static struct default_encoding default_external = {-2};
 
 rb_encoding *
 rb_default_external_encoding(void)
 {
-    if (!default_external) {
-	default_external = rb_enc_from_index(default_external_index);
+    if (default_external.enc) return default_external.enc;
+
+    if (default_external.index >= 0) {
+        default_external.enc = rb_enc_from_index(default_external.index);
+        return default_external.enc;
     }
-    return default_external;
+    else {
+        return rb_locale_encoding();
+    }
 }
 
 VALUE
@@ -1056,8 +1094,7 @@ rb_enc_default_external(void)
  *
  * Returns default external encoding.
  *
- * It is initialized by the locale or -E option,
- * and can't be modified after that.
+ * It is initialized by the locale or -E option.
  */
 static VALUE
 get_default_external(VALUE klass)
@@ -1068,22 +1105,36 @@ get_default_external(VALUE klass)
 void
 rb_enc_set_default_external(VALUE encoding)
 {
-    default_external_index = rb_enc_to_index(rb_to_encoding(encoding));
-    default_external = 0;
-    enc_alias_internal("external", default_external_index);
+    if (NIL_P(encoding)) {
+        rb_raise(rb_eArgError, "default external can not be nil");
+    }
+    enc_set_default_encoding(&default_external, encoding,
+			     "external", ENCINDEX_US_ASCII);
 }
 
-/* -2 => not yet set, -1 => nil */
-static int default_internal_index = -2;
-static rb_encoding *default_internal;
+/*
+ * call-seq:
+ *   Encoding.default_external = enc
+ *
+ * Sets default external encoding.
+ */
+static VALUE
+set_default_external(VALUE klass, VALUE encoding)
+{
+    rb_warning("setting Encoding.default_external");
+    rb_enc_set_default_external(encoding);
+    return encoding;
+}
+
+static struct default_encoding default_internal = {-2};
 
 rb_encoding *
 rb_default_internal_encoding(void)
 {
-    if (!default_internal && default_internal_index >= 0) {
-	default_internal = rb_enc_from_index(default_internal_index);
+    if (!default_internal.enc && default_internal.index >= 0) {
+        default_internal.enc = rb_enc_from_index(default_internal.index);
     }
-    return default_internal;
+    return default_internal.enc; /* can be NULL */
 }
 
 VALUE
@@ -1099,8 +1150,7 @@ rb_enc_default_internal(void)
  *
  * Returns default internal encoding.
  *
- * It is initialized by the source internal_encoding or -E option,
- * and can't be modified after that.
+ * It is initialized by the source internal_encoding or -E option.
  */
 static VALUE
 get_default_internal(VALUE klass)
@@ -1111,23 +1161,23 @@ get_default_internal(VALUE klass)
 void
 rb_enc_set_default_internal(VALUE encoding)
 {
-    if (default_internal_index != -2)
-	/* Already set */
-	return;
-    if (NIL_P(encoding)) {
-	default_internal_index = -1;
-	default_internal = 0;
-	st_insert(enc_table.names, (st_data_t)strdup("internal"),
-		  (st_data_t)UNSPECIFIED_ENCODING);
-	return;
-    }
+    enc_set_default_encoding(&default_internal, encoding,
+			     "internal", ENCINDEX_UTF_8);
+}
 
-    default_internal_index = rb_enc_to_index(rb_to_encoding(encoding));
-    /* Convert US-ASCII => UTF-8 */
-    if (default_internal_index == rb_usascii_encindex())
-	default_internal_index = rb_utf8_encindex();
-    default_internal = 0;
-    enc_alias_internal("internal", default_internal_index);
+/*
+ * call-seq:
+ *   Encoding.default_internal = enc or nil
+ *
+ * Sets default internal encoding.
+ * Or removes default internal encoding when passed nil.
+ */
+static VALUE
+set_default_internal(VALUE klass, VALUE encoding)
+{
+    rb_warning("setting Encoding.default_internal");
+    rb_enc_set_default_internal(encoding);
+    return encoding;
 }
 
 /*
@@ -1256,6 +1306,7 @@ rb_enc_aliases_enc_i(st_data_t name, st_data_t orig, st_data_t arg)
     if (NIL_P(str)) {
 	rb_encoding *enc = rb_enc_from_index(idx);
 
+	if (!enc) return ST_CONTINUE;
 	if (STRCASECMP((char*)name, rb_enc_name(enc)) == 0) {
 	    return ST_CONTINUE;
 	}
@@ -1316,7 +1367,9 @@ Init_Encoding(void)
     rb_define_singleton_method(rb_cEncoding, "_load", enc_load, 1);
 
     rb_define_singleton_method(rb_cEncoding, "default_external", get_default_external, 0);
+    rb_define_singleton_method(rb_cEncoding, "default_external=", set_default_external, 1);
     rb_define_singleton_method(rb_cEncoding, "default_internal", get_default_internal, 0);
+    rb_define_singleton_method(rb_cEncoding, "default_internal=", set_default_internal, 1);
     rb_define_singleton_method(rb_cEncoding, "locale_charmap", rb_locale_charmap, 0);
 
     list = rb_ary_new2(enc_table.count);

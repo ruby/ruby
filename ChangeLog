@@ -1,7 +1,39 @@
-Thu Dec 11 13:17:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 12 19:29:07 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* encoding.c (rb_enc_set_default_internal): defines internal
-	  encoding as nil.
+	* encoding.c (rb_enc_set_default_external): default_internal can be
+	  nil, but default_external cannot.
+
+	* encoding.c (rb_set_default_internal): adds rdoc.
+
+	* encoding.c (enc_find): ditto.
+
+Fri Dec 12 14:09:55 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* encoding.c (enc_get_default_encoding): removed.
+	  Generalizing rb_default_{external,internal}_encoding seems to be
+	  difficult. 
+	  default_external cannot be NULL even before detected. [ruby-dev:37390]
+
+	* encoding.c (rb_default_external_encoding): has its own
+	  implementation again.
+
+	* encoding.c (rb_default_internal_encoding): ditto.
+
+	* gem_prelude.rb: added notice.
+
+	* ruby.c (rubylib_mangled_path, rubylib_mangled_path2): uses locale
+	  encoding but not ASCII-8BIT.
+
+	* ruby.c (process_options): refers less to default_external.
+
+Thu Dec 11 20:05:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_aliases_enc_i): skips default internal.
+
+Thu Dec 11 13:36:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_set_default_encoding): allowed to set default
+	  encoding.
 
 	* encoding.c (rb_locale_encoding): removed Encoding::LOCALE.
 
