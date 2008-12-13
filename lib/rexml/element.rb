@@ -691,6 +691,7 @@ module REXML
       Kernel.warn("#{self.class.name}.write is deprecated.  See REXML::Formatters")
       formatter = if indent > -1
           if transitive
+            require "rexml/formatters/transitive"
             REXML::Formatters::Transitive.new( indent, ie_hack )
           else
             REXML::Formatters::Pretty.new( indent, ie_hack )
