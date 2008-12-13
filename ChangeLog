@@ -1,3 +1,7 @@
+Sat Dec 13 18:34:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (sym_printable): wrong condition for string iteration.
+
 Sat Dec 13 16:04:48 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* encoding.c (default_external): endless recursion during

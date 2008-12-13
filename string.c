@@ -6827,10 +6827,9 @@ sym_equal(VALUE sym1, VALUE sym2)
 
 
 static int
-sym_printable(const char *s, rb_encoding *enc)
+sym_printable(const char *s, const char *send, rb_encoding *enc)
 {
-    const char *send = s + strlen(s);
-    while (s) {
+    while (s < send) {
 	int c = rb_enc_codepoint(s, send, enc);
 	int n = rb_enc_codelen(c, enc);
 	if (!rb_enc_isprint(c, enc)) return Qfalse;
@@ -6862,7 +6861,7 @@ sym_inspect(VALUE sym)
     memcpy(RSTRING_PTR(str)+1, RSTRING_PTR(sym), RSTRING_LEN(sym));
     if (RSTRING_LEN(sym) != strlen(RSTRING_PTR(sym)) ||
 	!rb_enc_symname_p(RSTRING_PTR(sym), enc) ||
-	!sym_printable(RSTRING_PTR(sym), enc)) {
+	!sym_printable(RSTRING_PTR(sym), RSTRING_END(sym), enc)) {
 	str = rb_str_inspect(str);
 	strncpy(RSTRING_PTR(str), ":\"", 2);
     }
