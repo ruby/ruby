@@ -1,3 +1,11 @@
+Thu Dec 11 13:09:01 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (reg_enc_error): raise EncodingCompatibilityError for
+	  encoding incompatibility.  [ruby-core:18600]
+
+	* re.c (rb_reg_prepare_enc): more consistent error message.
+	  [ruby-core:18611]
+
 Fri Dec 12 19:29:07 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* encoding.c (rb_enc_set_default_external): default_internal can be
