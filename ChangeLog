@@ -1,3 +1,7 @@
+Thu Dec 11 23:48:00 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/cmath.rb (sqrt): should pass nan to the original method.
+
 Thu Dec 11 19:31:45 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit/assertions.rb: extracted from lib/test/unit.rb.
