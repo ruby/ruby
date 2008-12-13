@@ -651,18 +651,28 @@ class TestIO < Test::Unit::TestCase
       assert_equal("foo\nbar\n", f.read)
       assert_equal("", f2.read)
     end
+  end
 
-    a = []
-    assert_raise(Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM) do
-      loop {a << IO.pipe}
-    end
-    assert_raise(Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM) do
-      loop {a << [a[-1][0].dup, a[-1][1].dup]}
-    end
-    a.each do |r, w|
-      r.close unless !r || r.closed?
-      w.close unless !w || w.closed?
-    end
+  def test_dup_many
+    ruby('-e', <<-'End') {|f|
+      ok = 0
+      a = []
+      begin
+        loop {a << IO.pipe}
+      rescue Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM
+        ok += 1
+      end
+      print "no" if ok != 1
+      begin
+        loop {a << [a[-1][0].dup, a[-1][1].dup]}
+      rescue Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM
+        ok += 1
+      end
+      print "no" if ok != 2
+      print "ok"
+    End
+      assert_equal("ok", f.read)
+    }
   end
 
   def test_inspect
