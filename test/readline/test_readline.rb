@@ -166,12 +166,18 @@ class TestReadline < Test::Unit::TestCase
 
   def test_completion_append_character
     begin
-      Readline.completion_append_character = "x"
-      assert_equal("x", Readline.completion_append_character)
-      Readline.completion_append_character = "xyz"
-      assert_equal("x", Readline.completion_append_character)
-      Readline.completion_append_character = nil
-      assert_equal(nil, Readline.completion_append_character)
+      enc = Encoding.default_internal || Encoding.find("locale")
+      data_expected = [
+                       ["x", "x"],
+                       ["xyx", "x"],
+                       [" ", " "],
+                       ["\t", "\t"],
+                      ]
+      data_expected.each do |(data, expected)|
+        Readline.completion_append_character = data
+        assert_equal(expected, Readline.completion_append_character)
+        assert_equal(enc, Readline.completion_append_character.encoding)
+      end
       Readline.completion_append_character = ""
       assert_equal(nil, Readline.completion_append_character)
     rescue NotImplementedError

@@ -1,3 +1,9 @@
+Sat Dec 13 01:10:03 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/readline.c
+	  (readline_s_get_completion_append_character): uses locale
+	  encoding but not ASCII-8BIT.
+
 Fri Dec 12 19:24:47 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* common.mk (run, runruby, parse, gdb, gdb-ruby): you can also run
