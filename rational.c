@@ -1134,7 +1134,7 @@ nurat_inspect(VALUE self)
 {
     VALUE s;
 
-    s = rb_str_new2("(");
+    s = rb_usascii_str_new2("(");
     rb_str_concat(s, nurat_format(self, f_inspect));
     rb_str_cat2(s, ")");
 
@@ -1288,7 +1288,7 @@ make_patterns(void)
 				 sizeof underscores_pat_source - 1, 0);
     rb_gc_register_mark_object(underscores_pat);
 
-    an_underscore = rb_str_new2("_");
+    an_underscore = rb_usascii_str_new2("_");
     rb_gc_register_mark_object(an_underscore);
 }
 
@@ -1367,7 +1367,7 @@ string_to_r_internal(VALUE self)
 	    v = f_mul(v, f_expt(INT2FIX(10), f_to_i(exp)));
 #if 0
 	if (!NIL_P(de) && (!NIL_P(fp) || !NIL_P(exp)))
-	    return rb_assoc_new(v, rb_str_new2("dummy"));
+	    return rb_assoc_new(v, rb_usascii_str_new2("dummy"));
 #endif
 	if (!NIL_P(de))
 	    v = f_div(v, f_to_i(de));

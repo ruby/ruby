@@ -940,7 +940,7 @@ nucomp_inspect(VALUE self)
 {
     VALUE s;
 
-    s = rb_str_new2("(");
+    s = rb_usascii_str_new2("(");
     rb_str_concat(s, nucomp_format(self, f_inspect));
     rb_str_cat2(s, ")");
 
@@ -1082,20 +1082,20 @@ make_patterns(void)
     comp_pat2 = rb_reg_new(comp_pat2_source, sizeof comp_pat2_source - 1, 0);
     rb_gc_register_mark_object(comp_pat2);
 
-    a_slash = rb_str_new2("/");
+    a_slash = rb_usascii_str_new2("/");
     rb_gc_register_mark_object(a_slash);
 
-    a_dot_and_an_e = rb_str_new2(".eE");
+    a_dot_and_an_e = rb_usascii_str_new2(".eE");
     rb_gc_register_mark_object(a_dot_and_an_e);
 
-    null_string = rb_str_new2("");
+    null_string = rb_usascii_str_new2("");
     rb_gc_register_mark_object(null_string);
 
     underscores_pat = rb_reg_new(underscores_pat_source,
 				 sizeof underscores_pat_source - 1, 0);
     rb_gc_register_mark_object(underscores_pat);
 
-    an_underscore = rb_str_new2("_");
+    an_underscore = rb_usascii_str_new2("_");
     rb_gc_register_mark_object(an_underscore);
 }
 
@@ -1147,13 +1147,13 @@ string_to_c_internal(VALUE self)
 		sr = Qnil;
 		si = f_aref(m, INT2FIX(1));
 		if (NIL_P(si))
-		    si = rb_str_new2("");
+		    si = rb_usascii_str_new2("");
 		{
 		    VALUE t;
 
 		    t = f_aref(m, INT2FIX(2));
 		    if (NIL_P(t))
-			t = rb_str_new2("1");
+			t = rb_usascii_str_new2("1");
 		    rb_str_concat(si, t);
 		}
 		re = f_post_match(m);
@@ -1173,7 +1173,7 @@ string_to_c_internal(VALUE self)
 		si = f_aref(m, INT2FIX(3));
 		t = f_aref(m, INT2FIX(4));
 		if (NIL_P(t))
-		    t = rb_str_new2("1");
+		    t = rb_usascii_str_new2("1");
 		rb_str_concat(si, t);
 	    }
 	    re = f_post_match(m);

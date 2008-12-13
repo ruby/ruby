@@ -1,3 +1,9 @@
+Sat Dec 13 13:03:20 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: use rb_usascii_str_new2 instead of rb_str_new2.
+
+	* rational.c: ditto.
+
 Sat Dec 13 12:48:57 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_m17n.rb: feature changed in r20626.
