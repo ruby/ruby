@@ -1,3 +1,8 @@
+Wed Dec 10 11:25:53 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_initialize): raise RegexpError when encoding
+	  is dummy encoding. [ruby-dev:37091]
+
 Tue Dec  9 18:35:35 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/trans/single_byte.trans, cp850-tbl.rb, cp852-tbl.rb,
