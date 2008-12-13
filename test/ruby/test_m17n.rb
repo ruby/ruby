@@ -48,7 +48,7 @@ class TestM17N < Test::Unit::TestCase
       if enc == r.encoding
         assert_nothing_raised { r =~ "\xc2\xa1".force_encoding(enc) }
       else
-        assert_raise(ArgumentError) { r =~ "\xc2\xa1".force_encoding(enc) }
+        assert_raise(Encoding::CompatibilityError) { r =~ "\xc2\xa1".force_encoding(enc) }
       end
     }
   end
@@ -385,9 +385,9 @@ class TestM17N < Test::Unit::TestCase
       assert_equal(nil, r =~ s("a"))
       assert_equal(nil, r =~ u("a"))
       assert_equal(0, r =~ a("\xc2\xa1"))
-      assert_raise(ArgumentError) { r =~ e("\xc2\xa1") }
-      assert_raise(ArgumentError) { r =~ s("\xc2\xa1") }
-      assert_raise(ArgumentError) { r =~ u("\xc2\xa1") }
+      assert_raise(Encoding::CompatibilityError) { r =~ e("\xc2\xa1") }
+      assert_raise(Encoding::CompatibilityError) { r =~ s("\xc2\xa1") }
+      assert_raise(Encoding::CompatibilityError) { r =~ u("\xc2\xa1") }
     }
   end
 
@@ -402,10 +402,10 @@ class TestM17N < Test::Unit::TestCase
       assert_equal(0, r =~ e("a"))
       assert_equal(0, r =~ s("a"))
       assert_equal(0, r =~ u("a"))
-      assert_raise(ArgumentError) { r =~ a("\xc2\xa1") }
+      assert_raise(Encoding::CompatibilityError) { r =~ a("\xc2\xa1") }
       assert_equal(nil, r =~ e("\xc2\xa1"))
-      assert_raise(ArgumentError) { r =~ s("\xc2\xa1") }
-      assert_raise(ArgumentError) { r =~ u("\xc2\xa1") }
+      assert_raise(Encoding::CompatibilityError) { r =~ s("\xc2\xa1") }
+      assert_raise(Encoding::CompatibilityError) { r =~ u("\xc2\xa1") }
     }
 
     [/\xc2\xa1/e, eval(e(%{/\xc2\xa1/})), eval(e(%q{/\xc2\xa1/}))].each {|r|
@@ -413,10 +413,10 @@ class TestM17N < Test::Unit::TestCase
       assert_equal(nil, r =~ e("a"))
       assert_equal(nil, r =~ s("a"))
       assert_equal(nil, r =~ u("a"))
-      assert_raise(ArgumentError) { r =~ a("\xc2\xa1") }
+      assert_raise(Encoding::CompatibilityError) { r =~ a("\xc2\xa1") }
       assert_equal(0, r =~ e("\xc2\xa1"))
-      assert_raise(ArgumentError) { r =~ s("\xc2\xa1") }
-      assert_raise(ArgumentError) { r =~ u("\xc2\xa1") }
+      assert_raise(Encoding::CompatibilityError) { r =~ s("\xc2\xa1") }
+      assert_raise(Encoding::CompatibilityError) { r =~ u("\xc2\xa1") }
     }
   end
 
@@ -430,7 +430,7 @@ class TestM17N < Test::Unit::TestCase
   def test_regexp_windows_31j
     begin
       Regexp.new("\xa1".force_encoding("windows-31j")) =~ "\xa1\xa1".force_encoding("euc-jp")
-    rescue ArgumentError
+    rescue Encoding::CompatibilityError
       err = $!
     end
     assert_match(/windows-31j/i, err.message)
