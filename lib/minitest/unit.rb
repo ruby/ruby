@@ -336,12 +336,8 @@ p $!
     end
 
     def location e
-      e.backtrace.reverse.inject(""){ |last, s|
-        if  s =~ /in .(assert|refute|flunk$|pass$|fail$|raise$)/
-          break last 
-        else
-          s
-        end
+      e.backtrace.find { |s|
+        s !~ /in .(assert|refute|flunk|pass|fail|raise)/
       }.sub(/:in .*$/, '')
     end
 
