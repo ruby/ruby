@@ -1,7 +1,7 @@
 日 12月 14 12:51:48 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bignum.c (rb_big_mul): faster multiplication by Karatsuba method and
-	  twice faster square than normal multiplication.
+	  twice faster square than normal multiplication. [ruby-dev:37392]
 
 	* random.c (rb_rand_internal): used by Bignum#*.
 	
