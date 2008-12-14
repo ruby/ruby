@@ -200,11 +200,24 @@ class TestBignum < Test::Unit::TestCase
 
   def test_sub
     assert_equal(-T31, T32 - (T32 + T31))
+    x = 2**100
+    assert_equal(1, (x+2) - (x+1))
+    assert_equal(-1, (x+1) - (x+2))
+    assert_equal(0, (2**100) - (2.0**100))
+    o = Object.new
+    def o.coerce(x); [2**100+2, x]; end
+    assert_equal(1, (2**100+1) - o)
   end
 
   def test_plus
     assert_equal(T32.to_f, T32P + 1.0)
     assert_raise(TypeError) { T32 + "foo" }
+    assert_equal(1267651809154049016125877911552, (2**100) + (2**80))
+    assert_equal(1267651809154049016125877911552, (2**80) + (2**100))
+    assert_equal(2**101, (2**100) + (2.0**100))
+    o = Object.new
+    def o.coerce(x); [2**80, x]; end
+    assert_equal(1267651809154049016125877911552, (2**100) + o)
   end
 
   def test_minus
@@ -215,6 +228,13 @@ class TestBignum < Test::Unit::TestCase
   def test_mul
     assert_equal(T32.to_f, T32 * 1.0)
     assert_raise(TypeError) { T32 * "foo" }
+    o = Object.new
+    def o.coerce(x); [2**100, x]; end
+    assert_equal(2**180, (2**80) * o)
+  end
+
+  def test_mul_balance
+    assert_equal(3**7000, (3**5000) * (3**2000))
   end
 
   def test_divrem

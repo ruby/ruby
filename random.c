@@ -452,6 +452,16 @@ limited_big_rand(struct MT *mt, struct RBignum *limit)
     return rb_big_norm((VALUE)val);
 }
 
+unsigned long
+rb_rand_internal(unsigned long i)
+{
+    struct MT *mt = &default_mt.mt;
+    if (!genrand_initialized(mt)) {
+	rand_init(mt, random_seed());
+    }
+    return limited_rand(mt, i);
+}
+
 /*
  *  call-seq:
  *     rand(max=0)    => number
