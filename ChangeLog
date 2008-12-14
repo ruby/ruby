@@ -1,3 +1,13 @@
+Sun Dec 14 22:31:19 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bignum.c (bigmul1_karatsuba): remove temporal bignum.
+
+	* bignum.c (bigsqr): call bigmul0(x, x) because it is faster than the
+	  original bigsqr at this point.  
+
+	* bignum.c (rb_big_pow): a value returned from bigsqr is already
+	  truncated.
+
 Sun Dec 14 21:13:02 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bignum.c (bigmul1_karatsuba): fix comment and refactoring.
