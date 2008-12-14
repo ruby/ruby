@@ -1,3 +1,8 @@
+Sun Dec 14 14:53:41 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bignum.c (bigmul1_balance, bigmul1_karatsuba): remove all
+	  rb_gc_force_recycle which causes memory leak.
+
 Sun Dec 14 14:26:11 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* spec/README: directory structrue changed

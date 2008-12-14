@@ -1617,7 +1617,6 @@ bigmul1_balance(VALUE x, VALUE y)
 	yn -= r;
 	n += r;
     }
-    rb_gc_force_recycle(t1);
 
     return z;
 }
@@ -1698,7 +1697,6 @@ bigmul1_karatsuba(VALUE x, VALUE y)
 	/* subtract t2 from middle bytes of the result (z1) */
 	i = xn + yn - n;
 	bigsub_core(zds + n, i, BDIGITS(t2), t2n, zds + n, i);
-	rb_gc_force_recycle(t2);
     }
     else {
 	/* copy 0 into low bytes of the result (z0) */
@@ -1708,26 +1706,18 @@ bigmul1_karatsuba(VALUE x, VALUE y)
     /* subtract t1 from middle bytes of the result (z1) */
     i = xn + yn - n;
     bigsub_core(zds + n, i, BDIGITS(t1), t1n, zds + n, i);
-    rb_gc_force_recycle(t1);
 
     /* t1 <- xh + xl */
     t1 = bigadd(xh, xl, 1);
-    if (xh != yh) rb_gc_force_recycle(xh);
-    if (xl != yl) rb_gc_force_recycle(xl);
 
     /* t2 <- yh + yl */
     t2 = (x == y) ? t1 : bigadd(yh, yl, 1);
-    rb_gc_force_recycle(yh);
-    rb_gc_force_recycle(yl);
 
     /* t3 <- t1 * t2 */
     t3 = bigmul0(t1, t2);
-    rb_gc_force_recycle(t1);
-    if (t1 != t2) rb_gc_force_recycle(t2);
 
     /* add t3 to middle bytes of the result (z1) */
     bigadd_core(zds + n, i, BDIGITS(t3), big_real_len(t3), zds + n, i);
-    rb_gc_force_recycle(t3);
 
     return z;
 }
