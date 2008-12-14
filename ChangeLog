@@ -1,3 +1,11 @@
+Sun Dec 14 14:26:11 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* spec/README: directory structrue changed
+
+Sun Dec 14 09:14:37 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* reverts r20713.
+
 日 12月 14 12:51:48 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bignum.c (rb_big_mul): faster multiplication by Karatsuba method and
@@ -6,11 +14,6 @@
 	* random.c (rb_rand_internal): used by Bignum#*.
 	
 	* test/ruby/test_bignum.rb: add some tests for above.
-
-Sun Dec 14 09:14:37 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
-
-	* reverts r20713.
-
 Sun Dec 14 01:35:48 2008  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (forked_child): new variable.
