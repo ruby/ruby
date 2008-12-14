@@ -1,3 +1,7 @@
+Sun Dec 14 21:13:02 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bignum.c (bigmul1_karatsuba): fix comment and refactoring.
+
 Sun Dec 14 14:53:41 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bignum.c (bigmul1_balance, bigmul1_karatsuba): remove all

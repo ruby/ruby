@@ -1668,7 +1668,7 @@ bigmul1_karatsuba(VALUE x, VALUE y)
      *   where
      *     z2 = xh * yh
      *     z0 = xl * yl
-     *     z1 = (xh + xl) * (yh + yl) - x2 - x0
+     *     z1 = (xh + xl) * (yh + yl) - z2 - z0
      *
      *  ref: http://en.wikipedia.org/wiki/Karatsuba_algorithm
      */
@@ -1683,7 +1683,7 @@ bigmul1_karatsuba(VALUE x, VALUE y)
 
     /* copy t1 into high bytes of the result (z2) */
     MEMCPY(zds + 2 * n, BDIGITS(t1), BDIGIT, t1n);
-    for (i = 2 * n + t1n; i < xn + yn; i++) BDIGITS(z)[i] = 0;
+    for (i = 2 * n + t1n; i < xn + yn; i++) zds[i] = 0;
 
     if (!BIGZEROP(xl) && !BIGZEROP(yl)) {
 	/* t2 <- xl * yl */
@@ -1692,7 +1692,7 @@ bigmul1_karatsuba(VALUE x, VALUE y)
 
 	/* copy t2 into low bytes of the result (z0) */
 	MEMCPY(zds, BDIGITS(t2), BDIGIT, t2n);
-	for (i = t2n; i < 2 * n; i++) BDIGITS(z)[i] = 0;
+	for (i = t2n; i < 2 * n; i++) zds[i] = 0;
 
 	/* subtract t2 from middle bytes of the result (z1) */
 	i = xn + yn - n;
@@ -1700,7 +1700,7 @@ bigmul1_karatsuba(VALUE x, VALUE y)
     }
     else {
 	/* copy 0 into low bytes of the result (z0) */
-	for (i = 0; i < 2 * n; i++) BDIGITS(z)[i] = 0;
+	for (i = 0; i < 2 * n; i++) zds[i] = 0;
     }
 
     /* subtract t1 from middle bytes of the result (z1) */
