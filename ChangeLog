@@ -1,3 +1,7 @@
+Mon Dec 15 21:01:46 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pty/pty.c (chfunc): make it static.
+
 Mon Dec 15 20:59:10 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pty/pty.c (child_info): add slavename.
