@@ -461,6 +461,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if "$(PROCESSOR_ARCHITECTURE)" == "x86" || "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
 #define STACK_GROW_DIRECTION -1
 !endif
+#define CANONICALIZATION_FOR_MATHN 1
 #define DEFAULT_KCODE KCODE_NONE
 #define DLEXT ".so"
 #define RUBY_LIB "/lib/$(RUBY_INSTALL_NAME)/$(ruby_version)"
