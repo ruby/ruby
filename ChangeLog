@@ -1,3 +1,8 @@
+Mon Dec 15 16:26:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_callee_setup_arg_complex): uses cfp from
+	  blockptr instead of the current cfp.  [ruby-core:20544]
+
 Mon Dec 15 14:56:59 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_metaclass.rb: new test case for metaclass hierarchy.
