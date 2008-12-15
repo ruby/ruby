@@ -805,8 +805,8 @@ sleep_timeval(rb_thread_t *th, struct timeval tv)
 	if (to.tv_sec < tvn.tv_sec) break;
 	if (to.tv_sec == tvn.tv_sec && to.tv_usec <= tvn.tv_usec) break;
 	thread_debug("sleep_timeval: %ld.%.6ld > %ld.%.6ld\n",
-		     (long)to.tv_sec, to.tv_usec,
-		     (long)tvn.tv_sec, tvn.tv_usec);
+		     (long)to.tv_sec, (long)to.tv_usec,
+		     (long)tvn.tv_sec, (long)tvn.tv_usec);
 	tv.tv_sec = to.tv_sec - tvn.tv_sec;
 	if ((tv.tv_usec = to.tv_usec - tvn.tv_usec) < 0) {
 	    --tv.tv_sec;
