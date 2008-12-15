@@ -369,6 +369,67 @@ getDevice(int *master, int *slave, char SlaveName[DEVICELEN])
 }
 
 static VALUE
+pty_close_pty(VALUE assoc)
+{
+    VALUE io;
+    int i;
+
+    for (i = 0; i < 2; i++) {
+        io = rb_ary_entry(assoc, i);
+        if (TYPE(io) == T_FILE && 0 <= RFILE(io)->fptr->fd)
+            rb_io_close(io);
+    }
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *   master_io, slave_file = PTY.open
+ *   PTY.open {|master_io, slave_file| ... }
+ *
+ * Allocates a pty (pseudo-terminal).
+ *
+ * It returns an array which contains an IO object and a File object.
+ * The former is the master of the pty.
+ * The latter is the slave of the pty.
+ *
+ * If a block is given, it yields the array instead of return.
+ * The value of the block is returned.
+ * master_io and slave_file is closed when return if they are not closed.
+ *
+ * The filename of the slave is slave_file.path.
+ */
+static VALUE
+pty_open(VALUE klass)
+{
+    int master_fd, slave_fd;
+    char slavename[DEVICELEN];
+    VALUE master_io, slave_file;
+    rb_io_t *master_fptr, *slave_fptr;
+    VALUE assoc;
+
+    getDevice(&master_fd, &slave_fd, slavename);
+
+    master_io = rb_obj_alloc(rb_cIO);
+    MakeOpenFile(master_io, master_fptr);
+    master_fptr->mode = rb_io_mode_flags("r+");
+    master_fptr->fd = master_fd;
+    master_fptr->pathv = rb_obj_freeze(rb_sprintf(" pty %s", slavename));
+
+    slave_file = rb_obj_alloc(rb_cFile);
+    MakeOpenFile(slave_file, slave_fptr);
+    slave_fptr->mode = rb_io_mode_flags("r+");
+    slave_fptr->fd = slave_fd;
+    slave_fptr->pathv = rb_obj_freeze(rb_str_new_cstr(slavename));
+
+    assoc = rb_assoc_new(master_io, slave_file);
+    if (rb_block_given_p()) {
+	return rb_ensure(rb_yield, assoc, pty_close_pty, assoc);
+    }
+    return assoc;
+}
+
+static VALUE
 pty_detach_process(struct pty_info *info)
 {
     rb_detach_process(info->child_pid);
@@ -464,6 +525,7 @@ Init_pty()
     rb_define_module_function(cPTY,"getpty",pty_getpty,-1);
     rb_define_module_function(cPTY,"spawn",pty_getpty,-1);
     rb_define_singleton_method(cPTY,"check",pty_check,-1);
+    rb_define_singleton_method(cPTY,"open",pty_open,0);
 
     eChildExited = rb_define_class_under(cPTY,"ChildExited",rb_eRuntimeError);
     rb_define_method(eChildExited,"status",echild_status,0);

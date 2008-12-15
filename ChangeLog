@@ -1,3 +1,7 @@
+Mon Dec 15 22:48:11 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pty/pty.c (pty_open): new method PTY.open.
+
 Mon Dec 15 21:24:01 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pty/pty.c (get_device_once): use DEVICELEN instead of
