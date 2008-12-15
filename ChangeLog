@@ -1,6 +1,9 @@
-Mon Dec 15 16:28:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Dec 15 18:12:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-Mon Dec 15 16:26:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+	* lib/rake/packagetask.rb (Rake::PackageTask): small document
+	  update from okkez in [ruby-dev:37443]
+
+Mon Dec 15 16:28:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_callee_setup_arg_complex): uses cfp from
 	  blockptr instead of the current cfp.  [ruby-core:20544]
