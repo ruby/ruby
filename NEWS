@@ -18,22 +18,27 @@ with all sufficient information, see the ChangeLog file.
           o Block arguments
           o New semantics for block arguments
           o Block local variables
-          o Method used for splat arguments: #to_splat instead of #to_ary
+          o Method used for splat arguments: #to_splat instead of
+            #to_ary
           o defined? and local variables
-          o Parser expects that your source code has only valid byte sequence in some character encoding.
-	    Use magic comments to tell the parser which encoding you uses.
+          o Parser expects that your source code has only valid byte
+            sequence in some character encoding.  Use magic comments
+            to tell the parser which encoding you uses.
 
 * builtin classes and objects
 
     * Kernel and Object
           o Kernel#require
-	  o Kernel#methods has returned an array of strings but now it returns an array of symbols.
+          o Kernel#methods used to return an array of strings but now
+            it returns an array of symbols.
     * Class and Module
           o Class variables behavior
           o Module#attr is an alias of attr_reader
-          o Module#instance_methods, #private_instance_methods, #public_instance_methods
+          o Module#instance_methods, #private_instance_methods,
+            #public_instance_methods
           o Extra subclassing check when binding UnboundMethods
-	  o Module#instance_methods has returned an array of strings but now it returns an array of symbols.
+          o Module#instance_methods used to return an array of strings
+            but now it returns an array of symbols.
     * Exceptions
           o Equality of exceptions
           o SystemStackError
@@ -52,24 +57,30 @@ with all sufficient information, see the ChangeLog file.
           o Even more builtin and bundled libraries have been made to
             return an enumerator when called without a block.
     * File and Dir operations
-          o #to_path in File.path, File.chmod, File.lchmod, File.chown, File.lchown, File.utime, File.unlink... [Ruby2]
+          o #to_path is called as necessary in File.path, File.chmod,
+            File.lchmod, File.chown, File.lchown, File.utime,
+            File.unlink, etc..
           o Dir.[], Dir.glob
           o Dir.exist?
     * String and Regexp
           o No longer an Enumerable
           o ?c semantics
-          o "One-char-wide" semantics for String#[] and String#[]= [Ruby2]
-	  o Character-wise semantics in many methods in stead of byte-wise.
+          o "One-char-wide" semantics for String#[] and String#[]=
+          o Character-wise semantics in many methods in stead of
+            byte-wise.
           o Encoding-awareness
-          o Regexp matches only with strings which is encoded in a compatible character encoding to the regexp's.
+          o Regexp matches only with strings which is encoded in a
+            compatible character encoding to the regexp's.
     * Hash
           o Hash#to_s is equivalent to Hash#inspect
           o Semantics for Hash#each and Hash#each_pair
           o Hash#select returns a hash
-          o Hash#key is the new name for #index which has been deprecated.
-	  o Hash preserves order. It enumerates its elemets in the order in which each key are inserted.
-          o Most of the changes in Hash apply to hash like interfaces such as
-            ENV and *DBM.
+          o Hash#key is the new name for #index which has been
+            deprecated.
+          o Hash preserves order.  It enumerates its elements in the
+            order in which the keys are inserted.
+          o Most of the changes in Hash apply to hash like interfaces
+            such as ENV and *DBM.
     * Numeric
           o Numeric#div always rounds as Integer#div has done.
           o Numeric#fdiv: ditto.
@@ -81,18 +92,24 @@ with all sufficient information, see the ChangeLog file.
           o Kernel#open takes "t" for newline conversion
           o Kernel#open takes encoding specified
           o IO#initialize now accepts an IO argument
-	  o IO automatically converts byte sequence from a character encodings into another if specified.
+          o IO automatically converts byte sequence from a character
+            encodings into another if specified.
           o StringIO#readpartial
           o IO.try_convert
-          o Limit input in IO#gets, IO#readline, IO#readlines, IO#each_line, IO#lines, IO.foreach, IO.readlines, StringIO#gets, StringIO#readline, StringIO#each, StringIO#readlines
+          o Limit input in IO#gets, IO#readline, IO#readlines,
+            IO#each_line, IO#lines, IO.foreach, IO.readlines,
+            StringIO#gets, StringIO#readline, StringIO#each,
+            StringIO#readlines
           o IO#ungetc, StringIO#ungetc
-	  o IO#internal_encoding, IO#external_encoding, IO#set_encoding
-	  o IO.pipe takes encoding option
+          o IO#internal_encoding, IO#external_encoding,
+            IO#set_encoding
+          o IO.pipe takes encoding option
     * Struct
           o Struct#inspect
     * Symbols: restriction on literal symbols
     * $SAFE and bound methods
-          o New trusted/untrusted model in addition to tainted/untainted model.
+          o New trusted/untrusted model in addition to
+            tainted/untainted model.
     * Time
           o New format in Time#to_s
           o Timezone information preserved on Marshal.dump/load
@@ -100,38 +117,46 @@ with all sufficient information, see the ChangeLog file.
           o VERSION and friends
           o Kernel.to_a
           o Kernel#getc
-          o Kernel#callcc and Continuation now become 'continuation' bundled library.
+          o Kernel#callcc and Continuation now become 'continuation'
+            bundled library.
           o Object#type
           o Hash#index
           o ENV.index
-          o Presision is removed. Don't cry, it will be redesigned and come back in future version.
+          o Precision is removed.  Don't cry, it will be redesigned
+            and come back in future version.
           o Symbol#to_int
           o Numeric#rdiv
           o Removed Array and Hash #indices, #indexes
-	  o $KCODE is no longer effective. Use Encoding related features of each class.
-	  o mailread library
-	  o cgi-lib library: use cgi.
-	  o date2 library: use date.
-	  o eregex library
-	  o finalize library: use ObjectSpace.define_finalizer if you really need a finalizer. really?
-	  o ftools library: use fileutils.
-	  o generator library: use Enumerator.
-	  o importenv library
-	  o jcode library: use multilingualization support of String
-	  o parsedate library
-	  o ping library
-	  o readbytes library
-	  o getopts library and parsearg library: use optparse or getoptlong.
-	  o soap, wsdl, and xsd libraries: use soap4r gem.
-	  o Win32API library: use dl.
-	  o dl library: Reimplemented and API changed.
-	  o rubyunit library and runit library: use minitest or test/unit. Or use anything you love through RubyGems.
-	  o test/unit is reimplemented on top of minitest. This is not fully compatible with the original.
+          o $KCODE is no longer effective.  Use Encoding related
+            features of each class.
+          o mailread library
+          o cgi-lib library: use cgi.
+          o date2 library: use date.
+          o eregex library
+          o finalize library: use ObjectSpace.define_finalizer if you
+            really need a finalizer. realy?
+          o ftools library: use fileutils.
+          o generator library: use Enumerator.
+          o importenv library
+          o jcode library: use multilingualization support of String
+          o parsedate library
+          o ping library
+          o readbytes library
+          o getopts library and parsearg library: use optparse or
+            getoptlong.
+          o soap, wsdl, and xsd libraries: use soap4r gem.
+          o Win32API library: use dl.
+          o dl library: Reimplemented and API changed.
+          o rubyunit library and runit library: use minitest or
+            test/unit. Or use anything you love through RubyGems.
+          o test/unit is reimplemented on top of minitest.  This is
+            not fully compatible with the original.
 
 * bundled libraries
 
     * Readline
-          o If Readline uses libedit, Readline::HISTORY[0] returns the first of the history.
+          o If Readline uses libedit, Readline::HISTORY[0] returns the
+            first of the history.
     * Pathname
           o No longer has #to_str and #=~
     * Continuation
@@ -140,7 +165,8 @@ with all sufficient information, see the ChangeLog file.
 === Language core changes
 
     * New syntax and semantics
-          o Magic comments to declare in which encoding your source code is written
+          o Magic comments to declare in which encoding your source
+            code is written
           o New literal hash syntax
           o New syntax for lambdas
           o .() and calling Procs without #call/#[]
@@ -177,8 +203,9 @@ with all sufficient information, see the ChangeLog file.
           o Enumerator#with_object
           o Enumerator.new { ... }
     * Errno::EXXX
-          o All of them are always defined. Errno::EXX is just an alias
-	    of Errno::ENOERROR if your platform does not have EXXX.
+          o All of those are always defined.  Errno::EXX will be
+            defined as an alias to Errno::ENOERROR if your platform
+            does not have one.
     * Regexp#match, String#match
           o Regexp#match, String#match
     * Encoding
@@ -218,7 +245,7 @@ with all sufficient information, see the ChangeLog file.
           o String#unpack with a block
           o String#hash
           o String.try_convert
-	  o String.encoding, String#force_encoding, String#encode
+          o String.encoding, String#force_encoding, String#encode
     * Symbol
           o Zero-length symbols allowed
           o Symbol#=== matches strings
@@ -252,14 +279,18 @@ with all sufficient information, see the ChangeLog file.
           o Package management system for Ruby.
           o Integrated with Ruby's library loader.
     * Rake
-          o Ruby make. A simple ruby build program with capabilities similar to make.
+          o Ruby make. A simple ruby build program with capabilities
+            similar to make.
     * minitest
-          o Our new testing library which is cleaner and easier to read than the old test/unit.
-          o You can introduce the old test/unit as a gem through RubyGems if you want.
+          o Our new testing library which is cleaner and easier to
+            read than the old test/unit.
+          o You can introduce the old test/unit as a gem through
+            RubyGems if you want.
     * CMath
           o Complex number version of Math
     * Prime
-          o Extracted from Mathn and improved. You can easily iterate prime numbers.
+          o Extracted from Mathn and improved. You can easily iterate
+            prime numbers.
           o Prime.new is obsolete. Use its class methods.
     * ripper
           o Ruby script parser
@@ -274,7 +305,8 @@ with all sufficient information, see the ChangeLog file.
 === Implementation changes
 
 * Memory Diet
-    * Object Compaction - Object, Array, String, Hash, Struct, Class, Module
+    * Object Compaction - Object, Array, String, Hash, Struct, Class,
+      Module
     * st_table compaction (inlining small tables)
 * YARV
     * Ruby codes are compiled into opcodes before executed.
@@ -287,4 +319,5 @@ with all sufficient information, see the ChangeLog file.
           (2) Perhaps
           (3) Not supported
     * Dropped
-          o No longer supports djgpp, human68k, MacOS 9 or earlier, VMS nor Windows CE.
+          o No longer supports djgpp, human68k, MacOS 9 or earlier,
+            VMS nor Windows CE.
