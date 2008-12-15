@@ -1104,6 +1104,100 @@ true_value(void)
     rb_define_virtual_variable((name), (val) ? true_value : false_value, 0)
 
 static VALUE
+uscore_get()
+{
+    VALUE line;
+
+    line = rb_lastline_get();
+    if (TYPE(line) != T_STRING) {
+	rb_raise(rb_eTypeError, "$_ value need to be String (%s given)",
+		 NIL_P(line) ? "nil" : rb_obj_classname(line));
+    }
+    return line;
+}
+
+/*
+ *  call-seq:
+ *     sub(pattern, replacement)   => $_
+ *     sub(pattern) { block }      => $_
+ *  
+ *  Equivalent to <code>$_.sub(<i>args</i>)</code>, except that
+ *  <code>$_</code> will be updated if substitution occurs.
+ *  Available only when -p/-n command line option specified.
+ */
+
+static VALUE
+rb_f_sub(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE str = rb_funcall3(uscore_get(), rb_intern("sub"), argc, argv);
+    rb_lastline_set(str);
+    return str;
+}
+
+/*
+ *  call-seq:
+ *     gsub(pattern, replacement)    => string
+ *     gsub(pattern) {|...| block }  => string
+ *  
+ *  Equivalent to <code>$_.gsub...</code>, except that <code>$_</code>
+ *  receives the modified result.
+ *  Available only when -p/-n command line option specified.
+ *     
+ */
+
+static VALUE
+rb_f_gsub(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE str = rb_funcall3(uscore_get(), rb_intern("gsub"), argc, argv);
+    rb_lastline_set(str);
+    return str;
+}
+
+/*
+ *  call-seq:
+ *     chop   => string
+ *  
+ *  Equivalent to <code>($_.dup).chop!</code>, except <code>nil</code>
+ *  is never returned. See <code>String#chop!</code>.
+ *  Available only when -p/-n command line option specified.
+ *     
+ */
+
+static VALUE
+rb_f_chop()
+{
+    VALUE str = rb_funcall3(uscore_get(), rb_intern("chop"), 0, 0);
+    rb_lastline_set(str);
+    return str;
+}
+
+
+/*
+ *  call-seq:
+ *     chomp            => $_
+ *     chomp(string)    => $_
+ *  
+ *  Equivalent to <code>$_ = $_.chomp(<em>string</em>)</code>. See
+ *  <code>String#chomp</code>.
+ *  Available only when -p/-n command line option specified.
+ *     
+ */
+
+static VALUE
+rb_f_chomp(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE str = rb_funcall3(uscore_get(), rb_intern("chomp"), argc, argv);
+    rb_lastline_set(str);
+    return str;
+}
+
+static VALUE
 process_options(VALUE arg)
 {
     struct cmdline_arguments *argp = (struct cmdline_arguments *)arg;
@@ -1282,6 +1376,10 @@ process_options(VALUE arg)
     }
     if (opt->do_loop) {
 	tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
+	rb_define_global_function("sub", rb_f_sub, -1);
+	rb_define_global_function("gsub", rb_f_gsub, -1);
+	rb_define_global_function("chop", rb_f_chop, 0);
+	rb_define_global_function("chomp", rb_f_chomp, -1);
     }
 
     iseq = rb_iseq_new_top(tree, rb_str_new2("<main>"),

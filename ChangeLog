@@ -2,6 +2,12 @@ Mon Dec 15 23:34:04 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pty/pty.c (pty_open): set FMODE_SYNC and FMODE_DUPLEX.
 
+Mon Dec 15 23:29:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (process_options): revive global sub, gsub, chop, chomp
+	  only when auto looping options (-p/-n) is specified.
+	  [ruby-core:20570]
+
 Mon Dec 15 22:48:11 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pty/pty.c (pty_open): new method PTY.open.
