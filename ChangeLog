@@ -1,3 +1,23 @@
+Mon Dec 15 14:56:59 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/ruby/test_metaclass.rb: new test case for metaclass hierarchy.
+
+	* class.c (make_metametaclass): new function. extracted from
+	  rb_make_metaclass.
+
+	* class.c (rb_make_metaclass): uses make_metametaclass when called for a
+	  metaclass.
+
+	* class.c (rb_singleton_class): creates a meta^(n+2)-class in
+	  addition to a meta^(n+1)-class when called for a meta^(n)-class.
+	  This is because the returned meta^(n+1) class must acts as an instance of 
+	  Class, metaclass of Class, ..., meta^(n+1)-class of Class,
+	  Module, metaclass of Module, ..., meta^(n+1)-class of Module,
+	  Object, metaclass of Object, ..., meta^(n+2)-class of Object,
+	  BasicObject, metaclass of BasicObject, ..., meta^(n+2)-class of
+	  and BasicObject even when Class, Module, Object or BasicObject has
+	  not have its meta^(i)-class yet. 
+
 Mon Dec 15 15:13:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* id.h, template/id.h.tmpl (ruby_method_ids): sees YYTOKENTYPE too.
