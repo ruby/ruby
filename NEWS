@@ -45,9 +45,12 @@ with all sufficient information, see the ChangeLog file.
           o Array#choice was removed (use sample)
           o Array#[m,n] = nil places nil in the array.
     * Enumerable and Enumerator
+          o Enumerable::Enumerator, compatibility alias of Enumerator,
+            is removed.
           o Enumerable#map,collect_all called without a block returns
             an enumerator.
-          o Many interators in builtin and bundled libraries return an enumerator when called without a block.
+          o Even more builtin and bundled libraries have been made to
+            return an enumerator when called without a block.
     * File and Dir operations
           o #to_path in File.path, File.chmod, File.lchmod, File.chown, File.lchown, File.utime, File.unlink... [Ruby2]
           o Dir.[], Dir.glob
@@ -170,8 +173,7 @@ with all sufficient information, see the ChangeLog file.
           o Passing blocks to #[]
           o Proc#lambda?
     * Enumerable and Enumerator
-          o Enumerable::Enumerator is now just Enumerator.
-          o Enumerable#each_with_object [experimental]
+          o Enumerable#each_with_object
           o Enumerator#with_object
           o Enumerator.new { ... }
     * Errno::EXXX
