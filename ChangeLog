@@ -9938,11 +9938,6 @@ Fri Aug  1 01:01:49 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* proc.c (rb_proc_call_with_block): reduce comparison.
 
-Wed Jul 30 21:08:06 2008  Yusuke Endoh  <mame@tsg.ne.jp>
-
-	* ext/syck/syck.c (syck_free_parser): fix memory leak by
-	  YAML::Syck.compile.
-
 Thu Jul 31 22:17:35 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/bigdecimal/bigdecimal.c (VpMult): prevent memory leak.
@@ -10062,6 +10057,9 @@ Wed Jul 30 21:30:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	* regparse.c (name_add): fix memory leak.
 
 Wed Jul 30 21:08:06 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/syck/syck.c (syck_free_parser): fix memory leak by
+	  YAML::Syck.compile.
 
 	* regparse.c (parse_exp): fix memory leak at Regexp.new("x{1,1}").
 
@@ -21790,11 +21788,6 @@ Sat Dec 22 19:14:38 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* process.c (rb_f_fork): Unsupport Kernel.fork() on NetBSD.
 
-Sat Dec 22 15:54:54 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
-
-	* test/ruby/test_transcode.rb: Added simple tests for
-	  EUC-JP and Shift_JIS and tests for ASCII-only range
-
 Sat Dec 22 18:20:13 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk (version.o): add dependency. [ruby-dev:32680]
@@ -21843,6 +21836,9 @@ Sat Dec 22 15:56:36 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 Sat Dec 22 15:54:54 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* ChangeLog: Information for last patch got lost, fixed
+
+	* test/ruby/test_transcode.rb: Added simple tests for
+	  EUC-JP and Shift_JIS and tests for ASCII-only range
 
 Sat Dec 22 15:45:45 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
@@ -33005,8 +33001,6 @@ Mon Jan  1 06:13:11 2007  Eric Hodel  <drbrain@segment7.net>
 	* lib/rdoc/parsers/c_parser.rb: Make Rdoc accessible.  Update constant
 	  value information.
 
-Mon Jan  1 06:13:11 2007  Eric Hodel  <drbrain@segment7.net>
-
 	* ext/bigdecimal/bigdecimal.c: Update constant comments to provide
 	  values for RDoc.
 
@@ -34941,13 +34935,6 @@ Sat Sep  2 12:06:35 2006  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 	* lib/soap/generator.rb (SOAP::SOAPGenerator#encode_tag): do not dump
 	  XML attribute which value is nil.  value "" and nil both were dumped
 	  as 'attr="value"'.  [ruby-dev:29395]
-
-Sat Sep  2 11:47:58 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* eval.c (rb_eval): should handle when in else clause.  a patch
-	  from Eric Hodel <drbrain at segment7.net>.  [ruby-core:08662]
-
-	* parse.y (primary): wrap with NODE_CASE.  [ruby-core:08663]
 
 Sat Sep  2 12:00:32 2006  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
@@ -38583,11 +38570,6 @@ Wed Nov 30 13:43:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* misc/ruby-mode.el (ruby-expr-beg): support $! at the end of
 	  expression.   [ruby-dev:27868]
 
-Mon Nov 28 20:24:22 2005  Tanaka Akira  <akr@m17n.org>
-
-	* lib/pp.rb (PP::PPMethods#object_address_group): mask an address with
-	  word size.
-
 Tue Nov 29 23:57:05 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (struct parser_params): heap must be placed at same offset
@@ -38605,6 +38587,9 @@ Tue Nov 29 22:45:30 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 	  fixed: [ruby-core:6796]
 
 Mon Nov 28 20:24:22 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pp.rb (PP::PPMethods#object_address_group): mask an address with
+	  word size.
 
 	* lib/pp.rb (PP::PPMethods#object_address_group): adjust address format.
 
@@ -56466,12 +56451,6 @@ Mon Oct  6 22:59:46 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/csv/test_csv.rb: add tests for above change.
 
-Sun Oct  5 23:27:09 2003  Tanaka Akira  <akr@m17n.org>
-
-	* ext/socket/extconf.rb: check recvmsg even if sendmsg is exists.
-
-	* ext/socket/socket.c (thread_read_select): restored.
-
 Mon Oct  6 16:23:38 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object): wrong method name in the message.
@@ -56500,6 +56479,10 @@ Mon Oct  6 09:19:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  different. [ruby-talk:83685]
 
 Sun Oct  5 23:27:09 2003  Tanaka Akira  <akr@m17n.org>
+
+	* ext/socket/extconf.rb: check recvmsg even if sendmsg is exists.
+
+	* ext/socket/socket.c (thread_read_select): restored.
 
 	* lib/pathname.rb: version information is added in document.
 
@@ -57386,8 +57369,6 @@ Tue Sep  9 10:39:51 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (struct tag): dst should be VALUE.
 
-Tue Sep  9 10:39:51 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
 	* eval.c (localjump_destination): stop at the scope where the current
 	  block was created.  [ruby-dev:21353]
 
@@ -57963,7 +57944,12 @@ Tue Aug 19 23:20:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
 	* ext/bigdecimal/lib/bigdecimal/math.rb: E implemented.
 
-Tue Aug 19 07:47:09 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+Tue Aug 19 11:19:33 2003  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* io.c (next_argv): should not call GetOpenFile() if rb_stdout is
+	  not a IO (T_FILE).
+
+Tue Aug 19 07:47:10 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/ssl.rb: new file; SSL/TLS enhancement for GenericServer.
 
@@ -57983,11 +57969,6 @@ Tue Aug 19 07:47:09 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (SSLServer#accept): should close
 	  socket if SSLSocket raises error.
-
-Tue Aug 19 11:19:33 2003  Shugo Maeda  <shugo@ruby-lang.org>
-
-	* io.c (next_argv): should not call GetOpenFile() if rb_stdout is
-	  not a IO (T_FILE).
 
 Tue Aug 19 07:47:09 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -58077,7 +58058,7 @@ Fri Aug 15 23:15:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
 	* ext/bigdecimal/lib/bigdecimal/math.rb: atan() & sqrt() added.
 
-Fri Aug 15 12:01:43 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug 15 12:01:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (HUGE_ST_INO): check whether struct stat.st_ino
 	  is larger than long.  [ruby-dev:21194]
