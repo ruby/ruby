@@ -1,3 +1,17 @@
+Mon Dec 15 14:15:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (vm_call_super): uses method_missing().
+
+	* vm_eval.c (method_missing): get rid of too large alloca.
+
+	* vm_eval.c (rb_call0, method_missing): uses idMethodMissing.
+
+	* vm_method.c (rb_add_method, remove_method, rb_undef): uses
+	  id__send__.
+
+	* vm_method.c (Init_eval_method): removed IDs which are defined as
+	  immediate values.
+
 Mon Dec 15 11:35:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_backtrace): defaults to script name for C functions.

@@ -137,28 +137,11 @@ vm_call_super(rb_thread_t * const th, const int argc, const VALUE * const argv)
     }
 
     body = rb_method_node(klass, id);	/* this returns NODE_METHOD */
-
-    if (body) {
-	body = body->nd_body;
-    }
-    else {
-	VALUE *argv_m, result, argv_ary = 0;
-	if (argc < 0x100) {
-	    argv_m = ALLOCA_N(VALUE, argc+1);
-	}
-	else {
-	    argv_ary = rb_ary_tmp_new(argc+1);
-	    argv_m = RARRAY_PTR(argv_ary);
-	}
-	MEMCPY(argv_m + 1, argv, VALUE, argc);
-	argv_m[0] = ID2SYM(id);
-	th->method_missing_reason = 0;
-	th->passed_block = 0;
-	result = rb_funcall2(recv, idMethodMissing, argc + 1, argv_m);
-	if (argv_ary) rb_ary_clear(argv_ary);
-	return result;
+    if (!body) {
+	return method_missing(recv, id, argc, argv, 0);
     }
 
+    body = body->nd_body;
     return vm_call0(th, klass, recv, id, id, argc, argv, body, CALL_SUPER);
 }
 
@@ -221,7 +204,7 @@ rb_call0(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv,
     }
     
 
-    if (mid != missing) {
+    if (mid != idMethodMissing) {
 	/* receiver specified form for private method */
 	if (UNLIKELY(noex)) {
 	    if (((noex & NOEX_MASK) & NOEX_PRIVATE) && scope == 0) {
@@ -347,10 +330,13 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 static inline VALUE
 method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
 {
-    VALUE *nargv;
-    GET_THREAD()->method_missing_reason = call_status;
+    VALUE *nargv, result, argv_ary = 0;
+    rb_thread_t *th = GET_THREAD();
 
-    if (id == missing) {
+    th->method_missing_reason = call_status;
+    th->passed_block = 0;
+
+    if (id == idMethodMissing) {
 	rb_method_missing(argc, argv, obj);
     }
     else if (id == ID_ALLOCATOR) {
@@ -358,11 +344,19 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
 		 rb_class2name(obj));
     }
 
-    nargv = ALLOCA_N(VALUE, argc + 1);
+    if (argc < 0x100) {
+	nargv = ALLOCA_N(VALUE, argc + 1);
+    }
+    else {
+	argv_ary = rb_ary_tmp_new(argc + 1);
+	nargv = RARRAY_PTR(argv_ary);
+    }
     nargv[0] = ID2SYM(id);
     MEMCPY(nargv + 1, argv, VALUE, argc);
 
-    return rb_funcall2(obj, missing, argc + 1, nargv);
+    result = rb_funcall2(obj, idMethodMissing, argc + 1, nargv);
+    if (argv_ary) rb_ary_clear(argv_ary);
+    return result;
 }
 
 VALUE
