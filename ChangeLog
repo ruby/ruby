@@ -1,3 +1,8 @@
+Mon Dec 15 10:00:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (btest-ruby): use RUNRUBY instead of MINIRUBY to load the
+	  shared library.  [Bug #849]
+
 Sun Dec 14 09:14:37 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* reverts r20713.
