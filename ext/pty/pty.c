@@ -412,13 +412,13 @@ pty_open(VALUE klass)
 
     master_io = rb_obj_alloc(rb_cIO);
     MakeOpenFile(master_io, master_fptr);
-    master_fptr->mode = rb_io_mode_flags("r+");
+    master_fptr->mode = FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX;
     master_fptr->fd = master_fd;
     master_fptr->pathv = rb_obj_freeze(rb_sprintf(" pty %s", slavename));
 
     slave_file = rb_obj_alloc(rb_cFile);
     MakeOpenFile(slave_file, slave_fptr);
-    slave_fptr->mode = rb_io_mode_flags("r+");
+    slave_fptr->mode = FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX | FMODE_TTY;
     slave_fptr->fd = slave_fd;
     slave_fptr->pathv = rb_obj_freeze(rb_str_new_cstr(slavename));
 

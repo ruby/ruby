@@ -1,3 +1,7 @@
+Mon Dec 15 23:34:04 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pty/pty.c (pty_open): set FMODE_SYNC and FMODE_DUPLEX.
+
 Mon Dec 15 22:48:11 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pty/pty.c (pty_open): new method PTY.open.
