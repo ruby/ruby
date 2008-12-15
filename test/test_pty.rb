@@ -13,7 +13,6 @@ class TestPTY < Test::Unit::TestCase
   def test_spawn_without_block
     r, w, pid = PTY.spawn(RUBY, '-e', 'puts "a"')
     assert_equal("a\r\n", r.gets)
-    assert_raise(Errno::EIO) { r.gets }
   ensure
     Process.wait pid if pid
   end
@@ -22,7 +21,6 @@ class TestPTY < Test::Unit::TestCase
     PTY.spawn(RUBY, '-e', 'puts "b"') {|r,w,pid|
       assert_equal("b\r\n", r.gets)
       Process.wait(pid)
-      assert_raise(Errno::EIO) { r.gets }
     }
   end
 
@@ -31,7 +29,6 @@ class TestPTY < Test::Unit::TestCase
     PTY.spawn(commandline) {|r,w,pid|
       assert_equal("foo\r\n", r.gets)
       Process.wait(pid)
-      assert_raise(Errno::EIO) { r.gets }
     }
   end
 
@@ -39,7 +36,6 @@ class TestPTY < Test::Unit::TestCase
     PTY.spawn([RUBY, "argv0"], '-e', 'puts "bar"') {|r,w,pid|
       assert_equal("bar\r\n", r.gets)
       Process.wait(pid)
-      assert_raise(Errno::EIO) { r.gets }
     }
   end
 end if defined? PTY

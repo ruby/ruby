@@ -293,7 +293,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int fail)
     }
 
     *slave = open(name, O_RDWR);
-    strlcpy(SlaveName, name, sizeof SlaveName);
+    strlcpy(SlaveName, name, DEVICELEN);
 
     return 0;
 #else /* HAVE__GETPTY */
@@ -321,7 +321,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int fail)
 #endif
 				*master = i;
 				*slave = j;
-				strlcpy(SlaveName, pn, sizeof SlaveName);
+				strlcpy(SlaveName, pn, DEVICELEN);
 				return 0;
 #if defined I_PUSH && !defined linux
 			    }
@@ -343,7 +343,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int fail)
 	snprintf(MasterName, sizeof MasterName, MasterDevice, *p);
 	if ((i = open(MasterName,O_RDWR,0)) >= 0) {
 	    *master = i;
-	    snprintf(SlaveName, sizeof SlaveName, SlaveDevice, *p);
+	    snprintf(SlaveName, DEVICELEN, SlaveDevice, *p);
 	    if ((j = open(SlaveName,O_RDWR,0)) >= 0) {
 		*slave = j;
 		chown(SlaveName, getuid(), getgid());
