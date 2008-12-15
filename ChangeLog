@@ -1,4 +1,6 @@
-Mon Dec 15 14:15:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Dec 15 14:39:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (vm_call0): NODE_ZSUPER supported.  [ruby-core:20480]
 
 	* vm_eval.c (vm_call_super): uses method_missing().
 
