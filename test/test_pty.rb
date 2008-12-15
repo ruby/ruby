@@ -38,5 +38,65 @@ class TestPTY < Test::Unit::TestCase
       Process.wait(pid)
     }
   end
+
+  def test_open_without_block
+    ret = PTY.open
+    assert_kind_of(Array, ret)
+    assert_equal(2, ret.length)
+    assert_equal(IO, ret[0].class)
+    assert_equal(File, ret[1].class)
+    master, slave = ret
+    assert(slave.tty?)
+    assert(File.chardev?(slave.path))
+  ensure
+    if ret
+      ret[0].close
+      ret[1].close
+    end
+  end
+
+  def test_open_with_block
+    r = nil
+    x = Object.new
+    y = PTY.open {|ret|
+      r = ret;
+      assert_kind_of(Array, ret)
+      assert_equal(2, ret.length)
+      assert_equal(IO, ret[0].class)
+      assert_equal(File, ret[1].class)
+      master, slave = ret
+      assert(slave.tty?)
+      assert(File.chardev?(slave.path))
+      x
+    }
+    assert(r[0].closed?)
+    assert(r[1].closed?)
+    assert_equal(y, x)
+  end
+
+  def test_close_in_block
+    PTY.open {|master, slave|
+      slave.close
+      master.close
+      assert(slave.closed?)
+      assert(master.closed?)
+    }
+    assert_nothing_raised {
+      PTY.open {|master, slave|
+        slave.close
+        master.close
+      }
+    }
+  end
+
+  def test_open
+    PTY.open {|master, slave|
+      slave.puts "foo"
+      assert_equal("foo", master.gets.chomp)
+      master.puts "bar"
+      assert_equal("bar", slave.gets.chomp)
+    }
+  end
+
 end if defined? PTY
 
