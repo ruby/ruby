@@ -1,3 +1,14 @@
+Mon Dec 15 11:32:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (rubylib_mangled_path, rubylib_mangled_path2): cannot use
+	  locale encoding before load path is initialized
+
+	* ruby.c (ruby_init_loadpath_safe): ditto.
+
+	* ruby.c (process_options): loads encdb so that encodings can be
+	  loaded, then associates script name and load paths with the
+	  locale encoding.
+
 Mon Dec 15 10:00:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (btest-ruby): use RUNRUBY instead of MINIRUBY to load the
