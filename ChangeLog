@@ -1,3 +1,5 @@
+Mon Dec 15 16:28:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
 Mon Dec 15 16:26:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_callee_setup_arg_complex): uses cfp from
@@ -130,7 +132,7 @@ Sat Dec 13 16:04:48 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* encoding.c (default_external): endless recursion during
 	  loading a locale encoding on some locale.
-	  fixed by Nobuyuki Nakada.
+	  fixed by Nobuyoshi Nakada.
 
 Sat Dec 13 15:55:37 2008  TAKAO Kouji  <kouji@takao7.net>
 
@@ -385,7 +387,7 @@ Wed Dec 10 23:58:56 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 Wed Dec 10 21:32:02 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker.rb (RSS::Maker.[]): add.
-	Suggested by Akinori MUSHA. Thanks!!! [ruby-dev:37210]
+	  Suggested by Akinori MUSHA. Thanks!!! [ruby-dev:37210]
 
 Wed Dec 10 12:56:32 2008  Akinori MUSHA  <knu@iDaemons.org>
 
