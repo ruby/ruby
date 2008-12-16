@@ -2,6 +2,14 @@ Tue Dec 16 21:59:29 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit.setup_argv): ALT_SEPARATOR support.
 
+Tue Dec 16 21:59:02 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (VpToString): reverted modification
+	  (that caused a bug) in r20359.  [ruby-dev:37370]
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_limit): comment update.
+	  [ruby-dev:37465]
+
 Tue Dec 16 20:34:44 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pty/pty.c (getDevice): add nomesg argument.

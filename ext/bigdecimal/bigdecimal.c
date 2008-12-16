@@ -1811,7 +1811,7 @@ BigDecimal_new(int argc, VALUE *argv, VALUE self)
   *
   * A limit of 0, the default, means no upper limit.
   *
-  * The limit specified by this method takes priority over any limit 
+  * The limit specified by this method takes less priority over any limit 
   * specified to instance methods such as ceil, floor, truncate, or round.
   */
 static VALUE
@@ -3872,7 +3872,7 @@ VpToString(Real *a,char *psz,int fFmt,int fPlus)
 /* fPlus =0:default, =1: set ' ' before digits , =2:set '+' before digits. */
 {
     U_LONG i, ZeroSup;
-    U_LONG n, e;
+    U_LONG n, m, e, nn;
     char *pszSav = psz;
     S_LONG ex;
 
@@ -3888,12 +3888,18 @@ VpToString(Real *a,char *psz,int fFmt,int fPlus)
     *psz++ = '.';
     n = a->Prec;
     for(i=0;i < n;++i) {
+        m = BASE1;
         e = a->frac[i];
-	if((!ZeroSup) || e) {
-	    sprintf(psz, "%lu", e);    /* The reading zero(s) */
-	    psz += strlen(psz);
-	    /* as 0.00xx will be ignored. */
-	    ZeroSup = 0;    /* Set to print succeeding zeros */
+        while(m) {
+            nn = e / m;
+            if((!ZeroSup) || nn) {
+                sprintf(psz, "%lu", nn);    /* The reading zero(s) */
+                psz += strlen(psz);
+                /* as 0.00xx will be ignored. */
+                ZeroSup = 0;    /* Set to print succeeding zeros */
+            }
+            e = e - nn * m;
+            m /= 10;
         }
     }
     ex =(a->exponent) * BASE_FIG;
