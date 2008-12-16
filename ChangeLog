@@ -1,3 +1,11 @@
+Fri Dec 12 22:12:46 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c, rational.c: do not use RUBY_VERSION_CODE.
+
+Fri Dec 12 10:20:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c, rational.c: do not use RUBY_VERSION_CODE.
+
 Tue Dec 16 12:41:52 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* configure.in (OBJDUMP, OBJCOPY): 

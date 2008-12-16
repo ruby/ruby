@@ -320,20 +320,17 @@ f_complex_new_bang2(VALUE klass, VALUE x, VALUE y)
     return nucomp_s_new_internal(klass, x, y);
 }
 
-#ifndef RUBY_VERSION_CODE
-#include "version.h"
-#endif
-
-#if RUBY_VERSION_CODE < 200
 #define CANON
-#endif
-
 #ifdef CANON
 static int canonicalization = 0;
 
 void
 nucomp_canonicalize(int f)
 {
+    VALUE s = rb_const_get(rb_cObject, rb_intern("RUBY_VERSION"));
+    Check_Type(s, T_STRING);
+    if (rb_str_cmp(s, rb_str_new2("2.0.0")) >= 0)
+	rb_bug("no longer provide canonicalization");
     canonicalization = f;
 }
 #endif
