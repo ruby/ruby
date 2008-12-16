@@ -6826,6 +6826,18 @@ sym_equal(VALUE sym1, VALUE sym2)
 }
 
 
+static int
+sym_printable(const char *s, const char *send, rb_encoding *enc)
+{
+    while (s < send) {
+	int c = rb_enc_codepoint(s, send, enc);
+	int n = rb_enc_codelen(c, enc);
+	if (!rb_enc_isprint(c, enc)) return Qfalse;
+	s += n;
+    }
+    return Qtrue;
+}
+
 /*
  *  call-seq:
  *     sym.inspect    => string
@@ -6848,7 +6860,8 @@ sym_inspect(VALUE sym)
     RSTRING_PTR(str)[0] = ':';
     memcpy(RSTRING_PTR(str)+1, RSTRING_PTR(sym), RSTRING_LEN(sym));
     if (RSTRING_LEN(sym) != strlen(RSTRING_PTR(sym)) ||
-	!rb_enc_symname_p(RSTRING_PTR(sym), enc)) {
+	!rb_enc_symname_p(RSTRING_PTR(sym), enc) ||
+	!sym_printable(RSTRING_PTR(sym), RSTRING_END(sym), enc)) {
 	str = rb_str_inspect(str);
 	strncpy(RSTRING_PTR(str), ":\"", 2);
     }

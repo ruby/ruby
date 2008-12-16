@@ -1,3 +1,7 @@
+Sat Dec 13 18:34:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (sym_printable): wrong condition for string iteration.
+
 Sat Dec 13 15:52:27 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (sym_equal): remove documentation error "Otherwise,
@@ -52,6 +56,9 @@ Sat Dec 13 16:04:48 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	* encoding.c (default_external): endless recursion during
 	  loading a locale encoding on some locale.
 	  fixed by Nobuyuki Nakada.
+
+	* string.c (sym_inspect): quote if symbol contains non-printable
+	  characters.  [ruby-dev:37398]
 
 Sat Dec 13 14:24:38 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
