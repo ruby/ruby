@@ -1,3 +1,7 @@
+Tue Dec 16 19:43:53 2008  Tanaka Akira  <akr@fsij.org>
+
+	* re.c: use strlcpy for error messages.
+
 Tue Dec 16 16:41:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt): returns dispatched result.
