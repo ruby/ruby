@@ -1,3 +1,9 @@
+Sat Dec 13 13:03:20 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: use rb_usascii_str_new2 instead of rb_str_new2.
+
+	* rational.c: ditto.
+
 Fri Dec 12 22:12:46 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c, rational.c: do not use RUBY_VERSION_CODE.
