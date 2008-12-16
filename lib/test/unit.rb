@@ -32,6 +32,7 @@ module Test
       end
 
       files.map! {|f|
+        f.gsub!(/#{File::ALT_SEPARATOR}/o, File::SEPARATOR) if File::ALT_SEPARATOR
         if File.directory? f
           Dir["#{f}/**/test_*.rb"]
         elsif File.file? f
