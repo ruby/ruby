@@ -104,7 +104,7 @@ module MiniTest
       msg = message(msg) { "Expected #{mu_pp(obj)} to be an instance of #{cls}, not #{obj.class}" }
       flip = (Module === obj) && ! (Module === cls) # HACK for specs
       obj, cls = cls, obj if flip
-      assert obj.instance_of?(obj), msg
+      assert obj.instance_of?(cls), msg
     end
 
     def assert_kind_of cls, obj, msg = nil # TODO: merge with instance_of
