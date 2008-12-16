@@ -1,7 +1,7 @@
 Tue Dec 16 13:55:28 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* common.mk (complex.$(OBJEXT), rational.$(OBJEXT)): Properly add
-	  dependencies to version.h and revision.h to fix parallel build
+	  dependencies on version.h and revision.h to fix parallel build
 	  with make -j#.
 
 Tue Dec 16 12:30:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
