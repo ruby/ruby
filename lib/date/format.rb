@@ -669,11 +669,11 @@ class Date
   private_class_method :s3e
 
   def self._parse_day(str, e) # :nodoc:
-    if str.sub!(/\b(#{Format::ABBR_DAYS.keys.join('|')})[^-\d\s]*/ino, ' ')
+    if str.sub!(/\b(#{Format::ABBR_DAYS.keys.join('|')})[^-\d\s]*/io, ' ')
       e.wday = Format::ABBR_DAYS[$1.downcase]
       true
 =begin
-    elsif str.sub!(/\b(?!\dth)(su|mo|tu|we|th|fr|sa)\b/in, ' ')
+    elsif str.sub!(/\b(?!\dth)(su|mo|tu|we|th|fr|sa)\b/i, ' ')
       e.wday = %w(su mo tu we th fr sa).index($1.downcase)
       true
 =end
@@ -708,7 +708,7 @@ class Date
 		     [[:alpha:]]+(?:\sdst)?\b
 		   )
 		 )?
-		/inx,
+		/ix,
 		' ')
 
       t = $1
@@ -720,7 +720,7 @@ class Date
 		  \s*:?\s*(\d+)(?:[,.](\d+))?s?
 		)?
 	      )?
-	    (?:\s*([ap])(?:m\b|\.m\.))?/inx
+	    (?:\s*([ap])(?:m\b|\.m\.))?/ix
 
       e.hour = $1.to_i
       e.min = $2.to_i if $2
@@ -765,7 +765,7 @@ class Date
 		   \s*
 		   ('?-?\d+(?:(?:st|nd|rd|th)\b)?)
 		 )?
-		/inox,
+		/iox,
 		' ') # '
       s3e(e, $4, Format::ABBR_MONTHS[$2.downcase], $1,
 	  $3 && $3[0,1].downcase == 'b')
@@ -784,7 +784,7 @@ class Date
 		   \s*
 		   ('?-?\d+)
 		 )?
-		/inox,
+		/iox,
 		' ') # '
       s3e(e, $4, Format::ABBR_MONTHS[$1.downcase], $2,
 	  $3 && $3[0,1].downcase == 'b')
@@ -793,43 +793,43 @@ class Date
   end
 
   def self._parse_iso(str, e) # :nodoc:
-    if str.sub!(/('?[-+]?\d+)-(\d+)-('?-?\d+)/n, ' ')
+    if str.sub!(/('?[-+]?\d+)-(\d+)-('?-?\d+)/, ' ')
       s3e(e, $1, $2, $3)
       true
     end
   end
 
   def self._parse_iso2(str, e) # :nodoc:
-    if str.sub!(/\b(\d{2}|\d{4})?-?w(\d{2})(?:-?(\d))?\b/in, ' ')
+    if str.sub!(/\b(\d{2}|\d{4})?-?w(\d{2})(?:-?(\d))?\b/i, ' ')
       e.cwyear = $1.to_i if $1
       e.cweek = $2.to_i
       e.cwday = $3.to_i if $3
       true
-    elsif str.sub!(/-w-(\d)\b/in, ' ')
+    elsif str.sub!(/-w-(\d)\b/i, ' ')
       e.cwday = $1.to_i
       true
-    elsif str.sub!(/--(\d{2})?-(\d{2})\b/n, ' ')
+    elsif str.sub!(/--(\d{2})?-(\d{2})\b/, ' ')
       e.mon = $1.to_i if $1
       e.mday = $2.to_i
       true
-    elsif str.sub!(/--(\d{2})(\d{2})?\b/n, ' ')
+    elsif str.sub!(/--(\d{2})(\d{2})?\b/, ' ')
       e.mon = $1.to_i
       e.mday = $2.to_i if $2
       true
-    elsif /[,.](\d{2}|\d{4})-\d{3}\b/n !~ str &&
-	str.sub!(/\b(\d{2}|\d{4})-(\d{3})\b/n, ' ')
+    elsif /[,.](\d{2}|\d{4})-\d{3}\b/ !~ str &&
+	str.sub!(/\b(\d{2}|\d{4})-(\d{3})\b/, ' ')
       e.year = $1.to_i
       e.yday = $2.to_i
       true
-    elsif /\d-\d{3}\b/n !~ str &&
-	str.sub!(/\b-(\d{3})\b/n, ' ')
+    elsif /\d-\d{3}\b/ !~ str &&
+	str.sub!(/\b-(\d{3})\b/, ' ')
       e.yday = $1.to_i
       true
     end
   end
 
   def self._parse_jis(str, e) # :nodoc:
-    if str.sub!(/\b([mtsh])(\d+)\.(\d+)\.(\d+)/in, ' ')
+    if str.sub!(/\b([mtsh])(\d+)\.(\d+)\.(\d+)/i, ' ')
       era = { 'm'=>1867,
 	      't'=>1911,
 	      's'=>1925,
@@ -844,46 +844,46 @@ class Date
 
   def self._parse_vms(str, e) # :nodoc:
     if str.sub!(/('?-?\d+)-(#{Format::ABBR_MONTHS.keys.join('|')})[^-]*
-		-('?-?\d+)/inox, ' ')
+		-('?-?\d+)/iox, ' ')
       s3e(e, $3, Format::ABBR_MONTHS[$2.downcase], $1)
       true
     elsif str.sub!(/\b(#{Format::ABBR_MONTHS.keys.join('|')})[^-]*
-		-('?-?\d+)(?:-('?-?\d+))?/inox, ' ')
+		-('?-?\d+)(?:-('?-?\d+))?/iox, ' ')
       s3e(e, $3, Format::ABBR_MONTHS[$1.downcase], $2)
       true
     end
   end
 
   def self._parse_sla(str, e) # :nodoc:
-    if str.sub!(%r|('?-?\d+)/\s*('?\d+)(?:\D\s*('?-?\d+))?|n, ' ') # '
+    if str.sub!(%r|('?-?\d+)/\s*('?\d+)(?:\D\s*('?-?\d+))?|, ' ') # '
       s3e(e, $1, $2, $3)
       true
     end
   end
 
   def self._parse_dot(str, e) # :nodoc:
-    if str.sub!(%r|('?-?\d+)\.\s*('?\d+)\.\s*('?-?\d+)|n, ' ') # '
+    if str.sub!(%r|('?-?\d+)\.\s*('?\d+)\.\s*('?-?\d+)|, ' ') # '
       s3e(e, $1, $2, $3)
       true
     end
   end
 
   def self._parse_year(str, e) # :nodoc:
-    if str.sub!(/'(\d+)\b/n, ' ')
+    if str.sub!(/'(\d+)\b/, ' ')
       e.year = $1.to_i
       true
     end
   end
 
   def self._parse_mon(str, e) # :nodoc:
-    if str.sub!(/\b(#{Format::ABBR_MONTHS.keys.join('|')})\S*/ino, ' ')
+    if str.sub!(/\b(#{Format::ABBR_MONTHS.keys.join('|')})\S*/io, ' ')
       e.mon = Format::ABBR_MONTHS[$1.downcase]
       true
     end
   end
 
   def self._parse_mday(str, e) # :nodoc:
-    if str.sub!(/(\d+)(st|nd|rd|th)\b/in, ' ')
+    if str.sub!(/(\d+)(st|nd|rd|th)\b/i, ' ')
       e.mday = $1.to_i
       true
     end
@@ -908,7 +908,7 @@ class Date
 		      \[[-+]?\d[^\]]*\]
 		    )
 		  )?
-		/inx,
+		/ix,
 		' ')
       case $2.size
       when 2
@@ -1034,7 +1034,7 @@ class Date
 
     e._comp = comp
 
-    str.gsub!(/[^-+',.\/:@[:alnum:]\[\]\x80-\xff]+/n, ' ')
+    str.gsub!(/[^-+',.\/:@[:alnum:]\[\]]+/, ' ')
 
     _parse_time(str, e) # || _parse_beat(str, e)
     _parse_day(str, e)
@@ -1052,13 +1052,13 @@ class Date
     _parse_mday(str, e)   ||
     _parse_ddd(str, e)
 
-    if str.sub!(/\b(bc\b|bce\b|b\.c\.|b\.c\.e\.)/in, ' ')
+    if str.sub!(/\b(bc\b|bce\b|b\.c\.|b\.c\.e\.)/i, ' ')
       if e.year
 	e.year = -e.year + 1
       end
     end
 
-    if str.sub!(/\A\s*(\d{1,2})\s*\z/n, ' ')
+    if str.sub!(/\A\s*(\d{1,2})\s*\z/, ' ')
       if e.hour && !e.mday
 	v = $1.to_i
 	if (1..31) === v
@@ -1100,20 +1100,20 @@ class Date
 	      -w-\d)
 	(t
 	\d{2}:\d{2}(:\d{2}([,.]\d+)?)?
-	(z|[-+]\d{2}(:?\d{2})?)?)?\s*\z/inx =~ str
+	(z|[-+]\d{2}(:?\d{2})?)?)?\s*\z/ix =~ str
       _parse(str)
     elsif /\A\s*(([-+]?(\d{2}|\d{4})|--)\d{2}\d{2}|
 	      ([-+]?(\d{2}|\d{4}))?\d{3}|-\d{3}|
 	      (\d{2}|\d{4})?w\d{2}\d)
 	(t?
 	\d{2}\d{2}(\d{2}([,.]\d+)?)?
-	(z|[-+]\d{2}(\d{2})?)?)?\s*\z/inx =~ str
+	(z|[-+]\d{2}(\d{2})?)?)?\s*\z/ix =~ str
       _parse(str)
     elsif /\A\s*(\d{2}:\d{2}(:\d{2}([,.]\d+)?)?
-	(z|[-+]\d{2}(:?\d{2})?)?)?\s*\z/inx =~ str
+	(z|[-+]\d{2}(:?\d{2})?)?)?\s*\z/ix =~ str
       _parse(str)
     elsif /\A\s*(\d{2}\d{2}(\d{2}([,.]\d+)?)?
-	(z|[-+]\d{2}(\d{2})?)?)?\s*\z/inx =~ str
+	(z|[-+]\d{2}(\d{2})?)?)?\s*\z/ix =~ str
       _parse(str)
     end
   end
@@ -1122,7 +1122,7 @@ class Date
     if /\A\s*-?\d{4}-\d{2}-\d{2} # allow minus, anyway
 	(t|\s)
 	\d{2}:\d{2}:\d{2}(\.\d+)?
-	(z|[-+]\d{2}:\d{2})\s*\z/inx =~ str
+	(z|[-+]\d{2}:\d{2})\s*\z/ix =~ str
       _parse(str)
     end
   end
@@ -1131,7 +1131,7 @@ class Date
     if /\A\s*(-?\d{4,})(?:-(\d{2})(?:-(\d{2}))?)?
 	(?:t
 	  (\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?)?
-	(z|[-+]\d{2}:\d{2})?\s*\z/inx =~ str
+	(z|[-+]\d{2}:\d{2})?\s*\z/ix =~ str
       e = Format::Bag.new
       e.year = $1.to_i
       e.mon = $2.to_i if $2
@@ -1146,7 +1146,7 @@ class Date
       end
       e.to_hash
     elsif /\A\s*(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?
-	(z|[-+]\d{2}:\d{2})?\s*\z/inx =~ str
+	(z|[-+]\d{2}:\d{2})?\s*\z/ix =~ str
       e = Format::Bag.new
       e.hour = $1.to_i if $1
       e.min = $2.to_i if $2
@@ -1158,7 +1158,7 @@ class Date
       end
       e.to_hash
     elsif /\A\s*(?:--(\d{2})(?:-(\d{2}))?|---(\d{2}))
-	(z|[-+]\d{2}:\d{2})?\s*\z/inx =~ str
+	(z|[-+]\d{2}:\d{2})?\s*\z/ix =~ str
       e = Format::Bag.new
       e.mon = $1.to_i if $1
       e.mday = $2.to_i if $2
@@ -1177,7 +1177,7 @@ class Date
 	(?:#{Format::ABBR_MONTHS.keys.join('|')})\s+
 	-?(\d{2,})\s+ # allow minus, anyway
 	\d{2}:\d{2}(:\d{2})?\s*
-	(?:[-+]\d{4}|ut|gmt|e[sd]t|c[sd]t|m[sd]t|p[sd]t|[a-ik-z])\s*\z/inox =~ str
+	(?:[-+]\d{4}|ut|gmt|e[sd]t|c[sd]t|m[sd]t|p[sd]t|[a-ik-z])\s*\z/iox =~ str
       e = _parse(str, false)
       if $1.size < 4
 	if e[:year] < 50
@@ -1198,20 +1198,20 @@ class Date
 	(#{Format::ABBR_MONTHS.keys.join('|')})\s+
 	-?\d{4}\s+ # allow minus, anyway
 	\d{2}:\d{2}:\d{2}\s+
-	gmt\s*\z/inox =~ str
+	gmt\s*\z/iox =~ str
       _rfc2822(str)
     elsif /\A\s*(#{Format::DAYS.keys.join('|')})\s*,\s+
 	\d{2}\s*-\s*
 	(#{Format::ABBR_MONTHS.keys.join('|')})\s*-\s*
 	\d{2}\s+
 	\d{2}:\d{2}:\d{2}\s+
-	gmt\s*\z/inox =~ str
+	gmt\s*\z/iox =~ str
       _parse(str)
     elsif /\A\s*(#{Format::ABBR_DAYS.keys.join('|')})\s+
 	(#{Format::ABBR_MONTHS.keys.join('|')})\s+
 	\d{1,2}\s+
 	\d{2}:\d{2}:\d{2}\s+
-	\d{4}\s*\z/inox =~ str
+	\d{4}\s*\z/iox =~ str
       _parse(str)
     end
   end
@@ -1220,7 +1220,7 @@ class Date
     if /\A\s*[mtsh]?\d{2}\.\d{2}\.\d{2}
 	(t
 	(\d{2}:\d{2}(:\d{2}([,.]\d*)?)?
-	(z|[-+]\d{2}(:?\d{2})?)?)?)?\s*\z/inx =~ str
+	(z|[-+]\d{2}(:?\d{2})?)?)?)?\s*\z/ix =~ str
       if /\A\s*\d/ =~ str
 	_parse(str.sub(/\A\s*(\d)/, 'h\1'))
       else
