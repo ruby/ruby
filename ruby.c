@@ -1204,7 +1204,7 @@ process_options(VALUE arg)
 	enc = rb_enc_from_index(opt->intern.enc.index);
 	rb_enc_set_default_internal(rb_enc_from_encoding(enc));
     }
-    else
+    else if (!rb_default_internal_encoding())
 	/* Freeze default_internal */
 	rb_enc_set_default_internal(Qnil);
 
