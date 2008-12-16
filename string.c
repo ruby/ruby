@@ -6815,8 +6815,7 @@ rb_str_is_ascii_only_p(VALUE str)
  *     sym == obj   => true or false
  *  
  *  Equality---If <i>sym</i> and <i>obj</i> are exactly the same
- *  symbol, returns <code>true</code>. Otherwise, compares them
- *  as strings.
+ *  symbol, returns <code>true</code>. 
  */
 
 static VALUE
