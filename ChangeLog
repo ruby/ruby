@@ -1,3 +1,8 @@
+Tue Dec 16 12:41:52 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* configure.in (OBJDUMP, OBJCOPY): 
+	  (darwin) MacPorts prefixes GNU binutils with 'g'.
+
 Sun Dec  7 23:17:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (LIBRUBY_SO): localizes non-public symbols.
