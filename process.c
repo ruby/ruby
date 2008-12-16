@@ -971,10 +971,12 @@ void rb_thread_stop_timer_thread(void);
 void rb_thread_start_timer_thread(void);
 void rb_thread_reset_timer_thread(void);
 
+static int forked_child = 0;
+
 #define before_exec() \
-  (rb_enable_interrupt(), rb_thread_stop_timer_thread())
+  (rb_enable_interrupt(), forked_child ? 0 : rb_thread_stop_timer_thread())
 #define after_exec() \
-  (rb_thread_start_timer_thread(), rb_disable_interrupt())
+  (rb_thread_start_timer_thread(), forked_child = 0, rb_disable_interrupt())
 #define before_fork() before_exec()
 #define after_fork() after_exec()
 
@@ -2301,6 +2303,7 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
 	}
     }
     if (!pid) {
+        forked_child = 1;
 	if (chfunc) {
 #ifdef FD_CLOEXEC
 	    close(ep[0]);
