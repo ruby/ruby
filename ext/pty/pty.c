@@ -130,7 +130,7 @@ struct pty_info {
     rb_pid_t child_pid;
 };
 
-static void getDevice(int*, int*, char [DEVICELEN]);
+static void getDevice(int*, int*, char [DEVICELEN], int);
 
 struct exec_info {
     int argc;
@@ -248,7 +248,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 	argv = &v;
     }
 
-    getDevice(&master, &slave, SlaveName);
+    getDevice(&master, &slave, SlaveName, 0);
 
     carg.master = master;
     carg.slave = slave;
@@ -271,10 +271,19 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 }
 
 static int
-get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int fail)
+no_mesg(char *slavedevice, int nomesg)
+{
+    if (nomesg)
+        return chmod(slavedevice, 0600);
+    else
+        return 0;
+}
+
+static int
+get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, int fail)
 {
 #if defined(HAVE_POSIX_OPENPT)
-    int masterfd,slavefd;
+    int masterfd = -1, slavefd = -1;
     char *slavedevice;
     struct sigaction dfl, old;
 
@@ -282,33 +291,34 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int fail)
     dfl.sa_flags = 0;
     sigemptyset(&dfl.sa_mask);
 
-    if((masterfd = posix_openpt(O_RDWR|O_NOCTTY)) != -1) {
-	sigaction(SIGCHLD, &dfl, &old);
-	if(grantpt(masterfd) != -1) {
-	    sigaction(SIGCHLD, &old, NULL);
-	    if(unlockpt(masterfd) != -1) {
-		if((slavedevice = ptsname(masterfd)) != NULL) {
-		    if((slavefd = open(slavedevice, O_RDWR|O_NOCTTY, 0)) != -1) {
+    if ((masterfd = posix_openpt(O_RDWR|O_NOCTTY)) == -1) goto error;
+    if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
+    if (grantpt(masterfd) == -1) goto grantpt_error;
+    if (sigaction(SIGCHLD, &old, NULL) == -1) goto error;
+    if (unlockpt(masterfd) == -1) goto error;
+    if ((slavedevice = ptsname(masterfd)) == NULL) goto error;
+    if (no_mesg(slavedevice, nomesg) == -1) goto error;
+    if ((slavefd = open(slavedevice, O_RDWR|O_NOCTTY, 0)) == -1) goto error;
+
 #if defined I_PUSH && !defined linux
-			if(ioctl(slavefd, I_PUSH, "ptem") != -1) {
-			    if(ioctl(slavefd, I_PUSH, "ldterm") != -1) {
-				ioctl(slavefd, I_PUSH, "ttcompat");
+    if (ioctl(slavefd, I_PUSH, "ptem") == -1) goto error;
+    if (ioctl(slavefd, I_PUSH, "ldterm") == -1) goto error;
+    if (ioctl(slavefd, I_PUSH, "ttcompat") == -1) goto error;
 #endif
-				*master = masterfd;
-				*slave = slavefd;
-				strlcpy(SlaveName, slavedevice, DEVICELEN);
-				return 0;
-#if defined I_PUSH && !defined linux
-			    }
-			}
-#endif
-		    }
-		}
-	    }
-	}
-	close(masterfd);
+
+    *master = masterfd;
+    *slave = slavefd;
+    strlcpy(SlaveName, slavedevice, DEVICELEN);
+    return 0;
+
+  grantpt_error:
+    sigaction(SIGCHLD, &old, NULL);
+  error:
+    if (slavefd != -1) close(slavefd);
+    if (masterfd != -1) close(masterfd);
+    if (!fail) {
+        rb_raise(rb_eRuntimeError, "can't get Master/Slave device");
     }
-    if (!fail) rb_raise(rb_eRuntimeError, "can't get Master/Slave device");
     return -1;
 #elif defined HAVE_OPENPTY
 /*
@@ -320,12 +330,18 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int fail)
 	if (!fail) return -1;
 	rb_raise(rb_eRuntimeError, "openpty() failed");
     }
+    if (no_mesg(slavedevice, nomesg) == -1) {
+	if (!fail) return -1;
+	rb_raise(rb_eRuntimeError, "can't chmod slave pty");
+    }
 
     return 0;
+
 #elif defined HAVE__GETPTY
     char *name;
+    mode_t mode = nomesg ? 0600 : 0622;
 
-    if (!(name = _getpty(master, O_RDWR, 0622, 0))) {
+    if (!(name = _getpty(master, O_RDWR, mode, 0))) {
 	if (!fail) return -1;
 	rb_raise(rb_eRuntimeError, "_getpty() failed");
     }
@@ -335,72 +351,70 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int fail)
 
     return 0;
 #elif defined(HAVE_PTSNAME)
-    int	 i,j;
-    char *pn;
+    int	 masterfd = -1, slavefd = -1;
+    char *slavedevice;
     void (*s)();
 
     extern char *ptsname(int);
     extern int unlockpt(int);
     extern int grantpt(int);
 
-    if((i = open("/dev/ptmx", O_RDWR, 0)) != -1) {
-	s = signal(SIGCHLD, SIG_DFL);
-	if(grantpt(i) != -1) {
-	    signal(SIGCHLD, s);
-	    if(unlockpt(i) != -1) {
-		if((pn = ptsname(i)) != NULL) {
-		    if((j = open(pn, O_RDWR, 0)) != -1) {
+    if((masterfd = open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
+    s = signal(SIGCHLD, SIG_DFL);
+    if(grantpt(masterfd) == -1) goto error;
+    signal(SIGCHLD, s);
+    if(unlockpt(masterfd) == -1) goto error;
+    if((slavedevice = ptsname(masterfd)) == NULL) goto error;
+    if (no_mesg(slavedevice, nomesg) == -1) goto error;
+    if((slavefd = open(slavedevice, O_RDWR, 0)) == -1) goto error;
 #if defined I_PUSH && !defined linux
-			if(ioctl(j, I_PUSH, "ptem") != -1) {
-			    if(ioctl(j, I_PUSH, "ldterm") != -1) {
-				ioctl(j, I_PUSH, "ttcompat");
+    if(ioctl(slavefd, I_PUSH, "ptem") == -1) goto error;
+    if(ioctl(slavefd, I_PUSH, "ldterm") == -1) goto error;
+    ioctl(slavefd, I_PUSH, "ttcompat");
 #endif
-				*master = i;
-				*slave = j;
-				strlcpy(SlaveName, pn, DEVICELEN);
-				return 0;
-#if defined I_PUSH && !defined linux
-			    }
-			}
-#endif
-		    }
-		}
-	    }
-	}
-	close(i);
-    }
+    *master = masterfd;
+    *slave = slavefd;
+    strlcpy(SlaveName, slavedevice, DEVICELEN);
+    return 0;
+
+  error:
+    if (slavefd != -1) close(slavefd);
+    if (masterfd != -1) close(masterfd);
     if (!fail) rb_raise(rb_eRuntimeError, "can't get Master/Slave device");
     return -1;
 #else
-    int	 i,j;
+    int	 masterfd = -1, slavefd = -1;
     const char *const *p;
     char MasterName[DEVICELEN];
 
     for (p = deviceNo; *p != NULL; p++) {
 	snprintf(MasterName, sizeof MasterName, MasterDevice, *p);
-	if ((i = open(MasterName,O_RDWR,0)) >= 0) {
-	    *master = i;
+	if ((masterfd = open(MasterName,O_RDWR,0)) >= 0) {
+	    *master = masterfd;
 	    snprintf(SlaveName, DEVICELEN, SlaveDevice, *p);
-	    if ((j = open(SlaveName,O_RDWR,0)) >= 0) {
-		*slave = j;
-		chown(SlaveName, getuid(), getgid());
-		chmod(SlaveName, 0622);
+	    if ((slavefd = open(SlaveName,O_RDWR,0)) >= 0) {
+		*slave = slavefd;
+		if (chown(SlaveName, getuid(), getgid()) != 0) goto error;
+		if (chmod(SlaveName, nomesg ? 0600 : 0622) != 0) goto error;
 		return 0;
 	    }
-	    close(i);
+	    close(masterfd);
 	}
     }
+  error:
+    if (slavefd != -1) close(slavefd);
+    if (masterfd != -1) close(masterfd);
     if (fail) rb_raise(rb_eRuntimeError, "can't get %s", SlaveName);
     return -1;
 #endif
 }
 
 static void
-getDevice(int *master, int *slave, char SlaveName[DEVICELEN])
+getDevice(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg)
 {
-    if (get_device_once(master, slave, SlaveName, 0)) {
+    if (get_device_once(master, slave, SlaveName, nomesg, 0)) {
 	rb_gc();
-	get_device_once(master, slave, SlaveName, 1);
+	get_device_once(master, slave, SlaveName, nomesg, 1);
     }
 }
 
@@ -444,7 +458,7 @@ pty_open(VALUE klass)
     rb_io_t *master_fptr, *slave_fptr;
     VALUE assoc;
 
-    getDevice(&master_fd, &slave_fd, slavename);
+    getDevice(&master_fd, &slave_fd, slavename, 1);
 
     master_io = rb_obj_alloc(rb_cIO);
     MakeOpenFile(master_io, master_fptr);

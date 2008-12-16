@@ -99,23 +99,11 @@ class TestPTY < Test::Unit::TestCase
   end
 
   def test_stat_slave
-    # If grantpt is used, the slave device is changed as follows.
-    #   owner: real UID
-    #   group: an unspecified value (e.g. tty)
-    #   mode: 0620 (rw--w----)
-    #
-    # The group is not testable because unspecified.
-    #
-    # The mode is testable but the condition is relaxed because other
-    # pty functions (openpty, _getpty, etc.) may not use 0620.
-    # But no one can read from the tty, I hope (for security reason).
-    #
     PTY.open {|master, slave|
       s =  File.stat(slave.path)
       assert_equal(Process.uid, s.uid)
-      assert_equal(0600, s.mode & 0755)
+      assert_equal(0600, s.mode & 0777)
     }
   end
-
 end if defined? PTY
 
