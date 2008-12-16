@@ -2828,22 +2828,16 @@ primary		: literal
 		    }
 		| k_class tLSHFT expr
 		    {
-		    /*%%%*/
 			$<num>$ = in_def;
 			in_def = 0;
-		    /*%
-			in_def = 0;
-		    %*/
 		    }
 		  term
 		    {
-		    /*%%%*/
 			$<num>$ = in_single;
 			in_single = 0;
+		    /*%%%*/
 			local_push(0);
 		    /*%
-			$$ = in_single;
-			in_single = 0;
 		    %*/
 		    }
 		  bodystmt
@@ -2853,13 +2847,11 @@ primary		: literal
 			$$ = NEW_SCLASS($3, $7);
 			fixpos($$, $3);
 			local_pop();
-			in_def = $<num>4;
-			in_single = $<num>6;
 		    /*%
 			$$ = dispatch2(sclass, $3, $7);
-			in_def = $<val>4;
-			in_single = $<val>6;
 		    %*/
+			in_def = $<num>4;
+			in_single = $<num>6;
 		    }
 		| k_module cpath
 		    {
@@ -2903,13 +2895,11 @@ primary		: literal
 			fixpos($$, $4);
 			fixpos($$->nd_defn, $4);
 			local_pop();
-			in_def--;
-			cur_mid = $<id>3;
 		    /*%
 			$$ = dispatch3(def, $2, $4, $5);
+		    %*/
 			in_def--;
 			cur_mid = $<id>3;
-		    %*/
 		    }
 		| k_def singleton dot_or_colon {lex_state = EXPR_FNAME;} fname
 		    {
@@ -2931,11 +2921,10 @@ primary		: literal
 			fixpos($$, $2);
 			fixpos($$->nd_defn, $2);
 			local_pop();
-			in_single--;
 		    /*%
 			$$ = dispatch5(defs, $2, $3, $5, $7, $8);
-			in_single--;
 		    %*/
+			in_single--;
 		    }
 		| keyword_break
 		    {
