@@ -8,6 +8,7 @@ reference information is supplied with.  For a full list of changes
 with all sufficient information, see the ChangeLog file.
 
 == Changes since the 1.8.7 release
+See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
 
 === Compatibility issues
 
@@ -23,7 +24,7 @@ with all sufficient information, see the ChangeLog file.
           o defined? and local variables
           o Parser expects that your source code has only valid byte
             sequence in some character encoding.  Use magic comments
-            to tell the parser which encoding you uses.
+            to tell the parser which encoding you use.
 
 * builtin classes and objects
 
@@ -71,6 +72,7 @@ with all sufficient information, see the ChangeLog file.
           o Encoding-awareness
           o Regexp matches only with strings which is encoded in a
             compatible character encoding to the regexp's.
+          o Regexp#kcode is removed. use Regexp#encoding.
     * Hash
           o Hash#to_s is equivalent to Hash#inspect
           o Semantics for Hash#each and Hash#each_pair
@@ -87,6 +89,8 @@ with all sufficient information, see the ChangeLog file.
     * Integer
           o Integer(nil) raises TypeError
     * IO operations
+          o Many methods used to act byte-wise but now some of those act 
+            character-wise. You can use alternate byte-wise methods.
           o IO#getc
           o Non-blocking IO
           o Kernel#open takes "t" for newline conversion
@@ -113,44 +117,24 @@ with all sufficient information, see the ChangeLog file.
     * Time
           o New format in Time#to_s
           o Timezone information preserved on Marshal.dump/load
+
     * Deprecation
           o VERSION and friends
           o Kernel.to_a
-          o Kernel#getc
+          o Kernel#getc, #gsub, #sub
           o Kernel#callcc and Continuation now become 'continuation'
             bundled library.
           o Object#type
+          o Symbol#to_int and Symbol#to_i
+          o Numeric#rdiv
           o Hash#index
           o ENV.index
+          o Process::Status#to_int
           o Precision is removed.  Don't cry, it will be redesigned
             and come back in future version.
-          o Symbol#to_int
-          o Numeric#rdiv
           o Removed Array and Hash #indices, #indexes
           o $KCODE is no longer effective.  Use Encoding related
             features of each class.
-          o mailread library
-          o cgi-lib library: use cgi.
-          o date2 library: use date.
-          o eregex library
-          o finalize library: use ObjectSpace.define_finalizer if you
-            really need a finalizer. realy?
-          o ftools library: use fileutils.
-          o generator library: use Enumerator.
-          o importenv library
-          o jcode library: use multilingualization support of String
-          o parsedate library
-          o ping library
-          o readbytes library
-          o getopts library and parsearg library: use optparse or
-            getoptlong.
-          o soap, wsdl, and xsd libraries: use soap4r gem.
-          o Win32API library: use dl.
-          o dl library: Reimplemented and API changed.
-          o rubyunit library and runit library: use minitest or
-            test/unit. Or use anything you love through RubyGems.
-          o test/unit is reimplemented on top of minitest.  This is
-            not fully compatible with the original.
 
 * bundled libraries
 
@@ -158,9 +142,36 @@ with all sufficient information, see the ChangeLog file.
           o If Readline uses libedit, Readline::HISTORY[0] returns the
             first of the history.
     * Pathname
-          o No longer has #to_str and #=~
+          o No longer has #to_str nor #=~.
     * Continuation
           o as above
+
+    * Deprecation
+          o Complex#image: use Complex#imag
+          o All SSL-related class methods in Net::SMTP
+          o Prime#cache, Prime#primes, Prime#primes_so_far
+          o mailread library: use tmail gem.
+          o cgi-lib library: use cgi.
+          o date2 library: use date.
+          o eregex library
+          o finalize library: use ObjectSpace.define_finalizer if you
+            really need a finalizer. really?
+          o ftools library: use fileutils.
+          o generator library: use Enumerator.
+          o importenv library and Env library
+          o jcode library: use multilingualization support of String
+          o parsedate library
+          o ping library
+          o readbytes library
+          o getopts library and parsearg library: use optparse or
+            getoptlong.
+          o soap, wsdl and xsd libraries: use soap4r gem.
+          o Win32API library: use dl.
+          o dl library: Reimplemented and API changed.
+          o rubyunit library and runit library: use minitest or
+            test/unit. Or use anything you love through RubyGems.
+          o test/unit is reimplemented on top of minitest.  This is
+            not fully compatible with the original.
 
 === Language core changes
 
@@ -194,7 +205,6 @@ with all sufficient information, see the ChangeLog file.
     * Blocks and Procs
           o Arity of blocks without arguments
           o proc is now a synonym of Proc.new
-    * Blocks and Procs
           o Proc#yield
           o Passing blocks to #[]
           o Proc#lambda?
@@ -240,12 +250,12 @@ with all sufficient information, see the ChangeLog file.
           o String#clear
           o String#ord
           o String#getbyte, String#setbyte
-          o String#encoding
-          o String#force_encoding
+          o String#chars and String#each_char act as character-wise.
+          o String#codepoints, String#each_codepoint
           o String#unpack with a block
           o String#hash
           o String.try_convert
-          o String.encoding, String#force_encoding, String#encode
+          o String#encoding, String#force_encoding, String#encode
     * Symbol
           o Zero-length symbols allowed
           o Symbol#=== matches strings
@@ -254,7 +264,7 @@ with all sufficient information, see the ChangeLog file.
           o Symbol methods similar to those in String
     * Math
           o Math#log and Math#log2
-          o Math#cbrt, Math#lgamma
+          o Math#cbrt, Math#lgamma, Math#gamma
     * Rational / Complex
           o They are core library now
     * File and Dir operations
@@ -265,6 +275,9 @@ with all sufficient information, see the ChangeLog file.
           o Readline.vi_editing_mode?
           o Readline.emacs_editing_mode?
           o Readline::HISTORY.clear
+    * Tk
+          o TkXXX widget classes are removed and redefined as aliases of 
+            Tk::XXX classes.
     * Misc. new methods
           o RUBY_ENGINE to distinguish between Ruby processor implementation
           o public_send
@@ -289,7 +302,7 @@ with all sufficient information, see the ChangeLog file.
     * CMath
           o Complex number version of Math
     * Prime
-          o Extracted from Mathn and improved. You can easily iterate
+          o Extracted from Mathn and improved. You can easily enumerate
             prime numbers.
           o Prime.new is obsolete. Use its class methods.
     * ripper
