@@ -1,3 +1,9 @@
+Sun Dec  7 23:17:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (LIBRUBY_SO): localizes non-public symbols.
+
+	* configure.in (OBJDUMP, OBJCOPY): for dealing with binary files.
+
 Mon Dec 15 10:00:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (btest-ruby): use RUNRUBY instead of MINIRUBY to load the
