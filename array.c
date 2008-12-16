@@ -3067,6 +3067,8 @@ rb_ary_nitems(ary)
     long n = 0;
     VALUE *p, *pend;
 
+    rb_warn("Array#nitems is deprecated; use Array#count { |i| !i.nil? }");
+
     for (p = RARRAY(ary)->ptr, pend = p + RARRAY(ary)->len; p < pend; p++) {
 	if (!NIL_P(*p)) n++;
     }
@@ -3362,6 +3364,8 @@ rb_ary_choice(ary)
     VALUE ary;
 {
     long i, j;
+
+    rb_warn("Array#choice is deprecated; use Array#sample");
 
     i = RARRAY(ary)->len;
     if (i == 0) return Qnil;

@@ -1,3 +1,11 @@
+Tue Dec 16 17:14:01 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_nitems, rb_ary_choice): Add a deprecation
+	  warning.
+
+	* hash.c (env_index, rb_hash_index): Simplify the deprecation
+	  warnings.
+
 Mon Dec 15 18:53:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/sync.rb (Sync_m#sync_try_lock): wrong variable name fixed.
