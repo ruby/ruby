@@ -456,8 +456,7 @@ array.$(OBJEXT): {$(VPATH)}array.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h
 bignum.$(OBJEXT): {$(VPATH)}bignum.c $(RUBY_H_INCLUDES)
 class.$(OBJEXT): {$(VPATH)}class.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h
 compar.$(OBJEXT): {$(VPATH)}compar.c $(RUBY_H_INCLUDES)
-complex.$(OBJEXT): {$(VPATH)}complex.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}version.h $(srcdir)/revision.h
+complex.$(OBJEXT): {$(VPATH)}complex.c $(RUBY_H_INCLUDES)
 dir.$(OBJEXT): {$(VPATH)}dir.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
   $(ENCODING_H_INCLUDES)
 dln.$(OBJEXT): {$(VPATH)}dln.c {$(VPATH)}dln.h $(RUBY_H_INCLUDES)
@@ -512,8 +511,7 @@ process.$(OBJEXT): {$(VPATH)}process.c $(RUBY_H_INCLUDES) \
 random.$(OBJEXT): {$(VPATH)}random.c $(RUBY_H_INCLUDES)
 range.$(OBJEXT): {$(VPATH)}range.c $(RUBY_H_INCLUDES) \
   $(ENCODING_H_INCLUDES)
-rational.$(OBJEXT): {$(VPATH)}rational.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}version.h $(srcdir)/revision.h
+rational.$(OBJEXT): {$(VPATH)}rational.c $(RUBY_H_INCLUDES)
 re.$(OBJEXT): {$(VPATH)}re.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h \
   {$(VPATH)}regex.h $(ENCODING_H_INCLUDES) {$(VPATH)}util.h \
   {$(VPATH)}regint.h {$(VPATH)}regenc.h
