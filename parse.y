@@ -3497,7 +3497,12 @@ do_block	: keyword_do_block
 block_call	: command do_block
 		    {
 		    /*%%%*/
-			block_dup_check($1->nd_args, $2);
+			if (nd_type($1) == NODE_YIELD) {
+			    compile_error(PARSER_ARG "block given to yield");
+			}
+			else {
+			    block_dup_check($1->nd_args, $2);
+			}    
 			$2->nd_iter = $1;
 			$$ = $2;
 			fixpos($$, $1);
