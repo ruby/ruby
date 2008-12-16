@@ -1648,8 +1648,7 @@ set_arg0(VALUE val, ID id)
     if (i > PST_CLEN) {
 	union pstun un;
 	char buf[PST_CLEN + 1];	/* PST_CLEN is 64 (HP-UX 11.23) */
-	strncpy(buf, s, PST_CLEN);
-	buf[PST_CLEN] = '\0';
+	strlcpy(buf, s, sizeof(buf));
 	un.pst_command = buf;
 	pstat(PSTAT_SETCMD, un, PST_CLEN, 0, 0);
     }

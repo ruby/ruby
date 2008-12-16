@@ -193,7 +193,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	    buf = RSTRING_PTR(bufstr);
 	    MEMCPY(buf, feature, char, len);
 	    for (i = 0; (e = loadable_ext[i]) != 0; i++) {
-		strncpy(buf + len, e, DLEXT_MAXLEN + 1);
+		strlcpy(buf + len, e, DLEXT_MAXLEN + 1);
 		if (st_get_key(loading_tbl, (st_data_t)buf, &data)) {
 		    rb_str_resize(bufstr, 0);
 		    if (fn) *fn = (const char*)data;
