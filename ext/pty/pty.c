@@ -2,6 +2,7 @@
 #ifdef RUBY_EXTCONF_H
 #include RUBY_EXTCONF_H
 #endif
+#include	<stdlib.h>
 #include	<stdio.h>
 #include	<sys/types.h>
 #include	<sys/stat.h>
@@ -272,7 +273,44 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 static int
 get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int fail)
 {
-#if defined HAVE_OPENPTY
+#if defined(HAVE_POSIX_OPENPT)
+    int masterfd,slavefd;
+    char *slavedevice;
+    struct sigaction dfl, old;
+
+    dfl.sa_handler = SIG_DFL;
+    dfl.sa_flags = 0;
+    sigemptyset(&dfl.sa_mask);
+
+    if((masterfd = posix_openpt(O_RDWR|O_NOCTTY)) != -1) {
+	sigaction(SIGCHLD, &dfl, &old);
+	if(grantpt(masterfd) != -1) {
+	    sigaction(SIGCHLD, &old, NULL);
+	    if(unlockpt(masterfd) != -1) {
+		if((slavedevice = ptsname(masterfd)) != NULL) {
+		    if((slavefd = open(slavedevice, O_RDWR|O_NOCTTY, 0)) != -1) {
+#if defined I_PUSH && !defined linux
+			if(ioctl(slavefd, I_PUSH, "ptem") != -1) {
+			    if(ioctl(slavefd, I_PUSH, "ldterm") != -1) {
+				ioctl(slavefd, I_PUSH, "ttcompat");
+#endif
+				*master = masterfd;
+				*slave = slavefd;
+				strlcpy(SlaveName, slavedevice, DEVICELEN);
+				return 0;
+#if defined I_PUSH && !defined linux
+			    }
+			}
+#endif
+		    }
+		}
+	    }
+	}
+	close(masterfd);
+    }
+    if (!fail) rb_raise(rb_eRuntimeError, "can't get Master/Slave device");
+    return -1;
+#elif defined HAVE_OPENPTY
 /*
  * Use openpty(3) of 4.3BSD Reno and later,
  * or the same interface function.
@@ -296,10 +334,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int fail)
     strlcpy(SlaveName, name, DEVICELEN);
 
     return 0;
-#else /* HAVE__GETPTY */
+#elif defined(HAVE_PTSNAME)
     int	 i,j;
-
-#ifdef HAVE_PTSNAME
     char *pn;
     void (*s)();
 
@@ -336,6 +372,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int fail)
     if (!fail) rb_raise(rb_eRuntimeError, "can't get Master/Slave device");
     return -1;
 #else
+    int	 i,j;
     const char *const *p;
     char MasterName[DEVICELEN];
 
@@ -355,7 +392,6 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int fail)
     }
     if (fail) rb_raise(rb_eRuntimeError, "can't get %s", SlaveName);
     return -1;
-#endif
 #endif
 }
 
