@@ -2014,7 +2014,11 @@ rb_memhash(const void *ptr, long len)
 int
 rb_str_hash(VALUE str)
 {
-    return rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str));
+    int e = ENCODING_GET(str);
+    if (e) {
+	if (rb_enc_str_asciionly_p(str)) e = 0;
+    }
+    return rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str)) ^ e;
 }
 
 int
