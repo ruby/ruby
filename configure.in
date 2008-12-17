@@ -217,8 +217,9 @@ AC_CHECK_TOOL(AS, as)
 ASFLAGS=$ASFLAGS
 AC_SUBST(ASFLAGS)
 
-AC_CHECK_TOOL(OBJDUMP, objdump)
-AC_CHECK_TOOL(OBJCOPY, objcopy)
+# BSD's ports and MacPorts prefix GNU binutils with 'g'
+AC_CHECK_TOOLS(OBJDUMP, [objdump, gobjdump])
+AC_CHECK_TOOLS(OBJCOPY, [objcopy, gobjcopy])
 
 case "$target_os" in
 cygwin*|mingw*)
