@@ -1131,6 +1131,7 @@ sym_to_i(sym)
 {
     ID id = SYM2ID(sym);
 
+    rb_warning("Symbol#to_i is deprecated");
     return LONG2FIX(id);
 }
 
@@ -1141,8 +1142,10 @@ static VALUE
 sym_to_int(sym)
     VALUE sym;
 {
+    ID id = SYM2ID(sym);
+
     rb_warning("treating Symbol as an integer");
-    return sym_to_i(sym);
+    return LONG2FIX(id);
 }
 
 

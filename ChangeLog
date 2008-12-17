@@ -1,3 +1,8 @@
+Wed Dec 17 18:38:09 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* object.c (sym_to_i, sym_to_int): Add a deprecation warning to
+	  Symbol#to_i.
+
 Tue Dec 16 17:14:01 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_nitems, rb_ary_choice): Add a deprecation
