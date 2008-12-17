@@ -1,3 +1,9 @@
+Wed Dec 17 19:37:30 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pty/extconf.rb: check util.h for OpenBSD.
+
+	* ext/pty/pty.c: include util.h if available.  fix variable name.
+
 Wed Dec 17 19:23:28 2008  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/matrix.rb: shut up warning. [ruby-dev:37481] [Bug #899]

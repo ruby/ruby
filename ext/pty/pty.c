@@ -16,6 +16,9 @@
 #ifdef HAVE_LIBUTIL_H
 #include	<libutil.h>
 #endif
+#ifdef HAVE_UTIL_H
+#include	<util.h>
+#endif
 #ifdef HAVE_PTY_H
 #include	<pty.h>
 #endif
@@ -330,7 +333,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 	if (!fail) return -1;
 	rb_raise(rb_eRuntimeError, "openpty() failed");
     }
-    if (no_mesg(slavedevice, nomesg) == -1) {
+    if (no_mesg(SlaveName, nomesg) == -1) {
 	if (!fail) return -1;
 	rb_raise(rb_eRuntimeError, "can't chmod slave pty");
     }
@@ -448,6 +451,21 @@ pty_close_pty(VALUE assoc)
  * master_io and slave_file is closed when return if they are not closed.
  *
  * The filename of the slave is slave_file.path.
+ *
+ *   # make cut's stdout line buffered.
+ *   # if IO.pipe is used instead of PTY.open,
+ *   # this deadlocks because cut's stdout will be fully buffered.
+ *   m, s = PTY.open 
+ *   system("stty raw", :in=>s) # disable newline conversion.
+ *   r, w = IO.pipe
+ *   pid = spawn("cut -c 3-8", :in=>r, :out=>s)
+ *   r.close
+ *   s.close
+ *   w.puts "foo bar baz"      #=> "o bar \n"
+ *   p m.gets
+ *   w.puts "hoge fuga moge"   #=> "ge fug\n"
+ *   p m.gets
+ *
  */
 static VALUE
 pty_open(VALUE klass)
