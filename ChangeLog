@@ -1,3 +1,8 @@
+Mon Dec 15 16:26:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_callee_setup_arg_complex): uses cfp from
+	  blockptr instead of the current cfp.  [ruby-core:20544]
+
 Wed Dec 17 09:50:19 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_metaclass.rb: removed codes for my debugging.
@@ -138,7 +143,7 @@ Sat Dec 13 16:04:48 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* encoding.c (default_external): endless recursion during
 	  loading a locale encoding on some locale.
-	  fixed by Nobuyuki Nakada.
+	  fixed by Nobuyoshi Nakada.
 
 	* string.c (sym_inspect): quote if symbol contains non-printable
 	  characters.  [ruby-dev:37398]

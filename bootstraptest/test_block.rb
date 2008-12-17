@@ -487,6 +487,24 @@ assert_equal 'ok', %q{
 }, '[ruby-talk:266422]'
 
 assert_equal 'ok', %q{
+  class C
+    define_method(:xyz) do |o, k, &block|
+      block.call(o, k)
+    end
+  end
+  C.new.xyz("o","k") {|o, k| o+k}
+}, '[ruby-core:20544]'
+
+assert_equal 'ok', %q{
+  class C
+    define_method(:xyz) do |*args, &block|
+      block.call(*args)
+    end
+  end
+  C.new.xyz("o","k") {|*args| args.join("")}
+}, '[ruby-core:20544]'
+
+assert_equal 'ok', %q{
   STDERR.reopen(STDOUT)
   class C
     define_method(:foo) do |&block|
