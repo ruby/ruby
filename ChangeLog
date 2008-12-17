@@ -1,3 +1,11 @@
+Tue Dec 16 11:37:07 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby.c (set_arg0): use strlcpy() instead of strncpy().
+
+	* load.c (rb_feature_p): ditto.
+
+	* dln.c (dln_load): ditto.
+
 Tue Dec 16 09:14:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (block_call): block should not be given to yield.

@@ -1433,8 +1433,8 @@ dln_load(const char *file)
       if (err_stat != B_NO_ERROR) {
 	char real_name[MAXPATHLEN];
 
-	strcpy(real_name, buf);
-	strcat(real_name, "__Fv");
+	strlcpy(real_name, buf, MAXPATHLEN);
+	strlcat(real_name, "__Fv", MAXPATHLEN);
         err_stat = get_image_symbol(img_id, real_name,
 				    B_SYMBOL_TYPE_TEXT, (void **)&init_fct);
       }
