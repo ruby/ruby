@@ -1,3 +1,8 @@
+Mon Dec 15 20:16:46 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (EXTMK_ARGS): shouldn't use ``\"'' because cmd.exe eat
+	  ''\'' in such quotes.
+
 Mon Dec 15 19:07:31 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (config.h): define CANONICALIZATION_FOR_MATHN
