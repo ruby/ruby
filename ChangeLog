@@ -1,3 +1,8 @@
+Tue Dec 16 12:26:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ac_cv_header_ucontext_h): do not use ucontext.h on Mac
+	  OS X 10.5 or later.  merged from MacPorts.
+
 Tue Dec 16 11:37:07 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ruby.c (set_arg0): use strlcpy() instead of strncpy().
