@@ -186,29 +186,47 @@ rb_singleton_class_attached(VALUE klass, VALUE obj)
     }
 }
 
+
+static VALUE
+make_metametaclass(VALUE metaclass)
+{
+    VALUE metametaclass, super_of_metaclass;
+
+    if (RBASIC(metaclass)->klass == metaclass) { /* for meta^(n)-class of Class */
+        metametaclass = rb_class_boot(Qnil);
+        RBASIC(metametaclass)->klass = metametaclass;
+    }
+    else {
+        metametaclass = rb_class_boot(Qnil);
+        RBASIC(metametaclass)->klass = 
+            (RBASIC(RBASIC(metaclass)->klass)->klass == RBASIC(metaclass)->klass)
+            ? make_metametaclass(RBASIC(metaclass)->klass)
+            : RBASIC(RBASIC(metaclass)->klass)->klass;
+    }
+
+    FL_SET(metametaclass, FL_SINGLETON);
+    rb_singleton_class_attached(metametaclass, metaclass);
+    RBASIC(metaclass)->klass = metametaclass;
+
+    super_of_metaclass = RCLASS_SUPER(metaclass);
+    while (FL_TEST(super_of_metaclass, T_ICLASS)) {
+        super_of_metaclass = RCLASS_SUPER(super_of_metaclass);
+    }
+    RCLASS_SUPER(metametaclass) = 
+        rb_iv_get(RBASIC(super_of_metaclass)->klass, "__attached__") == super_of_metaclass
+        ? RBASIC(super_of_metaclass)->klass 
+        : make_metametaclass(super_of_metaclass);
+    OBJ_INFECT(metametaclass, RCLASS_SUPER(metametaclass));
+
+    return metametaclass;
+}
+
+
 VALUE
 rb_make_metaclass(VALUE obj, VALUE super)
 {
-    if (BUILTIN_TYPE(obj) == T_CLASS && FL_TEST(obj, FL_SINGLETON)) {
-        VALUE metaclass, meta_of_super;
-        if (RBASIC(obj)->klass == obj) { /* for meta^(n)-class of Class */
-            metaclass = rb_class_boot(obj);
-            RBASIC(metaclass)->klass = metaclass;
-        }
-        else {
-            metaclass = rb_class_boot(super);
-            RBASIC(metaclass)->klass = rb_singleton_class(RBASIC(obj)->klass);
-        }
-        FL_SET(metaclass, FL_SINGLETON);
-        rb_singleton_class_attached(metaclass, obj);
-        RBASIC(obj)->klass = metaclass;
-
-        meta_of_super = RCLASS(obj)->ptr->super;
-        while (FL_TEST(meta_of_super, T_ICLASS)) {
-            meta_of_super = RCLASS(meta_of_super)->ptr->super;
-        }
-        RCLASS(metaclass)->ptr->super = rb_singleton_class(meta_of_super);
-        return metaclass;
+    if (BUILTIN_TYPE(obj) == T_CLASS && FL_TEST(obj, FL_SINGLETON)) { /* obj is a metaclass */
+        return make_metametaclass(obj);
     }
     else {
 	VALUE metasuper;
@@ -843,6 +861,11 @@ rb_singleton_class(VALUE obj)
     }
     else {
 	klass = rb_make_metaclass(obj, RBASIC(obj)->klass);
+    }
+
+    if (BUILTIN_TYPE(obj) == T_CLASS) {
+	if (rb_iv_get(RBASIC(klass)->klass, "__attached__") != klass)
+        make_metametaclass(klass);
     }
     if (OBJ_TAINTED(obj)) {
 	OBJ_TAINT(klass);
