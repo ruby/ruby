@@ -1,3 +1,8 @@
+Wed Dec 17 11:39:39 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/bigdecimal/test_bigdecimal.rb (TestBigDecimal#test_hash):
+	  shut up warning.  see [ruby-dev:37437]
+
 Wed Dec 17 11:01:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_hash): gets rid of collisions between differen
