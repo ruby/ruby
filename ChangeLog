@@ -1,3 +1,8 @@
+Wed Dec 17 21:02:55 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (inspect_enumerator): Implement #inspect.
+	  [ruby-dev:37248]-[ruby-dev:37263]
+
 Wed Dec 17 20:06:32 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/date.rb (once): Use Object#object_id instead of Symbol#to_i;

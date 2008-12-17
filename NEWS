@@ -40,6 +40,10 @@ with all sufficient information, see the ChangeLog file.
 
     Now calls the "rewind" method of the enclosed object if defined.
 
+  * Enumerator#inspect
+
+    Implemented.
+
   * Hash#default_proc=
 
     New method.
