@@ -1,3 +1,8 @@
+Tue Dec 16 09:14:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (block_call): block should not be given to yield.
+	  [ruby-core:20583]
+
 Mon Dec 15 23:48:39 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* thread.c (sleep_timeval): cast tv_usec to long to shut up
