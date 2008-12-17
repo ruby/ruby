@@ -5,5 +5,10 @@ Test::Unit.setup_argv {|files|
     puts "Usage: testrb [options] tests..."
     exit 1
   end
+  if files.size == 1
+    $0 = File.basename(files[0])
+  else
+    $0 = files.to_s
+  end
   files
 }
