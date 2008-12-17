@@ -1,3 +1,11 @@
+Thu Dec 18 08:15:04 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/xmlrpc/server.rb:  Restricting method inspection to show only
+	  non-inherited public methods.  [ruby-core:20603]
+
+	* lib/xmlrpc/server.rb:  Fixing method inspection so it doesn't 
+	  trigger XMLRPC::FaultException when used.  [ruby-core:20604]
+
 Wed Dec 17 19:39:44 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (unix_recv_io): relax msg_controllen error
