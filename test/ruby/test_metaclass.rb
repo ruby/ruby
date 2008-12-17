@@ -1,6 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
-require '~/dev/metaclass_util/metaclass_util'
 
 class TestMetaclass < Test::Unit::TestCase
   class Foo; end
