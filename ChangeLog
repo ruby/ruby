@@ -2,6 +2,9 @@ Wed Dec 17 15:44:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_pop_m): use enum ary_take_pos_flags.
 
+	* array.c (rb_ary_push_m): add modification check before actual
+	  operation.   [ruby-dev:37440]
+
 Wed Dec 17 15:35:39 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* configure.in (OBJDUMP, OBJCOPY): 
