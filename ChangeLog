@@ -1,3 +1,7 @@
+Mon Dec 15 11:35:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (vm_backtrace): defaults to script name for C functions.
+
 Mon Dec 15 11:32:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (rubylib_mangled_path, rubylib_mangled_path2): cannot use

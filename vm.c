@@ -704,7 +704,7 @@ vm_backtrace(rb_thread_t *th, int lev)
     }
 
     ary = vm_backtrace_each(th, RUBY_VM_NEXT_CONTROL_FRAME(cfp),
-			    top_of_cfp, "", 0, ary);
+			    top_of_cfp, RSTRING_PTR(th->vm->progname), 0, ary);
     return ary;
 }
 
