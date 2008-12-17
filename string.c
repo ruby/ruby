@@ -3768,7 +3768,6 @@ rb_f_split(argc, argv)
 
 /*
  *  call-seq:
- *     str.each(separator=$/) {|substr| block }        => str
  *     str.each_line(separator=$/) {|substr| block }   => str
  *  
  *  Splits <i>str</i> using the supplied parameter as the record separator
@@ -3852,6 +3851,22 @@ rb_str_each_line(argc, argv, str)
     }
 
     return str;
+}
+
+/*
+ *  call-seq:
+ *     str.each(separator=$/) {|substr| block }        => str
+ *
+ *  
+ */
+static VALUE
+rb_str_each(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    rb_warning("treating String as Enumerable object is deprecated; use String#each_line/lines");
+    return rb_str_each_line(argc, argv, str);
 }
 
 
@@ -5077,7 +5092,7 @@ Init_String()
     rb_define_method(rb_cString, "squeeze!", rb_str_squeeze_bang, -1);
 
     rb_define_method(rb_cString, "each_line", rb_str_each_line, -1);
-    rb_define_method(rb_cString, "each",      rb_str_each_line, -1);
+    rb_define_method(rb_cString, "each",      rb_str_each, -1);
     rb_define_method(rb_cString, "each_byte", rb_str_each_byte, 0);
     rb_define_method(rb_cString, "each_char", rb_str_each_char, 0);
 

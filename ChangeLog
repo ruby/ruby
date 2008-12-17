@@ -1,3 +1,8 @@
+Wed Dec 17 19:53:08 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* string.c (rb_str_each): Add a deprecation warning to
+	  String#each.
+
 Wed Dec 17 18:40:11 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* object.c (rb_obj_id_obsolete): s/will be deprecated/is deprecated/.
