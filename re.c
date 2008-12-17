@@ -19,6 +19,7 @@
 VALUE rb_eRegexpError;
 
 typedef char onig_errmsg_buffer[ONIG_MAX_ERROR_MESSAGE_LEN];
+#define errcpy(err, msg) strlcpy((err), (msg), ONIG_MAX_ERROR_MESSAGE_LEN)
 
 #define BEG(no) regs->beg[no]
 #define END(no) regs->end[no]
@@ -1840,13 +1841,13 @@ read_escaped_byte(const char **pp, const char *end, onig_errmsg_buffer err)
 
     retbyte = -1;
     if (p == end || *p++ != '\\') {
-        strcpy(err, "too short escaped multibyte character");
+        errcpy(err, "too short escaped multibyte character");
         return -1;
     }
 
 again:
     if (p == end) {
-        strcpy(err, "too short escape sequence");
+        errcpy(err, "too short escape sequence");
         return -1;
     }
     switch (*p++) {
@@ -1870,7 +1871,7 @@ again:
       case 'x': /* \xHH */
         code = ruby_scan_hex(p, end < p+2 ? end-p : 2, &len);
         if (len < 1) {
-            strcpy(err, "invalid hex escape");
+            errcpy(err, "invalid hex escape");
             return -1;
         }
         p += len;
@@ -1878,7 +1879,7 @@ again:
 
       case 'M': /* \M-X, \M-\C-X, \M-\cX */
         if (meta_prefix) {
-            strcpy(err, "duplicate meta escape");
+            errcpy(err, "duplicate meta escape");
             return -1;
         }
         meta_prefix = 1;
@@ -1892,17 +1893,17 @@ again:
                 break;
             }
         }
-        strcpy(err, "too short meta escape");
+        errcpy(err, "too short meta escape");
         return -1;
 
       case 'C': /* \C-X, \C-\M-X */
         if (p == end || *p++ != '-') {
-            strcpy(err, "too short control escape");
+            errcpy(err, "too short control escape");
             return -1;
         }
       case 'c': /* \cX, \c\M-X */
         if (ctrl_prefix) {
-            strcpy(err, "duplicate control escape");
+            errcpy(err, "duplicate control escape");
             return -1;
         }
         ctrl_prefix = 1;
@@ -1916,15 +1917,15 @@ again:
                 break;
             }
         }
-        strcpy(err, "too short control escape");
+        errcpy(err, "too short control escape");
         return -1;
 
       default:
-        strcpy(err, "unexpected escape sequence");
+        errcpy(err, "unexpected escape sequence");
         return -1;
     }
     if (code < 0 || 0xff < code) {
-        strcpy(err, "invalid escape code");
+        errcpy(err, "invalid escape code");
         return -1;
     }
 
@@ -1967,7 +1968,7 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
 
     l = rb_enc_precise_mbclen(chbuf, chbuf+chlen, enc);
     if (MBCLEN_INVALID_P(l)) {
-        strcpy(err, "invalid multibyte escape");
+        errcpy(err, "invalid multibyte escape");
         return -1;
     }
     if (1 < chlen || (chbuf[0] & 0x80)) {
@@ -1976,7 +1977,7 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
         if (*encp == 0)
             *encp = enc;
         else if (*encp != enc) {
-            strcpy(err, "escaped non ASCII character in UTF-8 regexp");
+            errcpy(err, "escaped non ASCII character in UTF-8 regexp");
             return -1;
         }
     }
@@ -1994,7 +1995,7 @@ check_unicode_range(unsigned long code, onig_errmsg_buffer err)
 {
     if ((0xd800 <= code && code <= 0xdfff) || /* Surrogates */
         0x10ffff < code) {
-        strcpy(err, "invalid Unicode range");
+        errcpy(err, "invalid Unicode range");
         return -1;
     }
     return 0;
@@ -2020,7 +2021,7 @@ append_utf8(unsigned long uv,
         if (*encp == 0)
             *encp = rb_utf8_encoding();
         else if (*encp != rb_utf8_encoding()) {
-            strcpy(err, "UTF-8 character in non UTF-8 regexp");
+            errcpy(err, "UTF-8 character in non UTF-8 regexp");
             return -1;
         }
     }
@@ -2043,7 +2044,7 @@ unescape_unicode_list(const char **pp, const char *end,
         if (len == 0)
             break;
         if (6 < len) { /* max 10FFFF */
-            strcpy(err, "invalid Unicode range");
+            errcpy(err, "invalid Unicode range");
             return -1;
         }
         p += len;
@@ -2055,7 +2056,7 @@ unescape_unicode_list(const char **pp, const char *end,
     }
 
     if (has_unicode == 0) {
-        strcpy(err, "invalid Unicode list");
+        errcpy(err, "invalid Unicode list");
         return -1;
     }
 
@@ -2073,12 +2074,12 @@ unescape_unicode_bmp(const char **pp, const char *end,
     unsigned long code;
 
     if (end < p+4) {
-        strcpy(err, "invalid Unicode escape");
+        errcpy(err, "invalid Unicode escape");
         return -1;
     }
     code = ruby_scan_hex(p, 4, &len);
     if (len != 4) {
-        strcpy(err, "invalid Unicode escape");
+        errcpy(err, "invalid Unicode escape");
         return -1;
     }
     if (append_utf8(code, buf, encp, err) != 0)
@@ -2098,7 +2099,7 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
     while (p < end) {
         int chlen = rb_enc_precise_mbclen(p, end, enc);
         if (!MBCLEN_CHARFOUND_P(chlen)) {
-            strcpy(err, "invalid multibyte character");
+            errcpy(err, "invalid multibyte character");
             return -1;
         }
         chlen = MBCLEN_CHARFOUND_LEN(chlen);
@@ -2108,7 +2109,7 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
             if (*encp == 0)
                 *encp = enc;
             else if (*encp != enc) {
-                strcpy(err, "non ASCII character in UTF-8 regexp");
+                errcpy(err, "non ASCII character in UTF-8 regexp");
                 return -1;
             }
             continue;
@@ -2117,7 +2118,7 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
         switch (c = *p++) {
           case '\\':
             if (p == end) {
-                strcpy(err, "too short escape sequence");
+                errcpy(err, "too short escape sequence");
                 return -1;
             }
             switch (c = *p++) {
@@ -2147,7 +2148,7 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
 
               case 'u':
                 if (p == end) {
-                    strcpy(err, "too short escape sequence");
+                    errcpy(err, "too short escape sequence");
                     return -1;
                 }
                 if (*p == '{') {
@@ -2156,7 +2157,7 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
                     if (unescape_unicode_list(&p, end, buf, encp, err) != 0)
                         return -1;
                     if (p == end || *p++ != '}') {
-                        strcpy(err, "invalid Unicode list");
+                        errcpy(err, "invalid Unicode list");
                         return -1;
                     }
                     break;
@@ -2313,7 +2314,7 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     re->ptr = 0;
 
     if (rb_enc_dummy_p(enc)) {
-	    strcpy(err, "can't make regexp with dummy encoding");
+	    errcpy(err, "can't make regexp with dummy encoding");
 	    return -1;
     }
 
@@ -2324,7 +2325,7 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     if (fixed_enc) {
 	if ((fixed_enc != enc && (options & ARG_ENCODING_FIXED)) ||
             (fixed_enc != a_enc && (options & ARG_ENCODING_NONE))) {
-	    strcpy(err, "incompatible character encoding");
+	    errcpy(err, "incompatible character encoding");
 	    return -1;
 	}
         if (fixed_enc != a_enc) {
@@ -2362,7 +2363,7 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err)
         rb_encoding *ascii8bit = rb_ascii8bit_encoding();
         if (enc != ascii8bit) {
             if (rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
-                strcpy(err, "/.../n has a non escaped non ASCII character in non ASCII-8BIT script");
+                errcpy(err, "/.../n has a non escaped non ASCII character in non ASCII-8BIT script");
                 return -1;
             }
             enc = ascii8bit;
