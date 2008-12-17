@@ -1,3 +1,8 @@
+Mon Dec 15 23:48:39 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* thread.c (sleep_timeval): cast tv_usec to long to shut up
+	  warnings on OSX.  [ruby-dev:37449]
+
 Mon Dec 15 23:29:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (process_options): revive global sub, gsub, chop, chomp
