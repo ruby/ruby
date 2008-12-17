@@ -256,8 +256,8 @@ class TestBigDecimal < Test::Unit::TestCase
 
   def test_hash
     a = []
-    x = BigDecimal.new("1")
-    10.times { a << x *= 10 }
+    b = BigDecimal.new("1")
+    10.times { a << b *= 10 }
     h = {}
     a.each_with_index {|x, i| h[x] = i }
     a.each_with_index do |x, i|
