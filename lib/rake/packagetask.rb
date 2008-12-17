@@ -44,7 +44,7 @@ module Rake
   #   end
   #
   class PackageTask < TaskLib
-    # Name of the package (from the GEM Spec).
+    # Name of the package.
     attr_accessor :name
 
     # Version of the package (e.g. '1.3.2').
