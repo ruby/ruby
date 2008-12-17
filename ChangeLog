@@ -1,3 +1,7 @@
+Sun Dec 14 14:26:11 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* spec/README: directory structrue changed
+
 Sun Dec 14 01:35:48 2008  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (forked_child): new variable.
