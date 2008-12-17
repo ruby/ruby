@@ -529,6 +529,7 @@ darwin*)	LIBS="-lobjc $LIBS"
 		    ],
 		    [
 		    ac_cv_header_ucontext_h=no
+		    ac_cv_func_daemon=no
 		    ],
 		    [
 		    AC_DEFINE(BROKEN_SETREUID, 1)
