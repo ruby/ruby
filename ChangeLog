@@ -1,4 +1,6 @@
-Tue Dec 16 16:29:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Dec 16 16:41:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (stmt): returns dispatched result.
 
 	* parse.y (primary): also in ripper, saves in_def before restoring.
 
