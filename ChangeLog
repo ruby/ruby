@@ -1,3 +1,7 @@
+Tue Dec 16 16:29:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (primary): also in ripper, saves in_def before restoring.
+
 Tue Dec 16 12:30:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (ac_cv_header_ucontext_h): do not use ucontext.h on Mac
