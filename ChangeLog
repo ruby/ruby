@@ -1,3 +1,14 @@
+Mon Dec 15 11:32:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (rubylib_mangled_path, rubylib_mangled_path2): cannot use
+	  locale encoding before load path is initialized
+
+	* ruby.c (ruby_init_loadpath_safe): ditto.
+
+	* ruby.c (process_options): loads encdb so that encodings can be
+	  loaded, then associates script name and load paths with the
+	  locale encoding.
+
 Sun Dec 14 14:26:11 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* spec/README: directory structrue changed

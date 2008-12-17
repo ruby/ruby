@@ -210,9 +210,9 @@ rubylib_mangled_path(const char *s, unsigned int l)
 	}
     }
     if (!newp || l < oldl || STRNCASECMP(oldp, s, oldl) != 0) {
-	return rb_locale_str_new(s, l);
+	return rb_str_new(s, l);
     }
-    ret = rb_locale_str_new(0, l + newl - oldl);
+    ret = rb_str_new(0, l + newl - oldl);
     ptr = RSTRING_PTR(ret);
     memcpy(ptr, newp, newl);
     memcpy(ptr + newl, s + oldl, l - oldl);
@@ -226,8 +226,8 @@ rubylib_mangled_path2(const char *s)
     return rubylib_mangled_path(s, strlen(s));
 }
 #else
-#define rubylib_mangled_path rb_locale_str_new
-#define rubylib_mangled_path2 rb_locale_str_new_cstr
+#define rubylib_mangled_path rb_str_new
+#define rubylib_mangled_path2 rb_str_new_cstr
 #endif
 
 static void
@@ -298,11 +298,17 @@ identical_path(VALUE path)
 {
     return path;
 }
+static VALUE
+locale_path(VALUE path)
+{
+    rb_enc_associate(path, rb_locale_encoding());
+    return path;
+}
 
 void
 ruby_incpush(const char *path)
 {
-    ruby_push_include(path, identical_path);
+    ruby_push_include(path, locale_path);
 }
 
 static VALUE
@@ -394,7 +400,7 @@ ruby_init_loadpath_safe(int safe_level)
     load_path = GET_VM()->load_path;
 
     if (safe_level == 0) {
-	ruby_incpush(getenv("RUBYLIB"));
+	ruby_push_include(getenv("RUBYLIB"), identical_path);
     }
 
 #ifdef RUBY_SEARCH_PATH
@@ -1141,18 +1147,17 @@ process_options(VALUE arg)
 	}
     }
 
-    rb_progname = rb_obj_freeze(rb_str_new_cstr(opt->script));
-#if defined DOSISH || defined __CYGWIN__
-    translate_char(RSTRING_PTR(rb_progname), '\\', '/');
-#endif
-    opt->script_name = rb_progname;
+    opt->script_name = rb_str_new_cstr(opt->script);
     opt->script = RSTRING_PTR(opt->script_name);
+#if defined DOSISH || defined __CYGWIN__
+    translate_char(opt->script, '\\', '/');
+#endif
+    rb_obj_freeze(opt->script_name);
 
     ruby_init_loadpath_safe(opt->safe_level);
-    ruby_init_gems(!(opt->disable & DISABLE_BIT(gems)));
+    rb_enc_find_index("encdb");
     lenc = rb_locale_encoding();
     rb_enc_associate(rb_progname, lenc);
-    opt->script_name = rb_str_new4(rb_progname);
     parser = rb_parser_new();
     if (opt->yydebug) rb_parser_set_yydebug(parser, Qtrue);
     if (opt->ext.enc.name != 0) {
@@ -1177,6 +1182,15 @@ process_options(VALUE arg)
 	rb_enc_set_default_internal(rb_enc_from_encoding(enc));
 	opt->intern.enc.index = -1;
     }
+    rb_enc_associate(opt->script_name, lenc);
+    {
+	long i;
+	VALUE load_path = GET_VM()->load_path;
+	for (i = 0; i < RARRAY_LEN(load_path); ++i) {
+	    rb_enc_associate(RARRAY_PTR(load_path)[i], lenc);
+	}
+    }
+    ruby_init_gems(!(opt->disable & DISABLE_BIT(gems)));
     ruby_set_argv(argc, argv);
     process_sflag(opt);
 
@@ -1240,6 +1254,7 @@ process_options(VALUE arg)
     }
 
     rb_set_safe_level(opt->safe_level);
+    rb_progname = opt->script_name;
 
     return iseq;
 }
