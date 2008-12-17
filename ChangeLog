@@ -1,3 +1,8 @@
+Wed Dec 17 11:01:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_hash): gets rid of collisions between differen
+	  encoding strings.  [ruby-core:20526]
+
 Tue Dec 16 22:55:11 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bin/testrb: set $0.
