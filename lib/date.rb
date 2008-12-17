@@ -1005,10 +1005,10 @@ class Date
     def once(*ids) # :nodoc:
       for id in ids
 	module_eval <<-"end;"
-	  alias_method :__#{id.to_i}__, :#{id.to_s}
-	  private :__#{id.to_i}__
+	  alias_method :__#{id.object_id}__, :#{id.to_s}
+	  private :__#{id.object_id}__
 	  def #{id.to_s}(*args, &block)
-	    (@__#{id.to_i}__ ||= [__#{id.to_i}__(*args, &block)])[0]
+	    (@__#{id.object_id}__ ||= [__#{id.object_id}__(*args, &block)])[0]
 	  end
 	end;
       end

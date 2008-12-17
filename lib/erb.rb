@@ -304,7 +304,7 @@ class ERB
       def scan(&block)
 	@stag = nil
 	if @percent
-	  @src.each do |line|
+	  @src.each_line do |line|
 	    percent_line(line, &block)
 	  end
 	else

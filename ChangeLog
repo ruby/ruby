@@ -1,3 +1,13 @@
+Wed Dec 17 20:06:32 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/date.rb (once): Use Object#object_id instead of Symbol#to_i;
+	  backported from trunk besides the caching.
+
+	* lib/erb.rb (ERB::Compiler::TrimScanner#scan): Use
+	  String#each_line instead of String#each.
+
+	* rubytest.rb: Ditto.
+
 Wed Dec 17 19:53:48 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* object.c (rb_any_to_a): Always use "... is deprecated" for a
