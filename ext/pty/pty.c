@@ -452,19 +452,20 @@ pty_close_pty(VALUE assoc)
  *
  * The filename of the slave is slave_file.path.
  *
- *   # make cut's stdout line buffered.
- *   # if IO.pipe is used instead of PTY.open,
- *   # this deadlocks because cut's stdout will be fully buffered.
- *   m, s = PTY.open 
+ *   # Change the buffering type in factor command,
+ *   # assuming that it uses stdio for stdout buffering.
+ *   # If IO.pipe is used instead of PTY.open,
+ *   # this deadlocks because factor's stdout is fully buffered.
+ *   m, s = PTY.open
  *   system("stty raw", :in=>s) # disable newline conversion.
  *   r, w = IO.pipe
- *   pid = spawn("cut -c 3-8", :in=>r, :out=>s)
+ *   pid = spawn("factor", :in=>r, :out=>s)
  *   r.close
  *   s.close
- *   w.puts "foo bar baz"      #=> "o bar \n"
- *   p m.gets
- *   w.puts "hoge fuga moge"   #=> "ge fug\n"
- *   p m.gets
+ *   w.puts "42"
+ *   p m.gets #=> "42: 2 3 7\n"
+ *   w.puts "144"
+ *   p m.gets #=> "144: 2 2 2 2 3 3\n"
  *
  */
 static VALUE
