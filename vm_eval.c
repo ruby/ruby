@@ -35,6 +35,7 @@ vm_call0(rb_thread_t * th, VALUE klass, VALUE recv, VALUE id, ID oid,
 	blockptr = th->passed_block;
 	th->passed_block = 0;
     }
+  again:
     switch (nd_type(body)) {
       case RUBY_VM_METHOD_NODE:{
 	rb_control_frame_t *reg_cfp;
@@ -98,6 +99,16 @@ vm_call0(rb_thread_t * th, VALUE klass, VALUE recv, VALUE id, ID oid,
 	val = vm_call_bmethod(th, id, body->nd_cval,
 			      recv, klass, argc, (VALUE *)argv, blockptr);
 	break;
+      }
+      case NODE_ZSUPER:{
+	klass = RCLASS_SUPER(klass);
+	if (!klass || !(body = rb_method_node(klass, id))) {
+	    return method_missing(recv, id, argc, argv, 0);
+	}
+	RUBY_VM_CHECK_INTS();
+	nosuper = CALL_SUPER;
+	body = body->nd_body;
+	goto again;
       }
       default:
 	rb_bug("unsupported: vm_call0(%s)", ruby_node_name(nd_type(body)));
