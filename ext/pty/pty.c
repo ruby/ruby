@@ -192,7 +192,8 @@ struct child_info {
     VALUE *argv;
 };
 
-int chfunc(void *data)
+static int
+chfunc(void *data)
 {
     struct child_info *carg = data;
     int master = carg->master;
