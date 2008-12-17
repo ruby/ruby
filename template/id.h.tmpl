@@ -54,7 +54,7 @@ end
 #define symCFUNC ID2SYM(idCFUNC)
 
 enum ruby_method_ids {
-#ifndef tLAST_TOKEN
+#if !defined tLAST_TOKEN && !defined YYTOKENTYPE
 % tokens.each do |token, value|
     <%=token%> = <%=value%>,
 % end

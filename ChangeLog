@@ -1,3 +1,8 @@
+Mon Dec 15 15:13:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* id.h, template/id.h.tmpl (ruby_method_ids): sees YYTOKENTYPE too.
+	  [ruby-dev:37436]
+
 Mon Dec 15 15:02:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (EXTMK_ARGS): needs MINIRUBY for cross-compile.

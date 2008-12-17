@@ -32,7 +32,7 @@
 #define symCFUNC ID2SYM(idCFUNC)
 
 enum ruby_method_ids {
-#ifndef tLAST_TOKEN
+#if !defined tLAST_TOKEN && !defined YYTOKENTYPE
     tUPLUS = 321,
     tUMINUS = 322,
     tPOW = 323,
