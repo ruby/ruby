@@ -8,9 +8,8 @@
 
 static void rb_vm_check_redefinition_opt_method(const NODE *node);
 
-static ID __send__, object_id;
+static ID object_id;
 static ID removed, singleton_removed, undefined, singleton_undefined;
-static ID eqq, each, aref, aset, match, missing;
 static ID added, singleton_added;
 
 struct cache_entry {		/* method hash table. */
@@ -166,7 +165,7 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
 	    rb_warn("redefining Object#initialize may cause infinite loop");
 	}
 
-	if (mid == object_id || mid == __send__) {
+	if (mid == object_id || mid == id__send__) {
 	    if (node && nd_type(node) == RUBY_VM_METHOD_NODE) {
 		rb_warn("redefining `%s' may cause serious problem",
 			rb_id2name(mid));
@@ -313,7 +312,7 @@ remove_method(VALUE klass, ID mid)
     }
     if (OBJ_FROZEN(klass))
 	rb_error_frozen("class/module");
-    if (mid == object_id || mid == __send__ || mid == idInitialize) {
+    if (mid == object_id || mid == id__send__ || mid == idInitialize) {
 	rb_warn("removing `%s' may cause serious problem", rb_id2name(mid));
     }
     if (st_lookup(RCLASS_M_TBL(klass), mid, &data)) {
@@ -480,7 +479,7 @@ rb_undef(VALUE klass, ID id)
 		 rb_id2name(id));
     }
     rb_frozen_class_p(klass);
-    if (id == object_id || id == __send__ || id == idInitialize) {
+    if (id == object_id || id == id__send__ || id == idInitialize) {
 	rb_warn("undefining `%s' may cause serious problem", rb_id2name(id));
     }
     body = search_method(klass, id, &origin);
@@ -1128,13 +1127,6 @@ Init_eval_method(void)
     rb_define_singleton_method(rb_vm_top_self(), "private", top_private, -1);
 
     object_id = rb_intern("object_id");
-    __send__ = rb_intern("__send__");
-    eqq = rb_intern("===");
-    each = rb_intern("each");
-    aref = rb_intern("[]");
-    aset = rb_intern("[]=");
-    match = rb_intern("=~");
-    missing = rb_intern("method_missing");
     added = rb_intern("method_added");
     singleton_added = rb_intern("singleton_method_added");
     removed = rb_intern("method_removed");
