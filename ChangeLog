@@ -1,3 +1,8 @@
+Fri Dec 19 07:45:37 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (exc_equal): duck typing equal to make it transitive.
+	  [ruby-dev:34880]
+
 Thu Dec 18 19:31:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/irb/init.rb (IRB.opt_parse): (M17N) adds -U and -E as command
