@@ -256,15 +256,15 @@ if __FILE__ == $0
     $stdin.gets
   when 'w'
     finger = Rinda::RingFinger.new(nil)
-    finger.lookup_ring do |ts|
-      p ts
-      ts.write([:hello, :world])
+    finger.lookup_ring do |ts2|
+      p ts2
+      ts2.write([:hello, :world])
     end
   when 'r'
     finger = Rinda::RingFinger.new(nil)
-    finger.lookup_ring do |ts|
-      p ts
-      p ts.take([nil, nil])
+    finger.lookup_ring do |ts2|
+      p ts2
+      p ts2.take([nil, nil])
     end
   end
 end

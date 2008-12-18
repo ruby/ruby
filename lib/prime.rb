@@ -411,8 +411,8 @@ class Prime
       loop do
 	extend_table until @table.length > i
 	if !@table[i].zero?
-	  (j...32).step(2) do |j|
-	    return 32*i+j if !@table[i][j.div(2)].zero?
+	  (j...32).step(2) do |k|
+	    return 32*i+k if !@table[i][k.div(2)].zero?
 	  end
 	end
 	i += 1; j = 1

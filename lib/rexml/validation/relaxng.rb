@@ -436,7 +436,7 @@ module REXML
 
             arry[-1][-1].event_arg = evt[1]
             @value = false
-          end
+         end
         else
           arry << [] if evt[0] == :start_element
           arry[-1] << generate_event( evt )

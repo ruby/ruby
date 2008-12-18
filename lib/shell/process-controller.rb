@@ -62,7 +62,7 @@ class Shell
       end
 
       def block_output_synchronize(&b)
-	@BlockOutputMonitor.synchronize &b
+	@BlockOutputMonitor.synchronize(&b)
       end
 
       def wait_to_finish_all_process_controllers

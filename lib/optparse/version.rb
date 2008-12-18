@@ -1,7 +1,7 @@
 # OptionParser internal utility
 
 class << OptionParser
-  def show_version(*pkg)
+  def show_version(*pkgs)
     progname = ARGV.options.program_name
     result = false
     show = proc do |klass, cname, version|
@@ -19,14 +19,14 @@ class << OptionParser
       puts str
       result = true
     end
-    if pkg.size == 1 and pkg[0] == "all"
+    if pkgs.size == 1 and pkgs[0] == "all"
       self.search_const(::Object, /\AV(?:ERSION|ersion)\z/) do |klass, cname, version|
         unless cname[1] == ?e and klass.const_defined?(:Version)
           show.call(klass, cname.intern, version)
         end
       end
     else
-      pkg.each do |pkg|
+      pkgs.each do |pkg|
         begin
           pkg = pkg.split(/::|\//).inject(::Object) {|m, c| m.const_get(c)}
           v = case
@@ -46,8 +46,8 @@ class << OptionParser
     result
   end
 
-  def each_const(path, klass = ::Object)
-    path.split(/::|\//).inject(klass) do |klass, name|
+  def each_const(path, base = ::Object)
+    path.split(/::|\//).inject(base) do |klass, name|
       raise NameError, path unless Module === klass
       klass.constants.grep(/#{name}/i) do |c|
         klass.const_defined?(c) or next

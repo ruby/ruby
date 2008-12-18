@@ -11,13 +11,13 @@ module YAML
     class YamlNode
         include BaseNode
         attr_accessor :kind, :type_id, :value, :anchor
-        def initialize( t, v )
+        def initialize(t, v)
             @type_id = t
             if Hash === v
                 @kind = 'map'
                 @value = {}
-                v.each { |k,v|
-                    @value[ k.transform ] = [ k, v ]
+                v.each {|key,val|
+                    @value[key.transform] = [key, val]
                 }
             elsif Array === v
                 @kind = 'seq'

@@ -3216,7 +3216,7 @@ module Net
 	    ].join(':')
 	  )
 
-	  return response.keys.map { |k| qdval(k.to_s, response[k]) }.join(',')
+	  return response.keys.map {|key| qdval(key.to_s, response[key]) }.join(',')
 	when STAGE_TWO
 	  @stage = nil
 	  # if at the second stage, return an empty string
