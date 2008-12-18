@@ -450,12 +450,18 @@ pty_close_pty(VALUE assoc)
  * The value of the block is returned.
  * master_io and slave_file is closed when return if they are not closed.
  *
- * The filename of the slave is slave_file.path.
+ * The filename of the slave_file is slave_file.path.
+ *
+ *   PTY.open {|m, s|
+ *     p m      #=> #<IO: pty /dev/pts/1>
+ *     p s      #=> #<File:/dev/pts/1>
+ *     p s.path #=> "/dev/pts/1"
+ *   }
  *
  *   # Change the buffering type in factor command,
- *   # assuming that it uses stdio for stdout buffering.
+ *   # assuming that factor uses stdio for stdout buffering.
  *   # If IO.pipe is used instead of PTY.open,
- *   # this deadlocks because factor's stdout is fully buffered.
+ *   # this code deadlocks because factor's stdout is fully buffered.
  *   m, s = PTY.open
  *   system("stty raw", :in=>s) # disable newline conversion.
  *   r, w = IO.pipe
