@@ -8,43 +8,51 @@
 #
 #   
 #
-
-autoload :Kconv, "kconv"
-
 module IRB
   class Locale
     @RCS_ID='-$Id$-'
 
-    JPDefaultLocale = "ja"
+    LOCALE_NAME_RE = %r[
+      (?<language>[[:alpha:]]{2})
+      (?:_
+       (?<territory>[[:alpha:]]{2,3})
+       (?:\.
+	(?<codeset>[^@]+)
+       )?
+      )?
+      (?:@
+       (?<modifier>.*)
+      )?
+    ]x
     LOCALE_DIR = "/lc/"
 
+    @@legacy_encoding_alias_map = {}.freeze
+
     def initialize(locale = nil)
-      @lang = locale || ENV["IRB_LANG"] || ENV["LC_MESSAGES"] || ENV["LC_ALL"] || ENV["LANG"] || "C" 
-    end
+      @locale = locale || ENV["IRB_LANG"] || ENV["LC_MESSAGES"] || ENV["LC_ALL"] || ENV["LANG"] || "C" 
+      if m = LOCALE_NAME_RE.match(@locale)
+	@lang, @territory, @encoding_name, @modifier = m[:language], m[:territory], m[:codeset], m[:modifier]
 
-    attr_reader :lang
-
-    def lc2kconv(lang)
-      case lang
-      when "ja_JP.ujis", "ja_JP.euc", "ja_JP.eucJP", "ja_JP.EUC-JP"
-        Kconv::EUC
-      when "ja_JP.sjis", "ja_JP.SJIS"
-        Kconv::SJIS
-      when /ja_JP.utf-?8/i
-	Kconv::UTF8
+	if @encoding_name
+	  begin; load 'irb/encoding_aliases.rb' rescue LoadError; end
+	  if @encoding = @@legacy_encoding_alias_map[@encoding_name]
+	    warn "%s is obsolete. use %s" % ["#{@lang}_#{@territory}.#{@encoding_name}", "#{@lang}_#{@territory}.#{@encoding.name}"]
+	  end
+	  @encoding = Encoding.find(@encoding_name) rescue nil
+	end
       end
+      @encoding ||= (Encoding.find('locale') rescue Encoding::ASCII_8BIT)
     end
-    private :lc2kconv
+
+    attr_reader :lang, :territory, :encoding, :modifieer
 
     def String(mes)
       mes = super(mes)
-      case @lang
-      when /^ja/
-	mes = Kconv::kconv(mes, lc2kconv(@lang))
+      if @encoding
+	mes.encode(@encoding) 
       else
 	mes
       end
-      mes
     end
 
     def format(*opts)
@@ -106,27 +114,20 @@ module IRB
       dir = "" if dir == "."
       base = File.basename(file)
 
-      if /^ja(_JP)?$/ =~ @lang
- 	back, @lang = @lang, "C"
+      if dir[0] == ?/ #/
+	lc_path = search_file(dir, base)
+	return real_load(lc_path, priv) if lc_path
       end
-      begin
-	if dir[0] == ?/ #/
-	  lc_path = search_file(dir, base)
-	  return real_load(lc_path, priv) if lc_path
-	end
-	
-	for path in $:
-	  lc_path = search_file(path + "/" + dir, base)
-	  return real_load(lc_path, priv) if lc_path
-	end
-      ensure
-	@lang = back if back
+
+      for path in $:
+	lc_path = search_file(path + "/" + dir, base)
+	return real_load(lc_path, priv) if lc_path
       end
       raise LoadError, "No such file to load -- #{file}"
     end 
 
     def real_load(path, priv)
-      src = self.String(File.read(path))
+      src = MagicFile.open(path){|f| f.read}
       if priv
 	eval("self", TOPLEVEL_BINDING).extend(Module.new {eval(src, nil, path)})
       else
@@ -152,29 +153,39 @@ module IRB
     end
 
     def search_file(path, file)
-      if File.exist?(p1 = path + lc_path(file, "C"))
-	if File.exist?(p2 = path + lc_path(file))
-	  return p2
-	else
-	end
-	return p1
-      else
+      each_sublocale do |lc|
+	full_path = path + lc_path(file, lc)
+	return full_path if File.exist?(full_path)
       end
       nil
     end
     private :search_file
 
-    def lc_path(file = "", lc = @lang)
-      case lc
-      when "C"
+    def lc_path(file = "", lc = @locale)
+      if lc.nil?
 	LOCALE_DIR + file
-      when /^ja/
-	LOCALE_DIR + "ja/" + file
       else
 	LOCALE_DIR + @lang + "/" + file
       end
     end
     private :lc_path
+
+    def each_sublocale
+      if @lang
+	if @territory
+	  if @encoding_name
+	    yield "#{@lang}_#{@territory}.#{@encoding_name}@#{@modifier}" if @modifier
+	    yield "#{@lang}_#{@territory}.#{@encoding_name}"
+	  end
+	  yield "#{@lang}_#{@territory}@#{@modifier}" if @modifier
+	  yield "#{@lang}_#{@territory}"
+	end
+	yield "#{@lang}@#{@modifier}" if @modifier
+	yield "#{@lang}"
+      end
+      yield nil
+    end
+    private :each_sublocale
   end
 end
 

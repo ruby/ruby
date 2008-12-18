@@ -1,3 +1,4 @@
+# -*- coding: US-ASCII -*-
 #
 #   irb/lc/help-message.rb - 
 #   	$Release Version: 0.9.5$
@@ -14,6 +15,8 @@ Usage:  irb.rb [options] [programfile] [arguments]
   -d                Set $DEBUG to true (same as `ruby -d')
   -r load-module    Same as `ruby -r'
   -I path           Specify $LOAD_PATH directory
+  -U                Same as `ruby -U`
+  -E enc            Same as `ruby -E`
   --inspect	    Use `inspect' for output (default except for bc mode)
   --noinspect	    Don't use inspect for output
   --readline	    Use Readline extension module
@@ -32,3 +35,4 @@ Usage:  irb.rb [options] [programfile] [arguments]
 		    value is 16. 
   --irb_debug n	    Set internal debug level to n (not for popular use)
   -v, --version	    Print the version of irb
+# vim:fileencoding=us-ascii

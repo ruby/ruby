@@ -1,4 +1,4 @@
-#
+# -*- coding: utf-8 -*-
 #   irb/lc/ja/help-message.rb - 
 #   	$Release Version: 0.9.5$
 #   	$Revision$
@@ -9,27 +9,31 @@
 #   
 #
 Usage:  irb.rb [options] [programfile] [arguments]
-  -f		    ~/.irbrc $B$rFI$_9~$^$J$$(B.
-  -m		    bc$B%b!<%I(B($BJ,?t(B, $B9TNs$N7W;;$,$G$-$k(B)
-  -d                $DEBUG $B$r(Btrue$B$K$9$k(B(ruby -d $B$HF1$8(B)
-  -r load-module    ruby -r $B$HF1$8(B.
-  -I path           $LOAD_PATH $B$K(B path $B$rDI2C$9$k(B.
-  --inspect	    $B7k2L=PNO$K(Binspect$B$rMQ$$$k(B(bc$B%b!<%I0J30$O%G%U%)%k%H(B). 
-  --noinspect	    $B7k2L=PNO$K(Binspect$B$rMQ$$$J$$(B.
-  --readline	    readline$B%i%$%V%i%j$rMxMQ$9$k(B.
-  --noreadline	    readline$B%i%$%V%i%j$rMxMQ$7$J$$(B. 
+  -f		    ~/.irbrc を読み込まない.
+  -m		    bcモード(分数, 行列の計算ができる)
+  -d                $DEBUG をtrueにする(ruby -d と同じ)
+  -r load-module    ruby -r と同じ.
+  -I path           $LOAD_PATH に path を追加する.
+  -U                ruby -U と同じ.
+  -E enc            ruby -E と同じ.
+  --inspect	    結果出力にinspectを用いる(bcモード以外はデフォルト). 
+  --noinspect	    結果出力にinspectを用いない.
+  --readline	    readlineライブラリを利用する.
+  --noreadline	    readlineライブラリを利用しない. 
   --prompt prompt-mode/--prompt-mode prompt-mode
-		    $B%W%m%s%W%H%b!<%I$r@ZBX$($^$9(B. $B8=:_Dj5A$5$l$F$$$k%W(B
-		    $B%m%s%W%H%b!<%I$O(B, default, simple, xmp, inf-ruby$B$,(B
-		    $BMQ0U$5$l$F$$$^$9(B. 
-  --inf-ruby-mode   emacs$B$N(Binf-ruby-mode$BMQ$N%W%m%s%W%HI=<($r9T$J$&(B. $BFC(B
-		    $B$K;XDj$,$J$$8B$j(B, readline$B%i%$%V%i%j$O;H$o$J$/$J$k(B.
-  --simple-prompt   $BHs>o$K%7%s%W%k$J%W%m%s%W%H$rMQ$$$k%b!<%I$G$9(B.
-  --noprompt	    $B%W%m%s%W%HI=<($r9T$J$o$J$$(B.
-  --tracer	    $B%3%^%s%I<B9T;~$K%H%l!<%9$r9T$J$&(B.
+		    プロンプトモードを切替えます. 現在定義されているプ
+		    ロンプトモードは, default, simple, xmp, inf-rubyが
+		    用意されています. 
+  --inf-ruby-mode   emacsのinf-ruby-mode用のプロンプト表示を行なう. 特
+		    に指定がない限り, readlineライブラリは使わなくなる.
+  --simple-prompt   非常にシンプルなプロンプトを用いるモードです.
+  --noprompt	    プロンプト表示を行なわない.
+  --tracer	    コマンド実行時にトレースを行なう.
   --back-trace-limit n
-		    $B%P%C%/%H%l!<%9I=<($r%P%C%/%H%l!<%9$NF,$+$i(B n, $B8e$m(B
-		    $B$+$i(Bn$B$@$19T$J$&(B. $B%G%U%)%k%H$O(B16 
-  --irb_debug n	    irb$B$N%G%P%C%0%G%P%C%0%l%Y%k$r(Bn$B$K@_Dj$9$k(B($BMxMQ$7$J(B
-		    $B$$J}$,L5Fq$G$7$g$&(B).
-  -v, --version	    irb$B$N%P!<%8%g%s$rI=<($9$k(B
+		    バックトレース表示をバックトレースの頭から n, 後ろ
+		    からnだけ行なう. デフォルトは16 
+  --irb_debug n	    irbのデバッグデバッグレベルをnに設定する(利用しな
+		    い方が無難でしょう).
+  -v, --version	    irbのバージョンを表示する
+
+# vim:fileencoding=utf-8
