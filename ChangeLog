@@ -1,3 +1,10 @@
+Thu Dec 18 17:00:56 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_aset): string key copying only happen if key is
+	  an exact instance of String, not a subclass. based on a patch
+	  from Mike Gold <mike.gold.4433 at gmail.com> in [ruby-talk:322667].
+	  [incompatible] [ruby-talk:322417]
+
 Thu Dec 18 16:48:12 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/optparse/version.rb: remove variable shadowing to stop

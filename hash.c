@@ -984,7 +984,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 {
     rb_hash_modify(hash);
     if (RHASH(hash)->ntbl->type == &identhash ||
-	TYPE(key) != T_STRING || st_lookup(RHASH(hash)->ntbl, key, 0)) {
+	rb_obj_class(key) != rb_cString || st_lookup(RHASH(hash)->ntbl, key, 0)) {
 	st_insert(RHASH(hash)->ntbl, key, val);
     }
     else {
