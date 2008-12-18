@@ -80,7 +80,7 @@ module WEBrick
           "Premature end of script headers: #{@script_filename}" if body.nil?
 
         begin
-          header = HTTPUtils::parse_header(raw_header)
+          header = HTTPUtils::parse_header(raw_header.lines.to_a)
           if /^(\d+)/ =~ header['status'][0]
             res.status = $1.to_i
             header.delete('status')

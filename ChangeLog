@@ -1,3 +1,19 @@
+Thu Dec 18 23:53:50 2008  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test warning cleanups.
+
+	* lib/webrick/https.rb, lib/soap/attachment.rb, test/xsd/test_xsd.rb:
+	  uninitialized instance variables.
+
+	* lib/xsd/datatypes.rb: use Date#new! instead of Date#new0 according
+	  to deprecation message.
+
+	* lib/webrick/httpservlet/cgihandler.rb,
+	  lib/xsd/codegen/gensupport.rb, lib/soap/property.rb,
+	  lib/soap/mimemessage.rb, test/webrick/test_cgi.rb: use
+	  String#each_line and String#lines.to_a instead of String#each
+	  according to deprecation message.
+
 Thu Dec 18 08:20:51 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	Merged 20854 from trunk.

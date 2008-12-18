@@ -67,7 +67,7 @@ class TestXSD < Test::Unit::TestCase
   end
 
   def test_XSDString_NONE
-    XSD::Charset.module_eval { @encoding_backup = @encoding; @encoding = "NONE" }
+    XSD::Charset.module_eval { @encoding_backup = @internal_encoding; @internal_encoding = "NONE" }
     begin
       o = XSD::XSDString.new
       assert_equal(XSD::Namespace, o.type.namespace)
@@ -85,7 +85,7 @@ class TestXSD < Test::Unit::TestCase
 	p XSD::XSDString.new("\xC0\xC0").to_s
       end
     ensure
-      XSD::Charset.module_eval { @encoding = @encoding_backup }
+      XSD::Charset.module_eval { @internal_encoding = @encoding_backup }
     end
   end
 

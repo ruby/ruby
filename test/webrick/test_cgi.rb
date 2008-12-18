@@ -46,7 +46,7 @@ class TestWEBrickCGI < Test::Unit::TestCase
         assert_equal("a=1, a=2, b=x", res.body)}
       req = Net::HTTP::Get.new("/")
       http.request(req){|res|
-        ary = res.body.to_a
+        ary = res.body.lines.to_a
         assert_match(%r{/$}, ary[0])
         assert_match(%r{/webrick.cgi$}, ary[1])
       }

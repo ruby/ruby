@@ -49,7 +49,7 @@ class MIMEMessage
 
     def parse(str)
       header_cache = nil
-      str.each do |line|
+      str.each_line do |line|
 	case line
 	when /^\A[^\: \t]+:\s*.+$/
 	  parse_line(header_cache) if header_cache
@@ -148,6 +148,7 @@ class MIMEMessage
   def initialize
     @parts = []
     @headers = Headers.new
+    @boundary = nil
     @root = nil
   end
 

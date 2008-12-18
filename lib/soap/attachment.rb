@@ -37,6 +37,7 @@ class Attachment
     @string_or_readable = string_or_readable
     @contenttype = "application/octet-stream"
     @contentid = nil
+    @content = nil
   end
 
   def contentid
