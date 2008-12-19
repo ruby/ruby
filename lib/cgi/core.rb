@@ -590,7 +590,7 @@ class CGI
                       read_from_cmdline
                     end.dup.force_encoding(@accept_charset)
                   )
-        unless @accept_charset=~/ASCII-8BIT/i || @accept_charset==Encoding::ASCII_8BIT
+        unless Encoding.find(@accept_charset) == Encoding::ASCII_8BIT
           @params.each do |key,values|
             values.each do |value|
               unless value.valid_encoding?

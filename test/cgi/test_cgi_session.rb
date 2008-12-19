@@ -91,7 +91,83 @@ class CGISessionTest < Test::Unit::TestCase
     assert_equal(value1,session["key1"])
     assert_equal(value2,session["key2"])
     session.close
+  end
+  def test_cgi_session_specify_session_id
+    @environ = {
+      'REQUEST_METHOD'  => 'GET',
+  #    'QUERY_STRING'    => 'id=123&id=456&id=&str=%40h+%3D%7E+%2F%5E%24%2F',
+  #    'HTTP_COOKIE'     => '_session_id=12345; name1=val1&val2;',
+      'SERVER_SOFTWARE' => 'Apache 2.2.0',
+      'SERVER_PROTOCOL' => 'HTTP/1.1',
+    }
+    value1="value1"
+    value2="\x8F\xBC\x8D]"
+    value2.force_encoding("SJIS") if RUBY_VERSION>="1.9"
+    ENV.update(@environ)
+    cgi = CGI.new
+    session = CGI::Session.new(cgi,"tmpdir"=>@session_dir,"session_id"=>"foo")
+    session["key1"]=value1
+    session["key2"]=value2
+    assert_equal(value1,session["key1"])
+    assert_equal(value2,session["key2"])
+    assert_equal("foo",session.session_id)
+    session_id=session.session_id
+    session.close
+    $stdout = StringIO.new
+    cgi.out{""}
 
+    @environ = {
+      'REQUEST_METHOD'  => 'GET',
+      # 'HTTP_COOKIE'     => "_session_id=#{session_id}",
+      'QUERY_STRING'    => "_session_id=#{session.session_id}",
+      'SERVER_SOFTWARE' => 'Apache 2.2.0',
+      'SERVER_PROTOCOL' => 'HTTP/1.1',
+    }
+    ENV.update(@environ)
+    cgi = CGI.new
+    session = CGI::Session.new(cgi,"tmpdir"=>@session_dir)
+    $stdout = StringIO.new
+    assert_equal(value1,session["key1"])
+    assert_equal(value2,session["key2"])
+    assert_equal("foo",session.session_id)
+    session.close
+  end
+  def test_cgi_session_specify_session_key
+    @environ = {
+      'REQUEST_METHOD'  => 'GET',
+  #    'QUERY_STRING'    => 'id=123&id=456&id=&str=%40h+%3D%7E+%2F%5E%24%2F',
+  #    'HTTP_COOKIE'     => '_session_id=12345; name1=val1&val2;',
+      'SERVER_SOFTWARE' => 'Apache 2.2.0',
+      'SERVER_PROTOCOL' => 'HTTP/1.1',
+    }
+    value1="value1"
+    value2="\x8F\xBC\x8D]"
+    value2.force_encoding("SJIS") if RUBY_VERSION>="1.9"
+    ENV.update(@environ)
+    cgi = CGI.new
+    session = CGI::Session.new(cgi,"tmpdir"=>@session_dir,"session_key"=>"bar")
+    session["key1"]=value1
+    session["key2"]=value2
+    assert_equal(value1,session["key1"])
+    assert_equal(value2,session["key2"])
+    session_id=session.session_id
+    session.close
+    $stdout = StringIO.new
+    cgi.out{""}
 
+    @environ = {
+      'REQUEST_METHOD'  => 'GET',
+      'HTTP_COOKIE'     => "bar=#{session_id}",
+      # 'QUERY_STRING'    => "bar=#{session.session_id}",
+      'SERVER_SOFTWARE' => 'Apache 2.2.0',
+      'SERVER_PROTOCOL' => 'HTTP/1.1',
+    }
+    ENV.update(@environ)
+    cgi = CGI.new
+    session = CGI::Session.new(cgi,"tmpdir"=>@session_dir,"session_key"=>"bar")
+    $stdout = StringIO.new
+    assert_equal(value1,session["key1"])
+    assert_equal(value2,session["key2"])
+    session.close
   end
 end

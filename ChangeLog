@@ -1,3 +1,12 @@
+Thu Dec 18 21:12:28 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/session.rb: fix bug for ignore session_id option.
+	  report from [ruby-core:18635], [Bug #572]
+
+	* lib/cgi/core.rb: use Encoding#find when encoding set.
+
+	* test/cgi/test_cgi_session.rb: test for session_id specified.
+
 Thu Dec 18 16:48:12 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/optparse/version.rb: remove variable shadowing to stop
