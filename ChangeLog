@@ -1,3 +1,7 @@
+Fri Dec 19 15:51:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): get rid of warning on DOSISH.
+
 Fri Dec 19 07:45:37 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* error.c (exc_equal): duck typing equal to make it transitive.
