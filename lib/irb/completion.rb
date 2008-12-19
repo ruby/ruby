@@ -159,7 +159,7 @@ module IRB
 	    end
 	    next if name != "IRB::Context" and 
 	      /^(IRB|SLex|RubyLex|RubyToken)/ =~ name
-	    candidates.concat m.instance_methods(false).collect{|m| m.to_s}
+	    candidates.concat m.instance_methods(false).collect{|x| x.to_s}
 	  }
 	  candidates.sort!
 	  candidates.uniq!

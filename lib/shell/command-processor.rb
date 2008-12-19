@@ -26,7 +26,7 @@ class Shell
     #
     m = [:initialize, :expand_path]
     if Object.methods.first.kind_of?(String)
-      NoDelegateMethods = m.collect{|m| m.id2name}
+      NoDelegateMethods = m.collect{|x| x.id2name}
     else
       NoDelegateMethods = m
     end
@@ -124,7 +124,7 @@ class Shell
 	  f = File.open(path, mode, perm)
 	  File.chmod(perm & ~@shell.umask, path)
 	  if block_given?
-	    f.each &b
+	    f.each(&b)
 	  end
 	  f
 	else

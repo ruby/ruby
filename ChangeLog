@@ -1,3 +1,22 @@
+Thu Dec 18 16:48:12 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/optparse/version.rb: remove variable shadowing to stop
+	  warning.   [ruby-core:20612]
+
+	* lib/irb/completion.rb, lib/net/imap.rb, lib/prime.rb,
+	  lib/rinda/ring.rb, lib/racc/parser.rb,
+	  lib/shell/command-processor.rb, lib/yaml/yamlnode.rb: ditto.
+
+	* lib/racc/parser.rb: remove space before parentheses.
+
+	* lib/shell/command-processor.rb, lib/shell/process-controller.rb:
+	  use parentheses around arguments.
+
+	* lib/irb/ext/change-ws.rb, lib/rexml/validation/relaxng.rb,
+	  lib/yaml/baseemitter.rb: indentation fix.
+
+	* lib/matrix.rb: small cosmetic change.
+
 Thu Dec 18 08:15:04 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/xmlrpc/server.rb:  Restricting method inspection to show only

@@ -56,6 +56,6 @@ module IRB
 #       end
 #     end
 #     alias change_workspace change_binding
-   end
+  end
 end
 
