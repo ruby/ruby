@@ -1259,7 +1259,7 @@ process_options(VALUE arg)
     opt->script_name = rb_str_new_cstr(opt->script);
     opt->script = RSTRING_PTR(opt->script_name);
 #if defined DOSISH || defined __CYGWIN__
-    translate_char(opt->script, '\\', '/');
+    translate_char(RSTRING_PTR(opt->script_name), '\\', '/');
 #endif
     rb_obj_freeze(opt->script_name);
 

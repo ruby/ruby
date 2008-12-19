@@ -1,3 +1,7 @@
+Fri Dec 19 15:51:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): get rid of warning on DOSISH.
+
 Thu Dec 18 19:31:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/irb/init.rb (IRB.opt_parse): (M17N) adds -U and -E as command
