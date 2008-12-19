@@ -1,3 +1,12 @@
+Fri Dec 19 17:01:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_extract_encoding_option): "internal_encoding: nil"
+	  to specify no-transcoding.  and other corner case fixed.
+	  [ruby-dev:37496]
+
+	* hash.c (rb_hash_lookup2): new function to look-up hash with
+	  default value.
+
 Fri Dec 19 15:51:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): get rid of warning on DOSISH.

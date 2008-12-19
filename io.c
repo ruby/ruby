@@ -3917,54 +3917,59 @@ rb_io_mode_enc(rb_io_t *fptr, const char *modestr)
 int
 rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p)
 {
-    VALUE encoding=Qnil, extenc=Qnil, intenc=Qnil;
+    VALUE encoding=Qnil, extenc=Qundef, intenc=Qundef, tmp;
     int extracted = 0;
+    rb_encoding *extencoding = NULL;
+    rb_encoding *intencoding = NULL;
+
     if (!NIL_P(opt)) {
 	VALUE v;
-	v = rb_hash_aref(opt, sym_encoding);
-	if (!NIL_P(v)) encoding = v;
-	v = rb_hash_aref(opt, sym_extenc);
-	if (!NIL_P(v)) extenc = v;
-	v = rb_hash_aref(opt, sym_intenc);
-	if (!NIL_P(v)) intenc = v;
+	v = rb_hash_lookup2(opt, sym_encoding, Qnil);
+	if (v != Qnil) encoding = v;
+	v = rb_hash_lookup2(opt, sym_extenc, Qundef);
+	if (v != Qnil) extenc = v;
+	v = rb_hash_lookup2(opt, sym_intenc, Qundef);
+	if (v != Qundef) intenc = v;
     }
-    if (!NIL_P(extenc)) {
-	rb_encoding *extencoding = rb_to_encoding(extenc);
-	rb_encoding *intencoding = NULL;
-        extracted = 1;
-	if (!NIL_P(encoding)) {
-	    rb_warn("Ignoring encoding parameter '%s': external_encoding is used",
-		    RSTRING_PTR(encoding));
+    if ((extenc != Qundef || intenc != Qundef) && !NIL_P(encoding)) {
+	rb_warn("Ignoring encoding parameter '%s': %s_encoding is used",
+		StringValueCStr(encoding),
+		extenc == Qundef ? "internal" : "external");
+	encoding = Qnil;
+    }
+    if (extenc != Qundef && !NIL_P(extenc)) {
+	extencoding = rb_to_encoding(extenc);
+    }
+    if (intenc != Qundef) {
+	if (NIL_P(intenc)) {
+	    /* internal_encoding: nil => no transcoding */
+	    intencoding = (rb_encoding *)Qnil;
 	}
-	if (!NIL_P(intenc)) {
-	    if (!NIL_P(encoding = rb_check_string_type(intenc))) {
-		char *p = StringValueCStr(encoding);
-		if (*p == '-' && *(p+1) == '\0') {
-		    /* Special case - "-" => no transcoding */
-		    intencoding = (rb_encoding *)Qnil;
-		}
-		else
-		    intencoding = rb_to_encoding(intenc);
-	    }
-	    else
-		intencoding = rb_to_encoding(intenc);
-	    if (extencoding == intencoding) {
-		rb_warn("Ignoring internal encoding '%s': it is identical to external encoding '%s'",
-			RSTRING_PTR(rb_inspect(intenc)),
-			RSTRING_PTR(rb_inspect(extenc)));
+	else if (!NIL_P(tmp = rb_check_string_type(intenc))) {
+	    char *p = StringValueCStr(tmp);
+
+	    if (*p == '-' && *(p+1) == '\0') {
+		/* Special case - "-" => no transcoding */
 		intencoding = (rb_encoding *)Qnil;
 	    }
+	    else {
+		intencoding = rb_to_encoding(intenc);
+	    }
 	}
-	rb_io_ext_int_to_encs(extencoding, intencoding, enc_p, enc2_p);
+	else {
+	    intencoding = rb_to_encoding(intenc);
+	}
+	if (extencoding == intencoding) {
+	    intencoding = (rb_encoding *)Qnil;
+	}
     }
-    else {
-	if (!NIL_P(intenc)) {
-	    rb_raise(rb_eArgError, "External encoding must be specified when internal encoding is given");
-	}
-	if (!NIL_P(encoding)) {
-            extracted = 1;
-            parse_mode_enc(StringValueCStr(encoding), enc_p, enc2_p);
-	}
+    if (!NIL_P(encoding)) {
+	extracted = 1;
+	parse_mode_enc(StringValueCStr(encoding), enc_p, enc2_p);
+    }
+    else if (extenc != Qundef || intenc != Qundef) {
+        extracted = 1;
+	rb_io_ext_int_to_encs(extencoding, intencoding, enc_p, enc2_p);
     }
     return extracted;
 }
