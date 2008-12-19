@@ -463,14 +463,20 @@ rb_hash_aref(VALUE hash, VALUE key)
 }
 
 VALUE
-rb_hash_lookup(VALUE hash, VALUE key)
+rb_hash_lookup2(VALUE hash, VALUE key, VALUE def)
 {
     VALUE val;
 
     if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
-	return Qnil; /* without Hash#default */
+	return def; /* without Hash#default */
     }
     return val;
+}
+
+VALUE
+rb_hash_lookup(VALUE hash, VALUE key)
+{
+    return rb_hash_lookup2(hash, key, Qnil);
 }
 
 /*

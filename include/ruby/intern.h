@@ -359,6 +359,7 @@ VALUE rb_hash_dup(VALUE);
 VALUE rb_hash_freeze(VALUE);
 VALUE rb_hash_aref(VALUE, VALUE);
 VALUE rb_hash_lookup(VALUE, VALUE);
+VALUE rb_hash_lookup2(VALUE, VALUE, VALUE);
 VALUE rb_hash_fetch(VALUE, VALUE);
 VALUE rb_hash_aset(VALUE, VALUE, VALUE);
 VALUE rb_hash_delete_if(VALUE);
