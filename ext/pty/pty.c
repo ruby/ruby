@@ -15,6 +15,9 @@
 #ifdef HAVE_LIBUTIL_H
 #include	<libutil.h>
 #endif
+#ifdef HAVE_UTIL_H
+#include	<util.h>
+#endif
 #ifdef HAVE_PTY_H
 #include	<pty.h>
 #endif
@@ -417,6 +420,7 @@ getDevice(int *master, int *slave, char SlaveName[DEVICELEN])
 	rb_gc();
 	get_device_once(master, slave, SlaveName, 1);
     }
+    return Qnil;
 }
 
 /* ruby function: getpty */
