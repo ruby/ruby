@@ -1,3 +1,8 @@
+Wed Dec 17 19:39:44 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (unix_recv_io): relax msg_controllen error
+	  check.
+
 Wed Dec 17 19:37:30 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pty/extconf.rb: check util.h for OpenBSD.
