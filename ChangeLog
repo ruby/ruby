@@ -1,3 +1,7 @@
+Wed Dec 17 15:44:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_pop_m): use enum ary_take_pos_flags.
+
 Wed Dec 17 15:22:45 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* configure.in (OBJDUMP, OBJCOPY): 

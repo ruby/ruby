@@ -743,7 +743,7 @@ rb_ary_pop_m(int argc, VALUE *argv, VALUE ary)
     }
 
     rb_ary_modify_check(ary);
-    result = ary_take_first_or_last(argc, argv, ary, Qtrue);
+    result = ary_take_first_or_last(argc, argv, ary, ARY_TAKE_LAST);
     ARY_INCREASE_LEN(ary, -RARRAY_LEN(result));
     return result;
 }
