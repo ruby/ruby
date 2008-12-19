@@ -1,3 +1,15 @@
+Sat Dec 13 08:35:14 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_canonicalization): renamed.
+
+	* ext/math/complex.c: followed the above change.
+
+	* rational.c (nurat_canonicalization): renamed.
+
+	* ext/math/rational.c: followed the above change.
+
+	* configure.in: defines a new macro.
+
 Wed Dec 17 15:44:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_pop_m): use enum ary_take_pos_flags.
