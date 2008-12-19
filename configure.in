@@ -64,7 +64,7 @@ GNU_LD=$rb_cv_prog_gnu_ld
 AC_SUBST(GNU_LD)])
 
 unset GREP_OPTIONS
-rb_version=`grep RUBY_VERSION $srcdir/version.h`
+rb_version=`grep '^#define RUBY_VERSION ' $srcdir/version.h`
 MAJOR=`expr "$rb_version" : '#define RUBY_VERSION "\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*"'`
 MINOR=`expr "$rb_version" : '#define RUBY_VERSION "[0-9][0-9]*\.\([0-9][0-9]*\)\.[0-9][0-9]*"'`
 TEENY=`expr "$rb_version" : '#define RUBY_VERSION "[0-9][0-9]*\.[0-9][0-9]*\.\([0-9][0-9]*\)"'`
