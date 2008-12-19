@@ -240,6 +240,7 @@ class RubyLex
 	    end
 	  end
 	  if @line != "\n"
+      @line.force_encoding(@io.encoding)
 	    yield @line, @exp_line_no
 	  end
 	  break unless l

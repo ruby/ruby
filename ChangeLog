@@ -1,3 +1,43 @@
+Thu Dec 18 19:31:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/irb/init.rb (IRB.opt_parse): (M17N) adds -U and -E as command
+	  line options. [ruby-dev:37161]. Fixes #711. 
+	  improved long optinos.
+
+	* lib/irb/init.rb (IRB.set_encoding): new subroutine for IRB.opt_parse
+
+	* lib/irb/input-method.rb (IRB::StdioInputMethod): (M17N) regards
+	  scripts that user types as encoded in the external_encoding. 
+
+	* lib/irb/input-method.rb (IRB::ReadlineInputMethod): ditto.
+
+	* lib/irb/input-method.rb (IRB::FileInputMethod): (M17N) respects
+	  magic comment.
+
+	* lib/irb/help.rb (IRB.print_usage): (M17N) respects magic comment 
+	  in the resource file.
+
+	* lib/irb/lc/help-message: adds -U and -E.
+
+	* lib/irb/lc/ja/help-message: ditto. re-encoded from ISO-2022-JP into UTF-8.
+
+	* lib/irb/lc/ja/encoding_aliases.rb: new file. provides Japanese specific
+	  character encoding name table for backward compatibility.
+
+	* lib/irb/lc/ja/error.rb: re-eoncoded from ISO-2022-JP into UTF-8.
+	  magic comment.
+
+	* lib/irb/locale.rb: integrated with Ruby 1.9's M17N support.
+
+	* lib/irb/magic-file.rb: new file. utility to handle files with magic
+	  comment and opens in the correct encoding.
+
+	* lib/irb/ruby-lex.rb (RubyLex#each_top_level_statement): recovers
+	  character encoding for a statement after it lexed so that irb can
+	  eval the statement in correct encoding.
+
+	* lib/irb/src_encoding.rb: new file. utility.
+
 Thu Dec 18 21:12:28 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/session.rb: fix bug for ignore session_id option.

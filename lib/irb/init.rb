@@ -139,6 +139,11 @@ module IRB
       when /^-I(.+)?/
         opt = $1 || ARGV.shift
 	load_path.concat(opt.split(File::PATH_SEPARATOR)) if opt
+      when '-U'
+	set_encoding("UTF-8", "UTF-8")
+      when /^-E(.+)?/, /^--encoding(?:=(.+))?/
+	opt = $1 || ARGV.shift
+	set_encoding(*opt.split(':', 2))
       when "--inspect"
 	@CONF[:INSPECT_MODE] = true
       when "--noinspect"
@@ -155,8 +160,9 @@ module IRB
 	@CONF[:VERBOSE] = true
       when "--noverbose"
 	@CONF[:VERBOSE] = false
-      when "--prompt-mode", "--prompt"
-	prompt_mode = ARGV.shift.upcase.tr("-", "_").intern
+      when /^--prompt-mode(?:=(.+))?/, /^--prompt(?:=(.+))?/
+	opt = $1 || ARGV.shift
+	prompt_mode = opt.upcase.tr("-", "_").intern
 	@CONF[:PROMPT_MODE] = prompt_mode
       when "--noprompt"
 	@CONF[:PROMPT_MODE] = :NULL
@@ -166,14 +172,14 @@ module IRB
 	@CONF[:PROMPT_MODE] = :SIMPLE
       when "--tracer"
 	@CONF[:USE_TRACER] = true
-      when "--back-trace-limit"
-	@CONF[:BACK_TRACE_LIMIT] = ARGV.shift.to_i
-      when "--context-mode"
-	@CONF[:CONTEXT_MODE] = ARGV.shift.to_i
+      when /^--back-trace-limit(?:=(.+))?/
+	@CONF[:BACK_TRACE_LIMIT] = ($1 || ARGV.shift).to_i
+      when /^--context-mode(?:=(.+))?/
+	@CONF[:CONTEXT_MODE] = ($1 || ARGV.shift).to_i
       when "--single-irb"
 	@CONF[:SINGLE_IRB] = true
-      when "--irb_debug"
-	@CONF[:DEBUG_LEVEL] = ARGV.shift.to_i
+      when /^--irb_debug=(?:=(.+))?/
+	@CONF[:DEBUG_LEVEL] = ($1 || ARGV.shift).to_i
       when "-v", "--version"
 	print IRB.version, "\n"
 	exit 0
@@ -181,6 +187,12 @@ module IRB
 	require "irb/help"
 	IRB.print_usage
 	exit 0
+      when "--"
+	if opt = ARGV.shfit
+	  @CONF[:SCRIPT] = opt
+	  $0 = opt
+	end
+        break
       when /^-/
 	IRB.fail UnrecognizedSwitch, opt
       else
@@ -195,6 +207,7 @@ module IRB
       end
     end
     $LOAD_PATH.unshift(*load_path)
+
   end
 
   # running config
@@ -253,4 +266,21 @@ module IRB
     end
   end
 
+
+  DefaultEncodings = Struct.new(:external, :internal)
+  class << IRB
+    private
+    def set_encoding(extern, intern = nil)
+      verbose, $VERBOSE = $VERBOSE, nil
+      Encoding.default_external = extern unless extern.nil? || extern.empty?
+      Encoding.default_internal = intern unless intern.nil? || intern.empty?
+      @CONF[:ENCODINGS] = IRB::DefaultEncodings.new(extern, intern)
+      [$stdin, $stdout, $stderr].each do |io|
+	io.set_encoding(extern, intern)
+      end
+      @CONF[:LC_MESSAGES].instance_variable_set(:@encoding, extern)
+    ensure
+      $VERBOSE = verbose
+    end
+  end
 end
