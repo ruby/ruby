@@ -1,3 +1,7 @@
+Wed Dec 17 19:23:28 2008  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* lib/matrix.rb: shut up warning. [ruby-dev:37481] [Bug #899]
+
 Sat Dec 13 08:35:14 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_canonicalization): renamed.

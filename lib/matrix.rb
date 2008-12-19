@@ -18,7 +18,6 @@
 # See classes Matrix and Vector for documentation. 
 #
 
-
 require "e2mmap.rb"
 
 module ExceptionForMatrix # :nodoc:
@@ -623,22 +622,18 @@ class Matrix
         q = a[i][k].quo(akk)
         a[i][k] = 0
         
-        (k + 1).upto(size) do   
-          |j|
+	for j in (k + 1).. size
           a[i][j] -= a[k][j] * q
         end
-        0.upto(size) do
-          |j|
+        for j in 0..size
           @rows[i][j] -= @rows[k][j] * q
         end
       end
       
-      (k + 1).upto(size) do
-        |j|
+      for j in (k + 1).. size
         a[k][j] = a[k][j].quo(akk)
       end
-      0.upto(size) do
-        |j|
+      for j in 0..size
         @rows[k][j] = @rows[k][j].quo(akk)
       end
     end
@@ -712,8 +707,8 @@ class Matrix
         akk = a[k][k]
         det *= -1
       end
-      (k + 1).upto(size) do
-        |i|
+
+      for i in k + 1 .. size
         q = a[i][k].quo(akk)
         (k + 1).upto(size) do
           |j|
@@ -753,7 +748,8 @@ class Matrix
         a[i], a[k] = a[k], a[i]
         det *= -1
       end
-      (k + 1).upto(size) do |i|
+
+      for i in (k + 1)..size
         q = a[i][k].quo(a[k][k])
         k.upto(size) do |j|
           a[i][j] -= a[k][j] * q
@@ -823,11 +819,10 @@ class Matrix
           end
         end
       end
-      (k + 1).upto(a_row_size - 1) do
-        |i|
+
+      for i in (k + 1)..(a_row_size - 1)
         q = a[i][k].quo(akk)
-        (k + 1).upto(a_column_size - 1) do
-          |j|
+	for j in (k + 1)..(a_column_size - 1)
           a[i][j] -= a[k][j] * q
         end
       end
