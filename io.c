@@ -13,6 +13,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/io.h"
+#include "dln.h"
 #include <ctype.h>
 #include <errno.h>
 
@@ -4446,9 +4447,8 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     int status;
     struct popen_arg arg;
 #elif defined(_WIN32)
-    int openmode = rb_io_modestr_oflags(modestr);
-    const char *exename = NULL;
-    volatile VALUE cmdbuf;
+    volatile VALUE argbuf;
+    char **args;
     struct rb_exec_arg sarg;
     int pair[2], write_pair[2];
 #endif
@@ -4557,8 +4557,6 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     }
 #elif defined(_WIN32)
     if (argc) {
-	volatile VALUE argbuf;
-	char **args;
 	int i;
 
 	if (argc >= FIXNUM_MAX / sizeof(char *)) {
@@ -4570,10 +4568,6 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
 	    args[i] = StringValueCStr(argv[i]);
 	}
 	args[i] = NULL;
-	exename = cmd;
-	cmdbuf = rb_str_tmp_new(rb_w32_argv_size(args));
-	cmd = rb_w32_join_argv(RSTRING_PTR(cmdbuf), args);
-	rb_str_resize(argbuf, 0);
     }
     switch (fmode & (FMODE_READABLE|FMODE_WRITABLE)) {
       case FMODE_READABLE|FMODE_WRITABLE:
@@ -4610,7 +4604,9 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
 	rb_exec_arg_fixup(eargp);
 	rb_run_exec_options(eargp, &sarg);
     }
-    while ((pid = rb_w32_spawn(P_NOWAIT, cmd, exename)) == -1) {
+    while ((pid = (args ?
+		   rb_w32_aspawn(P_NOWAIT, 0, args) :
+		   rb_w32_spawn(P_NOWAIT, cmd, 0))) == -1) {
 	/* exec failed */
 	switch (errno) {
 	  case EAGAIN:
