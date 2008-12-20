@@ -29,12 +29,13 @@ module IRB
     @@legacy_encoding_alias_map = {}.freeze
 
     def initialize(locale = nil)
+      @lang = @territory = @encoding_name = @modifier = nil
       @locale = locale || ENV["IRB_LANG"] || ENV["LC_MESSAGES"] || ENV["LC_ALL"] || ENV["LANG"] || "C" 
       if m = LOCALE_NAME_RE.match(@locale)
 	@lang, @territory, @encoding_name, @modifier = m[:language], m[:territory], m[:codeset], m[:modifier]
 
 	if @encoding_name
-	  begin; load 'irb/encoding_aliases.rb' rescue LoadError; end
+	  begin load 'irb/encoding_aliases.rb'; rescue LoadError; end
 	  if @encoding = @@legacy_encoding_alias_map[@encoding_name]
 	    warn "%s is obsolete. use %s" % ["#{@lang}_#{@territory}.#{@encoding_name}", "#{@lang}_#{@territory}.#{@encoding.name}"]
 	  end

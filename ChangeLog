@@ -1,3 +1,9 @@
+Sat Dec 20 10:59:16 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/irb/locale.rb (IRB::Locale#initialize)
+	  initializes instance variables to suppress warnings.
+	  typo fix to ignore LoadError: [ruby-dev:37508]
+
 Fri Dec 19 17:01:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_extract_encoding_option): "internal_encoding: nil"
