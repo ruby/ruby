@@ -4450,6 +4450,7 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     const char *exename = NULL;
     volatile VALUE cmdbuf;
     struct rb_exec_arg sarg;
+    int pair[2], write_pair[2];
 #endif
     FILE *fp = 0;
     int fd = -1;
@@ -4574,11 +4575,42 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
 	cmd = rb_w32_join_argv(RSTRING_PTR(cmdbuf), args);
 	rb_str_resize(argbuf, 0);
     }
+    switch (fmode & (FMODE_READABLE|FMODE_WRITABLE)) {
+      case FMODE_READABLE|FMODE_WRITABLE:
+        if (rb_pipe(write_pair) < 0)
+            rb_sys_fail(cmd);
+        if (rb_pipe(pair) < 0) {
+            int e = errno;
+            close(write_pair[0]);
+            close(write_pair[1]);
+            errno = e;
+            rb_sys_fail(cmd);
+        }
+        if (eargp) {
+            rb_exec_arg_addopt(eargp, INT2FIX(0), INT2FIX(write_pair[0]));
+            rb_exec_arg_addopt(eargp, INT2FIX(1), INT2FIX(pair[1]));
+        }
+	break;
+      case FMODE_READABLE:
+        if (rb_pipe(pair) < 0)
+            rb_sys_fail(cmd);
+        if (eargp)
+            rb_exec_arg_addopt(eargp, INT2FIX(1), INT2FIX(pair[1]));
+	break;
+      case FMODE_WRITABLE:
+        if (rb_pipe(pair) < 0)
+            rb_sys_fail(cmd);
+        if (eargp)
+            rb_exec_arg_addopt(eargp, INT2FIX(0), INT2FIX(pair[0]));
+	break;
+      default:
+        rb_sys_fail(cmd);
+    }
     if (eargp) {
 	rb_exec_arg_fixup(eargp);
 	rb_run_exec_options(eargp, &sarg);
     }
-    while ((pid = rb_w32_pipe_exec(cmd, exename, openmode, &fd, &write_fd)) == -1) {
+    while ((pid = rb_w32_spawn(P_NOWAIT, cmd, exename)) == -1) {
 	/* exec failed */
 	switch (errno) {
 	  case EAGAIN:
@@ -4596,6 +4628,20 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     }
     if (eargp)
 	rb_run_exec_options(&sarg, NULL);
+    if ((fmode & FMODE_READABLE) && (fmode & FMODE_WRITABLE)) {
+        close(pair[1]);
+        fd = pair[0];
+        close(write_pair[0]);
+        write_fd = write_pair[1];
+    }
+    else if (fmode & FMODE_READABLE) {
+        close(pair[1]);
+        fd = pair[0];
+    }
+    else {
+        close(pair[0]);
+        fd = pair[1];
+    }
 #else
     if (argc) {
 	prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
