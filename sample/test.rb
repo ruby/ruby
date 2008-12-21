@@ -660,8 +660,8 @@ begin
     raise $string
   end
   test_ok(false)
-rescue
-  test_ok(true) if $! == $string
+rescue => e
+  test_ok(true) if $! == e
 end
   
 # exception in ensure clause

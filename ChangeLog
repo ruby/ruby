@@ -1,3 +1,7 @@
+Sun Dec 21 10:43:10 2008  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
+
+	* sample/test.rb: rescue exception.
+
 Sat Dec 20 18:28:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (dln_find_1): supplements an extension for executable
