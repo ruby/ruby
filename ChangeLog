@@ -1,3 +1,10 @@
+Mon Dec 22 02:54:56 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: temporary patch for trouble on TkAqua (> Tk8.4.9).
+
+	* ext/tk/sample/demos-jp/widget: set encoding to a demo-code string to
+	  avoid garbled text on the Code Window.
+
 Sun Dec 21 14:55:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (SPLAT_PROC): splat values by hand.

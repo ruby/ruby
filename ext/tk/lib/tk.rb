@@ -1112,19 +1112,6 @@ module TkCore
   WITH_RUBY_VM  = Object.const_defined?(:RubyVM) && ::RubyVM.class == Class
   WITH_ENCODING = defined?(::Encoding.default_external) && true
   #WITH_ENCODING = Object.const_defined?(:Encoding) && ::Encoding.class == Class
-  #if TclTkLib::WINDOWING_SYSTEM == 'aqua'
-  #  if (TclTkLib.get_version <=> [8, 4, TclTkLib::RELEASE_TYPE::FINAL, 9]) > 0
-  #    # *** KNOWN BUG ***
-  #    #   Main event loop thread of TkAqua (> Tk8.4.9) must be the main 
-  #    #   application thread. So, ruby1.9 users must call Tk.mainloop on 
-  #    #   the main application thread.
-  #    RUN_EVENTLOOP_ON_MAIN_THREAD = true
-  #  end
-  #end
-  unless self.const_defined? :RUN_EVENTLOOP_ON_MAIN_THREAD
-    ### Ruby 1.9 !!!!!!!!!!!!!!!!!!!!!!!!!!
-    RUN_EVENTLOOP_ON_MAIN_THREAD = false
-  end
 
   unless self.const_defined? :INTERP
     if self.const_defined? :IP_NAME
@@ -1143,8 +1130,36 @@ module TkCore
       opts = ''
     end
 
+    if WITH_RUBY_VM ### check Ruby 1.9 !!!!!!!
+      # *** NEED TO FIX ***
+      ip = TclTkIp.new(name, opts)
+      if ip._invoke_without_enc('tk', 'windowingsystem') == 'aqua' && 
+          (TclTkLib.get_version <=> [8,4,TclTkLib::RELEASE_TYPE::FINAL,9]) > 0
+        # *** KNOWN BUG ***
+        #   Main event loop thread of TkAqua (> Tk8.4.9) must be the main 
+        #   application thread. So, ruby1.9 users must call Tk.mainloop on 
+        #   the main application thread.
+        RUN_EVENTLOOP_ON_MAIN_THREAD = true
+        INTERP = ip
+      else
+        unless self.const_defined? :RUN_EVENTLOOP_ON_MAIN_THREAD
+          RUN_EVENTLOOP_ON_MAIN_THREAD = false
+        end
+        if RUN_EVENTLOOP_ON_MAIN_THREAD
+          INTERP = ip
+        else
+          ip.delete
+        end
+      end
+      ip = nil
+    else
+      unless self.const_defined? :RUN_EVENTLOOP_ON_MAIN_THREAD
+        RUN_EVENTLOOP_ON_MAIN_THREAD = false
+      end
+    end
+
     if !WITH_RUBY_VM || RUN_EVENTLOOP_ON_MAIN_THREAD ### check Ruby 1.9 !!!!!!!
-      INTERP = TclTkIp.new(name, opts)
+      INTERP = TclTkIp.new(name, opts) unless self.const_defined? :INTERP
     else
       INTERP_MUTEX = Mutex.new
       INTERP_ROOT_CHECK = ConditionVariable.new
@@ -1314,6 +1329,11 @@ module TkCore
       @init_ip_env.each{|script| script.call(ip)}
       @add_tk_procs.each{|name,args,body| ip._invoke('proc',name,args,body)}
     end
+  end
+
+  unless self.const_defined? :RUN_EVENTLOOP_ON_MAIN_THREAD
+    ### Ruby 1.9 !!!!!!!!!!!!!!!!!!!!!!!!!!
+    RUN_EVENTLOOP_ON_MAIN_THREAD = false
   end
 
   WIDGET_DESTROY_HOOK = '<WIDGET_DESTROY_HOOK>'
@@ -1683,12 +1703,13 @@ module TkCore
       TclTkLib.mainloop(check_root)
 
     elsif TkCore::RUN_EVENTLOOP_ON_MAIN_THREAD
-      #if TclTkLib::WINDOWING_SYSTEM == 'aqua' && 
-      #    Thread.current != Thread.main && 
-      #    (TclTkLib.get_version <=> [8,4,TclTkLib::RELEASE_TYPE::FINAL,9]) > 0
-      #  raise RuntimeError, 
-      #       "eventloop on TkAqua ( > Tk8.4.9 ) works on the main thread only"
-      #end
+      # if TclTkLib::WINDOWING_SYSTEM == 'aqua' && 
+      if TkCore::INTERP._invoke_without_enc('tk','windowingsystem')=='aqua' &&
+          Thread.current != Thread.main && 
+          (TclTkLib.get_version <=> [8,4,TclTkLib::RELEASE_TYPE::FINAL,9]) > 0
+        raise RuntimeError, 
+              "eventloop on TkAqua ( > Tk8.4.9 ) works on the main thread only"
+      end
       TclTkLib.mainloop(check_root)
 
     else ### Ruby 1.9 !!!!!
@@ -5529,7 +5550,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2008-12-04'.freeze
+  RELEASE_DATE = '2008-12-21'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
