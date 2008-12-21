@@ -1,3 +1,7 @@
+Sun Dec 21 14:48:51 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* test/readline/test_readline_history.rb: checked encoding.
+
 Sun Dec 21 14:45:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (parse_in_order): splat values to be passed.
