@@ -1518,28 +1518,70 @@ dln_find_1(const char *fname, const char *path, char *fbuf, int size,
     register const char *ep;
     register char *bp;
     struct stat st;
+    int i, fspace;
+#ifdef DOSISH
+    int is_abs = 0, has_path = 0, has_ext = 0;
+    const char *p = fname;
+#endif
 
 #define RETURN_IF(expr) if (expr) return (char *)fname;
 
     RETURN_IF(!fname);
+#ifdef DOSISH
+# ifndef CharNext
+# define CharNext(p) ((p)+1)
+# endif
+# ifdef DOSISH_DRIVE_LETTER
+    if (((p[0] | 0x20) - 'a') < 26  && p[1] == ':') {
+	p += 2;
+	is_abs = 1;
+    }
+# endif
+    switch (*p) {
+      case '/': case '\\':
+	is_abs = 1;
+	p++;
+    }
+    has_path = is_abs;
+    while (*p) {
+	switch (*p) {
+	  case '/': case '\\':
+	    has_path = 1;
+	    has_ext = 0;
+	    p++;
+	    break;
+	  case '.':
+	    has_ext = 1;
+	    p++;
+	    break;
+	  default:
+	    p = CharNext(p);
+	}
+    }
+    ep = bp = 0;
+    if (!exe_flag) {
+	RETURN_IF(is_abs);
+    }
+    else if (has_path) {
+	RETURN_IF(has_ext);
+	i = p - fname;
+	if (i + 1 > size) goto toolong;
+	fspace = size - i - 1;
+	bp = fbuf;
+	ep = p;
+	memcpy(fbuf, fname, i + 1);
+	goto needs_extension;
+    }
+#endif
+
     RETURN_IF(fname[0] == '/');
     RETURN_IF(strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0);
     RETURN_IF(exe_flag && strchr(fname, '/'));
-#ifdef DOSISH
-    RETURN_IF(fname[0] == '\\');
-# ifdef DOSISH_DRIVE_LETTER
-    RETURN_IF(strlen(fname) > 2 && fname[1] == ':');
-# endif
-    RETURN_IF(strncmp(".\\", fname, 2) == 0 || strncmp("..\\", fname, 3) == 0);
-    RETURN_IF(exe_flag && strchr(fname, '\\'));
-#endif
 
 #undef RETURN_IF
 
     for (dp = path;; dp = ++ep) {
 	register int l;
-	int i;
-	int fspace;
 
 	/* extract a component */
 	ep = strchr(dp, PATH_SEP[0]);
@@ -1602,7 +1644,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, int size,
 	memcpy(bp, fname, i + 1);
 
 #if defined(DOSISH)
-	if (exe_flag) {
+	if (exe_flag && !has_ext) {
 	    static const char extension[][5] = {
 #if defined(__EMX__) || defined(_WIN32)
 		".exe", ".com", ".cmd", ".bat",
@@ -1611,6 +1653,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, int size,
 	    };
 	    int j;
 
+	  needs_extension:
 	    for (j = 0; j < sizeof(extension) / sizeof(extension[0]); j++) {
 		if (fspace < strlen(extension[j])) {
 		    fprintf(stderr, "openpath: pathname too long (ignored)\n");

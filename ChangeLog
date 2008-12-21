@@ -1,3 +1,18 @@
+Sat Dec 20 18:28:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (dln_find_1): supplements an extension for executable
+	  files on DOSish platforms.
+
+	* io.c (pipe_open): use rb_w32_aspawn() for array form.
+
+	* win32/win32.c (rb_w32_pipe_exec): no longer used.
+
+	* win32/win32.c (rb_w32_spawn, rb_w32_aspawn): deals with batch
+	  files and commands with extensions.  [ruby-core:20695]
+
+	* win32/win32.c (has_redirection): supports environment variables
+	  references.
+
 Fri Dec  5 01:37:02 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_read): ERROR_BROKEN_PIPE is not a real error

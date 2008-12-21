@@ -349,6 +349,17 @@ flock(int fd, int oper)
 			      (DWORD)-1);
 }
 
+static inline char *
+translate_char(char *p, int from, int to)
+{
+    while (*p) {
+	if ((unsigned char)*p == from)
+	    *p = to;
+	p = CharNext(p);
+    }
+    return p;
+}
+
 static void
 init_env(void)
 {
@@ -377,11 +388,7 @@ init_env(void)
 	    alloc->lpVtbl->Release(alloc);
 	}
 	if (f) {
-	    char *p = env;
-	    while (*p) {
-		if (*p == '\\') *p = '/';
-		p = CharNext(p);
-	    }
+	    char *p = translate_char(env, '\\', '/');
 	    if (p - env == 2 && env[1] == ':') {
 		*p++ = '/';
 		*p = 0;
@@ -752,143 +759,33 @@ rb_w32_join_argv(char *cmd, char *const *argv)
     return cmd;
 }
 
-rb_pid_t
-rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe,
-		 int *write_pipe)
+#ifdef HAVE_SYS_PARAM_H
+# include <sys/param.h>
+#else
+# define MAXPATHLEN 512
+#endif
+
+#define STRNDUPA(ptr, src, len) \
+    (((char *)memcpy(((ptr) = ALLOCA_N(char, (len) + 1)), (src), (len)))[len] = 0)
+
+static int
+check_spawn_mode(int mode)
 {
-    struct ChildRecord* child;
-    HANDLE hIn, hOut;
-    HANDLE hDupIn, hDupOut;
-    HANDLE hCurProc;
-    SECURITY_ATTRIBUTES sa;
-    BOOL reading, writing;
-    int ret;
-
-    /* Figure out what we're doing... */
-    if (mode & O_RDWR) {
-	reading = writing = TRUE;
-    }
-    else if (mode & O_WRONLY) {
-	reading = FALSE;
-	writing = TRUE;
-    }
-    else {
-	reading = TRUE;
-	writing = FALSE;
-    }
-    mode &= ~(O_RDWR|O_RDONLY|O_WRONLY|O_TEXT);
-    mode |= O_BINARY;
-
-    sa.nLength              = sizeof (SECURITY_ATTRIBUTES);
-    sa.lpSecurityDescriptor = NULL;
-    sa.bInheritHandle       = TRUE;
-    ret = -1;
-
-    RUBY_CRITICAL(do {
-	/* create pipe */
-	hCurProc = GetCurrentProcess();
-	hIn = hOut = hDupIn = hDupOut = NULL;
-	if (reading) {
-	    HANDLE hTmpIn;
-	    if (!CreatePipe(&hTmpIn, &hOut, &sa, 2048L)) {
-		errno = map_errno(GetLastError());
-		break;
-	    }
-	    if (!DuplicateHandle(hCurProc, hTmpIn, hCurProc, &hDupIn, 0,
-				 FALSE, DUPLICATE_SAME_ACCESS)) {
-		errno = map_errno(GetLastError());
-		CloseHandle(hTmpIn);
-		CloseHandle(hOut);
-		break;
-	    }
-	    CloseHandle(hTmpIn);
-	    hTmpIn = NULL;
-	}
-	if (writing) {
-	    HANDLE hTmpOut;
-	    if (!CreatePipe(&hIn, &hTmpOut, &sa, 2048L)) {
-		errno = map_errno(GetLastError());
-		break;
-	    }
-	    if (!DuplicateHandle(hCurProc, hTmpOut, hCurProc, &hDupOut, 0,
-				 FALSE, DUPLICATE_SAME_ACCESS)) {
-		errno = map_errno(GetLastError());
-		CloseHandle(hIn);
-		CloseHandle(hTmpOut);
-		break;
-	    }
-	    CloseHandle(hTmpOut);
-	    hTmpOut = NULL;
-	}
-
-	/* create child process */
-	child = CreateChild(cmd, prog, &sa, hIn, hOut, NULL);
-	if (!child) {
-	    if (hIn)
-		CloseHandle(hIn);
-	    if (hOut)
-		CloseHandle(hOut);
-	    if (hDupIn)
-		CloseHandle(hDupIn);
-	    if (hDupOut)
-		CloseHandle(hDupOut);
-	    break;
-	}
-
-	/* associate handle to file descritor */
-	if (reading) {
-	    *pipe = rb_w32_open_osfhandle((intptr_t)hDupIn, O_RDONLY | mode);
-	    if (writing)
-		*write_pipe = rb_w32_open_osfhandle((intptr_t)hDupOut,
-						    O_WRONLY | mode);
-	}
-	else {
-	    *pipe = rb_w32_open_osfhandle((intptr_t)hDupOut, O_WRONLY | mode);
-	}
-	if (hIn)
-	    CloseHandle(hIn);
-	if (hOut)
-	    CloseHandle(hOut);
-	if (reading && writing && *write_pipe == -1) {
-	    if (*pipe != -1)
-		rb_w32_close(*pipe);
-	    else
-		CloseHandle(hDupIn);
-	    CloseHandle(hDupOut);
-	    CloseChildHandle(child);
-	    break;
-	}
-	else if (*pipe == -1) {
-	    if (reading)
-		CloseHandle(hDupIn);
-	    else
-		CloseHandle(hDupOut);
-	    CloseChildHandle(child);
-	    break;
-	}
-
-	ret = child->pid;
-    } while (0));
-
-    return ret;
-}
-
-rb_pid_t
-rb_w32_spawn(int mode, const char *cmd, const char *prog)
-{
-    struct ChildRecord *child;
-    DWORD exitcode;
-
     switch (mode) {
       case P_NOWAIT:
       case P_OVERLAY:
-	break;
+	return 0;
       default:
 	errno = EINVAL;
 	return -1;
     }
+}
 
-    child = CreateChild(cmd, prog, NULL, NULL, NULL, NULL);
+static rb_pid_t
+child_result(struct ChildRecord *child, int mode)
+{
+    DWORD exitcode;
+
     if (!child) {
 	return -1;
     }
@@ -906,22 +803,6 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     }
 }
 
-rb_pid_t
-rb_w32_aspawn(int mode, const char *prog, char *const *argv)
-{
-    int len = rb_w32_argv_size(argv);
-    char *cmd = ALLOCA_N(char, len);
-
-    if (!prog) prog = argv[0];
-    return rb_w32_spawn(mode, rb_w32_join_argv(cmd, argv), prog);
-}
-
-#ifdef HAVE_SYS_PARAM_H
-# include <sys/param.h>
-#else
-# define MAXPATHLEN 512
-#endif
-
 static struct ChildRecord *
 CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
 	    HANDLE hInput, HANDLE hOutput, HANDLE hError)
@@ -931,10 +812,7 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
     STARTUPINFO aStartupInfo;
     PROCESS_INFORMATION aProcessInformation;
     SECURITY_ATTRIBUTES sa;
-    const char *shell;
     struct ChildRecord *child;
-    char *p = NULL;
-    char fbuf[MAXPATHLEN];
 
     if (!cmd && !prog) {
 	errno = EFAULT;
@@ -981,6 +859,40 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
 
     dwCreationFlags = (NORMAL_PRIORITY_CLASS);
 
+    RUBY_CRITICAL({
+	fRet = CreateProcess(prog, (char *)cmd, psa, psa,
+			     psa->bInheritHandle, dwCreationFlags, NULL, NULL,
+			     &aStartupInfo, &aProcessInformation);
+	errno = map_errno(GetLastError());
+    });
+
+    if (!fRet) {
+	child->pid = 0;		/* release the slot */
+	return NULL;
+    }
+
+    CloseHandle(aProcessInformation.hThread);
+
+    child->hProcess = aProcessInformation.hProcess;
+    child->pid = (rb_pid_t)aProcessInformation.dwProcessId;
+
+    if (!IsWinNT()) {
+	/* On Win9x, make pid positive similarly to cygwin and perl */
+	child->pid = -child->pid;
+    }
+
+    return child;
+}
+
+rb_pid_t
+rb_w32_spawn(int mode, const char *cmd, const char *prog)
+{
+    char fbuf[MAXPATHLEN];
+    char *p = NULL;
+    const char *shell = NULL;
+
+    if (check_spawn_mode(mode)) return -1;
+
     if (prog) {
 	if (!(p = dln_find_exe_r(prog, NULL, fbuf, sizeof(fbuf)))) {
 	    shell = prog;
@@ -1024,20 +936,17 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
 		    p = dln_find_exe_r(cmd, NULL, fbuf, sizeof(fbuf));
 		    break;
 		}
-		if (strchr(".:*?\"/\\", *prog)) {
+		if (strchr(":*?\"/\\", *prog)) {
 		    if (cmd[len]) {
-			char *tmp = ALLOCA_N(char, len + 1);
-			memcpy(tmp, cmd, len);
-			tmp[len] = 0;
-			cmd = tmp;
+			STRNDUPA(p, cmd, len);
 		    }
+		    p = dln_find_exe_r(p ? p : cmd, NULL, fbuf, sizeof(fbuf));
+		    cmd += len;
 		    break;
 		}
 		if (ISSPACE(*prog) || strchr("<>|", *prog)) {
 		    len = prog - cmd;
-		    p = ALLOCA_N(char, len + 1);
-		    memcpy(p, cmd, len);
-		    p[len] = 0;
+		    STRNDUPA(p, cmd, len);
 		    p = dln_find_exe_r(p, NULL, fbuf, sizeof(fbuf));
 		    break;
 		}
@@ -1047,36 +956,61 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
     }
     if (p) {
 	shell = p;
-	while (*p) {
-	    if ((unsigned char)*p == '/')
-		*p = '\\';
-	    p = CharNext(p);
-	}
+	translate_char(p, '/', '\\');
     }
 
-    RUBY_CRITICAL({
-	fRet = CreateProcess(shell, (char *)cmd, psa, psa,
-			     psa->bInheritHandle, dwCreationFlags, NULL, NULL,
-			     &aStartupInfo, &aProcessInformation);
-	errno = map_errno(GetLastError());
-    });
+    return child_result(CreateChild(cmd, shell, NULL, NULL, NULL, NULL), mode);
+}
 
-    if (!fRet) {
-	child->pid = 0;		/* release the slot */
-	return NULL;
+rb_pid_t
+rb_w32_aspawn(int mode, const char *prog, char *const *argv)
+{
+    int len, differ = 0, c_switch =0;
+    const char *shell;
+    char *cmd, fbuf[MAXPATHLEN];
+
+    if (check_spawn_mode(mode)) return -1;
+
+    if (!prog) prog = argv[0];
+    if ((shell = getenv("COMSPEC")) &&
+	(has_redirection(prog) ||
+	 is_internal_cmd(prog, !is_command_com(shell)))) {
+	prog = shell;
+	c_switch = 1;
+	differ = 1;
     }
-
-    CloseHandle(aProcessInformation.hThread);
-
-    child->hProcess = aProcessInformation.hProcess;
-    child->pid = (rb_pid_t)aProcessInformation.dwProcessId;
-
-    if (!IsWinNT()) {
-	/* On Win9x, make pid positive similarly to cygwin and perl */
-	child->pid = -child->pid;
+    else if ((cmd = dln_find_exe_r(prog, NULL, fbuf, sizeof(fbuf)))) {
+	if (cmd == prog) strlcpy(cmd = fbuf, prog, sizeof(fbuf));
+	translate_char(cmd, '/', '\\');
+	prog = cmd;
+	argv++;
+	differ = 1;
     }
-
-    return child;
+    else if (strchr(prog, '/')) {
+	strlcpy(fbuf, prog, sizeof(fbuf));
+	translate_char(fbuf, '/', '\\');
+	prog = fbuf;
+	argv++;
+	differ = 1;
+    }
+    if (differ) {
+	char *progs[2];
+	progs[0] = (char *)prog;
+	progs[1] = NULL;
+	len = rb_w32_argv_size(progs);
+	if (c_switch) len += 3;
+	if (argv[0]) len += rb_w32_argv_size(argv);
+	cmd = ALLOCA_N(char, len);
+	rb_w32_join_argv(cmd, progs);
+	if (c_switch) strlcat(cmd, " /c", len);
+	if (argv[0]) rb_w32_join_argv(cmd + strlcat(cmd, " ", len), argv);
+    }
+    else {
+	len = rb_w32_argv_size(argv);
+	cmd = ALLOCA_N(char, len);
+	rb_w32_join_argv(cmd, argv);
+    }
+    return child_result(CreateChild(cmd, prog, NULL, NULL, NULL, NULL), mode);
 }
 
 typedef struct _NtCmdLineElement {
@@ -1174,6 +1108,12 @@ has_redirection(const char *cmd)
 	    if (!quote)
 		return TRUE;
 	    ptr++;
+	    break;
+
+	  case '%':
+	    if (*++ptr != '_' && !ISALPHA(*ptr)) break;
+	    while (*++ptr == '_' || ISALNUM(*ptr));
+	    if (*ptr++ == '%') return TRUE;
 	    break;
 
 	  case '\\':
