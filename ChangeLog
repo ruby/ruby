@@ -1,3 +1,7 @@
+Sun Dec 21 12:23:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (SPLAT_PROC): fix for regexp.  [ruby-dev:37514]
+
 Fri Dec 19 20:42:35 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/session.rb: ignore session_id options fixed.[Bug #605]
