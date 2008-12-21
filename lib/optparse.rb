@@ -996,7 +996,7 @@ class OptionParser
   end
   private :notwice
 
-  SPLAT_PROC = proc {|*a| next *a}
+  SPLAT_PROC = proc {|*a| a.length <= 1 ? a.first : a}
   #
   # Creates an OptionParser::Switch from the parameters. The parsed argument
   # value is passed to the given block, where it can be processed.
@@ -1263,7 +1263,7 @@ class OptionParser
           end
           begin
             opt, cb, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
-            val = cb.call(*val) if cb
+            val = cb.call(val) if cb
             setter.call(sw.switch_name, val) if setter
           rescue ParseError
             raise $!.set_option(arg, rest)
@@ -1294,7 +1294,7 @@ class OptionParser
             opt, cb, val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
             raise InvalidOption, arg if has_arg and !eq and arg == "-#{opt}"
             argv.unshift(opt) if opt and (opt = opt.sub(/\A-*/, '-')) != '-'
-            val = cb.call(*val) if cb
+            val = cb.call(val) if cb
             setter.call(sw.switch_name, val) if setter
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
