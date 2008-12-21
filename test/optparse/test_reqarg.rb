@@ -60,4 +60,16 @@ module TestOptionParser::ReqArg
     assert_equal(%w"", no_error {@opt.parse!(%w"--opt=foo")})
     assert_equal("foo", @flag)
   end
+
+  class TestOptionParser::WithPattern < TestOptionParser
+    def test_pattern
+      pat = num = nil
+      @opt.def_option("--pattern=VAL", /(\w+)(?:\s*:\s*(\w+))?/) {|x, y, z| pat = [x, y, z]}
+      @opt.def_option("-T NUM", /\A[1-4]\z/) {|n| num = n}
+      no_error {@opt.parse!(%w"--pattern=key:val")}
+      assert_equal(%w"key:val key val", pat, '[ruby-list:45645]')
+      no_error {@opt.parse!(%w"-T 4")}
+      assert_equal("4", num, '[ruby-dev:37514]')
+    end
+  end
 end

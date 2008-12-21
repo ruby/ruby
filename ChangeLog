@@ -1,3 +1,7 @@
+Sun Dec 21 12:23:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (SPLAT_PROC): fix for regexp.  [ruby-dev:37514]
+
 Sun Dec 21 10:43:10 2008  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* sample/test.rb: rescue exception.

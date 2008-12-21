@@ -996,7 +996,7 @@ class OptionParser
   end
   private :notwice
 
-  SPLAT_PROC = proc {|*a| a}
+  SPLAT_PROC = proc {|*a| next *a}
   #
   # Creates an OptionParser::Switch from the parameters. The parsed argument
   # value is passed to the given block, where it can be processed.
