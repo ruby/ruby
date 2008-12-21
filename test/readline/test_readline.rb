@@ -166,7 +166,7 @@ class TestReadline < Test::Unit::TestCase
 
   def test_completion_append_character
     begin
-      enc = Encoding.default_internal || Encoding.find("locale")
+      enc = get_default_internal_encoding
       data_expected = [
                        ["x", "x"],
                        ["xyx", "x"],
@@ -200,11 +200,14 @@ class TestReadline < Test::Unit::TestCase
     method_names.each do |method_name|
       begin
         begin
+          enc = get_default_internal_encoding
           saved = Readline.send(method_name.to_sym)
           expecteds = [" ", " .,|\t", ""]
           expecteds.each do |e|
             Readline.send((method_name + "=").to_sym, e)
-            assert_equal(e, Readline.send(method_name.to_sym))
+            res = Readline.send(method_name.to_sym)
+            assert_equal(e, res)
+            assert_equal(enc, res.encoding)
           end
         ensure
           Readline.send((method_name + "=").to_sym, saved) if saved
@@ -235,5 +238,9 @@ class TestReadline < Test::Unit::TestCase
         end
       }
     }
+  end
+
+  def get_default_internal_encoding
+    return Encoding.default_internal || Encoding.find("locale")
   end
 end if defined?(::Readline)
