@@ -60,6 +60,9 @@ Sat Dec 20 15:34:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  encoding, e.g. FileList['*.rb'].egrep(/require/, encoding:
 	  "ascii-8bit")
 
+	* lib/rake.rb (Rake::MultiTask): invoke_prerequisites should be
+	  private.  a patch from okkez in [ruby-dev:37399]
+
 Sat Dec 20 10:59:16 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/irb/locale.rb (IRB::Locale#initialize)
