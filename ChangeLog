@@ -1,3 +1,8 @@
+Mon Dec 22 19:10:44 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread_win32.c (Init_native_thread): need to call
+	  ruby_thread_set_native() here.
+
 Mon Dec 22 18:00:36 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: fix wrong flag value.
