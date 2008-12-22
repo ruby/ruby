@@ -979,8 +979,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    if ((flags & FWIDTH) && need < width)
 			need = width;
 
-		    CHECK(need);
-		    snprintf(&buf[blen], need, "%*s", need, "");
+		    CHECK(need + 1);
+		    snprintf(&buf[blen], need + 1, "%*s", need, "");
 		    if (flags & FMINUS) {
 			if (!isnan(fval) && fval < 0.0)
 			    buf[blen++] = '-';
