@@ -6937,6 +6937,7 @@ VALUE pipe_close(VALUE args)
  *  If a block is given, the block is called and
  *  returns the value of the block.
  *  <i>read_io</i> and <i>write_io</i> are sent to the block as arguments.
+ *   In this form, read_io and write_io are closed when IO.pipe returns.
  *
  *  Not available on all platforms.
  *
