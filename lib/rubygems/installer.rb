@@ -270,11 +270,8 @@ class Gem::Installer
   end
 
   ##
-  # Writes the .gemspec specification (in Ruby) to the supplied
-  # spec_path.
-  #
-  # spec:: [Gem::Specification] The Gem specification to output
-  # spec_path:: [String] The location (path) to write the gemspec to
+  # Writes the .gemspec specification (in Ruby) to the gem home's
+  # specifications directory.
 
   def write_spec
     rubycode = @spec.to_ruby
