@@ -1,3 +1,7 @@
+Tue Dec 23 08:04:58 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* gem_prelude.rb: Don't remove methods twice.  [bug#555]
+
 Tue Dec 23 00:16:48 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* sprintf.c (rb_str_format): fix buffer overflow.
