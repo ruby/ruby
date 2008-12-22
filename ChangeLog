@@ -1,7 +1,7 @@
 Mon Dec 22 12:05:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (mingw): no longer uses snprintf and vsnprintf of
-	  msvcrt.
+	  msvcrt.  [Bug#6]
 
 	* win32/win32.c (rb_w32_vsnprintf, rb_w32_snprintf): removed.
 
