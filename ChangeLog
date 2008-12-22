@@ -1,3 +1,12 @@
+Mon Dec 22 19:31:19 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* common.mk (revision.h): uses tool/file2lastrev.rb to support
+	  git-svn.
+
+	* version.h: changed version string as
+	  `ruby 1.9.1 (2008-12-22 patchlevel-5000 trunk 20912)
+	  [i386-darwin9.6.0]'.
+
 Mon Dec 22 15:56:49 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* Doxyfile.in: new file. Template of a configuration file.
