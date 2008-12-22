@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2008-12-03"
+#define TCLTKLIB_RELEASE_DATE "2008-12-22"
 
 #include "ruby.h"
 
@@ -411,7 +411,7 @@ static VALUE eventloop_thread;
 Tcl_ThreadId tk_eventloop_thread_id;  /* native thread ID of Tcl interpreter */
 #endif
 static VALUE eventloop_stack;
-static int   window_event_mode = ( ~ TCL_IDLE_EVENTS | TCL_WINDOW_EVENTS );
+static int   window_event_mode = ~0;
 
 static VALUE watchdog_thread;
 
@@ -1187,7 +1187,7 @@ set_eventloop_window_mode(self, mode)
     if (RTEST(mode)) {
       window_event_mode = ~0;
     } else {
-      window_event_mode = ~(TCL_WINDOW_EVENTS | TCL_IDLE_EVENTS);
+      window_event_mode = ~TCL_WINDOW_EVENTS;
     }
 
     return mode;
@@ -10152,3 +10152,4 @@ Init_tcltklib()
 }
 
 /* eof */
+
