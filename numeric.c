@@ -530,12 +530,12 @@ flo_to_s(VALUE flt)
     else if(isnan(value))
 	return rb_usascii_str_new2("NaN");
 
-    sprintf(buf, "%#.15g", value); /* ensure to print decimal point */
+    snprintf(buf, sizeof(buf), "%#.15g", value); /* ensure to print decimal point */
     if (!(e = strchr(buf, 'e'))) {
 	e = buf + strlen(buf);
     }
     if (!ISDIGIT(e[-1])) { /* reformat if ended with decimal point (ex 111111111111111.) */
-	sprintf(buf, "%#.14e", value);
+	snprintf(buf, sizeof(buf), "%#.14e", value);
 	if (!(e = strchr(buf, 'e'))) {
 	    e = buf + strlen(buf);
 	}
@@ -1554,7 +1554,7 @@ rb_num2long(VALUE val)
 	    char buf[24];
 	    char *s;
 
-	    sprintf(buf, "%-.10g", RFLOAT_VALUE(val));
+	    snprintf(buf, sizeof(buf), "%-.10g", RFLOAT_VALUE(val));
 	    if ((s = strchr(buf, ' ')) != 0) *s = '\0';
 	    rb_raise(rb_eRangeError, "float %s out of range of integer", buf);
 	}
@@ -1700,7 +1700,7 @@ rb_num2ll(VALUE val)
 	    char buf[24];
 	    char *s;
 
-	    sprintf(buf, "%-.10g", RFLOAT_VALUE(val));
+	    snprintf(buf, sizeof(buf), "%-.10g", RFLOAT_VALUE(val));
 	    if ((s = strchr(buf, ' ')) != 0) *s = '\0';
 	    rb_raise(rb_eRangeError, "float %s out of range of long long", buf);
 	}

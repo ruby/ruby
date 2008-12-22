@@ -1,3 +1,19 @@
+Mon Dec 22 12:05:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (mingw): no longer uses snprintf and vsnprintf of
+	  msvcrt.
+
+	* win32/win32.c (rb_w32_vsnprintf, rb_w32_snprintf): removed.
+
+	* win32/Makefile.sub (config.h): vsnprintf exists in VC7 or later.
+
+	* win32/mkexports.rb (Exports#initialize): aliases
+	  rb_w32_vsnprintf and rb_w32_snprintf for binary compatibility.
+
+	* sprintf.c (rb_str_format): uses snprintf instead of sprintf.
+
+	* numeric.c (flo_to_s, rb_num2long, rb_num2ll): ditto.
+
 Mon Dec 22 10:59:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_upto): should return enumerator if called

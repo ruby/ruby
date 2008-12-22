@@ -25,7 +25,7 @@
 #define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
 #define EXTENDSIGN(n, l) (((~0 << (n)) >> (((n)*(l)) % BITSPERDIG)) & ~(~0 << (n)))
 
-static void fmt_setup(char*,int,int,int,int);
+static void fmt_setup(char*,size_t,int,int,int,int);
 
 static char*
 remove_sign_bits(char *str, int base)
@@ -800,8 +800,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			    sc = ' ';
 			    width--;
 			}
-			sprintf(fbuf, "%%l%c", c);
-			sprintf(nbuf, fbuf, v);
+			snprintf(fbuf, sizeof(fbuf), "%%l%c", c);
+			snprintf(nbuf, sizeof(nbuf), fbuf, v);
 			s = nbuf;
 		    }
 		    else {
@@ -809,8 +809,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			if (v < 0) {
 			    dots = 1;
 			}
-			sprintf(fbuf, "%%l%c", *p == 'X' ? 'x' : *p);
-			sprintf(++s, fbuf, v);
+			snprintf(fbuf, sizeof(fbuf), "%%l%c", *p == 'X' ? 'x' : *p);
+			snprintf(++s, sizeof(nbuf) - 1, fbuf, v);
 			if (v < 0) {
 			    char d = 0;
 
@@ -980,7 +980,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			need = width;
 
 		    CHECK(need);
-		    sprintf(&buf[blen], "%*s", need, "");
+		    snprintf(&buf[blen], need, "%*s", need, "");
 		    if (flags & FMINUS) {
 			if (!isnan(fval) && fval < 0.0)
 			    buf[blen++] = '-';
@@ -1004,7 +1004,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    break;
 		}
 
-		fmt_setup(fbuf, *p, flags, width, prec);
+		fmt_setup(fbuf, sizeof(fbuf), *p, flags, width, prec);
 		need = 0;
 		if (*p != 'e' && *p != 'E') {
 		    i = INT_MIN;
@@ -1018,7 +1018,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		need += 20;
 
 		CHECK(need);
-		sprintf(&buf[blen], fbuf, fval);
+		snprintf(&buf[blen], need, fbuf, fval);
 		blen += strlen(&buf[blen]);
 	    }
 	    break;
@@ -1041,8 +1041,9 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 }
 
 static void
-fmt_setup(char *buf, int c, int flags, int width, int prec)
+fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 {
+    char *end = buf + size;
     *buf++ = '%';
     if (flags & FSHARP) *buf++ = '#';
     if (flags & FPLUS)  *buf++ = '+';
@@ -1051,12 +1052,12 @@ fmt_setup(char *buf, int c, int flags, int width, int prec)
     if (flags & FSPACE) *buf++ = ' ';
 
     if (flags & FWIDTH) {
-	sprintf(buf, "%d", width);
+	snprintf(buf, end - buf, "%d", width);
 	buf += strlen(buf);
     }
 
     if (flags & FPREC) {
-	sprintf(buf, ".%d", prec);
+	snprintf(buf, end - buf, ".%d", prec);
 	buf += strlen(buf);
     }
 
@@ -1084,7 +1085,15 @@ fmt_setup(char *buf, int c, int flags, int width, int prec)
 #undef snprintf
 #define FLOATING_POINT 1
 #define BSD__dtoa ruby_dtoa
+#undef HAVE_VSNPRINTF
+#undef HAVE_SNPRINTF
+#if _MSC_VER >= 1300
+#pragma warning(disable: 4273)
+#endif
 #include "missing/vsnprintf.c"
+#if _MSC_VER >= 1300
+#pragma warning(default: 4273)
+#endif
 
 static int
 ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)

@@ -144,9 +144,13 @@ RUBY_EXTERN long strtol(const char *, char **, int);
 #endif
 */
 
-#ifndef HAVE_VSNPRINTF
+#if defined HAVE_VSNPRINTF || defined HAVE_SNPRINTF
 # include <stdarg.h>
+#endif
+#ifndef HAVE_SNPRINTF
 RUBY_EXTERN int snprintf(char *, size_t n, char const *, ...);
+#endif
+#ifndef HAVE_VSNPRINTF
 RUBY_EXTERN int vsnprintf(char *, size_t n, char const *, va_list);
 #endif
 

@@ -423,7 +423,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_STRTOUL 1
 #define HAVE_FLOCK 1
 #define HAVE_SNPRINTF 1
+!if $(MSC_VER) >= 1300
 #define HAVE_VSNPRINTF 1
+!endif
 #define HAVE_ISNAN 1
 #define HAVE_FINITE 1
 #define HAVE_HYPOT 1
