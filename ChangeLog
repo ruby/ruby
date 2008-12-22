@@ -51,6 +51,15 @@ Sat Dec 20 18:28:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* win32/win32.c (has_redirection): supports environment variables
 	  references.
 
+Sat Dec 20 15:34:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rake.rb (Rake::FileList#egrep): change open mode to "rb",
+	  i.e. default to binary.    [ruby-dev:37385]
+
+	* lib/rake.rb (Rake::FileList#egrep): allow specifying reading
+	  encoding, e.g. FileList['*.rb'].egrep(/require/, encoding:
+	  "ascii-8bit")
+
 Sat Dec 20 10:59:16 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/irb/locale.rb (IRB::Locale#initialize)
