@@ -64,6 +64,7 @@ class Exports
       exports << "Library " + library
     end
     exports << "Description " + description.dump if description
+    exports << "VERSION #{RbConfig::CONFIG['MAJOR']}.#{RbConfig::CONFIG['MINOR']}"
     exports << "EXPORTS" << symbols()
     exports
   end
@@ -130,6 +131,10 @@ end
 class Exports::Mingw < Exports
   def self.nm
     @@nm ||= RbConfig::CONFIG["NM"]
+  end
+
+  def exports(*)
+    super()
   end
 
   def each_line(objs, &block)
