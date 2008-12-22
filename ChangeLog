@@ -1,3 +1,8 @@
+Mon Dec 22 10:59:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_upto): should return enumerator if called
+	  without block.  [ruby-dev:37526]
+
 Mon Dec 22 09:54:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (gettable_gen): the encoding of __FILE__ should be
