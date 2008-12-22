@@ -1,3 +1,8 @@
+Mon Dec 22 21:26:12 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_s_pipe): IO.pipe can take a block.
+	  (pipe_close): new function.
+
 Mon Dec 22 21:08:54 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit/assertions.rb (assert_nothing_raised): increment

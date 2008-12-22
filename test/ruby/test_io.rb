@@ -22,6 +22,34 @@ class TestIO < Test::Unit::TestCase
     IO.instance_methods.index(:"nonblock=")
   end
 
+  def test_pipe
+    r, w = IO.pipe
+    assert_instance_of(IO, r)
+    assert_instance_of(IO, w)
+    w.print "abc"
+    w.close
+    assert_equal("abc", r.read)
+    r.close
+  end
+
+  def test_pipe_block
+    x = nil
+    ret = IO.pipe {|r, w|
+      x = [r,w]
+      assert_instance_of(IO, r)
+      assert_instance_of(IO, w)
+      w.print "abc"
+      w.close
+      assert_equal("abc", r.read)
+      assert(!r.closed?)
+      assert(w.closed?)
+      :foooo
+    }
+    assert_equal(:foooo, ret)
+    assert(x[0].closed?)
+    assert(x[1].closed?)
+  end
+
   def test_gets_rs
     # default_rs
     r, w = IO.pipe

@@ -13,6 +13,9 @@ with all sufficient information, see the ChangeLog file.
 
 * builtin classes
 
+  * IO
+    * IO.pipe takes a block.
+
   * Enumerator#rewind
 
     Now calls the "rewind" method of the enclosed object if defined.

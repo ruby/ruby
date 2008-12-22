@@ -6906,6 +6906,21 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 
 }
 
+static
+VALUE pipe_close(VALUE args)
+{
+    VALUE *rw = (VALUE*)args;
+    VALUE io;
+    int i;
+
+    for (i = 0; i < 2; i++) {
+        io = rw[i];
+        if (!rb_io_closed(io))
+            rb_io_close(io);
+    }
+    return Qnil;
+}
+
 /*
  *  call-seq:
  *     IO.pipe                            -> [read_io, write_io]
@@ -6913,10 +6928,17 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
  *     IO.pipe("ext_enc:int_enc" [, opt]) -> [read_io, write_io]
  *     IO.pipe(ext_enc, int_enc [, opt])  -> [read_io, write_io]
  *
+ *     IO.pipe(...) {|read_io, write_io| ... }
+ *
  *  Creates a pair of pipe endpoints (connected to each other) and
  *  returns them as a two-element array of <code>IO</code> objects:
- *  <code>[</code> <i>read_io</i>, <i>write_io</i> <code>]</code>. Not
- *  available on all platforms.
+ *  <code>[</code> <i>read_io</i>, <i>write_io</i> <code>]</code>.
+ *
+ *  If a block is given, the block is called and
+ *  returns the value of the block.
+ *  <i>read_io</i> and <i>write_io</i> are sent to the block as arguments.
+ *
+ *  Not available on all platforms.
  *
  *  If an encoding (encoding name or encoding object) is specified as an optional argument,
  *  read string from pipe is tagged with the encoding specified.
@@ -6965,6 +6987,8 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     VALUE opt;
     rb_io_t *fptr, *fptr2;
     int fmode = 0;
+    VALUE ret;
+    VALUE rw[2];
 
     opt = pop_last_hash(&argc, argv);
     rb_scan_args(argc, argv, "02", &v1, &v2);
@@ -6997,7 +7021,13 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     fptr->mode |= fmode;
     fptr2->mode |= fmode;
 
-    return rb_assoc_new(r, w);
+    ret = rb_assoc_new(r, w);
+    rw[0] = r;
+    rw[1] = w;
+    if (rb_block_given_p()) {
+	return rb_ensure(rb_yield, ret, pipe_close, (VALUE)rw);
+    }
+    return ret;
 }
 
 struct foreach_arg {
