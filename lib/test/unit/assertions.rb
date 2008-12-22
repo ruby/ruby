@@ -15,6 +15,7 @@ module Test
       end
 
       def assert_nothing_raised(*args)
+        self._assertions += 1
         if Module === args.last
           msg = nil
         else
