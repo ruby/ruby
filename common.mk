@@ -138,6 +138,9 @@ miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DM
 GORUBY = go$(RUBY_INSTALL_NAME)
 golf: $(LIBRUBY) $(GOLFOBJS)
 	$(MAKE) $(MFLAGS) MAINOBJ="$(GOLFOBJS)" PROGRAM=$(GORUBY)$(EXEEXT) program
+capi: Doxyfile PHONY
+	@$(MAKEDIRS) doc/capi
+	@doxygen
 
 program: $(PROGRAM)
 
@@ -158,7 +161,7 @@ ruby.imp: $(COMMONOBJS)
 	@$(NM) -Pgp $(COMMONOBJS) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
 
 install: install-nodoc $(RDOCTARGET)
-install-all: install-nodoc install-doc
+install-all: install-nodoc install-doc install-capi
 
 install-nodoc: pre-install-nodoc do-install-nodoc post-install-nodoc
 pre-install-nodoc:: pre-install-local pre-install-ext
@@ -223,6 +226,13 @@ pre-install-man:: install-prereq
 do-install-man: $(PREP)
 	$(MINIRUBY) $(srcdir)/instruby.rb --make="$(MAKE)" $(INSTRUBY_ARGS) --install=man --mantype="$(MANTYPE)"
 post-install-man::
+	@$(NULLCMD)
+
+install-capi: capi pre-install-capi do-install-capi post-install-capi
+pre-install-capi:: install-prereq
+do-install-capi: $(PREP)
+	$(MINIRUBY) $(srcdir)/instruby.rb --make="$(MAKE)" $(INSTRUBY_ARGS) --install=capi
+post-install-capi::
 	@$(NULLCMD)
 
 what-where: no-install

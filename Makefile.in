@@ -164,6 +164,9 @@ fake.rb:	Makefile
 		' > $@
 
 Makefile:	$(srcdir)/Makefile.in $(srcdir)/enc/Makefile.in
+Doxyfile:	$(srcdir)/Doxyfile.in config.status
+	MAKE=$(MAKE) $(SHELL) ./config.status
+	
 
 $(MKFILES): config.status
 		MAKE=$(MAKE) $(SHELL) ./config.status

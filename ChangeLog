@@ -1,3 +1,27 @@
+Mon Dec 22 15:56:49 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* Doxyfile.in: new file. Template of a configuration file.
+	  Introduces C-level API reference generation with Doxygen. 
+
+	* tool/file2lastrev.rb: wrapper script that abstracts subversion
+	  and git-svn.
+
+	* tool/strip-rdoc.rb: filter for preventing doxygen from processing
+	  rdoc comments.
+
+	* configure.in: (Doxyfile): Doxyfile is generated together with
+	  Makefile.
+	  (PACKAGE): configuration $(PACKAGE) is necessary for $(docdir).
+
+	* instruby.rb: adds a new install target 'capi'
+
+	* common.mk (capi): new target that generates C API documents with
+	  Doxygen.
+	  (install-capi): new target.
+	  (pre-install-capi): ditto.
+	  (do-install-capi): ditto.
+	  (post-install-capi): ditto.
+
 Mon Dec 22 21:31:11 2008  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (int_ord): Integer#ord implemented.

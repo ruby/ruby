@@ -45,7 +45,7 @@ def parse_args(argv = ARGV)
     $mflags.concat(v)
   end
   opt.on('-i', '--install=TYPE',
-         [:local, :bin, :"bin-arch", :"bin-comm", :lib, :man, :ext, :"ext-arch", :"ext-comm", :rdoc]) do |ins|
+         [:local, :bin, :"bin-arch", :"bin-comm", :lib, :man, :ext, :"ext-arch", :"ext-comm", :rdoc, :capi]) do |ins|
     $install << ins
   end
   opt.on('--data-mode=OCTAL-MODE', OptionParser::OctalInteger) do |mode|
@@ -221,6 +221,7 @@ sitearchlibdir = CONFIG["sitearchdir"]
 vendorlibdir = CONFIG["vendorlibdir"]
 vendorarchlibdir = CONFIG["vendorarchdir"]
 mandir = File.join(CONFIG["mandir"], "man")
+capidir = CONFIG["docdir"]
 configure_args = Shellwords.shellwords(CONFIG["configure_args"])
 enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
 dll = CONFIG["LIBRUBY_SO"]
@@ -278,7 +279,7 @@ if $extout
   end
 end
 
-install?(:rdoc) do
+install?(:doc, :rdoc) do
   if $rdocdir
     puts "installing rdoc"
 
@@ -287,6 +288,13 @@ install?(:rdoc) do
     makedirs [ridatadir]
     install_recursive($rdocdir, ridatadir, :mode => $data_mode)
   end
+end
+install?(:doc, :capi) do
+  puts "installing capi-docs"
+
+  makedirs [capidir]
+  Dir.chdir("doc")
+  install_recursive "capi", capidir, :mode => $data_mode
 end
 
 install?(:local, :comm, :bin, :'bin-comm') do
