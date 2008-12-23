@@ -468,5 +468,6 @@ class TestTime < Test::Unit::TestCase
     assert_equal("JAN", T2000.strftime("%#b"))
     assert_equal("JANUARY", T2000.strftime("%#B"))
     assert_equal("JAN", T2000.strftime("%#h"))
+    assert_equal("FRIDAY", Time.local(2008,1,4).strftime("%#A"))
   end
 end

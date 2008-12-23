@@ -1,3 +1,8 @@
+Tue Dec 23 18:44:21 2008  Tanaka Akira  <akr@fsij.org>
+
+	* strftime.c (rb_strftime): use locale insensitive functions for tr_TR
+	  locale.
+
 Tue Dec 23 17:38:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit/assertions.rb (assert_equal): show small differences
