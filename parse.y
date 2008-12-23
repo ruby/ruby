@@ -7923,13 +7923,8 @@ gettable_gen(struct parser_params *parser, ID id)
 	return NEW_FALSE();
     }
     else if (id == keyword__FILE__) {
-	VALUE str = rb_external_str_new_with_enc(ruby_sourcefile, strlen(ruby_sourcefile),
-						 rb_filesystem_encoding());
-	if (rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT &&
-	    ENCODING_GET(str) == rb_usascii_encindex()) {
-	    rb_enc_associate(str, rb_ascii8bit_encoding());
-	}
-	return NEW_STR(str);
+	return NEW_STR(rb_external_str_new_with_enc(ruby_sourcefile, strlen(ruby_sourcefile),
+						    rb_filesystem_encoding()));
     }
     else if (id == keyword__LINE__) {
 	return NEW_LIT(INT2FIX(ruby_sourceline));
