@@ -59,8 +59,14 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o #to_path is called as necessary in File.path, File.chmod,
             File.lchmod, File.chown, File.lchown, File.utime,
             File.unlink, etc..
+          o File.world_readable?
+          o File.world_writable?
           o Dir.[], Dir.glob
           o Dir.exist?
+          o Dir.exists?
+    * File::Stat
+          o File::Stat#world_readable?
+          o File::Stat#world_writable?
     * String and Regexp
           o No longer an Enumerable
           o ?c semantics
@@ -86,6 +92,9 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Numeric#fdiv: ditto.
     * Integer
           o Integer(nil) raises TypeError
+    * Fixnum
+          o Fixnum#id2name removed
+          o Fixnum#to_sym removed
     * IO operations
           o Many methods used to act byte-wise but now some of those act 
             character-wise. You can use alternate byte-wise methods.
@@ -98,11 +107,16 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
             encodings into another if specified.
           o StringIO#readpartial
           o IO.try_convert
+          o IO.binread
+          o IO.copy_stream
+          o IO#binmode?
+          o IO#close_on_exec= and IO#close_on_exec?
           o Limit input in IO#gets, IO#readline, IO#readlines,
             IO#each_line, IO#lines, IO.foreach, IO.readlines,
             StringIO#gets, StringIO#readline, StringIO#each,
             StringIO#readlines
           o IO#ungetc, StringIO#ungetc
+          o IO#ungetbyte, StringIO#ungetbyte
           o IO#internal_encoding, IO#external_encoding,
             IO#set_encoding
           o IO.pipe takes encoding option
@@ -212,6 +226,7 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Proc#yield
           o Passing blocks to #[]
           o Proc#lambda?
+          o Proc#curry
     * Enumerable and Enumerator
           o Enumerable#each_with_index can take optional arguments
             and passes them to #each.
@@ -224,6 +239,10 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
             does not have one.
     * Regexp#match, String#match
           o Regexp#match, String#match
+          o Regexp#fixed_encoding?
+          o Regexp#encoding
+          o Regexp#named_captures
+          o Regexp#names
     * Encoding
     * Encoding::Converter
           o supports conversion between many encodings
@@ -239,9 +258,13 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Hash#default_proc=
           o Hash#_compare_by_identity and Hash#compare_by_identity?
           o Hash.try_convert
+          o Hash#assoc
+          o Hash#rassoc
+          o Hash#flatten
     * Numeric
           o Numeric#upto, #downto, #times, #step
           o Numeric#scalar?, Complex#scalar?
+          o Numeric#magnitude
     * Range
           o Range#cover?
           o Range#include? iterates over elements and compares the
@@ -252,6 +275,9 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
     * Regexp
           o Regexp#=== matches symbols
           o Regexp.try_convert
+    * MatchData
+          o MatchData#names
+          o MatchData#regexp
     * String
           o String#clear
           o String#ord
@@ -261,7 +287,9 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o String#unpack with a block
           o String#hash
           o String.try_convert
-          o String#encoding, String#force_encoding, String#encode
+          o String#encoding, String#force_encoding, String#encode, String#encode!
+          o String#ascii_only?
+          o String#valid_encoding?
     * Symbol
           o Zero-length symbols allowed
           o Symbol#=== matches strings
@@ -277,7 +305,21 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
     * File and Dir operations
           o New methods
     * Process
+          o Process.spawn
           o Process.daemon
+    * Thread
+          o Thread.critical and Thread.critical= removed
+          o Thread#exit!, Thread#kill! and Thread#terminate! removed.
+    * Time
+          o Time.times removed.  Use Process.times.
+          o Time#sunday?
+          o Time#monday?
+          o Time#tuesday?
+          o Time#wednesday?
+          o Time#thursday?
+          o Time#friday?
+          o Time#saturday?
+          o Time#tv_nsec and Time#nsec
     * Readline
           o Readline.vi_editing_mode?
           o Readline.emacs_editing_mode?
@@ -287,10 +329,12 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
             Tk::XXX classes.
     * Misc. new methods
           o RUBY_ENGINE to distinguish between Ruby processor implementation
+          o public_method
           o public_send
           o GC.count
           o ObjectSpace.count_objects
           o Method#hash, Proc#hash
+          o Method#source_location, UnboundMethod#source_location, Proc#source_location
           o __callee__
           o Elements in $LOAD_PATH and $LOADED_FEATURES are expanded
 
