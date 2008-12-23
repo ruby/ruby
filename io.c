@@ -1353,15 +1353,29 @@ rb_io_inspect(VALUE obj)
 {
     rb_io_t *fptr;
     const char *cname;
+    char fd_desc[256];
+    const char *path;
     const char *st = "";
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
-    if (!fptr || NIL_P(fptr->pathv)) return rb_any_to_s(obj);
     cname = rb_obj_classname(obj);
-    if (fptr->fd < 0) {
-	st = " (closed)";
+    if (!fptr || NIL_P(fptr->pathv)) {
+        if (fptr->fd < 0) {
+            path = "";
+            st = "(closed)";
+        }
+        else {
+            snprintf(fd_desc, sizeof(fd_desc), "fd %d", fptr->fd);
+            path = fd_desc;
+        }
     }
-    return rb_sprintf("#<%s:%s%s>", cname, RSTRING_PTR(fptr->pathv), st);
+    else {
+        path = RSTRING_PTR(fptr->pathv);
+        if (fptr->fd < 0) {
+            st = " (closed)";
+        }
+    }
+    return rb_sprintf("#<%s:%s%s>", cname, path, st);
 }
 
 /*
