@@ -6906,8 +6906,8 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 
 }
 
-static
-VALUE pipe_close(VALUE args)
+static VALUE
+pipe_close(VALUE args)
 {
     VALUE *rw = (VALUE*)args;
     VALUE io;
