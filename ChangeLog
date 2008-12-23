@@ -1,3 +1,7 @@
+Tue Dec 23 15:46:43 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/mathn.rb: Math.sqrt(NaN) should be NaN. [ruby-dev:37537]
+
 Tue Dec 23 15:46:47 2008  Eric Hodel  <drbrain@segment7.net>
 	* gem_prelude.rb:  Match full RubyGems behavior when a gem can't be
 	  found.

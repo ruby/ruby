@@ -134,6 +134,8 @@ module Math
       else
 	Complex(x, -y)
       end
+    elsif a.respond_to?(:nan?) and a.nan?
+      a
     elsif a >= 0
       rsqrt(a)
     else
