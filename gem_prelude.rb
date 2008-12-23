@@ -18,6 +18,9 @@ if defined?(Gem) then
 
   module Gem
 
+    class LoadError < ::LoadError
+    end
+
     ConfigMap = {
       :sitedir => RbConfig::CONFIG["sitedir"],
       :ruby_version => RbConfig::CONFIG["ruby_version"],
@@ -183,13 +186,13 @@ if defined?(Gem) then
 
       begin
         require 'rubygems/defaults/operating_system'
-      rescue LoadError
+      rescue ::LoadError
       end
 
       if defined?(RUBY_ENGINE) then
         begin
           require "rubygems/defaults/#{RUBY_ENGINE}"
-        rescue LoadError
+        rescue ::LoadError
         end
       end
     ensure
@@ -228,7 +231,7 @@ if defined?(Gem) then
       def push_gem_version_on_load_path(gem_name, *version_requirements)
         if version_requirements.empty?
           unless GemPaths.has_key?(gem_name)
-            raise LoadError.new("Could not find RubyGem #{gem_name} (>= 0)\n")
+            raise Gem::LoadError.new("Could not find RubyGem #{gem_name} (>= 0)\n")
           end
 
           # highest version gems already active
