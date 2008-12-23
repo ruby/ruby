@@ -3398,39 +3398,6 @@ set_trace_func(VALUE obj, VALUE trace)
     return trace;
 }
 
-static void
-thread_add_trace_func(rb_thread_t *th, VALUE trace)
-{
-    if (!rb_obj_is_proc(trace)) {
-	rb_raise(rb_eTypeError, "trace_func needs to be Proc");
-    }
-
-    rb_thread_add_event_hook(th, call_trace_func, RUBY_EVENT_ALL, trace);
-}
-
-static VALUE
-thread_add_trace_func_m(VALUE obj, VALUE trace)
-{
-    rb_thread_t *th;
-    GetThreadPtr(obj, th);
-    thread_add_trace_func(th, trace);
-    return trace;
-}
-
-static VALUE
-thread_set_trace_func_m(VALUE obj, VALUE trace)
-{
-    rb_thread_t *th;
-    GetThreadPtr(obj, th);
-    rb_thread_remove_event_hook(th, call_trace_func);
-
-    if (NIL_P(trace)) {
-	return Qnil;
-    }
-    thread_add_trace_func(th, trace);
-    return trace;
-}
-
 static const char *
 get_event_name(rb_event_flag_t event)
 {
@@ -3639,8 +3606,6 @@ Init_Thread(void)
 
     /* trace */
     rb_define_global_function("set_trace_func", set_trace_func, 1);
-    rb_define_method(rb_cThread, "set_trace_func", thread_set_trace_func_m, 1);
-    rb_define_method(rb_cThread, "add_trace_func", thread_add_trace_func_m, 1);
 
     /* init thread core */
     Init_native_thread();

@@ -1,3 +1,12 @@
+Mon Dec 22 15:25:03 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* thread.c (Thread#set_trace_func, #add_trace_func): removed.
+	  This is an unsupported feature in 1.9.1 and will be supported 
+	  in 1.9.2. [ruby-core:19581]
+	  (thread_add_trace_func): removes unnecessary function.
+	  (thread_add_trace_func_m): ditto.
+	  (thread_set_trace_func_m): ditto.
+
 Sat Dec 20 18:28:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (dln_find_1): supplements an extension for executable
