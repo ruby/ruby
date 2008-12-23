@@ -14,6 +14,7 @@ extern "C" {
 
 #ifndef RUBY_LIB
 #include "ruby/config.h"
+#include "ruby/defines.h"
 #ifdef RUBY_EXTCONF_H
 #include RUBY_EXTCONF_H
 #endif
