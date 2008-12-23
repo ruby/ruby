@@ -444,7 +444,7 @@ pack_pack(VALUE ary, VALUE fmt)
     char type;
     long items, len, idx, plen;
     const char *ptr;
-    rb_encoding *enc;
+    int enc_info = 1;		/* 0 - BINARY, 1 - US-ASCII, 2 - UTF-8 */
 #ifdef NATINT_PACK
     int natint;		/* native integer */
 #endif
@@ -508,6 +508,19 @@ pack_pack(VALUE ary, VALUE fmt)
 	}
 
 	switch (type) {
+	  case 'U':
+	    /* if encoding is US-ASCII, upgrade to UTF-8 */
+	    if (enc_info == 1) enc_info = 2;
+	    break;
+	  case 'm': case 'M': case 'u':
+	    /* keep US-ASCII (do nothing) */
+	    break;
+	  default:
+	    /* fall back to BINARY */
+	    enc_info = 0;
+	    break;
+	}
+	switch (type) {
 	  case 'A': case 'a': case 'Z':
 	  case 'B': case 'b':
 	  case 'H': case 'h':
@@ -521,15 +534,6 @@ pack_pack(VALUE ary, VALUE fmt)
 		ptr = RSTRING_PTR(from);
 		plen = RSTRING_LEN(from);
 		OBJ_INFECT(res, from);
-		switch (type) {
-		  case 'a': case 'A': case 'Z':
-		    enc = rb_enc_compatible(res, from);
-		    rb_enc_associate(res, enc);
-		    break;
-		  default:
-		    rb_enc_associate(res, rb_ascii8bit_encoding());
-		    break;
-		}
 	    }
 
 	    if (p[-1] == '*')
@@ -878,8 +882,6 @@ pack_pack(VALUE ary, VALUE fmt)
 	    break;
 
 	  case 'U':		/* Unicode character */
-	    enc = rb_enc_compatible(res, rb_enc_from_encoding(rb_utf8_encoding()));
-	    rb_enc_associate(res, enc);
 	    while (len-- > 0) {
 		SIGNED_VALUE l;
 		char buf[8];
@@ -898,8 +900,6 @@ pack_pack(VALUE ary, VALUE fmt)
 
 	  case 'u':		/* uuencoded string */
 	  case 'm':		/* base64 encoded string */
-	    enc = rb_enc_compatible(res, rb_enc_from_encoding(rb_usascii_encoding()));
-	    rb_enc_associate(res, enc);
 	    from = NEXTFROM;
 	    StringValue(from);
 	    ptr = RSTRING_PTR(from);
@@ -928,8 +928,6 @@ pack_pack(VALUE ary, VALUE fmt)
 	    break;
 
 	  case 'M':		/* quoted-printable encoded string */
-	    enc = rb_enc_compatible(res, rb_enc_from_encoding(rb_usascii_encoding()));
-	    rb_enc_associate(res, enc);
 	    from = rb_obj_as_string(NEXTFROM);
 	    if (len <= 1)
 		len = 72;
@@ -1024,6 +1022,17 @@ pack_pack(VALUE ary, VALUE fmt)
 	rb_str_associate(res, associates);
     }
     OBJ_INFECT(res, fmt);
+    switch (enc_info) {
+      case 1:
+	ENCODING_CODERANGE_SET(res, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
+	break;
+      case 2:
+	rb_enc_set_index(res, rb_utf8_encindex());
+	break;
+      default:
+	/* do nothing, keep ASCII-8BIT */
+	break;
+    }
     return res;
 }
 
@@ -1892,7 +1901,6 @@ pack_unpack(VALUE str, VALUE fmt)
 		    }
 		}
 		rb_str_set_len(buf, ptr - RSTRING_PTR(buf));
-		ENCODING_CODERANGE_SET(buf, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
 		UNPACK_PUSH(buf);
 	    }
 	    break;

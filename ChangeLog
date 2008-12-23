@@ -124,6 +124,14 @@ Mon Dec 22 19:31:19 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	  `ruby 1.9.1 (2008-12-22 patchlevel-5000 trunk 20912)
 	  [i386-darwin9.6.0]'.
 
+Mon Dec 22 16:32:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): encoding of packed string only from 'm',
+	  'M', and 'u' should be US-ASCII.  [ruby-dev:37284]
+
+	* pack.c (pack_pack): encoding of packed string only from 'U'
+	  should be UTF-8.  also upgrade US-ASCII strings to UTF-8.
+
 Mon Dec 22 15:56:49 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* Doxyfile.in: new file. Template of a configuration file.
