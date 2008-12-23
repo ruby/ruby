@@ -1,3 +1,8 @@
+Fri Dec 19 07:45:37 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (exc_equal): duck typing equal to make it transitive.
+	  [ruby-dev:34808]
+
 Mon Dec 22 15:25:03 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* thread.c (Thread#set_trace_func, #add_trace_func): removed.
