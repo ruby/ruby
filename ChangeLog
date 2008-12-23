@@ -1,3 +1,35 @@
+Tue Dec 23 21:55:05 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_fork): propagete an error message from child to parent.
+	  (rb_f_exec): show details of error in child process on
+	  exception.
+	  (save_redirect_fd): add error message arguments.
+	  (run_exec_dup2): ditto.
+	  (run_exec_close): ditto.
+	  (run_exec_open): ditto.
+	  (run_exec_dup2_child): ditto.
+	  (run_exec_pgroup): ditto.
+	  (run_exec_rlimit): ditto.
+	  (rb_run_exec_options): ditto.
+	  (rb_exec): ditto.
+	  (rb_exec_atfork): ditto.
+	  (rb_spawn_internal): ditto.
+	  (rb_spawn): ditto.
+	  (rb_f_system): follow arguments change.
+	  (proc_daemon): ditto.
+	  (rb_f_spawn): show details of error in child process on exception.
+
+	* io.c (popen_exec): add error message arguments.
+	  (pipe_open): show details of error in child process on exception.
+
+	* include/ruby/intern.h (rb_run_exec_options): add error message
+	  arguments.
+	  (rb_exec): ditto.
+	  (rb_fork): ditto.
+	  (rb_spawn): ditto.
+
+	* ext/pty/pty.c (chfunc): add error message arguments.
+
 Tue Dec 23 20:28:28 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* io.c: rdoc for File::open and 1.9 feature in file modes.

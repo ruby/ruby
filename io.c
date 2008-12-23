@@ -4440,12 +4440,12 @@ rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
 }
 
 static int
-popen_exec(void *pp)
+popen_exec(void *pp, char *errmsg, size_t errmsg_len)
 {
     struct popen_arg *p = (struct popen_arg*)pp;
 
     rb_thread_atfork_before_exec();
-    return rb_exec(p->execp);
+    return rb_exec(p->execp, errmsg, errmsg_len);
 }
 #endif
 
@@ -4460,6 +4460,7 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
 #if defined(HAVE_FORK)
     int status;
     struct popen_arg arg;
+    char errmsg[80] = { '\0' };
 #elif defined(_WIN32)
     volatile VALUE argbuf;
     char **args = NULL;
@@ -4530,11 +4531,11 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     }
     if (eargp) {
         rb_exec_arg_fixup(arg.execp);
-	pid = rb_fork(&status, popen_exec, &arg, arg.execp->redirect_fds);
+	pid = rb_fork(&status, popen_exec, &arg, arg.execp->redirect_fds, errmsg, sizeof(errmsg));
     }
     else {
 	fflush(stdin);		/* is it really needed? */
-	pid = rb_fork(&status, 0, 0, Qnil);
+	pid = rb_fork(&status, 0, 0, Qnil, NULL, 0);
 	if (pid == 0) {		/* child */
 	    popen_redirect(&arg);
 	    rb_io_synchronized(RFILE(orig_stdout)->fptr);
@@ -4553,6 +4554,8 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
             close(arg.write_pair[1]);
         }
 	errno = e;
+        if (errmsg[0])
+            rb_sys_fail(errmsg);
 	rb_sys_fail(cmd);
     }
     if ((fmode & FMODE_READABLE) && (fmode & FMODE_WRITABLE)) {
@@ -4616,7 +4619,7 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     }
     if (eargp) {
 	rb_exec_arg_fixup(eargp);
-	rb_run_exec_options(eargp, &sarg);
+	rb_run_exec_options(eargp, &sarg, NULL, 0);
     }
     while ((pid = (args ?
 		   rb_w32_aspawn(P_NOWAIT, 0, args) :
@@ -4631,13 +4634,13 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
 	    break;
 	  default:
 	    if (eargp)
-		rb_run_exec_options(&sarg, NULL);
+		rb_run_exec_options(&sarg, NULL, NULL, 0);
 	    rb_sys_fail(cmd);
 	    break;
 	}
     }
     if (eargp)
-	rb_run_exec_options(&sarg, NULL);
+	rb_run_exec_options(&sarg, NULL, NULL, 0);
     if ((fmode & FMODE_READABLE) && (fmode & FMODE_WRITABLE)) {
         close(pair[1]);
         fd = pair[0];
@@ -4659,11 +4662,11 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     }
     if (eargp) {
 	rb_exec_arg_fixup(eargp);
-	rb_run_exec_options(eargp, &sarg);
+	rb_run_exec_options(eargp, &sarg, NULL, 0);
     }
     fp = popen(cmd, modestr);
     if (eargp)
-	rb_run_exec_options(&sarg, NULL);
+	rb_run_exec_options(&sarg, NULL, NULL, 0);
     if (!fp) rb_sys_fail(RSTRING_PTR(prog));
     fd = fileno(fp);
 #endif

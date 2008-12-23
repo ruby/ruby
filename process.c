@@ -1756,16 +1756,22 @@ VALUE
 rb_f_exec(int argc, VALUE *argv)
 {
     struct rb_exec_arg earg;
+#define CHILD_ERRMSG_BUFLEN 80
+    char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
 
     rb_exec_arg_init(argc, argv, Qtrue, &earg);
     if (NIL_P(rb_ary_entry(earg.options, EXEC_OPTION_CLOSE_OTHERS)))
         rb_exec_arg_addopt(&earg, ID2SYM(rb_intern("close_others")), Qfalse);
     rb_exec_arg_fixup(&earg);
 
-    rb_exec(&earg);
+    rb_exec(&earg, errmsg, sizeof(errmsg));
+    if (errmsg[0])
+        rb_sys_fail(errmsg);
     rb_sys_fail(earg.prog);
     return Qnil;		/* dummy */
 }
+
+#define ERRMSG(str) do { if (errmsg && 0 < errmsg_buflen) strlcpy(errmsg, (str), errmsg_buflen); } while (0)
 
 /*#define DEBUG_REDIRECT*/
 #if defined(DEBUG_REDIRECT)
@@ -1837,12 +1843,15 @@ redirect_open(const char *pathname, int flags, mode_t perm)
 #endif
 
 static int
-save_redirect_fd(int fd, VALUE save)
+save_redirect_fd(int fd, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
     if (!NIL_P(save)) {
         VALUE newary;
         int save_fd = redirect_dup(fd);
-        if (save_fd == -1) return -1;
+        if (save_fd == -1) {
+            ERRMSG("dup");
+            return -1;
+        }
         newary = rb_ary_entry(save, EXEC_OPTION_DUP2);
         if (NIL_P(newary)) {
             newary = hide_obj(rb_ary_new());
@@ -1897,7 +1906,7 @@ intrcmp(const void *a, const void *b)
 }
 
 static int
-run_exec_dup2(VALUE ary, VALUE save)
+run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
     int n, i;
     int ret;
@@ -1910,7 +1919,11 @@ run_exec_dup2(VALUE ary, VALUE save)
     } *pairs = 0;
 
     n = RARRAY_LEN(ary);
-    pairs = ALLOC_N(struct fd_pair, n);
+    pairs = (struct fd_pair *)malloc(sizeof(struct fd_pair) * n);
+    if (pairs == NULL) {
+        ERRMSG("malloc");
+        return -1;
+    }
 
     /* initialize oldfd and newfd: O(n) */
     for (i = 0; i < n; i++) {
@@ -1948,11 +1961,13 @@ run_exec_dup2(VALUE ary, VALUE save)
     for (i = 0; i < n; i++) {
         int j = i;
         while (j != -1 && pairs[j].oldfd != -1 && pairs[j].num_newer == 0) {
-            if (save_redirect_fd(pairs[j].newfd, save) < 0)
+            if (save_redirect_fd(pairs[j].newfd, save, errmsg, errmsg_buflen) < 0)
                 goto fail;
             ret = redirect_dup2(pairs[j].oldfd, pairs[j].newfd);
-            if (ret == -1)
+            if (ret == -1) {
+                ERRMSG("dup2");
                 goto fail;
+            }
             pairs[j].oldfd = -1;
             j = pairs[j].older_index;
             if (j != -1)
@@ -1969,13 +1984,17 @@ run_exec_dup2(VALUE ary, VALUE save)
 #ifdef F_GETFD
             int fd = pairs[i].oldfd;
             ret = fcntl(fd, F_GETFD);
-            if (ret == -1)
+            if (ret == -1) {
+                ERRMSG("fcntl(F_GETFD)");
                 goto fail;
+            }
             if (ret & FD_CLOEXEC) {
                 ret &= ~FD_CLOEXEC;
                 ret = fcntl(fd, F_SETFD, ret);
-                if (ret == -1)
+                if (ret == -1) {
+                    ERRMSG("fcntl(F_SETFD)");
                     goto fail;
+                }
             }
 #endif
             pairs[i].oldfd = -1;
@@ -1983,29 +2002,37 @@ run_exec_dup2(VALUE ary, VALUE save)
         }
         if (extra_fd == -1) {
             extra_fd = redirect_dup(pairs[i].oldfd);
-            if (extra_fd == -1)
+            if (extra_fd == -1) {
+                ERRMSG("dup");
                 goto fail;
+            }
         }
         else {
             ret = redirect_dup2(pairs[i].oldfd, extra_fd);
-            if (ret == -1)
+            if (ret == -1) {
+                ERRMSG("dup2");
                 goto fail;
+            }
         }
         pairs[i].oldfd = extra_fd;
         j = pairs[i].older_index;
         pairs[i].older_index = -1;
         while (j != -1) {
             ret = redirect_dup2(pairs[j].oldfd, pairs[j].newfd);
-            if (ret == -1)
+            if (ret == -1) {
+                ERRMSG("dup2");
                 goto fail;
+            }
             pairs[j].oldfd = -1;
             j = pairs[j].older_index;
         }
     }
     if (extra_fd != -1) {
         ret = redirect_close(extra_fd);
-        if (ret == -1)
+        if (ret == -1) {
+            ERRMSG("close");
             goto fail;
+        }
     }
 
     xfree(pairs);
@@ -2017,7 +2044,7 @@ run_exec_dup2(VALUE ary, VALUE save)
 }
 
 static int
-run_exec_close(VALUE ary)
+run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
 {
     int i, ret;
 
@@ -2025,14 +2052,16 @@ run_exec_close(VALUE ary)
         VALUE elt = RARRAY_PTR(ary)[i];
         int fd = FIX2INT(RARRAY_PTR(elt)[0]);
         ret = redirect_close(fd);
-        if (ret == -1)
+        if (ret == -1) {
+            ERRMSG("close");
             return -1;
+        }
     }
     return 0;
 }
 
 static int
-run_exec_open(VALUE ary, VALUE save)
+run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
     int i, ret;
 
@@ -2045,7 +2074,10 @@ run_exec_open(VALUE ary, VALUE save)
         int perm = NUM2INT(RARRAY_PTR(param)[2]);
         int need_close = 1;
         int fd2 = redirect_open(path, flags, perm);
-        if (fd2 == -1) return -1;
+        if (fd2 == -1) {
+            ERRMSG("open");
+            return -1;
+        }
         while (i < RARRAY_LEN(ary) &&
                (elt = RARRAY_PTR(ary)[i], RARRAY_PTR(elt)[1] == param)) {
             fd = FIX2INT(RARRAY_PTR(elt)[0]);
@@ -2053,23 +2085,29 @@ run_exec_open(VALUE ary, VALUE save)
                 need_close = 0;
             }
             else {
-                if (save_redirect_fd(fd, save) < 0)
+                if (save_redirect_fd(fd, save, errmsg, errmsg_buflen) < 0)
                     return -1;
                 ret = redirect_dup2(fd2, fd);
-                if (ret == -1) return -1;
+                if (ret == -1) {
+                    ERRMSG("dup2");
+                    return -1;
+                }
             }
             i++;
         }
         if (need_close) {
             ret = redirect_close(fd2);
-            if (ret == -1) return -1;
+            if (ret == -1) {
+                ERRMSG("close");
+                return -1;
+            }
         }
     }
     return 0;
 }
 
 static int
-run_exec_dup2_child(VALUE ary, VALUE save)
+run_exec_dup2_child(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
     int i, ret;
     for (i = 0; i < RARRAY_LEN(ary); i++) {
@@ -2077,17 +2115,20 @@ run_exec_dup2_child(VALUE ary, VALUE save)
         int newfd = FIX2INT(RARRAY_PTR(elt)[0]);
         int oldfd = FIX2INT(RARRAY_PTR(elt)[1]);
 
-        if (save_redirect_fd(newfd, save) < 0)
+        if (save_redirect_fd(newfd, save, errmsg, errmsg_buflen) < 0)
             return -1;
         ret = redirect_dup2(oldfd, newfd);
-        if (ret == -1) return -1;
+        if (ret == -1) {
+            ERRMSG("dup2");
+            return -1;
+        }
     }
     return 0;
 }
 
 #ifdef HAVE_SETPGID
 static int
-run_exec_pgroup(VALUE obj, VALUE save)
+run_exec_pgroup(VALUE obj, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
     /*
      * If FD_CLOEXEC is available, rb_fork waits the child's execve.
@@ -2095,6 +2136,7 @@ run_exec_pgroup(VALUE obj, VALUE save)
      * No race condition, even without setpgid from the parent.
      * (Is there an environment which has setpgid but FD_CLOEXEC?)
      */
+    int ret;
     pid_t pgroup;
     if (!NIL_P(save)) {
         /* maybe meaningless with no fork environment... */
@@ -2104,13 +2146,15 @@ run_exec_pgroup(VALUE obj, VALUE save)
     if (pgroup == 0) {
         pgroup = getpid();
     }
-    return setpgid(getpid(), pgroup);
+    ret = setpgid(getpid(), pgroup);
+    if (ret == -1) ERRMSG("setpgid");
+    return ret;
 }
 #endif
 
 #ifdef RLIM2NUM
 static int
-run_exec_rlimit(VALUE ary, VALUE save)
+run_exec_rlimit(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
     int i;
     for (i = 0; i < RARRAY_LEN(ary); i++) {
@@ -2119,8 +2163,10 @@ run_exec_rlimit(VALUE ary, VALUE save)
         struct rlimit rlim;
         if (!NIL_P(save)) {
             VALUE tmp, newary;
-            if (getrlimit(rtype, &rlim) == -1)
+            if (getrlimit(rtype, &rlim) == -1) {
+                ERRMSG("getrlimit");
                 return -1;
+            }
             tmp = hide_obj(rb_ary_new3(3, RARRAY_PTR(elt)[0],
                                        RLIM2NUM(rlim.rlim_cur),
                                        RLIM2NUM(rlim.rlim_max)));
@@ -2133,15 +2179,17 @@ run_exec_rlimit(VALUE ary, VALUE save)
         }
         rlim.rlim_cur = NUM2RLIM(RARRAY_PTR(elt)[1]);
         rlim.rlim_max = NUM2RLIM(RARRAY_PTR(elt)[2]);
-        if (setrlimit(rtype, &rlim) == -1)
+        if (setrlimit(rtype, &rlim) == -1) {
+            ERRMSG("setrlimit");
             return -1;
+        }
     }
     return 0;
 }
 #endif
 
 int
-rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
+rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s, char *errmsg, size_t errmsg_buflen)
 {
     VALUE options = e->options;
     VALUE soptions = Qnil;
@@ -2161,7 +2209,7 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
 #ifdef HAVE_SETPGID
     obj = rb_ary_entry(options, EXEC_OPTION_PGROUP);
     if (RTEST(obj)) {
-        if (run_exec_pgroup(obj, soptions) == -1)
+        if (run_exec_pgroup(obj, soptions, errmsg, errmsg_buflen) == -1)
             return -1;
     }
 #endif
@@ -2169,7 +2217,7 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
 #ifdef RLIM2NUM
     obj = rb_ary_entry(options, EXEC_OPTION_RLIMIT);
     if (!NIL_P(obj)) {
-        if (run_exec_rlimit(obj, soptions) == -1)
+        if (run_exec_rlimit(obj, soptions, errmsg, errmsg_buflen) == -1)
             return -1;
     }
 #endif
@@ -2203,8 +2251,10 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
                          hide_obj(rb_str_new2(cwd)));
             xfree(cwd);
         }
-        if (chdir(RSTRING_PTR(obj)) == -1)
+        if (chdir(RSTRING_PTR(obj)) == -1) {
+            ERRMSG("chdir");
             return -1;
+        }
     }
 
     obj = rb_ary_entry(options, EXEC_OPTION_UMASK);
@@ -2217,7 +2267,7 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
 
     obj = rb_ary_entry(options, EXEC_OPTION_DUP2);
     if (!NIL_P(obj)) {
-        if (run_exec_dup2(obj, soptions) == -1)
+        if (run_exec_dup2(obj, soptions, errmsg, errmsg_buflen) == -1)
             return -1;
     }
 
@@ -2226,7 +2276,7 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
         if (!NIL_P(soptions))
             rb_warn("cannot close fd before spawn");
         else {
-            if (run_exec_close(obj) == -1)
+            if (run_exec_close(obj, errmsg, errmsg_buflen) == -1)
                 return -1;
         }
     }
@@ -2240,13 +2290,13 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
 
     obj = rb_ary_entry(options, EXEC_OPTION_OPEN);
     if (!NIL_P(obj)) {
-        if (run_exec_open(obj, soptions) == -1)
+        if (run_exec_open(obj, soptions, errmsg, errmsg_buflen) == -1)
             return -1;
     }
 
     obj = rb_ary_entry(options, EXEC_OPTION_DUP2_CHILD);
     if (!NIL_P(obj)) {
-        if (run_exec_dup2_child(obj, soptions) == -1)
+        if (run_exec_dup2_child(obj, soptions, errmsg, errmsg_buflen) == -1)
             return -1;
     }
 
@@ -2254,13 +2304,13 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
 }
 
 int
-rb_exec(const struct rb_exec_arg *e)
+rb_exec(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 {
     int argc = e->argc;
     VALUE *argv = e->argv;
     const char *prog = e->prog;
 
-    if (rb_run_exec_options(e, NULL) < 0) {
+    if (rb_run_exec_options(e, NULL, errmsg, errmsg_buflen) < 0) {
         return -1;
     }
 
@@ -2281,10 +2331,10 @@ rb_exec(const struct rb_exec_arg *e)
 
 #ifdef HAVE_FORK
 static int
-rb_exec_atfork(void* arg)
+rb_exec_atfork(void* arg, char *errmsg, size_t errmsg_buflen)
 {
     rb_thread_atfork_before_exec();
-    return rb_exec(arg);
+    return rb_exec(arg, errmsg, errmsg_buflen);
 }
 #endif
 
@@ -2367,7 +2417,8 @@ pipe_nocrash(int filedes[2], VALUE fds)
  * +chfunc+ must not raise any exceptions.
  */
 rb_pid_t
-rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
+rb_fork(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds,
+        char *errmsg, size_t errmsg_buflen)
 {
     rb_pid_t pid;
     int err, state = 0;
@@ -2422,10 +2473,12 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
 #ifdef FD_CLOEXEC
 	    close(ep[0]);
 #endif
-	    if (!(*chfunc)(charg)) _exit(EXIT_SUCCESS);
+	    if (!(*chfunc)(charg, errmsg, errmsg_buflen)) _exit(EXIT_SUCCESS);
 #ifdef FD_CLOEXEC
 	    err = errno;
 	    write(ep[1], &err, sizeof(err));
+            errmsg[errmsg_buflen-1] = '\0';
+            write(ep[1], errmsg, strlen(errmsg));
 #endif
 #if EXIT_SUCCESS == 127
 	    _exit(EXIT_FAILURE);
@@ -2441,6 +2494,14 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
 	if ((state = read(ep[0], &err, sizeof(err))) < 0) {
 	    err = errno;
 	}
+        if (state == sizeof(err) &&
+            errmsg && 0 < errmsg_buflen) {
+            ssize_t ret;
+            ret = read(ep[0], errmsg, errmsg_buflen-1);
+            if (0 <= ret) {
+                errmsg[ret] = '\0';
+            }
+        }
 	close(ep[0]);
 	if (state) {
 	    if (status) {
@@ -2487,7 +2548,7 @@ rb_f_fork(VALUE obj)
 
     rb_secure(2);
 
-    switch (pid = rb_fork(0, 0, 0, Qnil)) {
+    switch (pid = rb_fork(0, 0, 0, Qnil, NULL, 0)) {
       case 0:
 #ifdef linux
 	after_exec();
@@ -2725,7 +2786,8 @@ rb_syswait(rb_pid_t pid)
 }
 
 static rb_pid_t
-rb_spawn_internal(int argc, VALUE *argv, int default_close_others)
+rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
+                  char *errmsg, size_t errmsg_buflen)
 {
     rb_pid_t status;
     VALUE prog;
@@ -2742,10 +2804,10 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others)
     rb_exec_arg_fixup(&earg);
 
 #if defined HAVE_FORK
-    status = rb_fork(&status, rb_exec_atfork, &earg, earg.redirect_fds);
+    status = rb_fork(&status, rb_exec_atfork, &earg, earg.redirect_fds, errmsg, errmsg_buflen);
     if (prog && earg.argc) earg.argv[0] = prog;
 #else
-    if (rb_run_exec_options(&earg, &sarg) < 0) {
+    if (rb_run_exec_options(&earg, &sarg, errmsg, errmsg_buflen) < 0) {
         return -1;
     }
 
@@ -2769,15 +2831,15 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others)
     rb_last_status_set((status & 0xff) << 8, 0);
 # endif
 
-    rb_run_exec_options(&sarg, NULL);
+    rb_run_exec_options(&sarg, NULL, errmsg, errmsg_buflen);
 #endif
     return status;
 }
 
 rb_pid_t
-rb_spawn(int argc, VALUE *argv)
+rb_spawn(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
 {
-    return rb_spawn_internal(argc, argv, Qtrue);
+    return rb_spawn_internal(argc, argv, Qtrue, errmsg, errmsg_buflen);
 }
 
 /*
@@ -2825,7 +2887,7 @@ rb_f_system(int argc, VALUE *argv)
 
     chfunc = signal(SIGCHLD, SIG_DFL);
 #endif
-    status = rb_spawn_internal(argc, argv, Qfalse);
+    status = rb_spawn_internal(argc, argv, Qfalse, NULL, 0);
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
     if (status > 0) {
 	rb_syswait(status);
@@ -3068,9 +3130,14 @@ static VALUE
 rb_f_spawn(int argc, VALUE *argv)
 {
     rb_pid_t pid;
+    char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
 
-    pid = rb_spawn(argc, argv);
-    if (pid == -1) rb_sys_fail(RSTRING_PTR(argv[0]));
+    pid = rb_spawn(argc, argv, errmsg, sizeof(errmsg));
+    if (pid == -1) {
+        if (errmsg[0] == '\0')
+            rb_sys_fail(RSTRING_PTR(argv[0]));
+        rb_sys_fail(errmsg);
+    }
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
     return PIDT2NUM(pid);
 #else
@@ -4406,7 +4473,7 @@ proc_daemon(int argc, VALUE *argv)
     if (n < 0) rb_sys_fail("daemon");
     return INT2FIX(n);
 #elif defined(HAVE_FORK)
-    switch (rb_fork(0, 0, 0, Qnil)) {
+    switch (rb_fork(0, 0, 0, Qnil, NULL, 0)) {
       case -1:
 	return (-1);
       case 0:

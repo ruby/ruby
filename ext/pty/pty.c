@@ -155,7 +155,7 @@ struct child_info {
 };
 
 static int
-chfunc(void *data)
+chfunc(void *data, char *errmsg, size_t errmsg_len)
 {
     struct child_info *carg = data;
     int master = carg->master;
@@ -258,7 +258,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     carg.slavename = SlaveName;
     carg.argc = argc;
     carg.argv = argv;
-    pid = rb_fork(0, chfunc, &carg, Qnil);
+    pid = rb_fork(0, chfunc, &carg, Qnil, NULL, 0);
 
     if (pid < 0) {
 	close(master);
