@@ -270,7 +270,7 @@ class RDoc::Parser::C < RDoc::Parser
 
   def find_body(class_name, meth_name, meth_obj, body, quiet = false)
     case body
-    when %r"((?>/\*.*?\*/\s*)*)(?:(?:static|SWIGINTERN)\s+)?(?:intern\s+)?VALUE\s+#{meth_name}
+    when %r"((?>/\*.*?\*/\s*))(?:(?:static|SWIGINTERN)\s+)?(?:intern\s+)?VALUE\s+#{meth_name}
             \s*(\([^)]*\))([^;]|$)"xm
       comment, params = $1, $2
       body_text = $&
@@ -425,7 +425,7 @@ class RDoc::Parser::C < RDoc::Parser
 
   def find_override_comment(class_name, meth_name)
     name = Regexp.escape(meth_name)
-    if @content =~ %r{Document-method:\s+#{class_name}(?:\.|::)#{name}\s*?\n((?>.*?\*/))}m then
+    if @content =~ %r{Document-method:\s+#{class_name}(?:\.|::|#)#{name}\s*?\n((?>.*?\*/))}m then
       $1
     elsif @content =~ %r{Document-method:\s#{name}\s*?\n((?>.*?\*/))}m then
       $1

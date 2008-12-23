@@ -1,3 +1,8 @@
+Tue Dec 23 13:52:05 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/parser/c.rb:  Don't coalesce adjacent comment blocks.
+	  [bug#901]
+
 Tue Dec 23 12:00:00 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (pipe_close): fix coding style.  [ruby-dev:37554]
