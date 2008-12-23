@@ -918,6 +918,13 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 	}
 	else {
 	    int len = 0;
+	    if (*cmd == '"') {
+		for (prog = cmd + 1; *prog && *prog != '"'; prog = CharNext(prog));
+		len = prog - cmd - 1;
+		STRNDUPA(p, cmd + 1, len);
+		p = dln_find_exe_r(p, NULL, fbuf, sizeof(fbuf));
+		if (p) goto command_found;
+	    }
 	    for (prog = cmd; *prog; prog = CharNext(prog)) {
 		if (ISSPACE(*prog)) {
 		    len = prog - cmd;
@@ -955,6 +962,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 	}
     }
     if (p) {
+      command_found:
 	shell = p;
 	translate_char(p, '/', '\\');
     }
