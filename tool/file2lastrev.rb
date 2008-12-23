@@ -3,17 +3,13 @@
 require 'optparse'
 require 'pathname'
 
+SRCDIR = Pathname(File.dirname($0)).parent.freeze
 class VCSNotFoundError < RuntimeError; end
 
 def detect_vcs(path)
-  target_path = Pathname(File.expand_path(path))
-
-  path = target_path.directory? ? target_path : target_path.parent  
-  begin
-    return :svn, target_path.relative_path_from(path) if File.directory?("#{path}/.svn")
-    return :git, target_path.relative_path_from(path) if File.directory?("#{path}/.git")
-    path, orig = path.parent, path
-  end until path == orig
+  path = SRCDIR
+  return :svn, path.relative_path_from(SRCDIR) if File.directory?("#{path}/.svn")
+  return :git, path.relative_path_from(SRCDIR) if File.directory?("#{path}/.git")
   raise VCSNotFoundError, "does not seem to be under a vcs"
 end
 
@@ -23,9 +19,9 @@ def get_revisions(path)
 
   info = case vcs
   when :svn
-    `svn info #{path}`
+    `cd '#{SRCDIR}' && svn info '#{path}'`
   when :git
-    `git svn info #{path}`
+    `cd '#{SRCDIR}' && git svn info '#{path}'`
   end
 
   if info =~ /^Revision: (\d+)$/
