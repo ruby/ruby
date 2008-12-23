@@ -2477,8 +2477,10 @@ rb_fork(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fd
 #ifdef FD_CLOEXEC
 	    err = errno;
 	    write(ep[1], &err, sizeof(err));
-            errmsg[errmsg_buflen-1] = '\0';
-            write(ep[1], errmsg, strlen(errmsg));
+            if (errmsg && 0 < errmsg_buflen) {
+                errmsg[errmsg_buflen-1] = '\0';
+                write(ep[1], errmsg, strlen(errmsg));
+            }
 #endif
 #if EXIT_SUCCESS == 127
 	    _exit(EXIT_FAILURE);

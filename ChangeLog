@@ -1,3 +1,8 @@
+Tue Dec 23 22:57:48 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_fork): don't propagete an error message if error
+	  buffer not given.
+
 Tue Dec 23 21:55:05 2008  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_fork): propagete an error message from child to parent.
