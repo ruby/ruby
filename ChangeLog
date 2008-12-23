@@ -1,3 +1,7 @@
+Tue Dec 23 16:49:48 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_spawn): support normal commands with arguments.
+
 Tue Dec 23 16:22:41 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_inspect): show fd number if there is no pathname.

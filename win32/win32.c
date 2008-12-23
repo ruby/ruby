@@ -900,35 +900,36 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     }
     else {
 	int redir = -1;
-	int len = 0;
 	int nt;
 	while (ISSPACE(*cmd)) cmd++;
-	for (prog = cmd; *prog; prog = CharNext(prog)) {
-	    if (ISSPACE(*prog)) {
-		len = prog - cmd;
-		do ++prog; while (ISSPACE(*prog));
-		if (!*prog--) break;
-	    }
-	    else {
-		len = 0;
-	    }
-	}
-	if (!len) len = strlen(cmd);
 	if ((shell = getenv("RUBYSHELL")) && (redir = has_redirection(cmd))) {
-	    char *tmp = ALLOCA_N(char, strlen(shell) + len + sizeof(" -c ") + 2);
-	    sprintf(tmp, "%s -c \"%.*s\"", shell, len, cmd);
+	    char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) + sizeof(" -c ") + 2);
+	    sprintf(tmp, "%s -c \"%s\"", shell, cmd);
 	    cmd = tmp;
 	}
 	else if ((shell = getenv("COMSPEC")) &&
 		 (nt = !is_command_com(shell),
 		  (redir < 0 ? has_redirection(cmd) : redir) ||
 		  is_internal_cmd(cmd, nt))) {
-	    char *tmp = ALLOCA_N(char, strlen(shell) + len + sizeof(" /c ")
+	    char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) + sizeof(" /c ")
 				 + (nt ? 2 : 0));
-	    sprintf(tmp, nt ? "%s /c \"%.*s\"" : "%s /c %.*s", shell, len, cmd);
+	    sprintf(tmp, nt ? "%s /c \"%s\"" : "%s /c %s", shell, cmd);
 	    cmd = tmp;
 	}
 	else {
+	    int len = 0;
+	    for (prog = cmd; *prog; prog = CharNext(prog)) {
+		if (ISSPACE(*prog)) {
+		    len = prog - cmd;
+		    do ++prog; while (ISSPACE(*prog));
+		    break;
+		}
+		else {
+		    len = 0;
+		}
+	    }
+	    if (!len) len = strlen(cmd);
+
 	    shell = NULL;
 	    prog = cmd;
 	    for (;;) {
@@ -941,7 +942,6 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 			STRNDUPA(p, cmd, len);
 		    }
 		    p = dln_find_exe_r(p ? p : cmd, NULL, fbuf, sizeof(fbuf));
-		    cmd += len;
 		    break;
 		}
 		if (ISSPACE(*prog) || strchr("<>|", *prog)) {
