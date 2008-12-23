@@ -16,9 +16,7 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
 
     * New syntax and semantics
           o Block arguments are always local
-          o Block arguments
           o New semantics for block arguments
-          o Block local variables
           o Method used for splat arguments: #to_splat instead of
             #to_ary
           o defined? and local variables
@@ -29,21 +27,21 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
 * builtin classes and objects
 
     * Kernel and Object
-          o Kernel#require
-          o Kernel#methods used to return an array of strings but now
-            it returns an array of symbols.
+          o Kernel#methods and #singleton_methods used to return an 
+            array of strings but now they return an array of symbols.
     * Class and Module
-          o Class variables behavior
           o Module#attr is an alias of attr_reader
-          o Module#instance_methods, #private_instance_methods,
-            #public_instance_methods
+          o Module#instance_methods, #private_instance_methods and
+            #public_instance_methods used to return an array of 
+            strings but now they return an array of symbols.
           o Extra subclassing check when binding UnboundMethods
-          o Module#instance_methods used to return an array of strings
-            but now it returns an array of symbols.
+            
     * Exceptions
-          o Equality of exceptions
-          o SystemStackError
-          o SecurityError
+          o Exceptions are equal to each other if they belongs to 
+            the same class and have the same message and backtrace.
+          o SystemStackError used to be a subclass of StandardError
+            but not it is a direct subclass of Exception.
+          o SecurityError: ditto
           o Removed Exception#to_str [Ruby2]
 
     * Array
@@ -108,6 +106,8 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o IO#internal_encoding, IO#external_encoding,
             IO#set_encoding
           o IO.pipe takes encoding option
+          o Directive %u behaves like %d for negative values in 
+            printf-style formatting.
     * Struct
           o Struct#inspect
     * Symbols: restriction on literal symbols
@@ -138,6 +138,8 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
 
 * bundled libraries
 
+    * time and date
+          o Time.parse and Date.parse interprets slashed numerical dates as "dd/mm/yyyy".
     * Readline
           o If Readline uses libedit, Readline::HISTORY[0] returns the
             first of the history.
@@ -178,13 +180,17 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
     * New syntax and semantics
           o Magic comments to declare in which encoding your source
             code is written
-          o New literal hash syntax
+          o New literal hash syntax and new syntax for hash style 
+	    arguments 
           o New syntax for lambdas
           o .() and calling Procs without #call/#[]
+          o Block in block arguments
+          o Block local variables
           o Mandatory arguments after optional arguments allowed
           o Multiple splats allowed
-          o Arguments to #[]
-          o printf-style formatted strings (%)
+          o #[] can take splatted arguments, hash style arguments 
+            and a block.
+          o New directives in printf-style formatted strings (%).
           o Newlines allowed before ternary colon
           o Encoding.default_external and default_internal
 
@@ -192,14 +198,12 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
 
     * Kernel and Object
           o BasicObject
-          o Object#=~
-          o Kernel#instance_variable_defined?
+          o Object#=~ returns nil instead of false by default.
           o Kernel#define_singleton_method
-          o Kernel#singleton_methods, Kernel#methods
     * Class and Module
           o Module#const_defined?, #const_get and #method_defined?
-          o Module#class_variable_defined?
-          o #class_variable_{set,get}
+            take an optional parameter.
+          o #class_variable_{set,get} are public.
           o Class of singleton classes
     * Binding#eval
     * Blocks and Procs
@@ -209,6 +213,8 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Passing blocks to #[]
           o Proc#lambda?
     * Enumerable and Enumerator
+          o Enumerable#each_with_index can take optional arguments
+            and passes them to #each.
           o Enumerable#each_with_object
           o Enumerator#with_object
           o Enumerator.new { ... }
@@ -263,7 +269,8 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Symbol#encoding
           o Symbol methods similar to those in String
     * Math
-          o Math#log and Math#log2
+          o Math#log takes an optional argument.
+          o Math#log2
           o Math#cbrt, Math#lgamma, Math#gamma
     * Rational / Complex
           o They are core library now
