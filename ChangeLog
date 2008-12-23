@@ -1,11 +1,15 @@
+Tue Dec 23 23:49:37 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_init_copy): call io_seek only if io_tell succeeds.
+
 Tue Dec 23 22:57:48 2008  Tanaka Akira  <akr@fsij.org>
 
-	* process.c (rb_fork): don't propagete an error message if error
+	* process.c (rb_fork): don't propagate an error message if error
 	  buffer not given.
 
 Tue Dec 23 21:55:05 2008  Tanaka Akira  <akr@fsij.org>
 
-	* process.c (rb_fork): propagete an error message from child to parent.
+	* process.c (rb_fork): propagate an error message from child to parent.
 	  (rb_f_exec): show details of error in child process on
 	  exception.
 	  (save_redirect_fd): add error message arguments.

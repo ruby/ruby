@@ -5368,6 +5368,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     rb_io_t *fptr, *orig;
     int fd;
     VALUE write_io;
+    off_t pos;
 
     io = rb_io_get_io(io);
     if (dest == io) return dest;
@@ -5386,7 +5387,9 @@ rb_io_init_copy(VALUE dest, VALUE io)
 
     fd = ruby_dup(orig->fd);
     fptr->fd = fd;
-    io_seek(fptr, io_tell(orig), SEEK_SET);
+    pos = io_tell(orig);
+    if (0 <= pos)
+        io_seek(fptr, pos, SEEK_SET);
     if (fptr->mode & FMODE_BINMODE) {
 	rb_io_binmode(dest);
     }
