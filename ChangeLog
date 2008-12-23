@@ -1,3 +1,8 @@
+Tue Dec 23 15:48:55 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/file2lastrev.rb: shouldn't use single quote in shell's command
+	  line if you want to support Windows.
+
 Tue Dec 23 15:46:43 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/mathn.rb: Math.sqrt(NaN) should be NaN. [ruby-dev:37537]

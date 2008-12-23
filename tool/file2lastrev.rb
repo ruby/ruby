@@ -19,9 +19,9 @@ def get_revisions(path)
 
   info = case vcs
   when :svn
-    `cd '#{SRCDIR}' && svn info '#{path}'`
+    `cd "#{SRCDIR}" && svn info "#{path}"`
   when :git
-    `cd '#{SRCDIR}' && git svn info '#{path}'`
+    `cd "#{SRCDIR}" && git svn info "#{path}"`
   end
 
   if info =~ /^Revision: (\d+)$/
