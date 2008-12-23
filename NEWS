@@ -37,17 +37,13 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Extra subclassing check when binding UnboundMethods
             
     * Exceptions
-          o Exceptions are equal to each other if they belongs to 
+          o Exceptions are equal to each other if they belong to 
             the same class and have the same message and backtrace.
           o SystemStackError used to be a subclass of StandardError
             but not it is a direct subclass of Exception.
           o SecurityError: ditto
           o Removed Exception#to_str [Ruby2]
 
-    * Array
-          o Array#nitems was removed (use count {|i| !i.nil?})
-          o Array#choice was removed (use sample)
-          o Array#[m,n] = nil places nil in the array.
     * Enumerable and Enumerator
           o Enumerable::Enumerator, compatibility alias of Enumerator,
             is removed.
@@ -55,28 +51,10 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
             an enumerator.
           o Even more builtin and bundled libraries have been made to
             return an enumerator when called without a block.
-    * File and Dir operations
-          o #to_path is called as necessary in File.path, File.chmod,
-            File.lchmod, File.chown, File.lchown, File.utime,
-            File.unlink, etc..
-          o File.world_readable?
-          o File.world_writable?
-          o Dir.[], Dir.glob
-          o Dir.exist?
-          o Dir.exists?
-    * File::Stat
-          o File::Stat#world_readable?
-          o File::Stat#world_writable?
-    * String and Regexp
-          o No longer an Enumerable
-          o ?c semantics
-          o "One-char-wide" semantics for String#[] and String#[]=
-          o Character-wise semantics in many methods in stead of
-            byte-wise.
-          o Encoding-awareness
-          o Regexp matches only with strings which is encoded in a
-            compatible character encoding to the regexp's.
-          o Regexp#kcode is removed. use Regexp#encoding.
+    * Array
+          o Array#nitems was removed (use count {|i| !i.nil?})
+          o Array#choice was removed (use sample)
+          o Array#[m,n] = nil places nil in the array.
     * Hash
           o Hash#to_s is equivalent to Hash#inspect
           o Semantics for Hash#each and Hash#each_pair
@@ -87,14 +65,6 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
             order in which the keys are inserted.
           o Most of the changes in Hash apply to hash like interfaces
             such as ENV and *DBM.
-    * Numeric
-          o Numeric#div always rounds as Integer#div has done.
-          o Numeric#fdiv: ditto.
-    * Integer
-          o Integer(nil) raises TypeError
-    * Fixnum
-          o Fixnum#id2name removed
-          o Fixnum#to_sym removed
     * IO operations
           o Many methods used to act byte-wise but now some of those act 
             character-wise. You can use alternate byte-wise methods.
@@ -122,43 +92,74 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o IO.pipe takes encoding option
           o Directive %u behaves like %d for negative values in 
             printf-style formatting.
+    * File and Dir operations
+          o #to_path is called as necessary in File.path, File.chmod,
+            File.lchmod, File.chown, File.lchown, File.utime,
+            File.unlink, etc..
+          o File.world_readable?
+          o File.world_writable?
+          o Dir.[], Dir.glob
+          o Dir.exist?
+          o Dir.exists?
+    * File::Stat
+          o File::Stat#world_readable?
+          o File::Stat#world_writable?
+    * String and Regexp
+          o No longer an Enumerable
+          o ?c semantics
+          o "One-char-wide" semantics for String#[] and String#[]=
+          o Character-wise semantics in many methods in stead of
+            byte-wise.
+          o Encoding-awareness
+          o Regexp matches only with strings which is encoded in a
+            compatible character encoding to the regexp's.
+          o Regexp#kcode is removed. use Regexp#encoding.
+    * Symbols: restriction on literal symbols
+    * Numeric
+          o Numeric#div always rounds as Integer#div has done.
+          o Numeric#fdiv: ditto.
+    * Integer
+          o Integer(nil) raises TypeError
+    * Fixnum
+          o Fixnum#id2name removed
+          o Fixnum#to_sym removed
     * Struct
           o Struct#inspect
-    * Symbols: restriction on literal symbols
-    * $SAFE and bound methods
-          o New trusted/untrusted model in addition to
-            tainted/untainted model.
     * Time
           o New format in Time#to_s
           o Timezone information preserved on Marshal.dump/load
+    * $SAFE and bound methods
+          o New trusted/untrusted model in addition to
+            tainted/untainted model.
 
     * Deprecation
-          o VERSION and friends
           o Kernel.to_a
           o Kernel#getc, #gsub, #sub
           o Kernel#callcc and Continuation now become 'continuation'
             bundled library.
           o Object#type
-          o Symbol#to_int and Symbol#to_i
-          o Numeric#rdiv
+          o Removed Array and Hash #indices, #indexes
           o Hash#index
           o ENV.index
           o Process::Status#to_int
+          o Numeric#rdiv
           o Precision is removed.  Don't cry, it will be redesigned
             and come back in future version.
-          o Removed Array and Hash #indices, #indexes
+          o Symbol#to_int and Symbol#to_i
           o $KCODE is no longer effective.  Use Encoding related
             features of each class.
+          o VERSION and friends
 
 * bundled libraries
 
+    * Pathname
+          o No longer has #to_str nor #=~.
     * time and date
-          o Time.parse and Date.parse interprets slashed numerical dates as "dd/mm/yyyy".
+          o Time.parse and Date.parse interprets slashed numerical dates 
+	    as "dd/mm/yyyy".
     * Readline
           o If Readline uses libedit, Readline::HISTORY[0] returns the
             first of the history.
-    * Pathname
-          o No longer has #to_str nor #=~.
     * Continuation
           o as above
 
@@ -183,7 +184,8 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
             getoptlong.
           o soap, wsdl and xsd libraries: use soap4r gem.
           o Win32API library: use dl.
-          o dl library: Reimplemented and API changed.
+          o dl library: Reimplemented and API changed. use the new
+	    version of dl or ffi gem.
           o rubyunit library and runit library: use minitest or
             test/unit. Or use anything you love through RubyGems.
           o test/unit is reimplemented on top of minitest.  This is
@@ -208,17 +210,27 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Newlines allowed before ternary colon
           o Encoding.default_external and default_internal
 
+
 === Library updates
 
+* builtin classes and objects
     * Kernel and Object
           o BasicObject
           o Object#=~ returns nil instead of false by default.
           o Kernel#define_singleton_method
+	  o Kernel#load can load a library from the highest versions
+	    of gems by default.
     * Class and Module
           o Module#const_defined?, #const_get and #method_defined?
             take an optional parameter.
           o #class_variable_{set,get} are public.
           o Class of singleton classes
+
+    * Errno::EXXX
+          o All of those are always defined.  Errno::EXX will be
+            defined as an alias to Errno::ENOERROR if your platform
+            does not have one.
+
     * Binding#eval
     * Blocks and Procs
           o Arity of blocks without arguments
@@ -227,26 +239,17 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Passing blocks to #[]
           o Proc#lambda?
           o Proc#curry
+    * Fiber: coroutines/micro-threads
+    * Thread
+          o Thread.critical and Thread.critical= removed
+          o Thread#exit!, Thread#kill! and Thread#terminate! removed.
+
     * Enumerable and Enumerator
           o Enumerable#each_with_index can take optional arguments
             and passes them to #each.
           o Enumerable#each_with_object
           o Enumerator#with_object
           o Enumerator.new { ... }
-    * Errno::EXXX
-          o All of those are always defined.  Errno::EXX will be
-            defined as an alias to Errno::ENOERROR if your platform
-            does not have one.
-    * Regexp#match, String#match
-          o Regexp#match, String#match
-          o Regexp#fixed_encoding?
-          o Regexp#encoding
-          o Regexp#named_captures
-          o Regexp#names
-    * Encoding
-    * Encoding::Converter
-          o supports conversion between many encodings
-    * Fiber: coroutines/micro-threads
     * Array
           o Array#delete returns a deleted element rather than a given
             object
@@ -261,10 +264,6 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Hash#assoc
           o Hash#rassoc
           o Hash#flatten
-    * Numeric
-          o Numeric#upto, #downto, #times, #step
-          o Numeric#scalar?, Complex#scalar?
-          o Numeric#magnitude
     * Range
           o Range#cover?
           o Range#include? iterates over elements and compares the
@@ -272,12 +271,12 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
             Use Range#cover? for the old behavior, i.e. comparison
             with boundary values.
           o Range#min, Range#max
-    * Regexp
-          o Regexp#=== matches symbols
-          o Regexp.try_convert
-    * MatchData
-          o MatchData#names
-          o MatchData#regexp
+
+    * File and Dir operations
+          o New methods
+    * Process
+          o Process.spawn
+          o Process.daemon
     * String
           o String#clear
           o String#ord
@@ -287,29 +286,41 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o String#unpack with a block
           o String#hash
           o String.try_convert
-          o String#encoding, String#force_encoding, String#encode, String#encode!
+          o String#encoding
+	  o String#force_encoding, String#encode and String#encode!
           o String#ascii_only?
           o String#valid_encoding?
+	  o String#match
     * Symbol
           o Zero-length symbols allowed
           o Symbol#=== matches strings
           o Symbol#intern
           o Symbol#encoding
           o Symbol methods similar to those in String
+    * Regexp
+          o Regexp#=== matches symbols
+          o Regexp.try_convert
+          o Regexp#match
+          o Regexp#fixed_encoding?
+          o Regexp#encoding
+          o Regexp#named_captures
+          o Regexp#names
+    * MatchData
+          o MatchData#names
+          o MatchData#regexp
+    * Encoding
+    * Encoding::Converter
+          o supports conversion between many encodings
+    * Numeric
+          o Numeric#upto, #downto, #times, #step
+          o Numeric#scalar?, Complex#scalar?
+          o Numeric#magnitude
+    * Rational / Complex
+          o They are in the core library now
     * Math
           o Math#log takes an optional argument.
           o Math#log2
           o Math#cbrt, Math#lgamma, Math#gamma
-    * Rational / Complex
-          o They are core library now
-    * File and Dir operations
-          o New methods
-    * Process
-          o Process.spawn
-          o Process.daemon
-    * Thread
-          o Thread.critical and Thread.critical= removed
-          o Thread#exit!, Thread#kill! and Thread#terminate! removed.
     * Time
           o Time.times removed.  Use Process.times.
           o Time#sunday?
@@ -320,13 +331,6 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Time#friday?
           o Time#saturday?
           o Time#tv_nsec and Time#nsec
-    * Readline
-          o Readline.vi_editing_mode?
-          o Readline.emacs_editing_mode?
-          o Readline::HISTORY.clear
-    * Tk
-          o TkXXX widget classes are removed and redefined as aliases of 
-            Tk::XXX classes.
     * Misc. new methods
           o RUBY_ENGINE to distinguish between Ruby processor implementation
           o public_method
@@ -334,7 +338,8 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o GC.count
           o ObjectSpace.count_objects
           o Method#hash, Proc#hash
-          o Method#source_location, UnboundMethod#source_location, Proc#source_location
+          o Method#source_location, UnboundMethod#source_location and
+	    Proc#source_location
           o __callee__
           o Elements in $LOAD_PATH and $LOADED_FEATURES are expanded
 
@@ -346,9 +351,9 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Ruby make. A simple ruby build program with capabilities
             similar to make.
     * minitest
-          o Our new testing library which is cleaner and easier to
-            read than the old test/unit.
-          o You can introduce the old test/unit as a gem through
+          o Our new testing library which is faster, cleaner and easier
+	    to read than the old test/unit.
+          o You can introduce the old test/unit as testunit gem through
             RubyGems if you want.
     * CMath
           o Complex number version of Math
@@ -358,6 +363,13 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Prime.new is obsolete. Use its class methods.
     * ripper
           o Ruby script parser
+    * Readline
+          o Readline.vi_editing_mode?
+          o Readline.emacs_editing_mode?
+          o Readline::HISTORY.clear
+    * Tk
+          o TkXXX widget classes are removed and redefined as aliases of 
+            Tk::XXX classes.
 
 * commandline options
     * -E, --encoding
