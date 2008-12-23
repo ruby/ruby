@@ -1,3 +1,11 @@
+Wed Dec 24 06:29:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (OBJDUMP, OBJCOPY): autoconf list is not comma
+	  separated.
+
+	* configure.in (AC_HEADER_STDC, AC_CHECK_HEADERS AC_CHECK_FUNCS):
+	  removed duplicated checks.
+
 Wed Dec 24 03:21:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* misc/ruby-mode.el: added comment to mention newer version
