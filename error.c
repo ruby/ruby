@@ -554,22 +554,15 @@ exc_set_backtrace(VALUE exc, VALUE bt)
 static VALUE
 exc_equal(VALUE exc, VALUE obj)
 {
-    VALUE mesg, backtrace;
     ID id_mesg;
 
     if (exc == obj) return Qtrue;
-    CONST_ID(id_mesg, "mesg");
-    if (rb_obj_class(exc) != rb_obj_class(obj)) {
-	mesg = rb_funcall(obj, rb_intern("message"), 0, 0);
-	backtrace = rb_funcall(obj, rb_intern("backtrace"), 0, 0);
-    }
-    else {
-	mesg = rb_attr_get(obj, id_mesg);
-	backtrace = exc_backtrace(obj);
-    }
-    if (!rb_equal(rb_attr_get(exc, id_mesg), mesg))
+    if (rb_obj_class(exc) != rb_obj_class(obj))
 	return Qfalse;
-    if (!rb_equal(exc_backtrace(exc), backtrace))
+    CONST_ID(id_mesg, "mesg");
+    if (!rb_equal(rb_attr_get(exc, id_mesg), rb_attr_get(obj, id_mesg)))
+	return Qfalse;
+    if (!rb_equal(exc_backtrace(exc), exc_backtrace(obj)))
 	return Qfalse;
     return Qtrue;
 }
