@@ -2566,10 +2566,33 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
  *  to encoding +encoding+.
  *  The second form returns a copy of <i>str</i> transcoded
  *  from src_encoding to dst_encoding.
- *  The options Hash gives details for conversion. Details
- *  to be added.
+ *  The options Hash gives details for conversion.
  *  The last form returns a copy of <i>str</i> transcoded to
  *  <code>Encoding.default_internal</code>.
+ *
+ *  === options
+ *  A hash <code>options</code> can have the following keys:
+ *  :invalid ::
+ *    If the value is <code>:replace</code> <code>#encode</code> replaces
+ *    invalid characters in <code>str</code> with the replacement character.
+ *  :undef ::
+ *    If the value is <code>:replace</code> <code>#encode</code> replaces
+ *    characters which are undefined in the destination character set with
+ *    the replacement character.
+ *  :replace ::
+ *    sets the replacement character to the value.
+ *  :xml ::
+ *    The value must be <code>:text</code> or <code>:attr</code>.
+ *    If the value is <code>:text</code> <code>#encode</code> replaces
+ *    undefined characters with its numerical character reference.
+ *    If the value is <code>:attr</code> <code>#encode</code> also quotes
+ *    the replacement result.
+ *  :cr_newline ::
+ *    replaces EOL with CR.
+ *  :crlf_newline ::
+ *    replaces EOL with CR LF.
+ *  :universal_newline ::
+ *    replaces EOL with LF.
  */
 
 static VALUE
