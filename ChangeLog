@@ -203,7 +203,7 @@ Thu Dec 18 19:31:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/irb/init.rb (IRB.opt_parse): (M17N) adds -U and -E as command
 	  line options. [ruby-dev:37161]. Fixes #711. 
-	  improved long optinos.
+	  improved long options.
 
 	* lib/irb/init.rb (IRB.set_encoding): new subroutine for IRB.opt_parse
 
@@ -225,7 +225,7 @@ Thu Dec 18 19:31:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	* lib/irb/lc/ja/encoding_aliases.rb: new file. provides Japanese specific
 	  character encoding name table for backward compatibility.
 
-	* lib/irb/lc/ja/error.rb: re-eoncoded from ISO-2022-JP into UTF-8.
+	* lib/irb/lc/ja/error.rb: re-encoded from ISO-2022-JP into UTF-8.
 	  magic comment.
 
 	* lib/irb/locale.rb: integrated with Ruby 1.9's M17N support.
@@ -316,7 +316,7 @@ Wed Dec 17 11:39:39 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 Wed Dec 17 11:01:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* string.c (rb_str_hash): gets rid of collisions between differen
+	* string.c (rb_str_hash): gets rid of collisions between different
 	  encoding strings.  [ruby-core:20526]
 
 Wed Dec 17 09:50:19 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
@@ -542,7 +542,7 @@ Sun Dec 14 14:53:41 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 Sun Dec 14 14:26:11 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* spec/README: directory structrue changed
+	* spec/README: directory structure changed
 
 Sun Dec 14 09:14:37 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
@@ -961,7 +961,7 @@ Sun Dec  7 17:44:06 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open3.rb (Open3.capture3): renamed from Open3.poutput3.
 	  (Open3.capture2): renamed from Open3.poutput2.
-	  (lOpen3.capture2e): renamed from Open3.poutput2e.
+	  (Open3.capture2e): renamed from Open3.poutput2e.
 
 Sun Dec  7 11:48:04 2008  Tanaka Akira  <akr@fsij.org>
 
@@ -996,7 +996,7 @@ Fri Dec  5 21:45:45 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Fri Dec  5 21:42:44 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
-	* complex.c: inpsect should not depend on to_s.
+	* complex.c: inspect should not depend on to_s.
 
 Fri Dec  5 21:18:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -1531,7 +1531,7 @@ Sun Nov 23 00:04:14 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 Sat Nov 22 21:29:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* test/ruby/test_method.rb (test_default_accessiblity): test case for
+	* test/ruby/test_method.rb (test_default_accessibility): test case for
 	  [ruby-dev:37124].
 
 Sat Nov 22 18:24:24 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1883,7 +1883,7 @@ Sat Nov  8 05:31:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sat Nov  8 01:48:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (rb_thread_create_timer_thread): do not wait never
-	  coming signal if failed to create tiemr thread.
+	  coming signal if failed to create timer thread.
 
 	* thread_pthread.c (native_cond_timedwait): returns error code.
 
@@ -2001,7 +2001,7 @@ Mon Nov  3 13:01:13 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	  (ary_take_pos_flags): new enum. makes the fourth argument of
 	  rb_ary_take_first_or_last more descriptive.
 	  (rb_ary_partial): renamed rb_ary_partial0 more appropriately.
-	  takes a new parameter klass for what class to instanciate.
+	  takes a new parameter klass for what class to instantiate.
 
 Mon Nov  3 13:00:26 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
  
@@ -2091,7 +2091,7 @@ Fri Oct 31 12:27:52 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 Fri Oct 31 11:35:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_set_default_internal): no alias "internal" if
-	  defalt internal is not set.  [ruby-dev:37000]
+	  default internal is not set.  [ruby-dev:37000]
 
 Fri Oct 31 08:16:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -2365,7 +2365,7 @@ Mon Oct 27 15:38:38 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/minitest/test_mini_test.rb
 	  (test_assert_raises_triggered_different): the test failed when a
-	  file path in the backtrace contontains something except [\w\/\.],
+	  file path in the backtrace contains something except [\w\/\.],
 	  e.g. hyphen, Japanese characters or backslash.
 
 	* test/minitest/test_mini_test.rb
@@ -2584,7 +2584,7 @@ Fri Oct 24 18:29:00 2008  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/mathn.rb: moved into ext/mathn/rational/rational.c and
 	  ext/mathn/complex/complex.c.
-	* ext/mathn: new mathn ext-libralies.
+	* ext/mathn: new mathn ext-libraries.
 
 Fri Oct 24 18:21:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -2694,7 +2694,7 @@ Wed Oct 22 17:25:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Oct 22 16:27:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_yield_setup_args): should not drop arguments
-	  corresponding to default paramters.
+	  corresponding to default parameters.
 
 Wed Oct 22 14:59:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
