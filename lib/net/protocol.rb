@@ -135,7 +135,7 @@ module Net # :nodoc:
         @rbuf << @io.read_nonblock(BUFSIZE)
       rescue Errno::EWOULDBLOCK
         if IO.select([@io], nil, nil, @read_timeout)
-          @rbuf << @io.read_nonblock(BUFSIZE)
+          retry
         else
           raise Timeout::TimeoutError
         end

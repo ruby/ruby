@@ -171,6 +171,11 @@ Mon Dec 22 18:00:36 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: fix wrong flag value.
 
+Mon Dec 22 15:15:58 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/net/protocol.rb (Net::BufferedIO#rbuf_fill): avoid calling
+	  read_nonblock in rescue.  use retry instead.
+
 Mon Dec 22 14:35:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_external_str_new_with_enc): set ASCII-8BIT if
