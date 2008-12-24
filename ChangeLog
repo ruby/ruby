@@ -1,3 +1,8 @@
+Thu Dec 25 00:59:06 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* test/readline/test_readline_history.rb: did not check the
+	  encoding that is in the Readline::HISTORY. I will fix it.
+
 Wed Dec 24 22:36:06 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* error.c, vm_dump.c: change message by rb_bug().
