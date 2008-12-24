@@ -75,13 +75,14 @@ class Readline::TestHistory < Test::Unit::TestCase
   end
   
   def test_to_s
-    assert_equal("HISTORY", HISTORY.to_s)
+    expected = "HISTORY"
+    assert_equal(expected, HISTORY.to_s)
   end
 
   def test_get
     lines = push_history(5)
     lines.each_with_index do |s, i|
-      assert_equal(s, HISTORY[i])
+      assert_encoded_string_equal(s, HISTORY[i])
     end
   end
 
@@ -115,8 +116,9 @@ class Readline::TestHistory < Test::Unit::TestCase
       lines = push_history(5)
       5.times do |i|
         expected = "set: #{i}"
-        HISTORY[i] = expected
-        assert_equal(expected, HISTORY[i])
+        s = (HISTORY[i] = expected)
+        assert_encoded_string_equal(expected, HISTORY[i])
+        assert_encoded_string_equal(expected, s)
       end
     rescue NotImplementedError
     end
@@ -146,16 +148,18 @@ class Readline::TestHistory < Test::Unit::TestCase
 
   def test_push
     5.times do |i|
-      assert_equal(HISTORY, HISTORY.push(i.to_s))
-      assert_equal(i.to_s, HISTORY[i])
+      s = i.to_s
+      assert_equal(HISTORY, HISTORY.push(s))
+      assert_encoded_string_equal(s, HISTORY[i])
     end
     assert_equal(5, HISTORY.length)
   end
 
   def test_push__operator
     5.times do |i|
-      assert_equal(HISTORY, HISTORY << i.to_s)
-      assert_equal(i.to_s, HISTORY[i])
+      s = i.to_s
+      assert_equal(HISTORY, HISTORY << s)
+      assert_encoded_string_equal(s, HISTORY[i])
     end
     assert_equal(5, HISTORY.length)
   end
@@ -163,13 +167,13 @@ class Readline::TestHistory < Test::Unit::TestCase
   def test_push__plural
     assert_equal(HISTORY, HISTORY.push("0", "1", "2", "3", "4"))
     (0..4).each do |i|
-      assert_equal(i.to_s, HISTORY[i])
+      assert_encoded_string_equal(i.to_s, HISTORY[i])
     end
     assert_equal(5, HISTORY.length)
 
     assert_equal(HISTORY, HISTORY.push("5", "6", "7", "8", "9"))
     (5..9).each do |i|
-      assert_equal(i.to_s, HISTORY[i])
+      assert_encoded_string_equal(i.to_s, HISTORY[i])
     end
     assert_equal(10, HISTORY.length)
   end
@@ -180,7 +184,7 @@ class Readline::TestHistory < Test::Unit::TestCase
       
       lines = push_history(5)
       (1..5).each do |i|
-        assert_equal(lines[-i], HISTORY.pop)
+        assert_encoded_string_equal(lines[-i], HISTORY.pop)
         assert_equal(lines.length - i, HISTORY.length)
       end
       
@@ -195,7 +199,7 @@ class Readline::TestHistory < Test::Unit::TestCase
       
       lines = push_history(5)
       (0..4).each do |i|
-        assert_equal(lines[i], HISTORY.shift)
+        assert_encoded_string_equal(lines[i], HISTORY.shift)
         assert_equal(lines.length - (i + 1), HISTORY.length)
       end
     
@@ -212,8 +216,8 @@ class Readline::TestHistory < Test::Unit::TestCase
     lines = push_history(5)
     i = 0
     e = HISTORY.each do |s|
-      assert_equal(HISTORY[i], s)
-      assert_equal(lines[i], s)
+      assert_encoded_string_equal(HISTORY[i], s)
+      assert_encoded_string_equal(lines[i], s)
       i += 1
     end
     assert_equal(HISTORY, e)
@@ -248,22 +252,22 @@ class Readline::TestHistory < Test::Unit::TestCase
     begin
       lines = push_history(5)
       (0..4).each do |i|
-        assert_equal(lines[i], HISTORY.delete_at(0))
+        assert_encoded_string_equal(lines[i], HISTORY.delete_at(0))
       end
       assert(HISTORY.empty?)
 
       lines = push_history(5)
       (1..5).each do |i|
-        assert_equal(lines[lines.length - i], HISTORY.delete_at(-1))
+        assert_encoded_string_equal(lines[lines.length - i], HISTORY.delete_at(-1))
       end
       assert(HISTORY.empty?)
 
       lines = push_history(5)
-      assert_equal(lines[0], HISTORY.delete_at(0))
-      assert_equal(lines[4], HISTORY.delete_at(3))
-      assert_equal(lines[1], HISTORY.delete_at(0))
-      assert_equal(lines[3], HISTORY.delete_at(1))
-      assert_equal(lines[2], HISTORY.delete_at(0))
+      assert_encoded_string_equal(lines[0], HISTORY.delete_at(0))
+      assert_encoded_string_equal(lines[4], HISTORY.delete_at(3))
+      assert_encoded_string_equal(lines[1], HISTORY.delete_at(0))
+      assert_encoded_string_equal(lines[3], HISTORY.delete_at(1))
+      assert_encoded_string_equal(lines[2], HISTORY.delete_at(0))
       assert(HISTORY.empty?)
     rescue NotImplementedError
     end
@@ -304,6 +308,11 @@ class Readline::TestHistory < Test::Unit::TestCase
     end
     HISTORY.push(*lines)
     return lines
+  end
+
+  def assert_encoded_string_equal(expected, actual)
+    assert_equal(expected, actual)
+    assert_equal(expected.encoding, actual.encoding)
   end
 end if defined?(::Readline) && defined?(::Readline::HISTORY) &&
   (
