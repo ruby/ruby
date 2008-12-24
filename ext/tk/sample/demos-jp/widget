@@ -882,18 +882,12 @@ def showCode1(demo)
 
   $code_window.title("Demo code: #{file}")
   $code_window.iconname(file)
-#  fid = open(file, 'r')
-  fid = open([$demo_dir, file].join(File::Separator), 'r')
+  code = open([$demo_dir, file].join(File::Separator), 'r'){|fid| fid.read }
   $code_text.delete('1.0', 'end')
-  #$code_text.insert('1.0', `cat #{file}`)
-  $code_text.insert('1.0', fid.read)
-  #$code_mark = TkTextMark.new($code_text, '1.0')
-  #$code_text.set_insert('1.0')
+  code.force_encoding('EUC-JP') if defined?(::Encoding.default_external)
+  $code_text.insert('1.0', code)
   TkTextMarkInsert.new($code_text,'1.0')
-
   $set_linenum.call($code_text)
-
-  fid.close
 end
 
 def showCode2(demo)
@@ -974,14 +968,12 @@ def showCode2(demo)
 
   $code_window.title("Demo code: #{file}")
   $code_window.iconname(file)
-  fid = open([$demo_dir, file].join(File::Separator), 'r')
+  code = open([$demo_dir, file].join(File::Separator), 'r'){|fid| fid.read }
   $code_text.delete('1.0', 'end')
-  $code_text.insert('1.0', fid.read)
+  code.force_encoding('EUC-JP') if defined?(::Encoding.default_external)
+  $code_text.insert('1.0', code)
   TkTextMarkInsert.new($code_text,'1.0')
-
   $set_linenum.call($code_text)
-
-  fid.close
 end
 
 if $tk_major_ver < 8
