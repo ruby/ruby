@@ -1,3 +1,11 @@
+Sun Dec 21 14:55:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (SPLAT_PROC): splat values by hand.
+
+Sun Dec 21 12:23:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (SPLAT_PROC): fix for regexp.  [ruby-dev:37514]
+
 Mon Dec 22 15:25:03 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* thread.c (Thread#set_trace_func, #add_trace_func): removed.
