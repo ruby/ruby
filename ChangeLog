@@ -1,3 +1,7 @@
+Wed Dec 24 20:15:50 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* tool/file2lastrev.rb (get_revisions): fix to ignore end of line.
+
 Wed Dec 24 13:33:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (HAVE_LONG_LONG, HAVE_OFF_T): revised for autoconf
