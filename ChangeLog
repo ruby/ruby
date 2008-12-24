@@ -1,3 +1,16 @@
+Wed Dec 24 20:33:45 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_call_method): use class of method defined
+	  instead of receiver's class on bmethod.  fixes [ruby-core:20786]
+
+	* bootstraptest/test_method.rb: add a test for above.
+
+	* vm_insnhelper.c (vm_setup_method): remove unused parameter klass.
+
+	* vm_insnhelper.h (CALL_METHOD): ditto.
+
+	* insns.def, vm_eval.c: ditto.
+
 Wed Dec 24 20:15:50 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* tool/file2lastrev.rb (get_revisions): fix to ignore end of line.

@@ -1084,3 +1084,22 @@ assert_equal '[1, [:foo, 3, 4, :foo]]', %q{
   a = b = [:foo]
   regular(1, *a, *[3, 4], *b)
 }
+
+assert_equal '["B", "A"]', %q{
+  class A
+    def m
+      'A'
+    end
+  end
+
+  class B < A
+    define_method(:m) do    
+      ['B', super()]
+    end
+  end
+
+  class C < B
+  end
+
+  C.new.m
+}

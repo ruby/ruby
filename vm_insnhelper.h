@@ -158,8 +158,8 @@ extern VALUE ruby_vm_global_state_version;
   c1->nd_next = __tmp_c2->nd_next; \
 } while (0)
 
-#define CALL_METHOD(num, blockptr, flag, id, mn, recv, klass) do { \
-    VALUE v = vm_call_method(th, GET_CFP(), num, blockptr, flag, id, mn, recv, klass); \
+#define CALL_METHOD(num, blockptr, flag, id, mn, recv) do { \
+    VALUE v = vm_call_method(th, GET_CFP(), num, blockptr, flag, id, mn, recv); \
     if (v == Qundef) { \
 	RESTORE_REGS(); \
 	NEXT_INSN(); \
@@ -188,7 +188,7 @@ extern VALUE ruby_vm_global_state_version;
 
 #define CALL_SIMPLE_METHOD(num, id, recv) do { \
     VALUE klass = CLASS_OF(recv); \
-    CALL_METHOD(num, 0, 0, id, rb_method_node(klass, id), recv, CLASS_OF(recv)); \
+    CALL_METHOD(num, 0, 0, id, rb_method_node(klass, id), recv); \
 } while (0)
 
 #endif /* RUBY_INSNHELPER_H */

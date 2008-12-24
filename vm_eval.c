@@ -52,7 +52,7 @@ vm_call0(rb_thread_t * th, VALUE klass, VALUE recv, VALUE id, ID oid,
 	    *reg_cfp->sp++ = argv[i];
 	}
 
-	vm_setup_method(th, reg_cfp, argc, blockptr, 0, iseqval, recv, klass);
+	vm_setup_method(th, reg_cfp, argc, blockptr, 0, iseqval, recv);
 	val = vm_exec(th);
 	break;
       }
