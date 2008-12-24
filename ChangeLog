@@ -1,3 +1,8 @@
+Thu Dec 25 01:09:23 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* test/readline/test_readline_history.rb: check the encoding that
+	  is in the Readline::HISTORY.
+
 Thu Dec 25 00:59:06 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* test/readline/test_readline_history.rb: did not check the
