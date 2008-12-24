@@ -1,3 +1,7 @@
+Wed Dec 24 21:57:39 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_peephole_optimize): fix typo.
+
 Sun Dec 21 13:38:04 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (invoke_block_from_c): fix to point right cfp.
