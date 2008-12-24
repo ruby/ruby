@@ -207,10 +207,17 @@ report_bug(const char *file, int line, const char *fmt, va_list args)
 
     if (fwrite(buf, 1, len, out) == len ||
 	fwrite(buf, 1, len, (out = stdout)) == len) {
+
 	fputs("[BUG] ", out);
 	vfprintf(out, fmt, args);
 	fprintf(out, "\n%s\n\n", ruby_description);
+
 	rb_vm_bugreport();
+
+	fprintf(out,
+		"[NOTE]\n"
+		"You may encounter a bug of Ruby interpreter. Bug reports are welcome.\n"
+		"For details: http://www.ruby-lang.org/bugreport.html\n\n");
     }
 }
 
