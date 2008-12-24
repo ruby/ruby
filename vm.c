@@ -385,43 +385,41 @@ vm_stack_to_heap(rb_thread_t * const th)
 /* Proc */
 
 static VALUE
-vm_make_proc_from_block(rb_thread_t *th, rb_control_frame_t *cfp,
-			rb_block_t *block, VALUE klass)
+vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block, VALUE klass)
 {
     VALUE procval;
-    rb_control_frame_t *bcfp;
-    VALUE *bdfp;		/* to gc mark */
 
     procval = block->proc;
     if (procval && RBASIC(procval)->klass == klass) {
 	return procval;
     }
 
-    bcfp = RUBY_VM_GET_CFP_FROM_BLOCK_PTR(block);
-    bdfp = bcfp->dfp;
-    procval = vm_make_proc(th, bcfp, block, klass);
-    if (!block->proc) block->proc = procval;
+    procval = vm_make_proc(th, block, klass);
+    if (!block->proc) {
+	block->proc = procval;
+    }
     return procval;
 }
 
 VALUE
-vm_make_proc(rb_thread_t *th, rb_control_frame_t *cfp,
-	     const rb_block_t *block, VALUE klass)
+vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
 {
     VALUE procval, envval, blockprocval = 0;
     rb_proc_t *proc;
+    rb_control_frame_t *cfp = RUBY_VM_GET_CFP_FROM_BLOCK_PTR(block);
 
     if (GC_GUARDED_PTR_REF(cfp->lfp[0])) {
 	if (!RUBY_VM_CLASS_SPECIAL_P(cfp->lfp[0])) {
 	    rb_proc_t *p;
 
 	    blockprocval = vm_make_proc_from_block(
-		th, cfp, (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->lfp), klass);
+		th, (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->lfp), klass);
 
 	    GetProcPtr(blockprocval, p);
 	    *cfp->lfp = GC_GUARDED_PTR(&p->block);
 	}
     }
+
     envval = vm_make_env_object(th, cfp);
 
     if (PROCDEBUG) {
@@ -459,13 +457,14 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 {
     if (BUILTIN_TYPE(block->iseq) != T_NODE) {
 	const rb_iseq_t *iseq = block->iseq;
-	const rb_control_frame_t *cfp = th->cfp;
+	const rb_control_frame_t *cfp;
 	int i, opt_pc, arg_size = iseq->arg_size;
 	int type = block_proc_is_lambda(block->proc) ?
 	  VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK;
 
 	rb_vm_set_finish_env(th);
 
+	cfp = th->cfp;
 	CHECK_STACK_OVERFLOW(cfp, argc + iseq->stack_max);
 
 	for (i=0; i<argc; i++) {
@@ -1731,7 +1730,7 @@ m_core_set_postexe(VALUE self, VALUE iseqval)
 	blockptr->iseq = blockiseq;
 	blockptr->proc = 0;
 
-	proc = vm_make_proc(th, cfp, blockptr, rb_cProc);
+	proc = vm_make_proc(th, blockptr, rb_cProc);
 	rb_set_end_proc(rb_call_end_proc, proc);
     });
     return Qnil;
