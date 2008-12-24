@@ -1,7 +1,10 @@
-Thu Dec 25 05:05:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Dec 25 05:53:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/id.h.tmpl, id.h (ruby_method_ids): not depend on if
 	  token are defined as macros.  [ruby-dev:37553]
+
+	* template/id.h.tmpl, id.h (ruby_method_ids_check): enclosed in a
+	  struct.
 
 Thu Dec 25 01:52:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

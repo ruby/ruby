@@ -122,8 +122,9 @@ enum ruby_method_ids {
 };
 
 #ifdef tLAST_TOKEN
+struct ruby_method_ids_check {
 #define ruby_method_id_check_for(name, value) \
-    typedef int ruby_method_id_check_for_##name[name == value ? 1 : -1]
+    int checking_for_##name[name == value ? 1 : -1]
 ruby_method_id_check_for(tUPLUS, 321);
 ruby_method_id_check_for(tUMINUS, 322);
 ruby_method_id_check_for(tPOW, 323);
@@ -156,6 +157,7 @@ ruby_method_id_check_for(id_core_define_method, 373);
 ruby_method_id_check_for(id_core_define_singleton_method, 374);
 ruby_method_id_check_for(id_core_set_postexe, 375);
 ruby_method_id_check_for(tLAST_TOKEN, 376);
+};
 #endif
 
 #endif /* RUBY_ID_H */
