@@ -559,14 +559,25 @@ exc_equal(VALUE exc, VALUE obj)
 
     if (exc == obj) return Qtrue;
     CONST_ID(id_mesg, "mesg");
+
     if (rb_obj_class(exc) != rb_obj_class(obj)) {
-	mesg = rb_funcall(obj, rb_intern("message"), 0, 0);
-	backtrace = rb_funcall(obj, rb_intern("backtrace"), 0, 0);
+	ID id_message, id_backtrace;
+	CONST_ID(id_message, "message");
+	CONST_ID(id_backtrace, "backtrace");
+
+	if (rb_respond_to(obj, id_message) && rb_respond_to(obj, id_backtrace)) {
+	    mesg = rb_funcall(obj, id_message, 0, 0);
+	    backtrace = rb_funcall(obj, id_backtrace, 0, 0);
+	}
+	else {
+	    return Qfalse;
+	}
     }
     else {
 	mesg = rb_attr_get(obj, id_mesg);
 	backtrace = exc_backtrace(obj);
     }
+
     if (!rb_equal(rb_attr_get(exc, id_mesg), mesg))
 	return Qfalse;
     if (!rb_equal(exc_backtrace(exc), backtrace))

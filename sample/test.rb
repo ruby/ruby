@@ -661,9 +661,11 @@ begin
   end
   test_ok(false)
 rescue => e
-  test_ok(true) if $! == e
+  test_ok($! == e)
+  test_ok(e.message == $string)
+  test_ok(e != $string)
 end
-  
+
 # exception in ensure clause
 begin
   begin
