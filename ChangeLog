@@ -1,3 +1,7 @@
+Thu Dec 25 01:52:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_start_func_2): sets native thread key.
+
 Thu Dec 25 01:09:23 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* test/readline/test_readline_history.rb: check the encoding that
