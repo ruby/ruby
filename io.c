@@ -983,6 +983,9 @@ rb_io_flush(VALUE io)
 
     if (fptr->mode & FMODE_WRITABLE) {
         io_fflush(fptr);
+#ifdef _WIN32
+	fsync(fptr->fd);
+#endif
     }
     if (fptr->mode & FMODE_READABLE) {
         io_unread(fptr);
