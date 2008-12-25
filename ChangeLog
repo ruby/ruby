@@ -1,3 +1,8 @@
+Thu Dec 25 00:59:06 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* test/readline/test_readline_history.rb: did not check the
+	  encoding that is in the Readline::HISTORY. I will fix it.
+
 Mon Dec 22 02:54:56 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: temporary patch for trouble on TkAqua (> Tk8.4.9).
