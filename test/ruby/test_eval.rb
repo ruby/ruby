@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 class TestEval < Test::Unit::TestCase
 
@@ -7,15 +6,6 @@ class TestEval < Test::Unit::TestCase
   @@cvar = 13
   $gvar__eval = 14
   Const = 15
-
-  def ruby(*args)
-    args = ['-e', '$>.write($<.read)'] if args.empty?
-    ruby = EnvUtil.rubybin
-    f = IO.popen([ruby] + args, 'r+')
-    yield(f)
-  ensure
-    f.close unless !f || f.closed?
-  end
 
   def test_eval_basic
     assert_equal nil,   eval("nil")
@@ -399,13 +389,6 @@ class TestEval < Test::Unit::TestCase
         $SAFE = 4
         eval("", b)
       end.join
-    end
-  end
-
-  def test_eval_with_toplevel_binding # [ruby-dev:37142]
-    ruby("-e", "x = 0; eval('p x', TOPLEVEL_BINDING)") do |f|
-      f.close_write
-      assert_equal("0", f.read.chomp)
     end
   end
 end
