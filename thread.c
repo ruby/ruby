@@ -362,6 +362,8 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
     rb_thread_t *main_th;
     VALUE errinfo = Qnil;
 
+    ruby_thread_set_native(th);
+
     th->machine_stack_start = stack_start;
 #ifdef __ia64
     th->machine_register_stack_start = register_stack_start;
