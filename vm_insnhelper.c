@@ -1447,7 +1447,7 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, int num, int flag)
 }
 
 static inline int
-check_cfunc(const NODE *mn, const void *func)
+check_cfunc(const NODE *mn, VALUE (*func)())
 {
     if (mn && nd_type(mn->nd_body) == NODE_CFUNC &&
 	mn->nd_body->nd_cfnc == func) {
