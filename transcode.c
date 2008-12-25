@@ -20,7 +20,7 @@ VALUE rb_eConverterNotFoundError;
 
 VALUE rb_cEncodingConverter;
 
-static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
+static VALUE sym_invalid, sym_undef, sym_replace;
 static VALUE sym_xml, sym_text, sym_attr;
 static VALUE sym_universal_newline;
 static VALUE sym_crlf_newline;
@@ -4024,7 +4024,6 @@ Init_transcode(void)
 
     sym_invalid = ID2SYM(rb_intern("invalid"));
     sym_undef = ID2SYM(rb_intern("undef"));
-    sym_ignore = ID2SYM(rb_intern("ignore"));
     sym_replace = ID2SYM(rb_intern("replace"));
     sym_xml = ID2SYM(rb_intern("xml"));
     sym_text = ID2SYM(rb_intern("text"));
