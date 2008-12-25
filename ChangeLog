@@ -1,3 +1,12 @@
+Sun Dec 21 13:38:04 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (invoke_block_from_c): fix to point right cfp.
+
+	* vm.c (vm_make_proc, vm_make_proc_from_block), vm_core.h:
+	  remove unused parameter cfp.
+
+	* vm_insnhelper.c, proc.c (proc_new): ditto.
+
 Wed Dec 24 20:59:12 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* error.c (exc_equal): == method should not raise Exception.

@@ -185,10 +185,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
 	    /* make Proc object */
 	    if (blockptr->proc == 0) {
 		rb_proc_t *proc;
-
-		blockval = vm_make_proc(th, RUBY_VM_GET_CFP_FROM_BLOCK_PTR(blockptr),
-					blockptr, rb_cProc);
-
+		blockval = vm_make_proc(th, blockptr, rb_cProc);
 		GetProcPtr(blockval, proc);
 		*block = &proc->block;
 	    }
@@ -664,7 +661,7 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
     }
 
     if (blockptr) {
-	blockarg = vm_make_proc(th, th->cfp, blockptr, rb_cProc);
+	blockarg = vm_make_proc(th, blockptr, rb_cProc);
     }
     else {
 	blockarg = Qnil;
