@@ -1,3 +1,12 @@
+Sat Dec 20 15:34:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rake.rb (Rake::FileList#egrep): change open mode to "rb",
+	  i.e. default to binary.    [ruby-dev:37385]
+
+	* lib/rake.rb (Rake::FileList#egrep): allow specifying reading
+	  encoding, e.g. FileList['*.rb'].egrep(/require/, encoding:
+	  "ascii-8bit")
+
 Mon Dec 22 10:59:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_upto): should return enumerator if called
