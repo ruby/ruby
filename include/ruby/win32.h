@@ -243,11 +243,6 @@ extern char **rb_w32_get_environ(void);
 extern void   rb_w32_free_environ(char **);
 extern int    rb_w32_map_errno(DWORD);
 
-#define vsnprintf(s,n,f,l) rb_w32_vsnprintf(s,n,f,l)
-#define snprintf   rb_w32_snprintf
-extern int rb_w32_vsnprintf(char *, size_t, const char *, va_list);
-extern int rb_w32_snprintf(char *, size_t, const char *, ...);
-
 extern int chown(const char *, int, int);
 extern int link(const char *, const char *);
 extern int gettimeofday(struct timeval *, struct timezone *);
