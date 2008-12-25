@@ -1,3 +1,26 @@
+Wed Dec 24 20:15:50 2008  Koichi Sasada  <ko1@atdot.net>
+
+        * tool/file2lastrev.rb (get_revisions): fix to ignore end of line.
+
+Tue Dec 23 15:48:55 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+        * tool/file2lastrev.rb: shouldn't use single quote in shell's command
+	  line if you want to support Windows.
+
+Tue Dec 23 15:36:58 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* tool/file2lastrev.rb: detects vcs directory properly on
+	  building outside of srcdir. [ruby-dev:37555] [ruby-dev:37561]
+
+Mon Dec 22 19:31:19 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* common.mk (revision.h): uses tool/file2lastrev.rb to support
+	  git-svn.
+
+	* version.h: changed version string as
+	  `ruby 1.9.1 (2008-12-22 patchlevel-5000 trunk 20912)
+	  [i386-darwin9.6.0]'.
+
 Mon Dec 22 21:08:54 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit/assertions.rb (assert_nothing_raised): increment

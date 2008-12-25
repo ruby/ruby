@@ -674,10 +674,8 @@ prereq: incs srcs preludes
 preludes: {$(VPATH)}miniprelude.c
 preludes: {$(srcdir)}golf_prelude.c
 
-$(srcdir)/revision.h: $(srcdir)/version.h $(srcdir)/ChangeLog $(REVISION_FORCE)
-	@set LC_MESSAGES=C
-	-@$(SET_LC_MESSAGES) $(VCS) info "$(@D)" | \
-	sed -n "s/.*Rev:/#define RUBY_REVISION/p" > "$@.tmp"
+$(srcdir)/revision.h: $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
+	$(BASERUBY) $(srcdir)/tool/file2lastrev.rb --revision.h "$(@D)" > "$@.tmp"
 	@$(IFCHANGE) "$@" "$@.tmp"
 
 $(srcdir)/ext/ripper/ripper.c:
