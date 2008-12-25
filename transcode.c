@@ -2772,17 +2772,22 @@ decorate_convpath(VALUE convpath, int ecflags)
     len = n = RARRAY_LEN(convpath);
     if (n != 0) {
         VALUE pair = RARRAY_PTR(convpath)[n-1];
-        const char *sname = rb_enc_name(rb_to_encoding(RARRAY_PTR(pair)[0]));
-        const char *dname = rb_enc_name(rb_to_encoding(RARRAY_PTR(pair)[1]));
-        transcoder_entry_t *entry = get_transcoder_entry(sname, dname);
-        const rb_transcoder *tr = load_transcoder_entry(entry);
-        if (!tr)
-            return -1;
-        if (!DECORATOR_P(tr->src_encoding, tr->dst_encoding) &&
-             tr->asciicompat_type == asciicompat_encoder) {
-            n--;
-            rb_ary_store(convpath, len + num_decorators - 1, pair);
-        }
+	if (TYPE(pair) == T_ARRAY) {
+	    const char *sname = rb_enc_name(rb_to_encoding(RARRAY_PTR(pair)[0]));
+	    const char *dname = rb_enc_name(rb_to_encoding(RARRAY_PTR(pair)[1]));
+	    transcoder_entry_t *entry = get_transcoder_entry(sname, dname);
+	    const rb_transcoder *tr = load_transcoder_entry(entry);
+	    if (!tr)
+		return -1;
+	    if (!DECORATOR_P(tr->src_encoding, tr->dst_encoding) &&
+		    tr->asciicompat_type == asciicompat_encoder) {
+		n--;
+		rb_ary_store(convpath, len + num_decorators - 1, pair);
+	    }
+	}
+	else {
+	    rb_ary_store(convpath, len + num_decorators - 1, pair);
+	}
     }
 
     for (i = 0; i < num_decorators; i++)
