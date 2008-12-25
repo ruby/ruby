@@ -1103,3 +1103,40 @@ assert_equal '["B", "A"]', %q{
 
   C.new.m
 }
+
+assert_equal 'ok', %q{
+  module Foo
+    def foo
+      begin
+        super
+      rescue NoMethodError
+        :ok
+      end
+    end
+    module_function :foo
+  end
+  Foo.foo
+}, '[ruby-dev:37587]'
+
+assert_equal 'Object#foo', %q{
+  class Object
+    def self.foo
+      "Object.foo"
+    end
+    def foo
+      "Object#foo"
+    end
+  end
+
+  module Foo
+    def foo
+      begin
+        super
+      rescue NoMethodError
+        :ok
+      end
+    end
+    module_function :foo
+  end
+  Foo.foo
+}, '[ruby-dev:37587]'
