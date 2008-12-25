@@ -76,7 +76,7 @@ endif
 ifeq (@target_os@,cygwin)
 cygwin-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR)$(TEENY).dll: $(LIBRUBY_A)
 	@NM@ --extern --defined $(LIBRUBY_A) | \
-	  $(MINIRUBY) -ne 'BEGIN{puts "EXPORTS"}; puts $$1+"=$(@F)."+$$1 if / [CDT] _(.*)$$/' >rubydll.def
+	  $(MINIRUBY) -ne 'BEGIN{puts "VERSION $(MAJOR).$(MINOR)","EXPORTS"}; puts $$1+"=$(@F)."+$$1 if / [CDT] _(.*)$$/' >rubydll.def
 	@DLLWRAP@ -s --def=rubydll.def -o $@
 	@rm -f rubydll.def
 endif
