@@ -1,3 +1,17 @@
+Thu Dec 25 16:23:31 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (flush_before_seek): check io_fflush result.
+	  (rb_io_check_readable): ditto.
+	  (rb_io_flush): ditto.
+	  (rb_io_fsync): ditto.
+	  (remain_size): ditto.
+	  (rb_io_write_nonblock): ditto.
+	  (finish_writeconv): ditto.
+	  (fptr_finalize): ditto.
+	  (io_reopen): ditto.
+	  (rb_io_reopen): ditto.
+	  (copy_stream_body): ditto.
+
 Thu Dec 25 15:54:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_fflush): flush write buffer without write lock in
