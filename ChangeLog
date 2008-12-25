@@ -1,3 +1,11 @@
+Thu Nov 27 10:40:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_div2): should return
+	  Integer for #div operation.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_div2): should raise
+	  ZeroDivisionError if divisor is zero.  [ruby-dev:37207]
+
 Mon Nov  3 00:36:44 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_event.rb: rename test class.
