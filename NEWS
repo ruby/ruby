@@ -133,7 +133,7 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
             tainted/untainted model.
 
     * Deprecation
-          o Kernel.to_a
+          o Kernel#to_a
           o Kernel#getc, #gsub, #sub
           o Kernel#callcc and Continuation now become 'continuation'
             bundled library.
@@ -227,8 +227,8 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Class of singleton classes
 
     * Errno::EXXX
-          o All of those are always defined.  Errno::EXX will be
-            defined as an alias to Errno::ENOERROR if your platform
+          o All of those are always defined.  Errno::EXXX will be
+            defined as an alias to Errno::NOERROR if your platform
             does not have one.
 
     * Binding#eval
