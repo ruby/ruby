@@ -1221,13 +1221,13 @@ class TestIO < Test::Unit::TestCase
   def test_initialize
     t = make_tempfile
     
-    fd = IO.sysopen(t.path)
+    fd = IO.sysopen(t.path, "w")
     assert_kind_of(Integer, fd)
     f = IO.new(fd, "w")
     f.write("FOO\n")
     f.close
 
-    assert_equal("foo\nbar\nbaz\n", File.read(t.path))
+    assert_equal("FOO\n", File.read(t.path))
 
     f = open(t.path)
     assert_raise(RuntimeError) do

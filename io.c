@@ -340,7 +340,8 @@ io_ungetbyte(VALUE str, rb_io_t *fptr)
 static rb_io_t *
 flush_before_seek(rb_io_t *fptr)
 {
-    io_fflush(fptr);
+    if (io_fflush(fptr) < 0)
+        rb_sys_fail(0);
     io_unread(fptr);
     errno = 0;
     return fptr;
@@ -365,12 +366,14 @@ rb_io_check_readable(rb_io_t *fptr)
 	rb_raise(rb_eIOError, "not opened for reading");
     }
     if (fptr->wbuf_len) {
-        io_fflush(fptr);
+        if (io_fflush(fptr) < 0)
+            rb_sys_fail(0);
     }
     if (fptr->tied_io_for_writing) {
 	rb_io_t *wfptr;
 	GetOpenFile(fptr->tied_io_for_writing, wfptr);
-	io_fflush(wfptr);
+        if (io_fflush(wfptr) < 0)
+            rb_sys_fail(0);
     }
 }
 
@@ -988,7 +991,8 @@ rb_io_flush(VALUE io)
     GetOpenFile(io, fptr);
 
     if (fptr->mode & FMODE_WRITABLE) {
-        io_fflush(fptr);
+        if (io_fflush(fptr) < 0)
+            rb_sys_fail(0);
 #ifdef _WIN32
 	fsync(fptr->fd);
 #endif
@@ -1284,7 +1288,8 @@ rb_io_fsync(VALUE io)
     io = GetWriteIO(io);
     GetOpenFile(io, fptr);
 
-    io_fflush(fptr);
+    if (io_fflush(fptr) < 0)
+        rb_sys_fail(0);
     if (fsync(fptr->fd) < 0)
 	rb_sys_fail_path(fptr->pathv);
     return INT2FIX(0);
@@ -1452,7 +1457,8 @@ remain_size(rb_io_t *fptr)
 #endif
 	)
     {
-	io_fflush(fptr);
+        if (io_fflush(fptr) < 0)
+            rb_sys_fail(0);
 	pos = lseek(fptr->fd, 0, SEEK_CUR);
 	if (st.st_size >= pos && pos >= 0) {
 	    siz += st.st_size - pos;
@@ -1893,7 +1899,8 @@ rb_io_write_nonblock(VALUE io, VALUE str)
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
 
-    io_fflush(fptr);
+    if (io_fflush(fptr) < 0)
+        rb_sys_fail(0);
 
     rb_io_set_nonblock(fptr);
     n = write(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
@@ -3061,7 +3068,8 @@ finish_writeconv(rb_io_t *fptr, int noraise)
     res = econv_destination_buffer_full;
     while (res == econv_destination_buffer_full) {
         if (fptr->wbuf_len == fptr->wbuf_capa) {
-            io_fflush(fptr);
+            if (io_fflush(fptr) < 0 && !noraise)
+                rb_sys_fail(0);
         }
 
         ds = dp = (unsigned char *)fptr->wbuf + fptr->wbuf_off + fptr->wbuf_len;
@@ -3109,7 +3117,8 @@ fptr_finalize(rb_io_t *fptr, int noraise)
 	}
     }
     if (fptr->wbuf_len) {
-        io_fflush(fptr);
+        if (io_fflush(fptr) < 0 && !noraise)
+            rb_sys_fail(0);
     }
     if (IS_PREP_STDIO(fptr) ||
         fptr->fd <= 2) {
@@ -5194,10 +5203,12 @@ io_reopen(VALUE io, VALUE nfile)
 	pos = io_tell(orig);
     }
     if (orig->mode & FMODE_WRITABLE) {
-	io_fflush(orig);
+        if (io_fflush(orig) < 0)
+            rb_sys_fail(0);
     }
     if (fptr->mode & FMODE_WRITABLE) {
-	io_fflush(fptr);
+        if (io_fflush(fptr) < 0)
+            rb_sys_fail(0);
     }
 
     /* copy rb_io_t structure */
@@ -5310,7 +5321,8 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     }
 
     if (fptr->mode & FMODE_WRITABLE) {
-        io_fflush(fptr);
+        if (io_fflush(fptr) < 0)
+            rb_sys_fail(0);
     }
     fptr->rbuf_off = fptr->rbuf_len = 0;
 
@@ -7707,8 +7719,10 @@ copy_stream_body(VALUE arg)
         str = rb_str_buf_new(len);
         rb_str_resize(str,len);
         read_buffered_data(RSTRING_PTR(str), len, src_fptr);
-        if (dst_fptr) /* IO or filename */
-            io_binwrite(str, dst_fptr, 0);
+        if (dst_fptr) { /* IO or filename */
+            if (io_binwrite(str, dst_fptr, 0) < 0)
+                rb_sys_fail(0);
+        }
         else /* others such as StringIO */
             rb_io_write(stp->dst, str);
         stp->total += len;
