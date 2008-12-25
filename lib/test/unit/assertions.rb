@@ -53,9 +53,13 @@ module Test
           exp_comment = ''
           act_comment = ''
           if exp_str == act_str
-            if exp.is_a?(String) && act.is_a?(String)
+            if (exp.is_a?(String) && act.is_a?(String)) ||
+               (exp.is_a?(Regexp) && act.is_a?(Regexp))
               exp_comment = " (#{exp.encoding})"
               act_comment = " (#{act.encoding})"
+            elsif exp.is_a?(Float) && act.is_a?(Float)
+              exp_str = "%\#.#{Float::DIG+2}g" % exp
+              act_str = "%\#.#{Float::DIG+2}g" % act
             elsif exp.is_a?(Time) && act.is_a?(Time)
               exp_comment = " (nsec=#{exp.nsec})"
               act_comment = " (nsec=#{act.nsec})"
