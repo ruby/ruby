@@ -7076,7 +7076,6 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     rb_io_t *fptr, *fptr2;
     int fmode = 0;
     VALUE ret;
-    VALUE rw[2];
 
     opt = pop_last_hash(&argc, argv);
     rb_scan_args(argc, argv, "02", &v1, &v2);
@@ -7110,8 +7109,6 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     fptr2->mode |= fmode;
 
     ret = rb_assoc_new(r, w);
-    rw[0] = r;
-    rw[1] = w;
     if (rb_block_given_p()) {
 	return rb_ensure(pipe_yield, ret, io_close, r);
     }
