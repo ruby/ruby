@@ -1,3 +1,7 @@
+Thu Dec 25 17:06:13 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_initialize): check fd validity.  [ruby-dev:36646]
+
 Thu Dec 25 16:23:31 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (flush_before_seek): check io_fflush result.

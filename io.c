@@ -5928,6 +5928,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     int fd, fmode, oflags = O_RDONLY;
     convconfig_t convconfig;
     VALUE opt;
+    struct stat st;
 
     rb_secure(4);
 
@@ -5936,6 +5937,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &fmode, &convconfig);
 
     fd = NUM2INT(fnum);
+    if (fstat(fd, &st) == -1) rb_sys_fail(0);
     UPDATE_MAXFD(fd);
     if (NIL_P(vmode)) {
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
