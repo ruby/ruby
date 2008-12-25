@@ -996,7 +996,7 @@ send
 	vm_send_optimize(GET_CFP(), &mn, &flag, &num, &id, klass);
     }
 
-    CALL_METHOD(num, blockptr, flag, id, mn, recv, klass);
+    CALL_METHOD(num, blockptr, flag, id, mn, recv);
 }
 
 /**
@@ -1023,7 +1023,7 @@ invokesuper
     vm_search_superclass(GET_CFP(), GET_ISEQ(), recv, TOPN(num), &id, &klass);
     mn = rb_method_node(klass, id);
 
-    CALL_METHOD(num, blockptr, flag, id, mn, recv, klass);
+    CALL_METHOD(num, blockptr, flag, id, mn, recv);
 }
 
 /**

@@ -423,7 +423,7 @@ vm_method_missing(rb_thread_t *th, ID id, VALUE recv,
 static inline void
 vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		const int argc, const rb_block_t *blockptr, const VALUE flag,
-		const VALUE iseqval, const VALUE recv, const VALUE klass)
+		const VALUE iseqval, const VALUE recv)
 {
     rb_iseq_t *iseq;
     int opt_pc, i;
@@ -479,7 +479,7 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 static inline VALUE
 vm_call_method(rb_thread_t * const th, rb_control_frame_t * const cfp,
 	       const int num, rb_block_t * const blockptr, const VALUE flag,
-	       const ID id, const NODE * mn, const VALUE recv, VALUE klass)
+	       const ID id, const NODE * mn, const VALUE recv)
 {
     VALUE val;
 
@@ -496,7 +496,7 @@ vm_call_method(rb_thread_t * const th, rb_control_frame_t * const cfp,
 
 	    switch (nd_type(node)) {
 	      case RUBY_VM_METHOD_NODE:{
-		vm_setup_method(th, cfp, num, blockptr, flag, (VALUE)node->nd_body, recv, klass);
+		vm_setup_method(th, cfp, num, blockptr, flag, (VALUE)node->nd_body, recv);
 		return Qundef;
 	      }
 	      case NODE_CFUNC:{
@@ -521,10 +521,11 @@ vm_call_method(rb_thread_t * const th, rb_control_frame_t * const cfp,
 		VALUE *argv = ALLOCA_N(VALUE, num);
 		MEMCPY(argv, cfp->sp - num, VALUE, num);
 		cfp->sp += - num - 1;
-		val = vm_call_bmethod(th, id, node->nd_cval, recv, klass, num, argv, blockptr);
+		val = vm_call_bmethod(th, id, node->nd_cval, recv, mn->nd_clss, num, argv, blockptr);
 		break;
 	      }
 	      case NODE_ZSUPER:{
+		VALUE klass;
 		klass = RCLASS_SUPER(mn->nd_clss);
 		mn = rb_method_node(klass, id);
 
