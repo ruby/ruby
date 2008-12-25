@@ -1,3 +1,9 @@
+Mon Dec 15 20:59:10 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pty/pty.c (child_info): add slavename.
+	  (chfunc): use slavename.
+	  (establishShell): set slavename.
+	
 Tue Dec  9 13:23:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (check_cfunc): use function pointer.

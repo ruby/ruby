@@ -191,6 +191,7 @@ pty_exec(VALUE v)
 
 struct child_info {
     int master, slave;
+    char *slavename;
     int argc;
     VALUE *argv;
 };
@@ -240,7 +241,7 @@ chfunc(void *data)
     /* errors ignored for sun */
 #else
     close(slave);
-    slave = open(SlaveName, O_RDWR);
+    slave = open(carg->slavename, O_RDWR);
     if (slave < 0) {
         perror("open: pty slave");
         _exit(1);
@@ -296,6 +297,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 
     carg.master = master;
     carg.slave = slave;
+    carg.slavename = SlaveName;
     carg.argc = argc;
     carg.argv = argv;
     pid = rb_fork(0, chfunc, &carg, Qnil);
