@@ -218,8 +218,8 @@ ASFLAGS=$ASFLAGS
 AC_SUBST(ASFLAGS)
 
 # BSD's ports and MacPorts prefix GNU binutils with 'g'
-AC_CHECK_TOOLS(OBJDUMP, [objdump, gobjdump])
-AC_CHECK_TOOLS(OBJCOPY, [objcopy, gobjcopy])
+AC_CHECK_TOOLS(OBJDUMP, [objdump gobjdump])
+AC_CHECK_TOOLS(OBJCOPY, [objcopy gobjcopy])
 
 case "$target_os" in
 cygwin*|mingw*)
@@ -281,8 +281,6 @@ mingw*)
 	;;
 esac
 
-AC_CHECK_TYPES([long long, off_t])
-
 AC_CHECK_SIZEOF(int, 4)
 AC_CHECK_SIZEOF(short, 2)
 AC_CHECK_SIZEOF(long, 4)
@@ -293,6 +291,9 @@ AC_CHECK_SIZEOF(void*, 4)
 AC_CHECK_SIZEOF(float, 4)
 AC_CHECK_SIZEOF(double, 8)
 AC_CHECK_SIZEOF(time_t, 0)
+
+[test "${ac_cv_type_long_long}" = yes] && AC_DEFINE(HAVE_LONG_LONG)
+[test "${ac_cv_type_off_t}" = yes] && AC_DEFINE(HAVE_OFF_T)
 
 dnl RUBY_REPLACE_TYPE [typename] [default type] [macro type] [included]
 AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
@@ -644,11 +645,11 @@ fi
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
-AC_HEADER_STDC
+dnl AC_HEADER_STDC has been checked in AC_USE_SYSTEM_EXTENSIONS
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h sys/syscall.h\
+AC_CHECK_HEADERS(limits.h sys/file.h sys/ioctl.h sys/syscall.h\
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
-		 syscall.h pwd.h grp.h a.out.h utime.h memory.h direct.h sys/resource.h \
+		 syscall.h pwd.h grp.h a.out.h utime.h direct.h sys/resource.h \
 		 sys/mkdev.h sys/utime.h xti.h netinet/in_systm.h float.h ieeefp.h pthread.h \
 		 ucontext.h intrinsics.h langinfo.h locale.h sys/sendfile.h time.h \
 		 net/socket.h sys/socket.h)
@@ -787,7 +788,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot fsync getcwd
 	      setrgid setegid setregid setresgid issetugid pause lchown lchmod\
 	      getpgrp setpgrp getpgid setpgid initgroups getgroups setgroups\
 	      getpriority getrlimit setrlimit sysconf group_member\
-	      dlopen sigprocmask sigaction sigsetjmp _setjmp _longjmp vsnprintf snprintf\
+	      dlopen sigprocmask sigaction sigsetjmp _setjmp _longjmp snprintf\
 	      setsid telldir seekdir fchmod cosh sinh tanh log2 round signbit\
 	      setuid setgid daemon select_large_fdset setenv unsetenv\
               mktime timegm gmtime_r clock_gettime gettimeofday\
