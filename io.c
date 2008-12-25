@@ -983,6 +983,9 @@ rb_io_flush(VALUE io)
 
     if (fptr->mode & FMODE_WRITABLE) {
         io_fflush(fptr);
+#ifdef _WIN32
+	fsync(fptr->fd);
+#endif
     }
     if (fptr->mode & FMODE_READABLE) {
         io_unread(fptr);
@@ -4416,7 +4419,9 @@ popen_redirect(struct popen_arg *p)
         }
     }
 }
+#endif
 
+#if defined(HAVE_FORK) || defined(_WIN32)
 void
 rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
 {
@@ -4433,12 +4438,16 @@ rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
 	if (ret != -1 && !(ret & FD_CLOEXEC)) {
             fcntl(fd, F_SETFD, ret|FD_CLOEXEC);
         }
+#elif defined(_WIN32)
+	rb_w32_fd_noinherit(fd);
 #else
 	close(fd);
 #endif
     }
 }
+#endif
 
+#ifdef HAVE_FORK
 static int
 popen_exec(void *pp, char *errmsg, size_t errmsg_len)
 {
@@ -5922,13 +5931,15 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 
     fd = NUM2INT(fnum);
     UPDATE_MAXFD(fd);
-    if (NIL_P(vmode)) {
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
+    if (NIL_P(vmode)) {
         oflags = fcntl(fd, F_GETFL);
         if (oflags == -1) rb_sys_fail(0);
         fmode = rb_io_oflags_fmode(oflags);
-#endif
     }
+#elif defined(_WIN32)
+    if (rb_w32_is_valid_fd(fd)) rb_sys_fail(0);
+#endif
     MakeOpenFile(io, fp);
     fp->fd = fd;
     fp->mode = fmode;

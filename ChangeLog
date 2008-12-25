@@ -1,3 +1,8 @@
+Thu Dec 25 13:28:20 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_io_flush): fsync() after buffer is flushed on win32.
+	  [ruby-core:20043]
+
 Thu Dec 25 13:13:00 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_method_search): return rb_cObject if there is no
