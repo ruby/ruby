@@ -802,6 +802,7 @@ module Rake
   # parallel using Ruby threads.
   #
   class MultiTask < Task
+    private
     def invoke_prerequisites(args, invocation_chain)
       threads = @prerequisites.collect { |p|
         Thread.new(p) { |r| application[r].invoke_with_call_chain(args, invocation_chain) }

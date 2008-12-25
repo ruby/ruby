@@ -73,6 +73,9 @@ Fri Dec  5 01:37:02 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* io.c (pipe_open): use rb_w32_spawn() instead of rb_w32_pipe_exec()
 	  to use our own redirection scheme.
 
+	* lib/rake.rb (Rake::MultiTask): invoke_prerequisites should be
+	  private.  a patch from okkez in [ruby-dev:37399]
+
 Sat Dec 20 10:59:16 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/irb/locale.rb (IRB::Locale#initialize)
