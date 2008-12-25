@@ -660,10 +660,12 @@ begin
     raise $string
   end
   test_ok(false)
-rescue
-  test_ok(true) if $! == $string
+rescue => e
+  test_ok($! == e)
+  test_ok(e.message == $string)
+  test_ok(e != $string)
 end
-  
+
 # exception in ensure clause
 begin
   begin

@@ -1,3 +1,15 @@
+Wed Dec 24 20:59:12 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* error.c (exc_equal): == method should not raise Exception.
+	  [ruby-dev:37519]
+
+	* sample/test.rb: fix test
+
+Fri Dec 19 07:45:37 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (exc_equal): duck typing equal to make it transitive.
+	  [ruby-dev:34880]
+
 Wed Dec 24 20:33:45 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_call_method): use class of method defined
