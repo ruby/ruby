@@ -1,3 +1,12 @@
+Tue Dec 23 00:16:48 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* sprintf.c (rb_str_format): fix buffer overflow.
+
+Mon Dec 22 12:25:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/vsnprintf.c (BSD_vfprintf): fix for test_sprintf_comb.rb, by
+	  wanabe in [ruby-dev:36935].
+
 Mon Dec 22 12:05:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (mingw): no longer uses snprintf and vsnprintf of

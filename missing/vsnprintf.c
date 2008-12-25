@@ -753,6 +753,8 @@ reswitch:	switch (ch) {
 #ifdef FLOATING_POINT
 		case 'e':		/* anomalous precision */
 		case 'E':
+			if (prec != 0)
+				flags |= ALT;
 			prec = (prec == -1) ?
 				DEFPREC + 1 : prec + 1;
 			/* FALLTHROUGH */
@@ -782,7 +784,7 @@ fp_begin:		_double = va_arg(ap, double);
 			cp = cvt(_double, prec, flags, &softsign,
 				&expt, ch, &ndig);
 			if (ch == 'g' || ch == 'G') {
-				if (expt <= -4 || expt > prec)
+				if (expt <= -4 || (expt > prec && expt > 1))
 					ch = (ch == 'g') ? 'e' : 'E';
 				else
 					ch = 'g';
@@ -798,6 +800,8 @@ fp_begin:		_double = va_arg(ap, double);
 					size = expt;
 					if (prec || flags & ALT)
 						size += prec + 1;
+				} else if (!prec) { /* "0" */
+					size = 1;
 				} else	/* "0.X" */
 					size = prec + 2;
 			} else if (expt >= ndig) {	/* fixed g fmt */
@@ -1008,13 +1012,15 @@ number:			if ((dprec = prec) >= 0)
 			if (ch >= 'f') {	/* 'f' or 'g' */
 				if (_double == 0) {
 				/* kludge for __dtoa irregularity */
-					if (prec == 0 ||
+					if (ndig <= 1 &&
 					    (flags & ALT) == 0) {
 						PRINT("0", 1);
 					} else {
 						PRINT("0.", 2);
 						PAD(ndig - 1, zeroes);
 					}
+				} else if (expt == 0 && ndig == 0 && (flags & ALT) == 0) {
+					PRINT("0", 1);
 				} else if (expt <= 0) {
 					PRINT("0.", 2);
 					PAD(-expt, zeroes);
