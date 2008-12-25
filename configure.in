@@ -2140,6 +2140,8 @@ AC_CONFIG_FILES(Makefile, [{
 	if test "$gnumake" != yes; then
 	    echo ['$(MKFILES): $(srcdir)/common.mk']
 	    sed ['s/{\$([^(){}]*)[^{}]*}//g'] ${srcdir}/common.mk
+	else
+	    echo 'distclean-local::; @$(RM) GNUmakefile uncommon.mk'
 	fi
       } >> confmk$$.tmp && mv -f confmk$$.tmp Makefile],
 [RUBY_INSTALL_NAME=$RUBY_INSTALL_NAME EXEEXT=$EXEEXT gnumake=$gnumake])

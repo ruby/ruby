@@ -194,6 +194,10 @@ def rm_f(*files)
   FileUtils.rm_f(Dir[*files])
 end
 
+def rm_rf(*files)
+  FileUtils.rm_rf(Dir[*files])
+end
+
 # Returns time stamp of the +target+ file if it exists and is newer
 # than or equal to all of +times+.
 def modified?(target, times)
@@ -361,6 +365,7 @@ MSG
   xsystem(command)
 ensure
   log_src(src)
+  rm_rf 'conftest.dSYM'
 end
 
 def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
@@ -1894,7 +1899,6 @@ clean:
 \t\t@-$(RM) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep})
 
 distclean: clean
-\t\t@-$(RM_RF) conftest.dSYM
 \t\t@-$(RM) Makefile $(RUBY_EXTCONF_H) conftest.* mkmf.log
 \t\t@-$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES#{sep})
 
