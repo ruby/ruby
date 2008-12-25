@@ -627,8 +627,8 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 				     timeptr->tm_year + 1900L);
 			if (w < 0) goto err;
 			for (i = 3; i < 6; i++)
-				if (islower(s[i]))
-					s[i] = toupper(s[i]);
+				if (ISLOWER(s[i]))
+					s[i] = TOUPPER(s[i]);
 			s += w;
 			continue;
 #endif
@@ -781,12 +781,12 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			switch (flags & (BIT_OF(UPPER)|BIT_OF(LOWER))) {
 			case BIT_OF(UPPER):
 				do {
-					if (islower(*s)) *s = toupper(*s);
+					if (ISLOWER(*s)) *s = TOUPPER(*s);
 				} while (s++, --i);
 				break;
 			case BIT_OF(LOWER):
 				do {
-					if (isupper(*s)) *s = tolower(*s);
+					if (ISUPPER(*s)) *s = TOLOWER(*s);
 				} while (s++, --i);
 				break;
 			default:
