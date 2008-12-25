@@ -1,9 +1,50 @@
-;;;
-;;;  ruby-mode.el -
-;;;
-;;;  $Author$
-;;;  created at: Fri Feb  4 14:49:13 JST 1994
-;;;
+;;; ruby-mode.el --- Major mode for editing Ruby files
+
+;; Copyright (C) 1994, 1995, 1996 1997, 1998, 1999, 2000, 2001,
+;;   2002,2003, 2004, 2005, 2006, 2007, 2008
+;;   Free Software Foundation, Inc.
+
+;; Authors: Yukihiro Matsumoto, Nobuyoshi Nakada
+;; URL: http://www.emacswiki.org/cgi-bin/wiki/RubyMode
+;; Created: Fri Feb  4 14:49:13 JST 1994
+;; Keywords: languages ruby
+;; Version: 0.9
+
+;; This file is not part of GNU Emacs. However, a newer version of
+;; ruby-mode is included in recent releases of GNU Emacs (version 23
+;; and up), but the new version is not guaranteed to be compatible
+;; with older versions of Emacs or XEmacs. This file is the last
+;; version that aims to keep this compatibility.
+
+;; You can also get the latest version from the Emacs Lisp Package
+;; Archive: http://tromey.com/elpa
+
+;; This file is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; It is distributed in the hope that it will be useful, but WITHOUT
+;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+;; License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with it.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; Provides font-locking, indentation support, and navigation for Ruby code.
+;;
+;; If you're installing manually, you should add this to your .emacs
+;; file after putting it on your load path:
+;;
+;;    (autoload 'ruby-mode "ruby-mode" "Major mode for ruby files" t)
+;;    (add-to-list 'auto-mode-alist '("\\.rb$" . ruby-mode))
+;;    (add-to-list 'interpreter-mode-alist '("ruby" . ruby-mode))
+;;
+
+;;; Code:
 
 (defconst ruby-mode-revision "$Revision$"
   "Ruby mode revision string.")

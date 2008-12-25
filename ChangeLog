@@ -1,3 +1,9 @@
+Wed Dec 24 03:21:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el: added comment to mention newer version
+	  bundled with Emacs 23 or later.  a patch from Phil Hagelberg
+	  <phil at hagelb.org> in [ruby-core:20838].
+
 Tue Dec 23 23:49:37 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_init_copy): call io_seek only if io_tell succeeds.
