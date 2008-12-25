@@ -4448,7 +4448,7 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     struct popen_arg arg;
 #elif defined(_WIN32)
     volatile VALUE argbuf;
-    char **args;
+    char **args = NULL;
     struct rb_exec_arg sarg;
     int pair[2], write_pair[2];
 #endif
