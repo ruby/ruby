@@ -661,7 +661,12 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
     }
 
     if (blockptr) {
-	blockarg = vm_make_proc(th, blockptr, rb_cProc);
+	if (blockptr->proc) {
+	    blockarg = blockptr->proc;
+	}
+	else {
+	    blockarg = vm_make_proc(th, blockptr, rb_cProc);
+	}
     }
     else {
 	blockarg = Qnil;

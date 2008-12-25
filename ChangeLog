@@ -1,3 +1,7 @@
+Thu Dec 25 12:44:27 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_yield_with_cfunc): check block has Proc.
+
 Thu Dec 25 05:53:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/id.h.tmpl, id.h (ruby_method_ids): not depend on if
