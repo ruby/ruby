@@ -1,3 +1,7 @@
+Tue Dec 23 15:46:47 2008  Eric Hodel  <drbrain@segment7.net>
+	* gem_prelude.rb:  Match full RubyGems behavior when a gem can't be
+	  found.
+
 Tue Dec 23 15:30:02 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (pipe_open): need to initialize args.
