@@ -1629,7 +1629,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	 *   LABEL1:
 	 *     jump LABEL2
 	 *
-	 *   => in this case, first jump instruction should jump tp
+	 *   => in this case, first jump instruction should jump to
 	 *      LABEL2 directly
 	 */
 	diobj = (INSN *)get_destination_insn(iobj);
