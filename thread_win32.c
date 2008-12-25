@@ -50,6 +50,7 @@ Init_native_thread(void)
     rb_thread_t *th = GET_THREAD();
 
     ruby_native_thread_key = TlsAlloc();
+    ruby_thread_set_native(th);
     DuplicateHandle(GetCurrentProcess(),
 		    GetCurrentThread(),
 		    GetCurrentProcess(),
