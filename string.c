@@ -2861,6 +2861,7 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
     rb_encoding *enc;
 
     rb_scan_args(argc, argv, "11", &end, &exclusive);
+    RETURN_ENUMERATOR(beg, argc, argv);
     excl = RTEST(exclusive);
     CONST_ID(succ, "succ");
     StringValue(end);

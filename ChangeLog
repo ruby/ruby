@@ -1,3 +1,8 @@
+Mon Dec 22 10:59:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_upto): should return enumerator if called
+	  without block.  [ruby-dev:37526]
+
 Thu Dec 25 00:59:06 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* test/readline/test_readline_history.rb: did not check the
