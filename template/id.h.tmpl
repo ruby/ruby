@@ -53,14 +53,14 @@ end
 #define symIFUNC ID2SYM(idIFUNC)
 #define symCFUNC ID2SYM(idCFUNC)
 
+#if !defined tLAST_TOKEN && defined YYTOKENTYPE
+#define tLAST_TOKEN tLAST_TOKEN
+#endif
+
 enum ruby_method_ids {
-#if !defined tLAST_TOKEN && !defined YYTOKENTYPE
+#ifndef tLAST_TOKEN
 % tokens.each do |token, value|
     <%=token%> = <%=value%>,
-% end
-% tokens.map do |token, value|
-#elif <%=token%> != <%=value%>
-#error <%=token%> differs
 % end
 #endif
     idPLUS = '+',
@@ -113,5 +113,15 @@ enum ruby_method_ids {
     TOKEN2ID(__send__),
     TOKEN2ID(Initialize)
 };
+
+#ifdef tLAST_TOKEN
+struct ruby_method_ids_check {
+#define ruby_method_id_check_for(name, value) \
+    int checking_for_##name[name == value ? 1 : -1]
+% tokens.map do |token, value|
+ruby_method_id_check_for(<%=token%>, <%=value%>);
+% end
+};
+#endif
 
 #endif /* RUBY_ID_H */

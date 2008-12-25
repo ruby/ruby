@@ -3,8 +3,8 @@
 
   id.h - 
 
-  $Author: ko1 $
-  created at: Thu Jul 12 04:38:07 2007
+  $Author: nobu $
+  created at: Sun Oct 19 21:12:51 2008
 
   Copyright (C) 2007 Koichi Sasada
 
@@ -31,8 +31,12 @@
 #define symIFUNC ID2SYM(idIFUNC)
 #define symCFUNC ID2SYM(idCFUNC)
 
+#if !defined tLAST_TOKEN && defined YYTOKENTYPE
+#define tLAST_TOKEN tLAST_TOKEN
+#endif
+
 enum ruby_method_ids {
-#if !defined tLAST_TOKEN && !defined YYTOKENTYPE
+#ifndef tLAST_TOKEN
     tUPLUS = 321,
     tUMINUS = 322,
     tPOW = 323,
@@ -65,70 +69,6 @@ enum ruby_method_ids {
     id_core_define_singleton_method = 374,
     id_core_set_postexe = 375,
     tLAST_TOKEN = 376,
-#elif tUPLUS != 321
-#error tUPLUS differs
-#elif tUMINUS != 322
-#error tUMINUS differs
-#elif tPOW != 323
-#error tPOW differs
-#elif tCMP != 324
-#error tCMP differs
-#elif tEQ != 325
-#error tEQ differs
-#elif tEQQ != 326
-#error tEQQ differs
-#elif tNEQ != 327
-#error tNEQ differs
-#elif tGEQ != 328
-#error tGEQ differs
-#elif tLEQ != 329
-#error tLEQ differs
-#elif tANDOP != 330
-#error tANDOP differs
-#elif tOROP != 331
-#error tOROP differs
-#elif tMATCH != 332
-#error tMATCH differs
-#elif tNMATCH != 333
-#error tNMATCH differs
-#elif tDOT2 != 334
-#error tDOT2 differs
-#elif tDOT3 != 335
-#error tDOT3 differs
-#elif tAREF != 336
-#error tAREF differs
-#elif tASET != 337
-#error tASET differs
-#elif tLSHFT != 338
-#error tLSHFT differs
-#elif tRSHFT != 339
-#error tRSHFT differs
-#elif tLAMBDA != 352
-#error tLAMBDA differs
-#elif idNULL != 365
-#error idNULL differs
-#elif idRespond_to != 366
-#error idRespond_to differs
-#elif idIFUNC != 367
-#error idIFUNC differs
-#elif idCFUNC != 368
-#error idCFUNC differs
-#elif idThrowState != 369
-#error idThrowState differs
-#elif id_core_set_method_alias != 370
-#error id_core_set_method_alias differs
-#elif id_core_set_variable_alias != 371
-#error id_core_set_variable_alias differs
-#elif id_core_undef_method != 372
-#error id_core_undef_method differs
-#elif id_core_define_method != 373
-#error id_core_define_method differs
-#elif id_core_define_singleton_method != 374
-#error id_core_define_singleton_method differs
-#elif id_core_set_postexe != 375
-#error id_core_set_postexe differs
-#elif tLAST_TOKEN != 376
-#error tLAST_TOKEN differs
 #endif
     idPLUS = '+',
     idMINUS = '-',
@@ -180,5 +120,44 @@ enum ruby_method_ids {
     TOKEN2ID(__send__),
     TOKEN2ID(Initialize)
 };
+
+#ifdef tLAST_TOKEN
+struct ruby_method_ids_check {
+#define ruby_method_id_check_for(name, value) \
+    int checking_for_##name[name == value ? 1 : -1]
+ruby_method_id_check_for(tUPLUS, 321);
+ruby_method_id_check_for(tUMINUS, 322);
+ruby_method_id_check_for(tPOW, 323);
+ruby_method_id_check_for(tCMP, 324);
+ruby_method_id_check_for(tEQ, 325);
+ruby_method_id_check_for(tEQQ, 326);
+ruby_method_id_check_for(tNEQ, 327);
+ruby_method_id_check_for(tGEQ, 328);
+ruby_method_id_check_for(tLEQ, 329);
+ruby_method_id_check_for(tANDOP, 330);
+ruby_method_id_check_for(tOROP, 331);
+ruby_method_id_check_for(tMATCH, 332);
+ruby_method_id_check_for(tNMATCH, 333);
+ruby_method_id_check_for(tDOT2, 334);
+ruby_method_id_check_for(tDOT3, 335);
+ruby_method_id_check_for(tAREF, 336);
+ruby_method_id_check_for(tASET, 337);
+ruby_method_id_check_for(tLSHFT, 338);
+ruby_method_id_check_for(tRSHFT, 339);
+ruby_method_id_check_for(tLAMBDA, 352);
+ruby_method_id_check_for(idNULL, 365);
+ruby_method_id_check_for(idRespond_to, 366);
+ruby_method_id_check_for(idIFUNC, 367);
+ruby_method_id_check_for(idCFUNC, 368);
+ruby_method_id_check_for(idThrowState, 369);
+ruby_method_id_check_for(id_core_set_method_alias, 370);
+ruby_method_id_check_for(id_core_set_variable_alias, 371);
+ruby_method_id_check_for(id_core_undef_method, 372);
+ruby_method_id_check_for(id_core_define_method, 373);
+ruby_method_id_check_for(id_core_define_singleton_method, 374);
+ruby_method_id_check_for(id_core_set_postexe, 375);
+ruby_method_id_check_for(tLAST_TOKEN, 376);
+};
+#endif
 
 #endif /* RUBY_ID_H */
