@@ -24,12 +24,12 @@ def get_revisions(path)
     `cd "#{SRCDIR}" && git svn info "#{path}"`
   end
 
-  if info =~ /^Revision: (\d+)$/
+  if /^Revision: (\d+)/ =~ info
     last = $1 
   else
     raise "last revision not found"
   end
-  if info =~ /^Last Changed Rev: (\d+)$/
+  if /^Last Changed Rev: (\d+)/ =~ info
     changed = $1
   else
     raise "changed revision not found"
