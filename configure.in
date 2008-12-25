@@ -281,6 +281,8 @@ mingw*)
 	;;
 esac
 
+AC_CHECK_TYPES([long long, off_t])
+
 AC_CHECK_SIZEOF(int, 4)
 AC_CHECK_SIZEOF(short, 2)
 AC_CHECK_SIZEOF(long, 4)
@@ -291,9 +293,6 @@ AC_CHECK_SIZEOF(void*, 4)
 AC_CHECK_SIZEOF(float, 4)
 AC_CHECK_SIZEOF(double, 8)
 AC_CHECK_SIZEOF(time_t, 0)
-
-[test "${ac_cv_type_long_long}" = yes] && AC_DEFINE(HAVE_LONG_LONG)
-[test "${ac_cv_type_off_t}" = yes] && AC_DEFINE(HAVE_OFF_T)
 
 dnl RUBY_REPLACE_TYPE [typename] [default type] [macro type] [included]
 AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
