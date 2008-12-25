@@ -350,7 +350,6 @@ proc_new(VALUE klass, int is_lambda)
 	!RUBY_VM_CLASS_SPECIAL_P(cfp->lfp[0])) {
 
 	block = GC_GUARDED_PTR_REF(cfp->lfp[0]);
-	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
     else {
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -359,15 +358,6 @@ proc_new(VALUE klass, int is_lambda)
 	    !RUBY_VM_CLASS_SPECIAL_P(cfp->lfp[0])) {
 
 	    block = GC_GUARDED_PTR_REF(cfp->lfp[0]);
-
-	    if (block->proc) {
-		return block->proc;
-	    }
-
-	    /* TODO: check more (cfp limit, called via cfunc, etc) */
-	    while (cfp->dfp != block->dfp) {
-		cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-	    }
 
 	    if (is_lambda) {
 		rb_warn("tried to create Proc object without a block");
@@ -380,8 +370,16 @@ proc_new(VALUE klass, int is_lambda)
     }
 
     procval = block->proc;
-    if (procval && RBASIC(procval)->klass == klass) {
-	return procval;
+
+    if (procval) {
+	if (RBASIC(procval)->klass == klass) {
+	    return procval;
+	}
+	else {
+	    VALUE newprocval = proc_dup(procval);
+	    RBASIC(newprocval)->klass = klass;
+	    return newprocval;
+	}
     }
 
     procval = vm_make_proc(th, block, klass);
