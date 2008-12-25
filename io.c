@@ -558,7 +558,13 @@ io_fflush(rb_io_t *fptr)
   retry:
     if (fptr->wbuf_len == 0)
         return 0;
-    r = rb_mutex_synchronize(fptr->write_lock, io_flush_buffer, (VALUE)fptr);
+    if (fptr->write_lock) {
+	r = rb_mutex_synchronize(fptr->write_lock, io_flush_buffer, (VALUE)fptr);
+    }
+    else {
+	long l = io_writable_length(fptr, fptr->wbuf_len);
+	r = rb_write_internal(fptr->fd, fptr->wbuf+fptr->wbuf_off, l);
+    }
     /* xxx: Other threads may modify wbuf.
      * A lock is required, definitely. */
     rb_io_check_closed(fptr);
@@ -3190,6 +3196,7 @@ rb_io_fptr_finalize(rb_io_t *fptr)
 {
     if (!fptr) return 0;
     fptr->pathv = Qnil;
+    fptr->write_lock = 0;
     if (0 <= fptr->fd)
 	rb_io_fptr_cleanup(fptr, Qtrue);
     if (fptr->rbuf) {

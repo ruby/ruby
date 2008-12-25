@@ -1,3 +1,10 @@
+Thu Dec 25 15:54:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_fflush): flush write buffer without write lock in
+	  finalizers.  [ruby-dev:37572]
+
+	* io.c (rb_io_fptr_finalize): clear write lock before finalizing.
+
 Thu Dec 25 15:07:22 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (fptr_finalize): close the IO object even if close(2) is failed.
