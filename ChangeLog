@@ -1,3 +1,7 @@
+Tue Dec 23 08:04:58 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* gem_prelude.rb: Don't remove methods twice.  [bug#555]
+
 Wed Dec 24 20:15:50 2008  Koichi Sasada  <ko1@atdot.net>
 
         * tool/file2lastrev.rb (get_revisions): fix to ignore end of line.

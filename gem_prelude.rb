@@ -198,7 +198,13 @@ if defined?(Gem) then
 
     module QuickLoader
 
+      @loaded_full_rubygems_library = false
+
       def self.load_full_rubygems_library
+        return if @loaded_full_rubygems_library
+
+        @loaded_full_rubygems_library = true
+
         class << Gem
           Gem::GEM_PRELUDE_METHODS.each do |method_name|
             undef_method method_name
