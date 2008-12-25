@@ -580,9 +580,16 @@ rb_vm_bugreport(void)
 	SDR();
 
 	bt = rb_make_backtrace();
-	if (TYPE(bt) == T_ARRAY)
-	for (i = 0; i < RARRAY_LEN(bt); i++) {
-	    dp(RARRAY_PTR(bt)[i]);
+
+	if (bt) {
+	    fprintf(stderr, "-- Ruby level backtrace information"
+		    "-----------------------------------------\n");
+
+	    for (i = 0; i < RARRAY_LEN(bt); i++) {
+		VALUE str = RARRAY_PTR(bt)[i];
+		fprintf(stderr, "%s\n", RSTRING_PTR(str));
+	    }
+	    fprintf(stderr, "\n");
 	}
     }
 
@@ -592,13 +599,20 @@ rb_vm_bugreport(void)
     {
 	static void *trace[MAX_NATIVE_TRACE];
 	int n = backtrace(trace, MAX_NATIVE_TRACE);
+	char **syms = backtrace_symbols(trace, n);
 	int i;
 
-	fprintf(stderr, "-- backtrace of native function call (Use addr2line) --\n");
+	fprintf(stderr, "-- C level backtrace information "
+		"-------------------------------------------\n");
 	for (i=0; i<n; i++) {
-	    fprintf(stderr, "%p\n", trace[i]);
+	    char *info = syms ? syms[i] : "";
+	    fprintf(stderr, "%p %s\n", trace[i], info);
 	}
-	fprintf(stderr, "-------------------------------------------------------\n");
+	fprintf(stderr, "\n");
+
+	if (syms) {
+	    free(syms);
+	}
     }
 #endif
 }
