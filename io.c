@@ -3104,7 +3104,7 @@ finish_writeconv_sync(VALUE arg)
 static void
 fptr_finalize(rb_io_t *fptr, int noraise)
 {
-    int ebadf = 0;
+    int close_failure = 0;
     if (fptr->writeconv) {
 	if (fptr->write_lock) {
 	    struct finish_writeconv_arg arg;
@@ -3124,29 +3124,22 @@ fptr_finalize(rb_io_t *fptr, int noraise)
 	return;
     }
     if (fptr->stdio_file) {
-        if (fclose(fptr->stdio_file) < 0 && !noraise) {
-            /* fptr->stdio_file is deallocated anyway */
-            fptr->stdio_file = 0;
-            fptr->fd = -1;
-            rb_sys_fail_path(fptr->pathv);
-        }
+        /* fptr->stdio_file is deallocated anyway
+         * even if fclose failed.  */
+        if (fclose(fptr->stdio_file) < 0)
+            close_failure = 1;
     }
     else if (0 <= fptr->fd) {
-        if (close(fptr->fd) < 0 && !noraise) {
-            if (errno != EBADF) {
-                /* fptr->fd is still not closed */
-                rb_sys_fail_path(fptr->pathv);
-            }
-            else {
-                /* fptr->fd is already closed. */
-                ebadf = 1;
-            }
-        }
+        /* fptr->fd may be closed even if close fails.
+         * POSIX doesn't specify it.
+         * We assumes it is closed.  */
+        if (close(fptr->fd) < 0)
+            close_failure = 1;
     }
     fptr->fd = -1;
     fptr->stdio_file = 0;
     fptr->mode &= ~(FMODE_READABLE|FMODE_WRITABLE);
-    if (ebadf) {
+    if (close_failure && !noraise) {
         rb_sys_fail_path(fptr->pathv);
     }
 }
