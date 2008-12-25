@@ -1,3 +1,13 @@
+Thu Dec 25 12:49:12 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (proc_new): should use proc_dup() if block has Proc.
+
+	* vm.c (vm_make_proc_from_block): should use rb_cProc for block.
+
+	* vm.c (vm_make_proc): add an assertion.
+
+	* bootstraptest/test_proc.rb: add a test.
+
 Thu Dec 25 12:44:27 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_yield_with_cfunc): check block has Proc.

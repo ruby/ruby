@@ -385,20 +385,18 @@ vm_stack_to_heap(rb_thread_t * const th)
 /* Proc */
 
 static VALUE
-vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block, VALUE klass)
+vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block)
 {
-    VALUE procval;
+    VALUE proc = block->proc;
 
-    procval = block->proc;
-    if (procval && RBASIC(procval)->klass == klass) {
-	return procval;
+    if (block->proc) {
+	return block->proc;
     }
 
-    procval = vm_make_proc(th, block, klass);
-    if (!block->proc) {
-	block->proc = procval;
-    }
-    return procval;
+    proc = vm_make_proc(th, block, rb_cProc);
+    block->proc = proc;
+
+    return proc;
 }
 
 VALUE
@@ -408,12 +406,16 @@ vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
     rb_proc_t *proc;
     rb_control_frame_t *cfp = RUBY_VM_GET_CFP_FROM_BLOCK_PTR(block);
 
+    if (block->proc) {
+	rb_bug("vm_make_proc: Proc value is already created.");
+    }
+
     if (GC_GUARDED_PTR_REF(cfp->lfp[0])) {
 	if (!RUBY_VM_CLASS_SPECIAL_P(cfp->lfp[0])) {
 	    rb_proc_t *p;
 
 	    blockprocval = vm_make_proc_from_block(
-		th, (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->lfp), klass);
+		th, (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->lfp));
 
 	    GetProcPtr(blockprocval, p);
 	    *cfp->lfp = GC_GUARDED_PTR(&p->block);

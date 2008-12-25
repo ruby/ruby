@@ -394,3 +394,27 @@ assert_equal 'ok', %q{
   a_proc = give_it
   f.call_it(&give_it())
 }, '[ruby-core:15711]'
+
+assert_equal 'foo!', %q{
+  class FooProc < Proc
+    def initialize
+      @foo = "foo!"
+    end
+
+    def bar
+      @foo
+    end
+  end
+
+  def bar
+    FooProc.new &lambda{
+      p 1
+    }
+  end
+
+  fp = bar(&lambda{
+    p 2
+  })
+
+  fp.bar
+}, 'Subclass of Proc'
