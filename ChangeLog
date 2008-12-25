@@ -1,3 +1,9 @@
+Tue Dec 23 20:28:28 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* io.c: rdoc for File::open and 1.9 feature in file modes.
+
+	* transcode.c: rdoc for String#encode
+
 Tue Dec 23 19:51:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_spawn): deals with quoted commands.
