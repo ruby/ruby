@@ -1,3 +1,8 @@
+Tue Dec 23 13:52:05 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/parser/c.rb:  Don't coalesce adjacent comment blocks.
+	  [bug#901]
+
 Tue Dec 23 08:10:05 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/installer.rb: Fix documentation.  [bug#827]
