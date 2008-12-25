@@ -217,7 +217,7 @@ MINIRUBY = .\miniruby$(EXEEXT) -I$(srcdir)/lib
 RUNRUBY = .\$(PROGRAM) -I$(srcdir)/lib -I"$(EXTOUT)/$(arch)"
 !endif
 MINIRUBY = $(MINIRUBY) $(MINIRUBYOPT)
-RUNRUBY = $(RUNRUBY) "$(srcdir)/runruby.rb" --extout="$(EXTOUT)" --
+RUNRUBY = $(RUNRUBY) "$(srcdir)/runruby.rb" --extout="$(EXTOUT)" $(RUNRUBYOPT) --
 !ifndef RUBY
 RUBY = ruby
 !endif
