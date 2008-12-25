@@ -1,3 +1,7 @@
+Tue Dec 23 23:49:37 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_init_copy): call io_seek only if io_tell succeeds.
+
 Tue Dec 23 20:28:28 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* io.c: rdoc for File::open and 1.9 feature in file modes.
