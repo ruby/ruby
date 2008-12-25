@@ -1,3 +1,15 @@
+Thu Dec 25 14:32:23 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_method_search): fix control flow bug.
+	  (commited at r20981)
+
+Thu Dec 25 13:13:00 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_method_search): return rb_cObject if there is no
+	  super class.  [ruby-dev:37587]
+
+	* bootstraptest/test_method.rb: add tests for above.
+
 Thu Dec 25 12:49:12 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (proc_new): should use proc_dup() if block has Proc.
