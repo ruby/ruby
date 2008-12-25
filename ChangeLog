@@ -1,3 +1,7 @@
+Mon Dec 22 18:00:36 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: fix wrong flag value.
+
 Mon Dec 22 12:26:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in (rubydll.def), win32/mkexports.rb
