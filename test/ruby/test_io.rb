@@ -50,6 +50,19 @@ class TestIO < Test::Unit::TestCase
     assert(x[1].closed?)
   end
 
+  def test_pipe_block_close
+    4.times {|i|
+      x = nil
+      IO.pipe {|r, w|
+        x = [r,w]
+        r.close if (i&1) == 0
+        w.close if (i&2) == 0
+      }
+      assert(x[0].closed?)
+      assert(x[1].closed?)
+    }
+  end
+
   def test_gets_rs
     # default_rs
     r, w = IO.pipe
