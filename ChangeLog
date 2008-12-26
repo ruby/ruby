@@ -1,3 +1,11 @@
+Fri Dec 26 15:50:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::List#summarize): gives priority
+	  to latter switches.  [ruby-dev:36692]
+
+	* lib/optparse.rb (OptionParser#summarize): do not append
+	  unnecessary line terminator.
+
 Sun Dec 21 12:23:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (SPLAT_PROC): fix for regexp.  [ruby-dev:37514]
