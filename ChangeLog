@@ -1,3 +1,7 @@
+Mon Dec 22 21:31:11 2008  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_ord): Integer#ord implemented.
+
 Tue Dec 16 22:15:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/minitest/unit.rb (MiniTest::Assertions#assert_instance_of):
