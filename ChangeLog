@@ -1,3 +1,11 @@
+Tue Dec 16 22:15:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/minitest/unit.rb (MiniTest::Assertions#assert_instance_of):
+	  should assert by instance_of?, not ===.  [ruby-dev:37458]
+
+	* lib/minitest/unit.rb (MiniTest::Assertions#assert_instance_of):
+	  typo fixed.
+
 Mon Dec 15 20:59:10 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pty/pty.c (child_info): add slavename.
