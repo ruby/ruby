@@ -1,3 +1,11 @@
+Fri Dec 26 15:50:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::List#summarize): gives priority
+	  to latter switches.  [ruby-dev:36692]
+
+	* lib/optparse.rb (OptionParser#summarize): do not append
+	  unnecessary line terminator.
+
 Fri Dec 26 14:01:38 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (fptr_finalize): close the IO object even if finish_writeconv or
