@@ -1,3 +1,12 @@
+Mon Dec 22 09:54:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (gettable_gen): the encoding of __FILE__ should be
+	  rb_filesystem_encoding().  [ruby-list:45733]
+
+	* parse.y (gettable_gen): __FILE__ should be ASCII-8BIT when
+	  filesystem encoding is US-ASCII and __FILE__ contains non 7bit
+	  characters.
+
 Fri Dec 26 15:50:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::List#summarize): gives priority
