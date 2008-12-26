@@ -1,3 +1,15 @@
+Fri Dec 26 14:01:38 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (fptr_finalize): close the IO object even if finish_writeconv or
+	  flush is failed.
+	  (finish_writeconv): don't raise.  return errno or exception.
+	  (finish_writeconv_arg): removed.
+	  (finish_writeconv_sync): follow finish_writeconv change.
+
+	* transcode.c (rb_econv_make_exception): new function.
+
+	* include/ruby/encoding.h (rb_econv_make_exception): declared.
+
 Fri Dec 26 17:04:14 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/irb/input-method.rb (IRB::StdioInputMethod#initialize):

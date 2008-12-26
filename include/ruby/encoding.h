@@ -248,6 +248,9 @@ const char *rb_econv_encoding_to_insert_output(rb_econv_t *ec);
 /* raise an error if the last rb_econv_convert is error */
 void rb_econv_check_error(rb_econv_t *ec);
 
+/* returns an exception object or nil */
+VALUE rb_econv_make_exception(rb_econv_t *ec);
+
 int rb_econv_putbackable(rb_econv_t *ec);
 void rb_econv_putback(rb_econv_t *ec, unsigned char *p, int n);
 

@@ -3020,11 +3020,12 @@ rb_io_set_close_on_exec(VALUE io, VALUE arg)
 #define IS_PREP_STDIO(f) ((f)->mode & FMODE_PREP)
 #define PREP_STDIO_NAME(f) (RSTRING_PTR((f)->pathv))
 
-static void
-finish_writeconv(rb_io_t *fptr, int noraise)
+static VALUE
+finish_writeconv(rb_io_t *fptr)
 {
     unsigned char *ds, *dp, *de;
     rb_econv_result_t res;
+    VALUE err;
 
     if (!fptr->wbuf) {
         unsigned char buf[1024];
@@ -3044,104 +3045,90 @@ finish_writeconv(rb_io_t *fptr, int noraise)
                     ds += r;
                 }
                 if (rb_io_wait_writable(fptr->fd)) {
-                    if (!noraise)
-                        rb_io_check_closed(fptr);
-                    else if (fptr->fd < 0)
-                        return;
+                    if (fptr->fd < 0)
+                        return rb_exc_new3(rb_eIOError, rb_str_new_cstr("closed stream"));
                     goto retry;
                 }
-                return;
+                return INT2NUM(errno);
             }
-            if (!noraise) {
-                rb_econv_check_error(fptr->writeconv);
-            }
-            if (res == econv_invalid_byte_sequence ||
-                res == econv_incomplete_input ||
-                res == econv_undefined_conversion) {
-                break;
-            }
+            if (!NIL_P(err = rb_econv_make_exception(fptr->writeconv)))
+                return err;
         }
 
-        return;
+        return Qnil;
     }
 
     res = econv_destination_buffer_full;
     while (res == econv_destination_buffer_full) {
         if (fptr->wbuf_len == fptr->wbuf_capa) {
-            if (io_fflush(fptr) < 0 && !noraise)
-                rb_sys_fail(0);
+            if (io_fflush(fptr) < 0)
+                return INT2NUM(errno);
         }
 
         ds = dp = (unsigned char *)fptr->wbuf + fptr->wbuf_off + fptr->wbuf_len;
         de = (unsigned char *)fptr->wbuf + fptr->wbuf_capa;
         res = rb_econv_convert(fptr->writeconv, NULL, NULL, &dp, de, 0);
         fptr->wbuf_len += dp - ds;
-        if (!noraise) {
-            rb_econv_check_error(fptr->writeconv);
-        }
-        if (res == econv_invalid_byte_sequence ||
-            res == econv_incomplete_input ||
-            res == econv_undefined_conversion) {
-            break;
-        }
+        if (!NIL_P(err = rb_econv_make_exception(fptr->writeconv)))
+            return err;
     }
-
+    return Qnil;
 }
-
-struct finish_writeconv_arg {
-    rb_io_t *fptr;
-    int noraise;
-};
 
 static VALUE
 finish_writeconv_sync(VALUE arg)
 {
-    struct finish_writeconv_arg *p = (struct finish_writeconv_arg *)arg;
-    finish_writeconv(p->fptr, p->noraise);
-    return Qnil;
+    rb_io_t *fptr = (rb_io_t *)arg;
+    return finish_writeconv(fptr);
 }
 
 static void
 fptr_finalize(rb_io_t *fptr, int noraise)
 {
-    int close_failure = 0;
+    VALUE err = Qnil;
     if (fptr->writeconv) {
 	if (fptr->write_lock) {
-	    struct finish_writeconv_arg arg;
-	    arg.fptr = fptr;
-	    arg.noraise = noraise;
-	    rb_mutex_synchronize(fptr->write_lock, finish_writeconv_sync, (VALUE)&arg);
+	    err = rb_mutex_synchronize(fptr->write_lock, finish_writeconv_sync, (VALUE)fptr);
 	}
 	else {
-	    finish_writeconv(fptr, noraise);
+	    err = finish_writeconv(fptr);
 	}
     }
     if (fptr->wbuf_len) {
-        if (io_fflush(fptr) < 0 && !noraise)
-            rb_sys_fail(0);
+        if (io_fflush(fptr) < 0 && NIL_P(err))
+            err = INT2NUM(errno);
     }
-    if (IS_PREP_STDIO(fptr) ||
-        fptr->fd <= 2) {
-	return;
+    if (IS_PREP_STDIO(fptr) || fptr->fd <= 2) {
+        goto check_err;
     }
     if (fptr->stdio_file) {
         /* fptr->stdio_file is deallocated anyway
          * even if fclose failed.  */
-        if (fclose(fptr->stdio_file) < 0)
-            close_failure = 1;
+        if (fclose(fptr->stdio_file) < 0 && NIL_P(err))
+            err = INT2NUM(errno);
     }
     else if (0 <= fptr->fd) {
         /* fptr->fd may be closed even if close fails.
          * POSIX doesn't specify it.
          * We assumes it is closed.  */
-        if (close(fptr->fd) < 0)
-            close_failure = 1;
+        if (close(fptr->fd) < 0 && NIL_P(err))
+            err = INT2NUM(errno);
     }
     fptr->fd = -1;
     fptr->stdio_file = 0;
     fptr->mode &= ~(FMODE_READABLE|FMODE_WRITABLE);
-    if (close_failure && !noraise) {
-        rb_sys_fail_path(fptr->pathv);
+
+  check_err:
+    if (!NIL_P(err) && !noraise) {
+        switch(TYPE(err)) {
+          case T_FIXNUM:
+          case T_BIGNUM:
+            errno = NUM2INT(err);
+            rb_sys_fail_path(fptr->pathv);
+
+          default:
+            rb_exc_raise(err);
+        }
     }
 }
 
