@@ -1,3 +1,8 @@
+Fri Dec 26 17:04:14 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/irb/input-method.rb (IRB::StdioInputMethod#initialize):
+	  removed a 'p' for debugging.
+
 Thu Dec 25 20:57:01 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c (str_transcode0): set encoding when String#encode was

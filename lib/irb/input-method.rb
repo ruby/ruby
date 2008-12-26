@@ -51,7 +51,6 @@ module IRB
     def gets
       print @prompt
       line = @stdin.gets
-      p line.encoding
       @line[@line_no += 1] = line
     end
 
