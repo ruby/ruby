@@ -1,3 +1,11 @@
+Fri Dec 26 18:04:10 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (fptr_finalize): don't allocate objects if noraise.
+	  (finish_writeconv): add noalloc argument to be able to avoid
+	  object allocation.
+	  (finish_writeconv_arg): introduced again.
+	  (finish_writeconv_sync): follow the above change.
+
 Fri Dec 26 17:04:14 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/irb/input-method.rb (IRB::StdioInputMethod#initialize):
