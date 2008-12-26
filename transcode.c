@@ -3854,6 +3854,12 @@ econv_set_replacement(VALUE self, VALUE arg)
     return arg;
 }
 
+VALUE
+rb_econv_make_exception(rb_econv_t *ec)
+{
+    return make_econv_exception(ec);
+}
+
 void
 rb_econv_check_error(rb_econv_t *ec)
 {
