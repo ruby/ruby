@@ -3021,11 +3021,10 @@ rb_io_set_close_on_exec(VALUE io, VALUE arg)
 #define PREP_STDIO_NAME(f) (RSTRING_PTR((f)->pathv))
 
 static VALUE
-finish_writeconv(rb_io_t *fptr)
+finish_writeconv(rb_io_t *fptr, int noalloc)
 {
     unsigned char *ds, *dp, *de;
     rb_econv_result_t res;
-    VALUE err;
 
     if (!fptr->wbuf) {
         unsigned char buf[1024];
@@ -3046,13 +3045,16 @@ finish_writeconv(rb_io_t *fptr)
                 }
                 if (rb_io_wait_writable(fptr->fd)) {
                     if (fptr->fd < 0)
-                        return rb_exc_new3(rb_eIOError, rb_str_new_cstr("closed stream"));
+                        return noalloc ? Qtrue : rb_exc_new3(rb_eIOError, rb_str_new_cstr("closed stream"));
                     goto retry;
                 }
-                return INT2NUM(errno);
+                return noalloc ? Qtrue : INT2NUM(errno);
             }
-            if (!NIL_P(err = rb_econv_make_exception(fptr->writeconv)))
-                return err;
+            if (res == econv_invalid_byte_sequence ||
+                res == econv_incomplete_input ||
+                res == econv_undefined_conversion) {
+                return noalloc ? Qtrue : rb_econv_make_exception(fptr->writeconv);
+            }
         }
 
         return Qnil;
@@ -3062,24 +3064,32 @@ finish_writeconv(rb_io_t *fptr)
     while (res == econv_destination_buffer_full) {
         if (fptr->wbuf_len == fptr->wbuf_capa) {
             if (io_fflush(fptr) < 0)
-                return INT2NUM(errno);
+                return noalloc ? Qtrue : INT2NUM(errno);
         }
 
         ds = dp = (unsigned char *)fptr->wbuf + fptr->wbuf_off + fptr->wbuf_len;
         de = (unsigned char *)fptr->wbuf + fptr->wbuf_capa;
         res = rb_econv_convert(fptr->writeconv, NULL, NULL, &dp, de, 0);
         fptr->wbuf_len += dp - ds;
-        if (!NIL_P(err = rb_econv_make_exception(fptr->writeconv)))
-            return err;
+        if (res == econv_invalid_byte_sequence ||
+            res == econv_incomplete_input ||
+            res == econv_undefined_conversion) {
+            return noalloc ? Qtrue : rb_econv_make_exception(fptr->writeconv);
+        }
     }
     return Qnil;
 }
 
+struct finish_writeconv_arg {
+    rb_io_t *fptr;
+    int noalloc;
+};
+
 static VALUE
 finish_writeconv_sync(VALUE arg)
 {
-    rb_io_t *fptr = (rb_io_t *)arg;
-    return finish_writeconv(fptr);
+    struct finish_writeconv_arg *p = (struct finish_writeconv_arg *)arg;
+    return finish_writeconv(p->fptr, p->noalloc);
 }
 
 static void
@@ -3088,15 +3098,18 @@ fptr_finalize(rb_io_t *fptr, int noraise)
     VALUE err = Qnil;
     if (fptr->writeconv) {
 	if (fptr->write_lock) {
-	    err = rb_mutex_synchronize(fptr->write_lock, finish_writeconv_sync, (VALUE)fptr);
+            struct finish_writeconv_arg arg;
+            arg.fptr = fptr;
+            arg.noalloc = noraise;
+            err = rb_mutex_synchronize(fptr->write_lock, finish_writeconv_sync, (VALUE)&arg);
 	}
 	else {
-	    err = finish_writeconv(fptr);
+	    err = finish_writeconv(fptr, noraise);
 	}
     }
     if (fptr->wbuf_len) {
         if (io_fflush(fptr) < 0 && NIL_P(err))
-            err = INT2NUM(errno);
+            err = noraise ? Qtrue : INT2NUM(errno);
     }
     if (IS_PREP_STDIO(fptr) || fptr->fd <= 2) {
         goto check_err;
@@ -3105,14 +3118,14 @@ fptr_finalize(rb_io_t *fptr, int noraise)
         /* fptr->stdio_file is deallocated anyway
          * even if fclose failed.  */
         if (fclose(fptr->stdio_file) < 0 && NIL_P(err))
-            err = INT2NUM(errno);
+            err = noraise ? Qtrue : INT2NUM(errno);
     }
     else if (0 <= fptr->fd) {
         /* fptr->fd may be closed even if close fails.
          * POSIX doesn't specify it.
          * We assumes it is closed.  */
         if (close(fptr->fd) < 0 && NIL_P(err))
-            err = INT2NUM(errno);
+            err = noraise ? Qtrue : INT2NUM(errno);
     }
     fptr->fd = -1;
     fptr->stdio_file = 0;
