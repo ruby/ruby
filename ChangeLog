@@ -340,6 +340,11 @@ Mon Dec 22 18:00:36 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: fix wrong flag value.
 
+Mon Dec 22 14:35:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_external_str_new_with_enc): set ASCII-8BIT if
+	  encoding is US-ASCII and string contains 8bit characters.
+
 Mon Dec 22 12:26:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in (rubydll.def), win32/mkexports.rb
