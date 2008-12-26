@@ -1,3 +1,8 @@
+Sat Dec 27 01:52:39 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv.rb:  Using a more robust transcoding scheme to produce
+	  ASCII compatible inspect() messages.  [ruby-dev:37591]
+
 Fri Dec 26 18:04:10 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (fptr_finalize): don't allocate objects if noraise.
