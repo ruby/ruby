@@ -72,6 +72,7 @@ class TestTranscode < Test::Unit::TestCase
          "\xBE\xD6\xC0\xCE\xB1\xB8\xC7\xD4\x20\xDA\xD3\xC1\xF6\xC0\xCE", 'euc-kr') # 애인구함 朴지인
     check_both_ways("\uC544\uD58F\uD58F\u0020\uB620\uBC29\uD6BD\uB2D8\u0020\uC0AC\uB791\uD716",
          "\xBE\xC6\xC1\x64\xC1\x64\x20\x8C\x63\xB9\xE6\xC4\x4F\xB4\xD4\x20\xBB\xE7\xB6\xFB\xC5\x42", 'cp949') # 아햏햏 똠방횽님 사랑휖
+    assert_equal(Encoding::ISO_8859_1, "D\xFCrst".force_encoding('iso-8859-2').encode('iso-8859-1', 'iso-8859-1').encoding)
   end
 
   def test_twostep

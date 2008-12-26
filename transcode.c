@@ -2455,7 +2455,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
                     ECONV_XML_ATTR_CONTENT_DECORATOR|
                     ECONV_XML_ATTR_QUOTE_DECORATOR)) == 0) {
         if (senc && senc == denc) {
-            return -1;
+            return NIL_P(arg2) ? -1 : dencidx;
         }
         if (senc && denc && rb_enc_asciicompat(senc) && rb_enc_asciicompat(denc)) {
             if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
@@ -2463,7 +2463,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
             }
         }
         if (encoding_equal(sname, dname)) {
-            return -1;
+            return NIL_P(arg2) ? -1 : dencidx;
         }
     }
     else {
