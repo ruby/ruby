@@ -1,3 +1,10 @@
+Sat Dec 27 17:08:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* .gdbinit (dummy_gdb_enums.special_consts): forces to load debug
+	  info on Mac OS X.
+
+	* .gdbinit (rp): added T_ZOMBIE.
+
 Sat Dec 27 16:18:02 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (rb_frame_callee, rb_frame_caller): rb_frame_callee() 
