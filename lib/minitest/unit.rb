@@ -116,9 +116,9 @@ module MiniTest
     end
 
     def assert_match exp, act, msg = nil
-      msg = message(msg) { "Expected #{mu_pp(act)} to match #{mu_pp(exp)}" }
+      msg = message(msg) { "Expected #{mu_pp(exp)} to match #{mu_pp(act)}" }
       assert_respond_to act, :"=~"
-      (exp = /#{Regexp.escape(exp)}/) if String === exp && String === act
+      exp = /#{Regexp.escape(exp)}/ if String === exp && String === act
       assert act =~ exp, msg
     end
 
@@ -269,7 +269,7 @@ module MiniTest
       msg = message(msg) { "Expected #{mu_pp(obj)} to not be an instance of #{cls}" }
       flip = (Module === obj) && ! (Module === cls) # HACK for specs
       obj, cls = cls, obj if flip
-      refute cls === obj, msg
+      refute obj.instance_of?(cls), msg
     end
 
     def refute_kind_of cls, obj, msg = nil # TODO: merge with instance_of
@@ -280,7 +280,9 @@ module MiniTest
     end
 
     def refute_match exp, act, msg = nil
-      msg = message(msg) { "Expected #{mu_pp(act)} to not match #{mu_pp(exp)}" }
+      msg = message(msg) { "Expected #{mu_pp(exp)} to not match #{mu_pp(act)}" }
+      assert_respond_to act, :"=~"
+      exp = /#{Regexp.escape(exp)}/ if String === exp && String === act
       refute act =~ exp, msg
     end
 
@@ -313,7 +315,7 @@ module MiniTest
   end
 
   class Unit
-    VERSION = "1.3.2"
+    VERSION = "1.3.1"
 
     attr_accessor :report, :failures, :errors, :skips
     attr_accessor :test_count, :assertion_count
@@ -323,7 +325,6 @@ module MiniTest
 
     def self.autorun
       at_exit {
-p $!
         return if $! # don't run if there was an exception
         exit_code = MiniTest::Unit.new.run(ARGV)
         exit false if exit_code && exit_code != 0
@@ -336,9 +337,12 @@ p $!
     end
 
     def location e
-      e.backtrace.find { |s|
-        s !~ /in .(assert|refute|flunk|pass|fail|raise)/
-      }.sub(/:in .*$/, '')
+      last_before_assertion = ""
+      e.backtrace.reverse_each do |s|
+        break if s =~ /in .(assert|refute|flunk|pass|fail|raise)/
+        last_before_assertion = s
+      end
+      last_before_assertion.sub(/:in .*$/, '')
     end
 
     def puke klass, meth, e
