@@ -1,3 +1,7 @@
+Sat Dec 27 13:10:43 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* man/irb.1: adds -v, -h, -E and -U.
+
 Sat Dec 27 11:41:45 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_call_method, vm_call_cfunc): use original id instead of

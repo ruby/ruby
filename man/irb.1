@@ -8,7 +8,9 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl -version
-.Op Fl Idfmrv
+.Op Fl dfm
+.Op Fl I Ar directory
+.Op Fl r Ar library
 .Op Fl - Ns Oo no Oc Ns inspect
 .Op Fl - Ns Oo no Oc Ns readline
 .Op Fl -prompt Ar mode
@@ -24,29 +26,55 @@
 .Op argument ...
 .Pp
 .Sh DESCRIPTION
-irb is the REPL(read-eval&print loop) environment for Ruby programs.
+.Nm
+is the REPL(read-eval&print loop) environment for Ruby programs.
 .Pp
 .Sh OPTIONS
 .Bl -tag -width "1234567890123" -compact
 .Pp
+.It Fl -version
+Prints the version of
+.Nm .
+.Pp
+.It Fl E Ar external Ns Op : Ns Ar internal
+.It Fl -encoding Ar external Ns Op : Ns Ar internal
+Same as `ruby -E' .
+Specifies the default value(s) for external encodings and internal encoding. Values should be separated with colon (:).
+
+You can ommit the one for internal encodings, then the value
+.Pf ( Li "Encoding.default_internal" ) will be nil.
+.Pp
+.It Fl I Ar path
+Same as `ruby -I' .
+Specifies
+.Li $LOAD_PATH
+directory
+.Pp
+.It Fl U
+Same as `ruby -U' .
+Sets the defalut value for internal encodings
+.Pf ( Li "Encoding.default_internal" ) to UTF-8.
+.Pp
 .It Fl d
+Same as `ruby -d' .
 Sets
 .Li $DEBUG
-to true (same as `ruby -d')
+to true.
 .Pp
 .It Fl f
-Suppresses read of ~/.irbrc 
+Suppresses read of 
+.Pa ~/.irbrc .
+.Pp
+.It Fl h
+.It Fl -help
+Prints a summary of the options.
 .Pp
 .It Fl m
 Bc mode (load mathn, fraction or matrix are available)
 .Pp
-.It Fl r Ar load-module
-Same as `ruby -r'
-.Pp
-.It Fl I Ar path
-Specifies
-.Li $LOAD_PATH
-directory
+.It Fl r Ar library
+Same as `ruby -r'.
+Causes irb to load the library using require.
 .Pp
 .It Fl -inspect
 Uses `inspect' for output (default except for bc mode)
