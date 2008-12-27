@@ -199,7 +199,7 @@ require "stringio"
 # 
 class CSV
   # The version of the installed library.
-  VERSION = "2.4.4".freeze
+  VERSION = "2.4.5".freeze
   
   # 
   # A CSV::Row is part Array and part Hash.  It retains an order for the fields
@@ -487,7 +487,7 @@ class CSV
     end
     alias_method :to_s, :to_csv
     
-    # A summary of fields, by header, in an ASCII-8BIT String.
+    # A summary of fields, by header, in an ASCII compatible String.
     def inspect
       str = ["#<", self.class.to_s]
       each do |header, field|
@@ -495,7 +495,14 @@ class CSV
                ":" << field.inspect
       end
       str << ">"
-      str.map { |s| s.encode("ASCII-8BIT") }.join
+      begin
+        str.join
+      rescue  # any encoding error
+        str.map do |s|
+          e = Encoding::Converter.asciicompat_encoding(s.encoding)
+          e ? s.encode(e) : s.force_encoding("ASCII-8BIT")
+        end.join
+      end
     end
   end
   
@@ -1899,7 +1906,7 @@ class CSV
   
   # 
   # Returns a simplified description of the key FasterCSV attributes in an
-  # ASCII-8BIT String.
+  # ASCII compatible String.
   # 
   def inspect
     str = ["<#", self.class.to_s, " io_type:"]
@@ -1926,7 +1933,14 @@ class CSV
       str << " headers:" << headers.inspect
     end
     str << ">"
-    str.map { |s| s.encode("ASCII-8BIT") }.join
+    begin
+      str.join
+    rescue  # any encoding error
+      str.map do |s|
+        e = Encoding::Converter.asciicompat_encoding(s.encoding)
+        e ? s.encode(e) : s.force_encoding("ASCII-8BIT")
+      end.join
+    end
   end
   
   private

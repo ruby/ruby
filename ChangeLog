@@ -1,3 +1,8 @@
+Sat Dec 27 01:52:39 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv.rb:  Using a more robust transcoding scheme to produce
+	  ASCII compatible inspect() messages.  [ruby-dev:37591]
+
 Mon Dec 22 16:32:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_pack): encoding of packed string only from 'm',
