@@ -379,4 +379,19 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(4, f.size)
   end
 
+  # This test is should in ruby/test_method.rb
+  # However this test depends on stringio library,
+  # we write it here.
+  class C < StringIO
+    alias old_init initialize
+    attr_reader :foo
+    def initialize
+      @foo = :ok
+      old_init
+    end
+  end
+
+  def test_method
+    assert_equal(:ok, C.new.foo, 'Bug #632 [ruby-core:19282]')
+  end
 end

@@ -355,7 +355,7 @@ call_cfunc(VALUE (*func)(), VALUE recv,
 
 static inline VALUE
 vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
-	      int num, ID id, VALUE recv, VALUE klass,
+	      int num, ID id, ID oid, VALUE recv, VALUE klass,
 	      VALUE flag, const NODE *mn, const rb_block_t *blockptr)
 {
     VALUE val;
@@ -366,7 +366,7 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	    vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
 			  recv, (VALUE) blockptr, 0, reg_cfp->sp, 0, 1);
 
-	cfp->method_id = id;
+	cfp->method_id = oid;
 	cfp->method_class = klass;
 
 	reg_cfp->sp -= num + 1;
@@ -497,7 +497,7 @@ vm_call_method(rb_thread_t * const th, rb_control_frame_t * const cfp,
 		return Qundef;
 	      }
 	      case NODE_CFUNC:{
-		val = vm_call_cfunc(th, cfp, num, id, recv, mn->nd_clss, flag, node, blockptr);
+		val = vm_call_cfunc(th, cfp, num, id, (ID)mn->nd_file, recv, mn->nd_clss, flag, node, blockptr);
 		break;
 	      }
 	      case NODE_ATTRSET:{
@@ -518,7 +518,7 @@ vm_call_method(rb_thread_t * const th, rb_control_frame_t * const cfp,
 		VALUE *argv = ALLOCA_N(VALUE, num);
 		MEMCPY(argv, cfp->sp - num, VALUE, num);
 		cfp->sp += - num - 1;
-		val = vm_call_bmethod(th, id, node->nd_cval, recv, mn->nd_clss, num, argv, blockptr);
+		val = vm_call_bmethod(th, (ID)mn->nd_file, node->nd_cval, recv, mn->nd_clss, num, argv, blockptr);
 		break;
 	      }
 	      case NODE_ZSUPER:{
