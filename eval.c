@@ -204,7 +204,7 @@ ruby_exec_node(void *n, const char *file)
     if ((state = EXEC_TAG()) == 0) {
 	SAVE_ROOT_JMPBUF(th, {
 	    th->base_block = 0;
-	    rb_iseq_eval(iseq);
+	    rb_iseq_eval_main(iseq);
 	});
     }
     POP_TAG();

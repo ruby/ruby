@@ -97,6 +97,27 @@ vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref)
     }
 }
 
+static void
+vm_set_main_stack(rb_thread_t *th, VALUE iseqval)
+{
+    VALUE toplevel_binding = rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING"));
+    rb_binding_t *bind;
+    rb_iseq_t *iseq;
+    rb_env_t *env;
+
+    GetBindingPtr(toplevel_binding, bind);
+    GetEnvPtr(bind->env, env);
+    th->base_block = &env->block;
+    vm_set_eval_stack(th, iseqval, 0);
+    th->base_block = 0;
+
+    /* save binding */
+    GetISeqPtr(iseqval, iseq);
+    if (bind && iseq->local_size > 0) {
+	bind->env = vm_make_env_object(th, th->cfp);
+    }
+}
+
 rb_control_frame_t *
 vm_get_ruby_level_next_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
 {
@@ -1241,9 +1262,20 @@ rb_iseq_eval(VALUE iseqval)
 
     vm_set_top_stack(th, iseqval);
 
-    if (!rb_const_defined(rb_cObject, rb_intern("TOPLEVEL_BINDING"))) {
-	rb_define_global_const("TOPLEVEL_BINDING", rb_binding_new());
+    val = vm_exec(th);
+    tmp = iseqval; /* prohibit tail call optimization */
+    return val;
     }
+
+VALUE
+rb_iseq_eval_main(VALUE iseqval)
+{
+    rb_thread_t *th = GET_THREAD();
+    VALUE val;
+    volatile VALUE tmp;
+
+    vm_set_main_stack(th, iseqval);
+
     val = vm_exec(th);
     tmp = iseqval; /* prohibit tail call optimization */
     return val;
@@ -1860,7 +1892,7 @@ Init_VM(void)
     {
 	rb_vm_t *vm = ruby_current_vm;
 	rb_thread_t *th = GET_THREAD();
-	VALUE filename = rb_str_new2("<dummy toplevel>");
+	VALUE filename = rb_str_new2("<main>");
 	volatile VALUE iseqval = rb_iseq_new(0, filename, filename, 0, ISEQ_TYPE_TOP);
         volatile VALUE th_self;
 	rb_iseq_t *iseq;
@@ -1884,6 +1916,9 @@ Init_VM(void)
 	GetISeqPtr(iseqval, iseq);
 	th->cfp->iseq = iseq;
 	th->cfp->pc = iseq->iseq_encoded;
+	th->cfp->self = th->top_self;
+
+	rb_define_global_const("TOPLEVEL_BINDING", rb_binding_new());
     }
     vm_init_redefined_flag();
 }

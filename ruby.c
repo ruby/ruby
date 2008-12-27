@@ -1194,6 +1194,8 @@ process_options(VALUE arg)
     const char *s;
     char fbuf[MAXPATHLEN];
     int i = proc_options(argc, argv, opt, 0);
+    rb_thread_t *th = GET_THREAD();
+    rb_env_t *env = 0;
 
     argc -= i;
     argv += i;
@@ -1303,6 +1305,18 @@ process_options(VALUE arg)
     ruby_set_argv(argc, argv);
     process_sflag(opt);
 
+    {
+	/* set eval context */
+	VALUE toplevel_binding = rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING"));
+	rb_binding_t *bind;
+
+	GetBindingPtr(toplevel_binding, bind);
+	GetEnvPtr(bind->env, env);
+
+	th->parse_in_eval++;
+	th->mild_compile_error++;
+    }
+
     if (opt->e_script) {
 	rb_encoding *eenc;
 	if (opt->src.enc.index >= 0) {
@@ -1313,12 +1327,16 @@ process_options(VALUE arg)
 	}
 	rb_enc_associate(opt->e_script, eenc);
 	require_libraries(opt);
+
+	th->base_block = &env->block;
 	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
 	if (opt->script[0] == '-' && !opt->script[1]) {
 	    forbid_setid("program input from stdin");
 	}
+
+	th->base_block = &env->block;
 	tree = load_file(parser, opt->script, 1, opt);
     }
 
@@ -1357,8 +1375,10 @@ process_options(VALUE arg)
 	rb_define_global_function("chomp", rb_f_chomp, -1);
     }
 
-    iseq = rb_iseq_new_top(tree, rb_str_new2("<main>"),
-			   opt->script_name, Qfalse);
+    iseq = rb_iseq_new_main(tree, opt->script_name);
+    th->parse_in_eval--;
+    th->mild_compile_error--;
+    th->base_block = 0;
 
     if (opt->dump & DUMP_BIT(insns)) {
 	rb_io_write(rb_stdout, ruby_iseq_disasm(iseq));

@@ -431,6 +431,7 @@ typedef struct rb_thread_struct
 /* iseq.c */
 VALUE rb_iseq_new(NODE*, VALUE, VALUE, VALUE, VALUE);
 VALUE rb_iseq_new_top(NODE *node, VALUE name, VALUE filename, VALUE parent);
+VALUE rb_iseq_new_main(NODE *node, VALUE filename);
 VALUE rb_iseq_new_with_bopt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE);
 VALUE rb_iseq_new_with_opt(NODE*, VALUE, VALUE, VALUE, VALUE, const rb_compile_option_t*);
 VALUE rb_iseq_compile(VALUE src, VALUE file, VALUE line);
@@ -576,6 +577,7 @@ void rb_vm_bugreport(void);
 /* functions about thread/vm execution */
 
 VALUE rb_iseq_eval(VALUE iseqval);
+VALUE rb_iseq_eval_main(VALUE iseqval);
 void rb_enable_interrupt(void);
 void rb_disable_interrupt(void);
 int rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, VALUE *klassp);
