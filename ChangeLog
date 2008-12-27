@@ -1,3 +1,8 @@
+Sat Dec 27 18:25:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* vm_eval.c (rb_f_loop): return enumerator if no block given.
+	  [ruby-list:45747]
+
 Sat Dec 27 17:08:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* .gdbinit (dummy_gdb_enums.special_consts): forces to load debug
