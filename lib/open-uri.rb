@@ -240,7 +240,7 @@ module OpenURI
     # (RFC 2109 4.3.1, RFC 2965 3.3, RFC 2616 15.1.3)
     # However this is ad hoc.  It should be extensible/configurable.
     uri1.scheme.downcase == uri2.scheme.downcase ||
-    (/\A(?:http|ftp)\z/i =~ uri1.scheme && /\A(?:http|ftp)\z/i =~ uri2.scheme)
+    (/\A(?:https?|ftp)\z/i =~ uri1.scheme && /\A(?:https?|ftp)\z/i =~ uri2.scheme)
   end
 
   def OpenURI.open_http(buf, target, proxy, options) # :nodoc:
