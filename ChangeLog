@@ -1,3 +1,8 @@
+Sat Dec 27 15:23:38 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_yield_with_cfunc): rename parameter name
+	  "blockptr" to "blockargptr".
+
 Sat Dec 27 15:15:56 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* common.mk (revision.h): ignores failure of file2lastrev.
