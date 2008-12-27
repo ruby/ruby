@@ -316,7 +316,7 @@ rb_iseq_new_main(NODE *node, VALUE filename)
     rb_thread_t *th = GET_THREAD();
     VALUE parent = th->base_block->iseq->self;
     return rb_iseq_new_with_opt(node, rb_str_new2("<main>"), filename,
-				parent, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT);
+				parent, ISEQ_TYPE_MAIN, &COMPILE_OPTION_DEFAULT);
 }
 
 static VALUE
@@ -411,6 +411,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 	st_insert(type_map, ID2SYM(rb_intern("rescue")), ISEQ_TYPE_RESCUE);
 	st_insert(type_map, ID2SYM(rb_intern("ensure")), ISEQ_TYPE_ENSURE);
 	st_insert(type_map, ID2SYM(rb_intern("eval")), ISEQ_TYPE_EVAL);
+	st_insert(type_map, ID2SYM(rb_intern("main")), ISEQ_TYPE_MAIN);
 	st_insert(type_map, ID2SYM(rb_intern("defined_guard")), ISEQ_TYPE_DEFINED_GUARD);
     }
 
@@ -1028,6 +1029,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     DECL_SYMBOL(rescue);
     DECL_SYMBOL(ensure);
     DECL_SYMBOL(eval);
+    DECL_SYMBOL(main);
     DECL_SYMBOL(defined_guard);
 
     if (sym_top == 0) {
@@ -1042,6 +1044,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 	INIT_SYMBOL(rescue);
 	INIT_SYMBOL(ensure);
 	INIT_SYMBOL(eval);
+	INIT_SYMBOL(main);
 	INIT_SYMBOL(defined_guard);
     }
 
@@ -1054,6 +1057,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
       case ISEQ_TYPE_RESCUE: type = sym_rescue; break;
       case ISEQ_TYPE_ENSURE: type = sym_ensure; break;
       case ISEQ_TYPE_EVAL:   type = sym_eval;   break;
+      case ISEQ_TYPE_MAIN:   type = sym_main;   break;
       case ISEQ_TYPE_DEFINED_GUARD: type = sym_defined_guard; break;
       default: rb_bug("unsupported iseq type");
     };

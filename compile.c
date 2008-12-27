@@ -469,6 +469,7 @@ ruby_iseq_compile(VALUE self, NODE *node)
 	  case ISEQ_TYPE_CLASS:
 	  case ISEQ_TYPE_BLOCK:
 	  case ISEQ_TYPE_EVAL:
+	  case ISEQ_TYPE_MAIN:
 	  case ISEQ_TYPE_TOP:
 	    rb_compile_error(ERROR_ARGS "compile/should not be reached: %s:%d",
 			     __FILE__, __LINE__);
@@ -3265,6 +3266,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	else {
 	    rb_iseq_t *ip = iseq->parent_iseq;
 	    while (ip) {
+		if (!ip->compile_data) {
+		    ip = 0;
+		    break;
+		}
+
 		level++;
 		if (ip->compile_data->redo_label != 0) {
 		    level = 0x8000;
@@ -3281,6 +3287,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		else if (ip->type == ISEQ_TYPE_EVAL) {
 		    goto break_in_eval;
 		}
+
 		ip = ip->parent_iseq;
 	    }
 	    COMPILE_ERROR((ERROR_ARGS "Invalid break"));
@@ -3322,6 +3329,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    rb_iseq_t *ip;
 	    ip = iseq;
 	    while (ip) {
+		if (!ip->compile_data) {
+		    ip = 0;
+		    break;
+		}
+
 		level = 0x8000 | 0x4000;
 		if (ip->compile_data->redo_label != 0) {
 		    /* while loop */
@@ -3333,6 +3345,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		else if (ip->type == ISEQ_TYPE_EVAL) {
 		    goto next_in_eval;
 		}
+
 		ip = ip->parent_iseq;
 	    }
 	    if (ip != 0) {
@@ -3383,6 +3396,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    level = 0x8000 | 0x4000;
 	    ip = iseq;
 	    while (ip) {
+		if (!ip->compile_data) {
+		    ip = 0;
+		    break;
+		}
+
 		if (ip->compile_data->redo_label != 0) {
 		    break;
 		}
@@ -3392,6 +3410,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		else if (ip->type == ISEQ_TYPE_EVAL) {
 		    goto redo_in_eval;
 		}
+
 		ip = ip->parent_iseq;
 	    }
 	    if (ip != 0) {
@@ -5291,7 +5310,9 @@ rb_dvar_defined(ID id)
 	while (iseq->type == ISEQ_TYPE_BLOCK ||
 	       iseq->type == ISEQ_TYPE_RESCUE ||
 	       iseq->type == ISEQ_TYPE_ENSURE ||
-	       iseq->type == ISEQ_TYPE_EVAL) {
+	       iseq->type == ISEQ_TYPE_EVAL ||
+	       iseq->type == ISEQ_TYPE_MAIN
+	       ) {
 	    int i;
 
 	    for (i = 0; i < iseq->local_table_size; i++) {

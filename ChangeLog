@@ -1,3 +1,14 @@
+Sat Dec 27 14:48:26 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.h, iseq.c (rb_iseq_new_main): add a type ISEQ_TYPE_MAIN.
+	  [ruby-dev:37619]
+
+	* compile.c (rb_dvar_defined, ruby_iseq_compile): ditto.
+
+	* iseq.c (iseq_data_to_ary, iseq_load): ditto.
+
+	* compile.c (iseq_compile_each): fix to check ip->compile_data.
+
 Sat Dec 27 14:29:33 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb (OpenURI.redirectable?): permit https redirection.
