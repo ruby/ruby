@@ -750,6 +750,12 @@ rb_frame_this_func(void)
 ID
 rb_frame_callee(void)
 {
+    return frame_func_id(GET_THREAD()->cfp);
+}
+
+static ID
+rb_frame_caller(void)
+{
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
     /* check if prev_cfp can be accessible */
@@ -1106,7 +1112,7 @@ rb_f_local_variables(void)
 static VALUE
 rb_f_method_name(void)
 {
-    ID fname = rb_frame_callee();
+    ID fname = rb_frame_caller(); /* need *caller* ID */
 
     if (fname) {
 	return ID2SYM(fname);
