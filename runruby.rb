@@ -44,28 +44,36 @@ if extout
 end
 libs << File.expand_path("lib", srcdir)
 config["bindir"] = abs_archdir
-ENV["RUBY"] = File.expand_path(ruby)
-ENV["PATH"] = [abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)
+
+env = {}
+
+env["RUBY"] = File.expand_path(ruby)
+env["PATH"] = [abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)
 
 if pure
   libs << File.expand_path("ext", srcdir) << "-"
 elsif e = ENV["RUBYLIB"]
   libs |= e.split(File::PATH_SEPARATOR)
 end
-ENV["RUBYLIB"] = $:.replace(libs).join(File::PATH_SEPARATOR)
+env["RUBYLIB"] = $:.replace(libs).join(File::PATH_SEPARATOR)
 
 libruby_so = File.join(abs_archdir, config['LIBRUBY_SO'])
 if File.file?(libruby_so)
   if e = config['LIBPATHENV'] and !e.empty?
-    ENV[e] = [abs_archdir, ENV[e]].compact.join(File::PATH_SEPARATOR)
+    env[e] = [abs_archdir, ENV[e]].compact.join(File::PATH_SEPARATOR)
   end
   if /linux/ =~ RUBY_PLATFORM
-    ENV["LD_PRELOAD"] = [libruby_so, ENV["LD_PRELOAD"]].compact.join(' ')
+    env["LD_PRELOAD"] = [libruby_so, ENV["LD_PRELOAD"]].compact.join(' ')
   end
 end
+
+ENV.update env
 
 cmd = [ruby]
 cmd << "-rpurelib.rb" if pure
 cmd.concat(ARGV)
 cmd.unshift(*debugger) if debugger
+
+#require 'shellwords'; puts Shellwords.join(env.map {|k,v| "#{k}=#{v}" } + cmd)
+
 exec(*cmd)

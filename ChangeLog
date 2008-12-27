@@ -1,3 +1,7 @@
+Sun Dec 28 00:43:33 2008  Tanaka Akira  <akr@fsij.org>
+
+	* runruby.rb: refactored to modify ENV as once.
+
 Sat Dec 27 22:41:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rdoc/test_rdoc_info_formatting.rb (setup, teadown): uses
