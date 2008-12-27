@@ -1,4 +1,10 @@
-Sat Dec 27 19:30:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Dec 27 19:40:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (after_exec): needs to reset before restart timer
+	  thread.
+
+	* thread.c (thread_start_func_2): stops timer thread if forked in
+	  the new thread.   [ruby-core:19385]
 
 	* thread.c (rb_thread_atfork, rb_thread_atfork_before_exec): DRY.
 
