@@ -8,7 +8,7 @@ require 'rdoc/generator/texinfo'
 # From chapter 18 of the Pickaxe 3rd ed. and the TexInfo manual.
 class TestRDocInfoFormatting < MiniTest::Unit::TestCase
   def setup
-    @output_dir = File.join Dir.tmpdir, "test_rdoc_info_formatting_#{$$}"
+    @output_dir = File.join Dir.mktmpdir("test_rdoc_"), "info_formatting"
     @output_file = File.join @output_dir, 'rdoc.texinfo'
 
     RDoc::RDoc.new.document(['--fmt=texinfo', '--quiet',
@@ -20,7 +20,7 @@ class TestRDocInfoFormatting < MiniTest::Unit::TestCase
   end
 
   def teardown
-    # FileUtils.rm_rf @output_dir
+    FileUtils.rm_rf File.dirname(@output_dir)
   end
 
   # Make sure tags like *this* do not make HTML
