@@ -961,7 +961,8 @@ get_errinfo(void)
 	return *ptr;
     }
     else {
-	return Qnil;
+	rb_thread_t *th = GET_THREAD();
+	return th->errinfo;
     }
 }
 

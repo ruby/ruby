@@ -1,3 +1,11 @@
+Sat Dec 27 13:36:55 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c (get_errinfo): return th->errinfo value
+	  if normal errinfo place (dynamic local viriable) is not found.
+	  fixes Bug #732 [ruby-dev:37046].
+
+	* bootstraptest/test_proc.rb: add a test.
+
 Sat Dec 27 13:10:43 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* man/irb.1: adds -v, -h, -E and -U.
