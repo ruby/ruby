@@ -1,3 +1,7 @@
+Sat Dec 27 13:09:36 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* man/irb.1: adds -v, -h, -E, and -U.
+
 Sat Dec 27 09:48:54 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (Init_VM): create and define TOPLEVEL_BINDING at first.
