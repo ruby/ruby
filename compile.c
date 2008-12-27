@@ -2724,16 +2724,22 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 static VALUE
 make_name_for_block(rb_iseq_t *iseq)
 {
-    if (iseq->parent_iseq == 0) {
-	return rb_sprintf("block in %s", RSTRING_PTR(iseq->name));
+    int level = 1;
+    rb_iseq_t *ip = iseq;
+
+    if (iseq->parent_iseq != 0) {
+	while (ip->local_iseq != ip) {
+	    if (ip->type == ISEQ_TYPE_BLOCK) {
+		level++;
+	    }
+	    ip = ip->parent_iseq;
+	}
+    }
+
+    if (level == 1) {
+	return rb_sprintf("block in %s", RSTRING_PTR(ip->name));
     }
     else {
-	int level = 1;
-	rb_iseq_t *ip = iseq;
-	while (ip->local_iseq != ip) {
-	    ip = ip->parent_iseq;
-	    level++;
-	}
 	return rb_sprintf("block (%d levels) in %s", level, RSTRING_PTR(ip->name));
     }
 }
@@ -5323,5 +5329,3 @@ rb_parse_in_eval(void)
 {
     return GET_THREAD()->parse_in_eval != 0;
 }
-
-

@@ -310,6 +310,15 @@ rb_iseq_new_top(NODE *node, VALUE name, VALUE filename, VALUE parent)
 				&COMPILE_OPTION_DEFAULT);
 }
 
+VALUE
+rb_iseq_new_main(NODE *node, VALUE filename)
+{
+    rb_thread_t *th = GET_THREAD();
+    VALUE parent = th->base_block->iseq->self;
+    return rb_iseq_new_with_opt(node, rb_str_new2("<main>"), filename,
+				parent, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT);
+}
+
 static VALUE
 rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE filename,
 				VALUE parent, VALUE type, VALUE bopt,
