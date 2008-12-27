@@ -1,3 +1,8 @@
+Sat Dec 27 05:38:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (after_fork): ignores a termination request in the
+	  parent process.  [ruby-dev:37447]
+
 Sat Dec 27 01:52:39 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv.rb:  Using a more robust transcoding scheme to produce
@@ -262,7 +267,7 @@ Wed Dec 24 06:29:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* configure.in (OBJDUMP, OBJCOPY): autoconf list is not comma
 	  separated.
 
-	* configure.in (AC_HEADER_STDC, AC_CHECK_HEADERS AC_CHECK_FUNCS):
+	* configure.in (AC_HEADER_STDC, AC_CHECK_HEADERS, AC_CHECK_FUNCS):
 	  removed duplicated checks.
 
 Wed Dec 24 03:21:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
