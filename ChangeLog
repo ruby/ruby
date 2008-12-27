@@ -1,3 +1,11 @@
+Mon Dec 22 16:32:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): encoding of packed string only from 'm',
+	  'M', and 'u' should be US-ASCII.  [ruby-dev:37284]
+
+	* pack.c (pack_pack): encoding of packed string only from 'U'
+	  should be UTF-8.  also upgrade US-ASCII strings to UTF-8.
+
 Sat Dec 27 09:14:17 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* cont.c: rdoc for Fiber. patch by Muhammad Ali.
