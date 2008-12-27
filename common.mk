@@ -685,7 +685,7 @@ preludes: {$(VPATH)}miniprelude.c
 preludes: {$(srcdir)}golf_prelude.c
 
 $(srcdir)/revision.h: $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
-	$(BASERUBY) $(srcdir)/tool/file2lastrev.rb --revision.h "$(@D)" > "$@.tmp"
+	@-$(BASERUBY) $(srcdir)/tool/file2lastrev.rb --revision.h "$(@D)" > "$@.tmp"
 	@$(IFCHANGE) "$@" "$@.tmp"
 
 $(srcdir)/ext/ripper/ripper.c:
