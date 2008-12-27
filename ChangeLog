@@ -1,3 +1,8 @@
+Sat Dec 27 15:28:12 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (make_econv_exception): show source and destination
+	  encoding.  [ruby-dev:37285]
+
 Sat Dec 27 15:23:38 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_yield_with_cfunc): rename parameter name

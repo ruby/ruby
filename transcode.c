@@ -2005,6 +2005,14 @@ make_econv_exception(rb_econv_t *ec)
                 StringValueCStr(dumped),
                 ec->last_error.source_encoding,
                 ec->last_error.destination_encoding);
+        if (strcmp(ec->last_error.source_encoding,
+                   ec->source_encoding_name) != 0 ||
+            strcmp(ec->last_error.destination_encoding,
+                   ec->destination_encoding_name) != 0) {
+            rb_str_catf(mesg, " in conversion from %s to %s",
+                        ec->source_encoding_name,
+                        ec->destination_encoding_name);
+        }
         exc = rb_exc_new3(rb_eUndefinedConversionError, mesg);
         idx = rb_enc_find_index(ec->last_error.source_encoding);
         if (0 <= idx)
