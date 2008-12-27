@@ -1,3 +1,8 @@
+Sat Dec 27 09:14:17 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* cont.c: rdoc for Fiber. patch by Muhammad Ali.
+	  [ruby-core:20894]
+
 Sat Dec 27 05:38:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (after_fork): ignores a termination request in the
