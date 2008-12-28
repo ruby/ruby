@@ -1,3 +1,7 @@
+Sat Dec 27 15:15:56 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* common.mk (revision.h): ignores failure of file2lastrev.
+
 Sat Dec 27 15:02:38 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* ruby.c (process_options): fix to untouch th->mild_compile_error.
