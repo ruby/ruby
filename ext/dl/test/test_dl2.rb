@@ -59,14 +59,14 @@ class TestDL < TestBase
     buff = "xxxx"
     str  = "abc"
     cfunc = CFunc.new(@libc['strncpy'], TYPE_VOIDP, 'strncpy')
-    x = cfunc.call([buff,str,3].pack("ppi").unpack("l!*"))
+    x = cfunc.call([buff,str,3].pack("ppL!").unpack("l!*"))
     assert_equal("abcx", buff)
     assert_equal("abcx", CPtr.new(x).to_s(4))
 
     ptr = CPtr.malloc(4)
     str = "abc"
     cfunc = CFunc.new(@libc['strcpy'], TYPE_VOIDP, 'strcpy')
-    x = cfunc.call([ptr.to_i,str].pack("lp").unpack("l!*"))
+    x = cfunc.call([ptr.to_i,str].pack("l!p").unpack("l!*"))
     assert_equal("abc\0", ptr[0,4])
     assert_equal("abc\0", CPtr.new(x).to_s(4))
   end
@@ -75,7 +75,7 @@ class TestDL < TestBase
     buff = "foobarbaz"
     cb = set_callback(TYPE_INT,2){|x,y| CPtr.new(x)[0] <=> CPtr.new(y)[0]}
     cfunc = CFunc.new(@libc['qsort'], TYPE_VOID, 'qsort')
-    cfunc.call([buff, buff.size, 1, cb].pack("pI!I!L!").unpack("l!*"))
+    cfunc.call([buff, buff.size, 1, cb].pack("pL!L!L!").unpack("l!*"))
     assert_equal('aabbfoorz', buff)
   end
 
