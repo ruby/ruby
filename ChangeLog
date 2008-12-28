@@ -1,3 +1,8 @@
+Sun Dec 28 18:39:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c: not force to override snprintf/vsnprintf.
+	  [ruby-core:20824]
+
 Sun Dec 28 17:21:36 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/rubygems/test_ext_configure_builder.rb (test_self_build_fail):

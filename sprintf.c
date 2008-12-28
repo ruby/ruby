@@ -1081,12 +1081,9 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #  define u_quad_t unsigned LONG_LONG
 # endif
 #endif
-#undef vsnprintf
 #undef snprintf
 #define FLOATING_POINT 1
 #define BSD__dtoa ruby_dtoa
-#undef HAVE_VSNPRINTF
-#undef HAVE_SNPRINTF
 #if _MSC_VER >= 1300
 #pragma warning(disable: 4273)
 #endif
