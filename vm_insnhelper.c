@@ -644,7 +644,7 @@ block_proc_is_lambda(const VALUE procval)
 static inline VALUE
 vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
 		    VALUE self, int argc, const VALUE *argv,
-		    const rb_block_t *blockptr)
+		    const rb_block_t *blockargptr)
 {
     NODE *ifunc = (NODE *) block->iseq;
     VALUE val, arg, blockarg;
@@ -660,12 +660,12 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
 	arg = argv[0];
     }
 
-    if (blockptr) {
-	if (blockptr->proc) {
-	    blockarg = blockptr->proc;
+    if (blockargptr) {
+	if (blockargptr->proc) {
+	    blockarg = blockargptr->proc;
 	}
 	else {
-	    blockarg = vm_make_proc(th, blockptr, rb_cProc);
+	    blockarg = vm_make_proc(th, blockargptr, rb_cProc);
 	}
     }
     else {
