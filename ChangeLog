@@ -1,3 +1,10 @@
+Sat Dec 27 22:41:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/rdoc/test_rdoc_info_formatting.rb (setup, teadown): uses
+	  mktmpdir and removes it alfter the test.
+
+	* test/cgi/test_cgi_session.rb (setup, teadown): ditto.
+
 Sun Dec 28 12:53:10 2008  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* ext/dl/test/test_base.rb: use libc.dylib when the platform is darwin.
