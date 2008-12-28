@@ -14,6 +14,9 @@ when /mingw/, /mswin32/
 when /darwin/
   LIBC_SO = "/usr/lib/libc.dylib"
   LIBM_SO = "/usr/lib/libm.dylib"
+when /bsd/
+  LIBC_SO = "/usr/lib/libc.so"
+  LIBM_SO = "/usr/lib/libm.so"
 else
   LIBC_SO = ARGV[0]
   LIBM_SO = ARGV[1]
