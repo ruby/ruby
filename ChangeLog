@@ -1,3 +1,11 @@
+Mon Dec 29 03:43:25 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* ruby.c (process_options): set th->base_block only while
+	  it is needed.
+
+	* ruby.c (require_libraries): clear th->base_block before
+	  require libraries.
+
 Sun Dec 28 21:33:52 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/ext/dl/test_base.rb : add BSD's case.
