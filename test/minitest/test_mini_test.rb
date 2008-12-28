@@ -28,7 +28,7 @@ class TestMiniTest < MiniTest::Unit::TestCase
     Object.send :remove_const, :ATestCase if defined? ATestCase
   end
 
-  pwd = Pathname.new(File.expand_path Dir.pwd)
+  pwd = Pathname.new(File.expand_path(Dir.pwd))
   basedir = Pathname.new(File.expand_path(MiniTest::MINI_DIR)) + 'mini'
   basedir = basedir.relative_path_from(pwd).to_s
   MINITEST_BASE_DIR = basedir[/\A\./] ? basedir : "./#{basedir}"
@@ -96,6 +96,7 @@ class TestMiniTest < MiniTest::Unit::TestCase
     assert_equal 'F', @tu.puke('SomeClass', 'method_name', exception)
     assert_equal 1, @tu.failures
     assert_match(/^Failure.*Oh no!/m, @tu.report.first)
+    assert_match("method_name(SomeClass) [unhappy]", @tu.report.first)
   end
 
   def test_class_puke_with_failure_and_flunk_in_backtrace
@@ -106,6 +107,72 @@ class TestMiniTest < MiniTest::Unit::TestCase
                 end
     assert_equal 'F', @tu.puke('SomeClass', 'method_name', exception)
     refute @tu.report.any?{|line| line =~ /in .flunk/}
+  end
+
+  def test_class_puke_with_assertion_failed_and_long_backtrace
+    bt = (["test/test_some_class.rb:615:in `method_name'",
+           "#{MINITEST_BASE_DIR}/unit.rb:140:in `assert_raises'",
+           "test/test_some_class.rb:615:in `each'",
+           "test/test_some_class.rb:614:in `test_method_name'",
+           "#{MINITEST_BASE_DIR}/test.rb:165:in `__send__'"] +
+          BT_MIDDLE +
+          ["#{MINITEST_BASE_DIR}/test.rb:29"])
+    bt = util_expand_bt bt
+
+    ex_location = util_expand_bt(["test/test_some_class.rb:615"]).first
+
+    exception = MiniTest::Assertion.new "Oh no!"
+    exception.set_backtrace bt
+    assert_equal 'F', @tu.puke('TestSomeClass', 'test_method_name', exception)
+    assert_equal 1, @tu.failures
+    assert_match(/^Failure.*Oh no!/m, @tu.report.first)
+    assert_match("test_method_name(TestSomeClass) [#{ex_location}]", @tu.report.first)
+  end
+
+  def test_class_puke_with_assertion_failed_and_user_defined_assertions
+    bt = (["lib/test/my/util.rb:16:in `another_method_name'",
+           "#{MINITEST_BASE_DIR}/unit.rb:140:in `assert_raises'",
+           "lib/test/my/util.rb:15:in `block in assert_something'",
+           "lib/test/my/util.rb:14:in `each'",
+           "lib/test/my/util.rb:14:in `assert_something'",
+           "test/test_some_class.rb:615:in `each'",
+           "test/test_some_class.rb:614:in `test_method_name'",
+           "#{MINITEST_BASE_DIR}/test.rb:165:in `__send__'"] +
+          BT_MIDDLE +
+          ["#{MINITEST_BASE_DIR}/test.rb:29"])
+    bt = util_expand_bt bt
+
+    ex_location = util_expand_bt(["test/test_some_class.rb:615"]).first
+
+    exception = MiniTest::Assertion.new "Oh no!"
+    exception.set_backtrace bt
+    assert_equal 'F', @tu.puke('TestSomeClass', 'test_method_name', exception)
+    assert_equal 1, @tu.failures
+    assert_match(/^Failure.*Oh no!/m, @tu.report.first)
+    assert_match("test_method_name(TestSomeClass) [#{ex_location}]", @tu.report.first)
+  end
+
+  def test_class_puke_with_flunk_and_user_defined_assertions
+    bt = (["lib/test/my/util.rb:16:in `flunk'",
+           "#{MINITEST_BASE_DIR}/unit.rb:140:in `assert_raises'",
+           "lib/test/my/util.rb:15:in `block in assert_something'",
+           "lib/test/my/util.rb:14:in `each'",
+           "lib/test/my/util.rb:14:in `assert_something'",
+           "test/test_some_class.rb:615:in `each'",
+           "test/test_some_class.rb:614:in `test_method_name'",
+           "#{MINITEST_BASE_DIR}/test.rb:165:in `__send__'"] +
+          BT_MIDDLE +
+          ["#{MINITEST_BASE_DIR}/test.rb:29"])
+    bt = util_expand_bt bt
+
+    ex_location = util_expand_bt(["test/test_some_class.rb:615"]).first
+
+    exception = MiniTest::Assertion.new "Oh no!"
+    exception.set_backtrace bt
+    assert_equal 'F', @tu.puke('TestSomeClass', 'test_method_name', exception)
+    assert_equal 1, @tu.failures
+    assert_match(/^Failure.*Oh no!/m, @tu.report.first)
+    assert_match("test_method_name(TestSomeClass) [#{ex_location}]", @tu.report.first)
   end
 
   def test_class_puke_with_non_failure_exception
@@ -465,13 +532,13 @@ class TestMiniTestTestCase < MiniTest::Unit::TestCase
 
   def test_assert_match
     @assertion_count = 2
-    @tc.assert_match "blah blah blah", /\w+/
+    @tc.assert_match(/\w+/, "blah blah blah")
   end
 
   def test_assert_match_triggered
     @assertion_count = 2
     util_assert_triggered 'Expected /\d+/ to match "blah blah blah".' do
-      @tc.assert_match "blah blah blah", /\d+/
+      @tc.assert_match(/\d+/, "blah blah blah")
     end
   end
 
@@ -795,12 +862,14 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
   end
 
   def test_refute_match
-    @tc.refute_match "blah blah blah", /\d+/
+    @assertion_count = 2
+    @tc.refute_match(/\d+/, "blah blah blah")
   end
 
   def test_refute_match_triggered
+    @assertion_count = 2
     util_assert_triggered 'Expected /\w+/ to not match "blah blah blah".' do
-      @tc.refute_match "blah blah blah", /\w+/
+      @tc.refute_match(/\w+/, "blah blah blah")
     end
   end
 

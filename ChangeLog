@@ -1,3 +1,8 @@
+Sun Dec 28 05:44:44 2008  Ryan Davis  <ryan@wrath.local>
+
+	* lib/minitest/*.rb: Imported minitest 1.3.1 r4505.
+	* test/minitest/*.rb: ditto.
+
 Sun Dec 28 00:43:33 2008  Tanaka Akira  <akr@fsij.org>
 
 	* runruby.rb: refactored to modify ENV as once.
@@ -1022,7 +1027,7 @@ Wed Dec 10 12:56:32 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 Sat Dec 13 09:17:33 2008  Ryan Davis  <ryand-ruby@zenspider.com>
 
-	* lib/minitest/*.rb: Imported minitest 1.3.2 r4503.
+	* lib/minitest/*.rb: Imported minitest 1.3.1 r4503.
 	* test/minitest/test_mini_test.rb: ditto.
 	* lib/miniunit/autorun.rb: added (as part of r4503).
 	
