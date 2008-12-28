@@ -1,7 +1,7 @@
 Mon Dec 29 03:43:25 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* ruby.c (process_options): set th->base_block only while
-	  it is needed.
+	  it is needed.  [ruby-dev:37634] [Bug #939]
 
 	* ruby.c (require_libraries): clear th->base_block before
 	  require libraries.
