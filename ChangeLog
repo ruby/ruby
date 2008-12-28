@@ -1,3 +1,7 @@
+Sun Dec 28 12:24:14 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (mutex_free, mutex_unlock): add qualifiers.
+
 Sun Dec 28 10:28:04 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (mutex_free): GC thread (main thread) has failed to unlock
