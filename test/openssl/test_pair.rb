@@ -144,6 +144,18 @@ class OpenSSL::TestPair < Test::Unit::TestCase
     }
   end
 
+  def test_read_nonblock
+    ssl_pair {|s1, s2|
+      assert_raise(Errno::EWOULDBLOCK) { s2.read_nonblock(10) }
+      s1.write "abc\ndef\n"
+      assert_equal("ab", s2.read_nonblock(2))
+      assert_equal("c\n", s2.gets)
+      ret = nil
+      assert_nothing_raised("[ruby-core:20298]") { ret = s2.read_nonblock(10) }
+      assert_equal("def\n", ret)
+    }
+  end
+
 end
 
 end
