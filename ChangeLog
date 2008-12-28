@@ -1,3 +1,7 @@
+Sun Dec 28 12:53:10 2008  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
+
+	* ext/dl/test/test_base.rb: use libc.dylib when the platform is darwin.
+
 Sun Dec 28 12:24:14 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (mutex_free, mutex_unlock): add qualifiers.

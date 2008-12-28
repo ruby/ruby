@@ -14,6 +14,9 @@ when /linux/
 when /mingw/, /mswin32/
   LIBC_SO = "msvcrt.dll"
   LIBM_SO = "msvcrt.dll"
+when /darwin/
+  LIBC_SO = "/usr/lib/libc.dylib"
+  LIBM_SO = "/usr/lib/libm.dylib"
 else
   LIBC_SO = ARGV[0]
   LIBM_SO = ARGV[1]
