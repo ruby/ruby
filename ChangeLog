@@ -1,3 +1,8 @@
+Sat Dec 27 15:02:38 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* ruby.c (process_options): fix to untouch th->mild_compile_error.
+	  [ruby-dev:37621], [ruby-dev:37620]
+
 Sat Dec 27 14:48:26 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.h, iseq.c (rb_iseq_new_main): add a type ISEQ_TYPE_MAIN.

@@ -1314,7 +1314,6 @@ process_options(VALUE arg)
 	GetEnvPtr(bind->env, env);
 
 	th->parse_in_eval++;
-	th->mild_compile_error++;
     }
 
     if (opt->e_script) {
@@ -1377,7 +1376,6 @@ process_options(VALUE arg)
 
     iseq = rb_iseq_new_main(tree, opt->script_name);
     th->parse_in_eval--;
-    th->mild_compile_error--;
     th->base_block = 0;
 
     if (opt->dump & DUMP_BIT(insns)) {
