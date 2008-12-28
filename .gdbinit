@@ -1,3 +1,6 @@
+if dummy_gdb_enums.special_consts
+end
+
 define rp
   if (VALUE)$arg0 & RUBY_FIXNUM_FLAG
     printf "FIXNUM: %ld\n", $arg0 >> 1
@@ -217,9 +220,13 @@ define rp
     output (enum node_type)(($flags&RUBY_NODE_TYPEMASK)>>RUBY_NODE_TYPESHIFT)
     printf "): "
     print *(NODE *)$arg0
+  if ($flags & RUBY_T_MASK) == RUBY_T_ZOMBIE
+    printf "T_ZOMBIE: "
+    print (struct RData *)$arg0
   else
     printf "unknown: "
     print (struct RBasic *)$arg0
+  end
   end
   end
   end
