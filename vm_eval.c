@@ -64,7 +64,7 @@ vm_call0(rb_thread_t * th, VALUE klass, VALUE recv, VALUE id, ID oid,
 		vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
 			      recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
 
-	    cfp->method_id = id;
+	    cfp->method_id = oid;
 	    cfp->method_class = klass;
 
 	    val = call_cfunc(body->nd_cfnc, recv, body->nd_argc, argc, argv);
@@ -96,7 +96,7 @@ vm_call0(rb_thread_t * th, VALUE klass, VALUE recv, VALUE id, ID oid,
 	break;
       }
       case NODE_BMETHOD:{
-	val = vm_call_bmethod(th, id, body->nd_cval,
+	val = vm_call_bmethod(th, oid, body->nd_cval,
 			      recv, klass, argc, (VALUE *)argv, blockptr);
 	break;
       }
@@ -152,8 +152,8 @@ vm_call_super(rb_thread_t * const th, const int argc, const VALUE * const argv)
 	return method_missing(recv, id, argc, argv, 0);
     }
 
-    body = body->nd_body;
-    return vm_call0(th, klass, recv, id, id, argc, argv, body, CALL_SUPER);
+    return vm_call0(th, klass, recv, id, (ID)body->nd_file,
+		    argc, argv, body->nd_body, CALL_SUPER);
 }
 
 VALUE

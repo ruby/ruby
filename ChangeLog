@@ -1,3 +1,16 @@
+Sat Dec 27 11:41:45 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_call_method, vm_call_cfunc): use original id instead of
+	  calling id when NODE_CFUNC or NODE_BMETHOD.
+	  fixes Bug #632 [ruby-core:19282].
+
+	* vm_eval.c (vm_call0, vm_call_super): ditto.
+
+	* vm_method.c (rb_add_method, rb_alias): store original id
+	  in nd_file field of NODE_METHOD.
+
+	* test/stringio/test_stringio.rb: add a test.
+
 Sat Dec 27 13:09:36 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* man/irb.1: adds -v, -h, -E, and -U.

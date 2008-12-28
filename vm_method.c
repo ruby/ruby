@@ -129,6 +129,7 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
 
     /*
      * NODE_METHOD (NEW_METHOD(body, klass, vis)):
+     *   nd_file : original id   // RBASIC()->klass (TODO: dirty hack)
      *   nd_body : method body   // (2) // mark
      *   nd_clss : klass         // (1) // mark
      *   nd_noex : visibility    // (3)
@@ -139,7 +140,9 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
      *   nd_cnt  : alias count           // (3)
      */
     if (node) {
-	body = NEW_FBODY(NEW_METHOD(node, klass, NOEX_WITH_SAFE(noex)), 0);
+	NODE *method = NEW_METHOD(node, klass, NOEX_WITH_SAFE(noex));
+	method->nd_file = (void *)mid;
+	body = NEW_FBODY(method, mid);
     }
     else {
 	body = 0;
@@ -725,7 +728,7 @@ rb_mod_protected_method_defined(VALUE mod, VALUE mid)
 void
 rb_alias(VALUE klass, ID name, ID def)
 {
-    NODE *orig_fbody, *node;
+    NODE *orig_fbody, *node, *method;
     VALUE singleton = 0;
     st_data_t data;
 
@@ -762,9 +765,10 @@ rb_alias(VALUE klass, ID name, ID def)
 
     st_insert(RCLASS_M_TBL(klass), name,
 	      (st_data_t) NEW_FBODY(
-		  NEW_METHOD(orig_fbody->nd_body->nd_body,
+		  method = NEW_METHOD(orig_fbody->nd_body->nd_body,
 			     orig_fbody->nd_body->nd_clss,
 			     NOEX_WITH_SAFE(orig_fbody->nd_body->nd_noex)), def));
+    method->nd_file = (void *)def;
 
     rb_clear_cache_by_id(name);
 
