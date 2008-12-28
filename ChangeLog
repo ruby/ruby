@@ -1,3 +1,11 @@
+Sat Dec 27 13:36:55 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c (get_errinfo): return th->errinfo value
+	  if normal errinfo place (dynamic local viriable) is not found.
+	  fixes Bug #732 [ruby-dev:37046].
+
+	* bootstraptest/test_proc.rb: add a test.
+
 Sat Dec 27 11:41:45 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_call_method, vm_call_cfunc): use original id instead of

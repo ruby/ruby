@@ -418,3 +418,11 @@ assert_equal 'foo!', %q{
 
   fp.bar
 }, 'Subclass of Proc'
+
+assert_equal 'ok', %q{
+  at_exit{
+    print $!.message
+  }
+  raise "ok"
+}
+
