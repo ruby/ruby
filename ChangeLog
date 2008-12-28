@@ -1,3 +1,13 @@
+Sat Dec 27 16:18:02 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c (rb_frame_callee, rb_frame_caller): rb_frame_callee() 
+	  should return method id on current frame.
+	  add rb_frame_caller() to get method id on parent frame.
+	  Bug #884 [ruby-dev:37446]
+
+	* eval.c (rb_f_method_name): use rb_frame_caller()
+	  instead of rb_frame_callee().
+
 Sat Dec 27 15:28:12 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (make_econv_exception): show source and destination
