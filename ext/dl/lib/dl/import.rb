@@ -119,7 +119,13 @@ module DL
       name = symname.gsub(/@.+/,'')
       @func_map[name] = f
       # define_method(name){|*args,&block| f.call(*args,&block)}
-      module_eval(<<-EOS)
+      begin
+        /^(.+?):(\d+)/ =~ caller.first
+        file, line = $1, $2.to_i
+      rescue
+        file, line = __FILE__, __LINE__+3
+      end
+      module_eval(<<-EOS, file, line)
         def #{name}(*args, &block)
           @func_map['#{name}'].call(*args,&block)
         end
@@ -143,7 +149,13 @@ module DL
       end
       @func_map[name] = f
       #define_method(name){|*args,&block| f.call(*args,&block)}
-      module_eval(<<-EOS)
+      begin
+        /^(.+?):(\d+)/ =~ caller.first
+        file, line = $1, $2.to_i
+      rescue
+        file, line = __FILE__, __LINE__+3
+      end
+      module_eval(<<-EOS, file, line)
         def #{name}(*args,&block)
           @func_map['#{name}'].call(*args,&block)
         end

@@ -1,3 +1,11 @@
+Sun Dec 28 21:03:07 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ext/dl/lib/dl/import.rb (DL::Importer#extern): adds filename and
+	  line number to module_eval'ing for readability of backtrace.
+	  (DL::Importer#bind): ditto.
+
+	* ext/dl/lib/dl/struct.rb (DL::CStructBuilder#create): ditto.
+
 Sun Dec 28 19:11:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (config.h): do not use snprintf/vsnprintf in

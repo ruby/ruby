@@ -29,7 +29,7 @@ module DL
         }
       }
       size = klass.entity_class.size(types)
-      new_class.module_eval(<<-EOS)
+      new_class.module_eval(<<-EOS, __FILE__, __LINE__+1)
         def new_class.size()
           #{size}
         end
