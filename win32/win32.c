@@ -715,7 +715,7 @@ rb_w32_argv_size(char *const *argv)
 	    }
 	}
 	len += p - *t + n + 1;
-	if (quote) len += 2;
+	if (p - *t == 0 || quote) len += 2;
     }
     return len;
 }
