@@ -1,3 +1,8 @@
+Sat Dec 27 14:29:33 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb (OpenURI.redirectable?): permit https redirection.
+	  patch from Roman Shterenzon.  [ruby-core:20485]
+
 Sat Dec 27 13:36:55 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (get_errinfo): return th->errinfo value
