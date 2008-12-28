@@ -1,3 +1,7 @@
+Sat Dec 27 19:30:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_atfork, rb_thread_atfork_before_exec): DRY.
+
 Sat Dec 27 17:08:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* .gdbinit (dummy_gdb_enums.special_consts): forces to load debug

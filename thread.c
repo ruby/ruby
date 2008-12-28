@@ -2438,14 +2438,29 @@ clear_coverage(void)
     }
 }
 
+static void
+rb_thread_atfork_internal(int (*atfork)(st_data_t, st_data_t, st_data_t))
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_vm_t *vm = th->vm;
+    VALUE thval = th->self;
+    vm->main_thread = th;
+
+    st_foreach(vm->living_threads, atfork, (st_data_t)th);
+    st_clear(vm->living_threads);
+    st_insert(vm->living_threads, thval, (st_data_t)th->thread_id);
+    vm->sleeper = 0;
+    clear_coverage();
+}
+
 static int
-terminate_atfork_i(st_data_t key, st_data_t val, rb_thread_t *current_th)
+terminate_atfork_i(st_data_t key, st_data_t val, st_data_t current_th)
 {
     VALUE thval = key;
     rb_thread_t *th;
     GetThreadPtr(thval, th);
 
-    if (th != current_th) {
+    if (th != (rb_thread_t *)current_th) {
 	thread_cleanup_func(th);
     }
     return ST_CONTINUE;
@@ -2454,27 +2469,18 @@ terminate_atfork_i(st_data_t key, st_data_t val, rb_thread_t *current_th)
 void
 rb_thread_atfork(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_vm_t *vm = th->vm;
-    VALUE thval = th->self;
-    vm->main_thread = th;
-
-    st_foreach(vm->living_threads, terminate_atfork_i, (st_data_t)th);
-    st_clear(vm->living_threads);
-    st_insert(vm->living_threads, thval, (st_data_t) th->thread_id);
-    vm->sleeper = 0;
-    clear_coverage();
+    rb_thread_atfork_internal(terminate_atfork_i);
     rb_reset_random_seed();
 }
 
 static int
-terminate_atfork_before_exec_i(st_data_t key, st_data_t val, rb_thread_t *current_th)
+terminate_atfork_before_exec_i(st_data_t key, st_data_t val, st_data_t current_th)
 {
     VALUE thval = key;
     rb_thread_t *th;
     GetThreadPtr(thval, th);
 
-    if (th != current_th) {
+    if (th != (rb_thread_t *)current_th) {
 	thread_cleanup_func_before_exec(th);
     }
     return ST_CONTINUE;
@@ -2483,16 +2489,7 @@ terminate_atfork_before_exec_i(st_data_t key, st_data_t val, rb_thread_t *curren
 void
 rb_thread_atfork_before_exec(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_vm_t *vm = th->vm;
-    VALUE thval = th->self;
-    vm->main_thread = th;
-
-    st_foreach(vm->living_threads, terminate_atfork_before_exec_i, (st_data_t)th);
-    st_clear(vm->living_threads);
-    st_insert(vm->living_threads, thval, (st_data_t) th->thread_id);
-    vm->sleeper = 0;
-    clear_coverage();
+    rb_thread_atfork_internal(terminate_atfork_before_exec_i);
 }
 
 struct thgroup {
