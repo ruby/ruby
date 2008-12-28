@@ -1,3 +1,8 @@
+Sun Dec 28 17:21:36 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/rubygems/test_ext_configure_builder.rb (test_self_build_fail):
+	  Extends pattern for FreeBSD's error message.
+
 Sun Dec 28 12:24:14 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (mutex_free, mutex_unlock): add qualifiers.
