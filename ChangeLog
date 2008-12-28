@@ -1,4 +1,7 @@
-Sun Dec 28 18:39:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Dec 28 19:11:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (config.h): do not use snprintf/vsnprintf in
+	  msvcrt.
 
 	* sprintf.c: not force to override snprintf/vsnprintf.
 	  [ruby-core:20824]
