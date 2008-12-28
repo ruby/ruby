@@ -60,9 +60,9 @@ class TestGemCommand < RubyGemTestCase
     @cmd.add_option('-z', '--exe', 'BAD!') do end
     @cmd.add_option('-x', '--exe', 'BAD!') do end
 
-    assert_match %r|-x, --zip|, @cmd.parser.to_s
-    assert_match %r|-z, --exe|, @cmd.parser.to_s
-    refute_match %r|-x, --exe|, @cmd.parser.to_s
+    assert_match %r|-x, --exe|, @cmd.parser.to_s
+    refute_match %r|-z, --exe|, @cmd.parser.to_s
+    refute_match %r|-x, --zip|, @cmd.parser.to_s
   end
 
   def test_basic_accessors
