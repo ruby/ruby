@@ -2708,7 +2708,7 @@ thgroup_add(VALUE group, VALUE thread)
 #define GetMutexPtr(obj, tobj) \
   Data_Get_Struct(obj, mutex_t, tobj)
 
-static const char *mutex_unlock(mutex_t *mutex);
+static const char *mutex_unlock(mutex_t *mutex, rb_thread_t *th);
 
 static void
 mutex_free(void *ptr)
@@ -2717,7 +2717,8 @@ mutex_free(void *ptr)
 	mutex_t *mutex = ptr;
 	if (mutex->th) {
 	    /* rb_warn("free locked mutex"); */
-	    mutex_unlock(mutex);
+	    char *err = mutex_unlock(mutex, mutex->th);
+	    if (err) rb_bug("%s", err);
 	}
 	native_mutex_destroy(&mutex->lock);
 	native_cond_destroy(&mutex->cond);
@@ -2917,10 +2918,9 @@ rb_mutex_lock(VALUE self)
 }
 
 static const char *
-mutex_unlock(mutex_t *mutex)
+mutex_unlock(mutex_t *mutex, rb_thread_t *th)
 {
     const char *err = NULL;
-    rb_thread_t *th = GET_THREAD();
     mutex_t *th_mutex;
 
     native_mutex_lock(&mutex->lock);
@@ -2928,7 +2928,7 @@ mutex_unlock(mutex_t *mutex)
     if (mutex->th == 0) {
 	err = "Attempt to unlock a mutex which is not locked";
     }
-    else if (mutex->th != GET_THREAD()) {
+    else if (mutex->th != th) {
 	err = "Attempt to unlock a mutex which is locked by another thread";
     }
     else {
@@ -2979,7 +2979,7 @@ rb_mutex_unlock(VALUE self)
     mutex_t *mutex;
     GetMutexPtr(self, mutex);
 
-    err = mutex_unlock(mutex);
+    err = mutex_unlock(mutex, GET_THREAD());
     if (err) rb_raise(rb_eThreadError, "%s", err);
 
     return self;
@@ -2996,7 +2996,7 @@ rb_mutex_unlock_all(mutex_t *mutexes)
 	/* rb_warn("mutex #<%p> remains to be locked by terminated thread",
 		mutexes); */
 	mutexes = mutex->next_mutex;
-	err = mutex_unlock(mutex);
+	err = mutex_unlock(mutex, GET_THREAD());
 	if (err) rb_bug("invalid keeping_mutexes: %s", err);
     }
 }
