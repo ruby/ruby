@@ -1,3 +1,9 @@
+Mon Dec 29 14:50:19 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* Makefile.in (ext-clean): ext-clean always fails.
+
+	* ext/dl/ripper/extconf.rb: adds y.output into the clean list.
+
 Mon Dec 29 11:58:39 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_mutex_trylock): return false if Mutex owned

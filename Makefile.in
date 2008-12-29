@@ -228,7 +228,11 @@ clean-ext distclean-ext realclean-ext::
 	    dir=`dirname "$$mk"`; \
 	    echo $(@:-ext=)ing `expr "$$dir" : 'ext/\(.*\)'`; \
 	    (cd "$$dir"; $(MAKE) $(MFLAGS) $(@:-ext=)) && \
-	    test $@ != clean-ext && rmdir -p "$$dir" 2> /dev/null; \
+	    if [ $@ == clean-ext ]; then \
+	    	true; \
+	    else \
+		rmdir -p "$$dir" 2> /dev/null; \
+	    fi; \
 	done
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
