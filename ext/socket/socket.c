@@ -690,11 +690,12 @@ s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
     int fd, flags;
     VALUE addr = Qnil;
 
-    rb_scan_args(argc, argv, "11", &len, &flg);
+    rb_scan_args(argc, argv, "2", &len, &flg);
 
+    if (len == Qnil) buflen = 65536;
+    else             buflen = NUM2INT(len);
     if (flg == Qnil) flags = 0;
     else             flags = NUM2INT(flg);
-    buflen = NUM2INT(len);
 
 #ifdef MSG_DONTWAIT
     /* MSG_DONTWAIT avoids the race condition between fcntl and recvfrom.
@@ -748,11 +749,13 @@ bsock_recv(int argc, VALUE *argv, VALUE sock)
 
 /*
  * call-seq:
+ * 	basicsocket.recv_nonblock() => mesg
  * 	basicsocket.recv_nonblock(maxlen) => mesg
  * 	basicsocket.recv_nonblock(maxlen, flags) => mesg
  * 
  * Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
+ * If _maxlen_ is ommitted, its default value is 65536.
  * _flags_ is zero or more of the +MSG_+ options.
  * The result, _mesg_, is the data received.
  *
@@ -1878,11 +1881,13 @@ udp_send(int argc, VALUE *argv, VALUE sock)
 
 /*
  * call-seq:
+ * 	udpsocket.recvfrom_nonblock() => [mesg, sender_inet_addr]
  * 	udpsocket.recvfrom_nonblock(maxlen) => [mesg, sender_inet_addr]
  * 	udpsocket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_inet_addr]
  * 
  * Receives up to _maxlen_ bytes from +udpsocket+ using recvfrom(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
+ * If _maxlen_ is ommitted, its default value is 65536.
  * _flags_ is zero or more of the +MSG_+ options.
  * The first element of the results, _mesg_, is the data received.
  * The second element, _sender_inet_addr_, is an array to represent the sender address.

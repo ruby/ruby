@@ -26,6 +26,12 @@ Mon Dec 29 10:58:54 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_scan_open_args): ditto.
 
+Mon Dec 29 10:12:12 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (s_recvfrom_nonblock): default maxlen to be
+	  65536.  suggested by akr in [ruby-core:20918].  response to
+	  feature request #936 in [ruby-core:20917].
+
 Mon Dec 29 07:15:16 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* cont.c: small RDoc fix mentioned from <radek.bulat at gmail.com>
