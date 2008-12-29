@@ -1,3 +1,8 @@
+Mon Dec 29 18:24:49 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* Makefile.in (distclean-local): removes Doxyfile and
+	  run.gdb at distclean'ing.
+
 Mon Dec 29 17:53:24 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* bin/erb: accepts options in more flexible styles.
