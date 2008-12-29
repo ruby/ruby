@@ -1,3 +1,8 @@
+Mon Dec 29 18:02:45 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/io/wait/wait.c (io_nread): returns number of bytes available
+	  for read.  response to feature request #936 in [ruby-core:20917].
+
 Mon Dec 29 17:52:16 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/io/wait/wait.c (io_ready_p): updated to follow RDoc.

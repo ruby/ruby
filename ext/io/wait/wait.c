@@ -44,6 +44,31 @@ EXTERN struct timeval rb_time_interval _((VALUE time));
 
 /*
  * call-seq:
+ *   io.nread -> int
+ *
+ * Returns number of bytes that can be read without blocking.
+ * Returns zero if no information available.
+ */
+
+static VALUE
+io_nread(VALUE io)
+{
+    rb_io_t *fptr;
+    int len;
+    ioctl_arg n;
+
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+    len = rb_io_read_pending(fptr);
+    if (len > 0) return len;
+    if (!FIONREAD_POSSIBLE_P(fptr->fd)) return INT2FIX(0);
+    if (ioctl(fptr->fd, FIONREAD, &n)) return INT2FIX(0);
+    if (n > 0) return ioctl_arg2num(n);
+    return INT2FIX(0);
+}
+
+/*
+ * call-seq:
  *   io.ready? -> true, false or nil
  *
  * Returns true if input available without blocking, or false.
@@ -137,6 +162,7 @@ io_wait(int argc, VALUE *argv, VALUE io)
 void
 Init_wait()
 {
+    rb_define_method(rb_cIO, "nread", io_nread, 0);
     rb_define_method(rb_cIO, "ready?", io_ready_p, 0);
     rb_define_method(rb_cIO, "wait", io_wait, -1);
 }
