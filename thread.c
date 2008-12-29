@@ -2796,10 +2796,6 @@ rb_mutex_trylock(VALUE self)
     VALUE locked = Qfalse;
     GetMutexPtr(self, mutex);
 
-    if (mutex->th == GET_THREAD()) {
-	rb_raise(rb_eThreadError, "deadlock; recursive locking");
-    }
-
     native_mutex_lock(&mutex->lock);
     if (mutex->th == 0) {
 	mutex->th = GET_THREAD();
@@ -2871,10 +2867,15 @@ lock_interrupt(void *ptr)
 VALUE
 rb_mutex_lock(VALUE self)
 {
+
     if (rb_mutex_trylock(self) == Qfalse) {
 	mutex_t *mutex;
 	rb_thread_t *th = GET_THREAD();
 	GetMutexPtr(self, mutex);
+
+	if (mutex->th == GET_THREAD()) {
+	    rb_raise(rb_eThreadError, "deadlock; recursive locking");
+	}
 
 	while (mutex->th != th) {
 	    int interrupted;
