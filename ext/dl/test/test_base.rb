@@ -5,6 +5,9 @@ case RUBY_PLATFORM
 when /cygwin/
   LIBC_SO = "cygwin1.dll"
   LIBM_SO = "cygwin1.dll"
+when /x86_64-linux/
+  LIBC_SO = "/lib64/libc.so.6"
+  LIBM_SO = "/lib64/libm.so.6"
 when /linux/
   LIBC_SO = "/lib/libc.so.6"
   LIBM_SO = "/lib/libm.so.6"
