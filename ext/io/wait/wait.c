@@ -46,7 +46,8 @@ EXTERN struct timeval rb_time_interval _((VALUE time));
  * call-seq:
  *   io.ready? -> true, false or nil
  *
- * Returns non-nil if input available without blocking, or nil.
+ * Returns true if input available without blocking, or false.
+ * Returns nil if no information available.
  */
 
 static VALUE
@@ -58,10 +59,10 @@ io_ready_p(VALUE io)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     if (rb_io_read_pending(fptr)) return Qtrue;
-    if (!FIONREAD_POSSIBLE_P(fptr->fd)) return Qfalse;
-    if (ioctl(fptr->fd, FIONREAD, &n)) rb_sys_fail(0);
-    if (n > 0) return ioctl_arg2num(n);
-    return Qnil;
+    if (!FIONREAD_POSSIBLE_P(fptr->fd)) return Qnil;
+    if (ioctl(fptr->fd, FIONREAD, &n)) return Qnil;
+    if (n > 0) return Qtrue;
+    return Qfalse;
 }
 
 struct wait_readable_arg {
