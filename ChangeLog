@@ -1,3 +1,8 @@
+Mon Dec 29 20:45:25 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c: floor, ceil, truncate and round accept an extra
+	  argument like Float#round. [experimental]
+
 Mon Dec 29 18:24:49 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* Makefile.in (distclean-local): removes Doxyfile and

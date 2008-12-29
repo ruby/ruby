@@ -995,21 +995,76 @@ nurat_truncate(VALUE self)
 static VALUE
 nurat_round(VALUE self)
 {
+    VALUE num, den, neg;
+
     get_dat1(self);
 
-    if (f_negative_p(dat->num)) {
-	VALUE num, den;
+    num = dat->num;
+    den = dat->den;
+    neg = f_negative_p(num);
 
-	num = f_negate(dat->num);
-	num = f_add(f_mul(num, TWO), dat->den);
-	den = f_mul(dat->den, TWO);
-	return f_negate(f_idiv(num, den));
-    }
-    else {
-	VALUE num = f_add(f_mul(dat->num, TWO), dat->den);
-	VALUE den = f_mul(dat->den, TWO);
-	return f_idiv(num, den);
-    }
+    if (neg)
+	num = f_negate(num);
+
+    num = f_add(f_mul(num, TWO), den);
+    den = f_mul(den, TWO);
+    num = f_idiv(num, den);
+
+    if (neg)
+	num = f_negate(num);
+
+    return num;
+}
+
+static VALUE
+nurat_round_common(int argc, VALUE *argv, VALUE self,
+		   VALUE (*func)(VALUE))
+{
+    VALUE n, b, s;
+
+    if (argc == 0)
+	return (*func)(self);
+
+    rb_scan_args(argc, argv, "01", &n);
+
+    if (!k_integer_p(n))
+	rb_raise(rb_eTypeError, "not an integer");
+
+    b = f_expt(INT2FIX(10), n);
+    s = f_mul(self, b);
+
+    s = (*func)(s);
+
+    s = f_div(f_rational_new_bang1(CLASS_OF(self), s), b);
+
+    if (f_lt_p(n, ONE))
+	s = f_to_i(s);
+
+    return s;
+}
+
+static VALUE
+nurat_floor_n(int argc, VALUE *argv, VALUE self)
+{
+    return nurat_round_common(argc, argv, self, nurat_floor);
+}
+
+static VALUE
+nurat_ceil_n(int argc, VALUE *argv, VALUE self)
+{
+    return nurat_round_common(argc, argv, self, nurat_ceil);
+}
+
+static VALUE
+nurat_truncate_n(int argc, VALUE *argv, VALUE self)
+{
+    return nurat_round_common(argc, argv, self, nurat_truncate);
+}
+
+static VALUE
+nurat_round_n(int argc, VALUE *argv, VALUE self)
+{
+    return nurat_round_common(argc, argv, self, nurat_round);
 }
 
 #define f_size(x) rb_funcall(x, rb_intern("size"), 0)
@@ -1565,10 +1620,10 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "exact?", nurat_true, 0);
 #endif
 
-    rb_define_method(rb_cRational, "floor", nurat_floor, 0);
-    rb_define_method(rb_cRational, "ceil", nurat_ceil, 0);
-    rb_define_method(rb_cRational, "truncate", nurat_truncate, 0);
-    rb_define_method(rb_cRational, "round", nurat_round, 0);
+    rb_define_method(rb_cRational, "floor", nurat_floor_n, -1);
+    rb_define_method(rb_cRational, "ceil", nurat_ceil_n, -1);
+    rb_define_method(rb_cRational, "truncate", nurat_truncate_n, -1);
+    rb_define_method(rb_cRational, "round", nurat_round_n, -1);
 
     rb_define_method(rb_cRational, "to_i", nurat_truncate, 0);
     rb_define_method(rb_cRational, "to_f", nurat_to_f, 0);
