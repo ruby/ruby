@@ -11,10 +11,10 @@ module DL
 
     extern "void *strcpy(char*, char*)"
     extern "int isdigit(int)"
-    extern "float atof(string)"
+    extern "double atof(string)"
     extern "unsigned long strtoul(char*, char **, int)"
     extern "int qsort(void*, int, int, void*)"
-    extern "void fprintf(FILE*, char*)"
+    extern "int fprintf(FILE*, char*)"
     extern "int gettimeofday(timeval*, timezone*)" rescue nil
 
     QsortCallback = bind("void *qsort_callback(void*, void*)", :temp)

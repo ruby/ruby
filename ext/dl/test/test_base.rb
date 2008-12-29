@@ -9,8 +9,17 @@ when /x86_64-linux/
   LIBC_SO = "/lib64/libc.so.6"
   LIBM_SO = "/lib64/libm.so.6"
 when /linux/
-  LIBC_SO = "/lib/libc.so.6"
-  LIBM_SO = "/lib/libm.so.6"
+  libdir = '/lib'
+  case [0].pack('L!').size
+  when 4
+    # 32-bit ruby
+    libdir = '/lib32' if File.directory? '/lib32'
+  when 8
+    # 64-bit ruby
+    libdir = '/lib64' if File.directory? '/lib64'
+  end
+  LIBC_SO = File.join(libdir, "libc.so.6")
+  LIBM_SO = File.join(libdir, "libm.so.6")
 when /mingw/, /mswin32/
   LIBC_SO = "msvcrt.dll"
   LIBM_SO = "msvcrt.dll"
