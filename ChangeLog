@@ -1,3 +1,10 @@
+Sun Dec 28 17:10:13 2008  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
+
+	* ext/dl/test/test_dl2.rb: modify strncpy, strcpy, qsort, types.
+	  Patch by Takehiro Kubo.
+	  Bug #633 [ruby-core:19289]
+	* ext/dl/test/test_base.rb: /lib/libc.so is x86_64 binary in x86_64 architecture.
+
 Sun Dec 28 18:36:33 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/rubygems/test_gem_command.rb
