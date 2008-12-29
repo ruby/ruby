@@ -144,7 +144,7 @@ class TestRand < Test::Unit::TestCase
                     0.000000000000001)
     srand(0)
     o = Object.new
-    def o.to_i; 100; end
+    def o.to_int; 100; end
     assert_equal(44, rand(o))
     assert_equal(47, rand(o))
     assert_equal(64, rand(o))

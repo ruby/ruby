@@ -1,3 +1,11 @@
+Mon Dec 29 22:27:11 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* random.c (rb_f_rand): type check simplified.  strings are no
+	  longer allowed for argument.  [ruby-dev:37655]
+
+	* test/ruby/test_rand.rb (TestRand::o.to_int): need override
+	  to_int.
+
 Mon Dec 29 21:22:31 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* numeric.c: Infinity.numerator returns self. [experimental]

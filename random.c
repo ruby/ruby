@@ -489,49 +489,31 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
     long val, max;
     struct MT *mt = &default_mt.mt;
 
-    rb_scan_args(argc, argv, "01", &vmax);
     if (!genrand_initialized(mt)) {
 	rand_init(mt, random_seed());
     }
-    switch (TYPE(vmax)) {
-      case T_FLOAT:
-	if (RFLOAT_VALUE(vmax) <= LONG_MAX && RFLOAT_VALUE(vmax) >= LONG_MIN) {
-	    max = (long)RFLOAT_VALUE(vmax);
-	    break;
+    if (argc == 0) goto zero_arg;
+    rb_scan_args(argc, argv, "01", &vmax);
+    if (NIL_P(vmax)) goto zero_arg;
+    vmax = rb_to_int(vmax);
+    if (TYPE(vmax) == T_BIGNUM) {
+	struct RBignum *limit = (struct RBignum *)vmax;
+	if (!RBIGNUM_SIGN(limit)) {
+	    limit = (struct RBignum *)rb_big_clone(vmax);
+	    RBIGNUM_SET_SIGN(limit, 1);
 	}
-        if (RFLOAT_VALUE(vmax) < 0)
-            vmax = rb_dbl2big(-RFLOAT_VALUE(vmax));
-        else
-            vmax = rb_dbl2big(RFLOAT_VALUE(vmax));
-	/* fall through */
-      case T_BIGNUM:
-      bignum:
-        {
-            struct RBignum *limit = (struct RBignum *)vmax;
-            if (!RBIGNUM_SIGN(limit)) {
-                limit = (struct RBignum *)rb_big_clone(vmax);
-                RBIGNUM_SET_SIGN(limit, 1);
-            }
-            limit = (struct RBignum *)rb_big_minus((VALUE)limit, INT2FIX(1));
-            if (FIXNUM_P((VALUE)limit)) {
-                if (FIX2LONG((VALUE)limit) == -1)
-                    return DBL2NUM(genrand_real(mt));
-                return LONG2NUM(limited_rand(mt, FIX2LONG((VALUE)limit)));
-            }
-            return limited_big_rand(mt, limit);
+	limit = (struct RBignum *)rb_big_minus((VALUE)limit, INT2FIX(1));
+	if (FIXNUM_P((VALUE)limit)) {
+	    if (FIX2LONG((VALUE)limit) == -1)
+		return DBL2NUM(genrand_real(mt));
+	    return LONG2NUM(limited_rand(mt, FIX2LONG((VALUE)limit)));
 	}
-      case T_NIL:
-	max = 0;
-	break;
-      default:
-	vmax = rb_Integer(vmax);
-	if (TYPE(vmax) == T_BIGNUM) goto bignum;
-      case T_FIXNUM:
-	max = FIX2LONG(vmax);
-	break;
+	return limited_big_rand(mt, limit);
     }
+    max = NUM2LONG(vmax);
 
     if (max == 0) {
+      zero_arg:
 	return DBL2NUM(genrand_real(mt));
     }
     if (max < 0) max = -max;
