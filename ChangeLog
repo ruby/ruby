@@ -1,3 +1,7 @@
+Sun Dec 28 21:33:52 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/ext/dl/test_base.rb : add BSD's case.
+
 Sun Dec 28 21:09:12 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* ext/dl/lib/dl/import.rb (DL::Importer#sizeof): follows
