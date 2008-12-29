@@ -107,7 +107,6 @@ rb_get_path_check(VALUE obj, int check)
     tmp = rb_check_string_type(obj);
     if (!NIL_P(tmp)) goto exit;
 
-
     CONST_ID(to_path, "to_path");
     if (rb_respond_to(obj, to_path)) {
 	tmp = rb_funcall(obj, to_path, 0, 0);
@@ -120,6 +119,27 @@ rb_get_path_check(VALUE obj, int check)
     if (check && obj != tmp) {
 	rb_check_safe_obj(tmp);
     }
+
+#if defined _WIN32 || defined __APPLE__
+    {
+	static rb_encoding *fs_encoding;
+	rb_encoding *fname_encoding = rb_enc_get(tmp);
+	if (!fs_encoding)
+	    fs_encoding = rb_filesystem_encoding();
+	if (rb_usascii_encoding() != fname_encoding
+	    && rb_ascii8bit_encoding() != fname_encoding
+#if defined __APPLE__
+	    && rb_utf8_encoding() != fname_encoding
+#endif
+	    && fs_encoding != fname_encoding) {
+	    static VALUE fs_enc;
+	    if (!fs_enc)
+		fs_enc = rb_enc_from_encoding(fs_encoding);
+	    tmp = rb_str_encode(tmp, fs_enc, 0, Qnil);
+	}
+    }
+#endif
+
     return rb_str_new4(tmp);
 }
 

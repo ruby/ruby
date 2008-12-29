@@ -1,3 +1,10 @@
+Mon Dec 29 10:58:54 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (rb_get_path): move encoding conversion of file path
+	  from rb_scan_open_args.
+
+	* io.c (rb_scan_open_args): ditto.
+
 Mon Dec 29 07:15:16 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* cont.c: small RDoc fix mentioned from <radek.bulat at gmail.com>
