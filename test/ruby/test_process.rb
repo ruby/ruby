@@ -1044,4 +1044,16 @@ class TestProcess < Test::Unit::TestCase
   def test_pst_inspect
     assert_nothing_raised { Process::Status.allocate.inspect }
   end
+
+  def test_wait_and_sigchild
+    signal_received = []
+    Signal.trap(:CHLD)  { signal_received << true; puts "child died" }
+    pid = fork { sleep 1; exit }
+    Thread.start { raise }
+    Process.wait pid
+    sleep 2
+    assert_equal [true], signal_received, " [ruby-core:19744]"
+  ensure
+    Signal.trap(:CHLD, 'DEFAULT')
+  end
 end

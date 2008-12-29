@@ -1,3 +1,8 @@
+Mon Dec 29 22:37:17 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* process.c (rb_waitpid): retries waitpid when EINTR.
+	  [ruby-core:19744].
+
 Mon Dec 29 23:18:52 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* bignum.c (rb_cstr_to_inum): changed an error message.

@@ -624,18 +624,17 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
 #ifndef NO_WAITPID
     struct waitpid_arg arg;
 
+retry:
     arg.pid = pid;
     arg.st = st;
     arg.flags = flags;
     result = (rb_pid_t)rb_thread_blocking_region(rb_waitpid_blocking, &arg,
 						 RUBY_UBF_PROCESS, 0);
     if (result < 0) {
-#if 0
 	if (errno == EINTR) {
-	    rb_thread_polling();
-	    goto retry;
-	}
-#endif
+            RUBY_VM_CHECK_INTS();
+            goto retry;
+        }
 	return -1;
     }
 #else  /* NO_WAITPID */
