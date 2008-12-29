@@ -1,3 +1,8 @@
+Sun Dec 28 18:39:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c: not force to override snprintf/vsnprintf.
+	  [ruby-core:20824]
+
 Sun Dec 28 21:33:52 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/ext/dl/test_base.rb : add BSD's case.
