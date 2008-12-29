@@ -1,3 +1,10 @@
+Mon Dec 29 22:37:57 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): template f should not accept non float
+	  values.  [ruby-dev:37656]
+
+	* object.c (rb_to_float): new function to type check floats.
+
 Mon Dec 29 22:27:11 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* random.c (rb_f_rand): type check simplified.  strings are no

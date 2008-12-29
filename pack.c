@@ -789,7 +789,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		float f;
 
 		from = NEXTFROM;
-		f = RFLOAT_VALUE(rb_Float(from));
+		f = RFLOAT_VALUE(rb_to_float(from));
 		rb_str_buf_cat(res, (char*)&f, sizeof(float));
 	    }
 	    break;
