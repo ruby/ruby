@@ -690,7 +690,7 @@ s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
     int fd, flags;
     VALUE addr = Qnil;
 
-    rb_scan_args(argc, argv, "2", &len, &flg);
+    rb_scan_args(argc, argv, "02", &len, &flg);
 
     if (len == Qnil) buflen = 65536;
     else             buflen = NUM2INT(len);
