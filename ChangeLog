@@ -1,3 +1,11 @@
+Mon Dec 29 23:18:52 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* bignum.c (rb_cstr_to_inum): changed an error message.
+
+	* complex.c (string_to_c_strict): ditto.
+
+	* rational.c (string_to_r_strict): ditto.
+
 Mon Dec 29 22:37:57 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_pack): template f should not accept non float

@@ -1438,7 +1438,7 @@ string_to_r_strict(VALUE self)
     VALUE a = string_to_r_internal(self);
     if (NIL_P(RARRAY_PTR(a)[0]) || RSTRING_LEN(RARRAY_PTR(a)[1]) > 0) {
 	VALUE s = f_inspect(self);
-	rb_raise(rb_eArgError, "invalid value for Rational: %s",
+	rb_raise(rb_eArgError, "invalid value for convert(): %s",
 		 StringValuePtr(s));
     }
     return RARRAY_PTR(a)[0];

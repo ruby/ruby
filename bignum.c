@@ -583,7 +583,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	while (*str && ISSPACE(*str)) str++;
 	if (*str) {
 	  bad:
-	    rb_invalid_str(s, "Integer");
+	    rb_invalid_str(s, "Integer()");
 	}
     }
 
