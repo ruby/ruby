@@ -1,3 +1,9 @@
+Sun Dec 28 18:36:33 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/rubygems/test_gem_command.rb
+	  (test_add_option_overlapping_common_and_local_options):
+	  follows r21066.
+
 Mon Dec 29 14:50:19 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* Makefile.in (ext-clean): ext-clean always fails.
