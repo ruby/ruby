@@ -1352,6 +1352,23 @@ flo_truncate(VALUE num)
     return LONG2FIX(val);
 }
 
+static VALUE
+flo_numerator(VALUE num)
+{
+    double d = RFLOAT_VALUE(num);
+    if (isinf(d) || isnan(d))
+	return num;
+    return rb_call_super(0, 0);
+}
+
+static VALUE
+flo_denominator(VALUE num)
+{
+    double d = RFLOAT_VALUE(num);
+    if (isinf(d) || isnan(d))
+	return INT2FIX(1);
+    return rb_call_super(0, 0);
+}
 
 /*
  *  call-seq:
@@ -3246,6 +3263,9 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "ceil", flo_ceil, 0);
     rb_define_method(rb_cFloat, "round", flo_round, -1);
     rb_define_method(rb_cFloat, "truncate", flo_truncate, 0);
+
+    rb_define_method(rb_cFloat, "numerator", flo_numerator, 0);
+    rb_define_method(rb_cFloat, "denominator", flo_denominator, 0);
 
     rb_define_method(rb_cFloat, "nan?",      flo_is_nan_p, 0);
     rb_define_method(rb_cFloat, "infinite?", flo_is_infinite_p, 0);

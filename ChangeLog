@@ -1,3 +1,9 @@
+Mon Dec 29 21:22:31 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* numeric.c: Infinity.numerator returns self. [experimental]
+
+	* numeric.c: Infinity.denominator returns 1. [experimental]
+
 Mon Dec 29 20:57:14 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* man/ri.1: new manpage.
