@@ -12,9 +12,17 @@ class ERB
       arg = self.shift
       return nil if arg == '--'
       if arg =~ /^-(.)(.*)/
-        return arg if $1 == '-'
-        raise 'unknown switch "-"' if $2.index('-')
-        self.unshift "-#{$2}" if $2.size > 0
+        if $1 == '-'
+          arg, @maybe_arg = arg.split(/=/, 2)
+          return arg 
+        end
+        raise 'unknown switch "-"' if $2[0] == ?- and $1 != 'T'
+        if $2.size > 0
+          self.unshift "-#{$2}" 
+          @maybe_arg = $2
+        else
+          @maybe_arg = nil
+        end
         "-#{$1}"
       else
         self.unshift arg
@@ -23,7 +31,9 @@ class ERB
     end
     
     def ARGV.req_arg
-      self.shift || raise('missing argument')
+      (@maybe_arg || self.shift || raise('missing argument')).tap {
+        @maybe_arg = nil
+      }
     end
 
     def trim_mode_opt(trim_mode, disable_percent)
@@ -94,11 +104,11 @@ class ERB
   -n               print ruby script with line number
   -v               enable verbose mode
   -d               set $DEBUG to true
-  -r [library]     load a library
-  -S [safe_level]  set $SAFE (0..4)
+  -r library       load a library
+  -S safe_level    set $SAFE (0..4)
   -E ex[:in]       set default external/internal encodings
   -U               set default encoding to UTF-8.
-  -T [trim_mode]   specify trim_mode (0..2, -)
+  -T trim_mode     specify trim_mode (0..2, -)
   -P               ignore lines which start with "%"
 EOU
         exit 1

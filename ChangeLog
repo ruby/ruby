@@ -1,3 +1,7 @@
+Mon Dec 29 17:53:24 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* bin/erb: accepts options in more flexible styles.
+
 Mon Dec 29 17:25:17 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/erb.rb (ERB): m17n of ERB. adds rdoc.
