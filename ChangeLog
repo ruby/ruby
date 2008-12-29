@@ -1,3 +1,24 @@
+Mon Dec 29 17:25:17 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/erb.rb (ERB): m17n of ERB. adds rdoc.
+	  fixes #712. c.f. [ruby-dev:37516].
+
+	* lib/erb.rb (ERB::Compiler#compile): recognizes magic comments.
+	  returns a pair of compiled script and its script encoding.
+
+	* lib/erb.rb (ERB#set_eoutvar): make generated scripts return a 
+	  string in correct encoding.
+
+	* lib/erb.rb (ERB#def_method): use Kernel#eval for encoding-awareness  
+	  of the evaluated string.
+
+	* bin/erb.rb (ERB::Main.run): adds -E and -U options.
+	  String is no longer Enumerable.
+
+	* man/erb.1: new manapage.
+
+	* test/erb/test_erb_m17n.rb: new test case for m17n features.
+
 Mon Dec 29 18:02:45 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/io/wait/wait.c (io_nread): returns number of bytes available
