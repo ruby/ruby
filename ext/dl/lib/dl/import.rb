@@ -87,7 +87,7 @@ module DL
           raise(DLError, "unknown type: #{ty}")
         end
       when Class
-        if( ty.instance_methods().include?("to_ptr") )
+        if( ty.instance_methods().include?(:to_ptr) )
           return ty.size()
         end
       end
