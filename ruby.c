@@ -453,6 +453,9 @@ require_libraries(struct cmdline_options *opt)
 {
     VALUE list = opt->req_list;
     ID require;
+    rb_thread_t *th = GET_THREAD();
+    rb_block_t *prev_base_block = th->base_block;
+    th->base_block = 0;
 
     Init_ext();		/* should be called here for some reason :-( */
     CONST_ID(require, "require");
@@ -461,6 +464,7 @@ require_libraries(struct cmdline_options *opt)
 	rb_funcall2(rb_vm_top_self(), require, 1, &feature);
     }
     opt->req_list = 0;
+    th->base_block = prev_base_block;
 }
 
 static void
@@ -1312,9 +1316,15 @@ process_options(VALUE arg)
 
 	GetBindingPtr(toplevel_binding, bind);
 	GetEnvPtr(bind->env, env);
-
-	th->parse_in_eval++;
     }
+
+#define PREPARE_PARSE_MAIN(expr) do { \
+    th->parse_in_eval++; \
+    th->base_block = &env->block; \
+    expr; \
+    th->parse_in_eval--; \
+    th->base_block = 0; \
+} while (0)
 
     if (opt->e_script) {
 	rb_encoding *eenc;
@@ -1327,16 +1337,18 @@ process_options(VALUE arg)
 	rb_enc_associate(opt->e_script, eenc);
 	require_libraries(opt);
 
-	th->base_block = &env->block;
-	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
+	PREPARE_PARSE_MAIN({
+	    tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
+	});
     }
     else {
 	if (opt->script[0] == '-' && !opt->script[1]) {
 	    forbid_setid("program input from stdin");
 	}
 
-	th->base_block = &env->block;
-	tree = load_file(parser, opt->script, 1, opt);
+	PREPARE_PARSE_MAIN({
+	    tree = load_file(parser, opt->script, 1, opt);
+	});
     }
 
     if (opt->intern.enc.index >= 0) {
@@ -1364,19 +1376,23 @@ process_options(VALUE arg)
     }
 
     if (opt->do_print) {
-	tree = rb_parser_append_print(parser, tree);
+	PREPARE_PARSE_MAIN({
+	    tree = rb_parser_append_print(parser, tree);
+	});
     }
     if (opt->do_loop) {
-	tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
+	PREPARE_PARSE_MAIN({
+	    tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
+	});
 	rb_define_global_function("sub", rb_f_sub, -1);
 	rb_define_global_function("gsub", rb_f_gsub, -1);
 	rb_define_global_function("chop", rb_f_chop, 0);
 	rb_define_global_function("chomp", rb_f_chomp, -1);
     }
 
-    iseq = rb_iseq_new_main(tree, opt->script_name);
-    th->parse_in_eval--;
-    th->base_block = 0;
+    PREPARE_PARSE_MAIN({
+	iseq = rb_iseq_new_main(tree, opt->script_name);
+    });
 
     if (opt->dump & DUMP_BIT(insns)) {
 	rb_io_write(rb_stdout, ruby_iseq_disasm(iseq));
