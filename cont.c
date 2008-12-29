@@ -611,7 +611,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *     
  *  The <code>Fiber#resume</code> method accepts an arbitary number of
  *  parameters, if it is the first call to <code>resume</code> then they
- *  will be passed as block arguments. Other wise they will be the return
+ *  will be passed as block arguments. Otherwise they will be the return
  *  value of the call to <code>Fiber.yield</code>
  *
  *  Example:

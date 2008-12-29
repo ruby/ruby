@@ -1,4 +1,10 @@
+Mon Dec 29 07:15:16 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* cont.c: small RDoc fix mentioned from <radek.bulat at gmail.com>
+	  in [ruby-core:20921].
+
 Mon Dec 29 03:43:25 2008  Koichi Sasada  <ko1@atdot.net> 
+
 	* ruby.c (process_options): set th->base_block only while
 	  it is needed.  [ruby-dev:37634] [Bug #939]
 
