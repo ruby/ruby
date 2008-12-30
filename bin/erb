@@ -72,6 +72,11 @@ class ERB
             end
             raise "invalid trim mode #{arg.dump}" unless arg =~ /^[0-2]$/
             trim_mode = arg.to_i
+          when '-E', '--encoding'
+            arg = ARGV.req_arg
+            set_encoding(*arg.split(/:/, 2))
+          when '-U'
+            set_encoding(Encoding::UTF_8, Encoding::UTF_8)
           when '-P'
             disable_percent = true
           when '--help'
@@ -91,12 +96,15 @@ class ERB
   -d               set $DEBUG to true
   -r [library]     load a library
   -S [safe_level]  set $SAFE (0..4)
+  -E ex[:in]       set default external/internal encodings
+  -U               set default encoding to UTF-8.
   -T [trim_mode]   specify trim_mode (0..2, -)
   -P               ignore lines which start with "%"
 EOU
         exit 1
       end
 
+      $<.set_encoding(Encoding::ASCII_8BIT, nil)
       src = $<.read
       filename = $FILENAME
       exit 2 unless src
@@ -105,10 +113,8 @@ EOU
       erb.filename = filename
       if output
         if number
-          l = 1
-          for line in erb.src
-            puts "%3d %s"%[l, line]
-            l += 1
+          erb.src.each_line.with_index do |line, l|
+            puts "%3d %s"%[l+1, line]
           end
         else
           puts erb.src
@@ -118,6 +124,19 @@ EOU
       end
     end
     module_function :run
+
+    def set_encoding(extern, intern = nil)
+      verbose, $VERBOSE = $VERBOSE, nil
+      Encoding.default_external = extern unless extern.nil? || extern.empty?
+      Encoding.default_internal = intern unless intern.nil? || intern.empty?
+      [$stdin, $stdout, $stderr].each do |io|
+        io.set_encoding(extern, intern)
+      end
+    ensure
+      $VERBOSE = verbose
+    end
+    module_function :set_encoding
+    class << self; private :set_encoding; end
   end
 end
 
