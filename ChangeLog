@@ -3,6 +3,9 @@ Wed Dec 31 00:27:54 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* object.c (rb_to_float): prohibit conversion from nil to float.
 	  [ruby-dev:37663]
 
+	* pack.c (pack_pack): replace all rb_Float() to rb_to_float().
+	  [ruby-dev:37663]
+
 Tue Dec 30 21:17:00 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: use sock_define_uconst for INADDR_*
