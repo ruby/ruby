@@ -7,11 +7,16 @@ $out.puts("#define pseudo_AF_FTIP pseudo_AF_RTIP")
 DATA.each_line do |s|
   name, value = s.scan(/\S+/)
   if name && name[0] != ?#
+    if name =~ /\AINADDR_/
+      define = "sock_define_uconst"
+    else
+      define = "sock_define_const"
+    end
     $out.puts("#ifdef #{name}")
-    $out.puts("    sock_define_const(\"#{name}\", #{name});")
+    $out.puts("    #{define}(\"#{name}\", #{name});")
     if value
     $out.puts("#else")
-    $out.puts("    sock_define_const(\"#{name}\", #{value});")
+    $out.puts("    #{define}(\"#{name}\", #{value});")
     end
     $out.puts("#endif")
     $out.puts

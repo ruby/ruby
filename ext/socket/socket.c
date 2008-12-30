@@ -3557,7 +3557,16 @@ sock_define_const(const char *name, int value, VALUE mConst)
     rb_define_const(rb_cSocket, name, INT2FIX(value));
     rb_define_const(mConst, name, INT2FIX(value));
 }
+
+static void
+sock_define_uconst(const char *name, unsigned int value, VALUE mConst)
+{
+    rb_define_const(rb_cSocket, name, UINT2NUM(value));
+    rb_define_const(mConst, name, UINT2NUM(value));
+}
+
 #define sock_define_const(name, value) sock_define_const(name, value, mConst)
+#define sock_define_uconst(name, value) sock_define_uconst(name, value, mConst)
 
 /*
  * Class +Socket+ provides access to the underlying operating system
