@@ -3151,10 +3151,10 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "truncate", int_to_i, 0);
     rb_define_method(rb_cInteger, "round", int_round, -1);
 
-    rb_cFixnum = rb_define_class("Fixnum", rb_cInteger);
-
     rb_define_method(rb_cInteger, "numerator", int_numerator, 0);
     rb_define_method(rb_cInteger, "denominator", int_denominator, 0);
+
+    rb_cFixnum = rb_define_class("Fixnum", rb_cInteger);
 
     rb_define_method(rb_cFixnum, "to_s", fix_to_s, -1);
 
