@@ -2273,6 +2273,9 @@ rb_to_float(VALUE val)
     VALUE v;
 
     if (TYPE(val) == T_FLOAT) return val;
+    if (NIL_P(val)) {
+	rb_raise(rb_eTypeError, "can't convert nil into Float");
+    }
     v = convert_type(val, "Float", "to_f", Qtrue);
     if (TYPE(v) != T_FLOAT) {
 	const char *cname = rb_obj_classname(val);
