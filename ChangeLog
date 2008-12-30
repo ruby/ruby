@@ -1,3 +1,7 @@
+Mon Dec 29 20:57:14 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* man/ri.1: new manpage.
+
 Mon Dec 29 17:53:24 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* bin/erb: accepts options in more flexible styles.
