@@ -148,7 +148,7 @@ struct rb_econv_t {
 typedef struct {
     const char *sname;
     const char *dname;
-    const char *lib; /* maybe null.  it means that don't load the library. */
+    const char *lib; /* null means means no need to load a library */
     const rb_transcoder *transcoder;
 } transcoder_entry_t;
 
@@ -349,7 +349,7 @@ transcode_search_path(const char *sname, const char *dname,
 
     st_free_table(bfs.visited);
 
-    return pathlen; /* is -1 if !found */
+    return pathlen; /* is -1 if not found */
 }
 
 static const rb_transcoder *
@@ -1694,7 +1694,7 @@ rb_econv_asciicompat_encoding(const char *ascii_incompat_name)
 
     /*
      * Assumption:
-     * There are at most one transcoder for
+     * There is at most one transcoder for
      * converting from ASCII incompatible encoding.
      *
      * For ISO-2022-JP, there is ISO-2022-JP -> stateless-ISO-2022-JP and no others.
@@ -2574,33 +2574,43 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
  *  to encoding +encoding+.
  *  The second form returns a copy of <i>str</i> transcoded
  *  from src_encoding to dst_encoding.
- *  The options Hash gives details for conversion.
  *  The last form returns a copy of <i>str</i> transcoded to
  *  <code>Encoding.default_internal</code>.
+ *  By default, the first and second form raise
+ *  Encoding::UndefinedConversionError for characters that are
+ *  undefined in the destination encoding, and
+ *  Encoding::InvalidByteSequenceError for invalid byte sequences
+ *  in the source encoding. The last form by default does not raise
+ *  exceptions but uses replacement strings.
+ *  The <code>options</code> Hash gives details for conversion.
  *
  *  === options
- *  A hash <code>options</code> can have the following keys:
+ *  The hash <code>options</code> can have the following keys:
  *  :invalid ::
- *    If the value is <code>:replace</code> <code>#encode</code> replaces
- *    invalid characters in <code>str</code> with the replacement character.
+ *    If the value is <code>:replace</code>, <code>#encode</code> replaces
+ *    invalid byte sequences in <code>str</code> with the replacement character.
+ *    The default is to raise the exception
  *  :undef ::
- *    If the value is <code>:replace</code> <code>#encode</code> replaces
- *    characters which are undefined in the destination character set with
+ *    If the value is <code>:replace</code>, <code>#encode</code> replaces
+ *    characters which are undefined in the destination encoding with
  *    the replacement character.
  *  :replace ::
- *    sets the replacement character to the value.
+ *    Sets the replacement string to the value. The default replacement
+ *    string is "\uFFFD" for Unicode encoding forms, and "?" otherwise.
  *  :xml ::
  *    The value must be <code>:text</code> or <code>:attr</code>.
  *    If the value is <code>:text</code> <code>#encode</code> replaces
- *    undefined characters with its numerical character reference.
- *    If the value is <code>:attr</code> <code>#encode</code> also quotes
- *    the replacement result.
+ *    undefined characters with their (upper-case hexadecimal) numeric
+ *    character references. '&', '<', and '>' are converted to "&amp;",
+ *    "&lt;", and "&gt;", respectively.
+ *    If the value is <code>:attr</code>, <code>#encode</code> also quotes
+ *    the replacement result (using '"'), and replaces '"' with "&quot;".
  *  :cr_newline ::
- *    replaces EOL with CR.
+ *    Replaces LF ("\n") with CR ("\r") if value is true.
  *  :crlf_newline ::
- *    replaces EOL with CR LF.
+ *    Replaces LF ("\n") with CRLF ("\r\n") if value is true.
  *  :universal_newline ::
- *    replaces EOL with LF.
+ *    Replaces CRLF ("\r\n") and CR ("\r") with LF ("\n") if value is true.
  */
 
 static VALUE
@@ -2680,13 +2690,12 @@ make_encobj(const char *name)
  * It returns nil if the argument is an ASCII compatible encoding.
  *
  * "corresponding ASCII compatible encoding" is a ASCII compatible encoding which
- * represents same characters in the given ASCII incompatible encoding.
+ * can represents exactly the same characters as the given ASCII incompatible encoding.
+ * So, no conversion undefined error occurs when converting between the two encodings.
  *
- * So, no conversion undefined error occur between the ASCII compatible and incompatible encoding.
- *
- *   Encoding::Converter.stateless_encoding("ISO-2022-JP") #=> #<Encoding:stateless-ISO-2022-JP>
- *   Encoding::Converter.stateless_encoding("UTF-16BE") #=> #<Encoding:UTF-8>
- *   Encoding::Converter.stateless_encoding("UTF-8") #=> nil
+ *   Encoding::Converter.asciicompat_encoding("ISO-2022-JP") #=> #<Encoding:stateless-ISO-2022-JP>
+ *   Encoding::Converter.asciicompat_encoding("UTF-16BE") #=> #<Encoding:UTF-8>
+ *   Encoding::Converter.asciicompat_encoding("UTF-8") #=> nil
  *
  */
 static VALUE
@@ -2828,7 +2837,7 @@ search_convpath_i(const char *sname, const char *dname, int depth, void *arg)
  *   Encoding::Converter.search_convpath(source_encoding, destination_encoding)         -> ary
  *   Encoding::Converter.search_convpath(source_encoding, destination_encoding, opt)    -> ary
  *
- *  returns the conversion path.
+ *  Returns a conversion path.
  *
  *   p Encoding::Converter.search_convpath("ISO-8859-1", "EUC-JP")
  *   #=> [[#<Encoding:ISO-8859-1>, #<Encoding:UTF-8>],
@@ -2869,8 +2878,8 @@ econv_s_search_convpath(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
- * check the existance of converter.
- * returns the count of the converting paths.
+ * Check the existence of a convertsion path.
+ * Returns the number of converters in the conversion path.
  * result: >=0:success -1:failure
  */
 int
@@ -2946,7 +2955,7 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
             arg.ret = 0;
             ret = transcode_search_path(sname, dname, rb_econv_init_by_convpath_i, &arg);
             if (ret == -1 || arg.ret == -1)
-                rb_raise(rb_eArgError, "conversion add failed: %s to %s", sname, dname);
+                rb_raise(rb_eArgError, "adding conversion failed: %s to %s", sname, dname);
             if (first) {
                 first = 0;
                 *senc_p = senc;
@@ -3001,15 +3010,15 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  *
  * Encoding::Converter.new creates an instance of Encoding::Converter.
  *
- * source_encoding and destination_encoding should be a string or
+ * Source_encoding and destination_encoding should be a string or
  * Encoding object.
  *
  * opt should be nil, a hash or an integer.
  *
  * convpath should be an array.
- * convpath should contains
- * - two-element array which contains encoding or encoding name, or
- * - a string of decorator name.
+ * convpath may contain
+ * - two-element arrays which contain encodings or encoding names, or
+ * - strings representing decorator names.
  *
  * Encoding::Converter.new optionally takes an option.
  * The option should be a hash or an integer.
@@ -3018,32 +3027,32 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  * Encoding::Converter::INVALID_REPLACE, etc.
  *
  * [:invalid => nil]
- *   raise error on invalid byte sequence.  This is a default behavior.
+ *   Raise error on invalid byte sequence.  This is a default behavior.
  * [:invalid => :replace]
- *   replace invalid byte sequence as a replacement string.
+ *   Replace invalid byte sequence by replacement string.
  * [:undef => nil]
- *   raise error on conversion failure due to an character in source_encoding is not defined in destination_encoding.
+ *   Raise an error if a character in source_encoding is not defined in destination_encoding.
  *   This is a default behavior.
  * [:undef => :replace]
- *   replace undefined character in destination_encoding as a replacement string.
+ *   Replace undefined character in destination_encoding with replacement string.
  * [:replace => string]
- *   specify the replacement string.
+ *   Specify the replacement string.
  *   If not specified, "\uFFFD" is used for Unicode encodings and "?" for others.
  * [:universal_newline => true]
- *   convert CRLF and CR to LF.
+ *   Convert CRLF and CR to LF.
  * [:crlf_newline => true]
- *   convert LF to CRLF.
+ *   Convert LF to CRLF.
  * [:cr_newline => true]
- *   convert LF to CR.
+ *   Convert LF to CR.
  * [:xml => :text]
- *   escape as XML CharData.
+ *   Escape as XML CharData.
  *   This form can be used as a HTML 4.0 #PCDATA.
  *   - '&' -> '&amp;'
  *   - '<' -> '&lt;'
  *   - '>' -> '&gt;'
  *   - undefined characters in destination_encoding -> hexadecimal CharRef such as &#xHH;
  * [:xml => :attr]
- *   escape as XML AttValue.
+ *   Escape as XML AttValue.
  *   The converted result is quoted as "...".
  *   This form can be used as a HTML 4.0 attribute value.
  *   - '&' -> '&amp;'
@@ -3052,11 +3061,11 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  *   - '"' -> '&quot;'
  *   - undefined characters in destination_encoding -> hexadecimal CharRef such as &#xHH;
  *
- * example:
+ * Examples:
  *   # UTF-16BE to UTF-8
  *   ec = Encoding::Converter.new("UTF-16BE", "UTF-8")
  *
- *   # Usually, decorators such as newline conversion are inserted at last.
+ *   # Usually, decorators such as newline conversion are inserted last.
  *   ec = Encoding::Converter.new("UTF-16BE", "UTF-8", :universal_newline => true)
  *   p ec.convpath #=> [[#<Encoding:UTF-16BE>, #<Encoding:UTF-8>],
  *                 #    "universal_newline"]
@@ -3067,7 +3076,7 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  *   p ec.convpath #=> ["crlf_newline",
  *                 #    [#<Encoding:UTF-8>, #<Encoding:UTF-16BE>]]
  *
- *   # conversion path can be specified directly.
+ *   # Conversion path can be specified directly.
  *   ec = Encoding::Converter.new(["universal_newline", ["EUC-JP", "UTF-8"], ["UTF-8", "UTF-16BE"]])
  *   p ec.convpath #=> ["universal_newline",
  *                 #    [#<Encoding:EUC-JP>, #<Encoding:UTF-8>],
@@ -3166,7 +3175,7 @@ check_econv(VALUE self)
  * call-seq:
  *   ec.source_encoding -> encoding
  *
- * returns the source encoding as an Encoding object.
+ * Returns the source encoding as an Encoding object.
  */
 static VALUE
 econv_source_encoding(VALUE self)
@@ -3181,7 +3190,7 @@ econv_source_encoding(VALUE self)
  * call-seq:
  *   ec.destination_encoding -> encoding
  *
- * returns the destination encoding as an Encoding object.
+ * Returns the destination encoding as an Encoding object.
  */
 static VALUE
 econv_destination_encoding(VALUE self)
@@ -3196,7 +3205,7 @@ econv_destination_encoding(VALUE self)
  * call-seq:
  *   ec.convpath        -> ary
  *
- * returns the conversion path of ec.
+ * Returns the conversion path of ec.
  *
  * The result is an array of conversions.
  *
@@ -3206,9 +3215,9 @@ econv_destination_encoding(VALUE self)
  *   #    [#<Encoding:UTF-8>, #<Encoding:EUC-JP>],
  *   #    "crlf_newline"]
  *
- * A element of the array is a pair of encodings or a string.
- * The pair means encoding conversion.
- * The string means decorator.
+ * Each element of the array is a pair of encodings or a string.
+ * A pair means an encoding conversion.
+ * A string means a decorator.
  *
  * In the above example, [#<Encoding:ISO-8859-1>, #<Encoding:UTF-8>] means
  * a converter from ISO-8859-1 to UTF-8.
@@ -3452,11 +3461,11 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   ec.convert(source_string) -> destination_string
  *
- * convert source_string and return destination_string.
+ * Convert source_string and return destination_string.
  *
  * source_string is assumed as a part of source.
  * i.e.  :partial_input=>true is specified internally.
- * finish method should be used at last.
+ * finish method should be used last.
  *
  *   ec = Encoding::Converter.new("utf-8", "euc-jp")
  *   puts ec.convert("\u3042").dump     #=> "\xA4\xA2"
@@ -3521,8 +3530,8 @@ econv_convert(VALUE self, VALUE source_string)
  * call-seq:
  *   ec.finish -> string
  *
- * finishes the converter.
- * It returns the last part of converted string.
+ * Finishes the converter.
+ * It returns the last part of the converted string.
  *
  *   ec = Encoding::Converter.new("utf-8", "iso-2022-jp")
  *   p ec.convert("\u3042")     #=> "\e$B$\""
@@ -3565,8 +3574,8 @@ econv_finish(VALUE self)
  * call-seq:
  *   ec.primitive_errinfo -> array
  *
- * primitive_errinfo returns a precious information of the last error result
- * as a 5-elements array:
+ * primitive_errinfo returns important information regarding the last error
+ * as a 5-element array:
  *
  *   [result, enc1, enc2, error_bytes, readagain_bytes]
  *
@@ -3575,12 +3584,12 @@ econv_finish(VALUE self)
  * Other elements are only meaningful when result is
  * :invalid_byte_sequence, :incomplete_input or :undefined_conversion.
  *
- * enc1 and enc2 indicates a conversion step as pair of strings.
- * For example, a converter from EUC-JP to ISO-8859-1 converters
- * a string as EUC-JP -> UTF-8 -> ISO-8859-1.
- * So [enc1, enc2] is ["EUC-JP", "UTF-8"] or ["UTF-8", "ISO-8859-1"].
+ * enc1 and enc2 indicate a conversion step as a pair of strings.
+ * For example, a converter from EUC-JP to ISO-8859-1 converts
+ * a string as follows: EUC-JP -> UTF-8 -> ISO-8859-1.
+ * So [enc1, enc2] is either ["EUC-JP", "UTF-8"] or ["UTF-8", "ISO-8859-1"].
  *
- * error_bytes and readagain_bytes indicates the byte sequences which causes the error.
+ * error_bytes and readagain_bytes indicate the byte sequences which caused the error.
  * error_bytes is discarded portion.
  * readagain_bytes is buffered portion which is read again on next conversion.
  *
@@ -3666,14 +3675,14 @@ econv_primitive_errinfo(VALUE self)
  * call-seq:
  *   ec.insert_output(string) -> nil
  *
- * inserts string into the encoding converter.
- * The string will be converted into the destination encoding and
- * outputed on later conversions.
+ * Inserts string into the encoding converter.
+ * The string will be converted to the destination encoding and
+ * output on later conversions.
  *
  * If the destination encoding is stateful,
- * string is converted according to the state and update the state.
+ * string is converted according to the state and the state is updated.
  *
- * This method should be used only when a conversion error is occur.
+ * This method should be used only when a conversion error occurs.
  *
  *  ec = Encoding::Converter.new("utf-8", "iso-8859-1")
  *  src = "HIRAGANA LETTER A is \u{3042}."
@@ -3720,7 +3729,7 @@ econv_insert_output(VALUE self, VALUE string)
  *   ec.putback                    => string
  *   ec.putback(max_numbytes)      => string
  *
- * put back the bytes which will be converted.
+ * Put back the bytes which will be converted.
  *
  * The bytes are caused by invalid_byte_sequence error.
  * When invalid_byte_sequence error, some bytes are discarded and
@@ -3772,8 +3781,8 @@ econv_putback(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   ec.last_error -> exception or nil
  *
- * returns an exception object for the last conversion.
- * It returns nil if the last conversion is not an error. 
+ * Returns an exception object for the last conversion.
+ * Returns nil if the last conversion did not produce an error. 
  *
  * "error" means that
  * Encoding::InvalidByteSequenceError and Encoding::UndefinedConversionError for
@@ -3804,7 +3813,7 @@ econv_last_error(VALUE self)
  * call-seq:
  *   ec.replacement -> string
  *
- * returns the replacement string.
+ * Returns the replacement string.
  *
  *  ec = Encoding::Converter.new("euc-jp", "us-ascii")
  *  p ec.replacement    #=> "?"
@@ -3832,7 +3841,7 @@ econv_get_replacement(VALUE self)
  * call-seq:
  *   ec.replacement = string
  *
- * sets the replacement string.
+ * Sets the replacement string.
  *
  *  ec = Encoding::Converter.new("utf-8", "us-ascii", :undef => :replace)
  *  ec.replacement = "<undef>"
@@ -3883,7 +3892,7 @@ rb_econv_check_error(rb_econv_t *ec)
  * call-seq:
  *   ecerr.source_encoding_name         -> string
  *
- * returns the source encoding name as a string.
+ * Returns the source encoding name as a string.
  */
 static VALUE
 ecerr_source_encoding_name(VALUE self)
@@ -3895,7 +3904,7 @@ ecerr_source_encoding_name(VALUE self)
  * call-seq:
  *   ecerr.source_encoding              -> encoding
  *
- * returns the source encoding as an encoding object.
+ * Returns the source encoding as an encoding object.
  *
  * Note that the result may not be equal to the source encoding of
  * the encoding converter if the conversion has multiple steps.
@@ -3921,7 +3930,7 @@ ecerr_source_encoding(VALUE self)
  * call-seq:
  *   ecerr.destination_encoding_name         -> string
  *
- * returns the destination encoding name as a string.
+ * Returns the destination encoding name as a string.
  */
 static VALUE
 ecerr_destination_encoding_name(VALUE self)
@@ -3933,7 +3942,7 @@ ecerr_destination_encoding_name(VALUE self)
  * call-seq:
  *   ecerr.destination_encoding         -> string
  *
- * returns the destination encoding as an encoding object.
+ * Returns the destination encoding as an encoding object.
  */
 static VALUE
 ecerr_destination_encoding(VALUE self)
@@ -3945,7 +3954,7 @@ ecerr_destination_encoding(VALUE self)
  * call-seq:
  *   ecerr.error_char         -> string
  *
- * returns the one-character string which cause Encoding::UndefinedConversionError.
+ * Returns the one-character string which cause Encoding::UndefinedConversionError.
  *
  *  ec = Encoding::Converter.new("ISO-8859-1", "EUC-JP")
  *  begin
@@ -3966,7 +3975,7 @@ ecerr_error_char(VALUE self)
  * call-seq:
  *   ecerr.error_bytes         -> string
  *
- * returns the discarded bytes when Encoding::InvalidByteSequenceError occur.
+ * Returns the discarded bytes when Encoding::InvalidByteSequenceError occurs.
  *
  *  ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
  *  begin
