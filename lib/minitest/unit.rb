@@ -119,7 +119,7 @@ module MiniTest
       msg = message(msg) { "Expected #{mu_pp(exp)} to match #{mu_pp(act)}" }
       assert_respond_to act, :"=~"
       exp = /#{Regexp.escape(exp)}/ if String === exp && String === act
-      assert act =~ exp, msg
+      assert exp =~ act, msg
     end
 
     def assert_nil obj, msg = nil
@@ -283,7 +283,7 @@ module MiniTest
       msg = message(msg) { "Expected #{mu_pp(exp)} to not match #{mu_pp(act)}" }
       assert_respond_to act, :"=~"
       exp = /#{Regexp.escape(exp)}/ if String === exp && String === act
-      refute act =~ exp, msg
+      refute exp =~ act, msg
     end
 
     def refute_nil obj, msg = nil
