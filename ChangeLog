@@ -1,3 +1,8 @@
+Tue Dec 30 17:03:51 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/dl/test/test_import.rb: fix a prototype decl.
+	  pointed out by Takehiro Kubo [ruby-core:20971].
+
 Tue Dec 30 16:56:09 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_blocking_region): add a comment.
