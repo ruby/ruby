@@ -13,7 +13,7 @@ module DL
     extern "int isdigit(int)"
     extern "double atof(string)"
     extern "unsigned long strtoul(char*, char **, int)"
-    extern "int qsort(void*, int, int, void*)"
+    extern "int qsort(void*, unsigned long, unsigned long, void*)"
     extern "int fprintf(FILE*, char*)"
     extern "int gettimeofday(timeval*, timezone*)" rescue nil
 
