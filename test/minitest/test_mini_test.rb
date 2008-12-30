@@ -535,6 +535,27 @@ class TestMiniTestTestCase < MiniTest::Unit::TestCase
     @tc.assert_match(/\w+/, "blah blah blah")
   end
 
+  def test_assert_match_object
+    @assertion_count = 2
+
+    pattern = Object.new
+    def pattern.=~(other) true end
+
+    @tc.assert_match pattern, 5
+  end
+
+  def test_assert_match_object_triggered
+    @assertion_count = 2
+
+    pattern = Object.new
+    def pattern.=~(other) false end
+    def pattern.inspect; "<<Object>>" end
+
+    util_assert_triggered 'Expected <<Object>> to match 5.' do
+      @tc.assert_match pattern, 5
+    end
+  end
+
   def test_assert_match_triggered
     @assertion_count = 2
     util_assert_triggered 'Expected /\d+/ to match "blah blah blah".' do
@@ -864,6 +885,35 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
   def test_refute_match
     @assertion_count = 2
     @tc.refute_match(/\d+/, "blah blah blah")
+  end
+
+  def test_refute_match_object
+    @assertion_count = 2
+    @tc.refute_match Object.new, 5 # default #=~ returns false
+  end
+
+  def test_assert_object_triggered
+    @assertion_count = 2
+
+    pattern = Object.new
+    def pattern.=~(other) false end
+    def pattern.inspect; "<<Object>>" end
+
+    util_assert_triggered 'Expected <<Object>> to match 5.' do
+      @tc.assert_match pattern, 5
+    end
+  end
+
+  def test_refute_match_object_triggered
+    @assertion_count = 2
+
+    pattern = Object.new
+    def pattern.=~(other) true end
+    def pattern.inspect; "<<Object>>" end
+
+    util_assert_triggered 'Expected <<Object>> to not match 5.' do
+      @tc.refute_match pattern, 5
+    end
   end
 
   def test_refute_match_triggered

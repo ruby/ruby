@@ -1,3 +1,8 @@
+Tue Dec 30 18:23:10 2008  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*.rb: Imported minitest 1.3.1 r4506.
+	* test/minitest/*.rb: ditto.
+
 Tue Dec 30 17:59:59 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* transcode.c: Minor fixes and tweaks in documentation.
@@ -165,7 +170,7 @@ Sun Dec 28 10:28:04 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	* thread.c (mutex_unlock, rb_mutex_unlock, rb_mutex_unlock_all):
 	  mutex_unlock receives a thread.
 
-Sun Dec 28 05:44:44 2008  Ryan Davis  <ryan@wrath.local>
+Sun Dec 28 05:44:44 2008  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*.rb: Imported minitest 1.3.1 r4505.
 	* test/minitest/*.rb: ditto.
@@ -3610,7 +3615,7 @@ Fri Oct 10 17:26:50 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	* ext/json/ext/parser/parser.c (JSON_parse_string):
 	  associate encoding.
 
-Fri Oct 10 10:18:21 2008  Ryan Davis  <ryan@wrath.local>
+Fri Oct 10 10:18:21 2008  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/test/*: reverted back to test/unit.
 	* test/test/*: ditto
@@ -13006,7 +13011,7 @@ Tue Jun 17 20:32:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  miniruby, and tests, debug, etc have no meaning when
 	  cross-compiling.
 
-Tue Jun 17 18:39:11 2008  Ryan Davis  <ryan@wrath.local>
+Tue Jun 17 18:39:11 2008  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* common.mk: fixed dependencies on miniruby.
 
