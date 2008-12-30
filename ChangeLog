@@ -1,3 +1,7 @@
+Tue Dec 30 17:59:59 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode.c: Minor fixes and tweaks in documentation.
+
 Tue Dec 30 17:03:51 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/dl/test/test_import.rb: fix a prototype decl.
