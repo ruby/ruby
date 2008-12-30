@@ -24,7 +24,7 @@ module DL
     end
 
     def test_atof()
-      f = Function.new(CFunc.new(@libc['atof'], TYPE_FLOAT, 'atof'),
+      f = Function.new(CFunc.new(@libc['atof'], TYPE_DOUBLE, 'atof'),
                        [TYPE_VOIDP])
       r = f.call("12.34")
       assert_match(12.00..13.00, r)

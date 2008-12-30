@@ -121,20 +121,26 @@ end
       @template = ""
       addr      = 0
       types.each{|t|
-        orig_addr = addr
-        addr = align(orig_addr, ALIGN_MAP[t])
-        d = addr - orig_addr
-        if( d > 0 )
-          @template << "x#{d}"
-        end
+        addr = add_padding(addr, ALIGN_MAP[t])
         @template << PACK_MAP[t]
         addr += SIZE_MAP[t]
       }
+      addr = add_padding(addr, ALIGN_MAP[SIZEOF_VOIDP])
       if( addr % SIZEOF_VOIDP == 0 )
         @size = addr / SIZEOF_VOIDP
       else
         @size = (addr / SIZEOF_VOIDP) + 1
       end
+    end
+
+    def add_padding(addr, align)
+      orig_addr = addr
+      addr = align(orig_addr, align)
+      d = addr - orig_addr
+      if( d > 0 )
+        @template << "x#{d}"
+      end
+      addr
     end
   end
 end

@@ -1,3 +1,28 @@
+Mon Dec 29 23:41:42 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/dl/test/test_base.rb: add libc search logic.
+	  this patch is written by Takehiro Kubo.
+	  [ruby-core:20963] [Bug #932]
+
+	* ext/dl/dl.h: Add ",..." as the last argument.
+	  this patch is written by Takehiro Kubo.
+	  Bug #633 [ruby-core:19289]
+
+	* ext/dl/lib/dl/stack.rb: add add_padding() to calculate
+	  alignment.  this patch is written by Takehiro Kubo.
+	  Bug #633 [ruby-core:19289]
+
+	* ext/dl/test/test_func.rb: atof()'s return value is double.
+	  this patch is written by Takehiro Kubo.
+	  Bug #633 [ruby-core:19289]
+
+	* ext/dl/test/test_import.rb:
+	  - atof()'s return value is double.
+	  - The types of qsort's second and third argument are size_t.
+	  - fprintf()'s return value is int.
+	  this patch is written by Takehiro Kubo.
+	  Bug #633 [ruby-core:19289]
+
 Mon Dec 29 20:57:14 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* man/ri.1: new manpage.
