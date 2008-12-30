@@ -363,6 +363,7 @@ typedef struct rb_thread_struct
     int slice;
 
     native_thread_data_t native_thread_data;
+    void *blocking_region_buffer;
 
     VALUE thgroup;
     VALUE value;

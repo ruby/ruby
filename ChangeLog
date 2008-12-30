@@ -1,3 +1,15 @@
+Tue Dec 30 16:56:09 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_thread_blocking_region): add a comment.
+
+	* thread.c (rb_thread_call_without_gvl): added as a alias of
+	  rb_thread_blocking_region().
+
+	* thread.c (rb_thread_call_with_gvl): added.
+
+	* vm_core.h (rb_thread_t#blocking_region_buffer): added for
+	  rb_thread_call_with_gvl().
+
 Mon Dec 29 22:37:17 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* process.c (rb_waitpid): retries waitpid when EINTR.

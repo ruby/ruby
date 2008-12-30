@@ -1014,8 +1014,13 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
  *
  *   NOTE: You can not execute most of Ruby C API and touch Ruby objects
  *         in `func()' and `ubf()' because current thread doesn't acquire
- *         GVL (cause synchronization problem).  If you need to do it,
+ *         GVL (cause synchronization problem).  Especially, ALLOC*() are
+ *         forbidden because they are related to GC.  If you need to do it,
  *         read source code of C APIs and confirm by yourself.
+ *
+ *   NOTE: In short, this API is difficult to use safely.  I recommend you
+ *         use other ways if you have.  We lack experiences to use this API.
+ *         Please report your problem related on it.
  *
  *   Safe C API:
  *     * rb_thread_interrupted() - check interrupt flag
@@ -1038,6 +1043,72 @@ rb_thread_blocking_region(
     }, ubf, data2);
 
     return val;
+}
+
+/* alias of rb_thread_blocking_region() */
+
+VALUE
+rb_thread_call_without_gvl(
+    rb_blocking_function_t *func, void *data1,
+    rb_unblock_function_t *ubf, void *data2)
+{
+    return rb_thread_blocking_region(func, data1, ubf, data2);
+}
+
+/*
+ * rb_thread_call_with_gvl - re-enter into Ruby world while releasing GVL.
+ *
+ * While releasing GVL using rb_thread_blocking_region() or
+ * rb_thread_call_without_gvl(), you can not access Ruby values or invoke methods.
+ * If you need to access it, you must use this function rb_thread_call_with_gvl().
+ *
+ * This function rb_thread_call_with_gvl() does:
+ * (1) acquire GVL.
+ * (2) call passed function `func'.
+ * (3) release GVL.
+ * (4) return a value which is returned at (2).
+ *
+ * NOTE: You should not return Ruby object at (2) because such Object
+ *       will not marked.
+ *
+ * NOTE: If an exception is raised in `func', this function "DOES NOT"
+ *       protect (catch) the exception.  If you have any resources
+ *       which should free before throwing exception, you need use
+ *       rb_protect() in `func' and return a value which represents
+ *       exception is raised.
+ *
+ * NOTE: This functions should not be called by a thread which
+ *       is not created as Ruby thread (created by Thread.new or so).
+ *       In other words, this function *DOES NOT* associate
+ *       NON-Ruby thread to Ruby thread.
+ */
+void *
+rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
+{
+    rb_thread_t *th = ruby_thread_from_native();
+    struct rb_blocking_region_buffer *brb;
+    struct rb_unblock_callback prev_unblock;
+    void *r;
+
+    if (th == 0) {
+	/* Error is occurred, but we can't use rb_bug()
+	 * because this thread is not Ruby's thread.
+         * What should we do?
+	 */
+
+	fprintf(stderr, "[BUG] rb_thread_call_with_gvl() is called by non-ruby thread\n");
+	exit(1);
+    }
+
+    brb = (struct rb_blocking_region_buffer *)th->blocking_region_buffer;
+    prev_unblock = th->unblock;
+
+    blocking_region_end(th, brb);
+    /* enter to Ruby world: You can access Ruby values, methods and so on. */
+    r = (*func)(data1);
+    /* levae from Ruby world: You can not access Ruby values, etc. */
+    blocking_region_begin(th, brb, prev_unblock.func, prev_unblock.arg);
+    return r;
 }
 
 /*
