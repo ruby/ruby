@@ -1,3 +1,15 @@
+Tue Dec 30 16:56:09 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_thread_blocking_region): add a comment.
+
+	* thread.c (rb_thread_call_without_gvl): added as a alias of
+	  rb_thread_blocking_region().
+
+	* thread.c (rb_thread_call_with_gvl): added.
+
+	* vm_core.h (rb_thread_t#blocking_region_buffer): added for
+	  rb_thread_call_with_gvl().
+
 Mon Dec 29 23:41:42 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/dl/test/test_base.rb: add libc search logic.
