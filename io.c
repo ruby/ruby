@@ -7702,13 +7702,12 @@ copy_stream_body(VALUE arg)
 
     if (stp->src == argf ||
         !(TYPE(stp->src) == T_FILE ||
-          rb_respond_to(stp->src, rb_intern("to_io")) ||
           TYPE(stp->src) == T_STRING ||
           rb_respond_to(stp->src, rb_intern("to_path")))) {
         src_fd = -1;
     }
     else {
-        src_io = rb_check_convert_type(stp->src, T_FILE, "IO", "to_io");
+        src_io = TYPE(stp->src) == T_FILE ? stp->src : Qnil;
         if (NIL_P(src_io)) {
             VALUE args[2];
             int oflags = O_RDONLY;
@@ -7730,13 +7729,12 @@ copy_stream_body(VALUE arg)
 
     if (stp->dst == argf ||
         !(TYPE(stp->dst) == T_FILE ||
-          rb_respond_to(stp->dst, rb_intern("to_io")) ||
           TYPE(stp->dst) == T_STRING ||
           rb_respond_to(stp->dst, rb_intern("to_path")))) {
         dst_fd = -1;
     }
     else {
-        dst_io = rb_check_convert_type(stp->dst, T_FILE, "IO", "to_io");
+        dst_io = TYPE(stp->dst) == T_FILE ? stp->dst : Qnil;
         if (NIL_P(dst_io)) {
             VALUE args[3];
             int oflags = O_WRONLY|O_CREAT|O_TRUNC;
