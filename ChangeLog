@@ -1,3 +1,10 @@
+Wed Dec 31 23:37:17 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (sock_s_socketpair): yield if a block is given.
+	  (io_call_close): defined.
+	  (io_close): defined.
+	  (pair_yield): defined.
+
 Wed Dec 31 19:35:57 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* spec/README: follows the change of directory structure in rubyspec.

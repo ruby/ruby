@@ -146,4 +146,24 @@ class TestUNIXSocket < Test::Unit::TestCase
     assert_equal("a", s1.read(1))
   end
 
+  def test_socket_pair_with_block
+    pair = nil
+    ret = Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM, 0) {|s1, s2|
+      pair = [s1, s2]
+      :return_value
+    }
+    assert_equal(:return_value, ret)
+    assert_kind_of(Socket, pair[0])
+    assert_kind_of(Socket, pair[1])
+  end
+
+  def test_unix_socket_pair_with_block
+    pair = nil
+    UNIXSocket.pair {|s1, s2|
+      pair = [s1, s2]
+    }
+    assert_kind_of(UNIXSocket, pair[0])
+    assert_kind_of(UNIXSocket, pair[1])
+  end
+
 end if defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM
