@@ -67,6 +67,10 @@ with all sufficient information, see the ChangeLog file.
 
   * PTY.open
 
+* openssl
+
+  * Buffering#read_nonblock
+
 === Compatibility issues (excluding feature bug fixes)
 
   * Enumerator#rewind
