@@ -2270,19 +2270,15 @@ rb_f_float(VALUE obj, VALUE arg)
 VALUE
 rb_to_float(VALUE val)
 {
-    VALUE v;
-
     if (TYPE(val) == T_FLOAT) return val;
-    if (NIL_P(val)) {
-	rb_raise(rb_eTypeError, "can't convert nil into Float");
+    if (!rb_obj_is_kind_of(val, rb_cNumeric)) {
+	rb_raise(rb_eTypeError, "can't convert %s into Float",
+		 NIL_P(val) ? "nil" :
+		 val == Qtrue ? "true" :
+		 val == Qfalse ? "false" :
+		 rb_obj_classname(val));
     }
-    v = convert_type(val, "Float", "to_f", Qtrue);
-    if (TYPE(v) != T_FLOAT) {
-	const char *cname = rb_obj_classname(val);
-	rb_raise(rb_eTypeError, "can't convert %s to Float (%s#to_f gives %s)",
-		 cname, cname, rb_obj_classname(v));
-    }
-    return v;
+    return rb_convert_type(val, T_FLOAT, "Float", "to_f");
 }
 
 double
