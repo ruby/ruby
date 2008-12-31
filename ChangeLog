@@ -1,3 +1,7 @@
+Thu Jan  1 06:56:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/file2lastrev.rb: unset PWD.
+
 Wed Dec 31 23:37:17 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (sock_s_socketpair): yield if a block is given.
