@@ -9,9 +9,9 @@
 # *  this ensures that only one instance of Klass lets call it
 #    ``the instance'' can be created.
 #
-#    a,b  = Klass.instance, Klass.instance
-#    a == b   # => true
-#    a.new    #  NoMethodError - new is private ...
+#      a,b  = Klass.instance, Klass.instance
+#      a == b   # => true
+#      a.new    #  NoMethodError - new is private ...
 #
 # *  ``The instance'' is created at instantiation time, in other
 #    words the first call of Klass.instance(), thus
