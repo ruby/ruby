@@ -8,26 +8,15 @@ and put it into this directory.
  spec
   +-- mspec            driver library for executing the specification.
   +-- rubyspec
-       +-- 1.8           specification for both Ruby 1.8 and 1.9
-       |    +-- core        specification for core libraries 
-       |    |    +-- array 
-       |    |    +-- bignum
-       |    |    +-- ...
-       |    |
-       |    +-- fixtures    example classes for writing specs
-       |    +-- language    specification for Ruby language itself
-       |    +-- library     specification for standard libraries
-       |         +-- addrev
-       |         +-- ...
-       |    +-- core
+       +-- core        specification for core libraries 
+       |    +-- array 
+       |    +-- bignum
        |    +-- ...
        |
-       +-- 1.9           specification for new features and large changes in Ruby 1.9
-            +-- core
-            +-- fixtures
-            +-- language
-            +-- library
-            +-- core
+       +-- fixtures    example classes for writing specs
+       +-- language    specification for Ruby language itself
+       +-- library     specification for standard libraries
+            +-- addrev
             +-- ...
 
 == How to run
@@ -36,4 +25,6 @@ and put it into this directory.
    $ make test-rubyspec
 :mspec command
   verifies the specified spec.
+   $ mspec {language|core|language}
+   or
    $ mspec spec/path/to/some_spec.rb
