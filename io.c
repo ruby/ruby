@@ -282,6 +282,7 @@ rb_io_get_write_io(VALUE io)
  *     IO.try_convert(STDOUT)     # => STDOUT
  *     IO.try_convert("STDOUT")   # => nil
  *
+ *     require 'zlib'
  *     f = open("/tmp/zz.gz")       # => #<File:/tmp/zz.gz>
  *     z = Zlib::GzipReader.open(f) # => #<Zlib::GzipReader:0x81d8744>
  *     IO.try_convert(z)            # => #<File:/tmp/zz.gz>
