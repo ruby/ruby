@@ -71,6 +71,9 @@ with all sufficient information, see the ChangeLog file.
 
   * Buffering#read_nonblock
 
+* socket
+  * Socket.pair and UNIXSocket.pair takes a block.
+
 === Compatibility issues (excluding feature bug fixes)
 
   * Enumerator#rewind
