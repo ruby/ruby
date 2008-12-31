@@ -1,3 +1,15 @@
+Wed Dec 31 13:49:06 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/lib/openssl/buffering.rb (Buffering#read_nonblock):
+	  implemented.
+
+	* ext/openssl/ossl_ssl.c (rb_sys_fail_path): removed.
+	  (fcntl.h): don't include.
+	  (ossl_ssl_read_internal): defined.
+	  (ossl_ssl_read): use ossl_ssl_read_internal.
+	  (ossl_ssl_read_nonblock): use ossl_ssl_read_internal.
+	  (Init_ossl_ssl): define sysread_nonblock, instead of read_nonblock.
+
 Wed Dec 31 00:27:54 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_to_float): prohibit conversion from nil to float.

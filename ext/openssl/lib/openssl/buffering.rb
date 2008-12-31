@@ -99,6 +99,27 @@ module Buffering
     ret
   end
 
+  def read_nonblock(maxlen, buf=nil)
+    if maxlen == 0
+      if buf
+        buf.clear
+        return buf
+      else
+        return ""
+      end
+    end
+    if @rbuffer.empty?
+      return sysread_nonblock(maxlen, buf)
+    end
+    ret = consume_rbuff(maxlen)
+    if buf
+      buf.replace(ret)
+      ret = buf
+    end
+    raise EOFError if ret.empty?
+    ret
+  end
+
   def gets(eol=$/, limit=nil)
     idx = @rbuffer.index(eol)
     until @eof
