@@ -1,3 +1,8 @@
+Wed Dec 31 17:16:46 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_read_internal): show openssl error
+	  code in EWOULDBLOCK error.
+
 Wed Dec 31 15:45:18 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (copy_stream_body): don't check to_io because

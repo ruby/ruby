@@ -1024,14 +1024,14 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 	    case SSL_ERROR_WANT_WRITE:
                 if (nonblock) {
                     errno = EWOULDBLOCK;
-                    rb_sys_fail(0);
+                    rb_sys_fail("SSL_ERROR_WANT_WRITE");
                 }
                 rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
                 if (nonblock) {
                     errno = EWOULDBLOCK;
-                    rb_sys_fail(0);
+                    rb_sys_fail("SSL_ERROR_WANT_READ");
                 }
                 rb_io_wait_readable(FPTR_TO_FD(fptr));
 		continue;

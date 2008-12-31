@@ -146,7 +146,15 @@ class OpenSSL::TestPair < Test::Unit::TestCase
 
   def test_read_nonblock
     ssl_pair {|s1, s2|
-      assert_raise(Errno::EWOULDBLOCK) { s2.read_nonblock(10) }
+      err = nil
+      assert_raise(Errno::EWOULDBLOCK) {
+        begin
+          s2.read_nonblock(10)
+        ensure
+          err = $!
+        end
+      }
+      assert_match(/SSL_ERROR_WANT_READ/, err.message)
       s1.write "abc\ndef\n"
       assert_equal("ab", s2.read_nonblock(2))
       assert_equal("c\n", s2.gets)
