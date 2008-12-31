@@ -275,8 +275,8 @@ class Date
 
     def <=> (other)
       case other
-      when Infinity; d <=> other.d
-      when Numeric; d
+      when Infinity; return d <=> other.d
+      when Numeric; return d
       else
 	begin
 	  l, r = other.coerce(self)

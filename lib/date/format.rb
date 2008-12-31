@@ -239,12 +239,12 @@ class Date
       when 'j'; emit_n(yday, 3, f)
       when 'k'; emit_a(hour, 2, f)
       when 'L'
-	emit_n((sec_fraction / (1.to_r/86400/(10**3))).round, 3, f)
+	emit_n((sec_fraction / (1.to_r/86400/(10**3))).floor, 3, f)
       when 'l'; emit_a((hour % 12).nonzero? || 12, 2, f)
       when 'M'; emit_n(min, 2, f)
       when 'm'; emit_n(mon, 2, f)
       when 'N'
-	emit_n((sec_fraction / (1.to_r/86400/(10**9))).round, 9, f)
+	emit_n((sec_fraction / (1.to_r/86400/(10**9))).floor, 9, f)
       when 'n'; "\n"
       when 'P'; emit_ad(strftime('%p').downcase, 0, f)
       when 'p'; emit_au(if hour < 12 then 'AM' else 'PM' end, 0, f)

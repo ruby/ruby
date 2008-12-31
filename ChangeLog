@@ -1,3 +1,12 @@
+Thu Jan  1 08:39:36 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb (Date::Infinity#<=>): didn't work.  A patch from
+	  Dirkjan Bussink <d.bussink AT gmail.com> [ruby-core:15098].
+	  This is a bug obviously.  However it didn't affect the library's
+	  functions.
+
+	* lib/date.rb, lib/date/format.rb: some trivial changes.
+
 Mon Aug 11 09:34:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/dl/dl.c (rb_str_to_ptr): should propagate taint to dlptr.
