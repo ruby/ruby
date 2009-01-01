@@ -95,7 +95,9 @@ EOS
 
 MAYBE_ALIAS = [
   ["AF_UNIX", "AF_LOCAL"],
-  ["AF_ISO", "AF_OSI"]
+  ["AF_ISO", "AF_OSI"],
+  ["AF_E164", "AF_ISDN"],
+  ["AF_NS", "AF_IPX"],
 ]
 
 def each_alias(pat)
