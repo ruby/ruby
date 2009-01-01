@@ -258,7 +258,7 @@ constant_arg(VALUE arg, int (*str_to_int)(char*, int, int*), char *errmsg)
 	rb_check_safe_obj(arg);
         ptr = RSTRING_PTR(arg);
         if (str_to_int(ptr, RSTRING_LEN(arg), &ret) == -1)
-	    rb_raise(rb_eSocket, "%s %s", errmsg, ptr);
+	    rb_raise(rb_eSocket, "%s: %s", errmsg, ptr);
     }
     else {
 	ret = NUM2INT(arg);
@@ -285,6 +285,25 @@ level_arg(VALUE level)
 {
     /* convert SOL_SOCKET, IPPROTO_TCP, etc. */
     return constant_arg(level, level_to_int, "unknown protocol level");
+}
+
+static int
+optname_arg(int level, VALUE optname)
+{
+    switch (level) {
+      case SOL_SOCKET:
+        return constant_arg(optname, so_optname_to_int, "unknown socket level option name");
+      case IPPROTO_IP:
+        return constant_arg(optname, ip_optname_to_int, "unknown IP level option name");
+      case IPPROTO_IPV6:
+        return constant_arg(optname, ipv6_optname_to_int, "unknown IPv6 level option name");
+      case IPPROTO_TCP:
+        return constant_arg(optname, tcp_optname_to_int, "unknown TCP level option name");
+      case IPPROTO_UDP:
+        return constant_arg(optname, udp_optname_to_int, "unknown UDP level option name");
+      default:
+        return NUM2INT(optname);
+    }
 }
 
 static VALUE
@@ -433,7 +452,7 @@ bsock_setsockopt(VALUE sock, VALUE lev, VALUE optname, VALUE val)
 
     rb_secure(2);
     level = level_arg(lev);
-    option = NUM2INT(optname);
+    option = optname_arg(level, optname);
 
     switch (TYPE(val)) {
       case T_FIXNUM:
@@ -513,7 +532,7 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
     rb_io_t *fptr;
 
     level = level_arg(lev);
-    option = NUM2INT(optname);
+    option = optname_arg(level, optname);
     len = 256;
     buf = ALLOCA_N(char,len);
 

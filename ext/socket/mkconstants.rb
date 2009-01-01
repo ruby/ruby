@@ -157,6 +157,36 @@ level_to_int(char *str, int len, int *valp)
 <%= gen_name_to_int("str", "len", "valp", /\A(SOL_SOCKET\z|IPPROTO_)/) %>
 }
 
+static int
+so_optname_to_int(char *str, int len, int *valp)
+{
+<%= gen_name_to_int("str", "len", "valp", /\ASO_/) %>
+}
+
+static int
+ip_optname_to_int(char *str, int len, int *valp)
+{
+<%= gen_name_to_int("str", "len", "valp", /\AIP_/) %>
+}
+
+static int
+ipv6_optname_to_int(char *str, int len, int *valp)
+{
+<%= gen_name_to_int("str", "len", "valp", /\AIPV6_/) %>
+}
+
+static int
+tcp_optname_to_int(char *str, int len, int *valp)
+{
+<%= gen_name_to_int("str", "len", "valp", /\ATCP_/) %>
+}
+
+static int
+udp_optname_to_int(char *str, int len, int *valp)
+{
+<%= gen_name_to_int("str", "len", "valp", /\AUDP_/) %>
+}
+
 static char *
 family_to_str(int val)
 {
@@ -335,6 +365,13 @@ IP_RECVOPTS
 IP_RECVRETOPTS
 IP_RECVDSTADDR
 IP_RETOPTS
+IP_MINTTL
+IP_DONTFRAG
+IP_SENDSRCADDR
+IP_ONESBCAST
+IP_RECVTTL
+IP_RECVIF
+IP_PORTRANGE
 IP_MULTICAST_IF
 IP_MULTICAST_TTL
 IP_MULTICAST_LOOP
@@ -390,6 +427,21 @@ IPX_TYPE
 
 TCP_NODELAY
 TCP_MAXSEG
+TCP_CORK
+TCP_DEFER_ACCEPT
+TCP_INFO
+TCP_KEEPCNT
+TCP_KEEPIDLE
+TCP_KEEPINTVL
+TCP_LINGER2
+TCP_MD5SIG
+TCP_NOOPT
+TCP_NOPUSH
+TCP_QUICKACK
+TCP_SYNCNT
+TCP_WINDOW_CLAMP
+
+UDP_CORK
 
 EAI_ADDRFAMILY
 EAI_AGAIN

@@ -1,3 +1,14 @@
+Fri Jan  2 02:39:08 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (optname_arg): defined.
+	  (bsock_setsockopt): use optname_arg.
+	  (bsock_getsockopt): ditto.
+
+	* ext/socket/mkconstants.rb: generate so_optname_to_int,
+	  ip_optname_to_int, ipv6_optname_to_int, tcp_optname_to_int and
+	  udp_optname_to_int.
+	  more constants.
+
 Fri Jan  2 02:08:36 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (constant_arg): extracted from family_arg.
