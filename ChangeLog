@@ -1,3 +1,7 @@
+Fri Jan  2 00:49:44 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (sock_s_getaddrinfo): use socktype_arg.
+
 Fri Jan  2 00:12:27 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (family_arg): extracted from

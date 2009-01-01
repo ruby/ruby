@@ -3270,7 +3270,7 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
     hints.ai_family = NIL_P(family) ? PF_UNSPEC : family_arg(family);
 
     if (!NIL_P(socktype)) {
-	hints.ai_socktype = NUM2INT(socktype);
+	hints.ai_socktype = socktype_arg(socktype);
     }
     if (!NIL_P(protocol)) {
 	hints.ai_protocol = NUM2INT(protocol);
