@@ -12,6 +12,7 @@ class VCSNotFoundError < RuntimeError; end
 def detect_vcs(path)
   path = SRCDIR
   return :svn, path.relative_path_from(SRCDIR) if File.directory?("#{path}/.svn")
+  return :git_svn, path.relative_path_from(SRCDIR) if File.directory?("#{path}/.git/svn")
   return :git, path.relative_path_from(SRCDIR) if File.directory?("#{path}/.git")
   raise VCSNotFoundError, "does not seem to be under a vcs"
 end
@@ -22,8 +23,12 @@ def get_revisions(path)
   info = case vcs
   when :svn
     `cd "#{SRCDIR}" && svn info "#{path}"`
-  when :git
+  when :git_svn
     `cd "#{SRCDIR}" && git svn info "#{path}"`
+  when :git
+    git_log = `cd "#{SRCDIR}" && git log HEAD~1..HEAD "#{path}"`
+    git_log =~ /git-svn-id: .*?@(\d+)/
+    "Revision: #{$1}\nLast Changed Rev: #{$1}\n"
   end
 
   if /^Revision: (\d+)/ =~ info
