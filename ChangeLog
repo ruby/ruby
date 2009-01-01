@@ -1,3 +1,11 @@
+Wed Dec 31 14:52:33 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_digest.c (GetDigestPtr): use StringValueCStr
+	  instead of STR2CSTR.
+
+	* ext/openssl/ossl_pkey_ec.c (ossl_ec_key_initialize): ditto.
+	  (ossl_ec_group_initialize): ditto.
+
 Tue Dec 30 21:17:00 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: use sock_define_uconst for INADDR_*
