@@ -1,3 +1,11 @@
+Tue Dec 30 21:17:00 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: use sock_define_uconst for INADDR_*
+	  constants because Socket::INADDR_LOOPBACK should be 0x7f000001
+	  instead of -0xffffff.
+
+	* ext/socket/socket.c (sock_define_uconst): defined.
+
 Tue Dec 30 18:23:10 2008  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*.rb: Imported minitest 1.3.1 r4506.
