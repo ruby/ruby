@@ -110,4 +110,9 @@ class TestSocket < Test::Unit::TestCase
       assert_raise(ArgumentError) { Socket.unpack_sockaddr_un(addr) }
     }
   end
+
+  def test_getaddrinfo
+    # This should not send a DNS query because AF_UNIX.
+    assert_raise(SocketError) { Socket.getaddrinfo("www.kame.net", 80, "AF_UNIX") }
+  end
 end if defined?(Socket)

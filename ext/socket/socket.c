@@ -3252,14 +3252,10 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
 	hints.ai_family = FIX2INT(family);
     }
     else if ((ap = StringValuePtr(family)) != 0) {
-	if (strcmp(ap, "AF_INET") == 0) {
-	    hints.ai_family = PF_INET;
-	}
-#ifdef INET6
-	else if (strcmp(ap, "AF_INET6") == 0) {
-	    hints.ai_family = PF_INET6;
-	}
-#endif
+        int af;
+        if (family_to_int(ap, RSTRING_LEN(family), &af) == -1)
+	    rb_raise(rb_eSocket, "unknown socket domain %s", ap);
+        hints.ai_family = af;
     }
 
     if (!NIL_P(socktype)) {
