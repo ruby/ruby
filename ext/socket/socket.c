@@ -2281,6 +2281,7 @@ unix_peeraddr(VALUE sock)
 #endif
 
 static int family_to_int(char *str, int len);
+static int socktype_to_int(char *str, int len);
 
 static void
 setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
@@ -2304,31 +2305,14 @@ setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
     }
     tmp = rb_check_string_type(type);
     if (!NIL_P(tmp)) {
+        int socktype;
 	type = tmp;
 	rb_check_safe_obj(type);
 	ptr = RSTRING_PTR(type);
-	if (strcmp(ptr, "SOCK_STREAM") == 0)
-	    *tv = SOCK_STREAM;
-	else if (strcmp(ptr, "SOCK_DGRAM") == 0)
-	    *tv = SOCK_DGRAM;
-#ifdef SOCK_RAW
-	else if (strcmp(ptr, "SOCK_RAW") == 0)
-	    *tv = SOCK_RAW;
-#endif
-#ifdef SOCK_SEQPACKET
-	else if (strcmp(ptr, "SOCK_SEQPACKET") == 0)
-	    *tv = SOCK_SEQPACKET;
-#endif
-#ifdef SOCK_RDM
-	else if (strcmp(ptr, "SOCK_RDM") == 0)
-	    *tv = SOCK_RDM;
-#endif
-#ifdef SOCK_PACKET
-	else if (strcmp(ptr, "SOCK_PACKET") == 0)
-	    *tv = SOCK_PACKET;
-#endif
-	else
+        socktype = socktype_to_int(ptr, RSTRING_LEN(type));
+        if (socktype == -1)
 	    rb_raise(rb_eSocket, "unknown socket type %s", ptr);
+        *tv = socktype;
     }
     else {
 	*tv = NUM2INT(type);

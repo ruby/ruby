@@ -75,6 +75,24 @@ def each_names_with_len(pat)
   }
 end
 
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int(str_var, len_var, pat)")
+    switch (<%=len_var%>) {
+%    each_names_with_len(pat) {|names, len|
+      case <%=len%>:
+%      names.each {|name|
+#ifdef <%=name%>
+%       size = name.bytesize
+        if (memcmp(<%=str_var%>, <%=c_str name%>, <%=size%>) == 0) return <%=name%>;
+#endif
+%      }
+        return -1;
+
+%    }
+      default:
+        return -1;
+    }
+EOS
+
 result << ERB.new(<<'EOS', nil, '%').result(binding)
 static void
 init_constants(VALUE mConst)
@@ -100,21 +118,13 @@ init_constants(VALUE mConst)
 static int
 family_to_int(char *str, int len)
 {
-    switch (len) {
-%    each_names_with_len(/\A[AP]F_/) {|names, len|
-      case <%=len%>:
-%      names.each {|name|
-#ifdef <%=name%>
-%       size = name.bytesize
-        if (memcmp(str, <%=c_str name%>, <%=size%>) == 0) return <%=name%>;
-#endif
-%      }
-        return -1;
+<%= gen_name_to_int("str", "len", /\A[AP]F_/) %>
+}
 
-%    }
-      default:
-        return -1;
-    }
+static int
+socktype_to_int(char *str, int len)
+{
+<%= gen_name_to_int("str", "len", /\ASOCK_/) %>
 }
 
 EOS
