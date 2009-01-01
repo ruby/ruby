@@ -93,28 +93,12 @@ ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int(str_var, len_var,
     }
 EOS
 
-MAYBE_ALIAS = [
-  ["AF_UNIX", "AF_LOCAL"],
-  ["AF_ISO", "AF_OSI"],
-  ["AF_E164", "AF_ISDN"],
-  ["AF_NS", "AF_IPX"],
-]
-
 def each_alias(pat)
-  h = {}
-  each_name(pat) {|name|
-    h[name] = [name]
+  names = []
+  each_name(pat) {|n|
+    names << n
   }
-  MAYBE_ALIAS.each {|names|
-    a = []
-    names.each {|n|
-      a << n if h.delete n
-    }
-    h[a.first] = a
-  }
-  h.each_value {|names|
-    yield names
-  }
+  yield names
 end
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name(int_var, pat)")

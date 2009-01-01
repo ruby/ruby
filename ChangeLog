@@ -1,3 +1,7 @@
+Thu Jan  1 21:08:34 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: check all alias possibility. 
+
 Thu Jan  1 20:59:55 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: more possible aliases.
