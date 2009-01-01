@@ -3592,6 +3592,8 @@ sock_define_uconst(const char *name, unsigned int value, VALUE mConst)
 #define sock_define_const(name, value) sock_define_const(name, value, mConst)
 #define sock_define_uconst(name, value) sock_define_uconst(name, value, mConst)
 
+#include "constants.h"
+
 /*
  * Class +Socket+ provides access to the underlying operating system
  * socket implementations. It can be used to provide more operating system
@@ -3732,5 +3734,5 @@ Init_socket()
 
     /* constants */
     mConst = rb_define_module_under(rb_cSocket, "Constants");
-#include "constants.h"
+    init_constants(mConst);
 }

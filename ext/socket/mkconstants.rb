@@ -53,6 +53,9 @@ def each_data
 end
 
 result << ERB.new(<<'EOS', nil, '%').result(binding)
+static void
+init_constants(VALUE mConst)
+{
 % each_data {|guard, define, name, default_value|
 %   if guard
 #if <%=guard%>
@@ -69,6 +72,7 @@ result << ERB.new(<<'EOS', nil, '%').result(binding)
 %   end
 
 % }
+}
 EOS
 
 if opt_o
