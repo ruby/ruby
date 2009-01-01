@@ -1,3 +1,7 @@
+Thu Jan  1 20:54:02 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: AF_ISO and AF_OSI may be aliased.
+
 Thu Jan  1 20:50:09 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* process.c (before_exec): it makes no sense for a conditional

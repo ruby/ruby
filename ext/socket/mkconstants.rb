@@ -94,7 +94,8 @@ ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int(str_var, len_var,
 EOS
 
 MAYBE_ALIAS = [
-  ["AF_UNIX", "AF_LOCAL"]
+  ["AF_UNIX", "AF_LOCAL"],
+  ["AF_ISO", "AF_OSI"]
 ]
 
 def each_alias(pat)
