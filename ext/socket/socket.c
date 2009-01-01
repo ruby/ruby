@@ -241,6 +241,52 @@ ruby_getnameinfo__aix(sa, salen, host, hostlen, serv, servlen, flags)
 #define close closesocket
 #endif
 
+static int
+family_arg(VALUE domain)
+{
+    /* convert AF_INET, etc. */
+    VALUE tmp;
+    char *ptr;
+    int ret;
+
+    tmp = rb_check_string_type(domain);
+    if (!NIL_P(tmp)) {
+	domain = tmp;
+	rb_check_safe_obj(domain);
+        ptr = RSTRING_PTR(domain);
+        if (family_to_int(ptr, RSTRING_LEN(domain), &ret) == -1)
+	    rb_raise(rb_eSocket, "unknown socket domain %s", ptr);
+    }
+    else {
+	ret = NUM2INT(domain);
+    }
+    return ret;
+}
+
+static int
+socktype_arg(VALUE type)
+{
+    /* convert SOCK_STREAM, etc. */
+    VALUE tmp;
+    char *ptr;
+    int ret;
+
+    tmp = rb_check_string_type(type);
+    if (!NIL_P(tmp)) {
+	type = tmp;
+	rb_check_safe_obj(type);
+	ptr = RSTRING_PTR(type);
+        if (socktype_to_int(ptr, RSTRING_LEN(type), &ret) == -1)
+	    rb_raise(rb_eSocket, "unknown socket type %s", ptr);
+    }
+    else {
+	ret = NUM2INT(type);
+    }
+
+    return ret;
+}
+
+
 static VALUE
 init_sock(VALUE sock, int fd)
 {
@@ -1754,14 +1800,14 @@ static VALUE
 udp_init(int argc, VALUE *argv, VALUE sock)
 {
     VALUE arg;
-    int socktype = AF_INET;
+    int family = AF_INET;
     int fd;
 
     rb_secure(3);
     if (rb_scan_args(argc, argv, "01", &arg) == 1) {
-	socktype = NUM2INT(arg);
+	family = family_arg(arg);
     }
-    fd = ruby_socket(socktype, SOCK_DGRAM, 0);
+    fd = ruby_socket(family, SOCK_DGRAM, 0);
     if (fd < 0) {
 	rb_sys_fail("socket(2) - udp");
     }
@@ -2273,31 +2319,8 @@ unix_peeraddr(VALUE sock)
 static void
 setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
 {
-    VALUE tmp;
-    char *ptr;
-
-    tmp = rb_check_string_type(domain);
-    if (!NIL_P(tmp)) {
-	domain = tmp;
-	rb_check_safe_obj(domain);
-        ptr = RSTRING_PTR(domain);
-        if (family_to_int(ptr, RSTRING_LEN(domain), dv) == -1)
-	    rb_raise(rb_eSocket, "unknown socket domain %s", ptr);
-    }
-    else {
-	*dv = NUM2INT(domain);
-    }
-    tmp = rb_check_string_type(type);
-    if (!NIL_P(tmp)) {
-	type = tmp;
-	rb_check_safe_obj(type);
-	ptr = RSTRING_PTR(type);
-        if (socktype_to_int(ptr, RSTRING_LEN(type), tv) == -1)
-	    rb_raise(rb_eSocket, "unknown socket type %s", ptr);
-    }
-    else {
-	*tv = NUM2INT(type);
-    }
+    *dv = family_arg(domain);
+    *tv = socktype_arg(type);
 }
 
 static VALUE
@@ -3137,17 +3160,17 @@ sock_s_gethostbyname(VALUE obj, VALUE host)
 static VALUE
 sock_s_gethostbyaddr(int argc, VALUE *argv)
 {
-    VALUE addr, type;
+    VALUE addr, family;
     struct hostent *h;
     struct sockaddr *sa;
     char **pch;
     VALUE ary, names;
     int t = AF_INET;
 
-    rb_scan_args(argc, argv, "11", &addr, &type);
+    rb_scan_args(argc, argv, "11", &addr, &family);
     sa = (struct sockaddr*)StringValuePtr(addr);
-    if (!NIL_P(type)) {
-	t = NUM2INT(type);
+    if (!NIL_P(family)) {
+	t = family_arg(family);
     }
 #ifdef INET6
     else if (RSTRING_LEN(addr) == 16) {
@@ -3239,24 +3262,12 @@ static VALUE
 sock_s_getaddrinfo(int argc, VALUE *argv)
 {
     VALUE host, port, family, socktype, protocol, flags, ret;
-    char *ap;
     struct addrinfo hints, *res;
 
     rb_scan_args(argc, argv, "24", &host, &port, &family, &socktype, &protocol, &flags);
 
     MEMZERO(&hints, struct addrinfo, 1);
-    if (NIL_P(family)) {
-	hints.ai_family = PF_UNSPEC;
-    }
-    else if (FIXNUM_P(family)) {
-	hints.ai_family = FIX2INT(family);
-    }
-    else if ((ap = StringValuePtr(family)) != 0) {
-        int af;
-        if (family_to_int(ap, RSTRING_LEN(family), &af) == -1)
-	    rb_raise(rb_eSocket, "unknown socket domain %s", ap);
-        hints.ai_family = af;
-    }
+    hints.ai_family = NIL_P(family) ? PF_UNSPEC : family_arg(family);
 
     if (!NIL_P(socktype)) {
 	hints.ai_socktype = NUM2INT(socktype);
@@ -3285,7 +3296,6 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     int error;
     struct sockaddr_storage ss;
     struct sockaddr *sap;
-    char *ap;
 
     sa = flags = Qnil;
     rb_scan_args(argc, argv, "11", &sa, &flags);
@@ -3362,18 +3372,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	}
 	hints.ai_socktype = (fl & NI_DGRAM) ? SOCK_DGRAM : SOCK_STREAM;
 	/* af */
-	if (NIL_P(af)) {
-	    hints.ai_family = PF_UNSPEC;
-	}
-	else if (FIXNUM_P(af)) {
-	    hints.ai_family = FIX2INT(af);
-	}
-	else if ((ap = StringValuePtr(af)) != 0) {
-            int family;
-            if (family_to_int(ap, RSTRING_LEN(af), &family) == -1)
-                rb_raise(rb_eSocket, "unknown socket domain %s", ap);
-            hints.ai_family = family;
-	}
+        hints.ai_family = NIL_P(af) ? PF_UNSPEC : family_arg(af);
 	error = getaddrinfo(hptr, pptr, &hints, &res);
 	if (error) goto error_exit_addr;
 	sap = res->ai_addr;

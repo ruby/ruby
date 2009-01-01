@@ -1,3 +1,13 @@
+Fri Jan  2 00:12:27 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (family_arg): extracted from
+	  setup_domain_and_type.
+	  (socktype_arg): ditto.
+	  (udp_init): use family_arg.
+	  (sock_s_gethostbyaddr): ditto.
+	  (sock_s_getaddrinfo): ditto.
+	  (sock_s_getnameinfo): ditto.
+
 Thu Jan  1 22:27:55 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* spec/default.mspec: fix for builddir != srcdir
