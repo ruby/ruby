@@ -1,3 +1,10 @@
+Thu Jan  1 19:53:33 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: add valp argument for family_to_int and
+	  socktype_to_int.
+
+	* ext/socket/socket.c (setup_domain_and_type): use valp argument.
+
 Thu Jan  1 19:36:57 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: generate family_to_str.

@@ -2264,8 +2264,8 @@ unix_peeraddr(VALUE sock)
 }
 #endif
 
-static int family_to_int(char *str, int len);
-static int socktype_to_int(char *str, int len);
+static int family_to_int(char *str, int len, int *valp);
+static int socktype_to_int(char *str, int len, int *valp);
 
 static void
 setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
@@ -2275,28 +2275,22 @@ setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
 
     tmp = rb_check_string_type(domain);
     if (!NIL_P(tmp)) {
-        int family;
 	domain = tmp;
 	rb_check_safe_obj(domain);
         ptr = RSTRING_PTR(domain);
-        family = family_to_int(ptr, RSTRING_LEN(domain));
-        if (family == -1)
+        if (family_to_int(ptr, RSTRING_LEN(domain), dv) == -1)
 	    rb_raise(rb_eSocket, "unknown socket domain %s", ptr);
-        *dv = family;
     }
     else {
 	*dv = NUM2INT(domain);
     }
     tmp = rb_check_string_type(type);
     if (!NIL_P(tmp)) {
-        int socktype;
 	type = tmp;
 	rb_check_safe_obj(type);
 	ptr = RSTRING_PTR(type);
-        socktype = socktype_to_int(ptr, RSTRING_LEN(type));
-        if (socktype == -1)
+        if (socktype_to_int(ptr, RSTRING_LEN(type), tv) == -1)
 	    rb_raise(rb_eSocket, "unknown socket type %s", ptr);
-        *tv = socktype;
     }
     else {
 	*tv = NUM2INT(type);

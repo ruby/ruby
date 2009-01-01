@@ -75,14 +75,14 @@ def each_names_with_len(pat)
   }
 end
 
-ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int(str_var, len_var, pat)")
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int(str_var, len_var, retp_var, pat)")
     switch (<%=len_var%>) {
 %    each_names_with_len(pat) {|names, len|
       case <%=len%>:
 %      names.each {|name|
 #ifdef <%=name%>
 %       size = name.bytesize
-        if (memcmp(<%=str_var%>, <%=c_str name%>, <%=size%>) == 0) return <%=name%>;
+        if (memcmp(<%=str_var%>, <%=c_str name%>, <%=size%>) == 0) { *<%=retp_var%> = <%=name%>; return 0; }
 #endif
 %      }
         return -1;
@@ -153,15 +153,15 @@ init_constants(VALUE mConst)
 }
 
 static int
-family_to_int(char *str, int len)
+family_to_int(char *str, int len, int *valp)
 {
-<%= gen_name_to_int("str", "len", /\A[AP]F_/) %>
+<%= gen_name_to_int("str", "len", "valp", /\A[AP]F_/) %>
 }
 
 static int
-socktype_to_int(char *str, int len)
+socktype_to_int(char *str, int len, int *valp)
 {
-<%= gen_name_to_int("str", "len", /\ASOCK_/) %>
+<%= gen_name_to_int("str", "len", "valp", /\ASOCK_/) %>
 }
 
 static char *
