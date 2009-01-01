@@ -11,9 +11,6 @@ class TestUDPSocket < Test::Unit::TestCase
     assert_nothing_raised { UDPSocket.open(Socket::AF_INET) {} }
     assert_nothing_raised { UDPSocket.open("AF_INET") {} }
     assert_nothing_raised { UDPSocket.open(:AF_INET) {} }
-    if defined? Socket::AF_INET6
-      assert_nothing_raised { UDPSocket.open(Socket::AF_INET6) {} }
-    end
   end
 
   def test_connect
