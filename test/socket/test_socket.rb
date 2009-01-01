@@ -97,4 +97,17 @@ class TestSocket < Test::Unit::TestCase
     c.close if c
     IO.for_fd(fd).close if fd
   end
+
+  def test_initialize
+    Socket.open(Socket::AF_INET, Socket::SOCK_STREAM, 0) {|s|
+      addr = s.getsockname
+      assert_nothing_raised { Socket.unpack_sockaddr_in(addr) }
+      assert_raise(ArgumentError) { Socket.unpack_sockaddr_un(addr) }
+    }
+    Socket.open("AF_INET", "SOCK_STREAM", 0) {|s|
+      addr = s.getsockname
+      assert_nothing_raised { Socket.unpack_sockaddr_in(addr) }
+      assert_raise(ArgumentError) { Socket.unpack_sockaddr_un(addr) }
+    }
+  end
 end if defined?(Socket)

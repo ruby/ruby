@@ -166,4 +166,18 @@ class TestUNIXSocket < Test::Unit::TestCase
     assert_kind_of(UNIXSocket, pair[1])
   end
 
+  def test_initialize
+    Socket.open(Socket::AF_UNIX, Socket::SOCK_STREAM, 0) {|s|
+      addr = s.getsockname
+      assert_nothing_raised { Socket.unpack_sockaddr_un(addr) }
+      assert_raise(ArgumentError) { Socket.unpack_sockaddr_in(addr) }
+    }
+    Socket.open("AF_UNIX", "SOCK_STREAM", 0) {|s|
+      addr = s.getsockname
+      assert_nothing_raised { Socket.unpack_sockaddr_un(addr) }
+      assert_raise(ArgumentError) { Socket.unpack_sockaddr_in(addr) }
+    }
+  end
+
+
 end if defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM

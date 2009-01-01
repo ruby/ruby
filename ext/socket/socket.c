@@ -2280,6 +2280,8 @@ unix_peeraddr(VALUE sock)
 }
 #endif
 
+static int family_to_int(char *str, int len);
+
 static void
 setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
 {
@@ -2288,51 +2290,13 @@ setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
 
     tmp = rb_check_string_type(domain);
     if (!NIL_P(tmp)) {
+        int family;
 	domain = tmp;
 	rb_check_safe_obj(domain);
-	ptr = RSTRING_PTR(domain);
-	if (strcmp(ptr, "AF_INET") == 0)
-	    *dv = AF_INET;
-#ifdef AF_UNIX
-	else if (strcmp(ptr, "AF_UNIX") == 0)
-	    *dv = AF_UNIX;
-#endif
-#ifdef AF_ISO
-	else if (strcmp(ptr, "AF_ISO") == 0)
-	    *dv = AF_ISO;
-#endif
-#ifdef AF_NS
-	else if (strcmp(ptr, "AF_NS") == 0)
-	    *dv = AF_NS;
-#endif
-#ifdef AF_IMPLINK
-	else if (strcmp(ptr, "AF_IMPLINK") == 0)
-	    *dv = AF_IMPLINK;
-#endif
-#ifdef PF_INET
-	else if (strcmp(ptr, "PF_INET") == 0)
-	    *dv = PF_INET;
-#endif
-#ifdef PF_UNIX
-	else if (strcmp(ptr, "PF_UNIX") == 0)
-	    *dv = PF_UNIX;
-#endif
-#ifdef PF_IMPLINK
-	else if (strcmp(ptr, "PF_IMPLINK") == 0)
-	    *dv = PF_IMPLINK;
-	else if (strcmp(ptr, "AF_IMPLINK") == 0)
-	    *dv = AF_IMPLINK;
-#endif
-#ifdef PF_AX25
-	else if (strcmp(ptr, "PF_AX25") == 0)
-	    *dv = PF_AX25;
-#endif
-#ifdef PF_IPX
-	else if (strcmp(ptr, "PF_IPX") == 0)
-	    *dv = PF_IPX;
-#endif
-	else
+        family = family_to_int(RSTRING_PTR(domain), RSTRING_LEN(domain));
+        if (family == -1)
 	    rb_raise(rb_eSocket, "unknown socket domain %s", ptr);
+        *dv = family;
     }
     else {
 	*dv = NUM2INT(domain);

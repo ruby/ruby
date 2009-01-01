@@ -34,10 +34,15 @@ result = ''
 # workaround for NetBSD, OpenBSD and etc.
 result << "#define pseudo_AF_FTIP pseudo_AF_RTIP\n"
 
-def each_data
-  DATA.each_line {|s|
-    name, default_value = s.scan(/\S+/)
-    next unless name && name[0] != ?#
+DEFS = []
+DATA.each_line {|s|
+  name, default_value = s.scan(/\S+/)
+  next unless name && name[0] != ?#
+  DEFS << [name, default_value]
+}
+
+def each_const
+  DEFS.each {|name, default_value|
     if name =~ /\AINADDR_/
       define = "sock_define_uconst"
     else
@@ -52,11 +57,18 @@ def each_data
   }
 end
 
+def each_name(pat)
+  DEFS.each {|name, default_value|
+    next if pat !~ name
+    yield name
+  }
+end
+
 result << ERB.new(<<'EOS', nil, '%').result(binding)
 static void
 init_constants(VALUE mConst)
 {
-% each_data {|guard, define, name, default_value|
+% each_const {|guard, define, name, default_value|
 %   if guard
 #if <%=guard%>
 %   end
@@ -73,6 +85,19 @@ init_constants(VALUE mConst)
 
 % }
 }
+
+static int
+family_to_int(char *str, int len)
+{
+% each_name(/\A[AP]F_/) {|name|
+#ifdef <%=name%>
+%   size = name.bytesize
+    if (len == <%=size%> && memcmp(str, <%=c_str name%>, <%=size%>) == 0) return <%=name%>;
+#endif
+% }
+    return -1;
+}
+
 EOS
 
 if opt_o
