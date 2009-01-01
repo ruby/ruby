@@ -1,4 +1,24 @@
-$out ||= $stdout
+require 'optparse'
+
+opt = OptionParser.new
+
+opt.def_option('-h', 'help') {
+  puts opt
+  exit 0
+}
+
+opt_o = nil
+opt.def_option('-o FILE', 'specify output file') {|filename|
+  opt_o = filename
+}
+
+$out = ''
+def $out.puts(str="")
+  str += "\n" if /\n\z/ !~ str
+  self << str
+end
+
+opt.parse!
 
 # workaround for NetBSD, OpenBSD and etc.
 $out.puts("#define pseudo_AF_FTIP pseudo_AF_RTIP")
@@ -21,6 +41,14 @@ DATA.each_line do |s|
     $out.puts("#endif")
     $out.puts
   end
+end
+
+if opt_o
+  File.open(opt_o, 'w') {|f|
+    f << $out
+  }
+else
+  $stdout << $out
 end
 
 __END__

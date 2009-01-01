@@ -1,3 +1,9 @@
+Thu Jan  1 15:07:56 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: add -o option.
+
+	* ext/socket/depend: use mkconstants.rb with -o option.
+
 Thu Jan  1 07:42:36 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/singleton.rb: fix indentation of RDoc text.  [ruby-core:21029]
