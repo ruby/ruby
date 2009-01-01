@@ -15,20 +15,7 @@
 
 VALUE rb_mMath;
 
-static VALUE
-to_flo(VALUE x)
-{
-    if (!rb_obj_is_kind_of(x, rb_cNumeric)) {
-	rb_raise(rb_eTypeError, "can't convert %s into Float",
-		 NIL_P(x) ? "nil" :
-		 x == Qtrue ? "true" :
-		 x == Qfalse ? "false" :
-		 rb_obj_classname(x));
-    }
-    return rb_convert_type(x, T_FLOAT, "Float", "to_f");
-}
-
-#define Need_Float(x) (x) = to_flo(x)
+#define Need_Float(x) (x) = rb_to_float(x)
 #define Need_Float2(x,y) do {\
     Need_Float(x);\
     Need_Float(y);\

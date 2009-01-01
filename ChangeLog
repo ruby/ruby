@@ -1,3 +1,10 @@
+Wed Dec 31 14:12:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_to_float): replaced by to_flo definition from
+	  math.c  [ruby-dev:37668]
+
+	* math.c (Need_Float): use rb_to_float().
+
 Wed Dec 31 19:35:57 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* spec/README: follows the change of directory structure in rubyspec.
