@@ -1,3 +1,8 @@
+Wed Dec 31 15:45:18 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (copy_stream_body): don't check to_io because
+	  Zlib::GzipWriter#to_io returns the underlying IO.
+
 Wed Dec 31 14:52:33 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_digest.c (GetDigestPtr): use StringValueCStr

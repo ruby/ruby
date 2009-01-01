@@ -526,6 +526,69 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  class Rot13IO
+    def initialize(io)
+      @io = io
+    end
+
+    def readpartial(*args)
+      ret = @io.readpartial(*args)
+      ret.tr!('a-zA-Z', 'n-za-mN-ZA-M')
+      ret
+    end
+
+    def write(str)
+      @io.write(str.tr('a-zA-Z', 'n-za-mN-ZA-M'))
+    end
+
+    def to_io
+      @io
+    end
+  end
+
+  def test_copy_stream_io_to_rot13
+    mkcdtmpdir {
+      File.open("bar", "w") {|f| f << "vex" }
+      File.open("bar") {|src|
+        File.open("baz", "w") {|dst0|
+          dst = Rot13IO.new(dst0)
+          ret = IO.copy_stream(src, dst, 3)
+          assert_equal(3, ret)
+        }
+        assert_equal("irk", File.read("baz"))
+      }
+    }
+  end
+
+  def test_copy_stream_rot13_to_io
+    mkcdtmpdir {
+      File.open("bar", "w") {|f| f << "flap" }
+      File.open("bar") {|src0|
+        src = Rot13IO.new(src0)
+        File.open("baz", "w") {|dst|
+          ret = IO.copy_stream(src, dst, 4)
+          assert_equal(4, ret)
+        }
+      }
+      assert_equal("sync", File.read("baz"))
+    }
+  end
+
+  def test_copy_stream_rot13_to_rot13
+    mkcdtmpdir {
+      File.open("bar", "w") {|f| f << "bin" }
+      File.open("bar") {|src0|
+        src = Rot13IO.new(src0)
+        File.open("baz", "w") {|dst0|
+          dst = Rot13IO.new(dst0)
+          ret = IO.copy_stream(src, dst, 3)
+          assert_equal(3, ret)
+        }
+      }
+      assert_equal("bin", File.read("baz"))
+    }
+  end
+
   def test_copy_stream_strio_flush
     with_pipe {|r, w|
       w.sync = false
