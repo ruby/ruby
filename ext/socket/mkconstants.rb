@@ -34,12 +34,14 @@ result = ''
 # workaround for NetBSD, OpenBSD and etc.
 result << "#define pseudo_AF_FTIP pseudo_AF_RTIP\n"
 
-DEFS = []
+h = {}
 DATA.each_line {|s|
   name, default_value = s.scan(/\S+/)
   next unless name && name[0] != ?#
-  DEFS << [name, default_value]
+  raise "duplicate name: #{name}" if h.has_key? name
+  h[name] = default_value
 }
+DEFS = h.to_a
 
 def each_const
   DEFS.each {|name, default_value|

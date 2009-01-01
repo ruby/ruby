@@ -1,3 +1,7 @@
+Fri Jan  2 04:40:00 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: check duplicates.
+
 Fri Jan  2 02:39:08 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (optname_arg): defined.
@@ -113,7 +117,7 @@ Thu Jan  1 16:48:07 2009  Tanaka Akira  <akr@fsij.org>
 
 Thu Jan  1 15:08:46 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* tool/flie2lastrev.rb: supports git repositories which are cloned
+	* tool/file2lastrev.rb: supports git repositories which are cloned
 	  from a git-svn gateway.
 	  Patch by Hongli Lai. [ruby-core:21020]
 
@@ -341,7 +345,7 @@ Mon Dec 29 17:25:17 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	* bin/erb.rb (ERB::Main.run): adds -E and -U options.
 	  String is no longer Enumerable.
 
-	* man/erb.1: new manapage.
+	* man/erb.1: new manpage.
 
 	* test/erb/test_erb_m17n.rb: new test case for m17n features.
 
@@ -470,10 +474,10 @@ Sun Dec 28 00:43:33 2008  Tanaka Akira  <akr@fsij.org>
 
 Sat Dec 27 22:41:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* test/rdoc/test_rdoc_info_formatting.rb (setup, teadown): uses
-	  mktmpdir and removes it alfter the test.
+	* test/rdoc/test_rdoc_info_formatting.rb (setup, teardown): uses
+	  mktmpdir and removes it after the test.
 
-	* test/cgi/test_cgi_session.rb (setup, teadown): ditto.
+	* test/cgi/test_cgi_session.rb (setup, teardown): ditto.
 
 Sat Dec 27 21:46:10 2008  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
@@ -554,7 +558,7 @@ Sat Dec 27 14:29:33 2008  Tanaka Akira  <akr@fsij.org>
 Sat Dec 27 13:36:55 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (get_errinfo): return th->errinfo value
-	  if normal errinfo place (dynamic local viriable) is not found.
+	  if normal errinfo place (dynamic local variable) is not found.
 	  fixes Bug #732 [ruby-dev:37046].
 
 	* bootstraptest/test_proc.rb: add a test.
