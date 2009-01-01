@@ -3369,14 +3369,10 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	    hints.ai_family = FIX2INT(af);
 	}
 	else if ((ap = StringValuePtr(af)) != 0) {
-	    if (strcmp(ap, "AF_INET") == 0) {
-		hints.ai_family = PF_INET;
-	    }
-#ifdef INET6
-	    else if (strcmp(ap, "AF_INET6") == 0) {
-		hints.ai_family = PF_INET6;
-	    }
-#endif
+            int family;
+            if (family_to_int(ap, RSTRING_LEN(af), &family) == -1)
+                rb_raise(rb_eSocket, "unknown socket domain %s", ap);
+            hints.ai_family = family;
 	}
 	error = getaddrinfo(hptr, pptr, &hints, &res);
 	if (error) goto error_exit_addr;

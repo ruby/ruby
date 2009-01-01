@@ -115,4 +115,8 @@ class TestSocket < Test::Unit::TestCase
     # This should not send a DNS query because AF_UNIX.
     assert_raise(SocketError) { Socket.getaddrinfo("www.kame.net", 80, "AF_UNIX") }
   end
+
+  def test_getnameinfo
+    assert_raise(SocketError) { Socket.getnameinfo(["AF_UNIX", 80, "0.0.0.0"]) }
+  end
 end if defined?(Socket)
