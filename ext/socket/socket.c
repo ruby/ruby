@@ -981,6 +981,8 @@ sock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
     return sock_getaddrinfo(host, port, &hints);
 }
 
+static char *family_to_str(int val);
+
 static VALUE
 ipaddr(struct sockaddr *sockaddr, int norevlookup)
 {
@@ -988,32 +990,14 @@ ipaddr(struct sockaddr *sockaddr, int norevlookup)
     VALUE ary;
     int error;
     char hbuf[1024], pbuf[1024];
+    char *name;
 
-    switch (sockaddr->sa_family) {
-    case AF_UNSPEC:
-	family = rb_str_new2("AF_UNSPEC");
-	break;
-    case AF_INET:
-	family = rb_str_new2("AF_INET");
-	break;
-#ifdef INET6
-    case AF_INET6:
-	family = rb_str_new2("AF_INET6");
-	break;
-#endif
-#ifdef AF_LOCAL
-    case AF_LOCAL:
-	family = rb_str_new2("AF_LOCAL");
-	break;
-#elif  AF_UNIX
-    case AF_UNIX:
-	family = rb_str_new2("AF_UNIX");
-	break;
-#endif
-    default:
+    name = family_to_str(sockaddr->sa_family);
+    if (name)
+        family = rb_str_new2(name);
+    else {
         sprintf(pbuf, "unknown:%d", sockaddr->sa_family);
 	family = rb_str_new2(pbuf);
-	break;
     }
 
     addr1 = Qnil;

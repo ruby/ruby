@@ -93,6 +93,43 @@ ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int(str_var, len_var,
     }
 EOS
 
+MAYBE_ALIAS = [
+  ["AF_UNIX", "AF_LOCAL"]
+]
+
+def each_alias(pat)
+  h = {}
+  each_name(pat) {|name|
+    h[name] = [name]
+  }
+  MAYBE_ALIAS.each {|names|
+    a = []
+    names.each {|n|
+      a << n if h.delete n
+    }
+    h[a.first] = a
+  }
+  h.each_value {|names|
+    yield names
+  }
+end
+
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name(int_var, pat)")
+    switch (<%=int_var%>) {
+%    each_alias(pat) {|names|
+%      names.each_with_index {|n, i|
+%      cond = ["defined(#{n})"]
+%      (0...i).each {|j| cond << "(!defined(#{names[j]}) || #{n} != #{names[j]})" }
+#if <%=cond.join(" && ")%>
+      case <%=n%>: return <%=c_str n%>;
+#endif
+%      }
+%    }
+      default:
+        return NULL;
+    }
+EOS
+
 result << ERB.new(<<'EOS', nil, '%').result(binding)
 static void
 init_constants(VALUE mConst)
@@ -125,6 +162,12 @@ static int
 socktype_to_int(char *str, int len)
 {
 <%= gen_name_to_int("str", "len", /\ASOCK_/) %>
+}
+
+static char *
+family_to_str(int val)
+{
+<%= gen_int_to_name("val", /\AAF_/) %>
 }
 
 EOS
