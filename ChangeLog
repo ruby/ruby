@@ -1,3 +1,11 @@
+Fri Jan  2 01:15:11 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (level_arg): defined.
+	  (bsock_setsockopt): use level_arg.
+	  (bsock_getsockopt): ditto.
+
+	* ext/socket/mkconstants.rb: generate level_to_int.
+
 Fri Jan  2 00:58:40 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (family_arg): accept symbols as well.

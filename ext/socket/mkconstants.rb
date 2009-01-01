@@ -151,6 +151,12 @@ socktype_to_int(char *str, int len, int *valp)
 <%= gen_name_to_int("str", "len", "valp", /\ASOCK_/) %>
 }
 
+static int
+level_to_int(char *str, int len, int *valp)
+{
+<%= gen_name_to_int("str", "len", "valp", /\A(SOL_SOCKET\z|IPPROTO_)/) %>
+}
+
 static char *
 family_to_str(int val)
 {

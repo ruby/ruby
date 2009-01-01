@@ -294,6 +294,32 @@ socktype_arg(VALUE type)
     return ret;
 }
 
+static int
+level_arg(VALUE level)
+{
+    /* convert SOL_SOCKET, IPPROTO_TCP, etc. */
+    VALUE tmp;
+    char *ptr;
+    int ret;
+
+    if (SYMBOL_P(level)) {
+        level = rb_sym_to_s(level);
+        goto str;
+    }
+    else if (!NIL_P(tmp = rb_check_string_type(level))) {
+	level = tmp;
+      str:
+	rb_check_safe_obj(level);
+	ptr = RSTRING_PTR(level);
+        if (level_to_int(ptr, RSTRING_LEN(level), &ret) == -1)
+	    rb_raise(rb_eSocket, "unknown protocol level %s", ptr);
+    }
+    else {
+	ret = NUM2INT(level);
+    }
+
+    return ret;
+}
 
 static VALUE
 init_sock(VALUE sock, int fd)
@@ -440,7 +466,7 @@ bsock_setsockopt(VALUE sock, VALUE lev, VALUE optname, VALUE val)
     int vlen;
 
     rb_secure(2);
-    level = NUM2INT(lev);
+    level = level_arg(lev);
     option = NUM2INT(optname);
 
     switch (TYPE(val)) {
@@ -520,7 +546,7 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
     char *buf;
     rb_io_t *fptr;
 
-    level = NUM2INT(lev);
+    level = level_arg(lev);
     option = NUM2INT(optname);
     len = 256;
     buf = ALLOCA_N(char,len);
