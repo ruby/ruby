@@ -1,4 +1,5 @@
 require 'optparse'
+require 'erb'
 
 opt = OptionParser.new
 
@@ -12,43 +13,59 @@ opt.def_option('-o FILE', 'specify output file') {|filename|
   opt_o = filename
 }
 
-$out = ''
-def $out.puts(str="")
-  str += "\n" if /\n\z/ !~ str
-  self << str
+C_ESC = {
+  "\\" => "\\\\",
+  '"' => '\"',
+  "\n" => '\n',
+}
+
+0x00.upto(0x1f) {|ch| C_ESC[[ch].pack("C")] ||= "\\%03o" % ch }
+0x7f.upto(0xff) {|ch| C_ESC[[ch].pack("C")] = "\\%03o" % ch }
+C_ESC_PAT = Regexp.union(*C_ESC.keys)
+
+def c_str(str)
+  '"' + str.gsub(C_ESC_PAT, C_ESC) + '"'
 end
 
 opt.parse!
 
-# workaround for NetBSD, OpenBSD and etc.
-$out.puts("#define pseudo_AF_FTIP pseudo_AF_RTIP")
+result = ''
 
-# skip empty lines and comment lines
-DATA.each_line do |s|
-  name, value = s.scan(/\S+/)
-  if name && name[0] != ?#
+# workaround for NetBSD, OpenBSD and etc.
+result << "#define pseudo_AF_FTIP pseudo_AF_RTIP\n"
+
+def each_data
+  DATA.each_line {|s|
+    name, default_value = s.scan(/\S+/)
+    next unless name && name[0] != ?#
     if name =~ /\AINADDR_/
       define = "sock_define_uconst"
     else
       define = "sock_define_const"
     end
-    $out.puts("#ifdef #{name}")
-    $out.puts("    #{define}(\"#{name}\", #{name});")
-    if value
-    $out.puts("#else")
-    $out.puts("    #{define}(\"#{name}\", #{value});")
-    end
-    $out.puts("#endif")
-    $out.puts
-  end
+    yield define, name, default_value
+  }
 end
+
+result << ERB.new(<<'EOS', nil, '%').result(binding)
+% each_data {|define, name, default_value|
+#ifdef <%=name%>
+    <%=define%>(<%=c_str name%>, <%=name%>);
+%   if default_value
+#else
+    <%=define%>(<%=c_str name%>, <%=default_value%>);
+%   end
+#endif
+
+% }
+EOS
 
 if opt_o
   File.open(opt_o, 'w') {|f|
-    f << $out
+    f << result
   }
 else
-  $stdout << $out
+  $stdout << result
 end
 
 __END__
