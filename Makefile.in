@@ -263,4 +263,4 @@ update-rubyspec:
 
 test-rubyspec:
 	@if [ ! -d $(srcdir)/spec/rubyspec ]; then echo No rubyspec here.  make update-rubyspec first.; exit 1; fi
-	$(RUNRUBY) $(srcdir)/spec/mspec/bin/mspec $(MSPECOPT)
+	$(RUNRUBY) $(srcdir)/spec/mspec/bin/mspec -B $(srcdir)/spec/default.mspec $(MSPECOPT)
