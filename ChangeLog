@@ -1,3 +1,10 @@
+Fri Jan  2 02:08:36 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (constant_arg): extracted from family_arg.
+	  (family_arg): use constant_arg.
+	  (socktype_arg): ditto.
+	  (level_arg): ditto.
+
 Fri Jan  2 01:15:11 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (level_arg): defined.

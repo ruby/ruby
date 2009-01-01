@@ -242,83 +242,49 @@ ruby_getnameinfo__aix(sa, salen, host, hostlen, serv, servlen, flags)
 #endif
 
 static int
-family_arg(VALUE domain)
+constant_arg(VALUE arg, int (*str_to_int)(char*, int, int*), char *errmsg)
 {
-    /* convert AF_INET, etc. */
     VALUE tmp;
     char *ptr;
     int ret;
 
-    if (SYMBOL_P(domain)) {
-        domain = rb_sym_to_s(domain);
+    if (SYMBOL_P(arg)) {
+        arg = rb_sym_to_s(arg);
         goto str;
     }
-    else if (!NIL_P(tmp = rb_check_string_type(domain))) {
-	domain = tmp;
+    else if (!NIL_P(tmp = rb_check_string_type(arg))) {
+	arg = tmp;
       str:
-	rb_check_safe_obj(domain);
-        ptr = RSTRING_PTR(domain);
-        if (family_to_int(ptr, RSTRING_LEN(domain), &ret) == -1)
-	    rb_raise(rb_eSocket, "unknown socket domain %s", ptr);
+	rb_check_safe_obj(arg);
+        ptr = RSTRING_PTR(arg);
+        if (str_to_int(ptr, RSTRING_LEN(arg), &ret) == -1)
+	    rb_raise(rb_eSocket, "%s %s", errmsg, ptr);
     }
     else {
-	ret = NUM2INT(domain);
+	ret = NUM2INT(arg);
     }
     return ret;
+}
+
+static int
+family_arg(VALUE domain)
+{
+    /* convert AF_INET, etc. */
+    return constant_arg(domain, family_to_int, "unknown socket domain");
 }
 
 static int
 socktype_arg(VALUE type)
 {
     /* convert SOCK_STREAM, etc. */
-    VALUE tmp;
-    char *ptr;
-    int ret;
-
-    if (SYMBOL_P(type)) {
-        type = rb_sym_to_s(type);
-        goto str;
-    }
-    else if (!NIL_P(tmp = rb_check_string_type(type))) {
-	type = tmp;
-      str:
-	rb_check_safe_obj(type);
-	ptr = RSTRING_PTR(type);
-        if (socktype_to_int(ptr, RSTRING_LEN(type), &ret) == -1)
-	    rb_raise(rb_eSocket, "unknown socket type %s", ptr);
-    }
-    else {
-	ret = NUM2INT(type);
-    }
-
-    return ret;
+    return constant_arg(type, socktype_to_int, "unknown socket type");
 }
 
 static int
 level_arg(VALUE level)
 {
     /* convert SOL_SOCKET, IPPROTO_TCP, etc. */
-    VALUE tmp;
-    char *ptr;
-    int ret;
-
-    if (SYMBOL_P(level)) {
-        level = rb_sym_to_s(level);
-        goto str;
-    }
-    else if (!NIL_P(tmp = rb_check_string_type(level))) {
-	level = tmp;
-      str:
-	rb_check_safe_obj(level);
-	ptr = RSTRING_PTR(level);
-        if (level_to_int(ptr, RSTRING_LEN(level), &ret) == -1)
-	    rb_raise(rb_eSocket, "unknown protocol level %s", ptr);
-    }
-    else {
-	ret = NUM2INT(level);
-    }
-
-    return ret;
+    return constant_arg(level, level_to_int, "unknown protocol level");
 }
 
 static VALUE
