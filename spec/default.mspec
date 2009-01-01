@@ -8,6 +8,7 @@ class MSpecScript
 
   # The default implementation to run the specs.
   set :target, File.join(builddir, "miniruby#{config['exeext']}")
+  set :prefix, 'spec/rubyspec'
   set :flags, %W[
     -I#{srcdir}/lib
     -I#{srcdir}/#{config['EXTOUT']}/common

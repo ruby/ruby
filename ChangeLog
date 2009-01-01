@@ -1,3 +1,11 @@
+Wed Dec 31 19:35:57 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* spec/README: follows the change of directory structure in rubyspec.
+
+	* spec/default.mspec: ditto. Also follows change of mspec command.
+
+	* Makefile.in: ditto.
+
 Wed Dec 31 15:45:18 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (copy_stream_body): don't check to_io because
