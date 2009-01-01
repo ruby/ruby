@@ -221,16 +221,23 @@ distclean-local::
 	-rmdir -p $(arch_hdrdir)/ruby
 
 clean-ext distclean-ext realclean-ext::
-	@find ext -name Makefile | sort | while read mk; do \
-	    dir=`dirname "$$mk"`; \
-	    echo $(@:-ext=)ing `expr "$$dir" : 'ext/\(.*\)'`; \
+	@set dummy ${EXTS}; shift; \
+	if test "$$#" = 0; then \
+	    set dummy `find ext -name Makefile | sed 's:^ext/::;s:/Makefile$$::' | sort`; \
+	    shift; \
+	fi; \
+	cd ext; \
+	for dir; do \
+	    echo $(@:-ext=)ing "$$dir"; \
 	    (cd "$$dir"; $(MAKE) $(MFLAGS) $(@:-ext=)) && \
-	    if [ $@ == clean-ext ]; then \
-	    	true; \
-	    else \
-		rmdir -p "$$dir" 2> /dev/null; \
-	    fi; \
+	    case "$@" in \
+	    *distclean-ext*|*realclean-ext*) \
+		rmdir -p "$$dir" 2> /dev/null;; \
+	    esac; \
 	done
+
+distclean-ext realclean-ext::
+	@-rmdir ext 2> /dev/null || true
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c

@@ -1,3 +1,10 @@
+Thu Jan  1 07:16:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (distclean-ext, realclean-ext): use EXTS as default.
+
+	* win32/Makefile.sub (distclean-ext, realclean-ext): try to remove ext
+	  directory.
+
 Thu Jan  1 06:56:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/file2lastrev.rb: unset PWD.
