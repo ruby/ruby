@@ -1,3 +1,8 @@
+Fri Jan  2 00:58:40 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (family_arg): accept symbols as well.
+	  (socktype_arg): ditto.
+
 Fri Jan  2 00:49:44 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (sock_s_getaddrinfo): use socktype_arg.

@@ -249,9 +249,13 @@ family_arg(VALUE domain)
     char *ptr;
     int ret;
 
-    tmp = rb_check_string_type(domain);
-    if (!NIL_P(tmp)) {
+    if (SYMBOL_P(domain)) {
+        domain = rb_sym_to_s(domain);
+        goto str;
+    }
+    else if (!NIL_P(tmp = rb_check_string_type(domain))) {
 	domain = tmp;
+      str:
 	rb_check_safe_obj(domain);
         ptr = RSTRING_PTR(domain);
         if (family_to_int(ptr, RSTRING_LEN(domain), &ret) == -1)
@@ -271,9 +275,13 @@ socktype_arg(VALUE type)
     char *ptr;
     int ret;
 
-    tmp = rb_check_string_type(type);
-    if (!NIL_P(tmp)) {
+    if (SYMBOL_P(type)) {
+        type = rb_sym_to_s(type);
+        goto str;
+    }
+    else if (!NIL_P(tmp = rb_check_string_type(type))) {
 	type = tmp;
+      str:
 	rb_check_safe_obj(type);
 	ptr = RSTRING_PTR(type);
         if (socktype_to_int(ptr, RSTRING_LEN(type), &ret) == -1)
