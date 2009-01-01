@@ -3733,8 +3733,4 @@ Init_socket()
     /* constants */
     mConst = rb_define_module_under(rb_cSocket, "Constants");
 #include "constants.h"
-#ifdef INET6 /* IPv6 is not supported although AF_INET6 is defined on bcc32/mingw */
-    sock_define_const("AF_INET6", AF_INET6);
-    sock_define_const("PF_INET6", PF_INET6);
-#endif
 }

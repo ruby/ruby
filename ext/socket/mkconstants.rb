@@ -43,19 +43,30 @@ def each_data
     else
       define = "sock_define_const"
     end
-    yield define, name, default_value
+    guard = nil
+    if /\A(AF_INET6|PF_INET6)\z/ =~ name
+      # IPv6 is not supported although AF_INET6 is defined on bcc32/mingw
+      guard = "defined(INET6)"
+    end
+    yield guard, define, name, default_value
   }
 end
 
 result << ERB.new(<<'EOS', nil, '%').result(binding)
-% each_data {|define, name, default_value|
-#ifdef <%=name%>
+% each_data {|guard, define, name, default_value|
+%   if guard
+#if <%=guard%>
+%   end
+#if defined(<%=name%>)
     <%=define%>(<%=c_str name%>, <%=name%>);
 %   if default_value
 #else
     <%=define%>(<%=c_str name%>, <%=default_value%>);
 %   end
 #endif
+%   if guard
+#endif
+%   end
 
 % }
 EOS
@@ -79,6 +90,8 @@ SOCK_PACKET
 
 AF_INET
 PF_INET
+AF_INET6
+PF_INET6
 AF_UNIX
 PF_UNIX
 AF_AX25
