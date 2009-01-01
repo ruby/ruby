@@ -2293,7 +2293,8 @@ setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
         int family;
 	domain = tmp;
 	rb_check_safe_obj(domain);
-        family = family_to_int(RSTRING_PTR(domain), RSTRING_LEN(domain));
+        ptr = RSTRING_PTR(domain);
+        family = family_to_int(ptr, RSTRING_LEN(domain));
         if (family == -1)
 	    rb_raise(rb_eSocket, "unknown socket domain %s", ptr);
         *dv = family;
