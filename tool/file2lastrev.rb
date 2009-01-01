@@ -1,5 +1,8 @@
 #!/usr/bin/env ruby
 
+ENV['LANG'] = ENV['LC_ALL'] = ENV['LC_MESSAGES'] = 'C'
+ENV.delete('PWD')
+
 require 'optparse'
 require 'pathname'
 
@@ -14,7 +17,6 @@ def detect_vcs(path)
 end
 
 def get_revisions(path)
-  ENV['LANG'] = ENV['LC_ALL'] = ENV['LC_MESSAGES'] = 'C'
   vcs, path = detect_vcs(path)
 
   info = case vcs
