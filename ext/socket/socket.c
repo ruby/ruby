@@ -130,6 +130,14 @@ struct sockaddr_storage {
 };
 #endif
 
+static void sock_define_const(const char *name, int value, VALUE mConst);
+static void sock_define_uconst(const char *name, unsigned int value, VALUE mConst);
+#define sock_define_const(name, value) sock_define_const(name, value, mConst)
+#define sock_define_uconst(name, value) sock_define_uconst(name, value, mConst)
+#include "constants.h"
+#undef sock_define_const
+#undef sock_define_uconst
+
 #if defined(INET6) && (defined(LOOKUP_ORDER_HACK_INET) || defined(LOOKUP_ORDER_HACK_INET6))
 #define LOOKUP_ORDERS (sizeof(lookup_order_table) / sizeof(lookup_order_table[0]))
 static const int lookup_order_table[] = {
@@ -980,8 +988,6 @@ sock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
     hints.ai_flags = flags;
     return sock_getaddrinfo(host, port, &hints);
 }
-
-static char *family_to_str(int val);
 
 static VALUE
 ipaddr(struct sockaddr *sockaddr, int norevlookup)
@@ -2264,9 +2270,6 @@ unix_peeraddr(VALUE sock)
 }
 #endif
 
-static int family_to_int(char *str, int len, int *valp);
-static int socktype_to_int(char *str, int len, int *valp);
-
 static void
 setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
 {
@@ -3515,11 +3518,6 @@ sock_define_uconst(const char *name, unsigned int value, VALUE mConst)
     rb_define_const(rb_cSocket, name, UINT2NUM(value));
     rb_define_const(mConst, name, UINT2NUM(value));
 }
-
-#define sock_define_const(name, value) sock_define_const(name, value, mConst)
-#define sock_define_uconst(name, value) sock_define_uconst(name, value, mConst)
-
-#include "constants.h"
 
 /*
  * Class +Socket+ provides access to the underlying operating system

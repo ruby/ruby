@@ -1,3 +1,7 @@
+Thu Jan  1 20:17:47 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c: include constants.h at top.
+
 Thu Jan  1 19:53:33 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: add valp argument for family_to_int and
