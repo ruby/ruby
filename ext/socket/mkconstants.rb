@@ -64,6 +64,17 @@ def each_name(pat)
   }
 end
 
+def each_names_with_len(pat)
+  h = {}
+  DEFS.each {|name, default_value|
+    next if pat !~ name
+    (h[name.length] ||= []) << name
+  }
+  h.keys.sort.each {|len|
+    yield h[len], len
+  }
+end
+
 result << ERB.new(<<'EOS', nil, '%').result(binding)
 static void
 init_constants(VALUE mConst)
@@ -89,13 +100,21 @@ init_constants(VALUE mConst)
 static int
 family_to_int(char *str, int len)
 {
-% each_name(/\A[AP]F_/) {|name|
+    switch (len) {
+%    each_names_with_len(/\A[AP]F_/) {|names, len|
+      case <%=len%>:
+%      names.each {|name|
 #ifdef <%=name%>
-%   size = name.bytesize
-    if (len == <%=size%> && memcmp(str, <%=c_str name%>, <%=size%>) == 0) return <%=name%>;
+%       size = name.bytesize
+        if (memcmp(str, <%=c_str name%>, <%=size%>) == 0) return <%=name%>;
 #endif
-% }
-    return -1;
+%      }
+        return -1;
+
+%    }
+      default:
+        return -1;
+    }
 }
 
 EOS
