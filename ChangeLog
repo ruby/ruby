@@ -1,3 +1,7 @@
+Fri Jan  2 03:08:47 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/: use PNG instead of zlib as binary data. [ruby-dev:35666]
+
 Tue Nov 11 01:07:32 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* configure.in: fix SEGV on Mac OS X 10.5.3 with --enable-pthread.
