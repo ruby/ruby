@@ -16,12 +16,19 @@ class TestBasicSocket < Test::Unit::TestCase
     inet_stream do |s|
       n = s.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
       assert_equal([Socket::SOCK_STREAM].pack("i"), n)
+
       n = s.getsockopt("SOL_SOCKET", "SO_TYPE")
       assert_equal([Socket::SOCK_STREAM].pack("i"), n)
+
       n = s.getsockopt(:SOL_SOCKET, :SO_TYPE)
       assert_equal([Socket::SOCK_STREAM].pack("i"), n)
+
+      n = s.getsockopt(:SOCKET, :TYPE)
+      assert_equal([Socket::SOCK_STREAM].pack("i"), n)
+
       n = s.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR)
       assert_equal([0].pack("i"), n)
+
       val = Object.new
       class << val; self end.send(:define_method, :to_int) {
         s.close

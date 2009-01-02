@@ -1,3 +1,7 @@
+Fri Jan  2 15:30:57 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: make common prefix optional.
+
 Fri Jan  2 14:59:52 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: use hash for family_to_str to avoid

@@ -73,25 +73,44 @@ def reverse_each_name(pat)
   }
 end
 
-def each_names_with_len(pat)
+def each_names_with_len(pat, prefix_optional=nil)
   h = {}
   DEFS.each {|name, default_value|
     next if pat !~ name
-    (h[name.length] ||= []) << name
+    (h[name.length] ||= []) << [name, name]
+  }
+  if prefix_optional
+    if Regexp === prefix_optional
+      prefix_pat = prefix_optional
+    else
+      prefix_pat = /\A#{Regexp.escape prefix_optional}/
+    end
+    DEFS.each {|const, default_value|
+      next if pat !~ const
+      next if prefix_pat !~ const
+      name = $'
+      (h[name.length] ||= []) << [name, const]
+    }
+  end
+  hh = {}
+  h.each {|len, pairs|
+    pairs.each {|name, const|
+      raise "name crash: #{name}" if hh[name]
+      hh[name] = true
+    }
   }
   h.keys.sort.each {|len|
     yield h[len], len
   }
 end
 
-ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int(str_var, len_var, retp_var, pat)")
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int(str_var, len_var, retp_var, pat, prefix_optional=nil)")
     switch (<%=len_var%>) {
-%    each_names_with_len(pat) {|names, len|
+%    each_names_with_len(pat, prefix_optional) {|pairs, len|
       case <%=len%>:
-%      names.each {|name|
-#ifdef <%=name%>
-%       size = name.bytesize
-        if (memcmp(<%=str_var%>, <%=c_str name%>, <%=size%>) == 0) { *<%=retp_var%> = <%=name%>; return 0; }
+%      pairs.each {|name, const|
+#ifdef <%=const%>
+        if (memcmp(<%=str_var%>, <%=c_str name%>, <%=len%>) == 0) { *<%=retp_var%> = <%=const%>; return 0; }
 #endif
 %      }
         return -1;
@@ -146,49 +165,49 @@ init_constants(VALUE mConst)
 static int
 family_to_int(char *str, int len, int *valp)
 {
-<%= gen_name_to_int("str", "len", "valp", /\A[AP]F_/) %>
+<%= gen_name_to_int("str", "len", "valp", /\A[AP]F_/, "AF_") %>
 }
 
 static int
 socktype_to_int(char *str, int len, int *valp)
 {
-<%= gen_name_to_int("str", "len", "valp", /\ASOCK_/) %>
+<%= gen_name_to_int("str", "len", "valp", /\ASOCK_/, "SOCK_") %>
 }
 
 static int
 level_to_int(char *str, int len, int *valp)
 {
-<%= gen_name_to_int("str", "len", "valp", /\A(SOL_SOCKET\z|IPPROTO_)/) %>
+<%= gen_name_to_int("str", "len", "valp", /\A(SOL_SOCKET\z|IPPROTO_)/, /\A(SOL_|IPPROTO_)/) %>
 }
 
 static int
 so_optname_to_int(char *str, int len, int *valp)
 {
-<%= gen_name_to_int("str", "len", "valp", /\ASO_/) %>
+<%= gen_name_to_int("str", "len", "valp", /\ASO_/, "SO_") %>
 }
 
 static int
 ip_optname_to_int(char *str, int len, int *valp)
 {
-<%= gen_name_to_int("str", "len", "valp", /\AIP_/) %>
+<%= gen_name_to_int("str", "len", "valp", /\AIP_/, "IP_") %>
 }
 
 static int
 ipv6_optname_to_int(char *str, int len, int *valp)
 {
-<%= gen_name_to_int("str", "len", "valp", /\AIPV6_/) %>
+<%= gen_name_to_int("str", "len", "valp", /\AIPV6_/, "IPV6_") %>
 }
 
 static int
 tcp_optname_to_int(char *str, int len, int *valp)
 {
-<%= gen_name_to_int("str", "len", "valp", /\ATCP_/) %>
+<%= gen_name_to_int("str", "len", "valp", /\ATCP_/, "TCP_") %>
 }
 
 static int
 udp_optname_to_int(char *str, int len, int *valp)
 {
-<%= gen_name_to_int("str", "len", "valp", /\AUDP_/) %>
+<%= gen_name_to_int("str", "len", "valp", /\AUDP_/, "UDP_") %>
 }
 
 static char *
