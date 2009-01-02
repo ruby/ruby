@@ -1047,7 +1047,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_wait_and_sigchild
     signal_received = []
-    Signal.trap(:CHLD)  { signal_received << true; puts "child died" }
+    Signal.trap(:CHLD)  { signal_received << true }
     pid = fork { sleep 1; exit }
     Thread.start { raise }
     Process.wait pid
