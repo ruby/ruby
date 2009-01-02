@@ -104,19 +104,15 @@ def each_alias(pat)
 end
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name(int_var, lenp_var, pat)")
-    switch (<%=int_var%>) {
-%    each_alias(pat) {|names|
-%      names.each_with_index {|n, i|
-%      cond = ["defined(#{n})"]
-%      (0...i).each {|j| cond << "(!defined(#{names[j]}) || #{n} != #{names[j]})" }
-#if <%=cond.join(" && ")%>
-      case <%=n%>: if (<%=lenp_var%>) *<%=lenp_var%> = <%=n.bytesize%>; return <%=c_str n%>;
-#endif
-%      }
-%    }
-      default:
-        return NULL;
+% each_name(pat) {|n|
+#ifdef <%=n%>
+    if (<%=int_var%> == <%=n%>) {
+        if (<%=lenp_var%>) *<%=lenp_var%> = <%=n.bytesize%>;
+        return <%=c_str n%>;
     }
+#endif
+% }
+    return NULL;
 EOS
 
 result << ERB.new(<<'EOS', nil, '%').result(binding)

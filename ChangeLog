@@ -1,3 +1,8 @@
+Fri Jan  2 14:33:12 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb (gen_int_to_name): don't compare constants
+	  in preprocessor because the constants may be enum.
+
 Fri Jan  2 14:11:07 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb (gen_int_to_name): add lenp argument.
