@@ -1,3 +1,12 @@
+Fri Jan  2 23:36:10 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c: don't apply socktype hack [ruby-core:184] for
+	  sock_s_getaddrinfo.
+	  (sock_getaddrinfo): add socktype_hack argument.
+	  (sock_addrinfo): call sock_getaddrinfo with socktype_hack.
+	  (sock_s_getaddrinfo): call sock_getaddrinfo without socktype_hack.
+	  [ruby-dev:37674]
+
 Fri Jan  2 23:33:38 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/missing.h, sprintf.c: get rid of a warning of VC++.
