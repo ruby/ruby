@@ -1061,11 +1061,11 @@ ipaddr(struct sockaddr *sockaddr, int norevlookup)
     VALUE ary;
     int error;
     char hbuf[1024], pbuf[1024];
-    char *name;
 
-    name = family_to_str(sockaddr->sa_family);
-    if (name)
-        family = rb_str_new2(name);
+    family = family_to_str(sockaddr->sa_family);
+    if (!NIL_P(family)) {
+        family = rb_str_dup(family);
+    }
     else {
         sprintf(pbuf, "unknown:%d", sockaddr->sa_family);
 	family = rb_str_new2(pbuf);

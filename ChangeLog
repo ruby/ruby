@@ -1,3 +1,10 @@
+Fri Jan  2 17:20:31 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: use ID in the values of
+	  family_to_str_hash.  family_to_str returns a VALUE.
+
+	* ext/socket/socket.c (ipaddr): follow family_to_str change.
+
 Fri Jan  2 17:01:51 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: refactored to gather stringizer

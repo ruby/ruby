@@ -121,31 +121,36 @@ ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int(str_var, len_var,
     }
 EOS
 
+def reverse_each_name_with_prefix_optional(pat, prefix_pat)
+  reverse_each_name(pat) {|n|
+    yield n, n
+  }
+  if prefix_pat
+    reverse_each_name(pat) {|n|
+      next if prefix_pat !~ n
+      yield n, $'
+    }
+  end
+end
+
+
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name_hash(hash_var, pat, prefix_pat)")
     <%=hash_var%> = st_init_numtable();
-% reverse_each_name(pat) {|n|
+% reverse_each_name_with_prefix_optional(pat, prefix_pat) {|n,s|
 #ifdef <%=n%>
-    st_insert(<%=hash_var%>, (st_data_t)<%=n%>, (st_data_t)<%=c_str n%>);
+    st_insert(<%=hash_var%>, (st_data_t)<%=n%>, (st_data_t)rb_intern2(<%=c_str s%>, <%=s.bytesize%>));
 #endif
 % }
-% if prefix_pat
-%  reverse_each_name(pat) {|n|
-%   next if prefix_pat !~ n
-#ifdef <%=n%>
-    st_insert(<%=hash_var%>, (st_data_t)<%=n%>, (st_data_t)<%=c_str $'%>);
-#endif
-%  }
-% end
 EOS
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name_func(func_name, hash_var)")
-static char *
+static VALUE
 <%=func_name%>(int val)
 {
     st_data_t name;
     if (st_lookup(<%=hash_var%>, (st_data_t)val, &name))
-        return (char*)name;
-    return NULL;
+        return rb_id2str((ID)name);
+    return Qnil;
 }
 EOS
 
