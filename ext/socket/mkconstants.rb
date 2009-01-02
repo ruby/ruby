@@ -144,18 +144,18 @@ ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name_hash(hash_var, pa
 EOS
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name_func(func_name, hash_var)")
-static VALUE
+static ID
 <%=func_name%>(int val)
 {
     st_data_t name;
     if (st_lookup(<%=hash_var%>, (st_data_t)val, &name))
-        return rb_id2str((ID)name);
-    return Qnil;
+        return (ID)name;
+    return 0;
 }
 EOS
 
-STRINGIZER_DEFS = []
-def def_stringizer(func_name, pat, prefix_optional=nil)
+INTERN_DEFS = []
+def def_intern(func_name, pat, prefix_optional=nil)
   prefix_pat = nil
   if prefix_optional
     if Regexp === prefix_optional
@@ -168,14 +168,14 @@ def def_stringizer(func_name, pat, prefix_optional=nil)
   decl = "static st_table *#{hash_var};"
   gen_hash = gen_int_to_name_hash(hash_var, pat, prefix_pat)
   func = gen_int_to_name_func(func_name, hash_var)
-  STRINGIZER_DEFS << [decl, gen_hash, func]
+  INTERN_DEFS << [decl, gen_hash, func]
 end
 
-def_stringizer('family_to_str',  /\AAF_/)
+def_intern('intern_family',  /\AAF_/)
 
 result << ERB.new(<<'EOS', nil, '%').result(binding)
 
-<%= STRINGIZER_DEFS.map {|decl, gen_hash, func| decl }.join("\n") %>
+<%= INTERN_DEFS.map {|decl, gen_hash, func| decl }.join("\n") %>
 
 static void
 init_constants(VALUE mConst)
@@ -195,7 +195,7 @@ init_constants(VALUE mConst)
 #endif
 %   end
 % }
-<%= STRINGIZER_DEFS.map {|decl, gen_hash, func| gen_hash }.join("\n") %>
+<%= INTERN_DEFS.map {|decl, gen_hash, func| gen_hash }.join("\n") %>
 }
 
 static int
@@ -246,7 +246,7 @@ udp_optname_to_int(char *str, int len, int *valp)
 <%= gen_name_to_int("str", "len", "valp", /\AUDP_/, "UDP_") %>
 }
 
-<%= STRINGIZER_DEFS.map {|decl, gen_hash, func| func }.join("\n") %>
+<%= INTERN_DEFS.map {|decl, gen_hash, func| func }.join("\n") %>
 
 EOS
 

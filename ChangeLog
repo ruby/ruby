@@ -1,3 +1,10 @@
+Fri Jan  2 17:45:19 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: rename family_to_str to intern_family.
+	  it returns ID now.
+
+	* ext/socket/socket.c (ipaddr): use intern_family.
+
 Fri Jan  2 17:20:31 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: use ID in the values of
