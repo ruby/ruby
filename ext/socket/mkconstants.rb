@@ -66,6 +66,13 @@ def each_name(pat)
   }
 end
 
+def reverse_each_name(pat)
+  DEFS.reverse_each {|name, default_value|
+    next if pat !~ name
+    yield name
+  }
+end
+
 def each_names_with_len(pat)
   h = {}
   DEFS.each {|name, default_value|
@@ -95,27 +102,26 @@ ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int(str_var, len_var,
     }
 EOS
 
-def each_alias(pat)
-  names = []
-  each_name(pat) {|n|
-    names << n
-  }
-  yield names
-end
-
-ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name(int_var, lenp_var, pat)")
-% each_name(pat) {|n|
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name_hash(hash_var, pat)")
+    <%=hash_var%> = st_init_numtable();
+% reverse_each_name(pat) {|n|
 #ifdef <%=n%>
-    if (<%=int_var%> == <%=n%>) {
-        if (<%=lenp_var%>) *<%=lenp_var%> = <%=n.bytesize%>;
-        return <%=c_str n%>;
-    }
+    st_insert(<%=hash_var%>, (st_data_t)<%=n%>, (st_data_t)<%=c_str n%>);
 #endif
 % }
+EOS
+
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name(int_var, hash_var)")
+    st_data_t name;
+    if (st_lookup(<%=hash_var%>, (st_data_t)<%=int_var%>, &name))
+        return (char*)name;
     return NULL;
 EOS
 
 result << ERB.new(<<'EOS', nil, '%').result(binding)
+
+static st_table *family_to_str_hash;
+
 static void
 init_constants(VALUE mConst)
 {
@@ -133,8 +139,8 @@ init_constants(VALUE mConst)
 %   if guard
 #endif
 %   end
-
 % }
+<%= gen_int_to_name_hash('family_to_str_hash', /\AAF_/) %>
 }
 
 static int
@@ -186,9 +192,9 @@ udp_optname_to_int(char *str, int len, int *valp)
 }
 
 static char *
-family_to_str(int val, int *lenp)
+family_to_str(int val)
 {
-<%= gen_int_to_name("val", "lenp", /\AAF_/) %>
+<%= gen_int_to_name("val", "family_to_str_hash") %>
 }
 
 EOS

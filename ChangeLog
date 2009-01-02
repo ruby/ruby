@@ -1,3 +1,11 @@
+Fri Jan  2 14:59:52 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: use hash for family_to_str to avoid
+	  linear search.  lenp argument removed.
+
+	* ext/socket/socket.c (ipaddr): call family_to_str without lenp
+	  argument.
+
 Fri Jan  2 14:33:12 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb (gen_int_to_name): don't compare constants

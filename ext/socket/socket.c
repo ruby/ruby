@@ -1063,7 +1063,7 @@ ipaddr(struct sockaddr *sockaddr, int norevlookup)
     char hbuf[1024], pbuf[1024];
     char *name;
 
-    name = family_to_str(sockaddr->sa_family, NULL);
+    name = family_to_str(sockaddr->sa_family);
     if (name)
         family = rb_str_new2(name);
     else {
