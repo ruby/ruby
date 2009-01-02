@@ -420,6 +420,9 @@ assert_equal 'foo!', %q{
 }, 'Subclass of Proc'
 
 assert_equal 'ok', %q{
+  o = Object.new
+  def o.write(s); end
+  $stderr = o
   at_exit{
     print $!.message
   }
