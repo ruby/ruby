@@ -103,14 +103,14 @@ def each_alias(pat)
   yield names
 end
 
-ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name(int_var, pat)")
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name(int_var, lenp_var, pat)")
     switch (<%=int_var%>) {
 %    each_alias(pat) {|names|
 %      names.each_with_index {|n, i|
 %      cond = ["defined(#{n})"]
 %      (0...i).each {|j| cond << "(!defined(#{names[j]}) || #{n} != #{names[j]})" }
 #if <%=cond.join(" && ")%>
-      case <%=n%>: return <%=c_str n%>;
+      case <%=n%>: if (<%=lenp_var%>) *<%=lenp_var%> = <%=n.bytesize%>; return <%=c_str n%>;
 #endif
 %      }
 %    }
@@ -190,9 +190,9 @@ udp_optname_to_int(char *str, int len, int *valp)
 }
 
 static char *
-family_to_str(int val)
+family_to_str(int val, int *lenp)
 {
-<%= gen_int_to_name("val", /\AAF_/) %>
+<%= gen_int_to_name("val", "lenp", /\AAF_/) %>
 }
 
 EOS
@@ -214,6 +214,8 @@ SOCK_RDM
 SOCK_SEQPACKET
 SOCK_PACKET
 
+AF_UNSPEC
+PF_UNSPEC
 AF_INET
 PF_INET
 AF_INET6
@@ -226,8 +228,6 @@ AF_IPX
 PF_IPX
 AF_APPLETALK
 PF_APPLETALK
-AF_UNSPEC
-PF_UNSPEC
 AF_LOCAL
 PF_LOCAL
 AF_IMPLINK
