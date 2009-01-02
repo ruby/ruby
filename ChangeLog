@@ -1,3 +1,7 @@
+Fri Jan  2 23:33:38 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/missing.h, sprintf.c: get rid of a warning of VC++.
+
 Fri Jan  2 22:25:46 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* process.c: use sigaction instead of sigset.  [ruby-core:21021]
