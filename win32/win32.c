@@ -1640,15 +1640,7 @@ rb_w32_readdir(DIR *dirp)
 long
 rb_w32_telldir(DIR *dirp)
 {
-    long loc = 0; char *p = dirp->curr;
-
-    rb_w32_rewinddir(dirp);
-
-    while (p != dirp->curr) {
-	move_to_next_entry(dirp); loc++;
-    }
-
-    return loc;
+    return dirp->loc;
 }
 
 //
@@ -1673,6 +1665,7 @@ void
 rb_w32_rewinddir(DIR *dirp)
 {
     dirp->curr = dirp->start;
+    dirp->loc = 0;
 }
 
 //

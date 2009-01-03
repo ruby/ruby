@@ -1,3 +1,10 @@
+Sun Jan  4 04:47:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_telldir): just returns loc.
+
+	* win32/win32.c (rb_w32_rewinddir): needs to intialize loc.
+	  [ruby-core:18041]
+
 Thu Jan  1 08:39:36 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (Date::Infinity#<=>): didn't work.  A patch from
