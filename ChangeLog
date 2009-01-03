@@ -1,3 +1,9 @@
+Sat Jan  3 22:24:36 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk, Makefile.in, win32/Makefile.sub (INSNS): move the macro
+	  definition from common.mk to {Makefile.in,win32/Makefile.sub}.
+	  [ruby-dev:37678]
+
 Sat Jan  3 15:30:09 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/chinese.trans: added for transcoding EUC-CN and GB12345.
@@ -13,7 +19,7 @@ Sat Jan  3 03:00:42 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk, Makefile.in, win32/Makefile.sub ($(INSNS), node_name.inc,
 	  known_errors.inc, miniprelude.c, newline.c): move rules from common.mk
-	  to {Makefile.in,win32/Makefile.sub) for nmake.
+	  to {Makefile.in,win32/Makefile.sub} for nmake.
 	  [ruby-core:20993]
 
 Fri Jan  2 23:51:41 2009  Yusuke Endoh  <mame@tsg.ne.jp>
