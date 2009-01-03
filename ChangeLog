@@ -1,3 +1,10 @@
+Sun Jan  4 04:49:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_telldir): just returns loc.
+
+	* win32/win32.c (rb_w32_rewinddir): needs to intialize loc.
+	  [ruby-core:18041]
+
 Sun Jan  4 04:45:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_select): recalc the rest of timeout for each
