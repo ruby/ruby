@@ -1,3 +1,8 @@
+Sun Jan  4 04:45:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_select): recalc the rest of timeout for each
+	  iterations.  [ruby-core:18015]
+
 Fri Jan  2 03:08:47 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/: use PNG instead of zlib as binary data. [ruby-dev:35666]
