@@ -2298,14 +2298,12 @@ unix_sysaccept(VALUE sock)
     return s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
 }
 
-#ifdef HAVE_SYS_UN_H
 static VALUE
 unixaddr(struct sockaddr_un *sockaddr, socklen_t len)
 {
     return rb_assoc_new(rb_str_new2("AF_UNIX"),
                         rb_str_new2(unixpath(sockaddr, len)));
 }
-#endif
 
 static VALUE
 unix_addr(VALUE sock)

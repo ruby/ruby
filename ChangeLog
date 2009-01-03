@@ -1,3 +1,7 @@
+Sun Jan  4 04:33:14 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c: redundant #ifdef removed.
+
 Sun Jan  4 03:30:18 2009  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (maygvl_copy_stream_wait_read): renamed to add prefix to
