@@ -7345,7 +7345,7 @@ struct copy_stream_struct {
 };
 
 static int
-copy_stream_wait_read(struct copy_stream_struct *stp)
+maygvl_copy_stream_wait_read(struct copy_stream_struct *stp)
 {
     int ret;
     rb_fd_zero(&stp->fds);
@@ -7360,7 +7360,7 @@ copy_stream_wait_read(struct copy_stream_struct *stp)
 }
 
 static int
-copy_stream_wait_write(struct copy_stream_struct *stp)
+nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
 {
     int ret;
     rb_fd_zero(&stp->fds);
@@ -7395,7 +7395,7 @@ simple_sendfile(int out_fd, int in_fd, off_t *offset, size_t count)
 
 #ifdef USE_SENDFILE
 static int
-copy_stream_sendfile(struct copy_stream_struct *stp)
+nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 {
     struct stat src_stat, dst_stat;
     ssize_t ss;
@@ -7467,7 +7467,7 @@ copy_stream_sendfile(struct copy_stream_struct *stp)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
-            if (copy_stream_wait_write(stp) == -1)
+            if (nogvl_copy_stream_wait_write(stp) == -1)
                 return -1;
             if (rb_thread_interrupted(stp->th))
                 return -1;
@@ -7482,7 +7482,7 @@ copy_stream_sendfile(struct copy_stream_struct *stp)
 #endif
 
 static ssize_t
-copy_stream_read(struct copy_stream_struct *stp, char *buf, int len, off_t offset)
+maygvl_copy_stream_read(struct copy_stream_struct *stp, char *buf, int len, off_t offset)
 {
     ssize_t ss;
   retry_read:
@@ -7505,7 +7505,7 @@ copy_stream_read(struct copy_stream_struct *stp, char *buf, int len, off_t offse
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
-            if (copy_stream_wait_read(stp) == -1)
+            if (maygvl_copy_stream_wait_read(stp) == -1)
                 return -1;
             goto retry_read;
 #ifdef ENOSYS
@@ -7522,7 +7522,7 @@ copy_stream_read(struct copy_stream_struct *stp, char *buf, int len, off_t offse
 }
 
 static int
-copy_stream_write(struct copy_stream_struct *stp, char *buf, int len)
+nogvl_copy_stream_write(struct copy_stream_struct *stp, char *buf, int len)
 {
     ssize_t ss;
     int off = 0;
@@ -7530,7 +7530,7 @@ copy_stream_write(struct copy_stream_struct *stp, char *buf, int len)
         ss = write(stp->dst_fd, buf+off, len);
         if (ss == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                if (copy_stream_wait_write(stp) == -1)
+                if (nogvl_copy_stream_wait_write(stp) == -1)
                     return -1;
                 continue;
             }
@@ -7546,7 +7546,7 @@ copy_stream_write(struct copy_stream_struct *stp, char *buf, int len)
 }
 
 static void
-copy_stream_read_write(struct copy_stream_struct *stp)
+nogvl_copy_stream_read_write(struct copy_stream_struct *stp)
 {
     char buf[1024*16];
     int len;
@@ -7582,17 +7582,17 @@ copy_stream_read_write(struct copy_stream_struct *stp)
             len = sizeof(buf);
         }
         if (use_pread) {
-            ss = copy_stream_read(stp, buf, len, src_offset);
+            ss = maygvl_copy_stream_read(stp, buf, len, src_offset);
             if (0 < ss)
                 src_offset += ss;
         }
         else {
-            ss = copy_stream_read(stp, buf, len, (off_t)-1);
+            ss = maygvl_copy_stream_read(stp, buf, len, (off_t)-1);
         }
         if (ss <= 0) /* EOF or error */
             return;
 
-        ret = copy_stream_write(stp, buf, ss);
+        ret = nogvl_copy_stream_write(stp, buf, ss);
         if (ret < 0)
             return;
 
@@ -7605,7 +7605,7 @@ copy_stream_read_write(struct copy_stream_struct *stp)
 }
 
 static VALUE
-copy_stream_func(void *arg)
+nogvl_copy_stream_func(void *arg)
 {
     struct copy_stream_struct *stp = (struct copy_stream_struct *)arg;
 #ifdef USE_SENDFILE
@@ -7613,12 +7613,12 @@ copy_stream_func(void *arg)
 #endif
 
 #ifdef USE_SENDFILE
-    ret = copy_stream_sendfile(stp);
+    ret = nogvl_copy_stream_sendfile(stp);
     if (ret != 0)
         goto finish; /* error or success */
 #endif
 
-    copy_stream_read_write(stp);
+    nogvl_copy_stream_read_write(stp);
 
 #ifdef USE_SENDFILE
   finish:
@@ -7661,7 +7661,7 @@ copy_stream_fallback_body(VALUE arg)
             ssize_t ss;
             rb_thread_wait_fd(stp->src_fd);
             rb_str_resize(buf, buflen);
-            ss = copy_stream_read(stp, RSTRING_PTR(buf), l, off);
+            ss = maygvl_copy_stream_read(stp, RSTRING_PTR(buf), l, off);
             if (ss == -1)
                 return Qnil;
             if (ss == 0)
@@ -7800,7 +7800,7 @@ copy_stream_body(VALUE arg)
     rb_fd_set(src_fd, &stp->fds);
     rb_fd_set(dst_fd, &stp->fds);
 
-    return rb_thread_blocking_region(copy_stream_func, (void*)stp, RUBY_UBF_IO, 0);
+    return rb_thread_blocking_region(nogvl_copy_stream_func, (void*)stp, RUBY_UBF_IO, 0);
 }
 
 static VALUE
