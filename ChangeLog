@@ -1,3 +1,10 @@
+Sun Jan  4 00:30:50 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb: merged r20850, r17881, r16811, r16763, r16748, r15829, 
+	  r15794 and r15698 from ruby_1_8.
+
+	* test/erb/test_erb.rb: ditto.
+
 Sat Jan  3 22:24:36 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk, Makefile.in, win32/Makefile.sub (INSNS): move the macro

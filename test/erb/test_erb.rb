@@ -209,55 +209,54 @@ EOS
 n.times do |i|%>
 %% %%><%%<%= i%><%
 end%>
+%%%
 EOS
     ans = <<EOS
 % 
 % %%><%0
 % %%><%1
+%%
 EOS
     assert_equal(ans, ERB.new(src, nil, '%').result)
   end
 
-  class Bar; end
-
   def test_def_erb_method
-    assert(! Bar.new.respond_to?('hello'))
-    Bar.module_eval do
+    klass = Class.new
+    klass.module_eval do
       extend ERB::DefMethod
       fname = File.join(File.dirname(File.expand_path(__FILE__)), 'hello.erb')
       def_erb_method('hello', fname)
     end
-    assert(Bar.new.respond_to?('hello'))
+    assert(klass.new.respond_to?('hello'))
 
-    assert(! Bar.new.respond_to?('hello_world'))
+    assert(! klass.new.respond_to?('hello_world'))
     erb = @erb.new('hello, world')
-    Bar.module_eval do
+    klass.module_eval do
       def_erb_method('hello_world', erb)
     end
-    assert(Bar.new.respond_to?('hello_world'))    
+    assert(klass.new.respond_to?('hello_world'))    
   end
 
-  class DefMethodWithoutFname; end
-  class DefMethodWithFname; end
-
   def test_def_method_without_filename
+    klass = Class.new
     erb = ERB.new("<% raise ::TestERB::MyError %>")
     erb.filename = "test filename"
-    assert(! DefMethodWithoutFname.new.respond_to?('my_error'))
-    erb.def_method(DefMethodWithoutFname, 'my_error')
+    assert(! klass.new.respond_to?('my_error'))
+    erb.def_method(klass, 'my_error')
     e = assert_raise(::TestERB::MyError) {
-       DefMethodWithoutFname.new.my_error
+       klass.new.my_error
     }
     assert_match(/\A\(ERB\):1\b/, e.backtrace[0])
   end
 
   def test_def_method_with_fname
+    klass = Class.new
     erb = ERB.new("<% raise ::TestERB::MyError %>")
     erb.filename = "test filename"
-    assert(! DefMethodWithFname.new.respond_to?('my_error'))
-    erb.def_method(DefMethodWithFname, 'my_error', 'test fname')
+    assert(! klass.new.respond_to?('my_error'))
+    erb.def_method(klass, 'my_error', 'test fname')
     e = assert_raise(::TestERB::MyError) {
-       DefMethodWithFname.new.my_error
+       klass.new.my_error
     }
     assert_match(/\Atest fname:1\b/, e.backtrace[0])
   end
@@ -442,5 +441,18 @@ EOS
 
     assert_equal("%A5%B5%A5%F3%A5%D7%A5%EB",
                  ERB::Util.url_encode("\xA5\xB5\xA5\xF3\xA5\xD7\xA5\xEB".force_encoding("EUC-JP")))
+  end
+end
+
+class TestERBCoreWOStrScan < TestERBCore
+  def setup
+    @save_map = ERB::Compiler::Scanner.instance_variable_get('@scanner_map')
+    map = {[nil, false]=>ERB::Compiler::SimpleScanner}
+    ERB::Compiler::Scanner.instance_variable_set('@scanner_map', map)
+    super
+  end
+
+  def teardown
+    ERB::Compiler::Scanner.instance_variable_set('@scanner_map', @save_map)
   end
 end
