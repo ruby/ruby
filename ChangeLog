@@ -1,4 +1,12 @@
-Sun Jan  4 17:39:39 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
+Sun Jan  4 18:10:10 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/trans/gbk.trans, gbk-tbl.rb:
+	  new Chinese GBK transcoding (from Yoshihiro Kambayashi)
+
+	* test/ruby/test_transcode.rb: added tests for the above
+	  (from Yoshihiro Kambayashi)
+
+Sun Jan  4 17:55:55 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/test_transcode.rb: added tests for GB2312
 	  (from Yoshihiro Kambayashi)
