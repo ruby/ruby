@@ -567,14 +567,13 @@ range_min(VALUE range)
  *     
  */
 
-
 static VALUE
 range_max(VALUE range)
 {
     VALUE e = RANGE_END(range);
-    int ip = FIXNUM_P(e) || rb_obj_is_kind_of(e, rb_cInteger);
+    int nm = FIXNUM_P(e) || rb_obj_is_kind_of(e, rb_cNumeric);
 
-    if (rb_block_given_p() || (EXCL(range) && !ip)) {
+    if (rb_block_given_p() || (EXCL(range) && !nm)) {
 	return rb_call_super(0, 0);
     }
     else {
@@ -584,6 +583,9 @@ range_max(VALUE range)
 	if (c > 0)
 	    return Qnil;
 	if (EXCL(range)) {
+	    if (!FIXNUM_P(e) && !rb_obj_is_kind_of(e, rb_cInteger)) {
+		rb_raise(rb_eTypeError, "cannot exclude non Integer end value");
+	    }
 	    if (c == 0) return Qnil;
 	    if (FIXNUM_P(e)) {
 		return LONG2NUM(FIX2LONG(e) - 1);
@@ -593,6 +595,7 @@ range_max(VALUE range)
 	return e;
     }
 }
+
 
 VALUE
 rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)

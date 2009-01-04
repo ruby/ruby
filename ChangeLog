@@ -1,3 +1,8 @@
+Mon Jan  5 06:39:56 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_max): max value from ... not defined for non
+	  Integer Numeric end values. [ruby-dev:37690] fix: #974
+
 Sun Jan  4 22:37:19 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (rb_getaddrinfo): defined for address lookup without GVL.
