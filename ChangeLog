@@ -1,3 +1,12 @@
+Sun Jan  4 09:27:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (constant_arg): constified.
+
+	* ext/socket/socket.c (optname_arg): cygwin does not have
+	  IPPROTO_IPV6.
+
+	* ext/socket/mkconstants.rb (ipv6_optname_to_int): ditto.
+
 Sun Jan  4 04:33:14 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c: redundant #ifdef removed.

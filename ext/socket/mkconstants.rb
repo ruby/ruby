@@ -228,11 +228,13 @@ ip_optname_to_int(char *str, int len, int *valp)
 <%= gen_name_to_int("str", "len", "valp", /\AIP_/, "IP_") %>
 }
 
+#ifdef IPPROTO_IPV6
 static int
 ipv6_optname_to_int(char *str, int len, int *valp)
 {
 <%= gen_name_to_int("str", "len", "valp", /\AIPV6_/, "IPV6_") %>
 }
+#endif
 
 static int
 tcp_optname_to_int(char *str, int len, int *valp)

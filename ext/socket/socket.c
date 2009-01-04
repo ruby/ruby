@@ -242,7 +242,7 @@ ruby_getnameinfo__aix(sa, salen, host, hostlen, serv, servlen, flags)
 #endif
 
 static int
-constant_arg(VALUE arg, int (*str_to_int)(char*, int, int*), char *errmsg)
+constant_arg(VALUE arg, int (*str_to_int)(char*, int, int*), const char *errmsg)
 {
     VALUE tmp;
     char *ptr;
@@ -295,8 +295,10 @@ optname_arg(int level, VALUE optname)
         return constant_arg(optname, so_optname_to_int, "unknown socket level option name");
       case IPPROTO_IP:
         return constant_arg(optname, ip_optname_to_int, "unknown IP level option name");
+#ifdef IPPROTO_IPV6
       case IPPROTO_IPV6:
         return constant_arg(optname, ipv6_optname_to_int, "unknown IPv6 level option name");
+#endif
       case IPPROTO_TCP:
         return constant_arg(optname, tcp_optname_to_int, "unknown TCP level option name");
       case IPPROTO_UDP:
