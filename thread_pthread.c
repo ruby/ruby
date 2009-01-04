@@ -741,19 +741,24 @@ get_ts(struct timespec *ts, unsigned long nsec)
     return ts;
 }
 
+int rb_signal_buff_size(void);
+
 static void *
 thread_timer(void *dummy)
 {
     struct timespec ts;
-    int err;
 
     native_mutex_lock(&timer_thread_lock);
     native_cond_broadcast(&timer_thread_cond);
 #define WAIT_FOR_10MS() native_cond_timedwait(&timer_thread_cond, &timer_thread_lock, get_ts(&ts, PER_NANO/100))
-    while (system_working > 0 && (err = WAIT_FOR_10MS()) != 0 && err != EINTR) {
-	if (err != ETIMEDOUT) {
-	    rb_bug("thread_timer/timedwait: %d", err);
+    while (system_working > 0) {
+	int err = WAIT_FOR_10MS();
+	if (err == ETIMEDOUT);
+	else if (err == 0 || err == EINTR) {
+	    if (rb_signal_buff_size() == 0) break;
 	}
+	else rb_bug("thread_timer/timedwait: %d", err);
+
 #ifndef __CYGWIN__
 	if (signal_thread_list_anchor.next) {
 	    FGLOCK(&signal_thread_list_lock, {

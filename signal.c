@@ -514,6 +514,12 @@ sighandler(int sig)
 #endif
 }
 
+int
+rb_signal_buff_size()
+{
+    return signal_buff.size;
+}
+
 #if USE_TRAP_MASK
 # ifdef HAVE_SIGPROCMASK
 static sigset_t trap_last_mask;

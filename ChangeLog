@@ -1,3 +1,11 @@
+Fri Jan  2 06:43:58 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* signal.c (rb_signal_buff_size): defined for check whether signal
+	  is in the buffer or not.
+
+	* thread_pthread.c (thread_timer): don't exit the loop when signal
+	  is in the buffer. [ruby-dev:37637]
+
 Thu Jan  1 22:27:55 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* spec/default.mspec: fix for builddir != srcdir
@@ -712,11 +720,11 @@ Tue Dec 23 08:04:58 2008  Eric Hodel  <drbrain@segment7.net>
 
 Wed Dec 24 20:15:50 2008  Koichi Sasada  <ko1@atdot.net>
 
-        * tool/file2lastrev.rb (get_revisions): fix to ignore end of line.
+	* tool/file2lastrev.rb (get_revisions): fix to ignore end of line.
 
 Tue Dec 23 15:48:55 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-        * tool/file2lastrev.rb: shouldn't use single quote in shell's command
+	* tool/file2lastrev.rb: shouldn't use single quote in shell's command
 	  line if you want to support Windows.
 
 Tue Dec 23 15:36:58 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
@@ -1248,7 +1256,7 @@ Sat Dec 13 13:41:44 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_m17n_comb.rb: feature changed in r20626.
 	  follows it.
- 
+
 Sat Dec 13 12:48:57 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_m17n.rb: feature changed in r20626.
@@ -2514,7 +2522,7 @@ Wed Oct 29 23:31:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Oct 29 23:57:29 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (rb_ary_sort_bang): replacing array during sort broke
-          invariant of array.  [ruby-dev:36983]
+	invariant of array.  [ruby-dev:36983]
 
 Wed Oct 29 21:06:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
