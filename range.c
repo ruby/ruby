@@ -343,10 +343,13 @@ range_step(int argc, VALUE *argv, VALUE range)
 	     !NIL_P(rb_check_to_integer(b, "to_int")) ||
 	     !NIL_P(rb_check_to_integer(e, "to_int"))) {
 	ID op = EXCL(range) ? '<' : rb_intern("<=");
+	VALUE v = b;
+	int i = 0;
 
-	while (RTEST(rb_funcall(b, op, 1, e))) {
-	    rb_yield(b);
-	    b = rb_funcall(b, '+', 1, step);
+	while (RTEST(rb_funcall(v, op, 1, e))) {
+	    rb_yield(v);
+	    i++;
+	    v = rb_funcall(b, '+', 1, rb_funcall(INT2NUM(i), '*', 1, step));
 	}
     }
     else {

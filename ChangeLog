@@ -1,3 +1,8 @@
+Mon Jan  5 08:17:56 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_step): should not add up errors on loops.
+	  [ruby-dev:37691]
+
 Mon Jan  5 07:58:37 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* random.c (rb_f_srand): update RDoc.  [ruby-core:21113]
