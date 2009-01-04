@@ -926,7 +926,7 @@ port_str(VALUE port, char *pbuf, size_t len)
 #endif
 
 static struct addrinfo*
-sock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints)
+sock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack)
 {
     struct addrinfo* res = NULL;
     char *hostp, *portp;
@@ -936,7 +936,7 @@ sock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints)
     hostp = host_str(host, hbuf, sizeof(hbuf));
     portp = port_str(port, pbuf, sizeof(pbuf));
 
-    if (hints->ai_socktype == 0 && hints->ai_flags == 0 && str_isnumber(portp)) {
+    if (socktype_hack && hints->ai_socktype == 0 && hints->ai_flags == 0 && str_isnumber(portp)) {
        hints->ai_socktype = SOCK_DGRAM;
     }
 
@@ -978,7 +978,7 @@ sock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = socktype;
     hints.ai_flags = flags;
-    return sock_getaddrinfo(host, port, &hints);
+    return sock_getaddrinfo(host, port, &hints, 1);
 }
 
 static VALUE
@@ -3315,7 +3315,7 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
     if (!NIL_P(flags)) {
 	hints.ai_flags = NUM2INT(flags);
     }
-    res = sock_getaddrinfo(host, port, &hints);
+    res = sock_getaddrinfo(host, port, &hints, 0);
 
     ret = make_addrinfo(res);
     freeaddrinfo(res);
