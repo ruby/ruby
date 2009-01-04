@@ -1,6 +1,9 @@
 #include "transcode_data.h"
 
 <%
+  set_valid_byte_pattern 'GB2312', 'EUC-KR'
+  set_valid_byte_pattern 'GB12345', 'EUC-KR'
+
   transcode_tblgen "GB2312", "UTF-8",
   [["{00-7f}", :nomap]] +
   citrus_decode_mapsrc("euc", 0x8080, "GB2312/UCS")

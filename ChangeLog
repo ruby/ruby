@@ -1,5 +1,13 @@
 Sun Jan  4 17:39:39 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
+	* test/ruby/test_transcode.rb: added tests for GB2312
+	  (from Yoshihiro Kambayashi)
+
+	* enc/trans/chinese.trans: set valid byte patterns for
+	  GB2312 and GB12345
+
+Sun Jan  4 17:39:39 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
 	* enc/trans/big5.trans, big5-tbl.rb:
 	  new Chinese Big5 transcoding (from Yoshihiro Kambayashi)
 

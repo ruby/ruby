@@ -1400,7 +1400,55 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(Encoding::UndefinedConversionError) { "\u203E".encode("CP51932") }
   end
 
- def test_Big5
+  def test_gb2312
+    check_both_ways("\u3000", "\xA1\xA1", 'GB2312') # full-width space
+    check_both_ways("\u3013", "\xA1\xFE", 'GB2312') # 〓
+    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xB0".encode("utf-8", 'GB2312') }
+    check_both_ways("\u2488", "\xA2\xB1", 'GB2312') # ⒈
+    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xE4".encode("utf-8", 'GB2312') }
+    check_both_ways("\u3220", "\xA2\xE5", 'GB2312') # ㈠
+    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xF0".encode("utf-8", 'GB2312') }
+    check_both_ways("\u2160", "\xA2\xF1", 'GB2312') # Ⅰ
+    check_both_ways("\uFF01", "\xA3\xA1", 'GB2312') # ！
+    check_both_ways("\uFFE3", "\xA3\xFE", 'GB2312') # ￣
+    check_both_ways("\u3041", "\xA4\xA1", 'GB2312') # ぁ
+    check_both_ways("\u30A1", "\xA5\xA1", 'GB2312') # ァ
+    check_both_ways("\u0391", "\xA6\xA1", 'GB2312') # Α
+    check_both_ways("\u03B1", "\xA6\xC1", 'GB2312') # α
+    check_both_ways("\u0410", "\xA7\xA1", 'GB2312') # А
+    check_both_ways("\u0430", "\xA7\xD1", 'GB2312') # а
+    check_both_ways("\u0101", "\xA8\xA1", 'GB2312') # ā
+    assert_raise(Encoding::UndefinedConversionError) { "\xA8\xC4".encode("utf-8", 'GB2312') }
+    check_both_ways("\u3105", "\xA8\xC5", 'GB2312') # ㄅ
+    assert_raise(Encoding::UndefinedConversionError) { "\xA9\xA3".encode("utf-8", 'GB2312') }
+    check_both_ways("\u2500", "\xA9\xA4", 'GB2312') # ─
+    check_both_ways("\u554A", "\xB0\xA1", 'GB2312') # 啊
+    check_both_ways("\u5265", "\xB0\xFE", 'GB2312') # 剥
+    check_both_ways("\u4FCA", "\xBF\xA1", 'GB2312') # 俊
+    check_both_ways("\u5080", "\xBF\xFE", 'GB2312') # 傀
+    check_both_ways("\u9988", "\xC0\xA1", 'GB2312') # 馈
+    check_both_ways("\u4FD0", "\xC0\xFE", 'GB2312') # 俐
+    check_both_ways("\u7A00", "\xCF\xA1", 'GB2312') # 稀
+    check_both_ways("\u6653", "\xCF\xFE", 'GB2312') # 晓
+    check_both_ways("\u5C0F", "\xD0\xA1", 'GB2312') # 小
+    check_both_ways("\u7384", "\xD0\xFE", 'GB2312') # 玄
+    check_both_ways("\u4F4F", "\xD7\xA1", 'GB2312') # 住
+    check_both_ways("\u5EA7", "\xD7\xF9", 'GB2312') # 座
+    assert_raise(Encoding::UndefinedConversionError) { "\xD7\xFA".encode("utf-8", 'GB2312') }
+    check_both_ways("\u647A", "\xDF\xA1", 'GB2312') # 摺
+    check_both_ways("\u553C", "\xDF\xFE", 'GB2312') # 唼
+    check_both_ways("\u5537", "\xE0\xA1", 'GB2312') # 唷
+    check_both_ways("\u5E3C", "\xE0\xFE", 'GB2312') # 帼
+    check_both_ways("\u94E9", "\xEF\xA1", 'GB2312') # 铩
+    check_both_ways("\u7A14", "\xEF\xFE", 'GB2312') # 稔
+    check_both_ways("\u7A39", "\xF0\xA1", 'GB2312') # 稹
+    check_both_ways("\u7619", "\xF0\xFE", 'GB2312') # 瘙
+    check_both_ways("\u9CCC", "\xF7\xA1", 'GB2312') # 鳌
+    check_both_ways("\u9F44", "\xF7\xFE", 'GB2312') # 齄
+    check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\xC7\xE0\xC9\xBD\xD1\xA7\xD4\xBA\xB4\xF3\xD1\xA7", 'GB2312') # 青山学院大学
+  end
+  
+  def test_Big5
     check_both_ways("\u3000", "\xA1\x40", 'Big5') # full-width space
     check_both_ways("\uFE5A", "\xA1\x7E", 'Big5') # ﹚
     check_both_ways("\uFE5B", "\xA1\xA1", 'Big5') # ﹛
