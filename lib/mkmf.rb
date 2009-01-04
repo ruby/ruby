@@ -1721,7 +1721,9 @@ site-install-rb: install-rb
 
   sep = config_string('BUILD_FILE_SEPARATOR') {|s| ":/=#{s}" if s != "/"} || ""
   mfile.print "$(RUBYARCHDIR)/" if $extout
-  mfile.print "$(DLLIB): ", (makedef ? "$(DEFFILE) " : ""), "$(OBJS)\n"
+  mfile.print "$(DLLIB): "
+  mfile.print "$(DEFFILE) " if makedef
+  mfile.print "$(OBJS) Makefile\n"
   mfile.print "\t@-$(RM) $(@#{sep})\n"
   mfile.print "\t@-$(MAKEDIRS) $(@D)\n" if $extout
   link_so = LINK_SO.gsub(/^/, "\t")

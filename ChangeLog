@@ -1,3 +1,10 @@
+Sun Jan  4 11:11:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): does not use both of makefile.rb and
+	  extconf.rb at the same time.
+
+	* lib/mkmf.rb (DLLIB): depends on Makefile.  [ruby-core:21096]
+
 Sun Jan  4 09:27:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/socket.c (constant_arg): constified.
