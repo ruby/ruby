@@ -278,6 +278,9 @@ all: $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(srcdir)/common.mk
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
 
+INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
+	  vmtc.inc vm.inc
+
 !include $(srcdir)/common.mk
 
 $(MKFILES): $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak $(srcdir)/enc/Makefile.in
@@ -759,8 +762,8 @@ ext/extinit.obj: ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
 
 $(INSNS):
-	@if exist $(srcdir:/=\)\insns.inc ( \
-	@for %I in ($(INSNS)) do @copy $(srcdir:/=\)\%~nxI %I \
+	@if exist $(srcdir:/=\)\$(@F) ( \
+	copy $(srcdir:/=\)\$(@F) $@ \
 	) else ( \
 	@$(RM) $(PROGRAM) \
 	$(BASERUBY) -Ks $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) $@ \
