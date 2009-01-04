@@ -611,8 +611,6 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 INSNS2VMOPT = --srcdir="$(srcdir)"
 
 $(INSNS): $(srcdir)/insns.def {$(VPATH)}vm_opts.h $(srcdir)/defs/opt_operand.def $(srcdir)/defs/opt_insn_unif.def
-	@$(RM) $(PROGRAM)
-	$(BASERUBY) -Ks $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) $@
 
 minsns.inc: $(srcdir)/template/minsns.inc.tmpl
 
@@ -640,7 +638,6 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(
 insns: $(INSNS)
 
 node_name.inc: {$(VPATH)}node.h
-	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
 encdb.h: $(PREP)
 	$(MINIRUBY) $(srcdir)/enc/make_encdb.rb $@.new $(srcdir)/enc enc
@@ -655,19 +652,14 @@ transdb.h: $(PREP) srcs-enc
 # 		$(srcdir)/template/id.h.tmpl --vpath=$(VPATH) parse.h
 
 known_errors.inc: $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def
-	$(BASERUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def
 
 miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
-	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
 prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) $(PRELUDE_SCRIPTS) $(PREP)
 	$(COMPILE_PRELUDE) $(PRELUDE_SCRIPTS) $@
 
 golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) $(srcdir)/prelude.rb $(srcdir)/golf_prelude.rb $(PREP)
 	$(COMPILE_PRELUDE) $(srcdir)/golf_prelude.rb $@
-
-newline.c: 
-	$(BASERUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo newline.c $(srcdir)/enc/trans/newline.trans
 
 prereq: incs srcs preludes
 

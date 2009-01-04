@@ -1,3 +1,10 @@
+Sat Jan  3 03:00:42 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk, Makefile.in, win32/Makefile.sub ($(INSNS), node_name.inc,
+	  known_errors.inc, miniprelude.c, newline.c): move rules from common.mk
+	  to {Makefile.in,win32/Makefile.sub) for nmake.
+	  [ruby-core:20993]
+
 Fri Jan  2 23:51:41 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_sleep.rb (test_sleep_5sec): stop gc.
