@@ -1,3 +1,8 @@
+Fri Jan  2 22:20:46 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_process.rb (test_wait_and_sigchild): remove debug
+	  output.
+
 Fri Jan  2 06:43:58 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* signal.c (rb_signal_buff_size): defined for check whether signal
