@@ -1,3 +1,14 @@
+Sat Jan  3 15:30:09 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/chinese.trans: added for transcoding EUC-CN and GB12345.
+
+	* enc/trans/GB/: ditto.
+
+Sat Jan  3 15:26:30 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/euc-cn.c: renemed from gb2312.c because GB2312 is
+	  the name of a CSS.  it's encoding name is "EUC-CN".
+
 Sat Jan  3 03:00:42 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk, Makefile.in, win32/Makefile.sub ($(INSNS), node_name.inc,
