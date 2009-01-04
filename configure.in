@@ -565,7 +565,8 @@ beos*|haiku*)	ac_cv_func_link=no
 		esac
 		LIBS="$LIBS" # m lib is include in root under BeOS/Haiku
 		;;
-cygwin*)	;;
+cygwin*)	ac_cv_header_langinfo_h=no # nl_langinfo(CODESET) returns US-ASCII regardless locale. 
+		;;
 mingw*)		LIBS="-lshell32 -lws2_32 $LIBS"
 		ac_cv_header_a_out_h=no
 		ac_cv_header_pwd_h=no
