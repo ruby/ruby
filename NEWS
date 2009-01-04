@@ -23,6 +23,9 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Parser expects that your source code has only valid byte
             sequence in some character encoding.  Use magic comments
             to tell the parser which encoding you use.
+          o New semantics for constant definition in instance_eval
+            or in module_eval.
+
 
 * builtin classes and objects
 
