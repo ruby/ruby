@@ -1,3 +1,15 @@
+Sun Jan  4 17:07:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems.rb (Gem.set_home, Gem.set_paths): should not create
+	  directories stealthily.  [ruby-core:20990]
+
+	* lib/rubygems.rb (Gem.find_home): expand_path deals with platform
+	  dependent envirionments.
+
+	* lib/rdoc/ri/paths.rb (RDoc::HOMEDIR): ditto.
+
+	* instruby.rb (gem): creates gem directories at installation.
+
 Sun Jan  4 15:41:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_filesystem_encoding, rb_locale_charmap): uses

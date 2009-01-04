@@ -31,13 +31,7 @@ module RDoc::RI::Paths
   base    = File.join(RbConfig::CONFIG['datadir'], "ri", VERSION)
   SYSDIR  = File.join(base, "system")
   SITEDIR = File.join(base, "site")
-  homedir = ENV['HOME'] || ENV['USERPROFILE'] || ENV['HOMEPATH']
-
-  if homedir then
-    HOMEDIR = File.join(homedir, ".rdoc")
-  else
-    HOMEDIR = nil
-  end
+  HOMEDIR = (File.expand_path("~/.rdoc") rescue nil)
 
   begin
     require 'rubygems' unless defined?(Gem) and defined?(Gem::Enable) and

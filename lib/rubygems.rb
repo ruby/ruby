@@ -373,22 +373,12 @@ module Gem
   #   least on Win32).
 
   def self.find_home
-    ['HOME', 'USERPROFILE'].each do |homekey|
-      return ENV[homekey] if ENV[homekey]
-    end
-
-    if ENV['HOMEDRIVE'] && ENV['HOMEPATH'] then
-      return "#{ENV['HOMEDRIVE']}#{ENV['HOMEPATH']}"
-    end
-
-    begin
-      File.expand_path("~")
-    rescue
-      if File::ALT_SEPARATOR then
-          "C:/"
-      else
-          "/"
-      end
+    File.expand_path("~")
+  rescue
+    if File::ALT_SEPARATOR then
+      "C:/"
+    else
+      "/"
     end
   end
 
@@ -691,7 +681,6 @@ module Gem
   def self.set_home(home)
     home = home.gsub(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
     @gem_home = home
-    ensure_gem_subdirectories(@gem_home)
   end
 
   private_class_method :set_home
@@ -716,16 +705,6 @@ module Gem
     end
 
     @gem_path.uniq!
-    @gem_path.each do |path|
-      if 0 == File.expand_path(path).index(Gem.user_home)
-        next unless File.directory? Gem.user_home
-        unless win_platform? then
-          # only create by matching user
-          next if Etc.getpwuid.uid != File::Stat.new(Gem.user_home).uid
-        end
-      end
-      ensure_gem_subdirectories path
-    end
   end
 
   private_class_method :set_paths

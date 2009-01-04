@@ -409,6 +409,13 @@ install?(:local, :comm, :man) do
   end
 end
 
+install?(:local, :comm, :gem) do
+  puts "creating default gem directories"
+
+  gpath = Gem.default_dir
+  makedirs Gem::DIRECTORIES.collect {|dir| File.join(gpath, dir)}
+end
+
 $install << :local << :ext if $install.empty?
 $install.each do |inst|
   if !(procs = $install_procs[inst]) || procs.empty?
