@@ -1084,13 +1084,7 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #undef snprintf
 #define FLOATING_POINT 1
 #define BSD__dtoa ruby_dtoa
-#if _MSC_VER >= 1300
-#pragma warning(disable: 4273)
-#endif
 #include "missing/vsnprintf.c"
-#if _MSC_VER >= 1300
-#pragma warning(default: 4273)
-#endif
 
 static int
 ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
