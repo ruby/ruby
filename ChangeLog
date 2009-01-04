@@ -1,3 +1,14 @@
+Sun Jan  4 03:30:18 2009  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (maygvl_copy_stream_wait_read): renamed to add prefix to
+	  express GVL state.
+	  (nogvl_copy_stream_wait_write): ditto.
+	  (nogvl_copy_stream_sendfile): ditto.
+	  (maygvl_copy_stream_read): ditto.
+	  (nogvl_copy_stream_write): ditto.
+	  (nogvl_copy_stream_read_write): ditto.
+	  (nogvl_copy_stream_func): ditto.
+
 Sun Jan  4 00:30:50 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb: merged r20850, r17881, r16811, r16763, r16748, r15829, 
