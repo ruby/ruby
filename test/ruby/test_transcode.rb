@@ -1400,6 +1400,73 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(Encoding::UndefinedConversionError) { "\u203E".encode("CP51932") }
   end
 
+ def test_Big5
+    check_both_ways("\u3000", "\xA1\x40", 'Big5') # full-width space
+    check_both_ways("\uFE5A", "\xA1\x7E", 'Big5') # ﹚
+    check_both_ways("\uFE5B", "\xA1\xA1", 'Big5') # ﹛
+    #check_both_ways("\uFF0F", "\xA1\xFE", 'Big5') # ／
+    check_both_ways("\uFF57", "\xA3\x40", 'Big5') # ｗ
+    check_both_ways("\u310F", "\xA3\x7E", 'Big5') # ㄏ
+    check_both_ways("\u3110", "\xA3\xA1", 'Big5') # ㄐ
+    check_both_ways("\u02CB", "\xA3\xBF", 'Big5') # ˋ
+    assert_raise(Encoding::UndefinedConversionError) { "\xA3\xC0".encode("utf-8", 'Big5') }
+    check_both_ways("\u6D6C", "\xAF\x40", 'Big5') # 浬
+    check_both_ways("\u7837", "\xAF\x7E", 'Big5') # 砷
+    check_both_ways("\u7825", "\xAF\xA1", 'Big5') # 砥
+    check_both_ways("\u8343", "\xAF\xFE", 'Big5') # 荃
+    check_both_ways("\u8654", "\xB0\x40", 'Big5') # 虔
+    check_both_ways("\u9661", "\xB0\x7E", 'Big5') # 陡
+    check_both_ways("\u965B", "\xB0\xA1", 'Big5') # 陛
+    check_both_ways("\u5A40", "\xB0\xFE", 'Big5') # 婀
+    check_both_ways("\u6FC3", "\xBF\x40", 'Big5') # 濃
+    check_both_ways("\u7E0A", "\xBF\x7E", 'Big5') # 縊
+    check_both_ways("\u7E11", "\xBF\xA1", 'Big5') # 縑
+    check_both_ways("\u931A", "\xBF\xFE", 'Big5') # 錚
+    check_both_ways("\u9310", "\xC0\x40", 'Big5') # 錐
+    check_both_ways("\u5687", "\xC0\x7E", 'Big5') # 嚇
+    check_both_ways("\u568F", "\xC0\xA1", 'Big5') # 嚏
+    check_both_ways("\u77AC", "\xC0\xFE", 'Big5') # 瞬
+    check_both_ways("\u8B96", "\xC6\x40", 'Big5') # 讖
+    check_both_ways("\u7C72", "\xC6\x7E", 'Big5') # 籲
+	#assert_raise(Encoding::UndefinedConversionError) { "\xC6\xA1".encode("utf-8", 'Big5') }
+    #assert_raise(Encoding::UndefinedConversionError) { "\xC7\x40".encode("utf-8", 'Big5') }
+    assert_raise(Encoding::UndefinedConversionError) { "\xC8\x40".encode("utf-8", 'Big5') }
+    check_both_ways("\u4E42", "\xC9\x40", 'Big5') # 乂
+    check_both_ways("\u6C15", "\xC9\x7E", 'Big5') # 氕
+    check_both_ways("\u6C36", "\xC9\xA1", 'Big5') # 氶
+    check_both_ways("\u6C4B", "\xC9\xFE", 'Big5') # 汋
+    check_both_ways("\u67DC", "\xCF\x40", 'Big5') # 柜
+    check_both_ways("\u6D42", "\xCF\x7E", 'Big5') # 浂
+    check_both_ways("\u6D01", "\xCF\xA1", 'Big5') # 洁
+    check_both_ways("\u7A80", "\xCF\xFE", 'Big5') # 窀
+    check_both_ways("\u7A7E", "\xD0\x40", 'Big5') # 穾
+    check_both_ways("\u82EA", "\xD0\x7E", 'Big5') # 苪
+    check_both_ways("\u82E4", "\xD0\xA1", 'Big5') # 苤
+    check_both_ways("\u54F1", "\xD0\xFE", 'Big5') # 哱
+    check_both_ways("\u7A1B", "\xDF\x40", 'Big5') # 稛
+    check_both_ways("\u816F", "\xDF\x7E", 'Big5') # 腯
+    check_both_ways("\u8144", "\xDF\xA1", 'Big5') # 腄
+    check_both_ways("\u89E4", "\xDF\xFE", 'Big5') # 觤
+    check_both_ways("\u89E1", "\xE0\x40", 'Big5') # 觡
+    check_both_ways("\u903F", "\xE0\x7E", 'Big5') # 逿
+    check_both_ways("\u9044", "\xE0\xA1", 'Big5') # 遄
+    check_both_ways("\u50E0", "\xE0\xFE", 'Big5') # 僠
+    check_both_ways("\u979E", "\xEF\x40", 'Big5') # 鞞
+    check_both_ways("\u9D30", "\xEF\x7E", 'Big5') # 鴰
+    check_both_ways("\u9D45", "\xEF\xA1", 'Big5') # 鵅
+    check_both_ways("\u7376", "\xEF\xFE", 'Big5') # 獶
+    check_both_ways("\u74B8", "\xF0\x40", 'Big5') # 璸
+    check_both_ways("\u81D2", "\xF0\x7E", 'Big5') # 臒
+    check_both_ways("\u81D0", "\xF0\xA1", 'Big5') # 臐
+    check_both_ways("\u8E67", "\xF0\xFE", 'Big5') # 蹧
+    check_both_ways("\u7E98", "\xF9\x40", 'Big5') # 纘
+    check_both_ways("\u9F0A", "\xF9\x7E", 'Big5') # 鼊
+    check_both_ways("\u9FA4", "\xF9\xA1", 'Big5') # 龤
+    check_both_ways("\u9F98", "\xF9\xD5", 'Big5') # 龘
+    assert_raise(Encoding::UndefinedConversionError) { "\xF9\xD6".encode("utf-8", 'Big5') }
+    check_both_ways("\u795E\u6797\u7FA9\u535A", "\xAF\xAB\xAA\x4C\xB8\x71\xB3\xD5", 'Big5') # 神林義博
+  end
+  
   def test_nothing_changed
     a = "James".force_encoding("US-ASCII")
     b = a.encode("Shift_JIS")

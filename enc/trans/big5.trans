@@ -1,0 +1,16 @@
+#include "transcode_data.h"
+
+<%
+  require "big5-tbl"
+
+  transcode_tblgen "Big5", "UTF-8", [["{00-7f}", :nomap], *BIG5_TO_UCS_TBL]
+  transcode_tblgen "UTF-8", "Big5", [["{00-7f}", :nomap], *BIG5_TO_UCS_TBL.map {|a,b| [b,a] }]
+%>
+
+<%= transcode_generated_code %>
+
+void
+Init_big5(void)
+{
+<%= transcode_register_code %>
+}

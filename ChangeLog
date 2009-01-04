@@ -1,3 +1,11 @@
+Sun Jan  4 17:39:39 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/trans/big5.trans, big5-tbl.rb:
+	  new Chinese Big5 transcoding (from Yoshihiro Kambayashi)
+
+	* test/ruby/test_transcode.rb: added tests for the above
+	  (from Yoshihiro Kambayashi)
+
 Sun Jan  4 15:41:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_filesystem_encoding, rb_locale_charmap): uses
@@ -1527,7 +1535,6 @@ Tue Dec  9 18:35:35 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/test_transcode.rb: added tests for the above
 	  (from Yoshihiro Kambayashi), small cosmetic fixes
-
 
 Tue Dec  9 13:33:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
