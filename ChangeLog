@@ -1,3 +1,10 @@
+Sun Jan  4 11:11:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): does not use both of makefile.rb and
+	  extconf.rb at the same time.
+
+	* lib/mkmf.rb (DLLIB): depends on Makefile.  [ruby-core:21096]
+
 Mon Dec 29 17:02:50 2008  Tanaka Akira  <akr@fsij.org>
 
 	* eval.c (rb_thread_schedule): Don't change status of threads which

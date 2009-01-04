@@ -1592,7 +1592,9 @@ site-install-rb: install-rb
   end
 
   mfile.print "$(RUBYARCHDIR)/" if $extout
-  mfile.print "$(DLLIB): ", (makedef ? "$(DEFFILE) " : ""), "$(OBJS)\n"
+  mfile.print "$(DLLIB): "
+  mfile.print "$(DEFFILE) " if makedef
+  mfile.print "$(OBJS) Makefile\n"
   mfile.print "\t@-$(RM) $@\n"
   mfile.print "\t@-$(MAKEDIRS) $(@D)\n" if $extout
   link_so = LINK_SO.gsub(/^/, "\t")
