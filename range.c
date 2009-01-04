@@ -273,6 +273,8 @@ step_i(i, arg)
     return Qnil;
 }
 
+extern int ruby_float_step _((VALUE from, VALUE to, VALUE step, int excl));
+
 /*
  *  call-seq:
  *     rng.step(n=1) {| obj | block }    => rng
@@ -342,6 +344,9 @@ range_step(argc, argv, range)
 	    i += unit;
 	}
 
+    }
+    else if (ruby_float_step(b, e, step, EXCL(range))) {
+	/* done */
     }
     else if (rb_obj_is_kind_of(b, rb_cNumeric) ||
 	     !NIL_P(rb_check_to_integer(b, "to_int")) ||
