@@ -1,3 +1,11 @@
+Mon Jan  5 08:41:13 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_file_s_stat): need type check for non string values.
+	  [ruby-dev:37673]  fix: #964
+
+	* file.c (rb_file_s_size, rb_file_s_atime, rb_file_s_mtime,
+	  rb_file_s_ctime, rb_f_test): ditto.
+
 Mon Jan  5 08:17:56 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (range_step): should not add up errors on loops.
