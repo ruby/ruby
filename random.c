@@ -342,7 +342,7 @@ random_seed(void)
  *     srand(number=0)    => old_seed
  *  
  *  Seeds the pseudorandom number generator to the value of
- *  <i>number</i>.<code>to_i.abs</code>. If <i>number</i> is omitted
+ *  <i>number</i>. If <i>number</i> is omitted
  *  or zero, seeds the generator using a combination of the time, the
  *  process id, and a sequence number. (This is also the behavior if
  *  <code>Kernel::rand</code> is called without previously calling

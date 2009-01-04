@@ -1,3 +1,7 @@
+Mon Jan  5 07:58:37 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* random.c (rb_f_srand): update RDoc.  [ruby-core:21113]
+
 Mon Jan  5 06:39:56 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (range_max): max value from ... not defined for non
