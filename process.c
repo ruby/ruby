@@ -2559,12 +2559,8 @@ rb_f_abort(int argc, VALUE *argv)
 }
 
 
-#if defined(sun)
-#define signal(a,b) sigset(a,b)
-#else
-# if defined(POSIX_SIGNAL)
-#  define signal(a,b) posix_signal(a,b)
-# endif
+#if defined(POSIX_SIGNAL)
+# define signal(a,b) posix_signal(a,b)
 #endif
 
 void
