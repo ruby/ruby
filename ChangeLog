@@ -1,3 +1,12 @@
+Sun Jan  4 22:37:19 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (rb_getaddrinfo): defined for address lookup without GVL.
+	  (struct getaddrinfo_arg): defined.
+	  (nogvl_getaddrinfo): defined.
+	  (rb_getnameinfo): defined for name lookup without GVL.
+	  (getnameinfo_arg): defined.
+	  (nogvl_getnameinfo): defined.
+
 Sun Jan  4 18:10:10 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/trans/gbk.trans, gbk-tbl.rb:

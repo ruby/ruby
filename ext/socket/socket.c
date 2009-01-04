@@ -228,6 +228,7 @@ ruby_getnameinfo__aix(sa, salen, host, hostlen, serv, servlen, flags)
 #undef getnameinfo
 #define getnameinfo(sa, salen, host, hostlen, serv, servlen, flags) \
             ruby_getnameinfo__aix((sa), (salen), (host), (hostlen), (serv), (servlen), (flags))
+
 #ifndef CMSG_SPACE
 # define CMSG_SPACE(len) (_CMSG_ALIGN(sizeof(struct cmsghdr)) + _CMSG_ALIGN(len))
 #endif
@@ -240,6 +241,76 @@ ruby_getnameinfo__aix(sa, salen, host, hostlen, serv, servlen, flags)
 #undef close
 #define close closesocket
 #endif
+
+struct getaddrinfo_arg
+{
+    const char *node;
+    const char *service;
+    const struct addrinfo *hints;
+    struct addrinfo **res;
+};
+
+static VALUE
+nogvl_getaddrinfo(void *arg)
+{
+    struct getaddrinfo_arg *ptr = arg;
+    return getaddrinfo(ptr->node, ptr->service,
+                       ptr->hints, ptr->res);
+}
+
+static int
+rb_getaddrinfo(const char *node, const char *service,
+               const struct addrinfo *hints,
+               struct addrinfo **res)
+{
+    struct getaddrinfo_arg arg;
+    int ret;
+    arg.node = node;
+    arg.service = service;
+    arg.hints = hints;
+    arg.res = res;
+    ret = BLOCKING_REGION(nogvl_getaddrinfo, &arg);
+    return ret;
+}
+
+struct getnameinfo_arg
+{
+    const struct sockaddr *sa;
+    socklen_t salen;
+    char *host;
+    size_t hostlen;
+    char *serv;
+    size_t servlen;
+    int flags;
+};
+
+static VALUE
+nogvl_getnameinfo(void *arg)
+{
+    struct getnameinfo_arg *ptr = arg;
+    return getnameinfo(ptr->sa, ptr->salen,
+                       ptr->host, ptr->hostlen,
+                       ptr->serv, ptr->servlen,
+                       ptr->flags);
+}
+
+static int
+rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
+           char *host, size_t hostlen,
+           char *serv, size_t servlen, int flags)
+{
+    struct getnameinfo_arg arg;
+    int ret;
+    arg.sa = sa;
+    arg.salen = salen;
+    arg.host = host;
+    arg.hostlen = hostlen;
+    arg.serv = serv;
+    arg.servlen = servlen;
+    arg.flags = flags;
+    ret = BLOCKING_REGION(nogvl_getnameinfo, &arg);
+    return ret;
+}
 
 static int
 constant_arg(VALUE arg, int (*str_to_int)(char*, int, int*), const char *errmsg)
@@ -893,7 +964,7 @@ make_ipaddr0(struct sockaddr *addr, char *buf, size_t len)
 {
     int error;
 
-    error = getnameinfo(addr, SA_LEN(addr), buf, len, NULL, 0, NI_NUMERICHOST);
+    error = rb_getnameinfo(addr, SA_LEN(addr), buf, len, NULL, 0, NI_NUMERICHOST);
     if (error) {
 	raise_socket_error("getnameinfo", error);
     }
@@ -1015,7 +1086,7 @@ sock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_ha
        hints->ai_socktype = SOCK_DGRAM;
     }
 
-    error = getaddrinfo(hostp, portp, hints, &res);
+    error = rb_getaddrinfo(hostp, portp, hints, &res);
     if (error) {
 	if (hostp && hostp[strlen(hostp)-1] == '\n') {
 	    rb_raise(rb_eSocket, "newline at the end of hostname");
@@ -1076,14 +1147,14 @@ ipaddr(struct sockaddr *sockaddr, int norevlookup)
 
     addr1 = Qnil;
     if (!norevlookup) {
-	error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
-			    NULL, 0, 0);
+	error = rb_getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
+			       NULL, 0, 0);
 	if (! error) {
 	    addr1 = rb_str_new2(hbuf);
 	}
     }
-    error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
-			pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
+    error = rb_getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
+			   pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
     if (error) {
 	raise_socket_error("getnameinfo", error);
     }
@@ -3393,7 +3464,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	hints.ai_socktype = (fl & NI_DGRAM) ? SOCK_DGRAM : SOCK_STREAM;
 	/* af */
         hints.ai_family = NIL_P(af) ? PF_UNSPEC : family_arg(af);
-	error = getaddrinfo(hptr, pptr, &hints, &res);
+	error = rb_getaddrinfo(hptr, pptr, &hints, &res);
 	if (error) goto error_exit_addr;
 	sap = res->ai_addr;
     }
@@ -3402,16 +3473,16 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     }
 
   call_nameinfo:
-    error = getnameinfo(sap, SA_LEN(sap), hbuf, sizeof(hbuf),
-			pbuf, sizeof(pbuf), fl);
+    error = rb_getnameinfo(sap, SA_LEN(sap), hbuf, sizeof(hbuf),
+			   pbuf, sizeof(pbuf), fl);
     if (error) goto error_exit_name;
     if (res) {
 	for (r = res->ai_next; r; r = r->ai_next) {
 	    char hbuf2[1024], pbuf2[1024];
 
 	    sap = r->ai_addr;
-	    error = getnameinfo(sap, SA_LEN(sap), hbuf2, sizeof(hbuf2),
-				pbuf2, sizeof(pbuf2), fl);
+	    error = rb_getnameinfo(sap, SA_LEN(sap), hbuf2, sizeof(hbuf2),
+				   pbuf2, sizeof(pbuf2), fl);
 	    if (error) goto error_exit_name;
 	    if (strcmp(hbuf, hbuf2) != 0|| strcmp(pbuf, pbuf2) != 0) {
 		freeaddrinfo(res);
