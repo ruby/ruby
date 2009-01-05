@@ -4452,8 +4452,13 @@ rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
             fcntl(fd, F_SETFD, ret|FD_CLOEXEC);
         }
 #else
-	close(fd);
+	ret = close(fd);
 #endif
+#define CONTIGUOUS_CLOSED_FDS 20
+        if (ret != -1) {
+	    if (max < fd + CONTIGUOUS_CLOSED_FDS)
+		max = fd + CONTIGUOUS_CLOSED_FDS;
+	}
     }
 }
 
