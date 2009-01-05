@@ -1,3 +1,8 @@
+Mon Jan  5 16:15:00 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/curses/curses.c (free_window): use xfree instead of free.
+	  [ruby-dev:37200]
+
 Mon Jan  5 15:49:45 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/gdbm/gdbm.c (rb_gdbm_fetch): remove needless cast.
