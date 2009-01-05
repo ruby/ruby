@@ -389,13 +389,31 @@ exit_handler(void)
     DeleteCriticalSection(&select_mutex);
 }
 
+#ifndef CSIDL_PROFILE
+#define CSIDL_PROFILE 40
+#endif
+
+static BOOL
+get_special_folder(int n, char *env)
+{
+    LPITEMIDLIST pidl;
+    LPMALLOC alloc;
+    BOOL f = FALSE;
+    if (SHGetSpecialFolderLocation(NULL, n, &pidl) == 0) {
+	f = SHGetPathFromIDList(pidl, env);
+	SHGetMalloc(&alloc);
+	alloc->lpVtbl->Free(alloc, pidl);
+	alloc->lpVtbl->Release(alloc);
+    }
+    return f;
+}
+
 static void
 init_env(void)
 {
     char env[_MAX_PATH];
     DWORD len;
     BOOL f;
-    LPITEMIDLIST pidl;
 
     if (!GetEnvironmentVariable("HOME", env, sizeof(env))) {
 	f = FALSE;
@@ -409,12 +427,11 @@ init_env(void)
 	else if (GetEnvironmentVariable("USERPROFILE", env, sizeof(env))) {
 	    f = TRUE;
 	}
-	else if (SHGetSpecialFolderLocation(NULL, CSIDL_PERSONAL, &pidl) == 0) {
-	    LPMALLOC alloc;
-	    f = SHGetPathFromIDList(pidl, env);
-	    SHGetMalloc(&alloc);
-	    alloc->lpVtbl->Free(alloc, pidl);
-	    alloc->lpVtbl->Release(alloc);
+	else if (get_special_folder(CSIDL_PROFILE, env)) {
+	    f = TRUE;
+	}
+	else if (get_special_folder(CSIDL_PERSONAL, env)) {
+	    f = TRUE;
 	}
 	if (f) {
 	    char *p = env;
