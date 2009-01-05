@@ -1,3 +1,10 @@
+Mon Jan  5 16:26:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_filesystem_encoding): use ANSI codepage for file
+	  system on cygwin.
+
+	* encoding.c (rb_locale_charmap): reverted.  [ruby-core:21110]
+
 Mon Jan  5 16:15:00 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/curses/curses.c (free_window): use xfree instead of free.

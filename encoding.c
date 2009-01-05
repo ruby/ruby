@@ -14,17 +14,14 @@
 #include "regenc.h"
 #include <ctype.h>
 #ifndef NO_LOCALE_CHARMAP
-#if defined __CYGWIN__
+#ifdef __CYGWIN__
 #include <windows.h>
-#elif defined HAVE_LANGINFO_H
+#endif
+#ifdef HAVE_LANGINFO_H
 #include <langinfo.h>
 #endif
 #endif
 #include "ruby/util.h"
-
-#if defined _WIN32 || defined __CYGWIN__
-#define USE_CODEPAGE_LOCALE 1
-#endif
 
 static ID id_encoding;
 VALUE rb_cEncoding;
@@ -1033,8 +1030,12 @@ rb_encoding *
 rb_filesystem_encoding(void)
 {
     rb_encoding *enc;
-#if defined USE_CODEPAGE_LOCALE
-    enc = rb_locale_encoding();
+#if defined NO_LOCALE_CHARMAP
+    enc = rb_default_external_encoding();
+#elif defined _WIN32 || defined __CYGWIN__
+    char cp[sizeof(int) * 8 / 3 + 4];
+    snprintf(cp, sizeof cp, "CP%d", GetACP());
+    enc = rb_enc_find(cp);
 #elif defined __APPLE__
     enc = rb_enc_find("UTF8-MAC");
 #else
@@ -1212,12 +1213,12 @@ rb_locale_charmap(VALUE klass)
 {
 #if defined NO_LOCALE_CHARMAP
     return rb_usascii_str_new2("ASCII-8BIT");
-#elif defined USE_CODEPAGE_LOCALE
-    return rb_sprintf("CP%d", GetACP());
 #elif defined HAVE_LANGINFO_H
     char *codeset;
     codeset = nl_langinfo(CODESET);
     return rb_usascii_str_new2(codeset);
+#elif defined _WIN32
+    return rb_sprintf("CP%d", GetACP());
 #else
     return Qnil;
 #endif
