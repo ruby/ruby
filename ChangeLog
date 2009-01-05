@@ -1,3 +1,18 @@
+Mon Jan  5 11:12:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_schedule): runs deferred finalizers.
+
+	* gc.c (gc_sweep): sets rb_thread_pending to run deferred finalizers.
+
+	* rubysig.h (CHECK_INTS): now checks rb_thread_pending even on
+	  platforms where setitimer is not available.  [ruby-core:18045]
+
+Mon Jan  5 11:12:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* rubysig.h (CHECK_INTS): gives the chance to perform to deferred
+	  finalizers before explicit GC.start or the process termination.
+	  [ruby-core:18045]
+
 Sun Jan  4 04:47:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_telldir): just returns loc.
