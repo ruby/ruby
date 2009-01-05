@@ -290,7 +290,7 @@ rb_gdbm_fetch(GDBM_FILE dbm, datum key)
     str = rb_str_new(val.dptr, val.dsize);
     free(val.dptr);
     OBJ_TAINT(str);
-    return (VALUE)str;
+    return str;
 }
 
 static VALUE
