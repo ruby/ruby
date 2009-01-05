@@ -80,7 +80,7 @@ Sun Jan  4 17:07:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  directories stealthily.  [ruby-core:20990]
 
 	* lib/rubygems.rb (Gem.find_home): expand_path deals with platform
-	  dependent envirionments.
+	  dependent environments.
 
 	* lib/rdoc/ri/paths.rb (RDoc::HOMEDIR): ditto.
 
@@ -150,7 +150,7 @@ Sat Jan  3 15:30:09 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Sat Jan  3 15:26:30 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* enc/trans/euc-cn.c: renemed from gb2312.c because GB2312 is
+	* enc/trans/euc-cn.c: renamed from gb2312.c because GB2312 is
 	  the name of a CSS.  it's encoding name is "EUC-CN".
 
 Sat Jan  3 03:00:42 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -305,12 +305,12 @@ Thu Jan  1 21:26:05 2009  Tanaka Akira  <akr@fsij.org>
 
 Thu Jan  1 21:08:34 2009  Tanaka Akira  <akr@fsij.org>
 
-	* ext/socket/mkconstants.rb: check all alias possibility. 
+	* ext/socket/mkconstants.rb: check all alias possibility.
 
 Thu Jan  1 20:59:55 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: more possible aliases.
-	
+
 Thu Jan  1 20:54:02 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: AF_ISO and AF_OSI may be aliased.
@@ -582,10 +582,10 @@ Mon Dec 29 17:25:17 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	* lib/erb.rb (ERB::Compiler#compile): recognizes magic comments.
 	  returns a pair of compiled script and its script encoding.
 
-	* lib/erb.rb (ERB#set_eoutvar): make generated scripts return a 
+	* lib/erb.rb (ERB#set_eoutvar): make generated scripts return a
 	  string in correct encoding.
 
-	* lib/erb.rb (ERB#def_method): use Kernel#eval for encoding-awareness  
+	* lib/erb.rb (ERB#def_method): use Kernel#eval for encoding-awareness
 	  of the evaluated string.
 
 	* bin/erb.rb (ERB::Main.run): adds -E and -U options.
@@ -656,7 +656,7 @@ Mon Dec 29 03:43:25 2008  Koichi Sasada  <ko1@atdot.net>
 
 Sun Dec 28 21:33:52 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* test/ext/dl/test_base.rb : add BSD's case.
+	* test/ext/dl/test_base.rb: add BSD's case.
 
 Sun Dec 28 21:09:12 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
@@ -758,7 +758,7 @@ Sat Dec 27 17:08:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Dec 27 16:18:02 2008  Koichi Sasada  <ko1@atdot.net>
 
-	* eval.c (rb_frame_callee, rb_frame_caller): rb_frame_callee() 
+	* eval.c (rb_frame_callee, rb_frame_caller): rb_frame_callee()
 	  should return method id on current frame.
 	  add rb_frame_caller() to get method id on parent frame.
 	  Bug #884 [ruby-dev:37446]
@@ -858,7 +858,7 @@ Sat Dec 27 05:38:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Dec 27 01:52:39 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
-	* lib/csv.rb:  Using a more robust transcoding scheme to produce
+	* lib/csv.rb: Using a more robust transcoding scheme to produce
 	  ASCII compatible inspect() messages.  [ruby-dev:37591]
 
 Fri Dec 26 18:04:10 2008  Tanaka Akira  <akr@fsij.org>
@@ -1201,7 +1201,7 @@ Mon Dec 22 16:32:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Mon Dec 22 15:56:49 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* Doxyfile.in: new file. Template of a configuration file.
-	  Introduces C-level API reference generation with Doxygen. 
+	  Introduces C-level API reference generation with Doxygen.
 
 	* tool/file2lastrev.rb: wrapper script that abstracts subversion
 	  and git-svn.
@@ -1373,20 +1373,20 @@ Fri Dec 19 07:45:37 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Thu Dec 18 19:31:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/irb/init.rb (IRB.opt_parse): (M17N) adds -U and -E as command
-	  line options. [ruby-dev:37161]. Fixes #711. 
+	  line options. [ruby-dev:37161]. Fixes #711.
 	  improved long options.
 
 	* lib/irb/init.rb (IRB.set_encoding): new subroutine for IRB.opt_parse
 
 	* lib/irb/input-method.rb (IRB::StdioInputMethod): (M17N) regards
-	  scripts that user types as encoded in the external_encoding. 
+	  scripts that user types as encoded in the external_encoding.
 
 	* lib/irb/input-method.rb (IRB::ReadlineInputMethod): ditto.
 
 	* lib/irb/input-method.rb (IRB::FileInputMethod): (M17N) respects
 	  magic comment.
 
-	* lib/irb/help.rb (IRB.print_usage): (M17N) respects magic comment 
+	* lib/irb/help.rb (IRB.print_usage): (M17N) respects magic comment
 	  in the resource file.
 
 	* lib/irb/lc/help-message: adds -U and -E.
@@ -1450,7 +1450,7 @@ Thu Dec 18 08:15:04 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 	* lib/xmlrpc/server.rb:  Restricting method inspection to show only
 	  non-inherited public methods.  [ruby-core:20603]
 
-	* lib/xmlrpc/server.rb:  Fixing method inspection so it doesn't 
+	* lib/xmlrpc/server.rb:  Fixing method inspection so it doesn't
 	  trigger XMLRPC::FaultException when used.  [ruby-core:20604]
 
 Wed Dec 17 19:39:44 2008  Tanaka Akira  <akr@fsij.org>
@@ -1477,7 +1477,7 @@ Wed Dec 17 15:44:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Dec 17 15:35:39 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* configure.in (OBJDUMP, OBJCOPY): 
+	* configure.in (OBJDUMP, OBJCOPY):
 	  *BSD's ports and MacPorts prefix GNU binutils with 'g'.
 
 Wed Dec 17 11:39:39 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
@@ -1605,7 +1605,7 @@ Mon Dec 15 20:59:10 2008  Tanaka Akira  <akr@fsij.org>
 	* ext/pty/pty.c (child_info): add slavename.
 	  (chfunc): use slavename.
 	  (establishShell): set slavename.
-	
+
 Mon Dec 15 20:16:46 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk (EXTMK_ARGS): shouldn't use ``\"'' because cmd.exe eat
@@ -1638,13 +1638,13 @@ Mon Dec 15 14:56:59 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* class.c (rb_singleton_class): creates a meta^(n+2)-class in
 	  addition to a meta^(n+1)-class when called for a meta^(n)-class.
-	  This is because the returned meta^(n+1) class must acts as an instance of 
+	  This is because the returned meta^(n+1) class must acts as an instance of
 	  Class, metaclass of Class, ..., meta^(n+1)-class of Class,
 	  Module, metaclass of Module, ..., meta^(n+1)-class of Module,
 	  Object, metaclass of Object, ..., meta^(n+2)-class of Object,
 	  BasicObject, metaclass of BasicObject, ..., meta^(n+2)-class of
 	  and BasicObject even when Class, Module, Object or BasicObject has
-	  not have its meta^(i)-class yet. 
+	  not have its meta^(i)-class yet.
 
 Mon Dec 15 15:13:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -1697,7 +1697,7 @@ Sun Dec 14 22:31:19 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	* bignum.c (bigmul1_karatsuba): remove temporal bignum.
 
 	* bignum.c (bigsqr): call bigmul0(x, x) because it is faster than the
-	  original bigsqr at this point.  
+	  original bigsqr at this point.
 
 	* bignum.c (rb_big_pow): a value returned from bigsqr is already
 	  truncated.
@@ -1725,7 +1725,7 @@ Sun Dec 14 12:51:48 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	  twice faster square than normal multiplication. [ruby-dev:37392]
 
 	* random.c (rb_rand_internal): used by Bignum#*.
-	
+
 	* test/ruby/test_bignum.rb: add some tests for above.
 Sun Dec 14 01:35:48 2008  Tanaka Akira  <akr@fsij.org>
 
@@ -1791,7 +1791,7 @@ Sat Dec 13 12:48:57 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 Sat Dec 13 12:38:16 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* lib/minitest/test.rb (MinTest::Unit#location): 
+	* lib/minitest/test.rb (MinTest::Unit#location):
 	  skips user-defined assertions as MiniTest's.
 	  e.g. for test/ruby/test_m17n.rb.
 
@@ -1800,7 +1800,7 @@ Sat Dec 13 09:17:33 2008  Ryan Davis  <ryand-ruby@zenspider.com>
 	* lib/minitest/*.rb: Imported minitest 1.3.1 r4503.
 	* test/minitest/test_mini_test.rb: ditto.
 	* lib/miniunit/autorun.rb: added (as part of r4503).
-	
+
 Sat Dec 13 08:35:14 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_canonicalization): renamed.
@@ -1862,7 +1862,7 @@ Fri Dec 12 14:09:55 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* encoding.c (enc_get_default_encoding): removed.
 	  Generalizing rb_default_{external,internal}_encoding seems to be
-	  difficult. 
+	  difficult.
 	  default_external cannot be NULL even before detected. [ruby-dev:37390]
 
 	* encoding.c (rb_default_external_encoding): has its own
@@ -1972,7 +1972,7 @@ Thu Dec 11 10:18:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rexml/element.rb (REXML::Element#write): ditto.
 
-	* lib/rexml/formatters/transitive.rb (REXML::Formatters::Transitive#write_element): 
+	* lib/rexml/formatters/transitive.rb (REXML::Formatters::Transitive#write_element):
 	  add hack for IE.  [ruby-dev:36230]
 
 Thu Dec 11 02:37:22 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -2072,7 +2072,7 @@ Tue Dec  9 12:08:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Dec  9 11:50:46 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* pack.c (pack_pck): fixed [ruby-dev:37295]. 
+	* pack.c (pack_pack): fixed [ruby-dev:37295].
 	  Array#pack always has returned an US-ASCII string when
 	  the given format ended with 'u', 'M' or 'm'.
 
@@ -2320,7 +2320,7 @@ Thu Dec  4 16:16:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Dec  4 14:54:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* lib/rubygems/local_remote_options.rb (Gem#add_update_sources_option): 
+	* lib/rubygems/local_remote_options.rb (Gem#add_update_sources_option):
 	  little documentation fix.  a patch from okkez.  [ruby-dev:37271]
 
 Thu Dec  4 13:56:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -2344,12 +2344,12 @@ Thu Dec  4 11:38:40 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 Thu Dec  4 06:04:16 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk/menu.rb: TkOptionMenubutton.new fails to treat 
+	* ext/tk/lib/tk/menu.rb: TkOptionMenubutton.new fails to treat
 	  'parent' and 'variable' options on a Hash argument.
 
 Thu Dec  4 05:06:47 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: bug fix. use ::RubyVM instead of ::VM 
+	* ext/tk/lib/tk.rb: bug fix. use ::RubyVM instead of ::VM
 	  [ruby-list:45676]
 
 	* ext/tk/tcltklib.c: update RELEASE_DATE
@@ -2428,7 +2428,7 @@ Wed Dec  3 02:04:21 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 Tue Dec  2 19:22:13 2008  Tanaka Akira  <akr@fsij.org>
 
-	* lib/open3.rb (Open3.popen3): merge hash options if given. 
+	* lib/open3.rb (Open3.popen3): merge hash options if given.
 
 Tue Dec  2 15:31:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -2458,7 +2458,7 @@ Sun Nov 30 21:41:10 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 Sun Nov 30 18:01:50 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_regexp.rb (TestRegexp#test_parse_curly_brace):
-	  now accepts quantifier on anchrs agian by r20391.
+	  now accepts quantifier on anchors again by r20391.
 
 Sat Nov 29 23:56:44 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
@@ -2626,8 +2626,8 @@ Tue Nov 25 07:51:18 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Nov 25 03:37:42 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tkextlib/blt/tabset.rb, 
-	  ext/tk/lib/tkextlib/blt/tabnotebook.rb: 
+	* ext/tk/lib/tkextlib/blt/tabset.rb,
+	  ext/tk/lib/tkextlib/blt/tabnotebook.rb:
 	  fix many bugs. Now, those work properly.
 
 Tue Nov 25 03:26:04 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -2711,7 +2711,7 @@ Sat Nov 22 18:24:24 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tkextlib/blt.rb, ext/tk/lib/tkextlib/blt/vector.rb: 
+	* ext/tk/lib/tkextlib/blt.rb, ext/tk/lib/tkextlib/blt/vector.rb:
 	  fix NameError bug.
 
 Sat Nov 22 03:41:22 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -2763,7 +2763,7 @@ Wed Nov 19 17:48:05 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Nov 19 14:14:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* node.h (NOEX_MODFUNC): should be include NOEX_PRIVATE. 
+	* node.h (NOEX_MODFUNC): should be include NOEX_PRIVATE.
 	  [ruby-dev:37124]
 
 Wed Nov 19 03:01:04 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
@@ -2809,7 +2809,7 @@ Tue Nov 18 16:18:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Nov 18 15:56:55 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#read_request_line): 
+	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#read_request_line):
 	  use possessive match for path retrieval to avoid huge recursion
 	  for insanely long path.
 
@@ -2973,21 +2973,21 @@ Sat Nov  8 23:47:45 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* test/cgi/session_dir: add a session directory in test.
 
-	* test/cgi/test_cgi_session.rb: add a test. 
+	* test/cgi/test_cgi_session.rb: add a test.
 
 Sat Nov  8 21:57:03 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
-	* lib/cgi/session.rb: remove debug code. 
+	* lib/cgi/session.rb: remove debug code.
 
 Sat Nov  8 21:33:53 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
-	* lib/cgi/session.rb: fix indentation. 
+	* lib/cgi/session.rb: fix indentation.
 
 Sat Nov  8 18:11:14 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/webrick/httpproxy.rb (WEBrick::HTTPProxyServer#do_CONNECT):
 	  use #bytesize instead of #size.  a patch submitted from
-	  raspberry lemon in  [ruby-core:18571].
+	  raspberry lemon in [ruby-core:18571].
 
 	* lib/webrick/httpauth/digestauth.rb, lib/webrick/httpproxy.rb,
 	  lib/webrick/httprequest.rb, lib/webrick/httpservlet/cgi_runner.rb,
@@ -2997,7 +2997,7 @@ Sat Nov  8 18:11:14 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sat Nov  8 17:31:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_ungetc): ungetc position should
-	  not be changed from 1.8.   [ruby-core:19632]
+	  not be changed from 1.8.  [ruby-core:19632]
 
 Sat Nov  8 17:15:08 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -3174,9 +3174,9 @@ Mon Nov  3 13:01:13 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	  takes a new parameter klass for what class to instantiate.
 
 Mon Nov  3 13:00:26 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
- 
- 	* range.c (rb_range_beg_len): rb_raise takes C values as arguments.
- 	  [BUG] ranges turned into other value in a message of RangeError.
+
+	* range.c (rb_range_beg_len): rb_raise takes C values as arguments.
+	  [BUG] ranges turned into other value in a message of RangeError.
  
 Mon Nov  3 00:36:44 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
@@ -3212,7 +3212,7 @@ Sun Nov  2 16:41:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Nov  1 07:09:40 2008  Eric Hodel  <drbrain@segment7.net>
 
-	* gem_prelude.rb:  Don't require rubygems/defaults.rb.
+	* gem_prelude.rb: Don't require rubygems/defaults.rb.
 
 Fri Oct 31 21:58:50 2008  Kouhei Sutou  <kou@cozmixng.org>
 
@@ -3617,14 +3617,14 @@ Sun Oct 26 13:30:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Oct 26 07:57:35 2008  Eric Hodel  <drbrain@segment7.net>
 
-	* lib/rubygems*:  Update to RubyGems 1.3.1 r1909.
+	* lib/rubygems*: Update to RubyGems 1.3.1 r1909.
 
 Sun Oct 26 07:35:56 2008  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/unit.rb: Imported minitest 1.3.0 r4429.
 	* test/minitest/*: ditto.
 
-Sun Oct 26 02:16:29 2008  Yuki Sonoda (Yugui)   <yugui@yugui.jp>
+Sun Oct 26 02:16:29 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* configure.in ($MANTYPE): followed ruby.1, which had moved.
 
@@ -53937,7 +53937,7 @@ Mon Feb  9 17:46:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  file to create new file.
 
 	* lib/rdoc/ri/ri_paths.rb (RI::Paths::SYSDIR): get rid of unexpected
-	  influence by envirionment variable.
+	  influence by environment variable.
 
 	* bcc32/configure.bat, win32/configure.bat: add install-doc options.
 
