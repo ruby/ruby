@@ -1034,7 +1034,7 @@ rb_filesystem_encoding(void)
     enc = rb_default_external_encoding();
 #elif defined _WIN32 || defined __CYGWIN__
     char cp[sizeof(int) * 8 / 3 + 4];
-    snprintf(cp, sizeof cp, "CP%d", GetACP());
+    snprintf(cp, sizeof cp, "CP%d", GetOEMCP());
     enc = rb_enc_find(cp);
 #elif defined __APPLE__
     enc = rb_enc_find("UTF8-MAC");
@@ -1218,7 +1218,7 @@ rb_locale_charmap(VALUE klass)
     codeset = nl_langinfo(CODESET);
     return rb_usascii_str_new2(codeset);
 #elif defined _WIN32
-    return rb_sprintf("CP%d", GetACP());
+    return rb_sprintf("CP%d", GetConsoleCP());
 #else
     return Qnil;
 #endif
