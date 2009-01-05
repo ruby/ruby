@@ -76,10 +76,10 @@ static const char *nl_langinfo_0(nl_item item)
       if (strstart(p, "620")) return "TIS-620";
       if (strstart(p, "2312")) return "GB2312";
       if (strstart(p, "HKSCS")) return "Big5HKSCS";   /* no MIME charset */
-      if (strstart(p, "Big5") || strstart(l, "BIG5")) return "Big5";
+      if (strstart(p, "BIG5")) return "Big5";
       if (strstart(p, "GBK")) return "GBK";           /* no MIME charset */
       if (strstart(p, "18030")) return "GB18030";     /* no MIME charset */
-      if (strstart(p, "Shift_JIS") || strstart(l, "SJIS")) return "Shift_JIS";
+      if (strstart(p, "Shift_JIS") || strstart(p, "SJIS")) return "Shift_JIS";
       /* check for conclusive modifier */
       if (strstart(p, "euro")) return "ISO-8859-15";
     }
