@@ -5,6 +5,7 @@ end
 
 require "test/unit"
 require "tempfile"
+require "tmpdir"
 
 class TestUNIXSocket < Test::Unit::TestCase
   def test_fd_passing
@@ -167,17 +168,20 @@ class TestUNIXSocket < Test::Unit::TestCase
   end
 
   def test_initialize
-    Socket.open(Socket::AF_UNIX, Socket::SOCK_STREAM, 0) {|s|
-      addr = s.getsockname
-      assert_nothing_raised { Socket.unpack_sockaddr_un(addr) }
-      assert_raise(ArgumentError) { Socket.unpack_sockaddr_in(addr) }
-    }
-    Socket.open("AF_UNIX", "SOCK_STREAM", 0) {|s|
-      addr = s.getsockname
-      assert_nothing_raised { Socket.unpack_sockaddr_un(addr) }
-      assert_raise(ArgumentError) { Socket.unpack_sockaddr_in(addr) }
+    Dir.mktmpdir {|d|
+      Socket.open(Socket::AF_UNIX, Socket::SOCK_STREAM, 0) {|s|
+	s.bind(Socket.pack_sockaddr_un("#{d}/s1"))
+	addr = s.getsockname
+	assert_nothing_raised { Socket.unpack_sockaddr_un(addr) }
+	assert_raise(ArgumentError) { Socket.unpack_sockaddr_in(addr) }
+      }
+      Socket.open("AF_UNIX", "SOCK_STREAM", 0) {|s|
+	s.bind(Socket.pack_sockaddr_un("#{d}/s2"))
+	addr = s.getsockname
+	assert_nothing_raised { Socket.unpack_sockaddr_un(addr) }
+	assert_raise(ArgumentError) { Socket.unpack_sockaddr_in(addr) }
+      }
     }
   end
-
 
 end if defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM
