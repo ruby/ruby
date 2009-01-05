@@ -1271,7 +1271,7 @@ rb_iseq_eval(VALUE iseqval)
     val = vm_exec(th);
     tmp = iseqval; /* prohibit tail call optimization */
     return val;
-    }
+}
 
 VALUE
 rb_iseq_eval_main(VALUE iseqval)
@@ -1497,7 +1497,7 @@ thread_free(void *ptr)
 
     if (ptr) {
 	th = ptr;
-	
+
 	if (!th->root_fiber) {
 	    RUBY_FREE_UNLESS_NULL(th->stack);
 	}
