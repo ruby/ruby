@@ -371,10 +371,13 @@ static volatile int C(a), C(b), C(c), C(d), C(e);
 static volatile int C(f), C(g), C(h), C(i), C(j);
 static volatile int C(k), C(l), C(m), C(n), C(o);
 static volatile int C(p), C(q), C(r), C(s), C(t);
+#if 0
+{/* the above lines make cc-mode.el confused so much */}
+#endif
 int rb_dummy_false = 0;
 NORETURN(NOINLINE(static void register_stack_extend(rb_context_t *, VALUE *)));
 static void
-register_stack_extend(rb_context_t *cont, VALUE *curr_bsp)
+register_stack_extend(rb_context_t *cont, VALUE *vp, VALUE *curr_bsp)
 {
     if (rb_dummy_false) {
         /* use registers as much as possible */
@@ -388,9 +391,9 @@ register_stack_extend(rb_context_t *cont, VALUE *curr_bsp)
         E(p) = E(q) = E(r) = E(s) = E(t) = 0;
     }
     if (curr_bsp < cont->machine_register_stack_src+cont->machine_register_stack_size) {
-        register_stack_extend(cont, (VALUE*)rb_ia64_bsp());
+        register_stack_extend(cont, vp, (VALUE*)rb_ia64_bsp());
     }
-    cont_restore_1(cont);
+    cont_restore_0(cont, vp);
 }
 #undef C
 #undef E
@@ -403,35 +406,42 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 #define STACK_PAD_SIZE 1024
 	VALUE space[STACK_PAD_SIZE];
 
-#if STACK_GROW_DIRECTION < 0 /* downward */
-	if (addr_in_prev_frame > cont->machine_stack_src) {
-	    cont_restore_0(cont, &space[0]);
-	}
-#elif STACK_GROW_DIRECTION > 0 /* upward */
-	if (addr_in_prev_frame < cont->machine_stack_src + cont->machine_stack_size) {
-	    cont_restore_0(cont, &space[STACK_PAD_SIZE-1]);
-	}
-#else
+#if !STACK_GROW_DIRECTION
 	if (addr_in_prev_frame > &space[0]) {
 	    /* Stack grows downward */
-	    if (addr_in_prev_frame > cont->machine_stack_src) {
+#endif
+#if STACK_GROW_DIRECTION <= 0
+	    if (&space[0] > cont->machine_stack_src) {
+# ifdef HAVE_ALLOCA
+		ALLOCA_N(VALUE, &space[0] - cont->machine_stack_src);
+# else
 		cont_restore_0(cont, &space[0]);
+# endif
 	    }
+#endif
+#if !STACK_GROW_DIRECTION
 	}
 	else {
 	    /* Stack grows upward */
-	    if (addr_in_prev_frame < cont->machine_stack_src + cont->machine_stack_size) {
+#endif
+#if STACK_GROW_DIRECTION >= 0
+	    if (&space[STACK_PAD_SIZE] < cont->machine_stack_src + cont->machine_stack_size) {
+# ifdef HAVE_ALLOCA
+		ALLOCA_N(VALUE, cont->machine_stack_src + cont->machine_stack_size - &space[STACK_PAD_SIZE]);
+# else
 		cont_restore_0(cont, &space[STACK_PAD_SIZE-1]);
+# endif
 	    }
+#endif
+#if !STACK_GROW_DIRECTION
 	}
 #endif
     }
-#ifdef __ia64
-    register_stack_extend(cont, (VALUE*)rb_ia64_bsp());
-#else
     cont_restore_1(cont);
-#endif
 }
+#ifdef __ia64
+#define cont_restore_0(cont, vp) register_stack_extend(cont, vp, (VALUE*)rb_ia64_bsp());
+#endif
 
 /*
  *  Document-class: Continuation
