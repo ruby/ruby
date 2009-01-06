@@ -2428,6 +2428,7 @@ sock_initialize(VALUE sock, VALUE domain, VALUE type, VALUE protocol)
     return init_sock(sock, fd);
 }
 
+#if defined HAVE_SOCKETPAIR
 static VALUE
 io_call_close(VALUE io)
 {
@@ -2445,6 +2446,7 @@ pair_yield(VALUE pair)
 {
     return rb_ensure(rb_yield, pair, io_close, rb_ary_entry(pair, 1));
 }
+#endif
 
 static VALUE
 sock_s_socketpair(VALUE klass, VALUE domain, VALUE type, VALUE protocol)

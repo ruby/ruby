@@ -135,7 +135,6 @@ int
 getnameinfo(const struct sockaddr *sa, size_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags)
 {
 	struct afd *afd;
-	struct servent *sp;
 	struct hostent *hp;
 	u_short port;
 	int family, len, i;
@@ -177,7 +176,7 @@ getnameinfo(const struct sockaddr *sa, size_t salen, char *host, size_t hostlen,
 		strcpy(serv, numserv);
 	} else {
 #if defined(HAVE_GETSERVBYPORT)
-		sp = getservbyport(port, (flags & NI_DGRAM) ? "udp" : "tcp");
+		struct servent *sp = getservbyport(port, (flags & NI_DGRAM) ? "udp" : "tcp");
 		if (sp) {
 			if (strlen(sp->s_name) + 1 > servlen)
 				return ENI_MEMORY;
