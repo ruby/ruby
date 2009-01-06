@@ -1,3 +1,8 @@
+Tue Jan  6 09:02:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (yylex): 8 and 9 in octal integer should cause compile
+	  error.  [ruby-dev:35729]
+
 Mon Jan  5 11:12:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_schedule): runs deferred finalizers.
