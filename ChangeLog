@@ -1,3 +1,15 @@
+Tue Jan  6 13:39:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (cc_mark): frees the continuation's stack if its thread
+	  is dead to avoid recursive gc that segfaults.  [ruby-core:13889]
+	  a patch by Brent Roman <brent AT mbari.org>.
+
+	* eval.c (rb_cont_check): checks for valid continuation instance.
+
+	* eval.c (rb_callcc): assigns th->thread before scope_dup() to
+	  avoid segfaults if this scope_dup() triggers a gc pass.
+	  a patch by Brent Roman <brent AT mbari.org>.
+
 Mon Jan  5 12:52:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (init_env): use user profile folder than personal
