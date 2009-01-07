@@ -151,8 +151,8 @@ static const int lookup_order_table[] = {
 };
 
 static int
-ruby_getaddrinfo(char *nodename, char *servname,
-		 struct addrinfo *hints, struct addrinfo **res)
+ruby_getaddrinfo(const char *nodename, const char *servname,
+		 const struct addrinfo *hints, struct addrinfo **res)
 {
     struct addrinfo tmp_hints;
     int i, af, error;
@@ -183,7 +183,7 @@ ruby_getaddrinfo(char *nodename, char *servname,
 
 #if defined(_AIX)
 static int
-ruby_getaddrinfo__aix(char *nodename, char *servname,
+ruby_getaddrinfo__aix(const char *nodename, const char *servname,
 		      struct addrinfo *hints, struct addrinfo **res)
 {
     int error = getaddrinfo(nodename, servname, hints, res);
@@ -201,29 +201,24 @@ ruby_getaddrinfo__aix(char *nodename, char *servname,
 #undef getaddrinfo
 #define getaddrinfo(node,serv,hints,res) ruby_getaddrinfo__aix((node),(serv),(hints),(res))
 static int
-ruby_getnameinfo__aix(sa, salen, host, hostlen, serv, servlen, flags)
-     const struct sockaddr *sa;
-     size_t salen;
-     char *host;
-     size_t hostlen;
-     char *serv;
-     size_t servlen;
-     int flags;
+ruby_getnameinfo__aix(const struct sockaddr *sa, size_t salen,
+		      char *host, size_t hostlen,
+		      char *serv, size_t servlen, int flags)
 {
-  struct sockaddr_in6 *sa6;
-  u_int32_t *a6;
+    struct sockaddr_in6 *sa6;
+    u_int32_t *a6;
 
-  if (sa->sa_family == AF_INET6) {
-    sa6 = (struct sockaddr_in6 *)sa;
-    a6 = sa6->sin6_addr.u6_addr.u6_addr32;
+    if (sa->sa_family == AF_INET6) {
+	sa6 = (struct sockaddr_in6 *)sa;
+	a6 = sa6->sin6_addr.u6_addr.u6_addr32;
 
-    if (a6[0] == 0 && a6[1] == 0 && a6[2] == 0 && a6[3] == 0) {
-      strncpy(host, "::", hostlen);
-      snprintf(serv, servlen, "%d", sa6->sin6_port);
-      return 0;
+	if (a6[0] == 0 && a6[1] == 0 && a6[2] == 0 && a6[3] == 0) {
+	    strncpy(host, "::", hostlen);
+	    snprintf(serv, servlen, "%d", sa6->sin6_port);
+	    return 0;
+	}
     }
-  }
-  return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
+    return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
 }
 #undef getnameinfo
 #define getnameinfo(sa, salen, host, hostlen, serv, servlen, flags) \
