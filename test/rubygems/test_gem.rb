@@ -542,28 +542,6 @@ class TestGem < RubyGemTestCase
     end
   end
 
-  def test_self_user_home_user_drive_and_path
-    Gem.clear_paths
-
-    # safe-keep env variables
-    orig_home, orig_user_profile = ENV['HOME'], ENV['USERPROFILE']
-    orig_user_drive, orig_user_path = ENV['HOMEDRIVE'], ENV['HOMEPATH']
-
-    # prepare the environment
-    ENV.delete('HOME')
-    ENV.delete('USERPROFILE')
-    ENV['HOMEDRIVE'] = 'Z:'
-    ENV['HOMEPATH'] = '\\Users\\RubyUser'
-
-    assert_equal "Z:\\Users\\RubyUser", Gem.user_home
-
-  ensure
-    ENV['HOME'] = orig_home
-    ENV['USERPROFILE'] = orig_user_profile
-    ENV['USERDRIVE'] = orig_user_drive
-    ENV['USERPATH'] = orig_user_path
-  end
-
   def util_ensure_gem_dirs
     Gem.ensure_gem_subdirectories @gemhome
     @additional.each do |dir|
