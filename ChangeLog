@@ -1,3 +1,7 @@
+Thu Jan  8 07:30:52 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb (OpenURI.redirectable?): reverted https redirection.
+
 Thu Jan  8 00:31:58 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit/assertions.rb (assert_no_match): don't count up as two
