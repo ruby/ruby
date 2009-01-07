@@ -3918,11 +3918,10 @@ addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE
 
 
 #ifdef HAVE_SYS_UN_H
-static VALUE
+static void
 init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path)
 {
     struct sockaddr_un un;
-    VALUE addr;
 
     StringValue(path);
 
@@ -3936,8 +3935,6 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path)
     memcpy((void*)&un.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
    
     init_addrinfo(rai, (struct sockaddr *)&un, sizeof(un), AF_UNIX, SOCK_STREAM, 0, Qnil, Qnil);
-
-    return addr;
 }
 #endif
 
