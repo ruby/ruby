@@ -1,3 +1,7 @@
+Thu Jan  8 07:30:52 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb (OpenURI.redirectable?): reverted https redirection.
+
 Sun Jan  4 18:10:10 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/trans/gbk.trans, gbk-tbl.rb:
