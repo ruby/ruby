@@ -397,7 +397,9 @@ install?(:local, :comm, :man) do
     else
       require File.join(srcdir, "tool/mdoc2man.rb")
 
-      Tempfile.open(mdoc) do |w|
+      w = nil
+      Tempfile.open(mdoc) do |f|
+        w = f
         open(mdoc) {|r| Mdoc2Man.mdoc2man(r, w)}
       end
       install w.path, destfile, :mode => $data_mode
@@ -409,8 +411,9 @@ end
 install?(:local, :comm, :gem) do
   puts "creating default gem directories"
 
+  directories = %w[cache doc gems specifications]
   gpath = CONFIG["sitelibdir"].sub(%r'/site_ruby/(?=[^/]+)', '/gems/')
-  makedirs Gem::DIRECTORIES.collect {|dir| File.join(gpath, dir)}
+  makedirs directories.collect {|dir| File.join(gpath, dir)}
 end
 
 $install << :local << :ext if $install.empty?
