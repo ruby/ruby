@@ -172,6 +172,9 @@ def def_intern(func_name, pat, prefix_optional=nil)
 end
 
 def_intern('intern_family',  /\AAF_/)
+def_intern('intern_protocol_family',  /\APF_/)
+def_intern('intern_socktype',  /\ASOCK_/)
+def_intern('intern_ipproto',  /\AIPPROTO_/)
 
 result << ERB.new(<<'EOS', nil, '%').result(binding)
 

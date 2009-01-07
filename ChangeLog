@@ -1,3 +1,69 @@
+Wed Jan  7 22:24:12 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (rb_cAddrInfo): new class AddrInfo.
+	  (s_recvfrom): return AddrInfo as address.
+	  (s_recvfrom_nonblock): ditto.
+	  (sock_accept): ditto.
+	  (sock_accept_nonblock): ditto.
+	  (sock_sysaccept): ditto.
+	  (bsock_send): accept AddrInfo as address argument.
+	  (sock_connect): ditto.
+	  (sock_connect_nonblock): ditto.
+	  (sock_bind): ditto.
+	  (sock_s_unpack_sockaddr_in): ditto.
+	  (sock_s_unpack_sockaddr_un): ditto.
+	  (bsock_local_address): new method BasicSocket#local_address.
+	  (bsock_remote_address): new method BasicSocket#remote_address.
+	  (addrinfo_initialize): new method AddrInfo#initialize.
+	  (addrinfo_inspect): new method AddrInfo#inspect.
+	  (addrinfo_afamily): new method AddrInfo#afamily.
+	  (addrinfo_pfamily): new method AddrInfo#pfamily.
+	  (addrinfo_socktype): new method AddrInfo#socktype.
+	  (addrinfo_protocol): new method AddrInfo#protocol.
+	  (addrinfo_to_sockaddr): new method AddrInfo#to_sockaddr.
+	  (addrinfo_canonname): new method AddrInfo#canonname.
+	  (addrinfo_ip_p): new method AddrInfo#ip?.
+	  (addrinfo_ipv4_p): new method AddrInfo#ipv4?.
+	  (addrinfo_ipv6_p): new method AddrInfo#ipv6?.
+	  (addrinfo_unix_p): new method AddrInfo#unix?.
+	  (addrinfo_getnameinfo): new method AddrInfo#getnameinfo.
+	  (addrinfo_s_getaddrinfo): new method AddrInfo.getaddrinfo.
+	  (addrinfo_s_tcp): new method AddrInfo.tcp.
+	  (addrinfo_s_udp): new method AddrInfo.udp.
+	  (addrinfo_s_unix): new method AddrInfo.unix.
+	  (Init_socket): define new class and methods.
+	  (sock_getaddrinfo): apply socktype hack regardless of ai_flags.
+	  (addrinfo_new): defined.
+	  (get_afamily): ditto.
+	  (fd_socket_addrinfo): ditto.
+	  (io_socket_addrinfo): ditto.
+	  (SockAddrStringValue): ditto.
+	  (SockAddrStringValuePtr): ditto.
+	  (sockaddr_string_value): ditto.
+	  (sockaddr_string_value_ptr): ditto.
+	  (rb_addrinfo_t): ditto.
+	  (addrinfo_mark): ditto.
+	  (addrinfo_free): ditto.
+	  (addrinfo_s_allocate): ditto.
+	  (IS_ADDRINFO): ditto.
+	  (check_addrinfo): ditto.
+	  (get_addrinfo): ditto.
+	  (alloc_addrinfo): ditto.
+	  (init_addrinfo): ditto.
+	  (addrinfo_new): ditto.
+	  (call_getaddrinfo): ditto.
+	  (init_addrinfo_getaddrinfo): ditto.
+	  (make_inspectname): ditto.
+	  (addrinfo_firstonly_new): ditto.
+	  (addrinfo_list_new): ditto.
+	  (init_unix_addrinfo): ditto.
+	  (ai_get_afamily): ditto.
+
+	* ext/socket/mkconstants.rb: generate intern_protocol_family,
+	  intern_socktype and intern_ipproto.
+
+	  [ruby-dev:37692]
+
 Wed Jan  7 22:13:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb (man, gem): fixed errors.

@@ -102,7 +102,7 @@ class TestSocket < Test::Unit::TestCase
     c = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
     c.connect(serv.getsockname)
     fd, peeraddr = serv.sysaccept
-    assert_equal(c.getsockname, peeraddr)
+    assert_equal(c.getsockname, peeraddr.to_sockaddr)
   ensure
     serv.close if serv
     c.close if c
