@@ -1,3 +1,8 @@
+Wed Jan  7 10:09:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (timeofday): use monotonic clock.  based on a patch
+	  from zimbatm <zimbatm@oree.ch> in [ruby-core:16627].
+
 Tue Jan  6 09:03:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (yylex): 8 and 9 in octal integer should cause compile
