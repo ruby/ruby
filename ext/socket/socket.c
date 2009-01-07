@@ -1101,7 +1101,7 @@ str_isnumber(const char *p)
 }
 
 static char*
-host_str(VALUE host, char *hbuf, size_t len)
+host_str(VALUE host, char *hbuf, size_t len, int *flags_ptr)
 {
     if (NIL_P(host)) {
 	return NULL;
@@ -1110,6 +1110,7 @@ host_str(VALUE host, char *hbuf, size_t len)
 	unsigned long i = NUM2ULONG(host);
 
 	make_inetaddr(htonl(i), hbuf, len);
+        if (flags_ptr) *flags_ptr |= AI_NUMERICHOST;
 	return hbuf;
     }
     else {
@@ -1119,9 +1120,11 @@ host_str(VALUE host, char *hbuf, size_t len)
 	name = RSTRING_PTR(host);
 	if (!name || *name == 0 || (name[0] == '<' && strcmp(name, "<any>") == 0)) {
 	    make_inetaddr(INADDR_ANY, hbuf, len);
+            if (flags_ptr) *flags_ptr |= AI_NUMERICHOST;
 	}
 	else if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {
 	    make_inetaddr(INADDR_BROADCAST, hbuf, len);
+            if (flags_ptr) *flags_ptr |= AI_NUMERICHOST;
 	}
 	else if (strlen(name) >= len) {
 	    rb_raise(rb_eArgError, "hostname too long (%"PRIuSIZE")",
@@ -1135,13 +1138,14 @@ host_str(VALUE host, char *hbuf, size_t len)
 }
 
 static char*
-port_str(VALUE port, char *pbuf, size_t len)
+port_str(VALUE port, char *pbuf, size_t len, int *flags_ptr)
 {
     if (NIL_P(port)) {
 	return 0;
     }
     else if (FIXNUM_P(port)) {
 	snprintf(pbuf, len, "%ld", FIX2LONG(port));
+        if (flags_ptr) *flags_ptr |= AI_NUMERICSERV;
 	return pbuf;
     }
     else {
@@ -1172,13 +1176,15 @@ sock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_ha
     char *hostp, *portp;
     int error;
     char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
+    int additional_flags = 0;
 
-    hostp = host_str(host, hbuf, sizeof(hbuf));
-    portp = port_str(port, pbuf, sizeof(pbuf));
+    hostp = host_str(host, hbuf, sizeof(hbuf), &additional_flags);
+    portp = port_str(port, pbuf, sizeof(pbuf), &additional_flags);
 
     if (socktype_hack && hints->ai_socktype == 0 && str_isnumber(portp)) {
        hints->ai_socktype = SOCK_DGRAM;
     }
+    hints->ai_flags |= additional_flags;
 
     error = rb_getaddrinfo(hostp, portp, hints, &res);
     if (error) {
@@ -1662,7 +1668,7 @@ make_hostent_internal(struct hostent_arg *arg)
 	hostp = addr->ai_canonname;
     }
     else {
-	hostp = host_str(host, hbuf, sizeof(hbuf));
+	hostp = host_str(host, hbuf, sizeof(hbuf), NULL);
     }
     rb_ary_push(ary, rb_str_new2(hostp));
 
