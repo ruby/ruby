@@ -1,3 +1,8 @@
+Wed Jan  7 18:14:16 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* configure.in: fix SEGV on Mac OS X 10.5.3 with --enable-shared.
+	  a patch from Wataru Kimura in Bug #193 [ruby-core:17333].
+
 Tue Jan  6 18:34:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (stack_extend): streamlined rb_thread_restore_context()
