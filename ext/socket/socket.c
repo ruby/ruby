@@ -4491,6 +4491,9 @@ addrinfo_getnameinfo(int argc, VALUE *argv, VALUE self)
 
     flags = NIL_P(vflags) ? 0 : NUM2INT(vflags);
 
+    if (rai->socktype == SOCK_DGRAM)
+        flags |= NI_DGRAM;
+
     error = getnameinfo((struct sockaddr *)&rai->addr, rai->sockaddr_len,
                         hbuf, sizeof(hbuf), pbuf, sizeof(pbuf),
                         flags);
