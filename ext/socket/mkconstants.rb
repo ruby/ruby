@@ -219,6 +219,7 @@ init_constants(VALUE mConst)
 <%= gen_name_to_int_func("ipv6_optname_to_int", /\AIPV6_/, "IPV6_", "IPPROTO_IPV6") %>
 <%= gen_name_to_int_func("tcp_optname_to_int", /\ATCP_/, "TCP_") %>
 <%= gen_name_to_int_func("udp_optname_to_int", /\AUDP_/, "UDP_") %>
+<%= gen_name_to_int_func("shutdown_how_to_int", /\ASHUT_/, "SHUT_") %>
 
 <%= INTERN_DEFS.map {|decl, gen_hash, func| func }.join("\n") %>
 

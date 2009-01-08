@@ -375,6 +375,13 @@ optname_arg(int level, VALUE optname)
     }
 }
 
+static int
+shutdown_how_arg(VALUE how)
+{
+    /* convert SHUT_RD, SHUT_WR, SHUT_RDWR. */
+    return constant_arg(how, shutdown_how_to_int, "unknown shutdown argument");
+}
+
 static VALUE
 init_sock(VALUE sock, int fd)
 {
@@ -415,11 +422,11 @@ bsock_shutdown(int argc, VALUE *argv, VALUE sock)
     }
     rb_scan_args(argc, argv, "01", &howto);
     if (howto == Qnil)
-	how = 2;
+	how = SHUT_RDWR;
     else {
-	how = NUM2INT(howto);
-	if (how < 0 || 2 < how) {
-	    rb_raise(rb_eArgError, "`how' should be either 0, 1, 2");
+	how = shutdown_how_arg(howto);
+        if (how != SHUT_WR && how != SHUT_RD && how != SHUT_RDWR) {
+	    rb_raise(rb_eArgError, "`how' should be either :SHUT_RD, :SHUT_WR, :SHUT_RDWR");
 	}
     }
     GetOpenFile(sock, fptr);

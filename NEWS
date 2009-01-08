@@ -78,8 +78,9 @@ with all sufficient information, see the ChangeLog file.
     returns a sender address as AddrInfo object instead of a string.
   * BasicSocket#local_address
   * BasicSocket#remote_address
-  * string/symbol as protocol/address family, socket type, protocol level and
-    socket option name can be specified as a string/symbol.
+  * string/symbol as protocol/address family, socket type, protocol level,
+    socket option name and shutdown's how argument can be specified as a
+    string/symbol.
 
 === Compatibility issues (excluding feature bug fixes)
 
