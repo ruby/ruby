@@ -410,9 +410,11 @@ end
 install?(:local, :comm, :gem) do
   puts "creating default gem directories"
 
-  directories = open(File.join(srcdir, "lib/rubygems.rb")) do |f|
-    if f.grep(/^\s*DIRECTORIES\s*=\s*%w\[(.*?)\]/)
-      break $1.split
+  directories = []
+  IO.foreach(File.join(srcdir, "lib/rubygems.rb")) do |line|
+    if /^\s*DIRECTORIES\s*=\s*%w\[(.*?)\]/ =~ line
+      directories = $1.split
+      break
     end
   end
   gpath = CONFIG["sitelibdir"].sub(%r'/site_ruby/(?=[^/]+)', '/gems/')
