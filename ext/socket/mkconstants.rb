@@ -104,13 +104,19 @@ def each_names_with_len(pat, prefix_optional=nil)
   }
 end
 
-ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int(str_var, len_var, retp_var, pat, prefix_optional=nil)")
-    switch (<%=len_var%>) {
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int_func(funcname, pat, prefix_optional, guard=nil)")
+%if guard
+#ifdef <%=guard%>
+%end
+static int
+<%=funcname%>(char *str, int len, int *valp)
+{
+    switch (len) {
 %    each_names_with_len(pat, prefix_optional) {|pairs, len|
       case <%=len%>:
 %      pairs.each {|name, const|
 #ifdef <%=const%>
-        if (memcmp(<%=str_var%>, <%=c_str name%>, <%=len%>) == 0) { *<%=retp_var%> = <%=const%>; return 0; }
+        if (memcmp(str, <%=c_str name%>, <%=len%>) == 0) { *valp = <%=const%>; return 0; }
 #endif
 %      }
         return -1;
@@ -119,6 +125,10 @@ ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int(str_var, len_var,
       default:
         return -1;
     }
+}
+%if guard
+#endif
+%end
 EOS
 
 def reverse_each_name_with_prefix_optional(pat, prefix_pat)
@@ -201,55 +211,14 @@ init_constants(VALUE mConst)
 <%= INTERN_DEFS.map {|decl, gen_hash, func| gen_hash }.join("\n") %>
 }
 
-static int
-family_to_int(char *str, int len, int *valp)
-{
-<%= gen_name_to_int("str", "len", "valp", /\A[AP]F_/, "AF_") %>
-}
-
-static int
-socktype_to_int(char *str, int len, int *valp)
-{
-<%= gen_name_to_int("str", "len", "valp", /\ASOCK_/, "SOCK_") %>
-}
-
-static int
-level_to_int(char *str, int len, int *valp)
-{
-<%= gen_name_to_int("str", "len", "valp", /\A(SOL_SOCKET\z|IPPROTO_)/, /\A(SOL_|IPPROTO_)/) %>
-}
-
-static int
-so_optname_to_int(char *str, int len, int *valp)
-{
-<%= gen_name_to_int("str", "len", "valp", /\ASO_/, "SO_") %>
-}
-
-static int
-ip_optname_to_int(char *str, int len, int *valp)
-{
-<%= gen_name_to_int("str", "len", "valp", /\AIP_/, "IP_") %>
-}
-
-#ifdef IPPROTO_IPV6
-static int
-ipv6_optname_to_int(char *str, int len, int *valp)
-{
-<%= gen_name_to_int("str", "len", "valp", /\AIPV6_/, "IPV6_") %>
-}
-#endif
-
-static int
-tcp_optname_to_int(char *str, int len, int *valp)
-{
-<%= gen_name_to_int("str", "len", "valp", /\ATCP_/, "TCP_") %>
-}
-
-static int
-udp_optname_to_int(char *str, int len, int *valp)
-{
-<%= gen_name_to_int("str", "len", "valp", /\AUDP_/, "UDP_") %>
-}
+<%= gen_name_to_int_func("family_to_int", /\A(AF_|PF_)/, "AF_") %>
+<%= gen_name_to_int_func("socktype_to_int", /\ASOCK_/, "SOCK_") %>
+<%= gen_name_to_int_func("level_to_int", /\A(SOL_SOCKET\z|IPPROTO_)/, /\A(SOL_|IPPROTO_)/) %>
+<%= gen_name_to_int_func("so_optname_to_int", /\ASO_/, "SO_") %>
+<%= gen_name_to_int_func("ip_optname_to_int", /\AIP_/, "IP_") %>
+<%= gen_name_to_int_func("ipv6_optname_to_int", /\AIPV6_/, "IPV6_", "IPPROTO_IPV6") %>
+<%= gen_name_to_int_func("tcp_optname_to_int", /\ATCP_/, "TCP_") %>
+<%= gen_name_to_int_func("udp_optname_to_int", /\AUDP_/, "UDP_") %>
 
 <%= INTERN_DEFS.map {|decl, gen_hash, func| func }.join("\n") %>
 
