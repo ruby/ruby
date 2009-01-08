@@ -5,6 +5,10 @@ Thu Jan  8 23:19:38 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: generate shutdown_how_to_int.
 
+Thu Jan  8 23:16:37 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* instruby.rb: easy code contains fewer bugs.
+
 Thu Jan  8 22:59:30 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb (gen_name_to_int_func): generate
