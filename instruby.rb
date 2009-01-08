@@ -284,8 +284,7 @@ install?(:doc, :rdoc) do
   if $rdocdir
     puts "installing rdoc"
 
-    ridatadir = RDoc::RI::Paths::SYSDIR
-    Config.expand(ridatadir)
+    ridatadir = File.join(CONFIG['datadir'], "ri", CONFIG['ruby_version'], "system")
     makedirs [ridatadir]
     install_recursive($rdocdir, ridatadir, :mode => $data_mode)
   end
@@ -342,10 +341,10 @@ __END__
 :endofruby
 EOF
       when "cmd"
-        "#{<<EOH}#{shebang}#{body}"
+        "#{<<"/EOH"}#{shebang}#{body}"
 @"%~dp0#{ruby_install_name}" -x "%~f0" %*
 @exit /b %ERRORLEVEL%
-EOH
+/EOH
       else
         shebang + body
       end
@@ -411,7 +410,11 @@ end
 install?(:local, :comm, :gem) do
   puts "creating default gem directories"
 
-  directories = %w[cache doc gems specifications]
+  directories = open(File.join(srcdir, "lib/rubygems.rb")) do |f|
+    if f.grep(/^\s*DIRECTORIES\s*=\s*%w\[(.*?)\]/)
+      break $1.split
+    end
+  end
   gpath = CONFIG["sitelibdir"].sub(%r'/site_ruby/(?=[^/]+)', '/gems/')
   makedirs directories.collect {|dir| File.join(gpath, dir)}
 end

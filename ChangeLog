@@ -1,3 +1,8 @@
+Thu Jan  8 17:32:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb: should not depend on a library which does not exist
+	  in 1.8.
+
 Thu Jan  8 07:52:55 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (init_unix_addrinfo): don't return a value.
