@@ -1,3 +1,9 @@
+Thu Jan  8 22:44:10 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c: don't use AI_NUMERICSERV for platforms which
+	  not define it as old Windows.
+	  [ruby-dev:37736]
+
 Thu Jan  8 17:32:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb: should not depend on a library which does not exist

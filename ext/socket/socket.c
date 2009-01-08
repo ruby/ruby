@@ -1145,7 +1145,9 @@ port_str(VALUE port, char *pbuf, size_t len, int *flags_ptr)
     }
     else if (FIXNUM_P(port)) {
 	snprintf(pbuf, len, "%ld", FIX2LONG(port));
+#ifdef AI_NUMERICSERV
         if (flags_ptr) *flags_ptr |= AI_NUMERICSERV;
+#endif
 	return pbuf;
     }
     else {
@@ -4020,15 +4022,20 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
             VALUE service = rb_ary_entry(sockaddr_ary, 1);
             VALUE nodename = rb_ary_entry(sockaddr_ary, 2);
             VALUE numericnode = rb_ary_entry(sockaddr_ary, 3);
+            int flags;
 
             service = INT2NUM(NUM2INT(service));
             if (!NIL_P(nodename))
                 StringValue(nodename);
             StringValue(numericnode);
+            flags = AI_NUMERICHOST;
+#ifdef AI_NUMERICSERV
+            flags |= AI_NUMERICSERV;
+#endif
 
             init_addrinfo_getaddrinfo(rai, numericnode, service,
                     INT2NUM(i_pfamily ? i_pfamily : af), INT2NUM(i_socktype), INT2NUM(i_protocol),
-                    INT2NUM(AI_NUMERICHOST|AI_NUMERICSERV),
+                    INT2NUM(flags),
                     rb_str_equal(numericnode, nodename) ? Qnil : make_inspectname(nodename, service));
             break;
           }
