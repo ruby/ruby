@@ -1,3 +1,9 @@
+Thu Jan  8 13:20:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (deferred_nodes, compstmt, arg, fixup_nodes, range_op): fix
+	  up fixnum range literal in conditional as automagical line number
+	  comparison.  [ruby-core:12124], [ruby-dev:35731]
+
 Wed Jan  7 10:06:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (timeofday): use monotonic clock.  based on a patch
