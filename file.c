@@ -773,7 +773,8 @@ rb_file_s_stat(VALUE klass, VALUE fname)
     rb_secure(4);
     FilePathValue(fname);
     if (rb_stat(fname, &st) < 0) {
-	rb_sys_fail(StringValueCStr(fname));
+	FilePathValue(fname);
+	rb_sys_fail(RSTRING_PTR(fname));
     }
     return stat_new(&st);
 }
@@ -1590,8 +1591,10 @@ rb_file_s_size(VALUE klass, VALUE fname)
 {
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0)
-	rb_sys_fail(StringValueCStr(fname));
+    if (rb_stat(fname, &st) < 0) {
+	FilePathValue(fname);
+	rb_sys_fail(RSTRING_PTR(fname));
+    }
     return OFFT2NUM(st.st_size);
 }
 
@@ -1680,8 +1683,10 @@ rb_file_s_atime(VALUE klass, VALUE fname)
 {
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0)
-	rb_sys_fail(StringValueCStr(fname));
+    if (rb_stat(fname, &st) < 0) {
+	FilePathValue(fname);
+	rb_sys_fail(RSTRING_PTR(fname));
+    }
     return stat_atime(&st);
 }
 
@@ -1724,8 +1729,10 @@ rb_file_s_mtime(VALUE klass, VALUE fname)
 {
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0)
+    if (rb_stat(fname, &st) < 0) {
+	FilePathValue(fname);
 	rb_sys_fail(RSTRING_PTR(fname));
+    }
     return stat_mtime(&st);
 }
 
@@ -1769,8 +1776,10 @@ rb_file_s_ctime(VALUE klass, VALUE fname)
 {
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0)
+    if (rb_stat(fname, &st) < 0) {
+	FilePathValue(fname);
 	rb_sys_fail(RSTRING_PTR(fname));
+    }
     return stat_ctime(&st);
 }
 
@@ -3660,10 +3669,12 @@ rb_f_test(int argc, VALUE *argv)
 
     if (strchr("MAC", cmd)) {
 	struct stat st;
+	VALUE fname = argv[1];
 
 	CHECK(1);
-	if (rb_stat(argv[1], &st) == -1) {
-	    rb_sys_fail(RSTRING_PTR(argv[1]));
+	if (rb_stat(fname, &st) == -1) {
+	    FilePathValue(fname);
+	    rb_sys_fail(RSTRING_PTR(fname));
 	}
 
 	switch (cmd) {
