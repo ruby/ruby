@@ -94,7 +94,7 @@ free_window(struct windata *winp)
 {
     if (winp->window && winp->window != stdscr) delwin(winp->window);
     winp->window = 0;
-    free(winp);
+    xfree(winp);
 }
 
 static VALUE
