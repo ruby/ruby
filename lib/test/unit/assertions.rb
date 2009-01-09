@@ -92,6 +92,7 @@ module Test
 
       def assert_no_match(regexp, string, msg=nil)
         assert_instance_of(Regexp, regexp, "The first argument to assert_no_match should be a Regexp.")
+        self._assertions -= 1
         msg = message(msg) { "<#{mu_pp(regexp)}> expected to not match\n<#{mu_pp(string)}>" }
         assert(regexp !~ string, msg)
       end
