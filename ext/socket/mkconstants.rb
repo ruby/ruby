@@ -197,13 +197,17 @@ init_constants(VALUE mConst)
 %   if guard
 #if <%=guard%>
 %   end
-#if defined(<%=name%>)
-    <%=define%>(<%=c_str name%>, <%=name%>);
 %   if default_value
-#else
-    <%=define%>(<%=c_str name%>, <%=default_value%>);
-%   end
+#ifndef <%=name%>
+#define <%=name%> <%=default_value%>
 #endif
+%   else
+#if defined(<%=name%>)
+%   end
+    <%=define%>(<%=c_str name%>, <%=name%>);
+%   unless default_value
+#endif
+%   end
 %   if guard
 #endif
 %   end

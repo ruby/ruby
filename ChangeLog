@@ -1,3 +1,7 @@
+Fri Jan  9 15:40:07 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/mkconstants.rb: define macro if default_value is passed.
+
 Fri Jan  9 13:20:08 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: rescue abnormal Encoding.locale_charmap value.
