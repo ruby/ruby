@@ -1,3 +1,29 @@
+Fri Jan  9 15:20:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (TAG_THREAD): to start a new thread.
+
+	* eval.c (ruby_init, ruby_options, ruby_cleanup, rb_protect,
+	  rb_load_protect, rb_thread_start_0): make thread anchor.
+
+	* eval.c (proc_alloc): clone proc object if klass is not Proc or
+	  created in different thread.
+
+	* eval.c (rb_block_pass): call a function with a block.  [new]
+
+	* eval.c (rb_thread_start_0): restore prot_tag before rewinding.
+
+	* eval.c (rb_thread_start_0): update curr_thread before raising
+	  TAG_THREAD.  [ruby-dev:25712]
+
+	* eval.c (rb_thread_start_1): outer block variables wasn't linked to
+	  threads.  fixed: [ruby-dev:25700]
+
+	* eval.c (rb_thread_start_1): initialize newly pushed frame.
+	  fixed: [ruby-dev:25707]
+
+	* node.h (struct rb_thread): added anchor.  backported r7954,
+	  r7964, r7980, r7992, r8014 from trunk.
+
 Wed Jan  7 18:14:16 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* configure.in: fix SEGV on Mac OS X 10.5.3 with --enable-shared.

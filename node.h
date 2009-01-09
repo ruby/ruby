@@ -461,6 +461,8 @@ struct rb_thread {
     VALUE thread;
 
     VALUE sandbox;
+
+    struct ruby_env *anchor;
 };
 
 extern VALUE (*ruby_sandbox_save)_((rb_thread_t));
