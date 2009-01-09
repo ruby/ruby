@@ -1,3 +1,13 @@
+Mon Jan  5 17:59:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (cygwin): needs properly implemented nl_langinfo().
+	  [ruby-core:21110]
+
+	* missing/langinfo.c: added as suggested at [ruby-core:21015], from
+	  http://www.cl.cam.ac.uk/~mgk25/ucs/langinfo.c.
+
+	* missing/langinfo.c (nl_langinfo_0): fixed typos for SJIS.
+
 Mon Jan  5 17:38:40 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* encoding.c (rb_locale_charmap): use GetConsoleCP() instead of
