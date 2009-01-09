@@ -2082,7 +2082,7 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
 #if defined(NFDBITS) && defined(HAVE_RB_FD_INIT)
 
 /*
- * several Unix platforms supports file descriptors bigger than FD_SETSIZE
+ * several Unix platforms support file descriptors bigger than FD_SETSIZE
  * in select(2) system call.
  *
  * - Linux 2.2.12 (?)
