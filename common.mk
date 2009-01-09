@@ -380,7 +380,7 @@ btest-ruby: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 	@$(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib" -q
 
 test-sample: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
-	@$(MINIRUBY) $(srcdir)/rubytest.rb
+	@$(RUNRUBY) $(srcdir)/rubytest.rb
 
 test-knownbug: miniruby$(EXEEXT) $(PROGRAM) $(RBCONFIG) PHONY
 	$(MINIRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM)" $(OPTS) $(srcdir)/KNOWNBUGS.rb
