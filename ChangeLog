@@ -1,3 +1,7 @@
+Fri Jan  9 21:52:47 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (sock_define_const): use INT2NUM.
+
 Fri Jan  9 15:40:07 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/mkconstants.rb: define macro if default_value is passed.

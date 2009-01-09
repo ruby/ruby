@@ -4631,8 +4631,8 @@ sockaddr_string_value_ptr(volatile VALUE *v)
 static void
 sock_define_const(const char *name, int value, VALUE mConst)
 {
-    rb_define_const(rb_cSocket, name, INT2FIX(value));
-    rb_define_const(mConst, name, INT2FIX(value));
+    rb_define_const(rb_cSocket, name, INT2NUM(value));
+    rb_define_const(mConst, name, INT2NUM(value));
 }
 
 static void
