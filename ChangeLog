@@ -1,3 +1,7 @@
+Fri Jan  9 13:20:08 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: rescue abnormal Encoding.locale_charmap value.
+
 Fri Jan  9 12:29:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (test-sample), rubytest.rb: use runruby.rb
