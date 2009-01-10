@@ -66,6 +66,31 @@ def each_name(pat)
   }
 end
 
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_defs_in_guard(define, name, default_value)")
+% if default_value
+#ifndef <%=name%>
+#define <%=name%> <%=default_value%>
+#endif
+    <%=define%>(<%=c_str name%>, <%=name%>);
+% else
+#if defined(<%=name%>)
+    <%=define%>(<%=c_str name%>, <%=name%>);
+#endif
+% end
+EOS
+
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_defs")
+% each_const {|guard, define, name, default_value|
+%   if guard
+#if <%=guard%>
+<%= gen_const_defs_in_guard(define, name, default_value) %>
+#endif
+%   else
+<%= gen_const_defs_in_guard(define, name, default_value) %>
+%   end
+% }
+EOS
+
 def reverse_each_name(pat)
   DEFS.reverse_each {|name, default_value|
     next if pat !~ name
@@ -104,10 +129,7 @@ def each_names_with_len(pat, prefix_optional=nil)
   }
 end
 
-ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int_func(funcname, pat, prefix_optional, guard=nil)")
-%if guard
-#ifdef <%=guard%>
-%end
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int_func_in_guard(funcname, pat, prefix_optional, guard=nil)")
 static int
 <%=funcname%>(char *str, int len, int *valp)
 {
@@ -126,8 +148,15 @@ static int
         return -1;
     }
 }
+EOS
+
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int_func(funcname, pat, prefix_optional, guard=nil)")
 %if guard
+#ifdef <%=guard%>
+<%=gen_name_to_int_func_in_guard(funcname, pat, prefix_optional, guard)%>
 #endif
+%else
+<%=gen_name_to_int_func_in_guard(funcname, pat, prefix_optional, guard)%>
 %end
 EOS
 
@@ -193,25 +222,7 @@ result << ERB.new(<<'EOS', nil, '%').result(binding)
 static void
 init_constants(VALUE mConst)
 {
-% each_const {|guard, define, name, default_value|
-%   if guard
-#if <%=guard%>
-%   end
-%   if default_value
-#ifndef <%=name%>
-#define <%=name%> <%=default_value%>
-#endif
-%   else
-#if defined(<%=name%>)
-%   end
-    <%=define%>(<%=c_str name%>, <%=name%>);
-%   unless default_value
-#endif
-%   end
-%   if guard
-#endif
-%   end
-% }
+<%= gen_const_defs %>
 <%= INTERN_DEFS.map {|decl, gen_hash, func| gen_hash }.join("\n") %>
 }
 
