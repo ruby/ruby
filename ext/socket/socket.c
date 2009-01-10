@@ -3701,6 +3701,16 @@ sock_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
 /*
  * call-seq:
  *   socket.accept => [client_socket, client_addrinfo]
+ *
+ * Accepts a next connection.
+ * Returns a new Socket object and AddrInfo object.
+ *
+ *   serv = Socket.new(:INET, :STREAM, 0)
+ *   serv.listen(5)
+ *   c = Socket.new(:INET, :STREAM, 0)
+ *   c.connect(serv.local_address)
+ *   p serv.accept #=> [#<Socket:fd 6>, #<AddrInfo: 127.0.0.1:48555 TCP>]
+ *
  */
 static VALUE
 sock_accept(VALUE sock)
