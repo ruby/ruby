@@ -399,6 +399,17 @@ init_sock(VALUE sock, int fd)
     return sock;
 }
 
+/*
+ * call-seq:
+ *   BasicSocket.for_fd(fd) => basicsocket
+ *
+ * Returns a socket object which contains the file descriptor, _fd_.
+ *
+ *   # If invoked by inetd, STDIN/STDOUT/STDERR is a socket.
+ *   STDIN_SOCK = Socket.for_fd(STDIN.fileno)
+ *   p STDIN_SOCK.remote_address
+ *
+ */
 static VALUE
 bsock_s_for_fd(VALUE klass, VALUE fd)
 {
@@ -410,6 +421,33 @@ bsock_s_for_fd(VALUE klass, VALUE fd)
     return sock;
 }
 
+/*
+ * call-seq:
+ *   basicsocket.shutdown([how]) => 0
+ *
+ * Calls shutdown(2) system call.
+ *
+ * s.shutdown(Socket::SHUT_RD) disallows further read.
+ *
+ * s.shutdown(Socket::SHUT_WR) disallows further write.
+ *
+ * s.shutdown(Socket::SHUT_RDWR) disallows further read and write.
+ *
+ * _how_ can be symbol or string:
+ * - :RD, :SHUT_RD, "RD" and "SHUT_RD" are accepted as Socket::SHUT_RD.
+ * - :WR, :SHUT_WR, "WR" and "SHUT_WR" are accepted as Socket::SHUT_WR.
+ * - :RDWR, :SHUT_RDWR, "RDWR" and "SHUT_RDWR" are accepted as Socket::SHUT_RDWR.
+ *
+ *   UNIXSocket.pair {|s1, s2|
+ *     s1.puts "ping"
+ *     s1.shutdown(:WR)
+ *     p s2.read          #=> "ping\n"
+ *     s2.puts "pong"
+ *     s2.close
+ *     p s1.read          #=> "pong\n"
+ *   }
+ *   
+ */
 static VALUE
 bsock_shutdown(int argc, VALUE *argv, VALUE sock)
 {
@@ -436,6 +474,16 @@ bsock_shutdown(int argc, VALUE *argv, VALUE sock)
     return INT2FIX(0);
 }
 
+/*
+ * call-seq:
+ *   basicsocket.close_read => nil
+ *
+ * Disallows further read.
+ *
+ *   s1, s2 = UNIXSocket.pair
+ *   s1.close_read
+ *   s2.puts #=> Broken pipe (Errno::EPIPE)
+ */
 static VALUE
 bsock_close_read(VALUE sock)
 {
@@ -454,6 +502,21 @@ bsock_close_read(VALUE sock)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *   basicsocket.close_write => nil
+ *
+ * Disallows further write.
+ *
+ *   UNIXSocket.pair {|s1, s2|
+ *     s1.print "ping"
+ *     s1.close_write
+ *     p s2.read        #=> "ping"
+ *     s2.print "pong"
+ *     s2.close
+ *     p s1.read        #=> "pong"
+ *   }
+ */
 static VALUE
 bsock_close_write(VALUE sock)
 {
@@ -622,6 +685,16 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
 #endif
 }
 
+/*
+ * call-seq:
+ *   basicsocket.getsockname => sockaddr
+ *
+ * Returns the local address of the socket as a sockaddr string.
+ *
+ *   TCPServer.open("127.0.0.1", 15120) {|serv|
+ *     p serv.getsockname #=> "\x02\x00;\x10\x7F\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
+ *   }
+ */
 static VALUE
 bsock_getsockname(VALUE sock)
 {
@@ -635,6 +708,19 @@ bsock_getsockname(VALUE sock)
     return rb_str_new(buf, len);
 }
 
+/*
+ * call-seq:
+ *   basicsocket.getpeername => sockaddr
+ *
+ * Returns the remote address of the socket as a sockaddr string.
+ *
+ *   TCPServer.open("127.0.0.1", 1440) {|serv|
+ *     c = TCPSocket.new("127.0.0.1", 1440)
+ *     s = serv.accept
+ *     p s.getpeername #=> "\x02\x00\x82u\x7F\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
+ *   }
+ *
+ */
 static VALUE
 bsock_getpeername(VALUE sock)
 {
@@ -703,9 +789,14 @@ io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len)
  * call-seq:
  *   bsock.local_address => addrinfo
  *
- * returns an AddrInfo object for local address obtained by getsockname.
+ * Returns an AddrInfo object for local address obtained by getsockname.
  *
  * Note that addrinfo.protocol is filled by 0.
+ *
+ *   TCPServer.open("127.0.0.1", 1512) {|serv|
+ *     p serv.local_address #=> #<AddrInfo: 127.0.0.1:1512 TCP>
+ *   }
+ *
  */
 static VALUE
 bsock_local_address(VALUE sock)
@@ -724,9 +815,16 @@ bsock_local_address(VALUE sock)
  * call-seq:
  *   bsock.remote_address => addrinfo
  *
- * returns an AddrInfo object for remote address obtained by getpeername.
+ * Returns an AddrInfo object for remote address obtained by getpeername.
  *
  * Note that addrinfo.protocol is filled by 0.
+ *
+ *   TCPServer.open("127.0.0.1", 1728) {|serv|
+ *     c = TCPSocket.new("127.0.0.1", 1728)
+ *     s = serv.accept
+ *     p s.remote_address #=> #<AddrInfo: 127.0.0.1:36504 TCP>
+ *   }
+ *
  */
 static VALUE
 bsock_remote_address(VALUE sock)
@@ -771,6 +869,23 @@ send_blocking(void *data)
 static VALUE sockaddr_string_value(volatile VALUE *);
 static char *sockaddr_string_value_ptr(volatile VALUE *);
 
+/*
+ * call-seq:
+ *   basicsocket.send(mesg, flags [, sockaddr_to]) => numbytes_sent
+ *
+ * send _mesg_ via _basicsocket_.
+ *
+ * _mesg_ should be a string.
+ *
+ * _flags_ should be a bitwise OR of Socket::MSG_* constants.
+ *
+ * _sockaddr_to_ should be a packed sockaddr string or an addrinfo.
+ *
+ *   TCPSocket.open("localhost", 80) {|s|
+ *     s.send "GET / HTTP/1.0\r\n\r\n", 0
+ *     p s.read
+ *   }
+ */
 static VALUE
 bsock_send(int argc, VALUE *argv, VALUE sock)
 {
@@ -807,6 +922,19 @@ bsock_send(int argc, VALUE *argv, VALUE sock)
     return INT2FIX(n);
 }
 
+/*
+ * call-seq:
+ *   basicsocket.do_not_reverse_lookup => true or false
+ *
+ * Gets the do_not_reverse_lookup flag of _basicsocket_.
+ *
+ *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
+ *     p sock.do_not_reverse_lookup      #=> false
+ *     p sock.peeraddr                   #=> ["AF_INET", 80, "carbon.ruby-lang.org", "221.186.184.68"]
+ *     sock.do_not_reverse_lookup = true
+ *     p sock.peeraddr                   #=> ["AF_INET", 80, "221.186.184.68", "221.186.184.68"]
+ *   }
+ */
 static VALUE
 bsock_do_not_reverse_lookup(VALUE sock)
 {
@@ -816,6 +944,18 @@ bsock_do_not_reverse_lookup(VALUE sock)
     return (fptr->mode & FMODE_NOREVLOOKUP) ? Qtrue : Qfalse;
 }
 
+/*
+ * call-seq:
+ *   basicsocket.do_not_reverse_lookup = bool
+ *
+ * Sets the do_not_reverse_lookup flag of _basicsocket_.
+ *
+ *   BasicSocket.do_not_reverse_lookup = false
+ *   p TCPSocket.new("127.0.0.1", 80).do_not_reverse_lookup #=> false
+ *   BasicSocket.do_not_reverse_lookup = true
+ *   p TCPSocket.new("127.0.0.1", 80).do_not_reverse_lookup #=> true
+ *
+ */
 static VALUE
 bsock_do_not_reverse_lookup_set(VALUE sock, VALUE state)
 {
@@ -987,6 +1127,25 @@ s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
     return rb_assoc_new(str, addr);
 }
 
+/*
+ * call-seq:
+ *   basicsocket.recv(maxlen) => mesg
+ *   basicsocket.recv(maxlen, flags) => mesg
+ *
+ * Receives a message.
+ *
+ * _maxlen_ is the maximum number of bytes to receive.
+ *
+ * _flags_ should be a bitwise OR of Socket::MSG_* constants.
+ *
+ *   UNIXSocket.pair {|s1, s2|
+ *     s1.puts "Hello World"
+ *     p s2.recv(4)                     #=> "Hell"
+ *     p s2.recv(4, Socket::MSG_PEEK)   #=> "o Wo"
+ *     p s2.recv(4)                     #=> "o Wo"
+ *     p s2.recv(10)                    #=> "rld\n"
+ *   }
+ */
 static VALUE
 bsock_recv(int argc, VALUE *argv, VALUE sock)
 {
@@ -1036,12 +1195,36 @@ bsock_recv_nonblock(int argc, VALUE *argv, VALUE sock)
     return s_recvfrom_nonblock(sock, argc, argv, RECV_RECV);
 }
 
+/*
+ * call-seq:
+ *   BasicSocket.do_not_reverse_lookup => true or false
+ *
+ * Gets the global do_not_reverse_lookup flag.
+ *
+ *   BasicSocket.do_not_reverse_lookup  #=> false
+ */
 static VALUE
 bsock_do_not_rev_lookup(void)
 {
     return do_not_reverse_lookup?Qtrue:Qfalse;
 }
 
+/*
+ * call-seq:
+ *   BasicSocket.do_not_reverse_lookup = bool
+ *
+ * Sets the global do_not_reverse_lookup flag.
+ *
+ * The flag is used for initial value of do_not_reverse_lookup for each socket.
+ *
+ *   s1 = TCPSocket.new("localhost", 80)
+ *   p s1.do_not_reverse_lookup                 #=> true
+ *   BasicSocket.do_not_reverse_lookup = false
+ *   s2 = TCPSocket.new("localhost", 80)
+ *   p s2.do_not_reverse_lookup                 #=> false
+ *   p s1.do_not_reverse_lookup                 #=> true
+ *
+ */
 static VALUE
 bsock_do_not_rev_lookup_set(VALUE self, VALUE val)
 {
@@ -1719,6 +1902,16 @@ tcp_sockaddr(struct sockaddr *addr, size_t len)
     return make_ipaddr(addr);
 }
 
+/*
+ * call-seq:
+ *   TCPSocket.gethostbyname(hostname) => [official_hostname, alias_hostnames, address_family, *address_list]
+ *
+ * Lookups host information by _hostname_.
+ *
+ *   TCPSocket.gethostbyname("localhost")
+ *   #=> ["localhost", ["hal"], 2, "127.0.0.1"]
+ *
+ */
 static VALUE
 tcp_s_gethostbyname(VALUE obj, VALUE host)
 {
@@ -1727,6 +1920,19 @@ tcp_s_gethostbyname(VALUE obj, VALUE host)
 			tcp_sockaddr);
 }
 
+/*
+ * call-seq:
+ *   TCPServer.new([hostname,] port)                    => tcpserver
+ *
+ * Creates a new server socket bound to _port_.
+ *
+ * If _hostname_ is given, the socket is bound to it.
+ *
+ *   serv = TCPServer.new("127.0.0.1", 28561)
+ *   s = serv.accept
+ *   s.puts Time.now
+ *   s.close
+ */
 static VALUE
 tcp_svr_init(int argc, VALUE *argv, VALUE sock)
 {
@@ -1817,6 +2023,17 @@ s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
     return init_sock(rb_obj_alloc(klass), fd2);
 }
 
+/*
+ * call-seq:
+ *   tcpserver.accept => tcpsocket
+ *
+ *   TCPServer.open("127.0.0.1", 14641) {|serv|
+ *     s = serv.accept
+ *     s.puts Time.now
+ *     s.close
+ *   }
+ *   
+ */
 static VALUE
 tcp_accept(VALUE sock)
 {
@@ -1872,6 +2089,20 @@ tcp_accept_nonblock(VALUE sock)
 			     (struct sockaddr *)&from, &fromlen);
 }
 
+/*
+ * call-seq:
+ *   tcpserver.sysaccept => file_descriptor
+ *
+ * Returns a file descriptor of a accepted connection.
+ *
+ *   TCPServer.open("127.0.0.1", 28561) {|serv|
+ *     fd = serv.sysaccept
+ *     s = IO.for_fd(fd)       
+ *     s.puts Time.now
+ *     s.close
+ *   }
+ *
+ */
 static VALUE
 tcp_sysaccept(VALUE sock)
 {
@@ -1951,6 +2182,22 @@ init_unixsock(VALUE sock, VALUE path, int server)
 }
 #endif
 
+/*
+ * call-seq:
+ *   ipsocket.addr => [address_family, port, hostname, numeric_address] 
+ *
+ * Returns the local address as an array which contains
+ * address_family, port, hostname and numeric_address. 
+ *
+ * hostname is obtained from numeric_address using reverse lookup.
+ * If ipsocket.do_not_reverse_lookup is true,
+ * hostname is same as numeric_address.
+ *
+ *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
+ *     p sock.addr #=> ["AF_INET", 49429, "hal", "192.168.0.128"]
+ *   }
+ *
+ */
 static VALUE
 ip_addr(VALUE sock)
 {
@@ -1965,6 +2212,19 @@ ip_addr(VALUE sock)
     return ipaddr((struct sockaddr*)&addr, fptr->mode & FMODE_NOREVLOOKUP);
 }
 
+/*
+ * call-seq:
+ *   ipsocket.peeraddr => [address_family, port, hostname, numeric_address] 
+ *
+ * Returns the remote address as an array which contains
+ * address_family, port, hostname and numeric_address. 
+ * It is defined for connection oritented socket such as TCPSocket.
+ *
+ *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
+ *     p sock.peeraddr #=> ["AF_INET", 80, "carbon.ruby-lang.org", "221.186.184.68"]
+ *   }
+ *
+ */
 static VALUE
 ip_peeraddr(VALUE sock)
 {
@@ -1979,12 +2239,43 @@ ip_peeraddr(VALUE sock)
     return ipaddr((struct sockaddr*)&addr, fptr->mode & FMODE_NOREVLOOKUP);
 }
 
+/*
+ * call-seq:
+ *   ipsocket.recvfrom(maxlen)        => [mesg, ipaddr]
+ *   ipsocket.recvfrom(maxlen, flags) => [mesg, ipaddr]
+ *
+ * Receives a message and return the message as a string and
+ * an address which the message come from.
+ *
+ * _maxlen_ is the maximum number of bytes to receive.
+ *
+ * _flags_ should be a bitwise OR of Socket::MSG_* constants.
+ *
+ * ipaddr is same as IPSocket#{peeraddr,addr}.
+ *
+ *   u1 = UDPSocket.new
+ *   u1.bind("127.0.0.1", 4913)
+ *   u2 = UDPSocket.new
+ *   u2.send "uuuu", 0, "127.0.0.1", 4913
+ *   p u1.recvfrom(10) #=> ["uuuu", ["AF_INET", 33230, "localhost", "127.0.0.1"]]
+ *   
+ */
 static VALUE
 ip_recvfrom(int argc, VALUE *argv, VALUE sock)
 {
     return s_recvfrom(sock, argc, argv, RECV_IP);
 }
 
+/*
+ * call-seq:
+ *   IPSocket.getaddress(host)        => ipaddress
+ *
+ * Lookups IP address of _host_.
+ *
+ *   IPSocket.getaddress("localhost")     #=> "127.0.0.1"
+ *   IPSocket.getaddress("ip6-localhost") #=> "::1"
+ *
+ */
 static VALUE
 ip_s_getaddress(VALUE obj, VALUE host)
 {
@@ -1998,6 +2289,19 @@ ip_s_getaddress(VALUE obj, VALUE host)
     return make_ipaddr((struct sockaddr*)&addr);
 }
 
+/*
+ * call-seq:
+ *   UDPSocket.new([address_family]) => socket
+ *
+ * Creates a new UDPSocket object.
+ *
+ * _address_family_ should be an integer, a string or a symbol:
+ * Socket::AF_INET, "AF_INET", :INET, etc.
+ *
+ *   UDPSocket.new                   #=> #<UDPSocket:fd 3>
+ *   UDPSocket.new(Socket::AF_INET6) #=> #<UDPSocket:fd 4>
+ *
+ */
 static VALUE
 udp_init(int argc, VALUE *argv, VALUE sock)
 {
@@ -2037,6 +2341,22 @@ udp_connect_internal(struct udp_arg *arg)
     return Qfalse;
 }
 
+/*
+ * call-seq:
+ *   udpsocket.connect(host, port) => 0
+ *
+ * Connects _udpsocket_ to _host_:_port_.
+ *
+ * This makes possible to send without destination address.
+ *
+ *   u1 = UDPSocket.new
+ *   u1.bind("127.0.0.1", 4913)
+ *   u2 = UDPSocket.new
+ *   u2.connect("127.0.0.1", 4913)
+ *   u2.send "uuuu", 0
+ *   p u1.recvfrom(10) #=> ["uuuu", ["AF_INET", 33230, "localhost", "127.0.0.1"]]
+ *
+ */
 static VALUE
 udp_connect(VALUE sock, VALUE host, VALUE port)
 {
@@ -2054,6 +2374,18 @@ udp_connect(VALUE sock, VALUE host, VALUE port)
     return INT2FIX(0);
 }
 
+/*
+ * call-seq:
+ *   udpsocket.bind(host, port) #=> 0
+ *
+ * Binds _udpsocket_ to _host_:_port_.
+ *
+ *   u1 = UDPSocket.new
+ *   u1.bind("127.0.0.1", 4913)
+ *   u1.send "message-to-self", 0, "127.0.0.1", 4913
+ *   p u1.recvfrom(10) #=> ["message-to", ["AF_INET", 4913, "localhost", "127.0.0.1"]]
+ *
+ */
 static VALUE
 udp_bind(VALUE sock, VALUE host, VALUE port)
 {
@@ -2075,6 +2407,28 @@ udp_bind(VALUE sock, VALUE host, VALUE port)
     return INT2FIX(0);
 }
 
+/*
+ * call-seq:
+ *   udpsocket.send(mesg, flags, host, port)  => numbytes_sent
+ *   udpsocket.send(mesg, flags, sockaddr_to) => numbytes_sent
+ *   udpsocket.send(mesg, flags)              => numbytes_sent
+ *
+ * Sends _mesg_ via _udpsocket_.
+ * 
+ * _flags_ should be a bitwise OR of Socket::MSG_* constants.
+ *
+ *   u1 = UDPSocket.new
+ *   u1.bind("127.0.0.1", 4913)
+ *
+ *   u2 = UDPSocket.new
+ *   u2.send "hi", 0, "127.0.0.1", 4913
+ *
+ *   mesg, addr = u1.recvfrom(10)
+ *   u1.send mesg, 0, addr[3], addr[1]
+ *
+ *   p u2.recv(100) #=> "hi"
+ *
+ */
 static VALUE
 udp_send(int argc, VALUE *argv, VALUE sock)
 {
@@ -2162,6 +2516,16 @@ udp_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
 }
 
 #ifdef HAVE_SYS_UN_H
+/*
+ * call-seq:
+ *   UNIXSocket.new(path) => unixsocket
+ *
+ * Creates a new UNIX client socket connected to _path_.
+ *
+ *   s = UNIXSocket.new("/tmp/sock")
+ *   s.send "hello", 0
+ *   
+ */
 static VALUE
 unix_init(VALUE sock, VALUE path)
 {
@@ -2177,6 +2541,16 @@ unixpath(struct sockaddr_un *sockaddr, socklen_t len)
         return "";
 }
 
+/*
+ * call-seq:
+ *   unixsocket.path => path
+ *
+ * Returns the path of the local address of unixsocket.
+ *
+ *   s = UNIXServer.new("/tmp/sock")
+ *   p s.path #=> "/tmp/sock"
+ *
+ */
 static VALUE
 unix_path(VALUE sock)
 {
@@ -2193,12 +2567,45 @@ unix_path(VALUE sock)
     return rb_str_dup(fptr->pathv);
 }
 
+/*
+ * call-seq:
+ *   UNIXServer.new(path) => unixserver
+ *
+ * Creates a new UNIX server socket bound to _path_.
+ *
+ *   serv = UNIXServer.new("/tmp/sock")
+ *   s = serv.accept
+ *   p s.read
+ */
 static VALUE
 unix_svr_init(VALUE sock, VALUE path)
 {
     return init_unixsock(sock, path, 1);
 }
 
+/*
+ * call-seq:
+ *   unixsocket.recvfrom(maxlen [, flags]) => [mesg, unixaddress]
+ *
+ * Receives a message via _unixsocket_.
+ *
+ * _maxlen_ is the maximum number of bytes to receive.
+ *
+ * _flags_ should be a bitwise OR of Socket::MSG_* constants.
+ *
+ *   s1 = Socket.new(:UNIX, :DGRAM, 0)
+ *   s1_ai = AddrInfo.unix("/tmp/sock1")
+ *   s1.bind(s1_ai)
+ *
+ *   s2 = Socket.new(:UNIX, :DGRAM, 0)
+ *   s2_ai = AddrInfo.unix("/tmp/sock2")
+ *   s2.bind(s2_ai)
+ *   s3 = UNIXSocket.for_fd(s2.fileno)
+ *
+ *   s1.send "a", 0, s2_ai
+ *   p s3.recvfrom(10) #=> ["a", ["AF_UNIX", "/tmp/sock1"]]
+ *
+ */
 static VALUE
 unix_recvfrom(int argc, VALUE *argv, VALUE sock)
 {
@@ -2229,6 +2636,22 @@ sendmsg_blocking(void *data)
     return sendmsg(arg->fd, &arg->msg, 0);
 }
 
+/*
+ * call-seq:
+ *   unixsocket.send_io(io) => nil
+ *
+ * Sends _io_ as file descriptor passing.
+ *
+ *   s1, s2 = UNIXSocket.pair
+ *
+ *   s1.send_io STDOUT
+ *   stdout = s2.recv_io
+ *
+ *   p STDOUT.fileno #=> 1
+ *   p stdout.fileno #=> 6
+ *
+ *   stdout.puts "hello" # outputs "hello\n" to standard output.
+ */
 static VALUE
 unix_send_io(VALUE sock, VALUE val)
 {
@@ -2303,6 +2726,25 @@ recvmsg_blocking(void *data)
     return recvmsg(arg->fd, &arg->msg, 0);
 }
 
+/*
+ * call-seq:
+ *   unixsocket.recv_io([klass [, mode]]) => io
+ *
+ *   UNIXServer.open("/tmp/sock") {|serv|
+ *     UNIXSocket.open("/tmp/sock") {|c|  
+ *       s = serv.accept
+ *
+ *       c.send_io STDOUT 
+ *       stdout = s.recv_io 
+ *
+ *       p STDOUT.fileno #=> 1
+ *       p stdout.fileno #=> 7
+ *
+ *       stdout.puts "hello" # outputs "hello\n" to standard output.
+ *     }
+ *   }
+ *
+ */
 static VALUE
 unix_recv_io(int argc, VALUE *argv, VALUE sock)
 {
@@ -2412,6 +2854,23 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 #endif
 }
 
+/*
+ * call-seq:
+ *   unixserver.accept => unixsocket
+ *
+ * Accepts a new connection.
+ * It returns new UNIXSocket object.
+ *
+ *   UNIXServer.open("/tmp/sock") {|serv|
+ *     UNIXSocket.open("/tmp/sock") {|c|
+ *       s = serv.accept
+ *       s.puts "hi"
+ *       s.close
+ *       p c.read #=> "hi\n"
+ *     }
+ *   }
+ *
+ */
 static VALUE
 unix_accept(VALUE sock)
 {
@@ -2467,6 +2926,24 @@ unix_accept_nonblock(VALUE sock)
 			     (struct sockaddr *)&from, &fromlen);
 }
 
+/*
+ * call-seq:
+ *   unixserver.sysaccept => file_descriptor
+ *
+ * Accepts a new connection.
+ * It returns the new file descriptor which is an integer.
+ *
+ *   UNIXServer.open("/tmp/sock") {|serv|
+ *     UNIXSocket.open("/tmp/sock") {|c|
+ *       fd = serv.sysaccept
+ *       s = IO.new(fd)
+ *       s.puts "hi"
+ *       s.close 
+ *       p c.read #=> "hi\n"
+ *     }
+ *   }
+ *
+ */
 static VALUE
 unix_sysaccept(VALUE sock)
 {
@@ -2486,6 +2963,17 @@ unixaddr(struct sockaddr_un *sockaddr, socklen_t len)
                         rb_str_new2(unixpath(sockaddr, len)));
 }
 
+/*
+ * call-seq:
+ *   unixsocket.addr => [address_family, unix_path]
+ *
+ * Returns the local address as an array which contains
+ * address_family and unix_path.
+ *
+ * Example
+ *   serv = UNIXServer.new("/tmp/sock")
+ *   p serv.addr #=> ["AF_UNIX", "/tmp/sock"]
+ */
 static VALUE
 unix_addr(VALUE sock)
 {
@@ -2500,6 +2988,18 @@ unix_addr(VALUE sock)
     return unixaddr(&addr, len);
 }
 
+/*
+ * call-seq:
+ *   unixsocket.peeraddr => [address_family, unix_path]
+ *
+ * Returns the remote address as an array which contains
+ * address_family and unix_path.
+ *
+ * Example
+ *   serv = UNIXServer.new("/tmp/sock")
+ *   c = UNIXSocket.new("/tmp/sock")
+ *   p c.peeraddr #=> ["AF_UNIX", "/tmp/sock"]
+ */
 static VALUE
 unix_peeraddr(VALUE sock)
 {
@@ -2522,6 +3022,24 @@ setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
     *tv = socktype_arg(type);
 }
 
+/*
+ * call-seq:
+ *   Socket.new(domain, socktype, protocol) => socket
+ *
+ * Creates a new socket object.
+ *
+ * _domain_ should be a communications domain such as: :INET, :INET6, :UNIX, etc.
+ *
+ * _socktype_ should be a socket type such as: :STREAM, :DGRAM, :RAW, etc.
+ *
+ * _protocol_ should be a protocol defined in the domain.
+ * 0 is default protocol for the domain.
+ *
+ *   Socket.new(:INET, :STREAM, 0) # TCP socket
+ *   Socket.new(:INET, :DGRAM, 0)  # UDP socket
+ *   Socket.new(:UNIX, :STREAM, 0) # UNIX stream socket
+ *   Socket.new(:UNIX, :DGRAM, 0)  # UNIX datagram socket
+ */
 static VALUE
 sock_initialize(VALUE sock, VALUE domain, VALUE type, VALUE protocol)
 {
@@ -2556,6 +3074,27 @@ pair_yield(VALUE pair)
 }
 #endif
 
+/*
+ * call-seq:
+ *   Socket.pair(domain, type, protocol)       => [socket1, socket2]
+ *   Socket.socketpair(domain, type, protocol) => [socket1, socket2]
+ *
+ * Creates a pair of sockets connected each other.
+ *
+ * _domain_ should be a communications domain such as: :INET, :INET6, :UNIX, etc.
+ *
+ * _socktype_ should be a socket type such as: :STREAM, :DGRAM, :RAW, etc.
+ *
+ * _protocol_ should be a protocol defined in the domain.
+ * 0 is default protocol for the domain.
+ *
+ *   s1, s2 = Socket.pair(:UNIX, :DGRAM, 0)
+ *   s1.send "a", 0
+ *   s1.send "b", 0
+ *   p s2.recv(10) #=> "a"
+ *   p s2.recv(10) #=> "b"
+ *
+ */
 static VALUE
 sock_s_socketpair(VALUE klass, VALUE domain, VALUE type, VALUE protocol)
 {
@@ -2588,6 +3127,24 @@ sock_s_socketpair(VALUE klass, VALUE domain, VALUE type, VALUE protocol)
 }
 
 #ifdef HAVE_SYS_UN_H
+/*
+ * call-seq:
+ *   UNIXSocket.pair([type [, protocol]])       => [unixsocket1, unixsocket2]
+ *   UNIXSocket.socketpair([type [, protocol]]) => [unixsocket1, unixsocket2]
+ *
+ * Creates a pair of sockets connected each other.
+ *
+ * _socktype_ should be a socket type such as: :STREAM, :DGRAM, :RAW, etc.
+ *
+ * _protocol_ should be a protocol defined in the domain.
+ * 0 is default protocol for the domain.
+ *
+ *   s1, s2 = UNIXSocket.pair
+ *   s1.send "a", 0
+ *   s1.send "b", 0
+ *   p s2.recv(10) #=> "ab"
+ *
+ */
 static VALUE
 unix_s_socketpair(int argc, VALUE *argv, VALUE klass)
 {
@@ -3141,6 +3698,10 @@ sock_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
     return s_recvfrom_nonblock(sock, argc, argv, RECV_SOCKET);
 }
 
+/*
+ * call-seq:
+ *   socket.accept => [client_socket, client_addrinfo]
+ */
 static VALUE
 sock_accept(VALUE sock)
 {
@@ -3270,6 +3831,17 @@ sock_sysaccept(VALUE sock)
 }
 
 #ifdef HAVE_GETHOSTNAME
+/*
+ * call-seq:
+ *   Socket.gethostname => hostname
+ *
+ * Returns the hostname.
+ *
+ * Note that it is not guaranteed to be able to convert to IP address using gethostbyname, getaddrinfo, etc.
+ *
+ *   p Socket.gethostname #=> "hal"
+ *
+ */
 static VALUE
 sock_gethostname(VALUE obj)
 {
@@ -3351,6 +3923,15 @@ sock_sockaddr(struct sockaddr *addr, size_t len)
     return rb_str_new(ptr, len);
 }
 
+/*
+ * call-seq:
+ *   Socket.gethostbyname(hostname) => [official_hostname, alias_hostnames, address_family, *address_list]
+ *
+ * Obtains the host information for _hostname_.
+ *
+ *   p Socket.gethostbyname("hal") #=> ["localhost", ["hal"], 2, "\x7F\x00\x00\x01"]
+ *
+ */
 static VALUE
 sock_s_gethostbyname(VALUE obj, VALUE host)
 {
@@ -3358,6 +3939,15 @@ sock_s_gethostbyname(VALUE obj, VALUE host)
     return make_hostent(host, sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), sock_sockaddr);
 }
 
+/*
+ * call-seq:
+ *   Socket.gethostbyaddr(address_string [, address_family]) => hostent
+ *
+ * Obtains the host information for _address_.
+ *
+ *   p Socket.gethostbyaddr([221,186,184,68].pack("CCCC"))              
+ *   #=> ["carbon.ruby-lang.org", [], 2, "\xDD\xBA\xB8D"]
+ */
 static VALUE
 sock_s_gethostbyaddr(int argc, VALUE *argv)
 {
@@ -3408,6 +3998,19 @@ sock_s_gethostbyaddr(int argc, VALUE *argv)
     return ary;
 }
 
+/*
+ * call-seq:
+ *   Socket.getservbyname(service_name)                => port_number
+ *   Socket.getservbyname(service_name, protocol_name) => port_number
+ *
+ * Obtains the port number for _service_name_.
+ *
+ * If _protocol_name_ is not given, "tcp" is assumed.
+ *
+ *   Socket.getservbyname("smtp")          #=> 25
+ *   Socket.getservbyname("shell")         #=> 514
+ *   Socket.getservbyname("syslog", "udp") #=> 514
+ */   
 static VALUE
 sock_s_getservbyname(int argc, VALUE *argv)
 {
@@ -3436,6 +4039,19 @@ sock_s_getservbyname(int argc, VALUE *argv)
     return INT2FIX(port);
 }
 
+/*
+ * call-seq:
+ *   Socket.getservbyport(port [, protocol_name]) => service
+ *
+ * Obtains the port number for _port_.
+ *
+ * If _protocol_name_ is not given, "tcp" is assumed.
+ *
+ *   Socket.getservbyport(80)         #=> "www"
+ *   Socket.getservbyport(514, "tcp") #=> "shell"
+ *   Socket.getservbyport(514, "udp") #=> "syslog"
+ *
+ */
 static VALUE
 sock_s_getservbyport(int argc, VALUE *argv)
 {
@@ -3459,6 +4075,30 @@ sock_s_getservbyport(int argc, VALUE *argv)
     return rb_tainted_str_new2(sp->s_name);
 }
 
+/*
+ * call-seq:
+ *   Socket.getaddrinfo(nodename, servname[, family[, socktype[, protocol[, flags]]]]) => array
+ *
+ * Obtains address information for _nodename_:_servname_.
+ *
+ * _family_ should be an address family such as: :INET, :INET6, :UNIX, etc.
+ *
+ * _socktype_ should be a socket type such as: :STREAM, :DGRAM, :RAW, etc.
+ *
+ * _protocol_ should be a protocol defined in the family.
+ * 0 is default protocol for the family.
+ *
+ * _flags_ should be bitwise OR of Socket::AI_* constants.
+ *
+ *   Socket.getaddrinfo("www.ruby-lang.org", "http", nil, :STREAM)
+ *   #=> [["AF_INET", 80, "carbon.ruby-lang.org", "221.186.184.68", 2, 1, 6]] # PF_INET/SOCK_STREAM/IPPROTO_TCP
+ *
+ *   Socket.getaddrinfo("localhost", nil)
+ *   #=> [["AF_INET", 0, "localhost", "127.0.0.1", 2, 1, 6],  # PF_INET/SOCK_STREAM/IPPROTO_TCP
+ *   #    ["AF_INET", 0, "localhost", "127.0.0.1", 2, 2, 17], # PF_INET/SOCK_DGRAM/IPPROTO_UDP
+ *   #    ["AF_INET", 0, "localhost", "127.0.0.1", 2, 3, 0]]  # PF_INET/SOCK_RAW/IPPROTO_IP
+ *
+ */
 static VALUE
 sock_s_getaddrinfo(int argc, VALUE *argv)
 {
@@ -3486,6 +4126,25 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
     return ret;
 }
 
+/*
+ * call-seq:
+ *   Socket.getnameinfo(sockaddr [, flags]) => [hostname, servicename]
+ *
+ * Obtains name information for _sockaddr_.
+ *
+ * _sockaddr_ should be one of follows.
+ * - packed sockddr string such as Socket.sockaddr_in(80, "127.0.0.1")
+ * - 3-elements array such as ["AF_INET", 80, "127.0.0.1"]
+ * - 4-elements array such as ["AF_INET", 80, ignored, "127.0.0.1"]
+ *
+ * _flags_ should be bitwise OR of Socket::NI_* constants.
+ *
+ * Note that the last form is compatible with IPSocket#{addr,peeraddr}.
+ *
+ *   Socket.getnameinfo(Socket.sockaddr_in(80, "127.0.0.1"))       #=> ["localhost", "www"]
+ *   Socket.getnameinfo(["AF_INET", 80, "127.0.0.1"])              #=> ["localhost", "www"]
+ *   Socket.getnameinfo(["AF_INET", 80, "localhost", "127.0.0.1"]) #=> ["localhost", "www"]
+ */
 static VALUE
 sock_s_getnameinfo(int argc, VALUE *argv)
 {
@@ -3612,6 +4271,20 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     raise_socket_error("getnameinfo", error);
 }
 
+/*
+ * call-seq:
+ *   Socket.sockaddr_in(port, host)      => sockaddr
+ *   Socket.pack_sockaddr_in(port, host) => sockaddr
+ *
+ * Packs _port_ and _host_ as an AF_INET/AF_INET6 sockaddr string.
+ *
+ *   Socket.sockaddr_in(80, "127.0.0.1")
+ *   #=> "\x02\x00\x00P\x7F\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
+ *
+ *   Socket.sockaddr_in(80, "::1")
+ *   #=> "\n\x00\x00P\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00"
+ *
+ */
 static VALUE
 sock_s_pack_sockaddr_in(VALUE self, VALUE port, VALUE host)
 {
@@ -3625,6 +4298,19 @@ sock_s_pack_sockaddr_in(VALUE self, VALUE port, VALUE host)
     return addr;
 }
 
+/*
+ * call-seq:
+ *   Socket.unpack_sockaddr_in(sockaddr) => [port, ip_address]
+ *
+ * Unpacks _sockaddr_ into port and ip_address.
+ *
+ * _sockaddr_ should be a string or an addrinfo for AF_INET/AF_INET6.
+ *
+ *   sockaddr = Socket.sockaddr_in(80, "127.0.0.1")
+ *   p sockaddr #=> "\x02\x00\x00P\x7F\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
+ *   p Socket.unpack_sockaddr_in(sockaddr) #=> [80, "127.0.0.1"]
+ *
+ */
 static VALUE
 sock_s_unpack_sockaddr_in(VALUE self, VALUE addr)
 {
@@ -3649,6 +4335,17 @@ sock_s_unpack_sockaddr_in(VALUE self, VALUE addr)
 }
 
 #ifdef HAVE_SYS_UN_H
+
+/*
+ * call-seq:
+ *   Socket.sockaddr_un(path)      => sockaddr
+ *   Socket.pack_sockaddr_un(path) => sockaddr
+ *
+ * Packs _path_ as an AF_UNIX sockaddr string.
+ *
+ *   Socket.sockaddr_un("/tmp/sock") #=> "\x01\x00/tmp/sock\x00\x00..."
+ *
+ */
 static VALUE
 sock_s_pack_sockaddr_un(VALUE self, VALUE path)
 {
@@ -3670,6 +4367,18 @@ sock_s_pack_sockaddr_un(VALUE self, VALUE path)
     return addr;
 }
 
+/*
+ * call-seq:
+ *   Socket.unpack_sockaddr_un(sockaddr) => path
+ *
+ * Unpacks _sockaddr_ into path.
+ *
+ * _sockaddr_ should be a string or an addrinfo for AF_UNIX.
+ *
+ *   sockaddr = Socket.sockaddr_un("/tmp/sock") 
+ *   p Socket.unpack_sockaddr_un(sockaddr) #=> "/tmp/sock"
+ *
+ */
 static VALUE
 sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
 {
