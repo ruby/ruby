@@ -1,3 +1,7 @@
+Sat Jan 10 21:17:28 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: don't generate unintended newlines.
+
 Sat Jan 10 20:50:02 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: refactored to nest properly in statically

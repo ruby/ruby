@@ -83,10 +83,10 @@ ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_defs")
 % each_const {|guard, define, name, default_value|
 %   if guard
 #if <%=guard%>
-<%= gen_const_defs_in_guard(define, name, default_value) %>
+<%= gen_const_defs_in_guard(define, name, default_value).chomp %>
 #endif
 %   else
-<%= gen_const_defs_in_guard(define, name, default_value) %>
+<%= gen_const_defs_in_guard(define, name, default_value).chomp %>
 %   end
 % }
 EOS
