@@ -664,9 +664,9 @@ module Net
 	begin
 	  voidcmd("CDUP")
 	  return
-	rescue FTPPermError
-	  if $![0, 3] != "500"
-	    raise FTPPermError, $!
+	rescue FTPPermError => e
+	  if e.message[0, 3] != "500"
+	    raise e
 	  end
 	end
       end
