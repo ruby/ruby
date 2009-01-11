@@ -1,3 +1,10 @@
+Sun Jan 11 16:53:14 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb (PercentScanner): remove PercentScanner. fixed % after
+	  %> bug. [ruby-dev:37751] [Bug #997] 
+
+	* test/erb/test_erb.rb: ditto
+
 Sun Jan 11 09:53:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/mkconstants.rb (c_str): get rid of a 1.9 feature for
