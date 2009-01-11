@@ -24,7 +24,7 @@ C_ESC = {
 C_ESC_PAT = Regexp.union(*C_ESC.keys)
 
 def c_str(str)
-  '"' + str.gsub(C_ESC_PAT, C_ESC) + '"'
+  '"' + str.gsub(C_ESC_PAT) {|s| C_ESC[s]} + '"'
 end
 
 opt.parse!

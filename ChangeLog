@@ -1,3 +1,8 @@
+Sun Jan 11 09:53:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/mkconstants.rb (c_str): get rid of a 1.9 feature for
+	  cross compile.  [ruby-core:21243]
+
 Sun Jan 11 09:47:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_s_create): set nil as the value if assoc length
