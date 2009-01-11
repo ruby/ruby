@@ -1,3 +1,11 @@
+Mon Jan 12 00:21:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (gc_sweep, obj_free, run_final): defer finalizers of IO and
+	  Data.  [ruby-dev:35578]
+
+	* gc.c (rb_gc_call_finalizer_at_exit): self-referencing finalizers
+	  cannot be invoked.  [ruby-dev:35681]
+
 Sun Jan 11 11:31:52 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (chdir): handle 5xx errors correctly.
