@@ -1075,6 +1075,7 @@ class TestProcess < Test::Unit::TestCase
     Process.wait pid
     sleep 2
     assert_equal [true], signal_received, " [ruby-core:19744]"
+  rescue NotImplementedError
   ensure
     Signal.trap(:CHLD, 'DEFAULT')
   end
