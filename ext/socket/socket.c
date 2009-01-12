@@ -5106,6 +5106,12 @@ addrinfo_canonname(VALUE self)
     return rai->canonname;
 }
 
+#ifdef AF_INET6
+# define IS_IP_FAMILY(af) ((af) == AF_INET || (af) == AF_INET6)
+#else
+# define IS_IP_FAMILY(af) ((af) == AF_INET)
+#endif
+
 /*
  * call-seq:
  *   addrinfo.ip? => true or false
@@ -5123,12 +5129,7 @@ addrinfo_ip_p(VALUE self)
 {
     rb_addrinfo_t *rai = get_addrinfo(self);
     int family = ai_get_afamily(rai);
-    return family == AF_INET
-#ifdef AF_INET6
-        || family == AF_INET6
-#endif
-        ? Qtrue : Qfalse;
-    return Qfalse;
+    return IS_IP_FAMILY(family) ? Qtrue : Qfalse;
 }
 
 /*

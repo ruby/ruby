@@ -1,3 +1,8 @@
+Mon Jan 12 23:31:42 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (IS_IP_FAMILY): defined.
+	  (addrinfo_ip_p): use it.
+
 Mon Jan 12 17:23:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (assert_nothing_raised): removes the
