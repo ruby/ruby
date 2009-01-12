@@ -244,7 +244,7 @@ end
 
 $objs = ["socket.#{$OBJEXT}"]
 
-unless getaddr_info_ok and have_func("getnameinfo", "netdb.h") and have_func("getaddrinfo", "netdb.h")
+unless getaddr_info_ok and have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
   if have_struct_member("struct in6_addr", "s6_addr8", headers)
     $defs[-1] = "-DHAVE_ADDR8"
   end
