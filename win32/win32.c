@@ -668,10 +668,12 @@ is_command_com(const char *interp)
     return 0;
 }
 
+static int internal_cmd_match(const char *cmdname, int nt);
+
 static int
 is_internal_cmd(const char *cmd, int nt)
 {
-    char cmdname[9], *b = cmdname, c, **nm;
+    char cmdname[9], *b = cmdname, c;
 
     do {
 	if (!(c = *cmd++)) return 0;
@@ -691,6 +693,14 @@ is_internal_cmd(const char *cmd, int nt)
 	return 0;
     }
     *b = 0;
+    return internal_cmd_match(cmdname, nt);
+}
+
+static int
+internal_cmd_match(const char *cmdname, int nt)
+{
+    char **nm;
+
     nm = bsearch(cmdname, szInternalCmds,
 		 sizeof(szInternalCmds) / sizeof(*szInternalCmds),
 		 sizeof(*szInternalCmds),
@@ -706,8 +716,8 @@ rb_w32_get_osfhandle(int fh)
     return _get_osfhandle(fh);
 }
 
-int
-rb_w32_argv_size(char *const *argv)
+static int
+argv_size(char *const *argv, BOOL escape)
 {
     const char *p;
     char *const *t;
@@ -718,6 +728,10 @@ rb_w32_argv_size(char *const *argv)
 	    switch (*p) {
 	      case '\\':
 		++bs;
+		break;
+	      case '<': case '>': case '|': case '^':
+		bs = 0;
+		if (escape && !quote) n++;
 		break;
 	      case '"':
 		n += bs + 1; bs = 0;
@@ -737,8 +751,8 @@ rb_w32_argv_size(char *const *argv)
     return len;
 }
 
-char *
-rb_w32_join_argv(char *cmd, char *const *argv)
+static char *
+join_argv(char *cmd, char *const *argv, BOOL escape)
 {
     const char *p, *s;
     char *q, *const *t;
@@ -760,6 +774,12 @@ rb_w32_join_argv(char *cmd, char *const *argv)
 		memcpy(q, s, n = p - s); q += n; s = p;
 		memset(q, '\\', ++bs); q += bs; bs = 0;
 		break;
+	      case '<': case '>': case '|': case '^':
+		if (escape && !quote) {
+		    memcpy(q, s, n = p - s); q += n; s = p;
+		    *q++ = '^';
+		    break;
+		}
 	      default:
 		bs = 0;
 		p = CharNext(p) - 1;
@@ -990,7 +1010,8 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 rb_pid_t
 rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 {
-    int len, differ = 0, c_switch =0;
+    int len, differ = 0, c_switch = 0;
+    BOOL ntcmd = FALSE;
     const char *shell;
     char *cmd, fbuf[MAXPATHLEN];
 
@@ -998,8 +1019,7 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 
     if (!prog) prog = argv[0];
     if ((shell = getenv("COMSPEC")) &&
-	(has_redirection(prog) ||
-	 is_internal_cmd(prog, !is_command_com(shell)))) {
+	internal_cmd_match(prog, ntcmd = !is_command_com(shell))) {
 	prog = shell;
 	c_switch = 1;
 	differ = 1;
@@ -1022,18 +1042,18 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 	char *progs[2];
 	progs[0] = (char *)prog;
 	progs[1] = NULL;
-	len = rb_w32_argv_size(progs);
+	len = argv_size(progs, ntcmd);
 	if (c_switch) len += 3;
-	if (argv[0]) len += rb_w32_argv_size(argv);
+	if (argv[0]) len += argv_size(argv, ntcmd);
 	cmd = ALLOCA_N(char, len);
-	rb_w32_join_argv(cmd, progs);
+	join_argv(cmd, progs, ntcmd);
 	if (c_switch) strlcat(cmd, " /c", len);
-	if (argv[0]) rb_w32_join_argv(cmd + strlcat(cmd, " ", len), argv);
+	if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, ntcmd);
     }
     else {
-	len = rb_w32_argv_size(argv);
+	len = argv_size(argv, FALSE);
 	cmd = ALLOCA_N(char, len);
-	rb_w32_join_argv(cmd, argv);
+	join_argv(cmd, argv, FALSE);
     }
     return child_result(CreateChild(cmd, prog, NULL, NULL, NULL, NULL), mode);
 }

@@ -247,8 +247,6 @@ extern int chown(const char *, int, int);
 extern int link(const char *, const char *);
 extern int gettimeofday(struct timeval *, struct timezone *);
 extern rb_pid_t waitpid (rb_pid_t, int *, int);
-extern int rb_w32_argv_size(char *const *);
-extern char *rb_w32_join_argv(char *, char *const *);
 extern rb_pid_t rb_w32_spawn(int, const char *, const char*);
 extern rb_pid_t rb_w32_aspawn(int, const char *, char *const *);
 extern int kill(int, int);
