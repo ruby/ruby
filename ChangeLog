@@ -1,3 +1,7 @@
+Sat Jan 10 19:05:13 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (cont_restore_1): should not be inlined.
+
 Fri Jan  9 13:20:08 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: rescue abnormal Encoding.locale_charmap value.

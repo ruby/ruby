@@ -289,7 +289,7 @@ cont_capture(volatile int *stat)
     }
 }
 
-NORETURN(static void cont_restore_1(rb_context_t *));
+NOINLINE(NORETURN(static void cont_restore_1(rb_context_t *)));
 
 static void
 cont_restore_1(rb_context_t *cont)
