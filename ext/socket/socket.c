@@ -4668,10 +4668,10 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path)
 
 /*
  * call-seq:
- *   AddrInfo.new(sockaddr)
- *   AddrInfo.new(sockaddr, family)
- *   AddrInfo.new(sockaddr, family, socktype)
- *   AddrInfo.new(sockaddr, family, socktype, protocol)
+ *   AddrInfo.new(sockaddr)                             => addrinfo
+ *   AddrInfo.new(sockaddr, family)                     => addrinfo
+ *   AddrInfo.new(sockaddr, family, socktype)           => addrinfo
+ *   AddrInfo.new(sockaddr, family, socktype, protocol) => addrinfo
  *
  * returns a new instance of AddrInfo.
  * It the instnace contains sockaddr, family, socktype, protocol.
@@ -4800,7 +4800,7 @@ ai_get_afamily(rb_addrinfo_t *rai)
 
 /*
  * call-seq:
- *   addrinfo.inspect
+ *   addrinfo.inspect => string
  *
  * returns a string which shows addrinfo in human-readable form.
  *
@@ -5002,7 +5002,7 @@ addrinfo_inspect(VALUE self)
 
 /*
  * call-seq:
- *   addrinfo.afamily
+ *   addrinfo.afamily => integer
  *
  * returns the address family as an integer.
  *
@@ -5018,7 +5018,7 @@ addrinfo_afamily(VALUE self)
 
 /*
  * call-seq:
- *   addrinfo.pfamily
+ *   addrinfo.pfamily => integer
  *
  * returns the protocol family as an integer.
  *
@@ -5034,7 +5034,7 @@ addrinfo_pfamily(VALUE self)
 
 /*
  * call-seq:
- *   addrinfo.socktype
+ *   addrinfo.socktype => integer
  *
  * returns the socket type as an integer.
  *
@@ -5050,7 +5050,7 @@ addrinfo_socktype(VALUE self)
 
 /*
  * call-seq:
- *   addrinfo.protocol
+ *   addrinfo.protocol => integer
  *
  * returns the socket type as an integer.
  *
@@ -5066,7 +5066,7 @@ addrinfo_protocol(VALUE self)
 
 /*
  * call-seq:
- *   addrinfo.to_sockaddr
+ *   addrinfo.to_sockaddr => string
  *
  * returns the socket address as packed struct sockaddr string.
  *
@@ -5086,9 +5086,11 @@ addrinfo_to_sockaddr(VALUE self)
 
 /*
  * call-seq:
- *   addrinfo.canonname
+ *   addrinfo.canonname => string or nil
  *
  * returns the canonical name as an string.
+ *
+ * nil is returned if no canonical name.
  *
  * The canonical name is set by AddrInfo.getaddrinfo when AI_CANONNAME is specified.
  *
@@ -5106,7 +5108,7 @@ addrinfo_canonname(VALUE self)
 
 /*
  * call-seq:
- *   addrinfo.ip?
+ *   addrinfo.ip? => true or false
  *
  * returns true if addrinfo is internet (IPv4/IPv6) address.
  * returns false otherwise.
@@ -5131,7 +5133,7 @@ addrinfo_ip_p(VALUE self)
 
 /*
  * call-seq:
- *   addrinfo.ipv4?
+ *   addrinfo.ipv4? => true or false
  *
  * returns true if addrinfo is IPv4 address.
  * returns false otherwise.
@@ -5150,7 +5152,7 @@ addrinfo_ipv4_p(VALUE self)
 
 /*
  * call-seq:
- *   addrinfo.ipv6?
+ *   addrinfo.ipv6? => true or false
  *
  * returns true if addrinfo is IPv6 address.
  * returns false otherwise.
@@ -5173,7 +5175,7 @@ addrinfo_ipv6_p(VALUE self)
 
 /*
  * call-seq:
- *   addrinfo.unix?
+ *   addrinfo.unix? => true or false
  *
  * returns true if addrinfo is UNIX address.
  * returns false otherwise.
