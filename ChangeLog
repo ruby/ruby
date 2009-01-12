@@ -1,3 +1,16 @@
+Mon Jan 12 10:39:19 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c: fix comment (terminology: Global VM Lock).
+
+	* thread.c (blocking_region_begin, blocking_region_end):
+	  save and clear th->blocking_region_buffer.
+
+	* thread.c (rb_thread_call_with_gvl): check if it has GVL.
+
+	* thread.c (ruby_thread_has_gvl_p): added.
+
+	* vm_core.h: add decls.
+
 Sun Jan 11 16:53:14 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (PercentScanner): remove PercentScanner. fixed % after
