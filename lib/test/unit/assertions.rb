@@ -22,12 +22,18 @@ module Test
           msg = args.pop
         end
         begin
-          yield
+          line = __LINE__; yield
         rescue Exception => e
-          if ((args.empty? && !e.instance_of?(MiniTest::Assertion)) ||
+          bt = e.backtrace
+          as = e.instance_of?(MiniTest::Assertion)
+          if as
+            ans = /\A#{Regexp.quote(__FILE__)}:#{line}:in /o
+            bt.reject! {|line| ans =~ line}
+          end
+          if ((args.empty? && !as) ||
               args.any? {|a| a.instance_of?(Module) ? e.is_a?(a) : e.class == a })
             msg = message(msg) { "Exception raised:\n<#{mu_pp(e)}>" }
-            raise MiniTest::Assertion, msg.call, e.backtrace
+            raise MiniTest::Assertion, msg.call, bt
           else
             raise
           end

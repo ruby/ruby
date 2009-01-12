@@ -1,3 +1,12 @@
+Mon Jan 12 17:23:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (assert_nothing_raised): removes the
+	  current trace to get rid of an issue of MiniTest::Unit#location.
+
+Mon Jan 12 16:49:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb (install): erased a garbage.
+
 Mon Jan 12 16:45:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (open_dir_handle): extracted from rb_w32_opendir.
