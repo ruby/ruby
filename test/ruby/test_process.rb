@@ -2,6 +2,7 @@ require 'test/unit'
 require 'tmpdir'
 require 'pathname'
 require_relative 'envutil'
+require 'rbconfig'
 
 class TestProcess < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
@@ -198,7 +199,16 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
-  ENVCOMMAND = [RUBY, '-e', 'ENV.each {|k,v| puts "#{k}=#{v}" }']
+  MANDATORY_ENVS = []
+  if /linux/ =~ RbConfig::CONFIG['target_os']
+    MANDATORY_ENVS << 'LD_PRELOAD'
+  end
+  if e = RbConfig::CONFIG['LIBPATHENV']
+    MANDATORY_ENVS << e
+  end
+  PREENVARG = ['-e', "%w[#{MANDATORY_ENVS.join(' ')}].each{|e|ENV.delete(e)}"]
+  ENVARG = ['-e', 'ENV.each {|k,v| puts "#{k}=#{v}" }']
+  ENVCOMMAND = [RUBY].concat(PREENVARG).concat(ENVARG)
 
   def test_execopts_env
     assert_raise(ArgumentError) {
@@ -206,8 +216,18 @@ class TestProcess < Test::Unit::TestCase
     }
 
     h = {}
-    ENV.each {|k,v| h[k] = nil unless k.upcase == "PATH" }
-    IO.popen([h, RUBY, '-e', 'puts ENV.keys.map{|e|e.upcase}']) {|io|
+    cmd = [h, RUBY]
+    ENV.each do |k,v|
+      case k
+      when /\APATH\z/i
+      when *MANDATORY_ENVS
+        cmd << '-e' << "ENV.delete('#{k}')"
+      else
+        h[k] = nil
+      end
+    end
+    cmd << '-e' << 'puts ENV.keys.map{|e|e.upcase}'
+    IO.popen(cmd) {|io|
       assert_equal("PATH\n", io.read)
     }
 
@@ -222,10 +242,12 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopts_unsetenv_others
-    IO.popen([*ENVCOMMAND, :unsetenv_others=>true]) {|io|
+    h = {}
+    MANDATORY_ENVS.each {|k| e = ENV[k] and h[k] = e}
+    IO.popen([h, *ENVCOMMAND, :unsetenv_others=>true]) {|io|
       assert_equal("", io.read)
     }
-    IO.popen([{"A"=>"B"}, *ENVCOMMAND, :unsetenv_others=>true]) {|io|
+    IO.popen([h.merge("A"=>"B"), *ENVCOMMAND, :unsetenv_others=>true]) {|io|
       assert_equal("A=B\n", io.read)
     }
   end
