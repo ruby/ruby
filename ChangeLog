@@ -1,3 +1,8 @@
+Tue Jan 13 04:39:30 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (login): raise FTPReplyError if passwd or acct
+	  is not supplied.  backported from trunk.  fixed [ruby-core:18058].
+
 Mon Jan 12 00:21:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (gc_sweep, obj_free, run_final): defer finalizers of IO and

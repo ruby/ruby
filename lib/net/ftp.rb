@@ -374,9 +374,11 @@ module Net
       synchronize do
 	resp = sendcmd('USER ' + user)
 	if resp[0] == ?3
+          raise FTPReplyError, resp if passwd.nil?
 	  resp = sendcmd('PASS ' + passwd)
 	end
 	if resp[0] == ?3
+          raise FTPReplyError, resp if acct.nil?
 	  resp = sendcmd('ACCT ' + acct)
 	end
       end
