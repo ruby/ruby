@@ -283,8 +283,7 @@ install?(:rdoc) do
   if $rdocdir
     puts "installing rdoc"
 
-    ridatadir = RDoc::RI::Paths::SYSDIR
-    Config.expand(ridatadir)
+    ridatadir = File.join(CONFIG['datadir'], "ri", CONFIG['ruby_version'], "system")
     makedirs [ridatadir]
     install_recursive($rdocdir, ridatadir, :mode => $data_mode)
   end
@@ -334,10 +333,10 @@ __END__
 :endofruby
 EOF
       when "cmd"
-        "#{<<EOH}#{shebang}#{body}"
+        "#{<<"/EOH"}#{shebang}#{body}"
 @"%~dp0#{ruby_install_name}" -x "%~f0" %*
 @exit /b %ERRORLEVEL%
-EOH
+/EOH
       else
         shebang + body
       end
