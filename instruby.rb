@@ -159,25 +159,59 @@ def makedirs(dirs)
   super(dirs, :mode => $dir_mode) unless dirs.empty?
 end
 
+FalseProc = proc {false}
+def path_matcher(pat)
+  if pat and !pat.empty?
+    proc {|f| pat.any? {|n| File.fnmatch?(n, f)}}
+  else
+    FalseProc
+  end
+end
+
 def install_recursive(srcdir, dest, options = {})
   opts = options.clone
   noinst = opts.delete(:no_install)
   glob = opts.delete(:glob) || "*"
-  subpath = srcdir.size..-1
-  Dir.glob("#{srcdir}/**/#{glob}") do |src|
-    case base = File.basename(src)
-    when /\A\#.*\#\z/, /~\z/
-      next
-    end
-    if noinst
-      if Array === noinst
-        next if noinst.any? {|n| File.fnmatch?(n, base)}
+  subpath = (srcdir.size+1)..-1
+  prune = skip = FalseProc
+  if noinst
+    if Array === noinst
+      prune = noinst.grep(/#{File::SEPARATOR}/o).map!{|f| f.chomp(File::SEPARATOR)}
+      skip = noinst.grep(/\A[^#{File::SEPARATOR}]*\z/o)
+    else
+      if noinst.index(File::SEPARATOR)
+        prune = [noinst]
       else
-        next if File.fnmatch?(noinst, base)
+        skip = [noinst]
       end
     end
-    d = dest + src[subpath]
-    if File.directory?(src)
+    skip |= %w"#*# *~ *.old *.bak *.orig *.rej *.diff *.patch *.core"
+    prune = path_matcher(prune)
+    skip = path_matcher(skip)
+  end
+  File.directory?(srcdir) or return rescue return
+  paths = [[srcdir, dest, true]]
+  found = []
+  while file = paths.shift
+    found << file
+    file, d, dir = *file
+    if dir
+      files = []
+      Dir.foreach(file) do |f|
+        src = File.join(file, f)
+        d = File.join(dest, dir = src[subpath])
+        stat = File.lstat(src) rescue next
+        if stat.directory?
+          files << [src, d, true] if /\A\./ !~ f and !prune[dir]
+        else
+          files << [src, d, false] if File.fnmatch?(glob, f) and !skip[f]
+        end
+      end
+      paths.insert(0, *files)
+    end
+  end
+  for src, d, dir in found
+    if dir
       makedirs(d)
     else
       makedirs(File.dirname(d))
@@ -265,9 +299,7 @@ if $extout
   install?(:ext, :arch, :'ext-arch') do
     puts "installing extension objects"
     makedirs [archlibdir, sitearchlibdir, vendorarchlibdir, archhdrdir]
-    if noinst = CONFIG["no_install_files"] and noinst.empty?
-      noinst = nil
-    end
+    noinst = %w[-*] | (CONFIG["no_install_files"] || "").split
     install_recursive("#{extout}/#{CONFIG['arch']}", archlibdir, :no_install => noinst, :mode => $prog_mode)
     install_recursive("#{extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "*.h", :mode => $data_mode)
   end
@@ -407,7 +439,7 @@ install?(:local, :comm, :man) do
   end
 end
 
-install?(:local, :comm, :gem) do
+install?(:ext, :comm, :gem) do
   puts "creating default gem directories"
 
   directories = []

@@ -1,3 +1,8 @@
+Mon Jan 12 12:39:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb (install_recursive): skips the directory if matched
+	  to a no_install pattern ending with a file separator.
+
 Mon Jan 12 12:33:56 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: don't use bytesize because 1.9 dependent.
