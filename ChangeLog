@@ -1,3 +1,8 @@
+Wed Jan  7 17:13:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb (gem), lib/rubygems/defaults.rb (Gem.default_dir):
+	  use version invariant configuration.
+
 Thu Jan  8 00:31:58 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit/assertions.rb (assert_no_match): don't count up as two
