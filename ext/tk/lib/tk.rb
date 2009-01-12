@@ -3019,7 +3019,8 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
     end
 
   else ### Ruby 1.9 !!!!!!!!!!!!
-    loc_enc_obj = (::Encoding.find(::Encoding.locale_charmap) rescue Tk::Encoding::UNKNOWN)
+    # loc_enc_obj = (::Encoding.find(::Encoding.locale_charmap) rescue Tk::Encoding::UNKNOWN)
+    loc_enc_obj = ::Encoding.find("locale")
     ext_enc_obj = ::Encoding.default_external
     int_enc_obj = ::Encoding.default_internal || ext_enc_obj
     tksys_enc_name = Tk::Encoding::ENCODING_TABLE.get_name(Tk.encoding_system)
@@ -5550,7 +5551,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2009-01-09'.freeze
+  RELEASE_DATE = '2009-01-13'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
