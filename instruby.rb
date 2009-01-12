@@ -5,13 +5,14 @@ include RbConfig
 $".unshift File.expand_path("./rbconfig.rb")
 
 srcdir = File.dirname(__FILE__)
-$:.unshift File.expand_path("lib", srcdir)
+unless defined?(CROSS_COMPILING) and CROSS_COMPILING
+  $:.replace([File.expand_path("lib", srcdir), Dir.pwd])
+end
 require 'fileutils'
 require 'shellwords'
 require 'optparse'
 require 'optparse/shellwords'
 require 'tempfile'
-require 'rdoc/ri/paths'
 
 STDOUT.sync = true
 File.umask(0)
@@ -386,17 +387,15 @@ install?(:local, :comm, :man) do
     if $mantype == "doc"
       install mdoc, destfile, :mode => $data_mode
     else
-      require "../tool/mdoc2man.rb"
+      require File.join(srcdir, "tool/mdoc2man.rb")
 
-      w = Tempfile.open(mdoc)
-
-      open(mdoc) { |r|
-        Mdoc2Man.mdoc2man(r, w)
-      }
-
-      w.close
-
+      w = nil
+      Tempfile.open(mdoc) do |f|
+        w = f
+        open(mdoc) {|r| Mdoc2Man.mdoc2man(r, w)}
+      end
       install w.path, destfile, :mode => $data_mode
+      w.close!
     end
   end
 end
