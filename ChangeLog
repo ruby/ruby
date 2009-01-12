@@ -1,3 +1,8 @@
+Sat Jan 10 20:26:17 2009  Tanaka Akira  <akr@fsij.org>
+
+	* version.h: make version string succinct:
+	  "ruby 1.9.1p5000 (2009-01-10 trunk 21414) [i686-linux]".
+
 Sat Jan 10 19:05:13 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c (cont_restore_1): should not be inlined.
