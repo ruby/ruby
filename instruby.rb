@@ -430,6 +430,7 @@ install?(:local, :comm, :man) do
   puts "installing manpages"
 
   has_goruby = File.exist?(goruby_install_name+exeext)
+  require File.join(srcdir, "tool/mdoc2man.rb") if $mantype != "doc"
   Dir.chdir("#{srcdir}/man")
   for mdoc in Dir["*.[1-9]"]
     next unless File.file?(mdoc) and open(mdoc){|fh| fh.read(1) == '.'}
@@ -447,8 +448,6 @@ install?(:local, :comm, :man) do
     if $mantype == "doc"
       install mdoc, destfile, :mode => $data_mode
     else
-      require File.join(srcdir, "tool/mdoc2man.rb")
-
       w = nil
       Tempfile.open(mdoc) do |f|
         w = f
