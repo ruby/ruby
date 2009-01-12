@@ -1,3 +1,10 @@
+Mon Jan 12 16:45:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (open_dir_handle): extracted from rb_w32_opendir.
+
+	* win32/win32.c (winnt_stat): gets rid of strange behavior of
+	  GetFileAttributes().  [ruby-core:21269]
+
 Mon Jan 12 11:59:19 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (ruby_xmalloc, ruby_xrealloc, ruby_xfree):
