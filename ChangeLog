@@ -1,3 +1,10 @@
+Mon Jan 12 16:45:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (open_dir_handle): extracted from rb_w32_opendir.
+
+	* win32/win32.c (winnt_stat): gets rid of strange behavior of
+	  GetFileAttributes().  [ruby-core:21269]
+
 Mon Jan 12 13:41:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_start_0): must use ruby_longjmp instead of
