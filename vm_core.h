@@ -588,6 +588,9 @@ VALUE vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 VALUE vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass);
 VALUE vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
 
+void *rb_thread_call_with_gvl(void *(*func)(void *), void *data1);
+int ruby_thread_has_gvl_p(void);
+
 NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
 
 #define sysstack_error GET_VM()->special_exceptions[ruby_error_sysstack]

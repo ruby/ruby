@@ -1,3 +1,16 @@
+Mon Jan 12 10:39:19 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c: fix comment (terminology: Global VM Lock).
+
+	* thread.c (blocking_region_begin, blocking_region_end):
+	  save and clear th->blocking_region_buffer.
+
+	* thread.c (rb_thread_call_with_gvl): check if it has GVL.
+
+	* thread.c (ruby_thread_has_gvl_p): added.
+
+	* vm_core.h: add decls.
+
 Mon Jan 12 10:21:11 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c: remove unused decl.
