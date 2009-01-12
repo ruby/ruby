@@ -1,11 +1,6 @@
-Mon Jan 12 11:59:19 2009  Koichi Sasada  <ko1@atdot.net>
+Mon Jan 12 12:43:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* gc.c (ruby_xmalloc, ruby_xrealloc, ruby_xfree):
-	  enable to use them without GVL.
-	  if GC is invoked, acquire GVL during GC.
-	  if NoMemoryError is raised, acquire GVL and raise it.
-
-Mon Jan 12 12:39:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+	* instruby.rb (parse_args, install): added --strip option.
 
 	* instruby.rb (install_recursive): skips the directory if matched
 	  to a no_install pattern ending with a file separator.
@@ -14,6 +9,13 @@ Mon Jan 12 12:33:56 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: don't use bytesize because 1.9 dependent.
 	  [ruby-core:21266]
+
+Mon Jan 12 11:59:19 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (ruby_xmalloc, ruby_xrealloc, ruby_xfree):
+	  enable to use them without GVL.
+	  if GC is invoked, acquire GVL during GC.
+	  if NoMemoryError is raised, acquire GVL and raise it.
 
 Mon Jan 12 10:39:19 2009  Koichi Sasada  <ko1@atdot.net>
 

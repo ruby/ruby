@@ -31,6 +31,7 @@ def parse_args(argv = ARGV)
   $prog_mode = 0755
   $dir_mode = nil
   $script_mode = nil
+  $strip = false
   $cmdtype = ('bat' if File::ALT_SEPARATOR == '\\')
   mflags = []
   opt = OptionParser.new
@@ -64,6 +65,7 @@ def parse_args(argv = ARGV)
   opt.on('--installed-list [FILENAME]') {|name| $installed_list = name}
   opt.on('--rdoc-output [DIR]') {|dir| $rdocdir = dir}
   opt.on('--cmd-type=TYPE', %w[bat cmd plain]) {|cmd| $cmdtype = (cmd unless cmd == 'plain')}
+  opt.on('--[no-]strip') {|strip| $strip = strip}
 
   opt.order!(argv) do |v|
     case v
@@ -131,9 +133,28 @@ def install?(*types, &block)
   end
 end
 
+def strip_file(file)
+  if !defined?($strip_command) and (cmd = CONFIG["STRIP"])
+    case cmd
+    when "", "true", ":" then return
+    else $strip_command = Shellwords.shellwords(cmd)
+    end
+  elsif !$strip_command
+    return
+  end
+  system(*($strip_command + [file]))
+end
+
 def install(src, dest, options = {})
+  options = options.clone
+  strip = options.delete(:strip)
   options[:preserve] = true
-  super(src, with_destdir(dest), options)
+  d = with_destdir(dest)
+  super(src, d, options)
+  if strip and cmd = 
+    d = File.join(d, File.basename(src)) if $made_dirs[dest]
+    strip_file(d)
+  end
   if $installed_list
     dest = File.join(dest, File.basename(src)) if $made_dirs[dest]
     $installed_list.puts dest
@@ -268,17 +289,17 @@ install?(:local, :arch, :bin, :'bin-arch') do
 
   makedirs [bindir, libdir, archlibdir]
 
-  install ruby_install_name+exeext, bindir, :mode => $prog_mode
+  install ruby_install_name+exeext, bindir, :mode => $prog_mode, :strip => $strip
   if rubyw_install_name and !rubyw_install_name.empty?
-    install rubyw_install_name+exeext, bindir, :mode => $prog_mode
+    install rubyw_install_name+exeext, bindir, :mode => $prog_mode, :strip => $strip
   end
   if File.exist? goruby_install_name+exeext
-    install goruby_install_name+exeext, bindir, :mode => $prog_mode
+    install goruby_install_name+exeext, bindir, :mode => $prog_mode, :strip => $strip
   end
   if enable_shared and dll != lib
-    install dll, bindir, :mode => $prog_mode
+    install dll, bindir, :mode => $prog_mode, :strip => $strip
   end
-  install lib, libdir, :mode => $prog_mode unless lib == arc
+  install lib, libdir, :mode => $prog_mode, :strip => $strip unless lib == arc
   install arc, libdir, :mode => $data_mode
   install "rbconfig.rb", archlibdir, :mode => $data_mode
   if CONFIG["ARCHFILE"]
@@ -300,7 +321,7 @@ if $extout
     puts "installing extension objects"
     makedirs [archlibdir, sitearchlibdir, vendorarchlibdir, archhdrdir]
     noinst = %w[-*] | (CONFIG["no_install_files"] || "").split
-    install_recursive("#{extout}/#{CONFIG['arch']}", archlibdir, :no_install => noinst, :mode => $prog_mode)
+    install_recursive("#{extout}/#{CONFIG['arch']}", archlibdir, :no_install => noinst, :mode => $prog_mode, :strip => $strip)
     install_recursive("#{extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "*.h", :mode => $data_mode)
   end
   install?(:ext, :comm, :'ext-comm') do
