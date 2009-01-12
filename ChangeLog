@@ -1,3 +1,8 @@
+Mon Jan 12 12:33:56 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: don't use bytesize because 1.9 dependent.
+	  [ruby-core:21266]
+
 Mon Jan 12 10:39:19 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c: fix comment (terminology: Global VM Lock).
