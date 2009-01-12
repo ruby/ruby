@@ -41,7 +41,6 @@ void rb_thread_stop_timer_thread(void);
 
 void rb_call_inits(void);
 void Init_heap(void);
-void Init_ext(void);
 void Init_BareVM(void);
 
 void

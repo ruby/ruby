@@ -1,3 +1,7 @@
+Mon Jan 12 10:21:11 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c: remove unused decl.
+
 Sun Jan 11 16:53:14 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (PercentScanner): remove PercentScanner. fixed % after
