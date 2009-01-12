@@ -1412,13 +1412,44 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 #define BitOfIsRep(n) ((n) * 2 + 1)
 #define DIRENT_PER_CHAR (CHAR_BIT / 2)
 
+static HANDLE
+open_dir_handle(const char *filename, WIN32_FIND_DATA *fd)
+{
+    HANDLE fh;
+    static const char wildcard[] = "/*";
+    long len = strlen(filename);
+    char *scanname = malloc(len + sizeof(wildcard));
+
+    //
+    // Create the search pattern
+    //
+    if (!scanname) {
+	return INVALID_HANDLE_VALUE;
+    }
+    memcpy(scanname, filename, len + 1);
+
+    if (index("/\\:", *CharPrev(scanname, scanname + len)) == NULL)
+	memcpy(scanname + len, wildcard, sizeof(wildcard));
+    else
+	memcpy(scanname + len, wildcard + 1, sizeof(wildcard) - 1);
+
+    //
+    // do the FindFirstFile call
+    //
+    fh = FindFirstFile(scanname, fd);
+    free(scanname);
+    if (fh == INVALID_HANDLE_VALUE) {
+	errno = map_errno(GetLastError());
+    }
+    return fh;
+}
+
 DIR *
 rb_w32_opendir(const char *filename)
 {
     DIR               *p;
     long               len;
     long               idx;
-    char	      *scanname;
     char	      *tmp;
     struct stati64     sbuf;
     WIN32_FIND_DATA fd;
@@ -1436,38 +1467,17 @@ rb_w32_opendir(const char *filename)
 	return NULL;
     }
 
+    fh = open_dir_handle(filename, &fd);
+    if (fh == INVALID_HANDLE_VALUE) {
+	return NULL;
+    }
+
     //
     // Get us a DIR structure
     //
     p = calloc(sizeof(DIR), 1);
     if (p == NULL)
 	return NULL;
-
-    //
-    // Create the search pattern
-    //
-    len = strlen(filename) + 2 + 1;
-    if (!(scanname = malloc(len))) {
-	free(p);
-	return NULL;
-    }
-    strlcpy(scanname, filename, len);
-
-    if (index("/\\:", *CharPrev(scanname, scanname + strlen(scanname))) == NULL)
-	strlcat(scanname, "/*", len);
-    else
-	strlcat(scanname, "*", len);
-
-    //
-    // do the FindFirstFile call
-    //
-    fh = FindFirstFile(scanname, &fd);
-    free(scanname);
-    if (fh == INVALID_HANDLE_VALUE) {
-	errno = map_errno(GetLastError());
-	free(p);
-	return NULL;
-    }
 
     idx = 0;
 
@@ -3467,6 +3477,17 @@ fileattr_to_unixmode(DWORD attr, const char *path)
 }
 
 static int
+check_valid_dir(const char *path)
+{
+    WIN32_FIND_DATA fd;
+    HANDLE fh = open_dir_handle(path, &fd);
+    if (fh == INVALID_HANDLE_VALUE)
+	return -1;
+    FindClose(fh);
+    return 0;
+}
+
+static int
 winnt_stat(const char *path, struct stati64 *st)
 {
     HANDLE h;
@@ -3496,6 +3517,9 @@ winnt_stat(const char *path, struct stati64 *st)
 	    errno = map_errno(GetLastError());
 	    return -1;
 	}
+	if (attr & FILE_ATTRIBUTE_DIRECTORY) {
+	    if (check_valid_dir(path)) return -1;
+	}
 	st->st_mode  = fileattr_to_unixmode(attr, path);
     }
 
@@ -3504,6 +3528,21 @@ winnt_stat(const char *path, struct stati64 *st)
 
     return 0;
 }
+
+#ifdef WIN95
+static int
+win95_stat(const char *path, struct stati64 *st)
+{
+    int ret = stati64(path, st);
+    if (ret) return ret;
+    if (st->st_mode & S_IFDIR) {
+	return check_valid_dir(path);
+    }
+    return 0;
+}
+#else
+#define win95_stat(path, st) -1
+#endif
 
 int
 rb_w32_stat(const char *path, struct stat *st)
@@ -3552,7 +3591,7 @@ rb_w32_stati64(const char *path, struct stati64 *st)
     else if (*end == '\\' || (buf1 + 1 == end && *end == ':'))
 	strlcat(buf1, ".", size);
 
-    ret = IsWinNT() ? winnt_stat(buf1, st) : stati64(buf1, st);
+    ret = IsWinNT() ? winnt_stat(buf1, st) : win95_stat(buf1, st);
     if (ret == 0) {
 	st->st_mode &= ~(S_IWGRP | S_IWOTH);
     }

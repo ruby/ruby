@@ -97,6 +97,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_directory_p
     assert(File.directory?(@dir))
+    assert(!(File.directory?(@dir+"/...")))
     assert(!(File.directory?(@file)))
     assert(!(File.directory?(@nofile)))
   end
