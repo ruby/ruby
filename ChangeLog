@@ -1,3 +1,10 @@
+Mon Jan 12 23:55:19 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (addrinfo_ip_unpack): new method
+	  AddrInfo#ip_unpack.
+	  (addrinfo_unix_path): new method AddrInfo#unix_path.
+	  (Init_socket): define above methods.
+
 Mon Jan 12 23:31:42 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (IS_IP_FAMILY): defined.

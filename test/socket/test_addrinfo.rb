@@ -25,6 +25,11 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     assert_includes([0, Socket::IPPROTO_UDP], ai.protocol)
   end
 
+  def test_addrinfo_ip_unpack
+    ai = AddrInfo.tcp("127.0.0.1", 80)
+    assert_equal(["127.0.0.1", 80], ai.ip_unpack)
+  end
+
   def test_addrinfo_new_inet
     ai = AddrInfo.new(["AF_INET", 46102, "localhost.localdomain", "127.0.0.2"])
     assert_equal([46102, "127.0.0.2"], Socket.unpack_sockaddr_in(ai))
@@ -266,6 +271,11 @@ class TestSocketAddrInfo < Test::Unit::TestCase
       assert_equal(0, ai.protocol)
     end
 
+    def test_addrinfo_ip_unpack_inet6
+      ai = AddrInfo.tcp("::1", 80)
+      assert_equal(["::1", 80], ai.ip_unpack)
+    end
+
   end
 
   if defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM
@@ -277,6 +287,11 @@ class TestSocketAddrInfo < Test::Unit::TestCase
       assert_equal(Socket::PF_UNIX, ai.pfamily)
       assert_equal(Socket::SOCK_STREAM, ai.socktype)
       assert_equal(0, ai.protocol)
+    end
+
+    def test_addrinfo_unix_path
+      ai = AddrInfo.unix("/tmp/sock1")
+      assert_equal("/tmp/sock1", ai.unix_path)
     end
 
     def test_addrinfo_new_unix

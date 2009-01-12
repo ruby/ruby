@@ -5239,6 +5239,67 @@ addrinfo_getnameinfo(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
+ *   addrinfo.ip_unpack => [addr, port]
+ *
+ * Returns the IP address and port number as 2-element array.
+ *
+ *   AddrInfo.tcp("127.0.0.1", 80).ip_unpack    #=> ["127.0.0.1", 80]
+ *   AddrInfo.tcp("::1", 80).ip_unpack          #=> ["::1", 80]
+ */
+static VALUE
+addrinfo_ip_unpack(VALUE self)
+{
+    rb_addrinfo_t *rai = get_addrinfo(self);
+    int family = ai_get_afamily(rai);
+    VALUE vflags;
+    VALUE ret, portstr;
+
+    if (!IS_IP_FAMILY(family))
+	rb_raise(rb_eSocket, "need IPv4 or IPv6 address");
+
+    vflags = INT2NUM(NI_NUMERICHOST|NI_NUMERICSERV);
+    ret = addrinfo_getnameinfo(1, &vflags, self);
+    portstr = rb_ary_entry(ret, 1);
+    rb_ary_store(ret, 1, INT2NUM(atoi(StringValueCStr(portstr))));
+    return ret;
+}
+
+#ifdef HAVE_SYS_UN_H
+/*
+ * call-seq:
+ *   addrinfo.unix_path => path
+ *
+ * Returns the socket path as a string.
+ *
+ *   AddrInfo.unix("/tmp/sock").unix_path       #=> "/tmp/sock"
+ */
+static VALUE
+addrinfo_unix_path(VALUE self)
+{
+    rb_addrinfo_t *rai = get_addrinfo(self);
+    int family = ai_get_afamily(rai);
+    struct sockaddr_un *addr;
+    char *s, *e;
+
+    if (family != AF_UNIX)
+	rb_raise(rb_eSocket, "need AF_UNIX address");
+
+    addr = (struct sockaddr_un *)&rai->addr;
+
+    s = addr->sun_path;
+    e = (char*)addr + rai->sockaddr_len;
+    if (e < s)
+        rb_raise(rb_eSocket, "too short AF_UNIX address");
+    if (addr->sun_path + sizeof(addr->sun_path) < e)
+        rb_raise(rb_eSocket, "too long AF_UNIX address");
+    while (s < e && *(e-1) == '\0')
+        e--;
+    return rb_str_new(s, e-s);
+}
+#endif
+
+/*
+ * call-seq:
  *   AddrInfo.getaddrinfo(nodename, service, family, socktype, protocol, flags) => [addrinfo, ...]
  *   AddrInfo.getaddrinfo(nodename, service, family, socktype, protocol)        => [addrinfo, ...]
  *   AddrInfo.getaddrinfo(nodename, service, family, socktype)                  => [addrinfo, ...]
@@ -5521,10 +5582,14 @@ Init_socket()
     rb_define_method(rb_cAddrInfo, "protocol", addrinfo_protocol, 0);
     rb_define_method(rb_cAddrInfo, "canonname", addrinfo_canonname, 0);
 
-    rb_define_method(rb_cAddrInfo, "ip?",   addrinfo_ip_p, 0);
+    rb_define_method(rb_cAddrInfo, "ip?", addrinfo_ip_p, 0);
+    rb_define_method(rb_cAddrInfo, "ip_unpack", addrinfo_ip_unpack, 0);
     rb_define_method(rb_cAddrInfo, "ipv4?", addrinfo_ipv4_p, 0);
     rb_define_method(rb_cAddrInfo, "ipv6?", addrinfo_ipv6_p, 0);
     rb_define_method(rb_cAddrInfo, "unix?", addrinfo_unix_p, 0);
+#ifdef HAVE_SYS_UN_H
+    rb_define_method(rb_cAddrInfo, "unix_path", addrinfo_unix_path, 0);
+#endif
 
     rb_define_method(rb_cAddrInfo, "to_sockaddr", addrinfo_to_sockaddr, 0);
 
