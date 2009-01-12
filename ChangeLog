@@ -37,7 +37,7 @@ Mon Jan 12 10:21:11 2009  Koichi Sasada  <ko1@atdot.net>
 Sun Jan 11 16:53:14 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (PercentScanner): remove PercentScanner. fixed % after
-	  %> bug. [ruby-dev:37751] [Bug #997] 
+	  %> bug. [ruby-dev:37751] [Bug #997]
 
 	* test/erb/test_erb.rb: ditto
 
@@ -379,7 +379,7 @@ Sun Jan  4 03:30:18 2009  Tanaka Akira  <akr@fsij.org>
 
 Sun Jan  4 00:30:50 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* lib/erb.rb: merged r20850, r17881, r16811, r16763, r16748, r15829, 
+	* lib/erb.rb: merged r20850, r17881, r16811, r16763, r16748, r15829,
 	  r15794 and r15698 from ruby_1_8.
 
 	* test/erb/test_erb.rb: ditto.
@@ -858,7 +858,7 @@ Mon Dec 29 16:52:15 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Dec 29 16:16:20 2008  Koichi Sasada  <ko1@atdot.net>
 
-	* vm.c (vm_set_eval_stack, vm_set_main_stack, vm_set_top_stack): 
+	* vm.c (vm_set_eval_stack, vm_set_main_stack, vm_set_top_stack):
 	  check stack overflow.  [ruby-dev:37646]
 
 Sun Dec 28 18:36:33 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
@@ -2155,7 +2155,7 @@ Thu Dec 11 23:48:00 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 Thu Dec 11 21:04:04 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker.rb, lib/rss/maker/0.9.rb, lib/rss/maker/base.rb:
-	RSS::Maker.[] returns a maker class corresponds to passed version.
+	  RSS::Maker.[] returns a maker class corresponds to passed version.
 
 	* test/rss/test_maker_*.rb: add tests for RSS::Maker.[].
 
@@ -3425,7 +3425,7 @@ Mon Nov  3 13:00:26 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* range.c (rb_range_beg_len): rb_raise takes C values as arguments.
 	  [BUG] ranges turned into other value in a message of RangeError.
- 
+
 Mon Nov  3 00:36:44 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_event.rb: rename test class.
@@ -3597,7 +3597,7 @@ Wed Oct 29 23:31:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Oct 29 23:57:29 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (rb_ary_sort_bang): replacing array during sort broke
-          invariant of array.  [ruby-dev:36983]
+	  invariant of array.  [ruby-dev:36983]
 
 Wed Oct 29 21:06:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -5411,20 +5411,20 @@ Mon Sep 29 01:51:54 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 Mon Sep 29 00:30:20 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* lib/cgi/html.rb (CGI::HtmlExtension::{radio_group, checkbox_group}):
-	can specify the false as checked or selected value.
-	[ruby-core:18306], [ruby-core:18307]
+	  can specify the false as checked or selected value.
+	  [ruby-core:18306], [ruby-core:18307]
 
 	* test/cgi/test_cgi_tag_helper.rb: add a test.
 
 Sun Sep 28 23:08:38 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* lib/cgi/html.rb (CGI::HtmlExtension::popup_menu):
-	fix the calls #bytesize on array parameters. [ruby-core:18919]
+	  fix the calls #bytesize on array parameters. [ruby-core:18919]
 
 Sun Sep 28 22:44:26 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb (CGI::parse): ignore illegal query params.
-	[ruby-dev:36618]
+	  [ruby-dev:36618]
 
 Sun Sep 28 22:05:07 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
@@ -7751,8 +7751,8 @@ Thu Sep  4 20:19:36 2008  Tanaka Akira  <akr@fsij.org>
 Thu Sep  4 19:40:50 2008  Narihiro Nakamura  <authorNari@gmail.com>
 
 	* gc.c (gc_profile_record_get): to static function.
-	(gc_profile_result): ditto.
-	(gc_profile_report): ditto.
+	  (gc_profile_result): ditto.
+	  (gc_profile_report): ditto.
 
 Thu Sep  4 19:20:24 2008  Tanaka Akira  <akr@fsij.org>
 
