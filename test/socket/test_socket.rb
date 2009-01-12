@@ -93,6 +93,8 @@ class TestSocket < Test::Unit::TestCase
     assert_raise(ArgumentError) { Socket.unpack_sockaddr_un(sockaddr_in) }
     sockaddr_un = Socket.sockaddr_un("/tmp/s")
     assert_raise(ArgumentError) { Socket.unpack_sockaddr_in(sockaddr_un) }
+    assert_raise(ArgumentError) { Socket.unpack_sockaddr_in("") }
+    assert_raise(ArgumentError) { Socket.unpack_sockaddr_un("") }
   end if Socket.respond_to?(:sockaddr_un)
 
   def test_sysaccept
