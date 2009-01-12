@@ -12414,7 +12414,7 @@ rb_thread_start_0(fn, arg, th)
 	th->anchor = ip;
 	thread_insert(th);
 	curr_thread = th;
-	longjmp((prot_tag = ip->tag)->buf, TAG_THREAD);
+	ruby_longjmp((prot_tag = ip->tag)->buf, TAG_THREAD);
     }
 
     if (ruby_block) {		/* should nail down higher blocks */

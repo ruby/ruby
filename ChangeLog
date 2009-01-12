@@ -1,3 +1,8 @@
+Mon Jan 12 13:41:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_start_0): must use ruby_longjmp instead of
+	  longjmp.
+
 Sun Jan 11 20:19:38 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (PercentScanner): remove PercentScanner. fixed % after
