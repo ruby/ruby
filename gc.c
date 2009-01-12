@@ -410,6 +410,31 @@ rb_global_variable(VALUE *var)
     rb_gc_register_address(var);
 }
 
+static void *
+ruby_memerror_body(void *dummy)
+{
+    rb_memerror();
+    return 0;
+}
+
+static void
+ruby_memerror(void)
+{
+    if (ruby_thread_has_gvl_p()) {
+	rb_memerror();
+    }
+    else {
+	if (ruby_native_thread_p()) {
+	    rb_thread_call_with_gvl(ruby_memerror_body, 0);
+	}
+	else {
+	    /* no ruby thread */
+	    fprintf(stderr, "[FATAL] failed to allocate memory\n");
+	    exit(EXIT_FAILURE);
+	}
+    }
+}
+
 void
 rb_memerror(void)
 {
@@ -531,12 +556,60 @@ gc_profile_clear(void)
 }
 
 static void *
+negative_size_allocation_error_with_gvl(void *ptr)
+{
+    rb_raise(rb_eNoMemError, (const char *)ptr);
+    return 0; /* should not be reached */
+}
+
+static void
+negative_size_allocation_error(const char *msg)
+{
+    if (ruby_thread_has_gvl_p()) {
+	rb_raise(rb_eNoMemError, msg);
+    }
+    else {
+	if (ruby_native_thread_p()) {
+	    rb_thread_call_with_gvl(negative_size_allocation_error_with_gvl, (void *)msg);
+	}
+	else {
+	    fprintf(stderr, "[FATAL] %s\n", msg);
+	    exit(EXIT_FAILURE);
+	}
+    }
+}
+
+static void *
+gc_with_gvl(void *ptr)
+{
+    return (void *)garbage_collect((rb_objspace_t *)ptr);
+}
+
+static int
+garbage_collect_with_gvl(rb_objspace_t *objspace)
+{
+    if (ruby_thread_has_gvl_p()) {
+	return garbage_collect(objspace);
+    }
+    else {
+	if (ruby_native_thread_p()) {
+	    return (int)rb_thread_call_with_gvl(gc_with_gvl, (void *)objspace);
+	}
+	else {
+	    /* no ruby thread */
+	    fprintf(stderr, "[FATAL] failed to allocate memory\n");
+	    exit(EXIT_FAILURE);
+	}
+    }
+}
+
+static void *
 vm_xmalloc(rb_objspace_t *objspace, size_t size)
 {
     void *mem;
 
     if (size < 0) {
-	rb_raise(rb_eNoMemError, "negative allocation size (or too big)");
+	negative_size_allocation_error("negative allocation size (or too big)");
     }
     if (size == 0) size = 1;
 
@@ -546,15 +619,15 @@ vm_xmalloc(rb_objspace_t *objspace, size_t size)
 
     if ((ruby_gc_stress && !ruby_disable_gc_stress) ||
 	(malloc_increase+size) > malloc_limit) {
-	garbage_collect(objspace);
+	garbage_collect_with_gvl(objspace);
     }
     mem = malloc(size);
     if (!mem) {
-	if (garbage_collect(objspace)) {
+	if (garbage_collect_with_gvl(objspace)) {
 	    mem = malloc(size);
 	}
 	if (!mem) {
-	    rb_memerror();
+	    ruby_memerror();
 	}
     }
     malloc_increase += size;
@@ -575,11 +648,12 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
     void *mem;
 
     if (size < 0) {
-	rb_raise(rb_eArgError, "negative re-allocation size");
+	negative_size_allocation_error("negative re-allocation size");
     }
     if (!ptr) return ruby_xmalloc(size);
     if (size == 0) size = 1;
-    if (ruby_gc_stress && !ruby_disable_gc_stress) garbage_collect(objspace);
+    if (ruby_gc_stress && !ruby_disable_gc_stress)
+      garbage_collect_with_gvl(objspace);
 
 #if CALC_EXACT_MALLOC_SIZE
     size += sizeof(size_t);
@@ -589,11 +663,11 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
 
     mem = realloc(ptr, size);
     if (!mem) {
-	if (garbage_collect(objspace)) {
+	if (garbage_collect_with_gvl(objspace)) {
 	    mem = realloc(ptr, size);
 	}
 	if (!mem) {
-	    rb_memerror();
+	    ruby_memerror();
         }
     }
     malloc_increase += size;

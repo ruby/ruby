@@ -1,3 +1,10 @@
+Mon Jan 12 11:59:19 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (ruby_xmalloc, ruby_xrealloc, ruby_xfree):
+	  enable to use them without GVL.
+	  if GC is invoked, acquire GVL during GC.
+	  if NoMemoryError is raised, acquire GVL and raise it.
+
 Mon Jan 12 10:39:19 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c: fix comment (terminology: Global VM Lock).
