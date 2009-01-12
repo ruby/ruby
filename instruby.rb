@@ -151,7 +151,7 @@ def install(src, dest, options = {})
   options[:preserve] = true
   d = with_destdir(dest)
   super(src, d, options)
-  if strip and cmd = 
+  if strip
     d = File.join(d, File.basename(src)) if $made_dirs[dest]
     strip_file(d)
   end
