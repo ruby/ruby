@@ -2244,6 +2244,52 @@ rb_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *excep
 #define FD_CLR(i, f)	rb_fd_clr(i, f)
 #define FD_ISSET(i, f)	rb_fd_isset(i, f)
 
+#elif defined(_WIN32)
+
+void
+rb_fd_init(volatile rb_fdset_t *set)
+{
+    set->capa = FD_SETSIZE;
+    set->fdset = ALLOC(fd_set);
+    FD_ZERO(set->fdset);
+}
+
+void
+rb_fd_term(rb_fdset_t *set)
+{
+    xfree(set->fdset);
+    set->fdset = NULL;
+    set->capa = 0;
+}
+
+void
+rb_fd_set(int fd, rb_fdset_t *set)
+{
+    unsigned int i;
+    SOCKET s = rb_w32_get_osfhandle(fd);
+
+    for (i = 0; i < set->fdset->fd_count; i++) {
+        if (set->fdset->fd_array[i] == s) {
+            return;
+        }
+    }
+    if (set->fdset->fd_count >= set->capa) {
+	set->capa = (set->fdset->fd_count / FD_SETSIZE + 1) * FD_SETSIZE;
+	set->fdset = xrealloc(set->fdset, sizeof(unsigned int) + sizeof(SOCKET) * set->capa);
+    }
+    set->fdset->fd_array[set->fdset->fd_count++] = s;
+}
+
+#undef FD_ZERO
+#undef FD_SET
+#undef FD_CLR
+#undef FD_ISSET
+
+#define FD_ZERO(f)	rb_fd_zero(f)
+#define FD_SET(i, f)	rb_fd_set(i, f)
+#define FD_CLR(i, f)	rb_fd_clr(i, f)
+#define FD_ISSET(i, f)	rb_fd_isset(i, f)
+
 #endif
 
 #if defined(__CYGWIN__) || defined(_WIN32)

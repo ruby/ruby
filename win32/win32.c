@@ -1989,11 +1989,8 @@ rb_w32_fdclr(int fd, fd_set *set)
 
     for (i = 0; i < set->fd_count; i++) {
         if (set->fd_array[i] == s) {
-            while (i < set->fd_count - 1) {
-                set->fd_array[i] = set->fd_array[i + 1];
-                i++;
-            }
-            set->fd_count--;
+	    memmove(&set->fd_array[i], &set->fd_array[i+1],
+		    sizeof(set->fd_array[0]) * (--set->fd_count - i));
             break;
         }
     }
@@ -2021,7 +2018,7 @@ rb_w32_fdisset(int fd, fd_set *set)
 #undef select
 
 static int
-extract_fd(fd_set *dst, fd_set *src, int (*func)(SOCKET))
+extract_fd(rb_fdset_t *dst, fd_set *src, int (*func)(SOCKET))
 {
     int s = 0;
     if (!src || !dst) return 0;
@@ -2032,11 +2029,16 @@ extract_fd(fd_set *dst, fd_set *src, int (*func)(SOCKET))
 	if (!func || (*func)(fd)) { /* move it to dst */
 	    int d;
 
-	    for (d = 0; d < dst->fd_count; d++) {
-		if (dst->fd_array[d] == fd) break;
+	    for (d = 0; d < dst->fdset->fd_count; d++) {
+		if (dst->fdset->fd_array[d] == fd)
+		    break;
 	    }
-	    if (d == dst->fd_count && dst->fd_count < FD_SETSIZE) {
-		dst->fd_array[dst->fd_count++] = fd;
+	    if (d == dst->fdset->fd_count) {
+		if (dst->fdset->fd_count >= dst->capa) {
+		    dst->capa = (dst->fdset->fd_count / FD_SETSIZE + 1) * FD_SETSIZE;
+		    dst->fdset = xrealloc(dst->fdset, sizeof(unsigned int) + sizeof(SOCKET) * dst->capa);
+		}
+		dst->fdset->fd_array[dst->fdset->fd_count++] = fd;
 	    }
 	    memmove(
 		&src->fd_array[s],
@@ -2044,6 +2046,27 @@ extract_fd(fd_set *dst, fd_set *src, int (*func)(SOCKET))
 		sizeof(src->fd_array[0]) * (--src->fd_count - s));
 	}
 	else s++;
+    }
+
+    return dst->fdset->fd_count;
+}
+
+static int
+copy_fd(fd_set *dst, fd_set *src)
+{
+    int s;
+    if (!src || !dst) return 0;
+
+    for (s = 0; s < src->fd_count; ++s) {
+	SOCKET fd = src->fd_array[s];
+	int d;
+	for (d = 0; d < dst->fd_count; ++d) {
+	    if (dst->fd_array[d] == fd)
+		break;
+	}
+	if (d == dst->fd_count && d < FD_SETSIZE) {
+	    dst->fd_array[dst->fd_count++] = fd;
+	}
     }
 
     return dst->fd_count;
@@ -2186,11 +2209,11 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	      struct timeval *timeout)
 {
     int r;
-    fd_set pipe_rd;
-    fd_set cons_rd;
-    fd_set else_rd;
-    fd_set else_wr;
-    fd_set except;
+    rb_fdset_t pipe_rd;
+    rb_fdset_t cons_rd;
+    rb_fdset_t else_rd;
+    rb_fdset_t else_wr;
+    rb_fdset_t except;
     int nonsock = 0;
     struct timeval limit;
 
@@ -2225,19 +2248,19 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     // until some data is read from pipe. but ruby is single threaded system,
     // so whole system will be blocked forever.
 
-    else_rd.fd_count = 0;
+    rb_fd_init(&else_rd);
     nonsock += extract_fd(&else_rd, rd, is_not_socket);
 
-    pipe_rd.fd_count = 0;
-    extract_fd(&pipe_rd, &else_rd, is_pipe); // should not call is_pipe for socket
+    rb_fd_init(&pipe_rd);
+    extract_fd(&pipe_rd, else_rd.fdset, is_pipe); // should not call is_pipe for socket
 
-    cons_rd.fd_count = 0;
-    extract_fd(&cons_rd, &else_rd, is_console); // ditto
+    rb_fd_init(&cons_rd);
+    extract_fd(&cons_rd, else_rd.fdset, is_console); // ditto
 
-    else_wr.fd_count = 0;
+    rb_fd_init(&else_wr);
     nonsock += extract_fd(&else_wr, wr, is_not_socket);
 
-    except.fd_count = 0;
+    rb_fd_init(&except);
     extract_fd(&except, ex, is_not_socket); // drop only
 
     r = 0;
@@ -2256,15 +2279,17 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	    if (nonsock) {
 		// modifying {else,pipe,cons}_rd is safe because
 		// if they are modified, function returns immediately.
-		extract_fd(&else_rd, &pipe_rd, is_readable_pipe);
-		extract_fd(&else_rd, &cons_rd, is_readable_console);
+		extract_fd(&else_rd, pipe_rd.fdset, is_readable_pipe);
+		extract_fd(&else_rd, cons_rd.fdset, is_readable_console);
 	    }
 
-	    if (else_rd.fd_count || else_wr.fd_count) {
+	    if (else_rd.fdset->fd_count || else_wr.fdset->fd_count) {
 		r = do_select(nfds, rd, wr, ex, &zero); // polling
 		if (r < 0) break; // XXX: should I ignore error and return signaled handles?
-		r += extract_fd(rd, &else_rd, NULL); // move all
-		r += extract_fd(wr, &else_wr, NULL); // move all
+		r = copy_fd(rd, else_rd.fdset);
+		r += copy_fd(wr, else_wr.fdset);
+		if (ex)
+		    r += ex->fd_count;
 		break;
 	    }
 	    else {
@@ -2293,6 +2318,12 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	    }
 	}
     }
+
+    rb_fd_term(&except);
+    rb_fd_term(&else_wr);
+    rb_fd_term(&cons_rd);
+    rb_fd_term(&pipe_rd);
+    rb_fd_term(&else_rd);
 
     return r;
 }
@@ -4344,10 +4375,6 @@ rb_w32_read(int fd, void *buf, size_t size)
     if (_get_osfhandle(fd) == -1) {
 	return -1;
     }
-    if (!(_osfile(fd) & FOPEN)) {
-	errno = EBADF;
-	return -1;
-    }
 
     if (_osfile(fd) & FTEXT) {
 	return _read(fd, buf, size);
@@ -4464,10 +4491,6 @@ rb_w32_write(int fd, const void *buf, size_t size)
 
     // validate fd by using _get_osfhandle() because we cannot access _nhandle
     if (_get_osfhandle(fd) == -1) {
-	return -1;
-    }
-    if (!(_osfile(fd) & FOPEN)) {
-	errno = EBADF;
 	return -1;
     }
 
@@ -4700,10 +4723,6 @@ rb_w32_isatty(int fd)
 {
     // validate fd by using _get_osfhandle() because we cannot access _nhandle
     if (_get_osfhandle(fd) == -1) {
-	return 0;
-    }
-    if (!(_osfile(fd) & FOPEN)) {
-	errno = EBADF;
 	return 0;
     }
     if (!(_osfile(fd) & FDEV)) {
