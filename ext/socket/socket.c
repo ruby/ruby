@@ -5176,8 +5176,8 @@ addrinfo_ipv4_p(VALUE self)
 static VALUE
 addrinfo_ipv6_p(VALUE self)
 {
-    rb_addrinfo_t *rai = get_addrinfo(self);
 #ifdef AF_INET6
+    rb_addrinfo_t *rai = get_addrinfo(self);
     return ai_get_afamily(rai) == AF_INET6 ? Qtrue : Qfalse;
 #else
     return Qfalse;
