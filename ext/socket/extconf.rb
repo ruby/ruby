@@ -251,6 +251,7 @@ unless getaddr_info_ok and have_func("getnameinfo", headers) and have_func("geta
   $CPPFLAGS="-I. "+$CPPFLAGS
   $objs += ["getaddrinfo.#{$OBJEXT}"]
   $objs += ["getnameinfo.#{$OBJEXT}"]
+  $defs << "-DGETADDRINFO_EMU"
   have_func("inet_ntop") or have_func("inet_ntoa")
   have_func("inet_pton") or have_func("inet_aton")
   have_func("getservbyport")

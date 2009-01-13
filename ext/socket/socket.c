@@ -238,6 +238,7 @@ ruby_getnameinfo__aix(const struct sockaddr *sa, size_t salen,
 #define close closesocket
 #endif
 
+#ifndef GETADDRINFO_EMU
 struct getaddrinfo_arg
 {
     const char *node;
@@ -253,12 +254,16 @@ nogvl_getaddrinfo(void *arg)
     return getaddrinfo(ptr->node, ptr->service,
                        ptr->hints, ptr->res);
 }
+#endif
 
 static int
 rb_getaddrinfo(const char *node, const char *service,
                const struct addrinfo *hints,
                struct addrinfo **res)
 {
+#ifdef GETADDRINFO_EMU
+    return getaddrinfo(node, service, hints, res);
+#else
     struct getaddrinfo_arg arg;
     int ret;
     arg.node = node;
@@ -267,8 +272,10 @@ rb_getaddrinfo(const char *node, const char *service,
     arg.res = res;
     ret = BLOCKING_REGION(nogvl_getaddrinfo, &arg);
     return ret;
+#endif
 }
 
+#ifndef GETADDRINFO_EMU
 struct getnameinfo_arg
 {
     const struct sockaddr *sa;
@@ -289,12 +296,16 @@ nogvl_getnameinfo(void *arg)
                        ptr->serv, ptr->servlen,
                        ptr->flags);
 }
+#endif
 
 static int
 rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
            char *host, size_t hostlen,
            char *serv, size_t servlen, int flags)
 {
+#ifdef GETADDRINFO_EMU
+    return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
+#else
     struct getnameinfo_arg arg;
     int ret;
     arg.sa = sa;
@@ -306,6 +317,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     arg.flags = flags;
     ret = BLOCKING_REGION(nogvl_getnameinfo, &arg);
     return ret;
+#endif
 }
 
 static int

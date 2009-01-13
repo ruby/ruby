@@ -1,3 +1,13 @@
+Tue Jan 13 21:38:07 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (rb_getaddrinfo): use getaddrinfo with GVL if
+	  getaddrinfo.c/getnameinfo.c is used.  They are not thread safe
+	  because gethostbyname/gethostbyaddr is used.
+	  (rb_getnameinfo): ditto.
+
+	* extconf.rb: define GETADDRINFO_EMU if getaddrinfo.c/getnameinfo.c is
+	  used.
+
 Tue Jan 13 21:28:14 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* object.c (rb_obj_not_match): rdoc.
