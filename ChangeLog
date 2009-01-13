@@ -1,3 +1,9 @@
+Tue Jan 13 18:21:44 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_io_close_read): call rb_io_fptr_cleanup() instead of
+	  fptr_finalize() because the fptr has special finalizser if it is a
+	  pipe.  [ruby-dev:37757] (3)
+
 Tue Jan 13 18:19:49 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_io_initialize): workaround for Windows. [ruby-dev:37686]
@@ -49,7 +55,7 @@ Tue Jan 13 02:54:54 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/extconf.rb: use headers instead of "netdb.h" in checking
 	  getnameinfo() and getaddrinfo() because Windows doesn't have it.
-	  see [ruby-dev:37757].
+	  [ruby-dev:37757] (1)
 
 	* ext/socket/sockport.h (SA_LEN): use sockaddr_in6 when defined AF_INET6
 	  if INET6 is not defined.  winsock2's getaddrinfo() returns

@@ -3378,7 +3378,7 @@ rb_io_close_read(VALUE io)
     write_io = GetWriteIO(io);
     if (io != write_io) {
 	rb_io_t *wfptr;
-        fptr_finalize(fptr, Qfalse);
+        rb_io_fptr_cleanup(fptr, Qfalse);
 	GetOpenFile(write_io, wfptr);
         RFILE(io)->fptr = wfptr;
         RFILE(write_io)->fptr = NULL;
