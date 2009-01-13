@@ -1,3 +1,8 @@
+Tue Jan 13 12:10:42 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/{getaddrinfo,getnameinfo}.c: need to include ws2tcpip.h
+	  on Windows.
+
 Tue Jan 13 09:49:49 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* ext/socket/socket.c: removed warning about unused variable 'rai'.
