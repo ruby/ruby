@@ -1,3 +1,4 @@
+<%
 #
 # OnigEncodingDefine(foo, Foo) = {
 #   ..
@@ -23,7 +24,6 @@ lines = []
 encodings = []
 defs = {}
 encdirs = ARGV.dup
-outhdr = encdirs.shift || 'encdb.h'
 encdirs << 'enc' if encdirs.empty?
 files = {}
 encdirs.each do |encdir|
@@ -63,15 +63,17 @@ encdirs.each do |encdir|
             next
           end
           check_duplication(defs, $1, fn, $.)
-          lines << line.sub(/;.*/m, "").chomp + ";\n" if line
+          lines << line.sub(/;.*/m, "").chomp + ";" if line
         end
       end
     end
   end
 end
+encodings.each do |e|
+%>ENC_DEFINE("<%=e%>");
+% end
+% lines.each do |line|
+<%=line%>
+% end
 
-result = encodings.map {|e| %[ENC_DEFINE("#{e}");\n]}.join + lines.join + 
-  "\n#define ENCODING_COUNT #{count}\n"
-open(outhdr, 'wb') do |f|
-  f.print result
-end
+#define ENCODING_COUNT <%=count%>

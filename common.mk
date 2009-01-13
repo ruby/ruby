@@ -647,13 +647,11 @@ insns: $(INSNS)
 
 node_name.inc: {$(VPATH)}node.h
 
-encdb.h: $(PREP)
-	$(MINIRUBY) $(srcdir)/enc/make_encdb.rb $@.new $(srcdir)/enc enc
-	$(IFCHANGE) "$@" "$@.new"
+encdb.h: $(PREP) $(srcdir)/tool/generic_erb.rb $(srcdir)/template/encdb.h.tmpl
+	$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/encdb.h.tmpl $(srcdir)/enc enc
 
-transdb.h: $(PREP) srcs-enc
-	$(MINIRUBY) $(srcdir)/enc/trans/make_transdb.rb $@.new $(srcdir)/enc/trans enc/trans
-	$(IFCHANGE) "$@" "$@.new"
+transdb.h: $(PREP) srcs-enc $(srcdir)/tool/generic_erb.rb $(srcdir)/template/transdb.h.tmpl
+	$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/transdb.h.tmpl $(srcdir)/enc/trans enc/trans
 
 # {$(VPATH)}id.h: {$(VPATH)}parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
 # 	$(BASERUBY) $(srcdir)/tool/generic_erb.rb --if-change --output=$@ \
