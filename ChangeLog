@@ -1,3 +1,8 @@
+Tue Jan 13 21:44:30 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (io_reopen, rb_io_init_copy): should register fptr to pipe_list
+	  when copying pipe fptr.
+
 Tue Jan 13 21:38:07 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (rb_getaddrinfo): use getaddrinfo with GVL if
