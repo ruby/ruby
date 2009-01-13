@@ -1,3 +1,9 @@
+Tue Jan 13 12:31:54 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* tool/file2lastrev.rb (get_revisions): fixes problem with
+	  svn on cygwin. [ruby-dev:37702].
+	  Patch by Kouhei Sutou.
+
 Tue Jan 13 11:58:04 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/irb/input-method.rb: IRB did not prompt for MSwin32.
