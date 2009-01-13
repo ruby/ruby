@@ -5963,6 +5963,12 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     fp->encs = convconfig;
     clear_codeconv(fp);
     io_check_tty(fp);
+    if (fileno(stdin) == fd)
+	fp->stdio_file = stdin;
+    else if (fileno(stdout) == fd)
+	fp->stdio_file = stdout;
+    else if (fileno(stderr) == fd)
+	fp->stdio_file = stderr;
 
     return io;
 }
