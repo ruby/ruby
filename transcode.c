@@ -14,6 +14,7 @@
 #include "transcode_data.h"
 #include <ctype.h>
 
+/* VALUE rb_cEncoding = rb_define_class("Encoding", rb_cObject); */
 VALUE rb_eUndefinedConversionError;
 VALUE rb_eInvalidByteSequenceError;
 VALUE rb_eConverterNotFoundError;
