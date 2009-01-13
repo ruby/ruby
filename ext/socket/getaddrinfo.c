@@ -375,6 +375,8 @@ getaddrinfo(const char *hostname, const char *servname, const struct addrinfo *h
 				pai->ai_protocol = IPPROTO_UDP;
 			}
 			port = htons((unsigned short)atoi(servname));
+                } else if (pai->ai_flags & AI_NUMERICSERV) {
+                        ERR(EAI_NONAME);
 		} else {
 			struct servent *sp;
 			const char *proto;
