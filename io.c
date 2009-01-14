@@ -7028,9 +7028,10 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 }
 
 static VALUE
-pipe_yield(VALUE rw)
+pipe_pair_close(VALUE rw)
 {
-    return rb_ensure(rb_yield, rw, io_close, rb_ary_entry(rw, 1));
+    VALUE *rwp = (VALUE *)rw;
+    return rb_ensure(io_close, rwp[0], io_close, rwp[1]);
 }
 
 /*
@@ -7135,7 +7136,10 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
 
     ret = rb_assoc_new(r, w);
     if (rb_block_given_p()) {
-	return rb_ensure(pipe_yield, ret, io_close, r);
+	VALUE rw[2];
+	rw[0] = r;
+	rw[1] = w;
+	return rb_ensure(rb_yield, ret, pipe_pair_close, (VALUE)rw);
     }
     return ret;
 }
