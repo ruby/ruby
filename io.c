@@ -2016,7 +2016,7 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
 
     if (NEED_READCONV(fptr)) {
         make_readconv(fptr, 0);
-        while (1) {
+        do {
             const char *p, *e;
             int searchlen;
             if (fptr->cbuf_len) {
@@ -2050,15 +2050,12 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
                     return (unsigned char)RSTRING_PTR(str)[RSTRING_LEN(str)-1];
                 }
             }
-
-            if (more_char(fptr) == -1) {
-                *lp = limit;
-                return EOF;
-            }
-        }
+        } while (more_char(fptr) != -1);
+        *lp = limit;
+        return EOF;
     }
 
-    while (1) {
+    do {
 	long pending = READ_DATA_PENDING_COUNT(fptr);
 	if (pending > 0) {
 	    const char *p = READ_DATA_PENDING_PTR(fptr);
@@ -2082,15 +2079,13 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
 	    *lp = limit;
 	    if (e) return delim;
 	    if (limit == 0)
-              return (unsigned char)RSTRING_PTR(str)[RSTRING_LEN(str)-1];
+		return (unsigned char)RSTRING_PTR(str)[RSTRING_LEN(str)-1];
 	}
 	rb_thread_wait_fd(fptr->fd);
 	rb_io_check_closed(fptr);
-	if (io_fillbuf(fptr) < 0) {
-	    *lp = limit;
-	    return EOF;
-	}
-    }
+    } while (io_fillbuf(fptr) >= 0);
+    *lp = limit;
+    return EOF;
 }
 
 static inline int

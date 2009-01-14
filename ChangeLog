@@ -1,4 +1,6 @@
-Wed Jan 14 12:35:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jan 14 12:38:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (appendline): reformed.
 
 	* io.c (rb_io_s_pipe): reduced nest of rb_ensure of main block.
 
