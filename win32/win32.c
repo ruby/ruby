@@ -1011,7 +1011,7 @@ rb_pid_t
 rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 {
     int len, differ = 0, c_switch = 0;
-    BOOL ntcmd = FALSE;
+    BOOL ntcmd = FALSE, tmpnt;
     const char *shell;
     char *cmd, fbuf[MAXPATHLEN];
 
@@ -1019,7 +1019,8 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 
     if (!prog) prog = argv[0];
     if ((shell = getenv("COMSPEC")) &&
-	internal_cmd_match(prog, ntcmd = !is_command_com(shell))) {
+	internal_cmd_match(prog, tmpnt = !is_command_com(shell))) {
+	ntcmd = tmpnt;
 	prog = shell;
 	c_switch = 1;
 	differ = 1;

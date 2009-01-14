@@ -1,3 +1,8 @@
+Wed Jan 14 13:19:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_aspawn): should not escape with carret
+	  unless using cmd.exe.
+
 Wed Jan 14 13:09:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/extconf.rb (gai_strerror): checks if available and if
