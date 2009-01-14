@@ -3,15 +3,15 @@
 <%
   require "gb18030-tbl"
 
-  transcode_tbl_only "GB18030", "UTF-8", [["{00-7f}", :nomap],
-                                        *GB18030_TO_UCS_TBL,
+  transcode_tbl_only "GB18030", "UTF-8", [["{00-7f}", :nomap]] +
+                                         GB18030_TO_UCS_TBL + [
                                         ["{90-e2}{30-39}{81-fe}{30-39}", :func_so],
                                         ["e3{30-31}{81-fe}{30-39}", :func_so],
                                         ["e332{81-99}{30-39}", :func_so],
                                         ["e3329a{30-35}", :func_so],   #  "E3329A35" is U+10FFFF
                                        ]
-  transcode_tbl_only "UTF-8", "GB18030", [["{00-7f}", :nomap],
-                                        *GB18030_TO_UCS_TBL.map {|a,b| [b,a] },
+  transcode_tbl_only "UTF-8", "GB18030", [["{00-7f}", :nomap]] +
+                                         GB18030_TO_UCS_TBL.map {|a,b| [b,a] } + [
                                         ["f0{90-bf}{80-bf}{80-bf}", :func_so],
                                         ["{f1-f3}{80-bf}{80-bf}{80-bf}", :func_so],
                                         ["f4{80-8f}{80-bf}{80-bf}", :func_so]
@@ -81,5 +81,4 @@ Init_gb18030(void)
 {
     rb_register_transcoder(&rb_from_GB18030);
     rb_register_transcoder(&rb_to_GB18030);
-
 }

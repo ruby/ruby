@@ -607,7 +607,7 @@ end
 TRANSCODERS = []
 TRANSCODE_GENERATED_TRANSCODER_CODE = ''
 
-def transcode_tbl_only (from, to, map)
+def transcode_tbl_only(from, to, map)
   if VERBOSE_MODE
     if from.empty? || to.empty?
       STDERR.puts "converter for #{from.empty? ? to : from}"
