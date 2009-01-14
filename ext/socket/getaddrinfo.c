@@ -39,6 +39,9 @@
  */
 
 #include "config.h"
+#ifdef RUBY_EXTCONF_H
+#include RUBY_EXTCONF_H
+#endif
 #include <sys/types.h>
 #if !defined(_WIN32) && !defined(__VMS)
 #include <sys/param.h>
@@ -199,7 +202,8 @@ if (pai->ai_flags & AI_CANONNAME) {\
 
 #define ERR(err) { error = (err); goto bad; }
 
-#if defined __UCLIBC__
+#ifndef HAVE_GAI_STRERROR
+#ifdef GAI_STRERROR_CONST
 const
 #endif
 char *
@@ -210,6 +214,7 @@ gai_strerror(ecode)
 		ecode = EAI_MAX;
 	return (char *)ai_errlist[ecode];
 }
+#endif
 
 void
 freeaddrinfo(ai)
@@ -388,7 +393,7 @@ getaddrinfo(hostname, servname, hints, res)
 			port = htons((unsigned short)atoi(servname));
 		} else {
 			struct servent *sp;
-			char *proto;
+			const char *proto;
 
 			proto = NULL;
 			switch (pai->ai_socktype) {

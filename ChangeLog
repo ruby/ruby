@@ -1,3 +1,11 @@
+Wed Jan 14 13:09:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/extconf.rb (gai_strerror): checks if available and if
+	  returns const pointer.
+
+	* ext/socket/getaddrinfo.c (gai_strerror): defines only if non
+	  available.  [ruby-core:21328]
+
 Tue Jan 13 00:57:56 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (sock_s_unpack_sockaddr_in): check too short
