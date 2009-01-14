@@ -1218,6 +1218,15 @@ rb_locale_charmap(VALUE klass)
 {
 #if defined NO_LOCALE_CHARMAP
     return rb_usascii_str_new2("ASCII-8BIT");
+#elif defined __CYGWIN__
+    const char *nl_langinfo_codeset(void);
+    const char *codeset = nl_langinfo_codeset();
+    char cp[sizeof(int) * 3 + 4];
+    if (codeset) {
+	snprintf(cp, sizeof(cp), "CP%d", GetConsoleCP());
+	codeset = cp;
+    }
+    return rb_usascii_str_new2(codeset);
 #elif defined HAVE_LANGINFO_H
     char *codeset;
     codeset = nl_langinfo(CODESET);

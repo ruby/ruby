@@ -1,3 +1,4 @@
+/* -*- c-file-style: "gnu" -*- */
 /*
  * This is a quick-and-dirty emulator of the nl_langinfo(CODESET)
  * function defined in the Single Unix Specification for those systems
@@ -33,7 +34,16 @@
 
 #include <stdlib.h>
 #include <string.h>
+#if defined _WIN32 || defined __CYGWIN__
+#include <windows.h>
+int snprintf(char *, size_t, const char *, ...);
+#if defined _WIN32
+#define strncasecmp strnicmp
+#endif
+#endif
+#ifdef HAVE_LANGINFO_H
 #include "langinfo.h"
+#endif
 
 #define C_CODESET "US-ASCII"     /* Return this as the encoding of the
 				  * C/POSIX locale. Could as well one day
@@ -44,12 +54,10 @@
 
 static char buf[16];
 
-static const char *nl_langinfo_0(nl_item item)
+const char *
+nl_langinfo_codeset(void)
 {
-  char *l, *p;
-  
-  if (item != CODESET)
-    return NULL;
+  const char *l, *p;
   
   if (((l = getenv("LC_ALL"))   && *l) ||
       ((l = getenv("LC_CTYPE")) && *l) ||
@@ -59,30 +67,29 @@ static const char *nl_langinfo_0(nl_item item)
       return C_CODESET;
     /* check for encoding name fragment */
     p = strchr(l, '.');
-    if (p++) {
-      if (strstart(p, "UTF"))
+    if (!p++) p = l;
+    if (strstart(p, "UTF"))
 	return "UTF-8";
-      if (strstart(p, "8859-")) {
+    if (strstart(p, "8859-")) {
+      if (digit(p[5])) {
+	p += 5;
 	memcpy(buf, "ISO-8859-\0\0", 12);
-	if (digit(p[5])) {
-	  p += 5;
-	  buf[9] = *p++;
-	  if (digit(*p)) buf[10] = *p++;
-	  return buf;
-	}
+	buf[9] = *p++;
+	if (digit(*p)) buf[10] = *p++;
+	return buf;
       }
-      if (strstart(p, "KOI8-R")) return "KOI8-R";
-      if (strstart(p, "KOI8-U")) return "KOI8-U";
-      if (strstart(p, "620")) return "TIS-620";
-      if (strstart(p, "2312")) return "GB2312";
-      if (strstart(p, "HKSCS")) return "Big5HKSCS";   /* no MIME charset */
-      if (strstart(p, "BIG5")) return "Big5";
-      if (strstart(p, "GBK")) return "GBK";           /* no MIME charset */
-      if (strstart(p, "18030")) return "GB18030";     /* no MIME charset */
-      if (strstart(p, "Shift_JIS") || strstart(p, "SJIS")) return "Shift_JIS";
-      /* check for conclusive modifier */
-      if (strstart(p, "euro")) return "ISO-8859-15";
     }
+    if (strstart(p, "KOI8-R")) return "KOI8-R";
+    if (strstart(p, "KOI8-U")) return "KOI8-U";
+    if (strstart(p, "620")) return "TIS-620";
+    if (strstart(p, "2312")) return "GB2312";
+    if (strstart(p, "HKSCS")) return "Big5HKSCS";   /* no MIME charset */
+    if (strstart(p, "BIG5")) return "Big5";
+    if (strstart(p, "GBK")) return "GBK";           /* no MIME charset */
+    if (strstart(p, "18030")) return "GB18030";     /* no MIME charset */
+    if (strstart(p, "Shift_JIS") || strstart(p, "SJIS")) return "Windows-31J";
+    /* check for conclusive modifier */
+    if (strstart(p, "euro")) return "ISO-8859-15";
     /* check for language (and perhaps country) codes */
     if (strstart(l, "zh_TW")) return "Big5";
     if (strstart(l, "zh_HK")) return "Big5HKSCS";   /* no MIME charset */
@@ -106,15 +113,21 @@ static const char *nl_langinfo_0(nl_item item)
     /* Send me further rules if you like, but don't forget that we are
      * *only* interested in locale naming conventions on platforms
      * that do not already provide an nl_langinfo(CODESET) implementation. */
-    return "ISO-8859-1"; /* should perhaps be "UTF-8" instead */
   }
-  return C_CODESET;
+  return NULL;
 }
 
+#ifdef HAVE_LANGINFO_H
 char *nl_langinfo(nl_item item)
 {
-  return (char *)nl_langinfo_0(item);
+  const char *codeset;
+  if (item != CODESET)
+    return NULL;
+  codeset = nl_langinfo_codeset();
+  if (!codeset) codeset = C_CODESET;
+  return (char *)codeset;
 }
+#endif
 
 /* For a demo, compile with "gcc -W -Wall -o langinfo -D TEST langinfo.c" */
 
