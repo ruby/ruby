@@ -630,7 +630,7 @@ rb_io_wait_readable(int f)
 	rb_ensure(wait_readable, (VALUE)&rfds,
 		  (VALUE (*)(VALUE))rb_fd_term, (VALUE)&rfds);
 #else
-	rb_thread_select(f + 1, &rfds, NULL, NULL, NULL);
+	rb_thread_select(f + 1, rb_fd_ptr(&rfds), NULL, NULL, NULL);
 #endif
 	return Qtrue;
 
@@ -675,7 +675,7 @@ rb_io_wait_writable(int f)
 	rb_ensure(wait_writable, (VALUE)&wfds,
 		  (VALUE (*)(VALUE))rb_fd_term, (VALUE)&wfds);
 #else
-	rb_thread_select(f + 1, NULL, &wfds, NULL, NULL);
+	rb_thread_select(f + 1, NULL, rb_fd_ptr(&wfds), NULL, NULL);
 #endif
 	return Qtrue;
 

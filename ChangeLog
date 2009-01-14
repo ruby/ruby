@@ -1,4 +1,6 @@
-Wed Jan 14 12:38:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jan 14 12:39:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_wait_readable, rb_io_wait_writable): need rb_fd_ptr.
 
 	* io.c (appendline): reformed.
 
