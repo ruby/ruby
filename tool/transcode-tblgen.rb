@@ -334,6 +334,8 @@ class ActionMap
       "o2(0x#$1,0x#$2)"
     when /\A([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])\z/i
       "o3(0x#$1,0x#$2,0x#$3)"
+    when /\A([0-9a-f][0-9a-f])(3[0-9])([0-9a-f][0-9a-f])(3[0-9])\z/i
+      "g4(0x#$1,0x#$2,0x#$3,0x#$4)"
     when /\A(f[0-7])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])\z/i
       "o4(0x#$1,0x#$2,0x#$3,0x#$4)"
     when /\A([0-9a-f][0-9a-f]){4,259}\z/i
@@ -605,7 +607,7 @@ end
 TRANSCODERS = []
 TRANSCODE_GENERATED_TRANSCODER_CODE = ''
 
-def transcode_tblgen(from, to, map)
+def transcode_tbl_only (from, to, map)
   if VERBOSE_MODE
     if from.empty? || to.empty?
       STDERR.puts "converter for #{from.empty? ? to : from}"
@@ -624,6 +626,11 @@ def transcode_tblgen(from, to, map)
   end
   map = encode_utf8(map)
   real_tree_name, max_input = transcode_compile_tree(tree_name, from, map)
+  return map, tree_name, real_tree_name, max_input
+end
+
+def transcode_tblgen(from, to, map)
+  map, tree_name, real_tree_name, max_input = transcode_tbl_only(from, to, map)
   transcoder_name = "rb_#{tree_name}"
   TRANSCODERS << transcoder_name
   input_unit_length = UnitLength[from]
