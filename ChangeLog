@@ -1,3 +1,9 @@
+Wed Jan 14 16:16:19 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/curses/extconf.rb: check ncursesw earlier than ncurses to
+	  support UTF-8 strings.   non UTF-8 strings should be converted
+	  explicitly.   [ruby-core:21094]
+
 Wed Jan 14 14:42:30 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* cont.c: fix prototype declare of register_stack_extend
