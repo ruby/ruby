@@ -375,7 +375,7 @@ static volatile int C(p), C(q), C(r), C(s), C(t);
 {/* the above lines make cc-mode.el confused so much */}
 #endif
 int rb_dummy_false = 0;
-NORETURN(NOINLINE(static void register_stack_extend(rb_context_t *, VALUE *)));
+NORETURN(NOINLINE(static void register_stack_extend(rb_context_t *, VALUE *, VALUE *)));
 static void
 register_stack_extend(rb_context_t *cont, VALUE *vp, VALUE *curr_bsp)
 {

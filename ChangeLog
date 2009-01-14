@@ -1,3 +1,7 @@
+Wed Jan 14 14:42:30 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
+
+	* cont.c: fix prototype declare of register_stack_extend
+
 Wed Jan 14 13:19:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_aspawn): should not escape with carret
