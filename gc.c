@@ -558,7 +558,7 @@ gc_profile_clear(void)
 static void *
 negative_size_allocation_error_with_gvl(void *ptr)
 {
-    rb_raise(rb_eNoMemError, (const char *)ptr);
+    rb_raise(rb_eNoMemError, "%s", (const char *)ptr);
     return 0; /* should not be reached */
 }
 
@@ -566,7 +566,7 @@ static void
 negative_size_allocation_error(const char *msg)
 {
     if (ruby_thread_has_gvl_p()) {
-	rb_raise(rb_eNoMemError, msg);
+	rb_raise(rb_eNoMemError, "%s", msg);
     }
     else {
 	if (ruby_native_thread_p()) {

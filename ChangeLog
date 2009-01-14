@@ -1,3 +1,10 @@
+Wed Jan 14 22:38:30 2009  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (negative_size_allocation_error_with_gvl): abolish a warning.
+	  (negative_size_allocation_error): ditto.
+
+	* ext/openssl/ossl.c (ossl_raise): ditto.
+
 Wed Jan 14 20:05:05 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/trans/gb18030.trans, gb18030-tbl.rb:
