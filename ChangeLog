@@ -1,3 +1,8 @@
+Tue Jan 13 18:19:49 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_io_initialize): workaround for Windows. [ruby-dev:37686]
+          (also see [ruby-dev:37721])
+
 Tue Jan 13 17:29:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/trans/make_transdb.rb (converters): should not depend on the
