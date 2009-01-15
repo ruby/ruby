@@ -2889,7 +2889,7 @@ econv_s_search_convpath(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
- * Check the existence of a convertsion path.
+ * Check the existence of a conversion path.
  * Returns the number of converters in the conversion path.
  * result: >=0:success -1:failure
  */
@@ -3496,6 +3496,10 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
  * If a conversion error occur,
  * Encoding::UndefinedConversionError or
  * Encoding::InvalidByteSequenceError is raised.
+ * Encoding::Converter#convert doesn't supply methods to recover or restart
+ * from these exceptions.
+ * When you want to handle these conversion errors,
+ * use Encoding::Converter#primitive_convert.
  *
  */
 static VALUE
