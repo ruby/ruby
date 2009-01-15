@@ -7,6 +7,15 @@ require "test/unit"
 require "tempfile"
 
 class TestSocketAddrInfo < Test::Unit::TestCase
+  def test_addrinfo_ip
+    ai = AddrInfo.ip("127.0.0.1")
+    assert_equal([0, "127.0.0.1"], Socket.unpack_sockaddr_in(ai))
+    assert_equal(Socket::AF_INET, ai.afamily)
+    assert_equal(Socket::PF_INET, ai.pfamily)
+    assert_equal(0, ai.socktype)
+    assert_equal(0, ai.protocol)
+  end
+
   def test_addrinfo_tcp
     ai = AddrInfo.tcp("127.0.0.1", 80)
     assert_equal([80, "127.0.0.1"], Socket.unpack_sockaddr_in(ai))

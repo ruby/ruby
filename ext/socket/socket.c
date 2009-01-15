@@ -5362,6 +5362,27 @@ addrinfo_s_getaddrinfo(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
+ *   AddrInfo.ip(host) => addrinfo
+ *
+ * returns an addrinfo object for IP address.
+ *
+ *   AddrInfo.ip("localhost") #=> #<AddrInfo: 127.0.0.1 (localhost)>
+ */
+static VALUE
+addrinfo_s_ip(VALUE self, VALUE host)
+{
+    VALUE ret;
+    rb_addrinfo_t *rai;
+    ret = addrinfo_firstonly_new(host, Qnil,
+            INT2NUM(PF_UNSPEC), INT2FIX(0), INT2FIX(0), INT2FIX(0));
+    rai = get_addrinfo(ret);
+    rai->socktype = 0;
+    rai->protocol = 0;
+    return ret;
+}
+
+/*
+ * call-seq:
  *   AddrInfo.tcp(host, port) => addrinfo
  *
  * returns an addrinfo object for TCP address.
@@ -5372,7 +5393,7 @@ static VALUE
 addrinfo_s_tcp(VALUE self, VALUE host, VALUE port)
 {
     return addrinfo_firstonly_new(host, port,
-            INT2NUM(PF_UNSPEC), INT2NUM(SOCK_STREAM), INT2FIX(IPPROTO_TCP), INT2FIX(0));
+            INT2NUM(PF_UNSPEC), INT2NUM(SOCK_STREAM), INT2NUM(IPPROTO_TCP), INT2FIX(0));
 }
 
 /*
@@ -5387,7 +5408,7 @@ static VALUE
 addrinfo_s_udp(VALUE self, VALUE host, VALUE port)
 {
     return addrinfo_firstonly_new(host, port,
-            INT2NUM(PF_UNSPEC), INT2NUM(SOCK_DGRAM), INT2FIX(IPPROTO_UDP), INT2FIX(0));
+            INT2NUM(PF_UNSPEC), INT2NUM(SOCK_DGRAM), INT2NUM(IPPROTO_UDP), INT2FIX(0));
 }
 
 #ifdef HAVE_SYS_UN_H
@@ -5592,6 +5613,7 @@ Init_socket()
     rb_define_method(rb_cAddrInfo, "initialize", addrinfo_initialize, -1);
     rb_define_method(rb_cAddrInfo, "inspect", addrinfo_inspect, 0);
     rb_define_singleton_method(rb_cAddrInfo, "getaddrinfo", addrinfo_s_getaddrinfo, -1);
+    rb_define_singleton_method(rb_cAddrInfo, "ip", addrinfo_s_ip, 1);
     rb_define_singleton_method(rb_cAddrInfo, "tcp", addrinfo_s_tcp, 2);
     rb_define_singleton_method(rb_cAddrInfo, "udp", addrinfo_s_udp, 2);
 #ifdef HAVE_SYS_UN_H
