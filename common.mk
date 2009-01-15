@@ -377,7 +377,7 @@ btest: miniruby$(EXEEXT) PHONY
 	$(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(MINIRUBY)" $(OPTS)
 
 btest-ruby: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
-	@$(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib" -q
+	@$(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib" -q $(OPTS)
 
 test-sample: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 	@$(RUNRUBY) $(srcdir)/rubytest.rb
