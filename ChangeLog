@@ -1,3 +1,9 @@
+Fri Jan 16 00:57:34 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* lib/debug.rb: as wanabe-san pointed out,
+	  set_trace_func should be completely final task in debug.rb.
+	  Bug #847 [ruby-core:20449]
+
 Fri Jan 16 00:27:03 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (rb_vm_inc_const_missing_count, ruby_vm_const_missing_count): 
