@@ -1,3 +1,7 @@
+Tue Jan 13 03:07:28 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* instruby.rb: require "tool/mdoc2man.rb" before chdir if needed.
+
 Tue Jan 13 02:54:54 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/extconf.rb: use headers instead of "netdb.h" in checking
