@@ -1,3 +1,13 @@
+Thu Jan 15 13:10:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, win32/Makefile.sub (MISSING): added langinfo on mingw
+	  and mswin.
+
+	* encoding.c (rb_locale_charmap): use environments on mingw and mswin.
+
+	* missing/langinfo.c (nl_langinfo_codeset): MS-Windows Japanese
+	  environment uses Windows-31J derived from Shift_JIS, not EUC-JP.
+
 Thu Jan 15 12:10:39 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub ($(INSNS), node_name.inc, known_errors.inc,

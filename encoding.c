@@ -1218,7 +1218,7 @@ rb_locale_charmap(VALUE klass)
 {
 #if defined NO_LOCALE_CHARMAP
     return rb_usascii_str_new2("ASCII-8BIT");
-#elif defined __CYGWIN__
+#elif defined _WIN32 || defined __CYGWIN__
     const char *nl_langinfo_codeset(void);
     const char *codeset = nl_langinfo_codeset();
     char cp[sizeof(int) * 3 + 4];
@@ -1231,8 +1231,6 @@ rb_locale_charmap(VALUE klass)
     char *codeset;
     codeset = nl_langinfo(CODESET);
     return rb_usascii_str_new2(codeset);
-#elif defined _WIN32
-    return rb_sprintf("CP%d", GetConsoleCP());
 #else
     return Qnil;
 #endif

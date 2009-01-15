@@ -599,6 +599,7 @@ mingw*)		LIBS="-lshell32 -lws2_32 $LIBS"
 		rb_cv_binary_elf=no
 		rb_cv_negative_time_t=no
 		ac_cv_func_fcntl=yes
+		AC_LIBOBJ([langinfo])
 		;;
 os2-emx*)	LIBS="-lm $LIBS"
 		ac_cv_lib_dir_opendir=no;;

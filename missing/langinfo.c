@@ -36,7 +36,6 @@
 #include <string.h>
 #if defined _WIN32 || defined __CYGWIN__
 #include <windows.h>
-int snprintf(char *, size_t, const char *, ...);
 #if defined _WIN32
 #define strncasecmp strnicmp
 #endif
@@ -48,6 +47,12 @@ int snprintf(char *, size_t, const char *, ...);
 #define C_CODESET "US-ASCII"     /* Return this as the encoding of the
 				  * C/POSIX locale. Could as well one day
 				  * become "UTF-8". */
+
+#if defined _WIN32 || defined __CYGWIN__
+#define JA_CODESET "Windows-31J"
+#else
+#define JA_CODESET "EUC-JP"
+#endif
 
 #define digit(x) ((x) >= '0' && (x) <= '9')
 #define strstart(s, n) (strncasecmp(s, n, strlen(n)) == 0)
@@ -94,7 +99,7 @@ nl_langinfo_codeset(void)
     if (strstart(l, "zh_TW")) return "Big5";
     if (strstart(l, "zh_HK")) return "Big5HKSCS";   /* no MIME charset */
     if (strstart(l, "zh")) return "GB2312";
-    if (strstart(l, "ja")) return "EUC-JP";
+    if (strstart(l, "ja")) return JA_CODESET;
     if (strstart(l, "ko")) return "EUC-KR";
     if (strstart(l, "ru")) return "KOI8-R";
     if (strstart(l, "uk")) return "KOI8-U";
