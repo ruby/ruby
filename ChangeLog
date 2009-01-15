@@ -1,3 +1,11 @@
+Fri Jan 16 00:21:10 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub ($(INSNS), node_name.inc, known_errors.inc,
+	  miniprelude.c, newline.c): shoudn't copy when $(srcdir) != ".", too.
+	  (this is a workaround.  we need more strict check.)
+
+	* win32/Makefile.sub ($(INSNS)): shound't remove BASERUBY.
+
 Fri Jan 16 00:19:55 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_with_gvl): suppress warnings.
