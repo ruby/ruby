@@ -1,3 +1,8 @@
+Tue Jan 13 02:07:38 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: use Encoding.find("locale") instaed of
+	  Encoding.locale_charmap
+
 Tue Jan 13 00:57:56 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (sock_s_unpack_sockaddr_in): check too short
