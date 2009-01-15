@@ -1,3 +1,15 @@
+Tue Jan 13 16:39:11 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/intern.h, thread.c, win32/Makefile.sub (rb_fdset_t,
+	  rb_fd_init, rb_fd_term, rb_fd_zero, rb_fd_set, rb_fd_clr, rb_fd_isset,
+	  rb_fd_select, rb_fd_ptr, rb_fd_max, HAVE_RB_FD_INIT): new type,
+	  functions, and macros for Windows.
+
+	* win32/win32.c (extract_fd, rb_w32_select): use rb_fdset_t to expand
+	  fd_array if needed.  [ruby-core:19946]
+
+	* win32/win32.c (copy_fd): new funcion for rb_w32_select().
+
 Tue Jan 13 12:31:54 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* tool/file2lastrev.rb (get_revisions): fixes problem with

@@ -223,7 +223,11 @@ RUBY = ruby
 !endif
 
 !if !defined(STACK)
+!if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+STACK = 0x400000
+!else
 STACK = 0x200000
+!endif
 !if defined(STACK_COMMIT)
 STACK = $(STACK),$(STACK_COMMIT)
 !endif
@@ -454,6 +458,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RSHIFT(x,y) ((x)>>(int)y)
 #define FILE_COUNT _cnt
 #define FILE_READPTR _ptr
+#define HAVE_RB_FD_INIT 1
 #define RUBY_SETJMP(env) _setjmp(env)
 #define RUBY_LONGJMP(env,val) longjmp(env,val)
 #define RUBY_JMP_BUF jmp_buf
