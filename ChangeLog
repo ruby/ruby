@@ -1,3 +1,10 @@
+Wed Jan 14 22:38:30 2009  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (negative_size_allocation_error_with_gvl): abolish a warning.
+	  (negative_size_allocation_error): ditto.
+
+	* ext/openssl/ossl.c (ossl_raise): ditto.
+
 Thu Jan 15 13:10:58 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (COMPILERFLAG): for enc/trans/gb18030.c.

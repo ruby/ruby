@@ -296,8 +296,7 @@ ossl_raise(VALUE exc, const char *fmt, ...)
 	    msg = ERR_error_string(e, NULL);
 	else
 	    msg = ERR_reason_error_string(e);
-	fmt = len ? ": %s" : "%s";
-	len += snprintf(buf+len, BUFSIZ-len, fmt, msg);
+	len += snprintf(buf+len, BUFSIZ-len, "%s%s", (len ? ": " : ""), msg);
     }
     if (dOSSL == Qtrue){ /* show all errors on the stack */
 	while ((e = ERR_get_error()) != 0){
