@@ -1,3 +1,13 @@
+Tue Jan 13 02:54:54 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/extconf.rb: use headers instead of "netdb.h" in checking
+	  getnameinfo() and getaddrinfo() because Windows doesn't have it.
+	  see [ruby-dev:37757].
+
+	* ext/socket/sockport.h (SA_LEN): use sockaddr_in6 when defined AF_INET6
+	  if INET6 is not defined.  winsock2's getaddrinfo() returns
+	  sockaddr_in6 if ipv6 is available.
+
 Wed Jan 14 13:19:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_aspawn): should not escape with carret
@@ -16,7 +26,7 @@ Tue Jan 13 02:21:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Jan 13 02:07:38 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: use Encoding.find("locale") instaed of
+	* ext/tk/lib/tk.rb: use Encoding.find("locale") instead of
 	  Encoding.locale_charmap
 
 Tue Jan 13 00:57:56 2009  Tanaka Akira  <akr@fsij.org>
