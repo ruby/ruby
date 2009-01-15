@@ -1,3 +1,8 @@
+Tue Jan 13 21:28:14 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* object.c (rb_obj_not_match): rdoc.
+	  Patch by Kornelius Kalnbach.
+
 Tue Jan 13 21:44:30 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (io_reopen, rb_io_init_copy): should register fptr to pipe_list

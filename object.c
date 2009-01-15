@@ -1092,9 +1092,10 @@ rb_obj_match(VALUE obj1, VALUE obj2)
 
 /*
  *  call-seq:
- *     obj !~ other  => nil
+ *     obj !~ other  => true or false
  *  
- *  Returns true if two objects does not match, using <i>=~</i> method.
+ *  Returns true if two objects do not match (using the <i>=~</i>
+ *  method), otherwise false.
  */
 
 static VALUE
