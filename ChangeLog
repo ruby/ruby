@@ -1,3 +1,9 @@
+Tue Jan 13 00:57:56 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (sock_s_unpack_sockaddr_in): check too short
+	  sockaddr.
+	  (sock_s_unpack_sockaddr_un): ditto.
+
 Mon Jan 12 17:23:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (assert_nothing_raised): removes the
