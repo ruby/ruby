@@ -1,3 +1,9 @@
+Thu Jan 15 15:55:31 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* encoding.c (enc_set_default_encoding): should not treat US-ASCII
+	  special here.  a patch from Yui NARUSE in [ruby-dev:37769].
+	  [ruby-dev:37699]
+
 Thu Jan 15 14:27:27 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* LEGAL: Added information for missing/langinfo.c

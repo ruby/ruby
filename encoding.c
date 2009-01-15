@@ -1050,8 +1050,7 @@ struct default_encoding {
 };
 
 static int
-enc_set_default_encoding(struct default_encoding *def, VALUE encoding,
-			 const char *name, int defindex)
+enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const char *name)
 {
     int overridden = Qfalse;
     if (def->index != -2)
@@ -1066,8 +1065,6 @@ enc_set_default_encoding(struct default_encoding *def, VALUE encoding,
     }
     else {
 	def->index = rb_enc_to_index(rb_to_encoding(encoding));
-	if (def->index == ENCINDEX_US_ASCII)
-	    def->index = defindex;
 	def->enc = 0;
 	enc_alias_internal(name, def->index);
     }
@@ -1118,7 +1115,7 @@ rb_enc_set_default_external(VALUE encoding)
         rb_raise(rb_eArgError, "default external can not be nil");
     }
     enc_set_default_encoding(&default_external, encoding,
-			     "external", ENCINDEX_US_ASCII);
+                            "external");
 }
 
 /*
@@ -1171,7 +1168,7 @@ void
 rb_enc_set_default_internal(VALUE encoding)
 {
     enc_set_default_encoding(&default_internal, encoding,
-			     "internal", ENCINDEX_UTF_8);
+                            "internal");
 }
 
 /*
