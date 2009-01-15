@@ -1,3 +1,14 @@
+Tue Jan 13 02:21:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (internal_cmd_match): extracted from
+	  is_internal_cmd.
+
+	* win32/win32.c (argv_size, join_argv): escapes redirection, pipe
+	  and carret punctuations with carrets.
+
+	* win32/win32.c (rb_w32_aspawn): ditto, and redirections and pipe
+	  have no meanings.
+
 Tue Jan 13 02:07:38 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: use Encoding.find("locale") instaed of
