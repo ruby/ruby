@@ -440,7 +440,7 @@ unsigned int _stacksize = 262144;
 # define STACK_LEVEL_MAX (_stacksize - 4096)
 # undef HAVE_GETRLIMIT
 #elif defined(HAVE_GETRLIMIT) || defined(_WIN32)
-static unsigned int STACK_LEVEL_MAX = 655300;
+static size_t STACK_LEVEL_MAX = 655300;
 #else
 # define STACK_LEVEL_MAX 655300
 #endif
@@ -499,7 +499,7 @@ stack_grow_direction(addr)
     (ret) = (STACK_LENGTH > STACK_LEVEL_MAX + GC_WATER_MARK);\
 } while (0)
 
-int
+size_t
 ruby_stack_length(p)
     VALUE **p;
 {

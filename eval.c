@@ -10265,7 +10265,7 @@ rb_thread_save_context(th)
     rb_thread_t th;
 {
     VALUE *pos;
-    int len;
+    size_t len;
     static VALUE tval;
 
     len = ruby_stack_length(&pos);
