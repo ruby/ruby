@@ -4790,13 +4790,15 @@ pop_last_hash(int *argc_p, VALUE *argv)
  *  The last argument <i>opt</i> qualifies <i>mode</i>.
  *
  *    # set IO encoding
- *    nkf_io = IO.popen("nkf -e filename", :external_encoding=>"EUC-JP")
- *    euc_jp_string = nkf_io.read
+ *    IO.popen("nkf -e filename", :external_encoding=>"EUC-JP") {|nkf_io|
+ *      euc_jp_string = nkf_io.read
+ *    }
  *
  *    # merge standard output and standard error using
  *    # spawn option.  See the document of Kernel.spawn.
- *    ls_io = IO.popen(["ls", "/", :err=>[:child, :out]])
- *    ls_result_with_error = ls_io.read
+ *    IO.popen(["ls", "/", :err=>[:child, :out]]) {|ls_io|
+ *      ls_result_with_error = ls_io.read
+ *    }
  *
  *  Raises exceptions which <code>IO.pipe</code> and
  *  <code>Kernel.spawn</code> raise.
@@ -4818,9 +4820,10 @@ pop_last_hash(int *argc_p, VALUE *argv)
  *
  *     f = IO.popen("uname")
  *     p f.readlines
+ *     f.close
  *     puts "Parent is #{Process.pid}"
  *     IO.popen("date") { |f| puts f.gets }
- *     IO.popen("-") {|f| $stderr.puts "#{Process.pid} is here, f is #{f}"}
+ *     IO.popen("-") {|f| $stderr.puts "#{Process.pid} is here, f is #{f.inspect}"}
  *     p $?
  *     IO.popen(%w"sed -e s|^|<foo>| -e s&$&;zot;&", "r+") {|f|
  *       f.puts "bar"; f.close_write; puts f.gets
@@ -4829,11 +4832,11 @@ pop_last_hash(int *argc_p, VALUE *argv)
  *  <em>produces:</em>
  *
  *     ["Linux\n"]
- *     Parent is 26166
- *     Wed Apr  9 08:53:52 CDT 2003
- *     26169 is here, f is
- *     26166 is here, f is #<IO:0x401b3d44>
- *     #<Process::Status: pid=26166,exited(0)>
+ *     Parent is 21346
+ *     Thu Jan 15 22:41:19 JST 2009
+ *     21346 is here, f is #<IO:fd 3>
+ *     21352 is here, f is nil
+ *     #<Process::Status: pid 21352 exit 0>
  *     <foo>bar;zot;
  */
 
