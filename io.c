@@ -3364,7 +3364,7 @@ rb_io_close_read(VALUE io)
     write_io = GetWriteIO(io);
     if (io != write_io) {
 	rb_io_t *wfptr;
-        fptr_finalize(fptr, Qfalse);
+        rb_io_fptr_cleanup(fptr, Qfalse);
 	GetOpenFile(write_io, wfptr);
         RFILE(io)->fptr = wfptr;
         RFILE(write_io)->fptr = NULL;
@@ -5224,6 +5224,10 @@ io_reopen(VALUE io, VALUE nfile)
     if (orig->pathv) fptr->pathv = orig->pathv;
     else fptr->pathv = Qnil;
     fptr->finalize = orig->finalize;
+#if defined (__CYGWIN__) || !defined(HAVE_FORK)
+    if (fptr->finalize == pipe_finalize)
+	pipe_add_fptr(fptr);
+#endif
 
     fd = fptr->fd;
     fd2 = orig->fd;
@@ -5375,6 +5379,10 @@ rb_io_init_copy(VALUE dest, VALUE io)
     fptr->lineno = orig->lineno;
     if (!NIL_P(orig->pathv)) fptr->pathv = orig->pathv;
     fptr->finalize = orig->finalize;
+#if defined (__CYGWIN__) || !defined(HAVE_FORK)
+    if (fptr->finalize == pipe_finalize)
+	pipe_add_fptr(fptr);
+#endif
 
     fd = ruby_dup(orig->fd);
     fptr->fd = fd;
