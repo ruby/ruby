@@ -1,3 +1,7 @@
+Fri Jan 16 00:25:09 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: btest-ruby should receive option with OPTS.
+
 Fri Jan 16 00:21:10 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub ($(INSNS), node_name.inc, known_errors.inc,
