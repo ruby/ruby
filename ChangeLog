@@ -1,3 +1,20 @@
+Thu Jan 15 00:06:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/trans/gb18030.trans: get rid of a 1.9 feature for cross
+	  compile.  [ruby-core:21345]
+
+Wed Jan 14 20:05:05 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/trans/gb18030.trans, gb18030-tbl.rb:
+	  new Chinese GB18030 transcoding (from Yoshihiro Kambayashi)
+
+	* test/ruby/test_transcode.rb: added tests for the above
+	  (from Yoshihiro Kambayashi)
+
+	* transcode_data.h, transcode.c, tool/transcode_tblgen.rb:
+	  added support for GB18030-specific 4-byte sequences
+	  (with Yoshihiro Kambayashi)
+
 Wed Jan 14 16:16:19 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/curses/extconf.rb: check ncursesw earlier than ncurses to

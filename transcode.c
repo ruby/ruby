@@ -501,6 +501,10 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
       case 26: goto resume_label26;
       case 27: goto resume_label27;
       case 28: goto resume_label28;
+      case 29: goto resume_label29;
+      case 30: goto resume_label30;
+      case 31: goto resume_label31;
+      case 32: goto resume_label32;
     }
 
     while (1) {
@@ -568,6 +572,12 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
             SUSPEND_OBUF(17); *out_p++ = getBT1(next_info);
             SUSPEND_OBUF(18); *out_p++ = getBT2(next_info);
             SUSPEND_OBUF(19); *out_p++ = getBT3(next_info);
+	    continue;
+	  case GB4bt:
+            SUSPEND_OBUF(29); *out_p++ = getGB4bt0(next_info);
+            SUSPEND_OBUF(30); *out_p++ = getGB4bt1(next_info);
+            SUSPEND_OBUF(31); *out_p++ = getGB4bt2(next_info);
+            SUSPEND_OBUF(32); *out_p++ = getGB4bt3(next_info);
 	    continue;
           case STR1:
             tc->output_index = 0;
@@ -2686,9 +2696,9 @@ make_encobj(const char *name)
  *   Encoding::Converter.asciicompat_encoding(string) => encoding or nil
  *   Encoding::Converter.asciicompat_encoding(encoding) => encoding or nil
  *
- * returns the corresponding ASCII compatible encoding.
+ * Returns the corresponding ASCII compatible encoding.
  *
- * It returns nil if the argument is an ASCII compatible encoding.
+ * Returns nil if the argument is an ASCII compatible encoding.
  *
  * "corresponding ASCII compatible encoding" is a ASCII compatible encoding which
  * can represents exactly the same characters as the given ASCII incompatible encoding.
@@ -3997,7 +4007,7 @@ ecerr_error_bytes(VALUE self)
  * call-seq:
  *   ecerr.readagain_bytes         -> string
  *
- * returns the bytes to be read again when Encoding::InvalidByteSequenceError occur.
+ * Returns the bytes to be read again when Encoding::InvalidByteSequenceError occurs.
  */
 static VALUE
 ecerr_readagain_bytes(VALUE self)
@@ -4009,7 +4019,7 @@ ecerr_readagain_bytes(VALUE self)
  * call-seq:
  *   ecerr.incomplete_input?         -> true or false
  *
- * returns true if the invalid byte sequence error is caused by
+ * Returns true if the invalid byte sequence error is caused by
  * premature end of string.
  *
  *  ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
