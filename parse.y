@@ -1100,6 +1100,11 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = dispatch3(opassign, $$, $4, $5);
 		    %*/
 		    }
+		| primary_value tCOLON2 tCONSTANT tOP_ASGN command_call
+		    {
+			yyerror("constant re-assignment");
+			$$ = 0;
+		    }
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_call
 		    {
 		    /*%%%*/
