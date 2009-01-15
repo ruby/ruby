@@ -1,3 +1,15 @@
+Fri Jan 16 00:27:03 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (rb_vm_inc_const_missing_count, ruby_vm_const_missing_count): 
+	  added.
+
+	* vm_insnhelper.h: ditto.
+
+	* variable.c (rb_const_get_0), insns.def: Constants should not be
+	  cached if const_missing is called.  [ruby-core:21059] [Bug #967]
+
+	* bootstraptest/test_class.rb: add a test.
+
 Fri Jan 16 00:25:09 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: btest-ruby should receive option with OPTS.

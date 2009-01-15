@@ -17,6 +17,8 @@
 #include "node.h"
 
 void rb_vm_change_state(void);
+void rb_vm_inc_const_missing_count(void);
+
 st_table *rb_global_tbl;
 st_table *rb_class_tbl;
 static ID autoload, classpath, tmp_classpath;
@@ -1488,7 +1490,9 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
 	goto retry;
     }
 
-    return const_missing(klass, id);
+    value = const_missing(klass, id);
+    rb_vm_inc_const_missing_count();
+    return value;
 }
 
 VALUE
