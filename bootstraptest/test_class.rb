@@ -130,3 +130,17 @@ assert_equal "ok", %q{
     :ok
   end
 }, '[ruby-core:14378]'
+
+assert_equal '3', %q{
+  $i = 0
+  class C
+    def self.const_missing *args
+      $i+=1
+    end
+  end
+
+  3.times{
+    C::FOO
+  }
+  $i
+}

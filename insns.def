@@ -1222,7 +1222,8 @@ setinlinecache
     IC ic = GET_CONST_INLINE_CACHE(dst);
 
     ic->ic_value = val;
-    ic->ic_vmstat = GET_VM_STATE_VERSION();
+    ic->ic_vmstat = GET_VM_STATE_VERSION() - ruby_vm_const_missing_count;
+    ruby_vm_const_missing_count = 0;
 }
 
 /**

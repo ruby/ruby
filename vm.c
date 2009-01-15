@@ -34,6 +34,8 @@ VALUE rb_cEnv;
 VALUE rb_mRubyVMFrozenCore;
 
 VALUE ruby_vm_global_state_version = 1;
+VALUE ruby_vm_const_missing_count = 0;
+
 char ruby_vm_redefined_flag[BOP_LAST_];
 
 rb_thread_t *ruby_current_thread = 0;
@@ -47,6 +49,12 @@ void
 rb_vm_change_state(void)
 {
     INC_VM_STATE_VERSION();
+}
+
+void
+rb_vm_inc_const_missing_count(void)
+{
+    ruby_vm_const_missing_count +=1;
 }
 
 /* control stack frame */
