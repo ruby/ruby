@@ -22,6 +22,7 @@ transdirs = transdirs.sort_by {|td|
 
 files = {}
 names_t = []
+converter_list = []
 transdirs.each do |transdir|
   names = Dir.entries(transdir)
   names_t += names.map {|n| /(?!\A)\.trans\z/ =~ n ? $` : nil }.compact
@@ -44,6 +45,7 @@ transdirs.each do |transdir|
               [path, $., from_to, *converters[from_to].values_at(3, 4)]
             else
               converters[from_to] = [$1, $2, fn[0..-3], path, $.]
+              converter_list << from_to
             end
           end
         end
@@ -51,7 +53,9 @@ transdirs.each do |transdir|
     end
   end
 end
-result = converters.map {|k, v| %[rb_declare_transcoder("%s", "%s", "%s");\n] % v}.join
+result = converter_list.map do |from_to|
+  %[rb_declare_transcoder("%s", "%s", "%s");\n] % converters[from_to]
+end.join("")
 open(outhdr, 'wb') do |f|
   f.print result
 end
