@@ -1212,30 +1212,6 @@ expr_value	: expr
 
 command_call	: command
 		| block_command
-		| keyword_return call_args
-		    {
-		    /*%%%*/
-			$$ = NEW_RETURN(ret_args($2));
-		    /*%
-			$$ = dispatch1(return, $2);
-		    %*/
-		    }
-		| keyword_break call_args
-		    {
-		    /*%%%*/
-			$$ = NEW_BREAK(ret_args($2));
-		    /*%
-			$$ = dispatch1(break, $2);
-		    %*/
-		    }
-		| keyword_next call_args
-		    {
-		    /*%%%*/
-			$$ = NEW_NEXT(ret_args($2));
-		    /*%
-			$$ = dispatch1(next, $2);
-		    %*/
-		    }
 		;
 
 block_command	: block_call
@@ -1360,6 +1336,30 @@ command		: operation command_args       %prec tLOWEST
 			fixpos($$, $2);
 		    /*%
 			$$ = dispatch1(yield, $2);
+		    %*/
+		    }
+		| keyword_return call_args
+		    {
+		    /*%%%*/
+			$$ = NEW_RETURN(ret_args($2));
+		    /*%
+			$$ = dispatch1(return, $2);
+		    %*/
+		    }
+		| keyword_break call_args
+		    {
+		    /*%%%*/
+			$$ = NEW_BREAK(ret_args($2));
+		    /*%
+			$$ = dispatch1(break, $2);
+		    %*/
+		    }
+		| keyword_next call_args
+		    {
+		    /*%%%*/
+			$$ = NEW_NEXT(ret_args($2));
+		    /*%
+			$$ = dispatch1(next, $2);
 		    %*/
 		    }
 		;
@@ -2337,6 +2337,7 @@ opt_call_args	: none
 call_args	: command
 		    {
 		    /*%%%*/
+			value_expr($1);
 			$$ = NEW_LIST($1);
 		    /*%
 			$$ = arg_add(arg_new(), $1);
