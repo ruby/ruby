@@ -1,3 +1,9 @@
+Wed Jan 14 16:16:19 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/curses/extconf.rb: check ncursesw earlier than ncurses to
+	  support UTF-8 strings.   non UTF-8 strings should be converted
+	  explicitly.   [ruby-core:21094]
+
 Wed Jan 14 13:09:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/extconf.rb (gai_strerror): checks if available and if

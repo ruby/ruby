@@ -8,7 +8,7 @@ make=false
 headers = []
 have_library("mytinfo", "tgetent") if /bow/ =~ RUBY_PLATFORM
 have_library("tinfo", "tgetent") or have_library("termcap", "tgetent")
-if have_header(*curses=%w"ncurses.h") and have_library("ncurses", "initscr")
+if have_header(*curses=%w"ncurses.h") and (have_library("ncursesw", "initscr") or have_library("ncurses", "initscr"))
   make=true
 elsif have_header(*curses=%w"ncurses/curses.h") and have_library("ncurses", "initscr")
   make=true
