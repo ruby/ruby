@@ -1222,7 +1222,7 @@ rb_locale_charmap(VALUE klass)
     const char *nl_langinfo_codeset(void);
     const char *codeset = nl_langinfo_codeset();
     char cp[sizeof(int) * 3 + 4];
-    if (codeset) {
+    if (!codeset) {
 	snprintf(cp, sizeof(cp), "CP%d", GetConsoleCP());
 	codeset = cp;
     }
