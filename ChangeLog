@@ -1,3 +1,11 @@
+Wed Jan 14 23:57:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_locale_charmap): fallback to codepage if no
+	  locale is found.  [ruby-core:21110]
+
+	* missing/langinfo.c (nl_langinfo_codeset): returns NULL if no
+	  locale is found.
+
 Wed Jan 14 22:38:30 2009  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (negative_size_allocation_error_with_gvl): abolish a warning.
