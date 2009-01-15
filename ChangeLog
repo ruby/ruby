@@ -1,3 +1,7 @@
+Thu Jan 15 14:34:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (STACK_LEVEL_MAX, ruby_stack_length): returns size_t.
+	  [ruby-core:18207]
 Wed Jan 14 10:39:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* stable/ext/socket/socket.c (NI_MAXHOST, NI_MAXSERV): fixed invalid
