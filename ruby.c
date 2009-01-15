@@ -182,7 +182,7 @@ translate_char(char *p, int from, int to)
 }
 #endif
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32 || defined __CYGWIN__ || defined __SYMBIAN32__
 static VALUE
 rubylib_mangled_path(const char *s, unsigned int l)
 {
@@ -331,7 +331,7 @@ ruby_incpush_expand(const char *path)
     ruby_push_include(path, expand_include_path);
 }
 
-#if defined DOSISH || defined __CYGWIN__
+#if (defined DOSISH || defined __CYGWIN__) && !defined __SYMBIAN32__
 #define LOAD_RELATIVE 1
 #endif
 

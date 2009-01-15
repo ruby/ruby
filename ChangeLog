@@ -1,3 +1,8 @@
+Thu Jan 15 10:45:52 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* symbian/README.SYMBIAN: symbian support added.  great appreciate
+	  to <alexandre.zavorine at symbian.com>.
+
 Thu Jan 15 00:06:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/trans/gb18030.trans: get rid of a 1.9 feature for cross
