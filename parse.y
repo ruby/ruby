@@ -437,6 +437,7 @@ static void fixup_nodes(NODE **);
 extern int rb_dvar_defined(ID);
 extern int rb_local_defined(ID);
 extern int rb_parse_in_eval(void);
+extern int rb_prase_in_main(void);
 
 static VALUE reg_compile_gen(struct parser_params*, VALUE, int);
 #define reg_compile(str,options) reg_compile_gen(parser, str, options)
@@ -4977,7 +4978,7 @@ yycompile0(VALUE arg, int tracing)
     NODE *tree;
     struct parser_params *parser = (struct parser_params *)arg;
 
-    if (!compile_for_eval && rb_safe_level() == 0) {
+    if ((!compile_for_eval || rb_parse_in_main()) && rb_safe_level() == 0) {
 	ruby_debug_lines = debug_lines(ruby_sourcefile);
 	if (ruby_debug_lines && ruby_sourceline > 0) {
 	    VALUE str = STR_NEW0();

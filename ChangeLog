@@ -1,3 +1,14 @@
+Fri Jan 16 01:09:37 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* ruby.c (process_options): decrement parse_in_eval to recognize
+	  parsing main or normal eval script.
+
+	* compile.c (rb_parse_in_main): return 1 if parsing main script.
+	 (if parse_in_eval is negative value, it means main script)
+
+	* parse.y (yycompile0): check rb_parse_in_main() to accumulate
+	  script text.  Bug #848 [ruby-core:20450]
+
 Fri Jan 16 00:57:34 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* lib/debug.rb: as wanabe-san pointed out,
