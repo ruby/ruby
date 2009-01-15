@@ -1,3 +1,4 @@
+<%
 #
 # static const rb_transcoder
 # rb_from_US_ASCII = {
@@ -9,7 +10,6 @@
 count = 0
 converters = {}
 transdirs = ARGV.dup
-outhdr = transdirs.shift || 'transdb.h'
 transdirs << 'enc/trans' if transdirs.empty?
 
 transdirs = transdirs.sort_by {|td|
@@ -53,9 +53,7 @@ transdirs.each do |transdir|
     end
   end
 end
-result = converter_list.map do |from_to|
-  %[rb_declare_transcoder("%s", "%s", "%s");\n] % converters[from_to]
-end.join("")
-open(outhdr, 'wb') do |f|
-  f.print result
-end
+converter_list.each do |from_to|
+  from, to, fn = *converters[from_to]
+%>rb_declare_transcoder("<%=from%>", "<%=to%>", "<%=fn%>");
+% end
