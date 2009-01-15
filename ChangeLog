@@ -1,3 +1,8 @@
+Thu Jan 15 12:10:39 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub ($(INSNS), node_name.inc, known_errors.inc,
+	  miniprelude.c, newline.c): copy only when $(srcdir) != pwd.
+
 Wed Jan 14 23:57:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_locale_charmap): fallback to codepage if no
