@@ -898,10 +898,10 @@ end
 
 stdout.printf "Debug.rb\n"
 stdout.printf "Emacs support available.\n\n"
-set_trace_func proc { |event, file, line, id, binding, klass, *rest|
-  DEBUGGER__.context.trace_func event, file, line, id, binding, klass
-}
 RubyVM::InstructionSequence.compile_option = {
   trace_instruction: true
+}
+set_trace_func proc { |event, file, line, id, binding, klass, *rest|
+  DEBUGGER__.context.trace_func event, file, line, id, binding, klass
 }
 end
