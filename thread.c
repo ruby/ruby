@@ -1179,6 +1179,10 @@ thread_s_pass(VALUE klass)
 void
 rb_thread_execute_interrupts(rb_thread_t *th)
 {
+    if (GET_VM()->main_thread == th) {
+	while (rb_signal_buff_size() && !th->exec_signal) native_thread_yield();
+    }
+
     if (th->raised_flag) return;
 
     while (th->interrupt_flag) {
@@ -2518,13 +2522,14 @@ timer_thread_function(void *arg)
 {
     rb_vm_t *vm = GET_VM(); /* TODO: fix me for Multi-VM */
     int sig;
+    rb_thread_t *mth;
 
     /* for time slice */
     RUBY_VM_SET_TIMER_INTERRUPT(vm->running_thread);
 
     /* check signal */
-    if ((sig = rb_get_next_signal()) > 0) {
-	rb_thread_t *mth = vm->main_thread;
+    mth = vm->main_thread;
+    if (!mth->exec_signal && (sig = rb_get_next_signal()) > 0) {
 	enum rb_thread_status prev_status = mth->status;
 	thread_debug("main_thread: %s, sig: %d\n",
 		     thread_status_name(prev_status), sig);

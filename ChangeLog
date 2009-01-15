@@ -1,3 +1,11 @@
+Fri Jan 16 02:25:46 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (rb_thread_execute_interrupts): if signal is already
+	  buffered, main thread should wait until timer thread delivers it.
+
+	* thread.c (timer_thread_function): should defer delivery of a signal
+	  if main thread does not yet trap a previous one.  [ruby-dev:37676]
+
 Fri Jan 16 02:05:55 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (addrinfo_s_ip): new method AddrInfo.ip.
