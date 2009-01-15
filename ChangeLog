@@ -1,3 +1,7 @@
+Thu Jan 15 14:27:27 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* LEGAL: Added information for missing/langinfo.c
+
 Thu Jan 15 14:17:57 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (stmt): explicit error for "Object::Far += foo 1" just
