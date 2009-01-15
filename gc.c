@@ -582,7 +582,7 @@ negative_size_allocation_error(const char *msg)
 static void *
 gc_with_gvl(void *ptr)
 {
-    return (void *)garbage_collect((rb_objspace_t *)ptr);
+    return (void *)(VALUE)garbage_collect((rb_objspace_t *)ptr);
 }
 
 static int
