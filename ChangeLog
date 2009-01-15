@@ -1,7 +1,15 @@
+Tue Jan 13 21:45:53 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/ostruct.rb (OpenStruct#inspect): fixed the recursion check.
+	  Patch by Kornelius Kalnbach.  [ruby-core:20992].
+
+	* test/ostruct/test_ostruct.rb: test for inspect.
+	  Patch by Kornelius Kalnbach.  [ruby-core:20992].
+
 Tue Jan 13 21:28:14 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* object.c (rb_obj_not_match): rdoc.
-	  Patch by Kornelius Kalnbach.
+	  Patch by Kornelius Kalnbach.  [ruby-core:20991]
 
 Tue Jan 13 21:44:30 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
