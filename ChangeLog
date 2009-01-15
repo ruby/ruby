@@ -1,3 +1,9 @@
+Tue Jan 13 11:58:04 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/irb/input-method.rb: IRB did not prompt for MSwin32.
+	  [ruby-dev:37686].
+	  Patch by arton <artonx AT yahoo.co.jp>.
+
 Tue Jan 13 12:10:42 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/{getaddrinfo,getnameinfo}.c: need to include ws2tcpip.h
