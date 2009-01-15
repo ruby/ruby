@@ -28,7 +28,7 @@ Fri Jan 16 00:57:34 2009  Koichi Sasada  <ko1@atdot.net>
 
 Fri Jan 16 00:27:03 2009  Koichi Sasada  <ko1@atdot.net>
 
-	* vm.c (rb_vm_inc_const_missing_count, ruby_vm_const_missing_count): 
+	* vm.c (rb_vm_inc_const_missing_count, ruby_vm_const_missing_count):
 	  added.
 
 	* vm_insnhelper.h: ditto.
@@ -45,10 +45,10 @@ Fri Jan 16 00:25:09 2009  Koichi Sasada  <ko1@atdot.net>
 Fri Jan 16 00:21:10 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub ($(INSNS), node_name.inc, known_errors.inc,
-	  miniprelude.c, newline.c): shoudn't copy when $(srcdir) != ".", too.
+	  miniprelude.c, newline.c): shouldn't copy when $(srcdir) != ".", too.
 	  (this is a workaround.  we need more strict check.)
 
-	* win32/Makefile.sub ($(INSNS)): shound't remove BASERUBY.
+	* win32/Makefile.sub ($(INSNS)): shouldn't remove BASERUBY.
 
 Fri Jan 16 00:19:55 2009  Koichi Sasada  <ko1@atdot.net>
 
@@ -142,8 +142,8 @@ Wed Jan 14 20:05:05 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
 Wed Jan 14 16:16:19 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/curses/extconf.rb: check ncursesw earlier than ncurses to
-	  support UTF-8 strings.   non UTF-8 strings should be converted
-	  explicitly.   [ruby-core:21094]
+	  support UTF-8 strings.  non UTF-8 strings should be converted
+	  explicitly.  [ruby-core:21094]
 
 Wed Jan 14 14:42:30 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
@@ -208,7 +208,7 @@ Tue Jan 13 21:28:14 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 Tue Jan 13 18:21:44 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_io_close_read): call rb_io_fptr_cleanup() instead of
-	  fptr_finalize() because the fptr has special finalizser if it is a
+	  fptr_finalize() because the fptr has special finalizer if it is a
 	  pipe.  [ruby-dev:37757] (3)
 
 Tue Jan 13 18:19:49 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -231,7 +231,7 @@ Tue Jan 13 16:39:11 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/win32.c (extract_fd, rb_w32_select): use rb_fdset_t to expand
 	  fd_array if needed.  [ruby-core:19946]
 
-	* win32/win32.c (copy_fd): new funcion for rb_w32_select().
+	* win32/win32.c (copy_fd): new function for rb_w32_select().
 
 Tue Jan 13 12:31:54 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
@@ -17005,13 +17005,13 @@ Thu May  1 16:10:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Wed Apr 30 21:36:40 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (url_encode): [ruby-dev:34497] ERB::Util#url_encode
-	  bug fix. Reported by rubikitch.
+	  buggy fix. Reported by rubikitch.
 
 	* test/erb/test_erb.rb: ditto
 
 Wed Apr 30 20:11:36 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
-	* lib/net/telnet.rb:  Fixing a bug where line endings would not be properly
+	* lib/net/telnet.rb: Fixing a bug where line endings would not be properly
 	  escaped when the two character ending was broken up into separate TCP
 	  packets.  Issue reported and patched by Brian Candler.
 
