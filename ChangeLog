@@ -1,3 +1,8 @@
+Thu Jan 15 12:10:39 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub ($(INSNS), node_name.inc, known_errors.inc,
+	  miniprelude.c, newline.c): copy only when $(srcdir) != pwd.
+
 Thu Jan 15 11:40:44 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (pipe_open): revert a part of previous commit. it may be a
