@@ -4479,12 +4479,9 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     int status;
     struct popen_arg arg;
     char errmsg[80] = { '\0' };
-#else    
-#if defined(_WIN32)
-    int openmode = rb_io_modestr_oflags(modestr);
-    const char *exename = NULL;
-    volatile VALUE cmdbuf;
-#endif    
+#elif defined(_WIN32)
+    volatile VALUE argbuf;
+    char **args = NULL;
     struct rb_exec_arg sarg;
     int pair[2], write_pair[2];
 #endif
