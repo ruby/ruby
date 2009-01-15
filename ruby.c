@@ -1343,10 +1343,10 @@ process_options(VALUE arg)
     }
 
 #define PREPARE_PARSE_MAIN(expr) do { \
-    th->parse_in_eval++; \
+    th->parse_in_eval--; \
     th->base_block = &env->block; \
     expr; \
-    th->parse_in_eval--; \
+    th->parse_in_eval++; \
     th->base_block = 0; \
 } while (0)
 
