@@ -82,7 +82,7 @@ case $output
 when :changed, nil
   puts changed
 when :revision_h
-  puts "#define RUBY_REVISION #{changed}"
+  puts "#define RUBY_REVISION #{changed.to_i}"
 when :doxygen
   puts "r#{changed}/r#{last}"
 else
