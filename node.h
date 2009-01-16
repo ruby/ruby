@@ -319,7 +319,7 @@ extern NODE *ruby_top_cref;
 #define NEW_MODULE(n,b) NEW_NODE(NODE_MODULE,n,NEW_SCOPE(b),0)
 #define NEW_COLON2(c,i) NEW_NODE(NODE_COLON2,c,i,0)
 #define NEW_COLON3(i) NEW_NODE(NODE_COLON3,0,i,0)
-#define NEW_CREF(c) (NEW_NODE(NODE_CREF,0,0,c))
+#define NEW_CREF(c,n) NEW_NODE(NODE_CREF,c,0,n)
 #define NEW_DOT2(b,e) NEW_NODE(NODE_DOT2,b,e,0)
 #define NEW_DOT3(b,e) NEW_NODE(NODE_DOT3,b,e,0)
 #define NEW_ATTRSET(a) NEW_NODE(NODE_ATTRSET,a,0,0)

@@ -1,3 +1,12 @@
+Fri Jan 16 10:55:51 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (clone_method): should copy cbase in cref as well.
+	  [ruby-dev:35116]
+
+	* node.h (NEW_CREF): new NEW_ macro.
+
+	* eval.c (PUSH_CREF): use NEW_CREF().
+
 Thu Jan 15 14:34:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (STACK_LEVEL_MAX, ruby_stack_length): returns size_t.

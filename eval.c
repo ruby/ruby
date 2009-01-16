@@ -1068,7 +1068,7 @@ static VALUE ruby_wrapper;	/* security wrapper */
 
 NODE *ruby_cref = 0;
 NODE *ruby_top_cref;
-#define PUSH_CREF(c) ruby_cref = NEW_NODE(NODE_CREF,(c),0,ruby_cref)
+#define PUSH_CREF(c) ruby_cref = NEW_CREF(c,ruby_cref)
 #define POP_CREF() ruby_cref = ruby_cref->nd_next
 
 #define PUSH_SCOPE() do {		\
