@@ -297,7 +297,7 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc
 
 up::
-	@ set LC_TIME=C & $(VCSUP) "$(srcdir)"
+	@(set LC_TIME=C & $(VCSUP) "$(srcdir)")
 
 !include $(srcdir)/common.mk
 
