@@ -1,3 +1,7 @@
+Fri Jan 16 22:30:27 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c: move addrinfo code.
+
 Fri Jan 16 18:51:11 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (up): tell nmake that need to run command via
