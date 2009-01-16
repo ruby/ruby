@@ -1,3 +1,12 @@
+Fri Jan 16 13:28:09 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/minitest/test_mini_test.rb: the number of assertions must be
+	  exactly equal to the number of assertion method calls that the end-user
+	  would write. [ruby-dev:37703]
+
+	* lib/minitest/unit.rb: ditto. 
+	  Patch by David Flanagan <david AT davidflanagan.com>. [ruby-core:21350]
+
 Fri Jan 16 12:24:39 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (thread_start_func_2): call ruby_cleanup() if thread is
