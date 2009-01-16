@@ -1,3 +1,7 @@
+Thu Jan 15 14:27:27 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* LEGAL: Added information for missing/langinfo.c
+
 Fri Jan 16 13:39:24 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/minitest/unit.rb: temporarily merges Kouji's patch without
