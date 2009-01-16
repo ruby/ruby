@@ -463,7 +463,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
     }
     thread_cleanup_func(th);
     if (th->vm->main_thread == th) {
-	rb_thread_stop_timer_thread();
+	ruby_cleanup(state);
     }
     native_mutex_unlock(&th->vm->global_vm_lock);
 
