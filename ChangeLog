@@ -1,3 +1,10 @@
+Fri Jan 16 18:43:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot (package): includes all rules and expand
+	  configured values from the environment to create *.inc, sets RM
+	  for ripper.c, and needs chdir if absolute path is given with
+	  -exported option.
+
 Thu Jan 15 14:27:27 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* LEGAL: Added information for missing/langinfo.c

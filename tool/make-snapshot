@@ -19,7 +19,9 @@ YACC = ENV["YACC"] ||= "bison"
 ENV["BASERUBY"] ||= "ruby"
 ENV["RUBY"] ||= "ruby"
 ENV["MV"] ||= "mv"
+ENV["RM"] ||= "rm -f"
 ENV["MINIRUBY"] ||= "ruby"
+ENV["PROGRAM"] ||= "ruby"
 
 class String
   # for older ruby
@@ -157,8 +159,8 @@ def package(rev, destdir)
       FileUtils.mkpath(hdrdir = "#{extout}/include/ruby")
       File.open("#{hdrdir}/config.h", "w") {}
       miniruby = ENV['MINIRUBY'] + " -rcross"
-      IO.popen("make -f - prereq srcdir=. IFCHANGE=tool/ifchange 'MINIRUBY=#{miniruby}'", "w") do |f|
-        f.puts(IO.read("Makefile.in")[/^lex\.c.*?^$/m])
+      IO.popen("make -f - prereq srcdir=. IFCHANGE=tool/ifchange 'MINIRUBY=#{miniruby}' 'RUBY=#{ENV["RUBY"]}'", "w") do |f|
+        f.puts(IO.read("Makefile.in").gsub(/^@.*\n/, '').gsub(/@([A-Za-z_]\w*)@/) {ENV[$1]})
         f.puts(commonmk.gsub(/\{[^{}]*\}/, ""))
       end
       File.open("enc.mk", "r+b") do |f|
@@ -185,6 +187,9 @@ def package(rev, destdir)
   if v == "."
     v = File.basename(Dir.pwd)
     Dir.chdir ".."
+  else
+    Dir.chdir(File.dirname(v))
+    v = File.basename(v)
   end
 
   return [["bzip tarball", ".tar.bz2", %w"tar cjf"],
