@@ -1,3 +1,10 @@
+Fri Jan 16 01:42:50 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (call_trace_proc): as Matz said ([ruby-core:21183]),
+	  should skip rb_str_new2() if rb_sourcefile() returns NULL.
+	  rb_sourcefile() returns NULL if frame is toplevel of Fiber.
+	  [ruby-core:21161] [Bug #985]
+
 Fri Jan  9 12:29:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (test-sample), rubytest.rb: use runruby.rb
