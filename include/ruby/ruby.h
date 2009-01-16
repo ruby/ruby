@@ -85,7 +85,7 @@ typedef uintptr_t VALUE;
 typedef uintptr_t ID;
 # define SIGNED_VALUE intptr_t
 # define SIZEOF_VALUE SIZEOF_UINTPTR_T
-# undef PRI_VALUE_PREFIX
+# define PRI_VALUE_PREFIX ""
 #elif SIZEOF_LONG == SIZEOF_VOIDP
 typedef unsigned long VALUE;
 typedef unsigned long ID;

@@ -358,9 +358,13 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
 #define SIZEOF_SIZE_T 8
 #define SIZEOF_PTRDIFF_T 8
+#define SIZEOF_INTPTR_T 8
+#define SIZEOF_UINTPTR_T 8
 !else
 #define SIZEOF_SIZE_T 4
 #define SIZEOF_PTRDIFF_T 4
+#define SIZEOF_INTPTR_T 4
+#define SIZEOF_UINTPTR_T 4
 !endif
 !if $(MSC_VER) < 1400
 #define SIZE_MAX UINT_MAX
