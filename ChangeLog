@@ -1,3 +1,10 @@
+Fri Jan 16 13:39:24 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/minitest/unit.rb: temporarily merges Kouji's patch without
+	  maintainer's permission in order to release 1.9.1 RC2. 
+	  [ruby-core:21364] .
+	  Patch by Takao Kouji <kouji AT takao7.net>.
+
 Fri Jan 16 13:28:09 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/minitest/test_mini_test.rb: the number of assertions must be
