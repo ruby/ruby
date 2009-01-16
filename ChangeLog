@@ -1,3 +1,11 @@
+Fri Jan 16 02:25:46 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (rb_thread_execute_interrupts): if signal is already
+	  buffered, main thread should wait until timer thread delivers it.
+
+	* thread.c (timer_thread_function): should defer delivery of a signal
+	  if main thread does not yet trap a previous one.  [ruby-dev:37676]
+
 Fri Jan 16 01:42:50 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (call_trace_proc): as Matz said ([ruby-core:21183]),
