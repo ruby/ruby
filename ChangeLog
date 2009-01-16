@@ -4,6 +4,8 @@ Fri Jan 16 13:28:09 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	  exactly equal to the number of assertion method calls that the end-user
 	  would write. [ruby-dev:37703]
 
+	* test/minitest/test_mini_spec.rb: ditto.
+
 	* lib/minitest/unit.rb: ditto. 
 	  Patch by David Flanagan <david AT davidflanagan.com>. [ruby-core:21350]
 
