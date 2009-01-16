@@ -1,3 +1,7 @@
+Fri Jan 16 11:47:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_parse_in_main): fixed typo.
+
 Fri Jan 16 02:25:46 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (rb_thread_execute_interrupts): if signal is already

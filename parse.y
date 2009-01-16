@@ -437,7 +437,7 @@ static void fixup_nodes(NODE **);
 extern int rb_dvar_defined(ID);
 extern int rb_local_defined(ID);
 extern int rb_parse_in_eval(void);
-extern int rb_prase_in_main(void);
+extern int rb_parse_in_main(void);
 
 static VALUE reg_compile_gen(struct parser_params*, VALUE, int);
 #define reg_compile(str,options) reg_compile_gen(parser, str, options)
