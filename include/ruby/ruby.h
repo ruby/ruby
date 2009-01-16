@@ -80,12 +80,12 @@ extern "C" {
 #  endif
 #endif
 
-#if defined HAVE_UINTPTR_T
+#if defined HAVE_UINTPTR_T && 0
 typedef uintptr_t VALUE;
 typedef uintptr_t ID;
 # define SIGNED_VALUE intptr_t
 # define SIZEOF_VALUE SIZEOF_UINTPTR_T
-# define PRI_VALUE_PREFIX ""
+# undef PRI_VALUE_PREFIX
 #elif SIZEOF_LONG == SIZEOF_VOIDP
 typedef unsigned long VALUE;
 typedef unsigned long ID;
@@ -103,7 +103,7 @@ typedef unsigned LONG_LONG ID;
 # error ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
 #endif
 
-#ifdef PRIdPTR
+#if defined PRIdPTR && !defined PRI_VALUE_PREFIX
 #define PRIdVALUE PRIdPTR
 #define PRIiVALUE PRIiPTR
 #define PRIoVALUE PRIoPTR
@@ -117,6 +117,9 @@ typedef unsigned LONG_LONG ID;
 #define PRIuVALUE PRI_VALUE_PREFIX"u"
 #define PRIxVALUE PRI_VALUE_PREFIX"x"
 #define PRIXVALUE PRI_VALUE_PREFIX"X"
+#endif
+#ifndef PRI_VALUE_PREFIX
+# define PRI_VALUE_PREFIX ""
 #endif
 
 #if defined PRIdPTR
