@@ -60,6 +60,9 @@ extern "C" {
 # include <intrinsics.h>
 #endif
 
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
 #ifdef HAVE_INTTYPES_H
 # include <inttypes.h>
 #endif
@@ -77,7 +80,13 @@ extern "C" {
 #  endif
 #endif
 
-#if SIZEOF_LONG == SIZEOF_VOIDP
+#if defined HAVE_UINTPTR_T
+typedef uintptr_t VALUE;
+typedef uintptr_t ID;
+# define SIGNED_VALUE intptr_t
+# define SIZEOF_VALUE SIZEOF_UINTPTR_T
+# undef PRI_VALUE_PREFIX
+#elif SIZEOF_LONG == SIZEOF_VOIDP
 typedef unsigned long VALUE;
 typedef unsigned long ID;
 # define SIGNED_VALUE long
@@ -93,14 +102,26 @@ typedef unsigned LONG_LONG ID;
 #else
 # error ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
 #endif
+
+#ifdef PRIdPTR
+#define PRIdVALUE PRIdPTR
+#define PRIiVALUE PRIiPTR
+#define PRIoVALUE PRIoPTR
+#define PRIuVALUE PRIuPTR
+#define PRIxVALUE PRIxPTR
+#define PRIXVALUE PRIXPTR
+#else
 #define PRIdVALUE PRI_VALUE_PREFIX"d"
 #define PRIiVALUE PRI_VALUE_PREFIX"i"
 #define PRIoVALUE PRI_VALUE_PREFIX"o"
 #define PRIuVALUE PRI_VALUE_PREFIX"u"
 #define PRIxVALUE PRI_VALUE_PREFIX"x"
 #define PRIXVALUE PRI_VALUE_PREFIX"X"
+#endif
 
-#if SIZEOF_PTRDIFF_T == SIZEOF_INT
+#if defined PRIdPTR
+# define PRI_PTRDIFF_PREFIX "t"
+#elif SIZEOF_PTRDIFF_T == SIZEOF_INT
 # define PRI_PTRDIFF_PREFIX
 #elif SIZEOF_PTRDIFF_T == SIZEOF_LONG
 # define PRI_PTRDIFF_PREFIX "l"
@@ -114,7 +135,9 @@ typedef unsigned LONG_LONG ID;
 #define PRIxPTRDIFF PRI_PTRDIFF_PREFIX"x"
 #define PRIXPTRDIFF PRI_PTRDIFF_PREFIX"X"
 
-#if SIZEOF_SIZE_T == SIZEOF_INT
+#if defined PRIdPTR
+# define PRI_SIZE_PREFIX "z"
+#elif SIZEOF_SIZE_T == SIZEOF_INT
 # define PRI_SIZE_PREFIX
 #elif SIZEOF_SIZE_T == SIZEOF_LONG
 # define PRI_SIZE_PREFIX "l"

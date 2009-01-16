@@ -296,38 +296,51 @@ AC_CHECK_SIZEOF(time_t, 0)
 
 dnl RUBY_REPLACE_TYPE [typename] [default type] [macro type] [included]
 AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
-    AC_CHECK_TYPE([$1],
-	[AC_DEFINE_UNQUOTED(rb_[$1], [$1])],
-	[AC_DEFINE_UNQUOTED(rb_[$1], [$2])],
-	[$4])
+    AC_CHECK_TYPE([$1], [n=[$1]], [n=[$2]], [$4])
     AC_CACHE_CHECK([for convertible type of [$1]], rb_cv_[$1]_convertible, [
 	u= t=
-	AC_COMPILE_IFELSE(
-	    [AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT]
-				      [$4], [(rb_[$1])-1 > 0])],
-	    [u=U])
+	case "$n " in
+	dnl (
+	*" signed "*) ;;
+	dnl (
+	*" unsigned "*) u=U;;
+	dnl (
+	*)
+	    AC_COMPILE_IFELSE(
+		[AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT]
+					  [$4], [($n)-1 > 0])],
+		[u=U]);;
+	esac
+	case " $n " in
+	dnl (
+	*" long long "*) t=LL;;
+	dnl (
+	*" long "*) t=LONG;;
+	esac
 	if test x"$t" = x; then
 	    AC_COMPILE_IFELSE(
 		[AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT]
-					  [$4], [sizeof(rb_[$1]) > sizeof(long)])],
+					  [$4], [sizeof($n) > sizeof(long)])],
 		[t=LL])
 	fi
 	if test x"$t" = x; then
 	    AC_COMPILE_IFELSE(
 		[AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT]
-					  [$4], [sizeof(rb_[$1]) == sizeof(long)])],
+					  [$4], [sizeof($n) == sizeof(long)])],
 		[t=LONG])
 	fi
 	if test x"$t" = x; then
 	    t=INT
 	fi
 	rb_cv_[$1]_convertible=${u}${t}])
+    m4_ifval([$2], AC_DEFINE_UNQUOTED(rb_[$1], $n))
     AC_DEFINE_UNQUOTED([$3]2NUM[(v)], [${rb_cv_[$1]_convertible}2NUM(v)])
     AC_DEFINE_UNQUOTED(NUM2[$3][(v)], [NUM2${rb_cv_[$1]_convertible}(v)])
 ])
 RUBY_REPLACE_TYPE(pid_t, int, PIDT)
 RUBY_REPLACE_TYPE(uid_t, int, UIDT)
 RUBY_REPLACE_TYPE(gid_t, int, GIDT)
+RUBY_REPLACE_TYPE(time_t, [], TIMET, [@%:@include <time.h>])
 
 AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
   [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],
@@ -713,7 +726,12 @@ typedef $1 t; int s = sizeof(t) == 42;])],
     esac])])
 if test "${rb_cv_type_$1}" != no; then
     AC_DEFINE([HAVE_]AS_TR_CPP($1), 1)
-    test "${rb_cv_type_$1}" = yes || AC_DEFINE_UNQUOTED($1, [$rb_cv_type_$1])
+    if test "${rb_cv_type_$1}" = yes; then
+	AC_CHECK_SIZEOF($1)
+    else
+	AC_DEFINE_UNQUOTED($1, [$rb_cv_type_$1])
+	AC_DEFINE_UNQUOTED([SIZEOF_]AS_TR_CPP($1), [SIZEOF_]AS_TR_CPP([$rb_cv_type_$1]))
+    fi
 fi
 ])
 

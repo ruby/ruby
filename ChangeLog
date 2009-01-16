@@ -1,3 +1,15 @@
+Fri Jan 16 11:41:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_REPLACE_TYPE): does not define rb_ prefixed
+	  name if no default type is given.
+
+	* configure.in (RUBY_DEFINT): checks size.
+
+	* include/ruby/ruby.h (VALUE): use uintptr_t if available.
+
+	* include/ruby/ruby.h (PRI_PTRDIFF_PREFIX, PRI_SIZE_PREFIX):
+	  assumes usable if PRIdPTR is defined.
+
 Fri Jan 16 02:25:46 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (rb_thread_execute_interrupts): if signal is already
