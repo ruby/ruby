@@ -104,6 +104,8 @@ IFCHANGE      = $(srcdir)/tool/ifchange
 SET_LC_MESSAGES = env LC_MESSAGES=C
 OBJDUMP       = @OBJDUMP@
 OBJCOPY       = @OBJCOPY@
+VCS           = @VCS@
+VCSUP         = @VCSUP@
 
 OBJEXT        = @OBJEXT@
 ASMEXT        = S
@@ -166,7 +168,6 @@ fake.rb:	Makefile
 Makefile:	$(srcdir)/Makefile.in $(srcdir)/enc/Makefile.in
 Doxyfile:	$(srcdir)/Doxyfile.in config.status
 	MAKE=$(MAKE) $(SHELL) ./config.status
-	
 
 $(MKFILES): config.status
 		MAKE=$(MAKE) $(SHELL) ./config.status
@@ -246,6 +247,9 @@ distclean-ext realclean-ext::
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
+
+up::
+	@LC_TIME=C $(VCSUP) "$(srcdir)"
 
 update-rubyspec: 
 	@if [ -d $(srcdir)/spec/mspec ]; then \
