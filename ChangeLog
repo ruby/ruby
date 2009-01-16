@@ -1,3 +1,10 @@
+Fri Jan 16 18:43:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot (package): includes all rules and expand
+	  configured values from the environment to create *.inc, sets RM
+	  for ripper.c, and needs chdir if absolute path is given with
+	  -exported option.
+
 Fri Jan 16 18:26:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (VALUE): use unsigned long or long long
