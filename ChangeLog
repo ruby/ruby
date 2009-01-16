@@ -1,3 +1,8 @@
+Fri Jan 16 18:26:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (VALUE): use unsigned long or long long
+	  instead of uintptr_t, since many %lx and so on are still used.
+
 Fri Jan 16 17:33:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (Makefile): set VCS and VCSUP to support `git svn'
@@ -41,8 +46,6 @@ Fri Jan 16 11:41:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  name if no default type is given.
 
 	* configure.in (RUBY_DEFINT): checks size.
-
-	* include/ruby/ruby.h (VALUE): use uintptr_t if available.
 
 	* include/ruby/ruby.h (PRI_PTRDIFF_PREFIX, PRI_SIZE_PREFIX):
 	  assumes usable if PRIdPTR is defined.
