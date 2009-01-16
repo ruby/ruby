@@ -1,3 +1,7 @@
+Fri Jan 16 11:47:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_parse_in_main): fixed typo.
+
 Fri Jan 16 11:41:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_REPLACE_TYPE): does not define rb_ prefixed
