@@ -1,3 +1,12 @@
+Fri Jan 16 12:27:50 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub ($(INSNS), node_name.inc, known_errors.inc,
+	  miniprelude.c, newline.c): if dependencies is newer than targets or
+	  targets don't exist, try to create targets with BASERUBY. no need to
+	  detect errors there because the absence of BASERUBY is not abnormal.
+	  after the try, if the targets still don't exist, copy them from
+	  $(srcdir).
+
 Fri Jan 16 11:47:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_parse_in_main): fixed typo.
