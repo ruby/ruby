@@ -1,8 +1,7 @@
 YACC = bison
-COMSPEC=cmd /C
-IFCHANGE = $(COMSPEC) $(srcdir)\win32\ifchange.bat
+IFCHANGE = $(COMSPEC) /c $(srcdir)\win32\ifchange.bat
 RM = del
-MV = $(COMSPEC) move
+MV = $(COMSPEC) /c move
 VCS=svn
 
 
