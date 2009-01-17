@@ -325,7 +325,7 @@ module MiniTest
 
     def self.autorun
       at_exit {
-        return if $! # don't run if there was an exception
+        next if $! # don't run if there was an exception
         exit_code = MiniTest::Unit.new.run(ARGV)
         exit false if exit_code && exit_code != 0
       } unless @@installed_at_exit
