@@ -72,8 +72,20 @@ class XMP
     end
 
     def puts(exps)
+      if @encoding and exps.encoding != @encoding
+	enc = Encoding.compatible?(@exps.join("\n"), exps)
+	if enc.nil?
+	  raise Encoding::CompatibilityError, "Encoding in which the passed exression is encoded is not compatible to the preceding's one"
+	else
+	  @encoding = enc
+	end
+      else
+	@encoding = exps.encoding
+      end
       @exps.concat exps.split(/\n/)
     end
+
+    attr_reader :encoding
   end
 end
 
