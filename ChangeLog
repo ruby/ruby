@@ -1,3 +1,11 @@
+Sun Jan 18 01:37:50 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (sock_s_getnameinfo): accept AddrInfo object.
+
+	* ext/socket/raddrinfo.c (rb_check_sockaddr_string_type): defined.
+
+	* ext/socket/rubysocket.h (rb_check_sockaddr_string_type): declared.
+
 Sat Jan 17 22:01:15 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb: new file.

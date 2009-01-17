@@ -1520,6 +1520,14 @@ sockaddr_string_value_ptr(volatile VALUE *v)
 }
 
 VALUE
+rb_check_sockaddr_string_type(VALUE val)
+{
+    if (TYPE(val) == RUBY_T_DATA && IS_ADDRINFO(val))
+        return addrinfo_to_sockaddr(val);
+    return rb_check_string_type(val);
+}
+
+VALUE
 fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len)
 {
     int family;

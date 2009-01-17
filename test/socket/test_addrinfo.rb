@@ -134,6 +134,11 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     s3.close if s3 && !s3.closed?
   end
 
+  def test_socket_getnameinfo
+     ai = AddrInfo.udp("127.0.0.1", 8888)
+     assert_equal(["127.0.0.1", "8888"], Socket.getnameinfo(ai, Socket::NI_NUMERICHOST|Socket::NI_NUMERICSERV))
+  end
+
   def test_basicsocket_local_address
     s1 = Socket.new(:INET, :DGRAM, 0)
     s1.bind(Socket.sockaddr_in(0, "127.0.0.1"))

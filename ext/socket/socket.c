@@ -1134,7 +1134,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     if (!NIL_P(flags)) {
 	fl = NUM2INT(flags);
     }
-    tmp = rb_check_string_type(sa);
+    tmp = rb_check_sockaddr_string_type(sa);
     if (!NIL_P(tmp)) {
 	sa = tmp;
 	if (sizeof(ss) < RSTRING_LEN(sa)) {

@@ -150,6 +150,7 @@ int Rconnect();
 #define SockAddrStringValuePtr(v) sockaddr_string_value_ptr(&(v))
 VALUE sockaddr_string_value(volatile VALUE *);
 char *sockaddr_string_value_ptr(volatile VALUE *);
+VALUE rb_check_sockaddr_string_type(VALUE);
 
 NORETURN(void raise_socket_error(const char *, int));
 
