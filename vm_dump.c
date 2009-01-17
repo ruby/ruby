@@ -246,24 +246,19 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
     VALUE *lfp = cfp->lfp;
     VALUE *dfp = cfp->dfp;
 
-    int argc = 0, local_size;
+    int argc = 0, local_size = 0;
     const char *name;
     rb_iseq_t *iseq = cfp->iseq;
 
     if (iseq == 0) {
 	if (RUBYVM_CFUNC_FRAME_P(cfp)) {
-	    argc = 0;
-	    local_size = 0;
 	    name = rb_id2name(cfp->method_id);
 	}
 	else {
 	    name = "?";
-	    local_size = 0;
 	}
     }
     else if (RUBY_VM_IFUNC_P(iseq)) {
-	argc = 0;
-	local_size = 0;
 	name = "<ifunc>";
     }
     else {
@@ -605,7 +600,7 @@ rb_vm_bugreport(void)
 	fprintf(stderr, "-- C level backtrace information "
 		"-------------------------------------------\n");
 	for (i=0; i<n; i++) {
-	    char *info = syms ? syms[i] : "";
+	    const char *info = syms ? syms[i] : "";
 	    fprintf(stderr, "%p %s\n", trace[i], info);
 	}
 	fprintf(stderr, "\n");
