@@ -1,0 +1,141 @@
+/************************************************
+
+  tcpserver.c -
+
+  created at: Thu Mar 31 12:21:29 JST 1994
+
+  Copyright (C) 1993-2007 Yukihiro Matsumoto
+
+************************************************/
+
+#include "rubysocket.h"
+
+/*
+ * call-seq:
+ *   TCPServer.new([hostname,] port)                    => tcpserver
+ *
+ * Creates a new server socket bound to _port_.
+ *
+ * If _hostname_ is given, the socket is bound to it.
+ *
+ *   serv = TCPServer.new("127.0.0.1", 28561)
+ *   s = serv.accept
+ *   s.puts Time.now
+ *   s.close
+ */
+static VALUE
+tcp_svr_init(int argc, VALUE *argv, VALUE sock)
+{
+    VALUE arg1, arg2;
+
+    if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2)
+	return init_inetsock(sock, arg1, arg2, Qnil, Qnil, INET_SERVER);
+    else
+	return init_inetsock(sock, Qnil, arg1, Qnil, Qnil, INET_SERVER);
+}
+
+/*
+ * call-seq:
+ *   tcpserver.accept => tcpsocket
+ *
+ *   TCPServer.open("127.0.0.1", 14641) {|serv|
+ *     s = serv.accept
+ *     s.puts Time.now
+ *     s.close
+ *   }
+ *   
+ */
+static VALUE
+tcp_accept(VALUE sock)
+{
+    rb_io_t *fptr;
+    struct sockaddr_storage from;
+    socklen_t fromlen;
+ 
+    GetOpenFile(sock, fptr);
+    fromlen = sizeof(from);
+    return s_accept(rb_cTCPSocket, fptr->fd,
+		    (struct sockaddr*)&from, &fromlen);
+}
+
+/*
+ * call-seq:
+ * 	tcpserver.accept_nonblock => tcpsocket
+ * 
+ * Accepts an incoming connection using accept(2) after
+ * O_NONBLOCK is set for the underlying file descriptor.
+ * It returns an accepted TCPSocket for the incoming connection.
+ * 
+ * === Example
+ * 	require 'socket'
+ * 	serv = TCPServer.new(2202)
+ * 	begin # emulate blocking accept
+ * 	  sock = serv.accept_nonblock
+ * 	rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+ * 	  IO.select([serv])
+ * 	  retry
+ * 	end
+ * 	# sock is an accepted socket.
+ * 
+ * Refer to Socket#accept for the exceptions that may be thrown if the call
+ * to TCPServer#accept_nonblock fails. 
+ *
+ * TCPServer#accept_nonblock may raise any error corresponding to accept(2) failure,
+ * including Errno::EWOULDBLOCK.
+ * 
+ * === See
+ * * TCPServer#accept
+ * * Socket#accept
+ */
+static VALUE
+tcp_accept_nonblock(VALUE sock)
+{
+    rb_io_t *fptr;
+    struct sockaddr_storage from;
+    socklen_t fromlen;
+
+    GetOpenFile(sock, fptr);
+    fromlen = sizeof(from);
+    return s_accept_nonblock(rb_cTCPSocket, fptr,
+			     (struct sockaddr *)&from, &fromlen);
+}
+
+/*
+ * call-seq:
+ *   tcpserver.sysaccept => file_descriptor
+ *
+ * Returns a file descriptor of a accepted connection.
+ *
+ *   TCPServer.open("127.0.0.1", 28561) {|serv|
+ *     fd = serv.sysaccept
+ *     s = IO.for_fd(fd)       
+ *     s.puts Time.now
+ *     s.close
+ *   }
+ *
+ */
+static VALUE
+tcp_sysaccept(VALUE sock)
+{
+    rb_io_t *fptr;
+    struct sockaddr_storage from;
+    socklen_t fromlen;
+
+    GetOpenFile(sock, fptr);
+    fromlen = sizeof(from);
+    return s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
+}
+
+/*
+ * TCPServer class
+ */
+void
+Init_tcpserver(void)
+{
+    rb_cTCPServer = rb_define_class("TCPServer", rb_cTCPSocket);
+    rb_define_method(rb_cTCPServer, "accept", tcp_accept, 0);
+    rb_define_method(rb_cTCPServer, "accept_nonblock", tcp_accept_nonblock, 0);
+    rb_define_method(rb_cTCPServer, "sysaccept", tcp_sysaccept, 0);
+    rb_define_method(rb_cTCPServer, "initialize", tcp_svr_init, -1);
+    rb_define_method(rb_cTCPServer, "listen", sock_listen, 1);
+}

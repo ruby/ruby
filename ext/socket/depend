@@ -1,6 +1,20 @@
-socket.o: socket.c $(hdrdir)/ruby/ruby.h $(arch_hdrdir)/ruby/config.h \
+SOCK_HEADERS = rubysocket.h $(hdrdir)/ruby/ruby.h $(arch_hdrdir)/ruby/config.h \
 	$(hdrdir)/ruby/defines.h $(hdrdir)/ruby/io.h \
 	sockport.h constants.h
+
+init.o: init.c $(SOCK_HEADERS)
+constants.o: constants.c $(SOCK_HEADERS)
+basicsocket.o: basicsocket.c $(SOCK_HEADERS)
+socket.o: socket.c $(SOCK_HEADERS)
+ipsocket.o: ipsocket.c $(SOCK_HEADERS)
+tcpsocket.o: tcpsocket.c $(SOCK_HEADERS)
+tcpserver.o: tcpserver.c $(SOCK_HEADERS)
+sockssocket.o: sockssocket.c $(SOCK_HEADERS)
+udpsocket.o: udpsocket.c $(SOCK_HEADERS)
+unixsocket.o: unixsocket.c $(SOCK_HEADERS)
+unixserver.o: unixserver.c $(SOCK_HEADERS)
+raddrinfo.o: raddrinfo.c $(SOCK_HEADERS)
+
 getnameinfo.o: getnameinfo.c $(arch_hdrdir)/ruby/config.h addrinfo.h sockport.h
 getaddrinfo.o: getaddrinfo.c $(arch_hdrdir)/ruby/config.h addrinfo.h sockport.h
 

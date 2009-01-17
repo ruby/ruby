@@ -1,3 +1,41 @@
+Sat Jan 17 12:46:17 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket: split files for each class.
+
+	* ext/socket/rubysocket.h: common header.
+
+	* ext/socket/basicsocket.c: new file for BasicSocket.
+
+	* ext/socket/ipsocket.c: new file for IPSocket.
+
+	* ext/socket/tcpsocket.c: new file for TCPSocket.
+
+	* ext/socket/tcpserver.c: new file for TCPServer.
+
+	* ext/socket/sockssocket.c: new file for SOCKSSocket.
+
+	* ext/socket/udpsocket.c: new file for UDPSocket.
+
+	* ext/socket/unixsocket.c: new file for UNIXSocket.
+
+	* ext/socket/unixserver.c: new file for UNIXServer.
+
+	* ext/socket/socket.c: now for Socket.
+
+	* ext/socket/raddrinfo.c: new file for AddrInfo and name resolution.
+
+	* ext/socket/constants.c: new file for constants.
+
+	* ext/socket/init.c: new file for utilities.
+
+	* ext/socket/mkconstants.rb: export *_to_int.
+
+	* ext/socket/extconf.rb: add new object files.
+
+	* ext/socket/depend: add dependencies for new files.
+
+	* ext/.document: add new files.
+
 Sat Jan 17 11:12:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (cont_restore_0): padding size doesn't need to be large

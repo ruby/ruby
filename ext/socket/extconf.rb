@@ -242,7 +242,20 @@ Fatal: invalid value for --with-lookup-order-hack (expected INET, INET6 or UNSPE
 EOS
 end
 
-$objs = ["socket.#{$OBJEXT}"]
+$objs = [
+  "init.#{$OBJEXT}",
+  "constants.#{$OBJEXT}",
+  "basicsocket.#{$OBJEXT}",
+  "socket.#{$OBJEXT}",
+  "ipsocket.#{$OBJEXT}",
+  "tcpsocket.#{$OBJEXT}",
+  "tcpserver.#{$OBJEXT}",
+  "sockssocket.#{$OBJEXT}",
+  "udpsocket.#{$OBJEXT}",
+  "unixsocket.#{$OBJEXT}",
+  "unixserver.#{$OBJEXT}",
+  "raddrinfo.#{$OBJEXT}"
+]
 
 unless getaddr_info_ok and have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
   if have_struct_member("struct in6_addr", "s6_addr8", headers)

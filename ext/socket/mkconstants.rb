@@ -130,7 +130,7 @@ def each_names_with_len(pat, prefix_optional=nil)
 end
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int_func_in_guard(funcname, pat, prefix_optional, guard=nil)")
-static int
+int
 <%=funcname%>(char *str, int len, int *valp)
 {
     switch (len) {
@@ -183,7 +183,7 @@ ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name_hash(hash_var, pa
 EOS
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name_func(func_name, hash_var)")
-static ID
+ID
 <%=func_name%>(int val)
 {
     st_data_t name;
