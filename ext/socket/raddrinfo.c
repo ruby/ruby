@@ -1398,12 +1398,14 @@ addrinfo_s_getaddrinfo(int argc, VALUE *argv, VALUE self)
     return addrinfo_list_new(node, service, family, socktype, protocol, flags);
 }
 
-
 /*
  * call-seq:
  *   AddrInfo.ip(host) => addrinfo
  *
  * returns an addrinfo object for IP address.
+ *
+ * The port, socktype, protocol of the result is filled by zero.
+ * So, it is not appropriate to create a socket.
  *
  *   AddrInfo.ip("localhost") #=> #<AddrInfo: 127.0.0.1 (localhost)>
  */
