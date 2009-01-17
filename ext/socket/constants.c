@@ -19,7 +19,7 @@ static void sock_define_uconst(const char *name, unsigned int value, VALUE mCons
 #undef sock_define_uconst
 
 static int
-constant_arg(VALUE arg, int (*str_to_int)(char*, int, int*), const char *errmsg)
+constant_arg(VALUE arg, int (*str_to_int)(const char*, int, int*), const char *errmsg)
 {
     VALUE tmp;
     char *ptr;

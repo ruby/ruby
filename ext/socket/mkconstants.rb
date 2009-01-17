@@ -140,16 +140,16 @@ end
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int_decl(funcname, pat, prefix_optional, guard=nil)")
 %if guard
 #ifdef <%=guard%>
-int <%=funcname%>(char *str, int len, int *valp);
+int <%=funcname%>(const char *str, int len, int *valp);
 #endif
 %else
-int <%=funcname%>(char *str, int len, int *valp);
+int <%=funcname%>(const char *str, int len, int *valp);
 %end
 EOS
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int_func_in_guard(funcname, pat, prefix_optional, guard=nil)")
 int
-<%=funcname%>(char *str, int len, int *valp)
+<%=funcname%>(const char *str, int len, int *valp)
 {
     switch (len) {
 %    each_names_with_len(pat, prefix_optional) {|pairs, len|
@@ -241,6 +241,7 @@ end
 
 def_name_to_int("family_to_int", /\A(AF_|PF_)/, "AF_")
 def_name_to_int("socktype_to_int", /\ASOCK_/, "SOCK_")
+def_name_to_int("ipproto_to_int", /\AIPPROTO_/, "IPPROTO_")
 def_name_to_int("level_to_int", /\A(SOL_SOCKET\z|IPPROTO_)/, /\A(SOL_|IPPROTO_)/)
 def_name_to_int("so_optname_to_int", /\ASO_/, "SO_")
 def_name_to_int("ip_optname_to_int", /\AIP_/, "IP_")

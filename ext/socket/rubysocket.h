@@ -74,6 +74,12 @@
 # define NI_MAXSERV 32
 #endif
 
+#ifdef AF_INET6
+# define IS_IP_FAMILY(af) ((af) == AF_INET || (af) == AF_INET6)
+#else
+# define IS_IP_FAMILY(af) ((af) == AF_INET)
+#endif
+
 #ifndef HAVE_SOCKADDR_STORAGE
 /*
  * RFC 2553: protocol-independent placeholder for socket addresses

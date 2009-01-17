@@ -274,6 +274,17 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     s2.close if s2 && !s2.closed?
   end
 
+  def test_marshal
+    ai1 = AddrInfo.tcp("127.0.0.1", 80)
+    ai2 = Marshal.load(Marshal.dump(ai1))
+    assert_equal(ai1.afamily, ai2.afamily)
+    assert_equal(ai1.ip_unpack, ai2.ip_unpack)
+    assert_equal(ai1.pfamily, ai2.pfamily)
+    assert_equal(ai1.socktype, ai2.socktype)
+    assert_equal(ai1.protocol, ai2.protocol)
+    assert_equal(ai1.canonname, ai2.canonname)
+  end
+
   if Socket.const_defined?("AF_INET6")
 
     def test_addrinfo_new_inet6
@@ -288,6 +299,17 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     def test_addrinfo_ip_unpack_inet6
       ai = AddrInfo.tcp("::1", 80)
       assert_equal(["::1", 80], ai.ip_unpack)
+    end
+
+    def test_marshal_inet6
+      ai1 = AddrInfo.tcp("::1", 80)
+      ai2 = Marshal.load(Marshal.dump(ai1))
+      assert_equal(ai1.afamily, ai2.afamily)
+      assert_equal(ai1.ip_unpack, ai2.ip_unpack)
+      assert_equal(ai1.pfamily, ai2.pfamily)
+      assert_equal(ai1.socktype, ai2.socktype)
+      assert_equal(ai1.protocol, ai2.protocol)
+      assert_equal(ai1.canonname, ai2.canonname)
     end
 
   end
@@ -323,6 +345,17 @@ class TestSocketAddrInfo < Test::Unit::TestCase
       assert(!unix_ai.ipv4?)
       assert(!unix_ai.ipv6?)
       assert(unix_ai.unix?)
+    end
+
+    def test_marshal_unix
+      ai1 = AddrInfo.unix("/var/tmp/sock")
+      ai2 = Marshal.load(Marshal.dump(ai1))
+      assert_equal(ai1.afamily, ai2.afamily)
+      assert_equal(ai1.unix_path, ai2.unix_path)
+      assert_equal(ai1.pfamily, ai2.pfamily)
+      assert_equal(ai1.socktype, ai2.socktype)
+      assert_equal(ai1.protocol, ai2.protocol)
+      assert_equal(ai1.canonname, ai2.canonname)
     end
 
   end

@@ -1,3 +1,19 @@
+Sun Jan 18 03:05:20 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (addrinfo_mdump): new method.
+	  (addrinfo_mload): new method.
+	  (Init_addrinfo): define the method above.
+
+	* ext/socket/constants.c (constant_arg): str_to_int's first argument
+	  constified.
+
+	* ext/socket/mkconstants.rb (gen_name_to_int_decl): generated
+	  function's first argument constified.
+	  (gen_name_to_int_func_in_guard): ditto.
+	  (ipproto_to_int): generated.
+
+	* ext/socket/rubysocket.h (IS_IP_FAMILY): moved from raddrinfo.c.
+
 Sun Jan 18 01:37:50 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (sock_s_getnameinfo): accept AddrInfo object.
