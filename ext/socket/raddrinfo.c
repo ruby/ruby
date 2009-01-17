@@ -1404,6 +1404,10 @@ addrinfo_unix_path(VALUE self)
  *
  * flags should be bitwise OR of Socket::AI_??? constants.
  *
+ * Note that socktype should be specified whenever application knows the usage of the address.
+ * Some platform causes an error when socktype is ommitted and servname is specified as an integer
+ * because some port numbers, 512 for example, are ambiguous without socktype.
+ *
  *   AddrInfo.getaddrinfo("www.kame.net", 80, nil, :STREAM)
  *   #=> [#<AddrInfo: 203.178.141.194:80 TCP (www.kame.net:80)>,
  *   #    #<AddrInfo: [2001:200:0:8002:203:47ff:fea5:3085]:80 TCP (www.kame.net:80)>]
