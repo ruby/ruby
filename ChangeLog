@@ -1,3 +1,7 @@
+Sat Jan 17 12:13:10 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* random.c (Init_Random): always initialize seed.
+
 Sat Jan 17 12:11:06 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* marshal.c (dump_ensure, load_ensure): should return values.
