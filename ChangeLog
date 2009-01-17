@@ -1,3 +1,7 @@
+Sat Jan 17 12:16:10 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* random.c (Init_Random): always initialize seed.
+
 Fri Jan 16 10:59:31 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (clone_method): should copy cbase in cref as well.
