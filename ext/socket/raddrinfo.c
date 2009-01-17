@@ -1093,7 +1093,7 @@ addrinfo_mdump(VALUE self)
     id = intern_protocol_family(rai->pfamily);
     if (id == 0)
         rb_raise(rb_eSocket, "unknown protocol family: %d", rai->pfamily);
-    pfamily = ID2SYM(id);
+    pfamily = rb_id2str(id);
 
     if (rai->socktype == 0)
         socktype = INT2FIX(0);
@@ -1101,7 +1101,7 @@ addrinfo_mdump(VALUE self)
         id = intern_socktype(rai->socktype);
         if (id == 0)
             rb_raise(rb_eSocket, "unknown socktype: %d", rai->socktype);
-        socktype = ID2SYM(id);
+        socktype = rb_id2str(id);
     }
 
     if (rai->protocol == 0)
@@ -1110,7 +1110,7 @@ addrinfo_mdump(VALUE self)
         id = intern_ipproto(rai->protocol);
         if (id == 0)
             rb_raise(rb_eSocket, "unknown IP protocol: %d", rai->protocol);
-        protocol = ID2SYM(id);
+        protocol = rb_id2str(id);
     }
     else {
         rb_raise(rb_eSocket, "unknown protocol: %d", rai->protocol);
@@ -1123,7 +1123,7 @@ addrinfo_mdump(VALUE self)
     id = intern_family(afamily_int);
     if (id == 0)
         rb_raise(rb_eSocket, "unknown address family: %d", afamily_int);
-    afamily = ID2SYM(id);
+    afamily = rb_id2str(id);
 
     switch(afamily_int) {
       case AF_UNIX:
@@ -1165,7 +1165,6 @@ addrinfo_mload(VALUE self, VALUE ary)
     int afamily, pfamily, socktype, protocol;
     struct sockaddr_storage ss;
     size_t len;
-    const char *str;
     rb_addrinfo_t *rai;
 
     if (check_addrinfo(self))
@@ -1174,27 +1173,21 @@ addrinfo_mload(VALUE self, VALUE ary)
     ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
 
     v = rb_ary_entry(ary, 0);
-    if (!SYMBOL_P(v))
-        rb_raise(rb_eTypeError, "symbol expected for address family");
-    str = rb_id2name(SYM2ID(v));
-    if (family_to_int(str, strlen(str), &afamily) == -1)
+    StringValue(v);
+    if (family_to_int(RSTRING_PTR(v), RSTRING_LEN(v), &afamily) == -1)
         rb_raise(rb_eTypeError, "unexpected address family");
 
     v = rb_ary_entry(ary, 2);
-    if (!SYMBOL_P(v))
-        rb_raise(rb_eTypeError, "symbol expected for protocol family");
-    str = rb_id2name(SYM2ID(v));
-    if (family_to_int(str, strlen(str), &pfamily) == -1)
+    StringValue(v);
+    if (family_to_int(RSTRING_PTR(v), RSTRING_LEN(v), &pfamily) == -1)
         rb_raise(rb_eTypeError, "unexpected protocol family");
 
     v = rb_ary_entry(ary, 3);
     if (v == INT2FIX(0))
         socktype = 0;
     else {
-        if (!SYMBOL_P(v))
-            rb_raise(rb_eTypeError, "symbol expected for socktype");
-        str = rb_id2name(SYM2ID(v));
-        if (socktype_to_int(str, strlen(str), &socktype) == -1)
+        StringValue(v);
+        if (socktype_to_int(RSTRING_PTR(v), RSTRING_LEN(v), &socktype) == -1)
             rb_raise(rb_eTypeError, "unexpected socktype");
     }
 
@@ -1202,11 +1195,9 @@ addrinfo_mload(VALUE self, VALUE ary)
     if (v == INT2FIX(0))
         protocol = 0;
     else {
-        if (!SYMBOL_P(v))
-            rb_raise(rb_eTypeError, "symbol expected for protocol");
+        StringValue(v);
         if (IS_IP_FAMILY(afamily)) {
-            str = rb_id2name(SYM2ID(v));
-            if (ipproto_to_int(str, strlen(str), &protocol) == -1)
+            if (ipproto_to_int(RSTRING_PTR(v), RSTRING_LEN(v), &protocol) == -1)
                 rb_raise(rb_eTypeError, "unexpected protocol");
         }
         else {
