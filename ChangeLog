@@ -1,3 +1,12 @@
+Sat Jan 17 15:01:22 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (make_inspectname): add a res argument to
+	  suppress numeric inspectname.
+	  (init_addrinfo_getaddrinfo): call make_inspectname here.
+	  (addrinfo_firstonly_new): follow make_inspectname change.
+	  (addrinfo_list_new): ditto.
+	  (addrinfo_initialize): follow init_addrinfo_getaddrinfo change.
+
 Sat Jan 17 14:52:27 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: don't cause an error for duplicate names.

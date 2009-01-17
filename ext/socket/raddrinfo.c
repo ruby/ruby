@@ -590,13 +590,16 @@ call_getaddrinfo(VALUE node, VALUE service,
     return res;
 }
 
+static VALUE make_inspectname(VALUE node, VALUE service, struct addrinfo *res);
+
 static void
 init_addrinfo_getaddrinfo(rb_addrinfo_t *rai, VALUE node, VALUE service,
                           VALUE family, VALUE socktype, VALUE protocol, VALUE flags,
-                          VALUE inspectname)
+                          VALUE inspectnode, VALUE inspectservice)
 {
     struct addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 1);
     VALUE canonname;
+    VALUE inspectname = rb_str_equal(node, inspectnode) ? Qnil : make_inspectname(inspectnode, inspectservice, res);
 
     canonname = Qnil;
     if (res->ai_canonname) {
@@ -612,9 +615,26 @@ init_addrinfo_getaddrinfo(rb_addrinfo_t *rai, VALUE node, VALUE service,
 }
 
 static VALUE
-make_inspectname(VALUE node, VALUE service)
+make_inspectname(VALUE node, VALUE service, struct addrinfo *res)
 {
     VALUE inspectname = Qnil;
+
+    if (res) {
+        char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
+        int ret;
+        ret = rb_getnameinfo(res->ai_addr, res->ai_addrlen, hbuf,
+                             sizeof(hbuf), pbuf, sizeof(pbuf),
+                             NI_NUMERICHOST|NI_NUMERICSERV);
+        if (ret == 0) {
+            if (TYPE(node) == T_STRING && strcmp(hbuf, RSTRING_PTR(node)) == 0)
+                node = Qnil;
+            if (TYPE(service) == T_STRING && strcmp(pbuf, RSTRING_PTR(service)) == 0)
+                service = Qnil;
+            else if (TYPE(service) == T_FIXNUM && atoi(pbuf) == FIX2INT(service))
+                service = Qnil;
+        }
+    }
+
     if (TYPE(node) == T_STRING) {
         inspectname = rb_str_dup(node);
     }
@@ -648,7 +668,7 @@ addrinfo_firstonly_new(VALUE node, VALUE service, VALUE family, VALUE socktype, 
 
     struct addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 0);
 
-    inspectname = make_inspectname(node, service);
+    inspectname = make_inspectname(node, service, res);
 
     canonname = Qnil;
     if (res->ai_canonname) {
@@ -673,7 +693,7 @@ addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE
 
     struct addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 0);
 
-    inspectname = make_inspectname(node, service);
+    inspectname = make_inspectname(node, service, res);
 
     ret = rb_ary_new();
     for (r = res; r; r = r->ai_next) {
@@ -814,7 +834,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
             init_addrinfo_getaddrinfo(rai, numericnode, service,
                     INT2NUM(i_pfamily ? i_pfamily : af), INT2NUM(i_socktype), INT2NUM(i_protocol),
                     INT2NUM(flags),
-                    rb_str_equal(numericnode, nodename) ? Qnil : make_inspectname(nodename, service));
+                    nodename, service);
             break;
           }
 
