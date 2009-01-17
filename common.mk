@@ -122,8 +122,6 @@ BOOTSTRAPRUBY = $(BASERUBY)
 
 COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) -rrbconfig $(srcdir)/tool/compile_prelude.rb
 
-VCS           = svn
-
 all: encs exts
 exts: $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS)
@@ -717,8 +715,7 @@ gdb-ruby: $(PROGRAM) run.gdb PHONY
 dist:
 	$(BASERUBY) $(srcdir)/tool/make-snapshot tmp $(RELNAME)
 
-up:
-	@$(VCS) up "$(srcdir)"
+up::
 	-@$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(srcdir)/revision.h"
 
 help: PHONY

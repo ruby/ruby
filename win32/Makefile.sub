@@ -277,6 +277,17 @@ arch_hdrdir = $(EXTOUT)/include/$(arch)
 hdrdir = $(srcdir)/include
 VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/enc;$(srcdir)/missing;$(win_srcdir)
 
+!if exist($(srcdir)/.svn)
+VCS = svn
+VCSUP = $(VCS) up $(SVNUPOPTIONS)
+!else if exist($(srcdir)/.git/svn)
+VCS = git svn
+VCSUP = $(VCS) rebase $(GITSVNREBASEOPTIONS)
+!else if exist($(srcdir)/.git)
+VCS = git
+VCSUP = $(VCS) pull $(GITPULLOPTIONS)
+!endif
+
 all: $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(srcdir)/common.mk
 
 ruby: $(PROGRAM)
@@ -284,6 +295,9 @@ rubyw: $(WPROGRAM)
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc
+
+up::
+	@(set LC_TIME=C & $(VCSUP) "$(srcdir)")
 
 !include $(srcdir)/common.mk
 

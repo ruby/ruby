@@ -2137,7 +2137,20 @@ AC_SUBST(BUILTIN_TRANSOBJS)
 
 AC_CONFIG_FILES($FIRSTMAKEFILE)
 AC_CONFIG_FILES(Makefile, [{
-	sed '/^MISSING/s/\$U\././g' Makefile
+	if test -d "$srcdir/.svn"; then
+	    VCS='svn'
+	    VCSUP='$(VCS) up $(SVNUPOPTIONS)'
+	elif test -d "$srcdir/.git/svn"; then
+	    VCS='git svn'
+	    VCSUP='$(VCS) rebase $(GITSVNREBASEOPTIONS)'
+	elif test -d "$srcdir/.git"; then
+	    VCS='git'
+	    VCSUP='$(VCS) pull $(GITPULLOPTIONS)'
+	else
+	    VCS='echo cannot'
+	    VCSUP='$(VCS)'
+	fi
+	sed '/^MISSING/s/\$U\././g;/^VCS *=/s#@VCS@#'"$VCS"'#;/^VCSUP *=/s#@VCSUP@#'"$VCSUP"'#' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
 	test "$RUBY_INSTALL_NAME$EXEEXT" = ruby || echo 'ruby: $(PROGRAM);'
 	if test "$gnumake" != yes; then

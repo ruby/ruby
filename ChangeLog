@@ -1,9 +1,27 @@
+Sat Jan 17 19:33:48 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* configure.in (VCSUP): fixed the cases for git-svn or git.
+
+	* win32/Makefile.sub (VCSUP): ditto.
+
+	* Makefile.in (up): `cd' is necessary for git and git-svn.
+
+Fri Jan 16 18:51:11 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (up): tell nmake that need to run command via
+	  shell.
+
+Fri Jan 16 17:33:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (Makefile): set VCS and VCSUP to support `git svn'
+	  and git.
+
+	* Makefile.in, win32/Makefile.sub (up): split from common.mk.
+
 Mon Dec 29 22:37:57 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_pack): template f should not accept non float
 	  values.  [ruby-dev:37656]
-
-	* object.c (rb_to_float): new function to type check floats.
 
 Fri Jan 16 18:43:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
