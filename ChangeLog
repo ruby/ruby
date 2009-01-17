@@ -1,3 +1,8 @@
+Sat Jan 17 11:12:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (cont_restore_0): padding size doesn't need to be large
+	  if alloca is used.  suppress warnings.
+
 Sat Jan 17 11:12:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_dump.c (vm_stack_dump_each): initialized at declarations.

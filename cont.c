@@ -403,7 +403,11 @@ static void
 cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 {
     if (cont->machine_stack_src) {
+#ifdef HAVE_ALLOCA
+#define STACK_PAD_SIZE 1
+#else
 #define STACK_PAD_SIZE 1024
+#endif
 	VALUE space[STACK_PAD_SIZE];
 
 #if !STACK_GROW_DIRECTION
@@ -411,9 +415,11 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 	    /* Stack grows downward */
 #endif
 #if STACK_GROW_DIRECTION <= 0
-	    if (&space[0] > cont->machine_stack_src) {
+	    volatile VALUE *const end = cont->machine_stack_src;
+	    if (&space[0] > end) {
 # ifdef HAVE_ALLOCA
-		ALLOCA_N(VALUE, &space[0] - cont->machine_stack_src);
+		volatile VALUE *sp = ALLOCA_N(VALUE, &space[0] - end);
+		(void)sp;
 # else
 		cont_restore_0(cont, &space[0]);
 # endif
@@ -425,9 +431,11 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 	    /* Stack grows upward */
 #endif
 #if STACK_GROW_DIRECTION >= 0
-	    if (&space[STACK_PAD_SIZE] < cont->machine_stack_src + cont->machine_stack_size) {
+	    volatile VALUE *const end = cont->machine_stack_src + cont->machine_stack_size;
+	    if (&space[STACK_PAD_SIZE] < end) {
 # ifdef HAVE_ALLOCA
-		ALLOCA_N(VALUE, cont->machine_stack_src + cont->machine_stack_size - &space[STACK_PAD_SIZE]);
+		volatile VALUE *sp = ALLOCA_N(VALUE, end - &space[STACK_PAD_SIZE]);
+		(void)sp;
 # else
 		cont_restore_0(cont, &space[STACK_PAD_SIZE-1]);
 # endif
