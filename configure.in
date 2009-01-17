@@ -1400,6 +1400,14 @@ if test "$with_dln_a_out" != yes; then
 	darwin*)	: ${LDSHARED='cc -dynamic -bundle -undefined suppress -flat_namespace'}
 			: ${LDFLAGS=""}
 			: ${LIBPATHENV=DYLD_LIBRARY_PATH}
+			# /usr/local/include is always searched for
+			# some reason, but /usr/local/lib is not.
+			hdr=`find /usr/local/include -name \*.h -type f | sed 's:^/usr/local/include/::;q'`
+			if test -n "$hdr" && $CC -E -include "$hdr" -xc /dev/null | fgrep -q "$hdr"; then
+			    $CC -print-search-dirs | grep -q '^libraries:.*:/usr/local/lib/*' ||
+			    echo " $LDFLAGS " | grep -q ' -L */usr/local/lib/* ' ||
+			    LDFLAGS="${LDFLAGS:+$LDFLAGS }-L/usr/local/lib"
+			fi
 			rb_cv_dlopen=yes ;;
         aix*)           if test "$GCC" = yes; then
 			    : ${LDSHARED='$(CC) -shared'}
