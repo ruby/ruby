@@ -1,3 +1,7 @@
+Sat Jan 17 12:11:06 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* marshal.c (dump_ensure, load_ensure): should return values.
+
 Fri Jan 16 10:55:51 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (clone_method): should copy cbase in cref as well.

@@ -703,7 +703,7 @@ static VALUE
 dump_ensure(arg)
     struct dump_arg *arg;
 {
-    if (RBASIC(arg->str)->klass) return; /* ignore reentrant */
+    if (RBASIC(arg->str)->klass) return 0; /* ignore reentrant */
     st_free_table(arg->symbols);
     st_free_table(arg->data);
     if (arg->taint) {
@@ -1391,7 +1391,7 @@ static VALUE
 load_ensure(arg)
     struct load_arg *arg;
 {
-    if (RBASIC(arg->data)->klass) return; /* ignore reentrant */
+    if (RBASIC(arg->data)->klass) return 0; /* ignore reentrant */
     st_free_table(arg->symbols);
     return 0;
 }
