@@ -2172,10 +2172,10 @@ AC_CONFIG_FILES(Makefile, [{
 	    VCSUP='$(VCS) up $(SVNUPOPTIONS)'
 	elif test -d "$srcdir/.git/svn"; then
 	    VCS='git svn'
-	    VCSUP='$(VCS) up $(SVNUPOPTIONS)'
+	    VCSUP='$(VCS) rebase $(GITSVNREBASEOPTIONS)'
 	elif test -d "$srcdir/.git"; then
 	    VCS='git'
-	    VCSUP='$(VCS) up $(GITUPOPTIONS)'
+	    VCSUP='$(VCS) pull $(GITPULLOPTIONS)'
 	else
 	    VCS='echo cannot'
 	    VCSUP='$(VCS)'

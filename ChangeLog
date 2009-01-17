@@ -1,3 +1,11 @@
+Sat Jan 17 19:33:48 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* configure.in (VCSUP): fixed the cases for git-svn or git.
+
+	* win32/Makefile.sub (VCSUP): ditto.
+
+	* Makefile.in (up): `cd' is necessary for git and git-svn.
+
 Sat Jan 17 19:16:16 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: generate a header file for generated
