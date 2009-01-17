@@ -1,3 +1,9 @@
+Sat Jan 17 11:12:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_dump.c (vm_stack_dump_each): initialized at declarations.
+
+	* vm_dump.c (rb_vm_bugreport): constified to suppress a warning.
+
 Sat Jan 17 19:33:48 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* configure.in (VCSUP): fixed the cases for git-svn or git.
