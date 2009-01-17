@@ -1,3 +1,7 @@
+Sat Jan 17 22:01:15 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb: new file.
+
 Sat Jan 17 19:33:48 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* configure.in (VCSUP): fixed the cases for git-svn or git.

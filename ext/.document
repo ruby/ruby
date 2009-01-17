@@ -21,6 +21,7 @@ socket/unixsocket.c
 socket/unixserver.c
 socket/socket.c
 socket/constants.c
+socket/lib/socket.rb
 stringio/stringio.c
 strscan/strscan.c
 win32ole

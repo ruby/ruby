@@ -74,6 +74,7 @@ with all sufficient information, see the ChangeLog file.
 * socket
   * Socket.pair and UNIXSocket.pair takes a block.
   * AddrInfo class
+  * Socket.{tcp,tcp_server_loop,unix,unix_server_loop}
   * Socket#{recvfrom,recvfrom_nonblock,accept,accept_nonblock,sysaccept}
     returns a sender address as AddrInfo object instead of a string.
   * BasicSocket#local_address
