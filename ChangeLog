@@ -1,3 +1,7 @@
+Sat Jan 17 14:52:27 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: don't cause an error for duplicate names.
+
 Sat Jan 17 12:46:17 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket: split files for each class.

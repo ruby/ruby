@@ -38,7 +38,10 @@ h = {}
 DATA.each_line {|s|
   name, default_value = s.scan(/\S+/)
   next unless name && name[0] != ?#
-  raise "duplicate name: #{name}" if h.has_key? name
+  if h.has_key? name
+    warn "#{$.}: warning: duplicate name: #{name}"
+    next
+  end
   h[name] = default_value
 }
 DEFS = h.to_a
@@ -465,6 +468,7 @@ SO_ATTACH_FILTER
 SO_DETACH_FILTER
 SO_PEERNAME
 SO_TIMESTAMP
+SO_BINTIME
 
 SOPRI_INTERACTIVE
 SOPRI_NORMAL
