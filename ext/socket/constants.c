@@ -14,7 +14,7 @@ static void sock_define_const(const char *name, int value, VALUE mConst);
 static void sock_define_uconst(const char *name, unsigned int value, VALUE mConst);
 #define sock_define_const(name, value) sock_define_const(name, value, mConst)
 #define sock_define_uconst(name, value) sock_define_uconst(name, value, mConst)
-#include "constants.h"
+#include "constdefs.c"
 #undef sock_define_const
 #undef sock_define_uconst
 

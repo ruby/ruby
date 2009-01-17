@@ -142,6 +142,7 @@ int Rconnect();
 #endif
 #endif
 
+#include "constdefs.h"
 
 #define BLOCKING_REGION(func, arg) (long)rb_thread_blocking_region((func), (arg), RUBY_UBF_IO, 0)
 
@@ -152,18 +153,11 @@ char *sockaddr_string_value_ptr(volatile VALUE *);
 
 NORETURN(void raise_socket_error(const char *, int));
 
-int family_to_int(char *str, int len, int *valp);
-
 int family_arg(VALUE domain);
 int socktype_arg(VALUE type);
 int level_arg(VALUE level);
 int optname_arg(int level, VALUE optname);
 int shutdown_how_arg(VALUE how);
-
-ID intern_protocol_family(int val);
-ID intern_socktype(int val);
-ID intern_ipproto(int val);
-ID intern_family(int val);
 
 int rb_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res);
 int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);

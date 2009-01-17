@@ -1,9 +1,9 @@
 SOCK_HEADERS = rubysocket.h $(hdrdir)/ruby/ruby.h $(arch_hdrdir)/ruby/config.h \
 	$(hdrdir)/ruby/defines.h $(hdrdir)/ruby/io.h \
-	sockport.h constants.h
+	sockport.h constdefs.h
 
 init.o: init.c $(SOCK_HEADERS)
-constants.o: constants.c $(SOCK_HEADERS)
+constants.o: constants.c constdefs.c $(SOCK_HEADERS)
 basicsocket.o: basicsocket.c $(SOCK_HEADERS)
 socket.o: socket.c $(SOCK_HEADERS)
 ipsocket.o: ipsocket.c $(SOCK_HEADERS)
@@ -18,6 +18,6 @@ raddrinfo.o: raddrinfo.c $(SOCK_HEADERS)
 getnameinfo.o: getnameinfo.c $(arch_hdrdir)/ruby/config.h addrinfo.h sockport.h
 getaddrinfo.o: getaddrinfo.c $(arch_hdrdir)/ruby/config.h addrinfo.h sockport.h
 
-constants.h: $(srcdir)/mkconstants.rb
-	@echo "generating constants.h"
-	@$(RUBY) $(srcdir)/mkconstants.rb -o $@
+constdefs.h constdefs.c : $(srcdir)/mkconstants.rb
+	@echo "generating constant definitions"
+	@$(RUBY) $(srcdir)/mkconstants.rb -H constdefs.h -o constdefs.c

@@ -1,3 +1,15 @@
+Sat Jan 17 19:16:16 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: generate a header file for generated
+	  functions.
+
+	* ext/socket/rubysocket.h: include constdefs.h.  don't declare
+	  generated functions.
+
+	* ext/socket/constants.c: include constdefs.c instead of constants.h.
+
+	* ext/socket/depend: dependency updated.
+
 Sat Jan 17 17:58:22 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/irb/xmp.rb: multilingualizes XMP::StringInputMethod.

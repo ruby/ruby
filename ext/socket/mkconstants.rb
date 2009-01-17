@@ -13,6 +13,11 @@ opt.def_option('-o FILE', 'specify output file') {|filename|
   opt_o = filename
 }
 
+opt_H = nil
+opt.def_option('-H FILE', 'specify output header file') {|filename|
+  opt_H = filename
+}
+
 C_ESC = {
   "\\" => "\\\\",
   '"' => '\"',
@@ -132,6 +137,16 @@ def each_names_with_len(pat, prefix_optional=nil)
   }
 end
 
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int_decl(funcname, pat, prefix_optional, guard=nil)")
+%if guard
+#ifdef <%=guard%>
+int <%=funcname%>(char *str, int len, int *valp);
+#endif
+%else
+int <%=funcname%>(char *str, int len, int *valp);
+%end
+EOS
+
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int_func_in_guard(funcname, pat, prefix_optional, guard=nil)")
 int
 <%=funcname%>(char *str, int len, int *valp)
@@ -163,6 +178,13 @@ ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int_func(funcname, pa
 %end
 EOS
 
+NAME_TO_INT_DEFS = []
+def def_name_to_int(funcname, pat, prefix_optional, guard=nil)
+  decl = gen_name_to_int_decl(funcname, pat, prefix_optional, guard)
+  func = gen_name_to_int_func(funcname, pat, prefix_optional, guard)
+  NAME_TO_INT_DEFS << [decl, func]
+end
+
 def reverse_each_name_with_prefix_optional(pat, prefix_pat)
   reverse_each_name(pat) {|n|
     yield n, n
@@ -174,7 +196,6 @@ def reverse_each_name_with_prefix_optional(pat, prefix_pat)
     }
   end
 end
-
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name_hash(hash_var, pat, prefix_pat)")
     <%=hash_var%> = st_init_numtable();
@@ -196,6 +217,10 @@ ID
 }
 EOS
 
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_int_to_name_decl(func_name, hash_var)")
+ID <%=func_name%>(int val);
+EOS
+
 INTERN_DEFS = []
 def def_intern(func_name, pat, prefix_optional=nil)
   prefix_pat = nil
@@ -207,11 +232,22 @@ def def_intern(func_name, pat, prefix_optional=nil)
     end
   end
   hash_var = "#{func_name}_hash"
-  decl = "static st_table *#{hash_var};"
+  vardef = "static st_table *#{hash_var};"
   gen_hash = gen_int_to_name_hash(hash_var, pat, prefix_pat)
+  decl = gen_int_to_name_decl(func_name, hash_var)
   func = gen_int_to_name_func(func_name, hash_var)
-  INTERN_DEFS << [decl, gen_hash, func]
+  INTERN_DEFS << [vardef, gen_hash, decl, func]
 end
+
+def_name_to_int("family_to_int", /\A(AF_|PF_)/, "AF_")
+def_name_to_int("socktype_to_int", /\ASOCK_/, "SOCK_")
+def_name_to_int("level_to_int", /\A(SOL_SOCKET\z|IPPROTO_)/, /\A(SOL_|IPPROTO_)/)
+def_name_to_int("so_optname_to_int", /\ASO_/, "SO_")
+def_name_to_int("ip_optname_to_int", /\AIP_/, "IP_")
+def_name_to_int("ipv6_optname_to_int", /\AIPV6_/, "IPV6_", "IPPROTO_IPV6")
+def_name_to_int("tcp_optname_to_int", /\ATCP_/, "TCP_")
+def_name_to_int("udp_optname_to_int", /\AUDP_/, "UDP_")
+def_name_to_int("shutdown_how_to_int", /\ASHUT_/, "SHUT_")
 
 def_intern('intern_family',  /\AAF_/)
 def_intern('intern_protocol_family',  /\APF_/)
@@ -220,28 +256,32 @@ def_intern('intern_ipproto',  /\AIPPROTO_/)
 
 result << ERB.new(<<'EOS', nil, '%').result(binding)
 
-<%= INTERN_DEFS.map {|decl, gen_hash, func| decl }.join("\n") %>
+<%= INTERN_DEFS.map {|vardef, gen_hash, decl, func| vardef }.join("\n") %>
 
 static void
 init_constants(VALUE mConst)
 {
 <%= gen_const_defs %>
-<%= INTERN_DEFS.map {|decl, gen_hash, func| gen_hash }.join("\n") %>
+<%= INTERN_DEFS.map {|vardef, gen_hash, decl, func| gen_hash }.join("\n") %>
 }
 
-<%= gen_name_to_int_func("family_to_int", /\A(AF_|PF_)/, "AF_") %>
-<%= gen_name_to_int_func("socktype_to_int", /\ASOCK_/, "SOCK_") %>
-<%= gen_name_to_int_func("level_to_int", /\A(SOL_SOCKET\z|IPPROTO_)/, /\A(SOL_|IPPROTO_)/) %>
-<%= gen_name_to_int_func("so_optname_to_int", /\ASO_/, "SO_") %>
-<%= gen_name_to_int_func("ip_optname_to_int", /\AIP_/, "IP_") %>
-<%= gen_name_to_int_func("ipv6_optname_to_int", /\AIPV6_/, "IPV6_", "IPPROTO_IPV6") %>
-<%= gen_name_to_int_func("tcp_optname_to_int", /\ATCP_/, "TCP_") %>
-<%= gen_name_to_int_func("udp_optname_to_int", /\AUDP_/, "UDP_") %>
-<%= gen_name_to_int_func("shutdown_how_to_int", /\ASHUT_/, "SHUT_") %>
+<%= NAME_TO_INT_DEFS.map {|decl, func| func }.join("\n") %>
 
-<%= INTERN_DEFS.map {|decl, gen_hash, func| func }.join("\n") %>
+<%= INTERN_DEFS.map {|vardef, gen_hash, decl, func| func }.join("\n") %>
 
 EOS
+
+header_result = ERB.new(<<'EOS', nil, '%').result(binding)
+<%= NAME_TO_INT_DEFS.map {|decl, func| decl }.join("\n") %>
+
+<%= INTERN_DEFS.map {|vardef, gen_hash, decl, func| decl }.join("\n") %>
+EOS
+
+if opt_H
+  File.open(opt_H, 'w') {|f|
+    f << header_result
+  }
+end
 
 if opt_o
   File.open(opt_o, 'w') {|f|
