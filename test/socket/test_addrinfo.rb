@@ -37,6 +37,8 @@ class TestSocketAddrInfo < Test::Unit::TestCase
   def test_addrinfo_ip_unpack
     ai = AddrInfo.tcp("127.0.0.1", 80)
     assert_equal(["127.0.0.1", 80], ai.ip_unpack)
+    assert_equal("127.0.0.1", ai.ip_address)
+    assert_equal(80, ai.ip_port)
   end
 
   def test_addrinfo_new_inet
@@ -299,6 +301,8 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     def test_addrinfo_ip_unpack_inet6
       ai = AddrInfo.tcp("::1", 80)
       assert_equal(["::1", 80], ai.ip_unpack)
+      assert_equal("::1", ai.ip_address)
+      assert_equal(80, ai.ip_port)
     end
 
     def test_marshal_inet6

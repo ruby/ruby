@@ -1520,6 +1520,70 @@ addrinfo_ip_unpack(VALUE self)
     return ret;
 }
 
+/*
+ * call-seq:
+ *   addrinfo.ip_address => string
+ *
+ * Returns the IP address as a string.
+ *
+ *   AddrInfo.tcp("127.0.0.1", 80).ip_address    #=> "127.0.0.1"
+ *   AddrInfo.tcp("::1", 80).ip_address          #=> "::1"
+ */
+static VALUE
+addrinfo_ip_address(VALUE self)
+{
+    rb_addrinfo_t *rai = get_addrinfo(self);
+    int family = ai_get_afamily(rai);
+    VALUE vflags;
+    VALUE ret;
+
+    if (!IS_IP_FAMILY(family))
+	rb_raise(rb_eSocket, "need IPv4 or IPv6 address");
+
+    vflags = INT2NUM(NI_NUMERICHOST|NI_NUMERICSERV);
+    ret = addrinfo_getnameinfo(1, &vflags, self);
+    return rb_ary_entry(ret, 0);
+}
+
+/*
+ * call-seq:
+ *   addrinfo.ip_port => port
+ *
+ * Returns the port number as an integer.
+ *
+ *   AddrInfo.tcp("127.0.0.1", 80).ip_port    #=> 80
+ *   AddrInfo.tcp("::1", 80).ip_port          #=> 80
+ */
+static VALUE
+addrinfo_ip_port(VALUE self)
+{
+    rb_addrinfo_t *rai = get_addrinfo(self);
+    int family = ai_get_afamily(rai);
+    int port;
+
+    if (!IS_IP_FAMILY(family))
+	rb_raise(rb_eSocket, "need IPv4 or IPv6 address");
+
+    switch (family) {
+      case AF_INET:
+        if (rai->sockaddr_len != sizeof(struct sockaddr_in))
+            rb_raise(rb_eSocket, "unexpected sockaddr size for IPv4");
+        port = ntohs(((struct sockaddr_in *)&rai->addr)->sin_port);
+        break;
+
+      case AF_INET6:
+        if (rai->sockaddr_len != sizeof(struct sockaddr_in6))
+            rb_raise(rb_eSocket, "unexpected sockaddr size for IPv6");
+        port = ntohs(((struct sockaddr_in6 *)&rai->addr)->sin6_port);
+        break;
+
+      default:
+	rb_raise(rb_eSocket, "need IPv4 or IPv6 address");
+    }
+
+    return INT2NUM(port);
+}
+
 #ifdef HAVE_SYS_UN_H
 /*
  * call-seq:
@@ -1768,6 +1832,8 @@ Init_addrinfo(void)
 
     rb_define_method(rb_cAddrInfo, "ip?", addrinfo_ip_p, 0);
     rb_define_method(rb_cAddrInfo, "ip_unpack", addrinfo_ip_unpack, 0);
+    rb_define_method(rb_cAddrInfo, "ip_address", addrinfo_ip_address, 0);
+    rb_define_method(rb_cAddrInfo, "ip_port", addrinfo_ip_port, 0);
     rb_define_method(rb_cAddrInfo, "ipv4?", addrinfo_ipv4_p, 0);
     rb_define_method(rb_cAddrInfo, "ipv6?", addrinfo_ipv6_p, 0);
     rb_define_method(rb_cAddrInfo, "unix?", addrinfo_unix_p, 0);
