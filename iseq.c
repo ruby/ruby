@@ -447,7 +447,7 @@ iseq_s_load(int argc, VALUE *argv, VALUE self)
 }
 
 VALUE
-ruby_iseq_load(VALUE data, VALUE parent, VALUE opt)
+rb_iseq_load(VALUE data, VALUE parent, VALUE opt)
 {
     return iseq_load(rb_cISeq, data, parent, opt);
 }

@@ -1,3 +1,8 @@
+Mon Jan 19 04:06:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (rb_iseq_load): renamed from ruby_iseq_load, since it is
+	  for C extensions or the ruby core.  [ruby-core:21407]
+
 Mon Jan 19 03:06:22 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c (str_transcode0): fix: :xml option doesn't

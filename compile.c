@@ -5077,7 +5077,7 @@ iseq_build_exception(rb_iseq_t *iseq, struct st_table *labels_table,
 	    eiseqval = 0;
 	}
 	else {
-	    eiseqval = ruby_iseq_load(ptr[1], iseq->self, Qnil);
+	    eiseqval = rb_iseq_load(ptr[1], iseq->self, Qnil);
 	}
 
 	lstart = register_label(iseq, labels_table, ptr[2]);
@@ -5161,7 +5161,7 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			{
 			    if (op != Qnil) {
 				if (TYPE(op) == T_ARRAY) {
-				    argv[j] = ruby_iseq_load(op, iseq->self, Qnil);
+				    argv[j] = rb_iseq_load(op, iseq->self, Qnil);
 				}
 				else if (CLASS_OF(op) == rb_cISeq) {
 				    argv[j] = op;
