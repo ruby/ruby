@@ -1,3 +1,7 @@
+Sun Jan 18 14:29:52 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/unixsocket.c: redandant #ifdef removed.
+
 Sun Jan 18 03:33:23 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (addrinfo_mdump): don't use symbol.

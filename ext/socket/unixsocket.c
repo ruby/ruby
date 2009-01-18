@@ -75,9 +75,7 @@ init_unixsock(VALUE sock, VALUE path, int server)
 
     return sock;
 }
-#endif
 
-#ifdef HAVE_SYS_UN_H
 /*
  * call-seq:
  *   UNIXSocket.new(path) => unixsocket
@@ -441,9 +439,7 @@ unix_peeraddr(VALUE sock)
 	rb_sys_fail("getpeername(2)");
     return unixaddr(&addr, len);
 }
-#endif
 
-#ifdef HAVE_SYS_UN_H
 /*
  * call-seq:
  *   UNIXSocket.pair([type [, protocol]])       => [unixsocket1, unixsocket2]
