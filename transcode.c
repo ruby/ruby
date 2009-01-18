@@ -2457,7 +2457,8 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     if (argc == 0) {
 	arg1 = rb_enc_default_internal();
 	if (NIL_P(arg1)) {
-	    return -1;
+	    if (!ecflags) return -1;
+	    arg1 = rb_obj_encoding(str);
 	}
 	ecflags |= ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE;
     }

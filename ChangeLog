@@ -1,3 +1,8 @@
+Mon Jan 19 03:06:22 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* transcode.c (str_transcode0): fix: :xml option doesn't
+	  work on str.encode([options]) form without default_internal.
+
 Sun Jan 18 16:56:46 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (addrinfo_inspect_sockaddr): new
