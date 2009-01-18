@@ -41,6 +41,11 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     assert_equal(80, ai.ip_port)
   end
 
+  def test_addrinfo_inspect_sockaddr
+    ai = AddrInfo.tcp("127.0.0.1", 80)
+    assert_equal("127.0.0.1:80", ai.inspect_sockaddr)
+  end
+
   def test_addrinfo_new_inet
     ai = AddrInfo.new(["AF_INET", 46102, "localhost.localdomain", "127.0.0.2"])
     assert_equal([46102, "127.0.0.2"], Socket.unpack_sockaddr_in(ai))
@@ -305,6 +310,11 @@ class TestSocketAddrInfo < Test::Unit::TestCase
       assert_equal(80, ai.ip_port)
     end
 
+    def test_addrinfo_inspect_sockaddr_inet6
+      ai = AddrInfo.tcp("::1", 80)
+      assert_equal("[::1]:80", ai.inspect_sockaddr)
+    end
+
     def test_marshal_inet6
       ai1 = AddrInfo.tcp("::1", 80)
       ai2 = Marshal.load(Marshal.dump(ai1))
@@ -332,6 +342,11 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     def test_addrinfo_unix_path
       ai = AddrInfo.unix("/tmp/sock1")
       assert_equal("/tmp/sock1", ai.unix_path)
+    end
+
+    def test_addrinfo_inspect_sockaddr_unix
+      ai = AddrInfo.unix("/tmp/test_addrinfo_inspect_sockaddr_unix")
+      assert_equal("/tmp/test_addrinfo_inspect_sockaddr_unix", ai.inspect_sockaddr)
     end
 
     def test_addrinfo_new_unix

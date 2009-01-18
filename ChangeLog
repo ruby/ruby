@@ -1,3 +1,11 @@
+Sun Jan 18 16:56:46 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (addrinfo_inspect_sockaddr): new
+	  method AddrInfo#inspect_sockaddr.
+	  (inspect_sockaddr): extracted from addrinfo_inspect.
+	  (addrinfo_inspect): use inspect_sockaddr.
+	  (Init_addrinfo): define the new method.
+
 Sun Jan 18 16:46:37 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (addrinfo_ip_address): new method

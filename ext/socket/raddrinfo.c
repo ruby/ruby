@@ -879,24 +879,10 @@ ai_get_afamily(rb_addrinfo_t *rai)
     return get_afamily((struct sockaddr *)&rai->addr, rai->sockaddr_len);
 }
 
-/*
- * call-seq:
- *   addrinfo.inspect => string
- *
- * returns a string which shows addrinfo in human-readable form.
- *
- *   AddrInfo.tcp("localhost", 80).inspect #=> "#<AddrInfo: 127.0.0.1:80 TCP (localhost:80)>"
- *   AddrInfo.unix("/tmp/sock").inspect    #=> "#<AddrInfo: /tmp/sock SOCK_STREAM>"
- *
- */
 static VALUE
-addrinfo_inspect(VALUE self)
+inspect_sockaddr(VALUE addrinfo, VALUE ret)
 {
-    rb_addrinfo_t *rai = get_addrinfo(self);
-    int internet_p;
-    VALUE ret;
-
-    ret = rb_sprintf("#<%s: ", rb_obj_classname(self));
+    rb_addrinfo_t *rai = get_addrinfo(addrinfo);
 
     if (rai->sockaddr_len == 0) {
         rb_str_cat2(ret, "empty-sockaddr");
@@ -1023,6 +1009,30 @@ addrinfo_inspect(VALUE self)
         }
     }
 
+    return ret;
+}
+
+/*
+ * call-seq:
+ *   addrinfo.inspect => string
+ *
+ * returns a string which shows addrinfo in human-readable form.
+ *
+ *   AddrInfo.tcp("localhost", 80).inspect #=> "#<AddrInfo: 127.0.0.1:80 TCP (localhost:80)>"
+ *   AddrInfo.unix("/tmp/sock").inspect    #=> "#<AddrInfo: /tmp/sock SOCK_STREAM>"
+ *
+ */
+static VALUE
+addrinfo_inspect(VALUE self)
+{
+    rb_addrinfo_t *rai = get_addrinfo(self);
+    int internet_p;
+    VALUE ret;
+
+    ret = rb_sprintf("#<%s: ", rb_obj_classname(self));
+
+    inspect_sockaddr(self, ret);
+
     if (rai->pfamily && ai_get_afamily(rai) != rai->pfamily) {
         ID id = intern_protocol_family(rai->pfamily);
         if (id)
@@ -1079,6 +1089,23 @@ addrinfo_inspect(VALUE self)
 
     rb_str_buf_cat2(ret, ">");
     return ret;
+}
+
+/*
+ * call-seq:
+ *   addrinfo.inspect_sockaddr => string
+ *
+ * returns a string which shows the sockaddr in _addrinfo_ with human-readable form.
+ *
+ *   AddrInfo.tcp("localhost", 80).inspect_sockaddr     #=> "127.0.0.1:80"
+ *   AddrInfo.tcp("ip6-localhost", 80).inspect_sockaddr #=> "[::1]:80"
+ *   AddrInfo.unix("/tmp/sock").inspect_sockaddr        #=> "/tmp/sock"
+ *
+ */
+static VALUE
+addrinfo_inspect_sockaddr(VALUE self)
+{
+    return inspect_sockaddr(self, rb_str_new("", 0));
 }
 
 /* :nodoc: */
@@ -1816,6 +1843,7 @@ Init_addrinfo(void)
     rb_define_alloc_func(rb_cAddrInfo, addrinfo_s_allocate);
     rb_define_method(rb_cAddrInfo, "initialize", addrinfo_initialize, -1);
     rb_define_method(rb_cAddrInfo, "inspect", addrinfo_inspect, 0);
+    rb_define_method(rb_cAddrInfo, "inspect_sockaddr", addrinfo_inspect_sockaddr, 0);
     rb_define_singleton_method(rb_cAddrInfo, "getaddrinfo", addrinfo_s_getaddrinfo, -1);
     rb_define_singleton_method(rb_cAddrInfo, "ip", addrinfo_s_ip, 1);
     rb_define_singleton_method(rb_cAddrInfo, "tcp", addrinfo_s_tcp, 2);
