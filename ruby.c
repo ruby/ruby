@@ -458,7 +458,9 @@ require_libraries(struct cmdline_options *opt)
     ID require;
     rb_thread_t *th = GET_THREAD();
     rb_block_t *prev_base_block = th->base_block;
+    int prev_parse_in_eval = th->parse_in_eval;
     th->base_block = 0;
+    th->parse_in_eval = 0;
 
     Init_ext();		/* should be called here for some reason :-( */
     CONST_ID(require, "require");
@@ -467,6 +469,8 @@ require_libraries(struct cmdline_options *opt)
 	rb_funcall2(rb_vm_top_self(), require, 1, &feature);
     }
     opt->req_list = 0;
+
+    th->parse_in_eval = prev_parse_in_eval;
     th->base_block = prev_base_block;
 }
 
