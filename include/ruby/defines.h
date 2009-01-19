@@ -266,8 +266,8 @@ void rb_ia64_flushrs(void);
 #define RUBY_PLATFORM "unknown-unknown"
 #endif
 
-#ifndef RUBY_ALIAS_FUNCTION2
-#define RUBY_ALIAS_FUNCTION2(type, prot, name, args) \
+#ifndef RUBY_ALIAS_FUNCTION_TYPE
+#define RUBY_ALIAS_FUNCTION_TYPE(type, prot, name, args) \
     type prot {return name args;}
 #endif
 #ifndef RUBY_ALIAS_FUNCTION_VOID
@@ -276,7 +276,7 @@ void rb_ia64_flushrs(void);
 #endif
 #ifndef RUBY_ALIAS_FUNCTION
 #define RUBY_ALIAS_FUNCTION(prot, name, args) \
-    RUBY_ALIAS_FUNCTION2(VALUE, prot, name, args)
+    RUBY_ALIAS_FUNCTION_TYPE(VALUE, prot, name, args)
 #endif
 
 #if defined(__cplusplus)

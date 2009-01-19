@@ -473,10 +473,10 @@ if test "$GCC" = yes; then
 		[rb_cv_gcc_function_alias=$a; break])
 	done])
     if test "$rb_cv_gcc_function_alias" != no; then
-	AC_DEFINE_UNQUOTED([RUBY_ALIAS_FUNCTION2(type, prot, name, args)],
+	AC_DEFINE_UNQUOTED([RUBY_ALIAS_FUNCTION_TYPE(type, prot, name, args)],
 			   [type prot __attribute__(($rb_cv_gcc_function_alias(@%:@name)));])
 	AC_DEFINE_UNQUOTED([RUBY_ALIAS_FUNCTION_VOID(prot, name, args)],
-			   [RUBY_ALIAS_FUNCTION2(void, prot, name, args)])
+			   [RUBY_ALIAS_FUNCTION_TYPE(void, prot, name, args)])
     fi
 fi
 
