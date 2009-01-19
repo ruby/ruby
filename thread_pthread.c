@@ -741,8 +741,6 @@ get_ts(struct timespec *ts, unsigned long nsec)
     return ts;
 }
 
-int rb_signal_buff_size(void);
-
 static void *
 thread_timer(void *dummy)
 {
