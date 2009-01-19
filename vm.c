@@ -146,7 +146,7 @@ rb_vm_get_ruby_level_next_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
     return 0;
 }
 
-rb_control_frame_t *
+static rb_control_frame_t *
 vm_get_ruby_level_caller_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {

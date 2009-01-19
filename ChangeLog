@@ -1,3 +1,14 @@
+Mon Jan 19 11:46:39 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_eval.c, eval.c (rb_f_block_given_p): move definition of
+	  "iterator?" and "block_given?" to make static.
+
+	* vm.c (vm_get_ruby_level_caller_cfp): make it static.
+
+	* eval_intern.h, vm_insnhelper.c: move decl. of
+	  vm_get_ruby_level_caller_cfp()
+	  from eval_intern.h to vm_insnhelper.c.
+
 Mon Jan 19 11:27:39 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c: add a prefix "rb_" to exposed functions
