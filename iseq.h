@@ -13,11 +13,10 @@
 #define RUBY_COMPILE_H
 
 /* compile.c */
-VALUE ruby_iseq_compile(VALUE self, NODE *node);
-int ruby_iseq_translate_threaded_code(rb_iseq_t *iseq);
-VALUE ruby_insns_name_array(void);
-VALUE ruby_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
-			       VALUE exception, VALUE body);
+VALUE rb_iseq_compile_node(VALUE self, NODE *node);
+int rb_iseq_translate_threaded_code(rb_iseq_t *iseq);
+VALUE rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
+			     VALUE exception, VALUE body);
 
 /* iseq.c */
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);

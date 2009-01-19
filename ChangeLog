@@ -1,3 +1,25 @@
+Mon Jan 19 09:53:43 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c:
+	  rename ruby_iseq_disasm_insn() -> rb_iseq_disasm_insn().
+	  rename ruby_iseq_disasm() -> rb_iseq_disasm().
+
+	* compile.c:
+	  rename ruby_iseq_compile() -> rb_iseq_compile_node().
+	  rename ruby_iseq_translate_threaded_code() ->
+	         rb_iseq_translate_threaded_code().
+	  rename ruby_insns_name_array() -> rb_insns_name_array().
+	  rename ruby_iseq_build_from_ary() -> rb_iseq_build_from_ary().
+
+	* iseq.c, compile.c: remove ruby_insn_make_insn_table() and make
+	  static function insn_make_insn_table().
+
+	* iseq.h, ruby.c, vm.c, vm_core.h, vm_eval.c, vm_dump.c, 
+	  blockinlining.c: ditto.
+	  Rename strange "ruby_" prefix to "rb_" prefix.
+	  This changes may affect only core because renamed functions
+	  require a pointer of rb_iseq_t which is not exposed.
+
 Mon Jan 19 09:21:04 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/mkconstants.rb: define macros with default value in

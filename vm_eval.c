@@ -729,8 +729,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	th->base_block = 0;
 
 	if (0) {		/* for debug */
-	    extern VALUE ruby_iseq_disasm(VALUE);
-	    printf("%s\n", RSTRING_PTR(ruby_iseq_disasm(iseqval)));
+	    printf("%s\n", RSTRING_PTR(rb_iseq_disasm(iseqval)));
 	}
 
 	/* save new env */
