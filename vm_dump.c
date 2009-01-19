@@ -236,6 +236,7 @@ rb_vmdebug_stack_dump_th(VALUE thval)
     rb_vmdebug_stack_dump_raw(th, th->cfp);
 }
 
+#if VMDEBUG > 2
 static void
 vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 {
@@ -322,7 +323,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	rb_bug("unsupport frame type: %08lx", VM_FRAME_TYPE(cfp));
     }
 }
-
+#endif
 
 void
 rb_vmdebug_debug_print_register(rb_thread_t *th)
