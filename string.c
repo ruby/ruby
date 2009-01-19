@@ -1882,81 +1882,123 @@ rb_str_concat(VALUE str1, VALUE str2)
 #endif
 
 /* MurmurHash described in http://murmurhash.googlepages.com/ */
+#ifndef MURMUR
+#define MURMUR 1
+#endif
+
+#define MurmurMagic 0x7fd652ad
+
+static inline unsigned int
+murmur(unsigned int h, unsigned int k, int r)
+{
+    const unsigned int m = MurmurMagic;
+#if MURMUR == 1
+    h += k;
+    h *= m;
+    h ^= h >> r;
+#elif MURMUR == 2
+    k *= m;
+    k ^= k >> r;
+    k *= m;
+
+    h *= m;
+    h ^= k;
+#endif
+    return h;
+}
+
+static inline unsigned int
+murmur_finish(unsigned int h)
+{
+#if MURMUR == 1
+    h = murmur(h, 0, 10);
+    h = murmur(h, 0, 17);
+#elif MURMUR == 2
+    h ^= h >> 13;
+    h *= MurmurMagic;
+    h ^= h >> 15;
+#endif
+    return h;
+}
+
+#define murmur_step(h, k) murmur(h, k, 16)
+
 static unsigned int
 hash(const unsigned char * data, int len, unsigned int h)
 {
-    const unsigned int m = 0x7fd652ad;
-    const int r = 16;
+    uint32_t t = 0;
 
     h += 0xdeadbeef;
 
-    if (len >= 4) {
+#ifdef WORDS_BIGENDIAN
+# define SHIFT_OFFSET(i) ((i)*CHAR_BIT)
+#else
+# define SHIFT_OFFSET(i) (32-(i)*CHAR_BIT)
+#endif
+    if (len >= sizeof(uint32_t)) {
 #if !UNALIGNED_WORD_ACCESS
-	int align = (VALUE)data & 3;
+	int align = (VALUE)data % sizeof(uint32_t);
 	if (align) {
-	    uint32_t t = 0, d = 0;
+	    uint32_t d = 0;
 	    int sl, sr, pack;
 
 	    switch (align) {
 #ifdef WORDS_BIGENDIAN
 	      case 1: t |= data[2];
-	      case 2: t |= data[1] << 8;
-	      case 3: t |= data[0] << 16;
+	      case 2: t |= data[1] << CHAR_BIT;
+	      case 3: t |= data[0] << CHAR_BIT*2;
 #else
-	      case 1: t |= data[2] << 16;
-	      case 2: t |= data[1] << 8;
+	      case 1: t |= data[2] << CHAR_BIT*2;
+	      case 2: t |= data[1] << CHAR_BIT;
 	      case 3: t |= data[0];
 #endif
 	    }
 
 #ifdef WORDS_BIGENDIAN
-	    t >>= (8 * align) - 8;
+	    t >>= (CHAR_BIT * align) - CHAR_BIT;
 #else
-	    t <<= (8 * align);
+	    t <<= (CHAR_BIT * align);
 #endif
 
-	    data += 4-align;
-	    len -= 4-align;
+	    data += sizeof(uint32_t)-align;
+	    len -= sizeof(uint32_t)-align;
 
-	    sl = 8 * (4-align);
-	    sr = 8 * align;
+	    sl = CHAR_BIT * (sizeof(uint32_t)-align);
+	    sr = CHAR_BIT * align;
 
-	    while (len >= 4) {
+	    while (len >= sizeof(uint32_t)) {
 		d = *(uint32_t *)data;
 #ifdef WORDS_BIGENDIAN
 		t = (t << sr) | (d >> sl);
 #else
 		t = (t >> sr) | (d << sl);
 #endif
-		h += t;
-		h *= m;
-		h ^= h >> r;
+		h = murmur(h, t);
 		t = d;
-
-		data += 4;
-		len -= 4;
+		data += sizeof(uint32_t);
+		len -= sizeof(uint32_t);
 	    }
 
 	    pack = len < align ? len : align;
 	    d = 0;
 	    switch (pack) {
 #ifdef WORDS_BIGENDIAN
-	      case 3: d |= data[2] << 8;
-	      case 2: d |= data[1] << 16;
-	      case 1: d |= data[0] << 24;
-	      case 0:
-		h += (t << sr) | (d >> sl);
+	      case 3: d |= data[2] << CHAR_BIT;
+	      case 2: d |= data[1] << CHAR_BIT*2;
+	      case 1: d |= data[0] << CHAR_BIT*3;
 #else
-	      case 3: d |= data[2] << 16;
-	      case 2: d |= data[1] << 8;
+	      case 3: d |= data[2] << CHAR_BIT*2;
+	      case 2: d |= data[1] << CHAR_BIT;
 	      case 1: d |= data[0];
-	      case 0:
-		h += (t >> sr) | (d << sl);
 #endif
-		h *= m;
-		h ^= h >> r;
 	    }
+#ifdef WORDS_BIGENDIAN
+	    t = (t << sr) | (d >> sl);
+#else
+	    t = (t >> sr) | (d << sl);
+#endif
 
+	    h = murmur_step(h, t);
 	    data += pack;
 	    len -= pack;
 	}
@@ -1964,42 +2006,39 @@ hash(const unsigned char * data, int len, unsigned int h)
 #endif
 	{
 	    do {
-		h += *(uint32_t *)data;
-		h *= m;
-		h ^= h >> r;
-
-		data += 4;
-		len -= 4;
-	    } while (len >= 4);
+		h = murmur_step(h, *(uint32_t *)data);
+		data += sizeof(uint32_t);
+		len -= sizeof(uint32_t);
+	    } while (len >= sizeof(uint32_t));
 	}
     }
 
+    t = 0;
     switch(len) {
 #ifdef WORDS_BIGENDIAN
       case 3:
-	h += data[2] << 8;
+	t |= data[2] << CHAR_BIT;
       case 2:
-	h += data[1] << 16;
+	t |= data[1] << CHAR_BIT*2;
       case 1:
-	h += data[0] << 24;
+	t |= data[0] << CHAR_BIT*3;
 #else
       case 3:
-	h += data[2] << 16;
+	t |= data[2] << CHAR_BIT*2;
       case 2:
-	h += data[1] << 8;
+	t |= data[1] << CHAR_BIT;
       case 1:
-	h += data[0];
+	t |= data[0];
 #endif
-	h *= m;
-	h ^= h >> r;
+#if MURMUR == 1
+	h = murmur_step(h, t);
+#elif MURMUR1 == 2
+	h ^= t;
+	h *= MurmurMagic;
+#endif
     }
 
-    h *= m;
-    h ^= h >> 10;
-    h *= m;
-    h ^= h >> 17;
-
-    return h;
+    return murmur_finish(h);
 }
 
 int
