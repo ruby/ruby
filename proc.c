@@ -274,13 +274,13 @@ binding_clone(VALUE self)
     return bindval;
 }
 
-rb_control_frame_t *vm_get_ruby_level_next_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
+rb_control_frame_t *rb_vm_get_ruby_level_next_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 
 VALUE
 rb_binding_new(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = vm_get_ruby_level_next_cfp(th, th->cfp);
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
     VALUE bindval = binding_alloc(rb_cBinding);
     rb_binding_t *bind;
 
@@ -289,7 +289,7 @@ rb_binding_new(void)
     }
 
     GetBindingPtr(bindval, bind);
-    bind->env = vm_make_env_object(th, cfp);
+    bind->env = rb_vm_make_env_object(th, cfp);
     return bindval;
 }
 
@@ -385,7 +385,7 @@ proc_new(VALUE klass, int is_lambda)
 	}
     }
 
-    procval = vm_make_proc(th, block, klass);
+    procval = rb_vm_make_proc(th, block, klass);
 
     if (is_lambda) {
 	rb_proc_t *proc;
@@ -524,8 +524,8 @@ proc_call(int argc, VALUE *argv, VALUE procval)
 	}
     }
 
-    return vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
-			  argc, argv, blockptr);
+    return rb_vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
+			     argc, argv, blockptr);
 }
 
 VALUE
@@ -533,8 +533,8 @@ rb_proc_call(VALUE self, VALUE args)
 {
     rb_proc_t *proc;
     GetProcPtr(self, proc);
-    return vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
-			  RARRAY_LEN(args), RARRAY_PTR(args), 0);
+    return rb_vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
+			     RARRAY_LEN(args), RARRAY_PTR(args), 0);
 }
 
 VALUE
@@ -550,8 +550,8 @@ rb_proc_call_with_block(VALUE self, int argc, VALUE *argv, VALUE pass_procval)
 	block = &pass_proc->block;
     }
 
-    return vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
-			  argc, argv, block);
+    return rb_vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
+			     argc, argv, block);
 }
 
 /*

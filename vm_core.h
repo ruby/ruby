@@ -583,10 +583,10 @@ void rb_enable_interrupt(void);
 void rb_disable_interrupt(void);
 int rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, VALUE *klassp);
 
-VALUE vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
-		     int argc, const VALUE *argv, rb_block_t *blockptr);
-VALUE vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass);
-VALUE vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
+VALUE rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
+			int argc, const VALUE *argv, rb_block_t *blockptr);
+VALUE rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass);
+VALUE rb_vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
 
 void *rb_thread_call_with_gvl(void *(*func)(void *), void *data1);
 int ruby_thread_has_gvl_p(void);

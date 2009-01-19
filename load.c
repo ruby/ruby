@@ -315,7 +315,7 @@ rb_load(VALUE fname, int wrap)
 	rb_exc_raise(GET_THREAD()->errinfo);
     }
     if (state) {
-	vm_jump_tag_but_local_jump(state, Qundef);
+	rb_vm_jump_tag_but_local_jump(state, Qundef);
     }
 
     if (!NIL_P(GET_THREAD()->errinfo)) {

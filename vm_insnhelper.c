@@ -185,7 +185,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
 	    /* make Proc object */
 	    if (blockptr->proc == 0) {
 		rb_proc_t *proc;
-		blockval = vm_make_proc(th, blockptr, rb_cProc);
+		blockval = rb_vm_make_proc(th, blockptr, rb_cProc);
 		GetProcPtr(blockval, proc);
 		*block = &proc->block;
 	    }
@@ -397,7 +397,7 @@ vm_call_bmethod(rb_thread_t *th, ID id, VALUE procval, VALUE recv,
     (cfp-2)->method_class = klass;
 
     GetProcPtr(procval, proc);
-    val = vm_invoke_proc(th, proc, recv, argc, argv, blockptr);
+    val = rb_vm_invoke_proc(th, proc, recv, argc, argv, blockptr);
     return val;
 }
 
@@ -665,7 +665,7 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
 	    blockarg = blockargptr->proc;
 	}
 	else {
-	    blockarg = vm_make_proc(th, blockargptr, rb_cProc);
+	    blockarg = rb_vm_make_proc(th, blockargptr, rb_cProc);
 	}
     }
     else {
@@ -861,7 +861,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
     int argc = num;
 
     if (GET_ISEQ()->local_iseq->type != ISEQ_TYPE_METHOD || block == 0) {
-	vm_localjump_error("no block given (yield)", Qnil, 0);
+	rb_vm_localjump_error("no block given (yield)", Qnil, 0);
     }
     iseq = block->iseq;
 
@@ -1313,7 +1313,7 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 		}
 
 		if (is_orphan) {
-		    vm_localjump_error("break from proc-closure", throwobj, TAG_BREAK);
+		    rb_vm_localjump_error("break from proc-closure", throwobj, TAG_BREAK);
 		}
 	    }
 	    else if (state == TAG_RETRY) {
@@ -1352,7 +1352,7 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 		    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 		}
 
-		vm_localjump_error("unexpected return", throwobj, TAG_RETURN);
+		rb_vm_localjump_error("unexpected return", throwobj, TAG_RETURN);
 
 	      valid_return:
 		pt = dfp;
