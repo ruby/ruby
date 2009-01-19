@@ -1,3 +1,11 @@
+Mon Jan 19 09:21:04 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/mkconstants.rb: define macros with default value in
+	  constdefs.h if not exist them.
+
+	* ext/socket/raddrinfo.c (addrinfo_mdump, addrinfo_mload): support
+	  UNIX socket only on platforms which support it.
+
 Mon Jan 19 08:56:53 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c, vm_eval.c (rb_f_local_variables): move definition from eval.c

@@ -1153,6 +1153,7 @@ addrinfo_mdump(VALUE self)
     afamily = rb_id2str(id);
 
     switch(afamily_int) {
+#ifdef HAVE_SYS_UN_H
       case AF_UNIX:
       {
         struct sockaddr_un *su = (struct sockaddr_un *)&rai->addr;
@@ -1164,6 +1165,7 @@ addrinfo_mdump(VALUE self)
         sockaddr = rb_str_new(s, e-s);
         break;
       }
+#endif
 
       default:
       {
@@ -1250,6 +1252,7 @@ addrinfo_mload(VALUE self, VALUE ary)
 
     v = rb_ary_entry(ary, 1);
     switch(afamily) {
+#ifdef HAVE_SYS_UN_H
       case AF_UNIX:
       {
         struct sockaddr_un *su = (struct sockaddr_un *)&ss;
@@ -1263,6 +1266,7 @@ addrinfo_mload(VALUE self, VALUE ary)
         len = sizeof(*su);
         break;
       }
+#endif
 
       default:
       {
