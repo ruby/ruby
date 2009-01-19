@@ -1,6 +1,6 @@
-SOCK_HEADERS = rubysocket.h $(hdrdir)/ruby/ruby.h $(arch_hdrdir)/ruby/config.h \
+SOCK_HEADERS = $(srcdir)/rubysocket.h $(hdrdir)/ruby/ruby.h $(arch_hdrdir)/ruby/config.h \
 	$(hdrdir)/ruby/defines.h $(hdrdir)/ruby/io.h \
-	sockport.h constdefs.h
+	$(srcdir)/sockport.h constdefs.h
 
 init.o: init.c $(SOCK_HEADERS)
 constants.o: constants.c constdefs.c $(SOCK_HEADERS)
