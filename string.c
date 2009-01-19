@@ -1973,7 +1973,7 @@ hash(const unsigned char * data, int len, unsigned int h)
 #else
 		t = (t >> sr) | (d << sl);
 #endif
-		h = murmur(h, t);
+		h = murmur_step(h, t);
 		t = d;
 		data += sizeof(uint32_t);
 		len -= sizeof(uint32_t);

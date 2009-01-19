@@ -1,3 +1,7 @@
+Tue Jan 20 03:42:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (hash): fixed typo.  [ruby-dev:37791]
+
 Tue Jan 20 01:15:27 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb (SOMAXCONN): defined.
