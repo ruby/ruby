@@ -129,7 +129,7 @@ extern VALUE rb_cIPSocket;
 extern VALUE rb_cTCPSocket;
 extern VALUE rb_cTCPServer;
 extern VALUE rb_cUDPSocket;
-#ifdef AF_UNIX
+#ifdef HAVE_SYS_UN_H
 extern VALUE rb_cUNIXSocket;
 extern VALUE rb_cUNIXServer;
 #endif
@@ -177,8 +177,10 @@ VALUE make_ipaddr(struct sockaddr *addr);
 VALUE ipaddr(struct sockaddr *sockaddr, int norevlookup);
 VALUE make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, size_t));
 
+#ifdef HAVE_SYS_UN_H
 const char* unixpath(struct sockaddr_un *sockaddr, socklen_t len);
 VALUE unixaddr(struct sockaddr_un *sockaddr, socklen_t len);
+#endif
 
 int ruby_socket(int domain, int type, int proto);
 VALUE init_sock(VALUE sock, int fd);

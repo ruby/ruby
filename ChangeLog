@@ -1,3 +1,8 @@
+Mon Jan 19 11:22:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/rubysocket.h (rb_cUNIXSocket, rb_cUNIXServer),
+	  (unixpath, unixaddr): UNIX domain sockets depend on sys/un.h.
+
 Mon Jan 19 11:02:30 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_dump.c: add a prefix "rb_vmdebug_" to
