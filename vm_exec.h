@@ -59,9 +59,6 @@ typedef rb_iseq_t *ISEQ;
 #define throwdebug if(0)printf
 /* #define throwdebug printf */
 
-#define SDR2(cfp) vm_stack_dump_raw(GET_THREAD(), (cfp))
-
-
 /************************************************/
 #if   DISPATCH_XXX
 error !
