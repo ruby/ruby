@@ -593,7 +593,7 @@ garbage_collect_with_gvl(rb_objspace_t *objspace)
     }
     else {
 	if (ruby_native_thread_p()) {
-	    return (int)rb_thread_call_with_gvl(gc_with_gvl, (void *)objspace);
+	    return (VALUE)rb_thread_call_with_gvl(gc_with_gvl, (void *)objspace);
 	}
 	else {
 	    /* no ruby thread */
