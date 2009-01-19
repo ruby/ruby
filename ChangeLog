@@ -1,3 +1,7 @@
+Mon Jan 19 17:33:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (hash): defaulted to MurmurHash 2.0.
+
 Mon Jan 19 17:29:34 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/defines.h (RUBY_ALIAS_FUNCTION_TYPE): added.

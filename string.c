@@ -1883,7 +1883,7 @@ rb_str_concat(VALUE str1, VALUE str2)
 
 /* MurmurHash described in http://murmurhash.googlepages.com/ */
 #ifndef MURMUR
-#define MURMUR 1
+#define MURMUR 2
 #endif
 
 #define MurmurMagic 0x7fd652ad
@@ -2032,7 +2032,7 @@ hash(const unsigned char * data, int len, unsigned int h)
 #endif
 #if MURMUR == 1
 	h = murmur_step(h, t);
-#elif MURMUR1 == 2
+#elif MURMUR == 2
 	h ^= t;
 	h *= MurmurMagic;
 #endif
