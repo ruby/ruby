@@ -74,12 +74,17 @@ def each_name(pat)
   }
 end
 
-MISSING_DEFS = {}
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_decls")
+% each_const {|guard, define, name, default_value|
+%   if default_value
+#ifndef <%=name%>
+# define <%=name%> <%=default_value%>
+#endif
+%   end
+% }
+EOS
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_defs_in_guard(define, name, default_value)")
-% if default_value
-%   MISSING_DEFS[name] = default_value
-% end
 #if defined(<%=name%>)
     <%=define%>(<%=c_str name%>, <%=name%>);
 #endif
@@ -271,10 +276,8 @@ init_constants(VALUE mConst)
 EOS
 
 header_result = ERB.new(<<'EOS', nil, '%').result(binding)
-<%= MISSING_DEFS.map {|name, value| ["\#ifndef #{name}", "\# define #{name} #{value}", '#endif']}.join("\n") %>
-
+<%= gen_const_decls %>
 <%= NAME_TO_INT_DEFS.map {|decl, func| decl }.join("\n") %>
-
 <%= INTERN_DEFS.map {|vardef, gen_hash, decl, func| decl }.join("\n") %>
 EOS
 
