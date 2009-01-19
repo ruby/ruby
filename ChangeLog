@@ -1,3 +1,9 @@
+Mon Jan 19 18:25:28 2009  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in (rb_cv_broken_glibc_ia64_erfc): renamed from
+	  rb_broken_glibc_ia64_erfc.
+	  [ruby-core:18228]
+
 Sat Jan 17 12:16:10 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* random.c (Init_Random): always initialize seed.
