@@ -1592,8 +1592,14 @@ addrinfo_ip_port(VALUE self)
     int family = ai_get_afamily(rai);
     int port;
 
-    if (!IS_IP_FAMILY(family))
+    if (!IS_IP_FAMILY(family)) {
+      bad_family:
+#ifdef AF_INET6
 	rb_raise(rb_eSocket, "need IPv4 or IPv6 address");
+#else
+	rb_raise(rb_eSocket, "need IPv4 address");
+#endif
+    }
 
     switch (family) {
       case AF_INET:
@@ -1602,14 +1608,16 @@ addrinfo_ip_port(VALUE self)
         port = ntohs(((struct sockaddr_in *)&rai->addr)->sin_port);
         break;
 
+#ifdef AF_INET6
       case AF_INET6:
         if (rai->sockaddr_len != sizeof(struct sockaddr_in6))
             rb_raise(rb_eSocket, "unexpected sockaddr size for IPv6");
         port = ntohs(((struct sockaddr_in6 *)&rai->addr)->sin6_port);
         break;
+#endif
 
       default:
-	rb_raise(rb_eSocket, "need IPv4 or IPv6 address");
+	goto bad_family;
     }
 
     return INT2NUM(port);

@@ -1,3 +1,8 @@
+Mon Jan 19 11:00:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/raddrinfo.c (addrinfo_ip_port): use AF_INET6 only when
+	  defined, as well as addrinfo_ipv6_p().
+
 Mon Jan 19 10:43:38 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (garbage_collect_with_gvl): suppress warnings.
