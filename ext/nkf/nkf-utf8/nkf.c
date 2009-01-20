@@ -1,42 +1,30 @@
-/** Network Kanji Filter. (PDS Version)
- ** -*- coding: ISO-2022-JP -*-
- ************************************************************************
- ** Copyright (C) 1987, Fujitsu LTD. (Itaru ICHIKAWA)
- ** 連絡先： （株）富士通研究所　ソフト３研　市川　至
- ** （E-Mail Address: ichikawa@flab.fujitsu.co.jp）
- ** Copyright (C) 1996,1998
- ** Copyright (C) 2002
- ** 連絡先： 琉球大学情報工学科 河野 真治  mime/X0208 support
- ** （E-Mail Address: kono@ie.u-ryukyu.ac.jp）
- ** 連絡先： COW for DOS & Win16 & Win32 & OS/2
- ** （E-Mail Address: GHG00637@niftyserve.or.p）
- **
- **    このソースのいかなる複写，改変，修正も許諾します。ただし、
- **    その際には、誰が貢献したを示すこの部分を残すこと。
- **    再配布や雑誌の付録などの問い合わせも必要ありません。
- **    営利利用も上記に反しない範囲で許可します。
- **    バイナリの配布の際にはversion messageを保存することを条件とします。
- **    このプログラムについては特に何の保証もしない、悪しからず。
- **
- **    Everyone is permitted to do anything on this program
- **    including copying, modifying, improving,
- **    as long as you don't try to pretend that you wrote it.
- **    i.e., the above copyright notice has to appear in all copies.
- **    Binary distribution requires original version messages.
- **    You don't have to ask before copying, redistribution or publishing.
- **    THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
- ***********************************************************************/
-
-/***********************************************************************
- * 現在、nkf は SorceForge にてメンテナンスが続けられています。
- * http://sourceforge.jp/projects/nkf/
- ***********************************************************************/
-#define NKF_IDENT "$Id$"
-#define NKF_VERSION "2.0.8"
-#define NKF_RELEASE_DATE "2008-11-07"
+/*
+ * Copyright (c) 1987, Fujitsu LTD. (Itaru ICHIKAWA).
+ * Copyright (c) 1996-2009, The nkf Project.
+ *
+ * This software is provided 'as-is', without any express or implied
+ * warranty. In no event will the authors be held liable for any damages
+ * arising from the use of this software.
+ *
+ * Permission is granted to anyone to use this software for any purpose,
+ * including commercial applications, and to alter it and redistribute it
+ * freely, subject to the following restrictions:
+ *
+ * 1. The origin of this software must not be misrepresented; you must not
+ * claim that you wrote the original software. If you use this software
+ * in a product, an acknowledgment in the product documentation would be
+ * appreciated but is not required.
+ *
+ * 2. Altered source versions must be plainly marked as such, and must not be
+ * misrepresented as being the original software.
+ *
+ * 3. This notice may not be removed or altered from any source distribution.
+ */
+#define NKF_VERSION "2.0.9"
+#define NKF_RELEASE_DATE "2009-01-20"
 #define COPY_RIGHT \
-    "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa),2000 S. Kono, COW\n" \
-    "Copyright (C) 2002-2008 Kono, Furukawa, Naruse, mastodon"
+    "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa).\n" \
+    "Copyright (C) 1996-2009, The nkf Project."
 
 #include "config.h"
 #include "nkf.h"
@@ -50,6 +38,8 @@
 # define INCL_DOSERRORS
 # include <os2.h>
 #endif
+#include <assert.h>
+
 
 /* state of output_mode and input_mode
 
@@ -139,7 +129,7 @@ enum nkf_encodings {
     JIS_X_0212        = 0x1159, /* D */
     /* JIS_X_0213_2000_1 = 0x1228, */ /* O */
     JIS_X_0213_2 = 0x1229, /* P */
-    JIS_X_0213_1 = 0x1233, /* Q */
+    JIS_X_0213_1 = 0x1233 /* Q */
 };
 
 static nkf_char s_iconv(nkf_char c2, nkf_char c1, nkf_char c0);
@@ -511,7 +501,7 @@ static nkf_char
 no_connection2(nkf_char c2, nkf_char c1, nkf_char c0)
 {
     fprintf(stderr,"nkf internal module connection failure.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
     return 0; /* LINT */
 }
 
@@ -659,9 +649,37 @@ static nkf_char prev_cr = 0; /* CR or 0 */
 static int             end_check;
 #endif /*Easy Win */
 
-#define STD_GC_BUFSIZE (256)
-nkf_char std_gc_buf[STD_GC_BUFSIZE];
-nkf_char std_gc_ndx;
+static void *
+nkf_xmalloc(size_t size)
+{
+    void *ptr;
+
+    if (size == 0) size = 1;
+
+    ptr = malloc(size);
+    if (ptr == NULL) {
+	perror("can't malloc");
+	exit(EXIT_FAILURE);
+    }
+
+    return ptr;
+}
+
+static void *
+nkf_xrealloc(void *ptr, size_t size)
+{
+    if (size == 0) size = 1;
+
+    ptr = realloc(ptr, size);
+    if (ptr == NULL) {
+	perror("can't realloc");
+	exit(EXIT_FAILURE);
+    }
+
+    return ptr;
+}
+
+#define nkf_xfree(ptr) free(ptr)
 
 static int
 nkf_str_caseeql(const char *src, const char *target)
@@ -723,22 +741,15 @@ nkf_enc_find(const char *name)
 				nkf_enc_to_index(enc) == CP50222)
 
 #ifdef DEFAULT_CODE_LOCALE
-static char*
+static const char*
 nkf_locale_charmap()
 {
 #ifdef HAVE_LANGINFO_H
     return nl_langinfo(CODESET);
 #elif defined(__WIN32__)
-    char buf[16];
-    char *str;
-    int len = sprintf(buf, "CP%d", GetACP());
-    if (len > 0) {
-      str = malloc(len + 1);
-      strcpy(str, buf);
-      str[len] = '\0';
-      return str;
-    }
-    else return NULL;
+    static char buf[16];
+    sprintf(buf, "CP%d", GetACP());
+    return buf;
 #elif defined(__OS2__)
 # if defined(INT_IS_SHORT)
     /* OS/2 1.x */
@@ -754,16 +765,15 @@ nkf_locale_charmap()
         sprintf(buf, "CP%lu", ulCP[0]);
     return buf;
 # endif
-#else
-    return NULL;
 #endif
+    return NULL;
 }
 
 static nkf_encoding*
 nkf_locale_encoding()
 {
     nkf_encoding *enc = 0;
-    char *encname = nkf_locale_charmap();
+    const char *encname = nkf_locale_charmap();
     if (encname)
 	enc = nkf_enc_find(encname);
     return enc;
@@ -789,6 +799,64 @@ nkf_default_encoding()
     return enc;
 }
 
+typedef struct {
+    long capa;
+    long len;
+    unsigned char *ptr;
+} nkf_buf_t;
+
+static nkf_buf_t *
+nkf_buf_new(int length)
+{
+    nkf_buf_t *buf = nkf_xmalloc(sizeof(nkf_buf_t));
+    buf->ptr = nkf_xmalloc(length);
+    buf->capa = length;
+    buf->len = 0;
+    return buf;
+} 
+
+#if 0
+static void
+nkf_buf_dispose(nkf_buf_t *buf)
+{
+    nkf_xfree(buf->ptr);
+    nkf_xfree(buf);
+}
+#endif
+
+#define nkf_buf_length(buf) ((buf)->len)
+#define nkf_buf_empty_p(buf) ((buf)->len == 0)
+
+static unsigned char
+nkf_buf_at(nkf_buf_t *buf, int index)
+{
+    assert(index <= buf->len);
+    return buf->ptr[index];
+}
+
+static void
+nkf_buf_clear(nkf_buf_t *buf)
+{
+    buf->len = 0;
+}
+
+static void
+nkf_buf_push(nkf_buf_t *buf, unsigned char c)
+{
+    if (buf->capa <= buf->len) {
+	exit(EXIT_FAILURE);
+    }
+    buf->ptr[buf->len++] = c;
+}
+
+static unsigned char
+nkf_buf_pop(nkf_buf_t *buf)
+{
+    assert(!nkf_buf_empty_p(buf));
+    return buf->ptr[--buf->len];
+}
+
+/* Normalization Form C */
 #ifndef PERL_XS
 #ifdef WIN32DLL
 #define fprintf dllprintf
@@ -804,49 +872,39 @@ static void
 usage(void)
 {
     fprintf(HELP_OUTPUT,
-	    "USAGE:  nkf(nkf32,wnkf,nkf2) -[flags] [in file] .. [out file for -O flag]\n"
-	    "Flags:\n"
-	    "b,u      Output is buffered (DEFAULT),Output is unbuffered\n"
-	    "j,s,e,w  Output code is ISO-2022-JP, Shift JIS, EUC-JP, UTF-8N\n"
+	    "Usage:  nkf -[flags] [--] [in file] .. [out file for -O flag]\n"
+	    " j,s,e,w  Output code is ISO-2022-JP, Shift JIS, EUC-JP, UTF-8N\n"
 #ifdef UTF8_OUTPUT_ENABLE
-	    "         After 'w' you can add more options. -w[ 8 [0], 16 [[BL] [0]] ]\n"
+	    "          After 'w' you can add more options. -w[ 8 [0], 16 [[BL] [0]] ]\n"
 #endif
-	    "J,S,E,W  Input assumption is JIS 7 bit , Shift JIS, EUC-JP, UTF-8\n"
+	    " J,S,E,W  Input assumption is JIS 7 bit , Shift JIS, EUC-JP, UTF-8\n"
 #ifdef UTF8_INPUT_ENABLE
-	    "         After 'W' you can add more options. -W[ 8, 16 [BL] ] \n"
+	    "          After 'W' you can add more options. -W[ 8, 16 [BL] ] \n"
 #endif
-	    "t        no conversion\n"
-	    "i[@B]    Specify the Esc Seq for JIS X 0208-1978/83 (DEFAULT B)\n"
-	    "o[BJH]   Specify the Esc Seq for ASCII/Roman        (DEFAULT B)\n"
-	    "r        {de/en}crypt ROT13/47\n"
-	    "h        1 katakana->hiragana, 2 hiragana->katakana, 3 both\n"
-	    "m[BQSN0] MIME decode [B:base64,Q:quoted,S:strict,N:non-strict,0:no decode]\n"
-	    "M[BQ]    MIME encode [B:base64 Q:quoted]\n"
-	    "l        ISO8859-1 (Latin-1) support\n"
-	    "f/F      Folding: -f60 or -f or -f60-10 (fold margin 10) F preserve nl\n"
-	    "Z[0-4]   Default/0: Convert JISX0208 Alphabet to ASCII\n"
-	    "         1: Kankaku to one space  2: to two spaces  3: HTML Entity\n"
-	    "         4: JISX0208 Katakana to JISX0201 Katakana\n"
-	    "X,x      Assume X0201 kana in MS-Kanji, -x preserves X0201\n"
-	    "B[0-2]   Broken input  0: missing ESC,1: any X on ESC-[($]-X,2: ASCII on NL\n"
-#ifdef MSDOS
-	    "T        Text mode output\n"
-#endif
-	    "O        Output to File (DEFAULT 'nkf.out')\n"
-	    "I        Convert non ISO-2022-JP charactor to GETA\n"
-	    "d,c      Convert line breaks  -d: LF  -c: CRLF\n"
-	    "-L[uwm]  line mode u:LF w:CRLF m:CR (DEFAULT noconversion)\n"
-	    "v, V     Show this usage. V: show configuration\n"
-	    "\n"
+	    );
+    fprintf(HELP_OUTPUT,
+	    " m[BQSN0] MIME decode [B:base64,Q:quoted,S:strict,N:non-strict,0:no decode]\n"
+	    " M[BQ]    MIME encode [B:base64 Q:quoted]\n"
+	    " f/F      Folding: -f60 or -f or -f60-10 (fold margin 10) F preserve nl\n"
+	    );
+    fprintf(HELP_OUTPUT,
+	    " Z[0-4]   Default/0: Convert JISX0208 Alphabet to ASCII\n"
+	    "          1: Kankaku to one space  2: to two spaces  3: HTML Entity\n"
+	    "          4: JISX0208 Katakana to JISX0201 Katakana\n"
+	    " X,x      Assume X0201 kana in MS-Kanji, -x preserves X0201\n"
+	    );
+    fprintf(HELP_OUTPUT,
+	    " O        Output to File (DEFAULT 'nkf.out')\n"
+	    " L[uwm]   Line mode u:LF w:CRLF m:CR (DEFAULT noconversion)\n"
+	    );
+    fprintf(HELP_OUTPUT,
 	    "Long name options\n"
 	    " --ic=<input codeset>  --oc=<output codeset>\n"
 	    "                   Specify the input or output codeset\n"
-	    " --fj  --unix --mac  --windows\n"
-	    " --jis  --euc  --sjis  --utf8  --utf16  --mime  --base64\n"
-	    "                   Convert for the system or code\n"
 	    " --hiragana  --katakana  --katakana-hiragana\n"
 	    "                   To Hiragana/Katakana Conversion\n"
-	    " --prefix=         Insert escape before troublesome characters of Shift_JIS\n"
+	    );
+    fprintf(HELP_OUTPUT,
 #ifdef INPUT_OPTION
 	    " --cap-input, --url-input  Convert hex after ':' or '%%'\n"
 #endif
@@ -857,15 +915,16 @@ usage(void)
 	    " --fb-{skip, html, xml, perl, java, subchar}\n"
 	    "                   Specify how nkf handles unassigned characters\n"
 #endif
+	    );
+    fprintf(HELP_OUTPUT,
 #ifdef OVERWRITE
-	    " --in-place[=SUFFIX]  --overwrite[=SUFFIX]\n"
-	    "                   Overwrite original listed files by filtered result\n"
-	    "                   --overwrite preserves timestamp of original files\n"
+	    " --in-place[=SUF]  Overwrite original listed files by filtered result\n"
+	    " --overwrite[=SUF] in-place and preserve timestamp of original files\n"
 #endif
-	    " -g  --guess       Guess the input code\n"
-	    " --help  --version Show this help/the version\n"
-	    "                   For more information, see also man nkf\n"
-	    "\n");
+	    " -g --guess        Guess the input code\n"
+	    " -v --version      print the version\n"
+	    " --help/-V         print this help / configuration\n"
+	    );
     version();
 }
 
@@ -874,8 +933,6 @@ show_configuration(void)
 {
     fprintf(HELP_OUTPUT,
 	    "Summary of my nkf " NKF_VERSION " (" NKF_RELEASE_DATE ") configuration:\n"
-	    "  nkf identity:\n"
-	    "    " NKF_IDENT "\n"
 	    "  Compile-time options:\n"
 	    "    Compiled at:                 " __DATE__ " " __TIME__ "\n"
 	   );
@@ -937,12 +994,7 @@ get_backup_filename(const char *suffix, const char *filename)
     }
 
     if(asterisk_count){
-	backup_filename = malloc(strlen(suffix) + (asterisk_count * (filename_length - 1)) + 1);
-	if (!backup_filename){
-	    perror("Can't malloc backup filename.");
-	    return NULL;
-	}
-
+	backup_filename = nkf_xmalloc(strlen(suffix) + (asterisk_count * (filename_length - 1)) + 1);
 	for(i = 0, j = 0; suffix[i];){
 	    if(suffix[i] == '*'){
 		backup_filename[j] = '\0';
@@ -956,7 +1008,7 @@ get_backup_filename(const char *suffix, const char *filename)
 	backup_filename[j] = '\0';
     }else{
 	j = filename_length + strlen(suffix);
-	backup_filename = malloc(j + 1);
+	backup_filename = nkf_xmalloc(j + 1);
 	strcpy(backup_filename, filename);
 	strcat(backup_filename, suffix);
 	backup_filename[j] = '\0';
@@ -1070,7 +1122,7 @@ static const struct {
     {"euc","e"},
     {"euc-input","E"},
     {"fj","jm"},
-    {"help","v"},
+    {"help",""},
     {"jis","j"},
     {"jis-input","J"},
     {"mac","sLm"},
@@ -1080,7 +1132,7 @@ static const struct {
     {"sjis","s"},
     {"sjis-input","S"},
     {"unix","eLu"},
-    {"version","V"},
+    {"version","v"},
     {"windows","sLw"},
     {"hiragana","h1"},
     {"katakana","h2"},
@@ -2598,25 +2650,25 @@ w_oconv32(nkf_char c2, nkf_char c1)
 }
 #endif
 
-#define SCORE_L2       (1)                   /* 第2水準漢字 */
-#define SCORE_KANA     (SCORE_L2 << 1)       /* いわゆる半角カナ */
-#define SCORE_DEPEND   (SCORE_KANA << 1)     /* 機種依存文字 */
-#define SCORE_CP932    (SCORE_DEPEND << 1)   /* CP932 による読み換え (IBM extended characters) */
+#define SCORE_L2       (1)                   /* Kanji Level 2 */
+#define SCORE_KANA     (SCORE_L2 << 1)       /* Halfwidth Katakana */
+#define SCORE_DEPEND   (SCORE_KANA << 1)     /* MD Characters */
+#define SCORE_CP932    (SCORE_DEPEND << 1)   /* IBM extended characters */
 #define SCORE_X0212    (SCORE_CP932 << 1)    /* JIS X 0212 */
-#define SCORE_NO_EXIST (SCORE_X0212 << 1)    /* 存在しない文字 */
-#define SCORE_iMIME    (SCORE_NO_EXIST << 1) /* MIME による指定 */
-#define SCORE_ERROR    (SCORE_iMIME << 1) /* エラー */
+#define SCORE_NO_EXIST (SCORE_X0212 << 1)    /* Undefined Characters */
+#define SCORE_iMIME    (SCORE_NO_EXIST << 1) /* MIME selected */
+#define SCORE_ERROR    (SCORE_iMIME << 1) /* Error */
 
 #define SCORE_INIT (SCORE_iMIME)
 
-static const char score_table_A0[] = {
+static const nkf_char score_table_A0[] = {
     0, 0, 0, 0,
     0, 0, 0, 0,
     0, SCORE_DEPEND, SCORE_DEPEND, SCORE_DEPEND,
     SCORE_DEPEND, SCORE_DEPEND, SCORE_DEPEND, SCORE_NO_EXIST,
 };
 
-static const char score_table_F0[] = {
+static const nkf_char score_table_F0[] = {
     SCORE_L2, SCORE_L2, SCORE_L2, SCORE_L2,
     SCORE_L2, SCORE_DEPEND, SCORE_NO_EXIST, SCORE_NO_EXIST,
     SCORE_DEPEND, SCORE_DEPEND, SCORE_CP932, SCORE_CP932,
@@ -2925,12 +2977,42 @@ code_status(nkf_char c)
     }
 }
 
+typedef struct {
+    nkf_buf_t *std_gc_buf;
+    nkf_char broken_state;
+    nkf_buf_t *broken_buf;
+    nkf_char mimeout_state;
+    nkf_buf_t *nfc_buf;
+} nkf_state_t;
+
+static nkf_state_t *nkf_state = NULL;
+
+#define STD_GC_BUFSIZE (256)
+
+static void
+nkf_state_init(void)
+{
+    if (nkf_state) {
+	nkf_buf_clear(nkf_state->std_gc_buf);
+	nkf_buf_clear(nkf_state->broken_buf);
+	nkf_buf_clear(nkf_state->nfc_buf);
+    }
+    else {
+	nkf_state = nkf_xmalloc(sizeof(nkf_state_t));
+	nkf_state->std_gc_buf = nkf_buf_new(STD_GC_BUFSIZE);
+	nkf_state->broken_buf = nkf_buf_new(3);
+	nkf_state->nfc_buf = nkf_buf_new(9);
+    }
+    nkf_state->broken_state = 0;
+    nkf_state->mimeout_state = 0;
+}
+
 #ifndef WIN32DLL
 static nkf_char
 std_getc(FILE *f)
 {
-    if (std_gc_ndx){
-	return std_gc_buf[--std_gc_ndx];
+    if (!nkf_buf_empty_p(nkf_state->std_gc_buf)){
+	return nkf_buf_pop(nkf_state->std_gc_buf);
     }
     return getc(f);
 }
@@ -2939,10 +3021,7 @@ std_getc(FILE *f)
 static nkf_char
 std_ungetc(nkf_char c, FILE *f)
 {
-    if (std_gc_ndx == STD_GC_BUFSIZE){
-	return EOF;
-    }
-    std_gc_buf[std_gc_ndx++] = c;
+    nkf_buf_push(nkf_state->std_gc_buf, c);
     return c;
 }
 
@@ -3190,65 +3269,41 @@ check_bom(FILE *f)
     }
 }
 
-static struct {
-    int count;
-    nkf_char status;
-    nkf_char buf[3];
-} broken_state;
-
-static void
-init_broken_state(void)
-{
-    memset(&broken_state, 0, sizeof(broken_state));
-}
-
-static void
-push_broken_buf(c)
-{
-    broken_state.buf[broken_state.count++] = c;
-}
-
-static nkf_char
-pop_broken_buf(void)
-{
-    return broken_state.buf[--broken_state.count];
-}
-
 static nkf_char
 broken_getc(FILE *f)
 {
     nkf_char c, c1;
 
-    if (broken_state.count > 0) {
-	return pop_broken_buf();
+    if (!nkf_buf_empty_p(nkf_state->broken_buf)) {
+	return nkf_buf_pop(nkf_state->broken_buf);
     }
     c = (*i_bgetc)(f);
-    if (c=='$' && broken_state.status != ESC
+    if (c=='$' && nkf_state->broken_state != ESC
 	&& (input_mode == ASCII || input_mode == JIS_X_0201_1976_K)) {
 	c1= (*i_bgetc)(f);
-	broken_state.status = 0;
+	nkf_state->broken_state = 0;
 	if (c1=='@'|| c1=='B') {
-	    push_broken_buf(c1);
-	    push_broken_buf(c);
+	    nkf_buf_push(nkf_state->broken_buf, c1);
+	    nkf_buf_push(nkf_state->broken_buf, c);
 	    return ESC;
 	} else {
 	    (*i_bungetc)(c1,f);
 	    return c;
 	}
-    } else if (c=='(' && broken_state.status != ESC
+    } else if (c=='(' && nkf_state->broken_state != ESC
 	       && (input_mode == JIS_X_0208 || input_mode == JIS_X_0201_1976_K)) {
 	c1= (*i_bgetc)(f);
-	broken_state.status = 0;
+	nkf_state->broken_state = 0;
 	if (c1=='J'|| c1=='B') {
-	    push_broken_buf(c1);
-	    push_broken_buf(c);
+	    nkf_buf_push(nkf_state->broken_buf, c1);
+	    nkf_buf_push(nkf_state->broken_buf, c);
 	    return ESC;
 	} else {
 	    (*i_bungetc)(c1,f);
 	    return c;
 	}
     } else {
-	broken_state.status = c;
+	nkf_state->broken_state = c;
 	return c;
     }
 }
@@ -3256,8 +3311,8 @@ broken_getc(FILE *f)
 static nkf_char
 broken_ungetc(nkf_char c, FILE *f)
 {
-    if (broken_state.count < 2)
-	push_broken_buf(c);
+    if (nkf_buf_length(nkf_state->broken_buf) < 2)
+	nkf_buf_push(nkf_state->broken_buf, c);
     return c;
 }
 
@@ -3358,9 +3413,7 @@ fold_conv(nkf_char c2, nkf_char c1)
 	f_prev = LF;
 	f_line = 0;
 	fold_state =  LF;            /* output newline and clear */
-    } else if ( (c2==0  && c1==SP)||
-	       (c2==0  && c1==TAB)||
-	       (c2=='!'&& c1=='!')) {
+    } else if ((c2==0 && nkf_isblank(c1)) || (c2 == '!' && c1 == '!')) {
 	/* X0208 kankaku or ascii space */
 	if (f_prev == SP) {
 	    fold_state = 0;         /* remove duplicate spaces */
@@ -3558,7 +3611,7 @@ z_conv(nkf_char c2, nkf_char c1)
     if (alpha_f & 16) {
 	/* JIS X 0208 Katakana to JIS X 0201 Katakana */
 	if (c2 == 0x21) {
-	    char c = 0;
+	    nkf_char c = 0;
 	    switch (c1) {
 	    case 0x23:
 		/* U+3002 (0x8142) Ideographic Full Stop -> U+FF61 (0xA1) Halfwidth Ideographic Full Stop */
@@ -4198,42 +4251,56 @@ numchar_ungetc(nkf_char c, FILE *f)
 
 #ifdef UNICODE_NORMALIZATION
 
-/* Normalization Form C */
 static nkf_char
 nfc_getc(FILE *f)
 {
     nkf_char (*g)(FILE *f) = i_nfc_getc;
     nkf_char (*u)(nkf_char c ,FILE *f) = i_nfc_ungetc;
-    int i=0, j, k=1, lower, upper;
-    nkf_char buf[9];
+    nkf_buf_t *buf = nkf_state->nfc_buf;
     const unsigned char *array;
+    int lower=0, upper=NORMALIZATION_TABLE_LENGTH-1;
+    nkf_char c = (*g)(f);
 
-    buf[i] = (*g)(f);
-    while (k > 0 && ((buf[i] & 0xc0) != 0x80)){
-	lower=0, upper=NORMALIZATION_TABLE_LENGTH-1;
-	while (upper >= lower) {
-	    j = (lower+upper) / 2;
-	    array = normalization_table[j].nfd;
-	    for (k=0; k < NORMALIZATION_TABLE_NFD_LENGTH && array[k]; k++){
-		if (array[k] != buf[k]){
-		    array[k] < buf[k] ? (lower = j + 1) : (upper = j - 1);
-		    k = 0;
+    if (c == EOF || c > 0xFF || (c & 0xc0) == 0x80) return c;
+
+    nkf_buf_push(buf, (unsigned char)c);
+    do {
+	while (lower <= upper) {
+	    int mid = (lower+upper) / 2;
+	    int len;
+	    array = normalization_table[mid].nfd;
+	    for (len=0; len < NORMALIZATION_TABLE_NFD_LENGTH && array[len]; len++) {
+		if (len >= nkf_buf_length(buf)) {
+		    c = (*g)(f);
+		    if (c == EOF) {
+			len = 0;
+			lower = 1, upper = 0;
+			break;
+		    }
+		    nkf_buf_push(buf, c);
+		}
+		if (array[len] != nkf_buf_at(buf, len)) {
+		    if (array[len] < nkf_buf_at(buf, len)) lower = mid + 1;
+		    else  upper = mid - 1;
+		    len = 0;
 		    break;
-		} else if (k >= i)
-		    buf[++i] = (*g)(f);
+		}
 	    }
-	    if (k > 0){
-		array = normalization_table[j].nfc;
+	    if (len > 0) {
+		int i;
+		array = normalization_table[mid].nfc;
+		nkf_buf_clear(buf);
 		for (i=0; i < NORMALIZATION_TABLE_NFC_LENGTH && array[i]; i++)
-		    buf[i] = (nkf_char)(array[i]);
-		i--;
+		    nkf_buf_push(buf, array[i]);
 		break;
 	    }
 	}
-	while (i > 0)
-	    (*u)(buf[i--], f);
-    }
-    return buf[0];
+    } while (lower <= upper);
+
+    while (nkf_buf_length(buf) > 1) (*u)(nkf_buf_pop(buf), f);
+    c = nkf_buf_pop(buf);
+
+    return c;
 }
 
 static nkf_char
@@ -4307,17 +4374,13 @@ mime_getc(FILE *f)
 	    /* end Q encoding */
 	    input_mode = exit_mode;
 	    lwsp_count = 0;
-	    lwsp_buf = malloc((lwsp_size+5)*sizeof(char));
-	    if (lwsp_buf==NULL) {
-		perror("can't malloc");
-		return -1;
-	    }
+	    lwsp_buf = nkf_xmalloc((lwsp_size+5)*sizeof(char));
 	    while ((c1=(*i_getc)(f))!=EOF) {
 		switch (c1) {
 		case LF:
 		case CR:
 		    if (c1==LF) {
-			if ((c1=(*i_getc)(f))!=EOF && (c1==SP||c1==TAB)) {
+			if ((c1=(*i_getc)(f))!=EOF && nkf_isblank(c1)) {
 			    i_ungetc(SP,f);
 			    continue;
 			} else {
@@ -4326,7 +4389,7 @@ mime_getc(FILE *f)
 			c1 = LF;
 		    } else {
 			if ((c1=(*i_getc)(f))!=EOF && c1 == LF) {
-			    if ((c1=(*i_getc)(f))!=EOF && (c1==SP||c1==TAB)) {
+			    if ((c1=(*i_getc)(f))!=EOF && nkf_isblank(c1)) {
 				i_ungetc(SP,f);
 				continue;
 			    } else {
@@ -4344,12 +4407,7 @@ mime_getc(FILE *f)
 		    lwsp_buf[lwsp_count] = (unsigned char)c1;
 		    if (lwsp_count++>lwsp_size){
 			lwsp_size <<= 1;
-			lwsp_buf_new = realloc(lwsp_buf, (lwsp_size+5)*sizeof(char));
-			if (lwsp_buf_new==NULL) {
-			    free(lwsp_buf);
-			    perror("can't realloc");
-			    return -1;
-			}
+			lwsp_buf_new = nkf_xrealloc(lwsp_buf, (lwsp_size+5)*sizeof(char));
 			lwsp_buf = lwsp_buf_new;
 		    }
 		    continue;
@@ -4362,7 +4420,7 @@ mime_getc(FILE *f)
 		    i_ungetc(lwsp_buf[lwsp_count],f);
 		c1 = lwsp_buf[0];
 	    }
-	    free(lwsp_buf);
+	    nkf_xfree(lwsp_buf);
 	    return c1;
 	}
 	if (c1=='='&&c2<SP) { /* this is soft wrap */
@@ -4415,17 +4473,13 @@ mime_getc(FILE *f)
     if ((c1 == '?') && (c2 == '=')) {
 	input_mode = ASCII;
 	lwsp_count = 0;
-	lwsp_buf = malloc((lwsp_size+5)*sizeof(char));
-	if (lwsp_buf==NULL) {
-	    perror("can't malloc");
-	    return -1;
-	}
+	lwsp_buf = nkf_xmalloc((lwsp_size+5)*sizeof(char));
 	while ((c1=(*i_getc)(f))!=EOF) {
 	    switch (c1) {
 	    case LF:
 	    case CR:
 		if (c1==LF) {
-		    if ((c1=(*i_getc)(f))!=EOF && (c1==SP||c1==TAB)) {
+		    if ((c1=(*i_getc)(f))!=EOF && nkf_isblank(c1)) {
 			i_ungetc(SP,f);
 			continue;
 		    } else {
@@ -4437,7 +4491,7 @@ mime_getc(FILE *f)
 			if (c1==SP) {
 			    i_ungetc(SP,f);
 			    continue;
-			} else if ((c1=(*i_getc)(f))!=EOF && (c1==SP||c1==TAB)) {
+			} else if ((c1=(*i_getc)(f))!=EOF && nkf_isblank(c1)) {
 			    i_ungetc(SP,f);
 			    continue;
 			} else {
@@ -4455,12 +4509,7 @@ mime_getc(FILE *f)
 		lwsp_buf[lwsp_count] = (unsigned char)c1;
 		if (lwsp_count++>lwsp_size){
 		    lwsp_size <<= 1;
-		    lwsp_buf_new = realloc(lwsp_buf, (lwsp_size+5)*sizeof(char));
-		    if (lwsp_buf_new==NULL) {
-			free(lwsp_buf);
-			perror("can't realloc");
-			return -1;
-		    }
+		    lwsp_buf_new = nkf_xrealloc(lwsp_buf, (lwsp_size+5)*sizeof(char));
 		    lwsp_buf = lwsp_buf_new;
 		}
 		continue;
@@ -4473,7 +4522,7 @@ mime_getc(FILE *f)
 		i_ungetc(lwsp_buf[lwsp_count],f);
 	    c1 = lwsp_buf[0];
 	}
-	free(lwsp_buf);
+	nkf_xfree(lwsp_buf);
 	return c1;
     }
   mime_c3_retry:
@@ -4520,11 +4569,10 @@ mime_getc(FILE *f)
 static const char basis_64[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-#define MIMEOUT_BUF_LENGTH (60)
+#define MIMEOUT_BUF_LENGTH 74
 static struct {
     char buf[MIMEOUT_BUF_LENGTH+1];
     int count;
-    nkf_char state;
 } mimeout_state;
 
 /*nkf_char mime_lastchar2, mime_lastchar1;*/
@@ -4552,15 +4600,12 @@ open_mime(nkf_char mode)
 	PUT_NEWLINE((*o_mputc));
 	(*o_mputc)(SP);
 	base64_count = 1;
-	if (mimeout_state.count>0
-	    && (mimeout_state.buf[i]==SP || mimeout_state.buf[i]==TAB
-		|| mimeout_state.buf[i]==CR || mimeout_state.buf[i]==LF)) {
+	if (mimeout_state.count>0 && nkf_isspace(mimeout_state.buf[i])) {
 	    i++;
 	}
     }
     for (;i<mimeout_state.count;i++) {
-	if (mimeout_state.buf[i]==SP || mimeout_state.buf[i]==TAB
-	    || mimeout_state.buf[i]==CR || mimeout_state.buf[i]==LF) {
+	if (nkf_isspace(mimeout_state.buf[i])) {
 	    (*o_mputc)(mimeout_state.buf[i]);
 	    base64_count ++;
 	} else {
@@ -4628,13 +4673,13 @@ eof_mime(void)
     case 'B':
 	break;
     case 2:
-	(*o_mputc)(basis_64[((mimeout_state.state & 0x3)<< 4)]);
+	(*o_mputc)(basis_64[((nkf_state->mimeout_state & 0x3)<< 4)]);
 	(*o_mputc)('=');
 	(*o_mputc)('=');
 	base64_count += 3;
 	break;
     case 1:
-	(*o_mputc)(basis_64[((mimeout_state.state & 0xF) << 2)]);
+	(*o_mputc)(basis_64[((nkf_state->mimeout_state & 0xF) << 2)]);
 	(*o_mputc)('=');
 	base64_count += 2;
 	break;
@@ -4666,19 +4711,19 @@ mimeout_addchar(nkf_char c)
 	}
 	break;
     case 'B':
-	mimeout_state.state=c;
+	nkf_state->mimeout_state=c;
 	(*o_mputc)(basis_64[c>>2]);
 	mimeout_mode=2;
 	base64_count ++;
 	break;
     case 2:
-	(*o_mputc)(basis_64[((mimeout_state.state & 0x3)<< 4) | ((c & 0xF0) >> 4)]);
-	mimeout_state.state=c;
+	(*o_mputc)(basis_64[((nkf_state->mimeout_state & 0x3)<< 4) | ((c & 0xF0) >> 4)]);
+	nkf_state->mimeout_state=c;
 	mimeout_mode=1;
 	base64_count ++;
 	break;
     case 1:
-	(*o_mputc)(basis_64[((mimeout_state.state & 0xF) << 2) | ((c & 0xC0) >>6)]);
+	(*o_mputc)(basis_64[((nkf_state->mimeout_state & 0xF) << 2) | ((c & 0xC0) >>6)]);
 	(*o_mputc)(basis_64[c & 0x3F]);
 	mimeout_mode='B';
 	base64_count += 2;
@@ -4830,11 +4875,36 @@ mime_putc(nkf_char c)
 		if (base64_count > 1
 		    && base64_count + mimeout_state.count > 76
 		    && mimeout_state.buf[0] != CR && mimeout_state.buf[0] != LF){
-		    PUT_NEWLINE((*o_mputc));
-		    base64_count = 0;
-		    if (!nkf_isspace(mimeout_state.buf[0])){
-			(*o_mputc)(SP);
-			base64_count++;
+		    static const char *str = "boundary=\"";
+		    static int len = 10;
+		    i = 0;
+
+		    for (; i < mimeout_state.count - len; ++i) {
+			if (!strncmp(mimeout_state.buf+i, str, len)) {
+			    i += len - 2;
+			    break;
+			}
+		    }
+
+		    if (i == 0 || i == mimeout_state.count - len) {
+			PUT_NEWLINE((*o_mputc));
+			base64_count = 0;
+			if (!nkf_isspace(mimeout_state.buf[0])){
+			    (*o_mputc)(SP);
+			    base64_count++;
+			}
+		    }
+		    else {
+			int j;
+			for (j = 0; j <= i; ++j) {
+			    (*o_mputc)(mimeout_state.buf[j]);
+			}
+			PUT_NEWLINE((*o_mputc));
+			base64_count = 1;
+			for (; j <= mimeout_state.count; ++j) {
+			    mimeout_state.buf[j - i] = mimeout_state.buf[j];
+			}
+			mimeout_state.count -= i;
 		    }
 		}
 		mimeout_state.buf[mimeout_state.count++] = (char)c;
@@ -4881,7 +4951,7 @@ mime_putc(nkf_char c)
 		mimeout_state.buf[mimeout_state.count++] = (char)c;
 		return;
 	    }
-	    if (c==SP || c==TAB || c==CR || c==LF) {
+	    if (nkf_isspace(c)) {
 		for (i=0;i<mimeout_state.count;i++) {
 		    if (SP<mimeout_state.buf[i] && mimeout_state.buf[i]<DEL) {
 			eof_mime();
@@ -4958,15 +5028,9 @@ nkf_iconv_new(char *tocode, char *fromcode)
     nkf_iconv_t converter;
 
     converter->input_buffer_size = IOBUF_SIZE;
-    converter->input_buffer = malloc(converter->input_buffer_size);
-    if (converter->input_buffer == NULL)
-	perror("can't malloc");
-
+    converter->input_buffer = nkf_xmalloc(converter->input_buffer_size);
     converter->output_buffer_size = IOBUF_SIZE * 2;
-    converter->output_buffer = malloc(converter->output_buffer_size);
-    if (converter->output_buffer == NULL)
-	perror("can't malloc");
-
+    converter->output_buffer = nkf_xmalloc(converter->output_buffer_size);
     converter->cd = iconv_open(tocode, fromcode);
     if (converter->cd == (iconv_t)-1)
     {
@@ -5033,8 +5097,8 @@ nkf_iconv_convert(nkf_iconv_t *converter, FILE *input)
 static void
 nkf_iconv_close(nkf_iconv_t *convert)
 {
-    free(converter->inbuf);
-    free(converter->outbuf);
+    nkf_xfree(converter->inbuf);
+    nkf_xfree(converter->outbuf);
     iconv_close(converter->cd);
 }
 #endif
@@ -5145,7 +5209,6 @@ reinit(void)
     input_eol = 0;
     prev_cr = 0;
     option_mode = 0;
-    init_broken_state();
     z_prev2=0,z_prev1=0;
 #ifdef CHECK_OPTION
     iconv_for_check = 0;
@@ -5153,6 +5216,7 @@ reinit(void)
     input_codename = NULL;
     input_encoding = NULL;
     output_encoding = NULL;
+    nkf_state_init();
 #ifdef WIN32DLL
     reinitdll();
 #endif /*WIN32DLL*/
@@ -5778,6 +5842,10 @@ options(unsigned char *cp)
 		cp_back = cp;
 		cp = (unsigned char *)long_option[i].alias;
 	    }else{
+		if (strcmp(long_option[i].name, "help") == 0){
+		    usage();
+		    exit(EXIT_SUCCESS);
+		}
 		if (strcmp(long_option[i].name, "ic=") == 0){
 		    enc = nkf_enc_find((char *)p);
 		    if (!enc) continue;
@@ -5811,8 +5879,7 @@ options(unsigned char *cp)
 		    overwrite_f = TRUE;
 		    preserve_time_f = TRUE;
 		    backup_f = TRUE;
-		    backup_suffix = malloc(strlen((char *) p) + 1);
-		    strcpy(backup_suffix, (char *) p);
+		    backup_suffix = (char *)p;
 		    continue;
 		}
 		if (strcmp(long_option[i].name, "in-place") == 0){
@@ -5826,8 +5893,7 @@ options(unsigned char *cp)
 		    overwrite_f = TRUE;
 		    preserve_time_f = FALSE;
 		    backup_f = TRUE;
-		    backup_suffix = malloc(strlen((char *) p) + 1);
-		    strcpy(backup_suffix, (char *) p);
+		    backup_suffix = (char *)p;
 		    continue;
 		}
 #endif
@@ -6018,7 +6084,7 @@ options(unsigned char *cp)
 	    output_encoding = nkf_enc_from_index(EUCJP_NKF);
 	    continue;
 	case 's':           /* SJIS output */
-	    output_encoding = nkf_enc_from_index(WINDOWS_31J);
+	    output_encoding = nkf_enc_from_index(SHIFT_JIS);
 	    continue;
 	case 'l':           /* ISO8859 Latin-1 support, no conversion */
 	    iso8859_f = TRUE;  /* Only compatible with ISO-2022-JP */
@@ -6028,7 +6094,8 @@ options(unsigned char *cp)
 	    if (*cp=='@'||*cp=='B')
 		kanji_intro = *cp++;
 	    continue;
-	case 'o':           /* ASCII IN ESC-(-J/B */
+	case 'o':           /* ASCII IN ESC-(-J/B/H */
+	    /* ESC ( H was used in initial JUNET messages */
 	    if (*cp=='J'||*cp=='B'||*cp=='H')
 		ascii_intro = *cp++;
 	    continue;
@@ -6053,11 +6120,11 @@ options(unsigned char *cp)
 #ifndef PERL_XS
 	case 'V':
 	    show_configuration();
-	    exit(1);
+	    exit(EXIT_SUCCESS);
 	    break;
 	case 'v':
-	    usage();
-	    exit(1);
+	    version();
+	    exit(EXIT_SUCCESS);
 	    break;
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
@@ -6147,8 +6214,8 @@ options(unsigned char *cp)
 	case 'E':   /* EUC-JP input */
 	    input_encoding = nkf_enc_from_index(EUCJP_NKF);
 	    continue;
-	case 'S':   /* Windows-31J input */
-	    input_encoding = nkf_enc_from_index(WINDOWS_31J);
+	case 'S':   /* Shift_JIS input */
+	    input_encoding = nkf_enc_from_index(SHIFT_JIS);
 	    continue;
 	case 'Z':   /* Convert X0208 alphabet to asii */
 	    /* alpha_f
@@ -6308,6 +6375,8 @@ main(int argc, char **argv)
 #ifdef DEFAULT_CODE_LOCALE
     setlocale(LC_CTYPE, "");
 #endif
+    nkf_state_init();
+
     for (argc--,argv++; (argc > 0) && **argv == '-'; argc--, argv++) {
 	cp = (unsigned char *)*argv;
 	options(cp);
@@ -6415,13 +6484,9 @@ main(int argc, char **argv)
 		if (file_out_f == TRUE) {
 #ifdef OVERWRITE
 		    if (overwrite_f){
-			outfname = malloc(strlen(origfname)
+			outfname = nkf_xmalloc(strlen(origfname)
 					  + strlen(".nkftmpXXXXXX")
 					  + 1);
-			if (!outfname){
-			    perror(origfname);
-			    return -1;
-			}
 			strcpy(outfname, origfname);
 #ifdef MSDOS
 			{
@@ -6535,7 +6600,7 @@ main(int argc, char **argv)
 			    fprintf(stderr, "Can't rename %s to %s\n",
 				    origfname, backup_filename);
 			}
-			free(backup_filename);
+			nkf_xfree(backup_filename);
 		    }else{
 #ifdef MSDOS
 			if (unlink(origfname)){
@@ -6548,7 +6613,7 @@ main(int argc, char **argv)
 			fprintf(stderr, "Can't rename %s to %s\n",
 				outfname, origfname);
 		    }
-		    free(outfname);
+		    nkf_xfree(outfname);
 		}
 #endif
 	    }
