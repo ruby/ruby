@@ -73,7 +73,7 @@ describe MiniTest::Spec do
   end
 
   it "needs to verify regexp matches" do
-    @assertion_count = 4
+    @assertion_count = 6
 
     "blah".must_match(/\w+/).must_equal true
     proc { "blah".must_match(/\d+/) }.must_raise MiniTest::Assertion
@@ -140,7 +140,7 @@ describe MiniTest::Spec do
   end
 
   it "needs to verify mismatch" do
-    @assertion_count = 4
+    @assertion_count = 6
     "blah".wont_match(/\d+/).must_equal false
     proc { "blah".wont_match(/\w+/) }.must_raise MiniTest::Assertion
   end

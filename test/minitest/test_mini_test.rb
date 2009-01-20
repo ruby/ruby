@@ -440,13 +440,13 @@ class TestMiniTestTestCase < MiniTest::Unit::TestCase
   end
 
   def test_assert_empty
-    @assertion_count = 1
+    @assertion_count = 2
 
     @tc.assert_empty []
   end
 
   def test_assert_empty_triggered
-    @assertion_count = 1
+    @assertion_count = 2
 
     util_assert_triggered "Expected [1] to be empty." do
       @tc.assert_empty [1]
@@ -494,13 +494,13 @@ class TestMiniTestTestCase < MiniTest::Unit::TestCase
   end
 
   def test_assert_includes
-    @assertion_count = 1
+    @assertion_count = 2
 
     @tc.assert_includes [true], true
   end
 
   def test_assert_includes_triggered
-    @assertion_count = 2
+    @assertion_count = 3
 
     e = @tc.assert_raises MiniTest::Assertion do
       @tc.assert_includes [true], false
@@ -531,12 +531,12 @@ class TestMiniTestTestCase < MiniTest::Unit::TestCase
   end
 
   def test_assert_match
-    @assertion_count = 1
+    @assertion_count = 2
     @tc.assert_match(/\w+/, "blah blah blah")
   end
 
   def test_assert_match_object
-    @assertion_count = 1
+    @assertion_count = 2
 
     pattern = Object.new
     def pattern.=~(other) true end
@@ -545,7 +545,7 @@ class TestMiniTestTestCase < MiniTest::Unit::TestCase
   end
 
   def test_assert_match_object_triggered
-    @assertion_count = 1
+    @assertion_count = 2
 
     pattern = Object.new
     def pattern.=~(other) false end
@@ -557,7 +557,7 @@ class TestMiniTestTestCase < MiniTest::Unit::TestCase
   end
 
   def test_assert_match_triggered
-    @assertion_count = 1
+    @assertion_count = 2
     util_assert_triggered 'Expected /\d+/ to match "blah blah blah".' do
       @tc.assert_match(/\d+/, "blah blah blah")
     end
@@ -801,13 +801,13 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
   end
 
   def test_refute_empty
-    @assertion_count = 1
+    @assertion_count = 2
 
     @tc.refute_empty [1]
   end
 
   def test_refute_empty_triggered
-    @assertion_count = 1
+    @assertion_count = 2
 
     util_assert_triggered "Expected [] to not be empty." do
       @tc.refute_empty []
@@ -846,13 +846,13 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
   end
 
   def test_refute_includes
-    @assertion_count = 1
+    @assertion_count = 2
 
     @tc.refute_includes [true], false
   end
 
   def test_refute_includes_triggered
-    @assertion_count = 2
+    @assertion_count = 3
 
     e = @tc.assert_raises MiniTest::Assertion do
       @tc.refute_includes [true], true
@@ -883,17 +883,17 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
   end
 
   def test_refute_match
-    @assertion_count = 1
+    @assertion_count = 2
     @tc.refute_match(/\d+/, "blah blah blah")
   end
 
   def test_refute_match_object
-    @assertion_count = 1
+    @assertion_count = 2
     @tc.refute_match Object.new, 5 # default #=~ returns false
   end
 
   def test_assert_object_triggered
-    @assertion_count = 1
+    @assertion_count = 2
 
     pattern = Object.new
     def pattern.=~(other) false end
@@ -905,7 +905,7 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
   end
 
   def test_refute_match_object_triggered
-    @assertion_count = 1
+    @assertion_count = 2
 
     pattern = Object.new
     def pattern.=~(other) true end
@@ -917,7 +917,7 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
   end
 
   def test_refute_match_triggered
-    @assertion_count = 1
+    @assertion_count = 2
     util_assert_triggered 'Expected /\w+/ to not match "blah blah blah".' do
       @tc.refute_match(/\w+/, "blah blah blah")
     end

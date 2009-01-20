@@ -76,7 +76,6 @@ module MiniTest
     def assert_empty obj, msg = nil
       msg = message(msg) { "Expected #{obj.inspect} to be empty" }
       assert_respond_to obj, :empty?
-      self._assertions -= 1
       assert obj.empty?, msg
     end
 
@@ -98,7 +97,6 @@ module MiniTest
     def assert_includes collection, obj, msg = nil
       msg = message(msg) { "Expected #{mu_pp(collection)} to include #{mu_pp(obj)}" }
       assert_respond_to collection, :include?
-      self._assertions -= 1
       assert collection.include?(obj), msg
     end
 
@@ -120,7 +118,6 @@ module MiniTest
     def assert_match exp, act, msg = nil
       msg = message(msg) { "Expected #{mu_pp(exp)} to match #{mu_pp(act)}" }
       assert_respond_to act, :"=~"
-      self._assertions -= 1
       exp = /#{Regexp.escape(exp)}/ if String === exp && String === act
       assert exp =~ act, msg
     end
@@ -244,7 +241,6 @@ module MiniTest
     def refute_empty obj, msg = nil
       msg = message(msg) { "Expected #{obj.inspect} to not be empty" }
       assert_respond_to obj, :empty?
-      self._assertions -= 1
       refute obj.empty?, msg
     end
 
@@ -266,7 +262,6 @@ module MiniTest
     def refute_includes collection, obj, msg = nil
       msg = message(msg) { "Expected #{mu_pp(collection)} to not include #{mu_pp(obj)}" }
       assert_respond_to collection, :include?
-      self._assertions -= 1
       refute collection.include?(obj), msg
     end
 
@@ -287,7 +282,6 @@ module MiniTest
     def refute_match exp, act, msg = nil
       msg = message(msg) { "Expected #{mu_pp(exp)} to not match #{mu_pp(act)}" }
       assert_respond_to act, :"=~"
-      self._assertions -= 1
       exp = /#{Regexp.escape(exp)}/ if String === exp && String === act
       refute exp =~ act, msg
     end

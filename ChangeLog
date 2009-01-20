@@ -1,3 +1,8 @@
+Tue Jan 20 17:59:52 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* Reverts r21598 and r21599 because the original behavior is
+	  intentional.
+
 Tue Jan 20 09:26:05 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (nkf_buf_push): maybe a bug.
