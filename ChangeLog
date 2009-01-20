@@ -1,3 +1,9 @@
+Tue Jan 20 20:05:21 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/rubysocket.h (pseudo_AF_FTIP): moved from mkconstants.rb.
+
+	* ext/socket/mkconstants.rb: prepend header if -H is not given.
+
 Tue Jan 20 17:50:00 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (nkf_buf): use nkf_char.

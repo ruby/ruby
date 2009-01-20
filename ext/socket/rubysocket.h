@@ -59,9 +59,20 @@
 #include <fcntl.h>
 #endif
 #endif
+
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK EAGAIN
 #endif
+
+/*
+ * workaround for NetBSD, OpenBSD and etc.
+ * The problem is since 4.4BSD-Lite.
+ * FreeBSD fix the problem at FreeBSD 2.2.0.
+ * NetBSD fix the problem at NetBSD 3.0 by kern/29624.
+ * OpenBSD fix the problem at OpenBSD 3.8.
+ */
+#define pseudo_AF_FTIP pseudo_AF_RTIP
+
 #ifndef HAVE_GETADDRINFO
 # include "addrinfo.h"
 #endif
