@@ -1,3 +1,7 @@
+Tue Jan 20 17:50:00 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (nkf_buf): use nkf_char.
+
 Tue Jan 20 16:17:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (ruby_Init_{Continuation_body,Fiber_as_Coroutine}): prefixed

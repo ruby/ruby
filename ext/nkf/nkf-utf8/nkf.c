@@ -802,7 +802,7 @@ nkf_default_encoding()
 typedef struct {
     long capa;
     long len;
-    unsigned char *ptr;
+    nkf_char *ptr;
 } nkf_buf_t;
 
 static nkf_buf_t *
@@ -873,17 +873,20 @@ usage(void)
 {
     fprintf(HELP_OUTPUT,
 	    "Usage:  nkf -[flags] [--] [in file] .. [out file for -O flag]\n"
-	    " j,s,e,w  Output code is ISO-2022-JP, Shift JIS, EUC-JP, UTF-8N\n"
 #ifdef UTF8_OUTPUT_ENABLE
-	    "          After 'w' you can add more options. -w[ 8 [0], 16 [[BL] [0]] ]\n"
+	    " j/s/e/w  Specify output encoding ISO-2022-JP, Shift_JIS, EUC-JP\n"
+	    "          UTF options is -w[8[0],{16,32}[{B,L}[0]]]\n"
+#else
 #endif
-	    " J,S,E,W  Input assumption is JIS 7 bit , Shift JIS, EUC-JP, UTF-8\n"
 #ifdef UTF8_INPUT_ENABLE
-	    "          After 'W' you can add more options. -W[ 8, 16 [BL] ] \n"
+	    " J/S/E/W  Specify input encoding ISO-2022-JP, Shift_JIS, EUC-JP\n"
+	    "          UTF option is -W[8,[16,32][B,L]]\n"
+#else
+	    " J/S/E    Specify output encoding ISO-2022-JP, Shift_JIS, EUC-JP\n"
 #endif
 	    );
     fprintf(HELP_OUTPUT,
-	    " m[BQSN0] MIME decode [B:base64,Q:quoted,S:strict,N:non-strict,0:no decode]\n"
+	    " m[BQSN0] MIME decode [B:base64,Q:quoted,S:strict,N:nonstrict,0:no decode]\n"
 	    " M[BQ]    MIME encode [B:base64 Q:quoted]\n"
 	    " f/F      Folding: -f60 or -f or -f60-10 (fold margin 10) F preserve nl\n"
 	    );
@@ -898,32 +901,31 @@ usage(void)
 	    " L[uwm]   Line mode u:LF w:CRLF m:CR (DEFAULT noconversion)\n"
 	    );
     fprintf(HELP_OUTPUT,
-	    "Long name options\n"
-	    " --ic=<input codeset>  --oc=<output codeset>\n"
-	    "                   Specify the input or output codeset\n"
-	    " --hiragana  --katakana  --katakana-hiragana\n"
-	    "                   To Hiragana/Katakana Conversion\n"
+	    " --ic=<encoding>        Specify the input encoding\n"
+	    " --oc=<encoding>        Specify the output encoding\n"
+	    " --hiragana --katakana  Hiragana/Katakana Conversion\n"
+	    " --katakana-hiragana    Converts each other\n"
 	    );
     fprintf(HELP_OUTPUT,
 #ifdef INPUT_OPTION
-	    " --cap-input, --url-input  Convert hex after ':' or '%%'\n"
+	    " --{cap, url}-input     Convert hex after ':' or '%%'\n"
 #endif
 #ifdef NUMCHAR_OPTION
-	    " --numchar-input   Convert Unicode Character Reference\n"
+	    " --numchar-input        Convert Unicode Character Reference\n"
 #endif
 #ifdef UTF8_INPUT_ENABLE
 	    " --fb-{skip, html, xml, perl, java, subchar}\n"
-	    "                   Specify how nkf handles unassigned characters\n"
+	    "                        Specify unassigned character's replacement\n"
 #endif
 	    );
     fprintf(HELP_OUTPUT,
 #ifdef OVERWRITE
-	    " --in-place[=SUF]  Overwrite original listed files by filtered result\n"
-	    " --overwrite[=SUF] in-place and preserve timestamp of original files\n"
+	    " --in-place[=SUF]       Overwrite original files\n"
+	    " --overwrite[=SUF]      Preserve timestamp of original files\n"
 #endif
-	    " -g --guess        Guess the input code\n"
-	    " -v --version      print the version\n"
-	    " --help/-V         print this help / configuration\n"
+	    " -g --guess             Guess the input code\n"
+	    " -v --version           Print the version\n"
+	    " --help/-V              Print this help / configuration\n"
 	    );
     version();
 }
@@ -4263,7 +4265,7 @@ nfc_getc(FILE *f)
 
     if (c == EOF || c > 0xFF || (c & 0xc0) == 0x80) return c;
 
-    nkf_buf_push(buf, (unsigned char)c);
+    nkf_buf_push(buf, c);
     do {
 	while (lower <= upper) {
 	    int mid = (lower+upper) / 2;
