@@ -1,3 +1,9 @@
+Tue Jan 20 09:26:05 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (nkf_buf_push): maybe a bug.
+
+	* ext/nkf/nkf-utf8/nkf.c (options): no need to support help option.
+
 Tue Jan 20 06:48:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (take_items), enum.c (enum_zip): tries to convert to
