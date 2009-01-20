@@ -96,6 +96,8 @@ module MiniTest
 
     def assert_includes collection, obj, msg = nil
       msg = message(msg) { "Expected #{mu_pp(collection)} to include #{mu_pp(obj)}" }
+      flip = (obj.respond_to? :include?) && ! (collection.respond_to? :include?) # HACK for specs
+      obj, collection = collection, obj if flip
       assert_respond_to collection, :include?
       assert collection.include?(obj), msg
     end
@@ -261,6 +263,8 @@ module MiniTest
 
     def refute_includes collection, obj, msg = nil
       msg = message(msg) { "Expected #{mu_pp(collection)} to not include #{mu_pp(obj)}" }
+      flip = (obj.respond_to? :include?) && ! (collection.respond_to? :include?) # HACK for specs
+      obj, collection = collection, obj if flip
       assert_respond_to collection, :include?
       refute collection.include?(obj), msg
     end

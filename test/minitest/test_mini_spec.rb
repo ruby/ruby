@@ -154,4 +154,16 @@ describe MiniTest::Spec do
     1.wont_be_same_as(2).must_equal false
     proc { 1.wont_be_same_as 1 }.must_raise MiniTest::Assertion
   end
+
+  it "needs to be sensible about must_include order" do
+    @assertion_count = 6
+    [1, 2, 3].must_include(2).must_equal true
+    proc { [1, 2, 3].must_include 5 }.must_raise MiniTest::Assertion
+  end
+
+  it "needs to be sensible about wont_include order" do
+    @assertion_count = 6
+    [1, 2, 3].wont_include(5).must_equal false
+    proc { [1, 2, 3].wont_include 2 }.must_raise MiniTest::Assertion
+  end
 end

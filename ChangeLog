@@ -1,3 +1,8 @@
+Wed Jan 21 08:22:04 2009  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*.rb: Imported minitest 1.3.1 r4532.
+	* test/minitest/*.rb: ditto.
+
 Tue Jan 20 20:16:21 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (socket_s_list_ip_address): new method.
