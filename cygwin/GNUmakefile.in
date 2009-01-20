@@ -5,7 +5,7 @@ ENABLE_SHARED=@ENABLE_SHARED@
 DLLWRAP = @DLLWRAP@ --target=@target_os@
 
 ifeq (@target_os@,cygwin)
-  DLL_BASE_NAME := $(subst .dll,,$(LIBRUBY_SO))
+  DLL_BASE_NAME := $(LIBRUBY_SO:.dll=)
 else
   DLL_BASE_NAME := $(RUBY_SO_NAME)
   DLLWRAP += -mno-cygwin
@@ -29,7 +29,7 @@ WPROGRAM = $(RUBYW_INSTALL_NAME)$(EXEEXT)
 SOLIBS := $(DLL_BASE_NAME).res.@OBJEXT@ $(SOLIBS)
 EXTOBJS += $(if $(filter-out $(RUBYW_INSTALL_NAME),$(@:$(EXEEXT)=)),$(RUBY_INSTALL_NAME),$(@:$(EXEEXT)=)).res.$(OBJEXT)
 RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(DLL_BASE_NAME).rc
-RUBYDEF = $(RUBY_SO_NAME).def
+RUBYDEF = $(DLL_BASE_NAME).def
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
@@ -63,22 +63,25 @@ GNUmakefile:	$(srcdir)/cygwin/GNUmakefile.in
 
 ifeq (@target_os@,mingw32)
 $(OBJS) $(MAINOBJ): win32.h
+endif
 
 $(LIBRUBY_SO): $(RUBYDEF)
 
 $(RUBYDEF): $(LIBRUBY_A) $(PREP) $(RBCONFIG)
+ifeq (@target_os@,cygwin)
+	@NM@ --extern --defined $(LIBRUBY_A) | \
+	  $(MINIRUBY) -n -e 'BEGIN{puts "VERSION $(MAJOR).$(MINOR)","EXPORTS"}' \
+			 -e 'puts $$1 if / [CDT] _((?!Init_).*)$$/' > $@
+else
 	$(MINIRUBY) $(srcdir)/win32/mkexports.rb -output=$@ $(LIBRUBY_A)
+endif
 
 clean-local::
 	@$(RM) $(RUBYDEF)
-endif
 
 ifeq (@target_os@,cygwin)
-cygwin-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR)$(TEENY).dll: $(LIBRUBY_A)
-	@NM@ --extern --defined $(LIBRUBY_A) | \
-	  $(MINIRUBY) -ne 'BEGIN{puts "VERSION $(MAJOR).$(MINOR)","EXPORTS"}; puts $$1+"=$(@F)."+$$1 if / [CDT] _(.*)$$/' >rubydll.def
-	@DLLWRAP@ -s --def=rubydll.def -o $@
-	@rm -f rubydll.def
+cygwin-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR)$(TEENY).dll: $(LIBRUBY_A) $(RUBYDEF)
+	@DLLWRAP@ -s --def=$(RUBYDEF) -o $@
 endif
 
 clean-local::
