@@ -1,3 +1,10 @@
+Tue Jan 20 18:49:59 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/rdoc/ri/path.rb: Gem::Enable was removed.
+	  Use just defined?(Gem).
+	  And this prevents unexpected directory creation at
+	  installation. [ruby-core:20990]
+
 Tue Jan 20 17:59:52 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* Reverts r21598 and r21599 because the original behavior is
