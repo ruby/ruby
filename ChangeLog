@@ -1,3 +1,8 @@
+Tue Jan 20 13:03:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (hash): fixed the tail bytes handling in the aligned
+	  access case.
+
 Tue Jan 20 09:26:05 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (nkf_buf_push): maybe a bug.

@@ -1874,11 +1874,13 @@ rb_str_concat(VALUE str1, VALUE str2)
     return rb_str_append(str1, str2);
 }
 
-#if defined __i386__ || defined _M_IX86
-#define UNALIGNED_WORD_ACCESS 1
+#ifndef UNALIGNED_WORD_ACCESS
+# if defined __i386__ || defined _M_IX86
+#   define UNALIGNED_WORD_ACCESS 1
+# endif
 #endif
 #ifndef UNALIGNED_WORD_ACCESS
-#define UNALIGNED_WORD_ACCESS 0
+# define UNALIGNED_WORD_ACCESS 0
 #endif
 
 /* MurmurHash described in http://murmurhash.googlepages.com/ */
@@ -1998,6 +2000,9 @@ hash(const unsigned char * data, int len, unsigned int h)
 	    t = (t >> sr) | (d << sl);
 #endif
 
+#if MURMUR == 2
+	    if (len < align) goto skip_tail;
+#endif
 	    h = murmur_step(h, t);
 	    data += pack;
 	    len -= pack;
@@ -2014,7 +2019,7 @@ hash(const unsigned char * data, int len, unsigned int h)
     }
 
     t = 0;
-    switch(len) {
+    switch (len) {
 #ifdef WORDS_BIGENDIAN
       case 3:
 	t |= data[2] << CHAR_BIT;
@@ -2033,6 +2038,7 @@ hash(const unsigned char * data, int len, unsigned int h)
 #if MURMUR == 1
 	h = murmur_step(h, t);
 #elif MURMUR == 2
+      skip_tail:
 	h ^= t;
 	h *= MurmurMagic;
 #endif
