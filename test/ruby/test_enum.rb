@@ -211,11 +211,6 @@ class TestEnumerable < Test::Unit::TestCase
     a = []
     @obj.zip([:a, :b, :c]) {|x,y| a << [x, y] }
     assert_equal([[1,:a],[2,:b],[3,:c],[1,nil],[2,nil]], a)
-
-    ary = Object.new
-    def ary.to_a;   [1, 2]; end
-    def ary.to_ary; [3, 4]; end
-    assert_equal([[1, 3], [2, 4], [3, nil], [1, nil], [2, nil]], @obj.zip(ary))
   end
 
   def test_take

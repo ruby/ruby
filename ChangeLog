@@ -1,3 +1,7 @@
+Tue Jan 20 19:12:18 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* reverts r21693.
+
 Tue Jan 20 18:49:59 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/rdoc/ri/path.rb: Gem::Enable was removed.

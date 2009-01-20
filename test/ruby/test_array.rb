@@ -1502,11 +1502,6 @@ class TestArray < Test::Unit::TestCase
     a = []
     [1, 2, 3].zip([:a, :b], ["a", "b", "c", "d"]) {|x| a << x }
     assert_equal([[1, :a, "a"], [2, :b, "b"], [3, nil, "c"]], a)
-
-    ary = Object.new
-    def ary.to_a;   [1, 2]; end
-    def ary.to_ary; [3, 4]; end
-    assert_equal([[5, 3], [6, 4]], [5, 6].zip(ary))
   end
 
   def test_transpose

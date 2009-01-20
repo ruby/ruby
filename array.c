@@ -2209,11 +2209,9 @@ take_i(VALUE val, VALUE *args, int argc, VALUE *argv)
 static VALUE
 take_items(VALUE obj, long n)
 {
-    VALUE result = to_ary(obj);
+    VALUE result = rb_ary_new2(n);
     VALUE args[2];
 
-    if (!NIL_P(result)) return rb_ary_subseq(result, 0, n);
-    result = rb_ary_new2(n);
     args[0] = result; args[1] = (VALUE)n;
     rb_block_call(obj, rb_intern("each"), 0, 0, take_i, (VALUE)args);
     return result;
