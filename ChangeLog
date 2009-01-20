@@ -1,3 +1,8 @@
+Tue Jan 20 06:48:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (take_items), enum.c (enum_zip): tries to convert to
+	  array first.  [ruby-core:21442]
+
 Tue Jan 20 03:50:37 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: Update nkf to 2.0.9.

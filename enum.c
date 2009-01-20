@@ -1558,13 +1558,17 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
     ID conv;
     NODE *memo;
     VALUE result = Qnil;
+    VALUE args = rb_ary_new4(argc, argv);
     int allary = Qtrue;
 
+    argv = RARRAY_PTR(args);
     for (i=0; i<argc; i++) {
-	if (TYPE(argv[i]) != T_ARRAY) {
+	VALUE ary = rb_check_array_type(argv[i]);
+	if (NIL_P(ary)) {
 	    allary = Qfalse;
 	    break;
 	}
+	argv[i] = ary;
     }
     if (!allary) {
 	CONST_ID(conv, "to_enum");
@@ -1576,7 +1580,7 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
 	result = rb_ary_new();
     }
     /* use NODE_DOT2 as memo(v, v, -) */
-    memo = rb_node_newnode(NODE_DOT2, result, rb_ary_new4(argc, argv), 0);
+    memo = rb_node_newnode(NODE_DOT2, result, args, 0);
     rb_block_call(obj, id_each, 0, 0, allary ? zip_ary : zip_i, (VALUE)memo);
 
     return result;
