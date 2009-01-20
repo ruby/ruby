@@ -1,3 +1,8 @@
+Tue Jan 20 18:30:57 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (IS_BEG): EXPR_CLASS should be treated like EXPR_BEG.
+	  [ruby-core:21453]
+
 Tue Jan 20 04:02:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* node.h (rb_thread_raised_clear): should not clear flags other than
