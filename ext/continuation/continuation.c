@@ -1,8 +1,8 @@
 
-void Init_Continuation_body(void);
+void ruby_Init_Continuation_body(void);
 
 void
 Init_continuation(void)
 {
-    Init_Continuation_body();
+    ruby_Init_Continuation_body();
 }

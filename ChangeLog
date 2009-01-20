@@ -1,3 +1,10 @@
+Tue Jan 20 16:17:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (ruby_Init_{Continuation_body,Fiber_as_Coroutine}): prefixed
+	  with ruby_ to export.
+
+	* ext/continuation/continuation.c, ext/fiber/fiber.c: ditto.
+
 Tue Jan 20 15:32:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (miniruby): renames and then removes, to get rid of
@@ -7,11 +14,11 @@ Tue Jan 20 15:32:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (DLDFLAGS): do not export all symbols.
 
-	* cygwin/GNUmakefile.in (RUBYDEF): rejects symbols prefixex with
+	* cygwin/GNUmakefile.in (RUBYDEF): rejects symbols prefixed with
 	  Init_.
 
-	* win32/mkexports.rb (Exports::Mingw): includes all symbols except for
-	  prefixed with Init_ as well as mswin32.
+	* win32/mkexports.rb (Exports::Mingw): includes all symbols as
+	  well as mswin32, except for prefixed with Init_.
 
 Tue Jan 20 13:03:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
