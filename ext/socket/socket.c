@@ -1386,6 +1386,237 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
 }
 #endif
 
+#if defined(HAVE_GETIFADDRS) || defined(SIOCGLIFCONF) || defined(SIOCGIFCONF)
+static VALUE
+sockaddr_obj(struct sockaddr *addr)
+{
+    socklen_t len;
+
+    if (addr == NULL)
+        return Qnil;
+
+    switch (addr->sa_family) {
+      case AF_INET:
+        len = sizeof(struct sockaddr_in);
+        break;
+
+#ifdef AF_INET6
+      case AF_INET6:
+        len = sizeof(struct sockaddr_in6);
+        break;
+#endif
+
+#ifdef HAVE_SYS_UN_H
+      case AF_UNIX:
+        len = sizeof(struct sockaddr_un);
+        break;
+#endif
+
+      default:
+        len = sizeof(struct sockaddr_in);
+        break;
+    }
+#ifdef SA_LEN
+    if (len < SA_LEN(addr))
+	len = SA_LEN(addr);
+#endif
+
+    return addrinfo_new(addr, len, 0, 0, 0, Qnil, Qnil);
+}
+#endif
+
+/*
+ * call-seq:
+ *   Socket.list_ip_address => array
+ *
+ * Returns local IP addresses as an array.
+ *
+ * The array contains AddrInfo objects.
+ *
+ *  pp Socket.list_ip_address
+ *  #=> [#<AddrInfo: 127.0.0.1>,
+ *       #<AddrInfo: 192.168.0.128>,
+ *       #<AddrInfo: ::1>,
+ *       ...]
+ *
+ */
+static VALUE
+socket_s_list_ip_address(VALUE self)
+{
+#if defined(HAVE_GETIFADDRS)
+    struct ifaddrs *ifp = NULL;
+    struct ifaddrs *p;
+    int ret;
+    VALUE list;
+
+    ret = getifaddrs(&ifp);
+    if (ret == -1) {
+        rb_sys_fail("getifaddrs");
+    }
+
+    list = rb_ary_new();
+    for (p = ifp; p; p = p->ifa_next) {
+        if (p->ifa_addr != NULL && IS_IP_FAMILY(p->ifa_addr->sa_family)) {
+            rb_ary_push(list, sockaddr_obj(p->ifa_addr));
+        }
+    }
+
+    freeifaddrs(ifp);
+
+    return list;
+#elif defined(SIOCGLIFCONF) && defined(SIOCGLIFNUM) && !defined(__hpux)
+    /* Solaris if_tcp(7P) */
+    /* HP-UX has SIOCGLIFCONF too.  But it uses differenet struct */
+    int fd = -1;
+    int ret;
+    struct lifnum ln;
+    struct lifconf lc;
+    char *reason = NULL;
+    int save_errno;
+    int i;
+    VALUE list = Qnil;
+
+    lc.lifc_buf = NULL;
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd == -1)
+        rb_sys_fail("socket");
+
+    memset(&ln, 0, sizeof(ln));
+    ln.lifn_family = AF_UNSPEC;
+
+    ret = ioctl(fd, SIOCGLIFNUM, &ln);
+    if (ret == -1) {
+	reason = "SIOCGLIFNUM";
+	goto finish;
+    }
+
+    memset(&lc, 0, sizeof(lc));
+    lc.lifc_family = AF_UNSPEC;
+    lc.lifc_flags = 0;
+    lc.lifc_len = sizeof(struct lifreq) * ln.lifn_count;
+    lc.lifc_req = xmalloc(lc.lifc_len);
+
+    ret = ioctl(fd, SIOCGLIFCONF, &lc);
+    if (ret == -1) {
+	reason = "SIOCGLIFCONF";
+	goto finish;
+    }
+
+    close(fd);
+    fd = -1;
+
+    list = rb_ary_new();
+    for (i = 0; i < ln.lifn_count; i++) {
+	struct lifreq *req = &lc.lifc_req[i];
+        if (IS_IP_FAMILY(req->lifr_addr.ss_family)) {
+            rb_ary_push(list, sockaddr_obj((struct sockaddr *)&req->lifr_addr));
+        }
+    }
+
+  finish:
+    save_errno = errno;
+    if (lc.lifc_buf != NULL)
+	xfree(lc.lifc_req);
+    if (fd != -1)
+	close(fd);
+    errno = save_errno;
+
+    if (reason)
+	rb_sys_fail(reason);
+    return list;
+
+#elif defined(SIOCGIFCONF)
+    int fd = -1;
+    int ret;
+#define EXTRA_SPACE (sizeof(struct ifconf) + sizeof(struct sockaddr_storage))
+    char initbuf[4096+EXTRA_SPACE];
+    char *buf = initbuf;
+    int bufsize;
+    struct ifconf conf;
+    struct ifreq *req;
+    VALUE list = Qnil;
+    char *reason = NULL;
+    int save_errno;
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd == -1)
+        rb_sys_fail("socket");
+
+    bufsize = sizeof(initbuf);
+    buf = initbuf;
+
+  retry:
+    conf.ifc_len = bufsize;
+    conf.ifc_req = (struct ifreq *)buf;
+
+    /* fprintf(stderr, "bufsize: %d\n", bufsize); */
+
+    ret = ioctl(fd, SIOCGIFCONF, &conf);
+    if (ret == -1) {
+        reason = "SIOCGIFCONF";
+        goto finish;
+    }
+
+    /* fprintf(stderr, "conf.ifc_len: %d\n", conf.ifc_len); */
+
+    if (bufsize - EXTRA_SPACE < conf.ifc_len) {
+	if (bufsize < conf.ifc_len) {
+	    /* NetBSD returns required size for all interfaces. */
+	    bufsize = conf.ifc_len + EXTRA_SPACE;
+	}
+	else {
+	    bufsize = bufsize << 1;
+	}
+	if (buf == initbuf)
+	    buf = NULL;
+	buf = xrealloc(buf, bufsize);
+	goto retry;
+    }
+
+    close(fd);
+    fd = -1;
+
+    list = rb_ary_new();
+    req = conf.ifc_req;
+    while ((char*)req < (char*)conf.ifc_req + conf.ifc_len) {
+	struct sockaddr *addr = &req->ifr_addr;
+        if (IS_IP_FAMILY(addr->sa_family)) {
+	    rb_ary_push(list, sockaddr_obj(addr));
+	}
+#ifdef HAVE_SA_LEN
+# ifndef _SIZEOF_ADDR_IFREQ
+#  define _SIZEOF_ADDR_IFREQ(r) \
+          (sizeof(struct ifreq) + \
+           (sizeof(struct sockaddr) < (r).ifr_addr.sa_len ? \
+            (r).ifr_addr.sa_len - sizeof(struct sockaddr) : \
+            0))
+# endif
+	req = (struct ifreq *)((char*)req + _SIZEOF_ADDR_IFREQ(*req));
+#else
+	req = (struct ifreq *)((char*)req + sizeof(struct ifreq));
+#endif
+    }
+
+  finish:
+
+    save_errno = errno;
+    if (buf != initbuf)
+        xfree(buf);
+    if (fd != -1)
+	close(fd);
+    errno = save_errno;
+
+    if (reason)
+	rb_sys_fail(reason);
+    return list;
+
+#undef EXTRA_SPACE
+#else
+    rb_notimplement();
+#endif
+}
+
 /*
  * Class +Socket+ provides access to the underlying operating system
  * socket implementations. It can be used to provide more operating system
@@ -1449,4 +1680,6 @@ Init_socket()
     rb_define_singleton_method(rb_cSocket, "pack_sockaddr_un", sock_s_pack_sockaddr_un, 1);
     rb_define_singleton_method(rb_cSocket, "unpack_sockaddr_un", sock_s_unpack_sockaddr_un, 1);
 #endif
+
+    rb_define_singleton_method(rb_cSocket, "list_ip_address", socket_s_list_ip_address, 0);
 }

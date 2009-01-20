@@ -54,4 +54,16 @@ class TestSocket < Test::Unit::TestCase
   def test_getnameinfo
     assert_raise(SocketError) { Socket.getnameinfo(["AF_UNIX", 80, "0.0.0.0"]) }
   end
+
+  def test_list_ip_address
+    begin
+      list = Socket.list_ip_address
+    rescue NotImplementedError
+      return
+    end
+    list.each {|ai|
+      assert_instance_of(AddrInfo, ai)
+      assert(ai.ip?)
+    }
+  end
 end if defined?(Socket)

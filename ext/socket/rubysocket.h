@@ -60,6 +60,19 @@
 #endif
 #endif
 
+#ifdef HAVE_IFADDRS_H
+#include <ifaddrs.h>
+#endif
+#ifdef HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
+#ifdef HAVE_SYS_SOCKIO_H
+#include <sys/sockio.h>
+#endif
+#ifdef HAVE_NET_IF_H
+#include <net/if.h>
+#endif
+
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK EAGAIN
 #endif
@@ -183,6 +196,8 @@ struct addrinfo *sock_addrinfo(VALUE host, VALUE port, int socktype, int flags);
 struct addrinfo* sock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
 VALUE fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
 VALUE io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
+
+VALUE addrinfo_new(struct sockaddr *addr, socklen_t len, int family, int socktype, int protocol, VALUE canonname, VALUE inspectname);
 
 VALUE make_ipaddr(struct sockaddr *addr);
 VALUE ipaddr(struct sockaddr *sockaddr, int norevlookup);

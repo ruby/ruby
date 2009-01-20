@@ -550,7 +550,7 @@ init_addrinfo(rb_addrinfo_t *rai, struct sockaddr *sa, size_t len,
     rai->inspectname = inspectname;
 }
 
-static VALUE
+VALUE
 addrinfo_new(struct sockaddr *addr, socklen_t len,
              int family, int socktype, int protocol,
              VALUE canonname, VALUE inspectname)

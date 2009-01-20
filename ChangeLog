@@ -1,3 +1,17 @@
+Tue Jan 20 20:16:21 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (socket_s_list_ip_address): new method.
+	  (sockaddr_obj): new function.
+
+	* ext/socket/rubysocket.h: include ifaddrs.h, sys/ioctl.h,
+	  sys/sockio.h, net/if.h if available.
+	  (addrinfo_new): declared.
+
+	* ext/socket/raddrinfo.c (addrinfo_new): exported.
+
+	* ext/socket/extconf.rb: check ifaddrs.h, sys/ioctl.h, sys/sockio.h,
+	  net/if.h and getifaddrs.
+
 Tue Jan 20 20:05:21 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/rubysocket.h (pseudo_AF_FTIP): moved from mkconstants.rb.
