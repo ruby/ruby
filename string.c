@@ -2038,7 +2038,9 @@ hash(const unsigned char * data, int len, unsigned int h)
 #if MURMUR == 1
 	h = murmur_step(h, t);
 #elif MURMUR == 2
+# if !UNALIGNED_WORD_ACCESS
       skip_tail:
+# endif
 	h ^= t;
 	h *= MurmurMagic;
 #endif
