@@ -2860,6 +2860,7 @@ rb_io_ungetbyte(VALUE io, VALUE b)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
+    io_unset_eof(fptr);
     if (NIL_P(b)) return Qnil;
     if (FIXNUM_P(b)) {
 	char cc = FIX2INT(b);
@@ -2869,7 +2870,6 @@ rb_io_ungetbyte(VALUE io, VALUE b)
 	SafeStringValue(b);
     }
     io_ungetbyte(b, fptr);
-    io_unset_eof(fptr);
     return Qnil;
 }
 
@@ -2897,6 +2897,7 @@ rb_io_ungetc(VALUE io, VALUE c)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
+    io_unset_eof(fptr);
     if (NIL_P(c)) return Qnil;
     if (FIXNUM_P(c)) {
 	int cc = FIX2INT(c);
@@ -2926,7 +2927,6 @@ rb_io_ungetc(VALUE io, VALUE c)
     else {
         io_ungetbyte(c, fptr);
     }
-    io_unset_eof(fptr);
     return Qnil;
 }
 
