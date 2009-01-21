@@ -26,6 +26,18 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("D\u00FCrst", "D\xFCrst".encode(Encoding.find('utf-8'), Encoding.find('ISO-8859-1')))
   end
 
+  def test_noargument
+    default_default_internal = Encoding.default_internal
+    Encoding.default_internal = nil
+    assert_equal("\u3042".encode, "\u3042")
+    assert_equal("\xE3\x81\x82\x81".force_encoding("utf-8").encode,
+                 "\xE3\x81\x82\x81".force_encoding("utf-8"))
+    Encoding.default_internal = 'EUC-JP'
+    assert_equal("\u3042".encode, "\xA4\xA2".force_encoding('EUC-JP'))
+    assert_equal("\xE3\x81\x82\x81".force_encoding("utf-8").encode,
+                 "\xA4\xA2?".force_encoding('EUC-JP'))
+  end
+
   def test_length
     assert_equal("\u20AC"*20, ("\xA4"*20).encode('utf-8', 'iso-8859-15'))
     assert_equal("\u20AC"*20, ("\xA4"*20).encode!('utf-8', 'iso-8859-15'))
