@@ -575,6 +575,7 @@ enumerator_rewind(obj)
     }
 }
 
+static VALUE inspect_enumerator _((VALUE obj, VALUE dummy, int));
 static VALUE
 inspect_enumerator(obj, dummy, recur)
     VALUE obj, dummy;
@@ -726,6 +727,7 @@ yielder_yield(obj, args)
     return obj;
 }
 
+static VALUE yielder_new_i _((VALUE));
 static VALUE
 yielder_new_i(dummy)
     VALUE dummy;
