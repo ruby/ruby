@@ -1931,7 +1931,7 @@ rb_mod_remove_cvar(mod, name)
     VALUE mod, name;
 {
     const ID id = rb_to_id(name);
-    st_data_t val, n;
+    st_data_t val, n = id;
 
     if (!rb_is_class_id(id)) {
 	rb_name_error(id, "wrong class variable name %s", rb_id2name(id));
