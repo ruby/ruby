@@ -354,7 +354,8 @@ flush_before_seek(rb_io_t *fptr)
 }
 
 #define io_set_eof(fptr) (void)(((fptr)->mode & FMODE_TTY) && ((fptr)->mode |= FMODE_EOF))
-#define io_seek(fptr, ofs, whence) (fptr->mode &= ~FMODE_EOF, lseek(flush_before_seek(fptr)->fd, ofs, whence))
+#define io_unset_eof(fptr) (fptr->mode &= ~FMODE_EOF)
+#define io_seek(fptr, ofs, whence) (io_unset_eof(fptr), lseek(flush_before_seek(fptr)->fd, ofs, whence))
 #define io_tell(fptr) lseek(flush_before_seek(fptr)->fd, 0, SEEK_CUR)
 
 #ifndef SEEK_CUR
@@ -2868,6 +2869,7 @@ rb_io_ungetbyte(VALUE io, VALUE b)
 	SafeStringValue(b);
     }
     io_ungetbyte(b, fptr);
+    io_unset_eof(fptr);
     return Qnil;
 }
 
@@ -2924,6 +2926,7 @@ rb_io_ungetc(VALUE io, VALUE c)
     else {
         io_ungetbyte(c, fptr);
     }
+    io_unset_eof(fptr);
     return Qnil;
 }
 
