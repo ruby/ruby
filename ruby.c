@@ -325,7 +325,7 @@ expand_include_path(VALUE path)
     return rb_file_expand_path(path, Qnil);
 }
 
-void 
+void
 ruby_incpush_expand(const char *path)
 {
     ruby_push_include(path, expand_include_path);
@@ -566,7 +566,7 @@ moreswitches(const char *s, struct cmdline_options *opt, int envopt)
 	while (*p && !ISSPACE(*p)) ++p;
 	if (!*p) break;
 	*p++ = '\0';
-	while (ISSPACE(*p)) ++p; 
+	while (ISSPACE(*p)) ++p;
     }
     argc = RSTRING_LEN(argary) / sizeof(ap);
     ap = 0;
@@ -1128,7 +1128,7 @@ uscore_get()
  *  call-seq:
  *     sub(pattern, replacement)   => $_
  *     sub(pattern) { block }      => $_
- *  
+ *
  *  Equivalent to <code>$_.sub(<i>args</i>)</code>, except that
  *  <code>$_</code> will be updated if substitution occurs.
  *  Available only when -p/-n command line option specified.
@@ -1148,11 +1148,11 @@ rb_f_sub(argc, argv)
  *  call-seq:
  *     gsub(pattern, replacement)    => string
  *     gsub(pattern) {|...| block }  => string
- *  
+ *
  *  Equivalent to <code>$_.gsub...</code>, except that <code>$_</code>
  *  receives the modified result.
  *  Available only when -p/-n command line option specified.
- *     
+ *
  */
 
 static VALUE
@@ -1168,11 +1168,11 @@ rb_f_gsub(argc, argv)
 /*
  *  call-seq:
  *     chop   => string
- *  
+ *
  *  Equivalent to <code>($_.dup).chop!</code>, except <code>nil</code>
  *  is never returned. See <code>String#chop!</code>.
  *  Available only when -p/-n command line option specified.
- *     
+ *
  */
 
 static VALUE
@@ -1188,11 +1188,11 @@ rb_f_chop()
  *  call-seq:
  *     chomp            => $_
  *     chomp(string)    => $_
- *  
+ *
  *  Equivalent to <code>$_ = $_.chomp(<em>string</em>)</code>. See
  *  <code>String#chomp</code>.
  *  Available only when -p/-n command line option specified.
- *     
+ *
  */
 
 static VALUE
@@ -1592,7 +1592,7 @@ load_file_internal(VALUE arg)
 	enc = rb_usascii_encoding();
     }
     rb_funcall(f, set_encoding, 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
-    tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);
+    tree = rb_parser_compile_file(parser, fname, f, line_start);
     rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
     if (script && rb_parser_end_seen_p(parser)) {
 	rb_define_global_const("DATA", f);
