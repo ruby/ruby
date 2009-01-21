@@ -173,6 +173,21 @@ ary_resize_capa(VALUE ary, long capacity)
 }
 
 static void
+ary_double_capa(VALUE ary, long min)
+{
+    long new_capa = ARY_CAPA(ary) / 2;
+
+    if (new_capa < ARY_DEFAULT_SIZE) {
+	new_capa = ARY_DEFAULT_SIZE;
+    }
+    if (new_capa >= ARY_MAX_SIZE - min) {
+	new_capa = (ARY_MAX_SIZE - min) / 2;
+    }
+    new_capa += min;
+    ary_resize_capa(ary, new_capa);
+}
+
+static void
 rb_ary_decrement_share(VALUE shared)
 {
     if (shared) {
@@ -580,16 +595,7 @@ rb_ary_store(VALUE ary, long idx, VALUE val)
 
     rb_ary_modify(ary);
     if (idx >= ARY_CAPA(ary)) {
-	long new_capa = ARY_CAPA(ary) / 2;
-
-	if (new_capa < ARY_DEFAULT_SIZE) {
-	    new_capa = ARY_DEFAULT_SIZE;
-	}
-	if (new_capa >= ARY_MAX_SIZE - idx) {
-	    new_capa = (ARY_MAX_SIZE - idx) / 2;
-	}
-	new_capa += idx;
-	ary_resize_capa(ary, new_capa);
+	ary_double_capa(ary, idx);
     }
     if (idx > RARRAY_LEN(ary)) {
 	rb_mem_clear(RARRAY_PTR(ary) + RARRAY_LEN(ary),
@@ -839,7 +845,7 @@ rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
     if (argc == 0) return ary;
     rb_ary_modify(ary);
     if (ARY_CAPA(ary) <= (len = RARRAY_LEN(ary)) + argc) {
-	ary_resize_capa(ary, len + argc + ARY_DEFAULT_SIZE);
+	ary_double_capa(ary, len + argc);
     }
 
     /* sliding items */
@@ -1203,7 +1209,7 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	}
 	len = beg + rlen;
 	if (len >= ARY_CAPA(ary)) {
-	    ary_resize_capa(ary, len);
+	    ary_double_capa(ary, len);
 	}
 	rb_mem_clear(RARRAY_PTR(ary) + RARRAY_LEN(ary), beg - RARRAY_LEN(ary));
 	if (rlen > 0) {
@@ -1216,7 +1222,7 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 
 	alen = RARRAY_LEN(ary) + rlen - len;
 	if (alen >= ARY_CAPA(ary)) {
-	    ary_resize_capa(ary, alen);
+	    ary_double_capa(ary, alen);
 	}
 
 	if (len != rlen) {

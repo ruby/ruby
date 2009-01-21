@@ -6,6 +6,17 @@ Wed Jan 21 21:43:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ruby.c (load_file_internal): rests EOF flag to make possible to
 	  load from stdin after reading data.
 
+Wed Jan 21 17:17:18 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (ary_double_capa): a new function to expand array more
+	  aggressively.   [ruby-core:21460]
+
+	* array.c (rb_ary_store): use ary_double_capa().
+
+	* array.c (rb_ary_unshift_m): ditto.
+
+	* array.c (rb_ary_splice): ditto.
+
 Wed Jan 21 15:32:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_ungetbyte, rb_io_ungetc): clears EOF flag.
