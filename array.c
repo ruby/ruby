@@ -2209,7 +2209,7 @@ take_i(VALUE val, VALUE *args, int argc, VALUE *argv)
 static VALUE
 take_items(VALUE obj, long n)
 {
-    VALUE result = to_ary(obj);
+    VALUE result = rb_check_array_type(obj);
     VALUE args[2];
 
     if (!NIL_P(result)) return rb_ary_subseq(result, 0, n);
