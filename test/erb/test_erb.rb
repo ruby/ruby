@@ -234,7 +234,19 @@ EOS
     klass.module_eval do
       def_erb_method('hello_world', erb)
     end
-    assert(klass.new.respond_to?('hello_world'))    
+    assert(klass.new.respond_to?('hello_world'))
+
+    klass.module_eval do
+      def_erb_method('trim_hello', File.join(File.dirname(File.expand_path(__FILE__)), 'trim_hello.erb'), '-')
+    end
+    assert(klass.new.respond_to?('trim_hello'))
+    ans = <<EOS
+= hello
+* 0
+* 1
+* 2
+EOS
+    assert_equal(ans, klass.new.trim_hello)
   end
 
   def test_escape
