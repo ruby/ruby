@@ -1,3 +1,28 @@
+Wed Jan 21 11:12:55 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (filetime_to_timeval): new function, split from
+	  gettimeofday().
+
+	* win32/win32.c (gettimeofday): use above function.
+
+	* win32/win32.c (filetime_to_unixtime): ditto. [ruby-dev:36135]
+
+Wed Jan 21 11:12:55 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (gettimeofday): tv_usec is usec, not msec.
+	  [ruby-dev:36094]
+
+Wed Jan 21 11:12:55 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (gettimeofday): calc tv_sec and tv_usec from system
+	  time by myself. [ruby-dev:36084]
+
+Wed Jan 21 11:12:55 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (gettimeofday): shouldn't use mktime(2) because it's
+	  buggy about handling summer time.
+	  reported by Yoshikawa <yoshixool AT gmail.com> at [ruby-dev:36071]
+
 Tue Jan 20 12:23:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/scanf.rb (Scanf::FormatSpecifier#initialize): %i should accept
