@@ -43,6 +43,29 @@ memfill(mem, size, val)
     }
 }
 
+static void
+ary_resize_capa(VALUE ary, long capacity)
+{
+    REALLOC_N(RARRAY(ary)->ptr, VALUE, capacity);
+    RARRAY(ary)->aux.capa = capacity;
+}
+
+static void
+ary_double_capa(VALUE ary, long min)
+{
+    long new_capa = RARRAY(ary)->aux.capa / 2;
+
+    if (new_capa < ARY_DEFAULT_SIZE) {
+	new_capa = ARY_DEFAULT_SIZE;
+    }
+    if (new_capa >= ARY_MAX_SIZE - min) {
+	new_capa = (ARY_MAX_SIZE - min) / 2;
+    }
+    new_capa += min;
+    REALLOC_N(RARRAY(ary)->ptr, VALUE, new_capa);
+    RARRAY(ary)->aux.capa = new_capa;
+}
+
 #define ARY_TMPLOCK  FL_USER1
 
 static inline void
@@ -386,17 +409,7 @@ rb_ary_store(ary, idx, val)
 
     rb_ary_modify(ary);
     if (idx >= RARRAY(ary)->aux.capa) {
-	long new_capa = RARRAY(ary)->aux.capa / 2;
-
-	if (new_capa < ARY_DEFAULT_SIZE) {
-	    new_capa = ARY_DEFAULT_SIZE;
-	}
-	if (new_capa >= ARY_MAX_SIZE - idx) {
-	    new_capa = (ARY_MAX_SIZE - idx) / 2;
-	}
-	new_capa += idx;
-	REALLOC_N(RARRAY(ary)->ptr, VALUE, new_capa);
-	RARRAY(ary)->aux.capa = new_capa;
+	ary_double_capa(ary, idx);
     }
     if (idx > RARRAY(ary)->len) {
 	rb_mem_clear(RARRAY(ary)->ptr + RARRAY(ary)->len,
@@ -1099,8 +1112,7 @@ rb_ary_splice(ary, beg, len, rpl)
 	}
 	len = beg + rlen;
 	if (len >= RARRAY(ary)->aux.capa) {
-	    REALLOC_N(RARRAY(ary)->ptr, VALUE, len);
-	    RARRAY(ary)->aux.capa = len;
+	    ary_double_capa(ary, len);
 	}
 	rb_mem_clear(RARRAY(ary)->ptr + RARRAY(ary)->len, beg - RARRAY(ary)->len);
 	if (rlen > 0) {

@@ -1,3 +1,12 @@
+Wed Jan 21 17:25:41 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (ary_double_capa): a new function to expand array more
+	  aggressively.   [ruby-core:21460]
+
+	* array.c (rb_ary_store): use ary_double_capa().
+
+	* array.c (rb_ary_splice): ditto.
+
 Wed Jan 21 15:43:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (inspect_enumerator, yielder_new_i): added
