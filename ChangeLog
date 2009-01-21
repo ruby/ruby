@@ -1,3 +1,12 @@
+Wed Jan 21 13:57:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/io.h (typedef struct rb_io_t):
+	* io.c (flush_before_seek):
+	* io.c (io_fillbuf):
+	* io.c (io_fread):
+	* io.c (io_getpartial):
+	* ruby.c (load_file_internal):
+
 Wed Jan 21 08:22:04 2009  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*.rb: Imported minitest 1.3.1 r4532.
