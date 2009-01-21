@@ -1,11 +1,14 @@
-Wed Jan 21 13:57:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jan 21 13:58:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* include/ruby/io.h (typedef struct rb_io_t):
-	* io.c (flush_before_seek):
-	* io.c (io_fillbuf):
-	* io.c (io_fread):
-	* io.c (io_getpartial):
-	* ruby.c (load_file_internal):
+	* include/ruby/io.h (FMODE_EOF): EOF flag on TTY.
+
+	* io.c (io_set_eof): sets EOF flag for TTY.
+
+	* io.c (io_seek): clears EOF flag.
+
+	* io.c (io_fillbuf): returns EOF if already met EOF.  [ruby-dev:37798]
+
+	* io.c (io_fillbuf, io_fread, io_getpartial): sets EOF.
 
 Wed Jan 21 08:22:04 2009  Ryan Davis  <ryand-ruby@zenspider.com>
 
