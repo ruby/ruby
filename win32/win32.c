@@ -2795,24 +2795,36 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 
 #include <sys/timeb.h>
 
+static int
+filetime_to_timeval(const FILETIME* ft, struct timeval *tv)
+{
+    ULARGE_INTEGER tmp;
+    unsigned LONG_LONG lt;
+
+    tmp.LowPart = ft->dwLowDateTime;
+    tmp.HighPart = ft->dwHighDateTime;
+    lt = tmp.QuadPart;
+
+    /* lt is now 100-nanosec intervals since 1601/01/01 00:00:00 UTC,
+       convert it into UNIX time (since 1970/01/01 00:00:00 UTC).
+       the first leap second is at 1972/06/30, so we doesn't need to think
+       about it. */
+    lt /= 10;	/* to usec */
+    lt -= (LONG_LONG)((1970-1601)*365.2425) * 24 * 60 * 60 * 1000 * 1000;
+
+    tv->tv_sec = lt / (1000 * 1000);
+    tv->tv_usec = lt % (1000 * 1000);
+
+    return tv->tv_sec > 0 ? 0 : -1;
+}
+
 int _cdecl
 gettimeofday(struct timeval *tv, struct timezone *tz)
 {
-    SYSTEMTIME st;
-    time_t t;
-    struct tm tm;
+    FILETIME ft;
 
-    GetLocalTime(&st);
-    tm.tm_sec = st.wSecond;
-    tm.tm_min = st.wMinute;
-    tm.tm_hour = st.wHour;
-    tm.tm_mday = st.wDay;
-    tm.tm_mon = st.wMonth - 1;
-    tm.tm_year = st.wYear - 1900;
-    tm.tm_isdst = -1;
-    t = mktime(&tm);
-    tv->tv_sec = t;
-    tv->tv_usec = st.wMilliseconds * 1000;
+    GetSystemTimeAsFileTime(&ft);
+    filetime_to_timeval(&ft, tv);
 
     return 0;
 }
@@ -3087,27 +3099,12 @@ isUNCRoot(const char *path)
 static time_t
 filetime_to_unixtime(const FILETIME *ft)
 {
-    FILETIME loc;
-    SYSTEMTIME st;
-    struct tm tm;
-    time_t t;
+    struct timeval tv;
 
-    if (!FileTimeToLocalFileTime(ft, &loc)) {
+    if (filetime_to_timeval(ft, &tv) == (time_t)-1)
 	return 0;
-    }
-    if (!FileTimeToSystemTime(&loc, &st)) {
-	return 0;
-    }
-    memset(&tm, 0, sizeof(tm));
-    tm.tm_year = st.wYear - 1900;
-    tm.tm_mon = st.wMonth - 1;
-    tm.tm_mday = st.wDay;
-    tm.tm_hour = st.wHour;
-    tm.tm_min = st.wMinute;
-    tm.tm_sec = st.wSecond;
-    tm.tm_isdst = -1;
-    t = mktime(&tm);
-    return t == -1 ? 0 : t;
+    else
+	return tv.tv_sec;
 }
 
 static unsigned
