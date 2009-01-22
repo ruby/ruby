@@ -1,3 +1,17 @@
+Thu Jan 22 15:19:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (marshal_load): arg.data is no longer a VALUE but a
+	  st_table, and freed in load_ensure.  pointed out by pegacorn.
+	  [ruby-dev:37008]
+
+Thu Jan 22 15:19:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_mark_set): new function to mark keys.
+
+	* marshal.c (struct dump_arg, struct load_arg): added wrappers to mark
+	  data entries.  backport from trunk r13527,r13528,r13961,r16533.
+	  [ruby-dev:36082]
+
 Wed Jan 21 11:12:55 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (filetime_to_timeval): new function, split from

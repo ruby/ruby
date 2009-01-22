@@ -724,6 +724,31 @@ rb_mark_tbl(tbl)
 }
 
 static int
+mark_key(key, value, lev)
+    VALUE key, value;
+    int lev;
+{
+    gc_mark(key, lev);
+    return ST_CONTINUE;
+}
+
+static void
+mark_set(tbl, lev)
+    st_table *tbl;
+    int lev;
+{
+    if (!tbl) return;
+    st_foreach(tbl, mark_key, lev);
+}
+
+void
+rb_mark_set(tbl)
+    st_table *tbl;
+{
+    mark_set(tbl, 0);
+}
+
+static int
 mark_keyvalue(key, value, lev)
     VALUE key;
     VALUE value;
