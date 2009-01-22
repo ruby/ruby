@@ -2290,9 +2290,14 @@ define_final(int argc, VALUE *argv, VALUE os)
 	rb_raise(rb_eArgError, "wrong type argument %s (should be callable)",
 		 rb_obj_classname(block));
     }
-    FL_SET(obj, FL_FINALIZE);
+    if (!FL_ABLE(obj)) {
+	rb_raise(rb_eArgError, "cannot define finalizer for %s",
+		 rb_obj_classname(obj));
+    }
+    RBASIC(obj)->flags |= FL_FINALIZE;
 
     block = rb_ary_new3(2, INT2FIX(rb_safe_level()), block);
+    OBJ_FREEZE(block);
 
     if (!finalizer_table) {
 	finalizer_table = st_init_numtable();
@@ -2301,7 +2306,9 @@ define_final(int argc, VALUE *argv, VALUE os)
 	rb_ary_push(table, block);
     }
     else {
-	st_add_direct(finalizer_table, obj, rb_ary_new3(1, block));
+	table = rb_ary_new3(1, block);
+	RBASIC(table)->klass = 0;
+	st_add_direct(finalizer_table, obj, table);
     }
     return block;
 }
