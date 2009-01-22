@@ -1836,6 +1836,15 @@ rb_w32_open_osfhandle(intptr_t osfhandle, int flags)
 }
 #endif
 
+int
+rb_w32_is_valid_fd(int fd)
+{
+    if (_get_osfhandle(fd) == -1)
+	return -1;
+    else
+	return 0;
+}
+
 #undef getsockopt
 
 static int
