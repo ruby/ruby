@@ -298,7 +298,7 @@ end
 have_header("sys/un.h")
 have_header("sys/uio.h")
 
-$distcleanfiles.concat << "constants.h" << "constdefs.*"
+$distcleanfiles << "constants.h" << "constdefs.*"
 
 if have_func(test_func)
   have_func("hsterror")
