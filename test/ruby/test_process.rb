@@ -199,7 +199,7 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
-  MANDATORY_ENVS = []
+  MANDATORY_ENVS = %w[RUBYLIB]
   if /linux/ =~ RbConfig::CONFIG['target_os']
     MANDATORY_ENVS << 'LD_PRELOAD'
   end
