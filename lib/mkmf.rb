@@ -1586,6 +1586,10 @@ def create_makefile(target, srcprefix = nil)
   end
   origdef ||= ''
 
+  if $extout and $INSTALLFILES
+    $distcleanfiles.concat($INSTALLFILES.collect {|files, dir|File.join(dir, files.sub(/\A\.\//, ''))})
+  end
+
   if $extmk and not $extconf_h
     create_header
   end
@@ -1660,6 +1664,8 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
   mfile.print("install-rb-default: pre-install-rb-default\n")
   mfile.print("pre-install-rb: Makefile\n")
   mfile.print("pre-install-rb-default: Makefile\n")
+  fsep = config_string('BUILD_FILE_SEPARATOR')
+  sep = fsep ? ":/=#{fsep}" : ""
   for sfx, i in [["-default", [["lib/**/*.rb", "$(RUBYLIBDIR)", "lib"]]], ["", $INSTALLFILES]]
     files = install_files(mfile, i, nil, srcprefix) or next
     for dir, *files in files
@@ -1673,14 +1679,10 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
         mfile.print("#{dest}: #{f}\n")
         mfile.print("\t$(MAKEDIRS) $(@D)\n") unless $nmake
         mfile.print("\t$(#{$extout ? 'COPY' : 'INSTALL_DATA'}) ")
-	sep = config_string('BUILD_FILE_SEPARATOR')
-	if sep
-	  f = f.gsub("/", sep)
-	  sep = ":/="+sep
+	if fsep
+	  f = f.gsub("/", fsep)
 	  f = f.gsub(/(\$\(\w+)(\))/) {$1+sep+$2}
 	  f = f.gsub(/(\$\{\w+)(\})/) {$1+sep+$2}
-	else
-	  sep = ""
 	end
 	mfile.print("#{f} $(@D#{sep})\n")
 	if defined?($installed_list) and !$extout
