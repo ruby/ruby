@@ -193,6 +193,12 @@ module MarshalTestLib
     1.instance_eval { remove_instance_variable("@iv") }
   end
 
+  def test_fixnum_64bit
+    obj = [1220278665, 1220278662, 1220278661, 1220278661, 1220278656]
+
+    marshal_equal(obj)
+  end
+
   def test_float
     marshal_equal(-1.0)
     marshal_equal(0.0)
