@@ -1,3 +1,8 @@
+Thu Jan 22 11:57:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_gc_call_finalizer_at_exit): deffers IO finalization.
+	  [ruby-dev:36646]
+
 Thu Jan 22 05:17:06 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (def_erb_method): pass the trim_mode  [Feature #1032]

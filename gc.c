@@ -1254,6 +1254,15 @@ make_deferred(p)
     p->as.basic.flags = (p->as.basic.flags & ~T_MASK) | T_ZOMBIE;
 }
 
+static inline void
+make_io_deferred(RVALUE *p)
+{
+    struct rb_io_t *fptr = p->as.file.fptr;
+    make_deferred(p);
+    p->as.data.dfree = (void (*)(void*))rb_io_fptr_finalize;
+    p->as.data.data = fptr;
+}
+
 static int
 obj_free(obj)
     VALUE obj;
@@ -1327,10 +1336,7 @@ obj_free(obj)
 	break;
       case T_FILE:
 	if (RANY(obj)->as.file.fptr) {
-	    struct rb_io_t *fptr = RANY(obj)->as.file.fptr;
-	    make_deferred(RANY(obj));
-	    RDATA(obj)->dfree = (void (*)(void*))rb_io_fptr_finalize;
-	    RDATA(obj)->data = fptr;
+ 	    make_io_deferred(RANY(obj));
 	    return 1;
 	}
 	break;
@@ -1966,29 +1972,36 @@ run_final(obj)
     rb_thread_critical = critical_save;
 }
 
-void
-rb_gc_finalize_deferred()
+static int
+finalize_deferred()
 {
     RVALUE *p = deferred_final_list;
 
     deferred_final_list = 0;
     if (p) {
 	finalize_list(p);
-	free_unused_heaps();
+	return 1;
     }
+    return 0;
+}
+
+void
+rb_gc_finalize_deferred()
+{
+    if (finalize_deferred())
+	free_unused_heaps();
 }
 
 void
 rb_gc_call_finalizer_at_exit()
 {
     RVALUE *p, *pend;
+    RVALUE *final_list = 0;
     int i;
 
     /* run finalizers */
     if (need_call_final) {
-	p = deferred_final_list;
-	deferred_final_list = 0;
-	finalize_list(p);
+ 	finalize_deferred();
 	for (i = 0; i < heaps_used; i++) {
 	    p = heaps[i].slot; pend = p + heaps[i].limit;
 	    while (p < pend) {
@@ -2004,6 +2017,8 @@ rb_gc_call_finalizer_at_exit()
 	    finalizer_table = 0;
 	}
     }
+    /* finalizers are part of garbage collection */
+    during_gc++;
     /* run data object's finalizers */
     for (i = 0; i < heaps_used; i++) {
 	p = heaps[i].slot; pend = p + heaps[i].limit;
@@ -2015,15 +2030,24 @@ rb_gc_call_finalizer_at_exit()
 		    RUBY_CRITICAL(free(DATA_PTR(p)));
 		}
 		else if (RANY(p)->as.data.dfree) {
-		    (*RANY(p)->as.data.dfree)(DATA_PTR(p));
+ 		    make_deferred(RANY(p));
+ 		    RANY(p)->as.free.next = final_list;
+ 		    final_list = p;
 		}
 	    }
 	    else if (BUILTIN_TYPE(p) == T_FILE) {
-		p->as.free.flags = 0;
-		rb_io_fptr_finalize(RANY(p)->as.file.fptr);
+ 		if (RANY(p)->as.file.fptr) {
+ 		    make_io_deferred(RANY(p));
+ 		    RANY(p)->as.free.next = final_list;
+ 		    final_list = p;
+		}
 	    }
 	    p++;
 	}
+    }
+    during_gc = 0;
+    if (final_list) {
+	finalize_list(final_list);
     }
 }
 
