@@ -1,3 +1,10 @@
+Thu Jan 22 12:19:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (define_final): cannot define finalizer for immediate
+	  values.  [ruby-core:21500]
+
+	* gc.c (define_final): freezes or hides internal values.
+
 Thu Jan 22 11:57:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_gc_call_finalizer_at_exit): deffers IO finalization.
