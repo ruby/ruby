@@ -214,7 +214,6 @@ extern int    WSAAPI rb_w32_connect(int, const struct sockaddr *, int);
 extern void   rb_w32_fdset(int, fd_set*);
 extern void   rb_w32_fdclr(int, fd_set*);
 extern int    rb_w32_fdisset(int, fd_set*);
-extern int    rb_w32_is_valid_fd(int);
 extern int    WSAAPI rb_w32_select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
 extern int    WSAAPI rb_w32_getpeername(int, struct sockaddr *, int *);
 extern int    WSAAPI rb_w32_getsockname(int, struct sockaddr *, int *);

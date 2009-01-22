@@ -5971,15 +5971,13 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     fd = NUM2INT(fnum);
     if (fstat(fd, &st) == -1) rb_sys_fail(0);
     UPDATE_MAXFD(fd);
-#if defined(HAVE_FCNTL) && defined(F_GETFL)
     if (NIL_P(vmode)) {
+#if defined(HAVE_FCNTL) && defined(F_GETFL)
         oflags = fcntl(fd, F_GETFL);
         if (oflags == -1) rb_sys_fail(0);
         fmode = rb_io_oflags_fmode(oflags);
-    }
-#elif defined(_WIN32)
-    if (rb_w32_is_valid_fd(fd)) rb_sys_fail(0);
 #endif
+    }
     MakeOpenFile(io, fp);
     fp->fd = fd;
     fp->mode = fmode;
