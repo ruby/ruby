@@ -24,6 +24,8 @@ require 'rubygems/test_utilities'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'mockgemui')
 
 module Gem
+  @ruby = ENV['RUBY']
+
   def self.searcher=(searcher)
     MUTEX.synchronize do @searcher = searcher end
   end
@@ -252,8 +254,10 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
         Gem::Builder.new(spec).build
       end
 
+      cache_dir = File.join(@gemhome, 'cache')
+      FileUtils.mkdir_p cache_dir
       FileUtils.mv "#{spec.full_name}.gem",
-                   File.join(@gemhome, 'cache', "#{spec.original_name}.gem")
+                   File.join(cache_dir, "#{spec.original_name}.gem")
     end
   end
 

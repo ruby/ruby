@@ -1,3 +1,25 @@
+Thu Jan 22 16:29:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/installer.rb (Gem::Installer#initialize): fixed
+	  typos.
+
+	* test/rubygems/test_gem.rb (test_self_dir): removed false
+	  assertions.
+
+	* test/rubygems/test_gem.rb (test_self_set_paths): checks if paths
+	  are included.
+
+	* test/rubygems/test_gem_commands_install_command.rb
+	  (test_execute_remote): checks diagnostic message too.
+
+	* test/rubygems/test_gem_installer.rb (load): uses Gem.ruby.
+
+	* test/rubygems/gemutilities.rb (Gem.ruby): initializes from the
+	  environment variable to run without installation.
+
+	* test/rubygems/gemutilities.rb (RubyGemTestCase#util_build_gem):
+	  creates cache directory.
+
 Thu Jan 22 16:12:51 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* revert previous revision.  it's already out-of-date.

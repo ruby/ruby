@@ -152,11 +152,6 @@ class TestGem < RubyGemTestCase
 
   def test_self_dir
     assert_equal @gemhome, Gem.dir
-
-    Gem::DIRECTORIES.each do |filename|
-      assert File.directory?(File.join(Gem.dir, filename)),
-             "expected #{filename} to exist"
-    end
   end
 
   def test_self_ensure_gem_directories
@@ -483,9 +478,10 @@ class TestGem < RubyGemTestCase
     other = File.join @tempdir, 'other'
     path = [@userhome, other].join File::PATH_SEPARATOR
     Gem.send :set_paths, path
+    path = Gem.path
 
-    assert File.exist?(File.join(@userhome, 'gems'))
-    assert File.exist?(File.join(other, 'gems'))
+    assert_equal path[0], @userhome
+    assert_equal path[1], other
   end
 
   def test_self_set_paths_nonexistent_home

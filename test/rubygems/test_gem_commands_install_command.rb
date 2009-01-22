@@ -112,9 +112,18 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
 
     @cmd.options[:args] = [@a2.name]
 
+    err = ""
+    class << err
+      alias write <<
+    end
     use_ui @ui do
       e = assert_raises Gem::SystemExitException do
-        @cmd.execute
+        stderr, $stderr = $stderr, err
+        begin
+          @cmd.execute
+        ensure
+          $stderr = stderr
+        end
       end
       assert_equal 0, e.exit_code
     end
@@ -127,6 +136,7 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
     assert_equal "Installing RDoc documentation for #{@a2.full_name}...",
                  out.shift
     assert out.empty?, out.inspect
+    assert_match /^Updating class cache with \d+ classes/, err
   end
 
   def test_execute_two
