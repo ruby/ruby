@@ -390,7 +390,7 @@ class TestProcess < Test::Unit::TestCase
         wios = pipes.map {|r, w| w }
         child_wfds = wios.map {|w| h2[w].fileno }
         pid = spawn(RUBY, "-e",
-                "[#{child_wfds.join(',')}].each {|fd| IO.new(fd).puts fd }", h)
+                "[#{child_wfds.join(',')}].each {|fd| IO.new(fd, 'w').puts fd }", h)
         pipes.each {|r, w|
           assert_equal("#{h2[w].fileno}\n", r.gets)
         }
@@ -406,7 +406,7 @@ class TestProcess < Test::Unit::TestCase
         wios = pipes.map {|r, w| w }
         child_wfds = wios.map {|w| h2[w].fileno }
         pid = spawn(RUBY, "-e",
-                "[#{child_wfds.join(',')}].each {|fd| IO.new(fd).puts fd }", h)
+                "[#{child_wfds.join(',')}].each {|fd| IO.new(fd, 'w').puts fd }", h)
         pipes.each {|r, w|
           assert_equal("#{h2[w].fileno}\n", r.gets)
         }
@@ -422,7 +422,7 @@ class TestProcess < Test::Unit::TestCase
 
       with_pipe {|r, w|
         w.close_on_exec = true
-        pid = spawn(RUBY, "-e", "IO.new(#{w.fileno}).print 'a'", w=>w)
+        pid = spawn(RUBY, "-e", "IO.new(#{w.fileno}, 'w').print 'a'", w=>w)
         w.close
         assert_equal("a", r.read)
         Process.wait pid
@@ -491,13 +491,13 @@ class TestProcess < Test::Unit::TestCase
         IO.popen([*ECHO["fuga"], STDOUT=>"out"]) {|io| }
       }
       with_pipe {|r, w|
-        IO.popen([RUBY, '-e', 'IO.new(3).puts("a"); puts "b"', 3=>w]) {|io|
+        IO.popen([RUBY, '-e', 'IO.new(3, "w").puts("a"); puts "b"', 3=>w]) {|io|
           assert_equal("b\n", io.read)
         }
         w.close
         assert_equal("a\n", r.read)
       }
-      IO.popen([RUBY, '-e', "IO.new(9).puts(:b)",
+      IO.popen([RUBY, '-e', "IO.new(9, 'w').puts(:b)",
                9=>["out2", File::WRONLY|File::CREAT|File::TRUNC]]) {|io|
         assert_equal("", io.read)
       }
@@ -518,15 +518,14 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_fd_inheritance
-    skip "inheritance of fd>=3 is not supported" if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     with_pipe {|r, w|
-      system(RUBY, '-e', 'IO.new(ARGV[0].to_i).puts(:ba)', w.fileno.to_s)
+      system(RUBY, '-e', 'IO.new(ARGV[0].to_i, "w").puts(:ba)', w.fileno.to_s)
       w.close
       assert_equal("ba\n", r.read)
     }
     with_pipe {|r, w|
       Process.wait spawn(RUBY, '-e',
-                         'IO.new(ARGV[0].to_i).puts("bi") rescue nil',
+                         'IO.new(ARGV[0].to_i, "w").puts("bi") rescue nil',
                          w.fileno.to_s)
       w.close
       assert_equal("", r.read)
@@ -535,7 +534,7 @@ class TestProcess < Test::Unit::TestCase
       with_tmpchdir {|d|
 	write_file("s", <<-"End")
 	  exec(#{RUBY.dump}, '-e',
-	       'IO.new(ARGV[0].to_i).puts("bu") rescue nil',
+	       'IO.new(ARGV[0].to_i, "w").puts("bu") rescue nil',
 	       #{w.fileno.to_s.dump})
 	End
 	Process.wait spawn(RUBY, "s", :close_others=>false)
@@ -544,7 +543,7 @@ class TestProcess < Test::Unit::TestCase
       }
     }
     with_pipe {|r, w|
-      io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts('me')"])
+      io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}, 'w').puts('me')"])
       w.close
       errmsg = io.read
       assert_equal("", r.read)
@@ -552,7 +551,7 @@ class TestProcess < Test::Unit::TestCase
       Process.wait
     }
     with_pipe {|r, w|
-      errmsg = `#{RUBY} -e "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts(123)"`
+      errmsg = `#{RUBY} -e "STDERR.reopen(STDOUT); IO.new(#{w.fileno}, 'w').puts(123)"`
       w.close
       assert_equal("", r.read)
       assert_not_equal("", errmsg)
@@ -562,28 +561,28 @@ class TestProcess < Test::Unit::TestCase
   def test_execopts_close_others
     with_tmpchdir {|d|
       with_pipe {|r, w|
-        system(RUBY, '-e', 'STDERR.reopen("err", "w"); IO.new(ARGV[0].to_i).puts("ma")', w.fileno.to_s, :close_others=>true)
+        system(RUBY, '-e', 'STDERR.reopen("err", "w"); IO.new(ARGV[0].to_i, "w").puts("ma")', w.fileno.to_s, :close_others=>true)
         w.close
         assert_equal("", r.read)
         assert_not_equal("", File.read("err"))
         File.unlink("err")
       }
       with_pipe {|r, w|
-        Process.wait spawn(RUBY, '-e', 'STDERR.reopen("err", "w"); IO.new(ARGV[0].to_i).puts("mi")', w.fileno.to_s, :close_others=>true)
+        Process.wait spawn(RUBY, '-e', 'STDERR.reopen("err", "w"); IO.new(ARGV[0].to_i, "w").puts("mi")', w.fileno.to_s, :close_others=>true)
         w.close
         assert_equal("", r.read)
         assert_not_equal("", File.read("err"))
         File.unlink("err")
       }
       with_pipe {|r, w|
-        Process.wait spawn(RUBY, '-e', 'IO.new(ARGV[0].to_i).puts("bi")', w.fileno.to_s, :close_others=>false)
+        Process.wait spawn(RUBY, '-e', 'IO.new(ARGV[0].to_i, "w").puts("bi")', w.fileno.to_s, :close_others=>false)
         w.close
         assert_equal("bi\n", r.read)
       }
       with_pipe {|r, w|
 	write_file("s", <<-"End")
 	  exec(#{RUBY.dump}, '-e',
-	       'STDERR.reopen("err", "w"); IO.new(ARGV[0].to_i).puts("mu")',
+	       'STDERR.reopen("err", "w"); IO.new(ARGV[0].to_i, "w").puts("mu")',
 	       #{w.fileno.to_s.dump},
 	       :close_others=>true)
 	End
@@ -594,7 +593,7 @@ class TestProcess < Test::Unit::TestCase
         File.unlink("err")
       }
       with_pipe {|r, w|
-        io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts('me')", :close_others=>true])
+        io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}, 'w').puts('me')", :close_others=>true])
         w.close
         errmsg = io.read
         assert_equal("", r.read)
@@ -602,7 +601,7 @@ class TestProcess < Test::Unit::TestCase
         Process.wait
       }
       with_pipe {|r, w|
-        io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts('mo')", :close_others=>false])
+        io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}, 'w').puts('mo')", :close_others=>false])
         w.close
         errmsg = io.read
         assert_equal("mo\n", r.read)
@@ -610,7 +609,7 @@ class TestProcess < Test::Unit::TestCase
         Process.wait
       }
       with_pipe {|r, w|
-        io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts('mo')", :close_others=>nil])
+        io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}, 'w').puts('mo')", :close_others=>nil])
         w.close
         errmsg = io.read
         assert_equal("mo\n", r.read)
@@ -627,7 +626,7 @@ class TestProcess < Test::Unit::TestCase
         w << "haha\n"
         w.close
         r.close_on_exec = true
-        IO.popen([RUBY, "-e", "print IO.new(#{r.fileno}).read", r.fileno=>r.fileno, :close_others=>false]) {|io|
+        IO.popen([RUBY, "-e", "print IO.new(#{r.fileno}, 'r').read", r.fileno=>r.fileno, :close_others=>false]) {|io|
           assert_equal("haha\n", io.read)
         }
       }
@@ -678,7 +677,7 @@ class TestProcess < Test::Unit::TestCase
       with_pipe {|r, w|
 	write_file("s", <<-"End")
 	  str = "echo non existing command name which contains spaces"
-	  w = IO.new(#{w.fileno})
+	  w = IO.new(#{w.fileno}, "w")
 	  STDOUT.reopen(w)
 	  STDERR.reopen(w)
 	  begin
@@ -1075,8 +1074,11 @@ class TestProcess < Test::Unit::TestCase
     Process.wait pid
     sleep 2
     assert_equal [true], signal_received, " [ruby-core:19744]"
-  rescue NotImplementedError
+  rescue NotImplementedError, ArgumentError
   ensure
-    Signal.trap(:CHLD, 'DEFAULT')
+    begin
+      Signal.trap(:CHLD, 'DEFAULT')
+    rescue ArgumentError
+    end
   end
 end
