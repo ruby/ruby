@@ -476,12 +476,13 @@ end
 
 def try_func(func, libs, headers = nil, &b)
   headers = cpp_include(headers)
-  try_link(<<"SRC", libs, &b) or try_link(<<"SRC", libs, &b)
+  try_link(<<"SRC", libs, &b) or
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
 int t() { void ((*volatile p)()); p = (void ((*)()))#{func}; return 0; }
 SRC
+  try_link(<<"SRC", libs, &b)
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
@@ -1258,11 +1259,7 @@ def configuration(srcdir)
 SHELL = /bin/sh
 
 #### Start of system configuration section. ####
-#{
-if $extmk
-  "top_srcdir = " + $top_srcdir.sub(%r"\A#{Regexp.quote($topdir)}/", "$(topdir)/")
-end
-}
+#{"top_srcdir = " + $top_srcdir.sub(%r"\A#{Regexp.quote($topdir)}/", "$(topdir)/") if $extmk}
 srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {CONFIG[$1||$2]}.quote}
 topdir = #{($extmk ? CONFIG["topdir"] : $topdir).quote}
 hdrdir = #{$extmk ? CONFIG["hdrdir"].quote : '$(topdir)'}
