@@ -1,3 +1,7 @@
+Fri Jan 23 14:36:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (try_func): got rid of c-mode confusion.
+
 Fri Jan 23 13:26:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (trap_handler): also accepts symbols.  [ruby-dev:37823]
