@@ -1,3 +1,19 @@
+Fri Jan 23 11:42:21 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* NEWS: added an entry for REXML.
+
+	* lib/rexml/document.rb: fixed typo.
+
+Fri Jan 23 11:42:21 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/rexml/document.rb: limit entity expansion.  Thanks, Luka
+	  Treiber, Mitja Kolsek, and Michael Koziarski.  backported from
+	  trunk r19033, r19317, r19318.
+
+	* lib/rexml/entity.rb: ditto.
+
+	* test/rexml/test_document.rb: ditto.
+
 Thu Jan 22 15:11:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (marshal_load): arg.data is no longer a VALUE but a
