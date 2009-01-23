@@ -1331,8 +1331,6 @@ def configuration(srcdir)
       if CONFIG['target_os'] != 'cygwin'
         vpath = vpath.map {|p| p.sub(/.*/, '$(shell cygpath -u \&)')}
       end
-    when 'mingw32'
-      CONFIG['PATH_SEPARATOR'] = ';'
     end
   end
   CONFIG["hdrdir"] ||= $hdrdir
