@@ -1299,6 +1299,29 @@ def winsep(s)
   s.tr('/', '\\')
 end
 
+# Converts native path to format acceptable in Makefile
+#
+# Internal use only.
+#
+if !CROSS_COMPILING
+  case CONFIG['build_os']
+  when 'mingw32'
+    def mkintpath(path)
+      # mingw uses make from msys and it needs special care
+      # converts from C:\some\path to /C/some/path
+      path = path.dup
+      path.tr!('\\', '/')
+      path.sub!(/\A([A-Za-z]):(?=\/)/, '/\1')
+      path
+    end
+  end
+end
+unless defined?(mkintpath)
+  def mkintpath(path)
+    path
+  end
+end
+
 def configuration(srcdir)
   mk = []
   vpath = $VPATH.dup
@@ -1318,9 +1341,9 @@ SHELL = /bin/sh
 
 #### Start of system configuration section. ####
 #{"top_srcdir = " + $top_srcdir.sub(%r"\A#{Regexp.quote($topdir)}/", "$(topdir)/") if $extmk}
-srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {CONFIG[$1||$2]}.quote}
-topdir = #{($extmk ? CONFIG["topdir"] : $topdir).quote}
-hdrdir = #{CONFIG["hdrdir"].quote}
+srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {mkintpath(CONFIG[$1||$2])}.quote}
+topdir = #{mkintpath($extmk ? CONFIG["topdir"] : $topdir).quote}
+hdrdir = #{mkintpath(CONFIG["hdrdir"]).quote}
 arch_hdrdir = #{$arch_hdrdir}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
