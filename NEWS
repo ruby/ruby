@@ -7,6 +7,15 @@ Note that each entry is kept so brief that no reason behind or
 reference information is supplied with.  For a full list of changes
 with all sufficient information, see the ChangeLog file.
 
+* REXML
+
+  * REXML::Document.entity_expansion_limit=
+
+    New method to set the entity expansion limit. By default the limit is
+    set to 10000.  See the following URL for details.
+
+    http://www.ruby-lang.org/en/news/2008/08/23/dos-vulnerability-in-rexml/
+
 == Changes since the 1.8.6 release
 
 === Configuration changes
