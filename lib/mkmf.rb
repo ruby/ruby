@@ -1274,7 +1274,7 @@ def configuration(srcdir)
       if CONFIG['target_os'] != 'cygwin'
         vpath.each {|p| p.sub!(/.*/, '$(shell cygpath -u \&)')}
       end
-    when 'msdosdjgpp', 'mingw32'
+    when 'msdosdjgpp'
       CONFIG['PATH_SEPARATOR'] = ';'
     end
   end
