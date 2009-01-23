@@ -1,3 +1,8 @@
+Sat Jan 24 08:22:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (configuration): tools under the top source
+	  directory are not installed, so unusable outside extmk.rb.
+
 Fri Jan 23 17:24:31 2009  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* golf_prelude.rb (Enumerator#inspect): avoid warning.
