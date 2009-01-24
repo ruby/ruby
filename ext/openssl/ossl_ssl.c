@@ -67,6 +67,9 @@ static const char *ossl_sslctx_attrs[] = {
     "verify_callback", "options", "cert_store", "extra_chain_cert",
     "client_cert_cb", "tmp_dh_callback", "session_id_context",
     "session_get_cb", "session_new_cb", "session_remove_cb",
+#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
+    "servername_cb",
+#endif
 };
 
 #define ossl_ssl_get_io(o)           rb_iv_get((o),"@io")
@@ -84,7 +87,12 @@ static const char *ossl_sslctx_attrs[] = {
 #define ossl_ssl_set_tmp_dh(o,v)     rb_iv_set((o),"@tmp_dh",(v))
 
 static const char *ossl_ssl_attr_readers[] = { "io", "context", };
-static const char *ossl_ssl_attrs[] = { "sync_close", };
+static const char *ossl_ssl_attrs[] = {
+#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
+    "hostname",
+#endif
+    "sync_close", 
+};
 
 ID ID_callback_state;
 
@@ -446,6 +454,66 @@ ossl_sslctx_add_extra_chain_cert_i(VALUE i, VALUE arg)
     return i;
 }
 
+static VALUE ossl_sslctx_setup(VALUE self);
+
+#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
+static VALUE
+ossl_call_servername_cb(VALUE ary)
+{
+    VALUE ssl_obj, sslctx_obj, cb, ret_obj;
+
+    Check_Type(ary, T_ARRAY);
+    ssl_obj = rb_ary_entry(ary, 0);
+
+    sslctx_obj = rb_iv_get(ssl_obj, "@context");
+    if (NIL_P(sslctx_obj)) return Qnil;
+    cb = rb_iv_get(sslctx_obj, "@servername_cb");
+    if (NIL_P(cb)) return Qnil;
+
+    ret_obj = rb_funcall(cb, rb_intern("call"), 1, ary);
+    if (rb_obj_is_kind_of(ret_obj, cSSLContext)) {
+        SSL *ssl;
+        SSL_CTX *ctx2;
+
+        ossl_sslctx_setup(ret_obj);
+        Data_Get_Struct(ssl_obj, SSL, ssl);
+        Data_Get_Struct(ret_obj, SSL_CTX, ctx2);
+        SSL_set_SSL_CTX(ssl, ctx2);
+    } else if (!NIL_P(ret_obj)) {
+            rb_raise(rb_eArgError, "servername_cb must return an OpenSSL::SSL::SSLContext object or nil");
+    }
+
+    return ret_obj;
+}
+
+static int
+ssl_servername_cb(SSL *ssl, int *ad, void *arg)
+{
+    VALUE ary, ssl_obj, ret_obj;
+    void *ptr;
+    int state = 0;
+    const char *servername = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
+
+    if (!servername)
+        return SSL_TLSEXT_ERR_OK;
+
+    if ((ptr = SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx)) == NULL)
+    	return SSL_TLSEXT_ERR_ALERT_FATAL;
+    ssl_obj = (VALUE)ptr;
+    ary = rb_ary_new2(2);
+    rb_ary_push(ary, ssl_obj);
+    rb_ary_push(ary, rb_str_new2(servername));
+
+    ret_obj = rb_protect((VALUE(*)_((VALUE)))ossl_call_servername_cb, ary, &state);
+    if (state) {
+        rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(state));
+        return SSL_TLSEXT_ERR_ALERT_FATAL;
+    }
+
+    return SSL_TLSEXT_ERR_OK;
+}
+#endif
+
 /*
  * call-seq:
  *    ctx.setup => Qtrue # first time
@@ -581,6 +649,15 @@ ossl_sslctx_setup(VALUE self)
 	SSL_CTX_sess_set_remove_cb(ctx, ossl_sslctx_session_remove_cb);
 	OSSL_Debug("SSL SESSION remove callback added");
     }
+
+#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
+    val = rb_iv_get(self, "@servername_cb");
+    if (!NIL_P(val)) {
+        SSL_CTX_set_tlsext_servername_callback(ctx, ssl_servername_cb);
+	OSSL_Debug("SSL TLSEXT servername callback added");
+    }
+#endif
+
     return Qtrue;
 }
 
@@ -901,6 +978,10 @@ ossl_ssl_setup(VALUE self)
 
     Data_Get_Struct(self, SSL, ssl);
     if(!ssl){
+#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
+	VALUE hostname = rb_iv_get(self, "@hostname");
+#endif
+
         v_ctx = ossl_ssl_get_ctx(self);
         Data_Get_Struct(v_ctx, SSL_CTX, ctx);
 
@@ -910,6 +991,12 @@ ossl_ssl_setup(VALUE self)
         }
         DATA_PTR(self) = ssl;
 
+#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
+        if (!NIL_P(hostname)) {
+           if (SSL_set_tlsext_host_name(ssl, StringValuePtr(hostname)) != 1)
+               ossl_raise(eSSLError, "SSL_set_tlsext_host_name:");
+        }
+#endif
         io = ossl_ssl_get_io(self);
         GetOpenFile(io, fptr);
         rb_io_check_readable(fptr);
@@ -946,7 +1033,15 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname)
     Data_Get_Struct(self, SSL, ssl);
     GetOpenFile(ossl_ssl_get_io(self), fptr);
     for(;;){
-	if((ret = func(ssl)) > 0) break;
+	ret = func(ssl);
+
+        cb_state = rb_ivar_get(self, ID_callback_state);
+        if (!NIL_P(cb_state))
+            rb_jump_tag(NUM2INT(cb_state));
+
+	if (ret > 0)
+	    break;
+
 	switch((ret2 = ssl_get_error(ssl, ret))){
 	case SSL_ERROR_WANT_WRITE:
             rb_io_wait_writable(FPTR_TO_FD(fptr));
@@ -961,10 +1056,6 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname)
 	    ossl_raise(eSSLError, "%s returned=%d errno=%d state=%s", funcname, ret2, errno, SSL_state_string_long(ssl));
 	}
     }
-
-    cb_state = rb_ivar_get(self, ID_callback_state);
-    if (!NIL_P(cb_state))
-        rb_jump_tag(NUM2INT(cb_state));
 
     return self;
 }

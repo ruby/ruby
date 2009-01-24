@@ -1,3 +1,10 @@
+Sun Jan 25 06:44:58 2009  Technorama Ltd.  <oss-ruby@technorama.net>
+
+	* ext/openssl/ossl_ssl.c: Server Name Indication support.
+	  new methods SSLContext#server_name_cb=, SSLSocket#hostname=.
+
+	* test/openssl/test_ssl.rb: Tests for above.
+
 Sat Jan 24 08:22:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (configuration): tools under the top source
