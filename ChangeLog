@@ -1,3 +1,14 @@
+Sun Jan 25 00:02:23 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/matrix.rb (Vector#eql?): typo of the method name as "eqn?".
+	  (Vector#eqn?): removed. Defined by mistake.
+	  Fixes [ruby-dev:36294]. Reported by weda <weda AT
+	  issp.u-tokyo.ac.jp> and an anonymous user.
+
+	* test/matrix/test_matrix.rb: added.
+
+	* test/matrix/test_vector.rb: added.
+
 Fri Jan 23 11:49:45 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* NEWS: added an entry for REXML.
