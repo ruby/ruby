@@ -712,6 +712,9 @@ clean-local::
 		@$(RM) $(RUBY_INSTALL_NAME).res $(RUBYW_INSTALL_NAME).res $(RUBY_SO_NAME).res
 		@$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF) ext\ripper\y.output
 
+clean:
+		@-rmdir $(EXTOUT:/=\)\$(arch)
+
 distclean-local::
 		@$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\)
 		@$(RM) $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc

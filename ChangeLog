@@ -1,4 +1,4 @@
-Sun Jan 25 11:07:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jan 25 11:25:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, win32/Makefile.sub (RMDIRS): remove directory and
 	  parents.
@@ -6,13 +6,12 @@ Sun Jan 25 11:07:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* Makefile.in, win32/Makefile.sub (distclean-rdoc): added to remove
 	  temprary rdoc.
 
-	* Makefile.in, win32/Makefile.sub (distclean): removes extout
-	  directory.
-
 	* Makefile.in, win32/Makefile.sub (clean-ext): skips non-existent
 	  directories.
 
 	* common.mk (clean, distclean): cleans rdoc.
+
+	* common.mk (clean-extout): removes extout directory.
 
 	* configure.in (RMDIRS, RMALL): added to clean extout.
 

@@ -229,10 +229,6 @@ distclean-local::
 distclean-rdoc:
 	@$(RMALL) $(RDOCOUT:/=\)
 
-distclean:
-	@-rmdir $(EXTOUT)/$(arch)
-	@-rmdir $(EXTOUT)
-
 clean-ext distclean-ext realclean-ext::
 	@set dummy ${EXTS}; shift; \
 	if test "$$#" = 0; then \

@@ -340,7 +340,7 @@ install-prereq: $(CLEAR_INSTALLED_LIST)
 clear-installed-list:
 	@exit > $(INSTALLED_LIST)
 
-clean: clean-ext clean-local clean-enc clean-golf clean-rdoc
+clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-extout
 clean-local::
 	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
@@ -351,8 +351,10 @@ clean-enc:
 clean-golf:
 	@$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
 clean-rdoc:
+clean-extout:
+	@-$(RMDIRS) $(EXTOUT)/$(arch)
 
-distclean: distclean-ext distclean-local distclean-enc distclean-golf
+distclean: distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
 distclean-local:: clean-local
 	@$(RM) $(MKFILES) rbconfig.rb yasmdata.rb encdb.h
 	@$(RM) config.cache config.log config.status config.status.lineno $(PRELUDES)
@@ -363,13 +365,16 @@ distclean-enc: clean-enc
 distclean-golf: clean-golf
 	@$(RM) $(GOLFPRELUDES)
 distclean-rdoc:
+distclean-extout: clean-extout
+	@-$(RMDIRS) $(EXTOUT)
 
-realclean:: realclean-ext realclean-local realclean-enc realclean-golf
+realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 realclean-local:: distclean-local
 	@$(RM) parse.c parse.h lex.c newline.c revision.h
 realclean-ext::
 realclean-enc:: distclean-enc
 realclean-golf: distclean-golf
+realclean-extout: distclean-extout
 
 check: test test-all
 
