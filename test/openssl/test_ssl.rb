@@ -544,6 +544,50 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
       end
     end
   end
+
+  def test_tlsext_hostname
+    return unless OpenSSL::SSL::SSLSocket.instance_methods.include?("hostname")
+
+    ctx_proc = Proc.new do |ctx, ssl|
+      foo_ctx = ctx.dup
+
+      ctx.servername_cb = Proc.new do |ssl, hostname|
+        case hostname
+        when 'foo.example.com'
+          foo_ctx
+        when 'bar.example.com'
+          nil
+        else
+          raise "unknown hostname #{hostname.inspect}"
+        end
+      end
+    end
+
+    server_proc = Proc.new do |ctx, ssl|
+      readwrite_loop(ctx, ssl)
+    end
+
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, :ctx_proc => ctx_proc, :server_proc => server_proc) do |server, port|
+      2.times do |i|
+        sock = TCPSocket.new("127.0.0.1", port)
+        ctx = OpenSSL::SSL::SSLContext.new
+        if defined?(OpenSSL::SSL::OP_NO_TICKET)
+          # disable RFC4507 support
+          ctx.options = OpenSSL::SSL::OP_NO_TICKET
+        end
+        ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+        ssl.sync_close = true
+        ssl.hostname = (i & 1 == 0) ? 'foo.example.com' : 'bar.example.com'
+        ssl.connect
+
+        str = "x" * 100 + "\n"
+        ssl.puts(str)
+        assert_equal(str, ssl.gets)
+
+        ssl.close
+      end
+    end
+  end
 end
 
 end

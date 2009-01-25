@@ -1,3 +1,10 @@
+Mon Jan 26 05:36:55 2009  Technorama Ltd.  <oss-ruby@technorama.net>
+
+	* ext/openssl/ossl_ssl.c: Server Name Indication support.
+	  new methods SSLContext#server_name_cb=, SSLSocket#hostname=.
+
+	* test/openssl/test_ssl.rb: Tests for above.
+
 Fri Jan 23 15:12:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (mkintpath): new function which converts native path
