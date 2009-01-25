@@ -1,3 +1,9 @@
+Sun Jan 25 09:09:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (join_path): use strlcat() to force link.
+
+	* dir.c (glob_helper): no strcpy() is needed since len is known.
+
 Sun Jan 25 06:44:58 2009  Technorama Ltd.  <oss-ruby@technorama.net>
 
 	* ext/openssl/ossl_ssl.c: Server Name Indication support.
