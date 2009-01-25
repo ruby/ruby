@@ -1536,7 +1536,7 @@ socket_s_list_ip_address(VALUE self)
     struct ifconf conf;
     struct ifreq *req;
     VALUE list = Qnil;
-    char *reason = NULL;
+    const char *reason = NULL;
     int save_errno;
 
     fd = socket(AF_INET, SOCK_DGRAM, 0);
