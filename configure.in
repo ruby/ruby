@@ -265,6 +265,8 @@ else
   MAKEDIRS='install -d'
 fi
 AC_SUBST(MAKEDIRS)
+AC_SUBST(RMDIRS, ['$(top_srcdir)/tool/rmdirs'])
+AC_SUBST(RMALL, ['rm -fr'])
 
 dnl check for large file stuff
 mv confdefs.h confdefs1.h

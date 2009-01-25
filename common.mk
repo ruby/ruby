@@ -340,7 +340,7 @@ install-prereq: $(CLEAR_INSTALLED_LIST)
 clear-installed-list:
 	@exit > $(INSTALLED_LIST)
 
-clean: clean-ext clean-local clean-enc clean-golf
+clean: clean-ext clean-local clean-enc clean-golf clean-rdoc
 clean-local::
 	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
@@ -350,10 +350,11 @@ clean-enc:
 	@-$(MAKE) -f $(ENC_MK) $(MFLAGS) clean
 clean-golf:
 	@$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
+clean-rdoc:
 
 distclean: distclean-ext distclean-local distclean-enc distclean-golf
 distclean-local:: clean-local
-	@$(RM) $(MKFILES) $(arch_hdrdir)/ruby/config.h rbconfig.rb yasmdata.rb encdb.h
+	@$(RM) $(MKFILES) rbconfig.rb yasmdata.rb encdb.h
 	@$(RM) config.cache config.log config.status config.status.lineno $(PRELUDES)
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 distclean-ext::
@@ -361,6 +362,7 @@ distclean-enc: clean-enc
 	@-$(MAKE) -f $(ENC_MK) $(MFLAGS) distclean
 distclean-golf: clean-golf
 	@$(RM) $(GOLFPRELUDES)
+distclean-rdoc:
 
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf
 realclean-local:: distclean-local

@@ -64,6 +64,7 @@ PURIFY =
 AUTOCONF = autoconf
 IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
+RMDIRS = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
 CP = copy > nul
 MV = move > nul
 !if !defined(BASERUBY)
@@ -575,6 +576,8 @@ s,@ARFLAGS@,$(ARFLAGS),;t t
 s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,MFLAGS = -$$(MAKEFLAGS),;t t
 s,@RM@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rm.bat,;t t
+s,@RMDIRS@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rmdirs.bat,;t t
+s,@RMALL@,$$(COMSPEC) /C rmdir /s /q,;t t
 s,@CP@,copy > nul,;t t
 s,@LIBOBJS@,$(LIBOBJS),;t t
 s,@ALLOCA@,$(ALLOCA),;t t
@@ -712,15 +715,29 @@ clean-local::
 distclean-local::
 		@$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\)
 		@$(RM) $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
+		@-$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h
+		@-$(RMDIRS) $(arch_hdrdir:/=\)\ruby
+
+distclean-rdoc:
+		@-$(RMALL) $(RDOCOUT:/=\)
+
+distclean:
+		@-rmdir $(EXTOUT:/=\)\$(arch)
+		@-rmdir $(EXTOUT:/=\)
 
 clean-ext distclean-ext realclean-ext::
-		@for /R ext %I in (.) do @if exist %I\Makefile ( \
+!if "$(EXTS)" == ""
+		@for %I in ($(EXTS)) \
+!else
+		@for /R ext %I in (.) \
+!endif
+		do @if exist %I\Makefile ( \
+		    cd %I && ( \
 		    echo $(@:-ext=)ing %~nI & \
-		    cd %I & \
 		    $(MAKE) $(MFLAGS) $(@:-ext=) & \
 		    cd %CD% & \
-		    rmdir %I \
-		)
+		    $(RMDIRS) %I \
+		) )
 
 distclean-ext realclean-ext::
 		@-rmdir ext

@@ -158,11 +158,13 @@ end
 #
 #   ruby -run -e rmdir -- [OPTION] DIR
 #
+#   -p		remove DIRECTORY and its ancestors.
 #   -v		verbose
 #
 
 def rmdir
-  setup do |argv, options|
+  setup("p") do |argv, options|
+    options[:parents] = true if options.delete :p
     FileUtils.rmdir argv, options
   end
 end
