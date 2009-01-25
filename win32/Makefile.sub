@@ -729,7 +729,7 @@ distclean:
 		@-rmdir $(EXTOUT:/=\)
 
 clean-ext distclean-ext realclean-ext::
-!if "$(EXTS)" == ""
+!if "$(EXTS)" != ""
 		@for %I in ($(EXTS)) \
 !else
 		@for /R ext %I in (.) \
