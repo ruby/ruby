@@ -55,9 +55,9 @@ class TestSocket < Test::Unit::TestCase
     assert_raise(SocketError) { Socket.getnameinfo(["AF_UNIX", 80, "0.0.0.0"]) }
   end
 
-  def test_list_ip_address
+  def test_ip_address_list
     begin
-      list = Socket.list_ip_address
+      list = Socket.ip_address_list
     rescue NotImplementedError
       return
     end

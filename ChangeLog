@@ -1,3 +1,8 @@
+Sun Jan 25 16:35:44 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (socket_s_ip_address_list): renamed from
+	  socket_s_list_ip_address.  [ruby-dev:37806]
+
 Sun Jan 25 12:17:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in (RUBYDEF): needs read-only section too.

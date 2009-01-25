@@ -1427,13 +1427,13 @@ sockaddr_obj(struct sockaddr *addr)
 
 /*
  * call-seq:
- *   Socket.list_ip_address => array
+ *   Socket.ip_address_list => array
  *
  * Returns local IP addresses as an array.
  *
  * The array contains AddrInfo objects.
  *
- *  pp Socket.list_ip_address
+ *  pp Socket.ip_address_list
  *  #=> [#<AddrInfo: 127.0.0.1>,
  *       #<AddrInfo: 192.168.0.128>,
  *       #<AddrInfo: ::1>,
@@ -1441,7 +1441,7 @@ sockaddr_obj(struct sockaddr *addr)
  *
  */
 static VALUE
-socket_s_list_ip_address(VALUE self)
+socket_s_ip_address_list(VALUE self)
 {
 #if defined(HAVE_GETIFADDRS)
     struct ifaddrs *ifp = NULL;
@@ -1681,5 +1681,5 @@ Init_socket()
     rb_define_singleton_method(rb_cSocket, "unpack_sockaddr_un", sock_s_unpack_sockaddr_un, 1);
 #endif
 
-    rb_define_singleton_method(rb_cSocket, "list_ip_address", socket_s_list_ip_address, 0);
+    rb_define_singleton_method(rb_cSocket, "ip_address_list", socket_s_ip_address_list, 0);
 }
