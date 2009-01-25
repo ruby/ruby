@@ -1657,12 +1657,12 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
   mfile.print CLEANINGS
   fsep = config_string('BUILD_FILE_SEPARATOR') {|s| s unless s == "/"}
   if fsep
+    sep = ":/=#{fsep}"
     fseprepl = proc {|s|
       s = s.gsub("/", fsep)
       s = s.gsub(/(\$\(\w+)(\))/) {$1+sep+$2}
       s = s.gsub(/(\$\{\w+)(\})/) {$1+sep+$2}
     }
-    sep = ":/=#{fsep}"
   else
     fseprepl = proc {|s| s}
     sep = ""
