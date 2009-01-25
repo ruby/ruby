@@ -1,3 +1,7 @@
+Sun Jan 25 12:17:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cygwin/GNUmakefile.in (RUBYDEF): needs read-only section too.
+
 Sun Jan 25 12:02:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (clean-ext): condition of EXTS was inverted.
