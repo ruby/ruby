@@ -13745,6 +13745,7 @@ Init_Thread()
     rb_define_method(rb_cCont, "[]", rb_cont_call, -1);
     rb_define_global_function("callcc", rb_callcc, 0);
     rb_global_variable(&cont_protect);
+    rb_provide("continuation.so");
 
     cThGroup = rb_define_class("ThreadGroup", rb_cObject);
     rb_define_alloc_func(cThGroup, thgroup_s_alloc);

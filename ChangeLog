@@ -1,3 +1,8 @@
+Mon Jan 26 14:15:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (Init_Thread): provides "continuation.so" for forward
+	  compatibility.
+
 Mon Jan 26 05:36:55 2009  Technorama Ltd.  <oss-ruby@technorama.net>
 
 	* ext/openssl/ossl_ssl.c: Server Name Indication support.
