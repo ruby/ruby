@@ -1,3 +1,7 @@
+Mon Jan 26 15:49:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pathname.rb (chop_basename, prepend_prefix): use o option.
+
 Sun Jan 25 16:35:44 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (socket_s_ip_address_list): renamed from
