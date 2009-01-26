@@ -1,3 +1,9 @@
+Tue Jan 27 03:43:34 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_any_hash): fixed performance issues with nil, true,
+	  false as hash keys.  a patch from Matthias Waechter.  
+	  [ruby-core:21568]
+
 Tue Jan 27 03:23:43 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): should point correct path to

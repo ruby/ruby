@@ -69,6 +69,9 @@ rb_any_hash(VALUE a)
     switch (TYPE(a)) {
       case T_FIXNUM:
       case T_SYMBOL:
+      case T_NIL:
+      case T_FALSE:
+      case T_TRUE:
 	hnum = (int)a;
 	break;
 
