@@ -1270,7 +1270,9 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
     long offset, beg, len;
 
     if (argc == 3) {
-	rb_ary_splice(ary, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
+	beg = NUM2LONG(argv[0]);
+	len = NUM2LONG(argv[1]);
+	rb_ary_splice(ary, beg, len, argv[2]);
 	return argv[2];
     }
     if (argc != 2) {
