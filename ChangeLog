@@ -1,3 +1,7 @@
+Mon Jan 26 15:49:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pathname.rb (chop_basename, prepend_prefix): use o option.
+
 Mon Jan 26 14:15:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (Init_Thread): provides "continuation.so" for forward
