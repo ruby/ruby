@@ -1135,7 +1135,6 @@ static rb_pid_t
 proc_spawn_v(char **argv, char *prog)
 {
     char fbuf[MAXPATHLEN];
-    char *extension;
     rb_pid_t status;
 
     if (!prog)
