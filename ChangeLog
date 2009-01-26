@@ -7,7 +7,7 @@ Tue Jan 27 03:43:34 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue Jan 27 03:23:43 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): should point correct path to
-	  ruby.h and defines.h.   [ruby-core:21570]
+	  ruby.h and defines.h.   [ruby-core:21569]
 
 Mon Jan 26 16:00:40 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
