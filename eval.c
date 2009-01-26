@@ -13390,6 +13390,19 @@ rb_cont_call(argc, argv, cont)
     return Qnil;
 }
 
+void
+Init_Cont()
+{
+    rb_cCont = rb_define_class("Continuation", rb_cObject);
+    rb_undef_alloc_func(rb_cCont);
+    rb_undef_method(CLASS_OF(rb_cCont), "new");
+    rb_define_method(rb_cCont, "call", rb_cont_call, -1);
+    rb_define_method(rb_cCont, "[]", rb_cont_call, -1);
+    rb_define_global_function("callcc", rb_callcc, 0);
+    rb_global_variable(&cont_protect);
+    rb_provide("continuation.so");
+}
+
 struct thgroup {
     int enclosed;
     VALUE group;
@@ -13737,15 +13750,6 @@ Init_Thread()
     rb_define_method(rb_cThread, "keys", rb_thread_keys, 0);
 
     rb_define_method(rb_cThread, "inspect", rb_thread_inspect, 0);
-
-    rb_cCont = rb_define_class("Continuation", rb_cObject);
-    rb_undef_alloc_func(rb_cCont);
-    rb_undef_method(CLASS_OF(rb_cCont), "new");
-    rb_define_method(rb_cCont, "call", rb_cont_call, -1);
-    rb_define_method(rb_cCont, "[]", rb_cont_call, -1);
-    rb_define_global_function("callcc", rb_callcc, 0);
-    rb_global_variable(&cont_protect);
-    rb_provide("continuation.so");
 
     cThGroup = rb_define_class("ThreadGroup", rb_cObject);
     rb_define_alloc_func(cThGroup, thgroup_s_alloc);
