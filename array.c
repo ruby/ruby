@@ -1187,7 +1187,9 @@ rb_ary_aset(argc, argv, ary)
 	if (SYMBOL_P(argv[1])) {
 	    rb_raise(rb_eTypeError, "Symbol as subarray length");
 	}
-	rb_ary_splice(ary, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
+	beg = NUM2LONG(argv[0]);
+	len = NUM2LONG(argv[1]);
+	rb_ary_splice(ary, beg, len, argv[2]);
 	return argv[2];
     }
     if (argc != 2) {
