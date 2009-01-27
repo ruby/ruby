@@ -433,6 +433,10 @@ ensure
   rm_f "conftest*"
 end
 
+class Object
+  alias_method :try_header, (config_string('try_header') || :try_cpp)
+end
+
 def cpp_include(header)
   if header
     header = [header] unless header.kind_of? Array
@@ -806,7 +810,7 @@ end
 #
 def have_header(header, &b)
   checking_for header do
-    if try_cpp(cpp_include(header), &b)
+    if try_header(cpp_include(header), &b)
       $defs.push(format("-DHAVE_%s", header.tr("a-z./\055", "A-Z___")))
       true
     else
@@ -825,13 +829,13 @@ def find_header(header, *paths)
   message = checking_message(header, paths)
   header = cpp_include(header)
   checking_for message do
-    if try_cpp(header)
+    if try_header(header)
       true
     else
       found = false
       paths.each do |dir|
         opt = "-I#{dir}".quote
-        if try_cpp(header, opt)
+        if try_header(header, opt)
           $INCFLAGS << " " << opt
           found = true
           break

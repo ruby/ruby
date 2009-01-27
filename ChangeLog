@@ -1,3 +1,13 @@
+Tue Jan 27 11:09:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (try_header): checks the header depending on
+	  platform.
+
+	* lib/mkmf.rb (have_header, find_header): use try_header.
+
+	* win32/Makefile.sub (try_header): uses try_compile to get rid of
+	  slow -E option of VC.
+
 Tue Jan 27 11:03:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (distclean-enc, realclean-enc): do not call clean of

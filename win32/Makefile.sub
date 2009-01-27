@@ -654,6 +654,7 @@ s,@configure_args@,--with-make-prog=nmake --enable-shared $(configure_args),;t t
 s,@configure_input@,$$configure_input,;t t
 s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
+s,@try_header@,try_compile,;t t
 <<KEEP
 
 miniruby: miniruby$(EXEEXT)
