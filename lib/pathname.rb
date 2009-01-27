@@ -889,8 +889,10 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.readable?</tt>.
   def readable?() FileTest.readable?(@path) end
 
-  # See <tt>FileTest.world_readable?</tt>.
-  def world_readable?() FileTest.world_readable?(@path) end
+  if FileTest.respond_to? :world_readable?
+    # See <tt>FileTest.world_readable?</tt>.
+    def world_readable?() FileTest.world_readable?(@path) end
+  end
 
   # See <tt>FileTest.readable_real?</tt>.
   def readable_real?() FileTest.readable_real?(@path) end
@@ -916,8 +918,10 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.writable?</tt>.
   def writable?() FileTest.writable?(@path) end
 
-  # See <tt>FileTest.world_writable?</tt>.
-  def world_writable?() FileTest.world_writable?(@path) end
+  if FileTest.respond_to? :world_writable?
+    # See <tt>FileTest.world_writable?</tt>.
+    def world_writable?() FileTest.world_writable?(@path) end
+  end
 
   # See <tt>FileTest.writable_real?</tt>.
   def writable_real?() FileTest.writable_real?(@path) end
