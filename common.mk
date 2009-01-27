@@ -346,8 +346,6 @@ clean-local::
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
 	@$(RM) *.inc y.tab.c y.output encdb.h transdb.h
 clean-ext::
-clean-enc:
-	@-$(MAKE) -f $(ENC_MK) $(MFLAGS) clean
 clean-golf:
 	@$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
 clean-rdoc:
@@ -360,8 +358,6 @@ distclean-local:: clean-local
 	@$(RM) config.cache config.log config.status config.status.lineno $(PRELUDES)
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 distclean-ext::
-distclean-enc: clean-enc
-	@-$(MAKE) -f $(ENC_MK) $(MFLAGS) distclean
 distclean-golf: clean-golf
 	@$(RM) $(GOLFPRELUDES)
 distclean-rdoc:
@@ -372,9 +368,12 @@ realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean
 realclean-local:: distclean-local
 	@$(RM) parse.c parse.h lex.c newline.c revision.h
 realclean-ext::
-realclean-enc:: distclean-enc
 realclean-golf: distclean-golf
 realclean-extout: distclean-extout
+
+clean-enc distclean-enc realclean-enc:
+	@echo $(@:-enc=ing) encodings
+	@-$(MAKE) -f $(ENC_MK) $(MFLAGS) $(@:-enc=)
 
 check: test test-all
 

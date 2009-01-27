@@ -30,6 +30,7 @@
 % dependencies = encs + trans
 % cleanlibs = Shellwords.shellwords(CONFIG["cleanlibs"] || "")
 % cleanobjs = Shellwords.shellwords(CONFIG["cleanobjs"] || "")
+% cleanobjs << "$*.def" if deffile
 % rule_subst = CONFIG["RULE_SUBST"] || "%s"
 % transvpath = rule_subst.dup.sub!(/\{[^{}]+\}/, '$(TRANSVPATH)/') || "enc/trans/%s"
 % transvpath_prefix = (rule_subst.dup.sub!(/\{[^{}]+\}/, '{$(TRANSVPATH)}') || "") % ""

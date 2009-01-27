@@ -1,3 +1,20 @@
+Tue Jan 27 11:03:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (distclean-enc, realclean-enc): do not call clean of
+	  enc.mk twice or more.
+
+	* enc/depend (cleanobjs): added deffile.
+
+	* lib/mkmf.rb (create_makefile): removes deffile at clean instead
+	  of distclean.
+
+	* win32/Makefile.sub (miniruby, LIBRUBY_SO): removes lib and exp
+	  files.
+
+	* win32/Makefile.sub (clean, distclean): have moved to common.mk.
+
+	* win32/rmdirs.bat: omits `not empty' message.
+
 Tue Jan 27 10:15:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (struct rb_transcoding): added ary member for debug.
@@ -46,7 +63,7 @@ Sun Jan 25 12:02:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Jan 25 11:50:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* lib/mkmf.rb (create_makefile):fixed the variables order because
+	* lib/mkmf.rb (create_makefile): fixed the variables order because
 	  converter proc refers the separator.
 
 Sun Jan 25 11:25:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>

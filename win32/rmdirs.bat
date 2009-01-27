@@ -10,7 +10,7 @@ if "%1" == "" goto :end
         if not exist "%dir%\." goto :begin
         if "%dir%" == "." goto :begin
         if "%dir%" == ".." goto :begin
-        rd "%dir%" || goto :begin
+        rd "%dir%" 2> nul || goto :begin
         :trim_sep
             if not /%dir:~-1%/ == /\/ goto :trim_base
             set dir=%dir:~0,-1%

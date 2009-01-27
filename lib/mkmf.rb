@@ -1599,7 +1599,7 @@ def create_makefile(target, srcprefix = nil)
       makedef = %{-e "puts 'EXPORTS', '#{EXPORT_PREFIX}Init_$(TARGET)'"}
     end
     if makedef
-      $distcleanfiles << '$(DEFFILE)'
+      $cleanfiles << '$(DEFFILE)'
       origdef = deffile
       deffile = "$(TARGET)-$(arch).def"
     end
@@ -1649,7 +1649,7 @@ STATIC_LIB = #{staticlib unless $static.nil?}
   mfile.print "
 TARGET_SO     = #{($extout ? '$(RUBYARCHDIR)/' : '')}$(DLLIB)
 CLEANLIBS     = #{n}.#{CONFIG['DLEXT']} #{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
-CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, '$(TARGET)')}} *.bak
+CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$(TARGET)#{deffile ? '-$(arch)': ''}")} if target} *.bak
 
 all:    #{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}
 static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}

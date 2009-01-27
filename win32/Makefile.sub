@@ -661,6 +661,7 @@ miniruby: miniruby$(EXEEXT)
 miniruby$(EXEEXT):
 		@echo. $(LIBS)
 		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) -Fe$@ $(LDFLAGS)
+		@$(RM) miniruby.lib miniruby.exp
 		miniruby.exe -v
 		$(LDSHARED_1)
 		$(LDSHARED_2)
@@ -696,6 +697,7 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		$(LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) \
 			$(RUBY_SO_NAME).res $(LIBS) -Fe$@ $(LDFLAGS) \
 			$(LIBRUBY_DLDFLAGS)
+		@$(RM) dummy.lib dummy.exp
 		$(LDSHARED_0)
 		$(LDSHARED_1)
 		$(LDSHARED_2)
@@ -712,9 +714,6 @@ clean-local::
 		@$(RM) $(RUBY_INSTALL_NAME).res $(RUBYW_INSTALL_NAME).res $(RUBY_SO_NAME).res
 		@$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF) ext\ripper\y.output
 
-clean:
-		@-rmdir $(EXTOUT:/=\)\$(arch)
-
 distclean-local::
 		@$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\)
 		@$(RM) $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
@@ -723,10 +722,6 @@ distclean-local::
 
 distclean-rdoc:
 		@-$(RMALL) $(RDOCOUT:/=\)
-
-distclean:
-		@-rmdir $(EXTOUT:/=\)\$(arch)
-		@-rmdir $(EXTOUT:/=\)
 
 clean-ext distclean-ext realclean-ext::
 !if "$(EXTS)" != ""
