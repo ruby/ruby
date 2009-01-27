@@ -1,3 +1,8 @@
+Tue Jan 27 17:30:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (marshal_dump): initializes dump_arg before any funcall.
+	  [ruby-dev:36648]
+
 Tue Jan 27 15:17:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/socket.c (host_str): numeric address should be unsigned.
