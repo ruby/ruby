@@ -71,6 +71,7 @@ typedef struct rb_transcoding {
 
     union rb_transcoding_state_t { /* opaque data for stateful encoding */
         void *ptr;
+        char ary[sizeof(double) > sizeof(void*) ? sizeof(double) : sizeof(void*)];
         double dummy_for_alignment;
     } state;
 } rb_transcoding;
@@ -89,7 +90,7 @@ typedef struct rb_transcoding {
 #define TRANSCODING_STATE_EMBED_MAX sizeof(union rb_transcoding_state_t)
 #define TRANSCODING_STATE(tc) \
     ((tc)->transcoder->state_size <= sizeof((tc)->state) ? \
-     (void *)&(tc)->state : \
+     (tc)->state.ary : \
      (tc)->state.ptr)
 
 typedef struct {
@@ -424,7 +425,6 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                       const unsigned char *in_stop, unsigned char *out_stop,
                       rb_transcoding *tc,
                       const int opt)
-
 {
     const rb_transcoder *tr = tc->transcoder;
     int unitlen = tr->input_unit_length;
