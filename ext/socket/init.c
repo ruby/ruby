@@ -333,6 +333,15 @@ connect_blocking(void *data)
     return (VALUE)connect(arg->fd, arg->sockaddr, arg->len);
 }
 
+#if defined(SOCKS) && !defined(SOCKS5)
+static VALUE
+socks_connect_blocking(void *data)
+{
+    struct connect_arg *arg = data;
+    return (VALUE)Rconnect(arg->fd, arg->sockaddr, arg->len);
+}
+#endif
+
 int
 ruby_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
 {

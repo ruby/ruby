@@ -10,20 +10,11 @@
 
 #include "rubysocket.h"
 
-#if defined(SOCKS) && !defined(SOCKS5)
-static VALUE
-socks_connect_blocking(void *data)
-{
-    struct connect_arg *arg = data;
-    return (VALUE)Rconnect(arg->fd, arg->sockaddr, arg->len);
-}
-#endif
-
 #ifdef SOCKS
 static VALUE
 socks_init(VALUE sock, VALUE host, VALUE serv)
 {
-    static init = 0;
+    static int init = 0;
 
     if (init == 0) {
 	SOCKSinit("ruby");
