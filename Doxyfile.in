@@ -69,7 +69,7 @@ SHOW_USED_FILES        = YES
 SHOW_DIRECTORIES       = NO
 SHOW_FILES             = YES
 SHOW_NAMESPACES        = YES
-FILE_VERSION_FILTER    = "./miniruby@EXEEXT@ -I @srcdir@/lib @srcdir@/tool/file2lastrev.rb -q"
+FILE_VERSION_FILTER    = "@MINIRUBY@ @srcdir@/tool/file2lastrev.rb -q"
 LAYOUT_FILE            = 
 #---------------------------------------------------------------------------
 # configuration options related to warning and progress messages
@@ -96,7 +96,7 @@ EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       = 
 EXAMPLE_RECURSIVE      = NO
 IMAGE_PATH             = 
-INPUT_FILTER           = "./miniruby@EXEEXT@ -I @srcdir@/lib @srcdir@/tool/strip-rdoc.rb"
+INPUT_FILTER           = "@MINIRUBY@ @srcdir@/tool/strip-rdoc.rb"
 FILTER_PATTERNS        = 
 FILTER_SOURCE_FILES    = YES
 #---------------------------------------------------------------------------
