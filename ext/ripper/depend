@@ -5,7 +5,7 @@ BISON = bison
 
 src: ripper.c eventids1.c eventids2table.c
 
-ripper.o: ripper.c ../../lex.c eventids1.c eventids2.c eventids2table.c \
+ripper.o: ripper.c lex.c eventids1.c eventids2.c eventids2table.c \
 	$(hdrdir)/ruby/ruby.h $(arch_hdrdir)/ruby/config.h \
 	$(hdrdir)/ruby/defines.h $(hdrdir)/ruby/intern.h \
 	$(hdrdir)/ruby/encoding.h $(hdrdir)/missing.h \
