@@ -220,8 +220,7 @@ clean-local::
 	@$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output
 
 distclean-local::
-	@$(RM) ext/config.cache $(RBCONFIG)
-	$(RM) Doxyfile
+	@$(RM) ext/config.cache $(RBCONFIG) Doxyfile
 	@-$(RM) run.gdb
 	@-$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h
 	@-$(RMDIRS) $(arch_hdrdir)/ruby
