@@ -43,7 +43,7 @@
 #   base = p.basename          # Pathname:ruby
 #   dir, base = p.split        # [Pathname:/usr/bin, Pathname:ruby]
 #   data = p.read
-#   p.open { |f| _ } 
+#   p.open { |f| _ }
 #   p.each_line { |line| _ }
 #
 # === Example 2: Using standard Ruby
@@ -55,7 +55,7 @@
 #   base = File.basename(p)    # "ruby"
 #   dir, base = File.split(p)  # ["/usr/bin", "ruby"]
 #   data = File.read(p)
-#   File.open(p) { |f| _ } 
+#   File.open(p) { |f| _ }
 #   File.foreach(p) { |line| _ }
 #
 # === Example 3: Special features
@@ -71,7 +71,7 @@
 #   p5.cleanpath                    # Pathname:articles
 #   p5.realpath                     # Pathname:/home/gavin/articles
 #   p5.children                     # [Pathname:/home/gavin/articles/linux, ...]
-# 
+#
 # == Breakdown of functionality
 #
 # === Core methods
@@ -441,7 +441,7 @@ class Pathname
   # Returns a real (absolute) pathname of +self+ in the actual filesystem.
   # The real pathname doesn't contain symlinks or useless dots.
   #
-  # No arguments should be given; the old behaviour is *obsoleted*. 
+  # No arguments should be given; the old behaviour is *obsoleted*.
   #
   def realpath
     path = @path
@@ -576,7 +576,7 @@ class Pathname
   #   p2 = p1 + "bin/ruby"           # Pathname:/usr/bin/ruby
   #   p3 = p1 + "/etc/passwd"        # Pathname:/etc/passwd
   #
-  # This method doesn't access the file system; it is pure string manipulation. 
+  # This method doesn't access the file system; it is pure string manipulation.
   #
   def +(other)
     other = Pathname.new(other) unless Pathname === other
