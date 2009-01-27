@@ -1,3 +1,8 @@
+Wed Jan 28 01:16:50 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb (def_erb_method): pass the trim_mode  [Feature #1032]
+	  [Bug #1062]
+
 Tue Jan 27 20:25:09 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pathname.rb (Pathname#world_readable?): define only if

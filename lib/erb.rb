@@ -847,10 +847,10 @@ class ERB
   module DefMethod
     public
   # define _methodname_ as instance method of current module, using ERB object or eRuby file
-    def def_erb_method(methodname, erb_or_fname)
+    def def_erb_method(methodname, erb_or_fname, trim_mode=nil)
       if erb_or_fname.kind_of? String
         fname = erb_or_fname
-        erb = ERB.new(File.read(fname))
+        erb = ERB.new(File.read(fname), nil, trim_mode)
         erb.def_method(self, methodname, fname)
       else
         erb = erb_or_fname
