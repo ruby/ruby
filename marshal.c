@@ -776,8 +776,12 @@ marshal_dump(argc, argv)
 	else port = a1;
     }
     arg.dest = 0;
+    arg.symbols = st_init_numtable();
+    arg.data    = st_init_numtable();
+    arg.taint   = Qfalse;
     arg.str = rb_str_buf_new(0);
     RBASIC(arg.str)->klass = 0;
+    arg.wrapper = Data_Wrap_Struct(rb_cData, mark_dump_arg, 0, &arg);
     if (!NIL_P(port)) {
 	if (!rb_respond_to(port, s_write)) {
 	  type_error:
@@ -793,10 +797,6 @@ marshal_dump(argc, argv)
 	port = arg.str;
     }
 
-    arg.symbols = st_init_numtable();
-    arg.data    = st_init_numtable();
-    arg.taint   = Qfalse;
-    arg.wrapper = Data_Wrap_Struct(rb_cData, mark_dump_arg, 0, &arg);
     c_arg.obj   = obj;
     c_arg.arg   = &arg;
     c_arg.limit = limit;
