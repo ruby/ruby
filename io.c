@@ -353,7 +353,8 @@ flush_before_seek(rb_io_t *fptr)
     return fptr;
 }
 
-#define io_seek(fptr, ofs, whence) lseek(flush_before_seek(fptr)->fd, ofs, whence)
+#define io_set_eof(fptr) (void)(((fptr)->mode & FMODE_TTY) && ((fptr)->mode |= FMODE_EOF))
+#define io_seek(fptr, ofs, whence) (fptr->mode &= ~FMODE_EOF, lseek(flush_before_seek(fptr)->fd, ofs, whence))
 #define io_tell(fptr) lseek(flush_before_seek(fptr)->fd, 0, SEEK_CUR)
 
 #ifndef SEEK_CUR
@@ -1147,6 +1148,9 @@ io_fillbuf(rb_io_t *fptr)
 {
     int r;
 
+    if (fptr->mode & FMODE_EOF) {
+	return -1;
+    }
     if (fptr->rbuf == NULL) {
         fptr->rbuf_off = 0;
         fptr->rbuf_len = 0;
@@ -1165,8 +1169,10 @@ io_fillbuf(rb_io_t *fptr)
         }
         fptr->rbuf_off = 0;
         fptr->rbuf_len = r;
-        if (r == 0)
+        if (r == 0) {
+	    io_set_eof(fptr);
             return -1; /* EOF */
+	}
     }
     return 0;
 }
@@ -1422,7 +1428,10 @@ io_fread(VALUE str, long offset, rb_io_t *fptr)
     if (READ_DATA_PENDING(fptr) == 0) {
 	while (n > 0) {
 	    c = rb_read_internal(fptr->fd, RSTRING_PTR(str)+offset, n);
-	    if (c == 0) break;
+	    if (c == 0) {
+		io_set_eof(fptr);
+		break;
+	    }
 	    if (c < 0) {
 		rb_sys_fail_path(fptr->pathv);
 	    }
@@ -1729,6 +1738,9 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
                 goto again;
             rb_sys_fail_path(fptr->pathv);
         }
+	else if (n == 0) {
+	    io_set_eof(fptr);
+	}
     }
     rb_str_resize(str, n);
 

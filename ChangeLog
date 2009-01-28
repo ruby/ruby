@@ -1,3 +1,15 @@
+Wed Jan 21 13:58:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/io.h (FMODE_EOF): EOF flag on TTY.
+
+	* io.c (io_set_eof): sets EOF flag for TTY.
+
+	* io.c (io_seek): clears EOF flag.
+
+	* io.c (io_fillbuf): returns EOF if already met EOF.  [ruby-dev:37798]
+
+	* io.c (io_fillbuf, io_fread, io_getpartial): sets EOF.
+
 Wed Jan 21 14:41:48 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* array.c (take_items): to_ary() raises ArgumentError if cannot to
