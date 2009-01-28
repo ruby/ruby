@@ -143,7 +143,7 @@ class Exports::Mingw < Exports
 
   def each_export(objs)
     objdump(objs) do |l|
-      yield $1 if / [[:upper:]] _((?!Init_).*)$/ =~ l
+      yield $2, !$1 if /\s(?:(T)|[[:upper:]])\s_((?!Init_).*)$/ =~ l
     end
     yield "strcasecmp", "_stricmp"
     yield "strncasecmp", "_strnicmp"

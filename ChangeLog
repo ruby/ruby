@@ -1,3 +1,10 @@
+Tue Jan 27 14:41:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cygwin/GNUmakefile.in (RUBYDEF): needs DATA marks to export
+	  non-function symbols.  [ruby-core:21582]
+
+	* win32/mkexports.rb (Exports::Mingw#each_export): ditto.
+
 Sun Jan 25 12:17:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in (RUBYDEF): needs read-only section too.
