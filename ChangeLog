@@ -1,3 +1,7 @@
+Wed Jan 28 20:53:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (marshal_dump): fixed for check_dump_arg.
+
 Tue Jan 27 17:29:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (marshal_dump): initializes dump_arg before any funcall.
