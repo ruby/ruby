@@ -1,3 +1,7 @@
+Mon Jan 26 16:00:40 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_aset): fixed arguments evaluation order.
+
 Sun Jan 25 12:02:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (clean-ext): condition of EXTS was inverted.
