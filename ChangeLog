@@ -1,3 +1,8 @@
+Thu Jan 22 16:29:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/installer.rb (Gem::Installer#initialize): fixed
+	  typos.
+
 Thu Jan 22 14:53:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_process.rb (MANDATORY_ENVS): needs RUBYLIB to run

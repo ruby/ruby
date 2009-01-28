@@ -118,8 +118,8 @@ class Gem::Installer
 
     begin
       FileUtils.mkdir_p @gem_home
-    rescue Errno::EACCESS, Errno::ENOTDIR
-      # We'll divert to ~/.gems below
+    rescue Errno::EACCES, Errno::ENOTDIR
+      # We'll divert to ~/.gem below
     end
 
     if not File.writable? @gem_home or
