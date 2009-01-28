@@ -102,5 +102,6 @@ class Enumerator
       to_a.#{meth}(*args, &block)
     end"
   }
+  alias old_inspect inspect
   alias inspect old_to_s
 end

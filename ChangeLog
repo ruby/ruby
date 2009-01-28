@@ -1,3 +1,7 @@
+Fri Jan 23 17:24:31 2009  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* golf_prelude.rb (Enumerator#inspect): avoid warning.
+
 Fri Jan 23 15:12:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (mkintpath): new function which converts native path
