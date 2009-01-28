@@ -31,7 +31,7 @@ class CGICoreTest < Test::Unit::TestCase
     }
     ENV.update(@environ)
     cgi = CGI.new
-    assert_equal(["a","b","d"],cgi.keys.sort) if RUBY_VERSION>="1.9"
+    assert_equal(["a","b","c","d"],cgi.keys.sort) if RUBY_VERSION>="1.9"
     assert_equal("",cgi["d"])
   end
 

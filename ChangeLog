@@ -1,3 +1,11 @@
+Thu Jan 22 17:12:37 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/core.rb (CGI.parse): generate only key on params hash
+	  if request have only key uri parameters.
+		(ex. index.cgi?aaa&bbb=1 # params=>{:aaa=>[],:bbb=>["1"]})
+
+	* test/cgi/test_cgi_core.rb: fix test for key only params.
+
 Thu Jan 22 16:29:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/installer.rb (Gem::Installer#initialize): fixed
