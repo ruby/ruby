@@ -1,3 +1,9 @@
+Sun Jan 25 09:09:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (join_path): use strlcat() to force link.
+
+	* dir.c (glob_helper): no strcpy() is needed since len is known.
+
 Sat Jan 24 08:22:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (configuration): tools under the top source
