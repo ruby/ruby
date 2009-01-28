@@ -2306,7 +2306,9 @@ define_final(int argc, VALUE *argv, VALUE os)
 	rb_ary_push(table, block);
     }
     else {
-	st_add_direct(finalizer_table, obj, rb_ary_new3(1, block));
+	table = rb_ary_new3(1, block);
+	RBASIC(table)->klass = 0;
+	st_add_direct(finalizer_table, obj, table);
     }
     return block;
 }
