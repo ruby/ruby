@@ -708,7 +708,7 @@ zstream_run(struct zstream *z, Bytef *src, uInt len, int flush)
 	/* keep reference to `z->input' so as not to be garbage collected
 	   after zstream_reset_input() and prevent `z->stream.next_in'
 	   from dangling. */
-	guard = z->input;
+	RB_GC_GUARD(guard) = z->input;
     }
 
     if (z->stream.avail_out == 0) {
