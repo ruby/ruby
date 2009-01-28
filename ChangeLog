@@ -1,3 +1,8 @@
+Thu Jan 29 00:24:48 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/zlib/zlib.c (zstream_run): previous change didn't resolve the
+	  problem.
+
 Wed Jan 28 22:51:12 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/zlib/zlib.c (zstream_run): desperately guard the variable.
