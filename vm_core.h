@@ -569,9 +569,9 @@ VALUE rb_thread_alloc(VALUE klass);
 VALUE rb_proc_alloc(VALUE klass);
 
 /* for debug */
-extern void vm_stack_dump_raw(rb_thread_t *, rb_control_frame_t *);
-#define SDR() vm_stack_dump_raw(GET_THREAD(), GET_THREAD()->cfp)
-#define SDR2(cfp) vm_stack_dump_raw(GET_THREAD(), (cfp))
+extern void rb_vmdebug_stack_dump_raw(rb_thread_t *, rb_control_frame_t *);
+#define SDR() rb_vmdebug_stack_dump_raw(GET_THREAD(), GET_THREAD()->cfp)
+#define SDR2(cfp) rb_vmdebug_stack_dump_raw(GET_THREAD(), (cfp))
 void rb_vm_bugreport(void);
 
 

@@ -1,3 +1,18 @@
+Mon Jan 19 11:02:30 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_dump.c: add a prefix "rb_vmdebug_" to
+	  vm_stack_dump_raw(), vm_stack_dump_raw_current(),
+	  vm_env_dump_raw(), vm_proc_dump_raw(), vm_stack_dump_th(),
+	  vm_debug_print_register(), vm_thread_dump_regs(),
+	  vm_debug_print_pre(), vm_debug_print_post(),
+	  vm_thread_dump_state().
+	  This change also may affect core (in fact, user of
+	  above functions may be only ko1).
+
+	* vm_core.h: ditto.
+
+	* vm_exec.h (SDR2): remove duplicate definition.
+
 Mon Jan 19 09:53:43 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c:
