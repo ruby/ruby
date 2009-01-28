@@ -1,3 +1,11 @@
+Mon Jan 19 08:56:53 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c, vm_eval.c (rb_f_local_variables): move definition from eval.c
+	  to vm_eval.c because vm_collect_local_variables_in_heap() should
+	  be static function.
+
+	* vm.c (vm_collect_local_variables_in_heap): make it static.
+
 Tue Jan 27 14:41:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in (RUBYDEF): needs DATA marks to export

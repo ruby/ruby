@@ -1041,64 +1041,6 @@ errat_setter(VALUE val, ID id, VALUE *var)
     set_backtrace(err, val);
 }
 
-int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
-
-/*
- *  call-seq:
- *     local_variables    => array
- *
- *  Returns the names of the current local variables.
- *
- *     fred = 1
- *     for i in 1..10
- *        # ...
- *     end
- *     local_variables   #=> ["fred", "i"]
- */
-
-static VALUE
-rb_f_local_variables(void)
-{
-    VALUE ary = rb_ary_new();
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp =
-	vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
-    int i;
-
-    while (cfp) {
-	if (cfp->iseq) {
-	    for (i = 0; i < cfp->iseq->local_table_size; i++) {
-		ID lid = cfp->iseq->local_table[i];
-		if (lid) {
-		    const char *vname = rb_id2name(lid);
-		    /* should skip temporary variable */
-		    if (vname) {
-			rb_ary_push(ary, ID2SYM(lid));
-		    }
-		}
-	    }
-	}
-	if (cfp->lfp != cfp->dfp) {
-	    /* block */
-	    VALUE *dfp = GC_GUARDED_PTR_REF(cfp->dfp[0]);
-
-	    if (vm_collect_local_variables_in_heap(th, dfp, ary)) {
-		break;
-	    }
-	    else {
-		while (cfp->dfp != dfp) {
-		    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-		}
-	    }
-	}
-	else {
-	    break;
-	}
-    }
-    return ary;
-}
-
-
 /*
  *  call-seq:
  *     __method__         => symbol
@@ -1135,7 +1077,6 @@ Init_eval(void)
     rb_define_global_function("fail", rb_f_raise, -1);
 
     rb_define_global_function("global_variables", rb_f_global_variables, 0);	/* in variable.c */
-    rb_define_global_function("local_variables", rb_f_local_variables, 0);
 
     rb_define_global_function("__method__", rb_f_method_name, 0);
     rb_define_global_function("__callee__", rb_f_method_name, 0);

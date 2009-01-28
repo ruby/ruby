@@ -373,9 +373,8 @@ collect_local_variables_in_env(rb_env_t * const env, const VALUE ary)
     return 0;
 }
 
-int
-vm_collect_local_variables_in_heap(rb_thread_t * const th,
-				   VALUE * const dfp, const VALUE ary)
+static int
+vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary)
 {
     if (ENV_IN_HEAP_P(th, dfp)) {
 	rb_env_t *env;
