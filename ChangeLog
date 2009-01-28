@@ -1,3 +1,8 @@
+Thu Jan 22 11:33:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_time_timeval): made a real prototype.  a patch from
+	  Marcus Rueckert <darix AT opensu.se> at [ruby-core:21492].
+
 Wed Jan 21 21:43:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_ungetbyte, rb_io_ungetc): allows nil to reset EOF

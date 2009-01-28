@@ -917,7 +917,7 @@ rb_thread_interrupted(VALUE thval)
     return RUBY_VM_INTERRUPTED(th);
 }
 
-struct timeval rb_time_timeval();
+struct timeval rb_time_timeval(VALUE);
 
 void
 rb_thread_sleep(int sec)
