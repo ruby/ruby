@@ -1,3 +1,18 @@
+Tue Jan 20 15:32:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (miniruby): renames and then removes, to get rid of
+	  EPERM on cygwin and mingw.
+
+	* Makefile.in ($(LIBRUBY_SO)): use wildcard option of objcopy.
+
+	* configure.in (DLDFLAGS): do not export all symbols.
+
+	* cygwin/GNUmakefile.in (RUBYDEF): rejects symbols prefixex with
+	  Init_.
+
+	* win32/mkexports.rb (Exports::Mingw): includes all symbols except for
+	  prefixed with Init_ as well as mswin32.
+
 Wed Jan 28 15:24:11 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* math.c: SEGV is caused by implicit rb_to_float declaration

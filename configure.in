@@ -1463,7 +1463,7 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes;;
 	cygwin*|mingw*)	: ${LDSHARED="${CC} -shared "'$(if $(filter-out -g -g0,$(debugflags)),,-s)'}
 			XLDFLAGS="$XLDFLAGS -Wl,--stack,0x00200000,--enable-auto-import"
-			DLDFLAGS="${DLDFLAGS} -Wl,--enable-auto-image-base,--enable-auto-import,--export-all"
+			DLDFLAGS="${DLDFLAGS} -Wl,--enable-auto-image-base,--enable-auto-import"
 			: ${LIBPATHENV=""}
 			rb_cv_dlopen=yes ;;
 	hiuxmpp)	: ${LDSHARED='ld -r'} ;;
@@ -1856,6 +1856,7 @@ case "$target_os" in
 	cygwin*)
 	    if test x"$enable_shared" = xyes; then
 		LIBRUBY_SO='cyg$(RUBY_SO_NAME)'${MAJOR}${MINOR}${TEENY}.dll
+		LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' $(RUBYDEF)'
 	    fi
 	    ;;
 	mingw*)

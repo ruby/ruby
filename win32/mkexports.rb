@@ -143,14 +143,10 @@ class Exports::Mingw < Exports
 
   def each_export(objs)
     objdump(objs) do |l|
-      yield $1 if / [[:upper:]] _(.*)$/ =~ l
+      yield $1 if / [[:upper:]] _((?!Init_).*)$/ =~ l
     end
     yield "strcasecmp", "_stricmp"
     yield "strncasecmp", "_strnicmp"
-  end
-
-  def symbols()
-    @syms.select {|k, v| v}.sort.collect {|k, v| "#{k}=#{v}"}
   end
 end
 

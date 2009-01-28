@@ -125,7 +125,7 @@ all:
 .NOEXPORT:
 
 miniruby$(EXEEXT):
-		@$(RM) $@
+		@-if test -f $@; then mv -f $@ $@.old; $(RM) $@.old; fi
 		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(ARCHFILE) $(LIBS) $(OUTFLAG)$@
 
 $(PROGRAM):
@@ -143,9 +143,7 @@ $(LIBRUBY_A):
 $(LIBRUBY_SO):
 		@-$(PRE_LIBRUBY_UPDATE)
 		$(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(SOLIBS) $(OUTFLAG)$@
-		@-test "$(OBJDUMP)" = "" || test "$(OBJCOPY)" = "" || { \
-		set dummy `$(OBJDUMP) -t $@ | sed '/^[^ ]* g/!d;s/.* //;/^\(Init_\|vm_\)/!d;s/^/-L /'`; \
-		shift; test "$$#" = 0 || $(OBJCOPY) "$$@" $@; }
+		-$(OBJCOPY) -w -L '@EXPORT_PREFIX@Init_*' $@
 		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true
