@@ -1784,7 +1784,7 @@ site-install-rb: install-rb
   if File.exist?(depend)
     mfile.print("###\n", *depend_rules(File.read(depend)))
   else
-    headers = %w[ruby.h defines.h]
+    headers = %w[$(hdrdir)/ruby.h $(hdrdir)/ruby/defines.h]
     if RULE_SUBST
       headers.each {|h| h.sub!(/.*/, &RULE_SUBST.method(:%))}
     end
