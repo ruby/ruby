@@ -1552,6 +1552,7 @@ load_file_internal(VALUE arg)
 	    rb_io_ungetbyte(f, c);
 	}
 	require_libraries(opt);	/* Why here? unnatural */
+	rb_io_ungetbyte(f, Qnil);
     }
     if (opt->src.enc.index >= 0) {
 	enc = rb_enc_from_index(opt->src.enc.index);
