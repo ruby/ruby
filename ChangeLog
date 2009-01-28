@@ -1,3 +1,8 @@
+Wed Jan 28 15:24:11 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
+
+	* math.c: SEGV is caused by implicit rb_to_float declaration
+	  test_complexrational.rb: [BUG] in IA-64 architecture
+
 Tue Jan 27 03:23:43 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): should point correct path to
