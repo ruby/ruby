@@ -1367,6 +1367,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
   else
     sep = ""
   end
+  possible_command = (proc {|s| s if /top_srcdir/ !~ s} unless $extmk)
   extconf_h = $extconf_h ? "-DRUBY_EXTCONF_H=\\\"$(RUBY_EXTCONF_H)\\\" " : $defs.join(" ") << " "
   mk << %{
 CC = #{CONFIG['CC']}
@@ -1404,13 +1405,13 @@ sitearch = #{CONFIG['sitearch']}
 ruby_version = #{RbConfig::CONFIG['ruby_version']}
 ruby = #{$ruby}
 RUBY = $(ruby#{sep})
-RM = #{config_string('RM') || '$(RUBY) -run -e rm -- -f'}
+RM = #{config_string('RM', &possible_command) || '$(RUBY) -run -e rm -- -f'}
 RM_RF = #{'$(RUBY) -run -e rm -- -rf'}
-MAKEDIRS = #{config_string('MAKEDIRS') || '@$(RUBY) -run -e mkdir -- -p'}
-INSTALL = #{config_string('INSTALL') || '@$(RUBY) -run -e install -- -vp'}
+MAKEDIRS = #{config_string('MAKEDIRS', &possible_command) || '@$(RUBY) -run -e mkdir -- -p'}
+INSTALL = #{config_string('INSTALL', &possible_command) || '@$(RUBY) -run -e install -- -vp'}
 INSTALL_PROG = #{config_string('INSTALL_PROG') || '$(INSTALL) -m 0755'}
 INSTALL_DATA = #{config_string('INSTALL_DATA') || '$(INSTALL) -m 0644'}
-COPY = #{config_string('CP') || '@$(RUBY) -run -e cp -- -v'}
+COPY = #{config_string('CP', &possible_command) || '@$(RUBY) -run -e cp -- -v'}
 
 #### End of system configuration section. ####
 
@@ -1682,7 +1683,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
   mfile.print("install-rb-default: pre-install-rb-default\n")
   mfile.print("pre-install-rb: Makefile\n")
   mfile.print("pre-install-rb-default: Makefile\n")
-  fsep = config_string('BUILD_FILE_SEPARATOR')
+  fsep = config_string('BUILD_FILE_SEPARATOR') {|s| s unless s == "/"}
   sep = fsep ? ":/=#{fsep}" : ""
   for sfx, i in [["-default", [["lib/**/*.rb", "$(RUBYLIBDIR)", "lib"]]], ["", $INSTALLFILES]]
     files = install_files(mfile, i, nil, srcprefix) or next
@@ -1739,7 +1740,6 @@ site-install-rb: install-rb
     end
   end
 
-  sep = config_string('BUILD_FILE_SEPARATOR') {|s| ":/=#{s}" if s != "/"} || ""
   mfile.print "$(RUBYARCHDIR)/" if $extout
   mfile.print "$(DLLIB): "
   mfile.print "$(DEFFILE) " if makedef
