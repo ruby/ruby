@@ -790,7 +790,7 @@ marshal_dump(argc, argv)
 	arg.dest = port;
 	if (rb_respond_to(port, s_binmode)) {
 	    rb_funcall2(port, s_binmode, 0, 0);
-	    check_dump_arg(&arg, s_dump_data);
+	    check_dump_arg(&arg, s_binmode);
 	}
     }
     else {
