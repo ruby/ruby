@@ -1502,6 +1502,14 @@ class TestArray < Test::Unit::TestCase
     a = []
     [1, 2, 3].zip([:a, :b], ["a", "b", "c", "d"]) {|x| a << x }
     assert_equal([[1, :a, "a"], [2, :b, "b"], [3, nil, "c"]], a)
+
+    ary = Object.new
+    def ary.to_a;   [1, 2]; end
+    assert_raise(NoMethodError){ %w(a b).zip(ary) }
+    def ary.each; [3, 4].each{|e|yield e}; end
+    assert_equal([['a', 3], ['b', 4]], %w(a b).zip(ary))
+    def ary.to_ary; [5, 6]; end
+    assert_equal([['a', 5], ['b', 6]], %w(a b).zip(ary))
   end
 
   def test_transpose

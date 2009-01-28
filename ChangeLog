@@ -1,3 +1,12 @@
+Wed Jan 21 14:41:48 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* array.c (take_items): to_ary() raises ArgumentError if cannot to
+	  convert to Array. [ruby-dev:37797]
+
+Wed Jan 21 21:12:47 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* introduces r21693 again for merging r21713.
+
 Tue Jan 20 19:12:18 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* reverts r21693.
