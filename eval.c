@@ -548,45 +548,6 @@ rb_iterator_p()
     return rb_block_given_p();
 }
 
-/*
- *  call-seq:
- *     block_given?   => true or false
- *     iterator?      => true or false
- *
- *  Returns <code>true</code> if <code>yield</code> would execute a
- *  block in the current context. The <code>iterator?</code> form
- *  is mildly deprecated.
- *
- *     def try
- *       if block_given?
- *         yield
- *       else
- *         "no block"
- *       end
- *     end
- *     try                  #=> "no block"
- *     try { "hello" }      #=> "hello"
- *     try do "hello" end   #=> "hello"
- */
-
-
-VALUE
-rb_f_block_given_p(void)
-{
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->cfp;
-    cfp = vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
-
-    if (cfp != 0 &&
-	(cfp->lfp[0] & 0x02) == 0 &&
-	GC_GUARDED_PTR_REF(cfp->lfp[0])) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
-}
-
 VALUE rb_eThreadError;
 
 void
@@ -1069,9 +1030,6 @@ Init_eval(void)
 {
     rb_define_virtual_variable("$@", errat_getter, errat_setter);
     rb_define_virtual_variable("$!", errinfo_getter, 0);
-
-    rb_define_global_function("iterator?", rb_f_block_given_p, 0);
-    rb_define_global_function("block_given?", rb_f_block_given_p, 0);
 
     rb_define_global_function("raise", rb_f_raise, -1);
     rb_define_global_function("fail", rb_f_raise, -1);

@@ -198,7 +198,6 @@ NORETURN(void rb_vm_jump_tag_but_local_jump(int, VALUE));
 
 VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val);
 NODE *rb_vm_cref(void);
-rb_control_frame_t *vm_get_ruby_level_caller_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 VALUE rb_obj_is_proc(VALUE);
 VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, const rb_block_t *blockptr, VALUE filename);
 void rb_thread_terminate_all(void);

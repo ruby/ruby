@@ -18,6 +18,8 @@
 #define INLINE inline
 #endif
 
+static rb_control_frame_t *vm_get_ruby_level_caller_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
+
 static inline rb_control_frame_t *
 vm_push_frame(rb_thread_t * th, const rb_iseq_t * iseq,
 	      VALUE type, VALUE self, VALUE specval,
