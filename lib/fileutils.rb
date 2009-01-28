@@ -258,15 +258,24 @@ module FileUtils
   def rmdir(list, options = {})
     fu_check_options options, OPT_TABLE['rmdir']
     list = fu_list(list)
-    fu_output_message "rmdir #{list.join ' '}" if options[:verbose]
+    parents = options[:parents]
+    fu_output_message "rmdir #{parents ? '-p ' : ''}#{list.join ' '}" if options[:verbose]
     return if options[:noop]
     list.each do |dir|
-      Dir.rmdir dir.sub(%r</\z>, '')
+      begin
+        Dir.rmdir(dir = dir.sub(%r</\z>, ''))
+        if parents
+          until (parent = File.dirname(dir)) == '.' or parent == dir
+            Dir.rmdir(dir)
+          end
+        end
+      rescue Errno::ENOTEMPTY, Errno::ENOENT
+      end
     end
   end
   module_function :rmdir
 
-  OPT_TABLE['rmdir'] = [:noop, :verbose]
+  OPT_TABLE['rmdir'] = [:parents, :noop, :verbose]
 
   #
   # Options: force noop verbose

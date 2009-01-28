@@ -1,3 +1,35 @@
+Sun Jan 25 11:25:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, win32/Makefile.sub (RMDIRS): remove directory and
+	  parents.
+
+	* Makefile.in, win32/Makefile.sub (distclean-rdoc): added to remove
+	  temprary rdoc.
+
+	* Makefile.in, win32/Makefile.sub (clean-ext): skips non-existent
+	  directories.
+
+	* common.mk (clean, distclean): cleans rdoc.
+
+	* common.mk (clean-extout): removes extout directory.
+
+	* configure.in (RMDIRS, RMALL): added to clean extout.
+
+	* lib/fileutils.rb (FileUtils#rmdir): added :parents option.
+
+	* lib/mkmf.rb (create_makefile): cleans installed files at clean
+	  instead of distclean.
+
+	* lib/mkmf.rb (create_makefile): added clean-so and clean-rb.
+
+	* lib/mkmf.rb (def init_mkmf): added DISTCLEANDIRS.
+
+	* lib/un.rb (rmdir): added -p option.
+
+	* tool/rmdirs, win32/rmdirs.bat: removes directory and the parents.
+
+	* win32/rm.bat: added -r option.
+
 Sun Jan 25 09:09:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (join_path): use strlcat() to force link.
