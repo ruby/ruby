@@ -1,3 +1,8 @@
+Thu Jan 22 18:14:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): removes installed files under
+	  extout at distclean.
+
 Thu Jan 22 17:12:37 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb (CGI.parse): generate only key on params hash
