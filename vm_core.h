@@ -436,8 +436,8 @@ VALUE rb_iseq_new_main(NODE *node, VALUE filename);
 VALUE rb_iseq_new_with_bopt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE);
 VALUE rb_iseq_new_with_opt(NODE*, VALUE, VALUE, VALUE, VALUE, const rb_compile_option_t*);
 VALUE rb_iseq_compile(VALUE src, VALUE file, VALUE line);
-VALUE ruby_iseq_disasm(VALUE self);
-VALUE ruby_iseq_disasm_insn(VALUE str, VALUE *iseqval, int pos, rb_iseq_t *iseq, VALUE child);
+VALUE rb_iseq_disasm(VALUE self);
+VALUE rb_iseq_disasm_insn(VALUE str, VALUE *iseqval, int pos, rb_iseq_t *iseq, VALUE child);
 const char *ruby_node_name(int node);
 int rb_iseq_first_lineno(rb_iseq_t *iseq);
 

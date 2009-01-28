@@ -42,7 +42,7 @@ iseq_special_block(rb_iseq_t *iseq, void *builder)
 				      parent, iseq->type,
 				      GC_GUARDED_PTR(builder));
     if (0) {
-	printf("%s\n", RSTRING_PTR(ruby_iseq_disasm(iseqval)));
+	printf("%s\n", RSTRING_PTR(rb_iseq_disasm(iseqval)));
     }
     iseq->cached_special_block = iseqval;
     iseq->cached_special_block_builder = builder;

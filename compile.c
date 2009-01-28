@@ -415,7 +415,7 @@ iseq_add_mark_object_compile_time(rb_iseq_t *iseq, VALUE v)
 }
 
 VALUE
-ruby_iseq_compile(VALUE self, NODE *node)
+rb_iseq_compile_node(VALUE self, NODE *node)
 {
     DECL_ANCHOR(ret);
     rb_iseq_t *iseq;
@@ -503,7 +503,7 @@ ruby_iseq_compile(VALUE self, NODE *node)
 }
 
 int
-ruby_iseq_translate_threaded_code(rb_iseq_t *iseq)
+rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 {
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     extern const void **vm_get_insns_address_table(void);
@@ -961,10 +961,10 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     iseq_set_optargs_table(iseq);
 
     debugs("[compile step 5 (iseq_translate_threaded_code)] \n");
-    ruby_iseq_translate_threaded_code(iseq);
+    rb_iseq_translate_threaded_code(iseq);
 
     if (compile_debug > 1) {
-	VALUE str = ruby_iseq_disasm(iseq->self);
+	VALUE str = rb_iseq_disasm(iseq->self);
 	printf("%s\n", StringValueCStr(str));
 	fflush(stdout);
     }
@@ -5000,7 +5000,7 @@ dump_disasm_list(struct iseq_link_element *link)
 }
 
 VALUE
-ruby_insns_name_array(void)
+rb_insns_name_array(void)
 {
     VALUE ary = rb_ary_new();
     int i;
@@ -5090,6 +5090,20 @@ iseq_build_exception(rb_iseq_t *iseq, struct st_table *labels_table,
     return COMPILE_OK;
 }
 
+static struct st_table *
+insn_make_insn_table(void)
+{
+    struct st_table *table;
+    int i;
+    table = st_init_numtable();
+
+    for (i=0; i<VM_INSTRUCTION_SIZE; i++) {
+	st_insert(table, ID2SYM(rb_intern(insn_name(i))), i);
+    }
+
+    return table;
+}
+
 static int
 iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 		VALUE body, struct st_table *labels_table)
@@ -5105,7 +5119,7 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
     static struct st_table *insn_table;
 
     if (insn_table == 0) {
-	insn_table = ruby_insn_make_insn_table();
+	insn_table = insn_make_insn_table();
     }
 
     for (i=0; i<len; i++) {
@@ -5226,7 +5240,7 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 static inline VALUE CHECK_INTEGER(VALUE v) {NUM2LONG(v); return v;}
 
 VALUE
-ruby_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
+rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 			 VALUE exception, VALUE body)
 {
     int i;

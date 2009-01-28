@@ -41,6 +41,8 @@ char ruby_vm_redefined_flag[BOP_LAST_];
 rb_thread_t *ruby_current_thread = 0;
 rb_vm_t *ruby_current_vm = 0;
 
+VALUE rb_insns_name_array(void);
+
 void vm_analysis_operand(int insn, int n, VALUE op);
 void vm_analysis_register(int reg, int isset);
 void vm_analysis_insn(int insn);
@@ -1890,7 +1892,7 @@ Init_VM(void)
 #endif
 
     /* ::VM::InsnNameArray */
-    rb_define_const(rb_cRubyVM, "INSTRUCTION_NAMES", ruby_insns_name_array());
+    rb_define_const(rb_cRubyVM, "INSTRUCTION_NAMES", rb_insns_name_array());
 
     /* debug functions ::VM::SDR(), ::VM::NSDR() */
 #if VMDEBUG

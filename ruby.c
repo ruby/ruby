@@ -1399,7 +1399,7 @@ process_options(VALUE arg)
     });
 
     if (opt->dump & DUMP_BIT(insns)) {
-	rb_io_write(rb_stdout, ruby_iseq_disasm(iseq));
+	rb_io_write(rb_stdout, rb_iseq_disasm(iseq));
 	rb_io_flush(rb_stdout);
 	return Qtrue;
     }

@@ -331,7 +331,7 @@ rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE filename,
     iseq->self = self;
 
     prepare_iseq_build(iseq, name, filename, parent, type, bopt, option);
-    ruby_iseq_compile(self, node);
+    rb_iseq_compile_node(self, node);
     cleanup_iseq_build(iseq);
     return self;
 }
@@ -431,7 +431,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     prepare_iseq_build(iseq, name, filename,
 		       parent, iseq_type, 0, &option);
 
-    ruby_iseq_build_from_ary(iseq, locals, args, exception, body);
+    rb_iseq_build_from_ary(iseq, locals, args, exception, body);
 
     cleanup_iseq_build(iseq);
     return iseqval;
@@ -739,7 +739,7 @@ insn_operand_intern(rb_iseq_t *iseq,
 	break;
 
       default:
-	rb_bug("ruby_iseq_disasm: unknown operand type: %c", type);
+	rb_bug("rb_iseq_disasm: unknown operand type: %c", type);
     }
     return ret;
 }
@@ -749,8 +749,8 @@ insn_operand_intern(rb_iseq_t *iseq,
  * Iseq -> Iseq inspect object
  */
 VALUE
-ruby_iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
-		      rb_iseq_t *iseqdat, VALUE child)
+rb_iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
+		    rb_iseq_t *iseqdat, VALUE child)
 {
     int insn = iseq[pos];
     int len = insn_len(insn);
@@ -831,7 +831,7 @@ catch_type(int type)
 }
 
 VALUE
-ruby_iseq_disasm(VALUE self)
+rb_iseq_disasm(VALUE self)
 {
     rb_iseq_t *iseqdat = iseq_check(self);
     VALUE *iseq;
@@ -867,7 +867,7 @@ ruby_iseq_disasm(VALUE self)
 		    catch_type((int)entry->type), (int)entry->start,
 		    (int)entry->end, (int)entry->sp, (int)entry->cont);
 	if (entry->iseq) {
-	    rb_str_concat(str, ruby_iseq_disasm(entry->iseq));
+	    rb_str_concat(str, rb_iseq_disasm(entry->iseq));
 	}
     }
     if (iseqdat->catch_table_size != 0) {
@@ -920,12 +920,12 @@ ruby_iseq_disasm(VALUE self)
 
     /* show each line */
     for (i = 0; i < size;) {
-	i += ruby_iseq_disasm_insn(str, iseq, i, iseqdat, child);
+	i += rb_iseq_disasm_insn(str, iseq, i, iseqdat, child);
     }
 
     for (i = 0; i < RARRAY_LEN(child); i++) {
 	VALUE isv = rb_ary_entry(child, i);
-	rb_str_concat(str, ruby_iseq_disasm(isv));
+	rb_str_concat(str, rb_iseq_disasm(isv));
     }
 
     return str;
@@ -943,7 +943,7 @@ iseq_s_disasm(VALUE klass, VALUE body)
     if ((node = rb_method_body(body)) != 0) {
 	if (nd_type(node) == RUBY_VM_METHOD_NODE) {
  	    VALUE iseqval = (VALUE)node->nd_body;
-	    ret = ruby_iseq_disasm(iseqval);
+	    ret = rb_iseq_disasm(iseqval);
 	}
     }
 
@@ -1248,20 +1248,6 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     return val;
 }
 
-struct st_table *
-ruby_insn_make_insn_table(void)
-{
-    struct st_table *table;
-    int i;
-    table = st_init_numtable();
-
-    for (i=0; i<VM_INSTRUCTION_SIZE; i++) {
-	st_insert(table, ID2SYM(rb_intern(insn_name(i))), i);
-    }
-
-    return table;
-}
-
 VALUE
 rb_iseq_clone(VALUE iseqval, VALUE newcbase)
 {
@@ -1318,7 +1304,7 @@ rb_iseq_build_for_ruby2cext(
 	iseq->iseq[i+1] = (VALUE)func;
     }
 
-    ruby_iseq_translate_threaded_code(iseq);
+    rb_iseq_translate_threaded_code(iseq);
 
 #define ALLOC_AND_COPY(dst, src, type, size) do { \
   if (size) { \
@@ -1348,8 +1334,8 @@ Init_ISeq(void)
     rb_cISeq = rb_define_class_under(rb_cRubyVM, "InstructionSequence", rb_cObject);
     rb_define_alloc_func(rb_cISeq, iseq_alloc);
     rb_define_method(rb_cISeq, "inspect", iseq_inspect, 0);
-    rb_define_method(rb_cISeq, "disasm", ruby_iseq_disasm, 0);
-    rb_define_method(rb_cISeq, "disassemble", ruby_iseq_disasm, 0);
+    rb_define_method(rb_cISeq, "disasm", rb_iseq_disasm, 0);
+    rb_define_method(rb_cISeq, "disassemble", rb_iseq_disasm, 0);
     rb_define_method(rb_cISeq, "to_a", iseq_to_a, 0);
     rb_define_method(rb_cISeq, "eval", iseq_eval, 0);
 
