@@ -7697,7 +7697,7 @@ rb_mod_modfunc(argc, argv, module)
 		body = search_method(rb_cObject, id, &m);
 	    }
 	    if (body == 0 || body->nd_body == 0) {
-		rb_bug("undefined method `%s'; can't happen", rb_id2name(id));
+		print_undef(module, id);
 	    }
 	    if (nd_type(body->nd_body) != NODE_ZSUPER) {
 		break;		/* normal case: need not to follow 'super' link */
