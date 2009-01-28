@@ -506,11 +506,11 @@ int
 rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 {
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-    extern const void **vm_get_insns_address_table(void);
+    extern const void **rb_vm_get_insns_address_table(void);
 #if OPT_DIRECT_THREADED_CODE
-    const void * const *table = vm_get_insns_address_table();
+    const void * const *table = rb_vm_get_insns_address_table();
 #else
-    const void * const *table = vm_get_insns_address_table();
+    const void * const *table = rb_vm_get_insns_address_table();
 #endif
     int i;
 

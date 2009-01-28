@@ -252,7 +252,7 @@ static VALUE
 rb_mod_nesting(void)
 {
     VALUE ary = rb_ary_new();
-    const NODE *cref = vm_cref();
+    const NODE *cref = rb_vm_cref();
 
     while (cref && cref->nd_next) {
 	VALUE klass = cref->nd_clss;
@@ -281,7 +281,7 @@ rb_mod_nesting(void)
 static VALUE
 rb_mod_s_constants(int argc, VALUE *argv, VALUE mod)
 {
-    const NODE *cref = vm_cref();
+    const NODE *cref = rb_vm_cref();
     VALUE klass;
     VALUE cbase = 0;
     void *data = 0;
@@ -593,7 +593,7 @@ void
 rb_need_block()
 {
     if (!rb_block_given_p()) {
-	vm_localjump_error("no block given", Qnil, 0);
+	rb_vm_localjump_error("no block given", Qnil, 0);
     }
 }
 

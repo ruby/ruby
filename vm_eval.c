@@ -734,7 +734,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	/* save new env */
 	GetISeqPtr(iseqval, iseq);
 	if (bind && iseq->local_size > 0) {
-	    bind->env = vm_make_env_object(th, th->cfp);
+	    bind->env = rb_vm_make_env_object(th, th->cfp);
 	}
 
 	/* kick */
@@ -898,7 +898,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
     POP_TAG();
 
     rb_set_safe_level_force(safe);
-    if (state) vm_jump_tag_but_local_jump(state, val);
+    if (state) rb_vm_jump_tag_but_local_jump(state, val);
     return val;
 }
 

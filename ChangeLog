@@ -1,3 +1,18 @@
+Mon Jan 19 11:27:39 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c: add a prefix "rb_" to exposed functions
+	  vm_get_ruby_level_next_cfp(), rb_vm_make_env_object(),
+	  vm_stack_to_heap(), vm_make_proc(), vm_invoke_proc(),
+	  vm_get_sourceline(), vm_cref(), vm_localjump_error(),
+	  vm_make_jump_tag_but_local_jump(), vm_jump_tag_but_local_jump().
+  	  This changes may affect only core because most of renamed functions
+	  require a pointer of not-exposed struct such as rb_thread_t or NODE.
+	  In short, they are core functions.
+
+	* cont.c, eval.c, eval_intern.h, load.c, proc.c, thread.c,
+	  vm_core.h, vm_dump.c, vm_eval.c, vm_exec.c, vm_insnhelper.c:
+	  ditto.
+
 Mon Jan 19 11:02:30 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_dump.c: add a prefix "rb_vmdebug_" to

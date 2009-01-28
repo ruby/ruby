@@ -247,7 +247,7 @@ cont_new(VALUE klass)
     return cont;
 }
 
-void vm_stack_to_heap(rb_thread_t *th);
+void rb_vm_stack_to_heap(rb_thread_t *th);
 
 static VALUE
 cont_capture(volatile int *stat)
@@ -256,7 +256,7 @@ cont_capture(volatile int *stat)
     rb_thread_t *th = GET_THREAD(), *sth;
     volatile VALUE contval;
 
-    vm_stack_to_heap(th);
+    rb_vm_stack_to_heap(th);
     cont = cont_new(rb_cContinuation);
     contval = cont->self;
     sth = &cont->saved_thread;
@@ -767,7 +767,7 @@ rb_fiber_start(void)
 	th->local_svar = Qnil;
 
 	fib->status = RUNNING;
-	cont->value = vm_invoke_proc(th, proc, proc->block.self, argc, argv, 0);
+	cont->value = rb_vm_invoke_proc(th, proc, proc->block.self, argc, argv, 0);
     }
     TH_POP_TAG();
 
@@ -777,7 +777,7 @@ rb_fiber_start(void)
 	}
 	else {
 	    th->thrown_errinfo =
-	      vm_make_jump_tag_but_local_jump(state, th->errinfo);
+	      rb_vm_make_jump_tag_but_local_jump(state, th->errinfo);
 	}
 	RUBY_VM_SET_INTERRUPT(th);
     }

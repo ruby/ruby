@@ -128,14 +128,14 @@ vm_set_main_stack(rb_thread_t *th, VALUE iseqval)
     /* save binding */
     GetISeqPtr(iseqval, iseq);
     if (bind && iseq->local_size > 0) {
-	bind->env = vm_make_env_object(th, th->cfp);
+	bind->env = rb_vm_make_env_object(th, th->cfp);
     }
 
     CHECK_STACK_OVERFLOW(th->cfp, iseq->stack_max);
 }
 
 rb_control_frame_t *
-vm_get_ruby_level_next_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
+rb_vm_get_ruby_level_next_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
@@ -390,7 +390,7 @@ vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary)
 }
 
 VALUE
-vm_make_env_object(rb_thread_t * th, rb_control_frame_t *cfp)
+rb_vm_make_env_object(rb_thread_t * th, rb_control_frame_t *cfp)
 {
     VALUE envval;
 
@@ -409,11 +409,11 @@ vm_make_env_object(rb_thread_t * th, rb_control_frame_t *cfp)
 }
 
 void
-vm_stack_to_heap(rb_thread_t * const th)
+rb_vm_stack_to_heap(rb_thread_t * const th)
 {
     rb_control_frame_t *cfp = th->cfp;
-    while ((cfp = vm_get_ruby_level_next_cfp(th, cfp)) != 0) {
-	vm_make_env_object(th, cfp);
+    while ((cfp = rb_vm_get_ruby_level_next_cfp(th, cfp)) != 0) {
+	rb_vm_make_env_object(th, cfp);
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
 }
@@ -429,21 +429,21 @@ vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block)
 	return block->proc;
     }
 
-    proc = vm_make_proc(th, block, rb_cProc);
+    proc = rb_vm_make_proc(th, block, rb_cProc);
     block->proc = proc;
 
     return proc;
 }
 
 VALUE
-vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
+rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
 {
     VALUE procval, envval, blockprocval = 0;
     rb_proc_t *proc;
     rb_control_frame_t *cfp = RUBY_VM_GET_CFP_FROM_BLOCK_PTR(block);
 
     if (block->proc) {
-	rb_bug("vm_make_proc: Proc value is already created.");
+	rb_bug("rb_vm_make_proc: Proc value is already created.");
     }
 
     if (GC_GUARDED_PTR_REF(cfp->lfp[0])) {
@@ -458,7 +458,7 @@ vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
 	}
     }
 
-    envval = vm_make_env_object(th, cfp);
+    envval = rb_vm_make_env_object(th, cfp);
 
     if (PROCDEBUG) {
 	check_env_value(envval);
@@ -534,7 +534,7 @@ check_block(rb_thread_t *th)
     const rb_block_t *blockptr = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
 
     if (blockptr == 0) {
-	vm_localjump_error("no block given", Qnil, 0);
+	rb_vm_localjump_error("no block given", Qnil, 0);
     }
 
     return blockptr;
@@ -555,8 +555,8 @@ vm_yield(rb_thread_t *th, int argc, const VALUE *argv)
 }
 
 VALUE
-vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
-	       int argc, const VALUE *argv, rb_block_t * blockptr)
+rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
+		  int argc, const VALUE *argv, rb_block_t * blockptr)
 {
     VALUE val = Qundef;
     int state;
@@ -666,7 +666,7 @@ rb_lastline_set(VALUE val)
 /* backtrace */
 
 int
-vm_get_sourceline(const rb_control_frame_t *cfp)
+rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 {
     int line_no = 0;
     const rb_iseq_t *iseq = cfp->iseq;
@@ -700,7 +700,7 @@ vm_backtrace_each(rb_thread_t *th,
 	    if (cfp->pc != 0) {
 		rb_iseq_t *iseq = cfp->iseq;
 
-		line_no = vm_get_sourceline(cfp);
+		line_no = rb_vm_get_sourceline(cfp);
 		file = RSTRING_PTR(iseq->filename);
 		str = rb_sprintf("%s:%d:in `%s'",
 				 file, line_no, RSTRING_PTR(iseq->name));
@@ -749,7 +749,7 @@ const char *
 rb_sourcefile(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = vm_get_ruby_level_next_cfp(th, th->cfp);
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
     if (cfp) {
 	return RSTRING_PTR(cfp->iseq->filename);
@@ -763,10 +763,10 @@ int
 rb_sourceline(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = vm_get_ruby_level_next_cfp(th, th->cfp);
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
     if (cfp) {
-	return vm_get_sourceline(cfp);
+	return rb_vm_get_sourceline(cfp);
     }
     else {
 	return 0;
@@ -774,10 +774,10 @@ rb_sourceline(void)
 }
 
 NODE *
-vm_cref(void)
+rb_vm_cref(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = vm_get_ruby_level_next_cfp(th, th->cfp);
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
     return vm_get_cref(cfp->iseq, cfp->lfp, cfp->dfp);
 }
 
@@ -797,7 +797,7 @@ VALUE
 rb_vm_cbase(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = vm_get_ruby_level_next_cfp(th, th->cfp);
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
     return vm_get_cbase(cfp->iseq, cfp->lfp, cfp->dfp);
 }
@@ -837,14 +837,14 @@ make_localjump_error(const char *mesg, VALUE value, int reason)
 }
 
 void
-vm_localjump_error(const char *mesg, VALUE value, int reason)
+rb_vm_localjump_error(const char *mesg, VALUE value, int reason)
 {
     VALUE exc = make_localjump_error(mesg, value, reason);
     rb_exc_raise(exc);
 }
 
 VALUE
-vm_make_jump_tag_but_local_jump(int state, VALUE val)
+rb_vm_make_jump_tag_but_local_jump(int state, VALUE val)
 {
     VALUE result = Qnil;
 
@@ -876,10 +876,10 @@ vm_make_jump_tag_but_local_jump(int state, VALUE val)
 }
 
 void
-vm_jump_tag_but_local_jump(int state, VALUE val)
+rb_vm_jump_tag_but_local_jump(int state, VALUE val)
 {
     if (val != Qnil) {
-	VALUE exc = vm_make_jump_tag_but_local_jump(state, val);
+	VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, val);
 	rb_exc_raise(exc);
     }
     JUMP_TAG(state);
@@ -1341,7 +1341,7 @@ rb_thread_current_status(const rb_thread_t *th)
     if (cfp->iseq != 0) {
 	if (cfp->pc != 0) {
 	    rb_iseq_t *iseq = cfp->iseq;
-	    int line_no = vm_get_sourceline(cfp);
+	    int line_no = rb_vm_get_sourceline(cfp);
 	    char *file = RSTRING_PTR(iseq->filename);
 	    str = rb_sprintf("%s:%d:in `%s'",
 			     file, line_no, RSTRING_PTR(iseq->name));
@@ -1720,7 +1720,7 @@ static VALUE
 m_core_define_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval)
 {
     REWIND_CFP({
-	vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseqval, 0, vm_cref());
+	vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseqval, 0, rb_vm_cref());
     });
     return Qnil;
 }
@@ -1729,7 +1729,7 @@ static VALUE
 m_core_define_singleton_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval)
 {
     REWIND_CFP({
-	vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseqval, 1, vm_cref());
+	vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseqval, 1, rb_vm_cref());
     });
     return Qnil;
 }
@@ -1769,7 +1769,7 @@ m_core_set_postexe(VALUE self, VALUE iseqval)
 	rb_iseq_t *blockiseq;
 	rb_block_t *blockptr;
 	rb_thread_t *th = GET_THREAD();
-	rb_control_frame_t *cfp = vm_get_ruby_level_next_cfp(th, th->cfp);
+	rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 	VALUE proc;
 	extern void rb_call_end_proc(VALUE data);
 
@@ -1779,7 +1779,7 @@ m_core_set_postexe(VALUE self, VALUE iseqval)
 	blockptr->iseq = blockiseq;
 	blockptr->proc = 0;
 
-	proc = vm_make_proc(th, blockptr, rb_cProc);
+	proc = rb_vm_make_proc(th, blockptr, rb_cProc);
 	rb_set_end_proc(rb_call_end_proc, proc);
     });
     return Qnil;
