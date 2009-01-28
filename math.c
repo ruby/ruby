@@ -15,6 +15,7 @@
 
 VALUE rb_mMath;
 
+extern VALUE rb_to_float(VALUE val);
 #define Need_Float(x) (x) = rb_to_float(x)
 #define Need_Float2(x,y) do {\
     Need_Float(x);\
