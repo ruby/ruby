@@ -1,3 +1,8 @@
+Wed Jan 28 22:51:12 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/zlib/zlib.c (zstream_run): desperately guard the variable.
+	  [ruby-core:20576]
+
 Mon Jan 19 11:46:39 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_eval.c, eval.c (rb_f_block_given_p): move definition of
