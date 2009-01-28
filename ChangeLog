@@ -1,3 +1,7 @@
+Sun Jan 25 12:02:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (clean-ext): condition of EXTS was inverted.
+
 Sun Jan 25 11:50:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile):fixed the variables order because
