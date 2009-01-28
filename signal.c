@@ -753,6 +753,10 @@ trap_handler(VALUE *cmd, int sig)
     }
     else {
 	command = rb_check_string_type(*cmd);
+	if (NIL_P(command) && SYMBOL_P(*cmd)) {
+	    command = rb_id2str(SYM2ID(*cmd));
+	    if (!command) rb_raise(rb_eArgError, "bad handler");
+	}
 	if (!NIL_P(command)) {
 	    SafeStringValue(command);	/* taint check */
 	    *cmd = command;

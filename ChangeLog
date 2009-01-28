@@ -1,3 +1,7 @@
+Fri Jan 23 13:26:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (trap_handler): also accepts symbols.  [ruby-dev:37823]
+
 Thu Jan 22 18:14:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): removes installed files under
