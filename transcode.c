@@ -2909,7 +2909,8 @@ struct rb_econv_init_by_convpath_t {
     int ret;
 };
 
-void rb_econv_init_by_convpath_i(const char *sname, const char *dname, int depth, void *arg)
+static void
+rb_econv_init_by_convpath_i(const char *sname, const char *dname, int depth, void *arg)
 {
     struct rb_econv_init_by_convpath_t *a = (struct rb_econv_init_by_convpath_t *)arg;
     int ret;

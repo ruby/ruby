@@ -1,3 +1,7 @@
+Fri Jan 30 02:55:56 2009  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_init_by_convpath_i): make it static.
+
 Thu Jan 29 16:22:41 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* load.c (rb_feature_provided): should not calculate len by pointer
