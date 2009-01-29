@@ -1,54 +1,34 @@
 module Rake
-  
+
   # Win 32 interface methods for Rake. Windows specific functionality
   # will be placed here to collect that knowledge in one spot.
   module Win32
-    
-    # Error indicating a problem in locating the home directory on a
-    # Win32 system.
-    class Win32HomeError < RuntimeError
-    end
-    
     class << self
       # True if running on a windows system.
       def windows?
-        Config::CONFIG['host_os'] =~ /mswin/
+        # assume other DOSish systems are extinct.
+        File::ALT_SEPARATOR == '\\'
       end
+    end
 
-      # Run a command line on windows.
-      def rake_system(*cmd)
-        if cmd.size == 1
-          system("call #{cmd}")
-        else
-          system(*cmd)
-        end
-      end
-      
+    class << self
       # The standard directory containing system wide rake files on
       # Win 32 systems. Try the following environment variables (in
       # order):
       #
       # * APPDATA
+      # * HOME
       # * HOMEDRIVE + HOMEPATH
       # * USERPROFILE
       #
-      # If the above are not defined, the return nil.
+      # If the above are not defined, retruns the personal folder.
       def win32_system_dir #:nodoc:
         win32_shared_path = ENV['APPDATA']
-        if win32_shared_path.nil? && ENV['HOMEDRIVE'] && ENV['HOMEPATH']
-          win32_shared_path = ENV['HOMEDRIVE'] + ENV['HOMEPATH']
+        if !win32_shared_path or win32_shared_path.empty?
+          win32_shared_path = '~'
         end
-        win32_shared_path ||= ENV['USERPROFILE']
-        raise Win32HomeError, "Unable to determine home path environment variable." if
-          win32_shared_path.nil? or win32_shared_path.empty?
-        normalize(File.join(win32_shared_path, 'Rake'))
+        File.expand_path('Rake', win32_shared_path)
       end
-      
-      # Normalize a win32 path so that the slashes are all forward slashes.
-      def normalize(path)
-        path.gsub(/\\/, '/')
-      end
-      
-    end
+    end if windows?
   end
 end
