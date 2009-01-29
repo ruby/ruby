@@ -667,6 +667,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 %type <node> string_contents xstring_contents string_content
 %type <node> words qwords word_list qword_list word
 %type <node> literal numeric dsym cpath
+%type <node> top_compstmt top_stmts top_stmt
 %type <node> bodystmt compstmt stmts stmt expr arg primary command command_call method_call
 %type <node> expr_value arg_value primary_value
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
@@ -768,7 +769,7 @@ program		:  {
 		    /*%
 		    %*/
 		    }
-		  compstmt
+		  top_compstmt
 		    {
 		    /*%%%*/
 			if ($2 && !compile_for_eval) {
@@ -787,6 +788,73 @@ program		:  {
 		    /*%
 			$$ = $2;
 			parser->result = dispatch1(program, $$);
+		    %*/
+		    }
+		;
+
+top_compstmt	: top_stmts opt_terms
+		    {
+		    /*%%%*/
+			void_stmts($1);
+			fixup_nodes(&deferred_nodes);
+		    /*%
+		    %*/
+			$$ = $1;
+		    }
+		;
+
+top_stmts	: none
+                    {
+		    /*%%%*/
+			$$ = NEW_BEGIN(0);
+		    /*%
+			$$ = dispatch2(stmts_add, dispatch0(stmts_new),
+						  dispatch0(void_stmt));
+		    %*/
+		    }
+		| top_stmt
+		    {
+		    /*%%%*/
+			$$ = newline_node($1);
+		    /*%
+			$$ = dispatch2(stmts_add, dispatch0(stmts_new), $1);
+		    %*/
+		    }
+		| top_stmts terms top_stmt
+		    {
+		    /*%%%*/
+			$$ = block_append($1, newline_node($3));
+		    /*%
+			$$ = dispatch2(stmts_add, $1, $3);
+		    %*/
+		    }
+		| error top_stmt
+		    {
+			$$ = remove_begin($2);
+		    }
+		;
+
+top_stmt	: stmt
+		| keyword_BEGIN
+		    {
+			if (in_def || in_single) {
+			    yyerror("BEGIN in method");
+			}
+		    /*%%%*/
+			/* local_push(0); */
+		    /*%
+		    %*/
+		    }
+		  '{' top_compstmt '}'
+		    {
+		    /*%%%*/
+			ruby_eval_tree_begin = block_append(ruby_eval_tree_begin,
+							    $4);
+			/* NEW_PREEXE($4)); */
+			/* local_pop(); */
+			$$ = NEW_BEGIN(0);
+		    /*%
+			$$ = dispatch1(BEGIN, $4);
 		    %*/
 		    }
 		;
@@ -962,28 +1030,6 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = NEW_RESCUE(remove_begin($1), resq, 0);
 		    /*%
 			$$ = dispatch2(rescue_mod, $3, $1);
-		    %*/
-		    }
-		| keyword_BEGIN
-		    {
-			if (in_def || in_single) {
-			    yyerror("BEGIN in method");
-			}
-		    /*%%%*/
-			/* local_push(0); */
-		    /*%
-		    %*/
-		    }
-		  '{' compstmt '}'
-		    {
-		    /*%%%*/
-			ruby_eval_tree_begin = block_append(ruby_eval_tree_begin,
-							    $4);
-			/* NEW_PREEXE($4)); */
-			/* local_pop(); */
-			$$ = NEW_BEGIN(0);
-		    /*%
-			$$ = dispatch1(BEGIN, $4);
 		    %*/
 		    }
 		| keyword_END '{' compstmt '}'

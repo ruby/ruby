@@ -1,3 +1,11 @@
+Fri Jan 30 01:39:27 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* parse.y (top_compstmt, top_stmts, top_stmt): prohibit BEGIN {} in
+	  non-toplevel scope.  [ruby-core:21657]
+
+	* test/ruby/test_beginendblock.rb (test_begininclass): add a test for
+	  above.
+
 Wed Jan 28 22:51:12 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/zlib/zlib.c (zstream_run): desperately guard the variable.
