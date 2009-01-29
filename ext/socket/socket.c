@@ -1386,7 +1386,7 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
 }
 #endif
 
-#if defined(HAVE_GETIFADDRS) || defined(SIOCGLIFCONF) || defined(SIOCGIFCONF)
+#if defined(HAVE_GETIFADDRS) || defined(SIOCGLIFCONF) || defined(SIOCGIFCONF) || defined(_WIN32)
 static VALUE
 sockaddr_obj(struct sockaddr *addr)
 {
@@ -1612,6 +1612,97 @@ socket_s_ip_address_list(VALUE self)
     return list;
 
 #undef EXTRA_SPACE
+#elif defined(_WIN32)
+    typedef struct ip_adapter_unicast_address_st {
+	unsigned LONG_LONG dummy0;
+	struct ip_adapter_unicast_address_st *Next;
+	struct {
+	    struct sockaddr *lpSockaddr;
+	    int iSockaddrLength;
+	} Address;
+	int dummy1;
+	int dummy2;
+	int dummy3;
+	long dummy4;
+	long dummy5;
+	long dummy6;
+    } ip_adapter_unicast_address_t;
+    typedef struct ip_adapter_anycast_address_st {
+	unsigned LONG_LONG dummy0;
+	struct ip_adapter_anycast_address_st *Next;
+	struct {
+	    struct sockaddr *lpSockaddr;
+	    int iSockaddrLength;
+	} Address;
+    } ip_adapter_anycast_address_t;
+    typedef struct ip_adapter_addresses_st {
+	unsigned LONG_LONG dummy0;
+	struct ip_adapter_addresses_st *Next;
+	void *dummy1;
+	ip_adapter_unicast_address_t *FirstUnicastAddress;
+	ip_adapter_anycast_address_t *FirstAnycastAddress;
+	void *dummy2;
+	void *dummy3;
+	void *dummy4;
+	void *dummy5;
+	void *dummy6;
+	BYTE dummy7[8];
+	DWORD dummy8;
+	DWORD dummy9;
+	DWORD dummy10;
+	DWORD IfType;
+	int dummy11;
+	DWORD dummy12;
+	DWORD dummy13[16];
+	void *dummy14;
+    } ip_adapter_addresses_t;
+    typedef ULONG (WINAPI *GetAdaptersAddresses_t)(ULONG, ULONG, PVOID, ip_adapter_addresses_t *, PULONG);
+    HMODULE h;
+    GetAdaptersAddresses_t pGetAdaptersAddresses;
+    ULONG len;
+    DWORD ret;
+    ip_adapter_addresses_t *adapters;
+    VALUE list;
+
+    h = LoadLibrary("iphlpapi.dll");
+    if (!h)
+	rb_notimplement();
+    pGetAdaptersAddresses = (GetAdaptersAddresses_t)GetProcAddress(h, "GetAdaptersAddresses");
+    if (!pGetAdaptersAddresses) {
+	CloseHandle(h);
+	rb_notimplement();
+    }
+
+    ret = pGetAdaptersAddresses(AF_UNSPEC, 0, NULL, NULL, &len);
+    if (ret != ERROR_SUCCESS && ret != ERROR_BUFFER_OVERFLOW) {
+	errno = rb_w32_map_errno(ret);
+	CloseHandle(h);
+	rb_sys_fail("GetAdaptersAddresses");
+    }
+    adapters = (ip_adapter_addresses_t *)ALLOCA_N(BYTE, len);
+    ret = pGetAdaptersAddresses(AF_UNSPEC, 0, NULL, adapters, &len);
+    if (ret != ERROR_SUCCESS) {
+	errno = rb_w32_map_errno(ret);
+	CloseHandle(h);
+	rb_sys_fail("GetAdaptersAddresses");
+    }
+
+    list = rb_ary_new();
+    for (; adapters; adapters = adapters->Next) {
+	ip_adapter_unicast_address_t *uni;
+	ip_adapter_anycast_address_t *any;
+	for (uni = adapters->FirstUnicastAddress; uni; uni = uni->Next) {
+	    if (IS_IP_FAMILY(uni->Address.lpSockaddr->sa_family))
+		rb_ary_push(list, sockaddr_obj(uni->Address.lpSockaddr));
+	}
+	for (any = adapters->FirstAnycastAddress; any; any = any->Next) {
+	    if (IS_IP_FAMILY(any->Address.lpSockaddr->sa_family))
+		rb_ary_push(list, sockaddr_obj(any->Address.lpSockaddr));
+	}
+    }
+
+    CloseHandle(h);
+    return list;
 #else
     rb_notimplement();
 #endif

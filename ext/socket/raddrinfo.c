@@ -914,7 +914,7 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
             break;
           }
 
-#ifdef INET6
+#ifdef AF_INET6
           case AF_INET6:
           {
             struct sockaddr_in6 *addr;
