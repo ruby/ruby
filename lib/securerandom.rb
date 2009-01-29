@@ -169,11 +169,9 @@ module SecureRandom
 
   # SecureRandom.uuid generates a v4 random UUID.
   def self.uuid
-    str = self.random_bytes(16)
-    str[6] = (str[6] & 0x0f) | 0x40
-    str[8] = (str[8] & 0x3f) | 0x80
-
-    ary = str.unpack("NnnnnN")
+    ary = self.random_bytes(16).unpack("NnnnnN")
+    ary[2] = (ary[2] & 0x0fff) | 0x4000
+    ary[3] = (ary[3] & 0x3fff) | 0x8000
     "%08x-%04x-%04x-%04x-%04x%08x" % ary
   end
 
