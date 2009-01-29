@@ -708,7 +708,7 @@ zstream_run(struct zstream *z, Bytef *src, uInt len, int flush)
 	/* keep reference to `z->input' so as not to be garbage collected
 	   after zstream_reset_input() and prevent `z->stream.next_in'
 	   from dangling. */
-	RB_GC_GUARD(guard) = z->input;
+	guard = z->input;
     }
 
     if (z->stream.avail_out == 0) {
@@ -716,6 +716,9 @@ zstream_run(struct zstream *z, Bytef *src, uInt len, int flush)
     }
 
     for (;;) {
+	/* VC allocates err and guard to same address.  accessing err and guard
+	   in same scope prevents it. */
+	RB_GC_GUARD(guard);
 	n = z->stream.avail_out;
 	err = z->func->run(&z->stream, flush);
 	z->buf_filled += n - z->stream.avail_out;
