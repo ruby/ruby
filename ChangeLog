@@ -1,3 +1,16 @@
+Thu Jan 29 12:29:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rake.rb (FileUtils#rake_system): no longer needs workaround
+	  on Windows.  [ruby-core:21339]
+
+	* lib/rake/win32.rb (Rake::Win32#rake_system): ditto.
+
+	* lib/rake/win32.rb (Rake::Win32#win32_system_dir): no longer
+	  needs environment variables other than APPDATA now.
+
+	* lib/rake.rb (Rake::Application#standard_system_dir): uses
+	  platfrom specific definition on Windows system.
+
 Thu Jan 29 12:18:54 2009  Technorama Ltd.  <oss-ruby@technorama.net>
 
 	* lib/securerandom.rb: new method SecureRandom#uuid

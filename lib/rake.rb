@@ -983,11 +983,7 @@ module FileUtils
   end
 
   def rake_system(*cmd)
-    if Rake::Win32.windows?
-      Rake::Win32.rake_system(*cmd)
-    else
-      system(*cmd)
-    end
+    system(*cmd)
   end
   private :rake_system
 
@@ -2364,8 +2360,6 @@ module Rake
         begin
           if ENV['RAKE_SYSTEM']
             ENV['RAKE_SYSTEM']
-          elsif Win32.windows?
-            Win32.win32_system_dir
           else
             standard_system_dir
           end
@@ -2373,8 +2367,14 @@ module Rake
     end
     
     # The standard directory containing system wide rake files.
-    def standard_system_dir #:nodoc:
-      File.join(File.expand_path('~'), '.rake')
+    if Win32.windows?
+      def standard_system_dir #:nodoc:
+        Win32.win32_system_dir
+      end
+    else
+      def standard_system_dir #:nodoc:
+        File.expand_path('.rake', '~')
+      end
     end
     private :standard_system_dir
 
