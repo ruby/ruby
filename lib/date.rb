@@ -1660,12 +1660,23 @@ class Date
   # Create a new Date object representing today.
   #
   # +sg+ specifies the Day of Calendar Reform.
-  def self.today(sg=ITALY) Time.now.__send__(:to_date)    .new_start(sg) end
+  def self.today(sg=ITALY)
+    t = Time.now
+    jd = civil_to_jd(t.year, t.mon, t.mday, sg)
+    new!(jd_to_ajd(jd, 0, 0), 0, sg)
+  end
 
   # Create a new DateTime object representing the current time.
   #
   # +sg+ specifies the Day of Calendar Reform.
-  def self.now  (sg=ITALY) Time.now.__send__(:to_datetime).new_start(sg) end
+  def self.now(sg=ITALY)
+    t = Time.now
+    jd = civil_to_jd(t.year, t.mon, t.mday, sg)
+    fr = time_to_day_fraction(t.hour, t.min, [t.sec, 59].min) +
+      Rational(t.usec, 86400_000_000)
+    of = Rational(t.utc_offset, 86400)
+    new!(jd_to_ajd(jd, fr, of), of, sg)
+  end
 
   private_class_method :now
 
