@@ -269,6 +269,15 @@ class TestPathname < Test::Unit::TestCase
   defassert_raise(:relative_path_from, ArgumentError, "a", "..")
   defassert_raise(:relative_path_from, ArgumentError, ".", "..")
 
+  def with_tmpchdir(base=nil)
+    Dir.mktmpdir(base) {|d|
+      d = Pathname.new(d).realpath.to_s
+      Dir.chdir(d) {
+        yield d
+      }
+    }
+  end
+
   def realpath(path)
     Pathname.new(path).realpath.to_s
   end
@@ -280,11 +289,46 @@ class TestPathname < Test::Unit::TestCase
       return
     rescue TypeError
     end
-    Dir.mktmpdir('rubytest-pathname') {|dir|
+    with_tmpchdir('rubytest-pathname') {|dir|
       File.symlink("not-exist-target", "#{dir}/not-exist")
       assert_raise(Errno::ENOENT) { realpath("#{dir}/not-exist") }
+
       File.symlink("loop", "#{dir}/loop")
       assert_raise(Errno::ELOOP) { realpath("#{dir}/loop") }
+
+      File.symlink("loop-relative", "loop-relative")
+      assert_raise(Errno::ELOOP) { realpath("#{dir}/loop-relative") }
+
+      Dir.mkdir("exist")
+      assert_equal("#{dir}/exist", realpath("exist"))
+
+      File.symlink("loop1/loop1", "loop1")
+      assert_raise(Errno::ELOOP) { realpath("#{dir}/loop1") }
+
+      File.symlink("loop2", "loop3")
+      File.symlink("loop3", "loop2")
+      assert_raise(Errno::ELOOP) { realpath("#{dir}/loop2") }
+
+      Dir.mkdir("b")
+
+      File.symlink("b", "c")
+      assert_equal("#{dir}/b", realpath("c"))
+      assert_equal("#{dir}/b", realpath("c/../c"))
+      assert_equal("#{dir}/b", realpath("c/../c/../c/."))
+
+      File.symlink("..", "b/d")
+      assert_equal("#{dir}/b", realpath("c/d/c/d/c"))
+
+      File.symlink("#{dir}/b", "e")
+      assert_equal("#{dir}/b", realpath("e"))
+
+      Dir.mkdir("f")
+      Dir.mkdir("f/g")
+      File.symlink("f/g", "h")
+      assert_equal("#{dir}/f/g", realpath("h"))
+      File.chmod(0000, "f")
+      assert_raise(Errno::EACCES) { realpath("h") }
+      File.chmod(0755, "f")
     }
   end
 
