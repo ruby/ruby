@@ -128,8 +128,8 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 
     if (fn) *fn = 0;
     if (ext) {
-	len = ext - feature;
 	elen = strlen(ext);
+	len = strlen(feature) - elen;
 	type = rb ? 'r' : 's';
     }
     else {

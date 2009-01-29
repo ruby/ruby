@@ -1,3 +1,9 @@
+Thu Jan 29 16:22:41 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* load.c (rb_feature_provided): should not calculate len by pointer
+	  subtraction because feature may be a expanded path.
+	  [ruby-core:21267]
+
 Thu Jan 29 14:12:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (BASERUBY): erases RUBYOPT at the test.
