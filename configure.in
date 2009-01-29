@@ -18,7 +18,7 @@ AC_ARG_WITH(baseruby,
 	[
 		BASERUBY="ruby"
 	])
-test "`$BASERUBY -e 'p 42' 2>/dev/null`" = 42 ||
+test "`RUBYOPT=- $BASERUBY -e 'p 42' 2>/dev/null`" = 42 ||
     BASERUBY="echo executable host ruby is required.  use --with-baseruby option.; false"
 AC_SUBST(BASERUBY)
 
