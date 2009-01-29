@@ -134,4 +134,14 @@ module SecureRandom
       Math.ldexp(i64 >> (64-Float::MANT_DIG), -Float::MANT_DIG)
     end
   end
+
+  # SecureRandom.uuid generates a v4 random UUID.
+  def self.uuid
+    str = self.random_bytes(16)
+    str[6] = (str[6] & 0x0f) | 0x40
+    str[8] = (str[8] & 0x3f) | 0x80
+
+    ary = str.unpack("NnnnnN")
+    "%08x-%04x-%04x-%04x-%04x%08x" % ary
+  end
 end

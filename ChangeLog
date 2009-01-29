@@ -1,3 +1,7 @@
+Thu Jan 29 12:18:54 2009  Technorama Ltd.  <oss-ruby@technorama.net>
+
+	* lib/securerandom.rb: new method SecureRandom#uuid
+
 Wed Jan 28 01:16:50 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (def_erb_method): pass the trim_mode  [Feature #1032]
