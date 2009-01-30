@@ -76,9 +76,9 @@
 #
 # === Core methods
 #
-# These methods are effectively manipulating a String, because that's all a path
-# is.  Except for #mountpoint?, #children, and #realpath, they don't access the
-# filesystem.
+# These methods are effectively manipulating a String, because that's
+# all a path is.  Except for #mountpoint?, #children, #realdirpath
+# and #realpath, they don't access the filesystem.
 #
 # - +
 # - #join
@@ -90,6 +90,7 @@
 # - #each_filename
 # - #cleanpath
 # - #realpath
+# - #realdirpath
 # - #children
 # - #mountpoint?
 #
@@ -411,7 +412,7 @@ class Pathname
   end
   private :cleanpath_conservative
 
-  def realpath_rec(prefix, unresolved, h)
+  def realpath_rec(prefix, unresolved, h, strict, last = true)
     resolved = []
     until unresolved.empty?
       n = unresolved.shift
@@ -428,14 +429,20 @@ class Pathname
             prefix, *resolved = h[path]
           end
         else
-          s = File.lstat(path)
+          begin
+            s = File.lstat(path)
+          rescue Errno::ENOENT => e
+            raise e if strict || !last || !unresolved.empty?
+            resolved << n
+            break
+          end
           if s.symlink?
             h[path] = :resolving
             link_prefix, link_names = split_names(File.readlink(path))
             if link_prefix == ''
-              prefix, *resolved = h[path] = realpath_rec(prefix, resolved + link_names, h)
+              prefix, *resolved = h[path] = realpath_rec(prefix, resolved + link_names, h, strict, unresolved.empty?)
             else
-              prefix, *resolved = h[path] = realpath_rec(link_prefix, link_names, h)
+              prefix, *resolved = h[path] = realpath_rec(link_prefix, link_names, h, strict, unresolved.empty?)
             end
           else
             resolved << n
@@ -448,21 +455,39 @@ class Pathname
   end
   private :realpath_rec
 
-  #
-  # Returns a real (absolute) pathname of +self+ in the actual filesystem.
-  # The real pathname doesn't contain symlinks or useless dots.
-  #
-  # No arguments should be given; the old behaviour is *obsoleted*.
-  #
-  def realpath
+  def real_path_internal(strict = false)
     path = @path
     prefix, names = split_names(path)
     if prefix == ''
       prefix, names2 = split_names(Dir.pwd)
       names = names2 + names
     end
-    prefix, *names = realpath_rec(prefix, names, {})
+    prefix, *names = realpath_rec(prefix, names, {}, strict)
     self.class.new(prepend_prefix(prefix, File.join(*names)))
+  end
+  private :real_path_internal
+
+  #
+  # Returns the real (absolute) pathname of +self+ in the actual
+  # filesystem not containing symlinks or useless dots.
+  #
+  # All components of the pathname must exist when this method is
+  # called.
+  #
+  # No arguments should be given; the old behaviour is *obsoleted*.
+  #
+  def realpath
+    real_path_internal(true)
+  end
+
+  #
+  # Returns the real (absolute) pathname of +self+ in the actual filesystem.
+  # The real pathname doesn't contain symlinks or useless dots.
+  #
+  # The last component of the real pathname can be nonexistent.
+  #
+  def realdirpath
+    real_path_internal(false)
   end
 
   # #parent returns the parent directory.

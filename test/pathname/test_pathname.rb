@@ -278,23 +278,36 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def has_symlink?
+    begin
+      File.symlink(nil, nil)
+    rescue NotImplementedError
+      return false
+    rescue TypeError
+    end
+    return true
+  end
+
   def realpath(path)
     Pathname.new(path).realpath.to_s
   end
 
   def test_realpath
-    begin
-      File.symlink(nil, nil)
-    rescue NotImplementedError
-      return
-    rescue TypeError
-    end
+    return if !has_symlink?
     with_tmpchdir('rubytest-pathname') {|dir|
+      assert_raise(Errno::ENOENT) { realpath("#{dir}/not-exist") }
       File.symlink("not-exist-target", "#{dir}/not-exist")
       assert_raise(Errno::ENOENT) { realpath("#{dir}/not-exist") }
 
       File.symlink("loop", "#{dir}/loop")
       assert_raise(Errno::ELOOP) { realpath("#{dir}/loop") }
+
+      File.symlink("../#{File.basename(dir)}/./not-exist-target", "#{dir}/not-exist2")
+      assert_raise(Errno::ENOENT) { realpath("#{dir}/not-exist2") }
+
+      File.open("#{dir}/exist-target", "w") {}
+      File.symlink("../#{File.basename(dir)}/./exist-target", "#{dir}/exist2")
+      assert_nothing_raised { realpath("#{dir}/exist2") }
 
       File.symlink("loop-relative", "loop-relative")
       assert_raise(Errno::ELOOP) { realpath("#{dir}/loop-relative") }
@@ -329,6 +342,28 @@ class TestPathname < Test::Unit::TestCase
       File.chmod(0000, "f")
       assert_raise(Errno::EACCES) { realpath("h") }
       File.chmod(0755, "f")
+    }
+  end
+
+  def realdirpath(path)
+    Pathname.new(path).realdirpath.to_s
+  end
+
+  def test_realdirpath
+    return if !has_symlink?
+    Dir.mktmpdir('rubytest-pathname') {|dir|
+      rdir = realpath(dir)
+      assert_equal("#{rdir}/not-exist", realdirpath("#{dir}/not-exist"))
+      assert_raise(Errno::ENOENT) { realdirpath("#{dir}/not-exist/not-exist-child") }
+      File.symlink("not-exist-target", "#{dir}/not-exist")
+      assert_equal("#{rdir}/not-exist-target", realdirpath("#{dir}/not-exist"))
+      File.symlink("../#{File.basename(dir)}/./not-exist-target", "#{dir}/not-exist2")
+      assert_equal("#{rdir}/not-exist-target", realdirpath("#{dir}/not-exist2"))
+      File.open("#{dir}/exist-target", "w") {}
+      File.symlink("../#{File.basename(dir)}/./exist-target", "#{dir}/exist")
+      assert_equal("#{rdir}/exist-target", realdirpath("#{dir}/exist"))
+      File.symlink("loop", "#{dir}/loop")
+      assert_raise(Errno::ELOOP) { realdirpath("#{dir}/loop") }
     }
   end
 

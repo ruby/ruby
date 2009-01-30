@@ -1,3 +1,8 @@
+Fri Jan 30 21:49:32 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pathname.rb (Pathname#realdirpath): new method.
+	  [ruby-dev:36290]
+
 Fri Jan 30 18:04:23 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_write): limit write size to 32KB if the file

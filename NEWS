@@ -85,6 +85,9 @@ with all sufficient information, see the ChangeLog file.
     socket option name and shutdown's how argument can be specified as a
     string/symbol.
 
+* pathname
+  * realdirpath
+
 === Compatibility issues (excluding feature bug fixes)
 
   * Enumerator#rewind
