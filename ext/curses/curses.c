@@ -1498,8 +1498,8 @@ Init_curses(void)
     rb_define_module_function(mCurses, "noraw", curses_noraw, 0);
     rb_define_module_function(mCurses, "cbreak", curses_cbreak, 0);
     rb_define_module_function(mCurses, "nocbreak", curses_nocbreak, 0);
-    rb_define_alias(mCurses, "crmode", "cbreak");
-    rb_define_alias(mCurses, "nocrmode", "nocbreak");
+    rb_define_module_function(mCurses, "crmode", curses_nocbreak, 0);
+    rb_define_module_function(mCurses, "nocrmode", curses_nocbreak, 0);
     rb_define_module_function(mCurses, "nl", curses_nl, 0);
     rb_define_module_function(mCurses, "nonl", curses_nonl, 0);
     rb_define_module_function(mCurses, "beep", curses_beep, 0);
