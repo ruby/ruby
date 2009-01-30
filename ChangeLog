@@ -1,3 +1,8 @@
+Fri Jan 30 12:57:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cygwin/GNUmakefile.in (RUBYDEF): adds DATA to non-function symbols
+	  which is not marked as T.
+
 Tue Jan 20 16:17:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (ruby_Init_{Continuation_body,Fiber_as_Coroutine}): prefixed
