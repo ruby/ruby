@@ -113,6 +113,11 @@ EOT
         assert(!actual.equal?(expected), msg)
       end
 
+      # get rid of overcounting
+      def assert_respond_to obj, meth, msg = nil
+        super if !caller[0].rindex(MiniTest::MINI_DIR, 0) || !obj.respond_to?(meth)
+      end
+
       def build_message(head, template=nil, *arguments)
         template &&= template.chomp
         template.gsub(/\?/) { mu_pp(arguments.shift) }
