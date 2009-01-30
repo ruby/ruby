@@ -71,7 +71,7 @@ $(RUBYDEF): $(LIBRUBY_A) $(PREP) $(RBCONFIG)
 ifeq (@target_os@,cygwin)
 	@NM@ --extern --defined $(LIBRUBY_A) | \
 	  $(MINIRUBY) -n -e 'BEGIN{puts "VERSION $(MAJOR).$(MINOR)","EXPORTS"}' \
-			 -e 'if / (?:(T)|[A-Z]) _((?!Init_).*)$$/; puts "#{$$2}#{" DATA" if $$1}"; end' > $@
+			 -e 'if / (?:(T)|[A-Z]) _((?!Init_).*)$$/; puts "#{$$2}#{" DATA" if !$$1}"; end' > $@
 else
 	$(MINIRUBY) $(srcdir)/win32/mkexports.rb -output=$@ $(LIBRUBY_A)
 endif
