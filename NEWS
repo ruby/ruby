@@ -17,8 +17,6 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
     * New syntax and semantics
           o Block arguments are always local
           o New semantics for block arguments
-          o Method used for splat arguments: #to_splat instead of
-            #to_ary
           o defined? and local variables
           o Parser expects that your source code has only valid byte
             sequence in some character encoding.  Use magic comments
@@ -26,6 +24,9 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o New semantics for constant definition in instance_eval
             or in module_eval.
 
+    * Deprecated syntax
+          o colon (:) instead of "then" in if/unless or case expression.
+          o retry in a loop or an iterator.
 
 * builtin classes and objects
 
@@ -33,7 +34,8 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Kernel#methods and #singleton_methods used to return an 
             array of strings but now they return an array of symbols.
     * Class and Module
-          o Module#attr is an alias of attr_reader
+          o Module#attr works as Module#attr_reader by default.
+	    Optional boolean argument is obsolete.
           o Module#instance_methods, #private_instance_methods and
             #public_instance_methods used to return an array of 
             strings but now they return an array of symbols.
@@ -75,7 +77,6 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Non-blocking IO
           o Kernel#open takes "t" for newline conversion
           o Kernel#open takes encoding specified
-          o IO#initialize now accepts an IO argument
           o IO automatically converts byte sequence from a character
             encodings into another if specified.
           o StringIO#readpartial
@@ -309,7 +310,6 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
 	  o String#match
     * Symbol
           o Zero-length symbols allowed
-          o Symbol#=== matches strings
           o Symbol#intern
           o Symbol#encoding
           o Symbol methods similar to those in String
