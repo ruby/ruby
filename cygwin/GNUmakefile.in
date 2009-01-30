@@ -67,7 +67,7 @@ endif
 
 $(LIBRUBY_SO): $(RUBYDEF)
 
-$(RUBYDEF): $(LIBRUBY_A) $(PREP) $(RBCONFIG)
+$(RUBYDEF): $(LIBRUBY_A) $(PREP) $(RBCONFIG) GNUmakefile
 ifeq (@target_os@,cygwin)
 	@NM@ --extern --defined $(LIBRUBY_A) | \
 	  $(MINIRUBY) -n -e 'BEGIN{puts "VERSION $(MAJOR).$(MINOR)","EXPORTS"}' \

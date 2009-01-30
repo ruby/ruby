@@ -1,4 +1,6 @@
-Fri Jan 30 12:57:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jan 30 12:59:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cygwin/GNUmakefile.in (RUBYDEF): depends on makefiles.
 
 	* cygwin/GNUmakefile.in (RUBYDEF): adds DATA to non-function symbols
 	  which is not marked as T.
