@@ -76,16 +76,6 @@ trans: $(TRANSSOS)
 
 srcs: $(TRANSCSRCS)
 
-% if rule = (compile_rules = COMPILE_RULES).find(&/\$\(srcdir\)/.method(:=~))
-%   compile_rules = [rule.sub(/\$\(srcdir\)/, '\&/enc'), rule.sub(/\$\(srcdir\)/, '\&/enc/trans')] + compile_rules
-% end
-% compile_rules.each do |rule|
-<%=  rule % %w[c $(OBJEXT)] %>
-	-@$(MAKEDIRS) "$(@D)"
-	<%=COMPILE_C%>
-
-% end
-
 <%=transvpath_prefix%>.trans<%=transvpath_prefix%>.c:
 	$(MINIRUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo "$@" "$<"
 
@@ -121,7 +111,10 @@ $(ENCSODIR)/<%=e%>.$(DLEXT): <%=obj%>
 
 % end
 % dependencies.each do |e|
-<%=rule_subst % "enc/#{e}.$(OBJEXT)"%>: <%=rule_subst % "enc/#{e}.c"%>
+<%="enc/#{e}.$(OBJEXT)"%>: <%="$(encsrcdir)/#{e}.c"%>
+	-@$(MAKEDIRS) "$(@D)"
+	<%=COMPILE_C.gsub(/\$(\()?<(\:[^)]+)?(\))?/){"$(encsrcdir)/#{e}.c"}%>
+
 % end
 
 enc/encdb.$(OBJEXT): encdb.h
