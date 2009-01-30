@@ -107,12 +107,20 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
     * File::Stat
           o File::Stat#world_readable?
           o File::Stat#world_writable?
-    * String and Regexp
-          o No longer an Enumerable
-          o ?c semantics
-          o "One-char-wide" semantics for String#[] and String#[]=
-          o Character-wise semantics in many methods in stead of
-            byte-wise.
+    * String
+          o No longer an Enumerable: use each_line/lines for line
+            oriented operation
+          o Encoding-awareness
+              o Character-wise semantics in many methods instead of
+                byte-wise.
+                  o String#[]: Indexing a String with an integer returns a
+                    single character String instead of an integer.
+                  o String#[]=: No longer takes an integer as right
+                    side value.  Note that "str[i] = ?c" because of
+                    the following change.
+                  o ?c is evaluated to a single character string
+                    instead of an integer.
+    * Regexp
           o Encoding-awareness
           o Regexp matches only with strings which is encoded in a
             compatible character encoding to the regexp's.
