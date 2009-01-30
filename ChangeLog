@@ -1,3 +1,8 @@
+Fri Jan 30 18:04:23 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_write): limit write size to 32KB if the file
+	  seems to be console.  [ruby-core:21613]
+
 Fri Jan 30 16:12:32 2009  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/curses/curses.c (Init_curses): Curses#crmode and
@@ -11,7 +16,7 @@ Fri Jan 30 14:31:14 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Fri Jan 30 14:11:48 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* enc/depend: extract comile rules to each target for VC++.
+	* enc/depend: extract compile rules to each target for nmake.
 
 Fri Jan 30 12:59:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

@@ -4485,6 +4485,8 @@ rb_w32_write(int fd, const void *buf, size_t size)
     DWORD written;
     DWORD wait;
     DWORD err;
+    size_t len;
+    size_t ret;
     OVERLAPPED ol, *pol = NULL;
 
     if (is_socket(sock))
@@ -4505,6 +4507,12 @@ rb_w32_write(int fd, const void *buf, size_t size)
 	MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
 	return 0;
     }
+
+    ret = 0;
+  retry:
+    /* get rid of console writing bug */
+    len = (_osfile(fd) & FDEV) ? min(32 * 1024, size) : size;
+    size -= len;
 
     /* if have cancel_io, use Overlapped I/O */
     if (cancel_io) {
@@ -4534,7 +4542,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
 	pol = &ol;
     }
 
-    if (!WriteFile((HANDLE)_osfhnd(fd), buf, size, &written, pol)) {
+    if (!WriteFile((HANDLE)_osfhnd(fd), buf, len, &written, pol)) {
 	err = GetLastError();
 	if (err != ERROR_IO_PENDING) {
 	    if (err == ERROR_ACCESS_DENIED)
@@ -4582,9 +4590,16 @@ rb_w32_write(int fd, const void *buf, size_t size)
 	}
     }
 
+    ret += written;
+    if (written == len) {
+	(const char *)buf += len;
+	if (size > 0)
+	    goto retry;
+    }
+
     MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
 
-    return written;
+    return ret;
 }
 
 static int
