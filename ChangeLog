@@ -1,3 +1,8 @@
+Fri Jan 30 14:31:14 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/make-snapshot (prereq): remove enc.mk from tarball because
+	  BSD make checks $(srcdir)/enc.mk and try to run $(builddir)/enc.mk.
+
 Fri Jan 30 14:11:48 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* enc/depend: extract comile rules to each target for VC++.

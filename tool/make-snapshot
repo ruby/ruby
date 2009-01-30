@@ -163,15 +163,7 @@ def package(rev, destdir)
         f.puts(IO.read("Makefile.in").gsub(/^@.*\n/, '').gsub(/@([A-Za-z_]\w*)@/) {ENV[$1]})
         f.puts(commonmk.gsub(/\{[^{}]*\}/, ""))
       end
-      File.open("enc.mk", "r+b") do |f|
-        data = f.read
-        data.gsub!(/^((?:ENC|TRANS)(?:OBJ|SO)(?:S|DIR)\s*=)(?:.*\\\n)*.*/, '\1')
-        data.sub!(/^(clean:.*)(?:\n\t.*)+/, '\1')
-        f.rewind
-        f.truncate(0)
-        f.print data
-      end
-      clean.push("rbconfig.rb", ".rbconfig.time")
+      clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk")
       print "prerequisites"
     else
       system("#{YACC} -o parse.c parse.y")
