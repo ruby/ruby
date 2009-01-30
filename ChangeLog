@@ -1,3 +1,7 @@
+Fri Jan 30 14:11:48 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* enc/depend: extract comile rules to each target for VC++.
+
 Fri Jan 30 12:59:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in (RUBYDEF): depends on makefiles.
