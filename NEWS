@@ -87,6 +87,12 @@ with all sufficient information, see the ChangeLog file.
 
     Renamed from SDBM#index.
 
+* securerandom
+
+  SecureRandom.uuid
+
+    New method to generate a v4 random UUID.
+
 * set
 
   Set#classify
