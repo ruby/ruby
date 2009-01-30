@@ -28,7 +28,7 @@ module Test
           as = e.instance_of?(MiniTest::Assertion)
           if as
             ans = /\A#{Regexp.quote(__FILE__)}:#{line}:in /o
-            bt.reject! {|line| ans =~ line}
+            bt.reject! {|ln| ans =~ ln}
           end
           if ((args.empty? && !as) ||
               args.any? {|a| a.instance_of?(Module) ? e.is_a?(a) : e.class == a })
