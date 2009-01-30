@@ -219,9 +219,13 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o #[] can take splatted arguments, hash style arguments 
             and a block.
           o New directives in printf-style formatted strings (%).
-          o Newlines allowed before ternary colon
+          o Newlines allowed before ternary colon operator (:) and
+            method call dot operator (.)
+          o Negative operators such as !, != and !~ are now
+            overloadable
           o Encoding.default_external and default_internal
-
+          o __ENCODING__: New pseudo variable to hold the current
+            script's encoding
 
 === Library updates
 
