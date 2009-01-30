@@ -1003,7 +1003,7 @@ Init_Cont(void)
 }
 
 void
-Init_Continuation_body(void)
+ruby_Init_Continuation_body(void)
 {
     rb_cContinuation = rb_define_class("Continuation", rb_cObject);
     rb_undef_alloc_func(rb_cContinuation);
@@ -1014,7 +1014,7 @@ Init_Continuation_body(void)
 }
 
 void
-Init_Fiber_as_Coroutine(void)
+ruby_Init_Fiber_as_Coroutine(void)
 {
     rb_define_method(rb_cFiber, "transfer", rb_fiber_m_transfer, -1);
     rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);

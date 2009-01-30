@@ -1,3 +1,10 @@
+Tue Jan 20 16:17:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (ruby_Init_{Continuation_body,Fiber_as_Coroutine}): prefixed
+	  with ruby_ to export.
+
+	* ext/continuation/continuation.c, ext/fiber/fiber.c: ditto.
+
 Thu Jan 29 16:22:41 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* load.c (rb_feature_provided): should not calculate len by pointer
