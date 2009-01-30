@@ -56,6 +56,10 @@ with all sufficient information, see the ChangeLog file.
 
     Renamed from ENV.index.
 
+  * Proc#===
+
+    New method primarily for use in the case-when construct.
+
   * Range#cover?
 
     New alias to #include? for the forward compatibility with 1.9, in

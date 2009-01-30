@@ -1,3 +1,8 @@
+Fri Jan 30 15:41:51 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* proc.c (Init_Proc): add '===' operator to use procs in when
+	  clause of the case statement.  inspired by <http://www.aimred.com/news/developers/2008/08/14/unlocking_the_power_of_case_equality_proc/>.
+
 Thu Jan 29 12:18:54 2009  Technorama Ltd.  <oss-ruby@technorama.net>
 
 	* lib/securerandom.rb: new method SecureRandom#uuid

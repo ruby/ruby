@@ -8975,6 +8975,14 @@ proc_invoke(proc, args, self, klass)
  *     	from prog.rb:5
  */
 
+/*
+ *  call-seq:
+ *     prc === obj   => obj
+ *  
+ *  Invokes the block, with <i>obj</i> as the block's parameter.  It is
+ *  to allow a proc object to be a target of when clause in the case statement.
+ */
+
 VALUE
 rb_proc_call(proc, args)
     VALUE proc, args;		/* OK */
@@ -10105,6 +10113,7 @@ Init_Proc()
     rb_define_method(rb_cProc, "call", rb_proc_call, -2);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "[]", rb_proc_call, -2);
+    rb_define_method(rb_cProc, "===", rb_proc_call, -2);
     rb_define_method(rb_cProc, "==", proc_eq, 1);
     rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
     rb_define_method(rb_cProc, "to_proc", proc_to_self, 0);
