@@ -1,3 +1,18 @@
+Sat Jan 31 20:07:59 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (addrinfo_ipv6_unspecified_p): new method.
+	  (addrinfo_ipv6_loopback_p): ditto.
+	  (addrinfo_ipv6_multicast_p): ditto.
+	  (addrinfo_ipv6_linklocal_p): ditto.
+	  (addrinfo_ipv6_sitelocal_p): ditto.
+	  (addrinfo_ipv6_v4mapped_p): ditto.
+	  (addrinfo_ipv6_v4compat_p): ditto.
+	  (addrinfo_ipv6_mc_nodelocal_p): ditto.
+	  (addrinfo_ipv6_mc_linklocal_p): ditto.
+	  (addrinfo_ipv6_mc_sitelocal_p): ditto.
+	  (addrinfo_ipv6_mc_orglocal_p): ditto.
+	  (addrinfo_ipv6_mc_global_p): ditto.
+
 Sat Jan 31 19:09:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_require_safe): raises when the path to be loaded is

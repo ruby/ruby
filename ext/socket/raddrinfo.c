@@ -1623,6 +1623,163 @@ addrinfo_ip_port(VALUE self)
     return INT2NUM(port);
 }
 
+#ifdef AF_INET6
+
+static struct in6_addr *
+extract_in6_addr(VALUE self)
+{
+    rb_addrinfo_t *rai = get_addrinfo(self);
+    int family = ai_get_afamily(rai);
+    if (family != AF_INET6) return NULL;
+    return &((struct sockaddr_in6 *)&rai->addr)->sin6_addr;
+}
+
+/*
+ * Returns true for IPv6 unspecified address (::).
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv6_unspecified_p(VALUE self)
+{
+    struct in6_addr *addr = extract_in6_addr(self);
+    if (addr && IN6_IS_ADDR_UNSPECIFIED(addr)) return Qtrue;
+    return Qfalse;
+}
+
+/*
+ * Returns true for IPv6 loopback address (::1).
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv6_loopback_p(VALUE self)
+{
+    struct in6_addr *addr = extract_in6_addr(self);
+    if (addr && IN6_IS_ADDR_LOOPBACK(addr)) return Qtrue;
+    return Qfalse;
+}
+
+/*
+ * Returns true for IPv6 multicast address (ff00::/8).
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv6_multicast_p(VALUE self)
+{
+    struct in6_addr *addr = extract_in6_addr(self);
+    if (addr && IN6_IS_ADDR_MULTICAST(addr)) return Qtrue;
+    return Qfalse;
+}
+
+/*
+ * Returns true for IPv6 link local address (ff80::/10).
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv6_linklocal_p(VALUE self)
+{
+    struct in6_addr *addr = extract_in6_addr(self);
+    if (addr && IN6_IS_ADDR_LINKLOCAL(addr)) return Qtrue;
+    return Qfalse;
+}
+
+/*
+ * Returns true for IPv6 site local address (ffc0::/10).
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv6_sitelocal_p(VALUE self)
+{
+    struct in6_addr *addr = extract_in6_addr(self);
+    if (addr && IN6_IS_ADDR_SITELOCAL(addr)) return Qtrue;
+    return Qfalse;
+}
+
+/*
+ * Returns true for IPv4-mapped IPv6 address (::ffff:0:0/80).
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv6_v4mapped_p(VALUE self)
+{
+    struct in6_addr *addr = extract_in6_addr(self);
+    if (addr && IN6_IS_ADDR_V4MAPPED(addr)) return Qtrue;
+    return Qfalse;
+}
+
+/*
+ * Returns true for IPv4-compatible IPv6 address (::/80).
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv6_v4compat_p(VALUE self)
+{
+    struct in6_addr *addr = extract_in6_addr(self);
+    if (addr && IN6_IS_ADDR_V4COMPAT(addr)) return Qtrue;
+    return Qfalse;
+}
+
+/*
+ * Returns true for IPv6 multicast node-local scope address.
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv6_mc_nodelocal_p(VALUE self)
+{
+    struct in6_addr *addr = extract_in6_addr(self);
+    if (addr && IN6_IS_ADDR_MC_NODELOCAL(addr)) return Qtrue;
+    return Qfalse;
+}
+
+/*
+ * Returns true for IPv6 multicast link-local scope address.
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv6_mc_linklocal_p(VALUE self)
+{
+    struct in6_addr *addr = extract_in6_addr(self);
+    if (addr && IN6_IS_ADDR_MC_LINKLOCAL(addr)) return Qtrue;
+    return Qfalse;
+}
+
+/*
+ * Returns true for IPv6 multicast site-local scope address.
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv6_mc_sitelocal_p(VALUE self)
+{
+    struct in6_addr *addr = extract_in6_addr(self);
+    if (addr && IN6_IS_ADDR_MC_SITELOCAL(addr)) return Qtrue;
+    return Qfalse;
+}
+
+/*
+ * Returns true for IPv6 multicast organization-local scope address.
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv6_mc_orglocal_p(VALUE self)
+{
+    struct in6_addr *addr = extract_in6_addr(self);
+    if (addr && IN6_IS_ADDR_MC_ORGLOCAL(addr)) return Qtrue;
+    return Qfalse;
+}
+
+/*
+ * Returns true for IPv6 multicast global scope address.
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv6_mc_global_p(VALUE self)
+{
+    struct in6_addr *addr = extract_in6_addr(self);
+    if (addr && IN6_IS_ADDR_MC_GLOBAL(addr)) return Qtrue;
+    return Qfalse;
+}
+
+#endif
+
 #ifdef HAVE_SYS_UN_H
 /*
  * call-seq:
@@ -1870,13 +2027,30 @@ Init_addrinfo(void)
     rb_define_method(rb_cAddrInfo, "protocol", addrinfo_protocol, 0);
     rb_define_method(rb_cAddrInfo, "canonname", addrinfo_canonname, 0);
 
+    rb_define_method(rb_cAddrInfo, "ipv4?", addrinfo_ipv4_p, 0);
+    rb_define_method(rb_cAddrInfo, "ipv6?", addrinfo_ipv6_p, 0);
+    rb_define_method(rb_cAddrInfo, "unix?", addrinfo_unix_p, 0);
+
     rb_define_method(rb_cAddrInfo, "ip?", addrinfo_ip_p, 0);
     rb_define_method(rb_cAddrInfo, "ip_unpack", addrinfo_ip_unpack, 0);
     rb_define_method(rb_cAddrInfo, "ip_address", addrinfo_ip_address, 0);
     rb_define_method(rb_cAddrInfo, "ip_port", addrinfo_ip_port, 0);
-    rb_define_method(rb_cAddrInfo, "ipv4?", addrinfo_ipv4_p, 0);
-    rb_define_method(rb_cAddrInfo, "ipv6?", addrinfo_ipv6_p, 0);
-    rb_define_method(rb_cAddrInfo, "unix?", addrinfo_unix_p, 0);
+
+#ifdef AF_INET6
+    rb_define_method(rb_cAddrInfo, "ipv6_unspecified?", addrinfo_ipv6_unspecified_p, 0);
+    rb_define_method(rb_cAddrInfo, "ipv6_loopback?", addrinfo_ipv6_loopback_p, 0);
+    rb_define_method(rb_cAddrInfo, "ipv6_multicast?", addrinfo_ipv6_multicast_p, 0);
+    rb_define_method(rb_cAddrInfo, "ipv6_linklocal?", addrinfo_ipv6_linklocal_p, 0);
+    rb_define_method(rb_cAddrInfo, "ipv6_sitelocal?", addrinfo_ipv6_sitelocal_p, 0);
+    rb_define_method(rb_cAddrInfo, "ipv6_v4mapped?", addrinfo_ipv6_v4mapped_p, 0);
+    rb_define_method(rb_cAddrInfo, "ipv6_v4compat?", addrinfo_ipv6_v4compat_p, 0);
+    rb_define_method(rb_cAddrInfo, "ipv6_mc_nodelocal?", addrinfo_ipv6_mc_nodelocal_p, 0);
+    rb_define_method(rb_cAddrInfo, "ipv6_mc_linklocal?", addrinfo_ipv6_mc_linklocal_p, 0);
+    rb_define_method(rb_cAddrInfo, "ipv6_mc_sitelocal?", addrinfo_ipv6_mc_sitelocal_p, 0);
+    rb_define_method(rb_cAddrInfo, "ipv6_mc_orglocal?", addrinfo_ipv6_mc_orglocal_p, 0);
+    rb_define_method(rb_cAddrInfo, "ipv6_mc_global?", addrinfo_ipv6_mc_global_p, 0);
+#endif
+
 #ifdef HAVE_SYS_UN_H
     rb_define_method(rb_cAddrInfo, "unix_path", addrinfo_unix_path, 0);
 #endif

@@ -326,6 +326,48 @@ class TestSocketAddrInfo < Test::Unit::TestCase
       assert_equal(ai1.canonname, ai2.canonname)
     end
 
+    def test_ipv6_predicates
+      list = [
+        [:ipv6_unspecified?, "::"],
+        [:ipv6_loopback?, "::1"],
+        [:ipv6_v4compat?, "::0.0.0.2", "::255.255.255.255"],
+        [:ipv6_v4mapped?, "::ffff:0.0.0.0", "::ffff:255.255.255.255"],
+        [:ipv6_linklocal?, "fe80::", "febf::"],
+        [:ipv6_sitelocal?, "fec0::", "feef::"],
+        [:ipv6_multicast?, "ff00::", "ffff::"]
+      ]
+      mlist = [
+        [:ipv6_mc_nodelocal?, "ff01::", "ff11::"],
+        [:ipv6_mc_linklocal?, "ff02::", "ff12::"],
+        [:ipv6_mc_sitelocal?, "ff05::", "ff15::"],
+        [:ipv6_mc_orglocal?, "ff08::", "ff18::"],
+        [:ipv6_mc_global?, "ff0e::", "ff1e::"]
+      ]
+      list.each {|meth, *addrs|
+        addrs.each {|addr|
+          assert(AddrInfo.ip(addr).send(meth), "AddrInfo.ip(#{addr.inspect}).#{meth}")
+          list.each {|meth2,|
+            next if meth == meth2
+            assert(!AddrInfo.ip(addr).send(meth2), "!AddrInfo.ip(#{addr.inspect}).#{meth2}")
+          }
+        }
+      }
+      mlist.each {|meth, *addrs|
+        addrs.each {|addr|
+          assert(AddrInfo.ip(addr).send(meth), "AddrInfo.ip(#{addr.inspect}).#{meth}")
+          assert(AddrInfo.ip(addr).ipv6_multicast?, "AddrInfo.ip(#{addr.inspect}).ipv6_multicast?")
+          mlist.each {|meth2,|
+            next if meth == meth2
+            assert(!AddrInfo.ip(addr).send(meth2), "!AddrInfo.ip(#{addr.inspect}).#{meth2}")
+          }
+          list.each {|meth2,|
+            next if :ipv6_multicast? == meth2
+            assert(!AddrInfo.ip(addr).send(meth2), "!AddrInfo.ip(#{addr.inspect}).#{meth2}")
+          }
+        }
+      }
+    end
+
   end
 
   if defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM
