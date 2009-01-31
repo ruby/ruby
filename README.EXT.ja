@@ -115,11 +115,9 @@ FIXNUMとNILに関してはより高速な判別マクロが用意されています．
 (整数に変換できない場合には例外が発生する)．同様にチェック無
 で使える変換マクロはdoubleを取り出す「NUM2DBL()」があります．
 
-char* を取り出す場合，version 1.6 以前では「STR2CSTR()」とい
-うマクロを使っていましたが，これは to_str() による暗黙の型変
-換結果が GC される可能性があるため，version 1.7 以降では
-obsolete となり，代わりに StringValue() と StringValuePtr() 
-を使う事を推奨しています．StringValue(var) は var が String 
+char* を取り出す場合， StringValue() と StringValuePtr() 
+を使います．
+StringValue(var) は var が String 
 であれば何もせず，そうでなければ var を var.to_str() の結果
 に置き換えるマクロ，StringValuePtr(var) は同様に var を
 String に置き換えてから var のバイト列表現に対する char* を

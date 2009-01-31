@@ -103,7 +103,7 @@ numbers into C integers.  These macros includes a type check,
 so an exception will be raised if the conversion failed.  NUM2DBL()
 can be used to retrieve the double float value in the same way.
 
-In version 1.7 or later it is recommended that you use the new macros
+You can use the macros
 StringValue() and StringValuePtr() to get a char* from a VALUE.
 StringValue(var) replaces var's value with the result of "var.to_str()".
 StringValuePtr(var) does same replacement and returns char*
@@ -117,10 +117,6 @@ the result. If the result contains nul character, this macro causes
 the ArgumentError exception.
 StringValuePtr() doesn't gurantee to exist nul at the end of the
 result, and the result may contain nul.
-
-In version 1.6 or earlier, STR2CSTR() was used to do the same thing
-but now it is deprecated in version 1.7, because STR2CSTR() has a risk
-of a dangling pointer problem in the to_str() implicit conversion.
 
 Other data types have corresponding C structures, e.g. struct RArray
 for T_ARRAY etc. The VALUE of the type which has the corresponding

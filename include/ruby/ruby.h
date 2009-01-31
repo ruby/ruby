@@ -515,11 +515,6 @@ ULONG2NUM(unsigned long v)
     return rb_uint2big(v);
 }
 
-/* obsolete API - use StringValue() */
-char *rb_str2cstr(VALUE,long*);
-/* obsolete API - use StringValuePtr() */
-#define STR2CSTR(x) rb_str2cstr((VALUE)(x),0)
-
 #define NUM2CHR(x) (((TYPE(x) == T_STRING)&&(RSTRING_LEN(x)>=1))?\
                      RSTRING_PTR(x)[0]:(char)(NUM2INT(x)&0xff))
 #define CHR2FIX(x) INT2FIX((long)((x)&0xff))

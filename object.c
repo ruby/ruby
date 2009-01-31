@@ -2304,17 +2304,6 @@ rb_num2dbl(VALUE val)
     return RFLOAT_VALUE(rb_Float(val));
 }
 
-char*
-rb_str2cstr(VALUE str, long *len)
-{
-    StringValue(str);
-    if (len) *len = RSTRING_LEN(str);
-    else if (RTEST(ruby_verbose) && RSTRING_LEN(str) != strlen(RSTRING_PTR(str))) {
-	rb_warn("string contains \\0 character");
-    }
-    return RSTRING_PTR(str);
-}
-
 VALUE
 rb_String(VALUE val)
 {
