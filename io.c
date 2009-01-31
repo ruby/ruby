@@ -1899,6 +1899,17 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
  *  The result may also be smaller than string.length (partial write).
  *  The caller should care such errors and partial write.
  *
+ *    # Creates a pipe.
+ *    r, w = IO.pipe
+ *
+ *    # write_nonblock writes only 65536 bytes and return 65536.
+ *    # (The pipe size is 65536 bytes on this environment.)
+ *    s = "a" * 100000
+ *    p w.write_nonblock(s)     #=> 65536
+ *
+ *    # write_nonblock cannot write a byte and raise EWOULDBLOCK (EAGAIN).
+ *    p w.write_nonblock("b")   # Resource temporarily unavailable (Errno::EAGAIN)
+ *
  *  If the write buffer is not empty, it is flushed at first.
  *
  *  When write_nonblock raises EWOULDBLOCK,
