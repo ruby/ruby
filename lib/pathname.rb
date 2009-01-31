@@ -77,8 +77,8 @@
 # === Core methods
 #
 # These methods are effectively manipulating a String, because that's
-# all a path is.  Except for #mountpoint?, #children, #realdirpath
-# and #realpath, they don't access the filesystem.
+# all a path is.  Except for #mountpoint?, #children, #each_child,
+# #realdirpath and #realpath, they don't access the filesystem.
 #
 # - +
 # - #join
