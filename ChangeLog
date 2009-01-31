@@ -1,3 +1,8 @@
+Sat Jan 31 22:38:46 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS#each_address): don't query IPv6 address
+	  if the host has no global IPv6 address.
+
 Sat Jan 31 22:29:05 2009  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (STR2CSTR): removed.

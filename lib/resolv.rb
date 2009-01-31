@@ -379,8 +379,20 @@ class Resolv
 
     def each_address(name)
       each_resource(name, Resource::IN::A) {|resource| yield resource.address}
-      each_resource(name, Resource::IN::AAAA) {|resource| yield resource.address}
+      if use_ipv6?
+        each_resource(name, Resource::IN::AAAA) {|resource| yield resource.address}
+      end
     end
+
+    def use_ipv6?
+      begin
+        list = Socket.ip_address_list
+      rescue NotImplementedError
+        return true
+      end
+      list.any? {|a| a.ipv6? && !a.ipv6_loopback? && !a.ipv6_linklocal? }
+    end
+    private :use_ipv6?
 
     ##
     # Gets the hostname for +address+ from the DNS resolver.
