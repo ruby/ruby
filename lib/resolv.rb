@@ -162,7 +162,7 @@ class Resolv
   class ResolvTimeout < TimeoutError; end
 
   ##
-  # DNS::Hosts is a hostname resolver that uses the system hosts file.
+  # Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
     if /mswin32|mingw|bccwin/ =~ RUBY_PLATFORM
@@ -173,7 +173,7 @@ class Resolv
     end
 
     ##
-    # Creates a new DNS::Hosts, using +filename+ for its data source.
+    # Creates a new Resolv::Hosts, using +filename+ for its data source.
 
     def initialize(filename = DefaultFileName)
       @filename = filename
