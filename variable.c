@@ -1470,8 +1470,11 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
     tmp = klass;
   retry:
     while (RTEST(tmp)) {
+	VALUE am = 0;
 	while (RCLASS_IV_TBL(tmp) && st_lookup(RCLASS_IV_TBL(tmp),id,&value)) {
 	    if (value == Qundef) {
+		if (am == tmp) break;
+		am = tmp;
 		rb_autoload_load(tmp, id);
 		continue;
 	    }

@@ -59,3 +59,11 @@ assert_equal 'okok', %q{
   [t1.value, t2.value].join
 }
 
+assert_finish 5, %q{
+  autoload :ZZZ, File.expand_path(__FILE__)
+  begin
+    ZZZ
+  rescue NameError
+  end
+}, '[ruby-core:21696]'
+

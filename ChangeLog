@@ -1,3 +1,8 @@
+Sun Feb  1 05:19:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_const_get_0), vm_insnhelper.c (vm_get_ev_const):
+	  avoids infinite self recursion autoload.  [ruby-core:21696]
+
 Sat Jan 31 22:50:38 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit/assertions.rb (assert_equal): show class in failure
