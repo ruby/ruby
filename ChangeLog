@@ -1,3 +1,8 @@
+Sat Jan 31 22:50:38 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/test/unit/assertions.rb (assert_equal): show class in failure
+	  message if meaningful.
+
 Sat Jan 31 22:38:46 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS#each_address): don't query IPv6 address

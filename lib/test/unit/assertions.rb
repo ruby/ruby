@@ -69,6 +69,10 @@ module Test
             elsif exp.is_a?(Time) && act.is_a?(Time)
               exp_comment = " (nsec=#{exp.nsec})"
               act_comment = " (nsec=#{act.nsec})"
+            elsif exp.class != act.class
+              # a subclass of Range, for example.
+              exp_comment = " (#{exp.class})"
+              act_comment = " (#{act.class})"
             end
           elsif !Encoding.compatible?(exp_str, act_str)
             if exp.is_a?(String) && act.is_a?(String)
