@@ -1,3 +1,7 @@
+Sat Jan 31 14:12:43 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pathname.rb (Pathname#each_child): new method.
+
 Sat Jan 31 00:07:49 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit/assertions.rb

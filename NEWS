@@ -86,7 +86,8 @@ with all sufficient information, see the ChangeLog file.
     string/symbol.
 
 * pathname
-  * realdirpath
+  * new method: realdirpath
+  * new method: each_child
 
 === Compatibility issues (excluding feature bug fixes)
 

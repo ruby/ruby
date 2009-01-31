@@ -92,6 +92,7 @@
 # - #realpath
 # - #realdirpath
 # - #children
+# - #each_child
 # - #mountpoint?
 #
 # === File status predicate methods
@@ -714,6 +715,36 @@ class Pathname
       end
     }
     result
+  end
+
+  # Iterates over the children of the directory
+  # (files and subdirectories, not recursive).
+  # It yields Pathname object for each child.
+  # By default, the yielded pathnames will have enough information to access the files.
+  # If you set +with_directory+ to +false+, then the returned pathnames will contain the filename only.
+  #
+  #   Pathname("/usr/local").each_child {|f| p f }
+  #   #=> #<Pathname:/usr/local/share>
+  #   #   #<Pathname:/usr/local/bin>
+  #   #   #<Pathname:/usr/local/games>
+  #   #   #<Pathname:/usr/local/lib>
+  #   #   #<Pathname:/usr/local/include>
+  #   #   #<Pathname:/usr/local/sbin>
+  #   #   #<Pathname:/usr/local/src>
+  #   #   #<Pathname:/usr/local/man>
+  #
+  #   Pathname("/usr/local").each_child(false) {|f| p f }
+  #   #=> #<Pathname:share>
+  #   #   #<Pathname:bin>
+  #   #   #<Pathname:games>
+  #   #   #<Pathname:lib>
+  #   #   #<Pathname:include>
+  #   #   #<Pathname:sbin>
+  #   #   #<Pathname:src>
+  #   #   #<Pathname:man>
+  #
+  def each_child(with_directory=true, &b)
+    children(with_directory).each(&b)
   end
 
   #
