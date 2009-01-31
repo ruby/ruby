@@ -1,3 +1,8 @@
+Sat Jan 31 18:03:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (List#accept, parse_in_order): n option is no
+	  longer needed.
+
 Sat Jan 31 14:12:43 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pathname.rb (Pathname#each_child): new method.
