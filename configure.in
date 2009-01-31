@@ -190,7 +190,7 @@ AC_PROG_GCC_TRADITIONAL
 test $ac_cv_prog_cc_g = yes && : ${debugflags=-g}
 if test "$GCC" = yes; then
     linker_flag=-Wl,
-    : ${optflags=-O2} ${warnflags="-Wall -Wno-parentheses"}
+    : ${optflags=-O3} ${warnflags="-Wall -Wno-parentheses"}
 else
     linker_flag=
 fi

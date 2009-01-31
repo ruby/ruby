@@ -1,3 +1,8 @@
+Sat Jan 31 18:08:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (optflags): defaulted to -O3 to get rid of slug of
+	  gcc 4.3.
+
 Sat Jan 31 18:03:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (List#accept, parse_in_order): n option is no
