@@ -36,27 +36,27 @@
 # === Example 1: Using Pathname
 #
 #   require 'pathname'
-#   p = Pathname.new("/usr/bin/ruby")
-#   size = p.size              # 27662
-#   isdir = p.directory?       # false
-#   dir  = p.dirname           # Pathname:/usr/bin
-#   base = p.basename          # Pathname:ruby
-#   dir, base = p.split        # [Pathname:/usr/bin, Pathname:ruby]
-#   data = p.read
-#   p.open { |f| _ }
-#   p.each_line { |line| _ }
+#   pn = Pathname.new("/usr/bin/ruby")
+#   size = pn.size              # 27662
+#   isdir = pn.directory?       # false
+#   dir  = pn.dirname           # Pathname:/usr/bin
+#   base = pn.basename          # Pathname:ruby
+#   dir, base = pn.split        # [Pathname:/usr/bin, Pathname:ruby]
+#   data = pn.read
+#   pn.open { |f| _ }
+#   pn.each_line { |line| _ }
 #
 # === Example 2: Using standard Ruby
 #
-#   p = "/usr/bin/ruby"
-#   size = File.size(p)        # 27662
-#   isdir = File.directory?(p) # false
-#   dir  = File.dirname(p)     # "/usr/bin"
-#   base = File.basename(p)    # "ruby"
-#   dir, base = File.split(p)  # ["/usr/bin", "ruby"]
-#   data = File.read(p)
-#   File.open(p) { |f| _ }
-#   File.foreach(p) { |line| _ }
+#   pn = "/usr/bin/ruby"
+#   size = File.size(pn)        # 27662
+#   isdir = File.directory?(pn) # false
+#   dir  = File.dirname(pn)     # "/usr/bin"
+#   base = File.basename(pn)    # "ruby"
+#   dir, base = File.split(pn)  # ["/usr/bin", "ruby"]
+#   data = File.read(pn)
+#   File.open(pn) { |f| _ }
+#   File.foreach(pn) { |line| _ }
 #
 # === Example 3: Special features
 #
@@ -690,12 +690,12 @@ class Pathname
   # filename only.
   #
   # For example:
-  #   p = Pathname("/usr/lib/ruby/1.8")
-  #   p.children
+  #   pn = Pathname("/usr/lib/ruby/1.8")
+  #   pn.children
   #       # -> [ Pathname:/usr/lib/ruby/1.8/English.rb,
   #              Pathname:/usr/lib/ruby/1.8/Env.rb,
   #              Pathname:/usr/lib/ruby/1.8/abbrev.rb, ... ]
-  #   p.children(false)
+  #   pn.children(false)
   #       # -> [ Pathname:English.rb, Pathname:Env.rb, Pathname:abbrev.rb, ... ]
   #
   # Note that the result never contain the entries <tt>.</tt> and <tt>..</tt> in
@@ -997,7 +997,7 @@ end
 
 class Pathname    # * Dir *
   # See <tt>Dir.glob</tt>.  Returns or yields Pathname objects.
-  def Pathname.glob(*args) # :yield: p
+  def Pathname.glob(*args) # :yield: pathname
     if block_given?
       Dir.glob(*args) {|f| yield self.new(f) }
     else
@@ -1029,7 +1029,7 @@ class Pathname    # * Dir *
   # yields a Pathname object for each entry.
   #
   # This method has existed since 1.8.1.
-  def each_entry(&block) # :yield: p
+  def each_entry(&block) # :yield: pathname
     Dir.foreach(@path) {|f| yield self.class.new(f) }
   end
 
@@ -1063,7 +1063,7 @@ class Pathname    # * Find *
   # If +self+ is <tt>.</tt>, yielded pathnames begin with a filename in the
   # current directory, not <tt>./</tt>.
   #
-  def find(&block) # :yield: p
+  def find(&block) # :yield: pathname
     require 'find'
     if @path == '.'
       Find.find(@path) {|f| yield self.class.new(f.sub(%r{\A\./}, '')) }
