@@ -812,6 +812,17 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_readpartial_pos
+    mkcdtmpdir {
+      open("foo", "w") {|f| f << "abc" }
+      open("foo") {|f|
+        f.seek(0)
+        assert_equal("ab", f.readpartial(2))
+        assert_equal(2, f.pos)
+      }
+    }
+  end
+
   def test_read
     pipe(proc do |w|
       w.write "foobarbaz"
