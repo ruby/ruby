@@ -26,7 +26,7 @@ Mon Feb  2 07:36:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  prototypes.
 
 	* vm_dump.c (rb_vm_bugreport), vm_eval.c (rb_backtrace): gets rid
-	  of allocating objects.
+	  of allocating objects.  [ruby-core:21619]
 
 	* vm_eval.c (rb_backtrace_each): new function which iterates over
 	  each backtrace info.
