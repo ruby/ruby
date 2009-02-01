@@ -1153,6 +1153,8 @@ module Gem
         @new_platform = Gem::Platform::RUBY
       when 'mswin32' then # was Gem::Platform::WIN32
         @new_platform = Gem::Platform.new 'x86-mswin32'
+      when 'mswin64' then
+        @new_platform = Gem::Platform.new 'x86-mswin64'
       when 'i586-linux' then # was Gem::Platform::LINUX_586
         @new_platform = Gem::Platform.new 'x86-linux'
       when 'powerpc-darwin' then # was Gem::Platform::DARWIN

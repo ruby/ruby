@@ -1,3 +1,23 @@
+Mon Feb  2 08:12:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/xmlrpc/server.rb (Server#serve): gets rid of hardcoded
+	  platform names.
+
+	* lib/resolv.rb (Resolv::Hosts::DefaultFileName),
+	  (Resolv::DNS::Config.default_config_hash): tries win32/resolv on
+	  mswin64 too.
+
+	* lib/rubygems/specification.rb (Gem::Specification#ruby_code):
+	  aded mswin64.
+
+	* lib/drb/extservm.rb (DRb::ExtServManager#invoke_service_command):
+	  spawn is better to start a process in background.
+
+	* ext/extmk.rb: uses FNM_SYSCASE.
+
+	* instruby.rb: installs win32.h on mswin64 platform.
+	  [ruby-core:21722]
+
 Mon Feb  2 07:36:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_backtrace_each): now takes an iterator function.

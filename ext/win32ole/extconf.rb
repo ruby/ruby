@@ -36,7 +36,7 @@ end
 
 
 case RUBY_PLATFORM
-when /mswin32/
+when /mswin/
   $CFLAGS += ' /W3'
 when /cygwin/, /mingw/
   $defs << '-DNONAMELESSUNION'
