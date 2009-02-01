@@ -63,6 +63,25 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     assert(!ipv4_ai.unix?)
   end
 
+  def test_ipv4_address_predicates
+    list = [
+      [:ipv4_private?, "10.0.0.0", "10.255.255.255",
+                       "172.16.0.0", "172.31.255.255",
+                       "192.168.0.0", "192.168.255.255"],
+      [:ipv4_loopback?, "127.0.0.1", "127.0.0.0", "127.255.255.255"],
+      [:ipv4_multicast?, "224.0.0.0", "224.255.255.255"]
+    ]
+    list.each {|meth, *addrs|
+      addrs.each {|addr|
+        assert(AddrInfo.ip(addr).send(meth), "AddrInfo.ip(#{addr.inspect}).#{meth}")
+        list.each {|meth2,|
+          next if meth == meth2
+          assert(!AddrInfo.ip(addr).send(meth2), "!AddrInfo.ip(#{addr.inspect}).#{meth2}")
+        }
+      }
+    }
+  end
+
   def test_basicsocket_send
     s1 = Socket.new(:INET, :DGRAM, 0)
     s1.bind(Socket.sockaddr_in(0, "127.0.0.1"))
@@ -326,7 +345,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
       assert_equal(ai1.canonname, ai2.canonname)
     end
 
-    def test_ipv6_predicates
+    def test_ipv6_address_predicates
       list = [
         [:ipv6_unspecified?, "::"],
         [:ipv6_loopback?, "::1"],

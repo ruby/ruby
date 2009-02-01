@@ -1623,6 +1623,60 @@ addrinfo_ip_port(VALUE self)
     return INT2NUM(port);
 }
 
+static int
+extract_in_addr(VALUE self, uint32_t *addrp)
+{
+    rb_addrinfo_t *rai = get_addrinfo(self);
+    int family = ai_get_afamily(rai);
+    if (family != AF_INET) return 0;
+    *addrp = ntohl(((struct sockaddr_in *)&rai->addr)->sin_addr.s_addr);
+    return 1;
+}
+
+/*
+ * Returns true for IPv4 private address (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16).
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv4_private_p(VALUE self)
+{
+    uint32_t a;
+    if (!extract_in_addr(self, &a)) return Qfalse;
+    if ((a & 0xff000000) == 0x0a000000 || /* 10.0.0.0/8 */
+        (a & 0xfff00000) == 0xac100000 || /* 172.16.0.0/12 */
+        (a & 0xffff0000) == 0xc0a80000)   /* 192.168.0.0/16 */
+        return Qtrue;
+    return Qfalse;
+}
+
+/*
+ * Returns true for IPv4 loopback address (127.0.0.0/8).
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv4_loopback_p(VALUE self)
+{
+    uint32_t a;
+    if (!extract_in_addr(self, &a)) return Qfalse;
+    if ((a & 0xff000000) == 0x7f000000) /* 127.0.0.0/8 */
+        return Qtrue;
+    return Qfalse;
+}
+
+/*
+ * Returns true for IPv4 multicast address (224.0.0.0/4).
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv4_multicast_p(VALUE self)
+{
+    uint32_t a;
+    if (!extract_in_addr(self, &a)) return Qfalse;
+    if ((a & 0xf0000000) == 0xe0000000) /* 224.0.0.0/4 */
+        return Qtrue;
+    return Qfalse;
+}
+
 #ifdef AF_INET6
 
 static struct in6_addr *
@@ -2035,6 +2089,10 @@ Init_addrinfo(void)
     rb_define_method(rb_cAddrInfo, "ip_unpack", addrinfo_ip_unpack, 0);
     rb_define_method(rb_cAddrInfo, "ip_address", addrinfo_ip_address, 0);
     rb_define_method(rb_cAddrInfo, "ip_port", addrinfo_ip_port, 0);
+
+    rb_define_method(rb_cAddrInfo, "ipv4_private?", addrinfo_ipv4_private_p, 0);
+    rb_define_method(rb_cAddrInfo, "ipv4_loopback?", addrinfo_ipv4_loopback_p, 0);
+    rb_define_method(rb_cAddrInfo, "ipv4_multicast?", addrinfo_ipv4_multicast_p, 0);
 
 #ifdef AF_INET6
     rb_define_method(rb_cAddrInfo, "ipv6_unspecified?", addrinfo_ipv6_unspecified_p, 0);
