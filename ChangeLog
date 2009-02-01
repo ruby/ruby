@@ -1,3 +1,9 @@
+Mon Feb  2 06:51:36 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* encoding.c (rb_filesystem_encoding): Windows' filesystem encoding is
+	  sometimes ANSI code page and sometimes OEM code page. we should check
+	  whether code page is used.
+
 Sun Feb  1 21:27:55 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (addrinfo_ipv4_private_p): new method.
