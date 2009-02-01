@@ -384,10 +384,16 @@ class OptionParser
         left[-1] << if left[-1].empty? then ' ' * 4 else ', ' end << s
       end
 
-      left[0] << arg if arg
+      if arg
+        left[0] << (left[1] ? arg.sub(/\A(\[?)=/, '\1') + ',' : arg)
+      end
       mlen = left.collect {|ss| ss.length}.max.to_i
       while mlen > width and l = left.shift
         mlen = left.collect {|ss| ss.length}.max.to_i if l.length == mlen
+        if l.length < width and (r = right[0]) and !r.empty?
+          l = l.to_s.ljust(width) + ' ' + r
+          right.shift
+        end
         yield(indent + l)
       end
 
