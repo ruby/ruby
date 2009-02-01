@@ -823,14 +823,14 @@ sleep_timeval(rb_thread_t *th, struct timeval tv)
 }
 
 void
-rb_thread_sleep_forever()
+rb_thread_sleep_forever(void)
 {
     thread_debug("rb_thread_sleep_forever\n");
     sleep_forever(GET_THREAD(), 0);
 }
 
 static void
-rb_thread_sleep_deadly()
+rb_thread_sleep_deadly(void)
 {
     thread_debug("rb_thread_sleep_deadly\n");
     sleep_forever(GET_THREAD(), 1);
@@ -2010,7 +2010,7 @@ vm_living_thread_num(rb_vm_t *vm)
 }
 
 int
-rb_thread_alone()
+rb_thread_alone(void)
 {
     int num = 1;
     if (GET_THREAD()->vm->living_threads) {

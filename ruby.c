@@ -1112,7 +1112,7 @@ true_value(void)
     rb_define_virtual_variable((name), (val) ? true_value : false_value, 0)
 
 static VALUE
-uscore_get()
+uscore_get(void)
 {
     VALUE line;
 
@@ -1176,7 +1176,7 @@ rb_f_gsub(argc, argv)
  */
 
 static VALUE
-rb_f_chop()
+rb_f_chop(void)
 {
     VALUE str = rb_funcall3(uscore_get(), rb_intern("chop"), 0, 0);
     rb_lastline_set(str);

@@ -542,7 +542,7 @@ rb_block_given_p(void)
 }
 
 int
-rb_iterator_p()
+rb_iterator_p(void)
 {
     return rb_block_given_p();
 }
@@ -550,7 +550,7 @@ rb_iterator_p()
 VALUE rb_eThreadError;
 
 void
-rb_need_block()
+rb_need_block(void)
 {
     if (!rb_block_given_p()) {
 	rb_vm_localjump_error("no block given", Qnil, 0);

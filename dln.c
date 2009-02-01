@@ -445,14 +445,14 @@ undef_print(char *key, char *value)
 }
 
 static void
-dln_print_undef()
+dln_print_undef(void)
 {
     fprintf(stderr, " Undefined symbols:\n");
     st_foreach(undef_tbl, undef_print, NULL);
 }
 
 static void
-dln_undefined()
+dln_undefined(void)
 {
     if (undef_tbl->num_entries > 0) {
 	fprintf(stderr, "dln: Calling undefined function\n");

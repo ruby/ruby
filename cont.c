@@ -818,7 +818,7 @@ root_fiber_alloc(rb_thread_t *th)
 }
 
 VALUE
-rb_fiber_current()
+rb_fiber_current(void)
 {
     rb_thread_t *th = GET_THREAD();
     if (th->fiber == 0) {

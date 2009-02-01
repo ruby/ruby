@@ -515,7 +515,7 @@ sighandler(int sig)
 }
 
 int
-rb_signal_buff_size()
+rb_signal_buff_size(void)
 {
     return signal_buff.size;
 }
@@ -1044,7 +1044,7 @@ init_sigchld(int sig)
 #endif
 
 void
-ruby_sig_finalize()
+ruby_sig_finalize(void)
 {
     sighandler_t oldfunc;
 
