@@ -1,3 +1,9 @@
+Sun Feb  1 16:14:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (Switch#summarize): strips an equal sign from
+	  short option, and fills right sides in shorter lines.
+	  [ruby-talk:326414]
+
 Sat Jan 31 16:04:38 2009  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_getpartial): fflush after read for updating pos in FILE.
