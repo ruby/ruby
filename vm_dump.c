@@ -564,28 +564,27 @@ rb_vmdebug_thread_dump_state(VALUE self)
     return Qnil;
 }
 
-VALUE rb_make_backtrace(void);
+static int
+bugreport_backtrace(void *arg, const char *file, int line, const char *method)
+{
+    if (!*(int *)arg) {
+	fprintf(stderr, "-- Ruby level backtrace information"
+		"-----------------------------------------\n");
+	*(int *)arg = 1;
+    }
+    fprintf(stderr, "%s:%d:in `%s'\n", file, line, method);
+    return 0;
+}
 
 void
 rb_vm_bugreport(void)
 {
-    VALUE bt;
-
     if (GET_THREAD()->vm) {
 	int i;
 	SDR();
 
-	bt = rb_make_backtrace();
-
-	if (bt) {
-	    fprintf(stderr, "-- Ruby level backtrace information"
-		    "-----------------------------------------\n");
-
-	    for (i = 0; i < RARRAY_LEN(bt); i++) {
-		VALUE str = RARRAY_PTR(bt)[i];
-		fprintf(stderr, "%s\n", RSTRING_PTR(str));
-	    }
-	    fprintf(stderr, "\n");
+	if (rb_backtrace_each(bugreport_backtrace, &i)) {
+	    fputs("\n", stderr);
 	}
     }
 

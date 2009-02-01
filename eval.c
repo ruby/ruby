@@ -330,7 +330,6 @@ rb_frozen_class_p(VALUE klass)
 }
 
 NORETURN(static void rb_longjmp(int, VALUE));
-VALUE rb_make_backtrace(void);
 
 static void
 rb_longjmp(int tag, VALUE mesg)

@@ -16,6 +16,7 @@ static inline VALUE rb_vm_set_finish_env(rb_thread_t * th);
 static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const NODE *cref);
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
 static inline VALUE vm_backtrace(rb_thread_t *th, int lev);
+static int vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *arg);
 static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref);
@@ -1304,22 +1305,29 @@ rb_f_caller(int argc, VALUE *argv)
     return vm_backtrace(GET_THREAD(), lev);
 }
 
+static int
+print_backtrace(void *arg, const char *file, int line, const char *method)
+{
+    fprintf((FILE *)arg, "\tfrom %s:%d:in `%s'\n", file, line, method);
+    return Qfalse;
+}
+
 void
 rb_backtrace(void)
 {
-    long i;
-    VALUE ary;
-
-    ary = vm_backtrace(GET_THREAD(), -1);
-    for (i = 0; i < RARRAY_LEN(ary); i++) {
-	printf("\tfrom %s\n", RSTRING_PTR(RARRAY_PTR(ary)[i]));
-    }
+    vm_backtrace_each(GET_THREAD(), -1, print_backtrace, stdout);
 }
 
 VALUE
 rb_make_backtrace(void)
 {
     return vm_backtrace(GET_THREAD(), -1);
+}
+
+VALUE
+rb_backtrace_each(rb_backtrace_iter_func *iter, void *arg)
+{
+    return vm_backtrace_each(GET_THREAD(), -1, iter, arg);
 }
 
 /*

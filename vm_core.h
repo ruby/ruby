@@ -590,6 +590,9 @@ VALUE rb_vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
 
 void *rb_thread_call_with_gvl(void *(*func)(void *), void *data1);
 int ruby_thread_has_gvl_p(void);
+VALUE rb_make_backtrace(void);
+typedef int rb_backtrace_iter_func(void *, const char *, int, const char *);
+VALUE rb_backtrace_each(rb_backtrace_iter_func *iter, void *arg);
 
 NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
 

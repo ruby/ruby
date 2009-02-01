@@ -687,62 +687,59 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
     return line_no;
 }
 
-static VALUE
-vm_backtrace_each(rb_thread_t *th,
-		  const rb_control_frame_t *limit_cfp, const rb_control_frame_t *cfp,
-		  const char * file, int line_no, VALUE ary)
+static int
+vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *arg)
 {
-    VALUE str;
+    const rb_control_frame_t *limit_cfp = th->cfp;
+    const rb_control_frame_t *cfp = (void *)(th->stack + th->stack_size);
+    const char *file;
+    int line_no = 0;
 
+    cfp -= 2;
+    while (lev-- >= 0) {
+	if (++limit_cfp >= cfp) {
+	    return Qfalse;
+	}
+    }
+    limit_cfp = RUBY_VM_NEXT_CONTROL_FRAME(limit_cfp);
+    file = RSTRING_PTR(th->vm->progname);
     while (cfp > limit_cfp) {
-	str = 0;
 	if (cfp->iseq != 0) {
 	    if (cfp->pc != 0) {
 		rb_iseq_t *iseq = cfp->iseq;
 
 		line_no = rb_vm_get_sourceline(cfp);
 		file = RSTRING_PTR(iseq->filename);
-		str = rb_sprintf("%s:%d:in `%s'",
-				 file, line_no, RSTRING_PTR(iseq->name));
-		rb_ary_push(ary, str);
+		if ((*iter)(arg, file, line_no, RSTRING_PTR(iseq->name))) break;
 	    }
 	}
 	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
-	    str = rb_sprintf("%s:%d:in `%s'",
-			     file, line_no,
-			     rb_id2name(cfp->method_id));
-	    rb_ary_push(ary, str);
+	    if ((*iter)(arg, file, line_no, rb_id2name(cfp->method_id))) break;
 	}
 	cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp);
     }
-    return rb_ary_reverse(ary);
+    return Qtrue;
+}
+
+static int
+vm_backtrace_push(void *arg, const char *file, int line_no, const char *name)
+{
+    VALUE *aryp = arg;
+    if (!*aryp) {
+	*aryp = rb_ary_new();
+    }
+    rb_ary_push(*aryp, rb_sprintf("%s:%d:in `%s'", file, line_no, name));
+    return 0;
 }
 
 static inline VALUE
 vm_backtrace(rb_thread_t *th, int lev)
 {
-    VALUE ary;
-    const rb_control_frame_t *cfp = th->cfp;
-    const rb_control_frame_t *top_of_cfp = (void *)(th->stack + th->stack_size);
-    top_of_cfp -= 2;
+    VALUE ary = 0;
 
-    if (lev < 0) {
-	/* TODO ?? */
-	ary = rb_ary_new();
-    }
-    else {
-	while (lev-- >= 0) {
-	    cfp++;
-	    if (cfp >= top_of_cfp) {
-		return Qnil;
-	    }
-	}
-	ary = rb_ary_new();
-    }
-
-    ary = vm_backtrace_each(th, RUBY_VM_NEXT_CONTROL_FRAME(cfp),
-			    top_of_cfp, RSTRING_PTR(th->vm->progname), 0, ary);
-    return ary;
+    vm_backtrace_each(th, lev, vm_backtrace_push, &ary);
+    if (!ary) return Qnil;
+    return rb_ary_reverse(ary);
 }
 
 const char *
