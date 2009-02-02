@@ -1,3 +1,8 @@
+Tue Feb  3 07:02:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/langinfo.c (nl_langinfo_codeset): accepts iso-8859
+	  fragment.  [ruby-core:21757]
+
 Tue Feb  3 07:01:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb (patchlevel): config.status may not contain

@@ -63,6 +63,7 @@ const char *
 nl_langinfo_codeset(void)
 {
   const char *l, *p;
+  int n;
   
   if (((l = getenv("LC_ALL"))   && *l) ||
       ((l = getenv("LC_CTYPE")) && *l) ||
@@ -75,9 +76,9 @@ nl_langinfo_codeset(void)
     if (!p++) p = l;
     if (strstart(p, "UTF"))
 	return "UTF-8";
-    if (strstart(p, "8859-")) {
-      if (digit(p[5])) {
-	p += 5;
+    if ((n = 5, strstart(p, "8859-")) || (n = 9, strstart(p, "ISO-8859-"))) {
+      if (digit(p[n])) {
+	p += n;
 	memcpy(buf, "ISO-8859-\0\0", 12);
 	buf[9] = *p++;
 	if (digit(*p)) buf[10] = *p++;
