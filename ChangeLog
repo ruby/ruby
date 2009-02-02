@@ -1,3 +1,8 @@
+Tue Feb  3 07:01:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb (patchlevel): config.status may not contain
+	  PATCHLEVEL even if other version numbers exist.
+
 Mon Feb  2 23:43:00 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (Init_addrinfo): add AddrInfo#to_s as an

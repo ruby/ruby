@@ -38,6 +38,7 @@ v_fast = []
 v_others = []
 vars = {}
 has_version = false
+has_patchlevel = false
 continued_name = nil
 continued_line = nil
 File.foreach "config.status" do |line|
@@ -95,7 +96,12 @@ File.foreach "config.status" do |line|
     else
       v_others << v
     end
-    has_version = true if name == "MAJOR"
+    case name
+    when "MAJOR"
+      has_version = true
+    when "PATCHLEVEL"
+      has_patchlevel = true
+    end
   end
 #  break if /^CEOF/
 end
@@ -114,6 +120,8 @@ unless has_version
     print "  CONFIG[\"MINOR\"] = \"" + $2 + "\"\n"
     print "  CONFIG[\"TEENY\"] = \"" + $3 + "\"\n"
   }
+end
+unless has_patchlevel
   patchlevel = IO.foreach(File.join(srcdir, "version.h")) {|l|
     m = /^\s*#\s*define\s+RUBY_PATCHLEVEL\s+(-?\d+)/.match(l) and break m[1]
   }
