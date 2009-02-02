@@ -1,3 +1,8 @@
+Mon Feb  2 20:49:24 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c: Introduce id_each to save rb_itern() and SYM2ID()
+	  calls.
+
 Sun Feb  1 16:14:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (Switch#summarize): strips an equal sign from
