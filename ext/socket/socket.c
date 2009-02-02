@@ -19,7 +19,7 @@ setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
 
 /*
  * call-seq:
- *   Socket.new(domain, socktype, protocol) => socket
+ *   Socket.new(domain, socktype [, protocol]) => socket
  *
  * Creates a new socket object.
  *
@@ -28,18 +28,24 @@ setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
  * _socktype_ should be a socket type such as: :STREAM, :DGRAM, :RAW, etc.
  *
  * _protocol_ should be a protocol defined in the domain.
- * 0 is default protocol for the domain.
+ * This is optional.
+ * If it is not given, 0 is used internally.
  *
- *   Socket.new(:INET, :STREAM, 0) # TCP socket
- *   Socket.new(:INET, :DGRAM, 0)  # UDP socket
- *   Socket.new(:UNIX, :STREAM, 0) # UNIX stream socket
- *   Socket.new(:UNIX, :DGRAM, 0)  # UNIX datagram socket
+ *   Socket.new(:INET, :STREAM) # TCP socket
+ *   Socket.new(:INET, :DGRAM)  # UDP socket
+ *   Socket.new(:UNIX, :STREAM) # UNIX stream socket
+ *   Socket.new(:UNIX, :DGRAM)  # UNIX datagram socket
  */
 static VALUE
-sock_initialize(VALUE sock, VALUE domain, VALUE type, VALUE protocol)
+sock_initialize(int argc, VALUE *argv, VALUE sock)
 {
+    VALUE domain, type, protocol;
     int fd;
     int d, t;
+
+    rb_scan_args(argc, argv, "21", &domain, &type, &protocol);
+    if (NIL_P(protocol))
+        protocol = INT2FIX(0);
 
     rb_secure(3);
     setup_domain_and_type(domain, &d, type, &t);
@@ -1742,7 +1748,7 @@ Init_socket()
 
     Init_socket_init();
 
-    rb_define_method(rb_cSocket, "initialize", sock_initialize, 3);
+    rb_define_method(rb_cSocket, "initialize", sock_initialize, -1);
     rb_define_method(rb_cSocket, "connect", sock_connect, 1);
     rb_define_method(rb_cSocket, "connect_nonblock", sock_connect_nonblock, 1);
     rb_define_method(rb_cSocket, "bind", sock_bind, 1);

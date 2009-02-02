@@ -5,6 +5,11 @@ rescue LoadError
 end
 
 class TestSocket < Test::Unit::TestCase
+  def test_socket_new
+    s = Socket.new(:INET, :STREAM)
+    assert_kind_of(Socket, s)
+  end
+
   def test_unpack_sockaddr
     sockaddr_in = Socket.sockaddr_in(80, "")
     assert_raise(ArgumentError) { Socket.unpack_sockaddr_un(sockaddr_in) }
