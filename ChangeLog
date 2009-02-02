@@ -1,3 +1,7 @@
+Mon Feb  2 14:22:56 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/constants.c (cmsg_type_arg): INET6 check.
+
 Mon Feb  2 14:18:20 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c: use INET6 instead of IPV6.

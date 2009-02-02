@@ -100,8 +100,10 @@ cmsg_type_arg(int level, VALUE optname)
         return constant_arg(optname, scm_optname_to_int, "unknown UNIX control message");
       case IPPROTO_IP:
         return constant_arg(optname, ip_optname_to_int, "unknown IP control message");
+#ifdef INET6
       case IPPROTO_IPV6:
         return constant_arg(optname, ipv6_optname_to_int, "unknown IPv6 control message");
+#endif
       case IPPROTO_TCP:
         return constant_arg(optname, tcp_optname_to_int, "unknown TCP control message");
       case IPPROTO_UDP:
