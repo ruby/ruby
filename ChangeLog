@@ -6,6 +6,8 @@ Mon Feb  2 23:43:00 2009  Tanaka Akira  <akr@fsij.org>
 	* ext/socket/option.c (Init_sockopt): add Socket::Option#to_s as an
 	  alias of Socket::Option#data.
 
+	  [ruby-dev:37873]
+
 Mon Feb  2 21:04:13 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_sort_by_bang): RDoc update.  [ruby-core:21742]
