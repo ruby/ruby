@@ -46,7 +46,7 @@ class AddrInfo
   end
   private :connect_internal
 
-  # creates a socket connected to self.
+  # creates a socket connected to the address of self.
   #
   # If one or more arguments given as _local_addr_args_,
   # it is used as the local address of the socket.
@@ -72,7 +72,7 @@ class AddrInfo
     connect_internal(family_addrinfo(*local_addr_args), &block)
   end
 
-  # creates a socket connected to self.
+  # creates a socket connected to the address of self.
   #
   # If a block is given, it is called with the socket and the value of the block is returned.
   # The socket is returned otherwise.
