@@ -2605,6 +2605,9 @@ rb_home_dir(const char *user, VALUE result)
 {
     const char *dir;
     char *buf;
+#if defined DOSISH || defined __CYGWIN__
+    char *p;
+#endif
     long dirlen;
 
     if (!user || !*user) {
