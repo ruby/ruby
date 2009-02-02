@@ -1,3 +1,11 @@
+Tue Feb  3 08:35:12 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (Socket.tcp_server_sockets): extracted from
+	  Socket.tcp_server_loop.
+	  (Socket.accept_loop): ditto.
+	  (Socket.unix_server_socket): extracted from Socket.unix_server_loop.
+	  (Socket.unix_server_loop): use Socket.accept_loop.
+
 Tue Feb  3 08:21:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_readpartial.rb (make_pipe): readpartial does not

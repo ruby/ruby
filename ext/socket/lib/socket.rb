@@ -161,7 +161,7 @@ end
 class Socket
   # enable the socket option IPV6_V6ONLY if IPV6_V6ONLY is available.
   def ipv6only!
-    if Socket.const_defined?(:IPV6_V6ONLY)
+    if defined? Socket::IPV6_V6ONLY
       self.setsockopt(:IPV6, :V6ONLY, 1)
     end
   end
@@ -226,6 +226,71 @@ class Socket
     end
   end
 
+  # creates TCP server sockets for _host_ and _port_.
+  # _host_ is optional.
+  #
+  # It returns an array of listening sockets.
+  #
+  #   # tcp_server_sockets returns two sockets.
+  #   sockets = Socket.tcp_server_sockets(1296)
+  #   p sockets #=> [#<Socket:fd 3>, #<Socket:fd 4>]
+  #
+  #   # The sockets contains IPv6 and IPv4 sockets.
+  #   sockets.each {|s| p s.local_address }
+  #   #=> #<AddrInfo: [::]:1296 TCP>
+  #   #   #<AddrInfo: 0.0.0.0:1296 TCP>
+  #
+  def self.tcp_server_sockets(host=nil, port)
+    last_error = nil
+    sockets = []
+    AddrInfo.foreach(host, port, nil, :STREAM, nil, Socket::AI_PASSIVE) {|ai|
+      begin
+        s = ai.listen
+      rescue SystemCallError
+        last_error = $!
+        next
+      end
+      sockets << s
+    }
+    if sockets.empty?
+      raise last_error
+    end
+    sockets
+  ensure
+    if $!
+      sockets.each {|s|
+        s.close if !s.closed?
+      }
+    end
+  end
+
+  # yield socket and client address for each a connection accepted via given sockets.
+  #
+  # The arguments are a list of sockets.
+  # The individual argument should be a socket or an array of sockets. 
+  #
+  # This method yields the block sequentially.
+  # It means that the next connection is not accepted until the block returns.
+  # So concurrent mechanism, thread for example, should be used to service multiple clients at a time.
+  #
+  def self.accept_loop(*sockets) # :yield: socket, client_addrinfo
+    sockets.flatten!(1)
+    if sockets.empty?
+      raise ArgumentError, "no sockets"
+    end
+    loop {
+      readable, _, _ = IO.select(sockets)
+      readable.each {|r|
+        begin
+          sock, addr = r.accept_nonblock
+        rescue Errno::EWOULDBLOCK
+          next
+        end
+        yield sock, addr
+      }
+    }
+  end
+
   # creates a TCP server on _port_ and calls the block for each connection accepted.
   # The block is called with a socket and a client_address as an AddrInfo object.
   #
@@ -267,36 +332,15 @@ class Socket
   #     }
   #   }
   #
-  def self.tcp_server_loop(host=nil, port) # :yield: socket, client_addrinfo
-    last_error = nil
-    sockets = []
-    AddrInfo.foreach(host, port, nil, :STREAM, nil, Socket::AI_PASSIVE) {|ai|
-      begin
-        s = ai.listen
-      rescue SystemCallError
-        last_error = $!
-        next
-      end
-      sockets << s
-    }
-    if sockets.empty?
-      raise last_error
-    end
-    loop {
-      readable, _, _ = IO.select(sockets)
-      readable.each {|r|
-        begin
-          sock, addr = r.accept_nonblock
-        rescue Errno::EWOULDBLOCK
-          next
-        end
-        yield sock, addr
-      }
-    }
+  def self.tcp_server_loop(host=nil, port, &b) # :yield: socket, client_addrinfo
+    sockets = tcp_server_sockets(host, port)
+    accept_loop(sockets, &b)
   ensure
-    sockets.each {|s|
-      s.close if !s.closed?
-    }
+    if sockets
+      sockets.each {|s|
+        s.close if !s.closed?
+      }
+    end
   end
 
   # creates a new socket connected to path using UNIX socket socket.
@@ -328,6 +372,25 @@ class Socket
     end
   end
 
+  # creates UNIX server sockets on _path_
+  #
+  # It returns a listening socket.
+  #
+  #   socket = Socket.unix_server_socket("/tmp/s")
+  #   p socket               #=> #<Socket:fd 3>
+  #   p socket.local_address #=> #<AddrInfo: /tmp/s SOCK_STREAM>
+  #
+  def self.unix_server_socket(path)
+    begin
+      st = File.lstat(path)
+    rescue Errno::ENOENT
+    end
+    if st && st.socket? && st.owned?
+      File.unlink path
+    end
+    AddrInfo.unix(path).listen
+  end
+
   # creates a UNIX socket server on _path_.
   # It calls the block for each socket accepted.
   #
@@ -352,19 +415,9 @@ class Socket
   #     end
   #   }
   #
-  def self.unix_server_loop(path) # :yield: socket, client_addrinfo
-    begin
-      st = File.lstat(path)
-    rescue Errno::ENOENT
-    end
-    if st && st.socket? && st.owned?
-      File.unlink path
-    end
-    serv = AddrInfo.unix(path).listen
-    loop {
-      sock, addr = serv.accept
-      yield sock, addr
-    }
+  def self.unix_server_loop(path, &b) # :yield: socket, client_addrinfo
+    serv = unix_server_socket(path)
+    accept_loop(serv, &b)
   ensure
     serv.close if serv && !serv.closed?
   end
