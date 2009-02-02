@@ -4602,7 +4602,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
 
     ret += written;
     if (written == len) {
-	(const char *)buf += len;
+	buf = (const char *)buf + len;
 	if (size > 0)
 	    goto retry;
     }
