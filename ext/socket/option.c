@@ -21,7 +21,7 @@ optname_to_sym(int level, int optname)
         return constant_to_sym(optname, intern_so_optname);
       case IPPROTO_IP:
         return constant_to_sym(optname, intern_ip_optname);
-#ifdef IPV6
+#ifdef INET6
       case IPPROTO_IPV6:
         return constant_to_sym(optname, intern_ipv6_optname);
 #endif
