@@ -5,6 +5,8 @@ require 'fcntl'
 class TestReadPartial < Test::Unit::TestCase
   def make_pipe
     r, w = IO.pipe
+    r.binmode
+    w.binmode
     begin
       yield r, w
     ensure
