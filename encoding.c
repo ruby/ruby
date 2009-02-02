@@ -1034,7 +1034,7 @@ rb_filesystem_encoding(void)
     enc = rb_default_external_encoding();
 #elif defined _WIN32 || defined __CYGWIN__
     char cp[sizeof(int) * 8 / 3 + 4];
-    snprintf(cp, sizeof cp, "CP%d", GetOEMCP());
+    snprintf(cp, sizeof cp, "CP%d", AreFileApisANSI() ? GetACP() : GetOEMCP());
     enc = rb_enc_find(cp);
 #elif defined __APPLE__
     enc = rb_enc_find("UTF8-MAC");
