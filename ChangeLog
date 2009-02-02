@@ -1,3 +1,23 @@
+Mon Feb  2 08:12:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/xmlrpc/server.rb (Server#serve): gets rid of hardcoded
+	  platform names. (win64 support)
+
+	* lib/resolv.rb (Resolv::Hosts::DefaultFileName),
+	  (Resolv::DNS::Config.default_config_hash): tries win32/resolv on
+	  mswin64 too. (win64 support)
+
+	* lib/rubygems/specification.rb (Gem::Specification#ruby_code):
+	  aded mswin64. (win64 support)
+
+	* lib/drb/extservm.rb (DRb::ExtServManager#invoke_service_command):
+	  spawn is better to start a process in background.
+
+	* ext/extmk.rb: uses FNM_SYSCASE. (win64 support)
+
+	* instruby.rb: installs win32.h on mswin64 platform. (win64 support)
+	  [ruby-core:21722]
+
 Mon Feb  2 12:41:52 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* complex.c (f_signbit): regard NaN as a positive value.

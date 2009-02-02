@@ -351,7 +351,7 @@ $static_ext = {}
 if $extstatic
   $extstatic.each do |t|
     target = t
-    target = target.downcase if /mswin32|bccwin32/ =~ RUBY_PLATFORM
+    target = target.downcase if File::FNM_SYSCASE.nonzero?
     $static_ext[target] = $static_ext.size
   end
 end
@@ -371,7 +371,7 @@ for dir in ["ext", File::join($top_srcdir, "ext")]
 	end
 	next
       end
-      target = target.downcase if /mswin32|bccwin32/ =~ RUBY_PLATFORM
+      target = target.downcase if File::FNM_SYSCASE.nonzero?
       $static_ext[target] = $static_ext.size
     end
     MTIMES << f.mtime

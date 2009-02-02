@@ -358,7 +358,7 @@ install?(:local, :arch, :lib) do
   Dir.chdir(srcdir)
   makedirs [rubyhdrdir]
   noinst = []
-  unless RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
+  unless RUBY_PLATFORM =~ /mswin|mingw|bccwin/
     noinst << "win32.h"
   end
   noinst = nil if noinst.empty?

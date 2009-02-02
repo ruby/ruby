@@ -79,11 +79,7 @@ module DRb
 	@servers[name] = false
       end
       uri = @uri || DRb.uri
-      if RUBY_PLATFORM =~ /mswin32/ && /NT/ =~ ENV["OS"]
-        system(%Q'cmd /c start "ruby" /b #{command} #{uri} #{name}')
-      else
-	system("#{command} #{uri} #{name} &")
-      end
+      spawn("#{command} #{uri} #{name}")
     end
   end
 end
