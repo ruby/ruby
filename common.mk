@@ -141,6 +141,10 @@ capi: Doxyfile PHONY
 	@$(MAKEDIRS) doc/capi
 	@doxygen
 
+Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb $(srcdir)/template/Doxyfile.tmpl $(RBCONFIG)
+	$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ $(srcdir)/template/Doxyfile.tmpl \
+	--srcdir="$(srcdir)" --miniruby="$(MINIRUBY)"
+
 program: $(PROGRAM)
 
 $(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)

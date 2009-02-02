@@ -1,0 +1,22 @@
+# Doxyfile 1.5.7
+<%
+srcdir = miniruby = nil
+opt = OptionParser.new do |o|
+  o.on('--srcdir=SRCDIR') {|v| srcdir = v}
+  o.on('--miniruby=MINIRUBY') {|v| miniruby = v}
+  o.order!(ARGV)
+end
+srcdir ||= File.dirname(File.dirname(__FILE__))
+unless miniruby
+  load 'rbconfig.rb'
+  miniruby = './miniruby$(EXEEXT) -I$(srcdir)/lib -I$(EXTOUT)/common -I./- -r$(srcdir)/ext/purelib.rb'
+  RbConfig.expand(miniruby, RbConfig::CONFIG.merge("srcdir"=>srcdir))
+end
+%>
+@INCLUDE_PATH = <%=srcdir%>
+@INCLUDE = Doxyfile.in
+PROJECT_NUMBER         = <%=RUBY_VERSION%>
+STRIP_FROM_PATH        = <%=srcdir%>
+FILE_VERSION_FILTER    = "<%=miniruby%> <%=srcdir%>/tool/file2lastrev.rb -q"
+INPUT                  = <%=srcdir%>
+INPUT_FILTER           = "<%=miniruby%> <%=srcdir%>/tool/strip-rdoc.rb"

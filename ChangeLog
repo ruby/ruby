@@ -1,3 +1,9 @@
+Tue Feb  3 08:10:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (Doxyfile): moved from Makefile.in.
+
+	* template/Doxyfile.tmpl: split from Doxyfile.in.
+
 Tue Feb  3 08:01:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_write): use of cast expressions as lvalues

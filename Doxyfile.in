@@ -5,7 +5,6 @@
 #---------------------------------------------------------------------------
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = Ruby
-PROJECT_NUMBER         = @MAJOR@.@MINOR@.@TEENY@
 OUTPUT_DIRECTORY       = doc/capi
 CREATE_SUBDIRS         = NO
 OUTPUT_LANGUAGE        = English
@@ -15,7 +14,6 @@ ABBREVIATE_BRIEF       =
 ALWAYS_DETAILED_SEC    = YES
 INLINE_INHERITED_MEMB  = NO
 FULL_PATH_NAMES        = YES
-STRIP_FROM_PATH        = @srcdir@
 STRIP_FROM_INC_PATH    = 
 SHORT_NAMES            = NO
 JAVADOC_AUTOBRIEF      = YES
@@ -69,7 +67,6 @@ SHOW_USED_FILES        = YES
 SHOW_DIRECTORIES       = NO
 SHOW_FILES             = YES
 SHOW_NAMESPACES        = YES
-FILE_VERSION_FILTER    = "@MINIRUBY@ @srcdir@/tool/file2lastrev.rb -q"
 LAYOUT_FILE            = 
 #---------------------------------------------------------------------------
 # configuration options related to warning and progress messages
@@ -84,19 +81,17 @@ WARN_LOGFILE           =
 #---------------------------------------------------------------------------
 # configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = @srcdir@
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.c *.h *.y
 RECURSIVE              = YES
 EXCLUDE                = newline.c 
-EXCLUDE_SYMLINKS       = NO
+EXCLUDE_SYMLINKS       = YES
 EXCLUDE_PATTERNS       = *.src doc build tmp test yarvtest lib bootstraptest spec .ext .git .svn
 EXCLUDE_SYMBOLS        = 
 EXAMPLE_PATH           = 
 EXAMPLE_PATTERNS       = 
 EXAMPLE_RECURSIVE      = NO
 IMAGE_PATH             = 
-INPUT_FILTER           = "@MINIRUBY@ @srcdir@/tool/strip-rdoc.rb"
 FILTER_PATTERNS        = 
 FILTER_SOURCE_FILES    = YES
 #---------------------------------------------------------------------------
@@ -143,7 +138,7 @@ QHP_VIRTUAL_FOLDER     = doc
 QHG_LOCATION           = 
 DISABLE_INDEX          = NO
 ENUM_VALUES_PER_LINE   = 4
-GENERATE_TREEVIEW      = NONE
+GENERATE_TREEVIEW      = NO
 TREEVIEW_WIDTH         = 250
 FORMULA_FONTSIZE       = 10
 #---------------------------------------------------------------------------
