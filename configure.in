@@ -156,7 +156,7 @@ if test "$fat_binary" != no; then
 
     # /usr/lib/arch_tool -archify_list $TARGET_ARCHS
     ARCH_FLAG=
-    for archs in $TARGET_ARCHS 
+    for archs in $TARGET_ARCHS
     do
         ARCH_FLAG="$ARCH_FLAG -arch $archs"
     done
@@ -831,7 +831,7 @@ AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
 test x$ac_cv_func__longjmp = xno && ac_cv_func__setjmp=no
 
 AC_MSG_CHECKING(for setjmp type)
-AC_ARG_WITH(setjmp-type, 
+AC_ARG_WITH(setjmp-type,
 	[  --with-setjmp-type      select setjmp type], [
 	case $withval in
 	__builtin_setjmp) setjmp_prefix=__builtin_;;
@@ -1007,7 +1007,7 @@ main()
 fi
 
 AC_FUNC_GETPGRP
-AC_FUNC_SETPGRP  
+AC_FUNC_SETPGRP
 
 AC_C_BIGENDIAN
 AC_C_CONST
@@ -1269,7 +1269,7 @@ AC_ARG_WITH(valgrind,
         [AC_CHECK_HEADERS(valgrind/memcheck.h)])
 
 dnl wheather use dln_a_out or not
-AC_ARG_WITH(dln-a-out, 
+AC_ARG_WITH(dln-a-out,
 	[  --with-dln-a-out        use dln_a_out if possible], [
 	case $withval in
 	dnl (
@@ -1534,7 +1534,7 @@ if test "$ac_cv_header_a_out_h" = yes; then
 #define USE_DLN_A_OUT
 #include "dln.c"
 ],
-	[], 
+	[],
 	rb_cv_dln_a_out=yes,
 	rb_cv_dln_a_out=no)])
     if test "$rb_cv_dln_a_out" = yes; then
