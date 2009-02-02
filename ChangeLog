@@ -1,3 +1,7 @@
+Mon Feb  2 17:23:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cygwin/GNUmakefile.in (dir.o, win32.o): depend on win32/dir.h.
+
 Mon Feb  2 17:13:46 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* mkconfig.rb: patchlevel is somtimes minus.

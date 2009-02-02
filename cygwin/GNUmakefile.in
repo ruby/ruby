@@ -63,6 +63,8 @@ GNUmakefile:	$(srcdir)/cygwin/GNUmakefile.in
 
 ifeq (@target_os@,mingw32)
 $(OBJS) $(MAINOBJ): win32.h
+
+dir.$(OBJEXT) win32.$(OBJEXT): win32/dir.h
 endif
 
 $(LIBRUBY_SO): $(RUBYDEF)
