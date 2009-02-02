@@ -894,8 +894,10 @@ f_signbit(VALUE x)
 #else
       {
 	  char s[2];
+	  double f = RFLOAT_VALUE(x);
 
-	  (void)snprintf(s, sizeof s, "%.0f", RFLOAT_VALUE(x));
+	  if (isnan(f)) return Qfalse;
+	  (void)snprintf(s, sizeof s, "%.0f", f);
 	  return f_boolcast(s[0] == '-');
       }
 #endif
