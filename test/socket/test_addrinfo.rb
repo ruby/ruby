@@ -300,6 +300,15 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     s2.close if s2 && !s2.closed?
   end
 
+  def test_family_addrinfo
+    ai = AddrInfo.tcp("0.0.0.0", 4649).family_addrinfo("www.ruby-lang.org", 80)
+    assert_equal(["221.186.184.68", 80], ai.ip_unpack)
+    assert_equal(Socket::SOCK_STREAM, ai.socktype)
+    ai = AddrInfo.unix("/tmp/sock").family_addrinfo("/tmp/sock2")
+    assert_equal("/tmp/sock2", ai.unix_path)
+    assert_equal(Socket::SOCK_STREAM, ai.socktype)
+  end
+
   def test_marshal
     ai1 = AddrInfo.tcp("127.0.0.1", 80)
     ai2 = Marshal.load(Marshal.dump(ai1))
