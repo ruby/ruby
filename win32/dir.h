@@ -17,8 +17,8 @@ struct direct
     char d_isrep; /* reparse point */
 };
 typedef struct {
-    char *start;
-    char *curr;
+    WCHAR *start;
+    WCHAR *curr;
     long size;
     long nfiles;
     long loc;  /* [0, nfiles) */

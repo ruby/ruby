@@ -39,8 +39,9 @@ Mon Feb  2 11:45:10 2009  Tanaka Akira  <akr@fsij.org>
 
 Mon Feb  2 10:57:27 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* win32/win32.c (open_dir_handle, rb_w32_opendir, move_to_next_entry,
-	  rb_w32_readdir, check_valid_dir): change backend API from A to W.
+	* win32/win32.c, win32/dir.h (open_dir_handle, rb_w32_opendir,
+	  move_to_next_entry, rb_w32_readdir, check_valid_dir): change backend
+	  API from A to W.
 
 Mon Feb  2 10:48:38 2009  Tanaka Akira  <akr@fsij.org>
 
