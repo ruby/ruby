@@ -1928,6 +1928,7 @@ time_mdump(time)
 	rb_raise(rb_eArgError, "year too big to marshal");
 
     p = 0x1UL        << 31 | /*  1 */
+	tobj->gmt    << 30 | /*  1 */
 	tm->tm_year  << 14 | /* 16 */
 	tm->tm_mon   << 10 | /*  4 */
 	tm->tm_mday  <<  5 | /*  5 */
@@ -1986,7 +1987,7 @@ time_mload(time, str)
     time_t sec, usec;
     unsigned char *buf;
     struct tm tm;
-    int i;
+    int i, gmt;
 
     time_modify(time);
     StringValue(str);
@@ -2008,7 +2009,8 @@ time_mload(time, str)
 	usec = s;
     }
     else {
-       p &= ~(1UL<<31);
+	p &= ~(1UL<<31);
+	gmt        = (p >> 30) & 0x1;
 	tm.tm_year = (p >> 14) & 0xffff;
 	tm.tm_mon  = (p >> 10) & 0xf;
 	tm.tm_mday = (p >>  5) & 0x1f;
@@ -2024,6 +2026,7 @@ time_mload(time, str)
 
     GetTimeval(time, tobj);
     tobj->tm_got = 0;
+    tobj->gmt = gmt;
     tobj->tv.tv_sec = sec;
     tobj->tv.tv_usec = usec;
     return time;
