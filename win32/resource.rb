@@ -4,9 +4,10 @@ require 'rbconfig'
 
 CONFIG = RbConfig::MAKEFILE_CONFIG
 
-version = %w'MAJOR MINOR TEENY PATCHLEVEL'.map{|v| CONFIG[v] || '0'}
-nversion = version.join(',')
-sversion = version.join('.')
+version = %w'MAJOR MINOR TEENY'.map{|v| CONFIG[v] || '0'}
+patch = CONFIG['PATCHLEVEL']
+nversion = (version + [patch.to_i < 0 ? '0' : patch]).join(',')
+sversion = version.join('.') + (patch.to_i < 0 ? 'dev' : "p#{patch}")
 
 $ruby_name ||= CONFIG["RUBY_INSTALL_NAME"]
 $rubyw_name ||= CONFIG["RUBYW_INSTALL_NAME"] || $ruby_name.sub(/ruby/, '\&w')
