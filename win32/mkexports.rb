@@ -7,14 +7,14 @@ module RbConfig
 end
 
 class Exports
-  @subclass = []
+  @@subclass = []
   def self.inherited(klass)
-    @subclass << [/#{klass.name.sub(/.*::/, '').downcase}/i, klass]
+    @@subclass << [/#{klass.name.sub(/.*::/, '').downcase}/i, klass]
   end
 
   def self.create(*args, &block)
     platform = RUBY_PLATFORM
-    pat, klass = @subclass.find {|p, k| p =~ platform}
+    pat, klass = @@subclass.find {|p, k| p =~ platform}
     unless klass
       raise ArgumentError, "unsupported platform: #{platform}"
     end
@@ -128,7 +128,7 @@ class Exports::Mswin < Exports
   end
 end
 
-class Exports::Mingw < Exports
+class Exports::Cygwin < Exports
   def self.nm
     @@nm ||= RbConfig::CONFIG["NM"]
   end
@@ -145,6 +145,12 @@ class Exports::Mingw < Exports
     objdump(objs) do |l|
       yield $2, !$1 if /\s(?:(T)|[[:upper:]])\s_((?!Init_).*)$/ =~ l
     end
+  end
+end
+
+class Exports::Mingw < Exports::Cygwin
+  def each_export(objs)
+    super
     yield "strcasecmp", "_stricmp"
     yield "strncasecmp", "_strnicmp"
   end
