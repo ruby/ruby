@@ -519,6 +519,7 @@ Init_socket_init()
     Init_udpsocket();
     Init_unixsocket();
     Init_unixserver();
+    Init_sockopt();
     Init_addrinfo();
     Init_socket_constants();
 }

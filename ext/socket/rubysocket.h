@@ -159,6 +159,7 @@ extern VALUE rb_cUNIXServer;
 #endif
 extern VALUE rb_cSocket;
 extern VALUE rb_cAddrInfo;
+extern VALUE rb_cSockOpt;
 
 extern VALUE rb_eSocket;
 
@@ -242,6 +243,8 @@ VALUE sock_listen(VALUE sock, VALUE log);
 VALUE s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len);
 VALUE s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len);
 
+VALUE sockopt_new(int level, int optname, VALUE data);
+
 void Init_basicsocket(void);
 void Init_ipsocket(void);
 void Init_tcpsocket(void);
@@ -252,6 +255,7 @@ void Init_unixsocket(void);
 void Init_unixserver(void);
 void Init_socket_constants(void);
 void Init_addrinfo(void);
+void Init_sockopt(void);
 void Init_socket_init(void);
 
 #endif

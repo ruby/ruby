@@ -20,6 +20,7 @@ socket/udpsocket.c
 socket/unixsocket.c
 socket/unixserver.c
 socket/socket.c
+socket/option.c
 socket/constants.c
 socket/lib/socket.rb
 stringio/stringio.c

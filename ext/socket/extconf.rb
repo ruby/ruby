@@ -254,6 +254,7 @@ $objs = [
   "udpsocket.#{$OBJEXT}",
   "unixsocket.#{$OBJEXT}",
   "unixserver.#{$OBJEXT}",
+  "option.#{$OBJEXT}",
   "raddrinfo.#{$OBJEXT}"
 ]
 

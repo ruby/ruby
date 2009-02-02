@@ -1,3 +1,25 @@
+Mon Feb  2 10:48:38 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/basicsocket.c (bsock_setsockopt): accept Socket::Option
+	  object.
+	  (bsock_getsockopt): return Socket::Option object.
+
+	* ext/socket/option.c: new file.
+
+	* ext/socket/rubysocket.h (rb_cSockOpt): declared.
+	  (sockopt_new): ditto.
+	  (Init_sockopt): ditto.
+
+	* ext/socket/init.c (Init_socket_init): call Init_sockopt.
+
+	* ext/socket/depend: add dependency for option.o
+
+	* ext/socket/mkconstants.rb: generate intern_level, intern_so_optname,
+	  intern_ip_optname, intern_ipv6_optname, intern_tcp_optname,
+	  intern_udp_optname and intern_scm_optname.
+
+	* ext/socket/extconf.rb: add option.o.
+
 Mon Feb  2 09:49:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_backtrace_each): progname is not available at

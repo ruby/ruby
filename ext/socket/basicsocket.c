@@ -192,13 +192,23 @@ bsock_close_write(VALUE sock)
  *
 */
 static VALUE
-bsock_setsockopt(VALUE sock, VALUE lev, VALUE optname, VALUE val)
+bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
 {
+    VALUE lev, optname, val;
     int level, option;
     rb_io_t *fptr;
     int i;
     char *v;
     int vlen;
+
+    if (argc == 1) {
+        lev = rb_funcall(argv[0], rb_intern("level"), 0);
+        optname = rb_funcall(argv[0], rb_intern("optname"), 0);
+        val = rb_funcall(argv[0], rb_intern("data"), 0);
+    }
+    else {
+        rb_scan_args(argc, argv, "30", &lev, &optname, &val);
+    }
 
     rb_secure(2);
     level = level_arg(lev);
@@ -290,7 +300,7 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
     if (getsockopt(fptr->fd, level, option, buf, &len) < 0)
 	rb_sys_fail_path(fptr->pathv);
 
-    return rb_str_new(buf, len);
+    return sockopt_new(level, option, rb_str_new(buf, len));
 #else
     rb_notimplement();
 #endif
@@ -626,7 +636,7 @@ Init_basicsocket(void)
     rb_define_method(rb_cBasicSocket, "close_read", bsock_close_read, 0);
     rb_define_method(rb_cBasicSocket, "close_write", bsock_close_write, 0);
     rb_define_method(rb_cBasicSocket, "shutdown", bsock_shutdown, -1);
-    rb_define_method(rb_cBasicSocket, "setsockopt", bsock_setsockopt, 3);
+    rb_define_method(rb_cBasicSocket, "setsockopt", bsock_setsockopt, -1);
     rb_define_method(rb_cBasicSocket, "getsockopt", bsock_getsockopt, 2);
     rb_define_method(rb_cBasicSocket, "getsockname", bsock_getsockname, 0);
     rb_define_method(rb_cBasicSocket, "getpeername", bsock_getpeername, 0);
