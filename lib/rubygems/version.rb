@@ -22,7 +22,7 @@ class Gem::Version
 
   def self.correct?(version)
     case version
-    when Integer, /\A\s*(\d+(\.\d+)*)*\s*\z/ then true
+    when Integer, /\A\s*(\d+(\.-?\d+)*)*\s*\z/ then true
     else false
     end
   end

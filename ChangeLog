@@ -1,3 +1,10 @@
+Mon Feb  2 16:06:10 2009  Tanaka Akira  <akr@fsij.org>
+
+	* version.h: bump up to 1.9.2 patchlevel -1.
+	  yugui recommend "-1" strongly.
+
+	* lib/rubygems/version.rb: accept negative patchlevel.
+
 Mon Feb  2 14:53:35 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (sock_initialize): make 3rd argument, protocol,

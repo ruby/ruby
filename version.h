@@ -1,11 +1,11 @@
-#define RUBY_VERSION "1.9.1"
+#define RUBY_VERSION "1.9.2"
 #define RUBY_RELEASE_DATE "2009-02-02"
-#define RUBY_PATCHLEVEL 5000
+#define RUBY_PATCHLEVEL -1
 #define RUBY_BRANCH_NAME "trunk"
 
 #define RUBY_VERSION_MAJOR 1
 #define RUBY_VERSION_MINOR 9
-#define RUBY_VERSION_TEENY 1
+#define RUBY_VERSION_TEENY 2
 #define RUBY_RELEASE_YEAR 2009
 #define RUBY_RELEASE_MONTH 2
 #define RUBY_RELEASE_DAY 2
@@ -24,7 +24,11 @@ RUBY_EXTERN const char ruby_copyright[];
 #define RUBY_BIRTH_MONTH 2
 #define RUBY_BIRTH_DAY 24
 
+#if RUBY_PATCHLEVEL == -1
+#define RUBY_PATCHLEVEL_STR "dev"
+#else
 #define RUBY_PATCHLEVEL_STR "p"STRINGIZE(RUBY_PATCHLEVEL)
+#endif
 
 #ifndef RUBY_REVISION
 # include "revision.h"

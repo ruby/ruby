@@ -60,7 +60,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_verbose
     assert_in_out_err(%w(-vve) + [""]) do |r, e|
-      assert_match(/^ruby #{RUBY_VERSION}[p ].*? \[#{RUBY_PLATFORM}\]$/, r.join)
+      assert_match(/^ruby #{RUBY_VERSION}(?:[p ]|dev).*? \[#{RUBY_PLATFORM}\]$/, r.join)
       assert_equal RUBY_DESCRIPTION, r.join.chomp
       assert_equal([], e)
     end
@@ -106,7 +106,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_version
     assert_in_out_err(%w(--version)) do |r, e|
-      assert_match(/^ruby #{RUBY_VERSION}[p ].*? \[#{RUBY_PLATFORM}\]$/, r.join)
+      assert_match(/^ruby #{RUBY_VERSION}(?:[p ]|dev).*? \[#{RUBY_PLATFORM}\]$/, r.join)
       assert_equal RUBY_DESCRIPTION, r.join.chomp
       assert_equal([], e)
     end
