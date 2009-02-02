@@ -1,3 +1,7 @@
+Mon Feb  2 16:33:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_s_home): new method.   [ruby-core:21454]
+
 Mon Feb  2 16:06:10 2009  Tanaka Akira  <akr@fsij.org>
 
 	* version.h: bump up to 1.9.2 patchlevel -1.

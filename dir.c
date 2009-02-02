@@ -1852,6 +1852,30 @@ file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
     return Qfalse;
 }
 
+VALUE rb_home_dir(const char *user, VALUE result);
+
+/*
+ *  call-seq:
+ *    Dir.home()       => "/home/me"
+ *    Dir.home("root") => "/root"
+ *
+ *  Returns the home directory of the current user or the named user
+ *  if given.
+ */
+static VALUE
+dir_s_home(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE user;
+    const char *u = 0;
+
+    rb_scan_args(argc, argv, "01", &user);
+    if (!NIL_P(user)) {
+	SafeStringValue(user);
+	u = StringValueCStr(user);
+    }
+    return rb_home_dir(u, rb_str_new(0, 0));
+}
+
 /*
  *  Objects of class <code>Dir</code> are directory streams representing
  *  directories in the underlying file system. They provide a variety of
@@ -1895,6 +1919,7 @@ Init_Dir(void)
     rb_define_singleton_method(rb_cDir,"rmdir", dir_s_rmdir, 1);
     rb_define_singleton_method(rb_cDir,"delete", dir_s_rmdir, 1);
     rb_define_singleton_method(rb_cDir,"unlink", dir_s_rmdir, 1);
+    rb_define_singleton_method(rb_cDir,"home", dir_s_home, -1);
 
     rb_define_singleton_method(rb_cDir,"glob", dir_s_glob, -1);
     rb_define_singleton_method(rb_cDir,"[]", dir_s_aref, -1);

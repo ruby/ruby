@@ -2600,6 +2600,46 @@ ntfs_tail(const char *path)
 
 static int is_absolute_path(const char*);
 
+VALUE
+rb_home_dir(const char *user, VALUE result)
+{
+    const char *dir;
+    char *buf;
+    long dirlen;
+
+    if (!user || !*user) {
+	if (!(dir = getenv("HOME"))) {
+	    rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
+	}
+	dirlen = strlen(dir);
+	rb_str_resize(result, dirlen);
+	memcpy(buf = RSTRING_PTR(result), dir, dirlen);
+    }
+    else {
+#ifdef HAVE_GETPWENT
+	struct passwd *pwPtr = getpwnam(user);
+	if (!pwPtr) {
+	    endpwent();
+	    rb_raise(rb_eArgError, "user %s doesn't exist", user);
+	}
+	dirlen = strlen(pwPtr->pw_dir);
+	rb_str_resize(result, dirlen);
+	strcpy(buf = RSTRING_PTR(result), pwPtr->pw_dir);
+	endpwent();
+#else
+	return Qnil;
+#endif
+    }
+#if defined DOSISH || defined __CYGWIN__
+    for (p = buf; *p; p = CharNext(p)) {
+	if (*p == '\\') {
+	    *p = '/';
+	}
+    }
+#endif
+    return result;
+}
+
 static VALUE
 file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 {
@@ -2615,51 +2655,23 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
     tainted = OBJ_TAINTED(fname);
 
     if (s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
+	tainted = 1;
 	if (isdirsep(s[1]) || s[1] == '\0') {
-	    const char *dir = getenv("HOME");
-
-	    if (!dir) {
-		rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `%s'", s);
-	    }
-	    dirlen = strlen(dir);
-	    BUFCHECK(dirlen > buflen);
-	    strcpy(buf, dir);
-#if defined DOSISH || defined __CYGWIN__
-	    for (p = buf; *p; p = CharNext(p)) {
-		if (*p == '\\') {
-		    *p = '/';
-		}
-	    }
-#else
-	    p = buf + strlen(dir);
-#endif
-	    s++;
-	    tainted = 1;
-	    SET_EXTERNAL_ENCODING();
+	    buf = 0;
+	    rb_str_set_len(result, 0);
+	    if (*++s) ++s;
 	}
 	else {
-#ifdef HAVE_PWD_H
-	    struct passwd *pwPtr;
-	    s++;
-#endif
 	    s = nextdirsep(b = s);
 	    BUFCHECK(bdiff + (s-b) >= buflen);
 	    memcpy(p, b, s-b);
+	    rb_str_set_len(result, s-b);
+	    buf = p + 1;
 	    p += s-b;
-	    *p = '\0';
-#ifdef HAVE_PWD_H
-	    pwPtr = getpwnam(buf);
-	    if (!pwPtr) {
-		endpwent();
-		rb_raise(rb_eArgError, "user %s doesn't exist", buf);
-	    }
-	    dirlen = strlen(pwPtr->pw_dir);
-	    BUFCHECK(dirlen > buflen);
-	    strcpy(buf, pwPtr->pw_dir);
-	    p = buf + strlen(pwPtr->pw_dir);
-	    endpwent();
-#endif
 	}
+	rb_home_dir(buf, result);
+	BUFINIT();
+	p = pend;
     }
 #ifdef DOSISH_DRIVE_LETTER
     /* skip drive letter */
