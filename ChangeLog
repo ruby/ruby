@@ -16,7 +16,7 @@ Mon Feb  2 17:23:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Feb  2 17:13:46 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* mkconfig.rb: patchlevel is somtimes minus.
+	* mkconfig.rb: patchlevel is sometimes minus.
 
 	* win32/resource.rb: ditto.
 
@@ -137,7 +137,7 @@ Mon Feb  2 08:12:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  mswin64 too.
 
 	* lib/rubygems/specification.rb (Gem::Specification#ruby_code):
-	  aded mswin64.
+	  added mswin64.
 
 	* lib/drb/extservm.rb (DRb::ExtServManager#invoke_service_command):
 	  spawn is better to start a process in background.
@@ -237,7 +237,7 @@ Sat Jan 31 14:12:43 2009  Tanaka Akira  <akr@fsij.org>
 Sat Jan 31 00:07:49 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit/assertions.rb
-	  (Test::Unit::Assertions#assert_nothing_raised): supress warning.
+	  (Test::Unit::Assertions#assert_nothing_raised): suppress warning.
 	  [ruby-core:21312]
 
 Fri Jan 30 21:49:32 2009  Tanaka Akira  <akr@fsij.org>
@@ -310,7 +310,7 @@ Thu Jan 29 12:29:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  needs environment variables other than APPDATA now.
 
 	* lib/rake.rb (Rake::Application#standard_system_dir): uses
-	  platfrom specific definition on Windows system.
+	  platform specific definition on Windows system.
 
 Thu Jan 29 12:18:54 2009  Technorama Ltd.  <oss-ruby@technorama.net>
 
@@ -321,7 +321,7 @@ Thu Jan 29 11:22:19 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* ext/socket/raddrinfo.c (inspect_sockaddr): if defined AF_INET6,
 	  perhaps can inspect IPv6 addresses if not defined INET6.
 
-	* ext/socket/spclet.c (socket_s_ip_address_list): support Windows XP
+	* ext/socket/socket.c (socket_s_ip_address_list): support Windows XP
 	  or later. (Win2k or earlier is still not supported)
 
 Thu Jan 29 00:24:48 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -357,7 +357,7 @@ Tue Jan 27 12:59:55 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/ripper/depend: use VPATH.
 	  If a platform doesn't support VPATH, Ruby doesn't support it:
-	  for exapmle MSYS. [ruby-core:21570]
+	  for example MSYS. [ruby-core:21570]
 
 Tue Jan 27 12:21:17 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -447,7 +447,7 @@ Sun Jan 25 11:25:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  parents.
 
 	* Makefile.in, win32/Makefile.sub (distclean-rdoc): added to remove
-	  temprary rdoc.
+	  temporary rdoc.
 
 	* Makefile.in, win32/Makefile.sub (clean-ext): skips non-existent
 	  directories.
@@ -502,7 +502,7 @@ Fri Jan 23 15:12:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (configuration): leaves PATH_SEPARATOR unchanged.
 
-	* lib/mkmf.rb (configuration): convers srcdir, topdir and hdrdir.
+	* lib/mkmf.rb (configuration): converts srcdir, topdir and hdrdir.
 	  a patch by Alexey Borzenkov <snaury AT gmail.com> at
 	  [ruby-core:21448].
 
@@ -855,7 +855,7 @@ Sun Jan 18 16:46:37 2009  Tanaka Akira  <akr@fsij.org>
 
 Sun Jan 18 14:29:52 2009  Tanaka Akira  <akr@fsij.org>
 
-	* ext/socket/unixsocket.c: redandant #ifdef removed.
+	* ext/socket/unixsocket.c: redundant #ifdef removed.
 
 Sun Jan 18 03:33:23 2009  Tanaka Akira  <akr@fsij.org>
 
