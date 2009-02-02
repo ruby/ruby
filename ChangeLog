@@ -1,3 +1,8 @@
+Mon Feb  2 17:05:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_find_file_ext): should not be infected from other
+	  load paths.
+
 Mon Feb  2 16:33:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_s_home): new method.   [ruby-core:21454]
