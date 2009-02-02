@@ -195,4 +195,50 @@ class TestRequire < Test::Unit::TestCase
 
     assert_raise(ArgumentError) { at_exit }
   end
+
+  def test_tainted_loadpath
+    t = Tempfile.new(["test_ruby_test_require", ".rb"])
+    abs_dir, file = File.dirname(t.path), File.basename(t.path)
+    abs_dir = File.expand_path(abs_dir).untaint
+
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      abs_dir = "#{ abs_dir }"
+      $: << abs_dir
+      require "#{ file }"
+      p :ok
+    INPUT
+
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      abs_dir = "#{ abs_dir }"
+      $: << abs_dir.taint
+      require "#{ file }"
+      p :ok
+    INPUT
+
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      abs_dir = "#{ abs_dir }"
+      $: << abs_dir.taint
+      $SAFE = 1
+      begin
+        require "#{ file }"
+      rescue SecurityError
+        p :ok
+      end
+    INPUT
+
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      abs_dir = "#{ abs_dir }"
+      $: << abs_dir.taint
+      $SAFE = 1
+      require "#{ t.path }"
+      p :ok
+    INPUT
+
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      abs_dir = "#{ abs_dir }"
+      $: << abs_dir << 'elsewhere'.taint
+      require "#{ file }"
+      p :ok
+    INPUT
+  end
 end
