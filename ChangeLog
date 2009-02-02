@@ -1,3 +1,11 @@
+Mon Feb  2 23:43:00 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (Init_addrinfo): add AddrInfo#to_s as an
+	  alias of AddrInfo#to_sockaddr.
+
+	* ext/socket/option.c (Init_sockopt): add Socket::Option#to_s as an
+	  alias of Socket::Option#data.
+
 Mon Feb  2 21:04:13 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_sort_by_bang): RDoc update.  [ruby-core:21742]

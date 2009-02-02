@@ -2114,6 +2114,7 @@ Init_addrinfo(void)
 #endif
 
     rb_define_method(rb_cAddrInfo, "to_sockaddr", addrinfo_to_sockaddr, 0);
+    rb_define_method(rb_cAddrInfo, "to_s", addrinfo_to_sockaddr, 0); /* compatibility for ruby before 1.9.2 */
 
     rb_define_method(rb_cAddrInfo, "getnameinfo", addrinfo_getnameinfo, -1);
 

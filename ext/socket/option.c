@@ -371,5 +371,7 @@ Init_sockopt(void)
     rb_define_method(rb_cSockOpt, "int", sockopt_int, 0);
 
     rb_define_method(rb_cSockOpt, "unpack", sockopt_unpack, 1);
+
+    rb_define_method(rb_cSockOpt, "to_s", sockopt_data, 0); /* compatibility for ruby before 1.9.2 */
 }
 
