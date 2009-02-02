@@ -188,7 +188,7 @@ ancillary_int(VALUE self)
 static VALUE
 ancillary_s_ip_pktinfo(VALUE self, VALUE v_addr, VALUE v_ifindex, VALUE v_spec_dst)
 {
-#if defined(IPPROTO_IP) && defined(IP_PKTINFO) /* GNU/Linux */
+#if defined(IPPROTO_IP) && defined(IP_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN_PKTINFO) /* GNU/Linux */
     unsigned int ifindex;
     struct sockaddr_in sa;
     struct in_pktinfo pktinfo;
@@ -226,7 +226,7 @@ ancillary_s_ip_pktinfo(VALUE self, VALUE v_addr, VALUE v_ifindex, VALUE v_spec_d
 static VALUE
 ancillary_ip_pktinfo(VALUE self)
 {
-#if defined(IPPROTO_IP) && defined(IP_PKTINFO) /* GNU/Linux */
+#if defined(IPPROTO_IP) && defined(IP_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN_PKTINFO) /* GNU/Linux */
     int level, type;
     VALUE data;
     struct in_pktinfo pktinfo;
@@ -397,7 +397,7 @@ anc_inspect_ip_recvdstaddr(int level, int type, VALUE data, VALUE ret)
 }
 #endif
 
-#if defined(IPPROTO_IP) && defined(IP_PKTINFO) /* GNU/Linux */
+#if defined(IPPROTO_IP) && defined(IP_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN_PKTINFO) /* GNU/Linux */
 static int
 anc_inspect_ip_pktinfo(int level, int type, VALUE data, VALUE ret)
 {
@@ -426,7 +426,7 @@ anc_inspect_ip_pktinfo(int level, int type, VALUE data, VALUE ret)
 }
 #endif
 
-#if defined(IPPROTO_IPV6) && defined(IPV6_PKTINFO) /* IPv6 RFC3542 */
+#if defined(IPPROTO_IPV6) && defined(IPV6_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN6_PKTINFO) /* IPv6 RFC3542 */
 static int
 anc_inspect_ipv6_pktinfo(int level, int type, VALUE data, VALUE ret)
 {
@@ -508,7 +508,7 @@ ancillary_inspect(VALUE self)
 #        if defined(IP_RECVDSTADDR) /* 4.4BSD */
           case IP_RECVDSTADDR: if (anc_inspect_ip_recvdstaddr(level, type, data, ret) == -1) goto dump; break;
 #        endif
-#        if defined(IP_PKTINFO) /* GNU/Linux */
+#        if defined(IP_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN_PKTINFO) /* GNU/Linux */
           case IP_PKTINFO: if (anc_inspect_ip_pktinfo(level, type, data, ret) == -1) goto dump; break;
 #        endif
           default: goto dump;
