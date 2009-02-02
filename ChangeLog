@@ -1,3 +1,7 @@
+Mon Feb  2 21:04:13 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_sort_by_bang): RDoc update.  [ruby-core:21742]
+
 Mon Feb  2 20:49:24 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c: Introduce id_each to save rb_itern() and SYM2ID()
