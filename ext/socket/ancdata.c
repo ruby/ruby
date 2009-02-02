@@ -22,8 +22,10 @@ cmsg_type_to_sym(int level, int cmsg_type)
         return constant_to_sym(cmsg_type, intern_scm_optname);
       case IPPROTO_IP:
         return constant_to_sym(cmsg_type, intern_ip_optname);
+#ifdef IPPROTO_IPV6
       case IPPROTO_IPV6:
         return constant_to_sym(cmsg_type, intern_ipv6_optname);
+#endif
       case IPPROTO_TCP:
         return constant_to_sym(cmsg_type, intern_tcp_optname);
       case IPPROTO_UDP:
