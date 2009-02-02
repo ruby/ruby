@@ -255,6 +255,7 @@ $objs = [
   "unixsocket.#{$OBJEXT}",
   "unixserver.#{$OBJEXT}",
   "option.#{$OBJEXT}",
+  "ancdata.#{$OBJEXT}",
   "raddrinfo.#{$OBJEXT}"
 ]
 

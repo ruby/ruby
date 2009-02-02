@@ -92,6 +92,25 @@ shutdown_how_arg(VALUE how)
     return constant_arg(how, shutdown_how_to_int, "unknown shutdown argument");
 }
 
+int
+cmsg_type_arg(int level, VALUE optname)
+{
+    switch (level) {
+      case SOL_SOCKET:
+        return constant_arg(optname, scm_optname_to_int, "unknown UNIX control message");
+      case IPPROTO_IP:
+        return constant_arg(optname, ip_optname_to_int, "unknown IP control message");
+      case IPPROTO_IPV6:
+        return constant_arg(optname, ipv6_optname_to_int, "unknown IPv6 control message");
+      case IPPROTO_TCP:
+        return constant_arg(optname, tcp_optname_to_int, "unknown TCP control message");
+      case IPPROTO_UDP:
+        return constant_arg(optname, udp_optname_to_int, "unknown UDP control message");
+      default:
+        return NUM2INT(optname);
+    }
+}
+
 static void
 sock_define_const(const char *name, int value, VALUE mConst)
 {

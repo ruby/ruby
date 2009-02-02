@@ -1,3 +1,22 @@
+Mon Feb  2 11:45:10 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/rubysocket.h (cmsg_type_arg): declared.
+	  (Init_ancdata): ditto.
+
+	* ext/socket/init.c (Init_socket_init): call Init_ancdata.
+
+	* ext/socket/constants.c (cmsg_type_arg): defined.
+
+	* ext/socket/depend: add dependency for ancdata.o.
+
+	* ext/socket/mkconstants.rb: generate scm_optname_to_int.
+	  more constants.
+
+	* ext/socket/extconf.rb: add ancdata.o.
+
+	* ext/socket/ancdata.c: new file.  new method
+	  BasicSocket#{sendmsg,sendmsg_nonblock,recvmsg,recvmsg_nonblock}
+
 Mon Feb  2 10:57:27 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (open_dir_handle, rb_w32_opendir, move_to_next_entry,

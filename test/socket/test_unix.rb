@@ -31,6 +31,118 @@ class TestUNIXSocket < Test::Unit::TestCase
     end
   end
 
+  def test_fd_passing_n
+    io_ary = []
+    return if !defined?(Socket::SCM_RIGHTS)
+    io_ary.concat IO.pipe
+    io_ary.concat IO.pipe
+    io_ary.concat IO.pipe
+    send_io_ary = []
+    io_ary.each {|io|
+      send_io_ary << io
+      UNIXSocket.pair {|s1, s2|
+        begin
+          ret = s1.sendmsg("\0", 0, nil, [Socket::SOL_SOCKET, Socket::SCM_RIGHTS,
+                                          send_io_ary.map {|io| io.fileno }.pack("i!*")])
+        rescue NotImplementedError
+          return
+        end
+        assert_equal(1, ret)
+        ret = s2.recvmsg
+        data, srcaddr, flags, *ctls = ret
+        recv_io_ary = []
+        ctls.each {|ctl|
+          next if ctl.level != Socket::SOL_SOCKET || ctl.type != Socket::SCM_RIGHTS
+          recv_io_ary.concat ctl.data.unpack("i!*").map {|fd| IO.new(fd) }
+        }
+        assert_equal(send_io_ary.length, recv_io_ary.length)
+        send_io_ary.length.times {|i|
+          assert_not_equal(send_io_ary[i].fileno, recv_io_ary[i].fileno)
+          assert(File.identical?(send_io_ary[i], recv_io_ary[i]))
+        }
+      }
+    }
+  ensure
+    io_ary.each {|io| io.close if !io.closed? }
+  end
+
+  def test_sendmsg
+    return if !defined?(Socket::SCM_RIGHTS)
+    IO.pipe {|r1, w|
+      UNIXSocket.pair {|s1, s2|
+        begin
+          ret = s1.sendmsg("\0", 0, nil, [Socket::SOL_SOCKET, Socket::SCM_RIGHTS, [r1.fileno].pack("i!")])
+        rescue NotImplementedError
+          return
+        end
+        assert_equal(1, ret)
+        r2 = s2.recv_io
+        begin
+          assert(File.identical?(r1, r2))
+        ensure
+          r2.close
+        end
+      }
+    }
+  end
+
+  def test_sendmsg_ancillarydata
+    return if !defined?(Socket::SCM_RIGHTS)
+    return if !defined?(Socket::AncillaryData)
+    IO.pipe {|r1, w|
+      UNIXSocket.pair {|s1, s2|
+        begin
+          ad = Socket::AncillaryData.int(:SOCKET, :RIGHTS, r1.fileno)
+          ret = s1.sendmsg("\0", 0, nil, ad)
+        rescue NotImplementedError
+          return
+        end
+        assert_equal(1, ret)
+        r2 = s2.recv_io
+        begin
+          assert(File.identical?(r1, r2))
+        ensure
+          r2.close
+        end
+      }
+    }
+  end
+
+  def test_recvmsg
+    return if !defined?(Socket::SCM_RIGHTS)
+    IO.pipe {|r1, w|
+      UNIXSocket.pair {|s1, s2|
+        s1.send_io(r1)
+        ret = s2.recvmsg
+        data, srcaddr, flags, *ctls = ret
+        assert_equal("\0", data)
+	if flags == nil
+	  # struct msghdr is 4.3BSD style (msg_accrights field).
+	  assert_instance_of(Array, ctls)
+	  assert_equal(0, ctls.length)
+	else
+	  # struct msghdr is POSIX/4.4BSD style (msg_control field).
+	  assert_equal(0, flags & (Socket::MSG_TRUNC|Socket::MSG_CTRUNC))
+	  assert_instance_of(AddrInfo, srcaddr)
+	  assert_instance_of(Array, ctls)
+	  assert_equal(1, ctls.length)
+	  assert_instance_of(Socket::AncillaryData, ctls[0])
+	  assert_equal(Socket::SOL_SOCKET, ctls[0].level)
+	  assert_equal(Socket::SCM_RIGHTS, ctls[0].type)
+	  assert_instance_of(String, ctls[0].data)
+	  fd, rest = ctls[0].data.unpack("i!a*")
+	  assert_equal("", rest)
+	  r2 = IO.new(fd)
+	  begin
+	    assert(File.identical?(r1, r2))
+	  ensure
+	    r2.close
+	  end
+	end
+      }
+    }
+  end
+
   def bound_unix_socket(klass)
     tmpfile = Tempfile.new("testrubysock")
     path = tmpfile.path

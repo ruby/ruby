@@ -14,6 +14,7 @@ udpsocket.o: udpsocket.c $(SOCK_HEADERS)
 unixsocket.o: unixsocket.c $(SOCK_HEADERS)
 unixserver.o: unixserver.c $(SOCK_HEADERS)
 option.o: option.c $(SOCK_HEADERS)
+ancdata.o: ancdata.c $(SOCK_HEADERS)
 raddrinfo.o: raddrinfo.c $(SOCK_HEADERS)
 
 getnameinfo.o: getnameinfo.c $(arch_hdrdir)/ruby/config.h addrinfo.h sockport.h

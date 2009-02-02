@@ -520,6 +520,7 @@ Init_socket_init()
     Init_unixsocket();
     Init_unixserver();
     Init_sockopt();
+    Init_ancdata();
     Init_addrinfo();
     Init_socket_constants();
 }
