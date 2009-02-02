@@ -1677,7 +1677,7 @@ addrinfo_ipv4_multicast_p(VALUE self)
     return Qfalse;
 }
 
-#ifdef AF_INET6
+#ifdef INET6
 
 static struct in6_addr *
 extract_in6_addr(VALUE self)
@@ -2094,7 +2094,7 @@ Init_addrinfo(void)
     rb_define_method(rb_cAddrInfo, "ipv4_loopback?", addrinfo_ipv4_loopback_p, 0);
     rb_define_method(rb_cAddrInfo, "ipv4_multicast?", addrinfo_ipv4_multicast_p, 0);
 
-#ifdef AF_INET6
+#ifdef INET6
     rb_define_method(rb_cAddrInfo, "ipv6_unspecified?", addrinfo_ipv6_unspecified_p, 0);
     rb_define_method(rb_cAddrInfo, "ipv6_loopback?", addrinfo_ipv6_loopback_p, 0);
     rb_define_method(rb_cAddrInfo, "ipv6_multicast?", addrinfo_ipv6_multicast_p, 0);

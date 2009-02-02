@@ -1,3 +1,8 @@
+Mon Feb  2 12:47:47 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/{options,raddrinfo}.c: use INET6 instead of AF_INET6 for
+	  VC++6.
+
 Mon Feb  2 12:41:52 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* complex.c (f_signbit): regard NaN as a positive value.
