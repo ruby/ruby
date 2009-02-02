@@ -1082,10 +1082,13 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 	    cref = cref->nd_next;
 
 	    if (!NIL_P(klass)) {
+		VALUE am = 0;
 	      search_continue:
 		if (RCLASS_IV_TBL(klass) &&
 		    st_lookup(RCLASS_IV_TBL(klass), id, &val)) {
 		    if (val == Qundef) {
+			if (am == klass) break;
+			am = klass;
 			rb_autoload_load(klass, id);
 			goto search_continue;
 		    }
