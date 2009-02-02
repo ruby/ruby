@@ -10,8 +10,8 @@ opt = OptionParser.new do |o|
   o.on('-o', '--output=PATH') {|v| output = v}
   o.on('-c', '--[no-]if-change') {|v| ifchange = v}
   o.order!(ARGV)
-end or abort opt.opt_s
-template = ARGV.shift
+end
+template = ARGV.shift or abort opt.to_s
 erb = ERB.new(File.read(template), nil, '%')
 erb.filename = template
 result = erb.result
