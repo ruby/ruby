@@ -692,7 +692,7 @@ vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *
 {
     const rb_control_frame_t *limit_cfp = th->cfp;
     const rb_control_frame_t *cfp = (void *)(th->stack + th->stack_size);
-    const char *file;
+    const char *file = "ruby";
     int line_no = 0;
 
     cfp -= 2;
@@ -702,7 +702,7 @@ vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *
 	}
     }
     limit_cfp = RUBY_VM_NEXT_CONTROL_FRAME(limit_cfp);
-    file = RSTRING_PTR(th->vm->progname);
+    if (th->vm->progname) file = RSTRING_PTR(th->vm->progname);
     while (cfp > limit_cfp) {
 	if (cfp->iseq != 0) {
 	    if (cfp->pc != 0) {
