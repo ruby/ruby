@@ -33,9 +33,6 @@
 #endif
 #include "ruby/win32.h"
 #include "win32/dir.h"
-#ifndef index
-#define index(x, y) strchr((x), (y))
-#endif
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 
 #undef stat
@@ -1434,31 +1431,40 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 #define DIRENT_PER_CHAR (CHAR_BIT / 2)
 
 static HANDLE
-open_dir_handle(const char *filename, WIN32_FIND_DATA *fd)
+open_dir_handle(const char *filename, WIN32_FIND_DATAW *fd)
 {
     HANDLE fh;
-    static const char wildcard[] = "/*";
-    long len = strlen(filename);
-    char *scanname = malloc(len + sizeof(wildcard));
+    static const WCHAR wildcard[] = L"\\*";
+    UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
+    WCHAR *scanname;
+    WCHAR *p;
+    int len;
 
     //
     // Create the search pattern
     //
-    if (!scanname) {
+    len = MultiByteToWideChar(cp, 0, filename, -1, NULL, 0);
+    if (len <= 0) {
+	errno = map_errno(GetLastError());
 	return INVALID_HANDLE_VALUE;
     }
-    memcpy(scanname, filename, len + 1);
+    scanname = ALLOCA_N(WCHAR, len + sizeof(wildcard) / sizeof(WCHAR));
+    len = MultiByteToWideChar(cp, 0, filename, -1, scanname, len + 2);
+    if (len <= 0) {
+	errno = map_errno(GetLastError());
+	return INVALID_HANDLE_VALUE;
+    }
 
-    if (index("/\\:", *CharPrev(scanname, scanname + len)) == NULL)
-	memcpy(scanname + len, wildcard, sizeof(wildcard));
+    p = CharPrevW(scanname, scanname + len);
+    if (*p == L'/' || *p == L'\\' || *p == L':')
+	lstrcatW(scanname, wildcard + 1);
     else
-	memcpy(scanname + len, wildcard + 1, sizeof(wildcard) - 1);
+	lstrcatW(scanname, wildcard);
 
     //
     // do the FindFirstFile call
     //
-    fh = FindFirstFile(scanname, fd);
-    free(scanname);
+    fh = FindFirstFileW(scanname, fd);
     if (fh == INVALID_HANDLE_VALUE) {
 	errno = map_errno(GetLastError());
     }
@@ -1471,9 +1477,10 @@ rb_w32_opendir(const char *filename)
     DIR               *p;
     long               len;
     long               idx;
-    char	      *tmp;
+    WCHAR *tmpW;
+    char *tmp;
     struct stati64     sbuf;
-    WIN32_FIND_DATA fd;
+    WIN32_FIND_DATAW fd;
     HANDLE          fh;
 
     //
@@ -1509,14 +1516,14 @@ rb_w32_opendir(const char *filename)
     // of the previous string found.
     //
     do {
-	len = strlen(fd.cFileName) + 1;
+	len = lstrlenW(fd.cFileName) + 1;
 
 	//
 	// bump the string table size by enough for the
 	// new name and it's null terminator 
 	//
-	tmp = realloc(p->start, idx + len);
-	if (!tmp) {
+	tmpW = realloc(p->start, (idx + len) * sizeof(WCHAR));
+	if (!tmpW) {
 	  error:
 	    rb_w32_closedir(p);
 	    FindClose(fh);
@@ -1524,8 +1531,8 @@ rb_w32_opendir(const char *filename)
 	    return NULL;
 	}
 
-	p->start = tmp;
-	strlcpy(&p->start[idx], fd.cFileName, len);
+	p->start = tmpW;
+	memcpy(&p->start[idx], fd.cFileName, len * sizeof(WCHAR));
 
 	if (p->nfiles % DIRENT_PER_CHAR == 0) {
 	    tmp = realloc(p->bits, p->nfiles / DIRENT_PER_CHAR + 1);
@@ -1541,7 +1548,7 @@ rb_w32_opendir(const char *filename)
 
 	p->nfiles++;
 	idx += len;
-    } while (FindNextFile(fh, &fd));
+    } while (FindNextFileW(fh, &fd));
     FindClose(fh);
     p->size = idx;
     p->curr = p->start;
@@ -1557,7 +1564,7 @@ move_to_next_entry(DIR *dirp)
 {
     if (dirp->curr) {
 	dirp->loc++;
-	dirp->curr += strlen(dirp->curr) + 1;
+	dirp->curr += lstrlenW(dirp->curr) + 1;
 	if (dirp->curr >= (dirp->start + dirp->size)) {
 	    dirp->curr = NULL;
 	}
@@ -1572,17 +1579,20 @@ move_to_next_entry(DIR *dirp)
 struct direct  *
 rb_w32_readdir(DIR *dirp)
 {
-    static int  dummy = 0;
+    static int dummy = 0;
+    UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
 
     if (dirp->curr) {
 
 	//
 	// first set up the structure to return
 	//
-	dirp->dirstr.d_namlen = strlen(dirp->curr);
+	dirp->dirstr.d_namlen =
+	    WideCharToMultiByte(cp, 0, dirp->curr, -1, NULL, 0, NULL, NULL) - 1;
 	if (!(dirp->dirstr.d_name = malloc(dirp->dirstr.d_namlen + 1)))
 	    return NULL;
-	strlcpy(dirp->dirstr.d_name, dirp->curr, dirp->dirstr.d_namlen + 1);
+	WideCharToMultiByte(cp, 0, dirp->curr, -1, dirp->dirstr.d_name,
+			    dirp->dirstr.d_namlen + 1, NULL, NULL);
 
 	//
 	// Fake inode
@@ -3531,7 +3541,7 @@ fileattr_to_unixmode(DWORD attr, const char *path)
 static int
 check_valid_dir(const char *path)
 {
-    WIN32_FIND_DATA fd;
+    WIN32_FIND_DATAW fd;
     HANDLE fh = open_dir_handle(path, &fd);
     if (fh == INVALID_HANDLE_VALUE)
 	return -1;
