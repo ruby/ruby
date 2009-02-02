@@ -21,8 +21,8 @@
  * object.
  */
 VALUE rb_cEnumerator;
+static ID id_rewind, id_each;
 static VALUE sym_each;
-static ID id_rewind;
 
 VALUE rb_eStopIteration;
 
@@ -154,7 +154,7 @@ enum_each_slice(VALUE obj, VALUE n)
     args[0] = rb_ary_new2(size);
     args[1] = (VALUE)size;
 
-    rb_block_call(obj, SYM2ID(sym_each), 0, 0, each_slice_i, (VALUE)args);
+    rb_block_call(obj, id_each, 0, 0, each_slice_i, (VALUE)args);
 
     ary = args[0];
     if (RARRAY_LEN(ary) > 0) rb_yield(ary);
@@ -211,7 +211,7 @@ enum_each_cons(VALUE obj, VALUE n)
     args[0] = rb_ary_new2(size);
     args[1] = (VALUE)size;
 
-    rb_block_call(obj, SYM2ID(sym_each), 0, 0, each_cons_i, (VALUE)args);
+    rb_block_call(obj, id_each, 0, 0, each_cons_i, (VALUE)args);
 
     return Qnil;
 }
@@ -242,7 +242,7 @@ enum_each_with_object(VALUE obj, VALUE memo)
 {
     RETURN_ENUMERATOR(obj, 1, &memo);
 
-    rb_block_call(obj, SYM2ID(sym_each), 0, 0, each_with_object_i, memo);
+    rb_block_call(obj, id_each, 0, 0, each_with_object_i, memo);
 
     return memo;
 }
@@ -480,7 +480,7 @@ next_i(VALUE curr, VALUE obj)
     struct enumerator *e = enumerator_ptr(obj);
     VALUE nil = Qnil;
 
-    rb_block_call(obj, rb_intern("each"), 0, 0, next_ii, obj);
+    rb_block_call(obj, id_each, 0, 0, next_ii, obj);
     e->no_next = Qtrue;
     return rb_fiber_yield(1, &nil);
 }
@@ -866,8 +866,9 @@ Init_Enumerator(void)
     rb_define_method(rb_cYielder, "yield", yielder_yield, -2);
     rb_define_method(rb_cYielder, "<<", yielder_yield, -2);
 
-    sym_each = ID2SYM(rb_intern("each"));
     id_rewind = rb_intern("rewind");
+    id_each = rb_intern("each");
+    sym_each = ID2SYM(id_each);
 
     rb_provide("enumerator.so");	/* for backward compatibility */
 }
