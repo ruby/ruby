@@ -1,3 +1,10 @@
+Mon Feb  2 19:55:51 2009  Tanaka Akira  <akr@fsij.org>
+
+	* test/socket/test_addrinfo.rb: use AddrInfo.getaddrinfo to generate
+	  IPv6 address.  AddrInfo.ip generates IPv4 address for IPv4 mapped
+	  IPv6 address if --with-lookup-order-hack=INET.
+	  [ruby-dev:37868]
+
 Mon Feb  2 19:17:16 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* doc/NEWS-1.9.1: typo fixed: collect_all -> collect.

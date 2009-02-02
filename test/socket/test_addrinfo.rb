@@ -345,6 +345,10 @@ class TestSocketAddrInfo < Test::Unit::TestCase
       assert_equal(ai1.canonname, ai2.canonname)
     end
 
+    def ipv6(str)
+      AddrInfo.getaddrinfo(str, nil, :INET6, :DGRAM).fetch(0)
+    end
+
     def test_ipv6_address_predicates
       list = [
         [:ipv6_unspecified?, "::"],
@@ -364,24 +368,26 @@ class TestSocketAddrInfo < Test::Unit::TestCase
       ]
       list.each {|meth, *addrs|
         addrs.each {|addr|
-          assert(AddrInfo.ip(addr).send(meth), "AddrInfo.ip(#{addr.inspect}).#{meth}")
+          addr_exp = "AddrInfo.getaddrinfo(#{addr.inspect}, nil, :INET6, :DGRAM).fetch(0)"
+          assert(ipv6(addr).send(meth), "#{addr_exp}.#{meth}")
           list.each {|meth2,|
             next if meth == meth2
-            assert(!AddrInfo.ip(addr).send(meth2), "!AddrInfo.ip(#{addr.inspect}).#{meth2}")
+            assert(!ipv6(addr).send(meth2), "!#{addr_exp}.#{meth2}")
           }
         }
       }
       mlist.each {|meth, *addrs|
         addrs.each {|addr|
-          assert(AddrInfo.ip(addr).send(meth), "AddrInfo.ip(#{addr.inspect}).#{meth}")
-          assert(AddrInfo.ip(addr).ipv6_multicast?, "AddrInfo.ip(#{addr.inspect}).ipv6_multicast?")
+          addr_exp = "AddrInfo.getaddrinfo(#{addr.inspect}, nil, :INET6, :DGRAM).fetch(0)"
+          assert(ipv6(addr).send(meth), "#{addr_exp}.#{meth}")
+          assert(ipv6(addr).ipv6_multicast?, "#{addr_exp}.ipv6_multicast?")
           mlist.each {|meth2,|
             next if meth == meth2
-            assert(!AddrInfo.ip(addr).send(meth2), "!AddrInfo.ip(#{addr.inspect}).#{meth2}")
+            assert(!ipv6(addr).send(meth2), "!#{addr_exp}.#{meth2}")
           }
           list.each {|meth2,|
             next if :ipv6_multicast? == meth2
-            assert(!AddrInfo.ip(addr).send(meth2), "!AddrInfo.ip(#{addr.inspect}).#{meth2}")
+            assert(!ipv6(addr).send(meth2), "!#{addr_exp}.#{meth2}")
           }
         }
       }
