@@ -1,3 +1,8 @@
+Tue Feb  3 12:27:19 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (match_check): check if MatchData is initialized.
+	  [ruby-core:18749]
+
 Tue Feb  3 11:40:05 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/rexml/rexml.rb: incremented Ruby::VERSION.  Thanks, Jeremy

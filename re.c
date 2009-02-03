@@ -682,6 +682,14 @@ match_alloc(klass)
     return (VALUE)match;
 }
 
+static void
+match_check(VALUE match)
+{
+    if (!RMATCH(match)->str) {
+	rb_raise(rb_eTypeError, "uninitialized Match");
+    }
+}
+
 /* :nodoc: */
 static VALUE
 match_init_copy(obj, orig)
@@ -717,6 +725,7 @@ static VALUE
 match_size(match)
     VALUE match;
 {
+    match_check(match);
     return INT2FIX(RMATCH(match)->regs->num_regs);
 }
 
@@ -739,6 +748,7 @@ match_offset(match, n)
 {
     int i = NUM2INT(n);
 
+    match_check(match);
     if (i < 0 || RMATCH(match)->regs->num_regs <= i)
 	rb_raise(rb_eIndexError, "index %d out of matches", i);
 
@@ -768,6 +778,7 @@ match_begin(match, n)
 {
     int i = NUM2INT(n);
 
+    match_check(match);
     if (i < 0 || RMATCH(match)->regs->num_regs <= i)
 	rb_raise(rb_eIndexError, "index %d out of matches", i);
 
@@ -796,6 +807,7 @@ match_end(match, n)
 {
     int i = NUM2INT(n);
 
+    match_check(match);
     if (i < 0 || RMATCH(match)->regs->num_regs <= i)
 	rb_raise(rb_eIndexError, "index %d out of matches", i);
 
@@ -959,6 +971,7 @@ rb_reg_nth_defined(nth, match)
     VALUE match;
 {
     if (NIL_P(match)) return Qnil;
+    match_check(match);
     if (nth >= RMATCH(match)->regs->num_regs) {
 	return Qnil;
     }
@@ -979,6 +992,7 @@ rb_reg_nth_match(nth, match)
     long start, end, len;
 
     if (NIL_P(match)) return Qnil;
+    match_check(match);
     if (nth >= RMATCH(match)->regs->num_regs) {
 	return Qnil;
     }
@@ -1021,6 +1035,7 @@ rb_reg_match_pre(match)
     VALUE str;
 
     if (NIL_P(match)) return Qnil;
+    match_check(match);
     if (RMATCH(match)->BEG(0) == -1) return Qnil;
     str = rb_str_substr(RMATCH(match)->str, 0, RMATCH(match)->BEG(0));
     if (OBJ_TAINTED(match)) OBJ_TAINT(str);
@@ -1047,6 +1062,7 @@ rb_reg_match_post(match)
     long pos;
 
     if (NIL_P(match)) return Qnil;
+    match_check(match);
     if (RMATCH(match)->BEG(0) == -1) return Qnil;
     str = RMATCH(match)->str;
     pos = RMATCH(match)->END(0);
@@ -1062,6 +1078,7 @@ rb_reg_match_last(match)
     int i;
 
     if (NIL_P(match)) return Qnil;
+    match_check(match);
     if (RMATCH(match)->BEG(0) == -1) return Qnil;
 
     for (i=RMATCH(match)->regs->num_regs-1; RMATCH(match)->BEG(i) == -1 && i > 0; i--)
@@ -1099,12 +1116,17 @@ match_array(match, start)
     VALUE match;
     int start;
 {
-    struct re_registers *regs = RMATCH(match)->regs;
-    VALUE ary = rb_ary_new2(regs->num_regs);
-    VALUE target = RMATCH(match)->str;
+    struct re_registers *regs;
+    VALUE ary;
+    VALUE target;
     int i;
     int taint = OBJ_TAINTED(match);
-    
+
+    match_check(match);
+    regs = RMATCH(match)->regs;
+    ary = rb_ary_new2(regs->num_regs);
+    target = RMATCH(match)->str;
+
     for (i=start; i<regs->num_regs; i++) {
 	if (regs->beg[i] == -1) {
 	    rb_ary_push(ary, Qnil);
@@ -1236,6 +1258,7 @@ match_values_at(argc, argv, match)
     VALUE *argv;
     VALUE match;
 {
+    match_check(match);
     return rb_values_at(match, RMATCH(match)->regs->num_regs, argc, argv, match_entry);
 }
 
@@ -1261,11 +1284,15 @@ match_select(argc, argv, match)
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
     }
     else {
-	struct re_registers *regs = RMATCH(match)->regs;
-	VALUE target = RMATCH(match)->str;
+	struct re_registers *regs;
+	VALUE target;
 	VALUE result = rb_ary_new();
 	int i;
 	int taint = OBJ_TAINTED(match);
+
+	match_check(match);
+	regs = RMATCH(match)->regs;
+	target = RMATCH(match)->str;
 
 	for (i=0; i<regs->num_regs; i++) {
 	    VALUE str = rb_str_substr(target, regs->beg[i], regs->end[i]-regs->beg[i]);
@@ -1317,6 +1344,7 @@ static VALUE
 match_string(match)
     VALUE match;
 {
+    match_check(match);
     return RMATCH(match)->str;	/* str is frozen */
 }
 
