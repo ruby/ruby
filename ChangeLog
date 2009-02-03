@@ -1,3 +1,8 @@
+Wed Feb  4 01:28:46 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: fix struct in_pktinfo and struct in6_pktinfo
+	  detection.
+
 Wed Feb  4 00:32:59 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/etc/test_etc.rb(test_getpwnam, test_getgrgid, test_getgrnam):
