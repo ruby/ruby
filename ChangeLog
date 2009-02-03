@@ -1,3 +1,10 @@
+Wed Feb  4 00:32:59 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/etc/test_etc.rb(test_getpwnam, test_getgrgid, test_getgrnam):
+	  support an envirionment that has duplicative entries.  a patch from
+	  Tomoyuki Chikanaga <chikanag at nippon-control-system.co.jp> in
+	  [ruby-dev:37882].
+
 Wed Feb  4 00:17:52 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (Socket.tcp_server_sockets_port0): skip
