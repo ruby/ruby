@@ -23,7 +23,7 @@
 # online[http://www.germane-software.com/software/rexml/docs/tutorial.html]
 module REXML
   COPYRIGHT = "Copyright \xC2\xA9 2001-2006 Sean Russell <ser@germane-software.com>"
-  VERSION = "3.1.7.2"
+  VERSION = "3.1.7.3"
   DATE = "2007/275"
   REVISION = "$Revision$".gsub(/\$Revision:|\$/,'').strip
 

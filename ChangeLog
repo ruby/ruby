@@ -1,3 +1,8 @@
+Tue Feb  3 11:40:05 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/rexml/rexml.rb: incremented Ruby::VERSION.  Thanks, Jeremy
+	  Kemper.  [ruby-core:20113]
+
 Mon Feb  2 20:49:24 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c: Introduce id_each to save rb_itern() and SYM2ID()
