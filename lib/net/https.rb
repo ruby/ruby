@@ -73,7 +73,7 @@ It can be replaced by the following code:
 
 : ca_file, ca_file=((|path|))
     Sets path of a CA certification file in PEM format.
-    The file can contrain several CA certificats.
+    The file can contrain several CA certificates.
 
 : ca_path, ca_path=((|path|))
     Sets path of a CA certification directory containing certifications
