@@ -17,7 +17,7 @@ with all sufficient information, see the ChangeLog file.
     * Array#sort_by!
 
   * IO
-    * IO.pipe takes a block.
+    * IO.pipe can take a block.
 
   * Process
     * Process.spawn accepts [:child, FD] for a redirect target.
@@ -55,42 +55,72 @@ with all sufficient information, see the ChangeLog file.
 
 * open3
 
-  * Open3.popen2
-  * Open3.popen2e
-  * Open3.capture3
-  * Open3.capture2
-  * Open3.capture2e
-  * Open3.pipeline_rw
-  * Open3.pipeline_r
-  * Open3.pipeline_w
-  * Open3.pipeline_start
-  * Open3.pipeline
+  * new methods:
+    * Open3.popen2
+    * Open3.popen2e
+    * Open3.capture3
+    * Open3.capture2
+    * Open3.capture2e
+    * Open3.pipeline_rw
+    * Open3.pipeline_r
+    * Open3.pipeline_w
+    * Open3.pipeline_start
+    * Open3.pipeline
 
 * pty
 
-  * PTY.open
+  * new methods:
+    * PTY.open
 
 * openssl
 
-  * Buffering#read_nonblock
+  * new methods:
+    * Buffering#read_nonblock
 
 * socket
-  * Socket.pair and UNIXSocket.pair takes a block.
-  * AddrInfo class
-  * Socket.{tcp,tcp_server_loop,unix,unix_server_loop}
-  * Socket#{recvfrom,recvfrom_nonblock,accept,accept_nonblock,sysaccept}
-    returns a sender address as AddrInfo object instead of a string.
-  * BasicSocket#send, UDPSocket#send, Socket.getnameinfo, Socket#bind, and
-    Socket#{connect,connect_nonblock} accepts an AddrInfo object as sockaddr.
-  * BasicSocket#local_address
-  * BasicSocket#remote_address
-  * string/symbol as protocol/address family, socket type, protocol level,
-    socket option name and shutdown's how argument can be specified as a
-    string/symbol.
+
+  * incompatible changes:
+    * Socket#{recvfrom,recvfrom_nonblock,accept,accept_nonblock,sysaccept}
+      returns a sender address as AddrInfo object instead of a string.
+    * BasicSocket#getsockopt returns Socket::Option object instead of a string.
+
+  * new class:
+    * AddrInfo
+    * Socket::Option
+    * Socket::AncillaryData
+
+  * new methods:
+    * Socket.ip_address_list
+    * Socket.tcp
+    * Socket.tcp_server_loop
+    * Socket.tcp_server_sockets
+    * Socket.unix
+    * Socket.unix_server_loop
+    * Socket.unix_server_socket
+    * Socket.accept_loop
+    * Socket#ipv6only!
+    * BasicSocket#local_address
+    * BasicSocket#remote_address
+    * BasicSocket#sendmsg
+    * BasicSocket#sendmsg_nonblock
+    * BasicSocket#recvmsg
+    * BasicSocket#recvmsg_nonblock
+
+  * extended methods:
+    * Socket.new's 3rd argument is optional now.
+    * Socket.pair and UNIXSocket.pair can take a block.
+    * BasicSocket#send, UDPSocket#send, Socket.getnameinfo, Socket#bind, and
+      Socket#{connect,connect_nonblock} accepts an AddrInfo object as sockaddr.
+    * BasicSocket#getsockopt accepts a Socket::Option object.
+
+    * string/symbol as protocol/address family, socket type, protocol level,
+      socket option name and shutdown's how argument can be specified as a
+      string/symbol.
 
 * pathname
-  * new method: realdirpath
-  * new method: each_child
+  * new method:
+    * realdirpath
+    * each_child
 
 === Compatibility issues (excluding feature bug fixes)
 
