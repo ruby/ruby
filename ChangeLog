@@ -1,3 +1,7 @@
+Tue Feb  3 23:37:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file_internal): resets EOF flag after parse.
+
 Tue Feb  3 23:13:34 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_backtrace): always returns non-nil array if lev is
