@@ -309,6 +309,108 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     assert_equal(Socket::SOCK_STREAM, ai.socktype)
   end
 
+  def random_port
+    # IANA suggests dynamic port for 49152 to 65535
+    # http://www.iana.org/assignments/port-numbers
+    49152 + rand(65535-49152+1)
+  end
+
+  def test_connect_from
+    TCPServer.open("0.0.0.0", 0) {|serv|
+      serv_ai = AddrInfo.new(serv.getsockname, :INET, :STREAM)
+      port = random_port
+      begin
+        serv_ai.connect_from("0.0.0.0", port) {|s1|
+          s2 = serv.accept
+          begin
+            assert_equal(port, s2.remote_address.ip_port)
+          ensure
+            s2.close
+          end
+        }
+      rescue Errno::EADDRINUSE
+        # not test failure
+      end
+    }
+  end
+
+  def test_connect_to
+    TCPServer.open("0.0.0.0", 0) {|serv|
+      serv_ai = AddrInfo.new(serv.getsockname, :INET, :STREAM)
+      port = random_port
+      client_ai = AddrInfo.tcp("0.0.0.0", port)
+      begin
+        client_ai.connect_to(*serv_ai.ip_unpack) {|s1|
+          s2 = serv.accept
+          begin
+            assert_equal(port, s2.remote_address.ip_port)
+          ensure
+            s2.close
+          end
+        }
+      rescue Errno::EADDRINUSE
+        # not test failure
+      end
+    }
+  end
+
+  def test_connect
+    TCPServer.open("0.0.0.0", 0) {|serv|
+      serv_ai = AddrInfo.new(serv.getsockname, :INET, :STREAM)
+      begin
+        serv_ai.connect {|s1|
+          s2 = serv.accept
+          begin
+            assert_equal(s1.local_address.ip_unpack, s2.remote_address.ip_unpack)
+            assert_equal(s2.local_address.ip_unpack, s1.remote_address.ip_unpack)
+          ensure
+            s2.close
+          end
+        }
+      rescue Errno::EADDRINUSE
+        # not test failure
+      end
+    }
+  end
+
+  def test_bind
+    port = random_port
+    client_ai = AddrInfo.tcp("0.0.0.0", port)
+    begin
+      client_ai.bind {|s|
+        assert_equal(port, s.local_address.ip_port)
+      }
+    rescue Errno::EADDRINUSE
+      # not test failure
+    end
+  end
+
+  def test_listen
+    port = random_port
+    client_ai = AddrInfo.tcp("0.0.0.0", port)
+    begin
+      client_ai.listen {|serv|
+        assert_equal(port, serv.local_address.ip_port)
+        TCPSocket.open(*serv.local_address.ip_unpack) {|s1|
+          s2, addr = serv.accept
+          begin
+            assert_equal(s1.local_address.ip_unpack, addr.ip_unpack)
+          ensure
+            s2.close
+          end
+        }
+      }
+    rescue Errno::EADDRINUSE
+      # not test failure
+    end
+  end
+
+  def test_s_foreach
+    AddrInfo.foreach(nil, 80, nil, :STREAM) {|ai|
+      assert_kind_of(AddrInfo, ai)
+    }
+  end
+
   def test_marshal
     ai1 = AddrInfo.tcp("127.0.0.1", 80)
     ai2 = Marshal.load(Marshal.dump(ai1))
