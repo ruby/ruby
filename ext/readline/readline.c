@@ -304,6 +304,8 @@ readline_s_set_output(VALUE self, VALUE output)
  * should take input-string, and return an array of completion
  * candidates.
  *
+ * Set default if +proc+ is nil.
+ *
  * Raises ArgumentError exception if +proc+ does not respond to call method.
  *
  * Raises SecurityError exception if $SAFE is 4.
@@ -312,7 +314,7 @@ static VALUE
 readline_s_set_completion_proc(VALUE self, VALUE proc)
 {
     rb_secure(4);
-    if (!rb_respond_to(proc, rb_intern("call")))
+    if (!NIL_P(proc) && !rb_respond_to(proc, rb_intern("call")))
 	rb_raise(rb_eArgError, "argument must respond to `call'");
     return rb_ivar_set(mReadline, completion_proc, proc);
 }

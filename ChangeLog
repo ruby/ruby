@@ -1,3 +1,8 @@
+Tue Feb  3 21:07:19 2009  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/readline.c (readline_s_set_completion_proc): set
+	  default if proc is nil. fix #1095
+
 Tue Feb  3 16:36:06 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* array.c (rb_ary_sort_by_bang): RDoc update.
