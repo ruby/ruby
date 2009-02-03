@@ -1,3 +1,8 @@
+Tue Feb  3 11:25:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (load_lock): warn for circular require.  [ruby-core:20794],
+	  [ruby-core:20797]
+
 Tue Feb  3 08:35:12 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (Socket.tcp_server_sockets): extracted from

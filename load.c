@@ -379,6 +379,7 @@ load_lock(const char *ftptr)
 	st_insert(loading_tbl, (st_data_t)ftptr, data);
 	return (char *)ftptr;
     }
+    rb_warning("loading in progress, circular require considered harmful - %s", ftptr);
     return RTEST(rb_barrier_wait((VALUE)data)) ? (char *)ftptr : 0;
 }
 
