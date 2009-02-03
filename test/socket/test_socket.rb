@@ -73,10 +73,20 @@ class TestSocket < Test::Unit::TestCase
     }
   end
 
+  def tcp_unspecified_to_loopback(addrinfo)
+    if addrinfo.ipv4? && addrinfo.ip_address == "0.0.0.0"
+      AddrInfo.tcp("127.0.0.1", addrinfo.ip_port)
+    elsif addrinfo.ipv6? && addrinfo.ipv6_unspecified?
+      AddrInfo.tcp("::1", addrinfo.ip_port)
+    else
+      addrinfo
+    end
+  end
+
   def test_tcp
     TCPServer.open(0) {|serv|
-      port, addr = Socket.unpack_sockaddr_in(serv.getsockname)
-      Socket.tcp(addr, port) {|s1|
+      addr = tcp_unspecified_to_loopback(serv.local_address)
+      addr.connect {|s1|
         s2 = serv.accept
         begin
           assert_equal(s2.remote_address.ip_unpack, s1.local_address.ip_unpack)
@@ -168,7 +178,8 @@ class TestSocket < Test::Unit::TestCase
           tcp_servers = Socket.tcp_server_sockets(0)
           unix_server = Socket.unix_server_socket("#{tmpdir}/sock")
           tcp_servers.each {|s|
-            clients << s.local_address.connect
+            addr = tcp_unspecified_to_loopback(s.local_address)
+            clients << addr.connect
           }
           clients << unix_server.local_address.connect
           Socket.accept_loop(tcp_servers, unix_server) {|s|
