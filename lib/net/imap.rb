@@ -3151,8 +3151,8 @@ module Net
         k_ipad = key + "\0" * (64 - key.length)
         k_opad = key + "\0" * (64 - key.length)
         for i in 0..63
-          k_ipad[i] ^= 0x36
-          k_opad[i] ^= 0x5c
+          k_ipad[i] = (k_ipad[i].ord ^ 0x36).chr
+          k_opad[i] = (k_opad[i].ord ^ 0x5c).chr
         end
 
         digest = Digest::MD5.digest(k_ipad + text)
