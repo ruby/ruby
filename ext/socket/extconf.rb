@@ -301,11 +301,11 @@ have_header("sys/un.h")
 have_header("sys/uio.h")
 have_type("struct in_pktinfo", headers) {|src|
   src.sub(%r'^/\*top\*/', '\1'"\n#if defined(IPPROTO_IP) && defined(IP_PKTINFO)") <<
-  "#else\n" << "#error no in_pktinfo\n" << "#endif\n"
+  "#else\n" << "#error\n" << ">>>>>> no in_pktinfo <<<<<<\n" << "#endif\n"
 }
 have_type("struct in6_pktinfo", headers) {|src|
   src.sub(%r'^/\*top\*/', '\1'"\n#if defined(IPPROTO_IPV6) && defined(IPV6_PKTINFO)") <<
-  "#else\n" << "#error no in6_pktinfo\n" << "#endif\n"
+  "#else\n" << "#error\n" << ">>>>>> no in6_pktinfo <<<<<<\n" << "#endif\n"
 }
 
 $distcleanfiles << "constants.h" << "constdefs.*"
