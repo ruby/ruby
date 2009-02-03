@@ -1,3 +1,8 @@
+Wed Feb  4 00:17:52 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (Socket.tcp_server_sockets_port0): skip
+	  socket creation error.
+
 Tue Feb  3 23:37:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (load_file_internal): resets EOF flag after parse.

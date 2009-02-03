@@ -232,7 +232,11 @@ class Socket
       sockets = []
       port = nil
       ai_list.each {|ai|
-        s = Socket.new(ai.pfamily, ai.socktype, ai.protocol)
+        begin
+          s = Socket.new(ai.pfamily, ai.socktype, ai.protocol)
+        rescue SystemCallError
+          next
+        end
         sockets << s
         s.ipv6only! if ai.ipv6?
         s.setsockopt(:SOCKET, :REUSEADDR, 1)
