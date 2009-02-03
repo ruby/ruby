@@ -1,3 +1,8 @@
+Tue Feb  3 23:13:34 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (vm_backtrace): always returns non-nil array if lev is
+	  negative.  [ruby-core:21795]
+
 Tue Feb  3 21:19:06 2009  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/extconf.rb: checked rl_set_screen_size and

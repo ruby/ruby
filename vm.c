@@ -737,6 +737,9 @@ vm_backtrace(rb_thread_t *th, int lev)
 {
     VALUE ary = 0;
 
+    if (lev < 0) {
+	ary = rb_ary_new();
+    }
     vm_backtrace_each(th, lev, vm_backtrace_push, &ary);
     if (!ary) return Qnil;
     return rb_ary_reverse(ary);
