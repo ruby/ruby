@@ -6,7 +6,7 @@
   created at: Wed Jan 20 13:59:32 JST 1999
 
   Copyright (C) 1997-2008  Shugo Maeda
-  Copyright (C) 2008       TAKAO Kouji
+  Copyright (C) 2008-2009  TAKAO Kouji
 
   $Id$
 
