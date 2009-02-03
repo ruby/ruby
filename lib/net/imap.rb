@@ -1062,6 +1062,9 @@ module Net
 
     def send_command(cmd, *args, &block)
       synchronize do
+        args.each do |i|
+          validate_data(i)
+        end
         tag = generate_tag
         put_string(tag + " " + cmd)
         args.each do |i|
@@ -1102,6 +1105,25 @@ module Net
         else
           @debug_output_bol = false
         end
+      end
+    end
+
+    def validate_data(data)
+      case data
+      when nil
+      when String
+      when Integer
+        if data < 0 || data >= 4294967296
+          raise DataFormatError, num.to_s
+        end
+      when Array
+        data.each do |i|
+          validate_data(i)
+        end
+      when Time
+      when Symbol
+      else
+        data.validate
       end
     end
 
@@ -1151,9 +1173,6 @@ module Net
     end
 
     def send_number_data(num)
-      if num < 0 || num >= 4294967296
-        raise DataFormatError, num.to_s
-      end
       put_string(num.to_s)
     end
 
@@ -1309,6 +1328,9 @@ module Net
         imap.send(:put_string, @data)
       end
 
+      def validate
+      end
+
       private
 
       def initialize(data)
@@ -1319,6 +1341,9 @@ module Net
     class Atom # :nodoc:
       def send_data(imap)
         imap.send(:put_string, @data)
+      end
+
+      def validate
       end
 
       private
@@ -1333,6 +1358,9 @@ module Net
         imap.send(:send_quoted_string, @data)
       end
 
+      def validate
+      end
+
       private
 
       def initialize(data)
@@ -1343,6 +1371,9 @@ module Net
     class Literal # :nodoc:
       def send_data(imap)
         imap.send(:send_literal, @data)
+      end
+
+      def validate
       end
 
       private
@@ -1357,6 +1388,10 @@ module Net
         imap.send(:put_string, format_internal(@data))
       end
 
+      def validate
+        validate_internal(@data)
+      end
+
       private
 
       def initialize(data)
@@ -1368,7 +1403,6 @@ module Net
         when "*"
           return data
         when Integer
-          ensure_nz_number(data)
           if data == -1
             return "*"
           else
@@ -1382,6 +1416,23 @@ module Net
         when ThreadMember
           return data.seqno.to_s +
             ":" + data.children.collect {|i| format_internal(i).join(",")}
+        end
+      end
+
+      def validate_internal(data)
+        case data
+        when "*"
+        when Integer
+          ensure_nz_number(data)
+        when Range
+        when Array
+          data.each do |i|
+            validate_internal(i)
+          end
+        when ThreadMember
+          data.children.each do |i|
+            validate_internal(i)
+          end
         else
           raise DataFormatError, data.inspect
         end
