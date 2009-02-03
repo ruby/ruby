@@ -1,3 +1,10 @@
+Tue Feb  3 14:35:26 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/net/pop.rb: check for invalid APOP timestamp. (CVE-2007-1558)
+	  [ruby-dev:36631]
+
+	* test/net/pop/test_pop.rb: ditto.
+
 Mon Feb  2 20:03:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_mdump, time_mload): preserves GMT status.
