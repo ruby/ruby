@@ -143,6 +143,32 @@ class TestSocket < Test::Unit::TestCase
         }
       }
     end
+
+    def test_accept_loop
+      Dir.mktmpdir {|tmpdir|
+        tcp_servers = []
+        clients = []
+        accepted = []
+        begin
+          tcp_servers = Socket.tcp_server_sockets(0)
+          unix_server = Socket.unix_server_socket("#{tmpdir}/sock")
+          tcp_servers.each {|s|
+            clients << s.local_address.connect
+          }
+          clients << unix_server.local_address.connect
+          Socket.accept_loop(tcp_servers, unix_server) {|s|
+            accepted << s
+            break if clients.length == accepted.length
+          }
+          assert_equal(clients.length, accepted.length)
+        ensure
+          tcp_servers.each {|s| s.close if !s.closed?  }
+          unix_server.close if !unix_server.closed?
+          clients.each {|s| s.close if !s.closed?  }
+          accepted.each {|s| s.close if !s.closed?  }
+        end
+      }
+    end
   end
 
 end if defined?(Socket)
