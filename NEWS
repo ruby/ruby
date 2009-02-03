@@ -13,6 +13,9 @@ with all sufficient information, see the ChangeLog file.
 
 * builtin classes
 
+  * Array
+    * Array#sort_by!
+
   * IO
     * IO.pipe takes a block.
 

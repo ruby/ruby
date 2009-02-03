@@ -1,3 +1,9 @@
+Tue Feb  3 16:36:06 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* array.c (rb_ary_sort_by_bang): RDoc update.
+
+	* NEWS: add Array#sort_by!.
+
 Tue Feb  3 16:23:16 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (Socket.tcp_server_sockets_port0): new
