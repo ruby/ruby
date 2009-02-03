@@ -1518,13 +1518,17 @@ last_paren_match_getter(void)
 static VALUE
 match_array(VALUE match, int start)
 {
-    struct re_registers *regs = RMATCH_REGS(match);
-    VALUE ary = rb_ary_new2(regs->num_regs);
-    VALUE target = RMATCH(match)->str;
+    struct re_registers *regs;
+    VALUE ary;
+    VALUE target;
     int i;
     int taint = OBJ_TAINTED(match);
 
     match_check(match);
+    regs = RMATCH_REGS(match);
+    ary = rb_ary_new2(regs->num_regs);
+    target = RMATCH(match)->str;
+
     for (i=start; i<regs->num_regs; i++) {
 	if (regs->beg[i] == -1) {
 	    rb_ary_push(ary, Qnil);
@@ -1697,8 +1701,10 @@ match_entry(VALUE match, long n)
 static VALUE
 match_values_at(int argc, VALUE *argv, VALUE match)
 {
-    struct re_registers *regs = RMATCH_REGS(match);
+    struct re_registers *regs;
+
     match_check(match);
+    regs = RMATCH_REGS(match);
     return rb_get_values_at(match, regs->num_regs, argc, argv, match_entry);
 }
 
