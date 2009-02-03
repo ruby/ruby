@@ -226,10 +226,49 @@ class Socket
     end
   end
 
+  def self.tcp_server_sockets_port0(host)
+    ai_list = AddrInfo.getaddrinfo(host, 0, nil, :STREAM, nil, Socket::AI_PASSIVE)
+    begin
+      sockets = []
+      port = nil
+      ai_list.each {|ai|
+        s = Socket.new(ai.pfamily, ai.socktype, ai.protocol)
+        sockets << s
+        s.ipv6only! if ai.ipv6?
+        s.setsockopt(:SOCKET, :REUSEADDR, 1)
+        if !port
+          s.bind(ai)
+          port = s.local_address.ip_port
+        else
+          s.bind(AddrInfo.tcp(ai.ip_address, port))
+        end
+        s.listen(5)
+      }
+    rescue Errno::EADDRINUSE
+      sockets.each {|s|
+        s.close
+      }
+      retry
+    end
+    sockets
+  ensure
+    if $!
+      sockets.each {|s|
+        s.close if !s.closed?
+      }
+    end
+  end
+  class << self
+    private :tcp_server_sockets_port0
+  end
+
   # creates TCP server sockets for _host_ and _port_.
   # _host_ is optional.
   #
   # It returns an array of listening sockets.
+  #
+  # If _port_ is 0, actual port number is choosen dynamically.
+  # However all sockets in the result has same port number.
   #
   #   # tcp_server_sockets returns two sockets.
   #   sockets = Socket.tcp_server_sockets(1296)
@@ -240,27 +279,36 @@ class Socket
   #   #=> #<AddrInfo: [::]:1296 TCP>
   #   #   #<AddrInfo: 0.0.0.0:1296 TCP>
   #
+  #   # IPv6 and IPv4 socket has same port number, 53114, even if it is choosen dynamically.
+  #   sockets = Socket.tcp_server_sockets(0)
+  #   sockets.each {|s| p s.local_address }
+  #   #=> #<AddrInfo: [::]:53114 TCP>
+  #   #   #<AddrInfo: 0.0.0.0:53114 TCP>
+  #
   def self.tcp_server_sockets(host=nil, port)
-    last_error = nil
-    sockets = []
-    AddrInfo.foreach(host, port, nil, :STREAM, nil, Socket::AI_PASSIVE) {|ai|
-      begin
-        s = ai.listen
-      rescue SystemCallError
-        last_error = $!
-        next
-      end
-      sockets << s
-    }
-    if sockets.empty?
-      raise last_error
-    end
-    sockets
-  ensure
-    if $!
-      sockets.each {|s|
-        s.close if !s.closed?
+    return tcp_server_sockets_port0(host) if port == 0
+    begin
+      last_error = nil
+      sockets = []
+      AddrInfo.foreach(host, port, nil, :STREAM, nil, Socket::AI_PASSIVE) {|ai|
+        begin
+          s = ai.listen
+        rescue SystemCallError
+          last_error = $!
+          next
+        end
+        sockets << s
       }
+      if sockets.empty?
+        raise last_error
+      end
+      sockets
+    ensure
+      if $!
+        sockets.each {|s|
+          s.close if !s.closed?
+        }
+      end
     end
   end
 

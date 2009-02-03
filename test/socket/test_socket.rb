@@ -111,6 +111,21 @@ class TestSocket < Test::Unit::TestCase
     end
   end
 
+  def test_tcp_server_sockets_port0
+    sockets = Socket.tcp_server_sockets(0)
+    ports = sockets.map {|s| s.local_address.ip_port }
+    the_port = ports.first
+    ports.each {|port|
+      assert_equal(the_port, port)
+    }
+  ensure
+    if sockets
+      sockets.each {|s|
+        s.close
+      }
+    end
+  end
+
   if defined? UNIXSocket
     def test_unix
       Dir.mktmpdir {|tmpdir|
@@ -144,7 +159,7 @@ class TestSocket < Test::Unit::TestCase
       }
     end
 
-    def test_accept_loop
+    def test_accept_loop_with_unix
       Dir.mktmpdir {|tmpdir|
         tcp_servers = []
         clients = []
@@ -169,6 +184,27 @@ class TestSocket < Test::Unit::TestCase
         end
       }
     end
+  end
+
+  def test_accept_loop
+    servers = []
+    begin
+      servers = Socket.tcp_server_sockets(0)
+      port = servers[0].local_address.ip_port
+      Socket.tcp("localhost", port) {|s1|
+        Socket.accept_loop(servers) {|s2, client_ai|
+          begin
+            assert_equal(s1.local_address.ip_unpack, client_ai.ip_unpack)
+          ensure
+            s2.close
+          end
+          break
+        }
+      }
+    ensure
+      servers.each {|s| s.close if !s.closed?  }
+    end
+
   end
 
 end if defined?(Socket)

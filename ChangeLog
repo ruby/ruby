@@ -1,3 +1,9 @@
+Tue Feb  3 16:23:16 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (Socket.tcp_server_sockets_port0): new
+	  private function for allocating same port both IPv4 and IPv6.
+	  (Socket.tcp_server_sockets): use tcp_server_sockets_port0 for port 0.
+
 Tue Feb  3 14:12:10 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: validate data before sending to a server.
