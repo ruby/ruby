@@ -752,7 +752,7 @@ module Net
       @socket = sock
       @error_occured = false
       res = check_response(critical { recv_response() })
-      @apop_stamp = res.slice(/<.+>/)
+      @apop_stamp = res.slice(/<[!-~]+@[!-~]+>/)
     end
 
     def inspect
