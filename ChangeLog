@@ -1,3 +1,14 @@
+Tue Feb  3 21:19:06 2009  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/extconf.rb: checked rl_set_screen_size and
+	  rl_get_screen_size.
+
+	* ext/readline/readline.c (readline_s_set_screen_size): added
+	  Readline.set_screen_size.
+
+	* ext/readline/readline.c (readline_s_get_screen_size): added
+	  Readline.get_screen_size.
+
 Tue Feb  3 21:07:19 2009  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/readline.c (readline_s_set_completion_proc): set

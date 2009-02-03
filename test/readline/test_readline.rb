@@ -3,6 +3,8 @@ begin
 =begin
   class << Readline
     [
+     "set_screen_size",
+     "get_screen_size",
      "vi_editing_mode",
      "emacs_editing_mode",
      "completion_append_character=",
@@ -61,6 +63,8 @@ class TestReadline < Test::Unit::TestCase
        ["completer_quote_characters"],
        ["filename_quote_characters=", "\\"],
        ["filename_quote_characters"],
+       ["set_screen_size", 1, 1],
+       ["get_screen_size"],
       ]
     method_args.each do |method_name, *args|
       assert_raise(SecurityError, NotImplementedError,
@@ -140,6 +144,19 @@ class TestReadline < Test::Unit::TestCase
     end
   end
 
+  def test_get_screen_size
+    begin
+      res = Readline.get_screen_size
+      assert(res.is_a?(Array))
+      rows, columns = *res
+      assert(rows.is_a?(Integer))
+      assert(rows >= 0)
+      assert(columns.is_a?(Integer))
+      assert(columns >= 0)
+    rescue NotImplementedError
+    end
+  end
+  
   # vi_editing_mode
   # emacs_editing_mode
   def test_editing_mode

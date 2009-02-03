@@ -438,6 +438,62 @@ readline_attempted_completion_function(const char *text, int start, int end)
 
 /*
  * call-seq:
+ *   Readline.set_screen_size(rows, columns) -> self
+ *
+ * Set terminal size to +rows+ and +columns+.
+ *
+ * See GNU Readline's rl_set_screen_size function. 
+ *
+ * Raises NotImplementedError if the using readline library does not support.
+ *
+ * Raises SecurityError exception if $SAFE is 4.
+ */
+static VALUE
+readline_s_set_screen_size(VALUE self, VALUE rows, VALUE columns)
+{
+#ifdef HAVE_RL_SET_SCREEN_SIZE
+    rb_secure(4);
+    rl_set_screen_size(NUM2INT(rows), NUM2INT(columns));
+    return self;
+#else
+    rb_notimplement();
+    return Qnil; /* not reached */
+#endif /* HAVE_RL_SET_SCREEN_SIZE */
+}
+
+/*
+ * call-seq:
+ *   Readline.get_screen_size -> [rows, columns]
+ *
+ * Returns the terminal's rows and columns.
+ *
+ * See GNU Readline's rl_get_screen_size function. 
+ *
+ * Raises NotImplementedError if the using readline library does not support.
+ *
+ * Raises SecurityError exception if $SAFE is 4.
+ */
+static VALUE
+readline_s_get_screen_size(VALUE self)
+{
+#ifdef HAVE_RL_GET_SCREEN_SIZE
+    int rows, columns;
+    VALUE res;
+    
+    rb_secure(4);
+    rl_get_screen_size(&rows, &columns);
+    res = rb_ary_new();
+    rb_ary_push(res, INT2NUM(rows));
+    rb_ary_push(res, INT2NUM(columns));
+    return res;
+#else
+    rb_notimplement();
+    return Qnil; /* not reached */
+#endif /* HAVE_RL_GET_SCREEN_SIZE */
+}
+
+/*
+ * call-seq:
  *   Readline.vi_editing_mode -> nil
  *
  * Specifies VI editing mode. See the manual of GNU Readline for
@@ -1200,6 +1256,10 @@ Init_readline()
 			       readline_s_set_completion_case_fold, 1);
     rb_define_singleton_method(mReadline, "completion_case_fold",
 			       readline_s_get_completion_case_fold, 0);
+    rb_define_singleton_method(mReadline, "set_screen_size",
+			       readline_s_set_screen_size, 2);
+    rb_define_singleton_method(mReadline, "get_screen_size",
+			       readline_s_get_screen_size, 0);
     rb_define_singleton_method(mReadline, "vi_editing_mode",
 			       readline_s_vi_editing_mode, 0);
     rb_define_singleton_method(mReadline, "vi_editing_mode?",
