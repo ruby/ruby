@@ -122,6 +122,15 @@ with all sufficient information, see the ChangeLog file.
     * realdirpath
     * each_child
 
+* Readline
+  * new method:
+    * Readline.set_screen_size
+    * Readline.get_screen_size
+
+  * extended methods:
+    * Readline.completion_proc= accepts nil.
+      nil means to use default completion proc.
+
 === Compatibility issues (excluding feature bug fixes)
 
   * Enumerator#rewind
