@@ -14,7 +14,12 @@ with all sufficient information, see the ChangeLog file.
 * builtin classes
 
   * Array
-    * Array#sort_by!
+    * new method:
+      * Array#sort_by!
+
+  * Dir
+    * new method:
+      * Dir.home
 
   * IO
     * IO.pipe can take a block.
@@ -69,12 +74,12 @@ with all sufficient information, see the ChangeLog file.
 
 * pty
 
-  * new methods:
+  * new method:
     * PTY.open
 
 * openssl
 
-  * new methods:
+  * new method:
     * Buffering#read_nonblock
 
 * socket
@@ -118,12 +123,12 @@ with all sufficient information, see the ChangeLog file.
       string/symbol.
 
 * pathname
-  * new method:
+  * new methods:
     * realdirpath
     * each_child
 
 * Readline
-  * new method:
+  * new methods:
     * Readline.set_screen_size
     * Readline.get_screen_size
 
