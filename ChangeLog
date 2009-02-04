@@ -1,3 +1,8 @@
+Wed Feb  4 14:26:58 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_globs): need taint check.  reported by steve
+	  <oksteev at gmail.com>
+
 Tue Feb  3 14:35:26 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/net/pop.rb: check for invalid APOP timestamp. (CVE-2007-1558)
