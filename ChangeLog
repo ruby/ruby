@@ -1,3 +1,7 @@
+Wed Feb  4 21:55:38 2009  Tanaka Akira  <akr@fsij.org>
+
+	* bootstraptest/runner.rb: refine success message.
+
 Wed Feb  4 19:10:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (id.h): updates from parse.h.

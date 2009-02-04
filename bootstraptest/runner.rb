@@ -118,7 +118,11 @@ def exec_test(pathes)
   end
   $stderr.puts
   if @error == 0
-    $stderr.puts "PASS #{@count} tests"
+    if @count == 0
+      $stderr.puts "No tests, no problem"
+    else
+      $stderr.puts "PASS all #{@count} tests"
+    end
     exit true
   else
     @errbuf.each do |msg|
