@@ -1,3 +1,7 @@
+Thu Feb  5 00:09:39 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (addrinfo_ipv6_to_ipv4): new method.
+
 Wed Feb  4 21:59:31 2009  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (make_econv_exception): show U+XXXX form for undefined

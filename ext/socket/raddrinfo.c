@@ -1832,6 +1832,39 @@ addrinfo_ipv6_mc_global_p(VALUE self)
     return Qfalse;
 }
 
+/*
+ * Returns IPv4 address of IPv4 mapped/compatible IPv6 address.
+ * It returns nil if +self+ is not IPv4 mapped/compatible IPv6 address.
+ *
+ *   AddrInfo.ip("::192.0.2.3").ipv6_to_ipv4      #=> #<AddrInfo: 192.0.2.3>
+ *   AddrInfo.ip("::ffff:192.0.2.3").ipv6_to_ipv4 #=> #<AddrInfo: 192.0.2.3>
+ *   AddrInfo.ip("::1").ipv6_to_ipv4              #=> nil
+ *   AddrInfo.ip("192.0.2.3").ipv6_to_ipv4        #=> nil
+ *   AddrInfo.unix("/tmp/sock").ipv6_to_ipv4      #=> nil
+ */
+static VALUE
+addrinfo_ipv6_to_ipv4(VALUE self)
+{
+    rb_addrinfo_t *rai = get_addrinfo(self);
+    struct in6_addr *addr;
+    int family = ai_get_afamily(rai);
+    if (family != AF_INET6) return Qnil;
+    addr = &((struct sockaddr_in6 *)&rai->addr)->sin6_addr;
+    if (IN6_IS_ADDR_V4MAPPED(addr) || IN6_IS_ADDR_V4COMPAT(addr)) {
+        struct sockaddr_in sin4;
+        MEMZERO(&sin4, struct sockaddr_in, 1);
+        sin4.sin_family = AF_INET;
+        SET_SIN_LEN(&sin4, sizeof(sin4));
+        memcpy(&sin4.sin_addr, (char*)addr + sizeof(*addr) - sizeof(sin4.sin_addr), sizeof(sin4.sin_addr));
+        return addrinfo_new((struct sockaddr *)&sin4, sizeof(sin4),
+                            PF_INET, rai->socktype, rai->protocol,
+                            rai->canonname, rai->inspectname);
+    }
+    else {
+        return Qnil;
+    }
+}
+
 #endif
 
 #ifdef HAVE_SYS_UN_H
@@ -2107,6 +2140,8 @@ Init_addrinfo(void)
     rb_define_method(rb_cAddrInfo, "ipv6_mc_sitelocal?", addrinfo_ipv6_mc_sitelocal_p, 0);
     rb_define_method(rb_cAddrInfo, "ipv6_mc_orglocal?", addrinfo_ipv6_mc_orglocal_p, 0);
     rb_define_method(rb_cAddrInfo, "ipv6_mc_global?", addrinfo_ipv6_mc_global_p, 0);
+
+    rb_define_method(rb_cAddrInfo, "ipv6_to_ipv4", addrinfo_ipv6_to_ipv4, 0);
 #endif
 
 #ifdef HAVE_SYS_UN_H
