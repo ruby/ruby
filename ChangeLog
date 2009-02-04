@@ -1,3 +1,8 @@
+Thu Feb  5 03:55:22 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (LOCALTIME): should call tzset() before localtime_r().
+	  [ruby-dev:37896]
+
 Thu Feb  5 02:12:35 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 
 	* symbian/configure.bat: Updated Symbain configuration procedure to

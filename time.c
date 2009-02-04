@@ -487,7 +487,7 @@ static VALUE time_get_tm(VALUE, int);
 #define IF_HAVE_GMTIME_R(x) x
 #define ASCTIME(tm, buf) asctime_r(tm, buf)
 #define GMTIME(tm, result) gmtime_r(tm, &result)
-#define LOCALTIME(tm, result) localtime_r(tm, &result)
+#define LOCALTIME(tm, result) (tzset(),localtime_r(tm, &result))
 #else
 #define IF_HAVE_GMTIME_R(x) 	/* nothing */
 #define ASCTIME(tm, buf) asctime(tm)
