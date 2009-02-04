@@ -16,7 +16,7 @@ Tue Feb  3 11:40:05 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 Mon Feb  2 20:49:24 2009  Akinori MUSHA  <knu@iDaemons.org>
 
-	* enumerator.c: Introduce id_each to save rb_itern() and SYM2ID()
+	* enumerator.c: Introduce id_each to save rb_intern() and SYM2ID()
 	  calls.
 
 Sun Feb  1 16:14:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -83,7 +83,7 @@ Fri Jan 23 15:12:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (configuration): leaves PATH_SEPARATOR unchanged.
 
-	* lib/mkmf.rb (configuration): convers srcdir, topdir and hdrdir.
+	* lib/mkmf.rb (configuration): converts srcdir, topdir and hdrdir.
 	  a patch by Alexey Borzenkov <snaury AT gmail.com> at
 	  [ruby-core:21448].
 
@@ -98,7 +98,7 @@ Thu Jan 22 12:19:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Jan 22 11:57:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* gc.c (rb_gc_call_finalizer_at_exit): deffers IO finalization.
+	* gc.c (rb_gc_call_finalizer_at_exit): defers IO finalization.
 	  [ruby-dev:36646]
 
 Thu Jan 22 05:17:06 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
@@ -169,7 +169,7 @@ Mon Jan 12 13:41:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sun Jan 11 20:19:38 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (PercentScanner): remove PercentScanner. fixed % after
-	  %> bug. [ruby-dev:37751] [Bug #997] 
+	  %> bug. [ruby-dev:37751] [Bug #997]
 
 	* test/erb/test_erb.rb: ditto
 
@@ -291,7 +291,7 @@ Thu Dec 18 08:20:51 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 	* lib/xmlrpc/server.rb:  Restricting method inspection to show only
 	  non-inherited public methods.  [ruby-core:20603]
 
-	* lib/xmlrpc/server.rb:  Fixing method inspection so it doesn't 
+	* lib/xmlrpc/server.rb:  Fixing method inspection so it doesn't
 	  trigger XMLRPC::FaultException when used.  [ruby-core:20604]
 
 Wed Dec 17 21:02:55 2008  Akinori MUSHA  <knu@iDaemons.org>
@@ -582,7 +582,7 @@ Sat Nov 15 22:23:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Nov 13 14:51:34 2008  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* shell/command-processor.rb: undefined method `top_level_test' in
-  	  Shell#test. [ruby-list:45634]
+	  Shell#test. [ruby-list:45634]
 
 Wed Nov 12 03:49:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -809,7 +809,7 @@ Tue Sep 23 08:20:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-in-ppss-context-p): ditto.
 
-	* misc/ruby-mode.el (ruby-here-doc-end-syntax): 
+	* misc/ruby-mode.el (ruby-here-doc-end-syntax): ditto.
 
 Fri Sep 19 17:41:56 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
