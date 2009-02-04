@@ -1,3 +1,8 @@
+Wed Feb  4 21:59:31 2009  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (make_econv_exception): show U+XXXX form for undefined
+	  conversion error from UTF-8.
+
 Wed Feb  4 21:57:37 2009  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_dump): use MBCLEN_CHARFOUND_P properly.

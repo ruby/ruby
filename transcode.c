@@ -2009,9 +2009,23 @@ make_econv_exception(rb_econv_t *ec)
     if (ec->last_error.result == econv_undefined_conversion) {
         VALUE bytes = rb_str_new((const char *)ec->last_error.error_bytes_start,
                                  ec->last_error.error_bytes_len);
-        VALUE dumped;
+        VALUE dumped = Qnil;
         int idx;
-        dumped = rb_str_dump(bytes);
+        if (strcmp(ec->last_error.source_encoding, "UTF-8") == 0) {
+            rb_encoding *utf8 = rb_utf8_encoding();
+            const char *start, *end;
+            int n;
+            start = (const char *)ec->last_error.error_bytes_start;
+            end = start + ec->last_error.error_bytes_len;
+            n = rb_enc_precise_mbclen(start, end, utf8);
+            if (MBCLEN_CHARFOUND_P(n) &&
+                MBCLEN_CHARFOUND_LEN(n) == ec->last_error.error_bytes_len) {
+                unsigned int cc = rb_enc_codepoint(start, end, utf8);
+                dumped = rb_sprintf("U+%04X", cc);
+            }
+        }
+        if (dumped == Qnil)
+            dumped = rb_str_dump(bytes);
         mesg = rb_sprintf("%s from %s to %s",
                 StringValueCStr(dumped),
                 ec->last_error.source_encoding,
