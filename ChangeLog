@@ -1,3 +1,14 @@
+Thu Feb  5 02:12:35 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
+
+	* symbian/configure.bat: Updated Symbain configuration procedure to
+	  avoid creating files outside build directory
+
+	* symbian/pre-build: ditto
+
+	* symbian/setup: ditto
+
+	* symbian/rubyu.def: removed
+
 Thu Feb  5 01:44:02 2009  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (make_econv_exception): refine error message for
