@@ -480,7 +480,15 @@ class TestSocketAddrInfo < Test::Unit::TestCase
       list.each {|meth, *addrs|
         addrs.each {|addr|
           addr_exp = "AddrInfo.getaddrinfo(#{addr.inspect}, nil, :INET6, :DGRAM).fetch(0)"
-          assert(ipv6(addr).send(meth), "#{addr_exp}.#{meth}")
+	  if meth == :ipv6_v4compat? || meth == :ipv6_v4mapped?
+	    # MacOS X returns IPv4 address for ::ffff:1.2.3.4 and ::1.2.3.4.
+            # Solaris returns IPv4 address for ::ffff:1.2.3.4.
+	    ai = ipv6(addr)
+	    assert(ai.ipv4? || ai.send(meth), "ai=#{addr_exp}; ai.ipv4? || .#{meth}")
+	  else
+	    assert(ipv6(addr).send(meth), "#{addr_exp}.#{meth}")
+            assert_equal(addr, ipv6(addr).ip_address)
+	  end
           list.each {|meth2,|
             next if meth == meth2
             assert(!ipv6(addr).send(meth2), "!#{addr_exp}.#{meth2}")
