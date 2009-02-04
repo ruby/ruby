@@ -150,7 +150,7 @@ Mon Feb  2 21:04:13 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Feb  2 20:49:24 2009  Akinori MUSHA  <knu@iDaemons.org>
 
-	* enumerator.c: Introduce id_each to save rb_itern() and SYM2ID()
+	* enumerator.c: Introduce id_each to save rb_intern() and SYM2ID()
 	  calls.
 
 Mon Feb  2 19:55:51 2009  Tanaka Akira  <akr@fsij.org>
@@ -409,9 +409,9 @@ Fri Jan 30 18:04:23 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 Fri Jan 30 16:12:32 2009  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/curses/curses.c (Init_curses): Curses#crmode and
-	  Curses#nocrmode changes to the module function. 
+	  Curses#nocrmode changes to the module function.
 	  fix #916
-	
+
 Fri Jan 30 14:31:14 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/make-snapshot (prereq): remove enc.mk from tarball because
@@ -562,7 +562,7 @@ Tue Jan 27 04:02:53 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue Jan 27 03:43:34 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_any_hash): fixed performance issues with nil, true,
-	  false as hash keys.  a patch from Matthias Waechter.  
+	  false as hash keys.  a patch from Matthias Waechter.
 	  [ruby-core:21568]
 
 Tue Jan 27 03:23:43 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -902,7 +902,7 @@ Mon Jan 19 11:27:39 2009  Koichi Sasada  <ko1@atdot.net>
 	  vm_stack_to_heap(), vm_make_proc(), vm_invoke_proc(),
 	  vm_get_sourceline(), vm_cref(), vm_localjump_error(),
 	  vm_make_jump_tag_but_local_jump(), vm_jump_tag_but_local_jump().
-  	  This changes may affect only core because most of renamed functions
+	  This changes may affect only core because most of renamed functions
 	  require a pointer of not-exposed struct such as rb_thread_t or NODE.
 	  In short, they are core functions.
 
@@ -961,7 +961,7 @@ Mon Jan 19 09:53:43 2009  Koichi Sasada  <ko1@atdot.net>
 	* iseq.c, compile.c: remove ruby_insn_make_insn_table() and make
 	  static function insn_make_insn_table().
 
-	* iseq.h, ruby.c, vm.c, vm_core.h, vm_eval.c, vm_dump.c, 
+	* iseq.h, ruby.c, vm.c, vm_core.h, vm_eval.c, vm_dump.c,
 	  blockinlining.c: ditto.
 	  Rename strange "ruby_" prefix to "rb_" prefix.
 	  This changes may affect only core because renamed functions
