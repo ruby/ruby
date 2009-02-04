@@ -1,3 +1,8 @@
+Thu Feb  5 01:44:02 2009  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (make_econv_exception): refine error message for
+	  undefined conversion.  [ruby-core:21828]
+
 Thu Feb  5 01:18:25 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (sock_s_socketpair): make 3rd argument optional.

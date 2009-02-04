@@ -2026,17 +2026,27 @@ make_econv_exception(rb_econv_t *ec)
         }
         if (dumped == Qnil)
             dumped = rb_str_dump(bytes);
-        mesg = rb_sprintf("%s from %s to %s",
-                StringValueCStr(dumped),
-                ec->last_error.source_encoding,
-                ec->last_error.destination_encoding);
         if (strcmp(ec->last_error.source_encoding,
-                   ec->source_encoding_name) != 0 ||
+                   ec->source_encoding_name) == 0 &&
             strcmp(ec->last_error.destination_encoding,
-                   ec->destination_encoding_name) != 0) {
-            rb_str_catf(mesg, " in conversion from %s to %s",
-                        ec->source_encoding_name,
-                        ec->destination_encoding_name);
+                   ec->destination_encoding_name) == 0) {
+            mesg = rb_sprintf("%s from %s to %s",
+                    StringValueCStr(dumped),
+                    ec->last_error.source_encoding,
+                    ec->last_error.destination_encoding);
+        }
+        else {
+            int i;
+            mesg = rb_sprintf("%s to %s in conversion from %s",
+                    StringValueCStr(dumped),
+                    ec->last_error.destination_encoding,
+                    ec->source_encoding_name);
+            for (i = 0; i < ec->num_trans; i++) {
+                const rb_transcoder *tr = ec->elems[i].tc->transcoder;
+                if (!DECORATOR_P(tr->src_encoding, tr->dst_encoding))
+                    rb_str_catf(mesg, " to %s",
+                                ec->elems[i].tc->transcoder->dst_encoding);
+            }
         }
         exc = rb_exc_new3(rb_eUndefinedConversionError, mesg);
         idx = rb_enc_find_index(ec->last_error.source_encoding);
