@@ -186,7 +186,7 @@ define bld_inf
 @echo>$(1) PRJ_PLATFORMS
 @echo>>$(1) GCCE $(2)
 @echo>>$(1) PRJ_MMPFILES
-@echo>>$(1) gnumakefile pre-build.mk
+@echo>>$(1) gnumakefile ..\pre-build.mk
 @echo>>$(1) ruby.mmp
 @if not "$(EXT_LIST)" == "" for %%f in ($(EXT_LIST)) do echo>>$(1) %%f.mmp
 endef
@@ -208,24 +208,24 @@ define ruby_mmp
 @echo>>$(1) CAPABILITY LocalServices NetworkServices ReadUserData UserEnvironment WriteUserData
 
 
-@echo>>$(1) USERINCLUDE $(subst /,\,$(arch_hdrdir))
-@echo>>$(1) USERINCLUDE .
-@echo>>$(1) USERINCLUDE $(subst /,\,$(srcdir))
-@echo>>$(1) USERINCLUDE $(subst /,\,$(hdrdir))
-@echo>>$(1) USERINCLUDE $(subst /,\,$(hdrdir))\ruby
-@echo>>$(1) USERINCLUDE $(subst /,\,$(srcdir))\missing
+@echo>>$(1) USERINCLUDE ..\$(subst /,\,$(arch_hdrdir))
+@echo>>$(1) USERINCLUDE ..
+@echo>>$(1) USERINCLUDE ..\$(subst /,\,$(srcdir))
+@echo>>$(1) USERINCLUDE ..\$(subst /,\,$(hdrdir))
+@echo>>$(1) USERINCLUDE ..\$(subst /,\,$(hdrdir))\ruby
+@echo>>$(1) USERINCLUDE ..\$(subst /,\,$(srcdir))\missing
 
-@echo>>$(1) SYSTEMINCLUDE $(subst /,\,$(arch_hdrdir))
-@echo>>$(1) SYSTEMINCLUDE .
-@echo>>$(1) SYSTEMINCLUDE $(subst /,\,$(srcdir))
-@echo>>$(1) SYSTEMINCLUDE $(subst /,\,$(hdrdir))
-@echo>>$(1) SYSTEMINCLUDE $(subst /,\,$(hdrdir))\ruby
-@echo>>$(1) SYSTEMINCLUDE $(subst /,\,$(srcdir))\missing
+@echo>>$(1) SYSTEMINCLUDE ..\$(subst /,\,$(arch_hdrdir))
+@echo>>$(1) SYSTEMINCLUDE ..
+@echo>>$(1) SYSTEMINCLUDE ..\$(subst /,\,$(srcdir))
+@echo>>$(1) SYSTEMINCLUDE ..\$(subst /,\,$(hdrdir))
+@echo>>$(1) SYSTEMINCLUDE ..\$(subst /,\,$(hdrdir))\ruby
+@echo>>$(1) SYSTEMINCLUDE ..\$(subst /,\,$(srcdir))\missing
 
 @echo>>$(1) SYSTEMINCLUDE \epoc32\include
 @echo>>$(1) SYSTEMINCLUDE \epoc32\include\stdapis
 
-@echo>>$(1) SOURCEPATH $(subst /,\,$(srcdir))
+@echo>>$(1) SOURCEPATH ..\$(subst /,\,$(srcdir))
 @echo>>$(1) SOURCE array.c
 @echo>>$(1) SOURCE bignum.c
 @echo>>$(1) SOURCE blockinlining.c
@@ -285,20 +285,19 @@ define ruby_mmp
 @echo>>$(1) SOURCE strftime.c
 @echo>>$(1) SOURCE complex.c
 
-@echo>>$(1) SOURCEPATH $(subst /,\,$(srcdir))\missing
-@echo>>$(1) SOURCE vsnprintf.c
+@echo>>$(1) SOURCEPATH ..\$(subst /,\,$(srcdir))\missing
 @echo>>$(1) SOURCE alloca.c
 @echo>>$(1) SOURCE crypt.c
 @echo>>$(1) SOURCE tgamma.c
 @echo>>$(1) SOURCE flock.c
 
-@echo>>$(1) SOURCEPATH $(subst /,\,$(srcdir))\enc
+@echo>>$(1) SOURCEPATH ..\$(subst /,\,$(srcdir))\enc
 @echo>>$(1) SOURCE ascii.c
 @echo>>$(1) SOURCE unicode.c
 @echo>>$(1) SOURCE utf_8.c
 @echo>>$(1) SOURCE us_ascii.c
 
-@echo>>$(1) SOURCEPATH .
+@echo>>$(1) SOURCEPATH ..
 @echo>>$(1) SOURCE miniprelude.c
 @echo>>$(1) SOURCE parse.c
 @echo>>$(1) SOURCE newline.c
@@ -318,45 +317,43 @@ define ruby_mmp
 @echo>>$(1) EPOCHEAPSIZE $(3) $(4)
 
 @if "$(EXTSTATIC)" == "" echo>>$(1) OPTION GCCE -fvisibility=default
-@if "$(EXTSTATIC)" == "" echo>>$(1) DEFFILE .\Ruby.def
 endef
 
 define ext_mmp
-@echo>$(1).mmp TARGET $(1).dll
-@echo>>$(1).mmp TARGETTYPE DLL
-@echo>>$(1).mmp UID 0x10004262 $(2)
-@echo>>$(1).mmp VENDORID 0
-@echo>>$(1).mmp SECUREID $(2)
-@echo>>$(1).mmp CAPABILITY LocalServices NetworkServices ReadUserData UserEnvironment WriteUserData
+@echo>$(1)$(2).mmp TARGET $(2).dll
+@echo>>$(1)$(2).mmp TARGETTYPE DLL
+@echo>>$(1)$(2).mmp UID 0x10004262 $(3)
+@echo>>$(1)$(2).mmp VENDORID 0
+@echo>>$(1)$(2).mmp SECUREID $(3)
+@echo>>$(1)$(2).mmp CAPABILITY LocalServices NetworkServices ReadUserData UserEnvironment WriteUserData
 
-@echo>>$(1).mmp USERINCLUDE $(subst /,\,$(arch_hdrdir))
-@echo>>$(1).mmp USERINCLUDE $(subst /,\,$(srcdir))
-@echo>>$(1).mmp USERINCLUDE $(subst /,\,$(hdrdir))
-@echo>>$(1).mmp USERINCLUDE $(subst /,\,$(hdrdir))\ruby
-@echo>>$(1).mmp USERINCLUDE $(subst /,\,$(srcdir))\missing
+@echo>>$(1)$(2).mmp USERINCLUDE ..\$(subst /,\,$(arch_hdrdir))
+@echo>>$(1)$(2).mmp USERINCLUDE ..\$(subst /,\,$(srcdir))
+@echo>>$(1)$(2).mmp USERINCLUDE ..\$(subst /,\,$(hdrdir))
+@echo>>$(1)$(2).mmp USERINCLUDE ..\$(subst /,\,$(hdrdir))\ruby
+@echo>>$(1)$(2).mmp USERINCLUDE ..\$(subst /,\,$(srcdir))\missing
 
-@echo>>$(1).mmp SYSTEMINCLUDE $(subst /,\,$(arch_hdrdir))
-@echo>>$(1).mmp SYSTEMINCLUDE $(subst /,\,$(srcdir))
-@echo>>$(1).mmp SYSTEMINCLUDE $(subst /,\,$(hdrdir))
-@echo>>$(1).mmp SYSTEMINCLUDE $(subst /,\,$(hdrdir))\ruby
-@echo>>$(1).mmp SYSTEMINCLUDE $(subst /,\,$(srcdir))\missing
+@echo>>$(1)$(2).mmp SYSTEMINCLUDE ..\$(subst /,\,$(arch_hdrdir))
+@echo>>$(1)$(2).mmp SYSTEMINCLUDE ..\$(subst /,\,$(srcdir))
+@echo>>$(1)$(2).mmp SYSTEMINCLUDE ..\$(subst /,\,$(hdrdir))
+@echo>>$(1)$(2).mmp SYSTEMINCLUDE ..\$(subst /,\,$(hdrdir))\ruby
+@echo>>$(1)$(2).mmp SYSTEMINCLUDE ..\$(subst /,\,$(srcdir))\missing
 
-@echo>>$(1).mmp SYSTEMINCLUDE \epoc32\include\stdapis
+@echo>>$(1)$(2).mmp SYSTEMINCLUDE \epoc32\include\stdapis
 
-@echo>>$(1).mmp SOURCEPATH $(subst /,\,$(srcdir))\ext\$(1)
-@echo>>$(1).mmp SOURCE $(1).c $(3)
+@echo>>$(1)$(2).mmp SOURCEPATH ..\$(subst /,\,$(srcdir))\ext\$(2)
+@echo>>$(1)$(2).mmp SOURCE $(2).c $(4)
 
-@echo>>$(1).mmp LIBRARY euser.lib
-@echo>>$(1).mmp LIBRARY libc.lib $(4)
-@echo>>$(1).mmp LIBRARY Ruby.lib
+@echo>>$(1)$(2).mmp LIBRARY euser.lib
+@echo>>$(1)$(2).mmp LIBRARY libc.lib $(5)
+@echo>>$(1)$(2).mmp LIBRARY Ruby.lib
 
-@echo>>$(1).mmp OPTION GCCE -fvisibility=default
-@echo>>$(1).mmp DEFFILE .\$(1).def
+@echo>>$(1)$(2).mmp OPTION GCCE -fvisibility=default
 endef
 
 define ext_def
-@echo>$(1)u.def EXPORTS
-@echo>>$(1)u.def ^	Init_$(1) @ 1 NONAME
+@echo>$(1)$(2)u.def EXPORTS
+@echo>>$(1)$(2)u.def ^	Init_$(2) @ 1 NONAME
 endef
 
 define ruby_pkg
@@ -377,28 +374,17 @@ endef
 
 
 define ext_pkg
-@echo>ruby_$(1).pkg ^&EN
-
-@echo>>ruby_$(1).pkg #{"Ruby Extension: $(1)"},($(2)),$(MAJOR),$(MINOR),$(TEENY)
-
-@echo>>ruby_$(1).pkg %%{"Symbian Research"}
-
-@echo>>ruby_$(1).pkg :"Symbian Research"
-
-@echo>>ruby_$(1).pkg ($(RUBY_UID)), 1, 9, 1, {"Ruby Core"}
-
-@echo>>ruby_$(1).pkg [0x101F7961], 0, 0, 0, {"S60ProductID"}
-
-@echo>>ruby_$(1).pkg "$(EPOCROOT)epoc32\release\gcce\urel\$(1).dll"-"!:\sys\bin\$(1).dll"
-@echo>>ruby_$(1).pkg "$(EPOCROOT)epoc32\release\gcce\urel\$(1).dll"-"!:\Data\Ruby\$(MAJOR).$(MINOR).$(TEENY)\$(arch)\$(1).dll"
+@echo>>$(1) "$(EPOCROOT)epoc32\release\gcce\urel\$(2).dll"-"!:\sys\bin\$(2).dll"
+@echo>>$(1) "$(EPOCROOT)epoc32\release\gcce\urel\$(2).dll"-"!:\Data\Ruby\$(MAJOR).$(MINOR).$(TEENY)\$(arch)\$(2).dll"
 endef
 
-define ext_bigdecimal_pkg_lib_append
-@echo>>ruby_bigdecimal.pkg "$(subst /,\,$(srcdir))\ext\bigdecimal\lib\bigdecimal\jacobian.rb"-"!:\Data\Ruby\lib\bigdecimal\jacobian.rb"
-@echo>>ruby_bigdecimal.pkg "$(subst /,\,$(srcdir))\ext\bigdecimal\lib\bigdecimal\ludcmp.rb"-"!:\Data\Ruby\lib\bigdecimal\ludcmp.rb"
-@echo>>ruby_bigdecimal.pkg "$(subst /,\,$(srcdir))\ext\bigdecimal\lib\bigdecimal\math.rb"-"!:\Data\Ruby\lib\bigdecimal\math.rb"
-@echo>>ruby_bigdecimal.pkg "$(subst /,\,$(srcdir))\ext\bigdecimal\lib\bigdecimal\newton.rb"-"!:\Data\Ruby\lib\bigdecimal\newton.rb"
-@echo>>ruby_bigdecimal.pkg "$(subst /,\,$(srcdir))\ext\bigdecimal\lib\bigdecimal\util.rb"-"!:\Data\Ruby\lib\bigdecimal\util.rb"
+define ext_bigdecimal
+$(call ext_pkg,$(1),bigdecimal)
+@echo>>$(1) "..\$(subst /,\,$(srcdir))\ext\bigdecimal\lib\bigdecimal\jacobian.rb"-"!:\Data\Ruby\lib\bigdecimal\jacobian.rb"
+@echo>>$(1) "..\$(subst /,\,$(srcdir))\ext\bigdecimal\lib\bigdecimal\ludcmp.rb"-"!:\Data\Ruby\lib\bigdecimal\ludcmp.rb"
+@echo>>$(1) "..\$(subst /,\,$(srcdir))\ext\bigdecimal\lib\bigdecimal\math.rb"-"!:\Data\Ruby\lib\bigdecimal\math.rb"
+@echo>>$(1) "..\$(subst /,\,$(srcdir))\ext\bigdecimal\lib\bigdecimal\newton.rb"-"!:\Data\Ruby\lib\bigdecimal\newton.rb"
+@echo>>$(1) "..\$(subst /,\,$(srcdir))\ext\bigdecimal\lib\bigdecimal\util.rb"-"!:\Data\Ruby\lib\bigdecimal\util.rb"
 endef
 
 EPOCROOT := $(addsuffix \,$(word 3,$(shell devices -info @$(word 3,$(shell devices -default)) | find "Root")))
@@ -407,10 +393,12 @@ ifndef SIGNED
 RUBY_UID=0xA0001BC6
 STRINGIO_UID=0xA0001BC7
 BIGDECIMAL_UID=0xA0001BC8
+ZLIB_UID=0xA0001BCB
 else
 RUBY_UID=0x200205CC
 STRINGIO_UID=0x200205CD
 BIGDECIMAL_UID=0x200205CE
+ZLIB_UID=0x200205D0
 endif
 
 

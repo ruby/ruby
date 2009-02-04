@@ -1,8 +1,8 @@
 YACC = bison
-IFCHANGE = $(COMSPEC) /c $(srcdir)\win32\ifchange.bat
+IFCHANGE = cmd /C $(srcdir)\win32\ifchange.bat
 RM = del
-MV = $(COMSPEC) /c move
-VCS=svn
+MV = cmd /C move
+VCS = svn
 
 
 parse.c: $(srcdir)\parse.y $(srcdir)\tool\ytab.sed
@@ -48,6 +48,9 @@ newline.c:
 miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
+$(srcdir)/ext/socket/constants.h: $(srcdir)/ext/socket/mkconstants.rb
+	$(BASERUBY) $(srcdir)/ext/socket/mkconstants.rb >$@
+
 
 
 $(srcdir)/revision.h: $(srcdir)/version.h $(srcdir)/ChangeLog
@@ -63,10 +66,12 @@ srcs: parse.c newline.c lex.c miniprelude.c
 lex.c: $(srcdir)\lex.c.blt
 	copy $(?:/=\) $@
 
-MAKMAKE: incs srcs
+socket_const: $(srcdir)/ext/socket/constants.h
+
+MAKMAKE: incs srcs socket_const
 
 CLEAN :
-	del $(INSNS) node_name.inc known_errors.inc $(srcdir)\revision.h
+	del $(INSNS) node_name.inc known_errors.inc
 	$(RM) parse.c parse.h newline.c lex.c miniprelude.c
 
 BLD LIB CLEANLIB RESOURCE FREEZE SAVESPACE RELEASABLES FINAL :

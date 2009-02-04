@@ -9,17 +9,17 @@
     Note: if you want to build dynamic extensions support you need to install the latest version of GCC compiler from http://www.codesourcery.com/gnu_toolchains/arm/portal/release643. After that you need to apply a patch below to a header file (SDK_ROOT)\epoc32\include\gcce\gcce.h
 
 11c11
-< 
+<
 ---
 > @released
 18a19
-> 
+>
 21a23
-> 
+>
 24a27,29
-> #define IMPORT_D __declspec(dllimport) 
+> #define IMPORT_D __declspec(dllimport)
 > #define EXPORT_D __declspec(dllexport)
-> 
+>
 81,82c86,87
 < #define __NAKED__ __asm
 < #define ____ONLY_USE_NAKED_IN_CIA____ __asm
@@ -30,7 +30,7 @@
 <     namespace std {
 <         extern "C" {
 < #endif  /* __cplusplus */
-< 
+<
 < typedef struct __va_list { void *__ap; } va_list;
 ---
 >     namespace std { extern "C" {
@@ -44,7 +44,7 @@
 100,102c107
 < 	}  /* extern "C" */
 <     }  /* namespace std */
-< 
+<
 ---
 > 	} }
 105a111
@@ -52,7 +52,7 @@
 107,109c113,119
 < #define va_arg(ap, type) __builtin_va_arg(ap.__ap, type)
 < #define va_end(ap) __builtin_va_end(ap.__ap)
-< 
+<
 ---
 > #define va_arg(ap, type)    __builtin_va_arg(ap.__ap, type)
 > #define va_end(ap)          __builtin_va_end(ap.__ap)
@@ -69,7 +69,7 @@
 > 	#include "../symcpp.h"
 > #endif
 151a163
-> 
+>
 
 
 (2) If you want to build from SVN source, following command line binaries are required that are not a part of Symbain SDK.
@@ -81,13 +81,15 @@
 
 (1) Execute symbian\configure.bat on your build directory (symbian is default).
 
-(3) Run `bldmake bldfiles'
+(2) Run the following commands from symbian\group directory
+     'bldmake bldfiles'
+     'abld makefile gcce'
+     'abld build gcce urel ruby'
+     'abld freeze gcce ruby'
+     'abld build gcce urel'
 
-(4) Run `abld build gcce urel'
-
-(5) Run `makesis ruby.pkg'
-
-    This command will create unsigned installation file ruby.sis. To sign it follow the guidlines from www.symbiansigned.com
+(3) Run `makesis ruby.pkg' from symbian\sis directory
+     This command will create unsigned installation file ruby.sis. To sign it follow the guidlines from www.symbiansigned.com
 
 == Known problems
 
