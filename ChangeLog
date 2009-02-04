@@ -1,3 +1,7 @@
+Wed Feb  4 21:57:37 2009  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_dump): use MBCLEN_CHARFOUND_P properly.
+
 Wed Feb  4 21:55:38 2009  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb: refine success message.

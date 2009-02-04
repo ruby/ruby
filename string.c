@@ -4186,12 +4186,12 @@ rb_str_dump(VALUE str)
 	    else {
 		if (u8) {	/* \u{NN} */
 		    char buf[32];
-		    int n = rb_enc_precise_mbclen(p-1, pend, enc) - 1;
+		    int n = rb_enc_precise_mbclen(p-1, pend, enc);
 		    if (MBCLEN_CHARFOUND_P(n)) {
 			int cc = rb_enc_codepoint(p-1, pend, enc);
 			sprintf(buf, "%x", cc);
 			len += strlen(buf)+4;
-			p += n;
+			p += MBCLEN_CHARFOUND_LEN(n)-1;
 			break;
 		    }
 		}
