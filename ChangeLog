@@ -1,3 +1,8 @@
+Wed Feb  4 11:45:06 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/mkexports.rb: shouldn't export DllMain.
+	  reported at http://pc11.2ch.net/test/read.cgi/tech/1233686068/21
+
 Wed Feb  4 10:12:05 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* missing/vsnprintf.c (BSD_vfprintf): should support 't' format
