@@ -50,7 +50,7 @@ goto :loop
 :help
   echo Configuration:
   echo   --help                    display this help
-  echo   --srcdir=DIR              find the sources in DIR [configure dir or ..']
+  echo   --srcdir=DIR              find the sources in DIR [configure dir or ..]
   echo System types:
   echo   --target=TARGET           configure for TARGET [arm-symbianelf]
   echo Optional Package:
@@ -86,25 +86,32 @@ echo>> ~tmp~.mak arch_hdrdir = $(EXTOUT)/include/$(arch)
 echo>> ~tmp~.mak hdrdir = $(srcdir)/include
 
 echo>> ~tmp~.mak ifndef EXTSTATIC
-echo>> ~tmp~.mak EXT_LIST=stringio bigdecimal
+echo>> ~tmp~.mak EXT_LIST=stringio bigdecimal zlib
 echo>> ~tmp~.mak endif
 
 echo>> ~tmp~.mak all:
 echo>> ~tmp~.mak ^	@if not exist $(subst /,\,$(arch_hdrdir))\ruby\nul md $(subst /,\,$(arch_hdrdir)\ruby)
 echo>> ~tmp~.mak ^	$(call config_h,$(subst /,\,$(arch_hdrdir))\ruby\config.h)
-echo>> ~tmp~.mak ^	$(call ruby_mmp,ruby.mmp,64000,2000000,16000000)
-echo>> ~tmp~.mak ifndef EXTSTATIC
-echo>> ~tmp~.mak ^	$(call ext_mmp,stringio,$(STRINGIO_UID))
-echo>> ~tmp~.mak ^	$(call ext_def,stringio)
-echo>> ~tmp~.mak ^	$(call ext_pkg,stringio,$(STRINGIO_UID))
-echo>> ~tmp~.mak ^	$(call ext_mmp,bigdecimal,$(BIGDECIMAL_UID),,libm.lib)
-echo>> ~tmp~.mak ^	$(call ext_def,bigdecimal)
-echo>> ~tmp~.mak ^	$(call ext_pkg,bigdecimal,$(BIGDECIMAL_UID))
-echo>> ~tmp~.mak ^	$(ext_bigdecimal_pkg_lib_append)
-echo>> ~tmp~.mak endif
+echo>> ~tmp~.mak ^	@if not exist group\nul md group
 echo>> ~tmp~.mak ^	$(call pre_build_mk,pre-build.mk)
-echo>> ~tmp~.mak ^	$(call bld_inf,bld.inf)
-echo>> ~tmp~.mak ^	$(call ruby_pkg,ruby.pkg)
+echo>> ~tmp~.mak ^	$(call bld_inf,group\bld.inf)
+echo>> ~tmp~.mak ^	$(call ruby_mmp,group\ruby.mmp,64000,2000000,16000000)
+echo>> ~tmp~.mak ifndef EXTSTATIC
+echo>> ~tmp~.mak ^	$(call ext_mmp,group\,stringio,$(STRINGIO_UID))
+echo>> ~tmp~.mak ^	$(call ext_mmp,group\,bigdecimal,$(BIGDECIMAL_UID),,libm.lib)
+echo>> ~tmp~.mak ^	$(call ext_mmp,group\,zlib,$(ZLIB_UID),,libz.lib)
+echo>> ~tmp~.mak endif
+echo>> ~tmp~.mak ^	@if not exist sis\nul md sis
+echo>> ~tmp~.mak ^	$(call ruby_pkg,sis\ruby.pkg)
+echo>> ~tmp~.mak ifndef EXTSTATIC
+echo>> ~tmp~.mak ^	$(call ext_bigdecimal,sis\ruby.pkg)
+echo>> ~tmp~.mak ^	$(call ext_pkg,sis\ruby.pkg,stringio)
+echo>> ~tmp~.mak ^	$(call ext_pkg,sis\ruby.pkg,zlib)
+echo>> ~tmp~.mak ^	@if not exist eabi\nul md eabi
+echo>> ~tmp~.mak ^	$(call ext_def,eabi\,stringio)
+echo>> ~tmp~.mak ^	$(call ext_def,eabi\,bigdecimal)
+echo>> ~tmp~.mak ^	$(call ext_def,eabi\,zlib)
+echo>> ~tmp~.mak endif
 
 echo>> ~tmp~.mak include setup
 
