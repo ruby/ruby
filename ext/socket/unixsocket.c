@@ -463,6 +463,7 @@ unix_s_socketpair(int argc, VALUE *argv, VALUE klass)
 {
     VALUE domain, type, protocol;
     domain = INT2FIX(PF_UNIX);
+    VALUE args[3];
 
     rb_scan_args(argc, argv, "02", &type, &protocol);
     if (argc == 0)
@@ -470,7 +471,11 @@ unix_s_socketpair(int argc, VALUE *argv, VALUE klass)
     if (argc <= 1)
 	protocol = INT2FIX(0);
 
-    return sock_s_socketpair(klass, domain, type, protocol);
+    args[0] = domain;
+    args[1] = type;
+    args[2] = protocol;
+
+    return sock_s_socketpair(3, args, klass);
 }
 #endif
 

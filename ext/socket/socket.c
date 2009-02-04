@@ -97,12 +97,17 @@ pair_yield(VALUE pair)
  *
  */
 VALUE
-sock_s_socketpair(VALUE klass, VALUE domain, VALUE type, VALUE protocol)
+sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
 {
 #if defined HAVE_SOCKETPAIR
+    VALUE domain, type, protocol;
     int d, t, p, sp[2];
     int ret;
     VALUE s1, s2, r;
+
+    rb_scan_args(argc, argv, "21", &domain, &type, &protocol);
+    if (NIL_P(protocol))
+        protocol = INT2FIX(0);
 
     setup_domain_and_type(domain, &d, type, &t);
     p = NUM2INT(protocol);
@@ -1760,8 +1765,8 @@ Init_socket()
     rb_define_method(rb_cSocket, "recvfrom", sock_recvfrom, -1);
     rb_define_method(rb_cSocket, "recvfrom_nonblock", sock_recvfrom_nonblock, -1);
 
-    rb_define_singleton_method(rb_cSocket, "socketpair", sock_s_socketpair, 3);
-    rb_define_singleton_method(rb_cSocket, "pair", sock_s_socketpair, 3);
+    rb_define_singleton_method(rb_cSocket, "socketpair", sock_s_socketpair, -1);
+    rb_define_singleton_method(rb_cSocket, "pair", sock_s_socketpair, -1);
     rb_define_singleton_method(rb_cSocket, "gethostname", sock_gethostname, 0);
     rb_define_singleton_method(rb_cSocket, "gethostbyname", sock_s_gethostbyname, 1);
     rb_define_singleton_method(rb_cSocket, "gethostbyaddr", sock_s_gethostbyaddr, -1);

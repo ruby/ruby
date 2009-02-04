@@ -1,3 +1,12 @@
+Thu Feb  5 01:18:25 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (sock_s_socketpair): make 3rd argument optional.
+
+	* ext/socket/unixsocket.c (unix_s_socketpair): follow the above
+	  change.
+
+	* ext/socket/rubysocket.h (sock_s_socketpair): ditto.
+
 Thu Feb  5 00:09:39 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (addrinfo_ipv6_to_ipv4): new method.

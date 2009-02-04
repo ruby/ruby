@@ -212,7 +212,7 @@ VALUE unixaddr(struct sockaddr_un *sockaddr, socklen_t len);
 
 int ruby_socket(int domain, int type, int proto);
 VALUE init_sock(VALUE sock, int fd);
-VALUE sock_s_socketpair(VALUE klass, VALUE domain, VALUE type, VALUE protocol);
+VALUE sock_s_socketpair(int argc, VALUE *argv, VALUE klass);
 VALUE init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type);
 VALUE init_unixsock(VALUE sock, VALUE path, int server);
 
