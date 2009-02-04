@@ -1405,7 +1405,7 @@ rb_ary_join(ary, sep)
 	  case T_STRING:
 	    break;
 	  case T_ARRAY:
-	    if (rb_inspecting_p(tmp)) {
+	    if (tmp == ary || rb_inspecting_p(tmp)) {
 		tmp = rb_str_new2("[...]");
 	    }
 	    else {
