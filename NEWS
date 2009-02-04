@@ -112,6 +112,7 @@ with all sufficient information, see the ChangeLog file.
 
   * extended methods:
     * Socket.new's 3rd argument is optional now.
+    * Socket.pair's 3rd argument is optional now.
     * Socket.pair and UNIXSocket.pair can take a block.
     * BasicSocket#send, UDPSocket#send, Socket.getnameinfo, Socket#bind, and
       Socket#{connect,connect_nonblock} accepts an AddrInfo object as sockaddr.
