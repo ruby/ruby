@@ -1,3 +1,7 @@
+Wed Feb  4 19:10:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (id.h): updates from parse.h.
+
 Wed Feb  4 11:45:06 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/mkexports.rb: shouldn't export DllMain.

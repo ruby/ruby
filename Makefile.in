@@ -186,6 +186,11 @@ config.status:	$(srcdir)/configure $(srcdir)/enc/Makefile.in
 $(srcdir)/configure: $(srcdir)/configure.in
 		cd $(srcdir) && $(AUTOCONF)
 
+incs: id.h
+id.h: parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
+	$(BASERUBY) $(srcdir)/tool/generic_erb.rb --if-change --output=$@ \
+		$(srcdir)/template/id.h.tmpl --vpath=$(VPATH) parse.h
+
 # Things which should be considered:
 # * with gperf v.s. without gperf
 # * ./configure v.s. ../ruby/configure
