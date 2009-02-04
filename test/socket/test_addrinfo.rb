@@ -4,9 +4,10 @@ rescue LoadError
 end
 
 require "test/unit"
-require "tempfile"
 
 class TestSocketAddrInfo < Test::Unit::TestCase
+  HAS_UNIXSOCKET = defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM
+
   def test_addrinfo_ip
     ai = AddrInfo.ip("127.0.0.1")
     assert_equal([0, "127.0.0.1"], Socket.unpack_sockaddr_in(ai))
@@ -512,9 +513,22 @@ class TestSocketAddrInfo < Test::Unit::TestCase
       }
     end
 
+    def test_ipv6_to_ipv4
+      ai = AddrInfo.ip("::192.0.2.3").ipv6_to_ipv4
+      assert(ai.ipv4?)
+      assert_equal("192.0.2.3", ai.ip_address)
+      ai = AddrInfo.ip("::ffff:192.0.2.3").ipv6_to_ipv4
+      assert(ai.ipv4?)
+      assert_equal("192.0.2.3", ai.ip_address)
+      assert_nil(AddrInfo.ip("::1").ipv6_to_ipv4)
+      assert_nil(AddrInfo.ip("192.0.2.3").ipv6_to_ipv4)
+      if HAS_UNIXSOCKET
+        assert_nil(AddrInfo.unix("/tmp/sock").ipv6_to_ipv4)
+      end
+    end
   end
 
-  if defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM
+  if HAS_UNIXSOCKET
 
     def test_addrinfo_unix
       ai = AddrInfo.unix("/tmp/sock")
