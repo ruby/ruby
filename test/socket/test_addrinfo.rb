@@ -514,12 +514,16 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     end
 
     def test_ipv6_to_ipv4
-      ai = AddrInfo.ip("::192.0.2.3").ipv6_to_ipv4
+      ai = AddrInfo.ip("::192.0.2.3")
+      ai = ai.ipv6_to_ipv4 if !ai.ipv4?
       assert(ai.ipv4?)
       assert_equal("192.0.2.3", ai.ip_address)
-      ai = AddrInfo.ip("::ffff:192.0.2.3").ipv6_to_ipv4
+
+      ai = AddrInfo.ip("::ffff:192.0.2.3")
+      ai = ai.ipv6_to_ipv4 if !ai.ipv4?
       assert(ai.ipv4?)
       assert_equal("192.0.2.3", ai.ip_address)
+
       assert_nil(AddrInfo.ip("::1").ipv6_to_ipv4)
       assert_nil(AddrInfo.ip("192.0.2.3").ipv6_to_ipv4)
       if HAS_UNIXSOCKET
