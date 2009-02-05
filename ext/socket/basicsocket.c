@@ -359,12 +359,12 @@ bsock_getpeername(VALUE sock)
  * call-seq:
  *   bsock.local_address => addrinfo
  *
- * Returns an AddrInfo object for local address obtained by getsockname.
+ * Returns an Addrinfo object for local address obtained by getsockname.
  *
  * Note that addrinfo.protocol is filled by 0.
  *
  *   TCPServer.open("127.0.0.1", 1512) {|serv|
- *     p serv.local_address #=> #<AddrInfo: 127.0.0.1:1512 TCP>
+ *     p serv.local_address #=> #<Addrinfo: 127.0.0.1:1512 TCP>
  *   }
  *
  */
@@ -385,14 +385,14 @@ bsock_local_address(VALUE sock)
  * call-seq:
  *   bsock.remote_address => addrinfo
  *
- * Returns an AddrInfo object for remote address obtained by getpeername.
+ * Returns an Addrinfo object for remote address obtained by getpeername.
  *
  * Note that addrinfo.protocol is filled by 0.
  *
  *   TCPServer.open("127.0.0.1", 1728) {|serv|
  *     c = TCPSocket.new("127.0.0.1", 1728)
  *     s = serv.accept
- *     p s.remote_address #=> #<AddrInfo: 127.0.0.1:36504 TCP>
+ *     p s.remote_address #=> #<Addrinfo: 127.0.0.1:36504 TCP>
  *   }
  *
  */

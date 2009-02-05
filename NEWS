@@ -85,11 +85,11 @@ with all sufficient information, see the ChangeLog file.
 
   * incompatible changes:
     * Socket#{recvfrom,recvfrom_nonblock,accept,accept_nonblock,sysaccept}
-      returns a sender address as AddrInfo object instead of a string.
+      returns a sender address as Addrinfo object instead of a string.
     * BasicSocket#getsockopt returns Socket::Option object instead of a string.
 
   * new class:
-    * AddrInfo
+    * Addrinfo
     * Socket::Option
     * Socket::AncillaryData
 
@@ -115,7 +115,7 @@ with all sufficient information, see the ChangeLog file.
     * Socket.pair's 3rd argument is optional now.
     * Socket.pair and UNIXSocket.pair can take a block.
     * BasicSocket#send, UDPSocket#send, Socket.getnameinfo, Socket#bind, and
-      Socket#{connect,connect_nonblock} accepts an AddrInfo object as sockaddr.
+      Socket#{connect,connect_nonblock} accepts an Addrinfo object as sockaddr.
     * BasicSocket#getsockopt accepts a Socket::Option object.
 
     * string/symbol as protocol/address family, socket type, protocol level,

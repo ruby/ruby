@@ -505,7 +505,7 @@ check_addrinfo(VALUE self)
 {
     Check_Type(self, RUBY_T_DATA);
     if (!IS_ADDRINFO(self)) {
-        rb_raise(rb_eTypeError, "wrong argument type %s (expected AddrInfo)",
+        rb_raise(rb_eTypeError, "wrong argument type %s (expected Addrinfo)",
                  rb_class2name(CLASS_OF(self)));
     }
     return DATA_PTR(self);
@@ -558,7 +558,7 @@ addrinfo_new(struct sockaddr *addr, socklen_t len,
     VALUE a;
     rb_addrinfo_t *rai;
 
-    a = addrinfo_s_allocate(rb_cAddrInfo);
+    a = addrinfo_s_allocate(rb_cAddrinfo);
     DATA_PTR(a) = rai = alloc_addrinfo();
     init_addrinfo(rai, addr, len, family, socktype, protocol, canonname, inspectname);
     return a;
@@ -740,12 +740,12 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path)
 
 /*
  * call-seq:
- *   AddrInfo.new(sockaddr)                             => addrinfo
- *   AddrInfo.new(sockaddr, family)                     => addrinfo
- *   AddrInfo.new(sockaddr, family, socktype)           => addrinfo
- *   AddrInfo.new(sockaddr, family, socktype, protocol) => addrinfo
+ *   Addrinfo.new(sockaddr)                             => addrinfo
+ *   Addrinfo.new(sockaddr, family)                     => addrinfo
+ *   Addrinfo.new(sockaddr, family, socktype)           => addrinfo
+ *   Addrinfo.new(sockaddr, family, socktype, protocol) => addrinfo
  *
- * returns a new instance of AddrInfo.
+ * returns a new instance of Addrinfo.
  * It the instnace contains sockaddr, family, socktype, protocol.
  * sockaddr means struct sockaddr which can be used for connect(2), etc.
  * family, socktype and protocol are integers which is used for arguments of socket(2).
@@ -765,8 +765,8 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path)
  * - Socket.sockaddr_un("/tmp/sock")
  *
  * In an AF_INET/AF_INET6 sockaddr array, the 4th element,
- * numeric IP address, is used to construct socket address in the AddrInfo instance.
- * The 3rd element, textual host name, is also recorded but only used for AddrInfo#inspect.
+ * numeric IP address, is used to construct socket address in the Addrinfo instance.
+ * The 3rd element, textual host name, is also recorded but only used for Addrinfo#inspect.
  *
  * family is specified as an integer to specify the protocol family such as Socket::PF_INET.
  * It can be a symbol or a string which is the constant name
@@ -1018,8 +1018,8 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
  *
  * returns a string which shows addrinfo in human-readable form.
  *
- *   AddrInfo.tcp("localhost", 80).inspect #=> "#<AddrInfo: 127.0.0.1:80 TCP (localhost:80)>"
- *   AddrInfo.unix("/tmp/sock").inspect    #=> "#<AddrInfo: /tmp/sock SOCK_STREAM>"
+ *   Addrinfo.tcp("localhost", 80).inspect #=> "#<Addrinfo: 127.0.0.1:80 TCP (localhost:80)>"
+ *   Addrinfo.unix("/tmp/sock").inspect    #=> "#<Addrinfo: /tmp/sock SOCK_STREAM>"
  *
  */
 static VALUE
@@ -1097,9 +1097,9 @@ addrinfo_inspect(VALUE self)
  *
  * returns a string which shows the sockaddr in _addrinfo_ with human-readable form.
  *
- *   AddrInfo.tcp("localhost", 80).inspect_sockaddr     #=> "127.0.0.1:80"
- *   AddrInfo.tcp("ip6-localhost", 80).inspect_sockaddr #=> "[::1]:80"
- *   AddrInfo.unix("/tmp/sock").inspect_sockaddr        #=> "/tmp/sock"
+ *   Addrinfo.tcp("localhost", 80).inspect_sockaddr     #=> "127.0.0.1:80"
+ *   Addrinfo.tcp("ip6-localhost", 80).inspect_sockaddr #=> "[::1]:80"
+ *   Addrinfo.unix("/tmp/sock").inspect_sockaddr        #=> "/tmp/sock"
  *
  */
 static VALUE
@@ -1299,7 +1299,7 @@ addrinfo_mload(VALUE self, VALUE ary)
  *
  * returns the address family as an integer.
  *
- *   AddrInfo.tcp("localhost", 80).afamily == Socket::AF_INET #=> true
+ *   Addrinfo.tcp("localhost", 80).afamily == Socket::AF_INET #=> true
  *
  */
 static VALUE
@@ -1315,7 +1315,7 @@ addrinfo_afamily(VALUE self)
  *
  * returns the protocol family as an integer.
  *
- *   AddrInfo.tcp("localhost", 80).pfamily == Socket::PF_INET #=> true
+ *   Addrinfo.tcp("localhost", 80).pfamily == Socket::PF_INET #=> true
  *
  */
 static VALUE
@@ -1331,7 +1331,7 @@ addrinfo_pfamily(VALUE self)
  *
  * returns the socket type as an integer.
  *
- *   AddrInfo.tcp("localhost", 80).socktype == Socket::SOCK_STREAM #=> true
+ *   Addrinfo.tcp("localhost", 80).socktype == Socket::SOCK_STREAM #=> true
  *
  */
 static VALUE
@@ -1347,7 +1347,7 @@ addrinfo_socktype(VALUE self)
  *
  * returns the socket type as an integer.
  *
- *   AddrInfo.tcp("localhost", 80).protocol == Socket::IPPROTO_TCP #=> true
+ *   Addrinfo.tcp("localhost", 80).protocol == Socket::IPPROTO_TCP #=> true
  *
  */
 static VALUE
@@ -1363,7 +1363,7 @@ addrinfo_protocol(VALUE self)
  *
  * returns the socket address as packed struct sockaddr string.
  *
- *   AddrInfo.tcp("localhost", 80).to_sockaddr                    
+ *   Addrinfo.tcp("localhost", 80).to_sockaddr                    
  *   #=> "\x02\x00\x00P\x7F\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
  *
  */
@@ -1385,10 +1385,10 @@ addrinfo_to_sockaddr(VALUE self)
  *
  * nil is returned if no canonical name.
  *
- * The canonical name is set by AddrInfo.getaddrinfo when AI_CANONNAME is specified.
+ * The canonical name is set by Addrinfo.getaddrinfo when AI_CANONNAME is specified.
  *
- *   list = AddrInfo.getaddrinfo("www.ruby-lang.org", 80, :INET, :STREAM, nil, Socket::AI_CANONNAME)
- *   p list[0] #=> #<AddrInfo: 221.186.184.68:80 TCP carbon.ruby-lang.org (www.ruby-lang.org:80)>
+ *   list = Addrinfo.getaddrinfo("www.ruby-lang.org", 80, :INET, :STREAM, nil, Socket::AI_CANONNAME)
+ *   p list[0] #=> #<Addrinfo: 221.186.184.68:80 TCP carbon.ruby-lang.org (www.ruby-lang.org:80)>
  *   p list[0].canonname #=> "carbon.ruby-lang.org"
  *
  */
@@ -1406,9 +1406,9 @@ addrinfo_canonname(VALUE self)
  * returns true if addrinfo is internet (IPv4/IPv6) address.
  * returns false otherwise.
  *
- *   AddrInfo.tcp("127.0.0.1", 80).ip? #=> true
- *   AddrInfo.tcp("::1", 80).ip?       #=> true
- *   AddrInfo.unix("/tmp/sock").ip?    #=> false
+ *   Addrinfo.tcp("127.0.0.1", 80).ip? #=> true
+ *   Addrinfo.tcp("::1", 80).ip?       #=> true
+ *   Addrinfo.unix("/tmp/sock").ip?    #=> false
  *
  */
 static VALUE
@@ -1426,9 +1426,9 @@ addrinfo_ip_p(VALUE self)
  * returns true if addrinfo is IPv4 address.
  * returns false otherwise.
  *
- *   AddrInfo.tcp("127.0.0.1", 80).ipv4? #=> true
- *   AddrInfo.tcp("::1", 80).ipv4?       #=> false
- *   AddrInfo.unix("/tmp/sock").ipv4?    #=> false
+ *   Addrinfo.tcp("127.0.0.1", 80).ipv4? #=> true
+ *   Addrinfo.tcp("::1", 80).ipv4?       #=> false
+ *   Addrinfo.unix("/tmp/sock").ipv4?    #=> false
  *
  */
 static VALUE
@@ -1445,9 +1445,9 @@ addrinfo_ipv4_p(VALUE self)
  * returns true if addrinfo is IPv6 address.
  * returns false otherwise.
  *
- *   AddrInfo.tcp("127.0.0.1", 80).ipv6? #=> false
- *   AddrInfo.tcp("::1", 80).ipv6?       #=> true
- *   AddrInfo.unix("/tmp/sock").ipv6?    #=> false
+ *   Addrinfo.tcp("127.0.0.1", 80).ipv6? #=> false
+ *   Addrinfo.tcp("::1", 80).ipv6?       #=> true
+ *   Addrinfo.unix("/tmp/sock").ipv6?    #=> false
  *
  */
 static VALUE
@@ -1468,9 +1468,9 @@ addrinfo_ipv6_p(VALUE self)
  * returns true if addrinfo is UNIX address.
  * returns false otherwise.
  *
- *   AddrInfo.tcp("127.0.0.1", 80).unix? #=> false
- *   AddrInfo.tcp("::1", 80).unix?       #=> false
- *   AddrInfo.unix("/tmp/sock").unix?    #=> true
+ *   Addrinfo.tcp("127.0.0.1", 80).unix? #=> false
+ *   Addrinfo.tcp("::1", 80).unix?       #=> false
+ *   Addrinfo.unix("/tmp/sock").unix?    #=> true
  *
  */
 static VALUE
@@ -1494,9 +1494,9 @@ addrinfo_unix_p(VALUE self)
  *
  * flags should be bitwise OR of Socket::NI_??? constants.
  *
- *   AddrInfo.tcp("127.0.0.1", 80).getnameinfo #=> ["localhost", "www"]
+ *   Addrinfo.tcp("127.0.0.1", 80).getnameinfo #=> ["localhost", "www"]
  *
- *   AddrInfo.tcp("127.0.0.1", 80).getnameinfo(Socket::NI_NUMERICSERV)
+ *   Addrinfo.tcp("127.0.0.1", 80).getnameinfo(Socket::NI_NUMERICSERV)
  *   #=> ["localhost", "80"]
  */
 static VALUE
@@ -1530,8 +1530,8 @@ addrinfo_getnameinfo(int argc, VALUE *argv, VALUE self)
  *
  * Returns the IP address and port number as 2-element array.
  *
- *   AddrInfo.tcp("127.0.0.1", 80).ip_unpack    #=> ["127.0.0.1", 80]
- *   AddrInfo.tcp("::1", 80).ip_unpack          #=> ["::1", 80]
+ *   Addrinfo.tcp("127.0.0.1", 80).ip_unpack    #=> ["127.0.0.1", 80]
+ *   Addrinfo.tcp("::1", 80).ip_unpack          #=> ["::1", 80]
  */
 static VALUE
 addrinfo_ip_unpack(VALUE self)
@@ -1557,8 +1557,8 @@ addrinfo_ip_unpack(VALUE self)
  *
  * Returns the IP address as a string.
  *
- *   AddrInfo.tcp("127.0.0.1", 80).ip_address    #=> "127.0.0.1"
- *   AddrInfo.tcp("::1", 80).ip_address          #=> "::1"
+ *   Addrinfo.tcp("127.0.0.1", 80).ip_address    #=> "127.0.0.1"
+ *   Addrinfo.tcp("::1", 80).ip_address          #=> "::1"
  */
 static VALUE
 addrinfo_ip_address(VALUE self)
@@ -1582,8 +1582,8 @@ addrinfo_ip_address(VALUE self)
  *
  * Returns the port number as an integer.
  *
- *   AddrInfo.tcp("127.0.0.1", 80).ip_port    #=> 80
- *   AddrInfo.tcp("::1", 80).ip_port          #=> 80
+ *   Addrinfo.tcp("127.0.0.1", 80).ip_port    #=> 80
+ *   Addrinfo.tcp("::1", 80).ip_port          #=> 80
  */
 static VALUE
 addrinfo_ip_port(VALUE self)
@@ -1836,11 +1836,11 @@ addrinfo_ipv6_mc_global_p(VALUE self)
  * Returns IPv4 address of IPv4 mapped/compatible IPv6 address.
  * It returns nil if +self+ is not IPv4 mapped/compatible IPv6 address.
  *
- *   AddrInfo.ip("::192.0.2.3").ipv6_to_ipv4      #=> #<AddrInfo: 192.0.2.3>
- *   AddrInfo.ip("::ffff:192.0.2.3").ipv6_to_ipv4 #=> #<AddrInfo: 192.0.2.3>
- *   AddrInfo.ip("::1").ipv6_to_ipv4              #=> nil
- *   AddrInfo.ip("192.0.2.3").ipv6_to_ipv4        #=> nil
- *   AddrInfo.unix("/tmp/sock").ipv6_to_ipv4      #=> nil
+ *   Addrinfo.ip("::192.0.2.3").ipv6_to_ipv4      #=> #<Addrinfo: 192.0.2.3>
+ *   Addrinfo.ip("::ffff:192.0.2.3").ipv6_to_ipv4 #=> #<Addrinfo: 192.0.2.3>
+ *   Addrinfo.ip("::1").ipv6_to_ipv4              #=> nil
+ *   Addrinfo.ip("192.0.2.3").ipv6_to_ipv4        #=> nil
+ *   Addrinfo.unix("/tmp/sock").ipv6_to_ipv4      #=> nil
  */
 static VALUE
 addrinfo_ipv6_to_ipv4(VALUE self)
@@ -1874,7 +1874,7 @@ addrinfo_ipv6_to_ipv4(VALUE self)
  *
  * Returns the socket path as a string.
  *
- *   AddrInfo.unix("/tmp/sock").unix_path       #=> "/tmp/sock"
+ *   Addrinfo.unix("/tmp/sock").unix_path       #=> "/tmp/sock"
  */
 static VALUE
 addrinfo_unix_path(VALUE self)
@@ -1903,11 +1903,11 @@ addrinfo_unix_path(VALUE self)
 
 /*
  * call-seq:
- *   AddrInfo.getaddrinfo(nodename, service, family, socktype, protocol, flags) => [addrinfo, ...]
- *   AddrInfo.getaddrinfo(nodename, service, family, socktype, protocol)        => [addrinfo, ...]
- *   AddrInfo.getaddrinfo(nodename, service, family, socktype)                  => [addrinfo, ...]
- *   AddrInfo.getaddrinfo(nodename, service, family)                            => [addrinfo, ...]
- *   AddrInfo.getaddrinfo(nodename, service)                                    => [addrinfo, ...]
+ *   Addrinfo.getaddrinfo(nodename, service, family, socktype, protocol, flags) => [addrinfo, ...]
+ *   Addrinfo.getaddrinfo(nodename, service, family, socktype, protocol)        => [addrinfo, ...]
+ *   Addrinfo.getaddrinfo(nodename, service, family, socktype)                  => [addrinfo, ...]
+ *   Addrinfo.getaddrinfo(nodename, service, family)                            => [addrinfo, ...]
+ *   Addrinfo.getaddrinfo(nodename, service)                                    => [addrinfo, ...]
  *
  * returns a list of addrinfo objects as an array.
  *
@@ -1919,7 +1919,7 @@ addrinfo_unix_path(VALUE self)
  * family, socktype and protocol are hint for prefered protocol.
  * If the result will be used for a socket with SOCK_STREAM, 
  * SOCK_STREAM should be specified as socktype.
- * If so, AddrInfo.getaddrinfo returns addrinfo list appropriate for SOCK_STREAM.
+ * If so, Addrinfo.getaddrinfo returns addrinfo list appropriate for SOCK_STREAM.
  * If they are omitted or nil is given, the result is not restricted.
  * 
  * Similary, PF_INET6 as family restricts for IPv6.
@@ -1930,9 +1930,9 @@ addrinfo_unix_path(VALUE self)
  * Some platform causes an error when socktype is ommitted and servname is specified as an integer
  * because some port numbers, 512 for example, are ambiguous without socktype.
  *
- *   AddrInfo.getaddrinfo("www.kame.net", 80, nil, :STREAM)
- *   #=> [#<AddrInfo: 203.178.141.194:80 TCP (www.kame.net:80)>,
- *   #    #<AddrInfo: [2001:200:0:8002:203:47ff:fea5:3085]:80 TCP (www.kame.net:80)>]
+ *   Addrinfo.getaddrinfo("www.kame.net", 80, nil, :STREAM)
+ *   #=> [#<Addrinfo: 203.178.141.194:80 TCP (www.kame.net:80)>,
+ *   #    #<Addrinfo: [2001:200:0:8002:203:47ff:fea5:3085]:80 TCP (www.kame.net:80)>]
  *
  */
 static VALUE
@@ -1946,14 +1946,14 @@ addrinfo_s_getaddrinfo(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   AddrInfo.ip(host) => addrinfo
+ *   Addrinfo.ip(host) => addrinfo
  *
  * returns an addrinfo object for IP address.
  *
  * The port, socktype, protocol of the result is filled by zero.
  * So, it is not appropriate to create a socket.
  *
- *   AddrInfo.ip("localhost") #=> #<AddrInfo: 127.0.0.1 (localhost)>
+ *   Addrinfo.ip("localhost") #=> #<Addrinfo: 127.0.0.1 (localhost)>
  */
 static VALUE
 addrinfo_s_ip(VALUE self, VALUE host)
@@ -1970,11 +1970,11 @@ addrinfo_s_ip(VALUE self, VALUE host)
 
 /*
  * call-seq:
- *   AddrInfo.tcp(host, port) => addrinfo
+ *   Addrinfo.tcp(host, port) => addrinfo
  *
  * returns an addrinfo object for TCP address.
  *
- *   AddrInfo.tcp("localhost", "smtp") #=> #<AddrInfo: 127.0.0.1:25 TCP (localhost:smtp)>
+ *   Addrinfo.tcp("localhost", "smtp") #=> #<Addrinfo: 127.0.0.1:25 TCP (localhost:smtp)>
  */
 static VALUE
 addrinfo_s_tcp(VALUE self, VALUE host, VALUE port)
@@ -1985,11 +1985,11 @@ addrinfo_s_tcp(VALUE self, VALUE host, VALUE port)
 
 /*
  * call-seq:
- *   AddrInfo.udp(host, port) => addrinfo
+ *   Addrinfo.udp(host, port) => addrinfo
  *
  * returns an addrinfo object for UDP address.
  *
- *   AddrInfo.udp("localhost", "daytime") #=> #<AddrInfo: 127.0.0.1:13 UDP (localhost:daytime)>
+ *   Addrinfo.udp("localhost", "daytime") #=> #<Addrinfo: 127.0.0.1:13 UDP (localhost:daytime)>
  */
 static VALUE
 addrinfo_s_udp(VALUE self, VALUE host, VALUE port)
@@ -2002,11 +2002,11 @@ addrinfo_s_udp(VALUE self, VALUE host, VALUE port)
 
 /*
  * call-seq:
- *   AddrInfo.udp(host, port) => addrinfo
+ *   Addrinfo.udp(host, port) => addrinfo
  *
  * returns an addrinfo object for UNIX socket address.
  *
- *   AddrInfo.unix("/tmp/sock") #=> #<AddrInfo: /tmp/sock SOCK_STREAM>
+ *   Addrinfo.unix("/tmp/sock") #=> #<Addrinfo: /tmp/sock SOCK_STREAM>
  */
 static VALUE
 addrinfo_s_unix(VALUE self, VALUE path)
@@ -2014,7 +2014,7 @@ addrinfo_s_unix(VALUE self, VALUE path)
     VALUE addr;
     rb_addrinfo_t *rai;
 
-    addr = addrinfo_s_allocate(rb_cAddrInfo);
+    addr = addrinfo_s_allocate(rb_cAddrinfo);
     DATA_PTR(addr) = rai = alloc_addrinfo();
     init_unix_addrinfo(rai, path);
     OBJ_INFECT(addr, path);
@@ -2090,69 +2090,69 @@ io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len)
 }
 
 /*
- * AddrInfo class
+ * Addrinfo class
  */
 void
 Init_addrinfo(void)
 {
-    rb_cAddrInfo = rb_define_class("AddrInfo", rb_cData);
-    rb_define_alloc_func(rb_cAddrInfo, addrinfo_s_allocate);
-    rb_define_method(rb_cAddrInfo, "initialize", addrinfo_initialize, -1);
-    rb_define_method(rb_cAddrInfo, "inspect", addrinfo_inspect, 0);
-    rb_define_method(rb_cAddrInfo, "inspect_sockaddr", addrinfo_inspect_sockaddr, 0);
-    rb_define_singleton_method(rb_cAddrInfo, "getaddrinfo", addrinfo_s_getaddrinfo, -1);
-    rb_define_singleton_method(rb_cAddrInfo, "ip", addrinfo_s_ip, 1);
-    rb_define_singleton_method(rb_cAddrInfo, "tcp", addrinfo_s_tcp, 2);
-    rb_define_singleton_method(rb_cAddrInfo, "udp", addrinfo_s_udp, 2);
+    rb_cAddrinfo = rb_define_class("Addrinfo", rb_cData);
+    rb_define_alloc_func(rb_cAddrinfo, addrinfo_s_allocate);
+    rb_define_method(rb_cAddrinfo, "initialize", addrinfo_initialize, -1);
+    rb_define_method(rb_cAddrinfo, "inspect", addrinfo_inspect, 0);
+    rb_define_method(rb_cAddrinfo, "inspect_sockaddr", addrinfo_inspect_sockaddr, 0);
+    rb_define_singleton_method(rb_cAddrinfo, "getaddrinfo", addrinfo_s_getaddrinfo, -1);
+    rb_define_singleton_method(rb_cAddrinfo, "ip", addrinfo_s_ip, 1);
+    rb_define_singleton_method(rb_cAddrinfo, "tcp", addrinfo_s_tcp, 2);
+    rb_define_singleton_method(rb_cAddrinfo, "udp", addrinfo_s_udp, 2);
 #ifdef HAVE_SYS_UN_H
-    rb_define_singleton_method(rb_cAddrInfo, "unix", addrinfo_s_unix, 1);
+    rb_define_singleton_method(rb_cAddrinfo, "unix", addrinfo_s_unix, 1);
 #endif
 
-    rb_define_method(rb_cAddrInfo, "afamily", addrinfo_afamily, 0);
-    rb_define_method(rb_cAddrInfo, "pfamily", addrinfo_pfamily, 0);
-    rb_define_method(rb_cAddrInfo, "socktype", addrinfo_socktype, 0);
-    rb_define_method(rb_cAddrInfo, "protocol", addrinfo_protocol, 0);
-    rb_define_method(rb_cAddrInfo, "canonname", addrinfo_canonname, 0);
+    rb_define_method(rb_cAddrinfo, "afamily", addrinfo_afamily, 0);
+    rb_define_method(rb_cAddrinfo, "pfamily", addrinfo_pfamily, 0);
+    rb_define_method(rb_cAddrinfo, "socktype", addrinfo_socktype, 0);
+    rb_define_method(rb_cAddrinfo, "protocol", addrinfo_protocol, 0);
+    rb_define_method(rb_cAddrinfo, "canonname", addrinfo_canonname, 0);
 
-    rb_define_method(rb_cAddrInfo, "ipv4?", addrinfo_ipv4_p, 0);
-    rb_define_method(rb_cAddrInfo, "ipv6?", addrinfo_ipv6_p, 0);
-    rb_define_method(rb_cAddrInfo, "unix?", addrinfo_unix_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv4?", addrinfo_ipv4_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv6?", addrinfo_ipv6_p, 0);
+    rb_define_method(rb_cAddrinfo, "unix?", addrinfo_unix_p, 0);
 
-    rb_define_method(rb_cAddrInfo, "ip?", addrinfo_ip_p, 0);
-    rb_define_method(rb_cAddrInfo, "ip_unpack", addrinfo_ip_unpack, 0);
-    rb_define_method(rb_cAddrInfo, "ip_address", addrinfo_ip_address, 0);
-    rb_define_method(rb_cAddrInfo, "ip_port", addrinfo_ip_port, 0);
+    rb_define_method(rb_cAddrinfo, "ip?", addrinfo_ip_p, 0);
+    rb_define_method(rb_cAddrinfo, "ip_unpack", addrinfo_ip_unpack, 0);
+    rb_define_method(rb_cAddrinfo, "ip_address", addrinfo_ip_address, 0);
+    rb_define_method(rb_cAddrinfo, "ip_port", addrinfo_ip_port, 0);
 
-    rb_define_method(rb_cAddrInfo, "ipv4_private?", addrinfo_ipv4_private_p, 0);
-    rb_define_method(rb_cAddrInfo, "ipv4_loopback?", addrinfo_ipv4_loopback_p, 0);
-    rb_define_method(rb_cAddrInfo, "ipv4_multicast?", addrinfo_ipv4_multicast_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv4_private?", addrinfo_ipv4_private_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv4_loopback?", addrinfo_ipv4_loopback_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv4_multicast?", addrinfo_ipv4_multicast_p, 0);
 
 #ifdef INET6
-    rb_define_method(rb_cAddrInfo, "ipv6_unspecified?", addrinfo_ipv6_unspecified_p, 0);
-    rb_define_method(rb_cAddrInfo, "ipv6_loopback?", addrinfo_ipv6_loopback_p, 0);
-    rb_define_method(rb_cAddrInfo, "ipv6_multicast?", addrinfo_ipv6_multicast_p, 0);
-    rb_define_method(rb_cAddrInfo, "ipv6_linklocal?", addrinfo_ipv6_linklocal_p, 0);
-    rb_define_method(rb_cAddrInfo, "ipv6_sitelocal?", addrinfo_ipv6_sitelocal_p, 0);
-    rb_define_method(rb_cAddrInfo, "ipv6_v4mapped?", addrinfo_ipv6_v4mapped_p, 0);
-    rb_define_method(rb_cAddrInfo, "ipv6_v4compat?", addrinfo_ipv6_v4compat_p, 0);
-    rb_define_method(rb_cAddrInfo, "ipv6_mc_nodelocal?", addrinfo_ipv6_mc_nodelocal_p, 0);
-    rb_define_method(rb_cAddrInfo, "ipv6_mc_linklocal?", addrinfo_ipv6_mc_linklocal_p, 0);
-    rb_define_method(rb_cAddrInfo, "ipv6_mc_sitelocal?", addrinfo_ipv6_mc_sitelocal_p, 0);
-    rb_define_method(rb_cAddrInfo, "ipv6_mc_orglocal?", addrinfo_ipv6_mc_orglocal_p, 0);
-    rb_define_method(rb_cAddrInfo, "ipv6_mc_global?", addrinfo_ipv6_mc_global_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv6_unspecified?", addrinfo_ipv6_unspecified_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv6_loopback?", addrinfo_ipv6_loopback_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv6_multicast?", addrinfo_ipv6_multicast_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv6_linklocal?", addrinfo_ipv6_linklocal_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv6_sitelocal?", addrinfo_ipv6_sitelocal_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv6_v4mapped?", addrinfo_ipv6_v4mapped_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv6_v4compat?", addrinfo_ipv6_v4compat_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv6_mc_nodelocal?", addrinfo_ipv6_mc_nodelocal_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv6_mc_linklocal?", addrinfo_ipv6_mc_linklocal_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv6_mc_sitelocal?", addrinfo_ipv6_mc_sitelocal_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv6_mc_orglocal?", addrinfo_ipv6_mc_orglocal_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv6_mc_global?", addrinfo_ipv6_mc_global_p, 0);
 
-    rb_define_method(rb_cAddrInfo, "ipv6_to_ipv4", addrinfo_ipv6_to_ipv4, 0);
+    rb_define_method(rb_cAddrinfo, "ipv6_to_ipv4", addrinfo_ipv6_to_ipv4, 0);
 #endif
 
 #ifdef HAVE_SYS_UN_H
-    rb_define_method(rb_cAddrInfo, "unix_path", addrinfo_unix_path, 0);
+    rb_define_method(rb_cAddrinfo, "unix_path", addrinfo_unix_path, 0);
 #endif
 
-    rb_define_method(rb_cAddrInfo, "to_sockaddr", addrinfo_to_sockaddr, 0);
-    rb_define_method(rb_cAddrInfo, "to_s", addrinfo_to_sockaddr, 0); /* compatibility for ruby before 1.9.2 */
+    rb_define_method(rb_cAddrinfo, "to_sockaddr", addrinfo_to_sockaddr, 0);
+    rb_define_method(rb_cAddrinfo, "to_s", addrinfo_to_sockaddr, 0); /* compatibility for ruby before 1.9.2 */
 
-    rb_define_method(rb_cAddrInfo, "getnameinfo", addrinfo_getnameinfo, -1);
+    rb_define_method(rb_cAddrinfo, "getnameinfo", addrinfo_getnameinfo, -1);
 
-    rb_define_method(rb_cAddrInfo, "marshal_dump", addrinfo_mdump, 0);
-    rb_define_method(rb_cAddrInfo, "marshal_load", addrinfo_mload, 1);
+    rb_define_method(rb_cAddrinfo, "marshal_dump", addrinfo_mdump, 0);
+    rb_define_method(rb_cAddrinfo, "marshal_load", addrinfo_mload, 1);
 }

@@ -123,7 +123,7 @@ class TestUNIXSocket < Test::Unit::TestCase
 	else
 	  # struct msghdr is POSIX/4.4BSD style (msg_control field).
 	  assert_equal(0, flags & (Socket::MSG_TRUNC|Socket::MSG_CTRUNC))
-	  assert_instance_of(AddrInfo, srcaddr)
+	  assert_instance_of(Addrinfo, srcaddr)
 	  assert_instance_of(Array, ctls)
 	  assert_equal(1, ctls.length)
 	  assert_instance_of(Socket::AncillaryData, ctls[0])

@@ -68,18 +68,18 @@ class TestSocket < Test::Unit::TestCase
       return
     end
     list.each {|ai|
-      assert_instance_of(AddrInfo, ai)
+      assert_instance_of(Addrinfo, ai)
       assert(ai.ip?)
     }
   end
 
   def tcp_unspecified_to_loopback(addrinfo)
     if addrinfo.ipv4? && addrinfo.ip_address == "0.0.0.0"
-      AddrInfo.tcp("127.0.0.1", addrinfo.ip_port)
+      Addrinfo.tcp("127.0.0.1", addrinfo.ip_port)
     elsif addrinfo.ipv6? && addrinfo.ipv6_unspecified?
-      AddrInfo.tcp("::1", addrinfo.ip_port)
+      Addrinfo.tcp("::1", addrinfo.ip_port)
     elsif addrinfo.ipv6? && (ai = addrinfo.ipv6_to_ipv4) && ai.ip_address == "0.0.0.0"
-      AddrInfo.tcp("127.0.0.1", addrinfo.ip_port)
+      Addrinfo.tcp("127.0.0.1", addrinfo.ip_port)
     else
       addrinfo
     end

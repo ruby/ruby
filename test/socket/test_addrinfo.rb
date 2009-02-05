@@ -5,23 +5,23 @@ end
 
 require "test/unit"
 
-class TestSocketAddrInfo < Test::Unit::TestCase
+class TestSocketAddrinfo < Test::Unit::TestCase
   HAS_UNIXSOCKET = defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM
 
   def tcp_unspecified_to_loopback(addrinfo)
     if addrinfo.ipv4? && addrinfo.ip_address == "0.0.0.0"
-      AddrInfo.tcp("127.0.0.1", addrinfo.ip_port)
+      Addrinfo.tcp("127.0.0.1", addrinfo.ip_port)
     elsif addrinfo.ipv6? && addrinfo.ipv6_unspecified?
-      AddrInfo.tcp("::1", addrinfo.ip_port)
+      Addrinfo.tcp("::1", addrinfo.ip_port)
     elsif addrinfo.ipv6? && (ai = addrinfo.ipv6_to_ipv4) && ai.ip_address == "0.0.0.0"
-      AddrInfo.tcp("127.0.0.1", addrinfo.ip_port)
+      Addrinfo.tcp("127.0.0.1", addrinfo.ip_port)
     else
       addrinfo
     end
   end
 
   def test_addrinfo_ip
-    ai = AddrInfo.ip("127.0.0.1")
+    ai = Addrinfo.ip("127.0.0.1")
     assert_equal([0, "127.0.0.1"], Socket.unpack_sockaddr_in(ai))
     assert_equal(Socket::AF_INET, ai.afamily)
     assert_equal(Socket::PF_INET, ai.pfamily)
@@ -30,7 +30,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
   end
 
   def test_addrinfo_tcp
-    ai = AddrInfo.tcp("127.0.0.1", 80)
+    ai = Addrinfo.tcp("127.0.0.1", 80)
     assert_equal([80, "127.0.0.1"], Socket.unpack_sockaddr_in(ai))
     assert_equal(Socket::AF_INET, ai.afamily)
     assert_equal(Socket::PF_INET, ai.pfamily)
@@ -39,7 +39,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
   end
 
   def test_addrinfo_udp
-    ai = AddrInfo.udp("127.0.0.1", 80)
+    ai = Addrinfo.udp("127.0.0.1", 80)
     assert_equal([80, "127.0.0.1"], Socket.unpack_sockaddr_in(ai))
     assert_equal(Socket::AF_INET, ai.afamily)
     assert_equal(Socket::PF_INET, ai.pfamily)
@@ -48,19 +48,19 @@ class TestSocketAddrInfo < Test::Unit::TestCase
   end
 
   def test_addrinfo_ip_unpack
-    ai = AddrInfo.tcp("127.0.0.1", 80)
+    ai = Addrinfo.tcp("127.0.0.1", 80)
     assert_equal(["127.0.0.1", 80], ai.ip_unpack)
     assert_equal("127.0.0.1", ai.ip_address)
     assert_equal(80, ai.ip_port)
   end
 
   def test_addrinfo_inspect_sockaddr
-    ai = AddrInfo.tcp("127.0.0.1", 80)
+    ai = Addrinfo.tcp("127.0.0.1", 80)
     assert_equal("127.0.0.1:80", ai.inspect_sockaddr)
   end
 
   def test_addrinfo_new_inet
-    ai = AddrInfo.new(["AF_INET", 46102, "localhost.localdomain", "127.0.0.2"])
+    ai = Addrinfo.new(["AF_INET", 46102, "localhost.localdomain", "127.0.0.2"])
     assert_equal([46102, "127.0.0.2"], Socket.unpack_sockaddr_in(ai))
     assert_equal(Socket::AF_INET, ai.afamily)
     assert_equal(Socket::PF_INET, ai.pfamily)
@@ -69,7 +69,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
   end
 
   def test_addrinfo_predicates
-    ipv4_ai = AddrInfo.new(Socket.sockaddr_in(80, "192.168.0.1"))
+    ipv4_ai = Addrinfo.new(Socket.sockaddr_in(80, "192.168.0.1"))
     assert(ipv4_ai.ip?)
     assert(ipv4_ai.ipv4?)
     assert(!ipv4_ai.ipv6?)
@@ -86,10 +86,10 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     ]
     list.each {|meth, *addrs|
       addrs.each {|addr|
-        assert(AddrInfo.ip(addr).send(meth), "AddrInfo.ip(#{addr.inspect}).#{meth}")
+        assert(Addrinfo.ip(addr).send(meth), "Addrinfo.ip(#{addr.inspect}).#{meth}")
         list.each {|meth2,|
           next if meth == meth2
-          assert(!AddrInfo.ip(addr).send(meth2), "!AddrInfo.ip(#{addr.inspect}).#{meth2}")
+          assert(!Addrinfo.ip(addr).send(meth2), "!Addrinfo.ip(#{addr.inspect}).#{meth2}")
         }
       }
     }
@@ -99,7 +99,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     s1 = Socket.new(:INET, :DGRAM, 0)
     s1.bind(Socket.sockaddr_in(0, "127.0.0.1"))
     sa = s1.getsockname
-    ai = AddrInfo.new(sa)
+    ai = Addrinfo.new(sa)
     s2 = Socket.new(:INET, :DGRAM, 0)
     s2.send("test-basicsocket-send", 0, ai)
     assert_equal("test-basicsocket-send", s1.recv(100))
@@ -111,7 +111,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
   def test_udpsocket_send
     s1 = UDPSocket.new
     s1.bind("127.0.0.1", 0)
-    ai = AddrInfo.new(s1.getsockname)
+    ai = Addrinfo.new(s1.getsockname)
     s2 = UDPSocket.new
     s2.send("test-udp-send", 0, ai)
     assert_equal("test-udp-send", s1.recv(100))
@@ -123,7 +123,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
   def test_socket_bind
     s1 = Socket.new(:INET, :DGRAM, 0)
     sa = Socket.sockaddr_in(0, "127.0.0.1")
-    ai = AddrInfo.new(sa)
+    ai = Addrinfo.new(sa)
     s1.bind(ai)
     s2 = UDPSocket.new
     s2.send("test-socket-bind", 0, s1.getsockname)
@@ -137,7 +137,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     s1 = Socket.new(:INET, :STREAM, 0)
     s1.bind(Socket.sockaddr_in(0, "127.0.0.1"))
     s1.listen(5)
-    ai = AddrInfo.new(s1.getsockname)
+    ai = Addrinfo.new(s1.getsockname)
     s2 = Socket.new(:INET, :STREAM, 0)
     s2.connect(ai)
     s3, sender_addr = s1.accept
@@ -153,7 +153,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     s1 = Socket.new(:INET, :STREAM, 0)
     s1.bind(Socket.sockaddr_in(0, "127.0.0.1"))
     s1.listen(5)
-    ai = AddrInfo.new(s1.getsockname)
+    ai = Addrinfo.new(s1.getsockname)
     s2 = Socket.new(:INET, :STREAM, 0)
     begin
       s2.connect_nonblock(ai)
@@ -174,7 +174,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
   end
 
   def test_socket_getnameinfo
-     ai = AddrInfo.udp("127.0.0.1", 8888)
+     ai = Addrinfo.udp("127.0.0.1", 8888)
      assert_equal(["127.0.0.1", "8888"], Socket.getnameinfo(ai, Socket::NI_NUMERICHOST|Socket::NI_NUMERICSERV))
   end
 
@@ -218,7 +218,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     s, ai = ret
     assert_kind_of(Array, ret)
     assert_equal(2, ret.length)
-    assert_kind_of(AddrInfo, ai)
+    assert_kind_of(Addrinfo, ai)
     e = Socket.unpack_sockaddr_in(c.getsockname)
     a = Socket.unpack_sockaddr_in(ai.to_sockaddr)
     assert_equal(e, a)
@@ -243,7 +243,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     s, ai = ret
     assert_kind_of(Array, ret)
     assert_equal(2, ret.length)
-    assert_kind_of(AddrInfo, ai)
+    assert_kind_of(Addrinfo, ai)
     e = Socket.unpack_sockaddr_in(c.getsockname)
     a = Socket.unpack_sockaddr_in(ai.to_sockaddr)
     assert_equal(e, a)
@@ -264,7 +264,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     s = IO.new(fd)
     assert_kind_of(Array, ret)
     assert_equal(2, ret.length)
-    assert_kind_of(AddrInfo, ai)
+    assert_kind_of(Addrinfo, ai)
     e = Socket.unpack_sockaddr_in(c.getsockname)
     a = Socket.unpack_sockaddr_in(ai.to_sockaddr)
     assert_equal(e, a)
@@ -282,7 +282,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     s2.send("test-socket-recvfrom", 0, s1.getsockname)
     data, ai = s1.recvfrom(100)
     assert_equal("test-socket-recvfrom", data)
-    assert_kind_of(AddrInfo, ai)
+    assert_kind_of(Addrinfo, ai)
     e = Socket.unpack_sockaddr_in(s2.getsockname)
     a = Socket.unpack_sockaddr_in(ai.to_sockaddr)
     assert_equal(e, a)
@@ -304,7 +304,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
       retry
     end
     assert_equal("test-socket-recvfrom", data)
-    assert_kind_of(AddrInfo, ai)
+    assert_kind_of(Addrinfo, ai)
     e = Socket.unpack_sockaddr_in(s2.getsockname)
     a = Socket.unpack_sockaddr_in(ai.to_sockaddr)
     assert_equal(e, a)
@@ -314,10 +314,10 @@ class TestSocketAddrInfo < Test::Unit::TestCase
   end
 
   def test_family_addrinfo
-    ai = AddrInfo.tcp("0.0.0.0", 4649).family_addrinfo("www.ruby-lang.org", 80)
+    ai = Addrinfo.tcp("0.0.0.0", 4649).family_addrinfo("www.ruby-lang.org", 80)
     assert_equal(["221.186.184.68", 80], ai.ip_unpack)
     assert_equal(Socket::SOCK_STREAM, ai.socktype)
-    ai = AddrInfo.unix("/tmp/sock").family_addrinfo("/tmp/sock2")
+    ai = Addrinfo.unix("/tmp/sock").family_addrinfo("/tmp/sock2")
     assert_equal("/tmp/sock2", ai.unix_path)
     assert_equal(Socket::SOCK_STREAM, ai.socktype)
   end
@@ -330,7 +330,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
 
   def test_connect_from
     TCPServer.open("0.0.0.0", 0) {|serv|
-      serv_ai = AddrInfo.new(serv.getsockname, :INET, :STREAM)
+      serv_ai = Addrinfo.new(serv.getsockname, :INET, :STREAM)
       serv_ai = tcp_unspecified_to_loopback(serv_ai)
       port = random_port
       begin
@@ -350,10 +350,10 @@ class TestSocketAddrInfo < Test::Unit::TestCase
 
   def test_connect_to
     TCPServer.open("0.0.0.0", 0) {|serv|
-      serv_ai = AddrInfo.new(serv.getsockname, :INET, :STREAM)
+      serv_ai = Addrinfo.new(serv.getsockname, :INET, :STREAM)
       serv_ai = tcp_unspecified_to_loopback(serv_ai)
       port = random_port
-      client_ai = AddrInfo.tcp("0.0.0.0", port)
+      client_ai = Addrinfo.tcp("0.0.0.0", port)
       begin
         client_ai.connect_to(*serv_ai.ip_unpack) {|s1|
           s2 = serv.accept
@@ -371,7 +371,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
 
   def test_connect
     TCPServer.open("0.0.0.0", 0) {|serv|
-      serv_ai = AddrInfo.new(serv.getsockname, :INET, :STREAM)
+      serv_ai = Addrinfo.new(serv.getsockname, :INET, :STREAM)
       serv_ai = tcp_unspecified_to_loopback(serv_ai)
       begin
         serv_ai.connect {|s1|
@@ -391,7 +391,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
 
   def test_bind
     port = random_port
-    client_ai = AddrInfo.tcp("0.0.0.0", port)
+    client_ai = Addrinfo.tcp("0.0.0.0", port)
     begin
       client_ai.bind {|s|
         assert_equal(port, s.local_address.ip_port)
@@ -403,7 +403,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
 
   def test_listen
     port = random_port
-    client_ai = AddrInfo.tcp("0.0.0.0", port)
+    client_ai = Addrinfo.tcp("0.0.0.0", port)
     begin
       client_ai.listen {|serv|
         assert_equal(port, serv.local_address.ip_port)
@@ -426,13 +426,13 @@ class TestSocketAddrInfo < Test::Unit::TestCase
   end
 
   def test_s_foreach
-    AddrInfo.foreach(nil, 80, nil, :STREAM) {|ai|
-      assert_kind_of(AddrInfo, ai)
+    Addrinfo.foreach(nil, 80, nil, :STREAM) {|ai|
+      assert_kind_of(Addrinfo, ai)
     }
   end
 
   def test_marshal
-    ai1 = AddrInfo.tcp("127.0.0.1", 80)
+    ai1 = Addrinfo.tcp("127.0.0.1", 80)
     ai2 = Marshal.load(Marshal.dump(ai1))
     assert_equal(ai1.afamily, ai2.afamily)
     assert_equal(ai1.ip_unpack, ai2.ip_unpack)
@@ -445,7 +445,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
   if Socket.const_defined?("AF_INET6")
 
     def test_addrinfo_new_inet6
-      ai = AddrInfo.new(["AF_INET6", 42304, "ip6-localhost", "::1"])
+      ai = Addrinfo.new(["AF_INET6", 42304, "ip6-localhost", "::1"])
       assert_equal([42304, "::1"], Socket.unpack_sockaddr_in(ai))
       assert_equal(Socket::AF_INET6, ai.afamily)
       assert_equal(Socket::PF_INET6, ai.pfamily)
@@ -454,19 +454,19 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     end
 
     def test_addrinfo_ip_unpack_inet6
-      ai = AddrInfo.tcp("::1", 80)
+      ai = Addrinfo.tcp("::1", 80)
       assert_equal(["::1", 80], ai.ip_unpack)
       assert_equal("::1", ai.ip_address)
       assert_equal(80, ai.ip_port)
     end
 
     def test_addrinfo_inspect_sockaddr_inet6
-      ai = AddrInfo.tcp("::1", 80)
+      ai = Addrinfo.tcp("::1", 80)
       assert_equal("[::1]:80", ai.inspect_sockaddr)
     end
 
     def test_marshal_inet6
-      ai1 = AddrInfo.tcp("::1", 80)
+      ai1 = Addrinfo.tcp("::1", 80)
       ai2 = Marshal.load(Marshal.dump(ai1))
       assert_equal(ai1.afamily, ai2.afamily)
       assert_equal(ai1.ip_unpack, ai2.ip_unpack)
@@ -477,7 +477,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     end
 
     def ipv6(str)
-      AddrInfo.getaddrinfo(str, nil, :INET6, :DGRAM).fetch(0)
+      Addrinfo.getaddrinfo(str, nil, :INET6, :DGRAM).fetch(0)
     end
 
     def test_ipv6_address_predicates
@@ -499,7 +499,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
       ]
       list.each {|meth, *addrs|
         addrs.each {|addr|
-          addr_exp = "AddrInfo.getaddrinfo(#{addr.inspect}, nil, :INET6, :DGRAM).fetch(0)"
+          addr_exp = "Addrinfo.getaddrinfo(#{addr.inspect}, nil, :INET6, :DGRAM).fetch(0)"
 	  if meth == :ipv6_v4compat? || meth == :ipv6_v4mapped?
 	    # MacOS X returns IPv4 address for ::ffff:1.2.3.4 and ::1.2.3.4.
             # Solaris returns IPv4 address for ::ffff:1.2.3.4.
@@ -517,7 +517,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
       }
       mlist.each {|meth, *addrs|
         addrs.each {|addr|
-          addr_exp = "AddrInfo.getaddrinfo(#{addr.inspect}, nil, :INET6, :DGRAM).fetch(0)"
+          addr_exp = "Addrinfo.getaddrinfo(#{addr.inspect}, nil, :INET6, :DGRAM).fetch(0)"
           assert(ipv6(addr).send(meth), "#{addr_exp}.#{meth}")
           assert(ipv6(addr).ipv6_multicast?, "#{addr_exp}.ipv6_multicast?")
           mlist.each {|meth2,|
@@ -533,20 +533,20 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     end
 
     def test_ipv6_to_ipv4
-      ai = AddrInfo.ip("::192.0.2.3")
+      ai = Addrinfo.ip("::192.0.2.3")
       ai = ai.ipv6_to_ipv4 if !ai.ipv4?
       assert(ai.ipv4?)
       assert_equal("192.0.2.3", ai.ip_address)
 
-      ai = AddrInfo.ip("::ffff:192.0.2.3")
+      ai = Addrinfo.ip("::ffff:192.0.2.3")
       ai = ai.ipv6_to_ipv4 if !ai.ipv4?
       assert(ai.ipv4?)
       assert_equal("192.0.2.3", ai.ip_address)
 
-      assert_nil(AddrInfo.ip("::1").ipv6_to_ipv4)
-      assert_nil(AddrInfo.ip("192.0.2.3").ipv6_to_ipv4)
+      assert_nil(Addrinfo.ip("::1").ipv6_to_ipv4)
+      assert_nil(Addrinfo.ip("192.0.2.3").ipv6_to_ipv4)
       if HAS_UNIXSOCKET
-        assert_nil(AddrInfo.unix("/tmp/sock").ipv6_to_ipv4)
+        assert_nil(Addrinfo.unix("/tmp/sock").ipv6_to_ipv4)
       end
     end
   end
@@ -554,7 +554,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
   if HAS_UNIXSOCKET
 
     def test_addrinfo_unix
-      ai = AddrInfo.unix("/tmp/sock")
+      ai = Addrinfo.unix("/tmp/sock")
       assert_equal("/tmp/sock", Socket.unpack_sockaddr_un(ai))
       assert_equal(Socket::AF_UNIX, ai.afamily)
       assert_equal(Socket::PF_UNIX, ai.pfamily)
@@ -563,17 +563,17 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     end
 
     def test_addrinfo_unix_path
-      ai = AddrInfo.unix("/tmp/sock1")
+      ai = Addrinfo.unix("/tmp/sock1")
       assert_equal("/tmp/sock1", ai.unix_path)
     end
 
     def test_addrinfo_inspect_sockaddr_unix
-      ai = AddrInfo.unix("/tmp/test_addrinfo_inspect_sockaddr_unix")
+      ai = Addrinfo.unix("/tmp/test_addrinfo_inspect_sockaddr_unix")
       assert_equal("/tmp/test_addrinfo_inspect_sockaddr_unix", ai.inspect_sockaddr)
     end
 
     def test_addrinfo_new_unix
-      ai = AddrInfo.new(["AF_UNIX", "/tmp/sock"])
+      ai = Addrinfo.new(["AF_UNIX", "/tmp/sock"])
       assert_equal("/tmp/sock", Socket.unpack_sockaddr_un(ai))
       assert_equal(Socket::AF_UNIX, ai.afamily)
       assert_equal(Socket::PF_UNIX, ai.pfamily)
@@ -582,7 +582,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     end
 
     def test_addrinfo_predicates_unix
-      unix_ai = AddrInfo.new(Socket.sockaddr_un("/tmp/sososo"))
+      unix_ai = Addrinfo.new(Socket.sockaddr_un("/tmp/sososo"))
       assert(!unix_ai.ip?)
       assert(!unix_ai.ipv4?)
       assert(!unix_ai.ipv6?)
@@ -590,7 +590,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     end
 
     def test_marshal_unix
-      ai1 = AddrInfo.unix("/var/tmp/sock")
+      ai1 = Addrinfo.unix("/var/tmp/sock")
       ai2 = Marshal.load(Marshal.dump(ai1))
       assert_equal(ai1.afamily, ai2.afamily)
       assert_equal(ai1.unix_path, ai2.unix_path)

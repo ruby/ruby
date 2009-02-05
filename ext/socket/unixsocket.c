@@ -129,11 +129,11 @@ unix_path(VALUE sock)
  * _flags_ should be a bitwise OR of Socket::MSG_* constants.
  *
  *   s1 = Socket.new(:UNIX, :DGRAM, 0)
- *   s1_ai = AddrInfo.unix("/tmp/sock1")
+ *   s1_ai = Addrinfo.unix("/tmp/sock1")
  *   s1.bind(s1_ai)
  *
  *   s2 = Socket.new(:UNIX, :DGRAM, 0)
- *   s2_ai = AddrInfo.unix("/tmp/sock2")
+ *   s2_ai = Addrinfo.unix("/tmp/sock2")
  *   s2.bind(s2_ai)
  *   s3 = UNIXSocket.for_fd(s2.fileno)
  *

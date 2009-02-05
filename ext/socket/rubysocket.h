@@ -158,7 +158,7 @@ extern VALUE rb_cUNIXSocket;
 extern VALUE rb_cUNIXServer;
 #endif
 extern VALUE rb_cSocket;
-extern VALUE rb_cAddrInfo;
+extern VALUE rb_cAddrinfo;
 extern VALUE rb_cSockOpt;
 
 extern VALUE rb_eSocket;

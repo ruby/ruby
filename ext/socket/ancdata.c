@@ -736,7 +736,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
  *
  * _dest_sockaddr_ is a destination socket address for connection-less socket.
  * It should be a sockaddr such as a result of Socket.sockaddr_in.
- * An AddrInfo object can be used too.
+ * An Addrinfo object can be used too.
  *
  * _controls_ is a list of ancillary data.
  * The element of _controls_ should be Socket::AncillaryData or
@@ -997,7 +997,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
  * _mesg_ is a string of the received message.
  *
  * _sender_addrinfo_ is a sender socket address for connection-less socket.
- * It is an AddrInfo object.
+ * It is an Addrinfo object.
  * For connection-oriented socket such as TCP, sender_addrinfo is platform dependent.
  *
  * _rflags_ is a flags on the received message which is bitwise OR of MSG_* constants such as Socket::MSG_TRUNC.

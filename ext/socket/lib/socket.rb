@@ -1,29 +1,29 @@
 require 'socket.so'
 
-class AddrInfo
-  # creates an AddrInfo object from the arguments.
+class Addrinfo
+  # creates an Addrinfo object from the arguments.
   #
   # The arguments are interpreted as similar to self.
   #
-  #   AddrInfo.tcp("0.0.0.0", 4649).family_addrinfo("www.ruby-lang.org", 80)
-  #   #=> #<AddrInfo: 221.186.184.68:80 TCP (www.ruby-lang.org:80)>
+  #   Addrinfo.tcp("0.0.0.0", 4649).family_addrinfo("www.ruby-lang.org", 80)
+  #   #=> #<Addrinfo: 221.186.184.68:80 TCP (www.ruby-lang.org:80)>
   #
-  #   AddrInfo.unix("/tmp/sock").family_addrinfo("/tmp/sock2")
-  #   #=> #<AddrInfo: /tmp/sock2 SOCK_STREAM>
+  #   Addrinfo.unix("/tmp/sock").family_addrinfo("/tmp/sock2")
+  #   #=> #<Addrinfo: /tmp/sock2 SOCK_STREAM>
   #
   def family_addrinfo(*args)
     if args.empty?
       raise ArgumentError, "no address specified"
-    elsif AddrInfo === args.first
+    elsif Addrinfo === args.first
       raise ArgumentError, "too man argument" if args.length != 1
     elsif self.ip?
       raise ArgumentError, "IP address needs host and port but #{args.length} arguments given" if args.length != 2
       host, port = args
-      AddrInfo.getaddrinfo(host, port, self.pfamily, self.socktype, self.protocol)[0]
+      Addrinfo.getaddrinfo(host, port, self.pfamily, self.socktype, self.protocol)[0]
     elsif self.unix?
       raise ArgumentError, "UNIX socket needs single path argument but #{args.length} arguments given" if args.length != 1
       path, = args
-      AddrInfo.unix(path)
+      Addrinfo.unix(path)
     else
       raise ArgumentError, "unexpected family"
     end
@@ -57,13 +57,13 @@ class AddrInfo
   # If a block is given, it is called with the socket and the value of the block is returned.
   # The socket is returned otherwise.
   #
-  #   AddrInfo.tcp("www.ruby-lang.org", 80).connect_from("0.0.0.0", 4649) {|s|
+  #   Addrinfo.tcp("www.ruby-lang.org", 80).connect_from("0.0.0.0", 4649) {|s|
   #     s.print "GET / HTTP/1.0\r\n\r\n"
   #     p s.read
   #   }
   #
-  #   # AddrInfo object can be taken for the argument.
-  #   AddrInfo.tcp("www.ruby-lang.org", 80).connect_from(AddrInfo.tcp("0.0.0.0", 4649)) {|s|
+  #   # Addrinfo object can be taken for the argument.
+  #   Addrinfo.tcp("www.ruby-lang.org", 80).connect_from(Addrinfo.tcp("0.0.0.0", 4649)) {|s|
   #     s.print "GET / HTTP/1.0\r\n\r\n"
   #     p s.read
   #   }
@@ -77,7 +77,7 @@ class AddrInfo
   # If a block is given, it is called with the socket and the value of the block is returned.
   # The socket is returned otherwise.
   #
-  #   AddrInfo.tcp("www.ruby-lang.org", 80).connect {|s|
+  #   Addrinfo.tcp("www.ruby-lang.org", 80).connect {|s|
   #     s.print "GET / HTTP/1.0\r\n\r\n"
   #     p s.read
   #   }
@@ -91,7 +91,7 @@ class AddrInfo
   # If a block is given, it is called with the socket and the value of the block is returned.
   # The socket is returned otherwise.
   #
-  #   AddrInfo.tcp("0.0.0.0", 4649).connect_to("www.ruby-lang.org", 80) {|s|
+  #   Addrinfo.tcp("0.0.0.0", 4649).connect_to("www.ruby-lang.org", 80) {|s|
   #     s.print "GET / HTTP/1.0\r\n\r\n"
   #     p s.read
   #   }
@@ -106,7 +106,7 @@ class AddrInfo
   # If a block is given, it is called with the socket and the value of the block is returned.
   # The socket is returned otherwise.
   #
-  #   AddrInfo.udp("0.0.0.0", 9981).bind {|s|
+  #   Addrinfo.udp("0.0.0.0", 9981).bind {|s|
   #     s.local_address.connect {|s| s.send "hello", 0 }
   #     p s.recv(10) #=> "hello"
   #   }
@@ -145,16 +145,16 @@ class AddrInfo
     end
   end
 
-  # iterates over the list of AddrInfo objects obtained by AddrInfo.getaddrinfo.
+  # iterates over the list of Addrinfo objects obtained by Addrinfo.getaddrinfo.
   #
-  #   AddrInfo.foreach(nil, 80) {|x| p x }
-  #   #=> #<AddrInfo: 127.0.0.1:80 TCP (:80)>
-  #   #   #<AddrInfo: 127.0.0.1:80 UDP (:80)>
-  #   #   #<AddrInfo: [::1]:80 TCP (:80)>
-  #   #   #<AddrInfo: [::1]:80 UDP (:80)>
+  #   Addrinfo.foreach(nil, 80) {|x| p x }
+  #   #=> #<Addrinfo: 127.0.0.1:80 TCP (:80)>
+  #   #   #<Addrinfo: 127.0.0.1:80 UDP (:80)>
+  #   #   #<Addrinfo: [::1]:80 TCP (:80)>
+  #   #   #<Addrinfo: [::1]:80 UDP (:80)>
   #
   def self.foreach(nodename, service, family=nil, socktype=nil, protocol=nil, flags=nil, &block)
-    AddrInfo.getaddrinfo(nodename, service, family, socktype, protocol, flags).each(&block)
+    Addrinfo.getaddrinfo(nodename, service, family, socktype, protocol, flags).each(&block)
   end
 end
 
@@ -189,10 +189,10 @@ class Socket
 
     local_addr_list = nil
     if local_host != nil || local_port != nil
-      local_addr_list = AddrInfo.getaddrinfo(local_host, local_port, nil, :STREAM, nil)
+      local_addr_list = Addrinfo.getaddrinfo(local_host, local_port, nil, :STREAM, nil)
     end
 
-    AddrInfo.foreach(host, port, nil, :STREAM) {|ai|
+    Addrinfo.foreach(host, port, nil, :STREAM) {|ai|
       if local_addr_list
         local_addr = local_addr_list.find {|local_ai| local_ai.afamily == ai.afamily }
         next if !local_addr
@@ -227,7 +227,7 @@ class Socket
   end
 
   def self.tcp_server_sockets_port0(host)
-    ai_list = AddrInfo.getaddrinfo(host, 0, nil, :STREAM, nil, Socket::AI_PASSIVE)
+    ai_list = Addrinfo.getaddrinfo(host, 0, nil, :STREAM, nil, Socket::AI_PASSIVE)
     begin
       sockets = []
       port = nil
@@ -244,7 +244,7 @@ class Socket
           s.bind(ai)
           port = s.local_address.ip_port
         else
-          s.bind(AddrInfo.tcp(ai.ip_address, port))
+          s.bind(Addrinfo.tcp(ai.ip_address, port))
         end
         s.listen(5)
       }
@@ -280,21 +280,21 @@ class Socket
   #
   #   # The sockets contains IPv6 and IPv4 sockets.
   #   sockets.each {|s| p s.local_address }
-  #   #=> #<AddrInfo: [::]:1296 TCP>
-  #   #   #<AddrInfo: 0.0.0.0:1296 TCP>
+  #   #=> #<Addrinfo: [::]:1296 TCP>
+  #   #   #<Addrinfo: 0.0.0.0:1296 TCP>
   #
   #   # IPv6 and IPv4 socket has same port number, 53114, even if it is choosen dynamically.
   #   sockets = Socket.tcp_server_sockets(0)
   #   sockets.each {|s| p s.local_address }
-  #   #=> #<AddrInfo: [::]:53114 TCP>
-  #   #   #<AddrInfo: 0.0.0.0:53114 TCP>
+  #   #=> #<Addrinfo: [::]:53114 TCP>
+  #   #   #<Addrinfo: 0.0.0.0:53114 TCP>
   #
   def self.tcp_server_sockets(host=nil, port)
     return tcp_server_sockets_port0(host) if port == 0
     begin
       last_error = nil
       sockets = []
-      AddrInfo.foreach(host, port, nil, :STREAM, nil, Socket::AI_PASSIVE) {|ai|
+      Addrinfo.foreach(host, port, nil, :STREAM, nil, Socket::AI_PASSIVE) {|ai|
         begin
           s = ai.listen
         rescue SystemCallError
@@ -344,7 +344,7 @@ class Socket
   end
 
   # creates a TCP server on _port_ and calls the block for each connection accepted.
-  # The block is called with a socket and a client_address as an AddrInfo object.
+  # The block is called with a socket and a client_address as an Addrinfo object.
   #
   # If _host_ is specified, it is used with _port_ to determine the server addresses.
   #
@@ -355,8 +355,8 @@ class Socket
   # It means that the next connection is not accepted until the block returns.
   # So concurrent mechanism, thread for example, should be used to service multiple clients at a time.
   #
-  # Note that AddrInfo.getaddrinfo is used to determine the server socket addresses.
-  # When AddrInfo.getaddrinfo returns two or more addresses,
+  # Note that Addrinfo.getaddrinfo is used to determine the server socket addresses.
+  # When Addrinfo.getaddrinfo returns two or more addresses,
   # IPv4 and IPv6 address for example,
   # all of them are used.
   # Socket.tcp_server_loop succeeds if one socket can be used at least.
@@ -411,7 +411,7 @@ class Socket
   #   }
   #
   def self.unix(path) # :yield: socket
-    addr = AddrInfo.unix(path)
+    addr = Addrinfo.unix(path)
     sock = addr.connect
     if block_given?
       begin
@@ -430,7 +430,7 @@ class Socket
   #
   #   socket = Socket.unix_server_socket("/tmp/s")
   #   p socket               #=> #<Socket:fd 3>
-  #   p socket.local_address #=> #<AddrInfo: /tmp/s SOCK_STREAM>
+  #   p socket.local_address #=> #<Addrinfo: /tmp/s SOCK_STREAM>
   #
   def self.unix_server_socket(path)
     begin
@@ -440,7 +440,7 @@ class Socket
     if st && st.socket? && st.owned?
       File.unlink path
     end
-    AddrInfo.unix(path).listen
+    Addrinfo.unix(path).listen
   end
 
   # creates a UNIX socket server on _path_.

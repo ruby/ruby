@@ -674,13 +674,13 @@ sock_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
  *   socket.accept => [client_socket, client_addrinfo]
  *
  * Accepts a next connection.
- * Returns a new Socket object and AddrInfo object.
+ * Returns a new Socket object and Addrinfo object.
  *
  *   serv = Socket.new(:INET, :STREAM, 0)
  *   serv.listen(5)
  *   c = Socket.new(:INET, :STREAM, 0)
  *   c.connect(serv.local_address)
- *   p serv.accept #=> [#<Socket:fd 6>, #<AddrInfo: 127.0.0.1:48555 TCP>]
+ *   p serv.accept #=> [#<Socket:fd 6>, #<Addrinfo: 127.0.0.1:48555 TCP>]
  *
  */
 static VALUE
@@ -1442,12 +1442,12 @@ sockaddr_obj(struct sockaddr *addr)
  *
  * Returns local IP addresses as an array.
  *
- * The array contains AddrInfo objects.
+ * The array contains Addrinfo objects.
  *
  *  pp Socket.ip_address_list
- *  #=> [#<AddrInfo: 127.0.0.1>,
- *       #<AddrInfo: 192.168.0.128>,
- *       #<AddrInfo: ::1>,
+ *  #=> [#<Addrinfo: 127.0.0.1>,
+ *       #<Addrinfo: 192.168.0.128>,
+ *       #<Addrinfo: ::1>,
  *       ...]
  *
  */

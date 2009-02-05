@@ -1,3 +1,7 @@
+Thu Feb  5 19:58:40 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket: AddrInfo is renamed to Addrinfo.  [ruby-dev:37876]
+
 Thu Feb  5 16:18:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_SITE_LIB_PATH, RUBY_VENDOR_LIB_PATH): fix for

@@ -20,7 +20,7 @@ VALUE rb_cUNIXSocket;
 VALUE rb_cUNIXServer;
 #endif
 VALUE rb_cSocket;
-VALUE rb_cAddrInfo;
+VALUE rb_cAddrinfo;
 
 VALUE rb_eSocket;
 
