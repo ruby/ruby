@@ -21,17 +21,17 @@ Init_id(void)
     rb_encoding *enc = rb_usascii_encoding();
 
     REGISTER_SYMID(idNULL, "");
-    REGISTER_SYMID(idIFUNC, "<IFUNC>"),
-    REGISTER_SYMID(idCFUNC, "<CFUNC>"),
-    REGISTER_SYMID(idRespond_to, "respond_to?"),
-    REGISTER_SYMID(idThrowState, "#__ThrowState__"),
+    REGISTER_SYMID(idIFUNC, "<IFUNC>");
+    REGISTER_SYMID(idCFUNC, "<CFUNC>");
+    REGISTER_SYMID(idRespond_to, "respond_to?");
+    REGISTER_SYMID(idThrowState, "#__ThrowState__");
 
-    REGISTER_SYMID(id_core_set_method_alias,   	    "core#set_method_alias"),
-    REGISTER_SYMID(id_core_set_variable_alias, 	    "core#set_variable_alias"),
-    REGISTER_SYMID(id_core_undef_method,       	    "core#undef_method"),
-    REGISTER_SYMID(id_core_define_method,      	    "core#define_method"),
-    REGISTER_SYMID(id_core_define_singleton_method, "core#define_singleton_method"),
-    REGISTER_SYMID(id_core_set_postexe,             "core#set_postexe"),
+    REGISTER_SYMID(id_core_set_method_alias,   	    "core#set_method_alias");
+    REGISTER_SYMID(id_core_set_variable_alias, 	    "core#set_variable_alias");
+    REGISTER_SYMID(id_core_undef_method,       	    "core#undef_method");
+    REGISTER_SYMID(id_core_define_method,      	    "core#define_method");
+    REGISTER_SYMID(id_core_define_singleton_method, "core#define_singleton_method");
+    REGISTER_SYMID(id_core_set_postexe,             "core#set_postexe");
 
     REGISTER_SYMID(idEach, "each");
     REGISTER_SYMID(idLength, "length");
