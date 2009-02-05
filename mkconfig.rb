@@ -101,6 +101,8 @@ File.foreach "config.status" do |line|
       has_version = true
     when "PATCHLEVEL"
       has_patchlevel = true
+    when "ruby_version"
+      version = val[/\A"(.*)"\z/, 1]
     end
   end
 #  break if /^CEOF/
@@ -108,14 +110,14 @@ end
 
 drive = File::PATH_SEPARATOR == ';'
 
-prefix = '/lib/ruby/' + RUBY_VERSION + '/' + RUBY_PLATFORM
+prefix = "/lib/ruby/#{version}/#{RUBY_PLATFORM}"
 print "  TOPDIR = File.dirname(__FILE__).chomp!(#{prefix.dump})\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
 print "  CONFIG = {}\n"
 print "  CONFIG[\"DESTDIR\"] = DESTDIR\n"
 
 unless has_version
-  RUBY_VERSION.scan(/(\d+)\.(\d+)\.(\d+)/) {
+  version.scan(/(\d+)\.(\d+)(?:\.(\d+))?/) {
     print "  CONFIG[\"MAJOR\"] = \"" + $1 + "\"\n"
     print "  CONFIG[\"MINOR\"] = \"" + $2 + "\"\n"
     print "  CONFIG[\"TEENY\"] = \"" + $3 + "\"\n"

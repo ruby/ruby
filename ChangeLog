@@ -1,3 +1,9 @@
+Thu Feb  5 14:26:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (MAJOR, MINOR, TEENY): uses RUBY_VERSION_*.
+
+	* mkconfig.rb (prefix): uses ruby_version in config.status.
+
 Thu Feb  5 12:24:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_uniq): gets rid of copying.
