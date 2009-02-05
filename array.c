@@ -2864,21 +2864,33 @@ rb_ary_cmp(VALUE ary1, VALUE ary2)
 }
 
 static VALUE
-ary_make_hash(VALUE ary1, VALUE ary2)
+ary_add_hash(VALUE hash, VALUE ary)
 {
-    VALUE hash = rb_hash_new();
     long i;
 
-    RBASIC(hash)->klass = 0;
-    for (i=0; i<RARRAY_LEN(ary1); i++) {
-	rb_hash_aset(hash, RARRAY_PTR(ary1)[i], Qtrue);
-    }
-    if (ary2) {
-	for (i=0; i<RARRAY_LEN(ary2); i++) {
-	    rb_hash_aset(hash, RARRAY_PTR(ary2)[i], Qtrue);
-	}
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	rb_hash_aset(hash, RARRAY_PTR(ary)[i], Qtrue);
     }
     return hash;
+}
+
+static VALUE
+ary_make_hash(VALUE ary)
+{
+    VALUE hash = rb_hash_new();
+
+    RBASIC(hash)->klass = 0;
+    return ary_add_hash(hash, ary);
+}
+
+static inline void
+ary_recycle_hash(VALUE hash)
+{
+    if (RHASH(hash)->ntbl) {
+	st_table *tbl = RHASH(hash)->ntbl;
+	RHASH(hash)->ntbl = 0;
+	st_free_table(tbl);
+    }
 }
 
 /* 
@@ -2900,13 +2912,14 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
     volatile VALUE hash;
     long i;
 
-    hash = ary_make_hash(to_ary(ary2), 0);
+    hash = ary_make_hash(to_ary(ary2));
     ary3 = rb_ary_new();
 
     for (i=0; i<RARRAY_LEN(ary1); i++) {
 	if (st_lookup(RHASH_TBL(hash), RARRAY_PTR(ary1)[i], 0)) continue;
 	rb_ary_push(ary3, rb_ary_elt(ary1, i));
     }
+    ary_recycle_hash(hash);
     return ary3;
 }
 
@@ -2930,7 +2943,7 @@ rb_ary_and(VALUE ary1, VALUE ary2)
     ary2 = to_ary(ary2);
     ary3 = rb_ary_new2(RARRAY_LEN(ary1) < RARRAY_LEN(ary2) ?
 	    RARRAY_LEN(ary1) : RARRAY_LEN(ary2));
-    hash = ary_make_hash(ary2, 0);
+    hash = ary_make_hash(ary2);
 
     if (RHASH_EMPTY_P(hash))
         return ary3;
@@ -2941,6 +2954,7 @@ rb_ary_and(VALUE ary1, VALUE ary2)
 	    rb_ary_push(ary3, v);
 	}
     }
+    ary_recycle_hash(hash);
 
     return ary3;
 }
@@ -2965,7 +2979,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
 
     ary2 = to_ary(ary2);
     ary3 = rb_ary_new2(RARRAY_LEN(ary1)+RARRAY_LEN(ary2));
-    hash = ary_make_hash(ary1, ary2);
+    hash = ary_add_hash(ary_make_hash(ary1), ary2);
 
     for (i=0; i<RARRAY_LEN(ary1); i++) {
 	v = vv = rb_ary_elt(ary1, i);
@@ -2979,6 +2993,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
 	    rb_ary_push(ary3, v);
 	}
     }
+    ary_recycle_hash(hash);
     return ary3;
 }
 
@@ -3002,7 +3017,7 @@ rb_ary_uniq_bang(VALUE ary)
     VALUE hash, v, vv;
     long i, j;
 
-    hash = ary_make_hash(ary, 0);
+    hash = ary_make_hash(ary);
 
     if (RARRAY_LEN(ary) == RHASH_SIZE(hash)) {
 	return Qnil;
@@ -3014,6 +3029,7 @@ rb_ary_uniq_bang(VALUE ary)
 	}
     }
     ARY_SET_LEN(ary, j);
+    ary_recycle_hash(hash);
 
     return ary;
 }

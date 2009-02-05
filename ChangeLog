@@ -1,6 +1,14 @@
-Thu Feb  5 11:37:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Feb  5 12:01:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (ary_add_hash): split from ary_make_hash().
 
 	* array.c (ary_make_hash): hide a Hash used internally.
+
+	* array.c (ary_recycle_hash): clears internally used hash.  this
+	  name came from [ruby-dev:37908].
+
+	* array.c (rb_ary_diff, rb_ary_and, rb_ary_or, rb_ary_uniq_bang):
+	  recycle hashes.
 
 Thu Feb  5 11:21:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
