@@ -2869,6 +2869,7 @@ ary_make_hash(VALUE ary1, VALUE ary2)
     VALUE hash = rb_hash_new();
     long i;
 
+    RBASIC(hash)->klass = 0;
     for (i=0; i<RARRAY_LEN(ary1); i++) {
 	rb_hash_aset(hash, RARRAY_PTR(ary1)[i], Qtrue);
     }

@@ -1,3 +1,7 @@
+Thu Feb  5 11:37:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (ary_make_hash): hide a Hash used internally.
+
 Thu Feb  5 11:21:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_LIB_VERSION): added for library version, to
