@@ -3014,7 +3014,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
 static VALUE
 rb_ary_uniq_bang(VALUE ary)
 {
-    VALUE hash, v, vv;
+    VALUE hash, v;
     long i, j;
 
     hash = ary_make_hash(ary);
@@ -3023,8 +3023,8 @@ rb_ary_uniq_bang(VALUE ary)
 	return Qnil;
     }
     for (i=j=0; i<RARRAY_LEN(ary); i++) {
-	v = vv = rb_ary_elt(ary, i);
-	if (st_delete(RHASH_TBL(hash), (st_data_t*)&vv, 0)) {
+	st_data_t vv = (st_data_t)(v = rb_ary_elt(ary, i));
+	if (st_delete(RHASH_TBL(hash), &vv, 0)) {
 	    rb_ary_store(ary, j++, v);
 	}
     }
@@ -3047,9 +3047,19 @@ rb_ary_uniq_bang(VALUE ary)
 static VALUE
 rb_ary_uniq(VALUE ary)
 {
-    ary = rb_ary_dup(ary);
-    rb_ary_uniq_bang(ary);
-    return ary;
+    VALUE hash = ary_make_hash(ary), v;
+    VALUE uniq = ary_new(rb_obj_class(ary), RHASH_SIZE(hash));
+    long i;
+
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	st_data_t vv = (st_data_t)(v = rb_ary_elt(ary, i));
+	if (st_delete(RHASH_TBL(hash), &vv, 0)) {
+	    rb_ary_push(uniq, v);
+	}
+    }
+    ary_recycle_hash(hash);
+
+    return uniq;
 }
 
 /* 
