@@ -750,7 +750,7 @@ Init_readline()
     VALUE history, fcomp, ucomp;
 
     /* Allow conditional parsing of the ~/.inputrc file. */
-    rl_readline_name = "Ruby";
+    rl_readline_name = (char *)"Ruby";
 
     using_history();
 

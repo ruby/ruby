@@ -1,3 +1,12 @@
+Thu Feb  5 21:01:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (darwin): get rid of strange settings issue of
+	  apple gcc port, which searches /usr/local/include always but
+	  /usr/local/lib not.
+
+	* ext/readline/readline.c (Init_readline): suppress warnings with
+	  libedit.
+
 Tue Feb  3 18:35:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/thread/thread.c (rb_queue_pop, rb_queue_push): should not lock
