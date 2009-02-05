@@ -1,3 +1,12 @@
+Thu Feb  5 09:02:18 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/rexml/entity.rb (unnormalized): do not call
+	  document.record_entity_expansion if document is nil.
+	  see <http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=502535>.
+	  Thanks, Naohisa Goto.  backported from trunk.
+
+	* test/rexml/test_document.rb: ditto.
+
 Thu Feb  5 08:54:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_join): do not repeat self in a recursive array.
