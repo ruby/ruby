@@ -87,7 +87,7 @@ cont_mark(void *ptr)
 #ifdef CAPTURE_JUST_VALID_VM_STACK
 	    rb_gc_mark_locations(cont->vm_stack,
 				 cont->vm_stack + cont->vm_stack_slen + cont->vm_stack_clen);
-#elif
+#else
 	    rb_gc_mark_localtion(cont->vm_stack,
 				 cont->vm_stack, cont->saved_thread.stack_size);
 #endif
@@ -267,7 +267,7 @@ cont_capture(volatile int *stat)
     cont->vm_stack = ALLOC_N(VALUE, cont->vm_stack_slen + cont->vm_stack_clen);
     MEMCPY(cont->vm_stack, th->stack, VALUE, cont->vm_stack_slen);
     MEMCPY(cont->vm_stack + cont->vm_stack_slen, (VALUE*)th->cfp, VALUE, cont->vm_stack_clen);
-#elif
+#else
     cont->vm_stack = ALLOC_N(VALUE, th->stack_size);
     MEMCPY(cont->vm_stack, th->stack, VALUE, th->stack_size);
 #endif
@@ -314,7 +314,7 @@ cont_restore_1(rb_context_t *cont)
 	MEMCPY(th->stack, cont->vm_stack, VALUE, cont->vm_stack_slen);
 	MEMCPY(th->stack + sth->stack_size - cont->vm_stack_clen,
 	       cont->vm_stack + cont->vm_stack_slen, VALUE, cont->vm_stack_clen);
-#elif
+#else
 	MEMCPY(th->stack, cont->vm_stack, VALUE, sth->stack_size);
 #endif
     }
