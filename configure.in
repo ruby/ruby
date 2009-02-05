@@ -2048,11 +2048,13 @@ case "$target_os" in
     RUBY_VENDOR_LIB_PATH="`eval echo \\"$VENDOR_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
     ;;
 esac
+
+pat="$RUBY_LIB_PREFIX/"'\(.*\)'
 RUBY_LIB_PATH='RUBY_LIB_PREFIX"/"RUBY_LIB_VERSION'
 case "$RUBY_SITE_LIB_PATH" in
   dnl (
   "$RUBY_LIB_PREFIX/"*)
-    RUBY_SITE_LIB_PATH='RUBY_LIB_PREFIX"/'"`expr \"$RUBY_SITE_LIB_PATH\" : \"$RUBY_LIB_PREFIX/\"'\(.*\)'`"'"'
+    RUBY_SITE_LIB_PATH='RUBY_LIB_PREFIX"/'"`expr \"$RUBY_SITE_LIB_PATH\" : \"$pat\"`"'"'
     ;;
   dnl (
   *)
@@ -2063,7 +2065,7 @@ RUBY_SITE_LIB_PATH2='RUBY_SITE_LIB"/"RUBY_LIB_VERSION'
 case "$RUBY_VENDOR_LIB_PATH" in
   dnl (
   "$RUBY_LIB_PREFIX/"*)
-    RUBY_VENDOR_LIB_PATH='RUBY_LIB_PREFIX"/'"`expr \"$RUBY_VENDOR_LIB_PATH\" : \"$RUBY_LIB_PREFIX/\"'\(.*\)'`"'"'
+    RUBY_VENDOR_LIB_PATH='RUBY_LIB_PREFIX"/'"`expr \"$RUBY_VENDOR_LIB_PATH\" : \"$pat\"`"'"'
     ;;
   dnl (
   *)
