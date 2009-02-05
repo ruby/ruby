@@ -155,7 +155,7 @@ struct child_info {
 };
 
 static int
-chfunc(void *data, char *errmsg, size_t errmsg_len)
+chfunc(void *data)
 {
     struct child_info *carg = data;
     int master = carg->master;

@@ -1,3 +1,7 @@
+Fri Feb  6 07:52:57 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pty/pty.c (chfunc): type fixed.
+
 Fri Feb  6 02:51:59 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_each_codepoint): update RDoc for
