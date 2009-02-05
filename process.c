@@ -1764,7 +1764,7 @@ rb_f_exec(int argc, VALUE *argv)
         rb_exec_arg_addopt(&earg, ID2SYM(rb_intern("close_others")), Qfalse);
     rb_exec_arg_fixup(&earg);
 
-    rb_exec(&earg, errmsg, sizeof(errmsg));
+    rb_exec_err(&earg, errmsg, sizeof(errmsg));
     if (errmsg[0])
         rb_sys_fail(errmsg);
     rb_sys_fail(earg.prog);
@@ -2189,7 +2189,7 @@ run_exec_rlimit(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 #endif
 
 int
-rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s, char *errmsg, size_t errmsg_buflen)
+rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char *errmsg, size_t errmsg_buflen)
 {
     VALUE options = e->options;
     VALUE soptions = Qnil;
@@ -2304,13 +2304,19 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s, char *er
 }
 
 int
-rb_exec(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
+rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
+{
+    return rb_run_exec_options_err(e, s, NULL, 0);
+}
+
+int
+rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 {
     int argc = e->argc;
     VALUE *argv = e->argv;
     const char *prog = e->prog;
 
-    if (rb_run_exec_options(e, NULL, errmsg, errmsg_buflen) < 0) {
+    if (rb_run_exec_options_err(e, NULL, errmsg, errmsg_buflen) < 0) {
         return -1;
     }
 
@@ -2329,12 +2335,18 @@ rb_exec(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
     return -1;
 }
 
+int
+rb_exec(const struct rb_exec_arg *e)
+{
+    return rb_exec_err(e, NULL, 0);
+}
+
 #ifdef HAVE_FORK
 static int
 rb_exec_atfork(void* arg, char *errmsg, size_t errmsg_buflen)
 {
     rb_thread_atfork_before_exec();
-    return rb_exec(arg, errmsg, errmsg_buflen);
+    return rb_exec_err(arg, errmsg, errmsg_buflen);
 }
 #endif
 
@@ -2417,7 +2429,7 @@ pipe_nocrash(int filedes[2], VALUE fds)
  * +chfunc+ must not raise any exceptions.
  */
 rb_pid_t
-rb_fork(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds,
+rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds,
         char *errmsg, size_t errmsg_buflen)
 {
     rb_pid_t pid;
@@ -2519,6 +2531,32 @@ rb_fork(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fd
 #endif
     return pid;
 }
+
+struct chfunc_wrapper_t {
+    int (*chfunc)(void*);
+    void *arg;
+};
+
+static int
+chfunc_wrapper(void *arg_, char *errmsg, size_t errmsg_buflen)
+{
+    struct chfunc_wrapper_t *arg = arg_;
+    return arg->chfunc(arg->arg);
+}
+
+rb_pid_t
+rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
+{
+    if (chfunc) {
+        struct chfunc_wrapper_t warg = { chfunc, charg };
+        return rb_fork_err(status, chfunc_wrapper, &warg, fds, NULL, 0);
+    }
+    else {
+        return rb_fork_err(status, NULL, NULL, fds, NULL, 0);
+    }
+
+}
+
 #endif
 
 /*
@@ -2550,7 +2588,7 @@ rb_f_fork(VALUE obj)
 
     rb_secure(2);
 
-    switch (pid = rb_fork(0, 0, 0, Qnil, NULL, 0)) {
+    switch (pid = rb_fork(0, 0, 0, Qnil)) {
       case 0:
 #ifdef linux
 	after_exec();
@@ -2802,10 +2840,10 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
     rb_exec_arg_fixup(&earg);
 
 #if defined HAVE_FORK
-    status = rb_fork(&status, rb_exec_atfork, &earg, earg.redirect_fds, errmsg, errmsg_buflen);
+    status = rb_fork_err(&status, rb_exec_atfork, &earg, earg.redirect_fds, errmsg, errmsg_buflen);
     if (prog && earg.argc) earg.argv[0] = prog;
 #else
-    if (rb_run_exec_options(&earg, &sarg, errmsg, errmsg_buflen) < 0) {
+    if (rb_run_exec_options_err(&earg, &sarg, errmsg, errmsg_buflen) < 0) {
         return -1;
     }
 
@@ -2829,15 +2867,21 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
     rb_last_status_set((status & 0xff) << 8, 0);
 # endif
 
-    rb_run_exec_options(&sarg, NULL, errmsg, errmsg_buflen);
+    rb_run_exec_options_err(&sarg, NULL, errmsg, errmsg_buflen);
 #endif
     return status;
 }
 
 rb_pid_t
-rb_spawn(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
+rb_spawn_err(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
 {
     return rb_spawn_internal(argc, argv, Qtrue, errmsg, errmsg_buflen);
+}
+
+rb_pid_t
+rb_spawn(int argc, VALUE *argv)
+{
+    return rb_spawn_internal(argc, argv, Qtrue, NULL, 0);
 }
 
 /*
@@ -3130,7 +3174,7 @@ rb_f_spawn(int argc, VALUE *argv)
     rb_pid_t pid;
     char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
 
-    pid = rb_spawn(argc, argv, errmsg, sizeof(errmsg));
+    pid = rb_spawn_err(argc, argv, errmsg, sizeof(errmsg));
     if (pid == -1) {
         if (errmsg[0] == '\0')
             rb_sys_fail(RSTRING_PTR(argv[0]));
@@ -4471,7 +4515,7 @@ proc_daemon(int argc, VALUE *argv)
     if (n < 0) rb_sys_fail("daemon");
     return INT2FIX(n);
 #elif defined(HAVE_FORK)
-    switch (rb_fork(0, 0, 0, Qnil, NULL, 0)) {
+    switch (rb_fork(0, 0, 0, Qnil)) {
       case -1:
 	return (-1);
       case 0:

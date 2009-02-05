@@ -258,7 +258,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     carg.slavename = SlaveName;
     carg.argc = argc;
     carg.argv = argv;
-    pid = rb_fork(0, chfunc, &carg, Qnil, NULL, 0);
+    pid = rb_fork(0, chfunc, &carg, Qnil);
 
     if (pid < 0) {
 	close(master);

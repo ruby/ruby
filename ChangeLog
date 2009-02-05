@@ -1,3 +1,31 @@
+Thu Feb  5 20:28:27 2009  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_run_exec_options_err): renamed from
+	  rb_run_exec_options.
+	  (rb_exec_err): renamed from rb_exec.
+	  (rb_fork_err): renamed from rb_fork.
+	  (rb_spawn_err): renamed from rb_spawn.
+	  (rb_run_exec_options): declared with 1.9.1 compatible signature.
+	  (rb_exec): ditto.
+	  (rb_fork): ditto.
+	  (rb_spawn): ditto.
+
+	* process.c (rb_run_exec_options_err): renamed from
+	  rb_run_exec_options.
+	  (rb_exec_err): renamed from rb_exec.
+	  (rb_fork_err): renamed from rb_fork.
+	  (rb_spawn_err): renamed from rb_spawn.
+	  (rb_run_exec_options): defined.
+	  (rb_exec): ditto.
+	  (rb_fork): ditto.
+	  (rb_spawn): ditto.
+
+	* io.c: follow above change.
+
+	* ext/pty/pty.c: follow above change.
+
+	  [ruby-dev:37893]
+
 Thu Feb  5 19:58:40 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket: AddrInfo is renamed to Addrinfo.  [ruby-dev:37876]
