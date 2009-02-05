@@ -8,6 +8,18 @@ require "test/unit"
 class TestSocketAddrInfo < Test::Unit::TestCase
   HAS_UNIXSOCKET = defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM
 
+  def tcp_unspecified_to_loopback(addrinfo)
+    if addrinfo.ipv4? && addrinfo.ip_address == "0.0.0.0"
+      AddrInfo.tcp("127.0.0.1", addrinfo.ip_port)
+    elsif addrinfo.ipv6? && addrinfo.ipv6_unspecified?
+      AddrInfo.tcp("::1", addrinfo.ip_port)
+    elsif addrinfo.ipv6? && (ai = addrinfo.ipv6_to_ipv4) && ai.ip_address == "0.0.0.0"
+      AddrInfo.tcp("127.0.0.1", addrinfo.ip_port)
+    else
+      addrinfo
+    end
+  end
+
   def test_addrinfo_ip
     ai = AddrInfo.ip("127.0.0.1")
     assert_equal([0, "127.0.0.1"], Socket.unpack_sockaddr_in(ai))
@@ -319,6 +331,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
   def test_connect_from
     TCPServer.open("0.0.0.0", 0) {|serv|
       serv_ai = AddrInfo.new(serv.getsockname, :INET, :STREAM)
+      serv_ai = tcp_unspecified_to_loopback(serv_ai)
       port = random_port
       begin
         serv_ai.connect_from("0.0.0.0", port) {|s1|
@@ -338,6 +351,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
   def test_connect_to
     TCPServer.open("0.0.0.0", 0) {|serv|
       serv_ai = AddrInfo.new(serv.getsockname, :INET, :STREAM)
+      serv_ai = tcp_unspecified_to_loopback(serv_ai)
       port = random_port
       client_ai = AddrInfo.tcp("0.0.0.0", port)
       begin
@@ -358,6 +372,7 @@ class TestSocketAddrInfo < Test::Unit::TestCase
   def test_connect
     TCPServer.open("0.0.0.0", 0) {|serv|
       serv_ai = AddrInfo.new(serv.getsockname, :INET, :STREAM)
+      serv_ai = tcp_unspecified_to_loopback(serv_ai)
       begin
         serv_ai.connect {|s1|
           s2 = serv.accept
@@ -392,7 +407,11 @@ class TestSocketAddrInfo < Test::Unit::TestCase
     begin
       client_ai.listen {|serv|
         assert_equal(port, serv.local_address.ip_port)
-        TCPSocket.open(*serv.local_address.ip_unpack) {|s1|
+        serv_addr, serv_port = serv.local_address.ip_unpack
+        case serv_addr
+	when "0.0.0.0" then serv_addr = "127.0.0.1"
+	end
+        TCPSocket.open(serv_addr, serv_port) {|s1|
           s2, addr = serv.accept
           begin
             assert_equal(s1.local_address.ip_unpack, addr.ip_unpack)
