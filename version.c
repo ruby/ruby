@@ -16,6 +16,13 @@
 #define PRINT(type) puts(ruby_##type)
 #define MKSTR(type) rb_obj_freeze(rb_usascii_str_new(ruby_##type, sizeof(ruby_##type)-1))
 
+#ifndef RUBY_ARCH
+#define RUBY_ARCH RUBY_PLATFORM
+#endif
+#ifndef RUBY_SITEARCH
+#define RUBY_SITEARCH RUBY_ARCH
+#endif
+
 const char ruby_version[] = RUBY_VERSION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
@@ -23,6 +30,30 @@ const int ruby_patchlevel = RUBY_PATCHLEVEL;
 const char ruby_description[] = RUBY_DESCRIPTION;
 const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
+
+const char ruby_initial_load_paths[] =
+#ifdef RUBY_SEARCH_PATH
+    RUBY_SEARCH_PATH "\0"
+#endif
+    RUBY_SITE_LIB2 "\0"
+#ifdef RUBY_SITE_THIN_ARCHLIB
+    RUBY_SITE_THIN_ARCHLIB "\0"
+#endif
+    RUBY_SITE_ARCHLIB "\0"
+    RUBY_SITE_LIB "\0"
+
+    RUBY_VENDOR_LIB2 "\0"
+#ifdef RUBY_VENDOR_THIN_ARCHLIB
+    RUBY_VENDOR_THIN_ARCHLIB "\0"
+#endif
+    RUBY_VENDOR_ARCHLIB "\0"
+    RUBY_VENDOR_LIB "\0"
+
+    RUBY_LIB "\0"
+#ifdef RUBY_THIN_ARCHLIB
+    RUBY_THIN_ARCHLIB "\0"
+#endif
+    RUBY_ARCHLIB "\0";
 
 void
 Init_version(void)

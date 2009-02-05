@@ -1,3 +1,19 @@
+Thu Feb  5 11:21:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_LIB_VERSION): added for library version, to
+	  split from core version.  [ruby-dev:37748]
+
+	* configure.in (RUBY_LIB_PATH, etc): moved actual version
+	  dependent stuff to version.c.
+
+	* ruby.c (ruby_init_loadpath_safe): ditto.
+
+	* version.c (ruby_initial_load_paths): moved initial load path
+	  version depending on version from ruby.c.
+
+	* version.h (RUBY_VERSION_{MAJOR,MINOR,TEENY}): now mean library
+	  and API version, and reverted to 1.9.1.  [ruby-dev:37889]
+
 Thu Feb  5 07:39:33 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/readline/readline.c (Init_readline): remove_history(0) may be

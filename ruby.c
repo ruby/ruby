@@ -359,6 +359,8 @@ void
 ruby_init_loadpath_safe(int safe_level)
 {
     VALUE load_path;
+    extern const char ruby_initial_load_paths[];
+    const char *paths = ruby_initial_load_paths;
 #if defined LOAD_RELATIVE
     char libpath[MAXPATHLEN + 1];
     char *p;
@@ -395,7 +397,7 @@ ruby_init_loadpath_safe(int safe_level)
 
     rest = sizeof(libpath) - 1 - (p - libpath);
 
-#define RUBY_RELATIVE(path) (strncpy(p, (path), rest), libpath)
+#define RUBY_RELATIVE(path) (strlcpy(p, (path), rest), libpath)
 #else
 #define RUBY_RELATIVE(path) (path)
 #endif
@@ -406,29 +408,10 @@ ruby_init_loadpath_safe(int safe_level)
 	ruby_push_include(getenv("RUBYLIB"), identical_path);
     }
 
-#ifdef RUBY_SEARCH_PATH
-    incpush(RUBY_RELATIVE(RUBY_SEARCH_PATH));
-#endif
-
-    incpush(RUBY_RELATIVE(RUBY_SITE_LIB2));
-#ifdef RUBY_SITE_THIN_ARCHLIB
-    incpush(RUBY_RELATIVE(RUBY_SITE_THIN_ARCHLIB));
-#endif
-    incpush(RUBY_RELATIVE(RUBY_SITE_ARCHLIB));
-    incpush(RUBY_RELATIVE(RUBY_SITE_LIB));
-
-    incpush(RUBY_RELATIVE(RUBY_VENDOR_LIB2));
-#ifdef RUBY_VENDOR_THIN_ARCHLIB
-    incpush(RUBY_RELATIVE(RUBY_VENDOR_THIN_ARCHLIB));
-#endif
-    incpush(RUBY_RELATIVE(RUBY_VENDOR_ARCHLIB));
-    incpush(RUBY_RELATIVE(RUBY_VENDOR_LIB));
-
-    incpush(RUBY_RELATIVE(RUBY_LIB));
-#ifdef RUBY_THIN_ARCHLIB
-    incpush(RUBY_RELATIVE(RUBY_THIN_ARCHLIB));
-#endif
-    incpush(RUBY_RELATIVE(RUBY_ARCHLIB));
+    while (*paths) {
+	incpush(RUBY_RELATIVE(paths));
+	paths += strlen(paths) + 1;
+    }
 
     if (safe_level == 0) {
 	incpush(".");

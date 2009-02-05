@@ -2012,14 +2012,25 @@ AC_ARG_WITH(ruby-version,
 	    [  --with-ruby-version=STR ruby version string for version specific directories [[full]] (full|minor|STR)],
             [ruby_version=$withval],
             [ruby_version=full])
+unset RUBY_LIB_VERSION
 case "$ruby_version" in
   full)
-    ruby_version="${MAJOR}.${MINOR}.${TEENY}"
+    RUBY_LIB_VERSION='STRINGIZE(RUBY_VERSION_MAJOR)"."STRINGIZE(RUBY_VERSION_MINOR)"."STRINGIZE(RUBY_VERSION_TEENY)'
     ;;
   minor)
-    ruby_version="${MAJOR}.${MINOR}"
+    RUBY_LIB_VERSION='STRINGIZE(RUBY_VERSION_MAJOR)"."STRINGIZE(RUBY_VERSION_MINOR)'
     ;;
 esac
+if test ${RUBY_LIB_VERSION+set}; then
+    {
+    echo '#include "version.h"' 
+    echo "ruby_version=${RUBY_LIB_VERSION}"
+    } > conftest.c
+    ruby_version="`$CPP -I"${srcdir}" -D'STRINGIZE(x)=x' conftest.c | grep '^ruby_version='`"
+    eval $ruby_version
+else
+    RUBY_LIB_VERSION="\"${ruby_version}\""
+fi
 
 AC_ARG_WITH(sitedir,
 	    [  --with-sitedir=DIR      site libraries in DIR [[LIBDIR/ruby/site_ruby]]],
@@ -2045,15 +2056,37 @@ case "$target_os" in
     RUBY_VENDOR_LIB_PATH="`eval echo \\"$VENDOR_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
     ;;
 esac
-RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${ruby_version}"
-RUBY_SITE_LIB_PATH2="${RUBY_SITE_LIB_PATH}/${ruby_version}"
-RUBY_VENDOR_LIB_PATH2="${RUBY_VENDOR_LIB_PATH}/${ruby_version}"
+RUBY_LIB_PATH='RUBY_LIB_PREFIX"/"RUBY_LIB_VERSION'
+case "$RUBY_SITE_LIB_PATH" in
+  dnl (
+  "$RUBY_LIB_PREFIX/"*)
+    RUBY_SITE_LIB_PATH='RUBY_LIB_PREFIX"/'"`expr \"$RUBY_SITE_LIB_PATH\" : \"$RUBY_LIB_PREFIX/\"'\(.*\)'`"'"'
+    ;;
+  dnl (
+  *)
+    RUBY_SITE_LIB_PATH="\"${RUBY_SITE_LIB_PATH}\""
+    ;;
+esac
+RUBY_SITE_LIB_PATH2='RUBY_SITE_LIB"/"RUBY_LIB_VERSION'
+case "$RUBY_VENDOR_LIB_PATH" in
+  dnl (
+  "$RUBY_LIB_PREFIX/"*)
+    RUBY_VENDOR_LIB_PATH='RUBY_LIB_PREFIX"/'"`expr \"$RUBY_VENDOR_LIB_PATH\" : \"$RUBY_LIB_PREFIX/\"'\(.*\)'`"'"'
+    ;;
+  dnl (
+  *)
+    RUBY_VENDOR_LIB_PATH="\"${RUBY_VENDOR_LIB_PATH}\""
+    ;;
+esac
+RUBY_VENDOR_LIB_PATH2='RUBY_VENDOR_LIB"/"RUBY_LIB_VERSION'
 
-AC_DEFINE_UNQUOTED(RUBY_LIB, "${RUBY_LIB_PATH}")
-AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${RUBY_SITE_LIB_PATH}")
-AC_DEFINE_UNQUOTED(RUBY_SITE_LIB2, "${RUBY_SITE_LIB_PATH2}")
-AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, "${RUBY_VENDOR_LIB_PATH}")
-AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB2, "${RUBY_VENDOR_LIB_PATH2}")
+AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION, ${RUBY_LIB_VERSION})
+AC_DEFINE_UNQUOTED(RUBY_LIB_PREFIX, "${RUBY_LIB_PREFIX}")
+AC_DEFINE_UNQUOTED(RUBY_LIB, ${RUBY_LIB_PATH})
+AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, ${RUBY_SITE_LIB_PATH})
+AC_DEFINE_UNQUOTED(RUBY_SITE_LIB2, ${RUBY_SITE_LIB_PATH2})
+AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, ${RUBY_VENDOR_LIB_PATH})
+AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB2, ${RUBY_VENDOR_LIB_PATH2})
 
 AC_SUBST(arch)dnl
 AC_SUBST(sitearch)dnl
@@ -2066,28 +2099,24 @@ AC_SUBST(configure_args)dnl
 
 if test "$fat_binary" != no ; then
     arch="fat-${target_os}"
-
-    AC_DEFINE_UNQUOTED(RUBY_THIN_ARCHLIB,
-                 "${RUBY_LIB_PATH}/" __ARCHITECTURE__ "-${target_os}")
-
-    AC_DEFINE_UNQUOTED(RUBY_SITE_THIN_ARCHLIB,
-                 "${RUBY_SITE_LIB_PATH}/" __ARCHITECTURE__ "-${target_os}")
-    AC_DEFINE_UNQUOTED(RUBY_VENDOR_THIN_ARCHLIB,
-                 "${RUBY_VENDOR_LIB_PATH}/" __ARCHITECTURE__ "-${target_os}")
-    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, __ARCHITECTURE__ "-${target_os}")
+    AC_DEFINE_UNQUOTED(RUBY_THIN_ARCHLIB, RUBY_LIB"/"RUBY_PLATFORM)
+    AC_DEFINE_UNQUOTED(RUBY_SITE_THIN_ARCHLIB, RUBY_SITE_LIB"/"RUBY_PLATFORM)
+    AC_DEFINE_UNQUOTED(RUBY_VENDOR_THIN_ARCHLIB, RUBY_VENDOR_LIB"/"RUBY_PLATFORM)
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, __ARCHITECTURE__"-${target_os}")
 else
     arch="${target_cpu}-${target_os}"
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
 fi
 
+unset sitearch
 case "$target_os" in
   mingw*) sitearch="$target_cpu-$rb_cv_msvcrt" ;;
-  *) sitearch="${arch}" ;;
 esac
+test ${sitearch+set} && AC_DEFINE_UNQUOTED(RUBY_SITEARCH, "${sitearch}")
 
-AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${RUBY_LIB_PATH}/${arch}")
-AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${RUBY_SITE_LIB_PATH2}/${sitearch}")
-AC_DEFINE_UNQUOTED(RUBY_VENDOR_ARCHLIB, "${RUBY_VENDOR_LIB_PATH2}/${sitearch}")
+AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, RUBY_LIB"/"RUBY_ARCH)
+AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, RUBY_SITE_LIB2"/"RUBY_SITEARCH)
+AC_DEFINE_UNQUOTED(RUBY_VENDOR_ARCHLIB, RUBY_VENDOR_LIB2"/"RUBY_SITEARCH)
 
 AC_ARG_WITH(search-path,
 		[  --with-search-path=DIR specify the additional search path],
@@ -2170,6 +2199,7 @@ AC_SUBST(BUILTIN_TRANSOBJS)
 
 PACKAGE=$RUBY_INSTALL_NAME
 AC_SUBST(PACKAGE)
+AC_MSG_RESULT($PACKAGE library version = $ruby_version)
 
 AC_CONFIG_FILES($FIRSTMAKEFILE)
 AC_CONFIG_FILES(Makefile, [{
