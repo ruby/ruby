@@ -58,10 +58,9 @@ class TestProcess < Test::Unit::TestCase
     return unless rlimit_exist?
     with_tmpchdir {
       write_file 's', <<-"End"
-	cur_nofile, max_nofile = Process.getrlimit(Process::RLIMIT_NOFILE)
 	result = 1
 	begin
-	  Process.setrlimit(Process::RLIMIT_NOFILE, 0, max_nofile)
+	  Process.setrlimit(Process::RLIMIT_NOFILE, 0)
 	rescue Errno::EINVAL
 	  result = 0
 	end
@@ -72,7 +71,6 @@ class TestProcess < Test::Unit::TestCase
 	   result = 0
 	  end
 	end
-	Process.setrlimit(Process::RLIMIT_NOFILE, cur_nofile, max_nofile)
 	exit result
       End
       pid = spawn RUBY, "s"
