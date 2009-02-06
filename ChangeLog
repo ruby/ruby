@@ -1,3 +1,8 @@
+Fri Feb  6 20:37:42 2009  Tanaka Akira  <akr@fsij.org>
+
+	* signal.c (register_sigaltstack): ignore sigaltstack error.
+	  It fails on OpenBSD 4.4 when pthread library is linked.
+
 Fri Feb  6 18:18:07 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_readdir_with_enc): fallback to OS's conversion
