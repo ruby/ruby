@@ -1,3 +1,9 @@
+Fri Feb  6 21:58:24 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
+
+	* symbian/missing-pips.c: added a stub for missing PIPS function execl.
+
+	* process.c (rb_proc_exec) [__SYMBIAN32__]: removed conditional around execl function call.
+
 Fri Feb  6 20:37:42 2009  Tanaka Akira  <akr@fsij.org>
 
 	* signal.c (register_sigaltstack): ignore sigaltstack error.
