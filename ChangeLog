@@ -1,3 +1,7 @@
+Sat Feb  7 04:02:37 2009  Tanaka Akira  <akr@fsij.org>
+
+	* dir.c (dir_read): don't disable rdoc.
+
 Fri Feb  6 23:28:33 2009  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_fread): use rb_io_wait_readable for retry

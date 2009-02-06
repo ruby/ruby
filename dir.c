@@ -474,14 +474,15 @@ dir_path(VALUE dir)
  *     d.read   #=> ".."
  *     d.read   #=> "config.h"
  */
+static VALUE
+dir_read(VALUE dir)
+{
 #ifdef _WIN32
 # define READDIR(dir, enc) rb_w32_readdir_with_enc(dir, enc)
 #else
 # define READDIR(dir, enc) readdir(dir)
 #endif
-static VALUE
-dir_read(VALUE dir)
-{
+
     struct dir_data *dirp;
     struct dirent *dp;
 
