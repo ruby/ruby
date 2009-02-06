@@ -4510,6 +4510,8 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     char **args = NULL;
     struct rb_exec_arg sarg;
     int pair[2], write_pair[2];
+#elif defined(__SYMBIAN32__)
+    struct rb_exec_arg sarg;
 #endif
     FILE *fp = 0;
     int fd = -1;
