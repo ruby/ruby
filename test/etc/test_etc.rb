@@ -29,8 +29,8 @@ class TestEtc < Test::Unit::TestCase
 
   def test_getpwuid
     passwd = {}
-    Etc.passwd {|s| passwd[s.uid] = s unless passwd[s.uid] }
-    passwd.values.each do |s|
+    Etc.passwd {|s| passwd[s.uid] ||= s }
+    passwd.each_value do |s|
       assert_equal(s, Etc.getpwuid(s.uid))
       assert_equal(s, Etc.getpwuid) if Process.euid == s.uid
     end
@@ -38,8 +38,8 @@ class TestEtc < Test::Unit::TestCase
 
   def test_getpwnam
     passwd = {}
-    Etc.passwd {|s| passwd[s.name] = s unless passwd[s.name] }
-    passwd.values.each do |s|
+    Etc.passwd {|s| passwd[s.name] ||= s }
+    passwd.each_value do |s|
       assert_equal(s, Etc.getpwnam(s.name))
     end
   end
@@ -69,11 +69,9 @@ class TestEtc < Test::Unit::TestCase
   def test_getgrgid
     groups = {}
     Etc.group do |s|
-      unless groups[s.gid]
-        groups[s.gid] = s
-      end
+      groups[s.gid] ||= s
     end
-    groups.values.each do |s|
+    groups.each_value do |s|
       assert_equal(s, Etc.getgrgid(s.gid))
       assert_equal(s, Etc.getgrgid) if Process.egid == s.gid
     end
@@ -82,11 +80,9 @@ class TestEtc < Test::Unit::TestCase
   def test_getgrnam
     groups = {}
     Etc.group do |s|
-      unless groups[s.name]
-        groups[s.name] = s
-      end
+      groups[s.name] ||= s
     end
-    groups.values.each do |s|
+    groups.each_value do |s|
       assert_equal(s, Etc.getgrnam(s.name))
     end
   end
