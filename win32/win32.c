@@ -11,6 +11,7 @@
  */
 
 #include "ruby/ruby.h"
+#include "ruby/encoding.h"
 #include "dln.h"
 #include <fcntl.h>
 #include <process.h>
@@ -1471,31 +1472,15 @@ open_dir_handle(const char *filename, WIN32_FIND_DATAW *fd)
     return fh;
 }
 
-DIR *
-rb_w32_opendir(const char *filename)
+static DIR *
+opendir_internal(HANDLE fh, WIN32_FIND_DATAW *fd)
 {
-    DIR               *p;
-    long               len;
-    long               idx;
+    DIR *p;
+    long len;
+    long idx;
     WCHAR *tmpW;
     char *tmp;
-    struct stati64     sbuf;
-    WIN32_FIND_DATAW fd;
-    HANDLE          fh;
 
-    //
-    // check to see if we've got a directory
-    //
-    if (rb_w32_stati64(filename, &sbuf) < 0)
-	return NULL;
-    if (!(sbuf.st_mode & S_IFDIR) &&
-	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
-	((1 << (filename[0] & 0x5f) - 'A') & GetLogicalDrives()) == 0)) {
-	errno = ENOTDIR;
-	return NULL;
-    }
-
-    fh = open_dir_handle(filename, &fd);
     if (fh == INVALID_HANDLE_VALUE) {
 	return NULL;
     }
@@ -1516,7 +1501,7 @@ rb_w32_opendir(const char *filename)
     // of the previous string found.
     //
     do {
-	len = lstrlenW(fd.cFileName) + 1;
+	len = lstrlenW(fd->cFileName) + 1;
 
 	//
 	// bump the string table size by enough for the
@@ -1532,7 +1517,7 @@ rb_w32_opendir(const char *filename)
 	}
 
 	p->start = tmpW;
-	memcpy(&p->start[idx], fd.cFileName, len * sizeof(WCHAR));
+	memcpy(&p->start[idx], fd->cFileName, len * sizeof(WCHAR));
 
 	if (p->nfiles % DIRENT_PER_CHAR == 0) {
 	    tmp = realloc(p->bits, p->nfiles / DIRENT_PER_CHAR + 1);
@@ -1541,18 +1526,41 @@ rb_w32_opendir(const char *filename)
 	    p->bits = tmp;
 	    p->bits[p->nfiles / DIRENT_PER_CHAR] = 0;
 	}
-	if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+	if (fd->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 	    SetBit(p->bits, BitOfIsDir(p->nfiles));
-	if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+	if (fd->dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
 	    SetBit(p->bits, BitOfIsRep(p->nfiles));
 
 	p->nfiles++;
 	idx += len;
-    } while (FindNextFileW(fh, &fd));
+    } while (FindNextFileW(fh, fd));
     FindClose(fh);
     p->size = idx;
     p->curr = p->start;
     return p;
+}
+
+DIR *
+rb_w32_opendir(const char *filename)
+{
+    struct stati64     sbuf;
+    WIN32_FIND_DATAW fd;
+    HANDLE fh;
+
+    //
+    // check to see if we've got a directory
+    //
+    if (rb_w32_stati64(filename, &sbuf) < 0)
+	return NULL;
+    if (!(sbuf.st_mode & S_IFDIR) &&
+	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
+	((1 << (filename[0] & 0x5f) - 'A') & GetLogicalDrives()) == 0)) {
+	errno = ENOTDIR;
+	return NULL;
+    }
+
+    fh = open_dir_handle(filename, &fd);
+    return opendir_internal(fh, &fd);
 }
 
 //
@@ -1575,24 +1583,64 @@ move_to_next_entry(DIR *dirp)
 // Readdir just returns the current string pointer and bumps the
 // string pointer to the next entry.
 //
+static BOOL
+win32_direct_conv(const WCHAR *file, struct direct *entry, rb_encoding *dummy)
+{
+    UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
+    entry->d_namlen =
+	WideCharToMultiByte(cp, 0, file, -1, NULL, 0, NULL, NULL) - 1;
+    if (!(entry->d_name = malloc(entry->d_namlen + 1)))
+	return FALSE;
+    WideCharToMultiByte(cp, 0, file, -1, entry->d_name, entry->d_namlen + 1,
+			NULL, NULL);
+    return TRUE;
+}
 
-struct direct  *
-rb_w32_readdir(DIR *dirp)
+static BOOL
+ruby_direct_conv(const WCHAR *file, struct direct *entry, rb_encoding *enc)
+{
+    static rb_encoding *utf16 = (rb_encoding *)-1;
+    VALUE src;
+    VALUE dst;
+    VALUE opthash;
+    int ecflags;
+    VALUE ecopts;
+
+    if (utf16 == (rb_encoding *)-1) {
+	utf16 = rb_enc_find("UTF-16LE");
+	if (utf16 == rb_ascii8bit_encoding())
+	    utf16 = NULL;
+    }
+    if (!utf16)
+	/* maybe miniruby */
+	return win32_direct_conv(file, entry, NULL);
+
+    src = rb_enc_str_new((char *)file, lstrlenW(file) * sizeof(WCHAR), utf16);
+    opthash = rb_hash_new();
+    rb_hash_aset(opthash, ID2SYM(rb_intern("undef")),
+		 ID2SYM(rb_intern("replace")));
+    ecflags = rb_econv_prepare_opts(opthash, &ecopts);
+    dst = rb_str_encode(src, rb_enc_from_encoding(enc), ecflags, ecopts);
+
+    entry->d_namlen = RSTRING_LEN(dst);
+    if (!(entry->d_name = malloc(entry->d_namlen + 1)))
+	return FALSE;
+    memcpy(entry->d_name, RSTRING_PTR(dst), entry->d_namlen);
+    entry->d_name[entry->d_namlen] = '\0';
+    return TRUE;
+}
+
+static struct direct *
+readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, struct direct *, rb_encoding *), rb_encoding *enc)
 {
     static int dummy = 0;
-    UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
 
     if (dirp->curr) {
 
 	//
 	// first set up the structure to return
 	//
-	dirp->dirstr.d_namlen =
-	    WideCharToMultiByte(cp, 0, dirp->curr, -1, NULL, 0, NULL, NULL) - 1;
-	if (!(dirp->dirstr.d_name = malloc(dirp->dirstr.d_namlen + 1)))
-	    return NULL;
-	WideCharToMultiByte(cp, 0, dirp->curr, -1, dirp->dirstr.d_name,
-			    dirp->dirstr.d_namlen + 1, NULL, NULL);
+	conv(dirp->curr, &dirp->dirstr, enc);
 
 	//
 	// Fake inode
@@ -1615,6 +1663,18 @@ rb_w32_readdir(DIR *dirp)
 
     } else
 	return NULL;
+}
+
+struct direct  *
+rb_w32_readdir(DIR *dirp)
+{
+    return readdir_internal(dirp, win32_direct_conv, NULL);
+}
+
+struct direct  *
+rb_w32_readdir_with_enc(DIR *dirp, rb_encoding *enc)
+{
+    return readdir_internal(dirp, ruby_direct_conv, enc);
 }
 
 //

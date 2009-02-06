@@ -474,6 +474,11 @@ dir_path(VALUE dir)
  *     d.read   #=> ".."
  *     d.read   #=> "config.h"
  */
+#ifdef _WIN32
+# define READDIR(dir, enc) rb_w32_readdir_with_enc(dir, enc)
+#else
+# define READDIR(dir, enc) readdir(dir)
+#endif
 static VALUE
 dir_read(VALUE dir)
 {
@@ -482,7 +487,7 @@ dir_read(VALUE dir)
 
     GetDIR(dir, dirp);
     errno = 0;
-    dp = readdir(dirp->dir);
+    dp = READDIR(dirp->dir, dirp->enc);
     if (dp) {
 	return rb_external_str_new_with_enc(dp->d_name, NAMLEN(dp), dirp->enc);
     }
@@ -521,7 +526,7 @@ dir_each(VALUE dir)
     RETURN_ENUMERATOR(dir, 0, 0);
     GetDIR(dir, dirp);
     rewinddir(dirp->dir);
-    for (dp = readdir(dirp->dir); dp != NULL; dp = readdir(dirp->dir)) {
+    for (dp = READDIR(dirp->dir, dirp->enc); dp != NULL; dp = READDIR(dirp->dir, dirp->enc)) {
 	rb_yield(rb_external_str_new_with_enc(dp->d_name, NAMLEN(dp), dirp->enc));
 	if (dirp->dir == NULL) dir_closed();
     }
