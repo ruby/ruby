@@ -1,4 +1,3 @@
-//#include "symbian.h"
 #include <sys/signal.h>
 #include <sys/resource.h>
 #include <fcntl.h>
@@ -15,6 +14,7 @@ int sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
 int raise(int sig);
 int kill(pid_t pid, int sig);
 int pthread_sigmask(int how, const sigset_t *set, sigset_t *oset);
+int execl(const char *path, const char *arg0, ... /*, (char *)0 */);
 int execv(const char *path, char *const argv[]);
 int pthread_kill(pthread_t thread, int sig);
 
@@ -51,6 +51,11 @@ int kill(pid_t pid, int sig)
 int pthread_sigmask(int how, const sigset_t *set, sigset_t *oset)
 {
 	return -1;
+}
+
+int execl(const char *path, const char *arg0, ...)
+{
+	return 0;
 }
 
 int execv(const char *path, char *const argv[])

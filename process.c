@@ -1097,9 +1097,7 @@ rb_proc_exec(const char *str)
 		exit(status);
 #else
 	    before_exec();
-#ifndef __SYMBIAN32__	    
 	    execl("/bin/sh", "sh", "-c", str, (char *)NULL);
-#endif	    
 	    preserving_errno(after_exec());
 #endif
 	    return -1;
@@ -1735,8 +1733,8 @@ rb_exec_arg_fixup(struct rb_exec_arg *e)
  *  and the second argument is used as the <code>argv[0]</code> value,
  *  which may show up in process listings.
  *
- *  In order to execute the command, one of the <code>exec(2)</code> 
- *  system calls is used, so the running command may inherit some of the environment 
+ *  In order to execute the command, one of the <code>exec(2)</code>
+ *  system calls is used, so the running command may inherit some of the environment
  *  of the original program (including open file descriptors).
  *  This behavior is modified by env and options.
  *  See <code>spawn</code> for details.
@@ -2674,12 +2672,12 @@ rb_exit(int status)
  *     exit(integer=0)
  *     Kernel::exit(integer=0)
  *     Process::exit(integer=0)
- *  
+ *
  *  Initiates the termination of the Ruby script by raising the
  *  <code>SystemExit</code> exception. This exception may be caught. The
  *  optional parameter is used to return a status code to the invoking
  *  environment.
- *     
+ *
  *     begin
  *       exit
  *       puts "never get here"
@@ -2687,22 +2685,22 @@ rb_exit(int status)
  *       puts "rescued a SystemExit exception"
  *     end
  *     puts "after begin block"
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     rescued a SystemExit exception
  *     after begin block
- *     
+ *
  *  Just prior to termination, Ruby executes any <code>at_exit</code> functions
  *  (see Kernel::at_exit) and runs any object finalizers (see
  *  ObjectSpace::define_finalizer).
- *     
+ *
  *     at_exit { puts "at_exit function" }
  *     ObjectSpace.define_finalizer("string",  proc { puts "in finalizer" })
  *     exit
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     at_exit function
  *     in finalizer
  */
@@ -2744,7 +2742,7 @@ rb_f_exit(int argc, VALUE *argv)
  *     abort
  *     Kernel::abort
  *     Process::abort
- *  
+ *
  *  Terminate execution immediately, effectively by calling
  *  <code>Kernel.exit(1)</code>. If _msg_ is given, it is written
  *  to STDERR prior to terminating.
@@ -2969,7 +2967,7 @@ rb_f_system(int argc, VALUE *argv)
  *        :unsetenv_others => false  : don't clear (default)
  *      process group:
  *        :pgroup => true or 0 : process leader
- *        :pgroup => pgid      : join to specified process group 
+ *        :pgroup => pgid      : join to specified process group
  *      resource limit: resourcename is core, cpu, data, etc.  See Process.setrlimit.
  *        :rlimit_resourcename => limit
  *        :rlimit_resourcename => [cur_limit, max_limit]
@@ -3009,7 +3007,7 @@ rb_f_system(int argc, VALUE *argv)
  *  If a hash is given as +options+,
  *  it specifies
  *  process group,
- *  resource limit, 
+ *  resource limit,
  *  current directory,
  *  umask and
  *  redirects for the child process.
@@ -3071,7 +3069,7 @@ rb_f_system(int argc, VALUE *argv)
  *  So it is inherited from the parent process.
  *
  *  The standard input stream (stdin) can be specifed by :in, 0 and STDIN.
- *  
+ *
  *  A filename can be specified as a hash value.
  *
  *    pid = spawn(command, :in=>"/dev/null") # read mode
