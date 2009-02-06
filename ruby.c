@@ -1296,13 +1296,6 @@ process_options(VALUE arg)
 	opt->src.enc.index = opt_enc_index(opt->src.enc.name);
 	src_encoding_index = opt->src.enc.index;
     }
-    if (opt->ext.enc.index >= 0) {
-	enc = rb_enc_from_index(opt->ext.enc.index);
-    }
-    else {
-	enc = lenc;
-    }
-    rb_enc_set_default_external(rb_enc_from_encoding(enc));
     if (opt->intern.enc.index >= 0) {
 	enc = rb_enc_from_index(opt->intern.enc.index);
 	rb_enc_set_default_internal(rb_enc_from_encoding(enc));
@@ -1363,6 +1356,13 @@ process_options(VALUE arg)
     }
     if (opt->dump & DUMP_BIT(yydebug)) return Qtrue;
 
+    if (opt->ext.enc.index >= 0) {
+	enc = rb_enc_from_index(opt->ext.enc.index);
+    }
+    else {
+	enc = lenc;
+    }
+    rb_enc_set_default_external(rb_enc_from_encoding(enc));
     if (opt->intern.enc.index >= 0) {
 	/* Set in the shebang line */
 	enc = rb_enc_from_index(opt->intern.enc.index);
