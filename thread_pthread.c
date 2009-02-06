@@ -465,7 +465,11 @@ native_thread_create(rb_thread_t *th)
     }
     else {
 	pthread_attr_t attr;
+#ifdef __SYMBIAN32__
+	size_t stack_size = 64 * 1024;	/* 64KB: Let's be slightly more frugal on mobile platform */
+#else
 	size_t stack_size = 512 * 1024; /* 512KB */
+#endif
         size_t space;
 
 #ifdef PTHREAD_STACK_MIN
@@ -557,7 +561,7 @@ ubf_pthread_cond_signal(void *ptr)
     pthread_cond_signal(&th->native_thread_data.sleep_cond);
 }
 
-#ifndef __CYGWIN__
+#if !defined(__CYGWIN__) && !defined(__SYMBIAN32__)
 static void
 ubf_select_each(rb_thread_t *th)
 {
@@ -757,7 +761,7 @@ thread_timer(void *dummy)
 	}
 	else rb_bug("thread_timer/timedwait: %d", err);
 
-#ifndef __CYGWIN__
+#if !defined(__CYGWIN__) && !defined(__SYMBIAN32__)
 	if (signal_thread_list_anchor.next) {
 	    FGLOCK(&signal_thread_list_lock, {
 		struct signal_thread_list *list;
