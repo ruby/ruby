@@ -1,3 +1,8 @@
+Fri Feb  6 18:18:07 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_readdir_with_enc): fallback to OS convertion
+	  when ASCII-8BIT is passed.
+
 Fri Feb  6 17:19:23 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/{dir.h, win32.c} (rb_w32_readdir_with_enc): new function to

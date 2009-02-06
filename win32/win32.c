@@ -1674,7 +1674,10 @@ rb_w32_readdir(DIR *dirp)
 struct direct  *
 rb_w32_readdir_with_enc(DIR *dirp, rb_encoding *enc)
 {
-    return readdir_internal(dirp, ruby_direct_conv, enc);
+    if (enc == rb_ascii8bit_encoding())
+	return readdir_internal(dirp, win32_direct_conv, NULL);
+    else
+	return readdir_internal(dirp, ruby_direct_conv, enc);
 }
 
 //
