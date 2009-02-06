@@ -1,3 +1,8 @@
+Fri Feb  6 23:28:33 2009  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_fread): use rb_io_wait_readable for retry
+	  avoid Errno::EINTR on ruby -e 'trap(:CHLD) {}; spawn("sleep 1"); STDIN.read'
+
 Fri Feb  6 22:36:11 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 
 	* thread_pthread.c (native_thread_create) [__SYMBIAN32__]: reduced pthread stack size.
