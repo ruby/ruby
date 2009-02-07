@@ -1,6 +1,10 @@
-Sat Feb  7 11:57:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Feb  7 12:31:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* runruby.rb: added --precommand and --show options.
+
+	* runruby.rb: added --cpu option.
+
+	* runruby.rb: skips version check in rbconfig.rb.
 
 Sat Feb  7 11:44:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

@@ -13,6 +13,8 @@ while arg = ARGV[0]
     srcdir = value
   when re =~ "archdir"
     archdir = value
+  when re =~ "cpu"
+    precommand << "arch" << "-arch" << value
   when re =~ "extout"
     extout = value
   when re =~ "pure"
@@ -37,8 +39,9 @@ archdir ||= '.'
 abs_archdir = File.expand_path(archdir)
 $:.unshift(abs_archdir)
 
-require 'rbconfig'
-config = RbConfig::CONFIG
+config = File.read(conffile = File.join(abs_archdir, 'rbconfig.rb'))
+config.sub!(/^(\s*)RUBY_VERSION\s*==.*(\sor\s*)$/, '\1true\2')
+config = Module.new {module_eval(config, conffile)}::Config::CONFIG
 
 ruby = File.join(archdir, config["RUBY_INSTALL_NAME"]+config['EXEEXT'])
 unless File.exist?(ruby)
