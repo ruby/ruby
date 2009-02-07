@@ -1,3 +1,7 @@
+Sat Feb  7 11:57:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* runruby.rb: added --precommand and --show options.
+
 Sat Feb  7 11:44:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (have_header): needs dependent headers if trying to

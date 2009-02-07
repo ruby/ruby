@@ -1,6 +1,8 @@
 #!./miniruby
 
 pure = true
+show = false
+precommand = []
 while arg = ARGV[0]
   break ARGV.shift if arg == '--'
   /\A--([-\w]+)(?:=(.*))?\z/ =~ arg or break
@@ -16,7 +18,13 @@ while arg = ARGV[0]
   when re =~ "pure"
     pure = (value != "no")
   when re =~ "debugger"
-    debugger = value ? (value.split unless value == "no") : %w"gdb --args"
+    require 'shellwords'
+    precommand.concat(value ? (Shellwords.shellwords(value) unless value == "no") : %w"gdb --args")
+  when re =~ "precommand"
+    require 'shellwords'
+    precommand.concat(Shellwords.shellwords(value))
+  when re =~ "show"
+    show = true
   else
     break
   end
@@ -72,8 +80,12 @@ ENV.update env
 cmd = [ruby]
 cmd << "-rpurelib.rb" if pure
 cmd.concat(ARGV)
-cmd.unshift(*debugger) if debugger
+cmd.unshift(*precommand) unless precommand.empty?
 
-#require 'shellwords'; puts Shellwords.join(env.map {|k,v| "#{k}=#{v}" } + cmd)
+if show
+  require 'shellwords'
+  env.each {|k,v| puts "#{k}=#{v}"}
+  puts Shellwords.join(cmd)
+end
 
 exec(*cmd)
