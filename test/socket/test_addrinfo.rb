@@ -314,8 +314,8 @@ class TestSocketAddrinfo < Test::Unit::TestCase
   end
 
   def test_family_addrinfo
-    ai = Addrinfo.tcp("0.0.0.0", 4649).family_addrinfo("www.ruby-lang.org", 80)
-    assert_equal(["221.186.184.68", 80], ai.ip_unpack)
+    ai = Addrinfo.tcp("0.0.0.0", 4649).family_addrinfo("127.0.0.1", 80)
+    assert_equal(["127.0.0.1", 80], ai.ip_unpack)
     assert_equal(Socket::SOCK_STREAM, ai.socktype)
     ai = Addrinfo.unix("/tmp/sock").family_addrinfo("/tmp/sock2")
     assert_equal("/tmp/sock2", ai.unix_path)

@@ -1,3 +1,9 @@
+Sat Feb  7 21:26:15 2009  Tanaka Akira  <akr@fsij.org>
+
+	* test/socket/test_addrinfo.rb (test_family_addrinfo): don't use
+	  www.ruby-lang.org.
+	  http://d.hatena.ne.jp/nagachika/20090204/working_for_0f0e
+
 Sat Feb  7 18:02:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (--with-arch): added new option to suppor
