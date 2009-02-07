@@ -291,7 +291,7 @@ have_header("ifaddrs.h")
 have_func("getifaddrs")
 have_header("sys/ioctl.h")
 have_header("sys/sockio.h")
-have_header("net/if.h")
+have_header("net/if.h", headers)
 
 unless have_type("socklen_t", headers)
   $defs << "-Dsocklen_t=int"

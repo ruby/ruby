@@ -808,9 +808,9 @@ end
 # For example, if have_header('foo.h') returned true, then the HAVE_FOO_H
 # preprocessor macro would be passed to the compiler.
 #
-def have_header(header, &b)
+def have_header(header, preheaders = nil, &b)
   checking_for header do
-    if try_header(cpp_include(header), &b)
+    if try_header(cpp_include(preheaders)+cpp_include(header), &b)
       $defs.push(format("-DHAVE_%s", header.tr("a-z./\055", "A-Z___")))
       true
     else

@@ -1,3 +1,10 @@
+Sat Feb  7 11:44:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (have_header): needs dependent headers if trying to
+	  compile.
+
+	* ext/socket/extconf.rb: net/if.h depends on other headers.
+
 Sat Feb  7 04:02:37 2009  Tanaka Akira  <akr@fsij.org>
 
 	* dir.c (dir_read): don't disable rdoc.
