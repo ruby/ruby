@@ -320,6 +320,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     ai = Addrinfo.unix("/tmp/sock").family_addrinfo("/tmp/sock2")
     assert_equal("/tmp/sock2", ai.unix_path)
     assert_equal(Socket::SOCK_STREAM, ai.socktype)
+    assert_raise(SocketError) { Addrinfo.tcp("0.0.0.0", 4649).family_addrinfo("::1", 80) }
   end
 
   def random_port
