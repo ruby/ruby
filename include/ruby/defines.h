@@ -108,10 +108,7 @@ void xfree(void*);
 # define DOSISH_DRIVE_LETTER
 #endif
 
-#if defined(__NeXT__) || defined(__APPLE__)
-/* Do not trust WORDS_BIGENDIAN from configure since -arch compiler flag may
-   result in a different endian.  Instead trust __BIG_ENDIAN__ and
-   __LITTLE_ENDIAN__ which are set correctly by -arch. */
+#ifdef AC_APPLE_UNIVERSAL_BUILD
 #undef WORDS_BIGENDIAN
 #ifdef __BIG_ENDIAN__
 #define WORDS_BIGENDIAN

@@ -1,3 +1,31 @@
+Sat Feb  7 18:02:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (--with-arch): added new option to suppor
+	  universal binary.  replaced --enable-fat-binary option which
+	  didn't work actually.
+
+	* configure.in (RUBY_FUNC_ATTRIBUTE): added conditional test.
+
+	* configure.in (ac_cv_type_getgroups): decalared because getgroups()
+	  fills rest of the buffer with garbages on Rosetta.
+
+	* configure.in (alloca): defines only for powerpc, but always
+	  create empty object to suppress ld warning.
+
+	* configure.in (LIBRUBY_DLDFLAGS): set compatibility version with
+	  TEENY.
+
+	* configure.in (CFLAGS, LDFLAGS): separates ARCH_FLAG.
+
+	* configure.in (arch): renamed to "universal" from "fat".
+
+	* Makefile.in (ARCH_FLAG): added.
+
+	* include/ruby/defines.h (WORDS_BIGENDIAN): uses
+	  AC_APPLE_UNIVERSAL_BUILD.
+
+	* missing/alloca.c (alloca): defines only if C_ALLOCA is defined.
+
 Sat Feb  7 12:31:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* runruby.rb: added --precommand and --show options.

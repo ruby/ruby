@@ -3,6 +3,10 @@ AC_INIT()
 
 AC_PREREQ(2.60)
 
+AC_DEFUN([RUBY_PREREQ_AC],
+	[m4_if(m4_version_compare(m4_defn([m4_PACKAGE_VERSION]), [$1]), [-1],
+		AC_MSG_ERROR([Autoconf version ]$1[ or higher is required]$2))])
+
 AC_ARG_WITH(baseruby,
 	[  --with-baseruby=RUBY use RUBY as baseruby; RUBY is the pathname of ruby],
 	[
@@ -24,6 +28,7 @@ AC_SUBST(BASERUBY)
 
 AC_DEFUN([RUBY_MINGW32],
 [case "$host_os" in
+dnl (
 cygwin*)
 AC_CACHE_CHECK(for mingw32 environment, rb_cv_mingw32,
 [AC_TRY_CPP([
@@ -100,61 +105,51 @@ AC_CANONICAL_TARGET
 target_os=`echo $target_os | sed 's/linux-gnu$/linux/;s/linux-gnu/linux-/'`
 ac_install_sh='' # unusable for extension libraries.
 
-ifelse(currently,disabled, [
-dnl checks for fat-binary
-AC_ARG_ENABLE(fat-binary,
-       [  --enable-fat-binary=ARCHS
-                          build an Apple/NeXT Multi Architecture Binary (MAB);
+AC_ARG_WITH(arch, [dnl
+  --with-arch=ARCHS       build an Apple/NeXT Multi Architecture Binary (MAB);
                           ARCHS is a comma-delimited list of architectures for
-                          which to build; if ARCHS is omitted, then the package
-                          will be built for all architectures supported by the
-                          platform ("ppc" for MacOS/X and Darwin; "ppc,i386"
-                          for Rhapsody; "m68k,i386,sparc" for OpenStep;
-                          "m68k,i386,sparc,hppa" for NextStep); if this option
-                          is disabled or omitted entirely, then the package
-                          will be built only for the target platform],
-       [fat_binary=$enableval], [fat_binary=no])
-if test "$fat_binary" != no; then
-
+                          which to build; if this option is disabled or omitted
+			  entirely, then the package will be built only for the
+			  target platform],
+       [target_archs="$withval"], [unset target_archs])
+test ${CFLAGS+set} && CFLAGS=`echo "$CFLAGS" | sed 's/ *-arch  *[^ ]*//g'`
+test ${LDFLAGS+set} && LDFLAGS=`echo "$LDFLAGS" | sed 's/ *-arch  *[^ ]*//g'`
+unset ARCH_FLAG universal_binary
+if test ${target_archs+set}; then
     AC_MSG_CHECKING([target architectures])
-
-    # Respect TARGET_ARCHS setting from environment if available.
-    if test -z "$TARGET_ARCHS"; then
-	# Respect ARCH given to --enable-fat-binary if present.
-	if test "$fat_binary" != yes; then
-	    TARGET_ARCHS=`echo "$fat_binary" | tr ',' ' '`
-	else
-	    # Choose a default set of architectures based upon platform.
-	    case "$target_os" in
-	    darwin*)
-		TARGET_ARCHS="ppc"
-		;;
-	    rhapsody*)
-		TARGET_ARCHS="ppc i386"
-		;;
-	    openstep*)
-		TARGET_ARCHS="m68k i386 sparc"
-		;;
-	    nextstep*)
-		TARGET_ARCHS="m68k i386 sparc hppa"
-		;;
-	    *)
-		TARGET_ARCHS=`arch`
-	    esac
-	fi
-    fi
-
-    AC_MSG_RESULT([$TARGET_ARCHS])
-
+    target_archs=`echo $target_archs | tr , ' '`
     # /usr/lib/arch_tool -archify_list $TARGET_ARCHS
-    ARCH_FLAG=
-    for archs in $TARGET_ARCHS
+    for archs in $target_archs
     do
-        ARCH_FLAG="$ARCH_FLAG -arch $archs"
+	case ",$universal_binary," in
+	  dnl (
+	  *,$archs,*)
+	    ;;
+	  dnl (
+	  *)
+	    universal_binary="${universal_binary+$universal_binary,}$archs"
+	    ARCH_FLAG="${ARCH_FLAG+$ARCH_FLAG }-arch $archs"
+	    ;;
+	esac
     done
-    AC_DEFINE(NEXT_FAT_BINARY)
+    target_archs="$universal_binary"
+    unset universal_binary
+    case "$target_archs" in dnl (
+      *,*) universal_binary=yes;;
+    esac
+    AC_MSG_RESULT([$target_archs])
+
+    if test "${universal_binary-no}" = yes; then
+	RUBY_PREREQ_AC(2.63, [ to compile universal binary])
+	AC_SUBST(try_header,try_compile)
+	target=`echo $target | sed "s/^$target_cpu-/universal-/"`
+	target_cpu=universal
+    fi
+    CFLAGS="$CFLAGS ${ARCH_FLAG}"
+    LDFLAGS="${LDFLAGS+$LDFLAGS } ${ARCH_FLAG}"
+else
+    target_archs="$target_cpu"
 fi
-], [fat_binary=no])
 
 case $target_cpu in
   i?86) frame_address=yes;;
@@ -422,6 +417,18 @@ if test "$rb_cv_va_args_macro" = yes; then
   AC_DEFINE(HAVE_VA_ARGS_MACRO)
 fi
 
+AC_DEFUN([RUBY_DEFINE_IF], [dnl
+    m4_ifval([$3],[test "$3" && cat <<EOH >> confdefs.h
+@%:@if $3
+EOH
+])dnl
+AC_DEFINE_UNQUOTED($1, $2)
+    m4_ifval([$3],[test "$3" && cat <<EOH >> confdefs.h
+@%:@endif /* $3 */
+EOH
+])dnl
+])dnl
+
 AC_DEFUN([RUBY_FUNC_ATTRIBUTE], [dnl
 m4_ifval([$2], dnl
   [AS_VAR_PUSHDEF([attrib],[$2])], dnl
@@ -431,6 +438,7 @@ m4_ifval([$3], dnl
   [AS_VAR_PUSHDEF([rbcv],[$3])], dnl
   [AS_VAR_PUSHDEF([rbcv],[rb_cv_func_][$1])]dnl
 )dnl
+m4_ifval([$4], [rbcv_cond=[$4]; test "$rbcv_cond" || unset rbcv_cond])
 AC_CACHE_CHECK(for [$1] function attribute, rbcv,
 [rbcv=x
 if test "${ac_c_werror_flag+set}"; then
@@ -440,9 +448,14 @@ else
 fi
 ac_c_werror_flag=yes
 for mac in "__attribute__ (($1)) x" "x __attribute__ (($1))" "__declspec($1) x" x; do
+  m4_ifval([$4],mac="$mac"${rbcv_cond+" /* only if $rbcv_cond */"})
   AC_TRY_COMPILE(
-    [#define ]attrib[(x) $mac
-    ]attrib[(void conftest_attribute_check(void));], [],
+    m4_ifval([$4],${rbcv_cond+[@%:@if ]$rbcv_cond})
+[@%:@define ]attrib[(x) $mac]
+m4_ifval([$4],${rbcv_cond+[@%:@else]}
+${rbcv_cond+[@%:@define ]attrib[(x) x]}
+${rbcv_cond+[@%:@endif]})
+    attrib[(void conftest_attribute_check(void));], [],
     [rbcv="$mac"; break])
 done
 if test "${rb_c_werror_flag+set}"; then
@@ -451,7 +464,9 @@ else
   unset ac_c_werror_flag
 fi
 ])
-AC_DEFINE_UNQUOTED(attrib[(x)], $rbcv)
+if test "$rbcv" != x; then
+    RUBY_DEFINE_IF(attrib[(x)], $rbcv, [${rbcv_cond}])
+fi
 AS_VAR_POPDEF([attrib])
 AS_VAR_POPDEF([rbcv])
 ])
@@ -459,9 +474,11 @@ AS_VAR_POPDEF([rbcv])
 RUBY_FUNC_ATTRIBUTE(noreturn, NORETURN)
 RUBY_FUNC_ATTRIBUTE(deprecated, DEPRECATED)
 RUBY_FUNC_ATTRIBUTE(noinline, NOINLINE)
-RUBY_FUNC_ATTRIBUTE(stdcall)
-RUBY_FUNC_ATTRIBUTE(cdecl)
-RUBY_FUNC_ATTRIBUTE(fastcall)
+
+if_i386=${universal_binary+[defined __i386__]}
+RUBY_FUNC_ATTRIBUTE(stdcall,  [], [], ${if_i386})
+RUBY_FUNC_ATTRIBUTE(cdecl,    [], [], ${if_i386})
+RUBY_FUNC_ATTRIBUTE(fastcall, [], [], ${if_i386})
 
 if test "$GCC" = yes; then
     AC_CACHE_CHECK([for function alias], [rb_cv_gcc_function_alias],
@@ -527,20 +544,23 @@ openstep*)	;;
 rhapsody*)	;;
 darwin*)	LIBS="-lobjc $LIBS"
 		CPPFLAGS="$CPPFLAGS -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE"
+		AC_MSG_CHECKING(whether Mac OS X 10.5 or later)
 		AC_TRY_CPP([#include <AvailabilityMacros.h>
 		    #if MAC_OS_X_VERSION_MAX_ALLOWED <= 1040
 		    #error pre OS X 10.4
 		    [!<===== pre OS X 10.4 =====>]
 		    #endif
 		    ],
-		    [
+		    [macosx_10_5=yes], [macosx_10_5=no])
+		AC_MSG_RESULT($macosx_10_5)
+		if test $macosx_10_5 = yes; then
 		    ac_cv_header_ucontext_h=no
 		    ac_cv_func_daemon=no
-		    ],
-		    [
+		else
 		    AC_DEFINE(BROKEN_SETREUID, 1)
 		    AC_DEFINE(BROKEN_SETREGID, 1)
-		    ])
+		fi
+		ac_cv_type_getgroups=gid_t # getgroups() on Rosetta fills garbage
 		ac_cv_lib_crypt_crypt=no
                 AC_CACHE_CHECK(for broken crypt with 8bit chars, rb_cv_broken_crypt,
                     [AC_TRY_RUN([
@@ -762,12 +782,20 @@ fi
 dnl Checks for library functions.
 AC_TYPE_GETGROUPS
 AC_TYPE_SIGNAL
-case "${target_cpu}-${target_os}" in
+case "${target_cpu}-${target_os}:${target_archs}" in
+dnl (
 powerpc-darwin*)
   AC_LIBSOURCES(alloca.c)
   AC_SUBST([ALLOCA], [\${LIBOBJDIR}alloca.${ac_objext}])
   AC_DEFINE(C_ALLOCA)
   AC_DEFINE_UNQUOTED(alloca, alloca)
+  ;;
+dnl (
+universal-darwin*:*ppc*)
+  AC_LIBSOURCES(alloca.c)
+  AC_SUBST([ALLOCA], [\${LIBOBJDIR}alloca.${ac_objext}])
+  RUBY_DEFINE_IF(C_ALLOCA, 1, [defined __powerpc__])
+  RUBY_DEFINE_IF(alloca, alloca)
   ;;
 *)
   AC_FUNC_ALLOCA
@@ -1572,15 +1600,11 @@ else
 fi
 
 case "$target_os" in
+  dnl (
   linux* | gnu* | k*bsd*-gnu)
 	STRIP='strip -S -x';;
-  nextstep*)
-	STRIP='strip -A -n';;
-  openstep*)
-	STRIP='strip -A -n';;
-  rhapsody*)
-	STRIP='strip -A -n';;
-  darwin*)
+  dnl (
+  nextstep* | openstep* | rhapsody* | darwin*)
 	STRIP='strip -A -n';;
 esac
 
@@ -1663,10 +1687,6 @@ AC_SUBST(setup)
 if test "$prefix" = NONE; then
   prefix=$ac_default_prefix
 fi
-
-#if test "$fat_binary" != no ; then
-#  CFLAGS="$CFLAGS $ARCH_FLAG"
-#fi
 
 if test x"$cross_compiling" = xyes; then
   test x"$MINIRUBY" = x && MINIRUBY="${RUBY-ruby} -I`pwd` -rfake"
@@ -1775,10 +1795,10 @@ if test "$enable_shared" = 'yes'; then
 	esac
 	;;
     darwin*)
-	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(MAJOR).$(MINOR).$(TEENY).dylib'
+	RUBY_SO_NAME="$RUBY_SO_NAME"'.$(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_LDSHARED='cc -dynamiclib -undefined suppress -flat_namespace'
-	LIBRUBY_DLDFLAGS='-install_name $(libdir)/lib$(RUBY_SO_NAME).dylib -current_version $(MAJOR).$(MINOR).$(TEENY) -compatibility_version $(MAJOR).$(MINOR)'
-	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_SO_NAME).dylib'
+	LIBRUBY_DLDFLAGS='-install_name $(libdir)/lib$(RUBY_SO_NAME).dylib -current_version $(MAJOR).$(MINOR).$(TEENY) -compatibility_version $(MAJOR).$(MINOR).$(TEENY)'
+	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).dylib lib$(RUBY_INSTALL_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_INSTALL_NAME).dylib'
 	;;
     interix*)
 	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
@@ -1944,9 +1964,14 @@ esac
 
 CPPFLAGS="$CPPFLAGS "'$(DEFS)'
 test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
-cflagspat=`eval echo '"'"${cflags}"'"' | sed 's/[][|.*]/\\&/g'`
+cflagspat=`eval echo '"'"${cflags}"'"' | sed 's/[[][|.*]]/\\&/g'`
 CFLAGS=`echo "$CFLAGS" | sed "s|$cflagspat"'|${cflags}|'`
-cxxflagspat=`eval echo '"'"${cxxflags}"'"' | sed 's/[][|.*]/\\&/g'`
+if test "${ARCH_FLAG}"; then
+    archflagpat=`eval echo '"'"${ARCH_FLAG}"'"' | sed 's/[[][|.*]]/\\&/g'`
+    CFLAGS=`echo "$CFLAGS" | sed "s|$archflagpat"'|$(ARCH_FLAG)|'`
+    LDFLAGS=`echo "$LDFLAGS" | sed "s|$archflagpat"'|$(ARCH_FLAG)|'`
+fi
+cxxflagspat=`eval echo '"'"${cxxflags}"'"' | sed 's/[[][|.*]]/\\&/g'`
 CXXFLAGS=`echo "$CXXFLAGS" | sed "s|$cxxflagspat"'|${cxxflags}|'`
 AC_SUBST(cppflags, [])dnl
 AC_SUBST(cflags, ['${optflags} ${debugflags} ${warnflags}'])dnl
@@ -2091,14 +2116,20 @@ AC_SUBST(vendordir)dnl
 configure_args=$ac_configure_args
 AC_SUBST(configure_args)dnl
 
-if test "$fat_binary" != no ; then
-    arch="fat-${target_os}"
+if test "${universal_binary-no}" = yes ; then
+    arch="universal-${target_os}"
+    AC_CACHE_CHECK(whether __ARCHITECTURE__ is available, rb_cv_architecture_available,
+	AC_TRY_COMPILE([const char arch[] = __ARCHITECTURE__;], [puts(arch);],
+	     [rb_cv_architecture_available=yes], [rb_cv_architecture_available=no]))
+else
+    arch="${target_cpu}-${target_os}"
+fi
+if test "${rb_cv_architecture_available}" = yes; then
     AC_DEFINE_UNQUOTED(RUBY_THIN_ARCHLIB, RUBY_LIB"/"RUBY_PLATFORM)
     AC_DEFINE_UNQUOTED(RUBY_SITE_THIN_ARCHLIB, RUBY_SITE_LIB"/"RUBY_PLATFORM)
     AC_DEFINE_UNQUOTED(RUBY_VENDOR_THIN_ARCHLIB, RUBY_VENDOR_LIB"/"RUBY_PLATFORM)
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, __ARCHITECTURE__"-${target_os}")
 else
-    arch="${target_cpu}-${target_os}"
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
 fi
 

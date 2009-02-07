@@ -30,6 +30,8 @@ static char	SCCSid[] = "@(#)alloca.c	1.1";	/* for the "what" utility */
 #endif
 
 #include "ruby/config.h"
+#ifdef C_ALLOCA
+
 #ifdef emacs
 #ifdef static
 /* actually, only want this if static is defined as ""
@@ -192,3 +194,4 @@ alloca (size)			/* returns pointer to storage */
   }
 }
 
+#endif
