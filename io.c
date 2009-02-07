@@ -1351,6 +1351,9 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
  *  The later means that readpartial is nonblocking-flag insensitive.
  *  It blocks on the situation IO#sysread causes Errno::EAGAIN as if the fd is blocking mode.
  *
+ *  Since readpartial bypass internal stdio buffering mechanism,
+ *  IO#pos may return wrong value after readpartial.
+ *  This problem is fixed by Ruby 1.9 which doesn't use stdio.
  */
 
 static VALUE
