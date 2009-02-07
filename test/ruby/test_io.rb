@@ -17,15 +17,4 @@ class TestIO < Test::Unit::TestCase
     assert_equal("\377", r.gets("\377"), "[ruby-dev:24460]")
     r.close
   end
-
-  def test_readpartial_pos
-    mkcdtmpdir {
-      open("foo", "w") {|f| f << "abc" }
-      open("foo") {|f|
-        f.seek(0)
-        assert_equal("ab", f.readpartial(2))
-        assert_equal(2, f.pos)
-      }
-    }
-  end
 end
