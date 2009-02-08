@@ -111,13 +111,21 @@ class TestProcess < Test::Unit::TestCase
       s = run_in_child(<<-'End')
         cur, max = Process.getrlimit(:NOFILE)
         Process.setrlimit(:NOFILE, max-10)
-        Process.setrlimit(:NOFILE, :INFINITY) rescue exit 1
+        begin
+          Process.setrlimit(:NOFILE, :INFINITY)
+        rescue Errno::EPERM
+          exit 1
+        end
       End
       assert_not_equal(0, s.exitstatus)
       s = run_in_child(<<-'End')
         cur, max = Process.getrlimit(:NOFILE)
         Process.setrlimit(:NOFILE, max-10)
-        Process.setrlimit(:NOFILE, "INFINITY") rescue exit 1
+        begin
+          Process.setrlimit(:NOFILE, "INFINITY")
+        rescue Errno::EPERM
+          exit 1
+        end
       End
       assert_not_equal(0, s.exitstatus)
     end
