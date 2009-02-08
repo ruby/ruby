@@ -1,3 +1,8 @@
+Mon Feb  9 01:21:16 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (unix_recv_io): relax msg_controllen error
+	  check for x86_64-openbsd4.4.
+
 Thu Feb  5 21:01:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (darwin): get rid of strange settings issue of

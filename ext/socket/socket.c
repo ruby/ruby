@@ -2097,10 +2097,15 @@ unix_recv_io(argc, argv, sock)
 	rb_sys_fail("recvmsg(2)");
 
 #if FD_PASSING_BY_MSG_CONTROL
-    if (msg.msg_controllen != CMSG_SPACE(sizeof(int))) {
-      rb_raise(rb_eSocket,
-          "file descriptor was not passed (msg_controllen=%d, %d expected)",
-          msg.msg_controllen, CMSG_SPACE(sizeof(int)));
+    if (msg.msg_controllen < CMSG_LEN(sizeof(int))) {
+        rb_raise(rb_eSocket,
+		 "file descriptor was not passed (msg_controllen=%d smaller than CMSG_LEN(sizeof(int))=%d)",
+		 (int)msg.msg_controllen, (int)CMSG_LEN(sizeof(int)));
+    }
+    if (CMSG_SPACE(sizeof(int)) < msg.msg_controllen) {
+	rb_raise(rb_eSocket,
+		 "file descriptor was not passed (msg_controllen=%d bigger than CMSG_SPACE(sizeof(int))=%d)",
+                 (int)msg.msg_controllen, (int)CMSG_SPACE(sizeof(int)));
     }
     if (cmsg.hdr.cmsg_len != CMSG_LEN(sizeof(int))) {
       rb_raise(rb_eSocket,
