@@ -296,7 +296,7 @@ class TestUNIXSocket < Test::Unit::TestCase
     }
   end
 
-  def test_linux_cred
+  def test_cred_linux
     return if /linux/ !~ RUBY_PLATFORM
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
@@ -313,7 +313,7 @@ class TestUNIXSocket < Test::Unit::TestCase
     }
   end
 
-  def test_netbsd_cred
+  def test_cred_netbsd
     return if /netbsd/ !~ RUBY_PLATFORM
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
