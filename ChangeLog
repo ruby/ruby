@@ -1,3 +1,11 @@
+Sun Feb  8 21:47:50 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: check struct cmsgcred.
+
+	* ext/socket/ancdata.c (anc_inspect_passcred_credentials): add
+	  "(ucred)".
+	  (anc_inspect_socket_creds): show struct cmsgcred too, for FreeBSD.
+
 Sun Feb  8 21:05:35 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/drb/extservm.rb (DRb::ExtServManager#invoke_service_command):

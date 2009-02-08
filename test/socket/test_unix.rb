@@ -296,7 +296,7 @@ class TestUNIXSocket < Test::Unit::TestCase
     }
   end
 
-  def test_cred_linux
+  def test_cred_ucred
     return if /linux/ !~ RUBY_PLATFORM
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
@@ -306,15 +306,17 @@ class TestUNIXSocket < Test::Unit::TestCase
       s.setsockopt(:SOCKET, :PASSCRED, 1)
       c.print "a"
       msg, cliend_ai, rflags, cred = s.recvmsg
+      inspect = cred.inspect
       assert_equal("a", msg)
-      assert_match(/ pid=#{$$} /, cred.inspect)
-      assert_match(/ uid=#{Process.uid} /, cred.inspect)
-      assert_match(/ gid=#{Process.gid}>/, cred.inspect)
+      assert_match(/ pid=#{$$} /, inspect)
+      assert_match(/ uid=#{Process.uid} /, inspect)
+      assert_match(/ gid=#{Process.gid}>/, inspect)
+      assert_match(/ \(ucred\)/, inspect)
     }
   end
 
-  def test_cred_netbsd
-    return if /netbsd/ !~ RUBY_PLATFORM
+  def test_cred_sockcred
+    return if /netbsd|freebsd/ !~ RUBY_PLATFORM
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
       serv = Socket.unix_server_socket(sockpath)
@@ -324,10 +326,33 @@ class TestUNIXSocket < Test::Unit::TestCase
       c.print "a"
       msg, cliend_ai, rflags, cred = s.recvmsg
       assert_equal("a", msg)
-      assert_match(/ uid=#{Process.uid} /, cred.inspect)
-      assert_match(/ euid=#{Process.euid} /, cred.inspect)
-      assert_match(/ gid=#{Process.gid} /, cred.inspect)
-      assert_match(/ egid=#{Process.egid} /, cred.inspect)
+      inspect = cred.inspect
+      p inspect
+      assert_match(/ uid=#{Process.uid} /, inspect)
+      assert_match(/ euid=#{Process.euid} /, inspect)
+      assert_match(/ gid=#{Process.gid} /, inspect)
+      assert_match(/ egid=#{Process.egid} /, inspect)
+      assert_match(/ \(sockcred\)/, inspect)
+    }
+  end
+
+  def test_cred_cmsgcred
+    return if /freebsd/ !~ RUBY_PLATFORM
+    Dir.mktmpdir {|d|
+      sockpath = "#{d}/sock"
+      serv = Socket.unix_server_socket(sockpath)
+      c = Socket.unix(sockpath)
+      s, = serv.accept
+      c.sendmsg("a", 0, nil, [:SOCKET, Socket::SCM_CREDS, ""])      
+      msg, cliend_ai, rflags, cred = s.recvmsg
+      assert_equal("a", msg)
+      inspect = cred.inspect
+      p inspect
+      assert_match(/ pid=#{$$} /, inspect)
+      assert_match(/ uid=#{Process.uid} /, inspect)
+      assert_match(/ euid=#{Process.euid} /, inspect)
+      assert_match(/ gid=#{Process.gid} /, inspect)
+      assert_match(/ \(cmsgcred\)/, inspect)
     }
   end
 

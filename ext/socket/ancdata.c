@@ -385,6 +385,7 @@ anc_inspect_passcred_credentials(int level, int type, VALUE data, VALUE ret)
         struct ucred cred;
         memcpy(&cred, RSTRING_PTR(data), sizeof(struct ucred));
         rb_str_catf(ret, " pid=%u uid=%u gid=%u", cred.pid, cred.uid, cred.gid);
+	rb_str_cat2(ret, " (ucred)");
         return 0;
     }
     else {
@@ -393,38 +394,71 @@ anc_inspect_passcred_credentials(int level, int type, VALUE data, VALUE ret)
 }
 #endif
 
-#if defined(SCM_CREDS) && defined(HAVE_TYPE_STRUCT_SOCKCRED) /* NetBSD */
+#if defined(SCM_CREDS)
 #define INSPECT_SCM_CREDS
 static int
 anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
 {
     int i;
-    if (level == SOL_SOCKET && type == SCM_CREDS &&
-        RSTRING_LEN(data) >= SOCKCREDSIZE(0)) {
-	struct sockcred cred0, *cred;
-        memcpy(&cred0, RSTRING_PTR(data), SOCKCREDSIZE(0));
-	if (RSTRING_LEN(data) != SOCKCREDSIZE(cred0.sc_ngroups)) {
-	    return -1;
-	}
-	cred = (struct sockcred *)ALLOCA_N(char, SOCKCREDSIZE(cred0.sc_ngroups));
-        memcpy(cred, RSTRING_PTR(data), SOCKCREDSIZE(cred0.sc_ngroups));
-        rb_str_catf(ret, " uid=%u", cred->sc_uid);
-        rb_str_catf(ret, " euid=%u", cred->sc_euid);
-        rb_str_catf(ret, " gid=%u", cred->sc_gid);
-        rb_str_catf(ret, " egid=%u", cred->sc_egid);
-	if (cred0.sc_ngroups) {
+    if (level != SOL_SOCKET && type != SCM_CREDS)
+	return -1;
+
+    /*
+     * FreeBSD has struct cmsgcred and struct sockcred.
+     * They use both SOL_SOCKET/SCM_CREDS in the ancillary message.
+     * They are not ambiguous from the view of the caller
+     * because struct sockcred is sent if and only if the caller sets LOCAL_CREDS socket option.
+     * But inspect method doesn't know it.
+     * So they are ambiguous from the view of inspect.
+     * This function distinguish them by the size of the ancillary message.
+     * This heuristics works well except when sc_ngroups == CMGROUP_MAX.
+     */
+
+#if defined(HAVE_TYPE_STRUCT_CMSGCRED) /* FreeBSD */
+    if (RSTRING_LEN(data) == sizeof(struct cmsgcred)) {
+	struct cmsgcred cred;
+        memcpy(&cred, RSTRING_PTR(data), sizeof(struct cmsgcred));
+        rb_str_catf(ret, " pid=%u", cred.cmcred_pid);
+        rb_str_catf(ret, " uid=%u", cred.cmcred_uid);
+        rb_str_catf(ret, " euid=%u", cred.cmcred_euid);
+        rb_str_catf(ret, " gid=%u", cred.cmcred_gid);
+	if (cred.cmcred_ngroups) {
 	    char *sep = "=";
             rb_str_cat2(ret, " groups");
-	    for (i = 0; i < cred0.sc_ngroups; i++) {
-		rb_str_catf(ret, "%s%u", sep, cred->sc_groups[i]);
+	    for (i = 0; i < cred.cmcred_ngroups; i++) {
+		rb_str_catf(ret, "%s%u", sep, cred.cmcred_groups[i]);
 		sep = ",";
 	    }
 	}
+	rb_str_cat2(ret, " (cmsgcred)");
         return 0;
     }
-    else {
-        return -1;
+#endif
+#if defined(HAVE_TYPE_STRUCT_SOCKCRED) /* FreeBSD, NetBSD */
+    if (RSTRING_LEN(data) >= SOCKCREDSIZE(0)) {
+	struct sockcred cred0, *cred;
+        memcpy(&cred0, RSTRING_PTR(data), SOCKCREDSIZE(0));
+	if (RSTRING_LEN(data) == SOCKCREDSIZE(cred0.sc_ngroups)) {
+	    cred = (struct sockcred *)ALLOCA_N(char, SOCKCREDSIZE(cred0.sc_ngroups));
+	    memcpy(cred, RSTRING_PTR(data), SOCKCREDSIZE(cred0.sc_ngroups));
+	    rb_str_catf(ret, " uid=%u", cred->sc_uid);
+	    rb_str_catf(ret, " euid=%u", cred->sc_euid);
+	    rb_str_catf(ret, " gid=%u", cred->sc_gid);
+	    rb_str_catf(ret, " egid=%u", cred->sc_egid);
+	    if (cred0.sc_ngroups) {
+		char *sep = "=";
+		rb_str_cat2(ret, " groups");
+		for (i = 0; i < cred0.sc_ngroups; i++) {
+		    rb_str_catf(ret, "%s%u", sep, cred->sc_groups[i]);
+		    sep = ",";
+		}
+	    }
+	    rb_str_cat2(ret, " (sockcred)");
+	    return 0;
+	}
     }
+#endif
+    return -1;
 }
 #endif
 

@@ -309,6 +309,7 @@ have_type("struct in6_pktinfo", headers) {|src|
 }
 
 have_type("struct sockcred", headers)
+have_type("struct cmsgcred", headers)
 
 $distcleanfiles << "constants.h" << "constdefs.*"
 
