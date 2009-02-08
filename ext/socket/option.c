@@ -264,7 +264,7 @@ inspect_local_peercred(int level, int optname, VALUE data, VALUE ret)
         struct xucred cred;
         memcpy(&cred, RSTRING_PTR(data), sizeof(struct xucred));
         rb_str_catf(ret, " version=%u", cred.cr_version);
-        rb_str_catf(ret, " uid=%u", cred.cr_uid);
+        rb_str_catf(ret, " euid=%u", cred.cr_uid);
 	if (cred.cr_ngroups) {
 	    int i;
 	    char *sep = " groups=";

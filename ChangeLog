@@ -1,3 +1,8 @@
+Mon Feb  9 00:37:06 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c (inspect_local_peercred): cr_uid is a effective
+	  uid, not a real uid.
+
 Mon Feb  9 00:30:56 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: check sys/param.h and sys/ucred.h.

@@ -321,7 +321,7 @@ class TestUNIXSocket < Test::Unit::TestCase
       s, = serv.accept
       cred = s.getsockopt(0, Socket::LOCAL_PEERCRED)
       inspect = cred.inspect
-      assert_match(/ uid=#{Process.uid} /, inspect)
+      assert_match(/ euid=#{Process.euid} /, inspect)
       assert_match(/ \(xucred\)/, inspect)
     }
   end
