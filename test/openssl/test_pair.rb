@@ -156,6 +156,7 @@ class OpenSSL::TestPair < Test::Unit::TestCase
       }
       assert_match(/SSL_ERROR_WANT_READ/, err.message)
       s1.write "abc\ndef\n"
+      IO.select([s2])
       assert_equal("ab", s2.read_nonblock(2))
       assert_equal("c\n", s2.gets)
       ret = nil
