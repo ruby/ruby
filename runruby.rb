@@ -49,9 +49,10 @@ unless File.exist?(ruby)
 end
 
 libs = [abs_archdir]
+extout ||= config["EXTOUT"]
 if extout
   abs_extout = File.expand_path(extout)
-  libs << File.expand_path("common", abs_extout) << File.expand_path(RUBY_PLATFORM, abs_extout)
+  libs << File.expand_path("common", abs_extout) << File.expand_path(config['arch'], abs_extout)
 end
 libs << File.expand_path("lib", srcdir)
 config["bindir"] = abs_archdir

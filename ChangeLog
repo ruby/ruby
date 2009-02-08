@@ -1,3 +1,7 @@
+Sun Feb  8 09:41:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* runruby.rb: gets extout and arch from rbconfig.rb.
+
 Sat Feb  7 21:26:15 2009  Tanaka Akira  <akr@fsij.org>
 
 	* test/socket/test_addrinfo.rb (test_family_addrinfo): don't use
