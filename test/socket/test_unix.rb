@@ -306,8 +306,8 @@ class TestUNIXSocket < Test::Unit::TestCase
       cred = s.getsockopt(:SOCKET, :PEERCRED)
       inspect = cred.inspect
       assert_match(/ pid=#{$$} /, inspect)
-      assert_match(/ uid=#{Process.uid} /, inspect)
-      assert_match(/ gid=#{Process.gid} /, inspect)
+      assert_match(/ euid=#{Process.euid} /, inspect)
+      assert_match(/ egid=#{Process.egid} /, inspect)
       assert_match(/ \(ucred\)/, inspect)
     }
   end

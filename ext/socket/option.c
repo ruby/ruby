@@ -246,7 +246,7 @@ inspect_peercred(int level, int optname, VALUE data, VALUE ret)
     if (RSTRING_LEN(data) == sizeof(struct ucred)) {
         struct ucred cred;
         memcpy(&cred, RSTRING_PTR(data), sizeof(struct ucred));
-        rb_str_catf(ret, " pid=%u uid=%u gid=%u", cred.pid, cred.uid, cred.gid);
+        rb_str_catf(ret, " pid=%u euid=%u egid=%u", cred.pid, cred.uid, cred.gid);
         rb_str_cat2(ret, " (ucred)");
         return 0;
     }
