@@ -75,7 +75,7 @@ struct st_table {
 #endif
     st_index_t num_entries : ST_INDEX_BITS - 1;
     struct st_table_entry **bins;
-    struct st_table_entry *head;
+    struct st_table_entry *head, *tail;
 };
 
 #define st_is_member(table,key) st_lookup(table,key,(st_data_t *)0)
