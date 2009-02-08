@@ -343,7 +343,6 @@ class TestUNIXSocket < Test::Unit::TestCase
       msg, cliend_ai, rflags, cred = s.recvmsg
       assert_equal("a", msg)
       inspect = cred.inspect
-      p inspect
       assert_match(/ uid=#{Process.uid} /, inspect)
       assert_match(/ euid=#{Process.euid} /, inspect)
       assert_match(/ gid=#{Process.gid} /, inspect)
@@ -363,7 +362,6 @@ class TestUNIXSocket < Test::Unit::TestCase
       msg, cliend_ai, rflags, cred = s.recvmsg
       assert_equal("a", msg)
       inspect = cred.inspect
-      p inspect
       assert_match(/ pid=#{$$} /, inspect)
       assert_match(/ uid=#{Process.uid} /, inspect)
       assert_match(/ euid=#{Process.euid} /, inspect)
