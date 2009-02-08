@@ -73,6 +73,13 @@
 #include <net/if.h>
 #endif
 
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#ifdef HAVE_SYS_UCRED_H
+#include <sys/ucred.h>
+#endif
+
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK EAGAIN
 #endif

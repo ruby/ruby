@@ -256,6 +256,32 @@ inspect_peercred(int level, int optname, VALUE data, VALUE ret)
 }
 #endif
 
+#if defined(LOCAL_PEERCRED) /* FreeBSD */
+static int
+inspect_local_peercred(int level, int optname, VALUE data, VALUE ret)
+{
+    if (RSTRING_LEN(data) == sizeof(struct xucred)) {
+        struct xucred cred;
+        memcpy(&cred, RSTRING_PTR(data), sizeof(struct xucred));
+        rb_str_catf(ret, " version=%u", cred.cr_version);
+        rb_str_catf(ret, " uid=%u", cred.cr_uid);
+	if (cred.cr_ngroups) {
+	    int i;
+	    char *sep = " groups=";
+	    for (i = 0; i < cred.cr_ngroups; i++) {
+		rb_str_catf(ret, "%s%u", sep, cred.cr_groups[i]);
+		sep = ",";
+	    }
+	}
+        rb_str_cat2(ret, " (xucred)");
+        return 0;
+    }
+    else {
+        return -1;
+    }
+}
+#endif
+
 static VALUE
 sockopt_inspect(VALUE self)
 {
@@ -264,7 +290,7 @@ sockopt_inspect(VALUE self)
     int optname = NUM2INT(sockopt_optname(self));
     VALUE data = sockopt_data(self);
     VALUE v, ret;
-    ID family_id, level_id;
+    ID family_id, level_id, optname_id;
 
     StringValue(data);
 
@@ -276,17 +302,35 @@ sockopt_inspect(VALUE self)
     else
         rb_str_catf(ret, "family:%d", family);
 
-    level_id = intern_level(level);
-    if (level_id)
-        rb_str_catf(ret, " %s", rb_id2name(level_id));
-    else
-        rb_str_catf(ret, " level:%d", level);
+    if (family == AF_UNIX && level == 0) {
+	rb_str_catf(ret, " level:%d", level);
 
-    v = optname_to_sym(level, optname);
-    if (SYMBOL_P(v))
-        rb_str_catf(ret, " %s", rb_id2name(SYM2ID(v)));
-    else
-        rb_str_catf(ret, " optname:%d", optname);
+	optname_id = intern_local_optname(optname);
+	if (optname_id)
+	    rb_str_catf(ret, " %s", rb_id2name(optname_id));
+	else
+	    rb_str_catf(ret, " optname:%d", optname);
+    }
+    else {
+	level_id = intern_level(level);
+	if (level_id)
+	    rb_str_catf(ret, " %s", rb_id2name(level_id));
+	else
+	    rb_str_catf(ret, " level:%d", level);
+
+	v = optname_to_sym(level, optname);
+	if (SYMBOL_P(v))
+	    rb_str_catf(ret, " %s", rb_id2name(SYM2ID(v)));
+	else
+	    rb_str_catf(ret, " optname:%d", optname);
+    }
+
+    if (family == AF_UNIX && level == 0) {
+	if (optname == LOCAL_PEERCRED) {
+	    if (inspect_local_peercred(level, optname, data, ret) == -1) goto dump;
+	    goto finish;
+	}
+    }
 
     switch (level) {
 #    if defined(SOL_SOCKET)
@@ -391,6 +435,7 @@ sockopt_inspect(VALUE self)
         rb_str_catf(ret, " %s", StringValueCStr(data));
     }
 
+  finish:
     rb_str_cat2(ret, ">");
 
     return ret;

@@ -1,3 +1,14 @@
+Mon Feb  9 00:30:56 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: check sys/param.h and sys/ucred.h.
+
+	* ext/socket/rubysocket.h: include sys/param.h and sys/ucred.h.
+
+	* ext/socket/option.c (inspect_local_peercred): new function to show
+	  LOCAL_PEERCRED socket option on FreeBSD.
+	  (sockopt_inspect): show as LOCAL_* socket option if AF_UNIX and level
+	  is 0.
+
 Mon Feb  9 00:01:47 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/rubysocket.h (sockopt_new): add family argument.
@@ -25,7 +36,7 @@ Sun Feb  8 23:28:05 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 Sun Feb  8 23:22:35 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c (inspect_peercred): new function to show
-	  SO_PEERCRED socket option.
+	  SO_PEERCRED socket option on GNU/Linux.
 
 Sun Feb  8 22:44:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

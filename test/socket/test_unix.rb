@@ -312,6 +312,20 @@ class TestUNIXSocket < Test::Unit::TestCase
     }
   end
 
+  def test_getcred_xucred
+    return if /freebsd/ !~ RUBY_PLATFORM
+    Dir.mktmpdir {|d|
+      sockpath = "#{d}/sock"
+      serv = Socket.unix_server_socket(sockpath)
+      c = Socket.unix(sockpath)
+      s, = serv.accept
+      cred = s.getsockopt(0, Socket::LOCAL_PEERCRED)
+      inspect = cred.inspect
+      assert_match(/ uid=#{Process.uid} /, inspect)
+      assert_match(/ \(xucred\)/, inspect)
+    }
+  end
+
   def test_sendcred_ucred
     return if /linux/ !~ RUBY_PLATFORM
     Dir.mktmpdir {|d|
