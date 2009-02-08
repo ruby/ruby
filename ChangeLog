@@ -1,3 +1,9 @@
+Sun Feb  8 13:52:02 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (init_unix_addrinfo): add socktype argument.
+	  (addrinfo_initialize): follow init_unix_addrinfo change.
+	  (addrinfo_s_unix): add optional argument: socktype
+
 Sun Feb  8 13:09:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_APPEND_OPTION, RUBY_APPEND_OPTIONS),

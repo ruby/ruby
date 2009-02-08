@@ -719,7 +719,7 @@ addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE
 
 #ifdef HAVE_SYS_UN_H
 static void
-init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path)
+init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
 {
     struct sockaddr_un un;
 
@@ -734,7 +734,7 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path)
     un.sun_family = AF_UNIX;
     memcpy((void*)&un.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
    
-    init_addrinfo(rai, (struct sockaddr *)&un, sizeof(un), AF_UNIX, SOCK_STREAM, 0, Qnil, Qnil);
+    init_addrinfo(rai, (struct sockaddr *)&un, sizeof(un), PF_UNIX, socktype, 0, Qnil, Qnil);
 }
 #endif
 
@@ -843,7 +843,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
           {
             VALUE path = rb_ary_entry(sockaddr_ary, 1);
             StringValue(path);
-            init_unix_addrinfo(rai, path);
+            init_unix_addrinfo(rai, path, SOCK_STREAM);
             break;
           }
 #endif
@@ -2002,21 +2002,33 @@ addrinfo_s_udp(VALUE self, VALUE host, VALUE port)
 
 /*
  * call-seq:
- *   Addrinfo.unix(path) => addrinfo
+ *   Addrinfo.unix(path [, socktype]) => addrinfo
  *
  * returns an addrinfo object for UNIX socket address.
  *
- *   Addrinfo.unix("/tmp/sock") #=> #<Addrinfo: /tmp/sock SOCK_STREAM>
+ * _socktype_ specifies the socket type.
+ * If it is omitted, :STREAM is used.
+ *
+ *   Addrinfo.unix("/tmp/sock")         #=> #<Addrinfo: /tmp/sock SOCK_STREAM>
+ *   Addrinfo.unix("/tmp/sock", :DGRAM) #=> #<Addrinfo: /tmp/sock SOCK_DGRAM>
  */
 static VALUE
-addrinfo_s_unix(VALUE self, VALUE path)
+addrinfo_s_unix(int argc, VALUE *argv, VALUE self)
 {
-    VALUE addr;
+    VALUE path, vsocktype, addr;
+    int socktype;
     rb_addrinfo_t *rai;
+
+    rb_scan_args(argc, argv, "11", &path, &vsocktype);
+
+    if (NIL_P(vsocktype))
+        socktype = SOCK_STREAM;
+    else
+        socktype = socktype_arg(vsocktype);
 
     addr = addrinfo_s_allocate(rb_cAddrinfo);
     DATA_PTR(addr) = rai = alloc_addrinfo();
-    init_unix_addrinfo(rai, path);
+    init_unix_addrinfo(rai, path, socktype);
     OBJ_INFECT(addr, path);
     return addr;
 }
@@ -2105,7 +2117,7 @@ Init_addrinfo(void)
     rb_define_singleton_method(rb_cAddrinfo, "tcp", addrinfo_s_tcp, 2);
     rb_define_singleton_method(rb_cAddrinfo, "udp", addrinfo_s_udp, 2);
 #ifdef HAVE_SYS_UN_H
-    rb_define_singleton_method(rb_cAddrinfo, "unix", addrinfo_s_unix, 1);
+    rb_define_singleton_method(rb_cAddrinfo, "unix", addrinfo_s_unix, -1);
 #endif
 
     rb_define_method(rb_cAddrinfo, "afamily", addrinfo_afamily, 0);

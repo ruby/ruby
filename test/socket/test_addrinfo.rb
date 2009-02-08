@@ -563,6 +563,15 @@ class TestSocketAddrinfo < Test::Unit::TestCase
       assert_equal(0, ai.protocol)
     end
 
+    def test_addrinfo_unix_dgram
+      ai = Addrinfo.unix("/tmp/sock", :DGRAM)
+      assert_equal("/tmp/sock", Socket.unpack_sockaddr_un(ai))
+      assert_equal(Socket::AF_UNIX, ai.afamily)
+      assert_equal(Socket::PF_UNIX, ai.pfamily)
+      assert_equal(Socket::SOCK_DGRAM, ai.socktype)
+      assert_equal(0, ai.protocol)
+    end
+
     def test_addrinfo_unix_path
       ai = Addrinfo.unix("/tmp/sock1")
       assert_equal("/tmp/sock1", ai.unix_path)
