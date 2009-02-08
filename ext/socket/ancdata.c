@@ -376,6 +376,23 @@ anc_inspect_socket_rights(int level, int type, VALUE data, VALUE ret)
 }
 #endif
 
+#if defined(SCM_CREDENTIALS) /* GNU/Linux */
+static int
+anc_inspect_passcred_credentials(int level, int type, VALUE data, VALUE ret)
+{
+    if (level == SOL_SOCKET && type == SCM_CREDENTIALS &&
+        RSTRING_LEN(data) == sizeof(struct ucred)) {
+        struct ucred cred;
+        memcpy(&cred, RSTRING_PTR(data), sizeof(struct ucred));
+        rb_str_catf(ret, " pid=%u uid=%u gid=%u", cred.pid, cred.uid, cred.gid);
+        return 0;
+    }
+    else {
+        return -1;
+    }
+}
+#endif
+
 #if defined(IPPROTO_IP) && defined(IP_RECVDSTADDR) /* 4.4BSD */
 static int
 anc_inspect_ip_recvdstaddr(int level, int type, VALUE data, VALUE ret)
@@ -496,6 +513,9 @@ ancillary_inspect(VALUE self)
         switch (type) {
 #        if defined(SCM_RIGHTS) /* 4.4BSD */
           case SCM_RIGHTS: if (anc_inspect_socket_rights(level, type, data, ret) == -1) goto dump; break;
+#        endif
+#        if defined(SCM_CREDENTIALS) /* GNU/Linux */
+          case SCM_CREDENTIALS: if (anc_inspect_passcred_credentials(level, type, data, ret) == -1) goto dump; break;
 #        endif
           default: goto dump;
         }

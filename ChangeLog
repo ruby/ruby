@@ -1,3 +1,8 @@
+Sun Feb  8 18:46:15 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (anc_inspect_passcred_credentials): new
+	  function to show SCM_CREDENTIALS on GNU/Linux.
+
 Sun Feb  8 18:34:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_s_binread): ensures file path.  [ruby-dev:37940]
