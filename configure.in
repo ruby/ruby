@@ -105,6 +105,27 @@ AC_CANONICAL_TARGET
 target_os=`echo $target_os | sed 's/linux-gnu$/linux/;s/linux-gnu/linux-/'`
 ac_install_sh='' # unusable for extension libraries.
 
+AC_DEFUN([RUBY_APPEND_OPTION],
+	[# RUBY_APPEND_OPTION($1, $2)
+	{ case "( [$]{$1-} " dnl )
+	in '('*' $2 '*);; '(  ') $1="$2";; '('*) $1="[$]$1 $2";; esac; }])
+AC_DEFUN([RUBY_APPEND_OPTIONS],
+	[# RUBY_APPEND_OPTIONS($1, $2)
+	{ for rb_opt in $2; do
+	case "( [$]{$1-} " dnl )
+	in '('*" [$]{rb_opt} "*);; '(  ') $1="[$]{rb_opt}";; '('*) $1="[$]$1 [$]{rb_opt}";; esac; done; }])
+AC_DEFUN([RUBY_PREPEND_OPTION],
+	[# RUBY_PREPEND_OPTION($1, $2)
+	{ case "( [$]{$1-} " dnl )
+	in '('*' $2 '*);; '(  ') $1="$2";; '('*) $1="$2 [$]$1";; esac; }])
+AC_DEFUN([RUBY_PREPEND_OPTIONS],
+	[# RUBY_PREPEND_OPTIONS($1, $2)
+	{ unset rb_opts; for rb_opt in $2; do
+	case "( [$]{rb_opts} [$]{$1-} " dnl )
+	in '('*" [$]{rb_opt} "*);; '(  ') $1="[$]{rb_opt}";; '('*) rb_opts="[$]{rb_opts}[$]{rb_opt} ";; esac
+	done
+	$1="[$]{rb_opts}[$]$1"; }])
+
 AC_ARG_WITH(arch, [dnl
   --with-arch=ARCHS       build an Apple/NeXT Multi Architecture Binary (MAB);
                           ARCHS is a comma-delimited list of architectures for
@@ -114,7 +135,7 @@ AC_ARG_WITH(arch, [dnl
        [target_archs="$withval"], [unset target_archs])
 test ${CFLAGS+set} && CFLAGS=`echo "$CFLAGS" | sed 's/ *-arch  *[^ ]*//g'`
 test ${LDFLAGS+set} && LDFLAGS=`echo "$LDFLAGS" | sed 's/ *-arch  *[^ ]*//g'`
-unset ARCH_FLAG universal_binary
+unset ARCH_FLAG universal_binary universal_archnames
 if test ${target_archs+set}; then
     AC_MSG_CHECKING([target architectures])
     target_archs=`echo $target_archs | tr , ' '`
@@ -127,7 +148,13 @@ if test ${target_archs+set}; then
 	    ;;
 	  dnl (
 	  *)
-	    universal_binary="${universal_binary+$universal_binary,}$archs"
+	    cpu=`$SHELL "$srcdir/config.sub" "${archs}-${target_os}" 2>&1` || {
+	        AC_MSG_RESULT([failed])
+		AC_MSG_ERROR([$cpu])
+	    }
+	    cpu=`echo $cpu | sed 's/-.*-.*//'`
+	    universal_binary="${universal_binary+$universal_binary,}$cpu"
+	    universal_archnames="${universal_archnames} ${archs}=${cpu}"
 	    ARCH_FLAG="${ARCH_FLAG+$ARCH_FLAG }-arch $archs"
 	    ;;
 	esac
@@ -136,6 +163,7 @@ if test ${target_archs+set}; then
     unset universal_binary
     case "$target_archs" in dnl (
       *,*) universal_binary=yes;;
+      *)   unset universal_archnames;;
     esac
     AC_MSG_RESULT([$target_archs])
 
@@ -146,7 +174,7 @@ if test ${target_archs+set}; then
 	target_cpu=universal
     fi
     CFLAGS="$CFLAGS ${ARCH_FLAG}"
-    LDFLAGS="${LDFLAGS+$LDFLAGS } ${ARCH_FLAG}"
+    LDFLAGS="${LDFLAGS+$LDFLAGS }${ARCH_FLAG}"
 else
     target_archs="$target_cpu"
 fi
@@ -418,13 +446,13 @@ if test "$rb_cv_va_args_macro" = yes; then
 fi
 
 AC_DEFUN([RUBY_DEFINE_IF], [dnl
-    m4_ifval([$3],[test "$3" && cat <<EOH >> confdefs.h
-@%:@if $3
+    m4_ifval([$1],[test "$1" && cat <<EOH >> confdefs.h
+@%:@if $1
 EOH
 ])dnl
-AC_DEFINE_UNQUOTED($1, $2)
-    m4_ifval([$3],[test "$3" && cat <<EOH >> confdefs.h
-@%:@endif /* $3 */
+AC_DEFINE_UNQUOTED($2, $3)
+    m4_ifval([$1],[test "$1" && cat <<EOH >> confdefs.h
+@%:@endif /* $1 */
 EOH
 ])dnl
 ])dnl
@@ -465,7 +493,7 @@ else
 fi
 ])
 if test "$rbcv" != x; then
-    RUBY_DEFINE_IF(attrib[(x)], $rbcv, [${rbcv_cond}])
+    RUBY_DEFINE_IF([${rbcv_cond}], attrib[(x)], $rbcv)
 fi
 AS_VAR_POPDEF([attrib])
 AS_VAR_POPDEF([rbcv])
@@ -505,7 +533,7 @@ for mac in "__attribute__((dllimport))" "__declspec(dllimport)"; do
 done])
 test "x$rb_cv_ruby_extern" = xno || AC_DEFINE_UNQUOTED(RUBY_EXTERN, $rb_cv_ruby_extern)
 
-XCFLAGS="$XCFLAGS -DRUBY_EXPORT"
+RUBY_APPEND_OPTION(XCFLAGS, -DRUBY_EXPORT)
 
 dnl Check whether we need to define sys_nerr locally
 AC_CHECK_DECLS([sys_nerr], [], [], [$ac_includes_default
@@ -542,8 +570,8 @@ case "$target_os" in
 nextstep*)	;;
 openstep*)	;;
 rhapsody*)	;;
-darwin*)	LIBS="-lobjc $LIBS"
-		CPPFLAGS="$CPPFLAGS -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE"
+darwin*)	RUBY_PREPEND_OPTION(LIBS, -lobjc)
+		RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE)
 		AC_MSG_CHECKING(whether Mac OS X 10.5 or later)
 		AC_TRY_CPP([#include <AvailabilityMacros.h>
 		    #if MAC_OS_X_VERSION_MAX_ALLOWED <= 1040
@@ -794,8 +822,8 @@ dnl (
 universal-darwin*:*ppc*)
   AC_LIBSOURCES(alloca.c)
   AC_SUBST([ALLOCA], [\${LIBOBJDIR}alloca.${ac_objext}])
-  RUBY_DEFINE_IF(C_ALLOCA, 1, [defined __powerpc__])
-  RUBY_DEFINE_IF(alloca, alloca)
+  RUBY_DEFINE_IF([defined __powerpc__], C_ALLOCA, 1)
+  RUBY_DEFINE_IF([defined __powerpc__], alloca, alloca)
   ;;
 *)
   AC_FUNC_ALLOCA
@@ -1350,12 +1378,21 @@ if test "$with_dln_a_out" != yes; then
   AC_MSG_CHECKING(whether OS depend dynamic link works)
   if test "$GCC" = yes; then
     case "$target_os" in
-    nextstep*)	CCDLFLAGS="$CCDLFLAGS -fno-common";;
-    openstep*)	CCDLFLAGS="$CCDLFLAGS -fno-common";;
-    rhapsody*)	CCDLFLAGS="$CCDLFLAGS -fno-common";;
-    darwin*)	CCDLFLAGS="$CCDLFLAGS -fno-common";;
+    dnl (
+    nextstep*|openstep*|rhapsody*|darwin*)
+      # The -fno-common is needed if we wish to embed the Ruby interpreter
+      # into a plugin module of some project (as opposed to embedding it
+      # within the project's application).  The -I/usr/local/include is
+      # needed because CPP as discovered by configure (cc -E -traditional)
+      # fails to consult /usr/local/include by default.  This causes
+      # mkmf.rb's have_header() to fail if the desired resource happens to be
+      # installed in the /usr/local tree.
+      RUBY_APPEND_OPTION(CCDLFLAGS, -fno-common);;
+    dnl (
     human*|bsdi*|beos*|haiku*|cygwin*|mingw*|aix*|interix*) ;;
-    *) CCDLFLAGS="$CCDLFLAGS -fPIC";;
+    dnl (
+    *)
+      RUBY_APPEND_OPTION(CCDLFLAGS, -fPIC);;
     esac
   else
     case "$target_os" in
@@ -1733,7 +1770,7 @@ LIBRUBYARG_SHARED='-l$(RUBY_SO_NAME)'
 if test "$enable_shared" = 'yes'; then
   LIBRUBY='$(LIBRUBY_SO)'
   LIBRUBYARG='$(LIBRUBYARG_SHARED)'
-  CFLAGS="$CFLAGS $CCDLFLAGS"
+  test -z "$CCDLFLAGS" || CFLAGS="$CFLAGS $CCDLFLAGS"
   ENABLE_SHARED=yes
   if test "$rb_cv_binary_elf" = yes; then
     SOLIBS='$(LIBS)'
@@ -1834,25 +1871,17 @@ case "$target_os" in
     linux*)
 	;;
     netbsd*)
-	CFLAGS="$CFLAGS -pipe"
+	RUBY_APPEND_OPTION(CFLAGS, -pipe)
 	;;
     nextstep*|openstep*)
-	# The -fno-common is needed if we wish to embed the Ruby interpreter
-	# into a plugin module of some project (as opposed to embedding it
-	# within the project's application).  The -I/usr/local/include is
-	# needed because CPP as discovered by configure (cc -E -traditional)
-	# fails to consult /usr/local/include by default.  This causes
-	# mkmf.rb's have_header() to fail if the desired resource happens to be
-	# installed in the /usr/local tree.
-	CFLAGS="$CFLAGS -pipe -fno-common"
-	CPPFLAGS="$CPPFLAGS -I/usr/local/include"
+	RUBY_APPEND_OPTION(CPPFLAGS, -I/usr/local/include)
 	;;
     rhapsody*)
-	CFLAGS="$CFLAGS -pipe -no-precomp -fno-common"
+	RUBY_APPEND_OPTIONS(CFLAGS, -pipe -no-precomp)
 	;;
     darwin*)
-	CFLAGS="$CFLAGS -pipe -fno-common"
-        MINIDLNOBJ=dmydln.o
+	RUBY_APPEND_OPTION(CFLAGS, -pipe)
+	MINIDLNOBJ=dmydln.o
 	;;
     os2-emx)
     	CFLAGS="$CFLAGS -DOS2"
@@ -1961,6 +1990,38 @@ dnl (
     AC_MSG_RESULT($gnumake)
     ;;
 esac
+
+if test "${universal_binary-no}" = yes ; then
+    AC_MSG_CHECKING([for architecture macros])
+    mv confdefs.h confdefs1.h
+    : > confdefs.h
+    AC_TRY_COMPILE([@%:@if defined __`echo ${universal_archnames} |
+    sed 's/=[^ ]*//g;s/ /__ || defined __/g'`__
+@%:@else
+@%:@error
+>>>>>><<<<<<
+@%:@endif], [],
+[
+    AC_MSG_RESULT(yes)
+    mv -f confdefs1.h confdefs.h
+], [
+    AC_MSG_RESULT(no)
+    archflagpat=`eval echo '"'"${ARCH_FLAG}"'"' | sed 's/[[][|.*]]/\\&/g'`
+    cflags=`echo "$CFLAGS" | sed "s|$archflagpat"'||'`
+    for archs in ${universal_archnames}; do
+	cpu=${archs#*=}
+	archs=${archs%=*}
+	CFLAGS="$cflags -arch $archs"
+	archs="__${archs}__"
+	AC_MSG_CHECKING([for macro ${archs} on ${cpu}])
+	AC_TRY_COMPILE([@%:@ifndef ${archs}
+@%:@error
+@%:@endif], [], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no])])
+    done
+    mv -f confdefs1.h confdefs.h
+    AC_MSG_ERROR([failed])
+    ])
+fi
 
 CPPFLAGS="$CPPFLAGS "'$(DEFS)'
 test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
@@ -2121,15 +2182,23 @@ if test "${universal_binary-no}" = yes ; then
     AC_CACHE_CHECK(whether __ARCHITECTURE__ is available, rb_cv_architecture_available,
 	AC_TRY_COMPILE([const char arch[] = __ARCHITECTURE__;], [puts(arch);],
 	     [rb_cv_architecture_available=yes], [rb_cv_architecture_available=no]))
+    if test "${rb_cv_architecture_available}" = yes; then
+	AC_DEFINE_UNQUOTED(RUBY_PLATFORM_CPU, __ARCHITECTURE__)
+    else
+	for archs in ${universal_archnames}; do
+	    cpu=`echo $archs | sed 's/.*=//'`
+	    archs=`echo $archs | sed 's/=.*//'`
+	    RUBY_DEFINE_IF([defined __${archs}__], RUBY_PLATFORM_CPU, ["${cpu}"])
+	done
+    fi
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM_OS, "${target_os}")
+    AC_DEFINE_UNQUOTED(RUBY_ARCH, "universal-"RUBY_PLATFORM_OS)
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal."RUBY_PLATFORM_CPU"-"RUBY_PLATFORM_OS)
+    AC_DEFINE_UNQUOTED(RUBY_THIN_ARCHLIB, RUBY_LIB"/"RUBY_PLATFORM_CPU"-"RUBY_PLATFORM_OS)
+    AC_DEFINE_UNQUOTED(RUBY_SITE_THIN_ARCHLIB, RUBY_SITE_LIB2"/"RUBY_PLATFORM_CPU"-"RUBY_PLATFORM_OS)
+    AC_DEFINE_UNQUOTED(RUBY_VENDOR_THIN_ARCHLIB, RUBY_VENDOR_LIB2"/"RUBY_PLATFORM_CPU"-"RUBY_PLATFORM_OS)
 else
     arch="${target_cpu}-${target_os}"
-fi
-if test "${rb_cv_architecture_available}" = yes; then
-    AC_DEFINE_UNQUOTED(RUBY_THIN_ARCHLIB, RUBY_LIB"/"RUBY_PLATFORM)
-    AC_DEFINE_UNQUOTED(RUBY_SITE_THIN_ARCHLIB, RUBY_SITE_LIB"/"RUBY_PLATFORM)
-    AC_DEFINE_UNQUOTED(RUBY_VENDOR_THIN_ARCHLIB, RUBY_VENDOR_LIB"/"RUBY_PLATFORM)
-    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, __ARCHITECTURE__"-${target_os}")
-else
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
 fi
 

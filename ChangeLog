@@ -1,3 +1,15 @@
+Sun Feb  8 13:09:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_APPEND_OPTION, RUBY_APPEND_OPTIONS),
+	  (RUBY_PREPEND_OPTION, RUBY_PREPEND_OPTIONS): add option(s)
+	  without duplication.
+
+	* configure.in (RUBY_DEFINE_IF): changed parameter order, now
+	  condition comes first.
+
+	* configure.in (universal_binary): checks architecture macros, and
+	  improved thin load paths.
+
 Sun Feb  8 09:41:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* runruby.rb: gets extout and arch from rbconfig.rb.
