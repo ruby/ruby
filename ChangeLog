@@ -1,3 +1,16 @@
+Mon Feb  9 00:01:47 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/rubysocket.h (sockopt_new): add family argument.
+
+	* ext/socket/option.c (sockopt_initialize): add vfamily argument.
+	  (sockopt_new): add family argument and record it in the object.
+	  (sockopt_family): new method.
+	  (sockopt_s_int): add vfamily argument.
+	  (sockopt_inspect): show family.
+
+	* ext/socket/basicsocket.c (bsock_getsockopt): check address family
+	  using getsockname.
+
 Sun Feb  8 23:37:17 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* enumerator.c (enumerator_with_index): receives one argument which

@@ -35,11 +35,14 @@ optname_to_sym(int level, int optname)
 }
 
 static VALUE
-sockopt_initialize(VALUE self, VALUE vlevel, VALUE voptname, VALUE data)
+sockopt_initialize(VALUE self, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE data)
 {
+    int family;
     int level;
     StringValue(data);
     level = level_arg(vlevel);
+    family = family_arg(vfamily);
+    rb_ivar_set(self, rb_intern("family"), INT2NUM(family));
     rb_ivar_set(self, rb_intern("level"), INT2NUM(level));
     rb_ivar_set(self, rb_intern("optname"), INT2NUM(optname_arg(level, voptname)));
     rb_ivar_set(self, rb_intern("data"), data);
@@ -47,13 +50,27 @@ sockopt_initialize(VALUE self, VALUE vlevel, VALUE voptname, VALUE data)
 }
 
 VALUE
-sockopt_new(int level, int optname, VALUE data)
+sockopt_new(int family, int level, int optname, VALUE data)
 {
     NEWOBJ(obj, struct RObject);
     OBJSETUP(obj, rb_cSockOpt, T_OBJECT);
     StringValue(data);
-    sockopt_initialize((VALUE)obj, INT2NUM(level), INT2NUM(optname), data);
+    sockopt_initialize((VALUE)obj, INT2NUM(family), INT2NUM(level), INT2NUM(optname), data);
     return (VALUE)obj;
+}
+
+/*
+ * call-seq:
+ *   sockopt.family => integer
+ *
+ * returns the socket family as an integer.
+ *
+ *   p Socket::Option.new(:INET6, :IPV6, :RECVPKTINFO, [1].pack("i!")).family
+ */
+static VALUE
+sockopt_family(VALUE self)
+{
+    return rb_attr_get(self, rb_intern("family"));
 }
 
 /*
@@ -62,7 +79,7 @@ sockopt_new(int level, int optname, VALUE data)
  *
  * returns the socket level as an integer.
  *
- *   p Socket::Option.new(:IPV6, :RECVPKTINFO, [1].pack("i!")).level
+ *   p Socket::Option.new(:INET6, :IPV6, :RECVPKTINFO, [1].pack("i!")).level
  */
 static VALUE
 sockopt_level(VALUE self)
@@ -76,7 +93,7 @@ sockopt_level(VALUE self)
  *
  * returns the socket option name as an integer.
  *
- *   p Socket::Option.new(:IPV6, :RECVPKTINFO, [1].pack("i!")).optname
+ *   p Socket::Option.new(:INET6, :IPV6, :RECVPKTINFO, [1].pack("i!")).optname
  */
 static VALUE
 sockopt_optname(VALUE self)
@@ -90,7 +107,7 @@ sockopt_optname(VALUE self)
  *
  * returns the socket option data as a string.
  *
- *   p Socket::Option.new(:IPV6, :PKTINFO, [1].pack("i!")).data
+ *   p Socket::Option.new(:INET6, :IPV6, :PKTINFO, [1].pack("i!")).data
  */
 static VALUE
 sockopt_data(VALUE self)
@@ -100,7 +117,7 @@ sockopt_data(VALUE self)
 
 /*
  * call-seq:
- *   Socket::Option.int(level, optname, integer) => sockopt
+ *   Socket::Option.int(family, level, optname, integer) => sockopt
  *
  * Creates a new Socket::Option object which contains an int as data.
  *
@@ -110,12 +127,13 @@ sockopt_data(VALUE self)
  *   #=> #<Socket::Option: SOCKET KEEPALIVE 1>
  */
 static VALUE
-sockopt_s_int(VALUE klass, VALUE vlevel, VALUE voptname, VALUE vint)
+sockopt_s_int(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE vint)
 {
+    int family = family_arg(vfamily);
     int level = level_arg(vlevel);
     int optname = optname_arg(level, voptname);
     int i = NUM2INT(vint);
-    return sockopt_new(level, optname, rb_str_new((char*)&i, sizeof(i)));
+    return sockopt_new(family, level, optname, rb_str_new((char*)&i, sizeof(i)));
 }
 
 /*
@@ -241,21 +259,28 @@ inspect_peercred(int level, int optname, VALUE data, VALUE ret)
 static VALUE
 sockopt_inspect(VALUE self)
 {
+    int family = NUM2INT(sockopt_family(self));
     int level = NUM2INT(sockopt_level(self));
     int optname = NUM2INT(sockopt_optname(self));
     VALUE data = sockopt_data(self);
     VALUE v, ret;
-    ID level_id;
+    ID family_id, level_id;
 
     StringValue(data);
 
     ret = rb_sprintf("#<%s: ", rb_obj_classname(self));
 
+    family_id = intern_family(family);
+    if (family_id)
+	rb_str_cat2(ret, rb_id2name(family_id));
+    else
+        rb_str_catf(ret, "family:%d", family);
+
     level_id = intern_level(level);
     if (level_id)
-        rb_str_cat2(ret, rb_id2name(level_id));
+        rb_str_catf(ret, " %s", rb_id2name(level_id));
     else
-        rb_str_catf(ret, "level:%d", level);
+        rb_str_catf(ret, " level:%d", level);
 
     v = optname_to_sym(level, optname);
     if (SYMBOL_P(v))
@@ -381,13 +406,14 @@ void
 Init_sockopt(void)
 {
     rb_cSockOpt = rb_define_class_under(rb_cSocket, "Option", rb_cObject);
-    rb_define_method(rb_cSockOpt, "initialize", sockopt_initialize, 3);
+    rb_define_method(rb_cSockOpt, "initialize", sockopt_initialize, 4);
+    rb_define_method(rb_cSockOpt, "family", sockopt_family, 0);
     rb_define_method(rb_cSockOpt, "level", sockopt_level, 0);
     rb_define_method(rb_cSockOpt, "optname", sockopt_optname, 0);
     rb_define_method(rb_cSockOpt, "data", sockopt_data, 0);
     rb_define_method(rb_cSockOpt, "inspect", sockopt_inspect, 0);
 
-    rb_define_singleton_method(rb_cSockOpt, "int", sockopt_s_int, 3);
+    rb_define_singleton_method(rb_cSockOpt, "int", sockopt_s_int, 4);
     rb_define_method(rb_cSockOpt, "int", sockopt_int, 0);
 
     rb_define_method(rb_cSockOpt, "unpack", sockopt_unpack, 1);

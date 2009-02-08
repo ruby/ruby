@@ -244,7 +244,7 @@ VALUE sock_listen(VALUE sock, VALUE log);
 VALUE s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len);
 VALUE s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len);
 
-VALUE sockopt_new(int level, int optname, VALUE data);
+VALUE sockopt_new(int family, int level, int optname, VALUE data);
 
 void Init_basicsocket(void);
 void Init_ipsocket(void);

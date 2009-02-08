@@ -290,6 +290,8 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
     socklen_t len;
     char *buf;
     rb_io_t *fptr;
+    struct sockaddr_storage ss;
+    socklen_t sslen = sizeof(ss);
 
     level = level_arg(lev);
     option = optname_arg(level, optname);
@@ -297,10 +299,16 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
     buf = ALLOCA_N(char,len);
 
     GetOpenFile(sock, fptr);
+
+    if (getsockname(fptr->fd, (struct sockaddr*)&ss, &sslen) < 0)
+	rb_sys_fail("getsockname(2)");
+
     if (getsockopt(fptr->fd, level, option, buf, &len) < 0)
 	rb_sys_fail_path(fptr->pathv);
 
-    return sockopt_new(level, option, rb_str_new(buf, len));
+    if (sslen < (char*)&ss.ss_family + sizeof(ss.ss_family) - (char*)&ss)
+	ss.ss_family = AF_UNSPEC;
+    return sockopt_new(ss.ss_family, level, option, rb_str_new(buf, len));
 #else
     rb_notimplement();
 #endif
