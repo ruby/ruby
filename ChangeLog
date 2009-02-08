@@ -1,3 +1,8 @@
+Sun Feb  8 23:37:17 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* enumerator.c (enumerator_with_index): receives one argument which
+	  represents a start offset.  [ruby-dev:37921]
+
 Sun Feb  8 23:28:05 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* include/ruby/st.h, st.c: order entries by a linked list instead of

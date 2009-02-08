@@ -94,6 +94,7 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_with_index
     assert_equal([[1,0],[2,1],[3,2]], @obj.to_enum(:foo, 1, 2, 3).with_index.to_a)
+    assert_equal([[1,5],[2,6],[3,7]], @obj.to_enum(:foo, 1, 2, 3).with_index(5).to_a)
   end
 
   def test_with_object
