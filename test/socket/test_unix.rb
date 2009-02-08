@@ -313,7 +313,7 @@ class TestUNIXSocket < Test::Unit::TestCase
   end
 
   def test_getcred_xucred
-    return if /freebsd/ !~ RUBY_PLATFORM
+    return if /freebsd|darwin/ !~ RUBY_PLATFORM
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
       serv = Socket.unix_server_socket(sockpath)

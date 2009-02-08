@@ -256,7 +256,7 @@ inspect_peercred(int level, int optname, VALUE data, VALUE ret)
 }
 #endif
 
-#if defined(LOCAL_PEERCRED) /* FreeBSD */
+#if defined(LOCAL_PEERCRED) /* FreeBSD, MacOS X */
 static int
 inspect_local_peercred(int level, int optname, VALUE data, VALUE ret)
 {
