@@ -79,7 +79,7 @@ module DRb
 	@servers[name] = false
       end
       uri = @uri || DRb.uri
-      spawn("#{command} #{uri} #{name}")
+      Process.detach spawn("#{command} #{uri} #{name}")
     end
   end
 end
