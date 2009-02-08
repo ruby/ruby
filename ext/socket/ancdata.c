@@ -393,6 +393,41 @@ anc_inspect_passcred_credentials(int level, int type, VALUE data, VALUE ret)
 }
 #endif
 
+#if defined(SCM_CREDS) && defined(HAVE_TYPE_STRUCT_SOCKCRED) /* NetBSD */
+#define INSPECT_SCM_CREDS
+static int
+anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
+{
+    int i;
+    if (level == SOL_SOCKET && type == SCM_CREDS &&
+        RSTRING_LEN(data) >= SOCKCREDSIZE(0)) {
+	struct sockcred cred0, *cred;
+        memcpy(&cred0, RSTRING_PTR(data), SOCKCREDSIZE(0));
+	if (RSTRING_LEN(data) != SOCKCREDSIZE(cred0.sc_ngroups)) {
+	    return -1;
+	}
+	cred = (struct sockcred *)ALLOCA_N(char, SOCKCREDSIZE(cred0.sc_ngroups));
+        memcpy(cred, RSTRING_PTR(data), SOCKCREDSIZE(cred0.sc_ngroups));
+        rb_str_catf(ret, " uid=%u", cred->sc_uid);
+        rb_str_catf(ret, " euid=%u", cred->sc_euid);
+        rb_str_catf(ret, " gid=%u", cred->sc_gid);
+        rb_str_catf(ret, " egid=%u", cred->sc_egid);
+	if (cred0.sc_ngroups) {
+	    char *sep = "=";
+            rb_str_cat2(ret, " groups");
+	    for (i = 0; i < cred0.sc_ngroups; i++) {
+		rb_str_catf(ret, "%s%u", sep, cred->sc_groups[i]);
+		sep = ",";
+	    }
+	}
+        return 0;
+    }
+    else {
+        return -1;
+    }
+}
+#endif
+
 #if defined(IPPROTO_IP) && defined(IP_RECVDSTADDR) /* 4.4BSD */
 static int
 anc_inspect_ip_recvdstaddr(int level, int type, VALUE data, VALUE ret)
@@ -516,6 +551,9 @@ ancillary_inspect(VALUE self)
 #        endif
 #        if defined(SCM_CREDENTIALS) /* GNU/Linux */
           case SCM_CREDENTIALS: if (anc_inspect_passcred_credentials(level, type, data, ret) == -1) goto dump; break;
+#        endif
+#        if defined(INSPECT_SCM_CREDS) /* NetBSD */
+          case SCM_CREDS: if (anc_inspect_socket_creds(level, type, data, ret) == -1) goto dump; break;
 #        endif
           default: goto dump;
         }

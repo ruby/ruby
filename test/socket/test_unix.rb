@@ -306,11 +306,28 @@ class TestUNIXSocket < Test::Unit::TestCase
       s.setsockopt(:SOCKET, :PASSCRED, 1)
       c.print "a"
       msg, cliend_ai, rflags, cred = s.recvmsg
-      p cred
       assert_equal("a", msg)
-      assert_match(/pid=#{$$} /, cred.inspect)
-      assert_match(/uid=#{Process.uid} /, cred.inspect)
-      assert_match(/gid=#{Process.gid}>/, cred.inspect)
+      assert_match(/ pid=#{$$} /, cred.inspect)
+      assert_match(/ uid=#{Process.uid} /, cred.inspect)
+      assert_match(/ gid=#{Process.gid}>/, cred.inspect)
+    }
+  end
+
+  def test_netbsd_cred
+    return if /netbsd/ !~ RUBY_PLATFORM
+    Dir.mktmpdir {|d|
+      sockpath = "#{d}/sock"
+      serv = Socket.unix_server_socket(sockpath)
+      c = Socket.unix(sockpath)
+      s, = serv.accept
+      s.setsockopt(0, Socket::LOCAL_CREDS, 1)
+      c.print "a"
+      msg, cliend_ai, rflags, cred = s.recvmsg
+      assert_equal("a", msg)
+      assert_match(/ uid=#{Process.uid} /, cred.inspect)
+      assert_match(/ euid=#{Process.euid} /, cred.inspect)
+      assert_match(/ gid=#{Process.gid} /, cred.inspect)
+      assert_match(/ egid=#{Process.egid} /, cred.inspect)
     }
   end
 

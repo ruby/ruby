@@ -308,6 +308,8 @@ have_type("struct in6_pktinfo", headers) {|src|
   "#else\n" << "#error\n" << ">>>>>> no in6_pktinfo <<<<<<\n" << "#endif\n"
 }
 
+have_type("struct sockcred", headers)
+
 $distcleanfiles << "constants.h" << "constdefs.*"
 
 if have_func(test_func)
