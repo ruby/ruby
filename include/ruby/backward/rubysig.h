@@ -20,6 +20,13 @@
 #define RUBYSIG_H
 #include "ruby/ruby.h"
 
+#if defined(__cplusplus)
+extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
+#endif
+
 struct rb_blocking_region_buffer;
 RUBY_EXTERN struct rb_blocking_region_buffer *rb_thread_blocking_region_begin(void);
 RUBY_EXTERN void rb_thread_blocking_region_end(struct rb_blocking_region_buffer *);
@@ -30,4 +37,12 @@ RUBY_EXTERN void rb_thread_blocking_region_end(struct rb_blocking_region_buffer 
 #define ENABLE_INTS (1)
 #define ALLOW_INTS do {CHECK_INTS;} while (0)
 #define CHECK_INTS rb_thread_check_ints()
+
+#if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
+#endif
+}  /* extern "C" { */
+#endif
+
 #endif
