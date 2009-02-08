@@ -2002,7 +2002,7 @@ addrinfo_s_udp(VALUE self, VALUE host, VALUE port)
 
 /*
  * call-seq:
- *   Addrinfo.udp(host, port) => addrinfo
+ *   Addrinfo.unix(path) => addrinfo
  *
  * returns an addrinfo object for UNIX socket address.
  *
