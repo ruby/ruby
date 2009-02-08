@@ -326,10 +326,12 @@ sockopt_inspect(VALUE self)
     }
 
     if (family == AF_UNIX && level == 0) {
+#     if defined(LOCAL_PEERCRED)
 	if (optname == LOCAL_PEERCRED) {
 	    if (inspect_local_peercred(level, optname, data, ret) == -1) goto dump;
 	    goto finish;
 	}
+#     endif
     }
 
     switch (level) {
