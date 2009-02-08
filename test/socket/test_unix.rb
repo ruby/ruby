@@ -296,4 +296,22 @@ class TestUNIXSocket < Test::Unit::TestCase
     }
   end
 
+  def test_linux_cred
+    return if /linux/ !~ RUBY_PLATFORM
+    Dir.mktmpdir {|d|
+      sockpath = "#{d}/sock"
+      serv = Socket.unix_server_socket(sockpath)
+      c = Socket.unix(sockpath)
+      s, = serv.accept
+      s.setsockopt(:SOCKET, :PASSCRED, 1)
+      c.print "a"
+      msg, cliend_ai, rflags, cred = s.recvmsg
+      p cred
+      assert_equal("a", msg)
+      assert_match(/pid=#{$$} /, cred.inspect)
+      assert_match(/uid=#{Process.uid} /, cred.inspect)
+      assert_match(/gid=#{Process.gid}>/, cred.inspect)
+    }
+  end
+
 end if defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM
