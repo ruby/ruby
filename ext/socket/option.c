@@ -221,6 +221,23 @@ inspect_timeval(int level, int optname, VALUE data, VALUE ret)
     }
 }
 
+#if defined(SOL_SOCKET) && defined(SO_PEERCRED) /* GNU/Linux */
+static int
+inspect_peercred(int level, int optname, VALUE data, VALUE ret)
+{
+    if (RSTRING_LEN(data) == sizeof(struct ucred)) {
+        struct ucred cred;
+        memcpy(&cred, RSTRING_PTR(data), sizeof(struct ucred));
+        rb_str_catf(ret, " pid=%u uid=%u gid=%u", cred.pid, cred.uid, cred.gid);
+        rb_str_cat2(ret, " (ucred)");
+        return 0;
+    }
+    else {
+        return -1;
+    }
+}
+#endif
+
 static VALUE
 sockopt_inspect(VALUE self)
 {
@@ -298,6 +315,9 @@ sockopt_inspect(VALUE self)
 #        endif
 #        if defined(SO_SNDTIMEO) /* POSIX */
           case SO_SNDTIMEO: if (inspect_timeval(level, optname, data, ret) == -1) goto dump; break;
+#        endif
+#        if defined(SO_PEERCRED) /* GNU/Linux */
+          case SO_PEERCRED: if (inspect_peercred(level, optname, data, ret) == -1) goto dump; break;
 #        endif
 
           default: goto dump;

@@ -1,3 +1,8 @@
+Sun Feb  8 23:22:35 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c (inspect_peercred): new function to show
+	  SO_PEERCRED socket option.
+
 Sun Feb  8 22:44:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/backward/rubysig.h (rb_thread_blocking_region_begin),

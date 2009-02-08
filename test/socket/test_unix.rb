@@ -296,7 +296,23 @@ class TestUNIXSocket < Test::Unit::TestCase
     }
   end
 
-  def test_cred_ucred
+  def test_getcred_ucred
+    return if /linux/ !~ RUBY_PLATFORM
+    Dir.mktmpdir {|d|
+      sockpath = "#{d}/sock"
+      serv = Socket.unix_server_socket(sockpath)
+      c = Socket.unix(sockpath)
+      s, = serv.accept
+      cred = s.getsockopt(:SOCKET, :PEERCRED)
+      inspect = cred.inspect
+      assert_match(/ pid=#{$$} /, inspect)
+      assert_match(/ uid=#{Process.uid} /, inspect)
+      assert_match(/ gid=#{Process.gid} /, inspect)
+      assert_match(/ \(ucred\)/, inspect)
+    }
+  end
+
+  def test_sendcred_ucred
     return if /linux/ !~ RUBY_PLATFORM
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
@@ -310,12 +326,12 @@ class TestUNIXSocket < Test::Unit::TestCase
       assert_equal("a", msg)
       assert_match(/ pid=#{$$} /, inspect)
       assert_match(/ uid=#{Process.uid} /, inspect)
-      assert_match(/ gid=#{Process.gid}>/, inspect)
+      assert_match(/ gid=#{Process.gid} /, inspect)
       assert_match(/ \(ucred\)/, inspect)
     }
   end
 
-  def test_cred_sockcred
+  def test_sendcred_sockcred
     return if /netbsd|freebsd/ !~ RUBY_PLATFORM
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
@@ -336,7 +352,7 @@ class TestUNIXSocket < Test::Unit::TestCase
     }
   end
 
-  def test_cred_cmsgcred
+  def test_sendcred_cmsgcred
     return if /freebsd/ !~ RUBY_PLATFORM
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
