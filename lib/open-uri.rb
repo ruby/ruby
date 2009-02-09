@@ -170,7 +170,7 @@ module OpenURI
     end
     case opt_proxy
     when true
-      find_proxy = lambda {|u| [u.find_proxy, nil, nil]}
+      find_proxy = lambda {|u| pxy = u.find_proxy; pxy ? [pxy, nil, nil] : nil}
     when nil, false
       find_proxy = lambda {|u| nil}
     when String
