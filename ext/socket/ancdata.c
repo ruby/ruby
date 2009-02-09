@@ -605,7 +605,7 @@ ancillary_inspect(VALUE self)
     else
         rb_str_catf(ret, "family:%d", family);
 
-    level_id = intern_level(level);
+    level_id = intern_iplevel(level);
     if (level_id)
         rb_str_catf(ret, " %s", rb_id2name(level_id));
     else

@@ -318,7 +318,7 @@ sockopt_inspect(VALUE self)
 	    rb_str_catf(ret, " optname:%d", optname);
     }
     else {
-	level_id = intern_level(level);
+	level_id = intern_iplevel(level);
 	if (level_id)
 	    rb_str_catf(ret, " %s", rb_id2name(level_id));
 	else

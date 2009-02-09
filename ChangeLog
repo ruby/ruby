@@ -1,3 +1,14 @@
+Mon Feb  9 23:04:27 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: rename level_to_int to iplevel_to_int.
+	  rename intern_level to intern_iplevel.
+
+	* ext/socket/constants.c: follow the renaming.
+
+	* ext/socket/option.c: ditto.
+
+	* ext/socket/ancdata.c: ditto.
+
 Mon Feb  9 22:52:13 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/rubysocket.h (level_arg): add family argument.

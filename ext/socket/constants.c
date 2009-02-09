@@ -61,7 +61,7 @@ int
 level_arg(int family, VALUE level)
 {
     /* convert SOL_SOCKET, IPPROTO_TCP, etc. */
-    return constant_arg(level, level_to_int, "unknown protocol level");
+    return constant_arg(level, iplevel_to_int, "unknown protocol level");
 }
 
 int
