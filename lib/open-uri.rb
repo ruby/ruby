@@ -91,6 +91,7 @@ end
 module OpenURI
   Options = {
     :proxy => true,
+    :proxy_http_basic_authentication => true,
     :progress_proc => true,
     :content_length_proc => true,
     :http_basic_authentication => true,
@@ -143,16 +144,28 @@ module OpenURI
   end
 
   def OpenURI.open_loop(uri, options) # :nodoc:
-    case opt_proxy = options.fetch(:proxy, true)
+    if options.include? :proxy_http_basic_authentication
+      opt_proxy, proxy_user, proxy_pass = options[:proxy_http_basic_authentication]
+      proxy_user = proxy_user.to_str
+      proxy_pass = proxy_pass.to_str
+      if opt_proxy == true
+        raise ArgumentError.new("Invalid authenticated proxy option: #{options[:proxy_http_basic_authentication].inspect}")
+      end
+    else
+      opt_proxy = options.fetch(:proxy, true)
+      proxy_user = nil
+      proxy_pass = nil
+    end
+    case opt_proxy
     when true
-      find_proxy = lambda {|u| u.find_proxy}
+      find_proxy = lambda {|u| [u.find_proxy, nil, nil]}
     when nil, false
       find_proxy = lambda {|u| nil}
     when String
       opt_proxy = URI.parse(opt_proxy)
-      find_proxy = lambda {|u| opt_proxy}
+      find_proxy = lambda {|u| [opt_proxy, proxy_user, proxy_pass]}
     when URI::Generic
-      find_proxy = lambda {|u| opt_proxy}
+      find_proxy = lambda {|u| [opt_proxy, proxy_user, proxy_pass]}
     else
       raise ArgumentError.new("Invalid proxy option: #{opt_proxy}")
     end
@@ -201,7 +214,8 @@ module OpenURI
 
   def OpenURI.open_http(buf, target, proxy, options) # :nodoc:
     if proxy
-      raise "Non-HTTP proxy URI: #{proxy}" if proxy.class != URI::HTTP
+      proxy_uri, proxy_user, proxy_pass = proxy
+      raise "Non-HTTP proxy URI: #{proxy_uri}" if proxy_uri.class != URI::HTTP
     end
 
     if target.userinfo && "1.9.0" <= RUBY_VERSION
@@ -209,21 +223,31 @@ module OpenURI
       raise ArgumentError, "userinfo not supported.  [RFC3986]"
     end
 
+    header = {}
+    options.each {|k, v| header[k] = v if String === k }
+
     require 'net/http'
     klass = Net::HTTP
     if URI::HTTP === target
       # HTTP or HTTPS
       if proxy
-        klass = Net::HTTP::Proxy(proxy.host, proxy.port)
+        if proxy_user && proxy_pass
+          klass = Net::HTTP::Proxy(proxy_uri.host, proxy_uri.port, proxy_user, proxy_pass)
+        else
+          klass = Net::HTTP::Proxy(proxy_uri.host, proxy_uri.port)
+        end
       end
       target_host = target.host
       target_port = target.port
       request_uri = target.request_uri
     else
       # FTP over HTTP proxy
-      target_host = proxy.host
-      target_port = proxy.port
+      target_host = proxy_uri.host
+      target_port = proxy_uri.port
       request_uri = target.to_s
+      if proxy_user && proxy_pass
+        header["Proxy-Authorization"] = 'Basic ' + ["#{proxy_user}:#{proxy_pass}"].pack('m').delete("\r\n")
+      end
     end
 
     http = klass.new(target_host, target_port)
@@ -238,9 +262,6 @@ module OpenURI
     if options.include? :read_timeout
       http.read_timeout = options[:read_timeout]
     end
-
-    header = {}
-    options.each {|k, v| header[k] = v if String === k }
 
     resp = nil
     http.start {
@@ -463,6 +484,21 @@ module OpenURI
     #  `scheme' is replaced by `http', `https' or `ftp'.
     #  When false or nil is given, the environment variables are ignored and
     #  connection will be made to a server directly.
+    #
+    # [:proxy_http_basic_authentication]
+    #  Synopsis:
+    #    :proxy_http_basic_authentication => ["http://proxy.foo.com:8000/", "proxy-user", "proxy-password"]
+    #    :proxy_http_basic_authentication => [URI.parse("http://proxy.foo.com:8000/"), "proxy-user", "proxy-password"]
+    #   
+    #  If :proxy option is specified, the value should be an Array with 3 elements.
+    #  It should contain a proxy URI, a proxy user name and a proxy password.
+    #  The proxy URI should be a String, an URI or nil.
+    #  The proxy user name and password should be a String.
+    #
+    #  If nil is given for the proxy URI, this option is just ignored.
+    #
+    #  If :proxy and :proxy_http_basic_authentication is specified, 
+    #  :proxy_http_basic_authentication is preferred.
     #
     # [:http_basic_authentication]
     #  Synopsis:
