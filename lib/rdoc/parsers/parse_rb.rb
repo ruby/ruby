@@ -8,7 +8,7 @@
 # This file contains stuff stolen outright from:
 #
 #   rtags.rb - 
-#   ruby-lex.rb - ruby lexcal analizer
+#   ruby-lex.rb - ruby lexcal analyzer
 #   ruby-token.rb - ruby tokens 
 #   	by Keiju ISHITSUKA (Nippon Rational Inc.)
 #
