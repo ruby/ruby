@@ -327,7 +327,12 @@ module OpenURI
          Net::HTTPFound, # 302
          Net::HTTPSeeOther, # 303
          Net::HTTPTemporaryRedirect # 307
-      throw :open_uri_redirect, URI.parse(resp['location'])
+      begin
+        loc_uri = URI.parse(resp['location'])
+      rescue URI::InvalidURIError
+        raise OpenURI::HTTPError.new(io.status.join(' ') + ' (Invalid Location URI)', io)
+      end
+      throw :open_uri_redirect, loc_uri
     else
       raise OpenURI::HTTPError.new(io.status.join(' '), io)
     end

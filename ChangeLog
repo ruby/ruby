@@ -17,6 +17,8 @@ Mon Feb  9 11:50:02 2009  Akinori MUSHA  <knu@iDaemons.org>
 	  (OpenURI::Buffer): use Meta ===.  [ruby-core:14295] (r14609)
 	  (OpenURI::Meta#content_type_parse): fix
 	  tests. [ruby-dev:33336] (r15200)
+	  (OpenURI.open_http): rescue URI::InvalidURIError by URI.parse
+	  for location URI. (r15406)
 
 Mon Feb  9 01:21:16 2009  Tanaka Akira  <akr@fsij.org>
 
