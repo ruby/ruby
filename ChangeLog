@@ -1,4 +1,4 @@
-Mon Feb  9 11:50:02 2009  Akinori MUSHA  <knu@iDaemons.org>
+Mon Feb  9 12:02:29 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/open-uri.rb: add :read_timeout option.
 	  [ruby-core:4848] (r9166)
@@ -19,6 +19,7 @@ Mon Feb  9 11:50:02 2009  Akinori MUSHA  <knu@iDaemons.org>
 	  tests. [ruby-dev:33336] (r15200)
 	  (OpenURI.open_http): rescue URI::InvalidURIError by URI.parse
 	  for location URI. (r15406)
+	  Fix a typo and remove trailing spaces. (r16810, r19345)
 
 Mon Feb  9 01:21:16 2009  Tanaka Akira  <akr@fsij.org>
 
