@@ -37,7 +37,12 @@ cmsg_type_to_sym(int level, int cmsg_type)
 
 /*
  * call-seq:
- *   Socket::AncillaryData.new(cmsg_level, cmsg_type, cmsg_data) -> ancillarydata
+ *   Socket::AncillaryData.new(family, cmsg_level, cmsg_type, cmsg_data) -> ancillarydata
+ *
+ * _family_ should be an integer, a string or a symbol.
+ * - Socket::AF_INET, "AF_INET", "INET", :AF_INET, :INET
+ * - Socket::AF_UNIX, "AF_UNIX", "UNIX", :AF_UNIX, :UNIX
+ * - etc.
  *
  * _cmsg_level_ should be an integer, a string or a symbol.
  * - Socket::SOL_SOCKET, "SOL_SOCKET", "SOCKET", :SOL_SOCKET and :SOCKET
@@ -59,25 +64,49 @@ cmsg_type_to_sym(int level, int cmsg_type)
  *
  */
 static VALUE
-ancillary_initialize(VALUE self, VALUE vlevel, VALUE vtype, VALUE data)
+ancillary_initialize(VALUE self, VALUE vfamily, VALUE vlevel, VALUE vtype, VALUE data)
 {
-    int level;
+    int family = family_arg(vfamily);
+    int level = level_arg(vlevel);
+    int type = cmsg_type_arg(level, vtype);
     StringValue(data);
-    level = level_arg(vlevel);
+    rb_ivar_set(self, rb_intern("family"), INT2NUM(family));
     rb_ivar_set(self, rb_intern("level"), INT2NUM(level));
-    rb_ivar_set(self, rb_intern("type"), INT2NUM(cmsg_type_arg(level, vtype)));
+    rb_ivar_set(self, rb_intern("type"), INT2NUM(type));
     rb_ivar_set(self, rb_intern("data"), data);
     return self;
 }
 
 static VALUE
-ancdata_new(int level, int type, VALUE data)
+ancdata_new(int family, int level, int type, VALUE data)
 {
     NEWOBJ(obj, struct RObject);
     OBJSETUP(obj, rb_cAncillaryData, T_OBJECT);
     StringValue(data);
-    ancillary_initialize((VALUE)obj, INT2NUM(level), INT2NUM(type), data);
+    ancillary_initialize((VALUE)obj, INT2NUM(family), INT2NUM(level), INT2NUM(type), data);
     return (VALUE)obj;
+}
+
+static int
+ancillary_family(VALUE self)
+{
+    VALUE v = rb_attr_get(self, rb_intern("family"));
+    return NUM2INT(v);
+}
+
+/*
+ * call-seq:
+ *   ancillarydata.family => integer
+ *
+ * returns the socket family as an integer.
+ *
+ *   p Socket::AncillaryData.new(:INET6, :IPV6, :PKTINFO, "").family
+ *   #=> 41
+ */
+static VALUE
+ancillary_family_m(VALUE self)
+{
+    return INT2NUM(ancillary_family(self));
 }
 
 static int
@@ -93,7 +122,7 @@ ancillary_level(VALUE self)
  *
  * returns the cmsg level as an integer.
  *
- *   p Socket::AncillaryData.new(:IPV6, :PKTINFO, "").level
+ *   p Socket::AncillaryData.new(:INET6, :IPV6, :PKTINFO, "").level
  *   #=> 41
  */
 static VALUE
@@ -115,7 +144,7 @@ ancillary_type(VALUE self)
  *
  * returns the cmsg type as an integer.
  *
- *   p Socket::AncillaryData.new(:IPV6, :PKTINFO, "").type
+ *   p Socket::AncillaryData.new(:INET6, :IPV6, :PKTINFO, "").type
  *   #=> 2
  */
 static VALUE
@@ -130,7 +159,7 @@ ancillary_type_m(VALUE self)
  *
  * returns the cmsg data as a string.
  *
- *   p Socket::AncillaryData.new(:IPV6, :PKTINFO, "").data
+ *   p Socket::AncillaryData.new(:INET6, :IPV6, :PKTINFO, "").data
  *   #=> ""
  */
 static VALUE
@@ -144,22 +173,23 @@ ancillary_data(VALUE self)
 
 /*
  * call-seq:
- *   Socket::AncillaryData.int(cmsg_level, cmsg_type, integer) => ancillarydata
+ *   Socket::AncillaryData.int(family, cmsg_level, cmsg_type, integer) => ancillarydata
  *
  * Creates a new Socket::AncillaryData object which contains a int as data.
  *
  * The size and endian is dependent on the host. 
  *
- *   p Socket::AncillaryData.int(:SOCKET, :RIGHTS, STDERR.fileno)
- *   #=> #<Socket::AncillaryData: SOCKET RIGHTS 2>
+ *   p Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, STDERR.fileno)
+ *   #=> #<Socket::AncillaryData: AF_UNIX SOCKET RIGHTS 2>
  */
 static VALUE
-ancillary_s_int(VALUE klass, VALUE vlevel, VALUE vtype, VALUE integer)
+ancillary_s_int(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE vtype, VALUE integer)
 {
+    int family = family_arg(vfamily);
     int level = level_arg(vlevel);
     int type = cmsg_type_arg(level, vtype);
     int i = NUM2INT(integer);
-    return ancdata_new(level, type, rb_str_new((char*)&i, sizeof(i)));
+    return ancdata_new(family, level, type, rb_str_new((char*)&i, sizeof(i)));
 }
 
 /*
@@ -170,7 +200,7 @@ ancillary_s_int(VALUE klass, VALUE vlevel, VALUE vtype, VALUE integer)
  *
  * The size and endian is dependent on the host. 
  *
- *   ancdata = Socket::AncillaryData.int(:SOCKET, :RIGHTS, STDERR.fileno)
+ *   ancdata = Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, STDERR.fileno)
  *   p ancdata.int => 2
  */
 static VALUE
@@ -217,7 +247,7 @@ ancillary_s_ip_pktinfo(VALUE self, VALUE v_addr, VALUE v_ifindex, VALUE v_spec_d
         rb_raise(rb_eArgError, "spec_dst is not AF_INET sockaddr");
     memcpy(&pktinfo.ipi_spec_dst, &sa.sin_addr, sizeof(pktinfo.ipi_spec_dst));
 
-    return ancdata_new(IPPROTO_IP, IP_PKTINFO, rb_str_new((char *)&pktinfo, sizeof(pktinfo)));
+    return ancdata_new(AF_INET, IPPROTO_IP, IP_PKTINFO, rb_str_new((char *)&pktinfo, sizeof(pktinfo)));
 #else
     rb_notimplement();
 #endif
@@ -282,7 +312,7 @@ ancillary_s_ipv6_pktinfo(VALUE self, VALUE v_addr, VALUE v_ifindex)
 
     pktinfo.ipi6_ifindex = ifindex;
 
-    return ancdata_new(IPPROTO_IPV6, IPV6_PKTINFO, rb_str_new((char *)&pktinfo, sizeof(pktinfo)));
+    return ancdata_new(AF_INET6, IPPROTO_IPV6, IPV6_PKTINFO, rb_str_new((char *)&pktinfo, sizeof(pktinfo)));
 #else
     rb_notimplement();
 #endif
@@ -546,8 +576,8 @@ anc_inspect_ipv6_pktinfo(int level, int type, VALUE data, VALUE ret)
  *
  * returns a string which shows ancillarydata in human-readable form.
  *
- *   Socket::AncillaryData.new(:IPV6, :PKTINFO, "").inspect
- *   #=> #<Socket::AncillaryData: IPV6 PKTINFO "">
+ *   Socket::AncillaryData.new(:INET6, :IPV6, :PKTINFO, "").inspect
+ *   #=> #<Socket::AncillaryData: AF_INET6 IPV6 PKTINFO "">
  */
 static VALUE
 ancillary_inspect(VALUE self)
@@ -636,7 +666,7 @@ ancillary_inspect(VALUE self)
  *
  * tests the level and type of _ancillarydata_.
  *
- *   ancdata = Socket::AncillaryData.new(:IPV6, :PKTINFO, "")
+ *   ancdata = Socket::AncillaryData.new(:INET6, :IPV6, :PKTINFO, "")
  *   ancdata.cmsg_is?(Socket::IPPROTO_IPV6, Socket::IPV6_PKTINFO) #=> true
  *   ancdata.cmsg_is?(:IPV6, :PKTINFO)       #=> true
  *   ancdata.cmsg_is?(:IP, :PKTINFO)         #=> false
@@ -1052,11 +1082,15 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
         for (cmh = CMSG_FIRSTHDR(&mh); cmh != NULL; cmh = CMSG_NXTHDR(&mh, cmh)) {
             VALUE ctl;
             size_t clen;
+            struct sockaddr_storage ss;
+            socklen_t sslen = sizeof(ss);
             if (cmh->cmsg_len == 0) {
                 rb_raise(rb_eIOError, "invalid control message (cmsg_len == 0)");
             }
+            ss.ss_family = AF_UNSPEC;
+            getsockname(fptr->fd, (struct sockaddr*)&ss, &sslen);
             clen = (char*)cmh + cmh->cmsg_len - (char*)CMSG_DATA(cmh);
-            ctl = ancdata_new(cmh->cmsg_level, cmh->cmsg_type, rb_tainted_str_new((char*)CMSG_DATA(cmh), clen));
+            ctl = ancdata_new(ss.ss_family, cmh->cmsg_level, cmh->cmsg_type, rb_tainted_str_new((char*)CMSG_DATA(cmh), clen));
             rb_ary_push(ret, ctl);
         }
     }
@@ -1097,7 +1131,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
  *
  * _controls_ is ancillary data which is an array of Socket::AncillaryData objects such as:
  *
- *   #<Socket::AncillaryData: SOCKET RIGHTS 7>
+ *   #<Socket::AncillaryData: AF_UNIX SOCKET RIGHTS 7>
  *
  * _maxmesglen_ and _maxcontrolslen_ can be nil.
  * In that case, the buffer will be grown until the message is not truncated.
@@ -1146,17 +1180,18 @@ Init_ancdata(void)
 
 #if defined(HAVE_ST_MSG_CONTROL)
     rb_cAncillaryData = rb_define_class_under(rb_cSocket, "AncillaryData", rb_cObject);
-    rb_define_method(rb_cAncillaryData, "initialize", ancillary_initialize, 3);
+    rb_define_method(rb_cAncillaryData, "initialize", ancillary_initialize, 4);
     rb_define_method(rb_cAncillaryData, "inspect", ancillary_inspect, 0);
+    rb_define_method(rb_cAncillaryData, "family", ancillary_family_m, 0);
     rb_define_method(rb_cAncillaryData, "level", ancillary_level_m, 0);
     rb_define_method(rb_cAncillaryData, "type", ancillary_type_m, 0);
     rb_define_method(rb_cAncillaryData, "data", ancillary_data, 0);
     rb_define_method(rb_cAncillaryData, "cmsg_is?", ancillary_cmsg_is_p, 2);
-    rb_define_singleton_method(rb_cAncillaryData, "int", ancillary_s_int, 3);
+    rb_define_singleton_method(rb_cAncillaryData, "int", ancillary_s_int, 4);
     rb_define_method(rb_cAncillaryData, "int", ancillary_int, 0);
-    rb_define_singleton_method(rb_cAncillaryData, "ip_pktinfo", ancillary_s_ip_pktinfo, 3);
+    rb_define_singleton_method(rb_cAncillaryData, "ip_pktinfo", ancillary_s_ip_pktinfo, 4);
     rb_define_method(rb_cAncillaryData, "ip_pktinfo", ancillary_ip_pktinfo, 0);
-    rb_define_singleton_method(rb_cAncillaryData, "ipv6_pktinfo", ancillary_s_ipv6_pktinfo, 2);
+    rb_define_singleton_method(rb_cAncillaryData, "ipv6_pktinfo", ancillary_s_ipv6_pktinfo, 3);
     rb_define_method(rb_cAncillaryData, "ipv6_pktinfo", ancillary_ipv6_pktinfo, 0);
     rb_define_method(rb_cAncillaryData, "ipv6_pktinfo_addr", ancillary_ipv6_pktinfo_addr, 0);
     rb_define_method(rb_cAncillaryData, "ipv6_pktinfo_ifindex", ancillary_ipv6_pktinfo_ifindex, 0);

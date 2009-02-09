@@ -92,7 +92,7 @@ class TestUNIXSocket < Test::Unit::TestCase
     IO.pipe {|r1, w|
       UNIXSocket.pair {|s1, s2|
         begin
-          ad = Socket::AncillaryData.int(:SOCKET, :RIGHTS, r1.fileno)
+          ad = Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, r1.fileno)
           ret = s1.sendmsg("\0", 0, nil, ad)
         rescue NotImplementedError
           return
