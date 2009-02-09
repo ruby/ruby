@@ -11,6 +11,9 @@ Sun Feb  8 21:39:06 2009  Akinori MUSHA  <knu@iDaemons.org>
 	  (:ftp_active_mode) new option. (r13307)
 	  (URI::FTP.buffer_open) turn ftp passive mode on if
 	  :ftp_active_mode => false is given.
+	  (:redirect) new option to disable redirection. (r13788)
+	  (OpenURI::HTTPRedirect): new exception class for
+	  redirection. (r13788)
 
 Mon Feb  9 01:21:16 2009  Tanaka Akira  <akr@fsij.org>
 

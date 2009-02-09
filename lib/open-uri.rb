@@ -99,6 +99,7 @@ module OpenURI
     :ssl_ca_cert => nil,
     :ssl_verify_mode => nil,
     :ftp_active_mode => true,
+    :redirect => true,
   }
 
   def OpenURI.check_options(options) # :nodoc:
@@ -199,6 +200,9 @@ module OpenURI
           # URI.  It is converted to absolute URI using uri as a base URI.
           redirect = uri + redirect
         end
+        if !options.fetch(:redirect, true)
+          raise HTTPRedirect.new(buf.io.status.join(' '), buf.io, redirect)
+        end
         unless OpenURI.redirectable?(uri, redirect)
           raise "redirection forbidden: #{uri} -> #{redirect}"
         end
@@ -222,6 +226,9 @@ module OpenURI
   def OpenURI.redirectable?(uri1, uri2) # :nodoc:
     # This test is intended to forbid a redirection from http://... to
     # file:///etc/passwd.
+    # https to http redirect is also forbidden intentionally.
+    # It avoids sending secure cookie or referer by non-secure HTTP protocol.
+    # (RFC 2109 4.3.1, RFC 2965 3.3, RFC 2616 15.1.3)
     # However this is ad hoc.  It should be extensible/configurable.
     uri1.scheme.downcase == uri2.scheme.downcase ||
     (/\A(?:http|ftp)\z/i =~ uri1.scheme && /\A(?:http|ftp)\z/i =~ uri2.scheme)
@@ -332,6 +339,14 @@ module OpenURI
       @io = io
     end
     attr_reader :io
+  end
+
+  class HTTPRedirect < HTTPError
+    def initialize(message, io, uri)
+      super(message, io)
+      @uri = uri
+    end
+    attr_reader :uri
   end
 
   class Buffer # :nodoc:
@@ -605,6 +620,15 @@ module OpenURI
     # :ftp_active_mode=>false is used to make ftp passive mode.
     # Note that the active mode is default in Ruby 1.8 or prior.
     # Ruby 1.9 uses passive mode by default.
+    #
+    # [:redirect]
+    #  Synopsis:
+    #    :redirect=>bool
+    #
+    # :redirect=>false is used to disable HTTP redirects at all.
+    # OpenURI::HTTPRedirect exception raised on redirection.
+    # It is true by default.
+    # The true means redirectoins between http and ftp is permitted.
     #
     def open(*rest, &block)
       OpenURI.open_uri(self, *rest, &block)
