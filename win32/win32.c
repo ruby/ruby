@@ -2196,21 +2196,32 @@ int
 rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
 {
     SOCKET r;
+    int fd;
 
     if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
-	r = accept(TO_SOCKET(s), addr, addrlen);
-	if (r == INVALID_SOCKET) {
-	    errno = map_errno(WSAGetLastError());
-	    s = -1;
+	HANDLE h = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
+	fd = rb_w32_open_osfhandle((long)h, O_RDWR|O_BINARY|O_NOINHERIT);
+	if (fd != -1) {
+	    r = accept(TO_SOCKET(s), addr, addrlen);
+	    if (r != INVALID_SOCKET) {
+		MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
+		_set_osfhnd(fd, r);
+		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		CloseHandle(h);
+	    }
+	    else {
+		errno = map_errno(WSAGetLastError());
+		close(fd);
+		fd = -1;
+	    }
 	}
-	else {
-	    s = rb_w32_open_osfhandle(r, O_RDWR|O_BINARY);
-	}
+	else
+	    CloseHandle(h);
     });
-    return s;
+    return fd;
 }
 
 #undef bind
