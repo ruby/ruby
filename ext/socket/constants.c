@@ -58,14 +58,14 @@ socktype_arg(VALUE type)
 }
 
 int
-level_arg(VALUE level)
+level_arg(int family, VALUE level)
 {
     /* convert SOL_SOCKET, IPPROTO_TCP, etc. */
     return constant_arg(level, level_to_int, "unknown protocol level");
 }
 
 int
-optname_arg(int level, VALUE optname)
+optname_arg(int family, int level, VALUE optname)
 {
     switch (level) {
       case SOL_SOCKET:
@@ -93,23 +93,23 @@ shutdown_how_arg(VALUE how)
 }
 
 int
-cmsg_type_arg(int level, VALUE optname)
+cmsg_type_arg(int family, int level, VALUE type)
 {
     switch (level) {
       case SOL_SOCKET:
-        return constant_arg(optname, scm_optname_to_int, "unknown UNIX control message");
+        return constant_arg(type, scm_optname_to_int, "unknown UNIX control message");
       case IPPROTO_IP:
-        return constant_arg(optname, ip_optname_to_int, "unknown IP control message");
+        return constant_arg(type, ip_optname_to_int, "unknown IP control message");
 #ifdef INET6
       case IPPROTO_IPV6:
-        return constant_arg(optname, ipv6_optname_to_int, "unknown IPv6 control message");
+        return constant_arg(type, ipv6_optname_to_int, "unknown IPv6 control message");
 #endif
       case IPPROTO_TCP:
-        return constant_arg(optname, tcp_optname_to_int, "unknown TCP control message");
+        return constant_arg(type, tcp_optname_to_int, "unknown TCP control message");
       case IPPROTO_UDP:
-        return constant_arg(optname, udp_optname_to_int, "unknown UDP control message");
+        return constant_arg(type, udp_optname_to_int, "unknown UDP control message");
       default:
-        return NUM2INT(optname);
+        return NUM2INT(type);
     }
 }
 

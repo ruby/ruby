@@ -38,8 +38,8 @@ static VALUE
 sockopt_initialize(VALUE self, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE data)
 {
     int family = family_arg(vfamily);
-    int level = level_arg(vlevel);
-    int optname = optname_arg(level, voptname);
+    int level = level_arg(family, vlevel);
+    int optname = optname_arg(family, level, voptname);
     StringValue(data);
     rb_ivar_set(self, rb_intern("family"), INT2NUM(family));
     rb_ivar_set(self, rb_intern("level"), INT2NUM(level));
@@ -133,8 +133,8 @@ static VALUE
 sockopt_s_int(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE vint)
 {
     int family = family_arg(vfamily);
-    int level = level_arg(vlevel);
-    int optname = optname_arg(level, voptname);
+    int level = level_arg(family, vlevel);
+    int optname = optname_arg(family, level, voptname);
     int i = NUM2INT(vint);
     return sockopt_new(family, level, optname, rb_str_new((char*)&i, sizeof(i)));
 }

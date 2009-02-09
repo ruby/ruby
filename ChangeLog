@@ -1,3 +1,29 @@
+Mon Feb  9 22:52:13 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/rubysocket.h (level_arg): add family argument.
+	  (optname_arg): ditto.
+	  (cmsg_type_arg): ditto.
+	  (rb_sock_getfamily): declared.
+
+	* ext/socket/constants.c (level_arg): add family argument.
+	  (optname_arg): ditto.
+	  (cmsg_type_arg): ditto.
+
+	* ext/socket/init.c (rb_sock_getfamily): defined.
+
+	* ext/socket/option.c (sockopt_initialize): give family for level_arg
+	  and optname_arg.
+	  (sockopt_s_int): ditto.
+
+	* ext/socket/basicsocket.c (bsock_setsockopt): ditto.
+	  (bsock_getsockopt): ditto.
+
+	* ext/socket/ancdata.c (ancillary_initialize): ditto.
+	  (ancillary_s_int): ditto.
+	  (ancillary_cmsg_is_p): ditto.
+	  (bsock_sendmsg_internal): ditto.
+	  (bsock_recvmsg_internal): use rb_sock_getfamily.
+
 Mon Feb  9 21:48:59 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (ancillary_inspect): show address family.

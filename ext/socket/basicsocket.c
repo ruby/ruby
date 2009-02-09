@@ -195,7 +195,7 @@ static VALUE
 bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
 {
     VALUE lev, optname, val;
-    int level, option;
+    int family, level, option;
     rb_io_t *fptr;
     int i;
     char *v;
@@ -211,8 +211,10 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
     }
 
     rb_secure(2);
-    level = level_arg(lev);
-    option = optname_arg(level, optname);
+    GetOpenFile(sock, fptr);
+    family = rb_sock_getfamily(fptr->fd);
+    level = level_arg(family, lev);
+    option = optname_arg(family, level, optname);
 
     switch (TYPE(val)) {
       case T_FIXNUM:
@@ -235,7 +237,7 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
 
 #define rb_sys_fail_path(path) rb_sys_fail(NIL_P(path) ? 0 : RSTRING_PTR(path))
 
-    GetOpenFile(sock, fptr);
+    rb_io_check_closed(fptr);
     if (setsockopt(fptr->fd, level, option, v, vlen) < 0)
 	rb_sys_fail_path(fptr->pathv);
 
@@ -290,24 +292,21 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
     socklen_t len;
     char *buf;
     rb_io_t *fptr;
-    struct sockaddr_storage ss;
-    socklen_t sslen = sizeof(ss);
+    int family;
 
-    level = level_arg(lev);
-    option = optname_arg(level, optname);
+    GetOpenFile(sock, fptr);
+    family = rb_sock_getfamily(fptr->fd);
+    level = level_arg(family, lev);
+    option = optname_arg(family, level, optname);
     len = 256;
     buf = ALLOCA_N(char,len);
 
-    GetOpenFile(sock, fptr);
-
-    ss.ss_family = AF_UNSPEC;
-    if (getsockname(fptr->fd, (struct sockaddr*)&ss, &sslen) < 0)
-	rb_sys_fail("getsockname(2)");
+    rb_io_check_closed(fptr);
 
     if (getsockopt(fptr->fd, level, option, buf, &len) < 0)
 	rb_sys_fail_path(fptr->pathv);
 
-    return sockopt_new(ss.ss_family, level, option, rb_str_new(buf, len));
+    return sockopt_new(family, level, option, rb_str_new(buf, len));
 #else
     rb_notimplement();
 #endif

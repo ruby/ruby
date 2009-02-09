@@ -71,8 +71,8 @@ static VALUE
 ancillary_initialize(VALUE self, VALUE vfamily, VALUE vlevel, VALUE vtype, VALUE data)
 {
     int family = family_arg(vfamily);
-    int level = level_arg(vlevel);
-    int type = cmsg_type_arg(level, vtype);
+    int level = level_arg(family, vlevel);
+    int type = cmsg_type_arg(family, level, vtype);
     StringValue(data);
     rb_ivar_set(self, rb_intern("family"), INT2NUM(family));
     rb_ivar_set(self, rb_intern("level"), INT2NUM(level));
@@ -190,8 +190,8 @@ static VALUE
 ancillary_s_int(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE vtype, VALUE integer)
 {
     int family = family_arg(vfamily);
-    int level = level_arg(vlevel);
-    int type = cmsg_type_arg(level, vtype);
+    int level = level_arg(family, vlevel);
+    int type = cmsg_type_arg(family, level, vtype);
     int i = NUM2INT(integer);
     return ancdata_new(family, level, type, rb_str_new((char*)&i, sizeof(i)));
 }
@@ -686,8 +686,9 @@ ancillary_inspect(VALUE self)
 static VALUE
 ancillary_cmsg_is_p(VALUE self, VALUE vlevel, VALUE vtype)
 {
-    int level = level_arg(vlevel);
-    int type = cmsg_type_arg(level, vtype);
+    int family = ancillary_family(self);
+    int level = level_arg(family, vlevel);
+    int type = cmsg_type_arg(family, level, vtype);
 
     if (ancillary_level(self) == level &&
         ancillary_type(self) == type)
@@ -736,8 +737,11 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #endif
     int flags;
     ssize_t ss;
+    int family;
 
     rb_secure(4);
+    GetOpenFile(sock, fptr);
+    family = rb_sock_getfamily(fptr->fd);
 
     data = vflags = dest_sockaddr = Qnil;
     controls_ptr = NULL;
@@ -779,8 +783,8 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
                 vtype = rb_funcall(elt, rb_intern("type"), 0);
                 cdata = rb_funcall(elt, rb_intern("data"), 0);
             }
-            level = level_arg(vlevel);
-            type = cmsg_type_arg(level, vtype);
+            level = level_arg(family, vlevel);
+            type = cmsg_type_arg(family, level, vtype);
             StringValue(cdata);
             oldlen = RSTRING_LEN(controls_str);
             cspace = CMSG_SPACE(RSTRING_LEN(cdata));
@@ -810,7 +814,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     if (!NIL_P(dest_sockaddr))
 	SockAddrStringValue(dest_sockaddr);
 
-    GetOpenFile(sock, fptr);
+    rb_io_check_closed(fptr);
 
   retry:
     memset(&mh, 0, sizeof(mh));
@@ -1093,15 +1097,13 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
         for (cmh = CMSG_FIRSTHDR(&mh); cmh != NULL; cmh = CMSG_NXTHDR(&mh, cmh)) {
             VALUE ctl;
             size_t clen;
-            struct sockaddr_storage ss;
-            socklen_t sslen = sizeof(ss);
+            int family;
             if (cmh->cmsg_len == 0) {
                 rb_raise(rb_eIOError, "invalid control message (cmsg_len == 0)");
             }
-            ss.ss_family = AF_UNSPEC;
-            getsockname(fptr->fd, (struct sockaddr*)&ss, &sslen);
+            family = rb_sock_getfamily(fptr->fd);
             clen = (char*)cmh + cmh->cmsg_len - (char*)CMSG_DATA(cmh);
-            ctl = ancdata_new(ss.ss_family, cmh->cmsg_level, cmh->cmsg_type, rb_tainted_str_new((char*)CMSG_DATA(cmh), clen));
+            ctl = ancdata_new(family, cmh->cmsg_level, cmh->cmsg_type, rb_tainted_str_new((char*)CMSG_DATA(cmh), clen));
             rb_ary_push(ret, ctl);
         }
     }

@@ -194,10 +194,12 @@ NORETURN(void raise_socket_error(const char *, int));
 
 int family_arg(VALUE domain);
 int socktype_arg(VALUE type);
-int level_arg(VALUE level);
-int optname_arg(int level, VALUE optname);
+int level_arg(int family, VALUE level);
+int optname_arg(int family, int level, VALUE optname);
 int shutdown_how_arg(VALUE how);
-int cmsg_type_arg(int level, VALUE optname);
+int cmsg_type_arg(int family, int level, VALUE type);
+
+int rb_sock_getfamily(int sockfd);
 
 int rb_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res);
 int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);

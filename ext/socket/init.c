@@ -505,6 +505,18 @@ s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
     return init_sock(rb_obj_alloc(klass), fd2);
 }
 
+int rb_sock_getfamily(int sockfd)
+{
+    struct sockaddr_storage ss;
+    socklen_t sslen = sizeof(ss);
+
+    ss.ss_family = AF_UNSPEC;
+    if (getsockname(sockfd, (struct sockaddr*)&ss, &sslen) < 0)
+        rb_sys_fail("getsockname(2)");
+
+    return ss.ss_family;
+}
+
 /*
  * SocketError is the error class for socket.
  */
