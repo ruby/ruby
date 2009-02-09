@@ -1,3 +1,8 @@
+Tue Feb 10 01:28:49 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (ip_cmsg_type_to_sym): renamed from
+	  cmsg_type_to_sym.
+
 Tue Feb 10 01:22:56 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c (sockopt_inspect): refactored.

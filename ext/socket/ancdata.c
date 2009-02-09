@@ -15,7 +15,7 @@ constant_to_sym(int constant, ID (*intern_const)(int))
 }
 
 static VALUE
-cmsg_type_to_sym(int level, int cmsg_type)
+ip_cmsg_type_to_sym(int level, int cmsg_type)
 {
     switch (level) {
       case SOL_SOCKET:
@@ -611,7 +611,7 @@ ancillary_inspect(VALUE self)
     else
         rb_str_catf(ret, " cmsg_level:%d", level);
 
-    vtype = cmsg_type_to_sym(level, type);
+    vtype = ip_cmsg_type_to_sym(level, type);
     if (SYMBOL_P(vtype))
         rb_str_catf(ret, " %s", rb_id2name(SYM2ID(vtype)));
     else
