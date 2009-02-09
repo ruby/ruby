@@ -98,6 +98,7 @@ module OpenURI
     :read_timeout => true,
     :ssl_ca_cert => nil,
     :ssl_verify_mode => nil,
+    :ftp_active_mode => true,
   }
 
   def OpenURI.check_options(options) # :nodoc:
@@ -596,6 +597,15 @@ module OpenURI
     # OpenURI::OpenRead#open returns an IO like object if block is not given.
     # Otherwise it yields the IO object and return the value of the block.
     # The IO object is extended with OpenURI::Meta.
+    #
+    # [:ftp_active_mode]
+    #  Synopsis:
+    #    :ftp_active_mode=>bool
+    #
+    # :ftp_active_mode=>false is used to make ftp passive mode.
+    # Note that the active mode is default in Ruby 1.8 or prior.
+    # Ruby 1.9 uses passive mode by default.
+    #
     def open(*rest, &block)
       OpenURI.open_uri(self, *rest, &block)
     end
@@ -732,6 +742,7 @@ module URI
 
       # The access sequence is defined by RFC 1738
       ftp = Net::FTP.open(self.host)
+      ftp.passive = true if !options[:ftp_active_mode]
       # todo: extract user/passwd from .netrc.
       user = 'anonymous'
       passwd = nil
