@@ -85,6 +85,22 @@ with all sufficient information, see the ChangeLog file.
 
     Renamed from GDBM#index.
 
+* open-uri
+
+  * Added a lot of new options:
+
+    * :ftp_active_mode => bool
+
+      Specify false to enable FTP passive mode.  It is adviced that
+      this option should be explicitly set for forward compatibility
+      because the default mode is changed in Ruby >= 1.9.
+
+    * :read_timeout => seconds
+    * :proxy_http_basic_authentication => [uri, user, password]
+    * :redirect => bool
+    * :ssl_verify_mode => OpenSSL::SSL::VERIFY_*
+    * :ssl_ca_cert => filename
+
 * sdbm
 
   SDBM#key
@@ -137,9 +153,16 @@ with all sufficient information, see the ChangeLog file.
 
 === Compatibility issues (excluding feature bug fixes)
 
+* builtin classes
+
   * Enumerator#rewind
 
     See above.
+
+* open-uri
+
+ * URI::InvalidURIError is converted to OpenURI::HTTPError if an
+   invalid HTTP URI is given.
 
 == Changes since the 1.8.6 release
 
