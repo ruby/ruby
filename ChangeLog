@@ -1,3 +1,7 @@
+Tue Feb 10 04:34:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (when): makes parentheses balanced.
+
 Tue Feb 10 01:28:49 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (ip_cmsg_type_to_sym): renamed from
