@@ -300,14 +300,13 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
 
     GetOpenFile(sock, fptr);
 
+    ss.ss_family = AF_UNSPEC;
     if (getsockname(fptr->fd, (struct sockaddr*)&ss, &sslen) < 0)
 	rb_sys_fail("getsockname(2)");
 
     if (getsockopt(fptr->fd, level, option, buf, &len) < 0)
 	rb_sys_fail_path(fptr->pathv);
 
-    if (sslen < (char*)&ss.ss_family + sizeof(ss.ss_family) - (char*)&ss)
-	ss.ss_family = AF_UNSPEC;
     return sockopt_new(ss.ss_family, level, option, rb_str_new(buf, len));
 #else
     rb_notimplement();
