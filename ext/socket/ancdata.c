@@ -48,6 +48,7 @@ cmsg_type_to_sym(int level, int cmsg_type)
  * - Socket::SOL_SOCKET, "SOL_SOCKET", "SOCKET", :SOL_SOCKET and :SOCKET
  * - Socket::IPPROTO_IP, "IP" and :IP
  * - Socket::IPPROTO_IPV6, "IPV6" and :IPV6
+ * - Socket::IPPROTO_TCP, "TCP" and :TCP
  * - etc.
  *
  * _cmsg_type_ should be an integer, a string or a symbol.
@@ -59,8 +60,11 @@ cmsg_type_to_sym(int level, int cmsg_type)
  *
  * _cmsg_data_ should be a string.
  *
- *   p Socket::AncillaryData.new(:IPV6, :PKTINFO, "")     
- *   #=> #<Socket::AncillaryData: IPV6 PKTINFO "">
+ *   p Socket::AncillaryData.new(:INET, :TCP, :NODELAY, "")' 
+ *   #=> #<Socket::AncillaryData: AF_INET TCP NODELAY "">
+ *
+ *   p Socket::AncillaryData.new(:INET6, :IPV6, :PKTINFO, "")     
+ *   #=> #<Socket::AncillaryData: INET6 IPV6 PKTINFO "">
  *
  */
 static VALUE
@@ -101,7 +105,7 @@ ancillary_family(VALUE self)
  * returns the socket family as an integer.
  *
  *   p Socket::AncillaryData.new(:INET6, :IPV6, :PKTINFO, "").family
- *   #=> 41
+ *   #=> 10
  */
 static VALUE
 ancillary_family_m(VALUE self)
@@ -201,7 +205,7 @@ ancillary_s_int(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE vtype, VALUE int
  * The size and endian is dependent on the host. 
  *
  *   ancdata = Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, STDERR.fileno)
- *   p ancdata.int => 2
+ *   p ancdata.int #=> 2
  */
 static VALUE
 ancillary_int(VALUE self)
@@ -583,22 +587,29 @@ static VALUE
 ancillary_inspect(VALUE self)
 {
     VALUE ret;
-    int level, type;
+    int family, level, type;
     VALUE data;
-    ID level_id;
+    ID family_id, level_id;
     VALUE vtype;
 
+    family = ancillary_family(self);
     level = ancillary_level(self);
     type = ancillary_type(self);
     data = ancillary_data(self);
 
     ret = rb_sprintf("#<%s: ", rb_obj_classname(self));
 
+    family_id = intern_family(family);
+    if (family_id)
+        rb_str_cat2(ret, rb_id2name(family_id));
+    else
+        rb_str_catf(ret, "family:%d", family);
+
     level_id = intern_level(level);
     if (level_id)
-        rb_str_cat2(ret, rb_id2name(level_id));
+        rb_str_catf(ret, " %s", rb_id2name(level_id));
     else
-        rb_str_catf(ret, "cmsg_level:%d", level);
+        rb_str_catf(ret, " cmsg_level:%d", level);
 
     vtype = cmsg_type_to_sym(level, type);
     if (SYMBOL_P(vtype))
@@ -870,7 +881,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
  * sendmsg can be used to implement send_io as follows:
  *
  *   # use Socket::AncillaryData.
- *   ancdata = Socket::AncillaryData.int(:SOCKET, :RIGHTS, io.fileno)       
+ *   ancdata = Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, io.fileno)       
  *   sock.sendmsg("a", 0, nil, ancdata)
  *
  *   # use 3-element array.
