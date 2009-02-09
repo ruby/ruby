@@ -65,6 +65,7 @@ sockopt_new(int family, int level, int optname, VALUE data)
  * returns the socket family as an integer.
  *
  *   p Socket::Option.new(:INET6, :IPV6, :RECVPKTINFO, [1].pack("i!")).family
+ *   #=> 10
  */
 static VALUE
 sockopt_family(VALUE self)
@@ -79,6 +80,7 @@ sockopt_family(VALUE self)
  * returns the socket level as an integer.
  *
  *   p Socket::Option.new(:INET6, :IPV6, :RECVPKTINFO, [1].pack("i!")).level
+ *   #=> 41
  */
 static VALUE
 sockopt_level(VALUE self)
@@ -93,6 +95,7 @@ sockopt_level(VALUE self)
  * returns the socket option name as an integer.
  *
  *   p Socket::Option.new(:INET6, :IPV6, :RECVPKTINFO, [1].pack("i!")).optname
+ *   #=> 2
  */
 static VALUE
 sockopt_optname(VALUE self)
@@ -106,7 +109,8 @@ sockopt_optname(VALUE self)
  *
  * returns the socket option data as a string.
  *
- *   p Socket::Option.new(:INET6, :IPV6, :PKTINFO, [1].pack("i!")).data
+ *   p Socket::Option.new(:INET6, :IPV6, :RECVPKTINFO, [1].pack("i!")).data
+ *   #=> "\x01\x00\x00\x00"
  */
 static VALUE
 sockopt_data(VALUE self)
