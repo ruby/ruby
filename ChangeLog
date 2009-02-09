@@ -1,3 +1,7 @@
+Tue Feb 10 01:22:56 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c (sockopt_inspect): refactored.
+
 Tue Feb 10 01:02:16 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: generate intern_family_noprefix.

@@ -300,15 +300,25 @@ sockopt_inspect(VALUE self)
 
     StringValue(data);
 
-    ret = rb_sprintf("#<%s: ", rb_obj_classname(self));
+    ret = rb_sprintf("#<%s:", rb_obj_classname(self));
 
     family_id = intern_family_noprefix(family);
     if (family_id)
-	rb_str_cat2(ret, rb_id2name(family_id));
+	rb_str_catf(ret, " %s", rb_id2name(family_id));
     else
-        rb_str_catf(ret, "family:%d", family);
+        rb_str_catf(ret, " family:%d", family);
 
-    if (family == AF_UNIX && level == 0) {
+    if (level == SOL_SOCKET) {
+        rb_str_cat2(ret, " SOCKET");
+
+	optname_id = intern_so_optname(optname);
+	if (optname_id)
+	    rb_str_catf(ret, " %s", rb_id2name(optname_id));
+	else
+	    rb_str_catf(ret, " optname:%d", optname);
+    }
+#ifdef HAVE_SYS_UN_H
+    else if (family == AF_UNIX) {
 	rb_str_catf(ret, " level:%d", level);
 
 	optname_id = intern_local_optname(optname);
@@ -317,7 +327,8 @@ sockopt_inspect(VALUE self)
 	else
 	    rb_str_catf(ret, " optname:%d", optname);
     }
-    else {
+#endif
+    else if (IS_IP_FAMILY(family)) {
 	level_id = intern_iplevel(level);
 	if (level_id)
 	    rb_str_catf(ret, " %s", rb_id2name(level_id));
@@ -329,6 +340,10 @@ sockopt_inspect(VALUE self)
 	    rb_str_catf(ret, " %s", rb_id2name(SYM2ID(v)));
 	else
 	    rb_str_catf(ret, " optname:%d", optname);
+    }
+    else {
+        rb_str_catf(ret, " level:%d", level);
+        rb_str_catf(ret, " optname:%d", optname);
     }
 
     inspected = 0;
@@ -397,7 +412,9 @@ sockopt_inspect(VALUE self)
         break;
 
       case AF_INET:
+#ifdef INET6
       case AF_INET6:
+#endif
         switch (level) {
 #        if defined(IPPROTO_IPV6)
           case IPPROTO_IPV6:
@@ -434,6 +451,7 @@ sockopt_inspect(VALUE self)
         }
         break;
 
+#ifdef HAVE_SYS_UN_H
       case AF_UNIX:
         switch (level) {
           case 0:
@@ -445,6 +463,7 @@ sockopt_inspect(VALUE self)
             break;
         }
         break;
+#endif
     }
 
     if (!inspected) {
