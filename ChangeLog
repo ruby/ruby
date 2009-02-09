@@ -14,6 +14,7 @@ Sun Feb  8 21:39:06 2009  Akinori MUSHA  <knu@iDaemons.org>
 	  (:redirect) new option to disable redirection. (r13788)
 	  (OpenURI::HTTPRedirect): new exception class for
 	  redirection. (r13788)
+	  (OpenURI::Buffer): use Meta ===.  [ruby-core:14295] (r14609)
 
 Mon Feb  9 01:21:16 2009  Tanaka Akira  <akr@fsij.org>
 
