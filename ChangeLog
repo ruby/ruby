@@ -1,3 +1,8 @@
+Sun Feb  8 21:39:06 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/open-uri.rb: add :read_timeout option.
+	  [ruby-core:4848] (r9166)
+
 Mon Feb  9 01:21:16 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (unix_recv_io): relax msg_controllen error
