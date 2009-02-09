@@ -1,3 +1,8 @@
+Mon Feb  9 20:11:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32ole/win32ole.c (load_conv_function51932): fixed for the
+	  case IMultiLanguage is not available.  [ruby-dev:37950]
+
 Mon Feb  9 20:04:35 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c (inspect_int): return 1/0 on success/failure.
