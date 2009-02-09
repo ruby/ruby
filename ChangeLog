@@ -1,3 +1,8 @@
+Mon Feb  9 09:05:12 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c (inspect_local_peercred): check version.
+	  (sockopt_inspect): suppress warning.
+
 Mon Feb  9 02:04:03 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c (inspect_peercred): struct ucred contains

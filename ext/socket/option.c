@@ -263,6 +263,8 @@ inspect_local_peercred(int level, int optname, VALUE data, VALUE ret)
     if (RSTRING_LEN(data) == sizeof(struct xucred)) {
         struct xucred cred;
         memcpy(&cred, RSTRING_PTR(data), sizeof(struct xucred));
+        if (cred.cr_version != XUCRED_VERSION)
+            return -1;
         rb_str_catf(ret, " version=%u", cred.cr_version);
         rb_str_catf(ret, " euid=%u", cred.cr_uid);
 	if (cred.cr_ngroups) {
@@ -330,6 +332,7 @@ sockopt_inspect(VALUE self)
 	if (optname == LOCAL_PEERCRED) {
 	    if (inspect_local_peercred(level, optname, data, ret) == -1) goto dump;
 	    goto finish;
+#define USE_FINISH 1
 	}
 #     endif
     }
@@ -437,7 +440,10 @@ sockopt_inspect(VALUE self)
         rb_str_catf(ret, " %s", StringValueCStr(data));
     }
 
+#ifdef USE_FINISH
   finish:
+#endif
+#undef USE_FINISH
     rb_str_cat2(ret, ">");
 
     return ret;
