@@ -21,6 +21,15 @@ with all sufficient information, see the ChangeLog file.
     * new method:
       * Dir.home
 
+  * Enumerator
+    * extended methods:
+      * #with_index accepts an optional argument that specifies the
+        index number to start with, defaulted to 0.
+
+    * incompatible changes:
+      * #rewind now calls the "rewind" method of the enclosed object
+        if defined.
+
   * IO
     * extended methods:
       * IO.pipe can take a block.
@@ -28,10 +37,6 @@ with all sufficient information, see the ChangeLog file.
   * Process
     * extended methods:
       * Process.spawn accepts [:child, FD] for a redirect target.
-
-  * Enumerator#rewind
-    * incompatible changes:
-      Now calls the "rewind" method of the enclosed object if defined.
 
 * rss
 
