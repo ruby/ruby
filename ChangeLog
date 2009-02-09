@@ -6,6 +6,8 @@ Sun Feb  8 21:39:06 2009  Akinori MUSHA  <knu@iDaemons.org>
 	  (OpenURI.open_loop): prohibit multiple proxy options. (r9339)
 	  (OpenURI.open_loop): find_proxy should return nil when proxy
 	  does not exist. [ruby-dev:27630] (r9500)
+	  (:ssl_verify_mode): new option suggested by Will Glynn. (r9958)
+	  (:ssl_ca_cert): new option. (r9958, r13691)
 
 Mon Feb  9 01:21:16 2009  Tanaka Akira  <akr@fsij.org>
 
