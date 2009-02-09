@@ -122,8 +122,8 @@ sockopt_data(VALUE self)
  *
  * The size and endian is dependent on the host. 
  *
- *   p Socket::Option.int(:SOCKET, :KEEPALIVE, 1)
- *   #=> #<Socket::Option: SOCKET KEEPALIVE 1>
+ *   p Socket::Option.int(:INET, :SOCKET, :KEEPALIVE, 1)
+ *   #=> #<Socket::Option: AF_INET SOCKET KEEPALIVE 1>
  */
 static VALUE
 sockopt_s_int(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE vint)
@@ -143,7 +143,7 @@ sockopt_s_int(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE vi
  *
  * The size and endian is dependent on the host. 
  *
- *   sockopt = Socket::Option.int(:SOCKET, :KEEPALIVE, 1)
+ *   sockopt = Socket::Option.int(:INET, :SOCKET, :KEEPALIVE, 1)
  *   p sockopt.int => 1
  */
 static VALUE
@@ -166,10 +166,10 @@ inspect_int(int level, int optname, VALUE data, VALUE ret)
         int i;
         memcpy((char*)&i, RSTRING_PTR(data), sizeof(int));
         rb_str_catf(ret, " %d", i);
-        return 0;
+        return 1;
     }
     else {
-        return -1;
+        return 0;
     }
 }
 
@@ -180,10 +180,10 @@ inspect_uint(int level, int optname, VALUE data, VALUE ret)
         unsigned int i;
         memcpy((char*)&i, RSTRING_PTR(data), sizeof(unsigned int));
         rb_str_catf(ret, " %u", i);
-        return 0;
+        return 1;
     }
     else {
-        return -1;
+        return 0;
     }
 }
 
@@ -195,10 +195,10 @@ inspect_linger(int level, int optname, VALUE data, VALUE ret)
         struct linger s;
         memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
         rb_str_catf(ret, " onoff:%d linger:%d", s.l_onoff, s.l_linger);
-        return 0;
+        return 1;
     }
     else {
-        return -1;
+        return 0;
     }
 }
 #endif
@@ -216,10 +216,10 @@ inspect_socktype(int level, int optname, VALUE data, VALUE ret)
             rb_str_catf(ret, " %s", rb_id2name(id));
         else
             rb_str_catf(ret, " %d", i);
-        return 0;
+        return 1;
     }
     else {
-        return -1;
+        return 0;
     }
 }
 #endif
@@ -231,10 +231,10 @@ inspect_timeval(int level, int optname, VALUE data, VALUE ret)
         struct timeval s;
         memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
         rb_str_catf(ret, " %ld.%06ldsec", (long)s.tv_sec, (long)s.tv_usec);
-        return 0;
+        return 1;
     }
     else {
-        return -1;
+        return 0;
     }
 }
 
@@ -247,10 +247,10 @@ inspect_peercred(int level, int optname, VALUE data, VALUE ret)
         memcpy(&cred, RSTRING_PTR(data), sizeof(struct ucred));
         rb_str_catf(ret, " pid=%u euid=%u egid=%u", cred.pid, cred.uid, cred.gid);
         rb_str_cat2(ret, " (ucred)");
-        return 0;
+        return 1;
     }
     else {
-        return -1;
+        return 0;
     }
 }
 #endif
@@ -263,7 +263,7 @@ inspect_local_peercred(int level, int optname, VALUE data, VALUE ret)
         struct xucred cred;
         memcpy(&cred, RSTRING_PTR(data), sizeof(struct xucred));
         if (cred.cr_version != XUCRED_VERSION)
-            return -1;
+            return 0;
         rb_str_catf(ret, " version=%u", cred.cr_version);
         rb_str_catf(ret, " euid=%u", cred.cr_uid);
 	if (cred.cr_ngroups) {
@@ -275,10 +275,10 @@ inspect_local_peercred(int level, int optname, VALUE data, VALUE ret)
 	    }
 	}
         rb_str_cat2(ret, " (xucred)");
-        return 0;
+        return 1;
     }
     else {
-        return -1;
+        return 0;
     }
 }
 #endif
@@ -292,6 +292,7 @@ sockopt_inspect(VALUE self)
     VALUE data = sockopt_data(self);
     VALUE v, ret;
     ID family_id, level_id, optname_id;
+    int inspected;
 
     StringValue(data);
 
@@ -326,123 +327,127 @@ sockopt_inspect(VALUE self)
 	    rb_str_catf(ret, " optname:%d", optname);
     }
 
-    if (family == AF_UNIX && level == 0) {
-#     if defined(LOCAL_PEERCRED)
-	if (optname == LOCAL_PEERCRED) {
-	    if (inspect_local_peercred(level, optname, data, ret) == -1) goto dump;
-	    goto finish;
-#define USE_FINISH 1
-	}
-#     endif
+    inspected = 0;
+
+    if (level == SOL_SOCKET)
+        family = AF_UNSPEC;
+    switch (family) {
+      case AF_UNSPEC:
+        switch (level) {
+          case SOL_SOCKET:
+            switch (optname) {
+#            if defined(SO_DEBUG) /* POSIX */
+              case SO_DEBUG: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_ERROR) /* POSIX */
+              case SO_ERROR: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_TYPE) /* POSIX */
+              case SO_TYPE: inspected = inspect_socktype(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_ACCEPTCONN) /* POSIX */
+              case SO_ACCEPTCONN: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_BROADCAST) /* POSIX */
+              case SO_BROADCAST: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_REUSEADDR) /* POSIX */
+              case SO_REUSEADDR: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_KEEPALIVE) /* POSIX */
+              case SO_KEEPALIVE: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_OOBINLINE) /* POSIX */
+              case SO_OOBINLINE: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_SNDBUF) /* POSIX */
+              case SO_SNDBUF: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_RCVBUF) /* POSIX */
+              case SO_RCVBUF: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_DONTROUTE) /* POSIX */
+              case SO_DONTROUTE: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_RCVLOWAT) /* POSIX */
+              case SO_RCVLOWAT: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_SNDLOWAT) /* POSIX */
+              case SO_SNDLOWAT: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_LINGER) /* POSIX */
+              case SO_LINGER: inspected = inspect_linger(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_RCVTIMEO) /* POSIX */
+              case SO_RCVTIMEO: inspected = inspect_timeval(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_SNDTIMEO) /* POSIX */
+              case SO_SNDTIMEO: inspected = inspect_timeval(level, optname, data, ret); break;
+#            endif
+#            if defined(SO_PEERCRED) /* GNU/Linux */
+              case SO_PEERCRED: inspected = inspect_peercred(level, optname, data, ret); break;
+#            endif
+            }
+            break;
+        }
+        break;
+
+      case AF_INET:
+      case AF_INET6:
+        switch (level) {
+#        if defined(IPPROTO_IPV6)
+          case IPPROTO_IPV6:
+            switch (optname) {
+              /* IPV6_JOIN_GROUP ipv6_mreq, IPV6_LEAVE_GROUP ipv6_mreq */
+#            if defined(IPV6_MULTICAST_HOPS) /* POSIX */
+              case IPV6_MULTICAST_HOPS: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+#            if defined(IPV6_MULTICAST_IF) /* POSIX */
+              case IPV6_MULTICAST_IF: inspected = inspect_uint(level, optname, data, ret); break;
+#            endif
+#            if defined(IPV6_MULTICAST_LOOP) /* POSIX */
+              case IPV6_MULTICAST_LOOP: inspected = inspect_uint(level, optname, data, ret); break;
+#            endif
+#            if defined(IPV6_UNICAST_HOPS) /* POSIX */
+              case IPV6_UNICAST_HOPS: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+#            if defined(IPV6_V6ONLY) /* POSIX */
+              case IPV6_V6ONLY: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+            }
+            break;
+#        endif
+
+#        if defined(IPPROTO_TCP)
+          case IPPROTO_TCP:
+            switch (optname) {
+#            if defined(TCP_NODELAY) /* POSIX */
+              case TCP_NODELAY: inspected = inspect_int(level, optname, data, ret); break;
+#            endif
+            }
+            break;
+#        endif
+        }
+        break;
+
+      case AF_UNIX:
+        switch (level) {
+          case 0:
+            switch (optname) {
+#            if defined(LOCAL_PEERCRED)
+              case LOCAL_PEERCRED: inspected = inspect_local_peercred(level, optname, data, ret); break;
+#            endif
+            }
+            break;
+        }
+        break;
     }
 
-    switch (level) {
-#    if defined(SOL_SOCKET)
-      case SOL_SOCKET:
-        switch (optname) {
-#        if defined(SO_DEBUG) /* POSIX */
-          case SO_DEBUG: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(SO_ERROR) /* POSIX */
-          case SO_ERROR: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(SO_TYPE) /* POSIX */
-          case SO_TYPE: if (inspect_socktype(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(SO_ACCEPTCONN) /* POSIX */
-          case SO_ACCEPTCONN: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(SO_BROADCAST) /* POSIX */
-          case SO_BROADCAST: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(SO_REUSEADDR) /* POSIX */
-          case SO_REUSEADDR: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(SO_KEEPALIVE) /* POSIX */
-          case SO_KEEPALIVE: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(SO_OOBINLINE) /* POSIX */
-          case SO_OOBINLINE: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(SO_SNDBUF) /* POSIX */
-          case SO_SNDBUF: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(SO_RCVBUF) /* POSIX */
-          case SO_RCVBUF: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(SO_DONTROUTE) /* POSIX */
-          case SO_DONTROUTE: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(SO_RCVLOWAT) /* POSIX */
-          case SO_RCVLOWAT: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(SO_SNDLOWAT) /* POSIX */
-          case SO_SNDLOWAT: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-
-#        if defined(SO_LINGER) /* POSIX */
-          case SO_LINGER: if (inspect_linger(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(SO_RCVTIMEO) /* POSIX */
-          case SO_RCVTIMEO: if (inspect_timeval(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(SO_SNDTIMEO) /* POSIX */
-          case SO_SNDTIMEO: if (inspect_timeval(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(SO_PEERCRED) /* GNU/Linux */
-          case SO_PEERCRED: if (inspect_peercred(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-
-          default: goto dump;
-        }
-        break;
-#    endif
-
-#    if defined(IPPROTO_IPV6)
-      case IPPROTO_IPV6:
-        switch (optname) {
-          /* IPV6_JOIN_GROUP ipv6_mreq, IPV6_LEAVE_GROUP ipv6_mreq */
-#        if defined(IPV6_MULTICAST_HOPS) /* POSIX */
-          case IPV6_MULTICAST_HOPS: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(IPV6_MULTICAST_IF) /* POSIX */
-          case IPV6_MULTICAST_IF: if (inspect_uint(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(IPV6_MULTICAST_LOOP) /* POSIX */
-          case IPV6_MULTICAST_LOOP: if (inspect_uint(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(IPV6_UNICAST_HOPS) /* POSIX */
-          case IPV6_UNICAST_HOPS: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(IPV6_V6ONLY) /* POSIX */
-          case IPV6_V6ONLY: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-          default: goto dump;
-        }
-        break;
-#    endif
-
-#    if defined(IPPROTO_TCP)
-      case IPPROTO_TCP:
-        switch (optname) {
-#        if defined(TCP_NODELAY) /* POSIX */
-          case TCP_NODELAY: if (inspect_int(level, optname, data, ret) == -1) goto dump; break;
-#        endif
-          default: goto dump;
-        }
-        break;
-#    endif
-
-      default:
-      dump:
+    if (!inspected) {
         data = rb_str_dump(data);
         rb_str_catf(ret, " %s", StringValueCStr(data));
     }
 
-#ifdef USE_FINISH
-  finish:
-#endif
-#undef USE_FINISH
     rb_str_cat2(ret, ">");
 
     return ret;

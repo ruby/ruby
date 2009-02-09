@@ -1,3 +1,14 @@
+Mon Feb  9 20:04:35 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c (inspect_int): return 1/0 on success/failure.
+	  (inspect_uint): ditto.
+	  (inspect_linger): ditto.
+	  (inspect_socktype): ditto.
+	  (inspect_timeval): ditto.
+	  (inspect_peercred): ditto.
+	  (inspect_local_peercred): ditto.
+	  (sockopt_inspect): refactored.
+
 Mon Feb  9 20:00:26 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: more constants for Solaris.
