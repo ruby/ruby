@@ -407,7 +407,7 @@ enumerator_with_index_i(VALUE val, VALUE *memo)
 /*
  *  call-seq:
  *    e.with_index(offset = 0) {|(*args), idx| ... }
- *    e.with_index
+ *    e.with_index(offset = 0)
  *
  *  Iterates the given block for each element with an index, which
  *  starts from +offset+.  If no block is given, returns an enumerator.
