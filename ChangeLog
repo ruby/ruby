@@ -1,4 +1,4 @@
-Sun Feb  9 11:43:37 2009  Akinori MUSHA  <knu@iDaemons.org>
+Mon Feb  9 11:50:02 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/open-uri.rb: add :read_timeout option.
 	  [ruby-core:4848] (r9166)
@@ -15,6 +15,8 @@ Sun Feb  9 11:43:37 2009  Akinori MUSHA  <knu@iDaemons.org>
 	  (OpenURI::HTTPRedirect): new exception class for
 	  redirection. (r13788)
 	  (OpenURI::Buffer): use Meta ===.  [ruby-core:14295] (r14609)
+	  (OpenURI::Meta#content_type_parse): fix
+	  tests. [ruby-dev:33336] (r15200)
 
 Mon Feb  9 01:21:16 2009  Tanaka Akira  <akr@fsij.org>
 
