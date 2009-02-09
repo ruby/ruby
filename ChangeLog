@@ -1,3 +1,7 @@
+Mon Feb  9 20:00:26 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: more constants for Solaris.
+
 Mon Feb  9 19:59:18 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/basicsocket.c (bsock_getsockopt): refine address family
