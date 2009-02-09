@@ -2480,6 +2480,8 @@ open_ifs_socket(int af, int type, int protocol)
 		    out = WSASocket(af, type, protocol, &(proto_buffers[i]), 0, 0);
 		    break;
 		}
+		if (out == INVALID_SOCKET)
+		    out = WSASocket(af, type, protocol, NULL, 0, 0);
 	    }
 
 	    free(proto_buffers);
