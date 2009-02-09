@@ -1,3 +1,12 @@
+Tue Feb 10 01:02:16 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: generate intern_family_noprefix.
+
+	* ext/socket/option.c (sockopt_inspect): use intern_family_noprefix
+	  not to show AF_ prefix.
+
+	* ext/socket/ancdata.c (ancillary_inspect): ditto.
+
 Mon Feb  9 23:21:29 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/constants.c (level_arg): use unknown_level_to_int for

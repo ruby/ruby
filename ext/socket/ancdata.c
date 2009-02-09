@@ -599,7 +599,7 @@ ancillary_inspect(VALUE self)
 
     ret = rb_sprintf("#<%s: ", rb_obj_classname(self));
 
-    family_id = intern_family(family);
+    family_id = intern_family_noprefix(family);
     if (family_id)
         rb_str_cat2(ret, rb_id2name(family_id));
     else

@@ -253,6 +253,7 @@ def_name_to_int("shutdown_how_to_int", /\ASHUT_/, "SHUT_")
 def_name_to_int("scm_optname_to_int", /\ASCM_/, "SCM_")
 
 def_intern('intern_family',  /\AAF_/)
+def_intern('intern_family_noprefix',  /\AAF_/, "AF_")
 def_intern('intern_protocol_family',  /\APF_/)
 def_intern('intern_socktype',  /\ASOCK_/)
 def_intern('intern_ipproto',  /\AIPPROTO_/)
