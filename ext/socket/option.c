@@ -37,14 +37,13 @@ optname_to_sym(int level, int optname)
 static VALUE
 sockopt_initialize(VALUE self, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE data)
 {
-    int family;
-    int level;
+    int family = family_arg(vfamily);
+    int level = level_arg(vlevel);
+    int optname = optname_arg(level, voptname);
     StringValue(data);
-    level = level_arg(vlevel);
-    family = family_arg(vfamily);
     rb_ivar_set(self, rb_intern("family"), INT2NUM(family));
     rb_ivar_set(self, rb_intern("level"), INT2NUM(level));
-    rb_ivar_set(self, rb_intern("optname"), INT2NUM(optname_arg(level, voptname)));
+    rb_ivar_set(self, rb_intern("optname"), INT2NUM(optname));
     rb_ivar_set(self, rb_intern("data"), data);
     return self;
 }
