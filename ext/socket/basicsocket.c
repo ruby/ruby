@@ -326,14 +326,14 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
 static VALUE
 bsock_getsockname(VALUE sock)
 {
-    char buf[1024];
+    struct sockaddr_storage buf;
     socklen_t len = sizeof buf;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getsockname(fptr->fd, (struct sockaddr*)buf, &len) < 0)
+    if (getsockname(fptr->fd, (struct sockaddr*)&buf, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    return rb_str_new(buf, len);
+    return rb_str_new((char*)&buf, len);
 }
 
 /*

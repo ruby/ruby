@@ -1,3 +1,7 @@
+Mon Feb  9 20:19:36 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/basicsocket.c (bsock_getsockname): use sockaddr_storage.
+
 Mon Feb  9 20:11:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32ole/win32ole.c (load_conv_function51932): fixed for the
