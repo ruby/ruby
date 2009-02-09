@@ -144,15 +144,27 @@ module OpenURI
   end
 
   def OpenURI.open_loop(uri, options) # :nodoc:
-    if options.include? :proxy_http_basic_authentication
-      opt_proxy, proxy_user, proxy_pass = options[:proxy_http_basic_authentication]
+    proxy_opts = []
+    proxy_opts << :proxy_http_basic_authentication if options.include? :proxy_http_basic_authentication
+    proxy_opts << :proxy if options.include? :proxy
+    proxy_opts.compact!
+    if 1 < proxy_opts.length
+      raise ArgumentError, "multiple proxy options specified"
+    end
+    case proxy_opts.first
+    when :proxy_http_basic_authentication
+      opt_proxy, proxy_user, proxy_pass = options.fetch(:proxy_http_basic_authentication)
       proxy_user = proxy_user.to_str
       proxy_pass = proxy_pass.to_str
       if opt_proxy == true
         raise ArgumentError.new("Invalid authenticated proxy option: #{options[:proxy_http_basic_authentication].inspect}")
       end
-    else
-      opt_proxy = options.fetch(:proxy, true)
+    when :proxy
+      opt_proxy = options.fetch(:proxy)
+      proxy_user = nil
+      proxy_pass = nil
+    when nil
+      opt_proxy = true
       proxy_user = nil
       proxy_pass = nil
     end
@@ -498,7 +510,7 @@ module OpenURI
     #  If nil is given for the proxy URI, this option is just ignored.
     #
     #  If :proxy and :proxy_http_basic_authentication is specified, 
-    #  :proxy_http_basic_authentication is preferred.
+    #  ArgumentError is raised.
     #
     # [:http_basic_authentication]
     #  Synopsis:
