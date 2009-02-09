@@ -1,3 +1,14 @@
+Mon Feb  9 23:21:29 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/constants.c (level_arg): use unknown_level_to_int for
+	  non internet protocol.
+	  (optname_arg): use only so_optname_to_int for non internet protocol.
+	  (cmsg_type_arg): use only scm_optname_to_int for non internet
+	  protocol.
+
+	* ext/socket/mkconstants.rb: generate unknown_level_to_int.
+	  rename iplevel_to_int to ip_level_to_int.
+
 Mon Feb  9 23:04:27 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: rename level_to_int to iplevel_to_int.

@@ -196,8 +196,8 @@ int family_arg(VALUE domain);
 int socktype_arg(VALUE type);
 int level_arg(int family, VALUE level);
 int optname_arg(int family, int level, VALUE optname);
-int shutdown_how_arg(VALUE how);
 int cmsg_type_arg(int family, int level, VALUE type);
+int shutdown_how_arg(VALUE how);
 
 int rb_sock_getfamily(int sockfd);
 

@@ -61,27 +61,73 @@ int
 level_arg(int family, VALUE level)
 {
     /* convert SOL_SOCKET, IPPROTO_TCP, etc. */
-    return constant_arg(level, iplevel_to_int, "unknown protocol level");
+    if (IS_IP_FAMILY(family)) {
+        return constant_arg(level, ip_level_to_int, "unknown protocol level");
+    }
+    else {
+        return constant_arg(level, unknown_level_to_int, "unknown protocol level");
+    }
 }
 
 int
 optname_arg(int family, int level, VALUE optname)
 {
-    switch (level) {
-      case SOL_SOCKET:
-        return constant_arg(optname, so_optname_to_int, "unknown socket level option name");
-      case IPPROTO_IP:
-        return constant_arg(optname, ip_optname_to_int, "unknown IP level option name");
+    if (IS_IP_FAMILY(family)) {
+        switch (level) {
+          case SOL_SOCKET:
+            return constant_arg(optname, so_optname_to_int, "unknown socket level option name");
+          case IPPROTO_IP:
+            return constant_arg(optname, ip_optname_to_int, "unknown IP level option name");
 #ifdef IPPROTO_IPV6
-      case IPPROTO_IPV6:
-        return constant_arg(optname, ipv6_optname_to_int, "unknown IPv6 level option name");
+          case IPPROTO_IPV6:
+            return constant_arg(optname, ipv6_optname_to_int, "unknown IPv6 level option name");
 #endif
-      case IPPROTO_TCP:
-        return constant_arg(optname, tcp_optname_to_int, "unknown TCP level option name");
-      case IPPROTO_UDP:
-        return constant_arg(optname, udp_optname_to_int, "unknown UDP level option name");
-      default:
-        return NUM2INT(optname);
+          case IPPROTO_TCP:
+            return constant_arg(optname, tcp_optname_to_int, "unknown TCP level option name");
+          case IPPROTO_UDP:
+            return constant_arg(optname, udp_optname_to_int, "unknown UDP level option name");
+          default:
+            return NUM2INT(optname);
+        }
+    }
+    else {
+        switch (level) {
+          case SOL_SOCKET:
+            return constant_arg(optname, so_optname_to_int, "unknown socket level option name");
+          default:
+            return NUM2INT(optname);
+        }
+    }
+}
+
+int
+cmsg_type_arg(int family, int level, VALUE type)
+{
+    if (IS_IP_FAMILY(family)) {
+        switch (level) {
+          case SOL_SOCKET:
+            return constant_arg(type, scm_optname_to_int, "unknown UNIX control message");
+          case IPPROTO_IP:
+            return constant_arg(type, ip_optname_to_int, "unknown IP control message");
+#ifdef INET6
+          case IPPROTO_IPV6:
+            return constant_arg(type, ipv6_optname_to_int, "unknown IPv6 control message");
+#endif
+          case IPPROTO_TCP:
+            return constant_arg(type, tcp_optname_to_int, "unknown TCP control message");
+          case IPPROTO_UDP:
+            return constant_arg(type, udp_optname_to_int, "unknown UDP control message");
+          default:
+            return NUM2INT(type);
+        }
+    }
+    else {
+        switch (level) {
+          case SOL_SOCKET:
+            return constant_arg(type, scm_optname_to_int, "unknown UNIX control message");
+          default:
+            return NUM2INT(type);
+        }
     }
 }
 
@@ -90,27 +136,6 @@ shutdown_how_arg(VALUE how)
 {
     /* convert SHUT_RD, SHUT_WR, SHUT_RDWR. */
     return constant_arg(how, shutdown_how_to_int, "unknown shutdown argument");
-}
-
-int
-cmsg_type_arg(int family, int level, VALUE type)
-{
-    switch (level) {
-      case SOL_SOCKET:
-        return constant_arg(type, scm_optname_to_int, "unknown UNIX control message");
-      case IPPROTO_IP:
-        return constant_arg(type, ip_optname_to_int, "unknown IP control message");
-#ifdef INET6
-      case IPPROTO_IPV6:
-        return constant_arg(type, ipv6_optname_to_int, "unknown IPv6 control message");
-#endif
-      case IPPROTO_TCP:
-        return constant_arg(type, tcp_optname_to_int, "unknown TCP control message");
-      case IPPROTO_UDP:
-        return constant_arg(type, udp_optname_to_int, "unknown UDP control message");
-      default:
-        return NUM2INT(type);
-    }
 }
 
 static void
