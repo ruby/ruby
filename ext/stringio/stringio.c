@@ -779,15 +779,24 @@ strio_ungetc(self, ch)
     int cc = NUM2INT(ch);
     long len, pos = ptr->pos;
 
-    if (cc != EOF && pos > 0) {
-	if ((len = RSTRING(ptr->string)->len) < pos-- ||
-	    (unsigned char)RSTRING(ptr->string)->ptr[pos] !=
-	    (unsigned char)cc) {
-	    strio_extend(ptr, pos, 1);
-	    RSTRING(ptr->string)->ptr[pos] = cc;
-	    OBJ_INFECT(ptr->string, self);
+    if (cc != EOF) {
+	len = RSTRING(ptr->string)->len;
+	if (pos == 0) {
+	    char *p;
+	    rb_str_resize(ptr->string, len + 1);
+	    p = RSTRING(ptr->string)->ptr;
+	    memmove(p + 1, p, len);
 	}
-	--ptr->pos;
+	else {
+	    if (len < pos-- ||
+		(unsigned char)RSTRING(ptr->string)->ptr[pos] !=
+		(unsigned char)cc) {
+		strio_extend(ptr, pos, 1);
+	    }
+	    --ptr->pos;
+	}
+	RSTRING(ptr->string)->ptr[pos] = cc;
+	OBJ_INFECT(ptr->string, self);
 	ptr->flags &= ~STRIO_EOF;
     }
     return Qnil;
