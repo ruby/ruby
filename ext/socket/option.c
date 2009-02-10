@@ -127,7 +127,7 @@ sockopt_data(VALUE self)
  * The size and endian is dependent on the host. 
  *
  *   p Socket::Option.int(:INET, :SOCKET, :KEEPALIVE, 1)
- *   #=> #<Socket::Option: AF_INET SOCKET KEEPALIVE 1>
+ *   #=> #<Socket::Option: INET SOCKET KEEPALIVE 1>
  */
 static VALUE
 sockopt_s_int(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE vint)

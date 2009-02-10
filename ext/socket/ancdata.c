@@ -60,8 +60,8 @@ ip_cmsg_type_to_sym(int level, int cmsg_type)
  *
  * _cmsg_data_ should be a string.
  *
- *   p Socket::AncillaryData.new(:INET, :TCP, :NODELAY, "")' 
- *   #=> #<Socket::AncillaryData: AF_INET TCP NODELAY "">
+ *   p Socket::AncillaryData.new(:INET, :TCP, :NODELAY, "")
+ *   #=> #<Socket::AncillaryData: INET TCP NODELAY "">
  *
  *   p Socket::AncillaryData.new(:INET6, :IPV6, :PKTINFO, "")     
  *   #=> #<Socket::AncillaryData: INET6 IPV6 PKTINFO "">
@@ -184,7 +184,7 @@ ancillary_data(VALUE self)
  * The size and endian is dependent on the host. 
  *
  *   p Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, STDERR.fileno)
- *   #=> #<Socket::AncillaryData: AF_UNIX SOCKET RIGHTS 2>
+ *   #=> #<Socket::AncillaryData: UNIX SOCKET RIGHTS 2>
  */
 static VALUE
 ancillary_s_int(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE vtype, VALUE integer)
@@ -580,8 +580,8 @@ anc_inspect_ipv6_pktinfo(int level, int type, VALUE data, VALUE ret)
  *
  * returns a string which shows ancillarydata in human-readable form.
  *
- *   Socket::AncillaryData.new(:INET6, :IPV6, :PKTINFO, "").inspect
- *   #=> #<Socket::AncillaryData: AF_INET6 IPV6 PKTINFO "">
+ *   p Socket::AncillaryData.new(:INET6, :IPV6, :PKTINFO, "").inspect
+ *   #=> "#<Socket::AncillaryData: INET6 IPV6 PKTINFO \"\">"
  */
 static VALUE
 ancillary_inspect(VALUE self)
