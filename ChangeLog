@@ -1,3 +1,10 @@
+Tue Feb 10 23:30:32 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/basicsocket.c (bsock_getpeername): use struct
+	  sockaddr_storage.
+	  (bsock_local_address): ditto.
+	  (bsock_remote_address): ditto.
+
 Tue Feb 10 21:26:33 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (Socket.udp_server_sockets): new method.

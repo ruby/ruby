@@ -351,14 +351,14 @@ bsock_getsockname(VALUE sock)
 static VALUE
 bsock_getpeername(VALUE sock)
 {
-    char buf[1024];
+    struct sockaddr_storage buf;
     socklen_t len = sizeof buf;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getpeername(fptr->fd, (struct sockaddr*)buf, &len) < 0)
+    if (getpeername(fptr->fd, (struct sockaddr*)&buf, &len) < 0)
 	rb_sys_fail("getpeername(2)");
-    return rb_str_new(buf, len);
+    return rb_str_new((char*)&buf, len);
 }
 
 /*
@@ -377,14 +377,14 @@ bsock_getpeername(VALUE sock)
 static VALUE
 bsock_local_address(VALUE sock)
 {
-    char buf[1024];
+    struct sockaddr_storage buf;
     socklen_t len = sizeof buf;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getsockname(fptr->fd, (struct sockaddr*)buf, &len) < 0)
+    if (getsockname(fptr->fd, (struct sockaddr*)&buf, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    return fd_socket_addrinfo(fptr->fd, (struct sockaddr *)buf, len);
+    return fd_socket_addrinfo(fptr->fd, (struct sockaddr *)&buf, len);
 }
 
 /*
@@ -405,14 +405,14 @@ bsock_local_address(VALUE sock)
 static VALUE
 bsock_remote_address(VALUE sock)
 {
-    char buf[1024];
+    struct sockaddr_storage buf;
     socklen_t len = sizeof buf;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getpeername(fptr->fd, (struct sockaddr*)buf, &len) < 0)
+    if (getpeername(fptr->fd, (struct sockaddr*)&buf, &len) < 0)
 	rb_sys_fail("getpeername(2)");
-    return fd_socket_addrinfo(fptr->fd, (struct sockaddr *)buf, len);
+    return fd_socket_addrinfo(fptr->fd, (struct sockaddr *)&buf, len);
 }
 
 /*
