@@ -90,7 +90,7 @@ with all sufficient information, see the ChangeLog file.
 
   * incompatible changes:
     * Socket#{recvfrom,recvfrom_nonblock,accept,accept_nonblock,sysaccept}
-      returns a sender address as Addrinfo object instead of a string.
+      returns a sender address as Addrinfo object instead of a binary sockaddr string.
     * BasicSocket#getsockopt returns Socket::Option object instead of a string.
 
   * new class:
