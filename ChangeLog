@@ -1,3 +1,11 @@
+Tue Feb 10 21:26:33 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (Socket.udp_server_sockets): new method.
+	  (Socket.udp_server_loop_on): new method.
+	  (Socket.udp_server_loop): new method
+	  (Socket.ip_sockets_port0): extracted from tcp_server_sockets_port0.
+	  (Socket::UDPSource): new class.
+
 Tue Feb 10 21:14:43 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (sockaddr_obj): fill pfamily.
