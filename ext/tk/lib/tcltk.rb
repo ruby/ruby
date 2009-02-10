@@ -237,7 +237,7 @@ class TclTkVariable < TclTkObject
     set(dat) if dat
   end
 
-  # although you can set/refer variable by using set in tcl/tk,
+  # although you can set/read variables by using set in tcl/tk,
   # we provide the method for accessing variables
 
   # set(data): set tcl/tk variable using `set'

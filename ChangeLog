@@ -13636,7 +13636,7 @@ Tue Aug  5 16:38:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Aug  5 16:13:05 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* lib/net/imap.rb (disconnect): do not refer SSL::SSLSocket for
+	* lib/net/imap.rb (disconnect): do not refer to SSL::SSLSocket for
 	  environments without OpenSSL. fixed [ruby-dev:35755].
 
 Tue Aug  5 14:19:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -15156,7 +15156,7 @@ Thu Jul  3 01:44:01 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 Thu Jul  3 01:23:13 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	* sprintf.c: include ieeefp.h to refer isinf.
+	* sprintf.c: include ieeefp.h to refer to isinf.
 
 	* ext/bigdecimal/bigdecimal.c: ditto.
 
@@ -15205,7 +15205,7 @@ Wed Jul  2 03:10:41 2008  Koichi Sasada  <ko1@atdot.net>
 
 Wed Jul  2 02:02:34 2008  Koichi Sasada  <ko1@atdot.net>
 
-	* proc.c, vm.c: fix to refer next ruby level cfp to make binding.
+	* proc.c, vm.c: fix to refer to next ruby level cfp to make binding.
 
 Wed Jul  2 01:58:19 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -19197,7 +19197,7 @@ Mon Apr 21 11:00:27 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Apr 21 10:06:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* time.c: should include <errno.h> to refer errno.
+	* time.c: should include <errno.h> to refer to errno.
 
 Mon Apr 21 09:58:04 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -33955,7 +33955,7 @@ Wed May 30 13:32:34 2007  Shugo Maeda  <shugo@ruby-lang.org>
 	  error message.
 
 	* lib/net/imap.rb (ResponseParser#parse_error): fixed
-	  the condition not to refer @token.symbol unexpectedly.
+	  the condition not to refer to @token.symbol unexpectedly.
 	  Thanks, Dick Monahan.
 
 Wed May 30 13:24:33 2007  Shugo Maeda  <shugo@ruby-lang.org>
@@ -40939,8 +40939,8 @@ Tue Apr 25 07:55:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Apr 21 15:19:13 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/tcltklib.c (lib_eventloop_ensure): refer freed pointer
-	  [ruby-core:07744] and memory leak.
+	* ext/tk/tcltklib.c (lib_eventloop_ensure): avoid dereferencing
+	  freed pointer [ruby-core:07744] and memory leak.
 
 Fri Apr 21 12:14:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -43581,7 +43581,7 @@ Wed Sep 28 23:40:04 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Wed Sep 28 15:12:28 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb (WEBrick::CGI#start): req.query_string should
-	  refer the value of QUERY_STRING. [ruby-list:41186]
+	  refer to the value of QUERY_STRING. [ruby-list:41186]
 
 	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#query_string=):
 	  add new method.
@@ -52501,7 +52501,7 @@ Mon Sep  6 10:57:40 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Mon Sep  6 07:51:42 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (cvar_cbase): singletons should refer outer cvar scope.
+	* eval.c (cvar_cbase): singletons should refer to outer cvar scope.
 	  [ruby-dev:24223]
 
 	* eval.c (rb_load): should preserve previous ruby_wrapper value.
@@ -62282,7 +62282,7 @@ Tue Aug  5 15:47:34 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Aug  5 10:04:42 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* string.c (str_new4): ptr may refer null_str.
+	* string.c (str_new4): ptr may refer to null_str.
 
 Mon Aug  4 17:25:18 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
