@@ -457,8 +457,7 @@ anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
         rb_str_catf(ret, " gid=%u", cred.cmcred_gid);
 	if (cred.cmcred_ngroups) {
 	    int i;
-	    const char *sep = "=";
-            rb_str_cat2(ret, " groups");
+	    const char *sep = " groups=";
 	    for (i = 0; i < cred.cmcred_ngroups; i++) {
 		rb_str_catf(ret, "%s%u", sep, cred.cmcred_groups[i]);
 		sep = ",";
@@ -481,8 +480,7 @@ anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
 	    rb_str_catf(ret, " egid=%u", cred->sc_egid);
 	    if (cred0.sc_ngroups) {
 		int i;
-		const char *sep = "=";
-		rb_str_cat2(ret, " groups");
+		const char *sep = " groups=";
 		for (i = 0; i < cred0.sc_ngroups; i++) {
 		    rb_str_catf(ret, "%s%u", sep, cred->sc_groups[i]);
 		    sep = ",";
