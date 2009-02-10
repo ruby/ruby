@@ -272,7 +272,7 @@ inspect_local_peercred(int level, int optname, VALUE data, VALUE ret)
         rb_str_catf(ret, " euid=%u", cred.cr_uid);
 	if (cred.cr_ngroups) {
 	    int i;
-	    char *sep = " groups=";
+	    const char *sep = " groups=";
 	    for (i = 0; i < cred.cr_ngroups; i++) {
 		rb_str_catf(ret, "%s%u", sep, cred.cr_groups[i]);
 		sep = ",";

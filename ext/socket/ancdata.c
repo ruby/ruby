@@ -433,7 +433,6 @@ anc_inspect_passcred_credentials(int level, int type, VALUE data, VALUE ret)
 static int
 anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
 {
-    int i;
     if (level != SOL_SOCKET && type != SCM_CREDS)
 	return -1;
 
@@ -457,7 +456,8 @@ anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
         rb_str_catf(ret, " euid=%u", cred.cmcred_euid);
         rb_str_catf(ret, " gid=%u", cred.cmcred_gid);
 	if (cred.cmcred_ngroups) {
-	    char *sep = "=";
+	    int i;
+	    const char *sep = "=";
             rb_str_cat2(ret, " groups");
 	    for (i = 0; i < cred.cmcred_ngroups; i++) {
 		rb_str_catf(ret, "%s%u", sep, cred.cmcred_groups[i]);
@@ -480,7 +480,8 @@ anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
 	    rb_str_catf(ret, " gid=%u", cred->sc_gid);
 	    rb_str_catf(ret, " egid=%u", cred->sc_egid);
 	    if (cred0.sc_ngroups) {
-		char *sep = "=";
+		int i;
+		const char *sep = "=";
 		rb_str_cat2(ret, " groups");
 		for (i = 0; i < cred0.sc_ngroups; i++) {
 		    rb_str_catf(ret, "%s%u", sep, cred->sc_groups[i]);
