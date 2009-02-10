@@ -1432,7 +1432,7 @@ sockaddr_obj(struct sockaddr *addr)
 	len = SA_LEN(addr);
 #endif
 
-    return addrinfo_new(addr, len, 0, 0, 0, Qnil, Qnil);
+    return addrinfo_new(addr, len, addr->sa_family, 0, 0, Qnil, Qnil);
 }
 #endif
 
