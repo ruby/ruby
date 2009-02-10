@@ -312,14 +312,14 @@ Sat Feb  7 21:26:15 2009  Tanaka Akira  <akr@fsij.org>
 
 Sat Feb  7 18:02:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* configure.in (--with-arch): added new option to suppor
+	* configure.in (--with-arch): added new option to support
 	  universal binary.  replaced --enable-fat-binary option which
 	  didn't work actually.
 
 	* configure.in (RUBY_FUNC_ATTRIBUTE): added conditional test.
 
-	* configure.in (ac_cv_type_getgroups): decalared because getgroups()
-	  fills rest of the buffer with garbages on Rosetta.
+	* configure.in (ac_cv_type_getgroups): declared because getgroups()
+	  fills rest of the buffer with garbage on Rosetta.
 
 	* configure.in (alloca): defines only for powerpc, but always
 	  create empty object to suppress ld warning.
@@ -518,7 +518,7 @@ Thu Feb  5 03:55:22 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Feb  5 02:12:35 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 
-	* symbian/configure.bat: Updated Symbain configuration procedure to
+	* symbian/configure.bat: Updated Symbian configuration procedure to
 	  avoid creating files outside build directory
 
 	* symbian/pre-build: ditto
@@ -581,7 +581,7 @@ Wed Feb  4 01:28:46 2009  Tanaka Akira  <akr@fsij.org>
 Wed Feb  4 00:32:59 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/etc/test_etc.rb(test_getpwnam, test_getgrgid, test_getgrnam):
-	  support an envirionment that has duplicative entries.  a patch from
+	  support an environment that has duplicative entries.  a patch from
 	  Tomoyuki Chikanaga <chikanag at nippon-control-system.co.jp> in
 	  [ruby-dev:37882].
 
