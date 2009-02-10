@@ -1,3 +1,11 @@
+Tue Feb 10 20:58:47 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c (sockopt_family_m): renamed from sockopt_family.
+	  (sockopt_level_m): renamed from sockopt_level.
+	  (sockopt_optname_m): renamed from sockopt_optname.
+	  (inspect_local_peercred): follow the renaming.
+	  (Init_sockopt): ditto.
+
 Tue Feb 10 20:56:07 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (anc_inspect_socket_creds): refactored to avoid

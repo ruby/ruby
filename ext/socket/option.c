@@ -68,7 +68,7 @@ sockopt_new(int family, int level, int optname, VALUE data)
  *   #=> 10
  */
 static VALUE
-sockopt_family(VALUE self)
+sockopt_family_m(VALUE self)
 {
     return rb_attr_get(self, rb_intern("family"));
 }
@@ -83,7 +83,7 @@ sockopt_family(VALUE self)
  *   #=> 41
  */
 static VALUE
-sockopt_level(VALUE self)
+sockopt_level_m(VALUE self)
 {
     return rb_attr_get(self, rb_intern("level"));
 }
@@ -98,7 +98,7 @@ sockopt_level(VALUE self)
  *   #=> 2
  */
 static VALUE
-sockopt_optname(VALUE self)
+sockopt_optname_m(VALUE self)
 {
     return rb_attr_get(self, rb_intern("optname"));
 }
@@ -290,9 +290,9 @@ inspect_local_peercred(int level, int optname, VALUE data, VALUE ret)
 static VALUE
 sockopt_inspect(VALUE self)
 {
-    int family = NUM2INT(sockopt_family(self));
-    int level = NUM2INT(sockopt_level(self));
-    int optname = NUM2INT(sockopt_optname(self));
+    int family = NUM2INT(sockopt_family_m(self));
+    int level = NUM2INT(sockopt_level_m(self));
+    int optname = NUM2INT(sockopt_optname_m(self));
     VALUE data = sockopt_data(self);
     VALUE v, ret;
     ID family_id, level_id, optname_id;
@@ -487,9 +487,9 @@ Init_sockopt(void)
 {
     rb_cSockOpt = rb_define_class_under(rb_cSocket, "Option", rb_cObject);
     rb_define_method(rb_cSockOpt, "initialize", sockopt_initialize, 4);
-    rb_define_method(rb_cSockOpt, "family", sockopt_family, 0);
-    rb_define_method(rb_cSockOpt, "level", sockopt_level, 0);
-    rb_define_method(rb_cSockOpt, "optname", sockopt_optname, 0);
+    rb_define_method(rb_cSockOpt, "family", sockopt_family_m, 0);
+    rb_define_method(rb_cSockOpt, "level", sockopt_level_m, 0);
+    rb_define_method(rb_cSockOpt, "optname", sockopt_optname_m, 0);
     rb_define_method(rb_cSockOpt, "data", sockopt_data, 0);
     rb_define_method(rb_cSockOpt, "inspect", sockopt_inspect, 0);
 
