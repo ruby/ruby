@@ -7123,16 +7123,16 @@ static const char *const loadable_ext[] = {
     0
 };
 
-static int rb_feature_p _((const char *, const char *, int));
+static int rb_feature_p _((const char **, const char *, int));
 static int search_required _((VALUE, VALUE *, VALUE *));
 
 static int
-rb_feature_p(feature, ext, rb)
-    const char *feature, *ext;
+rb_feature_p(ftptr, ext, rb)
+    const char **ftptr, *ext;
     int rb;
 {
     VALUE v;
-    const char *f, *e;
+    const char *f, *e, *feature = *ftptr;
     long i, len, elen;
 
     if (ext) {
@@ -7150,18 +7150,21 @@ rb_feature_p(feature, ext, rb)
 	    continue;
 	if (!*(e = f + len)) {
 	    if (ext) continue;
+	    *ftptr = 0;
 	    return 'u';
 	}
 	if (*e != '.') continue;
 	if ((!rb || !ext) && (IS_SOEXT(e) || IS_DLEXT(e))) {
+	    *ftptr = 0;
 	    return 's';
 	}
 	if ((rb || !ext) && (strcmp(e, ".rb") == 0)) {
+	    *ftptr = 0;
 	    return 'r';
 	}
     }
     if (loading_tbl) {
-	if (st_lookup(loading_tbl, (st_data_t)feature, 0)) {
+	if (st_lookup(loading_tbl, (st_data_t)feature, (st_data_t *)ftptr)) {
 	    if (!ext) return 'u';
 	    return strcmp(ext, ".rb") ? 's' : 'r';
 	}
@@ -7173,7 +7176,7 @@ rb_feature_p(feature, ext, rb)
 	    MEMCPY(buf, feature, char, len);
 	    for (i = 0; (e = loadable_ext[i]) != 0; i++) {
 		strncpy(buf + len, e, DLEXT_MAXLEN + 1);
-		if (st_lookup(loading_tbl, (st_data_t)buf, 0)) {
+		if (st_lookup(loading_tbl, (st_data_t)buf, (st_data_t *)ftptr)) {
 		    return i ? 's' : 'r';
 		}
 	    }
@@ -7181,6 +7184,7 @@ rb_feature_p(feature, ext, rb)
     }
     return 0;
 }
+#define rb_feature_p(feature, ext, rb) rb_feature_p(&feature, ext, rb)
 
 int
 rb_provided(feature)
@@ -7289,7 +7293,7 @@ search_required(fname, featurep, path)
     VALUE fname, *featurep, *path;
 {
     VALUE tmp;
-    char *ext, *ftptr;
+    const char *ext, *ftptr;
     int type;
 
     *featurep = fname;
@@ -7297,12 +7301,18 @@ search_required(fname, featurep, path)
     ext = strrchr(ftptr = RSTRING_PTR(fname), '.');
     if (ext && !strchr(ext, '/')) {
 	if (strcmp(".rb", ext) == 0) {
-	    if (rb_feature_p(ftptr, ext, Qtrue)) return 'r';
+	    if (rb_feature_p(ftptr, ext, Qtrue)) {
+		if (ftptr) *path = rb_str_new2(ftptr);
+		return 'r';
+	    }
 	    if ((*path = rb_find_file(fname)) != 0) return 'r';
 	    return 0;
 	}
 	else if (IS_SOEXT(ext)) {
-	    if (rb_feature_p(ftptr, ext, Qfalse)) return 's';
+	    if (rb_feature_p(ftptr, ext, Qfalse)) {
+		if (ftptr) *path = rb_str_new2(ftptr);
+		return 's';
+	    }
 	    tmp = rb_str_new(RSTRING_PTR(fname), ext-RSTRING_PTR(fname));
 	    *featurep = tmp;
 #ifdef DLEXT2
@@ -7321,7 +7331,10 @@ search_required(fname, featurep, path)
 #endif
 	}
 	else if (IS_DLEXT(ext)) {
-	    if (rb_feature_p(ftptr, ext, Qfalse)) return 's';
+	    if (rb_feature_p(ftptr, ext, Qfalse)) {
+		if (ftptr) *path = rb_str_new2(ftptr);
+		return 's';
+	    }
 	    if ((*path = rb_find_file(fname)) != 0) return 's';
 	}
     }
@@ -7330,13 +7343,16 @@ search_required(fname, featurep, path)
     *featurep = tmp;
     switch (type) {
       case 0:
-	ftptr = RSTRING_PTR(tmp);
-	return rb_feature_p(ftptr, 0, Qfalse);
+	type = rb_feature_p(ftptr, 0, Qfalse);
+	if (type && ftptr) *path = rb_str_new2(ftptr);
+	return type;
 
       default:
 	ext = strrchr(ftptr = RSTRING(tmp)->ptr, '.');
-	if (rb_feature_p(ftptr, ext, !--type)) break;
-	*path = rb_find_file(tmp);
+	if (!rb_feature_p(ftptr, ext, !--type))
+	    *path = rb_find_file(tmp);
+	else if (ftptr)
+	    *path = rb_str_new2(ftptr);
     }
     return type ? 's' : 'r';
 }

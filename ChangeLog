@@ -1,3 +1,10 @@
+Tue Feb 10 19:40:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_feature_p): returns found feature name if loading.
+	  [ruby-core:19798]
+
+	* eval.c (search_required): ditto.
+
 Mon Feb  9 17:35:38 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_accept): secure fd before accept because if
