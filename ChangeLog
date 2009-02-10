@@ -1,3 +1,9 @@
+Wed Feb 11 00:38:16 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (sock_gethostname): use HOST_NAME_MAX.
+
+	* ext/socket/raddrinfo.c (make_ipaddr): local variable renamed.
+
 Tue Feb 10 23:44:53 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/init.c (struct recvfrom_arg): use struct

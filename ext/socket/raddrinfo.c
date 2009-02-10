@@ -193,10 +193,10 @@ make_ipaddr0(struct sockaddr *addr, char *buf, size_t len)
 VALUE
 make_ipaddr(struct sockaddr *addr)
 {
-    char buf[1024];
+    char hbuf[1024];
 
-    make_ipaddr0(addr, buf, sizeof(buf));
-    return rb_str_new2(buf);
+    make_ipaddr0(addr, hbuf, sizeof(hbuf));
+    return rb_str_new2(hbuf);
 }
 
 static void
