@@ -1441,6 +1441,8 @@ eval_node(self, node)
 
 int ruby_in_eval;
 
+static int rb_thread_join _((rb_thread_t, double));
+
 static void rb_thread_cleanup _((void));
 static void rb_thread_wait_other_threads _((void));
 
@@ -7121,8 +7123,9 @@ load_lock(ftptr)
 	return (char *)ftptr;
     }
     do {
-	if ((rb_thread_t)th == curr_thread) return 0;
-	CHECK_INTS;
+	rb_thread_t owner = (rb_thread_t)th;
+	if (owner == curr_thread) return 0;
+	rb_thread_join(owner->thread, -1.0);
     } while (st_lookup(loading_tbl, (st_data_t)ftptr, &th));
     return 0;
 }
@@ -11102,8 +11105,6 @@ rb_thread_select(max, read, write, except, timeout)
     if (except) *except = curr_thread->exceptfds;
     return curr_thread->select_value;
 }
-
-static int rb_thread_join _((rb_thread_t, double));
 
 static int
 rb_thread_join(th, limit)
