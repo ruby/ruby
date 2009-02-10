@@ -9,7 +9,8 @@ AC_DEFUN([RUBY_PREREQ_AC],
 		AC_MSG_ERROR([Autoconf version ]$1[ or higher is required]$2))])
 
 AC_DEFUN([when], dnl [(] makes parentheses balanced.
-$1[)])
+dnl note that spaces after comma need to be quoted.
+[$*][)])
 
 dnl environment section {
 
@@ -152,7 +153,7 @@ if test ${target_archs+set}; then
     for archs in $target_archs
     do
 	case ",$universal_binary," in
-	  when([*,$archs,*])
+	  when(*",$archs,"*)
 	    ;;
 	  when(*)
 	    cpu=`$SHELL "$srcdir/config.sub" "${archs}-${target_os}" 2>&1` || {
@@ -169,7 +170,7 @@ if test ${target_archs+set}; then
     target_archs="$universal_binary"
     unset universal_binary
     case "$target_archs" in
-      when([*,*]) universal_binary=yes;;
+      when(*,*) universal_binary=yes;;
       when(*)   unset universal_archnames;;
     esac
     AC_MSG_RESULT([$target_archs])
