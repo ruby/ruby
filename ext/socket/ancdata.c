@@ -952,7 +952,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #if defined(HAVE_ST_MSG_CONTROL)
     struct cmsghdr *cmh;
 #endif
-    char namebuf[1024];
+    struct sockaddr_storage namebuf;
     char datbuf0[4096], *datbuf;
     char ctlbuf0[4096], *ctlbuf;
     VALUE dat_str = Qnil;
@@ -1014,8 +1014,8 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
     memset(&mh, 0, sizeof(mh));
 
-    memset(namebuf, 0, sizeof(namebuf));
-    mh.msg_name = namebuf;
+    memset(&namebuf, 0, sizeof(namebuf));
+    mh.msg_name = (struct sockaddr *)&namebuf;
     mh.msg_namelen = sizeof(namebuf);
 
     mh.msg_iov = &iov;

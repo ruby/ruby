@@ -688,13 +688,13 @@ sock_accept(VALUE sock)
 {
     rb_io_t *fptr;
     VALUE sock2;
-    char buf[1024];
+    struct sockaddr_storage buf;
     socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = s_accept(rb_cSocket,fptr->fd,(struct sockaddr*)buf,&len);
+    sock2 = s_accept(rb_cSocket,fptr->fd,(struct sockaddr*)&buf,&len);
 
-    return rb_assoc_new(sock2, io_socket_addrinfo(sock2, (struct sockaddr*)buf, len));
+    return rb_assoc_new(sock2, io_socket_addrinfo(sock2, (struct sockaddr*)&buf, len));
 }
 
 /*
@@ -750,12 +750,12 @@ sock_accept_nonblock(VALUE sock)
 {
     rb_io_t *fptr;
     VALUE sock2;
-    char buf[1024];
+    struct sockaddr_storage buf;
     socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = s_accept_nonblock(rb_cSocket, fptr, (struct sockaddr *)buf, &len);
-    return rb_assoc_new(sock2, io_socket_addrinfo(sock2, (struct sockaddr*)buf, len));
+    sock2 = s_accept_nonblock(rb_cSocket, fptr, (struct sockaddr *)&buf, &len);
+    return rb_assoc_new(sock2, io_socket_addrinfo(sock2, (struct sockaddr*)&buf, len));
 }
 
 /*
@@ -802,13 +802,13 @@ sock_sysaccept(VALUE sock)
 {
     rb_io_t *fptr;
     VALUE sock2;
-    char buf[1024];
+    struct sockaddr_storage buf;
     socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = s_accept(0,fptr->fd,(struct sockaddr*)buf,&len);
+    sock2 = s_accept(0,fptr->fd,(struct sockaddr*)&buf,&len);
 
-    return rb_assoc_new(sock2, io_socket_addrinfo(sock2, (struct sockaddr*)buf, len));
+    return rb_assoc_new(sock2, io_socket_addrinfo(sock2, (struct sockaddr*)&buf, len));
 }
 
 #ifdef HAVE_GETHOSTNAME

@@ -78,7 +78,7 @@ struct recvfrom_arg {
     int fd, flags;
     VALUE str;
     socklen_t alen;
-    char buf[1024];
+    struct sockaddr_storage buf;
 };
 
 static VALUE
@@ -86,7 +86,7 @@ recvfrom_blocking(void *data)
 {
     struct recvfrom_arg *arg = data;
     return (VALUE)recvfrom(arg->fd, RSTRING_PTR(arg->str), RSTRING_LEN(arg->str),
-			   arg->flags, (struct sockaddr*)arg->buf, &arg->alen);
+			   arg->flags, (struct sockaddr*)&arg->buf, &arg->alen);
 }
 
 VALUE
@@ -139,16 +139,16 @@ s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 	}
 #endif
 	if (arg.alen && arg.alen != sizeof(arg.buf)) /* OSX doesn't return a from result for connection-oriented sockets */
-	    return rb_assoc_new(str, ipaddr((struct sockaddr*)arg.buf, fptr->mode & FMODE_NOREVLOOKUP));
+	    return rb_assoc_new(str, ipaddr((struct sockaddr*)&arg.buf, fptr->mode & FMODE_NOREVLOOKUP));
 	else
 	    return rb_assoc_new(str, Qnil);
 
 #ifdef HAVE_SYS_UN_H
       case RECV_UNIX:
-        return rb_assoc_new(str, unixaddr((struct sockaddr_un*)arg.buf, arg.alen));
+        return rb_assoc_new(str, unixaddr((struct sockaddr_un*)&arg.buf, arg.alen));
 #endif
       case RECV_SOCKET:
-	return rb_assoc_new(str, io_socket_addrinfo(sock, (struct sockaddr*)arg.buf, arg.alen));
+	return rb_assoc_new(str, io_socket_addrinfo(sock, (struct sockaddr*)&arg.buf, arg.alen));
       default:
 	rb_bug("s_recvfrom called with bad value");
     }
@@ -159,7 +159,7 @@ s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 {
     rb_io_t *fptr;
     VALUE str;
-    char buf[1024];
+    struct sockaddr_storage buf;
     socklen_t alen = sizeof buf;
     VALUE len, flg;
     long buflen;
@@ -189,7 +189,7 @@ s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 
     rb_io_check_closed(fptr);
     rb_io_set_nonblock(fptr);
-    slen = recvfrom(fd, RSTRING_PTR(str), buflen, flags, (struct sockaddr*)buf, &alen);
+    slen = recvfrom(fd, RSTRING_PTR(str), buflen, flags, (struct sockaddr*)&buf, &alen);
 
     if (slen < 0) {
 	rb_sys_fail("recvfrom(2)");
@@ -204,11 +204,11 @@ s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 
       case RECV_IP:
         if (alen && alen != sizeof(buf)) /* connection-oriented socket may not return a from result */
-            addr = ipaddr((struct sockaddr*)buf, fptr->mode & FMODE_NOREVLOOKUP);
+            addr = ipaddr((struct sockaddr*)&buf, fptr->mode & FMODE_NOREVLOOKUP);
         break;
 
       case RECV_SOCKET:
-        addr = io_socket_addrinfo(sock, (struct sockaddr*)buf, alen);
+        addr = io_socket_addrinfo(sock, (struct sockaddr*)&buf, alen);
         break;
 
       default:
