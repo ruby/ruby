@@ -1,3 +1,8 @@
+Tue Feb 10 21:09:23 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c (sockopt_s_bool): new method.
+	  (sockopt_bool): new method.
+
 Tue Feb 10 20:58:47 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c (sockopt_family_m): renamed from sockopt_family.

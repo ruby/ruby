@@ -163,6 +163,52 @@ sockopt_int(VALUE self)
     return INT2NUM(i);
 }
 
+/*
+ * call-seq:
+ *   Socket::Option.bool(family, level, optname, bool) => sockopt
+ *
+ * Creates a new Socket::Option object which contains boolean as data.
+ * Actually 0 or 1 as int is used.
+ *
+ *   p Socket::Option.bool(:INET, :SOCKET, :KEEPALIVE, true)
+ *   #=> #<Socket::Option: INET SOCKET KEEPALIVE 1>
+ *
+ *   p Socket::Option.bool(:INET, :SOCKET, :KEEPALIVE, false)
+ *   #=> #<Socket::Option: AF_INET SOCKET KEEPALIVE 0>
+ *
+ */
+static VALUE
+sockopt_s_bool(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE vbool)
+{
+    int family = family_arg(vfamily);
+    int level = level_arg(family, vlevel);
+    int optname = optname_arg(family, level, voptname);
+    int i = RTEST(vbool) ? 1 : 0;
+    return sockopt_new(family, level, optname, rb_str_new((char*)&i, sizeof(i)));
+}
+
+/*
+ * call-seq:
+ *   sockopt.bool => true or false
+ *
+ * Returns the data in _sockopt_ as an boolean value.
+ *
+ *   sockopt = Socket::Option.int(:INET, :SOCKET, :KEEPALIVE, 1)
+ *   p sockopt.bool => true
+ */
+static VALUE
+sockopt_bool(VALUE self)
+{
+    int i;
+    VALUE data = sockopt_data(self);
+    StringValue(data);
+    if (RSTRING_LEN(data) != sizeof(int))
+        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(int)=%d but %ld",
+                 (int)sizeof(int), (long)RSTRING_LEN(data));
+    memcpy((char*)&i, RSTRING_PTR(data), sizeof(int));
+    return i == 0 ? Qfalse : Qtrue;
+}
+
 static int
 inspect_int(int level, int optname, VALUE data, VALUE ret)
 {
@@ -495,6 +541,9 @@ Init_sockopt(void)
 
     rb_define_singleton_method(rb_cSockOpt, "int", sockopt_s_int, 4);
     rb_define_method(rb_cSockOpt, "int", sockopt_int, 0);
+
+    rb_define_singleton_method(rb_cSockOpt, "bool", sockopt_s_bool, 4);
+    rb_define_method(rb_cSockOpt, "bool", sockopt_bool, 0);
 
     rb_define_method(rb_cSockOpt, "unpack", sockopt_unpack, 1);
 
