@@ -133,7 +133,7 @@ class2path(klass)
 		 n);
     }
     if (rb_path2class(n) != rb_class_real(klass)) {
-	rb_raise(rb_eTypeError, "%s can't be referred", n);
+	rb_raise(rb_eTypeError, "%s can't be referred to", n);
     }
     return path;
 }
@@ -1034,7 +1034,7 @@ path2class(path)
     VALUE v = rb_path2class(path);
 
     if (TYPE(v) != T_CLASS) {
-	rb_raise(rb_eArgError, "%s does not refer class", path);
+	rb_raise(rb_eArgError, "%s does not refer to class", path);
     }
     return v;
 }
@@ -1046,7 +1046,7 @@ path2module(path)
     VALUE v = rb_path2class(path);
 
     if (TYPE(v) != T_MODULE) {
-	rb_raise(rb_eArgError, "%s does not refer module", path);
+	rb_raise(rb_eArgError, "%s does not refer to module", path);
     }
     return v;
 }

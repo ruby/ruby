@@ -59,7 +59,7 @@ class WSDLEncodedRegistry < Registry
     end
   end
 
-  # map anything for now: must refer WSDL while mapping.  [ToDo]
+  # map anything for now: must refer to WSDL while mapping.  [ToDo]
   def soap2obj(node, obj_class = nil)
     begin
       return any2obj(node, obj_class)

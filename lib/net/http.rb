@@ -39,7 +39,7 @@ module Net   #:nodoc:
   # 
   # This library provides your program functions to access WWW
   # documents via HTTP, Hyper Text Transfer Protocol version 1.1.
-  # For details of HTTP, refer [RFC2616]
+  # For details of HTTP, refer to [RFC2616]
   # (http://www.ietf.org/rfc/rfc2616.txt).
   # 
   # == Examples

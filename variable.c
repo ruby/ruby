@@ -274,7 +274,7 @@ rb_path2class(path)
 	  case T_CLASS:
 	    break;
 	  default:
-	    rb_raise(rb_eTypeError, "%s does not refer class/module", path);
+	    rb_raise(rb_eTypeError, "%s does not refer to class/module", path);
 	}
     }
 

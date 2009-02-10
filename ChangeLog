@@ -1156,7 +1156,7 @@ Tue Aug  5 16:43:07 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 Tue Aug  5 16:33:20 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* lib/net/imap.rb (disconnect): do not refer SSL::SSLSocket for
+	* lib/net/imap.rb (disconnect): do not refer to SSL::SSLSocket for
 	  environments without OpenSSL.  backported from trunk.
 	  fixed [ruby-dev:35755].
 
@@ -2907,7 +2907,7 @@ Mon Apr 21 15:54:48 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Apr 21 10:17:17 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* time.c: should include <errno.h> to refer errno.
+	* time.c: should include <errno.h> to refer to errno.
 
 Mon Apr 21 10:02:43 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -4692,8 +4692,8 @@ Tue Oct  2 20:35:24 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Mon Oct  1 12:50:59 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* gc.c (id2ref): valid id should not refer T_VALUE nor T_ICLASS.
-	  [ruby-dev:31911]
+	* gc.c (id2ref): valid id should not refer to T_VALUE nor
+	  T_ICLASS. [ruby-dev:31911]
 
 Wed Sep 26 23:54:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -5369,7 +5369,7 @@ Mon Jun  4 11:11:12 2007  Shugo Maeda  <shugo@ruby-lang.org>
 	  error message. (backported from HEAD)
 
 	* lib/net/imap.rb (ResponseParser#parse_error): fixed
-	  the condition not to refer @token.symbol unexpectedly.
+	  the condition not to refer to @token.symbol unexpectedly.
 	  Thanks, Dick Monahan. (backported from HEAD)
 
 Thu May 31 17:27:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -9014,8 +9014,8 @@ Tue Apr 25 00:08:24 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Apr 21 15:19:13 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/tcltklib.c (lib_eventloop_ensure): refer freed pointer
-	  [ruby-core:07744] and memory leak.
+	* ext/tk/tcltklib.c (lib_eventloop_ensure): avoid dereferencing
+	  freed pointer [ruby-core:07744] and memory leak.
 
 Fri Apr 21 12:14:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -10657,7 +10657,7 @@ Wed Sep 28 23:09:23 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Sep 28 15:14:19 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb (WEBrick::CGI#start): req.query_string should
-	  refer the value of QUERY_STRING. [ruby-list:41186]
+	  refer to the value of QUERY_STRING. [ruby-list:41186]
 
 	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#query_string=):
 	  add new method.
@@ -17010,7 +17010,7 @@ Mon Sep  6 11:00:47 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Sep  6 07:51:42 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (cvar_cbase): singletons should refer outer cvar scope.
+	* eval.c (cvar_cbase): singletons should refer to outer cvar scope.
 	  [ruby-dev:24223]
 
 	* eval.c (rb_load): should preserve previous ruby_wrapper value.
@@ -24933,7 +24933,7 @@ Tue Aug  5 15:47:34 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Aug  5 10:04:42 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* string.c (str_new4): ptr may refer null_str.
+	* string.c (str_new4): ptr may refer to null_str.
 
 Mon Aug  4 17:25:18 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
