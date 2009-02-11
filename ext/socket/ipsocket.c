@@ -243,4 +243,6 @@ Init_ipsocket(void)
     rb_define_method(rb_cIPSocket, "peeraddr", ip_peeraddr, 0);
     rb_define_method(rb_cIPSocket, "recvfrom", ip_recvfrom, -1);
     rb_define_singleton_method(rb_cIPSocket, "getaddress", ip_s_getaddress, 1);
+    rb_undef_method(rb_cIPSocket, "getpeereid");
+
 }
