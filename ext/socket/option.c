@@ -34,6 +34,16 @@ optname_to_sym(int level, int optname)
     }
 }
 
+/*
+ * call-seq:
+ *   Socket::Option.new(family, level, optname, data) => sockopt
+ *
+ * Returns a new Socket::Option object.
+ *
+ *   sockopt = Socket::Option.new(:INET, :SOCKET, :KEEPALIVE, [1].pack("i"))
+ *   p sockopt #=> #<Socket::Option: INET SOCKET KEEPALIVE 1>
+ *
+ */
 static VALUE
 sockopt_initialize(VALUE self, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE data)
 {
@@ -333,6 +343,17 @@ inspect_local_peercred(int level, int optname, VALUE data, VALUE ret)
 }
 #endif
 
+
+/*
+ * call-seq:
+ *   sockopt.inspect => string
+ *
+ * Returns a string which shows sockopt in human-readable form.
+ *
+ *   p Socket::Option.new(:INET, :SOCKET, :KEEPALIVE, [1].pack("i")).inspect
+ *   #=> "#<Socket::Option: INET SOCKET KEEPALIVE 1>"
+ *
+ */
 static VALUE
 sockopt_inspect(VALUE self)
 {
@@ -522,6 +543,16 @@ sockopt_inspect(VALUE self)
     return ret;
 }
 
+/*
+ * call-seq:
+ *   sockopt.unpack(template) => array
+ *
+ * Calls String#unpack on sockopt.data.
+ *
+ *   sockopt = Socket::Option.new(:INET, :SOCKET, :KEEPALIVE, [1].pack("i"))
+ *   p sockopt.unpack("i")      #=> [1]
+ *   p sockopt.data.unpack("i") #=> [1]
+ */
 static VALUE
 sockopt_unpack(VALUE self, VALUE template)
 {
