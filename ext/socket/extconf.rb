@@ -314,6 +314,8 @@ have_type("struct in6_pktinfo", headers) {|src|
 have_type("struct sockcred", headers)
 have_type("struct cmsgcred", headers)
 
+have_func("getpeereid")
+
 $distcleanfiles << "constants.h" << "constdefs.*"
 
 if have_func(test_func)

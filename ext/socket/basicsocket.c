@@ -363,6 +363,42 @@ bsock_getpeername(VALUE sock)
 
 /*
  * call-seq:
+ *   basicsocket.getpeereid => [euid, egid]
+ *
+ * Returns the user and group on the peer of the UNIX socket.
+ * The result is a two element array which contains the effective uid and the effective gid.
+ *
+ *   Socket.unix_server_loop("/tmp/sock") {|s|
+ *     p s.getpeereid #=> [1000, 1000]
+ *   }
+ *
+ */
+static VALUE
+bsock_getpeereid(VALUE self)
+{
+#if defined(HAVE_GETPEEREID)
+    rb_io_t *fptr;
+    uid_t euid;
+    gid_t egid;
+    GetOpenFile(self, fptr);
+    if (getpeereid(fptr->fd, &euid, &egid) == -1)
+	rb_sys_fail("getpeereid");
+    return rb_assoc_new(UIDT2NUM(euid), GIDT2NUM(egid));
+#elif defined(SO_PEERCRED) /* GNU/Linux */
+    rb_io_t *fptr;
+    struct ucred cred;
+    socklen_t len = sizeof(cred);
+    GetOpenFile(self, fptr);
+    if (getsockopt(fptr->fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) == -1)
+	rb_sys_fail("getsockopt(SO_PEERCRED)");
+    return rb_assoc_new(UIDT2NUM(cred.uid), GIDT2NUM(cred.gid));
+#else
+    rb_notimplement();
+#endif
+}
+
+/*
+ * call-seq:
  *   bsock.local_address => addrinfo
  *
  * Returns an Addrinfo object for local address obtained by getsockname.
@@ -646,6 +682,7 @@ Init_basicsocket(void)
     rb_define_method(rb_cBasicSocket, "getsockopt", bsock_getsockopt, 2);
     rb_define_method(rb_cBasicSocket, "getsockname", bsock_getsockname, 0);
     rb_define_method(rb_cBasicSocket, "getpeername", bsock_getpeername, 0);
+    rb_define_method(rb_cBasicSocket, "getpeereid", bsock_getpeereid, 0);
     rb_define_method(rb_cBasicSocket, "local_address", bsock_local_address, 0);
     rb_define_method(rb_cBasicSocket, "remote_address", bsock_remote_address, 0);
     rb_define_method(rb_cBasicSocket, "send", bsock_send, -1);

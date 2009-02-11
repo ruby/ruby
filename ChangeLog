@@ -1,3 +1,9 @@
+Wed Feb 11 10:16:34 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: check getpeereid.
+
+	* ext/socket/basicsocket.c (bsock_getpeereid): new method.
+
 Wed Feb 11 09:58:59 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (Socket::UDPSource#inspect): fix variable

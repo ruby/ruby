@@ -384,4 +384,18 @@ class TestUNIXSocket < Test::Unit::TestCase
     }
   end
 
+  def test_getpeereid
+    Dir.mktmpdir {|d|
+      path = "#{d}/sock"
+      serv = Socket.unix_server_socket(path)
+      c = Socket.unix(path)
+      s, = serv.accept
+      begin
+        assert_equal([Process.euid, Process.egid], c.getpeereid)
+        assert_equal([Process.euid, Process.egid], s.getpeereid)
+      rescue NotImplementedError
+      end
+    }
+  end
+
 end if defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM
