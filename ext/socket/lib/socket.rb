@@ -645,10 +645,9 @@ class Socket
   #   }
   #
   def self.unix_server_loop(path, &b) # :yield: socket, client_addrinfo
-    serv = unix_server_socket(path)
-    accept_loop(serv, &b)
-  ensure
-    serv.close if serv && !serv.closed?
+    unix_server_socket(path) {|serv|
+      accept_loop(serv, &b)
+    }
   end
 
 end

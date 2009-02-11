@@ -1,3 +1,8 @@
+Wed Feb 11 17:01:52 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (Socket.unix_server_loop): use
+	  unix_server_socket with a block.
+
 Wed Feb 11 16:54:26 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (Socket.unix_server_socket): close the
