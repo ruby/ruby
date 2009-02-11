@@ -1,3 +1,11 @@
+Wed Feb 11 18:09:41 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* gc.c (define_final, undefine_final): shouldn't add/remove finalizer
+	  of forzen objects.
+
+	* gc.c (undefine_final): should remove FL_FINALIZE flag.
+	  [ruby-dev:37964] (also see [ruby-dev:37959])
+
 Wed Feb 11 17:37:41 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (Socket.udp_server_sockets): call the block
