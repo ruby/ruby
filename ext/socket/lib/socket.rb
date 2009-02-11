@@ -279,7 +279,7 @@ class Socket
   # creates TCP server sockets for _host_ and _port_.
   # _host_ is optional.
   #
-  # If a block is not given,
+  # If no block given,
   # it returns an array of listening sockets.
   #
   # If a block is given, the block is called with the sockets.
@@ -421,16 +421,22 @@ class Socket
   #   Socket.udp_server_sockets([host, ] port)
   #
   # Creates UDP sockets for a UDP server.
-  # It returns an array of sockets.
+  #
+  # If no block given, it returns an array of sockets.
+  #
+  # If a block is given, the block is called with the sockets.
+  # The value of the block is returned.
+  # The sockets are closed when this method returns.
   #
   # If _port_ is zero, some port is choosen.
   # But the choosen port is used for the all sockets.
   #
   #   # UDP echo server
-  #   sockets = Socket.udp_server_sockets(0)
-  #   p sockets.first.local_address.ip_port     #=> 32963
-  #   Socket.udp_server_loop_on(sockets) {|msg, msg_src|
-  #     msg_src.reply msg
+  #   Socket.udp_server_sockets(0) {|sockets|
+  #     p sockets.first.local_address.ip_port     #=> 32963
+  #     Socket.udp_server_loop_on(sockets) {|msg, msg_src|
+  #       msg_src.reply msg
+  #     }
   #   }
   #
   def self.udp_server_sockets(host=nil, port)
@@ -612,7 +618,7 @@ class Socket
 
   # creates UNIX server sockets on _path_
   #
-  # If a block is not given, it returns a listening socket.
+  # If no block given, it returns a listening socket.
   #
   # If a block is given, it is called with the socket and the block value is returned.
   # When the block exits, the socket is closed and the socket file is removed.
