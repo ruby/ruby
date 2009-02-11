@@ -103,6 +103,7 @@
 #   using the #benchmark method:
 #
 #       require 'benchmark'
+#       include Benchmark         # we need the CAPTION and FMTSTR constants 
 #
 #       n = 50000
 #       Benchmark.benchmark(" "*7 + CAPTION, 7, FMTSTR, ">total:", ">avg:") do |x|
