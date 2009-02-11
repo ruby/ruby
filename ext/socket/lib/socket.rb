@@ -595,9 +595,17 @@ class Socket
   #
   # It returns a listening socket.
   #
+  # If a block is given, it is called with the socket and the block value is returned.
+  # When the block exits, the socket is closed and the socket file is removed.
+  #
   #   socket = Socket.unix_server_socket("/tmp/s")
-  #   p socket               #=> #<Socket:fd 3>
-  #   p socket.local_address #=> #<Addrinfo: /tmp/s SOCK_STREAM>
+  #   p socket                  #=> #<Socket:fd 3>
+  #   p socket.local_address    #=> #<Addrinfo: /tmp/s SOCK_STREAM>
+  #
+  #   Socket.unix_server_socket("/tmp/sock") {|s|
+  #     p s                     #=> #<Socket:fd 3>
+  #     p s.local_address       #=> # #<Addrinfo: /tmp/sock SOCK_STREAM>
+  #   }
   #
   def self.unix_server_socket(path)
     begin
