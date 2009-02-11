@@ -494,10 +494,10 @@ anc_inspect_socket_rights(int level, int type, VALUE data, VALUE ret)
             memcpy((char*)&fd, RSTRING_PTR(data)+off, sizeof(int));
             rb_str_catf(ret, " %d", fd);
         }
-        return 0;
+        return 1;
     }
     else {
-        return -1;
+        return 0;
     }
 }
 #endif
@@ -512,10 +512,10 @@ anc_inspect_passcred_credentials(int level, int type, VALUE data, VALUE ret)
         memcpy(&cred, RSTRING_PTR(data), sizeof(struct ucred));
         rb_str_catf(ret, " pid=%u uid=%u gid=%u", cred.pid, cred.uid, cred.gid);
 	rb_str_cat2(ret, " (ucred)");
-        return 0;
+        return 1;
     }
     else {
-        return -1;
+        return 0;
     }
 }
 #endif
@@ -526,7 +526,7 @@ static int
 anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
 {
     if (level != SOL_SOCKET && type != SCM_CREDS)
-	return -1;
+	return 0;
 
     /*
      * FreeBSD has struct cmsgcred and struct sockcred.
@@ -556,7 +556,7 @@ anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
 	    }
 	}
 	rb_str_cat2(ret, " (cmsgcred)");
-        return 0;
+        return 1;
     }
 #endif
 #if defined(HAVE_TYPE_STRUCT_SOCKCRED) /* FreeBSD, NetBSD */
@@ -579,11 +579,11 @@ anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
 		}
 	    }
 	    rb_str_cat2(ret, " (sockcred)");
-	    return 0;
+	    return 1;
 	}
     }
 #endif
-    return -1;
+    return 0;
 }
 #endif
 
@@ -600,10 +600,10 @@ anc_inspect_ip_recvdstaddr(int level, int type, VALUE data, VALUE ret)
             rb_str_cat2(ret, " invalid-address");
         else
             rb_str_catf(ret, " %s", addrbuf);
-        return 0;
+        return 1;
     }
     else {
-        return -1;
+        return 0;
     }
 }
 #endif
@@ -629,10 +629,10 @@ anc_inspect_ip_pktinfo(int level, int type, VALUE data, VALUE ret)
             rb_str_cat2(ret, " spec_dst:invalid-address");
         else
             rb_str_catf(ret, " spec_dst:%s", buf);
-        return 0;
+        return 1;
     }
     else {
-        return -1;
+        return 0;
     }
 }
 #endif
@@ -657,10 +657,10 @@ anc_inspect_ipv6_pktinfo(int level, int type, VALUE data, VALUE ret)
             rb_str_catf(ret, " ifindex:%d", ifindex);
         else
             rb_str_catf(ret, " %s", ifbuf);
-        return 0;
+        return 1;
     }
     else {
-        return -1;
+        return 0;
     }
 }
 #endif
@@ -680,79 +680,108 @@ ancillary_inspect(VALUE self)
     VALUE ret;
     int family, level, type;
     VALUE data;
-    ID family_id, level_id;
+    ID family_id, level_id, type_id;
     VALUE vtype;
+    int inspected;
 
     family = ancillary_family(self);
     level = ancillary_level(self);
     type = ancillary_type(self);
     data = ancillary_data(self);
 
-    ret = rb_sprintf("#<%s: ", rb_obj_classname(self));
+    ret = rb_sprintf("#<%s:", rb_obj_classname(self));
 
     family_id = intern_family_noprefix(family);
     if (family_id)
-        rb_str_cat2(ret, rb_id2name(family_id));
+        rb_str_catf(ret, " %s", rb_id2name(family_id));
     else
-        rb_str_catf(ret, "family:%d", family);
+        rb_str_catf(ret, " family:%d", family);
 
-    level_id = intern_iplevel(level);
-    if (level_id)
-        rb_str_catf(ret, " %s", rb_id2name(level_id));
-    else
+    if (level == SOL_SOCKET) {
+        rb_str_cat2(ret, " SOCKET");
+
+        type_id = intern_scm_optname(type);
+        if (type_id)
+            rb_str_catf(ret, " %s", rb_id2name(type_id));
+        else
+            rb_str_catf(ret, " cmsg_type:%d", type);
+    }
+    else if (IS_IP_FAMILY(family)) {
+        level_id = intern_iplevel(level);
+        if (level_id)
+            rb_str_catf(ret, " %s", rb_id2name(level_id));
+        else
+            rb_str_catf(ret, " cmsg_level:%d", level);
+
+        vtype = ip_cmsg_type_to_sym(level, type);
+        if (SYMBOL_P(vtype))
+            rb_str_catf(ret, " %s", rb_id2name(SYM2ID(vtype)));
+        else
+            rb_str_catf(ret, " cmsg_type:%d", type);
+    }
+    else {
         rb_str_catf(ret, " cmsg_level:%d", level);
-
-    vtype = ip_cmsg_type_to_sym(level, type);
-    if (SYMBOL_P(vtype))
-        rb_str_catf(ret, " %s", rb_id2name(SYM2ID(vtype)));
-    else
         rb_str_catf(ret, " cmsg_type:%d", type);
+    }
 
-    switch (level) {
-#    if defined(SOL_SOCKET)
-      case SOL_SOCKET:
-        switch (type) {
-#        if defined(SCM_RIGHTS) /* 4.4BSD */
-          case SCM_RIGHTS: if (anc_inspect_socket_rights(level, type, data, ret) == -1) goto dump; break;
+    inspected = 0;
+
+    if (level == SOL_SOCKET)
+        family = AF_UNSPEC;
+
+    switch (family) {
+      case AF_UNSPEC:
+        switch (level) {
+#        if defined(SOL_SOCKET)
+          case SOL_SOCKET:
+            switch (type) {
+#            if defined(SCM_RIGHTS) /* 4.4BSD */
+              case SCM_RIGHTS: inspected = anc_inspect_socket_rights(level, type, data, ret); break;
+#            endif
+#            if defined(SCM_CREDENTIALS) /* GNU/Linux */
+              case SCM_CREDENTIALS: inspected = anc_inspect_passcred_credentials(level, type, data, ret); break;
+#            endif
+#            if defined(INSPECT_SCM_CREDS) /* NetBSD */
+              case SCM_CREDS: inspected = anc_inspect_socket_creds(level, type, data, ret); break;
+#            endif
+            }
+            break;
 #        endif
-#        if defined(SCM_CREDENTIALS) /* GNU/Linux */
-          case SCM_CREDENTIALS: if (anc_inspect_passcred_credentials(level, type, data, ret) == -1) goto dump; break;
-#        endif
-#        if defined(INSPECT_SCM_CREDS) /* NetBSD */
-          case SCM_CREDS: if (anc_inspect_socket_creds(level, type, data, ret) == -1) goto dump; break;
-#        endif
-          default: goto dump;
         }
         break;
-#    endif
+       
+      case AF_INET:
+#ifdef INET6
+      case AF_INET6:
+#endif
+        switch (level) {
+#        if defined(IPPROTO_IP)
+          case IPPROTO_IP:
+            switch (type) {
+#            if defined(IP_RECVDSTADDR) /* 4.4BSD */
+              case IP_RECVDSTADDR: inspected = anc_inspect_ip_recvdstaddr(level, type, data, ret); break;
+#            endif
+#            if defined(IP_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN_PKTINFO) /* GNU/Linux */
+              case IP_PKTINFO: inspected = anc_inspect_ip_pktinfo(level, type, data, ret); break;
+#            endif
+            }
+            break;
+#        endif
 
-#    if defined(IPPROTO_IP)
-      case IPPROTO_IP:
-        switch (type) {
-#        if defined(IP_RECVDSTADDR) /* 4.4BSD */
-          case IP_RECVDSTADDR: if (anc_inspect_ip_recvdstaddr(level, type, data, ret) == -1) goto dump; break;
+#        if defined(IPPROTO_IPV6)
+          case IPPROTO_IPV6:
+            switch (type) {
+#            if defined(IPV6_PKTINFO) /* RFC 3542 */
+              case IPV6_PKTINFO: inspected = anc_inspect_ipv6_pktinfo(level, type, data, ret); break;
+#            endif
+            }
+            break;
 #        endif
-#        if defined(IP_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN_PKTINFO) /* GNU/Linux */
-          case IP_PKTINFO: if (anc_inspect_ip_pktinfo(level, type, data, ret) == -1) goto dump; break;
-#        endif
-          default: goto dump;
         }
         break;
-#    endif
+    }
 
-#    if defined(IPPROTO_IPV6)
-      case IPPROTO_IPV6:
-        switch (type) {
-#        if defined(IPV6_PKTINFO) /* RFC 3542 */
-          case IPV6_PKTINFO: if (anc_inspect_ipv6_pktinfo(level, type, data, ret) == -1) goto dump; break;
-#        endif
-          default: goto dump;
-        }
-        break;
-#    endif
-
-      default:
-      dump:
+    if (!inspected) {
         data = rb_str_dump(data);
         rb_str_catf(ret, " %s", StringValueCStr(data));
     }

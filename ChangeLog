@@ -1,3 +1,16 @@
+Wed Feb 11 14:08:23 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (anc_inspect_socket_rights): return 1 on
+	  success.  0 on failure.
+	  (anc_inspect_passcred_credentials): ditto.
+	  (anc_inspect_socket_creds): ditto.
+	  (anc_inspect_socket_creds): ditto.
+	  (anc_inspect_socket_creds): ditto.
+	  (anc_inspect_ip_recvdstaddr): ditto.
+	  (anc_inspect_ip_pktinfo): ditto.
+	  (anc_inspect_ipv6_pktinfo): ditto.
+	  (ancillary_inspect): check family.
+
 Wed Feb 11 12:55:07 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (anc_inspect_ip_pktinfo): make result bit
