@@ -229,34 +229,38 @@ class TestSocket < Test::Unit::TestCase
     begin
       ip_addrs = Socket.ip_address_list
     rescue NotImplementedError
+      return
     end
 
-    sockets = Socket.udp_server_sockets(0)
-    port = sockets.first.local_address.ip_port
+    Socket.udp_server_sockets(0) {|sockets|
+      begin
+        port = sockets.first.local_address.ip_port
 
-    th = Thread.new {
-      Socket.udp_server_loop_on(sockets) {|msg, msg_src|
-        break if msg == "exit"
-        rmsg = Marshal.dump([msg, msg_src.remote_address, msg_src.local_address])
-        msg_src.reply rmsg
-      }
-    }
+        th = Thread.new {
+          Socket.udp_server_loop_on(sockets) {|msg, msg_src|
+            break if msg == "exit"
+            rmsg = Marshal.dump([msg, msg_src.remote_address, msg_src.local_address])
+            msg_src.reply rmsg
+          }
+        }
 
-    ip_addrs.each {|ai|
-      Addrinfo.udp(ai.ip_address, port).connect {|s|
-        msg1 = "<<<#{ai.inspect}>>>"
-        s.sendmsg msg1
-        msg2, addr = s.recvmsg
-        msg2, remote_address, local_address = Marshal.load(msg2)
-        assert_equal(msg1, msg2)
-        assert_equal(ai.ip_address, addr.ip_address)
-      }
+        ip_addrs.each {|ai|
+          Addrinfo.udp(ai.ip_address, port).connect {|s|
+            msg1 = "<<<#{ai.inspect}>>>"
+            s.sendmsg msg1
+            msg2, addr = s.recvmsg
+            msg2, remote_address, local_address = Marshal.load(msg2)
+            assert_equal(msg1, msg2)
+            assert_equal(ai.ip_address, addr.ip_address)
+          }
+        }
+      ensure
+        if th
+          Addrinfo.udp("127.0.0.1", port).connect {|s| s.sendmsg "exit" }
+          th.join
+        end
+      end
     }
-  ensure
-    if th
-      Addrinfo.udp("127.0.0.1", port).connect {|s| s.sendmsg "exit" }
-      th.join
-    end
   end
 
 end if defined?(Socket)
