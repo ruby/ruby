@@ -296,6 +296,17 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     }
   end
 
+  def test_unix_server_socket
+    Dir.mktmpdir {|d|
+      path = "#{d}/sock"
+      Socket.unix_server_socket(path) {|s|
+        assert_equal(path, s.local_address.unix_path)
+        assert(File.socket?(path))
+      }
+      assert_raise(Errno::ENOENT) { File.stat path }
+    }
+  end
+
   def test_getcred_ucred
     return if /linux/ !~ RUBY_PLATFORM
     Dir.mktmpdir {|d|

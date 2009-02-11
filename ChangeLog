@@ -1,3 +1,8 @@
+Wed Feb 11 16:50:59 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (Socket.unix_server_socket): call the block
+	  if given.  remove the socket file when the block exits.
+
 Wed Feb 11 16:44:20 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (ancillary_s_ip_pktinfo): make 3rd argument

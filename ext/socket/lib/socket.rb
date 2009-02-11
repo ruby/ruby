@@ -607,7 +607,16 @@ class Socket
     if st && st.socket? && st.owned?
       File.unlink path
     end
-    Addrinfo.unix(path).listen
+    s = Addrinfo.unix(path).listen
+    if block_given?
+      begin
+        yield s
+      ensure
+        File.unlink path
+      end
+    else
+      s
+    end
   end
 
   # creates a UNIX socket server on _path_.
