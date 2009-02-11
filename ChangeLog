@@ -1,3 +1,8 @@
+Wed Feb 11 16:54:26 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (Socket.unix_server_socket): close the
+	  socket when the block exits.
+
 Wed Feb 11 16:50:59 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (Socket.unix_server_socket): call the block

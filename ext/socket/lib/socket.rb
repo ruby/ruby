@@ -612,6 +612,7 @@ class Socket
       begin
         yield s
       ensure
+        s.close if !s.closed?
         File.unlink path
       end
     else
