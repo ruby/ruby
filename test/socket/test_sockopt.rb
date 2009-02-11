@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'socket'
 
-class TestSockOpt < Test::Unit::TestCase
+class TestSocketOption < Test::Unit::TestCase
   def test_bool
     opt = Socket::Option.bool(:INET, :SOCKET, :KEEPALIVE, true)
     assert_equal(1, opt.int)

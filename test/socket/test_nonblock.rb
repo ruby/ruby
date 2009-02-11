@@ -7,7 +7,7 @@ require "test/unit"
 require "tempfile"
 require "timeout"
 
-class TestNonblockSocket < Test::Unit::TestCase
+class TestSocketNonblock < Test::Unit::TestCase
   def test_accept_nonblock
     serv = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
     serv.bind(Socket.sockaddr_in(0, "127.0.0.1"))

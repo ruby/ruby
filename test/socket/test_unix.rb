@@ -7,7 +7,7 @@ require "test/unit"
 require "tempfile"
 require "tmpdir"
 
-class TestUNIXSocket < Test::Unit::TestCase
+class TestSocket_UNIXSocket < Test::Unit::TestCase
   def test_fd_passing
     r1, w = IO.pipe
     s1, s2 = UNIXSocket.pair

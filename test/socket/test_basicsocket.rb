@@ -4,7 +4,7 @@ begin
 rescue LoadError
 end
 
-class TestBasicSocket < Test::Unit::TestCase
+class TestSocket_BasicSocket < Test::Unit::TestCase
   def inet_stream
     sock = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
     yield sock

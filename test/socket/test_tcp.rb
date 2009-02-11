@@ -5,7 +5,7 @@ rescue LoadError
 end
 
 
-class TestTCPSocket < Test::Unit::TestCase
+class TestSocket_TCPSocket < Test::Unit::TestCase
   def test_recvfrom
     svr = TCPServer.new("localhost", 0)
     th = Thread.new {
