@@ -493,7 +493,15 @@ class Socket
       end
     }
 
-    sockets
+    if block_given?
+      begin
+        yield sockets
+      ensure
+        sockets.each {|s| s.close if !s.closed? } if sockets
+      end
+    else
+      sockets
+    end
   end
 
   # :call-seq:
@@ -550,10 +558,9 @@ class Socket
   #   }
   #
   def self.udp_server_loop(host=nil, port, &b) # :yield: message, message_source
-    sockets = udp_server_sockets(host, port)
-    udp_server_loop_on(sockets, &b)
-  ensure
-    sockets.each {|s| s.close if !s.closed? } if sockets
+    udp_server_sockets(host, port) {|sockets|
+      udp_server_loop_on(sockets, &b)
+    }
   end
 
   # UDP address information used by Socket.udp_server_loop.
