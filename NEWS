@@ -114,6 +114,7 @@ with all sufficient information, see the ChangeLog file.
     * BasicSocket#sendmsg_nonblock
     * BasicSocket#recvmsg
     * BasicSocket#recvmsg_nonblock
+    * BasicSocket#getpeereid
 
   * extended methods:
     * Socket.new's 3rd argument is optional now.
