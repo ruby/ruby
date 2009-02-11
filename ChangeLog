@@ -1,3 +1,9 @@
+Wed Feb 11 12:55:07 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (anc_inspect_ip_pktinfo): make result bit
+	  succinct.
+	  (Init_ancdata): fix number of arguments.
+
 Wed Feb 11 11:47:41 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ipsocket.c (Init_ipsocket): undef getpeereid at IPSocket.

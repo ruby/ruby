@@ -219,6 +219,23 @@ ancillary_int(VALUE self)
     return INT2NUM(i);
 }
 
+/*
+ * call-seq:
+ *   Socket::AncillaryData.ip_pktinfo(addr, ifindex, spec_dst) => ancdata
+ *
+ * Returns new ancillary data for IP_PKTINFO.
+ *
+ * IP_PKTINFO is not standard.
+ *
+ * Supported platform: GNU/Linux
+ *
+ *   addr = Addrinfo.ip("127.0.0.1")
+ *   ifindex = 0
+ *   spec_dst = Addrinfo.ip("127.0.0.1")
+ *   p Socket::AncillaryData.ip_pktinfo(addr, ifindex, spec_dst)
+ *   #=> #<Socket::AncillaryData: INET IP PKTINFO 127.0.0.1 ifindex:0 spec_dst:127.0.0.1>
+ *
+ */
 static VALUE
 ancillary_s_ip_pktinfo(VALUE self, VALUE v_addr, VALUE v_ifindex, VALUE v_spec_dst)
 {
@@ -257,6 +274,25 @@ ancillary_s_ip_pktinfo(VALUE self, VALUE v_addr, VALUE v_ifindex, VALUE v_spec_d
 #endif
 }
 
+/*
+ * call-seq:
+ *   ancdata.ip_pktinfo => [addr, ifindex, spec_dst]
+ *
+ * Extracts addr, ifindex and spec_dst from IP_PKTINFO ancillary data.
+ *
+ * IP_PKTINFO is not standard.
+ *
+ * Supported platform: GNU/Linux
+ *
+ *   addr = Addrinfo.ip("127.0.0.1")
+ *   ifindex = 0
+ *   spec_dest = Addrinfo.ip("127.0.0.1")
+ *   ancdata = Socket::AncillaryData.ip_pktinfo(addr, ifindex, spec_dest)
+ *   p ancdata.ip_pktinfo
+ *   #=> [#<Addrinfo: 127.0.0.1>, 0, #<Addrinfo: 127.0.0.1>]
+ *
+ *
+ */
 static VALUE
 ancillary_ip_pktinfo(VALUE self)
 {
@@ -293,6 +329,20 @@ ancillary_ip_pktinfo(VALUE self)
 #endif
 }
 
+/*
+ * call-seq:
+ *   Socket::AncillaryData.ipv6_pktinfo(addr, ifindex) => ancdata
+ *
+ * Returns new ancillary data for IPV6_PKTINFO.
+ *
+ * IPV6_PKTINFO is defined by RFC 3542.
+ *
+ *   addr = Addrinfo.ip("::1")
+ *   ifindex = 0
+ *   p Socket::AncillaryData.ipv6_pktinfo(addr, ifindex)
+ *   #=> #<Socket::AncillaryData: INET6 IPV6 PKTINFO ::1 ifindex:0>
+ *
+ */
 static VALUE
 ancillary_s_ipv6_pktinfo(VALUE self, VALUE v_addr, VALUE v_ifindex)
 {
@@ -348,6 +398,20 @@ extract_ipv6_pktinfo(VALUE self, struct in6_pktinfo *pktinfo_ptr, struct sockadd
 }
 #endif
 
+/*
+ * call-seq:
+ *   ancdata.ipv6_pktinfo => [addr, ifindex]
+ *
+ * Extracts addr and ifindex from IPV6_PKTINFO ancillary data.
+ *
+ * IPV6_PKTINFO is defined by RFC 3542.
+ *
+ *   addr = Addrinfo.ip("::1")      
+ *   ifindex = 0
+ *   ancdata = Socket::AncillaryData.ipv6_pktinfo(addr, ifindex)
+ *   p ancdata.ipv6_pktinfo #=> [#<Addrinfo: ::1>, 0]
+ *
+ */
 static VALUE
 ancillary_ipv6_pktinfo(VALUE self)
 {
@@ -364,6 +428,20 @@ ancillary_ipv6_pktinfo(VALUE self)
 #endif
 }
 
+/*
+ * call-seq:
+ *   ancdata.ipv6_pktinfo_addr => addr
+ *
+ * Extracts addr from IPV6_PKTINFO ancillary data.
+ *
+ * IPV6_PKTINFO is defined by RFC 3542.
+ *
+ *   addr = Addrinfo.ip("::1")
+ *   ifindex = 0
+ *   ancdata = Socket::AncillaryData.ipv6_pktinfo(addr, ifindex)
+ *   p ancdata.ipv6_pktinfo_addr #=> #<Addrinfo: ::1>
+ *
+ */
 static VALUE
 ancillary_ipv6_pktinfo_addr(VALUE self)
 {
@@ -377,6 +455,20 @@ ancillary_ipv6_pktinfo_addr(VALUE self)
 #endif
 }
 
+/*
+ * call-seq:
+ *   ancdata.ipv6_pktinfo_ifindex => addr
+ *
+ * Extracts ifindex from IPV6_PKTINFO ancillary data.
+ *
+ * IPV6_PKTINFO is defined by RFC 3542.
+ *
+ *   addr = Addrinfo.ip("::1")
+ *   ifindex = 0
+ *   ancdata = Socket::AncillaryData.ipv6_pktinfo(addr, ifindex)
+ *   p ancdata.ipv6_pktinfo_ifindex #=> 0
+ *
+ */
 static VALUE
 ancillary_ipv6_pktinfo_ifindex(VALUE self)
 {
@@ -526,9 +618,9 @@ anc_inspect_ip_pktinfo(int level, int type, VALUE data, VALUE ret)
         char buf[INET_ADDRSTRLEN > IFNAMSIZ ? INET_ADDRSTRLEN : IFNAMSIZ];
         memcpy(&pktinfo, RSTRING_PTR(data), sizeof(pktinfo));
         if (inet_ntop(AF_INET, &pktinfo.ipi_addr, buf, sizeof(buf)) == NULL)
-            rb_str_cat2(ret, " addr:invalid-address");
+            rb_str_cat2(ret, " invalid-address");
         else
-            rb_str_catf(ret, " addr:%s", buf);
+            rb_str_catf(ret, " %s", buf);
         if (if_indextoname(pktinfo.ipi_ifindex, buf) == NULL)
             rb_str_catf(ret, " ifindex:%d", pktinfo.ipi_ifindex);
         else
@@ -1201,9 +1293,9 @@ Init_ancdata(void)
     rb_define_method(rb_cAncillaryData, "cmsg_is?", ancillary_cmsg_is_p, 2);
     rb_define_singleton_method(rb_cAncillaryData, "int", ancillary_s_int, 4);
     rb_define_method(rb_cAncillaryData, "int", ancillary_int, 0);
-    rb_define_singleton_method(rb_cAncillaryData, "ip_pktinfo", ancillary_s_ip_pktinfo, 4);
+    rb_define_singleton_method(rb_cAncillaryData, "ip_pktinfo", ancillary_s_ip_pktinfo, 3);
     rb_define_method(rb_cAncillaryData, "ip_pktinfo", ancillary_ip_pktinfo, 0);
-    rb_define_singleton_method(rb_cAncillaryData, "ipv6_pktinfo", ancillary_s_ipv6_pktinfo, 3);
+    rb_define_singleton_method(rb_cAncillaryData, "ipv6_pktinfo", ancillary_s_ipv6_pktinfo, 2);
     rb_define_method(rb_cAncillaryData, "ipv6_pktinfo", ancillary_ipv6_pktinfo, 0);
     rb_define_method(rb_cAncillaryData, "ipv6_pktinfo_addr", ancillary_ipv6_pktinfo_addr, 0);
     rb_define_method(rb_cAncillaryData, "ipv6_pktinfo_ifindex", ancillary_ipv6_pktinfo_ifindex, 0);
