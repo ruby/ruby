@@ -554,7 +554,7 @@ class Socket
     attr_reader :remote_address, :local_address
 
     def inspect
-      "\#<#{self.class}: #{@sender.inspect_sockaddr} to #{@receiver.inspect_sockaddr}>"
+      "\#<#{self.class}: #{@remote_address.inspect_sockaddr} to #{@local_address.inspect_sockaddr}>"
     end
 
     def reply(msg)
