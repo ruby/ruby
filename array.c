@@ -211,14 +211,16 @@ rb_ary_unshare(VALUE ary)
 }
 
 static inline void
-rb_ary_unshare_safe(VALUE ary) {
+rb_ary_unshare_safe(VALUE ary)
+{
     if (ARY_SHARED_P(ary) && !ARY_EMBED_P(ary)) {
 	rb_ary_unshare(ary);
     }
 }
 
 static VALUE
-rb_ary_increment_share(VALUE shared) {
+rb_ary_increment_share(VALUE shared)
+{
     int num = ARY_SHARED_NUM(shared);
     if (num >= 0) {
 	ARY_SET_SHARED_NUM(shared, num + 1);
@@ -389,6 +391,15 @@ ary_make_shared(VALUE ary)
     assert(!ARY_EMBED_P(ary));
     if (ARY_SHARED_P(ary)) {
 	return ARY_SHARED(ary);
+    }
+    else if (ARY_SHARED_ROOT_P(ary)) {
+	return ary;
+    }
+    else if (OBJ_FROZEN(ary)) {
+	ary_resize_capa(ary, ARY_HEAP_LEN(ary));
+	FL_SET_SHARED_ROOT(ary);
+	ARY_SET_SHARED_NUM(ary, 0);
+	return ary;
     }
     else {
 	NEWOBJ(shared, struct RArray);
@@ -2389,7 +2400,8 @@ rb_ary_replace(VALUE copy, VALUE orig)
         VALUE shared = ary_make_shared(orig);
         if (ARY_OWNS_HEAP_P(copy)) {
             xfree(RARRAY_PTR(copy));
-        } else {
+        }
+        else {
             rb_ary_unshare_safe(copy);
         }
         FL_UNSET_EMBED(copy);
