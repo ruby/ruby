@@ -10,6 +10,13 @@ Tue Feb 10 19:13:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (search_required): ditto.
 
+Wed Feb 11 23:36:20 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (VpMidRound): Round method bug
+	  pointed by Ryan Platte fixed(Patch to the patch from "NATORI
+	  Shin").  [ruby-talk:273360]
+	  back ported from 1.9. fix [ruby-core:19791]
+
 Mon Feb  9 17:34:55 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_accept): secure fd before accept because if
