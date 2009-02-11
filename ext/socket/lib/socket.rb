@@ -279,7 +279,12 @@ class Socket
   # creates TCP server sockets for _host_ and _port_.
   # _host_ is optional.
   #
-  # It returns an array of listening sockets.
+  # If a block is not given,
+  # it returns an array of listening sockets.
+  #
+  # If a block is given, the block is called with the sockets.
+  # The value of the block is returned.
+  # The socket is closed when this method returns.
   #
   # If _port_ is 0, actual port number is choosen dynamically.
   # However all sockets in the result has same port number.
@@ -299,30 +304,42 @@ class Socket
   #   #=> #<Addrinfo: [::]:53114 TCP>
   #   #   #<Addrinfo: 0.0.0.0:53114 TCP>
   #
+  #   # The block is called with the sockets.
+  #   Socket.tcp_server_sockets(0) {|sockets|
+  #     p sockets #=> [#<Socket:fd 3>, #<Socket:fd 4>]
+  #   }
+  #
   def self.tcp_server_sockets(host=nil, port)
-    return tcp_server_sockets_port0(host) if port == 0
-    begin
-      last_error = nil
-      sockets = []
-      Addrinfo.foreach(host, port, nil, :STREAM, nil, Socket::AI_PASSIVE) {|ai|
-        begin
-          s = ai.listen
-        rescue SystemCallError
-          last_error = $!
-          next
-        end
-        sockets << s
-      }
-      if sockets.empty?
-        raise last_error
-      end
-      sockets
-    ensure
-      if $!
-        sockets.each {|s|
-          s.close if !s.closed?
+    if port == 0
+      sockets = tcp_server_sockets_port0(host)
+    else
+      begin
+        last_error = nil
+        sockets = []
+        Addrinfo.foreach(host, port, nil, :STREAM, nil, Socket::AI_PASSIVE) {|ai|
+          begin
+            s = ai.listen
+          rescue SystemCallError
+            last_error = $!
+            next
+          end
+          sockets << s
         }
+        if sockets.empty?
+          raise last_error
+        end
+      ensure
+        sockets.each {|s| s.close if !s.closed? } if $!
       end
+    end
+    if block_given?
+      begin
+        yield sockets
+      ensure
+        sockets.each {|s| s.close if !s.closed? }
+      end
+    else
+      sockets
     end
   end
 
@@ -395,14 +412,9 @@ class Socket
   #   }
   #
   def self.tcp_server_loop(host=nil, port, &b) # :yield: socket, client_addrinfo
-    sockets = tcp_server_sockets(host, port)
-    accept_loop(sockets, &b)
-  ensure
-    if sockets
-      sockets.each {|s|
-        s.close if !s.closed?
-      }
-    end
+    tcp_server_sockets(host, port) {|sockets|
+      accept_loop(sockets, &b)
+    }
   end
 
   # :call-seq:
@@ -593,7 +605,7 @@ class Socket
 
   # creates UNIX server sockets on _path_
   #
-  # It returns a listening socket.
+  # If a block is not given, it returns a listening socket.
   #
   # If a block is given, it is called with the socket and the block value is returned.
   # When the block exits, the socket is closed and the socket file is removed.

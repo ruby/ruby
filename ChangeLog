@@ -1,3 +1,9 @@
+Wed Feb 11 17:34:16 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (Socket.tcp_server_sockets): call the block
+	  if given.  close the sockets when the block exits.
+	  (Socket.tcp_server_loop): use tcp_server_sockets in block form.
+
 Wed Feb 11 17:01:52 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (Socket.unix_server_loop): use
