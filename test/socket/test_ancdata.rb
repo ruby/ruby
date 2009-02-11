@@ -29,6 +29,8 @@ class TestSocketAncData < Test::Unit::TestCase
     if defined? Socket::IPV6_PKTINFO
       assert(!ancdata.cmsg_is?(:IPV6, :PKTINFO))
     end
+    ancdata2 = Socket::AncillaryData.ip_pktinfo(addr, ifindex)
+    assert_equal(addr.ip_address, ancdata2.ip_pktinfo[2].ip_address)
   end
 
   def test_ipv6_pktinfo

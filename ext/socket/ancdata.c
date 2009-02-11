@@ -221,9 +221,12 @@ ancillary_int(VALUE self)
 
 /*
  * call-seq:
+ *   Socket::AncillaryData.ip_pktinfo(addr, ifindex) => ancdata
  *   Socket::AncillaryData.ip_pktinfo(addr, ifindex, spec_dst) => ancdata
  *
  * Returns new ancillary data for IP_PKTINFO.
+ *
+ * If spec_dst is not given, addr is used.
  *
  * IP_PKTINFO is not standard.
  *
@@ -237,16 +240,22 @@ ancillary_int(VALUE self)
  *
  */
 static VALUE
-ancillary_s_ip_pktinfo(VALUE self, VALUE v_addr, VALUE v_ifindex, VALUE v_spec_dst)
+ancillary_s_ip_pktinfo(int argc, VALUE *argv, VALUE self)
 {
 #if defined(IPPROTO_IP) && defined(IP_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN_PKTINFO) /* GNU/Linux */
+    VALUE v_addr, v_ifindex, v_spec_dst;
     unsigned int ifindex;
     struct sockaddr_in sa;
     struct in_pktinfo pktinfo;
 
+    rb_scan_args(argc, argv, "21", &v_addr, &v_ifindex, &v_spec_dst);
+
     SockAddrStringValue(v_addr);
     ifindex = NUM2UINT(v_ifindex);
-    SockAddrStringValue(v_spec_dst);
+    if (NIL_P(v_spec_dst))
+        v_spec_dst = v_addr;
+    else
+        SockAddrStringValue(v_spec_dst);
 
     memset(&pktinfo, 0, sizeof(pktinfo));
 
@@ -1322,7 +1331,7 @@ Init_ancdata(void)
     rb_define_method(rb_cAncillaryData, "cmsg_is?", ancillary_cmsg_is_p, 2);
     rb_define_singleton_method(rb_cAncillaryData, "int", ancillary_s_int, 4);
     rb_define_method(rb_cAncillaryData, "int", ancillary_int, 0);
-    rb_define_singleton_method(rb_cAncillaryData, "ip_pktinfo", ancillary_s_ip_pktinfo, 3);
+    rb_define_singleton_method(rb_cAncillaryData, "ip_pktinfo", ancillary_s_ip_pktinfo, -1);
     rb_define_method(rb_cAncillaryData, "ip_pktinfo", ancillary_ip_pktinfo, 0);
     rb_define_singleton_method(rb_cAncillaryData, "ipv6_pktinfo", ancillary_s_ipv6_pktinfo, 2);
     rb_define_method(rb_cAncillaryData, "ipv6_pktinfo", ancillary_ipv6_pktinfo, 0);
