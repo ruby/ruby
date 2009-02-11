@@ -1,3 +1,10 @@
+Wed Feb 11 14:46:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (setspecial, putstring): fixed typos in rdoc.
+
+	* insns.def (toregexp): uses rb_ary_tmp_new(), and clears it after
+	  used.
+
 Wed Feb 11 14:08:23 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (anc_inspect_socket_rights): return 1 on

@@ -89,7 +89,7 @@ getspecial
 /**
   @c variable
   @e set special local variable ($~, $_, ...) value as obj.
-  @j 特別なローカル変数（$~, $_, ...）の値をを設定する。
+  @j 特別なローカル変数（$~, $_, ...）の値を設定する。
  */
 DEFINE_INSN
 setspecial
@@ -365,7 +365,7 @@ putiseq
 /**
   @c put
   @e put string val. string will be copied.
-  @j 文字列ををコピーしてスタックにプッシュする。
+  @j 文字列をコピーしてスタックにプッシュする。
  */
 DEFINE_INSN
 putstring
@@ -425,13 +425,13 @@ toregexp
 {
     VALUE rb_reg_new_ary(VALUE ary, int options);
     int i;
-    const VALUE ary = rb_ary_new2(cnt);
-    RBASIC(ary)->klass = 0;
+    const VALUE ary = rb_ary_tmp_new(cnt);
     for (i = 0; i < cnt; i++) {
         rb_ary_store(ary, cnt-i-1, TOPN(i));
     }
     POPN(cnt);
     val = rb_reg_new_ary(ary, opt);
+    rb_ary_clear(ary);
 }
 
 /**
