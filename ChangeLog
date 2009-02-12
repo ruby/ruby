@@ -60,7 +60,7 @@ Thu Feb 12 15:28:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Feb 11 18:09:41 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* gc.c (define_final, undefine_final): shouldn't add/remove finalizer
-	  of forzen objects.
+	  of frozen objects.
 
 	* gc.c (undefine_final): should remove FL_FINALIZE flag.
 	  [ruby-dev:37964] (also see [ruby-dev:37959])
