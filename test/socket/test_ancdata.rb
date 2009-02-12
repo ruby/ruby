@@ -55,4 +55,4 @@ class TestSocketAncData < Test::Unit::TestCase
       assert(!ancdata.cmsg_is?(:IP, :PKTINFO))
     end
   end
-end
+end if defined? Socket::AncillaryData
