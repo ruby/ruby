@@ -295,7 +295,7 @@ PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
 #define INIT_ANCHOR(name) \
   (name##_body__.last = &name##_body__.anchor, name = &name##_body__)
 
-#define hide_obj(obj) (void)(OBJ_FREEZE(obj), RBASIC(obj)->klass = 0)
+#define hide_obj(obj) do {OBJ_FREEZE(obj); RBASIC(obj)->klass = 0;} while (0)
 
 #include "optinsn.inc"
 #if OPT_INSTRUCTIONS_UNIFICATION
@@ -1978,7 +1978,7 @@ insn_set_sc_state(rb_iseq_t *iseq, INSN *iobj, int state)
 		dump_disasm_list((LINK_ELEMENT *)iobj);
 		dump_disasm_list((LINK_ELEMENT *)lobj);
 		printf("\n-- %d, %d\n", lobj->sc_state, nstate);
-		rb_compile_error(RSTRING_PTR(iseq->filename), iobj->lineno,
+		rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
 				 "insn_set_sc_state error\n");
 		return 0;
 	    }
