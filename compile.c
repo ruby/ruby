@@ -1361,6 +1361,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 						       "duplicated when clause is ignored");
 				}
 			    }
+			    hide_obj(map);
 			    generated_iseq[pos + 1 + j] = map;
 			    iseq_add_mark_object(iseq, map);
 			    break;
@@ -2121,7 +2122,8 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int *cntp
     int cnt = 1;
 
     debugp_param("nd_lit", lit);
-    ADD_INSN1(ret, nd_line(node), putobject, node->nd_lit);
+    hide_obj(lit);
+    ADD_INSN1(ret, nd_line(node), putobject, lit);
 
     while (list) {
 	COMPILE(ret, "each string", list->nd_head);
@@ -2237,7 +2239,7 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
 		rb_ary_push(ary, node->nd_head->nd_lit);
 		node = node->nd_next;
 	    }
-
+	    OBJ_FREEZE(ary);
 	    iseq_add_mark_object_compile_time(iseq, ary);
 	    ADD_INSN1(ret, nd_line(node_root), duparray, ary);
 	}
@@ -4369,6 +4371,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_XSTR:{
+	hide_obj(node->nd_lit);
 	ADD_CALL_RECEIVER(ret, nd_line(node));
 	ADD_INSN1(ret, nd_line(node), putobject, node->nd_lit);
 	ADD_CALL(ret, nd_line(node), ID2SYM(idBackquote), INT2FIX(1));
@@ -4660,6 +4663,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 			       RSTRING_PTR(iseq->name), (void *)iseq,
 			       iseq->compile_data->flip_cnt++);
 
+	hide_obj(key);
 	iseq_add_mark_object_compile_time(iseq, key);
 	ADD_INSN2(ret, nd_line(node), getspecial, key, INT2FIX(0));
 	ADD_INSNL(ret, nd_line(node), branchif, lend);
