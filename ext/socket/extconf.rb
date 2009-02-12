@@ -316,6 +316,9 @@ have_type("struct cmsgcred", headers)
 
 have_func("getpeereid")
 
+have_header("ucred.h", headers)
+have_func("getpeerucred")
+
 $distcleanfiles << "constants.h" << "constdefs.*"
 
 if have_func(test_func)

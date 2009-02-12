@@ -79,6 +79,9 @@
 #ifdef HAVE_SYS_UCRED_H
 #include <sys/ucred.h>
 #endif
+#ifdef HAVE_UCRED_H
+#include <ucred.h>
+#endif
 
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK EAGAIN

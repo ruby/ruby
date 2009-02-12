@@ -1,3 +1,12 @@
+Thu Feb 12 12:36:35 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/basicsocket.c (bsock_getpeereid): implemented for Solaris
+	  using getpeerucred.
+
+	* ext/socket/extconf.rb: check ucred.h and getpeerucred.
+
+	* ext/socket/rubysocket.h: include ucred.h if available.
+
 Thu Feb 12 19:42:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (compile_array_, defined_expr, iseq_compile_each): hide
