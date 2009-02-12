@@ -1398,7 +1398,7 @@ if test "$rb_cv_binary_elf" = yes; then
 fi
 
 case "$target_os" in
-when(linux* | gnu* | k*bsd*-gnu | bsdi*)
+when(linux* | gnu* | k*bsd*-gnu | bsdi* | kopensolaris*-gnu)
     if test "$rb_cv_binary_elf" = no; then
 	with_dln_a_out=yes
     else
@@ -1491,7 +1491,7 @@ if test "$with_dln_a_out" != yes; then
 			when(*shlicc*)	: ${LDSHARED="$CC -r"}
 					rb_cv_dlopen=yes ;;
 			esac ;;
-	when(linux* | gnu* | k*bsd*-gnu | netbsd* | bsdi*)
+	when(linux* | gnu* | k*bsd*-gnu | netbsd* | bsdi* | kopensolaris*-gnu)
 			: ${LDSHARED='${CC} -shared'}
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="$LDFLAGS -Wl,-export-dynamic"
@@ -1684,7 +1684,7 @@ else
 fi
 
 case "$target_os" in
-  when(linux* | gnu* | k*bsd*-gnu)
+  when(linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu)
 	STRIP='strip -S -x';;
   when(nextstep* | openstep* | rhapsody* | darwin*)
 	STRIP='strip -A -n';;
@@ -1777,7 +1777,7 @@ if test "$enable_shared" = 'yes'; then
     when(sunos4*)
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	;;
-    when(linux* | gnu* | k*bsd*-gnu | atheos*)
+    when(linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu)
 	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	;;

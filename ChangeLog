@@ -1,3 +1,8 @@
+Thu Feb 12 16:50:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: a patch to build on GNU/kOpenSolaris from Rober
+	  Millan at [ruby-core:21888].
+
 Thu Feb 12 15:28:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* iseq.c (simple_default_value): allow plain strings as default
