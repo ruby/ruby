@@ -608,7 +608,7 @@ vm_xmalloc(rb_objspace_t *objspace, size_t size)
 {
     void *mem;
 
-    if (size < 0) {
+    if ((ssize_t)size < 0) {
 	negative_size_allocation_error("negative allocation size (or too big)");
     }
     if (size == 0) size = 1;
@@ -647,7 +647,7 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
 {
     void *mem;
 
-    if (size < 0) {
+    if ((ssize_t)size < 0) {
 	negative_size_allocation_error("negative re-allocation size");
     }
     if (!ptr) return ruby_xmalloc(size);
