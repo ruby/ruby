@@ -888,6 +888,7 @@ defineclass
 	vm_check_if_namespace(cbase);
 
 	/* find klass */
+	rb_autoload_load(cbase, id);
 	if (rb_const_defined_at(cbase, id)) {
 	    /* already exist */
 	    klass = rb_const_get_at(cbase, id);

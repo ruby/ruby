@@ -1,3 +1,7 @@
+Fri Feb 13 00:48:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (defineclass): try to autoload const to be overridden.
+
 Thu Feb 12 23:22:29 2009  Tanaka Akira  <akr@fsij.org>
 
 	* test/socket/test_socket.rb (test_udp_server): filter out unreachable
