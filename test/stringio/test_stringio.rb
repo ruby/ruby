@@ -394,4 +394,19 @@ class TestStringIO < Test::Unit::TestCase
   def test_method
     assert_equal(:ok, C.new.foo, 'Bug #632 [ruby-core:19282]')
   end
+
+  def test_ungetc_pos
+    b = '\\b00010001 \\B00010001 \\b1 \\B1 \\b000100011'
+    s = StringIO.new( b )
+    expected_pos = 0
+    while n = s.getc
+      assert_equal( expected_pos + 1, s.pos )
+
+      s.ungetc( n )
+      assert_equal( expected_pos, s.pos )
+      assert_equal( n, s.getc )
+
+      expected_pos += 1
+    end
+  end
 end
