@@ -233,6 +233,9 @@ class TestSocket < Test::Unit::TestCase
     end
 
     Socket.udp_server_sockets(0) {|sockets|
+      famlies = {}
+      sockets.each {|s| famlies[s.local_address.afamily] = true }
+      ip_addrs.reject! {|ai| !famlies[ai.afamily] }
       begin
         port = sockets.first.local_address.ip_port
 
