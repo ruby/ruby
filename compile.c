@@ -4371,7 +4371,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_XSTR:{
-	hide_obj(node->nd_lit);
+	OBJ_FREEZE(node->nd_lit);
 	ADD_CALL_RECEIVER(ret, nd_line(node));
 	ADD_INSN1(ret, nd_line(node), putobject, node->nd_lit);
 	ADD_CALL(ret, nd_line(node), ID2SYM(idBackquote), INT2FIX(1));
