@@ -1,3 +1,8 @@
+Thu Feb 12 15:28:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* iseq.c (simple_default_value): allow plain strings as default
+	  values.
+
 Wed Feb 11 18:09:41 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* gc.c (define_final, undefine_final): shouldn't add/remove finalizer

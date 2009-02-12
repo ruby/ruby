@@ -1285,6 +1285,9 @@ simple_default_value(const VALUE *seq, const VALUE *eseq)
       case BIN(putnil):
 	val = Qnil;
 	goto got;
+      case BIN(putstring):
+	val = rb_str_new3(*seq++);
+	goto got;
       case BIN(putobject):
 	val = *seq++;
       got:
