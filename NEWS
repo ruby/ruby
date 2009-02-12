@@ -262,6 +262,8 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Thread#exit!, Thread#kill! and Thread#terminate! removed.
 
     * Enumerable and Enumerator
+          o Enumerator#enum_cons and Enumerator#enum_slice are
+            removed.  Use #each_cons and #each_slice without a block.            
           o Enumerable#each_with_index can take optional arguments
             and passes them to #each.
           o Enumerable#each_with_object
