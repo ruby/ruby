@@ -1,3 +1,8 @@
+Fri Feb 13 15:34:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (simple_default_value): removed.  default values of optional
+	  parameters are not available still now.  [ruby-dev:37980]
+
 Fri Feb 13 15:11:11 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_eval.c (eval_string_with_cref): use rb_vm_get_ruby_level_next_cfp() 

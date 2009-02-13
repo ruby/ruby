@@ -1284,38 +1284,6 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
     return newiseq;
 }
 
-static VALUE
-simple_default_value(const VALUE *seq, const VALUE *eseq)
-{
-    VALUE val;
-
-  again:
-    switch (*seq++) {
-      case BIN(trace):
-	if (++seq >= eseq) return Qundef;
-	goto again;
-      case BIN(putnil):
-	val = Qnil;
-	goto got;
-      case BIN(putstring):
-	val = rb_str_new3(*seq++);
-	goto got;
-      case BIN(putobject):
-	val = *seq++;
-      got:
-	switch (*seq++) {
-	  case BIN(setlocal):
-	    if ((seq+=1) == eseq) return val;
-	    break;
-	  case BIN(setdynamic):
-	    if ((seq+=2) == eseq) return val;
-	    break;
-	}
-      default:
-	return Qundef;
-    }
-}
-
 VALUE
 rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 {
@@ -1352,10 +1320,7 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
     for (s = i; i < r; i++) {
 	PARAM_TYPE(opt);
 	if (rb_id2name(PARAM_ID(i))) {
-	    VALUE defval = simple_default_value(iseq->iseq + iseq->arg_opt_table[i-s],
-						iseq->iseq + iseq->arg_opt_table[i-s+1]);
 	    rb_ary_push(a, ID2SYM(PARAM_ID(i)));
-	    if (defval != Qundef) rb_ary_push(a, defval);
 	}
 	rb_ary_push(args, a);
     }
