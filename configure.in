@@ -707,6 +707,7 @@ when(mingw*)	LIBS="-lshell32 -lws2_32 $LIBS"
 		rb_cv_binary_elf=no
 		rb_cv_negative_time_t=no
 		ac_cv_func_fcntl=yes
+		ac_cv_func_flock=yes
 		AC_LIBOBJ([langinfo])
 		;;
 when(os2-emx*)	LIBS="-lm $LIBS"
