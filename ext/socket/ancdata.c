@@ -1010,7 +1010,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
  * 3-elements array.
  * The 3-element array should contains cmsg_level, cmsg_type and data.
  *
- * The return value, _numbytes_sent_sent is an integer which is the number of bytes sent.
+ * The return value, _numbytes_sent_ is an integer which is the number of bytes sent.
  *
  * sendmsg can be used to implement send_io as follows:
  *
