@@ -26,9 +26,9 @@
 #endif
 
 #ifdef HAVE_SA_LEN
-# define SET_SA_LEN(sa, len) (sa)->sa_len = (len)
+# define SET_SA_LEN(sa, len) (void)((sa)->sa_len = (len))
 #else
-# define SET_SA_LEN(sa, len) (len)
+# define SET_SA_LEN(sa, len) (void)(len)
 #endif
 
 #ifdef HAVE_SIN_LEN

@@ -1,3 +1,8 @@
+Sat Feb 14 02:20:04 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/sockport.h (SET_SA_LEN): cast to void for supressing a
+	  warning.
+
 Fri Feb 13 23:37:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/win32/lib/Win32API.rb (Win32API#initialize): DL.dlopen
