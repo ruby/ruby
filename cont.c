@@ -933,7 +933,7 @@ rb_fiber_alive_p(VALUE fibval)
 {
     rb_fiber_t *fib;
     GetFiberPtr(fibval, fib);
-    return fib->status != TERMINATED;
+    return fib->status != TERMINATED ? Qtrue : Qfalse;
 }
 
 /*

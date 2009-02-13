@@ -164,5 +164,14 @@ class TestFiber < Test::Unit::TestCase
     assert_equal(nil, Thread.current[:v]); fb.resume
     assert_equal(nil, Thread.current[:v]);
   end
+
+  def test_alive
+    fib = Fiber.new{Fiber.yield}
+    assert_equal(true, fib.alive?)
+    fib.resume
+    assert_equal(true, fib.alive?)
+    fib.resume
+    assert_equal(false, fib.alive?)
+  end
 end
 
