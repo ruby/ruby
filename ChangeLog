@@ -1,3 +1,8 @@
+Fri Feb 13 23:37:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/win32/lib/Win32API.rb (Win32API#initialize): DL.dlopen
+	  raises DLError.
+
 Fri Feb 13 21:13:19 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (Init_socket): define TCPServer#listen and

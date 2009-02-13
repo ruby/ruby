@@ -12,6 +12,8 @@ class Win32API
     @proto = [import].join.tr("VPpNnLlIi", "0SSI").sub(/^(.)0*$/, '\1')
     handle = DLL[dllname] ||= DL.dlopen(dllname)
     @func = DL::CFunc.new(handle[func], TYPEMAP[export.tr("VPpNnLlIi", "0SSI")], func)
+  rescue DL::DLError => e
+    raise LoadError, e.message, e.backtrace
   end
 
   def call(*args)
