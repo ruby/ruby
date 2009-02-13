@@ -369,7 +369,11 @@ bsock_getpeername(VALUE sock)
  * The result is a two element array which contains the effective uid and the effective gid.
  *
  *   Socket.unix_server_loop("/tmp/sock") {|s|
- *     p s.getpeereid #=> [1000, 1000]
+ *     begin
+ *       p s.getpeereid #=> [1000, 1000]
+ *     ensure
+ *       s.close
+ *     end
  *   }
  *
  */
