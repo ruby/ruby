@@ -1,6 +1,3 @@
-if dummy_gdb_enums.special_consts
-end
-
 define rp
   if (VALUE)$arg0 & RUBY_FIXNUM_FLAG
     printf "FIXNUM: %ld\n", $arg0 >> 1
@@ -557,4 +554,30 @@ end
 
 define rb_backtrace
   call rb_backtrace()
+end
+
+define iseq
+  if $arg0->type == ISEQ_ELEMENT_NONE
+    echo [none]\n
+  end
+  if $arg0->type == ISEQ_ELEMENT_LABEL
+    print *(LABEL*)$arg0
+  end
+  if $arg0->type == ISEQ_ELEMENT_INSN
+    print *(INSN*)$arg0
+    if ((INSN*)$arg0)->insn_id != YARVINSN_jump
+      set $i = 0
+      set $operand_size = ((INSN*)$arg0)->operand_size
+      set $operands = ((INSN*)$arg0)->operands
+      while $i < $operand_size
+	rp $operands[$i++]
+      end
+    end
+  end
+  if $arg0->type == ISEQ_ELEMENT_ADJUST
+    print *(ADJUST*)$arg0
+  end
+end
+
+if dummy_gdb_enums.special_consts
 end
