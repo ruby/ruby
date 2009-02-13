@@ -593,6 +593,7 @@ int ruby_thread_has_gvl_p(void);
 VALUE rb_make_backtrace(void);
 typedef int rb_backtrace_iter_func(void *, const char *, int, const char *);
 VALUE rb_backtrace_each(rb_backtrace_iter_func *iter, void *arg);
+rb_control_frame_t *rb_vm_get_ruby_level_next_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 
 NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
 
