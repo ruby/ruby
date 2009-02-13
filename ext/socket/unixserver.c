@@ -143,6 +143,5 @@ Init_unixserver(void)
     rb_define_method(rb_cUNIXServer, "accept", unix_accept, 0);
     rb_define_method(rb_cUNIXServer, "accept_nonblock", unix_accept_nonblock, 0);
     rb_define_method(rb_cUNIXServer, "sysaccept", unix_sysaccept, 0);
-    rb_define_method(rb_cUNIXServer, "listen", sock_listen, 1);
 #endif
 }

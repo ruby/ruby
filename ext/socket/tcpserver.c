@@ -137,5 +137,4 @@ Init_tcpserver(void)
     rb_define_method(rb_cTCPServer, "accept_nonblock", tcp_accept_nonblock, 0);
     rb_define_method(rb_cTCPServer, "sysaccept", tcp_sysaccept, 0);
     rb_define_method(rb_cTCPServer, "initialize", tcp_svr_init, -1);
-    rb_define_method(rb_cTCPServer, "listen", sock_listen, 1);
 }

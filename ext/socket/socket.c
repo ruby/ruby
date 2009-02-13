@@ -1787,4 +1787,10 @@ Init_socket()
 #endif
 
     rb_define_singleton_method(rb_cSocket, "ip_address_list", socket_s_ip_address_list, 0);
+
+    /* defined here for rdoc */
+    rb_define_method(rb_cTCPServer, "listen", sock_listen, 1);
+#ifdef HAVE_SYS_UN_H
+    rb_define_method(rb_cUNIXServer, "listen", sock_listen, 1);
+#endif
 }

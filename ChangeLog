@@ -1,3 +1,8 @@
+Fri Feb 13 21:13:19 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (Init_socket): define TCPServer#listen and
+	  UNIXServer#listen here for rdoc.
+
 Fri Feb 13 20:59:48 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (extract_ipv6_pktinfo): set sa_len for 4.4BSD.
