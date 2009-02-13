@@ -400,6 +400,7 @@ extract_ipv6_pktinfo(VALUE self, struct in6_pktinfo *pktinfo_ptr, struct sockadd
     memcpy(pktinfo_ptr, RSTRING_PTR(data), sizeof(*pktinfo_ptr));
 
     memset(sa_ptr, 0, sizeof(*sa_ptr));
+    SET_SA_LEN((struct sockaddr *)sa_ptr, sizeof(struct sockaddr_in6));
     sa_ptr->sin6_family = AF_INET6;
     memcpy(&sa_ptr->sin6_addr, &pktinfo_ptr->ipi6_addr, sizeof(sa_ptr->sin6_addr));
     if (IN6_IS_ADDR_LINKLOCAL(&sa_ptr->sin6_addr))

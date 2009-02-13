@@ -1,3 +1,7 @@
+Fri Feb 13 20:59:48 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (extract_ipv6_pktinfo): set sa_len for 4.4BSD.
+
 Fri Feb 13 15:34:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (simple_default_value): removed.  default values of optional
