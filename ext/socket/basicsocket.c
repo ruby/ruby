@@ -370,7 +370,13 @@ bsock_getpeername(VALUE sock)
  *
  *   Socket.unix_server_loop("/tmp/sock") {|s|
  *     begin
- *       p s.getpeereid #=> [1000, 1000]
+ *       euid, egid = s.getpeereid
+ *
+ *       # Check the connected client is myself or not.
+ *       next if euid != Process.uid
+ *
+ *       # do something about my resource.
+ *
  *     ensure
  *       s.close
  *     end

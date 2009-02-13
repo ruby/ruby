@@ -993,7 +993,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
 /*
  * call-seq:
- *    basicsocket.sendmsg(mesg, flags=0, dest_sockaddr=nil, *controls) => sent_len
+ *    basicsocket.sendmsg(mesg, flags=0, dest_sockaddr=nil, *controls) => numbytes_sent
  *
  * sendmsg sends a message using sendmsg(2) system call in blocking manner.
  *
@@ -1010,7 +1010,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
  * 3-elements array.
  * The 3-element array should contains cmsg_level, cmsg_type and data.
  *
- * The return value, _sent_len_, is an integer which is the number of bytes sent.
+ * The return value, _numbytes_sent_sent is an integer which is the number of bytes sent.
  *
  * sendmsg can be used to implement send_io as follows:
  *
@@ -1031,7 +1031,7 @@ bsock_sendmsg(int argc, VALUE *argv, VALUE sock)
 
 /*
  * call-seq:
- *    basicsocket.sendmsg_nonblock(mesg, flags=0, dest_sockaddr=nil, *controls) => sent_len
+ *    basicsocket.sendmsg_nonblock(mesg, flags=0, dest_sockaddr=nil, *controls) => numbytes_sent
  *
  * sendmsg_nonblock sends a message using sendmsg(2) system call in non-blocking manner.
  *
