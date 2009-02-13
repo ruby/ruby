@@ -14,7 +14,7 @@ Fri Feb 13 15:11:11 2009  Koichi Sasada  <ko1@atdot.net>
 
 Fri Feb 13 15:01:40 2009  Koichi Sasada  <ko1@atdot.net>
 
-	* cont.c (rb_fiber_alive_p): fix to return true instead of 1.
+	* cont.c (rb_fiber_alive_p): fix to return true instead of 0.
 	  [ruby-dev:37991]
 
 	* test/ruby/test_fiber.rb: add a test for Fiber#alive?
