@@ -1,3 +1,8 @@
+Sat Feb 14 19:20:15 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pathname.rb: obsolete methods removed.
+	  [ruby-core:21564]
+
 Sat Feb 14 13:14:18 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* iseq.c: remove nil parameter from Proc#parameters

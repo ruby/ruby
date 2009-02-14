@@ -475,8 +475,6 @@ class Pathname
   # All components of the pathname must exist when this method is
   # called.
   #
-  # No arguments should be given; the old behaviour is *obsoleted*.
-  #
   def realpath
     real_path_internal(true)
   end
@@ -806,12 +804,6 @@ class Pathname    # * IO *
     IO.foreach(@path, *args, &block)
   end
 
-  # Pathname#foreachline is *obsoleted* at 1.8.1.  Use #each_line.
-  def foreachline(*args, &block)
-    warn "Pathname#foreachline is obsoleted.  Use Pathname#each_line."
-    each_line(*args, &block)
-  end
-
   # See <tt>IO.read</tt>.  Returns all the bytes from the file, or the first +N+
   # if specified.
   def read(*args) IO.read(@path, *args) end
@@ -902,20 +894,6 @@ class Pathname    # * File *
   # See <tt>File.split</tt>.  Returns the #dirname and the #basename in an
   # Array.
   def split() File.split(@path).map {|f| self.class.new(f) } end
-
-  # Pathname#link is confusing and *obsoleted* because the receiver/argument
-  # order is inverted to corresponding system call.
-  def link(old)
-    warn 'Pathname#link is obsoleted.  Use Pathname#make_link.'
-    File.link(old, @path)
-  end
-
-  # Pathname#symlink is confusing and *obsoleted* because the receiver/argument
-  # order is inverted to corresponding system call.
-  def symlink(old)
-    warn 'Pathname#symlink is obsoleted.  Use Pathname#make_symlink.'
-    File.symlink(old, @path)
-  end
 end
 
 
@@ -1009,18 +987,6 @@ class Pathname    # * Dir *
   def Pathname.getwd() self.new(Dir.getwd) end
   class << self; alias pwd getwd end
 
-  # Pathname#chdir is *obsoleted* at 1.8.1.
-  def chdir(&block)
-    warn "Pathname#chdir is obsoleted.  Use Dir.chdir."
-    Dir.chdir(@path, &block)
-  end
-
-  # Pathname#chroot is *obsoleted* at 1.8.1.
-  def chroot
-    warn "Pathname#chroot is obsoleted.  Use Dir.chroot."
-    Dir.chroot(@path)
-  end
-
   # Return the entries (files and subdirectories) in the directory, each as a
   # Pathname object.
   def entries() Dir.entries(@path).map {|f| self.class.new(f) } end
@@ -1031,12 +997,6 @@ class Pathname    # * Dir *
   # This method has existed since 1.8.1.
   def each_entry(&block) # :yield: pathname
     Dir.foreach(@path) {|f| yield self.class.new(f) }
-  end
-
-  # Pathname#dir_foreach is *obsoleted* at 1.8.1.
-  def dir_foreach(*args, &block)
-    warn "Pathname#dir_foreach is obsoleted.  Use Pathname#each_entry."
-    each_entry(*args, &block)
   end
 
   # See <tt>Dir.mkdir</tt>.  Create the referenced directory.
@@ -1105,18 +1065,6 @@ class Pathname    # * mixed *
     end
   end
   alias delete unlink
-
-  # This method is *obsoleted* at 1.8.1.  Use #each_line or #each_entry.
-  def foreach(*args, &block)
-    warn "Pathname#foreach is obsoleted.  Use each_line or each_entry."
-    if FileTest.directory? @path
-      # For polymorphism between Dir.foreach and IO.foreach,
-      # Pathname#foreach doesn't yield Pathname object.
-      Dir.foreach(@path, *args, &block)
-    else
-      IO.foreach(@path, *args, &block)
-    end
-  end
 end
 
 class Pathname
