@@ -1,3 +1,8 @@
+Sun Feb 15 00:39:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (ary_resize_capa): should not overwrite outside embedded
+	  array.
+
 Sat Feb 14 20:18:19 2009  Tanaka Akira  <akr@fsij.org>
 
 	* test/test_time.rb: extracted from lib/time.rb.
