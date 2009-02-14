@@ -214,9 +214,11 @@ class Time
     #
     #     # Suppose it is "Thu Nov 29 14:33:20 GMT 2001" now and
     #     # your timezone is GMT:
-    #     Time.parse("16:30")     #=> Thu Nov 29 16:30:00 GMT 2001
-    #     Time.parse("7/23")      #=> Mon Jul 23 00:00:00 GMT 2001
-    #     Time.parse("Aug 31")    #=> Fri Aug 31 00:00:00 GMT 2001
+    #     now = 
+    #     Time.parse("16:30")     #=> 2001-11-29 16:30:00 +0900
+    #     Time.parse("7/23")      #=> 2001-07-23 00:00:00 +0900
+    #     Time.parse("Aug 31")    #=> 2001-08-31 00:00:00 +0900
+    #     Time.parse("Aug 2000")  #=> 2000-08-01 00:00:00 +0900
     #
     # Since there are numerous conflicts among locally defined timezone
     # abbreviations all over the world, this method is not made to
@@ -252,6 +254,9 @@ class Time
     #
     def parse(date, now=self.now)
       d = Date._parse(date, false)
+      if !d[:year] && !d[:mon] && !d[:mday] && !d[:hour] && !d[:min] && !d[:sec] && !d[:sec_fraction]
+        raise ArgumentError, "no time information in #{date.inspect}"
+      end
       year = d[:year]
       year = yield(year) if year && block_given?
       make_time(year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)

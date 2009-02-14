@@ -176,6 +176,7 @@ class TestTimeExtention < Test::Unit::TestCase # :nodoc:
     #assert_equal(Time.local(2001,11,1), Time.parse("Nov", now))
     assert_equal(Time.local( 2001,11,29,10,22),
                  Time.parse(           "10:22", now))
+    assert_raise(ArgumentError) { Time.parse("foo", now) }
   end
 
   def test_invalid

@@ -1,3 +1,8 @@
+Sun Feb 15 06:34:22 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.parse): raise ArgumentError if Date._parse don't
+	  extract date information.  [ruby-core:20912]
+
 Sun Feb 15 04:48:08 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* string.c (rb_hash_uint32, rb_hash_uint, rb_hash_start, rb_hash_end),
