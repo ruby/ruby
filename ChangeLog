@@ -1,3 +1,11 @@
+Sun Feb 15 03:50:21 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* hash.c (rb_hash): always return a fixnum value because a return
+	  value of rb_hash may be used as a hash value itself and bignums have
+	  no unique VALUE.
+
+	* test/ruby/test_hash.rb: add a test for above.
+
 Sun Feb 15 00:45:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_uniq_bang, rb_ary_uniq): unique by the result of
