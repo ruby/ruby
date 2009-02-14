@@ -225,7 +225,7 @@ module WEBrick
       @request_line = read_line(socket) if socket
       @request_time = Time.now
       raise HTTPStatus::EOFError unless @request_line
-      if /^(\S+)\s+(\S+)(?:\s+HTTP\/(\d+\.\d+))?\r?\n/mo =~ @request_line
+      if /^(\S+)\s+(\S+?)(?:\s+HTTP\/(\d+\.\d+))?\r?\n/mo =~ @request_line
         @request_method = $1
         @unparsed_uri   = $2
         @http_version   = HTTPVersion.new($3 ? $3 : "0.9")

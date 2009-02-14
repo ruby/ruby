@@ -3,6 +3,12 @@ Fri Feb 13 19:17:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/logger.rb (ProgName): fixed for svn, based on a patch from
 	  Nobuhiro IMAI at [ruby-dev:37108].
 
+Sun Feb 15 04:15:39 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#read_request_line):
+	  use non-greedy match for path retrieval to avoid huge recursion
+	  for insanely long path.
+
 Fri Feb 13 19:04:06 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* shell/command-processor.rb: undefined method `top_level_test' in
