@@ -251,6 +251,9 @@ class TestSocket < Test::Unit::TestCase
           Addrinfo.udp(ai.ip_address, port).connect {|s|
             msg1 = "<<<#{ai.inspect}>>>"
             s.sendmsg msg1
+            unless IO.select([s], nil, nil, 10)
+              raise "no response"
+            end
             msg2, addr = s.recvmsg
             msg2, remote_address, local_address = Marshal.load(msg2)
             assert_equal(msg1, msg2)
@@ -260,7 +263,11 @@ class TestSocket < Test::Unit::TestCase
       ensure
         if th
           Addrinfo.udp("127.0.0.1", port).connect {|s| s.sendmsg "exit" }
-          th.join
+          unless th.join(10)
+            Thread.kill th
+            th.join(10)
+            raise "thread killed"
+          end
         end
       end
     }
