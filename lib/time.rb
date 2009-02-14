@@ -35,10 +35,6 @@
 #   %z is required to generate zone in date-time of RFC 2822
 #   but it is not portable.
 #
-# == Revision Information
-#
-# $Id$
-#
 
 require 'date/format'
 
