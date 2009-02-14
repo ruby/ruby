@@ -1,3 +1,7 @@
+Sat Feb 14 20:18:19 2009  Tanaka Akira  <akr@fsij.org>
+
+	* test/test_time.rb: extracted from lib/time.rb.
+
 Sat Feb 14 19:20:15 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pathname.rb: obsolete methods removed.
