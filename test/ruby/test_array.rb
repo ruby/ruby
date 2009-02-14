@@ -1240,6 +1240,11 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1, 2, 3, 4, nil], a.uniq)
     assert_equal(b, a)
 
+    c = @cls["a:def", "a:xyz", "b:abc", "b:xyz", "c:jkl"]
+    d = c.dup
+    assert_equal(@cls[ "a:def", "b:abc", "c:jkl" ], c.uniq {|s| s[/^\w+/]})
+    assert_equal(d, c)
+
     assert_equal(@cls[1, 2, 3], @cls[1, 2, 3].uniq)
   end
 
@@ -1247,6 +1252,10 @@ class TestArray < Test::Unit::TestCase
     a = @cls[ 1, 2, 3, 2, 1, 2, 3, 4, nil ]
     assert_equal(@cls[1, 2, 3, 4, nil], a.uniq!)
     assert_equal(@cls[1, 2, 3, 4, nil], a)
+
+    c = @cls["a:def", "a:xyz", "b:abc", "b:xyz", "c:jkl"]
+    assert_equal(@cls[ "a:def", "b:abc", "c:jkl" ], c.uniq! {|s| s[/^\w+/]})
+    assert_equal(@cls[ "a:def", "b:abc", "c:jkl" ], c)
 
     assert_nil(@cls[1, 2, 3].uniq!)
   end

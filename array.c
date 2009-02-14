@@ -2887,13 +2887,41 @@ ary_add_hash(VALUE hash, VALUE ary)
     return hash;
 }
 
-static VALUE
-ary_make_hash(VALUE ary)
+static inline VALUE
+ary_tmp_hash_new(void)
 {
     VALUE hash = rb_hash_new();
 
     RBASIC(hash)->klass = 0;
+    return hash;
+}
+
+static VALUE
+ary_make_hash(VALUE ary)
+{
+    VALUE hash = ary_tmp_hash_new();
     return ary_add_hash(hash, ary);
+}
+
+static VALUE
+ary_add_hash_by(VALUE hash, VALUE ary)
+{
+    long i;
+
+    for (i = 0; i < RARRAY_LEN(ary); ++i) {
+	VALUE v = rb_ary_elt(ary, i), k = rb_yield(v);
+	if (rb_hash_lookup2(hash, k, Qundef) == Qundef) {
+	    rb_hash_aset(hash, k, v);
+	}
+    }
+    return hash;
+}
+
+static VALUE
+ary_make_hash_by(VALUE ary)
+{
+    VALUE hash = ary_tmp_hash_new();
+    return ary_add_hash_by(hash, ary);
 }
 
 static inline void
@@ -3010,6 +3038,13 @@ rb_ary_or(VALUE ary1, VALUE ary2)
     return ary3;
 }
 
+static int
+push_value(st_data_t key, st_data_t val, st_data_t ary)
+{
+    rb_ary_push((VALUE)ary, (VALUE)val);
+    return ST_CONTINUE;
+}
+
 /*
  *  call-seq:
  *     array.uniq! -> array or nil
@@ -3022,6 +3057,8 @@ rb_ary_or(VALUE ary1, VALUE ary2)
  *     a.uniq!   #=> ["a", "b", "c"]
  *     b = [ "a", "b", "c" ]
  *     b.uniq!   #=> nil
+ *     c = [ "a:def", "a:xyz", "b:abc", "b:xyz", "c:jkl" ]
+ *     c.uniq! {|s| s[/^\w+/]}  #=> [ "a:def", "b:abc", "c:jkl" ] 
  */
 
 static VALUE
@@ -3030,18 +3067,28 @@ rb_ary_uniq_bang(VALUE ary)
     VALUE hash, v;
     long i, j;
 
-    hash = ary_make_hash(ary);
-
-    if (RARRAY_LEN(ary) == RHASH_SIZE(hash)) {
-	return Qnil;
-    }
-    for (i=j=0; i<RARRAY_LEN(ary); i++) {
-	st_data_t vv = (st_data_t)(v = rb_ary_elt(ary, i));
-	if (st_delete(RHASH_TBL(hash), &vv, 0)) {
-	    rb_ary_store(ary, j++, v);
+    if (rb_block_given_p()) {
+	hash = ary_make_hash_by(ary);
+	if (RARRAY_LEN(ary) == (i = RHASH_SIZE(hash))) {
+	    return Qnil;
 	}
+	ary_resize_capa(ary, i);
+	ARY_SET_LEN(ary, 0);
+	st_foreach(RHASH_TBL(hash), push_value, ary);
     }
-    ARY_SET_LEN(ary, j);
+    else {
+	hash = ary_make_hash(ary);
+	if (RARRAY_LEN(ary) == RHASH_SIZE(hash)) {
+	    return Qnil;
+	}
+	for (i=j=0; i<RARRAY_LEN(ary); i++) {
+	    st_data_t vv = (st_data_t)(v = rb_ary_elt(ary, i));
+	    if (st_delete(RHASH_TBL(hash), &vv, 0)) {
+		rb_ary_store(ary, j++, v);
+	    }
+	}
+	ARY_SET_LEN(ary, j);
+    }
     ary_recycle_hash(hash);
 
     return ary;
@@ -3055,19 +3102,29 @@ rb_ary_uniq_bang(VALUE ary)
  *     
  *     a = [ "a", "a", "b", "b", "c" ]
  *     a.uniq   #=> ["a", "b", "c"]
+ *     c = [ "a:def", "a:xyz", "b:abc", "b:xyz", "c:jkl" ]
+ *     c.uniq {|s| s[/^\w+/]}  #=> [ "a:def", "b:abc", "c:jkl" ] 
  */
 
 static VALUE
 rb_ary_uniq(VALUE ary)
 {
-    VALUE hash = ary_make_hash(ary), v;
-    VALUE uniq = ary_new(rb_obj_class(ary), RHASH_SIZE(hash));
+    VALUE hash, uniq, v;
     long i;
 
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-	st_data_t vv = (st_data_t)(v = rb_ary_elt(ary, i));
-	if (st_delete(RHASH_TBL(hash), &vv, 0)) {
-	    rb_ary_push(uniq, v);
+    if (rb_block_given_p()) {
+	hash = ary_make_hash_by(ary);
+	uniq = ary_new(rb_obj_class(ary), RHASH_SIZE(hash));
+	st_foreach(RHASH_TBL(hash), push_value, uniq);
+    }
+    else {
+	hash = ary_make_hash(ary);
+	uniq = ary_new(rb_obj_class(ary), RHASH_SIZE(hash));
+	for (i=0; i<RARRAY_LEN(ary); i++) {
+	    st_data_t vv = (st_data_t)(v = rb_ary_elt(ary, i));
+	    if (st_delete(RHASH_TBL(hash), &vv, 0)) {
+		rb_ary_push(uniq, v);
+	    }
 	}
     }
     ary_recycle_hash(hash);
