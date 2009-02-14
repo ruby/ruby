@@ -1,3 +1,8 @@
+Sat Feb 14 18:57:10 2009  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (rb_thread_schedule): handle EBADF of select as well.
+	  [ruby-core:21264]
+
 Mon Feb  9 12:02:29 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/open-uri.rb: add :read_timeout option.
