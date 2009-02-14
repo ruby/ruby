@@ -2913,7 +2913,6 @@ Init_GC(void)
     OBJ_TAINT(nomem_error);
     OBJ_FREEZE(nomem_error);
 
-    rb_define_method(rb_mKernel, "hash", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "object_id", rb_obj_id, 0);
 

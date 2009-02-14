@@ -84,7 +84,7 @@ rb_any_hash(VALUE a)
       case T_NIL:
       case T_FALSE:
       case T_TRUE:
-	hnum = (int)a;
+	hnum = rb_hash_end(rb_hash_start((unsigned int)a));
 	break;
 
       case T_STRING:

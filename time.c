@@ -1183,7 +1183,7 @@ time_hash(VALUE time)
     long hash;
 
     GetTimeval(time, tobj);
-    hash = tobj->ts.tv_sec ^ tobj->ts.tv_nsec;
+    hash = rb_hash_end(rb_hash_uint(rb_hash_start(tobj->ts.tv_sec), tobj->ts.tv_nsec));
     return LONG2FIX(hash);
 }
 

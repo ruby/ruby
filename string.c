@@ -1912,6 +1912,7 @@ murmur(unsigned int h, unsigned int k, int r)
 #endif
     return h;
 }
+#define murmur16(h) murmur_step(h, 16)
 
 static inline unsigned int
 murmur_finish(unsigned int h)
@@ -2053,8 +2054,53 @@ hash(const unsigned char * data, int len, unsigned int h)
     return murmur_finish(h);
 }
 
-int
-rb_memhash(const void *ptr, long len)
+unsigned int
+rb_hash_uint32(unsigned int h, unsigned int i)
+{
+    return murmur_step(h + i, 16);
+}
+
+unsigned int
+rb_hash_uint(unsigned int h, unsigned int i)
+{
+    unsigned int v = 0;
+    h += i;
+#ifdef WORDS_BIGENDIAN
+#if SIZEOF_INT*CHAR_BIT > 12*8
+    v = murmur16(v + (h >> 12*8));
+#endif
+#if SIZEOF_INT*CHAR_BIT > 8*8
+    v = murmur16(v + (h >> 8*8));
+#endif
+#if SIZEOF_INT*CHAR_BIT > 4*8
+    v = murmur16(v + (h >> 4*8));
+#endif
+#endif
+    v = murmur16(v + h);
+#ifndef WORDS_BIGENDIAN
+#if SIZEOF_INT*CHAR_BIT > 4*8
+    v = murmur16(v + (h >> 4*8));
+#endif
+#if SIZEOF_INT*CHAR_BIT > 8*8
+    v = murmur16(v + (h >> 8*8));
+#endif
+#if SIZEOF_INT*CHAR_BIT > 12*8
+    v = murmur16(v + (h >> 12*8));
+#endif
+#endif
+    return v;
+}
+
+unsigned int
+rb_hash_end(unsigned int h)
+{
+    h = murmur_step(h, 10);
+    h = murmur_step(h, 17);
+    return h;
+}
+
+unsigned int
+rb_hash_start(unsigned int h)
 {
     static int hashseed_init = 0;
     static unsigned int hashseed;
@@ -2064,7 +2110,13 @@ rb_memhash(const void *ptr, long len)
         hashseed_init = 1;
     }
 
-    return hash(ptr, len, hashseed);
+    return hashseed + h;
+}
+
+int
+rb_memhash(const void *ptr, long len)
+{
+    return hash(ptr, len, rb_hash_start(0));
 }
 
 int

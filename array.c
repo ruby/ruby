@@ -2771,12 +2771,12 @@ recursive_hash(VALUE ary, VALUE dummy, int recur)
     if (recur) {
 	return LONG2FIX(0);
     }
-    h = RARRAY_LEN(ary);
+    h = rb_hash_start(RARRAY_LEN(ary));
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	h = (h << 1) | (h<0 ? 1 : 0);
 	n = rb_hash(RARRAY_PTR(ary)[i]);
-	h ^= NUM2LONG(n);
+	h = rb_hash_uint(h, NUM2LONG(n));
     }
+    h = rb_hash_end(h);
     return LONG2FIX(h);
 }
 

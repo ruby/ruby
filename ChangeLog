@@ -1,3 +1,13 @@
+Sun Feb 15 04:48:08 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* string.c (rb_hash_uint32, rb_hash_uint, rb_hash_start, rb_hash_end),
+	  include/ruby/intern.h: add Murmurhash API.  [ruby-dev:37784]
+
+	* complex.c (nucomp_hash), array.c (rb_ary_hash), time.c (time_hash),
+	  string.c (rb_str_hsah), object.c (rb_obj_hash), range.c
+	  (range_hash), struct.c (rb_struct_hash), hash.c (rb_any_hash),
+	  rational.c (nurat_hash): use Murmurhash.  [ruby-dev:37784]
+
 Sun Feb 15 03:50:21 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* hash.c (rb_hash): always return a fixnum value because a return

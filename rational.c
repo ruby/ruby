@@ -27,7 +27,7 @@
 VALUE rb_cRational;
 
 static ID id_abs, id_cmp, id_convert, id_equal_p, id_expt, id_floor,
-    id_hash, id_idiv, id_inspect, id_integer_p, id_negate, id_to_f,
+    id_idiv, id_inspect, id_integer_p, id_negate, id_to_f,
     id_to_i, id_to_s, id_truncate;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
@@ -135,11 +135,8 @@ f_sub(VALUE x, VALUE y)
     return rb_funcall(x, '-', 1, y);
 }
 
-binop(xor, '^')
-
 fun1(abs)
 fun1(floor)
-fun1(hash)
 fun1(inspect)
 fun1(integer_p)
 fun1(negate)
@@ -1161,8 +1158,17 @@ nurat_to_r(VALUE self)
 static VALUE
 nurat_hash(VALUE self)
 {
+    long v, h[3];
+    VALUE n;
+
     get_dat1(self);
-    return f_xor(f_hash(dat->num), f_hash(dat->den));
+    h[0] = rb_hash(rb_obj_class(self));
+    n = rb_hash(dat->num);
+    h[1] = NUM2LONG(n);
+    n = rb_hash(dat->den);
+    h[2] = NUM2LONG(n);
+    v = rb_memhash(h, sizeof(h));
+    return LONG2FIX(v);
 }
 
 static VALUE
@@ -1554,7 +1560,6 @@ Init_Rational(void)
     id_equal_p = rb_intern("==");
     id_expt = rb_intern("**");
     id_floor = rb_intern("floor");
-    id_hash = rb_intern("hash");
     id_idiv = rb_intern("div");
     id_inspect = rb_intern("inspect");
     id_integer_p = rb_intern("integer?");

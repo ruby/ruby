@@ -213,14 +213,16 @@ range_eql(VALUE range, VALUE obj)
 static VALUE
 range_hash(VALUE range)
 {
-    long hash = EXCL(range);
+    unsigned hash = EXCL(range);
     VALUE v;
 
+    hash = rb_hash_start(hash);
     v = rb_hash(RANGE_BEG(range));
-    hash ^= v << 1;
+    hash = rb_hash_uint(hash, NUM2LONG(v));
     v = rb_hash(RANGE_END(range));
-    hash ^= v << 9;
-    hash ^= EXCL(range) << 24;
+    hash = rb_hash_uint(hash, NUM2LONG(v));
+    hash = rb_hash_uint(hash, EXCL(range) << 24);
+    hash = rb_hash_end(hash);
 
     return LONG2FIX(hash);
 }

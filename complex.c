@@ -22,7 +22,7 @@
 VALUE rb_cComplex;
 
 static ID id_abs, id_abs2, id_arg, id_cmp, id_conj, id_convert,
-    id_denominator, id_divmod, id_equal_p, id_expt, id_floor, id_hash,
+    id_denominator, id_divmod, id_equal_p, id_expt, id_floor,
     id_idiv, id_inspect, id_negate, id_numerator, id_polar, id_quo,
     id_real_p, id_to_f, id_to_i, id_to_r, id_to_s;
 
@@ -153,15 +153,12 @@ f_sub(VALUE x, VALUE y)
     return rb_funcall(x, '-', 1, y);
 }
 
-binop(xor, '^')
-
 fun1(abs)
 fun1(abs2)
 fun1(arg)
 fun1(conj)
 fun1(denominator)
 fun1(floor)
-fun1(hash)
 fun1(inspect)
 fun1(negate)
 fun1(numerator)
@@ -857,8 +854,17 @@ nucomp_numerator(VALUE self)
 static VALUE
 nucomp_hash(VALUE self)
 {
+    long v, h[3];
+    VALUE n;
+
     get_dat1(self);
-    return f_xor(f_hash(dat->real), f_hash(dat->imag));
+    h[0] = rb_hash(rb_obj_class(self));
+    n = rb_hash(dat->real);
+    h[1] = NUM2LONG(n);
+    n = rb_hash(dat->imag);
+    h[2] = NUM2LONG(n);
+    v = rb_memhash(h, sizeof(h));
+    return LONG2FIX(v);
 }
 
 static VALUE
@@ -1384,7 +1390,6 @@ Init_Complex(void)
     id_equal_p = rb_intern("==");
     id_expt = rb_intern("**");
     id_floor = rb_intern("floor");
-    id_hash = rb_intern("hash");
     id_idiv = rb_intern("div");
     id_inspect = rb_intern("inspect");
     id_negate = rb_intern("-@");

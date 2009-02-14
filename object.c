@@ -95,6 +95,14 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
     return Qfalse;
 }
 
+VALUE
+rb_obj_hash(VALUE obj)
+{
+    VALUE oid = rb_obj_id(obj);
+    unsigned h = rb_hash_end(rb_hash_start(NUM2LONG(oid)));
+    return LONG2NUM(h);
+}
+
 /*
  *  call-seq:
  *     !obj    => true or false
@@ -2505,6 +2513,7 @@ Init_Object(void)
     rb_define_method(rb_mKernel, "=~", rb_obj_match, 1);
     rb_define_method(rb_mKernel, "!~", rb_obj_not_match, 1);
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
+    rb_define_method(rb_mKernel, "hash", rb_obj_hash, 0);
 
     rb_define_method(rb_mKernel, "class", rb_obj_class, 0);
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
