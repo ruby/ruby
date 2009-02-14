@@ -1,3 +1,8 @@
+Sat Feb 14 13:14:18 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
+
+	* iseq.c: remove nil parameter from Proc#parameters
+	  after rest appeared.
+
 Sat Feb 14 07:23:52 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_external_str_new_with_enc): change evaluatioin order

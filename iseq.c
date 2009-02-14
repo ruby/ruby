@@ -1304,7 +1304,6 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 	for (i = 0; i < iseq->argc; i++) {
 	    PARAM_TYPE(opt);
 	    rb_ary_push(a, rb_id2name(PARAM_ID(i)) ? ID2SYM(PARAM_ID(i)) : Qnil);
-	    rb_ary_push(a, Qnil);
 	    rb_ary_push(args, a);
 	}
     }
@@ -1333,7 +1332,6 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 	for (i = iseq->arg_post_start; i < r; i++) {
 	    PARAM_TYPE(opt);
 	    rb_ary_push(a, rb_id2name(PARAM_ID(i)) ? ID2SYM(PARAM_ID(i)) : Qnil);
-	    rb_ary_push(a, Qnil);
 	    rb_ary_push(args, a);
 	}
     }
