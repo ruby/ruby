@@ -46,6 +46,11 @@ module SecureRandom
   # If n is not specified, 16 is assumed.
   # It may be larger in future.
   #
+  # The result may contain any byte: "\x00" - "\xff".
+  #
+  #   p SecureRandom.random_bytes #=> "\xD8\\\xE0\xF4\r\xB2\xFC*WM\xFF\x83\x18\xF45\xB6"
+  #   p SecureRandom.random_bytes #=> "m\xDC\xFC/\a\x00Uf\xB2\xB2P\xBD\xFF6S\x97"
+  #
   # If secure random number generator is not available,
   # NotImplementedError is raised.
   def self.random_bytes(n=nil)
@@ -117,6 +122,11 @@ module SecureRandom
   # If n is not specified, 16 is assumed.
   # It may be larger in future.
   #
+  # The result may contain 0-9 and a-f.
+  #
+  #   p SecureRandom.hex #=> "eb693ec8252cd630102fd0d0fb7c3485"
+  #   p SecureRandom.hex #=> "91dc3bfb4de5b11d029d376634589b61"
+  #
   # If secure random number generator is not available,
   # NotImplementedError is raised.
   def self.hex(n=nil)
@@ -131,10 +141,41 @@ module SecureRandom
   # If n is not specified, 16 is assumed.
   # It may be larger in future.
   #
+  # The result may contain A-Z, a-z, 0-9, "+", "/" and "=".
+  #
+  #   p SecureRandom.base64 #=> "/2BuBuLf3+WfSKyQbRcc/A=="
+  #   p SecureRandom.base64 #=> "6BbW0pxO0YENxn38HMUbcQ=="
+  #
   # If secure random number generator is not available,
   # NotImplementedError is raised.
+  #
+  # See RFC 3548 for base64.
   def self.base64(n=nil)
     [random_bytes(n)].pack("m*").delete("\n")
+  end
+
+  # SecureRandom.urlsafe_base64 generates a random URL-safe base64 string.
+  #
+  # The argument n specifies the length of the random length.
+  # The length of the result string is about 4/3 of n.
+  #
+  # If n is not specified, 16 is assumed.
+  # It may be larger in future.
+  #
+  # The result may contain A-Z, a-z, 0-9, "-", "_" and "=".
+  #
+  #   p SecureRandom.urlsafe_base64 #=> "b4GOKm4pOYU_-BOXcrUGDg=="
+  #   p SecureRandom.urlsafe_base64 #=> "UZLdOkzop70Ddx-IJR0ABg=="
+  #
+  # If secure random number generator is not available,
+  # NotImplementedError is raised.
+  #
+  # See RFC 3548 for URL-safe base64.
+  def self.urlsafe_base64(n=nil)
+    s = [random_bytes(n)].pack("m*")
+    s.delete!("\n")
+    s.tr!("+/", "-_")
+    s
   end
 
   # SecureRandom.random_number generates a random number.
@@ -143,9 +184,16 @@ module SecureRandom
   # SecureRandom.random_number returns an integer:
   # 0 <= SecureRandom.random_number(n) < n.
   #
+  #   p SecureRandom.random_number(100) #=> 15
+  #   p SecureRandom.random_number(100) #=> 88
+  #
   # If 0 is given or an argument is not given,
   # SecureRandom.random_number returns an float:
   # 0.0 <= SecureRandom.random_number() < 1.0.
+  #
+  #   p SecureRandom.random_number #=> 0.596506046187744
+  #   p SecureRandom.random_number #=> 0.350621695741409
+  #
   def self.random_number(n=0)
     if 0 < n
       hex = n.to_s(16)
@@ -168,6 +216,11 @@ module SecureRandom
   end
 
   # SecureRandom.uuid generates a v4 random UUID.
+  #
+  #   p SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
+  #   p SecureRandom.uuid #=> "62936e70-1815-439b-bf89-8492855a7e6b"
+  #
+  # See RFC 4122 for UUID.
   def self.uuid
     ary = self.random_bytes(16).unpack("NnnnnN")
     ary[2] = (ary[2] & 0x0fff) | 0x4000

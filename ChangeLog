@@ -1,3 +1,7 @@
+Sun Feb 15 16:57:35 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/securerandom.rb (SecureRandom.urlsafe_base64): new method.
+
 Sun Feb 15 14:58:07 2009  Tanaka Akira  <akr@fsij.org>
 
 	* hash.c (hash_i): use Murmurhash.
