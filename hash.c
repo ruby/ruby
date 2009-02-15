@@ -1523,8 +1523,7 @@ static int
 hash_i(VALUE key, VALUE val, int *hval)
 {
     if (key == Qundef) return ST_CONTINUE;
-    *hval ^= rb_hash(key);
-    *hval ^= rb_hash(val);
+    *hval ^= rb_hash_end(rb_hash_uint(rb_hash_start(rb_hash(key)), rb_hash(val)));
     return ST_CONTINUE;
 }
 
