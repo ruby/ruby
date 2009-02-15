@@ -4873,3 +4873,5 @@ rb_w32_fsopen(const char *path, const char *mode, int shflags)
     return f;
 }
 #endif
+
+RUBY_EXTERN int __cdecl _CrtDbgReportW() {return 0;}
