@@ -154,6 +154,10 @@ with all sufficient information, see the ChangeLog file.
   * incompatible changes:
     * Time.parse raises ArgumentError when no date information.
 
+* securerandom
+  * new methods:
+    * SecureRandom.urlsafe_base64
+
 === Compatibility issues (excluding feature bug fixes)
 
   * Enumerator#rewind
