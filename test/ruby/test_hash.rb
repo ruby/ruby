@@ -846,8 +846,23 @@ class TestHash < Test::Unit::TestCase
     assert_nil(h["foo"])
   end
 
+  class ObjWithHash
+    def initialize(value, hash)
+      @value = value
+      @hash = hash
+    end
+    attr_reader :value, :hash
+
+    def eql?(other)
+      @value == other.value
+    end
+  end
+
   def test_hash_hash
     assert_equal({0=>2,11=>1}.hash, {11=>1,0=>2}.hash)
+    o1 = ObjWithHash.new(0,1)
+    o2 = ObjWithHash.new(11,1)
+    assert_equal({o1=>1,o2=>2}.hash, {o2=>2,o1=>1}.hash)
   end
 
   def test_hash_bignum_hash
