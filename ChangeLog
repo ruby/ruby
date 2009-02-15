@@ -1,3 +1,8 @@
+Sun Feb 15 21:43:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ostruct.rb (OpenStruct#new_ostruct_member): checks if frozen.
+	  [ruby-talk:328195], [ruby-core:22142]
+
 Sun Feb 15 21:22:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions): aliases

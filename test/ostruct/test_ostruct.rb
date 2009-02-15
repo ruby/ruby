@@ -34,4 +34,12 @@ class TC_OpenStruct < Test::Unit::TestCase
     foo.bar.foo = foo
     assert_equal('#<OpenStruct bar=#<OpenStruct foo=#<OpenStruct ...>>>', foo.inspect)
   end
+
+  def test_frozen
+    o = OpenStruct.new
+    o.a = 'a'
+    o.freeze
+    assert_raise(TypeError) {o.b = 'b'}
+    assert_not_respond_to(o, :b)
+  end
 end
