@@ -167,5 +167,6 @@ with all sufficient information, see the ChangeLog file.
   * Socket#accept_nonblock
   * Socket#sysaccept
   * BasicSocket#getsockopt
+  * Time.parse
 
     See above.
