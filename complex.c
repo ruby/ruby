@@ -891,22 +891,19 @@ inline static VALUE
 f_signbit(VALUE x)
 {
     switch (TYPE(x)) {
-      case T_FLOAT:
+      case T_FLOAT: {
 #ifdef HAVE_SIGNBIT
-      {
-	  double f = RFLOAT_VALUE(x);
-	  return f_boolcast(!isnan(f) && signbit(f));
-      }
+	double f = RFLOAT_VALUE(x);
+	return f_boolcast(!isnan(f) && signbit(f));
 #else
-      {
-	  char s[2];
-	  double f = RFLOAT_VALUE(x);
+	char s[2];
+	double f = RFLOAT_VALUE(x);
 
-	  if (isnan(f)) return Qfalse;
-	  (void)snprintf(s, sizeof s, "%.0f", f);
-	  return f_boolcast(s[0] == '-');
-      }
+	if (isnan(f)) return Qfalse;
+	(void)snprintf(s, sizeof s, "%.0f", f);
+	return f_boolcast(s[0] == '-');
 #endif
+      }
     }
     return f_negative_p(x);
 }
