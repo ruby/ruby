@@ -169,7 +169,7 @@ classname(VALUE klass)
 /*
  *  call-seq:
  *     mod.name    => string
- *  
+ *
  *  Returns the name of the module <i>mod</i>.  Returns nil for anonymous modules.
  */
 
@@ -470,15 +470,10 @@ rb_define_hooked_variable(
     VALUE (*getter)(ANYARGS),
     void  (*setter)(ANYARGS))
 {
-    struct global_variable *gvar;
-    ID id;
-    VALUE tmp;
-    
-    if (var)
-        tmp = *var;
+    volatile VALUE tmp = var ? *var : Qnil;
+    ID id = global_id(name);
+    struct global_variable *gvar = rb_global_entry(id)->var;
 
-    id = global_id(name);
-    gvar = rb_global_entry(id)->var;
     gvar->data = (void*)var;
     gvar->getter = getter?(gvar_getter_t *)getter:var_getter;
     gvar->setter = setter?(gvar_setter_t *)setter:var_setter;
@@ -520,7 +515,7 @@ rb_trace_eval(VALUE cmd, VALUE val)
  *  call-seq:
  *     trace_var(symbol, cmd )             => nil
  *     trace_var(symbol) {|val| block }    => nil
- *  
+ *
  *  Controls tracing of assignments to global variables. The parameter
  *  +symbol_ identifies the variable (as either a string name or a
  *  symbol identifier). _cmd_ (which may be a string or a
@@ -528,13 +523,13 @@ rb_trace_eval(VALUE cmd, VALUE val)
  *  is assigned. The block or +Proc+ object receives the
  *  variable's new value as a parameter. Also see
  *  <code>Kernel::untrace_var</code>.
- *     
+ *
  *     trace_var :$_, proc {|v| puts "$_ is now '#{v}'" }
  *     $_ = "hello"
  *     $_ = ' there'
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     $_ is now 'hello'
  *     $_ is now ' there'
  */
@@ -592,7 +587,7 @@ remove_trace(struct global_variable *var)
 /*
  *  call-seq:
  *     untrace_var(symbol [, cmd] )   => array or nil
- *  
+ *
  *  Removes tracing for the specified command on the given global
  *  variable and returns +nil+. If no command is specified,
  *  removes all tracing for that variable and returns an array
@@ -728,9 +723,9 @@ gvar_i(ID key, struct global_entry *entry, VALUE ary)
 /*
  *  call-seq:
  *     global_variables    => array
- *  
+ *
  *  Returns an array of the names of global variables.
- *     
+ *
  *     global_variables.grep /std/   #=> [:$stdin, :$stdout, :$stderr]
  */
 
@@ -966,7 +961,7 @@ ivar_get(VALUE obj, ID id, int warn)
         len = ROBJECT_NUMIV(obj);
         ptr = ROBJECT_IVPTR(obj);
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
-        if (!iv_index_tbl) break; 
+        if (!iv_index_tbl) break;
         if (!st_lookup(iv_index_tbl, id, &index)) break;
         if (len <= index) break;
         val = ptr[index];
@@ -1176,11 +1171,11 @@ ivar_i(ID key, VALUE val, VALUE ary)
 /*
  *  call-seq:
  *     obj.instance_variables    => array
- *  
+ *
  *  Returns an array of instance variable names for the receiver. Note
  *  that simply defining an accessor does not create the corresponding
  *  instance variable.
- *     
+ *
  *     class Fred
  *       attr_accessor :a1
  *       def initialize
@@ -1203,10 +1198,10 @@ rb_obj_instance_variables(VALUE obj)
 /*
  *  call-seq:
  *     obj.remove_instance_variable(symbol)    => obj
- *  
+ *
  *  Removes the named instance variable from <i>obj</i>, returning that
  *  variable's value.
- *     
+ *
  *     class Dummy
  *       attr_reader :var
  *       def initialize
@@ -1302,7 +1297,7 @@ const_missing(VALUE klass, ID id)
  *  assumed to be in file <code>fred.rb</code>). If found, it returns the
  *  value of the loaded class. It therefore implements a perverse
  *  kind of autoload facility.
- *  
+ *
  *    def Object.const_missing(name)
  *      @looked_for ||= {}
  *      str_name = name.to_s
@@ -1314,7 +1309,7 @@ const_missing(VALUE klass, ID id)
  *      return klass if klass
  *      raise "Class not found: #{name}"
  *    end
- *  
+ *
  */
 
 VALUE
@@ -1519,7 +1514,7 @@ rb_const_get_at(VALUE klass, ID id)
 /*
  *  call-seq:
  *     remove_const(sym)   => obj
- *  
+ *
  *  Removes the definition of the given constant, returning that
  *  constant's value. Predefined classes and singleton objects (such as
  *  <i>true</i>) cannot be removed.
@@ -1619,7 +1614,7 @@ rb_const_list(void *data)
 /*
  *  call-seq:
  *     mod.constants(inherit=true)    => array
- *  
+ *
  *  Returns an array of the names of the constants accessible in
  *  <i>mod</i>. This includes the names of constants in any included
  *  modules (example at start of section), unless the <i>all</i>
@@ -1902,9 +1897,9 @@ cv_i(ID key, VALUE value, VALUE ary)
 /*
  *  call-seq:
  *     mod.class_variables   => array
- *  
+ *
  *  Returns an array of the names of class variables in <i>mod</i>.
- *     
+ *
  *     class One
  *       @@var1 = 1
  *     end
@@ -1929,19 +1924,19 @@ rb_mod_class_variables(VALUE obj)
 /*
  *  call-seq:
  *     remove_class_variable(sym)    => obj
- *  
+ *
  *  Removes the definition of the <i>sym</i>, returning that
  *  constant's value.
- *     
+ *
  *     class Dummy
  *       @@var = 99
  *       puts @@var
  *       remove_class_variable(:@@var)
  *       p(defined? @@var)
  *     end
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     99
  *     nil
  */
