@@ -2,6 +2,21 @@ require 'test/unit'
 require 'ostruct'
 
 class TC_OpenStruct < Test::Unit::TestCase
+  def assert_not_respond_to(object, method, message="")
+    _wrap_assertion do
+      full_message = build_message(message, <<EOT, object, object.class, method)
+<?>
+of type <?>
+expected not to respond_to\\?<?>.
+EOT
+      _wrap_assertion do
+        if object.respond_to?(method)
+          raise Test::Unit::AssertionFailedError, full_message, caller(5)
+        end
+      end
+    end
+  end
+
   def test_equality
     o1 = OpenStruct.new
     o2 = OpenStruct.new
@@ -33,5 +48,13 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal('#<OpenStruct bar=#<OpenStruct>>', foo.inspect)
     foo.bar.foo = foo
     assert_equal('#<OpenStruct bar=#<OpenStruct foo=#<OpenStruct ...>>>', foo.inspect)
+  end
+
+  def test_frozen
+    o = OpenStruct.new
+    o.a = 'a'
+    o.freeze
+    assert_raise(TypeError) {o.b = 'b'}
+    assert_not_respond_to(o, :b)
   end
 end

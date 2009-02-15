@@ -67,28 +67,33 @@ class OpenStruct
     @table.each_key{|key| new_ostruct_member(key)}
   end
 
+  def modifiable
+    if self.frozen?
+      raise TypeError, "can't modify frozen #{self.class}", caller(2)
+    end
+    @table
+  end
+  protected :modifiable
+
   def new_ostruct_member(name)
     name = name.to_sym
     unless self.respond_to?(name)
-      meta = class << self; self; end
-      meta.send(:define_method, name) { @table[name] }
-      meta.send(:define_method, :"#{name}=") { |x| @table[name] = x }
+      class << self; self; end.class_eval do
+        define_method(name) { @table[name] }
+        define_method("#{name}=") { |x| modifiable[name] = x }
+      end
     end
+    name
   end
 
   def method_missing(mid, *args) # :nodoc:
     mname = mid.id2name
     len = args.length
-    if mname =~ /=$/
+    if mname.chomp!('=')
       if len != 1
         raise ArgumentError, "wrong number of arguments (#{len} for 1)", caller(1)
       end
-      if self.frozen?
-        raise TypeError, "can't modify frozen #{self.class}", caller(1)
-      end
-      mname.chop!
-      self.new_ostruct_member(mname)
-      @table[mname.intern] = args[0]
+      modifiable[new_ostruct_member(mname)] = args[0]
     elsif len == 0
       @table[mid]
     else
