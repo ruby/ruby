@@ -1,3 +1,8 @@
+Sun Feb 15 21:22:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions): aliases
+	  assert_not_ methods.
+
 Sun Feb 15 16:57:35 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb (SecureRandom.urlsafe_base64): new method.

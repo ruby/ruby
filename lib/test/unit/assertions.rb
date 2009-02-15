@@ -122,6 +122,10 @@ EOT
         super if !caller[0].rindex(MiniTest::MINI_DIR, 0) || !obj.respond_to?(meth)
       end
 
+      instance_methods(true).grep(/\Arefute_/) do |m|
+        alias_method(('assert_not_' << m.to_s[/.*?_(.*)/, 1]), m)
+      end
+
       def build_message(head, template=nil, *arguments)
         template &&= template.chomp
         template.gsub(/\?/) { mu_pp(arguments.shift) }
