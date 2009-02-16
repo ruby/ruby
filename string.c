@@ -306,6 +306,7 @@ rb_obj_as_string(obj)
     return str;
 }
 
+static VALUE rb_str_s_alloc _((VALUE));
 static VALUE rb_str_replace _((VALUE, VALUE));
 
 VALUE
@@ -531,7 +532,21 @@ rb_str_associated(str)
     return Qfalse;
 }
 
-static char *null_str = "";
+static const char null_str[] = "";
+#define make_null_str(s) do { \
+	FL_SET(s, ELTS_SHARED); \
+	RSTRING(s)->ptr = (char *)null_str; \
+	RSTRING(s)->aux.shared = 0; \
+    } while (0)
+
+static VALUE
+rb_str_s_alloc(klass)
+    VALUE klass;
+{
+    VALUE str = str_alloc(klass);
+    make_null_str(str);
+    return str;
+}
 
 VALUE
 rb_string_value(ptr)
@@ -543,8 +558,7 @@ rb_string_value(ptr)
 	*ptr = s;
     }
     if (!RSTRING(s)->ptr) {
-	FL_SET(s, ELTS_SHARED);
-	RSTRING(s)->ptr = null_str;
+	make_null_str(s);
     }
     return s;
 }
@@ -575,8 +589,7 @@ rb_check_string_type(str)
 {
     str = rb_check_convert_type(str, T_STRING, "String", "to_str");
     if (!NIL_P(str) && !RSTRING(str)->ptr) {
-	FL_SET(str, ELTS_SHARED);
-	RSTRING(str)->ptr = null_str;
+	make_null_str(str);
     }
     return str;
 }
@@ -2256,9 +2269,18 @@ rb_str_replace(str, str2)
 	RSTRING(str)->aux.shared = RSTRING(str2)->aux.shared;
     }
     else {
-	rb_str_modify(str);
-	rb_str_resize(str, RSTRING(str2)->len);
-	memcpy(RSTRING(str)->ptr, RSTRING(str2)->ptr, RSTRING(str2)->len);
+	if (str_independent(str)) {
+	    rb_str_resize(str, RSTRING(str2)->len);
+	    memcpy(RSTRING(str)->ptr, RSTRING(str2)->ptr, RSTRING(str2)->len);
+	    if (!RSTRING(str)->ptr) {
+		make_null_str(str);
+	    }
+	}
+	else {
+	    RSTRING(str)->ptr = RSTRING(str2)->ptr;
+	    RSTRING(str)->len = RSTRING(str2)->len;
+	    str_make_independent(str);
+	}
 	if (FL_TEST(str2, STR_ASSOC)) {
 	    FL_SET(str, STR_ASSOC);
 	    RSTRING(str)->aux.shared = RSTRING(str2)->aux.shared;
@@ -4642,7 +4664,7 @@ Init_String()
     rb_cString  = rb_define_class("String", rb_cObject);
     rb_include_module(rb_cString, rb_mComparable);
     rb_include_module(rb_cString, rb_mEnumerable);
-    rb_define_alloc_func(rb_cString, str_alloc);
+    rb_define_alloc_func(rb_cString, rb_str_s_alloc);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
     rb_define_method(rb_cString, "initialize_copy", rb_str_replace, 1);
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);
