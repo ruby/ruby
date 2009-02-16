@@ -1,3 +1,8 @@
+Mon Feb 16 22:36:37 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb (DRbConn::alive?): fixed NoMethodError problem
+	  from NaHi [ruby-dev:37110].
+
 Sun Feb 15 04:21:42 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/net/ftp.rb (Net::FTP#open_socket): SOCKSsocket is obsolete.
