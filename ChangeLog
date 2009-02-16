@@ -1,7 +1,11 @@
-Mon Feb 16 01:17:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Feb 16 16:47:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* win32/win32.c (_CrtDbgReportW): prevent from false positive
-	  assertions in msvcrtd.  [ruby-core:22116]
+	* win32/Makefile.sub (CRTDEFFLAGS): separated from DEFS.
+
+	* win32/win32.c (rtc_error_handler): ignores RTC errors.
+
+	* win32/win32.c (NtInitialize): suppress useless CRT assertions.
+	  [ruby-core:22116]
 
 Sun Feb 15 21:43:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
