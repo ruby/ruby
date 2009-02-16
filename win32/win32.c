@@ -29,6 +29,9 @@
 #include <share.h>
 #include <shlobj.h>
 #include <mbstring.h>
+#if _MSC_VER >= 1400
+#include <crtdbg.h>
+#endif
 #ifdef __MINGW32__
 #include <mswsock.h>
 #endif
@@ -439,9 +442,28 @@ init_func(void)
 static void init_stdhandle(void);
 
 #if _MSC_VER >= 1400
-static void invalid_parameter(const wchar_t *expr, const wchar_t *func, const wchar_t *file, unsigned int line, uintptr_t dummy)
+static void
+invalid_parameter(const wchar_t *expr, const wchar_t *func, const wchar_t *file, unsigned int line, uintptr_t dummy)
 {
     // nothing to do
+}
+
+int ruby_w32_rtc_error;
+
+static int __cdecl
+rtc_error_handler(int e, const char *src, int line, const char *exe, const char *fmt, ...)
+{
+    va_list ap;
+    VALUE str;
+
+    if (!ruby_w32_rtc_error) return 0;
+    str = rb_sprintf("%s:%d: ", src, line);
+    va_start(ap, fmt);
+    rb_str_vcatf(str, fmt, ap);
+    va_end(ap);
+    rb_str_cat(str, "\n", 1);
+    rb_write_error2(RSTRING_PTR(str), RSTRING_LEN(str));
+    return 0;
 }
 #endif
 
@@ -496,7 +518,9 @@ rb_w32_sysinit(int *argc, char ***argv)
 #if _MSC_VER >= 1400
     static void set_pioinfo_extra(void);
 
+    _CrtSetReportMode(_CRT_ASSERT, 0);
     _set_invalid_parameter_handler(invalid_parameter);
+    _RTC_SetErrorFunc(rtc_error_handler);
     set_pioinfo_extra();
 #endif
 
@@ -4873,5 +4897,3 @@ rb_w32_fsopen(const char *path, const char *mode, int shflags)
     return f;
 }
 #endif
-
-RUBY_EXTERN int __cdecl _CrtDbgReportW() {return 0;}

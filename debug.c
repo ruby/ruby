@@ -148,6 +148,9 @@ set_debug_option(const char *str, int len, void *arg)
     } while (0)
     SET_WHEN("gc_stress", *ruby_initial_gc_stress_ptr);
     SET_WHEN("core", ruby_enable_coredump);
+#if defined _WIN32 && defined _MSC_VER && _MSC_VER >= 1400
+    SET_WHEN("rtc_error", ruby_w32_rtc_error);
+#endif
     fprintf(stderr, "unexpected debug option: %.*s\n", len, str);
 }
 
