@@ -678,15 +678,36 @@ argument is the C array of the method arguments, and the third
 argument is the receiver of the method.
 
 You can use the function rb_scan_args() to check and retrieve the
-arguments.  For example, "11" means that the method requires at least one
-argument, and at most receives two arguments.
+arguments.  The third argument is a string that specifies how to
+capture method arguments and assign them to the following variable
+references.  The format can be described in ABNF as follows:
+
+--
+scan-arg-spec  := param-arg-spec [block-arg-spec]
+
+param-arg-spec := pre-arg-spec [post-arg-spec] / post-arg-spec
+pre-arg-spec   := num-of-leading-mandatory-args [num-of-optional-args]
+post-arg-spec  := sym-for-variable-length-args
+block-arg-spec := sym-for-block-arg
+
+num-of-leading-mandatory-args  := DIGIT  ; -- the number of the leading mandatory arguments
+num-of-optional-args           := DIGIT  ; -- the number of the following optional arguments
+sym-for-variable-length-args   := "*"    ; -- indicates that the following variable length
+                                         ;    arguments are captured as a Ruby array
+sym-for-block-arg              := "&"    ; -- indicates that the iterator block should be
+                                         ;    captured if given
+--
+
+For example, "11" means that the method requires at least one
+argument, and at most receives two arguments.  For omitted arguments,
+variables are set to Qnil.
 
 Methods with an arbitrary number of arguments can receive arguments
 by Ruby's array, like this:
 
 --
 static VALUE
-fdbm_indexes(VALUE obj, VALUE args)
+thread_initialize(VALUE thread, VALUE args)
 {
 	:
 }
