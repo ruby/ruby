@@ -927,9 +927,11 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             MEMCPY(CMSG_DATA(cmh), RSTRING_PTR(cdata), char, RSTRING_LEN(cdata));
 	    last_pad = cspace - cmh->cmsg_len;
         }
+#if !defined(__OpenBSD__)
 	if (last_pad) {
 	    rb_str_set_len(controls_str, RSTRING_LEN(controls_str)-last_pad);
 	}
+#endif
 #else
 	rb_raise(rb_eNotImpError, "control message for sendmsg is unimplemented");
 #endif
