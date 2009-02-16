@@ -1,3 +1,7 @@
+Mon Feb 16 21:59:32 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
+
+	* symbian/setup: Update Symbian config to match recent changes in missing/alloca.c
+
 Mon Feb 16 17:04:14 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* class.c (rb_scan_args), README.EXT, README.EXT.ja: Add support
@@ -125,7 +129,7 @@ Fri Feb 13 15:34:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Feb 13 15:11:11 2009  Koichi Sasada  <ko1@atdot.net>
 
-	* vm_eval.c (eval_string_with_cref): use rb_vm_get_ruby_level_next_cfp() 
+	* vm_eval.c (eval_string_with_cref): use rb_vm_get_ruby_level_next_cfp()
 	  instead of vm_get_ruby_level_caller_cfp().  checking a upper frame
 	  is not enough.  [ruby-dev:37984]
 
