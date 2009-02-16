@@ -2,7 +2,7 @@ Mon Feb 16 23:14:51 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (bsock_sendmsg_internal) [OpenBSD]: don't remove
 	  the last padding to prevent sendmsg failure in test_udp_server in
-	  test/socket/test_socket.rb.
+	  test/socket/test_socket.rb on OpenBSD 4.4.
 
 Mon Feb 16 21:59:32 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 
