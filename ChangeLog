@@ -1,3 +1,14 @@
+Tue Feb 17 01:53:35 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: generate rb_define_const directly for
+	  rdoc.
+
+	* ext/.document: add socket/constdefs.c.
+
+	* ext/socket/constants.c (sock_define_const): removed.
+	  (sock_define_uconst): ditto.
+	  (rb_mSockConst): new static variable.
+
 Mon Feb 16 23:14:51 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (bsock_sendmsg_internal) [OpenBSD]: don't remove

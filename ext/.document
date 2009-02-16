@@ -23,6 +23,7 @@ socket/socket.c
 socket/option.c
 socket/ancdata.c
 socket/constants.c
+socket/constdefs.c
 socket/lib/socket.rb
 stringio/stringio.c
 strscan/strscan.c

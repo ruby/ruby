@@ -51,16 +51,16 @@ DEFS = h.to_a
 def each_const
   DEFS.each {|name, default_value|
     if name =~ /\AINADDR_/
-      define = "sock_define_uconst"
+      make_value = "UINT2NUM"
     else
-      define = "sock_define_const"
+      make_value = "INT2NUM"
     end
     guard = nil
     if /\A(AF_INET6|PF_INET6)\z/ =~ name
       # IPv6 is not supported although AF_INET6 is defined on bcc32/mingw
       guard = "defined(INET6)"
     end
-    yield guard, define, name, default_value
+    yield guard, make_value, name, default_value
   }
 end
 
@@ -72,7 +72,7 @@ def each_name(pat)
 end
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_decls")
-% each_const {|guard, define, name, default_value|
+% each_const {|guard, make_value, name, default_value|
 %   if default_value
 #ifndef <%=name%>
 # define <%=name%> <%=default_value%>
@@ -81,20 +81,21 @@ ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_decls")
 % }
 EOS
 
-ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_defs_in_guard(define, name, default_value)")
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_defs_in_guard(make_value, name, default_value)")
 #if defined(<%=name%>)
-    <%=define%>(<%=c_str name%>, <%=name%>);
+    rb_define_const(rb_cSocket, <%=c_str name%>, <%=make_value%>(<%=name%>));
+    rb_define_const(rb_mSockConst, <%=c_str name%>, <%=make_value%>(<%=name%>));
 #endif
 EOS
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_defs")
-% each_const {|guard, define, name, default_value|
+% each_const {|guard, make_value, name, default_value|
 %   if guard
 #if <%=guard%>
-<%= gen_const_defs_in_guard(define, name, default_value).chomp %>
+<%= gen_const_defs_in_guard(make_value, name, default_value).chomp %>
 #endif
 %   else
-<%= gen_const_defs_in_guard(define, name, default_value).chomp %>
+<%= gen_const_defs_in_guard(make_value, name, default_value).chomp %>
 %   end
 % }
 EOS
@@ -272,8 +273,12 @@ result = ERB.new(<<'EOS', nil, '%').result(binding)
 <%= INTERN_DEFS.map {|vardef, gen_hash, decl, func| vardef }.join("\n") %>
 
 static void
-init_constants(VALUE mConst)
+init_constants(void)
 {
+    /* for rdoc */
+    /* rb_cSocket = rb_define_class("Socket", rb_cBasicSocket); */
+    /* rb_mSockConst = rb_define_module_under(rb_cSocket, "Constants"); */
+
 <%= gen_const_defs %>
 <%= INTERN_DEFS.map {|vardef, gen_hash, decl, func| gen_hash }.join("\n") %>
 }

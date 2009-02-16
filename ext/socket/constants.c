@@ -10,13 +10,9 @@
 
 #include "rubysocket.h"
 
-static void sock_define_const(const char *name, int value, VALUE mConst);
-static void sock_define_uconst(const char *name, unsigned int value, VALUE mConst);
-#define sock_define_const(name, value) sock_define_const(name, value, mConst)
-#define sock_define_uconst(name, value) sock_define_uconst(name, value, mConst)
+static VALUE rb_mSockConst;
+
 #include "constdefs.c"
-#undef sock_define_const
-#undef sock_define_uconst
 
 static int
 constant_arg(VALUE arg, int (*str_to_int)(const char*, int, int*), const char *errmsg)
@@ -138,29 +134,13 @@ shutdown_how_arg(VALUE how)
     return constant_arg(how, shutdown_how_to_int, "unknown shutdown argument");
 }
 
-static void
-sock_define_const(const char *name, int value, VALUE mConst)
-{
-    rb_define_const(rb_cSocket, name, INT2NUM(value));
-    rb_define_const(mConst, name, INT2NUM(value));
-}
-
-static void
-sock_define_uconst(const char *name, unsigned int value, VALUE mConst)
-{
-    rb_define_const(rb_cSocket, name, UINT2NUM(value));
-    rb_define_const(mConst, name, UINT2NUM(value));
-}
-
 /*
  * Socket::Constants module
  */
 void
 Init_socket_constants(void)
 {
-    VALUE mConst;
-
     /* constants */
-    mConst = rb_define_module_under(rb_cSocket, "Constants");
-    init_constants(mConst);
+    rb_mSockConst = rb_define_module_under(rb_cSocket, "Constants");
+    init_constants();
 }
