@@ -80,7 +80,7 @@ define config_h
 @echo>>$(1) #define HAVE_RB_FD_INIT 1
 @echo>>$(1) #define GETGROUPS_T gid_t
 @echo>>$(1) #define RETSIGTYPE void
-@echo>>$(1) #define HAVE_ALLOCA 1
+@echo>>$(1) #define C_ALLOCA 1
 @echo>>$(1) #define HAVE_DUP2 1
 @echo>>$(1) #define HAVE_MEMMOVE 1
 @echo>>$(1) #define HAVE_STRCASECMP 1
