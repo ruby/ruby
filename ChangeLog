@@ -1,3 +1,10 @@
+Tue Feb 17 05:41:08 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c: fix to add "ensure" codes across "while" clause
+	  before "return" expression.  [ruby-dev:37967]
+
+	* bootstraptest/test_flow.rb: add a test.
+
 Tue Feb 17 01:53:35 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: generate rb_define_const directly for
