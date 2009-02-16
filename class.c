@@ -920,20 +920,37 @@ rb_define_attr(VALUE klass, const char *name, int read, int write)
 int
 rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 {
-    int n, i = 0;
-    const char *p = fmt;
+    int i = 0, postargc, nonpostargc;
+    const char *p = fmt, *q;
     VALUE *var;
     va_list vargs;
 
     va_start(vargs, fmt);
 
-    if (*p == '*') goto rest_arg;
+    /* check the trailing mandatory argument length in advance */
+    if ((q = strchr(p, '*')) != NULL && ISDIGIT(*++q)) {
+	postargc = *q - '0';
+	nonpostargc = argc - postargc;
+    }
+    else { 
+	postargc = 0;
+	nonpostargc = argc;
+    }
 
-    if (ISDIGIT(*p)) {
-	n = *p - '0';
-	if (n > argc)
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", argc, n);
-	for (i=0; i<n; i++) {
+    if (*p == '*') {
+	if (nonpostargc < 0)
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+		     argc, postargc);
+	goto rest_arg;    
+    }
+    else if (ISDIGIT(*p)) {
+	/* leading mandatory arguments */
+	int n = *p - '0';
+
+	if (nonpostargc < n)
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+		     argc, n + postargc);
+	for (; n-- > 0; i++) {
 	    var = va_arg(vargs, VALUE*);
 	    if (var) *var = argv[i];
 	}
@@ -943,12 +960,15 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 	goto error;
     }
 
+    /* optional arguments (typically with default values) */
     if (ISDIGIT(*p)) {
-	n = i + *p - '0';
-	for (; i<n; i++) {
+	int n = *p - '0';
+
+	for (; n-- > 0; ) {
 	    var = va_arg(vargs, VALUE*);
-	    if (argc > i) {
+	    if (i < nonpostargc) {
 		if (var) *var = argv[i];
+		i++;
 	    }
 	    else {
 		if (var) *var = Qnil;
@@ -957,20 +977,33 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 	p++;
     }
 
-    if(*p == '*') {
+    if (*p == '*') {
       rest_arg:
+	/* variable length arguments (the <*rest> part) */
 	var = va_arg(vargs, VALUE*);
-	if (argc > i) {
-	    if (var) *var = rb_ary_new4(argc-i, argv+i);
-	    i = argc;
+	if (i < nonpostargc) {
+	    if (var) *var = rb_ary_new4(nonpostargc-i, argv+i);
+	    i = nonpostargc;
 	}
 	else {
 	    if (var) *var = rb_ary_new();
 	}
 	p++;
+
+	if (0 < postargc) {
+	    /* trailing mandatory arguments */
+	    int n = postargc;
+
+	    for (; n-- > 0; i++) {
+		var = va_arg(vargs, VALUE*);
+		if (var) *var = argv[i];
+	    }
+	    p++;
+	}
     }
 
     if (*p == '&') {
+	/* iterator block */
 	var = va_arg(vargs, VALUE*);
 	if (rb_block_given_p()) {
 	    *var = rb_block_proc();
@@ -986,7 +1019,7 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 	goto error;
     }
 
-    if (argc > i) {
+    if (i < argc) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", argc, i);
     }
 

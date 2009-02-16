@@ -1,3 +1,9 @@
+Mon Feb 16 17:04:14 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* class.c (rb_scan_args), README.EXT, README.EXT.ja: Add support
+	  for specifying the number of the trailing mandatory arguments.
+	  Update the documents accordingly. [ruby-dev:37995]
+
 Mon Feb 16 16:46:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* debug.c (set_debug_option): added rtc_error option.
