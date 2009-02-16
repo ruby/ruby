@@ -317,8 +317,8 @@ module TupleSpaceTestModule
   
   def test_core_03_notify
     notify1 = @ts.notify(nil, [:req, Integer])
-    notify2 = @ts.notify(nil, [:ans, Integer], 5)
-    notify3 = @ts.notify(nil, {"message"=>String, "name"=>String}, 5)
+    notify2 = @ts.notify(nil, [:ans, Integer], 8)
+    notify3 = @ts.notify(nil, {"message"=>String, "name"=>String}, 8)
 
     @ts.write({"message"=>"first", "name"=>"3"}, 3)
     @ts.write({"message"=>"second", "name"=>"1"}, 1)
@@ -347,19 +347,19 @@ module TupleSpaceTestModule
       result = nil
       lv = 0
       n = 0
-      notify2.each  do |ev|
+      notify2.each do |ev, tuple|
 	n += 1
-	if ev[0] == 'write'
+	if ev == 'write'
 	  lv = lv + 1
-	elsif ev[0] == 'take'
+	elsif ev == 'take'
 	  lv = lv - 1
-	elsif ev[0] == 'close'
+	elsif ev == 'close'
 	  result = [lv, n]
 	else
 	  break
 	end
 	assert(lv >= 0)
-	assert_equal([:ans, 10], ev[1])
+	assert_equal([:ans, 10], tuple)
       end
       result
     end
@@ -386,13 +386,15 @@ module TupleSpaceTestModule
 
     sleep(4)
     assert_equal(10, thread_join(taker))
+    # notify2 must not expire until this @ts.take.
+    # sleep(4) might be short enough for the timeout of notify2 (8 secs)
     tuple = @ts.take([:ans, nil])
     assert_equal(10, tuple[1])
     assert_equal([], @ts.read_all([nil, nil]))
-    
+
     notify1.cancel
-    sleep(3) # notify2 expired
-    
+    sleep(7) # notify2 expired (sleep(4)+sleep(7) > 8)
+
     assert_equal([0, 11], thread_join(listener1))
     assert_equal([0, 3], thread_join(listener2))
 
