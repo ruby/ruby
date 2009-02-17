@@ -18,7 +18,7 @@ require "monitor"
 require "digest/md5"
 require "strscan"
 begin
-  require "openssl/ssl"
+  require "openssl"
 rescue LoadError
 end
 

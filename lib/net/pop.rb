@@ -25,7 +25,7 @@ require 'digest/md5'
 require 'timeout'
 
 begin
-  require "openssl/ssl"
+  require "openssl"
 rescue LoadError
 end
 

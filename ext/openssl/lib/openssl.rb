@@ -19,6 +19,6 @@ require 'openssl.so'
 require 'openssl/bn'
 require 'openssl/cipher'
 require 'openssl/digest'
-require 'openssl/ssl'
-require 'openssl/x509'
+require 'openssl/ssl-internal'
+require 'openssl/x509-internal'
 

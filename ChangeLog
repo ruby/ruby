@@ -1,3 +1,17 @@
+Wed Feb 18 01:05:05 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl: avoid cyclic require.
+
+	* ext/openssl/lib/openssl/ssl-internal.rb: renamed from ssl.rb
+
+	* ext/openssl/lib/openssl/x509-internal.rb: renamed from x509.rb.
+
+	* lib/net/imap.rb: require openssl, instead of openssl/ssl.
+
+	* lib/net/pop.rb: require openssl, instead of openssl/ssl.
+
+	[ruby-dev:38018]
+
 Wed Feb 18 00:55:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (Etc::Passwd.each, Etc::Group.each): new methods.
