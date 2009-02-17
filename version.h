@@ -16,8 +16,10 @@ RUBY_EXTERN const char ruby_version[];
 RUBY_EXTERN const char ruby_release_date[];
 RUBY_EXTERN const char ruby_platform[];
 RUBY_EXTERN const int ruby_patchlevel;
+#ifndef NO_STRING_LITERAL_CONCATENATION
 RUBY_EXTERN const char ruby_description[];
 RUBY_EXTERN const char ruby_copyright[];
+#endif
 #endif
 
 #define RUBY_AUTHOR "Yukihiro Matsumoto"
@@ -32,24 +34,29 @@ RUBY_EXTERN const char ruby_copyright[];
 #define RUBY_REVISION 0
 #endif
 
-#if RUBY_VERSION_TEENY > 0 && RUBY_PATCHLEVEL < 5000
-#define RUBY_RELEASE_STR "patchlevel"
-#define RUBY_RELEASE_NUM RUBY_PATCHLEVEL
+#if RUBY_PATCHLEVEL == -1
+#define RUBY_PATCHLEVEL_STR "dev"
 #else
-#ifdef RUBY_BRANCH_NAME
-#define RUBY_RELEASE_STR RUBY_BRANCH_NAME
-#else
-#define RUBY_RELEASE_STR "revision"
-#endif
-#define RUBY_RELEASE_NUM RUBY_REVISION
+#define RUBY_PATCHLEVEL_STR "p"STRINGIZE(RUBY_PATCHLEVEL)
 #endif
 
+#if RUBY_REVISION
+# ifdef RUBY_BRANCH_NAME
+#  define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "STRINGIZE(RUBY_REVISION)
+# else
+#  define RUBY_REVISION_STR " revision "STRINGIZE(RUBY_REVISION)
+# endif
+#else
+# define RUBY_REVISION_STR ""
+#endif
+
+#ifndef NO_STRING_LITERAL_CONCATENATION
 #ifndef RUBY_DESCRIPTION
 # define RUBY_DESCRIPTION	    \
     "ruby "RUBY_VERSION		    \
-    " ("RUBY_RELEASE_DATE" "	    \
-    RUBY_RELEASE_STR" "		    \
-    STRINGIZE(RUBY_RELEASE_NUM)") " \
+    RUBY_PATCHLEVEL_STR             \
+    " ("RUBY_RELEASE_DATE	    \
+    RUBY_REVISION_STR") "	    \
     "["RUBY_PLATFORM"]"
 #endif
 #ifndef RUBY_COPYRIGHT
@@ -58,4 +65,5 @@ RUBY_EXTERN const char ruby_copyright[];
     STRINGIZE(RUBY_BIRTH_YEAR)"-"   \
     STRINGIZE(RUBY_RELEASE_YEAR)" " \
     RUBY_AUTHOR
+#endif
 #endif
