@@ -15,7 +15,12 @@ class TestSocketNonblock < Test::Unit::TestCase
     assert_raise(Errno::EAGAIN, Errno::EWOULDBLOCK) { serv.accept_nonblock }
     c = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
     c.connect(serv.getsockname)
-    s, sockaddr = serv.accept_nonblock
+    begin
+      s, sockaddr = serv.accept_nonblock
+    rescue Errno::EWOULDBLOCK
+      IO.select nil, [serv]
+      s, sockaddr = serv.accept_nonblock
+    end
     assert_equal(Socket.unpack_sockaddr_in(c.getsockname), Socket.unpack_sockaddr_in(sockaddr))
   ensure
     serv.close if serv
