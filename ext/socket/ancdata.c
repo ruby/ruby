@@ -951,8 +951,10 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
              * Basically, msg_controllen should contains the padding.
              * So the padding is removed only if a problem really exists.
              */
+#if defined(__NetBSD__)
             if (last_level == SOL_SOCKET && last_type == SCM_RIGHTS)
                 rb_str_set_len(controls_str, RSTRING_LEN(controls_str)-last_pad);
+#endif
 	}
 #else
 	rb_raise(rb_eNotImpError, "control message for sendmsg is unimplemented");

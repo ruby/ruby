@@ -1,3 +1,8 @@
+Tue Feb 17 23:25:01 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal): make the padding
+	  removing only on NetBSD.
+
 Tue Feb 17 19:39:04 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (bsock_sendmsg_internal): should not remove the
