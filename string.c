@@ -464,6 +464,8 @@ rb_str_format_m(str, arg)
     return rb_str_format(1, &arg, str);
 }
 
+static const char null_str[] = "";
+
 static int
 str_independent(str)
     VALUE str;
@@ -474,6 +476,7 @@ str_independent(str)
     if (OBJ_FROZEN(str)) rb_error_frozen("string");
     if (!OBJ_TAINTED(str) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
+    if (RSTRING(str)->ptr == null_str) return 0;
     if (!FL_TEST(str, ELTS_SHARED)) return 1;
     return 0;
 }
@@ -532,7 +535,6 @@ rb_str_associated(str)
     return Qfalse;
 }
 
-static const char null_str[] = "";
 #define make_null_str(s) do { \
 	FL_SET(s, ELTS_SHARED); \
 	RSTRING(s)->ptr = (char *)null_str; \
