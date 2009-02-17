@@ -129,10 +129,9 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
     struct dl_handle *dlhandle;
     void *handle;
     const char *name;
-    const char *err;
     int i;
-
 #if defined(HAVE_DLERROR)
+    const char *err;
 # define CHECK_DLERROR if( err = dlerror() ){ func = 0; }
 #else
 # define CHECK_DLERROR
