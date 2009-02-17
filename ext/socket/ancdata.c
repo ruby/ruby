@@ -1342,6 +1342,10 @@ bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock)
 void
 Init_ancdata(void)
 {
+    /* for rdoc */
+    /* rb_cBasicSocket = rb_define_class("BasicSocket", rb_cIO); */
+    /* rb_cSocket = rb_define_class("Socket", rb_cBasicSocket); */
+
     rb_define_method(rb_cBasicSocket, "sendmsg", bsock_sendmsg, -1);
     rb_define_method(rb_cBasicSocket, "sendmsg_nonblock", bsock_sendmsg_nonblock, -1);
     rb_define_method(rb_cBasicSocket, "recvmsg", bsock_recvmsg, -1);
