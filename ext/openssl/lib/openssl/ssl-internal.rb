@@ -14,7 +14,6 @@
   $Id$
 =end
 
-require "openssl"
 require "openssl/buffering"
 require "fcntl"
 

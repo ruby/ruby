@@ -14,8 +14,6 @@
   $Id$
 =end
 
-require "openssl"
-
 module OpenSSL
   module X509
     class ExtensionFactory
