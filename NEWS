@@ -158,6 +158,11 @@ with all sufficient information, see the ChangeLog file.
   * new methods:
     * SecureRandom.urlsafe_base64
 
+* etc
+  * new methods:
+    * Etc::Passwd.each
+    * Etc::Group.each
+
 === Compatibility issues (excluding feature bug fixes)
 
   * Enumerator#rewind
