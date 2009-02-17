@@ -41,5 +41,7 @@ class TC_OpenStruct < Test::Unit::TestCase
     o.freeze
     assert_raise(TypeError) {o.b = 'b'}
     assert_not_respond_to(o, :b)
+    assert_raise(TypeError) {o.a = 'z'}
+    assert_equal('a', o.a)
   end
 end
