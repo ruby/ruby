@@ -1,3 +1,7 @@
+Tue Feb 17 12:53:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (get_arg_pat): no second parameter.
+
 Tue Feb 17 12:50:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_shared_replace): no need for

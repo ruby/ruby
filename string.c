@@ -1993,7 +1993,7 @@ regcomp_failed(str)
 }
 
 static VALUE
-get_arg_pat(pat, quote)
+get_arg_pat(pat)
      VALUE pat;
 {
     return rb_rescue2(get_pat_quoted, pat,
