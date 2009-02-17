@@ -1132,7 +1132,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
     GetOpenFile(sock, fptr);
     if (rb_io_read_pending(fptr)) {
-        rb_raise(rb_eIOError, "recvfrom for buffered IO");
+        rb_raise(rb_eIOError, "recvmsg for buffered IO");
     }
 
 #if !defined(HAVE_ST_MSG_CONTROL)
