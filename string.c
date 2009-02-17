@@ -264,13 +264,14 @@ rb_str_to_str(str)
     return rb_convert_type(str, T_STRING, "String", "to_str");
 }
 
+static inline void str_discard _((VALUE str));
+
 static void
 rb_str_shared_replace(str, str2)
     VALUE str, str2;
 {
     if (str == str2) return;
-    rb_str_modify(str);
-    if (!FL_TEST(str, ELTS_SHARED)) free(RSTRING(str)->ptr);
+    str_discard(str);
     if (NIL_P(str2)) {
 	RSTRING(str)->ptr = 0;
 	RSTRING(str)->len = 0;
@@ -510,6 +511,16 @@ rb_str_modify(str)
 {
     if (!str_independent(str))
 	str_make_independent(str);
+}
+
+static inline void
+str_discard(VALUE str)
+{
+    if (str_independent(str)) {
+	xfree(RSTRING_PTR(str));
+	RSTRING(str)->ptr = 0;
+	RSTRING(str)->len = 0;
+    }
 }
 
 void
@@ -2212,9 +2223,7 @@ str_gsub(argc, argv, str, bang)
     *bp = '\0';
     rb_str_unlocktmp(dest);
     if (bang) {
-	if (str_independent(str)) {
-	    free(RSTRING(str)->ptr);
-	}
+	str_discard(str);
 	FL_UNSET(str, STR_NOCAPA);
 	RSTRING(str)->ptr = buf;
 	RSTRING(str)->aux.capa = blen;
@@ -2312,9 +2321,7 @@ rb_str_replace(str, str2)
 
     StringValue(str2);
     if (FL_TEST(str2, ELTS_SHARED)) {
-	if (str_independent(str)) {
-	    free(RSTRING(str)->ptr);
-	}
+	str_discard(str);
 	RSTRING(str)->len = RSTRING(str2)->len;
 	RSTRING(str)->ptr = RSTRING(str2)->ptr;
 	FL_SET(str, ELTS_SHARED);

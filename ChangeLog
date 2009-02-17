@@ -1,3 +1,8 @@
+Tue Feb 17 12:50:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_shared_replace): no need for
+	  str_make_independent.
+
 Mon Feb 16 16:47:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (CRTDEFFLAGS): separated from DEFS.
