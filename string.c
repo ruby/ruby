@@ -759,6 +759,8 @@ rb_str_to_str(VALUE str)
     return rb_convert_type(str, T_STRING, "String", "to_str");
 }
 
+static inline void str_discard(VALUE str);
+
 void
 rb_str_shared_replace(VALUE str, VALUE str2)
 {
@@ -767,11 +769,8 @@ rb_str_shared_replace(VALUE str, VALUE str2)
     if (str == str2) return;
     enc = STR_ENC_GET(str2);
     cr = ENC_CODERANGE(str2);
-    rb_str_modify(str);
+    str_discard(str);
     OBJ_INFECT(str, str2);
-    if (!STR_SHARED_P(str) && !STR_EMBED_P(str)) {
-	xfree(RSTRING_PTR(str));
-    }
     if (RSTRING_LEN(str2) <= RSTRING_EMBED_LEN_MAX) {
 	STR_SET_EMBED(str);
 	memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), RSTRING_LEN(str2)+1);
@@ -1192,6 +1191,17 @@ str_modify_keep_cr(VALUE str)
     if (ENC_CODERANGE(str) == ENC_CODERANGE_BROKEN)
 	/* Force re-scan later */
 	ENC_CODERANGE_CLEAR(str);
+}
+
+static inline void
+str_discard(VALUE str)
+{
+    str_modifiable(str);
+    if (!STR_SHARED_P(str) && !STR_EMBED_P(str)) {
+	xfree(RSTRING_PTR(str));
+	RSTRING(str)->as.heap.ptr = 0;
+	RSTRING(str)->as.heap.len = 0;
+    }
 }
 
 void
@@ -3789,9 +3799,7 @@ rb_str_replace(VALUE str, VALUE str2)
     if (STR_ASSOC_P(str2)) {
 	str2 = rb_str_new4(str2);
     }
-    if (str_independent(str) && !STR_EMBED_P(str)) {
-	xfree(RSTRING_PTR(str));
-    }
+    str_discard(str);
     if (STR_SHARED_P(str2)) {
 	STR_SET_NOEMBED(str);
 	RSTRING(str)->as.heap.len = len;
@@ -3822,10 +3830,7 @@ rb_str_replace(VALUE str, VALUE str2)
 static VALUE
 rb_str_clear(VALUE str)
 {
-    /* rb_str_modify() */	/* no need for str_make_independent */
-    if (str_independent(str) && !STR_EMBED_P(str)) {
-	xfree(RSTRING_PTR(str));
-    }
+    str_discard(str);
     STR_SET_EMBED(str);
     STR_SET_EMBED_LEN(str, 0);
     RSTRING_PTR(str)[0] = 0;
