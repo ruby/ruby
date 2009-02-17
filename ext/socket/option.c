@@ -233,6 +233,7 @@ inspect_int(int level, int optname, VALUE data, VALUE ret)
     }
 }
 
+#if defined(IPV6_MULTICAST_IF) || defined(IPV6_MULTICAST_LOOP)
 static int
 inspect_uint(int level, int optname, VALUE data, VALUE ret)
 {
@@ -246,6 +247,7 @@ inspect_uint(int level, int optname, VALUE data, VALUE ret)
         return 0;
     }
 }
+#endif
 
 #if defined(SOL_SOCKET) && defined(SO_LINGER) /* POSIX */
 static int
@@ -305,7 +307,8 @@ inspect_peercred(int level, int optname, VALUE data, VALUE ret)
     if (RSTRING_LEN(data) == sizeof(struct ucred)) {
         struct ucred cred;
         memcpy(&cred, RSTRING_PTR(data), sizeof(struct ucred));
-        rb_str_catf(ret, " pid=%u euid=%u egid=%u", cred.pid, cred.uid, cred.gid);
+        rb_str_catf(ret, " pid=%u euid=%u egid=%u",
+		    (unsigned)cred.pid, (unsigned)cred.uid, (unsigned)cred.gid);
         rb_str_cat2(ret, " (ucred)");
         return 1;
     }
