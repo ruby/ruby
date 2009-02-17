@@ -890,6 +890,8 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #if defined(HAVE_ST_MSG_CONTROL)
 	int i;
 	int last_pad = 0;
+        int last_level = 0;
+        int last_type = 0;
         controls_str = rb_str_tmp_new(0);
         for (i = 0; i < controls_num; i++) {
             VALUE elt = controls_ptr[i], v;
@@ -925,13 +927,33 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             cmh->cmsg_type = type;
             cmh->cmsg_len = CMSG_LEN(RSTRING_LEN(cdata));
             MEMCPY(CMSG_DATA(cmh), RSTRING_PTR(cdata), char, RSTRING_LEN(cdata));
+            last_level = cmh->cmsg_level;
+            last_type = cmh->cmsg_type;
 	    last_pad = cspace - cmh->cmsg_len;
         }
-#if !defined(__OpenBSD__)
 	if (last_pad) {
-	    rb_str_set_len(controls_str, RSTRING_LEN(controls_str)-last_pad);
+            /*
+             * This code removes the last padding from msg_controllen.
+             * 
+             * 4.3BSD-Reno reject the padding for SCM_RIGHTS. (There was no 64bit environments in those days?)
+             * RFC 2292 require the padding.
+             * RFC 3542 relaxes the condition - implementation must accept both as valid.
+             * 
+             * Actual problems:
+             *
+             * - NetBSD 4.0.1
+             *   SCM_RIGHTS with padding causes EINVAL
+             *   IPV6_PKTINFO without padding causes "page fault trap"
+             *  
+             * - OpenBSD 4.4
+             *   IPV6_PKTINFO without padding causes EINVAL
+             *
+             * Basically, msg_controllen should contains the padding.
+             * So the padding is removed only if a problem really exists.
+             */
+            if (last_level == SOL_SOCKET && last_type == SCM_RIGHTS)
+                rb_str_set_len(controls_str, RSTRING_LEN(controls_str)-last_pad);
 	}
-#endif
 #else
 	rb_raise(rb_eNotImpError, "control message for sendmsg is unimplemented");
 #endif

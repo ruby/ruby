@@ -1,3 +1,8 @@
+Tue Feb 17 19:39:04 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal): should not remove the
+	  last padding of control messages, basically.
+
 Tue Feb 17 12:50:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_shared_replace): no need for
