@@ -44,20 +44,12 @@ fi
 GNU_LD=$rb_cv_prog_gnu_ld
 AC_SUBST(GNU_LD)])
 
-unset GREP_OPTIONS
-rb_version=`grep RUBY_VERSION $srcdir/version.h`
-MAJOR=`expr "$rb_version" : '#define RUBY_VERSION "\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*"'`
-MINOR=`expr "$rb_version" : '#define RUBY_VERSION "[0-9][0-9]*\.\([0-9][0-9]*\)\.[0-9][0-9]*"'`
-TEENY=`expr "$rb_version" : '#define RUBY_VERSION "[0-9][0-9]*\.[0-9][0-9]*\.\([0-9][0-9]*\)"'`
-if test "$MAJOR" = ""; then
-  AC_MSG_ERROR(could not determine MAJOR number from version.h)
-fi
-if test "$MINOR" = ""; then
-  AC_MSG_ERROR(could not determine MINOR number from version.h)
-fi
-if test "$TEENY" = ""; then
-  AC_MSG_ERROR(could not determine TEENY number from version.h)
-fi
+eval `sed -n 's/^#define RUBY_VERSION_\([A-Z][A-Z_0-9]*\) \([0-9][0-9]*\)/\1=\2/p' $srcdir/version.h`
+for v in MAJOR MINOR TEENY; do
+    if eval "test \"\$$v\" = ''"; then
+	AC_MSG_ERROR(could not determine $v number from version.h)
+    fi
+done
 AC_SUBST(MAJOR)
 AC_SUBST(MINOR)
 AC_SUBST(TEENY)

@@ -1,3 +1,7 @@
+Tue Feb 17 17:00:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (MAJOR, MINOR, TEENY): uses RUBY_VERSION_*.
+
 Tue Feb 17 12:53:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (get_arg_pat): no second parameter.
