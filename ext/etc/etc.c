@@ -27,7 +27,10 @@
 #define uid_t int
 #endif
 
-static VALUE sPasswd, sGroup;
+static VALUE sPasswd;
+#ifdef HAVE_GETGRENT
+static VALUE sGroup;
+#endif
 
 #ifndef _WIN32
 char *getenv();
@@ -139,7 +142,7 @@ etc_getpwuid(argc, argv, obj)
 	uid = getuid();
     }
     pwd = getpwuid(uid);
-    if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %d", uid);
+    if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %d", (int)uid);
     return setup_passwd(pwd);
 #else 
     return Qnil;
@@ -341,7 +344,7 @@ etc_getgrgid(obj, id)
     rb_secure(4);
     gid = PW_VAL2GID(id);
     grp = getgrgid(gid);
-    if (grp == 0) rb_raise(rb_eArgError, "can't find group for %d", gid);
+    if (grp == 0) rb_raise(rb_eArgError, "can't find group for %d", (int)gid);
     return setup_group(grp);
 #else
     return Qnil;

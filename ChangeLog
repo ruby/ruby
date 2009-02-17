@@ -1,3 +1,7 @@
+Wed Feb 18 01:58:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (sGroup): getgrent may not be available.
+
 Tue Feb 17 17:02:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* version.c, version.h: NO_STRING_LITERAL_CONCATENATION support.
