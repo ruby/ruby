@@ -1,3 +1,8 @@
+Tue Feb 17 11:58:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_independent): no independent string points null_str.
+	  [ruby-core:20082]
+
 Mon Feb 16 23:30:24 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/blt.rb, ext/tk/lib/tkextlib/blt/vector.rb: 
