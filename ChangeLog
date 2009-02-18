@@ -1,3 +1,12 @@
+Wed Feb 18 14:33:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_resurrect), string.c (rb_str_resurrect): new
+	  functions based on [ruby-dev:37983]
+
+	* insns.def (putstring, duparray): use rb_{ary,str}_resurrect().
+
+	* iseq.c (iseq_data_to_ary): needs to result TS_VALUE.
+
 Wed Feb 18 12:35:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_extname): fix for spaces before extention.

@@ -1469,6 +1469,12 @@ rb_ary_dup(VALUE ary)
     return dup;
 }
 
+VALUE
+rb_ary_resurrect(VALUE ary)
+{
+    return rb_ary_new4(RARRAY_LEN(ary), RARRAY_PTR(ary));
+}
+
 extern VALUE rb_output_fs;
 
 static VALUE

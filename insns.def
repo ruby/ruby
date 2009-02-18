@@ -373,7 +373,7 @@ putstring
 ()
 (VALUE val)
 {
-    val = rb_str_replace(rb_str_new(0, 0), str);
+    val = rb_str_resurrect(str);
 }
 
 /**
@@ -460,7 +460,7 @@ duparray
 ()
 (VALUE val)
 {
-    val = rb_ary_replace(rb_ary_new2(0), ary);
+    val = rb_ary_resurrect(ary);
 }
 
 /**

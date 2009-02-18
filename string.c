@@ -828,6 +828,11 @@ rb_str_dup(VALUE str)
     return str_duplicate(rb_obj_class(str), str);
 }
 
+VALUE
+rb_str_resurrect(VALUE str)
+{
+    return rb_str_replace(str_alloc(rb_cString), str);
+}
 
 /*
  *  call-seq:
