@@ -1,3 +1,7 @@
+Thu Feb 19 08:45:48 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
+
+	* ext/socket/rubysocket.h: add "#include <sys/stat.h>"
+
 Thu Feb 19 03:42:48 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (ancillary_rights): new method.
