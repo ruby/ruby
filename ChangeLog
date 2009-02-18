@@ -1,3 +1,8 @@
+Wed Feb 18 20:27:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (OBJCOPY): set ac_cv_prog_ac_ct_OBJCOPY to do nothing
+	  on cygwin and mingw because symbols are exported by def file.
+
 Wed Feb 18 15:35:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_chown): use chown unless HAVE_FCHOWN.

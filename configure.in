@@ -242,7 +242,7 @@ AC_SUBST(ASFLAGS)
 
 case "$target_os" in
 when(cygwin*|mingw*)
-    ac_cv_prog_OBJCOPY=":";;
+    ac_cv_prog_ac_ct_OBJCOPY=":";;
 esac
 
 # BSD's ports and MacPorts prefix GNU binutils with 'g'
