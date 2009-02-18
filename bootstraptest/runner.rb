@@ -95,8 +95,13 @@ End
 
   unless quiet
     puts Time.now
-    patchlevel = defined?(RUBY_PATCHLEVEL) ? " patchlevel #{RUBY_PATCHLEVEL}" : ''
-    puts "Driver is ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}#{patchlevel}) [#{RUBY_PLATFORM}]"
+    if defined?(RUBY_DESCRIPTION)
+      puts "Driver is #{RUBY_DESCRIPTION}"
+    elsif defined?(RUBY_PATCHLEVEL)
+      puts "Driver is ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}#{RUBY_PLATFORM}) [#{RUBY_PLATFORM}]"
+    else
+      puts "Driver is ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}) [#{RUBY_PLATFORM}]"
+    end
     puts "Target is #{`#{@ruby} -v`.chomp}"
     puts
     $stdout.flush
