@@ -514,6 +514,18 @@ FindChildSlot(rb_pid_t pid)
     return NULL;
 }
 
+static struct ChildRecord *
+FindChildSlotByHandle(HANDLE h)
+{
+
+    FOREACH_CHILD(child) {
+	if (child->hProcess == h) {
+	    return child;
+	}
+    } END_FOREACH_CHILD;
+    return NULL;
+}
+
 static void
 CloseChildHandle(struct ChildRecord *child)
 {
@@ -2964,7 +2976,7 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 	    return -1;
 	}
 
-	return poll_child_status(ChildRecord + ret, stat_loc);
+	return poll_child_status(FindChildSlotByHandle(events[ret]), stat_loc);
     }
     else {
 	struct ChildRecord* child = FindChildSlot(pid);

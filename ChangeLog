@@ -1,3 +1,9 @@
+Wed Feb 18 22:24:23 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (waitpid): fix bug of checking child slot.
+
+	* win32/win32.c (FindChildSlotByHandle): new.
+
 Wed Feb 18 22:17:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_pack): propagate taint status from format string to
