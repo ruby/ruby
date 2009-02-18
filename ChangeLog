@@ -1,3 +1,10 @@
+Wed Feb 18 22:47:01 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (discard_cmsg_resource): new function to close
+	  file descriptors in control message.
+	  (bsock_recvmsg_internal): call discard_cmsg_resource before retrying
+	  recvmsg.
+
 Wed Feb 18 21:47:37 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (bsock_recvmsg_internal): prevent misalignment.

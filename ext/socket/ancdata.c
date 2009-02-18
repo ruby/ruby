@@ -1099,6 +1099,28 @@ rb_recvmsg(int fd, struct msghdr *msg, int flags)
     return rb_thread_blocking_region(nogvl_recvmsg_func, &args, RUBY_UBF_IO, 0);
 }
 
+static void
+discard_cmsg_resource(struct msghdr *mh)
+{
+#if defined(HAVE_ST_MSG_CONTROL)
+    struct cmsghdr *cmh;
+
+    if (mh->msg_controllen == 0)
+        return;
+
+    for (cmh = CMSG_FIRSTHDR(mh); cmh != NULL; cmh = CMSG_NXTHDR(mh, cmh)) {
+        if (cmh->cmsg_level == SOL_SOCKET && cmh->cmsg_type == SCM_RIGHTS) {
+            int *fdp = (int *)CMSG_DATA(cmh);
+            int *end = (int *)((char *)cmh + cmh->cmsg_len);
+            while (fdp < end) {
+                close(*fdp);
+                fdp++;
+            }
+        }
+    }
+#endif
+}
+
 static VALUE
 bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 {
@@ -1232,12 +1254,14 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 	}
 #endif
 	if (grown) {
+            discard_cmsg_resource(&mh);
 	    goto retry;
 	}
 	else {
             grow_buffer = 0;
             if (flags != orig_flags) {
                 flags = orig_flags;
+                discard_cmsg_resource(&mh);
                 goto retry;
             }
         }
