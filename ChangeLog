@@ -1,3 +1,10 @@
+Wed Feb 18 22:07:44 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/gdbm/gdbm.c: do not set members of RSTRING(str) directly.
+	  [ruby-dev:37182]
+
+	* ext/gdbm/gdbm.c (rb_gdbm_nextkey): fix memory leak.
+
 Tue Feb 17 11:58:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_independent): no independent string points null_str.
