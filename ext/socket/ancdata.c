@@ -1102,27 +1102,33 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     rb_io_t *fptr;
     VALUE vmaxdatlen, vmaxctllen, vflags;
     int grow_buffer;
-    size_t maxdatlen, maxctllen;
+    size_t maxdatlen;
     int flags, orig_flags;
     struct msghdr mh;
     struct iovec iov;
-#if defined(HAVE_ST_MSG_CONTROL)
-    struct cmsghdr *cmh;
-#endif
     struct sockaddr_storage namebuf;
     char datbuf0[4096], *datbuf;
-    char ctlbuf0[4096], *ctlbuf;
     VALUE dat_str = Qnil;
-    VALUE ctl_str = Qnil;
     VALUE ret;
     ssize_t ss;
+#if defined(HAVE_ST_MSG_CONTROL)
+    struct cmsghdr *cmh;
+    size_t maxctllen;
+    char ctlbuf0[4096], *ctlbuf;
+    VALUE ctl_str = Qnil;
+#endif
 
     rb_secure(4);
 
     rb_scan_args(argc, argv, "03", &vmaxdatlen, &vflags, &vmaxctllen);
 
     maxdatlen = NIL_P(vmaxdatlen) ? sizeof(datbuf0) : NUM2SIZET(vmaxdatlen);
+#if defined(HAVE_ST_MSG_CONTROL)
     maxctllen = NIL_P(vmaxctllen) ? sizeof(ctlbuf0) : NUM2SIZET(vmaxctllen);
+#else
+    if (!NIL_P(vmaxctllen))
+        rb_raise(rb_eArgError, "control message not supported");
+#endif
     flags = NIL_P(vflags) ? 0 : NUM2INT(vflags);
 #ifdef MSG_DONTWAIT
     if (nonblock)
@@ -1159,6 +1165,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
         datbuf = RSTRING_PTR(dat_str);
     }
 
+#if defined(HAVE_ST_MSG_CONTROL)
     if (maxctllen <= sizeof(ctlbuf0))
         ctlbuf = ctlbuf0;
     else {
@@ -1168,6 +1175,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             rb_str_resize(ctl_str, maxctllen);
         ctlbuf = RSTRING_PTR(ctl_str);
     }
+#endif
 
     memset(&mh, 0, sizeof(mh));
 

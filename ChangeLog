@@ -1,3 +1,8 @@
+Wed Feb 18 12:09:43 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): reduce code on
+	  environments which have no control message.
+
 Wed Feb 18 20:27:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (OBJCOPY): set ac_cv_prog_ac_ct_OBJCOPY to do nothing
