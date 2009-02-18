@@ -1117,7 +1117,11 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #if defined(HAVE_ST_MSG_CONTROL)
     struct cmsghdr *cmh;
     size_t maxctllen;
-    char ctlbuf0[4096], *ctlbuf;
+    union {
+        char bytes[4096];
+        struct cmsghdr align;
+    } ctlbuf0;
+    char *ctlbuf;
     VALUE ctl_str = Qnil;
 #endif
 
@@ -1170,7 +1174,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
 #if defined(HAVE_ST_MSG_CONTROL)
     if (maxctllen <= sizeof(ctlbuf0))
-        ctlbuf = ctlbuf0;
+        ctlbuf = ctlbuf0.bytes;
     else {
         if (NIL_P(ctl_str))
             ctl_str = rb_str_tmp_new(maxctllen);
