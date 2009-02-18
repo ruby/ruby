@@ -1,3 +1,8 @@
+Wed Feb 18 22:17:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): propagate taint status from format string to
+	  result string.
+
 Wed Feb 18 22:07:44 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/gdbm/gdbm.c: do not set members of RSTRING(str) directly.
