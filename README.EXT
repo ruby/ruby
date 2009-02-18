@@ -1107,7 +1107,8 @@ assigned to captured arguments.  For omitted arguments, variables are
 set to Qnil.  NULL can be put in place of a variable reference, which
 means the corresponding captured argument(s) should be just dropped.
 
-The number of given arguments is returned.
+The number of given arguments, excluding an iterator block, is
+returned.
 
 ** Invoking Ruby method
 
