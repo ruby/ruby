@@ -53,7 +53,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
         recv_io_ary = []
         ctls.each {|ctl|
           next if ctl.level != Socket::SOL_SOCKET || ctl.type != Socket::SCM_RIGHTS
-          recv_io_ary.concat ctl.data.unpack("i!*").map {|fd| IO.new(fd) }
+          recv_io_ary.concat ctl.rights
         }
         assert_equal(send_io_ary.length, recv_io_ary.length)
         send_io_ary.length.times {|i|
@@ -126,13 +126,14 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
 	  assert_instance_of(Addrinfo, srcaddr)
 	  assert_instance_of(Array, ctls)
 	  assert_equal(1, ctls.length)
-	  assert_instance_of(Socket::AncillaryData, ctls[0])
-	  assert_equal(Socket::SOL_SOCKET, ctls[0].level)
-	  assert_equal(Socket::SCM_RIGHTS, ctls[0].type)
-	  assert_instance_of(String, ctls[0].data)
-	  fd, rest = ctls[0].data.unpack("i!a*")
-	  assert_equal("", rest)
-	  r2 = IO.new(fd)
+          ctl = ctls[0]
+	  assert_instance_of(Socket::AncillaryData, ctl)
+	  assert_equal(Socket::SOL_SOCKET, ctl.level)
+	  assert_equal(Socket::SCM_RIGHTS, ctl.type)
+	  assert_instance_of(String, ctl.data)
+          ios = ctl.rights
+          assert_equal(1, ios.length)
+	  r2 = ios[0]
 	  begin
 	    assert(File.identical?(r1, r2))
 	  ensure

@@ -1,3 +1,11 @@
+Thu Feb 19 03:42:48 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (ancillary_rights): new method.
+	  (make_io_for_rights): new function to allocate
+	  IOs for FDs in SCM_RIGHTS message.
+	  (bsock_recvmsg_internal): use make_io_for_rights.  So the FDs can be
+	  closed by GC.
+
 Thu Feb 19 03:28:59 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* README.EXT, README.EXT.ja: Improve the document about

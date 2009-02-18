@@ -174,6 +174,29 @@ ancillary_data(VALUE self)
     return v;
 }
 
+/*
+ * call-seq:
+ *   ancillarydata.rights => array-of-IOs
+ *
+ * returns the array of IOs which is sent by SCM_RIGHTS control message.
+ *
+ * The class of an IO in the array is IO or Socket. 
+ *
+ *   s1, s2 = UNIXSocket.pair
+ *   p s1                                       #=> #<UNIXSocket:fd 3>
+ *   s1.sendmsg "standard IOs", 0, nil, [:SOCKET, :RIGHTS, [0,s1.fileno].pack("ii")]
+ *   _, _, _, ctl = s2.recvmsg
+ *   p ctl.rights                               #=> [#<IO:fd 6>, #<Socket:fd 7>]
+ *   p File.identical?(STDIN, ctl.rights[0])    #=> true
+ *   p File.identical?(s1, ctl.rights[1])       #=> true
+ *
+ */
+static VALUE
+ancillary_rights(VALUE self)
+{
+    VALUE v = rb_attr_get(self, rb_intern("rights"));
+    return v;
+}
 
 /*
  * call-seq:
@@ -1121,6 +1144,35 @@ discard_cmsg_resource(struct msghdr *mh)
 #endif
 }
 
+#if defined(HAVE_ST_MSG_CONTROL)
+static void
+make_io_for_rights(VALUE ctl, struct cmsghdr *cmh)
+{
+    if (cmh->cmsg_level == SOL_SOCKET && cmh->cmsg_type == SCM_RIGHTS) {
+        int *fdp = (int *)CMSG_DATA(cmh);
+        int *end = (int *)((char *)cmh + cmh->cmsg_len);
+        while (fdp < end) {
+            int fd = *fdp;
+            struct stat stbuf;
+            VALUE io, ary;
+            if (fstat(fd, &stbuf) == -1)
+                rb_raise(rb_eSocket, "invalid fd in SCM_RIGHTS");
+            if (S_ISSOCK(stbuf.st_mode))
+                io = init_sock(rb_obj_alloc(rb_cSocket), fd);
+            else
+                io = rb_io_fdopen(fd, O_RDWR, NULL);
+            ary = rb_attr_get(ctl, rb_intern("rights"));
+            if (NIL_P(ary)) {
+                ary = rb_ary_new();
+                rb_ivar_set(ctl, rb_intern("rights"), ary);
+            }
+            rb_ary_push(ary, io);
+            fdp++;
+        }
+    }
+}
+#endif
+
 static VALUE
 bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 {
@@ -1145,6 +1197,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     } ctlbuf0;
     char *ctlbuf;
     VALUE ctl_str = Qnil;
+    int family;
 #endif
 
     rb_secure(4);
@@ -1288,17 +1341,17 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 			 );
 
 #if defined(HAVE_ST_MSG_CONTROL)
+    family = rb_sock_getfamily(fptr->fd);
     if (mh.msg_controllen) {
         for (cmh = CMSG_FIRSTHDR(&mh); cmh != NULL; cmh = CMSG_NXTHDR(&mh, cmh)) {
             VALUE ctl;
             size_t clen;
-            int family;
             if (cmh->cmsg_len == 0) {
                 rb_raise(rb_eIOError, "invalid control message (cmsg_len == 0)");
             }
-            family = rb_sock_getfamily(fptr->fd);
             clen = (char*)cmh + cmh->cmsg_len - (char*)CMSG_DATA(cmh);
             ctl = ancdata_new(family, cmh->cmsg_level, cmh->cmsg_type, rb_tainted_str_new((char*)CMSG_DATA(cmh), clen));
+            make_io_for_rights(ctl, cmh);
             rb_ary_push(ret, ctl);
         }
     }
@@ -1398,6 +1451,7 @@ Init_ancdata(void)
     rb_define_method(rb_cAncillaryData, "level", ancillary_level_m, 0);
     rb_define_method(rb_cAncillaryData, "type", ancillary_type_m, 0);
     rb_define_method(rb_cAncillaryData, "data", ancillary_data, 0);
+    rb_define_method(rb_cAncillaryData, "rights", ancillary_rights, 0);
     rb_define_method(rb_cAncillaryData, "cmsg_is?", ancillary_cmsg_is_p, 2);
     rb_define_singleton_method(rb_cAncillaryData, "int", ancillary_s_int, 4);
     rb_define_method(rb_cAncillaryData, "int", ancillary_int, 0);
