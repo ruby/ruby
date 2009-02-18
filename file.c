@@ -2780,7 +2780,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 		    }
 #if USE_NTFS
 		    else {
-			do *++s; while (istrailinggabage(*s));
+			do ++s; while (istrailinggabage(*s));
 		    }
 #endif
 		    break;
@@ -2831,12 +2831,18 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 
     if (s > b) {
 #if USE_NTFS
+	static const char prime[] = ":$DATA";
+	enum {prime_len = sizeof(prime) -1};
       endpath:
-	if (s > b + 6 && strncasecmp(s - 6, ":$DATA", 6) == 0) {
+	if (s > b + prime_len && strncasecmp(s - prime_len, prime, prime_len) == 0) {
 	    /* alias of stream */
 	    /* get rid of a bug of x64 VC++ */
-	    if (*(s-7) == ':') s -= 7;			/* prime */
-	    else if (memchr(b, ':', s - 6 - b)) s -= 6; /* alternative */
+	    if (*(s - (prime_len+1)) == ':') {
+		s -= prime_len + 1; /* prime */
+	    }
+	    else if (memchr(b, ':', s - prime_len - b)) {
+		s -= prime_len;	/* alternative */
+	    }
 	}
 #endif
 	BUFCHECK(bdiff + (s-b) >= buflen);
