@@ -766,37 +766,12 @@ fdbm_s_open(int argc, VALUE *argv, VALUE klass)
 えられます．
 
 この配列で与えられた引数を解析するための関数がopen()でも使わ
-れているrb_scan_args()です．第3引数に指定したフォーマットに
-従い，第4変数以降に指定した変数(の参照)に値を代入してくれます．
-このフォーマットは，ABNFで記述すると以下の通りです．
-
---
-scan-arg-spec  := param-arg-spec [block-arg-spec]
-
-param-arg-spec := pre-arg-spec [post-arg-spec] / post-arg-spec
-pre-arg-spec   := num-of-leading-mandatory-args [num-of-optional-args]
-post-arg-spec  := sym-for-variable-length-args [num-of-trailing-mandatory-args]
-block-arg-spec := sym-for-block-arg
-
-num-of-leading-mandatory-args  := DIGIT ; 先頭に置かれる省略不可能な引数の数
-num-of-optional-args           := DIGIT ; 続いて置かれる省略可能な引数の数
-sym-for-variable-length-args   := "*"   ; 続いて置かれる可変長引数を
-                                        ; Rubyの配列で取得するための指定
-num-of-trailing-mandatory-args := DIGIT ; 終端に置かれる省略不可能な引数の数
-sym-for-block-arg              := "&"   ; イテレータブロックを取得するための
-                                        ; 指定
---
-
-dbm.cの例では，フォーマットは"11"ですから，引数は最低1つで，2つ
-(1+1)まで許されるという意味になります．従って，フォーマット文
-字列に続いて2つの変数への参照を置く必要があります．それらには
-取得した変数がセットされます．変数への参照の代わりにNULLを指
-定することもでき，その場合は取得した引数の値は捨てられます．
-なお、省略可能引数が省略された時の変数の値はnil(C言語のレベル
-ではQnil)になります．
+れているrb_scan_args()です．第3引数に指定したフォーマットに従
+い，第4変数以降に指定したVALUEへの参照に値を代入してくれま
+す．
 
 
-最後に，引数をRubyの配列として受け取るものには
+引数をRubyの配列として受け取るメソッドの例には
 Thread#initializeがあります．実装はこうです．
 
 --
@@ -1198,13 +1173,37 @@ rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(), int a
 
 rb_scan_args(int argc, VALUE *argv, const char *fmt, ...)
 
-  argc, argv形式で与えられた引数を分解する．fmtは必須引数の数, 
-  付加引数の数, 残りの引数があるかを指定する文字列で, "数字
-  数字*"という形式である． 2 番目の数字と"*"はそれぞれ省略可
-  能である．必須引数が一つもない場合は0を指定する．第3引数以
-  降は変数へのポインタで, 該当する要素がその変数に格納される．
-  付加引数に対応する引数が与えられていない場合は変数にQnilが
-  代入される．
+  argc, argv形式で与えられた指定されたフォーマットに従って引
+  数を分解し，続くVALUEへの参照にセットします．このフォーマッ
+  トは，ABNFで記述すると以下の通りです．
+
+--
+scan-arg-spec  := param-arg-spec [block-arg-spec]
+
+param-arg-spec := pre-arg-spec [post-arg-spec] / post-arg-spec
+pre-arg-spec   := num-of-leading-mandatory-args [num-of-optional-args]
+post-arg-spec  := sym-for-variable-length-args [num-of-trailing-mandatory-args]
+block-arg-spec := sym-for-block-arg
+
+num-of-leading-mandatory-args  := DIGIT ; 先頭に置かれる省略不可能な引数の数
+num-of-optional-args           := DIGIT ; 続いて置かれる省略可能な引数の数
+sym-for-variable-length-args   := "*"   ; 続いて置かれる可変長引数を
+                                        ; Rubyの配列で取得するための指定
+num-of-trailing-mandatory-args := DIGIT ; 終端に置かれる省略不可能な引数の数
+sym-for-block-arg              := "&"   ; イテレータブロックを取得するための
+                                        ; 指定
+--
+
+  フォーマットが"12"の場合，引数は最低1つで，3つ(1+2)まで許さ
+  れるという意味になります．従って，フォーマット文字列に続い
+  て3つのVALUEへの参照を置く必要があります．それらには取得した
+  変数がセットされます．変数への参照の代わりにNULLを指定する
+  こともでき，その場合は取得した引数の値は捨てられます．なお、
+  省略可能引数が省略された時の変数の値はnil(C言語のレベルでは
+  Qnil)になります．
+
+  返り値は与えられた引数の数です．イテレータブロックは数えま
+  せん．
 
 ** Rubyメソッド呼び出し
 

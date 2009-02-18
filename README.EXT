@@ -679,41 +679,12 @@ argument is the receiver of the method.
 
 You can use the function rb_scan_args() to check and retrieve the
 arguments.  The third argument is a string that specifies how to
-capture method arguments and assign them to the following variable
-references.  The format can be described in ABNF as follows:
-
---
-scan-arg-spec  := param-arg-spec [block-arg-spec]
-
-param-arg-spec := pre-arg-spec [post-arg-spec] / post-arg-spec
-pre-arg-spec   := num-of-leading-mandatory-args [num-of-optional-args]
-post-arg-spec  := sym-for-variable-length-args [num-of-trailing-mandatory-args]
-block-arg-spec := sym-for-block-arg
-
-num-of-leading-mandatory-args  := DIGIT ; The number of leading
-                                        ; mandatory arguments
-num-of-optional-args           := DIGIT ; The number of optional
-                                        ; arguments
-sym-for-variable-length-args   := "*"   ; Indicates that variable
-                                        ; length arguments are
-                                        ; captured as a ruby array
-num-of-trailing-mandatory-args := DIGIT ; The number of trailing
-                                        ; mandatory arguments
-sym-for-block-arg              := "&"   ; Indicates that an iterator
-                                        ; block should be captured if
-                                        ; given
---
-
-For example, "11" means that the method requires at least one
-argument, and at most receives two (1+1) arguments.  So, the format
-string must be followed by two variable references, which are to be
-set to captured arguments.  For omitted arguments, variables are set
-to Qnil.  NULL can be put in place of a variable reference, which
-means the corresponding captured argument(s) does not need to be set.
+capture method arguments and assign them to the following VALUE
+references.
 
 
-Methods with an arbitrary number of arguments can receive arguments
-by Ruby's array, like this:
+The following is an example of a method that takes arguments by Ruby's
+array:
 
 --
 static VALUE
@@ -1103,11 +1074,40 @@ Defines a singleton method.  Arguments are same as rb_define_method().
 
  rb_scan_args(int argc, VALUE *argv, const char *fmt, ...)
 
-Retrieve argument from argc, argv.  The fmt is the format string for
-the arguments, such as "12" for 1 non-optional argument, 2 optional
-arguments.  If `*' appears at the end of fmt, it means the rest of
-the arguments are assigned to the corresponding variable, packed in
-an array.
+Retrieve argument from argc and argv to given VALUE references
+according to the format string.  The format can be described in ABNF
+as follows:
+
+--
+scan-arg-spec  := param-arg-spec [block-arg-spec]
+
+param-arg-spec := pre-arg-spec [post-arg-spec] / post-arg-spec
+pre-arg-spec   := num-of-leading-mandatory-args [num-of-optional-args]
+post-arg-spec  := sym-for-variable-length-args [num-of-trailing-mandatory-args]
+block-arg-spec := sym-for-block-arg
+
+num-of-leading-mandatory-args  := DIGIT ; The number of leading
+                                        ; mandatory arguments
+num-of-optional-args           := DIGIT ; The number of optional
+                                        ; arguments
+sym-for-variable-length-args   := "*"   ; Indicates that variable
+                                        ; length arguments are
+                                        ; captured as a ruby array
+num-of-trailing-mandatory-args := DIGIT ; The number of trailing
+                                        ; mandatory arguments
+sym-for-block-arg              := "&"   ; Indicates that an iterator
+                                        ; block should be captured if
+                                        ; given
+--
+
+For example, "12" means that the method requires at least one
+argument, and at most receives three (1+2) arguments.  So, the format
+string must be followed by three variable references, which are to be
+assigned to captured arguments.  For omitted arguments, variables are
+set to Qnil.  NULL can be put in place of a variable reference, which
+means the corresponding captured argument(s) should be just dropped.
+
+The number of given arguments is returned.
 
 ** Invoking Ruby method
 

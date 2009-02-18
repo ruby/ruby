@@ -1,3 +1,8 @@
+Thu Feb 19 03:28:59 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* README.EXT, README.EXT.ja: Improve the document about
+	  rb_scan_args() even more.
+
 Thu Feb 19 03:12:51 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_file_exhaustive.rb: skip some tests if euid == 0. 
