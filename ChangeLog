@@ -1,4 +1,8 @@
-Wed Feb 18 12:09:43 2009  Tanaka Akira  <akr@fsij.org>
+Wed Feb 18 21:34:30 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal): avoid misalignment.
+
+Wed Feb 18 21:09:43 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (bsock_recvmsg_internal): reduce code on
 	  environments which have no control message.

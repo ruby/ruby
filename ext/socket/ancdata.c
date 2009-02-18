@@ -899,7 +899,8 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             int level, type;
             VALUE cdata;
             long oldlen;
-            struct cmsghdr *cmh;
+            struct cmsghdr cmh;
+            char *cmsg;
             size_t cspace;
             v = rb_check_convert_type(elt, T_ARRAY, "Array", "to_ary");
             if (!NIL_P(v)) {
@@ -921,15 +922,17 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             oldlen = RSTRING_LEN(controls_str);
             cspace = CMSG_SPACE(RSTRING_LEN(cdata));
             rb_str_resize(controls_str, oldlen + cspace);
-            cmh = (struct cmsghdr *)(RSTRING_PTR(controls_str)+oldlen);
-            memset((char *)cmh, 0, cspace);
-            cmh->cmsg_level = level;
-            cmh->cmsg_type = type;
-            cmh->cmsg_len = CMSG_LEN(RSTRING_LEN(cdata));
-            MEMCPY(CMSG_DATA(cmh), RSTRING_PTR(cdata), char, RSTRING_LEN(cdata));
-            last_level = cmh->cmsg_level;
-            last_type = cmh->cmsg_type;
-	    last_pad = cspace - cmh->cmsg_len;
+            cmsg = RSTRING_PTR(controls_str)+oldlen;
+            memset((char *)cmsg, 0, cspace);
+            memset((char *)&cmh, 0, sizeof(cmh));
+            cmh.cmsg_level = level;
+            cmh.cmsg_type = type;
+            cmh.cmsg_len = CMSG_LEN(RSTRING_LEN(cdata));
+            MEMCPY(cmsg, &cmh, char, sizeof(cmh));
+            MEMCPY(cmsg+((char*)CMSG_DATA(&cmh)-(char*)&cmh), RSTRING_PTR(cdata), char, RSTRING_LEN(cdata));
+            last_level = cmh.cmsg_level;
+            last_type = cmh.cmsg_type;
+	    last_pad = cspace - cmh.cmsg_len;
         }
 	if (last_pad) {
             /*
