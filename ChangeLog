@@ -1,3 +1,7 @@
+Wed Feb 18 22:28:00 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_isatty): check whether fd is valid.
+
 Wed Feb 18 22:24:23 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (waitpid): fix bug of checking child slot.

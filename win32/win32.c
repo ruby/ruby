@@ -4088,6 +4088,10 @@ rb_w32_unlink(const char *path)
 int
 rb_w32_isatty(int fd)
 {
+    // validate fd by using _get_osfhandle() because we cannot access _nhandle
+    if (_get_osfhandle(fd) == -1) {
+	return 0;
+    }
     if (!(_osfile(fd) & FOPEN)) {
 	errno = EBADF;
 	return 0;
