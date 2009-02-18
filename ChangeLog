@@ -1,3 +1,8 @@
+Wed Feb 18 10:29:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_start_func_2): do not delete main thread from
+	  living_threads.  [ruby-core:19385], [ruby-core:22158]
+
 Wed Feb 18 01:05:05 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl: avoid cyclic require.
