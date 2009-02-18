@@ -3038,7 +3038,7 @@ rb_file_s_extname(klass, fname)
 		p = last;
 		break;
 	    }
-	    if (*last == '.') e = dot;
+	    if (*last == '.' || dot > last) e = dot;
 	    continue;
 #else
 	    e = p;	  /* get the last dot of the last component */
