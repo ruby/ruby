@@ -4511,9 +4511,9 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
 #elif defined(_WIN32)
     volatile VALUE argbuf;
     char **args = NULL;
-    struct rb_exec_arg sarg;
     int pair[2], write_pair[2];
-#elif defined(__SYMBIAN32__)
+#endif
+#if !defined(HAVE_FORK)
     struct rb_exec_arg sarg;
 #endif
     FILE *fp = 0;
