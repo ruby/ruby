@@ -2296,10 +2296,12 @@ rb_file_s_umask(argc, argv)
 #define isdirsep(x) ((x) == '/')
 #endif
 
+#ifndef USE_NTFS
 #if defined _WIN32 || defined __CYGWIN__
 #define USE_NTFS 1
 #else
 #define USE_NTFS 0
+#endif
 #endif
 
 #ifdef DOSISH_DRIVE_LETTER
@@ -2732,7 +2734,7 @@ file_expand_path(fname, dname, result)
     }
     if (p == skiproot(buf) - 1) p++;
 
-#if USE_NTFS
+#if USE_NTFS && defined __WIN32__
     *p = '\0';
     if ((s = strrdirsep(b = buf)) != 0 && !strpbrk(s, "*?")) {
 	size_t len;
