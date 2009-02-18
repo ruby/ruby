@@ -1,3 +1,8 @@
+Thu Feb 19 03:12:51 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_file_exhaustive.rb: skip some tests if euid == 0. 
+	  a patch from Lucas Nussbaum in [ruby-core:22209].
+
 Thu Feb 19 03:00:49 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* README.EXT, README.EXT.ja: Improve the document about
@@ -16267,7 +16272,7 @@ Tue Jun 24 09:40:47 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 Tue Jun 24 00:21:53 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (iseq_build_from_ary): initialize arg_opts, a patch from
-	  Adam Strzelecki <ono@java.pl> in [ruby-core:17220].
+	  Adam Strzelecki <ono at java.pl> in [ruby-core:17220].
 
 Tue Jun 24 00:10:53 2008  wanabe  <s.wanabe@gmail.com>
 

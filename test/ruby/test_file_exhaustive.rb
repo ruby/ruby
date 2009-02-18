@@ -142,6 +142,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_readable_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if Process.euid == 0
     File.chmod(0200, @file)
     assert(!(File.readable?(@file)))
     File.chmod(0600, @file)
@@ -151,6 +152,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_readable_real_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if Process.euid == 0
     File.chmod(0200, @file)
     assert(!(File.readable_real?(@file)))
     File.chmod(0600, @file)
@@ -171,6 +173,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_writable_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if Process.euid == 0
     File.chmod(0400, @file)
     assert(!(File.writable?(@file)))
     File.chmod(0600, @file)
@@ -180,6 +183,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_writable_real_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if Process.euid == 0
     File.chmod(0400, @file)
     assert(!(File.writable_real?(@file)))
     File.chmod(0600, @file)
@@ -610,6 +614,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_stat_readable_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if Process.euid == 0
     File.chmod(0200, @file)
     assert(!(File::Stat.new(@file).readable?))
     File.chmod(0600, @file)
@@ -618,6 +623,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_stat_readable_real_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if Process.euid == 0
     File.chmod(0200, @file)
     assert(!(File::Stat.new(@file).readable_real?))
     File.chmod(0600, @file)
@@ -636,6 +642,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_stat_writable_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if Process.euid == 0
     File.chmod(0400, @file)
     assert(!(File::Stat.new(@file).writable?))
     File.chmod(0600, @file)
@@ -644,6 +651,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_stat_writable_real_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if Process.euid == 0
     File.chmod(0400, @file)
     assert(!(File::Stat.new(@file).writable_real?))
     File.chmod(0600, @file)
