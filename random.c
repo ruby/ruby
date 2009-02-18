@@ -297,7 +297,7 @@ fill_random_seed(unsigned long seed[DEFAULT_SEED_CNT])
 #endif
             )) >= 0) {
         if (fstat(fd, &statbuf) == 0 && S_ISCHR(statbuf.st_mode)) {
-            read(fd, seed, DEFAULT_SEED_LEN);
+            (void)read(fd, seed, DEFAULT_SEED_LEN);
         }
         close(fd);
     }

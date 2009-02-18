@@ -5813,7 +5813,7 @@ void
 rb_write_error2(const char *mesg, long len)
 {
     if (rb_stderr == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0) {
-	fwrite(mesg, sizeof(char), len, stderr);
+	(void)fwrite(mesg, sizeof(char), len, stderr);
     }
     else {
 	rb_io_write(rb_stderr, rb_str_new(mesg, len));
@@ -6277,10 +6277,10 @@ argf_next_argv(VALUE argf)
 		    chmod(fn, st.st_mode);
 #endif
 		    if (st.st_uid!=st2.st_uid || st.st_gid!=st2.st_gid) {
-#ifdef __SYMBIAN32__		    
-			chown(fn, st.st_uid, st.st_gid);
+#ifdef HAVE_FCHOWN
+			(void)fchown(fw, st.st_uid, st.st_gid);
 #else			
-			fchown(fw, st.st_uid, st.st_gid);
+			(void)chown(fn, st.st_uid, st.st_gid);
 #endif			
 		    }
 #endif

@@ -2486,10 +2486,10 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 	    if (!(*chfunc)(charg, errmsg, errmsg_buflen)) _exit(EXIT_SUCCESS);
 #ifdef FD_CLOEXEC
 	    err = errno;
-	    write(ep[1], &err, sizeof(err));
+	    (void)write(ep[1], &err, sizeof(err));
             if (errmsg && 0 < errmsg_buflen) {
                 errmsg[errmsg_buflen-1] = '\0';
-                write(ep[1], errmsg, strlen(errmsg));
+                (void)write(ep[1], errmsg, strlen(errmsg));
             }
 #endif
 #if EXIT_SUCCESS == 127
