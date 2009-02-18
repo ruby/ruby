@@ -1,3 +1,8 @@
+Thu Feb 19 03:00:49 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* README.EXT, README.EXT.ja: Improve the document about
+	  rb_scan_args().
+
 Wed Feb 18 22:47:01 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (discard_cmsg_resource): new function to close
