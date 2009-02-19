@@ -1,3 +1,7 @@
+Thu Feb 19 22:17:38 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): fix exception.
+
 Thu Feb 19 21:13:03 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (ancillary_unix_rights): method renamed.

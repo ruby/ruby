@@ -1347,7 +1347,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             VALUE ctl;
             size_t clen;
             if (cmh->cmsg_len == 0) {
-                rb_raise(rb_eIOError, "invalid control message (cmsg_len == 0)");
+                rb_raise(rb_eTypeError, "invalid control message (cmsg_len == 0)");
             }
             clen = (char*)cmh + cmh->cmsg_len - (char*)CMSG_DATA(cmh);
             ctl = ancdata_new(family, cmh->cmsg_level, cmh->cmsg_type, rb_tainted_str_new((char*)CMSG_DATA(cmh), clen));
