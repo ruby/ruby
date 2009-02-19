@@ -165,6 +165,7 @@ define config_h
 @echo>>$(1) #define USE_ELF 1
 @echo>>$(1) #define DLEXT_MAXLEN 4
 @echo>>$(1) #define DLEXT ".dll"
+@echo>>$(1) #define DLN_NEEDS_ALT_SEPARATOR 1
 @echo>>$(1) #define RUBY_LIB "C:/Data/Ruby/lib/$(MAJOR).$(MINOR).$(TEENY)"
 @echo>>$(1) #define RUBY_SITE_LIB "E:/Data/Ruby/lib"
 @echo>>$(1) #define RUBY_SITE_LIB2 "E:/Data/Ruby/lib/$(MAJOR).$(MINOR).$(TEENY)"

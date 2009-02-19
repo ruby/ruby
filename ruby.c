@@ -166,22 +166,6 @@ usage(const char *name)
 
 VALUE rb_get_load_path(void);
 
-#ifndef CharNext		/* defined as CharNext[AW] on Windows. */
-#define CharNext(p) ((p) + mblen(p, RUBY_MBCHAR_MAXSIZE))
-#endif
-
-#if defined DOSISH || defined __CYGWIN__
-static inline void
-translate_char(char *p, int from, int to)
-{
-    while (*p) {
-	if ((unsigned char)*p == from)
-	    *p = to;
-	p = CharNext(p);
-    }
-}
-#endif
-
 #if defined _WIN32 || defined __CYGWIN__ || defined __SYMBIAN32__
 static VALUE
 rubylib_mangled_path(const char *s, unsigned int l)
@@ -206,7 +190,7 @@ rubylib_mangled_path(const char *s, unsigned int l)
 	    if (newl == 0 || oldl == 0) {
 		rb_fatal("malformed RUBYLIB_PREFIX");
 	    }
-	    translate_char(newp, '\\', '/');
+	    translit_char(newp, '\\', '/');
 	}
 	else {
 	    notfound = 1;
@@ -370,7 +354,7 @@ ruby_init_loadpath_safe(int safe_level)
 
     libpath[sizeof(libpath) - 1] = '\0';
 #if defined DOSISH
-    translate_char(libpath, '\\', '/');
+    translit_char(libpath, '\\', '/');
 #elif defined __CYGWIN__
     {
 	char rubylib[FILENAME_MAX];
@@ -1270,7 +1254,7 @@ process_options(VALUE arg)
     opt->script_name = rb_str_new_cstr(opt->script);
     opt->script = RSTRING_PTR(opt->script_name);
 #if defined DOSISH || defined __CYGWIN__
-    translate_char(RSTRING_PTR(opt->script_name), '\\', '/');
+    translit_char(RSTRING_PTR(opt->script_name), '\\', '/');
 #endif
     rb_obj_freeze(opt->script_name);
 

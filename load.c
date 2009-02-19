@@ -529,8 +529,17 @@ load_failed(VALUE fname)
 static VALUE
 load_ext(VALUE path)
 {
+    VALUE result;
+
     SCOPE_SET(NOEX_PUBLIC);
-    return (VALUE)dln_load(RSTRING_PTR(path));
+#if defined DLN_NEEDS_ALT_SEPARATOR && DLN_NEEDS_ALT_SEPARATOR
+    translit_char(RSTRING_PTR(path), '/', '\\');
+#endif
+    result = (VALUE)dln_load(RSTRING_PTR(path));
+#if defined DLN_NEEDS_ALT_SEPARATOR && DLN_NEEDS_ALT_SEPARATOR
+    translit_char(RSTRING_PTR(path), '\\', '/');
+#endif
+    return result;
 }
 
 VALUE

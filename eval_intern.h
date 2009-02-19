@@ -205,4 +205,20 @@ VALUE rb_vm_top_self();
 VALUE rb_vm_cbase(void);
 void rb_trap_restore_mask(void);
 
+#ifndef CharNext		/* defined as CharNext[AW] on Windows. */
+#define CharNext(p) ((p) + mblen(p, RUBY_MBCHAR_MAXSIZE))
+#endif
+
+#if defined DOSISH || defined __CYGWIN__
+static inline void
+translit_char(char *p, int from, int to)
+{
+    while (*p) {
+	if ((unsigned char)*p == from)
+	    *p = to;
+	p = CharNext(p);
+    }
+}
+#endif
+
 #endif /* RUBY_EVAL_INTERN_H */

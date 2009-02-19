@@ -1268,16 +1268,6 @@ dln_load(const char *file)
 # define RTLD_GLOBAL 0
 #endif
 
-#if defined __SYMBIAN32__
-	{ /* Need backslash in the path again */
-		char *p;
-		for (p = (char *)file; *p; p++) {
-			if (*p == '/') {
-				*p = '\\';
-			}
-		}
-	}
-#endif
 	/* Load file */
 	if ((handle = (void*)dlopen(file, RTLD_LAZY|RTLD_GLOBAL)) == NULL) {
 	    error = dln_strerror();
@@ -1286,8 +1276,9 @@ dln_load(const char *file)
 
 	init_fct = (void(*)())dlsym(handle, buf);
 #if defined __SYMBIAN32__
-	if (init_fct == NULL)
-		init_fct = (void(*)())dlsym(handle, "1"); /* Some Symbian versions do not support symbol table in DLL, ordinal numbers only */
+	if (init_fct == NULL) {
+	    init_fct = (void(*)())dlsym(handle, "1"); /* Some Symbian versions do not support symbol table in DLL, ordinal numbers only */
+	}
 #endif
 	if (init_fct == NULL) {
 	    error = DLN_ERROR();
