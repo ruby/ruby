@@ -53,7 +53,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
         recv_io_ary = []
         ctls.each {|ctl|
           next if ctl.level != Socket::SOL_SOCKET || ctl.type != Socket::SCM_RIGHTS
-          recv_io_ary.concat ctl.rights
+          recv_io_ary.concat ctl.unix_rights
         }
         assert_equal(send_io_ary.length, recv_io_ary.length)
         send_io_ary.length.times {|i|
@@ -131,7 +131,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
 	  assert_equal(Socket::SOL_SOCKET, ctl.level)
 	  assert_equal(Socket::SCM_RIGHTS, ctl.type)
 	  assert_instance_of(String, ctl.data)
-          ios = ctl.rights
+          ios = ctl.unix_rights
           assert_equal(1, ios.length)
 	  r2 = ios[0]
 	  begin

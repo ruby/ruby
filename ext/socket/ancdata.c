@@ -176,25 +176,25 @@ ancillary_data(VALUE self)
 
 /*
  * call-seq:
- *   ancillarydata.rights => array-of-IOs
+ *   ancillarydata.unix_rights => array-of-IOs
  *
- * returns the array of IOs which is sent by SCM_RIGHTS control message.
+ * returns the array of IOs which is sent by SCM_RIGHTS control message in UNIX domain socket.
  *
  * The class of an IO in the array is IO or Socket. 
  *
  *   s1, s2 = UNIXSocket.pair
- *   p s1                                       #=> #<UNIXSocket:fd 3>
+ *   p s1                                         #=> #<UNIXSocket:fd 3>
  *   s1.sendmsg "standard IOs", 0, nil, [:SOCKET, :RIGHTS, [0,s1.fileno].pack("ii")]
  *   _, _, _, ctl = s2.recvmsg
- *   p ctl.rights                               #=> [#<IO:fd 6>, #<Socket:fd 7>]
- *   p File.identical?(STDIN, ctl.rights[0])    #=> true
- *   p File.identical?(s1, ctl.rights[1])       #=> true
+ *   p ctl.unix_rights                            #=> [#<IO:fd 6>, #<Socket:fd 7>]
+ *   p File.identical?(STDIN, ctl.unix_rights[0]) #=> true
+ *   p File.identical?(s1, ctl.unix_rights[1])    #=> true
  *
  */
 static VALUE
-ancillary_rights(VALUE self)
+ancillary_unix_rights(VALUE self)
 {
-    VALUE v = rb_attr_get(self, rb_intern("rights"));
+    VALUE v = rb_attr_get(self, rb_intern("unix_rights"));
     return v;
 }
 
@@ -1146,7 +1146,7 @@ discard_cmsg_resource(struct msghdr *mh)
 
 #if defined(HAVE_ST_MSG_CONTROL)
 static void
-make_io_for_rights(VALUE ctl, struct cmsghdr *cmh)
+make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh)
 {
     if (cmh->cmsg_level == SOL_SOCKET && cmh->cmsg_type == SCM_RIGHTS) {
         int *fdp = (int *)CMSG_DATA(cmh);
@@ -1161,10 +1161,10 @@ make_io_for_rights(VALUE ctl, struct cmsghdr *cmh)
                 io = init_sock(rb_obj_alloc(rb_cSocket), fd);
             else
                 io = rb_io_fdopen(fd, O_RDWR, NULL);
-            ary = rb_attr_get(ctl, rb_intern("rights"));
+            ary = rb_attr_get(ctl, rb_intern("unix_rights"));
             if (NIL_P(ary)) {
                 ary = rb_ary_new();
-                rb_ivar_set(ctl, rb_intern("rights"), ary);
+                rb_ivar_set(ctl, rb_intern("unix_rights"), ary);
             }
             rb_ary_push(ary, io);
             fdp++;
@@ -1351,7 +1351,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             }
             clen = (char*)cmh + cmh->cmsg_len - (char*)CMSG_DATA(cmh);
             ctl = ancdata_new(family, cmh->cmsg_level, cmh->cmsg_type, rb_tainted_str_new((char*)CMSG_DATA(cmh), clen));
-            make_io_for_rights(ctl, cmh);
+            make_io_for_unix_rights(ctl, cmh);
             rb_ary_push(ret, ctl);
         }
     }
@@ -1451,7 +1451,7 @@ Init_ancdata(void)
     rb_define_method(rb_cAncillaryData, "level", ancillary_level_m, 0);
     rb_define_method(rb_cAncillaryData, "type", ancillary_type_m, 0);
     rb_define_method(rb_cAncillaryData, "data", ancillary_data, 0);
-    rb_define_method(rb_cAncillaryData, "rights", ancillary_rights, 0);
+    rb_define_method(rb_cAncillaryData, "unix_rights", ancillary_unix_rights, 0);
     rb_define_method(rb_cAncillaryData, "cmsg_is?", ancillary_cmsg_is_p, 2);
     rb_define_singleton_method(rb_cAncillaryData, "int", ancillary_s_int, 4);
     rb_define_method(rb_cAncillaryData, "int", ancillary_int, 0);
