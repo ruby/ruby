@@ -57,4 +57,44 @@ class TestPack < Test::Unit::TestCase
     assert_raises(RangeError) { [0x80000000].pack("U") }
     assert_raises(RangeError) { [0x100000000].pack("U") }
   end
+
+  def test_pack_unpack_hH
+    assert_equal("\x01\xfe", ["10ef"].pack("h*"))
+    assert_equal("", ["10ef"].pack("h0"))
+    assert_equal("\x01\x0e", ["10ef"].pack("h3"))
+    assert_equal("\x01\xfe\x0", ["10ef"].pack("h5"))
+    assert_equal("\xff\x0f", ["fff"].pack("h3"))
+    assert_equal("\xff\x0f", ["fff"].pack("h4"))
+    assert_equal("\xff\x0f\0", ["fff"].pack("h5"))
+    assert_equal("\xff\x0f\0", ["fff"].pack("h6"))
+    assert_equal("\xff\x0f\0\0", ["fff"].pack("h7"))
+    assert_equal("\xff\x0f\0\0", ["fff"].pack("h8"))
+
+    assert_equal("\x10\xef", ["10ef"].pack("H*"))
+    assert_equal("", ["10ef"].pack("H0"))
+    assert_equal("\x10\xe0", ["10ef"].pack("H3"))
+    assert_equal("\x10\xef\x0", ["10ef"].pack("H5"))
+    assert_equal("\xff\xf0", ["fff"].pack("H3"))
+    assert_equal("\xff\xf0", ["fff"].pack("H4"))
+    assert_equal("\xff\xf0\0", ["fff"].pack("H5"))
+    assert_equal("\xff\xf0\0", ["fff"].pack("H6"))
+    assert_equal("\xff\xf0\0\0", ["fff"].pack("H7"))
+    assert_equal("\xff\xf0\0\0", ["fff"].pack("H8"))
+
+    assert_equal(["10ef"], "\x01\xfe".unpack("h*"))
+    assert_equal([""], "\x01\xfe".unpack("h0"))
+    assert_equal(["1"], "\x01\xfe".unpack("h1"))
+    assert_equal(["10"], "\x01\xfe".unpack("h2"))
+    assert_equal(["10e"], "\x01\xfe".unpack("h3"))
+    assert_equal(["10ef"], "\x01\xfe".unpack("h4"))
+    assert_equal(["10ef"], "\x01\xfe".unpack("h5"))
+
+    assert_equal(["10ef"], "\x10\xef".unpack("H*"))
+    assert_equal([""], "\x10\xef".unpack("H0"))
+    assert_equal(["1"], "\x10\xef".unpack("H1"))
+    assert_equal(["10"], "\x10\xef".unpack("H2"))
+    assert_equal(["10e"], "\x10\xef".unpack("H3"))
+    assert_equal(["10ef"], "\x10\xef".unpack("H4"))
+    assert_equal(["10ef"], "\x10\xef".unpack("H5"))
+  end
 end

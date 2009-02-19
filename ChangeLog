@@ -1,3 +1,8 @@
+Thu Feb 19 17:26:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (pack_pack): fixed length for odd length string.
+	  [ruby-dev:37283]
+
 Thu Feb 19 17:13:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_yield_0): Qundef means no argument.  [ruby-Bugs-22525]
