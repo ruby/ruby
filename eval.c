@@ -5060,7 +5060,7 @@ rb_yield_0(val, self, klass, flags, avalue)
 	    switch (node->nd_state) {
 	      case YIELD_FUNC_LAMBDA:
 		if (!avalue) {
-		    val = rb_ary_new3(1, val);
+		    val = (val == Qundef) ? rb_ary_new2(0) : rb_ary_new3(1, val);
 		}
 		break;
 	      case YIELD_FUNC_AVALUE:
