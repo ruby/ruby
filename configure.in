@@ -241,7 +241,7 @@ ASFLAGS=$ASFLAGS
 AC_SUBST(ASFLAGS)
 
 case "$target_os" in
-when(cygwin*|mingw*)
+when(cygwin*|mingw*|darwin*)
     ac_cv_prog_ac_ct_OBJCOPY=":";;
 esac
 
@@ -1833,7 +1833,10 @@ if test "$enable_shared" = 'yes'; then
     when(darwin*)
 	RUBY_SO_NAME="$RUBY_SO_NAME"'.$(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_LDSHARED='cc -dynamiclib -undefined suppress -flat_namespace'
-	LIBRUBY_DLDFLAGS='-install_name $(libdir)/lib$(RUBY_SO_NAME).dylib -current_version $(MAJOR).$(MINOR).$(TEENY) -compatibility_version $(MAJOR).$(MINOR).$(TEENY)'
+	LIBRUBY_DLDFLAGS='-install_name $(libdir)/lib$(RUBY_SO_NAME).dylib'
+	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-current_version $(MAJOR).$(MINOR).$(TEENY)'
+	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(MAJOR).$(MINOR).$(TEENY)'
+	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_Init_* $(XLDFLAGS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).dylib.$(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).dylib lib$(RUBY_INSTALL_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_INSTALL_NAME).dylib'
 	;;
