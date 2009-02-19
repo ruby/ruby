@@ -1146,15 +1146,19 @@ discard_cmsg_resource(struct msghdr *mh)
 
 #if defined(HAVE_ST_MSG_CONTROL)
 static void
-make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh)
+make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh, char *msg_end)
 {
     if (cmh->cmsg_level == SOL_SOCKET && cmh->cmsg_type == SCM_RIGHTS) {
-        int *fdp = (int *)CMSG_DATA(cmh);
-        int *end = (int *)((char *)cmh + cmh->cmsg_len);
-        while (fdp < end) {
+        int *fdp, *end;
+	VALUE ary = rb_ary_new();
+	rb_ivar_set(ctl, rb_intern("unix_rights"), ary);
+        fdp = (int *)CMSG_DATA(cmh);
+        end = (int *)((char *)cmh + cmh->cmsg_len);
+        while ((char *)fdp + sizeof(int) <= (char *)end &&
+	       (char *)fdp + sizeof(int) <= msg_end) {
             int fd = *fdp;
             struct stat stbuf;
-            VALUE io, ary;
+            VALUE io;
             if (fstat(fd, &stbuf) == -1)
                 rb_raise(rb_eSocket, "invalid fd in SCM_RIGHTS");
             if (S_ISSOCK(stbuf.st_mode))
@@ -1162,13 +1166,10 @@ make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh)
             else
                 io = rb_io_fdopen(fd, O_RDWR, NULL);
             ary = rb_attr_get(ctl, rb_intern("unix_rights"));
-            if (NIL_P(ary)) {
-                ary = rb_ary_new();
-                rb_ivar_set(ctl, rb_intern("unix_rights"), ary);
-            }
             rb_ary_push(ary, io);
             fdp++;
         }
+	OBJ_FREEZE(ary);
     }
 }
 #endif
@@ -1343,15 +1344,18 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #if defined(HAVE_ST_MSG_CONTROL)
     family = rb_sock_getfamily(fptr->fd);
     if (mh.msg_controllen) {
+	char *msg_end = (char *)mh.msg_control + mh.msg_controllen;
         for (cmh = CMSG_FIRSTHDR(&mh); cmh != NULL; cmh = CMSG_NXTHDR(&mh, cmh)) {
             VALUE ctl;
+	    char *ctl_end;
             size_t clen;
             if (cmh->cmsg_len == 0) {
                 rb_raise(rb_eTypeError, "invalid control message (cmsg_len == 0)");
             }
-            clen = (char*)cmh + cmh->cmsg_len - (char*)CMSG_DATA(cmh);
+            ctl_end = (char*)cmh + cmh->cmsg_len;
+	    clen = (ctl_end <= msg_end ? ctl_end : msg_end) - (char*)CMSG_DATA(cmh);
             ctl = ancdata_new(family, cmh->cmsg_level, cmh->cmsg_type, rb_tainted_str_new((char*)CMSG_DATA(cmh), clen));
-            make_io_for_unix_rights(ctl, cmh);
+            make_io_for_unix_rights(ctl, cmh, msg_end);
             rb_ary_push(ret, ctl);
         }
     }

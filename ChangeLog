@@ -1,3 +1,9 @@
+Thu Feb 19 22:59:09 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (make_io_for_unix_rights): cmsg_len may be
+	  bigger than msg_controllen.
+	  freeze unix_rights array.
+
 Thu Feb 19 22:17:38 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (bsock_recvmsg_internal): fix exception.
