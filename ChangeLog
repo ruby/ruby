@@ -1,3 +1,8 @@
+Thu Feb 19 14:12:15 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/soap/mimemessage.rb (MIMEMessage#to_s): Fix a fatal
+	  method name typo. [Bug #1173]
+
 Wed Feb 18 12:35:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_extname): fix for spaces before extention.
