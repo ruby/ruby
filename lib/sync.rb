@@ -54,6 +54,7 @@ module Sync_m
   # exceptions
   class Err < StandardError
     def Err.Fail(*opt)
+      Thread.critical = false
       fail self, sprintf(self::Message, *opt)
     end
     
@@ -129,10 +130,10 @@ module Sync_m
   
   # locking methods.
   def sync_try_lock(mode = EX)
-    return unlock if sync_mode == UN
+    return unlock if mode == UN
     
     Thread.critical = true
-    ret = sync_try_lock_sub(sync_mode)
+    ret = sync_try_lock_sub(mode)
     Thread.critical = false
     ret
   end

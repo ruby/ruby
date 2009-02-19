@@ -1,3 +1,11 @@
+Fri Feb 20 01:40:18 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/sync.rb (Sync_m#sync_try_lock): wrong variable name fixed.
+	  a patch from [ruby-core:20561]
+
+	* lib/sync.rb (Sync_m::Err.Fail): turn off Thread.critical before
+	  exit.
+
 Thu Feb 19 17:52:42 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* pack.c (pack_pack): fixed odd act of 'm*', 'M*', and 'P*'.
