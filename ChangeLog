@@ -1,7 +1,10 @@
-Thu Feb 19 14:14:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Feb 19 14:18:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): creates target directories before
 	  copying.  [ruby-core:21958]
+
+	* lib/mkmf.rb (create_makefile): removes directories in the depth
+	  order.
 
 Thu Feb 19 13:56:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

@@ -1720,10 +1720,9 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
     end
     if $extout
       dirs.uniq!
-      dirs.reverse!
       unless dirs.empty?
         mfile.print("clean-rb#{sfx}::\n")
-        for dir in dirs
+        for dir in dirs.sort_by {|dir| -dir.count('/')}
           mfile.print("\t@-$(RMDIRS) #{fseprepl[dir]}\n")
         end
       end
