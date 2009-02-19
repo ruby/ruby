@@ -1,3 +1,9 @@
+Thu Feb 19 15:47:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/fake.rb.in: extracted from Makefile.in.
+
+	* configure.in (fake.rb): prefixed with $(arch)-.
+
 Thu Feb 19 15:39:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_ocsp.c (ossl_ocspbres_verify): OCSP_basic_verify
