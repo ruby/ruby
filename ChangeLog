@@ -1,3 +1,7 @@
+Thu Feb 19 14:24:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (darwin): makes dylib instead of so.
+
 Thu Feb 19 14:22:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): added phony targets.
