@@ -18,17 +18,16 @@ class Dir
     begin
       getdir = Win32API.new('shell32', 'SHGetFolderPath', 'LLLLP', 'L')
       raise RuntimeError if getdir.call(0, CSIDL_LOCAL_APPDATA, 0, 0, windir) != 0
-      windir = File.expand_path(windir.rstrip)
+      windir.rstrip!
     rescue RuntimeError
       begin
         getdir = Win32API.new('kernel32', 'GetSystemWindowsDirectory', 'PL', 'L')
       rescue RuntimeError
         getdir = Win32API.new('kernel32', 'GetWindowsDirectory', 'PL', 'L')
       end
-      len = getdir.call(windir, windir.size)
-      windir = File.expand_path(windir[0, len])
+      windir[getdir.call(windir, windir.size)..-1] = ""
     end
-    temp = File.join(windir.untaint, 'temp')
+    temp = File.expand_path('temp', windir.untaint)
     @@systmpdir = temp if File.directory?(temp) and File.writable?(temp)
   rescue LoadError
   end
