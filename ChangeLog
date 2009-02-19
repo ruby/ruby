@@ -1,3 +1,8 @@
+Thu Feb 19 15:14:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_each_group): defines only when Etc::Group is
+	  available.
+
 Thu Feb 19 15:11:40 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_intern.h (translit_char): moved from ruby.c.

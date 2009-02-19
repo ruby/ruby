@@ -468,6 +468,7 @@ etc_group(VALUE obj)
     return Qnil;
 }
 
+#ifdef HAVE_GETPWENT
 /* Iterates for each entry in the /etc/group file if a block is given.
  * If no block is given, returns the enumerator.
  *
@@ -489,12 +490,11 @@ etc_group(VALUE obj)
 static VALUE
 etc_each_group(VALUE obj)
 {
-#ifdef HAVE_GETPWENT
     RETURN_ENUMERATOR(obj, 0, 0);
     each_group();
-#endif
     return obj;
 }
+#endif
 
 /* Resets the process of reading the /etc/group file, so that the next call
  * to getgrent will return the first entry again.
