@@ -1,3 +1,8 @@
+Thu Feb 19 14:14:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): creates target directories before
+	  copying.  [ruby-core:21958]
+
 Thu Feb 19 13:56:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_home_dir): checks if HAVE_PWD_H.  [ruby-dev:38049]
