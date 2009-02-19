@@ -1,3 +1,9 @@
+Thu Feb 19 18:02:10 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* pack.c (pack_pack): fixed odd act of 'm*', 'M*', and 'P*'.
+	  just ignores '*' in these cases.
+	  [ruby-dev:37289]
+
 Thu Feb 19 17:26:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (pack_pack): fixed length for odd length string.
