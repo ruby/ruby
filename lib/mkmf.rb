@@ -1441,6 +1441,8 @@ CLEANFILES = #{$cleanfiles.join(' ')}
 DISTCLEANFILES = #{$distcleanfiles.join(' ')}
 
 all install static install-so install-rb: Makefile
+.PHONY: all install static install-so install-rb
+.PHONY: clean clean-so clean-rb
 
 RULES
 end
@@ -1634,7 +1636,7 @@ CLEANFILES = #{$cleanfiles.join(' ')}
 DISTCLEANFILES = #{$distcleanfiles.join(' ')}
 DISTCLEANDIRS = #{$distcleandirs.join(' ')}
 
-extout = #{$extout}
+extout = #{$extout && $extout.quote}
 extout_prefix = #{$extout_prefix}
 target_prefix = #{target_prefix}
 LOCAL_LIBS = #{$LOCAL_LIBS}
@@ -1657,6 +1659,8 @@ CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$
 
 all:    #{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}
 static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
+.PHONY: all install static install-so install-rb
+.PHONY: clean clean-so clean-rb
 "
   mfile.print CLEANINGS
   fsep = config_string('BUILD_FILE_SEPARATOR') {|s| s unless s == "/"}
