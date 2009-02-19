@@ -331,10 +331,6 @@ ruby_incpush_expand(const char *path)
     ruby_push_include(path, expand_include_path);
 }
 
-#if (defined DOSISH || defined __CYGWIN__) && !defined __SYMBIAN32__
-#define LOAD_RELATIVE 1
-#endif
-
 #if defined _WIN32 || defined __CYGWIN__
 static HMODULE libruby;
 

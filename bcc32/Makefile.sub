@@ -354,6 +354,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 \#define NEED_IO_SEEK_BETWEEN_RW 1
 \#define STACK_GROW_DIRECTION -1
 \#define DEFAULT_KCODE KCODE_NONE
+\#define LOAD_RELATIVE 1
 \#define DLEXT ".so"
 \#define RUBY_LIB "/lib/ruby/$(MAJOR).$(MINOR).$(TEENY)"
 \#define RUBY_SITE_LIB "/lib/ruby/site_ruby"

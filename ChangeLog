@@ -1,3 +1,7 @@
+Thu Feb 19 14:48:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, */Makefile.sub (LOAD_RELATIVE): moved from ruby.c
+
 Thu Feb 19 14:39:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (darwin): uses -unexported_symbol option of ld instead

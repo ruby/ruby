@@ -1664,7 +1664,11 @@ else
     when(nextstep*|openstep*|rhapsody*|darwin*)
 	DLEXT=bundle;;
     when(os2-emx*)
+	LOAD_RELATIVE=1
 	DLEXT=dll;;
+    when(cygwin*|mingw*|*djgpp*)
+	LOAD_RELATIVE=1
+	DLEXT=so;;
     when(*)
 	DLEXT=so;;
   esac
@@ -2132,18 +2136,16 @@ AC_ARG_WITH(vendordir,
             [vendordir='${libdir}/${RUBY_INSTALL_NAME}/vendor_ruby'])
 VENDOR_DIR=`eval echo \\"${vendordir}\\"`
 
-case "$target_os" in
-  when(cygwin*|mingw*|*djgpp*|os2-emx*)
+if test "${LOAD_RELATIVE+set}"; then
+    AC_DEFINE_UNQUOTED(LOAD_RELATIVE, $LOAD_RELATIVE)
     RUBY_LIB_PREFIX="`eval echo "$RUBY_LIB_PREFIX" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
     RUBY_SITE_LIB_PATH="`eval echo "$SITE_DIR" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
     RUBY_VENDOR_LIB_PATH="`eval echo "$VENDOR_DIR" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
-    ;;
-  when(*)
+else
     RUBY_LIB_PREFIX="`eval echo \\"$RUBY_LIB_PREFIX\\" | sed 's|^NONE/|'"$prefix"'/|'`"
     RUBY_SITE_LIB_PATH="`eval echo \\"$SITE_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
     RUBY_VENDOR_LIB_PATH="`eval echo \\"$VENDOR_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
-    ;;
-esac
+fi
 
 pat="$RUBY_LIB_PREFIX/"'\(.*\)'
 RUBY_LIB_PATH='RUBY_LIB_PREFIX"/"RUBY_LIB_VERSION'
