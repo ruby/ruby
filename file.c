@@ -2621,7 +2621,7 @@ rb_home_dir(const char *user, VALUE result)
 	memcpy(buf = RSTRING_PTR(result), dir, dirlen);
     }
     else {
-#ifdef HAVE_GETPWENT
+#ifdef HAVE_PWD_H
 	struct passwd *pwPtr = getpwnam(user);
 	if (!pwPtr) {
 	    endpwent();
