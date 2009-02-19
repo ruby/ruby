@@ -494,7 +494,9 @@ pack_pack(ary, fmt)
 	    }
 	}
 	if (*p == '*') {	/* set data length */
-	    len = strchr("@Xxu", type) ? 0 : items;
+	    len = strchr("@Xxu", type) ? 0
+                : strchr("PMm", type) ? 1
+                : items;
 	    p++;
 	}
 	else if (ISDIGIT(*p)) {
