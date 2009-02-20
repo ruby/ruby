@@ -1,3 +1,7 @@
+Fri Feb 20 19:34:36 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/session.rb: ignore session_id options fixed.[Bug #605]
+
 Fri Feb 20 18:05:27 2009  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	Merged 20854 from trunk.

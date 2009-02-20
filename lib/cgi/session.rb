@@ -182,7 +182,6 @@ class CGI
       md5.update(String(rand(0)))
       md5.update(String($$))
       md5.update('foobar')
-      @new_session = true
       md5.hexdigest
     end
     private :create_new_id
@@ -250,6 +249,7 @@ class CGI
       unless session_id
 	if option['new_session']
 	  session_id = create_new_id
+      @new_session = true
 	end
       end
       unless session_id
@@ -265,6 +265,7 @@ class CGI
 	    raise ArgumentError, "session_key `%s' should be supplied"%session_key
 	  end
 	  session_id = create_new_id
+      @new_session = true
 	end
       end
       @session_id = session_id
@@ -275,7 +276,8 @@ class CGI
         unless option.fetch('new_session', true)
           raise ArgumentError, "invalid session_id `%s'"%session_id
         end
-        session_id = @session_id = create_new_id
+        session_id = @session_id = create_new_id unless session_id
+      @new_session = true
         retry
       end
       request.instance_eval do
