@@ -267,7 +267,9 @@ class BasicServer
         if obj.kind_of? Proc
           methods << name
         else
-          obj.methods.each {|meth| methods << name + meth}
+          obj.class.public_instance_methods(false).each do |meth|
+            methods << "#{name}#{meth}"
+          end
         end
       end
       methods
