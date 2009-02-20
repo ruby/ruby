@@ -1,3 +1,13 @@
+Fri Feb 20 18:06:40 2009  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	Merged 20854 from trunk.
+
+	* lib/xmlrpc/server.rb:  Restricting method inspection to show only
+	  non-inherited public methods.  [ruby-core:20603]
+
+	* lib/xmlrpc/server.rb:  Fixing method inspection so it doesn't 
+	  trigger XMLRPC::FaultException when used.  [ruby-core:20604]
+
 Fri Feb 20 01:41:08 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/sync.rb (Sync_m#sync_try_lock): wrong variable name fixed.
