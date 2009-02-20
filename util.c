@@ -3058,20 +3058,11 @@ static char *dtoa_result;
 static char *
 rv_alloc(int i)
 {
-    int j, k, *r;
-
-    j = sizeof(ULong);
-    for (k = 0;
-            sizeof(Bigint) - sizeof(ULong) - sizeof(int) + j <= i;
-            j <<= 1)
-        k++;
-    r = (int*)Balloc(k);
-    *r = k;
     return
 #ifndef MULTIPLE_THREADS
         dtoa_result =
 #endif
-        (char *)(r+1);
+        xmalloc(i);
 }
 
 static char *
@@ -3096,9 +3087,7 @@ nrv_alloc(const char *s, char **rve, int n)
 static void
 freedtoa(char *s)
 {
-    Bigint *b = (Bigint *)((int *)s - 1);
-    b->maxwds = 1 << (b->k = *(int*)b);
-    Bfree(b);
+    xfree(s);
 }
 #endif
 

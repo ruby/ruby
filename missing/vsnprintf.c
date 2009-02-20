@@ -494,7 +494,7 @@ BSD__ultoa(register u_long val, char *endp, int base, int octzero, const char *x
 #define	BUF		(MAXEXP+MAXFRACT+1)	/* + decimal point */
 #define	DEFPREC		6
 
-static char *cvt __P((double, int, int, char *, int *, int, int *));
+static char *cvt __P((double, int, int, char *, int *, int, int *, char *));
 static int exponent __P((char *, int, int));
 
 #else /* no FLOATING_POINT */
@@ -783,7 +783,7 @@ fp_begin:		_double = va_arg(ap, double);
 			}
 			flags |= FPT;
 			cp = cvt(_double, prec, flags, &softsign,
-				&expt, ch, &ndig);
+				&expt, ch, &ndig, buf);
 			if (ch == 'g' || ch == 'G') {
 				if (expt <= -4 || (expt > prec && expt > 1))
 					ch = (ch == 'g') ? 'e' : 'E';
@@ -1076,10 +1076,10 @@ error:
 extern char *BSD__dtoa __P((double, int, int, int *, int *, char **));
 
 static char *
-cvt(value, ndigits, flags, sign, decpt, ch, length)
+cvt(value, ndigits, flags, sign, decpt, ch, length, buf)
 	double value;
 	int ndigits, flags, *decpt, ch, *length;
-	char *sign;
+	char *sign, *buf;
 {
 	int mode, dsgn;
 	char *digits, *bp, *rve;
@@ -1098,6 +1098,10 @@ cvt(value, ndigits, flags, sign, decpt, ch, length)
 	    *sign = '\000';
 	}
 	digits = BSD__dtoa(value, mode, ndigits, decpt, &dsgn, &rve);
+	memcpy(buf, digits, rve - digits);
+	xfree(digits);
+	rve = buf + (rve - digits);
+	digits = buf;
 	if (flags & ALT) {	/* Print trailing zeros */
 		bp = digits + ndigits;
 		if (ch == 'f') {
