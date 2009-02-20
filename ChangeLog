@@ -1,3 +1,11 @@
+Fri Feb 20 20:43:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::List#summarize): gives priority
+	  to latter switches.  [ruby-dev:36692]
+
+	* lib/optparse.rb (OptionParser#summarize): do not append
+	  unnecessary line terminator.
+
 Fri Feb 20 19:35:08 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/session.rb: ignore session_id options fixed.[Bug #605]

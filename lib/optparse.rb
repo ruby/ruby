@@ -630,17 +630,21 @@ class OptionParser
     # method which is called on every option.
     #
     def summarize(*args, &block)
-      list.each do |opt|
+      sum = []
+      list.reverse_each do |opt|
         if opt.respond_to?(:summarize) # perhaps OptionParser::Switch
-          opt.summarize(*args, &block)
-        elsif !opt
-          yield("")
+          s = []
+          opt.summarize(*args) {|l| s << l}
+          sum.concat(s.reverse)
+        elsif !opt or opt.empty?
+          sum << ""
         elsif opt.respond_to?(:each_line)
-          opt.each_line(&block)
+          sum.concat([*opt.each_line].reverse)
         else
-          opt.each(&block)
+          sum.concat([*opt.each].reverse)
         end
       end
+      sum.reverse_each(&block)
     end
 
     def add_banner(to)  # :nodoc:
@@ -962,7 +966,8 @@ class OptionParser
   # +indent+:: Indentation, defaults to @summary_indent.
   #
   def summarize(to = [], width = @summary_width, max = width - 1, indent = @summary_indent, &blk)
-    visit(:summarize, {}, {}, width, max, indent, &(blk || proc {|l| to << l + $/}))
+    blk ||= proc {|l| to << (l.index($/, -1) ? l : l + $/)}
+    visit(:summarize, {}, {}, width, max, indent, &blk)
     to
   end
 
