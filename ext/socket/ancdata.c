@@ -1313,6 +1313,8 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 	int grown = 0;
 #if defined(HAVE_ST_MSG_CONTROL)
         if (NIL_P(vmaxdatlen) && (mh.msg_flags & MSG_TRUNC)) {
+            if (SIZE_MAX/2 < maxdatlen)
+                rb_raise(rb_eArgError, "max data length too big");
 	    maxdatlen *= 2;
 	    grown = 1;
 	}
@@ -1328,6 +1330,8 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 		}
             }
             else {
+                if (SIZE_MAX/2 < maxctllen)
+                    rb_raise(rb_eArgError, "max control message length too big");
                 maxctllen *= 2;
                 grown = 1;
             }
@@ -1335,6 +1339,8 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 	}
 #else
 	if (NIL_P(vmaxdatlen) && ss != -1 && ss == iov.iov_len) {
+            if (SIZE_MAX/2 < maxdatlen)
+                rb_raise(rb_eArgError, "max data length too big");
 	    maxdatlen *= 2;
 	    grown = 1;
 	}
