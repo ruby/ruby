@@ -857,6 +857,30 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
+  def test_read_nonblock_error
+    return if !have_nonblock?
+    with_pipe {|r, w|
+      begin
+        r.read_nonblock 4096
+      rescue Errno::EWOULDBLOCK
+        assert_match(/WANT_READ/, $!.message)
+      end
+    }
+  end
+
+  def test_write_nonblock_error
+    return if !have_nonblock?
+    with_pipe {|r, w|
+      begin
+        loop {
+          w.write_nonblock "a"*100000
+        }
+      rescue Errno::EWOULDBLOCK
+        assert_match(/WANT_WRITE/, $!.message)
+      end
+    }
+  end
+
   def test_gets
     pipe(proc do |w|
       w.write "foobarbaz"

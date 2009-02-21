@@ -311,6 +311,8 @@ sock_connect_nonblock(VALUE sock, VALUE addr)
     rb_io_set_nonblock(fptr);
     n = connect(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_LEN(addr));
     if (n < 0) {
+        if (errno == EINPROGRESS)
+            rb_sys_fail("connect(2) WANT_WRITE");
 	rb_sys_fail("connect(2)");
     }
 

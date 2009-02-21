@@ -1030,8 +1030,11 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
         goto retry;
     }
 
-    if (ss == -1)
+    if (ss == -1) {
+        if (nonblock && errno == EWOULDBLOCK)
+            rb_sys_fail("sendmsg(2) WANT_WRITE");
 	rb_sys_fail("sendmsg(2)");
+    }
 
     return SSIZET2NUM(ss);
 }
@@ -1290,8 +1293,11 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
         goto retry;
     }
 
-    if (ss == -1)
+    if (ss == -1) {
+        if (nonblock && errno == EWOULDBLOCK)
+            rb_sys_fail("recvmsg(2) WANT_READ");
 	rb_sys_fail("recvmsg(2)");
+    }
 
     if (grow_buffer) {
 	int grown = 0;

@@ -124,9 +124,18 @@ class TestSocketNonblock < Test::Unit::TestCase
     af, port, host, addr = serv.addr
     c = TCPSocket.new(addr, port)
     s = serv.accept
-    return c, s
+    if block_given?
+      begin
+        yield c, s
+      ensure
+        c.close if !c.closed?
+        s.close if !s.closed?
+      end
+    else
+      return c, s
+    end
   ensure
-    serv.close if serv
+    serv.close if serv && !serv.closed?
   end
 
   def test_tcp_recv_nonblock
@@ -180,5 +189,66 @@ class TestSocketNonblock < Test::Unit::TestCase
     s.close if s
   end
 =end
+
+  def test_sendmsg_nonblock_error
+    tcp_pair {|c, s|
+      begin
+        loop {
+          c.sendmsg_nonblock("a" * 100000)
+        }
+      rescue Errno::EWOULDBLOCK
+        assert_match(/WANT_WRITE/, $!.message)
+      end
+    }
+  end
+
+  def test_recvmsg_nonblock_error
+    tcp_pair {|c, s|
+      begin
+        c.recvmsg_nonblock(4096)
+      rescue Errno::EWOULDBLOCK
+        assert_match(/WANT_READ/, $!.message)
+      end
+    }
+  end
+
+  def test_recv_nonblock_error
+    tcp_pair {|c, s|
+      begin
+        c.recv_nonblock(4096)
+      rescue Errno::EWOULDBLOCK
+        assert_match(/WANT_READ/, $!.message)
+      end
+    }
+  end
+
+  def test_connect_nonblock_error
+    serv = TCPServer.new("127.0.0.1", 0)
+    af, port, host, addr = serv.addr
+    c = Socket.new(:INET, :STREAM)
+    begin
+      c.connect_nonblock(Socket.sockaddr_in(port, "127.0.0.1"))
+    rescue Errno::EINPROGRESS
+      assert_match(/WANT_WRITE/, $!.message)
+    end
+  ensure
+    serv.close if serv && !serv.closed?
+    c.close if c && !c.closed?
+  end
+
+  def test_accept_nonblock_error
+    serv = Socket.new(:INET, :STREAM)
+    serv.bind(Socket.sockaddr_in(0, "127.0.0.1"))
+    serv.listen(5)
+    port = serv.local_address.ip_port
+    begin
+      s, _ = serv.accept_nonblock
+    rescue Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO
+      assert_match(/WANT_READ/, $!.message)
+    end
+  ensure
+    serv.close if serv && !serv.closed?
+    s.close if s && !s.closed?
+  end
 
 end if defined?(Socket)

@@ -1754,6 +1754,8 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
         if (n < 0) {
             if (!nonblock && rb_io_wait_readable(fptr->fd))
                 goto again;
+            if (nonblock && errno == EWOULDBLOCK)
+                rb_sys_fail("WANT_READ");
             rb_sys_fail_path(fptr->pathv);
         }
 	else if (n == 0) {
@@ -1952,7 +1954,11 @@ rb_io_write_nonblock(VALUE io, VALUE str)
     rb_io_set_nonblock(fptr);
     n = write(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
 
-    if (n == -1) rb_sys_fail_path(fptr->pathv);
+    if (n == -1) {
+        if (errno == EWOULDBLOCK)
+            rb_sys_fail("WANT_WRITE");
+        rb_sys_fail_path(fptr->pathv);
+    }
 
     return LONG2FIX(n);
 }

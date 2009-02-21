@@ -1,3 +1,17 @@
+Sun Feb 22 00:51:58 2009  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_getpartial): error message describes what should be
+	  waited after nonblocking error.
+	  (rb_io_write_nonblock): ditto.
+
+	* ext/socket/init.c (s_recvfrom_nonblock): ditto.
+	  (s_accept_nonblock): ditto.
+
+	* ext/socket/socket.c (sock_connect_nonblock): ditto.
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal): ditto.
+	  (bsock_recvmsg_internal): ditto.
+
 Sun Feb 22 00:31:42 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (bsock_recvmsg_internal): check recvmsg error
