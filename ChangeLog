@@ -1,3 +1,8 @@
+Sun Feb 22 01:48:51 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): gc when SCM_RIGHTS
+	  hit the file descriptor limit.
+
 Sun Feb 22 00:51:58 2009  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_getpartial): error message describes what should be

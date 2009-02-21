@@ -1202,6 +1202,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     char *ctlbuf;
     VALUE ctl_str = Qnil;
     int family;
+    int gc_done = 0;
 #endif
 
     rb_secure(4);
@@ -1296,6 +1297,16 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     if (ss == -1) {
         if (nonblock && errno == EWOULDBLOCK)
             rb_sys_fail("recvmsg(2) WANT_READ");
+#if defined(HAVE_ST_MSG_CONTROL)
+        if (errno == EMFILE && !gc_done) {
+          /* SCM_RIGHTS hit the file descriptors limit, maybe. */
+          gc_and_retry:
+            discard_cmsg_resource(&mh);
+            rb_gc();
+            gc_done = 1;
+	    goto retry;
+        }
+#endif
 	rb_sys_fail("recvmsg(2)");
     }
 
@@ -1307,8 +1318,19 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 	    grown = 1;
 	}
         if (NIL_P(vmaxctllen) && (mh.msg_flags & MSG_CTRUNC)) {
-	    maxctllen *= 2;
-	    grown = 1;
+#define BIG_ENOUGH_SPACE 65536
+            if (BIG_ENOUGH_SPACE < maxctllen &&
+                mh.msg_controllen < maxctllen - BIG_ENOUGH_SPACE) {
+                /* there are big space bug truncated.
+                 * file descriptors limit? */
+                if (!gc_done)
+                    goto gc_and_retry;
+            }
+            else {
+                maxctllen *= 2;
+                grown = 1;
+            }
+#undef BIG_ENOUGH_SPACE
 	}
 #else
 	if (NIL_P(vmaxdatlen) && ss != -1 && ss == iov.iov_len) {
