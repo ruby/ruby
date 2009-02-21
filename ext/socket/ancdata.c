@@ -1298,8 +1298,13 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
         if (nonblock && errno == EWOULDBLOCK)
             rb_sys_fail("recvmsg(2) WANT_READ");
 #if defined(HAVE_ST_MSG_CONTROL)
-        if (errno == EMFILE && !gc_done) {
-          /* SCM_RIGHTS hit the file descriptors limit, maybe. */
+        if (!gc_done && (errno == EMFILE || errno == EMSGSIZE)) {
+          /*
+           * When SCM_RIGHTS hit the file descriptors limit:
+           * - Linux 2.6.18 causes success with MSG_CTRUNC
+           * - MacOS X 10.4 causes EMSGSIZE (and lost file descriptors?)
+           * - Solaris 11 causes EMFILE
+           */
           gc_and_retry:
             rb_gc();
             gc_done = 1;
