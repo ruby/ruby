@@ -1290,6 +1290,9 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
         goto retry;
     }
 
+    if (ss == -1)
+	rb_sys_fail("recvmsg(2)");
+
     if (grow_buffer) {
 	int grown = 0;
 #if defined(HAVE_ST_MSG_CONTROL)
@@ -1320,9 +1323,6 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             }
         }
     }
-
-    if (ss == -1)
-	rb_sys_fail("recvmsg(2)");
 
     if (NIL_P(dat_str))
         dat_str = rb_tainted_str_new(datbuf, ss);

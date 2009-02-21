@@ -1,3 +1,8 @@
+Sun Feb 22 00:31:42 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): check recvmsg error
+	  earlier.
+
 Fri Feb 20 23:28:11 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* util.c (rv_alloc, freedtoa): use our normal xmalloc()/xfree() because
