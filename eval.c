@@ -10959,6 +10959,7 @@ rb_thread_schedule()
     rb_thread_t next;		/* OK */
     rb_thread_t th;
     rb_thread_t curr;
+    rb_thread_t th_found = 0;
     int found = 0;
 
     fd_set readfds;
@@ -11104,28 +11105,22 @@ rb_thread_schedule()
 	if (n > 0) {
 	    now = -1.0;
 	    /* Some descriptors are ready.
-	       Make the corresponding threads runnable. */
+             * Choose a thread which may run next.
+             * Don't change the status of threads which don't run next.
+             */
 	    FOREACH_THREAD_FROM(curr, th) {
 		if ((th->wait_for&WAIT_FD) && FD_ISSET(th->fd, &readfds)) {
-		    /* Wake up only one thread per fd. */
-		    FD_CLR(th->fd, &readfds);
-		    th->status = THREAD_RUNNABLE;
-		    th->fd = 0;
-		    th->wait_for = 0;
+                    th_found = th;
 		    found = 1;
+                    break;
 		}
 		if ((th->wait_for&WAIT_SELECT) &&
 		    (match_fds(&readfds, &th->readfds, max) ||
 		     match_fds(&writefds, &th->writefds, max) ||
 		     match_fds(&exceptfds, &th->exceptfds, max))) {
-		    /* Wake up only one thread per fd. */
-		    th->status = THREAD_RUNNABLE;
-		    th->wait_for = 0;
-		    n = intersect_fds(&readfds, &th->readfds, max) +
-			intersect_fds(&writefds, &th->writefds, max) +
-			intersect_fds(&exceptfds, &th->exceptfds, max);
-		    th->select_value = n;
-		    found = 1;
+                    th_found = th;
+                    found = 1;
+                    break;
 		}
 	    }
 	    END_FOREACH_FROM(curr, th);
@@ -11141,9 +11136,23 @@ rb_thread_schedule()
 	    next = th;
 	    break;
 	}
-	if (th->status == THREAD_RUNNABLE && th->stk_ptr) {
-	    if (!next || next->priority < th->priority)
-	       next = th;
+	if ((th->status == THREAD_RUNNABLE || th == th_found) && th->stk_ptr) {
+	    if (!next || next->priority < th->priority) {
+                if (th == th_found) {
+                    th_found->status = THREAD_RUNNABLE;
+                    th_found->wait_for = 0;
+                    if (th->wait_for&WAIT_FD) {
+                        th_found->fd = 0;
+                    }
+                    else { /* th->wait_for&WAIT_SELECT */
+                        n = intersect_fds(&readfds, &th_found->readfds, max) +
+                            intersect_fds(&writefds, &th_found->writefds, max) +
+                            intersect_fds(&exceptfds, &th_found->exceptfds, max);
+                        th_found->select_value = n;
+                    }
+                }
+	        next = th;
+            }
 	}
     }
     END_FOREACH_FROM(curr, th);

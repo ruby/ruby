@@ -1,3 +1,9 @@
+Sun Feb 22 00:19:05 2009  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (rb_thread_schedule): Don't change status of threads which
+	  don't run next even if select notify readability/writability.
+	  [ruby-core:20446]
+
 Fri Feb 20 20:43:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::List#summarize): gives priority
