@@ -355,6 +355,10 @@ Sat Feb 14 19:20:15 2009  Tanaka Akira  <akr@fsij.org>
 	* lib/pathname.rb: obsolete methods removed.
 	  [ruby-core:21564]
 
+Sat Feb 14 15:46:01 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/pathname.rb (Pathname#binread): added.  [ruby-dev:37952]
+
 Sat Feb 14 13:14:18 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* iseq.c: remove nil parameter from Proc#parameters
