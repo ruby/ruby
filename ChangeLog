@@ -1,3 +1,8 @@
+Sun Feb 22 01:52:30 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): don't call
+	  discard_cmsg_resource when EMFILE.
+
 Sun Feb 22 01:48:51 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (bsock_recvmsg_internal): gc when SCM_RIGHTS

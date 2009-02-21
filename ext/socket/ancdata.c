@@ -1301,7 +1301,6 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
         if (errno == EMFILE && !gc_done) {
           /* SCM_RIGHTS hit the file descriptors limit, maybe. */
           gc_and_retry:
-            discard_cmsg_resource(&mh);
             rb_gc();
             gc_done = 1;
 	    goto retry;
@@ -1323,8 +1322,10 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
                 mh.msg_controllen < maxctllen - BIG_ENOUGH_SPACE) {
                 /* there are big space bug truncated.
                  * file descriptors limit? */
-                if (!gc_done)
+                if (!gc_done) {
+		    discard_cmsg_resource(&mh);
                     goto gc_and_retry;
+		}
             }
             else {
                 maxctllen *= 2;
