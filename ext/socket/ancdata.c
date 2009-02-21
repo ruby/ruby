@@ -1402,12 +1402,12 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
  * In that case, the buffer will be grown until the message is not truncated.
  * Internally, MSG_PEEK is used and MSG_TRUNC/MSG_CTRUNC are checked.
  *
- * sendmsg can be used to implement recv_io as follows:
+ * recvmsg can be used to implement recv_io as follows:
  *
  *   mesg, sender_sockaddr, rflags, *controls = sock.recvmsg
  *   controls.each {|ancdata|
- *     if ancdata.level == Socket::SOL_SOCKET && ancdata.type == Socket::SCM_RIGHTS
- *       return IO.new(ancdata.int)
+ *     if ancdata.cmsg_is?(:SOCKET, :RIGHTS)
+ *       return ancdata.unix_rights[0]
  *     end
  *   }
  *
