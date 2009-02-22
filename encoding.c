@@ -925,7 +925,7 @@ enc_find(VALUE klass, VALUE enc)
  *   Encoding.compatible?(str1, str2) => enc or nil
  *
  * Checks the compatibility of two strings.
- * If they are compatible, means concatenatable, 
+ * If they are compatible, means concatenatable,
  * returns an encoding which the concatinated string will be.
  * If they are not compatible, nil is returned.
  *

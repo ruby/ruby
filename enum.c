@@ -821,7 +821,7 @@ name##_iter_i(VALUE i, VALUE *memo, int argc, VALUE *argv) \
 { \
     return enum_##name##_func(enum_yield(argc, argv), memo); \
 }
-    
+
 static VALUE
 enum_all_func(VALUE result, VALUE *memo)
 {
@@ -1428,8 +1428,8 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 
 /*
  *  call-seq:
- *     enum.reverse_each {|item| block } 
- *  
+ *     enum.reverse_each {|item| block }
+ *
  *  Traverses <i>enum</i> in reverse order.
  */
 

@@ -341,7 +341,7 @@ rb_load_protect(VALUE fname, int wrap, int *state)
 /*
  *  call-seq:
  *     load(filename, wrap=false)   => true
- *  
+ *
  *  Loads and executes the Ruby
  *  program in the file _filename_. If the filename does not
  *  resolve to an absolute path, the file is searched for in the library
@@ -406,7 +406,7 @@ load_unlock(const char *ftptr, int done)
 /*
  *  call-seq:
  *     require(string)    => true or false
- *  
+ *
  *  Ruby tries to load the library named _string_, returning
  *  +true+ if successful. If the filename does not resolve to
  *  an absolute path, it will be searched for in the directories listed
@@ -420,7 +420,7 @@ load_unlock(const char *ftptr, int done)
  *  appears in <code>$"</code>. However, the file name is not converted
  *  to an absolute path, so that ``<code>require 'a';require
  *  './a'</code>'' will load <code>a.rb</code> twice.
- *     
+ *
  *     require "my-library.rb"
  *     require "db-driver"
  */
@@ -638,11 +638,11 @@ ruby_init_ext(const char *name, void (*init)(void))
 /*
  *  call-seq:
  *     mod.autoload(name, filename)   => nil
- *  
+ *
  *  Registers _filename_ to be loaded (using <code>Kernel::require</code>)
  *  the first time that _module_ (which may be a <code>String</code> or
  *  a symbol) is accessed in the namespace of _mod_.
- *     
+ *
  *     module A
  *     end
  *     A.autoload(:B, "b")
@@ -672,11 +672,11 @@ rb_mod_autoload_p(VALUE mod, VALUE sym)
 /*
  *  call-seq:
  *     autoload(module, filename)   => nil
- *  
+ *
  *  Registers _filename_ to be loaded (using <code>Kernel::require</code>)
  *  the first time that _module_ (which may be a <code>String</code> or
  *  a symbol) is accessed.
- *     
+ *
  *     autoload(:MyModule, "/usr/local/lib/modules/my_module.rb")
  */
 

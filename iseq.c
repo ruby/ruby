@@ -1247,7 +1247,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     rb_hash_aset(misc, ID2SYM(rb_intern("local_size")), INT2FIX(iseq->local_size));
     rb_hash_aset(misc, ID2SYM(rb_intern("stack_max")), INT2FIX(iseq->stack_max));
 
-    /* 
+    /*
      * [:magic, :major_version, :minor_version, :format_type, :misc,
      *  :name, :filename, :type, :locals, :args,
      *  :catch_table, :bytecode]

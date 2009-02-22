@@ -3498,7 +3498,7 @@ block_call	: command do_block
 			}
 			else {
 			    block_dup_check($1->nd_args, $2);
-			}    
+			}
 			$2->nd_iter = $1;
 			$$ = $2;
 			fixpos($$, $1);

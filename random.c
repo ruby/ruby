@@ -9,7 +9,7 @@
 
 **********************************************************************/
 
-/* 
+/*
 This is based on trimmed version of MT19937.  To get the original version,
 contact <http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html>.
 
@@ -24,7 +24,7 @@ The original copyright notice follows.
    or init_by_array(mt, init_key, key_length).
 
    Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
-   All rights reserved.                          
+   All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -37,8 +37,8 @@ The original copyright notice follows.
         notice, this list of conditions and the following disclaimer in the
         documentation and/or other materials provided with the distribution.
 
-     3. The names of its contributors may not be used to endorse or promote 
-        products derived from this software without specific prior written 
+     3. The names of its contributors may not be used to endorse or promote
+        products derived from this software without specific prior written
         permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
@@ -59,7 +59,7 @@ The original copyright notice follows.
    email: matumoto@math.keio.ac.jp
 */
 
-/* Period parameters */  
+/* Period parameters */
 #define N 624
 #define M 397
 #define MATRIX_A 0x9908b0dfUL   /* constant vector a */
@@ -340,7 +340,7 @@ random_seed(void)
 /*
  *  call-seq:
  *     srand(number=0)    => old_seed
- *  
+ *
  *  Seeds the pseudorandom number generator to the value of
  *  <i>number</i>. If <i>number</i> is omitted
  *  or zero, seeds the generator using a combination of the time, the
@@ -369,7 +369,7 @@ rb_f_srand(int argc, VALUE *argv, VALUE obj)
     return old;
 }
 
-static unsigned long 
+static unsigned long
 make_mask(unsigned long x)
 {
     x = x | x >> 1;
@@ -465,7 +465,7 @@ rb_rand_internal(unsigned long i)
 /*
  *  call-seq:
  *     rand(max=0)    => number
- *  
+ *
  *  Converts <i>max</i> to an integer using max1 =
  *  max<code>.to_i.abs</code>. If the result is zero, returns a
  *  pseudorandom floating point number greater than or equal to 0.0 and
@@ -474,7 +474,7 @@ rb_rand_internal(unsigned long i)
  *  may be used to ensure repeatable sequences of random numbers between
  *  different runs of the program. Ruby currently uses a modified
  *  Mersenne Twister with a period of 2**19937-1.
- *     
+ *
  *     srand 1234                 #=> 0
  *     [ rand,  rand ]            #=> [0.191519450163469, 0.49766366626136]
  *     [ rand(10), rand(1000) ]   #=> [6, 817]

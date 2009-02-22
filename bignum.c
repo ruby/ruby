@@ -1714,7 +1714,7 @@ bigmul1_karatsuba(VALUE x, VALUE y)
 	t1 = xl; xl = xh; xh = t1;
     }
     bigadd_core(BDIGITS(xh), RBIGNUM_LEN(xh),
-		BDIGITS(xl), RBIGNUM_LEN(xl), 
+		BDIGITS(xl), RBIGNUM_LEN(xl),
 		BDIGITS(xh), RBIGNUM_LEN(xh));
 
     /* yh <- yh + yl */
@@ -1723,7 +1723,7 @@ bigmul1_karatsuba(VALUE x, VALUE y)
 	    t1 = yl; yl = yh; yh = t1;
 	}
 	bigadd_core(BDIGITS(yh), RBIGNUM_LEN(yh),
-		    BDIGITS(yl), RBIGNUM_LEN(yl), 
+		    BDIGITS(yl), RBIGNUM_LEN(yl),
 		    BDIGITS(yh), RBIGNUM_LEN(yh));
     }
     else yh = xh;

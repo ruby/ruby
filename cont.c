@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  cont.c - 
+  cont.c -
 
   $Author$
   created at: Thu May 23 09:03:43 2007
@@ -461,24 +461,24 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
  *  Continuations are somewhat analogous to a structured version of C's
  *  <code>setjmp/longjmp</code> (although they contain more state, so
  *  you might consider them closer to threads).
- *     
+ *
  *  For instance:
- *     
+ *
  *     arr = [ "Freddie", "Herbie", "Ron", "Max", "Ringo" ]
  *     callcc{|$cc|}
  *     puts(message = arr.shift)
  *     $cc.call unless message =~ /Max/
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     Freddie
  *     Herbie
  *     Ron
  *     Max
- *     
+ *
  *  This (somewhat contrived) example allows the inner loop to abandon
  *  processing early:
- *     
+ *
  *     callcc {|cont|
  *       for i in 0..4
  *         print "\n#{i}: "
@@ -489,9 +489,9 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
  *       end
  *     }
  *     print "\n"
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     0:   0  1  2  3  4
  *     1:   5  6  7  8  9
  *     2:  10 11 12 13 14
@@ -501,7 +501,7 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 /*
  *  call-seq:
  *     callcc {|cont| block }   =>  obj
- *  
+ *
  *  Generates a <code>Continuation</code> object, which it passes to the
  *  associated block. Performing a <em>cont</em><code>.call</code> will
  *  cause the <code>callcc</code> to return (as will falling through the
@@ -543,13 +543,13 @@ make_passing_arg(int argc, VALUE *argv)
  *  call-seq:
  *     cont.call(args, ...)
  *     cont[args, ...]
- *  
+ *
  *  Invokes the continuation. The program continues from the end of the
  *  <code>callcc</code> block. If no arguments are given, the original
  *  <code>callcc</code> returns <code>nil</code>. If one argument is
  *  given, <code>callcc</code> returns it. Otherwise, an array
  *  containing <i>args</i> is returned.
- *     
+ *
  *     callcc {|cont|  cont.call }           #=> nil
  *     callcc {|cont|  cont.call 1 }         #=> 1
  *     callcc {|cont|  cont.call 1, 2, 3 }   #=> [1, 2, 3]
@@ -592,26 +592,26 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *  Document-class: Fiber
  *
  *  Fibers are primitives for implementing light weight cooperative
- *  concurrency in Ruby. Basically they are a means of creating code blocks 
- *  that can be paused and resumed, much like threads. The main difference 
- *  is that they are never preempted and that the scheduling must be done by 
- *  the programmer and not the VM. 
+ *  concurrency in Ruby. Basically they are a means of creating code blocks
+ *  that can be paused and resumed, much like threads. The main difference
+ *  is that they are never preempted and that the scheduling must be done by
+ *  the programmer and not the VM.
  *
  *  As opposed to other stackless light weight concurrency models, each fiber
  *  comes with a small 4KB stack. This enables the fiber to be paused from deeply
  *  nested function calls within the fiber block.
  *
- *  When a fiber is created it will not run automatically. Rather it must be 
- *  be explicitly asked to run using the <code>Fiber#resume</code> method. 
- *  The code running inside the fiber can give up control by calling 
- *  <code>Fiber.yield</code> in which case it yields control back to caller 
+ *  When a fiber is created it will not run automatically. Rather it must be
+ *  be explicitly asked to run using the <code>Fiber#resume</code> method.
+ *  The code running inside the fiber can give up control by calling
+ *  <code>Fiber.yield</code> in which case it yields control back to caller
  *  (the caller of the <code>Fiber#resume</code>).
- * 
- *  Upon yielding or termination the Fiber returns the value of the last 
+ *
+ *  Upon yielding or termination the Fiber returns the value of the last
  *  executed expression
- *  
+ *
  *  For instance:
- *  
+ *
  *    fiber = Fiber.new do
  *      Fiber.yield 1
  *      2
@@ -620,20 +620,20 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *    puts fiber.resume
  *    puts fiber.resume
  *    puts fiber.resume
- *    
+ *
  *  <em>produces</em>
- *    
+ *
  *    1
  *    2
  *    FiberError: dead fiber called
- *     
+ *
  *  The <code>Fiber#resume</code> method accepts an arbitary number of
  *  parameters, if it is the first call to <code>resume</code> then they
  *  will be passed as block arguments. Otherwise they will be the return
  *  value of the call to <code>Fiber.yield</code>
  *
  *  Example:
- *  
+ *
  *    fiber = Fiber.new do |first|
  *      second = Fiber.yield first + 2
  *    end
@@ -643,7 +643,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *    puts fiber.resume 18
  *
  *  <em>produces</em>
- *    
+ *
  *    12
  *    14
  *    FiberError: dead fiber called
@@ -923,7 +923,7 @@ rb_fiber_yield(int argc, VALUE *argv)
 /*
  *  call-seq:
  *     fiber.alive? -> true or false
- *  
+ *
  *  Returns true if the fiber can still be resumed (or transferred to).
  *  After finishing execution of the fiber block this method will always
  *  return false.
@@ -939,13 +939,13 @@ rb_fiber_alive_p(VALUE fibval)
 /*
  *  call-seq:
  *     fiber.resume(args, ...) -> obj
- *  
+ *
  *  Resumes the fiber from the point at which the last <code>Fiber.yield</code>
- *  was called, or starts running it if it is the first call to 
+ *  was called, or starts running it if it is the first call to
  *  <code>resume</code>. Arguments passed to resume will be the value of
- *  the <code>Fiber.yield</code> expression or will be passed as block 
+ *  the <code>Fiber.yield</code> expression or will be passed as block
  *  parameters to the fiber's block if this is the first <code>resume</code>.
- *  
+ *
  *  Alternatively, when resume is called it evaluates to the arguments passed
  *  to the next <code>Fiber.yield</code> statement inside the fiber's block
  *  or to the block value if it runs to completion without any
@@ -960,15 +960,15 @@ rb_fiber_m_resume(int argc, VALUE *argv, VALUE fib)
 /*
  *  call-seq:
  *     fiber.transfer(args, ...) -> obj
- *  
+ *
  *  Transfer control to another fiber, resuming it from where it last
- *  stopped or starting it if it was not resumed before. The calling 
+ *  stopped or starting it if it was not resumed before. The calling
  *  fiber will be suspended much like in a call to <code>Fiber.yield</code>.
- *  
- *  The fiber which recieves the transfer call is treats it much like 
+ *
+ *  The fiber which recieves the transfer call is treats it much like
  *  a resume call. Arguments passed to transfer are treated like those
  *  passed to resume.
- *     
+ *
  *  You cannot resume a fiber that transferred control to another one.
  *  This will cause a double resume error. You need to transfer control
  *  back to this fiber before it can yield and resume.
@@ -982,7 +982,7 @@ rb_fiber_m_transfer(int argc, VALUE *argv, VALUE fib)
 /*
  *  call-seq:
  *     Fiber.yield(args, ...) -> obj
- *  
+ *
  *  Yields control back to the context that resumed the fiber, passing
  *  along any arguments that were passed to it. The fiber will resume
  *  processing at this point when <code>resume</code> is called next.
@@ -998,7 +998,7 @@ rb_fiber_s_yield(int argc, VALUE *argv, VALUE klass)
 /*
  *  call-seq:
  *     Fiber.current() -> fiber
- *  
+ *
  *  Returns the current fiber. You need to <code>require 'fiber'</code>
  *  before using this method. If you are not running in the context of
  *  a fiber this method will return the root fiber.

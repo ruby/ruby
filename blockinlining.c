@@ -34,7 +34,7 @@ iseq_special_block(rb_iseq_t *iseq, void *builder)
     else {
 	iseq->cached_special_block_builder = (void *)1;
     }
-    
+
     if (iseq->parent_iseq) {
 	parent = iseq->parent_iseq->self;
     }

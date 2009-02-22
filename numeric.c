@@ -2455,7 +2455,7 @@ fix_pow(VALUE x, VALUE y)
 	if (a == -1) {
 	    if (b % 2 == 0)
 		return INT2FIX(1);
-	    else 
+	    else
 		return INT2FIX(-1);
 	}
 	return int_pow(a, b);

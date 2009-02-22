@@ -76,10 +76,10 @@ rb_struct_s_members_m(VALUE klass)
 /*
  *  call-seq:
  *     struct.members    => array
- *  
+ *
  *  Returns an array of strings representing the names of the instance
  *  variables.
- *     
+ *
  *     Customer = Struct.new(:name, :address, :zip)
  *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *     joe.members   #=> [:name, :address, :zip]
@@ -293,7 +293,7 @@ rb_struct_define(const char *name, ...)
  *  <code>Struct</code>s in the system and should start with a capital
  *  letter. Assigning a structure class to a constant effectively gives
  *  the class the name of the constant.
- *     
+ *
  *  <code>Struct::new</code> returns a new <code>Class</code> object,
  *  which can then be used to create specific instances of the new
  *  structure. The number of actual parameters must be
@@ -302,12 +302,12 @@ rb_struct_define(const char *name, ...)
  *  parameters will raise an \E{ArgumentError}.
  *
  *  The remaining methods listed in this section (class and instance)
- *  are defined for this generated class. 
- *     
+ *  are defined for this generated class.
+ *
  *     # Create a structure with a name in Struct
  *     Struct.new("Customer", :name, :address)    #=> Struct::Customer
  *     Struct::Customer.new("Dave", "123 Main")   #=> #<struct Struct::Customer name="Dave", address="123 Main">
- *     
+ *
  *     # Create a structure named by its constant
  *     Customer = Struct.new(:name, :address)     #=> Customer
  *     Customer.new("Dave", "123 Main")           #=> #<struct Customer name="Dave", address="123 Main">
@@ -426,16 +426,16 @@ rb_struct_new(VALUE klass, ...)
 /*
  *  call-seq:
  *     struct.each {|obj| block }  => struct
- *  
+ *
  *  Calls <i>block</i> once for each instance variable, passing the
  *  value as a parameter.
- *     
+ *
  *     Customer = Struct.new(:name, :address, :zip)
  *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *     joe.each {|x| puts(x) }
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     Joe Smith
  *     123 Maple, Anytown NC
  *     12345
@@ -456,16 +456,16 @@ rb_struct_each(VALUE s)
 /*
  *  call-seq:
  *     struct.each_pair {|sym, obj| block }     => struct
- *  
+ *
  *  Calls <i>block</i> once for each instance variable, passing the name
  *  (as a symbol) and the value as parameters.
- *     
+ *
  *     Customer = Struct.new(:name, :address, :zip)
  *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *     joe.each_pair {|name, value| puts("#{name} => #{value}") }
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     name => Joe Smith
  *     address => 123 Maple, Anytown NC
  *     zip => 12345
@@ -545,9 +545,9 @@ rb_struct_inspect(VALUE s)
  *  call-seq:
  *     struct.to_a     => array
  *     struct.values   => array
- *  
+ *
  *  Returns the values for this instance as an array.
- *     
+ *
  *     Customer = Struct.new(:name, :address, :zip)
  *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *     joe.to_a[1]   #=> "123 Maple, Anytown NC"
@@ -596,17 +596,17 @@ rb_struct_aref_id(VALUE s, ID id)
 /*
  *  call-seq:
  *     struct[symbol]    => anObject
- *     struct[fixnum]    => anObject 
- *  
+ *     struct[fixnum]    => anObject
+ *
  *  Attribute Reference---Returns the value of the instance variable
  *  named by <i>symbol</i>, or indexed (0..length-1) by
  *  <i>fixnum</i>. Will raise <code>NameError</code> if the named
  *  variable does not exist, or <code>IndexError</code> if the index is
  *  out of range.
- *     
+ *
  *     Customer = Struct.new(:name, :address, :zip)
  *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     
+ *
  *     joe["name"]   #=> "Joe Smith"
  *     joe[:name]    #=> "Joe Smith"
  *     joe[0]        #=> "Joe Smith"
@@ -658,19 +658,19 @@ rb_struct_aset_id(VALUE s, ID id, VALUE val)
  *  call-seq:
  *     struct[symbol] = obj    => obj
  *     struct[fixnum] = obj    => obj
- *  
+ *
  *  Attribute Assignment---Assigns to the instance variable named by
  *  <i>symbol</i> or <i>fixnum</i> the value <i>obj</i> and
  *  returns it. Will raise a <code>NameError</code> if the named
  *  variable does not exist, or an <code>IndexError</code> if the index
  *  is out of range.
- *     
+ *
  *     Customer = Struct.new(:name, :address, :zip)
  *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     
+ *
  *     joe["name"] = "Luke"
  *     joe[:zip]   = "90210"
- *     
+ *
  *     joe.name   #=> "Luke"
  *     joe.zip    #=> "90210"
  */
@@ -704,15 +704,15 @@ struct_entry(VALUE s, long n)
     return rb_struct_aref(s, LONG2NUM(n));
 }
 
-/* 
+/*
  * call-seq:
  *   struct.values_at(selector,... )  => an_array
  *
  *   Returns an array containing the elements in
  *   _self_ corresponding to the given selector(s). The selectors
- *   may be either integer indices or ranges. 
+ *   may be either integer indices or ranges.
  *   See also </code>.select<code>.
- * 
+ *
  *      a = %w{ a b c d e f }
  *      a.values_at(1, 3, 5)
  *      a.values_at(1, 3, 5, 7)
@@ -729,12 +729,12 @@ rb_struct_values_at(int argc, VALUE *argv, VALUE s)
 /*
  *  call-seq:
  *     struct.select {|i| block }    => array
- *  
+ *
  *  Invokes the block passing in successive elements from
  *  <i>struct</i>, returning an array containing those elements
  *  for which the block returns a true value (equivalent to
  *  <code>Enumerable#select</code>).
- *     
+ *
  *     Lots = Struct.new(:a, :b, :c, :d, :e, :f)
  *     l = Lots.new(11, 22, 33, 44, 55, 66)
  *     l.select {|v| (v % 2).zero? }   #=> [22, 44, 66]
@@ -762,12 +762,12 @@ rb_struct_select(int argc, VALUE *argv, VALUE s)
 /*
  *  call-seq:
  *     struct == other_struct     => true or false
- *  
+ *
  *  Equality---Returns <code>true</code> if <i>other_struct</i> is
  *  equal to this one: they must be of the same class as generated by
  *  <code>Struct::new</code>, and the values of all instance variables
  *  must be equal (according to <code>Object#==</code>).
- *     
+ *
  *     Customer = Struct.new(:name, :address, :zip)
  *     joe   = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *     joejr = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
@@ -847,9 +847,9 @@ rb_struct_eql(VALUE s, VALUE s2)
  *  call-seq:
  *     struct.length    => fixnum
  *     struct.size      => fixnum
- *  
+ *
  *  Returns the number of instance variables.
- *     
+ *
  *     Customer = Struct.new(:name, :address, :zip)
  *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *     joe.length   #=> 3
@@ -865,13 +865,13 @@ rb_struct_size(VALUE s)
  *  A <code>Struct</code> is a convenient way to bundle a number of
  *  attributes together, using accessor methods, without having to write
  *  an explicit class.
- *     
+ *
  *  The <code>Struct</code> class is a generator of specific classes,
  *  each one of which is defined to hold a set of variables and their
  *  accessors. In these examples, we'll call the generated class
  *  ``<i>Customer</i>Class,'' and we'll show an example instance of that
  *  class as ``<i>Customer</i>Inst.''
- *     
+ *
  *  In the descriptions that follow, the parameter <i>symbol</i> refers
  *  to a symbol, which is either a quoted string or a
  *  <code>Symbol</code> (such as <code>:name</code>).

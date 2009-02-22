@@ -101,7 +101,7 @@ scan_digits(const char *str, int base, size_t *retlen, int *overflow)
             *overflow = 1;
         ret *= base;
         x = ret;
-        ret += d; 
+        ret += d;
         if (ret < x)
             *overflow = 1;
     }
@@ -217,11 +217,11 @@ ruby_strtoul(const char *str, char **endptr, int base)
  * Style 1:  The suffix begins with a '.'.  The extension is replaced.
  *           If the name matches the original name, use the fallback method.
  *
- * Style 2:  The suffix is a single character, not a '.'.  Try to add the 
+ * Style 2:  The suffix is a single character, not a '.'.  Try to add the
  *           suffix to the following places, using the first one that works.
- *               [1] Append to extension.  
- *               [2] Append to filename, 
- *               [3] Replace end of extension, 
+ *               [1] Append to extension.
+ *               [2] Append to filename,
+ *               [3] Replace end of extension,
  *               [4] Replace end of filename.
  *           If the name matches the original name, use the fallback method.
  *
@@ -257,7 +257,7 @@ ruby_strtoul(const char *str, char **endptr, int base)
  *                longname.fil => longname.fi~
  *                longname.fi~ => longnam~.fi~
  *                longnam~.fi~ => longnam~.$$$
- *                
+ *
  */
 
 
@@ -311,7 +311,7 @@ ruby_add_suffix(VALUE str, const char *suffix)
 	strcpy(p, suffix);
     }
     else if (suffix[1] == '\0') {  /* Style 2 */
-        if (extlen < 4) { 
+        if (extlen < 4) {
 	    ext[extlen] = *suffix;
 	    ext[++extlen] = '\0';
         }
@@ -336,7 +336,7 @@ fallback:
 }
 
 #if defined(__CYGWIN32__) || defined(_WIN32)
-static int 
+static int
 valid_filename(const char *s)
 {
     int fd;

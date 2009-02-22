@@ -1,4 +1,4 @@
-void Init_golf(void); 
+void Init_golf(void);
 #define ruby_run_node goruby_run_node
 #include "main.c"
 #undef ruby_run_node

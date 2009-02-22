@@ -118,7 +118,7 @@ getrusage_time(void)
     ULARGE_INTEGER ui;
     LONG_LONG q;
     double t;
-    
+
     if (GetProcessTimes(GetCurrentProcess(),
 			&creation_time, &exit_time, &kernel_time, &user_time) == 0)
     {
@@ -863,7 +863,7 @@ assign_heap_slot(rb_objspace_t *objspace)
     RVALUE *p, *pend, *membase;
     size_t hi, lo, mid;
     int objs;
-	
+
     objs = HEAP_OBJ_LIMIT;
     p = (RVALUE*)malloc(HEAP_SIZE);
 
@@ -962,7 +962,7 @@ static VALUE
 rb_newobj_from_heap(rb_objspace_t *objspace)
 {
     VALUE obj;
-	
+
     if ((ruby_gc_stress && !ruby_disable_gc_stress) || !freelist) {
     	if (!heaps_increment(objspace) && !garbage_collect(objspace)) {
 	    during_gc = 0;
@@ -1010,7 +1010,7 @@ rb_during_gc(void)
     rb_objspace_t *objspace = &rb_objspace;
     return during_gc;
 }
- 
+
 VALUE
 rb_newobj(void)
 {
@@ -2761,7 +2761,7 @@ gc_profile_record_get(void)
     VALUE gc_profile = rb_ary_new();
     size_t i;
     rb_objspace_t *objspace = (&rb_objspace);
-    
+
     if (!objspace->profile.run) {
 	return Qnil;
     }
@@ -2794,7 +2794,7 @@ gc_profile_record_get(void)
  *     GC::Profiler.result -> string
  *
  *  Report profile data to string.
- *  
+ *
  *  It returns a string as:
  *   GC 1 invokes.
  *   Index    Invoke Time(sec)       Use Size(byte)     Total Size(byte)         Total Object                    GC time(ms)
@@ -2808,7 +2808,7 @@ gc_profile_result(void)
     VALUE record;
     VALUE result;
     int i;
-    
+
     record = gc_profile_record_get();
     if (objspace->profile.run && objspace->profile.count) {
 	result = rb_sprintf("GC %d invokes.\n", NUM2INT(gc_count(0)));
@@ -2850,7 +2850,7 @@ gc_profile_result(void)
  *     GC::Profiler.report
  *
  *  GC::Profiler.result display
- *  
+ *
  */
 
 static VALUE

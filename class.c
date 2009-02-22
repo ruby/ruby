@@ -82,7 +82,7 @@ clone_method(ID mid, NODE *body, struct clone_method_data *data)
 	NODE *fbody = body->nd_body->nd_body;
 
 	if (nd_type(fbody) == RUBY_VM_METHOD_NODE) {
-	    fbody = NEW_NODE(RUBY_VM_METHOD_NODE, 0, 
+	    fbody = NEW_NODE(RUBY_VM_METHOD_NODE, 0,
 			     rb_iseq_clone((VALUE)fbody->nd_body, data->klass),
 			     0);
 	}
@@ -198,7 +198,7 @@ make_metametaclass(VALUE metaclass)
     }
     else {
         metametaclass = rb_class_boot(Qnil);
-        RBASIC(metametaclass)->klass = 
+        RBASIC(metametaclass)->klass =
             (RBASIC(RBASIC(metaclass)->klass)->klass == RBASIC(metaclass)->klass)
             ? make_metametaclass(RBASIC(metaclass)->klass)
             : RBASIC(RBASIC(metaclass)->klass)->klass;
@@ -212,9 +212,9 @@ make_metametaclass(VALUE metaclass)
     while (FL_TEST(super_of_metaclass, T_ICLASS)) {
         super_of_metaclass = RCLASS_SUPER(super_of_metaclass);
     }
-    RCLASS_SUPER(metametaclass) = 
+    RCLASS_SUPER(metametaclass) =
         rb_iv_get(RBASIC(super_of_metaclass)->klass, "__attached__") == super_of_metaclass
-        ? RBASIC(super_of_metaclass)->klass 
+        ? RBASIC(super_of_metaclass)->klass
         : make_metametaclass(super_of_metaclass);
     OBJ_INFECT(metametaclass, RCLASS_SUPER(metametaclass));
 
@@ -422,7 +422,7 @@ rb_include_module(VALUE klass, VALUE module)
     if (!OBJ_UNTRUSTED(klass)) {
 	rb_secure(4);
     }
-    
+
     if (TYPE(module) != T_MODULE) {
 	Check_Type(module, T_MODULE);
     }
@@ -461,16 +461,16 @@ rb_include_module(VALUE klass, VALUE module)
 /*
  *  call-seq:
  *     mod.included_modules -> array
- *  
+ *
  *  Returns the list of modules included in <i>mod</i>.
- *     
+ *
  *     module Mixin
  *     end
- *     
+ *
  *     module Outer
  *       include Mixin
  *     end
- *     
+ *
  *     Mixin.included_modules   #=> []
  *     Outer.included_modules   #=> [Mixin]
  */
@@ -492,10 +492,10 @@ rb_mod_included_modules(VALUE mod)
 /*
  *  call-seq:
  *     mod.include?(module)    => true or false
- *  
+ *
  *  Returns <code>true</code> if <i>module</i> is included in
  *  <i>mod</i> or one of <i>mod</i>'s ancestors.
- *     
+ *
  *     module A
  *     end
  *     class B
@@ -525,15 +525,15 @@ rb_mod_include_p(VALUE mod, VALUE mod2)
 /*
  *  call-seq:
  *     mod.ancestors -> array
- *  
+ *
  *  Returns a list of modules included in <i>mod</i> (including
  *  <i>mod</i> itself).
- *     
+ *
  *     module Mod
  *       include Math
  *       include Comparable
  *     end
- *     
+ *
  *     Mod.ancestors    #=> [Mod, Comparable, Math]
  *     Math.ancestors   #=> [Math]
  */
@@ -612,7 +612,7 @@ method_entry(ID key, NODE *body, st_table *list)
     if (key == ID_ALLOCATOR) {
 	return ST_CONTINUE;
     }
-    
+
     if (!st_lookup(list, key, 0)) {
 	if (body ==0 || !body->nd_body->nd_body) {
 	    type = -1; /* none */
@@ -658,14 +658,14 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int (*func) (ID, lo
 /*
  *  call-seq:
  *     mod.instance_methods(include_super=true)   => array
- *  
+ *
  *  Returns an array containing the names of instance methods that is callable
  *  from outside in the receiver. For a module, these are the public methods;
  *  for a class, they are the instance (not singleton) methods. With no
  *  argument, or with an argument that is <code>false</code>, the
  *  instance methods in <i>mod</i> are returned, otherwise the methods
  *  in <i>mod</i> and <i>mod</i>'s superclasses are returned.
- *     
+ *
  *     module A
  *       def method1()  end
  *     end
@@ -675,7 +675,7 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int (*func) (ID, lo
  *     class C < B
  *       def method3()  end
  *     end
- *     
+ *
  *     A.instance_methods                #=> [:method1]
  *     B.instance_methods(false)         #=> [:method2]
  *     C.instance_methods(false)         #=> [:method3]
@@ -691,7 +691,7 @@ rb_class_instance_methods(int argc, VALUE *argv, VALUE mod)
 /*
  *  call-seq:
  *     mod.protected_instance_methods(include_super=true)   => array
- *  
+ *
  *  Returns a list of the protected instance methods defined in
  *  <i>mod</i>. If the optional parameter is not <code>false</code>, the
  *  methods of any ancestors are included.
@@ -706,11 +706,11 @@ rb_class_protected_instance_methods(int argc, VALUE *argv, VALUE mod)
 /*
  *  call-seq:
  *     mod.private_instance_methods(include_super=true)    => array
- *  
+ *
  *  Returns a list of the private instance methods defined in
  *  <i>mod</i>. If the optional parameter is not <code>false</code>, the
  *  methods of any ancestors are included.
- *     
+ *
  *     module Mod
  *       def method1()  end
  *       private :method1
@@ -729,7 +729,7 @@ rb_class_private_instance_methods(int argc, VALUE *argv, VALUE mod)
 /*
  *  call-seq:
  *     mod.public_instance_methods(include_super=true)   => array
- *  
+ *
  *  Returns a list of the public instance methods defined in <i>mod</i>.
  *  If the optional parameter is not <code>false</code>, the methods of
  *  any ancestors are included.
@@ -744,30 +744,30 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
 /*
  *  call-seq:
  *     obj.singleton_methods(all=true)    => array
- *  
+ *
  *  Returns an array of the names of singleton methods for <i>obj</i>.
  *  If the optional <i>all</i> parameter is true, the list will include
  *  methods in modules included in <i>obj</i>.
- *     
+ *
  *     module Other
  *       def three() end
  *     end
- *     
+ *
  *     class Single
  *       def Single.four() end
  *     end
- *     
+ *
  *     a = Single.new
- *     
+ *
  *     def a.one()
  *     end
- *     
+ *
  *     class << a
  *       include Other
  *       def two()
  *       end
  *     end
- *     
+ *
  *     Single.singleton_methods    #=> [:four]
  *     a.singleton_methods(false)  #=> [:two, :one]
  *     a.singleton_methods         #=> [:two, :one, :three]
@@ -932,7 +932,7 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 	postargc = *q - '0';
 	nonpostargc = argc - postargc;
     }
-    else { 
+    else {
 	postargc = 0;
 	nonpostargc = argc;
     }
@@ -941,7 +941,7 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 	if (nonpostargc < 0)
 	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
 		     argc, postargc);
-	goto rest_arg;    
+	goto rest_arg;
     }
     else if (ISDIGIT(*p)) {
 	/* leading mandatory arguments */

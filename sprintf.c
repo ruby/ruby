@@ -31,7 +31,7 @@ static char*
 remove_sign_bits(char *str, int base)
 {
     char *s, *t;
-    
+
     s = t = str;
 
     if (base == 16) {
@@ -171,10 +171,10 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *  call-seq:
  *     format(format_string [, arguments...] )   => string
  *     sprintf(format_string [, arguments...] )  => string
- *  
+ *
  *  Returns the string resulting from applying <i>format_string</i> to
  *  any additional arguments.  Within the format string, any characters
- *  other than format sequences are copied to the result. 
+ *  other than format sequences are copied to the result.
  *
  *  The syntax of a format sequence is follows.
  *
@@ -210,13 +210,13 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *
  *      Field |  Float Format
  *      ------+--------------------------------------------------------------
- *        e   | Convert floating point argument into exponential notation 
+ *        e   | Convert floating point argument into exponential notation
  *            | with one digit before the decimal point as [-]d.dddddde[+-]dd.
  *            | The precision specifies the number of digits after the decimal
  *            | point (defaulting to six).
  *        E   | Equivalent to `e', but uses an uppercase E to indicate
  *            | the exponent.
- *        f   | Convert floating point argument as [-]ddd.dddddd, 
+ *        f   | Convert floating point argument as [-]ddd.dddddd,
  *            | where the precision specifies the number of digits after
  *            | the decimal point.
  *        g   | Convert a floating point number using exponential form
@@ -234,13 +234,13 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *            | sequence contains a precision, at most that many characters
  *            | will be copied.
  *        %   | A percent sign itself will be displayed.  No argument taken.
- *     
+ *
  *  The flags modifies the behavior of the formats.
  *  The flag characters are:
  *
  *    Flag     | Applies to    | Meaning
  *    ---------+---------------+-----------------------------------------
- *    space    | bBdiouxX      | Leave a space at the start of 
+ *    space    | bBdiouxX      | Leave a space at the start of
  *             | eEfgG         | non-negative numbers.
  *             | (numeric fmt) | For `o', `x', `X', `b' and `B', use
  *             |               | a minus sign with absolute value for
@@ -276,9 +276,9 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *             | (numeric fmt) | is used for negative numbers formatted as
  *             |               | complements.
  *    ---------+---------------+-----------------------------------------
- *    *        | all           | Use the next argument as the field width. 
+ *    *        | all           | Use the next argument as the field width.
  *             |               | If negative, left-justify the result. If the
- *             |               | asterisk is followed by a number and a dollar 
+ *             |               | asterisk is followed by a number and a dollar
  *             |               | sign, use the indicated argument as the width.
  *
  *  Examples of flags:
@@ -336,7 +336,7 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *   sprintf("%#g", 123.4)  #=> "123.400"
  *   sprintf("%g", 123456)  #=> "123456"
  *   sprintf("%#g", 123456) #=> "123456."
- *     
+ *
  *  The field width is an optional integer, followed optionally by a
  *  period and a precision.  The width specifies the minimum number of
  *  characters that will be written to the result for this field.
@@ -389,7 +389,7 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *   # precision for `e' is number of
  *   # digits after the decimal point           <------>
  *   sprintf("%20.8e", 1234.56789) #=> "      1.23456789e+03"
- *                                    
+ *
  *   # precision for `f' is number of
  *   # digits after the decimal point               <------>
  *   sprintf("%20.8f", 1234.56789) #=> "       1234.56789000"

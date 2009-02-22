@@ -30,7 +30,7 @@ vm_push_frame(rb_thread_t * th, const rb_iseq_t * iseq,
     int i;
 
     /* setup vm value stack */
-    
+
     /* nil initialize */
     for (i=0; i < local_size; i++) {
 	*sp = Qnil;
@@ -798,7 +798,7 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
     else {
         int r = iseq->arg_rest;
 
-        if (iseq->arg_post_len || 
+        if (iseq->arg_post_len ||
                 iseq->arg_opts) { /* TODO: implement simple version for (iseq->arg_post_len==0 && iseq->arg_opts > 0) */
 	    opt_pc = vm_yield_setup_block_args_complex(th, iseq, argc, argv);
         }

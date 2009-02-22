@@ -64,10 +64,10 @@ infinity_check(VALUE arg, double res, const char *msg)
 /*
  *  call-seq:
  *     Math.atan2(y, x)  => float
- *  
+ *
  *  Computes the arc tangent given <i>y</i> and <i>x</i>. Returns
  *  -PI..PI.
- *     
+ *
  */
 
 static VALUE
@@ -81,7 +81,7 @@ math_atan2(VALUE obj, VALUE y, VALUE x)
 /*
  *  call-seq:
  *     Math.cos(x)    => float
- *  
+ *
  *  Computes the cosine of <i>x</i> (expressed in radians). Returns
  *  -1..1.
  */
@@ -96,7 +96,7 @@ math_cos(VALUE obj, VALUE x)
 /*
  *  call-seq:
  *     Math.sin(x)    => float
- *  
+ *
  *  Computes the sine of <i>x</i> (expressed in radians). Returns
  *  -1..1.
  */
@@ -113,7 +113,7 @@ math_sin(VALUE obj, VALUE x)
 /*
  *  call-seq:
  *     Math.tan(x)    => float
- *  
+ *
  *  Returns the tangent of <i>x</i> (expressed in radians).
  */
 
@@ -128,7 +128,7 @@ math_tan(VALUE obj, VALUE x)
 /*
  *  call-seq:
  *     Math.acos(x)    => float
- *  
+ *
  *  Computes the arc cosine of <i>x</i>. Returns 0..PI.
  */
 
@@ -148,7 +148,7 @@ math_acos(VALUE obj, VALUE x)
 /*
  *  call-seq:
  *     Math.asin(x)    => float
- *  
+ *
  *  Computes the arc sine of <i>x</i>. Returns -{PI/2} .. {PI/2}.
  */
 
@@ -168,7 +168,7 @@ math_asin(VALUE obj, VALUE x)
 /*
  *  call-seq:
  *     Math.atan(x)    => float
- *  
+ *
  *  Computes the arc tangent of <i>x</i>. Returns -{PI/2} .. {PI/2}.
  */
 
@@ -190,7 +190,7 @@ cosh(double x)
 /*
  *  call-seq:
  *     Math.cosh(x)    => float
- *  
+ *
  *  Computes the hyperbolic cosine of <i>x</i> (expressed in radians).
  */
 
@@ -198,7 +198,7 @@ static VALUE
 math_cosh(VALUE obj, VALUE x)
 {
     Need_Float(x);
-    
+
     return DBL2NUM(cosh(RFLOAT_VALUE(x)));
 }
 
@@ -213,7 +213,7 @@ sinh(double x)
 /*
  *  call-seq:
  *     Math.sinh(x)    => float
- *  
+ *
  *  Computes the hyperbolic sine of <i>x</i> (expressed in
  *  radians).
  */
@@ -236,7 +236,7 @@ tanh(double x)
 /*
  *  call-seq:
  *     Math.tanh()    => float
- *  
+ *
  *  Computes the hyperbolic tangent of <i>x</i> (expressed in
  *  radians).
  */
@@ -251,7 +251,7 @@ math_tanh(VALUE obj, VALUE x)
 /*
  *  call-seq:
  *     Math.acosh(x)    => float
- *  
+ *
  *  Computes the inverse hyperbolic cosine of <i>x</i>.
  */
 
@@ -271,7 +271,7 @@ math_acosh(VALUE obj, VALUE x)
 /*
  *  call-seq:
  *     Math.asinh(x)    => float
- *  
+ *
  *  Computes the inverse hyperbolic sine of <i>x</i>.
  */
 
@@ -285,7 +285,7 @@ math_asinh(VALUE obj, VALUE x)
 /*
  *  call-seq:
  *     Math.atanh(x)    => float
- *  
+ *
  *  Computes the inverse hyperbolic tangent of <i>x</i>.
  */
 
@@ -306,7 +306,7 @@ math_atanh(VALUE obj, VALUE x)
 /*
  *  call-seq:
  *     Math.exp(x)    => float
- *  
+ *
  *  Returns e**x.
  */
 
@@ -330,7 +330,7 @@ math_exp(VALUE obj, VALUE x)
  *  call-seq:
  *     Math.log(numeric)    => float
  *     Math.log(num,base)   => float
- *  
+ *
  *  Returns the natural logarithm of <i>numeric</i>.
  *  If additional second argument is given, it will be the base
  *  of logarithm.
@@ -371,7 +371,7 @@ extern double log2(double);
 /*
  *  call-seq:
  *     Math.log2(numeric)    => float
- *  
+ *
  *  Returns the base 2 logarithm of <i>numeric</i>.
  */
 
@@ -392,7 +392,7 @@ math_log2(VALUE obj, VALUE x)
 /*
  *  call-seq:
  *     Math.log10(numeric)    => float
- *  
+ *
  *  Returns the base 10 logarithm of <i>numeric</i>.
  */
 
@@ -413,10 +413,10 @@ math_log10(VALUE obj, VALUE x)
 /*
  *  call-seq:
  *     Math.sqrt(numeric)    => float
- *  
+ *
  *  Returns the non-negative square root of <i>numeric</i>.
  *
- *    0.upto(10) {|x|            
+ *    0.upto(10) {|x|
  *      p [x, Math.sqrt(x), Math.sqrt(x)**2]
  *    }
  *    #=>
@@ -450,7 +450,7 @@ math_sqrt(VALUE obj, VALUE x)
 /*
  *  call-seq:
  *     Math.cbrt(numeric)    => float
- *  
+ *
  *  Returns the cube root of <i>numeric</i>.
  *
  *    -9.upto(9) {|x|
@@ -489,11 +489,11 @@ math_cbrt(VALUE obj, VALUE x)
 /*
  *  call-seq:
  *     Math.frexp(numeric)    => [ fraction, exponent ]
- *  
+ *
  *  Returns a two-element array containing the normalized fraction (a
  *  <code>Float</code>) and exponent (a <code>Fixnum</code>) of
  *  <i>numeric</i>.
- *     
+ *
  *     fraction, exponent = Math.frexp(1234)   #=> [0.6025390625, 11]
  *     fraction * 2**exponent                  #=> 1234.0
  */
@@ -505,7 +505,7 @@ math_frexp(VALUE obj, VALUE x)
     int exp;
 
     Need_Float(x);
-    
+
     d = frexp(RFLOAT_VALUE(x), &exp);
     return rb_assoc_new(DBL2NUM(d), INT2NUM(exp));
 }
@@ -513,9 +513,9 @@ math_frexp(VALUE obj, VALUE x)
 /*
  *  call-seq:
  *     Math.ldexp(flt, int) -> float
- *  
+ *
  *  Returns the value of <i>flt</i>*(2**<i>int</i>).
- *     
+ *
  *     fraction, exponent = Math.frexp(1234)
  *     Math.ldexp(fraction, exponent)   #=> 1234.0
  */
@@ -530,10 +530,10 @@ math_ldexp(VALUE obj, VALUE x, VALUE n)
 /*
  *  call-seq:
  *     Math.hypot(x, y)    => float
- *  
+ *
  *  Returns sqrt(x**2 + y**2), the hypotenuse of a right-angled triangle
  *  with sides <i>x</i> and <i>y</i>.
- *     
+ *
  *     Math.hypot(3, 4)   #=> 5.0
  */
 
@@ -689,7 +689,7 @@ exp1(sqrt)
  *  trigonometric and transcendental functions. See class
  *  <code>Float</code> for a list of constants that
  *  define Ruby's floating point accuracy.
- */     
+ */
 
 
 void

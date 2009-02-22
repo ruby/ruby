@@ -215,7 +215,6 @@ rb_call0(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv,
 	return method_missing(recv, mid, argc, argv,
 			      scope == 2 ? NOEX_VCALL : 0);
     }
-    
 
     if (mid != idMethodMissing) {
 	/* receiver specified form for private method */
@@ -227,7 +226,7 @@ rb_call0(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv,
 	    /* self must be kind of a specified form for protected method */
 	    if (((noex & NOEX_MASK) & NOEX_PROTECTED) && scope == 0) {
 		VALUE defined_class = klass;
-		
+
 		if (TYPE(defined_class) == T_ICLASS) {
 		    defined_class = RBASIC(defined_class)->klass;
 		}

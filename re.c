@@ -708,7 +708,7 @@ reg_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
  * A key of the hash is a name of the named captures.
  * A value of the hash is an array which is list of indexes of corresponding
  * named captures.
- * 
+ *
  *    /(?<foo>.)(?<bar>.)/.named_captures
  *    #=> {"foo"=>[1], "bar"=>[2]}
  *
@@ -2139,7 +2139,7 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
                         goto escape_asis;
                     }
                 }
-                /* xxx: How about more than 199 subexpressions? */ 
+                /* xxx: How about more than 199 subexpressions? */
 
               case '0': /* \0, \0O, \0OO */
 
@@ -2350,7 +2350,7 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     if (options & ARG_ENCODING_NONE) {
         re->basic.flags |= REG_ENCODING_NONE;
     }
-    
+
     re->ptr = make_regexp(RSTRING_PTR(unescaped), RSTRING_LEN(unescaped), enc,
 			  options & ARG_REG_OPTION_MASK, err);
     if (!re->ptr) return -1;
@@ -2576,7 +2576,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos)
  *
  *  If it is not matched, nil is assigned for the variables.
  *
- *     /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ "  x = "   
+ *     /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ "  x = "
  *     p lhs    #=> nil
  *     p rhs    #=> nil
  *
@@ -2694,18 +2694,18 @@ rb_reg_match2(VALUE re)
  *
  *     /(.)(.)(.)/.match("abc")[2]   #=> "b"
  *     /(.)(.)/.match("abc", 1)[2]   #=> "c"
- *     
+ *
  *  If a block is given, invoke the block with MatchData if match succeed, so
  *  that you can write
- *     
+ *
  *     pat.match(str) {|m| ...}
- *     
+ *
  *  instead of
- *      
+ *
  *     if m = pat.match(str)
  *       ...
  *     end
- *      
+ *
  *  The return value is a value from block execution in this case.
  */
 
@@ -3200,7 +3200,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
           case 'k':
             if (s < e && ASCGET(s, e, &clen) == '<') {
                 char *name, *name_end;
-               
+
                 name_end = name = s + clen;
                 while (name_end < e) {
                     c = ASCGET(name_end, e, &clen);

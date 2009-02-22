@@ -294,12 +294,12 @@ rb_binding_new(void)
 /*
  *  call-seq:
  *     binding -> a_binding
- *  
+ *
  *  Returns a +Binding+ object, describing the variable and
  *  method bindings at the point of call. This object can be used when
  *  calling +eval+ to execute the evaluated command in this
  *  environment. Also see the description of class +Binding+.
- *     
+ *
  *     def getBinding(param)
  *       return binding
  *     end
@@ -397,12 +397,12 @@ proc_new(VALUE klass, int is_lambda)
  *  call-seq:
  *     Proc.new {|...| block } => a_proc
  *     Proc.new                => a_proc
- *  
+ *
  *  Creates a new <code>Proc</code> object, bound to the current
  *  context. <code>Proc::new</code> may be called without a block only
  *  within a method with an attached block, in which case that block is
  *  converted to the <code>Proc</code> object.
- *     
+ *
  *     def proc_from
  *       Proc.new
  *     end
@@ -466,7 +466,7 @@ proc_lambda(void)
  *     prc.call(params,...)   => obj
  *     prc[params,...]        => obj
  *     prc.(params,...)       => obj
- *  
+ *
  *  Invokes the block, setting the block's parameters to the values in
  *  <i>params</i> using something close to method calling semantics.
  *  Generates a warning if multiple values are passed to a proc that
@@ -481,15 +481,15 @@ proc_lambda(void)
  *
  *  Returns the value of the last expression evaluated in the block. See
  *  also <code>Proc#yield</code>.
- *     
+ *
  *     a_proc = Proc.new {|a, *b| b.collect {|i| i*a }}
  *     a_proc.call(9, 1, 2, 3)   #=> [9, 18, 27]
  *     a_proc[9, 1, 2, 3]        #=> [9, 18, 27]
  *     a_proc = Proc.new {|a,b| a}
  *     a_proc.call(1,2,3)
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     prog.rb:5: wrong number of arguments (3 for 2) (ArgumentError)
  *     	from prog.rb:4:in `call'
  *     	from prog.rb:5
@@ -498,7 +498,7 @@ proc_lambda(void)
 /*
  *  call-seq:
  *     prc === obj   => obj
- *  
+ *
  *  Invokes the block, with <i>obj</i> as the block's parameter.  It is
  *  to allow a proc object to be a target of when clause in the case statement.
  */
@@ -555,14 +555,14 @@ rb_proc_call_with_block(VALUE self, int argc, VALUE *argv, VALUE pass_procval)
 /*
  *  call-seq:
  *     prc.arity -> fixnum
- *  
+ *
  *  Returns the number of arguments that would not be ignored. If the block
  *  is declared to take no arguments, returns 0. If the block is known
  *  to take exactly n arguments, returns n. If the block has optional
  *  arguments, return -n-1, where n is the number of mandatory
  *  arguments. A <code>proc</code> with no argument declarations
  *  is the same a block declaring <code>||</code> as its arguments.
- *     
+ *
  *     Proc.new {}.arity          #=>  0
  *     Proc.new {||}.arity        #=>  0
  *     Proc.new {|a|}.arity       #=>  1
@@ -761,14 +761,14 @@ proc_to_s(VALUE self)
     const char *cname = rb_obj_classname(self);
     rb_iseq_t *iseq;
     const char *is_lambda;
-    
+
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
     is_lambda = proc->is_lambda ? " (lambda)" : "";
 
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	int line_no = 0;
-	
+
 	if (iseq->insn_info_table) {
 	    line_no = rb_iseq_first_lineno(iseq);
 	}
@@ -790,7 +790,7 @@ proc_to_s(VALUE self)
 /*
  *  call-seq:
  *     prc.to_proc -> prc
- *  
+ *
  *  Part of the protocol for converting objects to <code>Proc</code>
  *  objects. Instances of class <code>Proc</code> simply return
  *  themselves.
@@ -883,7 +883,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
  *  associated with an iterator. They may also be unbound from one
  *  object (creating an <code>UnboundMethod</code>) and bound to
  *  another.
- *     
+ *
  *     class Thing
  *       def square(n)
  *         n*n
@@ -891,10 +891,10 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
  *     end
  *     thing = Thing.new
  *     meth  = thing.method(:square)
- *     
+ *
  *     meth.call(9)                 #=> 81
  *     [ 1, 2, 3 ].collect(&meth)   #=> [1, 4, 9]
- *     
+ *
  */
 
 /*
@@ -952,7 +952,7 @@ method_hash(VALUE method)
 /*
  *  call-seq:
  *     meth.unbind    => unbound_method
- *  
+ *
  *  Dissociates <i>meth</i> from it's current receiver. The resulting
  *  <code>UnboundMethod</code> can subsequently be bound to a new object
  *  of the same class (see <code>UnboundMethod</code>).
@@ -981,7 +981,7 @@ method_unbind(VALUE obj)
 /*
  *  call-seq:
  *     meth.receiver    => object
- *  
+ *
  *  Returns the bound receiver of the method object.
  */
 
@@ -997,7 +997,7 @@ method_receiver(VALUE obj)
 /*
  *  call-seq:
  *     meth.name    => symbol
- *  
+ *
  *  Returns the name of the method.
  */
 
@@ -1013,7 +1013,7 @@ method_name(VALUE obj)
 /*
  *  call-seq:
  *     meth.owner    => class_or_module
- *  
+ *
  *  Returns the class or module that defines the method.
  */
 
@@ -1029,13 +1029,13 @@ method_owner(VALUE obj)
 /*
  *  call-seq:
  *     obj.method(sym)    => method
- *  
+ *
  *  Looks up the named method as a receiver in <i>obj</i>, returning a
  *  <code>Method</code> object (or raising <code>NameError</code>). The
  *  <code>Method</code> object acts as a closure in <i>obj</i>'s object
  *  instance, so instance variables and the value of <code>self</code>
  *  remain available.
- *     
+ *
  *     class Demo
  *       def initialize(n)
  *         @iv = n
@@ -1044,11 +1044,11 @@ method_owner(VALUE obj)
  *         "Hello, @iv = #{@iv}"
  *       end
  *     end
- *     
+ *
  *     k = Demo.new(99)
  *     m = k.method(:hello)
  *     m.call   #=> "Hello, @iv = 99"
- *     
+ *
  *     l = Demo.new('Fred')
  *     m = l.method("hello")
  *     m.call   #=> "Hello, @iv = Fred"
@@ -1069,10 +1069,10 @@ rb_obj_public_method(VALUE obj, VALUE vid)
 /*
  *  call-seq:
  *     mod.instance_method(symbol)   => unbound_method
- *  
+ *
  *  Returns an +UnboundMethod+ representing the given
  *  instance method in _mod_.
- *     
+ *
  *     class Interpreter
  *       def do_a() print "there, "; end
  *       def do_d() print "Hello ";  end
@@ -1088,13 +1088,13 @@ rb_obj_public_method(VALUE obj, VALUE vid)
  *         string.each_byte {|b| Dispatcher[b].bind(self).call }
  *       end
  *     end
- *     
- *     
+ *
+ *
  *     interpreter = Interpreter.new
  *     interpreter.interpret('dave')
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     Hello there, Dave!
  */
 
@@ -1114,14 +1114,14 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
  *  call-seq:
  *     define_method(symbol, method)     => new_method
  *     define_method(symbol) { block }   => proc
- *  
+ *
  *  Defines an instance method in the receiver. The _method_
  *  parameter can be a +Proc+ or +Method+ object.
  *  If a block is specified, it is used as the method body. This block
  *  is evaluated using <code>instance_eval</code>, a point that is
  *  tricky to demonstrate because <code>define_method</code> is private.
  *  (This is why we resort to the +send+ hack in this example.)
- *     
+ *
  *     class A
  *       def fred
  *         puts "In Fred"
@@ -1139,9 +1139,9 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
  *     a.wilma
  *     a.create_method(:betty) { p self }
  *     a.betty
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     In Fred
  *     Charge it!
  *     #<B:0x401b39e8>
@@ -1242,10 +1242,10 @@ method_clone(VALUE self)
  *  call-seq:
  *     meth.call(args, ...)    => obj
  *     meth[args, ...]         => obj
- *  
+ *
  *  Invokes the <i>meth</i> with the specified arguments, returning the
  *  method's return value.
- *     
+ *
  *     m = 12.method("+")
  *     m.call(3)    #=> 15
  *     m.call(20)   #=> 32
@@ -1296,17 +1296,17 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
  *  with a particular object: these method objects are bound to that
  *  object. Bound method objects for an object can be created using
  *  <code>Object#method</code>.
- *     
+ *
  *  Ruby also supports unbound methods; methods objects that are not
  *  associated with a particular object. These can be created either by
  *  calling <code>Module#instance_method</code> or by calling
  *  <code>unbind</code> on a bound method object. The result of both of
  *  these is an <code>UnboundMethod</code> object.
- *     
+ *
  *  Unbound methods can only be called after they are bound to an
  *  object. That object must be be a kind_of? the method's original
  *  class.
- *     
+ *
  *     class Square
  *       def area
  *         @side * @side
@@ -1315,17 +1315,17 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
  *         @side = side
  *       end
  *     end
- *     
+ *
  *     area_un = Square.instance_method(:area)
- *     
+ *
  *     s = Square.new(12)
  *     area = area_un.bind(s)
  *     area.call   #=> 144
- *     
+ *
  *  Unbound methods are a reference to the method at the time it was
  *  objectified: subsequent changes to the underlying class will not
  *  affect the unbound method.
- *     
+ *
  *     class Test
  *       def test
  *         :original
@@ -1340,17 +1340,17 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
  *     t = Test.new
  *     t.test            #=> :modified
  *     um.bind(t).call   #=> :original
- *     
+ *
  */
 
 /*
  *  call-seq:
  *     umeth.bind(obj) -> method
- *  
+ *
  *  Bind <i>umeth</i> to <i>obj</i>. If <code>Klass</code> was the class
  *  from which <i>umeth</i> was obtained,
  *  <code>obj.kind_of?(Klass)</code> must be true.
- *     
+ *
  *     class A
  *       def test
  *         puts "In test, class = #{self.class}"
@@ -1360,8 +1360,8 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
  *     end
  *     class C < B
  *     end
- *     
- *     
+ *
+ *
  *     um = B.instance_method(:test)
  *     bm = um.bind(C.new)
  *     bm.call
@@ -1369,9 +1369,9 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
  *     bm.call
  *     bm = um.bind(A.new)
  *     bm.call
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     In test, class = C
  *     In test, class = B
  *     prog.rb:16:in `bind': bind argument must be an instance of B (TypeError)
@@ -1438,14 +1438,14 @@ rb_node_arity(NODE* body)
 /*
  *  call-seq:
  *     meth.arity    => fixnum
- *  
+ *
  *  Returns an indication of the number of arguments accepted by a
  *  method. Returns a nonnegative integer for methods that take a fixed
  *  number of arguments. For Ruby methods that take a variable number of
  *  arguments, returns -n-1, where n is the number of required
  *  arguments. For methods written in C, returns -1 if the call takes a
  *  variable number of arguments.
- *     
+ *
  *     class C
  *       def one;    end
  *       def two(a); end
@@ -1461,7 +1461,7 @@ rb_node_arity(NODE* body)
  *     c.method(:four).arity    #=> 2
  *     c.method(:five).arity    #=> -3
  *     c.method(:six).arity     #=> -3
- *     
+ *
  *     "cat".method(:size).arity      #=> 0
  *     "cat".method(:replace).arity   #=> 1
  *     "cat".method(:squeeze).arity   #=> -1
@@ -1643,7 +1643,7 @@ rb_proc_new(
 /*
  *  call-seq:
  *     meth.to_proc    => prc
- *  
+ *
  *  Returns a <code>Proc</code> object corresponding to this method.
  */
 
@@ -1705,15 +1705,15 @@ localjump_reason(VALUE exc)
 /*
  *  call-seq:
  *     prc.binding    => binding
- *  
+ *
  *  Returns the binding associated with <i>prc</i>. Note that
  *  <code>Kernel#eval</code> accepts either a <code>Proc</code> or a
  *  <code>Binding</code> object as its second parameter.
- *     
+ *
  *     def fred(param)
  *       proc {}
  *     end
- *     
+ *
  *     b = fred(99)
  *     eval("param", b.binding)   #=> 99
  */
@@ -1840,18 +1840,18 @@ proc_curry(int argc, VALUE *argv, VALUE self)
  *  <code>Proc</code> objects are blocks of code that have been bound to
  *  a set of local variables. Once bound, the code may be called in
  *  different contexts and still access those variables.
- *     
+ *
  *     def gen_times(factor)
  *       return Proc.new {|n| n*factor }
  *     end
- *     
+ *
  *     times3 = gen_times(3)
  *     times5 = gen_times(5)
- *     
+ *
  *     times3.call(12)               #=> 36
  *     times5.call(5)                #=> 25
  *     times3.call(times5.call(4))   #=> 60
- *     
+ *
  */
 
 void
@@ -1951,11 +1951,11 @@ Init_Proc(void)
  *  are all retained. Binding objects can be created using
  *  <code>Kernel#binding</code>, and are made available to the callback
  *  of <code>Kernel#set_trace_func</code>.
- *     
+ *
  *  These binding objects can be passed as the second argument of the
  *  <code>Kernel#eval</code> method, establishing an environment for the
  *  evaluation.
- *     
+ *
  *     class Demo
  *       def initialize(n)
  *         @secret = n
@@ -1964,18 +1964,18 @@ Init_Proc(void)
  *         return binding()
  *       end
  *     end
- *     
+ *
  *     k1 = Demo.new(99)
  *     b1 = k1.getBinding
  *     k2 = Demo.new(-3)
  *     b2 = k2.getBinding
- *     
+ *
  *     eval("@secret", b1)   #=> 99
  *     eval("@secret", b2)   #=> -3
  *     eval("@secret")       #=> nil
- *     
+ *
  *  Binding objects have no class-specific methods.
- *     
+ *
  */
 
 void

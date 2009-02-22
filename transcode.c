@@ -1269,13 +1269,13 @@ rb_econv_convert0(rb_econv_t *ec,
             memcpy(*output_ptr, data_start, len);
             *output_ptr += len;
             ec->elems[ec->num_trans-1].out_data_start =
-                ec->elems[ec->num_trans-1].out_data_end = 
+                ec->elems[ec->num_trans-1].out_data_end =
                 ec->elems[ec->num_trans-1].out_buf_start;
             has_output = 1;
         }
     }
 
-    if (ec->in_buf_start && 
+    if (ec->in_buf_start &&
         ec->in_data_start != ec->in_data_end) {
         res = rb_trans_conv(ec, (const unsigned char **)&ec->in_data_start, ec->in_data_end, output_ptr, output_stop,
                 (flags&~ECONV_AFTER_OUTPUT)|ECONV_PARTIAL_INPUT, &result_position);
@@ -1519,7 +1519,7 @@ allocate_converted_string(const char *sname, const char *dname,
 
 /* result: 0:success -1:failure */
 int
-rb_econv_insert_output(rb_econv_t *ec, 
+rb_econv_insert_output(rb_econv_t *ec,
     const unsigned char *str, size_t len, const char *str_encoding)
 {
     const char *insert_encoding = rb_econv_encoding_to_insert_output(ec);
@@ -1863,7 +1863,7 @@ rb_econv_binmode(rb_econv_t *ec)
         if (entry->transcoder)
             trs[n++] = entry->transcoder;
     }
-    
+
     num_trans = ec->num_trans;
     j = 0;
     for (i = 0; i < num_trans; i++) {
@@ -3107,7 +3107,7 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  *   p ec.convpath #=> [[#<Encoding:UTF-16BE>, #<Encoding:UTF-8>],
  *                 #    "universal_newline"]
  *
- *   # But, if the last encoding is ASCII incompatible, 
+ *   # But, if the last encoding is ASCII incompatible,
  *   # decorators are inserted before the last conversion.
  *   ec = Encoding::Converter.new("UTF-8", "UTF-16BE", :crlf_newline => true)
  *   p ec.convpath #=> ["crlf_newline",
@@ -3218,7 +3218,7 @@ static VALUE
 econv_source_encoding(VALUE self)
 {
     rb_econv_t *ec = check_econv(self);
-    if (!ec->source_encoding) 
+    if (!ec->source_encoding)
         return Qnil;
     return rb_enc_from_encoding(ec->source_encoding);
 }
@@ -3233,7 +3233,7 @@ static VALUE
 econv_destination_encoding(VALUE self)
 {
     rb_econv_t *ec = check_econv(self);
-    if (!ec->destination_encoding) 
+    if (!ec->destination_encoding)
         return Qnil;
     return rb_enc_from_encoding(ec->destination_encoding);
 }
@@ -3638,7 +3638,7 @@ econv_finish(VALUE self)
  *
  *   # \xff is invalid as EUC-JP.
  *   ec = Encoding::Converter.new("EUC-JP", "Shift_JIS")
- *   ec.primitive_convert(src="\xff", dst="", nil, 10)                       
+ *   ec.primitive_convert(src="\xff", dst="", nil, 10)
  *   p ec.primitive_errinfo
  *   #=> [:invalid_byte_sequence, "EUC-JP", "UTF-8", "\xFF", ""]
  *
@@ -3659,7 +3659,7 @@ econv_finish(VALUE self)
  *   # Encoding::Converter::PARTIAL_INPUT prevents invalid errors by
  *   # partial characters.
  *   ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
- *   ec.primitive_convert(src="\xa4", dst="", nil, 10, Encoding::Converter::PARTIAL_INPUT)                 
+ *   ec.primitive_convert(src="\xa4", dst="", nil, 10, Encoding::Converter::PARTIAL_INPUT)
  *   p ec.primitive_errinfo
  *   #=> [:source_buffer_empty, nil, nil, nil, nil]
  *
@@ -3823,7 +3823,7 @@ econv_putback(int argc, VALUE *argv, VALUE self)
  *   ec.last_error -> exception or nil
  *
  * Returns an exception object for the last conversion.
- * Returns nil if the last conversion did not produce an error. 
+ * Returns nil if the last conversion did not produce an error.
  *
  * "error" means that
  * Encoding::InvalidByteSequenceError and Encoding::UndefinedConversionError for

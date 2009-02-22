@@ -159,7 +159,7 @@ error_print(void)
 	long len = RARRAY_LEN(errat);
 	VALUE *ptr = RARRAY_PTR(errat);
         int skip = eclass == rb_eSysStackError;
-	
+
 #define TRACE_MAX (TRACE_HEAD+TRACE_TAIL+5)
 #define TRACE_HEAD 8
 #define TRACE_TAIL 5

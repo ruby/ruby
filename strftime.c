@@ -465,7 +465,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 		/*
 		 * From: Chip Rosenthal <chip@chinacat.unicom.com>
 		 * Date: Sun, 19 Mar 1995 00:33:29 -0600 (CST)
-		 * 
+		 *
 		 * Warning: the %z [code] is implemented by inspecting the
 		 * timezone name conditional compile settings, and
 		 * inferring a method to get timezone offsets. I've tried

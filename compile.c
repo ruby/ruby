@@ -3962,7 +3962,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    VALUE label;
 	    VALUE label_sym;
 
-	    
 	    CONST_ID(goto_id, "__goto__");
 	    CONST_ID(label_id, "__label__");
 
