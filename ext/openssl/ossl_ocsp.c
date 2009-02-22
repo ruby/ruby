@@ -593,22 +593,22 @@ ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_ocspbres_verify(int argc, VALUE *argv, VALUE self)
 {
-    VALUE certs, store, flags;
+    VALUE certs, store, flags, result;
     OCSP_BASICRESP *bs;
     STACK_OF(X509) *x509s;
     X509_STORE *x509st;
-    int flg, result;
+    int flg;
 
     rb_scan_args(argc, argv, "21", &certs, &store, &flags);
     x509st = GetX509StorePtr(store);
     flg = NIL_P(flags) ? 0 : INT2NUM(flags);
     x509s = ossl_x509_ary2sk(certs);
     GetOCSPBasicRes(self, bs);
-    result = OCSP_basic_verify(bs, x509s, x509st, flg);
+    result = OCSP_basic_verify(bs, x509s, x509st, flg) > 0 ? Qtrue : Qfalse;
     sk_X509_pop_free(x509s, X509_free);
     if(!result) rb_warn("%s", ERR_error_string(ERR_peek_error(), NULL));
 
-    return result ? Qtrue : Qfalse;
+    return result;
 }
 
 /*

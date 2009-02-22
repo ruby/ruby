@@ -1,3 +1,8 @@
+Thu Feb 19 15:39:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspbres_verify): OCSP_basic_verify
+	  returns positive value on success, not non-zero.  [ruby-core:21762]
+
 Wed Feb 18 12:35:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_extname): fix for spaces before extention.
