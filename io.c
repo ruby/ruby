@@ -7292,6 +7292,7 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
     struct foreach_arg arg;
 
     rb_scan_args(argc, argv, "12", NULL, NULL, &offset);
+    FilePathValue(argv[0]);
     arg.io = rb_io_open(argv[0], rb_str_new_cstr("rb:ASCII-8BIT"), Qnil, Qnil);
     if (NIL_P(arg.io)) return Qnil;
     arg.argv = argv+1;

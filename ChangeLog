@@ -1,3 +1,7 @@
+Sun Feb  8 18:34:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_s_binread): ensures file path.  [ruby-dev:37940]
+
 Fri Feb  6 23:28:33 2009  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_fread): use rb_io_wait_readable for retry
