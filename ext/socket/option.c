@@ -303,7 +303,7 @@ inspect_socktype(int level, int optname, VALUE data, VALUE ret)
 #endif
 
 static int
-inspect_timeval(int level, int optname, VALUE data, VALUE ret)
+inspect_timeval_as_interval(int level, int optname, VALUE data, VALUE ret)
 {
     if (RSTRING_LEN(data) == sizeof(struct timeval)) {
         struct timeval s;
@@ -484,10 +484,10 @@ sockopt_inspect(VALUE self)
               case SO_LINGER: inspected = inspect_linger(level, optname, data, ret); break;
 #            endif
 #            if defined(SO_RCVTIMEO) /* POSIX */
-              case SO_RCVTIMEO: inspected = inspect_timeval(level, optname, data, ret); break;
+              case SO_RCVTIMEO: inspected = inspect_timeval_as_interval(level, optname, data, ret); break;
 #            endif
 #            if defined(SO_SNDTIMEO) /* POSIX */
-              case SO_SNDTIMEO: inspected = inspect_timeval(level, optname, data, ret); break;
+              case SO_SNDTIMEO: inspected = inspect_timeval_as_interval(level, optname, data, ret); break;
 #            endif
 #            if defined(SO_PEERCRED) /* GNU/Linux */
               case SO_PEERCRED: inspected = inspect_peercred(level, optname, data, ret); break;

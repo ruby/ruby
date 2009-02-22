@@ -1,3 +1,8 @@
+Mon Feb 23 02:26:44 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c (inspect_timeval_as_interval): renamed from
+	  inspect_timeval.
+
 Mon Feb 23 02:10:09 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c (inspect_timeval): fix the size test.
