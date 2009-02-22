@@ -4810,8 +4810,8 @@ pop_last_hash(int *argc_p, VALUE *argv)
  *    cmd:
  *      "-"                                      : fork
  *      commandline                              : command line string which is passed to a shell
- *      [env, cmdname, arg1, ..., opts]          : command name and arguments (no shell)
- *      [env, [cmdname, argv0], arg1, ..., opts] : command name and arguments including argv[0] (no shell)
+ *      [env, cmdname, arg1, ..., opts]          : command name and zero or more arguments (no shell)
+ *      [env, [cmdname, argv0], arg1, ..., opts] : command name, argv[0] and zero or more arguments (no shell)
  *    (env and opts are optional.)
  *
  *  If _cmd_ is a +String+ ``<code>-</code>'',
