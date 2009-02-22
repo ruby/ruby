@@ -1,3 +1,8 @@
+Mon Feb  9 11:31:09 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (io_encoding_set): ignore second argument when external and
+	  internal are same. [ruby-dev:37939]
+
 Sun Feb  8 23:28:05 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* include/ruby/st.h, st.c: order entries by a linked list instead of

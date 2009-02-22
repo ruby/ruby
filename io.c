@@ -6969,6 +6969,10 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 	    }
 	    else
 		enc = rb_to_encoding(v2);
+	    if (enc == enc2) {
+		/* Special case - "-" => no transcoding */
+		enc2 = NULL;
+	    }
 	}
 	else
 	    enc = rb_to_encoding(v2);
