@@ -5703,7 +5703,7 @@ rb_str_each_char(VALUE str)
  *  when applied to Unicode strings. If a block is given, it iterates
  *  over each character in the string.
  *     
- *     "foo\u0635".chars.to_a   #=> [102, 111, 111, 1589]
+ *     "foo\u0635".codepoints.to_a   #=> [102, 111, 111, 1589]
  */
 
 /*

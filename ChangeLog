@@ -1,3 +1,9 @@
+Fri Feb  6 02:51:59 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_each_codepoint): update RDoc for
+	  String#codepoints.  a patch from Radoslaw Bulat in
+	  [ruby-core:21835]
+
 Fri Feb  6 01:09:13 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* cont.c (cont_mark, cont_capture, cont_restore_1): use #else instead
