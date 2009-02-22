@@ -1,3 +1,8 @@
+Thu Feb  5 07:39:33 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/readline/readline.c (Init_readline): remove_history(0) may be
+	  NULL.  [ruby-dev:37891]
+
 Thu Feb  5 03:55:22 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (LOCALTIME): should call tzset() before localtime_r().

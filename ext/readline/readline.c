@@ -1287,8 +1287,10 @@ Init_readline()
 #else
 	{
 	    HIST_ENTRY *entry = remove_history(0);
-	    free((char *)entry->line);
-	    free(entry);
+	    if (entry) {
+		free((char *)entry->line);
+		free(entry);
+	    }
 	}
 #endif
     }
