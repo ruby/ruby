@@ -444,8 +444,7 @@ register_sigaltstack(void)
     newSS.ss_size = ALT_STACK_SIZE;
     newSS.ss_flags = 0;
 
-    if (sigaltstack(&newSS, &oldSS) < 0) 
-	rb_bug("register_sigaltstack. error\n");
+    sigaltstack(&newSS, &oldSS); /* ignore error. */
 }
 #endif
 

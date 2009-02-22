@@ -1,3 +1,8 @@
+Fri Feb  6 20:37:42 2009  Tanaka Akira  <akr@fsij.org>
+
+	* signal.c (register_sigaltstack): ignore sigaltstack error.
+	  It fails on OpenBSD 4.4 when pthread library is linked.
+
 Fri Feb  6 12:03:47 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ruby.c (process_options): -K and -E in shebang should be reflect to
