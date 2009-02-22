@@ -5892,8 +5892,6 @@ rb_io_stdio_file(rb_io_t *fptr)
  *
  *  === Example1
  *
- *     puts IO.new($stdout).fileno # => 1
- *
  *     a = IO.new(2,"w")      # '2' is standard error
  *     $stderr.puts "Hello"
  *     a.puts "World"
