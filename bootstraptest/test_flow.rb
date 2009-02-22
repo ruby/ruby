@@ -200,7 +200,9 @@ assert_equal %q{[1, 2, 3, 5, 8, 9]}, %q{$a = []; begin; ; $a << 1
   end; $a << 8
 ; $a << 9
 ; rescue Exception; $a << 99; end; $a}
-assert_equal %q{[1, 2, 3, 5, 99]}, %q{$a = []; begin; ; $a << 1
+assert_equal %q{[1, 2, 3, 5, 99]}, %q{
+$a = [];
+begin; ; $a << 1
   while true; $a << 2
     begin; $a << 3
       break; $a << 4
@@ -488,4 +490,15 @@ assert_equal %q{[:ok, :ok2, :last]}, %q{
     a << :last
   end
   a
-   }
+}
+assert_equal %Q{ENSURE\n}, %q{
+  def test
+    while true
+      return
+    end
+  ensure
+    puts("ENSURE")
+  end
+  test
+}, '[ruby-dev:37967]'
+

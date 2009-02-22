@@ -1,3 +1,10 @@
+Tue Feb 17 05:41:08 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c: fix to add "ensure" codes across "while" clause
+	  before "return" expression.  [ruby-dev:37967]
+
+	* bootstraptest/test_flow.rb: add a test.
+
 Sun Feb 15 11:45:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_define_hooked_variable): suppress false assertion
