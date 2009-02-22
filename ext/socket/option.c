@@ -272,7 +272,7 @@ inspect_linger(int level, int optname, VALUE data, VALUE ret)
     if (RSTRING_LEN(data) == sizeof(struct linger)) {
         struct linger s;
         memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
-        rb_str_catf(ret, " onoff:%d linger:%d", s.l_onoff, s.l_linger);
+        rb_str_catf(ret, " %s %dsec", s.l_onoff ? "on" : "off", s.l_linger);
         return 1;
     }
     else {

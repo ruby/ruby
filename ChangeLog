@@ -1,3 +1,7 @@
+Sun Feb 22 20:09:29 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c (inspect_linger): message refined.
+
 Sun Feb 22 19:28:08 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/init.c (s_recvfrom): use rb_io_wait_readable after
