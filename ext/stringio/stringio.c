@@ -728,8 +728,9 @@ strio_ungetc(VALUE self, VALUE c)
 	p += clen;
 	lpos++;
     }
+    clen = p - RSTRING_PTR(ptr->string);
     rb_str_update(ptr->string, lpos, ptr->pos ? 1 : 0, c);
-    ptr->pos = p - RSTRING_PTR(ptr->string);
+    ptr->pos = clen;
 
     return Qnil;
 }
