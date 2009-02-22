@@ -1,3 +1,11 @@
+Sun Feb  8 22:44:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/backward/rubysig.h (rb_thread_blocking_region_begin),
+	  (rb_thread_blocking_region_end): marked as deprecated.
+
+	* include/ruby/backward/rubysig.h (TRAP_BEG): fix for C++.  a
+	  patch from Aman Gupta at [ruby-core:21934]
+
 Sun Feb  8 19:05:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/backward/rubysig.h: extern "C" was missing.
