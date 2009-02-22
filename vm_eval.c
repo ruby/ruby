@@ -256,6 +256,9 @@ rb_call(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope)
     return rb_call0(klass, recv, mid, argc, argv, scope, Qundef);
 }
 
+NORETURN(static void raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv,
+					  VALUE obj, int call_status));
+
 /*
  *  call-seq:
  *     obj.method_missing(symbol [, *args] )   => result
@@ -292,11 +295,21 @@ rb_call(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope)
 static VALUE
 rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 {
+    rb_thread_t *th = GET_THREAD();
+    raise_method_missing(th, argc, argv, obj, th->method_missing_reason);
+    return Qnil;		/* not reached */
+}
+
+#define NOEX_MISSING   0x80
+
+static void
+raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
+		     int last_call_status)
+{
     ID id;
     VALUE exc = rb_eNoMethodError;
     const char *format = 0;
-    rb_thread_t *th = GET_THREAD();
-    int last_call_status = th->method_missing_reason;
+
     if (argc == 0 || !SYMBOL_P(argv[0])) {
 	rb_raise(rb_eArgError, "no id given");
     }
@@ -333,11 +346,11 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 	}
 	exc = rb_class_new_instance(n, args, exc);
 
-	th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+	if (!(last_call_status & NOEX_MISSING)) {
+	    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+	}
 	rb_exc_raise(exc);
     }
-
-    return Qnil;		/* not reached */
 }
 
 static inline VALUE
@@ -350,7 +363,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
     th->passed_block = 0;
 
     if (id == idMethodMissing) {
-	rb_method_missing(argc, argv, obj);
+	raise_method_missing(th, argc, argv, obj, call_status | NOEX_MISSING);
     }
     else if (id == ID_ALLOCATOR) {
 	rb_raise(rb_eTypeError, "allocator undefined for %s",
@@ -370,6 +383,14 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
     result = rb_funcall2(obj, idMethodMissing, argc + 1, nargv);
     if (argv_ary) rb_ary_clear(argv_ary);
     return result;
+}
+
+void
+rb_raise_method_missing(rb_thread_t *th, int argc, VALUE *argv,
+			VALUE obj, int call_status)
+{
+    th->passed_block = 0;
+    raise_method_missing(th, argc, argv, obj, call_status | NOEX_MISSING);
 }
 
 VALUE

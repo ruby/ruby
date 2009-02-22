@@ -403,20 +403,25 @@ vm_call_bmethod(rb_thread_t *th, ID id, VALUE procval, VALUE recv,
     return val;
 }
 
+static inline void
+vm_method_missing_args(rb_thread_t *th, VALUE *argv,
+		  int num, rb_block_t *blockptr, int opt)
+{
+    rb_control_frame_t * const reg_cfp = th->cfp;
+    MEMCPY(argv, STACK_ADDR_FROM_TOP(num + 1), VALUE, num + 1);
+    th->method_missing_reason = opt;
+    th->passed_block = blockptr;
+    POPN(num + 1);
+}
+
 static inline VALUE
 vm_method_missing(rb_thread_t *th, ID id, VALUE recv,
 		  int num, rb_block_t *blockptr, int opt)
 {
-    VALUE val;
-    rb_control_frame_t * const reg_cfp = th->cfp;
     VALUE *argv = ALLOCA_N(VALUE, num + 1);
-    MEMCPY(argv, STACK_ADDR_FROM_TOP(num + 1), VALUE, num + 1);
+    vm_method_missing_args(th, argv, num, blockptr, opt);
     argv[0] = ID2SYM(id);
-    th->method_missing_reason = opt;
-    th->passed_block = blockptr;
-    POPN(num + 1);
-    val = rb_funcall2(recv, idMethodMissing, num + 1, argv);
-    return val;
+    return rb_funcall2(recv, idMethodMissing, num + 1, argv);
 }
 
 static inline void
@@ -581,17 +586,19 @@ vm_call_method(rb_thread_t * const th, rb_control_frame_t * const cfp,
     }
     else {
 	/* method missing */
+	int stat = 0;
+	if (flag & VM_CALL_VCALL_BIT) {
+	    stat |= NOEX_VCALL;
+	}
+	if (flag & VM_CALL_SUPER_BIT) {
+	    stat |= NOEX_SUPER;
+	}
 	if (id == idMethodMissing) {
-	    rb_bug("method missing");
+	    VALUE *argv = ALLOCA_N(VALUE, num);
+	    vm_method_missing_args(th, argv, num - 1, 0, stat);
+	    rb_raise_method_missing(th, num, argv, recv, stat);
 	}
 	else {
-	    int stat = 0;
-	    if (flag & VM_CALL_VCALL_BIT) {
-		stat |= NOEX_VCALL;
-	    }
-	    if (flag & VM_CALL_SUPER_BIT) {
-		stat |= NOEX_SUPER;
-	    }
 	    val = vm_method_missing(th, id, recv, num, blockptr, stat);
 	}
     }
