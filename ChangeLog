@@ -1,3 +1,8 @@
+Wed Feb 18 10:29:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_start_func_2): do not delete main thread from
+	  living_threads.  [ruby-core:19385], [ruby-core:22158]
+
 Tue Feb 17 05:41:08 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c: fix to add "ensure" codes across "while" clause

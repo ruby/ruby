@@ -440,8 +440,10 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    th->keeping_mutexes = NULL;
 	}
 
-	/* delete self from living_threads */
-	st_delete_wrap(th->vm->living_threads, th->self);
+	/* delete self other than main thread from living_threads */
+	if (th != main_th) {
+	    st_delete_wrap(th->vm->living_threads, th->self);
+	}
 
 	/* wake up joinning threads */
 	join_th = th->join_list_head;
@@ -1026,7 +1028,7 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
  *
  *   Safe C API:
  *     * rb_thread_interrupted() - check interrupt flag
- *     * ruby_xalloc(), ruby_xrealloc(), ruby_xfree() - 
+ *     * ruby_xalloc(), ruby_xrealloc(), ruby_xfree() -
  *         if they called without GVL, acquire GVL automatically.
  */
 VALUE
@@ -2132,7 +2134,7 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
  * - OpenBSD 2.0 (src/sys/kern/sys_generic.c:1.4)
  *   select(2) documents how to allocate fd_set dynamically.
  *   http://www.openbsd.org/cgi-bin/man.cgi?query=select&manpath=OpenBSD+4.4
- * - HP-UX documents how to allocate fd_set dynamically. 
+ * - HP-UX documents how to allocate fd_set dynamically.
  *   http://docs.hp.com/en/B2355-60105/select.2.html
  * - Solaris 8 has select_large_fdset
  *
@@ -2718,7 +2720,7 @@ thgroup_list(VALUE group)
 {
     VALUE ary = rb_ary_new();
     struct thgroup_list_params param;
-    
+
     param.ary = ary;
     param.group = group;
     st_foreach(GET_THREAD()->vm->living_threads, thgroup_list_i, (st_data_t) & param);
@@ -3638,7 +3640,7 @@ static void
 call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
 {
     struct call_trace_func_args args;
-    
+
     args.event = event;
     args.proc = proc;
     args.self = self;
