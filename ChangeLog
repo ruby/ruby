@@ -1,3 +1,8 @@
+Fri Feb  6 12:03:47 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby.c (process_options): -K and -E in shebang should be reflect to
+	  default_external. [ruby-dev:37920]
+
 Fri Feb  6 02:51:59 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_each_codepoint): update RDoc for
