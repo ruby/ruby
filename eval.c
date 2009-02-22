@@ -10631,9 +10631,8 @@ rb_thread_save_context(th)
     th->safe = ruby_safe_level;
 
     th->node = ruby_current_node;
-    if (ruby_sandbox_save != NULL)
-    {
-      ruby_sandbox_save(th);
+    if (ruby_sandbox_save != NULL) {
+	ruby_sandbox_save(th);
     }
 }
 
@@ -10681,20 +10680,19 @@ rb_thread_switch(n)
     (rb_thread_switch(ruby_setjmp(rb_thread_save_context(th), (th)->context)))
 
 NORETURN(static void rb_thread_restore_context _((rb_thread_t,int)));
-NORETURN(NOINLINE(static void rb_thread_restore_context_0(rb_thread_t,int,void*)));
-NORETURN(NOINLINE(static void stack_extend(rb_thread_t, int, VALUE *)));
+NORETURN(NOINLINE(static void rb_thread_restore_context_0(rb_thread_t,int)));
+NORETURN(NOINLINE(static void stack_extend(rb_thread_t, int)));
 
 static void
-rb_thread_restore_context_0(rb_thread_t th, int exit, void *vp)
+rb_thread_restore_context_0(rb_thread_t th, int exit)
 {
     static rb_thread_t tmp;
     static int ex;
     static VALUE tval;
 
     rb_trap_immediate = 0;	/* inhibit interrupts from here */
-    if (ruby_sandbox_restore != NULL)
-    {
-      ruby_sandbox_restore(th);
+    if (ruby_sandbox_restore != NULL) {
+	ruby_sandbox_restore(th);
     }
     ruby_frame = th->frame;
     ruby_scope = th->scope;
@@ -10742,9 +10740,9 @@ static volatile int C(f), C(g), C(h), C(i), C(j);
 static volatile int C(k), C(l), C(m), C(n), C(o);
 static volatile int C(p), C(q), C(r), C(s), C(t);
 int rb_dummy_false = 0;
-NORETURN(NOINLINE(static void register_stack_extend(rb_thread_t, int, void *, VALUE *)));
+NORETURN(NOINLINE(static void register_stack_extend(rb_thread_t, int, VALUE *)));
 static void
-register_stack_extend(rb_thread_t th, int exit, void *vp, VALUE *curr_bsp)
+register_stack_extend(rb_thread_t th, int exit, VALUE *curr_bsp)
 {
     if (rb_dummy_false) {
         /* use registers as much as possible */
@@ -10758,52 +10756,63 @@ register_stack_extend(rb_thread_t th, int exit, void *vp, VALUE *curr_bsp)
         E(p) = E(q) = E(r) = E(s) = E(t) = 0;
     }
     if (curr_bsp < th->bstr_pos+th->bstr_len) {
-        register_stack_extend(th, exit, &exit, (VALUE*)rb_ia64_bsp());
+        register_stack_extend(th, exit, (VALUE*)rb_ia64_bsp());
     }
-    rb_thread_restore_context_0(th, exit, &exit);
+    stack_extend(th, exit);
 }
 #undef C
 #undef E
 #endif
 
-# if defined(_MSC_VER) && _MSC_VER >= 1300
-__declspec(noinline) static void stack_extend(rb_thread_t, int, VALUE*);
-# endif
 static void
-stack_extend(rb_thread_t th, int exit, VALUE *addr_in_prev_frame)
+stack_extend(rb_thread_t th, int exit)
 {
 #define STACK_PAD_SIZE 1024
-    VALUE space[STACK_PAD_SIZE];
+    volatile VALUE space[STACK_PAD_SIZE], *sp = space;
 
-#if STACK_GROW_DIRECTION < 0
-    if (addr_in_prev_frame > th->stk_pos) stack_extend(th, exit, &space[0]);
-#elif STACK_GROW_DIRECTION > 0
-    if (addr_in_prev_frame < th->stk_pos + th->stk_len) stack_extend(th, exit, &space[STACK_PAD_SIZE-1]);
-#else
-    if (addr_in_prev_frame < rb_gc_stack_start) {
+#if !STACK_GROW_DIRECTION
+    if (space < rb_gc_stack_start) {
         /* Stack grows downward */
-        if (addr_in_prev_frame > th->stk_pos) stack_extend(th, exit, &space[0]);
+#endif
+#if STACK_GROW_DIRECTION <= 0
+	if (space > th->stk_pos) {
+# ifdef HAVE_ALLOCA
+	    sp = ALLOCA_N(VALUE, &space[0] - th->stk_pos);
+# else
+	    stack_extend(th, exit);
+# endif
+	}
+#endif
+#if !STACK_GROW_DIRECTION
     }
     else {
         /* Stack grows upward */
-        if (addr_in_prev_frame < th->stk_pos + th->stk_len) stack_extend(th, exit, &space[STACK_PAD_SIZE-1]);
+#endif
+#if STACK_GROW_DIRECTION >= 0
+	if (&space[STACK_PAD_SIZE] < th->stk_pos + th->stk_len) {
+# ifdef HAVE_ALLOCA
+	    sp = ALLOCA_N(VALUE, th->stk_pos + th->stk_len - &space[STACK_PAD_SIZE]);
+# else
+	    stack_extend(th, exit);
+# endif
+	}
+#endif
+#if !STACK_GROW_DIRECTION
     }
 #endif
-#ifdef __ia64
-    register_stack_extend(th, exit, space, (VALUE*)rb_ia64_bsp());
-#else
-    rb_thread_restore_context_0(th, exit, space);
-#endif
+    rb_thread_restore_context_0(th, exit);
 }
+#ifdef __ia64
+#define stack_extend(th, exit) register_stack_extend(th, exit, (VALUE*)rb_ia64_bsp())
+#endif
 
 static void
 rb_thread_restore_context(th, exit)
     rb_thread_t th;
     int exit;
 {
-    VALUE v;
     if (!th->stk_ptr) rb_bug("unsaved context");
-    stack_extend(th, exit, &v);
+    stack_extend(th, exit);
 }
 
 static void
@@ -12109,9 +12118,9 @@ rb_thread_group(thread)
     th->locals = 0;\
     th->thread = 0;\
     if (curr_thread == 0) {\
-      th->sandbox = Qnil;\
+	th->sandbox = Qnil;\
     } else {\
-      th->sandbox = curr_thread->sandbox;\
+	th->sandbox = curr_thread->sandbox;\
     }\
 } while (0)
 
