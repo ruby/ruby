@@ -192,8 +192,13 @@ s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
     slen = recvfrom(fd, RSTRING_PTR(str), buflen, flags, (struct sockaddr*)&buf, &alen);
 
     if (slen < 0) {
-        if (errno == EWOULDBLOCK)
+	switch (errno) {
+	  case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+	  case EWOULDBLOCK:
+#endif
             rb_sys_fail("recvfrom(2) WANT_READ");
+	}
 	rb_sys_fail("recvfrom(2)");
     }
     if (slen < RSTRING_LEN(str)) {
@@ -455,8 +460,17 @@ s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen
     rb_io_set_nonblock(fptr);
     fd2 = accept(fptr->fd, (struct sockaddr*)sockaddr, len);
     if (fd2 < 0) {
-        if (errno == EWOULDBLOCK || errno == ECONNABORTED || errno == EPROTO)
+	switch (errno) {
+	  case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+	  case EWOULDBLOCK:
+#endif
+	  case ECONNABORTED:
+#if defined EPROTO
+	  case EPROTO:
+#endif
             rb_sys_fail("accept(2) WANT_READ");
+	}
         rb_sys_fail("accept(2)");
     }
     make_fd_nonblock(fd2);
