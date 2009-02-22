@@ -1,3 +1,8 @@
+Thu Feb  5 03:55:22 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (LOCALTIME): should call tzset() before localtime_r().
+	  [ruby-dev:37896]
+
 Wed Feb  4 11:45:06 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/mkexports.rb: shouldn't export DllMain.
