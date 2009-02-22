@@ -1,3 +1,8 @@
+Tue Feb  3 14:12:10 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: validate data before sending to a server.
+	  [ruby-core:20320]
+
 Tue Feb  3 12:09:08 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (hmac_md5): should use String#ord to get ascii
