@@ -1,3 +1,8 @@
+Sun Feb 22 22:42:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (tr_trans): should recalculate coderange.
+	  [ruby-core:22326] (reopened at [ruby-core:22328])
+
 Sun Feb 22 20:09:29 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c (inspect_linger): message refined.

@@ -1432,6 +1432,8 @@ class TestString < Test::Unit::TestCase
   def test_tr_s
     assert_equal(S("hypo"), S("hello").tr_s(S("el"), S("yp")))
     assert_equal(S("h*o"),  S("hello").tr_s(S("el"), S("*")))
+    assert_equal("a".hash, "\u0101\u0101".tr_s("\u0101", "a").hash)
+    assert_equal(true, "\u3041\u3041".tr("\u3041", "a").ascii_only?)
   end
 
   def test_tr_s!

@@ -4712,6 +4712,10 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     int singlebyte = single_byte_optimizable(str);
     int cr;
 
+#define CHECK_IF_ASCII(c) \
+    (void)((cr == ENC_CODERANGE_7BIT && !rb_isascii(c)) ? \
+	   (cr = ENC_CODERANGE_VALID) : 0)
+
     StringValue(src);
     StringValue(repl);
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
@@ -4783,6 +4787,8 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	}
     }
 
+    if (cr == ENC_CODERANGE_VALID)
+	cr = ENC_CODERANGE_7BIT;
     str_modify_keep_cr(str);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
     if (sflag) {
@@ -4813,7 +4819,10 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		c = errc;
 	    }
 	    if (c != -1) {
-		if (save == c) continue;
+		if (save == c) {
+		    CHECK_IF_ASCII(c);
+		    continue;
+		}
 		save = c;
 		tlen = rb_enc_codelen(c, enc);
 		modify = 1;
@@ -4833,6 +4842,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    if (may_modify && memcmp(s, t, tlen) != 0) {
 		modify = 1;
 	    }
+	    CHECK_IF_ASCII(c);
 	    t += tlen;
 	}
 	*t = '\0';
@@ -4855,6 +4865,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		    modify = 1;
 		}
 	    }
+	    CHECK_IF_ASCII(c);
 	    s++;
 	}
     }
@@ -4904,6 +4915,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		    modify = 1;
 		}
 	    }
+	    CHECK_IF_ASCII(c);
 	    s += clen;
 	    t += tlen;
 	}
@@ -4918,7 +4930,6 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     }
     
     if (modify) {
-	cr = ENC_CODERANGE_AND(cr, ENC_CODERANGE(repl));
 	if (cr != ENC_CODERANGE_BROKEN)
 	    ENC_CODERANGE_SET(str, cr);
 	rb_enc_associate(str, enc);
