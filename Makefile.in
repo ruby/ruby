@@ -173,7 +173,7 @@ config.status:	$(srcdir)/configure $(srcdir)/enc/Makefile.in
 		MINIRUBY="$(MINIRUBY)" $(SHELL) ./config.status --recheck
 
 $(srcdir)/configure: $(srcdir)/configure.in
-		cd $(srcdir) && $(AUTOCONF)
+		unset PWD; cd $(srcdir) && exec $(AUTOCONF)
 
 incs: id.h
 id.h: parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl

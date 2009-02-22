@@ -1,4 +1,7 @@
-Sun Feb 22 12:56:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Feb 22 13:03:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (configure): unset PWD to use symlink to building
+	  directory.
 
 	* Makefile.in (up): cd doesn't need LC_TIME, VCS needs.
 
