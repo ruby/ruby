@@ -1,3 +1,13 @@
+Mon Feb  2 17:05:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_find_file_ext): should not be infected from other
+	  load paths.
+
+Sat Jan 31 19:09:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_require_safe): raises when the path to be loaded is
+	  tainted.  [ruby-dev:37843]
+
 Mon Feb  2 08:12:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/xmlrpc/server.rb (Server#serve): gets rid of hardcoded

@@ -4551,6 +4551,7 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 		*filep = tmp;
 		return j+1;
 	    }
+	    FL_UNSET(tmp, FL_TAINT | FL_UNTRUSTED);
 	}
 	rb_str_set_len(fname, fnlen);
     }
