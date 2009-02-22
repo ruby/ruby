@@ -1,3 +1,9 @@
+Sun Feb  8 23:28:05 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* include/ruby/st.h, st.c: order entries by a linked list instead of
+	  a loop to fix iteration miss when hash is modified during iteration.
+	  [ruby-dev:37910]
+
 Sun Feb  8 22:44:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/backward/rubysig.h (rb_thread_blocking_region_begin),

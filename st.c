@@ -176,6 +176,7 @@ st_init_table_with_size(const struct st_hash_type *type, int size)
     tbl->num_bins = size;
     tbl->bins = (st_table_entry **)Calloc(size, sizeof(st_table_entry*));
     tbl->head = 0;
+    tbl->tail = 0;
 
     return tbl;
 }
@@ -244,6 +245,7 @@ st_clear(st_table *table)
     }
     table->num_entries = 0;
     table->head = 0;
+    table->tail = 0;
 }
 
 void
@@ -335,7 +337,7 @@ st_get_key(st_table *table, register st_data_t key, st_data_t *result)
 
 #define ADD_DIRECT(table, key, value, hash_val, bin_pos)\
 do {\
-    st_table_entry *entry, *head;\
+    st_table_entry *entry;\
     if (table->num_entries/(table->num_bins) > ST_DEFAULT_MAX_DENSITY) {\
 	rehash(table);\
         bin_pos = hash_val % table->num_bins;\
@@ -347,13 +349,14 @@ do {\
     entry->key = key;\
     entry->record = value;\
     entry->next = table->bins[bin_pos];\
-    if ((head = table->head) != 0) {\
-	entry->fore = head;\
-	(entry->back = head->back)->fore = entry;\
-	head->back = entry;\
+    if (table->head != 0) {\
+	entry->fore = 0;\
+	(entry->back = table->tail)->fore = entry;\
+	table->tail = entry;\
     }\
     else {\
-	table->head = entry->fore = entry->back = entry;\
+	table->head = table->tail = entry;\
+	entry->fore = entry->back = 0;\
     }\
     table->bins[bin_pos] = entry;\
     table->num_entries++;\
@@ -455,7 +458,7 @@ rehash(register st_table *table)
 	    hash_val = ptr->hash % new_num_bins;
 	    ptr->next = new_bins[hash_val];
 	    new_bins[hash_val] = ptr;
-	} while ((ptr = ptr->fore) != table->head);
+	} while ((ptr = ptr->fore) != 0);
     }
 }
 
@@ -502,10 +505,8 @@ st_copy(st_table *old_table)
 	    entry->back = prev;
 	    *tail = prev = entry;
 	    tail = &entry->fore;
-	} while ((ptr = ptr->fore) != old_table->head);
-	entry = new_table->head;
-	entry->back = prev;
-	*tail = entry;
+	} while ((ptr = ptr->fore) != 0);
+	new_table->tail = prev;
     }
 
     return new_table;
@@ -513,14 +514,16 @@ st_copy(st_table *old_table)
 
 #define REMOVE_ENTRY(table, ptr) do					\
     {									\
-	if (ptr == ptr->fore) {						\
+	if (ptr->fore == 0 && ptr->back == 0) {				\
 	    table->head = 0;						\
+	    table->tail = 0;						\
 	}								\
 	else {								\
 	    st_table_entry *fore = ptr->fore, *back = ptr->back;	\
-	    fore->back = back;						\
-	    back->fore = fore;						\
+	    if (fore) fore->back = back;				\
+	    if (back) back->fore = fore;				\
 	    if (ptr == table->head) table->head = fore;			\
+	    if (ptr == table->tail) table->tail = back;			\
 	}								\
 	table->num_entries--;						\
     } while (0)
@@ -613,7 +616,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 {
     st_table_entry *ptr, **last, *tmp;
     enum st_retval retval;
-    int i, end;
+    int i;
 
     if (table->entries_packed) {
         for (i = 0; i < table->num_entries; i++) {
@@ -651,7 +654,6 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 
     if ((ptr = table->head) != 0) {
 	do {
-	    end = ptr->fore == table->head;
 	    retval = (*func)(ptr->key, ptr->record, arg);
 	    switch (retval) {
 	      case ST_CHECK:	/* check if hash is modified during iteration */
@@ -683,7 +685,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 		    }
 		}
 	    }
-	} while (!end && table->head);
+	} while (ptr && table->head);
     }
     return 0;
 }
@@ -694,7 +696,7 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 {
     st_table_entry *ptr, **last, *tmp;
     enum st_retval retval;
-    int i, end;
+    int i;
 
     if (table->entries_packed) {
         for (i = table->num_entries-1; 0 <= i; i--) {
@@ -732,7 +734,6 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
     if ((ptr = table->head) != 0) {
 	ptr = ptr->back;
 	do {
-	    end = ptr == table->head;
 	    retval = (*func)(ptr->key, ptr->record, arg, 0);
 	    switch (retval) {
 	      case ST_CHECK:	/* check if hash is modified during iteration */
@@ -766,7 +767,7 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 		free(tmp);
 		table->num_entries--;
 	    }
-	} while (!end && table->head);
+	} while (ptr && table->head);
     }
     return 0;
 }
