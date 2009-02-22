@@ -1,3 +1,14 @@
+Fri Feb 20 23:28:11 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* util.c (rv_alloc, freedtoa): use our normal xmalloc()/xfree() because
+	  couldn't free the returned pointer from ruby_dtoa().
+
+	* missing/vsnprintf.c (cvt): receive buffer and use/return it instead
+	  of returning the pointer returned from BSD__dtoa().
+
+	* missing/vsnprintf.c (BSD_vfprintf): pass buf to cvt() as the buffer.
+	  [ruby-core:22184]
+
 Thu Feb 19 15:39:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_ocsp.c (ossl_ocspbres_verify): OCSP_basic_verify
