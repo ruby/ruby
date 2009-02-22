@@ -1719,7 +1719,7 @@ rb_exec_arg_fixup(struct rb_exec_arg *e)
  *
  *    commandline                 : command line string which is passed to a shell
  *    cmdname, arg1, ...          : command name and one or more arguments (no shell)
- *    [cmdname, argv0], arg1, ... : command name and arguments including argv[0] (no shell)
+ *    [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
  *
  *  If single string is given as the command,
  *  it is taken as a command line that is subject to shell expansion before being executed.
@@ -2893,7 +2893,7 @@ rb_spawn(int argc, VALUE *argv)
  *
  *    commandline                 : command line string which is passed to a shell
  *    cmdname, arg1, ...          : command name and one or more arguments (no shell)
- *    [cmdname, argv0], arg1, ... : command name and arguments including argv[0] (no shell)
+ *    [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
  *
  *  system returns +true+ if the command gives zero exit status,
  *  +false+ for non zero exit status.
