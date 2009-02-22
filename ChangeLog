@@ -1,3 +1,8 @@
+Mon Feb 23 02:44:42 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (inspect_timeval_as_abstime): new function.
+	  (ancillary_inspect): use it for SO_TIMESTAMP.
+
 Mon Feb 23 02:26:44 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c (inspect_timeval_as_interval): renamed from

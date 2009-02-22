@@ -1,5 +1,7 @@
 #include "rubysocket.h"
 
+#include <time.h>
+
 #if defined(HAVE_ST_MSG_CONTROL)
 static VALUE rb_cAncillaryData;
 
@@ -698,6 +700,26 @@ anc_inspect_ipv6_pktinfo(int level, int type, VALUE data, VALUE ret)
 }
 #endif
 
+#if defined(SO_TIMESTAMP)
+static int
+inspect_timeval_as_abstime(int level, int optname, VALUE data, VALUE ret)
+{
+    if (RSTRING_LEN(data) == sizeof(struct timeval)) {
+        struct timeval s;
+        struct tm tm;
+        char buf[32];
+        memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
+        tm = *localtime(&s.tv_sec);
+        strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
+        rb_str_catf(ret, " %s.%06ld", buf, (long)s.tv_usec);
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+#endif
+
 /*
  * call-seq:
  *   ancillarydata.inspect => string
@@ -768,6 +790,9 @@ ancillary_inspect(VALUE self)
 #        if defined(SOL_SOCKET)
           case SOL_SOCKET:
             switch (type) {
+#            if defined(SO_TIMESTAMP) /* GNU/Linux, MacOS X, Solaris */
+              case SO_TIMESTAMP: inspected = inspect_timeval_as_abstime(level, type, data, ret); break;
+#            endif
 #            if defined(SCM_RIGHTS) /* 4.4BSD */
               case SCM_RIGHTS: inspected = anc_inspect_socket_rights(level, type, data, ret); break;
 #            endif
