@@ -305,7 +305,7 @@ inspect_socktype(int level, int optname, VALUE data, VALUE ret)
 static int
 inspect_timeval(int level, int optname, VALUE data, VALUE ret)
 {
-    if (RSTRING_LEN(data) == sizeof(struct linger)) {
+    if (RSTRING_LEN(data) == sizeof(struct timeval)) {
         struct timeval s;
         memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
         rb_str_catf(ret, " %ld.%06ldsec", (long)s.tv_sec, (long)s.tv_usec);
