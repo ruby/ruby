@@ -11,6 +11,7 @@ Sun Feb 22 14:33:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (tr_trans): should not be affected by the encoding of
 	  replacement unless actually modified.  [ruby-talk:328967]
+	  [ruby-core:22326]
 
 Sun Feb 22 13:38:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
