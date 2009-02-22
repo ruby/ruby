@@ -23,7 +23,9 @@
 #include <ocidl.h>
 #include <olectl.h>
 #include <ole2.h>
+#if defined(HAVE_TYPE_IMULTILANGUAGE2) || defined(HAVE_TYPE_IMULTILANGUAGE)
 #include <mlang.h>
+#endif
 #include <stdlib.h>
 #include <math.h>
 #ifdef HAVE_STDARG_PROTOTYPES
@@ -223,7 +225,7 @@ static IMultiLanguage2 *pIMultiLanguage = NULL;
 #elif defined(HAVE_TYPE_IMULTILANGUAGE)
 static IMultiLanguage *pIMultiLanguage = NULL;
 #else
-static void *pIMultiLanguage = NULL; /* dummy */
+#define pIMultiLanguage NULL /* dummy */
 #endif
 
 struct oledata {
@@ -285,8 +287,11 @@ static double time_object2date(VALUE tmobj);
 static VALUE date2time_str(double date);
 static rb_encoding *ole_cp2encoding(UINT cp);
 static UINT ole_encoding2cp(rb_encoding *enc);
-static void load_conv_function51932();
-static UINT ole_init_cp();
+NORETURN(static void failed_load_conv51932(void));
+#ifndef pIMultiLanguage
+static void load_conv_function51932(void);
+#endif
+static UINT ole_init_cp(void);
 static char *ole_wc2mb(LPWSTR pw);
 static VALUE ole_hresult2msg(HRESULT hr);
 static void ole_freeexceptinfo(EXCEPINFO *pExInfo);
@@ -976,7 +981,14 @@ static UINT ole_encoding2cp(rb_encoding *enc)
 }
 
 static void
-load_conv_function51932()
+failed_load_conv51932(void)
+{
+    rb_raise(eWIN32OLERuntimeError, "fail to load convert function for CP51932");
+}
+
+#ifndef pIMultiLanguage
+static void
+load_conv_function51932(void)
 {
     HRESULT hr = E_NOINTERFACE;
     void *p;
@@ -987,16 +999,18 @@ load_conv_function51932()
 #elif defined(HAVE_TYPE_IMULTILANGUAGE)
 	hr = CoCreateInstance(&CLSID_CMultiLanguage, NULL, CLSCTX_INPROC_SERVER,
 		              &IID_IMultiLanguage, &p);
-#else
-	hr = E_NOINTERFACE;
-	p = NULL;
 #endif
 	if (FAILED(hr)) {
-	    rb_raise(eWIN32OLERuntimeError, "fail to load convert function for CP51932");
+	    failed_load_conv51932();
 	}
 	pIMultiLanguage = p;
     }
 }
+#else
+#define load_conv_function51932() failed_load_conv51932()
+#endif
+
+#define conv_51932(cp) ((cp) == 51932 && (load_conv_function51932(), 1))
 
 static void
 set_ole_codepage(UINT cp)
@@ -1012,11 +1026,11 @@ set_ole_codepage(UINT cp)
         case CP_SYMBOL:
         case CP_UTF7:
         case CP_UTF8:
+            cWIN32OLE_cp = cp;
+            break;
         case 51932:
             cWIN32OLE_cp = cp;
-            if (cp == 51932) {
-                load_conv_function51932();
-            }
+            load_conv_function51932();
             break;
         default:
             rb_raise(eWIN32OLERuntimeError, "codepage should be WIN32OLE::CP_ACP, WIN32OLE::CP_OEMCP, WIN32OLE::CP_MACCP, WIN32OLE::CP_THREAD_ACP, WIN32OLE::CP_SYMBOL, WIN32OLE::CP_UTF7, WIN32OLE::CP_UTF8, or installed codepage.");
@@ -1028,7 +1042,7 @@ set_ole_codepage(UINT cp)
 
 
 static UINT
-ole_init_cp()
+ole_init_cp(void)
 {
     UINT cp;
     rb_encoding *encdef;
@@ -1108,12 +1122,11 @@ static char *
 ole_wc2mb(LPWSTR pw)
 {
     LPSTR pm;
-    HRESULT hr;
     int size = 0;
-    DWORD dw = 0;
-    if (cWIN32OLE_cp == 51932) {
-	load_conv_function51932();
-	hr = pIMultiLanguage->lpVtbl->ConvertStringFromUnicode(pIMultiLanguage,
+    if (conv_51932(cWIN32OLE_cp)) {
+#ifndef pIMultiLanguage
+	DWORD dw = 0;
+	HRESULT hr = pIMultiLanguage->lpVtbl->ConvertStringFromUnicode(pIMultiLanguage,
 		&dw, cWIN32OLE_cp, pw, NULL, NULL, &size);
 	if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert Unicode to CP%d", cWIN32OLE_cp);
@@ -1125,6 +1138,7 @@ ole_wc2mb(LPWSTR pw)
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert Unicode to CP%d", cWIN32OLE_cp);
 	}
 	pm[size] = '\0';
+#endif
         return pm;
     }
     size = WideCharToMultiByte(cWIN32OLE_cp, 0, pw, -1, NULL, 0, NULL, NULL);
@@ -1327,9 +1341,6 @@ ole_vstr2wc(VALUE vstr)
     int cp;
     int size = 0;
     LPWSTR pw;
-    int len = 0;
-    DWORD dw = 0;
-    HRESULT hr;
     st_data_t data;
     enc = rb_enc_get(vstr);
 
@@ -1351,11 +1362,11 @@ ole_vstr2wc(VALUE vstr)
             rb_raise(eWIN32OLERuntimeError, "not installed Windows codepage(%d) according to `%s'", cp, rb_enc_name(enc));
         }
     }
-    if (cp == 51932) {
-	load_conv_function51932();
-	len = RSTRING_LEN(vstr);
-	size = 0;
-	hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
+    if (conv_51932(cp)) {
+#ifndef pIMultiLanguage
+	DWORD dw = 0;
+	int len = RSTRING_LEN(vstr);
+	HRESULT hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
 		&dw, cp, RSTRING_PTR(vstr), &len, NULL, &size);
 	if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cp);
@@ -1367,6 +1378,7 @@ ole_vstr2wc(VALUE vstr)
 	if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cp);
 	}
+#endif
 	return pw;
     }
     size = MultiByteToWideChar(cp, 0, RSTRING_PTR(vstr), RSTRING_LEN(vstr), NULL, 0);
@@ -1380,14 +1392,12 @@ ole_mb2wc(char *pm, int len)
 {
     int size = 0;
     LPWSTR pw;
-    HRESULT hr;
-    DWORD dw = 0;
-    int n = len;
 
-    if (cWIN32OLE_cp == 51932) {
-	load_conv_function51932();
-	size = 0;
-	hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
+    if (conv_51932(cWIN32OLE_cp)) {
+#ifndef pIMultiLanguage
+	DWORD dw = 0;
+	int n = len;
+	HRESULT hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
 		&dw, cWIN32OLE_cp, pm, &n, NULL, &size);
 	if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cWIN32OLE_cp);
@@ -1398,6 +1408,7 @@ ole_mb2wc(char *pm, int len)
 	if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cWIN32OLE_cp);
 	}
+#endif
 	return pw;
     }
     size = MultiByteToWideChar(cWIN32OLE_cp, 0, pm, len, NULL, 0);
