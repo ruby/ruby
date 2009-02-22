@@ -1,3 +1,10 @@
+Thu Feb 12 22:51:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (hide_obj): OBJ_FREEZE() is not an expression.  a patch
+	  from nagachika <nagachika00 AT gmail.com> at [ruby-dev:37977].
+
+	* compile.c (insn_set_sc_state): fixed typoe.
+
 Thu Feb 12 19:42:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (compile_array_, defined_expr, iseq_compile_each): hide
