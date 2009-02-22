@@ -1,3 +1,15 @@
+Sun Feb 22 22:03:40 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (cc_mark): frees the continuation's stack if its thread
+	  is dead to avoid recursive gc that segfaults.  [ruby-core:13889]
+	  a patch by Brent Roman <brent AT mbari.org>.
+
+	* eval.c (rb_cont_check): checks for valid continuation instance.
+
+	* eval.c (rb_callcc): assigns th->thread before scope_dup() to
+	  avoid segfaults if this scope_dup() triggers a gc pass.
+	  a patch by Brent Roman <brent AT mbari.org>.
+
 Sun Feb 22 21:43:34 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (ruby_float_step): extracted from num_step().

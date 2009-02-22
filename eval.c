@@ -10513,8 +10513,8 @@ rb_gc_abort_threads()
     } END_FOREACH_FROM(main_thread, th);
 }
 
-static void
-thread_free(th)
+static inline void
+stack_free(th)
     rb_thread_t th;
 {
     if (th->stk_ptr) free(th->stk_ptr);
@@ -10523,6 +10523,13 @@ thread_free(th)
     if (th->bstr_ptr) free(th->bstr_ptr);
     th->bstr_ptr = 0;
 #endif
+}
+
+static void
+thread_free(th)
+    rb_thread_t th;
+{
+    stack_free(th);
     if (th->locals) st_free_table(th->locals);
     if (th->status != THREAD_KILLED) {
 	if (th->prev) th->prev->next = th->next;
@@ -10815,8 +10822,7 @@ rb_thread_die(th)
 {
     th->thgroup = 0;
     th->status = THREAD_KILLED;
-    if (th->stk_ptr) free(th->stk_ptr);
-    th->stk_ptr = 0;
+    stack_free(th);
 }
 
 static void
@@ -13006,6 +13012,38 @@ rb_thread_atfork()
 }
 
 
+static void
+cc_purge(cc)
+    rb_thread_t cc;
+{
+    /* free continuation's stack if it has just died */
+    if (NIL_P(cc->thread)) return;
+    if (rb_thread_check(cc->thread)->status == THREAD_KILLED) {
+	cc->thread = Qnil;
+	rb_thread_die(cc);  /* can't possibly activate this stack */
+    }
+}
+
+static void
+cc_mark(cc)
+    rb_thread_t cc;
+{
+    /* mark this continuation's stack only if its parent thread is still alive */
+    cc_purge(cc);
+    thread_mark(cc);
+}
+
+static rb_thread_t
+rb_cont_check(data)
+    VALUE data;
+{
+    if (TYPE(data) != T_DATA || RDATA(data)->dmark != (RUBY_DATA_FUNC)cc_mark) {
+	rb_raise(rb_eTypeError, "wrong argument type %s (expected Continuation)",
+		 rb_obj_classname(data));
+    }
+    return (rb_thread_t)RDATA(data)->data;
+}
+
 /*
  *  Document-class: Continuation
  *
@@ -13080,14 +13118,16 @@ rb_callcc(self)
     struct RVarmap *vars;
 
     THREAD_ALLOC(th);
-    cont = Data_Wrap_Struct(rb_cCont, thread_mark, thread_free, th);
+    /* must finish th initialization before any possible gc.
+     * brent@mbari.org */
+    th->thread = curr_thread->thread;
+    th->thgroup = cont_protect;
+    cont = Data_Wrap_Struct(rb_cCont, cc_mark, thread_free, th);
 
     scope_dup(ruby_scope);
     for (tag=prot_tag; tag; tag=tag->prev) {
 	scope_dup(tag->scope);
     }
-    th->thread = curr_thread->thread;
-    th->thgroup = cont_protect;
 
     for (vars = ruby_dyna_vars; vars; vars = vars->next) {
 	if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
@@ -13124,7 +13164,7 @@ rb_cont_call(argc, argv, cont)
     VALUE *argv;
     VALUE cont;
 {
-    rb_thread_t th = rb_thread_check(cont);
+    rb_thread_t th = rb_cont_check(cont);
 
     if (th->thread != curr_thread->thread) {
 	rb_raise(rb_eRuntimeError, "continuation called across threads");
@@ -13300,10 +13340,6 @@ thgroup_add(group, thread)
 
     rb_secure(4);
     th = rb_thread_check(thread);
-    if (!th->next || !th->prev) {
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected Thread)",
-		 rb_obj_classname(thread));
-    }
 
     if (OBJ_FROZEN(group)) {
       rb_raise(rb_eThreadError, "can't move to the frozen thread group");
