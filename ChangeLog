@@ -1,3 +1,8 @@
+Wed Feb 18 12:35:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_extname): fix for spaces before extention.
+	  [ruby-dev:38044]
+
 Wed Feb 18 10:29:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thread_start_func_2): do not delete main thread from
