@@ -273,4 +273,22 @@ class TestSocket < Test::Unit::TestCase
     }
   end
 
+  def test_timestamp
+    return if /linux|solaris|darwin/ !~ RUBY_PLATFORM
+    t1 = Time.now.strftime("%Y-%m-%d")
+    stamp = nil
+    Addrinfo.udp("127.0.0.1", 0).bind {|s1|
+      Addrinfo.udp("127.0.0.1", 0).bind {|s2|
+        s1.setsockopt(:SOCKET, :SO_TIMESTAMP, true)
+        s2.send "a", 0, s1.local_address
+        msg, addr, rflags, stamp = s1.recvmsg
+        assert_equal("a", msg)
+        assert(stamp.cmsg_is?(:SOCKET, :TIMESTAMP))
+      }
+    }
+    t2 = Time.now.strftime("%Y-%m-%d")
+    pat = Regexp.union([t1, t2].uniq)
+    assert_match(pat, stamp.inspect)
+  end
+
 end if defined?(Socket)
