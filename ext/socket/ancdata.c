@@ -184,7 +184,7 @@ ancillary_data(VALUE self)
  *
  *   s1, s2 = UNIXSocket.pair
  *   p s1                                         #=> #<UNIXSocket:fd 3>
- *   s1.sendmsg "standard IOs", 0, nil, [:SOCKET, :RIGHTS, [0,s1.fileno].pack("ii")]
+ *   s1.sendmsg "stdin and a socket", 0, nil, [:SOCKET, :RIGHTS, [0,s1.fileno].pack("ii")]
  *   _, _, _, ctl = s2.recvmsg
  *   p ctl.unix_rights                            #=> [#<IO:fd 6>, #<Socket:fd 7>]
  *   p File.identical?(STDIN, ctl.unix_rights[0]) #=> true
