@@ -119,6 +119,9 @@ s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
     while (rb_io_check_closed(fptr),
 	   rb_thread_wait_fd(arg.fd),
 	   (slen = BLOCKING_REGION(recvfrom_blocking, &arg)) < 0) {
+        if (!rb_io_wait_readable(fptr->fd)) {
+            rb_sys_fail("recvfrom(2)");
+        }
 	if (RBASIC(str)->klass || RSTRING_LEN(str) != buflen) {
 	    rb_raise(rb_eRuntimeError, "buffer string modified");
 	}

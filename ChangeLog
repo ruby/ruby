@@ -1,3 +1,8 @@
+Sun Feb 22 19:28:08 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/init.c (s_recvfrom): use rb_io_wait_readable after
+	  recvfrom.
+
 Sun Feb 22 18:40:04 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c (inspect_errno): new function.
