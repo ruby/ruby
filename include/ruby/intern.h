@@ -613,6 +613,7 @@ int rb_str_cmp(VALUE, VALUE);
 VALUE rb_str_equal(VALUE str1, VALUE str2);
 VALUE rb_str_drop_bytes(VALUE, long);
 void rb_str_update(VALUE, long, long, VALUE);
+VALUE rb_str_replace(VALUE, VALUE);
 VALUE rb_str_inspect(VALUE);
 VALUE rb_str_dump(VALUE);
 VALUE rb_str_split(VALUE, const char*);

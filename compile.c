@@ -295,6 +295,7 @@ PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
 #define INIT_ANCHOR(name) \
   (name##_body__.last = &name##_body__.anchor, name = &name##_body__)
 
+#define hide_obj(obj) (void)(OBJ_FREEZE(obj), RBASIC(obj)->klass = 0)
 
 #include "optinsn.inc"
 #if OPT_INSTRUCTIONS_UNIFICATION
@@ -2230,7 +2231,7 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
 
     if (opt_p == Qtrue) {
 	if (!poped) {
-	    VALUE ary = rb_ary_new();
+	    VALUE ary = rb_ary_tmp_new(len);
 	    node = node_root;
 	    while (node) {
 		rb_ary_push(ary, node->nd_head->nd_lit);
@@ -2709,6 +2710,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
     if (estr != 0) {
 	if (needstr != Qfalse) {
 	    VALUE str = rb_str_new2(estr);
+	    hide_obj(str);
 	    ADD_INSN1(ret, nd_line(node), putstring, str);
 	    iseq_add_mark_object_compile_time(iseq, str);
 	}
@@ -4353,6 +4355,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_STR:{
 	debugp_param("nd_lit", node->nd_lit);
 	if (!poped) {
+	    hide_obj(node->nd_lit);
 	    ADD_INSN1(ret, nd_line(node), putstring, node->nd_lit);
 	}
 	break;

@@ -815,14 +815,18 @@ rb_obj_as_string(VALUE obj)
     return str;
 }
 
-static VALUE rb_str_replace(VALUE, VALUE);
+static VALUE
+str_duplicate(VALUE klass, VALUE str)
+{
+    VALUE dup = str_alloc(klass);
+    rb_str_replace(dup, str);
+    return dup;
+}
 
 VALUE
 rb_str_dup(VALUE str)
 {
-    VALUE dup = str_alloc(rb_obj_class(str));
-    rb_str_replace(dup, str);
-    return dup;
+    return str_duplicate(rb_obj_class(str), str);
 }
 
 
@@ -3675,7 +3679,7 @@ rb_str_gsub(int argc, VALUE *argv, VALUE str)
  *     s.replace "world"   #=> "world"
  */
 
-static VALUE
+VALUE
 rb_str_replace(VALUE str, VALUE str2)
 {
     long len;
@@ -3977,9 +3981,7 @@ static VALUE
 rb_str_to_s(VALUE str)
 {
     if (rb_obj_class(str) != rb_cString) {
-	VALUE dup = str_alloc(rb_cString);
-	rb_str_replace(dup, str);
-	return dup;
+	return str_duplicate(rb_cString, str);
     }
     return str;
 }
