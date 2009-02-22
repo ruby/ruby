@@ -1,3 +1,9 @@
+Fri Feb  6 01:09:13 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* cont.c (cont_mark, cont_capture, cont_restore_1): use #else instead
+	  of #elif.  a patch from NISHIMATSU Takeshi <t_nissie at yahoo.co.jp>
+	  in [ruby-list:45856].
+
 Thu Feb  5 07:39:33 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/readline/readline.c (Init_readline): remove_history(0) may be
