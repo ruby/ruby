@@ -1,3 +1,7 @@
+Tue Feb  3 23:37:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file_internal): resets EOF flag after parse.
+
 Tue Feb  3 14:12:10 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: validate data before sending to a server.
