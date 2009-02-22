@@ -1,3 +1,8 @@
+Sun Feb  8 19:05:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/backward/rubysig.h: extern "C" was missing.
+	  [ruby-core:21929]
+
 Sun Feb  8 18:34:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_s_binread): ensures file path.  [ruby-dev:37940]
