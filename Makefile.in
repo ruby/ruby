@@ -243,7 +243,7 @@ ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
 
 up::
-	@LC_TIME=C cd "$(srcdir)" && $(VCSUP)
+	@cd "$(srcdir)" && LC_TIME=C exec $(VCSUP)
 
 update-rubyspec: 
 	@if [ -d $(srcdir)/spec/mspec ]; then \

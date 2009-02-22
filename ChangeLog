@@ -1,3 +1,7 @@
+Sun Feb 22 12:56:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (up): cd doesn't need LC_TIME, VCS needs.
+
 Sun Feb 22 10:43:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (method_missing): should not pop cfp if missing method
