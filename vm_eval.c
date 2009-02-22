@@ -704,7 +704,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	    th->base_block = &env->block;
 	}
 	else {
-	    rb_control_frame_t *cfp = vm_get_ruby_level_caller_cfp(th, th->cfp);
+	    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
 	    if (cfp != 0) {
 		block = *RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);

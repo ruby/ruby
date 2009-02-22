@@ -271,8 +271,6 @@ binding_clone(VALUE self)
     return bindval;
 }
 
-rb_control_frame_t *rb_vm_get_ruby_level_next_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
-
 VALUE
 rb_binding_new(void)
 {

@@ -590,6 +590,7 @@ VALUE rb_vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
 
 void *rb_thread_call_with_gvl(void *(*func)(void *), void *data1);
 int ruby_thread_has_gvl_p(void);
+rb_control_frame_t *rb_vm_get_ruby_level_next_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 
 NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
 
