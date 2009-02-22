@@ -1,3 +1,8 @@
+Fri Feb  6 23:28:33 2009  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_fread): use rb_io_wait_readable for retry
+	  avoid Errno::EINTR on ruby -e 'trap(:CHLD) {}; spawn("sleep 1"); STDIN.read'
+
 Fri Feb  6 20:37:42 2009  Tanaka Akira  <akr@fsij.org>
 
 	* signal.c (register_sigaltstack): ignore sigaltstack error.

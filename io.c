@@ -1428,12 +1428,15 @@ io_fread(VALUE str, long offset, rb_io_t *fptr)
 
     if (READ_DATA_PENDING(fptr) == 0) {
 	while (n > 0) {
+          again:
 	    c = rb_read_internal(fptr->fd, RSTRING_PTR(str)+offset, n);
 	    if (c == 0) {
 		io_set_eof(fptr);
 		break;
 	    }
 	    if (c < 0) {
+                if (rb_io_wait_readable(fptr->fd))
+                    goto again;
 		rb_sys_fail_path(fptr->pathv);
 	    }
 	    offset += c;
