@@ -233,6 +233,22 @@ inspect_int(int level, int optname, VALUE data, VALUE ret)
     }
 }
 
+static int
+inspect_errno(int level, int optname, VALUE data, VALUE ret)
+{
+    if (RSTRING_LEN(data) == sizeof(int)) {
+        int i;
+        char *err;
+        memcpy((char*)&i, RSTRING_PTR(data), sizeof(int));
+        err = strerror(i);
+        rb_str_catf(ret, " %s (%d)", err, i);
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
 #if defined(IPV6_MULTICAST_IF) || defined(IPV6_MULTICAST_LOOP)
 static int
 inspect_uint(int level, int optname, VALUE data, VALUE ret)
@@ -429,7 +445,7 @@ sockopt_inspect(VALUE self)
               case SO_DEBUG: inspected = inspect_int(level, optname, data, ret); break;
 #            endif
 #            if defined(SO_ERROR) /* POSIX */
-              case SO_ERROR: inspected = inspect_int(level, optname, data, ret); break;
+              case SO_ERROR: inspected = inspect_errno(level, optname, data, ret); break;
 #            endif
 #            if defined(SO_TYPE) /* POSIX */
               case SO_TYPE: inspected = inspect_socktype(level, optname, data, ret); break;
