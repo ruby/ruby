@@ -110,7 +110,7 @@ class Exports::Mswin < Exports
           next unless l.sub!(/.*?\s(\(\)\s+)?External\s+\|\s+/, '')
           is_data = !$1
           if noprefix or /^[@_]/ =~ l
-            next if /(?!^)@.*@/ =~ l || /@[[:xdigit:]]{16}$/ =~ l
+            next if /(?!^)@.*@/ =~ l || /@[[:xdigit:]]{16}$/ =~ l || /^_DllMain@/ =~ l
             l.sub!(/^[@_]/, '') if /@\d+$/ !~ l
           elsif !l.sub!(/^(\S+) \([^@?\`\']*\)$/, '\1')
             next
@@ -143,7 +143,8 @@ class Exports::Mingw < Exports
 
   def each_export(objs)
     objdump(objs) do |l|
-      yield $2, !$1 if /\s(?:(T)|[[:upper:]])\s_((?!Init_).*)$/ =~ l
+      next if /@.*@/ =~ l
+      yield $2, !$1 if /\s(?:(T)|[[:upper:]])\s_((?!Init_|DllMain@).*)$/ =~ l
     end
     yield "strcasecmp", "_stricmp"
     yield "strncasecmp", "_strnicmp"
