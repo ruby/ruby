@@ -1,3 +1,8 @@
+Tue Feb  3 12:09:08 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (hmac_md5): should use String#ord to get ascii
+	  code from the one-character string.
+
 Mon Feb  2 17:05:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_find_file_ext): should not be infected from other
