@@ -1140,3 +1140,14 @@ assert_equal 'Object#foo', %q{
   end
   Foo.foo
 }, '[ruby-dev:37587]'
+
+assert_normal_exit %q{
+  class BasicObject
+    remove_method :method_missing
+  end
+  begin
+    "a".lalala!
+  rescue NoMethodError => e
+    e.message == "undefined method `lalala!' for \"a\":String" ? :ok : :ng
+  end
+}, '[ruby-core:22298]'
