@@ -713,6 +713,7 @@ reswitch:	switch (ch) {
 		case 'h':
 			flags |= SHORTINT;
 			goto rflag;
+		case 't':
 		case 'l':
 			flags |= LONGINT;
 			goto rflag;

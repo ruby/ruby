@@ -1,3 +1,9 @@
+Wed Feb  4 10:12:05 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* missing/vsnprintf.c (BSD_vfprintf): should support 't' format
+	  modifier to handle PRIdPTRDIFF.  thanks for the info from
+	  Kazuhiro NISHIYAMA.  [ruby-core:21807]
+
 Tue Feb  3 23:37:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (load_file_internal): resets EOF flag after parse.
