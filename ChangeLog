@@ -1,3 +1,8 @@
+Mon Feb 23 03:19:37 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: define SO_TIMESTAMPNS and SCM_TIMESTAMPNS
+	  if available.
+
 Mon Feb 23 02:54:31 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (ancillary_inspect): use SCM_TIMESTAMP instead
