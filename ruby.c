@@ -1791,7 +1791,7 @@ ruby_process_options(int argc, char **argv)
 {
     struct cmdline_arguments args;
     struct cmdline_options opt;
-    NODE *tree;
+    VALUE iseq;
 
     ruby_script(argv[0]);  /* for the time being */
     rb_argv0 = rb_str_new4(rb_progname);
@@ -1801,10 +1801,10 @@ ruby_process_options(int argc, char **argv)
     args.opt = cmdline_options_init(&opt);
     opt.ext.enc.index = -1;
     opt.intern.enc.index = -1;
-    tree = (NODE *)rb_vm_call_cfunc(rb_vm_top_self(),
+    iseq = rb_vm_call_cfunc(rb_vm_top_self(),
 				    process_options, (VALUE)&args,
 				    0, rb_progname);
-    return tree;
+    return (void*)(struct RData*)iseq;
 }
 
 void
