@@ -2962,13 +2962,13 @@ rb_f_system(int argc, VALUE *argv)
  *    command...:
  *      commandline                 : command line string which is passed to a shell
  *      cmdname, arg1, ...          : command name and one or more arguments (no shell)
- *      [cmdname, argv0], arg1, ... : command name and arguments including argv[0] (no shell)
+ *      [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
  *    options: hash
  *      clearing environment variables:
  *        :unsetenv_others => true   : clear environment variables except specified by env
  *        :unsetenv_others => false  : don't clear (default)
  *      process group:
- *        :pgroup => true or 0 : process leader
+ *        :pgroup => true or 0 : make a new process group
  *        :pgroup => pgid      : join to specified process group
  *      resource limit: resourcename is core, cpu, data, etc.  See Process.setrlimit.
  *        :rlimit_resourcename => limit
@@ -3023,14 +3023,15 @@ rb_f_system(int argc, VALUE *argv)
  *
  *  The <code>:pgroup</code> key in +options+ specifies a process group.
  *  The corresponding value should be true, zero or positive integer.
- *  true and zero means the process should be a process leader.
+ *  true and zero means the process should be a process leader of a new
+ *  process group.
  *  Other values specifies a process group to be belongs.
  *
  *    pid = spawn(command, :pgroup=>true) # process leader
  *    pid = spawn(command, :pgroup=>10) # belongs to the process group 10
  *
  *  The <code>:rlimit_</code><em>foo</em> key specifies a resource limit.
- *  <em>foo</em> should be one of resource types such as <code>core</code>
+ *  <em>foo</em> should be one of resource types such as <code>core</code>.
  *  The corresponding value should be an integer or an array which have one or
  *  two integers: same as cur_limit and max_limit arguments for
  *  Process.setrlimit.
@@ -3048,7 +3049,7 @@ rb_f_system(int argc, VALUE *argv)
  *
  *    pid = spawn(command, :umask=>077)
  *
- *  The :in, :out, :err, a fixnum, an IO and an array key specifies a redirect.
+ *  The :in, :out, :err, a fixnum, an IO and an array key specifies a redirection.
  *  The redirection maps a file descriptor in the child process.
  *
  *  For example, stderr can be merged into stdout as follows:
@@ -3070,7 +3071,7 @@ rb_f_system(int argc, VALUE *argv)
  *  the standard output in the child process is not specified.
  *  So it is inherited from the parent process.
  *
- *  The standard input stream (stdin) can be specifed by :in, 0 and STDIN.
+ *  The standard input stream (stdin) can be specified by :in, 0 and STDIN.
  *
  *  A filename can be specified as a hash value.
  *
@@ -3094,19 +3095,19 @@ rb_f_system(int argc, VALUE *argv)
  *
  *  The array specifies a filename, flags and permission.
  *  The flags can be a string or an integer.
- *  If the flags is ommitted or nil, File::RDONLY is assumed.
+ *  If the flags is omitted or nil, File::RDONLY is assumed.
  *  The permission should be an integer.
- *  If the permission is ommitted or nil, 0644 is assumed.
+ *  If the permission is omitted or nil, 0644 is assumed.
  *
  *  If an array of IOs and integers are specified as a hash key,
- *  all the elemetns are redirected.
+ *  all the elements are redirected.
  *
  *    # stdout and stderr is redirected to log file.
  *    # The file "log" is opened just once.
  *    pid = spawn(command, [:out, :err]=>["log", "w"])
  *
  *  Another way to merge multiple file descriptors is [:child, fd].
- *  [:child, fd] means the file descriptor in the child process.
+ *  \[:child, fd] means the file descriptor in the child process.
  *  This is different from fd.
  *  For example, :err=>:out means redirecting child stderr to parent stdout.
  *  But :err=>[:child, :out] means redirecting child stderr to child stdout.
@@ -3116,7 +3117,7 @@ rb_f_system(int argc, VALUE *argv)
  *    # The file "log" is opened just once.
  *    pid = spawn(command, :out=>["log", "w"], :err=>[:child, :out])
  *
- *  [:child, :out] can be used to merge stderr into stdout in IO.popen.
+ *  \[:child, :out] can be used to merge stderr into stdout in IO.popen.
  *  In this case, IO.popen redirects stdout to a pipe in the child process
  *  and [:child, :out] refers the redirected stdout.
  *
@@ -3141,7 +3142,7 @@ rb_f_system(int argc, VALUE *argv)
  *    pid = spawn(command, :out=>w)   # r, w is closed in the child process.
  *    w.close
  *
- *  :close is specified as a hash value to close a fd individualy.
+ *  :close is specified as a hash value to close a fd individually.
  *
  *    f = open(foo)
  *    system(command, f=>:close)        # don't inherit f.
