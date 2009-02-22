@@ -1397,7 +1397,12 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("hal"),   S("ibm").tr(S("b-z"), S("a-z")))
 
     a = "abc".force_encoding(Encoding::US_ASCII)
-    assert_equal(Encoding::US_ASCII, a.tr(S("z"), S("\u0101")).encoding)
+    assert_equal(Encoding::US_ASCII, a.tr(S("z"), S("\u0101")).encoding, '[ruby-core:22326]')
+
+    assert_equal("a".hash, "a".tr("a", "\u0101").tr("\u0101", "a").hash, '[ruby-core:22328]')
+    assert_equal(true, "\u0101".tr("\u0101", "a").ascii_only?)
+    assert_equal(true, "\u3041".tr("\u3041", "a").ascii_only?)
+    assert_equal(false, "\u3041\u3042".tr("\u3041", "a").ascii_only?)
   end
 
   def test_tr!
@@ -1420,8 +1425,8 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("ibm"), a)
 
     a = "abc".force_encoding(Encoding::US_ASCII)
-    assert_nil(a.tr!(S("z"), S("\u0101")))
-    assert_equal(Encoding::US_ASCII, a.encoding)
+    assert_nil(a.tr!(S("z"), S("\u0101")), '[ruby-core:22326]')
+    assert_equal(Encoding::US_ASCII, a.encoding, '[ruby-core:22326]')
   end
 
   def test_tr_s
