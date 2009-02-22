@@ -1,3 +1,14 @@
+Sun Feb 22 10:43:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (method_missing): should not pop cfp if missing method
+	  is method_missing.  [ruby-core:22298]
+
+	* vm_eval.c (rb_raise_method_missing): new function to directly
+	  raise NoMethodError.
+
+	* vm_insnhelper.c (vm_call_method): fixed the case method_missing
+	  is missing.
+
 Fri Feb 20 23:28:11 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* util.c (rv_alloc, freedtoa): use our normal xmalloc()/xfree() because
