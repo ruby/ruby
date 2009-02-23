@@ -1,3 +1,10 @@
+Tue Feb 24 01:53:40 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (flo_eq): remove unnecessary NaN check using isnan().
+	  comparison regarding NaN is false anyway.
+
+	* numeric.c (flo_gt, flo_ge, flo_lt, flo_le, flo_eql): ditto.
+
 Tue Feb 24 01:22:19 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bootstraptest/test_thread.rb: fix for environment where fork is not

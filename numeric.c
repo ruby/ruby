@@ -874,13 +874,11 @@ flo_eq(VALUE x, VALUE y)
 	break;
       case T_FLOAT:
 	b = RFLOAT_VALUE(y);
-	if (isnan(b)) return Qfalse;
 	break;
       default:
 	return num_equal(x, y);
     }
     a = RFLOAT_VALUE(x);
-    if (isnan(a)) return Qfalse;
     return (a == b)?Qtrue:Qfalse;
 }
 
@@ -970,13 +968,11 @@ flo_gt(VALUE x, VALUE y)
 
       case T_FLOAT:
 	b = RFLOAT_VALUE(y);
-	if (isnan(b)) return Qfalse;
 	break;
 
       default:
 	return rb_num_coerce_relop(x, y, '>');
     }
-    if (isnan(a)) return Qfalse;
     return (a > b)?Qtrue:Qfalse;
 }
 
@@ -1005,13 +1001,11 @@ flo_ge(VALUE x, VALUE y)
 
       case T_FLOAT:
 	b = RFLOAT_VALUE(y);
-	if (isnan(b)) return Qfalse;
 	break;
 
       default:
 	return rb_num_coerce_relop(x, y, rb_intern(">="));
     }
-    if (isnan(a)) return Qfalse;
     return (a >= b)?Qtrue:Qfalse;
 }
 
@@ -1039,13 +1033,11 @@ flo_lt(VALUE x, VALUE y)
 
       case T_FLOAT:
 	b = RFLOAT_VALUE(y);
-	if (isnan(b)) return Qfalse;
 	break;
 
       default:
 	return rb_num_coerce_relop(x, y, '<');
     }
-    if (isnan(a)) return Qfalse;
     return (a < b)?Qtrue:Qfalse;
 }
 
@@ -1074,13 +1066,11 @@ flo_le(VALUE x, VALUE y)
 
       case T_FLOAT:
 	b = RFLOAT_VALUE(y);
-	if (isnan(b)) return Qfalse;
 	break;
 
       default:
 	return rb_num_coerce_relop(x, y, rb_intern("<="));
     }
-    if (isnan(a)) return Qfalse;
     return (a <= b)?Qtrue:Qfalse;
 }
 
@@ -1099,11 +1089,8 @@ static VALUE
 flo_eql(VALUE x, VALUE y)
 {
     if (TYPE(y) == T_FLOAT) {
-	double a = RFLOAT_VALUE(x);
-	double b = RFLOAT_VALUE(y);
-
-	if (isnan(a) || isnan(b)) return Qfalse;
-	if (a == b) return Qtrue;
+	if (RFLOAT_VALUE(x) == RFLOAT_VALUE(y))
+	    return Qtrue;
     }
     return Qfalse;
 }
