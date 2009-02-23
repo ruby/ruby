@@ -705,13 +705,15 @@ static int
 inspect_timeval_as_abstime(int level, int optname, VALUE data, VALUE ret)
 {
     if (RSTRING_LEN(data) == sizeof(struct timeval)) {
-        struct timeval s;
+        struct timeval tv;
+        time_t time;
         struct tm tm;
         char buf[32];
-        memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
-        tm = *localtime(&s.tv_sec);
+        memcpy((char*)&tv, RSTRING_PTR(data), sizeof(tv));
+        time = tv.tv_sec;
+        tm = *localtime(&time);
         strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
-        rb_str_catf(ret, " %s.%06ld", buf, (long)s.tv_usec);
+        rb_str_catf(ret, " %s.%06ld", buf, (long)tv.tv_usec);
         return 1;
     }
     else {
@@ -790,7 +792,7 @@ ancillary_inspect(VALUE self)
 #        if defined(SOL_SOCKET)
           case SOL_SOCKET:
             switch (type) {
-#            if defined(SCM_TIMESTAMP) /* GNU/Linux, MacOS X, Solaris */
+#            if defined(SCM_TIMESTAMP) /* GNU/Linux, FreeBSD, NetBSD, OpenBSD, MacOS X, Solaris */
               case SCM_TIMESTAMP: inspected = inspect_timeval_as_abstime(level, type, data, ret); break;
 #            endif
 #            if defined(SCM_RIGHTS) /* 4.4BSD */

@@ -1,3 +1,9 @@
+Mon Feb 23 20:18:49 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (inspect_timeval_as_abstime): use time_t
+	  variable to avoid a warning on environments which use long as
+	  tv_sec as NetBSD.
+
 Mon Feb 23 15:53:30 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_index, rb_ary_rindex): We know that argc is not
