@@ -522,7 +522,7 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     VALUE size, val;
 
     rb_ary_modify(ary);
-    if (argc ==  0) {
+    if (argc == 0) {
 	if (ARY_OWNS_HEAP_P(ary) && RARRAY_PTR(ary)) {
 	    xfree(RARRAY_PTR(ary));
 	}
@@ -1118,7 +1118,7 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
     VALUE val;
     long i;
 
-    if (argc  == 0) {
+    if (argc == 0) {
 	RETURN_ENUMERATOR(ary, 0, 0);
 	for (i=0; i<RARRAY_LEN(ary); i++) {
 	    if (RTEST(rb_yield(RARRAY_PTR(ary)[i]))) {
@@ -1127,7 +1127,7 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 	}
 	return Qnil;
     }
-    rb_scan_args(argc, argv, "01", &val);
+    rb_scan_args(argc, argv, "1", &val);
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	if (rb_equal(RARRAY_PTR(ary)[i], val))
 	    return LONG2NUM(i);
@@ -1167,7 +1167,7 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 	}
 	return Qnil;
     }
-    rb_scan_args(argc, argv, "01", &val);
+    rb_scan_args(argc, argv, "1", &val);
     while (i--) {
 	if (rb_equal(RARRAY_PTR(ary)[i], val))
 	    return LONG2NUM(i);
