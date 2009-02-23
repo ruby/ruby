@@ -1,3 +1,8 @@
+Tue Feb 24 07:09:50 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_compile_pattern): \s should include \v too.
+	  a patch from Masahiro Tomita.  [ruby-dev:38070]
+
 Mon Feb 23 14:47:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/fileutils.rb (mv): added description for the case of

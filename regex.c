@@ -2244,6 +2244,7 @@ re_compile_pattern(pattern, size, bufp)
 	  SET_LIST_BIT('\n');
 	  SET_LIST_BIT('\r');
 	  SET_LIST_BIT('\f');
+	  SET_LIST_BIT('\v');
 	}
 	else {
 	  char cc;
