@@ -1,3 +1,9 @@
+Tue Feb 24 00:54:16 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* insns.def (opt_minus): inline float operation.
+
+	* insns.def (opt_lt, opt_gt): ditto.
+
 Tue Feb 24 00:24:13 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (range_each): check #succ only when it is really

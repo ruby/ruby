@@ -1376,8 +1376,23 @@ opt_minus
 	    val = rb_big_minus(rb_int2big(a), rb_int2big(b));
 	}
     }
+    else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
+	if (0) {
+	}
+#if 1
+	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
+		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
+		 BASIC_OP_UNREDEFINED_P(BOP_MINUS)) {
+	    val = DBL2NUM(RFLOAT_VALUE(recv) - RFLOAT_VALUE(obj));
+	}
+#endif
+	else {
+	    goto INSN_LABEL(normal_dispatch);
+	}
+    }
     else {
 	/* other */
+      INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	PUSH(obj);
 	CALL_SIMPLE_METHOD(1, idMINUS, recv);
@@ -1654,7 +1669,22 @@ opt_lt
 	    val = Qfalse;
 	}
     }
+    else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
+	if (0) {
+	}
+#if 1
+	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
+		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
+		 BASIC_OP_UNREDEFINED_P(BOP_LT)) {
+	    val = RFLOAT_VALUE(recv) < RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
+	}
+#endif
+	else {
+	    goto INSN_LABEL(normal_dispatch);
+	}
+    }
     else {
+      INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	PUSH(obj);
 	CALL_SIMPLE_METHOD(1, idLT, recv);
@@ -1713,7 +1743,22 @@ opt_gt
 	    val = Qfalse;
 	}
     }
+    else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
+	if (0) {
+	}
+#if 1
+	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
+		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
+		 BASIC_OP_UNREDEFINED_P(BOP_GT)) {
+	    val = RFLOAT_VALUE(recv) > RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
+	}
+#endif
+	else {
+	    goto INSN_LABEL(normal_dispatch);
+	}
+    }
     else {
+      INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	PUSH(obj);
 	CALL_SIMPLE_METHOD(1, idGT, recv);
