@@ -417,10 +417,6 @@ range_each(VALUE range)
     beg = RANGE_BEG(range);
     end = RANGE_END(range);
 
-    if (!rb_respond_to(beg, id_succ)) {
-	rb_raise(rb_eTypeError, "can't iterate from %s",
-		 rb_obj_classname(beg));
-    }
     if (FIXNUM_P(beg) && FIXNUM_P(end)) { /* fixnums are special */
 	long lim = FIX2LONG(end);
 	long i;
@@ -439,6 +435,10 @@ range_each(VALUE range)
 	rb_block_call(beg, rb_intern("upto"), 2, args, rb_yield, 0);
     }
     else {
+	if (!rb_respond_to(beg, id_succ)) {
+	    rb_raise(rb_eTypeError, "can't iterate from %s",
+		     rb_obj_classname(beg));
+	}
 	range_each_func(range, each_i, NULL);
     }
     return range;
