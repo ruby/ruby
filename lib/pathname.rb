@@ -804,12 +804,6 @@ class Pathname    # * IO *
     IO.foreach(@path, *args, &block)
   end
 
-  # Pathname#foreachline is *obsoleted* at 1.8.1.  Use #each_line.
-  def foreachline(*args, &block)
-    warn "Pathname#foreachline is obsoleted.  Use Pathname#each_line."
-    each_line(*args, &block)
-  end
-
   # See <tt>IO.read</tt>.  Returns all data from the file, or the first +N+ bytes
   # if specified.
   def read(*args) IO.read(@path, *args) end
