@@ -16,7 +16,7 @@
 VALUE rb_mMath;
 
 extern VALUE rb_to_float(VALUE val);
-#define Need_Float(x) (x) = rb_to_float(x)
+#define Need_Float(x) do {if (TYPE(x) != T_FLOAT) {(x) = rb_to_float(x);}} while(0)
 #define Need_Float2(x,y) do {\
     Need_Float(x);\
     Need_Float(y);\
