@@ -479,7 +479,8 @@ module FileUtils
   # Options: force noop verbose
   # 
   # Moves file(s) +src+ to +dest+.  If +file+ and +dest+ exist on the different
-  # disk partition, the file is copied instead.
+  # disk partition, the copied file is created on the +dest+ and the original
+  # file removed from +src+.
   # 
   #   FileUtils.mv 'badname.rb', 'goodname.rb'
   #   FileUtils.mv 'stuff.rb', '/notexist/lib/ruby', :force => true  # no error
