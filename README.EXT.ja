@@ -1350,6 +1350,31 @@ rb_event_hook_func_tの定義は以下の通りです:
 
 指定されたフック関数を削除します．
 
+** 互換性のためのマクロ
+
+APIの互換性をチェックするために以下のマクロがデフォルトで定義されています．
+
+NORETURN_STYLE_NEW
+
+  NORETURN マクロが関数型マクロとして定義されていることを意味する．
+
+HAVE_RB_DEFINE_ALLOC_FUNC
+
+  rb_define_alloc_func() 関数が提供されていること、つまり
+  allocation framework が使われることを意味する．
+  have_func("rb_define_alloc_func", "ruby.h")
+  の結果と同じ．
+
+HAVE_RB_REG_NEW_STR
+
+  StringオブジェクトからRegexpオブジェクトを作る
+  rb_reg_new_str() 関数が提供されていることを意味する．
+  have_func("rb_reg_new_str", "ruby.h").
+  の結果と同じ．
+
+HAVE_RB_IO_T
+
+  rb_io_t 型が提供されていることを意味する．
 
 Appendix C. extconf.rbで使える関数たち
 
