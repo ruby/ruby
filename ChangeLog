@@ -1,3 +1,8 @@
+Tue Feb 24 02:35:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_s_create): set nil as the value if assoc length
+	  is not enough.  [ruby-core:21249]
+
 Sun Feb 22 22:08:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (stack_extend): streamlined rb_thread_restore_context()
