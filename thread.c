@@ -291,7 +291,7 @@ typedef struct rb_mutex_struct
     struct rb_mutex_struct *next_mutex;
 } mutex_t;
 
-static void rb_mutex_unlock_all(mutex_t *mutex);
+static void rb_mutex_unlock_all(mutex_t *mutex, rb_thread_t *th);
 
 void
 rb_thread_terminate_all(void)
@@ -305,7 +305,7 @@ rb_thread_terminate_all(void)
 
     /* unlock all locking mutexes */
     if (th->keeping_mutexes) {
-	rb_mutex_unlock_all(th->keeping_mutexes);
+	rb_mutex_unlock_all(th->keeping_mutexes, GET_THREAD());
     }
 
     thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
@@ -339,6 +339,12 @@ static void
 thread_cleanup_func(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
+
+    /* unlock all locking mutexes */
+    if (th->keeping_mutexes) {
+	rb_mutex_unlock_all(th->keeping_mutexes, th);
+	th->keeping_mutexes = NULL;
+    }
     thread_cleanup_func_before_exec(th_ptr);
     native_thread_destroy(th);
 }
@@ -434,12 +440,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 		   (void *)th, th->locking_mutex);
 	}
 
-	/* unlock all locking mutexes */
-	if (th->keeping_mutexes) {
-	    rb_mutex_unlock_all(th->keeping_mutexes);
-	    th->keeping_mutexes = NULL;
-	}
-
 	/* delete self other than main thread from living_threads */
 	if (th != main_th) {
 	    st_delete_wrap(th->vm->living_threads, th->self);
@@ -457,7 +457,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    }
 	    join_th = join_th->join_list_next;
 	}
-	if (th != main_th) rb_check_deadlock(th->vm);
 
 	if (!th->root_fiber) {
 	    rb_thread_recycle_stack_release(th->stack);
@@ -465,6 +464,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	}
     }
     thread_cleanup_func(th);
+    if (th != main_th) rb_check_deadlock(th->vm);
     if (th->vm->main_thread == th) {
 	ruby_cleanup(state);
     }
@@ -3146,7 +3146,7 @@ rb_mutex_unlock(VALUE self)
 }
 
 static void
-rb_mutex_unlock_all(mutex_t *mutexes)
+rb_mutex_unlock_all(mutex_t *mutexes, rb_thread_t *th)
 {
     const char *err;
     mutex_t *mutex;
@@ -3156,7 +3156,7 @@ rb_mutex_unlock_all(mutex_t *mutexes)
 	/* rb_warn("mutex #<%p> remains to be locked by terminated thread",
 		mutexes); */
 	mutexes = mutex->next_mutex;
-	err = mutex_unlock(mutex, GET_THREAD());
+	err = mutex_unlock(mutex, th);
 	if (err) rb_bug("invalid keeping_mutexes: %s", err);
     }
 }
