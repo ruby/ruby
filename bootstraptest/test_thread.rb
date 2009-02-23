@@ -219,9 +219,13 @@ assert_equal 'true', %{
 assert_equal 'ok', %{
   open("zzz.rb", "w") do |f|
     f.puts <<-END
-      Thread.new { fork { GC.start } }.join
-      pid, status = Process.wait2
-      $result = status.success? ? :ok : :ng
+      begin
+        Thread.new { fork { GC.start } }.join
+        pid, status = Process.wait2
+        $result = status.success? ? :ok : :ng
+      rescue NotImplementedError
+        :ok
+      end
     END
   end
   require "zzz.rb"
