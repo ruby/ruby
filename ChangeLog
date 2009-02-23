@@ -1,3 +1,9 @@
+Mon Feb 23 20:39:21 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (inspect_timespec_as_abstime): new function to
+	  show struct timespec.
+	  (ancillary_inspect): use it for SCM_TIMESTAMPNS on GNU/Linux.
+
 Mon Feb 23 20:30:06 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (inspect_bintime_as_abstime): new function to

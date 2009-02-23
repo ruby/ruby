@@ -700,7 +700,7 @@ anc_inspect_ipv6_pktinfo(int level, int type, VALUE data, VALUE ret)
 }
 #endif
 
-#if defined(SCM_TIMESTAMP)
+#if defined(SCM_TIMESTAMP) /* GNU/Linux, FreeBSD, NetBSD, OpenBSD, MacOS X, Solaris */
 static int
 inspect_timeval_as_abstime(int level, int optname, VALUE data, VALUE ret)
 {
@@ -722,7 +722,27 @@ inspect_timeval_as_abstime(int level, int optname, VALUE data, VALUE ret)
 }
 #endif
 
-#if defined(SCM_BINTIME)
+#if defined(SCM_TIMESTAMPNS) /* GNU/Linux */
+static int
+inspect_timespec_as_abstime(int level, int optname, VALUE data, VALUE ret)
+{
+    if (RSTRING_LEN(data) == sizeof(struct timespec)) {
+        struct timespec ts;
+        struct tm tm;
+        char buf[32];
+        memcpy((char*)&ts, RSTRING_PTR(data), sizeof(ts));
+        tm = *localtime(&ts.tv_sec);
+        strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
+        rb_str_catf(ret, " %s.%09ld", buf, (long)ts.tv_nsec);
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+#endif
+
+#if defined(SCM_BINTIME) /* FreeBSD */
 static int
 inspect_bintime_as_abstime(int level, int optname, VALUE data, VALUE ret)
 {
@@ -842,6 +862,9 @@ ancillary_inspect(VALUE self)
             switch (type) {
 #            if defined(SCM_TIMESTAMP) /* GNU/Linux, FreeBSD, NetBSD, OpenBSD, MacOS X, Solaris */
               case SCM_TIMESTAMP: inspected = inspect_timeval_as_abstime(level, type, data, ret); break;
+#            endif
+#            if defined(SCM_TIMESTAMPNS) /* GNU/Linux */
+              case SCM_TIMESTAMPNS: inspected = inspect_timespec_as_abstime(level, type, data, ret); break;
 #            endif
 #            if defined(SCM_BINTIME) /* FreeBSD */
               case SCM_BINTIME: inspected = inspect_bintime_as_abstime(level, type, data, ret); break;

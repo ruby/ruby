@@ -291,6 +291,29 @@ class TestSocket < Test::Unit::TestCase
     assert_match(pat, stamp.inspect)
   end
 
+  def test_timestampns
+    return if /linux/ !~ RUBY_PLATFORM || !defined?(Socket::SO_TIMESTAMPNS)
+    t1 = Time.now.strftime("%Y-%m-%d")
+    stamp = nil
+    Addrinfo.udp("127.0.0.1", 0).bind {|s1|
+      Addrinfo.udp("127.0.0.1", 0).bind {|s2|
+        begin
+          s1.setsockopt(:SOCKET, :TIMESTAMPNS, true)
+        rescue Errno::ENOPROTOOPT
+          # SO_TIMESTAMPNS is available since Linux 2.6.22
+          return
+        end
+        s2.send "a", 0, s1.local_address
+        msg, addr, rflags, stamp = s1.recvmsg
+        assert_equal("a", msg)
+        assert(stamp.cmsg_is?(:SOCKET, :TIMESTAMPNS))
+      }
+    }
+    t2 = Time.now.strftime("%Y-%m-%d")
+    pat = Regexp.union([t1, t2].uniq)
+    assert_match(pat, stamp.inspect)
+  end
+
   def test_bintime
     return if /freebsd/ !~ RUBY_PLATFORM
     t1 = Time.now.strftime("%Y-%m-%d")
