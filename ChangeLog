@@ -1,3 +1,11 @@
+Mon Feb 23 20:30:06 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (inspect_bintime_as_abstime): new function to
+	  show struct bintime.
+	  (ancillary_inspect): use it for SCM_BINTIME on FreeBSD.
+
+	* ext/socket/mkconstants.rb: define SCM_BINTIME.
+
 Mon Feb 23 20:18:49 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (inspect_timeval_as_abstime): use time_t

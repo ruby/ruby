@@ -722,6 +722,54 @@ inspect_timeval_as_abstime(int level, int optname, VALUE data, VALUE ret)
 }
 #endif
 
+#if defined(SCM_BINTIME)
+static int
+inspect_bintime_as_abstime(int level, int optname, VALUE data, VALUE ret)
+{
+    if (RSTRING_LEN(data) == sizeof(struct bintime)) {
+        struct bintime bt;
+        struct tm tm;
+	uint64_t frac_h, frac_l;
+	uint64_t scale_h, scale_l;
+	uint64_t tmp1, tmp2;
+	uint64_t res_h, res_l;
+        char buf[32];
+        memcpy((char*)&bt, RSTRING_PTR(data), sizeof(bt));
+        tm = *localtime(&bt.sec);
+        strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
+
+	/* res_h = frac * 10**19 / 2**64 */
+
+	frac_h = bt.frac >> 32;
+	frac_l = bt.frac & 0xffffffff;
+
+	scale_h = 0x8ac72304; /* 0x8ac7230489e80000 == 10**19 */
+	scale_l = 0x89e80000;
+
+	res_h = frac_h * scale_h;
+	res_l = frac_l * scale_l;
+
+	tmp1 = frac_h * scale_l;
+	res_h += tmp1 >> 32;
+	tmp2 = res_l;
+	res_l += tmp1 & 0xffffffff;
+	if (res_l < tmp2) res_h++;
+
+	tmp1 = frac_l * scale_h;
+	res_h += tmp1 >> 32;
+	tmp2 = res_l;
+	res_l += tmp1 & 0xffffffff;
+	if (res_l < tmp2) res_h++;
+
+        rb_str_catf(ret, " %s.%019"PRIu64, buf, res_h);
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+#endif
+
 /*
  * call-seq:
  *   ancillarydata.inspect => string
@@ -794,6 +842,9 @@ ancillary_inspect(VALUE self)
             switch (type) {
 #            if defined(SCM_TIMESTAMP) /* GNU/Linux, FreeBSD, NetBSD, OpenBSD, MacOS X, Solaris */
               case SCM_TIMESTAMP: inspected = inspect_timeval_as_abstime(level, type, data, ret); break;
+#            endif
+#            if defined(SCM_BINTIME) /* FreeBSD */
+              case SCM_BINTIME: inspected = inspect_bintime_as_abstime(level, type, data, ret); break;
 #            endif
 #            if defined(SCM_RIGHTS) /* 4.4BSD */
               case SCM_RIGHTS: inspected = anc_inspect_socket_rights(level, type, data, ret); break;
