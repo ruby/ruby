@@ -1,3 +1,8 @@
+Mon Feb 23 14:47:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (mv): added description for the case of
+	  different partitions.  [ruby-talk:329072]
+
 Mon Feb 23 10:19:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (USE_SYMBOL_AS_METHOD_NAME): Module#methods,
