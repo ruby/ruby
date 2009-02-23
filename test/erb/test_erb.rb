@@ -410,6 +410,10 @@ EOS
    assert_equal(ans, ERB.new(src, nil, '-').result)
    assert_equal(ans, ERB.new(src, nil, '-%').result)
   end
+
+  def test_percent_after_etag
+    assert_equal("1%", @erb.new("<%= 1 %>%", nil, "%").result)
+  end
 end
 
 class TestERBCoreWOStrScan < TestERBCore

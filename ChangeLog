@@ -1,3 +1,10 @@
+Tue Feb 24 02:44:39 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb (PercentScanner): remove PercentScanner. fixed % after
+	  %> bug. [ruby-dev:37751] [Bug #997] 
+
+	* test/erb/test_erb.rb: ditto
+
 Tue Feb 24 02:35:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_s_create): set nil as the value if assoc length
