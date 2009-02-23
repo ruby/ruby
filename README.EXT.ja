@@ -1376,6 +1376,12 @@ HAVE_RB_IO_T
 
   rb_io_t 型が提供されていることを意味する．
 
+USE_SYMBOL_AS_METHOD_NAME
+
+  メソッド名を返すメソッド，Module#methods, #singleton_methods
+  などがSymbolを返すことを意味する．
+
+
 Appendix C. extconf.rbで使える関数たち
 
 extconf.rbの中では利用可能なコンパイル条件チェックの関数は以

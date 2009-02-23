@@ -1276,6 +1276,11 @@ have_func("rb_reg_new_str", "ruby.h").
 
 Means that type rb_io_t is provided.
 
+ USE_SYMBOL_AS_METHOD_NAME
+
+Means that Symbols will be returned as method names, e.g.,
+Module#methods, #singleton_methods and so on.
+
 
 Appendix C. Functions Available in extconf.rb
 

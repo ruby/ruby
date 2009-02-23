@@ -286,6 +286,9 @@ VALUE rb_ull2inum(unsigned LONG_LONG);
 #define ID2SYM(x) (((VALUE)(x)<<RUBY_SPECIAL_SHIFT)|SYMBOL_FLAG)
 #define SYM2ID(x) RSHIFT((unsigned long)x,RUBY_SPECIAL_SHIFT)
 
+/* Module#methods, #singleton_methods and so on return Symbols */
+#define USE_SYMBOL_AS_METHOD_NAME 1
+
 /* special constants - i.e. non-zero and non-fixnum constants */
 enum ruby_special_consts {
     RUBY_Qfalse = 0,

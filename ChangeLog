@@ -1,3 +1,8 @@
+Mon Feb 23 10:19:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (USE_SYMBOL_AS_METHOD_NAME): Module#methods,
+	  #singleton_methods and so on return Symbols.  [ruby-talk:328775]
+
 Mon Feb 23 10:15:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README.EXT, README.EXT.ja: added macros for the Compatibilities.
