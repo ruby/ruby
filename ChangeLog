@@ -1,3 +1,8 @@
+Tue Feb 24 23:58:52 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_index, rb_ary_rindex): Emit a warning that a
+	  given block is unused when an argument is specified.
+
 Tue Feb 24 22:00:37 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (sockaddr_obj): convert fe80:1::1 to fe80::1%1.

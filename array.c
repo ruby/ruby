@@ -1128,6 +1128,8 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 	return Qnil;
     }
     rb_scan_args(argc, argv, "1", &val);
+    if (rb_block_given_p())
+	rb_warn("given block not used");
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	if (rb_equal(RARRAY_PTR(ary)[i], val))
 	    return LONG2NUM(i);
@@ -1168,6 +1170,8 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 	return Qnil;
     }
     rb_scan_args(argc, argv, "1", &val);
+    if (rb_block_given_p())
+	rb_warn("given block not used");
     while (i--) {
 	if (rb_equal(RARRAY_PTR(ary)[i], val))
 	    return LONG2NUM(i);
