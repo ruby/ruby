@@ -1,5 +1,6 @@
 SHELL = /bin/sh
 NULLCMD = :
+exec = exec
 
 #### Start of system configuration section. ####
 

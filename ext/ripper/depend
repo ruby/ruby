@@ -3,6 +3,8 @@ SRC1 = $(top_srcdir)/parse.y
 SRC2 = $(srcdir)/eventids2.c
 BISON = bison
 
+.SUFFIXES: .y
+
 src: ripper.c eventids1.c eventids2table.c
 
 ripper.o: ripper.c lex.c eventids1.c eventids2.c eventids2table.c \

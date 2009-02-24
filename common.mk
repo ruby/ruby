@@ -681,7 +681,7 @@ $(srcdir)/revision.h: $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/fil
 	@$(IFCHANGE) "$@" "$@.tmp"
 
 $(srcdir)/ext/ripper/ripper.c:
-	cd $(srcdir)/ext/ripper && exec $(MAKE) -f depend $(MFLAGS) top_srcdir=../.. srcdir=.
+	cd $(srcdir)/ext/ripper && $(exec) $(MAKE) -f depend $(MFLAGS) top_srcdir=../.. srcdir=.
 
 ##
 
