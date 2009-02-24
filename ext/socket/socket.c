@@ -1424,6 +1424,7 @@ sockaddr_obj(struct sockaddr *addr)
         len = sizeof(struct sockaddr_in6);
 #  ifdef __KAME__
 	/* KAME uses the 2nd 16bit word of link local IPv6 address as interface index internally */
+        /* http://orange.kame.net/dev/cvsweb.cgi/kame/IMPLEMENTATION */
 	/* convert fe80:1::1 to fe80::1%1 */
 	memcpy(&addr6, addr, len);
 	addr = (struct sockaddr *)&addr6;
