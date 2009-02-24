@@ -289,7 +289,9 @@ class TestSocket < Test::Unit::TestCase
     t2 = Time.now.strftime("%Y-%m-%d")
     pat = Regexp.union([t1, t2].uniq)
     assert_match(pat, stamp.inspect)
-    pat = /\.#{"%06d" % stamp.timestamp.usec}/
+    t = stamp.timestamp
+    assert_match(pat, t.strftime("%Y-%m-%d"))
+    pat = /\.#{"%06d" % t.usec}/
     assert_match(pat, stamp.inspect)
   end
 
@@ -314,7 +316,9 @@ class TestSocket < Test::Unit::TestCase
     t2 = Time.now.strftime("%Y-%m-%d")
     pat = Regexp.union([t1, t2].uniq)
     assert_match(pat, stamp.inspect)
-    pat = /\.#{"%09d" % stamp.timestamp.nsec}/
+    t = stamp.timestamp
+    assert_match(pat, t.strftime("%Y-%m-%d"))
+    pat = /\.#{"%09d" % t.nsec}/
     assert_match(pat, stamp.inspect)
   end
 
@@ -334,6 +338,8 @@ class TestSocket < Test::Unit::TestCase
     t2 = Time.now.strftime("%Y-%m-%d")
     pat = Regexp.union([t1, t2].uniq)
     assert_match(pat, stamp.inspect)
+    t = stamp.timestamp
+    assert_match(pat, t.strftime("%Y-%m-%d"))
   end
 
 end if defined?(Socket)

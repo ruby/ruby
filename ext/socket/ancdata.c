@@ -209,6 +209,10 @@ ancillary_unix_rights(VALUE self)
  * _ancillarydata_ should be one of following type:
  * - SOL_SOCKET/SCM_TIMESTAMP (micro second) GNU/Linux, FreeBSD, NetBSD, OpenBSD, Solaris, MacOS X
  * - SOL_SOCKET/SCM_TIMESTAMPNS (nano second) GNU/Linux
+ * - SOL_SOCKET/SCM_BINTIME (2**(-64) second) FreeBSD
+ *
+ * Note that Time cannot represent SCM_BINTIME timestamps accurately
+ * because Time uses nano second as internal representation.
  *
  *   Addrinfo.udp("127.0.0.1", 0).bind {|s1|
  *     Addrinfo.udp("127.0.0.1", 0).bind {|s2|
@@ -249,6 +253,17 @@ ancillary_timestamp(VALUE self)
         RSTRING_LEN(data) == sizeof(struct timespec)) {
         struct timespec ts;
         memcpy((char*)&ts, RSTRING_PTR(data), sizeof(ts));
+        result = rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+    }
+#endif
+
+#ifdef SCM_BINTIME
+    if (level == SOL_SOCKET && type == SCM_BINTIME &&
+        RSTRING_LEN(data) == sizeof(struct bintime)) {
+        struct bintime bt;
+        struct timespec ts;
+        memcpy((char*)&bt, RSTRING_PTR(data), sizeof(bt));
+        bintime2timespec(&bt, &ts);
         result = rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
     }
 #endif

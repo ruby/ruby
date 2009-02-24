@@ -1,3 +1,7 @@
+Tue Feb 24 19:56:11 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (ancillary_timestamp): support SCM_BINTIME.
+
 Tue Feb 24 19:45:15 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (ancillary_timestamp): new method.
