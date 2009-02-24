@@ -1407,6 +1407,9 @@ static VALUE
 sockaddr_obj(struct sockaddr *addr)
 {
     socklen_t len;
+#if defined(AF_INET6) && defined(__KAME__)
+    struct sockaddr_in6 addr6;
+#endif
 
     if (addr == NULL)
         return Qnil;
@@ -1419,6 +1422,19 @@ sockaddr_obj(struct sockaddr *addr)
 #ifdef AF_INET6
       case AF_INET6:
         len = sizeof(struct sockaddr_in6);
+#  ifdef __KAME__
+	/* KAME uses the 2nd 16bit word of link local IPv6 address as interface index internally */
+	/* convert fe80:1::1 to fe80::1%1 */
+	memcpy(&addr6, addr, len);
+	addr = (struct sockaddr *)&addr6;
+	if (IN6_IS_ADDR_LINKLOCAL(&addr6.sin6_addr) &&
+	    addr6.sin6_scope_id == 0 &&
+	    (addr6.sin6_addr.s6_addr[2] || addr6.sin6_addr.s6_addr[3])) {
+	    addr6.sin6_scope_id = (addr6.sin6_addr.s6_addr[2] << 8) | addr6.sin6_addr.s6_addr[3];
+	    addr6.sin6_addr.s6_addr[2] = 0;
+	    addr6.sin6_addr.s6_addr[3] = 0;
+	}
+#  endif
         break;
 #endif
 

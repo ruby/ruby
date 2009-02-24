@@ -1,3 +1,7 @@
+Tue Feb 24 22:00:37 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (sockaddr_obj): convert fe80:1::1 to fe80::1%1.
+
 Tue Feb 24 19:56:11 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (ancillary_timestamp): support SCM_BINTIME.
