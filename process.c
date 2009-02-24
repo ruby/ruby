@@ -929,6 +929,8 @@ rb_detach_process(rb_pid_t pid)
  *  know the result.  If specified _pid_ is not a valid child process
  *  ID, the thread returns +nil+ immediately.
  *
+ *  The waiting thread has <code>pid</code> method which returns the pid.
+ *
  *  In this first example, we don't reap the first child process, so
  *  it appears as a zombie in the process status display.
  *
