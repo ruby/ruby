@@ -26,12 +26,10 @@
 static VALUE
 tcp_svr_init(int argc, VALUE *argv, VALUE sock)
 {
-    VALUE arg1, arg2;
+    VALUE hostname, port;
 
-    if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2)
-	return init_inetsock(sock, arg1, arg2, Qnil, Qnil, INET_SERVER);
-    else
-	return init_inetsock(sock, Qnil, arg1, Qnil, Qnil, INET_SERVER);
+    rb_scan_args(argc, argv, "011", &hostname, &port);
+    return init_inetsock(sock, hostname, port, Qnil, Qnil, INET_SERVER);
 }
 
 /*

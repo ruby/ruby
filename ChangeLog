@@ -1,3 +1,11 @@
+Wed Feb 25 00:41:21 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* class.c (rb_scan_args): Allow specifying the number of trailing
+	  mandatory arguments right after the number of optional arguments
+	  only if the number of leading mandatory arguments is not omitted.
+
+	* ext/socket/tcpserver.c (tcp_svr_init): Make use of it.
+
 Wed Feb 25 00:15:15 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/curses/curses.c (curses_colors): new method added.  a patch
