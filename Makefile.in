@@ -177,7 +177,7 @@ $(srcdir)/configure: $(srcdir)/configure.in
 
 incs: id.h
 id.h: parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
-	$(BASERUBY) $(srcdir)/tool/generic_erb.rb --if-change --output=$@ \
+	$(BASERUBY) $(srcdir)/tool/generic_erb.rb --output=$@ \
 		$(srcdir)/template/id.h.tmpl --vpath=$(VPATH) parse.h
 
 # Things which should be considered:

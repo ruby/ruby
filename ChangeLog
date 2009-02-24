@@ -1,3 +1,7 @@
+Tue Feb 24 17:54:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (id.h): overwrites unconditinally.
+
 Tue Feb 24 13:13:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/vsnprintf.c (BSD_vfprintf): ptrdiff_t may be larger than
