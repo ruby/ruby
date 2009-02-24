@@ -80,8 +80,16 @@ TESTWORKDIR   = testwork
 
 VCS           = svn
 
-all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY)
-	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS)
+all: main
+
+main: exts
+	@$(RUNCMD) $(MKMAIN_CMD) MAKE=$(MAKE)
+
+exts: $(MKMAIN_CMD)
+
+$(MKMAIN_CMD): $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY)
+	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$@ $(EXTMK_ARGS)
+
 prog: $(PROGRAM) $(WPROGRAM)
 
 miniruby$(EXEEXT): config.status $(LIBRUBY_A) $(MAINOBJ) $(MINIOBJS) $(OBJS) $(DMYEXT)

@@ -1,3 +1,15 @@
+Tue Feb 24 19:01:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (main): split from exts and makes main program after
+	  building exts with miniruby, to get rid of overwriting running
+	  program.  [ruby-core:22339]
+
+	* Makefile.in, win32/Makefile.sub (RUNCMD, MKMAIN_CMD): macros to
+	  run script file.
+
+	* ext/extmk.rb (parse_args): added --command-output option which
+	  creates script file to make main program.
+
 Tue Feb 24 07:09:50 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regex.c (re_compile_pattern): \s should include \v too.

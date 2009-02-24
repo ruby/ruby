@@ -16,6 +16,7 @@ $extlibs = nil
 $extpath = nil
 $ignore = nil
 $message = nil
+$command_output = nil
 
 $progname = $0
 alias $PROGRAM_NAME $0
@@ -239,6 +240,7 @@ end
 
 def parse_args()
   $mflags = []
+  $makeflags = []
 
   opts = nil
   $optparser ||= OptionParser.new do |opts|
@@ -268,10 +270,14 @@ def parse_args()
       if arg = v.first
         arg.insert(0, '-') if /\A[^-][^=]*\Z/ =~ arg
       end
+      $makeflags.concat(v.reject {|arg| /\AMINIRUBY=/ =~ arg}.quote)
       $mflags.concat(v)
     end
     opts.on('--message [MESSAGE]', String) do |v|
       $message = v
+    end
+    opts.on('--command-output=FILE', String) do |v|
+      $command_output = v
     end
   end
   begin
@@ -528,6 +534,7 @@ void Init_ext _((void))\n{\n#$extinit}
   puts conf
   $stdout.flush
   $mflags.concat(conf)
+  $makeflags.concat(conf)
 else
   FileUtils.rm_f(extinit.to_a)
 end
@@ -544,9 +551,10 @@ Dir.chdir ".."
 unless $destdir.to_s.empty?
   $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
 end
-puts "making #{rubies.join(', ')}"
-$stdout.flush
+message = "making #{rubies.join(', ')}"
 $mflags.concat(rubies)
+$makeflags.uniq!
+$makeflags.concat(rubies)
 
 if $nmake == ?b
   unless (vars = $mflags.grep(/\A\w+=/n)).empty?
@@ -560,7 +568,27 @@ if $nmake == ?b
     vars.each {|flag| flag.sub!(/\A/, "-D")}
   end
 end
-system($make, *sysquote($mflags)) or exit($?.exitstatus)
+if $command_output
+  message = "echo #{message}"
+  cmd = [$make, *sysquote($makeflags)].join(' ')
+  open($command_output, 'wb') do |f|
+    case $command_output
+    when /\.sh\z/
+      f.puts message, "rm -f $0; exec #{cmd}"
+    when /\.bat\z/
+      ["@echo off", message, cmd, "del %0 & exit %ERRORLEVEL%"].each do |s|
+        f.print s, "\r\n"
+      end
+    else
+      f.puts cmd
+    end
+    f.chmod(0755)
+  end
+else
+  puts message
+  $stdout.flush
+  system($make, *sysquote($mflags)) or exit($?.exitstatus)
+end
 
 #Local variables:
 # mode: ruby

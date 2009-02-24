@@ -1,6 +1,7 @@
 # -*- makefile -*-
 
 SHELL = $(COMSPEC)
+RUNCMD = $(COMSPEC) /c
 MKFILES = Makefile
 NULL = nul
 
@@ -236,6 +237,8 @@ OBJEXT = obj
 ASMEXT = asm
 
 INSTALLED_LIST= .installed.list
+
+MKMAIN_CMD    = mkmain.bat
 
 !if !defined(WINMAINOBJ)
 WINMAINOBJ    = winmain.$(OBJEXT)
