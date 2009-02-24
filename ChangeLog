@@ -1,3 +1,10 @@
+Wed Feb 25 00:15:15 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/curses/curses.c (curses_colors): new method added.  a patch
+	  from Alexander Beisig in [ruby-core:22331].
+
+	* ext/curses/curses.c (curses_color_pairs): ditto.
+
 Wed Feb 25 00:05:13 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* class.c (rb_scan_args): Revamp rb_scan_args() to compute the

@@ -30,5 +30,7 @@ if make
   end
   have_var("ESCDELAY", curses)
   have_var("TABSIZE", curses)
+  have_var("COLORS", curses)
+  have_var("COLOR_PAIRS", curses)
   create_makefile("curses")
 end

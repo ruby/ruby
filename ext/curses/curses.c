@@ -677,12 +677,33 @@ curses_can_change_color(VALUE obj)
 }
 
 static VALUE
+curses_colors(VALUE obj)
+{
+#if defined(HAVE_COLORS)
+    return INT2FIX(COLORS);
+#else
+    rb_notimplement();
+#endif
+}
+
+static VALUE
 curses_color_content(VALUE obj, VALUE color)
 {
     short r,g,b;
 
     color_content(NUM2INT(color),&r,&g,&b);
     return rb_ary_new3(3,INT2FIX(r),INT2FIX(g),INT2FIX(b));
+}
+
+
+static VALUE
+curses_color_pairs(VALUE obj)
+{
+#if defined(HAVE_COLOR_PAIRS)
+    return INT2FIX(COLOR_PAIRS);
+#else
+    rb_notimplement();
+#endif
 }
 
 static VALUE
@@ -1537,7 +1558,9 @@ Init_curses(void)
     rb_define_module_function(mCurses, "has_colors?", curses_has_colors, 0);
     rb_define_module_function(mCurses, "can_change_color?",
 			      curses_can_change_color, 0);
+    rb_define_module_function(mCurses, "colors", curses_colors, 0);
     rb_define_module_function(mCurses, "color_content", curses_color_content, 1);
+    rb_define_module_function(mCurses, "color_pairs", curses_color_pairs, 0);
     rb_define_module_function(mCurses, "pair_content", curses_pair_content, 1);
     rb_define_module_function(mCurses, "color_pair", curses_color_pair, 1);
     rb_define_module_function(mCurses, "pair_number", curses_pair_number, 1);
