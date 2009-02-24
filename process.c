@@ -650,7 +650,7 @@ retry:
 
     for (;;) {
 	result = (rb_pid_t)rb_thread_blocking_region(rb_waitpid_blocking,
-						     st, RUBY_UBF_PROCESS);
+						     st, RUBY_UBF_PROCESS, 0);
 	if (result < 0) {
 	    if (errno == EINTR) {
 		rb_thread_schedule();
@@ -693,7 +693,7 @@ static int
 waitall_each(rb_pid_t pid, int status, VALUE ary)
 {
     rb_last_status_set(status, pid);
-    rb_ary_push(ary, rb_assoc_new(PIDT2NUM(pid), rb_last_status_get());
+    rb_ary_push(ary, rb_assoc_new(PIDT2NUM(pid), rb_last_status_get()));
     return ST_DELETE;
 }
 #endif

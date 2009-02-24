@@ -1,3 +1,10 @@
+Tue Feb 24 10:49:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_waitpid): last argument was missing.
+
+	* process.c (waitall_each): fixed typo.  a patch from shinichiro.h
+	  <shinichiro.hamaji AT gmail.com> at [ruby-dev:38054].
+
 Tue Feb 24 01:53:40 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (flo_eq): remove unnecessary NaN check using isnan().
