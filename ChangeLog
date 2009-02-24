@@ -6,6 +6,10 @@ Wed Feb 25 00:41:21 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/socket/tcpserver.c (tcp_svr_init): Make use of it.
 
+Wed Feb 25 00:28:25 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_file_size): new method added.  [ruby-core:22088]
+
 Wed Feb 25 00:15:15 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/curses/curses.c (curses_colors): new method added.  a patch

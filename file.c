@@ -1807,6 +1807,22 @@ rb_file_ctime(VALUE obj)
     return stat_ctime(&st);
 }
 
+static VALUE
+rb_file_size(VALUE obj)
+{
+    rb_io_t *fptr;
+    struct stat st;
+
+    GetOpenFile(obj, fptr);
+    if (fptr->mode & FMODE_WRITABLE) {
+	rb_io_flush(obj);
+    }
+    if (fstat(fptr->fd, &st) == -1) {
+	rb_sys_fail_path(fptr->pathv);
+    }
+    return OFFT2NUM(st.st_size);
+}
+
 static void
 chmod_internal(const char *path, void *mode)
 {
@@ -4766,6 +4782,7 @@ Init_File(void)
     rb_define_method(rb_cFile, "atime", rb_file_atime, 0);
     rb_define_method(rb_cFile, "mtime", rb_file_mtime, 0);
     rb_define_method(rb_cFile, "ctime", rb_file_ctime, 0);
+    rb_define_method(rb_cFile, "size", rb_file_size, 0);
 
     rb_define_method(rb_cFile, "chmod", rb_file_chmod, 1);
     rb_define_method(rb_cFile, "chown", rb_file_chown, 2);
