@@ -3511,7 +3511,7 @@ rb_thread_flock(void *data)
  *     }
  *
  *     # read the counter using read lock
- *     File.open("testfile", "r") {|f|
+ *     File.open("counter", "r") {|f|
  *       f.flock(File::LOCK_SH)
  *       p f.read
  *     }
