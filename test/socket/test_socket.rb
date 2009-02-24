@@ -289,6 +289,8 @@ class TestSocket < Test::Unit::TestCase
     t2 = Time.now.strftime("%Y-%m-%d")
     pat = Regexp.union([t1, t2].uniq)
     assert_match(pat, stamp.inspect)
+    pat = /\.#{"%06d" % stamp.timestamp.usec}/
+    assert_match(pat, stamp.inspect)
   end
 
   def test_timestampns
@@ -311,6 +313,8 @@ class TestSocket < Test::Unit::TestCase
     }
     t2 = Time.now.strftime("%Y-%m-%d")
     pat = Regexp.union([t1, t2].uniq)
+    assert_match(pat, stamp.inspect)
+    pat = /\.#{"%09d" % stamp.timestamp.nsec}/
     assert_match(pat, stamp.inspect)
   end
 

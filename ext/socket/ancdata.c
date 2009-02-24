@@ -202,6 +202,65 @@ ancillary_unix_rights(VALUE self)
 
 /*
  * call-seq:
+ *   ancillarydata.timestamp => time
+ *
+ * returns the timestamp as a time object.
+ *
+ * _ancillarydata_ should be one of following type:
+ * - SOL_SOCKET/SCM_TIMESTAMP (micro second) GNU/Linux, FreeBSD, NetBSD, OpenBSD, Solaris, MacOS X
+ * - SOL_SOCKET/SCM_TIMESTAMPNS (nano second) GNU/Linux
+ *
+ *   Addrinfo.udp("127.0.0.1", 0).bind {|s1|
+ *     Addrinfo.udp("127.0.0.1", 0).bind {|s2|
+ *       s1.setsockopt(:SOCKET, :TIMESTAMP, true)
+ *       s2.send "a", 0, s1.local_address
+ *       ctl = s1.recvmsg.last
+ *       p ctl    #=> #<Socket::AncillaryData: INET SOCKET TIMESTAMP 2009-02-24 17:35:46.775581>
+ *       t = ctl.timestamp
+ *       p t      #=> 2009-02-24 17:35:46 +0900
+ *       p t.usec #=> 775581
+ *       p t.nsec #=> 775581000
+ *     }
+ *   }
+ *
+ */
+static VALUE
+ancillary_timestamp(VALUE self)
+{
+    int level, type;
+    VALUE data;
+    VALUE result = Qnil;
+
+    level = ancillary_level(self);
+    type = ancillary_type(self);
+    data = ancillary_data(self);
+
+#ifdef SCM_TIMESTAMP
+    if (level == SOL_SOCKET && type == SCM_TIMESTAMP &&
+        RSTRING_LEN(data) == sizeof(struct timeval)) {
+        struct timeval tv;
+        memcpy((char*)&tv, RSTRING_PTR(data), sizeof(tv));
+        result = rb_time_new(tv.tv_sec, tv.tv_usec);
+    }
+#endif
+
+#ifdef SCM_TIMESTAMPNS
+    if (level == SOL_SOCKET && type == SCM_TIMESTAMPNS &&
+        RSTRING_LEN(data) == sizeof(struct timespec)) {
+        struct timespec ts;
+        memcpy((char*)&ts, RSTRING_PTR(data), sizeof(ts));
+        result = rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+    }
+#endif
+
+    if (result == Qnil)
+        rb_raise(rb_eTypeError, "timestamp ancillary data expected");
+
+    return result;
+}
+
+/*
+ * call-seq:
  *   Socket::AncillaryData.int(family, cmsg_level, cmsg_type, integer) => ancillarydata
  *
  * Creates a new Socket::AncillaryData object which contains a int as data.
@@ -1597,6 +1656,7 @@ Init_ancdata(void)
     rb_define_method(rb_cAncillaryData, "type", ancillary_type_m, 0);
     rb_define_method(rb_cAncillaryData, "data", ancillary_data, 0);
     rb_define_method(rb_cAncillaryData, "unix_rights", ancillary_unix_rights, 0);
+    rb_define_method(rb_cAncillaryData, "timestamp", ancillary_timestamp, 0);
     rb_define_method(rb_cAncillaryData, "cmsg_is?", ancillary_cmsg_is_p, 2);
     rb_define_singleton_method(rb_cAncillaryData, "int", ancillary_s_int, 4);
     rb_define_method(rb_cAncillaryData, "int", ancillary_int, 0);
