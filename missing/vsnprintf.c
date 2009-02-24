@@ -713,11 +713,16 @@ reswitch:	switch (ch) {
 		case 'h':
 			flags |= SHORTINT;
 			goto rflag;
+#if SIZEOF_PTRDIFF_T == SIZEOF_LONG
 		case 't':
+#endif
 		case 'l':
 			flags |= LONGINT;
 			goto rflag;
 #ifdef _HAVE_SANE_QUAD_
+#if SIZEOF_PTRDIFF_T == SIZEOF_LONG_LONG
+		case 't':
+#endif
 		case 'q':
 			flags |= QUADINT;
 			goto rflag;
