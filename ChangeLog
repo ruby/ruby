@@ -1,3 +1,8 @@
+Wed Feb 25 02:17:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_delete_bang): should recalculate coderange.
+	  [ruby-talk:329267]
+
 Wed Feb 25 00:41:21 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* class.c (rb_scan_args): Allow specifying the number of trailing
