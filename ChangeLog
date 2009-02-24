@@ -1,3 +1,9 @@
+Wed Feb 25 00:05:13 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* class.c (rb_scan_args): Revamp rb_scan_args() to compute the
+	  number of required and optional arguments precisely to prepare
+	  for a more informative error message.
+
 Tue Feb 24 23:58:52 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_index, rb_ary_rindex): Emit a warning that a
