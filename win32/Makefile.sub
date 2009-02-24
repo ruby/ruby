@@ -1,6 +1,7 @@
 # -*- makefile -*-
 
 SHELL = $(COMSPEC)
+RUNCMD = $(COMSPEC) /c
 MKFILES = Makefile
 NULL = nul
 
@@ -257,6 +258,8 @@ OBJEXT = obj
 ASMEXT = asm
 
 INSTALLED_LIST= .installed.list
+
+MKMAIN_CMD    = mkmain.bat
 
 !if !defined(WINMAINOBJ)
 WINMAINOBJ    = winmain.$(OBJEXT)
@@ -806,20 +809,15 @@ ext/extinit.obj: ext/extinit.c $(SETUP)
 $(INSNS):
 	@$(RM) $(PROGRAM)
 	-$(BASERUBY) -Ks $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) $@
-	if not exist $@ copy $(srcdir:/=\)\$(@F) $@
 
 node_name.inc:
 	-$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
-	if not exist $@ copy $(srcdir:/=\)\$(@F) $@
 
 known_errors.inc:
 	-$(BASERUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def
-	if not exist $@ copy $(srcdir:/=\)\$(@F) $@
 
 miniprelude.c:
 	-$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
-	if not exist $@ copy $(srcdir:/=\)\$(@F) $@
 
 newline.c:
 	-$(BASERUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo newline.c $(srcdir)/enc/trans/newline.trans
-	if not exist $@ copy $(srcdir:/=\)\$(@F) $@

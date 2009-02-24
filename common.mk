@@ -122,9 +122,16 @@ BOOTSTRAPRUBY = $(BASERUBY)
 
 COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) -rrbconfig $(srcdir)/tool/compile_prelude.rb
 
-all: encs exts
-exts: $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)
-	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS)
+all: encs exts main
+
+main: exts
+	@$(RUNCMD) $(MKMAIN_CMD) MAKE=$(MAKE)
+
+exts: $(MKMAIN_CMD)
+
+$(MKMAIN_CMD): $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY) 
+	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$@ $(EXTMK_ARGS)
+
 prog: $(PROGRAM) $(WPROGRAM)
 
 loadpath: $(PREP)

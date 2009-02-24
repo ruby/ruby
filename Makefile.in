@@ -1,5 +1,6 @@
 SHELL = /bin/sh
 NULLCMD = :
+RUNCMD = $(SHELL)
 exec = exec
 
 #### Start of system configuration section. ####
@@ -118,6 +119,8 @@ DLEXT         = @DLEXT@
 MANTYPE	      = @MANTYPE@
 
 INSTALLED_LIST= .installed.list
+
+MKMAIN_CMD    = mkmain.sh
 #### End of variables
 
 all:
