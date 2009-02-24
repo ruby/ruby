@@ -3499,7 +3499,19 @@ rb_thread_flock(void *data)
  *
  *  Example:
  *
- *     File.new("testfile").flock(File::LOCK_UN)   #=> 0
+ *     # write lock
+ *     # don't use "w" because it truncates the file before lock.
+ *     File.open("testfile", File::WRONLY|File::CREAT, 0644) {|f|
+ *       f.flock(File::LOCK_EX)
+ *       f.truncate(0)
+ *       f.write "new content"
+ *     }
+ *
+ *     # read lock
+ *     File.open("testfile", "r") {|f|
+ *       f.flock(File::LOCK_SH)
+ *       p f.read
+ *     }
  *
  */
 
