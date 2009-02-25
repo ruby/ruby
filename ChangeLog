@@ -1,3 +1,10 @@
+Wed Feb 25 14:57:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (open_dir_handle): extracted from rb_w32_opendir.
+
+	* win32/win32.c (winnt_stat): gets rid of strange behavior of
+	  GetFileAttributes().  [ruby-core:21269]
+
 Tue Feb 24 02:44:39 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (PercentScanner): remove PercentScanner. fixed % after
