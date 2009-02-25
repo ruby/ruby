@@ -1,3 +1,11 @@
+Wed Feb 25 15:05:35 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (config.status): use un.rb as cp instead of
+	  cmd.exe's copy command.
+
+	* lib/mkmf.rb (create_makefile): no longer need to convert path
+	  separator when copying file.
+
 Wed Feb 25 12:27:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_force_encoding): should clear coderange at changing

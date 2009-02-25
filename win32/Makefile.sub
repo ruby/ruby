@@ -584,7 +584,6 @@ s,@SET_MAKE@,MFLAGS = -$$(MAKEFLAGS),;t t
 s,@RM@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rm.bat,;t t
 s,@RMDIRS@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rmdirs.bat,;t t
 s,@RMALL@,$$(COMSPEC) /C rmdir /s /q,;t t
-s,@CP@,copy > nul,;t t
 s,@LIBOBJS@,$(LIBOBJS),;t t
 s,@ALLOCA@,$(ALLOCA),;t t
 s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
