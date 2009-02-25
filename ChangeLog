@@ -1,3 +1,7 @@
+Wed Feb 25 23:18:53 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (ancillary_s_unix_rights): new method.
+
 Wed Feb 25 23:01:26 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/unixsocket.c (unix_recv_io): prevent FD leak when 2 fd is

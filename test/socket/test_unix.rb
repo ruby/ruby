@@ -66,6 +66,41 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     io_ary.each {|io| io.close if !io.closed? }
   end
 
+  def test_fd_passing_n2
+    io_ary = []
+    return if !defined?(Socket::SCM_RIGHTS)
+    io_ary.concat IO.pipe
+    io_ary.concat IO.pipe
+    io_ary.concat IO.pipe
+    send_io_ary = []
+    io_ary.each {|io|
+      send_io_ary << io
+      UNIXSocket.pair {|s1, s2|
+        begin
+          ancdata = Socket::AncillaryData.unix_rights(*send_io_ary)
+          ret = s1.sendmsg("\0", 0, nil, ancdata)
+        rescue NotImplementedError
+          return
+        end
+        assert_equal(1, ret)
+        ret = s2.recvmsg
+        data, srcaddr, flags, *ctls = ret
+        recv_io_ary = []
+        ctls.each {|ctl|
+          next if ctl.level != Socket::SOL_SOCKET || ctl.type != Socket::SCM_RIGHTS
+          recv_io_ary.concat ctl.unix_rights
+        }
+        assert_equal(send_io_ary.length, recv_io_ary.length)
+        send_io_ary.length.times {|i|
+          assert_not_equal(send_io_ary[i].fileno, recv_io_ary[i].fileno)
+          assert(File.identical?(send_io_ary[i], recv_io_ary[i]))
+        }
+      }
+    }
+  ensure
+    io_ary.each {|io| io.close if !io.closed? }
+  end
+
   def test_sendmsg
     return if !defined?(Socket::SCM_RIGHTS)
     IO.pipe {|r1, w|
@@ -86,13 +121,35 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     }
   end
 
-  def test_sendmsg_ancillarydata
+  def test_sendmsg_ancillarydata_int
     return if !defined?(Socket::SCM_RIGHTS)
     return if !defined?(Socket::AncillaryData)
     IO.pipe {|r1, w|
       UNIXSocket.pair {|s1, s2|
         begin
           ad = Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, r1.fileno)
+          ret = s1.sendmsg("\0", 0, nil, ad)
+        rescue NotImplementedError
+          return
+        end
+        assert_equal(1, ret)
+        r2 = s2.recv_io
+        begin
+          assert(File.identical?(r1, r2))
+        ensure
+          r2.close
+        end
+      }
+    }
+  end
+
+  def test_sendmsg_ancillarydata_unix_rights
+    return if !defined?(Socket::SCM_RIGHTS)
+    return if !defined?(Socket::AncillaryData)
+    IO.pipe {|r1, w|
+      UNIXSocket.pair {|s1, s2|
+        begin
+          ad = Socket::AncillaryData.unix_rights(r1)
           ret = s1.sendmsg("\0", 0, nil, ad)
         rescue NotImplementedError
           return

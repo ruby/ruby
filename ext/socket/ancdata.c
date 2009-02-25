@@ -178,6 +178,51 @@ ancillary_data(VALUE self)
 
 /*
  * call-seq:
+ *   Socket::AncillaryData.unix_rights(io1, io2, ...) => ancillarydata
+ *
+ * Creates a new Socket::AncillaryData object which contains file descriptors as data.
+ *
+ *   p Socket::AncillaryData.unix_rights(STDERR)
+ *   #=> #<Socket::AncillaryData: UNIX SOCKET RIGHTS 2>
+ */
+static VALUE
+ancillary_s_unix_rights(int argc, VALUE *argv, VALUE klass)
+{
+#ifdef SCM_RIGHTS
+    VALUE result, str, ary;
+    int i;
+
+    ary = rb_ary_new();
+
+    for (i = 0 ; i < argc; i++) {
+        VALUE obj = argv[i];
+        if (TYPE(obj) != T_FILE) {
+            rb_raise(rb_eTypeError, "IO expected");
+        }
+        rb_ary_push(ary, obj);
+    }
+
+    str = rb_str_buf_new(sizeof(int) * argc);
+
+    for (i = 0 ; i < argc; i++) {
+        VALUE obj = RARRAY_PTR(ary)[i];
+        rb_io_t *fptr;
+        int fd;
+        GetOpenFile(obj, fptr);
+        fd = fptr->fd;
+        rb_str_buf_cat(str, (char *)&fd, sizeof(int));
+    }
+
+    result = ancdata_new(AF_UNIX, SOL_SOCKET, SCM_RIGHTS, str);
+    rb_ivar_set(result, rb_intern("unix_rights"), ary);
+    return result;
+#else
+    rb_notimplement();
+#endif
+}
+
+/*
+ * call-seq:
  *   ancillarydata.unix_rights => array-of-IOs
  *
  * returns the array of IOs which is sent by SCM_RIGHTS control message in UNIX domain socket.
@@ -1670,13 +1715,20 @@ Init_ancdata(void)
     rb_define_method(rb_cAncillaryData, "level", ancillary_level_m, 0);
     rb_define_method(rb_cAncillaryData, "type", ancillary_type_m, 0);
     rb_define_method(rb_cAncillaryData, "data", ancillary_data, 0);
+
+    rb_define_singleton_method(rb_cAncillaryData, "unix_rights", ancillary_s_unix_rights, -1);
     rb_define_method(rb_cAncillaryData, "unix_rights", ancillary_unix_rights, 0);
+
     rb_define_method(rb_cAncillaryData, "timestamp", ancillary_timestamp, 0);
+
     rb_define_method(rb_cAncillaryData, "cmsg_is?", ancillary_cmsg_is_p, 2);
+
     rb_define_singleton_method(rb_cAncillaryData, "int", ancillary_s_int, 4);
     rb_define_method(rb_cAncillaryData, "int", ancillary_int, 0);
+
     rb_define_singleton_method(rb_cAncillaryData, "ip_pktinfo", ancillary_s_ip_pktinfo, -1);
     rb_define_method(rb_cAncillaryData, "ip_pktinfo", ancillary_ip_pktinfo, 0);
+
     rb_define_singleton_method(rb_cAncillaryData, "ipv6_pktinfo", ancillary_s_ipv6_pktinfo, 2);
     rb_define_method(rb_cAncillaryData, "ipv6_pktinfo", ancillary_ipv6_pktinfo, 0);
     rb_define_method(rb_cAncillaryData, "ipv6_pktinfo_addr", ancillary_ipv6_pktinfo_addr, 0);
