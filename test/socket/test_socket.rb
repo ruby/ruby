@@ -273,6 +273,23 @@ class TestSocket < Test::Unit::TestCase
     }
   end
 
+  def test_linger
+    opt = Socket::Option.linger(true, 0)
+    assert_equal([true, 0], opt.linger)
+    Addrinfo.tcp("127.0.0.1", 0).listen {|serv|
+      serv.local_address.connect {|s1|
+        s2, _ = serv.accept
+        begin
+          s1.setsockopt(opt)
+          s1.close
+          assert_raise(Errno::ECONNRESET) { s2.read }
+        ensure
+          s2.close
+        end
+      }
+    }
+  end
+
   def test_timestamp
     return if /linux|freebsd|netbsd|openbsd|solaris|darwin/ !~ RUBY_PLATFORM
     t1 = Time.now.strftime("%Y-%m-%d")

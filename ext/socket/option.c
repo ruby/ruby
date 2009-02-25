@@ -83,6 +83,12 @@ sockopt_family_m(VALUE self)
     return rb_attr_get(self, rb_intern("family"));
 }
 
+static int
+sockopt_level(VALUE self)
+{
+    return NUM2INT(rb_attr_get(self, rb_intern("level")));
+}
+
 /*
  * call-seq:
  *   sockopt.level => integer
@@ -95,7 +101,13 @@ sockopt_family_m(VALUE self)
 static VALUE
 sockopt_level_m(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("level"));
+    return INT2NUM(sockopt_level(self));
+}
+
+static int
+sockopt_optname(VALUE self)
+{
+    return NUM2INT(rb_attr_get(self, rb_intern("optname")));
 }
 
 /*
@@ -110,7 +122,7 @@ sockopt_level_m(VALUE self)
 static VALUE
 sockopt_optname_m(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("optname"));
+    return INT2NUM(sockopt_optname(self));
 }
 
 /*
@@ -125,7 +137,9 @@ sockopt_optname_m(VALUE self)
 static VALUE
 sockopt_data(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("data"));
+    VALUE v = rb_attr_get(self, rb_intern("data"));
+    StringValue(v);
+    return v;
 }
 
 /*
@@ -219,6 +233,67 @@ sockopt_bool(VALUE self)
     return i == 0 ? Qfalse : Qtrue;
 }
 
+/*
+ * call-seq:
+ *   Socket::Option.linger(onoff, secs) => sockopt
+ *
+ * Creates a new Socket::Option object for SOL_SOCKET/SO_LINGER.
+ *
+ * _onoff_ should be an integer or a boolean.
+ *
+ * _secs_ should be the number of seconds.
+ *
+ *   p Socket::Option.linger(true, 10)
+ *   #=> #<Socket::Option: UNSPEC SOCKET LINGER on 10sec>
+ *
+ */
+static VALUE
+sockopt_s_linger(VALUE klass, VALUE vonoff, VALUE vsecs)
+{
+    VALUE tmp;
+    struct linger l;
+    memset(&l, 0, sizeof(l));
+    if (!NIL_P(tmp = rb_check_to_integer(vonoff, "to_int")))
+        l.l_onoff = NUM2INT(tmp);
+    else
+        l.l_onoff = RTEST(vonoff) ? 1 : 0;
+    l.l_linger = NUM2INT(vsecs);
+    return sockopt_new(AF_UNSPEC, SOL_SOCKET, SO_LINGER, rb_str_new((char*)&l, sizeof(l)));
+}
+
+/*
+ * call-seq:
+ *   sockopt.linger => [bool, seconds]
+ *
+ * Returns the linger data in _sockopt_ as a pair of boolean and integer.
+ *
+ *   sockopt = Socket::Option.linger(true, 10)
+ *   p sockopt.linger => [true, 10]
+ */
+static VALUE
+sockopt_linger(VALUE self)
+{
+    int level = sockopt_level(self);
+    int optname = sockopt_optname(self);
+    VALUE data = sockopt_data(self);
+    struct linger l;
+    VALUE vonoff, vsecs;
+
+    if (level != SOL_SOCKET || optname != SO_LINGER)
+        rb_raise(rb_eTypeError, "linger socket option expected"); 
+    if (RSTRING_LEN(data) != sizeof(l))
+        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(struct linger)=%d but %ld",
+                 (int)sizeof(struct linger), (long)RSTRING_LEN(data));
+    memcpy((char*)&l, RSTRING_PTR(data), sizeof(struct linger));
+    switch (l.l_onoff) {
+      case 0: vonoff = Qfalse; break;
+      case 1: vonoff = Qtrue; break;
+      default: vonoff = INT2NUM(l.l_onoff); break;
+    }
+    vsecs = INT2NUM(l.l_linger);
+    return rb_assoc_new(vonoff, vsecs);
+}
+
 static int
 inspect_int(int level, int optname, VALUE data, VALUE ret)
 {
@@ -272,7 +347,12 @@ inspect_linger(int level, int optname, VALUE data, VALUE ret)
     if (RSTRING_LEN(data) == sizeof(struct linger)) {
         struct linger s;
         memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
-        rb_str_catf(ret, " %s %dsec", s.l_onoff ? "on" : "off", s.l_linger);
+        switch (s.l_onoff) {
+          case 0: rb_str_cat2(ret, " off"); break;
+          case 1: rb_str_cat2(ret, " on"); break;
+          default: rb_str_catf(ret, " on(%d)", s.l_onoff); break;
+        }
+        rb_str_catf(ret, " %dsec", s.l_linger);
         return 1;
     }
     else {
@@ -597,6 +677,9 @@ Init_sockopt(void)
 
     rb_define_singleton_method(rb_cSockOpt, "bool", sockopt_s_bool, 4);
     rb_define_method(rb_cSockOpt, "bool", sockopt_bool, 0);
+
+    rb_define_singleton_method(rb_cSockOpt, "linger", sockopt_s_linger, 2);
+    rb_define_method(rb_cSockOpt, "linger", sockopt_linger, 0);
 
     rb_define_method(rb_cSockOpt, "unpack", sockopt_unpack, 1);
 

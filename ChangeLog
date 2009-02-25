@@ -1,3 +1,12 @@
+Thu Feb 26 00:21:21 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c (sockopt_level): extracted from sockopt_level_m.
+	  (sockopt_optname): extracted from sockopt_optname_m.
+	  (sockopt_data): apply StringValue.
+	  (sockopt_s_linger): new method.
+	  (sockopt_linger): new method.
+	  (inspect_linger): show onoff value if it is neither 0 nor 1.
+
 Wed Feb 25 23:23:03 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (ancillary_unix_rights): raise
