@@ -259,6 +259,10 @@ VALUE s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, s
 
 VALUE sockopt_new(int family, int level, int optname, VALUE data);
 
+#ifdef HAVE_ST_MSG_CONTROL
+void rsock_discard_cmsg_resource(struct msghdr *mh);
+#endif
+
 void Init_basicsocket(void);
 void Init_ipsocket(void);
 void Init_tcpsocket(void);

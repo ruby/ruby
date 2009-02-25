@@ -1,3 +1,13 @@
+Wed Feb 25 23:01:26 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/unixsocket.c (unix_recv_io): prevent FD leak when 2 fd is
+	  sent on LP64 platform.
+
+	* ext/socket/rubysocket.h (rsock_discard_cmsg_resource): declared.
+
+	* ext/socket/ancdata.c (rsock_discard_cmsg_resource): renamed from
+	  discard_cmsg_resource.  export it.
+
 Wed Feb 25 17:31:32 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (sysopen_func, rb_sysopen_internal, rb_sysopen): open file

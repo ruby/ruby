@@ -1300,10 +1300,10 @@ rb_recvmsg(int fd, struct msghdr *msg, int flags)
     return rb_thread_blocking_region(nogvl_recvmsg_func, &args, RUBY_UBF_IO, 0);
 }
 
-static void
-discard_cmsg_resource(struct msghdr *mh)
-{
 #if defined(HAVE_ST_MSG_CONTROL)
+void
+rsock_discard_cmsg_resource(struct msghdr *mh)
+{
     struct cmsghdr *cmh;
 
     if (mh->msg_controllen == 0)
@@ -1319,8 +1319,8 @@ discard_cmsg_resource(struct msghdr *mh)
             }
         }
     }
-#endif
 }
+#endif
 
 #if defined(HAVE_ST_MSG_CONTROL)
 static void
@@ -1505,7 +1505,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
                 /* there are big space bug truncated.
                  * file descriptors limit? */
                 if (!gc_done) {
-		    discard_cmsg_resource(&mh);
+		    rsock_discard_cmsg_resource(&mh);
                     goto gc_and_retry;
 		}
             }
@@ -1526,14 +1526,14 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 	}
 #endif
 	if (grown) {
-            discard_cmsg_resource(&mh);
+            rsock_discard_cmsg_resource(&mh);
 	    goto retry;
 	}
 	else {
             grow_buffer = 0;
             if (flags != orig_flags) {
                 flags = orig_flags;
-                discard_cmsg_resource(&mh);
+                rsock_discard_cmsg_resource(&mh);
                 goto retry;
             }
         }
