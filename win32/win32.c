@@ -4151,6 +4151,37 @@ rb_w32_getppid(void)
 int
 rb_w32_open(const char *file, int oflag, ...)
 {
+    UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
+    int len;
+    WCHAR *wfile;
+    int pmode;
+
+    va_list arg;
+    va_start(arg, oflag);
+    pmode = va_arg(arg, int);
+    va_end(arg);
+
+    if ((oflag & O_TEXT) || !(oflag & ~O_BINARY)) {
+	return _open(file, oflag, pmode);
+    }
+
+    len = MultiByteToWideChar(cp, 0, file, -1, NULL, 0);
+    if (len <= 0) {
+	errno = map_errno(GetLastError());
+	return -1;
+    }
+    wfile = ALLOCA_N(WCHAR, len);
+    MultiByteToWideChar(cp, 0, file, -1, wfile, len);
+    if (len <= 0) {
+	errno = map_errno(GetLastError());
+	return -1;
+    }
+    return rb_w32_wopen(wfile, oflag, pmode);
+}
+
+int
+rb_w32_wopen(const WCHAR *file, int oflag, ...)
+{
     char flags = 0;
     int fd;
     DWORD access;
@@ -4165,7 +4196,7 @@ rb_w32_open(const char *file, int oflag, ...)
 	va_start(arg, oflag);
 	pmode = va_arg(arg, int);
 	va_end(arg);
-	return _open(file, oflag, pmode);
+	return _wopen(file, oflag, pmode);
     }
 
     sec.nLength = sizeof(sec);
@@ -4281,8 +4312,8 @@ rb_w32_open(const char *file, int oflag, ...)
 	/* open with FILE_FLAG_OVERLAPPED if have CancelIo */
 	if (cancel_io)
 	    attr |= FILE_FLAG_OVERLAPPED;
-	h = CreateFile(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE, &sec,
-		       create, attr, NULL);
+	h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE, &sec,
+			create, attr, NULL);
 	if (h == INVALID_HANDLE_VALUE) {
 	    errno = map_errno(GetLastError());
 	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));

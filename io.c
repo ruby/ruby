@@ -4174,27 +4174,61 @@ struct sysopen_struct {
     const char *fname;
     int oflags;
     mode_t perm;
+#ifdef _WIN32
+    int wchar;
+#endif
 };
 
 static VALUE
 sysopen_func(void *ptr)
 {
     struct sysopen_struct *data = ptr;
+#ifdef _WIN32
+    if (data->wchar)
+	return (VALUE)rb_w32_wopen(data->fname, data->oflags, data->perm);
+#endif
     return (VALUE)open(data->fname, data->oflags, data->perm);
 }
 
 static int
-rb_sysopen_internal(const char *fname, int oflags, mode_t perm)
+rb_sysopen_internal(VALUE fname, int oflags, mode_t perm)
 {
+#ifdef _WIN32
+    static rb_encoding *utf16 = (rb_encoding *)-1;
+#endif
     struct sysopen_struct data;
-    data.fname = fname;
+    data.fname = RSTRING_PTR(fname);
     data.oflags = oflags;
     data.perm = perm;
+#ifdef _WIN32
+    if (utf16 == (rb_encoding *)-1) {
+	utf16 = rb_enc_find("UTF-16LE");
+	if (utf16 == rb_ascii8bit_encoding())
+	    utf16 = NULL;
+    }
+    if (utf16) {
+	VALUE wfname;
+	VALUE opthash = rb_hash_new();
+	int ecflags;
+	VALUE ecopts;
+	rb_hash_aset(opthash, ID2SYM(rb_intern("undef")),
+		     ID2SYM(rb_intern("replace")));
+	ecflags = rb_econv_prepare_opts(opthash, &ecopts);
+	wfname = rb_str_encode(fname, rb_enc_from_encoding(utf16), ecflags,
+			       ecopts);
+	rb_enc_str_buf_cat(wfname, "", 1, utf16); /* workaround */
+	data.fname = RSTRING_PTR(wfname);
+	data.wchar = 1;
+    }
+    else {
+	data.wchar = 0;
+    }
+#endif
     return (int)rb_thread_blocking_region(sysopen_func, &data, RUBY_UBF_IO, 0);
 }
 
 static int
-rb_sysopen(const char *fname, int oflags, mode_t perm)
+rb_sysopen(VALUE fname, int oflags, mode_t perm)
 {
     int fd;
 
@@ -4209,7 +4243,7 @@ rb_sysopen(const char *fname, int oflags, mode_t perm)
 	    fd = rb_sysopen_internal(fname, oflags, perm);
 	}
 	if (fd < 0) {
-	    rb_sys_fail(fname);
+	    rb_sys_fail(RSTRING_PTR(fname));
 	}
     }
     UPDATE_MAXFD(fd);
@@ -4280,7 +4314,7 @@ rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode, convconfig
     fptr->mode = fmode;
     fptr->encs = *convconfig;
     fptr->pathv = rb_str_new_frozen(filename);
-    fptr->fd = rb_sysopen(RSTRING_PTR(fptr->pathv), oflags, perm);
+    fptr->fd = rb_sysopen(fptr->pathv, oflags, perm);
     io_check_tty(fptr);
 
     return io;
@@ -4933,7 +4967,7 @@ rb_scan_open_args(int argc, VALUE *argv,
     opt = pop_last_hash(&argc, argv);
     rb_scan_args(argc, argv, "12", &fname, &vmode, &vperm);
     FilePathValue(fname);
-#if defined _WIN32 || defined __APPLE__
+#if defined __APPLE__
     {
 	static rb_encoding *fs_encoding;
 	rb_encoding *fname_encoding = rb_enc_get(fname);
@@ -5039,7 +5073,6 @@ rb_io_s_sysopen(int argc, VALUE *argv)
     VALUE intmode;
     int oflags, fd;
     mode_t perm;
-    char *path;
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &vperm);
     FilePathValue(fname);
@@ -5056,8 +5089,7 @@ rb_io_s_sysopen(int argc, VALUE *argv)
     else              perm = NUM2UINT(vperm);
 
     RB_GC_GUARD(fname) = rb_str_new4(fname);
-    path = RSTRING_PTR(fname);
-    fd = rb_sysopen(path, oflags, perm);
+    fd = rb_sysopen(fname, oflags, perm);
     return INT2NUM(fd);
 }
 
@@ -5397,7 +5429,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     fptr->pathv = rb_str_new_frozen(fname);
     oflags = rb_io_fmode_oflags(fptr->mode);
     if (fptr->fd < 0) {
-        fptr->fd = rb_sysopen(RSTRING_PTR(fptr->pathv), oflags, 0666);
+        fptr->fd = rb_sysopen(fptr->pathv, oflags, 0666);
 	fptr->stdio_file = 0;
 	return file;
     }
@@ -5422,7 +5454,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
         if (close(fptr->fd) < 0)
             rb_sys_fail_path(fptr->pathv);
         fptr->fd = -1;
-        fptr->fd = rb_sysopen(RSTRING_PTR(fptr->pathv), oflags, 0666);
+       fptr->fd = rb_sysopen(fptr->pathv, oflags, 0666);
     }
 
     return file;
@@ -6229,7 +6261,7 @@ argf_next_argv(VALUE argf)
 		}
 	    }
 	    else {
-		int fr = rb_sysopen(fn, O_RDONLY, 0);
+		int fr = rb_sysopen(ARGF.filename, O_RDONLY, 0);
 
 		if (ARGF.inplace) {
 		    struct stat st;
@@ -6254,7 +6286,7 @@ argf_next_argv(VALUE argf)
 			(void)close(fr);
 			(void)unlink(RSTRING_PTR(str));
 			(void)rename(fn, RSTRING_PTR(str));
-			fr = rb_sysopen(RSTRING_PTR(str), O_RDONLY, 0);
+			fr = rb_sysopen(str, O_RDONLY, 0);
 #else
 			if (rename(fn, RSTRING_PTR(str)) < 0) {
 			    rb_warn("Can't rename %s to %s: %s, skipping file",
@@ -6276,7 +6308,7 @@ argf_next_argv(VALUE argf)
 			}
 #endif
 		    }
-		    fw = rb_sysopen(fn, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+		    fw = rb_sysopen(ARGF.filename, O_WRONLY|O_CREAT|O_TRUNC, 0666);
 #ifndef NO_SAFE_RENAME
 		    fstat(fw, &st2);
 #ifdef HAVE_FCHMOD
