@@ -1107,10 +1107,10 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_symbol_op
-    ops = %w[
+    ops = %w"
       .. ... + - +(binary) -(binary) * / % ** +@ -@ | ^ & ! <=> > >= < <= ==
       === != =~ !~ ~ ! [] []= << >> :: `
-    ] #`
+    "
     ops.each do |op|
       assert_equal(Encoding::US_ASCII, op.intern.encoding, "[ruby-dev:33449]")
     end
@@ -1164,7 +1164,7 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_bignum_to_s
-    assert_equal(Encoding::US_ASCII, (1<<129).to_s.encoding)
+    assert_equal(Encoding::US_ASCII, (1 << 129).to_s.encoding)
   end
 
   def test_array_to_s
@@ -1306,6 +1306,10 @@ class TestM17N < Test::Unit::TestCase
   def test_force_encoding
     assert(("".center(1, "\x80".force_encoding("utf-8")); true),
            "moved from btest/knownbug, [ruby-dev:33807]")
+    a = "".force_encoding("ascii-8bit") << 0xC3 << 0xB6
+    assert_equal(1, a.force_encoding("utf-8").size, '[ruby-core:22437]')
+    b = "".force_encoding("ascii-8bit") << 0xC3.chr << 0xB6.chr
+    assert_equal(1, b.force_encoding("utf-8").size, '[ruby-core:22437]')
   end
 
   def test_combchar_codepoint
