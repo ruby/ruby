@@ -1,3 +1,7 @@
+Thu Feb 26 01:34:38 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: more MSG_* constants.
+
 Thu Feb 26 00:21:21 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c (sockopt_level): extracted from sockopt_level_m.
