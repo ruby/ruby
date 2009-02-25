@@ -1569,16 +1569,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
 	dest = "#{dir}/#{File.basename(f)}"
 	mfile.print("install-rb#{sfx}: #{dest}\n")
 	mfile.print("#{dest}: #{f} #{dir}\n\t$(#{$extout ? 'COPY' : 'INSTALL_DATA'}) ")
-	sep = config_string('BUILD_FILE_SEPARATOR')
-	if sep
-	  f = f.gsub("/", sep)
-	  sep = ":/="+sep
-	  f = f.gsub(/(\$\(\w+)(\))/) {$1+sep+$2}
-	  f = f.gsub(/(\$\{\w+)(\})/) {$1+sep+$2}
-	else
-	  sep = ""
-	end
-	mfile.print("#{f} $(@D#{sep})\n")
+	mfile.print("#{f} $(@D)\n")
 	if defined?($installed_list) and !$extout
 	  mfile.print("\t@echo #{dest}>>$(INSTALLED_LIST)\n")
 	end
