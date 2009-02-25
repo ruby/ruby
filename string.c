@@ -5658,7 +5658,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     rb_encoding *enc;
     VALUE rs;
     unsigned int newline;
-    char *p, *pend, *s, *ptr;
+    const char *p, *pend, *s, *ptr;
     long len, rslen;
     VALUE line;
     int n;
