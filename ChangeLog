@@ -1,3 +1,11 @@
+Wed Feb 25 15:05:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/extconf.rb (gai_strerror): checks if available and if
+	  returns const pointer.
+
+	* ext/socket/getaddrinfo.c (gai_strerror): defines only if non
+	  available.  [ruby-core:21328]
+
 Wed Feb 25 14:57:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (open_dir_handle): extracted from rb_w32_opendir.
