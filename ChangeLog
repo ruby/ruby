@@ -1,3 +1,9 @@
+Wed Feb 25 23:37:56 2009  Tanaka Akira  <akr@fsij.org>
+
+        * ext/socket/socket.c (unix_recv_io): prevent FD leak when 2 fd is
+          sent on LP64 platform.
+          (rsock_discard_cmsg_resource): new function.
+
 Wed Feb 25 22:54:13 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (config.status): use un.rb as cp instead of
