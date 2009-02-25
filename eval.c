@@ -11193,7 +11193,11 @@ rb_thread_schedule()
                     if ((FD_ISSET(fd, &readfds) ||
                          FD_ISSET(fd, &writefds) ||
                          FD_ISSET(fd, &exceptfds)) &&
+#ifndef _WIN32
                         fcntl(fd, F_GETFD, &dummy) == -1 &&
+#else
+			rb_w32_get_osfhandle(fd) == -1 &&
+#endif
                         errno == EBADF) {
                         badfd = fd;
                         break;

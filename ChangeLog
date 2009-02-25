@@ -1,3 +1,8 @@
+Wed Feb 25 22:53:04 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval.c (rb_thread_schedule): mswin32 doesn't have F_GETFD, so check
+	  with another method.
+
 Tue Feb 24 19:01:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (main): split from exts and makes main program after
