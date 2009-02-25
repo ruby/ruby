@@ -479,7 +479,7 @@ int rb_thread_reset_raised(rb_thread_t th);
 #define rb_thread_raised_set(th, f)   ((th)->flags |= (f))
 #define rb_thread_raised_reset(th, f) ((th)->flags &= ~(f))
 #define rb_thread_raised_p(th, f)     (((th)->flags & (f)) != 0)
-#define rb_thread_raised_clear(th)    ((th)->flags = 0)
+#define rb_thread_raised_clear(th)    (rb_thread_raised_reset(th, RAISED_MASK))
 
 #if defined(__cplusplus)
 }  /* extern "C" { */

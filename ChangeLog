@@ -1,3 +1,9 @@
+Wed Feb 25 15:15:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* node.h (rb_thread_raised_clear): should not clear flags other than
+	  raised flags.  a patch by Tomoyuki Chikanaga <chikanag AT
+	  nippon-control-system.co.jp> at [ruby-dev:37794].  [ruby-dev:37776]
+
 Wed Feb 25 15:05:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/extconf.rb (gai_strerror): checks if available and if
