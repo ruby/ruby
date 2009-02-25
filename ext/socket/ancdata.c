@@ -241,8 +241,12 @@ ancillary_s_unix_rights(int argc, VALUE *argv, VALUE klass)
 static VALUE
 ancillary_unix_rights(VALUE self)
 {
+#ifdef SCM_RIGHTS
     VALUE v = rb_attr_get(self, rb_intern("unix_rights"));
     return v;
+#else
+    rb_notimplement();
+#endif
 }
 
 /*
@@ -276,6 +280,7 @@ ancillary_unix_rights(VALUE self)
 static VALUE
 ancillary_timestamp(VALUE self)
 {
+#if defined(SCM_TIMESTAMP) || defined(SCM_TIMESTAMPNS) || defined(SCM_BINTIME)
     int level, type;
     VALUE data;
     VALUE result = Qnil;
@@ -284,25 +289,25 @@ ancillary_timestamp(VALUE self)
     type = ancillary_type(self);
     data = ancillary_data(self);
 
-#ifdef SCM_TIMESTAMP
+# ifdef SCM_TIMESTAMP
     if (level == SOL_SOCKET && type == SCM_TIMESTAMP &&
         RSTRING_LEN(data) == sizeof(struct timeval)) {
         struct timeval tv;
         memcpy((char*)&tv, RSTRING_PTR(data), sizeof(tv));
         result = rb_time_new(tv.tv_sec, tv.tv_usec);
     }
-#endif
+# endif
 
-#ifdef SCM_TIMESTAMPNS
+# ifdef SCM_TIMESTAMPNS
     if (level == SOL_SOCKET && type == SCM_TIMESTAMPNS &&
         RSTRING_LEN(data) == sizeof(struct timespec)) {
         struct timespec ts;
         memcpy((char*)&ts, RSTRING_PTR(data), sizeof(ts));
         result = rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
     }
-#endif
+# endif
 
-#ifdef SCM_BINTIME
+# ifdef SCM_BINTIME
     if (level == SOL_SOCKET && type == SCM_BINTIME &&
         RSTRING_LEN(data) == sizeof(struct bintime)) {
         struct bintime bt;
@@ -311,12 +316,15 @@ ancillary_timestamp(VALUE self)
         bintime2timespec(&bt, &ts);
         result = rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
     }
-#endif
+# endif
 
     if (result == Qnil)
         rb_raise(rb_eTypeError, "timestamp ancillary data expected");
 
     return result;
+#else
+    rb_notimplement();
+#endif
 }
 
 /*
@@ -1716,15 +1724,15 @@ Init_ancdata(void)
     rb_define_method(rb_cAncillaryData, "type", ancillary_type_m, 0);
     rb_define_method(rb_cAncillaryData, "data", ancillary_data, 0);
 
-    rb_define_singleton_method(rb_cAncillaryData, "unix_rights", ancillary_s_unix_rights, -1);
-    rb_define_method(rb_cAncillaryData, "unix_rights", ancillary_unix_rights, 0);
-
-    rb_define_method(rb_cAncillaryData, "timestamp", ancillary_timestamp, 0);
-
     rb_define_method(rb_cAncillaryData, "cmsg_is?", ancillary_cmsg_is_p, 2);
 
     rb_define_singleton_method(rb_cAncillaryData, "int", ancillary_s_int, 4);
     rb_define_method(rb_cAncillaryData, "int", ancillary_int, 0);
+
+    rb_define_singleton_method(rb_cAncillaryData, "unix_rights", ancillary_s_unix_rights, -1);
+    rb_define_method(rb_cAncillaryData, "unix_rights", ancillary_unix_rights, 0);
+
+    rb_define_method(rb_cAncillaryData, "timestamp", ancillary_timestamp, 0);
 
     rb_define_singleton_method(rb_cAncillaryData, "ip_pktinfo", ancillary_s_ip_pktinfo, -1);
     rb_define_method(rb_cAncillaryData, "ip_pktinfo", ancillary_ip_pktinfo, 0);

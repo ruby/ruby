@@ -1,3 +1,10 @@
+Wed Feb 25 23:23:03 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (ancillary_unix_rights): raise
+	  NotImplementedError if no fd passing feature.
+	  (ancillary_timestamp): raise NotImplementedError if no timestamp
+	  feature.
+	  
 Wed Feb 25 23:18:53 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (ancillary_s_unix_rights): new method.
