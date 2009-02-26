@@ -20,14 +20,6 @@
 #ifdef _WIN32
 #include "missing/file.h"
 #endif
-#if defined(__CYGWIN32__)
-#define _open open
-#define _close close
-#define _unlink unlink
-#define _access access
-#elif defined(_WIN32)
-#include <io.h>
-#endif
 
 #include "ruby/util.h"
 
@@ -345,9 +337,9 @@ valid_filename(const char *s)
     // It doesn't exist, so see if we can open it.
     */
 
-    if ((fd = _open(s, O_CREAT|O_EXCL, 0666)) >= 0) {
-	_close(fd);
-	_unlink(s);	/* don't leave it laying around */
+    if ((fd = open(s, O_CREAT|O_EXCL, 0666)) >= 0) {
+	close(fd);
+	unlink(s);	/* don't leave it laying around */
 	return 1;
     }
     else if (errno == EEXIST) {
