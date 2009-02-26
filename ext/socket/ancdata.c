@@ -261,7 +261,7 @@ ancillary_unix_rights(VALUE self)
  * - SOL_SOCKET/SCM_BINTIME (2**(-64) second) FreeBSD
  *
  * Note that Time cannot represent SCM_BINTIME timestamps accurately
- * because Time uses nano second as internal representation.
+ * because Time represents a time in nano second granularity.
  *
  *   Addrinfo.udp("127.0.0.1", 0).bind {|s1|
  *     Addrinfo.udp("127.0.0.1", 0).bind {|s2|
