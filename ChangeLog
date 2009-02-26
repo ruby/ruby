@@ -1,3 +1,7 @@
+Thu Feb 26 19:29:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (hash_foreach_iter): fix for prototype.
+
 Thu Feb 26 18:36:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (INSNS, newline.c, miniprelude.c, prelude.c),

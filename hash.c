@@ -152,20 +152,20 @@ struct hash_foreach_arg {
 };
 
 static int
-hash_foreach_iter(VALUE key, VALUE value, struct hash_foreach_arg *arg)
+hash_foreach_iter(st_data_t key, st_data_t value, struct hash_foreach_arg *arg)
 {
     int status;
     st_table *tbl;
 
     tbl = RHASH(arg->hash)->ntbl;
-    if (key == Qundef) return ST_CONTINUE;
-    status = (*arg->func)(key, value, arg->arg);
+    if ((VALUE)key == Qundef) return ST_CONTINUE;
+    status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
     if (RHASH(arg->hash)->ntbl != tbl) {
 	rb_raise(rb_eRuntimeError, "rehash occurred during iteration");
     }
     switch (status) {
       case ST_DELETE:
-	st_delete_safe(tbl, (st_data_t*)&key, 0, Qundef);
+	st_delete_safe(tbl, &key, 0, Qundef);
 	FL_SET(arg->hash, HASH_DELETED);
       case ST_CONTINUE:
 	break;
