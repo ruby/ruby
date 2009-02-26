@@ -746,7 +746,7 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
  *   Addrinfo.new(sockaddr, family, socktype, protocol) => addrinfo
  *
  * returns a new instance of Addrinfo.
- * It the instnace contains sockaddr, family, socktype, protocol.
+ * The instnace contains sockaddr, family, socktype, protocol.
  * sockaddr means struct sockaddr which can be used for connect(2), etc.
  * family, socktype and protocol are integers which is used for arguments of socket(2).
  *
@@ -766,7 +766,7 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
  *
  * In an AF_INET/AF_INET6 sockaddr array, the 4th element,
  * numeric IP address, is used to construct socket address in the Addrinfo instance.
- * The 3rd element, textual host name, is also recorded but only used for Addrinfo#inspect.
+ * If the 3rd element, textual host name, is non-nil, it is also recorded but used only for Addrinfo#inspect.
  *
  * family is specified as an integer to specify the protocol family such as Socket::PF_INET.
  * It can be a symbol or a string which is the constant name
