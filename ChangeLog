@@ -5,9 +5,9 @@ Thu Feb 26 12:36:36 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 Wed Feb 25 23:37:56 2009  Tanaka Akira  <akr@fsij.org>
 
-        * ext/socket/socket.c (unix_recv_io): prevent FD leak when 2 fd is
-          sent on LP64 platform.
-          (rsock_discard_cmsg_resource): new function.
+	* ext/socket/socket.c (unix_recv_io): prevent FD leak when 2 fd is
+	  sent on LP64 platform.
+	  (rsock_discard_cmsg_resource): new function.
 
 Wed Feb 25 22:54:13 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -4247,7 +4247,7 @@ Sun Dec 30 22:48:37 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Fri Dec 28 16:36:33 2007  NARUSE, Yui  <naruse@airemix.com>
 
-       * lib/resolv.rb (Resolv::DNS#each_address): now returns IPv6 address.
+	* lib/resolv.rb (Resolv::DNS#each_address): now returns IPv6 address.
 
 Fri Dec 28 13:21:32 2007  Kouhei Sutou  <kou@cozmixng.org>
 
