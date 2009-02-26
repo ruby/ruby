@@ -112,6 +112,7 @@ with all sufficient information, see the ChangeLog file.
     * Socket#ipv6only!
     * BasicSocket#local_address
     * BasicSocket#remote_address
+    * BasicSocket#connect_address
     * BasicSocket#sendmsg
     * BasicSocket#sendmsg_nonblock
     * BasicSocket#recvmsg

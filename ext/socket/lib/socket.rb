@@ -158,6 +158,46 @@ class Addrinfo
   end
 end
 
+class BasicSocket
+  # Returns an address of the socket suitable for connect.
+  #
+  # This method returns _self_.local_address, except following condition.
+  #
+  # - IPv4 unspecified address (0.0.0.0) is replaced by IPv4 loopback address (127.0.0.1).
+  # - IPv6 unspecified address (::) is replaced by IPv6 loopback address (::1).
+  #
+  # If the local address is not suitable for connect, SocketError is raised.
+  # IPv4 and IPv6 address which port is 0 is not suitable for connect.
+  # Unix domain socket which has no path is not suitable for connect.
+  #
+  #   Addrinfo.tcp("0.0.0.0", 0).listen {|serv|
+  #     p serv.connect_address #=> #<Addrinfo: 127.0.0.1:53660 TCP>
+  #     serv.connect_address.connect {|c|
+  #       s, _ = serv.accept
+  #       p [c, s] #=> [#<Socket:fd 4>, #<Socket:fd 6>]
+  #     }
+  #   }
+  #
+  def connect_address
+    addr = local_address
+    afamily = addr.afamily
+    if afamily == Socket::AF_INET
+      raise SocketError, "unbound IPv4 socket" if addr.ip_port == 0
+      if addr.ip_address == "0.0.0.0"
+        addr = Addrinfo.new(["AF_INET", addr.ip_port, nil, "127.0.0.1"], addr.pfamily, addr.socktype, addr.protocol)
+      end
+    elsif defined?(Socket::AF_INET6) && afamily == Socket::AF_INET6
+      raise SocketError, "unbound IPv6 socket" if addr.ip_port == 0
+      if addr.ip_address == "::"
+        addr = Addrinfo.new(["AF_INET6", addr.ip_port, nil, "::1"], addr.pfamily, addr.socktype, addr.protocol)
+      end
+    elsif defined?(Socket::AF_UNIX) && afamily == Socket::AF_UNIX
+      raise SocketError, "unbound Unix socket" if addr.unix_path == ""
+    end
+    addr
+  end
+end
+
 class Socket
   # enable the socket option IPV6_V6ONLY if IPV6_V6ONLY is available.
   def ipv6only!
