@@ -10,10 +10,13 @@ assert_equal '0', %q{
 }, '[ruby-dev:32404]'
 
 assert_finish 10, %q{
-  children = (1..10).map{
-    Thread.start{fork{}}.value
-  }
-  while !children.empty? and pid = Process.wait
-    children.delete(pid)
+  begin
+    children = (1..10).map{
+      Thread.start{fork{}}.value
+    }
+    while !children.empty? and pid = Process.wait
+      children.delete(pid)
+    end
+  rescue NotImplementedError
   end
 }, '[ruby-core:22158]'
