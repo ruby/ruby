@@ -4185,7 +4185,8 @@ sysopen_func(void *ptr)
     struct sysopen_struct *data = ptr;
 #ifdef _WIN32
     if (data->wchar)
-	return (VALUE)rb_w32_wopen(data->fname, data->oflags, data->perm);
+	return (VALUE)rb_w32_wopen((WCHAR *)data->fname, data->oflags,
+				   data->perm);
 #endif
     return (VALUE)open(data->fname, data->oflags, data->perm);
 }
@@ -4207,15 +4208,8 @@ rb_sysopen_internal(VALUE fname, int oflags, mode_t perm)
 	    utf16 = NULL;
     }
     if (utf16) {
-	VALUE wfname;
-	VALUE opthash = rb_hash_new();
-	int ecflags;
-	VALUE ecopts;
-	rb_hash_aset(opthash, ID2SYM(rb_intern("undef")),
-		     ID2SYM(rb_intern("replace")));
-	ecflags = rb_econv_prepare_opts(opthash, &ecopts);
-	wfname = rb_str_encode(fname, rb_enc_from_encoding(utf16), ecflags,
-			       ecopts);
+	VALUE wfname = rb_str_encode(fname, rb_enc_from_encoding(utf16), 0,
+				     Qnil);
 	rb_enc_str_buf_cat(wfname, "", 1, utf16); /* workaround */
 	data.fname = RSTRING_PTR(wfname);
 	data.wchar = 1;

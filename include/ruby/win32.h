@@ -532,6 +532,7 @@ HANDLE GetCurrentThreadHandle(void);
 int  rb_w32_sleep(unsigned long msec);
 int  rb_w32_putc(int, FILE*);
 int  rb_w32_getc(FILE*);
+int  rb_w32_wopen(const WCHAR *, int, ...);
 int  rb_w32_open(const char *, int, ...);
 int  rb_w32_close(int);
 int  rb_w32_fclose(FILE*);

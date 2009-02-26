@@ -1,3 +1,10 @@
+Thu Feb 26 10:56:48 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/win32.h (rb_w32_wopen): prototype forgotten.
+
+	* io.c (rb_sysopen_internal): shouldn't replace undefined chars in this
+	  case.
+
 Thu Feb 26 01:34:38 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: more MSG_* constants.
