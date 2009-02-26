@@ -171,6 +171,9 @@ class Enumerator
   end
   private :__generator
 
+  # remove next() before overriding it to avoid a awarning
+  remove_method :next
+
   # call-seq:
   #   e.next   => object
   #

@@ -1,3 +1,8 @@
+Thu Feb 26 12:36:36 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/generator.rb (Enumerator#__generator): Remove next() before
+	  overriding it to avoid a awarning.
+
 Wed Feb 25 23:37:56 2009  Tanaka Akira  <akr@fsij.org>
 
         * ext/socket/socket.c (unix_recv_io): prevent FD leak when 2 fd is
