@@ -271,22 +271,3 @@ update-rubyspec:
 test-rubyspec:
 	@if [ ! -d $(srcdir)/spec/rubyspec ]; then echo No rubyspec here.  make update-rubyspec first.; exit 1; fi
 	$(RUNRUBY) $(srcdir)/spec/mspec/bin/mspec -B $(srcdir)/spec/default.mspec $(MSPECOPT)
-
-INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
-	  vmtc.inc vm.inc
-
-$(INSNS):
-	@$(RM) $(PROGRAM)
-	$(BASERUBY) -Ks $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) $@
-
-node_name.inc:
-	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
-
-known_errors.inc:
-	$(BASERUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def
-
-miniprelude.c:
-	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
-
-newline.c: 
-	$(BASERUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo newline.c $(srcdir)/enc/trans/newline.trans
