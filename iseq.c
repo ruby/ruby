@@ -1018,7 +1018,7 @@ exception_type2symbol(VALUE type)
 static int
 cdhash_each(VALUE key, VALUE value, VALUE ary)
 {
-    rb_ary_push(ary, key);
+    rb_ary_push(ary, obj_resurrect(key));
     rb_ary_push(ary, value);
     return ST_CONTINUE;
 }
