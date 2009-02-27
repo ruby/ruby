@@ -4524,7 +4524,7 @@ file_load_ok(const char *path)
     int ret = 1;
     int fd = open(path, O_RDONLY);
     if (fd == -1) return 0;
-#if !(defined DOSISH || defined __CYGWIN__)
+#if !defined DOSISH
     {
 	struct stat st;
 	if (fstat(fd, &st) || !S_ISREG(st.st_mode)) {
