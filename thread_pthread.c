@@ -275,7 +275,7 @@ ruby_init_stack(VALUE *addr
     native_main_thread.stack_start = STACK_END_ADDRESS;
 #else
     if (!native_main_thread.stack_start ||
-        STACK_UPPER(&addr,
+        STACK_UPPER((VALUE *)(void *)&addr,
                     native_main_thread.stack_start > addr,
                     native_main_thread.stack_start < addr)) {
         native_main_thread.stack_start = addr;

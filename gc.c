@@ -1102,10 +1102,10 @@ int ruby_stack_grow_direction;
 int
 ruby_get_stack_grow_direction(VALUE *addr)
 {
-    rb_thread_t *th = GET_THREAD();
-    SET_STACK_END;
+    VALUE *end;
+    SET_MACHINE_STACK_END(&end);
 
-    if (STACK_END > addr) return ruby_stack_grow_direction = 1;
+    if (end > addr) return ruby_stack_grow_direction = 1;
     return ruby_stack_grow_direction = -1;
 }
 #endif
