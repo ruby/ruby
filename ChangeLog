@@ -1,3 +1,8 @@
+Fri Feb 27 22:14:22 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/lib/openssl/buffering.rb: define Buffering module under
+	  OpenSSL.  [ruby-dev:37906]
+
 Fri Feb 27 22:09:24 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit/assertions.rb: don't define assert_not_* if already
