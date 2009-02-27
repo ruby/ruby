@@ -43,5 +43,9 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_not_respond_to(o, :b)
     assert_raise(TypeError) {o.a = 'z'}
     assert_equal('a', o.a)
+    o = OpenStruct.new :a => 42
+    def o.frozen?; nil end
+    o.freeze
+    assert_raise(TypeError, '[ruby-core:22559]') {o.a = 1764}
   end
 end

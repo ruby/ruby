@@ -68,8 +68,10 @@ class OpenStruct
   end
 
   def modifiable
-    if self.frozen?
-      raise TypeError, "can't modify frozen #{self.class}", caller(2)
+    begin
+      @modifiable = true
+    rescue
+      raise TypeError, "can't modify frozen #{self.class}", caller(3)
     end
     @table
   end
