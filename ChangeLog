@@ -600,7 +600,7 @@ Wed Feb 18 14:33:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Feb 18 12:35:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* file.c (rb_file_s_extname): fix for spaces before extention.
+	* file.c (rb_file_s_extname): fix for spaces before extension.
 	  [ruby-dev:38044]
 
 Wed Feb 18 12:00:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -46167,7 +46167,7 @@ Fri Aug  5 00:19:33 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  extension.
 
 	* eval.c (search_required): ruby library should be prior to statically
-	  linked extentions.  fixed: [ruby-dev:26711]
+	  linked extensions.  fixed: [ruby-dev:26711]
 
 	* eval.c (formal_assign): returns position of rest arguments variable.
 
@@ -46209,7 +46209,7 @@ Thu Aug  4 13:30:15 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Thu Aug  4 08:03:39 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): should not modify $mflags for each
-	  extentions.
+	  extensions.
 
 Thu Aug  4 00:25:48 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -53346,7 +53346,7 @@ Mon Sep 13 02:42:28 2004  Minero Aoki  <aamine@loveruby.net>
 
 Mon Sep 13 02:26:31 2004  Minero Aoki  <aamine@loveruby.net>
 
-	* ext/ripper: ripper extention added.
+	* ext/ripper: ripper extension added.
 
 	* ext/ripper/MANIFEST: new file.
 
@@ -57463,7 +57463,7 @@ Fri Jan 30 18:53:23 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Thu Jan 29 23:11:57 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (DLEXT2): removed.  Ruby does not treat
-	  ".dll" as a extention library anymore.
+	  ".dll" as a extension library anymore.
 
 	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub (DLEXT2):
 	  ditto.
