@@ -236,7 +236,7 @@ unix_send_io(VALUE sock, VALUE val)
     cmsg.hdr.cmsg_len = CMSG_LEN(sizeof(int));
     cmsg.hdr.cmsg_level = SOL_SOCKET;
     cmsg.hdr.cmsg_type = SCM_RIGHTS;
-    *(int *)CMSG_DATA(&cmsg.hdr) = fd;
+    memcpy(CMSG_DATA(&cmsg.hdr), &fd, sizeof(int));
 #else
     arg.msg.msg_accrights = (caddr_t)&fd;
     arg.msg.msg_accrightslen = sizeof(fd);
@@ -321,7 +321,8 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
     cmsg.hdr.cmsg_len = CMSG_LEN(sizeof(int));
     cmsg.hdr.cmsg_level = SOL_SOCKET;
     cmsg.hdr.cmsg_type = SCM_RIGHTS;
-    *(int *)CMSG_DATA(&cmsg.hdr) = -1;
+    fd = -1;
+    memcpy(CMSG_DATA(&cmsg.hdr), &fd, sizeof(int));
 #else
     arg.msg.msg_accrights = (caddr_t)&fd;
     arg.msg.msg_accrightslen = sizeof(fd);
@@ -374,7 +375,7 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 #endif
 
 #if FD_PASSING_BY_MSG_CONTROL
-    fd = *(int *)CMSG_DATA(&cmsg.hdr);
+    memcpy(&fd, CMSG_DATA(&cmsg.hdr), sizeof(int));
 #endif
 
     if (klass == Qnil)

@@ -1,3 +1,15 @@
+Sat Feb 28 00:18:40 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c: suppress strict-aliasing warning with
+	  gcc version 4.4.0 20090219 (Red Hat 4.4.0-0.21) on Fedora 11 Alpha.
+
+	* ext/socket/socket.c: ditto.
+
+	* ext/socket/unixsocket.c: ditto.
+
+	* ext/socket/sockport.h (SS_LEN): defined.
+	  (SET_SS_LEN): ditto.
+
 Fri Feb 27 22:30:18 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (bsock_recvmsg_internal): close FDs passed by

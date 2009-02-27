@@ -1255,15 +1255,16 @@ addrinfo_mload(VALUE self, VALUE ary)
 #ifdef HAVE_SYS_UN_H
       case AF_UNIX:
       {
-        struct sockaddr_un *su = (struct sockaddr_un *)&ss;
-        memset(su, 0, sizeof(*su));
-        su->sun_family = AF_UNIX;
+        struct sockaddr_un sun;
+        memset(&sun, 0, sizeof(sun));
+        sun.sun_family = AF_UNIX;
 
         StringValue(v);
-        if (sizeof(su->sun_path) <= RSTRING_LEN(v))
+        if (sizeof(sun.sun_path) <= RSTRING_LEN(v))
             rb_raise(rb_eSocket, "too long AF_UNIX path");
-        memcpy(su->sun_path, RSTRING_PTR(v), RSTRING_LEN(v));
-        len = sizeof(*su);
+        memcpy(sun.sun_path, RSTRING_PTR(v), RSTRING_LEN(v));
+        len = sizeof(sun);
+        memcpy(&ss, &sun, len);
         break;
       }
 #endif

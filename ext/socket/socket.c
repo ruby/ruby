@@ -1157,7 +1157,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	    rb_raise(rb_eTypeError, "sockaddr length too big");
 	}
 	memcpy(&ss, RSTRING_PTR(sa), RSTRING_LEN(sa));
-	if (RSTRING_LEN(sa) != SA_LEN((struct sockaddr*)&ss)) {
+	if (RSTRING_LEN(sa) != SS_LEN(&ss)) {
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
 	sap = (struct sockaddr*)&ss;
