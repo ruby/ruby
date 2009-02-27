@@ -1,3 +1,9 @@
+Fri Feb 27 22:30:18 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): close FDs passed by
+	  SCM_RIGHTS unless :scm_rights=>true is given.
+	  (discard_cmsg): extracted from rsock_discard_cmsg_resource.
+
 Fri Feb 27 22:14:22 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/lib/openssl/buffering.rb: define Buffering module under

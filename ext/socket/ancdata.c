@@ -223,19 +223,31 @@ ancillary_s_unix_rights(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *   ancillarydata.unix_rights => array-of-IOs
+ *   ancillarydata.unix_rights => array-of-IOs or nil
  *
- * returns the array of IOs which is sent by SCM_RIGHTS control message in UNIX domain socket.
+ * returns the array of IO objects for SCM_RIGHTS control message in UNIX domain socket.
  *
- * The class of an IO in the array is IO or Socket. 
+ * The class of the IO objects in the array is IO or Socket. 
  *
+ * The array is attached to _ancillarydata_ when it is instantiated.
+ * For example, BasicSocket#recvmsg attach the array when
+ * receives a SCM_RIGHTS control message and :scm_rights=>true option is given.
+ *
+ *   # recvmsg needs :scm_rights=>true for unix_rights
  *   s1, s2 = UNIXSocket.pair
  *   p s1                                         #=> #<UNIXSocket:fd 3>
  *   s1.sendmsg "stdin and a socket", 0, nil, [:SOCKET, :RIGHTS, [0,s1.fileno].pack("ii")]
- *   _, _, _, ctl = s2.recvmsg
+ *   _, _, _, ctl = s2.recvmsg(:scm_rights=>true)
  *   p ctl.unix_rights                            #=> [#<IO:fd 6>, #<Socket:fd 7>]
  *   p File.identical?(STDIN, ctl.unix_rights[0]) #=> true
  *   p File.identical?(s1, ctl.unix_rights[1])    #=> true
+ *
+ *   # If :scm_rights=>true is not given, unix_rights returns nil
+ *   s1, s2 = UNIXSocket.pair
+ *   s1.sendmsg "stdin and a socket", 0, nil, [:SOCKET, :RIGHTS, [0,s1.fileno].pack("ii")]
+ *   _, _, _, ctl = s2.recvmsg
+ *   p ctl #=> #<Socket::AncillaryData: UNIX SOCKET RIGHTS 6 7>
+ *   p ctl.unix_rights #=> nil
  *
  */
 static VALUE
@@ -1354,23 +1366,33 @@ rb_recvmsg(int fd, struct msghdr *msg, int flags)
 }
 
 #if defined(HAVE_ST_MSG_CONTROL)
+static void
+discard_cmsg(struct cmsghdr *cmh, char *msg_end)
+{
+    if (cmh->cmsg_level == SOL_SOCKET && cmh->cmsg_type == SCM_RIGHTS) {
+        int *fdp = (int *)CMSG_DATA(cmh);
+        int *end = (int *)((char *)cmh + cmh->cmsg_len);
+        while ((char *)fdp + sizeof(int) <= (char *)end &&
+               (char *)fdp + sizeof(int) <= msg_end) {
+            close(*fdp);
+            fdp++;
+        }
+    }
+}
+
 void
 rsock_discard_cmsg_resource(struct msghdr *mh)
 {
     struct cmsghdr *cmh;
+    char *msg_end;
 
     if (mh->msg_controllen == 0)
         return;
 
+    msg_end = (char *)mh->msg_control + mh->msg_controllen;
+
     for (cmh = CMSG_FIRSTHDR(mh); cmh != NULL; cmh = CMSG_NXTHDR(mh, cmh)) {
-        if (cmh->cmsg_level == SOL_SOCKET && cmh->cmsg_type == SCM_RIGHTS) {
-            int *fdp = (int *)CMSG_DATA(cmh);
-            int *end = (int *)((char *)cmh + cmh->cmsg_len);
-            while (fdp < end) {
-                close(*fdp);
-                fdp++;
-            }
-        }
+        discard_cmsg(cmh, msg_end);
     }
 }
 #endif
@@ -1409,10 +1431,11 @@ static VALUE
 bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 {
     rb_io_t *fptr;
-    VALUE vmaxdatlen, vmaxctllen, vflags;
+    VALUE vmaxdatlen, vmaxctllen, vflags, vopts;
     int grow_buffer;
     size_t maxdatlen;
     int flags, orig_flags;
+    int request_scm_rights;
     struct msghdr mh;
     struct iovec iov;
     struct sockaddr_storage namebuf;
@@ -1435,6 +1458,10 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
     rb_secure(4);
 
+    vopts = Qnil;
+    if (0 < argc && TYPE(argv[argc-1]) == T_HASH)
+        vopts = argv[--argc];
+
     rb_scan_args(argc, argv, "03", &vmaxdatlen, &vflags, &vmaxctllen);
 
     maxdatlen = NIL_P(vmaxdatlen) ? sizeof(datbuf0) : NUM2SIZET(vmaxdatlen);
@@ -1452,6 +1479,10 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     orig_flags = flags;
 
     grow_buffer = NIL_P(vmaxdatlen) || NIL_P(vmaxctllen);
+
+    request_scm_rights = 0;
+    if (!NIL_P(vopts) && RTEST(rb_hash_aref(vopts, ID2SYM(rb_intern("scm_rights")))))
+        request_scm_rights = 1;
 
     GetOpenFile(sock, fptr);
     if (rb_io_read_pending(fptr)) {
@@ -1623,7 +1654,10 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             ctl_end = (char*)cmh + cmh->cmsg_len;
 	    clen = (ctl_end <= msg_end ? ctl_end : msg_end) - (char*)CMSG_DATA(cmh);
             ctl = ancdata_new(family, cmh->cmsg_level, cmh->cmsg_type, rb_tainted_str_new((char*)CMSG_DATA(cmh), clen));
-            make_io_for_unix_rights(ctl, cmh, msg_end);
+            if (request_scm_rights)
+                make_io_for_unix_rights(ctl, cmh, msg_end);
+            else
+                discard_cmsg(cmh, msg_end);
             rb_ary_push(ret, ctl);
         }
     }
@@ -1641,7 +1675,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
 /*
  * call-seq:
- *    basicsocket.recvmsg(maxmesglen=nil, flags=0, maxcontrollen=nil) => [mesg, sender_addrinfo, rflags, *controls]
+ *    basicsocket.recvmsg(maxmesglen=nil, flags=0, maxcontrollen=nil, opts={}) => [mesg, sender_addrinfo, rflags, *controls]
  *
  * recvmsg receives a message using recvmsg(2) system call in blocking manner.
  *
@@ -1650,6 +1684,18 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
  * _flags_ is bitwise OR of MSG_* constants such as Socket::MSG_PEEK.
  *
  * _maxcontrolslen_ is the maximum length of controls (ancillary data) to receive.
+ *
+ * _opts_ is option hash.
+ * Currently :scm_rights=>bool is the only option.
+ *
+ * :scm_rights option specifies that application expects SCM_RIGHTS control message.
+ * If the value is nil or false, application don't expects SCM_RIGHTS control message.
+ * In this case, recvmsg closes the passed file descriptors immediately.
+ * This is the default behavior.
+ *
+ * If :scm_rights value is neigher nil nor false, application expects SCM_RIGHTS control message.
+ * In this case, recvmsg creates IO objects for each file descriptors for
+ * Socket::AncillaryData#unix_rights method.
  *
  * The return value is 4-elements array.
  *
@@ -1672,7 +1718,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
  *
  * recvmsg can be used to implement recv_io as follows:
  *
- *   mesg, sender_sockaddr, rflags, *controls = sock.recvmsg
+ *   mesg, sender_sockaddr, rflags, *controls = sock.recvmsg(:scm_rights=>true)
  *   controls.each {|ancdata|
  *     if ancdata.cmsg_is?(:SOCKET, :RIGHTS)
  *       return ancdata.unix_rights[0]
@@ -1688,7 +1734,7 @@ bsock_recvmsg(int argc, VALUE *argv, VALUE sock)
 
 /*
  * call-seq:
- *    basicsocket.recvmsg_nonblock(maxdatalen=nil, flags=0, maxcontrollen=nil) => [data, sender_addrinfo, rflags, *controls]
+ *    basicsocket.recvmsg_nonblock(maxdatalen=nil, flags=0, maxcontrollen=nil, opts={}) => [data, sender_addrinfo, rflags, *controls]
  *
  * recvmsg receives a message using recvmsg(2) system call in non-blocking manner.
  *
