@@ -4521,13 +4521,19 @@ rb_path_check(const char *path)
 static int
 file_load_ok(const char *path)
 {
-    struct stat st;
-    int ret, fd = open(path, O_RDONLY);
+    int ret = 1;
+    int fd = open(path, O_RDONLY);
     if (fd == -1) return 0;
-    ret = fstat(fd, &st);
+#if !(defined DOSISH || defined __CYGWIN__)
+    {
+	struct stat st;
+	if (fstat(fd, &st) || !S_ISREG(st.st_mode)) {
+	    ret = 0;
+	}
+    }
+#endif
     (void)close(fd);
-    if (ret) return 0;
-    return S_ISREG(st.st_mode);
+    return ret;
 }
 
 static int
