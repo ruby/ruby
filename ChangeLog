@@ -1,6 +1,8 @@
-Fri Feb 27 15:49:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Feb 27 17:45:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* file.c (file_load_ok): checks if regular file.  [ruby-dev:38097]
+	* file.c (file_load_ok): checks if regular file, except for the
+	  platform disallows to open directories, e.g. cygwin.
+	  [ruby-dev:38097], [Bug #1221]
 
 Thu Feb 26 14:31:27 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
