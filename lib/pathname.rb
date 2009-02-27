@@ -167,6 +167,7 @@
 # These methods are a facade for IO:
 # - #each_line(*args, &block)
 # - #read(*args)
+# - #binread(*args)
 # - #readlines(*args)
 # - #sysopen(*args)
 #

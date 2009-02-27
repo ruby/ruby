@@ -139,8 +139,9 @@ with all sufficient information, see the ChangeLog file.
 
 * pathname
   * new methods:
-    * realdirpath
-    * each_child
+    * Pathname#binread
+    * Pathname#realdirpath
+    * Pathname#each_child
 
 * Readline
   * new methods:
