@@ -1,3 +1,8 @@
+Fri Feb 27 22:09:24 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/test/unit/assertions.rb: don't define assert_not_* if already
+	  overridden.
+
 Fri Feb 27 22:02:34 2009  Tanaka Akira  <akr@fsij.org>
 
 	* util.c: fix SEGV by test_time.rb with

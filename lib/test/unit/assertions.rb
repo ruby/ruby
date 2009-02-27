@@ -122,8 +122,10 @@ EOT
         super if !caller[0].rindex(MiniTest::MINI_DIR, 0) || !obj.respond_to?(meth)
       end
 
-      instance_methods(true).grep(/\Arefute_/) do |m|
-        alias_method(('assert_not_' << m.to_s[/.*?_(.*)/, 1]), m)
+      ms = instance_methods(true).map {|sym| sym.to_s }
+      ms.grep(/\Arefute_/) do |m|
+        mname = ('assert_not_' << m.to_s[/.*?_(.*)/, 1])
+        alias_method(mname, m) unless ms.include? mname
       end
 
       def build_message(head, template=nil, *arguments)
