@@ -290,7 +290,6 @@ rb_stat_dev_minor(self)
 #endif
 }
 
-
 /*
  *  call-seq:
  *     stat.ino   => fixnum
@@ -351,7 +350,6 @@ rb_stat_nlink(self)
     return UINT2NUM(get_stat(self)->st_nlink);
 }
 
-
 /*
  *  call-seq:
  *     stat.uid    => fixnum
@@ -385,7 +383,6 @@ rb_stat_gid(self)
 {
     return UINT2NUM(get_stat(self)->st_gid);
 }
-
 
 /*
  *  call-seq:
@@ -515,7 +512,6 @@ rb_stat_blocks(self)
     return Qnil;
 #endif
 }
-
 
 /*
  *  call-seq:
@@ -782,7 +778,6 @@ rb_file_s_lstat(klass, fname)
 #endif
 }
 
-
 /*
  *  call-seq:
  *     file.lstat   =>  stat
@@ -911,7 +906,6 @@ eaccess(path, mode)
  *  class. (Note that this is not done by inclusion: the interpreter cheats).
  *     
  */
-
 
 /*
  * call-seq:
@@ -1085,7 +1079,6 @@ test_c(obj, fname)
     return Qfalse;
 }
 
-
 /*
  * call-seq:
  *    File.exist?(file_name)    =>  true or false
@@ -1137,7 +1130,6 @@ test_R(obj, fname)
     if (access(StringValueCStr(fname), R_OK) < 0) return Qfalse;
     return Qtrue;
 }
-
 
 /*
  * call-seq:
@@ -1915,7 +1907,6 @@ lchown_internal(path, argp)
     if (lchown(path, args->owner, args->group) < 0)
 	rb_sys_fail(path);
 }
-
 
 /*
  *  call-seq:
@@ -3624,7 +3615,6 @@ rb_f_test(argc, argv)
 }
 
 
-
 /*
  *  Document-class: File::Stat
  *
@@ -3942,8 +3932,6 @@ rb_stat_r(obj)
     return Qtrue;
 }
 
-
-
 /*
  *  call-seq:
  *     stat.readable_real? -> true or false
@@ -4092,7 +4080,6 @@ rb_stat_x(obj)
  *  the process.
  */
 
-
 static VALUE
 rb_stat_X(obj)
     VALUE obj;
@@ -4155,7 +4142,6 @@ rb_stat_z(obj)
     if (get_stat(obj)->st_size == 0) return Qtrue;
     return Qfalse;
 }
-
 
 /*
  *  call-seq:
@@ -4373,13 +4359,13 @@ static int
 file_load_ok(file)
     const char *file;
 {
-    FILE *f;
-
-    if (!file) return 0;
-    f = fopen(file, "r");
-    if (f == NULL) return 0;
-    fclose(f);
-    return 1;
+    struct stat st;
+    int ret, fd = open(file, O_RDONLY);
+    if (fd == -1) return 0;
+    ret = fstat(fd, &st);
+    (void)close(fd);
+    if (ret) return 0;
+    return S_ISREG(st.st_mode);
 }
 
 static int
