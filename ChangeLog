@@ -1,3 +1,10 @@
+Fri Feb 27 14:39:40 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* numeric.c (flo_eq, flo_gt, flo_ge, flo_lt, flo_le, flo_eql): revert
+	  isnan() checks for VC++6.
+
+	* insns.def (opt_lt, opt_gt): ditto.
+
 Fri Feb 27 14:23:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/ostruct.rb (modifiable): check if really frozen.

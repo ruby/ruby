@@ -1676,7 +1676,13 @@ opt_lt
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
 		 BASIC_OP_UNREDEFINED_P(BOP_LT)) {
-	    val = RFLOAT_VALUE(recv) < RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
+	    double a = RFLOAT_VALUE(recv);
+	    double b = RFLOAT_VALUE(obj);
+#if defined(_MSC_VER) && _MSC_VER < 1300
+	    if (isnan(a) || isnan(b)) val = Qfalse;
+	    else
+#endif
+	    val = a < b ? Qtrue : Qfalse;
 	}
 #endif
 	else {
@@ -1750,7 +1756,13 @@ opt_gt
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
 		 BASIC_OP_UNREDEFINED_P(BOP_GT)) {
-	    val = RFLOAT_VALUE(recv) > RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
+	    double a = RFLOAT_VALUE(recv);
+	    double b = RFLOAT_VALUE(obj);
+#if defined(_MSC_VER) && _MSC_VER < 1300
+	    if (isnan(a) || isnan(b)) val = Qfalse;
+	    else
+#endif
+	    val = a > b ? Qtrue : Qfalse;
 	}
 #endif
 	else {

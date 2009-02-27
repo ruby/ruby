@@ -874,11 +874,17 @@ flo_eq(VALUE x, VALUE y)
 	break;
       case T_FLOAT:
 	b = RFLOAT_VALUE(y);
+#if defined(_MSC_VER) && _MSC_VER < 1300
+	if (isnan(b)) return Qfalse;
+#endif
 	break;
       default:
 	return num_equal(x, y);
     }
     a = RFLOAT_VALUE(x);
+#if defined(_MSC_VER) && _MSC_VER < 1300
+    if (isnan(a)) return Qfalse;
+#endif
     return (a == b)?Qtrue:Qfalse;
 }
 
@@ -968,11 +974,17 @@ flo_gt(VALUE x, VALUE y)
 
       case T_FLOAT:
 	b = RFLOAT_VALUE(y);
+#if defined(_MSC_VER) && _MSC_VER < 1300
+	if (isnan(b)) return Qfalse;
+#endif
 	break;
 
       default:
 	return rb_num_coerce_relop(x, y, '>');
     }
+#if defined(_MSC_VER) && _MSC_VER < 1300
+    if (isnan(a)) return Qfalse;
+#endif
     return (a > b)?Qtrue:Qfalse;
 }
 
@@ -1001,11 +1013,17 @@ flo_ge(VALUE x, VALUE y)
 
       case T_FLOAT:
 	b = RFLOAT_VALUE(y);
+#if defined(_MSC_VER) && _MSC_VER < 1300
+	if (isnan(b)) return Qfalse;
+#endif
 	break;
 
       default:
 	return rb_num_coerce_relop(x, y, rb_intern(">="));
     }
+#if defined(_MSC_VER) && _MSC_VER < 1300
+    if (isnan(a)) return Qfalse;
+#endif
     return (a >= b)?Qtrue:Qfalse;
 }
 
@@ -1033,11 +1051,17 @@ flo_lt(VALUE x, VALUE y)
 
       case T_FLOAT:
 	b = RFLOAT_VALUE(y);
+#if defined(_MSC_VER) && _MSC_VER < 1300
+	if (isnan(b)) return Qfalse;
+#endif
 	break;
 
       default:
 	return rb_num_coerce_relop(x, y, '<');
     }
+#if defined(_MSC_VER) && _MSC_VER < 1300
+    if (isnan(a)) return Qfalse;
+#endif
     return (a < b)?Qtrue:Qfalse;
 }
 
@@ -1066,11 +1090,17 @@ flo_le(VALUE x, VALUE y)
 
       case T_FLOAT:
 	b = RFLOAT_VALUE(y);
+#if defined(_MSC_VER) && _MSC_VER < 1300
+	if (isnan(b)) return Qfalse;
+#endif
 	break;
 
       default:
 	return rb_num_coerce_relop(x, y, rb_intern("<="));
     }
+#if defined(_MSC_VER) && _MSC_VER < 1300
+    if (isnan(a)) return Qfalse;
+#endif
     return (a <= b)?Qtrue:Qfalse;
 }
 
@@ -1089,7 +1119,12 @@ static VALUE
 flo_eql(VALUE x, VALUE y)
 {
     if (TYPE(y) == T_FLOAT) {
-	if (RFLOAT_VALUE(x) == RFLOAT_VALUE(y))
+	double a = RFLOAT_VALUE(x);
+	double b = RFLOAT_VALUE(y);
+#if defined(_MSC_VER) && _MSC_VER < 1300
+	if (isnan(a) || isnan(b)) return Qfalse;
+#endif
+	if (a == b)
 	    return Qtrue;
     }
     return Qfalse;
