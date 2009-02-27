@@ -107,7 +107,6 @@ rb_get_path_check(VALUE obj, int check)
     tmp = rb_check_string_type(obj);
     if (!NIL_P(tmp)) goto exit;
 
-
     CONST_ID(to_path, "to_path");
     if (rb_respond_to(obj, to_path)) {
 	tmp = rb_funcall(obj, to_path, 0, 0);
@@ -294,7 +293,6 @@ rb_stat_dev_minor(VALUE self)
 #endif
 }
 
-
 /*
  *  call-seq:
  *     stat.ino   => fixnum
@@ -352,7 +350,6 @@ rb_stat_nlink(VALUE self)
     return UINT2NUM(get_stat(self)->st_nlink);
 }
 
-
 /*
  *  call-seq:
  *     stat.uid    => fixnum
@@ -384,7 +381,6 @@ rb_stat_gid(VALUE self)
 {
     return GIDT2NUM(get_stat(self)->st_gid);
 }
-
 
 /*
  *  call-seq:
@@ -839,7 +835,6 @@ rb_file_s_lstat(VALUE klass, VALUE fname)
 #endif
 }
 
-
 /*
  *  call-seq:
  *     file.lstat   =>  stat
@@ -965,7 +960,6 @@ eaccess(const char *path, int mode)
  *
  */
 
-
 /*
  *   File.directory?(file_name)   =>  true or false
  *   File.directory?(file_name)   =>  true or false
@@ -1013,7 +1007,6 @@ rb_file_directory_p(VALUE obj, VALUE fname)
     if (S_ISDIR(st.st_mode)) return Qtrue;
     return Qfalse;
 }
-
 
 /*
  * call-seq:
@@ -1157,7 +1150,6 @@ rb_file_chardev_p(VALUE obj, VALUE fname)
 
     return Qfalse;
 }
-
 
 /*
  * call-seq:
@@ -2035,7 +2027,6 @@ lchown_internal(const char *path, void *arg)
 	rb_sys_fail(path);
 }
 
-
 /*
  *  call-seq:
  *     file.lchown(owner_int, group_int, file_name,..) => integer
@@ -2171,7 +2162,6 @@ rb_file_s_utime(int argc, VALUE *argv)
     n = apply2files(utime_internal, rest, tsp);
     return LONG2FIX(n);
 }
-
 
 NORETURN(static void sys_fail2(VALUE,VALUE));
 static void
@@ -3779,7 +3769,6 @@ rb_f_test(int argc, VALUE *argv)
 }
 
 
-
 /*
  *  Document-class: File::Stat
  *
@@ -4082,8 +4071,6 @@ rb_stat_r(VALUE obj)
     return Qtrue;
 }
 
-
-
 /*
  *  call-seq:
  *     stat.readable_real? -> true or false
@@ -4280,7 +4267,6 @@ rb_stat_x(VALUE obj)
  *  the process.
  */
 
-
 static VALUE
 rb_stat_X(VALUE obj)
 {
@@ -4340,7 +4326,6 @@ rb_stat_z(VALUE obj)
     if (get_stat(obj)->st_size == 0) return Qtrue;
     return Qfalse;
 }
-
 
 /*
  *  call-seq:
@@ -4536,7 +4521,13 @@ rb_path_check(const char *path)
 static int
 file_load_ok(const char *path)
 {
-    return eaccess(path, R_OK) == 0;
+    struct stat st;
+    int ret, fd = open(path, O_RDONLY);
+    if (fd == -1) return 0;
+    ret = fstat(fd, &st);
+    (void)close(fd);
+    if (ret) return 0;
+    return S_ISREG(st.st_mode);
 }
 
 static int
