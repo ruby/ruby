@@ -209,7 +209,7 @@ with all sufficient information, see the ChangeLog file.
   * Array#flatten
   * Array#flatten!
 
-    Takes an optional argument that determines the level of recursion
+    Take an optional argument that determines the level of recursion
     to flatten.
 
   * Array#eql?
@@ -222,7 +222,7 @@ with all sufficient information, see the ChangeLog file.
   * Array#index
   * Array#rindex
 
-    Take a block instead of an argument.
+    Use a given block if no argument is given.
 
   * Array#collect!
   * Array#map!
