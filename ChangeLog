@@ -1,3 +1,8 @@
+Sat Feb 28 16:18:39 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/net/http.rb: suppress warnings of non-existing instance variable
+	  access for SSL.
+
 Sat Feb 28 14:50:47 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (BasicSocket#connect_address): returns ::1

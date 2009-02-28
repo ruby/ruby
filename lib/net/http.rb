@@ -582,8 +582,11 @@ module Net   #:nodoc:
       D "opened"
       if use_ssl?
         ssl_parameters = Hash.new
+        iv_list = instance_variables
         SSL_ATTRIBUTES.each do |name|
-          if value = instance_variable_get("@#{name}")
+          ivname = "@#{name}".intern
+          if iv_list.include?(ivname) and
+             value = instance_variable_get(ivname)
             ssl_parameters[name] = value
           end
         end
