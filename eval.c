@@ -125,7 +125,7 @@ ruby_finalize(void)
 void rb_thread_stop_timer_thread(void);
 
 int
-ruby_cleanup(int ex)
+ruby_cleanup(volatile int ex)
 {
     int state;
     volatile VALUE errs[2];

@@ -1,3 +1,9 @@
+Sat Feb 28 21:52:37 2009  Tanaka Akira  <akr@fsij.org>
+
+	* vm_eval.c (rb_iterate): use volatile to suppress warnings.
+
+	* eval.c (ruby_cleanup): ditto.
+	
 Sat Feb 28 20:09:40 2009  Tanaka Akira  <akr@fsij.org>
 
 	* eval_error.c (error_print): use volatile to suppress warnings.

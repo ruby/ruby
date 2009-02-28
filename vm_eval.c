@@ -597,7 +597,7 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
     volatile VALUE retval = Qnil;
     NODE *node = NEW_IFUNC(bl_proc, data2);
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *volatile cfp = th->cfp;
 
     TH_PUSH_TAG(th);
     state = TH_EXEC_TAG();
