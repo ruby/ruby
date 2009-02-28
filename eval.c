@@ -1434,7 +1434,7 @@ ruby_init()
 	rb_call_inits();
 	ruby_class = rb_cObject;
 	ruby_frame->self = ruby_top_self;
-	ruby_top_cref = rb_node_newnode(NODE_CREF,rb_cObject,0,0);
+	ruby_top_cref = NEW_CREF(rb_cObject, 0);
 	ruby_cref = ruby_top_cref;
 	rb_define_global_const("TOPLEVEL_BINDING", rb_f_binding(ruby_top_self));
 #ifdef __MACOS__
