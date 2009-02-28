@@ -3934,11 +3934,13 @@ rb_eval(self, n)
 	      case NODE_DREGX:
 		result = rb_reg_new(RSTRING(str)->ptr, RSTRING(str)->len,
 				    node->nd_cflag);
+		RB_GC_GUARD(str); /* ensure str is not GC'd in rb_reg_new */
 		break;
 	      case NODE_DREGX_ONCE:	/* regexp expand once */
 		result = rb_reg_new(RSTRING(str)->ptr, RSTRING(str)->len,
 				    node->nd_cflag);
 		nd_set_type(node, NODE_LIT);
+		RB_GC_GUARD(str); /* ensure str is not GC'd in rb_reg_new */
 		node->nd_lit = result;
 		break;
 	      case NODE_LIT:

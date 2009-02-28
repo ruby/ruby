@@ -1,3 +1,9 @@
+Sat Feb 28 18:05:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval): needs to guard intermediate string objects.
+	  based on a patch from Brent Roman <brent AT mbari.org> a
+	  [ruby-core:22584].
+
 Fri Feb 27 17:45:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_load_ok): checks if regular file, except for the
