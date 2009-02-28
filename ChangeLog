@@ -1,3 +1,8 @@
+Sat Feb 28 14:50:47 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (BasicSocket#connect_address): returns ::1
+	  if the address is IPv4-mapped IPv6 address for 0.0.0.0 for MacOS X.
+
 Sat Feb 28 00:18:40 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c: suppress strict-aliasing warning with
