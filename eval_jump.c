@@ -101,7 +101,8 @@ rb_mark_end_proc(void)
 void
 rb_exec_end_proc(void)
 {
-    struct end_proc_data *link, *tmp;
+    struct end_proc_data *volatile link;
+    struct end_proc_data *tmp;
     int status;
     volatile int safe = rb_safe_level();
 

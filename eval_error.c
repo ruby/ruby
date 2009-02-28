@@ -66,11 +66,11 @@ set_backtrace(VALUE info, VALUE bt)
 static void
 error_print(void)
 {
-    VALUE errat = Qnil;		/* OK */
+    volatile VALUE errat = Qnil;		/* OK */
     VALUE errinfo = GET_THREAD()->errinfo;
     volatile VALUE eclass, e;
-    const char *einfo;
-    long elen;
+    const char *volatile einfo;
+    volatile long elen;
 
     if (NIL_P(errinfo))
 	return;

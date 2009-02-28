@@ -1,3 +1,16 @@
+Sat Feb 28 20:09:40 2009  Tanaka Akira  <akr@fsij.org>
+
+	* eval_error.c (error_print): use volatile to suppress warnings.
+
+	* vm_eval.c (eval_string_with_cref): ditto.
+
+	* thread.c (rb_exec_recursive): ditto.
+
+	* eval_jump.c (rb_exec_end_proc): ditto.
+
+	* eval.c (ruby_exec_node): ditto.
+	  (rb_longjmp): ditto.
+
 Sat Feb 28 18:28:58 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (ancillary_unix_rights): check message type.

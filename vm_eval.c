@@ -688,7 +688,7 @@ rb_each(VALUE obj)
 }
 
 static VALUE
-eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char *file, int line)
+eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char *volatile file, volatile int line)
 {
     int state;
     VALUE result = Qundef;

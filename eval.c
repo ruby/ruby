@@ -193,7 +193,7 @@ ruby_cleanup(int ex)
 int
 ruby_exec_node(void *n, const char *file)
 {
-    int state;
+    volatile int state;
     VALUE iseq = (VALUE)n;
     rb_thread_t *th = GET_THREAD();
 
@@ -332,13 +332,13 @@ rb_frozen_class_p(VALUE klass)
 NORETURN(static void rb_longjmp(int, VALUE));
 
 static void
-rb_longjmp(int tag, VALUE mesg)
+rb_longjmp(int tag, volatile VALUE mesg)
 {
     VALUE at;
     VALUE e;
     rb_thread_t *th = GET_THREAD();
     const char *file;
-    int line = 0;
+    volatile int line = 0;
 
     if (rb_thread_set_raised(th)) {
 	th->errinfo = exception_error;

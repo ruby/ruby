@@ -3345,7 +3345,7 @@ recursive_pop(VALUE hash, VALUE obj)
 VALUE
 rb_exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 {
-    VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
+    volatile VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
     VALUE objid = rb_obj_id(obj);
 
     if (recursive_check(hash, objid)) {
