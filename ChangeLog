@@ -1,3 +1,7 @@
+Sat Feb 28 18:28:58 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (ancillary_unix_rights): check message type.
+
 Sat Feb 28 16:18:39 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/net/http.rb: suppress warnings of non-existing instance variable

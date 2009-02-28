@@ -55,4 +55,12 @@ class TestSocketAncData < Test::Unit::TestCase
       assert(!ancdata.cmsg_is?(:IP, :PKTINFO))
     end
   end
+
+  if defined?(Socket::SCM_RIGHTS) && defined?(Socket::SCM_TIMESTAMP)
+    def test_unix_rights
+      assert_raise(TypeError) {
+        Socket::AncillaryData.int(:UNIX, :SOL_SOCKET, :TIMESTAMP, 1).unix_rights
+      }
+    end
+  end
 end if defined? Socket::AncillaryData
