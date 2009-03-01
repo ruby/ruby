@@ -526,7 +526,8 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
     return rsock_init_sock(rb_obj_alloc(klass), fd2);
 }
 
-int rb_sock_getfamily(int sockfd)
+int
+rsock_getfamily(int sockfd)
 {
     struct sockaddr_storage ss;
     socklen_t sslen = sizeof(ss);

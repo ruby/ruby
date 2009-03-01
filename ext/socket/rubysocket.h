@@ -203,7 +203,7 @@ int rsock_optname_arg(int family, int level, VALUE optname);
 int rsock_cmsg_type_arg(int family, int level, VALUE type);
 int rsock_shutdown_how_arg(VALUE how);
 
-int rb_sock_getfamily(int sockfd);
+int rsock_getfamily(int sockfd);
 
 int rb_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res);
 int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);

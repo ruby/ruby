@@ -1,3 +1,7 @@
+Sun Mar  1 20:57:41 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ (rsock_getfamily): renamed from rb_sock_getfamily.
+
 Sun Mar  1 19:52:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/win32/lib/Win32API.rb (initialize): passes res
