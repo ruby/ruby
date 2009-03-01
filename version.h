@@ -1,5 +1,5 @@
 #define RUBY_VERSION "1.9.2"
-#define RUBY_RELEASE_DATE "2009-02-28"
+#define RUBY_RELEASE_DATE "2009-03-01"
 #define RUBY_PATCHLEVEL -1
 #define RUBY_BRANCH_NAME "trunk"
 
@@ -7,8 +7,8 @@
 #define RUBY_VERSION_MINOR 9
 #define RUBY_VERSION_TEENY 1
 #define RUBY_RELEASE_YEAR 2009
-#define RUBY_RELEASE_MONTH 2
-#define RUBY_RELEASE_DAY 28
+#define RUBY_RELEASE_MONTH 3
+#define RUBY_RELEASE_DAY 1
 
 #ifdef RUBY_EXTERN
 RUBY_EXTERN const char ruby_version[];
