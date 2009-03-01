@@ -1,3 +1,8 @@
+Sun Mar  1 16:01:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (proc_daemon): stops and restarts timer thread because
+	  daemon(3) implies fork(2).  [ruby-dev:38055]
+
 Sun Mar  1 15:45:49 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ (rsock_make_hostent): renamed from sock_make_hostent.
