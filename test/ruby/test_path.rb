@@ -223,4 +223,13 @@ class TestPath < Test::Unit::TestCase
       assert_equal('c', File.basename('///a/b/c'))
     end
   end
+
+  def test_extname
+    assert_equal('', File.extname('a'))
+    assert_equal('.rb', File.extname('a.rb'))
+    assert_equal('', File.extname('a.rb.'))
+    assert_equal('', File.extname('a.'))
+    assert_equal('', File.extname('.x'))
+    assert_equal('', File.extname('..x'))
+  end
 end
