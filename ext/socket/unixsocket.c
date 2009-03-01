@@ -19,8 +19,8 @@ struct unixsock_arg {
 static VALUE
 unixsock_connect_internal(struct unixsock_arg *arg)
 {
-    return (VALUE)ruby_connect(arg->fd, (struct sockaddr*)arg->sockaddr,
-			       sizeof(*arg->sockaddr), 0);
+    return (VALUE)rsock_connect(arg->fd, (struct sockaddr*)arg->sockaddr,
+			        sizeof(*arg->sockaddr), 0);
 }
 
 VALUE
@@ -31,7 +31,7 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
     rb_io_t *fptr;
 
     SafeStringValue(path);
-    fd = ruby_socket(AF_UNIX, SOCK_STREAM, 0);
+    fd = rsock_socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) {
 	rb_sys_fail("socket(2)");
     }
@@ -482,7 +482,7 @@ unix_s_socketpair(int argc, VALUE *argv, VALUE klass)
     args[1] = type;
     args[2] = protocol;
 
-    return sock_s_socketpair(3, args, klass);
+    return rsock_sock_s_socketpair(3, args, klass);
 }
 #endif
 

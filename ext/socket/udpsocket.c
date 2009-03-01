@@ -34,7 +34,7 @@ udp_init(int argc, VALUE *argv, VALUE sock)
     if (rb_scan_args(argc, argv, "01", &arg) == 1) {
 	family = rsock_family_arg(arg);
     }
-    fd = ruby_socket(family, SOCK_DGRAM, 0);
+    fd = rsock_socket(family, SOCK_DGRAM, 0);
     if (fd < 0) {
 	rb_sys_fail("socket(2) - udp");
     }
@@ -55,7 +55,7 @@ udp_connect_internal(struct udp_arg *arg)
     struct addrinfo *res;
 
     for (res = arg->res; res; res = res->ai_next) {
-	if (ruby_connect(fd, res->ai_addr, res->ai_addrlen, 0) >= 0) {
+	if (rsock_connect(fd, res->ai_addr, res->ai_addrlen, 0) >= 0) {
 	    return Qtrue;
 	}
     }
@@ -86,7 +86,7 @@ udp_connect(VALUE sock, VALUE host, VALUE port)
     VALUE ret;
 
     rb_secure(3);
-    arg.res = sock_addrinfo(host, port, SOCK_DGRAM, 0);
+    arg.res = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
     GetOpenFile(sock, fptr);
     arg.fd = fptr->fd;
     ret = rb_ensure(udp_connect_internal, (VALUE)&arg,
@@ -114,7 +114,7 @@ udp_bind(VALUE sock, VALUE host, VALUE port)
     struct addrinfo *res0, *res;
 
     rb_secure(3);
-    res0 = sock_addrinfo(host, port, SOCK_DGRAM, 0);
+    res0 = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
     GetOpenFile(sock, fptr);
     for (res = res0; res; res = res->ai_next) {
 	if (bind(fptr->fd, res->ai_addr, res->ai_addrlen) < 0) {
@@ -166,7 +166,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
     rb_scan_args(argc, argv, "4", &arg.mesg, &flags, &host, &port);
 
     StringValue(arg.mesg);
-    res0 = sock_addrinfo(host, port, SOCK_DGRAM, 0);
+    res0 = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
     GetOpenFile(sock, fptr);
     arg.fd = fptr->fd;
     arg.flags = NUM2INT(flags);

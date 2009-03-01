@@ -49,7 +49,7 @@ sock_initialize(int argc, VALUE *argv, VALUE sock)
 
     rb_secure(3);
     setup_domain_and_type(domain, &d, type, &t);
-    fd = ruby_socket(d, t, NUM2INT(protocol));
+    fd = rsock_socket(d, t, NUM2INT(protocol));
     if (fd < 0) rb_sys_fail("socket(2)");
 
     return rsock_init_sock(sock, fd);
@@ -97,7 +97,7 @@ pair_yield(VALUE pair)
  *
  */
 VALUE
-sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
+rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
 {
 #if defined HAVE_SOCKETPAIR
     VALUE domain, type, protocol;
@@ -253,7 +253,7 @@ sock_connect(VALUE sock, VALUE addr)
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
     fd = fptr->fd;
-    n = ruby_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_LEN(addr), 0);
+    n = rsock_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_LEN(addr), 0);
     if (n < 0) {
 	rb_sys_fail("connect(2)");
     }
@@ -481,7 +481,7 @@ sock_bind(VALUE sock, VALUE addr)
  * * listen manual pages on unix-based systems
  * * listen function in Microsoft's Winsock functions reference
  */
-VALUE
+static VALUE
 sock_listen(VALUE sock, VALUE log)
 {
     rb_io_t *fptr;
@@ -922,7 +922,7 @@ static VALUE
 sock_s_gethostbyname(VALUE obj, VALUE host)
 {
     rb_secure(3);
-    return rsock_make_hostent(host, sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), sock_sockaddr);
+    return rsock_make_hostent(host, rsock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), sock_sockaddr);
 }
 
 /*
@@ -1105,7 +1105,7 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
     if (!NIL_P(flags)) {
 	hints.ai_flags = NUM2INT(flags);
     }
-    res = sock_getaddrinfo(host, port, &hints, 0);
+    res = rsock_getaddrinfo(host, port, &hints, 0);
 
     ret = make_addrinfo(res);
     freeaddrinfo(res);
@@ -1274,7 +1274,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 static VALUE
 sock_s_pack_sockaddr_in(VALUE self, VALUE port, VALUE host)
 {
-    struct addrinfo *res = sock_addrinfo(host, port, 0, 0);
+    struct addrinfo *res = rsock_addrinfo(host, port, 0, 0);
     VALUE addr = rb_str_new((char*)res->ai_addr, res->ai_addrlen);
 
     freeaddrinfo(res);
@@ -1787,8 +1787,8 @@ Init_socket()
     rb_define_method(rb_cSocket, "recvfrom", sock_recvfrom, -1);
     rb_define_method(rb_cSocket, "recvfrom_nonblock", sock_recvfrom_nonblock, -1);
 
-    rb_define_singleton_method(rb_cSocket, "socketpair", sock_s_socketpair, -1);
-    rb_define_singleton_method(rb_cSocket, "pair", sock_s_socketpair, -1);
+    rb_define_singleton_method(rb_cSocket, "socketpair", rsock_sock_s_socketpair, -1);
+    rb_define_singleton_method(rb_cSocket, "pair", rsock_sock_s_socketpair, -1);
     rb_define_singleton_method(rb_cSocket, "gethostname", sock_gethostname, 0);
     rb_define_singleton_method(rb_cSocket, "gethostbyname", sock_s_gethostbyname, 1);
     rb_define_singleton_method(rb_cSocket, "gethostbyaddr", sock_s_gethostbyaddr, -1);

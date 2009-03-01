@@ -291,7 +291,7 @@ port_str(VALUE port, char *pbuf, size_t len, int *flags_ptr)
 }
 
 struct addrinfo*
-sock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack)
+rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack)
 {
     struct addrinfo* res = NULL;
     char *hostp, *portp;
@@ -337,7 +337,7 @@ sock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_ha
 }
 
 struct addrinfo*
-sock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
+rsock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
 {
     struct addrinfo hints;
 
@@ -345,7 +345,7 @@ sock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = socktype;
     hints.ai_flags = flags;
-    return sock_getaddrinfo(host, port, &hints, 1);
+    return rsock_getaddrinfo(host, port, &hints, 1);
 }
 
 VALUE
@@ -583,7 +583,7 @@ call_getaddrinfo(VALUE node, VALUE service,
     if (!NIL_P(flags)) {
 	hints.ai_flags = NUM2INT(flags);
     }
-    res = sock_getaddrinfo(node, service, &hints, socktype_hack);
+    res = rsock_getaddrinfo(node, service, &hints, socktype_hack);
 
     if (res == NULL)
 	rb_raise(rb_eSocket, "host not found");

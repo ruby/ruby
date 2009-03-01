@@ -46,19 +46,19 @@ init_inetsock_internal(struct inetsock_arg *arg)
     int fd, status = 0;
     const char *syscall = 0;
 
-    arg->remote.res = sock_addrinfo(arg->remote.host, arg->remote.serv, SOCK_STREAM,
+    arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv, SOCK_STREAM,
 				    (type == INET_SERVER) ? AI_PASSIVE : 0);
     /*
      * Maybe also accept a local address
      */
 
     if (type != INET_SERVER && (!NIL_P(arg->local.host) || !NIL_P(arg->local.serv))) {
-	arg->local.res = sock_addrinfo(arg->local.host, arg->local.serv, SOCK_STREAM, 0);
+	arg->local.res = rsock_addrinfo(arg->local.host, arg->local.serv, SOCK_STREAM, 0);
     }
 
     arg->fd = fd = -1;
     for (res = arg->remote.res; res; res = res->ai_next) {
-	status = ruby_socket(res->ai_family,res->ai_socktype,res->ai_protocol);
+	status = rsock_socket(res->ai_family,res->ai_socktype,res->ai_protocol);
 	syscall = "socket(2)";
 	fd = status;
 	if (fd < 0) {
@@ -81,8 +81,8 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	    }
 
 	    if (status >= 0) {
-		status = ruby_connect(fd, res->ai_addr, res->ai_addrlen,
-				      (type == INET_SOCKS));
+		status = rsock_connect(fd, res->ai_addr, res->ai_addrlen,
+				       (type == INET_SOCKS));
 		syscall = "connect(2)";
 	    }
 	}
@@ -223,7 +223,7 @@ static VALUE
 ip_s_getaddress(VALUE obj, VALUE host)
 {
     struct sockaddr_storage addr;
-    struct addrinfo *res = sock_addrinfo(host, Qnil, SOCK_STREAM, 0);
+    struct addrinfo *res = rsock_addrinfo(host, Qnil, SOCK_STREAM, 0);
 
     /* just take the first one */
     memcpy(&addr, res->ai_addr, res->ai_addrlen);

@@ -228,7 +228,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
 }
 
 int
-ruby_socket(int domain, int type, int proto)
+rsock_socket(int domain, int type, int proto)
 {
     int fd;
 
@@ -353,7 +353,7 @@ socks_connect_blocking(void *data)
 #endif
 
 int
-ruby_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
+rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
 {
     int status;
     rb_blocking_function_t *func = connect_blocking;

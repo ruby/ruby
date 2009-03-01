@@ -51,7 +51,7 @@ static VALUE
 tcp_s_gethostbyname(VALUE obj, VALUE host)
 {
     rb_secure(3);
-    return rsock_make_hostent(host, sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME),
+    return rsock_make_hostent(host, rsock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME),
 			tcp_sockaddr);
 }
 

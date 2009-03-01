@@ -1,3 +1,14 @@
+Sun Mar  1 15:45:49 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ (rsock_make_hostent): renamed from sock_make_hostent.
+	  (rsock_addrinfo): renamed from sock_addrinfo.
+	  (rsock_getaddrinfo): renamed from sock_getaddrinfo.
+	  (rsock_socket): renamed from ruby_socket.
+	  (rsock_sock_s_socketpair): renamed from sock_s_socketpair.
+	  (rsock_connect): renamed from ruby_connect.
+
+	* ext/socket/socket.c (sock_listen): make it static.
+
 Sun Mar  1 15:29:31 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket: add rsock_ prefix.

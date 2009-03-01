@@ -207,8 +207,8 @@ int rb_sock_getfamily(int sockfd);
 
 int rb_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res);
 int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
-struct addrinfo *sock_addrinfo(VALUE host, VALUE port, int socktype, int flags);
-struct addrinfo *sock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
+struct addrinfo *rsock_addrinfo(VALUE host, VALUE port, int socktype, int flags);
+struct addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
 VALUE rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
 VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
 
@@ -223,9 +223,9 @@ const char* rsock_unixpath(struct sockaddr_un *sockaddr, socklen_t len);
 VALUE rsock_unixaddr(struct sockaddr_un *sockaddr, socklen_t len);
 #endif
 
-int ruby_socket(int domain, int type, int proto);
+int rsock_socket(int domain, int type, int proto);
 VALUE rsock_init_sock(VALUE sock, int fd);
-VALUE sock_s_socketpair(int argc, VALUE *argv, VALUE klass);
+VALUE rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass);
 VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type);
 VALUE rsock_init_unixsock(VALUE sock, VALUE path, int server);
 
@@ -250,9 +250,7 @@ enum sock_recv_type {
 VALUE rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
 VALUE rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
 
-int ruby_connect(int fd, const struct sockaddr *sockaddr, int len, int socks);
-
-VALUE sock_listen(VALUE sock, VALUE log);
+int rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks);
 
 VALUE rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len);
 VALUE rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len);
