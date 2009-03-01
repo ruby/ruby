@@ -38,7 +38,7 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
 
     MEMZERO(&sockaddr, struct sockaddr_un, 1);
     sockaddr.sun_family = AF_UNIX;
-    if (sizeof(sockaddr.sun_path) <= RSTRING_LEN(path)) {
+    if (sizeof(sockaddr.sun_path) <= (size_t)RSTRING_LEN(path)) {
         rb_raise(rb_eArgError, "too long unix socket path (max: %dbytes)",
             (int)sizeof(sockaddr.sun_path)-1);
     }

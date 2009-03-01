@@ -725,7 +725,7 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
 
     StringValue(path);
 
-    if (sizeof(un.sun_path) <= RSTRING_LEN(path))
+    if (sizeof(un.sun_path) <= (size_t)RSTRING_LEN(path))
         rb_raise(rb_eArgError, "too long unix socket path (max: %dbytes)",
             (int)sizeof(un.sun_path)-1);
 
@@ -1260,7 +1260,7 @@ addrinfo_mload(VALUE self, VALUE ary)
         sun.sun_family = AF_UNIX;
 
         StringValue(v);
-        if (sizeof(sun.sun_path) <= RSTRING_LEN(v))
+        if (sizeof(sun.sun_path) <= (size_t)RSTRING_LEN(v))
             rb_raise(rb_eSocket, "too long AF_UNIX path");
         memcpy(sun.sun_path, RSTRING_PTR(v), RSTRING_LEN(v));
         len = sizeof(sun);

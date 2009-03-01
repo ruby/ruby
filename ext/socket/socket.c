@@ -1153,11 +1153,11 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     tmp = rb_check_sockaddr_string_type(sa);
     if (!NIL_P(tmp)) {
 	sa = tmp;
-	if (sizeof(ss) < RSTRING_LEN(sa)) {
+	if (sizeof(ss) < (size_t)RSTRING_LEN(sa)) {
 	    rb_raise(rb_eTypeError, "sockaddr length too big");
 	}
 	memcpy(&ss, RSTRING_PTR(sa), RSTRING_LEN(sa));
-	if (RSTRING_LEN(sa) != SS_LEN(&ss)) {
+	if ((size_t)RSTRING_LEN(sa) != SS_LEN(&ss)) {
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
 	sap = (struct sockaddr*)&ss;
@@ -1386,7 +1386,7 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
     if (((struct sockaddr *)sockaddr)->sa_family != AF_UNIX) {
         rb_raise(rb_eArgError, "not an AF_UNIX sockaddr");
     }
-    if (sizeof(struct sockaddr_un) < RSTRING_LEN(addr)) {
+    if (sizeof(struct sockaddr_un) < (size_t)RSTRING_LEN(addr)) {
 	rb_raise(rb_eTypeError, "too long sockaddr_un - %ld longer than %d",
 		 RSTRING_LEN(addr), (int)sizeof(struct sockaddr_un));
     }

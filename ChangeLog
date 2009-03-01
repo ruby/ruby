@@ -1,3 +1,11 @@
+Sun Mar  1 22:59:41 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c: suppress warnings.
+
+	* ext/socket/socket.c: ditto.
+
+	* ext/socket/unixsocket.c: ditto.
+
 Sun Mar  1 20:57:41 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ (rsock_getfamily): renamed from rb_sock_getfamily.
