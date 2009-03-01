@@ -590,6 +590,29 @@ pst_wcoredump(VALUE st)
 #if !defined(HAVE_WAITPID) && !defined(HAVE_WAIT4)
 #define NO_WAITPID
 static st_table *pid_tbl;
+
+struct wait_data {
+    rb_pid_t pid;
+    int status;
+};
+
+static int
+wait_each(rb_pid_t pid, int status, struct wait_data *data)
+{
+    if (data->status != -1) return ST_STOP;
+
+    data->pid = pid;
+    data->status = status;
+    return ST_DELETE;
+}
+
+static int
+waitall_each(rb_pid_t pid, int status, VALUE ary)
+{
+    rb_last_status_set(status, pid);
+    rb_ary_push(ary, rb_assoc_new(PIDT2NUM(pid), rb_last_status_get()));
+    return ST_DELETE;
+}
 #else
 struct waitpid_arg {
     rb_pid_t pid;
@@ -624,7 +647,7 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
 #ifndef NO_WAITPID
     struct waitpid_arg arg;
 
-retry:
+  retry:
     arg.pid = pid;
     arg.st = st;
     arg.flags = flags;
@@ -635,13 +658,25 @@ retry:
             RUBY_VM_CHECK_INTS();
             goto retry;
         }
-	return -1;
+	return (rb_pid_t)-1;
     }
 #else  /* NO_WAITPID */
-    if (pid_tbl && st_lookup(pid_tbl, pid, (st_data_t *)st)) {
-	rb_last_status_set(*st, pid);
-	st_delete(pid_tbl, (st_data_t*)&pid, NULL);
-	return pid;
+    if (pid_tbl) {
+	st_data_t status, piddata = (st_data_t)pid;
+	if (pid == (rb_pid_t)-1) {
+	    struct wait_data data;
+	    data.pid = (rb_pid_t)-1;
+	    data.status = -1;
+	    st_foreach(pid_tbl, wait_each, (st_data_t)&data);
+	    if (data.status != -1) {
+		rb_last_status_set(data.status, data.pid);
+		return data.pid;
+	    }
+	}
+	else if (st_delete(pid_tbl, &piddata, &status)) {
+	    rb_last_status_set(*st = (int)status, pid);
+	    return pid;
+	}
     }
 
     if (flags) {
@@ -656,13 +691,13 @@ retry:
 		rb_thread_schedule();
 		continue;
 	    }
-	    return -1;
+	    return (rb_pid_t)-1;
 	}
-	if (result == pid) {
+	if (result == pid || pid == (rb_pid_t)-1) {
 	    break;
 	}
 	if (!pid_tbl)
-	  pid_tbl = st_init_numtable();
+	    pid_tbl = st_init_numtable();
 	st_insert(pid_tbl, pid, (st_data_t)st);
 	if (!rb_thread_alone()) rb_thread_schedule();
     }
@@ -672,31 +707,6 @@ retry:
     }
     return result;
 }
-
-#ifdef NO_WAITPID
-struct wait_data {
-    rb_pid_t pid;
-    int status;
-};
-
-static int
-wait_each(rb_pid_t pid, int status, struct wait_data *data)
-{
-    if (data->status != -1) return ST_STOP;
-
-    data->pid = pid;
-    data->status = status;
-    return ST_DELETE;
-}
-
-static int
-waitall_each(rb_pid_t pid, int status, VALUE ary)
-{
-    rb_last_status_set(status, pid);
-    rb_ary_push(ary, rb_assoc_new(PIDT2NUM(pid), rb_last_status_get()));
-    return ST_DELETE;
-}
-#endif
 
 
 /* [MG]:FIXME: I wasn't sure how this should be done, since ::wait()

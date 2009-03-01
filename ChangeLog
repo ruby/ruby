@@ -1,3 +1,8 @@
+Sun Mar  1 16:15:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_waitpid): use wait_each() on no waitpid platforms.
+	  [ruby-dev:38054]
+
 Sun Mar  1 16:01:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (proc_daemon): stops and restarts timer thread because
