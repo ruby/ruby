@@ -695,7 +695,7 @@ zstream_run(struct zstream *z, Bytef *src, uInt len, int flush)
 {
     uInt n;
     int err;
-    volatile VALUE guard;
+    volatile VALUE guard = Qnil;
 
     if (NIL_P(z->input) && len == 0) {
 	z->stream.next_in = (Bytef*)"";

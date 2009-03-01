@@ -1,3 +1,8 @@
+Sun Mar  1 19:38:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/zlib/zlib.c (zstream_run): suppress a warning.  a patch from
+	  Charlie Savage at [ruby-core:22607].
+
 Sun Mar  1 19:36:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_dtoa): allocates one more byte to get rid of buffer
