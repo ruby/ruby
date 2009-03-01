@@ -1,3 +1,8 @@
+Sun Mar  1 17:27:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (gfDebug): uncommented out.
+	  [ruby-core:22600]
+
 Sun Mar  1 03:04:19 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* class.c (rb_singleton_class_clone): Qnil must be used for a null
