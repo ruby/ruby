@@ -1,3 +1,9 @@
+Mon Mar  2 00:56:45 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/observer.rb: The module oberservable uses now a hash to
+	  store listeners. merged a patch from Alessandro Di Maria in
+	  [ruby-core:22560].
+
 Sun Mar  1 22:59:41 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c: suppress warnings.
