@@ -1,6 +1,6 @@
 Sun Mar  1 15:29:31 2009  Tanaka Akira  <akr@fsij.org>
 
-	* ext/socket: add rsock_prefix.
+	* ext/socket: add rsock_ prefix.
 
 Sat Feb 28 21:52:37 2009  Tanaka Akira  <akr@fsij.org>
 
