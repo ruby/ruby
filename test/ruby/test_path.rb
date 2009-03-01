@@ -189,6 +189,8 @@ class TestPath < Test::Unit::TestCase
     assert_equal('a', File.basename('/a/'))
     assert_equal('b', File.basename('/a/b'))
 
+    assert_equal("..", File.basename("..", ".*"))
+
     if /(bcc|ms|cyg)win|mingw|djgpp|human|emx/ =~ RUBY_PLATFORM
       # DOSISH_UNC
       assert_equal('/', File.basename('//'))
