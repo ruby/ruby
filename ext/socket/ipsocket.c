@@ -104,12 +104,12 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	listen(fd, 5);
 
     /* create new instance */
-    return init_sock(arg->sock, fd);
+    return rsock_init_sock(arg->sock, fd);
 }
 
 VALUE
-init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
-	      VALUE local_host, VALUE local_serv, int type)
+rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
+	            VALUE local_host, VALUE local_serv, int type)
 {
     struct inetsock_arg arg;
     arg.sock = sock;
@@ -152,7 +152,7 @@ ip_addr(VALUE sock)
 
     if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    return ipaddr((struct sockaddr*)&addr, fptr->mode & FMODE_NOREVLOOKUP);
+    return rsock_ipaddr((struct sockaddr*)&addr, fptr->mode & FMODE_NOREVLOOKUP);
 }
 
 /*
@@ -179,7 +179,7 @@ ip_peeraddr(VALUE sock)
 
     if (getpeername(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getpeername(2)");
-    return ipaddr((struct sockaddr*)&addr, fptr->mode & FMODE_NOREVLOOKUP);
+    return rsock_ipaddr((struct sockaddr*)&addr, fptr->mode & FMODE_NOREVLOOKUP);
 }
 
 /*
@@ -206,7 +206,7 @@ ip_peeraddr(VALUE sock)
 static VALUE
 ip_recvfrom(int argc, VALUE *argv, VALUE sock)
 {
-    return s_recvfrom(sock, argc, argv, RECV_IP);
+    return rsock_s_recvfrom(sock, argc, argv, RECV_IP);
 }
 
 /*
@@ -229,7 +229,7 @@ ip_s_getaddress(VALUE obj, VALUE host)
     memcpy(&addr, res->ai_addr, res->ai_addrlen);
     freeaddrinfo(res);
 
-    return make_ipaddr((struct sockaddr*)&addr);
+    return rsock_make_ipaddr((struct sockaddr*)&addr);
 }
 
 /*

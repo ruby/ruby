@@ -32,14 +32,14 @@ udp_init(int argc, VALUE *argv, VALUE sock)
 
     rb_secure(3);
     if (rb_scan_args(argc, argv, "01", &arg) == 1) {
-	family = family_arg(arg);
+	family = rsock_family_arg(arg);
     }
     fd = ruby_socket(family, SOCK_DGRAM, 0);
     if (fd < 0) {
 	rb_sys_fail("socket(2) - udp");
     }
 
-    return init_sock(sock, fd);
+    return rsock_init_sock(sock, fd);
 }
 
 struct udp_arg
@@ -157,10 +157,10 @@ udp_send(int argc, VALUE *argv, VALUE sock)
     rb_io_t *fptr;
     int n;
     struct addrinfo *res0, *res;
-    struct send_arg arg;
+    struct rsock_send_arg arg;
 
     if (argc == 2 || argc == 3) {
-	return bsock_send(argc, argv, sock);
+	return rsock_bsock_send(argc, argv, sock);
     }
     rb_secure(4);
     rb_scan_args(argc, argv, "4", &arg.mesg, &flags, &host, &port);
@@ -175,7 +175,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
 	arg.to = res->ai_addr;
 	arg.tolen = res->ai_addrlen;
 	rb_thread_fd_writable(arg.fd);
-	n = (int)BLOCKING_REGION(sendto_blocking, &arg);
+	n = (int)BLOCKING_REGION(rsock_sendto_blocking, &arg);
 	if (n >= 0) {
 	    freeaddrinfo(res0);
 	    return INT2FIX(n);
@@ -233,7 +233,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
 static VALUE
 udp_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
 {
-    return s_recvfrom_nonblock(sock, argc, argv, RECV_IP);
+    return rsock_s_recvfrom_nonblock(sock, argc, argv, RECV_IP);
 }
 
 /*

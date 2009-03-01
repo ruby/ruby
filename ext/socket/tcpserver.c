@@ -29,7 +29,7 @@ tcp_svr_init(int argc, VALUE *argv, VALUE sock)
     VALUE hostname, port;
 
     rb_scan_args(argc, argv, "011", &hostname, &port);
-    return init_inetsock(sock, hostname, port, Qnil, Qnil, INET_SERVER);
+    return rsock_init_inetsock(sock, hostname, port, Qnil, Qnil, INET_SERVER);
 }
 
 /*
@@ -52,8 +52,8 @@ tcp_accept(VALUE sock)
  
     GetOpenFile(sock, fptr);
     fromlen = sizeof(from);
-    return s_accept(rb_cTCPSocket, fptr->fd,
-		    (struct sockaddr*)&from, &fromlen);
+    return rsock_s_accept(rb_cTCPSocket, fptr->fd,
+		          (struct sockaddr*)&from, &fromlen);
 }
 
 /*
@@ -94,8 +94,8 @@ tcp_accept_nonblock(VALUE sock)
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(from);
-    return s_accept_nonblock(rb_cTCPSocket, fptr,
-			     (struct sockaddr *)&from, &fromlen);
+    return rsock_s_accept_nonblock(rb_cTCPSocket, fptr,
+			           (struct sockaddr *)&from, &fromlen);
 }
 
 /*
@@ -121,7 +121,7 @@ tcp_sysaccept(VALUE sock)
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(from);
-    return s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
+    return rsock_s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
 }
 
 /*

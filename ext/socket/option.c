@@ -18,17 +18,17 @@ optname_to_sym(int level, int optname)
 {
     switch (level) {
       case SOL_SOCKET:
-        return constant_to_sym(optname, intern_so_optname);
+        return constant_to_sym(optname, rsock_intern_so_optname);
       case IPPROTO_IP:
-        return constant_to_sym(optname, intern_ip_optname);
+        return constant_to_sym(optname, rsock_intern_ip_optname);
 #ifdef INET6
       case IPPROTO_IPV6:
-        return constant_to_sym(optname, intern_ipv6_optname);
+        return constant_to_sym(optname, rsock_intern_ipv6_optname);
 #endif
       case IPPROTO_TCP:
-        return constant_to_sym(optname, intern_tcp_optname);
+        return constant_to_sym(optname, rsock_intern_tcp_optname);
       case IPPROTO_UDP:
-        return constant_to_sym(optname, intern_udp_optname);
+        return constant_to_sym(optname, rsock_intern_udp_optname);
       default:
         return INT2NUM(optname);
     }
@@ -47,9 +47,9 @@ optname_to_sym(int level, int optname)
 static VALUE
 sockopt_initialize(VALUE self, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE data)
 {
-    int family = family_arg(vfamily);
-    int level = level_arg(family, vlevel);
-    int optname = optname_arg(family, level, voptname);
+    int family = rsock_family_arg(vfamily);
+    int level = rsock_level_arg(family, vlevel);
+    int optname = rsock_optname_arg(family, level, voptname);
     StringValue(data);
     rb_ivar_set(self, rb_intern("family"), INT2NUM(family));
     rb_ivar_set(self, rb_intern("level"), INT2NUM(level));
@@ -59,7 +59,7 @@ sockopt_initialize(VALUE self, VALUE vfamily, VALUE vlevel, VALUE voptname, VALU
 }
 
 VALUE
-sockopt_new(int family, int level, int optname, VALUE data)
+rsock_sockopt_new(int family, int level, int optname, VALUE data)
 {
     NEWOBJ(obj, struct RObject);
     OBJSETUP(obj, rb_cSockOpt, T_OBJECT);
@@ -156,11 +156,11 @@ sockopt_data(VALUE self)
 static VALUE
 sockopt_s_int(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE vint)
 {
-    int family = family_arg(vfamily);
-    int level = level_arg(family, vlevel);
-    int optname = optname_arg(family, level, voptname);
+    int family = rsock_family_arg(vfamily);
+    int level = rsock_level_arg(family, vlevel);
+    int optname = rsock_optname_arg(family, level, voptname);
     int i = NUM2INT(vint);
-    return sockopt_new(family, level, optname, rb_str_new((char*)&i, sizeof(i)));
+    return rsock_sockopt_new(family, level, optname, rb_str_new((char*)&i, sizeof(i)));
 }
 
 /*
@@ -204,11 +204,11 @@ sockopt_int(VALUE self)
 static VALUE
 sockopt_s_bool(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE vbool)
 {
-    int family = family_arg(vfamily);
-    int level = level_arg(family, vlevel);
-    int optname = optname_arg(family, level, voptname);
+    int family = rsock_family_arg(vfamily);
+    int level = rsock_level_arg(family, vlevel);
+    int optname = rsock_optname_arg(family, level, voptname);
     int i = RTEST(vbool) ? 1 : 0;
-    return sockopt_new(family, level, optname, rb_str_new((char*)&i, sizeof(i)));
+    return rsock_sockopt_new(family, level, optname, rb_str_new((char*)&i, sizeof(i)));
 }
 
 /*
@@ -258,7 +258,7 @@ sockopt_s_linger(VALUE klass, VALUE vonoff, VALUE vsecs)
     else
         l.l_onoff = RTEST(vonoff) ? 1 : 0;
     l.l_linger = NUM2INT(vsecs);
-    return sockopt_new(AF_UNSPEC, SOL_SOCKET, SO_LINGER, rb_str_new((char*)&l, sizeof(l)));
+    return rsock_sockopt_new(AF_UNSPEC, SOL_SOCKET, SO_LINGER, rb_str_new((char*)&l, sizeof(l)));
 }
 
 /*
@@ -369,7 +369,7 @@ inspect_socktype(int level, int optname, VALUE data, VALUE ret)
         int i;
         ID id;
         memcpy((char*)&i, RSTRING_PTR(data), sizeof(int));
-        id = intern_socktype(i);
+        id = rsock_intern_socktype(i);
         if (id)
             rb_str_catf(ret, " %s", rb_id2name(id));
         else
@@ -468,7 +468,7 @@ sockopt_inspect(VALUE self)
 
     ret = rb_sprintf("#<%s:", rb_obj_classname(self));
 
-    family_id = intern_family_noprefix(family);
+    family_id = rsock_intern_family_noprefix(family);
     if (family_id)
 	rb_str_catf(ret, " %s", rb_id2name(family_id));
     else
@@ -477,7 +477,7 @@ sockopt_inspect(VALUE self)
     if (level == SOL_SOCKET) {
         rb_str_cat2(ret, " SOCKET");
 
-	optname_id = intern_so_optname(optname);
+	optname_id = rsock_intern_so_optname(optname);
 	if (optname_id)
 	    rb_str_catf(ret, " %s", rb_id2name(optname_id));
 	else
@@ -487,7 +487,7 @@ sockopt_inspect(VALUE self)
     else if (family == AF_UNIX) {
 	rb_str_catf(ret, " level:%d", level);
 
-	optname_id = intern_local_optname(optname);
+	optname_id = rsock_intern_local_optname(optname);
 	if (optname_id)
 	    rb_str_catf(ret, " %s", rb_id2name(optname_id));
 	else
@@ -495,7 +495,7 @@ sockopt_inspect(VALUE self)
     }
 #endif
     else if (IS_IP_FAMILY(family)) {
-	level_id = intern_iplevel(level);
+	level_id = rsock_intern_iplevel(level);
 	if (level_id)
 	    rb_str_catf(ret, " %s", rb_id2name(level_id));
 	else

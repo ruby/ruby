@@ -156,7 +156,7 @@ struct sockaddr_storage {
 #define INET_SERVER 1
 #define INET_SOCKS  2
 
-extern int do_not_reverse_lookup;
+extern int rsock_do_not_reverse_lookup;
 #define FMODE_NOREVLOOKUP 0x100
 
 extern VALUE rb_cBasicSocket;
@@ -188,57 +188,57 @@ int Rconnect();
 
 #define BLOCKING_REGION(func, arg) (long)rb_thread_blocking_region((func), (arg), RUBY_UBF_IO, 0)
 
-#define SockAddrStringValue(v) sockaddr_string_value(&(v))
-#define SockAddrStringValuePtr(v) sockaddr_string_value_ptr(&(v))
-VALUE sockaddr_string_value(volatile VALUE *);
-char *sockaddr_string_value_ptr(volatile VALUE *);
+#define SockAddrStringValue(v) rsock_sockaddr_string_value(&(v))
+#define SockAddrStringValuePtr(v) rsock_sockaddr_string_value_ptr(&(v))
+VALUE rsock_sockaddr_string_value(volatile VALUE *);
+char *rsock_sockaddr_string_value_ptr(volatile VALUE *);
 VALUE rb_check_sockaddr_string_type(VALUE);
 
-NORETURN(void raise_socket_error(const char *, int));
+NORETURN(void rsock_raise_socket_error(const char *, int));
 
-int family_arg(VALUE domain);
-int socktype_arg(VALUE type);
-int level_arg(int family, VALUE level);
-int optname_arg(int family, int level, VALUE optname);
-int cmsg_type_arg(int family, int level, VALUE type);
-int shutdown_how_arg(VALUE how);
+int rsock_family_arg(VALUE domain);
+int rsock_socktype_arg(VALUE type);
+int rsock_level_arg(int family, VALUE level);
+int rsock_optname_arg(int family, int level, VALUE optname);
+int rsock_cmsg_type_arg(int family, int level, VALUE type);
+int rsock_shutdown_how_arg(VALUE how);
 
 int rb_sock_getfamily(int sockfd);
 
 int rb_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res);
 int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
 struct addrinfo *sock_addrinfo(VALUE host, VALUE port, int socktype, int flags);
-struct addrinfo* sock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
-VALUE fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
-VALUE io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
+struct addrinfo *sock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
+VALUE rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
+VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
 
-VALUE addrinfo_new(struct sockaddr *addr, socklen_t len, int family, int socktype, int protocol, VALUE canonname, VALUE inspectname);
+VALUE rsock_addrinfo_new(struct sockaddr *addr, socklen_t len, int family, int socktype, int protocol, VALUE canonname, VALUE inspectname);
 
-VALUE make_ipaddr(struct sockaddr *addr);
-VALUE ipaddr(struct sockaddr *sockaddr, int norevlookup);
-VALUE make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, size_t));
+VALUE rsock_make_ipaddr(struct sockaddr *addr);
+VALUE rsock_ipaddr(struct sockaddr *sockaddr, int norevlookup);
+VALUE rsock_make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, size_t));
 
 #ifdef HAVE_SYS_UN_H
-const char* unixpath(struct sockaddr_un *sockaddr, socklen_t len);
-VALUE unixaddr(struct sockaddr_un *sockaddr, socklen_t len);
+const char* rsock_unixpath(struct sockaddr_un *sockaddr, socklen_t len);
+VALUE rsock_unixaddr(struct sockaddr_un *sockaddr, socklen_t len);
 #endif
 
 int ruby_socket(int domain, int type, int proto);
-VALUE init_sock(VALUE sock, int fd);
+VALUE rsock_init_sock(VALUE sock, int fd);
 VALUE sock_s_socketpair(int argc, VALUE *argv, VALUE klass);
-VALUE init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type);
-VALUE init_unixsock(VALUE sock, VALUE path, int server);
+VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type);
+VALUE rsock_init_unixsock(VALUE sock, VALUE path, int server);
 
-struct send_arg {
+struct rsock_send_arg {
     int fd, flags;
     VALUE mesg;
     struct sockaddr *to;
     socklen_t tolen;
 };
 
-VALUE sendto_blocking(void *data);
-VALUE send_blocking(void *data);
-VALUE bsock_send(int argc, VALUE *argv, VALUE sock);
+VALUE rsock_sendto_blocking(void *data);
+VALUE rsock_send_blocking(void *data);
+VALUE rsock_bsock_send(int argc, VALUE *argv, VALUE sock);
 
 enum sock_recv_type {
     RECV_RECV,                  /* BasicSocket#recv(no from) */
@@ -247,17 +247,17 @@ enum sock_recv_type {
     RECV_SOCKET                 /* Socket#recvfrom */
 };
 
-VALUE s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
-VALUE s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
+VALUE rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
+VALUE rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
 
 int ruby_connect(int fd, const struct sockaddr *sockaddr, int len, int socks);
 
 VALUE sock_listen(VALUE sock, VALUE log);
 
-VALUE s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len);
-VALUE s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len);
+VALUE rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len);
+VALUE rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len);
 
-VALUE sockopt_new(int family, int level, int optname, VALUE data);
+VALUE rsock_sockopt_new(int family, int level, int optname, VALUE data);
 
 #ifdef HAVE_ST_MSG_CONTROL
 void rsock_discard_cmsg_resource(struct msghdr *mh);

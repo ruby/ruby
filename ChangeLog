@@ -1,3 +1,7 @@
+Sun Mar  1 15:29:31 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket: add rsock_prefix.
+
 Sat Feb 28 21:52:37 2009  Tanaka Akira  <akr@fsij.org>
 
 	* vm_eval.c (rb_iterate): use volatile to suppress warnings.

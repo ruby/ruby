@@ -186,12 +186,12 @@ make_ipaddr0(struct sockaddr *addr, char *buf, size_t len)
 
     error = rb_getnameinfo(addr, SA_LEN(addr), buf, len, NULL, 0, NI_NUMERICHOST);
     if (error) {
-        raise_socket_error("getnameinfo", error);
+        rsock_raise_socket_error("getnameinfo", error);
     }
 }
 
 VALUE
-make_ipaddr(struct sockaddr *addr)
+rsock_make_ipaddr(struct sockaddr *addr)
 {
     char hbuf[1024];
 
@@ -312,7 +312,7 @@ sock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_ha
         if (hostp && hostp[strlen(hostp)-1] == '\n') {
             rb_raise(rb_eSocket, "newline at the end of hostname");
         }
-        raise_socket_error("getaddrinfo", error);
+        rsock_raise_socket_error("getaddrinfo", error);
     }
 
 #if defined(__APPLE__) && defined(__MACH__)
@@ -349,7 +349,7 @@ sock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
 }
 
 VALUE
-ipaddr(struct sockaddr *sockaddr, int norevlookup)
+rsock_ipaddr(struct sockaddr *sockaddr, int norevlookup)
 {
     VALUE family, port, addr1, addr2;
     VALUE ary;
@@ -357,7 +357,7 @@ ipaddr(struct sockaddr *sockaddr, int norevlookup)
     char hbuf[1024], pbuf[1024];
     ID id;
 
-    id = intern_family(sockaddr->sa_family);
+    id = rsock_intern_family(sockaddr->sa_family);
     if (id) {
         family = rb_str_dup(rb_id2str(id));
     }
@@ -377,7 +377,7 @@ ipaddr(struct sockaddr *sockaddr, int norevlookup)
     error = rb_getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
                            pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
     if (error) {
-        raise_socket_error("getnameinfo", error);
+        rsock_raise_socket_error("getnameinfo", error);
     }
     addr2 = rb_str_new2(hbuf);
     if (addr1 == Qnil) {
@@ -391,7 +391,7 @@ ipaddr(struct sockaddr *sockaddr, int norevlookup)
 
 #ifdef HAVE_SYS_UN_H
 const char*
-unixpath(struct sockaddr_un *sockaddr, socklen_t len)
+rsock_unixpath(struct sockaddr_un *sockaddr, socklen_t len)
 {
     if (sockaddr->sun_path < (char*)sockaddr + len)
         return sockaddr->sun_path;
@@ -400,10 +400,10 @@ unixpath(struct sockaddr_un *sockaddr, socklen_t len)
 }
 
 VALUE
-unixaddr(struct sockaddr_un *sockaddr, socklen_t len)
+rsock_unixaddr(struct sockaddr_un *sockaddr, socklen_t len)
 {
     return rb_assoc_new(rb_str_new2("AF_UNIX"),
-                        rb_str_new2(unixpath(sockaddr, len)));
+                        rb_str_new2(rsock_unixpath(sockaddr, len)));
 }
 #endif
 
@@ -457,7 +457,7 @@ make_hostent_internal(struct hostent_arg *arg)
 }
 
 VALUE
-make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, size_t))
+rsock_make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, size_t))
 {
     struct hostent_arg arg;
 
@@ -551,9 +551,9 @@ init_addrinfo(rb_addrinfo_t *rai, struct sockaddr *sa, size_t len,
 }
 
 VALUE
-addrinfo_new(struct sockaddr *addr, socklen_t len,
-             int family, int socktype, int protocol,
-             VALUE canonname, VALUE inspectname)
+rsock_addrinfo_new(struct sockaddr *addr, socklen_t len,
+                   int family, int socktype, int protocol,
+                   VALUE canonname, VALUE inspectname)
 {
     VALUE a;
     rb_addrinfo_t *rai;
@@ -572,10 +572,10 @@ call_getaddrinfo(VALUE node, VALUE service,
     struct addrinfo hints, *res;
 
     MEMZERO(&hints, struct addrinfo, 1);
-    hints.ai_family = NIL_P(family) ? PF_UNSPEC : family_arg(family);
+    hints.ai_family = NIL_P(family) ? PF_UNSPEC : rsock_family_arg(family);
 
     if (!NIL_P(socktype)) {
-	hints.ai_socktype = socktype_arg(socktype);
+	hints.ai_socktype = rsock_socktype_arg(socktype);
     }
     if (!NIL_P(protocol)) {
 	hints.ai_protocol = NUM2INT(protocol);
@@ -676,9 +676,9 @@ addrinfo_firstonly_new(VALUE node, VALUE service, VALUE family, VALUE socktype, 
         OBJ_FREEZE(canonname);
     }
 
-    ret = addrinfo_new(res->ai_addr, res->ai_addrlen,
-                       res->ai_family, res->ai_socktype, res->ai_protocol,
-                       canonname, inspectname);
+    ret = rsock_addrinfo_new(res->ai_addr, res->ai_addrlen,
+                             res->ai_family, res->ai_socktype, res->ai_protocol,
+                             canonname, inspectname);
 
     freeaddrinfo(res);
     return ret;
@@ -705,9 +705,9 @@ addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE
             OBJ_FREEZE(canonname);
         }
 
-        addr = addrinfo_new(r->ai_addr, r->ai_addrlen,
-                            r->ai_family, r->ai_socktype, r->ai_protocol,
-                            canonname, inspectname);
+        addr = rsock_addrinfo_new(r->ai_addr, r->ai_addrlen,
+                                  r->ai_family, r->ai_socktype, r->ai_protocol,
+                                  canonname, inspectname);
 
         rb_ary_push(ret, addr);
     }
@@ -800,8 +800,8 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "13", &sockaddr_arg, &pfamily, &socktype, &protocol);
 
-    i_pfamily = NIL_P(pfamily) ? PF_UNSPEC : family_arg(pfamily);
-    i_socktype = NIL_P(socktype) ? 0 : socktype_arg(socktype);
+    i_pfamily = NIL_P(pfamily) ? PF_UNSPEC : rsock_family_arg(pfamily);
+    i_socktype = NIL_P(socktype) ? 0 : rsock_socktype_arg(socktype);
     i_protocol = NIL_P(protocol) ? 0 : NUM2INT(protocol);
 
     sockaddr_ary = rb_check_array_type(sockaddr_arg);
@@ -809,7 +809,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
         VALUE afamily = rb_ary_entry(sockaddr_ary, 0);
         int af;
         StringValue(afamily);
-        if (family_to_int(RSTRING_PTR(afamily), RSTRING_LEN(afamily), &af) == -1)
+        if (rsock_family_to_int(RSTRING_PTR(afamily), RSTRING_LEN(afamily), &af) == -1)
 	    rb_raise(rb_eSocket, "unknown address family: %s", StringValueCStr(afamily));
         switch (af) {
           case AF_INET: /* ["AF_INET", 46102, "localhost.localdomain", "127.0.0.1"] */
@@ -934,7 +934,7 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
                                     hbuf, sizeof(hbuf), NULL, 0,
                                     NI_NUMERICHOST|NI_NUMERICSERV);
                 if (error) {
-                    raise_socket_error("getnameinfo", error);
+                    rsock_raise_socket_error("getnameinfo", error);
                 }
                 if (addr->sin6_port == 0) {
                     rb_str_cat2(ret, hbuf);
@@ -999,7 +999,7 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
 
           default:
           {
-            ID id = intern_family(rai->addr.ss_family);
+            ID id = rsock_intern_family(rai->addr.ss_family);
             if (id == 0)
                 rb_str_catf(ret, "unknown address family %d", rai->addr.ss_family);
             else
@@ -1034,7 +1034,7 @@ addrinfo_inspect(VALUE self)
     inspect_sockaddr(self, ret);
 
     if (rai->pfamily && ai_get_afamily(rai) != rai->pfamily) {
-        ID id = intern_protocol_family(rai->pfamily);
+        ID id = rsock_intern_protocol_family(rai->pfamily);
         if (id)
             rb_str_catf(ret, " %s", rb_id2name(id));
         else
@@ -1055,7 +1055,7 @@ addrinfo_inspect(VALUE self)
     }
     else {
         if (rai->socktype) {
-            ID id = intern_socktype(rai->socktype);
+            ID id = rsock_intern_socktype(rai->socktype);
             if (id)
                 rb_str_catf(ret, " %s", rb_id2name(id));
             else
@@ -1064,7 +1064,7 @@ addrinfo_inspect(VALUE self)
 
         if (rai->protocol) {
             if (internet_p) {
-                ID id = intern_ipproto(rai->protocol);
+                ID id = rsock_intern_ipproto(rai->protocol);
                 if (id)
                     rb_str_catf(ret, " %s", rb_id2name(id));
                 else
@@ -1117,7 +1117,7 @@ addrinfo_mdump(VALUE self)
     int afamily_int = ai_get_afamily(rai);
     ID id;
 
-    id = intern_protocol_family(rai->pfamily);
+    id = rsock_intern_protocol_family(rai->pfamily);
     if (id == 0)
         rb_raise(rb_eSocket, "unknown protocol family: %d", rai->pfamily);
     pfamily = rb_id2str(id);
@@ -1125,7 +1125,7 @@ addrinfo_mdump(VALUE self)
     if (rai->socktype == 0)
         socktype = INT2FIX(0);
     else {
-        id = intern_socktype(rai->socktype);
+        id = rsock_intern_socktype(rai->socktype);
         if (id == 0)
             rb_raise(rb_eSocket, "unknown socktype: %d", rai->socktype);
         socktype = rb_id2str(id);
@@ -1134,7 +1134,7 @@ addrinfo_mdump(VALUE self)
     if (rai->protocol == 0)
         protocol = INT2FIX(0);
     else if (IS_IP_FAMILY(afamily_int)) {
-        id = intern_ipproto(rai->protocol);
+        id = rsock_intern_ipproto(rai->protocol);
         if (id == 0)
             rb_raise(rb_eSocket, "unknown IP protocol: %d", rai->protocol);
         protocol = rb_id2str(id);
@@ -1147,7 +1147,7 @@ addrinfo_mdump(VALUE self)
 
     inspectname = rai->inspectname;
 
-    id = intern_family(afamily_int);
+    id = rsock_intern_family(afamily_int);
     if (id == 0)
         rb_raise(rb_eSocket, "unknown address family: %d", afamily_int);
     afamily = rb_id2str(id);
@@ -1175,7 +1175,7 @@ addrinfo_mdump(VALUE self)
                             hbuf, sizeof(hbuf), pbuf, sizeof(pbuf),
                             NI_NUMERICHOST|NI_NUMERICSERV);
         if (error) {
-            raise_socket_error("getnameinfo", error);
+            rsock_raise_socket_error("getnameinfo", error);
         }
         sockaddr = rb_assoc_new(rb_str_new_cstr(hbuf), rb_str_new_cstr(pbuf));
         break;
@@ -1203,12 +1203,12 @@ addrinfo_mload(VALUE self, VALUE ary)
 
     v = rb_ary_entry(ary, 0);
     StringValue(v);
-    if (family_to_int(RSTRING_PTR(v), RSTRING_LEN(v), &afamily) == -1)
+    if (rsock_family_to_int(RSTRING_PTR(v), RSTRING_LEN(v), &afamily) == -1)
         rb_raise(rb_eTypeError, "unexpected address family");
 
     v = rb_ary_entry(ary, 2);
     StringValue(v);
-    if (family_to_int(RSTRING_PTR(v), RSTRING_LEN(v), &pfamily) == -1)
+    if (rsock_family_to_int(RSTRING_PTR(v), RSTRING_LEN(v), &pfamily) == -1)
         rb_raise(rb_eTypeError, "unexpected protocol family");
 
     v = rb_ary_entry(ary, 3);
@@ -1216,7 +1216,7 @@ addrinfo_mload(VALUE self, VALUE ary)
         socktype = 0;
     else {
         StringValue(v);
-        if (socktype_to_int(RSTRING_PTR(v), RSTRING_LEN(v), &socktype) == -1)
+        if (rsock_socktype_to_int(RSTRING_PTR(v), RSTRING_LEN(v), &socktype) == -1)
             rb_raise(rb_eTypeError, "unexpected socktype");
     }
 
@@ -1226,7 +1226,7 @@ addrinfo_mload(VALUE self, VALUE ary)
     else {
         StringValue(v);
         if (IS_IP_FAMILY(afamily)) {
-            if (ipproto_to_int(RSTRING_PTR(v), RSTRING_LEN(v), &protocol) == -1)
+            if (rsock_ipproto_to_int(RSTRING_PTR(v), RSTRING_LEN(v), &protocol) == -1)
                 rb_raise(rb_eTypeError, "unexpected protocol");
         }
         else {
@@ -1519,7 +1519,7 @@ addrinfo_getnameinfo(int argc, VALUE *argv, VALUE self)
                         hbuf, sizeof(hbuf), pbuf, sizeof(pbuf),
                         flags);
     if (error) {
-        raise_socket_error("getnameinfo", error);
+        rsock_raise_socket_error("getnameinfo", error);
     }
 
     return rb_assoc_new(rb_str_new2(hbuf), rb_str_new2(pbuf));
@@ -1857,9 +1857,9 @@ addrinfo_ipv6_to_ipv4(VALUE self)
         sin4.sin_family = AF_INET;
         SET_SIN_LEN(&sin4, sizeof(sin4));
         memcpy(&sin4.sin_addr, (char*)addr + sizeof(*addr) - sizeof(sin4.sin_addr), sizeof(sin4.sin_addr));
-        return addrinfo_new((struct sockaddr *)&sin4, sizeof(sin4),
-                            PF_INET, rai->socktype, rai->protocol,
-                            rai->canonname, rai->inspectname);
+        return rsock_addrinfo_new((struct sockaddr *)&sin4, sizeof(sin4),
+                                  PF_INET, rai->socktype, rai->protocol,
+                                  rai->canonname, rai->inspectname);
     }
     else {
         return Qnil;
@@ -2025,7 +2025,7 @@ addrinfo_s_unix(int argc, VALUE *argv, VALUE self)
     if (NIL_P(vsocktype))
         socktype = SOCK_STREAM;
     else
-        socktype = socktype_arg(vsocktype);
+        socktype = rsock_socktype_arg(vsocktype);
 
     addr = addrinfo_s_allocate(rb_cAddrinfo);
     DATA_PTR(addr) = rai = alloc_addrinfo();
@@ -2037,7 +2037,7 @@ addrinfo_s_unix(int argc, VALUE *argv, VALUE self)
 #endif
 
 VALUE
-sockaddr_string_value(volatile VALUE *v)
+rsock_sockaddr_string_value(volatile VALUE *v)
 {
     VALUE val = *v;
     if (TYPE(val) == RUBY_T_DATA && IS_ADDRINFO(val)) {
@@ -2048,9 +2048,9 @@ sockaddr_string_value(volatile VALUE *v)
 }
 
 char *
-sockaddr_string_value_ptr(volatile VALUE *v)
+rsock_sockaddr_string_value_ptr(volatile VALUE *v)
 {
-    sockaddr_string_value(v);
+    rsock_sockaddr_string_value(v);
     return RSTRING_PTR(*v);
 }
 
@@ -2063,7 +2063,7 @@ rb_check_sockaddr_string_type(VALUE val)
 }
 
 VALUE
-fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len)
+rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len)
 {
     int family;
     int socktype;
@@ -2078,24 +2078,24 @@ fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len)
         rb_sys_fail("getsockopt(SO_TYPE)");
     }
 
-    return addrinfo_new(addr, len, family, socktype, 0, Qnil, Qnil);
+    return rsock_addrinfo_new(addr, len, family, socktype, 0, Qnil, Qnil);
 }
 
 VALUE
-io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len)
+rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len)
 {
     rb_io_t *fptr;
 
     switch (TYPE(io)) {
       case T_FIXNUM:
-        return fd_socket_addrinfo(FIX2INT(io), addr, len);
+        return rsock_fd_socket_addrinfo(FIX2INT(io), addr, len);
 
       case T_BIGNUM:
-        return fd_socket_addrinfo(NUM2INT(io), addr, len);
+        return rsock_fd_socket_addrinfo(NUM2INT(io), addr, len);
 
       case T_FILE:
         GetOpenFile(io, fptr);
-        return fd_socket_addrinfo(fptr->fd, addr, len);
+        return rsock_fd_socket_addrinfo(fptr->fd, addr, len);
 
       default:
         rb_raise(rb_eTypeError, "neither IO nor file descriptor");

@@ -24,7 +24,7 @@ unixsock_connect_internal(struct unixsock_arg *arg)
 }
 
 VALUE
-init_unixsock(VALUE sock, VALUE path, int server)
+rsock_init_unixsock(VALUE sock, VALUE path, int server)
 {
     struct sockaddr_un sockaddr;
     int fd, status;
@@ -67,7 +67,7 @@ init_unixsock(VALUE sock, VALUE path, int server)
 
     if (server) listen(fd, 5);
 
-    init_sock(sock, fd);
+    rsock_init_sock(sock, fd);
     if (server) {
 	GetOpenFile(sock, fptr);
         fptr->pathv = rb_str_new_frozen(path);
@@ -89,7 +89,7 @@ init_unixsock(VALUE sock, VALUE path, int server)
 static VALUE
 unix_init(VALUE sock, VALUE path)
 {
-    return init_unixsock(sock, path, 0);
+    return rsock_init_unixsock(sock, path, 0);
 }
 
 /*
@@ -113,7 +113,7 @@ unix_path(VALUE sock)
 	socklen_t len = sizeof(addr);
 	if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	    rb_sys_fail(0);
-	fptr->pathv = rb_obj_freeze(rb_str_new_cstr(unixpath(&addr, len)));
+	fptr->pathv = rb_obj_freeze(rb_str_new_cstr(rsock_unixpath(&addr, len)));
     }
     return rb_str_dup(fptr->pathv);
 }
@@ -144,7 +144,7 @@ unix_path(VALUE sock)
 static VALUE
 unix_recvfrom(int argc, VALUE *argv, VALUE sock)
 {
-    return s_recvfrom(sock, argc, argv, RECV_UNIX);
+    return rsock_s_recvfrom(sock, argc, argv, RECV_UNIX);
 }
 
 #if defined(HAVE_ST_MSG_CONTROL) && defined(SCM_RIGHTS)
@@ -418,7 +418,7 @@ unix_addr(VALUE sock)
 
     if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    return unixaddr(&addr, len);
+    return rsock_unixaddr(&addr, len);
 }
 
 /*
@@ -444,7 +444,7 @@ unix_peeraddr(VALUE sock)
 
     if (getpeername(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getpeername(2)");
-    return unixaddr(&addr, len);
+    return rsock_unixaddr(&addr, len);
 }
 
 /*

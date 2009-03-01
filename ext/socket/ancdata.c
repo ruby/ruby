@@ -21,17 +21,17 @@ ip_cmsg_type_to_sym(int level, int cmsg_type)
 {
     switch (level) {
       case SOL_SOCKET:
-        return constant_to_sym(cmsg_type, intern_scm_optname);
+        return constant_to_sym(cmsg_type, rsock_intern_scm_optname);
       case IPPROTO_IP:
-        return constant_to_sym(cmsg_type, intern_ip_optname);
+        return constant_to_sym(cmsg_type, rsock_intern_ip_optname);
 #ifdef IPPROTO_IPV6
       case IPPROTO_IPV6:
-        return constant_to_sym(cmsg_type, intern_ipv6_optname);
+        return constant_to_sym(cmsg_type, rsock_intern_ipv6_optname);
 #endif
       case IPPROTO_TCP:
-        return constant_to_sym(cmsg_type, intern_tcp_optname);
+        return constant_to_sym(cmsg_type, rsock_intern_tcp_optname);
       case IPPROTO_UDP:
-        return constant_to_sym(cmsg_type, intern_udp_optname);
+        return constant_to_sym(cmsg_type, rsock_intern_udp_optname);
       default:
         return INT2NUM(cmsg_type);
     }
@@ -72,9 +72,9 @@ ip_cmsg_type_to_sym(int level, int cmsg_type)
 static VALUE
 ancillary_initialize(VALUE self, VALUE vfamily, VALUE vlevel, VALUE vtype, VALUE data)
 {
-    int family = family_arg(vfamily);
-    int level = level_arg(family, vlevel);
-    int type = cmsg_type_arg(family, level, vtype);
+    int family = rsock_family_arg(vfamily);
+    int level = rsock_level_arg(family, vlevel);
+    int type = rsock_cmsg_type_arg(family, level, vtype);
     StringValue(data);
     rb_ivar_set(self, rb_intern("family"), INT2NUM(family));
     rb_ivar_set(self, rb_intern("level"), INT2NUM(level));
@@ -361,9 +361,9 @@ ancillary_timestamp(VALUE self)
 static VALUE
 ancillary_s_int(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE vtype, VALUE integer)
 {
-    int family = family_arg(vfamily);
-    int level = level_arg(family, vlevel);
-    int type = cmsg_type_arg(family, level, vtype);
+    int family = rsock_family_arg(vfamily);
+    int level = rsock_level_arg(family, vlevel);
+    int type = rsock_cmsg_type_arg(family, level, vtype);
     int i = NUM2INT(integer);
     return ancdata_new(family, level, type, rb_str_new((char*)&i, sizeof(i)));
 }
@@ -498,11 +498,11 @@ ancillary_ip_pktinfo(VALUE self)
 
     sa.sin_family = AF_INET;
     memcpy(&sa.sin_addr, &pktinfo.ipi_addr, sizeof(sa.sin_addr));
-    v_addr = addrinfo_new((struct sockaddr *)&sa, sizeof(sa), PF_INET, 0, 0, Qnil, Qnil);
+    v_addr = rsock_addrinfo_new((struct sockaddr *)&sa, sizeof(sa), PF_INET, 0, 0, Qnil, Qnil);
 
     sa.sin_family = AF_INET;
     memcpy(&sa.sin_addr, &pktinfo.ipi_spec_dst, sizeof(sa.sin_addr));
-    v_spec_dst = addrinfo_new((struct sockaddr *)&sa, sizeof(sa), PF_INET, 0, 0, Qnil, Qnil);
+    v_spec_dst = rsock_addrinfo_new((struct sockaddr *)&sa, sizeof(sa), PF_INET, 0, 0, Qnil, Qnil);
 
     return rb_ary_new3(3, v_addr, UINT2NUM(pktinfo.ipi_ifindex), v_spec_dst);
 #else
@@ -603,7 +603,7 @@ ancillary_ipv6_pktinfo(VALUE self)
     VALUE v_addr;
 
     extract_ipv6_pktinfo(self, &pktinfo, &sa);
-    v_addr = addrinfo_new((struct sockaddr *)&sa, sizeof(sa), PF_INET6, 0, 0, Qnil, Qnil);
+    v_addr = rsock_addrinfo_new((struct sockaddr *)&sa, sizeof(sa), PF_INET6, 0, 0, Qnil, Qnil);
     return rb_ary_new3(2, v_addr, UINT2NUM(pktinfo.ipi6_ifindex));
 #else
     rb_notimplement();
@@ -631,7 +631,7 @@ ancillary_ipv6_pktinfo_addr(VALUE self)
     struct in6_pktinfo pktinfo;
     struct sockaddr_in6 sa;
     extract_ipv6_pktinfo(self, &pktinfo, &sa);
-    return addrinfo_new((struct sockaddr *)&sa, sizeof(sa), PF_INET6, 0, 0, Qnil, Qnil);
+    return rsock_addrinfo_new((struct sockaddr *)&sa, sizeof(sa), PF_INET6, 0, 0, Qnil, Qnil);
 #else
     rb_notimplement();
 #endif
@@ -963,7 +963,7 @@ ancillary_inspect(VALUE self)
 
     ret = rb_sprintf("#<%s:", rb_obj_classname(self));
 
-    family_id = intern_family_noprefix(family);
+    family_id = rsock_intern_family_noprefix(family);
     if (family_id)
         rb_str_catf(ret, " %s", rb_id2name(family_id));
     else
@@ -972,14 +972,14 @@ ancillary_inspect(VALUE self)
     if (level == SOL_SOCKET) {
         rb_str_cat2(ret, " SOCKET");
 
-        type_id = intern_scm_optname(type);
+        type_id = rsock_intern_scm_optname(type);
         if (type_id)
             rb_str_catf(ret, " %s", rb_id2name(type_id));
         else
             rb_str_catf(ret, " cmsg_type:%d", type);
     }
     else if (IS_IP_FAMILY(family)) {
-        level_id = intern_iplevel(level);
+        level_id = rsock_intern_iplevel(level);
         if (level_id)
             rb_str_catf(ret, " %s", rb_id2name(level_id));
         else
@@ -1088,8 +1088,8 @@ static VALUE
 ancillary_cmsg_is_p(VALUE self, VALUE vlevel, VALUE vtype)
 {
     int family = ancillary_family(self);
-    int level = level_arg(family, vlevel);
-    int type = cmsg_type_arg(family, level, vtype);
+    int level = rsock_level_arg(family, vlevel);
+    int type = rsock_cmsg_type_arg(family, level, vtype);
 
     if (ancillary_level(self) == level &&
         ancillary_type(self) == type)
@@ -1187,8 +1187,8 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
                 vtype = rb_funcall(elt, rb_intern("type"), 0);
                 cdata = rb_funcall(elt, rb_intern("data"), 0);
             }
-            level = level_arg(family, vlevel);
-            type = cmsg_type_arg(family, level, vtype);
+            level = rsock_level_arg(family, vlevel);
+            type = rsock_cmsg_type_arg(family, level, vtype);
             StringValue(cdata);
             oldlen = RSTRING_LEN(controls_str);
             cspace = CMSG_SPACE(RSTRING_LEN(cdata));
@@ -1423,7 +1423,7 @@ make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh, char *msg_end)
             if (fstat(fd, &stbuf) == -1)
                 rb_raise(rb_eSocket, "invalid fd in SCM_RIGHTS");
             if (S_ISSOCK(stbuf.st_mode))
-                io = init_sock(rb_obj_alloc(rb_cSocket), fd);
+                io = rsock_init_sock(rb_obj_alloc(rb_cSocket), fd);
             else
                 io = rb_io_fdopen(fd, O_RDWR, NULL);
             ary = rb_attr_get(ctl, rb_intern("unix_rights"));
@@ -1640,7 +1640,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     }
 
     ret = rb_ary_new3(3, dat_str,
-                         io_socket_addrinfo(sock, mh.msg_name, mh.msg_namelen),
+                         rsock_io_socket_addrinfo(sock, mh.msg_name, mh.msg_namelen),
 #if defined(HAVE_ST_MSG_CONTROL)
 			 INT2NUM(mh.msg_flags)
 #else

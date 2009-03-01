@@ -27,14 +27,14 @@ tcp_init(int argc, VALUE *argv, VALUE sock)
     rb_scan_args(argc, argv, "22", &remote_host, &remote_serv,
 			&local_host, &local_serv);
 
-    return init_inetsock(sock, remote_host, remote_serv,
-			local_host, local_serv, INET_CLIENT);
+    return rsock_init_inetsock(sock, remote_host, remote_serv,
+			       local_host, local_serv, INET_CLIENT);
 }
 
 static VALUE
 tcp_sockaddr(struct sockaddr *addr, size_t len)
 {
-    return make_ipaddr(addr);
+    return rsock_make_ipaddr(addr);
 }
 
 /*
@@ -51,7 +51,7 @@ static VALUE
 tcp_s_gethostbyname(VALUE obj, VALUE host)
 {
     rb_secure(3);
-    return make_hostent(host, sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME),
+    return rsock_make_hostent(host, sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME),
 			tcp_sockaddr);
 }
 

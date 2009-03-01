@@ -13,8 +13,8 @@
 static void
 setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
 {
-    *dv = family_arg(domain);
-    *tv = socktype_arg(type);
+    *dv = rsock_family_arg(domain);
+    *tv = rsock_socktype_arg(type);
 }
 
 /*
@@ -52,7 +52,7 @@ sock_initialize(int argc, VALUE *argv, VALUE sock)
     fd = ruby_socket(d, t, NUM2INT(protocol));
     if (fd < 0) rb_sys_fail("socket(2)");
 
-    return init_sock(sock, fd);
+    return rsock_init_sock(sock, fd);
 }
 
 #if defined HAVE_SOCKETPAIR
@@ -120,8 +120,8 @@ sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
 	rb_sys_fail("socketpair(2)");
     }
 
-    s1 = init_sock(rb_obj_alloc(klass), sp[0]);
-    s2 = init_sock(rb_obj_alloc(klass), sp[1]);
+    s1 = rsock_init_sock(rb_obj_alloc(klass), sp[0]);
+    s2 = rsock_init_sock(rb_obj_alloc(klass), sp[1]);
     r = rb_assoc_new(s1, s2);
     if (rb_block_given_p()) {
         return rb_ensure(pair_yield, r, io_close, s1);
@@ -604,7 +604,7 @@ sock_listen(VALUE sock, VALUE log)
 static VALUE
 sock_recvfrom(int argc, VALUE *argv, VALUE sock)
 {
-    return s_recvfrom(sock, argc, argv, RECV_SOCKET);
+    return rsock_s_recvfrom(sock, argc, argv, RECV_SOCKET);
 }
 
 /*
@@ -668,7 +668,7 @@ sock_recvfrom(int argc, VALUE *argv, VALUE sock)
 static VALUE
 sock_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
 {
-    return s_recvfrom_nonblock(sock, argc, argv, RECV_SOCKET);
+    return rsock_s_recvfrom_nonblock(sock, argc, argv, RECV_SOCKET);
 }
 
 /*
@@ -694,9 +694,9 @@ sock_accept(VALUE sock)
     socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = s_accept(rb_cSocket,fptr->fd,(struct sockaddr*)&buf,&len);
+    sock2 = rsock_s_accept(rb_cSocket,fptr->fd,(struct sockaddr*)&buf,&len);
 
-    return rb_assoc_new(sock2, io_socket_addrinfo(sock2, (struct sockaddr*)&buf, len));
+    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, (struct sockaddr*)&buf, len));
 }
 
 /*
@@ -756,8 +756,8 @@ sock_accept_nonblock(VALUE sock)
     socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = s_accept_nonblock(rb_cSocket, fptr, (struct sockaddr *)&buf, &len);
-    return rb_assoc_new(sock2, io_socket_addrinfo(sock2, (struct sockaddr*)&buf, len));
+    sock2 = rsock_s_accept_nonblock(rb_cSocket, fptr, (struct sockaddr *)&buf, &len);
+    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, (struct sockaddr*)&buf, len));
 }
 
 /*
@@ -808,9 +808,9 @@ sock_sysaccept(VALUE sock)
     socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = s_accept(0,fptr->fd,(struct sockaddr*)&buf,&len);
+    sock2 = rsock_s_accept(0,fptr->fd,(struct sockaddr*)&buf,&len);
 
-    return rb_assoc_new(sock2, io_socket_addrinfo(sock2, (struct sockaddr*)&buf, len));
+    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, (struct sockaddr*)&buf, len));
 }
 
 #ifdef HAVE_GETHOSTNAME
@@ -874,7 +874,7 @@ make_addrinfo(struct addrinfo *res0)
     }
     base = rb_ary_new();
     for (res = res0; res; res = res->ai_next) {
-	ary = ipaddr(res->ai_addr, do_not_reverse_lookup);
+	ary = rsock_ipaddr(res->ai_addr, rsock_do_not_reverse_lookup);
 	if (res->ai_canonname) {
 	    RARRAY_PTR(ary)[2] = rb_str_new2(res->ai_canonname);
 	}
@@ -922,7 +922,7 @@ static VALUE
 sock_s_gethostbyname(VALUE obj, VALUE host)
 {
     rb_secure(3);
-    return make_hostent(host, sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), sock_sockaddr);
+    return rsock_make_hostent(host, sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), sock_sockaddr);
 }
 
 /*
@@ -947,7 +947,7 @@ sock_s_gethostbyaddr(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "11", &addr, &family);
     sa = (struct sockaddr*)StringValuePtr(addr);
     if (!NIL_P(family)) {
-	t = family_arg(family);
+	t = rsock_family_arg(family);
     }
 #ifdef INET6
     else if (RSTRING_LEN(addr) == 16) {
@@ -1094,10 +1094,10 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "24", &host, &port, &family, &socktype, &protocol, &flags);
 
     MEMZERO(&hints, struct addrinfo, 1);
-    hints.ai_family = NIL_P(family) ? PF_UNSPEC : family_arg(family);
+    hints.ai_family = NIL_P(family) ? PF_UNSPEC : rsock_family_arg(family);
 
     if (!NIL_P(socktype)) {
-	hints.ai_socktype = socktype_arg(socktype);
+	hints.ai_socktype = rsock_socktype_arg(socktype);
     }
     if (!NIL_P(protocol)) {
 	hints.ai_protocol = NUM2INT(protocol);
@@ -1182,7 +1182,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	    else {
 		/*
 		 * 4th element holds numeric form, don't resolve.
-		 * see ipaddr().
+		 * see rsock_ipaddr().
 		 */
 #ifdef AI_NUMERICHOST /* AIX 4.3.3 doesn't have AI_NUMERICHOST. */
 		hints.ai_flags |= AI_NUMERICHOST;
@@ -1218,7 +1218,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	}
 	hints.ai_socktype = (fl & NI_DGRAM) ? SOCK_DGRAM : SOCK_STREAM;
 	/* af */
-        hints.ai_family = NIL_P(af) ? PF_UNSPEC : family_arg(af);
+        hints.ai_family = NIL_P(af) ? PF_UNSPEC : rsock_family_arg(af);
 	error = rb_getaddrinfo(hptr, pptr, &hints, &res);
 	if (error) goto error_exit_addr;
 	sap = res->ai_addr;
@@ -1250,11 +1250,11 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 
   error_exit_addr:
     if (res) freeaddrinfo(res);
-    raise_socket_error("getaddrinfo", error);
+    rsock_raise_socket_error("getaddrinfo", error);
 
   error_exit_name:
     if (res) freeaddrinfo(res);
-    raise_socket_error("getnameinfo", error);
+    rsock_raise_socket_error("getnameinfo", error);
 }
 
 /*
@@ -1320,7 +1320,7 @@ sock_s_unpack_sockaddr_in(VALUE self, VALUE addr)
         rb_raise(rb_eArgError, "not an AF_INET sockaddr");
 #endif
     }
-    host = make_ipaddr((struct sockaddr*)sockaddr);
+    host = rsock_make_ipaddr((struct sockaddr*)sockaddr);
     OBJ_INFECT(host, addr);
     return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), host);
 }
@@ -1390,7 +1390,7 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
 	rb_raise(rb_eTypeError, "too long sockaddr_un - %ld longer than %d",
 		 RSTRING_LEN(addr), (int)sizeof(struct sockaddr_un));
     }
-    sun_path = unixpath(sockaddr, RSTRING_LEN(addr));
+    sun_path = rsock_unixpath(sockaddr, RSTRING_LEN(addr));
     if (sizeof(struct sockaddr_un) == RSTRING_LEN(addr) &&
         sun_path == sockaddr->sun_path &&
         sun_path + strlen(sun_path) == RSTRING_PTR(addr) + RSTRING_LEN(addr)) {
@@ -1454,7 +1454,7 @@ sockaddr_obj(struct sockaddr *addr)
 	len = SA_LEN(addr);
 #endif
 
-    return addrinfo_new(addr, len, addr->sa_family, 0, 0, Qnil, Qnil);
+    return rsock_addrinfo_new(addr, len, addr->sa_family, 0, 0, Qnil, Qnil);
 }
 #endif
 

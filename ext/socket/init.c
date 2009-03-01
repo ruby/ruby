@@ -28,10 +28,10 @@ VALUE rb_eSocket;
 VALUE rb_cSOCKSSocket;
 #endif
 
-int do_not_reverse_lookup = 0;
+int rsock_do_not_reverse_lookup = 0;
 
 void
-raise_socket_error(const char *reason, int error)
+rsock_raise_socket_error(const char *reason, int error)
 {
 #ifdef EAI_SYSTEM
     if (error == EAI_SYSTEM) rb_sys_fail(reason);
@@ -40,7 +40,7 @@ raise_socket_error(const char *reason, int error)
 }
 
 VALUE
-init_sock(VALUE sock, int fd)
+rsock_init_sock(VALUE sock, int fd)
 {
     rb_io_t *fp;
 
@@ -48,7 +48,7 @@ init_sock(VALUE sock, int fd)
     fp->fd = fd;
     fp->mode = FMODE_READWRITE|FMODE_DUPLEX;
     rb_io_ascii8bit_binmode(sock);
-    if (do_not_reverse_lookup) {
+    if (rsock_do_not_reverse_lookup) {
 	fp->mode |= FMODE_NOREVLOOKUP;
     }
     rb_io_synchronized(fp);
@@ -57,18 +57,18 @@ init_sock(VALUE sock, int fd)
 }
 
 VALUE
-sendto_blocking(void *data)
+rsock_sendto_blocking(void *data)
 {
-    struct send_arg *arg = data;
+    struct rsock_send_arg *arg = data;
     VALUE mesg = arg->mesg;
     return (VALUE)sendto(arg->fd, RSTRING_PTR(mesg), RSTRING_LEN(mesg),
                          arg->flags, arg->to, arg->tolen);
 }
 
 VALUE
-send_blocking(void *data)
+rsock_send_blocking(void *data)
 {
-    struct send_arg *arg = data;
+    struct rsock_send_arg *arg = data;
     VALUE mesg = arg->mesg;
     return (VALUE)send(arg->fd, RSTRING_PTR(mesg), RSTRING_LEN(mesg),
                        arg->flags);
@@ -90,7 +90,7 @@ recvfrom_blocking(void *data)
 }
 
 VALUE
-s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
+rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 {
     rb_io_t *fptr;
     VALUE str, klass;
@@ -142,23 +142,23 @@ s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 	}
 #endif
 	if (arg.alen && arg.alen != sizeof(arg.buf)) /* OSX doesn't return a from result for connection-oriented sockets */
-	    return rb_assoc_new(str, ipaddr((struct sockaddr*)&arg.buf, fptr->mode & FMODE_NOREVLOOKUP));
+	    return rb_assoc_new(str, rsock_ipaddr((struct sockaddr*)&arg.buf, fptr->mode & FMODE_NOREVLOOKUP));
 	else
 	    return rb_assoc_new(str, Qnil);
 
 #ifdef HAVE_SYS_UN_H
       case RECV_UNIX:
-        return rb_assoc_new(str, unixaddr((struct sockaddr_un*)&arg.buf, arg.alen));
+        return rb_assoc_new(str, rsock_unixaddr((struct sockaddr_un*)&arg.buf, arg.alen));
 #endif
       case RECV_SOCKET:
-	return rb_assoc_new(str, io_socket_addrinfo(sock, (struct sockaddr*)&arg.buf, arg.alen));
+	return rb_assoc_new(str, rsock_io_socket_addrinfo(sock, (struct sockaddr*)&arg.buf, arg.alen));
       default:
-	rb_bug("s_recvfrom called with bad value");
+	rb_bug("rsock_s_recvfrom called with bad value");
     }
 }
 
 VALUE
-s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
+rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 {
     rb_io_t *fptr;
     VALUE str;
@@ -214,15 +214,15 @@ s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 
       case RECV_IP:
         if (alen && alen != sizeof(buf)) /* connection-oriented socket may not return a from result */
-            addr = ipaddr((struct sockaddr*)&buf, fptr->mode & FMODE_NOREVLOOKUP);
+            addr = rsock_ipaddr((struct sockaddr*)&buf, fptr->mode & FMODE_NOREVLOOKUP);
         break;
 
       case RECV_SOCKET:
-        addr = io_socket_addrinfo(sock, (struct sockaddr*)&buf, alen);
+        addr = rsock_io_socket_addrinfo(sock, (struct sockaddr*)&buf, alen);
         break;
 
       default:
-        rb_bug("s_recvfrom_nonblock called with bad value");
+        rb_bug("rsock_s_recvfrom_nonblock called with bad value");
     }
     return rb_assoc_new(str, addr);
 }
@@ -455,7 +455,7 @@ make_fd_nonblock(int fd)
 }
 
 VALUE
-s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len)
+rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len)
 {
     int fd2;
 
@@ -477,7 +477,7 @@ s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen
         rb_sys_fail("accept(2)");
     }
     make_fd_nonblock(fd2);
-    return init_sock(rb_obj_alloc(klass), fd2);
+    return rsock_init_sock(rb_obj_alloc(klass), fd2);
 }
 
 struct accept_arg {
@@ -494,7 +494,7 @@ accept_blocking(void *data)
 }
 
 VALUE
-s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
+rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 {
     int fd2;
     int retry = 0;
@@ -523,7 +523,7 @@ s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 	rb_sys_fail(0);
     }
     if (!klass) return INT2NUM(fd2);
-    return init_sock(rb_obj_alloc(klass), fd2);
+    return rsock_init_sock(rb_obj_alloc(klass), fd2);
 }
 
 int rb_sock_getfamily(int sockfd)

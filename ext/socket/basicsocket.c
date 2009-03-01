@@ -25,7 +25,7 @@ static VALUE
 bsock_s_for_fd(VALUE klass, VALUE fd)
 {
     rb_io_t *fptr;
-    VALUE sock = init_sock(rb_obj_alloc(klass), NUM2INT(fd));
+    VALUE sock = rsock_init_sock(rb_obj_alloc(klass), NUM2INT(fd));
 
     GetOpenFile(sock, fptr);
 
@@ -73,7 +73,7 @@ bsock_shutdown(int argc, VALUE *argv, VALUE sock)
     if (howto == Qnil)
 	how = SHUT_RDWR;
     else {
-	how = shutdown_how_arg(howto);
+	how = rsock_shutdown_how_arg(howto);
         if (how != SHUT_WR && how != SHUT_RD && how != SHUT_RDWR) {
 	    rb_raise(rb_eArgError, "`how' should be either :SHUT_RD, :SHUT_WR, :SHUT_RDWR");
 	}
@@ -213,8 +213,8 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
     rb_secure(2);
     GetOpenFile(sock, fptr);
     family = rb_sock_getfamily(fptr->fd);
-    level = level_arg(family, lev);
-    option = optname_arg(family, level, optname);
+    level = rsock_level_arg(family, lev);
+    option = rsock_optname_arg(family, level, optname);
 
     switch (TYPE(val)) {
       case T_FIXNUM:
@@ -296,8 +296,8 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
 
     GetOpenFile(sock, fptr);
     family = rb_sock_getfamily(fptr->fd);
-    level = level_arg(family, lev);
-    option = optname_arg(family, level, optname);
+    level = rsock_level_arg(family, lev);
+    option = rsock_optname_arg(family, level, optname);
     len = 256;
     buf = ALLOCA_N(char,len);
 
@@ -306,7 +306,7 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
     if (getsockopt(fptr->fd, level, option, buf, &len) < 0)
 	rb_sys_fail_path(fptr->pathv);
 
-    return sockopt_new(family, level, option, rb_str_new(buf, len));
+    return rsock_sockopt_new(family, level, option, rb_str_new(buf, len));
 #else
     rb_notimplement();
 #endif
@@ -440,7 +440,7 @@ bsock_local_address(VALUE sock)
     GetOpenFile(sock, fptr);
     if (getsockname(fptr->fd, (struct sockaddr*)&buf, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    return fd_socket_addrinfo(fptr->fd, (struct sockaddr *)&buf, len);
+    return rsock_fd_socket_addrinfo(fptr->fd, (struct sockaddr *)&buf, len);
 }
 
 /*
@@ -468,7 +468,7 @@ bsock_remote_address(VALUE sock)
     GetOpenFile(sock, fptr);
     if (getpeername(fptr->fd, (struct sockaddr*)&buf, &len) < 0)
 	rb_sys_fail("getpeername(2)");
-    return fd_socket_addrinfo(fptr->fd, (struct sockaddr *)&buf, len);
+    return rsock_fd_socket_addrinfo(fptr->fd, (struct sockaddr *)&buf, len);
 }
 
 /*
@@ -489,9 +489,9 @@ bsock_remote_address(VALUE sock)
  *   }
  */
 VALUE
-bsock_send(int argc, VALUE *argv, VALUE sock)
+rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
 {
-    struct send_arg arg;
+    struct rsock_send_arg arg;
     VALUE flags, to;
     rb_io_t *fptr;
     int n;
@@ -506,10 +506,10 @@ bsock_send(int argc, VALUE *argv, VALUE sock)
 	to = rb_str_new4(to);
 	arg.to = (struct sockaddr *)RSTRING_PTR(to);
 	arg.tolen = RSTRING_LEN(to);
-	func = sendto_blocking;
+	func = rsock_sendto_blocking;
     }
     else {
-	func = send_blocking;
+	func = rsock_send_blocking;
     }
     GetOpenFile(sock, fptr);
     arg.fd = fptr->fd;
@@ -596,7 +596,7 @@ bsock_do_not_reverse_lookup_set(VALUE sock, VALUE state)
 static VALUE
 bsock_recv(int argc, VALUE *argv, VALUE sock)
 {
-    return s_recvfrom(sock, argc, argv, RECV_RECV);
+    return rsock_s_recvfrom(sock, argc, argv, RECV_RECV);
 }
 
 /*
@@ -639,7 +639,7 @@ bsock_recv(int argc, VALUE *argv, VALUE sock)
 static VALUE
 bsock_recv_nonblock(int argc, VALUE *argv, VALUE sock)
 {
-    return s_recvfrom_nonblock(sock, argc, argv, RECV_RECV);
+    return rsock_s_recvfrom_nonblock(sock, argc, argv, RECV_RECV);
 }
 
 /*
@@ -653,7 +653,7 @@ bsock_recv_nonblock(int argc, VALUE *argv, VALUE sock)
 static VALUE
 bsock_do_not_rev_lookup(void)
 {
-    return do_not_reverse_lookup?Qtrue:Qfalse;
+    return rsock_do_not_reverse_lookup?Qtrue:Qfalse;
 }
 
 /*
@@ -676,7 +676,7 @@ static VALUE
 bsock_do_not_rev_lookup_set(VALUE self, VALUE val)
 {
     rb_secure(4);
-    do_not_reverse_lookup = RTEST(val);
+    rsock_do_not_reverse_lookup = RTEST(val);
     return val;
 }
 
@@ -705,7 +705,7 @@ Init_basicsocket(void)
     rb_define_method(rb_cBasicSocket, "getpeereid", bsock_getpeereid, 0);
     rb_define_method(rb_cBasicSocket, "local_address", bsock_local_address, 0);
     rb_define_method(rb_cBasicSocket, "remote_address", bsock_remote_address, 0);
-    rb_define_method(rb_cBasicSocket, "send", bsock_send, -1);
+    rb_define_method(rb_cBasicSocket, "send", rsock_bsock_send, -1);
     rb_define_method(rb_cBasicSocket, "recv", bsock_recv, -1);
     rb_define_method(rb_cBasicSocket, "recv_nonblock", bsock_recv_nonblock, -1);
     rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup", bsock_do_not_reverse_lookup, 0);

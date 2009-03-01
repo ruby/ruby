@@ -24,7 +24,7 @@
 static VALUE
 unix_svr_init(VALUE sock, VALUE path)
 {
-    return init_unixsock(sock, path, 1);
+    return rsock_init_unixsock(sock, path, 1);
 }
 
 /*
@@ -53,8 +53,8 @@ unix_accept(VALUE sock)
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(struct sockaddr_un);
-    return s_accept(rb_cUNIXSocket, fptr->fd,
-		    (struct sockaddr*)&from, &fromlen);
+    return rsock_s_accept(rb_cUNIXSocket, fptr->fd,
+		          (struct sockaddr*)&from, &fromlen);
 }
 
 /*
@@ -95,8 +95,8 @@ unix_accept_nonblock(VALUE sock)
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(from);
-    return s_accept_nonblock(rb_cUNIXSocket, fptr,
-			     (struct sockaddr *)&from, &fromlen);
+    return rsock_s_accept_nonblock(rb_cUNIXSocket, fptr,
+			           (struct sockaddr *)&from, &fromlen);
 }
 
 /*
@@ -126,7 +126,7 @@ unix_sysaccept(VALUE sock)
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(struct sockaddr_un);
-    return s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
+    return rsock_s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
 }
 
 #endif
