@@ -3409,7 +3409,7 @@ dtoa(double d, int mode, int ndigits, int *decpt, int *sign, char **rve)
         if (i <= 0)
             i = 1;
     }
-    s = s0 = rv_alloc(i);
+    s = s0 = rv_alloc(i+1);
 
 #ifdef Honor_FLT_ROUNDS
     if (mode > 1 && rounding != 1)

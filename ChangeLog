@@ -1,3 +1,8 @@
+Sun Mar  1 19:41:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_dtoa): allocates one more byte to get rid of buffer
+	  overrun.  a patch from Charlie Savage at [ruby-core:22604].
+
 Sun Mar  1 17:27:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (gfDebug): uncommented out.
