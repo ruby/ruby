@@ -329,7 +329,7 @@ rb_frozen_class_p(VALUE klass)
     }
 }
 
-NORETURN(static void rb_longjmp(int, VALUE));
+NORETURN(static void rb_longjmp(int, volatile VALUE));
 
 static void
 rb_longjmp(int tag, volatile VALUE mesg)

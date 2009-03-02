@@ -1,3 +1,8 @@
+Mon Mar  2 10:29:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_longjmp), include/ruby/intern.h (ruby_cleanup): fixed
+	  prototypes.
+
 Mon Mar  2 00:56:45 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/observer.rb: The module oberservable uses now a hash to
