@@ -1,3 +1,7 @@
+Mon Mar  2 21:26:42 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (anc_inspect_socket_creds): supress warnings.
+
 Mon Mar  2 21:13:42 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (rsock_discard_cmsg_resource): defined

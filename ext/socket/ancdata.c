@@ -742,10 +742,10 @@ anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
     }
 #endif
 #if defined(HAVE_TYPE_STRUCT_SOCKCRED) /* FreeBSD, NetBSD */
-    if (RSTRING_LEN(data) >= SOCKCREDSIZE(0)) {
+    if ((size_t)RSTRING_LEN(data) >= SOCKCREDSIZE(0)) {
 	struct sockcred cred0, *cred;
         memcpy(&cred0, RSTRING_PTR(data), SOCKCREDSIZE(0));
-	if (RSTRING_LEN(data) == SOCKCREDSIZE(cred0.sc_ngroups)) {
+	if ((size_t)RSTRING_LEN(data) == SOCKCREDSIZE(cred0.sc_ngroups)) {
 	    cred = (struct sockcred *)ALLOCA_N(char, SOCKCREDSIZE(cred0.sc_ngroups));
 	    memcpy(cred, RSTRING_PTR(data), SOCKCREDSIZE(cred0.sc_ngroups));
 	    rb_str_catf(ret, " uid=%u", cred->sc_uid);
