@@ -1,3 +1,7 @@
+Mon Mar  2 21:39:08 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/sockport.h (SS_LEN): defined unconditionally.
+
 Mon Mar  2 21:26:42 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (anc_inspect_socket_creds): supress warnings.

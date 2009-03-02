@@ -10,7 +10,9 @@
 #ifndef SOCKPORT_H
 #define SOCKPORT_H
 
-#ifndef SA_LEN
+#ifdef SA_LEN
+#  define SS_LEN(ss) (ss)->ss_len
+#else
 # ifdef HAVE_SA_LEN
 #  define SA_LEN(sa) (sa)->sa_len
 #  define SS_LEN(ss) (ss)->ss_len
