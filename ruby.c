@@ -325,6 +325,12 @@ DllMain(HINSTANCE dll, DWORD reason, LPVOID reserved)
 	libruby = dll;
     return TRUE;
 }
+
+HANDLE
+rb_libruby_handle(void)
+{
+    return libruby;
+}
 #endif
 
 void ruby_init_loadpath_safe(int safe_level);

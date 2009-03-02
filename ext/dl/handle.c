@@ -67,6 +67,13 @@ rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
     rb_bug("rb_dlhandle_new");
   }
 
+#if defined(HAVE_WINDOWS_H)
+  if( !clib ){
+    HANDLE rb_libruby_handle(void);
+    ptr = rb_libruby_handle();
+  }
+  else
+#endif
   ptr = dlopen(clib, cflag);
 #if defined(HAVE_DLERROR)
   if( !ptr && (err = dlerror()) ){

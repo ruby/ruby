@@ -24,7 +24,7 @@
 #   include <windows.h>
 #   define dlclose(ptr) FreeLibrary((HINSTANCE)ptr)
 #   define dlopen(name,flag) ((void*)LoadLibrary(name))
-#   define dlerror()    "unknown error"
+#   define dlerror() strerror(rb_w32_map_errno(GetLastError()))
 #   define dlsym(handle,name) ((void*)GetProcAddress(handle,name))
 #   define RTLD_LAZY -1
 #   define RTLD_NOW  -1

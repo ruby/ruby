@@ -1,4 +1,9 @@
-Mon Mar  2 10:50:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Mar  2 11:01:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/dl.h (dlerror): fixed on Windows.
+
+	* ext/dl/handle.c (rb_dlhandle_initialize): returns handle to
+	  libruby if nil is given on Windows as dlopen.
 
 	* ext/dl/handle.c (rb_dlhandle_sym): get rid of buffer overrun,
 	  and try ASCII WINAPI versions too.
