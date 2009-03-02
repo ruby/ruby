@@ -1,3 +1,7 @@
+Mon Mar  2 21:01:36 2009  Tanaka Akira  <akr@fsij.org>
+
+	* file.c: include fcntl.h for O_RDONLY on Solaris.
+
 Mon Mar  2 19:43:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/uri/common.rb (URI::Parser#escape): escaped string is ascii
