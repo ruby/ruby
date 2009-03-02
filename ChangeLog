@@ -1,3 +1,7 @@
+Mon Mar  2 12:22:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (init_env): keeps wide chars as wide chars.
+
 Mon Mar  2 11:01:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/dl.h (dlerror): fixed on Windows.

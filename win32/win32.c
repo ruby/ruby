@@ -350,6 +350,16 @@ flock(int fd, int oper)
 			      (DWORD)-1);
 }
 
+static inline WCHAR *
+translate_wchar(WCHAR *p, int from, int to)
+{
+    for (; *p; p++) {
+	if (*p == from)
+	    *p = to;
+    }
+    return p;
+}
+
 static inline char *
 translate_char(char *p, int from, int to)
 {
@@ -366,13 +376,13 @@ translate_char(char *p, int from, int to)
 #endif
 
 static BOOL
-get_special_folder(int n, char *env)
+get_special_folder(int n, WCHAR *env)
 {
     LPITEMIDLIST pidl;
     LPMALLOC alloc;
     BOOL f = FALSE;
     if (SHGetSpecialFolderLocation(NULL, n, &pidl) == 0) {
-	f = SHGetPathFromIDList(pidl, env);
+	f = SHGetPathFromIDListW(pidl, env);
 	SHGetMalloc(&alloc);
 	alloc->lpVtbl->Free(alloc, pidl);
 	alloc->lpVtbl->Release(alloc);
@@ -381,22 +391,34 @@ get_special_folder(int n, char *env)
 }
 
 static void
+regulate_path(WCHAR *path)
+{
+    WCHAR *p = translate_wchar(path, L'\\', L'/');
+    if (p - path == 2 && path[1] == L':') {
+	*p++ = L'/';
+	*p = L'\0';
+    }
+}
+
+#define numberof(array) (sizeof(array) / sizeof(*array))
+
+static void
 init_env(void)
 {
-    char env[_MAX_PATH];
+    WCHAR env[_MAX_PATH];
     DWORD len;
     BOOL f;
 
-    if (!GetEnvironmentVariable("HOME", env, sizeof(env))) {
+    if (!GetEnvironmentVariableW(L"HOME", env, numberof(env))) {
 	f = FALSE;
-	if (GetEnvironmentVariable("HOMEDRIVE", env, sizeof(env)))
-	    len = strlen(env);
+	if (GetEnvironmentVariableW(L"HOMEDRIVE", env, numberof(env)))
+	    len = lstrlenW(env);
 	else
 	    len = 0;
-	if (GetEnvironmentVariable("HOMEPATH", env + len, sizeof(env) - len) || len) {
+	if (GetEnvironmentVariableW(L"HOMEPATH", env + len, numberof(env) - len) || len) {
 	    f = TRUE;
 	}
-	else if (GetEnvironmentVariable("USERPROFILE", env, sizeof(env))) {
+	else if (GetEnvironmentVariableW(L"USERPROFILE", env, numberof(env))) {
 	    f = TRUE;
 	}
 	else if (get_special_folder(CSIDL_PROFILE, env)) {
@@ -406,25 +428,20 @@ init_env(void)
 	    f = TRUE;
 	}
 	if (f) {
-	    char *p = translate_char(env, '\\', '/');
-	    if (p - env == 2 && env[1] == ':') {
-		*p++ = '/';
-		*p = 0;
-	    }
-	    SetEnvironmentVariable("HOME", env);
+	    regulate_path(env);
+	    SetEnvironmentVariableW(L"HOME", env);
 	}
     }
 
-    if (!GetEnvironmentVariable("USER", env, sizeof env)) {
-	if (GetEnvironmentVariable("USERNAME", env, sizeof env)) {
-	    SetEnvironmentVariable("USER", env);
-	}
-	else if (!GetUserName(env, (len = sizeof env, &len))) {
+    if (!GetEnvironmentVariableW(L"USER", env, numberof(env))) {
+	if (!GetEnvironmentVariableW(L"USERNAME", env, numberof(env)) &&
+	    !GetUserNameW(env, (len = numberof(env), &len))) {
 	    NTLoginName = "<Unknown>";
 	    return;
 	}
+	SetEnvironmentVariableW(L"USER", env);
     }
-    NTLoginName = strdup(env);
+    NTLoginName = strdup(rb_w32_getenv("USER"));
 }
 
 
