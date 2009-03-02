@@ -1,3 +1,7 @@
+Tue Mar  3 01:56:03 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/securerandom.rb (SecureRandom.urlsafe_base64): delete padding.
+
 Mon Mar  2 21:39:08 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/sockport.h (SS_LEN): defined unconditionally.

@@ -162,10 +162,12 @@ module SecureRandom
   # If n is not specified, 16 is assumed.
   # It may be larger in future.
   #
-  # The result may contain A-Z, a-z, 0-9, "-", "_" and "=".
+  # No padding is generated because "=" may be used as a URL delimiter.
   #
-  #   p SecureRandom.urlsafe_base64 #=> "b4GOKm4pOYU_-BOXcrUGDg=="
-  #   p SecureRandom.urlsafe_base64 #=> "UZLdOkzop70Ddx-IJR0ABg=="
+  # The result may contain A-Z, a-z, 0-9, "-" and "_".
+  #
+  #   p SecureRandom.urlsafe_base64 #=> "b4GOKm4pOYU_-BOXcrUGDg"
+  #   p SecureRandom.urlsafe_base64 #=> "UZLdOkzop70Ddx-IJR0ABg"
   #
   # If secure random number generator is not available,
   # NotImplementedError is raised.
@@ -175,6 +177,7 @@ module SecureRandom
     s = [random_bytes(n)].pack("m*")
     s.delete!("\n")
     s.tr!("+/", "-_")
+    s.delete!("=")
     s
   end
 
