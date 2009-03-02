@@ -160,53 +160,48 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
     func = dlsym(handle, name);
     CHECK_DLERROR;
     if( !func ){
-#if defined(__CYGWIN__) || defined(WIN32) || defined(__MINGW32__)
+	int  len = strlen(name);
+	char *name_n;
+#if defined(__CYGWIN__) || defined(_WIN32) || defined(__MINGW32__)
 	{
-	    int  len = strlen(name);
 	    char *name_a = (char*)xmalloc(len+2);
 	    strcpy(name_a, name);
 	    name_a[len]   = 'A';
 	    name_a[len+1] = '\0';
 	    func = dlsym(handle, name_a);
-	    xfree(name_a);
 	    CHECK_DLERROR;
-	    if( !func ){
-		for( i = 0; i < 256; i += 4 ){
-		    int  len = strlen(name);
-		    char *name_n = (char*)xmalloc(len+5);
-		    sprintf(name_n, "%s@%d%c", name, i, 0);
-		    func = dlsym(handle, name_n);
-		    xfree(name_n);
-		    CHECK_DLERROR;
-		    if( func )
-                    {
-			break;
-		    }
-		}
-		CHECK_DLERROR;
-		if( !func ){
-		    rb_raise(rb_eDLError, "unknown symbol \"%s\"", name);
-		}
+	    if( func ){
+		xfree(name_a);
+		goto found;
 	    }
+	    name_n = xrealloc(name_a, len+6);
 	}
 #else
+	name_n = (char*)xmalloc(len+6);
+#endif
+	memcpy(name_n, name, len);
+	name_n[len++] = '@';
 	for( i = 0; i < 256; i += 4 ){
-	    int  len = strlen(name);
-	    char *name_n = (char*)xmalloc(len+4);
-	    sprintf(name_n, "%s@%d", name, i);
+	    sprintf(name_n + len, "%d", i);
 	    func = dlsym(handle, name_n);
-	    xfree(name_n);
 	    CHECK_DLERROR;
-            if( func ){
-		break;
-	    }
+	    if( func ) break;
 	}
-	CHECK_DLERROR;
-        if( !func ){
+	xfree(name_n);
+	if( func ) goto found;
+	name_n[len-1] = 'A';
+	name_n[len++] = '@';
+	for( i = 0; i < 256; i += 4 ){
+	    sprintf(name_n + len, "%d", i);
+	    func = dlsym(handle, name_n);
+	    CHECK_DLERROR;
+	    if( func ) break;
+	}
+	if( !func ){
 	    rb_raise(rb_eDLError, "unknown symbol \"%s\"", name);
 	}
-#endif
     }
+  found:
 
     return PTR2NUM(func);
 }
