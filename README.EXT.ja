@@ -1382,6 +1382,12 @@ USE_SYMBOL_AS_METHOD_NAME
   メソッド名を返すメソッド，Module#methods, #singleton_methods
   などがSymbolを返すことを意味する．
 
+HAVE_RUBY_*_H
+
+  ruby.h で定義されている．対応するヘッダが提供されていること
+  を意味する．たとえば，HAVE_RUBY_ST_H が定義されている場合は
+  単なる st.h ではなく ruby/st.h を使用する．
+
 
 Appendix C. extconf.rbで使える関数たち
 

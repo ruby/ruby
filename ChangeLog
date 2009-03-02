@@ -1,3 +1,7 @@
+Mon Mar  2 16:40:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README.EXT, README.EXT.ja (Macros): added HAVE_RUBY_*_H.
+
 Mon Mar  2 12:22:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (init_env): keeps wide chars as wide chars.

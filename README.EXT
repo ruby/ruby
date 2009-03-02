@@ -1282,6 +1282,11 @@ Means that type rb_io_t is provided.
 Means that Symbols will be returned as method names, e.g.,
 Module#methods, #singleton_methods and so on.
 
+ HAVE_RUBY_*_H
+
+Defined in ruby.h and means correspoinding header is available.  For
+instance, when HAVE_RUBY_ST_H is defined you should use ruby/st.h not
+mere st.h.
 
 Appendix C. Functions Available in extconf.rb
 
