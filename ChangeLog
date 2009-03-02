@@ -1,3 +1,8 @@
+Mon Mar  2 21:06:40 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (addrinfo_mload): don't use "sun" variable
+	  for Solaris.
+
 Mon Mar  2 21:01:36 2009  Tanaka Akira  <akr@fsij.org>
 
 	* file.c: include fcntl.h for O_RDONLY on Solaris.
