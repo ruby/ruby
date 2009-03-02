@@ -69,6 +69,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   def test_fd_passing_n2
     io_ary = []
     return if !defined?(Socket::SCM_RIGHTS)
+    return if !defined?(Socket::AncillaryData)
     io_ary.concat IO.pipe
     io_ary.concat IO.pipe
     io_ary.concat IO.pipe

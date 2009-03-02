@@ -1387,10 +1387,12 @@ discard_cmsg(struct cmsghdr *cmh, char *msg_end)
         }
     }
 }
+#endif
 
 void
 rsock_discard_cmsg_resource(struct msghdr *mh)
 {
+#if defined(HAVE_ST_MSG_CONTROL)
     struct cmsghdr *cmh;
     char *msg_end;
 
@@ -1402,8 +1404,8 @@ rsock_discard_cmsg_resource(struct msghdr *mh)
     for (cmh = CMSG_FIRSTHDR(mh); cmh != NULL; cmh = CMSG_NXTHDR(mh, cmh)) {
         discard_cmsg(cmh, msg_end);
     }
-}
 #endif
+}
 
 #if defined(HAVE_ST_MSG_CONTROL)
 static void

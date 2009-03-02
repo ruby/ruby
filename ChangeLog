@@ -1,3 +1,8 @@
+Mon Mar  2 21:13:42 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (rsock_discard_cmsg_resource): defined
+	  unconditionally.
+
 Mon Mar  2 21:06:40 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (addrinfo_mload): don't use "sun" variable
