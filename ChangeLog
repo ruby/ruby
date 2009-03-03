@@ -1,3 +1,8 @@
+Mon Feb 23 14:47:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (mv): added description for the case of
+	  different partitions.  [ruby-talk:329072]
+
 Sun Feb 22 22:42:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (tr_trans): should recalculate coderange.
