@@ -1,3 +1,7 @@
+Fri Feb  6 12:11:24 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby.c (process_options): set initial default_external before -r.
+
 Sun Feb 22 10:43:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (method_missing): should not pop cfp if missing method
