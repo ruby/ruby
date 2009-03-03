@@ -1,0 +1,18 @@
+callback.o: $(hdrdir)/ruby.h $(hdrdir)/io.h
+
+callback-0.o: callback-0.c $(hdrdir)/ruby.h
+callback-1.o: callback-1.c $(hdrdir)/ruby.h
+callback-2.o: callback-2.c $(hdrdir)/ruby.h
+callback-3.o: callback-3.c $(hdrdir)/ruby.h
+callback-4.o: callback-4.c $(hdrdir)/ruby.h
+callback-5.o: callback-5.c $(hdrdir)/ruby.h
+callback-6.o: callback-6.c $(hdrdir)/ruby.h
+callback-7.o: callback-7.c $(hdrdir)/ruby.h
+callback-8.o: callback-8.c $(hdrdir)/ruby.h
+
+callback-0.c callback-1.c callback-2.c \
+callback-3.c callback-4.c callback-5.c \
+callback-6.c callback-7.c callback-8.c \
+callback.c: $(srcdir)/mkcallback.rb $(srcdir)/../dl.h
+	@echo "generating callback.h"
+	@$(RUBY) $(srcdir)/mkcallback.rb $(srcdir)/../dl.h 

@@ -60,7 +60,18 @@ rb_dl_value2ptr(VALUE self, VALUE val)
     return PTR2NUM((void*)val);
 }
 
-#include "callback.h"
+static void
+rb_dl_init_callbacks(VALUE dl)
+{
+    static const char cb[] = "dl/callback.so";
+
+    rb_autoload(dl, rb_intern_const("CdeclCallbackAddrs"), cb);
+    rb_autoload(dl, rb_intern_const("CdeclCallbackProcs"), cb);
+#ifdef FUNC_STDCALL
+    rb_autoload(dl, rb_intern_const("StdcallCallbackAddrs"), cb);
+    rb_autoload(dl, rb_intern_const("StdcallCallbackProcs"), cb);
+#endif
+}
 
 void
 Init_dl()
@@ -69,8 +80,8 @@ Init_dl()
     void Init_dlcfunc();
     void Init_dlptr();
 
-    rbdl_id_cdecl = rb_intern("cdecl");
-    rbdl_id_stdcall = rb_intern("stdcall");
+    rbdl_id_cdecl = rb_intern_const("cdecl");
+    rbdl_id_stdcall = rb_intern_const("stdcall");
 
     rb_mDL = rb_define_module("DL");
     rb_eDLError = rb_define_class_under(rb_mDL, "DLError", rb_eStandardError);
@@ -79,7 +90,7 @@ Init_dl()
     rb_define_const(rb_mDL, "MAX_CALLBACK", INT2NUM(MAX_CALLBACK));
     rb_define_const(rb_mDL, "DLSTACK_SIZE", INT2NUM(DLSTACK_SIZE));
 
-    rb_dl_init_callbacks();
+    rb_dl_init_callbacks(rb_mDL);
 
     rb_define_const(rb_mDL, "RTLD_GLOBAL", INT2NUM(RTLD_GLOBAL));
     rb_define_const(rb_mDL, "RTLD_LAZY",   INT2NUM(RTLD_LAZY));
