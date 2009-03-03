@@ -1240,7 +1240,12 @@ rb_string_value(volatile VALUE *ptr)
 {
     VALUE s = *ptr;
     if (TYPE(s) != T_STRING) {
-	s = rb_str_to_str(s);
+	if (SYMBOL_P(s)) {
+	    s = rb_sym_to_s(s);
+	}
+	else {
+	    s = rb_str_to_str(s);
+	}
 	*ptr = s;
     }
     return s;
@@ -4961,7 +4966,7 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
     char *s, *send, *t;
     VALUE del = 0, nodel = 0;
     int modify = 0;
-    int i, ascompat;
+    int i, ascompat, cr;
 
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
     if (argc < 1) {
@@ -4979,6 +4984,7 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
     ascompat = rb_enc_asciicompat(enc);
     s = t = RSTRING_PTR(str);
     send = RSTRING_END(str);
+    cr = ascompat ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID;
     while (s < send) {
 	unsigned int c;
 	int clen;
@@ -5003,12 +5009,14 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
 	    else {
 		if (t != s) rb_enc_mbcput(c, t, enc);
 		t += clen;
+		if (cr == ENC_CODERANGE_7BIT) cr = ENC_CODERANGE_VALID;
 	    }
 	    s += clen;
 	}
     }
     *t = '\0';
     STR_SET_LEN(str, t - RSTRING_PTR(str));
+    ENC_CODERANGE_SET(str, cr);
 
     if (modify) return str;
     return Qnil;

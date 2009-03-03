@@ -474,6 +474,11 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("he"),   S("hello").delete(S("lo")))
     assert_equal(S("hell"), S("hello").delete(S("aeiou"), S("^e")))
     assert_equal(S("ho"),   S("hello").delete(S("ej-m")))
+
+    assert_equal("a".hash, "a\u0101".delete("\u0101").hash, '[ruby-talk:329267]')
+    assert_equal(true, "a\u0101".delete("\u0101").ascii_only?)
+    assert_equal(true, "a\u3041".delete("\u3041").ascii_only?)
+    assert_equal(false, "a\u3041\u3042".tr("\u3041", "a").ascii_only?)
   end
 
   def test_delete!
