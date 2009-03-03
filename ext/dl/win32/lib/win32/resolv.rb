@@ -3,6 +3,7 @@
 
 =end
 
+require "dl/import"
 require 'win32/registry'
 
 module Win32
@@ -33,7 +34,11 @@ module Win32
       [ search, nameserver ]
     end
 
-getv = Win32API.new('kernel32.dll', 'GetVersionExA', 'P', 'L')
+module Kernel32
+  extend DL::Importer
+  dlload "kernel32"
+end
+getv = Kernel32.extern "int GetVersionExA(void *)", :stdcall
 info = [ 148, 0, 0, 0, 0 ].pack('V5') + "\0" * 128
 getv.call(info)
 if info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
@@ -255,8 +260,12 @@ else
     end
     
     module WsControl
-      WsControl = Win32API.new('wsock32.dll', 'WsControl', 'LLPPPP', 'L')
-      WSAGetLastError = Win32API.new('wsock32.dll', 'WSAGetLastError', 'V', 'L')
+      module WSock32
+        extend DL::Importer
+        dlload "wsock32.dll"
+      end
+      WsControl = WSock32.extern "int WsControl(int, int, void *, void *, void *, void *", :stdcall
+      WSAGetLastError = WSock32.extern "int WSAGetLastError(void)", :stdcall
       
       MAX_TDI_ENTITIES = 512
       IPPROTO_TCP = 6
