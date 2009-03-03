@@ -1,3 +1,13 @@
+Sun Feb 22 22:42:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (tr_trans): should recalculate coderange.
+	  [ruby-core:22326] (reopened at [ruby-core:22328])
+
+Sun Feb 22 14:33:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (tr_trans): should not be affected by the encoding of
+	  replacement unless actually modified.  [ruby-talk:328967]
+
 Fri Feb  6 12:11:24 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ruby.c (process_options): set initial default_external before -r.

@@ -1395,6 +1395,9 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("hippo"), S("hello").tr(S("el"), S("ip")))
     assert_equal(S("*e**o"), S("hello").tr(S("^aeiou"), S("*")))
     assert_equal(S("hal"),   S("ibm").tr(S("b-z"), S("a-z")))
+
+    a = "abc".force_encoding(Encoding::US_ASCII)
+    assert_equal(Encoding::US_ASCII, a.tr(S("z"), S("\u0101")).encoding)
   end
 
   def test_tr!
@@ -1415,11 +1418,17 @@ class TestString < Test::Unit::TestCase
     a = S("ibm")
     assert_nil(a.tr!(S("B-Z"), S("A-Z")))
     assert_equal(S("ibm"), a)
+
+    a = "abc".force_encoding(Encoding::US_ASCII)
+    assert_nil(a.tr!(S("z"), S("\u0101")))
+    assert_equal(Encoding::US_ASCII, a.encoding)
   end
 
   def test_tr_s
     assert_equal(S("hypo"), S("hello").tr_s(S("el"), S("yp")))
     assert_equal(S("h*o"),  S("hello").tr_s(S("el"), S("*")))
+    assert_equal("a".hash, "\u0101\u0101".tr_s("\u0101", "a").hash)
+    assert_equal(true, "\u3041\u3041".tr("\u3041", "a").ascii_only?)
   end
 
   def test_tr_s!

@@ -4603,6 +4603,10 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     int singlebyte = single_byte_optimizable(str);
     int cr;
 
+#define CHECK_IF_ASCII(c) \
+    (void)((cr == ENC_CODERANGE_7BIT && !rb_isascii(c)) ? \
+	   (cr = ENC_CODERANGE_VALID) : 0)
+
     StringValue(src);
     StringValue(repl);
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
@@ -4674,6 +4678,8 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	}
     }
 
+    if (cr == ENC_CODERANGE_VALID)
+	cr = ENC_CODERANGE_7BIT;
     str_modify_keep_cr(str);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
     if (sflag) {
@@ -4682,8 +4688,10 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	char *buf = ALLOC_N(char, max), *t = buf;
 
 	while (s < send) {
-	    c0 = c = rb_enc_codepoint(s, send, enc);
-	    tlen = clen = rb_enc_codelen(c, enc);
+	    int may_modify = 0;
+	    c0 = c = rb_enc_codepoint(s, send, e1);
+	    clen = rb_enc_codelen(c, e1);
+	    tlen = enc == e1 ? clen : rb_enc_codelen(c, enc);
 
 	    s += clen;
 	    if (c < 256) {
@@ -4702,7 +4710,10 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		c = errc;
 	    }
 	    if (c != -1) {
-		if (save == c) continue;
+		if (save == c) {
+		    CHECK_IF_ASCII(c);
+		    continue;
+		}
 		save = c;
 		tlen = rb_enc_codelen(c, enc);
 		modify = 1;
@@ -4710,6 +4721,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    else {
 		save = -1;
 		c = c0;
+		if (enc != e1) may_modify = 1;
 	    }
 	    while (t - buf + tlen >= max) {
 		offset = t - buf;
@@ -4718,6 +4730,10 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		t = buf + offset;
 	    }
 	    rb_enc_mbcput(c, t, enc);
+	    if (may_modify && memcmp(s, t, tlen) != 0) {
+		modify = 1;
+	    }
+	    CHECK_IF_ASCII(c);
 	    t += tlen;
 	}
 	*t = '\0';
@@ -4740,6 +4756,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		    modify = 1;
 		}
 	    }
+	    CHECK_IF_ASCII(c);
 	    s++;
 	}
     }
@@ -4749,8 +4766,10 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	char *buf = ALLOC_N(char, max), *t = buf;
 
 	while (s < send) {
-	    c0 = c = rb_enc_codepoint(s, send, enc);
-	    tlen = clen = rb_enc_codelen(c, enc);
+	    int may_modify = 0;
+	    c0 = c = rb_enc_codepoint(s, send, e1);
+	    clen = rb_enc_codelen(c, e1);
+	    tlen = enc == e1 ? clen : rb_enc_codelen(c, enc);
 
 	    if (c < 256) {
 		c = trans[c];
@@ -4772,8 +4791,8 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		modify = 1;
 	    }
 	    else {
-		modify = 1;
 		c = c0;
+		if (enc != e1) may_modify = 1;
 	    }
 	    while (t - buf + tlen >= max) {
 		offset = t - buf;
@@ -4781,7 +4800,13 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		REALLOC_N(buf, char, max);
 		t = buf + offset;
 	    }
-	    if (s != t) rb_enc_mbcput(c, t, enc);
+	    if (s != t) {
+		rb_enc_mbcput(c, t, enc);
+		if (may_modify && memcmp(s, t, tlen) != 0) {
+		    modify = 1;
+		}
+	    }
+	    CHECK_IF_ASCII(c);
 	    s += clen;
 	    t += tlen;
 	}
@@ -4796,7 +4821,6 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     }
     
     if (modify) {
-	cr = ENC_CODERANGE_AND(cr, ENC_CODERANGE(repl));
 	if (cr != ENC_CODERANGE_BROKEN)
 	    ENC_CODERANGE_SET(str, cr);
 	rb_enc_associate(str, enc);
