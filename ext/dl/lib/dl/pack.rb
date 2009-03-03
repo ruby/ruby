@@ -2,55 +2,6 @@ require 'dl'
 
 module DL
   module PackInfo
-    if( defined?(TYPE_LONG_LONG) )
-    ALIGN_MAP = {
-      TYPE_VOIDP => ALIGN_VOIDP,
-      TYPE_CHAR  => ALIGN_CHAR,
-      TYPE_SHORT => ALIGN_SHORT,
-      TYPE_INT   => ALIGN_INT,
-      TYPE_LONG  => ALIGN_LONG,
-      TYPE_LONG_LONG => ALIGN_LONG_LONG,
-      TYPE_FLOAT => ALIGN_FLOAT,
-      TYPE_DOUBLE => ALIGN_DOUBLE,
-      -TYPE_CHAR  => ALIGN_CHAR,
-      -TYPE_SHORT => ALIGN_SHORT,
-      -TYPE_INT   => ALIGN_INT,
-      -TYPE_LONG  => ALIGN_LONG,
-      -TYPE_LONG_LONG => ALIGN_LONG_LONG,
-    }
-
-    PACK_MAP = {
-      TYPE_VOIDP => ((SIZEOF_VOIDP == SIZEOF_LONG_LONG) ? "q" : "l!"),
-      TYPE_CHAR  => "c",
-      TYPE_SHORT => "s!",
-      TYPE_INT   => "i!",
-      TYPE_LONG  => "l!",
-      TYPE_LONG_LONG => "q",
-      TYPE_FLOAT => "f",
-      TYPE_DOUBLE => "d",
-      -TYPE_CHAR  => "c",
-      -TYPE_SHORT => "s!",
-      -TYPE_INT   => "i!",
-      -TYPE_LONG  => "l!",
-      -TYPE_LONG_LONG => "q",
-    }
-
-    SIZE_MAP = {
-      TYPE_VOIDP => SIZEOF_VOIDP,
-      TYPE_CHAR  => SIZEOF_CHAR,
-      TYPE_SHORT => SIZEOF_SHORT,
-      TYPE_INT   => SIZEOF_INT,
-      TYPE_LONG  => SIZEOF_LONG,
-      TYPE_LONG_LONG => SIZEOF_LONG_LONG,
-      TYPE_FLOAT => SIZEOF_FLOAT,
-      TYPE_DOUBLE => SIZEOF_DOUBLE,
-      -TYPE_CHAR  => SIZEOF_CHAR,
-      -TYPE_SHORT => SIZEOF_SHORT,
-      -TYPE_INT   => SIZEOF_INT,
-      -TYPE_LONG  => SIZEOF_LONG,
-      -TYPE_LONG_LONG => SIZEOF_LONG_LONG,
-    }
-    else
     ALIGN_MAP = {
       TYPE_VOIDP => ALIGN_VOIDP,
       TYPE_CHAR  => ALIGN_CHAR,
@@ -92,6 +43,10 @@ module DL
       -TYPE_INT   => SIZEOF_INT,
       -TYPE_LONG  => SIZEOF_LONG,
     }
+    if defined?(TYPE_LONG_LONG)
+      ALIGN_MAP[TYPE_LONG_LONG] = ALIGN_MAP[-TYPE_LONG_LONG] = ALIGN_LONG_LONG
+      PACK_MAP[TYPE_LONG_LONG] = PACK_MAP[-TYPE_LONG_LONG] = "q"
+      SIZE_MAP[TYPE_LONG_LONG] = SIZE_MAP[-TYPE_LONG_LONG] = SIZEOF_LONG_LONG
     end
 
     def align(addr, align)
@@ -108,8 +63,8 @@ module DL
   class Packer
     include PackInfo
 
-    def Packer.[](*types)
-      Packer.new(types)
+    def self.[](*types)
+      new(types)
     end
 
     def initialize(types)

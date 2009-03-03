@@ -2,8 +2,8 @@ require 'dl'
 
 module DL
   class Stack
-    def Stack.[](*types)
-      Stack.new(types)
+    def self.[](*types)
+      new(types)
     end
 
     def initialize(types)
@@ -51,40 +51,6 @@ module DL
       end
     end
 
-if( defined?(TYPE_LONG_LONG) )
-    ALIGN_MAP = {
-      TYPE_VOIDP => ALIGN_VOIDP,
-      TYPE_CHAR  => ALIGN_VOIDP,
-      TYPE_SHORT => ALIGN_VOIDP,
-      TYPE_INT   => ALIGN_VOIDP,
-      TYPE_LONG  => ALIGN_VOIDP,
-      TYPE_LONG_LONG => ALIGN_LONG_LONG,
-      TYPE_FLOAT => ALIGN_FLOAT,
-      TYPE_DOUBLE => ALIGN_DOUBLE,
-    }
-
-    PACK_MAP = {
-      TYPE_VOIDP => ((SIZEOF_VOIDP == SIZEOF_LONG_LONG)? "q" : "l!"),
-      TYPE_CHAR  => "c",
-      TYPE_SHORT => "s!",
-      TYPE_INT   => "i!",
-      TYPE_LONG  => "l!",
-      TYPE_LONG_LONG => "q",
-      TYPE_FLOAT => "f",
-      TYPE_DOUBLE => "d",
-    }
-
-    SIZE_MAP = {
-      TYPE_VOIDP => SIZEOF_VOIDP,
-      TYPE_CHAR  => SIZEOF_CHAR,
-      TYPE_SHORT => SIZEOF_SHORT,
-      TYPE_INT   => SIZEOF_INT,
-      TYPE_LONG  => SIZEOF_LONG,
-      TYPE_LONG_LONG => SIZEOF_LONG_LONG,
-      TYPE_FLOAT => SIZEOF_FLOAT,
-      TYPE_DOUBLE => SIZEOF_DOUBLE,
-    }
-else
     ALIGN_MAP = {
       TYPE_VOIDP => ALIGN_VOIDP,
       TYPE_CHAR  => ALIGN_VOIDP,
@@ -114,7 +80,11 @@ else
       TYPE_FLOAT => SIZEOF_FLOAT,
       TYPE_DOUBLE => SIZEOF_DOUBLE,
     }
-end
+    if defined?(TYPE_LONG_LONG)
+      ALIGN_MAP[TYPE_LONG_LONG] = ALIGN_LONG_LONG
+      PACK_MAP[TYPE_LONG_LONG] = "q"
+      SIZE_MAP[TYPE_LONG_LONG] = SIZEOF_LONG_LONG
+    end
 
     def parse_types(types)
       @types = types
