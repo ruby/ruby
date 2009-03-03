@@ -25,6 +25,10 @@ module DL
       @cfunc.to_i
     end
 
+    def name
+      @cfunc.name
+    end
+
     def call(*args, &block)
       funcs = []
       args = wrap_args(args, @stack.types, funcs, &block)

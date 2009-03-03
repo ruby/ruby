@@ -1,3 +1,7 @@
+Tue Mar  3 15:53:20 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/lib/dl/func.rb (DL::Function.name): delegate to @cfunc.
+
 Tue Mar  3 15:40:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/dl.c (rb_dl_init_callbacks): autoloads callbacks.
