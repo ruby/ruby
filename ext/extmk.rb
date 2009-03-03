@@ -146,6 +146,7 @@ def extmake(target)
       begin
 	$extconf_h = nil
 	ok &&= extract_makefile(makefile)
+	old_objs = $objs
 	conf = ["#{$srcdir}/makefile.rb", "#{$srcdir}/extconf.rb"].find {|f| File.exist?(f)}
 	if (($extconf_h && !File.exist?($extconf_h)) ||
 	    !(t = modified?(makefile, MTIMES)) ||
@@ -186,6 +187,7 @@ def extmake(target)
       args += ["static"] unless $clean
       $extlist.push [$static, $target, File.basename($target), $preload]
     end
+    FileUtils.rm_f($objs - old_objs)
     unless system($make, *args)
       $ignore or $continue or return false
     end
