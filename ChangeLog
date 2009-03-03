@@ -1,3 +1,13 @@
+Tue Feb 24 01:22:19 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bootstraptest/test_thread.rb: fix for environment where fork is not
+	  available.
+
+Tue Feb 24 01:19:38 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (thread_cleanup_func): unlock all locked mutexes even when
+	  forking.  [ruby-core:22269]
+
 Mon Feb 23 14:47:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/fileutils.rb (mv): added description for the case of
