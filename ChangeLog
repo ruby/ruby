@@ -1,3 +1,8 @@
+Tue Feb 24 13:13:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/vsnprintf.c (BSD_vfprintf): ptrdiff_t may be larger than
+	  long.
+
 Tue Feb 24 10:49:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_waitpid): last argument was missing.
