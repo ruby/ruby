@@ -1,3 +1,8 @@
+Wed Mar  4 03:42:56 2009  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv.rb: A patch from Madoka Yakamamoto to prevent an infinite
+	  loop while reading some encodings.
+
 Wed Mar  4 00:54:43 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/prime.rb (Prime::prime?): used to return a wrong answer.
