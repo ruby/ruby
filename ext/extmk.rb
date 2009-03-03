@@ -105,8 +105,8 @@ def extmake(target)
     $mdir = target
     $srcdir = File.join($top_srcdir, "ext", $mdir)
     $preload = nil
-    $objs = ""
-    $srcs = ""
+    $objs = []
+    $srcs = []
     $compiled[target] = false
     makefile = "./Makefile"
     ok = File.exist?(makefile)
@@ -137,9 +137,8 @@ def extmake(target)
       }
       begin
 	$extconf_h = nil
-	$objs = []
 	ok &&= extract_makefile(makefile)
-        old_objs = $objs
+	old_objs = $objs
 	conf = ["#{$srcdir}/makefile.rb", "#{$srcdir}/extconf.rb"].find {|f| File.exist?(f)}
 	if (($extconf_h && !File.exist?($extconf_h)) ||
 	    !(t = modified?(makefile, MTIMES)) ||
@@ -180,7 +179,7 @@ def extmake(target)
       args += ["static"] unless $clean
       $extlist.push [$static, $target, File.basename($target), $preload]
     end
-    FileUtils.rm_f($objs.split - old_objs)
+    FileUtils.rm_f($objs - old_objs)
     unless system($make, *args)
       $ignore or $continue or return false
     end
