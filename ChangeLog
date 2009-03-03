@@ -1,3 +1,9 @@
+Tue Mar  3 14:53:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (main): passes $(MAKE) to mkmain_cmd
+
+	* ext/extmk.rb (command_output): uses arguments to invoke make.
+
 Tue Mar  3 01:56:03 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb (SecureRandom.urlsafe_base64): delete padding.

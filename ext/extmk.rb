@@ -565,13 +565,13 @@ $mflags.unshift("topdir=#$topdir")
 ENV.delete("RUBYOPT")
 if $command_output
   message = "echo #{message}"
-  cmd = [$make, *sysquote($makeflags)].join(' ')
+  cmd = sysquote($makeflags).join(' ')
   open($command_output, 'wb') do |f|
     case $command_output
     when /\.sh\z/
-      f.puts message, "rm -f $0; exec #{cmd}"
+      f.puts message, "rm -f $0; exec \"$@\" #{cmd}"
     when /\.bat\z/
-      ["@echo off", message, cmd, "del %0 & exit %ERRORLEVEL%"].each do |s|
+      ["@echo off", message, "%* #{cmd}", "del %0 & exit %ERRORLEVEL%"].each do |s|
         f.print s, "\r\n"
       end
     else
