@@ -1,3 +1,11 @@
+Tue Feb 24 17:58:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (ripper.c): exec can't work on Windows.
+
+	* ext/ripper/depend (.SUFFIXES): nmake doesn't have .y by default.
+
+	* Makefile.in (id.h): overwrites unconditinally.
+
 Tue Feb 24 13:13:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/vsnprintf.c (BSD_vfprintf): ptrdiff_t may be larger than
