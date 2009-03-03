@@ -1,3 +1,8 @@
+Tue Mar  3 17:10:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): removes object files no longer used and
+	  files to be removed by old distclean.
+
 Tue Mar  3 16:51:51 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/dl/win32/lib/win32/resolv.rb: get rid of warning.
@@ -39,8 +44,6 @@ Tue Mar  3 15:40:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Mar  3 14:57:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (main): passes $(MAKE) to mkmain_cmd
-
-	* ext/extmk.rb (extmake): removes object files no longer used.
 
 	* ext/extmk.rb (command_output): uses arguments to invoke make.
 
