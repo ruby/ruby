@@ -89,6 +89,11 @@ class TestPrime < Test::Unit::TestCase
     end
   end
 
+  def test_default_instance_does_not_have_compatibility_methods
+    assert !Prime.instance.respond_to?(:succ)
+    assert !Prime.instance.respond_to?(:next)
+  end
+
   class TestInteger < Test::Unit::TestCase
     def test_prime_division
       pd = PRIMES.inject(&:*).prime_division
@@ -100,6 +105,10 @@ class TestPrime < Test::Unit::TestCase
     end
 
     def test_prime?
+      # zero and unit
+      assert !0.prime?
+      assert !1.prime?
+
       # small primes
       assert 2.prime?
       assert 3.prime?
@@ -121,6 +130,12 @@ class TestPrime < Test::Unit::TestCase
 
       # factorial
       assert !(2...100).inject(&:*).prime?
+
+      # negative
+      assert !-1.prime?
+      assert -2.prime?
+      assert -3.prime?
+      assert !-4.prime?
     end
   end
 end
