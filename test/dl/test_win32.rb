@@ -33,6 +33,7 @@ module Win32API
     end
   end
   module_function :get_version_ex
+rescue DL::DLError
 end
 
 module DL
@@ -50,4 +51,4 @@ class TestWin32 < TestBase
     assert_equal(expect, platform)
   end
 end
-end
+end if defined?(Win32API::OSVERSIONINFO)
