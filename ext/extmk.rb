@@ -88,6 +88,7 @@ def extract_makefile(makefile, keep = true)
   end
   $objs = (m[/^OBJS[ \t]*=[ \t](.*)/, 1] || "").split
   $srcs = (m[/^SRCS[ \t]*=[ \t](.*)/, 1] || "").split
+  $distcleanfiles = (m[/^DISTCLEANFILES[ \t]*=[ \t](.*)/, 1] || "").split
   $LOCAL_LIBS = m[/^LOCAL_LIBS[ \t]*=[ \t]*(.*)/, 1] || ""
   $LIBPATH = Shellwords.shellwords(m[/^libpath[ \t]*=[ \t]*(.*)/, 1] || "") - %w[$(libdir) $(topdir)]
   true
@@ -147,6 +148,7 @@ def extmake(target)
 	$extconf_h = nil
 	ok &&= extract_makefile(makefile)
 	old_objs = $objs
+	old_cleanfiles = $distcleanfiles
 	conf = ["#{$srcdir}/makefile.rb", "#{$srcdir}/extconf.rb"].find {|f| File.exist?(f)}
 	if (($extconf_h && !File.exist?($extconf_h)) ||
 	    !(t = modified?(makefile, MTIMES)) ||
@@ -187,7 +189,8 @@ def extmake(target)
       args += ["static"] unless $clean
       $extlist.push [$static, $target, File.basename($target), $preload]
     end
-    FileUtils.rm_f($objs - old_objs)
+    FileUtils.rm_f(old_cleanfiles - $distcleanfiles)
+    FileUtils.rm_f(old_objs - $objs)
     unless system($make, *args)
       $ignore or $continue or return false
     end
