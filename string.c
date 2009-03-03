@@ -5947,7 +5947,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 	 memcmp(RSTRING_PTR(rs), pp, rslen) == 0)) {
 	if (rb_enc_left_char_head(p, pp, e, enc) != pp)
 	    return Qnil;
-	str_modify_keep_cr(str);
+	rb_str_modify(str);
 	STR_SET_LEN(str, RSTRING_LEN(str) - rslen);
 	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
 	return str;

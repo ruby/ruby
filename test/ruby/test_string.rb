@@ -339,6 +339,8 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("hello"), S("hello").chomp)
     assert_equal(S("hello"), S("hello!").chomp)
     $/ = save
+
+    assert_equal(S("a").hash, S("a\u0101").chomp(S("\u0101")).hash, '[ruby-core:22414]')
   end
 
   def test_chomp!
@@ -393,6 +395,8 @@ class TestString < Test::Unit::TestCase
     s = "foo\r"
     s.chomp!("")
     assert_equal("foo\r", s)
+
+    assert_equal(S("a").hash, S("a\u0101").chomp!(S("\u0101")).hash, '[ruby-core:22414]')
   end
 
   def test_chop
