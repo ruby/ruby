@@ -2215,7 +2215,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    if (NIL_P(rs)) {
+    if (NIL_P(rs) && limit < 0) {
 	str = read_all(fptr, 0, Qnil);
 	if (RSTRING_LEN(str) == 0) return Qnil;
     }
@@ -2227,24 +2227,26 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	return rb_io_getline_fast(fptr, enc);
     }
     else {
-	int c, newline;
-	const char *rsptr;
-	long rslen;
+	int c, newline = -1;
+	const char *rsptr = 0;
+	long rslen = 0;
 	int rspara = 0;
         int extra_limit = 16;
 
-	rslen = RSTRING_LEN(rs);
-	if (rslen == 0) {
-	    rsptr = "\n\n";
-	    rslen = 2;
-	    rspara = 1;
-	    swallow(fptr, '\n');
-	    rs = 0;
+	if (!NIL_P(rs)) {
+	    rslen = RSTRING_LEN(rs);
+	    if (rslen == 0) {
+		rsptr = "\n\n";
+		rslen = 2;
+		rspara = 1;
+		swallow(fptr, '\n');
+		rs = 0;
+	    }
+	    else {
+		rsptr = RSTRING_PTR(rs);
+	    }
+	    newline = (unsigned char)rsptr[rslen - 1];
 	}
-	else {
-	    rsptr = RSTRING_PTR(rs);
-	}
-	newline = (unsigned char)rsptr[rslen - 1];
 
 	/* MS - Optimisation */
         enc = io_read_encoding(fptr);

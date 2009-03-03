@@ -61,8 +61,9 @@ class TestIO < Test::Unit::TestCase
   def test_gets_limit_extra_arg
     with_pipe {|r, w|
       r, w = IO.pipe
-      w << "0123456789"
+      w << "0123456789\n0123456789"
       w.close
+      assert_equal("0123456789\n0", r.gets(nil, 12))
       assert_raise(TypeError) { r.gets(3,nil) }
     }
   end
