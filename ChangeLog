@@ -1,6 +1,8 @@
-Tue Mar  3 14:53:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar  3 14:57:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (main): passes $(MAKE) to mkmain_cmd
+
+	* ext/extmk.rb (extmake): removes object files no longer used.
 
 	* ext/extmk.rb (command_output): uses arguments to invoke make.
 
