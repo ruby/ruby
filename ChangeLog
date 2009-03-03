@@ -1,4 +1,6 @@
-Tue Mar  3 15:03:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar  3 15:05:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/lib/dl/value.rb (DL::ValueUtil#wrap_arg): NULL for nil.
 
 	* test/dl: moved from ext/dl/test.
 

@@ -48,6 +48,8 @@ module DL
     def wrap_arg(arg, ty, funcs, &block)
         funcs ||= []
         case arg
+        when nil
+          return 0
         when CPtr
           return arg.to_i
         when IO
