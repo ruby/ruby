@@ -1,4 +1,7 @@
-Tue Mar  3 15:07:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar  3 15:09:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/lib/dl/cparser.rb (DL::CParser::parse_signature): fixed
+	  variable name.
 
 	* ext/dl/lib/dl/pack.rb (DL::PackInfo): reduced redundan
 	  initialization.

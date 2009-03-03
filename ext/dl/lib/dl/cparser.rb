@@ -52,7 +52,7 @@ module DL
         ret  = ret.join(" ")
         return [func, parse_ctype(ret, tymap), args.collect{|arg| parse_ctype(arg, tymap)}]
       else
-        raise(RuntimeError,"can't parse the function prototype: #{proto}")
+        raise(RuntimeError,"can't parse the function prototype: #{signature}")
       end
     end
 
