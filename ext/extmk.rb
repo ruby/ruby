@@ -113,8 +113,8 @@ def extmake(target)
     $mdir = target
     $srcdir = File.join($top_srcdir, "ext", $mdir)
     $preload = nil
-    $objs = ""
-    $srcs = ""
+    $objs = []
+    $srcs = []
     $compiled[target] = false
     makefile = "./Makefile"
     ok = File.exist?(makefile)

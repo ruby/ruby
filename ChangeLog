@@ -1,3 +1,8 @@
+Tue Mar  3 16:25:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake), lib/mkmf.rb (create_makefile): $objs and
+	  $srcs are always Array or nil now.
+
 Sun Mar  1 19:41:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_dtoa): allocates one more byte to get rid of buffer

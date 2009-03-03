@@ -1466,9 +1466,8 @@ def create_makefile(target, srcprefix = nil)
   for i in $objs
     i.sub!(/\.o\z/, ".#{$OBJEXT}")
   end
-  $objs = $objs.join(" ")
 
-  target = nil if $objs == ""
+  target = nil if $objs.empty?
 
   if target and EXPORT_PREFIX
     if File.exist?(File.join(srcdir, target + '.def'))
@@ -1507,7 +1506,7 @@ target_prefix = #{target_prefix}
 LOCAL_LIBS = #{$LOCAL_LIBS}
 LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
 SRCS = #{srcs.collect(&File.method(:basename)).join(' ')}
-OBJS = #{$objs}
+OBJS = #{$objs.join(" ")}
 TARGET = #{target}
 DLLIB = #{dllib}
 EXTSTATIC = #{$static || ""}
