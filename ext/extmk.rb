@@ -137,6 +137,7 @@ def extmake(target)
       }
       begin
 	$extconf_h = nil
+	$objs = []
 	ok &&= extract_makefile(makefile)
         old_objs = $objs
 	conf = ["#{$srcdir}/makefile.rb", "#{$srcdir}/extconf.rb"].find {|f| File.exist?(f)}
