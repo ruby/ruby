@@ -82,9 +82,9 @@ if info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
             end
           end
           
-          reg.open('Interfaces') do |reg|
-            reg.each_key do |iface,|
-              reg.open(iface) do |regif|
+          reg.open('Interfaces') do |h|
+            h.each_key do |iface,|
+              h.open(iface) do |regif|
                 begin
                   [ 'NameServer', 'DhcpNameServer' ].each do |key|
                     begin

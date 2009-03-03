@@ -15,6 +15,8 @@ module DL
       if( @cfunc.ctype < 0 )
         @cfunc.ctype = @cfunc.ctype.abs
         @unsigned = true
+      else
+        @unsigned = false
       end
       if( proc )
         bind(&proc)
