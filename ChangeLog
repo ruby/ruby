@@ -1,3 +1,8 @@
+Sun Mar  1 16:01:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (proc_daemon): stops and restarts timer thread because
+	  daemon(3) implies fork(2).  [ruby-dev:38055]
+
 Fri Feb 27 22:02:34 2009  Tanaka Akira  <akr@fsij.org>
 
 	* util.c: fix SEGV by test_time.rb with

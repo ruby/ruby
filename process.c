@@ -4197,7 +4197,10 @@ proc_daemon(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "02", &nochdir, &noclose);
 
 #if defined(HAVE_DAEMON)
+    prefork();
+    before_fork();
     n = daemon(RTEST(nochdir), RTEST(noclose));
+    after_fork();
     if (n < 0) rb_sys_fail("daemon");
     return INT2FIX(n);
 #elif defined(HAVE_FORK)
