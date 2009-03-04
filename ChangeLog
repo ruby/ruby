@@ -1,3 +1,8 @@
+Mon Mar  2 10:50:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/handle.c (rb_dlhandle_sym): get rid of buffer overrun,
+	  and try ASCII WINAPI versions too.
+
 Mon Mar  2 00:56:45 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/observer.rb: The module oberservable uses now a hash to
