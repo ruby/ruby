@@ -1,3 +1,8 @@
+Sun Mar  1 19:52:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/win32/lib/Win32API.rb (initialize): passes res
+	  arguments to DL.
+
 Sun Mar  1 19:36:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_dtoa): allocates one more byte to get rid of buffer
