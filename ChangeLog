@@ -1,3 +1,8 @@
+Wed Mar  4 03:42:56 2009  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv.rb: A patch from Madoka Yakamamoto to prevent an infinite
+	  loop while reading some encodings.
+
 Mon Mar  2 21:01:36 2009  Tanaka Akira  <akr@fsij.org>
 
 	* file.c: include fcntl.h for O_RDONLY on Solaris.

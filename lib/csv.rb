@@ -2282,9 +2282,7 @@ class CSV
       if @io.eof? or data.size >= bytes + 10
         return data
       else
-        data += @io.read(1) until data.valid_encoding? or
-                                  @io.eof?             or
-                                  data.size >= bytes + 10
+        data += @io.read(1)
         retry
       end
     end
