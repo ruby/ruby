@@ -178,7 +178,7 @@ EXTLIBS =
 !if !defined(LIBS)
 LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib $(EXTLIBS)
 !endif
-!if defined(HAVE_UNICOWS)
+!if "$(ENABLE_WIN95)" == "yes"
 LIBS = unicows.lib $(LIBS)
 !endif
 !if !defined(MISSING)
@@ -335,7 +335,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #if _MSC_VER != $(MSC_VER)
 #error MSC version unmatch: _MSC_VER: $(MSC_VER) is expected.
 #endif
-!if defined(HAVE_UNICOWS) && "$(MACHINE)" == "x86"
+!if "$(ENABLE_WIN95)" == "yes" && "$(MACHINE)" == "x86"
 #define WIN95 1
 !endif
 #define STDC_HEADERS 1

@@ -142,8 +142,9 @@ int main(int argc, char **argv)
 	@del rtname.*
 
 -unicows-: nul
+!if "$(ENABLE_WIN95)" == ""
 	@echo Checking unicows.lib
-	@$(CC) -MD <<conftest.c unicows.lib user32.lib > nul && echo>>$(MAKEFILE) HAVE_UNICOWS = 1 || rem
+	@$(CC) -MD <<conftest.c unicows.lib user32.lib > nul && echo>>$(MAKEFILE) ENABLE_WIN95 = yes || rem
 #include <windows.h>
 int main()
 {
@@ -151,6 +152,9 @@ int main()
 }
 <<
 	@del conftest.*
+!else if "$(ENABLE_WIN95)" == "yes"
+	@echo>>$(MAKEFILE) ENABLE_WIN95 = yes
+!endif
 
 -version-: nul
 	@$(APPEND)

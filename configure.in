@@ -551,6 +551,12 @@ dnl Check whether we need to define sys_nerr locally
 AC_CHECK_DECLS([sys_nerr], [], [], [$ac_includes_default
 #include <errno.h>])
 
+AC_ARG_ENABLE(win95, [  --enable-win95          enable Windows 95 series support]
+  [case "$enableval" in
+    when(yes|no) enable_win95=$enableval;;
+    when(*) unset enable_win95;;
+  esac])
+
 case "$target_os" in
 when(freebsd*)
   AC_CACHE_CHECK([whether pthread should be enabled by default],
@@ -709,8 +715,7 @@ when(mingw*)	LIBS="-lshell32 -lws2_32 $LIBS"
 		ac_cv_func_fcntl=yes
 		ac_cv_func_flock=yes
 		AC_LIBOBJ([langinfo])
-		AC_HAVE_LIBRARY(unicows, [LIBS="-lunicows $LIBS"
-		    AC_DEFINE(WIN95)])
+		: ${enable_win95=maybe}
 		;;
 when(os2-emx*)	LIBS="-lm $LIBS"
 		ac_cv_lib_dir_opendir=no;;
@@ -742,6 +747,13 @@ AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
 AC_CHECK_LIB(socket, socketpair)	# SunOS/Solaris
 AC_CHECK_LIB(rt, clock_gettime)	# GNU/Linux
+if test "${enable_win95}" = maybe; then
+    AC_HAVE_LIBRARY(unicows, [enable_win95=yes], [enable_win95=no])
+fi
+if test "${enable_win95}" = yes; then
+    AC_DEFINE(WIN95)
+    LIBS="-lunicows $LIBS"
+fi
 
 case "$target_cpu" in
 when(alpha*)	case "$target_os"::"$GCC" in

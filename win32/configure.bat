@@ -25,6 +25,8 @@ if "%1" == "--install-name" goto :installname
 if "%1" == "--so-name" goto :soname
 if "%1" == "--enable-install-doc" goto :enable-rdoc
 if "%1" == "--disable-install-doc" goto :disable-rdoc
+if "%1" == "--enable-win95" goto :enable-win95
+if "%1" == "--disable-win95" goto :disable-win95
 if "%1" == "--extout" goto :extout
 if "%1" == "--path" goto :path
 if "%1" == "--with-baseruby" goto :baseruby
@@ -95,6 +97,16 @@ goto :loop
   echo>>confargs.tmp %1 \
   shift
 goto :loop
+:enable-win95
+  echo>> ~tmp~.mak 	"ENABLE_WIN95=yes" \
+  echo>>confargs.tmp %1 \
+  shift
+goto :loop
+:disable-win95
+  echo>> ~tmp~.mak 	"ENABLE_WIN95=no" \
+  echo>>confargs.tmp %1 \
+  shift
+goto :loop
 :extout
   echo>> ~tmp~.mak 	"EXTOUT=%2" \
   echo>>confargs.tmp %1=%2 \
@@ -125,6 +137,7 @@ goto :loop
   echo   --with-baseruby=RUBY    use RUBY as baseruby [ruby]
   echo   --with-static-linked-ext link external modules statically
   echo   --disable-install-doc   do not install rdoc indexes during install
+  echo   --enable-win95          enable win95 support
   del *.tmp
   del ~tmp~.mak
 goto :exit
@@ -132,8 +145,10 @@ goto :exit
 echo>> ~tmp~.mak 	WIN32DIR=$(@D)
 echo.>>confargs.tmp
 echo>confargs.c #define $ $$ 
+echo>>confargs.c !ifndef CONFIGURE_ARGS
 type>>confargs.c confargs.tmp
 echo>>confargs.c configure_args = CONFIGURE_ARGS
+echo>>confargs.c !endif
 echo>>confargs.c #undef $
 if exist pathlist.tmp echo>>confargs.c #define PATH_LIST \
 if exist pathlist.tmp type>>confargs.c pathlist.tmp
