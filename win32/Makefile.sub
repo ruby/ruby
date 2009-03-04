@@ -178,6 +178,9 @@ EXTLIBS =
 !if !defined(LIBS)
 LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib $(EXTLIBS)
 !endif
+!if defined(HAVE_UNICOWS)
+LIBS = unicows.lib $(LIBS)
+!endif
 !if !defined(MISSING)
 MISSING = acosh.obj cbrt.obj crypt.obj erf.obj lgamma_r.obj strlcat.obj strlcpy.obj tgamma.obj win32.obj langinfo.obj
 !endif

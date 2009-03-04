@@ -709,6 +709,8 @@ when(mingw*)	LIBS="-lshell32 -lws2_32 $LIBS"
 		ac_cv_func_fcntl=yes
 		ac_cv_func_flock=yes
 		AC_LIBOBJ([langinfo])
+		AC_HAVE_LIBRARY(unicows, [LIBS="-lunicows $LIBS"
+		    AC_DEFINE(WIN95)])
 		;;
 when(os2-emx*)	LIBS="-lm $LIBS"
 		ac_cv_lib_dir_opendir=no;;

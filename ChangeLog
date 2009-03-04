@@ -1,6 +1,10 @@
-Wed Mar  4 19:35:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Mar  4 20:27:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (mingw): checks if unicows.lib is available.
 
 	* include/ruby/win32.h (WIN95): moved to config.h
+
+	* win32/Makefile.sub (LIBS): links unicows.lib if available.
 
 	* win32/Makefile.sub (config.h): defines WIN95 only if unicows.lib
 	  is available.
