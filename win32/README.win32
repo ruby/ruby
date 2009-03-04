@@ -4,7 +4,7 @@
 
 == Requirement
 
-(1) Visual C++ 5.0 or later.
+(1) Visual C++ 6.0 or later.
 
     Note: if you want to build x64 or ia64 version, use native compiler for
           x64/ia64.
