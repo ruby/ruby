@@ -1,3 +1,7 @@
+Thu Mar  5 00:06:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/README.win32 (Requirement): added unicows.lib and dll.
+
 Wed Mar  4 23:29:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, win32/configure.bat (--enable-win95): new option

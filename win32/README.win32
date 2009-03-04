@@ -23,6 +23,10 @@
      * sed
      * ruby 1.8
 
+(4) If you want built binaries to run on Windows 95 series (including
+    98 and Me), you need unicows.lib at compile time, and unicows.dll
+    at run time.
+
 == How to compile and install
 
 (1) Execute win32\configure.bat on your build directory.
@@ -114,10 +118,10 @@ in Japanese, but you can download at least.
 
     D:
     cd D:\build\ruby
-    C:\src\ruby\win32\configure --prefix=C:/usr/local
+    C:\src\ruby\win32\configure --prefix=/usr/local
     nmake
     nmake test
-    nmake install
+    nmake install DESTDIR=C:
 
 * Build x64 version (requires native x64 VC++ compiler)
 
