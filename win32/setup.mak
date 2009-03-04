@@ -60,9 +60,9 @@ BASERUBY = $(BASERUBY)
 	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I >> $(MAKEFILE)
 !endif
 
--system-vars-: -runtime-
+-system-vars-: -runtime- -unicows-
 
--system-vars32-: -osname32- -runtime-
+-system-vars32-: -osname32- -runtime- -unicows-
 
 -system-vars64-: -osname64- -runtime-
 
@@ -141,6 +141,17 @@ int main(int argc, char **argv)
 	@.\rtname >>$(MAKEFILE)
 	@del rtname.*
 
+-unicows-: nul
+	@echo Checking unicows.lib
+	@$(CC) -MD <<conftest.c unicows.lib user32.lib > nul && echo>>$(MAKEFILE) HAVE_UNICOWS = 1 || rem
+#include <windows.h>
+int main()
+{
+    return GetEnvironmentVariableW(0, 0, 0) == 0;
+}
+<<
+	@del conftest.*
+
 -version-: nul
 	@$(APPEND)
 	@$(CPP) -I$(srcdir) <<"Creating $(MAKEFILE)" | find "=" >>$(MAKEFILE)
@@ -213,7 +224,7 @@ $(CPU) = $(PROCESSOR_LEVEL)
 -epilogue-: nul
 !if exist(confargs.c)
 	@$(APPEND)
-	@$(CPP) confargs.c | find "=" >> $(MAKEFILE)
+	@$(CPP) confargs.c 2>&1 | findstr "! =" >> $(MAKEFILE)
 	@del confargs.c
 !endif
 	@type << >>$(MAKEFILE)
@@ -231,4 +242,4 @@ $(CPU) = $(PROCESSOR_LEVEL)
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<
 	@$(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat config.h config.status
-	@echo type `$(MAKE)' to make ruby.
+	@echo "type `nmake' to make ruby."

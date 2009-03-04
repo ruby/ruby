@@ -89,12 +89,6 @@ typedef unsigned int uintptr_t;
 # define mode_t int
 #endif
 
-#ifdef _M_IX86
-# define WIN95 1
-#else
-# undef  WIN95
-#endif
-
 #ifdef WIN95
 extern DWORD rb_w32_osid(void);
 #define rb_w32_iswinnt()  (rb_w32_osid() == VER_PLATFORM_WIN32_NT)

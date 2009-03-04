@@ -1,3 +1,12 @@
+Wed Mar  4 19:35:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h (WIN95): moved to config.h
+
+	* win32/Makefile.sub (config.h): defines WIN95 only if unicows.lib
+	  is available.
+
+	* win32/setup.mak (-unicows-): checks if unicows.lib is available.
+
 Wed Mar  4 05:19:27 2009  James Edward Gray II  <jeg2@ruby-lang.org>
 
   * lib/csv.rb: Some minor documentation fixes from Gregory Brown.
