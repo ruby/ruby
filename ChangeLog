@@ -1,3 +1,7 @@
+Thu Mar  5 04:32:38 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_array.rb: add some tests for coverage.
+
 Thu Mar  5 00:06:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/README.win32 (Requirement): added unicows.lib and dll.

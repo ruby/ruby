@@ -777,6 +777,8 @@ class TestArray < Test::Unit::TestCase
     assert_equal(4, a.index([1,2,3]))
     assert_nil(a.index('ca'))
     assert_nil(a.index([1,2]))
+
+    assert_equal(1, a.index(99) {|x| x == 'cat' })
   end
 
   def test_values_at
@@ -1032,6 +1034,8 @@ class TestArray < Test::Unit::TestCase
     assert_equal(4, a.rindex([1,2,3]))
     assert_nil(a.rindex('ca'))
     assert_nil(a.rindex([1,2]))
+
+    assert_equal(3, a.rindex(99) {|x| x == [1,2,3] })
   end
 
   def test_shift
@@ -1254,6 +1258,10 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1, 2, 3, 4, nil], a)
 
     c = @cls["a:def", "a:xyz", "b:abc", "b:xyz", "c:jkl"]
+    assert_equal(@cls[ "a:def", "b:abc", "c:jkl" ], c.uniq! {|s| s[/^\w+/]})
+    assert_equal(@cls[ "a:def", "b:abc", "c:jkl" ], c)
+
+    c = @cls["a:def", "b:abc", "c:jkl"]
     assert_equal(@cls[ "a:def", "b:abc", "c:jkl" ], c.uniq! {|s| s[/^\w+/]})
     assert_equal(@cls[ "a:def", "b:abc", "c:jkl" ], c)
 
@@ -1679,5 +1687,11 @@ class TestArray < Test::Unit::TestCase
     a = (1..10).to_a
     a.fill(:foo, 5, -3)
     assert_equal((1..10).to_a, a)
+  end
+
+  def test_slice_freezed_array
+    a = [1,2,3,4,5].freeze
+    assert_equal([1,2,3,4], a[0,4])
+    assert_equal([2,3,4,5], a[1,4])
   end
 end
