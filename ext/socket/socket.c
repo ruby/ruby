@@ -281,9 +281,9 @@ sock_connect(VALUE sock, VALUE addr)
  * 	begin # emulate blocking connect
  * 	  socket.connect_nonblock(sockaddr)
  * 	rescue Errno::EINPROGRESS
- * 	  IO.select(nil, [socket])
+ * 	  IO.select(nil, [socket]) # wait 3-way handshake completion
  * 	  begin
- * 	    socket.connect_nonblock(sockaddr)
+ * 	    socket.connect_nonblock(sockaddr) # check connection failure 
  * 	  rescue Errno::EISCONN
  * 	  end
  * 	end
