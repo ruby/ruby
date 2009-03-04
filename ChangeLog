@@ -1,3 +1,9 @@
+Fri Feb 27 18:30:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (cdhash_type, iseq_set_sequence): should not call
+	  methods of the argument of case, to keep the semantics of
+	  case/when.  [ruby-dev:38079]
+
 Fri Feb 27 18:01:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (ruby_get_stack_grow_direction): no needs to use thread

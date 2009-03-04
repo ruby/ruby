@@ -1216,6 +1216,38 @@ iseq_set_local_table(rb_iseq_t *iseq, ID *tbl)
     return COMPILE_OK;
 }
 
+static int
+cdhash_cmp(VALUE val, VALUE lit)
+{
+    if (val == lit) return 0;
+    if (SPECIAL_CONST_P(lit)) {
+	return val != lit;
+    }
+    if (SPECIAL_CONST_P(val) || BUILTIN_TYPE(val) != BUILTIN_TYPE(lit)) {
+	return -1;
+    }
+    if (BUILTIN_TYPE(lit) == T_STRING) {
+	return rb_str_hash_cmp(lit, val);
+    }
+    return !rb_eql(lit, val);
+}
+
+static int
+cdhash_hash(VALUE a)
+{
+    if (SPECIAL_CONST_P(a)) return (int)a;
+    if (TYPE(a) == T_STRING) return rb_str_hash(a);
+    {
+	VALUE hval = rb_hash(a);
+	return (int)FIX2LONG(hval);
+    }
+}
+
+static const struct st_hash_type cdhash_type = {
+    cdhash_cmp,
+    cdhash_hash,
+};
+
 /**
   ruby insn object array -> raw instruction sequence
  */
@@ -1343,6 +1375,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    int i;
 			    VALUE lits = operands[j];
 			    VALUE map = rb_hash_new();
+			    RHASH_TBL(map)->type = &cdhash_type;
 
 			    for (i=0; i < RARRAY_LEN(lits); i+=2) {
 				VALUE obj = rb_ary_entry(lits, i);
