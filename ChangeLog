@@ -1,3 +1,15 @@
+Sun Mar  1 19:02:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/cfunc.c (rb_dlcfunc_call): fix for stdcall and missing
+	  argument numbers.  [ruby-core:22601]
+
+	* ext/dl/dl.h (DLSTACK_PROTO0_): added.
+
+	* ext/dl/mkcallback.rb (gencallback, gen_callback_file),
+	  (rb_dl_init_callbacks): omit stdcall functions unless supported.
+
+	* lib/rubygems/config_file.rb (SHGetFolderPath): stdcall.
+
 Sun Mar  1 17:27:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (gfDebug): uncommented out.

@@ -6,9 +6,6 @@
 #if !defined(FUNC_CDECL)
 #  define FUNC_CDECL(x) x
 #endif
-#if !defined(FUNC_STDCALL)
-#  define FUNC_STDCALL(x) x
-#endif
 
 #if defined(HAVE_DLFCN_H)
 # include <dlfcn.h>
@@ -49,7 +46,7 @@
     stack[10],stack[11],stack[12],stack[13],stack[14],\
     stack[15],stack[16],stack[17],stack[18],stack[19]
 
-#define DLSTACK_PROTO0 
+#define DLSTACK_PROTO0_ void
 #define DLSTACK_PROTO1_ DLSTACK_TYPE
 #define DLSTACK_PROTO2_ DLSTACK_PROTO1_, DLSTACK_TYPE
 #define DLSTACK_PROTO3_ DLSTACK_PROTO2_, DLSTACK_TYPE
@@ -86,6 +83,7 @@
  *   (...) in the declaration) %al is used as hidden argument to
  *   specify the number of SSE registers used.
  */
+#define DLSTACK_PROTO0 void
 #define DLSTACK_PROTO1 DLSTACK_PROTO1_, ...
 #define DLSTACK_PROTO2 DLSTACK_PROTO2_, ...
 #define DLSTACK_PROTO3 DLSTACK_PROTO3_, ...

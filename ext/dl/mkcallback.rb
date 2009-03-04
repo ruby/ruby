@@ -114,7 +114,7 @@ end
 
 def gencallback(ty, calltype, proc_entry, argc, n)
   <<-EOS
-
+#{calltype == STDCALL ? "\n#ifdef FUNC_STDCALL" : ""}
 static #{DLTYPE[ty][:type]}
 FUNC_#{calltype.upcase}(#{func_name(ty,argc,n,calltype)})(#{(0...argc).collect{|i| "DLSTACK_TYPE stack" + i.to_s}.join(", ")})
 {
@@ -128,7 +128,7 @@ FUNC_#{calltype.upcase}(#{func_name(ty,argc,n,calltype)})(#{(0...argc).collect{|
     ret = rb_funcall2(cb, rb_dl_cb_call, #{argc}, #{argc > 0 ? 'args' : 'NULL'});
     return #{DLTYPE[ty][:conv] ? DLTYPE[ty][:conv] % "ret" : ""};
 }
-
+#{calltype == STDCALL ? "#endif\n" : ""}
   EOS
 end
 
@@ -157,7 +157,9 @@ def gen_callback_file(ty)
     f.puts <<-EOS
 #include "dl.h"
 extern VALUE rb_DLCdeclCallbackAddrs, rb_DLCdeclCallbackProcs;
+#ifdef FUNC_STDCALL
 extern VALUE rb_DLStdcallCallbackAddrs, rb_DLStdcallCallbackProcs;
+#endif
 extern ID   rb_dl_cb_call;
     EOS
     yield f
@@ -167,8 +169,10 @@ void
 {
 #{gen_push_proc_ary(ty, "rb_DLCdeclCallbackProcs")}
 #{gen_push_addr_ary(ty, "rb_DLCdeclCallbackAddrs", CDECL)}
+#ifdef FUNC_STDCALL
 #{gen_push_proc_ary(ty, "rb_DLStdcallCallbackProcs")}
 #{gen_push_addr_ary(ty, "rb_DLStdcallCallbackAddrs", STDCALL)}
+#endif
 }
     EOS
   }
@@ -201,11 +205,13 @@ rb_dl_init_callbacks()
     tmp = rb_DLCdeclCallbackAddrs = rb_ary_new();
     rb_define_const(rb_mDL, "CdeclCallbackAddrs", tmp);
 
+#ifdef FUNC_STDCALL
     tmp = rb_DLStdcallCallbackProcs = rb_ary_new();
     rb_define_const(rb_mDL, "StdcallCallbackProcs", tmp);
 
     tmp = rb_DLStdcallCallbackAddrs = rb_ary_new();
     rb_define_const(rb_mDL, "StdcallCallbackAddrs", tmp);
+#endif
 
 #{
     (0...MAX_DLTYPE).collect{|ty|
