@@ -1,3 +1,8 @@
+Fri Feb 27 18:01:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (ruby_get_stack_grow_direction): no needs to use thread
+	  here, and not initialized yet.  [ruby-core:22439]
+
 Fri Feb 27 17:45:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_load_ok): checks if regular file, except for the
