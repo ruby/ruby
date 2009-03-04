@@ -1,3 +1,8 @@
+Thu Mar  5 04:42:52 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_array.rb: fix wrong test, and add a test for
+	  sort_by!.
+
 Thu Mar  5 04:32:38 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_array.rb: add some tests for coverage.

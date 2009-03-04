@@ -1262,7 +1262,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[ "a:def", "b:abc", "c:jkl" ], c)
 
     c = @cls["a:def", "b:abc", "c:jkl"]
-    assert_equal(@cls[ "a:def", "b:abc", "c:jkl" ], c.uniq! {|s| s[/^\w+/]})
+    assert_equal(nil, c.uniq! {|s| s[/^\w+/]})
     assert_equal(@cls[ "a:def", "b:abc", "c:jkl" ], c)
 
     assert_nil(@cls[1, 2, 3].uniq!)
@@ -1693,5 +1693,11 @@ class TestArray < Test::Unit::TestCase
     a = [1,2,3,4,5].freeze
     assert_equal([1,2,3,4], a[0,4])
     assert_equal([2,3,4,5], a[1,4])
+  end
+
+  def test_sort_by!
+    a = [1,3,5,2,4]
+    a.sort_by! {|x| -x }
+    assert_equal([5,4,3,2,1], a)
   end
 end
