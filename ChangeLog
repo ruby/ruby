@@ -1,3 +1,8 @@
+Fri Feb 27 22:02:34 2009  Tanaka Akira  <akr@fsij.org>
+
+	* util.c: fix SEGV by test_time.rb with
+	  gcc version 4.4.0 20090219 (Red Hat 4.4.0-0.21) on Fedora 11 Alpha.
+
 Fri Feb 27 18:30:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (cdhash_type, iseq_set_sequence): should not call

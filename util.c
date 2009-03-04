@@ -914,23 +914,25 @@ Exactly one of IEEE_LITTLE_ENDIAN, IEEE_BIG_ENDIAN, VAX, or IBM should be define
 typedef union { double d; ULong L[2]; } U;
 
 #ifdef YES_ALIAS
-#define dval(x) x
-#ifdef IEEE_LITTLE_ENDIAN
-#define word0(x) ((ULong *)&x)[1]
-#define word1(x) ((ULong *)&x)[0]
+typedef double double_u;
+#  define dval(x) x
+#  ifdef IEEE_LITTLE_ENDIAN
+#    define word0(x) (((ULong *)&x)[1])
+#    define word1(x) (((ULong *)&x)[0])
+#  else
+#    define word0(x) (((ULong *)&x)[0])
+#    define word1(x) (((ULong *)&x)[1])
+#  endif
 #else
-#define word0(x) ((ULong *)&x)[0]
-#define word1(x) ((ULong *)&x)[1]
-#endif
-#else
-#ifdef IEEE_LITTLE_ENDIAN
-#define word0(x) ((U*)&x)->L[1]
-#define word1(x) ((U*)&x)->L[0]
-#else
-#define word0(x) ((U*)&x)->L[0]
-#define word1(x) ((U*)&x)->L[1]
-#endif
-#define dval(x) ((U*)&x)->d
+typedef U double_u;
+#  ifdef IEEE_LITTLE_ENDIAN
+#    define word0(x) (x.L[1])
+#    define word1(x) (x.L[0])
+#  else
+#    define word0(x) (x.L[0])
+#    define word1(x) (x.L[1])
+#  endif
+#  define dval(x) (x.d)
 #endif
 
 /* The following definition of Storeinc is appropriate for MIPS processors.
@@ -1665,10 +1667,11 @@ diff(Bigint *a, Bigint *b)
 }
 
 static double
-ulp(double x)
+ulp(double x_)
 {
     register Long L;
-    double a;
+    double_u x, a;
+    dval(x) = x_;
 
     L = (word0(x) & Exp_mask) - (P-1)*Exp_msk1;
 #ifndef Avoid_Underflow
@@ -1706,7 +1709,7 @@ b2d(Bigint *a, int *e)
 {
     ULong *xa, *xa0, w, y, z;
     int k;
-    double d;
+    double_u d;
 #ifdef VAX
     ULong d0, d1;
 #else
@@ -1767,8 +1770,9 @@ ret_d:
 }
 
 static Bigint *
-d2b(double d, int *e, int *bits)
+d2b(double d_, int *e, int *bits)
 {
+    double_u d;
     Bigint *b;
     int de, k;
     ULong *x, y, z;
@@ -1777,6 +1781,9 @@ d2b(double d, int *e, int *bits)
 #endif
 #ifdef VAX
     ULong d0, d1;
+#endif
+    dval(d) = d_;
+#ifdef VAX
     d0 = word0(d) >> 16 | word0(d) << 16;
     d1 = word1(d) >> 16 | word1(d) << 16;
 #else
@@ -1902,7 +1909,7 @@ d2b(double d, int *e, int *bits)
 static double
 ratio(Bigint *a, Bigint *b)
 {
-    double da, db;
+    double_u da, db;
     int k, ka, kb;
 
     dval(da) = b2d(a, &ka);
@@ -2061,7 +2068,8 @@ ruby_strtod(const char *s00, char **se)
     int bb2, bb5, bbe, bd2, bd5, bbbits, bs2, c, dsign,
          e, e1, esign, i, j, k, nd, nd0, nf, nz, nz0, sign;
     const char *s, *s0, *s1;
-    double aadj, aadj1, adj, rv, rv0;
+    double aadj, adj;
+    double_u aadj1, rv, rv0;
     Long L;
     ULong y, z;
     Bigint *bb, *bb1, *bd, *bd0, *bs, *delta;
@@ -2760,14 +2768,14 @@ drop_down:
         }
         if ((aadj = ratio(delta, bs)) <= 2.) {
             if (dsign)
-                aadj = aadj1 = 1.;
+                aadj = dval(aadj1) = 1.;
             else if (word1(rv) || word0(rv) & Bndry_mask) {
 #ifndef Sudden_Underflow
                 if (word1(rv) == Tiny1 && !word0(rv))
                     goto undfl;
 #endif
                 aadj = 1.;
-                aadj1 = -1.;
+                dval(aadj1) = -1.;
             }
             else {
                 /* special case -- power of FLT_RADIX to be */
@@ -2777,12 +2785,12 @@ drop_down:
                     aadj = 1./FLT_RADIX;
                 else
                     aadj *= 0.5;
-                aadj1 = -aadj;
+                dval(aadj1) = -aadj;
             }
         }
         else {
             aadj *= 0.5;
-            aadj1 = dsign ? aadj : -aadj;
+            dval(aadj1) = dsign ? aadj : -aadj;
 #ifdef Check_FLT_ROUNDS
             switch (Rounding) {
               case 2: /* towards +infinity */
@@ -2794,7 +2802,7 @@ drop_down:
             }
 #else
             if (Flt_Rounds == 0)
-                aadj1 += 0.5;
+                dval(aadj1) += 0.5;
 #endif /*Check_FLT_ROUNDS*/
         }
         y = word0(rv) & Exp_mask;
@@ -2804,7 +2812,7 @@ drop_down:
         if (y == Exp_msk1*(DBL_MAX_EXP+Bias-1)) {
             dval(rv0) = dval(rv);
             word0(rv) -= P*Exp_msk1;
-            adj = aadj1 * ulp(dval(rv));
+            adj = dval(aadj1) * ulp(dval(rv));
             dval(rv) += adj;
             if ((word0(rv) & Exp_mask) >=
                     Exp_msk1*(DBL_MAX_EXP+Bias-P)) {
@@ -2824,11 +2832,11 @@ drop_down:
                     if ((z = aadj) <= 0)
                         z = 1;
                     aadj = z;
-                    aadj1 = dsign ? aadj : -aadj;
+                    dval(aadj1) = dsign ? aadj : -aadj;
                 }
                 word0(aadj1) += (2*P+1)*Exp_msk1 - y;
             }
-            adj = aadj1 * ulp(dval(rv));
+            adj = dval(aadj1) * ulp(dval(rv));
             dval(rv) += adj;
 #else
 #ifdef Sudden_Underflow
@@ -3126,7 +3134,7 @@ freedtoa(char *s)
  */
 
 char *
-ruby_dtoa(double d, int mode, int ndigits, int *decpt, int *sign, char **rve)
+ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
 {
  /* Arguments ndigits, decpt, sign are similar to those
     of ecvt and fcvt; trailing zeros are suppressed from
@@ -3171,7 +3179,8 @@ ruby_dtoa(double d, int mode, int ndigits, int *decpt, int *sign, char **rve)
     ULong x;
 #endif
     Bigint *b, *b1, *delta, *mlo = 0, *mhi = 0, *S;
-    double d2, ds, eps;
+    double ds;
+    double_u d, d2, eps;
     char *s, *s0;
 #ifdef Honor_FLT_ROUNDS
     int rounding;
@@ -3179,6 +3188,8 @@ ruby_dtoa(double d, int mode, int ndigits, int *decpt, int *sign, char **rve)
 #ifdef SET_INEXACT
     int inexact, oldinexact;
 #endif
+
+    dval(d) = d_;
 
 #ifndef MULTIPLE_THREADS
     if (dtoa_result) {
