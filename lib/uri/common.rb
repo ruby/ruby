@@ -223,11 +223,11 @@ module URI
           tmp << sprintf('%%%02X', uc)
         end
         tmp
-      end
+      end.force_encoding(Encoding::US_ASCII)
     end
 
     def unescape(str, escaped = @regexp[:ESCAPED])
-      str.gsub(escaped) { [$&[1, 2].hex].pack('U') }
+      str.gsub(escaped) { [$&[1, 2].hex].pack('C') }.force_encoding(str.encoding)
     end
 
     @@to_s = Kernel.instance_method(:to_s)
