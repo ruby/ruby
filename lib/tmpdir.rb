@@ -40,12 +40,11 @@ class Dir
     if $SAFE > 0
       tmp = @@systmpdir
     else
-      for dir in [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'],
-	          ENV['USERPROFILE'], @@systmpdir, '/tmp']
-	if dir and File.directory?(dir) and File.writable?(dir)
+      for dir in [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'], @@systmpdir, '/tmp']
+	if dir and stat = File.stat(dir) and stat.directory? and stat.writable?
 	  tmp = dir
 	  break
-	end
+	end rescue nil
       end
       File.expand_path(tmp)
     end
