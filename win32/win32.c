@@ -196,6 +196,11 @@ rb_w32_map_errno(DWORD winerr)
 static const char *NTLoginName;
 
 static OSVERSIONINFO osver;
+#ifdef _M_IX86
+static DWORD Win32System = (DWORD)-1;
+#endif
+static DWORD Win32Version = (DWORD)-1;
+
 static void
 get_version(void)
 {
@@ -207,8 +212,6 @@ get_version(void)
 }
 
 #ifdef _M_IX86
-static DWORD Win32System = (DWORD)-1;
-
 DWORD
 rb_w32_osid(void)
 {
@@ -218,7 +221,6 @@ rb_w32_osid(void)
     return (Win32System);
 }
 #endif
-static DWORD Win32Version = (DWORD)-1;
 
 static DWORD
 rb_w32_osver(void)
