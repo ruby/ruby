@@ -1,4 +1,6 @@
-Thu Mar  5 10:24:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar  5 10:29:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_eql): extracted from rb_str_equal and rb_str_eql.
 
 	* string.c (rb_str_chomp_bang): keeps 7bit coderange.
 

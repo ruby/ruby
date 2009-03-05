@@ -2227,7 +2227,18 @@ rb_str_cmp(VALUE str1, VALUE str2)
     return -1;
 }
 
+/* expect tail call optimization */
+static VALUE
+str_eql(const VALUE str1, const VALUE str2)
+{
+    const long len = RSTRING_LEN(str1);
 
+    if (len != RSTRING_LEN(str2)) return Qfalse;
+    if (!rb_str_comparable(str1, str2)) return Qfalse;
+    if (memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2), len) == 0)
+	return Qtrue;
+    return Qfalse;
+}
 /*
  *  call-seq:
  *     str == obj   => true or false
@@ -2240,8 +2251,6 @@ rb_str_cmp(VALUE str1, VALUE str2)
 VALUE
 rb_str_equal(VALUE str1, VALUE str2)
 {
-    int len;
-
     if (str1 == str2) return Qtrue;
     if (TYPE(str2) != T_STRING) {
 	if (!rb_respond_to(str2, rb_intern("to_str"))) {
@@ -2249,12 +2258,7 @@ rb_str_equal(VALUE str1, VALUE str2)
 	}
 	return rb_equal(str2, str1);
     }
-    if (!rb_str_comparable(str1, str2)) return Qfalse;
-    if (RSTRING_LEN(str1) == (len = RSTRING_LEN(str2)) &&
-	memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2), len) == 0) {
-	return Qtrue;
-    }
-    return Qfalse;
+    return str_eql(str1, str2);
 }
 
 /*
@@ -2267,15 +2271,8 @@ rb_str_equal(VALUE str1, VALUE str2)
 static VALUE
 rb_str_eql(VALUE str1, VALUE str2)
 {
-    if (TYPE(str2) != T_STRING || RSTRING_LEN(str1) != RSTRING_LEN(str2))
-	return Qfalse;
-
-    if (!rb_str_comparable(str1, str2)) return Qfalse;
-    if (memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2),
-	       lesser(RSTRING_LEN(str1), RSTRING_LEN(str2))) == 0)
-	return Qtrue;
-
-    return Qfalse;
+    if (TYPE(str2) != T_STRING) return Qfalse;
+    return str_eql(str1, str2);
 }
 
 /*
