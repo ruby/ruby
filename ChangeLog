@@ -1,3 +1,7 @@
+Thu Mar  5 10:24:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_chomp_bang): keeps 7bit coderange.
+
 Thu Mar  5 10:10:40 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/encoding.h (enc_initialized_p): ENC_UNINITIALIZED
