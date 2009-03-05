@@ -1,3 +1,7 @@
+Thu Mar  5 13:21:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_osid): always define for binary compatibility.
+
 Thu Mar  5 11:52:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (make_insns_rules): rule to make rules for insns.

@@ -196,17 +196,24 @@ rb_w32_map_errno(DWORD winerr)
 static const char *NTLoginName;
 
 static OSVERSIONINFO osver;
-#ifdef WIN95
+static void
+get_version(void)
+{
+    memset(&osver, 0, sizeof(OSVERSIONINFO));
+    osver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+    GetVersionEx(&osver);
+    Win32System = osver.dwPlatformId;
+    Win32Version = osver.dwMajorVersion;
+}
+
+#ifdef _M_IX86
 static DWORD Win32System = (DWORD)-1;
 
 DWORD
 rb_w32_osid(void)
 {
     if (osver.dwPlatformId != Win32System) {
-	memset(&osver, 0, sizeof(OSVERSIONINFO));
-	osver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	GetVersionEx(&osver);
-	Win32System = osver.dwPlatformId;
+	get_version();
     }
     return (Win32System);
 }
@@ -217,16 +224,18 @@ static DWORD
 rb_w32_osver(void)
 {
     if (osver.dwMajorVersion != Win32Version) {
-	memset(&osver, 0, sizeof(OSVERSIONINFO));
-	osver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	GetVersionEx(&osver);
-	Win32Version = osver.dwMajorVersion;
+	get_version();
     }
     return (Win32Version);
 }
 
 #define IsWinNT() rb_w32_iswinnt()
 #define IsWin95() rb_w32_iswin95()
+#ifdef WIN95
+#define IfWin95(win95, winnt) (IsWin95() ? (win95) : (winnt))
+#else
+#define IfWin95(win95, winnt) (winnt)
+#endif
 
 HANDLE
 GetCurrentThreadHandle(void)
@@ -2330,7 +2339,7 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     rb_fdset_t else_wr;
     rb_fdset_t except;
     int nonsock = 0;
-    struct timeval limit;
+    struct timeval limit = {0, 0};
 
     if (nfds < 0 || (timeout && (timeout->tv_sec < 0 || timeout->tv_usec < 0))) {
 	errno = EINVAL;
@@ -3334,7 +3343,7 @@ kill(int pid, int sig)
 	return -1;
     }
 
-    if (IsWin95()) pid = -pid;
+    (void)IfWin95(pid = -pid, 0);
     if ((unsigned int)pid == GetCurrentProcessId() &&
 	(sig != 0 && sig != SIGKILL)) {
 	if ((ret = raise(sig)) != 0) {
@@ -3800,6 +3809,7 @@ truncate(const char *path, off_t length)
 {
     HANDLE h;
     int ret;
+#ifdef WIN95
     if (IsWin95()) {
 	int fd = open(path, O_WRONLY), e = 0;
 	if (fd == -1) return -1;
@@ -3809,6 +3819,7 @@ truncate(const char *path, off_t length)
 	if (ret == -1) errno = e;
 	return ret;
     }
+#endif
     h = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, 0);
     if (h == INVALID_HANDLE_VALUE) {
 	errno = map_errno(GetLastError());
@@ -3824,9 +3835,11 @@ ftruncate(int fd, off_t length)
 {
     long h;
 
+#ifdef WIN95
     if (IsWin95()) {
 	return chsize(fd, (unsigned long)length);
     }
+#endif
     h = _get_osfhandle(fd);
     if (h == -1) return -1;
     return rb_chsize((HANDLE)h, length);
@@ -4126,7 +4139,7 @@ rb_w32_getpid(void)
 
     pid = getpid();
 
-    if (IsWin95()) pid = -pid;
+    (void)IfWin95(pid = -pid, 0);
 
     return pid;
 }
