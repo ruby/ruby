@@ -1,3 +1,11 @@
+Thu Mar  5 10:10:40 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/encoding.h (enc_initialized_p): ENC_UNINITIALIZED
+	  is not defined already.
+
+	* include/ruby/encoding.h (ENC_FROM_ENCINDEX): removed because
+	  depending on a static variable.
+
 Thu Mar  5 04:42:52 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_array.rb: fix wrong test, and add a test for

@@ -184,13 +184,10 @@ VALUE rb_locale_charmap(VALUE klass);
 long rb_memsearch(const void*,long,const void*,long,rb_encoding*);
 
 RUBY_EXTERN VALUE rb_cEncoding;
-#define enc_initialized_p(enc) ((enc)->ruby_encoding_index != ENC_UNINITIALIZED)
 #define ENC_DUMMY_FLAG (1<<24)
 #define ENC_INDEX_MASK (~(~0U<<24))
 
 #define ENC_TO_ENCINDEX(enc)   ((enc)->ruby_encoding_index & ENC_INDEX_MASK)
-#define ENC_FROM_ENCINDEX(idx) (RARRAY_PTR(rb_encoding_list)[idx])
-#define ENC_FROM_ENCODING(enc) ENC_FROM_ENCINDEX(ENC_TO_ENCINDEX(enc))
 
 #define ENC_DUMMY_P(enc) ((enc)->ruby_encoding_index & ENC_DUMMY_FLAG)
 #define ENC_SET_DUMMY(enc) ((enc)->ruby_encoding_index |= ENC_DUMMY_FLAG)
