@@ -1,3 +1,8 @@
+Thu Mar  5 18:36:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_to_s): keeps enough precision for round trip.
+	  [ruby-core:22325]
+
 Thu Mar  5 16:56:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tmpdir.rb (Dir.tmpdir): not use USERPROFILE, and ignores

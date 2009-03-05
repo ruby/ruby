@@ -521,7 +521,9 @@ rb_float_new(double d)
 static VALUE
 flo_to_s(VALUE flt)
 {
-    char buf[32];
+    enum {decimal_mant = DBL_MANT_DIG-DBL_DIG};
+    enum {float_dig = DBL_DIG+2};
+    char buf[float_dig + (decimal_mant + CHAR_BIT - 1) / CHAR_BIT + 10];
     double value = RFLOAT_VALUE(flt);
     char *p, *e;
 
@@ -530,12 +532,12 @@ flo_to_s(VALUE flt)
     else if(isnan(value))
 	return rb_usascii_str_new2("NaN");
 
-    snprintf(buf, sizeof(buf), "%#.15g", value); /* ensure to print decimal point */
+    snprintf(buf, sizeof(buf), "%#.*g", float_dig, value); /* ensure to print decimal point */
     if (!(e = strchr(buf, 'e'))) {
 	e = buf + strlen(buf);
     }
     if (!ISDIGIT(e[-1])) { /* reformat if ended with decimal point (ex 111111111111111.) */
-	snprintf(buf, sizeof(buf), "%#.14e", value);
+	snprintf(buf, sizeof(buf), "%#.*e", float_dig - 1, value);
 	if (!(e = strchr(buf, 'e'))) {
 	    e = buf + strlen(buf);
 	}
