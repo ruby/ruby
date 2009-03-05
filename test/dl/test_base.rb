@@ -26,7 +26,7 @@ when /mingw/, /mswin32/
 when /darwin/
   LIBC_SO = "/usr/lib/libc.dylib"
   LIBM_SO = "/usr/lib/libm.dylib"
-when /bsd/
+when /bsd|dragonfly/
   LIBC_SO = "/usr/lib/libc.so"
   LIBM_SO = "/usr/lib/libm.so"
 else

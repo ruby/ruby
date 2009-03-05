@@ -1,3 +1,7 @@
+Thu Mar  5 10:32:17 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/dl/test_base.rb: Add dragonfly to libc and libm switch.
+
 Thu Mar  5 10:29:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_eql): extracted from rb_str_equal and rb_str_eql.
