@@ -271,3 +271,6 @@ update-rubyspec:
 test-rubyspec:
 	@if [ ! -d $(srcdir)/spec/rubyspec ]; then echo No rubyspec here.  make update-rubyspec first.; exit 1; fi
 	$(RUNRUBY) $(srcdir)/spec/mspec/bin/mspec -B $(srcdir)/spec/default.mspec $(MSPECOPT)
+
+$(INSNS): $(srcdir)/insns.def vm_opts.h $(srcdir)/defs/opt_operand.def $(srcdir)/defs/opt_insn_unif.def
+	$(BASERUBY) -Ks $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) $@

@@ -637,25 +637,21 @@ INSNS2VMOPT = --srcdir="$(srcdir)"
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc
 
-$(INSNS): $(srcdir)/insns.def {$(VPATH)}vm_opts.h $(srcdir)/defs/opt_operand.def $(srcdir)/defs/opt_insn_unif.def
-	@$(RM) $(PROGRAM)
-	$(BASERUBY) -Ks $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) $@
+{$(VPATH)}minsns.inc: $(srcdir)/template/minsns.inc.tmpl
 
-minsns.inc: $(srcdir)/template/minsns.inc.tmpl
+{$(VPATH)}opt_sc.inc: $(srcdir)/template/opt_sc.inc.tmpl
 
-opt_sc.inc: $(srcdir)/template/opt_sc.inc.tmpl
+{$(VPATH)}optinsn.inc: $(srcdir)/template/optinsn.inc.tmpl
 
-optinsn.inc: $(srcdir)/template/optinsn.inc.tmpl
+{$(VPATH)}optunifs.inc: $(srcdir)/template/optunifs.inc.tmpl
 
-optunifs.inc: $(srcdir)/template/optunifs.inc.tmpl
+{$(VPATH)}insns.inc: $(srcdir)/template/insns.inc.tmpl
 
-insns.inc: $(srcdir)/template/insns.inc.tmpl
+{$(VPATH)}insns_info.inc: $(srcdir)/template/insns_info.inc.tmpl
 
-insns_info.inc: $(srcdir)/template/insns_info.inc.tmpl
+{$(VPATH)}vmtc.inc: $(srcdir)/template/vmtc.inc.tmpl
 
-vmtc.inc: $(srcdir)/template/vmtc.inc.tmpl
-
-vm.inc: $(srcdir)/template/vm.inc.tmpl
+{$(VPATH)}vm.inc: $(srcdir)/template/vm.inc.tmpl
 
 srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}newline.c $(srcdir)/ext/ripper/ripper.c srcs-enc
 

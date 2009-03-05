@@ -1,3 +1,7 @@
+Thu Mar  5 11:52:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (make_insns_rules): rule to make rules for insns.
+
 Thu Mar  5 11:27:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (miniruby.exe): workaround for a failure of
