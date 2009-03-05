@@ -1,3 +1,8 @@
+Thu Mar  5 11:27:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (miniruby.exe): workaround for a failure of
+	  mt.exe on Windows 7 beta.  [ruby-talk:330284]
+
 Thu Mar  5 10:32:17 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/dl/test_base.rb: Add dragonfly to libc and libm switch.

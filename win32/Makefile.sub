@@ -267,7 +267,7 @@ MKMAIN_CMD    = mkmain.bat
 !if !defined(WINMAINOBJ)
 WINMAINOBJ    = winmain.$(OBJEXT)
 !endif
-ARCHMINIOBJS  = dmydln.$(OBJEXT)
+ARCHMINIOBJS  = dmydln.$(OBJEXT) miniruby.res
 LIBOBJS       = $(MISSING) $(LIBOBJS)
 
 !ifndef COMMON_LIBS
@@ -675,6 +675,9 @@ miniruby$(EXEEXT):
 		$(LDSHARED_1)
 		$(LDSHARED_2)
 
+miniruby.rc:
+		@exit > $@
+
 !if "$(PROGRAM)" != ""
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(PURIFY) $(CC) $(MAINOBJ) $(RUBY_INSTALL_NAME).res \
@@ -725,7 +728,7 @@ clean-local::
 
 distclean-local::
 		@$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\)
-		@$(RM) $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
+		@$(RM) miniruby.rc $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 		@-$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h
 		@-$(RMDIRS) $(arch_hdrdir:/=\)\ruby
 
