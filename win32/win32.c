@@ -196,10 +196,6 @@ rb_w32_map_errno(DWORD winerr)
 static const char *NTLoginName;
 
 static OSVERSIONINFO osver;
-#ifdef _M_IX86
-static DWORD Win32System = (DWORD)-1;
-#endif
-static DWORD Win32Version = (DWORD)-1;
 
 static void
 get_version(void)
@@ -207,28 +203,20 @@ get_version(void)
     memset(&osver, 0, sizeof(OSVERSIONINFO));
     osver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
     GetVersionEx(&osver);
-    Win32System = osver.dwPlatformId;
-    Win32Version = osver.dwMajorVersion;
 }
 
 #ifdef _M_IX86
 DWORD
 rb_w32_osid(void)
 {
-    if (osver.dwPlatformId != Win32System) {
-	get_version();
-    }
-    return (Win32System);
+    return osver.dwPlatformId;
 }
 #endif
 
 static DWORD
 rb_w32_osver(void)
 {
-    if (osver.dwMajorVersion != Win32Version) {
-	get_version();
-    }
-    return (Win32Version);
+    return osver.dwMajorVersion;
 }
 
 #define IsWinNT() rb_w32_iswinnt()
@@ -551,6 +539,8 @@ rb_w32_sysinit(int *argc, char ***argv)
     _RTC_SetErrorFunc(rtc_error_handler);
     set_pioinfo_extra();
 #endif
+
+    get_version();
 
     //
     // subvert cmd.exe's feeble attempt at command line parsing
