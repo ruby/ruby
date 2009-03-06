@@ -8,14 +8,6 @@ require 'digest/md5'
 
 # :stopdoc:
 module Gem
-  if RUBY_VERSION >= '1.8.6'
-    MD5 = Digest::MD5
-  else
-    require 'rubygems/digest/digest_adapter'
-    MD5 = DigestAdapter.new(Digest::MD5)
-    def MD5.md5(string)
-      self.hexdigest(string)
-    end
-  end
+  MD5 = Digest::MD5
 end
 # :startdoc:

@@ -7,10 +7,5 @@
 require 'digest/sha1'
 
 module Gem
-  if RUBY_VERSION >= '1.8.6'
-    SHA1 = Digest::SHA1
-  else
-    require 'rubygems/digest/digest_adapter'
-    SHA1 = DigestAdapter.new(Digest::SHA1)
-  end
+  SHA1 = Digest::SHA1
 end
