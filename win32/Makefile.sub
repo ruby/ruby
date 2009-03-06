@@ -790,13 +790,13 @@ end
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 
 {$(srcdir)/missing}.c.asm:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa $(COUTFLAG)$@ -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
 {$(srcdir)/win32}.c.asm:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa $(COUTFLAG)$@ -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
 {$(srcdir)}.c.asm:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa $(COUTFLAG)$@ -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
 .c.asm:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa $(COUTFLAG)$@ -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
 
 .rc.res:
 	$(RC) -I. -I$(<D) $(iconinc) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $(<:\=/)
