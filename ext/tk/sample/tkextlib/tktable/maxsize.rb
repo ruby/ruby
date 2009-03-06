@@ -4,7 +4,7 @@
 ##
 ## This demo uses a really big table.  The big startup time is in
 ## filling the table's Tcl array var.
-## 
+##
 ## ( based on 'maxsize.tcl' included source archive of tktable extension )
 ##
 require 'tk'
@@ -23,15 +23,15 @@ cols = 10
 
 lbl = TkLabel.new(:text=>"TkTable v2 Example")
 
-table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :variable=>ary, 
-                        :width=>6, :height=>8, 
-                        :titlerows=>1, :titlecols=>1, 
+table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :variable=>ary,
+                        :width=>6, :height=>8,
+                        :titlerows=>1, :titlecols=>1,
                         :coltagcommand=>proc{|col|
                           col = Integer(col)
                           (col>0 && col%2 == 1)? 'OddCol': ''
-                        }, 
-                        :selectmode=>:extended, 
-                        :colstretch=>:unset, :rowstretch=>:unset, 
+                        },
+                        :selectmode=>:extended,
+                        :colstretch=>:unset, :rowstretch=>:unset,
                         :selecttitles=>false, :drawmode=>:slow)
 
 sx = table.xscrollbar(TkScrollbar.new)

@@ -8,7 +8,7 @@
 # based on "Id: ttknote.tcl,v 1.5 2007/12/13 15:27:07 dgp Exp"
 
 if defined?($ttknote_demo) && $ttknote_demo
-  $ttknote_demo.destroy 
+  $ttknote_demo.destroy
   $ttknote_demo = nil
 end
 
@@ -22,16 +22,16 @@ $ttknote_demo = TkToplevel.new {|w|
 Ttk::Frame.new($ttknote_demo) {|frame|
   sep = Ttk::Separator.new(frame)
   Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
-  TkGrid('x', 
-         Ttk::Button.new(frame, :text=>'コード参照', 
-                         :image=>$image['view'], :compound=>:left, 
-                         :command=>proc{showCode 'ttknote'}), 
-         Ttk::Button.new(frame, :text=>'閉じる', 
-                         :image=>$image['delete'], :compound=>:left, 
+  TkGrid('x',
+         Ttk::Button.new(frame, :text=>'コード参照',
+                         :image=>$image['view'], :compound=>:left,
+                         :command=>proc{showCode 'ttknote'}),
+         Ttk::Button.new(frame, :text=>'閉じる',
+                         :image=>$image['delete'], :compound=>:left,
                          :command=>proc{
                            $ttknote_demo.destroy
                            $ttknote_demo = nil
-                         }), 
+                         }),
          :padx=>4, :pady=>4)
   grid_columnconfigure(0, :weight=>1)
   pack(:side=>:bottom, :fill=>:x)
@@ -40,13 +40,13 @@ Ttk::Frame.new($ttknote_demo) {|frame|
 base_frame = Ttk::Frame.new($ttknote_demo).pack(:fill=>:both, :expand=>true)
 
 ## Make the notebook and set up Ctrl+Tab traversal
-notebook = Ttk::Notebook.new(base_frame).pack(:fill=>:both, :expand=>true, 
+notebook = Ttk::Notebook.new(base_frame).pack(:fill=>:both, :expand=>true,
                                               :padx=>2, :pady=>3)
 notebook.enable_traversal
 
 ## Popuplate the first pane
 f_msg = Ttk::Frame.new(notebook)
-msg_m = Ttk::Label.new(f_msg, :font=>$font, :wraplength=>'5i', 
+msg_m = Ttk::Label.new(f_msg, :font=>$font, :wraplength=>'5i',
                        :justify=>:left, :anchor=>'n', :text=><<EOL)
 Ttkとは，テーマ指定可能な新しいウィジェット集合です．\
 その中に含まれるウィジェットのひとつにノートブックウィジェットがあります．\
@@ -64,7 +64,7 @@ Ctrl+Tabキーの入力によっても行うことができます．\
 EOL
 neat = TkVariable.new
 after_id = nil
-msg_b = Ttk::Button.new(f_msg, :text=>'すてきだ！(Neat!)', :underline=>6, 
+msg_b = Ttk::Button.new(f_msg, :text=>'すてきだ！(Neat!)', :underline=>6,
                         :command=>proc{
                           neat.value = 'あぁ，そのとおりさ．．．'
                           Tk.after_cancel(after_id) if after_id

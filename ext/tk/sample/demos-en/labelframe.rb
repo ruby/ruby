@@ -7,7 +7,7 @@
 
 
 if defined?($labelframe_demo) && $labelframe_demo
-  $labelframe_demo.destroy 
+  $labelframe_demo.destroy
   $labelframe_demo = nil
 end
 
@@ -20,8 +20,8 @@ $labelframe_demo = TkToplevel.new {|w|
 base_frame = TkFrame.new($labelframe_demo).pack(:fill=>:both, :expand=>true)
 
 # Some information
-TkLabel.new(base_frame, 
-            :font=>$font, :wraplength=>'4i', :justify=>:left, 
+TkLabel.new(base_frame,
+            :font=>$font, :wraplength=>'4i', :justify=>:left,
             :text=><<EOL).pack(:side=>:top)
 Labelframes are used to group related widgets together. \
 The label may be either plain text or another widget. \
@@ -45,17 +45,17 @@ TkFrame.new(base_frame){|f|
 }
 
 # Demo area
-w = TkFrame.new(base_frame).pack(:side=>:bottom, :fill=>:both, 
+w = TkFrame.new(base_frame).pack(:side=>:bottom, :fill=>:both,
                                        :expand=>true)
 
 # A group of radiobuttons in a labelframe
-TkLabelFrame.new(w, :text=>'Value', 
+TkLabelFrame.new(w, :text=>'Value',
                  :padx=>2, :pady=>2) {|f|
   grid(:row=>0, :column=>0, :pady=>'2m', :padx=>'2m')
 
   v = TkVariable.new
   (1..4).each{|i|
-    TkRadiobutton.new(f, :text=>"This is value #{i}", 
+    TkRadiobutton.new(f, :text=>"This is value #{i}",
                       :variable=>v, :value=>i) {
       pack(:side=>:top, :fill=>:x, :pady=>2)
     }
@@ -78,7 +78,7 @@ def lfEnableButtons(w)
 end
 
 TkLabelFrame.new(w, :pady=>2, :padx=>2){|f|
-  TkCheckButton.new(f, :widgetname=>'cb', :variable=>$lfdummy, 
+  TkCheckButton.new(f, :widgetname=>'cb', :variable=>$lfdummy,
                     :text=>"Use this option.", :padx=>0) {|cb|
     command proc{lfEnableButtons(f)}
     f.labelwidget(cb)

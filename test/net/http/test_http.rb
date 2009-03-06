@@ -253,7 +253,7 @@ module TestNetHTTP_version_1_2_methods
     assert_kind_of String, res.body
     assert_equal $test_net_http_data, res.body
   end
-  
+
   def _test_send_request__POST(http)
     data = 'aaabbb cc ddddddddddd lkjoiu4j3qlkuoa'
     res = http.send_request('POST', '/', data)

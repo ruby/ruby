@@ -105,7 +105,7 @@ class TestTranscode < Test::Unit::TestCase
     all_ascii = (0..127).to_a.pack 'C*'
     encodings.each do |enc|
       test_start = all_ascii
-      assert_equal(test_start, test_start.encode('UTF-8',enc).encode(enc).force_encoding('ASCII-8BIT')) 
+      assert_equal(test_start, test_start.encode('UTF-8',enc).encode(enc).force_encoding('ASCII-8BIT'))
     end
   end
 
@@ -126,7 +126,7 @@ class TestTranscode < Test::Unit::TestCase
     all_bytes = (0..255).to_a.pack 'C*'
     encodings_8859.each do |enc|
       test_start = all_bytes
-      assert_equal(test_start, test_start.encode('UTF-8',enc).encode(enc).force_encoding('ASCII-8BIT')) 
+      assert_equal(test_start, test_start.encode('UTF-8',enc).encode(enc).force_encoding('ASCII-8BIT'))
     end
   end
 
@@ -224,7 +224,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u0153", "\x9C", 'windows-1252') # œ
     assert_raise(Encoding::UndefinedConversionError) { "\x9D".encode("utf-8", 'windows-1252') }
     check_both_ways("\u017E", "\x9E", 'windows-1252') # ž
-    check_both_ways("\u00A0", "\xA0", 'windows-1252') # non-breaking space 
+    check_both_ways("\u00A0", "\xA0", 'windows-1252') # non-breaking space
     check_both_ways("\u00AF", "\xAF", 'windows-1252') # ¯
     check_both_ways("\u00B0", "\xB0", 'windows-1252') # °
     check_both_ways("\u00BF", "\xBF", 'windows-1252') # ¿
@@ -432,7 +432,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u03B1", "\xE0", 'IBM437') # α
     check_both_ways("\u2229", "\xEF", 'IBM437') # ∩
     check_both_ways("\u2261", "\xF0", 'IBM437') # ≡
-    check_both_ways("\u00A0", "\xFF", 'IBM437') # non-breaking space 
+    check_both_ways("\u00A0", "\xFF", 'IBM437') # non-breaking space
   end
 
   def test_IBM775
@@ -451,7 +451,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00D3", "\xE0", 'IBM775') # Ó
     check_both_ways("\u2019", "\xEF", 'IBM775') # ’
     check_both_ways("\u00AD", "\xF0", 'IBM775') # osft hyphen
-    check_both_ways("\u00A0", "\xFF", 'IBM775') # non-breaking space 
+    check_both_ways("\u00A0", "\xFF", 'IBM775') # non-breaking space
   end
 
   def test_IBM852
@@ -470,7 +470,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00D3", "\xE0", 'IBM852') # Ó
     check_both_ways("\u00B4", "\xEF", 'IBM852') # ´
     check_both_ways("\u00AD", "\xF0", 'IBM852') # osft hyphen
-    check_both_ways("\u00A0", "\xFF", 'IBM852') # non-breaking space 
+    check_both_ways("\u00A0", "\xFF", 'IBM852') # non-breaking space
   end
 
   def test_IBM855
@@ -489,7 +489,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u042F", "\xE0", 'IBM855') # Я
     check_both_ways("\u2116", "\xEF", 'IBM855') # №
     check_both_ways("\u00AD", "\xF0", 'IBM855') # osft hyphen
-    check_both_ways("\u00A0", "\xFF", 'IBM855') # non-breaking space 
+    check_both_ways("\u00A0", "\xFF", 'IBM855') # non-breaking space
   end
 
   def test_IBM857
@@ -517,7 +517,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00B1", "\xF1", 'IBM857') # ±
     assert_raise(Encoding::UndefinedConversionError) { "\xF2".encode("utf-8", 'IBM857') }
     check_both_ways("\u00BE", "\xF3", 'IBM857') # ¾
-    check_both_ways("\u00A0", "\xFF", 'IBM857') # non-breaking space 
+    check_both_ways("\u00A0", "\xFF", 'IBM857') # non-breaking space
   end
 
   def test_IBM860
@@ -536,7 +536,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u03B1", "\xE0", 'IBM860') # α
     check_both_ways("\u2229", "\xEF", 'IBM860') # ∩
     check_both_ways("\u2261", "\xF0", 'IBM860') # ≡
-    check_both_ways("\u00A0", "\xFF", 'IBM860') # non-breaking space 
+    check_both_ways("\u00A0", "\xFF", 'IBM860') # non-breaking space
   end
 
   def test_IBM861
@@ -555,7 +555,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u03B1", "\xE0", 'IBM861') # α
     check_both_ways("\u2229", "\xEF", 'IBM861') # ∩
     check_both_ways("\u2261", "\xF0", 'IBM861') # ≡
-    check_both_ways("\u00A0", "\xFF", 'IBM861') # non-breaking space 
+    check_both_ways("\u00A0", "\xFF", 'IBM861') # non-breaking space
   end
 
   def test_IBM862
@@ -574,7 +574,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u03B1", "\xE0", 'IBM862') # α
     check_both_ways("\u2229", "\xEF", 'IBM862') # ∩
     check_both_ways("\u2261", "\xF0", 'IBM862') # ≡
-    check_both_ways("\u00A0", "\xFF", 'IBM862') # non-breaking space 
+    check_both_ways("\u00A0", "\xFF", 'IBM862') # non-breaking space
   end
 
   def test_IBM863
@@ -593,7 +593,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u03B1", "\xE0", 'IBM863') # α
     check_both_ways("\u2229", "\xEF", 'IBM863') # ∩
     check_both_ways("\u2261", "\xF0", 'IBM863') # ≡
-    check_both_ways("\u00A0", "\xFF", 'IBM863') # non-breaking space 
+    check_both_ways("\u00A0", "\xFF", 'IBM863') # non-breaking space
   end
 
   def test_IBM865
@@ -612,7 +612,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u03B1", "\xE0", 'IBM865') # α
     check_both_ways("\u2229", "\xEF", 'IBM865') # ∩
     check_both_ways("\u2261", "\xF0", 'IBM865') # ≡
-    check_both_ways("\u00A0", "\xFF", 'IBM865') # non-breaking space 
+    check_both_ways("\u00A0", "\xFF", 'IBM865') # non-breaking space
   end
 
   def test_IBM866
@@ -631,7 +631,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u0440", "\xE0", 'IBM866') # р
     check_both_ways("\u044F", "\xEF", 'IBM866') # я
     check_both_ways("\u0401", "\xF0", 'IBM866') # Ё
-    check_both_ways("\u00A0", "\xFF", 'IBM866') # non-breaking space 
+    check_both_ways("\u00A0", "\xFF", 'IBM866') # non-breaking space
   end
 
   def test_IBM869
@@ -658,7 +658,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u03B6", "\xE0", 'IBM869') # ζ
     check_both_ways("\u0384", "\xEF", 'IBM869') # ΄
     check_both_ways("\u00AD", "\xF0", 'IBM869') # soft hyphen
-    check_both_ways("\u00A0", "\xFF", 'IBM869') # non-breaking space 
+    check_both_ways("\u00A0", "\xFF", 'IBM869') # non-breaking space
   end
 
   def test_macCroatian
@@ -906,7 +906,7 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(Encoding::UndefinedConversionError) { "\xFC".encode("utf-8", 'TIS-620') }
     assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'TIS-620') }
   end
-  
+
     def test_CP850
     check_both_ways("\u00C7", "\x80", 'CP850') # Ç
     check_both_ways("\u00C5", "\x8F", 'CP850') # Å
@@ -1265,7 +1265,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u73F1", "\xE0\xFE", 'euc-jp') # 珱
     assert_raise(Encoding::UndefinedConversionError) { "\xF4\xA7".encode("utf-8", 'euc-jp') }
     #check_both_ways("\u9ADC", "\xFC\xE3", 'euc-jp') # 髜 (IBM extended)
-    
+
     check_both_ways("\u677E\u672C\u884C\u5F18", "\xBE\xBE\xCB\xDC\xB9\xD4\xB9\xB0", 'euc-jp') # 松本行弘
     check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\xC0\xC4\xBB\xB3\xB3\xD8\xB1\xA1\xC2\xE7\xB3\xD8", 'euc-jp') # 青山学院大学
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\xBF\xC0\xCE\xD3\xB5\xC1\xC7\xEE", 'euc-jp') # 神林義博
@@ -1460,7 +1460,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u9F44", "\xF7\xFE", 'GB2312') # 齄
     check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\xC7\xE0\xC9\xBD\xD1\xA7\xD4\xBA\xB4\xF3\xD1\xA7", 'GB2312') # 青山学院大学
   end
-  
+
   def test_gbk
     check_both_ways("\u4E02", "\x81\x40", 'GBK') # 丂
     check_both_ways("\u4E8A", "\x81\x7E", 'GBK') # 亊
@@ -1577,33 +1577,33 @@ class TestTranscode < Test::Unit::TestCase
 
   def test_gb18030
     # test from GBK
-    check_both_ways("\u4E02", "\x81\x40", 'GB18030') # 
-    check_both_ways("\u4E8A", "\x81\x7E", 'GB18030') # 
-    check_both_ways("\u4E90", "\x81\x80", 'GB18030') # 
+    check_both_ways("\u4E02", "\x81\x40", 'GB18030') #
+    check_both_ways("\u4E8A", "\x81\x7E", 'GB18030') #
+    check_both_ways("\u4E90", "\x81\x80", 'GB18030') #
     check_both_ways("\u4FA2", "\x81\xFE", 'GB18030') # 侢
-    check_both_ways("\u5EC6", "\x8F\x40", 'GB18030') # 
+    check_both_ways("\u5EC6", "\x8F\x40", 'GB18030') #
     check_both_ways("\u5F24", "\x8F\x7E", 'GB18030') # 弤
     check_both_ways("\u5F28", "\x8F\x80", 'GB18030') # 弨
-    check_both_ways("\u6007", "\x8F\xFE", 'GB18030') # 
-    check_both_ways("\u6008", "\x90\x40", 'GB18030') # 
+    check_both_ways("\u6007", "\x8F\xFE", 'GB18030') #
+    check_both_ways("\u6008", "\x90\x40", 'GB18030') #
     check_both_ways("\u6080", "\x90\x7E", 'GB18030') # 悀
-    check_both_ways("\u6081", "\x90\x80", 'GB18030') # 
-    check_both_ways("\u6146", "\x90\xFE", 'GB18030') # 
-    check_both_ways("\u70DC", "\x9F\x40", 'GB18030') # 
+    check_both_ways("\u6081", "\x90\x80", 'GB18030') #
+    check_both_ways("\u6146", "\x90\xFE", 'GB18030') #
+    check_both_ways("\u70DC", "\x9F\x40", 'GB18030') #
     check_both_ways("\u7134", "\x9F\x7E", 'GB18030') # 焴
     check_both_ways("\u7135", "\x9F\x80", 'GB18030') # 焵
-    check_both_ways("\u71D3", "\x9F\xFE", 'GB18030') # 
-    check_both_ways("\u71D6", "\xA0\x40", 'GB18030') # 
-    check_both_ways("\u721A", "\xA0\x7E", 'GB18030') # 
-    check_both_ways("\u721B", "\xA0\x80", 'GB18030') # 
-    check_both_ways("\u72DB", "\xA0\xFE", 'GB18030') # 
+    check_both_ways("\u71D3", "\x9F\xFE", 'GB18030') #
+    check_both_ways("\u71D6", "\xA0\x40", 'GB18030') #
+    check_both_ways("\u721A", "\xA0\x7E", 'GB18030') #
+    check_both_ways("\u721B", "\xA0\x80", 'GB18030') #
+    check_both_ways("\u72DB", "\xA0\xFE", 'GB18030') #
     check_both_ways("\u3000", "\xA1\xA1", 'GB18030') # full-width space
-    check_both_ways("\u3001", "\xA1\xA2", 'GB18030') # 
-    check_both_ways("\u3013", "\xA1\xFE", 'GB18030') # 
+    check_both_ways("\u3001", "\xA1\xA2", 'GB18030') #
+    check_both_ways("\u3013", "\xA1\xFE", 'GB18030') #
     #assert_raise(Encoding::UndefinedConversionError) { "\xA2\xA0".encode("utf-8", 'GB18030') }
     check_both_ways("\u2170", "\xA2\xA1", 'GB18030') # ⅰ
     #assert_raise(Encoding::UndefinedConversionError) { "\xA2\xB0".encode("utf-8", 'GB18030') }
-    check_both_ways("\u2488", "\xA2\xB1", 'GB18030') # 
+    check_both_ways("\u2488", "\xA2\xB1", 'GB18030') #
     #assert_raise(Encoding::UndefinedConversionError) { "\xA2\xE4".encode("utf-8", 'GB18030') }
     check_both_ways("\u3220", "\xA2\xE5", 'GB18030') # ㈠
     #assert_raise(Encoding::UndefinedConversionError) { "\xA2\xF0".encode("utf-8", 'GB18030') }
@@ -1612,72 +1612,72 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\uFF01", "\xA3\xA1", 'GB18030') # E
     check_both_ways("\uFFE3", "\xA3\xFE", 'GB18030') # E
     #assert_raise(Encoding::UndefinedConversionError) { "\xA4\xA0".encode("utf-8", 'GB18030') }
-    check_both_ways("\u3041", "\xA4\xA1", 'GB18030') # 
+    check_both_ways("\u3041", "\xA4\xA1", 'GB18030') #
     #assert_raise(Encoding::UndefinedConversionError) { "\xA5\xA0".encode("utf-8", 'GB18030') }
     check_both_ways("\u30A1", "\xA5\xA1", 'GB18030') # ァ
-    check_both_ways("\u0391", "\xA6\xA1", 'GB18030') # 
+    check_both_ways("\u0391", "\xA6\xA1", 'GB18030') #
     check_both_ways("\u03B1", "\xA6\xC1", 'GB18030') # α
     #assert_raise(Encoding::UndefinedConversionError) { "\xA6\xED".encode("utf-8", 'GB18030') }
     check_both_ways("\uFE3B", "\xA6\xEE", 'GB18030') # E
-    check_both_ways("\u0410", "\xA7\xA1", 'GB18030') # 
+    check_both_ways("\u0410", "\xA7\xA1", 'GB18030') #
     check_both_ways("\u0430", "\xA7\xD1", 'GB18030') # а
-    check_both_ways("\u02CA", "\xA8\x40", 'GB18030') # 
-    check_both_ways("\u2587", "\xA8\x7E", 'GB18030') # 
+    check_both_ways("\u02CA", "\xA8\x40", 'GB18030') #
+    check_both_ways("\u2587", "\xA8\x7E", 'GB18030') #
     #assert_raise(Encoding::UndefinedConversionError) { "\xA8\x96".encode("utf-8", 'GB18030') }
-    check_both_ways("\u0101", "\xA8\xA1", 'GB18030') # 
+    check_both_ways("\u0101", "\xA8\xA1", 'GB18030') #
     #assert_raise(Encoding::UndefinedConversionError) { "\xA8\xBC".encode("utf-8", 'GB18030') }
     #assert_raise(Encoding::UndefinedConversionError) { "\xA8\xBF".encode("utf-8", 'GB18030') }
     #assert_raise(Encoding::UndefinedConversionError) { "\xA8\xC4".encode("utf-8", 'GB18030') }
-    check_both_ways("\u3105", "\xA8\xC5", 'GB18030') # 
+    check_both_ways("\u3105", "\xA8\xC5", 'GB18030') #
     check_both_ways("\u3021", "\xA9\x40", 'GB18030') # 〡
     #assert_raise(Encoding::UndefinedConversionError) { "\xA9\x58".encode("utf-8", 'GB18030') }
     #assert_raise(Encoding::UndefinedConversionError) { "\xA9\x5B".encode("utf-8", 'GB18030') }
     #assert_raise(Encoding::UndefinedConversionError) { "\xA9\x5D".encode("utf-8", 'GB18030') }
-    check_both_ways("\u3007", "\xA9\x96", 'GB18030') # 
+    check_both_ways("\u3007", "\xA9\x96", 'GB18030') #
     #assert_raise(Encoding::UndefinedConversionError) { "\xA9\xA3".encode("utf-8", 'GB18030') }
     check_both_ways("\u2500", "\xA9\xA4", 'GB18030') # ─
     #assert_raise(Encoding::UndefinedConversionError) { "\xA9\xF0".encode("utf-8", 'GB18030') }
-    check_both_ways("\u7588", "\xAF\x40", 'GB18030') # 
-    check_both_ways("\u7607", "\xAF\x7E", 'GB18030') # 
-    check_both_ways("\u7608", "\xAF\x80", 'GB18030') # 
-    check_both_ways("\u7644", "\xAF\xA0", 'GB18030') # 
+    check_both_ways("\u7588", "\xAF\x40", 'GB18030') #
+    check_both_ways("\u7607", "\xAF\x7E", 'GB18030') #
+    check_both_ways("\u7608", "\xAF\x80", 'GB18030') #
+    check_both_ways("\u7644", "\xAF\xA0", 'GB18030') #
     #assert_raise(Encoding::UndefinedConversionError) { "\xAF\xA1".encode("utf-8", 'GB18030') }
-    check_both_ways("\u7645", "\xB0\x40", 'GB18030') # 
-    check_both_ways("\u769B", "\xB0\x7E", 'GB18030') # 
-    check_both_ways("\u769C", "\xB0\x80", 'GB18030') # 
+    check_both_ways("\u7645", "\xB0\x40", 'GB18030') #
+    check_both_ways("\u769B", "\xB0\x7E", 'GB18030') #
+    check_both_ways("\u769C", "\xB0\x80", 'GB18030') #
     check_both_ways("\u5265", "\xB0\xFE", 'GB18030') # 剥
     check_both_ways("\u7DFB", "\xBF\x40", 'GB18030') # 緻
     check_both_ways("\u7E39", "\xBF\x7E", 'GB18030') # 縹
     check_both_ways("\u7E3A", "\xBF\x80", 'GB18030') # 縺
     check_both_ways("\u5080", "\xBF\xFE", 'GB18030') # 傀
-    check_both_ways("\u7E5E", "\xC0\x40", 'GB18030') # 
-    check_both_ways("\u7E9E", "\xC0\x7E", 'GB18030') # 
+    check_both_ways("\u7E5E", "\xC0\x40", 'GB18030') #
+    check_both_ways("\u7E9E", "\xC0\x7E", 'GB18030') #
     check_both_ways("\u7EAE", "\xC0\x80", 'GB18030') # 纮
-    check_both_ways("\u4FD0", "\xC0\xFE", 'GB18030') # 
+    check_both_ways("\u4FD0", "\xC0\xFE", 'GB18030') #
     check_both_ways("\u87A5", "\xCF\x40", 'GB18030') # 螥
     check_both_ways("\u87F8", "\xCF\x7E", 'GB18030') # 蟸
     check_both_ways("\u87FA", "\xCF\x80", 'GB18030') # 蟺
-    check_both_ways("\u6653", "\xCF\xFE", 'GB18030') # 
+    check_both_ways("\u6653", "\xCF\xFE", 'GB18030') #
     check_both_ways("\u8824", "\xD0\x40", 'GB18030') # 蠤
     check_both_ways("\u887A", "\xD0\x7E", 'GB18030') # 衺
     check_both_ways("\u887B", "\xD0\x80", 'GB18030') # 衻
-    check_both_ways("\u7384", "\xD0\xFE", 'GB18030') # 
-    check_both_ways("\u9019", "\xDF\x40", 'GB18030') # 
-    check_both_ways("\u9081", "\xDF\x7E", 'GB18030') # 
-    check_both_ways("\u9084", "\xDF\x80", 'GB18030') # 
+    check_both_ways("\u7384", "\xD0\xFE", 'GB18030') #
+    check_both_ways("\u9019", "\xDF\x40", 'GB18030') #
+    check_both_ways("\u9081", "\xDF\x7E", 'GB18030') #
+    check_both_ways("\u9084", "\xDF\x80", 'GB18030') #
     check_both_ways("\u553C", "\xDF\xFE", 'GB18030') # 唼
-    check_both_ways("\u90C2", "\xE0\x40", 'GB18030') # 
-    check_both_ways("\u911C", "\xE0\x7E", 'GB18030') # 
-    check_both_ways("\u911D", "\xE0\x80", 'GB18030') # 
+    check_both_ways("\u90C2", "\xE0\x40", 'GB18030') #
+    check_both_ways("\u911C", "\xE0\x7E", 'GB18030') #
+    check_both_ways("\u911D", "\xE0\x80", 'GB18030') #
     check_both_ways("\u5E3C", "\xE0\xFE", 'GB18030') # 帼
     check_both_ways("\u986F", "\xEF\x40", 'GB18030') # 顯
     check_both_ways("\u98E4", "\xEF\x7E", 'GB18030') # 飤
     check_both_ways("\u98E5", "\xEF\x80", 'GB18030') # 飥
-    check_both_ways("\u7A14", "\xEF\xFE", 'GB18030') # 
-    check_both_ways("\u9908", "\xF0\x40", 'GB18030') # 
-    check_both_ways("\u9949", "\xF0\x7E", 'GB18030') # 
-    check_both_ways("\u994A", "\xF0\x80", 'GB18030') # 
-    check_both_ways("\u7619", "\xF0\xFE", 'GB18030') # 
+    check_both_ways("\u7A14", "\xEF\xFE", 'GB18030') #
+    check_both_ways("\u9908", "\xF0\x40", 'GB18030') #
+    check_both_ways("\u9949", "\xF0\x7E", 'GB18030') #
+    check_both_ways("\u994A", "\xF0\x80", 'GB18030') #
+    check_both_ways("\u7619", "\xF0\xFE", 'GB18030') #
     check_both_ways("\u9F32", "\xFD\x40", 'GB18030') # 鼲
     check_both_ways("\u9F78", "\xFD\x7E", 'GB18030') # 齸
     check_both_ways("\u9F79", "\xFD\x80", 'GB18030') # 齹
@@ -1692,40 +1692,40 @@ class TestTranscode < Test::Unit::TestCase
 	# new tests for GB18030
     check_both_ways("\u9FA6", "\x82\x35\x8F\x33", 'GB18030') # 龦
     check_both_ways("\uD7FF", "\x83\x36\xC7\x38", 'GB18030') # No name ()
-    
-    check_both_ways("\u0452", "\x81\x30\xD3\x30", 'GB18030') # 
+
+    check_both_ways("\u0452", "\x81\x30\xD3\x30", 'GB18030') #
     check_both_ways("\u200F", "\x81\x36\xA5\x31", 'GB18030') # RIGHT-TO-LEFT MARK
-    
+
     check_both_ways("\uE865", "\x83\x36\xD0\x30", 'GB18030') # No name (Private Use Area)
     check_both_ways("\uF92B", "\x84\x30\x85\x34", 'GB18030') # E
-    
-    check_both_ways("\u2643", "\x81\x37\xA8\x39", 'GB18030') # 
+
+    check_both_ways("\u2643", "\x81\x37\xA8\x39", 'GB18030') #
     check_both_ways("\u2E80", "\x81\x38\xFD\x38", 'GB18030') # ⺀
-    
+
     check_both_ways("\uFA2A", "\x84\x30\x9C\x38", 'GB18030') # E
     check_both_ways("\uFE2F", "\x84\x31\x85\x37", 'GB18030') # No name (Combining Half Marks)
-    
+
     check_both_ways("\u3CE1", "\x82\x31\xD4\x38", 'GB18030') # 㳡
-    check_both_ways("\u4055", "\x82\x32\xAF\x32", 'GB18030') # 
-    
-    check_both_ways("\u361B", "\x82\x30\xA6\x33", 'GB18030') # 
-    check_both_ways("\u3917", "\x82\x30\xF2\x37", 'GB18030') # 
-    
+    check_both_ways("\u4055", "\x82\x32\xAF\x32", 'GB18030') #
+
+    check_both_ways("\u361B", "\x82\x30\xA6\x33", 'GB18030') #
+    check_both_ways("\u3917", "\x82\x30\xF2\x37", 'GB18030') #
+
     check_both_ways("\u49B8", "\x82\x34\xA1\x31", 'GB18030') # 䦸
     check_both_ways("\u4C76", "\x82\x34\xE7\x33", 'GB18030') # 䱶
-    
+
     check_both_ways("\u4160", "\x82\x32\xC9\x37", 'GB18030') # 䅠
     check_both_ways("\u4336", "\x82\x32\xF8\x37", 'GB18030') # 䌶
-    
-    check_both_ways("\u478E", "\x82\x33\xE8\x38", 'GB18030') # 
-    check_both_ways("\u4946", "\x82\x34\x96\x38", 'GB18030') # 
-    
-    check_both_ways("\u44D7", "\x82\x33\xA3\x39", 'GB18030') # 
-    check_both_ways("\u464B", "\x82\x33\xC9\x31", 'GB18030') # 
-    
+
+    check_both_ways("\u478E", "\x82\x33\xE8\x38", 'GB18030') #
+    check_both_ways("\u4946", "\x82\x34\x96\x38", 'GB18030') #
+
+    check_both_ways("\u44D7", "\x82\x33\xA3\x39", 'GB18030') #
+    check_both_ways("\u464B", "\x82\x33\xC9\x31", 'GB18030') #
+
     check_both_ways("\uFFE6", "\x84\x31\xA2\x34", 'GB18030') # E
     check_both_ways("\uFFFF", "\x84\x31\xA4\x39", 'GB18030') # not a character
-    
+
     check_both_ways("\u{10000}", "\x90\x30\x81\x30", 'GB18030') # 𐀀
     check_both_ways("\u{10FFFE}", "\xE3\x32\x9A\x34", 'GB18030') # No name (Not a character)
     check_both_ways("\u{10FFFF}", "\xE3\x32\x9A\x35", 'GB18030') # No name (Not a character)
@@ -1797,7 +1797,7 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(Encoding::UndefinedConversionError) { "\xF9\xD6".encode("utf-8", 'Big5') }
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\xAF\xAB\xAA\x4C\xB8\x71\xB3\xD5", 'Big5') # 神林義博
   end
-  
+
   def test_nothing_changed
     a = "James".force_encoding("US-ASCII")
     b = a.encode("Shift_JIS")

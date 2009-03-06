@@ -16,7 +16,7 @@ class MockClock
       nil
     end
   end
-  
+
   def initialize
     @now = 2
     @reso = 1
@@ -32,7 +32,7 @@ class MockClock
   def at(n)
     n
   end
-    
+
   def _forward(n=nil)
     now ,= @ts.take([nil, :now])
     @now = now + n
@@ -114,7 +114,7 @@ module TupleSpaceTestModule
     end
     th.value
   end
-  
+
   def test_00_tuple
     tuple = Rinda::TupleEntry.new([1,2,3])
     assert(!tuple.canceled?)
@@ -283,7 +283,7 @@ module TupleSpaceTestModule
       @ts.write([:ans, s])
       s
     end
-    
+
     assert_equal(10, thread_join(taker))
     tuple = @ts.take([:ans, nil])
     assert_equal(10, tuple[1])
@@ -314,7 +314,7 @@ module TupleSpaceTestModule
     assert_equal(10, tuple[1])
     assert_equal([], @ts.read_all([nil, nil]))
   end
-  
+
   def test_core_03_notify
     notify1 = @ts.notify(nil, [:req, Integer])
     notify2 = @ts.notify(nil, [:ans, Integer], 8)
@@ -417,7 +417,7 @@ module TupleSpaceTestModule
     assert_equal([[:removeme, 1]], @ts.read_all([nil, nil]))
     entry.cancel
     assert_equal([], @ts.read_all([nil, nil]))
-    
+
     template = nil
     taker = Thread.new do
       @ts.take([:take, nil], 10) do |t|
@@ -427,7 +427,7 @@ module TupleSpaceTestModule
 	end
       end
     end
-    
+
     sleep(2)
 
     assert_raise(Rinda::RequestCanceledError) do
@@ -435,7 +435,7 @@ module TupleSpaceTestModule
     end
 
     assert(template.canceled?)
-    
+
     @ts.write([:take, 1])
 
     assert_equal([[:take, 1]], @ts.read_all([nil, nil]))
@@ -464,7 +464,7 @@ module TupleSpaceTestModule
     end
 
     assert(template.canceled?)
-    
+
     @ts.write([:take, 1])
 
     assert_equal([[:take, 1]], @ts.read_all([nil, nil]))
@@ -475,7 +475,7 @@ module TupleSpaceTestModule
       @sec = sec
       @n = n
     end
-    
+
     def renew
       return -1 if @n <= 0
       @n -= 1
@@ -488,7 +488,7 @@ module TupleSpaceTestModule
     assert(!tuple.canceled?)
     assert(tuple.expired?)
     assert(!tuple.alive?)
-    
+
     tuple = Rinda::TupleEntry.new([1,2,3], 1)
     assert(!tuple.canceled?)
     assert(!tuple.expired?)

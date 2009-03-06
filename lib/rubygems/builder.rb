@@ -11,7 +11,7 @@ module Gem
   # to produce a .gem file.
   #
   class Builder
-  
+
     include UserInteraction
     ##
     # Constructs a builder instance for the provided specification
@@ -38,7 +38,7 @@ module Gem
       say success
       @spec.file_name
     end
-    
+
     def success
       <<-EOM
   Successfully built RubyGem

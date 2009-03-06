@@ -57,7 +57,7 @@ module SSLPair
   ensure
     if th && th.alive?
       th.kill
-      th.join 
+      th.join
     end
   end
 end

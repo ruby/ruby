@@ -4,14 +4,14 @@ require "rss/maker/base"
 
 module RSS
   module Maker
-    
+
     class RSS09 < RSSBase
-      
+
       def initialize(feed_version)
         super
         @feed_type = "rss"
       end
-      
+
       private
       def make_feed
         Rss.new(@feed_version, @version, @encoding, @standalone)
@@ -38,20 +38,20 @@ module RSS
             raise NotSetError.new("maker.channel", _not_set_required_variables)
           end
         end
-        
+
         private
         def setup_items(rss)
           @maker.items.to_feed(rss)
         end
-        
+
         def setup_image(rss)
           @maker.image.to_feed(rss)
         end
-        
+
         def setup_textinput(rss)
           @maker.textinput.to_feed(rss)
         end
-        
+
         def variables
           super + ["pubDate"]
         end
@@ -78,7 +78,7 @@ module RSS
               end
             end
           end
-          
+
           class Day < DayBase
             def to_feed(rss, days)
               day = Rss::Channel::SkipDays::Day.new
@@ -96,7 +96,7 @@ module RSS
             end
           end
         end
-        
+
         class SkipHours < SkipHoursBase
           def to_feed(rss, channel)
             unless @hours.empty?
@@ -108,7 +108,7 @@ module RSS
               end
             end
           end
-          
+
           class Hour < HourBase
             def to_feed(rss, hours)
               hour = Rss::Channel::SkipHours::Hour.new
@@ -126,7 +126,7 @@ module RSS
             end
           end
         end
-        
+
         class Cloud < CloudBase
           def to_feed(*args)
           end
@@ -243,7 +243,7 @@ module RSS
           true
         end
       end
-      
+
       class Items < ItemsBase
         def to_feed(rss)
           if rss.channel
@@ -253,7 +253,7 @@ module RSS
             setup_other_elements(rss, rss.items)
           end
         end
-        
+
         class Item < ItemBase
           def to_feed(rss)
             item = Rss::Channel::Item.new
@@ -439,7 +439,7 @@ module RSS
           end
         end
       end
-      
+
       class Textinput < TextinputBase
         def to_feed(rss)
           textInput = Rss::Channel::TextInput.new

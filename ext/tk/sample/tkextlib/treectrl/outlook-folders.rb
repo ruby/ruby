@@ -7,7 +7,7 @@ def demoOutlookFolders(t)
   height = t.font.metrics(:linespace) + 2
   height = 18 if height < 18
 
-  t.configure(:itemheight=>height, :selectmode=>:browse, :showlines=>true, 
+  t.configure(:itemheight=>height, :selectmode=>:browse, :showlines=>true,
               :showroot=>true, :showrootbutton=>false, :showbuttons=>true)
 
   if $HasColumnCreate
@@ -17,15 +17,15 @@ def demoOutlookFolders(t)
   end
 
   t.element_create('e1', :image)
-  t.element_create('e2', :text, :lines=>1, 
+  t.element_create('e2', :text, :lines=>1,
                    :fill=>[@SystemHighlightText, ['selected', 'focus']])
-  t.element_create('e3', :text, :lines=>1, :font=>t.font.dup.weight(:bold), 
+  t.element_create('e3', :text, :lines=>1, :font=>t.font.dup.weight(:bold),
                    :fill=>[@SystemHighlightText, ['selected', 'focus']])
   t.element_create('e4', :text, :fill=>'blue')
   t.element_create('e5', :image, :image=>@images['outlook-folder'])
-  t.element_create('e6', :rect, :showfocus=>true, 
+  t.element_create('e6', :rect, :showfocus=>true,
                    :fill=>[
-                     @SystemHighlight, ['selected', 'focus'], 
+                     @SystemHighlight, ['selected', 'focus'],
                      'gray', ['selected', '!focus']
                    ])
 
@@ -60,28 +60,28 @@ def demoOutlookFolders(t)
   t.style_layout(s, 'e6', :union=>['e3'], :iexpand=>:ns, :ipadx=>2)
 
   t.item_style_set(:root, 0, 's1')
-  t.item_complex(:root, 
+  t.item_complex(:root,
                  [
-                   ['e1', {:image=>@images['outlook-main']}], 
+                   ['e1', {:image=>@images['outlook-main']}],
                    ['e2', {:text=>'Outlook Express'}]
                  ])
 
   parentList = [:root, '', '', '', '', '', '']
   parent = :root
   [
-     [0, :local, "Local Folders", true, 0], 
-        [1, :inbox, 'Inbox', false, 5], 
-        [1, :outbox, 'Outbox', false, 0], 
-        [1, :sent, "Sent Items", false, 0], 
-        [1, :deleted, "Deleted Items", false, 50], 
-        [1, :draft, 'Drafts', false, 0], 
-        [1, :folder, "Messages to Dad", false, 0], 
-        [1, :folder, "Messages to Sis", false, 0], 
-        [1, :folder, "Messages to Me", false, 0], 
-           [2, :folder, "2001", false, 0], 
-           [2, :folder, "2000", false, 0], 
-           [2, :folder, "1999", false, 0], 
-     [0, :server, "news.gmane.org", true, 0], 
+     [0, :local, "Local Folders", true, 0],
+        [1, :inbox, 'Inbox', false, 5],
+        [1, :outbox, 'Outbox', false, 0],
+        [1, :sent, "Sent Items", false, 0],
+        [1, :deleted, "Deleted Items", false, 50],
+        [1, :draft, 'Drafts', false, 0],
+        [1, :folder, "Messages to Dad", false, 0],
+        [1, :folder, "Messages to Sis", false, 0],
+        [1, :folder, "Messages to Me", false, 0],
+           [2, :folder, "2001", false, 0],
+           [2, :folder, "2000", false, 0],
+           [2, :folder, "1999", false, 0],
+     [0, :server, "news.gmane.org", true, 0],
         [1, :group, "gmane.comp.lang.lua.general", false, 498]
   ].each{|depth, img, text, button, unread|
     if $Version_1_1_OrLater
@@ -93,7 +93,7 @@ def demoOutlookFolders(t)
     if img == :folder
       if unread != 0
         t.item_style_set(item, 0, 's4')
-        t.item_complex(item, 
+        t.item_complex(item,
                        [['e3', {:text=>text}], ['e4', {:text=>"(#{unread})"}]])
       else
         t.item_style_set(item, 0, 's3')
@@ -102,17 +102,17 @@ def demoOutlookFolders(t)
     else
       if unread != 0
         t.item_style_set(item, 0, 's2')
-        t.item_complex(item, 
+        t.item_complex(item,
                        [
-                         ['e1', {:image=>@images["outlook-#{img}"]}], 
-                         ['e3', {:text=>text}], 
+                         ['e1', {:image=>@images["outlook-#{img}"]}],
+                         ['e3', {:text=>text}],
                          ['e4', {:text=>"(#{unread})"}]
                        ])
       else
         t.item_style_set(item, 0, 's1')
-        t.item_complex(item, 
+        t.item_complex(item,
                        [
-                         ['e1', {:image=>@images["outlook-#{img}"]}], 
+                         ['e1', {:image=>@images["outlook-#{img}"]}],
                          ['e2', {:text=>text}]
                        ])
       end

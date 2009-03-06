@@ -58,10 +58,10 @@ EOS
     assert_equal(:ü, :"\u{fc}")
 
     # the NUL character is not allowed in symbols
-    assert_raise(SyntaxError) { eval %q(:"\u{0}")} 
+    assert_raise(SyntaxError) { eval %q(:"\u{0}")}
     assert_raise(SyntaxError) { eval %q(:"\u0000")}
-    assert_raise(SyntaxError) { eval %q(:"\u{fc 0 0041}")} 
-    assert_raise(SyntaxError) { eval %q(:"\x00")} 
+    assert_raise(SyntaxError) { eval %q(:"\u{fc 0 0041}")}
+    assert_raise(SyntaxError) { eval %q(:"\x00")}
     assert_raise(SyntaxError) { eval %q(:"\0")}
   end
 
@@ -137,7 +137,7 @@ EOS
   def test_dynamic_regexp
     assert_match(Regexp.new("Martin D\\u{FC}rst"), "Martin Dürst")
   end
-  
+
   def test_syntax_variants
     # all hex digits
     assert_equal("\xC4\xA3\xE4\x95\xA7\xE8\xA6\xAB\xEC\xB7\xAF", "\u0123\u4567\u89AB\uCDEF")
@@ -147,7 +147,7 @@ EOS
     assert_equal("\xC4\xA3\xE4\x95\xA7\xE8\xA6\xAB\xEC\xB7\xAF", "\u0123\u4567\u89aB\uCdEf")
     assert_equal("\xC4\xA3\xE4\x95\xA7\xE8\xA6\xAB\xEC\xB7\xAF", "\u0123\u4567\u89aB\ucDEF")
   end
-  
+
   def test_fulton
     # examples from Hal Fulton's book (second edition), chapter 4
     # precomposed e'pe'e
@@ -188,7 +188,7 @@ EOS
     assert_equal('Straße', "Stra\u{DF}e")
     assert_equal("\x53\x74\x72\x61\xC3\x9F\x65", "Stra\u{DF}e")
   end
-  
+
   def test_edge_cases
     # start and end of each outer plane
     assert_equal("\xF4\x8F\xBF\xBF", "\u{10FFFF}")

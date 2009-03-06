@@ -6,12 +6,12 @@
 #++
 
 module Gem
-  
-  # There is an incompatibility between the way Ruby 1.8.5 and 1.8.6 
-  # handles digests. This DigestAdapter will take a pre-1.8.6 digest 
+
+  # There is an incompatibility between the way Ruby 1.8.5 and 1.8.6
+  # handles digests. This DigestAdapter will take a pre-1.8.6 digest
   # and adapt it to the 1.8.6 API.
   #
-  # Note that only the digest and hexdigest methods are adapted, 
+  # Note that only the digest and hexdigest methods are adapted,
   # since these are the only functions used by Gems.
   #
   class DigestAdapter

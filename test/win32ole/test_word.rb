@@ -38,7 +38,7 @@ if defined?(WIN32OLE)
           @obj = WIN32OLE.new('Word.Application')
         rescue WIN32OLERuntimeError
           @obj = nil
-          if !$skipped 
+          if !$skipped
               $skipped = true
           end
         end

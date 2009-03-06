@@ -39,7 +39,7 @@ module RSS
 
         setup_dummy_textinput(maker)
       end
-      
+
       setup_rss = RSS::Maker.make("1.0") do |maker|
         rss.setup_maker(maker)
       end
@@ -49,7 +49,7 @@ module RSS
         assert_equal(@favicon_infos["about"], favicon.about)
         assert_equal(@favicon_infos["image_size"], favicon.image_size)
         assert_equal(@favicon_infos["dc_title"], favicon.dc_title)
-        
+
         item = target.items.last.image_item
         assert_equal(@item_infos["about"], item.about)
         assert_equal(@item_infos["resource"], item.resource)

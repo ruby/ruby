@@ -527,7 +527,7 @@ Options may also be set in the 'RI' environment variable.
     ancestors = [orig_klass]
     ancestors.push(*cache.includes.map { |inc| inc['name'] })
     ancestors << cache.superclass
-    
+
     ancestor_index = ancestors.index(klass)
 
     if ancestor_index

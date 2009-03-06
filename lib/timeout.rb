@@ -63,7 +63,7 @@ module Timeout
       raise Error, e.message, e.backtrace
     ensure
       if y and y.alive?
-        y.kill 
+        y.kill
         y.join # make sure y is dead.
       end
     end

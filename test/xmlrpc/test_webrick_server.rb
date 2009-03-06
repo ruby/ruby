@@ -18,9 +18,9 @@ class Test_Webrick < Test::Unit::TestCase
       if b == 0
         raise XMLRPC::FaultException.new(1, "division by zero")
       else
-        a / b 
+        a / b
       end
-    end 
+    end
 
     s.set_default_handler do |name, *args|
       raise XMLRPC::FaultException.new(-99, "Method #{name} missing" +
@@ -34,13 +34,13 @@ class Test_Webrick < Test::Unit::TestCase
 
   def setup_http_server(port, use_ssl)
     option = {
-      :Port => port, 
+      :Port => port,
       :SSLEnable => use_ssl,
     }
     if use_ssl
       require 'webrick/https'
       option.update(
-        :SSLVerifyClient => ::OpenSSL::SSL::VERIFY_NONE, 
+        :SSLVerifyClient => ::OpenSSL::SSL::VERIFY_NONE,
         :SSLCertName => []
       )
     end

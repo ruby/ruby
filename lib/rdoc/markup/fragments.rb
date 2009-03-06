@@ -203,7 +203,7 @@ class RDoc::Markup
     #    normal paragraph text.
     #
     #       this is code
-    #   
+    #
     #       and more code
     #
     # You'll end up with the fragments Paragraph, BlankLine, Verbatim,

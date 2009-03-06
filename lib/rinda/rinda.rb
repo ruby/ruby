@@ -58,7 +58,7 @@ module Rinda
 
     ##
     # The number of elements in the tuple.
-    
+
     def size
       @tuple.size
     end
@@ -162,7 +162,7 @@ module Rinda
       end
       return true
     end
-    
+
     ##
     # Alias for #match.
 
@@ -171,7 +171,7 @@ module Rinda
     end
 
   end
-  
+
   ##
   # <i>Documentation?</i>
 
@@ -184,7 +184,7 @@ module Rinda
       @drb_uri = uri
       @drb_ref = ref
     end
-    
+
     ##
     # This DRbObjectTemplate matches +ro+ if the remote object's drburi and
     # drbref are the same.  +nil+ is used as a wildcard.
@@ -213,14 +213,14 @@ module Rinda
     def initialize(ts)
       @ts = ts
     end
-    
+
     ##
     # Adds +tuple+ to the proxied TupleSpace.  See TupleSpace#write.
 
     def write(tuple, sec=nil)
       @ts.write(tuple, sec)
     end
-    
+
     ##
     # Takes +tuple+ from the proxied TupleSpace.  See TupleSpace#take.
 
@@ -229,14 +229,14 @@ module Rinda
       @ts.move(DRbObject.new(port), tuple, sec, &block)
       port[0]
     end
-    
+
     ##
     # Reads +tuple+ from the proxied TupleSpace.  See TupleSpace#read.
 
     def read(tuple, sec=nil, &block)
       @ts.read(tuple, sec, &block)
     end
-    
+
     ##
     # Reads all tuples matching +tuple+ from the proxied TupleSpace.  See
     # TupleSpace#read_all.
@@ -244,7 +244,7 @@ module Rinda
     def read_all(tuple)
       @ts.read_all(tuple)
     end
-    
+
     ##
     # Registers for notifications of event +ev+ on the proxied TupleSpace.
     # See TupleSpace#notify

@@ -1,4 +1,4 @@
-# 
+#
 def random_N
   @RandomN[0] || 500
 end
@@ -11,39 +11,39 @@ def demoRandom(t)
 
   height = t.font.metrics(:linespace)
   height = 18 if height < 18
-  t.configure(:itemheight=>height, :selectmode=>:extended, 
-              :showroot=>true, :showrootbutton=>true, :showbuttons=>true, 
-              :showlines=>true, :scrollmargin=>16, 
+  t.configure(:itemheight=>height, :selectmode=>:extended,
+              :showroot=>true, :showrootbutton=>true, :showbuttons=>true,
+              :showlines=>true, :scrollmargin=>16,
               :xscrolldelay=>[500, 50], :yscrolldelay=>[500, 50])
 
   if $Version_1_1_OrLater
-    t.column_create(:expand=>true, :text=>'Item', 
+    t.column_create(:expand=>true, :text=>'Item',
                     :itembackground=>['#e0e8f0', []], :tag=>'item')
-    t.column_create(:text=>'Parent', :justify=>:center, 
+    t.column_create(:text=>'Parent', :justify=>:center,
                     :itembackground=>['gray90', []], :tag=>'parent')
-    t.column_create(:text=>'Depth', :justify=>:center, 
+    t.column_create(:text=>'Depth', :justify=>:center,
                     :itembackground=>['linen', []], :tag=>'depth')
   else # TreeCtrl 1.0
-    t.column_configure(0, :expand=>true, :text=>'Item', 
+    t.column_configure(0, :expand=>true, :text=>'Item',
                        :itembackground=>['#e0e8f0', []], :tag=>'item')
-    t.column_configure(1, :text=>'Parent', :justify=>:center, 
+    t.column_configure(1, :text=>'Parent', :justify=>:center,
                        :itembackground=>['gray90', []], :tag=>'parent')
-    t.column_configure(2, :text=>'Depth', :justify=>:center, 
+    t.column_configure(2, :text=>'Depth', :justify=>:center,
                        :itembackground=>['linen', []], :tag=>'depth')
   end
 
   t.element_create('e1', :image, :image=>[
-                     @images['folder-open'], ['open'], 
+                     @images['folder-open'], ['open'],
                      @images['folder-closed'], []
                    ])
   t.element_create('e2', :image, :image=>@images['small-file'])
-  t.element_create('e3', :text, 
+  t.element_create('e3', :text,
                    :fill=>[@SystemHighlightText, ['selected', 'focus']])
   t.element_create('e4', :text, :fill=>'blue')
   t.element_create('e6', :text)
-  t.element_create('e5', :rect, :showfocus=>true, 
+  t.element_create('e5', :rect, :showfocus=>true,
                    :fill=>[
-                     @SystemHighlight, ['selected', 'focus'], 
+                     @SystemHighlight, ['selected', 'focus'],
                      'gray', ['selected', '!focus']
                    ])
 
@@ -65,11 +65,11 @@ def demoRandom(t)
   t.style_layout(s, 'e6', :padx=>6, :expand=>:ns)
 
   @Priv[:sensitive, t] = [
-    [:item, 's1',  'e5', 'e1', 'e3'], 
+    [:item, 's1',  'e5', 'e1', 'e3'],
     [:item, 's2',  'e5', 'e2', 'e3']
   ]
   @Priv[:dragimage, t] = [
-    [:item, 's1',  'e1', 'e3'], 
+    [:item, 's1',  'e1', 'e3'],
     [:item, 's2',  'e2', 'e3']
   ]
 
@@ -108,16 +108,16 @@ def demoRandom(t)
         t.item_hasbutton(item_i, true)
       end
       t.item_style_set(item_i, 0, 's1', 1, 's3', 2, 's3')
-      t.item_complex(item_i, 
-                     [ ['e3', {:text=>"Item #{i}"}], 
-                       ['e4', {:text=>"(#{numChildren})"}] ], 
-                     [ ['e6', {:text=>"#{t.item_parent(item_i)}"}] ], 
+      t.item_complex(item_i,
+                     [ ['e3', {:text=>"Item #{i}"}],
+                       ['e4', {:text=>"(#{numChildren})"}] ],
+                     [ ['e6', {:text=>"#{t.item_parent(item_i)}"}] ],
                      [ ['e6', {:text=>"#{t.depth(item_i)}"}] ])
     else
       t.item_style_set(item_i, 1, 's3', 2, 's3', 0, 's2')
-      t.item_complex(item_i, 
-                     [ ['e3', {:text=>"Item #{i}"}] ], 
-                     [ ['e6', {:text=>"#{t.item_parent(item_i)}"}] ], 
+      t.item_complex(item_i,
+                     [ ['e3', {:text=>"Item #{i}"}] ],
+                     [ ['e6', {:text=>"#{t.item_parent(item_i)}"}] ],
                      [ ['e6', {:text=>"#{t.depth(item_i)}"}] ])
     end
   }
@@ -125,46 +125,46 @@ def demoRandom(t)
 
   treeCtrlRandom = TkBindTag.new
 
-  treeCtrlRandom.bind('Double-ButtonPress-1', 
+  treeCtrlRandom.bind('Double-ButtonPress-1',
                       proc{|w, x, y|
                         Tk::TreeCtrl::BindCallback.doubleButton1(w, x, y)
                         Tk.callback_break
                       }, '%W %x %y')
 
-  treeCtrlRandom.bind('Control-ButtonPress-1', 
+  treeCtrlRandom.bind('Control-ButtonPress-1',
                       proc{|w, x, y|
                         @Priv['selectMode'] = :toggle
                         randomButton1(w, x, y)
                         Tk.callback_break
                       }, '%W %x %y')
 
-  treeCtrlRandom.bind('Shift-ButtonPress-1', 
+  treeCtrlRandom.bind('Shift-ButtonPress-1',
                       proc{|w, x, y|
                         @Priv['selectMode'] = :add
                         randomButton1(w, x, y)
                         Tk.callback_break
                       }, '%W %x %y')
 
-  treeCtrlRandom.bind('ButtonPress-1', 
+  treeCtrlRandom.bind('ButtonPress-1',
                       proc{|w, x, y|
                         @Priv['selectMode'] = :set
                         randomButton1(w, x, y)
                         Tk.callback_break
                       }, '%W %x %y')
 
-  treeCtrlRandom.bind('Button1-Motion', 
+  treeCtrlRandom.bind('Button1-Motion',
                       proc{|w, x, y|
                         randomMotion1(w, x, y)
                         Tk.callback_break
                       }, '%W %x %y')
 
-  treeCtrlRandom.bind('Button1-Leave', 
+  treeCtrlRandom.bind('Button1-Leave',
                       proc{|w, x, y|
                         randomLeave1(w, x, y)
                         Tk.callback_break
                       }, '%W %x %y')
 
-  treeCtrlRandom.bind('ButtonRelease-1', 
+  treeCtrlRandom.bind('ButtonRelease-1',
                       proc{|w, x, y|
                         randomRelease1(w, x, y)
                         Tk.callback_break
@@ -363,7 +363,7 @@ def randomRelease1(t, x, y)
     t.selection_modify('', @Priv[:drop])
     t[:cursor] = ''
     if @Priv[:drop] != ''
-      randomDrop(t, @Priv[:drop], @Priv.list_element(:selection), 
+      randomDrop(t, @Priv[:drop], @Priv.list_element(:selection),
                  @Priv[:drop, :pos])
     end
   end
@@ -479,7 +479,7 @@ def randomAutoScanCheck(t, x, y)
       when 'drag', 'marquee'
         randomMotion(t, x, y)
       end
-      @Priv[:autoscan, :afterId, t] = 
+      @Priv[:autoscan, :afterId, t] =
         Tk.after(delay, proc{ randomAutoScanCheckAux(t) })
     end
     return
@@ -502,7 +502,7 @@ def demoRandom2(t)
 
   init_pics('mac-*')
 
-  t.configure(:openbuttonimage=>@images['mac-collapse'], 
-              :closedbuttonimage=>@images['mac-expand'], 
+  t.configure(:openbuttonimage=>@images['mac-collapse'],
+              :closedbuttonimage=>@images['mac-expand'],
               :showlines=>false)
 end

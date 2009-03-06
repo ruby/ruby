@@ -58,7 +58,7 @@ module YAML
     #
     # YAML Hash class to support comments and defaults
     #
-    class SpecialHash < ::Hash 
+    class SpecialHash < ::Hash
         attr_accessor :default
         def inspect
             self.default.to_s
@@ -112,7 +112,7 @@ module YAML
             if ( tmp = self.assoc( k ) ) and not set
                 tmp[1] = val
             else
-                self << [ k, val ] 
+                self << [ k, val ]
             end
             val
         end
@@ -163,7 +163,7 @@ module YAML
             self.assoc( k ).to_a
         end
         def []=( k, val )
-            self << [ k, val ] 
+            self << [ k, val ]
             val
         end
         def has_key?( k )

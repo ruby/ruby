@@ -2,12 +2,12 @@
 # tkballoonhelp.rb : simple balloon help widget
 #                       by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
-# Add a balloon help to a widget. 
-# This widget has only poor featureas. If you need more useful features, 
+# Add a balloon help to a widget.
+# This widget has only poor featureas. If you need more useful features,
 # please try to use the Tix extension of Tcl/Tk under Ruby/Tk.
-# 
+#
 # The interval time to display a balloon help is defined 'interval' option
-# (default is 1000ms). 
+# (default is 1000ms).
 #
 require 'tk'
 
@@ -87,10 +87,10 @@ class TkBalloonHelp<TkLabel
       when 2
         @command.call(x - TkWinfo.rootx(@parent), y - TkWinfo.rooty(@parent))
       when 3
-        @command.call(x - TkWinfo.rootx(@parent), y - TkWinfo.rooty(@parent), 
+        @command.call(x - TkWinfo.rootx(@parent), y - TkWinfo.rooty(@parent),
                       self)
       else
-        @command.call(x - TkWinfo.rootx(@parent), y - TkWinfo.rooty(@parent), 
+        @command.call(x - TkWinfo.rootx(@parent), y - TkWinfo.rooty(@parent),
                       self, @parent)
       end
     end
@@ -99,11 +99,11 @@ class TkBalloonHelp<TkLabel
     @frame.raise
 
     @org_cursor = @parent['cursor']
-    @parent.cursor('crosshair') 
+    @parent.cursor('crosshair')
   end
 
   def erase
-    @parent.cursor(@org_cursor) 
+    @parent.cursor(@org_cursor)
     @frame.withdraw
   end
 
@@ -122,8 +122,8 @@ if __FILE__ == $0
   }
   TkButton.new('text'=>'This button has another balloon help') {|b|
     pack('fill'=>'x')
-    TkBalloonHelp.new(b, 'text'=>'configured message', 
-                      'interval'=>200, 'font'=>'courier', 
+    TkBalloonHelp.new(b, 'text'=>'configured message',
+                      'interval'=>200, 'font'=>'courier',
                       'background'=>'gray', 'foreground'=>'red')
   }
 
@@ -131,8 +131,8 @@ if __FILE__ == $0
   sb.insert(:end, *%w(aaa bbb ccc ddd eee fff ggg hhh iii jjj kkk lll mmm))
 =begin
   # CASE1 : command takes no arguemnt
-  bh = TkBalloonHelp.new(sb, :interval=>500, 
-                         :relief=>:ridge, :background=>'white', 
+  bh = TkBalloonHelp.new(sb, :interval=>500,
+                         :relief=>:ridge, :background=>'white',
                          :command=>proc{
                            y = TkWinfo.pointery(sb) - TkWinfo.rooty(sb)
                            bh.text "current index == #{sb.nearest(y)}"
@@ -140,16 +140,16 @@ if __FILE__ == $0
 =end
 =begin
   # CASE2 : command takes 2 arguemnts
-  bh = TkBalloonHelp.new(sb, :interval=>500, 
-                         :relief=>:ridge, :background=>'white', 
+  bh = TkBalloonHelp.new(sb, :interval=>500,
+                         :relief=>:ridge, :background=>'white',
                          :command=>proc{|x, y|
                            bh.text "current index == #{sb.nearest(y)}"
                          })
 =end
 =begin
   # CASE3 : command takes 3 arguemnts
-  TkBalloonHelp.new(sb, :interval=>500, 
-                    :relief=>:ridge, :background=>'white', 
+  TkBalloonHelp.new(sb, :interval=>500,
+                    :relief=>:ridge, :background=>'white',
                     :command=>proc{|x, y, bhelp|
                       bhelp.text "current index == #{sb.nearest(y)}"
                     })
@@ -160,14 +160,14 @@ if __FILE__ == $0
     bhelp.text "current index == #{parent.nearest(y)}"
   }
 
-  TkBalloonHelp.new(sb, :interval=>500, 
-                    :relief=>:ridge, :background=>'white', 
+  TkBalloonHelp.new(sb, :interval=>500,
+                    :relief=>:ridge, :background=>'white',
                     :command=>cmd)
 
   sb2 = TkScrollbox.new.pack(:fill=>:x)
   sb2.insert(:end, *%w(AAA BBB CCC DDD EEE FFF GGG HHH III JJJ KKK LLL MMM))
-  TkBalloonHelp.new(sb2, :interval=>500, 
-                    :padx=>5, :relief=>:raised, 
+  TkBalloonHelp.new(sb2, :interval=>500,
+                    :padx=>5, :relief=>:raised,
                     :background=>'gray25', :foreground=>'white',
                     :command=>cmd)
 =end
@@ -178,14 +178,14 @@ if __FILE__ == $0
   end
   cmd = self.method(:set_msg)
 
-  TkBalloonHelp.new(sb, :interval=>500, 
-                    :relief=>:ridge, :background=>'white', 
+  TkBalloonHelp.new(sb, :interval=>500,
+                    :relief=>:ridge, :background=>'white',
                     :command=>cmd)
 
   sb2 = TkScrollbox.new.pack(:fill=>:x)
   sb2.insert(:end, *%w(AAA BBB CCC DDD EEE FFF GGG HHH III JJJ KKK LLL MMM))
-  TkBalloonHelp.new(sb2, :interval=>500, 
-                    :padx=>5, :relief=>:raised, 
+  TkBalloonHelp.new(sb2, :interval=>500,
+                    :padx=>5, :relief=>:raised,
                     :background=>'gray25', :foreground=>'white',
                     :command=>cmd)
 #=end

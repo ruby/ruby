@@ -262,19 +262,19 @@ class TestDateBase < Test::Unit::TestCase
     end
   end
 
-  #        October 1582        
+  #        October 1582
   #   S   M  Tu   W  Th   F   S
   #     274 275 276 277 288 289
   # 290 291 292 293 294 295 296
   # 297 298 299 300 301 302 303
-  # 304                        
+  # 304
 
-  #        October 1582        
+  #        October 1582
   #   S   M  Tu   W  Th   F   S
   #     -92 -91 -90 -89 -78 -77
   # -76 -75 -74 -73 -72 -71 -70
   # -69 -68 -67 -66 -65 -64 -63
-  # -62                        
+  # -62
 
   def test_valid_ordinal__italy
     valid_ordinal_p =  :_valid_ordinal?
@@ -286,7 +286,7 @@ class TestDateBase < Test::Unit::TestCase
     end
   end
 
-  #       September 1752       
+  #       September 1752
   #   S   M  Tu   W  Th   F   S
   #         245 246 258 259 260
   # 261 262 263 264 265 266 267
@@ -327,12 +327,12 @@ class TestDateBase < Test::Unit::TestCase
     end
   end
 
-  #     October 1582    
+  #     October 1582
   #  S  M Tu  W Th  F  S
   #     1  2  3  4 15 16
   # 17 18 19 20 21 22 23
   # 24 25 26 27 28 29 30
-  # 31                  
+  # 31
 
   def test_valid_civil__italy
     valid_civil_p = :_valid_civil?
@@ -356,7 +356,7 @@ class TestDateBase < Test::Unit::TestCase
     end
   end
 
-  #    September 1752   
+  #    September 1752
   #  S  M Tu  W Th  F  S
   #        1  2 14 15 16
   # 17 18 19 20 21 22 23

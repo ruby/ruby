@@ -66,7 +66,7 @@ class CGI
   # Modules Http3, Http4, etc., contain more basic HTML-generation methods
   # (:title, :center, etc.).
   #
-  # See class CGI for a detailed example. 
+  # See class CGI for a detailed example.
   #
   module HtmlExtension
 
@@ -99,7 +99,7 @@ class CGI
       end
     end
 
-    # Generate a Document Base URI element as a String. 
+    # Generate a Document Base URI element as a String.
     #
     # +href+ can either by a string, giving the base URL for the HREF
     # attribute, or it can be a has of the element's attributes.
@@ -179,10 +179,10 @@ class CGI
     #
     #   checkbox("name")
     #     # = checkbox("NAME" => "name")
-    # 
+    #
     #   checkbox("name", "value")
     #     # = checkbox("NAME" => "name", "VALUE" => "value")
-    # 
+    #
     #   checkbox("name", "value", true)
     #     # = checkbox("NAME" => "name", "VALUE" => "value", "CHECKED" => true)
     def checkbox(name = "", value = nil, checked = nil)
@@ -220,23 +220,23 @@ class CGI
     #     # <INPUT TYPE="checkbox" NAME="name" VALUE="foo">foo
     #     # <INPUT TYPE="checkbox" NAME="name" VALUE="bar">bar
     #     # <INPUT TYPE="checkbox" NAME="name" VALUE="baz">baz
-    # 
+    #
     #   checkbox_group("name", ["foo"], ["bar", true], "baz")
     #     # <INPUT TYPE="checkbox" NAME="name" VALUE="foo">foo
     #     # <INPUT TYPE="checkbox" CHECKED NAME="name" VALUE="bar">bar
     #     # <INPUT TYPE="checkbox" NAME="name" VALUE="baz">baz
-    # 
+    #
     #   checkbox_group("name", ["1", "Foo"], ["2", "Bar", true], "Baz")
     #     # <INPUT TYPE="checkbox" NAME="name" VALUE="1">Foo
     #     # <INPUT TYPE="checkbox" CHECKED NAME="name" VALUE="2">Bar
     #     # <INPUT TYPE="checkbox" NAME="name" VALUE="Baz">Baz
-    # 
+    #
     #   checkbox_group("NAME" => "name",
     #                    "VALUES" => ["foo", "bar", "baz"])
-    # 
+    #
     #   checkbox_group("NAME" => "name",
     #                    "VALUES" => [["foo"], ["bar", true], "baz"])
-    # 
+    #
     #   checkbox_group("NAME" => "name",
     #                    "VALUES" => [["1", "Foo"], ["2", "Bar", true], "Baz"])
     def checkbox_group(name = "", *values)
@@ -272,13 +272,13 @@ class CGI
     #
     #   file_field("name")
     #     # <INPUT TYPE="file" NAME="name" SIZE="20">
-    # 
+    #
     #   file_field("name", 40)
     #     # <INPUT TYPE="file" NAME="name" SIZE="40">
-    # 
+    #
     #   file_field("name", 40, 100)
     #     # <INPUT TYPE="file" NAME="name" SIZE="40" MAXLENGTH="100">
-    # 
+    #
     #   file_field("NAME" => "name", "SIZE" => 40)
     #     # <INPUT TYPE="file" NAME="name" SIZE="40">
     def file_field(name = "", size = 20, maxlength = nil)
@@ -298,7 +298,7 @@ class CGI
     #
     # +method+ should be either "get" or "post", and defaults to the latter.
     # +action+ defaults to the current CGI script name.  +enctype+
-    # defaults to "application/x-www-form-urlencoded".  
+    # defaults to "application/x-www-form-urlencoded".
     #
     # Alternatively, the attributes can be specified as a hash.
     #
@@ -306,19 +306,19 @@ class CGI
     #
     #   form{ "string" }
     #     # <FORM METHOD="post" ENCTYPE="application/x-www-form-urlencoded">string</FORM>
-    # 
+    #
     #   form("get") { "string" }
     #     # <FORM METHOD="get" ENCTYPE="application/x-www-form-urlencoded">string</FORM>
-    # 
+    #
     #   form("get", "url") { "string" }
     #     # <FORM METHOD="get" ACTION="url" ENCTYPE="application/x-www-form-urlencoded">string</FORM>
-    # 
+    #
     #   form("METHOD" => "post", "ENCTYPE" => "enctype") { "string" }
     #     # <FORM METHOD="post" ENCTYPE="enctype">string</FORM>
     def form(method = "post", action = script_name, enctype = "application/x-www-form-urlencoded")
       attributes = if method.kind_of?(String)
                      { "METHOD" => method, "ACTION" => action,
-                       "ENCTYPE" => enctype } 
+                       "ENCTYPE" => enctype }
                    else
                      unless method.has_key?("METHOD")
                        method["METHOD"] = "post"
@@ -350,10 +350,10 @@ class CGI
     #
     #   hidden("name")
     #     # <INPUT TYPE="hidden" NAME="name">
-    # 
+    #
     #   hidden("name", "value")
     #     # <INPUT TYPE="hidden" NAME="name" VALUE="value">
-    # 
+    #
     #   hidden("NAME" => "name", "VALUE" => "reset", "ID" => "foo")
     #     # <INPUT TYPE="hidden" NAME="name" VALUE="value" ID="foo">
     def hidden(name = "", value = nil)
@@ -376,36 +376,36 @@ class CGI
     # should include the entire text of this tag, including angle brackets.
     #
     # The body of the html element is supplied as a block.
-    # 
+    #
     #   html{ "string" }
     #     # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><HTML>string</HTML>
-    # 
+    #
     #   html("LANG" => "ja") { "string" }
     #     # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><HTML LANG="ja">string</HTML>
-    # 
+    #
     #   html("DOCTYPE" => false) { "string" }
     #     # <HTML>string</HTML>
-    # 
+    #
     #   html("DOCTYPE" => '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">') { "string" }
     #     # <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"><HTML>string</HTML>
-    # 
+    #
     #   html("PRETTY" => "  ") { "<BODY></BODY>" }
     #     # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
     #     # <HTML>
     #     #   <BODY>
     #     #   </BODY>
     #     # </HTML>
-    # 
+    #
     #   html("PRETTY" => "\t") { "<BODY></BODY>" }
     #     # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
     #     # <HTML>
     #     #         <BODY>
     #     #         </BODY>
     #     # </HTML>
-    # 
+    #
     #   html("PRETTY") { "<BODY></BODY>" }
     #     # = html("PRETTY" => "  ") { "<BODY></BODY>" }
-    # 
+    #
     #   html(if $VERBOSE then "PRETTY" end) { "HTML string" }
     #
     def html(attributes = {}) # :yield:
@@ -444,17 +444,17 @@ class CGI
 
     # Generate an Image Button Input element as a string.
     #
-    # +src+ is the URL of the image to use for the button.  +name+ 
+    # +src+ is the URL of the image to use for the button.  +name+
     # is the input name.  +alt+ is the alternative text for the image.
     #
     # Alternatively, the attributes can be specified as a hash.
-    # 
+    #
     #   image_button("url")
     #     # <INPUT TYPE="image" SRC="url">
-    # 
+    #
     #   image_button("url", "name", "string")
     #     # <INPUT TYPE="image" SRC="url" NAME="name" ALT="string">
-    # 
+    #
     #   image_button("SRC" => "url", "ATL" => "strng")
     #     # <INPUT TYPE="image" SRC="url" ALT="string">
     def image_button(src = "", name = nil, alt = nil)
@@ -480,7 +480,7 @@ class CGI
     #
     #   img("src", "alt", 100, 50)
     #     # <IMG SRC="src" ALT="alt" WIDTH="100" HEIGHT="50">
-    # 
+    #
     #   img("SRC" => "src", "ALT" => "alt", "WIDTH" => 100, "HEIGHT" => 50)
     #     # <IMG SRC="src" ALT="alt" WIDTH="100" HEIGHT="50">
     def img(src = "", alt = "", width = nil, height = nil)
@@ -506,15 +506,15 @@ class CGI
     #
     #   multipart_form{ "string" }
     #     # <FORM METHOD="post" ENCTYPE="multipart/form-data">string</FORM>
-    # 
+    #
     #   multipart_form("url") { "string" }
     #     # <FORM METHOD="post" ACTION="url" ENCTYPE="multipart/form-data">string</FORM>
     def multipart_form(action = nil, enctype = "multipart/form-data")
       attributes = if action == nil
-                     { "METHOD" => "post", "ENCTYPE" => enctype } 
+                     { "METHOD" => "post", "ENCTYPE" => enctype }
                    elsif action.kind_of?(String)
                      { "METHOD" => "post", "ACTION" => action,
-                       "ENCTYPE" => enctype } 
+                       "ENCTYPE" => enctype }
                    else
                      unless action.has_key?("METHOD")
                        action["METHOD"] = "post"
@@ -542,13 +542,13 @@ class CGI
     #
     #   password_field("name")
     #     # <INPUT TYPE="password" NAME="name" SIZE="40">
-    # 
+    #
     #   password_field("name", "value")
     #     # <INPUT TYPE="password" NAME="name" VALUE="value" SIZE="40">
-    # 
+    #
     #   password_field("password", "value", 80, 200)
     #     # <INPUT TYPE="password" NAME="name" VALUE="value" SIZE="80" MAXLENGTH="200">
-    # 
+    #
     #   password_field("NAME" => "name", "VALUE" => "value")
     #     # <INPUT TYPE="password" NAME="name" VALUE="value">
     def password_field(name = "", value = nil, size = 40, maxlength = nil)
@@ -584,21 +584,21 @@ class CGI
     #     #   <OPTION VALUE="bar">bar</OPTION>
     #     #   <OPTION VALUE="baz">baz</OPTION>
     #     # </SELECT>
-    # 
+    #
     #   popup_menu("name", ["foo"], ["bar", true], "baz")
     #     # <SELECT NAME="name">
     #     #   <OPTION VALUE="foo">foo</OPTION>
     #     #   <OPTION VALUE="bar" SELECTED>bar</OPTION>
     #     #   <OPTION VALUE="baz">baz</OPTION>
     #     # </SELECT>
-    # 
+    #
     #   popup_menu("name", ["1", "Foo"], ["2", "Bar", true], "Baz")
     #     # <SELECT NAME="name">
     #     #   <OPTION VALUE="1">Foo</OPTION>
     #     #   <OPTION SELECTED VALUE="2">Bar</OPTION>
     #     #   <OPTION VALUE="Baz">Baz</OPTION>
     #     # </SELECT>
-    # 
+    #
     #   popup_menu("NAME" => "name", "SIZE" => 2, "MULTIPLE" => true,
     #               "VALUES" => [["1", "Foo"], ["2", "Bar", true], "Baz"])
     #     # <SELECT NAME="name" MULTIPLE SIZE="2">
@@ -649,10 +649,10 @@ class CGI
     #
     #   radio_button("name", "value")
     #     # <INPUT TYPE="radio" NAME="name" VALUE="value">
-    # 
+    #
     #   radio_button("name", "value", true)
     #     # <INPUT TYPE="radio" NAME="name" VALUE="value" CHECKED>
-    # 
+    #
     #   radio_button("NAME" => "name", "VALUE" => "value", "ID" => "foo")
     #     # <INPUT TYPE="radio" NAME="name" VALUE="value" ID="foo">
     def radio_button(name = "", value = nil, checked = nil)
@@ -670,28 +670,28 @@ class CGI
     #
     # This works the same as #checkbox_group().  However, it is not valid
     # to have more than one radiobutton in a group checked.
-    # 
+    #
     #   radio_group("name", "foo", "bar", "baz")
     #     # <INPUT TYPE="radio" NAME="name" VALUE="foo">foo
     #     # <INPUT TYPE="radio" NAME="name" VALUE="bar">bar
     #     # <INPUT TYPE="radio" NAME="name" VALUE="baz">baz
-    # 
+    #
     #   radio_group("name", ["foo"], ["bar", true], "baz")
     #     # <INPUT TYPE="radio" NAME="name" VALUE="foo">foo
     #     # <INPUT TYPE="radio" CHECKED NAME="name" VALUE="bar">bar
     #     # <INPUT TYPE="radio" NAME="name" VALUE="baz">baz
-    # 
+    #
     #   radio_group("name", ["1", "Foo"], ["2", "Bar", true], "Baz")
     #     # <INPUT TYPE="radio" NAME="name" VALUE="1">Foo
     #     # <INPUT TYPE="radio" CHECKED NAME="name" VALUE="2">Bar
     #     # <INPUT TYPE="radio" NAME="name" VALUE="Baz">Baz
-    # 
+    #
     #   radio_group("NAME" => "name",
     #                 "VALUES" => ["foo", "bar", "baz"])
-    # 
+    #
     #   radio_group("NAME" => "name",
     #                 "VALUES" => [["foo"], ["bar", true], "baz"])
-    # 
+    #
     #   radio_group("NAME" => "name",
     #                 "VALUES" => [["1", "Foo"], ["2", "Bar", true], "Baz"])
     def radio_group(name = "", *values)
@@ -723,10 +723,10 @@ class CGI
     #
     #   reset
     #     # <INPUT TYPE="reset">
-    # 
+    #
     #   reset("reset")
     #     # <INPUT TYPE="reset" VALUE="reset">
-    # 
+    #
     #   reset("VALUE" => "reset", "ID" => "foo")
     #     # <INPUT TYPE="reset" VALUE="reset" ID="foo">
     def reset(value = nil, name = nil)
@@ -750,13 +750,13 @@ class CGI
     #
     #   submit
     #     # <INPUT TYPE="submit">
-    # 
+    #
     #   submit("ok")
     #     # <INPUT TYPE="submit" VALUE="ok">
-    # 
+    #
     #   submit("ok", "button1")
     #     # <INPUT TYPE="submit" VALUE="ok" NAME="button1">
-    # 
+    #
     #   submit("VALUE" => "ok", "NAME" => "button1", "ID" => "foo")
     #     # <INPUT TYPE="submit" VALUE="ok" NAME="button1" ID="foo">
     def submit(value = nil, name = nil)
@@ -779,16 +779,16 @@ class CGI
     #
     #   text_field("name")
     #     # <INPUT TYPE="text" NAME="name" SIZE="40">
-    # 
+    #
     #   text_field("name", "value")
     #     # <INPUT TYPE="text" NAME="name" VALUE="value" SIZE="40">
-    # 
+    #
     #   text_field("name", "value", 80)
     #     # <INPUT TYPE="text" NAME="name" VALUE="value" SIZE="80">
-    # 
+    #
     #   text_field("name", "value", 80, 200)
     #     # <INPUT TYPE="text" NAME="name" VALUE="value" SIZE="80" MAXLENGTH="200">
-    # 
+    #
     #   text_field("NAME" => "name", "VALUE" => "value")
     #     # <INPUT TYPE="text" NAME="name" VALUE="value">
     def text_field(name = "", value = nil, size = 40, maxlength = nil)

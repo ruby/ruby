@@ -20,7 +20,7 @@ class Tk::Iwidgets::Fileselectionbox
 
   def __strval_optkeys
     super() + [
-      'directory', 'dirslabel', 'fileslabel', 'filterlabel', 'mask', 
+      'directory', 'dirslabel', 'fileslabel', 'filterlabel', 'mask',
       'nomatchstring', 'selectionlabel'
     ]
   end

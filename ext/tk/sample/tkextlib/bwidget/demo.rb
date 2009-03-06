@@ -54,21 +54,21 @@ class BWidget_Demo
 
     descmenu = [
       '&File', 'all', 'file', 0, [
-        ['command', 'E&xit', [], 'Exit BWidget demo', [], 
+        ['command', 'E&xit', [], 'Exit BWidget demo', [],
           {:command=>proc{exit}}]
-      ], 
+      ],
       '&Options', 'all', 'options', 0, [
-        ['checkbutton', 'Toolbar &1', ['all', 'option'], 
-          'Show/hide toolbar 1', [], 
-          { :variable=>DemoVar.toolbar1, 
+        ['checkbutton', 'Toolbar &1', ['all', 'option'],
+          'Show/hide toolbar 1', [],
+          { :variable=>DemoVar.toolbar1,
             :command=>proc{
               DemoVar.mainframe.show_toolbar(0, DemoVar.toolbar1.value)
             }
           }
-        ], 
-        ['checkbutton', 'Toolbar &2', ['all', 'option'], 
-          'Show/hide toolbar 2', [], 
-          { :variable=>DemoVar.toolbar2, 
+        ],
+        ['checkbutton', 'Toolbar &2', ['all', 'option'],
+          'Show/hide toolbar 2', [],
+          { :variable=>DemoVar.toolbar2,
             :command=>proc{
               DemoVar.mainframe.show_toolbar(1, DemoVar.toolbar2.value)
             }
@@ -81,8 +81,8 @@ class BWidget_Demo
     DemoVar.prgindic.value = 0
 
     DemoVar.mainframe = Tk::BWidget::MainFrame.new(
-                                :menu=>descmenu, 
-                                :textvariable=>DemoVar.status, 
+                                :menu=>descmenu,
+                                :textvariable=>DemoVar.status,
                                 :progressvar=>DemoVar.prgindic
                         )
 
@@ -91,22 +91,22 @@ class BWidget_Demo
 
     DemoVar.mainframe.add_toolbar{|tb1|
       Tk::BWidget::ButtonBox.new(tb1, :spacing=>0, :padx=>1, :pady=>1){|bbox|
-        add(:image=>Tk::BWidget::Bitmap.new('new'), 
-            :highlightthickness=>0, :takefocus=>0, :relief=>:link, 
-            :borderwidth=>1, :padx=>1, :pady=>1, 
-            :command=>proc{puts 'select "Create a new file" icon'}, 
+        add(:image=>Tk::BWidget::Bitmap.new('new'),
+            :highlightthickness=>0, :takefocus=>0, :relief=>:link,
+            :borderwidth=>1, :padx=>1, :pady=>1,
+            :command=>proc{puts 'select "Create a new file" icon'},
             :helptext=>"Create a new file")
 
-        add(:image=>Tk::BWidget::Bitmap.new('open'), 
-            :highlightthickness=>0, :takefocus=>0, :relief=>:link, 
-            :borderwidth=>1, :padx=>1, :pady=>1, 
-            :command=>proc{puts 'select "Open an existing file" icon'}, 
+        add(:image=>Tk::BWidget::Bitmap.new('open'),
+            :highlightthickness=>0, :takefocus=>0, :relief=>:link,
+            :borderwidth=>1, :padx=>1, :pady=>1,
+            :command=>proc{puts 'select "Open an existing file" icon'},
             :helptext=>"Open an existing file")
 
-        add(:image=>Tk::BWidget::Bitmap.new('save'), 
-            :highlightthickness=>0, :takefocus=>0, :relief=>:link, 
-            :borderwidth=>1, :padx=>1, :pady=>1, 
-            :command=>proc{puts 'select "Save file" icon'}, 
+        add(:image=>Tk::BWidget::Bitmap.new('save'),
+            :highlightthickness=>0, :takefocus=>0, :relief=>:link,
+            :borderwidth=>1, :padx=>1, :pady=>1,
+            :command=>proc{puts 'select "Save file" icon'},
             :helptext=>"Save file")
 
         pack(:side=>:left, :anchor=>:w)
@@ -119,22 +119,22 @@ class BWidget_Demo
       DemoVar.prgindic.numeric += 1
 
       Tk::BWidget::ButtonBox.new(tb1, :spacing=>0, :padx=>1, :pady=>1){|bbox|
-        add(:image=>Tk::BWidget::Bitmap.new('cut'), 
-            :highlightthickness=>0, :takefocus=>0, :relief=>:link, 
-            :borderwidth=>1, :padx=>1, :pady=>1, 
-            :command=>proc{puts 'select "Cut selection" icon'}, 
+        add(:image=>Tk::BWidget::Bitmap.new('cut'),
+            :highlightthickness=>0, :takefocus=>0, :relief=>:link,
+            :borderwidth=>1, :padx=>1, :pady=>1,
+            :command=>proc{puts 'select "Cut selection" icon'},
             :helptext=>"Cut selection")
 
-        add(:image=>Tk::BWidget::Bitmap.new('copy'), 
-            :highlightthickness=>0, :takefocus=>0, :relief=>:link, 
-            :borderwidth=>1, :padx=>1, :pady=>1, 
-            :command=>proc{puts 'select "Copy selection" icon'}, 
+        add(:image=>Tk::BWidget::Bitmap.new('copy'),
+            :highlightthickness=>0, :takefocus=>0, :relief=>:link,
+            :borderwidth=>1, :padx=>1, :pady=>1,
+            :command=>proc{puts 'select "Copy selection" icon'},
             :helptext=>"Copy selection")
 
-        add(:image=>Tk::BWidget::Bitmap.new('paste'), 
-            :highlightthickness=>0, :takefocus=>0, :relief=>:link, 
-            :borderwidth=>1, :padx=>1, :pady=>1, 
-            :command=>proc{puts 'select "Paste selection" icon'}, 
+        add(:image=>Tk::BWidget::Bitmap.new('paste'),
+            :highlightthickness=>0, :takefocus=>0, :relief=>:link,
+            :borderwidth=>1, :padx=>1, :pady=>1,
+            :command=>proc{puts 'select "Paste selection" icon'},
             :helptext=>"Paste selection")
 
         pack(:side=>:left, :anchor=>:w)
@@ -145,7 +145,7 @@ class BWidget_Demo
     DemoVar.prgindic.numeric += 1
 
     tb2 = DemoVar.mainframe.add_toolbar
-    DemoVar._wfont = Tk::BWidget::SelectFont::Toolbar.new(tb2, 
+    DemoVar._wfont = Tk::BWidget::SelectFont::Toolbar.new(tb2,
                        :command=>proc{update_font(DemoVar._wfont[:font])}
                      )
     DemoVar.font = DemoVar._wfont[:font]
@@ -213,18 +213,18 @@ class BWidget_Demo
     top.withdraw
     top.overrideredirect(true)
 
-    ximg  = TkLabel.new(top, :bitmap=>"@#{File.join(DEMODIR,'x1.xbm')}", 
+    ximg  = TkLabel.new(top, :bitmap=>"@#{File.join(DEMODIR,'x1.xbm')}",
                         :foreground=>'grey90', :background=>'white')
     bwimg = TkLabel.new(ximg, :bitmap=>"@#{File.join(DEMODIR,'bwidget.xbm')}",
                         :foreground=>'grey90', :background=>'white')
     frame = TkFrame.new(ximg, :background=>'white')
-    TkLabel.new(frame, :text=>'Loading demo', 
+    TkLabel.new(frame, :text=>'Loading demo',
                 :background=>'white', :font=>'times 8').pack
-    TkLabel.new(frame, :textvariable=>DemoVar.prgtext, 
+    TkLabel.new(frame, :textvariable=>DemoVar.prgtext,
                 :background=>'white', :font=>'times 8', :width=>35).pack
-    Tk::BWidget::ProgressBar.new(frame, :width=>50, :height=>10, 
-                                 :background=>'white', 
-                                 :variable=>DemoVar.prgindic, 
+    Tk::BWidget::ProgressBar.new(frame, :width=>50, :height=>10,
+                                 :background=>'white',
+                                 :variable=>DemoVar.prgindic,
                                  :maximum=>10).pack
     frame.place(:x=>0, :y=>0, :anchor=>:nw)
     bwimg.place(:relx=>1, :rely=>1, :anchor=>:se)

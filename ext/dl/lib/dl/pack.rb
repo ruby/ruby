@@ -74,7 +74,7 @@ module DL
     def size()
       @size
     end
-    
+
     def pack(ary)
       case SIZEOF_VOIDP
       when SIZEOF_LONG
@@ -96,9 +96,9 @@ module DL
         raise(RuntimeError, "sizeof(void*)?")
       end
     end
-    
+
     private
-    
+
     def parse_types(types)
       @template = ""
       addr     = 0

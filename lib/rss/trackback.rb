@@ -23,7 +23,7 @@ module RSS
   module BaseTrackBackModel
 
     ELEMENTS = %w(ping about)
-    
+
     def append_features(klass)
       super
 
@@ -47,7 +47,7 @@ module RSS
             end
           EOC
         end
-        
+
         [%w(about s)].each do |name, postfix|
           var_name = "#{TRACKBACK_PREFIX}_#{name}"
           klass_name = "TrackBack#{Utils.to_class_name(name)}"
@@ -105,7 +105,7 @@ module RSS
         def required_prefix
           TRACKBACK_PREFIX
         end
-        
+
         def required_uri
           TRACKBACK_URI
         end
@@ -141,17 +141,17 @@ module RSS
       include RSS10
 
       class << self
-        
+
         def required_prefix
           TRACKBACK_PREFIX
         end
-        
+
         def required_uri
           TRACKBACK_URI
         end
 
       end
-      
+
       @tag_name = "about"
 
       [
@@ -163,7 +163,7 @@ module RSS
 
       alias_method(:value, :resource)
       alias_method(:value=, :resource=)
-      
+
       def initialize(*args)
         if Utils.element_initialize_arguments?(args)
           super
@@ -185,7 +185,7 @@ module RSS
       def setup_maker_attributes(about)
         about.resource = self.resource
       end
-      
+
     end
   end
 
@@ -197,7 +197,7 @@ module RSS
       include RSS09
 
       @tag_name = "ping"
-      
+
       content_setup
 
       class << self
@@ -205,13 +205,13 @@ module RSS
         def required_prefix
           TRACKBACK_PREFIX
         end
-        
+
         def required_uri
           TRACKBACK_URI
         end
 
       end
-      
+
       alias_method(:value, :content)
       alias_method(:value=, :content=)
 
@@ -223,26 +223,26 @@ module RSS
           self.content = args[0]
         end
       end
-      
+
       def full_name
         tag_name_with_prefix(TRACKBACK_PREFIX)
       end
-      
+
     end
 
     class TrackBackAbout < Element
       include RSS09
 
       @tag_name = "about"
-      
+
       content_setup
 
       class << self
-        
+
         def required_prefix
           TRACKBACK_PREFIX
         end
-        
+
         def required_uri
           TRACKBACK_URI
         end
@@ -260,11 +260,11 @@ module RSS
           self.content = args[0]
         end
       end
-      
+
       def full_name
         tag_name_with_prefix(TRACKBACK_PREFIX)
       end
-      
+
     end
   end
 

@@ -90,7 +90,7 @@ EOC
     class ChannelBase
       include DublinCoreModel
     end
-    
+
     class ImageBase; include DublinCoreModel; end
     class ItemsBase
       class ItemBase

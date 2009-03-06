@@ -6,7 +6,7 @@ require "test/unit"
 
 if defined?(WIN32OLE_PARAM)
   class TestWIN32OLE_PARAM < Test::Unit::TestCase
-    
+
     def setup
       ole_type = WIN32OLE_TYPE.new("Microsoft Internet Controls", "WebBrowser")
       m_navigate = WIN32OLE_METHOD.new(ole_type, "Navigate")

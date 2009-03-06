@@ -22,7 +22,7 @@ class TestString < Test::Unit::TestCase
   def test_s_new
     assert_equal("RUBY", S("RUBY"))
   end
-    
+
   def test_AREF # '[]'
     assert_equal("A",  S("AooBar")[0])
     assert_equal("B",  S("FooBaB")[-1])
@@ -224,7 +224,7 @@ class TestString < Test::Unit::TestCase
     assert_equal(10,  S("FeeFieFoo-Fum") =~ /Fum$/)
     assert_equal(nil, S("FeeFieFoo-Fum") =~ /FUM$/)
 
-    pre_1_7_1 do 
+    pre_1_7_1 do
       $= = true
       assert_equal(10,  S("FeeFieFoo-Fum") =~ /FUM$/)
       $= = false
@@ -279,7 +279,7 @@ class TestString < Test::Unit::TestCase
   def test_VERY_EQUAL # '==='
     # assert_equal(true, S("foo") === :foo)
     casetest(S("abcdef"), S("abcdef"))
-    
+
     pre_1_7_1 do
       $= = true
       casetest(S("CAT"), S('cat'))
@@ -317,7 +317,7 @@ class TestString < Test::Unit::TestCase
     b = a.dup
     assert_equal(S("Hello"), a.capitalize!)
     assert_equal(S("hello"), b)
-   
+
   end
 
   def test_center
@@ -551,7 +551,7 @@ class TestString < Test::Unit::TestCase
           a.taint  if taint
           a.untrust  if untrust
           a.freeze if frozen
-          b = a.dup 
+          b = a.dup
 
           assert_equal(a, b)
           assert(a.__id__ != b.__id__)
@@ -560,7 +560,7 @@ class TestString < Test::Unit::TestCase
           assert_equal(a.untrusted?, b.untrusted?)
         end
       end
-    end     
+    end
   end
 
   def test_each
@@ -570,12 +570,12 @@ class TestString < Test::Unit::TestCase
     S("hello\nworld").lines.each {|x| res << x}
     assert_equal(S("hello\n"), res[0])
     assert_equal(S("world"),   res[1])
-    
+
     res=[]
     S("hello\n\n\nworld").lines(S('')).each {|x| res << x}
     assert_equal(S("hello\n\n\n"), res[0])
     assert_equal(S("world"),       res[1])
-    
+
     $/ = "!"
     res=[]
     S("hello!world").lines.each {|x| res << x}
@@ -604,14 +604,14 @@ class TestString < Test::Unit::TestCase
     S("hello\n\n\nworld").lines(S('')).each {|x| res << x}
     assert_equal(S("hello\n\n\n"), res[0])
     assert_equal(S("world"),       res[1])
-    
+
     $/ = "!"
 
     res=[]
     S("hello!world").lines.each {|x| res << x}
     assert_equal(S("hello!"), res[0])
     assert_equal(S("world"),  res[1])
-    
+
     $/ = save
 
     s = nil
@@ -635,7 +635,7 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("h<e>ll<o>"), S("hello").gsub(/([aeiou])/, S('<\1>')))
     assert_equal(S("h e l l o "),
                  S("hello").gsub(/./) { |s| s[0].to_s + S(' ')})
-    assert_equal(S("HELL-o"), 
+    assert_equal(S("HELL-o"),
                  S("hello").gsub(/(hell)(.)/) { |s| $1.upcase + S('-') + $2 })
 
     a = S("hello")
@@ -672,8 +672,8 @@ class TestString < Test::Unit::TestCase
     r.taint
     r.untrust
     a.gsub!(/./, r)
-    assert(a.tainted?) 
-    assert(a.untrusted?) 
+    assert(a.tainted?)
+    assert(a.untrusted?)
 
     a = S("hello")
     assert_nil(a.sub!(S('X'), S('Y')))
@@ -983,12 +983,12 @@ class TestString < Test::Unit::TestCase
       assert_nil( a.slice!(6) )
     else
       assert_raise(IndexError) { a.slice!(6) }
-    end 
+    end
     assert_equal(S("FooBar"), a)
 
     if @aref_slicebang_silent
-      assert_nil( a.slice!(-7) ) 
-    else 
+      assert_nil( a.slice!(-7) )
+    else
       assert_raise(IndexError) { a.slice!(-7) }
     end
     assert_equal(S("FooBar"), a)
@@ -1239,8 +1239,8 @@ class TestString < Test::Unit::TestCase
     r.taint
     r.untrust
     a.sub!(/./, r)
-    assert(a.tainted?) 
-    assert(a.untrusted?) 
+    assert(a.tainted?)
+    assert(a.untrusted?)
   end
 
   def test_succ
@@ -1494,7 +1494,7 @@ class TestString < Test::Unit::TestCase
     assert_equal([ 65, 66, 67 ],  S("ABC").unpack("c3"))
     assert_equal([ -1, 66, 67 ],  S("\377BC").unpack("c*"))
 
-    
+
     assert_equal([S("4142"), S("0a"), S("1")], S("AB\n\x10").unpack(S("H4H2H1")))
     assert_equal([S("1424"), S("a0"), S("2")], S("AB\n\x02").unpack(S("h4h2h1")))
 
@@ -1659,7 +1659,7 @@ class TestString < Test::Unit::TestCase
   end
 
   def test_respond_to
-    o = Object.new 
+    o = Object.new
     def o.respond_to?(arg) [:to_str].include?(arg) ? nil : super end
     def o.to_str() "" end
     def o.==(other) "" == other end

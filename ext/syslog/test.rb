@@ -47,7 +47,7 @@ class TestSyslog < Test::Unit::TestCase
     Syslog.close
 
     # given parameters
-    Syslog.open("foo", Syslog::LOG_NDELAY | Syslog::LOG_PERROR, Syslog::LOG_DAEMON) 
+    Syslog.open("foo", Syslog::LOG_NDELAY | Syslog::LOG_PERROR, Syslog::LOG_DAEMON)
 
     assert_equal('foo', Syslog.ident)
     assert_equal(Syslog::LOG_NDELAY | Syslog::LOG_PERROR, Syslog.options)

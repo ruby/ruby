@@ -3,7 +3,7 @@
 #                              Hidethoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 # based on tkmenubar.rb :
-#   Copyright (C) 1998 maeda shugo. All rights reserved. 
+#   Copyright (C) 1998 maeda shugo. All rights reserved.
 #   This file can be distributed under the terms of the Ruby.
 #
 # The format of the menu_spec is:
@@ -14,24 +14,24 @@
 #     [text, underline, configs], # menu button/entry (*1)
 #     [label, command, underline, accelerator, configs],   # command entry
 #     [label, TkVar_obj, underline, accelerator, configs], # checkbutton entry
-#     [label, [TkVar_obj, value], 
+#     [label, [TkVar_obj, value],
 #                        underline, accelerator, configs], # radiobutton entry
-#     [label, [[...menu_info...], [...menu_info...], ...], 
+#     [label, [[...menu_info...], [...menu_info...], ...],
 #                        underline, accelerator, configs], # cascade entry (*2)
 #     '---', # separator
 #     ...
 #   ]
 #
-# underline, accelerator, and configs are optional pearameters. 
-# Hashes are OK instead of Arrays. Then the entry type ('command', 
+# underline, accelerator, and configs are optional pearameters.
+# Hashes are OK instead of Arrays. Then the entry type ('command',
 # 'checkbutton', 'radiobutton' or 'cascade') is given by 'type' key
 # (e.g. :type=>'cascade'). When type is 'cascade', an array of menu_info
 # is acceptable for 'menu' key (then, create sub-menu).
 #
 # NOTE: (*1)
-#   If you want to make special menus (*.help for UNIX, *.system for Win, 
-#   and *.apple for Mac), append 'menu_name'=>name (name is 'help' for UNIX, 
-#   'system' for Win, and 'apple' for Mac) option to the configs hash of 
+#   If you want to make special menus (*.help for UNIX, *.system for Win,
+#   and *.apple for Mac), append 'menu_name'=>name (name is 'help' for UNIX,
+#   'system' for Win, and 'apple' for Mac) option to the configs hash of
 #   menu button/entry information.
 #
 # NOTE: (*2)
@@ -39,7 +39,7 @@
 #   to the configs of the cascade entry.
 
 module TkMenuSpec
-  def _create_menu(parent, menu_info, menu_name = nil, 
+  def _create_menu(parent, menu_info, menu_name = nil,
                    tearoff = false, default_opts = nil)
     if tearoff.kind_of?(Hash)
       default_opts = tearoff
@@ -80,7 +80,7 @@ module TkMenuSpec
         menu_opts.update(_symbolkey2str(options.delete('menu_config') || {}))
         if item_type == 'cascade' && options['menu'].kind_of?(Array)
           # create cascade menu
-          submenu = _create_menu(menu, options['menu'], menu_name, 
+          submenu = _create_menu(menu, options['menu'], menu_name,
                                  tearoff, menu_opts)
           options['menu'] = submenu
         end
@@ -117,7 +117,7 @@ module TkMenuSpec
               menu_config = opts.delete('menu_config') || {}
               menu_opts.update(_symbolkey2str(menu_config))
             end
-            submenu = _create_menu(menu, item_info[1], menu_name, 
+            submenu = _create_menu(menu, item_info[1], menu_name,
                                    tearoff, menu_opts)
             options['menu'] = submenu
           end
@@ -155,7 +155,7 @@ module TkMenuSpec
   def _use_menubar?(parent)
     use_menubar = false
     if parent.kind_of?(Tk::Root) || parent.kind_of?(Tk::Toplevel)
-      true 
+      true
     elsif parent.current_configinfo.has_key?('menu')
       true
     else
@@ -214,7 +214,7 @@ module TkMenuSpec
         keys = {:label=>btn_info}
       end
 
-      menu = _create_menu(mbar, menu_info[1..-1], menu_name, 
+      menu = _create_menu(mbar, menu_info[1..-1], menu_name,
                           tearoff, default_opts)
       menu.tearoff(tearoff)
 
@@ -251,9 +251,9 @@ module TkMenuSpec
 
       mbtn.pack('side' => 'left')
 
-      menu = _create_menu(mbtn, menu_info[1..-1], menu_name, 
+      menu = _create_menu(mbtn, menu_info[1..-1], menu_name,
                           tearoff, default_opts)
-    
+
       mbtn.menu(menu)
 
       [mbtn, menu]

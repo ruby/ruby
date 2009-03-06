@@ -19,7 +19,7 @@ module RSS
         "http://example.com/1",
         "http://example.com/2",
       ]
-      
+
       setup_xml_declaration_info
       setup_xml_stylesheet_infos
       setup_channel_info
@@ -57,7 +57,7 @@ module RSS
       assert_image10(@image_info, rss.image)
       assert_textinput10(@textinput_info, rss.textinput)
     end
-    
+
     def test_to_s_09
       rss = RSS::Maker.make("0.91") do |maker|
         setup_full(maker)
@@ -79,7 +79,7 @@ module RSS
       assert_image09(@image_info, rss.image)
       assert_textinput09(@textinput_info, rss.textinput)
     end
-    
+
     def test_to_s_20
       rss = RSS::Maker.make("2.0") do |maker|
         setup_full(maker)
@@ -101,7 +101,7 @@ module RSS
       assert_image20(@image_info, rss.image)
       assert_textinput20(@textinput_info, rss.textinput)
     end
-    
+
     private
     def setup_xml_declaration_info
       @version = "1.0"
@@ -278,13 +278,13 @@ module RSS
         "updateBase" => Time.now - 3600,
       }
     end
-    
+
     def setup_content_info
       @content_info = {
         "encoded" => "<p>p</p>",
       }
     end
-    
+
     def setup_trackback_info
       @trackback_info = {
         "ping" => "http://example.com/tb.cgi?tb_id=XXX",
@@ -323,7 +323,7 @@ module RSS
     def setup_channel(maker)
       channel = maker.channel
       info = @channel_info
-      
+
       %w(about title link description language copyright
          managingEditor webMaster rating docs date
          lastBuildDate generator ttl).each do |name|
@@ -341,7 +341,7 @@ module RSS
         new_hour = skipHours.new_hour
         new_hour.content = hour
       end
-      
+
       cloud = channel.cloud
       %w(domain port path registerProcedure protocol).each do |name|
         cloud.__send__("#{name}=", info["cloud"][name])
@@ -352,7 +352,7 @@ module RSS
         category.__send__("#{name}=", info["category"][name])
       end
     end
-    
+
     def setup_image(maker)
       image = maker.image
       info = @image_info
@@ -361,7 +361,7 @@ module RSS
         image.__send__("#{name}=", info[name])
       end
     end
-    
+
     def setup_items(maker)
       items = maker.items
 
@@ -370,7 +370,7 @@ module RSS
         %w(title link description date author comments).each do |name|
           item.__send__("#{name}=", info[name])
         end
-        
+
         guid = item.guid
         %w(isPermaLink content).each do |name|
           guid.__send__("#{name}=", info["guid"][name])
@@ -410,7 +410,7 @@ module RSS
         target.__send__("#{prefix}_#{name}=", @content_info[name])
       end
     end
-    
+
     def setup_dublin_core(target)
       prefix = "dc"
       %w(title description creator subject publisher
@@ -419,14 +419,14 @@ module RSS
         target.__send__("#{prefix}_#{name}=", @dc_info[name])
       end
     end
-    
+
     def setup_syndicate(target)
       prefix = "sy"
       %w(updatePeriod updateFrequency updateBase).each do |name|
         target.__send__("#{prefix}_#{name}=", @sy_info[name])
       end
     end
-    
+
     def setup_trackback(target)
       target.trackback_ping = @trackback_info["ping"]
       @trackback_info["abouts"].each do |about|
@@ -439,7 +439,7 @@ module RSS
     def assert_channel10(attrs, channel)
       _wrap_assertion do
         n_attrs = normalized_attrs(attrs)
-        
+
         names = %w(about title link description)
         assert_attributes(attrs, names, channel)
 
@@ -458,7 +458,7 @@ module RSS
         assert_attributes(attrs, %w(resource), image)
       end
     end
-    
+
     def assert_channel10_textinput(attrs, textinput)
       _wrap_assertion do
         assert_attributes(attrs, %w(resource), textinput)
@@ -506,7 +506,7 @@ module RSS
                    copyright pubDate lastBuildDate docs
                    managingEditor webMaster)
         assert_attributes(attrs, names, channel)
-        
+
         %w(skipHours skipDays).each do |name|
           value = n_attrs[name]
           if value
@@ -525,7 +525,7 @@ module RSS
         end
       end
     end
-    
+
     def assert_channel09_skipHours(contents, skipHours)
       _wrap_assertion do
         hours = skipHours.hours
@@ -534,7 +534,7 @@ module RSS
         end
       end
     end
-    
+
     def assert_image09(attrs, image)
       _wrap_assertion do
         names = %w(url link title description)
@@ -552,7 +552,7 @@ module RSS
         end
       end
     end
-    
+
     def assert_textinput09(attrs, textinput)
       _wrap_assertion do
         names = %w(title description name link)
@@ -564,7 +564,7 @@ module RSS
     def assert_channel20(attrs, channel)
       _wrap_assertion do
         n_attrs = normalized_attrs(attrs)
-        
+
         names = %w(title link description language copyright
                    managingEditor webMaster pubDate
                    lastBuildDate generator docs rating)
@@ -584,11 +584,11 @@ module RSS
     def assert_channel20_skipDays(contents, skipDays)
       assert_channel09_skipDays(contents, skipDays)
     end
-    
+
     def assert_channel20_skipHours(contents, skipHours)
       assert_channel09_skipHours(contents, skipHours)
     end
-    
+
     def assert_channel20_cloud(attrs, cloud)
       _wrap_assertion do
         names = %w(domain path registerProcedure protocol)
@@ -596,7 +596,7 @@ module RSS
         assert_attributes(attrs, names, cloud)
       end
     end
-    
+
     def assert_channel20_categories(attrs, categories)
       _wrap_assertion do
         names = %w(domain content)
@@ -605,7 +605,7 @@ module RSS
         end
       end
     end
-    
+
     def assert_image20(attrs, image)
       _wrap_assertion do
         names = %w(url link title description)
@@ -639,20 +639,20 @@ module RSS
         assert_attributes(attrs, %w(url content), source)
       end
     end
-    
+
     def assert_items20_enclosure(attrs, enclosure)
       _wrap_assertion do
         names = ["url", ["length", :integer], "type"]
         assert_attributes(attrs, names, enclosure)
       end
     end
-    
+
     def assert_items20_categories(attrs, categories)
       _wrap_assertion do
         assert_channel20_categories(attrs, categories)
       end
     end
-    
+
     def assert_items20_guid(attrs, guid)
       _wrap_assertion do
         names = [["isPermaLink", :boolean], ["content"]]

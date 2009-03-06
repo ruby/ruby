@@ -1,12 +1,12 @@
 #
 # Defines ParserWriterChooseMixin, which makes it possible to choose a
 # different XML writer and/or XML parser then the default one.
-# The Mixin is used in client.rb (class Client) and server.rb (class 
+# The Mixin is used in client.rb (class Client) and server.rb (class
 # BasicServer)
-# 
+#
 # Copyright (C) 2001, 2002, 2003 by Michael Neumann (mneumann@ntecs.de)
 #
-# $Id$ 
+# $Id$
 #
 
 module XMLRPC
@@ -15,7 +15,7 @@ module XMLRPC
   # This module enables a user-class to be marshalled
   # by XML-RPC for Ruby into a Hash, with one additional
   # key/value pair "___class___" => ClassName
-  # 
+  #
   module Marshallable
   end
 
@@ -72,9 +72,9 @@ module XMLRPC
       mname = nil
       sig = [sig] if sig.kind_of? String
 
-      sig = sig.collect do |s| 
+      sig = sig.collect do |s|
         name, si = parse_sig(s)
-        raise "Wrong signatures!" if mname != nil and name != mname 
+        raise "Wrong signatures!" if mname != nil and name != mname
         mname = name
         si
       end
@@ -83,12 +83,12 @@ module XMLRPC
     end
 
     private # ---------------------------------
-  
+
     def parse_sig(sig)
       # sig is a String
       if sig =~ /^\s*(\w+)\s+([^(]+)(\(([^)]*)\))?\s*$/
         params = [$1]
-        name   = $2.strip 
+        name   = $2.strip
         $4.split(",").each {|i| params << i.strip} if $4 != nil
         return name, params
       else
@@ -109,10 +109,10 @@ module XMLRPC
       instance_eval(&p)
     end
 
-    def get_methods(obj, delim=".") 
+    def get_methods(obj, delim=".")
       prefix = @prefix + delim
-      @methods.collect { |name, meth, sig, help| 
-        [prefix + name, obj.method(meth).to_proc, sig, help] 
+      @methods.collect { |name, meth, sig, help|
+        [prefix + name, obj.method(meth).to_proc, sig, help]
       }
     end
 
@@ -132,7 +132,7 @@ module XMLRPC
     def get_methods(obj, delim=".")
       prefix = @prefix + delim
       obj.class.public_instance_methods(false).collect { |name|
-        [prefix + name, obj.method(name).to_proc, nil, nil] 
+        [prefix + name, obj.method(name).to_proc, nil, nil]
       }
     end
   end
@@ -141,16 +141,16 @@ module XMLRPC
   end # module Service
 
 
-  # 
+  #
   # short-form to create a Service::Interface
   #
   def self.interface(prefix, &p)
-    Service::Interface.new(prefix, &p)  
+    Service::Interface.new(prefix, &p)
   end
 
   # short-cut for creating a PublicInstanceMethodsInterface
   def self.iPIMethods(prefix)
-    Service::PublicInstanceMethodsInterface.new(prefix) 
+    Service::PublicInstanceMethodsInterface.new(prefix)
   end
 
 

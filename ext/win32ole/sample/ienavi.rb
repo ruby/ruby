@@ -26,7 +26,7 @@ ev = WIN32OLE_EVENT.new(ie, 'DWebBrowserEvents')
 
 ev.on_event {|*args| default_handler(*args)}
 ev.on_event("NavigateComplete") {|url| navigate(url)}
-ev.on_event("Quit") {|*args| stop_msg_loop} 
+ev.on_event("Quit") {|*args| stop_msg_loop}
 
 $LOOP = TRUE
 while ($LOOP)

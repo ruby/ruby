@@ -445,7 +445,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       serv = Socket.unix_server_socket(sockpath)
       c = Socket.unix(sockpath)
       s, = serv.accept
-      c.sendmsg("a", 0, nil, [:SOCKET, Socket::SCM_CREDS, ""])      
+      c.sendmsg("a", 0, nil, [:SOCKET, Socket::SCM_CREDS, ""])
       msg, cliend_ai, rflags, cred = s.recvmsg
       assert_equal("a", msg)
       inspect = cred.inspect

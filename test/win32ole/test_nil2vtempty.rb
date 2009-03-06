@@ -26,7 +26,7 @@ if defined?(WIN32OLE)
         rs = con.openSchema(4, [nil,nil,"DUMMY", "TABLE"])
         assert(rs)
         assert_equal("_Recordset", rs.ole_type.name)
-        
+
         rs = con.openSchema(4, [WIN32OLE_VARIANT::Empty, WIN32OLE_VARIANT::Empty, "DUMMY", "TABLE"])
         assert(rs)
         assert_equal("_Recordset", rs.ole_type.name)

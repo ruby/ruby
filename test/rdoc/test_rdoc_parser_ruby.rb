@@ -177,7 +177,7 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
     assert_equal 'Foo', foo.full_name
     assert_equal comment, foo.comment
   end
-  
+
   def test_parse_class_mistaken_for_module
 #
 # The code below is not strictly legal Ruby (Foo must have been defined

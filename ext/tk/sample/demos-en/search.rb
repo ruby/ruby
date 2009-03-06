@@ -62,13 +62,13 @@ end
 
 def textToggle(cmd1,sleep1,cmd2,sleep2)
   sleep_list = [sleep2, sleep1]
-  TkAfter.new(proc{sleep = sleep_list.shift; sleep_list.push(sleep); sleep}, 
+  TkAfter.new(proc{sleep = sleep_list.shift; sleep_list.push(sleep); sleep},
               -1, cmd1, cmd2).start(sleep1)
 end
 
 # toplevel widget
 if defined?($search_demo) && $search_demo
-  $search_demo.destroy 
+  $search_demo.destroy
   $search_demo = nil
 end
 
@@ -101,35 +101,35 @@ $search_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame
 TkFrame.new(base_frame) {|f|
-  TkLabel.new(f, 'text'=>'File name:', 
+  TkLabel.new(f, 'text'=>'File name:',
               'width'=>13, 'anchor'=>'w').pack('side'=>'left')
   $search_fileName = TkVariable.new
-  TkEntry.new(f, 'width'=>40, 
+  TkEntry.new(f, 'width'=>40,
               'textvariable'=>$search_fileName) {
     pack('side'=>'left')
     bind('Return', proc{textLoadFile($search_text, $search_fileName.value)
                         $search_string_entry.focus})
     focus
   }
-  TkButton.new(f, 'text'=>'Load File', 
-               'command'=>proc{textLoadFile($search_text, 
+  TkButton.new(f, 'text'=>'Load File',
+               'command'=>proc{textLoadFile($search_text,
                                             $search_fileName.value)})\
   .pack('side'=>'left', 'pady'=>5, 'padx'=>10)
 }.pack('side'=>'top', 'fill'=>'x')
 
 TkFrame.new(base_frame) {|f|
-  TkLabel.new(f, 'text'=>'Search string:', 
+  TkLabel.new(f, 'text'=>'Search string:',
               'width'=>13, 'anchor'=>'w').pack('side'=>'left')
   $search_searchString = TkVariable.new
-  $search_string_entry = TkEntry.new(f, 'width'=>40, 
+  $search_string_entry = TkEntry.new(f, 'width'=>40,
                                      'textvariable'=>$search_searchString) {
     pack('side'=>'left')
-    bind('Return', proc{textSearch($search_text, $search_searchString.value, 
+    bind('Return', proc{textSearch($search_text, $search_searchString.value,
                                    $search_Tag)})
   }
-  TkButton.new(f, 'text'=>'Highlight', 
-               'command'=>proc{textSearch($search_text, 
-                                          $search_searchString.value, 
+  TkButton.new(f, 'text'=>'Highlight',
+               'command'=>proc{textSearch($search_text,
+                                          $search_searchString.value,
                                           $search_Tag)}) {
     pack('side'=>'left', 'pady'=>5, 'padx'=>10)
   }
@@ -148,20 +148,20 @@ $search_text = TkText.new(base_frame, 'setgrid'=>true, 'wrap'=>'word') {|t|
 
 if TkWinfo.depth($search_demo) > 1
   textToggle(proc{
-               $search_Tag.configure('background'=>'#ce5555', 
+               $search_Tag.configure('background'=>'#ce5555',
                                      'foreground'=>'white')
              },
-             800, 
+             800,
              proc{
                $search_Tag.configure('background'=>'', 'foreground'=>'')
              },
              200 )
 else
   textToggle(proc{
-               $search_Tag.configure('background'=>'black', 
+               $search_Tag.configure('background'=>'black',
                                      'foreground'=>'white')
              },
-             800, 
+             800,
              proc{
                $search_Tag.configure('background'=>'', 'foreground'=>'')
              },

@@ -69,7 +69,7 @@ class TestSymbol < Test::Unit::TestCase
   end
 
   def test_inspect_number
-    # 5) Inconsistency between :$0 and :$1? The first one is valid, but the 
+    # 5) Inconsistency between :$0 and :$1? The first one is valid, but the
     # latter isn't.
     assert_inspect_evaled(':$0')
     assert_inspect_evaled(':$1')

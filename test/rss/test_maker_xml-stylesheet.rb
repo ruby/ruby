@@ -35,7 +35,7 @@ module RSS
       assert_equal(charset, xss.charset)
       assert_equal(alternate, xss.alternate)
 
-      
+
       href = 'http://example.com/index.xsl'
       type = 'text/xsl'
       rss = RSS::Maker.make("1.0") do |maker|
@@ -55,7 +55,7 @@ module RSS
     def test_not_valid_xml_stylesheet
       href = 'xss.XXX'
       type = "text/xsl"
-      
+
       rss = RSS::Maker.make("1.0") do |maker|
         maker.xml_stylesheets.new_xml_stylesheet do |xss|
           # xss.href = href
@@ -78,6 +78,6 @@ module RSS
       end
       assert(rss.xml_stylesheets.empty?)
     end
-    
+
   end
 end

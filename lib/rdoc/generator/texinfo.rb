@@ -51,7 +51,7 @@ module RDoc
       def initialize(values, file = 'texinfo.erb')
         @v, @file = [values, file]
       end
-     
+
       def template
         ::File.read(::File.join(BASE_DIR, 'texinfo', @file))
       end

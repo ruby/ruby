@@ -44,7 +44,7 @@ module TkOptionDB
 
   def read_entries(file, f_enc=nil)
     if TkCore::INTERP.safe?
-      fail SecurityError, 
+      fail SecurityError,
         "can't call 'TkOptionDB.read_entries' on a safe interpreter"
     end
 
@@ -86,7 +86,7 @@ module TkOptionDB
     ent
   end
   module_function :read_entries
-      
+
   def read_with_encoding(file, f_enc=nil, pri=None)
     # try to read the file as an OptionDB file
     read_entries(file, f_enc).each{|pat, val|
@@ -136,7 +136,7 @@ module TkOptionDB
 
   @@resource_proc_class.const_set(:CARRIER, '.'.freeze)
 
-  @@resource_proc_class.instance_variable_set('@method_tbl', 
+  @@resource_proc_class.instance_variable_set('@method_tbl',
                                               TkCore::INTERP.create_table)
   @@resource_proc_class.instance_variable_set('@add_method', false)
   @@resource_proc_class.instance_variable_set('@safe_mode', 4)
@@ -144,7 +144,7 @@ module TkOptionDB
   class << @@resource_proc_class
     private :new
 
-=begin 
+=begin
     CARRIER    = '.'.freeze
     METHOD_TBL = TkCore::INTERP.create_table
     ADD_METHOD = false
@@ -171,7 +171,7 @@ module TkOptionDB
 
     def __check_proc_string__(str)
       # If you want to check the proc_string, do it in this method.
-      # Please define this in the block given to 'new_proc_class' method. 
+      # Please define this in the block given to 'new_proc_class' method.
       str
     end
 
@@ -186,20 +186,20 @@ module TkOptionDB
       unless TkComm._callback_entry?(res_proc)
         #if id == :new || !(self::METHOD_TBL.has_key?(id) || self::ADD_METHOD)
         if id == :new || !(@method_tbl.has_key?(id) || @add_method)
-          raise NoMethodError, 
+          raise NoMethodError,
                 "not support resource-proc '#{id.id2name}' for #{self.name}"
         end
         proc_str = proc_source
         proc_str = '{' + proc_str + '}' unless /\A\{.*\}\Z/ =~ proc_str
         #proc_str = __closed_block_check__(proc_str)
         proc_str = __check_proc_string__(proc_str)
-        res_proc = proc{ 
+        res_proc = proc{
           begin
             #eval("$SAFE = #{self::SAFE_MODE};\nProc.new" + proc_str)
             eval("$SAFE = #{@safe_mode};\nProc.new" + proc_str)
           rescue SyntaxError=>err
-            raise SyntaxError, 
-              TkCore::INTERP._toUTF8(err.message.gsub(/\(eval\):\d:/, 
+            raise SyntaxError,
+              TkCore::INTERP._toUTF8(err.message.gsub(/\(eval\):\d:/,
                                                       "(#{id.id2name}):"))
           end
         }.call
@@ -291,7 +291,7 @@ module TkOptionDB
     cmd_klass.instance_variable_set('@method_tbl', TkCore::INTERP.create_table)
     cmd_klass.instance_variable_set('@add_method', add)
     cmd_klass.instance_variable_set('@safe_mode', safe)
-    func.each{|f| 
+    func.each{|f|
       cmd_klass.instance_variable_get('@method_tbl')[f.to_s.intern] = nil
     }
 =begin
@@ -310,14 +310,14 @@ module TkOptionDB
     # for security, make these methods invalid
     class << klass
       def __null_method(*args); nil; end
-      [ :class_eval, :name, :superclass, :clone, :dup, :autoload, :autoload?, 
-        :ancestors, :const_defined?, :const_get, :const_set, :const_missing, 
-        :class_variables, :constants, :included_modules, :instance_methods, 
-        :method_defined?, :module_eval, :private_instance_methods, 
-        :protected_instance_methods, :public_instance_methods, 
-        :singleton_methods, :remove_const, :remove_method, :undef_method, 
-        :to_s, :inspect, :display, :method, :methods, :respond_to?, 
-        :instance_variable_get, :instance_variable_set, :instance_method, 
+      [ :class_eval, :name, :superclass, :clone, :dup, :autoload, :autoload?,
+        :ancestors, :const_defined?, :const_get, :const_set, :const_missing,
+        :class_variables, :constants, :included_modules, :instance_methods,
+        :method_defined?, :module_eval, :private_instance_methods,
+        :protected_instance_methods, :public_instance_methods,
+        :singleton_methods, :remove_const, :remove_method, :undef_method,
+        :to_s, :inspect, :display, :method, :methods, :respond_to?,
+        :instance_variable_get, :instance_variable_set, :instance_method,
         :instance_eval, :instance_exec, :instance_variables, :kind_of?, :is_a?,
         :private_methods, :protected_methods, :public_methods ].each{|m|
         alias_method(m, :__null_method)
@@ -331,7 +331,7 @@ module TkOptionDB
   RAND_BASE_HEAD = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   RAND_BASE_CHAR = RAND_BASE_HEAD + 'abcdefghijklmnopqrstuvwxyz0123456789_'
   def __get_random_basename
-    name = '%s%03d' % [RAND_BASE_HEAD[rand(RAND_BASE_HEAD.size),1], 
+    name = '%s%03d' % [RAND_BASE_HEAD[rand(RAND_BASE_HEAD.size),1],
                        RAND_BASE_CNT[0]]
     len = RAND_BASE_CHAR.size
     (6+rand(10)).times{
@@ -344,9 +344,9 @@ module TkOptionDB
   private_class_method :__get_random_basename
 
   # define new proc class :
-  # If you want to modify the new class or create a new subclass, 
-  # you must do such operation in the block parameter. 
-  # Because the created class is flozen after evaluating the block. 
+  # If you want to modify the new class or create a new subclass,
+  # you must do such operation in the block parameter.
+  # Because the created class is flozen after evaluating the block.
   def new_proc_class(klass, func, safe = 4, add = false, parent = nil, &b)
     new_klass = __create_new_class(klass, func, safe, add, parent)
     new_klass.class_eval(&b) if block_given?
@@ -357,7 +357,7 @@ module TkOptionDB
   module_function :new_proc_class
 
   def eval_under_random_base(parent = nil, &b)
-    new_klass = __create_new_class(__get_random_basename(), 
+    new_klass = __create_new_class(__get_random_basename(),
                                    [], 4, false, parent)
     ret = new_klass.class_eval(&b) if block_given?
     __remove_methods_of_proc_class(new_klass)

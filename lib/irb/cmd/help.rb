@@ -5,7 +5,7 @@
 #
 # --
 #
-#   
+#
 #
 
 require 'rdoc/ri/driver'

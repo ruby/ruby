@@ -13,28 +13,28 @@ module DemoSelect
 
     titf1 = Tk::BWidget::TitleFrame.new(frame, :text=>'SpinBox')
     subf = titf1.get_frame
-    spin = Tk::BWidget::SpinBox.new(subf, :range=>[1, 100, 1], 
-                                    :textvariable=>@@var.ref('spin', 'var'), 
+    spin = Tk::BWidget::SpinBox.new(subf, :range=>[1, 100, 1],
+                                    :textvariable=>@@var.ref('spin', 'var'),
                                     :helptext=>'This is the SpinBox')
-    ent = Tk::BWidget::LabelEntry.new(subf, :label=>'Linked var', 
-                                      :labelwidth=>10, :labelanchor=>:w,  
-                                      :textvariable=>@@var.ref('spin', 'var'), 
-                                      :editable=>0, 
+    ent = Tk::BWidget::LabelEntry.new(subf, :label=>'Linked var',
+                                      :labelwidth=>10, :labelanchor=>:w,
+                                      :textvariable=>@@var.ref('spin', 'var'),
+                                      :editable=>0,
                                       :helptext=>"This is an Entry reflecting\nthe linked var of SpinBox")
-    labf = Tk::BWidget::LabelFrame.new(subf, :text=>'Options', 
-                                       :side=>:top, :anchor=>:w, 
-                                       :relief=>:sunken, :borderwidth=>1, 
+    labf = Tk::BWidget::LabelFrame.new(subf, :text=>'Options',
+                                       :side=>:top, :anchor=>:w,
+                                       :relief=>:sunken, :borderwidth=>1,
                                        :helptext=>'Modify some options of SpinBox')
     subf = labf.get_frame
-    chk1 = TkCheckbutton.new(subf, :text=>'Non editable', 
-                             :variable=>@@var.ref('spin', 'editable'), 
-                             :onvalue=>false, :offvalue=>true, 
+    chk1 = TkCheckbutton.new(subf, :text=>'Non editable',
+                             :variable=>@@var.ref('spin', 'editable'),
+                             :onvalue=>false, :offvalue=>true,
                              :command=>proc{
                                spin.editable(@@var['spin', 'editable'])
                              })
-    chk2 = TkCheckbutton.new(subf, :text=>'Disabled', 
-                             :variable=>@@var.ref('spin', 'state'), 
-                             :onvalue=>'disabled', :offvalue=>'normal', 
+    chk2 = TkCheckbutton.new(subf, :text=>'Disabled',
+                             :variable=>@@var.ref('spin', 'state'),
+                             :onvalue=>'disabled', :offvalue=>'normal',
                              :command=>proc{
                                spin.state(@@var['spin', 'state'])
                              })
@@ -47,28 +47,28 @@ module DemoSelect
     combo = Tk::BWidget::ComboBox.new(subf,
                                       :textvariable=>@@var.ref('combo', 'var'),
                                       :values=>[
-                                        'first value', 'second value', 
-                                        'third value', 'fourth value', 
+                                        'first value', 'second value',
+                                        'third value', 'fourth value',
                                         'fifth value'
-                                      ], 
+                                      ],
                                       :helptext=>'This is the ComboBox')
-    ent = Tk::BWidget::LabelEntry.new(subf, :label=>'Linked var', 
-                                      :labelwidth=>10, :labelanchor=>:w, 
+    ent = Tk::BWidget::LabelEntry.new(subf, :label=>'Linked var',
+                                      :labelwidth=>10, :labelanchor=>:w,
                                       :textvariable=>@@var.ref('combo', 'var'),
                                       :editable=>0, :helptext=>"This is an Entry reflecting\nthe linked var of ComboBox")
-    labf = Tk::BWidget::LabelFrame.new(subf, :text=>'Options', :side=>:top, 
-                                       :anchor=>:w, :relief=>:sunken, 
+    labf = Tk::BWidget::LabelFrame.new(subf, :text=>'Options', :side=>:top,
+                                       :anchor=>:w, :relief=>:sunken,
                                        :borderwidth=>1, :helptext=>'Modify some options of ComboBox')
     subf = labf.get_frame
-    chk1 = TkCheckbutton.new(subf, :text=>'Non editable', 
-                             :variable=>@@var.ref('combo', 'editable'), 
-                             :onvalue=>false, :offvalue=>true, 
+    chk1 = TkCheckbutton.new(subf, :text=>'Non editable',
+                             :variable=>@@var.ref('combo', 'editable'),
+                             :onvalue=>false, :offvalue=>true,
                              :command=>proc{
                                combo.editable(@@var['combo', 'editable'])
                              })
-    chk2 = TkCheckbutton.new(subf, :text=>'Disabled', 
-                             :variable=>@@var.ref('combo', 'state'), 
-                             :onvalue=>'disabled', :offvalue=>'normal', 
+    chk2 = TkCheckbutton.new(subf, :text=>'Disabled',
+                             :variable=>@@var.ref('combo', 'state'),
+                             :onvalue=>'disabled', :offvalue=>'normal',
                              :command=>proc{
                                combo.state(@@var['combo', 'state'])
                              })

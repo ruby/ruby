@@ -4,7 +4,7 @@
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 #   * Part of tcllib extension
-#   * This file is required by 'tkextlib/tcllib/tablelist.rb' or 
+#   * This file is required by 'tkextlib/tcllib/tablelist.rb' or
 #     'tkextlib/tcllib/tablelist_tile.rb'.
 #
 
@@ -54,7 +54,7 @@ module Tk::Tcllib::TablelistItemConfig
     elsif idx =~ /([^,]+),([^,]+)/
       row = $1, column = $2
       [num_or_str(row), num_or_str(column)]
-    else 
+    else
       num_or_str(idx)
     end
   end
@@ -144,7 +144,7 @@ class Tk::Tcllib::Tablelist
 
   def create_self(keys)
     if keys and keys != None
-      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+      tk_call_without_enc(self.class::TkCommandNames[0], @path,
                           *hash_kv(keys, true))
     else
       tk_call_without_enc(self.class::TkCommandNames[0], @path)
@@ -166,8 +166,8 @@ class Tk::Tcllib::Tablelist
 
   def __boolval_optkeys
     super() + [
-      'forceeditendcommand', 'movablecolumns', 'movablerows', 
-      'protecttitlecolumns', 'resizablecolumns', 
+      'forceeditendcommand', 'movablecolumns', 'movablerows',
+      'protecttitlecolumns', 'resizablecolumns',
       'showarrow', 'showlabels', 'showseparators'
     ]
   end
@@ -194,7 +194,7 @@ class Tk::Tcllib::Tablelist
     # The method is used to convert a ruby's object to a opt-value.
     # When set the value of the option "key", "proc.call(value)" is called.
     # That is, "-#{key} #{proc.call(value)}".
-    super().update('stretch'=>proc{|v| 
+    super().update('stretch'=>proc{|v|
                      (v.kind_of?(Array))? v.collect{|e| _to_idx(e)}: v
                    })
   end
@@ -218,7 +218,7 @@ class Tk::Tcllib::Tablelist
 
   def __item_boolval_optkeys(id)
     super(id) + [
-      'editable', 'hide', 'resizable', 'showarrow', 'stretchable', 
+      'editable', 'hide', 'resizable', 'showarrow', 'stretchable',
     ]
   end
   private :__item_boolval_optkeys
@@ -249,7 +249,7 @@ class Tk::Tcllib::Tablelist
     tk_send('activatecell', _to_idx(index))
     self
   end
-  alias activatecell activate_cell 
+  alias activatecell activate_cell
 
   def get_attrib(name=nil)
     if name && name != None
@@ -280,7 +280,7 @@ class Tk::Tcllib::Tablelist
     TkBindTag.new_by_name(tk_send('bodytag'))
   end
 
-  def cancel_editing 
+  def cancel_editing
     tk_send('cancelediting')
     self
   end
@@ -338,7 +338,7 @@ class Tk::Tcllib::Tablelist
     idx = _from_idx(tk_send('containingcell', x, y))
     if idx.kind_of?(Array)
       [
-        ((idx[0].kind_of?(Fixnum) && idx[0] < 0)?  nil: idx[0]), 
+        ((idx[0].kind_of?(Fixnum) && idx[0] < 0)?  nil: idx[0]),
         ((idx[1].kind_of?(Fixnum) && idx[1] < 0)?  nil: idx[1])
       ]
     else
@@ -698,7 +698,7 @@ class << Tk::Tcllib::Tablelist
 
 
   ############################################################
-  # with the BWidget package 
+  # with the BWidget package
   def addBWidgetEntry(name=None)
     Tk.tk_call('::tablelist::addBWidgetEntry', name)
   end
@@ -713,7 +713,7 @@ class << Tk::Tcllib::Tablelist
 
 
   ############################################################
-  # with the Iwidgets ([incr Widgets]) package 
+  # with the Iwidgets ([incr Widgets]) package
   def addIncrEntryfield(name=None)
     Tk.tk_call('::tablelist::addIncrEntry', name)
   end

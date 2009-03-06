@@ -30,7 +30,7 @@ class Gem::ConfigFile
 
   PLATFORM_DEFAULTS = {}
 
-  system_config_path = 
+  system_config_path =
     begin
       require 'Win32API'
 
@@ -45,7 +45,7 @@ class Gem::ConfigFile
     end
 
   SYSTEM_WIDE_CONFIG_FILE = File.join system_config_path, 'gemrc'
-  
+
   # List of arguments supplied to the config file object.
   attr_reader :args
 

@@ -17,12 +17,12 @@ module URI
     DEFAULT_PORT = 21
 
     COMPONENT = [
-      :scheme, 
+      :scheme,
       :userinfo, :host, :port,
       :path, :typecode
     ].freeze
     #
-    # Typecode is "a", "i" or "d". 
+    # Typecode is "a", "i" or "d".
     #
     # * "a" indicates a text file (the FTP command was ASCII)
     # * "i" indicates a binary file (FTP command IMAGE)
@@ -31,7 +31,7 @@ module URI
     TYPECODE = ['a', 'i', 'd'].freeze
     TYPECODE_PREFIX = ';type='.freeze
 
-    def self.new2(user, password, host, port, path, 
+    def self.new2(user, password, host, port, path,
                   typecode = nil, arg_check = true)
       typecode = nil if typecode.size == 0
       if typecode && !TYPECODE.include?(typecode)
@@ -42,22 +42,22 @@ module URI
       # do escape
 
       self.new('ftp',
-               [user, password], 
-               host, port, nil, 
-               typecode ? path + TYPECODE_PREFIX + typecode : path, 
+               [user, password],
+               host, port, nil,
+               typecode ? path + TYPECODE_PREFIX + typecode : path,
                nil, nil, nil, arg_check)
     end
 
     #
     # == Description
     #
-    # Creates a new URI::FTP object from components, with syntax checking.  
+    # Creates a new URI::FTP object from components, with syntax checking.
     #
-    # The components accepted are +userinfo+, +host+, +port+, +path+ and 
+    # The components accepted are +userinfo+, +host+, +port+, +path+ and
     # +typecode+.
     #
-    # The components should be provided either as an Array, or as a Hash 
-    # with keys formed by preceding the component names with a colon. 
+    # The components should be provided either as an Array, or as a Hash
+    # with keys formed by preceding the component names with a colon.
     #
     # If an Array is used, the components must be passed in the order
     # [userinfo, host, port, path, typecode]
@@ -67,11 +67,11 @@ module URI
     #
     #     require 'uri'
     #
-    #     uri = URI::FTP.build(['user:password', 'ftp.example.com', nil, 
+    #     uri = URI::FTP.build(['user:password', 'ftp.example.com', nil,
     #       '/path/file.> zip', 'i'])
     #     puts uri.to_s  ->  ftp://user:password@ftp.example.com/%2Fpath/file.zip;type=a
     #
-    #     uri2 = URI::FTP.build({:host => 'ftp.example.com', 
+    #     uri2 = URI::FTP.build({:host => 'ftp.example.com',
     #       :path => 'ruby/src'})
     #     puts uri2.to_s  ->  ftp://ftp.example.com/ruby/src
     #
@@ -92,7 +92,7 @@ module URI
 
       if tmp[:typecode]
         if tmp[:typecode].size == 1
-          tmp[:typecode] = TYPECODE_PREFIX + tmp[:typecode] 
+          tmp[:typecode] = TYPECODE_PREFIX + tmp[:typecode]
         end
         tmp[:path] << tmp[:typecode]
       end
@@ -109,7 +109,7 @@ module URI
     # Unlike build(), this method does not escape the path component as
     # required by RFC1738; instead it is treated as per RFC2396.
     #
-    # Arguments are +scheme+, +userinfo+, +host+, +port+, +registry+, +path+, 
+    # Arguments are +scheme+, +userinfo+, +host+, +port+, +registry+, +path+,
     # +opaque+, +query+ and +fragment+, in that order.
     #
     def initialize(*arg)
@@ -119,7 +119,7 @@ module URI
       if tmp
         typecode = @path[tmp + TYPECODE_PREFIX.size..-1]
         self.set_path(@path[0..tmp - 1])
-        
+
         if arg[-1]
           self.typecode = typecode
         else
@@ -164,9 +164,9 @@ module URI
     # RFC 1738 specifically states that the path for an FTP URI does not
     # include the / which separates the URI path from the URI host. Example:
     #
-    #     ftp://ftp.example.com/pub/ruby 
+    #     ftp://ftp.example.com/pub/ruby
     #
-    # The above URI indicates that the client should connect to 
+    # The above URI indicates that the client should connect to
     # ftp.example.com then cd pub/ruby from the initial login directory.
     #
     # If you want to cd to an absolute directory, you must include an

@@ -49,7 +49,7 @@ class TarTestCase < RubyGemTestCase
       linkname 100
       magic 6
       version 2
-      uname 32 
+      uname 32
       gname 32
       devmajor 8
       devminor 8
@@ -68,7 +68,7 @@ class TarTestCase < RubyGemTestCase
         next
       end
 
-      assert_equal expected[offset, length], actual[offset, length], 
+      assert_equal expected[offset, length], actual[offset, length],
                    "Field #{name} of the tar header differs."
 
       offset += length

@@ -6,7 +6,7 @@ class DRbLarge
   include DRbUndumped
 
   def size(ary)
-    ary.size 
+    ary.size
   end
 
   def sum(ary)

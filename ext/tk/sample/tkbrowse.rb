@@ -69,7 +69,7 @@ end
 # Fill the listbox with a list of all the files in the directory (run
 # the "ls" command to get that information).
 
-if ARGV.length>0 
+if ARGV.length>0
   dir = ARGV[0]
 else
   dir="."

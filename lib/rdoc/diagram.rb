@@ -313,7 +313,7 @@ module RDoc
     def wrap_in_image_map(src, dot)
       res = ""
       dot_map = `dot -Tismap #{src}`
-      
+
       if(!dot_map.empty?)
         res << %{<map id="map" name="map">\n}
         dot_map.split($/).each do |area|

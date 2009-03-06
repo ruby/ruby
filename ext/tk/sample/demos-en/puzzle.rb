@@ -8,7 +8,7 @@
 
 # toplevel widget
 if defined?($puzzle_demo) && $puzzle_demo
-  $puzzle_demo.destroy 
+  $puzzle_demo.destroy
   $puzzle_demo = nil
 end
 
@@ -70,7 +70,7 @@ end
 
 # depend_on_button_width = true
 depend_on_button_width = false
- 
+
 s = TkScrollbar.new(base_frame)
 base = TkFrame.new(base_frame) {
   width  frameWidth
@@ -101,7 +101,7 @@ order = [3,1,6,2,5,7,15,13,4,11,8,9,14,10,12]
     if depend_on_button_width && (w.winfo_reqwidth * 4 > base.width)
       base.width = w.winfo_reqwidth * 4
     end
-  }.place('relx'=>$xpos[num], 'rely'=>$ypos[num], 
+  }.place('relx'=>$xpos[num], 'rely'=>$ypos[num],
           'relwidth'=>0.25, 'relheight'=>0.25)
 }
 $xpos['space'] = 0.75

@@ -20,7 +20,7 @@ class TestScanfBlock < Test::Unit::TestCase
     Brahms     1833
     EOS
   end
-  
+
 alias set_up setup
   def test_str1
     res = @str.scanf("%s%d") { |name, year| "#{name} was born in #{year}." }
@@ -63,7 +63,7 @@ alias set_up setup
       "Brahms was born in 1833." ],res)
     fh.close
   ensure
-    File.delete(fn)  
+    File.delete(fn)
   end
 
   def test_io2
@@ -75,7 +75,7 @@ alias set_up setup
     assert_equal(fh.scanf("%d%f%s") {}, [])
     fh.close
   ensure
-    File.delete(fn)  
+    File.delete(fn)
   end
 
 end

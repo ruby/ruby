@@ -123,7 +123,7 @@ module Tk
     TOPLEVEL_METHODCALL_OPTKEYS['focusmodel'] = 'focusmodel'
 
     def Wm.forget(win)
-      # Tcl/Tk 8.5+ 
+      # Tcl/Tk 8.5+
       # work with dockable frames
       tk_call_without_enc('wm', 'forget', win.epath)
       win
@@ -200,7 +200,7 @@ module Tk
       if imgs.empty?
         win.instance_eval{
           @wm_iconphoto = nil unless defined? @wm_iconphoto
-          return @wm_iconphoto 
+          return @wm_iconphoto
         }
       end
 
@@ -308,10 +308,10 @@ module Tk
     def Wm.manage(win, use_id = nil)
       # Tcl/Tk 8.5+ feature
       # --------------------------------------------------------------
-      # In the future release, I want to support to embed the 'win' 
+      # In the future release, I want to support to embed the 'win'
       # into the container which has window-id 'use-id'.
-      # It may give users frexibility on controlling their GUI. 
-      # However, it may be difficult for current Tcl/Tk (Tcl/Tk8.5.1), 
+      # It may give users frexibility on controlling their GUI.
+      # However, it may be difficult for current Tcl/Tk (Tcl/Tk8.5.1),
       # because it seems to require to modify Tcl/Tk's source code.
       # --------------------------------------------------------------
       if use_id

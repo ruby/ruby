@@ -6,7 +6,7 @@ def demoOutlookNewsgroup(t)
 
   height = t.font.metrics(:linespace)
   height = 18 if height < 18
-  t.configure(:itemheight=>height, :selectmode=>:browse, :showlines=>false, 
+  t.configure(:itemheight=>height, :selectmode=>:browse, :showlines=>false,
               :showroot=>false, :showrootbutton=>false, :showbuttons=>true)
 
   if $Version_1_1_OrLater
@@ -24,7 +24,7 @@ def demoOutlookNewsgroup(t)
     t.column_configure(3, :text=>'Subject', :width=>250, :tag=>'subject')
     t.column_configure(4, :text=>'From', :width=>150, :tag=>'from')
     t.column_configure(5, :text=>'Sent', :width=>150, :tag=>'sent')
-    t.column_configure(6, :text=>'Size', :width=>60, :justify=>:right, 
+    t.column_configure(6, :text=>'Size', :width=>60, :justify=>:right,
                        :tag=>'size')
   end
 
@@ -37,35 +37,35 @@ def demoOutlookNewsgroup(t)
   # State for a message with unread descendants
   t.state_define('unread')
 
-  t.element_create('elemImg', :image, 
+  t.element_create('elemImg', :image,
                    :image=>[
-                     @sel_images['outlook-read-2'], 
-                          ['selected', 'read', 'unread', '!open'], 
+                     @sel_images['outlook-read-2'],
+                          ['selected', 'read', 'unread', '!open'],
                      @images['outlook-read-2'], ['read', 'unread', '!open'],
-                     @sel_images['outlook-read'], ['selected', 'read'], 
-                     @images['outlook-read'], ['read'], 
-                     @sel_images['outlook-unread'], ['selected'], 
+                     @sel_images['outlook-read'], ['selected', 'read'],
+                     @images['outlook-read'], ['read'],
+                     @sel_images['outlook-unread'], ['selected'],
                      @images['outlook-unread'], []
                    ])
-  t.element_create('elemTxt', :text, :lines=>1, 
-                   :fill=>[@SystemHighlightText, ['selected', 'focus']], 
+  t.element_create('elemTxt', :text, :lines=>1,
+                   :fill=>[@SystemHighlightText, ['selected', 'focus']],
                    :font=>[
-                     t.font.dup.weight(:bold), ['read', 'unread', '!open'], 
+                     t.font.dup.weight(:bold), ['read', 'unread', '!open'],
                      t.font.dup.weight(:bold), ['!read']
                    ])
-  t.element_create('sel.e', :rect, :open=>:e, :showfocus=>true, 
+  t.element_create('sel.e', :rect, :open=>:e, :showfocus=>true,
                    :fill=>[
-                     @SystemHighlight, ['selected', 'focus'], 
+                     @SystemHighlight, ['selected', 'focus'],
                      'gray',  ['selected', '!focus']
                    ])
-  t.element_create('sel.w', :rect, :open=>:w, :showfocus=>true, 
+  t.element_create('sel.w', :rect, :open=>:w, :showfocus=>true,
                    :fill=>[
-                     @SystemHighlight, ['selected', 'focus'], 
+                     @SystemHighlight, ['selected', 'focus'],
                      'gray',  ['selected', '!focus']
                    ])
-  t.element_create('sel.we', :rect, :open=>:we, :showfocus=>true, 
+  t.element_create('sel.we', :rect, :open=>:we, :showfocus=>true,
                    :fill=>[
-                     @SystemHighlight, ['selected', 'focus'], 
+                     @SystemHighlight, ['selected', 'focus'],
                      'gray',  ['selected', '!focus']
                    ])
 
@@ -74,7 +74,7 @@ def demoOutlookNewsgroup(t)
   t.style_elements(s, ['sel.e', 'elemImg', 'elemTxt'])
   t.style_layout(s, 'elemImg', :expand=>:ns)
   t.style_layout(s, 'elemTxt', :padx=>[2,6], :squeeze=>:x, :expand=>:ns)
-  t.style_layout(s, 'sel.e', :union=>['elemTxt'], 
+  t.style_layout(s, 'sel.e', :union=>['elemTxt'],
                  :iexpand=>:nes, :ipadx=>[2,0])
 
   # Text
@@ -168,12 +168,12 @@ def demoOutlookNewsgroup(t)
   }
 
   # Do something when the selection changes
-  t.notify_bind(t, 'Selection', 
+  t.notify_bind(t, 'Selection',
                 proc{|w|
                   if w.selection_count == 1
                     # One item is selected
                     if @Message[:afterId][:id]
-                      Tk.after_cancel(@Message[:afterId][:id]) 
+                      Tk.after_cancel(@Message[:afterId][:id])
                     end
                     @Message[:afterId][:item] = w.selection_get[0]
                     @Message[:afterId][:id] = Tk.after(500, proc{
@@ -208,7 +208,7 @@ def demoOutlookNewsgroup2(t)
 
   height = t.font.metrics(:linespace)
   height = 18 if height < 18
-  t.configure(:itemheight=>height, :selectmode=>:browse, :showlines=>false, 
+  t.configure(:itemheight=>height, :selectmode=>:browse, :showlines=>false,
               :showroot=>false, :showrootbutton=>false, :showbuttons=>true)
 
   if $Version_1_1_OrLater
@@ -226,7 +226,7 @@ def demoOutlookNewsgroup2(t)
     t.column_configure(3, :text=>'Subject', :width=>250, :tag=>'subject')
     t.column_configure(4, :text=>'From', :width=>150, :tag=>'from')
     t.column_configure(5, :text=>'Sent', :width=>150, :tag=>'sent')
-    t.column_configure(6, :text=>'Size', :width=>60, :justify=>:right, 
+    t.column_configure(6, :text=>'Size', :width=>60, :justify=>:right,
                        :tag=>'size')
   end
 
@@ -235,24 +235,24 @@ def demoOutlookNewsgroup2(t)
   t.element_create('image.unread', :image, :image=>@images['outlook-unread'])
   t.element_create('image.read', :image, :image=>@images['outlook-read'])
   t.element_create('image.read2', :image, :image=>@images['outlook-read-2'])
-  t.element_create('text.read', :text, :lines=>1, 
+  t.element_create('text.read', :text, :lines=>1,
                    :fill=>[@SystemHighlightText, ['selected', 'focus']])
-  t.element_create('text.unread', :text, :lines=>1, 
-                   :fill=>[@SystemHighlightText, ['selected', 'focus']], 
+  t.element_create('text.unread', :text, :lines=>1,
+                   :fill=>[@SystemHighlightText, ['selected', 'focus']],
                    :font=>t.font.dup.weight(:bold))
-  t.element_create('sel.e', :rect, :open=>:e, :showfocus=>true, 
+  t.element_create('sel.e', :rect, :open=>:e, :showfocus=>true,
                    :fill=>[
-                     @SystemHighlight, ['selected', 'focus'], 
+                     @SystemHighlight, ['selected', 'focus'],
                      'gray',  ['selected', '!focus']
                    ])
-  t.element_create('sel.w', :rect, :open=>:w, :showfocus=>true, 
+  t.element_create('sel.w', :rect, :open=>:w, :showfocus=>true,
                    :fill=>[
-                     @SystemHighlight, ['selected', 'focus'], 
+                     @SystemHighlight, ['selected', 'focus'],
                      'gray',  ['selected', '!focus']
                    ])
-  t.element_create('sel.we', :rect, :open=>:we, :showfocus=>true, 
+  t.element_create('sel.we', :rect, :open=>:we, :showfocus=>true,
                    :fill=>[
-                     @SystemHighlight, ['selected', 'focus'], 
+                     @SystemHighlight, ['selected', 'focus'],
                      'gray',  ['selected', '!focus']
                    ])
 
@@ -261,7 +261,7 @@ def demoOutlookNewsgroup2(t)
   t.style_elements(s, ['sel.e', 'image.unread', 'text.unread'])
   t.style_layout(s, 'image.unread', :expand=>:ns)
   t.style_layout(s, 'text.unread', :padx=>[2,6], :squeeze=>:x, :expand=>:ns)
-  t.style_layout(s, 'sel.e', :union=>['text.unread'], 
+  t.style_layout(s, 'sel.e', :union=>['text.unread'],
                  :iexpand=>:nes, :ipadx=>[2,0])
 
   # Image + text
@@ -269,7 +269,7 @@ def demoOutlookNewsgroup2(t)
   t.style_elements(s, ['sel.e', 'image.read', 'text.read'])
   t.style_layout(s, 'image.read', :expand=>:ns)
   t.style_layout(s, 'text.read', :padx=>[2,6], :squeeze=>:x, :expand=>:ns)
-  t.style_layout(s, 'sel.e', :union=>['text.read'], 
+  t.style_layout(s, 'sel.e', :union=>['text.read'],
                  :iexpand=>:nes, :ipadx=>[2,0])
 
   # Image + text
@@ -277,7 +277,7 @@ def demoOutlookNewsgroup2(t)
   t.style_elements(s, ['sel.e', 'image.read2', 'text.unread'])
   t.style_layout(s, 'image.read2', :expand=>:ns)
   t.style_layout(s, 'text.unread', :padx=>[2,6], :squeeze=>:x, :expand=>:ns)
-  t.style_layout(s, 'sel.e', :union=>['text.unread'], 
+  t.style_layout(s, 'sel.e', :union=>['text.unread'],
                  :iexpand=>:nes, :ipadx=>[2,0])
 
   # Text
@@ -350,7 +350,7 @@ def demoOutlookNewsgroup2(t)
       style = 'unread'
       style2 = 'unread2'
     end
-    t.item_style_set(i, 3, style, 4, "#{style2}.we", 5, "#{style2}.we", 
+    t.item_style_set(i, 3, style, 4, "#{style2}.we", 5, "#{style2}.we",
                      6, "#{style2}.w")
     t.item_text(i, 3, subject, 4, from, 5, sent, 6, size)
     if t.item_numchildren(i) > 0
@@ -359,24 +359,24 @@ def demoOutlookNewsgroup2(t)
   }
 
   # Do something when the selection changes
-  t.notify_bind(t, 'Selection', 
+  t.notify_bind(t, 'Selection',
                 proc{|w|
                   if w.selection_count == 1
                     i = t.selection_get[0]
                     unless @Message[:read][i]
                       if t.item_isopen(i) || !anyUnreadDescendants(t, i)
                         # unread -> read
-                        t.item_style_map(i, 'subject', 'read', 
+                        t.item_style_map(i, 'subject', 'read',
                                          ['text.unread', 'text.read'])
-                        t.item_style_map(i, 'from', 'read.we', 
+                        t.item_style_map(i, 'from', 'read.we',
                                          ['text.unread', 'text.read'])
-                        t.item_style_map(i, 'sent', 'read.we', 
+                        t.item_style_map(i, 'sent', 'read.we',
                                          ['text.unread', 'text.read'])
-                        t.item_style_map(i, 'size', 'read.w', 
+                        t.item_style_map(i, 'size', 'read.w',
                                          ['text.unread', 'text.read'])
                       else
                         # unread -> read2
-                        t.item_style_map(i, 'subject', 'read2', 
+                        t.item_style_map(i, 'subject', 'read2',
                                          ['text.unread', 'text.unread'])
                       end
 
@@ -386,34 +386,34 @@ def demoOutlookNewsgroup2(t)
                   end
                 }, '%T')
 
-  t.notify_bind(t, 'Expand-after', 
+  t.notify_bind(t, 'Expand-after',
                 proc{|w, i|
                   if @Messge[:read][i] && anyUnreadDescendants(t, i)
                     # read2 -> read
-                    t.item_style_map(i, 'subject', 'read', 
+                    t.item_style_map(i, 'subject', 'read',
                                      ['text.unread', 'text.read'])
                     # unread -> read
-                    t.item_style_map(i, 'from', 'read.we', 
+                    t.item_style_map(i, 'from', 'read.we',
                                      ['text.unread', 'text.read'])
-                    t.item_style_map(i, 'sent', 'read.we', 
+                    t.item_style_map(i, 'sent', 'read.we',
                                      ['text.unread', 'text.read'])
-                    t.item_style_map(i, 'size', 'read.w', 
+                    t.item_style_map(i, 'size', 'read.w',
                                      ['text.unread', 'text.read'])
                   end
                 }, '%T %I')
 
-  t.notify_bind(t, 'Collapse-after', 
+  t.notify_bind(t, 'Collapse-after',
                 proc{|w, i|
                   if @Messge[:read][i] && anyUnreadDescendants(t, i)
                     # read -> read2
-                    t.item_style_map(i, 'subject', 'read2', 
+                    t.item_style_map(i, 'subject', 'read2',
                                      ['text.read', 'text.unread'])
                     # read -> unread
-                    t.item_style_map(i, 'from', 'unread.we', 
+                    t.item_style_map(i, 'from', 'unread.we',
                                      ['text.read', 'text.unread'])
-                    t.item_style_map(i, 'sent', 'unread.we', 
+                    t.item_style_map(i, 'sent', 'unread.we',
                                      ['text.read', 'text.unread'])
-                    t.item_style_map(i, 'size', 'unread.w', 
+                    t.item_style_map(i, 'size', 'unread.w',
                                      ['text.read', 'text.unread'])
                   end
                 }, '%T %I')

@@ -5,7 +5,7 @@
 #
 # This application is used for testing the HTML widget.  It can
 # also server as an example of how to use the HTML widget.
-# 
+#
 require 'tk'
 require 'tkextlib/tkHTML'
 
@@ -51,11 +51,11 @@ show_img = TkVariable.new(1)
 # html[:fontcommand] = pick_font
 pick_font = proc{|size, attrs|
   puts "FontCmd: #{size} #{attrs}"
-  [ ((attrs =~ /fixed/)? 'courier': 'charter'), 
-    (12 * (1.2**(size.to_f - 4.0))).to_i, 
-    ((attrs =~ /italic/)? 'italic': 'roman'), 
-    ((attrs =~ /bold/)? 'bold': 'normal') ].join(' ') 
-} 
+  [ ((attrs =~ /fixed/)? 'courier': 'charter'),
+    (12 * (1.2**(size.to_f - 4.0))).to_i,
+    ((attrs =~ /italic/)? 'italic': 'roman'),
+    ((attrs =~ /bold/)? 'bold': 'normal') ].join(' ')
+}
 
 #
 # This routine is called for each form element
@@ -126,7 +126,7 @@ script_cmd = proc{|*args|
 
 # This routine is called for every <APPLET> markup
 #
-applet_cmd = proc{|w, arglist| 
+applet_cmd = proc{|w, arglist|
   # puts "AppletCmd: w=#{w} arglist=#{arglist}"
   TkLabel.new(w, :text=>"The Applet #{w}", :bd=>2, :relief=>raised)
 }
@@ -134,12 +134,12 @@ applet_cmd = proc{|w, arglist|
 #
 # Construct the main HTML viewer
 #
-html = Tk::HTML_Widget.new(:padx=>5, :pady=>9, 
-                           :formcommand=>form_cmd, 
-                           :imagecommand=>image_cmd, 
-                           :scriptcommand=>script_cmd, 
-                           :appletcommand=>applet_cmd, 
-                           :underlinehyperlinks=>0, 
+html = Tk::HTML_Widget.new(:padx=>5, :pady=>9,
+                           :formcommand=>form_cmd,
+                           :imagecommand=>image_cmd,
+                           :scriptcommand=>script_cmd,
+                           :appletcommand=>applet_cmd,
+                           :underlinehyperlinks=>0,
                            :bg=>'white', :tablerelief=>:raised)
 vscr = html.yscrollbar(TkScrollbar.new)
 hscr = html.xscrollbar(TkScrollbar.new)
@@ -166,7 +166,7 @@ read_file = proc{|name|
   rescue
     ret = nil
     fp = nil
-    Tk.messageBox(:icon=>'error', :message=>"fail to open '#{name}'", 
+    Tk.messageBox(:icon=>'error', :message=>"fail to open '#{name}'",
                   :type=>:ok)
   ensure
     fp.close if fp
@@ -221,7 +221,7 @@ html.clipping_window.bind('1', href_binding, '%x %y')
 html.clipping_window.bind('B1-Motion', proc{|w, x, y|
                             w.selection_set(priv['mark'], "@#{x},#{y}")
                             TkClipboard.clear
-                            # avoid tkhtml0.0 errors 
+                            # avoid tkhtml0.0 errors
                             # anyone can fix this for tkhtml0.0
                             begin
                               TkClipboard.append(TkSelection.get)
@@ -235,7 +235,7 @@ html.clipping_window.bind('B1-Motion', proc{|w, x, y|
 last_dir = Dir.pwd
 sel_load = proc{
   filetypes = [
-    ['Html Files', ['.html', '.htm']], 
+    ['Html Files', ['.html', '.htm']],
     ['All Files', '*']
   ]
 
@@ -268,15 +268,15 @@ Tk::HTML_Widget::ClippingWindow.bind('Motion', proc{|w, x, y|
 # Setup menu
 #
 menu_spec = [
-  [['File', 0], 
-    ['Open',    sel_load, 0], 
-    ['Refresh', refresh,   0], 
+  [['File', 0],
+    ['Open',    sel_load, 0],
+    ['Refresh', refresh,   0],
     '---',
-    ['Exit', proc{exit}, 1]], 
+    ['Exit', proc{exit}, 1]],
 
-  [['View', 0], 
-    ['Underline Hyperlinks', ul_hyper], 
-    ['Show Table Structure', show_tbl], 
+  [['View', 0],
+    ['Underline Hyperlinks', ul_hyper],
+    ['Show Table Structure', show_tbl],
     ['Show Images',          show_img]]
 ]
 
@@ -285,7 +285,7 @@ mbar = Tk.root.add_menubar(menu_spec)
 #
 # Setup trace
 #
-ul_hyper.trace('w', proc{ 
+ul_hyper.trace('w', proc{
                  html[:underlinehyperlinks] = ul_hyper.value
                  refresh.call
                })

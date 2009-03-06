@@ -22,7 +22,7 @@ class Mail
     @body = []
     while line = f.gets()
       $_.chop!
-      next if /^From / =~ line  # skip From-line  
+      next if /^From / =~ line  # skip From-line
       break if /^$/ =~ line     # end of header
       if /^(\S+):\s*(.*)/ =~ line
         @header[attr = $1.capitalize] = $2

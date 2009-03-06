@@ -45,7 +45,7 @@ module Test
 
       reject_pat = Regexp.union(reject.map {|r| /#{r}/ })
       files.reject! {|f| reject_pat =~ f }
-        
+
       files.each {|f|
         d = File.dirname(File.expand_path(f))
         unless $:.include? d

@@ -2,7 +2,7 @@
 # tk/menubar.rb
 #
 # Original version:
-#   Copyright (C) 1998 maeda shugo. All rights reserved. 
+#   Copyright (C) 1998 maeda shugo. All rights reserved.
 #   This file can be distributed under the terms of the Ruby.
 
 # Usage:
@@ -52,18 +52,18 @@
 #     {:label=>'Open', :command=>proc{puts('Open clicked')}, :underline=>0},
 #     '---',
 #     ['Check_A', TkVariable.new(true), 6],
-#     {:type=>'checkbutton', :label=>'Check_B', 
+#     {:type=>'checkbutton', :label=>'Check_B',
 #                 :variable=>TkVariable.new, :underline=>6},
 #     '---',
 #     ['Radio_X', [radio_var, 'x'], 6],
 #     ['Radio_Y', [radio_var, 'y'], 6],
 #     ['Radio_Z', [radio_var, 'z'], 6],
 #     '---',
-#     ['cascade', [ 
-#                    ['sss', proc{p 'sss'}, 0], 
-#                    ['ttt', proc{p 'ttt'}, 0], 
-#                    ['uuu', proc{p 'uuu'}, 0], 
-#                    ['vvv', proc{p 'vvv'}, 0], 
+#     ['cascade', [
+#                    ['sss', proc{p 'sss'}, 0],
+#                    ['ttt', proc{p 'ttt'}, 0],
+#                    ['uuu', proc{p 'uuu'}, 0],
+#                    ['vvv', proc{p 'vvv'}, 0],
 #                 ], 0],
 #     '---',
 #     ['Quit', proc{exit}, 0]],
@@ -92,7 +92,7 @@ require 'tk/menuspec'
 class TkMenubar<Tk::Frame
   include TkComposite
   include TkMenuSpec
-  
+
   def initialize(parent = nil, spec = nil, options = nil)
     if parent.kind_of? Hash
       options = _symbolkey2str(parent)
@@ -103,7 +103,7 @@ class TkMenubar<Tk::Frame
     end
 
     @menus = []
-    
+
     spec.each{|info| add_menu(info)} if spec
 
     options.each{|key, value| configure(key, value)} if options
@@ -124,7 +124,7 @@ class TkMenubar<Tk::Frame
     delegate('font', mbtn, menu, *submenus)
     delegate('kanjifont', mbtn, menu, *submenus)
   end
-  
+
   def [](index)
     return @menus[index]
   end

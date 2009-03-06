@@ -98,7 +98,7 @@ class Time
       #   In RFC 3339, -00:00 is used for the time in UTC is known,
       #   but the offset to local time is unknown.
       #   They are not appropriate for specific time zone such as
-      #   Europe/London because time zone neutral, 
+      #   Europe/London because time zone neutral,
       #   So -00:00 and -0000 are treated as UTC.
       if /\A(?:-00:00|-0000|-00|UTC|Z|UT)\z/i =~ zone
         true

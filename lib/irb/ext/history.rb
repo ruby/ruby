@@ -1,12 +1,12 @@
 #
-#   history.rb - 
+#   history.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 
 module IRB
@@ -56,7 +56,7 @@ module IRB
     end
 
     def size(size)
-      if size != 0 && size < @size 
+      if size != 0 && size < @size
 	@contents = @contents[@size - size .. @size]
       end
       @size = size
@@ -78,7 +78,7 @@ module IRB
       @contents.push [no, val]
       @contents.shift if @size != 0 && @contents.size > @size
     end
-    
+
     alias real_inspect inspect
 
     def inspect

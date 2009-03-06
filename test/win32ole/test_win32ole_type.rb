@@ -51,7 +51,7 @@ if defined?(WIN32OLE_TYPE)
       assert_equal(0, ole_type.helpcontext)
       assert_equal([], ole_type.variables)
       assert(ole_type.ole_methods.select{|m|/NameSpace/i =~ m.name}.size > 0)
-      
+
       ole_type2 = WIN32OLE_TYPE.new("{13709620-C279-11CE-A49E-444553540000}", "Shell")
       assert_instance_of(WIN32OLE_TYPE, ole_type)
       assert_equal(ole_type.name, ole_type2.name)
@@ -184,7 +184,7 @@ if defined?(WIN32OLE_TYPE)
       assert_equal(1, otype.size)
       otype = ole_types.select{|t| t.name == "DWebBrowserEvents2"}
       assert_equal(1, otype.size)
-      otype = ole_types.select{|t| t.name == "DWebBrowserEvents"}  
+      otype = ole_types.select{|t| t.name == "DWebBrowserEvents"}
       assert_equal(1, otype.size)
     end
 
@@ -197,7 +197,7 @@ if defined?(WIN32OLE_TYPE)
       assert_equal(0, otype.size)
       otype = ole_types.select{|t| t.name == "DWebBrowserEvents2"}
       assert_equal(1, otype.size)
-      otype = ole_types.select{|t| t.name == "DWebBrowserEvents"}  
+      otype = ole_types.select{|t| t.name == "DWebBrowserEvents"}
       assert_equal(0, otype.size)
     end
 
@@ -210,7 +210,7 @@ if defined?(WIN32OLE_TYPE)
       assert_equal(0, otype.size)
       otype = ole_types.select{|t| t.name == "DWebBrowserEvents2"}
       assert_equal(1, otype.size)
-      otype = ole_types.select{|t| t.name == "DWebBrowserEvents"}  
+      otype = ole_types.select{|t| t.name == "DWebBrowserEvents"}
       assert_equal(1, otype.size)
     end
 
@@ -223,7 +223,7 @@ if defined?(WIN32OLE_TYPE)
       assert_equal(0, otype.size)
       otype = ole_types.select{|t| t.name == "DWebBrowserEvents2"}
       assert_equal(1, otype.size)
-      otype = ole_types.select{|t| t.name == "DWebBrowserEvents"}  
+      otype = ole_types.select{|t| t.name == "DWebBrowserEvents"}
       assert_equal(0, otype.size)
     end
 

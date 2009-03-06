@@ -19,7 +19,7 @@ Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Notebook, :TkNotebook)
 class Tk::Tile::TNotebook < TkWindow
   ################################
   include TkItemConfigMethod
-  
+
   def __item_cget_cmd(id)
     [self.path, 'tab', id]
   end
@@ -109,7 +109,7 @@ class Tk::Tile::TNotebook < TkWindow
   def forget(idx)
     tk_send('forget', idx)
     self
-  end    
+  end
 
   def index(idx)
     number(tk_send('index', idx))

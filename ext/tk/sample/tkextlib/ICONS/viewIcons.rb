@@ -4,7 +4,7 @@
 #
 #     --  Display icons from icon library.
 #
-#     --  Copy the clicked icon data (command string of creating 
+#     --  Copy the clicked icon data (command string of creating
 #         a TkPhotoImage instance) to the clipboard.
 #
 require 'tk'
@@ -27,7 +27,7 @@ class ViewIcons
     ent_library = TkEntry.new(base, :width=>50, :textvariable=>@library)
     ent_groups  = TkEntry.new(base, :width=>50, :textvariable=>@groups)
 
-    btn_browse = TkButton.new(base, :text=>'Browse', 
+    btn_browse = TkButton.new(base, :text=>'Browse',
                                     :command=>method(:select_icons))
     btn_view   = TkButton.new(base, :text=>'View',
                                     :command=>method(:display_icons))
@@ -35,8 +35,8 @@ class ViewIcons
 
     @column_btns = {}
     6.step(20, 2){|i|
-      @column_btns[i] = TkButton.new(columns, 
-                                     :text=>i.to_s, :width=>2, 
+      @column_btns[i] = TkButton.new(columns,
+                                     :text=>i.to_s, :width=>2,
                                      :command=>proc{set_columns(i)}
                                      ).pack(:side=>:left)
     }
@@ -90,15 +90,15 @@ class ViewIcons
   end
 
   def _create_info_window
-    @info_window = TkToplevel.new(:background=>'lightyellow', :borderwidth=>1, 
+    @info_window = TkToplevel.new(:background=>'lightyellow', :borderwidth=>1,
                                   :relief=>:solid){|w|
-      lbl_name = TkLabel.new(w, :text=>'Name', :background=>'lightyellow', 
+      lbl_name = TkLabel.new(w, :text=>'Name', :background=>'lightyellow',
                              :font=>@boldfont, :justify=>:left)
-      lbl_grps = TkLabel.new(w, :text=>'Groups', :background=>'lightyellow', 
+      lbl_grps = TkLabel.new(w, :text=>'Groups', :background=>'lightyellow',
                              :font=>@boldfont, :justify=>:left)
-      lbl_type = TkLabel.new(w, :text=>'Type', :background=>'lightyellow', 
+      lbl_type = TkLabel.new(w, :text=>'Type', :background=>'lightyellow',
                              :font=>@boldfont, :justify=>:left)
-      lbl_size = TkLabel.new(w, :text=>'Size', :background=>'lightyellow', 
+      lbl_size = TkLabel.new(w, :text=>'Size', :background=>'lightyellow',
                              :font=>@boldfont, :justify=>:left)
 
       lbl_name.grid(:row=>0, :column=>0, :sticky=>:w)
@@ -192,7 +192,7 @@ class ViewIcons
 
   def cancel_info
     if @delay_timer
-      @delay_timer.cancel 
+      @delay_timer.cancel
       @delay_timer = nil
     end
     @info_window.withdraw
@@ -242,9 +242,9 @@ class ViewIcons
     TkClipboard.append(@command)
 
     if Tk::PLATFORM['platform'] == 'unix'
-      TkSelection.handle(Tk.root, method(:primary_transfer), 
+      TkSelection.handle(Tk.root, method(:primary_transfer),
                          :selection=>'PRIMARY')
-      TkSelection.set_owner(Tk.root, :selection=>'PRIMARY', 
+      TkSelection.set_owner(Tk.root, :selection=>'PRIMARY',
                             :command=>method(:lost_selection))
     end
 
@@ -256,17 +256,17 @@ class ViewIcons
     bbox = @icons_window.bbox('all')
     width = @controls.winfo_width - @icons_window.yscrollbar.winfo_width - 8
 
-    @icons_window.configure(:width=>width, :scrollregion=>bbox, 
-                            :xscrollincrement=>'0.1i', 
+    @icons_window.configure(:width=>width, :scrollregion=>bbox,
+                            :xscrollincrement=>'0.1i',
                             :yscrollincrement=>'0.1i')
   end
 
   def select_icons
-    new_lib = Tk.getOpenFile(:initialdir=>@initial_dir, 
-                             :initialfile=>'tkIcons', 
-                             :title=>'Select Icon Library', 
+    new_lib = Tk.getOpenFile(:initialdir=>@initial_dir,
+                             :initialfile=>'tkIcons',
+                             :title=>'Select Icon Library',
                              :filetypes=>[
-                               ['Icon Libraries', ['tkIcons*']], 
+                               ['Icon Libraries', ['tkIcons*']],
                                ['All Files', ['*']]
                              ])
 
@@ -280,7 +280,7 @@ class ViewIcons
     row = 0
 
     unless File.exist?(@library.value)
-      Tk.messageBox(:icon=>'warning', :message=>'File does not exist', 
+      Tk.messageBox(:icon=>'warning', :message=>'File does not exist',
                     :title=>'viewIcons')
       return
     end

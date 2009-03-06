@@ -15,18 +15,18 @@ class TestDataConverters < Test::Unit::TestCase
   def setup
     @data   = "Numbers,:integer,1,:float,3.015"
     @parser = CSV.new(@data)
-    
+
     @custom = lambda { |field| field =~ /\A:(\S.*?)\s*\Z/ ? $1.to_sym : field }
-    
+
     @win_safe_time_str = Time.now.strftime("%a %b %d %H:%M:%S %Y")
   end
-  
+
   def test_builtin_integer_converter
     # does convert
     [-5, 1, 10000000000].each do |n|
       assert_equal(n, CSV::Converters[:integer][n.to_s])
     end
-    
+
     # does not convert
     (%w{junk 1.0} + [""]).each do |str|
       assert_equal(str, CSV::Converters[:integer][str])
@@ -38,7 +38,7 @@ class TestDataConverters < Test::Unit::TestCase
     [-5.1234, 0, 2.3e-11].each do |n|
       assert_equal(n, CSV::Converters[:float][n.to_s])
     end
-    
+
     # does not convert
     (%w{junk 1..0 .015F} + [""]).each do |str|
       assert_equal(str, CSV::Converters[:float][str])
@@ -64,43 +64,43 @@ class TestDataConverters < Test::Unit::TestCase
     # does not convert
     assert_instance_of(String, CSV::Converters[:date_time]["junk"])
   end
-  
+
   def test_convert_with_builtin
     # setup parser...
     assert(@parser.respond_to?(:convert))
     assert_nothing_raised(Exception) { @parser.convert(:integer) }
-    
+
     # and use
     assert_equal(["Numbers", ":integer", 1, ":float", "3.015"], @parser.shift)
-    
+
     setup  # reset
-    
+
     # setup parser...
     assert_nothing_raised(Exception) { @parser.convert(:float) }
-    
+
     # and use
     assert_equal(["Numbers", ":integer", 1.0, ":float", 3.015], @parser.shift)
   end
-  
+
   def test_convert_order
     # floats first, then integers...
-    assert_nothing_raised(Exception) do 
+    assert_nothing_raised(Exception) do
       @parser.convert(:float)
       @parser.convert(:integer)
     end
-    
+
     # gets us nothing but floats
     assert_equal( [String, String, Float, String, Float],
                   @parser.shift.map { |field| field.class } )
-    
+
     setup  # reset
 
     # integers have precendance...
-    assert_nothing_raised(Exception) do 
+    assert_nothing_raised(Exception) do
       @parser.convert(:integer)
       @parser.convert(:float)
     end
-    
+
     # gives us proper number conversion
     assert_equal( [String, String, Fixnum, String, Float],
                   @parser.shift.map { |field| field.class } )
@@ -109,7 +109,7 @@ class TestDataConverters < Test::Unit::TestCase
   def test_builtin_numeric_combo_converter
     # setup parser...
     assert_nothing_raised(Exception) { @parser.convert(:numeric) }
-    
+
     # and use
     assert_equal( [String, String, Fixnum, String, Float],
                   @parser.shift.map { |field| field.class } )
@@ -120,18 +120,18 @@ class TestDataConverters < Test::Unit::TestCase
     @data   << ",#{@win_safe_time_str}"        # add a DateTime field
     @parser =  CSV.new(@data)                  # reset parser
     assert_nothing_raised(Exception) { @parser.convert(:all) }
-    
+
     # and use
     assert_equal( [String, String, Fixnum, String, Float, DateTime],
                   @parser.shift.map { |field| field.class } )
   end
-  
+
   def test_convert_with_custom_code
     # define custom converter...
     assert_nothing_raised(Exception) do
       @parser.convert { |field| field =~ /\A:(\S.*?)\s*\Z/ ? $1.to_sym : field }
     end
-    
+
     # and use
     assert_equal(["Numbers", :integer, "1", :float, "3.015"], @parser.shift)
 
@@ -140,11 +140,11 @@ class TestDataConverters < Test::Unit::TestCase
     # mix built-in and custom...
     assert_nothing_raised(Exception) { @parser.convert(:numeric) }
     assert_nothing_raised(Exception) { @parser.convert(&@custom) }
-    
+
     # and use
     assert_equal(["Numbers", :integer, 1, :float, 3.015], @parser.shift)
   end
-  
+
   def test_convert_with_custom_code_using_field_info
     # define custom converter that uses field information...
     assert_nothing_raised(Exception) do
@@ -153,26 +153,26 @@ class TestDataConverters < Test::Unit::TestCase
         info.index == 4 ? Float(field).floor : field
       end
     end
-    
+
     # and use
     assert_equal(["Numbers", ":integer", "1", ":float", 3], @parser.shift)
   end
-  
+
   def test_convert_with_custom_code_using_field_info_header
     @parser = CSV.new(@data, headers: %w{one two three four five})
-    
+
     # define custom converter that uses field header information...
     assert_nothing_raised(Exception) do
       @parser.convert do |field, info|
         info.header == "three" ? Integer(field) * 100 : field
       end
     end
-    
+
     # and use
     assert_equal( ["Numbers", ":integer", 100, ":float", "3.015"],
                   @parser.shift.fields )
   end
-  
+
   def test_shortcut_interface
     assert_equal( ["Numbers", ":integer", 1, ":float", 3.015],
                   CSV.parse_line(@data, converters: :numeric) )
@@ -183,14 +183,14 @@ class TestDataConverters < Test::Unit::TestCase
     assert_equal( ["Numbers", :integer, 1, :float, 3.015],
                   CSV.parse_line(@data, converters: [:numeric, @custom]) )
   end
-  
+
   def test_unconverted_fields
     [ [ @data,
         ["Numbers", :integer, 1, :float, 3.015],
         %w{Numbers :integer 1 :float 3.015} ],
       ["\n", Array.new, Array.new] ].each do |test, fields, unconverted|
       row = nil
-      assert_nothing_raised(Exception) do 
+      assert_nothing_raised(Exception) do
         row = CSV.parse_line( test,
                               converters:         [:numeric, @custom],
                               unconverted_fields: true )
@@ -206,7 +206,7 @@ class TestDataConverters < Test::Unit::TestCase
     1,2,3
     END_CSV
     row = nil
-    assert_nothing_raised(Exception) do 
+    assert_nothing_raised(Exception) do
       row = CSV.parse_line( data,
                             converters:         :numeric,
                             unconverted_fields: true,
@@ -217,7 +217,7 @@ class TestDataConverters < Test::Unit::TestCase
     assert_respond_to(row, :unconverted_fields)
     assert_equal(%w{1 2 3}, row.unconverted_fields)
 
-    assert_nothing_raised(Exception) do 
+    assert_nothing_raised(Exception) do
       row = CSV.parse_line( data,
                             converters:         :numeric,
                             unconverted_fields: true,
@@ -230,7 +230,7 @@ class TestDataConverters < Test::Unit::TestCase
     assert_respond_to(row, :unconverted_fields)
     assert_equal(%w{first second third}, row.unconverted_fields)
 
-    assert_nothing_raised(Exception) do 
+    assert_nothing_raised(Exception) do
       row = CSV.parse_line( data,
                             converters:         :numeric,
                             unconverted_fields: true,
@@ -244,7 +244,7 @@ class TestDataConverters < Test::Unit::TestCase
     assert_respond_to(row, :unconverted_fields)
     assert_equal(%w{first second third}, row.unconverted_fields)
 
-    assert_nothing_raised(Exception) do 
+    assert_nothing_raised(Exception) do
       row = CSV.parse_line( data,
                             converters:         :numeric,
                             unconverted_fields: true,

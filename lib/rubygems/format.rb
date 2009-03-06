@@ -17,7 +17,7 @@ module Gem
   class Format
     attr_accessor :spec, :file_entries, :gem_path
     extend Gem::UserInteraction
-  
+
     ##
     # Constructs an instance of a Format object, representing the gem's
     # data structure.
@@ -27,9 +27,9 @@ module Gem
     def initialize(gem_path)
       @gem_path = gem_path
     end
-    
+
     ##
-    # Reads the named gem file and returns a Format object, representing 
+    # Reads the named gem file and returns a Format object, representing
     # the data from the gem file
     #
     # file_path:: [String] Path to the gem file

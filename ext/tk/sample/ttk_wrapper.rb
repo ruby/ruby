@@ -10,7 +10,7 @@ version = '0.1.3'
 #  parse commandline arguments
 ##########################################################################
 require 'optparse'
-opt = OptionParser.new("Usage: #{$0} [options] rubytk_script" << "\n    " << 
+opt = OptionParser.new("Usage: #{$0} [options] rubytk_script" << "\n    " <<
                          "Ruby/Tk script wrapper. Use Ttk widgets as default.")
 opt.version = version
 
@@ -21,7 +21,7 @@ OPTS[:theme] = 'default'
 
 opt.on('-l', '--list', 'list available theme names'){|v| OPTS[:list] = true}
 opt.on('-t', '--theme theme', 'theme name'){|v| OPTS[:theme] = v}
-opt.on('-d', '--themedir themes_dir', 'directory of theme definitions'){|v| 
+opt.on('-d', '--themedir themes_dir', 'directory of theme definitions'){|v|
   OPTS[:themedir] << v
 }
 opt.on('-r', '--rubytheme rb_theme', 'theme definition file (ruby script)'){|v|
@@ -42,7 +42,7 @@ begin
   Tk.default_widget_set = :Ttk
 rescue LoadError
   if OPTS[:verbose]
-    print "warning: fail to load 'Ttk' extension. use standard widgets.\n" 
+    print "warning: fail to load 'Ttk' extension. use standard widgets.\n"
   end
 end
 
@@ -53,7 +53,7 @@ end
 
 ##########################################################################
 # define Tcl/Tk procedures for compatibility.
-# those are required when want to use themes included 
+# those are required when want to use themes included
 # in "sample/tkextlib/tile/demo.rb".
 ##########################################################################
 Tk::Tile.__define_LoadImages_proc_for_compatibility__!
@@ -111,7 +111,7 @@ TkItemConfigMethod.__set_IGNORE_UNKNOWN_CONFIGURE_OPTION__! true
 #  set theme of widget style
 ##########################################################################
 if OPTS[:list] || OPTS[:verbose]
-  print "supported theme names: #{Tk::Tile.themes.inspect}\n" 
+  print "supported theme names: #{Tk::Tile.themes.inspect}\n"
   exit if OPTS[:list] && ARGV.empty?
 end
 print "use theme: \"#{OPTS[:theme]}\"\n" if OPTS[:theme] && OPTS[:verbose]
@@ -122,7 +122,7 @@ Tk::Tile.set_theme(OPTS[:theme]) if OPTS[:theme]
 ##########################################################################
 #  replace $0 and $RPAGRAM_NAME
 ##########################################################################
-#  When the expand_path of the target script is long, ruby sometimes 
+#  When the expand_path of the target script is long, ruby sometimes
 #  fails to set the path to $0 (the path string is trimmed).
 #  The following replaces $0 and $PROGNAME to avoid such trouble.
 progname_obj = $0.dup

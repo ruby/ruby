@@ -87,7 +87,7 @@ class Tempfile < DelegateClass(File)
     else
       prefix, suffix = basename, ''
     end
- 
+
     t = Time.now.strftime("%Y%m%d")
     path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}-#{n}#{suffix}"
   end
@@ -167,7 +167,7 @@ class Tempfile < DelegateClass(File)
     def callback(data)	# :nodoc:
       pid = $$
       Proc.new {
-	if pid == $$ 
+	if pid == $$
 	  path, tmpfile, cleanlist = *data
 
 	  print "removing ", path, "..." if $DEBUG

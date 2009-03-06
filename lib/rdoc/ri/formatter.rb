@@ -114,7 +114,7 @@ class RDoc::RI::Formatter
     txt = txt.gsub(%r{<tt>(.*?)</tt>}, '+\1+')
     txt.gsub!(%r{<code>(.*?)</code>}, '+\1+')
     txt.gsub!(%r{<b>(.*?)</b>}, '*\1*')
-    txt.gsub!(%r{<em>(.*?)</em>}, '_\1_') 
+    txt.gsub!(%r{<em>(.*?)</em>}, '_\1_')
     txt
   end
 

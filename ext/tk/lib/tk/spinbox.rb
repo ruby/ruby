@@ -13,15 +13,15 @@ class Tk::Spinbox<Tk::Entry
   class SpinCommand < TkValidateCommand
     class ValidateArgs < TkUtil::CallbackSubst
       KEY_TBL = [
-        [ ?d, ?s, :direction ], 
-        [ ?s, ?e, :current ], 
-        [ ?W, ?w, :widget ], 
+        [ ?d, ?s, :direction ],
+        [ ?s, ?e, :current ],
+        [ ?W, ?w, :widget ],
         nil
       ]
 
       PROC_TBL = [
-        [ ?s, TkComm.method(:string) ], 
-        [ ?w, TkComm.method(:window) ], 
+        [ ?s, TkComm.method(:string) ],
+        [ ?w, TkComm.method(:window) ],
 
         [ ?e, proc{|val|
             #enc = Tk.encoding
@@ -32,7 +32,7 @@ class Tk::Spinbox<Tk::Entry
               TkComm::string(val)
             end
           }
-        ], 
+        ],
 
         nil
       ]

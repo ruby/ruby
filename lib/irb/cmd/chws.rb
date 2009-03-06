@@ -1,12 +1,12 @@
 #
-#   change-ws.rb - 
+#   change-ws.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 
 require "irb/cmd/nop.rb"

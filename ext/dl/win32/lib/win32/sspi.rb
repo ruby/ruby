@@ -2,7 +2,7 @@
 # = win32/sspi.rb
 #
 # Copyright (c) 2006-2007 Justin Bailey
-# 
+#
 # Written and maintained by Justin Bailey <jgbailey@gmail.com>.
 #
 # This program is free software. You can re-distribute and/or
@@ -33,7 +33,7 @@ module Win32
 		ISC_REQ_PROMPT_FOR_CREDS = 0x00000040
 		ISC_REQ_CONNECTION = 0x00000800
 
-		# Win32 API Functions. Uses Win32API to bind methods to constants contained in class. 
+		# Win32 API Functions. Uses Win32API to bind methods to constants contained in class.
 		module API
 			# Can be called with AcquireCredentialsHandle.call()
 			AcquireCredentialsHandle = Win32API.new("secur32", "AcquireCredentialsHandle", 'ppLpppppp', 'L')
@@ -44,22 +44,22 @@ module Win32
 			# Can be called with FreeCredentialsHandle.call()
 			FreeCredentialsHandle = Win32API.new("secur32", "FreeCredentialsHandle", 'P', 'L')
 		end
-	  
+
 		# SecHandle struct
 		class SecurityHandle
 			def upper
 				@struct.unpack("LL")[1]
 			end
-	    
+
 			def lower
 				@struct.unpack("LL")[0]
 			end
-	    
+
 			def to_p
 				@struct ||= "\0" * 8
 			end
 		end
-	  
+
 		# Some familiar aliases for the SecHandle structure
 		CredHandle = CtxtHandle = SecurityHandle
 
@@ -71,13 +71,13 @@ module Win32
 				@struct ||= "\0" * 8
 			end
 		end
-	  
+
 		# Creates binary representaiton of a SecBufferDesc structure,
 		# including the SecBuffer contained inside.
 		class SecurityBuffer
 
 			SECBUFFER_TOKEN = 2   # Security token
-	    
+
 			TOKENBUFSIZE = 12288
 			SECBUFFER_VERSION = 0
 
@@ -86,22 +86,22 @@ module Win32
 				@bufferSize = @buffer.length
 				@type = SECBUFFER_TOKEN
 			end
-	    
+
 			def bufferSize
 				unpack
 				@bufferSize
 			end
-	    
+
 			def bufferType
 				unpack
 				@type
 			end
-	    
+
 			def token
 				unpack
 				@buffer
 			end
-	    
+
 			def to_p
 				# Assumption is that when to_p is called we are going to get a packed structure. Therefore,
 				# set @unpacked back to nil so we know to unpack when accessors are next accessed.
@@ -110,14 +110,14 @@ module Win32
 				# will not be able to unpack changes to the structure. Alternative, nested unpacks,
 				# does not work (i.e. @struct.unpack("LLP12")[2].unpack("LLP12") results in "no associated pointer")
 				@sec_buffer ||= [@bufferSize, @type, @buffer].pack("LLP")
-				@struct ||= [SECBUFFER_VERSION, 1, @sec_buffer].pack("LLP")    
+				@struct ||= [SECBUFFER_VERSION, 1, @sec_buffer].pack("LLP")
 			end
-	  
+
 		private
-	  
+
 			# Unpacks the SecurityBufferDesc structure into member variables. We
 			# only want to do this once per struct, so the struct is deleted
-			# after unpacking. 
+			# after unpacking.
 			def unpack
 				if ! @unpacked && @sec_buffer && @struct
 					@bufferSize, @type = @sec_buffer.unpack("LL")
@@ -128,30 +128,30 @@ module Win32
 				end
 			end
 		end
-	  
+
 		# SEC_WINNT_AUTH_IDENTITY structure
 		class Identity
 			SEC_WINNT_AUTH_IDENTITY_ANSI = 0x1
 
 			attr_accessor :user, :domain, :password
-	    
+
 			def initialize(user = nil, domain = nil, password = nil)
 				@user = user
 				@domain = domain
 				@password = password
 				@flags = SEC_WINNT_AUTH_IDENTITY_ANSI
 			end
-	    
+
 			def to_p
-				[@user, @user ? @user.length : 0, 
+				[@user, @user ? @user.length : 0,
 				 @domain, @domain ? @domain.length : 0,
 				 @password, @password ? @password.length : 0,
 				 @flags].pack("PLPLPLL")
-			end    
+			end
 		end
 
 		# Takes a return result from an SSPI function and interprets the value.
-		class SSPIResult 
+		class SSPIResult
 			# Good results
 			SEC_E_OK = 0x00000000
 			SEC_I_CONTINUE_NEEDED = 0x00090312
@@ -172,27 +172,27 @@ module Win32
 			SEC_E_NOT_OWNER = 0x80090306
 			SEC_E_SECPKG_NOT_FOUND = 0x80090305
 			SEC_E_UNKNOWN_CREDENTIALS = 0x8009030D
-	    
+
 			@@map = {}
 			constants.each { |v| @@map[self.const_get(v.to_s)] = v }
 
 			attr_reader :value
-	    
+
 			def initialize(value)
 				# convert to unsigned long
 				value = [value].pack("L").unpack("L").first
 				raise "#{value.to_s(16)} is not a recognized result" unless @@map.has_key? value
 				@value = value
 			end
-	    
+
 			def to_s
 				@@map[@value].to_s
 			end
-	    
+
 			def ok?
 				@value == SEC_I_CONTINUE_NEEDED || @value == SEC_E_OK
 			end
-	    
+
 			def ==(other)
 				if other.is_a?(SSPIResult)
 					@value == other.value
@@ -205,14 +205,14 @@ module Win32
 		end
 
 		# Handles "Negotiate" type authentication. Geared towards authenticating with a proxy server over HTTP
-		class NegotiateAuth  
+		class NegotiateAuth
 			attr_accessor :credentials, :context, :contextAttributes, :user, :domain
 
 			# Default request flags for SSPI functions
 			REQUEST_FLAGS = ISC_REQ_CONFIDENTIALITY | ISC_REQ_REPLAY_DETECT | ISC_REQ_CONNECTION
 
 			# NTLM tokens start with this header always. Encoding alone adds "==" and newline, so remove those
-      B64_TOKEN_PREFIX = ["NTLMSSP"].pack("m").delete("=\n")  
+      B64_TOKEN_PREFIX = ["NTLMSSP"].pack("m").delete("=\n")
 
 			# Given a connection and a request path, performs authentication as the current user and returns
 			# the response from a GET request. The connnection should be a Net::HTTP object, and it should
@@ -222,7 +222,7 @@ module Win32
 			def NegotiateAuth.proxy_auth_get(http, path, user = nil, domain = nil)
 				raise "http must respond to :get" unless http.respond_to?(:get)
 				nego_auth = self.new user, domain
-	      
+
 				resp = http.get path, { "Proxy-Authorization" => "Negotiate " + nego_auth.get_initial_token }
 				if resp["Proxy-Authenticate"]
 					resp = http.get path, { "Proxy-Authorization" => "Negotiate " + nego_auth.complete_authentication(resp["Proxy-Authenticate"].split(" ").last.strip) }
@@ -230,7 +230,7 @@ module Win32
 
 				resp
 			end
-	    
+
 			# Creates a new instance ready for authentication as the given user in the given domain.
 			# Defaults to current user and domain as defined by ENV["USERDOMAIN"] and ENV["USERNAME"] if
 			# no arguments are supplied.
@@ -238,7 +238,7 @@ module Win32
 				if user.nil? && domain.nil? && ENV["USERNAME"].nil? && ENV["USERDOMAIN"].nil?
 					raise "A username or domain must be supplied since they cannot be retrieved from the environment"
 				end
-	      
+
 				@user = user || ENV["USERNAME"]
 				@domain = domain || ENV["USERDOMAIN"]
 			end
@@ -253,7 +253,7 @@ module Win32
 				@context = CtxtHandle.new
 				@contextAttributes = "\0" * 4
 
-				result = SSPIResult.new(API::InitializeSecurityContext.call(@credentials.to_p, nil, nil, 
+				result = SSPIResult.new(API::InitializeSecurityContext.call(@credentials.to_p, nil, nil,
 					REQUEST_FLAGS,0, SECURITY_NETWORK_DREP, nil, 0, @context.to_p, outputBuffer.to_p, @contextAttributes, TimeStamp.new.to_p))
 
 				if result.ok? then
@@ -262,15 +262,15 @@ module Win32
 					raise "Error: #{result.to_s}"
 				end
 			end
-	    
-			# Takes a token and gets the next token in the Negotiate authentication chain. Token can be Base64 encoded or not. 
+
+			# Takes a token and gets the next token in the Negotiate authentication chain. Token can be Base64 encoded or not.
 			# The token can include the "Negotiate" header and it will be stripped.
 			# Does not indicate if SEC_I_CONTINUE or SEC_E_OK was returned.
 			# Token returned is Base64 encoded w/ all new lines removed.
 			def complete_authentication(token)
 				raise "This object is no longer usable because its resources have been freed." if @cleaned_up
 
-				# Nil token OK, just set it to empty string      
+				# Nil token OK, just set it to empty string
 				token = "" if token.nil?
 
 				if token.include? "Negotiate"
@@ -278,17 +278,17 @@ module Win32
 					token = token.split(" ").last
 				end
 
-				if token.include? B64_TOKEN_PREFIX 
+				if token.include? B64_TOKEN_PREFIX
 					# indicates base64 encoded token
           token = token.strip.unpack("m")[0]
 				end
-	      
+
 				outputBuffer = SecurityBuffer.new
-				result = SSPIResult.new(API::InitializeSecurityContext.call(@credentials.to_p, @context.to_p, nil, 
-					REQUEST_FLAGS, 0, SECURITY_NETWORK_DREP, SecurityBuffer.new(token).to_p, 0, 
+				result = SSPIResult.new(API::InitializeSecurityContext.call(@credentials.to_p, @context.to_p, nil,
+					REQUEST_FLAGS, 0, SECURITY_NETWORK_DREP, SecurityBuffer.new(token).to_p, 0,
 					@context.to_p,
 					outputBuffer.to_p, @contextAttributes, TimeStamp.new.to_p))
-	       
+
 				if result.ok? then
 					return encode_token(outputBuffer.token)
 				else
@@ -316,7 +316,7 @@ module Win32
 				@credentials = CredHandle.new
 				ts = TimeStamp.new
 				@identity = Identity.new @user, @domain
-				result = SSPIResult.new(API::AcquireCredentialsHandle.call(nil, "Negotiate", SECPKG_CRED_OUTBOUND, nil, @identity.to_p, 
+				result = SSPIResult.new(API::AcquireCredentialsHandle.call(nil, "Negotiate", SECPKG_CRED_OUTBOUND, nil, @identity.to_p,
 					nil, nil, @credentials.to_p, ts.to_p))
 				raise "Error acquire credentials: #{result}" unless result.ok?
 			end

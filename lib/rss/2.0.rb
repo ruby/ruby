@@ -29,7 +29,7 @@ module RSS
       Category = Item::Category
 
       class Item
-      
+
         [
           ["comments", "?"],
           ["author", "?"],
@@ -57,9 +57,9 @@ module RSS
           _setup_maker_element(item)
           @guid.setup_maker(item) if @guid
         end
-        
+
         class Guid < Element
-          
+
           include RSS09
 
           [

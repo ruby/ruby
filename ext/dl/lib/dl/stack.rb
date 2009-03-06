@@ -39,9 +39,9 @@ module DL
         raise(RuntimeError, "sizeof(void*)?")
       end
     end
-    
+
     private
-    
+
     def align(addr, align)
       d = addr % align
       if( d == 0 )

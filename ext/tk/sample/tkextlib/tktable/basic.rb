@@ -3,7 +3,7 @@
 ## basic.rb
 ##
 ## This demo shows the basic use of the table widget
-## 
+##
 ## ( based on 'basic.tcl' included source archive of tktable extension )
 ##
 require 'tk'
@@ -22,19 +22,19 @@ cols = 8
 
 lbl = TkLabel.new(:text=>"TkTable v1 Example")
 
-table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :variable=>ary, 
-                        :width=>6, :height=>6, 
-                        :titlerows=>1, :titlecols=>2, 
-                        :roworigin=>-1, :colorigin=>-2, 
+table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :variable=>ary,
+                        :width=>6, :height=>6,
+                        :titlerows=>1, :titlecols=>2,
+                        :roworigin=>-1, :colorigin=>-2,
                         :rowstretchmode=>:last, :colstretchmode=>:last,
                         :rowtagcommand=>proc{|row|
                           row = Integer(row)
                           (row>0 && row%2 == 1)? 'OddRow': ''
-                        }, 
+                        },
                         :coltagcommand=>proc{|col|
                           col = Integer(col)
                           (col>0 && col%2 == 1)? 'OddCol': ''
-                        }, 
+                        },
                         :selectmode=>:extended, :sparsearray=>false)
 
 sx = table.xscrollbar(TkScrollbar.new)

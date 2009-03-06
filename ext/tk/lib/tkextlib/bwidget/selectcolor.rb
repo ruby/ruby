@@ -57,7 +57,7 @@ class Tk::BWidget::SelectColor::Dialog
 
   def create
     @keys['type'] = 'dialog'  # 'dialog' type returns color
-    tk_call(Tk::BWidget::SelectColor::TkCommandNames[0], 
+    tk_call(Tk::BWidget::SelectColor::TkCommandNames[0],
             @path, *hash_kv(@keys))
   end
 end
@@ -67,7 +67,7 @@ class Tk::BWidget::SelectColor::Menubutton
     keys = {} unless keys
     keys = _symbolkey2str(keys)
     keys['type'] = 'menubutton'  # 'toolbar' type returns widget path
-    window(tk_call(Tk::BWidget::SelectColor::TkCommandNames[0], 
+    window(tk_call(Tk::BWidget::SelectColor::TkCommandNames[0],
                    @path, *hash_kv(keys)))
   end
 end

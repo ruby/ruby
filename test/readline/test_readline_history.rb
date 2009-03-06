@@ -73,7 +73,7 @@ class Readline::TestHistory < Test::Unit::TestCase
       }.join
     end
   end
-  
+
   def test_to_s
     expected = "HISTORY"
     assert_equal(expected, HISTORY.to_s)
@@ -101,7 +101,7 @@ class Readline::TestHistory < Test::Unit::TestCase
         HISTORY[i]
       end
     end
-    
+
     invalid_indexes = [100_000_000_000_000_000_000,
                        -100_000_000_000_000_000_000]
     invalid_indexes.each do |i|
@@ -127,7 +127,7 @@ class Readline::TestHistory < Test::Unit::TestCase
     assert_raise(IndexError, NotImplementedError, "index=<0>") do
       HISTORY[0] = "set: 0"
     end
-    
+
     lines = push_history(5)
     invalid_indexes = [5, 6, 100, -6, -7, -100]
     invalid_indexes.each do |i|
@@ -135,7 +135,7 @@ class Readline::TestHistory < Test::Unit::TestCase
         HISTORY[i] = "set: #{i}"
       end
     end
-    
+
     invalid_indexes = [100_000_000_000_000_000_000,
                        -100_000_000_000_000_000_000]
     invalid_indexes.each do |i|
@@ -180,13 +180,13 @@ class Readline::TestHistory < Test::Unit::TestCase
   def test_pop
     begin
       assert_equal(nil, HISTORY.pop)
-      
+
       lines = push_history(5)
       (1..5).each do |i|
         assert_external_string_equal(lines[-i], HISTORY.pop)
         assert_equal(lines.length - i, HISTORY.length)
       end
-      
+
       assert_equal(nil, HISTORY.pop)
     rescue NotImplementedError
     end
@@ -195,13 +195,13 @@ class Readline::TestHistory < Test::Unit::TestCase
   def test_shift
     begin
       assert_equal(nil, HISTORY.shift)
-      
+
       lines = push_history(5)
       (0..4).each do |i|
         assert_external_string_equal(lines[i], HISTORY.shift)
         assert_equal(lines.length - (i + 1), HISTORY.length)
       end
-    
+
       assert_equal(nil, HISTORY.shift)
     rescue NotImplementedError
     end
@@ -276,7 +276,7 @@ class Readline::TestHistory < Test::Unit::TestCase
     assert_raise(IndexError, NotImplementedError, "index=<0>") do
       HISTORY.delete_at(0)
     end
-      
+
     lines = push_history(5)
     invalid_indexes = [5, 6, 100, -6, -7, -100]
     invalid_indexes.each do |i|
@@ -284,7 +284,7 @@ class Readline::TestHistory < Test::Unit::TestCase
         HISTORY.delete_at(i)
       end
     end
-    
+
     invalid_indexes = [100_000_000_000_000_000_000,
                        -100_000_000_000_000_000_000]
     invalid_indexes.each do |i|

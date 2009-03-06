@@ -20,12 +20,12 @@ module Gem
                    'installed gems') do |value, options|
           options[:all] = value
         end
-        add_option('--[no-]rdoc', 
+        add_option('--[no-]rdoc',
           'Include RDoc generated documents') do
           |value, options|
           options[:include_rdoc] = value
         end
-        add_option('--[no-]ri', 
+        add_option('--[no-]ri',
           'Include RI generated documents'
           ) do |value, options|
           options[:include_ri] = value

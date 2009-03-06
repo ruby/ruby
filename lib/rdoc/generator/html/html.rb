@@ -11,7 +11,7 @@ require 'rdoc/generator/html/common'
 # '[source]' link.
 #
 # This template *also* forms the basis of the frameless template.
-# 
+#
 # == Authors
 #
 # * Michael Granger <ged@FaerieMUD.org>

@@ -6,7 +6,7 @@ require "test/unit"
 
 if defined?(WIN32OLE_METHOD)
   class TestWIN32OLE_METHOD < Test::Unit::TestCase
-    
+
     def setup
       ole_type = WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "Shell")
       @m_open = WIN32OLE_METHOD.new(ole_type, "open")
@@ -125,7 +125,7 @@ if defined?(WIN32OLE_METHOD)
     def test_params
       params = @m_browse_for_folder.params
       assert_instance_of(Array, params)
-      assert_equal(4, params.size) 
+      assert_equal(4, params.size)
       assert_instance_of(WIN32OLE_PARAM, params[0])
     end
 

@@ -8,28 +8,28 @@ module RSS
     def setup
       @rss_version = "2.0"
     end
-    
+
     def test_Rss
       version = "1.0"
       encoding = "UTF-8"
       standalone = false
-      
+
       rss = Rss.new(@rss_version, version, encoding, standalone)
       setup_rss20(rss)
-      
+
       doc = REXML::Document.new(rss.to_s(false))
-      
+
       xmldecl = doc.xml_decl
-      
+
       %w(version encoding).each do |x|
         assert_equal(instance_eval(x), xmldecl.__send__(x))
       end
       assert_equal(standalone, !xmldecl.standalone.nil?)
-      
+
       assert_equal("", doc.root.namespace)
       assert_equal(@rss_version, doc.root.attributes["version"])
     end
-    
+
     def test_not_displayed_xml_stylesheets
       rss = Rss.new(@rss_version)
       plain_rss = rss.to_s
@@ -38,7 +38,7 @@ module RSS
         assert_equal(plain_rss, rss.to_s)
       end
     end
-    
+
     def test_xml_stylesheets
       [
         [{:href => "a.xsl", :type => "text/xsl"}],
@@ -57,7 +57,7 @@ module RSS
       title = "fugafuga"
       link = "http://hoge.com"
       description = "fugafugafugafuga"
-      
+
       language = "en-us"
       copyright = "Copyright 2002, Spartanburg Herald-Journal"
       managingEditor = "geo@herald.com (George Matesky)"
@@ -81,7 +81,7 @@ module RSS
       rating = '(PICS-1.1 "http://www.rsac.org/ratingsv01.html" l gen true comment "RSACi North America Server" for "http://www.rsac.org" on "1996.04.16T08:15-0500" r (n 0 s 0 v 0 l 0))'
 
       channel = Rss::Channel.new
-      
+
       elems = %w(title link description language copyright
                  managingEditor webMaster pubDate lastBuildDate
                  generator docs ttl rating)
@@ -94,10 +94,10 @@ module RSS
         channel.categories << Rss::Channel::Category.new(cat[:domain],
                                                          cat[:content])
       end
-      
+
       doc = REXML::Document.new(make_rss20(channel.to_s))
       c = doc.root.elements[1]
-      
+
       elems.each do |x|
         elem = c.elements[x]
         assert_equal(x, elem.name)
@@ -139,10 +139,10 @@ module RSS
                                       cloud_params[:registerProcedure],
                                       cloud_params[:protocol])
       cloud_params[:port] = cloud.port
-      
+
       doc = REXML::Document.new(cloud.to_s)
       cloud_elem = doc.root
-      
+
       actual = {}
       cloud_elem.attributes.each do |name, value|
         value = value.to_i if name == "port"
@@ -169,7 +169,7 @@ module RSS
 
       doc = REXML::Document.new(image.to_s)
       image_elem = doc.root
-      
+
       image_params.each do |name, value|
         value = image.__send__(name)
         actual = image_elem.elements[name.to_s].text
@@ -177,7 +177,7 @@ module RSS
         assert_equal(value, actual)
       end
     end
-    
+
     def test_channel_textInput
       textInput_params = {
         :title => "fugafuga",
@@ -192,13 +192,13 @@ module RSS
 
       doc = REXML::Document.new(textInput.to_s)
       input_elem = doc.root
-      
+
       textInput_params.each do |name, value|
         actual = input_elem.elements[name.to_s].text
         assert_equal(value, actual)
       end
     end
-    
+
     def test_channel_skip_days
       skipDays_values = [
         "Sunday",
@@ -208,15 +208,15 @@ module RSS
       skipDays_values.each do |value|
         skipDays.days << Rss::Channel::SkipDays::Day.new(value)
       end
-      
+
       doc = REXML::Document.new(skipDays.to_s)
       days_elem = doc.root
-      
+
       skipDays_values.each_with_index do |value, i|
         assert_equal(value, days_elem.elements[i + 1].text)
       end
     end
-    
+
     def test_channel_skip_hours
       skipHours_values = [
         "0",
@@ -229,7 +229,7 @@ module RSS
 
       doc = REXML::Document.new(skipHours.to_s)
       hours_elem = doc.root
-      
+
       skipHours_values.each_with_index do |value, i|
         expected = skipHours.hours[i].content
         assert_equal(expected, hours_elem.elements[i + 1].text.to_i)
@@ -260,7 +260,7 @@ module RSS
 
       item = Rss::Channel::Item.new
       channel.items << item
-      
+
       elems = %w(title link description author comments pubDate)
       elems.each do |x|
         value = instance_eval(x)
@@ -271,7 +271,7 @@ module RSS
         item.categories << Rss::Channel::Category.new(cat[:domain],
                                                       cat[:content])
       end
-      
+
       doc = REXML::Document.new(channel.to_s)
       channel_elem = doc.root
 
@@ -311,7 +311,7 @@ module RSS
                                                     enclosure_params[:length],
                                                     enclosure_params[:type])
       enclosure_params[:length] = enclosure.length
-      
+
       doc = REXML::Document.new(enclosure.to_s)
       enclosure_elem = doc.root
 
@@ -322,7 +322,7 @@ module RSS
       end
       assert_equal(enclosure_params, actual)
     end
-    
+
     def test_item_guid
       test_params = [
         {
@@ -345,10 +345,10 @@ module RSS
         else
           assert_equal(guid.isPermaLink, guid.PermaLink?)
         end
-        
+
         doc = REXML::Document.new(guid.to_s)
         guid_elem = doc.root
-      
+
         actual = {}
         actual[:content] = guid_elem.text if guid_elem.text
         guid_elem.attributes.each do |name, value|
@@ -358,7 +358,7 @@ module RSS
         assert_equal(guid_params, actual)
       end
     end
-    
+
     def test_item_source
       source_params = {
         :url => "http://www.tomalak.org/links2.xml",
@@ -370,7 +370,7 @@ module RSS
 
       doc = REXML::Document.new(source.to_s)
       source_elem = doc.root
-      
+
       actual = {}
       actual[:content] = source_elem.text
       source_elem.attributes.each do |name, value|

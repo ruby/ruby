@@ -94,7 +94,7 @@ EOT
 <#{expected_str}> expected but was
 <#{actual_str}>.
 EOT
-          # subsecond timestamp is not portable. 
+          # subsecond timestamp is not portable.
 	  assert_block(full_message) { expected.tv_sec == actual.tv_sec }
         }
       end

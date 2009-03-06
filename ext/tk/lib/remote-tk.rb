@@ -118,7 +118,7 @@ class RemoteTkIp
     @@DEFAULT_MASTER.assign_receiver_and_watchdog(self)
 
     @@IP_TABLE[@threadgroup] = self
-    @@TK_TABLE_LIST.size.times{ 
+    @@TK_TABLE_LIST.size.times{
       (tbl = {}).tainted? || tbl.taint
       @tk_table_list << tbl
     }
@@ -158,13 +158,13 @@ class RemoteTkIp
 
     return nil if timeout < 1
     @ret_val.value = ''
-    @interp._invoke('send', '-async', @remote, 
-                    'send', '-async', Tk.appname, 
+    @interp._invoke('send', '-async', @remote,
+                    'send', '-async', Tk.appname,
                     "set #{@ret_val.id} ready")
     Tk.update
     if @ret_val != 'ready'
       (1..(timeout*5)).each{
-        sleep 0.2 
+        sleep 0.2
         Tk.update
         break if @ret_val == 'ready'
       }
@@ -208,10 +208,10 @@ class RemoteTkIp
     cmds = @interp._merge_tklist(*TkUtil::_conv_args([], enc_mode, *cmds))
     if @displayof
       if async
-        @interp.__invoke('send', '-async', '-displayof', @displayof, 
+        @interp.__invoke('send', '-async', '-displayof', @displayof,
                          '--', @remote, *cmds)
       else
-        @interp.__invoke('send', '-displayof', @displayof, 
+        @interp.__invoke('send', '-displayof', @displayof,
                          '--', @remote, *cmds)
       end
     else
@@ -233,7 +233,7 @@ class RemoteTkIp
 
   def is_rubytk?
     return false if _appsend(false, false, 'info', 'command', 'ruby') == ""
-    [ _appsend(false, false, 'ruby', 'RUBY_VERSION'), 
+    [ _appsend(false, false, 'ruby', 'RUBY_VERSION'),
       _appsend(false, false, 'set', 'tk_patchLevel') ]
   end
 
@@ -302,7 +302,7 @@ class RemoteTkIp
     raise SecurityError, "no permission to manipulate" unless self.manipulable?
 
     if @displayof
-      lst = @interp._invoke_without_enc('winfo', 'interps', 
+      lst = @interp._invoke_without_enc('winfo', 'interps',
                                         '-displayof', @displayof)
     else
       lst = @interp._invoke_without_enc('winfo', 'interps')

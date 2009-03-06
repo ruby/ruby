@@ -1,12 +1,12 @@
 #
-#   push-ws.rb - 
+#   push-ws.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 
 module IRB

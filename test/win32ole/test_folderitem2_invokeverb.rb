@@ -32,7 +32,7 @@ if defined?(WIN32OLE)
       # Search the 'Create Shortcut (&S)' string in Japanese.
       # Yes, I know the string in the Windows 2000 Japanese Edition.
       # But I do not know about the string in any other Windows.
-      # 
+      #
       verbs = @fi2.verbs
       verbs.extend(Enumerable)
       @cp = WIN32OLE.codepage
@@ -40,7 +40,7 @@ if defined?(WIN32OLE)
         WIN32OLE.codepage = 932
       rescue
       end
-      @shortcut = verbs.collect{|verb| 
+      @shortcut = verbs.collect{|verb|
         verb.name
       }.find {|name|
         name.unpack("C*") == [131, 86, 131, 135, 129, 91, 131, 103, 131, 74, 131, 98, 131, 103, 130, 204, 141, 236, 144, 172, 40, 38, 83, 41]

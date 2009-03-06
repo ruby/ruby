@@ -2,7 +2,7 @@
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
 # Revision:: $Id$
-# License:: 
+# License::
 #   You can redistribute it and/or modify it under the same term as Ruby.
 #
 
@@ -34,7 +34,7 @@ module URI
       UNRESERVED = "-_.!~*'()#{ALNUM}"
       # reserved      = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" |
       #                 "$" | ","
-      # reserved      = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" | 
+      # reserved      = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" |
       #                 "$" | "," | "[" | "]" (RFC 2732)
       RESERVED = ";/?:@&=+$,\\[\\]"
 
@@ -103,7 +103,7 @@ module URI
 	# null uri
 
       when @regexp[:ABS_URI]
-	scheme, opaque, userinfo, host, port, 
+	scheme, opaque, userinfo, host, port,
 	  registry, path, query, fragment = $~[1..-1]
 
 	# URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
@@ -119,19 +119,19 @@ module URI
 	# server        = [ [ userinfo "@" ] hostport ]
 
 	if !scheme
-	  raise InvalidURIError, 
+	  raise InvalidURIError,
 	    "bad URI(absolute but no scheme): #{uri}"
 	end
 	if !opaque && (!path && (!host && !registry))
 	  raise InvalidURIError,
-	    "bad URI(absolute but no path): #{uri}" 
+	    "bad URI(absolute but no path): #{uri}"
 	end
 
       when @regexp[:REL_URI]
 	scheme = nil
 	opaque = nil
 
-	userinfo, host, port, registry, 
+	userinfo, host, port, registry,
 	  rel_segment, abs_path, query, fragment = $~[1..-1]
 	if rel_segment && abs_path
 	  path = rel_segment + abs_path
@@ -158,7 +158,7 @@ module URI
 
       path = '' if !path && !opaque # (see RFC2396 Section 5.2)
       ret = [
-	scheme, 
+	scheme,
 	userinfo, host, port,         # X
 	registry,                     # X
 	path,                         # Y
@@ -170,16 +170,16 @@ module URI
     end
 
     def parse(uri)
-      scheme, userinfo, host, port, 
+      scheme, userinfo, host, port,
        	registry, path, opaque, query, fragment = self.split(uri)
 
       if scheme && URI.scheme_list.include?(scheme.upcase)
-	URI.scheme_list[scheme.upcase].new(scheme, userinfo, host, port, 
-                                           registry, path, opaque, query, 
+	URI.scheme_list[scheme.upcase].new(scheme, userinfo, host, port,
+                                           registry, path, opaque, query,
                                            fragment, self)
       else
-	Generic.new(scheme, userinfo, host, port, 
-	   	    registry, path, opaque, query, 
+	Generic.new(scheme, userinfo, host, port,
+	   	    registry, path, opaque, query,
 	    	    fragment, self)
       end
     end
@@ -457,7 +457,7 @@ module URI
           end
         end
       else
-        raise ArgumentError, 
+        raise ArgumentError,
           "expected Array of or Hash of components of #{klass.to_s} (#{klass.component[1..-1].join(', ')})"
       end
       tmp[:scheme] = klass.to_s.sub(/\A.*::/, '').downcase
@@ -538,7 +538,7 @@ module URI
   def self.scheme_list
     @@schemes
   end
-  
+
   #
   # Base class for all URI exceptions.
   #
@@ -579,7 +579,7 @@ module URI
   #   * Opaque
   #   * Query
   #   * Fragment
-  # 
+  #
   # == Usage
   #
   #   require 'uri'
@@ -604,7 +604,7 @@ module URI
   # == Description
   #
   # Creates one of the URI's subclasses instance from the string.
-  #  
+  #
   # == Raises
   #
   # URI::InvalidURIError
@@ -617,11 +617,11 @@ module URI
   #   uri = URI.parse("http://www.ruby-lang.org/")
   #   p uri
   #   # => #<URI::HTTP:0x202281be URL:http://www.ruby-lang.org/>
-  #   p uri.scheme 
-  #   # => "http" 
-  #   p uri.host 
-  #   # => "www.ruby-lang.org" 
-  # 
+  #   p uri.scheme
+  #   # => "http"
+  #   p uri.host
+  #   # => "www.ruby-lang.org"
+  #
   def self.parse(uri)
     DEFAULT_PARSER.parse(uri)
   end
@@ -658,7 +658,7 @@ module URI
   #
   # == Args
   #
-  # +str+:: 
+  # +str+::
   #   String to extract URIs from.
   # +schemes+::
   #   Limit URI matching to a specific schemes.
@@ -686,25 +686,25 @@ module URI
   #
   # == Args
   #
-  # +match_schemes+:: 
+  # +match_schemes+::
   #   Array of schemes. If given, resulting regexp matches to URIs
   #   whose scheme is one of the match_schemes.
-  # 
+  #
   # == Description
   # Returns a Regexp object which matches to URI-like strings.
   # The Regexp object returned by this method includes arbitrary
   # number of capture group (parentheses).  Never rely on it's number.
-  # 
+  #
   # == Usage
   #
   #   require 'uri'
   #
   #   # extract first URI from html_string
   #   html_string.slice(URI.regexp)
-  # 
+  #
   #   # remove ftp URIs
   #   html_string.sub(URI.regexp(['ftp'])
-  # 
+  #
   #   # You should not rely on the number of parentheses
   #   html_string.scan(URI.regexp) do |*matches|
   #     p $&

@@ -18,7 +18,7 @@ class TestHTTP < Test::Unit::TestCase
   def test_parse
     u = URI.parse('http://a')
     assert_kind_of(URI::HTTP, u)
-    assert_equal(['http', 
+    assert_equal(['http',
 		   nil, 'a', URI::HTTP.default_port,
 		   '', nil, nil], uri_to_ary(u))
   end

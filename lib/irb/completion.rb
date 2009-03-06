@@ -1,5 +1,5 @@
 #
-#   irb/completor.rb - 
+#   irb/completor.rb -
 #   	$Release Version: 0.9$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
@@ -15,16 +15,16 @@ module IRB
 
     ReservedWords = [
       "BEGIN", "END",
-      "alias", "and", 
-      "begin", "break", 
+      "alias", "and",
+      "begin", "break",
       "case", "class",
       "def", "defined", "do",
       "else", "elsif", "end", "ensure",
-      "false", "for", 
-      "if", "in", 
-      "module", 
+      "false", "for",
+      "if", "in",
+      "module",
       "next", "nil", "not",
-      "or", 
+      "or",
       "redo", "rescue", "retry", "return",
       "self", "super",
       "then", "true",
@@ -32,10 +32,10 @@ module IRB
       "when", "while",
       "yield",
     ]
-      
+
     CompletionProc = proc { |input|
       bind = IRB.conf[:MAIN_CONTEXT].workspace.binding
-      
+
 #      puts "input: #{input}"
 
       case input
@@ -63,7 +63,7 @@ module IRB
 	candidates = Proc.instance_methods.collect{|m| m.to_s}
 	candidates |= Hash.instance_methods.collect{|m| m.to_s}
 	select_message(receiver, message, candidates)
-	
+
       when /^(:[^:.]*)$/
  	# Symbol
 	if Symbol.respond_to?(:all_symbols)
@@ -137,7 +137,7 @@ module IRB
 	gv = eval("global_variables", bind).collect{|m| m.to_s}
 	lv = eval("local_variables", bind).collect{|m| m.to_s}
 	cv = eval("self.class.constants", bind).collect{|m| m.to_s}
-	
+
 	if (gv | lv | cv).include?(receiver)
 	  # foo.func and foo is local var.
 	  candidates = eval("#{receiver}.methods", bind).collect{|m| m.to_s}
@@ -157,7 +157,7 @@ module IRB
 	    rescue Exception
 	      name = ""
 	    end
-	    next if name != "IRB::Context" and 
+	    next if name != "IRB::Context" and
 	      /^(IRB|SLex|RubyLex|RubyToken)/ =~ name
 	    candidates.concat m.instance_methods(false).collect{|x| x.to_s}
 	  }
@@ -177,7 +177,7 @@ module IRB
 
       else
 	candidates = eval("methods | private_methods | local_variables | self.class.constants", bind).collect{|m| m.to_s}
-			  
+
 	(candidates|ReservedWords).grep(/^#{Regexp.quote(input)}/)
       end
     }

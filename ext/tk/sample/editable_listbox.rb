@@ -3,7 +3,7 @@
 #
 #   When "DoubleClick-1" on a listbox item, the entry box is opend on the
 #   item. And when hit "Return" key on the entry box after modifying the
-#   text, the entry box is closed and the item is changed. Or when hit 
+#   text, the entry box is closed and the item is changed. Or when hit
 #   "Escape" key, the entry box is closed without modification.
 #
 #                              by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
@@ -14,8 +14,8 @@ class Editable_TkListbox < TkListbox
   def _ebox_placer(coord_y)
     idx = self.nearest(coord_y)
     x, y, w, h = self.bbox(idx)
-    @ebox.place(:x => 0, :relwidth => 1.0, 
-                :y => y - self.selectborderwidth, 
+    @ebox.place(:x => 0, :relwidth => 1.0,
+                :y => y - self.selectborderwidth,
                 :height => h + 2 * self.selectborderwidth)
     @ebox.pos = idx
     @ebox.value = self.listvariable.list[idx]

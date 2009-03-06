@@ -12,19 +12,19 @@ module DemoDnD
     titf1 = Tk::BWidget::TitleFrame.new(frame, :text=>'Drag source')
     subf = titf1.get_frame
 
-    ent1 = Tk::BWidget::LabelEntry.new(subf, :label=>'Entry', 
-                                       :labelwidth=>14, :dragenabled=>true, 
+    ent1 = Tk::BWidget::LabelEntry.new(subf, :label=>'Entry',
+                                       :labelwidth=>14, :dragenabled=>true,
                                        :dragevent=>3)
-    labf1 = Tk::BWidget::LabelFrame.new(subf, :text=>'Label (text)', 
+    labf1 = Tk::BWidget::LabelFrame.new(subf, :text=>'Label (text)',
                                         :width=>14)
     f = labf1.get_frame
-    lab = Tk::BWidget::Label.new(f, :text=>'Drag this text', 
+    lab = Tk::BWidget::Label.new(f, :text=>'Drag this text',
                                  :dragenabled=>true, :dragevent=>3).pack
 
-    labf2 = Tk::BWidget::LabelFrame.new(subf, :text=>'Label (bitmap)', 
+    labf2 = Tk::BWidget::LabelFrame.new(subf, :text=>'Label (bitmap)',
                                         :width=>14)
     f = labf2.get_frame
-    lab = Tk::BWidget::Label.new(f, :bitmap=>'info', 
+    lab = Tk::BWidget::Label.new(f, :bitmap=>'info',
                                  :dragenabled=>true, :dragevent=>3).pack
 
     Tk.pack(ent1, labf1, labf2, :side=>:top, :fill=>:x, :pady=>4)
@@ -32,11 +32,11 @@ module DemoDnD
     titf2 = Tk::BWidget::TitleFrame.new(frame, :text=>'Drop targets')
     subf = titf2.get_frame
 
-    ent1 = Tk::BWidget::LabelEntry.new(subf, :label=>'Entry', 
+    ent1 = Tk::BWidget::LabelEntry.new(subf, :label=>'Entry',
                                        :labelwidth=>14, :dropenabled=>true)
     labf1 = Tk::BWidget::LabelFrame.new(subf, :text=>'Label', :width=>14)
     f = labf1.get_frame
-    lab = Tk::BWidget::Label.new(f, :dropenabled=>true, 
+    lab = Tk::BWidget::Label.new(f, :dropenabled=>true,
                                  :highlightthickness=>1).pack(:fill=>:x)
     Tk.pack(ent1, labf1, :side=>:top, :fill=>:x, :pady=>4)
     Tk.pack(titf1, titf2, :pady=>4)

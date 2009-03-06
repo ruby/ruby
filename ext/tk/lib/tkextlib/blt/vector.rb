@@ -49,10 +49,10 @@ module Tk::BLT
         size = size.join(':')
       end
       if size
-        @id = TkCore::INTERP._invoke('::blt::vector', 'create', 
+        @id = TkCore::INTERP._invoke('::blt::vector', 'create',
                                      "#auto(#{size})", *hash_kv(keys))
       else
-        @id = TkCore::INTERP._invoke('::blt::vector', 'create', 
+        @id = TkCore::INTERP._invoke('::blt::vector', 'create',
                                      "#auto", *hash_kv(keys))
       end
 

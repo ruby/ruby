@@ -2,7 +2,7 @@
 require 'tk'
 require 'tkextlib/iwidgets'
 
-sf = Tk::Iwidgets::Scrolledframe.new(:width=>150, :height=>180, 
+sf = Tk::Iwidgets::Scrolledframe.new(:width=>150, :height=>180,
                                      :labeltext=>'scrolledframe')
 cs = sf.child_site
 

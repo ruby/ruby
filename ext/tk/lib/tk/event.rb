@@ -53,39 +53,39 @@ module TkEvent
       #-----+-------------------+------------------+-----------------------#
       #  ID |  const            |  group_flag      |  context_name         #
       #-----+-------------------+------------------+-----------------------#
-      [  2,  :KeyPress,          Grp::KEY,         'KeyPress',    'Key'    ], 
-      [  3,  :KeyRelease,        Grp::KEY,         'KeyRelease'            ], 
-      [  4,  :ButtonPress,       Grp::BUTTON,      'ButtonPress', 'Button' ], 
-      [  5,  :ButtonRelease,     Grp::BUTTON,      'ButtonRelease'         ], 
-      [  6,  :MotionNotify,      Grp::MOTION,      'Motion'                ], 
-      [  7,  :EnterNotify,       Grp::CROSSING,    'Enter'                 ], 
-      [  8,  :LeaveNotify,       Grp::CROSSING,    'Leave'                 ], 
-      [  9,  :FocusIn,           Grp::FOCUS,       'FocusIn'               ], 
-      [ 10,  :FocusOut,          Grp::FOCUS,       'FocusOut'              ], 
-      [ 11,  :KeymapNotify,      0,                                        ], 
-      [ 12,  :Expose,            Grp::EXPOSE,      'Expose'                ], 
-      [ 13,  :GraphicsExpose,    Grp::EXPOSE,                              ], 
-      [ 14,  :NoExpose,          0,                                        ], 
-      [ 15,  :VisibilityNotify,  Grp::VISIBILITY,  'Visibility'            ], 
-      [ 16,  :CreateNotify,      Grp::CREATE,      'Create'                ], 
-      [ 17,  :DestroyNotify,     Grp::DESTROY,     'Destroy'               ], 
-      [ 18,  :UnmapNotify,       Grp::UNMAP,       'Unmap'                 ], 
-      [ 19,  :MapNotify,         Grp::MAP,         'Map'                   ], 
-      [ 20,  :MapRequest,        Grp::MAPREQ,      'MapRequest'            ], 
-      [ 21,  :ReparentNotify,    Grp::REPARENT,    'Reparent'              ], 
-      [ 22,  :ConfigureNotify,   Grp::CONFIG,      'Configure'             ], 
-      [ 23,  :ConfigureRequest,  Grp::CONFIGREQ,   'ConfigureRequest'      ], 
-      [ 24,  :GravityNotify,     Grp::GRAVITY,     'Gravity'               ], 
-      [ 25,  :ResizeRequest,     Grp::RESIZEREQ,   'ResizeRequest'         ], 
-      [ 26,  :CirculateNotify,   Grp::CIRC,        'Circulate'             ], 
-      [ 27,  :CirculateRequest,  0,                'CirculateRequest'      ], 
-      [ 28,  :PropertyNotify,    Grp::PROP,        'Property'              ], 
-      [ 29,  :SelectionClear,    0,                                        ], 
-      [ 30,  :SelectionRequest,  0,                                        ], 
-      [ 31,  :SelectionNotify,   0,                                        ], 
-      [ 32,  :ColormapNotify,    Grp::COLORMAP,    'Colormap'              ], 
-      [ 33,  :ClientMessage,     0,                                        ], 
-      [ 34,  :MappingNotify,     0,                                        ], 
+      [  2,  :KeyPress,          Grp::KEY,         'KeyPress',    'Key'    ],
+      [  3,  :KeyRelease,        Grp::KEY,         'KeyRelease'            ],
+      [  4,  :ButtonPress,       Grp::BUTTON,      'ButtonPress', 'Button' ],
+      [  5,  :ButtonRelease,     Grp::BUTTON,      'ButtonRelease'         ],
+      [  6,  :MotionNotify,      Grp::MOTION,      'Motion'                ],
+      [  7,  :EnterNotify,       Grp::CROSSING,    'Enter'                 ],
+      [  8,  :LeaveNotify,       Grp::CROSSING,    'Leave'                 ],
+      [  9,  :FocusIn,           Grp::FOCUS,       'FocusIn'               ],
+      [ 10,  :FocusOut,          Grp::FOCUS,       'FocusOut'              ],
+      [ 11,  :KeymapNotify,      0,                                        ],
+      [ 12,  :Expose,            Grp::EXPOSE,      'Expose'                ],
+      [ 13,  :GraphicsExpose,    Grp::EXPOSE,                              ],
+      [ 14,  :NoExpose,          0,                                        ],
+      [ 15,  :VisibilityNotify,  Grp::VISIBILITY,  'Visibility'            ],
+      [ 16,  :CreateNotify,      Grp::CREATE,      'Create'                ],
+      [ 17,  :DestroyNotify,     Grp::DESTROY,     'Destroy'               ],
+      [ 18,  :UnmapNotify,       Grp::UNMAP,       'Unmap'                 ],
+      [ 19,  :MapNotify,         Grp::MAP,         'Map'                   ],
+      [ 20,  :MapRequest,        Grp::MAPREQ,      'MapRequest'            ],
+      [ 21,  :ReparentNotify,    Grp::REPARENT,    'Reparent'              ],
+      [ 22,  :ConfigureNotify,   Grp::CONFIG,      'Configure'             ],
+      [ 23,  :ConfigureRequest,  Grp::CONFIGREQ,   'ConfigureRequest'      ],
+      [ 24,  :GravityNotify,     Grp::GRAVITY,     'Gravity'               ],
+      [ 25,  :ResizeRequest,     Grp::RESIZEREQ,   'ResizeRequest'         ],
+      [ 26,  :CirculateNotify,   Grp::CIRC,        'Circulate'             ],
+      [ 27,  :CirculateRequest,  0,                'CirculateRequest'      ],
+      [ 28,  :PropertyNotify,    Grp::PROP,        'Property'              ],
+      [ 29,  :SelectionClear,    0,                                        ],
+      [ 30,  :SelectionRequest,  0,                                        ],
+      [ 31,  :SelectionNotify,   0,                                        ],
+      [ 32,  :ColormapNotify,    Grp::COLORMAP,    'Colormap'              ],
+      [ 33,  :ClientMessage,     0,                                        ],
+      [ 34,  :MappingNotify,     0,                                        ],
       [ 35,  :VirtualEvent,      Grp::VIRTUAL,                             ],
       [ 36,  :ActivateNotify,    Grp::ACTIVATE,    'Activate'              ],
       [ 37,  :DeactivateNotify,  Grp::ACTIVATE,    'Deactivate'            ],
@@ -153,12 +153,12 @@ module TkEvent
 
     FIELD_FLAG = {
       # key  =>  flag
-      'above'       => Grp::CONFIG, 
+      'above'       => Grp::CONFIG,
       'borderwidth' => (Grp::CREATE|Grp::CONFIG),
-      'button'      => Grp::BUTTON, 
-      'count'       => Grp::EXPOSE, 
-      'data'        => (Grp::VIRTUAL|Grp::STRING_DATA), 
-      'delta'       => Grp::MWHEEL, 
+      'button'      => Grp::BUTTON,
+      'count'       => Grp::EXPOSE,
+      'data'        => (Grp::VIRTUAL|Grp::STRING_DATA),
+      'delta'       => Grp::MWHEEL,
       'detail'      => (Grp::FOCUS|Grp::CROSSING),
       'focus'       => Grp::CROSSING,
       'height'      => (Grp::EXPOSE|Grp::CONFIG),
@@ -191,23 +191,23 @@ module TkEvent
     }
 
     FIELD_OPERATION = {
-      'root' => proc{|val| 
+      'root' => proc{|val|
         begin
           Tk.tk_call_without_enc('winfo', 'pathname', val)
           val
         rescue
           nil
         end
-      }, 
+      },
 
-      'subwindow' => proc{|val| 
+      'subwindow' => proc{|val|
         begin
           Tk.tk_call_without_enc('winfo', 'pathname', val)
           val
         rescue
           nil
         end
-      }, 
+      },
 
       'window' => proc{|val| nil}
     }
@@ -280,7 +280,7 @@ module TkEvent
         Tk.event_generate(win, type_name, opts)
       else
         # If type is KEY event, focus should be set to target widget.
-        # If not set, original widget will get the same event. 
+        # If not set, original widget will get the same event.
         # That will make infinite loop.
         w = Tk.tk_call_without_enc('focus')
         begin
@@ -296,58 +296,58 @@ module TkEvent
 
     # [ <'%' subst-key char>, <proc type char>, <instance var (accessor) name>]
     KEY_TBL = [
-      [ ?#, ?n, :serial ], 
-      [ ?a, ?s, :above ], 
-      [ ?b, ?n, :num ], 
-      [ ?c, ?n, :count ], 
-      [ ?d, ?s, :detail ], 
+      [ ?#, ?n, :serial ],
+      [ ?a, ?s, :above ],
+      [ ?b, ?n, :num ],
+      [ ?c, ?n, :count ],
+      [ ?d, ?s, :detail ],
       # ?e
-      [ ?f, ?b, :focus ], 
+      [ ?f, ?b, :focus ],
       # ?g
-      [ ?h, ?n, :height ], 
-      [ ?i, ?s, :win_hex ], 
+      [ ?h, ?n, :height ],
+      [ ?i, ?s, :win_hex ],
       # ?j
-      [ ?k, ?n, :keycode ], 
+      [ ?k, ?n, :keycode ],
       # ?l
-      [ ?m, ?s, :mode ], 
+      [ ?m, ?s, :mode ],
       # ?n
-      [ ?o, ?b, :override ], 
-      [ ?p, ?s, :place ], 
+      [ ?o, ?b, :override ],
+      [ ?p, ?s, :place ],
       # ?q
       # ?r
-      [ ?s, ?x, :state ], 
-      [ ?t, ?n, :time ], 
+      [ ?s, ?x, :state ],
+      [ ?t, ?n, :time ],
       # ?u
-      [ ?v, ?n, :value_mask ], 
-      [ ?w, ?n, :width ], 
-      [ ?x, ?n, :x ], 
-      [ ?y, ?n, :y ], 
+      [ ?v, ?n, :value_mask ],
+      [ ?w, ?n, :width ],
+      [ ?x, ?n, :x ],
+      [ ?y, ?n, :y ],
       # ?z
-      [ ?A, ?s, :char ], 
-      [ ?B, ?n, :borderwidth ], 
+      [ ?A, ?s, :char ],
+      [ ?B, ?n, :borderwidth ],
       # ?C
-      [ ?D, ?n, :wheel_delta ], 
-      [ ?E, ?b, :send_event ], 
+      [ ?D, ?n, :wheel_delta ],
+      [ ?E, ?b, :send_event ],
       # ?F
       # ?G
       # ?H
       # ?I
       # ?J
-      [ ?K, ?s, :keysym ], 
+      [ ?K, ?s, :keysym ],
       # ?L
       # ?M
-      [ ?N, ?n, :keysym_num ], 
+      [ ?N, ?n, :keysym_num ],
       # ?O
-      [ ?P, ?s, :property ], 
+      [ ?P, ?s, :property ],
       # ?Q
-      [ ?R, ?s, :rootwin_id ], 
-      [ ?S, ?s, :subwindow ], 
-      [ ?T, ?n, :type ], 
+      [ ?R, ?s, :rootwin_id ],
+      [ ?S, ?s, :subwindow ],
+      [ ?T, ?n, :type ],
       # ?U
       # ?V
-      [ ?W, ?w, :widget ], 
-      [ ?X, ?n, :x_root ], 
-      [ ?Y, ?n, :y_root ], 
+      [ ?W, ?w, :widget ],
+      [ ?X, ?n, :x_root ],
+      [ ?Y, ?n, :y_root ],
       # ?Z
       nil
     ]
@@ -356,16 +356,16 @@ module TkEvent
     #   the subst-key string will be converted to a bytecode (128+idx).
     LONGKEY_TBL = [
       # for example, for %CTT and %CST subst-key on tkdnd-2.0
-      # ['CTT', ?l, :drop_target_type], 
-      # ['CST', ?l, :drop_source_type], 
+      # ['CTT', ?l, :drop_target_type],
+      # ['CST', ?l, :drop_source_type],
     ]
 
     # [ <proc type char>, <proc/method to convert tcl-str to ruby-obj>]
     PROC_TBL = [
-      [ ?n, TkComm.method(:num_or_str) ], 
-      [ ?s, TkComm.method(:string) ], 
-      [ ?b, TkComm.method(:bool) ], 
-      [ ?w, TkComm.method(:window) ], 
+      [ ?n, TkComm.method(:num_or_str) ],
+      [ ?s, TkComm.method(:string) ],
+      [ ?b, TkComm.method(:bool) ],
+      [ ?w, TkComm.method(:window) ],
 
       [ ?x, proc{|val|
           begin
@@ -374,7 +374,7 @@ module TkEvent
             val
           end
         }
-      ], 
+      ],
 
       nil
     ]
@@ -399,25 +399,25 @@ module TkEvent
 
     # setup tables to be used by scan_args, _get_subst_key, _get_all_subst_keys
     #
-    #     _get_subst_key() and _get_all_subst_keys() generates key-string 
-    #     which describe how to convert callback arguments to ruby objects. 
-    #     When binding parameters are given, use _get_subst_key(). 
-    #     But when no parameters are given, use _get_all_subst_keys() to 
-    #     create a Event class object as a callback parameter. 
+    #     _get_subst_key() and _get_all_subst_keys() generates key-string
+    #     which describe how to convert callback arguments to ruby objects.
+    #     When binding parameters are given, use _get_subst_key().
+    #     But when no parameters are given, use _get_all_subst_keys() to
+    #     create a Event class object as a callback parameter.
     #
-    #     scan_args() is used when doing callback. It convert arguments 
-    #     ( which are Tcl strings ) to ruby objects based on the key string 
-    #     that is generated by _get_subst_key() or _get_all_subst_keys(). 
+    #     scan_args() is used when doing callback. It convert arguments
+    #     ( which are Tcl strings ) to ruby objects based on the key string
+    #     that is generated by _get_subst_key() or _get_all_subst_keys().
     #
     _setup_subst_table(KEY_TBL, PROC_TBL)
     # _setup_subst_table(KEY_TBL, LONGKEY_TBL, PROC_TBL) # if use longname-keys
 
     #
-    # NOTE: The order of parameters which passed to callback procedure is 
+    # NOTE: The order of parameters which passed to callback procedure is
     #        <extra_arg>, <extra_arg>, ... , <subst_arg>, <subst_arg>, ...
     #
 
-    # If you need support extra arguments given by Tcl/Tk, 
+    # If you need support extra arguments given by Tcl/Tk,
     # please override _get_extra_args_tbl
     #
     #def self._get_extra_args_tbl
@@ -436,15 +436,15 @@ module TkEvent
     alias sendevent send_event
 =end
     ALIAS_TBL = {
-      :button    => :num, 
-      :data      => :detail, 
-      :delta     => :wheel_delta, 
-      :root      => :rootwin_id, 
-      :rootx     => :x_root, 
-      :root_x    => :x_root, 
-      :rooty     => :y_root, 
-      :root_y    => :y_root, 
-      :sendevent => :send_event, 
+      :button    => :num,
+      :data      => :detail,
+      :delta     => :wheel_delta,
+      :root      => :rootwin_id,
+      :rootx     => :x_root,
+      :root_x    => :x_root,
+      :rooty     => :y_root,
+      :root_y    => :y_root,
+      :sendevent => :send_event,
       :window    => :widget
     }
 

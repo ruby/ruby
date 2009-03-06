@@ -47,7 +47,7 @@ module DL
       @libc = dlopen(LIBC_SO)
       @libm = dlopen(LIBM_SO)
     end
-    
+
     def assert_match(expected, actual, message="")
       assert(expected === actual, message)
     end

@@ -8,7 +8,7 @@
 
 # toplevel widget
 if defined?($entry2_demo) && $entry2_demo
-  $entry2_demo.destroy 
+  $entry2_demo.destroy
   $entry2_demo = nil
 end
 
@@ -82,7 +82,7 @@ TkFrame.new(base_frame, 'borderwidth'=>10) {|w|
   e3.pack('side'=>'top', 'fill'=>'x')
   s3.pack('side'=>'top', 'fill'=>'x')
 
-  # 
+  #
   e1.insert(0, 'Initial value')
   e2.insert('end', "This entry contains a long value, much too long ")
   e2.insert('end', "to fit in the window at one time, so long in fact ")

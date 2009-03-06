@@ -8,7 +8,7 @@
 
 # toplevel widget
 if defined?($cscroll_demo) && $cscroll_demo
-  $cscroll_demo.destroy 
+  $cscroll_demo.destroy
   $cscroll_demo = nil
 end
 
@@ -22,7 +22,7 @@ $cscroll_demo = TkToplevel.new {|w|
 base_frame = TkFrame.new($cscroll_demo).pack(:fill=>:both, :expand=>true)
 
 # label
-TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'4i', 
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'4i',
             'justify'=>'left', 'text'=>"This window displays a canvas widget that can be scrolled either using the scrollbars or by dragging with button 2 in the canvas.  If you click button 1 on one of the rectangles, its indices will be printed on stdout."){
   pack('side'=>'top')
 }
@@ -45,7 +45,7 @@ $cscroll_buttons = TkFrame.new(base_frame) {|frame|
 }
 $cscroll_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# frame 
+# frame
 unless $tk_version =~ /^4\.[01]/
   $cscroll_grid = TkFrame.new(base_frame) {
     pack('expand'=>'yes', 'fill'=>'both', 'padx'=>1, 'pady'=>1)
@@ -55,14 +55,14 @@ unless $tk_version =~ /^4\.[01]/
 end
 
 # canvas
-$cscroll_canvas = TkCanvas.new(base_frame, 
+$cscroll_canvas = TkCanvas.new(base_frame,
                                'relief'=>'sunken', 'borderwidth'=>2,
                                'scrollregion'=>['-11c', '-11c', '50c', '20c']
                                ) {|c|
   if $tk_version =~ /^4\.[01]/
-    pack('expand'=>'yes', 'fill'=>'both') 
+    pack('expand'=>'yes', 'fill'=>'both')
   else
-    grid('in'=>$cscroll_grid, 'padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>0, 
+    grid('in'=>$cscroll_grid, 'padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>0,
          'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
   end
 
@@ -71,18 +71,18 @@ $cscroll_canvas = TkCanvas.new(base_frame,
     if $tk_version =~ /^4\.[01]/
       pack('side'=>'right', 'fill'=>'y')
     else
-      grid('in'=>$cscroll_grid, 'padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>1, 
+      grid('in'=>$cscroll_grid, 'padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>1,
            'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
     end
   }
 
-  TkScrollbar.new(base_frame, 'orient'=>'horiz', 
+  TkScrollbar.new(base_frame, 'orient'=>'horiz',
                   'command'=>proc{|*args| c.xview(*args)}) {|hs|
     c.xscrollcommand(proc{|first,last| hs.set first,last})
     if $tk_version =~ /^4\.[01]/
-      pack('side'=>'bottom', 'fill'=>'x') 
+      pack('side'=>'bottom', 'fill'=>'x')
     else
-      grid('in'=>$cscroll_grid, 'padx'=>1, 'pady'=>1, 'row'=>1, 'column'=>0, 
+      grid('in'=>$cscroll_grid, 'padx'=>1, 'pady'=>1, 'row'=>1, 'column'=>0,
            'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
     end
   }
@@ -93,9 +93,9 @@ bg = $cscroll_canvas.configinfo('bg')[4]
   x = -10+3*i
   y = -10
   (0..9).each{|j|
-    TkcRectangle.new($cscroll_canvas, "#{x}c", "#{y}c", "#{x+2}c", "#{y+2}c", 
+    TkcRectangle.new($cscroll_canvas, "#{x}c", "#{y}c", "#{x+2}c", "#{y+2}c",
                      'outline'=>'black', 'fill'=>bg, 'tags'=>'rect')
-    TkcText.new($cscroll_canvas, "#{x+1}c", "#{y+1}c", 
+    TkcText.new($cscroll_canvas, "#{x+1}c", "#{y+1}c",
                 'text'=>"#{i},#{j}", 'anchor'=>'center', 'tags'=>'text')
     y += 3
   }
@@ -106,7 +106,7 @@ $cscroll_canvas.itembind('all', 'Any-Leave', proc{scrollLeave $cscroll_canvas})
 $cscroll_canvas.itembind('all', '1', proc{scrollButton $cscroll_canvas})
 $cscroll_canvas.itembind('all', 'Any-Enter', proc{scrollEnter $cscroll_canvas})
 $cscroll_canvas.bind('2', proc{|x,y| $cscroll_canvas.scan_mark(x,y)}, '%x %y')
-$cscroll_canvas.bind('B2-Motion', 
+$cscroll_canvas.bind('B2-Motion',
                      proc{|x,y| $cscroll_canvas.scan_dragto(x,y)}, '%x %y')
 
 def scrollEnter(c)

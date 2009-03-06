@@ -38,7 +38,7 @@ class Tk::Toplevel<TkWindow
 #    s << "-class"     << @classname if @classname
 #    s << "-colormap"  << @colormap  if @colormap
 #    s << "-container" << @container if @container
-#    s << "-screen"    << @screen    if @screen 
+#    s << "-screen"    << @screen    if @screen
 #    s << "-use"       << @use       if @use
 #    s << "-visual"    << @visual    if @visual
 #    tk_call 'toplevel', @path, *s
@@ -113,7 +113,7 @@ class Tk::Toplevel<TkWindow
       @use       = keys['use']
       @visual    = keys['visual']
       if !@classname && my_class_name
-        keys['class'] = @classname = my_class_name 
+        keys['class'] = @classname = my_class_name
       end
       if @classname.kind_of? TkBindTag
         @db_class = @classname
@@ -127,7 +127,7 @@ class Tk::Toplevel<TkWindow
       end
       keys, cmds = _wm_command_option_chk(keys)
       super(keys)
-      cmds.each{|k,v| 
+      cmds.each{|k,v|
         if v.kind_of? Array
           self.__send__(k,*v)
         else
@@ -162,7 +162,7 @@ class Tk::Toplevel<TkWindow
       keys = {}
     end
     if !@classname && my_class_name
-      keys['class'] = @classname = my_class_name 
+      keys['class'] = @classname = my_class_name
     end
     if @classname.kind_of? TkBindTag
       @db_class = @classname
@@ -176,7 +176,7 @@ class Tk::Toplevel<TkWindow
     end
     keys, cmds = _wm_command_option_chk(keys)
     super(parent, keys)
-    cmds.each{|k,v| 
+    cmds.each{|k,v|
       if v.kind_of? Array
         self.send(k,*v)
       else
@@ -200,8 +200,8 @@ class Tk::Toplevel<TkWindow
 
   def add_menu(menu_info, tearoff=false, opts=nil)
     # See tk/menuspec.rb for menu_info.
-    # opts is a hash of default configs for all of cascade menus. 
-    # Configs of menu_info can override it. 
+    # opts is a hash of default configs for all of cascade menus.
+    # Configs of menu_info can override it.
     if tearoff.kind_of?(Hash)
       opts = tearoff
       tearoff = false
@@ -212,7 +212,7 @@ class Tk::Toplevel<TkWindow
   def add_menubar(menu_spec, tearoff=false, opts=nil)
     # See tk/menuspec.rb for menu_spec.
     # opts is a hash of default configs for all of cascade menus.
-    # Configs of menu_spec can override it. 
+    # Configs of menu_spec can override it.
     menu_spec.each{|info| add_menu(info, tearoff, opts)}
     self.menu
   end

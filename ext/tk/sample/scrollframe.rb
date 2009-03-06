@@ -6,7 +6,7 @@
 #    When it is configured, scrollregion of the container is changed.
 #
 #    Scrollbars can be toggled by Tk::ScrollFrame#vscroll & hscroll.
-#    If horizontal or virtical scrollbar is turned off, the horizontal 
+#    If horizontal or virtical scrollbar is turned off, the horizontal
 #    or virtical size of embedded widgets is propagated.
 #
 #                         Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
@@ -27,8 +27,8 @@ class Tk::ScrollFrame < TkFrame
     @v_scroll = TkScrollbar.new(@frame, 'orient'=>'vertical')
 
     # create a canvas widget
-    @canvas = TkCanvas.new(@frame, 
-                           :borderwidth=>0, :selectborderwidth=>0, 
+    @canvas = TkCanvas.new(@frame,
+                           :borderwidth=>0, :selectborderwidth=>0,
                            :highlightthickness=>0)
 
     # allignment
@@ -215,7 +215,7 @@ if __FILE__ == $0
   TkButton.new(f, :text=>'foo button', :command=>proc{puts 'foo'}).pack
   TkButton.new(f, :text=>'baaar button', :command=>proc{puts 'baaar'}).pack
   TkButton.new(f, :text=>'baz button', :command=>proc{puts 'baz'}).pack
-  TkButton.new(f, :text=>'hoge hoge button', 
+  TkButton.new(f, :text=>'hoge hoge button',
                :command=>proc{puts 'hoge hoge'}).pack(:side=>:bottom)
 
   # f.hscroll(false)

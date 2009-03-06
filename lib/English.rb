@@ -11,7 +11,7 @@
 #  With English:
 #
 #      require "English"
-#      
+#
 #      $OUTPUT_FIELD_SEPARATOR = ' -- '
 #      "waterbuffalo" =~ /buff/
 #      print $LOADED_FEATURES, $POSTMATCH, $PID, "\n"
@@ -83,7 +83,7 @@ alias $DEFAULT_OUTPUT          $>
 # of the contents of all the files
 # given as command-line arguments, or <tt>$stdin</tt>
 # (in the case where there are no
-# arguments). <tt>$<</tt> supports methods similar to a 
+# arguments). <tt>$<</tt> supports methods similar to a
 # +File+ object:
 # +inmode+, +close+,
 # <tt>closed?</tt>, +each+,
@@ -91,7 +91,7 @@ alias $DEFAULT_OUTPUT          $>
 # +eof+, <tt>eof?</tt>, +file+,
 # +filename+, +fileno+,
 # +getc+, +gets+, +lineno+,
-# <tt>lineno=</tt>, +path+, 
+# <tt>lineno=</tt>, +path+,
 # +pos+, <tt>pos=</tt>,
 # +read+, +readchar+,
 # +readline+, +readlines+,
@@ -139,12 +139,12 @@ alias $ARGV                    $*
 alias $MATCH                   $&
 
 # The string preceding the match in the last
-# successful pattern match. This variable is local to 
+# successful pattern match. This variable is local to
 # the current scope. Read only. Thread local.
 alias $PREMATCH                $`
 
 # The string following the match in the last
-# successful pattern match. This variable is local to 
+# successful pattern match. This variable is local to
 # the current scope. Read only. Thread local.
 alias $POSTMATCH               $'
 

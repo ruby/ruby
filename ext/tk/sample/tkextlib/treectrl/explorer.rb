@@ -49,44 +49,44 @@ def demoExplorerDetails(t)
   height = t.font.metrics(:linespace)
   height = 18 if height < 18
 
-  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false, 
-              :itemheight=>height, :selectmode=>:extended, 
-              :xscrollincrement=>20, :scrollmargin=>16, 
+  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false,
+              :itemheight=>height, :selectmode=>:extended,
+              :xscrollincrement=>20, :scrollmargin=>16,
               :xscrolldelay=>[500, 50], :yscrolldelay=>[500, 50])
 
   init_pics('small-*')
 
   if $HasColumnCreate
-    t.column_create(:text=>'Name', :tag=>'name', 
+    t.column_create(:text=>'Name', :tag=>'name',
                     :width=>200, :arrow=>:up, :arrowpad=>6)
-    t.column_create(:text=>'Size', :tag=>'size', :justify=>:right, 
+    t.column_create(:text=>'Size', :tag=>'size', :justify=>:right,
                     :width=>60, :arrowside=>:left, :arrowgravity=>:right)
     t.column_create(:text=>'Type', :tag=>'type', :width=>120)
     t.column_create(:text=>'Modified', :tag=>'modified', :width=>130)
   else
-    t.column_configure(0, :text=>'Name', :tag=>'name', 
+    t.column_configure(0, :text=>'Name', :tag=>'name',
                        :width=>200, :arrow=>:up, :arrowpad=>6)
-    t.column_configure(1, :text=>'Size', :tag=>'size', :justify=>:right, 
+    t.column_configure(1, :text=>'Size', :tag=>'size', :justify=>:right,
                        :width=>60, :arrowside=>:left, :arrowgravity=>:right)
     t.column_configure(2, :text=>'Type', :tag=>'type', :width=>120)
     t.column_configure(3, :text=>'Modified', :tag=>'modified', :width=>130)
   end
 
-  t.element_create('e1', :image, 
+  t.element_create('e1', :image,
                    :image=>[
-                     @sel_images['small-folder'], ['selected'], 
+                     @sel_images['small-folder'], ['selected'],
                      @images['small-folder'], []
                    ])
-  t.element_create('e2', :text, :lines=>1, 
+  t.element_create('e2', :text, :lines=>1,
                    :fill=>[@SystemHighlightText, ['selected', 'focus']])
   t.element_create('txtType', :text, :lines=>1)
-  t.element_create('txtSize', :text, :lines=>1, 
+  t.element_create('txtSize', :text, :lines=>1,
                    :datatype=>:integer, :format=>'%dKB')
-  t.element_create('txtDate', :text, :lines=>1, 
+  t.element_create('txtDate', :text, :lines=>1,
                    :datatype=>:time, :format=>'%d/%m/%y %I:%M %p')
   t.element_create('e4', :rect, :showfocus=>true,
                    :fill=>[
-                     @SystemHighlight, ['selected', 'focus'], 
+                     @SystemHighlight, ['selected', 'focus'],
                      'gray', ['selected', '!focus']
                    ])
 
@@ -116,23 +116,23 @@ def demoExplorerDetails(t)
   @Priv[:sensitive, t] = [ ['name', 'styName', 'e1', 'e2'] ]
   @Priv[:dragimage, t] = [ ['name', 'styName', 'e1', 'e2'] ]
 
-  t.notify_bind(t, 'Edit-accept', 
+  t.notify_bind(t, 'Edit-accept',
                 proc{|w, i, tt| w.item_text(i, 0, tt)}, '%T %I %t')
 
   dir_proc = proc{|file|
     item = t.item_create
     t.item_style_set(item, 0, 'styName', 2, 'styType', 3, 'styDate')
-    t.item_complex(item, 
-                   [['e2', {:text=>File.basename(file)}]], 
-                   [], 
-                   [['txtType', {:text=>'Folder'}]], 
+    t.item_complex(item,
+                   [['e2', {:text=>File.basename(file)}]],
+                   [],
+                   [['txtType', {:text=>'Folder'}]],
                    [['txtDate', {:data=>File.mtime(file).tv_sec}]])
     t.item_lastchild(:root, item)
   }
 
   file_proc = proc{|file|
     item = t.item_create
-    t.item_style_set(item, 0, 'styName', 1, 'stySize', 
+    t.item_style_set(item, 0, 'styName', 1, 'stySize',
                            2, 'styType', 3, 'styDate')
 
     ext = File.extname(file)
@@ -151,14 +151,14 @@ def demoExplorerDetails(t)
     type = type[1..-1] << ' ' unless type.empty?
     type << 'File'
 
-    t.item_complex(item, 
-                   [ 
-                     ['e1', {:image=>[@sel_images[img], ['selected'], 
+    t.item_complex(item,
+                   [
+                     ['e1', {:image=>[@sel_images[img], ['selected'],
                                       @images[img], []]}],
                      ['e2', {:text=>File.basename(file)}]
-                   ], 
-                   [ ['txtSize', {:data=>File.size(file)/1024 + 1}] ], 
-                   [ ['txtType', {:text=>type}] ], 
+                   ],
+                   [ ['txtSize', {:data=>File.size(file)/1024 + 1}] ],
+                   [ ['txtType', {:text=>type}] ],
                    [ ['txtDate', {:data=>File.mtime(file).tv_sec}] ]
                    )
     t.item_lastchild(:root, item)
@@ -167,7 +167,7 @@ def demoExplorerDetails(t)
   demoExplorerAux(t, dir_proc, file_proc)
 
   @SortColumn = 0
-  t.notify_bind(t, 'Header-invoke', 
+  t.notify_bind(t, 'Header-invoke',
                 proc{|w, c| explorerHeaderInvoke(t, w, c)}, '%T %C')
 
   t.bindtags = [ t, 'TreeCtrlFileList', Tk::TreeCtrl, t.winfo_toplevel, :all ]
@@ -200,37 +200,37 @@ def explorerHeaderInvoke(t, w, c)
   case t.column_cget(c, :tag)
   when 'name'
     if dirCount > 0
-      t.item_sort(:root, order, {:last=>"root child #{lastDir}"}, 
+      t.item_sort(:root, order, {:last=>"root child #{lastDir}"},
                   {:column=>c, :dictionary=>true})
     end
     if dirCount < t.numitems - 1
-      t.item_sort(:root, order, {:first=>"root child #{dirCount}"}, 
+      t.item_sort(:root, order, {:first=>"root child #{dirCount}"},
                   {:column=>c, :dictionary=>true})
     end
 
   when 'size'
     if dirCount < t.numitems - 1
-      t.item_sort(:root, order, {:first=>"root child #{dirCount}"}, 
-                  {:column=>c, :integer=>true}, 
+      t.item_sort(:root, order, {:first=>"root child #{dirCount}"},
+                  {:column=>c, :integer=>true},
                   {:column=>'name', :dictionary=>true})
     end
 
   when 'type'
     if dirCount < t.numitems - 1
-      t.item_sort(:root, order, {:first=>"root child #{dirCount}"}, 
-                  {:column=>c, :dictionary=>true}, 
+      t.item_sort(:root, order, {:first=>"root child #{dirCount}"},
+                  {:column=>c, :dictionary=>true},
                   {:column=>'name', :dictionary=>true})
     end
 
   when 'modified'
     if dirCount > 0
-      t.item_sort(:root, order, {:last=>"root child #{lastDir}"}, 
-                  {:column=>c, :integer=>true}, 
+      t.item_sort(:root, order, {:last=>"root child #{lastDir}"},
+                  {:column=>c, :integer=>true},
                   {:column=>'name', :dictionary=>true})
     end
     if dirCount < t.numitems - 1
-      t.item_sort(:root, order, {:first=>"root child #{dirCount}"}, 
-                  {:column=>c, :integer=>true}, 
+      t.item_sort(:root, order, {:first=>"root child #{dirCount}"},
+                  {:column=>c, :integer=>true},
                   {:column=>'name', :dictionary=>true})
     end
 
@@ -241,9 +241,9 @@ def demoExplorerLargeIcons(t)
   # Item height is 32 for icon, 4 padding, 3 lines of text
   itemHeight = 32 + 4 + t.font.metrics(:linespace) * 3
 
-  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false, 
-              :selectmode=>:extended, :wrap=>:window, :orient=>:horizontal, 
-              :itemheight=>itemHeight, :showheader=>false, :scrollmargin=>16, 
+  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false,
+              :selectmode=>:extended, :wrap=>:window, :orient=>:horizontal,
+              :itemheight=>itemHeight, :showheader=>false, :scrollmargin=>16,
               :xscrolldelay=>[500, 50], :yscrolldelay=>[500, 50])
 
   init_pics('big-*')
@@ -254,17 +254,17 @@ def demoExplorerLargeIcons(t)
     t.column_configure(0, :width=>75)
   end
 
-  t.element_create('elemImg', :image, 
+  t.element_create('elemImg', :image,
                    :image=>[
-                     @sel_images['big-folder'], ['selected'], 
+                     @sel_images['big-folder'], ['selected'],
                      @images['big-folder'], []
                    ])
-  t.element_create('elemTxt', :text, :justify=>:center, 
-                   :lines=>1, :width=>71, :wrap=>:word, 
+  t.element_create('elemTxt', :text, :justify=>:center,
+                   :lines=>1, :width=>71, :wrap=>:word,
                    :fill=>[@SystemHighlightText, ['selected', 'focus']])
-  t.element_create('elemSel', :rect, :showfocus=>true, 
+  t.element_create('elemSel', :rect, :showfocus=>true,
                    :fill=>[
-                     @SystemHighlight, ['selected', 'focus'], 
+                     @SystemHighlight, ['selected', 'focus'],
                      'gray', ['selected']
                    ])
 
@@ -272,7 +272,7 @@ def demoExplorerLargeIcons(t)
   s = t.style_create('STYLE', :orient=>:vertical)
   t.style_elements(s, ['elemSel', 'elemImg', 'elemTxt'])
   t.style_layout(s, 'elemImg', :expand=>:we)
-  t.style_layout(s, 'elemTxt', 
+  t.style_layout(s, 'elemTxt',
                  :pady=>[4,0], :padx=>2, :squeeze=>:x, :expand=>:we)
   t.style_layout(s, 'elemSel', :union=>['elemTxt'])
 
@@ -280,7 +280,7 @@ def demoExplorerLargeIcons(t)
   @Priv[:sensitive, t] = [ [0, 'STYLE', 'elemImg', 'elemTxt'] ]
   @Priv[:dragimage, t] = [ [0, 'STYLE', 'elemImg', 'elemTxt'] ]
 
-  t.notify_bind(t, 'Edit-accept', 
+  t.notify_bind(t, 'Edit-accept',
                 proc{|w, i, tt| w.item_text(i, 0, tt)}, '%T %I %t')
 
   dir_proc = proc{|file|
@@ -310,9 +310,9 @@ def demoExplorerLargeIcons(t)
     type = type[1..-1] << ' ' unless type.empty?
     type << 'File'
 
-    t.item_complex(item, 
-                   [ 
-                     ['elemImg', {:image=>[@sel_images[img], ['selected'], 
+    t.item_complex(item,
+                   [
+                     ['elemImg', {:image=>[@sel_images[img], ['selected'],
                                            @images[img], []]}],
                      ['elemTxt', {:text=>File.basename(file)}]
                    ])
@@ -323,7 +323,7 @@ def demoExplorerLargeIcons(t)
 
   t.activate(t.index('root firstchild'))
 
-  t.notify_bind(t, 'ActiveItem', 
+  t.notify_bind(t, 'ActiveItem',
                 proc{|w, a, c|
                   w.item_element_configure(a, 0, 'elemTxt', :lines=>'')
                   w.item_element_configure(c, 0, 'elemTxt', :lines=>3)
@@ -346,9 +346,9 @@ def demoExplorerList(t)
   height = t.font.metrics(:linespace) + 2
   height = 18 if height < 18
 
-  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false, 
-              :itemheight=>height, :selectmode=>:extended, :wrap=>:window, 
-              :showheader=>false, :scrollmargin=>16, 
+  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false,
+              :itemheight=>height, :selectmode=>:extended, :wrap=>:window,
+              :showheader=>false, :scrollmargin=>16,
               :xscrolldelay=>[500, 50], :yscrolldelay=>[500, 50])
 
   init_pics('small-*')
@@ -359,16 +359,16 @@ def demoExplorerList(t)
     t.column_configure(0, :widthhack=>true)
   end
 
-  t.element_create('elemImg', :image, 
+  t.element_create('elemImg', :image,
                    :image=>[
-                     @sel_images['small-folder'], ['selected'], 
+                     @sel_images['small-folder'], ['selected'],
                      @images['small-folder'], []
                    ])
-  t.element_create('elemTxt', :text, :lines=>1, 
+  t.element_create('elemTxt', :text, :lines=>1,
                    :fill=>[@SystemHighlightText, ['selected', 'focus']])
-  t.element_create('elemSel', :rect, :showfocus=>true, 
+  t.element_create('elemSel', :rect, :showfocus=>true,
                    :fill=>[
-                     @SystemHighlight, ['selected', 'focus'], 
+                     @SystemHighlight, ['selected', 'focus'],
                      'gray', ['selected', '!focus']
                    ])
 
@@ -383,7 +383,7 @@ def demoExplorerList(t)
   @Priv[:sensitive, t] = [ [0, 'STYLE', 'elemImg', 'elemTxt'] ]
   @Priv[:dragimage, t] = [ [0, 'STYLE', 'elemImg', 'elemTxt'] ]
 
-  t.notify_bind(t, 'Edit-accept', 
+  t.notify_bind(t, 'Edit-accept',
                 proc{|w, i, tt| w.item_text(i, 0, tt)}, '%T %I %t')
 
   dir_proc = proc{|file|
@@ -413,9 +413,9 @@ def demoExplorerList(t)
     type = type[1..-1] << ' ' unless type.empty?
     type << 'File'
 
-    t.item_complex(item, 
-                   [ 
-                     ['elemImg', {:image=>[@sel_images[img], ['selected'], 
+    t.item_complex(item,
+                   [
+                     ['elemImg', {:image=>[@sel_images[img], ['selected'],
                                            @images[img], []]}],
                      ['elemTxt', {:text=>File.basename(file)}]
                    ])

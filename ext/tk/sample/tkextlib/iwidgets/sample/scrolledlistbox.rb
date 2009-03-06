@@ -4,13 +4,13 @@ require 'tkextlib/iwidgets'
 
 TkOption.add('*textBackground', 'white')
 
-slb = Tk::Iwidgets::Scrolledlistbox.new(:selectmode=>:single, 
+slb = Tk::Iwidgets::Scrolledlistbox.new(:selectmode=>:single,
                                         :vscrollmode=>:static,
                                         :hscrollmode=>:dynamic,
-                                        :labeltext=>'List', 
+                                        :labeltext=>'List',
                                         :selectioncommand=>proc{
                                           puts(slb.get_curselection)
-                                        }, 
+                                        },
                                         :dblclickcommand=>proc{
                                           puts('Double Click')
                                           puts(slb.get_curselection)

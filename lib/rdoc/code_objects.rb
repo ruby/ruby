@@ -340,7 +340,7 @@ module RDoc
       meth.add_alias(new_meth)
       add_method(new_meth)
     end
-    
+
     def add_alias(an_alias)
       meth = find_instance_method_named(an_alias.old_name)
 
@@ -453,7 +453,7 @@ module RDoc
       @method_list.each {|m| yield m}
     end
 
-    def each_attribute 
+    def each_attribute
       @attributes.each {|a| yield a}
     end
 
@@ -658,7 +658,7 @@ module RDoc
 
     def self.find_class_named(name)
      @@all_classes.each_value do |c|
-        res = c.find_class_named(name) 
+        res = c.find_class_named(name)
         return res if res
       end
       nil
@@ -767,7 +767,7 @@ module RDoc
       raise NoMethodError, "#{full_name} is a module" if module?
 
       if @superclass.nil? or @superclass == 'Object' then
-        @superclass = superclass 
+        @superclass = superclass
       end
     end
 

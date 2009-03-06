@@ -17,7 +17,7 @@
 
 == Version
   $Id$
-  
+
   2001-11-06: Contiributed to Ruby/OpenSSL project.
   2004-03-06: Some code is merged in to net/http.
 

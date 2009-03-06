@@ -3,7 +3,7 @@ def demoInternetOptions (t)
 
   height = t.font.metrics(:linespace) + 2
   height = 18 if height < 18
-  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false, 
+  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false,
               :itemheight=>height, :selectmode=>:browse)
 
   init_pics('internet-*')
@@ -19,14 +19,14 @@ def demoInternetOptions (t)
   t.state_define('on')
 
   t.element_create('e1', :image, :image=>[
-                     @images['internet-check-on'],  ['check', 'on'], 
-                     @images['internet-check-off'], ['check'], 
-                     @images['internet-radio-on'],  ['radio', 'on'], 
+                     @images['internet-check-on'],  ['check', 'on'],
+                     @images['internet-check-off'], ['check'],
+                     @images['internet-radio-on'],  ['radio', 'on'],
                      @images['internet-radio-off'], ['radio']
                    ])
-  t.element_create('e2', :text, 
+  t.element_create('e2', :text,
                    :fill=>[@SystemHighlightText, ['selected', 'focus']])
-  t.element_create('e3', :rect, :showfocus=>true, 
+  t.element_create('e3', :rect, :showfocus=>true,
                    :fill=>[@SystemHighlight, ['selected', 'focus']])
 
   s = t.style_create('s1')
@@ -38,18 +38,18 @@ def demoInternetOptions (t)
   parentList = [:root, '', '', '', '', '', '']
   parent = :root
   [
-    [0, :print, "Printing", "", ""], 
-        [1, :off, "Print background colors and images", "o1", ""], 
-    [0, :search, "Search from Address bar", "", ""], 
-        [1, :search, "When searching", "", ""], 
-            [2, :off, "Display results, and go to the most likely sites", 
-                                                                 "o2", "r1"], 
-            [2, :off, "Do not search from the Address bar", "o3", "r1"], 
-            [2, :off, "Just display the results in the main window", 
+    [0, :print, "Printing", "", ""],
+        [1, :off, "Print background colors and images", "o1", ""],
+    [0, :search, "Search from Address bar", "", ""],
+        [1, :search, "When searching", "", ""],
+            [2, :off, "Display results, and go to the most likely sites",
+                                                                 "o2", "r1"],
+            [2, :off, "Do not search from the Address bar", "o3", "r1"],
+            [2, :off, "Just display the results in the main window",
                                                                  "o4", "r1"],
-            [2, :on, "Just go to the most likely site", "o5", "r1"], 
-    [0, :security, "Security", "", ""], 
-        [1, :on, "Check for publisher's certificate revocation", "o5", ""], 
+            [2, :on, "Just go to the most likely site", "o5", "r1"],
+    [0, :security, "Security", "", ""],
+        [1, :on, "Check for publisher's certificate revocation", "o5", ""],
         [1, :off, "Check for server certificate revocation (requires restart)",
                                                                  "o6", ""]
   ].each{|depth, setting, text, option, group|
@@ -73,7 +73,7 @@ def demoInternetOptions (t)
         t.item_state_set(item, 'radio')
       end
     else
-      t.item_element_configure(item, 0, 'e1', 
+      t.item_element_configure(item, 0, 'e1',
                                :image=>@images["internet-#{setting}"])
     end
     t.item_lastchild(parentList[depth], item)
@@ -146,7 +146,7 @@ end
 def demoInternetOptions_2(t)
   height = t.font.metrics(:linespace) + 2
   height = 18 if height < 18
-  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false, 
+  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false,
               :itemheight=>height, :selectmode=>:browse)
 
   init_pics('internet-*')
@@ -154,9 +154,9 @@ def demoInternetOptions_2(t)
   t.column_configure(0, :text=>'Internet Options')
 
   t.element_create('e1', :image)
-  t.element_create('e2', :text, 
+  t.element_create('e2', :text,
                    :fill=>[@SystemHighlightText, ['selected', 'focus']])
-  t.element_create('e3', :rect, :showfocus=>true, 
+  t.element_create('e3', :rect, :showfocus=>true,
                    :fill=>[@SystemHighlight, ['selected', 'focus']])
 
   s = t.style_create('s1')
@@ -168,18 +168,18 @@ def demoInternetOptions_2(t)
   parentList = [:root, '', '', '', '', '', '']
   parent = :root
   [
-    [0, :print, "Printing", "", ""], 
-        [1, :off, "Print background colors and images", "o1", ""], 
-    [0, :search, "Search from Address bar", "", ""], 
-        [1, :search, "When searching", "", ""], 
-            [2, :off, "Display results, and go to the most likely sites", 
-                                                                 "o2", "r1"], 
-            [2, :off, "Do not search from the Address bar", "o3", "r1"], 
-            [2, :off, "Just display the results in the main window", 
+    [0, :print, "Printing", "", ""],
+        [1, :off, "Print background colors and images", "o1", ""],
+    [0, :search, "Search from Address bar", "", ""],
+        [1, :search, "When searching", "", ""],
+            [2, :off, "Display results, and go to the most likely sites",
+                                                                 "o2", "r1"],
+            [2, :off, "Do not search from the Address bar", "o3", "r1"],
+            [2, :off, "Just display the results in the main window",
                                                                  "o4", "r1"],
-            [2, :on, "Just go to the most likely site", "o5", "r1"], 
-    [0, :security, "Security", "", ""], 
-        [1, :on, "Check for publisher's certificate revocation", "o5", ""], 
+            [2, :on, "Just go to the most likely site", "o5", "r1"],
+    [0, :security, "Security", "", ""],
+        [1, :on, "Check for publisher's certificate revocation", "o5", ""],
         [1, :off, "Check for server certificate revocation (requires restart)",
                                                                  "o6", ""]
   ].each{|depth, setting, text, option, group|
@@ -201,7 +201,7 @@ def demoInternetOptions_2(t)
         t.item_element_configure(item, 0, 'e1', :image=>img)
       end
     else
-      t.item_element_configure(item, 0, 'e1', 
+      t.item_element_configure(item, 0, 'e1',
                                :image=>@images["internet-#{setting}"])
     end
     t.item_lastchild(parentList[depth], item)
@@ -256,16 +256,16 @@ def optionButton1_2(w, x, y)
       else
         setting = :on
       end
-      w.item_element_configure(item, 0, 'e1', 
+      w.item_element_configure(item, 0, 'e1',
                                :image=>@images["internet-check-#{setting}"])
       @Option[:setting, item] = setting
     else
       # a radiobutton
       current = @Option[:current, group]
       return if current == item.to_s
-      w.item_element_configure(current, 0, 'e1', 
+      w.item_element_configure(current, 0, 'e1',
                                :image=>@images["internet-radio-off"])
-      w.item_element_configure(item, 0, 'e1', 
+      w.item_element_configure(item, 0, 'e1',
                                :image=>@images["internet-radio-on"])
       @Option[:setting, item] = :on
       @Option[:current, group] = item

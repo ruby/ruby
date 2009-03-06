@@ -490,7 +490,7 @@ end
       'i386-mswin32_80'   => 'a-1-x86-mswin32-80',
       'i386-mingw32'      => 'a-1-x86-mingw32'
     }
-    
+
     test_cases.each do |arch, expected|
       util_set_arch arch
       @a1.platform = 'current'

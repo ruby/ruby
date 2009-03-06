@@ -11,7 +11,7 @@ module Rake
   # The RDocTask will create the following targets:
   #
   # [<b><em>rdoc</em></b>]
-  #   Main task for this RDOC task.  
+  #   Main task for this RDOC task.
   #
   # [<b>:clobber_<em>rdoc</em></b>]
   #   Delete all the rdoc files.  This target is automatically
@@ -80,7 +80,7 @@ module Rake
       yield self if block_given?
       define
     end
-    
+
     # Create the tasks defined by this task lib.
     def define
       if name.to_s != "rdoc"
@@ -89,17 +89,17 @@ module Rake
 
       desc "Build the #{name} HTML Files"
       task name
-      
+
       desc "Force a rebuild of the RDOC files"
       task "re#{name}" => ["clobber_#{name}", name]
-      
-      desc "Remove rdoc products" 
+
+      desc "Remove rdoc products"
       task "clobber_#{name}" do
         rm_r rdoc_dir rescue nil
       end
-      
+
       task :clobber => ["clobber_#{name}"]
-      
+
       directory @rdoc_dir
       task name => [rdoc_target]
       file rdoc_target => @rdoc_files + [Rake.application.rakefile] do

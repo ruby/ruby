@@ -3,15 +3,15 @@
 #  TkTextIO class :: handling I/O stream on a TkText widget
 #                             by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
-#  NOTE: TkTextIO supports 'character' (not 'byte') access only. 
-#        So, for example, TkTextIO#getc returns a character, TkTextIO#pos 
-#        means the character position, TkTextIO#read(size) counts by 
+#  NOTE: TkTextIO supports 'character' (not 'byte') access only.
+#        So, for example, TkTextIO#getc returns a character, TkTextIO#pos
+#        means the character position, TkTextIO#read(size) counts by
 #        characters, and so on.
-#        Of course, it is available to make TkTextIO class to suuport 
-#        'byte' access. However, it may break multi-byte characters. 
+#        Of course, it is available to make TkTextIO class to suuport
+#        'byte' access. However, it may break multi-byte characters.
 #        and then, displayed string on the text widget may be garbled.
-#        I think that it is not good on the supposed situation of using 
-#        TkTextIO. 
+#        I think that it is not good on the supposed situation of using
+#        TkTextIO.
 #
 require 'tk'
 require 'tk/text'
@@ -24,14 +24,14 @@ class TkTextIO < TkText
 
   OPT_DEFAULTS = {
     'mode'       => nil,
-    'overwrite'  => false, 
-    'text'       => nil, 
-    'show'       => :pos, 
-    'wrap'       => 'char', 
-    'sync'       => true, 
-    'prompt'     => nil, 
-    'prompt_cmd' => nil, 
-    'hist_size'  => 1000, 
+    'overwrite'  => false,
+    'text'       => nil,
+    'show'       => :pos,
+    'wrap'       => 'char',
+    'sync'       => true,
+    'prompt'     => nil,
+    'prompt_cmd' => nil,
+    'hist_size'  => 1000,
   }
 
   def create_self(keys)
@@ -46,7 +46,7 @@ class TkTextIO < TkText
     @buf_size = 0
     @buf_max = 1024
 
-    @write_buf_queue, @write_buf_mutex, 
+    @write_buf_queue, @write_buf_mutex,
     @read_buf_queue,  @read_buf_mutex  = @@create_queues.call
 
     @idle_flush  = TkTimer.new(:idle, 1, proc{ @flusher.run rescue nil })
@@ -87,7 +87,7 @@ class TkTextIO < TkText
 
   def _get_io_params(keys)
     opts = {}
-    self.class.const_get(:OPT_DEFAULTS).each{|k, v| 
+    self.class.const_get(:OPT_DEFAULTS).each{|k, v|
       if keys.has_key?(k)
         opts[k] = keys.delete(k)
       else
@@ -261,7 +261,7 @@ class TkTextIO < TkText
       Tk.callback_break
     end
   end
-  private :_cb_up, :_cb_down, :_cb_left, :_cb_backspace, 
+  private :_cb_up, :_cb_down, :_cb_left, :_cb_backspace,
           :_cb_ctrl_a, :_cb_ctrl_u
 
   def _setup_console_bindings
@@ -484,7 +484,7 @@ class TkTextIO < TkText
     Thread.pass
     if @open[:w] || ! @write_buffer.empty?
       @write_buf_mutex.synchronize {
-        _sync_write_buf(@write_buffer) 
+        _sync_write_buf(@write_buffer)
         @write_buffer[0..-1] = ''
       }
     end
@@ -666,7 +666,7 @@ class TkTextIO < TkText
       @txtpos.set('end - 1 char')
     elsif rs == ''
       @count_var.value  # make it global
-      idx = tksearch_with_count([:regexp], @count_var, 
+      idx = tksearch_with_count([:regexp], @count_var,
                                    "\n(\n)+", @txtpos, 'end - 1 char')
       if idx
         s = get(@txtpos, idx) << "\n"
@@ -779,9 +779,9 @@ class TkTextIO < TkText
   end
 
   def show_mode=(mode)
-    # define show mode  when file position is changed. 
-    #  mode == :pos or "pos" or true :: see current file position. 
-    #  mode == :insert or "insert"   :: see insert cursor position. 
+    # define show mode  when file position is changed.
+    #  mode == :pos or "pos" or true :: see current file position.
+    #  mode == :insert or "insert"   :: see insert cursor position.
     #  mode == nil or false          :: do nothing
     #  else see 'mode' position ('mode' should be text index or mark)
     case mode
@@ -921,9 +921,9 @@ if __FILE__ == $0
   ev_loop = Thread.new{Tk.mainloop}
 
   f = TkFrame.new.pack
-  #tio = TkTextIO.new(f, :show=>:nil, 
-  #tio = TkTextIO.new(f, :show=>:pos, 
-  tio = TkTextIO.new(f, :show=>:insert, 
+  #tio = TkTextIO.new(f, :show=>:nil,
+  #tio = TkTextIO.new(f, :show=>:pos,
+  tio = TkTextIO.new(f, :show=>:insert,
                      :text=>">>> This is an initial text line. <<<\n\n"){
 #    yscrollbar(TkScrollbar.new(f).pack(:side=>:right, :fill=>:y))
     pack(:side=>:left, :fill=>:both, :expand=>true)
@@ -1045,12 +1045,12 @@ if __FILE__ == $0
   num = 0
 #  io = TkTextIO.new(:mode=>:console, :prompt=>'').pack
 #=begin
-  io = TkTextIO.new(:mode=>:console, 
+  io = TkTextIO.new(:mode=>:console,
                     :prompt_cmd=>proc{
                       s = "[#{num}]"
                       num += 1
                       s
-                    }, 
+                    },
                     :prompt=>'-> ').pack
 #=end
   Thread.new{loop{sleep 2; io.puts 'hoge'}}

@@ -160,7 +160,7 @@ module JSON
   # * *indent*: a string used to indent levels (default: ''),
   # * *space*: a string that is put after, a : or , delimiter (default: ''),
   # * *space_before*: a string that is put before a : pair delimiter (default: ''),
-  # * *object_nl*: a string that is put at the end of a JSON object (default: ''), 
+  # * *object_nl*: a string that is put at the end of a JSON object (default: ''),
   # * *array_nl*: a string that is put at the end of a JSON array (default: ''),
   # * *check_circular*: true if checking for circular data structures
   #   should be done (the default), false otherwise.

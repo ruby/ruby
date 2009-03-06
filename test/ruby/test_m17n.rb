@@ -960,8 +960,8 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_sub2
-    s = "\x80".force_encoding("ASCII-8BIT")     
-    r = Regexp.new("\x80".force_encoding("ASCII-8BIT")) 
+    s = "\x80".force_encoding("ASCII-8BIT")
+    r = Regexp.new("\x80".force_encoding("ASCII-8BIT"))
     s2 = s.sub(r, "")
     assert(s2.empty?)
     assert(s2.ascii_only?)

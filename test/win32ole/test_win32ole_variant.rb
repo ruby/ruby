@@ -102,7 +102,7 @@ if defined?(WIN32OLE_VARIANT)
       assert_equal(0, obj.value)
       assert_equal(WIN32OLE::VARIANT::VT_UI4, obj.vartype)
 
-      
+
       if defined?(WIN32OLE::VARIANT::VT_I8)
         obj = WIN32OLE_VARIANT.new(nil, WIN32OLE::VARIANT::VT_I8)
         assert_equal(0, obj.value)
@@ -114,7 +114,7 @@ if defined?(WIN32OLE_VARIANT)
         assert_equal(0, obj.value)
         assert_equal(WIN32OLE::VARIANT::VT_UI8, obj.vartype)
       end
-      
+
       obj = WIN32OLE_VARIANT.new(nil, WIN32OLE::VARIANT::VT_INT)
       assert_equal(0, obj.value)
       assert_equal(WIN32OLE::VARIANT::VT_INT, obj.vartype)
@@ -251,7 +251,7 @@ if defined?(WIN32OLE_VARIANT)
       assert_equal(5, obj.value)
       assert_equal(WIN32OLE::VARIANT::VT_UINT|WIN32OLE::VARIANT::VT_BYREF, obj.vartype)
     end
-    
+
     # This test is failed in cygwin.
     # The tagVARIANT definition has no union member pllVal in cygwin.
     def test_s_new_with_i8_byref
@@ -263,7 +263,7 @@ if defined?(WIN32OLE_VARIANT)
         STDERR.puts("\n#{__FILE__}:#{__LINE__}:#{self.class.name}.test_s_new_with_i8_byref is skipped")
       end
     end
-    
+
     # This test is failed in cygwin.
     # The tagVARIANT definition has no union member pullVal in cygwin.
     def test_s_new_with_ui8_byref
@@ -319,7 +319,7 @@ if defined?(WIN32OLE_VARIANT)
       obj = WIN32OLE_VARIANT.array([2,3], WIN32OLE::VARIANT::VT_I4|WIN32OLE::VARIANT::VT_BYREF)
       assert_equal(WIN32OLE::VARIANT::VT_I4|WIN32OLE::VARIANT::VT_BYREF|WIN32OLE::VARIANT::VT_ARRAY, obj.vartype)
       assert_equal([[0, 0, 0],[0, 0, 0]], obj.value)
-      
+
       obj = WIN32OLE_VARIANT.array([2,3], WIN32OLE::VARIANT::VT_I4|WIN32OLE::VARIANT::VT_ARRAY)
       assert_instance_of(WIN32OLE_VARIANT, obj)
       assert_equal(WIN32OLE::VARIANT::VT_I4|WIN32OLE::VARIANT::VT_ARRAY, obj.vartype)
@@ -383,7 +383,7 @@ if defined?(WIN32OLE_VARIANT)
     end
 
     def test_conversion_str2cy
-      begin 
+      begin
         WIN32OLE.locale = 0x0411 # set locale Japanese
         obj = WIN32OLE_VARIANT.new("\\10,000", WIN32OLE::VARIANT::VT_CY)
         assert_equal("10000", obj.value)
@@ -464,7 +464,7 @@ if defined?(WIN32OLE_VARIANT)
       obj = WIN32OLE_VARIANT.new(["abc", "123"], vartype)
       assert_equal(vartype, obj.vartype)
       assert_equal(["abc", "123"], obj.value)
-      
+
       vartype = WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_BYREF|WIN32OLE::VARIANT::VT_BSTR
       obj = WIN32OLE_VARIANT.new(["abc", "123"], vartype)
       assert_equal(vartype, obj.vartype)

@@ -6,7 +6,7 @@
 #
 # --
 #
-#   
+#
 #
 
 require 'irb/magic-file'

@@ -53,7 +53,7 @@ tcps = nil
     port = port + i
     break
   rescue Errno::EADDRINUSE
-    next 
+    next
   end
 }
 ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)

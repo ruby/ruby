@@ -1,11 +1,11 @@
 #
 #  tkalignbox.rb : align widgets with same width/height
-# 
+#
 #                                            by Hidetoshi NAGAI
 #
-#  The box size depends on 'reqheight' and 'reqwidth' of contained widgets. 
-#  If you want to give the box size when those requested sizes are 0, 
-#  please set box.propagate = false (See the test routine at the tail of 
+#  The box size depends on 'reqheight' and 'reqwidth' of contained widgets.
+#  If you want to give the box size when those requested sizes are 0,
+#  please set box.propagate = false (See the test routine at the tail of
 #  this file).
 
 require 'tk'
@@ -126,10 +126,10 @@ class TkHBox < TkAlignBox
   private :_set_framesize
 
   def _place_config(widget, idx, cnt)
-    widget.place_in(self, 
-                    'relx'=>idx/cnt, 'x'=>@padx, 
-                    'rely'=>0, 'y'=>@pady, 
-                    'relwidth'=>1.0/cnt, 'width'=>-2*@padx, 
+    widget.place_in(self,
+                    'relx'=>idx/cnt, 'x'=>@padx,
+                    'rely'=>0, 'y'=>@pady,
+                    'relwidth'=>1.0/cnt, 'width'=>-2*@padx,
                     'relheight'=>1.0, 'height'=>-2*@pady)
   end
   private :_place_config
@@ -138,10 +138,10 @@ TkHLBox = TkHBox
 
 class TkHRBox < TkHBox
   def _place_config(widget, idx, cnt)
-    widget.place_in(self, 
-                    'relx'=>(cnt - idx - 1)/cnt, 'x'=>@padx, 
-                    'rely'=>0, 'y'=>@pady, 
-                    'relwidth'=>1.0/cnt, 'width'=>-2*@padx, 
+    widget.place_in(self,
+                    'relx'=>(cnt - idx - 1)/cnt, 'x'=>@padx,
+                    'rely'=>0, 'y'=>@pady,
+                    'relwidth'=>1.0/cnt, 'width'=>-2*@padx,
                     'relheight'=>1.0, 'height'=>-2*@pady)
   end
   private :_place_config
@@ -156,10 +156,10 @@ class TkVBox < TkAlignBox
   private :_set_framesize
 
   def _place_config(widget, idx, cnt)
-    widget.place_in(self, 
-                    'relx'=>0, 'x'=>@padx, 
-                    'rely'=>idx/cnt, 'y'=>@pady, 
-                    'relwidth'=>1.0, 'width'=>-2*@padx, 
+    widget.place_in(self,
+                    'relx'=>0, 'x'=>@padx,
+                    'rely'=>idx/cnt, 'y'=>@pady,
+                    'relwidth'=>1.0, 'width'=>-2*@padx,
                     'relheight'=>1.0/cnt, 'height'=>-2*@pady)
   end
   private :_place_config
@@ -168,10 +168,10 @@ TkVTBox = TkVBox
 
 class TkVBBox < TkVBox
   def _place_config(widget, idx, cnt)
-    widget.place_in(self, 
-                    'relx'=>0, 'x'=>@padx, 
-                    'rely'=>(cnt - idx - 1)/cnt, 'y'=>@pady, 
-                    'relwidth'=>1.0, 'width'=>-2*@padx, 
+    widget.place_in(self,
+                    'relx'=>0, 'x'=>@padx,
+                    'rely'=>(cnt - idx - 1)/cnt, 'y'=>@pady,
+                    'relwidth'=>1.0, 'width'=>-2*@padx,
                     'relheight'=>1.0/cnt, 'height'=>-2*@pady)
   end
   private :_place_config
@@ -187,7 +187,7 @@ if __FILE__ == $0
         TkButton.new(f, :text=>'aaa'),
         TkButton.new(f, :text=>'aaaa'))
 
-  f = TkHBox.new(:borderwidth=>3, :relief=>'ridge', 
+  f = TkHBox.new(:borderwidth=>3, :relief=>'ridge',
                  :padx=>7, :pady=>3, :background=>'yellow').pack
   f.add(TkButton.new(f, :text=>'a'),
         TkButton.new(f, :text=>'aa', :font=>'Helvetica 16'),
@@ -202,22 +202,22 @@ if __FILE__ == $0
 
   f = TkHRBox.new(:borderwidth=>3, :relief=>'raised').pack(:fill=>:x)
   f.add(TkButton.new(f, :text=>'a'),
-        TkButton.new(f, :text=>'aa'), 
+        TkButton.new(f, :text=>'aa'),
         TkButton.new(f, :text=>'aaa'))
 
   f = TkVBBox.new(:borderwidth=>3, :relief=>'ridge').pack(:fill=>:x)
   f.propagate = false
   f.height 100
-  f.add(TkFrame.new(f){|ff| 
-          TkButton.new(ff, :text=>'a').pack(:pady=>4, :padx=>6, 
+  f.add(TkFrame.new(f){|ff|
+          TkButton.new(ff, :text=>'a').pack(:pady=>4, :padx=>6,
                                             :fill=>:both, :expand=>true)
-        }, 
-        TkFrame.new(f){|ff| 
-          TkButton.new(ff, :text=>'aa').pack(:pady=>4, :padx=>6, 
+        },
+        TkFrame.new(f){|ff|
+          TkButton.new(ff, :text=>'aa').pack(:pady=>4, :padx=>6,
                                              :fill=>:both, :expand=>true)
-        }, 
-        TkFrame.new(f){|ff| 
-          TkButton.new(ff, :text=>'aaaa').pack(:pady=>4, :padx=>6, 
+        },
+        TkFrame.new(f){|ff|
+          TkButton.new(ff, :text=>'aaaa').pack(:pady=>4, :padx=>6,
                                                :fill=>:both, :expand=>true)
         })
 

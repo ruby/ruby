@@ -48,7 +48,7 @@ require 'json/common'
 # * http://json.rubyforge.org
 #
 # == Usage
-# 
+#
 # To use JSON you can
 #   require 'json'
 # to load the installed variant (either the extension 'json' or the pure
@@ -141,7 +141,7 @@ require 'json/common'
 #
 #  JSON.parse json
 #  # => [1, 2, {"a"=>3.141}, false, true, nil, "4..10"]
-# 
+#
 # Note, that the range from the original data structure is a simple
 # string now. The reason for this is, that JSON doesn't support ranges
 # or arbitrary classes. In this case the json library falls back to call
@@ -170,7 +170,7 @@ require 'json/common'
 # if the given class responds to the json_create class method. If so, it is
 # called with the JSON object converted to a Ruby hash. So a range can
 # be deserialised by implementing Range.json_create like this:
-# 
+#
 #  class Range
 #    def self.json_create(o)
 #      new(*o['data'])

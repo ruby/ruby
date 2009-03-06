@@ -218,7 +218,7 @@ class TkcTag<TkObject
     CTagID_TBL.mutex.synchronize{
       if CTagID_TBL[cpath]
         CTagID_TBL[cpath][id]? CTagID_TBL[cpath][id]: id
-      else 
+      else
         id
       end
     }
@@ -414,7 +414,7 @@ class TkcGroup<TkcTag
     include(*args) if args != []
   end
   #private :create_self
-  
+
   def include(*tags)
     for i in tags
       #i.addtag(@id)

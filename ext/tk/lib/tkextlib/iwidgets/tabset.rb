@@ -116,9 +116,9 @@ class Tk::Iwidgets::Tabset
         return
       end
       tabs_size = @canvas.winfo_width
-      tab_start, tab_end = @canvas . 
-        find_overlapping(head, 0, head + delta, @canvas.winfo_height) . 
-        find_all{|id| @canvas.itemtype(id) == TkcPolygon} . 
+      tab_start, tab_end = @canvas .
+        find_overlapping(head, 0, head + delta, @canvas.winfo_height) .
+        find_all{|id| @canvas.itemtype(id) == TkcPolygon} .
         map!{|id| bbox = @canvas.bbox(id); [bbox[0], bbox[2]]} . max
 
     when 'e', 'w'
@@ -127,9 +127,9 @@ class Tk::Iwidgets::Tabset
         return
       end
       tabs_size = @canvas.winfo_height
-      tab_start, tab_end = @canvas . 
-        find_overlapping(0, head, @canvas.winfo_width, head + delta) . 
-        find_all{|id| @canvas.itemtype(id) == TkcPolygon} . 
+      tab_start, tab_end = @canvas .
+        find_overlapping(0, head, @canvas.winfo_width, head + delta) .
+        find_all{|id| @canvas.itemtype(id) == TkcPolygon} .
         map!{|id| bbox = @canvas.bbox(id); [bbox[1], bbox[3]]} . max
     end
 

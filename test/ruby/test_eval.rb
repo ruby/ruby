@@ -204,7 +204,7 @@ class TestEval < Test::Unit::TestCase
     end
   end
 
-  # 
+  #
   # From ruby/test/ruby/test_eval.rb
   #
 

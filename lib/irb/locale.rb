@@ -6,7 +6,7 @@
 #
 # --
 #
-#   
+#
 #
 module IRB
   class Locale
@@ -30,7 +30,7 @@ module IRB
 
     def initialize(locale = nil)
       @lang = @territory = @encoding_name = @modifier = nil
-      @locale = locale || ENV["IRB_LANG"] || ENV["LC_MESSAGES"] || ENV["LC_ALL"] || ENV["LANG"] || "C" 
+      @locale = locale || ENV["IRB_LANG"] || ENV["LC_MESSAGES"] || ENV["LC_ALL"] || ENV["LANG"] || "C"
       if m = LOCALE_NAME_RE.match(@locale)
 	@lang, @territory, @encoding_name, @modifier = m[:language], m[:territory], m[:codeset], m[:modifier]
 
@@ -50,7 +50,7 @@ module IRB
     def String(mes)
       mes = super(mes)
       if @encoding
-	mes.encode(@encoding) 
+	mes.encode(@encoding)
       else
 	mes
       end
@@ -109,7 +109,7 @@ module IRB
     end
 
     alias toplevel_load load
-    
+
     def load(file, priv=nil)
       dir = File.dirname(file)
       dir = "" if dir == "."
@@ -125,7 +125,7 @@ module IRB
 	return real_load(lc_path, priv) if lc_path
       end
       raise LoadError, "No such file to load -- #{file}"
-    end 
+    end
 
     def real_load(path, priv)
       src = MagicFile.open(path){|f| f.read}

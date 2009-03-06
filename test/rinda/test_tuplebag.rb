@@ -150,7 +150,7 @@ class TestTupleBag < Test::Unit::TestCase
     t = tup(:val, 1)
 
     @tb.push t
-    
+
     assert_equal t, @tb.find(tem(:val, 1))
   end
 

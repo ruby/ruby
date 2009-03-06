@@ -1,12 +1,12 @@
 #
-#   loader.rb - 
+#   loader.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 
 
@@ -44,7 +44,7 @@ module IRB
       irb.suspend_name(path, File.basename(path)) do
 	irb.suspend_input_method(FileInputMethod.new(path)) do
 	  |back_io|
-	  irb.signal_status(:IN_LOAD) do 
+	  irb.signal_status(:IN_LOAD) do
 	    if back_io.kind_of?(FileInputMethod)
 	      irb.eval_input
 	    else
@@ -61,7 +61,7 @@ module IRB
 
     def load_file(path, priv = nil)
       irb.suspend_name(path, File.basename(path)) do
-	
+
 	if priv
 	  ws = WorkSpace.new(Module.new)
 	else
@@ -70,7 +70,7 @@ module IRB
 	irb.suspend_workspace(ws) do
 	  irb.suspend_input_method(FileInputMethod.new(path)) do
 	    |back_io|
-	    irb.signal_status(:IN_LOAD) do 
+	    irb.signal_status(:IN_LOAD) do
 #	      p irb.conf
 	      if back_io.kind_of?(FileInputMethod)
 		irb.eval_input

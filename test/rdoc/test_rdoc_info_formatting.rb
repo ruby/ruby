@@ -40,7 +40,7 @@ class TestRDocInfoFormatting < MiniTest::Unit::TestCase
   def test_escaping
     assert_match(/@@ and @\{@\} should be at-sign-prefixed/)
   end
-  
+
   # This tests that *bold* and <b>bold me</b> become @strong{bolded}
   def test_bold
     # Seems like a limitation of the Info format: @strong{bold}
@@ -139,7 +139,7 @@ Second inner item.
 Second outer item.
 @end itemize")
   end
-  
+
   def test_internal_hyperlinks
     # be sure to test multi-word hyperlinks as well.
   end

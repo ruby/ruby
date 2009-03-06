@@ -1,7 +1,7 @@
 #
-# Implements a simple HTTP-server by using John W. Small's (jsmall@laser.net) 
+# Implements a simple HTTP-server by using John W. Small's (jsmall@laser.net)
 # ruby-generic-server.
-# 
+#
 # Copyright (C) 2001, 2002, 2003 by Michael Neumann (mneumann@ntecs.de)
 #
 # $Id$
@@ -14,8 +14,8 @@ class HttpServer < GServer
 
   ##
   # handle_obj specifies the object, that receives calls to request_handler
-  # and ip_auth_handler 
-  def initialize(handle_obj, port = 8080, host = DEFAULT_HOST, maxConnections = 4, 
+  # and ip_auth_handler
+  def initialize(handle_obj, port = 8080, host = DEFAULT_HOST, maxConnections = 4,
                  stdlog = $stdout, audit = true, debug = true)
     @handler = handle_obj
     super(port, host, maxConnections, stdlog, audit, debug)
@@ -24,7 +24,7 @@ class HttpServer < GServer
 private
 
   # Constants -----------------------------------------------
-  
+
   CRLF        = "\r\n"
   HTTP_PROTO  = "HTTP/1.0"
   SERVER_NAME = "HttpServer (Ruby #{RUBY_VERSION})"
@@ -46,27 +46,27 @@ private
   }
 
   # Classes -------------------------------------------------
-  
+
   class Request
     attr_reader :data, :header, :method, :path, :proto
-    
+
     def initialize(data, method=nil, path=nil, proto=nil)
       @header, @data = Table.new, data
       @method, @path, @proto = method, path, proto
     end
-    
+
     def content_length
       len = @header['Content-Length']
       return nil if len.nil?
-      return len.to_i 
+      return len.to_i
     end
-    
+
   end
-  
+
   class Response
     attr_reader   :header
     attr_accessor :body, :status, :status_message
-    
+
     def initialize(status=200)
       @status = status
       @status_message = nil
@@ -82,7 +82,7 @@ private
     include Enumerable
 
     def initialize(hash={})
-      @hash = hash 
+      @hash = hash
       update(hash)
     end
 
@@ -113,7 +113,7 @@ private
 
   def http_header(header=nil)
     new_header = Table.new(DEFAULT_HEADER)
-    new_header.update(header) unless header.nil? 
+    new_header.update(header) unless header.nil?
 
     new_header["Connection"] = "close"
     new_header["Date"]       = http_date(Time.now)
@@ -127,7 +127,7 @@ private
 
   def http_resp(status_code, status_message=nil, header=nil, body=nil)
     status_message ||= StatusCodeMapping[status_code]
-    
+
     str = ""
     str << "#{HTTP_PROTO} #{status_code} #{status_message}" << CRLF
     http_header(header).writeTo(str)
@@ -137,8 +137,8 @@ private
   end
 
   # Main Serve Loop -----------------------------------------
-  
-  def serve(io)  
+
+  def serve(io)
     # perform IP authentification
     unless @handler.ip_auth_handler(io)
       io << http_resp(403, "Forbidden")
@@ -149,10 +149,10 @@ private
     if io.gets =~ /^(\S+)\s+(\S+)\s+(\S+)/
       request = Request.new(io, $1, $2, $3)
     else
-      io << http_resp(400, "Bad Request") 
+      io << http_resp(400, "Bad Request")
       return
     end
-     
+
     # parse HTTP headers
     while (line=io.gets) !~ /^(\n|\r)/
       if line =~ /^([\w-]+):\s*(.*)$/
@@ -160,15 +160,15 @@ private
       end
     end
 
-    io.binmode    
+    io.binmode
     response = Response.new
 
     # execute request handler
     @handler.request_handler(request, response)
-   
+
     # write response back to the client
     io << http_resp(response.status, response.status_message,
-                    response.header, response.body) 
+                    response.header, response.body)
 
   rescue Exception => e
     io << http_resp(500, "Internal Server Error")

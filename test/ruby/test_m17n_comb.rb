@@ -709,7 +709,7 @@ class TestM17NComb < Test::Unit::TestCase
   def test_str_chomp
     combination(STRINGS, STRINGS) {|s1, s2|
       if !s1.ascii_only? && !s2.ascii_only? && !Encoding.compatible?(s1,s2)
-        if s1.bytesize > s2.bytesize 
+        if s1.bytesize > s2.bytesize
           assert_raise(Encoding::CompatibilityError) { s1.chomp(s2) }
         end
         next

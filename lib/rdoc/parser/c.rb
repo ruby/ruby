@@ -79,7 +79,7 @@ require 'rdoc/known_classes'
 #    * Encapsulate the writing and reading of the configuration
 #    * file. ...
 #    */
-#   
+#
 #   /*
 #    * Document-method: read_value
 #    *
@@ -124,7 +124,7 @@ class RDoc::Parser::C < RDoc::Parser
   end
 
   def do_classes
-    @content.scan(/(\w+)\s* = \s*rb_define_module\s*\(\s*"(\w+)"\s*\)/mx) do 
+    @content.scan(/(\w+)\s* = \s*rb_define_module\s*\(\s*"(\w+)"\s*\)/mx) do
       |var_name, class_name|
       handle_class_module(var_name, "module", class_name, nil, nil)
     end

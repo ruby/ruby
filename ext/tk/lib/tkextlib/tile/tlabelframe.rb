@@ -15,7 +15,7 @@ module Tk
   end
 end
 
-Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Labelframe, 
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Labelframe,
                             :TkLabelframe, :TkLabelFrame)
 
 

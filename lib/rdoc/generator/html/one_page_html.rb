@@ -54,7 +54,7 @@ module RDoc::Generator::HTML::ONE_PAGE_HTML
 <% sections["method_list"].each do |method_list| %>
 <% if method_list["methods"] then %>
 <% method_list["methods"].each do |methods| %>
-<h4><%= methods["type"] %> <%= methods["category"] %> method: 
+<h4><%= methods["type"] %> <%= methods["category"] %> method:
 <% if methods["callseq"] then %>
 <a name="<%= methods["aref"] %>"><%= methods["callseq"] %></a>
 <% end %>

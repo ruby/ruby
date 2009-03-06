@@ -290,7 +290,7 @@ module MarshalTestLib
     class MyStruct
       def ==(rhs)
 	return true if __id__ == rhs.__id__
-	return false unless rhs.is_a?(::Struct) 
+	return false unless rhs.is_a?(::Struct)
 	return false if self.class != rhs.class
 	members.each do |member|
 	  return false if self.__send__(member) != rhs.__send__(member)
@@ -483,7 +483,7 @@ module MarshalTestLib
     class MyStruct2
       def ==(rhs)
 	return true if __id__ == rhs.__id__
-	return false unless rhs.is_a?(::Struct) 
+	return false unless rhs.is_a?(::Struct)
 	return false if self.class != rhs.class
 	members.each do |member|
 	  return false if self.__send__(member) != rhs.__send__(member)

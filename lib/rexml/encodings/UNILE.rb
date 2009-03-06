@@ -18,7 +18,7 @@ module REXML
     def decode_unile(str)
       array_enc=str.unpack('C*')
       array_utf8 = []
-      0.step(array_enc.size-1, 2){|i| 
+      0.step(array_enc.size-1, 2){|i|
         array_utf8 << (array_enc.at(i) + array_enc.at(i+1)*0x100)
       }
       array_utf8.pack('U*')

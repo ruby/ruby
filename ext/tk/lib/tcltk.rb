@@ -84,7 +84,7 @@ end
 # class TclTkInterpreter: tcl/tk interpreter
 class TclTkInterpreter
 
-  # initialize(): 
+  # initialize():
   def initialize()
     # generate interpreter object
     @ip = TclTkIp.new()
@@ -181,7 +181,7 @@ end
 # class TclTkObject: base class of the tcl/tk objects
 class TclTkObject
 
-  # initialize(ip, exp): 
+  # initialize(ip, exp):
   #   ip: interpreter(TclTkIp)
   #   exp: tcl/tk representation
   def initialize(ip, exp)
@@ -211,7 +211,7 @@ end
 # class TclTkLibCommand: tcl/tk commands in the library
 class TclTkLibCommand < TclTkCommand
 
-  # initialize(ip, name): 
+  # initialize(ip, name):
   #   ip: interpreter(TclTkInterpreter)
   #   name: command name (String)
   def initialize(ip, name)
@@ -222,7 +222,7 @@ end
 # class TclTkVariable: tcl/tk variable
 class TclTkVariable < TclTkObject
 
-  # initialize(interp, dat): 
+  # initialize(interp, dat):
   #   interp: interpreter(TclTkInterpreter)
   #   dat: the value to set(String)
   #       if nil, not initialize variable
@@ -255,7 +255,7 @@ end
 # class TclTkWidget: tcl/tk widget
 class TclTkWidget < TclTkCommand
 
-  # initialize(*args): 
+  # initialize(*args):
   #   *args: parameters
   def initialize(*args)
     if args[0].kind_of?(TclTkIp)
@@ -281,7 +281,7 @@ class TclTkWidget < TclTkCommand
       # interp: interpreter(TclTkInterpreter)
       # parent: parent widget
       # command: widget generating tk command(label Åù)
-      # *args: argument to the command 
+      # *args: argument to the command
       interp, parent, command, *args = args
 
       # generate widget name
@@ -303,14 +303,14 @@ end
 # class TclTkCallback: tcl/tk callbacks
 class TclTkCallback < TclTkObject
 
-  # initialize(interp, pr, arg): 
+  # initialize(interp, pr, arg):
   #   interp: interpreter(TclTkInterpreter)
   #   pr: callback procedure(Proc)
   #   arg: string to pass as block parameters of pr
   #       bind command of tcl/tk uses % replacement for parameters
   #       pr can receive replaced data using block parameter
   #       its format is specified by arg string
-  #       You should not specify arg for the command like 
+  #       You should not specify arg for the command like
   #       scrollbar with -command option, which receives parameters
   #       without specifying any replacement
   def initialize(interp, pr, arg = nil)
@@ -347,7 +347,7 @@ end
 # class TclTkImage: tcl/tk images
 class TclTkImage < TclTkCommand
 
-  # initialize(interp, t, *args): 
+  # initialize(interp, t, *args):
   #     generating image is done by TclTkImage.new()
   #     destrying is done by image delete (inconsistent, sigh)
   #   interp: interpreter(TclTkInterpreter)

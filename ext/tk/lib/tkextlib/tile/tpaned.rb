@@ -13,7 +13,7 @@ module Tk
   end
 end
 
-Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Panedwindow, 
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Panedwindow,
                             :TkPanedwindow, :TkPanedWindow)
 
 
@@ -127,7 +127,7 @@ class Tk::Tile::TPaned < TkWindow
         end
         conf
       else
-        tk_split_simplelist(tk_send_without_enc('pane', 
+        tk_split_simplelist(tk_send_without_enc('pane',
                                                 win)).collect{|conflist|
           conf = tk_split_simplelist(conflist)
           conf[0] = conf[0][1..-1]
@@ -135,18 +135,18 @@ class Tk::Tile::TPaned < TkWindow
             if conf[0] == 'hide'
               conf[3] = bool(conf[3]) unless conf[3].empty?
             elsif conf[3].index('{')
-              conf[3] = tk_split_list(conf[3]) 
+              conf[3] = tk_split_list(conf[3])
             else
-              conf[3] = tk_tcl2ruby(conf[3]) 
+              conf[3] = tk_tcl2ruby(conf[3])
             end
           end
           if conf[4]
             if conf[0] == 'hide'
               conf[4] = bool(conf[4]) unless conf[4].empty?
             elsif conf[4].index('{')
-              conf[4] = tk_split_list(conf[4]) 
+              conf[4] = tk_split_list(conf[4])
             else
-              conf[4] = tk_tcl2ruby(conf[4]) 
+              conf[4] = tk_tcl2ruby(conf[4])
             end
           end
           conf[1] = conf[1][1..-1] if conf.size == 2 # alias info
@@ -165,7 +165,7 @@ class Tk::Tile::TPaned < TkWindow
         { key => conf }
       else
         ret = {}
-        tk_split_simplelist(tk_send_without_enc('pane', 
+        tk_split_simplelist(tk_send_without_enc('pane',
                                                 win)).each{|conflist|
           conf = tk_split_simplelist(conflist)
           key = conf.shift[1..-1]
@@ -173,18 +173,18 @@ class Tk::Tile::TPaned < TkWindow
             if key == 'hide'
               conf[2] = bool(conf[2]) unless conf[2].empty?
             elsif conf[2].index('{')
-              conf[2] = tk_split_list(conf[2]) 
+              conf[2] = tk_split_list(conf[2])
             else
-              conf[2] = tk_tcl2ruby(conf[2]) 
+              conf[2] = tk_tcl2ruby(conf[2])
             end
           end
           if conf[3]
             if key == 'hide'
               conf[3] = bool(conf[3]) unless conf[3].empty?
             elsif conf[3].index('{')
-              conf[3] = tk_split_list(conf[3]) 
+              conf[3] = tk_split_list(conf[3])
             else
-              conf[3] = tk_tcl2ruby(conf[3]) 
+              conf[3] = tk_tcl2ruby(conf[3])
             end
           end
           if conf.size == 1

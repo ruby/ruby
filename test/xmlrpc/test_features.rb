@@ -29,7 +29,7 @@ class Test_Features < Test::Unit::TestCase
 
     XMLRPC::XMLWriter.each_installed_writer do |writer|
       c = XMLRPC::Create.new(writer)
-      str = c.methodCall("test", *@params) 
+      str = c.methodCall("test", *@params)
       XMLRPC::XMLParser.each_installed_parser do |parser|
         para = nil
 

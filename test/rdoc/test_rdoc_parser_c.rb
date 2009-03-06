@@ -176,11 +176,11 @@ void Init_foo(){
 
     comment = <<-EOF.chomp
 
-     
+
       Multiline comment goes here because this comment spans multiple lines.
       Multiline comment goes here because this comment spans multiple lines.
-      
-   
+
+
     EOF
     assert_equal ['MULTILINE', 'INT2FIX(1)', comment], constants.shift
     assert_equal ['MULTILINE_VALUE', '1', comment], constants.shift
@@ -189,8 +189,8 @@ void Init_foo(){
 
       Multiline comment goes here because this comment spans multiple lines.
       Multiline comment goes here because this comment spans multiple lines.
-      
-   
+
+
     EOF
     assert_equal ['MULTILINE_NOT_EMPTY', 'INT2FIX(1)', comment], constants.shift
 

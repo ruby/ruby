@@ -8,7 +8,7 @@
 
 # toplevel widget
 if defined?($text_demo) && $text_demo
-  $text_demo.destroy 
+  $text_demo.destroy
   $text_demo = nil
 end
 
@@ -45,7 +45,7 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# text 
+# text
 TkText.new(base_frame){|t|
   relief 'sunken'
   bd 2
@@ -62,7 +62,7 @@ TkText.new(base_frame){|t|
   }
   pack('expand'=>'yes', 'fill'=>'both')
 
-  # 
+  #
   insert('0.0', <<EOT)
 This window is a text widget.  It displays one or more lines of text
 and allows you to edit the text.  Here is a summary of the things you

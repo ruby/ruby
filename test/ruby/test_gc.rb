@@ -10,7 +10,7 @@ class TestGc < Test::Unit::TestCase
   def test_gc
     prev_stress = GC.stress
     GC.stress = false
-    
+
     assert_nothing_raised do
       1.upto(10000) {
         tmp = [0,1,2,3,4,5,6,7,8,9]

@@ -9,8 +9,8 @@ module TkPalette
   extend Tk
 
   TkCommandNames = [
-    'tk_setPalette'.freeze, 
-    'tk_bisque'.freeze, 
+    'tk_setPalette'.freeze,
+    'tk_bisque'.freeze,
     'tkDarken'.freeze
   ].freeze
 

@@ -14,7 +14,7 @@ class TestEncoding < Test::Unit::TestCase
       assert_equal(e, Encoding.find(e.name.downcase))
     end
   end
-  
+
   def test_enc_names
     aliases = Encoding.aliases
     aliases.each do |a, en|
@@ -32,7 +32,7 @@ class TestEncoding < Test::Unit::TestCase
       assert_raise(TypeError) { e.dup }
       assert_raise(TypeError) { e.clone }
       assert_equal(e.object_id, Marshal.load(Marshal.dump(e)).object_id)
-    end    
+    end
   end
 
   def test_find

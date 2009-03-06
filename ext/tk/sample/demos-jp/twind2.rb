@@ -5,7 +5,7 @@
 
 # toplevel widget が存在すれば削除する
 if defined?($twind2_demo) && $twind2_demo
-  $twind2_demo.destroy 
+  $twind2_demo.destroy
   $twind2_demo = nil
 end
 
@@ -20,20 +20,20 @@ base_frame = TkFrame.new($twind2_demo).pack(:fill=>:both, :expand=>true)
 
 # frame 生成
 $twind2_buttons = TkFrame.new(base_frame) {|frame|
-  TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2), 
+  TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2),
          :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
-  TkGrid('x', 
-         TkButton.new(frame, :text=>'コード参照', 
-                      :image=>$image['view'], :compound=>:left, 
-                      :command=>proc{showCode 'twind2'}), 
-         TkButton.new(frame, :text=>'閉じる', 
-                      :image=>$image['delete'], :compound=>:left, 
+  TkGrid('x',
+         TkButton.new(frame, :text=>'コード参照',
+                      :image=>$image['view'], :compound=>:left,
+                      :command=>proc{showCode 'twind2'}),
+         TkButton.new(frame, :text=>'閉じる',
+                      :image=>$image['delete'], :compound=>:left,
                       :command=>proc{
                         tmppath = $twind2_demo
                         $twind2_demo = nil
                         $showVarsWin[tmppath.path] = nil
                         tmppath.destroy
-                      }), 
+                      }),
          :padx=>4, :pady=>4)
   frame.grid_columnconfigure(0, :weight=>1)
 }
@@ -41,11 +41,11 @@ $twind2_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame 生成
 $twind2_text = nil
-TkFrame.new(base_frame, 'highlightthickness'=>2, 'borderwidth'=>2, 
+TkFrame.new(base_frame, 'highlightthickness'=>2, 'borderwidth'=>2,
             'relief'=>'sunken') {|f|
   $twind2_text = TkText.new(f, 'setgrid'=>true, 'font'=>$font,
-                            # 'width'=>'70', 'height'=>35, 'wrap'=>'word', 
-                            'width'=>'70', 'height'=>35, 'wrap'=>'char', 
+                            # 'width'=>'70', 'height'=>35, 'wrap'=>'word',
+                            'width'=>'70', 'height'=>35, 'wrap'=>'char',
                             'highlightthickness'=>0, 'borderwidth'=>0 ){|t|
     TkScrollbar.new(f) {|s|
       command proc{|*args| t.yview(*args)}
@@ -55,11 +55,11 @@ TkFrame.new(base_frame, 'highlightthickness'=>2, 'borderwidth'=>2,
 }.pack('expand'=>'yes', 'fill'=>'both')
 
 # タグ生成
-$tag2_center = TkTextTag.new($twind2_text, 
+$tag2_center = TkTextTag.new($twind2_text,
                             'justify' =>'center',
                             'spacing1'=>'5m',
                             'spacing3'=>'5m'  )
-$tag2_buttons = TkTextTag.new($twind2_text, 
+$tag2_buttons = TkTextTag.new($twind2_text,
                              'lmargin1'=>'1c',
                              'lmargin2'=>'1c',
                              'rmargin' =>'1c',
@@ -86,7 +86,7 @@ $twind2_text.insert('end', '例えば，ここには２つの')
 $twind2_text.insert('end', 'ボタンウィジェットが埋め込まれています。')
 $twind2_text.insert('end', '最初のボタンをクリックすると、')
 $twind2_text.insert('end', '水平方向のスクロールを ')
-TkTextWindow.new($twind2_text, 'end', 
+TkTextWindow.new($twind2_text, 'end',
                  'window'=>TkButton.new($twind2_text) {
                    #text 'ON'
                    text 'オン'
@@ -95,7 +95,7 @@ TkTextWindow.new($twind2_text, 'end',
                  })
 $twind2_text.insert('end', "にします。また、２つめのボタンをクリックすると\n")
 $twind2_text.insert('end', '水平方向のスクロールを')
-TkTextWindow.new($twind2_text, 'end', 
+TkTextWindow.new($twind2_text, 'end',
                  'window'=>TkButton.new($twind2_text) {
                    #text 'OFF'
                    text 'オフ'
@@ -105,7 +105,7 @@ TkTextWindow.new($twind2_text, 'end',
 $twind2_text.insert('end', "にします。\n\n")
 
 $twind2_text.insert('end', '次はもうひとつの例です。')
-TkTextWindow.new($twind2_text, 'end', 
+TkTextWindow.new($twind2_text, 'end',
                  'window'=>TkButton.new($twind2_text) {
                    text 'ここをクリック'
                    command proc{textWindPlot2 $twind2_text}
@@ -116,7 +116,7 @@ $mark2_plot = TkTextMark.new($twind2_text, 'insert')
 $mark2_plot.gravity='left'
 $twind2_text.insert('end', 'マウスでドラッグすることで、')
 $twind2_text.insert('end', 'プロット上のデータ点を移動することができます。')
-TkTextWindow.new($twind2_text, 'end', 
+TkTextWindow.new($twind2_text, 'end',
                  'window'=>TkButton.new($twind2_text) {
                    text '消去'
                    command proc{textWindDel2 $twind2_text}
@@ -148,7 +148,7 @@ btn_default = TkButton.new($twind2_text) {|b|
 }
 TkTextWindow.new($twind2_text, 'end', 'window'=>btn_default, 'padx'=>3)
 embToggle = TkVariable.new('Short')
-TkTextWindow.new($twind2_text, 'end', 
+TkTextWindow.new($twind2_text, 'end',
                  'window'=>TkCheckButton.new($twind2_text) {
                    textvariable embToggle
                    indicatoron 0
@@ -159,21 +159,21 @@ TkTextWindow.new($twind2_text, 'end',
                    pady 5
                    padx 2
                  },
-                 'padx'=>3, 
+                 'padx'=>3,
                  'pady'=>2 )
 
-[ 'AntiqueWhite3', 'Bisque1', 'Bisque2', 'Bisque3', 'Bisque4', 
-  'SlateBlue3', 'RoyalBlue1', 'SteelBlue2', 'DeepSkyBlue3', 'LightBlue1', 
-  'DarkSlateGray1', 'Aquamarine2', 'DarkSeaGreen2', 'SeaGreen1', 
-  'Yellow1', 'IndianRed1', 'IndianRed2', 'Tan1', 'Tan4' 
+[ 'AntiqueWhite3', 'Bisque1', 'Bisque2', 'Bisque3', 'Bisque4',
+  'SlateBlue3', 'RoyalBlue1', 'SteelBlue2', 'DeepSkyBlue3', 'LightBlue1',
+  'DarkSlateGray1', 'Aquamarine2', 'DarkSeaGreen2', 'SeaGreen1',
+  'Yellow1', 'IndianRed1', 'IndianRed2', 'Tan1', 'Tan4'
 ].each{|twind_color|
-  TkTextWindow.new($twind2_text, 'end', 
+  TkTextWindow.new($twind2_text, 'end',
                    'window'=>TkButton.new($twind2_text) {
                      text twind_color
                      cursor 'top_left_arrow'
                      command proc{$twind2_text.bg twind_color}
                    },
-                   'padx'=>3, 
+                   'padx'=>3,
                    'pady'=>2 )
 }
 
@@ -187,44 +187,44 @@ $text_normal2['pad'] = $twind2_text.cget('padx')
 $twind2_text.insert('end', "\nborder width や highlightthickness, ")
 $twind2_text.insert('end', "padding を通常の値から変更することも可能です。\n")
 
-TkTextWindow.new($twind2_text, 'end', 
-                 'window'=>TkButton.new($twind2_text, :text=>"Big borders", 
-                                        :cursor=>'top_left_arrow', 
+TkTextWindow.new($twind2_text, 'end',
+                 'window'=>TkButton.new($twind2_text, :text=>"Big borders",
+                                        :cursor=>'top_left_arrow',
                                         'command'=>proc{
                                           textWinBigB2 $twind2_text
                                         }))
 
-TkTextWindow.new($twind2_text, 'end', 
-                 'window'=>TkButton.new($twind2_text, :text=>"Small borders", 
-                                        :cursor=>'top_left_arrow', 
+TkTextWindow.new($twind2_text, 'end',
+                 'window'=>TkButton.new($twind2_text, :text=>"Small borders",
+                                        :cursor=>'top_left_arrow',
                                         'command'=>proc{
                                           textWinSmallB2 $twind2_text
                                         }))
 
-TkTextWindow.new($twind2_text, 'end', 
-                 'window'=>TkButton.new($twind2_text, :text=>"Big highlight", 
-                                        :cursor=>'top_left_arrow', 
+TkTextWindow.new($twind2_text, 'end',
+                 'window'=>TkButton.new($twind2_text, :text=>"Big highlight",
+                                        :cursor=>'top_left_arrow',
                                         'command'=>proc{
                                           textWinBigH2 $twind2_text
                                         }))
 
-TkTextWindow.new($twind2_text, 'end', 
+TkTextWindow.new($twind2_text, 'end',
                  'window'=>TkButton.new($twind2_text, :text=>"Small highlight",
-                                        :cursor=>'top_left_arrow', 
+                                        :cursor=>'top_left_arrow',
                                         'command'=>proc{
                                           textWinSmallH2 $twind2_text
                                         }))
 
-TkTextWindow.new($twind2_text, 'end', 
-                 'window'=>TkButton.new($twind2_text, :text=>"Big pad", 
-                                        :cursor=>'top_left_arrow', 
+TkTextWindow.new($twind2_text, 'end',
+                 'window'=>TkButton.new($twind2_text, :text=>"Big pad",
+                                        :cursor=>'top_left_arrow',
                                         'command'=>proc{
                                           textWinBigP2 $twind2_text
                                         }))
 
-TkTextWindow.new($twind2_text, 'end', 
-                 'window'=>TkButton.new($twind2_text, :text=>"Small pad", 
-                                        :cursor=>'top_left_arrow', 
+TkTextWindow.new($twind2_text, 'end',
+                 'window'=>TkButton.new($twind2_text, :text=>"Small pad",
+                                        :cursor=>'top_left_arrow',
                                         'command'=>proc{
                                           textWinSmallP2 $twind2_text
                                         }))
@@ -232,9 +232,9 @@ TkTextWindow.new($twind2_text, 'end',
 $twind2_text.insert('end', "\n\n更にイメージもテキストウィジェットに")
 $twind2_text.insert('end', "うまく配置できます：")
 
-TkTextImage.new($twind2_text, 'end', 
+TkTextImage.new($twind2_text, 'end',
                 'image'=>TkBitmapImage.new(:file=>[
-                                             $demo_dir, '..', 
+                                             $demo_dir, '..',
                                              'images', 'face.xbm'
                                            ].join(File::Separator)))
 
@@ -309,39 +309,39 @@ def textWindPlot2 (t)
 
   TkcLine.new($twind2_plot, 100, 250, 400, 250, 'width'=>2)
   TkcLine.new($twind2_plot, 100, 250, 100,  50, 'width'=>2)
-  TkcText.new($twind2_plot, 225, 20, 
+  TkcText.new($twind2_plot, 225, 20,
               'text'=>"A Simple Plot", 'font'=>font, 'fill'=>'brown')
 
   (0..10).each {|i|
     x = 100 + (i * 30)
     TkcLine.new($twind2_plot, x, 250, x, 245, 'width'=>2)
-    TkcText.new($twind2_plot, x, 254, 
+    TkcText.new($twind2_plot, x, 254,
                 'text'=>10*i, 'font'=>font, 'anchor'=>'n')
   }
   (0..5).each {|i|
     y = 250 - (i * 40)
     TkcLine.new($twind2_plot, 100, y, 105, y, 'width'=>2)
-    TkcText.new($twind2_plot, 96, y, 
+    TkcText.new($twind2_plot, 96, y,
                 'text'=>"#{i*50}.0", 'font'=>font, 'anchor'=>'e')
   }
 
   for xx, yy in [[12,56],[20,94],[33,98],[32,120],[61,180],[75,160],[98,223]]
     x = 100 + (3*xx)
     y = 250 - (4*yy)/5
-    item = TkcOval.new($twind2_plot, x-6, y-6, x+6, y+6, 
+    item = TkcOval.new($twind2_plot, x-6, y-6, x+6, y+6,
                        'width'=>1, 'outline'=>'black', 'fill'=>'SkyBlue2')
     item.addtag 'point'
   end
 
-  $twind2_plot.itembind('point', 'Any-Enter', 
+  $twind2_plot.itembind('point', 'Any-Enter',
                         proc{$twind2_plot.itemconfigure 'current', 'fill', 'red'})
-  $twind2_plot.itembind('point', 'Any-Leave', 
+  $twind2_plot.itembind('point', 'Any-Leave',
                         proc{$twind2_plot.itemconfigure 'current', 'fill', 'SkyBlue2'})
-  $twind2_plot.itembind('point', '1', 
+  $twind2_plot.itembind('point', '1',
                         proc{|x,y| embPlotDown2 $twind2_plot,x,y}, "%x %y")
-  $twind2_plot.itembind('point', 'ButtonRelease-1', 
+  $twind2_plot.itembind('point', 'ButtonRelease-1',
                         proc{$twind2_plot.dtag 'selected'})
-  $twind2_plot.bind('B1-Motion', 
+  $twind2_plot.bind('B1-Motion',
                     proc{|x,y| embPlotMove2 $twind2_plot,x,y}, "%x %y")
   while ($twind2_text.get($mark2_plot) =~ /[ \t\n]/)
     $twind2_text.delete $mark2_plot

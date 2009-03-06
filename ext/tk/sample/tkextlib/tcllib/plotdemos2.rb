@@ -12,7 +12,7 @@ Tk.pack(c1,c2, :fill=>:both, :side=>:top)
 ###############################
 # Set up a strip chart
 ###############################
-slipchart = Tk::Tcllib::Plotchart::Stripchart.new(c1, [0.0, 100.0, 10.0], 
+slipchart = Tk::Tcllib::Plotchart::Stripchart.new(c1, [0.0, 100.0, 10.0],
                                                       [0.0, 100.0, 20.0])
 
 TkTimer.new(500, -1, proc{|obj| # obj --> TkTimer object
@@ -34,7 +34,7 @@ slipchart.title "Aha!"
 ###############################
 # Set up an isometric plot
 ###############################
-s = Tk::Tcllib::Plotchart::IsometricPlot.new(c2, [0.0, 100.0], [0.0, 200.0], 
+s = Tk::Tcllib::Plotchart::IsometricPlot.new(c2, [0.0, 100.0], [0.0, 200.0],
                                              :noaxes)
 
 s.set_zoom_pan
@@ -50,8 +50,8 @@ s.plot('circle',           [70.0, 70.0, 42.0])
 h = TkToplevel.new(:title=>'h')
 c = TkCanvas.new(h, :bg=>'white', :width=>400, :height=>200).pack(:fill=>:both)
 
-s = Tk::Tcllib::Plotchart::XYPlot.new(c, [0.0, 100.0, 10.0], 
-                                         [0.0, 100.0, 20.0]) 
+s = Tk::Tcllib::Plotchart::XYPlot.new(c, [0.0, 100.0, 10.0],
+                                         [0.0, 100.0, 20.0])
 s.dataconfig('series1', :colour=>'red',   :type=>:symbol)
 s.dataconfig('series2', :colour=>'green', :type=>:both)
 

@@ -5,7 +5,7 @@
 
 # toplevel widget が存在すれば削除する
 if defined?($style_demo) && $style_demo
-  $style_demo.destroy 
+  $style_demo.destroy
   $style_demo = nil
 end
 
@@ -76,13 +76,13 @@ txt = TkText.new(base_frame){|t|
 #  when /^8.*/
 #    unless $style_demo_do_first
 #      $style_demo_do_first = true
-#      Tk.tk_call('font', 'create', '@bigascii', 
+#      Tk.tk_call('font', 'create', '@bigascii',
 #                '-copy', '-*-Courier-Bold-R-Normal--*-140-*-*-*-*-*-*')
-#      Tk.tk_call('font', 'create', '@smallascii', 
+#      Tk.tk_call('font', 'create', '@smallascii',
 #                '-copy', '-Adobe-Helvetica-Bold-R-Normal-*-100-*')
-#      Tk.tk_call('font', 'create', '@cBigFont', 
+#      Tk.tk_call('font', 'create', '@cBigFont',
 #                '-compound', '@bigascii @msg_knj')
-#      Tk.tk_call('font', 'create', '@cSmallFont', 
+#      Tk.tk_call('font', 'create', '@cSmallFont',
 #                '-compound', '@smallascii @kanji')
 #    end
 #    style_tag_big = TkTextTag.new(t, 'font'=>'@cBigFont')
@@ -96,24 +96,24 @@ txt = TkText.new(base_frame){|t|
     style_tag_raised = TkTextTag.new(t, 'relief'=>'raised', 'borderwidth'=>1)
     style_tag_sunken = TkTextTag.new(t, 'relief'=>'sunken', 'borderwidth'=>1)
   else
-    style_tag_color1 = TkTextTag.new(t, 'background'=>'black', 
+    style_tag_color1 = TkTextTag.new(t, 'background'=>'black',
                                      'foreground'=>'white')
-    style_tag_color2 = TkTextTag.new(t, 'background'=>'black', 
+    style_tag_color2 = TkTextTag.new(t, 'background'=>'black',
                                      'foreground'=>'white')
-    style_tag_raised = TkTextTag.new(t, 'background'=>'white', 
+    style_tag_raised = TkTextTag.new(t, 'background'=>'white',
                                      'relief'=>'raised', 'borderwidth'=>1)
-    style_tag_sunken = TkTextTag.new(t, 'background'=>'white', 
+    style_tag_sunken = TkTextTag.new(t, 'background'=>'white',
                                      'relief'=>'sunken', 'borderwidth'=>1)
   end
 
   # テキストタグ設定 (その他)
   if $tk_version =~ /^4\.[01]/
-    style_tag_bgstipple = TkTextTag.new(t, 'background'=>'black', 
-                                        'borderwidth'=>0, 
+    style_tag_bgstipple = TkTextTag.new(t, 'background'=>'black',
+                                        'borderwidth'=>0,
                                         'bgstipple'=>'gray25')
   else
-    style_tag_bgstipple = TkTextTag.new(t, 'background'=>'black', 
-                                        'borderwidth'=>0, 
+    style_tag_bgstipple = TkTextTag.new(t, 'background'=>'black',
+                                        'borderwidth'=>0,
                                         'bgstipple'=>'gray12')
   end
   style_tag_fgstipple = TkTextTag.new(t, 'fgstipple'=>'gray50')
@@ -217,9 +217,9 @@ X')
 9. マージン', style_tag_big)
   insert('end', 'テキストの左側に余分な空白を置くことができます:
 ')
-  insert('end', 'この段落はマージンの使用例です。スクリーン', 
+  insert('end', 'この段落はマージンの使用例です。スクリーン',
          style_tag_margins)
-  insert('end', '上で折り返されて表示されている1行のテキストです。', 
+  insert('end', '上で折り返されて表示されている1行のテキストです。',
          style_tag_margins)
   insert('end', '左側には2種類のマージンを持ちます。', style_tag_margins)
   insert('end', '1行目に対するものと、', style_tag_margins)
@@ -241,9 +241,9 @@ spacing3')
   insert('end', 'の空間を置
 くかを示します。
 ')
-  insert('end', 'これらのインデントされた段落はどのように', 
+  insert('end', 'これらのインデントされた段落はどのように',
          style_tag_spacing)
-  insert('end', 'スペーシングがが行われるのかを示します。', 
+  insert('end', 'スペーシングがが行われるのかを示します。',
          style_tag_spacing)
   insert('end', '各段落は実際はテキストwidget', style_tag_spacing)
   insert('end', 'の1行で、widgetによって折り畳まれています。
@@ -253,11 +253,11 @@ spacing3')
   insert('end', 'これにより、段落の間に大きな間隔が', style_tag_spacing)
   insert('end', '存在しています。', style_tag_spacing)
   insert('end', 'Spacing2は2pointに設定されています。', style_tag_spacing)
-  insert('end', 'これで段落の中にほんの少し間隔が存在しています。', 
+  insert('end', 'これで段落の中にほんの少し間隔が存在しています。',
          style_tag_spacing)
   insert('end', 'Spacing3はこの例では使用されていません。
 ', style_tag_spacing)
-  insert('end', '間隔がどこにあるかを見たければ、これらの段落の', 
+  insert('end', '間隔がどこにあるかを見たければ、これらの段落の',
          style_tag_spacing)
   insert('end', 'なかでテキストを選択してください。選択の', style_tag_spacing)
   insert('end', '反転した部分には余分にとられた間隔が', style_tag_spacing)

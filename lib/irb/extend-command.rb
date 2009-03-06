@@ -1,12 +1,12 @@
 #
-#   irb/extend-command.rb - irb extend command 
+#   irb/extend-command.rb - irb extend command
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 module IRB
   #
@@ -89,15 +89,15 @@ module IRB
 
       [:irb_load, :Load, "irb/cmd/load"],
       [:irb_require, :Require, "irb/cmd/load"],
-      [:irb_source, :Source, "irb/cmd/load", 
+      [:irb_source, :Source, "irb/cmd/load",
 	[:source, NO_OVERRIDE]],
 
       [:irb, :IrbCommand, "irb/cmd/subirb"],
-      [:irb_jobs, :Jobs, "irb/cmd/subirb", 
+      [:irb_jobs, :Jobs, "irb/cmd/subirb",
 	[:jobs, NO_OVERRIDE]],
-      [:irb_fg, :Foreground, "irb/cmd/subirb", 
+      [:irb_fg, :Foreground, "irb/cmd/subirb",
 	[:fg, NO_OVERRIDE]],
-      [:irb_kill, :Kill, "irb/cmd/subirb", 
+      [:irb_kill, :Kill, "irb/cmd/subirb",
 	[:kill, OVERRIDE_PRIVATE_ONLY]],
 
       [:irb_help, :Help, "irb/cmd/help",
@@ -161,9 +161,9 @@ module IRB
 	  (override == NO_OVERRIDE) &&  !respond_to?(to, true)
 	target = self
 	(class<<self;self;end).instance_eval{
-	  if target.respond_to?(to, true) && 
+	  if target.respond_to?(to, true) &&
 	      !target.respond_to?(EXCB.irb_original_method_name(to), true)
-	    alias_method(EXCB.irb_original_method_name(to), to) 
+	    alias_method(EXCB.irb_original_method_name(to), to)
 	  end
 	  alias_method to, from
 	}

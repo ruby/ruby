@@ -20,7 +20,7 @@ class TkFont
   Tk_FontNameTBL = TkCore::INTERP.create_table
   Tk_FontUseTBL  = TkCore::INTERP.create_table
 
-  TkCore::INTERP.init_ip_env{ 
+  TkCore::INTERP.init_ip_env{
     Tk_FontNameTBL.mutex.synchronize{ Tk_FontNameTBL.clear }
     Tk_FontUseTBL.mutex.synchronize{ Tk_FontUseTBL.clear }
   }
@@ -66,8 +66,8 @@ class TkFont
           knj = 'defaultgui'
         when /Mincho:Helvetica-Bold-12/
           # Tcl/Tk-JP for UNIX/X
-          ltn, knj = tk_split_simplelist(tk_call('font', 'configure', 
-                                                 'Mincho:Helvetica-Bold-12', 
+          ltn, knj = tk_split_simplelist(tk_call('font', 'configure',
+                                                 'Mincho:Helvetica-Bold-12',
                                                  '-compound'))
         else
           # unknown Tcl/Tk-JP
@@ -75,7 +75,7 @@ class TkFont
           platform = Tk::PLATFORM['platform']
           case platform
           when 'unix'
-            ltn = {'family'=>'Helvetica'.freeze, 
+            ltn = {'family'=>'Helvetica'.freeze,
                    'size'=>-12, 'weight'=>'bold'.freeze}
             #knj = 'k14'
             #knj = '-misc-fixed-medium-r-normal--14-*-*-*-c-*-jisx0208.1983-0'
@@ -102,7 +102,7 @@ class TkFont
         platform = Tk::PLATFORM['platform']
         case platform
         when 'unix'
-          ltn = {'family'=>'Helvetica'.freeze, 
+          ltn = {'family'=>'Helvetica'.freeze,
                  'size'=>-12, 'weight'=>'bold'.freeze}
         when 'windows'
           ltn = {'family'=>'MS Sans Serif'.freeze, 'size'=>8}
@@ -294,7 +294,7 @@ class TkFont
     end
 
     h = Hash[TkFont.metrics(fnt)]
-    h.keys.each{|k| 
+    h.keys.each{|k|
       case TkFont::MetricsType[k.to_s]
       when ?n
         h[k] = TkComm::num_or_str(h[k])
@@ -331,7 +331,7 @@ class TkFont
     end
 
     h = Hash[TkFont.metrics_displayof(fnt, win, option)]
-    h.keys.each{|k| 
+    h.keys.each{|k|
       case TkFont::MetricsType[k.to_s]
       when ?n
         h[k] = TkComm::num_or_str(h[k])
@@ -459,7 +459,7 @@ class TkFont
       else
         begin
           compound = tk_split_simplelist(
-              Hash[*tk_split_simplelist(tk_call('font', 'configure', 
+              Hash[*tk_split_simplelist(tk_call('font', 'configure',
                                                 fnt))].collect{|k,v|
                 [k[1..-1], v]
               }.assoc('compound')[1])
@@ -473,7 +473,7 @@ class TkFont
             TkFont.new(fnt).call_font_configure([path, key], *args)
           end
         else
-          TkFont.new(compound[0], 
+          TkFont.new(compound[0],
                      compound[1]).call_font_configure([path, key], *args)
         end
       end
@@ -570,7 +570,7 @@ class TkFont
       if JAPANIZED_TK
         tk_call('font', 'create', @latinfont, '-charset', 'iso8859')
         tk_call('font', 'create', @kanjifont, '-charset', 'jisx0208.1983')
-        tk_call('font', 'create', @compoundfont, 
+        tk_call('font', 'create', @compoundfont,
                 '-compound', [@latinfont, @kanjifont])
       else
         tk_call('font', 'create', @latinfont)
@@ -614,7 +614,7 @@ class TkFont
     # compound font check
     if Tk::TK_VERSION == '8.0' && JAPANIZED_TK
       begin
-        compound = tk_split_simplelist(tk_call('font', 'configure', 
+        compound = tk_split_simplelist(tk_call('font', 'configure',
                                                ltn, '-compound'))
         if knj == nil
           if compound != []
@@ -624,7 +624,7 @@ class TkFont
           if compound != []
             ltn = compound[0]
           end
-          compound = tk_split_simplelist(tk_call('font', 'configure', 
+          compound = tk_split_simplelist(tk_call('font', 'configure',
                                                  knj, '-compound'))
           if compound != []
             knj = compound[1]
@@ -639,7 +639,7 @@ class TkFont
         if Tk::TK_VERSION =~ /^4..*/
           knj = DEFAULT_KANJI_FONT_NAME
         else
-          knj = ltn 
+          knj = ltn
         end
       end
     else
@@ -806,7 +806,7 @@ class TkFont
         if font[:charset] || font['charset']
           tk_call('font', 'create', @latinfont, *hash_kv(font))
         else
-          tk_call('font', 'create', @latinfont, 
+          tk_call('font', 'create', @latinfont,
                   '-charset', 'iso8859', *hash_kv(font))
         end
       elsif font.kind_of? Array
@@ -815,7 +815,7 @@ class TkFont
       elsif font.kind_of? TkFont
         tk_call('font', 'create', @latinfont, '-copy', font.latin_font)
       elsif font
-        tk_call('font', 'create', @latinfont, '-copy', font, 
+        tk_call('font', 'create', @latinfont, '-copy', font,
                 '-charset', 'iso8859')
       else
         tk_call('font', 'create', @latinfont, '-charset', 'iso8859')
@@ -851,7 +851,7 @@ class TkFont
         if font[:charset] || font['charset']
           tk_call('font', 'create', @kanjifont, *hash_kv(font))
         else
-          tk_call('font', 'create', @kanjifont, 
+          tk_call('font', 'create', @kanjifont,
                   '-charset', 'jisx0208.1983', *hash_kv(font))
         end
       elsif font.kind_of? Array
@@ -860,7 +860,7 @@ class TkFont
       elsif font.kind_of? TkFont
         tk_call('font', 'create', @kanjifont, '-copy', font.kanji_font_id)
       elsif font
-        tk_call('font', 'create', @kanjifont, '-copy', font, 
+        tk_call('font', 'create', @kanjifont, '-copy', font,
                 '-charset', 'jisx0208.1983')
       else
         tk_call('font', 'create', @kanjifont, '-charset', 'jisx0208.1983')
@@ -922,7 +922,7 @@ class TkFont
       @fontslot = {'font'=>@compoundfont}
       # @fontslot['font'] = @compoundfont
       begin
-        tk_call('font', 'create', @compoundfont, 
+        tk_call('font', 'create', @compoundfont,
                 '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
       rescue RuntimeError => e
         if ltn == knj
@@ -930,7 +930,7 @@ class TkFont
             tk_call('font', 'delete', @latinfont)
             create_latinfont(DEFAULT_LATIN_FONT_NAME)
             opts = []
-            Hash[*(tk_split_simplelist(tk_call('font', 'configure', 
+            Hash[*(tk_split_simplelist(tk_call('font', 'configure',
                                                @kanjifont)))].each{|k,v|
               case k
               when '-size', '-weight', '-slant', '-underline', '-overstrike'
@@ -938,14 +938,14 @@ class TkFont
               end
             }
             tk_call('font', 'configure', @latinfont, *opts)
-            tk_call('font', 'create', @compoundfont, 
+            tk_call('font', 'create', @compoundfont,
                     '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
 
           elsif e.message =~ /ascii font .* specified/
             tk_call('font', 'delete', @kanjifont)
             create_kanjifont(DEFAULT_KANJI_FONT_NAME)
             opts = []
-            Hash[*(tk_split_simplelist(tk_call('font', 'configure', 
+            Hash[*(tk_split_simplelist(tk_call('font', 'configure',
                                                @latinfont)))].each{|k,v|
               case k
               when '-size', '-weight', '-slant', '-underline', '-overstrike'
@@ -953,7 +953,7 @@ class TkFont
               end
             }
             tk_call('font', 'configure', @kanjifont, *opts)
-            tk_call('font', 'create', @compoundfont, 
+            tk_call('font', 'create', @compoundfont,
                     '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
 
           else
@@ -1392,7 +1392,7 @@ class TkFont
     end
 
     h = Hash[metrics(option)]
-    h.keys.each{|k| 
+    h.keys.each{|k|
       case TkFont::MetricsType[k.to_s]
       when ?n
         h[k] = TkComm::num_or_str(h[k])
@@ -1424,7 +1424,7 @@ class TkFont
     end
 
     h = Hash[metrics_displayof(win, option)]
-    h.keys.each{|k| 
+    h.keys.each{|k|
       case TkFont::MetricsType[k.to_s]
       when ?n
         h[k] = TkComm::num_or_str(h[k])
@@ -1459,7 +1459,7 @@ class TkFont
     end
 
     h = Hash[latin_metrics(option)]
-    h.keys.each{|k| 
+    h.keys.each{|k|
       case TkFont::MetricsType[k.to_s]
       when ?n
         h[k] = TkComm::num_or_str(h[k])
@@ -1495,7 +1495,7 @@ class TkFont
     end
 
     h = Hash[latin_metrics_displayof(win, option)]
-    h.keys.each{|k| 
+    h.keys.each{|k|
       case TkFont::MetricsType[k.to_s]
       when ?n
         h[k] = TkComm::num_or_str(h[k])
@@ -1532,7 +1532,7 @@ class TkFont
     end
 
     h = Hash[kanji_metrics(option)]
-    h.keys.each{|k| 
+    h.keys.each{|k|
       case TkFont::MetricsType[k.to_s]
       when ?n
         h[k] = TkComm::num_or_str(h[k])
@@ -1570,7 +1570,7 @@ class TkFont
     end
 
     h = Hash[kanji_metrics_displayof(win, option)]
-    h.keys.each{|k| 
+    h.keys.each{|k|
       case TkFont::MetricsType[k.to_s]
       when ?n
         h[k] = TkComm::num_or_str(h[k])
@@ -1586,7 +1586,7 @@ class TkFont
   def reset_pointadjust
     begin
       if /^8\..*/ === Tk::TK_VERSION  && JAPANIZED_TK
-        configure('pointadjust' => latin_actual.assoc('size')[1].to_f / 
+        configure('pointadjust' => latin_actual.assoc('size')[1].to_f /
                                       kanji_actual.assoc('size')[1].to_f )
       end
     rescue
@@ -1659,8 +1659,8 @@ module TkFont::CoreMethods
         ''
       end
     else
-      [['family',''], ['size',0], ['weight',''], ['slant',''], 
-        ['underline',false], ['overstrike',false], ['charset',''], 
+      [['family',''], ['size',0], ['weight',''], ['slant',''],
+        ['underline',false], ['overstrike',false], ['charset',''],
         ['pointadjust',0]]
     end
   end
@@ -1672,7 +1672,7 @@ module TkFont::CoreMethods
       ""
     elsif option
       if win
-        val = tk_call('font', 'actual', font, 
+        val = tk_call('font', 'actual', font,
                       "-displayof", win, "-#{option}")
       else
         val = tk_call('font', 'actual', font, "-#{option}")
@@ -1687,7 +1687,7 @@ module TkFont::CoreMethods
       end
     else
       l = tk_split_simplelist(if win
-                                 tk_call('font', 'actual', font, 
+                                 tk_call('font', 'actual', font,
                                                      "-displayof", win)
                               else
                                  tk_call('font', 'actual', font)
@@ -1733,8 +1733,8 @@ module TkFont::CoreMethods
           ''
         end
       else
-        [['family',''], ['size',0], ['weight',''], ['slant',''], 
-          ['underline',false], ['overstrike',false], ['charset',''], 
+        [['family',''], ['size',0], ['weight',''], ['slant',''],
+          ['underline',false], ['overstrike',false], ['charset',''],
           ['pointadjust',1.0]]
       end
     else # ! TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
@@ -1753,8 +1753,8 @@ module TkFont::CoreMethods
         ''
       end
     else
-      {'family'=>'', 'size'=>0, 'weight'=>'', 'slant'=>'', 
-        'underline'=>false, 'overstrike'=>false, 
+      {'family'=>'', 'size'=>0, 'weight'=>'', 'slant'=>'',
+        'underline'=>false, 'overstrike'=>false,
         'charset'=>false, 'pointadjust'=>1.0}
     end
   end
@@ -1775,20 +1775,20 @@ module TkFont::CoreMethods
         configure_core_tk8x(font, 'family', slot.delete('family'))
       end
 
-      if ((slot.key?('size') || slot.key?(:size)) && 
+      if ((slot.key?('size') || slot.key?(:size)) &&
           padjust && !slot.key?('pointadjust') && !slot.key?(:pointadjust))
-        tk_call('font', 'configure', font, 
+        tk_call('font', 'configure', font,
                 '-pointadjust', padjust, *hash_kv(slot))
       else
         tk_call('font', 'configure', font, *hash_kv(slot))
       end
     elsif (slot == 'size' || slot == :size) && padjust != nil
-      tk_call('font', 'configure', font, 
+      tk_call('font', 'configure', font,
               "-#{slot}", value, '-pointadjust', padjust)
     elsif JAPANIZED_TK && (slot == 'family' || slot == :family)
       # coumpund font?
       begin
-        compound = tk_split_simplelist(tk_call('font', 'configure', 
+        compound = tk_split_simplelist(tk_call('font', 'configure',
                                                font, '-compound'))
       rescue
         tk_call('font', 'configure', font, '-family', value)
@@ -1819,7 +1819,7 @@ module TkFont::CoreMethods
       ensure
         tk_call('font', 'delete', kfnt) if kfnt != ''
       end
-      
+
     else
       tk_call('font', 'configure', font, "-#{slot}", value)
     end
@@ -2044,7 +2044,7 @@ module TkFont::CoreMethods
       keys = self.configinfo
       tk_call('font', 'delete', @compoundfont)
       begin
-        tk_call('font', 'create', @compoundfont, 
+        tk_call('font', 'create', @compoundfont,
                 '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
 =begin
         latinkeys = {}
@@ -2061,7 +2061,7 @@ module TkFont::CoreMethods
         tk_call('font', 'delete', @latinfont)
         if fnt_bup && fnt_bup != ''
           tk_call('font', 'create', @latinfont, '-copy', fnt_bup)
-          tk_call('font', 'create', @compoundfont, 
+          tk_call('font', 'create', @compoundfont,
                   '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
           tk_call('font', 'delete', fnt_bup)
         else
@@ -2082,7 +2082,7 @@ module TkFont::CoreMethods
         # not exist? (deleted?) -> create font
         tk_call('font', 'create', @compoundfont, *hash_kv(latinkeys))
       end
-    end    
+    end
     self
   end
 
@@ -2112,20 +2112,20 @@ module TkFont::CoreMethods
       keys = self.configinfo
       tk_call('font', 'delete', @compoundfont)
       begin
-        tk_call('font', 'create', @compoundfont, 
+        tk_call('font', 'create', @compoundfont,
                 '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
       rescue RuntimeError => e
         tk_call('font', 'delete', @kanjifont)
         if fnt_bup && fnt_bup != ''
           tk_call('font', 'create', @kanjifont, '-copy', fnt_bup)
-          tk_call('font', 'create', @compoundfont, 
+          tk_call('font', 'create', @compoundfont,
                   '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
           tk_call('font', 'delete', fnt_bup)
         else
           fail e
         end
       end
-    end    
+    end
     self
   end
 
@@ -2137,7 +2137,7 @@ module TkFont::CoreMethods
     font = '{}' if font == ''
 
     if win
-      number(tk_call('font', 'measure', font, 
+      number(tk_call('font', 'measure', font,
                      '-displayof', win, text))
     else
       number(tk_call('font', 'measure', font, text))
@@ -2158,7 +2158,7 @@ module TkFont::CoreMethods
 
     if option
       if win
-        number(tk_call('font', 'metrics', font, 
+        number(tk_call('font', 'metrics', font,
                        "-displayof", win, "-#{option}"))
       else
         number(tk_call('font', 'metrics', font, "-#{option}"))
@@ -2304,12 +2304,12 @@ end
 #######################################
 # define system font names
 #######################################
-if Tk::TCL_MAJOR_VERSION > 8 || 
+if Tk::TCL_MAJOR_VERSION > 8 ||
     (Tk::TCL_MAJOR_VERSION == 8 && Tk::TCL_MINOR_VERSION >= 5)
   # add standard fonts of Tcl/Tk 8.5+
   TkFont::SYSTEM_FONT_NAMES.add [
-    'TkDefaultFont', 'TkTextFont', 'TkFixedFont', 'TkMenuFont', 
-    'TkHeadingFont', 'TkCaptionFont', 'TkSmallCaptionFont', 
+    'TkDefaultFont', 'TkTextFont', 'TkFixedFont', 'TkMenuFont',
+    'TkHeadingFont', 'TkCaptionFont', 'TkSmallCaptionFont',
     'TkIconFont', 'TkTooltipFont'
   ]
 end
@@ -2323,22 +2323,22 @@ TkFont::SYSTEM_FONT_NAMES.add [
 #  --  macintosh, macosx
 TkFont::SYSTEM_FONT_NAMES.add ['system', 'application']
 
-if Tk::TCL_MAJOR_VERSION > 8 || 
+if Tk::TCL_MAJOR_VERSION > 8 ||
     (Tk::TCL_MAJOR_VERSION == 8 && Tk::TCL_MINOR_VERSION >= 5)
   TkFont::SYSTEM_FONT_NAMES.add ['menu']
 end
 
 #  --  macosx (Aqua theme)
-if Tk::TCL_MAJOR_VERSION > 8 || 
+if Tk::TCL_MAJOR_VERSION > 8 ||
     (Tk::TCL_MAJOR_VERSION == 8 && Tk::TCL_MINOR_VERSION >= 5)
   TkFont::SYSTEM_FONT_NAMES.add [
-    'systemSystemFont', 'systemEmphasizedSystemFont', 
-    'systemSmallSystemFont', 'systemSmallEmphasizedSystemFont', 
-    'systemApplicationFont', 'systemLabelFont', 'systemViewsFont', 
-    'systemMenuTitleFont', 'systemMenuItemFont', 'systemMenuItemMarkFont', 
-    'systemMenuItemCmdKeyFont', 'systemWindowTitleFont', 
-    'systemPushButtonFont', 'systemUtilityWindowTitleFont', 
-    'systemAlertHeaderFont', 'systemToolbarFont', 'systemMiniSystemFont', 
+    'systemSystemFont', 'systemEmphasizedSystemFont',
+    'systemSmallSystemFont', 'systemSmallEmphasizedSystemFont',
+    'systemApplicationFont', 'systemLabelFont', 'systemViewsFont',
+    'systemMenuTitleFont', 'systemMenuItemFont', 'systemMenuItemMarkFont',
+    'systemMenuItemCmdKeyFont', 'systemWindowTitleFont',
+    'systemPushButtonFont', 'systemUtilityWindowTitleFont',
+    'systemAlertHeaderFont', 'systemToolbarFont', 'systemMiniSystemFont',
     'systemDetailSystemFont', 'systemDetailEmphasizedSystemFont'
   ]
 end

@@ -35,10 +35,10 @@ module Rake
   #     s.files = PKG_FILES
   #     s.description = <<EOF
   #   Rake is a Make-like program implemented in Ruby. Tasks
-  #   and dependencies are specified in standard Ruby syntax. 
+  #   and dependencies are specified in standard Ruby syntax.
   #   EOF
   #   end
-  #   
+  #
   #   Rake::GemPackageTask.new(spec) do |pkg|
   #     pkg.need_zip = true
   #     pkg.need_tar = true
@@ -84,7 +84,7 @@ module Rake
         }
       end
     end
-    
+
     def gem_file
       if @gem_spec.platform == Gem::Platform::RUBY
         "#{package_name}.gem"
@@ -92,6 +92,6 @@ module Rake
         "#{package_name}-#{@gem_spec.platform}.gem"
       end
     end
-    
+
   end
 end

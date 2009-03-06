@@ -7,10 +7,10 @@
 #
 # (The following is the original description of the library.)
 #
-# Plotchart is a Tcl-only package that focuses on the easy creation of 
-# xy-plots, barcharts and other common types of graphical presentations. 
-# The emphasis is on ease of use, rather than flexibility. The procedures 
-# that create a plot use the entire canvas window, making the layout of the 
+# Plotchart is a Tcl-only package that focuses on the easy creation of
+# xy-plots, barcharts and other common types of graphical presentations.
+# The emphasis is on ease of use, rather than flexibility. The procedures
+# that create a plot use the entire canvas window, making the layout of the
 # plot completely automatic.
 #
 # This results in the creation of an xy-plot in, say, ten lines of code:
@@ -32,27 +32,27 @@
 #    $s title "Data series"
 # --------------------------------------------------------------------
 #
-# A drawback of the package might be that it does not do any data management. 
-# So if the canvas that holds the plot is to be resized, the whole plot must 
-# be redrawn. The advantage, though, is that it offers a number of plot and 
+# A drawback of the package might be that it does not do any data management.
+# So if the canvas that holds the plot is to be resized, the whole plot must
+# be redrawn. The advantage, though, is that it offers a number of plot and
 # chart types:
 #
 #    * XY-plots like the one shown above with any number of data series.
-#    * Stripcharts, a kind of XY-plots where the horizontal axis is adjusted 
-#      automatically. The result is a kind of sliding window on the data 
+#    * Stripcharts, a kind of XY-plots where the horizontal axis is adjusted
+#      automatically. The result is a kind of sliding window on the data
 #      series.
 #    * Polar plots, where the coordinates are polar instead of cartesian.
-#    * Isometric plots, where the scale of the coordinates in the two 
-#      directions is always the same, i.e. a circle in world coordinates 
+#    * Isometric plots, where the scale of the coordinates in the two
+#      directions is always the same, i.e. a circle in world coordinates
 #      appears as a circle on the screen.
-#      You can zoom in and out, as well as pan with these plots (Note: this 
-#      works best if no axes are drawn, the zooming and panning routines do 
-#      not distinguish the axes), using the mouse buttons with the control 
+#      You can zoom in and out, as well as pan with these plots (Note: this
+#      works best if no axes are drawn, the zooming and panning routines do
+#      not distinguish the axes), using the mouse buttons with the control
 #      key and the arrow keys with the control key.
 #    * Piecharts, with automatic scaling to indicate the proportions.
-#    * Barcharts, with either vertical or horizontal bars, stacked bars or 
+#    * Barcharts, with either vertical or horizontal bars, stacked bars or
 #      bars side by side.
-#    * Timecharts, where bars indicate a time period and milestones or other 
+#    * Timecharts, where bars indicate a time period and milestones or other
 #      important moments in time are represented by triangles.
 #    * 3D plots (both for displaying surfaces and 3D bars)
 #
@@ -91,13 +91,13 @@ module Tk::Tcllib::Plotchart
   end
 
   def self.world_coordinates(w, *args) # args := xmin, ymin, xmax, ymax
-    tk_call_without_enc('::Plotchart::worldCoordinates', 
+    tk_call_without_enc('::Plotchart::worldCoordinates',
                         w.path, *(args.flatten))
   end
 
-  def self.world_3D_coordinates(w, *args) 
+  def self.world_3D_coordinates(w, *args)
     # args := xmin, ymin, zmin, xmax, ymax, zmax
-    tk_call_without_enc('::Plotchart::world3DCoordinates', 
+    tk_call_without_enc('::Plotchart::world3DCoordinates',
                         w.path, *(args.flatten))
   end
 
@@ -157,7 +157,7 @@ module Tk::Tcllib::Plotchart
       if key.kind_of?(Hash)
         tk_call_without_enc(@chart, 'xconfig', *hash_kv(key, true))
       else
-        tk_call_without_enc(@chart, 'xconfig', 
+        tk_call_without_enc(@chart, 'xconfig',
                             "-#{key}", _get_eval_enc_str(value))
       end
       self
@@ -167,7 +167,7 @@ module Tk::Tcllib::Plotchart
       if key.kind_of?(Hash)
         tk_call_without_enc(@chart, 'yconfig', *hash_kv(key, true))
       else
-        tk_call_without_enc(@chart, 'yconfig', 
+        tk_call_without_enc(@chart, 'yconfig',
                             "-#{key}", _get_eval_enc_str(value))
       end
       self
@@ -180,14 +180,14 @@ module Tk::Tcllib::Plotchart
     end
 
     def world_coordinates(*args) # args := xmin, ymin, xmax, ymax
-      tk_call_without_enc('::Plotchart::worldCoordinates', 
+      tk_call_without_enc('::Plotchart::worldCoordinates',
                           @path, *(args.flatten))
       self
     end
 
-    def world_3D_coordinates(*args) 
+    def world_3D_coordinates(*args)
       # args := xmin, ymin, zmin, xmax, ymax, zmax
-      tk_call_without_enc('::Plotchart::world3DCoordinates', 
+      tk_call_without_enc('::Plotchart::world3DCoordinates',
                           @path, *(args.flatten))
       self
     end
@@ -229,7 +229,7 @@ module Tk::Tcllib::Plotchart
     include ChartMethod
 
     TkCommandNames = [
-      'canvas'.freeze, 
+      'canvas'.freeze,
       '::Plotchart::createXYPlot'.freeze
     ].freeze
 
@@ -259,7 +259,7 @@ module Tk::Tcllib::Plotchart
 
     def _create_chart
       p self.class::TkCommandNames[1] if $DEBUG
-      tk_call_without_enc(self.class::TkCommandNames[1], @path, 
+      tk_call_without_enc(self.class::TkCommandNames[1], @path,
                           array2tk_list(@xaxis), array2tk_list(@yaxis))
     end
     private :_create_chart
@@ -324,7 +324,7 @@ module Tk::Tcllib::Plotchart
       if key.kind_of?(Hash)
         tk_call_without_enc(@chart, 'dataconfig', series, *hash_kv(key, true))
       else
-        tk_call_without_enc(@chart, 'dataconfig', series, 
+        tk_call_without_enc(@chart, 'dataconfig', series,
                             "-#{key}", _get_eval_enc_str(value))
       end
     end
@@ -333,7 +333,7 @@ module Tk::Tcllib::Plotchart
   ############################
   class Stripchart < XYPlot
     TkCommandNames = [
-      'canvas'.freeze, 
+      'canvas'.freeze,
       '::Plotchart::createStripchart'.freeze
     ].freeze
   end
@@ -343,7 +343,7 @@ module Tk::Tcllib::Plotchart
     include ChartMethod
 
     TkCommandNames = [
-      'canvas'.freeze, 
+      'canvas'.freeze,
       '::Plotchart::createPolarplot'.freeze
     ].freeze
 
@@ -370,7 +370,7 @@ module Tk::Tcllib::Plotchart
 
     def _create_chart
       p self.class::TkCommandNames[1] if $DEBUG
-      tk_call_without_enc(self.class::TkCommandNames[1], @path, 
+      tk_call_without_enc(self.class::TkCommandNames[1], @path,
                           array2tk_list(@radius_data))
     end
     private :_create_chart
@@ -382,7 +382,7 @@ module Tk::Tcllib::Plotchart
     end
 
     def plot(series, radius, angle)
-      tk_call_without_enc(@chart, 'plot', _get_eval_enc_str(series), 
+      tk_call_without_enc(@chart, 'plot', _get_eval_enc_str(series),
                           radius, angle)
       self
     end
@@ -391,7 +391,7 @@ module Tk::Tcllib::Plotchart
       if key.kind_of?(Hash)
         tk_call_without_enc(@chart, 'dataconfig', series, *hash_kv(key, true))
       else
-        tk_call_without_enc(@chart, 'dataconfig', series, 
+        tk_call_without_enc(@chart, 'dataconfig', series,
                             "-#{key}", _get_eval_enc_str(value))
       end
     end
@@ -403,7 +403,7 @@ module Tk::Tcllib::Plotchart
     include ChartMethod
 
     TkCommandNames = [
-      'canvas'.freeze, 
+      'canvas'.freeze,
       '::Plotchart::createIsometricPlot'.freeze
     ].freeze
 
@@ -446,8 +446,8 @@ module Tk::Tcllib::Plotchart
 
     def _create_chart
       p self.class::TkCommandNames[1] if $DEBUG
-      tk_call_without_enc(self.class::TkCommandNames[1], @path, 
-                          array2tk_list(@xaxis), array2tk_list(@yaxis), 
+      tk_call_without_enc(self.class::TkCommandNames[1], @path,
+                          array2tk_list(@xaxis), array2tk_list(@yaxis),
                           @stepsize)
     end
     private :_create_chart
@@ -483,7 +483,7 @@ module Tk::Tcllib::Plotchart
     include ChartMethod
 
     TkCommandNames = [
-      'canvas'.freeze, 
+      'canvas'.freeze,
       '::Plotchart::create3DPlot'.freeze
     ].freeze
 
@@ -516,9 +516,9 @@ module Tk::Tcllib::Plotchart
 
     def _create_chart
       p self.class::TkCommandNames[1] if $DEBUG
-      tk_call_without_enc(self.class::TkCommandNames[1], @path, 
-                          array2tk_list(@xaxis), 
-                          array2tk_list(@yaxis), 
+      tk_call_without_enc(self.class::TkCommandNames[1], @path,
+                          array2tk_list(@xaxis),
+                          array2tk_list(@yaxis),
                           array2tk_list(@zaxis))
     end
     private :_create_chart
@@ -542,10 +542,10 @@ module Tk::Tcllib::Plotchart
     end
 
     def plot_data(dat)
-      # dat has to be provided as a 2 level array. 
-      # 1st level contains rows, drawn in y-direction, 
-      # and each row is an array whose elements are drawn in x-direction, 
-      # for the columns. 
+      # dat has to be provided as a 2 level array.
+      # 1st level contains rows, drawn in y-direction,
+      # and each row is an array whose elements are drawn in x-direction,
+      # for the columns.
       tk_call_without_enc(@chart, 'plotdata', dat)
       self
     end
@@ -565,7 +565,7 @@ module Tk::Tcllib::Plotchart
     include ChartMethod
 
     TkCommandNames = [
-      'canvas'.freeze, 
+      'canvas'.freeze,
       '::Plotchart::createPiechart'.freeze
     ].freeze
 
@@ -596,11 +596,11 @@ module Tk::Tcllib::Plotchart
     include ChartMethod
 
     TkCommandNames = [
-      'canvas'.freeze, 
+      'canvas'.freeze,
       '::Plotchart::createBarchart'.freeze
     ].freeze
 
-    def initialize(*args) 
+    def initialize(*args)
       # args := ([parent,] xlabels, ylabels [, series] [, keys])
       # xlabels, ylabels := labels | axis ( depend on normal or horizontal )
       # labels := Array of [label, label, ...]
@@ -642,8 +642,8 @@ module Tk::Tcllib::Plotchart
 
     def _create_chart
       p self.class::TkCommandNames[1] if $DEBUG
-      tk_call_without_enc(self.class::TkCommandNames[1], @path, 
-                          array2tk_list(@xlabels), array2tk_list(@ylabels), 
+      tk_call_without_enc(self.class::TkCommandNames[1], @path,
+                          array2tk_list(@xlabels), array2tk_list(@ylabels),
                           @series_size)
     end
     private :_create_chart
@@ -672,7 +672,7 @@ module Tk::Tcllib::Plotchart
   ############################
   class HorizontalBarchart < Barchart
     TkCommandNames = [
-      'canvas'.freeze, 
+      'canvas'.freeze,
       '::Plotchart::createHorizontalBarchart'.freeze
     ].freeze
   end
@@ -717,7 +717,7 @@ module Tk::Tcllib::Plotchart
 
     def _create_chart
       p self.class::TkCommandNames[1] if $DEBUG
-      tk_call_without_enc(self.class::TkCommandNames[1], @path, 
+      tk_call_without_enc(self.class::TkCommandNames[1], @path,
                           @time_begin, @time_end, @items)
     end
     private :_create_chart
@@ -790,13 +790,13 @@ module Tk::Tcllib::Plotchart
 
     def _create_chart
       p self.class::TkCommandNames[1] if $DEBUG
-      tk_call_without_enc(self.class::TkCommandNames[1], @path, 
+      tk_call_without_enc(self.class::TkCommandNames[1], @path,
                           @time_begin, @time_end, @items, @text_width)
     end
     private :_create_chart
 
     def task(txt, time_begin, time_end, completed=0.0)
-      list(tk_call_without_enc(@chart, 'task', txt, time_begin, time_end, 
+      list(tk_call_without_enc(@chart, 'task', txt, time_begin, time_end,
                                completed)).collect!{|id|
         TkcItem.id2obj(self, id)
       }

@@ -39,7 +39,7 @@ class Tk::Tcllib::CText
 
   def create_self(keys)
     if keys and keys != None
-      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+      tk_call_without_enc(self.class::TkCommandNames[0], @path,
                           *hash_kv(keys, true))
     else
       tk_call_without_enc(self.class::TkCommandNames[0], @path)
@@ -48,7 +48,7 @@ class Tk::Tcllib::CText
   private :create_self
 
   def __strval_optkeys
-    super() << 'linemapfg' << 'linemapbg' << 
+    super() << 'linemapfg' << 'linemapbg' <<
       'linemap_select_fg' << 'linemap_select_bg'
   end
   private :__strval_optkeys
@@ -96,19 +96,19 @@ class Tk::Tcllib::CText
   end
 
   def add_highlight_class_for_special_chars(klass, col, *chrs)
-    tk_call('ctext::addHighlightClassForSpecialChars', 
+    tk_call('ctext::addHighlightClassForSpecialChars',
             @path, klass, col, chrs.join(''))
     self
   end
 
   def add_highlight_class_for_regexp(klass, col, tcl_regexp)
-    tk_call('ctext::addHighlightClassForRegexp', 
+    tk_call('ctext::addHighlightClassForRegexp',
             @path, klass, col, tcl_regexp)
     self
   end
 
   def add_highlight_class_with_only_char_start(klass, col, chr)
-    tk_call('ctext::addHighlightClassWithOnlyCharStart', 
+    tk_call('ctext::addHighlightClassWithOnlyCharStart',
             @path, klass, col, chr)
     self
   end

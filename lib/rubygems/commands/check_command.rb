@@ -46,7 +46,7 @@ class Gem::Commands::CheckCommand < Gem::Command
             say "\t#{error_entry.problem}"
             say
           end
-        else  
+        else
           say "#{key} is error-free"
         end
         say

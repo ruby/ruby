@@ -48,7 +48,7 @@ class TestGemPackageTarInput < TarTestCase
       meta = @spec.to_yaml
 
       f.write tar_file_header("metadata", "", 0644, meta.size)
-      f.write meta + "\0" * (1024 - meta.size) 
+      f.write meta + "\0" * (1024 - meta.size)
       f.write "\0" * 1024
     end
 

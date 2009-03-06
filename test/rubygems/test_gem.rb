@@ -400,7 +400,7 @@ class TestGem < RubyGemTestCase
   def test_self_refresh
     util_make_gems
 
-    a1_spec = File.join @gemhome, "specifications", "#{@a1.full_name}.gemspec" 
+    a1_spec = File.join @gemhome, "specifications", "#{@a1.full_name}.gemspec"
 
     FileUtils.mv a1_spec, @tempdir
 

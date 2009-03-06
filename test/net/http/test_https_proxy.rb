@@ -34,4 +34,4 @@ class HTTPSProxyTest < Test::Unit::TestCase
     t.join if t
   end
 end if defined?(OpenSSL)
- 
+

@@ -576,7 +576,7 @@ EOT
       with_pipe(enc) {|r, w|
         w << "\xc2\xa1"
         w.close
-        s = r.getc 
+        s = r.getc
         assert_equal(enc, s.encoding)
       }
     }
@@ -897,7 +897,7 @@ EOT
           STDIN.reopen(io)
           STDIN.external_encoding
           STDIN.write "\u3042"
-          STDIN.flush 
+          STDIN.flush
         End
         Process.wait pid
         f.rewind
@@ -1360,7 +1360,7 @@ EOT
       }
       content = File.read("t", :mode=>"rb:ascii-8bit")
       assert_equal(expected.dup.force_encoding("ascii-8bit"),
-                   content.force_encoding("ascii-8bit")) 
+                   content.force_encoding("ascii-8bit"))
     }
   end
 

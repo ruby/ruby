@@ -1,5 +1,5 @@
 #
-# tk/composite.rb : 
+# tk/composite.rb :
 #
 require 'tk'
 
@@ -358,7 +358,7 @@ module TkComposite
             opt, wins = tbl[0]
             next unless wins && wins[-1]
             if slot == opt
-              info_list.delete_if{|i| i[0] == slot} << 
+              info_list.delete_if{|i| i[0] == slot} <<
                 wins[-1].configinfo(slot)
             else
               info = wins[-1].configinfo(opt)
@@ -367,7 +367,7 @@ module TkComposite
             end
           else
             opt, wins = tbl[-1]
-            info_list.delete_if{|i| i[0] == slot} << 
+            info_list.delete_if{|i| i[0] == slot} <<
               [slot, '', '', '', wins[-1].cget(opt)]
           end
         }

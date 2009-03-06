@@ -10,7 +10,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   attr_accessor :context
 
   # Regular expressions to match class and method references.
-  # 
+  #
   # 1.) There can be a '\' in front of text to suppress
   #     any cross-references (note, however, that the single '\'
   #     is written as '\\\\' in order to escape it twice, once

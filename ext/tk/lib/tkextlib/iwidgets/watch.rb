@@ -24,7 +24,7 @@ class Tk::Iwidgets::Watch
   private :__boolval_optkeys
 
   def __strval_optkeys
-    super() << 'clockcolor' << 'hourcolor' << 'minutecolor' << 
+    super() << 'clockcolor' << 'hourcolor' << 'minutecolor' <<
       'pivotcolor' << 'secondcolor' << 'tickcolor'
   end
   private :__strval_optkeys

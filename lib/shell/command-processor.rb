@@ -1,12 +1,12 @@
 #
-#   shell/command-controller.rb - 
+#   shell/command-controller.rb -
 #   	$Release Version: 0.7 $
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 
 require "e2mmap"
@@ -39,7 +39,7 @@ class Shell
       for m in CommandProcessor.instance_methods(false) - NoDelegateMethods
 	add_delegate_command_to_shell(m)
       end
-      
+
       def self.method_added(id)
 	add_delegate_command_to_shell(id)
       end
@@ -84,7 +84,7 @@ class Shell
     # Shell#test
     #
     # -
-    #	
+    #
     # CommandProcessor#foreach(path, rs)
     #	  path: String
     #	  rs:	String - record separator
@@ -168,7 +168,7 @@ class Shell
     #	  sh["e", "foo"]
     #	  sh[:exists?, "foo"]
     #	  sh["exists?", "foo"]
-    #	  
+    #
     alias top_level_test test
     def test(command, file1, file2=nil)
       file1 = expand_path(file1)
@@ -211,11 +211,11 @@ class Shell
     # CommandProcessor#mkdir(*path)
     #	  path: String
     #	same as Dir.mkdir()
-    #	  
+    #
     def mkdir(*path)
       @shell.check_point
       notify("mkdir #{path.join(' ')}")
-      
+
       perm = nil
       if path.last.kind_of?(Integer)
 	perm = path.pop
@@ -236,7 +236,7 @@ class Shell
     # CommandProcessor#rmdir(*path)
     #	  path: String
     #	same as Dir.rmdir()
-    #	  
+    #
     def rmdir(*path)
       @shell.check_point
       notify("rmdir #{path.join(' ')}")
@@ -256,7 +256,7 @@ class Shell
     #	example:
     #	  print sh.system("ls", "-l")
     #	  sh.system("ls", "-l") | sh.head > STDOUT
-    # 
+    #
     def system(command, *opts)
       if opts.empty?
 	if command =~ /\*|\?|\{|\}|\[|\]|<|>|\(|\)|~|&|\||\\|\$|;|'|`|"|\n/
@@ -338,7 +338,7 @@ class Shell
     def notify(*opts, &block)
       Shell.notify(*opts) {|mes|
 	yield mes if iterator?
-	
+
 	mes.gsub!("%pwd", "#{@cwd}")
 	mes.gsub!("%cwd", "#{@cwd}")
       }
@@ -383,10 +383,10 @@ class Shell
      	          SystemCommand.new(@shell, '#{path}', *opts)
                end]), nil, __FILE__, __LINE__ - 1)
       rescue SyntaxError
-	Shell.notify "warn: Can't define #{command} path: #{path}." 
+	Shell.notify "warn: Can't define #{command} path: #{path}."
       end
       Shell.notify "Define #{command} path: #{path}.", Shell.debug?
-      Shell.notify("Definition of #{command}: ", d, 
+      Shell.notify("Definition of #{command}: ", d,
 	     Shell.debug.kind_of?(Integer) && Shell.debug > 1)
     end
 
@@ -418,7 +418,7 @@ class Shell
                           @shell.__send__(:#{command},
                                           *(CommandProcessor.alias_map[:#{ali}].call *opts))
 	                end]), nil, __FILE__, __LINE__ - 1)
-    
+
 	else
            args = opts.collect{|opt| '"' + opt + '"'}.join(",")
            eval((d = %Q[def #{ali}(*opts)
@@ -426,22 +426,22 @@ class Shell
                         end]), nil, __FILE__, __LINE__ - 1)
 	end
       rescue SyntaxError
-	Shell.notify "warn: Can't alias #{ali} command: #{command}." 
+	Shell.notify "warn: Can't alias #{ali} command: #{command}."
 	Shell.notify("Definition of #{ali}: ", d)
 	raise
       end
       Shell.notify "Define #{ali} command: #{command}.", Shell.debug?
-      Shell.notify("Definition of #{ali}: ", d, 
+      Shell.notify("Definition of #{ali}: ", d,
 	     Shell.debug.kind_of?(Integer) && Shell.debug > 1)
       self
     end
-   
+
     def self.unalias_command(ali)
       ali = ali.id2name if ali.kind_of?(Symbol)
       @alias_map.delete ali.intern
       undef_system_command(ali)
     end
-   
+
     #
     # CommandProcessor.def_builtin_commands(delegation_class, command_specs)
     #	  delegation_class: Class or Module
@@ -472,7 +472,7 @@ class Shell
 		    #{delegation_class}.#{meth}(#{call_arg_str})
 		 end]
 	Shell.notify "Define #{meth}(#{arg_str})", Shell.debug?
-	Shell.notify("Definition of #{meth}: ", d, 
+	Shell.notify("Definition of #{meth}: ", d,
 		     Shell.debug.kind_of?(Integer) && Shell.debug > 1)
 	eval d
       end
@@ -513,7 +513,7 @@ class Shell
 
     #----------------------------------------------------------------------
     #
-    #  class initializing methods  - 
+    #  class initializing methods  -
     #
     #----------------------------------------------------------------------
     def self.add_delegate_command_to_shell(id)
@@ -561,7 +561,7 @@ class Shell
       normal_delegation_file_methods = [
 	["atime", ["FILENAME"]],
 	["basename", ["fn", "*opts"]],
-	["chmod", ["mode", "*FILENAMES"]], 
+	["chmod", ["mode", "*FILENAMES"]],
 	["chown", ["owner", "group", "*FILENAME"]],
 	["ctime", ["FILENAMES"]],
 	["delete", ["*FILENAMES"]],
@@ -584,7 +584,7 @@ class Shell
       alias_method :rm, :delete
 
       # method related FileTest
-      def_builtin_commands(FileTest, 
+      def_builtin_commands(FileTest,
 		   FileTest.singleton_methods(false).collect{|m| [m, ["FILENAME"]]})
 
     end

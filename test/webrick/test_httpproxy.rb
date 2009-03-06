@@ -25,7 +25,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     # Testing GET or POST to the proxy server
     # Note that the proxy server works as the origin server.
     #                    +------+
-    #                    V      | 
+    #                    V      |
     #  client -------> proxy ---+
     #        GET / POST     GET / POST
     #
@@ -176,7 +176,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     # Testing GET or POST through the upstream proxy server
     # Note that the upstream proxy server works as the origin server.
     #                                   +------+
-    #                                   V      | 
+    #                                   V      |
     #  client -------> proxy -------> proxy ---+
     #        GET / POST     GET / POST     GET / POST
     #

@@ -92,7 +92,7 @@ class Tk::Listbox<TkTextWin
       fail ArgumentError, 'an Array is expected'
     end
     tk_send_without_enc('delete', '0', 'end')
-    tk_send_without_enc('insert', '0', 
+    tk_send_without_enc('insert', '0',
                         *(vals.collect{|v| _get_eval_enc_str(v)}))
     vals
   end
@@ -110,7 +110,7 @@ class Tk::Listbox<TkTextWin
       _fromUTF8(tk_send_without_enc('itemcget', index, "-#{key}"))
     when 'font', 'kanjifont'
       #fnt = tk_tcl2ruby(tk_send('itemcget', index, "-#{key}"))
-      fnt = tk_tcl2ruby(_fromUTF8(tk_send_without_enc('itemcget', index, 
+      fnt = tk_tcl2ruby(_fromUTF8(tk_send_without_enc('itemcget', index,
                                                       '-font')))
       unless fnt.kind_of?(TkFont)
         fnt = tagfontobj(index, fnt)
@@ -127,9 +127,9 @@ class Tk::Listbox<TkTextWin
   end
   def itemconfigure(index, key, val=None)
     if key.kind_of? Hash
-      if (key['font'] || key[:font] || 
-          key['kanjifont'] || key[:kanjifont] || 
-          key['latinfont'] || key[:latinfont] || 
+      if (key['font'] || key[:font] ||
+          key['kanjifont'] || key[:kanjifont] ||
+          key['latinfont'] || key[:latinfont] ||
           key['asciifont'] || key[:asciifont] )
         tagfont_configure(index, _symbolkey2str(key))
       else
@@ -137,9 +137,9 @@ class Tk::Listbox<TkTextWin
       end
 
     else
-      if (key == 'font' || key == :font || 
-          key == 'kanjifont' || key == :kanjifont || 
-          key == 'latinfont' || key == :latinfont || 
+      if (key == 'font' || key == :font ||
+          key == 'kanjifont' || key == :kanjifont ||
+          key == 'latinfont' || key == :latinfont ||
           key == 'asciifont' || key == :asciifont )
         if val == None
           tagfontobj(index)
@@ -176,16 +176,16 @@ class Tk::Listbox<TkTextWin
           else
             if conf[3]
               if conf[3].index('{')
-                conf[3] = tk_split_list(conf[3]) 
+                conf[3] = tk_split_list(conf[3])
               else
-                conf[3] = tk_tcl2ruby(conf[3]) 
+                conf[3] = tk_tcl2ruby(conf[3])
               end
             end
             if conf[4]
               if conf[4].index('{')
-                conf[4] = tk_split_list(conf[4]) 
+                conf[4] = tk_split_list(conf[4])
               else
-                conf[4] = tk_tcl2ruby(conf[4]) 
+                conf[4] = tk_tcl2ruby(conf[4])
               end
             end
           end
@@ -224,16 +224,16 @@ class Tk::Listbox<TkTextWin
           else
             if conf[2]
               if conf[2].index('{')
-                conf[2] = tk_split_list(conf[2]) 
+                conf[2] = tk_split_list(conf[2])
               else
-                conf[2] = tk_tcl2ruby(conf[2]) 
+                conf[2] = tk_tcl2ruby(conf[2])
               end
             end
             if conf[3]
               if conf[3].index('{')
-                conf[3] = tk_split_list(conf[3]) 
+                conf[3] = tk_split_list(conf[3])
               else
-                conf[3] = tk_tcl2ruby(conf[3]) 
+                conf[3] = tk_tcl2ruby(conf[3])
               end
             end
           end

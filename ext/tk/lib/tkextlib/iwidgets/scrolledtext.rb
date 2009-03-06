@@ -86,7 +86,7 @@ class Tk::Iwidgets::Scrolledtext
     list(tk_send('bbox', index))
   end
   def compare(idx1, op, idx2)
-    bool(tk_send_without_enc('compare', _get_eval_enc_str(idx1), 
+    bool(tk_send_without_enc('compare', _get_eval_enc_str(idx1),
                              op, _get_eval_enc_str(idx2)))
   end
 
@@ -119,11 +119,11 @@ class Tk::Iwidgets::Scrolledtext
   def image_cget_strict(index, slot)
     case slot.to_s
     when 'text', 'label', 'show', 'data', 'file'
-      _fromUTF8(tk_send_without_enc('image', 'cget', 
+      _fromUTF8(tk_send_without_enc('image', 'cget',
                                     _get_eval_enc_str(index), "-#{slot}"))
     else
-      tk_tcl2ruby(_fromUTF8(tk_send_without_enc('image', 'cget', 
-                                                _get_eval_enc_str(index), 
+      tk_tcl2ruby(_fromUTF8(tk_send_without_enc('image', 'cget',
+                                                _get_eval_enc_str(index),
                                                 "-#{slot}")))
     end
   end
@@ -151,13 +151,13 @@ class Tk::Iwidgets::Scrolledtext
 
   def image_configure(index, slot, value=None)
     if slot.kind_of? Hash
-      _fromUTF8(tk_send_without_enc('image', 'configure', 
-                                    _get_eval_enc_str(index), 
+      _fromUTF8(tk_send_without_enc('image', 'configure',
+                                    _get_eval_enc_str(index),
                                     *hash_kv(slot, true)))
     else
-      _fromUTF8(tk_send_without_enc('image', 'configure', 
-                                    _get_eval_enc_str(index), 
-                                    "-#{slot}", 
+      _fromUTF8(tk_send_without_enc('image', 'configure',
+                                    _get_eval_enc_str(index),
+                                    "-#{slot}",
                                     _get_eval_enc_str(value)))
     end
     self
@@ -187,16 +187,16 @@ class Tk::Iwidgets::Scrolledtext
           else
             if conf[3]
               if conf[3].index('{')
-                conf[3] = tk_split_list(conf[3]) 
+                conf[3] = tk_split_list(conf[3])
               else
-                conf[3] = tk_tcl2ruby(conf[3]) 
+                conf[3] = tk_tcl2ruby(conf[3])
               end
             end
             if conf[4]
               if conf[4].index('{')
-                conf[4] = tk_split_list(conf[4]) 
+                conf[4] = tk_split_list(conf[4])
               else
-                conf[4] = tk_tcl2ruby(conf[4]) 
+                conf[4] = tk_tcl2ruby(conf[4])
               end
             end
           end
@@ -228,16 +228,16 @@ class Tk::Iwidgets::Scrolledtext
           else
             if conf[2]
               if conf[2].index('{')
-                conf[2] = tk_split_list(conf[2]) 
+                conf[2] = tk_split_list(conf[2])
               else
-                conf[2] = tk_tcl2ruby(conf[2]) 
+                conf[2] = tk_tcl2ruby(conf[2])
               end
             end
             if conf[3]
               if conf[3].index('{')
-                conf[3] = tk_split_list(conf[3]) 
+                conf[3] = tk_split_list(conf[3])
               else
-                conf[3] = tk_tcl2ruby(conf[3]) 
+                conf[3] = tk_tcl2ruby(conf[3])
               end
             end
           end
@@ -298,7 +298,7 @@ class Tk::Iwidgets::Scrolledtext
 
   def mark_gravity(mark, direction=nil)
     if direction
-      tk_send_without_enc('mark', 'gravity', 
+      tk_send_without_enc('mark', 'gravity',
                           _get_eval_enc_str(mark), direction)
       self
     else
@@ -307,27 +307,27 @@ class Tk::Iwidgets::Scrolledtext
   end
 
   def mark_set(mark, index)
-    tk_send_without_enc('mark', 'set', _get_eval_enc_str(mark), 
+    tk_send_without_enc('mark', 'set', _get_eval_enc_str(mark),
                         _get_eval_enc_str(index))
     self
   end
   alias set_mark mark_set
 
   def mark_unset(*marks)
-    tk_send_without_enc('mark', 'unset', 
+    tk_send_without_enc('mark', 'unset',
                         *(marks.collect{|mark| _get_eval_enc_str(mark)}))
     self
   end
   alias unset_mark mark_unset
 
   def mark_next(index)
-    tagid2obj(_fromUTF8(tk_send_without_enc('mark', 'next', 
+    tagid2obj(_fromUTF8(tk_send_without_enc('mark', 'next',
                                             _get_eval_enc_str(index))))
   end
   alias next_mark mark_next
 
   def mark_previous(index)
-    tagid2obj(_fromUTF8(tk_send_without_enc('mark', 'previous', 
+    tagid2obj(_fromUTF8(tk_send_without_enc('mark', 'previous',
                                             _get_eval_enc_str(index))))
   end
   alias previous_mark mark_previous
@@ -354,11 +354,11 @@ class Tk::Iwidgets::Scrolledtext
 
     # $KCODE == 'NONE'
     if JAPANIZED_TK
-      tk_call_without_enc('kstring', 'length', 
+      tk_call_without_enc('kstring', 'length',
                           _get_eval_enc_str(txt)).to_i
     else
       begin
-        tk_call_without_enc('encoding', 'convertto', 'ascii', 
+        tk_call_without_enc('encoding', 'convertto', 'ascii',
                             _get_eval_enc_str(txt)).length
       rescue StandardError, NameError
         # sorry, I have no plan
@@ -419,11 +419,11 @@ class Tk::Iwidgets::Scrolledtext
         pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
         if pat.kind_of? String
           #return [index(start + " + #{pos} chars"), pat.split('').length]
-          return [index(start + " + #{pos} chars"), 
+          return [index(start + " + #{pos} chars"),
                   _ktext_length(pat), pat.dup]
         else
           #return [index(start + " + #{pos} chars"), $&.split('').length]
-          return [index(start + " + #{pos} chars"), 
+          return [index(start + " + #{pos} chars"),
                   _ktext_length(match), match]
         end
       else
@@ -437,11 +437,11 @@ class Tk::Iwidgets::Scrolledtext
         pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
         if pat.kind_of? String
           #return [index(start + " + #{pos} chars"), pat.split('').length]
-          return [index(start + " + #{pos} chars"), 
+          return [index(start + " + #{pos} chars"),
                   _ktext_length(pat), pat.dup]
         else
           #return [index(start + " + #{pos} chars"), $&.split('').length]
-          return [index(start + " + #{pos} chars"), 
+          return [index(start + " + #{pos} chars"),
                   _ktext_length(match), match]
         end
       else
@@ -452,7 +452,7 @@ class Tk::Iwidgets::Scrolledtext
           pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
           if pat.kind_of? String
             #return [index("1.0 + #{pos} chars"), pat.split('').length]
-            return [index("1.0 + #{pos} chars"), 
+            return [index("1.0 + #{pos} chars"),
                     _ktext_length(pat), pat.dup]
           else
             #return [index("1.0 + #{pos} chars"), $&.split('').length]

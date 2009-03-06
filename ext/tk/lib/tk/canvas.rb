@@ -13,7 +13,7 @@ module TkCanvasItemConfig
   def __item_strval_optkeys(id)
     # maybe need to override
     super(id) + [
-      'fill', 'activefill', 'disabledfill', 
+      'fill', 'activefill', 'disabledfill',
       'outline', 'activeoutline', 'disabledoutline'
     ]
   end
@@ -117,7 +117,7 @@ class Tk::Canvas<TkWindow
   end
 
   def bbox(tagOrId, *tags)
-    list(tk_send_without_enc('bbox', tagid(tagOrId), 
+    list(tk_send_without_enc('bbox', tagid(tagOrId),
                              *tags.collect{|t| tagid(t)}))
   end
 
@@ -181,7 +181,7 @@ class Tk::Canvas<TkWindow
   end
 
   def dchars(tag, first, last=None)
-    tk_send_without_enc('dchars', tagid(tag), 
+    tk_send_without_enc('dchars', tagid(tag),
                         _get_eval_enc_str(first), _get_eval_enc_str(last))
     self
   end
@@ -214,7 +214,7 @@ class Tk::Canvas<TkWindow
   alias deltag dtag
 
   def find(mode, *args)
-    list(tk_send_without_enc('find', mode, *args)).collect!{|id| 
+    list(tk_send_without_enc('find', mode, *args)).collect!{|id|
       TkcItem.id2obj(self, id)
     }
   end
@@ -270,7 +270,7 @@ class Tk::Canvas<TkWindow
   end
 
   def insert(tagOrId, index, string)
-    tk_send_without_enc('insert', tagid(tagOrId), index, 
+    tk_send_without_enc('insert', tagid(tagOrId), index,
                         _get_eval_enc_str(string))
     self
   end
@@ -300,7 +300,7 @@ class Tk::Canvas<TkWindow
         fnt
       end
     else
-      tk_tcl2ruby(_fromUTF8(tk_send_without_enc('itemcget', tagid(tagOrId), 
+      tk_tcl2ruby(_fromUTF8(tk_send_without_enc('itemcget', tagid(tagOrId),
                                                 "-#{option}")))
     end
   end
@@ -315,16 +315,16 @@ class Tk::Canvas<TkWindow
           || key['latinfont'] || key['asciifont'] )
         tagfont_configure(tagid(tagOrId), key.dup)
       else
-        _fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId), 
+        _fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId),
                                       *hash_kv(key, true)))
       end
 
     else
       if ( key == 'coords' || key == :coords )
         self.coords(tagOrId, value)
-      elsif ( key == 'font' || key == :font || 
-              key == 'kanjifont' || key == :kanjifont || 
-              key == 'latinfont' || key == :latinfont || 
+      elsif ( key == 'font' || key == :font ||
+              key == 'kanjifont' || key == :kanjifont ||
+              key == 'latinfont' || key == :latinfont ||
               key == 'asciifont' || key == :asciifont )
         if value == None
           tagfontobj(tagid(tagOrId))
@@ -332,7 +332,7 @@ class Tk::Canvas<TkWindow
           tagfont_configure(tagid(tagOrId), {key=>value})
         end
       else
-        _fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId), 
+        _fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId),
                                       "-#{key}", _get_eval_enc_str(value)))
       end
     end
@@ -389,16 +389,16 @@ class Tk::Canvas<TkWindow
           else
             if conf[3]
               if conf[3].index('{')
-                conf[3] = tk_split_list(conf[3]) 
+                conf[3] = tk_split_list(conf[3])
               else
-                conf[3] = tk_tcl2ruby(conf[3]) 
+                conf[3] = tk_tcl2ruby(conf[3])
               end
             end
             if conf[4]
               if conf[4].index('{')
-                conf[4] = tk_split_list(conf[4]) 
+                conf[4] = tk_split_list(conf[4])
               else
-                conf[4] = tk_tcl2ruby(conf[4]) 
+                conf[4] = tk_tcl2ruby(conf[4])
               end
             end
           end
@@ -421,8 +421,8 @@ class Tk::Canvas<TkWindow
         when 'coords'
           {'coords' => ['', '', '', self.coords(tagOrId)]}
         when 'dash', 'activedash', 'disableddash'
-          conf = tk_split_simplelist(tk_send_without_enc('itemconfigure', 
-                                                         tagid(tagOrId), 
+          conf = tk_split_simplelist(tk_send_without_enc('itemconfigure',
+                                                         tagid(tagOrId),
                                                          "-#{key}"))
           if conf[3] && conf[3] =~ /^[0-9]/
             conf[3] = list(conf[3])
@@ -457,16 +457,16 @@ class Tk::Canvas<TkWindow
           else
             if conf[2]
               if conf[2].index('{')
-                conf[2] = tk_split_list(conf[2]) 
+                conf[2] = tk_split_list(conf[2])
               else
-                conf[2] = tk_tcl2ruby(conf[2]) 
+                conf[2] = tk_tcl2ruby(conf[2])
               end
             end
             if conf[3]
               if conf[3].index('{')
-                conf[3] = tk_split_list(conf[3]) 
+                conf[3] = tk_split_list(conf[3])
               else
-                conf[3] = tk_tcl2ruby(conf[3]) 
+                conf[3] = tk_tcl2ruby(conf[3])
               end
             end
           end
@@ -676,7 +676,7 @@ class TkcItem<TkObject
       fail RuntimeError, "#{self} is an abstract class"
     end
     args, fontkeys = _parse_create_args(args)
-    idnum = tk_call_without_enc(canvas.path, 'create', 
+    idnum = tk_call_without_enc(canvas.path, 'create',
                                 self::CItemTypeName, *args)
     canvas.itemconfigure(idnum, fontkeys) unless fontkeys.empty?
     idnum.to_i  # 'canvas item id' is an integer number

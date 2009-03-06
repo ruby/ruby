@@ -25,13 +25,13 @@ module Rake
   #   of date.
   #
   # [<b>"<em>package_dir</em>/<em>name</em>-<em>version</em>.tgz"</b>]
-  #   Create a gzipped tar package (if <em>need_tar</em> is true).  
+  #   Create a gzipped tar package (if <em>need_tar</em> is true).
   #
   # [<b>"<em>package_dir</em>/<em>name</em>-<em>version</em>.tar.gz"</b>]
-  #   Create a gzipped tar package (if <em>need_tar_gz</em> is true).  
+  #   Create a gzipped tar package (if <em>need_tar_gz</em> is true).
   #
   # [<b>"<em>package_dir</em>/<em>name</em>-<em>version</em>.tar.bz2"</b>]
-  #   Create a bzip2'd tar package (if <em>need_tar_bz2</em> is true).  
+  #   Create a bzip2'd tar package (if <em>need_tar_bz2</em> is true).
   #
   # [<b>"<em>package_dir</em>/<em>name</em>-<em>version</em>.zip"</b>]
   #   Create a zip package archive (if <em>need_zip</em> is true).
@@ -74,7 +74,7 @@ module Rake
     # Zip command for zipped archives.  The default is 'zip'.
     attr_accessor :zip_command
 
-    # Create a Package Task with the given name and version. 
+    # Create a Package Task with the given name and version.
     def initialize(name=nil, version=nil)
       init(name, version)
       yield self if block_given?
@@ -102,11 +102,11 @@ module Rake
 
       desc "Build all the packages"
       task :package
-      
+
       desc "Force a rebuild of the package files"
       task :repackage => [:clobber_package, :package]
-      
-      desc "Remove package products" 
+
+      desc "Remove package products"
       task :clobber_package do
         rm_r package_dir rescue nil
       end
@@ -128,7 +128,7 @@ module Rake
           end
         end
       end
-      
+
       if need_zip
         task :package => ["#{package_dir}/#{zip_file}"]
         file "#{package_dir}/#{zip_file}" => [package_dir_path] + package_files do
@@ -160,7 +160,7 @@ module Rake
     def package_name
       @version ? "#{@name}-#{@version}" : @name
     end
-      
+
     def package_dir_path
       "#{package_dir}/#{package_name}"
     end

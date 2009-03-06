@@ -7,7 +7,7 @@ require "rss/xml-stylesheet"
 
 module RSS
   class TestXMLStyleSheet < TestCase
-    
+
     def test_accessor
       [
         {:href => "a.xsl", :type => "text/xsl"},
@@ -17,7 +17,7 @@ module RSS
         assert_xml_stylesheet_attrs(attrs, XMLStyleSheet.new(attrs))
       end
     end
-    
+
     def test_to_s
       [
         {:href => "a.xsl", :type => "text/xsl"},
@@ -39,7 +39,7 @@ module RSS
         assert_xml_stylesheet(target, attrs, XMLStyleSheet.new(contents))
       end
     end
-    
+
     def test_bad_alternate
       %w(a ___ ??? BAD_ALTERNATE).each do |value|
         xss = XMLStyleSheet.new
@@ -53,7 +53,7 @@ module RSS
         assert_nil(xss.alternate)
       end
     end
-    
+
     def test_parse
       [
         [{:href => "a.xsl", :type => "text/xsl"},],
@@ -92,7 +92,7 @@ module RSS
         end
       end
     end
-    
+
     def parse_pi(pi)
       /\A\s*<\?(\S+)([^(?:\?>)]+)\?>\s*\z/ =~ pi
       target = $1
@@ -103,6 +103,6 @@ module RSS
       end
       [target, contents]
     end
-    
+
   end
 end

@@ -395,7 +395,7 @@ module RSS
           end
         EOC
       end
-      
+
       attr_reader :feed_version
       alias_method(:rss_version, :feed_version)
       attr_accessor :version, :encoding, :standalone
@@ -409,7 +409,7 @@ module RSS
         @encoding = "UTF-8"
         @standalone = nil
       end
-      
+
       def make
         yield(self)
         to_feed
@@ -423,7 +423,7 @@ module RSS
         feed.validate
         feed
       end
-      
+
       private
       remove_method :make_xml_stylesheets
       def make_xml_stylesheets
@@ -440,7 +440,7 @@ module RSS
           attr_accessor attribute
           add_need_initialize_variable(attribute)
         end
-        
+
         def to_feed(feed)
           xss = ::RSS::XMLStyleSheet.new
           guess_type_if_need(xss)
@@ -463,7 +463,7 @@ module RSS
         end
       end
     end
-    
+
     class ChannelBase < Base
       include SetupDefaultDate
 
@@ -538,7 +538,7 @@ module RSS
           end
         end
       end
-      
+
       class SkipHoursBase < Base
         def_array_element("hour")
 
@@ -549,7 +549,7 @@ module RSS
           end
         end
       end
-      
+
       class CloudBase < Base
         %w(domain port path registerProcedure protocol).each do |element|
           attr_accessor element
@@ -619,7 +619,7 @@ module RSS
         include AtomTextConstructBase
       end
     end
-    
+
     class ImageBase < Base
       %w(title url width height description).each do |element|
         attr_accessor element
@@ -630,18 +630,18 @@ module RSS
         @maker.channel.link
       end
     end
-    
+
     class ItemsBase < Base
       def_array_element("item")
 
       attr_accessor :do_sort, :max_size
-      
+
       def initialize(maker)
         super
         @do_sort = false
         @max_size = -1
       end
-      
+
       def normalize
         if @max_size >= 0
           sort_if_need[0...@max_size]

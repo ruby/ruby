@@ -31,7 +31,7 @@ module REXML
         output << ' '*@level
         if node.children.empty?
           output << " " if @ie_hack
-          output << "/" 
+          output << "/"
         else
           output << ">"
           # If compact and all children are text, and if the formatted output

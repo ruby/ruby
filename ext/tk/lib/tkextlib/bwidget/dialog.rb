@@ -52,7 +52,7 @@ class Tk::BWidget::Dialog
   def create_self(keys)
     cmd = self.class::TkCommandNames[0]
     if keys and keys != None
-      tk_call_without_enc(cmd, @path, '-parent', @relative, 
+      tk_call_without_enc(cmd, @path, '-parent', @relative,
                           *hash_kv(keys, true))
     else
       tk_call_without_enc(cmd, @path, '-parent', @relative)

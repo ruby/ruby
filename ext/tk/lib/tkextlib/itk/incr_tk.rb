@@ -99,7 +99,7 @@ module Tk
       def itk_option_define(name, resource, klass, init, config=None)
         tk_call('itk_option', 'define', name, resource, klass, init, config)
       end
-      
+
       def itk_option_remove(*args)
         tk_call('itk_option', 'remove', *args)
       end
@@ -192,7 +192,7 @@ module Tk
         ComponentID_TBL.mutex.synchronize{
           if ComponentID_TBL.key?(master)
             if ComponentID_TBL[master].key?(component)
-              return ComponentID_TBL[master][component] 
+              return ComponentID_TBL[master][component]
             end
           else
             ComponentID_TBL[master] = {}

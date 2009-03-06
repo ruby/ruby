@@ -5,7 +5,7 @@
 
 # toplevel widget が存在すれば削除する
 if defined?($sayings_demo) && $sayings_demo
-  $sayings_demo.destroy 
+  $sayings_demo.destroy
   $sayings_demo = nil
 end
 
@@ -67,11 +67,11 @@ TkFrame.new(base_frame, 'borderwidth'=>10) {|w|
     sayings_lbox.pack('expand'=>'yes', 'fill'=>'y')
 
   else
-    sayings_lbox.grid('row'=>0, 'column'=>0, 
+    sayings_lbox.grid('row'=>0, 'column'=>0,
                       'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
-    sv.grid('row'=>0, 'column'=>1, 
+    sv.grid('row'=>0, 'column'=>1,
             'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
-    sh.grid('row'=>1, 'column'=>0, 
+    sh.grid('row'=>1, 'column'=>0,
             'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
     TkGrid.rowconfigure(w, 0, 'weight'=>1, 'minsize'=>0)
     TkGrid.columnconfigure(w, 0, 'weight'=>1, 'minsize'=>0)

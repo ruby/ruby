@@ -16,7 +16,7 @@ if defined?(WIN32OLE)
     def test_convert_bignum
       @dict1.add("a", 9999999999)
       @dict1.add("b", 999999999)
-      @dict1.add("c", @dict1.item("b") * 10 + 9) 
+      @dict1.add("c", @dict1.item("b") * 10 + 9)
       assert_equal(9999999999, @dict1.item("a"))
       assert_equal(9999999999, @dict1.item("c"))
     end
@@ -134,11 +134,11 @@ if defined?(WIN32OLE)
       @dict1.add("ary2", [[1,2,"a"], [3,4,"b"]])
       assert_equal([[1,2,"a"], [3,4,"b"]], @dict1["ary2"])
 
-      @dict1.add("ary3", [[[1]]]) 
-      assert_equal([[[1]]], @dict1["ary3"]) 
+      @dict1.add("ary3", [[[1]]])
+      assert_equal([[[1]]], @dict1["ary3"])
 
-      @dict1.add("ary4", [[[1], [2], [3]], [[4], [5], [6]]]) 
-      assert_equal([[[1],[2], [3]], [[4], [5], [6]]], @dict1["ary4"]) 
+      @dict1.add("ary4", [[[1], [2], [3]], [[4], [5], [6]]])
+      assert_equal([[[1],[2], [3]], [[4], [5], [6]]], @dict1["ary4"])
     end
   end
 
@@ -303,7 +303,7 @@ if defined?(WIN32OLE)
                    guid)
     end
 
-    # 
+    #
     # WIN32OLE.codepage is initialized according to Encoding.default_external.
     #
     # def test_s_codepage
@@ -342,7 +342,7 @@ if defined?(WIN32OLE)
           assert_equal("\xA4\xA2".force_encoding("CP20932"), obj.value)
         end
 
-        WIN32OLE.codepage = cp 
+        WIN32OLE.codepage = cp
         file = fso.opentextfile(fname, 2, true)
         file.write [0x3042].pack("U*").force_encoding("UTF-8")
         file.close
@@ -353,7 +353,7 @@ if defined?(WIN32OLE)
         assert_equal("\202\240", str)
 
         # This test fail if codepage 20932 (euc) is not installed.
-        begin 
+        begin
           WIN32OLE.codepage = 20932
         rescue WIN32OLERuntimeError
         end

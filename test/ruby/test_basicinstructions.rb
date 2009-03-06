@@ -7,7 +7,7 @@ class Class
 end
 
 class TestBasicInstructions < Test::Unit::TestCase
-  
+
   def test_immediates
     assert_equal((1==1), true)
     assert_equal((1==2), false)
@@ -30,7 +30,7 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal false, (self == nil)
     assert_equal false, (self == 0)
   end
-  
+
   def test_string
     expected = "str" + "ing"
     assert_equal expected, 'string'
@@ -55,14 +55,14 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal :sym, :"#{s}"
     assert_equal :sym, :"#{"#{"#{s}"}"}"
   end
-  
+
   def test_xstr
     assert_equal 'hoge', `echo hoge`.chomp
     assert_equal '3', `echo #{1 + 2}`.chomp
     hoge = 'huga'
     assert_equal 'huga', `echo #{hoge}`.chomp
   end
-  
+
   def test_regexp
     assert_equal /test/, /test/
     assert_equal 'test', /test/.source
@@ -108,7 +108,7 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal 'c', a[2]
     assert_nil a[3]
   end
-  
+
   def test_hash
     assert_equal({}, {})
     assert_equal({1=>2}, {1=>2})
@@ -127,7 +127,7 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal((1...3), (1...2+1))
     assert_equal(('a'..'z'), ('a'..'z'))
   end
-  
+
   def test_not
     assert_equal true, !nil
     assert_equal true, !false

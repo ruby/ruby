@@ -13,7 +13,7 @@ However, when treats a binary sequence, the convert process makes troubles.
 
 Tk::BinaryString class (subclass of Tk::EncodedString class) is the class \
 to avoid such troubles. Please see the source code of this sample. \
-A Tk::BinaryString instance is used to create the image for the center button. 
+A Tk::BinaryString instance is used to create the image for the center button.
 EOM
 
 ImgFile=[File.dirname(__FILE__), 'images','tcllogo.gif'].join(File::Separator)

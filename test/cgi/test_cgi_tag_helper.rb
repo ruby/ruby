@@ -326,7 +326,7 @@ class CGITagHelperTest < Test::Unit::TestCase
       assert_match(/^<INPUT .*NAME="foo".*>bb<INPUT .*NAME="foo".*>dd$/,str)
     end
   end
-  
+
 =begin
   def test_cgi_tag_helper_html4
     ## html4

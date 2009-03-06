@@ -1,11 +1,11 @@
-# 
+#
 # = un.rb
-# 
+#
 # Copyright (c) 2003 WATANABE Hirofumi <eban@ruby-lang.org>
-# 
+#
 # This program is free software.
 # You can distribute/modify this program under the same terms of Ruby.
-# 
+#
 # == Utilities to replace common UNIX commands in Makefiles etc
 #
 # == SYNOPSIS

@@ -65,7 +65,7 @@ class RDoc::Options
   # Formatter to mark up text with
 
   attr_accessor :formatter
-  
+
   ##
   # image format for diagrams
 

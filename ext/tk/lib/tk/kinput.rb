@@ -8,8 +8,8 @@ module TkKinput
   extend Tk
 
   TkCommandNames = [
-    'kinput_start'.freeze, 
-    'kinput_send_spot'.freeze, 
+    'kinput_start'.freeze,
+    'kinput_send_spot'.freeze,
     'kanjiInput'.freeze
   ].freeze
 
@@ -47,7 +47,7 @@ module TkKinput
 
   def TkKinput.attribute_info(win, slot=nil)
     if slot
-      conf = tk_split_list(tk_call('kanjiInput', 'attribute', 
+      conf = tk_split_list(tk_call('kanjiInput', 'attribute',
                                    win, "-#{slot}"))
       conf[0] = conf[0][1..-1]
       conf

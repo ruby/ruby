@@ -32,19 +32,19 @@ module DemoManager
   end
 
   def self._mainframe(parent)
-    labf1 = Tk::BWidget::LabelFrame.new(parent, :text=>'Toolbar', 
-                                        :side=>:top, :anchor=>:w, 
+    labf1 = Tk::BWidget::LabelFrame.new(parent, :text=>'Toolbar',
+                                        :side=>:top, :anchor=>:w,
                                         :relief=>:sunken, :borderwidth=>2)
     subf = labf1.get_frame
-    chk1 = TkCheckbutton.new(subf, :text=>'View toolbar 1', 
-                             :variable=>DemoVar.toolbar1, 
+    chk1 = TkCheckbutton.new(subf, :text=>'View toolbar 1',
+                             :variable=>DemoVar.toolbar1,
                              :command=>proc{
                                DemoVar.mainframe.show_toolbar(
                                   0, DemoVar.toolbar1.value
                                )
                              })
-    chk2 = TkCheckbutton.new(subf, :text=>'View toolbar 2', 
-                             :variable=>DemoVar.toolbar2, 
+    chk2 = TkCheckbutton.new(subf, :text=>'View toolbar 2',
+                             :variable=>DemoVar.toolbar2,
                              :command=>proc{
                                DemoVar.mainframe.show_toolbar(
                                   1, DemoVar.toolbar2.value
@@ -54,12 +54,12 @@ module DemoManager
     Tk.pack(chk1, chk2, :anchor=>:w, :fill=>:x)
     labf1.pack(:fill=>:both)
 
-    labf2 = Tk::BWidget::LabelFrame.new(parent, :text=>'Status bar', 
-                                        :side=>:top, :anchor=>:w, 
+    labf2 = Tk::BWidget::LabelFrame.new(parent, :text=>'Status bar',
+                                        :side=>:top, :anchor=>:w,
                                         :relief=>:sunken, :borderwidth=>2)
     subf = labf2.get_frame
-    chk1 = TkCheckbutton.new(subf, :text=>"Show Progress\nindicator", 
-                             :justify=>:left, :variable=>@@progress, 
+    chk1 = TkCheckbutton.new(subf, :text=>"Show Progress\nindicator",
+                             :justify=>:left, :variable=>@@progress,
                              :command=>proc{ _show_progress })
     chk1.pack(:anchor=>:w, :fill=>:x)
 
@@ -67,8 +67,8 @@ module DemoManager
   end
 
   def self._notebook(parent)
-    TkCheckbutton.new(parent, :text=>'Homogeneous label', 
-                      :variable=>@@homogeneous, 
+    TkCheckbutton.new(parent, :text=>'Homogeneous label',
+                      :variable=>@@homogeneous,
                       :command=>proc{
                         DemoVar.notebook[:homogeneous] = @@homogeneous.value
                       }).pack(:side=>:left, :anchor=>:n, :fill=>:x)
@@ -92,13 +92,13 @@ module DemoManager
       sw.pack(:fill=>:both, :expand=>true)
     }
 
-    sw = Tk::BWidget::ScrolledWindow.new(pane3, :relief=>:sunken, 
+    sw = Tk::BWidget::ScrolledWindow.new(pane3, :relief=>:sunken,
                                          :borderwidth=>2)
     sf = Tk::BWidget::ScrollableFrame.new(sw)
     sw.set_widget(sf)
     subf = sf.get_frame
     lab = TkLabel.new(subf, :text=>'This is a ScrollableFrame')
-    chk = TkCheckbutton.new(subf, :text=>'Constrained with', 
+    chk = TkCheckbutton.new(subf, :text=>'Constrained with',
                             :variable=>@@constw, :command=>proc{
                               sf['constrainedwidth'] = @@constw.value
                             })

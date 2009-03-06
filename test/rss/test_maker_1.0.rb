@@ -19,7 +19,7 @@ module RSS
         setup_dummy_item(maker)
       end
       assert_equal("1.0", rss.rss_version)
-      
+
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         maker.encoding = "EUC-JP"
@@ -137,8 +137,8 @@ module RSS
         end
       end
     end
-    
-    
+
+
     def test_image
       title = "fugafuga"
       link = "http://hoge.com"
@@ -147,7 +147,7 @@ module RSS
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         maker.channel.link = link
-        
+
         maker.image.title = title
         maker.image.url = url
 
@@ -164,7 +164,7 @@ module RSS
         RSS::Maker.make("1.0") do |maker|
           # setup_dummy_channel(maker)
           maker.channel.link = link
-          
+
           maker.image.title = title
           maker.image.url = url
         end
@@ -179,7 +179,7 @@ module RSS
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         maker.channel.link = link
-        
+
         # maker.image.url = url
         maker.image.title = title
 
@@ -191,7 +191,7 @@ module RSS
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         maker.channel.link = link
-        
+
         maker.image.url = url
         # maker.image.title = title
 
@@ -205,7 +205,7 @@ module RSS
           setup_dummy_channel(maker)
           # maker.channel.link = link
           maker.channel.link = nil
-          
+
           maker.image.url = url
           maker.image.title = title
 
@@ -227,7 +227,7 @@ module RSS
 
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
-        
+
         maker.items.new_item do |item|
           item.title = title
           item.link = link
@@ -241,11 +241,11 @@ module RSS
       assert_equal(link, item.link)
       assert_nil(item.description)
 
-      
+
       item_size = 5
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
-        
+
         item_size.times do |i|
           maker.items.new_item do |_item|
             _item.title = "#{title}#{i}"
@@ -265,7 +265,7 @@ module RSS
 
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
-        
+
         item_size.times do |i|
           maker.items.new_item do |_item|
             _item.title = "#{title}#{i}"
@@ -292,7 +292,7 @@ module RSS
       max_size = item_size / 2
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
-        
+
         item_size.times do |i|
           maker.items.new_item do |_item|
             _item.title = "#{title}#{i}"
@@ -329,7 +329,7 @@ module RSS
       max_size = -2
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
-        
+
         item_size.times do |i|
           maker.items.new_item do |_item|
             _item.title = "#{title}#{i}"
@@ -398,7 +398,7 @@ module RSS
 
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
-        
+
         maker.textinput.link = link
         maker.textinput.title = title
         maker.textinput.description = description
@@ -425,7 +425,7 @@ module RSS
         end
       end
     end
-    
+
     def test_not_valid_textinput
       title = "fugafuga"
       description = "text hoge fuga"
@@ -447,7 +447,7 @@ module RSS
 
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
-        
+
         maker.textinput.link = link
         # maker.textinput.title = title
         maker.textinput.description = description
@@ -460,7 +460,7 @@ module RSS
 
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
-        
+
         maker.textinput.link = link
         maker.textinput.title = title
         # maker.textinput.description = description
@@ -473,7 +473,7 @@ module RSS
 
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
-        
+
         maker.textinput.link = link
         maker.textinput.title = title
         maker.textinput.description = description

@@ -1373,7 +1373,7 @@ end
 #
 #   ##
 #   # This method tries over and over until it is tired
-#   
+#
 #   def go_go_go(thing_to_try, tries = 10) # :args: thing_to_try
 #     puts thing_to_try
 #     go_go_go thing_to_try, tries - 1
@@ -1393,7 +1393,7 @@ end
 #   # :call-seq:
 #   #   my_method(Range)
 #   #   my_method(offset, length)
-#   
+#
 #   def my_method(*args)
 #   end
 #
@@ -1404,7 +1404,7 @@ end
 #
 #   ##
 #   # My method is awesome
-#   
+#
 #   def my_method(&block) # :yields: happy, times
 #     block.call 1, 2
 #   end
@@ -1416,7 +1416,7 @@ end
 #
 #   ##
 #   # This is a meta-programmed method!
-#   
+#
 #   add_my_method :meta_method, :arg1, :arg2
 #
 # The parser looks at the token after the identifier to determine the name, in
@@ -1447,10 +1447,10 @@ end
 #   ##
 #   # :method: ghost_method
 #   # There is a method here, but you can't see it!
-#   
+#
 #   ##
 #   # this is a comment for a regular method
-#   
+#
 #   def regular_method() end
 #
 # Note that by default, the :method: directive will be ignored if there is a

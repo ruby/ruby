@@ -89,7 +89,7 @@ EOC
     end
 
     class ChannelBase; include Maker::ImageFaviconModel; end
-    
+
     class ItemsBase
       class ItemBase; include Maker::ImageItemModel; end
     end

@@ -250,69 +250,69 @@ autoload :TkXIM,              'tk/xim'
 module Tk
   @TOPLEVEL_ALIAS_TABLE = {}
   @TOPLEVEL_ALIAS_TABLE[:Tk] = {
-    :TkButton             => 'tk/button', 
+    :TkButton             => 'tk/button',
 
-    :TkCanvas             => 'tk/canvas', 
+    :TkCanvas             => 'tk/canvas',
 
-    :TkCheckButton        => 'tk/checkbutton', 
-    :TkCheckbutton        => 'tk/checkbutton', 
+    :TkCheckButton        => 'tk/checkbutton',
+    :TkCheckbutton        => 'tk/checkbutton',
 
-    # :TkDialog             => 'tk/dialog', 
-    # :TkDialog2            => 'tk/dialog', 
-    # :TkDialogObj          => 'tk/dialog', 
-    # :TkWarning            => 'tk/dialog', 
-    # :TkWarning2           => 'tk/dialog', 
-    # :TkWarningObj         => 'tk/dialog', 
+    # :TkDialog             => 'tk/dialog',
+    # :TkDialog2            => 'tk/dialog',
+    # :TkDialogObj          => 'tk/dialog',
+    # :TkWarning            => 'tk/dialog',
+    # :TkWarning2           => 'tk/dialog',
+    # :TkWarningObj         => 'tk/dialog',
 
-    :TkEntry              => 'tk/entry', 
+    :TkEntry              => 'tk/entry',
 
-    :TkFrame              => 'tk/frame', 
+    :TkFrame              => 'tk/frame',
 
-    :TkLabel              => 'tk/label', 
+    :TkLabel              => 'tk/label',
 
-    :TkLabelFrame         => 'tk/labelframe', 
-    :TkLabelframe         => 'tk/labelframe', 
+    :TkLabelFrame         => 'tk/labelframe',
+    :TkLabelframe         => 'tk/labelframe',
 
-    :TkListbox            => 'tk/listbox', 
+    :TkListbox            => 'tk/listbox',
 
-    :TkMacResource        => 'tk/macpkg', 
+    :TkMacResource        => 'tk/macpkg',
 
-    :TkMenu               => 'tk/menu', 
-    :TkMenuClone          => 'tk/menu', 
-    :TkCloneMenu          => 'tk/menu', 
-    # :TkSystemMenu         => 'tk/menu', 
-    :TkSysMenu_Help       => 'tk/menu', 
-    :TkSysMenu_System     => 'tk/menu', 
-    :TkSysMenu_Apple      => 'tk/menu', 
-    :TkMenubutton         => 'tk/menu', 
-    :TkMenuButton         => 'tk/menu', 
-    :TkOptionMenubutton   => 'tk/menu', 
-    :TkOptionMenuButton   => 'tk/menu', 
+    :TkMenu               => 'tk/menu',
+    :TkMenuClone          => 'tk/menu',
+    :TkCloneMenu          => 'tk/menu',
+    # :TkSystemMenu         => 'tk/menu',
+    :TkSysMenu_Help       => 'tk/menu',
+    :TkSysMenu_System     => 'tk/menu',
+    :TkSysMenu_Apple      => 'tk/menu',
+    :TkMenubutton         => 'tk/menu',
+    :TkMenuButton         => 'tk/menu',
+    :TkOptionMenubutton   => 'tk/menu',
+    :TkOptionMenuButton   => 'tk/menu',
 
-    :TkMessage            => 'tk/message', 
+    :TkMessage            => 'tk/message',
 
-    :TkPanedWindow        => 'tk/panedwindow', 
-    :TkPanedwindow        => 'tk/panedwindow', 
+    :TkPanedWindow        => 'tk/panedwindow',
+    :TkPanedwindow        => 'tk/panedwindow',
 
-    :TkRadioButton        => 'tk/radiobutton', 
-    :TkRadiobutton        => 'tk/radiobutton', 
+    :TkRadioButton        => 'tk/radiobutton',
+    :TkRadiobutton        => 'tk/radiobutton',
 
-    # :TkRoot               => 'tk/root', 
+    # :TkRoot               => 'tk/root',
 
-    :TkScale              => 'tk/scale', 
+    :TkScale              => 'tk/scale',
 
-    :TkScrollbar          => 'tk/scrollbar', 
-    :TkXScrollbar         => 'tk/scrollbar', 
-    :TkYScrollbar         => 'tk/scrollbar', 
+    :TkScrollbar          => 'tk/scrollbar',
+    :TkXScrollbar         => 'tk/scrollbar',
+    :TkYScrollbar         => 'tk/scrollbar',
 
-    :TkSpinbox            => 'tk/spinbox', 
+    :TkSpinbox            => 'tk/spinbox',
 
-    :TkText               => 'tk/text', 
+    :TkText               => 'tk/text',
 
-    :TkToplevel           => 'tk/toplevel', 
+    :TkToplevel           => 'tk/toplevel',
 
-    :TkWinDDE             => 'tk/winpkg', 
-    :TkWinRegistry        => 'tk/winpkg', 
+    :TkWinDDE             => 'tk/winpkg',
+    :TkWinRegistry        => 'tk/winpkg',
   }
 
   @TOPLEVEL_ALIAS_OWNER = {}
@@ -361,7 +361,7 @@ class << Tk
     # check already autoloaded
     if (table = @TOPLEVEL_ALIAS_TABLE[current = @current_default_widget_set])
       table.each{|sym, file|
-        if !Object.autoload?(sym) && Object.const_defined?(sym) && 
+        if !Object.autoload?(sym) && Object.const_defined?(sym) &&
             @TOPLEVEL_ALIAS_TABLE[current][sym].kind_of?(String)
           # autoload -> class
           @TOPLEVEL_ALIAS_TABLE[current][sym] = Object.const_get(sym)
@@ -399,9 +399,9 @@ Tk.default_widget_set = :Tk
 ############################################
 # Ttk (Tile) support
 =begin
-if major > 8 || 
-    (major == 8 && minor > 5) || 
-    (major == 8 && minor == 5 && type >= TclTkLib::RELEASE_TYPE::BETA) 
+if major > 8 ||
+    (major == 8 && minor > 5) ||
+    (major == 8 && minor == 5 && type >= TclTkLib::RELEASE_TYPE::BETA)
   # Tcl/Tk 8.5 beta or later
   Object.autoload :Ttk, 'tkextlib/tile'
   Tk.autoload :Tile, 'tkextlib/tile'

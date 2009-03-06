@@ -69,7 +69,7 @@ $DEBUG_RDOC = nil
 # always will override those in +RDOCOPT+.
 #
 # Run
-# 
+#
 #   % rdoc --help
 #
 # for full details on rdoc's options.
@@ -96,7 +96,7 @@ $DEBUG_RDOC = nil
 #
 #   =begin rdoc
 #   Documentation to be processed by RDoc.
-#   
+#
 #   ...
 #   =end
 #
@@ -112,7 +112,7 @@ $DEBUG_RDOC = nil
 #   # FIXME: fails if the birthday falls on February 29th
 #   #++
 #   # The DOB is returned as a Time object.
-#   
+#
 #   def get_dob(person)
 #     # ...
 #   end
@@ -138,7 +138,7 @@ $DEBUG_RDOC = nil
 #
 #   def fred # :yields: index, position
 #     # ...
-#   
+#
 #     yield line, address
 #
 # which will get documented as
@@ -251,12 +251,12 @@ $DEBUG_RDOC = nil
 #   module also will be omitted.  By default, though, modules and
 #   classes within that class of module _will_ be documented.  This is
 #   turned off by adding the +all+ modifier.
-#   
+#
 #     module MyModule # :nodoc:
 #       class Input
 #       end
 #     end
-#     
+#
 #     module OtherModule # :nodoc: all
 #       class Output
 #       end
@@ -290,7 +290,7 @@ $DEBUG_RDOC = nil
 #   comment block may have one or more lines before the :section: directive.
 #   These will be removed, and any identical lines at the end of the block are
 #   also removed.  This allows you to add visual cues such as:
-#     
+#
 #     # ----------------------------------------
 #     # :section: My Section
 #     # This is the section that I wrote.

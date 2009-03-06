@@ -31,10 +31,10 @@ module TkItemConfigOptkeys
   def __item_strval_optkeys(id)
     # maybe need to override
     [
-      'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile', 
-      'activebackground', 'activeforeground', 'background', 
-      'disabledforeground', 'disabledbackground', 'foreground', 
-      'highlightbackground', 'highlightcolor', 'insertbackground', 
+      'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile',
+      'activebackground', 'activeforeground', 'background',
+      'disabledforeground', 'disabledbackground', 'foreground',
+      'highlightbackground', 'highlightcolor', 'insertbackground',
       'selectbackground', 'selectforeground', 'troughcolor'
     ]
   end
@@ -148,7 +148,7 @@ module TkItemConfigMethod
 
   def __item_configinfo_struct(id)
     # maybe need to override
-    {:key=>0, :alias=>1, :db_name=>1, :db_class=>2, 
+    {:key=>0, :alias=>1, :db_name=>1, :db_class=>2,
       :default_value=>3, :current_value=>4}
   end
   private :__item_configinfo_struct
@@ -402,7 +402,7 @@ module TkItemConfigMethod
         fontkey  = $2
         # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}"))))
         conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}")), false, true)
-        conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 
+        conf[__item_configinfo_struct(tagid(tagOrId))[:key]] =
           conf[__item_configinfo_struct(tagid(tagOrId))[:key]][1..-1]
         if ( ! __item_configinfo_struct(tagid(tagOrId))[:alias] \
             || conf.size > __item_configinfo_struct(tagid(tagOrId))[:alias] + 1 )
@@ -414,7 +414,7 @@ module TkItemConfigMethod
         elsif ( __item_configinfo_struct(tagid(tagOrId))[:alias] \
                && conf.size == __item_configinfo_struct(tagid(tagOrId))[:alias] + 1 \
                && conf[__item_configinfo_struct(tagid(tagOrId))[:alias]][0] == ?- )
-          conf[__item_configinfo_struct(tagid(tagOrId))[:alias]] = 
+          conf[__item_configinfo_struct(tagid(tagOrId))[:alias]] =
             conf[__item_configinfo_struct(tagid(tagOrId))[:alias]][1..-1]
         end
         conf
@@ -464,7 +464,7 @@ module TkItemConfigMethod
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
               begin
-                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                   number(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
               rescue
                 conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = nil
@@ -472,7 +472,7 @@ module TkItemConfigMethod
             end
             if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
               begin
-                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                   number(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
               rescue
                 conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = nil
@@ -485,11 +485,11 @@ module TkItemConfigMethod
 
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
-              conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+              conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                 num_or_str(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
             end
             if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
-              conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+              conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                 num_or_str(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
             end
 
@@ -500,7 +500,7 @@ module TkItemConfigMethod
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
               begin
-                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                   bool(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
               rescue
                 conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = nil
@@ -508,7 +508,7 @@ module TkItemConfigMethod
             end
             if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
               begin
-                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                   bool(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
               rescue
                 conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = nil
@@ -521,11 +521,11 @@ module TkItemConfigMethod
 
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
-              conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+              conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                 simplelist(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
             end
             if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
-              conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+              conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                 simplelist(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
             end
 
@@ -536,12 +536,12 @@ module TkItemConfigMethod
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =~ /^[0-9]/ )
-              conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+              conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                 list(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
             end
             if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =~ /^[0-9]/ )
-              conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+              conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                 list(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
             end
 
@@ -574,13 +574,13 @@ module TkItemConfigMethod
             # conf = tk_split_list(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
             conf = tk_split_list(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), 0, false, true)
           end
-          conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 
+          conf[__item_configinfo_struct(tagid(tagOrId))[:key]] =
             conf[__item_configinfo_struct(tagid(tagOrId))[:key]][1..-1]
 
           if ( __item_configinfo_struct(tagid(tagOrId))[:alias] \
               && conf.size == __item_configinfo_struct(tagid(tagOrId))[:alias] + 1 \
               && conf[__item_configinfo_struct(tagid(tagOrId))[:alias]][0] == ?- )
-            conf[__item_configinfo_struct(tagid(tagOrId))[:alias]] = 
+            conf[__item_configinfo_struct(tagid(tagOrId))[:alias]] =
               conf[__item_configinfo_struct(tagid(tagOrId))[:alias]][1..-1]
           end
 
@@ -591,7 +591,7 @@ module TkItemConfigMethod
           #   conf = tk_split_simplelist(conflist)
           ret = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)))), false, false).collect{|conflist|
             conf = tk_split_simplelist(conflist, false, true)
-            conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 
+            conf[__item_configinfo_struct(tagid(tagOrId))[:key]] =
               conf[__item_configinfo_struct(tagid(tagOrId))[:key]][1..-1]
 
             optkey = conf[__item_configinfo_struct(tagid(tagOrId))[:key]]
@@ -627,7 +627,7 @@ module TkItemConfigMethod
               if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
                 begin
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                     number(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
                 rescue
                   conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = nil
@@ -635,7 +635,7 @@ module TkItemConfigMethod
               end
               if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
                 begin
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                     number(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
                 rescue
                   conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = nil
@@ -645,11 +645,11 @@ module TkItemConfigMethod
             when /^(#{__item_numstrval_optkeys(tagid(tagOrId)).join('|')})$/
               if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
-                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                   num_or_str(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
               end
               if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
-                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                   num_or_str(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
               end
 
@@ -657,7 +657,7 @@ module TkItemConfigMethod
               if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
                 begin
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                     bool(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
                 rescue
                   conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = nil
@@ -665,7 +665,7 @@ module TkItemConfigMethod
               end
               if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
                 begin
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                     bool(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
                 rescue
                   conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = nil
@@ -675,11 +675,11 @@ module TkItemConfigMethod
             when /^(#{__item_listval_optkeys(tagid(tagOrId)).join('|')})$/
               if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
-                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                   simplelist(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
               end
               if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
-                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                   simplelist(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
               end
 
@@ -687,12 +687,12 @@ module TkItemConfigMethod
               if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =~ /^[0-9]/ )
-                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                   list(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
               end
               if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =~ /^[0-9]/ )
-                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                   list(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
               end
 
@@ -719,20 +719,20 @@ module TkItemConfigMethod
               if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
                 if conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]].index('{')
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
-                    tk_split_list(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]]) 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
+                    tk_split_list(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
                 else
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
-                    tk_tcl2ruby(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]]) 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
+                    tk_tcl2ruby(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
                 end
               end
               if conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]]
                 if conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]].index('{')
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
-                    tk_split_list(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]]) 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
+                    tk_split_list(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
                 else
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
-                    tk_tcl2ruby(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]]) 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
+                    tk_tcl2ruby(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
                 end
               end
             end
@@ -740,7 +740,7 @@ module TkItemConfigMethod
             if ( __item_configinfo_struct(tagid(tagOrId))[:alias] \
                 && conf.size == __item_configinfo_struct(tagid(tagOrId))[:alias] + 1 \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:alias]][0] == ?- )
-              conf[__item_configinfo_struct(tagid(tagOrId))[:alias]] = 
+              conf[__item_configinfo_struct(tagid(tagOrId))[:alias]] =
                 conf[__item_configinfo_struct(tagid(tagOrId))[:alias]][1..-1]
             end
 
@@ -774,7 +774,7 @@ module TkItemConfigMethod
         fontkey  = $2
         # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}"))))
         conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}")), false, true)
-        conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 
+        conf[__item_configinfo_struct(tagid(tagOrId))[:key]] =
           conf[__item_configinfo_struct(tagid(tagOrId))[:key]][1..-1]
 
         if ( ! __item_configinfo_struct(tagid(tagOrId))[:alias] \
@@ -788,7 +788,7 @@ module TkItemConfigMethod
         elsif ( __item_configinfo_struct(tagid(tagOrId))[:alias] \
                && conf.size == __item_configinfo_struct(tagid(tagOrId))[:alias] + 1 )
           if conf[__item_configinfo_struct(tagid(tagOrId))[:alias]][0] == ?-
-            conf[__item_configinfo_struct(tagid(tagOrId))[:alias]] = 
+            conf[__item_configinfo_struct(tagid(tagOrId))[:alias]] =
               conf[__item_configinfo_struct(tagid(tagOrId))[:alias]][1..-1]
           end
           { conf[0] => conf[1] }
@@ -841,7 +841,7 @@ module TkItemConfigMethod
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
               begin
-                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                   number(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
               rescue
                 conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = nil
@@ -849,7 +849,7 @@ module TkItemConfigMethod
             end
             if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
               begin
-                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                   number(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
               rescue
                 conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = nil
@@ -862,11 +862,11 @@ module TkItemConfigMethod
 
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
-              conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+              conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                 num_or_stre(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
             end
             if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
-              conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+              conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                 num_or_str(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
             end
 
@@ -877,7 +877,7 @@ module TkItemConfigMethod
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
               begin
-                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                   bool(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
               rescue
                 conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = nil
@@ -885,7 +885,7 @@ module TkItemConfigMethod
             end
             if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
               begin
-                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                   bool(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
               rescue
                 conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = nil
@@ -898,11 +898,11 @@ module TkItemConfigMethod
 
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
-              conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+              conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                 simplelist(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
             end
             if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
-              conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+              conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                 simplelist(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
             end
 
@@ -913,12 +913,12 @@ module TkItemConfigMethod
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =~ /^[0-9]/ )
-              conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+              conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                 list(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
             end
             if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =~ /^[0-9]/ )
-              conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+              conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                 list(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
             end
 
@@ -951,13 +951,13 @@ module TkItemConfigMethod
             # conf = tk_split_list(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
             conf = tk_split_list(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), 0, false, true)
           end
-          conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 
+          conf[__item_configinfo_struct(tagid(tagOrId))[:key]] =
             conf[__item_configinfo_struct(tagid(tagOrId))[:key]][1..-1]
 
           if ( __item_configinfo_struct(tagid(tagOrId))[:alias] \
               && conf.size == __item_configinfo_struct(tagid(tagOrId))[:alias] + 1 )
             if conf[__item_configinfo_struct(tagid(tagOrId))[:alias]][0] == ?-
-              conf[__item_configinfo_struct(tagid(tagOrId))[:alias]] = 
+              conf[__item_configinfo_struct(tagid(tagOrId))[:alias]] =
                 conf[__item_configinfo_struct(tagid(tagOrId))[:alias]][1..-1]
             end
             { conf[0] => conf[1] }
@@ -971,7 +971,7 @@ module TkItemConfigMethod
           #   conf = tk_split_simplelist(conflist)
           tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)))), false, false).each{|conflist|
             conf = tk_split_simplelist(conflist, false, true)
-            conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 
+            conf[__item_configinfo_struct(tagid(tagOrId))[:key]] =
               conf[__item_configinfo_struct(tagid(tagOrId))[:key]][1..-1]
 
             optkey = conf[__item_configinfo_struct(tagid(tagOrId))[:key]]
@@ -1007,7 +1007,7 @@ module TkItemConfigMethod
               if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
                 begin
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                     number(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
                 rescue
                   conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = nil
@@ -1015,7 +1015,7 @@ module TkItemConfigMethod
               end
               if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
                 begin
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                     number(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
                 rescue
                   conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = nil
@@ -1025,11 +1025,11 @@ module TkItemConfigMethod
             when /^(#{__item_numstrval_optkeys(tagid(tagOrId)).join('|')})$/
               if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
-                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                   num_or_str(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
               end
               if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
-                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                   num_or_str(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
               end
 
@@ -1037,7 +1037,7 @@ module TkItemConfigMethod
               if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
                 begin
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                     bool(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
                 rescue
                   conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = nil
@@ -1045,7 +1045,7 @@ module TkItemConfigMethod
               end
               if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
                 begin
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                     bool(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
                 rescue
                   conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = nil
@@ -1055,11 +1055,11 @@ module TkItemConfigMethod
             when /^(#{__item_listval_optkeys(tagid(tagOrId)).join('|')})$/
               if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
-                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                   simplelist(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
               end
               if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
-                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                   simplelist(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
               end
 
@@ -1067,12 +1067,12 @@ module TkItemConfigMethod
               if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =~ /^[0-9]/ )
-                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                   list(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
               end
               if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =~ /^[0-9]/ )
-                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                   list(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
               end
 
@@ -1099,19 +1099,19 @@ module TkItemConfigMethod
               if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                   && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
                 if conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]].index('{')
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
-                    tk_split_list(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]]) 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
+                    tk_split_list(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
                 else
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] =
                     tk_tcl2ruby(conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]])
                 end
               end
               if conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]]
                 if conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]].index('{')
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
-                    tk_split_list(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]]) 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
+                    tk_split_list(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
                 else
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = 
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] =
                     tk_tcl2ruby(conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]])
                 end
               end
@@ -1120,7 +1120,7 @@ module TkItemConfigMethod
             if ( __item_configinfo_struct(tagid(tagOrId))[:alias] \
                 && conf.size == __item_configinfo_struct(tagid(tagOrId))[:alias] + 1 )
               if conf[__item_configinfo_struct(tagid(tagOrId))[:alias]][0] == ?-
-                conf[__item_configinfo_struct(tagid(tagOrId))[:alias]] = 
+                conf[__item_configinfo_struct(tagid(tagOrId))[:alias]] =
                   conf[__item_configinfo_struct(tagid(tagOrId))[:alias]][1..-1]
               end
               ret[conf[0]] = conf[1]
@@ -1187,7 +1187,7 @@ module TkItemConfigMethod
           end
           slot = conf[__item_configinfo_struct(tagid(tagOrId))[:alias]]
         end while(org_slot != slot)
-        fail RuntimeError, 
+        fail RuntimeError,
           "there is a configure alias loop about '#{org_slot}'"
       else
         ret = {}

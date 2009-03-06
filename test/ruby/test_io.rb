@@ -1195,13 +1195,13 @@ class TestIO < Test::Unit::TestCase
 
   def test_sysopen
     t = make_tempfile
-    
+
     fd = IO.sysopen(t.path)
     assert_kind_of(Integer, fd)
     f = IO.for_fd(fd)
     assert_equal("foo\nbar\nbaz\n", f.read)
     f.close
-    
+
     fd = IO.sysopen(t.path, "w", 0666)
     assert_kind_of(Integer, fd)
     if defined?(Fcntl::F_GETFL)
@@ -1211,7 +1211,7 @@ class TestIO < Test::Unit::TestCase
     end
     f.write("FOO\n")
     f.close
-    
+
     fd = IO.sysopen(t.path, "r")
     assert_kind_of(Integer, fd)
     f = IO.for_fd(fd)
@@ -1360,7 +1360,7 @@ class TestIO < Test::Unit::TestCase
 
   def test_initialize
     t = make_tempfile
-    
+
     fd = IO.sysopen(t.path, "w")
     assert_kind_of(Integer, fd)
     f = IO.new(fd, "w")
@@ -1374,7 +1374,7 @@ class TestIO < Test::Unit::TestCase
       f.instance_eval { initialize }
     end
   end
-  
+
   def test_new_with_block
     assert_in_out_err([], "r, w = IO.pipe; IO.new(r) {}", [], /^.+$/)
   end

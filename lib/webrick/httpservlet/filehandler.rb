@@ -32,7 +32,7 @@ module WEBrick
         if not_modified?(req, res, mtime, res['etag'])
           res.body = ''
           raise HTTPStatus::NotModified
-        elsif req['range'] 
+        elsif req['range']
           make_partial_content(req, res, @local_path, st.size)
           raise HTTPStatus::PartialContent
         else
@@ -402,7 +402,7 @@ module WEBrick
         res.body << "<A HREF=\"?M=#{d1}\">Last modified</A>         "
         res.body << "<A HREF=\"?S=#{d1}\">Size</A>\n"
         res.body << "<HR>\n"
-       
+
         list.unshift [ "..", File::mtime(local_path+"/.."), -1 ]
         list.each{ |name, time, size|
           if name == ".."
@@ -420,7 +420,7 @@ module WEBrick
         }
         res.body << "</PRE><HR>"
 
-        res.body << <<-_end_of_html_    
+        res.body << <<-_end_of_html_
     <ADDRESS>
      #{HTMLUtils::escape(@config[:ServerSoftware])}<BR>
      at #{req.host}:#{req.port}

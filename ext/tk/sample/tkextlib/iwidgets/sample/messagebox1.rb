@@ -2,9 +2,9 @@
 require 'tk'
 require 'tkextlib/iwidgets'
 
-mb = Tk::Iwidgets::Messagebox.new(:hscrollmode=>:dynamic, 
-                                  :labeltext=>'Messages', :labelpos=>:n, 
-                                  :height=>120, :width=>550, 
+mb = Tk::Iwidgets::Messagebox.new(:hscrollmode=>:dynamic,
+                                  :labeltext=>'Messages', :labelpos=>:n,
+                                  :height=>120, :width=>550,
                                   :savedir=>'/tmp', :textbackground=>'#d9d9d9')
 mb.pack(:padx=>5, :pady=>5, :fill=>:both, :expand=>true)
 

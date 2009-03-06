@@ -79,17 +79,17 @@ require 'rdoc/parser'
 #     !
 #     ! Comment blocks for the modules (or the programs).
 #     !
-#   
+#
 #     private
-#   
+#
 #     logical            :: a     ! a private variable
 #     real, public       :: b     ! a public variable
 #     integer, parameter :: c = 0 ! a public constant
-#   
+#
 #     public :: c
 #     public :: MULTI_ARRAY
 #     public :: hoge, foo
-#   
+#
 #     type MULTI_ARRAY
 #       !
 #       ! Comment blocks for the derived-types.
@@ -97,9 +97,9 @@ require 'rdoc/parser'
 #       real, pointer :: var(:) =>null() ! Comments block for the variables.
 #       integer       :: num = 0
 #     end type MULTI_ARRAY
-#   
+#
 #   contains
-#   
+#
 #     subroutine hoge( in,   &   ! Comment blocks between continuation lines are ignored.
 #         &            out )
 #       !
@@ -109,32 +109,32 @@ require 'rdoc/parser'
 #       character(*),intent(out),allocatable,target  :: in
 #                                    ! Comment blocks can be
 #                                    ! written under Fortran statements.
-#   
+#
 #       character(32) :: file ! This comment parsed as a variable in below NAMELIST.
 #       integer       :: id
-#   
+#
 #       namelist /varinfo_nml/ file, id
 #               !
 #               ! Comment blocks for the NAMELISTs.
 #               ! Information about variables are described above.
 #               !
-#   
+#
 #     ....
-#   
+#
 #     end subroutine hoge
-#   
+#
 #     integer function foo( in )
 #       !
 #       ! This part is considered as comment block.
-#   
+#
 #       ! Comment blocks under blank lines are ignored.
 #       !
 #       integer, intent(in):: inA ! This part is considered as comment block.
-#   
+#
 #                                 ! This part is ignored.
-#   
+#
 #     end function foo
-#   
+#
 #     subroutine hide( in,   &
 #       &              out )      !:nodoc:
 #       !
@@ -145,11 +145,11 @@ require 'rdoc/parser'
 #       ! defined operators, defined assignments,
 #       ! list of imported modules ("use" statement).
 #       !
-#   
+#
 #     ....
-#   
+#
 #     end subroutine hide
-#   
+#
 #   end module hogehoge
 
 class RDoc::Parser::F95 < RDoc::Parser
@@ -295,7 +295,7 @@ class RDoc::Parser::F95 < RDoc::Parser
 
         @stats.add_module f9x_module
 
-        f9x_comment = COMMENTS_ARE_UPPER ? 
+        f9x_comment = COMMENTS_ARE_UPPER ?
           find_comments(pre_comment.join("\n"))  + "\n" + module_trailing :
             module_trailing + "\n" + find_comments(module_code.sub(/^.*$\n/i, ''))
         f9x_module.comment = f9x_comment
@@ -320,8 +320,8 @@ class RDoc::Parser::F95 < RDoc::Parser
         program_code = module_program_code
         program_trailing = module_program_trailing
         # progress "p" # HACK what stats thingy does this correspond to?
-        program_comment = COMMENTS_ARE_UPPER ? 
-          find_comments(pre_comment.join("\n")) + "\n" + program_trailing : 
+        program_comment = COMMENTS_ARE_UPPER ?
+          find_comments(pre_comment.join("\n")) + "\n" + program_trailing :
             program_trailing + "\n" + find_comments(program_code.sub(/^.*$\n/i, ''))
         program_comment = "\n\n= <i>Program</i> <tt>#{program_name}</tt>\n\n" \
                           + program_comment
@@ -410,12 +410,12 @@ class RDoc::Parser::F95 < RDoc::Parser
     # This information is used when "add_method" and
     # "set_visibility_for" are called.
     #
-    visibility_default, visibility_info = 
+    visibility_default, visibility_info =
               parse_visibility(remaining_lines.join("\n"), visibility, container)
     @@public_methods.concat visibility_info
     if visibility_default == :public
       if !cascaded_modules_list.empty?
-        cascaded_modules = 
+        cascaded_modules =
           Attr.new("Cascaded Modules",
                    "Imported modules all of whose components are published again",
                    "",
@@ -499,7 +499,7 @@ class RDoc::Parser::F95 < RDoc::Parser
       type_trailing = find_comments($4)
       next if type_trailing =~ /^:nodoc:/
       type_visibility = $1
-      type_comment = COMMENTS_ARE_UPPER ? 
+      type_comment = COMMENTS_ARE_UPPER ?
         find_comments($~.pre_match) + "\n" + type_trailing :
           type_trailing + "\n" + find_comments(type_code.sub(/^.*$\n/i, ''))
       type_element_visibility_public = true
@@ -567,8 +567,8 @@ class RDoc::Parser::F95 < RDoc::Parser
     end
 
     if !derived_types_comment.empty?
-      derived_types_table = 
-        Attr.new("Derived Types", "Derived_Types", "", 
+      derived_types_table =
+        Attr.new("Derived Types", "Derived_Types", "",
                  derived_types_comment)
       container.add_attribute(derived_types_table)
     end
@@ -733,8 +733,8 @@ class RDoc::Parser::F95 < RDoc::Parser
         subroutine_trailing = procedure_trailing
         subroutine_code     = procedure_code
 
-        subroutine_comment = COMMENTS_ARE_UPPER ? 
-          pre_comment.join("\n") + "\n" + subroutine_trailing : 
+        subroutine_comment = COMMENTS_ARE_UPPER ?
+          pre_comment.join("\n") + "\n" + subroutine_trailing :
             subroutine_trailing + "\n" + subroutine_code.sub(/^.*$\n/i, '')
         subroutine = AnyMethod.new("subroutine", subroutine_name)
         parse_subprogram(subroutine, subroutine_params,
@@ -787,7 +787,7 @@ class RDoc::Parser::F95 < RDoc::Parser
 
       # The visibility of procedure is specified
       #
-      set_visibility(container, procedure_name, 
+      set_visibility(container, procedure_name,
                      visibility_default, @@public_methods)
 
       # The alias for this procedure from external modules
@@ -871,11 +871,11 @@ class RDoc::Parser::F95 < RDoc::Parser
           next if !old_meth
           nolink = old_meth.visibility == :private ? true : nil
           nolink = nil if @options.show_all
-          new_meth = 
-             initialize_external_method(generic_name, proc, 
-                                        old_meth.params, nil, 
-                                        old_meth.comment, 
-                                        old_meth.clone.token_stream[0].text, 
+          new_meth =
+             initialize_external_method(generic_name, proc,
+                                        old_meth.params, nil,
+                                        old_meth.comment,
+                                        old_meth.clone.token_stream[0].text,
                                         true, nolink)
           new_meth.singleton = old_meth.singleton
 
@@ -937,10 +937,10 @@ class RDoc::Parser::F95 < RDoc::Parser
         end
 
         if indicated_method
-          external_method = 
-            initialize_external_method(generic_name, proc, 
-                                       indicated_method.params, 
-                                       indicated_file, 
+          external_method =
+            initialize_external_method(generic_name, proc,
+                                       indicated_method.params,
+                                       indicated_file,
                                        indicated_method.comment)
 
           @stats.add_method external_method
@@ -1004,12 +1004,12 @@ class RDoc::Parser::F95 < RDoc::Parser
   # Parse arguments, comment, code of subroutine and function.  Return
   # AnyMethod object.
 
-  def parse_subprogram(subprogram, params, comment, code, 
+  def parse_subprogram(subprogram, params, comment, code,
                        before_contains=nil, function=nil, prefix=nil)
     subprogram.singleton = false
     prefix = "" if !prefix
     arguments = params.sub(/\(/, "").sub(/\)/, "").split(",") if params
-    args_comment, params_opt = 
+    args_comment, params_opt =
       find_arguments(arguments, code.sub(/^s*?contains\s*?(!.*?)?$.*/im, ""),
                      nil, nil, true)
     params_opt = "( " + params_opt + " ) " if params_opt
@@ -1086,7 +1086,7 @@ class RDoc::Parser::F95 < RDoc::Parser
         if arg == defitem.varname.strip.chomp || all
           args_rdocforms << <<-"EOF"
 
-#{indent}<tt><b>#{defitem.varname.chomp.strip}#{defitem.arraysuffix}</b> #{defitem.inivalue}</tt> :: 
+#{indent}<tt><b>#{defitem.varname.chomp.strip}#{defitem.arraysuffix}</b> #{defitem.inivalue}</tt> ::
 #{indent}   <tt>#{defitem.types.chomp.strip}</tt>
 EOF
           if !defitem.comment.chomp.strip.empty?
@@ -1096,7 +1096,7 @@ EOF
             }
             args_rdocforms << <<-"EOF"
 
-#{indent}   <tt></tt> :: 
+#{indent}   <tt></tt> ::
 #{indent}       <tt></tt>
 #{indent}       #{comment.chomp.strip}
 EOF
@@ -1130,7 +1130,7 @@ EOF
     before_contains = "" if !before_contains
     while lines =~ /^\s*?namelist\s+\/\s*?(\w+)\s*?\/([\s\w\,]+)$/i
       lines = $~.post_match
-      nml_comment = COMMENTS_ARE_UPPER ? 
+      nml_comment = COMMENTS_ARE_UPPER ?
           find_comments($~.pre_match) : find_comments($~.post_match)
       nml_name = $1
       nml_args = $2.split(",")
@@ -1193,7 +1193,7 @@ EOF
 
     if internal
       external_alias_header = "#{INTERNAL_ALIAS_MES} "
-      external_alias_text   = external_alias_header + old 
+      external_alias_text   = external_alias_header + old
     elsif file
       external_alias_header = "#{EXTERNAL_ALIAS_MES} "
       external_alias_text   = external_alias_header + file + "#" + old
@@ -1325,8 +1325,8 @@ EOF
                   subname.upcase == alias_item["old_name"].upcase &&
                           @options.ignore_case
 
-        new_meth = initialize_external_method(alias_item["new_name"], 
-                                              subname, params, @file_name, 
+        new_meth = initialize_external_method(alias_item["new_name"],
+                                              subname, params, @file_name,
                                               comment)
         new_meth.visibility = alias_item["visibility"]
 
@@ -1402,7 +1402,7 @@ EOF
             brank_flag = false
             now_continuing = false
             next ""
-          else 
+          else
             brank_flag     = false
             now_continuing = false
             ignore         = false
@@ -1595,7 +1595,7 @@ EOF
     comment_block = Array.new
     checked = false
     lines.each do |line|
-      if !checked 
+      if !checked
         if /^\s?#{INTERNAL_ALIAS_MES}/ =~ line ||
             /^\s?#{EXTERNAL_ALIAS_MES}/ =~ line
           checked = true
@@ -1676,9 +1676,9 @@ EOF
 
     def to_s
       return <<-EOF
-<Fortran95Definition: 
+<Fortran95Definition:
 varname=#{@varname}, types=#{types},
-inivalue=#{@inivalue}, arraysuffix=#{@arraysuffix}, nodoc=#{@nodoc}, 
+inivalue=#{@inivalue}, arraysuffix=#{@arraysuffix}, nodoc=#{@nodoc},
 comment=
 #{@comment}
 >

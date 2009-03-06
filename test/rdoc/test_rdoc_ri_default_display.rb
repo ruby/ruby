@@ -169,7 +169,7 @@ Instance method extensions:
 ------------------------------------------------------- SomeClass::some_method
      SomeClass::some_method(arg1, arg2)
 
-     From 
+     From
 ------------------------------------------------------------------------------
      [no description]
     EOF

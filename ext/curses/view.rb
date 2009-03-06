@@ -67,10 +67,10 @@ while TRUE
       else
 	break
       end
-      i += 1 
+      i += 1
     end
     #wscrl(i)
-      
+
   when "p"  #when KEY_UP
     i = 0
     while i < n
@@ -79,8 +79,8 @@ while TRUE
       else
 	break
       end
-      i += 1 
-    end    
+      i += 1
+    end
     #wscrl(-i)
 
   when "q"

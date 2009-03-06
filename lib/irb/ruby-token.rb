@@ -1,12 +1,12 @@
 #
-#   irb/ruby-token.rb - ruby tokens 
+#   irb/ruby-token.rb - ruby tokens
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 module RubyToken
   EXPR_BEG = :EXPR_BEG
@@ -21,7 +21,7 @@ module RubyToken
   if !defined?(Symbol)
     Symbol = Integer
   end
-  
+
   class Token
     def initialize(seek, line_no, char_no)
       @seek = seek
@@ -84,7 +84,7 @@ module RubyToken
       if (tk = TkReading2Token[token]).nil?
 	IRB.fail TkReading2TokenNoKey, token
       end
-      tk = Token(tk[0], value) 
+      tk = Token(tk[0], value)
       if tk.kind_of?(TkOp)
 	tk.name = token
       end
@@ -93,8 +93,8 @@ module RubyToken
       if (tk = TkSymbol2Token[token]).nil?
 	IRB.fail TkSymbol2TokenNoKey, token
       end
-      return Token(tk[0], value) 
-    else 
+      return Token(tk[0], value)
+    else
       if (token.ancestors & [TkId, TkVal, TkOPASGN, TkUnknownChar]).empty?
 	token.new(@prev_seek, @prev_line_no, @prev_char_no)
       else
@@ -194,7 +194,7 @@ module RubyToken
     [:TkASSOC,      TkOp,   "=>"],
     [:TkQUESTION,   TkOp,   "?"],	 #?
     [:TkCOLON,      TkOp,   ":"],        #:
-    
+
     [:TkfLPAREN],         # func( #
     [:TkfLBRACK],         # func[ #
     [:TkfLBRACE],         # func{ #
@@ -250,7 +250,7 @@ module RubyToken
       IRB.fail AlreadyDefinedToken, token_n
     end
     token_c = eval("class #{token_n} < #{super_token}; end; #{token_n}")
-    
+
     if reading
       if TkReading2Token[reading]
 	IRB.fail TkReading2TokenDuplicateError, token_n, reading

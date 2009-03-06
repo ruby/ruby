@@ -12,9 +12,9 @@ require 'expect'
 fnames = []
 PTY.spawn("ftp ftp.ruby-lang.org") do |r_f,w_f,pid|
   w_f.sync = true
-  
+
   $expect_verbose = false
-  
+
   if !ENV['USER'].nil?
     username = ENV['USER']
   elsif !ENV['LOGNAME'].nil?
@@ -22,14 +22,14 @@ PTY.spawn("ftp ftp.ruby-lang.org") do |r_f,w_f,pid|
   else
     username = 'guest'
   end
-  
+
   r_f.expect(/^(Name).*: |(word):|> /) do
     w_f.puts($1 ? "ftp" : $2 ? "#{username}@" : "cd pub/ruby")
   end
   r_f.expect("> ") do
     w_f.print "dir\n"
   end
-  
+
   r_f.expect(/[^\-]> /) do |output|
     for x in output[0].split("\n")
       if x =~ /(ruby.*?\.tar\.gz)/ then

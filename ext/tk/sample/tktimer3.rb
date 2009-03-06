@@ -5,7 +5,7 @@ require "tk"
 
 # new notation :
 #   * symbols are acceptable as keys or values of the option hash
-#   * the parent widget can be given by :parent key on the option hash 
+#   * the parent widget can be given by :parent key on the option hash
 root = TkRoot.new(:title=>'timer sample')
 label = TkLabel.new(:parent=>root, :relief=>:raised, :width=>10) \
                .pack(:side=>:bottom, :fill=>:both)
@@ -19,11 +19,11 @@ tick = proc{|aobj| #<== TkTimer object
 }
 
 timer = TkTimer.new(50, -1, tick).start(0, proc{ label.text('0.00'); 0 })
-        # ==> repeat-interval : (about) 50 ms,  
-        #     repeat : infinite (-1) times, 
+        # ==> repeat-interval : (about) 50 ms,
+        #     repeat : infinite (-1) times,
         #     repeat-procedure : tick (only one, in this case)
         #
-        # ==> wait-before-call-init-proc : 0 ms, 
+        # ==> wait-before-call-init-proc : 0 ms,
         #     init_proc : proc{ label.text('0.00'); 0 }
         #
         # (0ms)-> init_proc ->(50ms)-> tick ->(50ms)-> tick ->....

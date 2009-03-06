@@ -64,7 +64,7 @@ class Struct
             end
             if not struct_type
                 struct_def = [ tag.split( ':', 4 ).last ]
-                struct_type = Struct.new( *struct_def.concat( val.keys.collect { |k| k.intern } ) ) 
+                struct_type = Struct.new( *struct_def.concat( val.keys.collect { |k| k.intern } ) )
             end
 
             #
@@ -317,7 +317,7 @@ class Time
                 utc_same_instant = self.dup.utc
                 utc_same_writing = Time.utc(year,month,day,hour,min,sec,usec)
                 difference_to_utc = utc_same_writing - utc_same_instant
-                if (difference_to_utc < 0) 
+                if (difference_to_utc < 0)
                     difference_sign = '-'
                     absolute_difference = -difference_to_utc
                 else
@@ -388,9 +388,9 @@ class Rational
 			Rational( val['numerator'], val['denominator'] )
 		end
 	end
-	def to_yaml( opts = {} ) 
+	def to_yaml( opts = {} )
 		YAML::quick_emit( self, opts ) do |out|
-			out.map( taguri, nil ) do |map| 
+			out.map( taguri, nil ) do |map|
 				map.add( 'denominator', denominator )
 				map.add( 'numerator', numerator )
 			end
@@ -435,7 +435,7 @@ class FalseClass
 	end
 end
 
-class NilClass 
+class NilClass
     yaml_as "tag:yaml.org,2002:null"
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) do |out|

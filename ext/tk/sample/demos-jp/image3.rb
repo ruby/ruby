@@ -9,7 +9,7 @@
 
 # toplevel widget
 if defined?($image3_demo) && $image3_demo
-  $image3_demo.destroy 
+  $image3_demo.destroy
   $image3_demo = nil
 end
 
@@ -22,7 +22,7 @@ $image3_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($image3_demo).pack(:fill=>:both, :expand=>true)
 
-# 
+#
 def loadDir3(w)
   w.delete(0,'end')
   Dir.glob([$dirName,'*'].join(File::Separator)).sort.each{|f|
@@ -38,10 +38,10 @@ end
 # Arguments:
 # w -                   Name of the toplevel window of the demo.
 def selectAndLoadDir3(w, lbox)
-  dir = Tk.chooseDirectory(:initialdir=>$dirName.value, 
+  dir = Tk.chooseDirectory(:initialdir=>$dirName.value,
                            :parent=>w, :mustexist=>true)
   if dir.length > 0
-    $dirName.value = dir 
+    $dirName.value = dir
     loadDir3(lbox)
   end
 end
@@ -94,11 +94,11 @@ image3_f = TkFrame.new(base_frame).pack(:fill=>:both, :expand=>true)
 
 image3_df = TkLabelFrame.new(base_frame, :text=>'ディレクトリ:')
 
-image3_ff = TkLabelFrame.new(base_frame, :text=>'ファイル:', 
+image3_ff = TkLabelFrame.new(base_frame, :text=>'ファイル:',
                              :padx=>'2m', :pady=>'2m')
 image3_lbx = TkListbox.new(image3_ff, :width=>20, :height=>10) {
   pack(:side=>:left, :fill=>:y, :expand=>true)
-  yscrollbar(TkScrollbar.new(image3_ff).pack(:side=>:left, :fill=>:y, 
+  yscrollbar(TkScrollbar.new(image3_ff).pack(:side=>:left, :fill=>:y,
                                              :expand=>true))
   insert(0, *(%w(earth.gif earthris.gif teapot.ppm)))
   bind('Double-1', proc{|x,y| loadImage3(self, x, y)}, '%x %y')
@@ -109,7 +109,7 @@ image3_ent = TkEntry.new(image3_df, :width=>30, :textvariable=>$dirName){
   bind('Return', proc{loadDir3(image3_lbx)})
 }
 
-TkButton.new(image3_df, :pady=>0, :padx=>'2m', :text=>"ディレクトリ選択", 
+TkButton.new(image3_df, :pady=>0, :padx=>'2m', :text=>"ディレクトリ選択",
              :command=>proc{selectAndLoadDir3(image3_ent, image3_lbx)}) {
   pack(:side=>:left, :fill=>:y, :padx=>[0, '2m'], :pady=>'2m')
 }
@@ -121,7 +121,7 @@ image3_if = TkLabelFrame.new(base_frame, :text=>'イメージ:') {|f|
 
 Tk.grid(image3_df,  '-',
         :sticky=>:ew, :padx=>'1m', :pady=>'1m', :in=>image3_f)
-Tk.grid(image3_ff, image3_if, 
+Tk.grid(image3_ff, image3_if,
         :sticky=>:nw, :padx=>'1m', :pady=>'1m', :in=>image3_f)
 TkGrid.columnconfigure(image3_f, 1, :weight=>1)
 

@@ -64,7 +64,7 @@ module RSS
         setup_dummy_image(maker)
       end
       channel = new_rss.channel
-      
+
       assert_equal(title, channel.title)
       assert_equal(link, channel.link)
       assert_equal(description, channel.description)
@@ -99,19 +99,19 @@ module RSS
       rss = RSS::Maker.make("0.91") do |maker|
         setup_dummy_channel(maker)
         maker.channel.link = link
-        
+
         maker.image.title = title
         maker.image.url = url
         maker.image.width = width
         maker.image.height = height
         maker.image.description = description
       end
-      
+
       new_rss = RSS::Maker.make("0.91") do |maker|
         rss.channel.setup_maker(maker)
         rss.image.setup_maker(maker)
       end
-      
+
       image = new_rss.image
       assert_equal(title, image.title)
       assert_equal(link, image.link)
@@ -120,7 +120,7 @@ module RSS
       assert_equal(height.to_i, image.height)
       assert_equal(description, image.description)
     end
-    
+
     def test_setup_maker_textinput
       title = "fugafuga"
       description = "text hoge fuga"
@@ -142,7 +142,7 @@ module RSS
         rss.image.setup_maker(maker)
         rss.textinput.setup_maker(maker)
       end
-      
+
       textInput = new_rss.channel.textInput
       assert_equal(title, textInput.title)
       assert_equal(description, textInput.description)
@@ -156,10 +156,10 @@ module RSS
       description = "text hoge fuga"
 
       item_size = 5
-      
+
       rss = RSS::Maker.make("0.91") do |maker|
         setup_dummy_channel(maker)
-        
+
         item_size.times do |i|
           maker.items.new_item do |item|
             item.title = "#{title}#{i}"
@@ -170,7 +170,7 @@ module RSS
 
         setup_dummy_image(maker)
       end
-      
+
       new_rss = RSS::Maker.make("0.91") do |maker|
         rss.channel.setup_maker(maker)
 
@@ -196,11 +196,11 @@ module RSS
     def test_setup_maker_items_backward_compatibility
       test_setup_maker_items(true)
     end
-    
+
     def test_setup_maker
       encoding = "EUC-JP"
       standalone = true
-      
+
       href = 'a.xsl'
       type = 'text/xsl'
       title = 'sample'
@@ -228,7 +228,7 @@ module RSS
       new_rss = RSS::Maker.make("0.91") do |maker|
         rss.setup_maker(maker)
       end
-      
+
       assert_equal("0.91", new_rss.rss_version)
       assert_equal(encoding, new_rss.encoding)
       assert_equal(standalone, new_rss.standalone)

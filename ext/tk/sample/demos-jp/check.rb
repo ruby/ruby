@@ -5,7 +5,7 @@
 
 # toplevel widget が存在すれば削除する
 if defined?($check_demo) && $check_demo
-  $check_demo.destroy 
+  $check_demo.destroy
   $check_demo = nil
 end
 
@@ -54,7 +54,7 @@ TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text '変数参照'
     command proc{
-      showVars(base_frame, 
+      showVars(base_frame,
                ['wipers', wipers], ['brakes', brakes], ['sober', sober])
     }
   }.pack('side'=>'left', 'expand'=>'yes')

@@ -17,11 +17,11 @@ worksheet.Range("D2").value = 20;
 worksheet.Range("A1:B2").value = [["North","South"],
                                   [5.2, 10]];
 
-vals = WIN32OLE_VARIANT.new([["East","West"], 
-                             [8, 20]], 
-                            WIN32OLE::VARIANT::VT_ARRAY) 
+vals = WIN32OLE_VARIANT.new([["East","West"],
+                             [8, 20]],
+                            WIN32OLE::VARIANT::VT_ARRAY)
 worksheet.Range("C1:D2").value = vals
-                                 
+
 range = worksheet.Range("A1:D2");
 range.Select
 chart = workbook.Charts.Add;

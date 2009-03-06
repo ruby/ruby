@@ -4,15 +4,15 @@
 #++
 # Copyright (c) 2002-2008 Akinori MUSHA <knu@iDaemons.org>
 #
-# Documentation by Akinori MUSHA and Gavin Sinclair. 
+# Documentation by Akinori MUSHA and Gavin Sinclair.
 #
 # All rights reserved.  You can redistribute and/or modify it under the same
 # terms as Ruby.
 #
 #   $Id$
 #
-# == Overview 
-# 
+# == Overview
+#
 # This library provides the Set class, which deals with a collection
 # of unordered values with no duplicates.  It is a hybrid of Array's
 # intuitive inter-operation facilities and Hash's fast lookup.  If you
@@ -555,33 +555,33 @@ end
 # == RestricedSet class
 # RestricedSet implements a set with restrictions defined by a given
 # block.
-# 
+#
 # === Super class
 #     Set
-# 
+#
 # === Class Methods
 # --- RestricedSet::new(enum = nil) { |o| ... }
 # --- RestricedSet::new(enum = nil) { |rset, o| ... }
 #     Creates a new restricted set containing the elements of the given
 #     enumerable object.  Restrictions are defined by the given block.
-# 
+#
 #     If the block's arity is 2, it is called with the RestrictedSet
 #     itself and an object to see if the object is allowed to be put in
 #     the set.
-# 
+#
 #     Otherwise, the block is called with an object to see if the object
 #     is allowed to be put in the set.
-# 
+#
 # === Instance Methods
 # --- restriction_proc
 #     Returns the restriction procedure of the set.
-# 
+#
 # =end
-# 
+#
 # class RestricedSet < Set
 #   def initialize(*args, &block)
 #     @proc = block or raise ArgumentError, "missing a block"
-# 
+#
 #     if @proc.arity == 2
 #       instance_eval %{
 # 	def add(o)
@@ -589,7 +589,7 @@ end
 # 	  self
 # 	end
 # 	alias << add
-# 
+#
 # 	def add?(o)
 # 	  if include?(o) || !@proc.call(self, o)
 # 	    nil
@@ -598,17 +598,17 @@ end
 # 	    self
 # 	  end
 # 	end
-# 
+#
 # 	def replace(enum)
 # 	  clear
 # 	  enum.each { |o| add(o) }
-# 
+#
 # 	  self
 # 	end
-# 
+#
 # 	def merge(enum)
 # 	  enum.each { |o| add(o) }
-# 
+#
 # 	  self
 # 	end
 #       }
@@ -616,12 +616,12 @@ end
 #       instance_eval %{
 # 	def add(o)
 #         if @proc.call(o)
-# 	    @hash[o] = true 
+# 	    @hash[o] = true
 #         end
 # 	  self
 # 	end
 # 	alias << add
-# 
+#
 # 	def add?(o)
 # 	  if include?(o) || !@proc.call(o)
 # 	    nil
@@ -632,10 +632,10 @@ end
 # 	end
 #       }
 #     end
-# 
+#
 #     super(*args)
 #   end
-# 
+#
 #   def restriction_proc
 #     @proc
 #   end
@@ -1241,33 +1241,33 @@ end
 # class TC_RestricedSet < Test::Unit::TestCase
 #   def test_s_new
 #     assert_raises(ArgumentError) { RestricedSet.new }
-# 
+#
 #     s = RestricedSet.new([-1,2,3]) { |o| o > 0 }
 #     assert_equal([2,3], s.sort)
 #   end
-# 
+#
 #   def test_restriction_proc
 #     s = RestricedSet.new([-1,2,3]) { |o| o > 0 }
-# 
+#
 #     f = s.restriction_proc
 #     assert_instance_of(Proc, f)
 #     assert(f[1])
 #     assert(!f[0])
 #   end
-# 
+#
 #   def test_replace
 #     s = RestricedSet.new(-3..3) { |o| o > 0 }
 #     assert_equal([1,2,3], s.sort)
-# 
+#
 #     s.replace([-2,0,3,4,5])
 #     assert_equal([3,4,5], s.sort)
 #   end
-# 
+#
 #   def test_merge
 #     s = RestricedSet.new { |o| o > 0 }
 #     s.merge(-5..5)
 #     assert_equal([1,2,3,4,5], s.sort)
-# 
+#
 #     s.merge([10,-10,-8,8])
 #     assert_equal([1,2,3,4,5,8,10], s.sort)
 #   end

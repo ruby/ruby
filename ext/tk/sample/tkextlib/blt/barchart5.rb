@@ -2,7 +2,7 @@
 require 'tk'
 require 'tkextlib/blt'
 
-load File.join(File.dirname(File.expand_path(__FILE__)), 
+load File.join(File.dirname(File.expand_path(__FILE__)),
                'scripts', 'stipples.rb')
 
 TkOption.add('*graph.x.Title', 'X Axis Label')
@@ -23,27 +23,27 @@ if visual != 'staticgray' && visual != 'grayscale'
 end
 
 htext = Tk::BLT::Htext.new(:widgetname=>'.htext', :text=><<EOD)
-    This is an example of the barchart widget.  The barchart has 
-    many components; x and y axis, legend, crosshairs, elements, etc.  
+    This is an example of the barchart widget.  The barchart has
+    many components; x and y axis, legend, crosshairs, elements, etc.
     To create a postscript file "bar.ps", press the %%
 
     ruby {
-    b = TkButton.new(Tk::BLT::Htext::Htext_Widget.window, 
-                     :widgetname=>'print', :text=>'Print', 
+    b = TkButton.new(Tk::BLT::Htext::Htext_Widget.window,
+                     :widgetname=>'print', :text=>'Print',
                      :command=>proc{
                         $graph.postsript(:output=>'bar.ps')
                      })
     Tk::BLT::Htext::Htext_Widget.window.append(b)
     }
 
-%% button.  
+%% button.
 %%
 
     ruby {
-    $graph = Tk::BLT::Barchart.new(:widgetname=>'.htext.graph', 
+    $graph = Tk::BLT::Barchart.new(:widgetname=>'.htext.graph',
                                    :relief=>:raised, :borderwidth=>2)
     $graph.xaxis_configure(:rotate=>90, :stepsize=>0)
-    Tk::BLT::Htext::Htext_Widget.window.append($graph, 
+    Tk::BLT::Htext::Htext_Widget.window.append($graph,
                                                :fill=>:both, :padx=>4)
     }
 
@@ -51,8 +51,8 @@ htext = Tk::BLT::Htext.new(:widgetname=>'.htext', :text=><<EOD)
     Hit the %%
 
     ruby {
-    b = TkButton.new(Tk::BLT::Htext::Htext_Widget.window, 
-                     :widgetname=>'quit', :text=>'Quit', 
+    b = TkButton.new(Tk::BLT::Htext::Htext_Widget.window,
+                     :widgetname=>'quit', :text=>'Quit',
                      :command=>proc{ exit })
     Tk::BLT::Htext::Htext_Widget.window.append(b)
     }
@@ -86,7 +86,7 @@ x.seq(-5.0, 5.0, 0.2)
 y.expr("sin(#{x})")
 barWidth = 0.19
 
-$graph.element_create('sin', :relief=>:raised, :borderwidth=>1, 
+$graph.element_create('sin', :relief=>:raised, :borderwidth=>1,
                       :x=>x, :y=>y, :barwidth=>barWidth)
 
 Tk::BLT::Table.add(Tk.root, htext, :fill=>:both)

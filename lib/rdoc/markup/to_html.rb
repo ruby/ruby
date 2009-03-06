@@ -309,7 +309,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
 
     # convert -- to em-dash, (-- to en-dash)
       gsub(/---?/, '&#8212;'). #gsub(/--/, '&#8211;').
-      
+
     # convert ... to elipsis (and make sure .... becomes .<elipsis>)
       gsub(/\.\.\.\./, '.&#8230;').gsub(/\.\.\./, '&#8230;').
 

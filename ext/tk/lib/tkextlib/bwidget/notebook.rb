@@ -23,7 +23,7 @@ class Tk::BWidget::NoteBook
 
   class Event_for_Tabs < TkEvent::Event
     def self._get_extra_args_tbl
-      [ 
+      [
         TkComm.method(:string)   # page idenfier
       ]
     end
@@ -57,7 +57,7 @@ class Tk::BWidget::NoteBook
     else
       cmd = Proc.new
     end
-    _bind_for_event_class(Event_for_Tabs, [path, 'bindtabs'], 
+    _bind_for_event_class(Event_for_Tabs, [path, 'bindtabs'],
                           context, cmd, *args)
     self
   end
@@ -73,7 +73,7 @@ class Tk::BWidget::NoteBook
     else
       cmd = Proc.new
     end
-    _bind_append_for_event_class(Event_for_Tabs, [path, 'bindtabs'], 
+    _bind_append_for_event_class(Event_for_Tabs, [path, 'bindtabs'],
                                  context, cmd, *args)
     self
   end

@@ -80,7 +80,7 @@ class Tk::BWidget::SelectFont::Toolbar
     keys = {} unless keys
     keys = _symbolkey2str(keys)
     keys['type'] = 'toolbar'  # 'toolbar' type returns widget path
-    window(tk_call(Tk::BWidget::SelectFont::TkCommandNames[0], 
+    window(tk_call(Tk::BWidget::SelectFont::TkCommandNames[0],
                    @path, *hash_kv(keys)))
   end
 end

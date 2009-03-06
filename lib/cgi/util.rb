@@ -119,7 +119,7 @@ class CGI
   #   print CGI::unescapeElement(
   #           CGI::escapeHTML('<BR><A HREF="url"></A>'), "A", "IMG")
   #     # "&lt;BR&gt;<A HREF="url"></A>"
-  # 
+  #
   #   print CGI::unescapeElement(
   #           CGI::escapeHTML('<BR><A HREF="url"></A>'), ["A", "IMG"])
   #     # "&lt;BR&gt;<A HREF="url"></A>"
@@ -161,7 +161,7 @@ class CGI
   #     #   <BODY>
   #     #   </BODY>
   #     # </HTML>
-  # 
+  #
   #   print CGI::pretty("<HTML><BODY></BODY></HTML>", "\t")
   #     # <HTML>
   #     #         <BODY>

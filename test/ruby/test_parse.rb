@@ -20,7 +20,7 @@ class TestParse < Test::Unit::TestCase
     END
     assert_equal(42, x)
   end
-  
+
   def test_alias_backref
     assert_raise(SyntaxError) do
       eval <<-END
@@ -193,7 +193,7 @@ class TestParse < Test::Unit::TestCase
         class foo; end
       END
     end
-    
+
     assert_raise(SyntaxError) do
       eval <<-END
         def foo
@@ -350,7 +350,7 @@ class TestParse < Test::Unit::TestCase
   def test_words
     assert_equal([], %W( ))
   end
-  
+
   def test_dstr
     @@foo = 1
     assert_equal("foo 1 bar", "foo #@@foo bar")

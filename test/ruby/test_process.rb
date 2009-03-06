@@ -467,9 +467,9 @@ class TestProcess < Test::Unit::TestCase
       assert_equal("errout", File.read("out"))
 
       Process.wait spawn(RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'",
-                         STDOUT=>"out", 
+                         STDOUT=>"out",
                          STDERR=>[:child, 3],
-                         3=>[:child, 4], 
+                         3=>[:child, 4],
                          4=>[:child, STDOUT]
                         )
       assert_equal("errout", File.read("out"))

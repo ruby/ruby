@@ -26,7 +26,7 @@ class Tk::BWidget::Tree
 
   class Event_for_Items < TkEvent::Event
     def self._get_extra_args_tbl
-      [ 
+      [
         TkComm.method(:string)   # item idenfier
       ]
     end
@@ -38,7 +38,7 @@ class Tk::BWidget::Tree
   private :__strval_optkeys
 
   def __boolval_optkeys
-    super() << 'dragenabled' << 'dropenabled' << 
+    super() << 'dragenabled' << 'dropenabled' <<
       'redraw' << 'selectfill' << 'showlines'
   end
   private :__boolval_optkeys
@@ -68,7 +68,7 @@ class Tk::BWidget::Tree
     else
       cmd = Proc.new
     end
-    _bind_for_event_class(Event_for_Items, [path, 'bindImage'], 
+    _bind_for_event_class(Event_for_Items, [path, 'bindImage'],
                           context, cmd, *args)
     self
   end
@@ -84,7 +84,7 @@ class Tk::BWidget::Tree
     else
       cmd = Proc.new
     end
-    _bind_append_for_event_class(Event_for_Items, [path, 'bindImage'], 
+    _bind_append_for_event_class(Event_for_Items, [path, 'bindImage'],
                                  context, cmd, *args)
     self
   end
@@ -109,7 +109,7 @@ class Tk::BWidget::Tree
     else
       cmd = Proc.new
     end
-    _bind_for_event_class(Event_for_Items, [path, 'bindText'], 
+    _bind_for_event_class(Event_for_Items, [path, 'bindText'],
                           context, cmd, *args)
     self
   end
@@ -125,7 +125,7 @@ class Tk::BWidget::Tree
     else
       cmd = Proc.new
     end
-    _bind_append_for_event_class(Event_for_Items, [path, 'bindText'], 
+    _bind_append_for_event_class(Event_for_Items, [path, 'bindText'],
                                  context, cmd, *args)
     self
   end
@@ -206,7 +206,7 @@ class Tk::BWidget::Tree
   end
 
   def selection_add(*args)
-    tk_send_without_enc('selection', 'add', 
+    tk_send_without_enc('selection', 'add',
                         *(args.collect{|node| tagid(node)}))
     self
   end
@@ -221,30 +221,30 @@ class Tk::BWidget::Tree
   end
 
   def selection_include?(*args)
-    bool(tk_send_without_enc('selection', 'get', 
+    bool(tk_send_without_enc('selection', 'get',
                              *(args.collect{|node| tagid(node)})))
   end
 
   def selection_range(*args)
-    tk_send_without_enc('selection', 'range', 
+    tk_send_without_enc('selection', 'range',
                         *(args.collect{|node| tagid(node)}))
     self
   end
 
   def selection_remove(*args)
-    tk_send_without_enc('selection', 'remove', 
+    tk_send_without_enc('selection', 'remove',
                         *(args.collect{|node| tagid(node)}))
     self
   end
 
   def selection_set(*args)
-    tk_send_without_enc('selection', 'set', 
+    tk_send_without_enc('selection', 'set',
                         *(args.collect{|node| tagid(node)}))
     self
   end
 
   def selection_toggle(*args)
-    tk_send_without_enc('selection', 'toggle', 
+    tk_send_without_enc('selection', 'toggle',
                         *(args.collect{|node| tagid(node)}))
     self
   end
@@ -298,7 +298,7 @@ class Tk::BWidget::Tree::Node
       @tree = tree.tree
       parent = tree.parent
     else
-      fail RuntimeError, 
+      fail RuntimeError,
         "expect Tk::BWidget::Tree or Tk::BWidget::Tree::Node for 1st argument"
     end
 

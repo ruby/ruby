@@ -88,7 +88,7 @@ EOD
 
 ##########################################
 
-bmp_dir = File.join(File.dirname(File.expand_path(__FILE__)), 
+bmp_dir = File.join(File.dirname(File.expand_path(__FILE__)),
                     '../catalog_demo/images')
 
 ##########################################
@@ -102,16 +102,16 @@ tb = Tk::Iwidgets::Toolbar.new(:helpvariable=>status_var)
 
 ##########################################
 
-tb.add(:button, :helpstr=>'Copy It', :image=>editcopy22, 
+tb.add(:button, :helpstr=>'Copy It', :image=>editcopy22,
        :balloonstr=>'Copy', :command=>proc{puts 'Copy It'})
 
-tb.add(:button, :helpstr=>'Cut It', :image=>editcut22, 
+tb.add(:button, :helpstr=>'Cut It', :image=>editcut22,
        :balloonstr=>'Cut', :command=>proc{puts 'Cut It'})
 
-tb.add(:button, :helpstr=>'Paste It', :image=>editpaste22, 
+tb.add(:button, :helpstr=>'Paste It', :image=>editpaste22,
        :balloonstr=>'Paste', :command=>proc{puts 'Paste It'})
 
-tb.add(:button, :helpstr=>'Delete It', :image=>editdelete22, 
+tb.add(:button, :helpstr=>'Delete It', :image=>editdelete22,
        :balloonstr=>'Delete', :command=>proc{puts 'Delete It'})
 
 #--------------------------------
@@ -120,19 +120,19 @@ tb.add(:frame, :borderwidth=>1, :width=>10, :height=>10)
 
 #--------------------------------
 
-tb.add(:radiobutton, :variable=>radio_var, :value=>'Box', 
-       :bitmap=>"@#{bmp_dir}/box.xbm", 
-       :helpstr=>'Radio Button #1', :balloonstr=>'Radio', 
+tb.add(:radiobutton, :variable=>radio_var, :value=>'Box',
+       :bitmap=>"@#{bmp_dir}/box.xbm",
+       :helpstr=>'Radio Button #1', :balloonstr=>'Radio',
        :command=>proc{puts 'Radio Button "Box"'})
 
-tb.add(:radiobutton, :variable=>radio_var, :value=>'Line', 
-       :bitmap=>"@#{bmp_dir}/line.xbm", 
-       :helpstr=>'Radio Button #2', :balloonstr=>'Radio', 
+tb.add(:radiobutton, :variable=>radio_var, :value=>'Line',
+       :bitmap=>"@#{bmp_dir}/line.xbm",
+       :helpstr=>'Radio Button #2', :balloonstr=>'Radio',
        :command=>proc{puts 'Radio Button "Line"'})
 
-tb.add(:radiobutton, :variable=>radio_var, :value=>'Oval', 
-       :bitmap=>"@#{bmp_dir}/oval.xbm", 
-       :helpstr=>'Radio Button #3', :balloonstr=>'Radio', 
+tb.add(:radiobutton, :variable=>radio_var, :value=>'Oval',
+       :bitmap=>"@#{bmp_dir}/oval.xbm",
+       :helpstr=>'Radio Button #3', :balloonstr=>'Radio',
        :command=>proc{puts 'Radio Button "Oval"'})
 
 #--------------------------------
@@ -141,10 +141,10 @@ tb.add(:frame, :borderwidth=>1, :width=>10, :height=>10)
 
 #--------------------------------
 
-tb.add(:checkbutton, :variable=>check_var1, :onvalue=>'yes', :offvalue=>'no', 
+tb.add(:checkbutton, :variable=>check_var1, :onvalue=>'yes', :offvalue=>'no',
        :image=>text22, :command=>proc{puts 'Checkbutton 1'})
 
-tb.add(:checkbutton, :variable=>check_var2, :onvalue=>'yes', :offvalue=>'no', 
+tb.add(:checkbutton, :variable=>check_var2, :onvalue=>'yes', :offvalue=>'no',
        :bitmap=>"@#{bmp_dir}/points.xbm", :command=>proc{puts 'Checkbutton 2'})
 
 tb.pack(:side=>:top, :anchor=>:nw)

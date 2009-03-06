@@ -4,7 +4,7 @@
 
 # delete old toplevel widget
 if defined?($check2_demo) && $check2_demo
-  $check2_demo.destroy 
+  $check2_demo.destroy
   $check2_demo = nil
 end
 
@@ -34,35 +34,35 @@ sober  = TkVariable.new(0)
 
 # frame
 TkFrame.new(base_frame) {|frame|
-  TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2), 
+  TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2),
          :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
-  TkGrid('x', 
-         TkButton.new(frame, :text=>'See Variables', 
-                      :image=>$image['view'], :compound=>:left, 
+  TkGrid('x',
+         TkButton.new(frame, :text=>'See Variables',
+                      :image=>$image['view'], :compound=>:left,
                       :command=>proc{
-                        showVars($check2_demo, 
-                                 ['safety', safety], ['wipers', wipers], 
+                        showVars($check2_demo,
+                                 ['safety', safety], ['wipers', wipers],
                                  ['brakes', brakes], ['sober', sober])
-                      }), 
-         TkButton.new(frame, :text=>'See Code', 
-                      :image=>$image['view'], :compound=>:left, 
-                      :command=>proc{showCode 'check2'}), 
-         TkButton.new(frame, :text=>'Dismiss', 
-                      :image=>$image['delete'], :compound=>:left, 
+                      }),
+         TkButton.new(frame, :text=>'See Code',
+                      :image=>$image['view'], :compound=>:left,
+                      :command=>proc{showCode 'check2'}),
+         TkButton.new(frame, :text=>'Dismiss',
+                      :image=>$image['delete'], :compound=>:left,
                       :command=>proc{
                         tmppath = $check2_demo
                         $check2_demo = nil
                         $showVarsWin[tmppath.path] = nil
                         tmppath.destroy
-                      }), 
+                      }),
          :padx=>4, :pady=>4)
   frame.grid_columnconfigure(0, :weight=>1)
 }.pack('side'=>'bottom', 'fill'=>'x')
 
 
 # checkbutton
-TkCheckButton.new(base_frame, :text=>'Safety Check', :variable=>safety, 
-                  :relief=>:flat, :onvalue=>'all', :offvalue=>'none', 
+TkCheckButton.new(base_frame, :text=>'Safety Check', :variable=>safety,
+                  :relief=>:flat, :onvalue=>'all', :offvalue=>'none',
                   :tristatevalue=>'partial'){
   pack('side'=>'top', 'pady'=>2, 'anchor'=>'w')
 }
@@ -70,7 +70,7 @@ TkCheckButton.new(base_frame, :text=>'Safety Check', :variable=>safety,
 [ TkCheckButton.new(base_frame, 'text'=>'Wipers OK', 'variable'=>wipers),
   TkCheckButton.new(base_frame, 'text'=>'Brakes OK', 'variable'=>brakes),
   TkCheckButton.new(base_frame, 'text'=>'Driver Sober', 'variable'=>sober)
-].each{|w| 
+].each{|w|
   w.relief('flat')
   w.pack('side'=>'top', 'padx'=>15, 'pady'=>2, 'anchor'=>'w')
 }

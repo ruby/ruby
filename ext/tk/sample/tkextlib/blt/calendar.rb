@@ -31,17 +31,17 @@ TkOption.add('*tile', texture2)
 class BLT_Calendar_sample
   @@monthInfo = [
     nil,  # dummy
-    ['January', 31], 
-    ['February', 28], 
-    ['March', 31], 
-    ['April', 30], 
-    ['May', 31], 
-    ['June', 30], 
-    ['July', 31], 
-    ['August', 31], 
-    ['Septembar', 30], 
-    ['October', 31], 
-    ['November', 30], 
+    ['January', 31],
+    ['February', 28],
+    ['March', 31],
+    ['April', 30],
+    ['May', 31],
+    ['June', 30],
+    ['July', 31],
+    ['August', 31],
+    ['Septembar', 30],
+    ['October', 31],
+    ['November', 30],
     ['December', 31]
   ]
 
@@ -53,23 +53,23 @@ class BLT_Calendar_sample
     if TkComm.bool(Tk.info(:commands, '.calendar'))
       Tk.destroy('.calendar')
     end
-    cal = Tk::BLT::Tile::Frame.new(:widgetname=>'.calendar', 
-                                   :classname=>'Calendar', 
+    cal = Tk::BLT::Tile::Frame.new(:widgetname=>'.calendar',
+                                   :classname=>'Calendar',
                                    :width=>'3i', :height=>'3i')
 
-    mon = Tk::BLT::Tile::Label.new(cal, :font=>'Courier 14 bold', 
-                                   :text=>"#{@@monthInfo[today.month][0]} " + 
+    mon = Tk::BLT::Tile::Label.new(cal, :font=>'Courier 14 bold',
+                                   :text=>"#{@@monthInfo[today.month][0]} " +
                                           "#{today.year}")
     Tk::BLT::Table.add(cal, mon, [1, 0], :cspan=>7, :pady=>10)
 
-    week_f = Tk::BLT::Tile::Frame.new(cal, :widgetname=>'weekframe', 
+    week_f = Tk::BLT::Tile::Frame.new(cal, :widgetname=>'weekframe',
                                       :relief=>:sunken, :borderwidth=>1)
     Tk::BLT::Table.add(cal, week_f, [2, 0], :columnspan=>7, :fill=>:both)
 
     @@abbrDays.each_with_index{|dayName, idx|
-      Tk::BLT::Table.add(cal, 
-                         Tk::BLT::Tile::Label.new(cal, :text=>dayName, 
-                                                  :font=>'Helvetica 12'), 
+      Tk::BLT::Table.add(cal,
+                         Tk::BLT::Tile::Label.new(cal, :text=>dayName,
+                                                  :font=>'Helvetica 12'),
                          [2, idx], :pady=>2, :padx=>2)
     }
 
@@ -83,11 +83,11 @@ class BLT_Calendar_sample
     wkday += 7 if wkday < 0
 
     while cnt <= numDays
-      Tk::BLT::Table.add(cal, 
+      Tk::BLT::Table.add(cal,
                          Tk::BLT::Tile::Label.new(cal, :text=>cnt){
-                           self.configure(:borderwidth=>1, 
+                           self.configure(:borderwidth=>1,
                                           :relief=>:sunken) if cnt == today.day
-                         }, 
+                         },
                          [week+3, wkday], :fill=>:both, :ipadx=>10, :ipady=>4)
       cnt += 1
       wkday += 1
@@ -98,11 +98,11 @@ class BLT_Calendar_sample
     end
 
     Tk::BLT::Tile::Frame.new(cal, :borderwidth=>1, :relief=>:sunken){|f|
-      Tk::BLT::Table.add(f, 
-                         Tk::BLT::Tile::Button.new(f, :widgetname=>'button', 
-                                                   :command=>proc{exit}, 
-                                                   :borderwidth=>2, 
-                                                   :text=>'Quit'), 
+      Tk::BLT::Table.add(f,
+                         Tk::BLT::Tile::Button.new(f, :widgetname=>'button',
+                                                   :command=>proc{exit},
+                                                   :borderwidth=>2,
+                                                   :text=>'Quit'),
                          :padx=>4, :pady=>4)
       Tk::BLT::Table.add(cal, f, [week+4, 5], :cspan=>2, :pady=>4)
     }

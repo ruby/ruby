@@ -16,19 +16,19 @@ class TkTextImage<TkObject
       @path = TkTextMark.new(@t, tk_call(@t.path, 'index', 'end - 1 chars'))
     elsif index.kind_of? TkTextMark
       if tk_call_without_enc(@t.path,'index',index.path) == tk_call_without_enc(@t.path,'index','end')
-        @path = TkTextMark.new(@t, tk_call_without_enc(@t.path, 'index', 
+        @path = TkTextMark.new(@t, tk_call_without_enc(@t.path, 'index',
                                                        'end - 1 chars'))
       else
-        @path = TkTextMark.new(@t, tk_call_without_enc(@t.path, 'index', 
+        @path = TkTextMark.new(@t, tk_call_without_enc(@t.path, 'index',
                                                        index.path))
       end
     else
-      @path = TkTextMark.new(@t, tk_call_without_enc(@t.path, 'index', 
+      @path = TkTextMark.new(@t, tk_call_without_enc(@t.path, 'index',
                                                      _get_eval_enc_str(index)))
     end
     @path.gravity = 'left'
     @index = @path.path
-    @id = tk_call_without_enc(@t.path, 'image', 'create', @index, 
+    @id = tk_call_without_enc(@t.path, 'image', 'create', @index,
                               *hash_kv(keys, true)).freeze
     @path.gravity = 'right'
   end
@@ -78,7 +78,7 @@ class TkTextImage<TkObject
   end
 
   def image=(value)
-    tk_call_without_enc(@t.path, 'image', 'configure', @index, '-image', 
+    tk_call_without_enc(@t.path, 'image', 'configure', @index, '-image',
                         _get_eval_enc_str(value))
     #self
     value

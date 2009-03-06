@@ -20,7 +20,7 @@ class Tk::Iwidgets::Calendar
 
   def __strval_optkeys
     super() + [
-      'buttonforeground', 'outline', 'selectcolor', 
+      'buttonforeground', 'outline', 'selectcolor',
       'weekdaybackground', 'weekendbackground'
     ]
   end

@@ -45,7 +45,7 @@ class TkImage<TkObject
             keys.delete('imagename')
             keys.delete('without_creating')
             obj.instance_eval{
-              tk_call_without_enc('image', 'create', 
+              tk_call_without_enc('image', 'create',
                                   @type, @path, *hash_kv(keys, true))
             }
           end
@@ -78,7 +78,7 @@ class TkImage<TkObject
       }
     end
     unless without_creating
-      tk_call_without_enc('image', 'create', 
+      tk_call_without_enc('image', 'create',
                           @type, @path, *hash_kv(keys, true))
     end
   end

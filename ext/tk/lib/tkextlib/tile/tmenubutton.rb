@@ -15,7 +15,7 @@ module Tk
   end
 end
 
-Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Menubutton, 
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Menubutton,
                             :TkMenubutton, :TkMenuButton)
 
 

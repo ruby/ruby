@@ -5,7 +5,7 @@
 # based on "Id: toolbar.tcl,v 1.3 2007/12/13 15:27:07 dgp Exp"
 
 if defined?($toolbar_demo) && $toolbar_demo
-  $toolbar_demo.destroy 
+  $toolbar_demo.destroy
   $toolbar_demo = nil
 end
 
@@ -18,7 +18,7 @@ $toolbar_demo = TkToplevel.new {|w|
 base_frame = Ttk::Frame.new($toolbar_demo).pack(:fill=>:both, :expand=>true)
 
 if Tk.windowingsystem != 'aqua'
-  msg = Ttk::Label.new(base_frame, :wraplength=>'4i', 
+  msg = Ttk::Label.new(base_frame, :wraplength=>'4i',
                        :text=>Tk::UTF8_String.new(<<EOL))
 This is a demonstration of how to do \
 a toolbar that is styled correctly \
@@ -32,7 +32,7 @@ toolbar is no longer needed, just close it like any normal toplevel \
 and it will reattach to the window it was torn off from.
 EOL
 else
-  msg = Ttk::Label.new(base_frame, :wraplength=>'4i', 
+  msg = Ttk::Label.new(base_frame, :wraplength=>'4i',
                        :text=>Tk::UTF8_String.new(<<EOL))
 This is a demonstration of how to do \
 a toolbar that is styled correctly. The buttons are configured to \
@@ -83,25 +83,25 @@ end
 text = TkText.new(base_frame, :width=>40, :height=>10)
 
 ## Toolbar contents
-tb_btn = Ttk::Button.new(tbar_base, :text=>'Button', :style=>'Toolbutton', 
+tb_btn = Ttk::Button.new(tbar_base, :text=>'Button', :style=>'Toolbutton',
                          :command=>proc{text.insert(:end, "Button Pressed\n")})
-tb_chk = Ttk::Checkbutton.new(tbar_base, :text=>'Check', :style=>'Toolbutton', 
-                              :variable=>(check = TkVariable.new), 
+tb_chk = Ttk::Checkbutton.new(tbar_base, :text=>'Check', :style=>'Toolbutton',
+                              :variable=>(check = TkVariable.new),
                               :command=>proc{
                                 text.insert(:end, "Check is #{check.value}\n")
                               })
 tb_mbtn = Ttk::Menubutton.new(tbar_base, :text=>'Menu')
-tb_combo = Ttk::Combobox.new(tbar_base, :value=>TkFont.families, 
+tb_combo = Ttk::Combobox.new(tbar_base, :value=>TkFont.families,
                              :state=>:readonly)
 tb_mbtn.menu(menu = Tk::Menu.new(tb_mbtn))
 menu.add(:command, :label=>'Just', :command=>proc{text.insert(:end, "Just\n")})
 menu.add(:command, :label=>'An', :command=>proc{text.insert(:end, "An\n")})
-menu.add(:command, :label=>'Example', 
+menu.add(:command, :label=>'Example',
          :command=>proc{text.insert(:end, "Example\n")})
 tb_combo.bind('<ComboboxSelected>'){ text.font.family = tb_combo.get }
 
 ## Arrange contents
-Tk.grid(tb_btn, tb_chk, tb_mbtn, tb_combo, 
+Tk.grid(tb_btn, tb_chk, tb_mbtn, tb_combo,
         :in=>contents, :padx=>2, :sticky=>'ns')
 Tk.grid(tbar_base, :sticky=>'ew')
 Tk.grid(sep, :sticky=>'ew')
@@ -114,16 +114,16 @@ base_frame.grid_columnconfigure(text, :weight=>1)
 Ttk::Frame.new(base_frame) {|frame|
   sep = Ttk::Separator.new(frame)
   Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
-  TkGrid('x', 
-         Ttk::Button.new(frame, :text=>'See Code', 
-                         :image=>$image['view'], :compound=>:left, 
-                         :command=>proc{showCode 'toolbar'}), 
-         Ttk::Button.new(frame, :text=>'Dismiss', 
-                         :image=>$image['delete'], :compound=>:left, 
+  TkGrid('x',
+         Ttk::Button.new(frame, :text=>'See Code',
+                         :image=>$image['view'], :compound=>:left,
+                         :command=>proc{showCode 'toolbar'}),
+         Ttk::Button.new(frame, :text=>'Dismiss',
+                         :image=>$image['delete'], :compound=>:left,
                          :command=>proc{
                            $toolbar_demo.destroy
                            $toolbar_demo = nil
-                         }), 
+                         }),
          :padx=>4, :pady=>4)
   grid_columnconfigure(0, :weight=>1)
   Tk.grid(frame, :sticky=>'ew')

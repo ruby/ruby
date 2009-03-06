@@ -16,7 +16,7 @@ class TestERB < Test::Unit::TestCase
     erb = ERB.new("γεια σας".encode("ISO-8859-7"))
     assert_equal Encoding::ISO_8859_7, erb.result.encoding
 
-    assert_raise(ArgumentError, /ASCII compatible/) { 
+    assert_raise(ArgumentError, /ASCII compatible/) {
       ERB.new("こんにちは".force_encoding("ISO-2022-JP")) # dummy encoding
     }
   end

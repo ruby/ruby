@@ -4,7 +4,7 @@
 
 # toplevel widget
 if defined?($form_demo) && $form_demo
-  $form_demo.destroy 
+  $form_demo.destroy
   $form_demo = nil
 end
 
@@ -43,7 +43,7 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# entry 
+# entry
 form_data = []
 (1..5).each{|i|
   f = TkFrame.new(base_frame, 'bd'=>2)
@@ -54,7 +54,7 @@ form_data = []
   form_data[i] = {'frame'=>f, 'entry'=>e, 'label'=>l}
 }
 
-# 
+#
 form_data[1]['label'].text('Name:')
 form_data[2]['label'].text('Address:')
 form_data[5]['label'].text('Phone:')

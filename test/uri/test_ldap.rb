@@ -38,47 +38,47 @@ class TestLDAP < Test::Unit::TestCase
     # from RFC2255, section 6.
     urls = {
       'ldap:///o=University%20of%20Michigan,c=US' =>
-      ['ldap', nil, URI::LDAP::DEFAULT_PORT, 
-	'o=University%20of%20Michigan,c=US', 
+      ['ldap', nil, URI::LDAP::DEFAULT_PORT,
+	'o=University%20of%20Michigan,c=US',
 	nil, nil, nil, nil],
 
       'ldap://ldap.itd.umich.edu/o=University%20of%20Michigan,c=US' =>
-      ['ldap', 'ldap.itd.umich.edu', URI::LDAP::DEFAULT_PORT, 
-	'o=University%20of%20Michigan,c=US', 
+      ['ldap', 'ldap.itd.umich.edu', URI::LDAP::DEFAULT_PORT,
+	'o=University%20of%20Michigan,c=US',
 	nil, nil, nil, nil],
 
       'ldap://ldap.itd.umich.edu/o=University%20of%20Michigan,c=US?postalAddress' =>
-      ['ldap', 'ldap.itd.umich.edu', URI::LDAP::DEFAULT_PORT, 
+      ['ldap', 'ldap.itd.umich.edu', URI::LDAP::DEFAULT_PORT,
 	'o=University%20of%20Michigan,c=US',
 	'postalAddress', nil, nil, nil],
 
       'ldap://host.com:6666/o=University%20of%20Michigan,c=US??sub?(cn=Babs%20Jensen)' =>
-      ['ldap', 'host.com', 6666, 
+      ['ldap', 'host.com', 6666,
 	'o=University%20of%20Michigan,c=US',
 	nil, 'sub', '(cn=Babs%20Jensen)', nil],
 
       'ldap://ldap.itd.umich.edu/c=GB?objectClass?one' =>
-      ['ldap', 'ldap.itd.umich.edu', URI::LDAP::DEFAULT_PORT, 
-	'c=GB', 
+      ['ldap', 'ldap.itd.umich.edu', URI::LDAP::DEFAULT_PORT,
+	'c=GB',
 	'objectClass', 'one', nil, nil],
 
       'ldap://ldap.question.com/o=Question%3f,c=US?mail' =>
-      ['ldap', 'ldap.question.com', URI::LDAP::DEFAULT_PORT, 
+      ['ldap', 'ldap.question.com', URI::LDAP::DEFAULT_PORT,
 	'o=Question%3f,c=US',
 	'mail', nil, nil, nil],
 
       'ldap://ldap.netscape.com/o=Babsco,c=US??(int=%5c00%5c00%5c00%5c04)' =>
-      ['ldap', 'ldap.netscape.com', URI::LDAP::DEFAULT_PORT, 
+      ['ldap', 'ldap.netscape.com', URI::LDAP::DEFAULT_PORT,
 	'o=Babsco,c=US',
 	nil, '(int=%5c00%5c00%5c00%5c04)', nil, nil],
 
       'ldap:///??sub??bindname=cn=Manager%2co=Foo' =>
-      ['ldap', nil, URI::LDAP::DEFAULT_PORT, 
+      ['ldap', nil, URI::LDAP::DEFAULT_PORT,
 	'',
 	nil, 'sub', nil, 'bindname=cn=Manager%2co=Foo'],
 
       'ldap:///??sub??!bindname=cn=Manager%2co=Foo' =>
-      ['ldap', nil, URI::LDAP::DEFAULT_PORT, 
+      ['ldap', nil, URI::LDAP::DEFAULT_PORT,
 	'',
 	nil, 'sub', nil, '!bindname=cn=Manager%2co=Foo'],
     }.each do |url, ary|

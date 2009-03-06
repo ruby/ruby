@@ -1,5 +1,5 @@
 #
-#   mutex_m.rb - 
+#   mutex_m.rb -
 #   	$Release Version: 3.0$
 #   	$Revision: 1.7 $
 #       Original from mutex.rb
@@ -34,13 +34,13 @@ module Mutex_m
       alias try_lock mu_try_lock
       alias synchronize mu_synchronize
     }
-  end  
+  end
 
   def Mutex_m.append_features(cl)
     super
     define_aliases(cl) unless cl.instance_of?(Module)
   end
-  
+
   def Mutex_m.extend_object(obj)
     super
     obj.mu_extended
@@ -56,30 +56,30 @@ module Mutex_m
     end
     mu_initialize
   end
-  
-  # locking 
+
+  # locking
   def mu_synchronize(&block)
     @_mutex.synchronize(&block)
   end
-  
+
   def mu_locked?
     @_mutex.locked?
   end
-  
+
   def mu_try_lock
     @_mutex.try_lock
   end
-  
+
   def mu_lock
     @_mutex.lock
   end
-  
+
   def mu_unlock
     @_mutex.unlock
   end
-  
+
   private
-  
+
   def mu_initialize
     @_mutex = Mutex.new
   end

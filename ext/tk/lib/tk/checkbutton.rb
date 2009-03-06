@@ -26,5 +26,5 @@ end
 Tk::Checkbutton = Tk::CheckButton
 #TkCheckButton = Tk::CheckButton unless Object.const_defined? :TkCheckButton
 #TkCheckbutton = Tk::Checkbutton unless Object.const_defined? :TkCheckbutton
-Tk.__set_toplevel_aliases__(:Tk, Tk::CheckButton, 
+Tk.__set_toplevel_aliases__(:Tk, Tk::CheckButton,
                             :TkCheckButton, :TkCheckbutton)

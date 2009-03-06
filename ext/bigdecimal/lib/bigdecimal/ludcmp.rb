@@ -17,7 +17,7 @@ module LUSolve
       end
       if nrmrow>zero then
          scales <<= one.div(nrmrow,prec)
-      else 
+      else
          raise "Singular matrix"
       end
     end

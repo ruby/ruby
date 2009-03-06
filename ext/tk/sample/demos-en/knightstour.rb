@@ -155,16 +155,16 @@ class Knights_Tour
     frame = Ttk::Frame.new($knightstour)
     sep = Ttk::Separator.new(frame)
     Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
-    TkGrid('x', 
-           Ttk::Button.new(frame, :text=>'See Code', 
-                           :image=>$image['view'], :compound=>:left, 
-                           :command=>proc{showCode 'knightstour'}), 
-           Ttk::Button.new(frame, :text=>'Dismiss', 
-                           :image=>$image['delete'], :compound=>:left, 
+    TkGrid('x',
+           Ttk::Button.new(frame, :text=>'See Code',
+                           :image=>$image['view'], :compound=>:left,
+                           :command=>proc{showCode 'knightstour'}),
+           Ttk::Button.new(frame, :text=>'Dismiss',
+                           :image=>$image['delete'], :compound=>:left,
                            :command=>proc{
                              $knightstour.destroy
                              $knightstour = nil
-                           }), 
+                           }),
            :padx=>4, :pady=>4)
     frame.grid_columnconfigure(0, :weight=>1)
     frame
@@ -176,7 +176,7 @@ class Knights_Tour
     $knightstour.withdraw
     base_f = Ttk::Frame.new($knightstour)
     @board = Tk::Canvas.new(base_f, :width=>240, :height=>240)
-    @log = Tk::Text.new(base_f, :width=>12, :height=>1, 
+    @log = Tk::Text.new(base_f, :width=>12, :height=>1,
                         :font=>'Arial 8', :background=>'white')
     scr = @log.yscrollbar(Ttk::Scrollbar.new(base_f))
 
@@ -186,13 +186,13 @@ class Knights_Tour
 
     tool_f = Ttk::Frame.new($knightstour)
     label = Ttk::Label.new(tool_f, :text=>'Speed')
-    scale = Ttk::Scale.new(tool_f, :from=>8, :to=>2000, :variable=>@delay, 
+    scale = Ttk::Scale.new(tool_f, :from=>8, :to=>2000, :variable=>@delay,
                            :command=>proc{|n| set_delay(n)})
-    check = Ttk::Checkbutton.new(tool_f, :text=>'Repeat', 
+    check = Ttk::Checkbutton.new(tool_f, :text=>'Repeat',
                                  :variable=>@continuous)
-    @start_btn = Ttk::Button.new(tool_f, :text=>'Start', 
+    @start_btn = Ttk::Button.new(tool_f, :text=>'Start',
                                  :command=>proc{tour()})
-    @exit_btn = Ttk::Button.new(tool_f, :text=>'Exit', 
+    @exit_btn = Ttk::Button.new(tool_f, :text=>'Exit',
                                 :command=>proc{_exit()})
 
     7.downto(0){|row|
@@ -205,16 +205,16 @@ class Knights_Tour
           dfill = 'tan4'
         end
         coords = [col * 30 + 4, row * 30 + 4, col * 30 + 30, row * 30 + 30]
-        @board.create(TkcRectangle, coords, 
+        @board.create(TkcRectangle, coords,
                       :fill=>fill, :disabledfill=>dfill,
                       :width=>2, :state=>:disabled)
       }
     }
 
     @knight_font = TkFont.new(:size=>-24)
-    @knight = TkcText.new(@board, 0, 0, :font=>@knight_font, 
-                          :text=>Tk::UTF8_String.new('\u265e'), 
-                          :anchor=>'nw', # :tags=>'knight', 
+    @knight = TkcText.new(@board, 0, 0, :font=>@knight_font,
+                          :text=>Tk::UTF8_String.new('\u265e'),
+                          :anchor=>'nw', # :tags=>'knight',
                           :fill=>'black', :activefill=>'#600000')
     @knight.coords(@board.coords(rand(64)+1)[0..1])
     @knight.bind('ButtonPress-1', '%W %x %y'){|w,x,y| drag_start(w,x,y)}

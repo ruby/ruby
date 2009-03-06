@@ -137,7 +137,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_tls
-    # 
+    #
     def tvar(var, val)
       old = Thread.current[var]
       begin

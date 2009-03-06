@@ -10,7 +10,7 @@ module Rake
   # Create a task that runs a set of tests.
   #
   # Example:
-  #  
+  #
   #   Rake::TestTask.new do |t|
   #     t.libs << "test"
   #     t.test_files = FileList['test/test*.rb']
@@ -63,7 +63,7 @@ module Rake
     # * :rake -- Rake provided test loading script (default).
     # * :testrb -- Ruby provided test loading script.
     # * :direct -- Load tests using command line loader.
-    # 
+    #
     attr_accessor :loader
 
     # Array of commandline options to pass to ruby when running test loader.

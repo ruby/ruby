@@ -1,12 +1,12 @@
 #
-#   shell/builtin-command.rb - 
+#   shell/builtin-command.rb -
 #   	$Release Version: 0.7 $
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 
 require "shell/filter"
@@ -25,7 +25,7 @@ class Shell
     def initialize(sh, *opts)
       super sh
     end
-    
+
     def each(rs = nil)
       # do nothing
     end
@@ -36,7 +36,7 @@ class Shell
       super sh
       @strings = strings
     end
-    
+
     def each(rs = nil)
       rs =  @shell.record_separator unless rs
       for str  in @strings
@@ -70,7 +70,7 @@ class Shell
     end
 
     def each(rs = nil)
-      if @pattern[0] == ?/ 
+      if @pattern[0] == ?/
 	@files = Dir[@pattern]
       else
 	prefix = @shell.pwd+"/"

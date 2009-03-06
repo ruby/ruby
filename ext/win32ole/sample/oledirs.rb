@@ -7,7 +7,7 @@ require "win32ole"
 def listup(items)
 #  items.each do |i|
   for i in items
-    puts i.name 
+    puts i.name
   end
 end
 

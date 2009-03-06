@@ -376,7 +376,7 @@ class Gem::SourceIndex
   end
 
   def ==(other) # :nodoc:
-    self.class === other and @gems == other.gems 
+    self.class === other and @gems == other.gems
   end
 
   def dump

@@ -8,7 +8,7 @@ module RSS
       super
       @xml_stylesheets = []
     end
-    
+
     private
     def xml_stylesheet_pi
       xsss = @xml_stylesheets.collect do |xss|
@@ -94,7 +94,7 @@ module RSS
         xss.__send__("#{attr}=", __send__(attr))
       end
     end
-    
+
     private
     def guess_type(filename)
       /\.([^.]+)$/ =~ filename

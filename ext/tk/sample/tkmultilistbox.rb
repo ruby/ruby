@@ -35,10 +35,10 @@ class TkMultiListbox < TkListbox
 
     # create base flames
     @f_title = TkFrame.new(@frame, 'width'=>@width_total)
-    @f_lbox  = TkFrame.new(@frame, 
+    @f_lbox  = TkFrame.new(@frame,
                            'width'=>@width_total, 'height'=>lbox_height)
-    @f_hscr  = TkFrame.new(@frame, 'width'=>@width_total, 
-                           'height'=>@v_scroll.cget('width') + 
+    @f_hscr  = TkFrame.new(@frame, 'width'=>@width_total,
+                           'height'=>@v_scroll.cget('width') +
                                      2 * @v_scroll.cget('borderwidth'))
 
     # dummy label to keep the hight of title space
@@ -63,25 +63,25 @@ class TkMultiListbox < TkListbox
       f = TkFrame.new(@f_title, 'width'=>width)
       base = [f]
       @title_list << TkLabel.new(f, 'text'=>label).pack('fill'=>'x')
-      f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>-6, 
+      f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>-6,
               'relwidth'=>@rel_list[idx+1] - @rel_list[idx])
 
       # listbox field
       f = TkFrame.new(@f_lbox, 'width'=>width)
       base << f
       @lbox_list << TkListbox.new(f).pack('fill'=>'both', 'expand'=>true)
-      f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>-4, 
+      f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>-4,
               'relwidth'=>@rel_list[idx+1] - @rel_list[idx], 'relheight'=>1.0)
 
       # scrollbar field
       f = TkFrame.new(@f_hscr, 'width'=>width)
       base << f
-      @hscr_list << TkScrollbar.new(f, 'orient'=>'horizontal') . 
+      @hscr_list << TkScrollbar.new(f, 'orient'=>'horizontal') .
                                               pack('fill'=>'x', 'anchor'=>'w')
-      f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>-4, 
+      f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>-4,
               'relwidth'=>@rel_list[idx+1] - @rel_list[idx])
 
-      @lbox_list[idx].xscrollcommand proc{|first, last| 
+      @lbox_list[idx].xscrollcommand proc{|first, last|
         @hscr_list[idx].set first, last
       }
       @hscr_list[idx].command proc{|*args| @lbox_list[idx].xview *args}
@@ -93,19 +93,19 @@ class TkMultiListbox < TkListbox
     # create tab
     @tab_list = [nil]
     (1..(@rel_list.size - 2)).each{|idx|
-      tab = TkFrame.new(@f_title, 'cursor'=>'sb_h_double_arrow', 
+      tab = TkFrame.new(@f_title, 'cursor'=>'sb_h_double_arrow',
                         'width'=>6, 'borderwidth'=>2, 'relief'=>'raised')
       @tab_list << tab
       tab.place('relx'=>@rel_list[idx], 'anchor'=>'ne', 'relheight'=>0.95)
-      tab.bind('Button-1', 
-               proc{|x| @x = x; @frame_width = TkWinfo.width(@f_title).to_f}, 
+      tab.bind('Button-1',
+               proc{|x| @x = x; @frame_width = TkWinfo.width(@f_title).to_f},
                '%X')
       tab.bind('B1-Motion', proc{|x, idx| resize(x, idx.to_i)}, "%X #{idx}")
     }
 
     # set control procedure for virtical scroll
     @lbox_list.each{|lbox|
-      lbox.yscrollcommand proc{|first, last| 
+      lbox.yscrollcommand proc{|first, last|
         @v_scroll.set first, last
       }
     }
@@ -118,17 +118,17 @@ class TkMultiListbox < TkListbox
     @mode['extended'] = extended_mode_bindtag
     @mode['multiple'] = multiple_mode_bindtag
     @current_mode = 'browse'
-    @lbox_list.each{|l| 
-      l.bind('Shift-Key-Left', 
+    @lbox_list.each{|l|
+      l.bind('Shift-Key-Left',
              proc{|w| focus_shift(w, -1); Tk.callback_break}, '%W')
-      l.bind('Shift-Key-Right', 
+      l.bind('Shift-Key-Right',
              proc{|w| focus_shift(w, 1); Tk.callback_break}, '%W')
 
-      l.bind('Button-2', proc{|x, y| 
+      l.bind('Button-2', proc{|x, y|
                @lbox_mark_x = x
                @lbox_list.each{|lbox| lbox.scan_mark(x, y)}
              }, '%x %y')
-      l.bind('B2-Motion', proc{|x, y| 
+      l.bind('B2-Motion', proc{|x, y|
                @lbox_list.each{|lbox| lbox.scan_dragto(@lbox_mark_x, y)}
                l.scan_dragto(x, y)
              }, '%x %y')
@@ -189,7 +189,7 @@ class TkMultiListbox < TkListbox
 
   # set 'mode' option of listboxes
   def mode(sel_mode)
-    @lbox_list.each{|l| 
+    @lbox_list.each{|l|
       tags = l.bindtags
       tags = tags - [ @mode[@current_mode] ]
       l.bindtags(tags.unshift(@mode[sel_mode]))
@@ -282,7 +282,7 @@ class TkMultiListbox < TkListbox
             array[indices[0]] = line[label]
           else
             if line[label].kind_of? Array
-              indices.each_with_index{|index, num| 
+              indices.each_with_index{|index, num|
                 array[index] = line[label][num]
               }
             else
@@ -300,9 +300,9 @@ class TkMultiListbox < TkListbox
           indices.each{|index| lbox_ins[index] << line[index]}
         end
       }
-    }   
+    }
 
-    @lbox_list.each_with_index{|lbox, index| 
+    @lbox_list.each_with_index{|lbox, index|
       lbox.insert(idx, *lbox_ins[index]) if lbox_ins[index]
     }
   end
@@ -326,7 +326,7 @@ class TkMultiListbox < TkListbox
     (0..(@rel_list.size - 2)).each{|idx|
       title, lbox, hscr = @base_list[idx]
       title.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx])
-      lbox.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx], 
+      lbox.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx],
                  'relheight'=>1.0)
       hscr.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx])
 
@@ -356,11 +356,11 @@ class TkMultiListbox < TkListbox
 
     # adjustment of rightside widget of the tab
     title, lbox, hscr = @base_list[idx]
-    title.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx], 
+    title.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx],
                 'relx'=>@rel_list[idx])
-    lbox.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx], 
+    lbox.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx],
                'relx'=>@rel_list[idx], 'relheight'=>1.0)
-    hscr.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx], 
+    hscr.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx],
                'relx'=>@rel_list[idx])
 
     # update reference position
@@ -370,11 +370,11 @@ class TkMultiListbox < TkListbox
   #################################
   def browse_mode_bindtag
     t = TkBindTag.new
-    t.bind('Button-1', 
+    t.bind('Button-1',
            proc{|w, y| w.focus; select_line(w, w.nearest(y))}, '%W %y')
     t.bind('B1-Motion', proc{|w, y| select_line(w, w.nearest(y))}, '%W %y')
 
-    t.bind('Shift-Button-1', 
+    t.bind('Shift-Button-1',
            proc{|w, y| active_line(w, w.nearest(y))}, '%W %y')
 
     t.bind('Key-Up', proc{|w| select_shift(w, -1)}, '%W')
@@ -385,7 +385,7 @@ class TkMultiListbox < TkListbox
 
     t.bind('space', proc{|w| select_line(w, w.index('active').to_i)}, '%W')
     t.bind('Select', proc{|w| select_line(w, w.index('active').to_i)}, '%W')
-    t.bind('Control-slash', 
+    t.bind('Control-slash',
            proc{|w| select_line(w, w.index('active').to_i)}, '%W')
 
     t
@@ -394,12 +394,12 @@ class TkMultiListbox < TkListbox
   ########################
   def single_mode_bindtag
     t = TkBindTag.new
-    t.bind('Button-1', 
+    t.bind('Button-1',
            proc{|w, y| w.focus; select_only(w, w.nearest(y))}, '%W %y')
-    t.bind('ButtonRelease-1', 
+    t.bind('ButtonRelease-1',
            proc{|w, y| active_line(w, w.nearest(y))}, '%W %y')
 
-    t.bind('Shift-Button-1', 
+    t.bind('Shift-Button-1',
            proc{|w, y| active_line(w, w.nearest(y))}, '%W %y')
 
     t.bind('Key-Up', proc{|w| select_shift(w, -1)}, '%W')
@@ -410,9 +410,9 @@ class TkMultiListbox < TkListbox
 
     t.bind('space', proc{|w| select_line(w, w.index('active').to_i)}, '%W')
     t.bind('Select', proc{|w| select_line(w, w.index('active').to_i)}, '%W')
-    t.bind('Control-slash', 
+    t.bind('Control-slash',
            proc{|w| select_line(w, w.index('active').to_i)}, '%W')
-    t.bind('Control-backslash', 
+    t.bind('Control-backslash',
            proc{@lbox_list.each{|l| l.selection_clear(0, 'end')}})
 
     t
@@ -421,22 +421,22 @@ class TkMultiListbox < TkListbox
   ########################
   def extended_mode_bindtag
     t = TkBindTag.new
-    t.bind('Button-1', 
+    t.bind('Button-1',
            proc{|w, y| w.focus; select_only(w, w.nearest(y))}, '%W %y')
     t.bind('B1-Motion', proc{|w, y| select_range(w, w.nearest(y))}, '%W %y')
 
-    t.bind('ButtonRelease-1', 
+    t.bind('ButtonRelease-1',
            proc{|w, y| active_line(w, w.nearest(y))}, '%W %y')
 
-    t.bind('Shift-Button-1', 
+    t.bind('Shift-Button-1',
            proc{|w, y| select_range(w, w.nearest(y))}, '%W %y')
-    t.bind('Shift-B1-Motion', 
+    t.bind('Shift-B1-Motion',
            proc{|w, y| select_range(w, w.nearest(y))}, '%W %y')
 
-    t.bind('Control-Button-1', 
+    t.bind('Control-Button-1',
            proc{|w, y| select_toggle(w, w.nearest(y))}, '%W %y')
 
-    t.bind('Control-B1-Motion', 
+    t.bind('Control-B1-Motion',
            proc{|w, y| select_drag(w, w.nearest(y))}, '%W %y')
 
     t.bind('Key-Up', proc{|w| active_shift(w, -1)}, '%W')
@@ -462,9 +462,9 @@ class TkMultiListbox < TkListbox
   ########################
   def multiple_mode_bindtag
     t = TkBindTag.new
-    t.bind('Button-1', 
+    t.bind('Button-1',
            proc{|w, y| w.focus; select_line3(w, w.nearest(y))}, '%W %y')
-    t.bind('ButtonRelease-1', 
+    t.bind('ButtonRelease-1',
            proc{|w, y| active_line(w, w.nearest(y))}, '%W %y')
 
     t.bind('Key-Up', proc{|w| active_shift(w, -1)}, '%W')
@@ -624,15 +624,15 @@ end
 # test
 ################################################
 if __FILE__ == $0
-  f = TkFrame.new(nil, 'width'=>300, 
+  f = TkFrame.new(nil, 'width'=>300,
                   'height'=>200).pack('fill'=>'both', 'expand'=>'true')
   #f = TkFrame.new.pack('fill'=>'both', 'expand'=>'true')
-  l = TkMultiListbox.new(f, 150, 
-                         [ ['L1', 100], 
-                           ['L2', 200], 
-                           ['L3', 50] ], 
-                         'titlefont'=>'courier', 
-                         'titleforeground'=>'yellow', 
+  l = TkMultiListbox.new(f, 150,
+                         [ ['L1', 100],
+                           ['L2', 200],
+                           ['L3', 50] ],
+                         'titlefont'=>'courier',
+                         'titleforeground'=>'yellow',
                          'titlebackground'=>'navy'
                          ).pack('fill'=>'both', 'expand'=>true)
   l.insert('end', [1,2,3])

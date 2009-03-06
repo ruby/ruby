@@ -1,12 +1,12 @@
 #
-#   shell/process-controller.rb - 
+#   shell/process-controller.rb -
 #   	$Release Version: 0.7 $
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 require "forwardable"
 
@@ -26,7 +26,7 @@ class Shell
     class<<self
       extend Forwardable
 
-      def_delegator("@ProcessControllersMonitor", 
+      def_delegator("@ProcessControllersMonitor",
 		    "synchronize", "process_controllers_exclusive")
 
       def active_process_controllers
@@ -118,7 +118,7 @@ class Shell
     def waiting_jobs
       @waiting_jobs
     end
-    
+
     def jobs_exist?
       @jobs_sync.synchronize(:SH) do
 	@active_jobs.empty? or @waiting_jobs.empty?
@@ -158,7 +158,7 @@ class Shell
 	else
 	  command = @waiting_jobs.shift
 #	  command.notify "job(%id) pre-start.", @shell.debug?
-	  
+
 	  return unless command
 	end
 	@active_jobs.push command
@@ -253,7 +253,7 @@ class Shell
 	  end
 
 	  pid = fork {
-	    Thread.list.each do |th| 
+	    Thread.list.each do |th|
 #	      th.kill unless [Thread.main, Thread.current].include?(th)
 	      th.kill unless Thread.current == th
 	    end
@@ -261,7 +261,7 @@ class Shell
 	    STDIN.reopen(pipe_peer_in)
 	    STDOUT.reopen(pipe_peer_out)
 
-	    ObjectSpace.each_object(IO) do |io| 
+	    ObjectSpace.each_object(IO) do |io|
 	      if ![STDIN, STDOUT, STDERR].include?(io)
 		io.close unless io.closed?
 	      end
@@ -295,9 +295,9 @@ class Shell
 			   "You can use Shell#transact or Shell#check_point for more safe execution.")
 	    redo
 	  end
-	  
+
 #	  command.notify "job(%id) pre-pre-finish.", @shell.debug?
-	  @job_monitor.synchronize do 
+	  @job_monitor.synchronize do
 #	    command.notify "job(%id) pre-finish.", @shell.debug?
 	    terminate_job(command)
 #	    command.notify "job(%id) pre-finish2.", @shell.debug?

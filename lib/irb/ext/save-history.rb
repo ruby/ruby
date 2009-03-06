@@ -1,13 +1,13 @@
 #!/usr/local/bin/ruby
 #
-#   save-history.rb - 
+#   save-history.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 
 require "readline"

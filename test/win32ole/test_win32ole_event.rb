@@ -63,7 +63,7 @@ if defined?(WIN32OLE_EVENT)
         @db.close
         10.times do |i|
           WIN32OLE_EVENT.new(@db)
-          GC.start  
+          GC.start
           message_loop
           @db.open
           message_loop
@@ -176,7 +176,7 @@ if defined?(WIN32OLE_EVENT)
         ev.on_event('WillConnect'){|*args|
           {:return => 1, :ConnectionString => CONNSTR}
         }
-        @db.connectionString = 'XXX' 
+        @db.connectionString = 'XXX'
         @db.open
         assert(true)
       end
@@ -186,7 +186,7 @@ if defined?(WIN32OLE_EVENT)
         ev.on_event('WillConnect'){|*args|
           {:ConnectionString => CONNSTR}
         }
-        @db.connectionString = 'XXX' 
+        @db.connectionString = 'XXX'
         @db.open
         assert(true)
       end
@@ -196,7 +196,7 @@ if defined?(WIN32OLE_EVENT)
         ev.on_event('WillConnect'){|*args|
           {'ConnectionString' => CONNSTR}
         }
-        @db.connectionString = 'XXX' 
+        @db.connectionString = 'XXX'
         @db.open
         assert(true)
       end
@@ -206,7 +206,7 @@ if defined?(WIN32OLE_EVENT)
         ev.on_event('WillConnect'){|*args|
           {'return' => 1, 'ConnectionString' => CONNSTR}
         }
-        @db.connectionString = 'XXX' 
+        @db.connectionString = 'XXX'
         @db.open
         assert(true)
       end
@@ -216,7 +216,7 @@ if defined?(WIN32OLE_EVENT)
         ev.on_event('WillConnect'){|*args|
           {0 => CONNSTR}
         }
-        @db.connectionString = 'XXX' 
+        @db.connectionString = 'XXX'
         @db.open
         assert(true)
       end

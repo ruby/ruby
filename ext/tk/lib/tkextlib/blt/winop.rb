@@ -38,7 +38,7 @@ class << Tk::BLT::Winop
     tk_call('::blt::winop', 'image', 'readjpeg', file, photo)
   end
   def image_resample(src, dest, horiz_filter=None, vert_filter=None)
-    tk_call('::blt::winop', 'image', 'resample', 
+    tk_call('::blt::winop', 'image', 'resample',
             src, dest, horiz_filter, vert_filter)
   end
   def image_rotate(src, dest, angle)
@@ -47,9 +47,9 @@ class << Tk::BLT::Winop
   def image_snap(win, photo, width=None, height=None)
     tk_call('::blt::winop', 'image', 'snap', win, photo, width, height)
   end
-  def image_subsample(src, dest, x, y, width, height, 
+  def image_subsample(src, dest, x, y, width, height,
                       horiz_filter=None, vert_filter=None)
-    tk_call('::blt::winop', 'image', 'subsample', 
+    tk_call('::blt::winop', 'image', 'subsample',
             src, dest, x, y, width, height, horiz_filter, vert_filter)
   end
 
@@ -66,13 +66,13 @@ class << Tk::BLT::Winop
   end
 
   def resample(src, dest, horiz_filter=None, vert_filter=None)
-    tk_call('::blt::winop', 'resample', 
+    tk_call('::blt::winop', 'resample',
             src, dest, horiz_filter, vert_filter)
   end
 
-  def subsample(src, dest, x, y, width, height, 
+  def subsample(src, dest, x, y, width, height,
                 horiz_filter=None, vert_filter=None)
-    tk_call('::blt::winop', 'subsample', 
+    tk_call('::blt::winop', 'subsample',
             src, dest, x, y, width, height, horiz_filter, vert_filter)
   end
 

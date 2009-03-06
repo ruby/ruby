@@ -6,7 +6,7 @@
 #
 # --
 #
-#   
+#
 #
 
 module IRB
@@ -20,7 +20,7 @@ module IRB
     IRB.load_modules
 
     unless @CONF[:PROMPT][@CONF[:PROMPT_MODE]]
-      IRB.fail(UndefinedPromptMode, @CONF[:PROMPT_MODE]) 
+      IRB.fail(UndefinedPromptMode, @CONF[:PROMPT_MODE])
     end
   end
 
@@ -112,7 +112,7 @@ module IRB
 
 #    @CONF[:LC_MESSAGES] = "en"
     @CONF[:LC_MESSAGES] = Locale.new
-    
+
     @CONF[:DEBUG_LEVEL] = 1
   end
 
@@ -246,7 +246,7 @@ module IRB
       yield proc{|rc| rc == "rc" ? irbrc : irbrc+rc}
     end
     if home = ENV["HOME"]
-      yield proc{|rc| home+"/.irb#{rc}"} 
+      yield proc{|rc| home+"/.irb#{rc}"}
     end
     home = Dir.pwd
     yield proc{|rc| home+"/.irb#{rc}"}

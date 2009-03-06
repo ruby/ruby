@@ -4,9 +4,9 @@ require "rss/maker/0.9"
 
 module RSS
   module Maker
-    
+
     class RSS20 < RSS09
-      
+
       def initialize(feed_version="2.0")
         super
       end
@@ -17,17 +17,17 @@ module RSS
         def required_variable_names
           %w(link)
         end
-        
+
         class SkipDays < RSS09::Channel::SkipDays
           class Day < RSS09::Channel::SkipDays::Day
           end
         end
-        
+
         class SkipHours < RSS09::Channel::SkipHours
           class Hour < RSS09::Channel::SkipHours::Hour
           end
         end
-        
+
         class Cloud < RSS09::Channel::Cloud
           def to_feed(rss, channel)
             cloud = Rss::Channel::Cloud.new
@@ -51,7 +51,7 @@ module RSS
               category.to_feed(rss, channel)
             end
           end
-          
+
           class Category < RSS09::Channel::Categories::Category
             def to_feed(rss, channel)
               category = Rss::Channel::Category.new
@@ -81,14 +81,14 @@ module RSS
           end
         end
       end
-      
+
       class Image < RSS09::Image
         private
         def required_element?
           false
         end
       end
-      
+
       class Items < RSS09::Items
         class Item < RSS09::Items::Item
           private
@@ -179,7 +179,7 @@ module RSS
                 category.to_feed(rss, item)
               end
             end
-          
+
             class Category < RSS09::Items::Item::Categories::Category
               def to_feed(rss, item)
                 category = Rss::Channel::Item::Category.new
@@ -212,11 +212,11 @@ module RSS
           end
         end
       end
-      
+
       class Textinput < RSS09::Textinput
       end
     end
-    
+
     add_maker("2.0", "2.0", RSS20)
     add_maker("rss2.0", "2.0", RSS20)
   end

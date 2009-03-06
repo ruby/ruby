@@ -60,7 +60,7 @@ class RDoc::RI::NameDescriptor
       end
 
       if @method_name =~ /::|\.|#/ or !tokens.empty?
-        raise RDoc::RI::Error.new("Bad argument: #{arg}") 
+        raise RDoc::RI::Error.new("Bad argument: #{arg}")
       end
       if separator && separator != '.'
         @is_class_method = separator == "::"

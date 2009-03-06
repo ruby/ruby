@@ -20,7 +20,7 @@ class Tk::Iwidgets::Finddialog
 
   def __strval_optkeys
     super() + [
-      'patternbackground', 'patternforeground', 
+      'patternbackground', 'patternforeground',
       'searchbackground', 'searchforeground'
     ]
   end

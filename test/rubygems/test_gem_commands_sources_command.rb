@@ -244,7 +244,7 @@ Will cause RubyGems to revert to legacy indexes, degrading performance.
     assert_equal "source cache successfully updated\n", @ui.output
     assert_equal '', @ui.error
   end
- 
+
   def test_execute_update_legacy
     @cmd.handle_options %w[--update]
 
@@ -269,6 +269,6 @@ source cache successfully updated
     assert_equal expected, @ui.output
     assert_equal '', @ui.error
   end
- 
+
 end
 

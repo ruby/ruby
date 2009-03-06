@@ -14,7 +14,7 @@ class TestGemDependencyInstaller < RubyGemTestCase
       fp.puts "#!/usr/bin/ruby"
     end
     @a1, @a1_gem = util_gem 'a', '1' do |s| s.executables << 'a_bin' end
-    @aa1, @aa1_gem = util_gem 'aa', '1' 
+    @aa1, @aa1_gem = util_gem 'aa', '1'
 
     @b1, @b1_gem = util_gem 'b', '1' do |s|
       s.add_dependency 'a'

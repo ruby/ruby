@@ -9,7 +9,7 @@ module DRb
 	end
         block_value = @block.call(*x)
       end
-      
+
       def perform_with_block
         @obj.__send__(@msg_id, *@argv) do |*x|
           jump_error = nil

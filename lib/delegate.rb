@@ -37,16 +37,16 @@
 #     def initialize
 #       @source = SimpleDelegator.new([])
 #     end
-#     
+#
 #     def stats( records )
 #       @source.__setobj__(records)
-#       	
+#
 #       "Elements:  #{@source.size}\n" +
 #       " Non-Nil:  #{@source.compact.size}\n" +
 #       "  Unique:  #{@source.uniq.size}\n"
 #     end
 #   end
-#   
+#
 #   s = Stats.new
 #   puts s.stats(%w{James Edward Gray II})
 #   puts
@@ -57,7 +57,7 @@
 #   Elements:  4
 #    Non-Nil:  4
 #     Unique:  4
-# 
+#
 #   Elements:  8
 #    Non-Nil:  7
 #     Unique:  6
@@ -72,19 +72,19 @@
 #
 #   class Tempfile < DelegateClass(File)
 #     # constant and class member data initialization...
-#   
+#
 #     def initialize(basename, tmpdir=Dir::tmpdir)
 #       # build up file path/name in var tmpname...
-#     
+#
 #       @tmpfile = File.open(tmpname, File::RDWR|File::CREAT|File::EXCL, 0600)
-#     
+#
 #       # ...
-#     
+#
 #       super(@tmpfile)
-#     
+#
 #       # below this point, all methods of File are supported...
 #     end
-#   
+#
 #     # ...
 #   end
 #
@@ -97,15 +97,15 @@
 #        super             # pass obj to Delegator constructor, required
 #        @delegate_sd_obj = obj    # store obj for future use
 #      end
-# 
+#
 #      def __getobj__
 #        @delegate_sd_obj          # return object we are delegating to, required
 #      end
-# 
+#
 #      def __setobj__(obj)
 #        @delegate_sd_obj = obj    # change delegation object, a feature we're providing
 #      end
-# 
+#
 #      # ...
 #    end
 
@@ -142,18 +142,18 @@ class Delegator
     end
   end
 
-  # 
-  # Checks for a method provided by this the delegate object by fowarding the 
+  #
+  # Checks for a method provided by this the delegate object by fowarding the
   # call through \_\_getobj\_\_.
-  # 
+  #
   def respond_to?(m, include_private = false)
     return true if super
     return self.__getobj__.respond_to?(m, include_private)
   end
 
-  # 
+  #
   # Returns true if two objects are considered same.
-  # 
+  #
   def ==(obj)
     return true if obj.equal?(self)
     self.__getobj__ == obj

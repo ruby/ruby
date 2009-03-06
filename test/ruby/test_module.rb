@@ -100,7 +100,7 @@ class TestModule < Test::Unit::TestCase
     def AClass.cm3
       "cm3"
     end
-    
+
     private_class_method :cm1, "cm3"
 
     def aClass

@@ -26,7 +26,7 @@ module OpenSSL
       end
 
       def create_ext_from_array(ary)
-        raise ExtensionError, "unexpected array form" if ary.size > 3 
+        raise ExtensionError, "unexpected array form" if ary.size > 3
         create_ext(ary[0], ary[1], ary[2])
       end
 
@@ -36,12 +36,12 @@ module OpenSSL
         value.strip!
         create_ext(oid, value)
       end
-      
+
       def create_ext_from_hash(hash)
         create_ext(hash["oid"], hash["value"], hash["critical"])
       end
     end
-    
+
     class Extension
       def to_s # "oid = critical, value"
         str = self.oid
@@ -49,7 +49,7 @@ module OpenSSL
         str << "critical, " if self.critical?
         str << self.value.gsub(/\n/, ", ")
       end
-        
+
       def to_h # {"oid"=>sn|ln, "value"=>value, "critical"=>true|false}
         {"oid"=>self.oid,"value"=>self.value,"critical"=>self.critical?}
       end

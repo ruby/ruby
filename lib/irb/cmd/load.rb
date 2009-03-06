@@ -1,12 +1,12 @@
 #
-#   load.rb - 
+#   load.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 
 require "irb/cmd/nop.rb"
@@ -25,7 +25,7 @@ module IRB
 
     class Require<Nop
       include IrbLoader
-      
+
       def execute(file_name)
 #	return ruby_require(file_name) unless IRB.conf[:USE_LOADER]
 
@@ -44,7 +44,7 @@ module IRB
 	when /\.(so|o|sl)$/
 	  return ruby_require(file_name)
 	end
-	
+
 	begin
 	  irb_load(f = file_name + ".rb")
 	  $".push f

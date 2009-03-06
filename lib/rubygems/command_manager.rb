@@ -15,12 +15,12 @@ module Gem
   # sub-commands supported by the gem command.
   class CommandManager
     include UserInteraction
-    
+
     # Return the authoritative instance of the command manager.
     def self.instance
       @command_manager ||= CommandManager.new
     end
-    
+
     # Register all the subcommands supported by the gem command.
     def initialize
       @commands = {}
@@ -52,24 +52,24 @@ module Gem
       register_command :update
       register_command :which
     end
-    
+
     # Register the command object.
     def register_command(command_obj)
       @commands[command_obj] = false
     end
-    
+
     # Return the registered command from the command name.
     def [](command_name)
       command_name = command_name.intern
       return nil if @commands[command_name].nil?
       @commands[command_name] ||= load_and_instantiate(command_name)
     end
-    
+
     # Return a list of all command names (as strings).
     def command_names
       @commands.keys.collect {|key| key.to_s}.sort
     end
-    
+
     # Run the config specified by +args+.
     def run(args)
       process_args(args)
@@ -88,7 +88,7 @@ module Gem
       if args.size == 0
         say Gem::Command::HELP
         terminate_interaction(1)
-      end 
+      end
       case args[0]
       when '-h', '--help'
         say Gem::Command::HELP
@@ -122,7 +122,7 @@ module Gem
       len = cmd_name.length
       self.command_names.select { |n| cmd_name == n[0,len] }
     end
-    
+
     private
 
     def load_and_instantiate(command_name)
@@ -143,4 +143,4 @@ module Gem
       end
     end
   end
-end 
+end

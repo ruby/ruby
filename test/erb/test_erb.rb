@@ -73,7 +73,7 @@ class TestERBCore < Test::Unit::TestCase
 * <%= n %>
 <% end %>
 EOS
-      
+
     ans = <<EOS
 %% hi
 = hello
@@ -118,7 +118,7 @@ EOS
 % n=0
 * 2
 EOS
-      
+
     erb = @erb.new(src, safe, 2)
     assert_equal(ans, erb.result)
     erb = @erb.new(src, safe, '<>')
@@ -212,7 +212,7 @@ end%>
 %%%
 EOS
     ans = <<EOS
-% 
+%
 % %%><%0
 % %%><%1
 %%
@@ -234,7 +234,7 @@ EOS
     klass.module_eval do
       def_erb_method('hello_world', erb)
     end
-    assert(klass.new.respond_to?('hello_world'))    
+    assert(klass.new.respond_to?('hello_world'))
   end
 
   def test_def_method_without_filename
@@ -300,7 +300,7 @@ EOS
 
   def test_keep_lineno
     src = <<EOS
-Hello, 
+Hello,
 % x = "World"
 <%= x%>
 % raise("lineno")
@@ -316,21 +316,21 @@ EOS
 
     src = <<EOS
 %>
-Hello, 
+Hello,
 <% x = "World%%>
 "%>
 <%= x%>
 EOS
 
     ans = <<EOS
-%>Hello, 
+%>Hello,
 World%>
 EOS
     assert_equal(ans, ERB.new(src, nil, '>').result)
 
     ans = <<EOS
 %>
-Hello, 
+Hello,
 
 World%>
 EOS
@@ -338,7 +338,7 @@ EOS
 
     ans = <<EOS
 %>
-Hello, 
+Hello,
 
 World%>
 
@@ -346,7 +346,7 @@ EOS
     assert_equal(ans, ERB.new(src).result)
 
     src = <<EOS
-Hello, 
+Hello,
 <% x = "World%%>
 "%>
 <%= x%>
@@ -381,7 +381,7 @@ EOS
 % y = 'Hello'
 <%- x = "World%%>
 "-%>
-<%= x %><%- x = nil -%> 
+<%= x %><%- x = nil -%>
 <% raise("lineno") %>
 EOS
 
@@ -417,19 +417,19 @@ NotSkip <%- y = x -%> NotSkip
    <%- up = w.upcase -%>
    * <%= up %>
  <%- end -%>
-KeepNewLine <%- z = nil -%> 
+KeepNewLine <%- z = nil -%>
 EOS
 
    ans = <<EOS
 NotSkip  NotSkip
   * HELLO
   * WORLD
- NotSkip 
+ NotSkip
    * hello
    * HELLO
    * world
    * WORLD
-KeepNewLine  
+KeepNewLine
 EOS
    assert_equal(ans, ERB.new(src, nil, '-').result)
    assert_equal(ans, ERB.new(src, nil, '-%').result)

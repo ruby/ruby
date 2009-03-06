@@ -206,7 +206,7 @@ Init_callback(void)
     VALUE tmp;
     VALUE rb_mDL = rb_path2class("DL");
 
-    rb_dl_cb_call = rb_intern("call");		       
+    rb_dl_cb_call = rb_intern("call");
 
     tmp = rb_DLCdeclCallbackProcs = rb_ary_new();
     rb_define_const(rb_mDL, "CdeclCallbackProcs", tmp);

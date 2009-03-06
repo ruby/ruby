@@ -19,7 +19,7 @@ module WEBrick
     class Error       < Status; end
     class ClientError < Error; end
     class ServerError < Error; end
-    
+
     class EOFError < StandardError; end
 
     StatusMessage = {
@@ -84,7 +84,7 @@ module WEBrick
         class #{err_name} < #{parent}
           def self.code() RC_#{var_name} end
           def self.reason_phrase() StatusMessage[code] end
-          def code() self::class::code end 
+          def code() self::class::code end
           def reason_phrase() self::class::reason_phrase end
           alias to_i code
         end

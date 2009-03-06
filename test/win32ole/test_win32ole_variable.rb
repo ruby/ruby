@@ -6,7 +6,7 @@ require "test/unit"
 
 if defined?(WIN32OLE_VARIABLE)
   class TestWIN32OLE_VARIABLE < Test::Unit::TestCase
-    
+
     def setup
       ole_type = WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "ShellSpecialFolderConstants")
       @var1 = ole_type.variables.find {|v| v.name == 'ssfDESKTOP'}

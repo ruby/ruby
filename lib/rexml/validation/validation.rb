@@ -14,7 +14,7 @@ module REXML
       def dump
         puts @root.inspect
       end
-      def validate( event ) 
+      def validate( event )
         #puts "Current: #@current"
         #puts "Event: #{event.inspect}"
         @attr_stack = [] unless defined? @attr_stack
@@ -33,12 +33,12 @@ module REXML
             sattr = [:start_attribute, nil]
             eattr = [:end_attribute]
             text = [:text, nil]
-            k,v = event[2].find { |key,value| 
+            k,v = event[2].find { |key,value|
               sattr[1] = key
               #puts "Looking for #{sattr.inspect}"
               m = @current.next( sattr )
               #puts "Got #{m.inspect}"
-              if m 
+              if m
                 # If the state has text children...
                 #puts "Looking for #{eattr.inspect}"
                 #puts "Expect #{m.expected}"

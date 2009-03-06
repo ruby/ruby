@@ -9,7 +9,7 @@
 
 # toplevel widget
 if defined?($clrpick_demo) && $clrpick_demo
-  $clrpick_demo.destroy 
+  $clrpick_demo.destroy
   $clrpick_demo = nil
 end
 
@@ -47,10 +47,10 @@ Tk::Frame.new($clrpick_demo) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# button 
+# button
 # TkButton.new($clrpick_demo, 'text'=>'Set background color ...') {|b|
 Tk::Button.new($clrpick_demo, 'text'=>'Set background color ...') {|b|
-  command(proc{setColor $clrpick_demo, b, 'background', 
+  command(proc{setColor $clrpick_demo, b, 'background',
               ['background', 'highlightbackground']})
   pack('side'=>'top', 'anchor'=>'c', 'pady'=>'2m')
 }
@@ -64,7 +64,7 @@ Tk::Button.new($clrpick_demo, 'text'=>'Set foreground color ...') {|b|
 def setColor(w,button,name,options)
   w.grab
   initialColor = button[name]
-  color = Tk.chooseColor('title'=>"Choose a #{name} color", 'parent'=>w, 
+  color = Tk.chooseColor('title'=>"Choose a #{name} color", 'parent'=>w,
                          'initialcolor'=>initialColor)
   if color != ""
     setColor_helper(w,options,color)

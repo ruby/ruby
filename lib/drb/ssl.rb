@@ -15,7 +15,7 @@ module DRb
 	:SSLClientCA          => nil,
 	:SSLCACertificatePath => nil,
 	:SSLCACertificateFile => nil,
-	:SSLVerifyMode        => ::OpenSSL::SSL::VERIFY_NONE, 
+	:SSLVerifyMode        => ::OpenSSL::SSL::VERIFY_NONE,
 	:SSLVerifyDepth       => nil,
 	:SSLVerifyCallback    => nil,   # custom verification
         :SSLCertificateStore  => nil,
@@ -31,7 +31,7 @@ module DRb
         @ssl_ctx = nil
       end
 
-      def [](key); 
+      def [](key);
 	@config[key] || DEFAULT[key]
       end
 
@@ -41,14 +41,14 @@ module DRb
 	ssl.connect
 	ssl
       end
-      
+
       def accept(tcp)
 	ssl = OpenSSL::SSL::SSLSocket.new(tcp, @ssl_ctx)
 	ssl.sync = true
 	ssl.accept
 	ssl
       end
-      
+
       def setup_certificate
         if @cert && @pkey
           return
@@ -77,7 +77,7 @@ module DRb
 	cert.not_before = Time.now
 	cert.not_after = Time.now + (365*24*60*60)
 	cert.public_key = rsa.public_key
-	
+
 	ef = OpenSSL::X509::ExtensionFactory.new(nil,cert)
 	cert.extensions = [
 	  ef.create_extension("basicConstraints","CA:FALSE"),
@@ -89,7 +89,7 @@ module DRb
 	  cert.add_extension(ef.create_extension("nsComment", comment))
 	end
 	cert.sign(rsa, OpenSSL::Digest::SHA1.new)
-	
+
 	@cert = cert
         @pkey = rsa
       end
@@ -143,7 +143,7 @@ module DRb
       end
       port = soc.addr[1] if port == 0
       @uri = "drbssl://#{host}:#{port}"
-      
+
       ssl_conf = SSLConfig.new(config)
       ssl_conf.setup_certificate
       ssl_conf.setup_ssl_context
@@ -159,7 +159,7 @@ module DRb
       @ssl = is_established ? soc : nil
       super(uri, soc.to_io, config)
     end
-    
+
     def stream; @ssl; end
 
     def close
@@ -169,12 +169,12 @@ module DRb
       end
       super
     end
-      
+
     def accept
       begin
       while true
 	soc = @socket.accept
-	break if (@acl ? @acl.allow_socket?(soc) : true) 
+	break if (@acl ? @acl.allow_socket?(soc) : true)
 	soc.close
       end
       ssl = @config.accept(soc)
@@ -185,6 +185,6 @@ module DRb
       end
     end
   end
-  
+
   DRbProtocol.add_protocol(DRbSSLSocket)
 end

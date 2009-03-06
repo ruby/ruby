@@ -1,12 +1,12 @@
 #
-#   irb/ws-for-case-2.rb - 
+#   irb/ws-for-case-2.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 
 while true

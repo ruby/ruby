@@ -12,14 +12,14 @@ module TkXIM
   def TkXIM.useinputmethods(value = None, win = nil)
     if value == None
       if win
-        bool(tk_call_without_enc('tk', 'useinputmethods', 
+        bool(tk_call_without_enc('tk', 'useinputmethods',
                                  '-displayof', win))
       else
         bool(tk_call_without_enc('tk', 'useinputmethods'))
       end
     else
       if win
-        bool(tk_call_without_enc('tk', 'useinputmethods', 
+        bool(tk_call_without_enc('tk', 'useinputmethods',
                                  '-displayof', win, value))
       else
         bool(tk_call_without_enc('tk', 'useinputmethods', value))

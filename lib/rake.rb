@@ -115,7 +115,7 @@ class String
       File.join(partial_dirs)
     end
     protected :pathmap_partial
-      
+
     # Preform the pathmap replacement operations on the given path. The
     # patterns take the form 'pat1,rep1;pat2,rep2...'.
     def pathmap_replace(patterns, &block)
@@ -362,9 +362,9 @@ module Rake
     def inspect
       to_s
     end
-    
+
     protected
-    
+
     def lookup(name)
       if @hash.has_key?(name)
         @hash[name]
@@ -1734,7 +1734,7 @@ module Rake
       [task_name, arg_names, []]
     end
     private :resolve_args_without_dependencies
-    
+
     # Resolve task arguments for a task or rule when there are
     # dependencies declared.
     #
@@ -1765,7 +1765,7 @@ module Rake
       [task_name, arg_names, deps]
     end
     private :resolve_args_with_dependencies
-    
+
     # If a rule can be found that matches the task name, enhance the
     # task with the prerequisites and actions from the rule.  Set the
     # source attribute of the task appropriately for the rule.  Return
@@ -2108,7 +2108,7 @@ module Rake
       80
     end
 
-    # Calculate the dynamic width of the 
+    # Calculate the dynamic width of the
     def dynamic_width
       @dynamic_width ||= (dynamic_width_stty.nonzero? || dynamic_width_tput)
     end
@@ -2124,7 +2124,7 @@ module Rake
     def unix?
       RUBY_PLATFORM =~ /(aix|darwin|linux|(net|free|open)bsd|cygwin|solaris|irix|hpux)/i
     end
-    
+
     def windows?
       Win32.windows?
     end
@@ -2184,7 +2184,7 @@ module Rake
         ],
         ['--execute-continue',  '-E CODE',
           "Execute some Ruby code, then continue with normal task processing.",
-          lambda { |value| eval(value) }            
+          lambda { |value| eval(value) }
         ],
         ['--libdir', '-I LIBDIR', "Include LIBDIR in the search path for required modules.",
           lambda { |value| $:.push(value) }
@@ -2196,9 +2196,9 @@ module Rake
           lambda { |value| verbose(false) }
         ],
         ['--rakefile', '-f [FILE]', "Use FILE as the rakefile.",
-          lambda { |value| 
+          lambda { |value|
             value ||= ''
-            @rakefiles.clear 
+            @rakefiles.clear
             @rakefiles << value
           }
         ],
@@ -2272,12 +2272,12 @@ module Rake
       opts.banner = "rake [-f rakefile] {options} targets..."
       opts.separator ""
       opts.separator "Options are ..."
-      
+
       opts.on_tail("-h", "--help", "-H", "Display this help message.") do
         puts opts
         exit
       end
-      
+
       standard_rake_options.each { |args| opts.on(*args) }
       parsed_argv = opts.parse(ARGV)
 
@@ -2365,7 +2365,7 @@ module Rake
           end
         end
     end
-    
+
     # The standard directory containing system wide rake files.
     if Win32.windows?
       def standard_system_dir #:nodoc:

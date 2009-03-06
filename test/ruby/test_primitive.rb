@@ -1,7 +1,7 @@
 require 'test/unit'
 
 class TestRubyPrimitive < Test::Unit::TestCase
-  
+
   def test_not
     assert_equal false, !true
     assert_equal true, !false
@@ -143,7 +143,7 @@ class TestRubyPrimitive < Test::Unit::TestCase
     assert_equal 7, ($test_ruby_primitive_gvar = 7)
     assert_equal 7, ($test_ruby_primitive_gvar = 7)
   end
-  
+
   class A7
     @@c = 1
     def m
@@ -184,7 +184,7 @@ class TestRubyPrimitive < Test::Unit::TestCase
     assert_equal 3, A9.m
     assert_equal 4, A9.m
   end
-  
+
   class A10
     attr_accessor :a
   end
@@ -257,7 +257,7 @@ class TestRubyPrimitive < Test::Unit::TestCase
     h[0] &&= 1
     assert_equal 1, h[0]
   end
-  
+
   def test_backref
     /a(b)(c)d/ =~ 'xyzabcdefgabcdefg'
     assert_equal 'b', $1

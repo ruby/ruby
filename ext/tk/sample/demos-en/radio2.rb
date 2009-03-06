@@ -8,7 +8,7 @@
 
 # toplevel widget
 if defined?($radio2_demo) && $radio2_demo
-  $radio2_demo.destroy 
+  $radio2_demo.destroy
   $radio2_demo = nil
 end
 
@@ -21,7 +21,7 @@ $radio2_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($radio2_demo).pack(:fill=>:both, :expand=>true)
 
-# label 
+# label
 msg = TkLabel.new(base_frame) {
   font $font
   wraplength '5i'
@@ -30,12 +30,12 @@ msg = TkLabel.new(base_frame) {
 }
 msg.pack('side'=>'top')
 
-# 
+#
 size = TkVariable.new
 color = TkVariable.new
 align = TkVariable.new
 
-# frame 
+# frame
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
@@ -55,24 +55,24 @@ TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'See Variables'
     command proc{
-      showVars(base_frame, 
+      showVars(base_frame,
                ['size', size], ['color', color], ['compound', align])
     }
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# frame 
-f_left  = TkLabelFrame.new(base_frame, 'text'=>'Point Size', 
+# frame
+f_left  = TkLabelFrame.new(base_frame, 'text'=>'Point Size',
                            'pady'=>2, 'padx'=>2)
-f_mid   = TkLabelFrame.new(base_frame, 'text'=>'Color', 
+f_mid   = TkLabelFrame.new(base_frame, 'text'=>'Color',
                            'pady'=>2, 'padx'=>2)
-f_right = TkLabelFrame.new(base_frame, 'text'=>'Alignment', 
+f_right = TkLabelFrame.new(base_frame, 'text'=>'Alignment',
                            'pady'=>2, 'padx'=>2)
 f_left.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 f_mid.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 f_right.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 
-# radiobutton 
+# radiobutton
 [10, 12, 18, 24].each {|sz|
   TkRadioButton.new(f_left) {
     text "Point Size #{sz}"
@@ -92,15 +92,15 @@ f_right.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
   }.pack('side'=>'top', 'pady'=>2, 'fill'=>'x')
 }
 
-# label = TkLabel.new(f_right, 'text'=>'Label', 'bitmap'=>'questhead', 
-label = Tk::Label.new(f_right, 'text'=>'Label', 'bitmap'=>'questhead', 
+# label = TkLabel.new(f_right, 'text'=>'Label', 'bitmap'=>'questhead',
+label = Tk::Label.new(f_right, 'text'=>'Label', 'bitmap'=>'questhead',
                     'compound'=>'left')
 label.configure('width'=>TkWinfo.reqwidth(label), 'compound'=>'top')
 label.height(TkWinfo.reqheight(label))
 abtn = ['Top', 'Left', 'Right', 'Bottom'].collect{|a|
   lower = a.downcase
-  TkRadioButton.new(f_right, 'text'=>a, 'variable'=>align, 'relief'=>'flat', 
-                    'value'=>lower, 'indicatoron'=>0, 'width'=>7, 
+  TkRadioButton.new(f_right, 'text'=>a, 'variable'=>align, 'relief'=>'flat',
+                    'value'=>lower, 'indicatoron'=>0, 'width'=>7,
                     'command'=>proc{label.compound(align.value)})
 }
 

@@ -34,7 +34,7 @@ class TimerHolderTest < RUNIT::TestCase
     assert(!holder.include?(key))
     holder.delete(key)
   end
-  
+
   def test_00
     do_test(0.5)
   end

@@ -8,7 +8,7 @@
 
 # toplevel widget
 if defined?($check_demo) && $check_demo
-  $check_demo.destroy 
+  $check_demo.destroy
   $check_demo = nil
 end
 
@@ -21,7 +21,7 @@ $check_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($check_demo).pack(:fill=>:both, :expand=>true)
 
-# label 
+# label
 msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
@@ -30,12 +30,12 @@ msg = TkLabel.new(base_frame) {
 }
 msg.pack('side'=>'top')
 
-# 
+#
 wipers = TkVariable.new(0)
 brakes = TkVariable.new(0)
 sober  = TkVariable.new(0)
 
-# frame 
+# frame
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
@@ -56,7 +56,7 @@ TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'See Variables'
     command proc{
-      showVars(base_frame, 
+      showVars(base_frame,
                ['wipers', wipers], ['brakes', brakes], ['sober', sober])
     }
   }.pack('side'=>'left', 'expand'=>'yes')

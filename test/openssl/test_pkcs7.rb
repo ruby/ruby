@@ -35,7 +35,7 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
                            @ca_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
   end
 
-  def issue_cert(*args)             
+  def issue_cert(*args)
     OpenSSL::TestUtils.issue_cert(*args)
   end
 
@@ -77,7 +77,7 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
     assert_equal(@ee1_cert.serial, signers[0].serial)
     assert_equal(@ee1_cert.issuer.to_s, signers[0].issuer.to_s)
 
-    # A signed-data which have multiple signatures can be created 
+    # A signed-data which have multiple signatures can be created
     # through the following steps.
     #   1. create two signed-data
     #   2. copy signerInfo and certificate from one to another
@@ -85,7 +85,7 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
     tmp1 = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, [], flag)
     tmp2 = OpenSSL::PKCS7.sign(@ee2_cert, @rsa1024, data, [], flag)
     tmp1.add_signer(tmp2.signers[0])
-    tmp1.add_certificate(@ee2_cert)  
+    tmp1.add_certificate(@ee2_cert)
 
     p7 = OpenSSL::PKCS7.new(tmp1.to_der)
     certs = p7.certificates

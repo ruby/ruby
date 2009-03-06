@@ -9,7 +9,7 @@ require "test/unit"
 
 if defined?(WIN32OLE)
   class TestWIN32OLE_FOR_PROPERTYPUTREF < Test::Unit::TestCase
-    
+
     def setup
       @obj = WIN32OLE.new('Scripting.Dictionary')
     end

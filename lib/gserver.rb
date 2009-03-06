@@ -13,7 +13,7 @@ require "thread"
 
 #
 # GServer implements a generic server, featuring thread pool management,
-# simple logging, and multi-server management.  See HttpServer in 
+# simple logging, and multi-server management.  See HttpServer in
 # <tt>xmlrpc/httpserver.rb</tt> in the Ruby standard library for an example of
 # GServer in action.
 #
@@ -34,7 +34,7 @@ require "thread"
 #
 #   #
 #   # A server that returns the time in seconds since 1970.
-#   # 
+#   #
 #   class TimeServer < GServer
 #     def initialize(port=10001, *args)
 #       super(port, *args)
@@ -47,17 +47,17 @@ require "thread"
 #   # Run the server with logging enabled (it's a separate thread).
 #   server = TimeServer.new
 #   server.audit = true                  # Turn logging on.
-#   server.start 
+#   server.start
 #
 #   # *** Now point your browser to http://localhost:10001 to see it working ***
 #
-#   # See if it's still running. 
+#   # See if it's still running.
 #   GServer.in_service?(10001)           # -> true
 #   server.stopped?                      # -> false
 #
 #   # Shut the server down gracefully.
 #   server.shutdown
-#   
+#
 #   # Alternatively, stop it immediately.
 #   GServer.stop(10001)
 #   # or, of course, "server.stop".

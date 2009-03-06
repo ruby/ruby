@@ -73,14 +73,14 @@ module Rinda
     end
 
     ##
-    # Reset the expiry time according to +sec_or_renewer+.  
+    # Reset the expiry time according to +sec_or_renewer+.
     #
     # +nil+::    it is set to expire in the far future.
     # +false+::  it has expired.
     # Numeric::  it will expire in that many seconds.
     #
     # Otherwise the argument refers to some kind of renewer object
-    # which will reset its expiry time. 
+    # which will reset its expiry time.
 
     def renew(sec_or_renewer)
       sec, @renewer = get_renewer(sec_or_renewer)
@@ -168,7 +168,7 @@ module Rinda
     def match(tuple)
       @tuple.match(tuple)
     end
-    
+
     alias === match
 
     def make_tuple(ary) # :nodoc:
@@ -224,11 +224,11 @@ module Rinda
   #
   #   ts = Rinda::TupleSpace.new
   #   observer = ts.notify 'write', [nil]
-  #   
+  #
   #   Thread.start do
   #     observer.each { |t| p t }
   #   end
-  #   
+  #
   #   3.times { |i| ts.write [i] }
   #
   # Outputs:
@@ -276,7 +276,7 @@ module Rinda
         it = pop
         yield(it)
       end
-    rescue 
+    rescue
     ensure
       cancel
     end
@@ -295,16 +295,16 @@ module Rinda
       def initialize
         @bin = []
       end
-      
+
       def add(tuple)
         @bin.push(tuple)
       end
-      
+
       def delete(tuple)
         idx = @bin.rindex(tuple)
         @bin.delete_at(idx) if idx
       end
-      
+
       def find(&blk)
         @bin.reverse_each do |x|
           return x if yield(x)

@@ -32,7 +32,7 @@ class TestRDocMarkupToHtmlCrossref < MiniTest::Unit::TestCase
     # predicable.
     RDoc::Generator::Method.reset
     top_level = RDoc::TopLevel.new @source_file_name
-    
+
     options = RDoc::Options.new
     options.quiet = true
 
@@ -107,7 +107,7 @@ class TestRDocMarkupToHtmlCrossref < MiniTest::Unit::TestCase
   #
   def verify_class_crossref(xref, reference, class_name)
     class_file_name = class_name.gsub(/::/, "/")
-    
+
     result = "<a href=\"../classes/#{class_file_name}.html\">#{reference}</a>"
 
     verify_convert xref, reference, result
@@ -120,7 +120,7 @@ class TestRDocMarkupToHtmlCrossref < MiniTest::Unit::TestCase
   #
   def verify_method_crossref(xref, reference, class_name, method_seq)
     class_file_name = class_name.gsub(/::/, "/")
-    
+
     result = "<a href=\"../classes/#{class_file_name}.html##{method_seq}\">#{reference}</a>"
 
     verify_convert xref, reference, result
@@ -145,7 +145,7 @@ class TestRDocMarkupToHtmlCrossref < MiniTest::Unit::TestCase
     # bogus does not exist and so no cross-reference should be generated.
     verify_no_crossref xref, "bogus"
     verify_no_crossref xref, "\\bogus"
-    
+
     # Ref_Class1 is in the top-level namespace, and so a cross-reference always
     # should be generated, unless markup is suppressed.
     verify_class_crossref xref, "Ref_Class1", "Ref_Class1"

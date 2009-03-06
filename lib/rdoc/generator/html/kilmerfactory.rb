@@ -61,8 +61,8 @@ class RDoc::Generator::HTML::KilmerFactory
   # If not supplied, this defaults to "Attributes".
   #
   attr_reader :attribute_list_heading
-  
-  # 
+
+  #
   # ====Description:
   # This method constructs a KilmerFactory instance, which
   # can be used to build Kilmer-style template classes.
@@ -72,7 +72,7 @@ class RDoc::Generator::HTML::KilmerFactory
   # ====Parameters:
   # [style_attributes]
   #      A Hash describing the appearance of the Kilmer-style.
-  # 
+  #
   def initialize(style_attributes)
     @central_css = style_attributes[:central_css]
     if(!@central_css)
@@ -103,7 +103,7 @@ class RDoc::Generator::HTML::KilmerFactory
   def get_STYLE
     return @central_css
   end
-  
+
   def get_METHOD_LIST
     return %{
 <% if values["diagram"] then %>

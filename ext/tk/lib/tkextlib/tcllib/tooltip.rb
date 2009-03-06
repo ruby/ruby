@@ -3,7 +3,7 @@
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 #   * Part of tcllib extension
-#   * Provides tooltips, a small text message that is displayed when the 
+#   * Provides tooltips, a small text message that is displayed when the
 #     mouse hovers over a widget.
 #
 

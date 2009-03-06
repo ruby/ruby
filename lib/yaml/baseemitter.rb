@@ -42,7 +42,7 @@ module YAML
             '|'
           else
             '>'
-          end 
+          end
         indt = $&.to_i if block =~ /\d+/
         if valx =~ /(\A\n*[ \t#]|^---\s+)/
           indt = options(:Indent) unless indt.to_i > 0
@@ -64,8 +64,8 @@ module YAML
         valx = fold( YAML::escape( valx, esc_skip ) + "\"" ).chomp
         self << '"' + indent_text( valx, indt, false )
       else
-        if block[0] == ?> 
-          valx = fold( valx ) 
+        if block[0] == ?>
+          valx = fold( valx )
         end
         #p [block, indt]
         self << block + indent_text( valx, indt )
@@ -84,7 +84,7 @@ module YAML
     # Emit double-quoted string
     #
     def double( value )
-      "\"#{YAML.escape( value )}\"" 
+      "\"#{YAML.escape( value )}\""
     end
 
     #
@@ -150,8 +150,8 @@ module YAML
         @seq_map = false
       else
         # FIXME
-        # if @buffer.length == 1 and options(:UseHeader) == false and type.length.zero? 
-        #     @headless = 1 
+        # if @buffer.length == 1 and options(:UseHeader) == false and type.length.zero?
+        #     @headless = 1
         # end
 
         defkey = @options.delete( :DefaultKey )
@@ -174,7 +174,7 @@ module YAML
             self << "\n"
             indent!
           end
-          self << ": " 
+          self << ": "
           v[1].to_yaml( :Emitter => self )
         }
       end
@@ -187,7 +187,7 @@ module YAML
       #     @seq_map = false
       # else
       self << "\n"
-      indent! 
+      indent!
       # end
     end
 
@@ -207,8 +207,8 @@ module YAML
         self << "[]"
       else
         # FIXME
-        # if @buffer.length == 1 and options(:UseHeader) == false and type.length.zero? 
-        #     @headless = 1 
+        # if @buffer.length == 1 and options(:UseHeader) == false and type.length.zero?
+        #     @headless = 1
         # end
 
         #

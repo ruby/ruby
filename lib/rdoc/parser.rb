@@ -22,14 +22,14 @@ require 'rdoc/stats'
 # following incantation
 #
 #   require "rdoc/parser"
-#   
+#
 #   class RDoc::Parser::Xyz < RDoc::Parser
 #     parse_files_matching /\.xyz$/ # <<<<
-#   
+#
 #     def initialize(file_name, body, options)
 #       ...
 #     end
-#   
+#
 #     def scan
 #       ...
 #     end

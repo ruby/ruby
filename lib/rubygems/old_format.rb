@@ -16,7 +16,7 @@ module Gem
   #
   class OldFormat
     attr_accessor :spec, :file_entries, :gem_path
-  
+
     ##
     # Constructs an instance of a Format object, representing the gem's
     # data structure.
@@ -26,9 +26,9 @@ module Gem
     def initialize(gem_path)
       @gem_path = gem_path
     end
-    
+
     ##
-    # Reads the named gem file and returns a Format object, representing 
+    # Reads the named gem file and returns a Format object, representing
     # the data from the gem file
     #
     # file_path:: [String] Path to the gem file
@@ -58,8 +58,8 @@ module Gem
       end
       format
     end
-    
-    private 
+
+    private
     ##
     # Skips the Ruby self-install header.  After calling this method, the
     # IO index will be set after the Ruby code.
@@ -79,7 +79,7 @@ module Gem
        raise Gem::Exception.new("Failed to find end of ruby script while reading gem")
      end
     end
-     
+
     ##
     # Reads the specification YAML from the supplied IO and constructs
     # a Gem::Specification from it.  After calling this method, the
@@ -100,7 +100,7 @@ module Gem
         raise Gem::Exception.new("Failed to parse gem specification out of gem file")
       end
     end
-    
+
     ##
     # Reads lines from the supplied IO until a end-of-yaml (---) is
     # reached

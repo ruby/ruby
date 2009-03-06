@@ -96,7 +96,7 @@ Q1VB8qkJN7rA7/2HrCR3gTsWNb1YhAsnFsoeRscC+LxXoXi9OAIUBG98h4tilg6S
     cert
   end
 
-  def issue_crl(revoke_info, serial, lastup, nextup, extensions, 
+  def issue_crl(revoke_info, serial, lastup, nextup, extensions,
                 issuer, issuer_key, digest)
     crl = OpenSSL::X509::CRL.new
     crl.issuer = issuer.subject

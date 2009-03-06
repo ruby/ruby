@@ -281,7 +281,7 @@ class Tk::Text<TkTextWin
   def create_self(keys)
     #if keys and keys != None
     #  #tk_call_without_enc('text', @path, *hash_kv(keys, true))
-    #  tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+    #  tk_call_without_enc(self.class::TkCommandNames[0], @path,
     #                     *hash_kv(keys, true))
     #else
     #  #tk_call_without_enc('text', @path)
@@ -306,7 +306,7 @@ class Tk::Text<TkTextWin
   end
 
   def index(idx)
-    Tk::Text::IndexString.new(tk_send_without_enc('index', 
+    Tk::Text::IndexString.new(tk_send_without_enc('index',
                                                   _get_eval_enc_str(idx)))
   end
 
@@ -375,7 +375,7 @@ class Tk::Text<TkTextWin
 
   def mark_gravity(mark, direction=nil)
     if direction
-      tk_send_without_enc('mark', 'gravity', 
+      tk_send_without_enc('mark', 'gravity',
                           _get_eval_enc_str(mark), direction)
       self
     else
@@ -384,27 +384,27 @@ class Tk::Text<TkTextWin
   end
 
   def mark_set(mark, index)
-    tk_send_without_enc('mark', 'set', _get_eval_enc_str(mark), 
+    tk_send_without_enc('mark', 'set', _get_eval_enc_str(mark),
                         _get_eval_enc_str(index))
     self
   end
   alias set_mark mark_set
 
   def mark_unset(*marks)
-    tk_send_without_enc('mark', 'unset', 
+    tk_send_without_enc('mark', 'unset',
                         *(marks.collect{|mark| _get_eval_enc_str(mark)}))
     self
   end
   alias unset_mark mark_unset
 
   def mark_next(index)
-    tagid2obj(_fromUTF8(tk_send_without_enc('mark', 'next', 
+    tagid2obj(_fromUTF8(tk_send_without_enc('mark', 'next',
                                             _get_eval_enc_str(index))))
   end
   alias next_mark mark_next
 
   def mark_previous(index)
-    tagid2obj(_fromUTF8(tk_send_without_enc('mark', 'previous', 
+    tagid2obj(_fromUTF8(tk_send_without_enc('mark', 'previous',
                                             _get_eval_enc_str(index))))
   end
   alias previous_mark mark_previous
@@ -412,11 +412,11 @@ class Tk::Text<TkTextWin
   def image_cget_strict(index, slot)
     case slot.to_s
     when 'text', 'label', 'show', 'data', 'file'
-      _fromUTF8(tk_send_without_enc('image', 'cget', 
+      _fromUTF8(tk_send_without_enc('image', 'cget',
                                     _get_eval_enc_str(index), "-#{slot}"))
     else
-      tk_tcl2ruby(_fromUTF8(tk_send_without_enc('image', 'cget', 
-                                                _get_eval_enc_str(index), 
+      tk_tcl2ruby(_fromUTF8(tk_send_without_enc('image', 'cget',
+                                                _get_eval_enc_str(index),
                                                 "-#{slot}")))
     end
   end
@@ -445,13 +445,13 @@ class Tk::Text<TkTextWin
 
   def image_configure(index, slot, value=None)
     if slot.kind_of?(Hash)
-      _fromUTF8(tk_send_without_enc('image', 'configure', 
-                                    _get_eval_enc_str(index), 
+      _fromUTF8(tk_send_without_enc('image', 'configure',
+                                    _get_eval_enc_str(index),
                                     *hash_kv(slot, true)))
     else
-      _fromUTF8(tk_send_without_enc('image', 'configure', 
-                                    _get_eval_enc_str(index), 
-                                    "-#{slot}", 
+      _fromUTF8(tk_send_without_enc('image', 'configure',
+                                    _get_eval_enc_str(index),
+                                    "-#{slot}",
                                     _get_eval_enc_str(value)))
     end
     self
@@ -481,16 +481,16 @@ class Tk::Text<TkTextWin
           else
             if conf[3]
               if conf[3].index('{')
-                conf[3] = tk_split_list(conf[3]) 
+                conf[3] = tk_split_list(conf[3])
               else
-                conf[3] = tk_tcl2ruby(conf[3]) 
+                conf[3] = tk_tcl2ruby(conf[3])
               end
             end
             if conf[4]
               if conf[4].index('{')
-                conf[4] = tk_split_list(conf[4]) 
+                conf[4] = tk_split_list(conf[4])
               else
-                conf[4] = tk_tcl2ruby(conf[4]) 
+                conf[4] = tk_tcl2ruby(conf[4])
               end
             end
           end
@@ -522,16 +522,16 @@ class Tk::Text<TkTextWin
           else
             if conf[2]
               if conf[2].index('{')
-                conf[2] = tk_split_list(conf[2]) 
+                conf[2] = tk_split_list(conf[2])
               else
-                conf[2] = tk_tcl2ruby(conf[2]) 
+                conf[2] = tk_tcl2ruby(conf[2])
               end
             end
             if conf[3]
               if conf[3].index('{')
-                conf[3] = tk_split_list(conf[3]) 
+                conf[3] = tk_split_list(conf[3])
               else
-                conf[3] = tk_tcl2ruby(conf[3]) 
+                conf[3] = tk_tcl2ruby(conf[3])
               end
             end
           end
@@ -620,7 +620,7 @@ class Tk::Text<TkTextWin
   end
 
   def compare(idx1, op, idx2)
-    bool(tk_send_without_enc('compare', _get_eval_enc_str(idx1), 
+    bool(tk_send_without_enc('compare', _get_eval_enc_str(idx1),
                              op, _get_eval_enc_str(idx2)))
   end
 
@@ -643,7 +643,7 @@ class Tk::Text<TkTextWin
   def count_info(idx1, idx2, update=true)
     # Tk8.5 feature
     opts = [
-      :chars, :displaychars, :displayindices, :displaylines, 
+      :chars, :displaychars, :displayindices, :displaylines,
       :indices, :lines, :xpixels, :ypixels
     ]
     if update
@@ -737,8 +737,8 @@ class Tk::Text<TkTextWin
   end
 
   def tag_add(tag, index1, index2=None)
-    tk_send_without_enc('tag', 'add', _get_eval_enc_str(tag), 
-                        _get_eval_enc_str(index1), 
+    tk_send_without_enc('tag', 'add', _get_eval_enc_str(tag),
+                        _get_eval_enc_str(index1),
                         _get_eval_enc_str(index2))
     self
   end
@@ -746,15 +746,15 @@ class Tk::Text<TkTextWin
   alias add_tag tag_add
 
   def tag_delete(*tags)
-    tk_send_without_enc('tag', 'delete', 
+    tk_send_without_enc('tag', 'delete',
                         *(tags.collect{|tag| _get_eval_enc_str(tag)}))
     TkTextTag::TTagID_TBL.mutex.synchronize{
       if TkTextTag::TTagID_TBL[@path]
         tags.each{|tag|
           if tag.kind_of?(TkTextTag)
-            TkTextTag::TTagID_TBL[@path].delete(tag.id) 
+            TkTextTag::TTagID_TBL[@path].delete(tag.id)
           else
-            TkTextTag::TTagID_TBL[@path].delete(tag) 
+            TkTextTag::TTagID_TBL[@path].delete(tag)
           end
         }
       end
@@ -807,7 +807,7 @@ class Tk::Text<TkTextWin
   def tag_cget(tag, key)
     case key.to_s
     when 'text', 'label', 'show', 'data', 'file'
-      tk_call_without_enc(@path, 'tag', 'cget', 
+      tk_call_without_enc(@path, 'tag', 'cget',
                           _get_eval_enc_str(tag), "-#{key}")
     when 'font', 'kanjifont'
       #fnt = tk_tcl2ruby(tk_send('tag', 'cget', tag, "-#{key}"))
@@ -833,14 +833,14 @@ class Tk::Text<TkTextWin
           || key['latinfont'] || key['asciifont'] )
         tagfont_configure(tag, key)
       else
-        tk_send_without_enc('tag', 'configure', _get_eval_enc_str(tag), 
+        tk_send_without_enc('tag', 'configure', _get_eval_enc_str(tag),
                             *hash_kv(key, true))
       end
 
     else
-      if  key == 'font' || key == :font || 
+      if  key == 'font' || key == :font ||
           key == 'kanjifont' || key == :kanjifont ||
-          key == 'latinfont' || key == :latinfont || 
+          key == 'latinfont' || key == :latinfont ||
           key == 'asciifont' || key == :asciifont
         if val == None
           tagfontobj(tag)
@@ -848,7 +848,7 @@ class Tk::Text<TkTextWin
           tagfont_configure(tag, {key=>val})
         end
       else
-        tk_send_without_enc('tag', 'configure', _get_eval_enc_str(tag), 
+        tk_send_without_enc('tag', 'configure', _get_eval_enc_str(tag),
                             "-#{key}", _get_eval_enc_str(val))
       end
     end
@@ -878,16 +878,16 @@ class Tk::Text<TkTextWin
           else
             if conf[3]
               if conf[3].index('{')
-                conf[3] = tk_split_list(conf[3]) 
+                conf[3] = tk_split_list(conf[3])
               else
-                conf[3] = tk_tcl2ruby(conf[3]) 
+                conf[3] = tk_tcl2ruby(conf[3])
               end
             end
             if conf[4]
               if conf[4].index('{')
-                conf[4] = tk_split_list(conf[4]) 
+                conf[4] = tk_split_list(conf[4])
               else
-                conf[4] = tk_tcl2ruby(conf[4]) 
+                conf[4] = tk_tcl2ruby(conf[4])
               end
             end
           end
@@ -926,16 +926,16 @@ class Tk::Text<TkTextWin
           else
             if conf[2]
               if conf[2].index('{')
-                conf[2] = tk_split_list(conf[2]) 
+                conf[2] = tk_split_list(conf[2])
               else
-                conf[2] = tk_tcl2ruby(conf[2]) 
+                conf[2] = tk_tcl2ruby(conf[2])
               end
             end
             if conf[3]
               if conf[3].index('{')
-                conf[3] = tk_split_list(conf[3]) 
+                conf[3] = tk_split_list(conf[3])
               else
-                conf[3] = tk_tcl2ruby(conf[3]) 
+                conf[3] = tk_tcl2ruby(conf[3])
               end
             end
           end
@@ -980,19 +980,19 @@ class Tk::Text<TkTextWin
 =end
 
   def tag_raise(tag, above=None)
-    tk_send_without_enc('tag', 'raise', _get_eval_enc_str(tag), 
+    tk_send_without_enc('tag', 'raise', _get_eval_enc_str(tag),
                         _get_eval_enc_str(above))
     self
   end
 
   def tag_lower(tag, below=None)
-    tk_send_without_enc('tag', 'lower', _get_eval_enc_str(tag), 
+    tk_send_without_enc('tag', 'lower', _get_eval_enc_str(tag),
                         _get_eval_enc_str(below))
     self
   end
 
   def tag_remove(tag, *indices)
-    tk_send_without_enc('tag', 'remove', _get_eval_enc_str(tag), 
+    tk_send_without_enc('tag', 'remove', _get_eval_enc_str(tag),
                         *(indices.collect{|idx| _get_eval_enc_str(idx)}))
     self
   end
@@ -1001,7 +1001,7 @@ class Tk::Text<TkTextWin
     #l = tk_split_simplelist(tk_send_without_enc('tag', 'ranges',
     #                                            _get_eval_enc_str(tag)))
     l = tk_split_simplelist(tk_send_without_enc('tag', 'ranges',
-                                                _get_eval_enc_str(tag)), 
+                                                _get_eval_enc_str(tag)),
                             false, true)
     r = []
     while key=l.shift
@@ -1011,18 +1011,18 @@ class Tk::Text<TkTextWin
   end
 
   def tag_nextrange(tag, first, last=None)
-    simplelist(tk_send_without_enc('tag', 'nextrange', 
-                                   _get_eval_enc_str(tag), 
-                                   _get_eval_enc_str(first), 
+    simplelist(tk_send_without_enc('tag', 'nextrange',
+                                   _get_eval_enc_str(tag),
+                                   _get_eval_enc_str(first),
                                    _get_eval_enc_str(last))).collect{|idx|
       Tk::Text::IndexString.new(idx)
     }
   end
 
   def tag_prevrange(tag, first, last=None)
-    simplelist(tk_send_without_enc('tag', 'prevrange', 
-                                   _get_eval_enc_str(tag), 
-                                   _get_eval_enc_str(first), 
+    simplelist(tk_send_without_enc('tag', 'prevrange',
+                                   _get_eval_enc_str(tag),
+                                   _get_eval_enc_str(first),
                                    _get_eval_enc_str(last))).collect{|idx|
       Tk::Text::IndexString.new(idx)
     }
@@ -1032,7 +1032,7 @@ class Tk::Text<TkTextWin
   def window_cget(index, slot)
     case slot.to_s
     when 'text', 'label', 'show', 'data', 'file'
-      _fromUTF8(tk_send_without_enc('window', 'cget', 
+      _fromUTF8(tk_send_without_enc('window', 'cget',
                                     _get_eval_enc_str(index), "-#{slot}"))
     when 'font', 'kanjifont'
       #fnt = tk_tcl2ruby(tk_send('window', 'cget', index, "-#{slot}"))
@@ -1076,12 +1076,12 @@ class Tk::Text<TkTextWin
             slot['create'] = install_cmd(proc{_epath(p_create.call)})
           end
         end
-        tk_send_without_enc('window', 'configure', 
-                            _get_eval_enc_str(index), 
+        tk_send_without_enc('window', 'configure',
+                            _get_eval_enc_str(index),
                             *hash_kv(slot, true))
       else
         if slot == 'window' || slot == :window
-          # id = value 
+          # id = value
           # value = id.epath if id.kind_of?(TkWindow)
           value = _epath(value)
         end
@@ -1101,8 +1101,8 @@ class Tk::Text<TkTextWin
             value = install_cmd(proc{_epath(p_create.call)})
           end
         end
-        tk_send_without_enc('window', 'configure', 
-                            _get_eval_enc_str(index), 
+        tk_send_without_enc('window', 'configure',
+                            _get_eval_enc_str(index),
                             "-#{slot}", _get_eval_enc_str(value))
       end
     end
@@ -1129,16 +1129,16 @@ class Tk::Text<TkTextWin
           else
             if conf[3]
               if conf[3].index('{')
-                conf[3] = tk_split_list(conf[3]) 
+                conf[3] = tk_split_list(conf[3])
               else
-                conf[3] = tk_tcl2ruby(conf[3]) 
+                conf[3] = tk_tcl2ruby(conf[3])
               end
             end
             if conf[4]
               if conf[4].index('{')
-                conf[4] = tk_split_list(conf[4]) 
+                conf[4] = tk_split_list(conf[4])
               else
-                conf[4] = tk_tcl2ruby(conf[4]) 
+                conf[4] = tk_tcl2ruby(conf[4])
               end
             end
           end
@@ -1166,16 +1166,16 @@ class Tk::Text<TkTextWin
           else
             if conf[2]
               if conf[2].index('{')
-                conf[2] = tk_split_list(conf[2]) 
+                conf[2] = tk_split_list(conf[2])
               else
-                conf[2] = tk_tcl2ruby(conf[2]) 
+                conf[2] = tk_tcl2ruby(conf[2])
               end
             end
             if conf[3]
               if conf[3].index('{')
-                conf[3] = tk_split_list(conf[3]) 
+                conf[3] = tk_split_list(conf[3])
               else
-                conf[3] = tk_tcl2ruby(conf[3]) 
+                conf[3] = tk_tcl2ruby(conf[3])
               end
             end
           end
@@ -1231,11 +1231,11 @@ class Tk::Text<TkTextWin
 
     # $KCODE == 'NONE'
     if JAPANIZED_TK
-      tk_call_without_enc('kstring', 'length', 
+      tk_call_without_enc('kstring', 'length',
                           _get_eval_enc_str(txt)).to_i
     else
       begin
-        tk_call_without_enc('encoding', 'convertto', 'ascii', 
+        tk_call_without_enc('encoding', 'convertto', 'ascii',
                             _get_eval_enc_str(txt)).length
       rescue StandardError, NameError
         # sorry, I have no plan
@@ -1324,11 +1324,11 @@ class Tk::Text<TkTextWin
         pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
         if pat.kind_of?(String)
           #return [index(start + " + #{pos} chars"), pat.split('').length]
-          return [index(start + " + #{pos} chars"), 
+          return [index(start + " + #{pos} chars"),
                   _ktext_length(pat), pat.dup]
         else
           #return [index(start + " + #{pos} chars"), $&.split('').length]
-          return [index(start + " + #{pos} chars"), 
+          return [index(start + " + #{pos} chars"),
                   _ktext_length(match), match]
         end
       else
@@ -1342,11 +1342,11 @@ class Tk::Text<TkTextWin
         pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
         if pat.kind_of?(String)
           #return [index(start + " + #{pos} chars"), pat.split('').length]
-          return [index(start + " + #{pos} chars"), 
+          return [index(start + " + #{pos} chars"),
                   _ktext_length(pat), pat.dup]
         else
           #return [index(start + " + #{pos} chars"), $&.split('').length]
-          return [index(start + " + #{pos} chars"), 
+          return [index(start + " + #{pos} chars"),
                   _ktext_length(match), match]
         end
       else
@@ -1357,7 +1357,7 @@ class Tk::Text<TkTextWin
           pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
           if pat.kind_of?(String)
             #return [index("1.0 + #{pos} chars"), pat.split('').length]
-            return [index("1.0 + #{pos} chars"), 
+            return [index("1.0 + #{pos} chars"),
                     _ktext_length(pat), pat.dup]
           else
             #return [index("1.0 + #{pos} chars"), $&.split('').length]
@@ -1447,7 +1447,7 @@ class Tk::Text<TkTextWin
       idx = str.index(/ /, i)
       result.push str[i..(idx-1)]
       i = idx + 1
-      
+
       # retrieve value
       case result[-1]
       when 'text'
@@ -1505,7 +1505,7 @@ class Tk::Text<TkTextWin
         break
       end
     end
-    
+
     kvis = []
     until result.empty?
       kvis.push [result.shift, result.shift, result.shift]

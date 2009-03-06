@@ -34,7 +34,7 @@ Tk.load_tclscript(File.join(demodir, 'repeater.tcl'))
 # This forces an update of the available packages list. It's required
 # for package names to find the themes in demos/themes/*.tcl
 ## Tk.tk_call(TkPackage.unknown_proc, 'Tcl', TkPackage.provide('Tcl'))
-##  --> This doesn't work. 
+##  --> This doesn't work.
 ##      Because, unknown_proc may be "command + some arguments".
 Tk.ip_eval("#{TkPackage.unknown_proc}  Tcl #{TkPackage.provide('Tcl')}")
 
@@ -45,18 +45,18 @@ TkRoot.new{
 
 # The descriptive names of the builtin themes.
 $THEMELIST = [
-  ['default', 'Default'], 
-  ['classic', 'Classic'], 
-  ['alt', 'Revitalized'], 
-  ['winnative', 'Windows native'], 
-  ['xpnative', 'XP Native'], 
-  ['aqua', 'Aqua'], 
+  ['default', 'Default'],
+  ['classic', 'Classic'],
+  ['alt', 'Revitalized'],
+  ['winnative', 'Windows native'],
+  ['xpnative', 'XP Native'],
+  ['aqua', 'Aqua'],
 ]
 
-$V = TkVariable.new_hash(:THEME      => 'default', 
-                         :COMPOUND   => 'top', 
-                         :CONSOLE    => false, 
-                         :MENURADIO1 => 'One', 
+$V = TkVariable.new_hash(:THEME      => 'default',
+                         :COMPOUND   => 'top',
+                         :CONSOLE    => false,
+                         :MENURADIO1 => 'One',
                          :MENUCHECK1 => true,
                          :PBMODE     => 'determinate',
                          :SELECTED   => true,
@@ -84,8 +84,8 @@ end
 def makeThemeControl(parent)
   c = Tk::Tile::Labelframe.new(parent, :text=>'Theme')
   $THEMELIST.each{|theme, name|
-    b = Tk::Tile::Radiobutton.new(c, :text=>name, :value=>theme, 
-                                  :variable=>$V.ref(:THEME), 
+    b = Tk::Tile::Radiobutton.new(c, :text=>name, :value=>theme,
+                                  :variable=>$V.ref(:THEME),
                                   :command=>proc{setTheme(theme)})
     b.grid(:sticky=>:ew)
     unless (TkPackage.names.find{|n| n =~ /(tile|ttk)::theme::#{theme}/})
@@ -93,8 +93,8 @@ def makeThemeControl(parent)
     end
   }
   $RUBY_THEMELIST.each{|theme, name, available|
-    b = Tk::Tile::Radiobutton.new(c, :text=>name, :value=>theme, 
-                                  :variable=>$V.ref(:THEME), 
+    b = Tk::Tile::Radiobutton.new(c, :text=>name, :value=>theme,
+                                  :variable=>$V.ref(:THEME),
                                   :command=>proc{setTheme(theme)})
     b.grid(:sticky=>:ew)
     b.ttk_state(:disabled) unless available
@@ -105,14 +105,14 @@ end
 def makeThemeMenu(parent)
   m = TkMenu.new(parent)
   $THEMELIST.each{|theme, name|
-    m.add(:radiobutton, :label=>name, :variable=>$V.ref(:THEME), 
+    m.add(:radiobutton, :label=>name, :variable=>$V.ref(:THEME),
           :value=>theme, :command=>proc{setTheme(theme)})
     unless (TkPackage.names.find{|n| n =~ /(tile|ttk)::theme::#{theme}/})
       m.entryconfigure(:end, :state=>:disabled)
     end
   }
   $RUBY_THEMELIST.each{|theme, name, available|
-    m.add(:radiobutton, :label=>name, :variable=>$V.ref(:THEME), 
+    m.add(:radiobutton, :label=>name, :variable=>$V.ref(:THEME),
           :value=>theme, :command=>proc{setTheme(theme)})
     m.entryconfigure(:end, :state=>:disabled) unless available
   }
@@ -174,7 +174,7 @@ def sbstub(sb, cmd, num, units = 'units')
     current = sb.get
     sb.set(current[0] + delta * num, current[1] + delta * num)
   end
-end    
+end
 
 # ... for debugging:
 TkBindTag::ALL.bind('ButtonPress-3', proc{|w| $W = w}, '%W')
@@ -209,21 +209,21 @@ def makeToolbars
   i = 0
   $BUTTONS.each{|icon|
     i += 1
-    Tk::Tile::Button.new(tb, :text=>icon, :image=>$ICON[icon], 
-                         :compound=>$V[:COMPOUND], 
-                         :style=>:Toolbutton).grid(:row=>0, :column=>i, 
+    Tk::Tile::Button.new(tb, :text=>icon, :image=>$ICON[icon],
+                         :compound=>$V[:COMPOUND],
+                         :style=>:Toolbutton).grid(:row=>0, :column=>i,
                                                    :sticky=>:news)
   }
   $CHECKBOXES.each{|icon|
     i += 1
-    Tk::Tile::Checkbutton.new(tb, :text=>icon, :image=>$ICON[icon], 
-                              :variable=>$V.ref(icon), 
-                              :compound=>$V[:COMPOUND], 
-                              :style=>:Toolbutton).grid(:row=>0, :column=>i, 
+    Tk::Tile::Checkbutton.new(tb, :text=>icon, :image=>$ICON[icon],
+                              :variable=>$V.ref(icon),
+                              :compound=>$V[:COMPOUND],
+                              :style=>:Toolbutton).grid(:row=>0, :column=>i,
                                                         :sticky=>:news)
   }
 
-  mb = Tk::Tile::Menubutton.new(tb, :text=>'toolbar', :image=>$ICON['file'], 
+  mb = Tk::Tile::Menubutton.new(tb, :text=>'toolbar', :image=>$ICON['file'],
                                 :compound=>$V[:COMPOUND])
   mb.configure(:menu=>makeCompoundMenu(mb))
   i += 1
@@ -240,21 +240,21 @@ def makeToolbars
   i = 0
   $BUTTONS.each{|icon|
     i += 1
-    TkButton.new(tb, :text=>icon, :image=>$ICON[icon], 
-                 :compound=>$V[:COMPOUND], :relief=>:flat, 
-                 :overrelief=>:raised).grid(:row=>0, :column=>i, 
+    TkButton.new(tb, :text=>icon, :image=>$ICON[icon],
+                 :compound=>$V[:COMPOUND], :relief=>:flat,
+                 :overrelief=>:raised).grid(:row=>0, :column=>i,
                                             :sticky=>:news)
   }
   $CHECKBOXES.each{|icon|
     i += 1
-    TkCheckbutton.new(tb, :text=>icon, :image=>$ICON[icon], 
-                      :variable=>$V.ref(icon), :compound=>$V[:COMPOUND], 
-                      :indicatoron=>false, :selectcolor=>'', :relief=>:flat, 
-                      :overrelief=>:raised).grid(:row=>0, :column=>i, 
+    TkCheckbutton.new(tb, :text=>icon, :image=>$ICON[icon],
+                      :variable=>$V.ref(icon), :compound=>$V[:COMPOUND],
+                      :indicatoron=>false, :selectcolor=>'', :relief=>:flat,
+                      :overrelief=>:raised).grid(:row=>0, :column=>i,
                                                  :sticky=>:news)
   }
 
-  mb = TkMenubutton.new(tb, :text=>'toolbar', :image=>$ICON['file'], 
+  mb = TkMenubutton.new(tb, :text=>'toolbar', :image=>$ICON['file'],
                         :compound=>$V[:COMPOUND])
   mb.configure(:menu=>makeCompoundMenu(mb))
   i += 1
@@ -270,8 +270,8 @@ end
 def makeCompoundMenu(mb)
   menu = TkMenu.new(mb)
   %w(text image none top bottom left right center).each{|str|
-    menu.add(:radiobutton, :label=>Tk.tk_call('string', 'totitle', str), 
-             :variable=>$V.ref(:COMPOUND), :value=>str, 
+    menu.add(:radiobutton, :label=>Tk.tk_call('string', 'totitle', str),
+             :variable=>$V.ref(:COMPOUND), :value=>str,
              :command=>proc{ changeToolbars() })
   }
   menu
@@ -289,7 +289,7 @@ makeThemeControl(control).grid(:sticky=>:news, :padx=>6, :ipadx=>6)
 control.grid_rowconfigure(99, :weight=>1)
 
 def changeToolbars
-  foreachWidget($TOOLBARS, 
+  foreachWidget($TOOLBARS,
                 proc{|w|
                   begin
                     w.compound($V[:COMPOUND])
@@ -350,7 +350,7 @@ nb, client, scales, combo, tree, others = makeNotebook()
 #
 def fillMenu(menu)
   %w(above below left right flush).each{|dir|
-    menu.add(:command, :label=>Tk.tk_call('string', 'totitle', dir), 
+    menu.add(:command, :label=>Tk.tk_call('string', 'totitle', dir),
              :command=>proc{ menu.winfo_parent.direction(dir) })
   }
   menu.add(:cascade, :label=>'Submenu', :menu=>(submenu = TkMenu.new(menu)))
@@ -366,14 +366,14 @@ l = Tk::Tile::Labelframe.new(client, :text=>'Themed', :padding=>6)
 r = TkLabelframe.new(client, :text=>'Standard', :padx=>6, :pady=>6)
 
 ## Styled frame
-cb = Tk::Tile::Checkbutton.new(l, :text=>'Checkbutton', 
+cb = Tk::Tile::Checkbutton.new(l, :text=>'Checkbutton',
                                :variable=>$V.ref(:SELECTED), :underline=>2)
-rb1 = Tk::Tile::Radiobutton.new(l, :text=>'One', :variable=>$V.ref(:CHOICE), 
+rb1 = Tk::Tile::Radiobutton.new(l, :text=>'One', :variable=>$V.ref(:CHOICE),
                                 :value=>1, :underline=>0)
-rb2 = Tk::Tile::Radiobutton.new(l, :text=>'Two', :variable=>$V.ref(:CHOICE), 
+rb2 = Tk::Tile::Radiobutton.new(l, :text=>'Two', :variable=>$V.ref(:CHOICE),
                                 :value=>2)
-rb3 = Tk::Tile::Radiobutton.new(l, :text=>'Three', 
-                                :variable=>$V.ref(:CHOICE), 
+rb3 = Tk::Tile::Radiobutton.new(l, :text=>'Three',
+                                :variable=>$V.ref(:CHOICE),
                                 :value=>3, :underline=>0)
 btn = Tk::Tile::Button.new(l, :text=>'Button', :underline=>0)
 
@@ -386,9 +386,9 @@ $entryText = TkVariable.new('Entry widget')
 e = Tk::Tile::Entry.new(l, :textvariable=>$entryText)
 e.selection_range(6, :end)
 
-ltext_f, ltext = scrolledWidget(l, TkText, true, 
+ltext_f, ltext = scrolledWidget(l, TkText, true,
                                 :width=>12, :height=>5, :wrap=>:none)
-# NOTE TO MAINTAINERS: 
+# NOTE TO MAINTAINERS:
 # The checkbuttons are -sticky ew / -expand x  on purpose:
 # it demonstrates one of the differences between TCheckbuttons
 # and standard checkbuttons.
@@ -407,11 +407,11 @@ TkGrid.rowconfigure(l, 7, :weight=>1) # text widget (grid is a PITA)
 
 ## Orig frame
 cb = TkCheckbutton.new(r, :text=>'Checkbutton', :variable=>$V.ref(:SELECTED))
-rb1 = TkRadiobutton.new(r, :text=>'One', 
+rb1 = TkRadiobutton.new(r, :text=>'One',
                         :variable=>$V.ref(:CHOICE), :value=>1)
-rb2 = TkRadiobutton.new(r, :text=>'Two', :variable=>$V.ref(:CHOICE), 
+rb2 = TkRadiobutton.new(r, :text=>'Two', :variable=>$V.ref(:CHOICE),
                         :value=>2, :underline=>1)
-rb3 = TkRadiobutton.new(r, :text=>'Three', 
+rb3 = TkRadiobutton.new(r, :text=>'Three',
                         :variable=>$V.ref(:CHOICE), :value=>3)
 btn = TkButton.new(r, :text=>'Button')
 
@@ -420,14 +420,14 @@ m = TkMenu.new(mb)
 mb.menu(m)
 $V[:rmbIndicatoron] = mb.indicatoron
 m.add(:checkbutton, :label=>'Indicator?', #'
-      :variable=>$V.ref(:rmbIndicatoron), 
+      :variable=>$V.ref(:rmbIndicatoron),
       :command=>proc{mb.indicatoron($V[:rmbIndicatoron])})
 m.add(:separator)
 fillMenu(m)
 
 e = TkEntry.new(r, :textvariable=>$entryText)
 
-rtext_f, rtext = scrolledWidget(r, TkText, false, 
+rtext_f, rtext = scrolledWidget(r, TkText, false,
                                 :width=>12, :height=>5, :wrap=>:none)
 
 Tk.grid(cb, :sticky=>:ew)
@@ -450,9 +450,9 @@ TkGrid.columnconfigure(client, [0, 1], :weight=>1)
 # Add some text to the text boxes:
 #
 msgs = [
-"The cat crept into the crypt, crapped and crept out again", 
-"Peter Piper picked a peck of pickled peppers", 
-"How much wood would a woodchuck chuck if a woodchuck could chuck wood", 
+"The cat crept into the crypt, crapped and crept out again",
+"Peter Piper picked a peck of pickled peppers",
+"How much wood would a woodchuck chuck if a woodchuck could chuck wood",
 "He thrusts his fists against the posts and still insists he sees the ghosts",
 "Who put the bomb in the bom-b-bom-b-bom,",
 "Is this your sister's sixth zither, sir?",
@@ -493,8 +493,8 @@ if version?('0.6')
     scale.command {|value| progress.value(value)}
     vscale.command {|value| progress.inverted(vprogress, value) }
   else
-    # This would also work, but the Tk scale widgets 
-    # in the right hand pane cause some interference when 
+    # This would also work, but the Tk scale widgets
+    # in the right hand pane cause some interference when
     # in autoincrement/indeterminate mode.
     #
     progress.variable $V.ref(:SCALE)
@@ -609,10 +609,10 @@ scales.grid_rowconfigure(0, :weight=>1)
 # Command box:
 #
 cmd = Tk::Tile::Frame.new($BASE)
-b_close = Tk::Tile::Button.new(cmd, :text=>'Close', 
-                               :underline=>0, :default=>:normal, 
+b_close = Tk::Tile::Button.new(cmd, :text=>'Close',
+                               :underline=>0, :default=>:normal,
                                :command=>proc{Tk.root.destroy})
-b_help = Tk::Tile::Button.new(cmd, :text=>'Help', :underline=>0, 
+b_help = Tk::Tile::Button.new(cmd, :text=>'Help', :underline=>0,
                               :default=>:normal, :command=>proc{showHelp()})
 Tk.grid('x', b_close, b_help, :pady=>[6, 4], :padx=>4)
 TkGrid.columnconfigure(cmd, 0, :weight=>1)
@@ -639,20 +639,20 @@ menu = TkMenu.new($BASE)
 $ROOT.menu(menu)
 m_file = TkMenu.new(menu, :tearoff=>0)
 menu.add(:cascade, :label=>'File', :underline=>0, :menu=>m_file)
-m_file.add(:command, :label=>'Open', :underline=>0, 
+m_file.add(:command, :label=>'Open', :underline=>0,
            :compound=>:left, :image=>$ICON['open'])
-m_file.add(:command, :label=>'Save', :underline=>0, 
+m_file.add(:command, :label=>'Save', :underline=>0,
            :compound=>:left, :image=>$ICON['save'])
 m_file.add(:separator)
 m_f_test = TkMenu.new(menu, :tearoff=>0)
 m_file.add(:cascade, :label=>'Test submenu', :underline=>0, :menu=>m_f_test)
-m_file.add(:checkbutton, :label=>'Text check', :underline=>5, 
+m_file.add(:checkbutton, :label=>'Text check', :underline=>5,
            :variable=>$V.ref(:MENUCHECK1))
 m_file.insert(:end, :separator)
 
 if Tk.windowingsystem != 'x11'
   TkConsole.create
-  m_file.insert(:end, :checkbutton, :label=>'Console', :underline=>5, 
+  m_file.insert(:end, :checkbutton, :label=>'Console', :underline=>5,
                 :variable=>$V.ref(:CONSOLE), :command=>proc{toggle_console()})
   def toggle_console
     if TkComm.bool($V[:CONSOLE])
@@ -663,7 +663,7 @@ if Tk.windowingsystem != 'x11'
   end
 end
 
-m_file.add(:command, :label=>'Exit', :underline=>1, 
+m_file.add(:command, :label=>'Exit', :underline=>1,
            :command=>proc{Tk.event_generate(b_close, '<Invoke>')})
 
 %w(One Two Three Four).each{|lbl|
@@ -672,7 +672,7 @@ m_file.add(:command, :label=>'Exit', :underline=>1,
 
 # Add Theme menu.
 #
-menu.add(:cascade, :label=>'Theme', :underline=>3, 
+menu.add(:cascade, :label=>'Theme', :underline=>3,
          :menu=>makeThemeMenu(menu))
 
 setTheme($V[:THEME])
@@ -710,7 +710,7 @@ if version?('0.5')
   tree.grid_rowconfigure(0, :weight=>1)
   tree.grid_propagate(0)
 
-  # Add initial tree node: 
+  # Add initial tree node:
   # Later nodes will be added in <<TreeviewOpen>> binding.
   treeview.insert('', 0, :id=>'.', :text=>'Main Window', :open=>false,
       :values=>[TkWinfo.classname('.')])
@@ -758,20 +758,20 @@ showDescription.bind('Enter', proc{|w| msg.text($Desc[w.path])}, '%W')
 showDescription.bind('Leave', proc{|w| msg.text('')}, '%W')
 
 [
-  [ :trackStates, "Widget states...",  
-    "Display/modify widget state bits" ], 
+  [ :trackStates, "Widget states...",
+    "Display/modify widget state bits" ],
 
-  [ :scrollbarResizeDemo,  "Scrollbar resize behavior...", 
-    "Shows how Tile and standard scrollbars differ when they're sized too large" ], 
+  [ :scrollbarResizeDemo,  "Scrollbar resize behavior...",
+    "Shows how Tile and standard scrollbars differ when they're sized too large" ],
 
-  [ :trackFocus, "Track keyboard focus..." , 
+  [ :trackFocus, "Track keyboard focus..." ,
     "Display the name of the widget that currently has focus" ],
 
   [ :repeatDemo, "Repeating buttons...",
     "Demonstrates custom classes (see demos/repeater.tcl)" ]
 
 ].each{|demo_cmd, label, description|
-  b = Tk::Tile::Button.new(others, :text=>label, 
+  b = Tk::Tile::Button.new(others, :text=>label,
                            :command=>proc{ self.__send__(demo_cmd) })
   $Desc[b.path] = description
   b.bindtags <<= showDescription
@@ -825,16 +825,16 @@ def trackFocus
   $focus = TkToplevel.new(:title=>'Keyboard focus')
   i = 0
   [
-    ["Focus widget:", :Widget], 
-    ["Class:", :WidgetClass], 
-    ["Next:", :WidgetNext], 
-    ["Grab:", :Grab], 
+    ["Focus widget:", :Widget],
+    ["Class:", :WidgetClass],
+    ["Next:", :WidgetNext],
+    ["Grab:", :Grab],
     ["Status:", :GrabStatus]
   ].each{|label, var_index|
-    Tk.grid(Tk::Tile::Label.new($focus, :text=>label, :anchor=>:e), 
-            Tk::Tile::Label.new($focus, 
-                                :textvariable=>$FocusInf.ref(var_index), 
-                                :width=>40, :anchor=>:w, :relief=>:groove), 
+    Tk.grid(Tk::Tile::Label.new($focus, :text=>label, :anchor=>:e),
+            Tk::Tile::Label.new($focus,
+                                :textvariable=>$FocusInf.ref(var_index),
+                                :width=>40, :anchor=>:w, :relief=>:groove),
             :sticky=>:ew)
     i += 1
   }
@@ -857,7 +857,7 @@ def focusMonitor
   $FocusInf[:Grab] = grab_wins = Tk.current_grabs
   unless grab_wins.empty?
     $FocusInf[:GrabStatus] = grab_wins[0].grab_status
-  else  
+  else
     $FocusInf[:GrabStatus] = ''
   end
 
@@ -869,13 +869,13 @@ end
 #
 $Widget = TkVariable.new
 
-TkBindTag::ALL.bind('Control-Shift-ButtonPress-1', 
+TkBindTag::ALL.bind('Control-Shift-ButtonPress-1',
                     proc{|w|
                       $Widget.value = w
                       updateStates()
                       Tk.callback_break
                     }, '%W')
-$states_list = %w(active disabled focus pressed selected 
+$states_list = %w(active disabled focus pressed selected
                   background indeterminate invalid default)
 $states_btns = {}
 $states = nil
@@ -893,17 +893,17 @@ def trackStates
 
   l_inf = Tk::Tile::Label.new($states, :text=>"Press Control-Shift-Button-1 on any widget")
 
-  l_lw = Tk::Tile::Label.new($states, :text=>'Widget:', 
+  l_lw = Tk::Tile::Label.new($states, :text=>'Widget:',
                              :anchor=>:e, :relief=>:groove)
-  l_w = Tk::Tile::Label.new($states, :textvariable=>$Widget, 
+  l_w = Tk::Tile::Label.new($states, :textvariable=>$Widget,
                              :anchor=>:w, :relief=>:groove)
 
   Tk.grid(l_inf, '-', :sticky=>:ew, :padx=>6, :pady=>6)
   Tk.grid(l_lw, l_w, :sticky=>:ew)
 
   $states_list.each{|st|
-    cb = Tk::Tile::Checkbutton.new($states, :text=>st, 
-                                   :variable=>$State.ref(st), 
+    cb = Tk::Tile::Checkbutton.new($states, :text=>st,
+                                   :variable=>$State.ref(st),
                                    :command=>proc{ changeState(st) })
     $states_btns[st] = cb
     Tk.grid('x', cb, :sticky=>:nsew)
@@ -914,7 +914,7 @@ def trackStates
   f_cmd = Tk::Tile::Frame.new($states)
   Tk.grid('x', f_cmd, :sticky=>:nse)
 
-  b_close = Tk::Tile::Button.new(f_cmd, :text=>'Close', 
+  b_close = Tk::Tile::Button.new(f_cmd, :text=>'Close',
                                  :command=>proc{ $states.destroy })
   Tk.grid('x', b_close, :padx=>4, :pady=>[6,4])
   f_cmd.grid_columnconfigure(0, :weight=>1)

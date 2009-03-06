@@ -177,7 +177,7 @@ class TestProc < Test::Unit::TestCase
     b = proc { :foo }
     assert_equal(:foo, b.curry[])
   end
- 
+
   def test_curry_ski_fib
     s = proc {|f, g, x| f[x][g[x]] }.curry
     k = proc {|x, y| x }.curry
@@ -292,7 +292,7 @@ class TestProc < Test::Unit::TestCase
     b2 = b1.dup
     assert(b1 == b2)
   end
-  
+
   def test_to_proc
     b = proc { :foo }
     assert_equal(:foo, b.to_proc.call)
@@ -687,7 +687,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal([[:opt, :a], [:rest, :b], [:opt, :c], [:block, :d]], proc {|a, *b, c, &d|}.parameters)
     assert_equal([[:opt, :a], [:opt, :b], [:rest, :c], [:opt, :d], [:block, :e]], proc {|a, b=:b, *c, d, &e|}.parameters)
     assert_equal([[:opt, nil], [:block, :b]], proc {|(a), &b|}.parameters)
-    assert_equal([[:opt, :a], [:opt, :b], [:opt, :c], [:opt, :d], [:rest, :e], [:opt, :f], [:opt, :g], [:block, :h]], proc {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters) 
+    assert_equal([[:opt, :a], [:opt, :b], [:opt, :c], [:opt, :d], [:rest, :e], [:opt, :f], [:opt, :g], [:block, :h]], proc {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters)
   end
 
   def pm0() end

@@ -8,7 +8,7 @@
 
 # destroy toplevel widget for this demo script
 if defined?($pendulum_demo) && $pendulum_demo
-  $pendulum_demo.destroy 
+  $pendulum_demo.destroy
   $pendulum_demo = nil
 end
 
@@ -61,14 +61,14 @@ class PendulumAnimationDemo
 
     # Create the canvas containing the graphical representation of the
     # simulated system.
-    @c = TkCanvas.new(@lf1, :width=>320, :height=>200, :background=>'white', 
+    @c = TkCanvas.new(@lf1, :width=>320, :height=>200, :background=>'white',
                       :borderwidth=>2, :relief=>:sunken)
-    TkcText.new(@c, 5, 5, :anchor=>:nw, 
+    TkcText.new(@c, 5, 5, :anchor=>:nw,
                 :text=>'Click to Adjust Bob Start Position')
     # Coordinates of these items don't matter; they will be set properly below
     @plate = TkcLine.new(@c, 0, 25, 320, 25, :width=>2, :fill=>'grey50')
     @rod = TkcLine.new(@c, 1, 1, 1, 1, :width=>3, :fill=>'black')
-    @bob = TkcOval.new(@c, 1, 1, 2, 2, 
+    @bob = TkcOval.new(@c, 1, 1, 2, 2,
                        :width=>3, :fill=>'yellow', :outline=>'black')
     TkcOval.new(@c, 155, 20, 165, 30, :fill=>'grey50', :outline=>'')
 
@@ -78,22 +78,22 @@ class PendulumAnimationDemo
     # Create the canvas containing the phase space graph; this consists of
     # a line that gets gradually paler as it ages, which is an extremely
     # effective visual trick.
-    @k = TkCanvas.new(@lf2, :width=>320, :height=>200, :background=>'white', 
+    @k = TkCanvas.new(@lf2, :width=>320, :height=>200, :background=>'white',
                       :borderwidth=>2, :relief=>:sunken)
     @y_axis = TkcLine.new(@k, 160, 200, 160, 0, :fill=>'grey75', :arrow=>:last)
     @x_axis = TkcLine.new(@k, 0, 100, 320, 100, :fill=>'grey75', :arrow=>:last)
 
     @graph = {}
     90.step(0, -10){|i|
-      # Coordinates of these items don't matter; 
+      # Coordinates of these items don't matter;
       # they will be set properly below
       @graph[i] = TkcLine.new(@k, 0, 0, 1, 1, :smooth=>true, :fill=>"grey#{i}")
     }
 
     # labels
-    @label_theta = TkcText.new(@k, 0, 0, :anchor=>:ne, 
+    @label_theta = TkcText.new(@k, 0, 0, :anchor=>:ne,
                                :text=>'q', :font=>'Symbol 8')
-    @label_dtheta = TkcText.new(@k, 0, 0, :anchor=>:ne, 
+    @label_dtheta = TkcText.new(@k, 0, 0, :anchor=>:ne,
                                :text=>'dq', :font=>'Symbol 8')
 
     # pack
@@ -111,19 +111,19 @@ class PendulumAnimationDemo
     # binding
     @c.bindtags_unshift(btag = TkBindTag.new)
     btag.bind('Destroy'){ @timer.stop }
-    btag.bind('1', proc{|x, y| @timer.stop; showPendulum(x.to_i, y.to_i)}, 
+    btag.bind('1', proc{|x, y| @timer.stop; showPendulum(x.to_i, y.to_i)},
               '%x %y')
     btag.bind('B1-Motion', proc{|x, y| showPendulum(x.to_i, y.to_i)}, '%x %y')
-    btag.bind('ButtonRelease-1', 
-              proc{|x, y| showPendulum(x.to_i, y.to_i); @timer.start }, 
+    btag.bind('ButtonRelease-1',
+              proc{|x, y| showPendulum(x.to_i, y.to_i); @timer.start },
               '%x %y')
 
     btag.bind('Configure', proc{|w| @plate.coords(0, 25, w.to_i, 25)}, '%w')
 
-    @k.bind('Configure', proc{|h, w| 
+    @k.bind('Configure', proc{|h, w|
               h = h.to_i
               w = w.to_i
-              @psh = h/2; 
+              @psh = h/2;
               @psw = w/2
               @x_axis.coords(2, @psh, w-2, @psh)
               @y_axis.coords(@psw, h-2, @psw, 2)
@@ -144,9 +144,9 @@ class PendulumAnimationDemo
   end
 
   # This procedure makes the pendulum appear at the correct place on the
-  # canvas. If the additional arguments x, y are passed instead of computing 
-  # the position of the pendulum from the length of the pendulum rod and its 
-  # angle, the length and angle are computed in reverse from the given 
+  # canvas. If the additional arguments x, y are passed instead of computing
+  # the position of the pendulum from the length of the pendulum rod and its
+  # angle, the length and angle are computed in reverse from the given
   # location (which is taken to be the centre of the pendulum bob.)
   def showPendulum(x=nil, y=nil)
     if x && y && (x != 160 || y != 25)

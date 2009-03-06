@@ -7,23 +7,23 @@
 require 'tk'
 
 if ARGV.empty?
-  $stderr.puts 'Error:: No time arguments for counting down' 
+  $stderr.puts 'Error:: No time arguments for counting down'
   exit(1)
 end
 
 width = 10
 
-TkButton.new(:text=>'exit', 
+TkButton.new(:text=>'exit',
              :command=>proc{exit}).pack(:side=>:bottom, :fill=>:x)
 
 b = TkButton.new(:text=>'start').pack(:side=>:top, :fill=>:x)
 
 f = TkFrame.new(:relief=>:ridge, :borderwidth=>2).pack(:fill=>:x)
-TkLabel.new(f, :relief=>:flat, :pady=>3, 
-            :background=>'black', :foreground=>'white', 
+TkLabel.new(f, :relief=>:flat, :pady=>3,
+            :background=>'black', :foreground=>'white',
             :text=>'  elapsed: ').pack(:fill=>:x, :side=>:left, :expand=>true)
-now = TkLabel.new(f, :width=>width, :relief=>:flat, :pady=>3, :anchor=>:w, 
-                  :background=>'black', :foreground=>'white', 
+now = TkLabel.new(f, :width=>width, :relief=>:flat, :pady=>3, :anchor=>:w,
+                  :background=>'black', :foreground=>'white',
                   :text=>'%4d:%02d.00' % [0, 0]).pack(:side=>:right)
 
 timers = [ TkRTTimer.new(10){|tm|
@@ -41,9 +41,9 @@ timers = [ TkRTTimer.new(10){|tm|
 
 ARGV.collect{|arg| (Float(arg) * 60).to_i}.sort.each_with_index{|time, idx|
   f = TkFrame.new(:relief=>:ridge, :borderwidth=>2).pack(:fill=>:x)
-  TkLabel.new(f, :relief=>:flat, :pady=>3, 
+  TkLabel.new(f, :relief=>:flat, :pady=>3,
               :text=>'  %4d:%02d  --> ' % (time.divmod(60))).pack(:side=>:left)
-  l = TkLabel.new(f, :width=>width, :relief=>:flat, :pady=>3, :anchor=>:w, 
+  l = TkLabel.new(f, :width=>width, :relief=>:flat, :pady=>3, :anchor=>:w,
                   :text=>'%4d:%02d' % (time.divmod(60))).pack(:side=>:right)
   timers << TkRTTimer.new(1000){|tm|
     t = (tm.return_value || time) - 1

@@ -119,35 +119,35 @@ class RDoc::RI::DefaultDisplay
       return display_class_method_list(klass)
     end
   end
-  
+
   ##
   # Given a Hash mapping a class' methods to method types (returned by
   # display_class_method_list), this method allows the user to
   # choose one of the methods.
-  
+
   def get_class_method_choice(method_map)
     if CAN_USE_READLINE
       # prepare abbreviations for tab completion
       abbreviations = method_map.keys.abbrev
-      Readline.completion_proc = proc do |string| 
+      Readline.completion_proc = proc do |string|
         abbreviations.values.uniq.grep(/^#{string}/)
       end
     end
-    
+
     @formatter.raw_print_line "\nEnter the method name you want.\n"
     @formatter.raw_print_line "Class methods can be preceeded by '::' and instance methods by '#'.\n"
 
     if CAN_USE_READLINE
       @formatter.raw_print_line "You can use tab to autocomplete.\n"
       @formatter.raw_print_line "Enter a blank line to exit.\n"
-      
+
       choice_string = Readline.readline(">> ").strip
     else
       @formatter.raw_print_line "Enter a blank line to exit.\n"
       @formatter.raw_print_line ">> "
       choice_string = $stdin.gets.strip
     end
-    
+
     if choice_string == ''
       return nil
     else
@@ -172,7 +172,7 @@ class RDoc::RI::DefaultDisplay
       end
     end
   end
-  
+
 
   ##
   # Display methods on +klass+
@@ -187,16 +187,16 @@ class RDoc::RI::DefaultDisplay
                   :instance_methods,
                   :instance_method_extensions,
                  ]
-    
+
     class_data.each do |data_type|
       data = klass.send data_type
-      
+
       unless data.nil? or data.empty? then
         @formatter.blankline
-        
+
         heading = data_type.to_s.split('_').join(' ').capitalize << ':'
         @formatter.display_heading heading, 2, ''
-        
+
         method_names = []
         data.each do |item|
           method_names << item.name
@@ -268,7 +268,7 @@ class RDoc::RI::DefaultDisplay
       end
     end
   end
-  
+
   ##
   # Display a list of +methods+ and allow the user to select one of them.
 
@@ -280,9 +280,9 @@ class RDoc::RI::DefaultDisplay
       methods.each_with_index do |method, index|
         @formatter.raw_print_line "%3d %s [%s]\n" % [index + 1, method.full_name, method.source_path]
       end
-      
+
       @formatter.raw_print_line ">> "
-      
+
       choice = $stdin.gets.strip!
 
       if(choice == '')
@@ -294,7 +294,7 @@ class RDoc::RI::DefaultDisplay
       if ((choice == 0) || (choice > methods.size)) then
         @formatter.raw_print_line "Invalid choice!\n"
       else
-        method = methods[choice - 1] 
+        method = methods[choice - 1]
         display_method_info(method)
       end
     end

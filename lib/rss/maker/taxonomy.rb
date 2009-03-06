@@ -72,12 +72,12 @@ EOC
         class TaxonomyTopicBase < Base
           include DublinCoreModel
           include TaxonomyTopicsModel
-          
+
           attr_accessor :value
           add_need_initialize_variable("value")
           alias_method(:taxo_link, :value)
           alias_method(:taxo_link=, :value=)
-          
+
           def have_required_values?
             @value
           end
@@ -88,11 +88,11 @@ EOC
     class RSSBase
       include TaxonomyTopicModel
     end
-    
+
     class ChannelBase
       include TaxonomyTopicsModel
     end
-    
+
     class ItemsBase
       class ItemBase
         include TaxonomyTopicsModel

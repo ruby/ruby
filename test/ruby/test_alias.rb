@@ -45,7 +45,7 @@ class TestAlias < Test::Unit::TestCase
     assert_equal "foo", x.bar
     assert_raise(NoMethodError) { x.quux }
   end
-   
+
   class C
     def m
       $SAFE

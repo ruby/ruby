@@ -32,6 +32,6 @@ module Gem
         super
       end
     end
-    
+
   end
 end

@@ -36,7 +36,7 @@ class TestReadline < Test::Unit::TestCase
   def teardown
     Readline.instance_variable_set("@completion_proc", nil)
   end
-  
+
   def test_safe_level_4
     method_args =
       [
@@ -119,7 +119,7 @@ class TestReadline < Test::Unit::TestCase
       Readline.input = "This is not a file."
     end
   end
-  
+
   def test_output=
     assert_raise(TypeError) do
       Readline.output = "This is not a file."
@@ -156,7 +156,7 @@ class TestReadline < Test::Unit::TestCase
     rescue NotImplementedError
     end
   end
-  
+
   # vi_editing_mode
   # emacs_editing_mode
   def test_editing_mode

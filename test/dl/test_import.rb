@@ -54,7 +54,7 @@ module DL
 
     def test_unsigned_result()
       d = (2 ** 31) + 1
-      
+
       r = LIBC.strtoul(d.to_s, 0, 0)
       assert_equal(d, r)
     end
@@ -75,7 +75,7 @@ module DL
     def test_value()
       i = LIBC.value('int', 2)
       assert_equal(2, i.value)
-      
+
       d = LIBC.value('double', 2.0)
       assert_equal(2.0, d.value)
 

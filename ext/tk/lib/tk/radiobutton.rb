@@ -67,5 +67,5 @@ end
 Tk::Radiobutton = Tk::RadioButton
 #TkRadioButton = Tk::RadioButton unless Object.const_defined? :TkRadioButton
 #TkRadiobutton = Tk::Radiobutton unless Object.const_defined? :TkRadiobutton
-Tk.__set_toplevel_aliases__(:Tk, Tk::RadioButton, 
+Tk.__set_toplevel_aliases__(:Tk, Tk::RadioButton,
                             :TkRadioButton, :TkRadiobutton)

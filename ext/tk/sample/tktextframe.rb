@@ -41,9 +41,9 @@ class TkTextFrame < TkText
 =end
     # please check the differences of the following definitions
     option_methods(
-       [:scrollbarwidth, :get_scrollbarwidth], 
-       [:textbackground, nil, :textbg_info], 
-       :textborderwidth, 
+       [:scrollbarwidth, :get_scrollbarwidth],
+       [:textbackground, nil, :textbg_info],
+       :textborderwidth,
        :textrelief
     )
 
@@ -146,17 +146,17 @@ end
 if __FILE__ == $0
   f = TkFrame.new.pack('fill'=>'x')
   #t = TkTextFrame.new.pack
-  t = TkTextFrame.new(:textborderwidth=>3, 
-                      :textrelief=>:ridge, 
+  t = TkTextFrame.new(:textborderwidth=>3,
+                      :textrelief=>:ridge,
                       :scrollbarrelief=>:ridge).pack
   p t.configinfo
-  TkButton.new(f, 'text'=>'vscr OFF', 
+  TkButton.new(f, 'text'=>'vscr OFF',
                'command'=>proc{t.vscroll(false)}).pack('side'=>'right')
-  TkButton.new(f, 'text'=>'vscr ON', 
+  TkButton.new(f, 'text'=>'vscr ON',
                'command'=>proc{t.vscroll(true)}).pack('side'=>'right')
-  TkButton.new(f, 'text'=>'hscr ON', 
+  TkButton.new(f, 'text'=>'hscr ON',
                'command'=>proc{t.hscroll(true)}).pack('side'=>'left')
-  TkButton.new(f, 'text'=>'hscr OFF', 
+  TkButton.new(f, 'text'=>'hscr OFF',
                'command'=>proc{t.hscroll(false)}).pack('side'=>'left')
   Tk.mainloop
 end

@@ -2,7 +2,7 @@
 # Demo: Layout
 #
 def demoLayout(t)
-  t.configure(:showroot=>false, :showrootbutton=>true, :showbuttons=>true, 
+  t.configure(:showroot=>false, :showrootbutton=>true, :showbuttons=>true,
               :showlines=>true, :itemheight=>0, :selectmode=>:browse)
 
   if $HasColumnCreate
@@ -12,10 +12,10 @@ def demoLayout(t)
   end
 
   t.element_create('e1', :rect, :width=>30, :height=>30, :fill=>'gray20')
-  t.element_create('e2', :rect, :width=>30, :height=>30, :fill=>'gray40', 
+  t.element_create('e2', :rect, :width=>30, :height=>30, :fill=>'gray40',
                    :outline=>'blue', :outlinewidth=>3)
   t.element_create('e3', :rect, :fill=>'gray60')
-  t.element_create('e4', :rect, :showfocus=>true, 
+  t.element_create('e4', :rect, :showfocus=>true,
                    :fill=>[
                      @SystemHighlight, ['selected', 'focus'], 'gray80', []
                    ])
@@ -31,9 +31,9 @@ def demoLayout(t)
   t.style_layout(s, 'e3', :union=>['e1', 'e2'], :ipadx=>4, :ipady=>4, :pady=>2)
   t.style_layout(s, 'e4', :detach=>true, :iexpand=>:es)
   t.style_layout(s, 'e5', :detach=>true, :padx=>[2,0], :pady=>2, :iexpand=>:s)
-  t.style_layout(s, 'e6', :detach=>true, :expand=>:ws, 
+  t.style_layout(s, 'e6', :detach=>true, :expand=>:ws,
                  :padx=>[0,2], :pady=>[2,0])
-  t.style_layout(s, 'e7', :detach=>true, :expand=>:wn, 
+  t.style_layout(s, 'e7', :detach=>true, :expand=>:wn,
                  :padx=>[0,2], :pady=>[0,2])
 
   if $Version_1_1_OrLater
@@ -53,7 +53,7 @@ def demoLayout(t)
   t.item_style_set(i, 0, s)
   t.item_lastchild(parent, i)
 
-  ### 
+  ###
 
   s = t.style_create('s2')
   t.style_elements(s, ['e4', 'e3', 'e1'])
@@ -77,7 +77,7 @@ def demoLayout(t)
   t.item_style_set(i2, 0, s)
   t.item_lastchild(i, i2)
 
-  ### 
+  ###
 
   s = t.style_create('s3')
   t.style_elements(s, ['e4', 'e3', 'e1', 'e5', 'e6'])
@@ -101,10 +101,10 @@ def demoLayout(t)
   t.item_style_set(i2, 0, s)
   t.item_lastchild(i, i2)
 
-  ### 
+  ###
 
-  t.element_create('eb', :border, :background=>@SystemButtonFace, 
-                   :relief=>[:sunken, ['selected'], :raised, []], 
+  t.element_create('eb', :border, :background=>@SystemButtonFace,
+                   :relief=>[:sunken, ['selected'], :raised, []],
                    :thickness=>2, :filled=>true)
   t.element_create('et', :text)
 
@@ -134,11 +134,11 @@ def demoLayout(t)
   t.item_text(i, 0, text)
   t.item_lastchild(parent, i)
 
-  ### 
+  ###
 
   styleNum = 5
-  [ 
-    [:horizontal, [:s, :ns, :n]], 
+  [
+    [:horizontal, [:s, :ns, :n]],
     [:vertical,   [:e, :we, :w]]
   ].each{|orient, expandList|
     expandList.each{|expand|

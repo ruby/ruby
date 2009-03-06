@@ -1,6 +1,6 @@
 =begin
  external service manager
- 	Copyright (c) 2000 Masatoshi SEKI 
+ 	Copyright (c) 2000 Masatoshi SEKI
 =end
 
 require 'drb/drb'
@@ -21,7 +21,7 @@ module DRb
     def self.command=(cmd)
       @@command = cmd
     end
-      
+
     def initialize
       super()
       @cond = new_cond
@@ -51,7 +51,7 @@ module DRb
       end
       self
     end
-    
+
     def unregist(name)
       synchronize do
 	@servers.delete(name)

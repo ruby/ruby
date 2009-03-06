@@ -382,7 +382,7 @@ class TestDateStrftime < Test::Unit::TestCase
        H18.09.01).each do |s|
       assert_equal(s, Date.parse(s).jisx0301)
     end
-  
+
   end
 
 end

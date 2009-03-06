@@ -8,7 +8,7 @@
         MD5SUM = "e3701f9db765a2358aef94c40ded71c8"
         if $0 == __FILE__
           require 'optparse'
-        
+
           options = {}
           ARGV.options do |opts|
             opts.on_tail("--help", "show this message") {puts opts; exit}
@@ -19,45 +19,45 @@
           end
 
           require 'rubygems'
-          @directory = options[:directory] || Gem.dir  
+          @directory = options[:directory] || Gem.dir
           @force = options[:force]
-  
-          gem = Gem::Installer.new(__FILE__).install(@force, @directory)      
+
+          gem = Gem::Installer.new(__FILE__).install(@force, @directory)
           if options[:gen_rdoc]
             Gem::DocManager.new(gem).generate_rdoc
           end
 end
 
 __END__
---- !ruby/object:Gem::Specification 
+--- !ruby/object:Gem::Specification
 rubygems_version: "1.0"
 name: testing
-version: !ruby/object:Gem::Version 
+version: !ruby/object:Gem::Version
   version: 1.2.3
 date: 2004-03-18 22:01:52.859121 -05:00
-platform: 
+platform:
 summary: This exercise the gem testing stuff.
-require_paths: 
+require_paths:
   - lib
-files: 
+files:
   - lib/foo.rb
   - lib/test
   - lib/test.rb
   - lib/test/wow.rb
 autorequire: test
 test_suite_file: foo
-requirements: 
+requirements:
   - a computer processor
---- 
-- 
+---
+-
   size: 109
   mode: 420
   path: lib/foo.rb
-- 
+-
   size: 0
   mode: 420
   path: lib/test.rb
-- 
+-
   size: 15
   mode: 420
   path: lib/test/wow.rb

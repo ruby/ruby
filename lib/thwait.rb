@@ -15,7 +15,7 @@
 #    each thread termination.
 #  * th = ThreadsWait.new(thread1,...)
 #    creates synchronization object, specifying thread(s) to wait.
-#  
+#
 #  methods:
 #  * th.threads
 #    list threads to be synchronized
@@ -23,7 +23,7 @@
 #    is there any thread to be synchronized.
 #  * th.finished?
 #    is there already terminated thread.
-#  * th.join(thread1,...) 
+#  * th.join(thread1,...)
 #    wait for specified thread(s).
 #  * th.join_nowait(threa1,...)
 #    specifies thread(s) to wait.  non-blocking.
@@ -52,11 +52,11 @@ require "e2mmap.rb"
 #
 class ThreadsWait
   RCS_ID='-$Id: thwait.rb,v 1.3 1998/06/26 03:19:34 keiju Exp keiju $-'
-  
+
   extend Exception2MessageMapper
   def_exception("ErrNoWaitingThread", "No threads for waiting.")
   def_exception("ErrNoFinishedThread", "No finished threads.")
-  
+
   #
   # Waits until all specified threads have terminated.  If a block is provided,
   # it is executed for each thread termination.
@@ -71,7 +71,7 @@ class ThreadsWait
       tw.all_waits
     end
   end
-  
+
   #
   # Creates a ThreadsWait object, specifying the threads to wait on.
   # Non-blocking.
@@ -81,24 +81,24 @@ class ThreadsWait
     @wait_queue = Queue.new
     join_nowait(*threads) unless threads.empty?
   end
-  
+
   # Returns the array of threads in the wait queue.
   attr :threads
-  
+
   #
   # Returns +true+ if there are no threads to be synchronized.
   #
   def empty?
     @threads.empty?
   end
-  
+
   #
   # Returns +true+ if any thread has terminated.
   #
   def finished?
     !@wait_queue.empty?
   end
-  
+
   #
   # Waits for specified threads to terminate.
   #
@@ -106,7 +106,7 @@ class ThreadsWait
     join_nowait(*threads)
     next_wait
   end
-  
+
   #
   # Specifies the threads that this object will wait for, but does not actually
   # wait.
@@ -124,7 +124,7 @@ class ThreadsWait
       end
     end
   end
-  
+
   #
   # Waits until any of the specified threads has terminated, and returns the one
   # that does.
@@ -141,7 +141,7 @@ class ThreadsWait
       ThreadsWait.fail ErrNoFinishedThread
     end
   end
-  
+
   #
   # Waits until all of the specified threads are terminated.  If a block is
   # supplied for the method, it is executed for each thread termination.

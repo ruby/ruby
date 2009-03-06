@@ -1,14 +1,14 @@
-# 
+#
 # cgi.rb - cgi support library
-# 
+#
 # Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
-# 
+#
 # Copyright (C) 2000  Information-technology Promotion Agency, Japan
 #
 # Author: Wakou Aoyama <wakou@ruby-lang.org>
 #
-# Documentation: Wakou Aoyama (RDoc'd and embellished by William Webber) 
-# 
+# Documentation: Wakou Aoyama (RDoc'd and embellished by William Webber)
+#
 # == Overview
 #
 # The Common Gateway Interface (CGI) is a simple protocol
@@ -18,7 +18,7 @@
 # parameters of the request passed in either in the
 # environment (GET) or via $stdin (POST), and everything
 # it prints to $stdout is returned to the client.
-# 
+#
 # This file holds the +CGI+ class.  This class provides
 # functionality for retrieving HTTP request parameters,
 # managing cookies, and generating HTML output.  See the
@@ -75,18 +75,18 @@ raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
 #
 #
 # For each of these variables, there is a corresponding attribute with the
-# same name, except all lower case and without a preceding HTTP_.  
+# same name, except all lower case and without a preceding HTTP_.
 # +content_length+ and +server_port+ are integers; the rest are strings.
 #
 # === Parameters
 #
 # The method #params() returns a hash of all parameters in the request as
 # name/value-list pairs, where the value-list is an Array of one or more
-# values.  The CGI object itself also behaves as a hash of parameter names 
-# to values, but only returns a single value (as a String) for each 
+# values.  The CGI object itself also behaves as a hash of parameter names
+# to values, but only returns a single value (as a String) for each
 # parameter name.
 #
-# For instance, suppose the request contains the parameter 
+# For instance, suppose the request contains the parameter
 # "favourite_colours" with the multiple values "blue" and "green".  The
 # following behaviour would occur:
 #
@@ -105,7 +105,7 @@ raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
 #
 # === Multipart requests
 #
-# If a request's method is POST and its content type is multipart/form-data, 
+# If a request's method is POST and its content type is multipart/form-data,
 # then it may contain uploaded files.  These are stored by the QueryExtension
 # module in the parameters of the request.  The parameter name is the name
 # attribute of the file input field, as usual.  However, the value is not
@@ -136,7 +136,7 @@ raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
 #
 # Each HTML element has a corresponding method for generating that
 # element as a String.  The name of this method is the same as that
-# of the element, all lowercase.  The attributes of the element are 
+# of the element, all lowercase.  The attributes of the element are
 # passed in as a hash, and the body as a no-argument block that evaluates
 # to a String.  The HTML generation module knows which elements are
 # always empty, and silently drops any passed-in body.  It also knows
@@ -150,57 +150,57 @@ raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
 # as arguments, rather than via a hash.
 #
 # == Examples of use
-# 
+#
 # === Get form values
-# 
+#
 #   require "cgi"
 #   cgi = CGI.new
 #   value = cgi['field_name']   # <== value string for 'field_name'
 #     # if not 'field_name' included, then return "".
 #   fields = cgi.keys            # <== array of field names
-# 
+#
 #   # returns true if form has 'field_name'
 #   cgi.has_key?('field_name')
 #   cgi.has_key?('field_name')
 #   cgi.include?('field_name')
-# 
-# CAUTION! cgi['field_name'] returned an Array with the old 
+#
+# CAUTION! cgi['field_name'] returned an Array with the old
 # cgi.rb(included in ruby 1.6)
-# 
+#
 # === Get form values as hash
-# 
+#
 #   require "cgi"
 #   cgi = CGI.new
 #   params = cgi.params
-# 
+#
 # cgi.params is a hash.
-# 
+#
 #   cgi.params['new_field_name'] = ["value"]  # add new param
 #   cgi.params['field_name'] = ["new_value"]  # change value
 #   cgi.params.delete('field_name')           # delete param
 #   cgi.params.clear                          # delete all params
-# 
-# 
+#
+#
 # === Save form values to file
-# 
+#
 #   require "pstore"
 #   db = PStore.new("query.db")
 #   db.transaction do
 #     db["params"] = cgi.params
 #   end
-# 
-# 
+#
+#
 # === Restore form values from file
-# 
+#
 #   require "pstore"
 #   db = PStore.new("query.db")
 #   db.transaction do
 #     cgi.params = db["params"]
 #   end
-# 
-# 
+#
+#
 # === Get multipart form values
-# 
+#
 #   require "cgi"
 #   cgi = CGI.new
 #   value = cgi['field_name']   # <== value string for 'field_name'
@@ -208,37 +208,37 @@ raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
 #   value.local_path            # <== path to local file of value
 #   value.original_filename     # <== original filename of value
 #   value.content_type          # <== content_type of value
-# 
+#
 # and value has StringIO or Tempfile class methods.
-# 
+#
 # === Get cookie values
-# 
+#
 #   require "cgi"
 #   cgi = CGI.new
 #   values = cgi.cookies['name']  # <== array of 'name'
 #     # if not 'name' included, then return [].
 #   names = cgi.cookies.keys      # <== array of cookie names
-# 
+#
 # and cgi.cookies is a hash.
-# 
+#
 # === Get cookie objects
-# 
+#
 #   require "cgi"
 #   cgi = CGI.new
 #   for name, cookie in cgi.cookies
 #     cookie.expires = Time.now + 30
 #   end
 #   cgi.out("cookie" => cgi.cookies) {"string"}
-# 
+#
 #   cgi.cookies # { "name1" => cookie1, "name2" => cookie2, ... }
-# 
+#
 #   require "cgi"
 #   cgi = CGI.new
 #   cgi.cookies['name'].expires = Time.now + 30
 #   cgi.out("cookie" => cgi.cookies['name']) {"string"}
-# 
+#
 # === Print http header and html string to $DEFAULT_OUTPUT ($>)
-# 
+#
 #   require "cgi"
 #   cgi = CGI.new("html3")  # add HTML generation methods
 #   cgi.out() do
@@ -262,7 +262,7 @@ raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
 #       end
 #     end
 #   end
-# 
+#
 #   # add HTML generation methods
 #   CGI.new("html3")    # html3.2
 #   CGI.new("html4")    # html4.01 (Strict)

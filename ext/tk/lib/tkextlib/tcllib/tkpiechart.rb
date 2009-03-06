@@ -52,7 +52,7 @@ module Tk::Tcllib::Tkpiechart
     private :__config_cmd
 
     def __configinfo_struct
-      {:key=>0, :alias=>nil, :db_name=>nil, :db_class=>nil, 
+      {:key=>0, :alias=>nil, :db_name=>nil, :db_class=>nil,
         :default_value=>1, :current_value=>2}
     end
     private :__configinfo_struct
@@ -63,7 +63,7 @@ module Tk::Tcllib::Tkpiechart
     private :__boolval_optkeys
 
     def __strval_optkeys
-      super() << 'bordercolor' << 'textbackground' << 
+      super() << 'bordercolor' << 'textbackground' <<
         'widestvaluetext' << 'title'
     end
     private :__strval_optkeys
@@ -90,7 +90,7 @@ module Tk::Tcllib::Tkpiechart
 
     def create_self(x, y, width, height, keys=None)
       if keys and keys != None
-        @tag_key = tk_call_without_enc('::stooop::new', 'pie', 
+        @tag_key = tk_call_without_enc('::stooop::new', 'pie',
                                        @c, x, y, *hash_kv(keys, true))
       else
         @tag_key = tk_call_without_enc('::stooop::new', 'pie', @c, x, y)
@@ -148,7 +148,7 @@ module Tk::Tcllib::Tkpiechart
     end
 
     def selected_slices
-      tk_split_simplelist(tk_call_without_enc('pie::selectedSlices', 
+      tk_split_simplelist(tk_call_without_enc('pie::selectedSlices',
                                               @tag_key)).collect{|slice|
         @slice_tbl[slice] || Slice.new(:no_create, self, slice)
       }
@@ -212,7 +212,7 @@ module Tk::Tcllib::Tkpiechart
     end
 
     def size(share, disp=None)
-      tk_call_without_enc('pie::sizeSlice', 
+      tk_call_without_enc('pie::sizeSlice',
                           @pie.tag_key, @tag_key, share, disp)
       self
     end
@@ -236,7 +236,7 @@ module Tk::Tcllib::Tkpiechart
 
     def create_self(keys=None)
       if keys and keys != None
-        @tag_key = tk_call_without_enc('::stooop::new', 'pieBoxLabeler', 
+        @tag_key = tk_call_without_enc('::stooop::new', 'pieBoxLabeler',
                                        *hash_kv(keys, true))
       else
         @tag_key = tk_call_without_enc('::stooop::new', 'pieBoxLabeler')
@@ -268,8 +268,8 @@ module Tk::Tcllib::Tkpiechart
 
     def create_self(keys=None)
       if keys and keys != None
-        @tag_key = tk_call_without_enc('::stooop::new', 
-                                       'piePeripheralLabeler', 
+        @tag_key = tk_call_without_enc('::stooop::new',
+                                       'piePeripheralLabeler',
                                        *hash_kv(keys, true))
       else
         @tag_key = tk_call_without_enc('::stooop::new', 'piePeripheralLabeler')
@@ -296,11 +296,11 @@ module Tk::Tcllib::Tkpiechart
 
     def create_self(x, y, keys=None)
       if keys and keys != None
-        @tag_key = tk_call_without_enc('::stooop::new', 'canvasLabel', 
-                                       @c, x, y, width, height, 
+        @tag_key = tk_call_without_enc('::stooop::new', 'canvasLabel',
+                                       @c, x, y, width, height,
                                        *hash_kv(keys, true))
       else
-        @tag_key = tk_call_without_enc('::stooop::new', 'canvasLabel', 
+        @tag_key = tk_call_without_enc('::stooop::new', 'canvasLabel',
                                        @c, x, y, width, height)
       end
 

@@ -233,7 +233,7 @@ class Gem::Package::TarHeader
     ]
 
     header = header.pack PACK_FORMAT
-                  
+
     header << ("\0" * ((512 - header.size) % 512))
   end
 

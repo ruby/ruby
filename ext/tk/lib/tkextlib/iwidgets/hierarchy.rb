@@ -64,15 +64,15 @@ class Tk::Iwidgets::Hierarchy
 
   class IndicatorCommand < TkValidateCommand
     class ValidateArgs < TkUtil::CallbackSubst
-      KEY_TBL  = [ 
-        [ ?n, ?s, :node ], 
-        [ ?s, ?b, :status ], 
+      KEY_TBL  = [
+        [ ?n, ?s, :node ],
+        [ ?s, ?b, :status ],
         nil
       ]
 
-      PROC_TBL = [ 
-        [ ?s, TkComm.method(:string) ], 
-        [ ?b, TkComm.method(:bool) ], 
+      PROC_TBL = [
+        [ ?s, TkComm.method(:string) ],
+        [ ?b, TkComm.method(:bool) ],
         nil
       ]
 
@@ -109,9 +109,9 @@ class Tk::Iwidgets::Hierarchy
 
   class IconCommand < TkValidateCommand
     class ValidateArgs < TkUtil::CallbackSubst
-      KEY_TBL  = [ 
-        [ ?n, ?s, :node ], 
-        [ ?i, ?s, :icon ], 
+      KEY_TBL  = [
+        [ ?n, ?s, :node ],
+        [ ?i, ?s, :icon ],
         nil
       ]
       PROC_TBL = [ [ ?s, TkComm.method(:string) ], nil ]
@@ -270,7 +270,7 @@ class Tk::Iwidgets::Hierarchy
   end
 
   def compare(idx1, op, idx2)
-    bool(tk_send_without_enc('compare', _get_eval_enc_str(idx1), 
+    bool(tk_send_without_enc('compare', _get_eval_enc_str(idx1),
                              op, _get_eval_enc_str(idx2)))
   end
 

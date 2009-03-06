@@ -101,7 +101,7 @@ module TkGrid
   def columnconfigure(master, index, args)
     # master = master.epath if master.kind_of?(TkObject)
     master = _epath(master)
-    tk_call_without_enc("grid", 'columnconfigure', 
+    tk_call_without_enc("grid", 'columnconfigure',
                         master, index, *hash_kv(args))
   end
   alias column columnconfigure
@@ -119,15 +119,15 @@ module TkGrid
     if slot
       case slot
       when 'uniform', :uniform
-        tk_call_without_enc('grid', 'columnconfigure', 
+        tk_call_without_enc('grid', 'columnconfigure',
                             master, index, "-#{slot}")
       else
-        num_or_str(tk_call_without_enc('grid', 'columnconfigure', 
+        num_or_str(tk_call_without_enc('grid', 'columnconfigure',
                                        master, index, "-#{slot}"))
       end
     else
       #ilist = list(tk_call_without_enc('grid','columnconfigure',master,index))
-      ilist = simplelist(tk_call_without_enc('grid', 'columnconfigure', 
+      ilist = simplelist(tk_call_without_enc('grid', 'columnconfigure',
                                              master, index))
       info = {}
       while key = ilist.shift
@@ -148,15 +148,15 @@ module TkGrid
     if slot
       case slot
       when 'uniform', :uniform
-        tk_call_without_enc('grid', 'rowconfigure', 
+        tk_call_without_enc('grid', 'rowconfigure',
                             master, index, "-#{slot}")
       else
-        num_or_str(tk_call_without_enc('grid', 'rowconfigure', 
+        num_or_str(tk_call_without_enc('grid', 'rowconfigure',
                                        master, index, "-#{slot}"))
       end
     else
       #ilist = list(tk_call_without_enc('grid', 'rowconfigure', master, index))
-      ilist = simplelist(tk_call_without_enc('grid', 'rowconfigure', 
+      ilist = simplelist(tk_call_without_enc('grid', 'rowconfigure',
                                              master, index))
       info = {}
       while key = ilist.shift

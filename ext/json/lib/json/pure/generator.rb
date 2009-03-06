@@ -86,7 +86,7 @@ module JSON
         # * *indent*: a string used to indent levels (default: ''),
         # * *space*: a string that is put after, a : or , delimiter (default: ''),
         # * *space_before*: a string that is put before a : pair delimiter (default: ''),
-        # * *object_nl*: a string that is put at the end of a JSON object (default: ''), 
+        # * *object_nl*: a string that is put at the end of a JSON object (default: ''),
         # * *array_nl*: a string that is put at the end of a JSON array (default: ''),
         # * *check_circular*: true if checking for circular data structures
         #   should be done (the default), false otherwise.
@@ -148,13 +148,13 @@ module JSON
         end
 
         # Returns _true_, if _object_ was already seen during this generating
-        # run. 
+        # run.
         def seen?(object)
           @seen.key?(object.__id__)
         end
 
         # Remember _object_, to find out if it was already encountered (if a
-        # cyclic data structure is if a cyclic data structure is rendered). 
+        # cyclic data structure is if a cyclic data structure is rendered).
         def remember(object)
           @seen[object.__id__] = true
         end
@@ -300,7 +300,7 @@ module JSON
               json_shift(state, depth + 1) << value.to_json(state, depth + 1)
             }.join(delim)
             result << state.array_nl if state
-            result << json_shift(state, depth) 
+            result << json_shift(state, depth)
             result << ']'
             result
           end

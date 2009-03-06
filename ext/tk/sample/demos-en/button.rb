@@ -6,20 +6,20 @@
 # button widget demo (called by 'widget')
 #
 
-# toplevel widget 
+# toplevel widget
 if defined?($button_demo) && $button_demo
-  $button_demo.destroy 
+  $button_demo.destroy
   $button_demo = nil
 end
 
-# demo toplevel widget 
+# demo toplevel widget
 $button_demo = TkToplevel.new {|w|
   title("Button Demonstration")
   iconname("button")
   positionWindow(w)
 }
 
-# label 
+# label
 msg = TkLabel.new($button_demo) {
   font $kanji_font
   wraplength '4i'
@@ -28,7 +28,7 @@ msg = TkLabel.new($button_demo) {
 }
 msg.pack('side'=>'top')
 
-# frame 
+# frame
 $button_buttons = Tk::Frame.new($button_demo) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'

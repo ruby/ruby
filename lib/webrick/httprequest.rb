@@ -304,7 +304,7 @@ module WEBrick
         end
       elsif self['content-length'] || @remaining_size
         @remaining_size ||= self['content-length'].to_i
-        while @remaining_size > 0 
+        while @remaining_size > 0
           sz = [@buffer_size, @remaining_size].min
           break unless buf = read_data(socket, sz)
           @remaining_size -= buf.bytesize

@@ -45,7 +45,7 @@ module Tk::WinDDE
         elsif args.size == 0
           tk_call('dde', 'servername', force, exact, *hash_kv(keys))
         else
-          tk_call('dde', 'servername', force, exact, 
+          tk_call('dde', 'servername', force, exact,
                   *((hash_kv(keys) << '--') + args))
         end
       else
@@ -86,7 +86,7 @@ module Tk::WinDDE
     tk_call('dde', 'eval', -async, topic, cmd, *args)
   end
 
-  module_function :servername, :execute, :async_execute, 
+  module_function :servername, :execute, :async_execute,
                   :poke, :request, :services, :eval
 end
 

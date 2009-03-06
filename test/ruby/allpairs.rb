@@ -26,7 +26,7 @@ module AllPairs
         yield row
       }
     }
-  end 
+  end
 
   def combine_block(tbl1, tbl2)
     result = []
@@ -49,7 +49,7 @@ module AllPairs
       tbl = []
       make_basic_block(v) {|row|
         tbl << row
-      } 
+      }
       tbls = [tbl]
       while tbl.first.length ** 2 < prime
         tbl = combine_block(tbl, tbl)

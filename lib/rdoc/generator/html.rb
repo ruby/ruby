@@ -305,9 +305,9 @@ class RDoc::Generator::HTML
 
       open 'index.html', 'w'  do |f|
         style_url = style_url '', @options.css
-        
+
         classes = @classes.sort.map { |klass| klass.value_hash }
-        
+
         values = {
           'initial_page'  => @main_url,
           'style_url'     => style_url('', @options.css),
@@ -315,7 +315,7 @@ class RDoc::Generator::HTML
           'charset'       => @options.charset,
           'classes'       => classes,
         }
-        
+
         values['inline_source'] = @options.inline_source
 
         main.write_html_on f, values

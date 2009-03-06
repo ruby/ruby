@@ -79,7 +79,7 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
       Accept-Language: ja
       Content-Type: text/plain
       Content-Length: 7
-      X-Empty-Header: 
+      X-Empty-Header:
 
       foobar
     _end_of_message_

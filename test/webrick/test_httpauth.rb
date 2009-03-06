@@ -14,7 +14,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
       server.mount_proc(path){|req, res|
         WEBrick::HTTPAuth.basic_auth(req, res, realm){|user, pass|
           user == "webrick" && pass == "supersecretpassword"
-        }     
+        }
         res.body = "hoge"
       }
       http = Net::HTTP.new(addr, port)

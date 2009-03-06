@@ -2,7 +2,7 @@
 #
 #  Tk::Img demo
 #
-#    --  This script is based on demo.tcl of Tcl/Tk's 'Img' extention. 
+#    --  This script is based on demo.tcl of Tcl/Tk's 'Img' extention.
 #        Image data in this script is those of demo.tcl.
 #        Please read 'license_terms_of_Img_extension' file.
 #
@@ -85,7 +85,7 @@ class TkImg_demo
       Tk.update_idletasks
       Tk.after(20, proc{update_animated_gif(w, :image, 0)})
     rescue => e
-      w.configure(:text=>"error displaying animated gif:\n#{e.message}", 
+      w.configure(:text=>"error displaying animated gif:\n#{e.message}",
                   :image=>'', :relief=>:ridge)
     end
     w.pack
@@ -98,15 +98,15 @@ class TkImg_demo
       TkLabel.new(@typeFrame[fmt], :text=>"#{fmt} :  ").pack(:side=>:left)
     end
     begin
-      f = TkFrame.new(@typeFrame[fmt], 
+      f = TkFrame.new(@typeFrame[fmt],
                       :borderwidth=>2, :relief=>:ridge).pack(:side=>:left)
       im = TkPhotoImage.new(:data=>data)
       im['data'] = ''
       TkLabel.new(f, :image=>im).pack
-      TkLabel.new(f, :text=>type, :borderwidth=>0, :pady=>0, :padx=>2, 
+      TkLabel.new(f, :text=>type, :borderwidth=>0, :pady=>0, :padx=>2,
                   :font=>'Helvetica 8').pack
     rescue => e
-      TkMessage.new(f, :text=>"error displaying #{type} image: #{e.message}", 
+      TkMessage.new(f, :text=>"error displaying #{type} image: #{e.message}",
                     :aspect=>250).pack
     end
     Tk.update

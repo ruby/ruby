@@ -38,7 +38,7 @@ module Gem
       end
       cmd.run(Gem.configuration.args)
       end_time = Time.now
-      if Gem.configuration.benchmark 
+      if Gem.configuration.benchmark
         printf "\nExecution time: %0.2f seconds.\n", end_time-start_time
         puts "Press Enter to finish"
         STDIN.gets

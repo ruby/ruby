@@ -13,7 +13,7 @@ module YAML
 	# Parser tokens
 	#
 	WORD_CHAR = 'A-Za-z0-9'
-	PRINTABLE_CHAR = '-_A-Za-z0-9!?/()$\'". ' 
+	PRINTABLE_CHAR = '-_A-Za-z0-9!?/()$\'". '
 	NOT_PLAIN_CHAR = '\x7f\x0-\x1f\x80-\x9f'
 	ESCAPE_CHAR = '[\\x00-\\x09\\x0b-\\x1f]'
 	INDICATOR_CHAR = '*&!|\\\\^@%{}[]='
@@ -27,7 +27,7 @@ module YAML
 				 \x18	\x19	\x1a	\e		\x1c	\x1d	\x1e	\x1f
 			    }
 	UNESCAPES = {
-				'a' => "\x07", 'b' => "\x08", 't' => "\x09", 
+				'a' => "\x07", 'b' => "\x08", 't' => "\x09",
 				'n' => "\x0a", 'v' => "\x0b", 'f' => "\x0c",
 				'r' => "\x0d", 'e' => "\x1b", '\\' => '\\',
 			    }

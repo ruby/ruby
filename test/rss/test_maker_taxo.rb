@@ -7,7 +7,7 @@ module RSS
 
     def setup
       @uri = "http://purl.org/rss/1.0/modules/taxonomy/"
-      
+
       @resources = [
         "http://meerkat.oreillynet.com/?c=cat23",
         "http://meerkat.oreillynet.com/?c=47",
@@ -52,7 +52,7 @@ module RSS
     def _test_date
       t1 = Time.iso8601("2000-01-01T12:00:05+00:00")
       t2 = Time.iso8601("2005-01-01T12:00:05+00:00")
-      
+
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         maker.channel.date = t1
@@ -70,7 +70,7 @@ module RSS
       assert_equal([t1, t2], rss.channel.dc_dates.collect{|x| x.value})
       assert_equal([t2, t1], rss.items.last.dc_dates.collect{|x| x.value})
     end
-    
+
     private
     def set_topics(target, resources=@resources)
       resources.each do |value|

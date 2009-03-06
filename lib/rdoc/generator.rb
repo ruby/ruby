@@ -137,7 +137,7 @@ module RDoc::Generator
       end
 
       RDoc::TopLevel.all_classes_and_modules.each do |cls|
-        build_class_list(classes, options, cls, files[0], 
+        build_class_list(classes, options, cls, files[0],
                          RDoc::Generator::CLASS_DIR)
       end
 

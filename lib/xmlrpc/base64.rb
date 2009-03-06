@@ -9,19 +9,19 @@ Released under the same term of license as Ruby.
 
 = XMLRPC::Base64
 == Description
-This class is necessary for (('xmlrpc4r')) to determine that a string should 
-be transmitted base64-encoded and not as a raw-string. 
-You can use (({XMLRPC::Base64})) on the client and server-side as a 
+This class is necessary for (('xmlrpc4r')) to determine that a string should
+be transmitted base64-encoded and not as a raw-string.
+You can use (({XMLRPC::Base64})) on the client and server-side as a
 parameter and/or return-value.
 
 == Class Methods
 --- XMLRPC::Base64.new( str, state = :dec )
     Creates a new (({XMLRPC::Base64})) instance with string ((|str|)) as the
-    internal string. When ((|state|)) is (({:dec})) it assumes that the 
-    string ((|str|)) is not in base64 format (perhaps already decoded), 
-    otherwise if ((|state|)) is (({:enc})) it decodes ((|str|)) 
+    internal string. When ((|state|)) is (({:dec})) it assumes that the
+    string ((|str|)) is not in base64 format (perhaps already decoded),
+    otherwise if ((|state|)) is (({:enc})) it decodes ((|str|))
     and stores it as the internal string.
-    
+
 --- XMLRPC::Base64.decode( str )
     Decodes string ((|str|)) with base64 and returns that value.
 
@@ -40,7 +40,7 @@ parameter and/or return-value.
 module XMLRPC
 
 class Base64
-  
+
   def initialize(str, state = :dec)
     case state
     when :enc
@@ -51,11 +51,11 @@ class Base64
       raise ArgumentError, "wrong argument; either :enc or :dec"
     end
   end
-  
+
   def decoded
-    @str  
+    @str
   end
-  
+
   def encoded
     Base64.encode(@str)
   end

@@ -182,7 +182,7 @@ module Tk::BLT
       def move(dest, keys={})
         @tree.keys(@id, dest, keys)
         self
-      end      
+      end
 
       def next()
         @tree.next(@id)
@@ -397,10 +397,10 @@ module Tk::BLT
         NotifyID_TBL.mutex.synchronize{
           if tree.kind_of?(Array)
             # not create
-            tpath = tree[0].path            
+            tpath = tree[0].path
             NotifyID_TBL[tpath] ||= {}
             unless (obj = NotifyID_TBL[tpath][tree[1]])
-              (NotifyID_TBL[tpath][tree[1]] = 
+              (NotifyID_TBL[tpath][tree[1]] =
                  obj = self.allocate).instance_eval{
                 @parent = @tree = tree[0]
                 @tpath = @parent.path
@@ -438,7 +438,7 @@ module Tk::BLT
         args = args.collect{|arg| '-' << arg.to_s}
 
         args << proc{|id, type|
-          cmd.call(Tk::BLT::Tree::Node.id2obj(@tree, id), 
+          cmd.call(Tk::BLT::Tree::Node.id2obj(@tree, id),
                    ((type[0] == ?-)? type[1..-1]: type))
         }
 
@@ -509,7 +509,7 @@ module Tk::BLT
             tpath = tree[0].path
             TraceID_TBL[tpath] ||= {}
             unless (obj = TraceID_TBL[tpath][tree[1]])
-              (TraceID_TBL[tpath][tree[1]] = 
+              (TraceID_TBL[tpath][tree[1]] =
                  obj = self.allocate).instance_eval{
                 @parent = @tree = tree
                 @tpath = @parent.path
@@ -541,8 +541,8 @@ module Tk::BLT
           end
         end
 
-        @path = @id = tk_call(@tpath, 'trace', 'create', node, key, opts, 
-                              proc{|t, id, k, ops| 
+        @path = @id = tk_call(@tpath, 'trace', 'create', node, key, opts,
+                              proc{|t, id, k, ops|
                                 tobj = Tk::BLT::Tree.id2obj(t)
                                 if tobj.kind_of?(Tk::BLT::Tree)
                                   nobj = Tk::BLT::Tree::Node.id2obj(tobj, id)
@@ -599,8 +599,8 @@ module Tk::BLT
         'recurse'=>nil, 'tags'=>nil,
 
         # sort command
-        'ascii'=>nil, 'decreasing'=>nil, 'disctionary'=>nil, 
-        'integer'=>nil, 'real'=>nil, 'recurse'=>nil, 'reorder'=>nil, 
+        'ascii'=>nil, 'decreasing'=>nil, 'disctionary'=>nil,
+        'integer'=>nil, 'real'=>nil, 'recurse'=>nil, 'reorder'=>nil,
       }
     end
 
@@ -624,7 +624,7 @@ module Tk::BLT
     def self.new(name = nil)
       TreeID_TBL.mutex.synchronize{
         if name && TreeID_TBL[name]
-          TreeID_TBL[name] 
+          TreeID_TBL[name]
         else
           (obj = self.allocate).instance_eval{
             initialize(name)
@@ -680,7 +680,7 @@ module Tk::BLT
     end
 
     def ancestor(node1, node2)
-      Tk::BLT::Tree::Node.id2obj(self, tk_call('::blt::tree', 'ancestor', 
+      Tk::BLT::Tree::Node.id2obj(self, tk_call('::blt::tree', 'ancestor',
                                                tagid(node1), tagid(node2)))
     end
 
@@ -701,14 +701,14 @@ module Tk::BLT
     end
 
     def copy(src, parent, keys={})
-      id = tk_call('::blt::tree', 'copy', tagid(src), tagid(parent), 
+      id = tk_call('::blt::tree', 'copy', tagid(src), tagid(parent),
                    __conv_keyonly_opts(keys))
       Tk::BLT::Tree::Node.new(self, nil, 'node'=>id)
     end
     def copy_to(src, dest_tree, parent, keys={})
       return copy(src, parent, keys={}) unless dest_tree
 
-      id = tk_call('::blt::tree', 'copy', tagid(src), dest_tree, 
+      id = tk_call('::blt::tree', 'copy', tagid(src), dest_tree,
                    tagid(parent), __conv_keyonly_opts(keys))
       Tk::BLT::Tree::Node.new(dest_tree, nil, 'node'=>id)
     end
@@ -751,7 +751,7 @@ module Tk::BLT
     end
 
     def find(node, keys={})
-      simplelist(tk_call('::blt::tree', 'find', tagid(node), 
+      simplelist(tk_call('::blt::tree', 'find', tagid(node),
                          __conv_keyonly_opts(keys))).collect{|n|
         Tk::BLT::Tree::Node.id2obj(self, n)
       }
@@ -775,7 +775,7 @@ module Tk::BLT
     end
 
     def index(node)
-      Tk::BLT::Tree::Node.id2obj(self, 
+      Tk::BLT::Tree::Node.id2obj(self,
                                  tk_call('::blt::tree', 'index', tagid(node)))
     end
 
@@ -785,11 +785,11 @@ module Tk::BLT
     end
 
     def ancestor?(node1, node2)
-      bool(tk_call('::blt::tree', 'is', 'ancestor', 
+      bool(tk_call('::blt::tree', 'is', 'ancestor',
                    tagid(node1), tagid(node2)))
     end
     def before?(node1, node2)
-      bool(tk_call('::blt::tree', 'is', 'before', 
+      bool(tk_call('::blt::tree', 'is', 'before',
                    tagid(node1), tagid(node2)))
     end
     def leaf?(node)
@@ -806,7 +806,7 @@ module Tk::BLT
       if nodes.empty?
         simplelist(tk_call('blt::tree', 'keys', tagid(node)))
       else
-        simplelist(tk_call('blt::tree', 'keys', tagid(node), 
+        simplelist(tk_call('blt::tree', 'keys', tagid(node),
                            *(nodes.collect{|n| tagid(n)}))).collect{|lst|
           simplelist(lst)
         }
@@ -828,7 +828,7 @@ module Tk::BLT
     end
 
     def link(parent, node, keys={})
-      ret = tk_call('::blt::tree', 'link', tagid(parent), tagid(node), 
+      ret = tk_call('::blt::tree', 'link', tagid(parent), tagid(node),
                     __conv_keyonly_opts(keys))
       (ret == '-1')? nil: Tk::BLT::Tree::Node.id2obj(self, ret)
     end
@@ -902,7 +902,7 @@ module Tk::BLT
     end
 
     def restore(node, str, keys={})
-      tk_call('::blt::tree', 'restore', tagid(node), str, 
+      tk_call('::blt::tree', 'restore', tagid(node), str,
               __conv_keyonly_opts(keys))
       self
     end
@@ -915,7 +915,7 @@ module Tk::BLT
     end
 
     def restore_from_file(node, file, keys={})
-      tk_call('::blt::tree', 'restorefile', tagid(node), file, 
+      tk_call('::blt::tree', 'restorefile', tagid(node), file,
               __conv_keyonly_opts(keys))
       self
     end
@@ -923,13 +923,13 @@ module Tk::BLT
       keys = __conv_keyonly_opts(keys)
       keys.delete('overwrite')
       keys.delete(:overwrite)
-      tk_call('::blt::tree', 'restorefile', tagid(node), file, 
+      tk_call('::blt::tree', 'restorefile', tagid(node), file,
               '-overwrite', keys)
       self
     end
 
     def root(node=None)
-      Tk::BLT::Tree::Node.id2obj(self, tk_call('::blt::tree', 'root', 
+      Tk::BLT::Tree::Node.id2obj(self, tk_call('::blt::tree', 'root',
                                                tagid(node)))
     end
 
@@ -958,7 +958,7 @@ module Tk::BLT
     end
 
     def tag_delete(tag, *nodes)
-      tk_call(@path, 'tag', 'delete', tagid(tag), 
+      tk_call(@path, 'tag', 'delete', tagid(tag),
               *(nodes.collect{|n| tagid(n)}))
       self
     end
@@ -973,7 +973,7 @@ module Tk::BLT
     end
 
     def tag_get(node, *patterns)
-      simplelist(tk_call(@tpath, 'tag', 'get', tagid(node), 
+      simplelist(tk_call(@tpath, 'tag', 'get', tagid(node),
                          *(patterns.collect{|pat| tagid(pat)}))).collect{|str|
         Tk::BLT::Tree::Tag.id2obj(self, str)
       }
@@ -997,7 +997,7 @@ module Tk::BLT
     end
 
     def tag_unset(node, *tags)
-      tk_call(@path, 'tag', 'unset', tagid(node), 
+      tk_call(@path, 'tag', 'unset', tagid(node),
               *(tags.collect{|t| tagid(t)}))
       self
     end

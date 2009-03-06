@@ -484,7 +484,7 @@ EOR
       assert_not_expected_tag(name, uri, "image") do
         Parser.parse(rss, true, false)
       end
-      
+
       uri = CONTENT_URI
       name = "encoded"
       elem = "<#{name} xmlns='#{uri}'/>"

@@ -5,7 +5,7 @@
 # based on Tcl/Tk8.4.4 widget demos
 
 if defined?($spin_demo) && $spin_demo
-  $spin_demo.destroy 
+  $spin_demo.destroy
   $spin_demo = nil
 end
 
@@ -17,8 +17,8 @@ $spin_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($spin_demo).pack(:fill=>:both, :expand=>true)
 
-TkLabel.new(base_frame, 
-            :font=>$font, :wraplength=>'5i', :justify=>:left, 
+TkLabel.new(base_frame,
+            :font=>$font, :wraplength=>'5i', :justify=>:left,
             :text=><<EOL).pack(:side=>:top)
 Three different spin-boxes are displayed below.  \
 You can add characters by pointing, clicking and typing.  \
@@ -50,16 +50,16 @@ TkFrame.new(base_frame){|f|
 }
 
 australianCities = [
-    'Canberra', 'Sydney', 'Melbourne', 'Perth', 'Adelaide', 
+    'Canberra', 'Sydney', 'Melbourne', 'Perth', 'Adelaide',
     'Brisbane', 'Hobart', 'Darwin', 'Alice Springs'
 ]
 
 [
-  TkSpinbox.new(base_frame, :from=>1, :to=>10, :width=>10, :validate=>:key, 
+  TkSpinbox.new(base_frame, :from=>1, :to=>10, :width=>10, :validate=>:key,
                 :validatecommand=>[
                   proc{|s| s == '' || /^[+-]?\d+$/ =~ s }, '%P'
-                ]), 
-  TkSpinbox.new(base_frame, :from=>0, :to=>3, :increment=>0.5, 
-                :format=>'%05.2f', :width=>10), 
+                ]),
+  TkSpinbox.new(base_frame, :from=>0, :to=>3, :increment=>0.5,
+                :format=>'%05.2f', :width=>10),
   TkSpinbox.new(base_frame, :values=>australianCities, :width=>10)
 ].each{|sbox| sbox.pack(:side=>:top, :pady=>5, :padx=>10)}

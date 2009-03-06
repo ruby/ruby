@@ -10,7 +10,7 @@ class Tk::Scrollbar<TkWindow
 
   def create_self(keys)
     @assigned = []
-    @scroll_proc = proc{|*args| 
+    @scroll_proc = proc{|*args|
       if self.orient == 'horizontal'
         @assigned.each{|w| w.xview(*args)}
       else # 'vertical'
@@ -21,11 +21,11 @@ class Tk::Scrollbar<TkWindow
     if keys and keys != None
       unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
         #tk_call_without_enc('scrollbar', @path, *hash_kv(keys, true))
-        tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+        tk_call_without_enc(self.class::TkCommandNames[0], @path,
                             *hash_kv(keys, true))
       else
         begin
-          tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+          tk_call_without_enc(self.class::TkCommandNames[0], @path,
                               *hash_kv(keys, true))
         rescue
           tk_call_without_enc(self.class::TkCommandNames[0], @path)
@@ -38,7 +38,7 @@ class Tk::Scrollbar<TkWindow
               configure(keys)
             else
               # re-create widget
-              tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+              tk_call_without_enc(self.class::TkCommandNames[0], @path,
                                   *hash_kv(keys, true))
             end
           end

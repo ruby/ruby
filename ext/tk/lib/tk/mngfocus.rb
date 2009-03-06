@@ -8,8 +8,8 @@ module TkManageFocus
   extend Tk
 
   TkCommandNames = [
-    'tk_focusFollowMouse'.freeze, 
-    'tk_focusNext'.freeze, 
+    'tk_focusFollowMouse'.freeze,
+    'tk_focusNext'.freeze,
     'tk_focusPrev'.freeze
   ].freeze
 

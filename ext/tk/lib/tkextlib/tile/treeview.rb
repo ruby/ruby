@@ -20,7 +20,7 @@ module Tk::Tile::TreeviewConfig
 
   def __item_configinfo_struct(id)
     # maybe need to override
-    {:key=>0, :alias=>nil, :db_name=>nil, :db_class=>nil, 
+    {:key=>0, :alias=>nil, :db_name=>nil, :db_class=>nil,
       :default_value=>nil, :current_value=>1}
   end
   private :__item_configinfo_struct
@@ -451,7 +451,7 @@ module Tk::Tile::TreeviewConfig
   def __item_val2ruby_optkeys(id)
     case id[0]
     when :item, 'item'
-      { 
+      {
         'tags'=>proc{|arg_id, val|
           simplelist(val).collect{|tag|
             Tk::Tile::Treeview::Tag.id2obj(self, tag)
@@ -498,7 +498,7 @@ module Tk::Tile::TreeviewConfig
           end
           slot = conf[__item_configinfo_struct(tagid(tagOrId))[:alias]]
         end while(org_slot != slot)
-        fail RuntimeError, 
+        fail RuntimeError,
           "there is a configure alias loop about '#{org_slot}'"
       else
         ret = {}
@@ -707,7 +707,7 @@ class Tk::Tile::Treeview::Item < TkObject
     keys = _symbolkey2str(keys)
     id = keys.delete('id')
     if id
-      num_or_str(tk_call(tree, 'insert', 
+      num_or_str(tk_call(tree, 'insert',
                          parent_item, idx, '-id', id, *hash_kv(keys)))
     else
       num_or_str(tk_call(tree, 'insert', parent_item, idx, *hash_kv(keys)))
@@ -1030,7 +1030,7 @@ class Tk::Tile::Treeview < TkWindow
   end
 
   def tagid(id)
-    if id.kind_of?(Tk::Tile::Treeview::Item) || 
+    if id.kind_of?(Tk::Tile::Treeview::Item) ||
         id.kind_of?(Tk::Tile::Treeview::Tag)
       id.id
     elsif id.kind_of?(Array)
@@ -1055,7 +1055,7 @@ class Tk::Tile::Treeview < TkWindow
     }
   end
   def set_children(item, *items)
-    tk_send_without_enc('children', item, 
+    tk_send_without_enc('children', item,
                         array2tk_list(items.flatten, true))
     self
   end

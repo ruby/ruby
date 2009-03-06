@@ -21,7 +21,7 @@ end
 
 # toplevel widget
 if defined?($ruler_demo) && $ruler_demo
-  $ruler_demo.destroy 
+  $ruler_demo.destroy
   $ruler_demo = nil
 end
 
@@ -35,7 +35,7 @@ $ruler_demo = TkToplevel.new {|w|
 base_frame = TkFrame.new($ruler_demo).pack(:fill=>:both, :expand=>true)
 
 # label
-TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left', 
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left',
             'text'=>"This canvas widget shows a mock-up of a ruler.  You can create tab stops by dragging them out of the well to the right of the ruler.  You can also drag existing tab stops.  If you drag a tab stop far enough up or down so that it turns dim, it will be deleted when you release the mouse button."){
   pack('side'=>'top')
 }
@@ -58,14 +58,14 @@ $ruler_buttons = TkFrame.new(base_frame) {|frame|
 }
 $ruler_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# canvas 
+# canvas
 $ruler_canvas = TkCanvas.new(base_frame, 'width'=>'14.8c', 'height'=>'2.5c')
 $ruler_canvas.pack('side'=>'top', 'fill'=>'x')
 
-# 
+#
 unless Struct.const_defined?("RulerInfo")
-  $demo_rulerInfo = Struct.new("RulerInfo", :grid, :left, :right, :x, :y, 
-                               :top, :bottom, :size, :normalStyle, 
+  $demo_rulerInfo = Struct.new("RulerInfo", :grid, :left, :right, :x, :y,
+                               :top, :bottom, :size, :normalStyle,
                                :activeStyle, :deleteStyle).new
 end
 $demo_rulerInfo.grid = '.25c'
@@ -77,17 +77,17 @@ $demo_rulerInfo.size = TkWinfo.fpixels($ruler_canvas, '.2c')
 $demo_rulerInfo.normalStyle = {'fill'=>'black'}
 if TkWinfo.depth($ruler_canvas) > 1
   $demo_rulerInfo.activeStyle = {'fill'=>'red', 'stipple'=>''}
-  $demo_rulerInfo.deleteStyle = {'fill'=>'red', 
-    'stipple'=>'@'+[$demo_dir, '..', 
+  $demo_rulerInfo.deleteStyle = {'fill'=>'red',
+    'stipple'=>'@'+[$demo_dir, '..',
                      'images', 'gray25.xbm'].join(File::Separator)}
 else
   $demo_rulerInfo.activeStyle = {'fill'=>'black', 'stipple'=>''}
-  $demo_rulerInfo.deleteStyle = {'fill'=>'black', 
-    'stipple'=>'@'+[$demo_dir, '..', 
+  $demo_rulerInfo.deleteStyle = {'fill'=>'black',
+    'stipple'=>'@'+[$demo_dir, '..',
                      'images', 'gray25.xbm'].join(File::Separator)}
 end
 
-TkcLine.new($ruler_canvas, 
+TkcLine.new($ruler_canvas,
             '1c', '0.5c', '1c', '1c', '13c', '1c', '13c', '0.5c', 'width'=>1)
 (0..11).each{|i|
   x = i+1
@@ -101,21 +101,21 @@ TkcLine.new($ruler_canvas,
 $rulerTag_well = TkcTag.new($ruler_canvas)
 $ruler_canvas\
 .addtag_withtag($rulerTag_well,
-                TkcRectangle.new($ruler_canvas, 
-                                 '13.2c', '1c', '13.8c', '0.5c', 
-                                 'outline'=>'black', 
+                TkcRectangle.new($ruler_canvas,
+                                 '13.2c', '1c', '13.8c', '0.5c',
+                                 'outline'=>'black',
                                  'fill'=>($ruler_canvas\
                                           .configinfo('background'))[4]) )
 $ruler_canvas\
 .addtag_withtag($rulerTag_well,
-                rulerMkTab($ruler_canvas, 
-                           TkWinfo.pixels($ruler_canvas, '13.5c'), 
+                rulerMkTab($ruler_canvas,
+                           TkWinfo.pixels($ruler_canvas, '13.5c'),
                            TkWinfo.pixels($ruler_canvas, '.65c') ) )
 
 $rulerTag_well.bind('1', proc{|x,y| rulerNewTab($ruler_canvas,x,y)}, '%x %y')
-$ruler_canvas.itembind('tab', '1', 
+$ruler_canvas.itembind('tab', '1',
                        proc{|x,y| rulerSelectTab($ruler_canvas,x,y)}, '%x %y')
-$ruler_canvas.bind('B1-Motion', 
+$ruler_canvas.bind('B1-Motion',
                    proc{|x,y| rulerMoveTab($ruler_canvas,x,y)}, '%x %y')
 $ruler_canvas.bind('Any-ButtonRelease-1', proc{rulerReleaseTab($ruler_canvas)})
 

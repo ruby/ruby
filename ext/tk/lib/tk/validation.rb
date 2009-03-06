@@ -211,21 +211,21 @@ class TkValidateCommand
 
   class ValidateArgs < TkUtil::CallbackSubst
     KEY_TBL = [
-      [ ?d, ?n, :action ], 
-      [ ?i, ?x, :index ], 
-      [ ?s, ?e, :current ], 
-      [ ?v, ?s, :type ], 
-      [ ?P, ?e, :value ], 
-      [ ?S, ?e, :string ], 
-      [ ?V, ?s, :triggered ], 
-      [ ?W, ?w, :widget ], 
+      [ ?d, ?n, :action ],
+      [ ?i, ?x, :index ],
+      [ ?s, ?e, :current ],
+      [ ?v, ?s, :type ],
+      [ ?P, ?e, :value ],
+      [ ?S, ?e, :string ],
+      [ ?V, ?s, :triggered ],
+      [ ?W, ?w, :widget ],
       nil
     ]
 
     PROC_TBL = [
-      [ ?n, TkComm.method(:number) ], 
-      [ ?s, TkComm.method(:string) ], 
-      [ ?w, TkComm.method(:window) ], 
+      [ ?n, TkComm.method(:number) ],
+      [ ?s, TkComm.method(:string) ],
+      [ ?w, TkComm.method(:window) ],
 
       [ ?e, proc{|val|
           #enc = Tk.encoding
@@ -236,7 +236,7 @@ class TkValidateCommand
             TkComm::string(val)
           end
         }
-      ], 
+      ],
 
       [ ?x, proc{|val|
           idx = TkComm::number(val)
@@ -246,7 +246,7 @@ class TkValidateCommand
             idx
           end
         }
-      ], 
+      ],
 
       nil
     ]
@@ -272,7 +272,7 @@ class TkValidateCommand
     _setup_subst_table(KEY_TBL, PROC_TBL);
 
     #
-    # NOTE: The order of parameters which passed to callback procedure is 
+    # NOTE: The order of parameters which passed to callback procedure is
     #        <extra_arg>, <extra_arg>, ... , <subst_arg>, <subst_arg>, ...
     #
 

@@ -30,10 +30,10 @@ class Tk::Vu::Bargraph < TkWindow
 
   def __strval_optkeys
     super() + [
-      'title', 
-      'barbackground', 'barcolor', 'barcolour', 
-      'tickcolor', 'tickcolour', 
-      'textcolor', 'textcolour', 
+      'title',
+      'barbackground', 'barcolor', 'barcolour',
+      'tickcolor', 'tickcolour',
+      'textcolor', 'textcolour',
     ]
   end
   private :__strval_optkeys

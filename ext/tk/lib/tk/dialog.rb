@@ -18,11 +18,11 @@ class TkDialogObj < TkWindow
   def _set_button_config(configs)
     set_config = proc{|c,i|
       if $VERBOSE && (c.has_key?('command') || c.has_key?(:command))
-        STDERR.print("Warning: cannot give a command option " + 
+        STDERR.print("Warning: cannot give a command option " +
                      "to the dialog button#{i}. It was removed.\n")
       end
       c.delete('command'); c.delete(:command)
-      # @config << Kernel.format("%s.button%s configure %s; ", 
+      # @config << Kernel.format("%s.button%s configure %s; ",
       #                                @path, i, hash_kv(c).join(' '))
       # @config << @path+'.button'+i.to_s+' configure '+hash_kv(c).join(' ')+'; '
       @config << @path+'.button'+i.to_s+' configure '+
@@ -103,7 +103,7 @@ class TkDialogObj < TkWindow
     #end
 
     if @buttons.kind_of?(Array)
-      _set_button_config(@buttons.collect{|cfg| 
+      _set_button_config(@buttons.collect{|cfg|
                            (cfg.kind_of? Array)? cfg[1]: nil})
       @buttons = @buttons.collect{|cfg| (cfg.kind_of? Array)? cfg[0]: cfg}
     end
@@ -127,7 +127,7 @@ class TkDialogObj < TkWindow
 =end
 
     if @message_config.kind_of?(Hash)
-      # @config << Kernel.format("%s.msg configure %s;", 
+      # @config << Kernel.format("%s.msg configure %s;",
       #                        @path, hash_kv(@message_config).join(' '))
       # @config << @path+'.msg configure '+hash_kv(@message_config).join(' ')+';'
       @config << @path+'.msg configure '+
@@ -135,7 +135,7 @@ class TkDialogObj < TkWindow
     end
 
     if @msgframe_config.kind_of?(Hash)
-      # @config << Kernel.format("%s.top configure %s;", 
+      # @config << Kernel.format("%s.top configure %s;",
       #                        @path, hash_kv(@msgframe_config).join(' '))
       # @config << @path+'.top configure '+hash_kv(@msgframe_config).join(' ')+';'
       @config << @path+'.top configure '+
@@ -143,7 +143,7 @@ class TkDialogObj < TkWindow
     end
 
     if @btnframe_config.kind_of?(Hash)
-      # @config << Kernel.format("%s.bot configure %s;", 
+      # @config << Kernel.format("%s.bot configure %s;",
       #                        @path, hash_kv(@btnframe_config).join(' '))
       # @config << @path+'.bot configure '+hash_kv(@btnframe_config).join(' ')+';'
       @config << @path+'.bot configure '+
@@ -151,7 +151,7 @@ class TkDialogObj < TkWindow
     end
 
     if @bitmap_config.kind_of?(Hash)
-      # @config << Kernel.format("%s.bitmap configure %s;", 
+      # @config << Kernel.format("%s.bitmap configure %s;",
       #                        @path, hash_kv(@bitmap_config).join(' '))
       # @config << @path+'.bitmap configure '+hash_kv(@bitmap_config).join(' ')+';'
       @config << @path+'.bitmap configure '+
@@ -176,19 +176,19 @@ class TkDialogObj < TkWindow
     # default_button = '{}' if default_button == nil
     default_button = '' if default_button == nil
     #Tk.ip_eval('eval {global '+@var.id+';'+@config+
-    #          'set '+@var.id+' [tk_dialog '+ 
+    #          'set '+@var.id+' [tk_dialog '+
     #          @path+" "+@title+" {#{@message}} "+@bitmap+" "+
     #          String(default_button)+" "+@buttons.join(' ')+']}')
     Tk.ip_eval(@config)
-    # @val = Tk.ip_eval('tk_dialog ' + @path + ' ' + @title + 
-    #                 ' {' + @message + '} ' + @bitmap + ' ' + 
+    # @val = Tk.ip_eval('tk_dialog ' + @path + ' ' + @title +
+    #                 ' {' + @message + '} ' + @bitmap + ' ' +
     #                 String(default_button) + ' ' + @buttons.join(' ')).to_i
-    # @val = Tk.ip_eval(self.class::TkCommandNames[0] + ' ' + @path + ' ' + 
-    #                   @title + ' {' + @message + '} ' + @bitmap + ' ' + 
+    # @val = Tk.ip_eval(self.class::TkCommandNames[0] + ' ' + @path + ' ' +
+    #                   @title + ' {' + @message + '} ' + @bitmap + ' ' +
     #                   String(default_button) + ' ' + @buttons.join(' ')).to_i
     @val = Tk.ip_eval(array2tk_list([
-                                      self.class::TkCommandNames[0], 
-                                      @path, @title, @message, @bitmap, 
+                                      self.class::TkCommandNames[0],
+                                      @path, @title, @message, @bitmap,
                                       String(default_button)
                                     ].concat(@buttons))).to_i
   end
@@ -226,7 +226,7 @@ class TkDialogObj < TkWindow
     return nil
   end
   def bitmap
-    # returns a bitmap name or a bitmap file path 
+    # returns a bitmap name or a bitmap file path
     # (@ + path ; e.g. '@/usr/share/bitmap/sample.xbm')
     return "info"
   end

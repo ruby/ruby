@@ -1,5 +1,5 @@
 #
-#   forwardable.rb - 
+#   forwardable.rb -
 #   	$Release Version: 1.1$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
@@ -33,28 +33,28 @@
 #
 #   class Queue
 #     extend Forwardable
-#     
+#
 #     def initialize
 #       @q = [ ]    # prepare delegate object
 #     end
-#     
+#
 #     # setup preferred interface, enq() and deq()...
 #     def_delegator :@q, :push, :enq
 #     def_delegator :@q, :shift, :deq
-#     
+#
 #     # support some general Array methods that fit Queues well
 #     def_delegators :@q, :clear, :first, :push, :shift, :size
 #   end
-# 
+#
 #   q = Queue.new
 #   q.enq 1, 2, 3, 4, 5
 #   q.push 6
-# 
+#
 #   q.shift    # => 1
 #   while q.size > 0
 #     puts q.deq
 #   end
-# 
+#
 #   q.enq "Ruby", "Perl", "Python"
 #   puts q.first
 #   q.clear
@@ -90,9 +90,9 @@
 #
 # If you want to use both Forwardable and SingleForwardable, you can
 # use methods def_instance_delegator and def_single_delegator, etc.
-# 
+#
 # If the object isn't a Module and Class, You can too extend
-# Forwardable module. 
+# Forwardable module.
 #    printer = String.new
 #    printer.extend Forwardable              # prepare object for delegation
 #    printer.def_delegator "STDOUT", "puts"  # add delegation for STDOUT.puts()

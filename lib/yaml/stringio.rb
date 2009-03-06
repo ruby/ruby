@@ -13,7 +13,7 @@ rescue LoadError
         end
         def pos
             @pos
-        end    
+        end
         def eof
             @eof
         end

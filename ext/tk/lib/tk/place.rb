@@ -35,9 +35,9 @@ module TkPlace
       # win = win.epath if win.kind_of?(TkObject)
       win = _epath(win)
       if slot
-        #conf = tk_split_list(tk_call_without_enc('place', 'configure', 
+        #conf = tk_split_list(tk_call_without_enc('place', 'configure',
         #                                        win, "-#{slot}") )
-        conf = tk_split_simplelist(tk_call_without_enc('place', 'configure', 
+        conf = tk_split_simplelist(tk_call_without_enc('place', 'configure',
                                                        win, "-#{slot}") )
         conf[0] = conf[0][1..-1]
         conf[1] = tk_tcl2ruby(conf[1])
@@ -46,7 +46,7 @@ module TkPlace
         conf[4] = tk_tcl2ruby(conf[1])
         conf
       else
-        tk_split_simplelist(tk_call_without_enc('place', 'configure', 
+        tk_split_simplelist(tk_call_without_enc('place', 'configure',
                                                 win)).collect{|conflist|
           #conf = list(conflist)
           conf = simplelist(conflist).collect!{|inf| tk_tcl2ruby(inf)}
@@ -63,16 +63,16 @@ module TkPlace
     # win = win.epath if win.kind_of?(TkObject)
     win = _epath(win)
     if slot
-      #conf = tk_split_list(tk_call_without_enc('place', 'configure', 
+      #conf = tk_split_list(tk_call_without_enc('place', 'configure',
       #                                         win, "-#{slot}") )
-      conf = tk_split_simplelist(tk_call_without_enc('place', 'configure', 
+      conf = tk_split_simplelist(tk_call_without_enc('place', 'configure',
                                                      win, "-#{slot}") )
       # { conf[0][1..-1] => conf[1] }
       { conf[0][1..-1] => tk_tcl2ruby(conf[4]) }
     else
       ret = {}
       #tk_split_list(tk_call_without_enc('place','configure',win)).each{|conf|
-      tk_split_simplelist(tk_call_without_enc('place', 'configure', 
+      tk_split_simplelist(tk_call_without_enc('place', 'configure',
                                               win)).each{|conf_list|
         #ret[conf[0][1..-1]] = conf[1]
         conf = simplelist(conf_list)

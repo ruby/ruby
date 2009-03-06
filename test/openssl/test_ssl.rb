@@ -82,7 +82,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
       end
 
       Thread.start do
-        Thread.current.abort_on_exception = true  
+        Thread.current.abort_on_exception = true
         server_proc.call(ctx, ssl)
       end
     end
@@ -93,7 +93,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     ctx_proc = args[:ctx_proc]
     server_proc = args[:server_proc]
     server_proc ||= method(:readwrite_loop)
-  
+
     store = OpenSSL::X509::Store.new
     store.add_cert(@ca_cert)
     store.purpose = OpenSSL::X509::PURPOSE_SSL_CLIENT
@@ -120,7 +120,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
 
     begin
       server = Thread.new do
-        Thread.current.abort_on_exception = true  
+        Thread.current.abort_on_exception = true
         server_loop(ctx, ssls, server_proc)
       end
 
@@ -532,7 +532,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
         ctx.session_add(saved_session)
       end
       connections += 1
-      
+
       readwrite_loop(ctx, ssl)
     end
 

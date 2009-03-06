@@ -5,7 +5,7 @@
 
 # toplevel widget が存在すれば削除する
 if defined?($check2_demo) && $check2_demo
-  $check2_demo.destroy 
+  $check2_demo.destroy
   $check2_demo = nil
 end
 
@@ -35,35 +35,35 @@ sober  = TkVariable.new(0)
 
 # frame 生成
 TkFrame.new(base_frame) {|frame|
-  TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2), 
+  TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2),
          :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
-  TkGrid('x', 
-         TkButton.new(frame, :text=>'変数参照', 
-                      :image=>$image['view'], :compound=>:left, 
+  TkGrid('x',
+         TkButton.new(frame, :text=>'変数参照',
+                      :image=>$image['view'], :compound=>:left,
                       :command=>proc{
-                        showVars($check2_demo, 
-                                 ['safety', safety], ['wipers', wipers], 
+                        showVars($check2_demo,
+                                 ['safety', safety], ['wipers', wipers],
                                  ['brakes', brakes], ['sober', sober])
-                      }), 
-         TkButton.new(frame, :text=>'コード参照', 
-                      :image=>$image['view'], :compound=>:left, 
-                      :command=>proc{showCode 'check2'}), 
-         TkButton.new(frame, :text=>'閉じる', 
-                      :image=>$image['delete'], :compound=>:left, 
+                      }),
+         TkButton.new(frame, :text=>'コード参照',
+                      :image=>$image['view'], :compound=>:left,
+                      :command=>proc{showCode 'check2'}),
+         TkButton.new(frame, :text=>'閉じる',
+                      :image=>$image['delete'], :compound=>:left,
                       :command=>proc{
                         tmppath = $check2_demo
                         $check2_demo = nil
                         $showVarsWin[tmppath.path] = nil
                         tmppath.destroy
-                      }), 
+                      }),
          :padx=>4, :pady=>4)
   frame.grid_columnconfigure(0, :weight=>1)
 }.pack('side'=>'bottom', 'fill'=>'x')
 
 
 # checkbutton 生成
-TkCheckButton.new(base_frame, :text=>'安全性検査', :variable=>safety, 
-                  :relief=>:flat, :onvalue=>'all', :offvalue=>'none', 
+TkCheckButton.new(base_frame, :text=>'安全性検査', :variable=>safety,
+                  :relief=>:flat, :onvalue=>'all', :offvalue=>'none',
                   :tristatevalue=>'partial'){
   pack('side'=>'top', 'pady'=>2, 'anchor'=>'w')
 }
@@ -71,7 +71,7 @@ TkCheckButton.new(base_frame, :text=>'安全性検査', :variable=>safety,
 [ TkCheckButton.new(base_frame, 'text'=>'ワイパー OK', 'variable'=>wipers),
   TkCheckButton.new(base_frame, 'text'=>'ブレーキ OK', 'variable'=>brakes),
   TkCheckButton.new(base_frame, 'text'=>'運転手 素面', 'variable'=>sober)
-].each{|w| 
+].each{|w|
   w.relief('flat')
   w.pack('side'=>'top', 'padx'=>15, 'pady'=>2, 'anchor'=>'w')
 }

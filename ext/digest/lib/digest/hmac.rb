@@ -2,8 +2,8 @@
 #
 # An implementation of HMAC keyed-hashing algorithm
 #
-# == Overview 
-# 
+# == Overview
+#
 # This library adds a method named hmac() to Digest classes, which
 # creates a Digest class for calculating HMAC digests.
 #
@@ -142,7 +142,7 @@ module TM_HMAC
       }
     }
   end
-end  
+end
 
 class TC_HMAC_MD5 < Test::Unit::TestCase
   include TM_HMAC

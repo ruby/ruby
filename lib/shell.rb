@@ -1,12 +1,12 @@
 #
-#   shell.rb - 
+#   shell.rb -
 #   	$Release Version: 0.7 $
 #   	$Revision: 1.9 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 
 require "e2mmap"

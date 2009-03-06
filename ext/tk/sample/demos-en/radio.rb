@@ -8,7 +8,7 @@
 
 # toplevel widget
 if defined?($radio_demo) && $radio_demo
-  $radio_demo.destroy 
+  $radio_demo.destroy
   $radio_demo = nil
 end
 
@@ -21,7 +21,7 @@ $radio_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($radio_demo).pack(:fill=>:both, :expand=>true)
 
-# label 
+# label
 msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
@@ -30,11 +30,11 @@ msg = TkLabel.new(base_frame) {
 }
 msg.pack('side'=>'top')
 
-# 
+#
 size = TkVariable.new
 color = TkVariable.new
 
-# frame 
+# frame
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
@@ -59,13 +59,13 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# frame 
+# frame
 f_left = TkFrame.new(base_frame)
 f_right = TkFrame.new(base_frame)
 f_left.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 f_right.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 
-# radiobutton 
+# radiobutton
 [10, 12, 18, 24].each {|sz|
   TkRadioButton.new(f_left) {
     text "Point Size #{sz}"

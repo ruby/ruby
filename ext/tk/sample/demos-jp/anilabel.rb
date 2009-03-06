@@ -6,7 +6,7 @@
 
 # toplevel widget が存在すれば削除する
 if defined?($anilabel_demo) && $anilabel_demo
-  $anilabel_demo.destroy 
+  $anilabel_demo.destroy
   $anilabel_demo = nil
 end
 
@@ -50,7 +50,7 @@ TkFrame.new(base_frame) {|frame|
 # label demo 用フレーム生成
 f_left = TkLabelFrame.new(base_frame,  :text=>'Scrolling Texts')
 f_right = TkLabelFrame.new(base_frame, :text=>'GIF Image')
-Tk.pack(f_left, f_right, 'side'=>'left', 'expand'=>'yes', 'fill'=>'both', 
+Tk.pack(f_left, f_right, 'side'=>'left', 'expand'=>'yes', 'fill'=>'both',
         'padx'=>10, 'pady'=>10)
 
 # animated label
@@ -88,7 +88,7 @@ class AnimatedImageLabel < AnimatedTextLabel
     @btag.bind_append('Destroy'){
       if @destroy_image
         begin
-          self.image.delete 
+          self.image.delete
         rescue
         end
       end
@@ -124,13 +124,13 @@ class AnimatedImageLabel < AnimatedTextLabel
 end
 
 # label 生成
-l1 = AnimatedTextLabel.new(f_left, :borderwidth=>4, :relief=>:ridge, 
+l1 = AnimatedTextLabel.new(f_left, :borderwidth=>4, :relief=>:ridge,
                            :font=>{:family=>'Courier', :size=>10})
-l2 = AnimatedTextLabel.new(f_left, :borderwidth=>4, :relief=>:groove, 
+l2 = AnimatedTextLabel.new(f_left, :borderwidth=>4, :relief=>:groove,
                            :font=>{:family=>'Courier', :size=>10})
-l3 = AnimatedTextLabel.new(f_left, :borderwidth=>4, :relief=>:flat, 
+l3 = AnimatedTextLabel.new(f_left, :borderwidth=>4, :relief=>:flat,
                            :font=>{:family=>'Courier', :size=>10}, :width=>18)
-Tk.pack(l1, l2, l3, 
+Tk.pack(l1, l2, l3,
         :side=>:top, :expand=>true, :anchor=>:w, :padx=>10, :pady=>10)
 
 limg = AnimatedImageLabel.new(f_right, :borderwidth=>0)

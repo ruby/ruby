@@ -5,7 +5,7 @@
 
 # toplevel widget が存在すれば削除する
 if defined?($filebox_demo) && $entry2_demo
-  $filebox_demo.destroy 
+  $filebox_demo.destroy
   $filebox_demo = nil
 end
 
@@ -49,7 +49,7 @@ TkFrame.new(base_frame) {|frame|
     TkEntry.new(f, 'width'=>20) {|e|
       pack('side'=>'left', 'expand'=>'yes', 'fill'=>'x')
 
-      TkButton.new(f, 'text'=>'Browse ...', 
+      TkButton.new(f, 'text'=>'Browse ...',
                    'command'=>proc{fileDialog base_frame,e,type})\
       .pack('side'=>'left')
     }
@@ -60,9 +60,9 @@ TkFrame.new(base_frame) {|frame|
 
 $tk_strictMotif = TkVarAccess.new('tk_strictMotif')
 if ($tk_platform['platform'] == 'unix')
-  TkCheckButton.new(base_frame, 
-                    'text'=>'Motifスタイルのダイアログを用いる', 
-                    'variable'=>$tk_strictMotif, 
+  TkCheckButton.new(base_frame,
+                    'text'=>'Motifスタイルのダイアログを用いる',
+                    'variable'=>$tk_strictMotif,
                     'onvalue'=>1, 'offvalue'=>0 ).pack('anchor'=>'c')
 end
 
@@ -71,23 +71,23 @@ def fileDialog(w,ent,operation)
   #
   #--------------------------------------------------------
   types = [
-    ['Text files',       ['.txt','.doc']          ], 
-    ['Text files',       [],                      'TEXT' ], 
-    ['Ruby Scripts',     ['.rb'],                 'TEXT' ], 
-    ['Tcl Scripts',      ['.tcl'],                'TEXT' ], 
-    ['C Source Files',   ['.c','.h']              ], 
-    ['All Source Files', ['.rb','.tcl','.c','.h'] ], 
-    ['Image Files',      ['.gif']                 ], 
-    ['Image Files',      ['.jpeg','.jpg']         ], 
-    ['Image Files',      [],                      ['GIFF','JPEG']], 
+    ['Text files',       ['.txt','.doc']          ],
+    ['Text files',       [],                      'TEXT' ],
+    ['Ruby Scripts',     ['.rb'],                 'TEXT' ],
+    ['Tcl Scripts',      ['.tcl'],                'TEXT' ],
+    ['C Source Files',   ['.c','.h']              ],
+    ['All Source Files', ['.rb','.tcl','.c','.h'] ],
+    ['Image Files',      ['.gif']                 ],
+    ['Image Files',      ['.jpeg','.jpg']         ],
+    ['Image Files',      [],                      ['GIFF','JPEG']],
     ['All files',        '*'                      ]
   ]
 
   if operation == '開く'
     file = Tk.getOpenFile('filetypes'=>types, 'parent'=>w)
   else
-    file = Tk.getSaveFile('filetypes'=>types, 'parent'=>w, 
-                          'initialfile'=>'Untitled', 
+    file = Tk.getSaveFile('filetypes'=>types, 'parent'=>w,
+                          'initialfile'=>'Untitled',
                           'defaultextension'=>'.txt')
   end
   if file != ""

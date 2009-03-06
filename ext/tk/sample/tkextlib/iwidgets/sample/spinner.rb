@@ -18,10 +18,10 @@ class Spinner_demo < TkWindow
   end
 
   def initialize(parent=nil)
-    @spinner = Tk::Iwidgets::Spinner.new(parent, :labeltext=>'Month : ', 
-                                         :width=>10, :fixed=>10, 
-                                         :validate=>proc{|c| block_input}, 
-                                         :decrement=>proc{spin_month -1}, 
+    @spinner = Tk::Iwidgets::Spinner.new(parent, :labeltext=>'Month : ',
+                                         :width=>10, :fixed=>10,
+                                         :validate=>proc{|c| block_input},
+                                         :decrement=>proc{spin_month -1},
                                          :increment=>proc{spin_month 1})
     @path = @spinner
     @spinner.insert(0, Months[0])

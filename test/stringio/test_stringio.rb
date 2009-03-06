@@ -117,7 +117,7 @@ class TestStringIO < Test::Unit::TestCase
   def test_isatty
     assert_equal(false, StringIO.new("").isatty)
   end
-  
+
   def test_path
     assert_equal(nil, StringIO.new("").path)
   end
@@ -134,7 +134,7 @@ class TestStringIO < Test::Unit::TestCase
   def test_set_fcntl
     assert_raise(NotImplementedError) { StringIO.new("").fcntl }
   end
-  
+
   def test_close
     f = StringIO.new("")
     f.close
@@ -147,7 +147,7 @@ class TestStringIO < Test::Unit::TestCase
   ensure
     f.close unless f.closed?
   end
-  
+
   def test_close_read
     f = StringIO.new("")
     f.close_read
@@ -161,7 +161,7 @@ class TestStringIO < Test::Unit::TestCase
   ensure
     f.close unless f.closed?
   end
-  
+
   def test_close_write
     f = StringIO.new("")
     f.close_write

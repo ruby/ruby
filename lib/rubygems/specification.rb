@@ -256,7 +256,7 @@ module Gem
     # Defines a _singular_ version of an existing _plural_ attribute (i.e. one
     # whose value is expected to be an array).  This means just creating a
     # helper method that takes a single value and appends it to the array.
-    # These are created for convenience, so that in a spec, one can write 
+    # These are created for convenience, so that in a spec, one can write
     #
     #   s.require_path = 'mylib'
     #
@@ -266,13 +266,13 @@ module Gem
     #
     # That above convenience is available courtesy of:
     #
-    #   attribute_alias_singular :require_path, :require_paths 
+    #   attribute_alias_singular :require_path, :require_paths
 
     def self.attribute_alias_singular(singular, plural)
       define_method("#{singular}=") { |val|
         send("#{plural}=", [val])
       }
-      define_method("#{singular}") { 
+      define_method("#{singular}") {
         val = send("#{plural}")
         val.nil? ? nil : val.first
       }
@@ -427,7 +427,7 @@ module Gem
     end
 
     alias has_test_suite? has_unit_tests? # :nodoc: deprecated
-    
+
     ##
     # Specification constructor.  Assigns the default values to the
     # attributes, adds this spec to the list of loaded specs (see
@@ -476,7 +476,7 @@ module Gem
     # routine (#initialize).  This method makes up for that and deals with
     # gems of different ages.
     #
-    # 'input' can be anything that YAML.load() accepts: String or IO. 
+    # 'input' can be anything that YAML.load() accepts: String or IO.
 
     def self.from_yaml(input)
       input = normalize_yaml_input input
@@ -493,12 +493,12 @@ module Gem
       unless (spec.instance_variables.include? '@specification_version' or
               spec.instance_variables.include? :@specification_version) and
              spec.instance_variable_get :@specification_version
-        spec.instance_variable_set :@specification_version, 
+        spec.instance_variable_set :@specification_version,
                                    NONEXISTENT_SPECIFICATION_VERSION
       end
 
       spec
-    end 
+    end
 
     ##
     # Loads ruby format gemspec from +filename+
@@ -522,7 +522,7 @@ module Gem
       result = "--- " + result unless result =~ /^--- /
       result
     end
-    
+
     ##
     # Sets the rubygems_version to the current RubyGems version
 
@@ -624,7 +624,7 @@ module Gem
     # Checks if this specification meets the requirement of +dependency+.
 
     def satisfies_requirement?(dependency)
-      return @name == dependency.name && 
+      return @name == dependency.name &&
         dependency.version_requirements.satisfied_by?(@version)
     end
 
@@ -804,7 +804,7 @@ module Gem
           raise Gem::InvalidSpecificationException,
                 "missing value for attribute #{symbol}"
         end
-      end 
+      end
 
       if require_paths.empty? then
         raise Gem::InvalidSpecificationException,
@@ -850,9 +850,9 @@ module Gem
     # Normalize the list of files so that:
     # * All file lists have redundancies removed.
     # * Files referenced in the extra_rdoc_files are included in the package
-    #   file list. 
+    #   file list.
     #
-    # Also, the summary and description are converted to a normal format. 
+    # Also, the summary and description are converted to a normal format.
 
     def normalize
       if defined?(@extra_rdoc_files) and @extra_rdoc_files then
@@ -935,11 +935,11 @@ module Gem
       else raise Exception, "ruby_code case not handled: #{obj.class}"
       end
     end
-    
+
     private :ruby_code
 
     # :section: Required gemspec attributes
-    
+
     ##
     # The version of RubyGems used to create this gem
 
@@ -979,7 +979,7 @@ module Gem
 
     ##
     # A contact email for this gem
-    
+
     attribute :email
 
     ##
@@ -990,7 +990,7 @@ module Gem
     ##
     # The rubyforge project this gem lives under.  i.e. RubyGems'
     # rubyforge_project is "rubygems".
-    
+
     attribute :rubyforge_project
 
     ##
@@ -1108,7 +1108,7 @@ module Gem
 
     ##
     # Singular accessor for executables
-    
+
     attribute_alias_singular :executable, :executables
 
     ##

@@ -1,5 +1,5 @@
 #
-# newton.rb 
+# newton.rb
 #
 # Solves the nonlinear algebraic equation system f = 0 by Newton's method.
 # This program is not dependent on BigDecimal.
@@ -28,7 +28,7 @@ require "bigdecimal/jacobian"
 module Newton
   include LUSolve
   include Jacobian
-  
+
   def norm(fv,zero=0.0)
     s = zero
     n = fv.size

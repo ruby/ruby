@@ -218,7 +218,7 @@ require 'rubygems/gem_openssl'
 #
 #   # signing key (still kept in an undisclosed location!)
 #   s.signing_key = '/mnt/floppy/alf-private_key.pem'
-#   
+#
 #   # certificate chain (includes the issuer certificate now too)
 #   s.cert_chain  = ['/home/alf/doc/seattlerb-public_cert.pem',
 #                    '/home/alf/doc/alf_at_seattle-public_cert.pem']
@@ -274,7 +274,7 @@ require 'rubygems/gem_openssl'
 #   # convert a PEM format X509 certificate into DER format:
 #   # (note: Windows .cer files are X509 certificates in DER format)
 #   $ openssl x509 -in input.pem -outform der -out output.der
-#   
+#
 #   # print out the certificate in a human-readable format:
 #   $ openssl x509 -in input.pem -noout -text
 #
@@ -282,7 +282,7 @@ require 'rubygems/gem_openssl'
 #
 #   # convert a PEM format RSA key into DER format:
 #   $ openssl rsa -in input_key.pem -outform der -out output_key.der
-#   
+#
 #   # print out the key in a human readable format:
 #   $ openssl rsa -in input_key.pem -noout -text
 #

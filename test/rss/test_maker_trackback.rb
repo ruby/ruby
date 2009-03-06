@@ -7,7 +7,7 @@ module RSS
 
     def setup
       @uri = "http://madskills.com/public/xml/rss/module/trackback/"
-      
+
       @elements = {
         :ping => "http://bar.com/tb.cgi?tb_id=rssplustrackback",
         :abouts => [

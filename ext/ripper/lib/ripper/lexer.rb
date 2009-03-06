@@ -173,7 +173,7 @@ class Ripper
         @tokens[@match.begin(n)...@match.end(n)].map {|pos,type,str| str }
       end
     end
-  
+
   end
 
 end

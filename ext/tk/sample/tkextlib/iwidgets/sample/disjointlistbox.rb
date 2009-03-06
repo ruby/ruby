@@ -2,7 +2,7 @@
 require 'tk'
 require 'tkextlib/iwidgets'
 
-djl = Tk::Iwidgets::Disjointlistbox.new.pack(:fill=>:both, :expand=>true, 
+djl = Tk::Iwidgets::Disjointlistbox.new.pack(:fill=>:both, :expand=>true,
                                              :padx=>10,  :pady=>10)
 djl.set_lhs(*[0,2,4,5])
 djl.set_rhs(3,6)

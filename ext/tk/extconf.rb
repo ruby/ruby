@@ -42,7 +42,7 @@ unless is_win32
   have_library("nsl", "t_open")
   have_library("socket", "socket")
   have_library("dl", "dlopen")
-  have_library("m", "log") 
+  have_library("m", "log")
 end
 
 tk_idir,  tk_ldir  = dir_config("tk")
@@ -185,7 +185,7 @@ def find_tk(tklib, stubs, version, *opt_paths)
            find_library("#{lib}#{ver}g", func, *paths) or
            find_library("#{lib}#{ver.delete('.')}g", func, *paths) or
            find_library("tk#{ver}", func, *paths) or
-           find_library("tk#{ver.delete('.')}", func, *paths) or 
+           find_library("tk#{ver.delete('.')}", func, *paths) or
            find_library("tk#{ver}g", func, *paths) or
            find_library("tk#{ver.delete('.')}g", func, *paths)
          } || (!version && find_library(lib, func, *paths))
@@ -227,7 +227,7 @@ def find_tcltk_header(tclver, tkver)
 end
 
 def find_X11(*opt_paths)
-  default_paths = 
+  default_paths =
     [ "/usr/X11/lib", "/usr/lib/X11", "/usr/X11R6/lib", "/usr/openwin/lib" ]
   paths = opt_paths.compact.concat(default_paths)
   st = find_library("X11", "XOpenDisplay", *paths)
@@ -235,7 +235,7 @@ def find_X11(*opt_paths)
     puts("Warning:: cannot find X11 library. tcltklib will not be compiled (tcltklib is disabled on your Ruby == Ruby/Tk will not work). Please check configure options. If your Tcl/Tk don't require X11, please try --without-X11.")
   end
   st
-end 
+end
 
 def pthread_check()
   tcl_major_ver = nil
@@ -295,9 +295,9 @@ def pthread_check()
       puts(%Q'\
 *****************************************************************************
 **
-** PTHREAD SUPPORT CHECK WARNING: 
+** PTHREAD SUPPORT CHECK WARNING:
 **
-**   We cannot check the consistency of pthread support between Ruby 
+**   We cannot check the consistency of pthread support between Ruby
 **   and the Tcl/Tk library in your environment (are you perhaps
 **   cross-compiling?). If pthread support for these 2 packages is
 **   inconsistent you may find you get errors when running Ruby/Tk
@@ -314,7 +314,7 @@ def pthread_check()
     # tcl-thread is unknown
     if try_run(<<EOF)
 #include <tcl.h>
-int main() { 
+int main() {
    Tcl_Interp *ip;
    ip = Tcl_CreateInterp();
    exit((Tcl_Eval(ip, "set tcl_platform(threaded)") == TCL_OK)? 0: 1);
@@ -340,7 +340,7 @@ EOF
       puts(%Q'\
 *****************************************************************************
 **
-** PTHREAD SUPPORT MODE WARNING: 
+** PTHREAD SUPPORT MODE WARNING:
 **
 **   Ruby is compiled with --enable-pthread, but your Tcl/Tk library
 **   seems to be compiled without pthread support. Although you can
@@ -349,9 +349,9 @@ EOF
 **   keep the current pthread support status, we recommend you reconfigure
 **   and recompile the libraries so that both or neither support pthreads.
 **
-**   If you want change the status of pthread support, please recompile 
-**   Ruby without "--enable-pthread" configure option or recompile Tcl/Tk 
-**   with "--enable-threads" configure option (if your Tcl/Tk is later 
+**   If you want change the status of pthread support, please recompile
+**   Ruby without "--enable-pthread" configure option or recompile Tcl/Tk
+**   with "--enable-threads" configure option (if your Tcl/Tk is later
 **   than or equal to Tcl/Tk 8.1).
 **
 *****************************************************************************
@@ -374,9 +374,9 @@ EOF
       puts(%Q'\
 *****************************************************************************
 **
-** PTHREAD SUPPORT MODE ERROR: 
+** PTHREAD SUPPORT MODE ERROR:
 **
-**   Ruby is not compiled with --enable-pthread, but your Tcl/Tk 
+**   Ruby is not compiled with --enable-pthread, but your Tcl/Tk
 **   library seems to be compiled with pthread support. This
 **   combination may cause frequent hang or segmentation fault
 **   errors when Ruby/Tk is working. We recommend that you NEVER
@@ -399,8 +399,8 @@ end
 
 tclver, tkver = check_tcltk_version(tcltk_version)
 
-if ( tcltk_framework || 
-       ( find_tcltk_header(tclver, tkver) && 
+if ( tcltk_framework ||
+       ( find_tcltk_header(tclver, tkver) &&
            ( !use_X || find_X11(x11_ldir2, x11_ldir) ) &&
            find_tcl(tcllib, stubs, tclver, *tcl_ldir_list) &&
            find_tk(tklib, stubs, tkver, *tk_ldir_list) ) )

@@ -230,7 +230,7 @@ class Tk::BLT::Treeview
   ########################
 
   def __boolval_optkeys
-    ['autocreate', 'allowduplicates', 'exportselection', 'flat', 'hideroot', 
+    ['autocreate', 'allowduplicates', 'exportselection', 'flat', 'hideroot',
       'newtags', 'showtitles', 'sortselection']
   end
   private :__boolval_optkeys
@@ -245,17 +245,17 @@ class Tk::BLT::Treeview
   class OpenCloseCommand < TkValidateCommand
     class ValidateArgs < TkUtil::CallbackSubst
       KEY_TBL = [
-        [ ?W, ?w, :widget ], 
-        [ ?p, ?s, :name ], 
-        [ ?P, ?s, :fullpath ], 
-        [ ?#, ?x, :node_id ], 
+        [ ?W, ?w, :widget ],
+        [ ?p, ?s, :name ],
+        [ ?P, ?s, :fullpath ],
+        [ ?#, ?x, :node_id ],
         nil
       ]
 
       PROC_TBL = [
-        [ ?x, TkComm.method(:num_or_str) ], 
-        [ ?s, TkComm.method(:string) ], 
-        [ ?w, TkComm.method(:window) ], 
+        [ ?x, TkComm.method(:num_or_str) ],
+        [ ?s, TkComm.method(:string) ],
+        [ ?w, TkComm.method(:window) ],
         nil
       ]
 
@@ -463,7 +463,7 @@ class Tk::BLT::Treeview
     self
   end
   def entry_children(tag, first=None, last=None)
-    simplelist(tk_send('entry', 'children', tagid(tag), 
+    simplelist(tk_send('entry', 'children', tagid(tag),
                        first, last)).collect{|id| tagid2obj(id)}
   end
   def entry_delete(tag, first=None, last=None)
@@ -500,17 +500,17 @@ class Tk::BLT::Treeview
   class FindExecFlagValue < TkValidateCommand
     class ValidateArgs < TkUtil::CallbackSubst
       KEY_TBL = [
-        [ ?W, ?w, :widget ], 
-        [ ?p, ?s, :name ], 
-        [ ?P, ?s, :fullpath ], 
-        [ ?#, ?x, :node_id ], 
+        [ ?W, ?w, :widget ],
+        [ ?p, ?s, :name ],
+        [ ?P, ?s, :fullpath ],
+        [ ?#, ?x, :node_id ],
         nil
       ]
 
       PROC_TBL = [
-        [ ?x, TkComm.method(:num_or_str) ], 
-        [ ?s, TkComm.method(:string) ], 
-        [ ?w, TkComm.method(:window) ], 
+        [ ?x, TkComm.method(:num_or_str) ],
+        [ ?s, TkComm.method(:string) ],
+        [ ?w, TkComm.method(:window) ],
         nil
       ]
 
@@ -646,7 +646,7 @@ class Tk::BLT::Treeview
     }
   end
   def range_open(first, last)
-    simplelist(tk_send('range', '-open', 
+    simplelist(tk_send('range', '-open',
                        tagid(first), tagid(last))).collect{|id|
       tagid2obj(id)
     }
@@ -1118,7 +1118,7 @@ class Tk::BLT::Treeview::Node < TkObject
       at = keys.delete['at']
 
       if parent
-        if parent.kind_of?(Tk::BLT::Treeview::Node) || 
+        if parent.kind_of?(Tk::BLT::Treeview::Node) ||
             parent.kind_of?(Tk::BLT::Treeview::Tag)
           path = [get_full(parent.id)[0], name]
           at = nil # ignore 'at' option

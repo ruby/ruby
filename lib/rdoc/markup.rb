@@ -27,9 +27,9 @@ require 'rdoc'
 # convert multiple input strings.
 #
 #   require 'rdoc/markup/to_html'
-#   
+#
 #   h = RDoc::Markup::ToHtml.new
-#   
+#
 #   puts h.convert(input_string)
 #
 # You can extend the RDoc::Markup parser to recognise new markup
@@ -41,22 +41,22 @@ require 'rdoc'
 #
 #   require 'rdoc/markup'
 #   require 'rdoc/markup/to_html'
-#   
+#
 #   class WikiHtml < RDoc::Markup::ToHtml
 #     def handle_special_WIKIWORD(special)
 #       "<font color=red>" + special.text + "</font>"
 #     end
 #   end
-#   
+#
 #   m = RDoc::Markup.new
 #   m.add_word_pair("{", "}", :STRIKE)
 #   m.add_html("no", :STRIKE)
-#   
+#
 #   m.add_special(/\b([A-Z][a-z]+[A-Z]\w+)/, :WIKIWORD)
-#   
+#
 #   wh = WikiHtml.new
 #   wh.add_tag(:STRIKE, "<strike>", "</strike>")
-#   
+#
 #   puts "<body>#{wh.convert ARGF.read}</body>"
 #
 #--

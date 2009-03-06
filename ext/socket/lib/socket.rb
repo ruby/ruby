@@ -388,7 +388,7 @@ class Socket
   # yield socket and client address for each a connection accepted via given sockets.
   #
   # The arguments are a list of sockets.
-  # The individual argument should be a socket or an array of sockets. 
+  # The individual argument should be a socket or an array of sockets.
   #
   # This method yields the block sequentially.
   # It means that the next connection is not accepted until the block returns.

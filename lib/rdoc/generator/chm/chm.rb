@@ -6,7 +6,7 @@ module RDoc::Generator::CHM::CHM
   HTML = RDoc::Generator::HTML::HTML
 
   INDEX = HTML::INDEX
-  
+
   STYLE = HTML::STYLE
 
   CLASS_INDEX = HTML::CLASS_INDEX

@@ -5,7 +5,7 @@
 
 # toplevel widget が存在すれば削除する
 if defined?($label_demo) && $label_demo
-  $label_demo.destroy 
+  $label_demo.destroy
   $label_demo = nil
 end
 
@@ -49,12 +49,12 @@ TkFrame.new(base_frame) {|frame|
 # label demo 用フレーム生成
 f_left = TkFrame.new(base_frame)
 f_right = TkFrame.new(base_frame)
-[f_left, f_right].each{|w| w.pack('side'=>'left', 'expand'=>'yes', 
+[f_left, f_right].each{|w| w.pack('side'=>'left', 'expand'=>'yes',
                                   'padx'=>10, 'pady'=>10, 'fill'=>'both')}
 
 # label 生成
 [ TkLabel.new(f_left, 'text'=>'最初のラベル'),
-  TkLabel.new(f_left, 'text'=>'2 番目。ちょっと浮き上がらせてみました', 
+  TkLabel.new(f_left, 'text'=>'2 番目。ちょっと浮き上がらせてみました',
               'relief'=>'raised'),
   TkLabel.new(f_left, 'text'=>'3 番目。沈んでいます ', 'relief'=>'sunken')
 ].each{|w| w.pack('side'=>'top', 'expand'=>'yes', 'pady'=>2, 'anchor'=>'w')}

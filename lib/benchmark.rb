@@ -1,13 +1,13 @@
 =begin
 #
-# benchmark.rb - a performance benchmarking library 
-# 
+# benchmark.rb - a performance benchmarking library
+#
 # $Id$
-# 
-# Created by Gotoken (gotoken@notwork.org). 
+#
+# Created by Gotoken (gotoken@notwork.org).
 #
 # Documentation by Gotoken (original RD), Lyle Johnson (RDoc conversion), and
-# Gavin Sinclair (editing). 
+# Gavin Sinclair (editing).
 #
 =end
 
@@ -26,15 +26,15 @@
 #       require 'benchmark'
 #
 #       puts Benchmark.measure { "a"*1_000_000 }
-# 
+#
 #   On my machine (FreeBSD 3.2 on P5, 100MHz) this generates:
-# 
+#
 #       1.166667   0.050000   1.216667 (  0.571355)
-# 
+#
 #   This report shows the user CPU time, system CPU time, the sum of
 #   the user and system CPU times, and the elapsed real time. The unit
 #   of time is seconds.
-# 
+#
 # * Do some experiments sequentially using the #bm method:
 #
 #       require 'benchmark'
@@ -45,7 +45,7 @@
 #         x.report { n.times do   ; a = "1"; end }
 #         x.report { 1.upto(n) do ; a = "1"; end }
 #       end
-# 
+#
 #   The result:
 #
 #              user     system      total        real
@@ -63,14 +63,14 @@
 #         x.report("times:") { n.times do   ; a = "1"; end }
 #         x.report("upto:")  { 1.upto(n) do ; a = "1"; end }
 #       end
-# 
+#
 # The result:
-# 
+#
 #                     user     system      total        real
 #        for:     1.050000   0.000000   1.050000 (  0.503462)
 #        times:   1.533333   0.016667   1.550000 (  0.735473)
 #        upto:    1.500000   0.016667   1.516667 (  0.711239)
-# 
+#
 #
 # * The times for some benchmarks depend on the order in which items
 #   are run.  These differences are due to the cost of memory
@@ -79,21 +79,21 @@
 #   sort an array of floats:
 #
 #       require 'benchmark'
-#       
+#
 #       array = (1..1000000).map { rand }
-#       
+#
 #       Benchmark.bmbm do |x|
 #         x.report("sort!") { array.dup.sort! }
 #         x.report("sort")  { array.dup.sort  }
 #       end
-# 
+#
 #   The result:
-# 
+#
 #        Rehearsal -----------------------------------------
 #        sort!  11.928000   0.010000  11.938000 ( 12.756000)
 #        sort   13.048000   0.020000  13.068000 ( 13.857000)
 #        ------------------------------- total: 25.006000sec
-#        
+#
 #                    user     system      total        real
 #        sort!  12.959000   0.010000  12.969000 ( 13.793000)
 #        sort   12.007000   0.000000  12.007000 ( 12.791000)
@@ -103,7 +103,7 @@
 #   using the #benchmark method:
 #
 #       require 'benchmark'
-#       include Benchmark         # we need the CAPTION and FMTSTR constants 
+#       include Benchmark         # we need the CAPTION and FMTSTR constants
 #
 #       n = 50000
 #       Benchmark.benchmark(" "*7 + CAPTION, 7, FMTSTR, ">total:", ">avg:") do |x|
@@ -112,9 +112,9 @@
 #         tu = x.report("upto:")  { 1.upto(n) do ; a = "1"; end }
 #         [tf+tt+tu, (tf+tt+tu)/3]
 #       end
-# 
+#
 #   The result:
-# 
+#
 #                     user     system      total        real
 #        for:     1.016667   0.016667   1.033333 (  0.485749)
 #        times:   1.450000   0.016667   1.466667 (  0.681367)
@@ -145,10 +145,10 @@ module Benchmark
   # suitable for nearly all benchmarking requirements.  See the examples in
   # Benchmark, and the #bm and #bmbm methods.
   #
-  # Example: 
+  # Example:
   #
   #     require 'benchmark'
-  #     include Benchmark          # we need the CAPTION and FMTSTR constants 
+  #     include Benchmark          # we need the CAPTION and FMTSTR constants
   #
   #     n = 50000
   #     Benchmark.benchmark(" "*7 + CAPTION, 7, FMTSTR, ">total:", ">avg:") do |x|
@@ -157,16 +157,16 @@ module Benchmark
   #       tu = x.report("upto:")  { 1.upto(n) do ; a = "1"; end }
   #       [tf+tt+tu, (tf+tt+tu)/3]
   #     end
-  # 
+  #
   # <i>Generates:</i>
-  # 
+  #
   #                     user     system      total        real
   #        for:     1.016667   0.016667   1.033333 (  0.485749)
   #        times:   1.450000   0.016667   1.466667 (  0.681367)
   #        upto:    1.533333   0.000000   1.533333 (  0.722166)
   #        >total:  4.000000   0.033333   4.033333 (  1.889282)
   #        >avg:    1.333333   0.011111   1.344444 (  0.629761)
-  # 
+  #
 
   def benchmark(caption = "", label_width = nil, fmtstr = nil, *labels) # :yield: report
     sync = STDOUT.sync
@@ -177,7 +177,7 @@ module Benchmark
     print caption
     results = yield(Report.new(label_width, fmtstr))
     Array === results and results.grep(Tms).each {|t|
-      print((labels.shift || t.label || "").ljust(label_width), 
+      print((labels.shift || t.label || "").ljust(label_width),
             t.format(fmtstr))
     }
     STDOUT.sync = sync
@@ -186,7 +186,7 @@ module Benchmark
 
   # A simple interface to the #benchmark method, #bm is generates sequential reports
   # with labels.  The parameters have the same meaning as for #benchmark.
-  # 
+  #
   #     require 'benchmark'
   #
   #     n = 50000
@@ -195,9 +195,9 @@ module Benchmark
   #       x.report("times:") { n.times do   ; a = "1"; end }
   #       x.report("upto:")  { 1.upto(n) do ; a = "1"; end }
   #     end
-  # 
+  #
   # <i>Generates:</i>
-  # 
+  #
   #                     user     system      total        real
   #        for:     1.050000   0.000000   1.050000 (  0.503462)
   #        times:   1.533333   0.016667   1.550000 (  0.735473)
@@ -224,21 +224,21 @@ module Benchmark
   # calculate the required label width.
   #
   #       require 'benchmark'
-  #       
+  #
   #       array = (1..1000000).map { rand }
-  #       
+  #
   #       Benchmark.bmbm do |x|
   #         x.report("sort!") { array.dup.sort! }
   #         x.report("sort")  { array.dup.sort  }
   #       end
-  # 
+  #
   # <i>Generates:</i>
-  # 
+  #
   #        Rehearsal -----------------------------------------
   #        sort!  11.928000   0.010000  11.938000 ( 12.756000)
   #        sort   13.048000   0.020000  13.068000 ( 13.857000)
   #        ------------------------------- total: 25.006000sec
-  #        
+  #
   #                    user     system      total        real
   #        sort!  12.959000   0.010000  12.969000 ( 13.793000)
   #        sort   12.007000   0.000000  12.007000 ( 12.791000)
@@ -267,7 +267,7 @@ module Benchmark
     ets = sum.format("total: %tsec")
     printf("%s %s\n\n",
            "-"*(width+CAPTION.length-ets.length-1), ets)
-    
+
     # take
     print ' '*width, CAPTION
     list = []
@@ -285,7 +285,7 @@ module Benchmark
     ary
   end
 
-  # 
+  #
   # Returns the time used to execute the given block as a
   # Benchmark::Tms object.
   #
@@ -293,10 +293,10 @@ module Benchmark
     t0, r0 = Benchmark.times, Time.now
     yield
     t1, r1 = Benchmark.times, Time.now
-    Benchmark::Tms.new(t1.utime  - t0.utime, 
-                       t1.stime  - t0.stime, 
-                       t1.cutime - t0.cutime, 
-                       t1.cstime - t0.cstime, 
+    Benchmark::Tms.new(t1.utime  - t0.utime,
+                       t1.stime  - t0.stime,
+                       t1.cutime - t0.cutime,
+                       t1.cstime - t0.cstime,
                        r1.to_f - r0.to_f,
                        label)
   end
@@ -323,8 +323,8 @@ module Benchmark
     # Usually, one doesn't call this method directly, as new
     # Job objects are created by the #bmbm method.
     # _width_ is a initial value for the label offset used in formatting;
-    # the #bmbm method passes its _width_ argument to this constructor. 
-    # 
+    # the #bmbm method passes its _width_ argument to this constructor.
+    #
     def initialize(width)
       @width = width
       @list = []
@@ -343,11 +343,11 @@ module Benchmark
     end
 
     alias report item
-    
+
     # An array of 2-element arrays, consisting of label and block pairs.
     attr_reader :list
-    
-    # Length of the widest label in the #list, plus one.  
+
+    # Length of the widest label in the #list, plus one.
     attr_reader :width
   end
 
@@ -363,10 +363,10 @@ module Benchmark
     #
     # Returns an initialized Report instance.
     # Usually, one doesn't call this method directly, as new
-    # Report objects are created by the #benchmark and #bm methods. 
-    # _width_ and _fmtstr_ are the label offset and 
-    # format string used by Tms#format. 
-    # 
+    # Report objects are created by the #benchmark and #bm methods.
+    # _width_ and _fmtstr_ are the label offset and
+    # format string used by Tms#format.
+    #
     def initialize(width = 0, fmtstr = nil)
       @width, @fmtstr = width, fmtstr
     end
@@ -398,50 +398,50 @@ module Benchmark
 
     # User CPU time
     attr_reader :utime
-    
+
     # System CPU time
     attr_reader :stime
-   
+
     # User CPU time of children
     attr_reader :cutime
-    
+
     # System CPU time of children
     attr_reader :cstime
-    
+
     # Elapsed real time
     attr_reader :real
-    
-    # Total time, that is _utime_ + _stime_ + _cutime_ + _cstime_ 
+
+    # Total time, that is _utime_ + _stime_ + _cutime_ + _cstime_
     attr_reader :total
-    
+
     # Label
     attr_reader :label
 
     #
     # Returns an initialized Tms object which has
-    # _u_ as the user CPU time, _s_ as the system CPU time, 
+    # _u_ as the user CPU time, _s_ as the system CPU time,
     # _cu_ as the children's user CPU time, _cs_ as the children's
     # system CPU time, _real_ as the elapsed real time and _l_
-    # as the label. 
-    # 
+    # as the label.
+    #
     def initialize(u = 0.0, s = 0.0, cu = 0.0, cs = 0.0, real = 0.0, l = nil)
       @utime, @stime, @cutime, @cstime, @real, @label = u, s, cu, cs, real, l
       @total = @utime + @stime + @cutime + @cstime
     end
 
-    # 
+    #
     # Returns a new Tms object whose times are the sum of the times for this
     # Tms object, plus the time required to execute the code block (_blk_).
-    # 
+    #
     def add(&blk) # :yield:
-      self + Benchmark::measure(&blk) 
+      self + Benchmark::measure(&blk)
     end
 
-    # 
+    #
     # An in-place version of #add.
-    # 
+    #
     def add!
-      t = Benchmark::measure(&blk) 
+      t = Benchmark::measure(&blk)
       @utime  = utime + t.utime
       @stime  = stime + t.stime
       @cutime = cutime + t.cutime
@@ -450,32 +450,32 @@ module Benchmark
       self
     end
 
-    # 
+    #
     # Returns a new Tms object obtained by memberwise summation
     # of the individual times for this Tms object with those of the other
     # Tms object.
-    # This method and #/() are useful for taking statistics. 
-    # 
+    # This method and #/() are useful for taking statistics.
+    #
     def +(other); memberwise(:+, other) end
-    
+
     #
     # Returns a new Tms object obtained by memberwise subtraction
     # of the individual times for the other Tms object from those of this
     # Tms object.
     #
     def -(other); memberwise(:-, other) end
-    
+
     #
     # Returns a new Tms object obtained by memberwise multiplication
     # of the individual times for this Tms object by _x_.
     #
     def *(x); memberwise(:*, x) end
 
-    # 
+    #
     # Returns a new Tms object obtained by memberwise division
     # of the individual times for this Tms object by _x_.
-    # This method and #+() are useful for taking statistics. 
-    # 
+    # This method and #+() are useful for taking statistics.
+    #
     def /(x); memberwise(:/, x) end
 
     #
@@ -486,15 +486,15 @@ module Benchmark
     #
     # <tt>%u</tt>::     Replaced by the user CPU time, as reported by Tms#utime.
     # <tt>%y</tt>::     Replaced by the system CPU time, as reported by #stime (Mnemonic: y of "s*y*stem")
-    # <tt>%U</tt>::     Replaced by the children's user CPU time, as reported by Tms#cutime 
+    # <tt>%U</tt>::     Replaced by the children's user CPU time, as reported by Tms#cutime
     # <tt>%Y</tt>::     Replaced by the children's system CPU time, as reported by Tms#cstime
     # <tt>%t</tt>::     Replaced by the total CPU time, as reported by Tms#total
     # <tt>%r</tt>::     Replaced by the elapsed real time, as reported by Tms#real
     # <tt>%n</tt>::     Replaced by the label string, as reported by Tms#label (Mnemonic: n of "*n*ame")
-    # 
+    #
     # If _fmtstr_ is not given, FMTSTR is used as default value, detailing the
     # user, system and real elapsed time.
-    # 
+    #
     def format(arg0 = nil, *args)
       fmtstr = (arg0 || FMTSTR).dup
       fmtstr.gsub!(/(%[-+\.\d]*)n/){"#{$1}s" % label}
@@ -507,19 +507,19 @@ module Benchmark
       arg0 ? Kernel::format(fmtstr, *args) : fmtstr
     end
 
-    # 
+    #
     # Same as #format.
-    # 
+    #
     def to_s
       format
     end
 
-    # 
+    #
     # Returns a new 6-element array, consisting of the
     # label, user CPU time, system CPU time, children's
     # user CPU time, children's system CPU time and elapsed
     # real time.
-    # 
+    #
     def to_a
       [@label, @utime, @stime, @cutime, @cstime, @real]
     end
@@ -548,7 +548,7 @@ module Benchmark
   # The default caption string (heading above the output times).
   CAPTION = Benchmark::Tms::CAPTION
 
-  # The default format string used to display times.  See also Benchmark::Tms#format. 
+  # The default format string used to display times.  See also Benchmark::Tms#format.
   FMTSTR = Benchmark::Tms::FMTSTR
 end
 
