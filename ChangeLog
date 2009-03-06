@@ -1,11 +1,7 @@
-Fri Mar  6 16:17:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Mar  6 18:37:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* win32/Makefile.sub (.c.asm): removed $(COUTFLAG).
-
-Fri Mar  6 14:59:30 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* error.c (report_bug): message updated to better English.
-	  [ruby-core:22665]
+	* configure.in, Makefile.in, win32/Makefile.sub (CHDIR): cd using
+	  phisical directory.
 
 Fri Mar  6 14:28:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -103,22 +99,6 @@ Wed Mar  4 20:27:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  is available.
 
 	* win32/setup.mak (-unicows-): checks if unicows.lib is available.
-
-Wed Mar  4 05:19:27 2009  James Edward Gray II  <jeg2@ruby-lang.org>
-
-	* lib/csv.rb: Some minor documentation fixes from Gregory Brown.
-
-Wed Mar  4 03:42:56 2009  James Edward Gray II  <jeg2@ruby-lang.org>
-
-	* lib/csv.rb: A patch from Madoka Yakamamoto to prevent an infinite
-	  loop while reading some encodings.
-
-Wed Mar  4 00:54:43 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
-
-	* lib/prime.rb (Prime::prime?): used to return a wrong answer.
-	  [ruby-core:22646].
-
-	* test/test_prime.rb (test_prime?): test case for [ruby-core:22646].
 
 Tue Mar  3 17:10:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -3296,7 +3276,7 @@ Tue Jan 13 18:21:44 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 Tue Jan 13 18:19:49 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_io_initialize): workaround for Windows. [ruby-dev:37686]
-	  (also see [ruby-dev:37721])
+          (also see [ruby-dev:37721])
 
 Tue Jan 13 17:29:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

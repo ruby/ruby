@@ -1,6 +1,7 @@
 SHELL = /bin/sh
 NULLCMD = :
 RUNCMD = $(SHELL)
+CHDIR = @CHDIR@
 exec = exec
 
 #### Start of system configuration section. ####
@@ -174,10 +175,10 @@ uncommon.mk: $(srcdir)/common.mk
 		sed 's/{\$$([^(){}]*)[^{}]*}//g' $< > $@
 
 config.status:	$(srcdir)/configure $(srcdir)/enc/Makefile.in
-		MINIRUBY="$(MINIRUBY)" $(SHELL) ./config.status --recheck
+	PWD= MINIRUBY="$(MINIRUBY)" $(SHELL) ./config.status --recheck
 
 $(srcdir)/configure: $(srcdir)/configure.in
-		unset PWD; cd $(srcdir) && exec $(AUTOCONF)
+	$(CHDIR) $(srcdir) && exec $(AUTOCONF)
 
 incs: id.h
 id.h: parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
@@ -247,11 +248,11 @@ ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
 
 up::
-	@cd "$(srcdir)" && LC_TIME=C exec $(VCSUP)
+	@$(CHDIR) "$(srcdir)" && LC_TIME=C exec $(VCSUP)
 
 update-rubyspec: 
 	@if [ -d $(srcdir)/spec/mspec ]; then \
-	  cd $(srcdir)/spec/mspec; \
+	  $(CHDIR) $(srcdir)/spec/mspec; \
 	  echo updating mspec ...; \
 	  git pull; \
 	  cd ../..; \
@@ -260,7 +261,7 @@ update-rubyspec:
 	  git clone $(MSPEC_GIT_URL) $(srcdir)/spec/mspec; \
 	fi
 	@if [ -d $(srcdir)/spec/rubyspec ]; then \
-	  cd $(srcdir)/spec/rubyspec; \
+	  $(CHDIR) $(srcdir)/spec/rubyspec; \
 	  echo updating rubyspec ...; \
 	  git pull; \
 	else \

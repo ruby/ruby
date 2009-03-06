@@ -4,6 +4,7 @@ SHELL = $(COMSPEC)
 RUNCMD = $(COMSPEC) /c
 MKFILES = Makefile
 NULL = nul
+CHDIR = cd
 
 !ifndef MFLAGS
 MFLAGS=-l
@@ -301,7 +302,7 @@ ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
 
 up::
-	@(set LC_TIME=C & $(VCSUP) "$(srcdir)")
+	@cd "$(srcdir:/=\)" && set LC_TIME=C && $(VCSUP)
 
 !include $(srcdir)/common.mk
 
