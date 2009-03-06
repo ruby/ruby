@@ -811,6 +811,9 @@ dir.$(OBJEXT) win32.$(OBJEXT): {$(srcdir)}win32/dir.h
 ext/extinit.obj: ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
 
+INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
+	  vmtc.inc vm.inc
+
 !ifdef insns
 make_insns_rules:
 	@type <<

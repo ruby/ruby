@@ -634,9 +634,6 @@ newline.$(OBJEXT): {$(VPATH)}newline.c {$(VPATH)}defines.h \
 
 INSNS2VMOPT = --srcdir="$(srcdir)"
 
-INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
-	  vmtc.inc vm.inc
-
 {$(VPATH)}minsns.inc: $(srcdir)/template/minsns.inc.tmpl
 
 {$(VPATH)}opt_sc.inc: $(srcdir)/template/opt_sc.inc.tmpl

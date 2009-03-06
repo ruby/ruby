@@ -1,3 +1,8 @@
+Fri Mar  6 14:28:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, win32/Makefile.sub (INSNS): moved variable
+	  definition before rule.
+
 Fri Mar  6 13:47:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rake/loaders/makefile.rb (Rake::MakefileLoader#load): deals with
