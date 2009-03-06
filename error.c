@@ -216,7 +216,7 @@ report_bug(const char *file, int line, const char *fmt, va_list args)
 
 	fprintf(out,
 		"[NOTE]\n"
-		"You may encounter a bug of Ruby interpreter. Bug reports are welcome.\n"
+		"You may have encountered a bug in the Ruby interpreter. Bug reports are welcome.\n"
 		"For details: http://www.ruby-lang.org/bugreport.html\n\n");
     }
 }

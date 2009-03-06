@@ -1,3 +1,8 @@
+Fri Mar  6 14:59:30 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (report_bug): message updated to better English.
+	  [ruby-core:22665]
+
 Fri Mar  6 14:28:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, win32/Makefile.sub (INSNS): moved variable
