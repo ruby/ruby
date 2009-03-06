@@ -1743,7 +1743,7 @@ if test "$prefix" = NONE; then
 fi
 
 if test x"$cross_compiling" = xyes; then
-  test x"$MINIRUBY" = x && MINIRUBY="${RUBY-ruby} -I`pwd` -rfake"
+  test x"$MINIRUBY" = x && MINIRUBY="${RUBY-ruby} -I`pwd` -r$(arch)-fake"
   PREP='$(arch)-fake.rb'
   RUNRUBY='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
 else
