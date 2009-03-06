@@ -1,4 +1,9 @@
-Fri Mar  6 18:46:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Mar  6 19:25:40 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_LIB_VERSION_STYLE): sets full or minor style
+	  not to show RUBY_VERSION_MAJOR and so on.
+
+	* version.h (RUBY_LIB_VERSION): makes from RUBY_LIB_VERSION_STYLE.
 
 	* configure.in, Makefile.in, win32/Makefile.sub (CHDIR): cd using
 	  phisical directory.

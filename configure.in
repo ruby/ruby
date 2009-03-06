@@ -2136,20 +2136,23 @@ AC_ARG_WITH(ruby-version,
             [ruby_version=$withval],
             [ruby_version=full])
 unset RUBY_LIB_VERSION
+unset RUBY_LIB_VERSION_STYLE
 case "$ruby_version" in
   when(full)
-    RUBY_LIB_VERSION='STRINGIZE(RUBY_VERSION_MAJOR)"."STRINGIZE(RUBY_VERSION_MINOR)"."STRINGIZE(RUBY_VERSION_TEENY)'
+    RUBY_LIB_VERSION_STYLE='3	/* full */'
     ;;
   when(minor)
-    RUBY_LIB_VERSION='STRINGIZE(RUBY_VERSION_MAJOR)"."STRINGIZE(RUBY_VERSION_MINOR)'
+    RUBY_LIB_VERSION_STYLE='2	/* minor */'
     ;;
 esac
-if test ${RUBY_LIB_VERSION+set}; then
+if test ${RUBY_LIB_VERSION_STYLE+set}; then
     {
-    echo '#include "version.h"' 
-    echo "ruby_version=${RUBY_LIB_VERSION}"
+    echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
+    echo '#define STRINGIZE(x) x'
+    echo '#include "version.h"'
+    echo 'ruby_version=RUBY_LIB_VERSION'
     } > conftest.c
-    ruby_version="`$CPP -I"${srcdir}" -D'STRINGIZE(x)=x' conftest.c | grep '^ruby_version='`"
+    ruby_version="`$CPP -I"${srcdir}" conftest.c | grep '^ruby_version='`"
     eval $ruby_version
 else
     RUBY_LIB_VERSION="\"${ruby_version}\""
@@ -2199,7 +2202,11 @@ case "$RUBY_VENDOR_LIB_PATH" in
 esac
 RUBY_VENDOR_LIB_PATH2='RUBY_VENDOR_LIB"/"RUBY_LIB_VERSION'
 
-AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION, ${RUBY_LIB_VERSION})
+if test ${RUBY_LIB_VERSION_STYLE+set}; then
+    AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION_STYLE, $RUBY_LIB_VERSION_STYLE)
+else
+    AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION, [$RUBY_LIB_VERSION])
+fi
 AC_DEFINE_UNQUOTED(RUBY_LIB_PREFIX, "${RUBY_LIB_PREFIX}")
 AC_DEFINE_UNQUOTED(RUBY_LIB, ${RUBY_LIB_PATH})
 AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, ${RUBY_SITE_LIB_PATH})
