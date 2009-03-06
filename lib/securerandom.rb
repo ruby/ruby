@@ -156,28 +156,35 @@ module SecureRandom
 
   # SecureRandom.urlsafe_base64 generates a random URL-safe base64 string.
   #
-  # The argument n specifies the length of the random length.
-  # The length of the result string is about 4/3 of n.
+  # The argument _n_ specifies the length of the random length.
+  # The length of the result string is about 4/3 of _n_.
   #
-  # If n is not specified, 16 is assumed.
+  # If _n_ is not specified, 16 is assumed.
   # It may be larger in future.
   #
-  # No padding is generated because "=" may be used as a URL delimiter.
+  # The boolean argument _padding_ specifies the padding.
+  # If it is false or nil, padding is not generated.
+  # Otherwise padding is generated.
+  # By default, padding is not generated because "=" may be used as a URL delimiter.
   #
   # The result may contain A-Z, a-z, 0-9, "-" and "_".
+  # "=" is also used if _padding_ is true.
   #
   #   p SecureRandom.urlsafe_base64 #=> "b4GOKm4pOYU_-BOXcrUGDg"
   #   p SecureRandom.urlsafe_base64 #=> "UZLdOkzop70Ddx-IJR0ABg"
+  #
+  #   p SecureRandom.urlsafe_base64(nil, true) #=> "i0XQ-7gglIsHGV2_BNPrdQ=="
+  #   p SecureRandom.urlsafe_base64(nil, true) #=> "-M8rLhr7JEpJlqFGUMmOxg=="
   #
   # If secure random number generator is not available,
   # NotImplementedError is raised.
   #
   # See RFC 3548 for URL-safe base64.
-  def self.urlsafe_base64(n=nil)
+  def self.urlsafe_base64(n=nil, padding=false)
     s = [random_bytes(n)].pack("m*")
     s.delete!("\n")
     s.tr!("+/", "-_")
-    s.delete!("=")
+    s.delete!("=") if !padding
     s
   end
 
