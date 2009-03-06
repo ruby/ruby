@@ -2459,6 +2459,7 @@ rb_ary_clear(VALUE ary)
  *  <code>nil</code> is equivalent to <i>self.length</i>. The last three
  *  forms fill the array with the value of the block. The block is
  *  passed the absolute index of each element to be filled.
+ *  Negative values of <i>start</i> count from the end of the array.
  *
  *     a = [ "a", "b", "c", "d" ]
  *     a.fill("x")              #=> ["x", "x", "x", "x"]

@@ -3,6 +3,11 @@ Thu Mar  5 18:36:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* numeric.c (flo_to_s): keeps enough precision for round trip.
 	  [ruby-core:22325]
 
+Thu Mar  5 17:42:06 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_fill): doc for Array#fill misses indication
+	  about negative value for the start argument.  [ruby-core:22497]
+
 Thu Mar  5 16:56:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tmpdir.rb (Dir.tmpdir): not use USERPROFILE, and ignores
@@ -76,22 +81,6 @@ Wed Mar  4 20:27:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  is available.
 
 	* win32/setup.mak (-unicows-): checks if unicows.lib is available.
-
-Wed Mar  4 05:19:27 2009  James Edward Gray II  <jeg2@ruby-lang.org>
-
-  * lib/csv.rb: Some minor documentation fixes from Gregory Brown.
-
-Wed Mar  4 03:42:56 2009  James Edward Gray II  <jeg2@ruby-lang.org>
-
-  * lib/csv.rb: A patch from Madoka Yakamamoto to prevent an infinite
-    loop while reading some encodings.
-
-Wed Mar  4 00:54:43 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
-
-	* lib/prime.rb (Prime::prime?): used to return a wrong answer.
-	  [ruby-core:22646].
-
-	* test/test_prime.rb (test_prime?): test case for [ruby-core:22646].
 
 Tue Mar  3 17:10:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
