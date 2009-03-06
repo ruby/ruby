@@ -306,6 +306,24 @@ up::
 
 !include $(srcdir)/common.mk
 
+update-mspec:
+!if exist($(srcdir)/spec/mspec)
+	@echo updating mspec ...
+	@cd $(srcdir:/=\)\spec\mspec && git pull
+!else
+	@echo retrieving mspec ...
+	@cd $(srcdir:/=\) && git clone $(MSPEC_GIT_URL) spec/mspec
+!endif
+
+update-rubyspec: update-mspec
+!if exist($(srcdir)/spec/rubyspec)
+	@echo updating rubyspec ...
+	@cd $(srcdir:/=\)\spec\rubyspec && git pull
+!else
+	@echo retrieving rubyspec ...
+	@cd $(srcdir:/=\) && git clone $(RUBYSPEC_GIT_URL) spec/rubyspec
+!endif
+
 $(MKFILES): $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak $(srcdir)/enc/Makefile.in
 	$(COMSPEC) /C $(win_srcdir:/=\)\configure.bat $(configure_args)
 	@echo $(MKFILES) should be updated, re-run $(MAKE).
