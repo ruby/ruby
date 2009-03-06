@@ -1,4 +1,7 @@
-Fri Mar  6 13:45:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Mar  6 13:47:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rake/loaders/makefile.rb (Rake::MakefileLoader#load): deals with
+	  escaped spaces.  incorporated from rake 0.8.4.
 
 	* lib/rake/testtask.rb (Rake::TestTask#define): passes each libs
 	  as each arguments with expanded.  incorporated from rake 0.8.4.
