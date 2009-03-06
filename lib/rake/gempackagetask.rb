@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 # Define a package task library to aid in the definition of GEM
 # packages.
 

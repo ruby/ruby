@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 #--
 # tsort.rb - provides a module for topological sorting and strongly connected components.
 #++

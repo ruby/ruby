@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 module Rake
 
   # Makefile loader to be used with the import file loader.

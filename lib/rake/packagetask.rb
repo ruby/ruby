@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 # Define a package task libarary to aid in the definition of
 # redistributable package files.
 

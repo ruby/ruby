@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby -w
 # encoding: UTF-8
 # = csv.rb -- CSV Reading and Writing
 #

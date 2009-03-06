@@ -1,5 +1,3 @@
-#!/usr/local/bin/ruby
-#
 #   multi.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
