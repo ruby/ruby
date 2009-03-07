@@ -84,7 +84,12 @@ class TestRDocMarkupToHtmlCrossref < MiniTest::Unit::TestCase
     actual_expected_result.gsub!(/\n/, " ")
     result.gsub!(/\n/, " ")
 
-    assert_equal actual_expected_result, result
+    begin
+      assert_equal actual_expected_result, result
+    rescue MiniTest::Assertion => e
+      bt = caller(2)
+      raise e, [e.message, *bt.grep(/\A#{Regexp.quote(__FILE__)}:/o)].join("\n"), bt
+    end
   end
 
   #
