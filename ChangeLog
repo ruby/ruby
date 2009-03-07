@@ -1,3 +1,7 @@
+Sat Mar  7 14:07:31 2009  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: fix the location of cdcmd.
+
 Sat Mar  7 13:52:01 2009  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: the shell which runs configure may be different from

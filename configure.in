@@ -302,10 +302,10 @@ mkdir conf$$.dir &&
 (cd conf$$.dir && mkdir src build && cd src &&
 $as_ln_s ../build . > /dev/null 2>&1 && cd build &&
 for chdir in 'cd -P' 'PWD= cd'; do
-    ( ${CONFIG_SHELL-/bin/sh} -c "$chdir ../src" 2> /dev/null && echo "$chdir" > cdcmd) && break
+    ( ${CONFIG_SHELL-/bin/sh} -c "$chdir ../src" 2> /dev/null && echo "$chdir" > ../cdcmd) && break
 done)
-if test -e conf$$.dir/src/cdcmd; then
-    read CHDIR < conf$$.dir/src/cdcmd 2> /dev/null
+if test -e conf$$.dir/cdcmd; then
+    read CHDIR < conf$$.dir/cdcmd 2> /dev/null
 else
     CHDIR=cd
 fi
