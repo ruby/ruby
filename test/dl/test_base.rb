@@ -36,8 +36,14 @@ when /bsd|dragonfly/
   LIBC_SO = "/usr/lib/libc.so"
   LIBM_SO = "/usr/lib/libm.so"
 when /solaris2/
-  LIBC_SO = "/usr/lib/libc.so"
-  LIBM_SO = "/usr/lib/libm.so"
+  case [0].pack('L!').size
+  when 4
+    libdir = '/usr/lib'
+  when 8
+    libdir = '/usr/lib/64'
+  end
+  LIBC_SO = "#{libdir}/libc.so"
+  LIBM_SO = "#{libdir}/libm.so"
 else
   LIBC_SO = ARGV[0]
   LIBM_SO = ARGV[1]
