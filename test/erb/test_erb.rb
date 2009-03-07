@@ -234,7 +234,7 @@ EOS
     klass.module_eval do
       def_erb_method('hello_world', erb)
     end
-    assert(klass.new.respond_to?('hello_world'))    
+    assert(klass.new.respond_to?('hello_world'))
   end
 
   def test_def_method_without_filename
