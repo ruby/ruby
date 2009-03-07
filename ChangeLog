@@ -1,3 +1,7 @@
+Sat Mar  7 18:45:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: checks if cd really succeeded.
+
 Sat Mar  7 14:24:47 2009  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: don't use CONFIG_SHELL for testing shell feature in
