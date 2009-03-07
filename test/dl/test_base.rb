@@ -18,8 +18,14 @@ when /linux/
     # 64-bit ruby
     libdir = '/lib64' if File.directory? '/lib64'
   end
-  LIBC_SO = File.join(libdir, "libc.so.6")
-  LIBM_SO = File.join(libdir, "libm.so.6")
+  LIBC_SO = [
+    File.join(libdir, "libc.so.6"),
+    File.join(libdir, "libc.so.6.1")
+  ].find {|f| File.file? f }
+  LIBM_SO = [
+    File.join(libdir, "libm.so.6"),
+    File.join(libdir, "libm.so.6.1")
+  ].find {|f| File.file? f }
 when /mingw/, /mswin32/
   LIBC_SO = "msvcrt.dll"
   LIBM_SO = "msvcrt.dll"
@@ -29,12 +35,14 @@ when /darwin/
 when /bsd|dragonfly/
   LIBC_SO = "/usr/lib/libc.so"
   LIBM_SO = "/usr/lib/libm.so"
+when /solaris2/
+  LIBC_SO = "/usr/lib/libc.so"
+  LIBM_SO = "/usr/lib/libm.so"
 else
   LIBC_SO = ARGV[0]
   LIBM_SO = ARGV[1]
   if( !(LIBC_SO && LIBM_SO) )
-    $stderr.puts("#{$0} <libc> <libm>")
-    exit
+    $stderr.puts("libc and libm not found: #{$0} <libc> <libm>")
   end
 end
 
