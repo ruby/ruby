@@ -1,3 +1,8 @@
+Sat Mar  7 14:24:47 2009  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: don't use CONFIG_SHELL for testing shell feature in
+	  Makefile.
+
 Sat Mar  7 14:07:31 2009  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: fix the location of cdcmd.
