@@ -1,13 +1,16 @@
 require 'test/unit'
 require 'dl'
+require_relative '../ruby/envutil'
+
+libc_so = libm_so = nil
 
 case RUBY_PLATFORM
 when /cygwin/
-  LIBC_SO = "cygwin1.dll"
-  LIBM_SO = "cygwin1.dll"
+  libc_so = "cygwin1.dll"
+  libm_so = "cygwin1.dll"
 when /x86_64-linux/
-  LIBC_SO = "/lib64/libc.so.6"
-  LIBM_SO = "/lib64/libm.so.6"
+  libc_so = "/lib64/libc.so.6"
+  libm_so = "/lib64/libm.so.6"
 when /linux/
   libdir = '/lib'
   case [0].pack('L!').size
@@ -18,39 +21,39 @@ when /linux/
     # 64-bit ruby
     libdir = '/lib64' if File.directory? '/lib64'
   end
-  LIBC_SO = [
-    File.join(libdir, "libc.so.6"),
-    File.join(libdir, "libc.so.6.1")
-  ].find {|f| File.file? f }
-  LIBM_SO = [
-    File.join(libdir, "libm.so.6"),
-    File.join(libdir, "libm.so.6.1")
-  ].find {|f| File.file? f }
+  libc_so = File.join(libdir, "libc.so.6")
+  libm_so = File.join(libdir, "libm.so.6")
 when /mingw/, /mswin32/
-  LIBC_SO = "msvcrt.dll"
-  LIBM_SO = "msvcrt.dll"
+  libc_so = "msvcrt.dll"
+  libm_so = "msvcrt.dll"
 when /darwin/
-  LIBC_SO = "/usr/lib/libc.dylib"
-  LIBM_SO = "/usr/lib/libm.dylib"
+  libc_so = "/usr/lib/libc.dylib"
+  libm_so = "/usr/lib/libm.dylib"
 when /bsd|dragonfly/
-  LIBC_SO = "/usr/lib/libc.so"
-  LIBM_SO = "/usr/lib/libm.so"
-when /solaris2/
-  case [0].pack('L!').size
-  when 4
-    libdir = '/usr/lib'
-  when 8
-    libdir = '/usr/lib/64'
-  end
-  LIBC_SO = "#{libdir}/libc.so"
-  LIBM_SO = "#{libdir}/libm.so"
+  libc_so = "/usr/lib/libc.so"
+  libm_so = "/usr/lib/libm.so"
 else
-  LIBC_SO = ARGV[0]
-  LIBM_SO = ARGV[1]
-  if( !(LIBC_SO && LIBM_SO) )
+  libc_so = ARGV[0]
+  libm_so = ARGV[1]
+  if( !(libc_so && libm_so) )
     $stderr.puts("libc and libm not found: #{$0} <libc> <libm>")
   end
 end
+
+libc_so = nil if !libc_so || !File.file?(libc_so)
+libm_so = nil if !libm_so || !File.file?(libm_so)
+
+if !libc_so || !libm_so
+  ruby = EnvUtil.rubybin
+  ldd = `ldd #{ruby}`
+  #puts ldd
+  libc_so = $1 if !libc_so && %r{libc\.so.*=>\s+(/\S*)} =~ ldd
+  libm_so = $1 if !libm_so && %r{libm\.so.*=>\s+(/\S*)} =~ ldd
+  #p [libc_so, libm_so]
+end
+
+DL::LIBC_SO = libc_so
+DL::LIBM_SO = libm_so
 
 module DL
   class TestBase < Test::Unit::TestCase
