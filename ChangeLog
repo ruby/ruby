@@ -1,3 +1,9 @@
+Sat Mar  7 13:52:01 2009  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: the shell which runs configure may be different from
+	  the shell for make.  configure likes bash but Makefile specifies
+	  SHELL=/bin/sh.
+
 Sat Mar  7 12:31:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/erb/test_erb.rb: reverted space sensitive test results.
