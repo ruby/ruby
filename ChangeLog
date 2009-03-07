@@ -45766,7 +45766,7 @@ Tue Sep 13 20:24:37 2005  Tanaka Akira  <akr@m17n.org>
 
 Tue Sep 13 15:41:29 2005  Minero Aoki  <aamine@loveruby.net>
 
-	* lib/net/http.rb: wrote docuemntation of HTTPRequest/HTTPResponse
+	* lib/net/http.rb: wrote documentation of HTTPRequest/HTTPResponse
 	  classes.
 
 Tue Sep 13 14:27:47 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
@@ -45792,7 +45792,7 @@ Tue Sep 13 12:33:05 2005  why the lucky stiff  <why@ruby-lang.org>
 	  get called, should they be present.  consolidated all the diaspora of 	  internal node types into the family below YAML::Syck::Node -- Map,
 	  Seq, Scalar -- all of whom are SyckNode structs pointing to
 	  Ruby data.  moved Object#yaml_new into the node_import and made it
-	  the default behavior.  the target_class is always called wih
+	  the default behavior.  the target_class is always called with
 	  yaml_new, prepended a parameter, which is the klass.  loaded nodes
 	  through GenericResolver show their style.
 	  new Resolver#tagurize converts type ids to taguris.
@@ -45838,7 +45838,7 @@ Tue Sep 13 00:02:33 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Sep 12 20:53:06 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* test/openssl/test_pkcs7.rb (test_enveloped): skip this test
-	  to avoid a bug of PKCS7_enctypt() (only if ext/openssl is
+	  to avoid a bug of PKCS7_encrypt() (only if ext/openssl is
 	  compiled with OpenSSL-0.9.7d or earlier versions).
 	  http://www.mail-archive.com/openssl-dev@openssl.org/msg17376.html
 
@@ -45933,7 +45933,7 @@ Wed Sep  7 17:29:27 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  OpenSSL::Engine#ctrl_cmd. it wraps ENGINE_ctrl_cmd_string.
 
 	* ext/openssl/ossl_engine.c (ossl_engine_get_cmds): new method
-	  OpenSSL::Engine#cmds. it returms engine command definitions.
+	  OpenSSL::Engine#cmds. it returns engine command definitions.
 
 Wed Sep  7 15:48:37 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -46123,7 +46123,7 @@ Mon Aug 29 19:47:18 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Mon Aug 29 18:58:05 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
-	* lib/irb/init.rb: make IRB -I option that is same befavior for ruby.
+	* lib/irb/init.rb: make IRB -I option that is same behavior for ruby.
 	  [ruby-dev:26872]
 
 	* lib/irb/locale.rb: support to print help message when OS locale is
@@ -46146,7 +46146,7 @@ Sat Aug 27 20:13:31 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* ext/curses/curses.c ({curses,window}_clrtoeol): added. suggested
 	  by Reyn Vlietstra.
 
-	* ext/curses/curses.c: chtype in curses is not `char', rahter `long'.
+	* ext/curses/curses.c: chtype in curses is not `char', rather `long'.
 	  [ruby-Bugs:2298]
 
 	* ext/curses/view.rb: String =~ String is deprecated.
@@ -46279,7 +46279,7 @@ Mon Aug 15 00:38:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* eval.c (rb_rescue2): reduce PUSH_TAG() as well as NODE_RESCUE.
 	  [ruby-dev:26800]
 
-	* range.c (range_check, range_init): reduce uselse exceptions.
+	* range.c (range_check, range_init): reduce useless exceptions.
 
 Mon Aug 15 00:34:11 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -46313,7 +46313,7 @@ Sat Aug 13 18:51:26 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Aug 13 08:01:59 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/lib/kconv.rb: Kconv.kconv is now alias of Kconv.conv
-	* ext/nkf/lib/kconv.rb: remove nkf dependend symbols fomr SYMBOL_TO_OPTION
+	* ext/nkf/lib/kconv.rb: remove nkf dependent symbols from SYMBOL_TO_OPTION
 
 Fri Aug 12 17:06:53 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -46467,8 +46467,8 @@ Mon Aug  8 05:16:55 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 Mon Aug  8 05:15:19 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* lib/webrick/httpproxy.rb (HTTPProxyServer#intialize),
-	  lib/webrick/httpserver.rb (HTTPServer#intialize),
+	* lib/webrick/httpproxy.rb (HTTPProxyServer#initialize),
+	  lib/webrick/httpserver.rb (HTTPServer#initialize),
 	  lib/webrick/httpservlet/cgihandler.rb (CGIHandler#initialize),
 	  lib/webrick/httpservlet/erbhandler.rb (ERBHandler#initialize),
 	  lib/webrick/httpservlet/filehandler.rb(DefaultFileHandler#initialize):
