@@ -1,3 +1,8 @@
+Sat Mar  7 22:06:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (universal_binary): checks if sizes are same on all
+	  architectures.
+
 Sat Mar  7 18:45:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: checks if cd really succeeded.

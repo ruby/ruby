@@ -344,6 +344,20 @@ AC_CHECK_SIZEOF(float, 4)
 AC_CHECK_SIZEOF(double, 8)
 AC_CHECK_SIZEOF(time_t, 0)
 
+if test "$universal_binary" = yes; then
+    for type in int long "long long" "void*" time_t; do
+	eval size='$ac_cv_sizeof_'AS_TR_SH($type)
+	if test $size = 0; then continue; fi
+	AC_COMPILE_IFELSE(
+	    [AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT],
+		[sizeof($type) == $size])], [], [size=0])
+	if test $size = 0; then
+	    dnl try with __LP64__
+	    AC_MSG_ERROR([size of $type is unknown])
+	fi
+    done
+fi
+
 dnl RUBY_REPLACE_TYPE [typename] [default type] [macro type] [included]
 AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
     AC_CHECK_TYPE([$1], [n=[$1]], [n=[$2]], [$4])
