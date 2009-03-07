@@ -1,3 +1,11 @@
+Sat Mar  7 12:31:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/erb/test_erb.rb: reverted space sensitive test results.
+
+	* test/rdoc/test_rdoc_parser_c.rb: ditto.
+
+	* test/rdoc/test_rdoc_ri_default_display.rb: ditto.
+
 Fri Mar  6 23:35:59 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb (SecureRandom.urlsafe_base64): add optional
