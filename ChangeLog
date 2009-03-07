@@ -34,7 +34,7 @@ Fri Mar  6 19:25:40 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* version.h (RUBY_LIB_VERSION): makes from RUBY_LIB_VERSION_STYLE.
 
 	* configure.in, Makefile.in, win32/Makefile.sub (CHDIR): cd using
-	  phisical directory.
+	  physical directory.
 
 	* Makefile.in (update-mspec): split from update-rubyspec.
 
@@ -171,7 +171,7 @@ Tue Mar  3 15:40:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/dl/lib/dl/cparser.rb (DL::CParser::parse_signature): fixed
 	  variable name.
 
-	* ext/dl/lib/dl/pack.rb (DL::PackInfo): reduced redundan
+	* ext/dl/lib/dl/pack.rb (DL::PackInfo): reduced redundant
 	  initialization.
 
 	* ext/dl/lib/dl/stack.rb (DL::Stack): ditto.
@@ -196,7 +196,7 @@ Mon Mar  2 21:39:08 2009  Tanaka Akira  <akr@fsij.org>
 
 Mon Mar  2 21:26:42 2009  Tanaka Akira  <akr@fsij.org>
 
-	* ext/socket/ancdata.c (anc_inspect_socket_creds): supress warnings.
+	* ext/socket/ancdata.c (anc_inspect_socket_creds): suppress warnings.
 
 Mon Mar  2 21:13:42 2009  Tanaka Akira  <akr@fsij.org>
 
@@ -245,7 +245,7 @@ Mon Mar  2 10:29:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Mar  2 00:56:45 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* lib/drb/observer.rb: The module oberservable uses now a hash to
+	* lib/drb/observer.rb: The module observable uses now a hash to
 	  store listeners. merged a patch from Alessandro Di Maria in
 	  [ruby-core:22560].
 
@@ -585,7 +585,7 @@ Tue Feb 24 17:58:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/ripper/depend (.SUFFIXES): nmake doesn't have .y by default.
 
-	* Makefile.in (id.h): overwrites unconditinally.
+	* Makefile.in (id.h): overwrites unconditionally.
 
 Tue Feb 24 13:13:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -744,7 +744,7 @@ Sun Feb 22 13:38:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Feb 22 13:03:12 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* eval.c (ruby_options): the evaluater now expects iseq instead of tree.
+	* eval.c (ruby_options): the evaluator now expects iseq instead of tree.
 
 	* ruby.c (ruby_process_options): ditto.
 
@@ -1092,7 +1092,7 @@ Sun Feb 15 04:48:08 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 	  include/ruby/intern.h: add Murmurhash API.  [ruby-dev:37784]
 
 	* complex.c (nucomp_hash), array.c (rb_ary_hash), time.c (time_hash),
-	  string.c (rb_str_hsah), object.c (rb_obj_hash), range.c
+	  string.c (rb_str_hash), object.c (rb_obj_hash), range.c
 	  (range_hash), struct.c (rb_struct_hash), hash.c (rb_any_hash),
 	  rational.c (nurat_hash): use Murmurhash.  [ruby-dev:37784]
 
@@ -1134,12 +1134,12 @@ Sat Feb 14 13:14:18 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 Sat Feb 14 07:23:52 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* string.c (rb_external_str_new_with_enc): change evaluatioin order
+	* string.c (rb_external_str_new_with_enc): change evaluation order
 	  for speed.
 
 Sat Feb 14 02:20:04 2009  Tanaka Akira  <akr@fsij.org>
 
-	* ext/socket/sockport.h (SET_SA_LEN): cast to void for supressing a
+	* ext/socket/sockport.h (SET_SA_LEN): cast to void for suppressing a
 	  warning.
 
 Fri Feb 13 23:37:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -45660,7 +45660,7 @@ Thu Sep 15 23:25:21 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	    * Array of an element which has simpleType causes a crash. (#128)
 
-	    * prarmeterOrder may not contain return part so it can be shorter
+	    * parameterOrder may not contain return part so it can be shorter
 	      than parts size.  Thanks to Hugh.  (#139)
 
 	  * Samples
