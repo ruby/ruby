@@ -5,28 +5,32 @@
 #++
 
     SIMPLE_GEM = <<-GEMDATA
-        MD5SUM = "e3701f9db765a2358aef94c40ded71c8"
+        MD5SUM = "954df67d9475aa2f4fbba20aa33649c8"
         if $0 == __FILE__
           require 'optparse'
 
           options = {}
           ARGV.options do |opts|
             opts.on_tail("--help", "show this message") {puts opts; exit}
-            opts.on('--dir=DIRNAME', "Installation directory for the Gem") {|options[:directory]|}
-            opts.on('--force', "Force Gem to intall, bypassing dependency checks") {|options[:force]|}
-            opts.on('--gen-rdoc', "Generate RDoc documentation for the Gem") {|options[:gen_rdoc]|}
+            opts.on('--dir=DIRNAME', "Installation directory for the Gem") {|x|
+              options[:directory] = x
+            }
+            opts.on('--force', "Force Gem to intall, bypassing dependency checks") {|x|
+              options[:force] = x
+            }
+            opts.on('--gen-rdoc', "Generate RDoc documentation for the Gem") {|x|
+              options[:gen_rdoc] = x
+            }
             opts.parse!
           end
 
-          require 'rubygems'
-          @directory = options[:directory] || Gem.dir
-          @force = options[:force]
+          require 'rubygems/installer'
 
-          gem = Gem::Installer.new(__FILE__).install(@force, @directory)
+          gem = Gem::Installer.new(__FILE__, options).install
           if options[:gen_rdoc]
             Gem::DocManager.new(gem).generate_rdoc
           end
-end
+        end
 
 __END__
 --- !ruby/object:Gem::Specification
