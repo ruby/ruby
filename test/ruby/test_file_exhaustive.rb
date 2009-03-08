@@ -259,7 +259,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert(!(File.identical?(@nofile, @file)))
   end
 
-  def test_size
+  def test_s_size
     assert_integer(File.size(@dir))
     assert_equal(3, File.size(@file))
     assert_equal(0, File.size(@zerofile))
@@ -385,6 +385,9 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(@file, File.expand_path(@file + "."))
       assert_equal(@file, File.expand_path(@file + "::$DATA"))
     end
+    assert_kind_of(String, File.expand_path("~"))
+    assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha") }
+    assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha", "/") }
   end
 
   def test_basename
@@ -730,5 +733,19 @@ class TestFileExhaustive < Test::Unit::TestCase
         load(@file)
       end.join
     end
+  end
+
+  def test_size
+    assert_equal(3, File.open(@file) {|f| f.size })
+    File.open(@file, "a") do |f|
+      f.write("bar")
+      assert_equal(6, f.size)
+    end
+  end
+
+  def test_absolute_path
+    assert_equal(File.join(Dir.pwd, "~foo"), File.absolute_path("~foo"))
+    dir = File.expand_path("/bar")
+    assert_equal(File.join(dir, "~foo"), File.absolute_path("~foo", dir))
   end
 end
