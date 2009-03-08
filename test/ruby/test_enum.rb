@@ -48,6 +48,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(1, @obj.find_index {|x| x % 2 == 0 })
     assert_equal(nil, @obj.find_index {|x| false })
     assert_raise(ArgumentError) { @obj.find_index(0, 1) }
+    assert_equal(1, @obj.find_index(2) {|x| x == 1 })
   end
 
   def test_find_all
@@ -212,6 +213,10 @@ class TestEnumerable < Test::Unit::TestCase
     @obj.zip([:a, :b, :c]) {|x,y| a << [x, y] }
     assert_equal([[1,:a],[2,:b],[3,:c],[1,nil],[2,nil]], a)
 
+    a = []
+    @obj.zip({a: "A", b: "B", c: "C"}) {|x,y| a << [x, y] }
+    assert_equal([[1,[:a,"A"]],[2,[:b,"B"]],[3,[:c,"C"]],[1,nil],[2,nil]], a)
+
     ary = Object.new
     def ary.to_a;   [1, 2]; end
     assert_raise(NoMethodError){ %w(a b).zip(ary) }
@@ -273,5 +278,9 @@ class TestEnumerable < Test::Unit::TestCase
       [o, o, o].sort_by {|x| x }
       c.call
     end
+  end
+
+  def test_reverse_each
+    assert_equal([2,1,3,2,1], @obj.reverse_each.to_a)
   end
 end
