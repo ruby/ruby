@@ -1,3 +1,7 @@
+Mon Mar  9 01:12:37 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_object.rb: add a test for Object#method_missing.
+
 Mon Mar  9 01:11:17 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_file_exhaustive.rb: add tests for File#size and

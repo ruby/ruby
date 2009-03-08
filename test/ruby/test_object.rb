@@ -294,6 +294,14 @@ class TestObject < Test::Unit::TestCase
     assert_raise(NoMethodError) do
       1.instance_eval { method_missing(:method_missing) }
     end
+
+    c.class_eval do
+      undef_method(:method_missing)
+    end
+
+    assert_raise(ArgumentError) do
+      c.new.method_missing
+    end
   end
 
   def test_send_with_no_arguments
