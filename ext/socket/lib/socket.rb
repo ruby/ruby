@@ -159,7 +159,7 @@ class Addrinfo
 end
 
 class BasicSocket
-  # Returns an address of the socket suitable for connect.
+  # Returns an address of the socket suitable for connect in the local machine.
   #
   # This method returns _self_.local_address, except following condition.
   #
