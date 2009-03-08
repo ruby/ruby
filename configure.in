@@ -10,7 +10,7 @@ AC_DEFUN([RUBY_PREREQ_AC],
 
 AC_DEFUN([when], dnl [(] makes parentheses balanced.
 dnl note that spaces after comma need to be quoted.
-[$*][)])
+[[$*]][)])
 
 dnl environment section {
 
@@ -333,30 +333,89 @@ esac
 
 AC_CHECK_TYPES([long long, off_t])
 
-AC_CHECK_SIZEOF(int, 4)
-AC_CHECK_SIZEOF(short, 2)
-AC_CHECK_SIZEOF(long, 4)
-AC_CHECK_SIZEOF(long long, 0)
-AC_CHECK_SIZEOF(__int64, 0)
-AC_CHECK_SIZEOF(off_t, 0)
-AC_CHECK_SIZEOF(void*, 4)
-AC_CHECK_SIZEOF(float, 4)
-AC_CHECK_SIZEOF(double, 8)
-AC_CHECK_SIZEOF(time_t, 0)
+AC_CACHE_CHECK([char bit], [rb_cv_char_bit],
+    [_AC_COMPUTE_INT_COMPILE([CHAR_BIT], [rb_cv_char_bit],
+	[AC_INCLUDES_DEFAULT([@%:@include <limits.h>])], [rb_cv_char_bit=8])])
 
-if test "$universal_binary" = yes; then
-    for type in int long "long long" "void*" time_t; do
-	eval size='$ac_cv_sizeof_'AS_TR_SH($type)
-	if test $size = 0; then continue; fi
+AC_DEFUN([RUBY_CHECK_SIZEOF],
+[if test "$universal_binary" = yes; then
+AC_CACHE_CHECK([size of $1], [AS_TR_SH([ac_cv_sizeof_$1])], [dnl
+    unset AS_TR_SH(ac_cv_sizeof_$1)
+    m4_ifval([$2], [test -z "${AS_TR_SH(ac_cv_sizeof_$1)+set}" && {
+    for t in $2; do
 	AC_COMPILE_IFELSE(
 	    [AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT],
-		[sizeof($type) == $size])], [], [size=0])
-	if test $size = 0; then
-	    dnl try with __LP64__
-	    AC_MSG_ERROR([size of $type is unknown])
-	fi
+		[sizeof($1) == sizeof($t)])], [
+		AS_TR_SH(ac_cv_sizeof_$1)=AS_TR_CPP([SIZEOF_]$t)
+		break])
     done
+    }])
+    m4_ifval([$3], [test -z "${AS_TR_SH(ac_cv_sizeof_$1)+set}" && {
+    unset cond
+    for s in 32 64 128; do
+	for t in $3; do
+	    cond="${cond}
+@%:@${cond+el}if defined(__${t}${s}__) || defined(__${t}${s}) || defined(_${t}${s}) || defined(${t}${s})"
+	    hdr="AC_INCLUDES_DEFAULT([
+@%:@if defined(__${t}${s}__) || defined(__${t}${s}) || defined(_${t}${s}) || defined(${t}${s})
+@%:@ define AS_TR_CPP(HAVE_$1) 1
+@%:@else
+@%:@ define AS_TR_CPP(HAVE_$1) 0
+@%:@endif])"
+	    AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([$hdr], [!AS_TR_CPP(HAVE_$1)])], [continue])
+	    AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([$hdr],
+				[AS_TR_CPP(HAVE_$1) == (sizeof($1) == ([$[s / rb_cv_char_bit]]))])],
+		[AS_TR_SH(ac_cv_sizeof_$1)="${AS_TR_SH(ac_cv_sizeof_$1)+${AS_TR_SH(ac_cv_sizeof_$1)-} }${t}${s}"])
+	done
+    done
+    }])
+    _AC_COMPUTE_INT_COMPILE(AS_TR_CPP(SIZEOF_$1), [t], [AC_INCLUDES_DEFAULT([
+$cond
+@%:@else
+typedef $1 ac__type_sizeof_;
+@%:@define AS_TR_CPP(SIZEOF_$1) sizeof(ac__type_sizeof_)
+@%:@endif
+@%:@ifndef AS_TR_CPP(SIZEOF_$1)
+@%:@define AS_TR_CPP(SIZEOF_$1) 0
+@%:@endif])], [unset t])
+    if test ${t-0} != 0; then
+	AS_TR_SH(ac_cv_sizeof_$1)="${AS_TR_SH(ac_cv_sizeof_$1)+${AS_TR_SH(ac_cv_sizeof_$1)-} }${t}"
+    fi
+])
+{
+    unset cond
+    for t in ${AS_TR_SH(ac_cv_sizeof_$1)-}; do
+	case "$t" in
+	when([[0-9]*|SIZEOF_*])
+	    ${cond+echo "@%:@else"}
+	    echo "[@%:@define ]AS_TR_CPP(SIZEOF_$1) [$t]"
+	    break
+	    ;;
+	when([*])
+	    s=`expr $t : ['.*[^0-9]\([0-9][0-9]*\)$']`
+	    echo "@%:@${cond+el}if defined(__${t}__) || defined(__${t}) || defined(_${t}) || defined($t)"
+	    echo "@%:@define AS_TR_CPP(SIZEOF_$1) [$[s / rb_cv_char_bit]]"
+	    cond=1
+	    ;;
+	esac
+    done
+    ${cond+echo "@%:@endif"}
+} >> confdefs.h
+else
+AC_CHECK_SIZEOF([$1])
 fi
+])
+
+RUBY_CHECK_SIZEOF(int, [], [ILP])
+RUBY_CHECK_SIZEOF(short)
+RUBY_CHECK_SIZEOF(long, [int], [ILP LP])
+RUBY_CHECK_SIZEOF(long long)
+RUBY_CHECK_SIZEOF(__int64)
+RUBY_CHECK_SIZEOF(off_t)
+RUBY_CHECK_SIZEOF(void*, [int long "long long"], [ILP LP LLP])
+RUBY_CHECK_SIZEOF(float)
+RUBY_CHECK_SIZEOF(double)
+RUBY_CHECK_SIZEOF(time_t, [long "long long"])
 
 dnl RUBY_REPLACE_TYPE [typename] [default type] [macro type] [included]
 AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
