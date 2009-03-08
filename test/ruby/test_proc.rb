@@ -176,6 +176,11 @@ class TestProc < Test::Unit::TestCase
 
     b = proc { :foo }
     assert_equal(:foo, b.curry[])
+
+    b = lambda {|x, y, &b| b.call(x + y) }.curry
+    b = b.call(2) { raise }
+    b = b.call(3) {|x| x + 4 }
+    assert_equal(9, b)
   end
 
   def test_curry_ski_fib
@@ -279,6 +284,10 @@ class TestProc < Test::Unit::TestCase
   def test_arity2
     assert_equal(0, method(:proc).to_proc.arity)
     assert_equal(-1, proc {}.curry.arity)
+
+    c = Class.new
+    c.class_eval { attr_accessor :foo }
+    assert_equal(1, c.new.method(:foo=).to_proc.arity)
   end
 
   def test_proc_location
@@ -688,6 +697,9 @@ class TestProc < Test::Unit::TestCase
     assert_equal([[:opt, :a], [:opt, :b], [:rest, :c], [:opt, :d], [:block, :e]], proc {|a, b=:b, *c, d, &e|}.parameters)
     assert_equal([[:opt, nil], [:block, :b]], proc {|(a), &b|}.parameters)
     assert_equal([[:opt, :a], [:opt, :b], [:opt, :c], [:opt, :d], [:rest, :e], [:opt, :f], [:opt, :g], [:block, :h]], proc {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters)
+
+    assert_equal([[:req]], method(:require).parameters)
+    assert_equal([[:rest]], method(:p).parameters)
   end
 
   def pm0() end
@@ -715,5 +727,24 @@ class TestProc < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], method(:pmo6).to_proc.parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], method(:pmo7).to_proc.parameters)
     assert_equal([[:req], [:block, :b]], method(:pma1).to_proc.parameters)
+  end
+
+  def test_to_s
+    assert_match(/^#<Proc:0x\h+@#{ Regexp.quote(__FILE__) }:\d+>$/, proc {}.to_s)
+    assert_match(/^#<Proc:0x\h+@#{ Regexp.quote(__FILE__) }:\d+ \(lambda\)>$/, lambda {}.to_s)
+    assert_match(/^#<Proc:0x\h+ \(lambda\)>$/, method(:p).to_proc.to_s)
+    x = proc {}
+    x.taint
+    assert(x.to_s.tainted?)
+  end
+
+  def source_location_test
+    __LINE__
+  end
+
+  def test_source_location
+    file, lineno = method(:source_location_test).source_location
+    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
+    assert_equal(source_location_test - 1, lineno)
   end
 end
