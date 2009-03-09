@@ -163,6 +163,7 @@ define config_h
 @echo>>$(1) #define HAVE_LIBPTHREAD 1
 @echo>>$(1) #define HAVE_NANOSLEEP 1
 @echo>>$(1) #define USE_ELF 1
+@echo>>$(1) #define MANGLED_PATH 1
 @echo>>$(1) #define DLEXT_MAXLEN 4
 @echo>>$(1) #define DLEXT ".dll"
 @echo>>$(1) #define DLN_NEEDS_ALT_SEPARATOR 1

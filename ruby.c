@@ -169,7 +169,7 @@ usage(const char *name)
 
 VALUE rb_get_load_path(void);
 
-#if defined _WIN32 || defined __CYGWIN__ || defined __SYMBIAN32__
+#ifdef MANGLED_PATH
 static VALUE
 rubylib_mangled_path(const char *s, unsigned int l)
 {
@@ -209,15 +209,8 @@ rubylib_mangled_path(const char *s, unsigned int l)
     ptr[l + newl - oldl] = 0;
     return ret;
 }
-
-static VALUE
-rubylib_mangled_path2(const char *s)
-{
-    return rubylib_mangled_path(s, strlen(s));
-}
 #else
 #define rubylib_mangled_path rb_str_new
-#define rubylib_mangled_path2 rb_str_new_cstr
 #endif
 
 static void
@@ -353,7 +346,7 @@ ruby_init_loadpath_safe(int safe_level)
 #if defined LOAD_RELATIVE
     char libpath[MAXPATHLEN + 1];
     char *p;
-    int rest;
+    int baselen;
 
     libpath[0] = '\0';
 #if defined _WIN32 || defined __CYGWIN__
@@ -362,7 +355,7 @@ ruby_init_loadpath_safe(int safe_level)
     _execname(libpath, sizeof(libpath) - 1);
 #elif defined(HAVE_DLADDR)
     Dl_info dli;
-    if (dladdr(ruby_init_loadpath_safe, &dli)) {
+    if (dladdr(expand_include_path, &dli)) {
 	strlcpy(libpath, dli.dli_fname, sizeof(libpath));
     }
 #endif
@@ -390,13 +383,14 @@ ruby_init_loadpath_safe(int safe_level)
 	p = libpath + 1;
     }
 
-    rest = sizeof(libpath) - 1 - (p - libpath);
+    baselen = p - libpath;
 
-#define RUBY_RELATIVE(path) (strlcpy(p, (path), rest), libpath)
+#define BASEPATH() rb_str_buf_cat(rb_str_buf_new(baselen+len), libpath, baselen)
+#define RUBY_RELATIVE(path, len) rb_str_buf_cat(BASEPATH(), path, len)
 #else
-#define RUBY_RELATIVE(path) (path)
+#define RUBY_RELATIVE(path, len) rubylib_mangled_path(path, len)
 #endif
-#define incpush(path) rb_ary_push(load_path, rubylib_mangled_path2(path))
+#define incpush(path) rb_ary_push(load_path, (path))
     load_path = GET_VM()->load_path;
 
     if (safe_level == 0) {
@@ -404,12 +398,13 @@ ruby_init_loadpath_safe(int safe_level)
     }
 
     while (*paths) {
-	incpush(RUBY_RELATIVE(paths));
-	paths += strlen(paths) + 1;
+	int len = strlen(paths);
+	incpush(RUBY_RELATIVE(paths, len));
+	paths += len + 1;
     }
 
     if (safe_level == 0) {
-	incpush(".");
+	rb_ary_push(load_path, rb_str_new_cstr("."));
     }
 }
 

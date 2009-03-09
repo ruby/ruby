@@ -1,8 +1,14 @@
-Tue Mar 10 04:53:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar 10 04:56:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (MINIRUBY): keep macro into Makefile.
 
 	* configure.in (RUBY_CHECK_SIZEOF): fix for fallback.
+
+	* configure.in (MANGLED_PATH): defines for RUBYLIB_PREFIX.
+
+	* ruby.c (ruby_init_loadpath_safe): uses string as buffer.
+
+	* symbian/setup (config_h): defines MANGLED_PATH.
 
 Tue Mar 10 03:48:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
