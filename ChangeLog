@@ -1,3 +1,7 @@
+Mon Mar  9 14:48:08 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (OPTFLAGS): simplified. see [ruby-core:22725]
+
 Mon Mar  9 14:33:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb: prints names of the directories where files are
