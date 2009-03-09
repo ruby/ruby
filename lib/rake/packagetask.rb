@@ -42,7 +42,7 @@ module Rake
   #   end
   #
   class PackageTask < TaskLib
-    # Name of the package.
+    # Name of the package (from the GEM Spec).
     attr_accessor :name
 
     # Version of the package (e.g. '1.3.2').
@@ -120,7 +120,6 @@ module Rake
           task :package => ["#{package_dir}/#{file}"]
           file "#{package_dir}/#{file}" => [package_dir_path] + package_files do
             chdir(package_dir) do
-              sh %{env}
               sh %{#{@tar_command} #{flag}cvf #{file} #{package_name}}
             end
           end
