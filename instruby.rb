@@ -484,6 +484,17 @@ install?(:ext, :comm, :gem) do
   end
   gpath = CONFIG["sitelibdir"].sub(%r'/site_ruby/(?=[^/]+)', '/gems/')
   prepare "default gems", gpath, directories
+
+  destdir = File.join(gpath, directories.grep(/^spec/)[0])
+  gems = %w[rake rdoc]
+  gems.each do |gem|
+    lib = File.join(srcdir, "lib/#{gem}.rb")
+    version = open(lib) {|f| f.find {|s| /^\s*\w*VERSION\s*=(?!=)/ =~ s}} or next
+    version = version.split(%r"=\s*", 2)[1].strip
+    open_for_install(File.join(destdir, "#{gem}.gemspec"), $data_mode) do |f|
+      "Gem::Specification.new {|s| s.name, s.version = #{gem.dump}, #{version}}\n"
+    end
+  end
 end
 
 $install << :local << :ext if $install.empty?
