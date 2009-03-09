@@ -1,3 +1,10 @@
+Mon Mar  9 09:04:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (define_final): cannot define finalizer for immediate
+	  values.  [ruby-core:21500]
+
+	* gc.c (define_final): freezes or hides internal values.
+
 Mon Mar  9 08:54:47 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (IS_BEG): EXPR_CLASS should be treated like EXPR_BEG.
