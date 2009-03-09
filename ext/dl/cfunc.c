@@ -496,7 +496,7 @@ rb_dlcfunc_to_i(VALUE self)
 }
 
 void
-Init_dlcfunc()
+Init_dlcfunc(void)
 {
     id_last_error = rb_intern("__DL2_LAST_ERROR__");
 #if defined(HAVE_WINDOWS_H)

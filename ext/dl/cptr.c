@@ -446,7 +446,7 @@ rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 }
 
 void
-Init_dlptr()
+Init_dlptr(void)
 {
     id_to_ptr = rb_intern("to_ptr");
 

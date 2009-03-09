@@ -214,7 +214,7 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
 }
 
 void
-Init_dlhandle()
+Init_dlhandle(void)
 {
     rb_cDLHandle = rb_define_class_under(rb_mDL, "Handle", rb_cObject);
     rb_define_alloc_func(rb_cDLHandle, rb_dlhandle_s_allocate);

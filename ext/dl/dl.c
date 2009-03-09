@@ -74,11 +74,11 @@ rb_dl_init_callbacks(VALUE dl)
 }
 
 void
-Init_dl()
+Init_dl(void)
 {
-    void Init_dlhandle();
-    void Init_dlcfunc();
-    void Init_dlptr();
+    void Init_dlhandle(void);
+    void Init_dlcfunc(void);
+    void Init_dlptr(void);
 
     rbdl_id_cdecl = rb_intern_const("cdecl");
     rbdl_id_stdcall = rb_intern_const("stdcall");
