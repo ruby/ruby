@@ -1,4 +1,6 @@
-Tue Mar 10 04:43:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar 10 04:53:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (MINIRUBY): keep macro into Makefile.
 
 	* configure.in (RUBY_CHECK_SIZEOF): fix for fallback.
 
