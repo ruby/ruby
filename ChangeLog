@@ -1,3 +1,9 @@
+Mon Mar  9 20:59:24 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspbres_verify): OCSP_basic_verify
+	  returns positive value on success, not non-zero.  [ruby-core:21762]
+	  backported r22440 from trunk.
+
 Mon Mar  9 10:02:15 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (match_check): check if MatchData is initialized.
