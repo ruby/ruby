@@ -1,3 +1,8 @@
+Mon Mar  9 09:56:34 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/rexml/rexml.rb: incremented Ruby::VERSION.  Thanks, Jeremy
+	  Kemper.  [ruby-core:20113]
+
 Mon Mar  9 09:52:53 2009  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_getpartial): fflush after read for updating pos in FILE.
