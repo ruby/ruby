@@ -1,3 +1,12 @@
+Mon Mar  9 16:03:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/installer.rb (Gem::Installer#initialize): env may
+	  not be under /usr/bin.
+
+	* lib/rubygems/installer.rb (Gem::Installer#shebang): uses /bin/sh
+	  if shebang has any options, since env shebang trick does no
+	  work with options.
+
 Mon Mar  9 15:19:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb (manpages): use basename to compare and for Tempfile.

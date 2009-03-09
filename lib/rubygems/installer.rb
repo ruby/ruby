@@ -98,7 +98,12 @@ class Gem::Installer
       :source_index => Gem.source_index,
     }.merge options
 
-    @env_shebang = options[:env_shebang]
+    if @env_shebang = options[:env_shebang]
+      unless File.executable?(shebang = "/usr/bin/env")
+        shebang = "/bin/env"
+      end
+      @env_shebang = shebang
+    end
     @force = options[:force]
     gem_home = options[:install_dir]
     @gem_home = Pathname.new(gem_home).expand_path
@@ -387,22 +392,24 @@ class Gem::Installer
   # necessary.
 
   def shebang(bin_file_name)
-    if @env_shebang then
-      "#!/usr/bin/env " + Gem::ConfigMap[:ruby_install_name]
+    ruby_name = Gem::ConfigMap[:ruby_install_name] unless @env_shebang
+    path = File.join @gem_dir, @spec.bindir, bin_file_name
+    first_line = File.open(path, "rb") {|file| file.gets}
+    if /\A#!/ =~ first_line then
+      # Preserve extra words on shebang line, like "-w".  Thanks RPA.
+      shebang = first_line.sub(/\A\#!.*?ruby\S*(?=\s*(\S+))/, "#!#{Gem.ruby}")
+      shebang.strip! # Avoid nasty ^M issues.
+      if ruby_name and $1
+        %{#!/bin/sh\n'exec' '#{ruby_name}' '-x' "$0" "$@"\n#{shebang}}
+      else
+        shebang
+      end
     else
-      path = File.join @gem_dir, @spec.bindir, bin_file_name
-
-      File.open(path, "rb") do |file|
-        first_line = file.gets
-        if first_line =~ /^#!/ then
-          # Preserve extra words on shebang line, like "-w".  Thanks RPA.
-          shebang = first_line.sub(/\A\#!.*?ruby\S*/, "#!#{Gem.ruby}")
-        else
-          # Create a plain shebang line.
-          shebang = "#!#{Gem.ruby}"
-        end
-
-        shebang.strip # Avoid nasty ^M issues.
+      # Create a plain shebang line.
+      if ruby_name
+        "#!#@env_shebang #{ruby_name}"
+      else
+        "#!#{Gem.ruby}"
       end
     end
   end
