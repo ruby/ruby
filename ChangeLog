@@ -1,3 +1,8 @@
+Mon Mar  9 09:52:53 2009  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_getpartial): fflush after read for updating pos in FILE.
+	  not portable, I guess.  [ruby-core:21561]
+
 Mon Mar  9 09:04:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (define_final): cannot define finalizer for immediate

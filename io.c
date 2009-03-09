@@ -1283,6 +1283,8 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
                 goto again;
             rb_sys_fail(fptr->path);
         }
+        if (fptr->f) /* update pos in FILE structure [ruby-core:21561] */
+            fflush(fptr->f);
     }
     rb_str_resize(str, n);
 
