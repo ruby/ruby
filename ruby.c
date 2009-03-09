@@ -26,6 +26,9 @@
 #ifdef __hpux
 #include <sys/pstat.h>
 #endif
+#if defined(LOAD_RELATIVE) && defined(HAVE_DLADDR)
+#include <dlfcn.h>
+#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -352,10 +355,16 @@ ruby_init_loadpath_safe(int safe_level)
     char *p;
     int rest;
 
+    libpath[0] = '\0';
 #if defined _WIN32 || defined __CYGWIN__
     GetModuleFileName(libruby, libpath, sizeof libpath);
 #elif defined(__EMX__)
     _execname(libpath, sizeof(libpath) - 1);
+#elif defined(HAVE_DLADDR)
+    Dl_info dli;
+    if (dladdr(ruby_init_loadpath_safe, &dli)) {
+	strlcpy(libpath, dli.dli_fname, sizeof(libpath));
+    }
 #endif
 
     libpath[sizeof(libpath) - 1] = '\0';

@@ -198,6 +198,10 @@ if test $frame_address = yes; then
     AC_DEFINE(USE_BUILTIN_FRAME_ADDRESS)
 fi
 
+AC_ARG_ENABLE(load-relative,
+       [  --enable-load-relative  resolve load paths at run time. ],
+       [load_relative=$enableval])
+
 AC_ARG_PROGRAM
 
 dnl Checks for programs.
@@ -1777,6 +1781,15 @@ else
 	DLEXT=so;;
   esac
 fi
+if test "$rb_cv_dlopen:$load_relative" = yes:yes; then
+    AC_CHECK_FUNCS(dladdr)
+    if test "$ac_cv_func_dladdr" = yes; then
+	LOAD_RELATIVE=1
+    else
+	unset load_relative
+    fi
+fi
+
 len=2 # .rb
 n=`expr "$DLEXT"  : '.*'`; test "$n" -gt "$len" && len=$n
 n=`expr "$DLEXT2" : '.*'`; test "$n" -gt "$len" && len=$n
@@ -1941,7 +1954,12 @@ if test "$enable_shared" = 'yes'; then
     when(darwin*)
 	RUBY_SO_NAME="$RUBY_SO_NAME"'.$(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_LDSHARED='cc -dynamiclib -undefined suppress -flat_namespace'
-	LIBRUBY_DLDFLAGS='-install_name $(libdir)/lib$(RUBY_SO_NAME).dylib'
+	if test "$load_relative" = yes; then
+	    libprefix='@executable_path/..'
+	else
+	    libprefix='$(libdir)'
+	fi
+	LIBRUBY_DLDFLAGS='-install_name '${libprefix}'/lib/lib$(RUBY_SO_NAME).dylib'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-current_version $(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_Init_* $(XLDFLAGS)'
