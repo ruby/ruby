@@ -1,4 +1,6 @@
-$out = open("callback.c", "w")
+#!ruby -s
+$output ||= "callback"
+$out = open("#{$output}.c", "w")
 
 $dl_h = ARGV[0] || "dl.h"
 
@@ -157,10 +159,9 @@ def gen_push_addr_ary(ty, aryname, calltype)
 end
 
 def gen_callback_file(ty)
-  filename = "callback-#{ty}.c"
+  filename = "#{$output}-#{ty}.c"
   initname = "rb_dl_init_callbacks_#{ty}"
-  open(filename, "w") {|f|
-    f.puts <<-EOS
+  body = <<-EOS
 #include "dl.h"
 
 extern VALUE rb_DLCdeclCallbackAddrs, rb_DLCdeclCallbackProcs;
@@ -169,8 +170,8 @@ extern VALUE rb_DLStdcallCallbackAddrs, rb_DLStdcallCallbackProcs;
 #endif
 extern ID   rb_dl_cb_call;
     EOS
-    yield f
-    f.puts <<-EOS
+  yield body
+  body << <<-EOS
 void
 #{initname}()
 {
@@ -182,12 +183,12 @@ void
 #endif
 }
     EOS
-  }
-  initname
+  [filename, initname, body]
 end
 
+callbacks = []
 for ty in 0...MAX_DLTYPE
-  initname = gen_callback_file(ty) {|f|
+  filename, initname, body = gen_callback_file(ty) {|f|
     foreach_proc_entry do |calltype, proc_entry|
       for argc in 0...DLSTACK_SIZE
         for n in 0...MAX_CALLBACK
@@ -197,6 +198,7 @@ for ty in 0...MAX_DLTYPE
     end
   }
   $out << "void #{initname}();\n"
+  callbacks << [filename, body]
 end
 
 $out << (<<EOS)
@@ -229,3 +231,8 @@ Init_callback(void)
 }
 }
 EOS
+$out.close
+
+for filename, body in callbacks
+  open(filename, "wb") {|f| f.puts body}
+end

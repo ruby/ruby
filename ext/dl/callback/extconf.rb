@@ -5,7 +5,8 @@ if compiled?("dl")
   callback_srcs = callbacks.map{|basename| "#{basename}.c"}
   callback_objs = callbacks.map{|basename| "#{basename}.o"}
 
-  $distcleanfiles += [ "callback.h", *callback_srcs ]
+  $distcleanfiles << '$(SRCS)'
+  $srcs = callback_srcs
   $objs = callback_objs
   $INCFLAGS << " -I$(srcdir)/.."
 

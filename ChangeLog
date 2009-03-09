@@ -1,4 +1,10 @@
-Tue Mar 10 01:57:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar 10 03:48:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/callback/depend: fix for parallel build.
+
+	* ext/dl/callback/extconf.rb: callback.h is no longer created.
+
+	* ext/dl/callback/mkcallback.rb: creates main source first.
 
 	* ext/dl/callback/extconf.rb ($distcleanfiles): added callback.c.
 
