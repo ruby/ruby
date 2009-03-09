@@ -1,3 +1,9 @@
+Mon Mar  9 22:57:47 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* version.h (RUBY_VERSION): Bump the version number to 1.8.8dev.
+	  This is by no means that the release engineering process has
+	  begun but just for naming convenience.  Still a long way to go.
+
 Sat Mar  7 14:55:21 2009  Tanaka Akira  <akr@fsij.org>
 
 	* file.c: include fcntl.h for O_RDONLY on Solaris.
