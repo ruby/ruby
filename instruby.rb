@@ -452,19 +452,20 @@ install?(:local, :comm, :man) do
   require File.join(srcdir, "tool/mdoc2man.rb") if $mantype != "doc"
   mdocs.each do |mdoc|
     next unless File.file?(mdoc) and open(mdoc){|fh| fh.read(1) == '.'}
-    if mdoc == "goruby.1"
+    base = File.basename(mdoc)
+    if base == "goruby.1"
       next unless has_goruby
     end
 
     destdir = mandir + (section = mdoc[/\d+$/])
-    destname = ruby_install_name.sub(/ruby/, File.basename(mdoc, ".#{section}"))
+    destname = ruby_install_name.sub(/ruby/, base.chomp(".#{section}"))
     destfile = File.join(destdir, "#{destname}.#{section}")
 
     if $mantype == "doc"
       install mdoc, destfile, :mode => $data_mode
     else
       w = nil
-      Tempfile.open(mdoc) do |f|
+      Tempfile.open(base) do |f|
         w = f
         open(mdoc) {|r| Mdoc2Man.mdoc2man(r, w)}
       end
