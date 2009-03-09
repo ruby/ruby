@@ -341,6 +341,7 @@ AC_CACHE_CHECK([char bit], [rb_cv_char_bit],
     [_AC_COMPUTE_INT_COMPILE([CHAR_BIT], [rb_cv_char_bit],
 	[AC_INCLUDES_DEFAULT([@%:@include <limits.h>])], [rb_cv_char_bit=8])])
 
+dnl RUBY_CHECK_SIZEOF [typename], [maybe same size types], [macros], [include]
 AC_DEFUN([RUBY_CHECK_SIZEOF],
 [if test "$universal_binary" = yes; then
 AC_CACHE_CHECK([size of $1], [AS_TR_SH([ac_cv_sizeof_$1])], [dnl
@@ -373,18 +374,19 @@ AC_CACHE_CHECK([size of $1], [AS_TR_SH([ac_cv_sizeof_$1])], [dnl
 	done
     done
     }])
-    _AC_COMPUTE_INT_COMPILE(AS_TR_CPP(SIZEOF_$1), [t], [AC_INCLUDES_DEFAULT([
-$cond
-@%:@else
+    _AC_COMPUTE_INT_COMPILE(AS_TR_CPP(SIZEOF_$1), [t], [AC_INCLUDES_DEFAULT([$4])]
+[${cond+$cond
+@%:@else}
 typedef $1 ac__type_sizeof_;
 @%:@define AS_TR_CPP(SIZEOF_$1) sizeof(ac__type_sizeof_)
-@%:@endif
+${cond+@%:@endif}
 @%:@ifndef AS_TR_CPP(SIZEOF_$1)
 @%:@define AS_TR_CPP(SIZEOF_$1) 0
-@%:@endif])], [unset t])
+@%:@endif], [unset t])
     if test ${t-0} != 0; then
 	AS_TR_SH(ac_cv_sizeof_$1)="${AS_TR_SH(ac_cv_sizeof_$1)+${AS_TR_SH(ac_cv_sizeof_$1)-} }${t}"
     fi
+    : ${AS_TR_SH(ac_cv_sizeof_$1)=0}
 ])
 {
     unset cond
