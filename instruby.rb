@@ -259,6 +259,23 @@ def with_destdir(dir)
   $destdir + dir
 end
 
+def prepare(mesg, basedir, subdirs=nil)
+  case
+  when !subdirs
+    dirs = basedir
+  when subdirs.size == 0
+    subdirs = nil
+  when subdirs.size == 1
+    dirs = [basedir = File.join(basedir, subdirs)]
+    subdirs = nil
+  else
+    dirs = [basedir, *subdirs.collect {|dir| File.join(basedir, dir)}]
+  end
+  printf("installing %-18s %s%s\n", "#{mesg}:", basedir,
+         (subdirs ? " (#{subdirs.join(', ')})" : ""))
+  makedirs(dirs)
+end
+
 exeext = CONFIG["EXEEXT"]
 
 ruby_install_name = CONFIG["ruby_install_name"]
@@ -276,7 +293,7 @@ sitelibdir = CONFIG["sitelibdir"]
 sitearchlibdir = CONFIG["sitearchdir"]
 vendorlibdir = CONFIG["vendorlibdir"]
 vendorarchlibdir = CONFIG["vendorarchdir"]
-mandir = File.join(CONFIG["mandir"], "man")
+mandir = CONFIG["mandir"]
 capidir = CONFIG["docdir"]
 configure_args = Shellwords.shellwords(CONFIG["configure_args"])
 enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
@@ -285,9 +302,7 @@ lib = CONFIG["LIBRUBY"]
 arc = CONFIG["LIBRUBY_A"]
 
 install?(:local, :arch, :bin, :'bin-arch') do
-  puts "installing binary commands"
-
-  makedirs [bindir, libdir, archlibdir]
+  prepare "binary commands", bindir
 
   install ruby_install_name+exeext, bindir, :mode => $prog_mode, :strip => $strip
   if rubyw_install_name and !rubyw_install_name.empty?
@@ -299,18 +314,24 @@ install?(:local, :arch, :bin, :'bin-arch') do
   if enable_shared and dll != lib
     install dll, bindir, :mode => $prog_mode, :strip => $strip
   end
+end
+
+install?(:local, :arch, :lib) do
+  prepare "base libraries", libdir
+
   install lib, libdir, :mode => $prog_mode, :strip => $strip unless lib == arc
   install arc, libdir, :mode => $data_mode
+  if dll == lib and dll != arc
+    for link in CONFIG["LIBRUBY_ALIASES"].split
+      ln_sf(dll, File.join(libdir, link))
+    end
+  end
+
+  prepare "arch files", archlibdir
   install "rbconfig.rb", archlibdir, :mode => $data_mode
   if CONFIG["ARCHFILE"]
     for file in CONFIG["ARCHFILE"].split
       install file, archlibdir, :mode => $data_mode
-    end
-  end
-
-  if dll == lib and dll != arc
-    for link in CONFIG["LIBRUBY_ALIASES"].split
-      ln_sf(dll, File.join(libdir, link))
     end
   end
 end
@@ -318,49 +339,49 @@ end
 if $extout
   extout = "#$extout"
   install?(:ext, :arch, :'ext-arch') do
-    puts "installing extension objects"
-    makedirs [archlibdir, sitearchlibdir, vendorarchlibdir, archhdrdir]
+    prepare "extension objects", archlibdir
     noinst = %w[-*] | (CONFIG["no_install_files"] || "").split
     install_recursive("#{extout}/#{CONFIG['arch']}", archlibdir, :no_install => noinst, :mode => $prog_mode, :strip => $strip)
+    prepare "extension objects", sitearchlibdir
+    prepare "extension objects", vendorarchlibdir
+  end
+  install?(:ext, :arch, :'ext-arch') do
+    prepare "extension headers", archhdrdir
     install_recursive("#{extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "*.h", :mode => $data_mode)
   end
   install?(:ext, :comm, :'ext-comm') do
-    puts "installing extension scripts"
-    hdrdir = rubyhdrdir + "/ruby"
-    makedirs [rubylibdir, sitelibdir, vendorlibdir, hdrdir]
+    prepare "extension scripts", rubylibdir
     install_recursive("#{extout}/common", rubylibdir, :mode => $data_mode)
+    prepare "extension scripts", sitelibdir
+    prepare "extension scripts", vendorlibdir
+  end
+  install?(:ext, :comm, :'ext-comm') do
+    hdrdir = rubyhdrdir + "/ruby"
+    prepare "extension headers", hdrdir
     install_recursive("#{extout}/include/ruby", hdrdir, :glob => "*.h", :mode => $data_mode)
   end
 end
 
 install?(:doc, :rdoc) do
   if $rdocdir
-    puts "installing rdoc"
-
     ridatadir = File.join(CONFIG['datadir'], "ri", CONFIG['ruby_version'], "system")
-    makedirs [ridatadir]
+    prepare "rdoc", ridatadir
     install_recursive($rdocdir, ridatadir, :mode => $data_mode)
   end
 end
 install?(:doc, :capi) do
-  puts "installing capi-docs"
-
-  makedirs [capidir]
-  Dir.chdir("doc")
-  install_recursive "capi", capidir, :mode => $data_mode
+  prepare "capi-docs", capidir
+  install_recursive "doc/capi", capidir, :mode => $data_mode
 end
 
 install?(:local, :comm, :bin, :'bin-comm') do
-  puts "installing command scripts"
-
-  Dir.chdir srcdir
-  makedirs [bindir, rubylibdir]
+  prepare "command scripts", bindir
 
   ruby_shebang = File.join(bindir, ruby_install_name)
   if File::ALT_SEPARATOR
     ruby_bin = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
   end
-  for src in Dir["bin/*"]
+  for src in Dir[File.join(srcdir, "bin/*")]
     next unless File.file?(src)
     next if /\/[.#]|(\.(old|bak|orig|rej|diff|patch|core)|~|\/core)$/i =~ src
 
@@ -406,44 +427,38 @@ EOF
 end
 
 install?(:local, :comm, :lib) do
-  puts "installing library scripts"
-
-  makedirs [rubylibdir]
+  prepare "library scripts", rubylibdir
   noinst = %w[README* *.txt *.rdoc]
   install_recursive(File.join(srcdir, "lib"), rubylibdir, :no_install => noinst, :mode => $data_mode)
 end
 
 install?(:local, :arch, :lib) do
-  puts "installing headers"
+  prepare "common headers", rubyhdrdir
 
-  Dir.chdir(srcdir)
-  makedirs [rubyhdrdir]
   noinst = []
   unless RUBY_PLATFORM =~ /mswin|mingw|bccwin/
     noinst << "win32.h"
   end
   noinst = nil if noinst.empty?
-  install_recursive("include", rubyhdrdir, :no_install => noinst, :glob => "*.h", :mode => $data_mode)
+  install_recursive(File.join(srcdir, "include"), rubyhdrdir, :no_install => noinst, :glob => "*.h", :mode => $data_mode)
 end
 
 install?(:local, :comm, :man) do
-  puts "installing manpages"
+  mdocs = Dir["#{srcdir}/man/*.[1-9]"]
+  prepare "manpages", mandir, ([] | mdocs.collect {|mdoc| mdoc[/\d+$/]}).sort.collect {|sec| "man#{sec}"}
 
+  mandir = File.join(mandir, "man")
   has_goruby = File.exist?(goruby_install_name+exeext)
   require File.join(srcdir, "tool/mdoc2man.rb") if $mantype != "doc"
-  Dir.chdir("#{srcdir}/man")
-  for mdoc in Dir["*.[1-9]"]
+  mdocs.each do |mdoc|
     next unless File.file?(mdoc) and open(mdoc){|fh| fh.read(1) == '.'}
     if mdoc == "goruby.1"
       next unless has_goruby
     end
 
-    destdir = mandir + mdoc[/(\d+)$/]
-    section = $1
+    destdir = mandir + (section = mdoc[/\d+$/])
     destname = ruby_install_name.sub(/ruby/, File.basename(mdoc, ".#{section}"))
     destfile = File.join(destdir, "#{destname}.#{section}")
-
-    makedirs destdir
 
     if $mantype == "doc"
       install mdoc, destfile, :mode => $data_mode
@@ -460,8 +475,6 @@ install?(:local, :comm, :man) do
 end
 
 install?(:ext, :comm, :gem) do
-  puts "creating default gem directories"
-
   directories = []
   IO.foreach(File.join(srcdir, "lib/rubygems.rb")) do |line|
     if /^\s*DIRECTORIES\s*=\s*%w\[(.*?)\]/ =~ line
@@ -470,7 +483,7 @@ install?(:ext, :comm, :gem) do
     end
   end
   gpath = CONFIG["sitelibdir"].sub(%r'/site_ruby/(?=[^/]+)', '/gems/')
-  makedirs directories.collect {|dir| File.join(gpath, dir)}
+  prepare "default gems", gpath, directories
 end
 
 $install << :local << :ext if $install.empty?

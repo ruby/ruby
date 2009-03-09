@@ -1,3 +1,8 @@
+Mon Mar  9 14:33:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb: prints names of the directories where files are
+	  installed to.
+
 Mon Mar  9 02:25:54 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_proc.rb: add some tests.
