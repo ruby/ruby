@@ -190,8 +190,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
 
     iseq->compile_data = ALLOC(struct iseq_compile_data);
     MEMZERO(iseq->compile_data, struct iseq_compile_data, 1);
-    iseq->compile_data->mark_ary = rb_ary_new();
-    RBASIC(iseq->compile_data->mark_ary)->klass = 0;
+    iseq->compile_data->mark_ary = rb_ary_tmp_new();
 
     iseq->compile_data->storage_head = iseq->compile_data->storage_current =
       (struct iseq_compile_data_storage *)
@@ -359,6 +358,7 @@ rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE filename,
 		     VALUE parent, VALUE type,
 		     const rb_compile_option_t *option)
 {
+    /* TODO: argument check */
     return rb_iseq_new_with_bopt_and_opt(node, name, filename, parent, type,
 					   Qfalse, option);
 }
@@ -367,6 +367,7 @@ VALUE
 rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE filename,
 		       VALUE parent, VALUE type, VALUE bopt)
 {
+    /* TODO: argument check */
     return rb_iseq_new_with_bopt_and_opt(node, name, filename, parent, type,
 					   bopt, &COMPILE_OPTION_DEFAULT);
 }
@@ -471,11 +472,10 @@ rb_iseq_load(VALUE data, VALUE parent, VALUE opt)
 }
 
 static NODE *
-compile_string(VALUE str, VALUE file, VALUE line)
+compile_string(VALUE str, const char *file, int line)
 {
     VALUE parser = rb_parser_new();
-    NODE *node = rb_parser_compile_string(parser, StringValueCStr(file),
-					  str, NUM2INT(line));
+    NODE *node = rb_parser_compile_string(parser, file, str, line);
 
     if (!node) {
 	rb_exc_raise(GET_THREAD()->errinfo);	/* TODO: check err */
@@ -487,7 +487,9 @@ VALUE
 rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE line, VALUE opt)
 {
     rb_compile_option_t option;
-    NODE *node = compile_string(StringValue(src), file, line);
+    const char *fn = StringValueCStr(file);
+    int ln = NUM2INT(line);
+    NODE *node = compile_string(StringValue(src), fn, ln);
     rb_thread_t *th = GET_THREAD();
     make_compile_option(&option, opt);
 
@@ -516,8 +518,8 @@ iseq_s_compile(int argc, VALUE *argv, VALUE self)
     rb_secure(1);
 
     rb_scan_args(argc, argv, "13", &src, &file, &line, &opt);
-    file = file == Qnil ? rb_str_new2("<compiled>") : file;
-    line = line == Qnil ? INT2FIX(1) : line;
+    if (NIL_P(file)) file = rb_str_new2("<compiled>");
+    if (NIL_P(line)) line = INT2FIX(1);
 
     return rb_iseq_compile_with_option(src, file, line, opt);
 }

@@ -1,3 +1,7 @@
+Tue Mar 10 10:53:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (rb_iseq_compile_with_option): argument may be converted.
+
 Tue Mar 10 04:56:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (MINIRUBY): keep macro into Makefile.
