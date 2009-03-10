@@ -167,7 +167,6 @@ CXXFLAGS = $(CFLAGS)
 !if !defined(LDFLAGS)
 LDFLAGS = -incremental:no -debug -opt:ref -opt:icf
 !endif
-LDFLAGS = -link $(LDFLAGS)
 !if !defined(XLDFLAGS)
 XLDFLAGS = -stack:$(STACK)
 !endif
@@ -653,7 +652,7 @@ s,@CPPOUTFILE@,-P,;t t
 s,@LIBPATHFLAG@, -libpath:"%s",;t t
 s,@RPATHFLAG@,,;t t
 s,@LIBARG@,%s.lib,;t t
-s,@LINK_SO@,$$(LDSHARED) -Fe$$(@) $$(OBJS) $$(LIBS) $$(LOCAL_LIBS) $$(DLDFLAGS) -implib:$$(*F:.so=)-$$(arch).lib -pdb:$$(*F:.so=)-$$(arch).pdb -def:$$(DEFFILE),;t t
+s,@LINK_SO@,$$(LDSHARED) -Fe$$(@) $$(OBJS) $$(LIBS) $$(LOCAL_LIBS) -link $$(DLDFLAGS) -implib:$$(*F:.so=)-$$(arch).lib -pdb:$$(*F:.so=)-$$(arch).pdb -def:$$(DEFFILE),;t t
 !if $(MSC_VER) >= 1400
 s,@LINK_SO@,@$$(RUBY) -run -e wait_writable -- -n 10 $$(@),;t t
 s,@LINK_SO@,$(MANIFESTTOOL) -manifest $$(@).manifest -outputresource:$$(@);2,;t t
@@ -689,7 +688,7 @@ miniruby: miniruby$(EXEEXT)
 
 miniruby$(EXEEXT):
 		@echo. $(LIBS)
-		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) -Fe$@ $(LDFLAGS)
+		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) -Fe$@ -link $(LDFLAGS)
 		@$(RM) miniruby.lib miniruby.exp
 		miniruby.exe -v
 		$(LDSHARED_1)
@@ -701,7 +700,7 @@ miniruby.rc:
 !if "$(PROGRAM)" != ""
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(PURIFY) $(CC) $(MAINOBJ) $(RUBY_INSTALL_NAME).res \
-			$(OUTFLAG)$@ $(LIBRUBYARG) $(LDFLAGS) $(XLDFLAGS)
+			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
 		$(LDSHARED_0)
 		$(LDSHARED_1)
 		$(LDSHARED_2)
@@ -711,7 +710,7 @@ $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 		$(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) \
 			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBYARG) \
-			$(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
+			-link $(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
 		$(LDSHARED_0)
 		$(LDSHARED_1)
 		$(LDSHARED_2)
@@ -727,7 +726,7 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		@echo. $(DLDOBJS)
 		@-$(PRE_LIBRUBY_UPDATE)
 		$(LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) \
-			$(RUBY_SO_NAME).res $(LIBS) -Fe$@ $(LDFLAGS) \
+			$(RUBY_SO_NAME).res $(LIBS) -Fe$@ -link $(LDFLAGS) \
 			$(LIBRUBY_DLDFLAGS)
 		@$(RM) dummy.lib dummy.exp
 		$(LDSHARED_0)
