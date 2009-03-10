@@ -3383,7 +3383,7 @@ rb_ary_shuffle_bang(VALUE ary)
 
     rb_ary_modify(ary);
     while (i) {
-	long j = rb_genrand_real()*i;
+	long j = (long)(rb_genrand_real()*i);
 	VALUE tmp = RARRAY_PTR(ary)[--i];
 	RARRAY_PTR(ary)[i] = RARRAY_PTR(ary)[j];
 	RARRAY_PTR(ary)[j] = tmp;
@@ -3432,7 +3432,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     len = RARRAY_LEN(ary);
     if (argc == 0) {
 	if (len == 0) return Qnil;
-	i = len == 1 ? 0 : rb_genrand_real()*len;
+	i = len == 1 ? 0 : (long)(rb_genrand_real()*len);
 	return RARRAY_PTR(ary)[i];
     }
     rb_scan_args(argc, argv, "1", &nv);
@@ -3445,14 +3445,14 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
       case 1:
 	return rb_ary_new4(1, &ptr[(long)(rb_genrand_real()*len)]);
       case 2:
-	i = rb_genrand_real()*len;
-	j = rb_genrand_real()*(len-1);
+	i = (long)(rb_genrand_real()*len);
+	j = (long)(rb_genrand_real()*(len-1));
 	if (j >= i) j++;
 	return rb_ary_new3(2, ptr[i], ptr[j]);
       case 3:
-	i = rb_genrand_real()*len;
-	j = rb_genrand_real()*(len-1);
-	k = rb_genrand_real()*(len-2);
+	i = (long)(rb_genrand_real()*len);
+	j = (long)(rb_genrand_real()*(len-1));
+	k = (long)(rb_genrand_real()*(len-2));
 	{
 	    long l = j, g = i;
 	    if (j >= i) l = i, g = ++j;
@@ -3462,9 +3462,9 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     }
     if (n < sizeof(idx)/sizeof(idx[0])) {
 	long sorted[sizeof(idx)/sizeof(idx[0])];
-	sorted[0] = idx[0] = rb_genrand_real()*len;
+	sorted[0] = idx[0] = (long)(rb_genrand_real()*len);
 	for (i=1; i<n; i++) {
-	    k = rb_genrand_real()*--len;
+	    k = (long)(rb_genrand_real()*--len);
 	    for (j = 0; j < i; ++j) {
 		if (k < sorted[j]) break;
 		++k;

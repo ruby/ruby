@@ -4872,7 +4872,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	}
     }
     else {
-	int clen, tlen, max = RSTRING_LEN(str) * 1.2;
+	int clen, tlen, max = (int)(RSTRING_LEN(str) * 1.2);
 	int offset;
 	char *buf = ALLOC_N(char, max), *t = buf;
 

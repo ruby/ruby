@@ -750,7 +750,7 @@ reswitch:	switch (ch) {
 			{
 				ulval = SARG();
 				if ((long)ulval < 0) {
-					ulval = -ulval;
+					ulval = (u_long)(-(long)ulval);
 					sign = '-';
 				}
 			}

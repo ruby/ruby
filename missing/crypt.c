@@ -680,13 +680,13 @@ des_cipher(in, out, salt, num_iter)
 	if (num_iter >= 0)
 	{		/* encryption */
 		kp = &KS[0];
-		ks_inc  = sizeof(*kp);
+		ks_inc  = (int)sizeof(*kp);
 	}
 	else
 	{		/* decryption */
 		num_iter = -num_iter;
 		kp = &KS[KS_SIZE-1];
-		ks_inc  = -sizeof(*kp);
+		ks_inc  = -(int)sizeof(*kp);
 	}
 
 	while (--num_iter >= 0) {

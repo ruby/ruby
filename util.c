@@ -162,7 +162,7 @@ ruby_strtoul(const char *str, char **endptr, int base)
     }
 
     if (sign < 0) {
-        ret = -ret;
+        ret = (unsigned long)(-(long)ret);
         return ret;
     }
     else {
@@ -2821,7 +2821,7 @@ drop_down:
 #ifdef Avoid_Underflow
             if (scale && y <= 2*P*Exp_msk1) {
                 if (aadj <= 0x7fffffff) {
-                    if ((z = aadj) <= 0)
+                    if ((z = (int)aadj) <= 0)
                         z = 1;
                     aadj = z;
                     dval(aadj1) = dsign ? aadj : -aadj;
@@ -3428,7 +3428,7 @@ ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
              */
             dval(eps) = 0.5/tens[ilim-1] - dval(eps);
             for (i = 0;;) {
-                L = dval(d);
+                L = (int)dval(d);
                 dval(d) -= L;
                 *s++ = '0' + (int)L;
                 if (dval(d) < dval(eps))

@@ -1025,7 +1025,7 @@ rb_big2ulong_pack(VALUE x)
 {
     VALUE num = big2ulong(x, "unsigned long", Qfalse);
     if (!RBIGNUM_SIGN(x)) {
-	return -num;
+	return (VALUE)(-(SIGNED_VALUE)num);
     }
     return num;
 }
@@ -1039,7 +1039,7 @@ rb_big2ulong(VALUE x)
 	if ((SIGNED_VALUE)num < 0) {
 	    rb_raise(rb_eRangeError, "bignum out of range of unsigned long");
 	}
-	return -num;
+	return (VALUE)(-(SIGNED_VALUE)num);
     }
     return num;
 }
@@ -1082,7 +1082,8 @@ rb_big2ull(VALUE x)
 {
     unsigned LONG_LONG num = big2ull(x, "unsigned long long");
 
-    if (!RBIGNUM_SIGN(x)) return -num;
+    if (!RBIGNUM_SIGN(x))
+	return (VALUE)(-(SIGNED_VALUE)num);
     return num;
 }
 

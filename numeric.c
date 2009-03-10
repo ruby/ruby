@@ -1272,7 +1272,7 @@ flo_floor(VALUE num)
     if (!FIXABLE(f)) {
 	return rb_dbl2big(f);
     }
-    val = f;
+    val = (long)f;
     return LONG2FIX(val);
 }
 
@@ -1298,7 +1298,7 @@ flo_ceil(VALUE num)
     if (!FIXABLE(f)) {
 	return rb_dbl2big(f);
     }
-    val = f;
+    val = (long)f;
     return LONG2FIX(val);
 }
 
@@ -1347,7 +1347,7 @@ flo_round(int argc, VALUE *argv, VALUE num)
     if (!FIXABLE(number)) {
 	return rb_dbl2big(number);
     }
-    val = number;
+    val = (long)number;
     return LONG2FIX(val);
 }
 
@@ -1372,7 +1372,7 @@ flo_truncate(VALUE num)
     if (!FIXABLE(f)) {
 	return rb_dbl2big(f);
     }
-    val = f;
+    val = (long)f;
     return LONG2FIX(val);
 }
 

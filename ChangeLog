@@ -1,3 +1,8 @@
+Tue Mar 10 14:43:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c, bignum.c, gc.c, numeric.c, string.c, util.c, insns.def,
+	  missing/crypt.c, missing/vsnprintf.c, : suppress warnings.
+
 Tue Mar 10 13:45:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (LDFLAGS): moved -link to TRY_LINK, LINK_SO

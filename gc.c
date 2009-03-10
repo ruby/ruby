@@ -937,7 +937,7 @@ init_heap(rb_objspace_t *objspace)
 static void
 set_heaps_increment(rb_objspace_t *objspace)
 {
-    size_t next_heaps_length = heaps_used * 1.8;
+    size_t next_heaps_length = (size_t)(heaps_used * 1.8);
     heaps_inc = next_heaps_length - heaps_used;
 
     if (next_heaps_length > heaps_length) {
@@ -1712,8 +1712,8 @@ gc_sweep(rb_objspace_t *objspace)
     size_t i;
     size_t live = 0, free_min = 0, do_heap_free = 0;
 
-    do_heap_free = (heaps_used * HEAP_OBJ_LIMIT) * 0.65;
-    free_min = (heaps_used * HEAP_OBJ_LIMIT)  * 0.2;
+    do_heap_free = (size_t)((heaps_used * HEAP_OBJ_LIMIT) * 0.65);
+    free_min = (size_t)((heaps_used * HEAP_OBJ_LIMIT)  * 0.2);
 
     if (free_min < FREE_MIN) {
 	do_heap_free = heaps_used * HEAP_OBJ_LIMIT;
@@ -1776,7 +1776,7 @@ gc_sweep(rb_objspace_t *objspace)
     }
     GC_PROF_SET_MALLOC_INFO;
     if (malloc_increase > malloc_limit) {
-	malloc_limit += (malloc_increase - malloc_limit) * (double)live / (live + freed);
+	malloc_limit += (size_t)((malloc_increase - malloc_limit) * (double)live / (live + freed));
 	if (malloc_limit < GC_MALLOC_LIMIT) malloc_limit = GC_MALLOC_LIMIT;
     }
     malloc_increase = 0;
