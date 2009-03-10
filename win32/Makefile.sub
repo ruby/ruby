@@ -100,7 +100,7 @@ DEBUGFLAGS = -Zi
 !if $(MSC_VER) < 1400
 OPTFLAGS = -O2b2xg-
 !else
-OPTFLAGS = -O2b2xty-
+OPTFLAGS = -O2sy-
 !endif
 !endif
 !if !defined(PLATFORM)
