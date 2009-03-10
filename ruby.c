@@ -348,15 +348,15 @@ ruby_init_loadpath_safe(int safe_level)
     char *p;
     int baselen;
 
-    libpath[0] = '\0';
 #if defined _WIN32 || defined __CYGWIN__
     GetModuleFileName(libruby, libpath, sizeof libpath);
 #elif defined(__EMX__)
     _execname(libpath, sizeof(libpath) - 1);
 #elif defined(HAVE_DLADDR)
     Dl_info dli;
+    libpath[0] = '\0';
     if (dladdr(expand_include_path, &dli)) {
-	strlcpy(libpath, dli.dli_fname, sizeof(libpath));
+	realpath(dli.dli_fname, libpath);
     }
 #endif
 
@@ -373,7 +373,7 @@ ruby_init_loadpath_safe(int safe_level)
     p = strrchr(libpath, '/');
     if (p) {
 	*p = 0;
-	if (p - libpath > 3 && !STRCASECMP(p - 4, "/bin")) {
+	if (p - libpath > 3 && !(STRCASECMP(p - 4, "/bin") && strcmp(p - 4, "/lib"))) {
 	    p -= 4;
 	    *p = 0;
 	}
