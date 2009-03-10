@@ -158,6 +158,9 @@ RUNTIMEFLAG   = -MD
 !if !defined(COMPILERFLAG)
 COMPILERFLAG  = -Zm600
 !endif
+!if !defined(WARNFLAGS)
+WARNFLAGS = -W2 -wd4996
+!endif
 !if !defined(CFLAGS)
 CFLAGS = $(RUNTIMEFLAG) $(DEBUGFLAGS) $(WARNFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG) $(COMPILERFLAG)
 !endif
@@ -193,13 +196,12 @@ LDSHARED = $(LD) -LD
 XCFLAGS = -DRUBY_EXPORT -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(srcdir)/missing $(XCFLAGS)
 !if $(MSC_VER) >= 1400
 # Prevents VC++ 2005 (cl ver 14) warnings
-CRTDEFFLAGS = -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
 MANIFESTTOOL = mt -nologo
 LDSHARED_0 = @$(MINIRUBY) -run -e wait_writable -- -n 10 $@
 LDSHARED_1 = $(MANIFESTTOOL) -manifest $(@).manifest -outputresource:$(@);2
 LDSHARED_2 = @$(RM) $(@:/=\).manifest
 !endif
-CPPFLAGS = $(CRTDEFFLAGS) $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
+CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 
 DLDFLAGS = $(LDFLAGS) -dll
 SOLIBS = 
