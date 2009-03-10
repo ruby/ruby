@@ -1,3 +1,13 @@
+Wed Mar 11 04:47:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_to_i, time_hash): time_t may be bigger than long
+	  and int.
+
+	* time.c (time_timeval, rb_time_timeval, obj2nsec, time_strftime),
+	  (time_mdump, time_mload): suppress warnings.
+
+	* win32/Makefile.sub (config.h): added TIMET2NUM and NUM2TIMET.
+
 Wed Mar 11 04:29:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c: suppress warnings.  based on a patch from Charlie

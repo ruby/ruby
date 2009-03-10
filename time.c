@@ -21,6 +21,10 @@
 
 #include <math.h>
 
+#ifndef TYPEOF_TIMEVAL_TV_SEC
+# define TYPEOF_TIMEVAL_TV_SEC time_t
+#endif
+
 VALUE rb_cTime;
 static VALUE time_utc_offset _((VALUE));
 
@@ -251,7 +255,7 @@ time_timeval(VALUE num, int interval)
     struct timeval tv;
 
     ts = time_timespec(num, interval);
-    tv.tv_sec = ts.tv_sec;
+    tv.tv_sec = (TYPEOF_TIMEVAL_TV_SEC)ts.tv_sec;
     tv.tv_usec = ts.tv_nsec / 1000;
 
     return tv;
@@ -271,7 +275,7 @@ rb_time_timeval(VALUE time)
 
     if (TYPE(time) == T_DATA && RDATA(time)->dfree == time_free) {
 	GetTimeval(time, tobj);
-        t.tv_sec = tobj->ts.tv_sec;
+        t.tv_sec = (TYPEOF_TIMEVAL_TV_SEC)tobj->ts.tv_sec;
         t.tv_usec = tobj->ts.tv_nsec / 1000;
 	return t;
     }
@@ -365,7 +369,7 @@ obj2nsec(VALUE obj, long *nsec)
 
     ts = time_timespec(obj, 1);
     *nsec = ts.tv_nsec;
-    return ts.tv_sec;
+    return (long)ts.tv_sec;
 }
 
 static long
@@ -992,7 +996,7 @@ time_to_i(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return LONG2NUM(tobj->ts.tv_sec);
+    return TIMET2NUM(tobj->ts.tv_sec);
 }
 
 /*
@@ -1183,7 +1187,13 @@ time_hash(VALUE time)
     long hash;
 
     GetTimeval(time, tobj);
-    hash = rb_hash_end(rb_hash_uint(rb_hash_start(tobj->ts.tv_sec), tobj->ts.tv_nsec));
+#if SIZEOF_TIME_T > SIZEOF_INT
+    hash = rb_hash_start((unsigned int)(tobj->ts.tv_sec >> (SIZEOF_INT * CHAR_BIT)));
+    hash = rb_hash_uint(hash, (unsigned int)tobj->ts.tv_sec);
+#else
+    hash = rb_hash_start((unsigned int)tobj->ts.tv_sec);
+#endif
+    hash = rb_hash_end(rb_hash_uint(hash, tobj->ts.tv_nsec));
     return LONG2FIX(hash);
 }
 
@@ -2137,7 +2147,7 @@ time_strftime(VALUE time, VALUE format)
     if (len == 0) {
 	rb_warning("strftime called with empty format string");
     }
-    else if (strlen(fmt) < len) {
+    else if (memchr(fmt, '\0', len)) {
 	/* Ruby string may contain \0's. */
 	const char *p = fmt, *pe = fmt + len;
 
@@ -2202,11 +2212,11 @@ time_mdump(VALUE time)
     nsec = tobj->ts.tv_nsec % 1000;
 
     for (i=0; i<4; i++) {
-	buf[i] = p & 0xff;
+	buf[i] = (unsigned char)p;
 	p = RSHIFT(p, 8);
     }
     for (i=4; i<8; i++) {
-	buf[i] = s & 0xff;
+	buf[i] = (unsigned char)s;
 	s = RSHIFT(s, 8);
     }
 
@@ -2306,6 +2316,7 @@ time_mload(VALUE time, VALUE str)
 	tm.tm_hour =  p        & 0x1f;
 	tm.tm_min  = (s >> 26) & 0x3f;
 	tm.tm_sec  = (s >> 20) & 0x3f;
+	tm.tm_yday = tm.tm_mday = tm.tm_wday = 0;
 	tm.tm_isdst = 0;
 
 	sec = make_time_t(&tm, Qtrue);

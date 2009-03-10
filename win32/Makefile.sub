@@ -393,8 +393,12 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define SIZEOF_DOUBLE 8
 !if $(MSC_VER) >= 1400
 #define SIZEOF_TIME_T 8
+#define TIMET2NUM(v) LL2NUM(v)
+#define NUM2TIMET(v) NUM2LL(v)
 !else
 #define SIZEOF_TIME_T 4
+#define TIMET2NUM(v) LONG2NUM(v)
+#define NUM2TIMET(v) NUM2LONG(v)
 !endif
 #define SIZEOF_RLIM_T 0
 !if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
@@ -460,6 +464,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define GETGROUPS_T int
 #define RETSIGTYPE void
+#define TYPEOF_TIMEVAL_TV_SEC long
 #define HAVE_ALLOCA 1
 #define HAVE_DUP2 1
 #define HAVE_MEMCMP 1
