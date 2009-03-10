@@ -1,4 +1,7 @@
-Tue Mar 10 19:40:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar 10 19:58:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h (strcasecmp, strncasecmp): use _ prefixed
+	  versions to suppress warnings.
 
 	* ext/dl/callback/mkcallback.rb (DLTYPE[FLOAT]): cast to suppress
 	  warnings.  [ruby-core:22792]

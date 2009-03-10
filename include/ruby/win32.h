@@ -185,8 +185,8 @@ extern int rb_w32_stat(const char *, struct stat *);
 extern int rb_w32_fstat(int, struct stat *);
 #endif
 
-#define strcasecmp		stricmp
-#define strncasecmp		strnicmp
+#define strcasecmp		_stricmp
+#define strncasecmp		_strnicmp
 #define fsync			_commit
 
 #ifdef __MINGW32__
