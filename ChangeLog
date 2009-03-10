@@ -1,3 +1,8 @@
+Wed Mar 11 04:29:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c: suppress warnings.  based on a patch from Charlie
+	  Savage at [ruby-core:22804].
+
 Wed Mar 11 04:22:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (sig_trap): suppress warnings.

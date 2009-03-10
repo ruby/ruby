@@ -31,6 +31,7 @@
 #include <mbstring.h>
 #if _MSC_VER >= 1400
 #include <crtdbg.h>
+#include <rtcapi.h>
 #endif
 #ifdef __MINGW32__
 #include <mswsock.h>
@@ -1596,7 +1597,7 @@ rb_w32_opendir(const char *filename)
 	return NULL;
     if (!(sbuf.st_mode & S_IFDIR) &&
 	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
-	((1 << (filename[0] & 0x5f) - 'A') & GetLogicalDrives()) == 0)) {
+	 ((1 << ((filename[0] & 0x5f) - 'A')) & GetLogicalDrives()) == 0)) {
 	errno = ENOTDIR;
 	return NULL;
     }
@@ -2136,21 +2137,21 @@ rb_w32_fdisset(int fd, fd_set *set)
 static int
 extract_fd(rb_fdset_t *dst, fd_set *src, int (*func)(SOCKET))
 {
-    int s = 0;
+    unsigned int s = 0;
     if (!src || !dst) return 0;
 
     while (s < src->fd_count) {
         SOCKET fd = src->fd_array[s];
 
 	if (!func || (*func)(fd)) { /* move it to dst */
-	    int d;
+	    unsigned int d;
 
 	    for (d = 0; d < dst->fdset->fd_count; d++) {
 		if (dst->fdset->fd_array[d] == fd)
 		    break;
 	    }
 	    if (d == dst->fdset->fd_count) {
-		if (dst->fdset->fd_count >= dst->capa) {
+		if ((int)dst->fdset->fd_count >= dst->capa) {
 		    dst->capa = (dst->fdset->fd_count / FD_SETSIZE + 1) * FD_SETSIZE;
 		    dst->fdset = xrealloc(dst->fdset, sizeof(unsigned int) + sizeof(SOCKET) * dst->capa);
 		}
@@ -2170,12 +2171,12 @@ extract_fd(rb_fdset_t *dst, fd_set *src, int (*func)(SOCKET))
 static int
 copy_fd(fd_set *dst, fd_set *src)
 {
-    int s;
+    unsigned int s;
     if (!src || !dst) return 0;
 
     for (s = 0; s < src->fd_count; ++s) {
 	SOCKET fd = src->fd_array[s];
-	int d;
+	unsigned int d;
 	for (d = 0; d < dst->fd_count; ++d) {
 	    if (dst->fd_array[d] == fd)
 		break;
@@ -2380,9 +2381,9 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     extract_fd(&except, ex, is_not_socket); // drop only
 
     r = 0;
-    if (rd && rd->fd_count > r) r = rd->fd_count;
-    if (wr && wr->fd_count > r) r = wr->fd_count;
-    if (ex && ex->fd_count > r) r = ex->fd_count;
+    if (rd && (int)rd->fd_count > r) r = (int)rd->fd_count;
+    if (wr && (int)wr->fd_count > r) r = (int)wr->fd_count;
+    if (ex && (int)ex->fd_count > r) r = (int)ex->fd_count;
     if (nfds > r) nfds = r;
 
     {
@@ -3193,7 +3194,7 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 
     if (pid == -1) {
 	int count = 0;
-	DWORD ret;
+	int ret;
 	HANDLE events[MAXCHILDNUM];
 
 	FOREACH_CHILD(child) {
@@ -3257,8 +3258,8 @@ filetime_to_timeval(const FILETIME* ft, struct timeval *tv)
     lt /= 10;	/* to usec */
     lt -= (LONG_LONG)((1970-1601)*365.2425) * 24 * 60 * 60 * 1000 * 1000;
 
-    tv->tv_sec = lt / (1000 * 1000);
-    tv->tv_usec = lt % (1000 * 1000);
+    tv->tv_sec = (long)(lt / (1000 * 1000));
+    tv->tv_usec = (long)(lt % (1000 * 1000));
 
     return tv->tv_sec > 0 ? 0 : -1;
 }
@@ -3540,7 +3541,7 @@ isUNCRoot(const char *path)
     return 0;
 }
 
-#define COPY_STAT(src, dest) do {		\
+#define COPY_STAT(src, dest, size_cast) do {	\
 	(dest).st_dev 	= (src).st_dev;		\
 	(dest).st_ino 	= (src).st_ino;		\
 	(dest).st_mode  = (src).st_mode;	\
@@ -3548,7 +3549,7 @@ isUNCRoot(const char *path)
 	(dest).st_uid   = (src).st_uid;		\
 	(dest).st_gid   = (src).st_gid;		\
 	(dest).st_rdev 	= (src).st_rdev;	\
-	(dest).st_size 	= (src).st_size;	\
+	(dest).st_size 	= size_cast(src).st_size; \
 	(dest).st_atime = (src).st_atime;	\
 	(dest).st_mtime = (src).st_mtime;	\
 	(dest).st_ctime = (src).st_ctime;	\
@@ -3580,7 +3581,7 @@ rb_w32_fstati64(int fd, struct stati64 *st)
 
     if (ret) return ret;
     tmp.st_mode &= ~(S_IWGRP | S_IWOTH);
-    COPY_STAT(tmp, *st);
+    COPY_STAT(tmp, *st, +);
     if (GetFileInformationByHandle((HANDLE)_get_osfhandle(fd), &info)) {
 	if (!(info.dwFileAttributes & FILE_ATTRIBUTE_READONLY)) {
 	    st->st_mode |= S_IWUSR;
@@ -3626,10 +3627,10 @@ fileattr_to_unixmode(DWORD attr, const char *path)
 	while (path < end) {
 	    end = CharPrev(path, end);
 	    if (*end == '.') {
-		if ((strcmpi(end, ".bat") == 0) ||
-		    (strcmpi(end, ".cmd") == 0) ||
-		    (strcmpi(end, ".com") == 0) ||
-		    (strcmpi(end, ".exe") == 0)) {
+		if ((strcasecmp(end, ".bat") == 0) ||
+		    (strcasecmp(end, ".cmd") == 0) ||
+		    (strcasecmp(end, ".com") == 0) ||
+		    (strcasecmp(end, ".exe") == 0)) {
 		    mode |= S_IEXEC;
 		}
 		break;
@@ -3663,7 +3664,7 @@ winnt_stat(const char *path, struct stati64 *st)
     memset(st, 0, sizeof(*st));
     st->st_nlink = 1;
 
-    if (_mbspbrk(path, "?*")) {
+    if (_mbspbrk((const unsigned char *)path, (const unsigned char *)"?*")) {
 	errno = ENOENT;
 	return -1;
     }
@@ -3717,7 +3718,7 @@ rb_w32_stat(const char *path, struct stat *st)
     struct stati64 tmp;
 
     if (rb_w32_stati64(path, &tmp)) return -1;
-    COPY_STAT(tmp, *st);
+    COPY_STAT(tmp, *st, (_off_t));
     return 0;
 }
 
@@ -4615,7 +4616,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 
 	if (!(_osfile(fd) & (FDEV | FPIPE))) {
 	    LONG high = ol.OffsetHigh;
-	    LONG low = ol.Offset + read;
+	    DWORD low = ol.Offset + read;
 	    if (low < ol.Offset)
 		++high;
 	    SetFilePointer((HANDLE)_osfhnd(fd), low, &high, FILE_BEGIN);
@@ -4733,7 +4734,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
 
 	if (!(_osfile(fd) & (FDEV | FPIPE))) {
 	    LONG high = ol.OffsetHigh;
-	    LONG low = ol.Offset + written;
+	    DWORD low = ol.Offset + written;
 	    if (low < ol.Offset)
 		++high;
 	    SetFilePointer((HANDLE)_osfhnd(fd), low, &high, FILE_BEGIN);
