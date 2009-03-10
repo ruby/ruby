@@ -190,7 +190,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
 
     iseq->compile_data = ALLOC(struct iseq_compile_data);
     MEMZERO(iseq->compile_data, struct iseq_compile_data, 1);
-    iseq->compile_data->mark_ary = rb_ary_tmp_new();
+    iseq->compile_data->mark_ary = rb_ary_tmp_new(3);
 
     iseq->compile_data->storage_head = iseq->compile_data->storage_current =
       (struct iseq_compile_data_storage *)
@@ -1378,7 +1378,7 @@ rb_iseq_build_for_ruby2cext(
     *iseq = *iseq_template;
     iseq->name = rb_str_new2(name);
     iseq->filename = rb_str_new2(filename);
-    iseq->mark_ary = rb_ary_new();
+    iseq->mark_ary = rb_ary_tmp_new(3);
     iseq->self = iseqval;
 
     iseq->iseq = ALLOC_N(VALUE, iseq->iseq_size);

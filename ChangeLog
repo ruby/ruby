@@ -1,3 +1,8 @@
+Tue Mar 10 11:36:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (prepare_iseq_build): too few arguments to function
+	  rb_ary_tmp_new().
+
 Tue Mar 10 10:53:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (rb_iseq_compile_with_option): argument may be converted.
