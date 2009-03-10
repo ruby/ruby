@@ -1,7 +1,11 @@
-Tue Mar 10 14:43:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar 10 19:40:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/callback/mkcallback.rb (DLTYPE[FLOAT]): cast to suppress
+	  warnings.  [ruby-core:22792]
 
 	* array.c, bignum.c, gc.c, numeric.c, string.c, util.c, insns.def,
 	  missing/crypt.c, missing/vsnprintf.c, : suppress warnings.
+	  [ruby-core:22792]
 
 Tue Mar 10 13:45:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

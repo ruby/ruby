@@ -73,7 +73,7 @@ DLTYPE = {
   FLOAT => {
     :name => 'float',
     :type => 'float',
-    :conv => 'RFLOAT_VALUE(%s)',
+    :conv => '(float)RFLOAT_VALUE(%s)',
   },
   DOUBLE => {
     :name => 'double',
