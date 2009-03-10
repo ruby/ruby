@@ -1,3 +1,7 @@
+Wed Mar 11 04:22:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (sig_trap): suppress warnings.
+
 Tue Mar 10 20:07:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (WARNFLAGS): uses -wd4996 instead of

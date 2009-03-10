@@ -935,7 +935,7 @@ sig_trap(int argc, VALUE *argv)
     struct trap_arg arg;
 
     rb_secure(2);
-    if (argc == 0 || argc > 2) {
+    if (argc < 1 || argc > 2) {
 	rb_raise(rb_eArgError, "wrong number of arguments -- trap(sig, cmd)/trap(sig){...}");
     }
 
@@ -944,7 +944,7 @@ sig_trap(int argc, VALUE *argv)
 	arg.cmd = rb_block_proc();
 	arg.func = sighandler;
     }
-    else if (argc == 2) {
+    else {
 	arg.cmd = argv[1];
 	arg.func = trap_handler(&arg.cmd, arg.sig);
     }
