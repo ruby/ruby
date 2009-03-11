@@ -28,3 +28,4 @@ a\
 s/^\([ 	]*\)\(yyerror[ 	]*([ 	]*parser,\)/\1parser_\2/
 s!^ *extern char \*getenv();!/* & */!
 s/^\(#.*\)".*\.tab\.c"/\1"parse.c"/
+/^\(#.*\)".*\.y"/s:\\\\:/:g

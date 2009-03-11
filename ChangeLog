@@ -1,3 +1,7 @@
+Thu Mar 12 01:08:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/ytab.sed: replaces backslashes with slash for nmake.
+
 Wed Mar 11 21:23:06 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_mload): don't clear tm_mday.
