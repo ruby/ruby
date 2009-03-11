@@ -5448,7 +5448,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
         if (close(fptr->fd) < 0)
             rb_sys_fail_path(fptr->pathv);
         fptr->fd = -1;
-       fptr->fd = rb_sysopen(fptr->pathv, oflags, 0666);
+        fptr->fd = rb_sysopen(fptr->pathv, oflags, 0666);
     }
 
     return file;
@@ -7726,7 +7726,7 @@ copy_stream_fallback_body(VALUE arg)
     const int buflen = 16*1024;
     VALUE n;
     VALUE buf = rb_str_buf_new(buflen);
-    long rest = stp->copy_length;
+    off_t rest = stp->copy_length;
     off_t off = stp->src_offset;
     ID read_method = id_readpartial;
 
@@ -7745,7 +7745,7 @@ copy_stream_fallback_body(VALUE arg)
         else {
             if (rest == 0)
                 break;
-            l = buflen < rest ? buflen : rest;
+            l = buflen < rest ? buflen : (long)rest;
         }
         if (stp->src_fd == -1) {
             rb_funcall(stp->src, read_method, 2, INT2FIX(l), buf);
