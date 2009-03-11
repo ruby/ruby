@@ -1,4 +1,7 @@
-Thu Mar 12 05:09:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar 12 05:12:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (ruby_init_stack): range of rlim_cur may be
+	  larger than int.
 
 	* missing/vsnprintf.c (BSD_vfprintf): commented out code which has
 	  no effect at all.
