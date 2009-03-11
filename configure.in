@@ -217,7 +217,7 @@ AC_PROG_GCC_TRADITIONAL
 test $ac_cv_prog_cc_g = yes && : ${debugflags=-g}
 if test "$GCC" = yes; then
     linker_flag=-Wl,
-    : ${optflags=-O3} ${warnflags="-Wall -Wno-parentheses"}
+    : ${optflags=-O3}
 else
     linker_flag=
 fi
@@ -319,6 +319,21 @@ AC_SUBST(CHDIR)
 
 dnl }
 dnl compiler section {
+
+if test "$GCC:${warnflags+set}:no" = yes::no; then
+    save_CFLAGS="$CFLAGS"
+    for wflag in -Wno-missing-field-initializers -Wshorten-64-to-32; do
+        CFLAGS="$CFLAGS $wflag"
+        AC_MSG_CHECKING([whether $wflag is accepted])
+        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
+	    [warnflags="${warnflags+$warnflags }$wflag"
+	    AC_MSG_RESULT(yes)],
+	    [AC_MSG_RESULT(no)])
+    done
+    CFLAGS="$save_CFLAGS"
+    unset save_CFLAGS
+    warnflags="-Wall -Wno-unused-parameter -Wno-parentheses ${warnflags+$warnflags }-Wpointer-arith -Wwrite-strings"
+fi
 
 dnl check for large file stuff
 mv confdefs.h confdefs1.h

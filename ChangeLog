@@ -1,4 +1,8 @@
-Thu Mar 12 05:27:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar 12 05:49:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (warnflags): added some default flags,
+	  pointer-arith, write-strings and shorten-64-to-32, but suppress
+	  unused-parameter and missing-field-initializers, if possible.
 
 	* configure.in (RUBY_CHECK_HUGE): checks whether a value range is
 	  larger than long.
