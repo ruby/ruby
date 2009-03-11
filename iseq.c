@@ -860,6 +860,7 @@ rb_iseq_disasm(VALUE self)
     VALUE child = rb_ary_new();
     unsigned long size;
     int i;
+    long l;
     ID *tbl;
     enum {header_minlen = 72};
 
@@ -871,9 +872,9 @@ rb_iseq_disasm(VALUE self)
     rb_str_cat2(str, "== disasm: ");
 
     rb_str_concat(str, iseq_inspect(iseqdat->self));
-    if ((i = RSTRING_LEN(str)) < header_minlen) {
+    if ((l = RSTRING_LEN(str)) < header_minlen) {
 	rb_str_resize(str, header_minlen);
-	memset(RSTRING_PTR(str) + i, '=', header_minlen - i);
+	memset(RSTRING_PTR(str) + l, '=', header_minlen - l);
     }
     rb_str_cat2(str, "\n");
 
