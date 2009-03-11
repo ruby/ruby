@@ -580,7 +580,7 @@ static VALUE
 dir_seek(VALUE dir, VALUE pos)
 {
     struct dir_data *dirp;
-    off_t p = NUM2OFFT(pos);
+    long p = NUM2LONG(pos);
 
     GetDIR(dir, dirp);
 #ifdef HAVE_SEEKDIR

@@ -1,3 +1,7 @@
+Thu Mar 12 01:18:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_seek): use long for seekdir().
+
 Thu Mar 12 01:08:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/ytab.sed: replaces backslashes with slash for nmake.
