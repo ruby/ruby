@@ -1,3 +1,9 @@
+Thu Mar 12 02:10:57 2009  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: strip spaces from ruby_version.
+	  Sun C 5.9 SunOS_i386 Build47_dlight 2007/05/22 generates
+	  `ruby_version= 1 "." 9 "." 1'.
+
 Thu Mar 12 01:18:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_seek): use long for seekdir().
