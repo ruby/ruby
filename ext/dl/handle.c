@@ -145,17 +145,7 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
 
     rb_secure(2);
 
-    if( sym == Qnil ){
-#if defined(RTLD_NEXT)
-	name = RTLD_NEXT;
-#else
-	name = NULL;
-#endif
-    }
-    else{
-	name = StringValuePtr(sym);
-    }
-
+    name = StringValuePtr(sym);
 
     Data_Get_Struct(self, struct dl_handle, dlhandle);
     if( ! dlhandle->open ){
