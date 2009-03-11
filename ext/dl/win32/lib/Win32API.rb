@@ -8,10 +8,10 @@ class Win32API
   DLL = {}
   TYPEMAP = {"0" => DL::TYPE_VOID, "S" => DL::TYPE_VOIDP, "I" => DL::TYPE_LONG}
 
-  def initialize(dllname, func, import, export = "0", *rest)
+  def initialize(dllname, func, import, export = "0", calltype = :stdcall)
     @proto = [import].join.tr("VPpNnLlIi", "0SSI").sub(/^(.)0*$/, '\1')
     handle = DLL[dllname] ||= DL.dlopen(dllname)
-    @func = DL::CFunc.new(handle[func], TYPEMAP[export.tr("VPpNnLlIi", "0SSI")], func, *rest)
+    @func = DL::CFunc.new(handle[func], TYPEMAP[export.tr("VPpNnLlIi", "0SSI")], func, calltype)
   rescue DL::DLError => e
     raise LoadError, e.message, e.backtrace
   end
