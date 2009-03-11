@@ -1,3 +1,7 @@
+Wed Mar 11 12:12:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (run_final): calls free function.  [ruby-core:22578]
+
 Mon Mar  9 22:57:47 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* version.h (RUBY_VERSION): Bump the version number to 1.8.8dev.

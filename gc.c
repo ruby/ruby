@@ -1259,7 +1259,7 @@ make_io_deferred(RVALUE *p)
 {
     struct rb_io_t *fptr = p->as.file.fptr;
     make_deferred(p);
-    p->as.data.dfree = (void (*)(void*))rb_io_fptr_finalize;
+    p->as.data.dfree = (void (*)_((void*)))rb_io_fptr_finalize;
     p->as.data.data = fptr;
 }
 
@@ -1960,6 +1960,9 @@ run_final(obj)
     objid = rb_obj_id(obj);	/* make obj into id */
     RBASIC(obj)->klass = 0;
     rb_thread_critical = Qtrue;
+    if (RDATA(obj)->dfree) {
+	(*RDATA(obj)->dfree)(DATA_PTR(obj));
+    }
     args[1] = 0;
     args[2] = (VALUE)ruby_safe_level;
     for (i=0; i<RARRAY(finalizers)->len; i++) {
