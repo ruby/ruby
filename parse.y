@@ -68,11 +68,7 @@ enum lex_state_e {
     EXPR_VALUE			/* alike EXPR_BEG but label is disallowed. */
 };
 
-# ifdef HAVE_LONG_LONG
-typedef unsigned LONG_LONG stack_type;
-# else
-typedef unsigned long stack_type;
-# endif
+typedef VALUE stack_type;
 
 # define BITSTACK_PUSH(stack, n)	(stack = (stack<<1)|((n)&1))
 # define BITSTACK_POP(stack)	(stack = stack >> 1)
@@ -2381,13 +2377,13 @@ call_args	: command
 		;
 
 command_args	:  {
-			$<num>$ = cmdarg_stack;
+			$<val>$ = cmdarg_stack;
 			CMDARG_PUSH(1);
 		    }
 		  call_args
 		    {
 			/* CMDARG_POP() */
-			cmdarg_stack = $<num>1;
+			cmdarg_stack = $<val>1;
 			$$ = $2;
 		    }
 		;
