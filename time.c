@@ -2316,7 +2316,7 @@ time_mload(VALUE time, VALUE str)
 	tm.tm_hour =  p        & 0x1f;
 	tm.tm_min  = (s >> 26) & 0x3f;
 	tm.tm_sec  = (s >> 20) & 0x3f;
-	tm.tm_yday = tm.tm_mday = tm.tm_wday = 0;
+	tm.tm_yday = tm.tm_wday = 0;
 	tm.tm_isdst = 0;
 
 	sec = make_time_t(&tm, Qtrue);
