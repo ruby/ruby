@@ -3220,7 +3220,7 @@ rb_f_spawn(int argc, VALUE *argv)
 static VALUE
 rb_f_sleep(int argc, VALUE *argv)
 {
-    int beg, end;
+    time_t beg, end;
 
     beg = time(0);
     if (argc == 0) {
