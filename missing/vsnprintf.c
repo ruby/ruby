@@ -1047,7 +1047,7 @@ number:			if ((dprec = prec) >= 0)
 					ox[0] = *cp++;
 					ox[1] = '.';
 					PRINT(ox, 2);
-					if (_double || flags & ALT == 0) {
+					if (_double /*|| flags & ALT == 0*/) {
 						PRINT(cp, ndig-1);
 					} else	/* 0.[0..] */
 						/* __dtoa irregularity */
