@@ -136,7 +136,6 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
     struct dl_handle *dlhandle;
     void *handle;
     const char *name;
-    int i;
 #if defined(HAVE_DLERROR)
     const char *err;
 # define CHECK_DLERROR if( err = dlerror() ){ func = 0; }
@@ -168,6 +167,7 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
     CHECK_DLERROR;
 #if defined(FUNC_STDCALL)
     if( !func ){
+	int  i;
 	int  len = strlen(name);
 	char *name_n;
 #if defined(__CYGWIN__) || defined(_WIN32) || defined(__MINGW32__)
