@@ -894,12 +894,32 @@ AC_CHECK_SIZEOF(rlim_t, 0, [
 ])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
+AC_DEFUN([RUBY_CHECK_HUGE],
+    [AC_CACHE_CHECK([whether $1 is huge], AS_TR_SH(rb_cv_huge_$1),
+[AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY(
+[AC_INCLUDES_DEFAULT([$4])
+static m4_bpatsubst([$1], [\..*]) rbcv_var;],
+[dnl
+sizeof(rbcv_var[]m4_bmatch([$1], [\.], .m4_bpatsubst([$1], [^[^.]*\.])))>sizeof(long)]
+)],
+[AS_TR_SH(rb_cv_huge_$1)=yes],
+[AS_TR_SH(rb_cv_huge_$1)=no])])
+if test "${AS_TR_SH(rb_cv_huge_$1)}" = yes; then
+    m4_ifval([$2], [$2], [AC_DEFINE(AS_TR_CPP(HUGE_$1))])
+m4_ifval([$3], [else
+$3
+])
+fi])
+
 AC_TYPE_SIZE_T
 AC_CHECK_SIZEOF(size_t, 0)
 AC_CHECK_SIZEOF(ptrdiff_t, $ac_cv_sizeof_size_t)
 AC_STRUCT_ST_BLKSIZE
 AC_STRUCT_ST_BLOCKS
 AC_STRUCT_ST_RDEV
+if test "$ac_cv_member_struct_stat_st_blocks" = yes; then
+    RUBY_CHECK_HUGE(struct stat.st_blocks)
+fi
 AC_CHECK_MEMBERS([struct stat.st_atim])
 AC_CHECK_MEMBERS([struct stat.st_atimespec])
 AC_CHECK_MEMBERS([struct stat.st_atimensec])
@@ -1314,17 +1334,8 @@ else
   fi
 fi
 
-AC_CACHE_CHECK([whether st_ino is huge], rb_cv_huge_st_ino,
-[AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([
-#include <sys/stat.h>
-struct stat test_stat;
-], [sizeof(test_stat.st_ino)>sizeof(long)])],
-rb_cv_huge_st_ino=yes,
-rb_cv_huge_st_ino=no)
-])
-if test $rb_cv_huge_st_ino = yes; then
-  AC_DEFINE(HUGE_ST_INO)
-fi
+RUBY_CHECK_HUGE([struct stat.st_ino],
+  [AC_DEFINE(HUGE_ST_INO)], [], [@%:@include <sys/stat.h>])
 
 if test "$ac_cv_func_sysconf" = yes; then
   AC_DEFUN([RUBY_CHECK_SYSCONF], [dnl

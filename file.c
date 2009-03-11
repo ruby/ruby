@@ -502,8 +502,12 @@ rb_stat_blksize(VALUE self)
 static VALUE
 rb_stat_blocks(VALUE self)
 {
-#ifdef HAVE_ST_BLOCKS
+#ifdef HAVE_STRUCT_STAT_ST_BLOCKS
+# ifdef HUGE_STRUCT_STAT_ST_BLOCKS
+    return ULL2NUM(get_stat(self)->st_blocks);
+# else
     return ULONG2NUM(get_stat(self)->st_blocks);
+# endif
 #else
     return Qnil;
 #endif
