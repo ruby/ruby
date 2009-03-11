@@ -23,9 +23,9 @@ when /linux/
   end
   libc_so = File.join(libdir, "libc.so.6")
   libm_so = File.join(libdir, "libm.so.6")
-when /mingw/, /mswin32/
-  libc_so = "msvcrt.dll"
-  libm_so = "msvcrt.dll"
+when /mingw/, /mswin/
+  require "rbconfig"
+  libc_so = libm_so = RbConfig::CONFIG["RUBY_SO_NAME"].split(/-/, 2)[0] + ".dll"
 when /darwin/
   libc_so = "/usr/lib/libc.dylib"
   libm_so = "/usr/lib/libm.dylib"
@@ -40,8 +40,8 @@ else
   end
 end
 
-libc_so = nil if !libc_so || !File.file?(libc_so)
-libm_so = nil if !libm_so || !File.file?(libm_so)
+libc_so = nil if !libc_so || (libc_so[0] == ?/ && !File.file?(libc_so))
+libm_so = nil if !libm_so || (libm_so[0] == ?/ && !File.file?(libm_so))
 
 if !libc_so || !libm_so
   ruby = EnvUtil.rubybin
