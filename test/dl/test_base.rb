@@ -33,8 +33,8 @@ when /bsd|dragonfly/
   libc_so = "/usr/lib/libc.so"
   libm_so = "/usr/lib/libm.so"
 else
-  libc_so = ARGV[0]
-  libm_so = ARGV[1]
+  libc_so = ARGV[0] if ARGV[0] && ARGV[0][0] == ?/
+  libm_so = ARGV[1] if ARGV[1] && ARGV[1][0] == ?/
   if( !(libc_so && libm_so) )
     $stderr.puts("libc and libm not found: #{$0} <libc> <libm>")
   end
