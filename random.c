@@ -279,8 +279,10 @@ fill_random_seed(unsigned long seed[DEFAULT_SEED_CNT])
 {
     static int n = 0;
     struct timeval tv;
+#ifdef S_ISCHR
     int fd;
     struct stat statbuf;
+#endif
 
     memset(seed, 0, DEFAULT_SEED_LEN);
 
