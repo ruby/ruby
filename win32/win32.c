@@ -371,6 +371,18 @@ translate_char(char *p, int from, int to)
     return p;
 }
 
+#ifndef CSIDL_LOCAL_APPDATA
+#define CSIDL_LOCAL_APPDATA 28
+#endif
+#ifndef CSIDL_COMMON_APPDATA
+#define CSIDL_COMMON_APPDATA 35
+#endif
+#ifndef CSIDL_WINDOWS
+#define CSIDL_WINDOWS	36
+#endif
+#ifndef CSIDL_SYSTEM
+#define CSIDL_SYSTEM	37
+#endif
 #ifndef CSIDL_PROFILE
 #define CSIDL_PROFILE 40
 #endif
@@ -400,11 +412,27 @@ regulate_path(WCHAR *path)
     }
 }
 
+static UINT
+get_system_directory(WCHAR *path, UINT len)
+{
+    HANDLE hKernel = GetModuleHandle("kernel32.dll");
+
+    if (hKernel) {
+	typedef UINT WINAPI wgetdir_func(WCHAR*, UINT);
+	FARPROC ptr = GetProcAddress(hKernel, "GetSystemWindowsDirectoryW");
+	if (ptr) {
+	    return (*(wgetdir_func *)ptr)(path, len);
+	}
+    }
+    return GetWindowsDirectoryW(path, len);
+}
+
 #define numberof(array) (sizeof(array) / sizeof(*array))
 
 static void
 init_env(void)
 {
+    static const WCHAR TMPDIR[] = L"TMPDIR";
     WCHAR env[_MAX_PATH];
     DWORD len;
     BOOL f;
@@ -442,6 +470,20 @@ init_env(void)
 	SetEnvironmentVariableW(L"USER", env);
     }
     NTLoginName = strdup(rb_w32_getenv("USER"));
+
+    if (!GetEnvironmentVariableW(TMPDIR, env, numberof(env)) &&
+	!GetEnvironmentVariableW(L"TMP", env, numberof(env)) &&
+	!GetEnvironmentVariableW(L"TEMP", env, numberof(env)) &&
+	(get_special_folder(CSIDL_LOCAL_APPDATA, env) ||
+	 get_system_directory(env, numberof(env)))) {
+	static const WCHAR temp[] = L"temp";
+	WCHAR *p = translate_wchar(env, L'\\', L'/');
+	if (*(p - 1) != L'/') *p++ = L'/';
+	if (p - env + numberof(temp) < numberof(env)) {
+	    memcpy(p, temp, sizeof(temp));
+	    SetEnvironmentVariableW(TMPDIR, env);
+	}
+    }
 }
 
 
@@ -1639,12 +1681,11 @@ win32_direct_conv(const WCHAR *file, struct direct *entry, rb_encoding *dummy)
     return TRUE;
 }
 
-static BOOL
-ruby_direct_conv(const WCHAR *file, struct direct *entry, rb_encoding *enc)
+VALUE
+rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc)
 {
     static rb_encoding *utf16 = (rb_encoding *)-1;
     VALUE src;
-    VALUE dst;
     VALUE opthash;
     int ecflags;
     VALUE ecopts;
@@ -1656,14 +1697,23 @@ ruby_direct_conv(const WCHAR *file, struct direct *entry, rb_encoding *enc)
     }
     if (!utf16)
 	/* maybe miniruby */
-	return win32_direct_conv(file, entry, NULL);
+	return Qnil;
 
-    src = rb_enc_str_new((char *)file, lstrlenW(file) * sizeof(WCHAR), utf16);
+    src = rb_enc_str_new((char *)wstr, lstrlenW(wstr) * sizeof(WCHAR), utf16);
     opthash = rb_hash_new();
     rb_hash_aset(opthash, ID2SYM(rb_intern("undef")),
 		 ID2SYM(rb_intern("replace")));
     ecflags = rb_econv_prepare_opts(opthash, &ecopts);
-    dst = rb_str_encode(src, rb_enc_from_encoding(enc), ecflags, ecopts);
+    return rb_str_encode(src, rb_enc_from_encoding(enc), ecflags, ecopts);
+}
+
+static BOOL
+ruby_direct_conv(const WCHAR *file, struct direct *entry, rb_encoding *enc)
+{
+    VALUE dst = rb_w32_conv_from_wchar(file, enc);
+
+    if (NIL_P(dst))
+	return win32_direct_conv(file, entry, NULL);
 
     entry->d_namlen = RSTRING_LEN(dst);
     if (!(entry->d_name = malloc(entry->d_namlen + 1)))
@@ -1727,7 +1777,7 @@ rb_w32_readdir_with_enc(DIR *dirp, rb_encoding *enc)
 // Telldir returns the current string pointer position
 //
 
-off_t
+long
 rb_w32_telldir(DIR *dirp)
 {
     return dirp->loc;
@@ -1738,7 +1788,7 @@ rb_w32_telldir(DIR *dirp)
 // (Saved by telldir).
 
 void
-rb_w32_seekdir(DIR *dirp, off_t loc)
+rb_w32_seekdir(DIR *dirp, long loc)
 {
     if (dirp->loc > loc) rb_w32_rewinddir(dirp);
 
@@ -4951,3 +5001,58 @@ rb_w32_fsopen(const char *path, const char *mode, int shflags)
     return f;
 }
 #endif
+
+BOOL
+rb_w32_get_special_directory(int n, WCHAR *path)
+{
+    if (!get_special_folder(n, path))
+	return FALSE;
+    regulate_path(path);
+    return TRUE;
+}
+
+static VALUE
+w32_get_special_directory(VALUE self, VALUE num)
+{
+    VALUE str;
+    int n = NUM2INT(num);
+    WCHAR path[_MAX_PATH];
+
+    if (!rb_w32_get_special_directory(n, path)) {
+	rb_sys_fail(0);
+    }
+    str = rb_w32_conv_from_wchar(path, rb_filesystem_encoding());
+    OBJ_TAINT(str);
+    return str;
+}
+
+static VALUE
+w32_get_system_directory(VALUE self)
+{
+    VALUE str;
+    WCHAR path[_MAX_PATH];
+
+    if (!get_system_directory(path, numberof(path))) {
+	rb_sys_fail(0);
+    }
+    regulate_path(path);
+    str = rb_w32_conv_from_wchar(path, rb_filesystem_encoding());
+    OBJ_TAINT(str);
+    return str;
+}
+
+void
+Init_win32(void)
+{
+    VALUE mWin32 = rb_define_module("Win32");
+    VALUE dir = rb_define_module_under(mWin32, "Dir");
+    rb_define_module_function(dir, "special", w32_get_special_directory, 1);
+    rb_define_module_function(dir, "system", w32_get_system_directory, 0);
+    rb_define_const(dir, "LOCAL_APPDATA", UINT2NUM(CSIDL_LOCAL_APPDATA));
+    rb_define_const(dir, "COMMON_APPDATA", UINT2NUM(CSIDL_COMMON_APPDATA));
+    rb_define_const(dir, "WINDOWS", UINT2NUM(CSIDL_WINDOWS));
+    rb_define_const(dir, "SYSTEM", UINT2NUM(CSIDL_SYSTEM));
+    rb_define_const(dir, "PROFILE", UINT2NUM(CSIDL_PROFILE));
+    rb_define_const(dir, "PERSONAL", UINT2NUM(CSIDL_PERSONAL));
+    rb_define_const(mWin32, "Version", UINT2NUM(rb_w32_osver()));
+}
