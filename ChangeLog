@@ -8,7 +8,8 @@ Wed Mar 11 13:22:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* win32/win32.c (init_env): set TMPDIR if none of TMPDIR, TMP,
 	  TEMP is set.
 
-	* win32/win32.c (rb_w32_telldir, rb_w32_seekdir): should use long.
+	* win32/win32.c (rb_w32_telldir, rb_w32_seekdir): should use long,
+	  as defined by SUSv3.
 
 Wed Mar 11 13:03:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
