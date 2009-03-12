@@ -7642,7 +7642,7 @@ static void
 nogvl_copy_stream_read_write(struct copy_stream_struct *stp)
 {
     char buf[1024*16];
-    int len;
+    size_t len;
     ssize_t ss;
     int ret;
     off_t copy_length;
@@ -7859,7 +7859,7 @@ copy_stream_body(VALUE arg)
     stp->dst_fd = dst_fd;
 
     if (stp->src_offset == (off_t)-1 && src_fptr && src_fptr->rbuf_len) {
-        long len = src_fptr->rbuf_len;
+        size_t len = src_fptr->rbuf_len;
         VALUE str;
         if (stp->copy_length != (off_t)-1 && stp->copy_length < len) {
             len = (size_t)stp->copy_length;
