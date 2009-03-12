@@ -17,11 +17,11 @@
 
 #define ENCODING_INLINE_MAX 1023
 #define ENCODING_SHIFT (FL_USHIFT+10)
-#define ENCODING_MASK (ENCODING_INLINE_MAX<<ENCODING_SHIFT)
+#define ENCODING_MASK (((VALUE)ENCODING_INLINE_MAX)<<ENCODING_SHIFT)
 
 #define ENCODING_SET_INLINED(obj,i) do {\
     RBASIC(obj)->flags &= ~ENCODING_MASK;\
-    RBASIC(obj)->flags |= (i) << ENCODING_SHIFT;\
+    RBASIC(obj)->flags |= (VALUE)(i) << ENCODING_SHIFT;\
 } while (0)
 #define ENCODING_SET(obj,i) do {\
     VALUE rb_encoding_set_obj = (obj); \
