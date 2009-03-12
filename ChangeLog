@@ -1,3 +1,10 @@
+Thu Mar 12 22:41:41 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl: suppress warnings.
+
+	* ext/openssl/ossl.h (OSSL_Debug): don't use gcc extention for
+	  variadic macro.
+
 Thu Mar 12 22:29:36 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (WARNFLAGS): warning 4996 is only in VC++8 or

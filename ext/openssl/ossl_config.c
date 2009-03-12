@@ -300,7 +300,7 @@ get_conf_section(CONF_VALUE *cv, VALUE ary)
     rb_ary_push(ary, rb_str_new2(cv->section));
 }
 
-static IMPLEMENT_LHASH_DOALL_ARG_FN(get_conf_section, CONF_VALUE*, VALUE);
+static IMPLEMENT_LHASH_DOALL_ARG_FN(get_conf_section, CONF_VALUE*, VALUE)
 
 static VALUE
 ossl_config_get_sections(VALUE self)
@@ -338,7 +338,7 @@ dump_conf_value(CONF_VALUE *cv, VALUE str)
     rb_str_cat2(str, "\n");
 }
 
-static IMPLEMENT_LHASH_DOALL_ARG_FN(dump_conf_value, CONF_VALUE*, VALUE);
+static IMPLEMENT_LHASH_DOALL_ARG_FN(dump_conf_value, CONF_VALUE*, VALUE)
 
 static VALUE
 dump_conf(CONF *conf)
@@ -382,7 +382,7 @@ each_conf_value(CONF_VALUE *cv, void* dummy)
     }
 }
 
-static IMPLEMENT_LHASH_DOALL_ARG_FN(each_conf_value, CONF_VALUE*, void*);
+static IMPLEMENT_LHASH_DOALL_ARG_FN(each_conf_value, CONF_VALUE*, void*)
 
 static VALUE
 ossl_config_each(VALUE self)

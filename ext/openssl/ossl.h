@@ -163,10 +163,10 @@ VALUE ossl_to_der_if_possible(VALUE);
 extern VALUE dOSSL;
 
 #if defined(HAVE_VA_ARGS_MACRO)
-#define OSSL_Debug(fmt, ...) do { \
+#define OSSL_Debug(...) do { \
   if (dOSSL == Qtrue) { \
     fprintf(stderr, "OSSL_DEBUG: "); \
-    fprintf(stderr, fmt, ##__VA_ARGS__); \
+    fprintf(stderr, __VA_ARGS__); \
     fprintf(stderr, " [%s:%d]\n", __FILE__, __LINE__); \
   } \
 } while (0)

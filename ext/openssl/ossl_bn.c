@@ -272,9 +272,9 @@ ossl_bn_coerce(VALUE self, VALUE other)
 	}						\
 	return Qfalse;					\
     }
-BIGNUM_BOOL1(is_zero);
-BIGNUM_BOOL1(is_one);
-BIGNUM_BOOL1(is_odd);
+BIGNUM_BOOL1(is_zero)
+BIGNUM_BOOL1(is_one)
+BIGNUM_BOOL1(is_odd)
 
 #define BIGNUM_1c(func)					\
     /*							\
@@ -298,7 +298,7 @@ BIGNUM_BOOL1(is_odd);
 	WrapBN(CLASS_OF(self), obj, result);		\
 	return obj;					\
     }
-BIGNUM_1c(sqr);
+BIGNUM_1c(sqr)
 
 #define BIGNUM_2(func)					\
     /*							\
@@ -322,8 +322,8 @@ BIGNUM_1c(sqr);
 	WrapBN(CLASS_OF(self), obj, result);		\
 	return obj;					\
     }
-BIGNUM_2(add);
-BIGNUM_2(sub);
+BIGNUM_2(add)
+BIGNUM_2(sub)
 
 #define BIGNUM_2c(func)						\
     /*								\
@@ -347,12 +347,12 @@ BIGNUM_2(sub);
 	WrapBN(CLASS_OF(self), obj, result);			\
 	return obj;						\
     }
-BIGNUM_2c(mul);
-BIGNUM_2c(mod);
-BIGNUM_2c(exp);
-BIGNUM_2c(gcd);
-BIGNUM_2c(mod_sqr);
-BIGNUM_2c(mod_inverse);
+BIGNUM_2c(mul)
+BIGNUM_2c(mod)
+BIGNUM_2c(exp)
+BIGNUM_2c(gcd)
+BIGNUM_2c(mod_sqr)
+BIGNUM_2c(mod_inverse)
 
 /*
  * call-seq:
@@ -407,10 +407,10 @@ ossl_bn_div(VALUE self, VALUE other)
 	WrapBN(CLASS_OF(self), obj, result);			\
 	return obj;						\
     }
-BIGNUM_3c(mod_add);
-BIGNUM_3c(mod_sub);
-BIGNUM_3c(mod_mul);
-BIGNUM_3c(mod_exp);
+BIGNUM_3c(mod_add)
+BIGNUM_3c(mod_sub)
+BIGNUM_3c(mod_mul)
+BIGNUM_3c(mod_exp)
 
 #define BIGNUM_BIT(func)				\
     /*							\
@@ -428,9 +428,9 @@ BIGNUM_3c(mod_exp);
 	}						\
 	return self;					\
     }
-BIGNUM_BIT(set_bit);
-BIGNUM_BIT(clear_bit);
-BIGNUM_BIT(mask_bits);
+BIGNUM_BIT(set_bit)
+BIGNUM_BIT(clear_bit)
+BIGNUM_BIT(mask_bits)
 
 /*
  * call-seq:
@@ -474,8 +474,8 @@ ossl_bn_is_bit_set(VALUE self, VALUE bit)
 	WrapBN(CLASS_OF(self), obj, result);		\
 	return obj;					\
     }
-BIGNUM_SHIFT(lshift);
-BIGNUM_SHIFT(rshift);
+BIGNUM_SHIFT(lshift)
+BIGNUM_SHIFT(rshift)
 
 #define BIGNUM_SELF_SHIFT(func)				\
     /*							\
@@ -494,8 +494,8 @@ BIGNUM_SHIFT(rshift);
 		ossl_raise(eBNError, NULL);		\
 	return self;					\
     }
-BIGNUM_SELF_SHIFT(lshift);
-BIGNUM_SELF_SHIFT(rshift);
+BIGNUM_SELF_SHIFT(lshift)
+BIGNUM_SELF_SHIFT(rshift)
 
 #define BIGNUM_RAND(func)					\
     /*								\
@@ -528,8 +528,8 @@ BIGNUM_SELF_SHIFT(rshift);
 	WrapBN(klass, obj, result);				\
 	return obj;						\
     }
-BIGNUM_RAND(rand);
-BIGNUM_RAND(pseudo_rand);
+BIGNUM_RAND(rand)
+BIGNUM_RAND(pseudo_rand)
 
 #define BIGNUM_RAND_RANGE(func)					\
     /*								\
@@ -552,8 +552,8 @@ BIGNUM_RAND(pseudo_rand);
 	WrapBN(klass, obj, result);				\
 	return obj;						\
     }
-BIGNUM_RAND_RANGE(rand);
-BIGNUM_RAND_RANGE(pseudo_rand);
+BIGNUM_RAND_RANGE(rand)
+BIGNUM_RAND_RANGE(pseudo_rand)
 
 /*
  * call-seq:
@@ -608,8 +608,8 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 	GetBN(self, bn);			\
 	return INT2FIX(BN_##func(bn));		\
     }
-BIGNUM_NUM(num_bytes);
-BIGNUM_NUM(num_bits);
+BIGNUM_NUM(num_bytes)
+BIGNUM_NUM(num_bits)
 
 static VALUE
 ossl_bn_copy(VALUE self, VALUE other)
@@ -642,8 +642,8 @@ ossl_bn_copy(VALUE self, VALUE other)
 	GetBN(self, bn1);				\
 	return INT2FIX(BN_##func(bn1, bn2));		\
     }
-BIGNUM_CMP(cmp);
-BIGNUM_CMP(ucmp);
+BIGNUM_CMP(cmp)
+BIGNUM_CMP(ucmp)
 
 static VALUE
 ossl_bn_eql(VALUE self, VALUE other)
