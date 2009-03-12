@@ -1260,7 +1260,6 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 
     if (state != 0) {
 	VALUE *pt = 0;
-	int i;
 	if (flag != 0) {
 	    pt = (void *) 1;
 	}
@@ -1329,6 +1328,7 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 		}
 	    }
 	    else if (state == TAG_RETRY) {
+		rb_num_t i;
 		pt = GC_GUARDED_PTR_REF((VALUE *) * GET_DFP());
 		for (i = 0; i < level; i++) {
 		    pt = GC_GUARDED_PTR_REF((VALUE *) * pt);

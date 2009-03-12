@@ -1,6 +1,9 @@
-Thu Mar 12 17:56:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar 12 18:02:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c: use st_index_t for indexes instead of int.
+
+	* vm.c (rb_vm_get_sourceline), vm_insnhelper.c (vm_throw): use
+	  rb_num_t.
 
 Thu Mar 12 09:30:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

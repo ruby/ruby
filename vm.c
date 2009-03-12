@@ -672,7 +672,7 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
     const rb_iseq_t *iseq = cfp->iseq;
 
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	int i;
+	rb_num_t i;
 	int pos = cfp->pc - cfp->iseq->iseq_encoded;
 
 	for (i = 0; i < iseq->insn_info_size; i++) {
