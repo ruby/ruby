@@ -1,3 +1,10 @@
+Thu Mar 12 13:02:12 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* mkconfig.rb: patchlevel is sometimes minus.
+
+	* win32/resource.rb: ditto.
+	  thease changes are merged from trunk.
+
 Wed Mar 11 12:12:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (run_final): calls free function.  [ruby-core:22578]

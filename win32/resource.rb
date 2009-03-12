@@ -4,9 +4,10 @@ require 'rbconfig'
 
 CONFIG = Config::MAKEFILE_CONFIG
 
-version = %w'MAJOR MINOR TEENY PATCHLEVEL'.map {|v| CONFIG[v] || '0'}
-fversion = version.join(',')
-rversion = version.join('.')
+version = %w'MAJOR MINOR TEENY'.map{|v| CONFIG[v] || '0'}
+patch = CONFIG['PATCHLEVEL']
+nversion = (version + [patch.to_i < 0 ? '0' : patch]).join(',')
+sversion = version.join('.') + (patch.to_i < 0 ? 'dev' : "p#{patch}")
 
 $ruby_name ||= CONFIG["RUBY_INSTALL_NAME"]
 $rubyw_name ||= CONFIG["RUBYW_INSTALL_NAME"] || $ruby_name.sub(/ruby/, '\&w')
@@ -50,7 +51,7 @@ end
   [$ruby_name,   CONFIG["EXEEXT"], 'VFT_APP', 'CUI', ruby_icon],
   [$rubyw_name,  CONFIG["EXEEXT"], 'VFT_APP', 'GUI', rubyw_icon || ruby_icon],
   [$so_name,     '.dll',           'VFT_DLL', 'DLL', dll_icons.join],
-].each do |base, ext, type, desc, icons|
+].each do |base, ext, type, desc, icon|
   open(base + '.rc', "w") { |f|
     f.binmode if /mingw/ =~ RUBY_PLATFORM
 
@@ -60,10 +61,10 @@ end
 #include <winver.h>
 #endif
 
-#{icons || ''}
+#{icon || ''}
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION    #{fversion}
- PRODUCTVERSION #{fversion}
+ FILEVERSION    #{nversion}
+ PRODUCTVERSION #{nversion}
  FILEFLAGSMASK  0x3fL
  FILEFLAGS      0x0L
  FILEOS         VOS__WINDOWS32
@@ -74,16 +75,15 @@ BEGIN
  BEGIN
   BLOCK "000004b0"
   BEGIN
-   VALUE "FileDescription",  "Ruby interpreter (#{desc}) #{rversion} [#{RUBY_PLATFORM}]\\0"
-   VALUE "FileVersion",      "#{fversion}\\0"
-   VALUE "Home Page",        "http://www.ruby-lang.org/\\0"
+   VALUE "Comments",         "#{RUBY_RELEASE_DATE}\\0"
+   VALUE "CompanyName",      "http://www.ruby-lang.org/\\0"
+   VALUE "FileDescription",  "Ruby interpreter (#{desc}) #{sversion} [#{RUBY_PLATFORM}]\\0"
+   VALUE "FileVersion",      "#{sversion}\\0"
    VALUE "InternalName",     "#{base + ext}\\0"
    VALUE "LegalCopyright",   "Copyright (C) 1993-#{RUBY_RELEASE_DATE[/\d+/]} Yukihiro Matsumoto\\0"
    VALUE "OriginalFilename", "#{base + ext}\\0"
-   VALUE "Platform",         "#{RUBY_PLATFORM}\\0"
-   VALUE "ProductVersion",   "#{fversion}\\0"
-   VALUE "Release Date",     "#{RUBY_RELEASE_DATE}\\0"
-   VALUE "Version",          "#{rversion}\\0"
+   VALUE "ProductName",      "Ruby interpreter #{sversion} [#{RUBY_PLATFORM}]\\0"
+   VALUE "ProductVersion",   "#{sversion}\\0"
   END
  END
  BLOCK "VarFileInfo"

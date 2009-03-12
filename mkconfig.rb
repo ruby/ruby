@@ -114,7 +114,7 @@ unless has_version
     print "  CONFIG[\"TEENY\"] = \"" + $3 + "\"\n"
   }
   patchlevel = IO.foreach(File.join(srcdir, "version.h")) {|l|
-    m = /^\s*#\s*define\s+RUBY_PATCHLEVEL\s+(\d+)/.match(l) and break m[1]
+    m = /^\s*#\s*define\s+RUBY_PATCHLEVEL\s+(-?\d+)/.match(l) and break m[1]
   }
   print "  CONFIG[\"PATCHLEVEL\"] = \"#{patchlevel}\"\n"
 end
