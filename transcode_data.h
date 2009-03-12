@@ -37,7 +37,7 @@
 #define STR1	(PType 0x11)	/* string 4 <= len <= 259 bytes: 1byte length + content */
 #define GB4bt	(PType 0x12)	/* GB18030 four bytes payload */
 
-#define STR1_LENGTH(byte_addr) (*(byte_addr) + 4)
+#define STR1_LENGTH(byte_addr) (unsigned int)(*(byte_addr) + 4)
 #define STR1_BYTEINDEX(w) ((w) >> 6)
 #define makeSTR1(bi) (((bi) << 6) | STR1)
 #define makeSTR1LEN(len) ((len)-4)
@@ -48,15 +48,15 @@
 #define o4(b0,b1,b2,b3)	(PType(((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|(((unsigned char)(b3))<<24)|((((unsigned char)(b0))&0x07)<<5)|FOURbt)&0xffffffffU))
 #define g4(b0,b1,b2,b3) (PType(((((unsigned char)(b0))<<8)|(((unsigned char)(b2))<<16)|((((unsigned char)(b1))&0x0f)<<24)|((((unsigned int)(unsigned char)(b3))&0x0f)<<28)|GB4bt)&0xffffffffU))
 
-#define getBT1(a)	(((a)>> 8)&0xFF)
-#define getBT2(a)	(((a)>>16)&0xFF)
-#define getBT3(a)	(((a)>>24)&0xFF)
-#define getBT0(a)	((((a)>> 5)&0x07)|0xF0)   /* for UTF-8 only!!! */
+#define getBT1(a)	((unsigned char)((a)>> 8))
+#define getBT2(a)	((unsigned char)((a)>>16))
+#define getBT3(a)	((unsigned char)((a)>>24))
+#define getBT0(a)	(((unsigned char)((a)>> 5)&0x07)|0xF0)   /* for UTF-8 only!!! */
 
-#define getGB4bt0(a)	(((a)>> 8)&0xFF)
-#define getGB4bt1(a)	(((a)>>24)&0x0F|0x30)
-#define getGB4bt2(a)	(((a)>>16)&0xFF)
-#define getGB4bt3(a)	(((a)>>28)&0x0F|0x30)
+#define getGB4bt0(a)	((unsigned char)((a)>> 8))
+#define getGB4bt1(a)	((unsigned char)((a)>>24)&0x0F|0x30)
+#define getGB4bt2(a)	((unsigned char)((a)>>16))
+#define getGB4bt3(a)	((unsigned char)((a)>>28)&0x0F|0x30)
 
 #define o2FUNii(b1,b2)	(PType((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|FUNii))
 

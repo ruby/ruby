@@ -205,8 +205,8 @@ report_bug(const char *file, int line, const char *fmt, va_list args)
     FILE *out = stderr;
     int len = err_position_0(buf, BUFSIZ, file, line);
 
-    if (fwrite(buf, 1, len, out) == len ||
-	fwrite(buf, 1, len, (out = stdout)) == len) {
+    if ((ssize_t)fwrite(buf, 1, len, out) == (ssize_t)len ||
+	(ssize_t)fwrite(buf, 1, len, (out = stdout)) == (ssize_t)len) {
 
 	fputs("[BUG] ", out);
 	vfprintf(out, fmt, args);

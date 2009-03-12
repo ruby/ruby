@@ -69,10 +69,11 @@ rb_cmpint(VALUE val, VALUE a, VALUE b)
 }
 
 #define RBIGNUM_SET_LEN(b,l) \
-  ((RBASIC(b)->flags & RBIGNUM_EMBED_FLAG) ? \
-   (RBASIC(b)->flags = (RBASIC(b)->flags & ~RBIGNUM_EMBED_LEN_MASK) | \
-      ((l) << RBIGNUM_EMBED_LEN_SHIFT)) : \
-   (RBIGNUM(b)->as.heap.len = (l)))
+    ((RBASIC(b)->flags & RBIGNUM_EMBED_FLAG) ? \
+     (void)(RBASIC(b)->flags = \
+	    (RBASIC(b)->flags & ~RBIGNUM_EMBED_LEN_MASK) | \
+	    ((l) << RBIGNUM_EMBED_LEN_SHIFT)) : \
+     (void)(RBIGNUM(b)->as.heap.len = (l)))
 
 static void
 rb_big_realloc(VALUE big, long len)
@@ -190,17 +191,21 @@ bigfixize(VALUE x)
     long len = RBIGNUM_LEN(x);
     BDIGIT *ds = BDIGITS(x);
 
-    if (len*SIZEOF_BDIGITS <= sizeof(long)) {
+    if (len > 0 && len*SIZEOF_BDIGITS <= sizeof(long)) {
 	long num = 0;
+#if 2*SIZEOF_BDIGITS > SIZEOF_LONG
+	num = (long)ds[0];
+#else
 	while (len--) {
-	    num = BIGUP(num) + ds[len];
+	    num = (long)(BIGUP(num) + ds[len]);
 	}
+#endif
 	if (num >= 0) {
 	    if (RBIGNUM_SIGN(x)) {
 		if (POSFIXABLE(num)) return LONG2FIX(num);
 	    }
 	    else {
-		if (NEGFIXABLE(-(long)num)) return LONG2FIX(-(long)num);
+		if (NEGFIXABLE(-num)) return LONG2FIX(-num);
 	    }
 	}
     }
@@ -1017,7 +1022,7 @@ big2ulong(VALUE x, const char *type, int check)
 	num = BIGUP(num);
 	num += ds[len];
     }
-    return num;
+    return (VALUE)num;
 }
 
 VALUE
@@ -1581,7 +1586,7 @@ bigmul1_normal(VALUE x, VALUE y)
 	    n = BIGDN(n);
 	}
 	if (n) {
-	    zds[i + j] = n;
+	    zds[i + j] = (BDIGIT)n;
 	}
     }
     rb_thread_check_ints();
@@ -1770,7 +1775,7 @@ bigsqr_fast(VALUE x)
 	    zds[i + len] = BIGLO(c);
 	    c = BIGDN(c);
 	}
-	if (c) zds[i + len + 1] += c;
+	if (c) zds[i + len + 1] += (BDIGIT)c;
     }
     return z;
 }
@@ -1889,7 +1894,7 @@ bigdivrem1(void *ptr)
     for (nyzero = 0; !yds[nyzero]; nyzero++);
     do {
 	if (bds->stop) return Qnil;
-	if (zds[j] ==  yds[ny-1]) q = BIGRAD-1;
+	if (zds[j] ==  yds[ny-1]) q = (BDIGIT)BIGRAD-1;
 	else q = (BDIGIT)((BIGUP(zds[j]) + zds[j-1])/yds[ny-1]);
 	if (q) {
            i = nyzero; num = 0; t2 = 0;
@@ -2480,7 +2485,7 @@ rb_big_or(VALUE xx, VALUE yy)
 	zds[i] = ds1[i] | ds2[i];
     }
     for (; i<l2; i++) {
-	zds[i] = sign?ds2[i]:(BIGRAD-1);
+	zds[i] = sign?ds2[i]:(BDIGIT)(BIGRAD-1);
     }
     if (!RBIGNUM_SIGN(z)) get2comp(z);
 

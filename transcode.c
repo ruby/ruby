@@ -86,7 +86,7 @@ typedef struct rb_transcoding {
 #define TRANSCODING_WRITEBUF_SIZE(tc) \
     ((tc)->transcoder->max_output <= sizeof((tc)->writebuf.ary) ? \
      sizeof((tc)->writebuf.ary) : \
-     (tc)->transcoder->max_output)
+     (size_t)(tc)->transcoder->max_output)
 #define TRANSCODING_STATE_EMBED_MAX sizeof(union rb_transcoding_state_t)
 #define TRANSCODING_STATE(tc) \
     ((tc)->transcoder->state_size <= sizeof((tc)->state) ? \
@@ -1598,11 +1598,11 @@ rb_econv_insert_output(rb_econv_t *ec,
         *data_end_p = buf;
         *buf_end_p = buf+need;
     }
-    else if (*buf_end_p - *data_end_p < need) {
+    else if ((size_t)(*buf_end_p - *data_end_p) < need) {
         MEMMOVE(*buf_start_p, *data_start_p, unsigned char, *data_end_p - *data_start_p);
         *data_end_p = *buf_start_p + (*data_end_p - *data_start_p);
         *data_start_p = *buf_start_p;
-        if (*buf_end_p - *data_end_p < need) {
+        if ((size_t)(*buf_end_p - *data_end_p) < need) {
             unsigned char *buf;
             size_t s = (*data_end_p - *buf_start_p) + need;
             if (s < need)
@@ -2019,7 +2019,7 @@ make_econv_exception(rb_econv_t *ec)
             end = start + ec->last_error.error_bytes_len;
             n = rb_enc_precise_mbclen(start, end, utf8);
             if (MBCLEN_CHARFOUND_P(n) &&
-                MBCLEN_CHARFOUND_LEN(n) == ec->last_error.error_bytes_len) {
+                (size_t)MBCLEN_CHARFOUND_LEN(n) == ec->last_error.error_bytes_len) {
                 unsigned int cc = rb_enc_codepoint(start, end, utf8);
                 dumped = rb_sprintf("U+%04X", cc);
             }

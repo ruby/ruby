@@ -34,11 +34,11 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	biseq_name = "";	/* RSTRING(cfp->block_iseq->name)->ptr; */
     }
 
-    if (lfp < 0 || lfp > th->stack_size) {
+    if (lfp < 0 || (size_t)lfp > th->stack_size) {
 	lfp = (ptrdiff_t)cfp->lfp;
 	lfp_in_heap = 'p';
     }
-    if (dfp < 0 || dfp > th->stack_size) {
+    if (dfp < 0 || (size_t)dfp > th->stack_size) {
 	dfp = (ptrdiff_t)cfp->dfp;
 	dfp_in_heap = 'p';
     }
@@ -338,9 +338,9 @@ rb_vmdebug_debug_print_register(rb_thread_t *th)
 	pc = cfp->pc - cfp->iseq->iseq_encoded;
     }
 
-    if (lfp < 0 || lfp > th->stack_size)
+    if (lfp < 0 || (size_t)lfp > th->stack_size)
 	lfp = -1;
-    if (dfp < 0 || dfp > th->stack_size)
+    if (dfp < 0 || (size_t)dfp > th->stack_size)
 	dfp = -1;
 
     cfpi = ((rb_control_frame_t *)(th->stack + th->stack_size)) - cfp;

@@ -515,7 +515,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 					time_t now;
 					time(&now);
 					utc = *gmtime(&now);
-					off = (now - mktime(&utc)) / 60;
+					off = (long)((now - mktime(&utc)) / 60);
 				}
 #endif
 #endif /* !HAVE_VAR_TIMEZONE */

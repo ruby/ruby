@@ -25,7 +25,7 @@ VALUE rb_cArray;
 static ID id_cmp;
 
 #define ARY_DEFAULT_SIZE 16
-#define ARY_MAX_SIZE (LONG_MAX / sizeof(VALUE))
+#define ARY_MAX_SIZE (LONG_MAX / (int)sizeof(VALUE))
 
 void
 rb_mem_clear(register VALUE *mem, register long size)
@@ -3089,7 +3089,7 @@ rb_ary_uniq_bang(VALUE ary)
     }
     else {
 	hash = ary_make_hash(ary);
-	if (RARRAY_LEN(ary) == RHASH_SIZE(hash)) {
+	if (RARRAY_LEN(ary) == (long)RHASH_SIZE(hash)) {
 	    return Qnil;
 	}
 	for (i=j=0; i<RARRAY_LEN(ary); i++) {
@@ -3460,7 +3460,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	}
 	return rb_ary_new3(3, ptr[i], ptr[j], ptr[k]);
     }
-    if (n < sizeof(idx)/sizeof(idx[0])) {
+    if ((size_t)n < sizeof(idx)/sizeof(idx[0])) {
 	long sorted[sizeof(idx)/sizeof(idx[0])];
 	sorted[0] = idx[0] = (long)(rb_genrand_real()*len);
 	for (i=1; i<n; i++) {

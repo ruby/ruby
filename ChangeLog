@@ -1,4 +1,10 @@
-Thu Mar 12 18:09:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar 12 18:16:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c, bignum.c, dln.c, error.c, gc.c, io.c, marshal.c,
+	  numeric.c, pack.c, strftime.c, string.c, thread.c, transcode.c,
+	  transcode_data.h, util.c, variable.c, vm_dump.c,
+	  include/ruby/encoding.h, missing/crypt.c, missing/vsnprintf.c:
+	  suppress VC type warnings.  [ruby-core:22726]
 
 	* marshal.c (div0), numeric.c (infinite_value): new functions to
 	  get rid of VC divion by 0 warnings.

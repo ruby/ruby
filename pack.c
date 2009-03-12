@@ -690,7 +690,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		char c;
 
 		from = NEXTFROM;
-		c = num2i32(from);
+		c = (char)num2i32(from);
 		rb_str_buf_cat(res, &c, sizeof(char));
 	    }
 	    break;
@@ -701,7 +701,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		short s;
 
 		from = NEXTFROM;
-		s = num2i32(from);
+		s = (short)num2i32(from);
 		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
 	    break;
@@ -744,7 +744,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		unsigned short s;
 
 		from = NEXTFROM;
-		s = num2i32(from);
+		s = (unsigned short)num2i32(from);
 		s = NATINT_HTONS(s);
 		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
@@ -766,7 +766,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		unsigned short s;
 
 		from = NEXTFROM;
-		s = num2i32(from);
+		s = (unsigned short)num2i32(from);
 		s = NATINT_HTOVS(s);
 		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
@@ -789,7 +789,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		float f;
 
 		from = NEXTFROM;
-		f = RFLOAT_VALUE(rb_to_float(from));
+		f = (float)RFLOAT_VALUE(rb_to_float(from));
 		rb_str_buf_cat(res, (char*)&f, sizeof(float));
 	    }
 	    break;
@@ -800,7 +800,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		FLOAT_CONVWITH(ftmp);
 
 		from = NEXTFROM;
-		f = RFLOAT_VALUE(rb_to_float(from));
+		f = (float)RFLOAT_VALUE(rb_to_float(from));
 		f = HTOVF(f,ftmp);
 		rb_str_buf_cat(res, (char*)&f, sizeof(float));
 	    }
@@ -835,7 +835,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		FLOAT_CONVWITH(ftmp);
 
 		from = NEXTFROM;
-		f = RFLOAT_VALUE(rb_to_float(from));
+		f = (float)RFLOAT_VALUE(rb_to_float(from));
 		f = HTONF(f,ftmp);
 		rb_str_buf_cat(res, (char*)&f, sizeof(float));
 	    }
@@ -990,7 +990,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		}
 
 		while (ul) {
-		    c = ((ul & 0x7f) | 0x80);
+		    c = (char)(ul & 0x7f) | 0x80;
 		    rb_str_buf_cat(buf, &c, sizeof(char));
 		    ul >>=  7;
 		}
@@ -1050,7 +1050,7 @@ encodes(VALUE str, const char *s, long len, int type, int tail_lf)
     int padding;
 
     if (type == 'u') {
-	buff[i++] = len + ' ';
+	buff[i++] = (char)len + ' ';
 	padding = '`';
     }
     else {
@@ -1162,7 +1162,7 @@ hex2num(char c)
 
 #define PACK_LENGTH_ADJUST_SIZE(sz) do {	\
     tmp = 0;					\
-    if (len > (send-s)/sz) {			\
+    if (len > (long)((send-s)/sz)) {		\
         if (!star) {				\
 	    tmp = len-(send-s)/sz;		\
         }					\
@@ -1807,9 +1807,9 @@ pack_unpack(VALUE str, VALUE fmt)
 			    d = (*s++ - ' ') & 077;
 			else
 			    d = 0;
-			hunk[0] = a << 2 | b >> 4;
-			hunk[1] = b << 4 | c >> 2;
-			hunk[2] = c << 6 | d;
+			hunk[0] = (char)(a << 2 | b >> 4);
+			hunk[1] = (char)(b << 4 | c >> 2);
+			hunk[2] = (char)(c << 6 | d);
 			memcpy(ptr, hunk, mlen);
 			ptr += mlen;
 			len -= mlen;
@@ -1990,7 +1990,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    break;
 
 	  case 'p':
-	    if (len > (send - s) / sizeof(char *))
+	    if (len > (long)((send - s) / sizeof(char *)))
 		len = (send - s) / sizeof(char *);
 	    while (len-- > 0) {
 		if (send - s < sizeof(char *))
@@ -2075,38 +2075,38 @@ rb_uv_to_utf8(char buf[6], unsigned long uv)
 	return 1;
     }
     if (uv <= 0x7ff) {
-	buf[0] = ((uv>>6)&0xff)|0xc0;
-	buf[1] = (uv&0x3f)|0x80;
+	buf[0] = (char)((uv>>6)&0xff)|0xc0;
+	buf[1] = (char)(uv&0x3f)|0x80;
 	return 2;
     }
     if (uv <= 0xffff) {
-	buf[0] = ((uv>>12)&0xff)|0xe0;
-	buf[1] = ((uv>>6)&0x3f)|0x80;
-	buf[2] = (uv&0x3f)|0x80;
+	buf[0] = (char)((uv>>12)&0xff)|0xe0;
+	buf[1] = (char)((uv>>6)&0x3f)|0x80;
+	buf[2] = (char)(uv&0x3f)|0x80;
 	return 3;
     }
     if (uv <= 0x1fffff) {
-	buf[0] = ((uv>>18)&0xff)|0xf0;
-	buf[1] = ((uv>>12)&0x3f)|0x80;
-	buf[2] = ((uv>>6)&0x3f)|0x80;
-	buf[3] = (uv&0x3f)|0x80;
+	buf[0] = (char)((uv>>18)&0xff)|0xf0;
+	buf[1] = (char)((uv>>12)&0x3f)|0x80;
+	buf[2] = (char)((uv>>6)&0x3f)|0x80;
+	buf[3] = (char)(uv&0x3f)|0x80;
 	return 4;
     }
     if (uv <= 0x3ffffff) {
-	buf[0] = ((uv>>24)&0xff)|0xf8;
-	buf[1] = ((uv>>18)&0x3f)|0x80;
-	buf[2] = ((uv>>12)&0x3f)|0x80;
-	buf[3] = ((uv>>6)&0x3f)|0x80;
-	buf[4] = (uv&0x3f)|0x80;
+	buf[0] = (char)((uv>>24)&0xff)|0xf8;
+	buf[1] = (char)((uv>>18)&0x3f)|0x80;
+	buf[2] = (char)((uv>>12)&0x3f)|0x80;
+	buf[3] = (char)((uv>>6)&0x3f)|0x80;
+	buf[4] = (char)(uv&0x3f)|0x80;
 	return 5;
     }
     if (uv <= 0x7fffffff) {
-	buf[0] = ((uv>>30)&0xff)|0xfc;
-	buf[1] = ((uv>>24)&0x3f)|0x80;
-	buf[2] = ((uv>>18)&0x3f)|0x80;
-	buf[3] = ((uv>>12)&0x3f)|0x80;
-	buf[4] = ((uv>>6)&0x3f)|0x80;
-	buf[5] = (uv&0x3f)|0x80;
+	buf[0] = (char)((uv>>30)&0xff)|0xfc;
+	buf[1] = (char)((uv>>24)&0x3f)|0x80;
+	buf[2] = (char)((uv>>18)&0x3f)|0x80;
+	buf[3] = (char)((uv>>12)&0x3f)|0x80;
+	buf[4] = (char)((uv>>6)&0x3f)|0x80;
+	buf[5] = (char)(uv&0x3f)|0x80;
 	return 6;
     }
     rb_raise(rb_eRangeError, "pack(U): value out of range");

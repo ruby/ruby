@@ -2280,7 +2280,7 @@ rb_fd_set(int fd, rb_fdset_t *set)
             return;
         }
     }
-    if (set->fdset->fd_count >= set->capa) {
+    if (set->fdset->fd_count >= (unsigned)set->capa) {
 	set->capa = (set->fdset->fd_count / FD_SETSIZE + 1) * FD_SETSIZE;
 	set->fdset = xrealloc(set->fdset, sizeof(unsigned int) + sizeof(SOCKET) * set->capa);
     }

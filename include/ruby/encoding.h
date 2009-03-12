@@ -32,7 +32,7 @@
         rb_enc_set_index(rb_encoding_set_obj, encoding_set_enc_index); \
 } while (0)
 
-#define ENCODING_GET_INLINED(obj) ((RBASIC(obj)->flags & ENCODING_MASK)>>ENCODING_SHIFT)
+#define ENCODING_GET_INLINED(obj) (int)((RBASIC(obj)->flags & ENCODING_MASK)>>ENCODING_SHIFT)
 #define ENCODING_GET(obj) \
     (ENCODING_GET_INLINED(obj) != ENCODING_INLINE_MAX ? \
      ENCODING_GET_INLINED(obj) : \

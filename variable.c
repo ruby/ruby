@@ -963,7 +963,7 @@ ivar_get(VALUE obj, ID id, int warn)
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
         if (!iv_index_tbl) break;
         if (!st_lookup(iv_index_tbl, id, &index)) break;
-        if (len <= index) break;
+        if (len <= (long)index) break;
         val = ptr[index];
         if (val != Qundef)
             return val;
@@ -1024,7 +1024,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
             ivar_extended = 1;
         }
         len = ROBJECT_NUMIV(obj);
-        if (len <= index) {
+        if (len <= (long)index) {
             VALUE *ptr = ROBJECT_IVPTR(obj);
             if (index < ROBJECT_EMBED_LEN_MAX) {
                 RBASIC(obj)->flags |= ROBJECT_EMBED;
@@ -1037,7 +1037,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
                 VALUE *newptr;
                 long newsize = (index+1) + (index+1)/4; /* (index+1)*1.25 */
                 if (!ivar_extended &&
-                    iv_index_tbl->num_entries < newsize) {
+                    iv_index_tbl->num_entries < (st_index_t)newsize) {
                     newsize = iv_index_tbl->num_entries;
                 }
                 if (RBASIC(obj)->flags & ROBJECT_EMBED) {
@@ -1081,7 +1081,7 @@ rb_ivar_defined(VALUE obj, ID id)
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
         if (!iv_index_tbl) break;
         if (!st_lookup(iv_index_tbl, id, &index)) break;
-        if (ROBJECT_NUMIV(obj) <= index) break;
+        if (ROBJECT_NUMIV(obj) <= (long)index) break;
         val = ROBJECT_IVPTR(obj)[index];
         if (val != Qundef)
             return Qtrue;
@@ -1108,7 +1108,7 @@ struct obj_ivar_tag {
 static int
 obj_ivar_i(ID key, VALUE index, struct obj_ivar_tag *data)
 {
-    if (index < ROBJECT_NUMIV(data->obj)) {
+    if ((long)index < ROBJECT_NUMIV(data->obj)) {
         VALUE val = ROBJECT_IVPTR(data->obj)[index];
         if (val != Qundef) {
             return (data->func)(key, val, data->arg);
@@ -1238,7 +1238,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
         if (!iv_index_tbl) break;
         if (!st_lookup(iv_index_tbl, id, &index)) break;
-        if (ROBJECT_NUMIV(obj) <= index) break;
+        if (ROBJECT_NUMIV(obj) <= (long)index) break;
         val = ROBJECT_IVPTR(obj)[index];
         if (val != Qundef) {
             ROBJECT_IVPTR(obj)[index] = Qundef;

@@ -240,7 +240,7 @@ static int BSD__sfvwrite(fp, uio)
 	register size_t len;
 	register const char *p;
 	register struct __siov *iov;
-	register int w;
+	register size_t w;
 
 	if ((len = uio->uio_resid) == 0)
 		return (0);
@@ -347,7 +347,7 @@ BSD__sbprintf(register FILE *fp, const char *fmt, va_list ap)
  */
 #define	to_digit(c)	((c) - '0')
 #define is_digit(c)	((unsigned)to_digit(c) <= 9)
-#define	to_char(n)	((n) + '0')
+#define	to_char(n)	(char)((n) + '0')
 
 #ifdef _HAVE_SANE_QUAD_
 /*

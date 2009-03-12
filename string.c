@@ -1279,7 +1279,7 @@ rb_string_value_cstr(volatile VALUE *ptr)
     VALUE str = rb_string_value(ptr);
     char *s = RSTRING_PTR(str);
 
-    if (!s || RSTRING_LEN(str) != strlen(s)) {
+    if (!s || RSTRING_LEN(str) != (long)strlen(s)) {
 	rb_raise(rb_eArgError, "string contains null byte");
     }
     return s;
@@ -4794,8 +4794,8 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     str_modify_keep_cr(str);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
     if (sflag) {
-	int clen, tlen, max = RSTRING_LEN(str);
-	int offset, save = -1;
+	int offset, clen, tlen, max = RSTRING_LEN(str);
+	unsigned int save = -1;
 	char *buf = ALLOC_N(char, max), *t = buf;
 
 	while (s < send) {
@@ -5167,9 +5167,9 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
     rb_encoding *enc = 0;
     VALUE del = 0, nodel = 0;
     char *s, *send, *t;
-    int save, modify = 0;
-    int i;
+    int i, modify = 0;
     int ascompat, singlebyte = single_byte_optimizable(str);
+    unsigned int save;
 
     if (argc == 0) {
 	enc = STR_ENC_GET(str);
@@ -7013,11 +7013,11 @@ sym_inspect(VALUE sym)
     str = rb_enc_str_new(0, RSTRING_LEN(sym)+1, enc);
     RSTRING_PTR(str)[0] = ':';
     memcpy(RSTRING_PTR(str)+1, RSTRING_PTR(sym), RSTRING_LEN(sym));
-    if (RSTRING_LEN(sym) != strlen(RSTRING_PTR(sym)) ||
+    if (RSTRING_LEN(sym) != (long)strlen(RSTRING_PTR(sym)) ||
 	!rb_enc_symname_p(RSTRING_PTR(sym), enc) ||
 	!sym_printable(RSTRING_PTR(sym), RSTRING_END(sym), enc)) {
 	str = rb_str_inspect(str);
-	strncpy(RSTRING_PTR(str), ":\"", 2);
+	memcpy(RSTRING_PTR(str), ":\"", 2);
     }
     return str;
 }

@@ -246,7 +246,7 @@ w_long(long x, struct dump_arg *arg)
 	return;
     }
     for (i=1;i<sizeof(long)+1;i++) {
-	buf[i] = x & 0xff;
+	buf[i] = (char)(x & 0xff);
 	x = RSHIFT(x,8);
 	if (x == 0) {
 	    buf[0] = i;
@@ -290,15 +290,15 @@ save_mantissa(double d, char *buf)
 	    d = modf(ldexp(d, MANT_BITS), &n);
 	    m = (unsigned long)n;
 #if MANT_BITS > 24
-	    buf[i++] = m >> 24;
+	    buf[i++] = (char)(m >> 24);
 #endif
 #if MANT_BITS > 16
-	    buf[i++] = m >> 16;
+	    buf[i++] = (char)(m >> 16);
 #endif
 #if MANT_BITS > 8
-	    buf[i++] = m >> 8;
+	    buf[i++] = (char)(m >> 8);
 #endif
-	    buf[i++] = m;
+	    buf[i++] = (char)m;
 	} while (d > 0);
 	while (!buf[i - 1]) --i;
     }

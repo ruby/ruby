@@ -7669,7 +7669,7 @@ nogvl_copy_stream_read_write(struct copy_stream_struct *stp)
 
     while (use_eof || 0 < copy_length) {
         if (!use_eof && copy_length < sizeof(buf)) {
-            len = copy_length;
+            len = (size_t)copy_length;
         }
         else {
             len = sizeof(buf);
@@ -7862,7 +7862,7 @@ copy_stream_body(VALUE arg)
         long len = src_fptr->rbuf_len;
         VALUE str;
         if (stp->copy_length != (off_t)-1 && stp->copy_length < len) {
-            len = stp->copy_length;
+            len = (size_t)stp->copy_length;
         }
         str = rb_str_buf_new(len);
         rb_str_resize(str,len);

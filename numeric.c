@@ -1954,7 +1954,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
 	  out_of_range:
 	    rb_raise(rb_eRangeError, "%"PRIdVALUE " out of char range", i);
 	}
-	c = i;
+	c = (char)i;
 	if (i < 0x80) {
 	    return rb_usascii_str_new(&c, 1);
 	}

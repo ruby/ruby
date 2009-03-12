@@ -257,10 +257,10 @@ typedef union {
  */
 #define	TO_SIX_BIT(rslt, src) {				\
 		C_block cvt;				\
-		cvt.b[0] = src; src >>= 6;		\
-		cvt.b[1] = src; src >>= 6;		\
-		cvt.b[2] = src; src >>= 6;		\
-		cvt.b[3] = src;				\
+		cvt.b[0] = (unsigned char)src; src >>= 6; \
+		cvt.b[1] = (unsigned char)src; src >>= 6; \
+		cvt.b[2] = (unsigned char)src; src >>= 6; \
+		cvt.b[3] = (unsigned char)src;		\
 		rslt = (cvt.b32.i0 & 0x3f3f3f3fL) << 2;	\
 	}
 
@@ -784,7 +784,7 @@ init_des()
 			k = (k|07) - (k&07);
 			k++;
 		}
-		perm[i] = k;
+		perm[i] = (unsigned char)k;
 	}
 #ifdef DEBUG
 	prtab("pc1tab", perm, 8);
@@ -831,7 +831,7 @@ init_des()
 				k = (k|07) - (k&07);
 				k++;
 			}
-			perm[i*8+j] = k;
+			perm[i*8+j] = (unsigned char)k;
 		}
 	}
 #ifdef DEBUG
@@ -877,7 +877,7 @@ init_des()
 			for (i = 0; i < 32; i++)
 				tmp32[i] = 0;
 			for (i = 0; i < 4; i++)
-				tmp32[4 * tableno + i] = (k >> i) & 01;
+				tmp32[4 * tableno + i] = (unsigned char)(k >> i) & 01;
 			k = 0;
 			for (i = 24; --i >= 0; )
 				k = (k<<1) | tmp32[perm[i]-1];

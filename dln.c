@@ -1475,7 +1475,7 @@ dln_load(const char *file)
     return 0;			/* dummy return */
 }
 
-static char *dln_find_1(const char *fname, const char *path, char *buf, int size, int exe_flag);
+static char *dln_find_1(const char *fname, const char *path, char *buf, size_t size, int exe_flag);
 
 char *
 dln_find_exe_r(const char *fname, const char *path, char *buf, int size)
@@ -1516,14 +1516,14 @@ dln_find_file(const char *fname, const char *path)
 }
 
 static char *
-dln_find_1(const char *fname, const char *path, char *fbuf, int size,
+dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	   int exe_flag /* non 0 if looking for executable. */)
 {
     register const char *dp;
     register const char *ep;
     register char *bp;
     struct stat st;
-    int i, fspace;
+    size_t i, fspace;
 #ifdef DOSISH
     int is_abs = 0, has_path = 0, has_ext = 0;
     const char *p = fname;

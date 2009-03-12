@@ -1170,11 +1170,11 @@ static Bigint *
 multadd(Bigint *b, int m, int a)   /* multiply by m and add a */
 {
     int i, wds;
-#ifdef ULLong
     ULong *x;
+#ifdef ULLong
     ULLong carry, y;
 #else
-    ULong carry, *x, y;
+    ULong carry, y;
 #ifdef Pack_32
     ULong xi, z;
 #endif
@@ -1189,7 +1189,7 @@ multadd(Bigint *b, int m, int a)   /* multiply by m and add a */
 #ifdef ULLong
         y = *x * (ULLong)m + carry;
         carry = y >> 32;
-        *x++ = y & FFFFFFFF;
+        *x++ = (ULong)y & FFFFFFFF;
 #else
 #ifdef Pack_32
         xi = *x;
@@ -1211,7 +1211,7 @@ multadd(Bigint *b, int m, int a)   /* multiply by m and add a */
             Bfree(b);
             b = b1;
         }
-        b->x[wds++] = carry;
+        b->x[wds++] = (ULong)carry;
         b->wds = wds;
     }
     return b;
@@ -1378,9 +1378,9 @@ mult(Bigint *a, Bigint *b)
             do {
                 z = *x++ * (ULLong)y + *xc + carry;
                 carry = z >> 32;
-                *xc++ = z & FFFFFFFF;
+                *xc++ = (ULong)z & FFFFFFFF;
             } while (x < xae);
-            *xc = carry;
+            *xc = (ULong)carry;
         }
     }
 #else
@@ -1397,7 +1397,7 @@ mult(Bigint *a, Bigint *b)
                 carry = z2 >> 16;
                 Storeinc(xc, z2, z);
             } while (x < xae);
-            *xc = carry;
+            *xc = (ULong)carry;
         }
         if (y = *xb >> 16) {
             x = xa;
@@ -1425,7 +1425,7 @@ mult(Bigint *a, Bigint *b)
                 carry = z >> 16;
                 *xc++ = z & 0xffff;
             } while (x < xae);
-            *xc = carry;
+            *xc = (ULong)carry;
         }
     }
 #endif
@@ -1616,12 +1616,12 @@ diff(Bigint *a, Bigint *b)
     do {
         y = (ULLong)*xa++ - *xb++ - borrow;
         borrow = y >> 32 & (ULong)1;
-        *xc++ = y & FFFFFFFF;
+        *xc++ = (ULong)y & FFFFFFFF;
     } while (xb < xbe);
     while (xa < xae) {
         y = *xa++ - borrow;
         borrow = y >> 32 & (ULong)1;
-        *xc++ = y & FFFFFFFF;
+        *xc++ = (ULong)y & FFFFFFFF;
     }
 #else
 #ifdef Pack_32
@@ -2979,7 +2979,7 @@ quorem(Bigint *b, Bigint *S)
             carry = ys >> 32;
             y = *bx - (ys & FFFFFFFF) - borrow;
             borrow = y >> 32 & (ULong)1;
-            *bx++ = y & FFFFFFFF;
+            *bx++ = (ULong)y & FFFFFFFF;
 #else
 #ifdef Pack_32
             si = *sx++;
@@ -3019,7 +3019,7 @@ quorem(Bigint *b, Bigint *S)
             carry = ys >> 32;
             y = *bx - (ys & FFFFFFFF) - borrow;
             borrow = y >> 32 & (ULong)1;
-            *bx++ = y & FFFFFFFF;
+            *bx++ = (ULong)y & FFFFFFFF;
 #else
 #ifdef Pack_32
             si = *sx++;
