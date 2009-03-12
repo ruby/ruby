@@ -1,3 +1,10 @@
+Thu Mar 12 15:26:02 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/openssl/test_ssl.rb (OpenSSL#test_client_session):
+	  Debian's openssl 0.9.8g-13 failed at assert(ssl.session_reused?),
+	  when use default SSLContext. [ruby-dev:36167]
+	  backported r19268 from trunk. [ruby-core:22843]
+
 Thu Mar 12 13:02:12 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* mkconfig.rb: patchlevel is sometimes minus.
