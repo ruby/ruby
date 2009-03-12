@@ -1,3 +1,7 @@
+Thu Mar 12 09:24:24 2009  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h: suppress warnings of overflow.
+
 Thu Mar 12 09:15:14 2009  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h: suppress warnings of overflow.
