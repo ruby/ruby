@@ -1,3 +1,11 @@
+Thu Mar 12 09:30:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CHECK_SIZEOF): if same size type is found, no
+	  more calculation is needed.
+
+	* configure.in (RUBY_DEFINT): falls back to RUBY_CHECK_SIZEOF if
+	  size is not immediate.
+
 Thu Mar 12 09:24:24 2009  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h: suppress warnings of overflow.

@@ -359,7 +359,7 @@ AC_CACHE_CHECK([char bit], [rb_cv_char_bit],
 dnl RUBY_CHECK_SIZEOF [typename], [maybe same size types], [macros], [include]
 AC_DEFUN([RUBY_CHECK_SIZEOF],
 [if test "$universal_binary" = yes; then
-AC_CACHE_CHECK([size of $1], [AS_TR_SH([ac_cv_sizeof_$1])], [dnl
+AC_CACHE_CHECK([size of $1], [AS_TR_SH([ac_cv_sizeof_$1])], [
     unset AS_TR_SH(ac_cv_sizeof_$1)
     m4_ifval([$2], [test -z "${AS_TR_SH(ac_cv_sizeof_$1)+set}" && {
     for t in $2; do
@@ -370,8 +370,8 @@ AC_CACHE_CHECK([size of $1], [AS_TR_SH([ac_cv_sizeof_$1])], [dnl
 		break])
     done
     }])
-    m4_ifval([$3], [test -z "${AS_TR_SH(ac_cv_sizeof_$1)+set}" && {
     unset cond
+    m4_ifval([$3], [test -z "${AS_TR_SH(ac_cv_sizeof_$1)+set}" && {
     for s in 32 64 128; do
 	for t in $3; do
 	    cond="${cond}
@@ -389,6 +389,9 @@ AC_CACHE_CHECK([size of $1], [AS_TR_SH([ac_cv_sizeof_$1])], [dnl
 	done
     done
     }])
+    m4_ifval([$2][$3], [case "${AS_TR_SH(ac_cv_sizeof_$1)}" in
+    when([SIZEOF_*]);;
+    when(*)])
     _AC_COMPUTE_INT_COMPILE(AS_TR_CPP(SIZEOF_$1), [t], [AC_INCLUDES_DEFAULT([$4])]
 [${cond+$cond
 @%:@else}
@@ -401,6 +404,7 @@ ${cond+@%:@endif}
     if test ${t-0} != 0; then
 	AS_TR_SH(ac_cv_sizeof_$1)="${AS_TR_SH(ac_cv_sizeof_$1)+${AS_TR_SH(ac_cv_sizeof_$1)-} }${t}"
     fi
+    m4_ifval([$2][$3], [;; esac])
     : ${AS_TR_SH(ac_cv_sizeof_$1)=0}
 ])
 {
@@ -892,7 +896,7 @@ AC_CHECK_HEADERS(limits.h sys/file.h sys/ioctl.h sys/syscall.h\
 		 net/socket.h sys/socket.h)
 
 dnl Check additional types.
-AC_CHECK_SIZEOF(rlim_t, 0, [
+RUBY_CHECK_SIZEOF(rlim_t, [int long "long long"], [], [
   #ifdef HAVE_SYS_TYPES_H
   # include <sys/types.h>
   #endif
@@ -927,8 +931,8 @@ $3
 fi])
 
 AC_TYPE_SIZE_T
-AC_CHECK_SIZEOF(size_t, 0)
-AC_CHECK_SIZEOF(ptrdiff_t, $ac_cv_sizeof_size_t)
+RUBY_CHECK_SIZEOF(size_t, [int long void*])
+RUBY_CHECK_SIZEOF(ptrdiff_t, size_t)
 AC_STRUCT_ST_BLKSIZE
 AC_STRUCT_ST_BLOCKS
 AC_STRUCT_ST_RDEV
@@ -969,7 +973,7 @@ typedef $1 t; int s = sizeof(t) == 42;])],
 if test "${rb_cv_type_$1}" != no; then
     AC_DEFINE([HAVE_]AS_TR_CPP($1), 1)
     if test "${rb_cv_type_$1}" = yes; then
-	AC_CHECK_SIZEOF($1)
+	m4_bmatch([$2], [^[1-9][0-9]*$], [AC_CHECK_SIZEOF($1)], [RUBY_CHECK_SIZEOF($1, $2)])
     else
 	AC_DEFINE_UNQUOTED($1, [$rb_cv_type_$1])
 	AC_DEFINE_UNQUOTED([SIZEOF_]AS_TR_CPP($1), [SIZEOF_]AS_TR_CPP([$rb_cv_type_$1]))
@@ -1137,8 +1141,8 @@ if test "$rb_cv_have_daylight" = yes; then
   AC_DEFINE(HAVE_DAYLIGHT)
 fi
 AC_DEFUN([RUBY_CHECK_VARTYPE], [dnl
-AC_CACHE_CHECK([for external $1], rb_cv_var_$1,
-  [rb_cv_var_$1=no
+AC_CACHE_CHECK([for external $1], AS_TR_SH(rb_cv_var_$1),
+  [AS_TR_SH(rb_cv_var_$1)=no
   AC_TRY_COMPILE([
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 1
@@ -1157,11 +1161,11 @@ $2
 extern $t $1;
 const volatile void *volatile t;],
         [t = &(&$1)[0];],
-        [rb_cv_var_$1=$t; break])
+        [AS_TR_SH(rb_cv_var_$1)=$t; break])
     done])])
-if test "[$rb_cv_var_]$1" != no; then
-  AC_DEFINE([HAVE_VAR_]m4_toupper($1))
-  AC_DEFINE_UNQUOTED([TYPEOF_VAR_]m4_toupper($1), $rb_cv_var_$1)
+if test "${AS_TR_SH(rb_cv_var_$1)}" != no; then
+  AC_DEFINE(AS_TR_CPP(HAVE_VAR_$1))
+  AC_DEFINE_UNQUOTED(AS_TR_CPP(TYPEOF_VAR_$1), ${AS_TR_SH(rb_cv_var_$1)})
 fi])
 RUBY_CHECK_VARTYPE(timezone, [@%:@include <time.h>], [long int])
 RUBY_CHECK_VARTYPE(altzone, [@%:@include <time.h>], [long int])
