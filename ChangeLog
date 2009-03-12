@@ -1,3 +1,8 @@
+Thu Mar 12 22:14:01 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_def_const): use INT2NUM because
+	  OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG doesn't fit into Fixnum.
+
 Thu Mar 12 18:16:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c, bignum.c, dln.c, error.c, gc.c, io.c, marshal.c,
