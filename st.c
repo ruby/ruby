@@ -227,7 +227,7 @@ void
 st_clear(st_table *table)
 {
     register st_table_entry *ptr, *next;
-    int i;
+    st_index_t i;
 
     if (table->entries_packed) {
         table->num_entries = 0;
@@ -284,7 +284,7 @@ st_lookup(st_table *table, register st_data_t key, st_data_t *value)
     register st_table_entry *ptr;
 
     if (table->entries_packed) {
-        int i;
+        st_index_t i;
         for (i = 0; i < table->num_entries; i++) {
             if ((st_data_t)table->bins[i*2] == key) {
                 if (value !=0) *value = (st_data_t)table->bins[i*2+1];
@@ -313,7 +313,7 @@ st_get_key(st_table *table, register st_data_t key, st_data_t *result)
     register st_table_entry *ptr;
 
     if (table->entries_packed) {
-        int i;
+        st_index_t i;
         for (i = 0; i < table->num_entries; i++) {
             if ((st_data_t)table->bins[i*2] == key) {
                 if (result !=0) *result = (st_data_t)table->bins[i*2];
@@ -385,7 +385,7 @@ st_insert(register st_table *table, register st_data_t key, st_data_t value)
     register st_table_entry *ptr;
 
     if (table->entries_packed) {
-        int i;
+        st_index_t i;
         for (i = 0; i < table->num_entries; i++) {
             if ((st_data_t)table->bins[i*2] == key) {
                 table->bins[i*2+1] = (struct st_table_entry*)value;
@@ -536,7 +536,7 @@ st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
     register st_table_entry *ptr;
 
     if (table->entries_packed) {
-        int i;
+        st_index_t i;
         for (i = 0; i < table->num_entries; i++) {
             if ((st_data_t)table->bins[i*2] == *key) {
                 if (value != 0) *value = (st_data_t)table->bins[i*2+1];
@@ -594,7 +594,7 @@ void
 st_cleanup_safe(st_table *table, st_data_t never)
 {
     st_table_entry *ptr, **last, *tmp;
-    int i;
+    st_index_t i;
 
     for (i = 0; i < table->num_bins; i++) {
 	ptr = *(last = &table->bins[i]);
@@ -616,11 +616,11 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 {
     st_table_entry *ptr, **last, *tmp;
     enum st_retval retval;
-    int i;
+    st_index_t i;
 
     if (table->entries_packed) {
         for (i = 0; i < table->num_entries; i++) {
-            int j;
+            st_index_t j;
             st_data_t key, val;
             key = (st_data_t)table->bins[i*2];
             val = (st_data_t)table->bins[i*2+1];

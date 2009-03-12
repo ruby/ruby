@@ -1,3 +1,7 @@
+Thu Mar 12 17:56:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c: use st_index_t for indexes instead of int.
+
 Thu Mar 12 09:30:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_CHECK_SIZEOF): if same size type is found, no
