@@ -1,3 +1,8 @@
+Thu Mar 12 22:29:36 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (WARNFLAGS): warning 4996 is only in VC++8 or
+	  later.
+
 Thu Mar 12 22:14:01 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_def_const): use INT2NUM because
