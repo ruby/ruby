@@ -1201,6 +1201,20 @@ obj_alloc_by_path(const char *path, struct load_arg *arg)
     return rb_obj_alloc(klass);
 }
 
+#if defined _MSC_VER && _MSC_VER >= 1300
+#pragma warning(push)
+#pragma warning(disable:4723)
+#endif
+static double
+div0(double x)
+{
+    double t = 0.0;
+    return x / t;
+}
+#if defined _MSC_VER && _MSC_VER >= 1300
+#pragma warning(pop)
+#endif
+
 static VALUE
 r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 {
@@ -1292,18 +1306,18 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_FLOAT:
 	{
-	    double d, t = 0.0;
+	    double d;
 	    VALUE str = r_bytes(arg);
 	    const char *ptr = RSTRING_PTR(str);
 
 	    if (strcmp(ptr, "nan") == 0) {
-		d = t / t;
+		d = div0(0.0);
 	    }
 	    else if (strcmp(ptr, "inf") == 0) {
-		d = 1.0 / t;
+		d = div0(+1.0);
 	    }
 	    else if (strcmp(ptr, "-inf") == 0) {
-		d = -1.0 / t;
+		d = div0(-1.0);
 	    }
 	    else {
 		char *e;

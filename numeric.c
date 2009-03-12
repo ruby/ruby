@@ -2445,6 +2445,20 @@ int_pow(long x, unsigned long y)
     return LONG2NUM(z);
 }
 
+#if defined _MSC_VER && _MSC_VER >= 1300
+#pragma warning(push)
+#pragma warning(disable:4723)
+#endif
+static inline double
+infinite_value(void)
+{
+    static const double zero = 0.0;
+    return 1.0 / zero;
+}
+#if defined _MSC_VER && _MSC_VER >= 1300
+#pragma warning(pop)
+#endif
+
 /*
  *  call-seq:
  *    fix ** other         => Numeric
@@ -2460,7 +2474,6 @@ int_pow(long x, unsigned long y)
 static VALUE
 fix_pow(VALUE x, VALUE y)
 {
-    static const double zero = 0.0;
     long a = FIX2LONG(x);
 
     if (FIXNUM_P(y)) {
@@ -2473,7 +2486,7 @@ fix_pow(VALUE x, VALUE y)
 	if (b == 1) return x;
 	if (a == 0) {
 	    if (b > 0) return INT2FIX(0);
-	    return DBL2NUM(1.0 / zero);
+	    return DBL2NUM(infinite_value());
 	}
 	if (a == 1) return INT2FIX(1);
 	if (a == -1) {
@@ -2501,7 +2514,7 @@ fix_pow(VALUE x, VALUE y)
       case T_FLOAT:
 	if (RFLOAT_VALUE(y) == 0.0) return DBL2NUM(1.0);
 	if (a == 0) {
-	    return DBL2NUM(RFLOAT_VALUE(y) < 0 ? (1.0 / zero) : 0.0);
+	    return DBL2NUM(RFLOAT_VALUE(y) < 0 ? infinite_value() : 0.0);
 	}
 	if (a == 1) return DBL2NUM(1.0);
 	return DBL2NUM(pow((double)a, RFLOAT_VALUE(y)));

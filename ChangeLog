@@ -1,4 +1,7 @@
-Thu Mar 12 18:02:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar 12 18:09:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (div0), numeric.c (infinite_value): new functions to
+	  get rid of VC divion by 0 warnings.
 
 	* st.c: use st_index_t for indexes instead of int.
 
