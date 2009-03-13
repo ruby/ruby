@@ -6,6 +6,11 @@ Fri Mar 13 19:41:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* common.mk (EXTMK_ARGS): needs MINIRUBY for cross-compile.
 	  [ruby-core:20131]
 
+Fri Mar 13 09:17:12 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils#fu_get_gid): stringify group
+	  argument before making regexp match.  [ruby-dev:38155]
+
 Thu Mar 12 15:26:02 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/openssl/test_ssl.rb (OpenSSL#test_client_session):
