@@ -103,6 +103,13 @@ typedef unsigned LONG_LONG ID;
 # error ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
 #endif
 
+typedef char ruby_check_sizeof_int[SIZEOF_INT == sizeof(int) ? 1 : -1];
+typedef char ruby_check_sizeof_long[SIZEOF_LONG == sizeof(long) ? 1 : -1];
+#ifdef SIZEOF_LONG_LONG
+typedef char ruby_check_sizeof_long_long[SIZEOF_LONG_LONG == sizeof(LONG_LONG) ? 1 : -1];
+#endif
+typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
+
 #if defined PRIdPTR && !defined PRI_VALUE_PREFIX
 #define PRIdVALUE PRIdPTR
 #define PRIiVALUE PRIiPTR
@@ -302,6 +309,28 @@ enum ruby_special_consts {
     RUBY_SPECIAL_SHIFT  = 8
 };
 
+#if defined HAVE_STDBOOL_H
+# include <stdbool.h>
+#elif defined __cplusplus
+typedef bool _Bool;
+#else
+# ifndef HAVE__BOOL
+#   define _Bool signed char
+# endif
+# ifndef bool
+#   define bool _Bool
+# endif
+# ifndef false
+#   define false 0
+# endif
+# ifndef true
+#   define true 1
+# endif
+# ifndef __bool_true_false_are_defined
+#   define __bool_true_false_are_defined 1
+# endif
+#endif
+
 #define Qfalse ((VALUE)RUBY_Qfalse)
 #define Qtrue  ((VALUE)RUBY_Qtrue)
 #define Qnil   ((VALUE)RUBY_Qnil)
@@ -375,7 +404,7 @@ enum ruby_value_type {
 #define T_ZOMBIE RUBY_T_ZOMBIE
 #define T_MASK   RUBY_T_MASK
 
-#define BUILTIN_TYPE(x) (((struct RBasic*)(x))->flags & T_MASK)
+#define BUILTIN_TYPE(x) (int)(((struct RBasic*)(x))->flags & T_MASK)
 
 #define TYPE(x) rb_type((VALUE)(x))
 
@@ -439,7 +468,7 @@ long rb_fix2int(VALUE);
 static inline int
 NUM2INT(VALUE x)
 {
-    return FIXNUM_P(x) ? FIX2INT(x) : rb_num2int(x);
+    return FIXNUM_P(x) ? FIX2INT(x) : (int)rb_num2int(x);
 }
 unsigned long rb_num2uint(VALUE);
 #define NUM2UINT(x) ((unsigned int)rb_num2uint(x))
@@ -1142,8 +1171,8 @@ rb_type(VALUE obj)
 static inline int
 rb_special_const_p(VALUE obj)
 {
-    if (SPECIAL_CONST_P(obj)) return Qtrue;
-    return Qfalse;
+    if (SPECIAL_CONST_P(obj)) return true;
+    return false;
 }
 
 #include "ruby/missing.h"

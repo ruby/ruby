@@ -480,12 +480,12 @@ gc_stress_get(VALUE self)
  */
 
 static VALUE
-gc_stress_set(VALUE self, VALUE bool)
+gc_stress_set(VALUE self, VALUE flag)
 {
     rb_objspace_t *objspace = &rb_objspace;
     rb_secure(2);
-    ruby_gc_stress = RTEST(bool);
-    return bool;
+    ruby_gc_stress = RTEST(flag);
+    return flag;
 }
 
 /*
@@ -1636,7 +1636,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	break;
 
       default:
-	rb_bug("rb_gc_mark(): unknown data type 0x%lx(%p) %s",
+	rb_bug("rb_gc_mark(): unknown data type 0x%x(%p) %s",
 	       BUILTIN_TYPE(obj), (void *)obj,
 	       is_pointer_to_heap(objspace, obj) ? "corrupted object" : "non object");
     }
@@ -1934,7 +1934,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       default:
-	rb_bug("gc_sweep(): unknown data type 0x%lx(%p)",
+	rb_bug("gc_sweep(): unknown data type 0x%x(%p)",
 	       BUILTIN_TYPE(obj), (void*)obj);
     }
 

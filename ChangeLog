@@ -1,3 +1,14 @@
+Fri Mar 13 10:42:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (AC_HEADER_DIRENT): added.
+
+	* include/ruby/ruby.h (NUM2INT, rb_special_const_p): returns true
+	  and false instead of Qtrue and Qfalse for platforms where VALUE
+	  is bigger than int.
+
+	* gc.c (gc_stress_set), ext/openssl/ossl_asn1.c (decode_bool): go
+	  rid of variables named `bool'.
+
 Fri Mar 13 10:16:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (struct stat.st_size): may be huge.

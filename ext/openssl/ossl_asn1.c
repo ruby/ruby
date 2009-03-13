@@ -306,14 +306,14 @@ obj_to_asn1derstr(VALUE obj)
 static VALUE
 decode_bool(unsigned char* der, int length)
 {
-    int bool;
+    int val;
     const unsigned char *p;
 
     p = der;
-    if((bool = d2i_ASN1_BOOLEAN(NULL, &p, length)) < 0)
+    if((val = d2i_ASN1_BOOLEAN(NULL, &p, length)) < 0)
 	ossl_raise(eASN1Error, NULL);
 
-    return bool ? Qtrue : Qfalse;
+    return val ? Qtrue : Qfalse;
 }
 
 static VALUE

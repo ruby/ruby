@@ -887,6 +887,7 @@ fi
 dnl Checks for header files.
 AC_HEADER_DIRENT
 dnl AC_HEADER_STDC has been checked in AC_USE_SYSTEM_EXTENSIONS
+AC_HEADER_STDBOOL
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(limits.h sys/file.h sys/ioctl.h sys/syscall.h\
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
