@@ -63,6 +63,11 @@ Fri Mar 13 09:30:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (bigfixize): zero length Bignum is 0.
 
+Fri Mar 13 09:17:12 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils#fu_get_gid): stringify group
+	  argument before making regexp match.  [ruby-dev:38155]
+
 Fri Mar 13 08:06:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (rv_strdup): macro to duplicate nul-terminated string.
