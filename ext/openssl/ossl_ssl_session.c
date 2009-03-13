@@ -107,7 +107,7 @@ static VALUE ossl_ssl_session_get_time(VALUE self)
 	if (t == 0)
 		return Qnil;
 
-	return rb_funcall(rb_cTime, rb_intern("at"), 1, LONG2NUM(t));
+	return rb_funcall(rb_cTime, rb_intern("at"), 1, TIMET2NUM(t));
 }
 
 /*
@@ -126,14 +126,14 @@ static VALUE ossl_ssl_session_get_timeout(VALUE self)
 
 	t = SSL_SESSION_get_timeout(ctx);
 
-	return ULONG2NUM(t);
+	return TIMET2NUM(t);
 }
 
 #define SSLSESSION_SET_TIME(func)						\
 	static VALUE ossl_ssl_session_set_##func(VALUE self, VALUE time_v)	\
 	{									\
 		SSL_SESSION *ctx;						\
-		time_t t;							\
+		unsigned long t;						\
 										\
 		GetSSLSession(self, ctx);					\
 										\

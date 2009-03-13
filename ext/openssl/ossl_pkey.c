@@ -177,7 +177,7 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
     str = rb_str_new(0, EVP_PKEY_size(pkey)+16);
     if (!EVP_SignFinal(&ctx, (unsigned char *)RSTRING_PTR(str), &buf_len, pkey))
 	ossl_raise(ePKeyError, NULL);
-    assert(buf_len <= RSTRING_LEN(str));
+    assert((long)buf_len <= RSTRING_LEN(str));
     rb_str_set_len(str, buf_len);
 
     return str;

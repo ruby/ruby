@@ -905,7 +905,7 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
         rb_raise(rb_eArgError, "arg must be Time or nil");
     }
 
-    SSL_CTX_flush_sessions(ctx, tm);
+    SSL_CTX_flush_sessions(ctx, (long)tm);
 
     return self;
 }
