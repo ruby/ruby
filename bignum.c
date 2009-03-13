@@ -191,7 +191,8 @@ bigfixize(VALUE x)
     long len = RBIGNUM_LEN(x);
     BDIGIT *ds = BDIGITS(x);
 
-    if (len > 0 && len*SIZEOF_BDIGITS <= sizeof(long)) {
+    if (len == 0) return INT2FIX(0);
+    if (len*SIZEOF_BDIGITS <= sizeof(long)) {
 	long num = 0;
 #if 2*SIZEOF_BDIGITS > SIZEOF_LONG
 	num = (long)ds[0];
