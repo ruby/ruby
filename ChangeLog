@@ -1,3 +1,8 @@
+Fri Mar 13 19:41:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb (patchlevel): config.status may not contain
+	  PATCHLEVEL even if other version numbers exist.
+
 Fri Mar 13 19:40:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (EXTMK_ARGS): needs MINIRUBY for cross-compile.
