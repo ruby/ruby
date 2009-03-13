@@ -221,8 +221,6 @@ if test "$GCC" = yes; then
 else
     linker_flag=
 fi
-CFLAGS="${CFLAGS} `eval echo $cflags`"
-CXXFLAGS="${CXXFLAGS} `eval echo $cxxflags`"
 
 RUBY_PROG_GNU_LD
 RUBY_CPPOUTFILE
@@ -334,6 +332,9 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     unset save_CFLAGS
     warnflags="-Wall -Wno-unused-parameter -Wno-parentheses ${warnflags+$warnflags }-Wpointer-arith -Wwrite-strings"
 fi
+
+CFLAGS="${CFLAGS} `eval echo $cflags`"
+CXXFLAGS="${CXXFLAGS} `eval echo $cxxflags`"
 
 dnl check for large file stuff
 mv confdefs.h confdefs1.h
