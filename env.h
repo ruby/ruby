@@ -31,6 +31,7 @@ void rb_gc_mark_frame _((struct FRAME *));
 
 #define FRAME_DMETH  1
 #define FRAME_FUNC   2
+#define FRAME_REST_ARG   4
 
 extern struct SCOPE {
     struct RBasic super;

@@ -3586,6 +3586,15 @@ rb_eval(self, n)
 		    }
 		    argv = RARRAY(RBASIC(ruby_scope)->klass)->ptr;
 		}
+		else if (ruby_frame->flags & FRAME_REST_ARG) {
+		    VALUE rest = ruby_scope->local_vars[argc+2];
+
+		    /* check if T_ARRAY */;
+		    argv = TMP_ALLOC(argc + RARRAY(rest)->len);
+		    MEMCPY(argv, ruby_scope->local_vars+2, VALUE, argc);
+		    MEMCPY(argv+argc, RARRAY(rest)->ptr, VALUE, RARRAY(rest)->len);
+		    argc += RARRAY(rest)->len;
+		}
 		else if (!ruby_scope->local_vars) {
 		    argc = 0;
 		    argv = 0;
@@ -6095,6 +6104,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 			    i = -i - 1;
 			}
 			else {
+			    ruby_frame->flags |= FRAME_REST_ARG;
 			    v = rb_ary_new2(0);
 			}
 			assign(recv, node->nd_rest, v, 1);
