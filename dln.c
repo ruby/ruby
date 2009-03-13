@@ -1616,8 +1616,9 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 		home = getenv("HOME");
 		if (home != NULL) {
 		    i = strlen(home);
-		    if ((fspace -= i) < 0)
+		    if (fspace < i)
 			goto toolong;
+		    fspace -= i;
 		    memcpy(bp, home, i);
 		    bp += i;
 		}
@@ -1625,8 +1626,9 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 		l--;
 	    }
 	    if (l > 0) {
-		if ((fspace -= l) < 0)
+		if (fspace < l)
 		    goto toolong;
+		fspace -= l;
 		memcpy(bp, dp, l);
 		bp += l;
 	    }
@@ -1638,7 +1640,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 
 	/* now append the file name */
 	i = strlen(fname);
-	if ((fspace -= i) < 0) {
+	if (fspace < i) {
 	  toolong:
 	    fprintf(stderr, "openpath: pathname too long (ignored)\n");
 	    *bp = '\0';
@@ -1646,6 +1648,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	    fprintf(stderr, "\tFile \"%s\"\n", fname);
 	    goto next;
 	}
+	fspace -= i;
 	memcpy(bp, fname, i + 1);
 
 #if defined(DOSISH)

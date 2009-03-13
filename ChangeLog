@@ -1,3 +1,7 @@
+Fri Mar 13 20:58:11 2009  Tanaka Akira  <akr@fsij.org>
+
+	* dln.c (dln_find_1): compare fspace in size_t world.
+
 Fri Mar 13 18:58:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (CFLAGS, CXXFLAGS): moved after warnflags.
