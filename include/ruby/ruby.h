@@ -309,28 +309,6 @@ enum ruby_special_consts {
     RUBY_SPECIAL_SHIFT  = 8
 };
 
-#if defined HAVE_STDBOOL_H
-# include <stdbool.h>
-#elif defined __cplusplus
-typedef bool _Bool;
-#else
-# ifndef HAVE__BOOL
-#   define _Bool signed char
-# endif
-# ifndef bool
-#   define bool _Bool
-# endif
-# ifndef false
-#   define false 0
-# endif
-# ifndef true
-#   define true 1
-# endif
-# ifndef __bool_true_false_are_defined
-#   define __bool_true_false_are_defined 1
-# endif
-#endif
-
 #define Qfalse ((VALUE)RUBY_Qfalse)
 #define Qtrue  ((VALUE)RUBY_Qtrue)
 #define Qnil   ((VALUE)RUBY_Qnil)
@@ -1171,8 +1149,8 @@ rb_type(VALUE obj)
 static inline int
 rb_special_const_p(VALUE obj)
 {
-    if (SPECIAL_CONST_P(obj)) return true;
-    return false;
+    if (SPECIAL_CONST_P(obj)) return (int)Qtrue;
+    return (int)Qfalse;
 }
 
 #include "ruby/missing.h"
