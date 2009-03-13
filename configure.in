@@ -936,6 +936,7 @@ RUBY_CHECK_SIZEOF(ptrdiff_t, size_t)
 AC_STRUCT_ST_BLKSIZE
 AC_STRUCT_ST_BLOCKS
 AC_STRUCT_ST_RDEV
+RUBY_CHECK_HUGE([struct stat.st_size])
 if test "$ac_cv_member_struct_stat_st_blocks" = yes; then
     RUBY_CHECK_HUGE(struct stat.st_blocks)
 fi
