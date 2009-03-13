@@ -428,7 +428,7 @@ ${cond+@%:@endif}
     ${cond+echo "@%:@endif"}
 } >> confdefs.h
 else
-AC_CHECK_SIZEOF([$1])
+AC_CHECK_SIZEOF([$1], 0, [$4])
 fi
 ])
 
