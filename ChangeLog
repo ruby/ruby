@@ -1,3 +1,7 @@
+Fri Mar 13 18:10:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_throw_obj): inverted call flow.  [ruby-core:22872]
+
 Fri Mar 13 17:04:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (bool): not define to get rid of conflic

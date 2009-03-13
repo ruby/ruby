@@ -1127,8 +1127,6 @@ rb_mod_module_exec(int argc, VALUE *argv, VALUE mod)
     return yield_under(mod, mod, rb_ary_new4(argc, argv));
 }
 
-NORETURN(static VALUE rb_f_throw _((int, VALUE *)));
-
 /*
  *  call-seq:
  *     throw(symbol [, obj])
@@ -1145,10 +1143,18 @@ static VALUE
 rb_f_throw(int argc, VALUE *argv)
 {
     VALUE tag, value;
+
+    rb_scan_args(argc, argv, "11", &tag, &value);
+    rb_throw_obj(tag, value);
+    return Qnil;		/* not reached */
+}
+
+void
+rb_throw_obj(VALUE tag, VALUE value)
+{
     rb_thread_t *th = GET_THREAD();
     struct rb_vm_tag *tt = th->tag;
 
-    rb_scan_args(argc, argv, "11", &tag, &value);
     while (tt) {
 	if (tt->tag == tag) {
 	    tt->retval = value;
@@ -1164,29 +1170,12 @@ rb_f_throw(int argc, VALUE *argv)
     th->errinfo = NEW_THROW_OBJECT(tag, 0, TAG_THROW);
 
     JUMP_TAG(TAG_THROW);
-#ifndef __GNUC__
-    return Qnil;		/* not reached */
-#endif
 }
 
 void
 rb_throw(const char *tag, VALUE val)
 {
-    VALUE argv[2];
-
-    argv[0] = ID2SYM(rb_intern(tag));
-    argv[1] = val;
-    rb_f_throw(2, argv);
-}
-
-void
-rb_throw_obj(VALUE tag, VALUE val)
-{
-    VALUE argv[2];
-
-    argv[0] = tag;
-    argv[1] = val;
-    rb_f_throw(2, argv);
+    rb_throw_obj(ID2SYM(rb_intern(tag)), val);
 }
 
 /*
