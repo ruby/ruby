@@ -120,7 +120,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 	data.tbl = RCLASS_M_TBL(clone) = st_init_numtable();
 	data.klass = clone;
 	st_foreach(RCLASS_M_TBL(orig), clone_method,
-	  (st_data_t)&data);
+		   (st_data_t)&data);
     }
 
     return clone;
@@ -166,7 +166,7 @@ rb_singleton_class_clone(VALUE obj)
 	data.tbl = RCLASS_M_TBL(clone);
 	data.klass = (VALUE)clone;
 	st_foreach(RCLASS_M_TBL(klass), clone_method,
-	  (st_data_t)&data);
+		   (st_data_t)&data);
 	rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);
 	FL_SET(clone, FL_SINGLETON);
 	return (VALUE)clone;
@@ -430,27 +430,27 @@ rb_include_module(VALUE klass, VALUE module)
     OBJ_INFECT(klass, module);
     c = klass;
     while (module) {
-       int superclass_seen = Qfalse;
+	int superclass_seen = Qfalse;
 
 	if (RCLASS_M_TBL(klass) == RCLASS_M_TBL(module))
 	    rb_raise(rb_eArgError, "cyclic include detected");
-       /* ignore if the module included already in superclasses */
-       for (p = RCLASS_SUPER(klass); p; p = RCLASS_SUPER(p)) {
-           switch (BUILTIN_TYPE(p)) {
-             case T_ICLASS:
-               if (RCLASS_M_TBL(p) == RCLASS_M_TBL(module)) {
-                   if (!superclass_seen) {
-                       c = p;  /* move insertion point */
-                   }
-                   goto skip;
-               }
-               break;
-             case T_CLASS:
-               superclass_seen = Qtrue;
-               break;
-           }
-       }
-       c = RCLASS_SUPER(c) = include_class_new(module, RCLASS_SUPER(c));
+	/* ignore if the module included already in superclasses */
+	for (p = RCLASS_SUPER(klass); p; p = RCLASS_SUPER(p)) {
+	    switch (BUILTIN_TYPE(p)) {
+	      case T_ICLASS:
+		if (RCLASS_M_TBL(p) == RCLASS_M_TBL(module)) {
+		    if (!superclass_seen) {
+			c = p;  /* move insertion point */
+		    }
+		    goto skip;
+		}
+		break;
+	      case T_CLASS:
+		superclass_seen = Qtrue;
+		break;
+	    }
+	}
+	c = RCLASS_SUPER(c) = include_class_new(module, RCLASS_SUPER(c));
 	changed = 1;
       skip:
 	module = RCLASS_SUPER(module);
@@ -865,7 +865,7 @@ rb_singleton_class(VALUE obj)
 
     if (BUILTIN_TYPE(obj) == T_CLASS) {
 	if (rb_iv_get(RBASIC(klass)->klass, "__attached__") != klass)
-        make_metametaclass(klass);
+	    make_metametaclass(klass);
     }
     if (OBJ_TAINTED(obj)) {
 	OBJ_TAINT(klass);
