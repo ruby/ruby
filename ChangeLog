@@ -1,3 +1,9 @@
+Fri Mar 13 15:10:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_x509ext.c (ossl_x509ext_set_value): should use
+	  OPENSSL_free instead of free.  a patch from Charlie Savage a
+	  [ruby-core:22858].
+
 Fri Mar 13 10:42:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (AC_HEADER_DIRENT): added.
