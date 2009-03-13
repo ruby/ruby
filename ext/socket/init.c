@@ -271,8 +271,6 @@ wait_connectable0(int fd, rb_fdset_t *fds_w, rb_fdset_t *fds_e)
 	    return -1;
 	}
     }
-
-    return 0;
 }
 
 struct wait_connectable_arg {

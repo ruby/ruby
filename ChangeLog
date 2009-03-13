@@ -1,3 +1,7 @@
+Fri Mar 13 23:03:40 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/init.c (wait_connectable0): remove unreachable code.
+
 Fri Mar 13 23:00:02 2009  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (RUBY_CHECK_SIZEOF): pass [include] to AC_CHECK_SIZEOF.
