@@ -543,7 +543,6 @@ check_argc(long argc)
 VALUE
 rb_proc_call(VALUE self, VALUE args)
 {
-    long argc = ;
     rb_proc_t *proc;
     GetProcPtr(self, proc);
     return rb_vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
@@ -1646,7 +1645,7 @@ bmcall(VALUE args, VALUE method)
 	argc = 1;
     }
     else {
-	argc = check_argc(RARRAY_LEN(argc));
+	argc = check_argc(RARRAY_LEN(args));
     }
     ret = rb_method_call(argc, RARRAY_PTR(a), method);
     a = args;
