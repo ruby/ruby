@@ -2034,7 +2034,8 @@ rb_gc_call_finalizer_at_exit()
 	p = heaps[i].slot; pend = p + heaps[i].limit;
 	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
-		DATA_PTR(p) && RANY(p)->as.data.dfree) {
+		DATA_PTR(p) && RANY(p)->as.data.dfree &&
+		RANY(p)->as.basic.klass != rb_cThread) {
 		p->as.free.flags = 0;
 		if ((long)RANY(p)->as.data.dfree == -1) {
 		    RUBY_CRITICAL(free(DATA_PTR(p)));
