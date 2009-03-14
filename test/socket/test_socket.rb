@@ -173,9 +173,14 @@ class TestSocket < Test::Unit::TestCase
           unix_server = Socket.unix_server_socket("#{tmpdir}/sock")
           tcp_servers.each {|s|
             addr = s.connect_address
+            assert_nothing_raised("connect to #{addr.inspect}") {
+              clients << addr.connect
+            }
+          }
+          addr = unix_server.connect_address
+          assert_nothing_raised("connect to #{addr.inspect}") {
             clients << addr.connect
           }
-          clients << unix_server.local_address.connect
           Socket.accept_loop(tcp_servers, unix_server) {|s|
             accepted << s
             break if clients.length == accepted.length
