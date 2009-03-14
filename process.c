@@ -2837,7 +2837,7 @@ static rb_pid_t
 rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
                   char *errmsg, size_t errmsg_buflen)
 {
-    rb_pid_t status;
+    rb_pid_t pid;
     VALUE prog;
     struct rb_exec_arg earg;
 #if !defined HAVE_FORK
@@ -2852,7 +2852,7 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
     rb_exec_arg_fixup(&earg);
 
 #if defined HAVE_FORK
-    status = rb_fork_err(&status, rb_exec_atfork, &earg, earg.redirect_fds, errmsg, errmsg_buflen);
+    pid = rb_fork_err(&pid, rb_exec_atfork, &earg, earg.redirect_fds, errmsg, errmsg_buflen);
     if (prog && earg.argc) earg.argv[0] = prog;
 #else
     if (rb_run_exec_options_err(&earg, &sarg, errmsg, errmsg_buflen) < 0) {
@@ -2864,24 +2864,24 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
     if (prog && argc) argv[0] = prog;
 # if defined HAVE_SPAWNV
     if (!argc) {
-	status = proc_spawn(RSTRING_PTR(prog));
+	pid = proc_spawn(RSTRING_PTR(prog));
     }
     else {
-	status = proc_spawn_n(argc, argv, prog);
+	pid = proc_spawn_n(argc, argv, prog);
     }
 #  if defined(_WIN32)
-    if (status == -1)
+    if (pid == -1)
 	rb_last_status_set(0x7f << 8, 0);
 #  endif
 # else
     if (argc) prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
-    status = system(StringValuePtr(prog));
-    rb_last_status_set((status & 0xff) << 8, 0);
+    pid = system(StringValuePtr(prog));
+    rb_last_status_set((pid & 0xff) << 8, 0);
 # endif
 
     rb_run_exec_options_err(&sarg, NULL, errmsg, errmsg_buflen);
 #endif
-    return status;
+    return pid;
 }
 
 rb_pid_t
@@ -2930,6 +2930,7 @@ rb_spawn(int argc, VALUE *argv)
 static VALUE
 rb_f_system(int argc, VALUE *argv)
 {
+    rb_pid_t pid;
     int status;
 
 #if defined(SIGCLD) && !defined(SIGCHLD)
@@ -2941,16 +2942,16 @@ rb_f_system(int argc, VALUE *argv)
 
     chfunc = signal(SIGCHLD, SIG_DFL);
 #endif
-    status = rb_spawn_internal(argc, argv, Qfalse, NULL, 0);
+    pid = rb_spawn_internal(argc, argv, Qfalse, NULL, 0);
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
-    if (status > 0) {
-	rb_syswait(status);
+    if (pid > 0) {
+	rb_syswait(pid);
     }
 #endif
 #ifdef SIGCHLD
     signal(SIGCHLD, chfunc);
 #endif
-    if (status < 0) {
+    if (pid < 0) {
 	return Qnil;
     }
     status = PST2INT(rb_last_status_get());

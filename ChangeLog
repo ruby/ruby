@@ -1,3 +1,8 @@
+Sat Mar 14 14:45:51 2009  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_f_system): use rb_pid_t for pid.
+	  (rb_spawn_internal): local variable renamed.
+
 Sat Mar 14 14:16:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_strdup, Balloc, rv_alloc): use size_t.
