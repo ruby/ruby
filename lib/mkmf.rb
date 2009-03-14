@@ -9,7 +9,7 @@ CONFIG = RbConfig::MAKEFILE_CONFIG
 ORIG_LIBPATH = ENV['LIB']
 
 CXX_EXT = %w[cc cxx cpp]
-if /mswin|bccwin|mingw|os2/ !~ CONFIG['build_os']
+if File::FNM_SYSCASE.zero?
   CXX_EXT.concat(%w[C])
 end
 SRC_EXT = %w[c m] << CXX_EXT
@@ -1189,16 +1189,16 @@ end
 #
 def create_header(header = "extconf.h")
   message "creating %s\n", header
-    sym = header.tr("a-z./\055", "A-Z___")
+  sym = header.tr("a-z./\055", "A-Z___")
   hdr = ["#ifndef #{sym}\n#define #{sym}\n"]
-      for line in $defs
-	case line
-	when /^-D([^=]+)(?:=(.*))?/
+  for line in $defs
+    case line
+    when /^-D([^=]+)(?:=(.*))?/
       hdr << "#define #$1 #{$2 ? Shellwords.shellwords($2)[0] : 1}\n"
-	when /^-U(.*)/
+    when /^-U(.*)/
       hdr << "#undef #$1\n"
-	end
-      end
+    end
+  end
   hdr << "#endif\n"
   hdr = hdr.join
   unless (IO.read(header) == hdr rescue false)
@@ -1527,7 +1527,7 @@ end
 # Makefile.
 #
 # Setting the +target_prefix+ will, in turn, install the generated binary in
-# a directory under your Config::CONFIG['sitearchdir'] that mimics your local
+# a directory under your RbConfig::CONFIG['sitearchdir'] that mimics your local
 # filesystem when you run 'make install'.
 #
 # For example, given the following file tree:
@@ -1937,7 +1937,7 @@ RPATHFLAG = config_string('RPATHFLAG') || ''
 LIBARG = config_string('LIBARG') || '-l%s'
 MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main() {return 0;}'
 
-sep = config_string('BUILD_FILE_SEPARATOR') {|s| ":/=#{s}" if sep != "/"} || ""
+sep = config_string('BUILD_FILE_SEPARATOR') {|s| ":/=#{s}" if s != "/"} || ""
 CLEANINGS = "
 clean-rb-default::
 clean-rb::

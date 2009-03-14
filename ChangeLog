@@ -1,3 +1,8 @@
+Sat Mar 14 10:39:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (CXX_EXT): checks for case-sensitive filesystem with
+	  FNM_SYSCASE rather than build_os.
+
 Fri Mar 13 23:03:40 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/init.c (wait_connectable0): remove unreachable code.
