@@ -49,7 +49,7 @@ unsigned long ruby_scan_hex(const char *, int, int *);
 void ruby_add_suffix(VALUE str, const char *suffix);
 #endif
 
-void ruby_qsort(void *, const int, const int,
+void ruby_qsort(void *, const size_t, const size_t,
 		int (*)(const void *, const void *, void *), void *);
 
 void ruby_setenv(const char *, const char *);
