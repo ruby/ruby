@@ -1,4 +1,6 @@
-Sat Mar 14 17:59:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Mar 14 18:05:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_proc_call): checks overflow.
 
 	* proc.c (rb_proc_parameters): unnamed_parameters() expects in
 	  not VALUE.

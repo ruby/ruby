@@ -529,10 +529,17 @@ proc_call(int argc, VALUE *argv, VALUE procval)
 VALUE
 rb_proc_call(VALUE self, VALUE args)
 {
+    long argc = RARRAY_LEN(args);
     rb_proc_t *proc;
     GetProcPtr(self, proc);
+#if SIZEOF_LONG > SIZEOF_INT
+    if (argc > INT_MAX || argc < 0) {
+	rb_raise(rb_eArgError, "too many arguments (%lu)",
+		 (unsigned long)argc);
+    }
+#endif
     return rb_vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
-			     RARRAY_LEN(args), RARRAY_PTR(args), 0);
+			     (int)argc, RARRAY_PTR(args), 0);
 }
 
 VALUE
