@@ -648,7 +648,11 @@ INSNS2VMOPT = --srcdir="$(srcdir)"
 
 {$(VPATH)}vm.inc: $(srcdir)/template/vm.inc.tmpl
 
-srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}newline.c $(srcdir)/ext/ripper/ripper.c srcs-enc
+srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}newline.c srcs-ext srcs-enc
+
+EXT_SRCS = $(srcdir)/ext/ripper/ripper.c $(srcdir)/ext/dl/callback/callback.c
+
+srcs-ext: $(EXT_SRCS)
 
 srcs-enc: $(ENC_MK)
 	$(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
@@ -687,8 +691,8 @@ $(srcdir)/revision.h: $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/fil
 	@-$(BASERUBY) $(srcdir)/tool/file2lastrev.rb --revision.h "$(@D)" > "$@.tmp"
 	@$(IFCHANGE) "$@" "$@.tmp"
 
-$(srcdir)/ext/ripper/ripper.c:
-	$(CHDIR) $(srcdir)/ext/ripper && $(exec) $(MAKE) -f depend $(MFLAGS) top_srcdir=../.. srcdir=.
+$(EXT_SRCS):
+	$(CHDIR) $(@D) && $(exec) $(MAKE) -f depend $(MFLAGS) top_srcdir=../.. srcdir=.
 
 ##
 
