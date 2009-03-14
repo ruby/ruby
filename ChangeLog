@@ -1,3 +1,7 @@
+Sat Mar 14 15:59:04 2009  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_spawn_internal): use int variable for status.
+
 Sat Mar 14 14:45:51 2009  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_f_system): use rb_pid_t for pid.

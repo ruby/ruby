@@ -2838,6 +2838,7 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
                   char *errmsg, size_t errmsg_buflen)
 {
     rb_pid_t pid;
+    int status;
     VALUE prog;
     struct rb_exec_arg earg;
 #if !defined HAVE_FORK
@@ -2852,7 +2853,7 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
     rb_exec_arg_fixup(&earg);
 
 #if defined HAVE_FORK
-    pid = rb_fork_err(&pid, rb_exec_atfork, &earg, earg.redirect_fds, errmsg, errmsg_buflen);
+    pid = rb_fork_err(&status, rb_exec_atfork, &earg, earg.redirect_fds, errmsg, errmsg_buflen);
     if (prog && earg.argc) earg.argv[0] = prog;
 #else
     if (rb_run_exec_options_err(&earg, &sarg, errmsg, errmsg_buflen) < 0) {
@@ -2875,8 +2876,8 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
 #  endif
 # else
     if (argc) prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
-    pid = system(StringValuePtr(prog));
-    rb_last_status_set((pid & 0xff) << 8, 0);
+    status = system(StringValuePtr(prog));
+    rb_last_status_set((status & 0xff) << 8, 0);
 # endif
 
     rb_run_exec_options_err(&sarg, NULL, errmsg, errmsg_buflen);
