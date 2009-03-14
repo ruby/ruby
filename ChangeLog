@@ -1,3 +1,8 @@
+Sat Mar 14 13:53:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_qsort): the result of cmp must be signed, so ge
+	  rid of reuse of a variable.
+
 Sat Mar 14 10:56:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (init_funcname_len, dln_find_exe_r, dln_find_file_r): use
