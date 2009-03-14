@@ -33,7 +33,7 @@ ruby_scan_oct(const char *start, int len, int *retlen)
 	retval <<= 3;
 	retval |= *s++ - '0';
     }
-    *retlen = s - start;
+    *retlen = (int)(s - start);	/* less than len */
     return retval;
 }
 
@@ -43,14 +43,14 @@ ruby_scan_hex(const char *start, int len, int *retlen)
     static const char hexdigit[] = "0123456789abcdef0123456789ABCDEF";
     register const char *s = start;
     register unsigned long retval = 0;
-    char *tmp;
+    const char *tmp;
 
     while (len-- && *s && (tmp = strchr(hexdigit, *s))) {
 	retval <<= 4;
 	retval |= (tmp - hexdigit) & 15;
 	s++;
     }
-    *retlen = s - start;
+    *retlen = (int)(s - start);	/* less than len */
     return retval;
 }
 
@@ -590,7 +590,7 @@ char *
 ruby_strdup(const char *str)
 {
     char *tmp;
-    int len = strlen(str) + 1;
+    size_t len = strlen(str) + 1;
 
     tmp = xmalloc(len);
     memcpy(tmp, str, len);
@@ -898,6 +898,9 @@ static double private_mem[PRIVATE_mem], *pmem_next = private_mem;
 
 #ifdef __cplusplus
 extern "C" {
+#if 0
+}
+#endif
 #endif
 
 #if defined(IEEE_LITTLE_ENDIAN) + defined(IEEE_BIG_ENDIAN) + defined(VAX) + defined(IBM) != 1
@@ -1124,7 +1127,7 @@ Balloc(int k)
     int x;
     Bigint *rv;
 #ifndef Omit_Private_Memory
-    unsigned int len;
+    size_t len;
 #endif
 
     ACQUIRE_DTOA_LOCK(0);
@@ -1190,7 +1193,7 @@ multadd(Bigint *b, int m, int a)   /* multiply by m and add a */
 #ifdef ULLong
         y = *x * (ULLong)m + carry;
         carry = y >> 32;
-        *x++ = (ULong)y & FFFFFFFF;
+        *x++ = (ULong)(y & FFFFFFFF);
 #else
 #ifdef Pack_32
         xi = *x;
@@ -1379,7 +1382,7 @@ mult(Bigint *a, Bigint *b)
             do {
                 z = *x++ * (ULLong)y + *xc + carry;
                 carry = z >> 32;
-                *xc++ = (ULong)z & FFFFFFFF;
+                *xc++ = (ULong)(z & FFFFFFFF);
             } while (x < xae);
             *xc = (ULong)carry;
         }
@@ -1617,12 +1620,12 @@ diff(Bigint *a, Bigint *b)
     do {
         y = (ULLong)*xa++ - *xb++ - borrow;
         borrow = y >> 32 & (ULong)1;
-        *xc++ = (ULong)y & FFFFFFFF;
+        *xc++ = (ULong)(y & FFFFFFFF);
     } while (xb < xbe);
     while (xa < xae) {
         y = *xa++ - borrow;
         borrow = y >> 32 & (ULong)1;
-        *xc++ = (ULong)y & FFFFFFFF;
+        *xc++ = (ULong)(y & FFFFFFFF);
     }
 #else
 #ifdef Pack_32
@@ -2980,7 +2983,7 @@ quorem(Bigint *b, Bigint *S)
             carry = ys >> 32;
             y = *bx - (ys & FFFFFFFF) - borrow;
             borrow = y >> 32 & (ULong)1;
-            *bx++ = (ULong)y & FFFFFFFF;
+            *bx++ = (ULong)(y & FFFFFFFF);
 #else
 #ifdef Pack_32
             si = *sx++;
@@ -3020,7 +3023,7 @@ quorem(Bigint *b, Bigint *S)
             carry = ys >> 32;
             y = *bx - (ys & FFFFFFFF) - borrow;
             borrow = y >> 32 & (ULong)1;
-            *bx++ = (ULong)y & FFFFFFFF;
+            *bx++ = (ULong)(y & FFFFFFFF);
 #else
 #ifdef Pack_32
             si = *sx++;
@@ -3067,7 +3070,7 @@ rv_alloc(int i)
 #endif
 
 static char *
-nrv_alloc(const char *s, char **rve, int n)
+nrv_alloc(const char *s, char **rve, size_t n)
 {
     char *rv, *t;
 
@@ -3819,5 +3822,8 @@ ruby_each_words(const char *str, void (*func)(const char*, int, void*), void *ar
 }
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
