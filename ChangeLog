@@ -1,3 +1,7 @@
+Sat Mar 14 17:54:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_each_words): assume no string exceeds INT_MAX.
+
 Sat Mar 14 15:59:04 2009  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_spawn_internal): use int variable for status.

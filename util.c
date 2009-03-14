@@ -3816,7 +3816,7 @@ ruby_each_words(const char *str, void (*func)(const char*, int, void*), void *ar
 	if (!*str) break;
 	end = str;
 	while (*end && !ISSPACE(*end) && *end != ',') end++;
-	len = end - str;
+	len = (int)(end - str);	/* assume no string exceeds INT_MAX */
 	(*func)(str, len, arg);
     }
 }
