@@ -24,7 +24,7 @@
 #include "ruby/util.h"
 
 unsigned long
-ruby_scan_oct(const char *start, int len, int *retlen)
+ruby_scan_oct(const char *start, size_t len, size_t *retlen)
 {
     register const char *s = start;
     register unsigned long retval = 0;
@@ -38,7 +38,7 @@ ruby_scan_oct(const char *start, int len, int *retlen)
 }
 
 unsigned long
-ruby_scan_hex(const char *start, int len, int *retlen)
+ruby_scan_hex(const char *start, size_t len, size_t *retlen)
 {
     static const char hexdigit[] = "0123456789abcdef0123456789ABCDEF";
     register const char *s = start;

@@ -5288,7 +5288,7 @@ parser_tokadd(struct parser_params *parser, int c)
 }
 
 static int
-parser_tok_hex(struct parser_params *parser, int *numlen)
+parser_tok_hex(struct parser_params *parser, size_t *numlen)
 {
     int c;
 
@@ -5315,7 +5315,7 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
      */
 
     int codepoint;
-    int numlen;
+    size_t numlen;
 
     if (regexp_literal) { tokadd('\\'); tokadd('u'); }
 
@@ -5393,7 +5393,7 @@ parser_read_escape(struct parser_params *parser, int flags,
 		   rb_encoding **encp)
 {
     int c;
-    int numlen;
+    size_t numlen;
 
     switch (c = nextc()) {
       case '\\':	/* Backslash */
@@ -5423,13 +5423,9 @@ parser_read_escape(struct parser_params *parser, int flags,
       case '0': case '1': case '2': case '3': /* octal constant */
       case '4': case '5': case '6': case '7':
 	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
-	{
-	    int numlen;
-
-	    pushback(c);
-	    c = scan_oct(lex_p, 3, &numlen);
-	    lex_p += numlen;
-	}
+	pushback(c);
+	c = scan_oct(lex_p, 3, &numlen);
+	lex_p += numlen;
 	return c;
 
       case 'x':	/* hex constant */
@@ -5505,7 +5501,7 @@ parser_tokadd_escape(struct parser_params *parser, rb_encoding **encp)
       case '4': case '5': case '6': case '7':
 	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
 	{
-	    int numlen;
+	    size_t numlen;
 	    int oct;
 
 	    oct = scan_oct(--lex_p, 3, &numlen);
@@ -5518,7 +5514,7 @@ parser_tokadd_escape(struct parser_params *parser, rb_encoding **encp)
       case 'x':	/* hex constant */
 	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
 	{
-	    int numlen;
+	    size_t numlen;
 	    int hex;
 
 	    hex = tok_hex(&numlen);

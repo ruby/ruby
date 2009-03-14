@@ -41,9 +41,9 @@ extern "C" {
 #endif
 
 #define scan_oct ruby_scan_oct
-unsigned long ruby_scan_oct(const char *, int, int *);
+unsigned long ruby_scan_oct(const char *, size_t, size_t *);
 #define scan_hex ruby_scan_hex
-unsigned long ruby_scan_hex(const char *, int, int *);
+unsigned long ruby_scan_hex(const char *, size_t, size_t *);
 
 #if defined(__CYGWIN32__) || defined(_WIN32)
 void ruby_add_suffix(VALUE str, const char *suffix);

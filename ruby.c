@@ -699,7 +699,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 
 	  case 'W':
 	    {
-		int numlen;
+		size_t numlen;
 		int v = 2;	/* -W as -W2 */
 
 		if (*++s) {
@@ -861,7 +861,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 
 	  case 'T':
 	    {
-		int numlen;
+		size_t numlen;
 		int v = 1;
 
 		if (*++s) {
@@ -887,7 +887,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 	  case '0':
 	    if (envopt) goto noenvopt;
 	    {
-		int numlen;
+		size_t numlen;
 		int v;
 		char c;
 

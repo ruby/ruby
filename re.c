@@ -1842,7 +1842,7 @@ read_escaped_byte(const char **pp, const char *end, onig_errmsg_buffer err)
     const char *p = *pp;
     int code;
     int meta_prefix = 0, ctrl_prefix = 0;
-    int len;
+    size_t len;
     int retbyte;
 
     retbyte = -1;
@@ -2041,7 +2041,7 @@ unescape_unicode_list(const char **pp, const char *end,
     const char *p = *pp;
     int has_unicode = 0;
     unsigned long code;
-    int len;
+    size_t len;
 
     while (p < end && ISSPACE(*p)) p++;
 
@@ -2076,7 +2076,7 @@ unescape_unicode_bmp(const char **pp, const char *end,
         VALUE buf, rb_encoding **encp, onig_errmsg_buffer err)
 {
     const char *p = *pp;
-    int len;
+    size_t len;
     unsigned long code;
 
     if (end < p+4) {
@@ -2131,7 +2131,7 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
               case '1': case '2': case '3':
               case '4': case '5': case '6': case '7': /* \O, \OO, \OOO or backref */
                 {
-                    int octlen;
+                    size_t octlen;
                     if (ruby_scan_oct(p-1, end-(p-1), &octlen) <= 0177) {
                         /* backref or 7bit octal.
                            no need to unescape anyway.
