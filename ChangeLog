@@ -1,3 +1,7 @@
+Sun Mar 15 03:29:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (SAVED_GROUP_ID, p_gid_switch): should be rb_gid_t.
+
 Sun Mar 15 02:53:13 2009  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_subpat): accept capture name.

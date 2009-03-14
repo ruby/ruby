@@ -4570,7 +4570,7 @@ proc_daemon(int argc, VALUE *argv)
  *
  */
 
-static int SAVED_GROUP_ID = -1;
+static rb_gid_t SAVED_GROUP_ID = -1;
 
 #ifdef BROKEN_SETREGID
 int
@@ -5233,7 +5233,7 @@ p_gid_sw_ensure(rb_gid_t id)
 static VALUE
 p_gid_switch(VALUE obj)
 {
-    int gid, egid;
+    rb_gid_t gid, egid;
 
     check_gid_switch();
 
@@ -5248,7 +5248,8 @@ p_gid_switch(VALUE obj)
 	} else {
 	    return GIDT2NUM(egid);
 	}
-    } else if (egid != SAVED_GROUP_ID) {
+    }
+    else if (egid != SAVED_GROUP_ID) {
 	proc_setegid(obj, GIDT2NUM(SAVED_GROUP_ID));
 	if (rb_block_given_p()) {
 	    under_gid_switch = 1;
@@ -5256,7 +5257,8 @@ p_gid_switch(VALUE obj)
 	} else {
 	    return GIDT2NUM(gid);
 	}
-    } else {
+    }
+    else {
 	errno = EPERM;
 	rb_sys_fail(0);
     }
