@@ -123,7 +123,7 @@ class TestFloat < Test::Unit::TestCase
     assert_equal("-Infinity", (-inf).to_s)
     assert_equal("NaN", (inf / inf).to_s)
 
-    assert_equal("1.0e+14", 10000_00000_00000.0.to_s)
+    assert_equal("1.0e+18", 1000_00000_00000_00000.0.to_s)
   end
 
   def test_coerce
