@@ -576,6 +576,13 @@ rb_proc_call_with_block(VALUE self, int argc, VALUE *argv, VALUE pass_procval)
 static VALUE
 proc_arity(VALUE self)
 {
+    int arity = rb_proc_arity(self);
+    return INT2FIX(arity);
+}
+
+int
+rb_proc_arity(VALUE proc)
+{
     rb_proc_t *proc;
     rb_iseq_t *iseq;
     GetProcPtr(self, proc);
@@ -583,27 +590,21 @@ proc_arity(VALUE self)
     if (iseq) {
 	if (BUILTIN_TYPE(iseq) != T_NODE) {
 	    if (iseq->arg_rest < 0) {
-		return INT2FIX(iseq->argc);
+		return iseq->argc;
 	    }
 	    else {
-		return INT2FIX(-(iseq->argc + 1 + iseq->arg_post_len));
+		return -(iseq->argc + 1 + iseq->arg_post_len);
 	    }
 	}
 	else {
 	    NODE *node = (NODE *)iseq;
 	    if (nd_type(node) == NODE_IFUNC && node->nd_cfnc == bmcall) {
 		/* method(:foo).to_proc.arity */
-		return INT2FIX(method_arity(node->nd_tval));
+		return method_arity(node->nd_tval);
 	    }
 	}
     }
-    return INT2FIX(-1);
-}
-
-int
-rb_proc_arity(VALUE proc)
-{
-    return FIX2INT(proc_arity(proc));
+    return -1;
 }
 
 static rb_iseq_t *
@@ -689,7 +690,7 @@ rb_proc_parameters(VALUE self)
     int is_proc;
     rb_iseq_t *iseq = get_proc_iseq(self, &is_proc);
     if (!iseq) {
-	return unnamed_parameters(proc_arity(self));
+	return unnamed_parameters(rb_proc_arity(self));
     }
     return rb_iseq_parameters(iseq, is_proc);
 }
@@ -1814,7 +1815,7 @@ curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
 static VALUE
 proc_curry(int argc, VALUE *argv, VALUE self)
 {
-    int sarity, marity = FIX2INT(proc_arity(self));
+    int sarity, marity = rb_proc_arity(self);
     VALUE arity, opt = Qfalse;
 
     if (marity < 0) {
