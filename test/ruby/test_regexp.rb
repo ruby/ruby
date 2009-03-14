@@ -104,6 +104,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal({}, /(.)(.)/.named_captures)
 
     assert_equal("a[b]c", "abc".sub(/(?<x>[bc])/, "[\\k<x>]"))
+
+    assert_equal("o", "foo"[/(?<bar>o)/, "bar"])
+
+    s = "foo"
+    s[/(?<bar>o)/, "bar"] = "baz"
+    assert_equal("fbazo", s)
   end
 
   def test_assign_named_capture

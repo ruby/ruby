@@ -1,3 +1,19 @@
+Sun Mar 15 02:53:13 2009  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_subpat): accept capture name.
+	  (rb_str_aref): follow above change.
+	  (rb_str_aref_m): pass the 2nd argument to rb_str_subpat.
+	  (rb_str_subpat_set): accept capture name.
+	  (rb_str_aset): follow above change.
+	  (rb_str_partition): ditto.
+	  (rb_str_aset_m): pass the 2nd argument to rb_str_subpat_set.
+
+	* include/ruby/intern.h (rb_reg_backref_number): declared.
+
+	* re.c (rb_reg_backref_number): defined.
+
+	  [ruby-core:21057]
+
 Sun Mar 15 02:09:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (bmcall): should not uninitialized variable.  a patch from

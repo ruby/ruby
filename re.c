@@ -1008,6 +1008,11 @@ match_backref_number(VALUE match, VALUE backref)
     return num;
 }
 
+int
+rb_reg_backref_number(VALUE match, VALUE backref)
+{
+    return match_backref_number(match, backref);
+}
 
 /*
  *  call-seq:

@@ -3024,10 +3024,12 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
 }
 
 static VALUE
-rb_str_subpat(VALUE str, VALUE re, int nth)
+rb_str_subpat(VALUE str, VALUE re, VALUE backref)
 {
     if (rb_reg_search(re, str, 0, 0) >= 0) {
-	return rb_reg_nth_match(nth, rb_backref_get());
+        VALUE match = rb_backref_get();
+        int nth = rb_reg_backref_number(match, backref);
+	return rb_reg_nth_match(nth, match);
     }
     return Qnil;
 }
@@ -3047,7 +3049,7 @@ rb_str_aref(VALUE str, VALUE indx)
 	return str;
 
       case T_REGEXP:
-	return rb_str_subpat(str, indx, 0);
+	return rb_str_subpat(str, indx, INT2FIX(0));
 
       case T_STRING:
 	if (rb_str_index(str, indx, 0) != -1)
@@ -3091,6 +3093,7 @@ rb_str_aref(VALUE str, VALUE indx)
  *     str.slice(range)            => new_str or nil
  *     str.slice(regexp)           => new_str or nil
  *     str.slice(regexp, fixnum)   => new_str or nil
+ *     str.slice(regexp, capname)  => new_str or nil
  *     str.slice(other_str)        => new_str or nil
  *
  *  Element Reference---If passed a single <code>Fixnum</code>, returns a
@@ -3103,7 +3106,7 @@ rb_str_aref(VALUE str, VALUE indx)
  *  is negative, or the beginning of the range is greater than the end.
  *
  *  If a <code>Regexp</code> is supplied, the matching portion of <i>str</i> is
- *  returned. If a numeric parameter follows the regular expression, that
+ *  returned. If a numeric or name parameter follows the regular expression, that
  *  component of the <code>MatchData</code> is returned instead. If a
  *  <code>String</code> is given, that string is returned if it occurs in
  *  <i>str</i>. In both cases, <code>nil</code> is returned if there is no
@@ -3130,7 +3133,7 @@ rb_str_aref_m(int argc, VALUE *argv, VALUE str)
 {
     if (argc == 2) {
 	if (TYPE(argv[0]) == T_REGEXP) {
-	    return rb_str_subpat(str, argv[0], NUM2INT(argv[1]));
+	    return rb_str_subpat(str, argv[0], argv[1]);
 	}
 	return rb_str_substr(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]));
     }
@@ -3251,8 +3254,9 @@ rb_str_update(VALUE str, long beg, long len, VALUE val)
 }
 
 static void
-rb_str_subpat_set(VALUE str, VALUE re, int nth, VALUE val)
+rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
 {
+    int nth;
     VALUE match;
     long start, end, len;
     rb_encoding *enc;
@@ -3262,6 +3266,7 @@ rb_str_subpat_set(VALUE str, VALUE re, int nth, VALUE val)
 	rb_raise(rb_eIndexError, "regexp not matched");
     }
     match = rb_backref_get();
+    nth = rb_reg_backref_number(match, backref);
     regs = RMATCH_REGS(match);
     if (nth >= regs->num_regs) {
       out_of_range:
@@ -3299,7 +3304,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 	return val;
 
       case T_REGEXP:
-	rb_str_subpat_set(str, indx, 0, val);
+	rb_str_subpat_set(str, indx, INT2FIX(0), val);
 	return val;
 
       case T_STRING:
@@ -3332,6 +3337,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
  *     str[range] = aString
  *     str[regexp] = new_str
  *     str[regexp, fixnum] = new_str
+ *     str[regexp, name] = new_str
  *     str[other_str] = new_str
  *
  *  Element Assignment---Replaces some or all of the content of <i>str</i>. The
@@ -3354,7 +3360,7 @@ rb_str_aset_m(int argc, VALUE *argv, VALUE str)
 {
     if (argc == 3) {
 	if (TYPE(argv[0]) == T_REGEXP) {
-	    rb_str_subpat_set(str, argv[0], NUM2INT(argv[1]), argv[2]);
+	    rb_str_subpat_set(str, argv[0], argv[1], argv[2]);
 	}
 	else {
 	    rb_str_splice(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
@@ -6760,7 +6766,7 @@ rb_str_partition(VALUE str, VALUE sep)
 	return rb_ary_new3(3, str, rb_str_new(0,0),rb_str_new(0,0));
     }
     if (regex) {
-	sep = rb_str_subpat(str, sep, 0);
+	sep = rb_str_subpat(str, sep, INT2FIX(0));
 	if (pos == 0 && RSTRING_LEN(sep) == 0) goto failed;
     }
     return rb_ary_new3(3, rb_str_subseq(str, 0, pos),

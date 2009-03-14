@@ -38,6 +38,10 @@ with all sufficient information, see the ChangeLog file.
     * extended methods:
       * Process.spawn accepts [:child, FD] for a redirect target.
 
+  * String
+    * extended methods:
+      * string[regexp, name] supported.
+
 * rss
 
   * 0.2.4 -> 0.2.5

@@ -518,6 +518,7 @@ int rb_memcicmp(const void*,const void*,long);
 void rb_match_busy(VALUE);
 VALUE rb_reg_nth_defined(int, VALUE);
 VALUE rb_reg_nth_match(int, VALUE);
+int rb_reg_backref_number(VALUE match, VALUE backref);
 VALUE rb_reg_last_match(VALUE);
 VALUE rb_reg_match_pre(VALUE);
 VALUE rb_reg_match_post(VALUE);
