@@ -581,7 +581,7 @@ proc_arity(VALUE self)
 }
 
 int
-rb_proc_arity(VALUE proc)
+rb_proc_arity(VALUE self)
 {
     rb_proc_t *proc;
     rb_iseq_t *iseq;
