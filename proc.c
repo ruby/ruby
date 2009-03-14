@@ -1647,8 +1647,8 @@ bmcall(VALUE args, VALUE method)
     else {
 	argc = check_argc(RARRAY_LEN(args));
     }
-    ret = rb_method_call(argc, RARRAY_PTR(a), method);
-    a = args;
+    ret = rb_method_call(argc, RARRAY_PTR(args), method);
+    RB_GC_GUARD(a) = args;
     return ret;
 }
 
