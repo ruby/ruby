@@ -3116,12 +3116,14 @@ nrv_alloc(const char *s, char **rve, int n)
 {
     char *rv, *t;
 
-    t = rv = rv_alloc(n);
+    t = rv = rv_alloc(n+1);
     while ((*t = *s++) != 0) t++;
     if (rve)
         *rve = t;
     return rv;
 }
+
+#define rv_strdup(s, rve) nrv_alloc(s, rve, strlen(s)+1)
 
 /* freedtoa(s) must be used to free values s returned by dtoa
  * when MULTIPLE_THREADS is #defined.  It should be used in all cases,
@@ -3256,9 +3258,9 @@ dtoa(double d, int mode, int ndigits, int *decpt, int *sign, char **rve)
         *decpt = 9999;
 #ifdef IEEE_Arith
         if (!word1(d) && !(word0(d) & 0xfffff))
-            return nrv_alloc("Infinity", rve, 8);
+            return rv_strdup("Infinity", rve);
 #endif
-        return nrv_alloc("NaN", rve, 3);
+        return rv_strdup("NaN", rve);
     }
 #endif
 #ifdef IBM
@@ -3266,7 +3268,7 @@ dtoa(double d, int mode, int ndigits, int *decpt, int *sign, char **rve)
 #endif
     if (!dval(d)) {
         *decpt = 1;
-        return nrv_alloc("0", rve, 1);
+        return rv_strdup("0", rve);
     }
 
 #ifdef SET_INEXACT
