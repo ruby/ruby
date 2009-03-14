@@ -98,12 +98,12 @@ char *getenv();
 # endif
 #endif
 
-static int
+static size_t
 init_funcname_len(char **buf, const char *file)
 {
     char *p;
     const char *slash;
-    int len;
+    size_t len;
 
     /* Load the file as an object one */
     for (slash = file-1; *file; file++) /* Find position of last '/' */
@@ -121,7 +121,7 @@ init_funcname_len(char **buf, const char *file)
 }
 
 #define init_funcname(buf, file) do {\
-    int len = init_funcname_len(buf, file);\
+    size_t len = init_funcname_len(buf, file);\
     char *tmp = ALLOCA_N(char, len+1);\
     if (!tmp) {\
 	free(*buf);\
@@ -1478,7 +1478,7 @@ dln_load(const char *file)
 static char *dln_find_1(const char *fname, const char *path, char *buf, size_t size, int exe_flag);
 
 char *
-dln_find_exe_r(const char *fname, const char *path, char *buf, int size)
+dln_find_exe_r(const char *fname, const char *path, char *buf, size_t size)
 {
     if (!path) {
 	path = getenv(PATH_ENV);
@@ -1495,7 +1495,7 @@ dln_find_exe_r(const char *fname, const char *path, char *buf, int size)
 }
 
 char *
-dln_find_file_r(const char *fname, const char *path, char *buf, int size)
+dln_find_file_r(const char *fname, const char *path, char *buf, size_t size)
 {
     if (!path) path = ".";
     return dln_find_1(fname, path, buf, size, 0);
@@ -1586,7 +1586,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 #undef RETURN_IF
 
     for (dp = path;; dp = ++ep) {
-	register int l;
+	register size_t l;
 
 	/* extract a component */
 	ep = strchr(dp, PATH_SEP[0]);
@@ -1659,7 +1659,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 /* end of __EMX__ or _WIN32 */
 #endif
 	    };
-	    int j;
+	    size_t j;
 
 	  needs_extension:
 	    for (j = 0; j < sizeof(extension) / sizeof(extension[0]); j++) {

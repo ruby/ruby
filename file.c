@@ -654,7 +654,7 @@ static VALUE
 rb_stat_inspect(VALUE self)
 {
     VALUE str;
-    int i;
+    size_t i;
     static const struct {
 	const char *name;
 	VALUE (*func)(VALUE);
@@ -2664,7 +2664,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 {
     const char *s, *b;
     char *buf, *p, *pend, *root;
-    long buflen, dirlen;
+    size_t buflen, dirlen;
     int tainted;
     rb_encoding *extenc = 0;
 

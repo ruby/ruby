@@ -437,11 +437,11 @@ typedef struct { char *LL, *RR; } stack_node; /* Stack structure for L,l,R,r */
                        ((*cmp)(b,c,d)>0 ? b : ((*cmp)(a,c,d)<0 ? a : c)))
 
 void
-ruby_qsort(void* base, const int nel, const int size,
+ruby_qsort(void* base, const size_t nel, const size_t size,
 	   int (*cmp)(const void*, const void*, void*), void *d)
 {
   register char *l, *r, *m;          	/* l,r:left,right group   m:median point */
-  register int  t, eq_l, eq_r;       	/* eq_l: all items in left group are equal to S */
+  register size_t t, eq_l, eq_r;       	/* eq_l: all items in left group are equal to S */
   char *L = base;                    	/* left end of curren region */
   char *R = (char*)base + size*(nel-1); /* right end of current region */
   int  chklim = 63;                     /* threshold of ordering element check */

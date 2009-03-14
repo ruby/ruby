@@ -1,3 +1,12 @@
+Sat Mar 14 10:56:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (init_funcname_len, dln_find_exe_r, dln_find_file_r): use
+	  size_t.
+
+	* file.c (rb_stat_inspect, file_expand_path): ditto.
+
+	* util.c (ruby_qsort): ditto.
+
 Sat Mar 14 10:39:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (CXX_EXT): checks for case-sensitive filesystem with
