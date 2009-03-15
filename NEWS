@@ -40,7 +40,7 @@ with all sufficient information, see the ChangeLog file.
 
   * String
     * extended methods:
-      * string[regexp, name] supported.
+      * string[regexp, name] is supported for named capture.
 
 * rss
 
