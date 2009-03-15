@@ -1,3 +1,8 @@
+Sun Mar 15 12:01:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/installer.rb (Gem::Installer#shebang): fix for env
+	  shebang.
+
 Sun Mar 15 11:15:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h ({RSTRING,RBIGNUM}_EMBED_LEN_MAX): made int.

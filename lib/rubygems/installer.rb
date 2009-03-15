@@ -71,6 +71,8 @@ class Gem::Installer
 
   end
 
+  ENV_PATHS = %w[/usr/bin/env /bin/env]
+
   ##
   # Constructs an Installer instance that will install the gem located at
   # +gem+.  +options+ is a Hash with the following keys:
@@ -98,12 +100,7 @@ class Gem::Installer
       :source_index => Gem.source_index,
     }.merge options
 
-    if @env_shebang = options[:env_shebang]
-      unless File.executable?(shebang = "/usr/bin/env")
-        shebang = "/bin/env"
-      end
-      @env_shebang = shebang
-    end
+    @env_shebang = options[:env_shebang]
     @force = options[:force]
     gem_home = options[:install_dir]
     @gem_home = Pathname.new(gem_home).expand_path
@@ -392,25 +389,23 @@ class Gem::Installer
   # necessary.
 
   def shebang(bin_file_name)
-    ruby_name = Gem::ConfigMap[:ruby_install_name] unless @env_shebang
+    ruby_name = Gem::ConfigMap[:ruby_install_name] if @env_shebang
     path = File.join @gem_dir, @spec.bindir, bin_file_name
     first_line = File.open(path, "rb") {|file| file.gets}
     if /\A#!/ =~ first_line then
       # Preserve extra words on shebang line, like "-w".  Thanks RPA.
-      shebang = first_line.sub(/\A\#!.*?ruby\S*(?=\s*(\S+))/, "#!#{Gem.ruby}")
+      shebang = first_line.sub(/\A\#!.*?ruby\S*(?=(\s+\S+))/, "#!#{Gem.ruby}")
+      opts = $1
       shebang.strip! # Avoid nasty ^M issues.
-      if ruby_name and $1
-        %{#!/bin/sh\n'exec' '#{ruby_name}' '-x' "$0" "$@"\n#{shebang}}
-      else
-        shebang
-      end
+    end
+    if !ruby_name
+      "#!#{Gem.ruby}#{opts}"
+    elsif opts
+      %{#!/bin/sh\n'exec' #{ruby_name.dump} '-x' "$0" "$@"\n#{shebang}}
     else
       # Create a plain shebang line.
-      if ruby_name
-        "#!#@env_shebang #{ruby_name}"
-      else
-        "#!#{Gem.ruby}"
-      end
+      @env_path ||= ENV_PATHS.find {|path| File.executable?(path)}
+      "#!#{@env_path} #{ruby_name}"
     end
   end
 
