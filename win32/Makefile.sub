@@ -271,6 +271,8 @@ INSTALLED_LIST= .installed.list
 
 MKMAIN_CMD    = mkmain.bat
 
+SRC_FILE = $(<:\=/)
+
 !if !defined(WINMAINOBJ)
 WINMAINOBJ    = winmain.$(OBJEXT)
 !endif

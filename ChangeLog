@@ -1,3 +1,8 @@
+Sun Mar 15 09:17:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (.y.c): use SRC_FILE which contains slashes instead of
+	  backslashes.  [ruby-core:22891]
+
 Sun Mar 15 08:26:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (srcs-ext): creates ext/dl/callback/callback.c also.

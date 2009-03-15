@@ -435,7 +435,7 @@ PHONY:
 parse.h {$(VPATH)}parse.h: {$(VPATH)}parse.c
 
 {$(srcdir)}.y.c:
-	$(YACC) -d $(YFLAGS) -o y.tab.c $<
+	$(YACC) -d $(YFLAGS) -o y.tab.c $(SRC_FILE)
 	sed -f $(srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@.new
 	@$(MV) $@.new $@
 	sed -e "/^#line.*y\.tab\.h/d;/^#line.*parse\.y/d" y.tab.h > $(@:.c=.h).new
