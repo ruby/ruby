@@ -1,3 +1,7 @@
+Sun Mar 15 11:00:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file_internal): stop the timer thread before exec.
+
 Sun Mar 15 09:17:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (.y.c): use SRC_FILE which contains slashes instead of

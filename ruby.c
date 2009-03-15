@@ -1499,6 +1499,7 @@ load_file_internal(VALUE arg)
 		    return 0;
 
 		if ((p = strstr(RSTRING_PTR(line), "ruby")) == 0) {
+		    void rb_thread_stop_timer_thread(void);
 		    /* not ruby script, kick the program */
 		    char **argv;
 		    char *path;
@@ -1525,6 +1526,7 @@ load_file_internal(VALUE arg)
 			argv = origarg.argv;
 		    }
 		    argv[0] = path;
+		    rb_thread_stop_timer_thread();
 		    execv(path, argv);
 
 		    rb_fatal("Can't exec %s", path);
