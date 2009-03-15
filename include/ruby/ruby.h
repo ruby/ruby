@@ -605,7 +605,7 @@ struct RFloat {
 
 #define ELTS_SHARED FL_USER2
 
-#define RSTRING_EMBED_LEN_MAX ((sizeof(VALUE)*3)/sizeof(char)-1)
+#define RSTRING_EMBED_LEN_MAX ((int)((sizeof(VALUE)*3)/sizeof(char)-1))
 struct RString {
     struct RBasic basic;
     union {
@@ -756,7 +756,7 @@ struct RStruct {
      RSTRUCT(st)->as.ary : \
      RSTRUCT(st)->as.heap.ptr)
 
-#define RBIGNUM_EMBED_LEN_MAX ((sizeof(VALUE)*3)/sizeof(BDIGIT))
+#define RBIGNUM_EMBED_LEN_MAX ((int)((sizeof(VALUE)*3)/sizeof(BDIGIT)))
 struct RBignum {
     struct RBasic basic;
     union {
@@ -849,13 +849,13 @@ struct RBignum {
 #define FL_UNSET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags &= ~(f);} while (0)
 #define FL_REVERSE(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags ^= (f);} while (0)
 
-#define OBJ_TAINTED(x) FL_TEST((x), FL_TAINT)
+#define OBJ_TAINTED(x) (!!FL_TEST((x), FL_TAINT))
 #define OBJ_TAINT(x) FL_SET((x), FL_TAINT)
-#define OBJ_UNTRUSTED(x) FL_TEST((x), FL_UNTRUSTED)
+#define OBJ_UNTRUSTED(x) (!!FL_TEST((x), FL_UNTRUSTED))
 #define OBJ_UNTRUST(x) FL_SET((x), FL_UNTRUSTED)
 #define OBJ_INFECT(x,s) do {if (FL_ABLE(x) && FL_ABLE(s)) RBASIC(x)->flags |= RBASIC(s)->flags & (FL_TAINT | FL_UNTRUSTED);} while (0)
 
-#define OBJ_FROZEN(x) FL_TEST((x), FL_FREEZE)
+#define OBJ_FROZEN(x) (!!FL_TEST((x), FL_FREEZE))
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
 
 #define ALLOC_N(type,n) (type*)xmalloc2((n),sizeof(type))
