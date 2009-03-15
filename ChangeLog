@@ -1,3 +1,11 @@
+Sun Mar 15 11:15:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h ({RSTRING,RBIGNUM}_EMBED_LEN_MAX): made int.
+
+	* include/ruby/ruby.h (OBJ_{TAINTED,UNTRUSTED,FROZEN}): return int.
+
+	* include/ruby/encoding.h (ENC_CODERANGE): ditto.
+
 Sun Mar 15 11:11:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_hash_uint, rb_hash_start, rb_hash_end): use VALUE
