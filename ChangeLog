@@ -1,3 +1,8 @@
+Sun Mar 15 11:11:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_hash_uint, rb_hash_start, rb_hash_end): use VALUE
+	  rather than unsigned int.
+
 Sun Mar 15 11:00:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (load_file_internal): stop the timer thread before exec.
