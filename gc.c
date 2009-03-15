@@ -1960,7 +1960,7 @@ run_final(obj)
     objid = rb_obj_id(obj);	/* make obj into id */
     RBASIC(obj)->klass = 0;
     rb_thread_critical = Qtrue;
-    if (RDATA(obj)->dfree) {
+    if (BUILTIN_TYPE(obj) == T_ZOMBIE && RDATA(obj)->dfree) {
 	(*RDATA(obj)->dfree)(DATA_PTR(obj));
     }
     args[1] = 0;
