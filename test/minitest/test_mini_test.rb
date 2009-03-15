@@ -468,9 +468,10 @@ class TestMiniTestTestCase < MiniTest::Unit::TestCase
   end
 
   def test_assert_in_delta_triggered
-    util_assert_triggered 'Expected 0.0 - 0.001 (0.001) to be < 1.0e-06.' do
+    e = assert_raises(MiniTest::Assertion) do
       @tc.assert_in_delta 0.0, 1.0 / 1000, 0.000001
     end
+    assert_match /\AExpected 0\.0 - 0\.001 \(0\.001\) to be < (?:1\.0+\de-06|9\.9+\de-07).\z/, e.message
   end
 
   def test_assert_in_epsilon
@@ -488,9 +489,10 @@ class TestMiniTestTestCase < MiniTest::Unit::TestCase
   end
 
   def test_assert_in_epsilon_triggered
-    util_assert_triggered 'Expected 10000 - 9990 (10) to be < 9.99.' do
+    e = assert_raises(MiniTest::Assertion) do
       @tc.assert_in_epsilon 10000, 9990
-    end
+    end 
+    assert_match(/\AExpected 10000 - 9990 \(10\) to be < 9\.99*\d*\.\z/, e.message)
   end
 
   def test_assert_includes
@@ -829,9 +831,10 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
   end
 
   def test_refute_in_delta_triggered
-    util_assert_triggered 'Expected 0.0 - 0.001 (0.001) to not be < 0.1.' do
+    e = assert_raises(MiniTest::Assertion) do
       @tc.refute_in_delta 0.0, 1.0 / 1000, 0.1
     end
+    assert_match /\AExpected 0\.0 - 0\.001 \(0\.001\) to not be < 0\.10*\d*\.\z/, e.message
   end
 
   def test_refute_in_epsilon
@@ -980,6 +983,11 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
     msg = e.message.sub(/(---Backtrace---).*/m, '\1')
     msg.gsub!(/\(0x[0-9a-f]+\)/, '(0xXXX)')
 
-    assert_equal expected, msg
+    begin
+      assert_equal expected, msg
+    rescue MiniTest::Assertion => e
+      e.backtrace.shift(3)
+      raise
+    end
   end
 end
