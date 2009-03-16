@@ -9025,7 +9025,7 @@ static VALUE method_arity _((VALUE));
  *  arguments. A <code>proc</code> with no argument declarations
  *  is the same a block declaring <code>||</code> as its arguments.
  *     
- *     Proc.new {}.arity          #=>  0
+ *     Proc.new {}.arity          #=> -1
  *     Proc.new {||}.arity        #=>  0
  *     Proc.new {|a|}.arity       #=>  1
  *     Proc.new {|a,b|}.arity     #=>  2
