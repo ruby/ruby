@@ -11203,7 +11203,9 @@ rb_thread_schedule()
             if (e == EBADF) {
                 int badfd = -1;
                 int fd;
+#ifndef _WIN32
                 int dummy;
+#endif
                 for (fd = 0; fd <= max; fd++) {
                     if ((FD_ISSET(fd, &readfds) ||
                          FD_ISSET(fd, &writefds) ||
