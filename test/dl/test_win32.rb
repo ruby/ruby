@@ -2,6 +2,7 @@ require 'test_base'
 require 'dl/import'
 require 'dl/types'
 
+class DL::TestWin32 < DL::TestBase
 module Win32API
   extend DL::Importer
 
@@ -36,8 +37,7 @@ module Win32API
 rescue DL::DLError
 end
 
-module DL
-class TestWin32 < TestBase
+if defined?(Win32API::OSVERSIONINFO)
   def test_version()
     platform = Win32API.get_version_ex().dwPlatformId
     case ENV['OS']
@@ -51,4 +51,4 @@ class TestWin32 < TestBase
     assert_equal(expect, platform)
   end
 end
-end if defined?(Win32API::OSVERSIONINFO)
+end
