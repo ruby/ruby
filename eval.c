@@ -10879,7 +10879,10 @@ static void
 stack_extend(rb_thread_t th, int exit)
 {
 #define STACK_PAD_SIZE 1024
-    volatile VALUE space[STACK_PAD_SIZE], *sp = space;
+    volatile VALUE space[STACK_PAD_SIZE];
+#ifdef HAVE_ALLOCA
+    volatile VALUE *sp = space;
+#endif
 
 #if !STACK_GROW_DIRECTION
     if (space < rb_gc_stack_start) {
