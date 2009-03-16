@@ -16,6 +16,7 @@ STATIC_RUBY   = static-ruby
 EXTCONF       = extconf.rb
 RBCONFIG      = ./.rbconfig.time
 LIBRUBY_EXTS  = ./.libruby-with-ext.time
+REVISION_H    = ./.revision.time
 RDOCOUT       = $(EXTOUT)/rdoc
 ID_H_TARGET   = -id.h-
 
@@ -657,7 +658,8 @@ srcs-ext: $(EXT_SRCS)
 srcs-enc: $(ENC_MK)
 	$(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
 
-incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(VPATH)}known_errors.inc $(srcdir)/revision.h
+incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(VPATH)}known_errors.inc \
+      $(srcdir)/revision.h $(REVISION_H)
 
 insns: $(INSNS)
 
@@ -687,9 +689,12 @@ prereq: incs srcs preludes
 preludes: {$(VPATH)}miniprelude.c
 preludes: {$(srcdir)}golf_prelude.c
 
-$(srcdir)/revision.h: $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
-	@-$(BASERUBY) $(srcdir)/tool/file2lastrev.rb --revision.h "$(@D)" > "$@.tmp"
-	@$(IFCHANGE) "$@" "$@.tmp"
+$(srcdir)/revision.h:
+	@exit > $@
+
+$(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
+	@-$(BASERUBY) $(srcdir)/tool/file2lastrev.rb --revision.h "$(srcdir)" > "$(srcdir)/revision.tmp"
+	@$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" "$(srcdir)/revision.tmp"
 
 $(EXT_SRCS):
 	$(CHDIR) $(@D) && $(exec) $(MAKE) -f depend $(MFLAGS) top_srcdir=../.. srcdir=.

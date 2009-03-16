@@ -1,13 +1,20 @@
 @echo off
 :: usage: ifchange target temporary
 
-if "%1" == "" goto :end
-
 set timestamp=
-if "%1" == "--timestamp" (
-    set timestamp=yes
+:optloop
+for %%I in (%1) do set opt=%%~I
+if "%opt%" == "--timestamp" (
+    set timestamp=.
     shift
+    goto :optloop
+) else if "%opt:~0,12%" == "--timestamp=" (
+    set timestamp=%opt:~12%
+    shift
+    goto :optloop
 )
+if "%opt%" == "" goto :end
+
 set dest=%1
 set src=%2
 set dest=%dest:/=\%
@@ -63,7 +70,8 @@ del %src%
 
 :nt_end
 if "%timestamp%" == "" goto :end
-    for %%I in ("%dest%") do set timestamp=%%~dpI\.time.%%~nxI
-    if not exist "%timestamp%" copy nul "%timestamp%" > nul
-    goto :end >> "%timestamp%"
+    if "%timestamp%" == "." (
+        for %%I in ("%dest%") do set timestamp=%%~dpI.time.%%~nxI
+    )
+    goto :end > "%timestamp%"
 :end

@@ -1,11 +1,22 @@
 #!/bin/sh
 # usage: ifchange target temporary
 
-unset timestamp
-if [ "$1" = --timestamp ]; then
-    timestamp=yes
+timestamp=
+until [ "$0" = 0 ]; do
+    case "$1" in
+	--timestamp)
+	    timestamp=.
+	    ;;
+	--timestamp=*)
+	    timestamp="${1#*=}" || timestamp=`expr "$1" : '[^=]*=\(.*\)'`
+	    ;;
+	*)
+	    break
+	    ;;
+    esac
     shift
-fi
+done
+
 target="$1"
 temp="$2"
 if [ "$temp" = - ]; then
@@ -13,6 +24,7 @@ if [ "$temp" = - ]; then
     cat > "$temp" || exit $?
     trap 'rm -f "$temp"' 0
 fi
+
 if cmp "$target" "$temp" >/dev/null 2>&1; then
     echo "$target unchanged"
     rm -f "$temp"
@@ -20,6 +32,18 @@ else
     echo "$target updated"
     mv -f "$temp" "$target"
 fi
-if [ $timestamp ]; then
-    touch `dirname "$target"`/.time.`basename "$target"`
+
+if [ -n "${timestamp}" ]; then
+    if [ x"${timestamp}" = x. ]; then
+	case "$target" in
+	    */*)
+		timestamp="${target%/*}"/.time."${target##*/}" ||
+		timestamp=`dirname "$target"`/.time.`basename "$target"`
+		;;
+	    *)
+		timestamp=.time."$target"
+		;;
+	esac
+    fi
+    : > "$timestamp"
 fi

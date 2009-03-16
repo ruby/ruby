@@ -1,3 +1,10 @@
+Mon Mar 16 12:30:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (REVISION_H): keeps timestamp of revision.h.
+	  [ruby-core:22900]
+
+	* tool/ifchange, win32/ifchange.bat: extended --timestamp option.
+
 Mon Mar 16 09:28:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, common.mk, win32/Makefile.sub: added preprocessing rules.
