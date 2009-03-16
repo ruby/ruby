@@ -1,3 +1,8 @@
+Mon Mar 16 16:37:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tcltklib.c (eventloop_sleep, lib_eventloop_core),
+	  (lib_watchdog_core): tv_usec is not time_t.
+
 Mon Mar 16 15:33:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (proc_arity): fixed rdoc.  [ruby-core:18708]

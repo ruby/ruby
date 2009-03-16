@@ -1550,7 +1550,7 @@ eventloop_sleep(dummy)
     struct timeval t;
 
     t.tv_sec = (time_t)0;
-    t.tv_usec = (time_t)(no_event_wait*1000.0);
+    t.tv_usec = (long)(no_event_wait*1000.0);
 
 #ifdef HAVE_NATIVETHREAD
 #ifndef RUBY_USE_NATIVE_THREAD
@@ -1634,7 +1634,7 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
     if (update_flag) DUMP1("update loop start!!");
 
     t.tv_sec = (time_t)0;
-    t.tv_usec = (time_t)(no_event_wait*1000.0);
+    t.tv_usec = (long)(no_event_wait*1000.0);
 
     Tcl_DeleteTimerHandler(timer_token);
     run_timer_flag = 0;
@@ -2249,9 +2249,9 @@ lib_watchdog_core(check_rootwidget)
     struct timeval t0, t1;
 
     t0.tv_sec  = (time_t)0;
-    t0.tv_usec = (time_t)((NO_THREAD_INTERRUPT_TIME)*1000.0);
+    t0.tv_usec = (long)((NO_THREAD_INTERRUPT_TIME)*1000.0);
     t1.tv_sec  = (time_t)0;
-    t1.tv_usec = (time_t)((WATCHDOG_INTERVAL)*1000.0);
+    t1.tv_usec = (long)((WATCHDOG_INTERVAL)*1000.0);
 
     /* check other watchdog thread */
     if (!NIL_P(watchdog_thread)) {
