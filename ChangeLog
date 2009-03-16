@@ -1,3 +1,12 @@
+Mon Mar 16 09:28:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, common.mk, win32/Makefile.sub: added preprocessing rules.
+
+Sun Mar 15 12:34:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/minitest/test_mini_test.rb: fixed tests depending on the
+	  detail of floating point representation.
+
 Sun Mar 15 12:01:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/installer.rb (Gem::Installer#shebang): fix for env

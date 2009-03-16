@@ -830,6 +830,15 @@ end
 .c.asm:
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
 
+{$(srcdir)/missing}.c.i:
+	$(CC) $(XCFLAGS) $(CPPFLAGS) -P -Tc$(<:\=/) > $@
+{$(srcdir)/win32}.c.i:
+	$(CC) $(XCFLAGS) $(CPPFLAGS) -P -Tc$(<:\=/)
+{$(srcdir)}.c.i:
+	$(CC) $(XCFLAGS) $(CPPFLAGS) -P -Tc$(<:\=/)
+.c.i:
+	$(CC) $(XCFLAGS) $(CPPFLAGS) -P -Tc$(<:\=/)
+
 .rc.res:
 	$(RC) -I. -I$(<D) $(iconinc) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $(<:\=/)
 

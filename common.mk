@@ -2,7 +2,7 @@ bin: $(PROGRAM) $(WPROGRAM)
 lib: $(LIBRUBY)
 dll: $(LIBRUBY_SO)
 
-.SUFFIXES: .inc .h .c .y
+.SUFFIXES: .inc .h .c .y .i
 
 RUBYLIB       = -
 RUBYOPT       = -
