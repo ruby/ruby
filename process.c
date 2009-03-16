@@ -2838,7 +2838,9 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
                   char *errmsg, size_t errmsg_buflen)
 {
     rb_pid_t pid;
+#if defined HAVE_FORK || !defined HAVE_SPAWNV
     int status;
+#endif
     VALUE prog;
     struct rb_exec_arg earg;
 #if !defined HAVE_FORK
