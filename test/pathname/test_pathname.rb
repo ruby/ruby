@@ -381,6 +381,15 @@ class TestPathname < Test::Unit::TestCase
   def pathsub(path, pat, repl) Pathname.new(path).sub(pat, repl).to_s end
   defassert(:pathsub, "a.o", "a.c", /\.c\z/, ".o")
 
+  def test_sub_matchdata
+    result = Pathname("abc.gif").sub(/\..*/) {
+      assert_not_nil($~)
+      assert_equal(".gif", $~[0])
+      ".png"
+    }
+    assert_equal("abc.png", result.to_s)
+  end
+
   def root?(path)
     Pathname.new(path).root?
   end

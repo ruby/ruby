@@ -1,3 +1,8 @@
+Tue Mar 17 14:56:26 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pathname.rb (Pathname#sub): set $~ in block.binding.
+	  [ruby-dev:38173]
+
 Mon Mar 16 16:37:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/tcltklib.c (eventloop_sleep, lib_eventloop_core),
