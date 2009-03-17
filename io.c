@@ -2018,7 +2018,7 @@ rb_io_write_nonblock(VALUE io, VALUE str)
  *       end
  *     }
  *
- *  Note that this method behaves like fread function in C.
+ *  Note that this method behaves like fread() function in C.
  *  If you need the behavior like read(2) system call,
  *  consider readpartial, read_nonblock and sysread.
  */
