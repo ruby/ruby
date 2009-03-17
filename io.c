@@ -1972,11 +1972,11 @@ rb_io_write_nonblock(VALUE io, VALUE str)
  *  <i>length</i> must be a non-negative integer or nil.
  *
  *  If <i>length</i> is a positive integer,
- *  It reads <i>length</i> bytes and
- *  returns a string which is <i>length</i> bytes long.
- *  If EOF is met after 1 or more bytes read but before <i>length</i> bytes read,
- *  a shorter string is returned.
- *  If EOF is met at beginning, nil is returned.
+ *  it try to read <i>length</i> bytes.
+ *  It returns nil or a string which length is 1 to <i>length</i> bytes.
+ *  nil means it met EOF at beginning.
+ *  The 1 to <i>length</i>-1 bytes string means it met EOF after reading the result.
+ *  The <i>length</i> bytes string means it doesn't meet EOF.
  *
  *  If <i>length</i> is omitted or is <code>nil</code>,
  *  it reads until EOF.
