@@ -1,3 +1,8 @@
+Tue Mar 17 14:25:16 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pathname.rb (Pathname#sub): set $~ in block.binding.
+	  [ruby-dev:38173]
+
 Tue Mar 17 13:48:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (config.h): added RUBY_COREDLL.
