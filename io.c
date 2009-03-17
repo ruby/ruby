@@ -1967,9 +1967,23 @@ rb_io_write_nonblock(VALUE io, VALUE str)
  *  call-seq:
  *     ios.read([length [, buffer]])    => string, buffer, or nil
  *
- *  Reads at most <i>length</i> bytes from the I/O stream, or to the
- *  end of file if <i>length</i> is omitted or is <code>nil</code>.
+ *  Reads <i>length</i> bytes from the I/O stream.
+ *
  *  <i>length</i> must be a non-negative integer or nil.
+ *
+ *  If <i>length</i> is a positive integer,
+ *  It reads <i>length</i> bytes and
+ *  returns a string which is <i>length</i> bytes long.
+ *  If EOF is met after 1 or more bytes read but before <i>length</i> bytes read,
+ *  a shorter string is returned.
+ *  If EOF is met at beginning, nil is returned.
+ *
+ *  If <i>length</i> is omitted or is <code>nil</code>,
+ *  it reads until EOF.
+ *  It returns a string even if EOF is met at beginning.
+ *
+ *  If <i>length</i> is zero, it returns <code>""</code>.
+ *
  *  If the optional <i>buffer</i> argument is present, it must reference
  *  a String, which will receive the data.
  *
@@ -1979,10 +1993,34 @@ rb_io_write_nonblock(VALUE io, VALUE str)
  *  <code><i>ios</i>.read(nil)</code> returns <code>""</code>.
  *  <code><i>ios</i>.read(<i>positive-integer</i>)</code> returns nil.
  *
- *  <code><i>ios</i>.read(0)</code> returns <code>""</code>.
- *
  *     f = File.new("testfile")
  *     f.read(16)   #=> "This is line one"
+ *
+ *     # reads whole file
+ *     open("file") {|f|
+ *       data = f.read # This returns a string even if the file is empty.
+ *       ...
+ *     }
+ *
+ *     # iterate over fixed length records.
+ *     open("fixed-record-file") {|f|
+ *       while record = f.read(256)
+ *         ...
+ *       end
+ *     }
+ *
+ *     # iterate over variable length records.
+ *     # record is prefixed by 32-bit length.
+ *     open("variable-record-file") {|f|
+ *       while len = f.read(4)
+ *         len = len.unpack("N")[0] # 32-bit length
+ *         record = f.read(len) # This returns a string even if len is 0.
+ *       end
+ *     }
+ *
+ *  Note that this method behaves like fread function in C.
+ *  If you need the behavior like read(2) system call,
+ *  consider readpartial, read_nonblock and sysread.
  */
 
 static VALUE
