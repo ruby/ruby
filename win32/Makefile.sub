@@ -536,6 +536,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RUBY_VENDOR_LIB RUBY_LIB_PREFIX"/vendor_ruby"
 #define RUBY_VENDOR_LIB2 RUBY_VENDOR_LIB"/"RUBY_LIB_VERSION
 #define RUBY_PLATFORM "$(arch)"
+#define RUBY_COREDLL "$(RT)"
 #define RUBY_ARCHLIB "/lib/$(RUBY_INSTALL_NAME)/$(ruby_version)/$(ARCH)-$(PLATFORM)"
 #define RUBY_SITE_ARCHLIB "/lib/$(RUBY_INSTALL_NAME)/site_ruby/$(ruby_version)/$(ARCH)-$(RT)"
 #define RUBY_VENDOR_ARCHLIB "/lib/$(RUBY_INSTALL_NAME)/vendor_ruby/$(ruby_version)/$(ARCH)-$(RT)"

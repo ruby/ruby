@@ -1,3 +1,10 @@
+Tue Mar 17 13:48:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (config.h): added RUBY_COREDLL.
+
+	* ext/dl/handle.c (rb_dlhandle_initialize): returns msvcrt if libc
+	  or RUBY_COREDLL is given.  [ruby-core:22828]
+
 Tue Mar 17 10:29:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c, dln.c, parse.y, re.c, ruby.c, sprintf.c, strftime.c,

@@ -7,6 +7,30 @@
 
 VALUE rb_cDLHandle;
 
+#ifdef HAVE_WINDOWS_H
+# ifndef _WIN32_WCE
+static void *
+w32_coredll(void)
+{
+    MEMORY_BASIC_INFORMATION m;
+    memset(&m, 0, sizeof(m));
+    if( !VirtualQuery(_errno, &m, sizeof(m)) ) return NULL;
+    return m.AllocationBase;
+}
+# endif
+
+static int
+w32_dlclose(void *ptr)
+{
+# ifndef _WIN32_WCE
+    if( ptr == w32_coredll() ) return 0;
+# endif
+    if( FreeLibrary((HMODULE)ptr) ) return 0;
+    return errno = rb_w32_map_errno(GetLastError());
+}
+#define dlclose(ptr) w32_dlclose(ptr)
+#endif
+
 void
 dlhandle_free(struct dl_handle *dlhandle)
 {
@@ -71,6 +95,18 @@ rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
     if( !clib ){
 	HANDLE rb_libruby_handle(void);
 	ptr = rb_libruby_handle();
+    }
+    else if( STRCASECMP(clib, "libc") == 0
+# ifdef RUBY_COREDLL
+	     || STRCASECMP(clib, RUBY_COREDLL) == 0
+	     || STRCASECMP(clib, RUBY_COREDLL".dll") == 0
+# endif
+	){
+# ifdef _WIN32_WCE
+	ptr = dlopen("coredll.dll", cflag);
+# else
+	ptr = w32_coredll();
+# endif
     }
     else
 #endif

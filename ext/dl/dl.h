@@ -22,7 +22,6 @@
 #else
 # if defined(HAVE_WINDOWS_H)
 #   include <windows.h>
-#   define dlclose(ptr) FreeLibrary((HINSTANCE)ptr)
 #   define dlopen(name,flag) ((void*)LoadLibrary(name))
 #   define dlerror() strerror(rb_w32_map_errno(GetLastError()))
 #   define dlsym(handle,name) ((void*)GetProcAddress(handle,name))
