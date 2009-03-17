@@ -2,13 +2,20 @@ class Object
   @@golf_hash = {}
   def method_missing m, *a, &b
     t = @@golf_hash[ [m,self.class] ] ||= matching_methods(m)[0]
-    t ? __send__(t, *a, &b) : super
+    if t && b
+      __send__(t, *a) {|*args|
+        b.binding.eval("proc{|golf_matchdata| $~ = golf_matchdata }").call($~) if $~
+        b.call(*args)
+      }
+    else
+      t ? __send__(t, *a, &b) : super
+    end
   end
 
   def matching_methods(s='', m=callable_methods)
     r=/^#{s.to_s.gsub(/./){"(.*?)"+Regexp.escape($&)}}/
     m.grep(r).sort_by do |i|
-      i.to_s.match(r).captures.map(&:size)<<i
+      i.to_s.match(r).captures.map(&:size) << i
     end
   end
 
