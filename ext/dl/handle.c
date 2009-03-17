@@ -10,123 +10,123 @@ VALUE rb_cDLHandle;
 void
 dlhandle_free(struct dl_handle *dlhandle)
 {
-  if( dlhandle->ptr && dlhandle->open && dlhandle->enable_close ){
-    dlclose(dlhandle->ptr);
-  }
+    if( dlhandle->ptr && dlhandle->open && dlhandle->enable_close ){
+	dlclose(dlhandle->ptr);
+    }
 }
 
 VALUE
 rb_dlhandle_close(VALUE self)
 {
-  struct dl_handle *dlhandle;
+    struct dl_handle *dlhandle;
 
-  Data_Get_Struct(self, struct dl_handle, dlhandle);
-  dlhandle->open = 0;
-  return INT2NUM(dlclose(dlhandle->ptr));
+    Data_Get_Struct(self, struct dl_handle, dlhandle);
+    dlhandle->open = 0;
+    return INT2NUM(dlclose(dlhandle->ptr));
 }
 
 VALUE
 rb_dlhandle_s_allocate(VALUE klass)
 {
-  VALUE obj;
-  struct dl_handle *dlhandle;
+    VALUE obj;
+    struct dl_handle *dlhandle;
 
-  obj = Data_Make_Struct(rb_cDLHandle, struct dl_handle, 0,
-			 dlhandle_free, dlhandle);
-  dlhandle->ptr  = 0;
-  dlhandle->open = 0;
-  dlhandle->enable_close = 0;
+    obj = Data_Make_Struct(rb_cDLHandle, struct dl_handle, 0,
+			   dlhandle_free, dlhandle);
+    dlhandle->ptr  = 0;
+    dlhandle->open = 0;
+    dlhandle->enable_close = 0;
 
-  return obj;
+    return obj;
 }
 
 VALUE
 rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
 {
-  void *ptr;
-  struct dl_handle *dlhandle;
-  VALUE lib, flag;
-  char  *clib;
-  int   cflag;
-  const char *err;
+    void *ptr;
+    struct dl_handle *dlhandle;
+    VALUE lib, flag;
+    char  *clib;
+    int   cflag;
+    const char *err;
 
-  switch( rb_scan_args(argc, argv, "02", &lib, &flag) ){
-  case 0:
-    clib = NULL;
-    cflag = RTLD_LAZY | RTLD_GLOBAL;
-    break;
-  case 1:
-    clib = NIL_P(lib) ? NULL : StringValuePtr(lib);
-    cflag = RTLD_LAZY | RTLD_GLOBAL;
-    break;
-  case 2:
-    clib = NIL_P(lib) ? NULL : StringValuePtr(lib);
-    cflag = NUM2INT(flag);
-    break;
-  default:
-    rb_bug("rb_dlhandle_new");
-  }
+    switch( rb_scan_args(argc, argv, "02", &lib, &flag) ){
+      case 0:
+	clib = NULL;
+	cflag = RTLD_LAZY | RTLD_GLOBAL;
+	break;
+      case 1:
+	clib = NIL_P(lib) ? NULL : StringValuePtr(lib);
+	cflag = RTLD_LAZY | RTLD_GLOBAL;
+	break;
+      case 2:
+	clib = NIL_P(lib) ? NULL : StringValuePtr(lib);
+	cflag = NUM2INT(flag);
+	break;
+      default:
+	rb_bug("rb_dlhandle_new");
+    }
 
 #if defined(HAVE_WINDOWS_H)
-  if( !clib ){
-    HANDLE rb_libruby_handle(void);
-    ptr = rb_libruby_handle();
-  }
-  else
+    if( !clib ){
+	HANDLE rb_libruby_handle(void);
+	ptr = rb_libruby_handle();
+    }
+    else
 #endif
-  ptr = dlopen(clib, cflag);
+	ptr = dlopen(clib, cflag);
 #if defined(HAVE_DLERROR)
-  if( !ptr && (err = dlerror()) ){
-    rb_raise(rb_eDLError, "%s", err);
-  }
+    if( !ptr && (err = dlerror()) ){
+	rb_raise(rb_eDLError, "%s", err);
+    }
 #else
-  if( !ptr ){
-    err = dlerror();
-    rb_raise(rb_eDLError, "%s", err);
-  }
+    if( !ptr ){
+	err = dlerror();
+	rb_raise(rb_eDLError, "%s", err);
+    }
 #endif
-  Data_Get_Struct(self, struct dl_handle, dlhandle);
-  if( dlhandle->ptr && dlhandle->open && dlhandle->enable_close ){
-    dlclose(dlhandle->ptr);
-  }
-  dlhandle->ptr = ptr;
-  dlhandle->open = 1;
-  dlhandle->enable_close = 0;
+    Data_Get_Struct(self, struct dl_handle, dlhandle);
+    if( dlhandle->ptr && dlhandle->open && dlhandle->enable_close ){
+	dlclose(dlhandle->ptr);
+    }
+    dlhandle->ptr = ptr;
+    dlhandle->open = 1;
+    dlhandle->enable_close = 0;
 
-  if( rb_block_given_p() ){
-    rb_ensure(rb_yield, self, rb_dlhandle_close, self);
-  }
+    if( rb_block_given_p() ){
+	rb_ensure(rb_yield, self, rb_dlhandle_close, self);
+    }
 
-  return Qnil;
+    return Qnil;
 }
 
 VALUE
 rb_dlhandle_enable_close(VALUE self)
 {
-  struct dl_handle *dlhandle;
+    struct dl_handle *dlhandle;
 
-  Data_Get_Struct(self, struct dl_handle, dlhandle);
-  dlhandle->enable_close = 1;
-  return Qnil;
+    Data_Get_Struct(self, struct dl_handle, dlhandle);
+    dlhandle->enable_close = 1;
+    return Qnil;
 }
 
 VALUE
 rb_dlhandle_disable_close(VALUE self)
 {
-  struct dl_handle *dlhandle;
+    struct dl_handle *dlhandle;
 
-  Data_Get_Struct(self, struct dl_handle, dlhandle);
-  dlhandle->enable_close = 0;
-  return Qnil;
+    Data_Get_Struct(self, struct dl_handle, dlhandle);
+    dlhandle->enable_close = 0;
+    return Qnil;
 }
 
 VALUE
 rb_dlhandle_to_i(VALUE self)
 {
-  struct dl_handle *dlhandle;
+    struct dl_handle *dlhandle;
 
-  Data_Get_Struct(self, struct dl_handle, dlhandle);
-  return PTR2NUM(dlhandle);
+    Data_Get_Struct(self, struct dl_handle, dlhandle);
+    return PTR2NUM(dlhandle);
 }
 
 VALUE

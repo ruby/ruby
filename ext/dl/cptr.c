@@ -14,11 +14,11 @@ static ID id_to_ptr;
 static void
 dlptr_free(struct ptr_data *data)
 {
-  if (data->ptr) {
-      if (data->free) {
-	  (*(data->free))(data->ptr);
-      }
-  }
+    if (data->ptr) {
+	if (data->free) {
+	    (*(data->free))(data->ptr);
+	}
+    }
 }
 
 static void
@@ -29,79 +29,79 @@ dlptr_mark(struct ptr_data *data)
 void
 dlptr_init(VALUE val)
 {
-  struct ptr_data *data;
+    struct ptr_data *data;
 
-  Data_Get_Struct(val, struct ptr_data, data);
-  OBJ_TAINT(val);
+    Data_Get_Struct(val, struct ptr_data, data);
+    OBJ_TAINT(val);
 }
 
 VALUE
 rb_dlptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
 {
-  struct ptr_data *data;
-  VALUE val;
+    struct ptr_data *data;
+    VALUE val;
 
-  rb_secure(4);
-  val = Data_Make_Struct(klass, struct ptr_data,
-			 0, dlptr_free, data);
-  data->ptr = ptr;
-  data->free = func;
-  data->size = size;
-  dlptr_init(val);
+    rb_secure(4);
+    val = Data_Make_Struct(klass, struct ptr_data,
+			   0, dlptr_free, data);
+    data->ptr = ptr;
+    data->free = func;
+    data->size = size;
+    dlptr_init(val);
 
-  return val;
+    return val;
 }
 
 VALUE
 rb_dlptr_new(void *ptr, long size, freefunc_t func)
 {
-  return rb_dlptr_new2(rb_cDLCPtr, ptr, size, func);
+    return rb_dlptr_new2(rb_cDLCPtr, ptr, size, func);
 }
 
 VALUE
 rb_dlptr_malloc(long size, freefunc_t func)
 {
-  void *ptr;
+    void *ptr;
 
-  rb_secure(4);
-  ptr = ruby_xmalloc((size_t)size);
-  memset(ptr,0,(size_t)size);
-  return rb_dlptr_new(ptr, size, func);
+    rb_secure(4);
+    ptr = ruby_xmalloc((size_t)size);
+    memset(ptr,0,(size_t)size);
+    return rb_dlptr_new(ptr, size, func);
 }
 
 void *
 rb_dlptr2cptr(VALUE val)
 {
-  struct ptr_data *data;
-  void *ptr;
+    struct ptr_data *data;
+    void *ptr;
 
-  if (rb_obj_is_kind_of(val, rb_cDLCPtr)) {
-    Data_Get_Struct(val, struct ptr_data, data);
-    ptr = data->ptr;
-  }
-  else if (val == Qnil) {
-    ptr = NULL;
-  }
-  else{
-    rb_raise(rb_eTypeError, "DL::PtrData was expected");
-  }
+    if (rb_obj_is_kind_of(val, rb_cDLCPtr)) {
+	Data_Get_Struct(val, struct ptr_data, data);
+	ptr = data->ptr;
+    }
+    else if (val == Qnil) {
+	ptr = NULL;
+    }
+    else{
+	rb_raise(rb_eTypeError, "DL::PtrData was expected");
+    }
     
-  return ptr;
+    return ptr;
 }
 
 static VALUE
 rb_dlptr_s_allocate(VALUE klass)
 {
-  VALUE obj;
-  struct ptr_data *data;
+    VALUE obj;
+    struct ptr_data *data;
 
-  rb_secure(4);
-  obj = Data_Make_Struct(klass, struct ptr_data, dlptr_mark, dlptr_free, data);
-  data->ptr = 0;
-  data->size = 0;
-  data->free = 0;
+    rb_secure(4);
+    obj = Data_Make_Struct(klass, struct ptr_data, dlptr_mark, dlptr_free, data);
+    data->ptr = 0;
+    data->size = 0;
+    data->free = 0;
 
-  return obj;
+    return obj;
 }
 
 static VALUE

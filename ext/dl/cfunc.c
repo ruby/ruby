@@ -45,66 +45,66 @@ rb_dl_set_win32_last_error(VALUE self, VALUE val)
 void
 dlcfunc_free(struct cfunc_data *data)
 {
-  if( data->name ){
-      xfree(data->name);
-  }
-  xfree(data);
+    if( data->name ){
+	xfree(data->name);
+    }
+    xfree(data);
 }
 
 VALUE
 rb_dlcfunc_new(void (*func)(), int type, const char *name, ID calltype)
 {
-  VALUE val;
-  struct cfunc_data *data;
+    VALUE val;
+    struct cfunc_data *data;
 
-  rb_secure(4);
-  if( func ){
-    val = Data_Make_Struct(rb_cDLCFunc, struct cfunc_data, 0, dlcfunc_free, data);
-    data->ptr  = func;
-    data->name = name ? strdup(name) : NULL;
-    data->type = type;
-    data->calltype = calltype;
-  }
-  else{
-    val = Qnil;
-  }
+    rb_secure(4);
+    if( func ){
+	val = Data_Make_Struct(rb_cDLCFunc, struct cfunc_data, 0, dlcfunc_free, data);
+	data->ptr  = func;
+	data->name = name ? strdup(name) : NULL;
+	data->type = type;
+	data->calltype = calltype;
+    }
+    else{
+	val = Qnil;
+    }
 
-  return val;
+    return val;
 }
 
 void *
 rb_dlcfunc2ptr(VALUE val)
 {
-  struct cfunc_data *data;
-  void * func;
+    struct cfunc_data *data;
+    void * func;
 
-  if( rb_obj_is_kind_of(val, rb_cDLCFunc) ){
-    Data_Get_Struct(val, struct cfunc_data, data);
-    func = data->ptr;
-  }
-  else if( val == Qnil ){
-    func = NULL;
-  }
-  else{
-    rb_raise(rb_eTypeError, "DL::CFunc was expected");
-  }
+    if( rb_obj_is_kind_of(val, rb_cDLCFunc) ){
+	Data_Get_Struct(val, struct cfunc_data, data);
+	func = data->ptr;
+    }
+    else if( val == Qnil ){
+	func = NULL;
+    }
+    else{
+	rb_raise(rb_eTypeError, "DL::CFunc was expected");
+    }
 
-  return func;
+    return func;
 }
 
 VALUE
 rb_dlcfunc_s_allocate(VALUE klass)
 {
-  VALUE obj;
-  struct cfunc_data *data;
+    VALUE obj;
+    struct cfunc_data *data;
 
-  obj = Data_Make_Struct(klass, struct cfunc_data, 0, dlcfunc_free, data);
-  data->ptr  = 0;
-  data->name = 0;
-  data->type = 0;
-  data->calltype = CFUNC_CDECL;
+    obj = Data_Make_Struct(klass, struct cfunc_data, 0, dlcfunc_free, data);
+    data->ptr  = 0;
+    data->name = 0;
+    data->type = 0;
+    data->calltype = CFUNC_CDECL;
 
-  return obj;
+    return obj;
 }
 
 VALUE
@@ -374,7 +374,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	switch( cfunc->type ){
 	case DLTYPE_VOID:
 #define CASE(n) case n: { \
-            DECL_FUNC_STDCALL(f,void,DLSTACK_PROTO##n##_) = cfunc->ptr; \
+	    DECL_FUNC_STDCALL(f,void,DLSTACK_PROTO##n##_) = cfunc->ptr; \
 	    f(DLSTACK_ARGS##n(stack)); \
 	    result = Qnil; \
 }
