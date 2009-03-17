@@ -881,10 +881,10 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		| keyword_alias tGVAR tBACK_REF
 		    {
 		    /*%%%*/
-			char buf[3];
-
-			sprintf(buf, "$%c", (char)$3->nd_nth);
-			$$ = NEW_VALIAS($2, rb_intern(buf));
+			char buf[2];
+			buf[0] = '$';
+			buf[1] = (char)$3->nd_nth;
+			$$ = NEW_VALIAS($2, rb_intern2(buf, 2));
 		    /*%
 			$$ = dispatch2(var_alias, $2, $3);
 		    %*/
@@ -7041,7 +7041,7 @@ parser_yylex(struct parser_params *parser)
 	    if (nondigit) {
 		char tmp[30];
 	      trailing_uc:
-		sprintf(tmp, "trailing `%c' in number", nondigit);
+		snprintf(tmp, sizeof(tmp), "trailing `%c' in number", nondigit);
 		yyerror(tmp);
 	    }
 	    if (is_float) {
@@ -10011,9 +10011,9 @@ ripper_id2sym(ID id)
     char buf[8];
 
     if (id <= 256) {
-        buf[0] = id;
+        buf[0] = (char)id;
         buf[1] = '\0';
-        return ID2SYM(rb_intern(buf));
+        return ID2SYM(rb_intern2(buf, 1));
     }
     if ((name = keyword_id_to_str(id))) {
         return ID2SYM(rb_intern(name));

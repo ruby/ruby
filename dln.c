@@ -127,7 +127,7 @@ init_funcname_len(char **buf, const char *file)
 	free(*buf);\
 	rb_memerror();\
     }\
-    strcpy(tmp, *buf);\
+    strlcpy(tmp, *buf, len + 1);\
     free(*buf);\
     *buf = tmp;\
 } while (0)
@@ -1224,7 +1224,7 @@ dln_load(const char *file)
     /* Load the file as an object one */
     init_funcname(&buf, file);
 
-    strcpy(winfile, file);
+    strlcpy(winfile, file, sizeof(winfile));
 
     /* Load file */
     if ((handle = LoadLibrary(winfile)) == NULL) {
@@ -1669,7 +1669,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 		    fprintf(stderr, "\tFile \"%s%s\"\n", fname, extension[j]);
 		    continue;
 		}
-		strcpy(bp + i, extension[j]);
+		strlcpy(bp + i, extension[j], fspace);
 		if (stat(fbuf, &st) == 0)
 		    return fbuf;
 	    }

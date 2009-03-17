@@ -455,10 +455,11 @@ global_id(const char *name)
 
     if (name[0] == '$') id = rb_intern(name);
     else {
-	char *buf = ALLOCA_N(char, strlen(name)+2);
+	size_t len = strlen(name);
+	char *buf = ALLOCA_N(char, len+1);
 	buf[0] = '$';
-	strcpy(buf+1, name);
-	id = rb_intern(buf);
+	memcpy(buf+1, name, len);
+	id = rb_intern2(buf, len+1);
     }
     return id;
 }
@@ -733,13 +734,14 @@ VALUE
 rb_f_global_variables(void)
 {
     VALUE ary = rb_ary_new();
-    char buf[4];
-    const char *s = "123456789";
+    char buf[2];
+    int i;
 
     st_foreach_safe(rb_global_tbl, gvar_i, ary);
-    while (*s) {
-	sprintf(buf, "$%c", *s++);
-	rb_ary_push(ary, ID2SYM(rb_intern(buf)));
+    buf[0] = '$';
+    for (i = 1; i <= 9; ++i) {
+	buf[1] = (char)(i + '0');
+	rb_ary_push(ary, ID2SYM(rb_intern2(buf, 2)));
     }
     return ary;
 }

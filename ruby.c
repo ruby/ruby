@@ -379,7 +379,7 @@ ruby_init_loadpath_safe(int safe_level)
 	}
     }
     else {
-	strcpy(libpath, ".");
+	strlcpy(libpath, ".", sizeof(libpath));
 	p = libpath + 1;
     }
 
@@ -522,15 +522,16 @@ moreswitches(const char *s, struct cmdline_options *opt, int envopt)
     char **argv, *p;
     const char *ap = 0;
     VALUE argstr, argary;
+    int len;
 
     while (ISSPACE(*s)) s++;
     if (!*s) return;
-    argstr = rb_str_tmp_new(strlen(s) + 2);
+    argstr = rb_str_tmp_new((len = strlen(s)) + 2);
     argary = rb_str_tmp_new(0);
 
     p = RSTRING_PTR(argstr);
     *p++ = ' ';
-    strcpy(p, s);
+    memcpy(p, s, len + 1);
     ap = 0;
     rb_str_cat(argary, (char *)&ap, sizeof(ap));
     while (*p) {

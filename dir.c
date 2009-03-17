@@ -1463,7 +1463,8 @@ ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg,
     }
 
     if (lbrace && rbrace) {
-	char *buf = GLOB_ALLOC_N(char, strlen(s) + 1);
+	size_t len = strlen(s) + 1;
+	char *buf = GLOB_ALLOC_N(char, len);
 	long shift;
 
 	if (!buf) return -1;
@@ -1482,7 +1483,7 @@ ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg,
 		Inc(p, pend, enc);
 	    }
 	    memcpy(buf+shift, t, p-t);
-	    strcpy(buf+shift+(p-t), rbrace+1);
+	    strlcpy(buf+shift+(p-t), rbrace+1, len-(shift+(p-t)));
 	    status = ruby_brace_expand(buf, flags, func, arg, enc);
 	    if (status) break;
 	}

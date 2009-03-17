@@ -1,3 +1,9 @@
+Tue Mar 17 10:29:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c, dln.c, parse.y, re.c, ruby.c, sprintf.c, strftime.c,
+	  string.c, util.c, variable.c: use strlcpy, memcpy and snprintf
+	  instead of strcpy, strncpy and sprintf.
+
 Mon Mar 16 17:15:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/dl/test_win32.rb (Win32API): enclosed by DL::TestWin32.

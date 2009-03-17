@@ -243,7 +243,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			savetz = (char *) malloc(tzlen + 1);
 			if (savetz != NULL) {
 				savetzlen = tzlen + 1;
-				strcpy(savetz, tz);
+				memcpy(savetz, tz, savetzlen);
 			}
 		}
 		tzset();
@@ -256,10 +256,10 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			savetz = (char *) realloc(savetz, i);
 			if (savetz) {
 				savetzlen = i;
-				strcpy(savetz, tz);
+				memcpy(savetz, tz, i);
 			}
 		} else
-			strcpy(savetz, tz);
+			memcpy(savetz, tz, i);
 		tzset();
 	}
 #endif	/* POSIX_SEMANTICS */

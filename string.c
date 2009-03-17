@@ -4347,19 +4347,19 @@ rb_str_dump(VALUE str)
 		if (MBCLEN_CHARFOUND_P(n)) {
 		    int cc = rb_enc_codepoint(p-1, pend, enc);
 		    p += n;
-		    sprintf(q, "u{%x}", cc);
+		    snprintf(q, qend-q, "u{%x}", cc);
 		    q += strlen(q);
 		    continue;
 		}
 	    }
-	    sprintf(q, "x%02X", c);
+	    snprintf(q, qend-q, "x%02X", c);
 	    q += 3;
 	}
     }
     *q++ = '"';
     *q = '\0';
     if (!rb_enc_asciicompat(enc)) {
-	sprintf(q, ".force_encoding(\"%s\")", enc->name);
+	snprintf(q, qend-q, ".force_encoding(\"%s\")", enc->name);
 	enc = rb_ascii8bit_encoding();
     }
     OBJ_INFECT(result, str);

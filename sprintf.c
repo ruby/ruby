@@ -988,7 +988,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			    buf[blen++] = '+';
 			else if (flags & FSPACE)
 			    blen++;
-			strncpy(&buf[blen], expr, strlen(expr));
+			memcpy(&buf[blen], expr, strlen(expr));
 		    }
 		    else {
 			if (!isnan(fval) && fval < 0.0)
@@ -997,8 +997,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			    buf[blen + need - strlen(expr) - 1] = '+';
 			else if ((flags & FSPACE) && need > width)
 			    blen++;
-			strncpy(&buf[blen + need - strlen(expr)], expr,
-				strlen(expr));
+			memcpy(&buf[blen + need - strlen(expr)], expr,
+			       strlen(expr));
 		    }
 		    blen += strlen(&buf[blen]);
 		    break;

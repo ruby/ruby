@@ -270,6 +270,7 @@ ruby_add_suffix(VALUE str, const char *suffix)
     char *s, *t, *p;
     long slen;
     char buf[1024];
+    char *const bufend = buf + sizeof(buf);
 
     if (RSTRING_LEN(str) > 1000)
         rb_fatal("Cannot do inplace edit on long filename (%ld characters)",
@@ -300,7 +301,7 @@ ruby_add_suffix(VALUE str, const char *suffix)
 
     if (*suffix == '.') {        /* Style 1 */
         if (strEQ(ext, suffix)) goto fallback;
-	strcpy(p, suffix);
+	strlcpy(p, suffix, bufend - p);
     }
     else if (suffix[1] == '\0') {  /* Style 2 */
         if (extlen < 4) {
@@ -317,7 +318,7 @@ ruby_add_suffix(VALUE str, const char *suffix)
 	    buf[7] = *suffix;
 	}
 	else goto fallback;
-	strcpy(p, ext);
+	strlcpy(p, ext, bufend - p);
     }
     else { /* Style 3:  Panic */
 fallback:
