@@ -3,6 +3,11 @@ Wed Mar 18 16:59:48 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 	* test/test_syslog.rb (TestSyslog#test_open): check
 	  param after block again. because detect not to call block.
 
+Wed Mar 18 16:54:04 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
+
+	* ext/socket/ancdata.c: not use pktinfo.ipi_spec_dst if not defined
+	* ext/socket/extconf.rb: define HAVE_IPI_SPEC_DST
+
 Wed Mar 18 16:38:11 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/test_syslog.rb (TestSyslog#test_open): check
