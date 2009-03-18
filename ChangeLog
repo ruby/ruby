@@ -1,3 +1,8 @@
+Wed Mar 18 12:48:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (report_bug): rb_bug can be caused by extension
+	  libraries.
+
 Wed Mar 18 02:41:33 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb (open_server_inaddr_any): fixed multiple network
