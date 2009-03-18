@@ -64,9 +64,11 @@ class TestSyslog < Test::Unit::TestCase
     assert_equal(nil, Syslog.facility)
 
     # block
-    Syslog.open { |param|
-      assert_equal(Syslog, param)
+    param = nil
+    Syslog.open { |syslog|
+      param = syslog
     }
+    assert_equal(Syslog, param)
   ensure
     Syslog.close if Syslog.opened?
   end

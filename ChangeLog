@@ -1,3 +1,8 @@
+Wed Mar 18 16:59:48 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/test_syslog.rb (TestSyslog#test_open): check
+	  param after block again. because detect not to call block.
+
 Wed Mar 18 16:38:11 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/test_syslog.rb (TestSyslog#test_open): check
