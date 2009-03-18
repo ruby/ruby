@@ -1,3 +1,8 @@
+Wed Mar 18 16:38:11 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/test_syslog.rb (TestSyslog#test_open): check
+	  block parameter in block. [ruby-dev:38180]
+
 Wed Mar 18 12:48:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (report_bug): rb_bug can be caused by extension
