@@ -47,8 +47,8 @@ if !libc_so || !libm_so
   ruby = EnvUtil.rubybin
   ldd = `ldd #{ruby}`
   #puts ldd
-  libc_so = $1 if !libc_so && %r{libc\.so.*=>\s+(/\S*)} =~ ldd
-  libm_so = $1 if !libm_so && %r{libm\.so.*=>\s+(/\S*)} =~ ldd
+  libc_so = $& if !libc_so && %r{/\S*/libc\.so\S*} =~ ldd
+  libm_so = $& if !libm_so && %r{/\S*/libm\.so\S*} =~ ldd
   #p [libc_so, libm_so]
 end
 
