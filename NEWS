@@ -34,6 +34,10 @@ with all sufficient information, see the ChangeLog file.
     * extended methods:
       * IO.pipe can take a block.
 
+    * new modules:
+      * IO::WaitReadable
+      * IO::WaitWritable
+
   * Process
     * extended methods:
       * Process.spawn accepts [:child, FD] for a redirect target.

@@ -100,6 +100,37 @@ module Buffering
     ret
   end
 
+  # Reads at most _maxlen_ bytes in the non-blocking manner.
+  #
+  # When no data can be read without blocking,
+  # It raises OpenSSL::SSL::SSLError extended by
+  # IO::WaitReadable or IO::WaitWritable.
+  #
+  # IO::WaitReadable means SSL needs to read internally.
+  # So read_nonblock should be called again after
+  # underlying IO is readable.
+  #
+  # IO::WaitWritable means SSL needs to write internally.
+  # So read_nonblock should be called again after
+  # underlying IO is writable.
+  #
+  # So OpenSSL::Buffering#read_nonblock needs two rescue clause as follows.
+  # 
+  #  begin
+  #    result = ssl.read_nonblock(maxlen)
+  #  rescue IO::WaitReadable
+  #    IO.select([io])
+  #    retry
+  #  rescue IO::WaitWritable
+  #    IO.select(nil, [io])
+  #    retry
+  #  end
+  #
+  # Note that one reason that read_nonblock write to a underlying IO
+  # is the peer requests a new TLS/SSL handshake.
+  # See openssl FAQ for more details.
+  # http://www.openssl.org/support/faq.html
+  #
   def read_nonblock(maxlen, buf=nil)
     if maxlen == 0
       if buf
