@@ -157,7 +157,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     s2 = Socket.new(:INET, :STREAM, 0)
     begin
       s2.connect_nonblock(ai)
-    rescue Errno::EINPROGRESS
+    rescue IO::WaitWritable
       IO.select(nil, [s2])
       begin
         s2.connect_nonblock(ai)

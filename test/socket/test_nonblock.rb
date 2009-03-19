@@ -36,7 +36,7 @@ class TestSocketNonblock < Test::Unit::TestCase
     servaddr = serv.getsockname
     begin
       c.connect_nonblock(servaddr)
-    rescue Errno::EINPROGRESS
+    rescue IO::WaitWritable
       IO.select nil, [c]
       assert_nothing_raised {
         begin
