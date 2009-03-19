@@ -155,21 +155,6 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     assert_equal(ctx.setup, nil)
   end
 
-  def test_ssl_read_nonblock
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true) { |server, port|
-      sock = TCPSocket.new("127.0.0.1", port)
-      ssl = OpenSSL::SSL::SSLSocket.new(sock)
-      ssl.sync_close = true
-      ssl.connect
-      assert_raise(Errno::EAGAIN, Errno::EWOULDBLOCK) { ssl.read_nonblock(100) }
-      ssl.write("abc\n")
-      IO.select [ssl]
-      assert_equal('a', ssl.read_nonblock(1))
-      assert_equal("bc\n", ssl.read_nonblock(100))
-      assert_raise(Errno::EAGAIN, Errno::EWOULDBLOCK) { ssl.read_nonblock(100) }
-    }
-  end
-
   def test_connect_and_close
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
       sock = TCPSocket.new("127.0.0.1", port)

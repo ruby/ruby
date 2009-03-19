@@ -1,3 +1,8 @@
+Thu Mar 19 23:18:44 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_ssl.c: revert incomplete read_nonblock
+	  implemenatation.
+
 Wed Mar 18 02:30:41 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb (open_server_inaddr_any): fixed multiple network

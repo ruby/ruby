@@ -14,12 +14,6 @@
 #include <rubysig.h>
 #include <rubyio.h>
 
-#if defined(HAVE_FCNTL_H) || defined(_WIN32)
-#include <fcntl.h>
-#elif defined(HAVE_SYS_FCNTL_H)
-#include <sys/fcntl.h>
-#endif
-
 #if defined(HAVE_UNISTD_H)
 #  include <unistd.h> /* for read(), and write() */
 #endif
@@ -1105,71 +1099,6 @@ ossl_ssl_accept(VALUE self)
 static VALUE
 ossl_ssl_read(int argc, VALUE *argv, VALUE self)
 {
-  SSL *ssl;
-  int ilen, nread = 0;
-  VALUE len, str;
-  rb_io_t *fptr;
-
-  rb_scan_args(argc, argv, "11", &len, &str);
-  ilen = NUM2INT(len);
-  if(NIL_P(str)) str = rb_str_new(0, ilen);
-  else{
-    StringValue(str);
-    rb_str_modify(str);
-    rb_str_resize(str, ilen);
-  }
-  if(ilen == 0) return str;
-
-  Data_Get_Struct(self, SSL, ssl);
-  GetOpenFile(ossl_ssl_get_io(self), fptr);
-  if (ssl) {
-    if(SSL_pending(ssl) <= 0)
-      rb_thread_wait_fd(FPTR_TO_FD(fptr));
-    for (;;){
-      nread = SSL_read(ssl, RSTRING_PTR(str), RSTRING_LEN(str));
-      switch(ssl_get_error(ssl, nread)){
-        case SSL_ERROR_NONE:
-          goto end;
-        case SSL_ERROR_ZERO_RETURN:
-          rb_eof_error();
-        case SSL_ERROR_WANT_WRITE:
-          rb_io_wait_writable(FPTR_TO_FD(fptr));
-          continue;
-        case SSL_ERROR_WANT_READ:
-          rb_io_wait_readable(FPTR_TO_FD(fptr));
-          continue;
-        case SSL_ERROR_SYSCALL:
-          if(ERR_peek_error() == 0 && nread == 0) rb_eof_error();
-          rb_sys_fail(0);
-        default:
-          ossl_raise(eSSLError, "SSL_read:");
-      }
-    }
-  }
-  else {
-    rb_warning("SSL session is not started yet.");
-    return rb_funcall(ossl_ssl_get_io(self), rb_intern("read_nonblock"), 2, len, str);
-  }
-
-end:
-  rb_str_set_len(str, nread);
-  OBJ_TAINT(str);
-
-  return str;
-}
-
-/*
- * call-seq:
- *    ssl.read_nonblock(length) => string
- *    ssl.read_nonblock(length, buffer) => buffer
- *
- * === Parameters
- * * +length+ is a positive integer.
- * * +buffer+ is a string used to store the result.
- */
-static VALUE
-ossl_ssl_read_nonblock(int argc, VALUE *argv, VALUE self)
-{
     SSL *ssl;
     int ilen, nread = 0;
     VALUE len, str;
@@ -1187,11 +1116,12 @@ ossl_ssl_read_nonblock(int argc, VALUE *argv, VALUE self)
 
     Data_Get_Struct(self, SSL, ssl);
     GetOpenFile(ossl_ssl_get_io(self), fptr);
-    rb_io_set_nonblock(fptr);
     if (ssl) {
+	if(SSL_pending(ssl) <= 0)
+	    rb_thread_wait_fd(FPTR_TO_FD(fptr));
 	for (;;){
 	    nread = SSL_read(ssl, RSTRING_PTR(str), RSTRING_LEN(str));
-	    switch(SSL_get_error(ssl, nread)){
+	    switch(ssl_get_error(ssl, nread)){
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_ZERO_RETURN:
@@ -1200,7 +1130,7 @@ ossl_ssl_read_nonblock(int argc, VALUE *argv, VALUE self)
                 rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
-	        rb_sys_fail(fptr->path);
+                rb_io_wait_readable(FPTR_TO_FD(fptr));
 		continue;
 	    case SSL_ERROR_SYSCALL:
 		if(ERR_peek_error() == 0 && nread == 0) rb_eof_error();
@@ -1211,8 +1141,9 @@ ossl_ssl_read_nonblock(int argc, VALUE *argv, VALUE self)
         }
     }
     else {
+        ID id_sysread = rb_intern("sysread");
         rb_warning("SSL session is not started yet.");
-        return rb_funcall(ossl_ssl_get_io(self), rb_intern("sysread"), 2, len, str);
+        return rb_funcall(ossl_ssl_get_io(self), id_sysread, 2, len, str);
     }
 
   end:
@@ -1586,7 +1517,6 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "sysread",    ossl_ssl_read, -1);
     rb_define_method(cSSLSocket, "syswrite",   ossl_ssl_write, 1);
     rb_define_method(cSSLSocket, "sysclose",   ossl_ssl_close, 0);
-    rb_define_method(cSSLSocket, "read_nonblock",    ossl_ssl_read_nonblock, -1);
     rb_define_method(cSSLSocket, "cert",       ossl_ssl_get_cert, 0);
     rb_define_method(cSSLSocket, "peer_cert",  ossl_ssl_get_peer_cert, 0);
     rb_define_method(cSSLSocket, "peer_cert_chain", ossl_ssl_get_peer_cert_chain, 0);
