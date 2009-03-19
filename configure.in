@@ -359,14 +359,19 @@ AC_CACHE_CHECK([char bit], [rb_cv_char_bit],
 
 dnl RUBY_CHECK_SIZEOF [typename], [maybe same size types], [macros], [include]
 AC_DEFUN([RUBY_CHECK_SIZEOF],
-[if test "$universal_binary" = yes; then
+[m4_bmatch([$1], [\.], [], [if test "$universal_binary" = yes; then])
 AC_CACHE_CHECK([size of $1], [AS_TR_SH([ac_cv_sizeof_$1])], [
     unset AS_TR_SH(ac_cv_sizeof_$1)
+    rbcv_var="
+typedef m4_bpatsubst([$1], [\..*]) ac__type_sizeof_;
+static ac__type_sizeof_ *rbcv_ptr;
+@%:@define AS_TR_CPP(SIZEOF_$1) sizeof((*rbcv_ptr)[]m4_bmatch([$1], [\.], .m4_bpatsubst([$1], [^[^.]*\.])))
+"
     m4_ifval([$2], [test -z "${AS_TR_SH(ac_cv_sizeof_$1)+set}" && {
     for t in $2; do
 	AC_COMPILE_IFELSE(
-	    [AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT],
-		[sizeof($1) == sizeof($t)])], [
+	    [AC_LANG_BOOL_COMPILE_TRY(AC_INCLUDES_DEFAULT([$rbcv_var]),
+		[AS_TR_CPP(SIZEOF_$1) == sizeof($t)])], [
 		AS_TR_SH(ac_cv_sizeof_$1)=AS_TR_CPP([SIZEOF_]$t)
 		break])
     done
@@ -384,8 +389,9 @@ AC_CACHE_CHECK([size of $1], [AS_TR_SH([ac_cv_sizeof_$1])], [
 @%:@ define AS_TR_CPP(HAVE_$1) 0
 @%:@endif])"
 	    AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([$hdr], [!AS_TR_CPP(HAVE_$1)])], [continue])
-	    AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([$hdr],
-				[AS_TR_CPP(HAVE_$1) == (sizeof($1) == ([$[s / rb_cv_char_bit]]))])],
+	    AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([$hdr]
+				[$rbcv_var],
+				[AS_TR_CPP(HAVE_$1) == (AS_TR_CPP(SIZEOF_$1) == ([$[s / rb_cv_char_bit]]))])],
 		[AS_TR_SH(ac_cv_sizeof_$1)="${AS_TR_SH(ac_cv_sizeof_$1)+${AS_TR_SH(ac_cv_sizeof_$1)-} }${t}${s}"])
 	done
     done
@@ -396,8 +402,7 @@ AC_CACHE_CHECK([size of $1], [AS_TR_SH([ac_cv_sizeof_$1])], [
     _AC_COMPUTE_INT_COMPILE(AS_TR_CPP(SIZEOF_$1), [t], [AC_INCLUDES_DEFAULT([$4])]
 [${cond+$cond
 @%:@else}
-typedef $1 ac__type_sizeof_;
-@%:@define AS_TR_CPP(SIZEOF_$1) sizeof(ac__type_sizeof_)
+$rbcv_var
 ${cond+@%:@endif}
 @%:@ifndef AS_TR_CPP(SIZEOF_$1)
 @%:@define AS_TR_CPP(SIZEOF_$1) 0
@@ -427,9 +432,9 @@ ${cond+@%:@endif}
     done
     ${cond+echo "@%:@endif"}
 } >> confdefs.h
-else
+m4_bmatch([$1], [\.], [], [else
 AC_CHECK_SIZEOF([$1], 0, [$4])
-fi
+fi])
 ])
 
 RUBY_CHECK_SIZEOF(int, [], [ILP])
@@ -454,31 +459,32 @@ AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
 	    u=U;;
 	  when(*)
 	    AC_COMPILE_IFELSE(
-		[AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT]
-					  [$4], [($n)-1 > 0])],
+		[AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT([$4])], [($n)-1 > 0])],
 		[u=U]);;
 	esac
+	if test x"$t" = x; then
+	    for t in "long long" long int short; do
+		test -n "$u" && t="unsigned $t"
+		AC_COMPILE_IFELSE(
+		    [AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT([$4])]
+			[typedef $n rbcv_conftest_target_type;
+			typedef $t rbcv_conftest_replace_type;
+			extern rbcv_conftest_target_type rbcv_conftest_var;
+			extern rbcv_conftest_replace_type rbcv_conftest_var;
+			extern rbcv_conftest_target_type rbcv_conftest_func(void);
+			extern rbcv_conftest_replace_type rbcv_conftest_func(void);
+			], [sizeof(rbcv_conftest_target_type) == sizeof(rbcv_conftest_replace_type)])],
+		    [n="$t"; break])
+	    done
+	fi
 	case " $n " in
 	  when(*" long long "*)
 	    t=LL;;
 	  when(*" long "*)
 	    t=LONG;;
+	  when(*)
+	    t=INT;;
 	esac
-	if test x"$t" = x; then
-	    AC_COMPILE_IFELSE(
-		[AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT]
-					  [$4], [sizeof($n) > sizeof(long)])],
-		[t=LL])
-	fi
-	if test x"$t" = x; then
-	    AC_COMPILE_IFELSE(
-		[AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT]
-					  [$4], [sizeof($n) == sizeof(long)])],
-		[t=LONG])
-	fi
-	if test x"$t" = x; then
-	    t=INT
-	fi
 	rb_cv_[$1]_convertible=${u}${t}])
     m4_ifval([$2], AC_DEFINE_UNQUOTED(rb_[$1], $n))
     AC_DEFINE_UNQUOTED([$3]2NUM[(v)], [${rb_cv_[$1]_convertible}2NUM(v)])
@@ -914,33 +920,15 @@ RUBY_CHECK_SIZEOF(rlim_t, [int long "long long"], [], [
   #include <stdio.h>
 ])
 
-dnl Checks for typedefs, structures, and compiler characteristics.
-AC_DEFUN([RUBY_CHECK_HUGE],
-    [AC_CACHE_CHECK([whether $1 is huge], AS_TR_SH(rb_cv_huge_$1),
-[AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY(
-[AC_INCLUDES_DEFAULT([$4])
-static m4_bpatsubst([$1], [\..*]) rbcv_var;],
-[dnl
-sizeof(rbcv_var[]m4_bmatch([$1], [\.], .m4_bpatsubst([$1], [^[^.]*\.])))>sizeof(long)]
-)],
-[AS_TR_SH(rb_cv_huge_$1)=yes],
-[AS_TR_SH(rb_cv_huge_$1)=no])])
-if test "${AS_TR_SH(rb_cv_huge_$1)}" = yes; then
-    m4_ifval([$2], [$2], [AC_DEFINE(AS_TR_CPP(HUGE_$1))])
-m4_ifval([$3], [else
-$3
-])
-fi])
-
 AC_TYPE_SIZE_T
 RUBY_CHECK_SIZEOF(size_t, [int long void*])
 RUBY_CHECK_SIZEOF(ptrdiff_t, size_t)
 AC_STRUCT_ST_BLKSIZE
 AC_STRUCT_ST_BLOCKS
 AC_STRUCT_ST_RDEV
-RUBY_CHECK_HUGE([struct stat.st_size])
+RUBY_CHECK_SIZEOF([struct stat.st_size], [int long "long long"])
 if test "$ac_cv_member_struct_stat_st_blocks" = yes; then
-    RUBY_CHECK_HUGE(struct stat.st_blocks)
+    RUBY_CHECK_SIZEOF([struct stat.st_blocks], [int long "long long"])
 fi
 AC_CHECK_MEMBERS([struct stat.st_atim])
 AC_CHECK_MEMBERS([struct stat.st_atimespec])
@@ -1356,8 +1344,7 @@ else
   fi
 fi
 
-RUBY_CHECK_HUGE([struct stat.st_ino],
-  [AC_DEFINE(HUGE_ST_INO)], [], [@%:@include <sys/stat.h>])
+RUBY_CHECK_SIZEOF([struct stat.st_ino], [long "long long"], [], [@%:@include <sys/stat.h>])
 
 if test "$ac_cv_func_sysconf" = yes; then
   AC_DEFUN([RUBY_CHECK_SYSCONF], [dnl
@@ -2364,6 +2351,10 @@ if test "${universal_binary-no}" = yes ; then
 	    RUBY_DEFINE_IF([defined __${archs}__], RUBY_PLATFORM_CPU, ["${cpu}"])
 	done
     fi
+    ints='long int'
+    test "$ac_cv_type_long_long" = yes && ints="'long long' $ints"
+    AC_SUBST(UNIVERSAL_ARCHNAMES, "${universal_archnames}")
+    AC_SUBST(UNIVERSAL_INTS, "${ints}")
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM_OS, "${target_os}")
     AC_DEFINE_UNQUOTED(RUBY_ARCH, "universal-"RUBY_PLATFORM_OS)
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal."RUBY_PLATFORM_CPU"-"RUBY_PLATFORM_OS)

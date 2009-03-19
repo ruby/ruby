@@ -310,7 +310,7 @@ rb_stat_dev_minor(VALUE self)
 static VALUE
 rb_stat_ino(VALUE self)
 {
-#ifdef HUGE_ST_INO
+#if SIZEOF_STRUCT_STAT_ST_INO > SIZEOF_LONG
     return ULL2NUM(get_stat(self)->st_ino);
 #else
     return ULONG2NUM(get_stat(self)->st_ino);
@@ -503,7 +503,7 @@ static VALUE
 rb_stat_blocks(VALUE self)
 {
 #ifdef HAVE_STRUCT_STAT_ST_BLOCKS
-# ifdef HUGE_STRUCT_STAT_ST_BLOCKS
+# if SIZEOF_STRUCT_STAT_ST_BLOCKS > SIZEOF_LONG
     return ULL2NUM(get_stat(self)->st_blocks);
 # else
     return ULONG2NUM(get_stat(self)->st_blocks);

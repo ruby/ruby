@@ -65,6 +65,7 @@ $os2 = /os2/ =~ RUBY_PLATFORM
 $beos = /beos/ =~ RUBY_PLATFORM
 $haiku = /haiku/ =~ RUBY_PLATFORM
 $solaris = /solaris/ =~ RUBY_PLATFORM
+$universal = /universal/ =~ RUBY_PLATFORM
 $dest_prefix_pattern = (File::PATH_SEPARATOR == ';' ? /\A([[:alpha:]]:)?/ : /\A/)
 
 # :stopdoc:
@@ -440,7 +441,7 @@ end
 def cpp_include(header)
   if header
     header = [header] unless header.kind_of? Array
-    header.map {|h| "#include <#{h}>\n"}.join
+    header.map {|h| String === h ? "#include <#{h}>\n" : h}.join
   else
     ""
   end
@@ -977,14 +978,23 @@ end
 # SIZEOF_MYSTRUCT=12 preprocessor macro would be passed to the compiler.
 #
 def check_sizeof(type, headers = nil, &b)
-  expr = "sizeof(#{type})"
-  fmt = "%d"
+  typename, member = type.split('.', 2)
+  prelude = cpp_include(headers).split(/$/)
+  prelude << "typedef #{typename} rbcv_typedef_;\n"
+  prelude << "static rbcv_typedef_ *rbcv_ptr_;\n"
+  prelude = [prelude]
+  expr = "sizeof((*rbcv_ptr_)#{"."<<member if member})"
+  fmt = "%s"
   def fmt.%(x)
     x ? super : "failed"
   end
   checking_for checking_message("size of #{type}", headers), fmt do
-    if size = try_constant(expr, headers, &b)
-      $defs.push(format("-DSIZEOF_%s=%d", type.tr_cpp, size))
+    if (($universal and
+         size = UNIVERSAL_INTS.find {|t|
+           try_static_assert("#{expr} == sizeof(#{t})", prelude, &b)
+         }) or
+        size = try_constant(expr, prelude, &b))
+      $defs.push(format("-DSIZEOF_%s=%s", type.tr_cpp, size))
       size
     end
   end
@@ -1725,7 +1735,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       dirs.uniq!
       unless dirs.empty?
         mfile.print("clean-rb#{sfx}::\n")
-        for dir in dirs.sort_by {|dir| -dir.count('/')}
+        for dir in dirs.sort_by {|d| -d.count('/')}
           mfile.print("\t@-$(RMDIRS) #{fseprepl[dir]}\n")
         end
       end
@@ -1936,6 +1946,7 @@ LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L"%s"'
 RPATHFLAG = config_string('RPATHFLAG') || ''
 LIBARG = config_string('LIBARG') || '-l%s'
 MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main() {return 0;}'
+UNIVERSAL_INTS = config_string('UNIVERSAL_INTS') {|s| Shellwords.shellwords(s)} if $universal
 
 sep = config_string('BUILD_FILE_SEPARATOR') {|s| ":/=#{s}" if s != "/"} || ""
 CLEANINGS = "
