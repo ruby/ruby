@@ -864,7 +864,7 @@ class TestIO < Test::Unit::TestCase
       begin
         r.read_nonblock 4096
       rescue Errno::EWOULDBLOCK
-        assert_match(/WANT_READ/, $!.message)
+        assert_kind_of(IO::WaitReadable, $!)
       end
     }
   end
@@ -877,7 +877,7 @@ class TestIO < Test::Unit::TestCase
           w.write_nonblock "a"*100000
         }
       rescue Errno::EWOULDBLOCK
-        assert_match(/WANT_WRITE/, $!.message)
+        assert_kind_of(IO::WaitWritable, $!)
       end
     }
   end

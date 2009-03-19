@@ -272,10 +272,9 @@ ossl_to_der_if_possible(VALUE obj)
 /*
  * Errors
  */
-void
-ossl_raise(VALUE exc, const char *fmt, ...)
+static VALUE
+ossl_make_error(VALUE exc, const char *fmt, va_list args)
 {
-    va_list args;
     char buf[BUFSIZ];
     const char *msg;
     long e;
@@ -287,9 +286,7 @@ ossl_raise(VALUE exc, const char *fmt, ...)
     e = ERR_peek_error();
 #endif
     if (fmt) {
-	va_start(args, fmt);
 	len = vsnprintf(buf, BUFSIZ, fmt, args);
-	va_end(args);
     }
     if (len < BUFSIZ && e) {
 	if (dOSSL == Qtrue) /* FULL INFO */
@@ -306,7 +303,29 @@ ossl_raise(VALUE exc, const char *fmt, ...)
     ERR_clear_error();
 
     if(len > BUFSIZ) len = strlen(buf);
-    rb_exc_raise(rb_exc_new(exc, buf, len));
+    return rb_exc_new(exc, buf, len);
+}
+
+void
+ossl_raise(VALUE exc, const char *fmt, ...)
+{
+    va_list args;
+    VALUE err;
+    va_start(args, fmt);
+    err = ossl_make_error(exc, fmt, args);
+    va_end(args);
+    rb_exc_raise(err);
+}
+
+VALUE
+ossl_exc_new(VALUE exc, const char *fmt, ...)
+{
+    va_list args;
+    VALUE err;
+    va_start(args, fmt);
+    err = ossl_make_error(exc, fmt, args);
+    va_end(args);
+    return err;
 }
 
 /*

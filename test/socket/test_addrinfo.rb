@@ -236,7 +236,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     c.connect(serv.local_address)
     begin
       ret = serv.accept_nonblock
-    rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+    rescue IO::WaitReadable, Errno::EINTR
       IO.select([serv])
       retry
     end
@@ -299,7 +299,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     s2.send("test-socket-recvfrom", 0, s1.getsockname)
     begin
       data, ai = s1.recvfrom_nonblock(100)
-    rescue Errno::EWOULDBLOCK
+    rescue IO::WaitReadable
       IO.select([s1])
       retry
     end

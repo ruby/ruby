@@ -1114,15 +1114,17 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 		rb_eof_error();
 	    case SSL_ERROR_WANT_WRITE:
                 if (nonblock) {
-                    errno = EWOULDBLOCK;
-                    rb_sys_fail("SSL_ERROR_WANT_WRITE");
+                    VALUE exc = ossl_exc_new(eSSLError, "write would block");
+                    rb_extend_object(exc, rb_mWaitWritable);
+                    rb_exc_raise(exc);
                 }
                 rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
                 if (nonblock) {
-                    errno = EWOULDBLOCK;
-                    rb_sys_fail("SSL_ERROR_WANT_READ");
+                    VALUE exc = ossl_exc_new(eSSLError, "read would block");
+                    rb_extend_object(exc, rb_mWaitReadable);
+                    rb_exc_raise(exc);
                 }
                 rb_io_wait_readable(FPTR_TO_FD(fptr));
 		continue;

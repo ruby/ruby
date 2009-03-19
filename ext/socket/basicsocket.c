@@ -623,14 +623,22 @@ bsock_recv(int argc, VALUE *argv, VALUE sock)
  * 	c = TCPSocket.new(addr, port)
  * 	s = serv.accept
  * 	c.send "aaa", 0
- * 	IO.select([s]) # emulate blocking recv.
- * 	p s.recv_nonblock(10) #=> "aaa"
+ * 	begin # emulate blocking recv.
+ * 	  p s.recv_nonblock(10) #=> "aaa"
+ * 	rescue IO::WaitReadable
+ * 	  IO.select([s])
+ * 	  retry
+ * 	end
  *
  * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
  * to _recv_nonblock_ fails. 
  *
  * BasicSocket#recv_nonblock may raise any error corresponding to recvfrom(2) failure,
  * including Errno::EWOULDBLOCK.
+ *
+ * If the exception is Errno::EWOULDBLOCK or Errno::AGAIN,
+ * it is extended by IO::WaitReadable.
+ * So IO::WaitReadable can be used to rescue the exceptions for retrying recv_nonblock.
  *
  * === See
  * * Socket#recvfrom

@@ -986,6 +986,7 @@ PRINTF_ARGS(NORETURN(void rb_raise(VALUE, const char*, ...)), 2, 3);
 PRINTF_ARGS(NORETURN(void rb_fatal(const char*, ...)), 1, 2);
 PRINTF_ARGS(NORETURN(void rb_bug(const char*, ...)), 1, 2);
 NORETURN(void rb_sys_fail(const char*));
+NORETURN(void rb_mod_sys_fail(VALUE, const char*));
 NORETURN(void rb_iter_break(void));
 NORETURN(void rb_exit(int));
 NORETURN(void rb_notimplement(void));
@@ -1040,6 +1041,8 @@ RUBY_EXTERN VALUE rb_mFileTest;
 RUBY_EXTERN VALUE rb_mGC;
 RUBY_EXTERN VALUE rb_mMath;
 RUBY_EXTERN VALUE rb_mProcess;
+RUBY_EXTERN VALUE rb_mWaitReadable;
+RUBY_EXTERN VALUE rb_mWaitWritable;
 
 RUBY_EXTERN VALUE rb_cBasicObject;
 RUBY_EXTERN VALUE rb_cObject;

@@ -280,7 +280,7 @@ sock_connect(VALUE sock, VALUE addr)
  * 	sockaddr = Socket.sockaddr_in(80, 'www.google.com')
  * 	begin # emulate blocking connect
  * 	  socket.connect_nonblock(sockaddr)
- * 	rescue Errno::EINPROGRESS
+ * 	rescue IO::WaitWritable
  * 	  IO.select(nil, [socket]) # wait 3-way handshake completion
  * 	  begin
  * 	    socket.connect_nonblock(sockaddr) # check connection failure 
@@ -295,6 +295,10 @@ sock_connect(VALUE sock, VALUE addr)
  *
  * Socket#connect_nonblock may raise any error corresponding to connect(2) failure,
  * including Errno::EINPROGRESS.
+ *
+ * If the exception is Errno::EINPROGRESS,
+ * it is extended by IO::WaitWritable.
+ * So IO::WaitWritable can be used to rescue the exceptions for retrying connect_nonblock.
  *
  * === See
  * * Socket#connect
@@ -312,7 +316,7 @@ sock_connect_nonblock(VALUE sock, VALUE addr)
     n = connect(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_LEN(addr));
     if (n < 0) {
         if (errno == EINPROGRESS)
-            rb_sys_fail("connect(2) WANT_WRITE");
+            rb_mod_sys_fail(rb_mWaitWritable, "connect(2) would block");
 	rb_sys_fail("connect(2)");
     }
 
@@ -638,7 +642,7 @@ sock_recvfrom(int argc, VALUE *argv, VALUE sock)
  * 	client, client_sockaddr = socket.accept
  * 	begin # emulate blocking recvfrom
  * 	  pair = client.recvfrom_nonblock(20)
- * 	rescue Errno::EAGAIN, Errno::EWOULDBLOCK
+ * 	rescue IO::WaitReadable
  * 	  IO.select([client])
  * 	  retry
  * 	end
@@ -661,6 +665,10 @@ sock_recvfrom(int argc, VALUE *argv, VALUE sock)
  *
  * Socket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
  * including Errno::EWOULDBLOCK.
+ *
+ * If the exception is Errno::EWOULDBLOCK or Errno::AGAIN,
+ * it is extended by IO::WaitReadable.
+ * So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
  *
  * === See
  * * Socket#recvfrom
@@ -720,7 +728,7 @@ sock_accept(VALUE sock)
  * 	socket.listen(5)
  * 	begin # emulate blocking accept
  * 	  client_socket, client_sockaddr = socket.accept_nonblock
- * 	rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+ * 	rescue IO::WaitReadable, Errno::EINTR
  * 	  IO.select([socket])
  * 	  retry
  * 	end
@@ -743,6 +751,10 @@ sock_accept(VALUE sock)
  *
  * Socket#accept_nonblock may raise any error corresponding to accept(2) failure,
  * including Errno::EWOULDBLOCK.
+ *
+ * If the exception is Errno::EWOULDBLOCK, Errno::AGAIN, Errno::ECONNABORTED or Errno::EPROTO,
+ * it is extended by IO::WaitReadable.
+ * So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
  * 
  * === See
  * * Socket#accept

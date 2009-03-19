@@ -218,14 +218,22 @@ udp_send(int argc, VALUE *argv, VALUE sock)
  * 	s2.connect(*s1.addr.values_at(3,1))
  * 	s1.connect(*s2.addr.values_at(3,1))
  * 	s1.send "aaa", 0
- * 	IO.select([s2]) # emulate blocking recvfrom
- * 	p s2.recvfrom_nonblock(10)  #=> ["aaa", ["AF_INET", 33302, "localhost.localdomain", "127.0.0.1"]]
+ * 	begin # emulate blocking recvfrom
+ * 	  p s2.recvfrom_nonblock(10)  #=> ["aaa", ["AF_INET", 33302, "localhost.localdomain", "127.0.0.1"]]
+ * 	rescue IO::WaitReadable
+ * 	  IO.select([s2])
+ * 	  retry
+ * 	end
  *
  * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
  * to _recvfrom_nonblock_ fails. 
  *
  * UDPSocket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
  * including Errno::EWOULDBLOCK.
+ *
+ * If the exception is Errno::EWOULDBLOCK or Errno::AGAIN,
+ * it is extended by IO::WaitReadable.
+ * So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
  *
  * === See
  * * Socket#recvfrom

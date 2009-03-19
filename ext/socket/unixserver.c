@@ -70,7 +70,7 @@ unix_accept(VALUE sock)
  * 	serv = UNIXServer.new("/tmp/sock")
  * 	begin # emulate blocking accept
  * 	  sock = serv.accept_nonblock
- * 	rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+ * 	rescue IO::WaitReadable, Errno::EINTR
  * 	  IO.select([serv])
  * 	  retry
  * 	end
@@ -81,6 +81,10 @@ unix_accept(VALUE sock)
  *
  * UNIXServer#accept_nonblock may raise any error corresponding to accept(2) failure,
  * including Errno::EWOULDBLOCK.
+ *
+ * If the exception is Errno::EWOULDBLOCK, Errno::AGAIN, Errno::ECONNABORTED or Errno::EPROTO,
+ * it is extended by IO::WaitReadable.
+ * So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
  * 
  * === See
  * * UNIXServer#accept

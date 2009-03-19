@@ -133,8 +133,16 @@ module Net # :nodoc:
     def rbuf_fill
       begin
         @rbuf << @io.read_nonblock(BUFSIZE)
-      rescue Errno::EWOULDBLOCK
+      rescue IO::WaitReadable
         if IO.select([@io], nil, nil, @read_timeout)
+          retry
+        else
+          raise Timeout::TimeoutError
+        end
+      rescue IO::WaitWritable
+        # OpenSSL::Buffering#read_nonblock may fail with IO::WaitWritable.
+        # http://www.openssl.org/support/faq.html#PROG10
+        if IO.select(nil, [@io], nil, @read_timeout)
           retry
         else
           raise Timeout::TimeoutError

@@ -135,6 +135,7 @@ int ossl_pem_passwd_cb(char *, int, int, void *);
  */
 #define OSSL_ErrMsg() ERR_reason_error_string(ERR_get_error())
 NORETURN(void ossl_raise(VALUE, const char *, ...));
+VALUE ossl_exc_new(VALUE, const char *, ...);
 
 /*
  * Verify callback

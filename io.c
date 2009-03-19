@@ -110,6 +110,8 @@ extern void Init_File(void);
 VALUE rb_cIO;
 VALUE rb_eEOFError;
 VALUE rb_eIOError;
+VALUE rb_mWaitReadable;
+VALUE rb_mWaitWritable;
 
 VALUE rb_stdin, rb_stdout, rb_stderr;
 VALUE rb_deferr;		/* rescue VIM plugin */
@@ -1754,8 +1756,8 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
         if (n < 0) {
             if (!nonblock && rb_io_wait_readable(fptr->fd))
                 goto again;
-            if (nonblock && errno == EWOULDBLOCK)
-                rb_sys_fail("WANT_READ");
+            if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN))
+                rb_mod_sys_fail(rb_mWaitReadable, "read would block");
             rb_sys_fail_path(fptr->pathv);
         }
 	else if (n == 0) {
@@ -1855,20 +1857,24 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
  *  It causes all errors the read(2) system call causes: Errno::EWOULDBLOCK, Errno::EINTR, etc.
  *  The caller should care such errors.
  *
+ *  If the exception is Errno::EWOULDBLOCK or Errno::AGAIN,
+ *  it is extended by IO::WaitReadable.
+ *  So IO::WaitReadable can be used to rescue the exceptions for retrying read_nonblock.
+ *
  *  read_nonblock causes EOFError on EOF.
  *
  *  If the read buffer is not empty,
  *  read_nonblock reads from the buffer like readpartial.
  *  In this case, the read(2) system call is not called.
  *
- *  When read_nonblock raises EWOULDBLOCK,
+ *  When read_nonblock raises an exception kind of IO::WaitReadable,
  *  read_nonblock should not be called
  *  until io is readable for avoiding busy loop.
  *  This can be done as follows.
  *
  *    begin
  *      result = io.read_nonblock(maxlen)
- *    rescue Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EINTR
+ *    rescue IO::WaitReadable, Errno::EINTR
  *      IO.select([io])
  *      retry
  *    end
@@ -1904,6 +1910,10 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
  *  The result may also be smaller than string.length (partial write).
  *  The caller should care such errors and partial write.
  *
+ *  If the exception is Errno::EWOULDBLOCK or Errno::AGAIN,
+ *  it is extended by IO::WaitWritable.
+ *  So IO::WaitWritable can be used to rescue the exceptions for retrying write_nonblock.
+ *
  *    # Creates a pipe.
  *    r, w = IO.pipe
  *
@@ -1917,14 +1927,14 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
  *
  *  If the write buffer is not empty, it is flushed at first.
  *
- *  When write_nonblock raises EWOULDBLOCK,
+ *  When write_nonblock raises an exception kind of IO::WaitWritable,
  *  write_nonblock should not be called
  *  until io is writable for avoiding busy loop.
  *  This can be done as follows.
  *
  *    begin
  *      result = io.write_nonblock(string)
- *    rescue Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EINTR
+ *    rescue IO::WaitWritable, Errno::EINTR
  *      IO.select(nil, [io])
  *      retry
  *    end
@@ -1955,8 +1965,8 @@ rb_io_write_nonblock(VALUE io, VALUE str)
     n = write(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
 
     if (n == -1) {
-        if (errno == EWOULDBLOCK)
-            rb_sys_fail("WANT_WRITE");
+        if (errno == EWOULDBLOCK || errno == EAGAIN)
+            rb_mod_sys_fail(rb_mWaitWritable, "write would block");
         rb_sys_fail_path(fptr->pathv);
     }
 
@@ -8672,6 +8682,9 @@ Init_IO(void)
 
     rb_cIO = rb_define_class("IO", rb_cObject);
     rb_include_module(rb_cIO, rb_mEnumerable);
+
+    rb_mWaitReadable = rb_define_module_under(rb_cIO, "WaitReadable");
+    rb_mWaitWritable = rb_define_module_under(rb_cIO, "WaitWritable");
 
 #if 0
     /* This is necessary only for forcing rdoc handle File::open */

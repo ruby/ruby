@@ -1,3 +1,45 @@
+Thu Mar 19 20:29:40 2009  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_mWaitReadable): defined.
+	  (rb_mWaitWritable): defined.
+	  (io_getpartial): extend IO::WaitReadable on EWOULDBLOCK and EAGAIN.
+	  (rb_io_write_nonblock): extend IO::WaitWritable on EWOULDBLOCK and
+	  EAGAIN.
+
+	* error.c (make_errno_exc): extracted from rb_sys_fail.
+	  (rb_mod_sys_fail): new function.
+
+	* include/ruby/ruby.h (rb_mod_sys_fail): declared.
+	  (rb_mWaitReadable): declared.
+	  (rb_mWaitWritable): declared.
+
+	* ext/socket/init.c (rsock_s_recvfrom_nonblock): extend
+	  IO::WaitReadable on EWOULDBLOCK and EAGAIN.
+	  (rsock_s_accept_nonblock): extend IO::WaitReadable on EWOULDBLOCK,
+	  EAGAIN, ECONNABORTED and EPROTO.
+
+	* ext/socket/socket.c (sock_connect_nonblock): extend IO::WaitWritable
+	  on EINPROGRESS.
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal): extend
+	  IO::WaitWritable on EWOULDBLOCK and EAGAIN.
+	  (bsock_recvmsg_internal): extend IO::WaitReadable on EWOULDBLOCK and
+	  EAGAIN.
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_read_internal): raise SSLError
+	  extended by IO::WaitReadable/IO::WaitWritable on
+	  SSL_ERROR_WANT_READ/SSL_ERROR_WANT_WRITE.
+
+	* ext/openssl/ossl.c (ossl_make_error): extracted from ossl_raise.
+	  (ossl_exc_new): new function.
+
+	* ext/openssl/ossl.h (ossl_exc_new): declared.
+
+	* lib/net/protocol.rb (rbuf_fill): rescue IO::WaitReadable and
+	  IO::WaitWritable.
+
+	  [ruby-core:22539], [ruby-dev:38140] 
+
 Wed Mar 18 16:59:48 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/test_syslog.rb (TestSyslog#test_open): check
