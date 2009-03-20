@@ -218,8 +218,11 @@ class TestProcess < Test::Unit::TestCase
   end
 
   MANDATORY_ENVS = %w[RUBYLIB]
-  if /linux/ =~ RbConfig::CONFIG['target_os']
+  case RbConfig::CONFIG['target_os']
+  when /linux/
     MANDATORY_ENVS << 'LD_PRELOAD'
+  when /mswin|mingw/
+    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR])
   end
   if e = RbConfig::CONFIG['LIBPATHENV']
     MANDATORY_ENVS << e
@@ -286,6 +289,7 @@ class TestProcess < Test::Unit::TestCase
   UMASK = [RUBY, '-e', 'printf "%04o\n", File.umask']
 
   def test_execopts_umask
+    skip "umask is not supported" if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     IO.popen([*UMASK, :umask => 0]) {|io|
       assert_equal("0000", io.read.chomp)
     }
@@ -466,6 +470,9 @@ class TestProcess < Test::Unit::TestCase
                          STDERR=>"out", STDOUT=>[:child, STDERR])
       assert_equal("errout", File.read("out"))
 
+      if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+        skip "inheritance of fd other than stdin,stdout and stderr is not supported"
+      end
       Process.wait spawn(RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'",
                          STDOUT=>"out",
                          STDERR=>[:child, 3],
@@ -508,6 +515,9 @@ class TestProcess < Test::Unit::TestCase
       assert_raise(ArgumentError) {
         IO.popen([*ECHO["fuga"], STDOUT=>"out"]) {|io| }
       }
+      if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+        skip "inheritance of fd other than stdin,stdout and stderr is not supported"
+      end
       with_pipe {|r, w|
         IO.popen([RUBY, '-e', 'IO.new(3, "w").puts("a"); puts "b"', 3=>w]) {|io|
           assert_equal("b\n", io.read)
@@ -536,6 +546,9 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_fd_inheritance
+    if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+      skip "inheritance of fd other than stdin,stdout and stderr is not supported"
+    end
     with_pipe {|r, w|
       system(RUBY, '-e', 'IO.new(ARGV[0].to_i, "w").puts(:ba)', w.fileno.to_s)
       w.close
@@ -577,6 +590,9 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopts_close_others
+    if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+      skip "inheritance of fd other than stdin,stdout and stderr is not supported"
+    end
     with_tmpchdir {|d|
       with_pipe {|r, w|
         system(RUBY, '-e', 'STDERR.reopen("err", "w"); IO.new(ARGV[0].to_i, "w").puts("ma")', w.fileno.to_s, :close_others=>true)
@@ -692,22 +708,17 @@ class TestProcess < Test::Unit::TestCase
 
   def test_exec_noshell
     with_tmpchdir {|d|
-      with_pipe {|r, w|
-	write_file("s", <<-"End")
+      write_file("s", <<-"End")
 	  str = "echo non existing command name which contains spaces"
-	  w = IO.new(#{w.fileno}, "w")
-	  STDOUT.reopen(w)
-	  STDERR.reopen(w)
+	  STDERR.reopen(STDOUT)
 	  begin
 	    exec [str, str]
 	  rescue Errno::ENOENT
-	    w.write "Errno::ENOENT success"
+	    print "Errno::ENOENT success"
 	  end
 	End
-	system(RUBY, "s", :close_others=>false)
-	w.close
-	assert_equal("Errno::ENOENT success", r.read)
-      }
+      r = IO.popen([RUBY, "s", :close_others=>false], "r") {|f| f.read}
+      assert_equal("Errno::ENOENT success", r)
     }
   end
 
