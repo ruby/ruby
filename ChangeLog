@@ -40,6 +40,19 @@ Thu Mar 19 20:29:40 2009  Tanaka Akira  <akr@fsij.org>
 
 	  [ruby-core:22539], [ruby-dev:38140] 
 
+Thu Mar 19 18:49:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CHECK_SIZEOF): allows qualified name.
+
+	* configure.in (RUBY_REPLACE_TYPE): checks more strictly.
+
+	* configure.in (struct stat.st_size, struct stat.st_blocks),
+	  (struct stat.st_ino): check for size.
+
+	* lib/mkmf.rb (check_sizeof): allows qualified name.
+
+	* file.c (rb_stat_ino, rb_stat_blocks): check by size.
+
 Wed Mar 18 16:59:48 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/test_syslog.rb (TestSyslog#test_open): check
