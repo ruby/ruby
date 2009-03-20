@@ -21,6 +21,8 @@
 #include <crt_externs.h>
 #endif
 
+static VALUE rb_hash_s_try_convert _((VALUE, VALUE));
+
 #define HASH_DELETED  FL_USER1
 #define HASH_PROC_DEFAULT FL_USER2
 
@@ -343,7 +345,7 @@ rb_hash_s_create(argc, argv, klass)
     int i;
 
     if (argc == 1) {
-	tmp = rb_check_convert_type(argv[0], T_HASH, "Hash", "to_hash");
+	tmp = rb_hash_s_try_convert(Qnil, argv[0]);
 	if (!NIL_P(tmp)) {
 	    hash = hash_alloc0(klass);
 	    RHASH(hash)->tbl = st_copy(RHASH(tmp)->tbl);
@@ -388,6 +390,24 @@ to_hash(hash)
     VALUE hash;
 {
     return rb_convert_type(hash, T_HASH, "Hash", "to_hash");
+}
+
+/*
+ *  call-seq:
+ *     Hash.try_convert(obj) -> hash or nil
+ *
+ *  Try to convert <i>obj</i> into a hash, using to_hash method.
+ *  Returns converted hash or nil if <i>obj</i> cannot be converted
+ *  for any reason.
+ *
+ *     Hash.try_convert({1=>2})   # => {1=>2}
+ *     Hash.try_convert("1=>2")   # => nil
+ */
+static VALUE
+rb_hash_s_try_convert(dummy, hash)
+    VALUE dummy, hash;
+{
+    return rb_check_convert_type(hash, T_HASH, "Hash", "to_hash");
 }
 
 static int
@@ -2685,6 +2705,7 @@ Init_Hash()
 
     rb_define_alloc_func(rb_cHash, hash_alloc);
     rb_define_singleton_method(rb_cHash, "[]", rb_hash_s_create, -1);
+    rb_define_singleton_method(rb_cHash, "try_convert", rb_hash_s_try_convert, 1);
     rb_define_method(rb_cHash,"initialize", rb_hash_initialize, -1);
     rb_define_method(rb_cHash,"initialize_copy", rb_hash_replace, 1);
     rb_define_method(rb_cHash,"rehash", rb_hash_rehash, 0);

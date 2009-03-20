@@ -268,6 +268,33 @@ rb_check_array_type(ary)
     return rb_check_convert_type(ary, T_ARRAY, "Array", "to_ary");
 }
 
+/*
+ *  call-seq:
+ *     Array.try_convert(obj) -> array or nil
+ *
+ *  Try to convert <i>obj</i> into an array, using to_ary method.
+ *  Returns converted array or nil if <i>obj</i> cannot be converted
+ *  for any reason.  This method is to check if an argument is an
+ *  array.
+ *
+ *     Array.try_convert([1])   # => [1]
+ *     Array.try_convert("1")   # => nil
+ *
+ *     if tmp = Array.try_convert(arg)
+ *       # the argument is an array
+ *     elsif tmp = String.try_convert(arg)
+ *       # the argument is a string
+ *     end
+ *
+ */
+
+static VALUE
+rb_ary_s_try_convert(dummy, ary)
+    VALUE dummy, ary;
+{
+    return rb_check_array_type(ary);
+}
+
 static VALUE rb_ary_replace _((VALUE, VALUE));
 
 /*
@@ -3836,6 +3863,7 @@ Init_Array()
 
     rb_define_alloc_func(rb_cArray, ary_alloc);
     rb_define_singleton_method(rb_cArray, "[]", rb_ary_s_create, -1);
+    rb_define_singleton_method(rb_cArray, "try_convert", rb_ary_s_try_convert, 1);
     rb_define_method(rb_cArray, "initialize", rb_ary_initialize, -1);
     rb_define_method(rb_cArray, "initialize_copy", rb_ary_replace, 1);
 

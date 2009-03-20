@@ -614,6 +614,24 @@ rb_check_string_type(str)
     return str;
 }
 
+/*
+ *  call-seq:
+ *     String.try_convert(obj) -> string or nil
+ *
+ *  Try to convert <i>obj</i> into a String, using to_str method.
+ *  Returns converted regexp or nil if <i>obj</i> cannot be converted
+ *  for any reason.
+ *
+ *     String.try_convert("str")     # => str
+ *     String.try_convert(/re/)      # => nil
+ */
+static VALUE
+rb_str_s_try_convert(dummy, str)
+    VALUE dummy, str;
+{
+    return rb_check_string_type(str);
+}
+
 VALUE
 rb_str_substr(str, beg, len)
     VALUE str;
@@ -5003,6 +5021,7 @@ Init_String()
     rb_include_module(rb_cString, rb_mComparable);
     rb_include_module(rb_cString, rb_mEnumerable);
     rb_define_alloc_func(rb_cString, rb_str_s_alloc);
+    rb_define_singleton_method(rb_cString, "try_convert", rb_str_s_try_convert, 1);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
     rb_define_method(rb_cString, "initialize_copy", rb_str_replace, 1);
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);

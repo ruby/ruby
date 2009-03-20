@@ -22,6 +22,14 @@ with all sufficient information, see the ChangeLog file.
 
 * builtin classes
 
+  * Array#try_convert()
+  * Hash#try_convert()
+  * IO#try_convert()
+  * Regexp#try_convert()
+  * String#try_convert()
+
+    New methods.
+
   * Array#sample
 
     New method with which replaces #choice.

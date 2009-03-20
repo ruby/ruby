@@ -1973,6 +1973,39 @@ rb_reg_options(re)
     return options;
 }
 
+VALUE
+rb_check_regexp_type(re)
+    VALUE re;
+{
+    return rb_check_convert_type(re, T_REGEXP, "Regexp", "to_regexp");
+}
+
+static VALUE rb_reg_s_try_convert _((VALUE, VALUE));
+
+/*
+ *  call-seq:
+ *     Regexp.try_convert(obj) -> re or nil
+ *
+ *  Try to convert <i>obj</i> into a Regexp, using to_regexp method.
+ *  Returns converted regexp or nil if <i>obj</i> cannot be converted
+ *  for any reason.
+ *
+ *     Regexp.try_convert(/re/)         #=> /re/
+ *     Regexp.try_convert("re")         #=> nil
+ *
+ *     o = Object.new
+ *     Regexp.try_convert(o)            #=> nil
+ *     def o.to_regexp() /foo/ end
+ *     Regexp.try_convert(o)            #=> /foo/
+ *
+ */
+static VALUE
+rb_reg_s_try_convert(dummy, re)
+    VALUE dummy, re;
+{
+    return rb_check_regexp_type(re);
+}
+
 static VALUE
 rb_reg_s_union(self, args0)
     VALUE self;
@@ -1986,7 +2019,7 @@ rb_reg_s_union(self, args0)
     }
     else if (argc == 1) {
         VALUE v;
-        v = rb_check_convert_type(rb_ary_entry(args0, 0), T_REGEXP, "Regexp", "to_regexp");
+        v = rb_check_regexp_type(rb_ary_entry(args0, 0));
         if (!NIL_P(v))
             return v;
         else {
@@ -2004,7 +2037,7 @@ rb_reg_s_union(self, args0)
             volatile VALUE v;
             if (0 < i)
                 rb_str_buf_cat2(source, "|");
-            v = rb_check_convert_type(rb_ary_entry(args0, i), T_REGEXP, "Regexp", "to_regexp");
+            v = rb_check_regexp_type(rb_ary_entry(args0, i));
             if (!NIL_P(v)) {
                 if (FL_TEST(v, KCODE_FIXED)) {
                     if (kcode == -1) {
@@ -2399,6 +2432,7 @@ Init_Regexp()
     rb_define_singleton_method(rb_cRegexp, "escape", rb_reg_s_quote, -1);
     rb_define_singleton_method(rb_cRegexp, "union", rb_reg_s_union_m, -2);
     rb_define_singleton_method(rb_cRegexp, "last_match", rb_reg_s_last_match, -1);
+    rb_define_singleton_method(rb_cRegexp, "try_convert", rb_reg_s_try_convert, 1);
 
     rb_define_method(rb_cRegexp, "initialize", rb_reg_initialize_m, -1);
     rb_define_method(rb_cRegexp, "initialize_copy", rb_reg_init_copy, 1);
