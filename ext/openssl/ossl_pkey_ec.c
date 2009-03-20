@@ -201,7 +201,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
             BIO_free(in);
 
             if (ec == NULL) {
-                const char *name = STR2CSTR(arg);
+                const char *name = StringValueCStr(arg);
                 int nid = OBJ_sn2nid(name);
 
                 if (nid == NID_undef)
@@ -774,7 +774,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
             BIO_free(in);
 
             if (!group) {
-                const char *name = STR2CSTR(arg1);
+                const char *name = StringValueCStr(arg1);
                 int nid = OBJ_sn2nid(name);
 
                 if (nid == NID_undef)

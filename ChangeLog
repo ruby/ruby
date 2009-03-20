@@ -1,3 +1,11 @@
+Fri Mar 20 18:01:12 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_digest.c (GetDigestPtr): use StringValueCStr
+	  instead of STR2CSTR.
+
+	* ext/openssl/ossl_pkey_ec.c (ossl_ec_key_initialize): ditto.
+	  (ossl_ec_group_initialize): ditto.
+
 Thu Mar 19 23:18:44 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_ssl.c: revert incomplete read_nonblock

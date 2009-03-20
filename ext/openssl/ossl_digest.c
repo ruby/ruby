@@ -38,7 +38,7 @@ GetDigestPtr(VALUE obj)
     const EVP_MD *md;
 
     if (TYPE(obj) == T_STRING) {
-    	const char *name = STR2CSTR(obj);
+    	const char *name = StringValueCStr(obj);
 
         md = EVP_get_digestbyname(name);
         if (!md)
