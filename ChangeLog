@@ -1,3 +1,8 @@
+Fri Mar 20 09:22:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (libprefix): must not append "lib" after $(libdir),
+	  when load_relative is not used on darwin.  [ruby-dev:38182]
+
 Thu Mar 19 20:29:40 2009  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_mWaitReadable): defined.

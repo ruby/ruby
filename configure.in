@@ -1978,11 +1978,11 @@ if test "$enable_shared" = 'yes'; then
 	RUBY_SO_NAME="$RUBY_SO_NAME"'.$(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_LDSHARED='cc -dynamiclib -undefined suppress -flat_namespace'
 	if test "$load_relative" = yes; then
-	    libprefix='@executable_path/..'
+	    libprefix='@executable_path/../lib'
 	else
 	    libprefix='$(libdir)'
 	fi
-	LIBRUBY_DLDFLAGS='-install_name '${libprefix}'/lib/lib$(RUBY_SO_NAME).dylib'
+	LIBRUBY_DLDFLAGS='-install_name '${libprefix}'/lib$(RUBY_SO_NAME).dylib'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-current_version $(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_Init_* $(XLDFLAGS)'
