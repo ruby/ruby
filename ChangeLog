@@ -1,3 +1,12 @@
+Sat Mar 21 02:37:07 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/lib/openssl/buffering.rb
+	  (OpenSSL::Buffering#write_nonblock): new method.
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_write_nonblock): new method.
+	  (ossl_ssl_write_internal): defined.
+	  (ossl_ssl_write): use ossl_ssl_write_internal.
+
 Fri Mar 20 18:25:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (errmap): added ERROR_MOD_NOT_FOUND.

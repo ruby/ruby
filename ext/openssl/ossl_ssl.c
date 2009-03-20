@@ -1180,13 +1180,8 @@ ossl_ssl_read_nonblock(int argc, VALUE *argv, VALUE self)
     return ossl_ssl_read_internal(argc, argv, self, 1);
 }
 
-
-/*
- * call-seq:
- *    ssl.syswrite(string) => integer
- */
 static VALUE
-ossl_ssl_write(VALUE self, VALUE str)
+ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock)
 {
     SSL *ssl;
     int nwrite = 0;
@@ -1203,9 +1198,19 @@ ossl_ssl_write(VALUE self, VALUE str)
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_WANT_WRITE:
+                if (nonblock) {
+                    VALUE exc = ossl_exc_new(eSSLError, "write would block");
+                    rb_extend_object(exc, rb_mWaitWritable);
+                    rb_exc_raise(exc);
+                }
                 rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
+                if (nonblock) {
+                    VALUE exc = ossl_exc_new(eSSLError, "read would block");
+                    rb_extend_object(exc, rb_mWaitReadable);
+                    rb_exc_raise(exc);
+                }
                 rb_io_wait_readable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_SYSCALL:
@@ -1223,6 +1228,26 @@ ossl_ssl_write(VALUE self, VALUE str)
 
   end:
     return INT2NUM(nwrite);
+}
+
+/*
+ * call-seq:
+ *    ssl.syswrite(string) => integer
+ */
+static VALUE
+ossl_ssl_write(VALUE self, VALUE str)
+{
+    return ossl_ssl_write_internal(self, str, 0);
+}
+
+/*
+ * call-seq:
+ *    ssl.syswrite_nonblock(string) => integer
+ */
+static VALUE
+ossl_ssl_write_nonblock(VALUE self, VALUE str)
+{
+    return ossl_ssl_write_internal(self, str, 1);
 }
 
 /*
@@ -1545,6 +1570,7 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "sysread",    ossl_ssl_read, -1);
     rb_define_private_method(cSSLSocket, "sysread_nonblock",    ossl_ssl_read_nonblock, -1);
     rb_define_method(cSSLSocket, "syswrite",   ossl_ssl_write, 1);
+    rb_define_private_method(cSSLSocket, "syswrite_nonblock",    ossl_ssl_write_nonblock, 1);
     rb_define_method(cSSLSocket, "sysclose",   ossl_ssl_close, 0);
     rb_define_method(cSSLSocket, "cert",       ossl_ssl_get_cert, 0);
     rb_define_method(cSSLSocket, "peer_cert",  ossl_ssl_get_peer_cert, 0);

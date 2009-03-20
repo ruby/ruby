@@ -92,7 +92,8 @@ with all sufficient information, see the ChangeLog file.
 
 * openssl
   * new method:
-    * Buffering#read_nonblock
+    * OpenSSL::Buffering#read_nonblock
+    * OpenSSL::Buffering#write_nonblock
 
 * socket
 

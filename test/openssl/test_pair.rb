@@ -165,6 +165,33 @@ class OpenSSL::TestPair < Test::Unit::TestCase
     }
   end
 
+  def test_write_nonblock
+    ssl_pair {|s1, s2|
+      n = 0
+      begin
+        n += s1.write_nonblock("a" * 100000)
+        n += s1.write_nonblock("b" * 100000)
+        n += s1.write_nonblock("c" * 100000)
+        n += s1.write_nonblock("d" * 100000)
+        n += s1.write_nonblock("e" * 100000)
+        n += s1.write_nonblock("f" * 100000)
+      rescue IO::WaitWritable
+      end
+      s1.close
+      assert_equal(n, s2.read.length)
+    }
+  end
+
+  def test_write_nonblock_with_buffered_data
+    ssl_pair {|s1, s2|
+      s1.write "foo"
+      s1.write_nonblock("bar")
+      s1.write "baz"
+      s1.close
+      assert_equal("foobarbaz", s2.read)
+    }
+  end
+
 end
 
 end

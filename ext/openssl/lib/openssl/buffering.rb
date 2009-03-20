@@ -116,6 +116,7 @@ module Buffering
   #
   # So OpenSSL::Buffering#read_nonblock needs two rescue clause as follows.
   # 
+  #  # emulates blocking read (readpartial).
   #  begin
   #    result = ssl.read_nonblock(maxlen)
   #  rescue IO::WaitReadable
@@ -247,6 +248,48 @@ module Buffering
   def write(s)
     do_write(s)
     s.length
+  end
+
+  # Writes _str_ in the non-blocking manner.
+  #
+  # If there are buffered data, it is flushed at first.
+  # This may block.
+  #
+  # write_nonblock returns number of bytes written to the SSL connection.
+  #
+  # When no data can be written without blocking,
+  # It raises OpenSSL::SSL::SSLError extended by
+  # IO::WaitReadable or IO::WaitWritable.
+  #
+  # IO::WaitReadable means SSL needs to read internally.
+  # So write_nonblock should be called again after
+  # underlying IO is readable.
+  #
+  # IO::WaitWritable means SSL needs to write internally.
+  # So write_nonblock should be called again after
+  # underlying IO is writable.
+  #
+  # So OpenSSL::Buffering#write_nonblock needs two rescue clause as follows.
+  # 
+  #  # emulates blocking write.
+  #  begin
+  #    result = ssl.write_nonblock(str)
+  #  rescue IO::WaitReadable
+  #    IO.select([io])
+  #    retry
+  #  rescue IO::WaitWritable
+  #    IO.select(nil, [io])
+  #    retry
+  #  end
+  #
+  # Note that one reason that write_nonblock read from a underlying IO
+  # is the peer requests a new TLS/SSL handshake.
+  # See openssl FAQ for more details.
+  # http://www.openssl.org/support/faq.html
+  #
+  def write_nonblock(s)
+    flush
+    syswrite_nonblock(s)
   end
 
   def << (s)
