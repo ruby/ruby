@@ -845,7 +845,7 @@ join_argv(char *cmd, char *const *argv, BOOL escape)
     for (t = argv, q = cmd; p = *t; t++) {
 	quote = 0;
 	s = p;
-	if (!*p || strpbrk(p, " \t\"")) {
+	if (!*p || strpbrk(p, " \t\"'")) {
 	    quote = 1;
 	    *q++ = '"';
 	}
@@ -1018,6 +1018,10 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 	if (!(p = dln_find_exe_r(prog, NULL, fbuf, sizeof(fbuf)))) {
 	    shell = prog;
 	}
+	else {
+	    shell = p;
+	    translate_char(p, '/', '\\');
+	}
     }
     else {
 	int redir = -1;
@@ -1038,54 +1042,48 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 	    cmd = tmp;
 	}
 	else {
-	    int len = 0;
-	    if (*cmd == '"') {
-		for (prog = cmd + 1; *prog && *prog != '"'; prog = CharNext(prog));
-		len = prog - cmd - 1;
-		STRNDUPA(p, cmd + 1, len);
-		p = dln_find_exe_r(p, NULL, fbuf, sizeof(fbuf));
-		if (p) goto command_found;
-	    }
-	    for (prog = cmd; *prog; prog = CharNext(prog)) {
-		if (ISSPACE(*prog)) {
-		    len = prog - cmd;
-		    do ++prog; while (ISSPACE(*prog));
-		    break;
-		}
-		else {
-		    len = 0;
-		}
-	    }
-	    if (!len) len = strlen(cmd);
-
+	    int len = 0, quote = (*cmd == '"') ? '"' : 0;
 	    shell = NULL;
-	    prog = cmd;
-	    for (;;) {
+	    for (prog = cmd + !!quote;; prog = CharNext(prog)) {
 		if (!*prog) {
-		    p = dln_find_exe_r(cmd, NULL, fbuf, sizeof(fbuf));
+		    len = prog - cmd;
+		    shell = cmd;
 		    break;
 		}
-		if (strchr(":*?\"/\\", *prog)) {
-		    if (cmd[len]) {
-			STRNDUPA(p, cmd, len);
-		    }
-		    p = dln_find_exe_r(p ? p : cmd, NULL, fbuf, sizeof(fbuf));
+		if (*prog == quote) {
+		    len = prog++ - cmd - 1;
+		    STRNDUPA(p, cmd + 1, len);
+		    shell = p;
+		    break;
+		}
+		if (quote) continue;
+		if (strchr("*?\"", *prog)) {
+		    len = prog - cmd;
+		    STRNDUPA(p, cmd, len);
+		    shell = p;
 		    break;
 		}
 		if (ISSPACE(*prog) || strchr("<>|", *prog)) {
 		    len = prog - cmd;
 		    STRNDUPA(p, cmd, len);
-		    p = dln_find_exe_r(p, NULL, fbuf, sizeof(fbuf));
+		    shell = p;
 		    break;
 		}
-		prog++;
+	    }
+	    shell = dln_find_exe_r(shell, NULL, fbuf, sizeof(fbuf));
+	    if (shell == fbuf) {
+		len += strlen(prog) + (quote ? 2 : 0) + 1;
+		cmd = p = ALLOCA_N(char, len);
+		if (quote) *p++ = '"';
+		p += strlcpy(p, fbuf, --len);
+		if (quote) *p++ = '"';
+		p += strlcpy(p, prog, --len);
+		if (quote) shell = NULL;
+	    }
+	    else {
+		shell = p;
 	    }
 	}
-    }
-    if (p) {
-      command_found:
-	shell = p;
-	translate_char(p, '/', '\\');
     }
 
     return child_result(CreateChild(cmd, shell, NULL, NULL, NULL, NULL), mode);
@@ -1134,6 +1132,7 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 	join_argv(cmd, progs, ntcmd);
 	if (c_switch) strlcat(cmd, " /c", len);
 	if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, ntcmd);
+	prog = 0;
     }
     else {
 	len = argv_size(argv, FALSE);
@@ -1665,6 +1664,17 @@ move_to_next_entry(DIR *dirp)
     }
 }
 
+static char *
+win32_conv_from_wstr(const WCHAR *wstr, long *len)
+{
+    UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
+    char *ptr;
+    *len = WideCharToMultiByte(cp, 0, wstr, -1, NULL, 0, NULL, NULL) - 1;
+    if (!(ptr = malloc(*len + 1))) return 0;
+    WideCharToMultiByte(cp, 0, wstr, -1, ptr, *len + 1, NULL, NULL);
+    return ptr;
+}
+
 //
 // Readdir just returns the current string pointer and bumps the
 // string pointer to the next entry.
@@ -1672,13 +1682,8 @@ move_to_next_entry(DIR *dirp)
 static BOOL
 win32_direct_conv(const WCHAR *file, struct direct *entry, rb_encoding *dummy)
 {
-    UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
-    entry->d_namlen =
-	WideCharToMultiByte(cp, 0, file, -1, NULL, 0, NULL, NULL) - 1;
-    if (!(entry->d_name = malloc(entry->d_namlen + 1)))
+    if (!(entry->d_name = win32_conv_from_wstr(file, &entry->d_namlen)))
 	return FALSE;
-    WideCharToMultiByte(cp, 0, file, -1, entry->d_name, entry->d_namlen + 1,
-			NULL, NULL);
     return TRUE;
 }
 
@@ -1708,19 +1713,25 @@ rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc)
     return rb_str_encode(src, rb_enc_from_encoding(enc), ecflags, ecopts);
 }
 
+char *
+rb_w32_conv_from_wstr(const WCHAR *wstr, long *lenp, rb_encoding *enc)
+{
+    VALUE str = rb_w32_conv_from_wchar(wstr, enc);
+    long len;
+    char *ptr;
+
+    if (NIL_P(str)) return win32_conv_from_wstr(wstr, lenp);
+    *lenp = len = RSTRING_LEN(str);
+    memcpy(ptr = malloc(len + 1), RSTRING_PTR(str), len);
+    ptr[len] = '\0';
+    return ptr;
+}
+
 static BOOL
 ruby_direct_conv(const WCHAR *file, struct direct *entry, rb_encoding *enc)
 {
-    VALUE dst = rb_w32_conv_from_wchar(file, enc);
-
-    if (NIL_P(dst))
-	return win32_direct_conv(file, entry, NULL);
-
-    entry->d_namlen = RSTRING_LEN(dst);
-    if (!(entry->d_name = malloc(entry->d_namlen + 1)))
+    if (!(entry->d_name = rb_w32_conv_from_wstr(file, &entry->d_namlen, enc)))
 	return FALSE;
-    memcpy(entry->d_name, RSTRING_PTR(dst), entry->d_namlen);
-    entry->d_name[entry->d_namlen] = '\0';
     return TRUE;
 }
 
@@ -5002,3 +5013,59 @@ rb_w32_fsopen(const char *path, const char *mode, int shflags)
     return f;
 }
 #endif
+
+BOOL
+rb_w32_get_special_directory(int n, WCHAR *path)
+{
+    if (!get_special_folder(n, path))
+	return FALSE;
+    regulate_path(path);
+    return TRUE;
+}
+
+static VALUE
+w32_get_special_directory(VALUE self, VALUE num)
+{
+    VALUE str;
+    int n = NUM2INT(num);
+    WCHAR path[_MAX_PATH];
+
+    if (!rb_w32_get_special_directory(n, path)) {
+	rb_sys_fail(0);
+    }
+    str = rb_w32_conv_from_wchar(path, rb_filesystem_encoding());
+    OBJ_TAINT(str);
+    return str;
+}
+
+static VALUE
+w32_get_system_directory(VALUE self)
+{
+    VALUE str;
+    WCHAR path[_MAX_PATH];
+
+    if (!get_system_directory(path, numberof(path))) {
+	rb_sys_fail(0);
+    }
+    regulate_path(path);
+    str = rb_w32_conv_from_wchar(path, rb_filesystem_encoding());
+    OBJ_TAINT(str);
+    return str;
+}
+
+void
+Init_win32(void)
+{
+    VALUE mWin32 = rb_define_module("Win32");
+    VALUE dir = rb_define_module_under(mWin32, "Dir");
+    rb_define_module_function(dir, "special", w32_get_special_directory, 1);
+    rb_define_module_function(dir, "system", w32_get_system_directory, 0);
+    rb_define_const(dir, "LOCAL_APPDATA", UINT2NUM(CSIDL_LOCAL_APPDATA));
+    rb_define_const(dir, "COMMON_APPDATA", UINT2NUM(CSIDL_COMMON_APPDATA));
+    rb_define_const(dir, "WINDOWS", UINT2NUM(CSIDL_WINDOWS));
+    rb_define_const(dir, "SYSTEM", UINT2NUM(CSIDL_SYSTEM));
+    rb_define_const(dir, "PROFILE", UINT2NUM(CSIDL_PROFILE));
+    rb_define_const(dir, "PERSONAL", UINT2NUM(CSIDL_PERSONAL));
+    rb_define_const(mWin32, "Version", UINT2NUM(rb_w32_osver()));
+    rb_ivar_set(rb_mKernel, rb_intern("@__win32__"), mWin32);
+}
