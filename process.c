@@ -2336,19 +2336,28 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
     else {
 	rb_proc_exec_n(argc, argv, prog);
     }
-#ifndef FD_CLOEXEC
-    preserving_errno({
-	fprintf(stderr, "%s:%d: command not found: %s\n",
-		rb_sourcefile(), rb_sourceline(), prog);
-    });
-#endif
     return -1;
 }
 
 int
 rb_exec(const struct rb_exec_arg *e)
 {
+#if !defined FD_CLOEXEC && !defined HAVE_SPAWNV
+    char errmsg[80] = { '\0' };
+    int ret = rb_exec_err(e, errmsg, sizeof(errmsg));
+    preserving_errno(
+	if (errmsg[0]) {
+	    fprintf(stderr, "%s\n", errmsg);
+	}
+	else {
+	    fprintf(stderr, "%s:%d: command not found: %s\n",
+		    rb_sourcefile(), rb_sourceline(), e->prog);
+	}
+    );
+    return ret;
+#else
     return rb_exec_err(e, NULL, 0);
+#endif
 }
 
 #ifdef HAVE_FORK

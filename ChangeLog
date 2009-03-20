@@ -1,3 +1,8 @@
+Sat Mar 21 08:19:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_exec): prints error message only on platforms
+	  neither close-on-exec nor spawnv is supported.
+
 Sat Mar 21 08:17:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_spawn, rb_w32_aspawn): omit program name
