@@ -1,3 +1,7 @@
+Fri Mar 20 18:25:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (errmap): added ERROR_MOD_NOT_FOUND.
+
 Fri Mar 20 09:22:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (libprefix): must not append "lib" after $(libdir),
