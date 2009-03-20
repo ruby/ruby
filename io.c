@@ -4755,7 +4755,7 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
 	rb_run_exec_options(eargp, &sarg);
     }
     while ((pid = (args ?
-		   rb_w32_aspawn(P_NOWAIT, 0, args) :
+		   rb_w32_aspawn(P_NOWAIT, cmd, args) :
 		   rb_w32_spawn(P_NOWAIT, cmd, 0))) == -1) {
 	/* exec failed */
 	switch (errno) {

@@ -1,3 +1,8 @@
+Sat Mar 21 07:25:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (pipe_open): should pass program name even if multiple
+	  arguments are given.  fix for TestProcess::test_argv0.
+
 Sat Mar 21 02:37:07 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/lib/openssl/buffering.rb
