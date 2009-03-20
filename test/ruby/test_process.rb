@@ -868,6 +868,13 @@ class TestProcess < Test::Unit::TestCase
       assert(!status.success?)
       assert_match(/\Atako pid=\d+ ppid=\d+\ntika pid=\d+ ppid=\d+\n\z/, result)
       assert_not_equal(result[/\d+/].to_i, status.pid)
+
+      if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+        Dir.mkdir(path = "path with space")
+        write_file(bat = path + "/battest.bat", "@echo %1")
+        r = IO.popen([bat, "foo 'bar'"]) {|f| f.read}
+        assert_equal(%["foo 'bar'"\n], r, '[ruby-core:22960]')
+      end
     }
   end
 
