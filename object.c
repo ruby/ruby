@@ -2242,8 +2242,9 @@ rb_convert_type(val, type, tname, method)
     if (TYPE(val) == type) return val;
     v = convert_type(val, tname, method, Qtrue);
     if (TYPE(v) != type) {
-	rb_raise(rb_eTypeError, "%s#%s should return %s",
-		 rb_obj_classname(val), method, tname);
+	const char *cname = rb_obj_classname(val);
+	rb_raise(rb_eTypeError, "can't convert %s to %s (%s#%s gives %s)",
+		 cname, tname, cname, method, rb_obj_classname(v));
     }
     return v;
 }
@@ -2261,8 +2262,9 @@ rb_check_convert_type(val, type, tname, method)
     v = convert_type(val, tname, method, Qfalse);
     if (NIL_P(v)) return Qnil;
     if (TYPE(v) != type) {
-	rb_raise(rb_eTypeError, "%s#%s should return %s",
-		 rb_obj_classname(val), method, tname);
+	const char *cname = rb_obj_classname(val);
+	rb_raise(rb_eTypeError, "can't convert %s to %s (%s#%s gives %s)",
+		 cname, tname, cname, method, rb_obj_classname(v));
     }
     return v;
 }
@@ -2275,8 +2277,9 @@ rb_to_integer(val, method)
 {
     VALUE v = convert_type(val, "Integer", method, Qtrue);
     if (!rb_obj_is_kind_of(v, rb_cInteger)) {
-	rb_raise(rb_eTypeError, "%s#%s should return Integer",
-		 rb_obj_classname(val), method);
+	const char *cname = rb_obj_classname(val);
+	rb_raise(rb_eTypeError, "can't convert %s to Integer (%s#%s gives %s)",
+		 cname, cname, method, rb_obj_classname(v));
     }
     return v;
 }

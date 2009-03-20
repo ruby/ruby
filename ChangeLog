@@ -1,3 +1,8 @@
+Fri Mar 20 22:55:00 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* object.c (rb_convert_type, rb_to_integer)
+	  (rb_check_convert_type): Improve error messages.
+
 Fri Mar 20 18:41:53 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (Array#try_convert): New method backported from 1.9.
