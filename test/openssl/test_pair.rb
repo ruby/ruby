@@ -192,6 +192,62 @@ class OpenSSL::TestPair < Test::Unit::TestCase
     }
   end
 
+  def test_connect_accept_nonblock
+    host = "127.0.0.1"
+    port = 0
+    ctx = OpenSSL::SSL::SSLContext.new()
+    ctx.ciphers = "ADH"
+    serv = TCPServer.new(host, port)
+    ssls = OpenSSL::SSL::SSLServer.new(serv, ctx)
+
+    port = serv.connect_address.ip_port
+
+    sock1 = TCPSocket.new(host, port)
+    sock2 = serv.accept
+    serv.close
+
+    th = Thread.new {
+      s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx)
+      s2.sync_close = true
+      begin
+        sleep 0.2
+        s2.accept_nonblock
+      rescue IO::WaitReadable
+        IO.select([s2])
+        retry
+      rescue IO::WaitWritable
+        IO.select(nil, [s2])
+        retry
+      end
+      s2
+    }
+
+    sleep 0.1
+    ctx = OpenSSL::SSL::SSLContext.new()
+    ctx.ciphers = "ADH"
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx)
+    begin
+      sleep 0.2
+      s1.connect_nonblock
+    rescue IO::WaitReadable
+      IO.select([s1])
+      retry
+    rescue IO::WaitWritable
+      IO.select(nil, [s1])
+      retry
+    end
+    s1.sync_close = true
+
+    s2 = th.value
+
+    s1.print "a\ndef"
+    assert_equal("a\n", s2.gets)
+  ensure
+    serv.close if serv && !serv.closed?
+    sock1.close if sock1 && !sock1.closed?
+    sock2.close if sock2 && !sock2.closed?
+  end
+
 end
 
 end

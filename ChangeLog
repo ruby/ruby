@@ -1,3 +1,16 @@
+Sat Mar 21 15:54:41 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_ssl.c (write_would_block): defined.
+	  (read_would_block): defined.
+	  (ossl_start_ssl): add nonblock argument.
+	  (ossl_ssl_connect): follow ossl_start_ssl change.
+	  (ossl_ssl_connect_nonblock): new method.
+	  (ossl_ssl_accept): follow ossl_start_ssl change.
+	  (ossl_ssl_accept_nonblock): new method.
+	  (ossl_ssl_read_internal): use write_would_block and
+	  read_would_block.
+	  (ossl_ssl_write_internal): ditto.
+
 Sat Mar 21 08:19:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_exec): prints error message only on platforms

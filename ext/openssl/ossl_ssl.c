@@ -1020,8 +1020,28 @@ ossl_ssl_setup(VALUE self)
 #define ssl_get_error(ssl, ret) SSL_get_error(ssl, ret)
 #endif
 
+static void
+write_would_block(int nonblock)
+{
+    if (nonblock) {
+        VALUE exc = ossl_exc_new(eSSLError, "write would block");
+        rb_extend_object(exc, rb_mWaitWritable);
+        rb_exc_raise(exc);
+    }
+}
+
+static void
+read_would_block(int nonblock)
+{
+    if (nonblock) {
+        VALUE exc = ossl_exc_new(eSSLError, "read would block");
+        rb_extend_object(exc, rb_mWaitReadable);
+        rb_exc_raise(exc);
+    }
+}
+
 static VALUE
-ossl_start_ssl(VALUE self, int (*func)(), const char *funcname)
+ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, int nonblock)
 {
     SSL *ssl;
     rb_io_t *fptr;
@@ -1044,9 +1064,11 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname)
 
 	switch((ret2 = ssl_get_error(ssl, ret))){
 	case SSL_ERROR_WANT_WRITE:
+            write_would_block(nonblock);
             rb_io_wait_writable(FPTR_TO_FD(fptr));
             continue;
 	case SSL_ERROR_WANT_READ:
+            read_would_block(nonblock);
             rb_io_wait_readable(FPTR_TO_FD(fptr));
             continue;
 	case SSL_ERROR_SYSCALL:
@@ -1068,7 +1090,18 @@ static VALUE
 ossl_ssl_connect(VALUE self)
 {
     ossl_ssl_setup(self);
-    return ossl_start_ssl(self, SSL_connect, "SSL_connect");
+    return ossl_start_ssl(self, SSL_connect, "SSL_connect", 0);
+}
+
+/*
+ * call-seq:
+ *    ssl.connect_nonblock => self
+ */
+static VALUE
+ossl_ssl_connect_nonblock(VALUE self)
+{
+    ossl_ssl_setup(self);
+    return ossl_start_ssl(self, SSL_connect, "SSL_connect", 1);
 }
 
 /*
@@ -1079,7 +1112,18 @@ static VALUE
 ossl_ssl_accept(VALUE self)
 {
     ossl_ssl_setup(self);
-    return ossl_start_ssl(self, SSL_accept, "SSL_accept");
+    return ossl_start_ssl(self, SSL_accept, "SSL_accept", 0);
+}
+
+/*
+ * call-seq:
+ *    ssl.accept_nonblock => self
+ */
+static VALUE
+ossl_ssl_accept_nonblock(VALUE self)
+{
+    ossl_ssl_setup(self);
+    return ossl_start_ssl(self, SSL_accept, "SSL_accept", 1);
 }
 
 static VALUE
@@ -1113,19 +1157,11 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 	    case SSL_ERROR_ZERO_RETURN:
 		rb_eof_error();
 	    case SSL_ERROR_WANT_WRITE:
-                if (nonblock) {
-                    VALUE exc = ossl_exc_new(eSSLError, "write would block");
-                    rb_extend_object(exc, rb_mWaitWritable);
-                    rb_exc_raise(exc);
-                }
+                write_would_block(nonblock);
                 rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
-                if (nonblock) {
-                    VALUE exc = ossl_exc_new(eSSLError, "read would block");
-                    rb_extend_object(exc, rb_mWaitReadable);
-                    rb_exc_raise(exc);
-                }
+                read_would_block(nonblock);
                 rb_io_wait_readable(FPTR_TO_FD(fptr));
 		continue;
 	    case SSL_ERROR_SYSCALL:
@@ -1198,19 +1234,11 @@ ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock)
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_WANT_WRITE:
-                if (nonblock) {
-                    VALUE exc = ossl_exc_new(eSSLError, "write would block");
-                    rb_extend_object(exc, rb_mWaitWritable);
-                    rb_exc_raise(exc);
-                }
+                write_would_block(nonblock);
                 rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
-                if (nonblock) {
-                    VALUE exc = ossl_exc_new(eSSLError, "read would block");
-                    rb_extend_object(exc, rb_mWaitReadable);
-                    rb_exc_raise(exc);
-                }
+                read_would_block(nonblock);
                 rb_io_wait_readable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_SYSCALL:
@@ -1566,7 +1594,9 @@ Init_ossl_ssl()
     rb_define_alias(cSSLSocket, "to_io", "io");
     rb_define_method(cSSLSocket, "initialize", ossl_ssl_initialize, -1);
     rb_define_method(cSSLSocket, "connect",    ossl_ssl_connect, 0);
+    rb_define_method(cSSLSocket, "connect_nonblock",    ossl_ssl_connect_nonblock, 0);
     rb_define_method(cSSLSocket, "accept",     ossl_ssl_accept, 0);
+    rb_define_method(cSSLSocket, "accept_nonblock",     ossl_ssl_accept_nonblock, 0);
     rb_define_method(cSSLSocket, "sysread",    ossl_ssl_read, -1);
     rb_define_private_method(cSSLSocket, "sysread_nonblock",    ossl_ssl_read_nonblock, -1);
     rb_define_method(cSSLSocket, "syswrite",   ossl_ssl_write, 1);

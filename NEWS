@@ -37,6 +37,7 @@ with all sufficient information, see the ChangeLog file.
     * new modules:
       * IO::WaitReadable
       * IO::WaitWritable
+        They are used to extend non-blocking exceptions.
 
   * Process
     * extended methods:
@@ -91,9 +92,11 @@ with all sufficient information, see the ChangeLog file.
     * PTY.open
 
 * openssl
-  * new method:
+  * new methods:
     * OpenSSL::Buffering#read_nonblock
     * OpenSSL::Buffering#write_nonblock
+    * OpenSSL::SSL::SSLSocket#connect_nonblock
+    * OpenSSL::SSL::SSLSocket#accept_nonblock
 
 * socket
 
