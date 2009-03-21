@@ -275,7 +275,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	switch( cfunc->type ){
 	case DLTYPE_VOID:
 #define CASE(n) case n: { \
-            DECL_FUNC_CDECL(f,void,DLSTACK_PROTO##n) = cfunc->ptr; \
+	    DECL_FUNC_CDECL(f,void,DLSTACK_PROTO##n) = cfunc->ptr; \
 	    f(DLSTACK_ARGS##n(stack)); \
 	    result = Qnil; \
 }
