@@ -1096,6 +1096,20 @@ ossl_ssl_connect(VALUE self)
 /*
  * call-seq:
  *    ssl.connect_nonblock => self
+ *
+ * initiate the TLS/SSL handshake as a client in non-blocking manner.
+ *
+ *   # emulates blocking connect
+ *   begin
+ *     ssl.connect_nonblock
+ *   rescue IO::WaitReadable
+ *     IO.select([s2])
+ *     retry
+ *   rescue IO::WaitWritable
+ *     IO.select(nil, [s2])
+ *     retry
+ *   end
+ *
  */
 static VALUE
 ossl_ssl_connect_nonblock(VALUE self)
@@ -1118,6 +1132,20 @@ ossl_ssl_accept(VALUE self)
 /*
  * call-seq:
  *    ssl.accept_nonblock => self
+ *
+ * initiate the TLS/SSL handshake as a server in non-blocking manner.
+ *
+ *   # emulates blocking accept
+ *   begin
+ *     ssl.accept_nonblock
+ *   rescue IO::WaitReadable
+ *     IO.select([s2])
+ *     retry
+ *   rescue IO::WaitWritable
+ *     IO.select(nil, [s2])
+ *     retry
+ *   end
+ *
  */
 static VALUE
 ossl_ssl_accept_nonblock(VALUE self)
