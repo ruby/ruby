@@ -1,7 +1,7 @@
 Sun Mar 22 20:39:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb: use Kernel.exit to get rid of using
-	  IRB::ExtendCommandBundle#exit.  a patch from Dmitry Vazhov by
+	  IRB::ExtendCommandBundle#exit.  a patch from Dmitry Vazhov at
 	  [ruby-core:22986].
 
 Fri Mar 20 22:55:00 2009  Akinori MUSHA  <knu@iDaemons.org>
