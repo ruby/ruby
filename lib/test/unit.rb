@@ -275,6 +275,6 @@ end
 
 at_exit do
   unless $! || Test::Unit.run?
-    exit Test::Unit::AutoRunner.run
+    Kernel.exit Test::Unit::AutoRunner.run
   end
 end
