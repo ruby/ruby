@@ -824,6 +824,15 @@ class TestProcess < Test::Unit::TestCase
       assert_match(/\Ataka pid=\d+ ppid=\d+\z/, result1)
       assert_match(/\Ataki pid=\d+ ppid=\d+\z/, result2)
       assert_not_equal(result1[/\d+/].to_i, status.pid)
+
+      if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+        Dir.mkdir(path = "path with space")
+        write_file(bat = path + "/bat test.bat", "@echo %1>out")
+        system(bat, "foo 'bar'")
+        assert_equal(%["foo 'bar'"\n], File.read("out"), '[ruby-core:22960]')
+        system(%[#{bat.dump} "foo 'bar'"])
+        assert_equal(%["foo 'bar'"\n], File.read("out"), '[ruby-core:22960]')
+      end
     }
   end
 
@@ -847,6 +856,23 @@ class TestProcess < Test::Unit::TestCase
       assert_match(/\Ataku pid=\d+ ppid=\d+\z/, result1)
       assert_match(/\Atake pid=\d+ ppid=\d+\z/, result2)
       assert_not_equal(result1[/\d+/].to_i, status.pid)
+
+      if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+        Dir.mkdir(path = "path with space")
+        write_file(bat = path + "/bat test.bat", "@echo %1>out")
+        pid = spawn(bat, "foo 'bar'")
+        Process.wait pid
+        status = $?
+        assert(status.exited?)
+        assert(status.success?)
+        assert_equal(%["foo 'bar'"\n], File.read("out"), '[ruby-core:22960]')
+        pid = spawn(%[#{bat.dump} "foo 'bar'"])
+        Process.wait pid
+        status = $?
+        assert(status.exited?)
+        assert(status.success?)
+        assert_equal(%["foo 'bar'"\n], File.read("out"), '[ruby-core:22960]')
+      end
     }
   end
 
@@ -871,8 +897,10 @@ class TestProcess < Test::Unit::TestCase
 
       if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
         Dir.mkdir(path = "path with space")
-        write_file(bat = path + "/battest.bat", "@echo %1")
+        write_file(bat = path + "/bat test.bat", "@echo %1")
         r = IO.popen([bat, "foo 'bar'"]) {|f| f.read}
+        assert_equal(%["foo 'bar'"\n], r, '[ruby-core:22960]')
+        r = IO.popen(%[#{bat.dump} "foo 'bar'"]) {|f| f.read}
         assert_equal(%["foo 'bar'"\n], r, '[ruby-core:22960]')
       end
     }

@@ -1005,6 +1005,18 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
     return child;
 }
 
+static int
+is_batch(const char *cmd)
+{
+    int len = strlen(cmd);
+    if (len <= 4) return 0;
+    cmd += len - 4;
+    if (*cmd++ != '.') return 0;
+    if (strcasecmp(cmd, "bat") == 0) return 1;
+    if (strcasecmp(cmd, "cmd") == 0) return 1;
+    return 0;
+}
+
 rb_pid_t
 rb_w32_spawn(int mode, const char *cmd, const char *prog)
 {
@@ -1043,27 +1055,21 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 	}
 	else {
 	    int len = 0, quote = (*cmd == '"') ? '"' : 0;
-	    shell = NULL;
+	    const char *comspec = shell;
 	    for (prog = cmd + !!quote;; prog = CharNext(prog)) {
 		if (!*prog) {
 		    len = prog - cmd;
 		    shell = cmd;
 		    break;
 		}
-		if (*prog == quote) {
+		if ((unsigned char)*prog == quote) {
 		    len = prog++ - cmd - 1;
 		    STRNDUPA(p, cmd + 1, len);
 		    shell = p;
 		    break;
 		}
 		if (quote) continue;
-		if (strchr("*?\"", *prog)) {
-		    len = prog - cmd;
-		    STRNDUPA(p, cmd, len);
-		    shell = p;
-		    break;
-		}
-		if (ISSPACE(*prog) || strchr("<>|", *prog)) {
+		if (ISSPACE(*prog) || strchr("<>|*?\"", *prog)) {
 		    len = prog - cmd;
 		    STRNDUPA(p, cmd, len);
 		    shell = p;
@@ -1071,17 +1077,30 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 		}
 	    }
 	    shell = dln_find_exe_r(shell, NULL, fbuf, sizeof(fbuf));
-	    if (shell == fbuf) {
-		len += strlen(prog) + (quote ? 2 : 0) + 1;
-		cmd = p = ALLOCA_N(char, len);
-		if (quote) *p++ = '"';
-		p += strlcpy(p, fbuf, --len);
-		if (quote) *p++ = '"';
-		p += strlcpy(p, prog, --len);
-		if (quote) shell = NULL;
+	    if (!shell) {
+		shell = comspec;
 	    }
 	    else {
-		shell = p;
+		len = strlen(shell);
+		if (strchr(shell, ' ')) quote = -1;
+		if (shell == fbuf) {
+		    p = fbuf;
+		}
+		else if (shell != p && strchr(shell, '/')) {
+		    STRNDUPA(p, shell, len);
+		    shell = p;
+		}
+		if (p) translate_char(p, '/', '\\');
+		if (is_batch(shell)) {
+		    int alen = strlen(prog);
+		    cmd = p = ALLOCA_N(char, len + alen + (quote ? 2 : 0) + 1);
+		    if (quote) *p++ = '"';
+		    memcpy(p, shell, len);
+		    p += len;
+		    if (quote) *p++ = '"';
+		    memcpy(p, prog, alen + 1);
+		    shell = 0;
+		}
 	    }
 	}
     }
@@ -1092,7 +1111,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 rb_pid_t
 rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 {
-    int len, differ = 0, c_switch = 0;
+    int len, c_switch = 0;
     BOOL ntcmd = FALSE, tmpnt;
     const char *shell;
     char *cmd, fbuf[MAXPATHLEN];
@@ -1105,40 +1124,41 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 	ntcmd = tmpnt;
 	prog = shell;
 	c_switch = 1;
-	differ = 1;
     }
     else if ((cmd = dln_find_exe_r(prog, NULL, fbuf, sizeof(fbuf)))) {
 	if (cmd == prog) strlcpy(cmd = fbuf, prog, sizeof(fbuf));
 	translate_char(cmd, '/', '\\');
 	prog = cmd;
-	argv++;
-	differ = 1;
     }
     else if (strchr(prog, '/')) {
-	strlcpy(fbuf, prog, sizeof(fbuf));
-	translate_char(fbuf, '/', '\\');
-	prog = fbuf;
-	argv++;
-	differ = 1;
+	len = strlen(prog);
+	if (len < sizeof(fbuf))
+	    strlcpy(cmd = fbuf, prog, sizeof(fbuf));
+	else
+	    STRNDUPA(cmd, prog, len);
+	translate_char(cmd, '/', '\\');
+	prog = cmd;
     }
-    if (differ) {
+    if (c_switch || is_batch(prog)) {
 	char *progs[2];
 	progs[0] = (char *)prog;
 	progs[1] = NULL;
 	len = argv_size(progs, ntcmd);
 	if (c_switch) len += 3;
+	else ++argv;
 	if (argv[0]) len += argv_size(argv, ntcmd);
 	cmd = ALLOCA_N(char, len);
 	join_argv(cmd, progs, ntcmd);
 	if (c_switch) strlcat(cmd, " /c", len);
 	if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, ntcmd);
-	prog = 0;
+	prog = c_switch ? shell : 0;
     }
     else {
 	len = argv_size(argv, FALSE);
 	cmd = ALLOCA_N(char, len);
 	join_argv(cmd, argv, FALSE);
     }
+
     return child_result(CreateChild(cmd, prog, NULL, NULL, NULL, NULL), mode);
 }
 

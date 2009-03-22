@@ -1,3 +1,8 @@
+Sun Mar 22 14:51:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_spawn, rb_w32_aspawn): use NULL as
+	  application name for batch files.
+
 Sat Mar 21 15:54:41 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_ssl.c (write_would_block): defined.
