@@ -64,6 +64,10 @@ with all sufficient information, see the ChangeLog file.
 
     Renamed from ENV.index.
 
+  * IO#ungetbyte
+
+    Added as an alias to #ungetc.
+
   * Proc#===
 
     New method primarily for use in the case-when construct.

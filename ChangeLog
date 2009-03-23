@@ -1,5 +1,7 @@
 Mon Mar 23 21:07:09 2009  Akinori MUSHA  <knu@iDaemons.org>
 
+	* io.c (IO#ungetbyte): New method backported from 1.9.
+
 	* array.c (ary_resize_capa): Remove an unused function.
 
 	* array.c, bignum.c, dir.c, enumerator.c, gc.c, io.c, numeric.c,
