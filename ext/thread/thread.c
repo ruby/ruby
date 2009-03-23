@@ -242,19 +242,22 @@ wake_all(List *list)
     return Qnil;
 }
 
+extern int rb_thread_join _((VALUE thread, double limit));
+#define DELAY_INFTY 1E30
+
 static VALUE
-wait_list_inner(List *list)
+wait_list_inner(VALUE arg)
 {
-    push_list(list, rb_thread_current());
+    push_list((List *)arg, rb_thread_current());
     rb_thread_stop();
     return Qnil;
 }
 
 static VALUE
-wait_list_cleanup(List *list)
+wait_list_cleanup(VALUE arg)
 {
     /* cleanup in case of spurious wakeups */
-    remove_one(list, rb_thread_current());
+    remove_one((List *)arg, rb_thread_current());
     return Qnil;
 }
 
@@ -390,6 +393,25 @@ rb_mutex_try_lock(VALUE self)
     return Qtrue;
 }
 
+static VALUE
+wait_mutex(VALUE arg)
+{
+    Mutex *mutex = (Mutex *)arg;
+    VALUE current = rb_thread_current();
+
+    push_list(&mutex->waiting, current);
+    do {
+	rb_thread_critical = 0;
+	rb_thread_join(mutex->owner, DELAY_INFTY);
+	rb_thread_critical = 1;
+	if (!MUTEX_LOCKED_P(mutex)) {
+	    mutex->owner = current;
+	    break;
+	}
+    } while (mutex->owner != current);
+    return Qnil;
+}
+
 /*
  * Document-method: lock
  * call-seq: lock
@@ -410,14 +432,7 @@ lock_mutex(Mutex *mutex)
 	mutex->owner = current;
     }
     else {
-	do {
-	    wait_list(&mutex->waiting);
-	    rb_thread_critical = 1;
-	    if (!MUTEX_LOCKED_P(mutex)) {
-		mutex->owner = current;
-		break;
-	    }
-	} while (mutex->owner != current);
+	rb_ensure(wait_mutex, (VALUE)mutex, wait_list_cleanup, (VALUE)&mutex->waiting);
     }
 
     rb_thread_critical = 0;

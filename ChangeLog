@@ -1,3 +1,14 @@
+Mon Mar 23 18:26:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_value): missed to change at r17874.  [ruby-core:17595]
+
+Mon Mar 23 18:26:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_join): new API.
+
+	* ext/thread/thread.c (wait_mutex, lock_mutex): wait until the locking
+	  thread exits.  [ruby-dev:34856]
+
 Mon Mar 23 17:41:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_load_ok): checks if regular file, except for the
