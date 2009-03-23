@@ -136,6 +136,12 @@ with all sufficient information, see the ChangeLog file.
 
     Return an enumerator if no block is given.
 
+* stringio
+
+  * StringIO#ungetbyte
+
+    Added as an alias to #ungetc.
+
 * rss
 
   * 0.2.4 -> 0.2.5

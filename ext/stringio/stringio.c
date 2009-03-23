@@ -726,7 +726,8 @@ strio_each_byte(self)
 
 /*
  * call-seq:
- *   strio.getc   -> fixnum or nil
+ *   strio.getbyte -> fixnum or nil
+ *   strio.getc    -> fixnum or nil
  *
  * See IO#getc.
  */
@@ -765,9 +766,10 @@ strio_extend(ptr, pos, len)
 
 /*
  * call-seq:
- *   strio.ungetc(integer)   -> nil
+ *   strio.ungetbyte(integer) -> nil
+ *   strio.ungetc(integer)    -> nil
  *
- * Pushes back one character (passed as a parameter) onto *strio*
+ * Pushes back one byte (passed as a parameter) onto *strio*
  * such that a subsequent buffered read will return it.  Pushing back 
  * behind the beginning of the buffer string is not possible.  Nothing
  * will be done if such an attempt is made.
@@ -1356,6 +1358,7 @@ Init_stringio()
     rb_define_method(StringIO, "getc", strio_getc, 0);
     rb_define_method(StringIO, "getbyte", strio_getc, 0);
     rb_define_method(StringIO, "ungetc", strio_ungetc, 1);
+    rb_define_method(StringIO, "ungetbyte", strio_ungetc, 1);
     rb_define_method(StringIO, "readchar", strio_readchar, 0);
     rb_define_method(StringIO, "readbyte", strio_readchar, 0);
     rb_define_method(StringIO, "gets", strio_gets, -1);
