@@ -1,3 +1,7 @@
+Mon Mar 23 21:54:20 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* process.c: Eliminate an "unused variable" warning.
+
 Mon Mar 23 21:18:30 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/stringio/stringio.c (StringIO#ungetbyte): New method
