@@ -1,3 +1,7 @@
+Mon Mar 23 21:16:21 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* process.c: Stick with the K&R style in 1.8.
+
 Mon Mar 23 21:07:09 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* io.c (IO#ungetbyte): New method backported from 1.9.

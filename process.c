@@ -909,7 +909,8 @@ rb_detach_process(pid)
  */
 
 static VALUE
-proc_detach(VALUE obj, VALUE pid)
+proc_detach(obj, pid)
+    VALUE obj, pid;
 {
     rb_secure(2);
     return rb_detach_process(NUM2INT(pid));
@@ -1905,7 +1906,8 @@ proc_setpriority(obj, which, who, prio)
  */
 
 static VALUE
-proc_getrlimit(VALUE obj, VALUE resource)
+proc_getrlimit(obj, resource)
+    VALUE obj, resource;
 {
 #if defined(HAVE_GETRLIMIT) && defined(RLIM2NUM)
     struct rlimit rlim;
@@ -1959,7 +1961,10 @@ proc_getrlimit(VALUE obj, VALUE resource)
  */
 
 static VALUE
-proc_setrlimit(int argc, VALUE *argv, VALUE obj)
+proc_setrlimit(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
 #if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
     VALUE resource, rlim_cur, rlim_max;
@@ -2594,7 +2599,8 @@ static size_t maxgroups = 32;
  */
 
 static VALUE
-proc_getgroups(VALUE obj)
+proc_getgroups(obj)
+    VALUE obj;
 {
 #ifdef HAVE_GETGROUPS
     VALUE ary;
@@ -2634,7 +2640,8 @@ proc_getgroups(VALUE obj)
  */
 
 static VALUE
-proc_setgroups(VALUE obj, VALUE ary)
+proc_setgroups(obj, ary)
+    VALUE obj, ary;
 {
 #ifdef HAVE_SETGROUPS
     size_t ngroups;
@@ -2744,7 +2751,8 @@ proc_getmaxgroups(obj)
  */
 
 static VALUE
-proc_setmaxgroups(VALUE obj, VALUE val)
+proc_setmaxgroups(obj, val)
+    VALUE obj, val;
 {
     size_t  ngroups = FIX2INT(val);
 
