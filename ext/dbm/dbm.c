@@ -91,7 +91,8 @@ fdbm_alloc(VALUE klass)
 static VALUE
 fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE file, vmode, vflags;
+    volatile VALUE file;
+    VALUE vmode, vflags;
     DBM *dbm;
     struct dbmdata *dbmp;
     int mode, flags = 0;

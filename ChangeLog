@@ -1,3 +1,11 @@
+Mon Mar 23 21:41:14 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/dbm/dbm.c (fdbm_initialize): Make the file variable
+	  volatile, because FilePathValue() currently does not protect the
+	  given variable from GC. (Probably it should)
+
+	* ext/sdbm/init.c (fsdbm_initialize): Ditto.
+
 Mon Mar 23 19:22:14 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* file.c (rb_file_s_lstat): Back out.
