@@ -1,3 +1,9 @@
+Mon Mar 23 19:17:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/thread/thread.c (rb_queue_pop, rb_queue_push): should not lock
+	  mutex if got an exception while waiting, and should ensure unlocked
+	  after signaled.  [ruby-dev:37545]
+
 Mon Mar 23 18:26:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_value): missed to change at r17874.  [ruby-core:17595]

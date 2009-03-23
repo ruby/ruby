@@ -77,5 +77,14 @@ class TC_Thread < Test::Unit::TestCase
             assert_equal("exit.", result[/.*\Z/], '[ruby-dev:30653]')
         }
     end
+
+    def test_queue_rescue
+        require "timeout"
+        queue = Queue.new
+        assert_raises(Timeout::Error) {Timeout.timeout(0.001) {queue.pop}}
+        queue.push(1)
+        assert_nothing_raised("[ruby-dev:37545]") {assert_equal(1, queue.pop)}
+        assert(queue.empty?)
+    end
 end
 
