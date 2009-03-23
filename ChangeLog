@@ -1,3 +1,7 @@
+Mon Mar 23 14:32:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_spawn): use original command if not found.
+
 Mon Mar 23 06:51:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/depend (link_so): replaces $(TARGET) with basename of the

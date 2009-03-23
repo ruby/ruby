@@ -1055,7 +1055,6 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 	}
 	else {
 	    int len = 0, quote = (*cmd == '"') ? '"' : 0;
-	    const char *comspec = shell;
 	    for (prog = cmd + !!quote;; prog = CharNext(prog)) {
 		if (!*prog) {
 		    len = prog - cmd;
@@ -1078,7 +1077,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 	    }
 	    shell = dln_find_exe_r(shell, NULL, fbuf, sizeof(fbuf));
 	    if (!shell) {
-		shell = comspec;
+		shell = p ? p : cmd;
 	    }
 	    else {
 		len = strlen(shell);
