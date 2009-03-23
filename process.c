@@ -5449,13 +5449,17 @@ Init_process(void)
     {
         VALUE inf = RLIM2NUM(RLIM_INFINITY);
 #ifdef RLIM_SAVED_MAX
-	VALUE v = RLIM_INFINITY == RLIM_SAVED_MAX ? inf : RLIM2NUM(RLIM_SAVED_MAX);
-        rb_define_const(rb_mProcess, "RLIM_SAVED_MAX", v);
+	{
+	    VALUE v = RLIM_INFINITY == RLIM_SAVED_MAX ? inf : RLIM2NUM(RLIM_SAVED_MAX);
+	    rb_define_const(rb_mProcess, "RLIM_SAVED_MAX", v);
+	}
 #endif
         rb_define_const(rb_mProcess, "RLIM_INFINITY", inf);
 #ifdef RLIM_SAVED_CUR
-        v = RLIM_INFINITY == RLIM_SAVED_CUR ? inf : RLIM2NUM(RLIM_SAVED_CUR);
-        rb_define_const(rb_mProcess, "RLIM_SAVED_CUR", v);
+	{
+	    VALUE v = RLIM_INFINITY == RLIM_SAVED_CUR ? inf : RLIM2NUM(RLIM_SAVED_CUR);
+	    rb_define_const(rb_mProcess, "RLIM_SAVED_CUR", v);
+	}
 #endif
     }
 #ifdef RLIMIT_CORE
