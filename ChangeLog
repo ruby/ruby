@@ -1,3 +1,11 @@
+Mon Mar 23 21:07:09 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (ary_resize_capa): Remove an unused function.
+
+	* array.c, bignum.c, dir.c, enumerator.c, gc.c, io.c, numeric.c,
+	  object.c, re.c, string.c, struct.c: Mixing two styles is not a
+	  good thing.  Stick with the K&R style in 1.8.
+
 Sun Mar 22 20:39:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb: use Kernel.exit to get rid of using

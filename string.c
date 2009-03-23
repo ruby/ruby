@@ -514,7 +514,8 @@ rb_str_modify(str)
 }
 
 static inline void
-str_discard(VALUE str)
+str_discard(str)
+    VALUE str;
 {
     if (str_independent(str)) {
 	xfree(RSTRING_PTR(str));
@@ -716,7 +717,9 @@ rb_str_unlocktmp(str)
 }
 
 void
-rb_str_set_len(VALUE str, long len)
+rb_str_set_len(str, len)
+    VALUE str;
+    long len;
 {
     RSTRING(str)->len = len;
     RSTRING(str)->ptr[len] = '\0';
@@ -3961,7 +3964,8 @@ rb_str_each_byte(str)
  */
 
 static VALUE
-rb_str_each_char(VALUE str)
+rb_str_each_char(str)
+    VALUE str;
 {
     int i, len, n;
     const char *ptr;

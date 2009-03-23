@@ -1611,8 +1611,13 @@ ruby_brace_glob(str, flags, func, arg)
     return ruby_brace_glob0(str, flags & ~GLOB_VERBOSE, func, arg);
 }
 
+static int push_glob _((VALUE, const char *, int));
+
 static int
-push_glob(VALUE ary, const char *str, int flags)
+push_glob(ary, str, flags)
+    VALUE ary;
+    const char *str;
+    int flags;
 {
     struct glob_args args;
 

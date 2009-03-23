@@ -1239,7 +1239,8 @@ VALUE rb_proc_new _((VALUE (*)(ANYARGS/* VALUE yieldarg[, VALUE procarg] */), VA
  */
 
 static VALUE
-sym_to_proc(VALUE sym)
+sym_to_proc(sym)
+    VALUE sym;
 {
     return rb_proc_new(sym_call, (VALUE)SYM2ID(sym));
 }
@@ -2285,7 +2286,9 @@ rb_to_integer(val, method)
 }
 
 VALUE
-rb_check_to_integer(VALUE val, const char *method)
+rb_check_to_integer(val, method)
+    VALUE val;
+    const char *method;
 {
     VALUE v;
 

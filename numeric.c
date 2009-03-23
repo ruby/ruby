@@ -281,7 +281,7 @@ num_quo(x, y)
 }
 
 
-static VALUE num_floor(VALUE num);
+static VALUE num_floor _((VALUE));
 
 /*
  *  call-seq:
@@ -1816,7 +1816,8 @@ int_int_p(num)
  */
 
 static VALUE
-int_odd_p(VALUE num)
+int_odd_p(num)
+    VALUE num;
 {
     if (rb_funcall(num, '%', 1, INT2FIX(2)) != INT2FIX(0)) {
         return Qtrue;
@@ -1832,7 +1833,8 @@ int_odd_p(VALUE num)
  */
 
 static VALUE
-int_even_p(VALUE num)
+int_even_p(num)
+    VALUE num;
 {
     if (rb_funcall(num, '%', 1, INT2FIX(2)) == INT2FIX(0)) {
         return Qtrue;
@@ -1874,7 +1876,8 @@ int_succ(num)
  */
 
 static VALUE
-int_pred(VALUE num)
+int_pred(num)
+    VALUE num;
 {
     if (FIXNUM_P(num)) {
         long i = FIX2LONG(num) - 1;
@@ -2999,7 +3002,8 @@ fix_zero_p(num)
  */
 
 static VALUE
-fix_odd_p(VALUE num)
+fix_odd_p(num)
+    VALUE num;
 {
     if (num & 2) {
         return Qtrue;
@@ -3015,7 +3019,8 @@ fix_odd_p(VALUE num)
  */
 
 static VALUE
-fix_even_p(VALUE num)
+fix_even_p(num)
+    VALUE num;
 {
     if (num & 2) {
         return Qfalse;

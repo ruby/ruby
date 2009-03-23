@@ -1196,7 +1196,8 @@ read_all(fptr, siz, str)
     return str;
 }
 
-void rb_io_set_nonblock(rb_io_t *fptr)
+void rb_io_set_nonblock(fptr)
+    rb_io_t *fptr;
 {
     int flags;
 #ifdef F_GETFL
@@ -1423,7 +1424,8 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
  */
 
 static VALUE
-rb_io_write_nonblock(VALUE io, VALUE str)
+rb_io_write_nonblock(io, str)
+    VALUE io, str;
 {
     rb_io_t *fptr;
     FILE *f;
@@ -1700,7 +1702,7 @@ rscheck(rsptr, rslen, rs)
     return 1;
 }
 
-static VALUE rb_io_getline(VALUE rs, VALUE io);
+static VALUE rb_io_getline _((VALUE, VALUE));
 
 static VALUE
 rb_io_getline(rs, io)
@@ -2137,10 +2139,13 @@ rb_io_bytes(io)
 
 /*
  *  call-seq:
- *     ios.getc   => fixnum or nil
+ *     ios.getbyte => fixnum or nil
+ *     ios.getc    => fixnum or nil
  *  
  *  Gets the next 8-bit byte (0..255) from <em>ios</em>. Returns
- *  <code>nil</code> if called at end of file.
+ *  <code>nil</code> if called at end of file.  getc() will change and
+ *  return a character in 1.9, so if what you exactly mean is a byte,
+ *  use getbyte().
  *     
  *     f = File.new("testfile")
  *     f.getc   #=> 84
@@ -2197,9 +2202,10 @@ rb_getc(f)
 
 /*
  *  call-seq:
+ *     ios.readbyte   => fixnum
  *     ios.readchar   => fixnum
  *  
- *  Reads a character as with <code>IO#getc</code>, but raises an
+ *  Reads a byte as with <code>IO#getc</code>, but raises an
  *  <code>EOFError</code> on end of file.
  */
 
@@ -2217,9 +2223,10 @@ rb_io_readchar(io)
 
 /*
  *  call-seq:
- *     ios.ungetc(integer)   => nil
+ *     ios.ungetbyte(integer) => nil
+ *     ios.ungetc(integer)    => nil
  *  
- *  Pushes back one character (passed as a parameter) onto <em>ios</em>,
+ *  Pushes back one byte (passed as a parameter) onto <em>ios</em>,
  *  such that a subsequent buffered read will return it. Only one character
  *  may be pushed back before a subsequent read operation (that is,
  *  you will be able to read only the last of several characters that have been pushed
@@ -3140,7 +3147,7 @@ rb_io_unbuffered(fptr)
     rb_io_synchronized(fptr);
 }
 
-static VALUE pipe_open(VALUE pstr, const char *pname, const char *mode);
+static VALUE pipe_open _((VALUE, const char *, const char *));
 
 static VALUE
 pipe_open(pstr, pname, mode)
@@ -6011,6 +6018,7 @@ Init_IO()
     rb_define_method(rb_cIO, "readchar",  rb_io_readchar, 0);
     rb_define_method(rb_cIO, "readbyte",  rb_io_readchar, 0);
     rb_define_method(rb_cIO, "ungetc",rb_io_ungetc, 1);
+    rb_define_method(rb_cIO, "ungetbyte",rb_io_ungetc, 1);
     rb_define_method(rb_cIO, "<<",    rb_io_addstr, 1);
     rb_define_method(rb_cIO, "flush", rb_io_flush, 0);
     rb_define_method(rb_cIO, "tell", rb_io_tell, 0);

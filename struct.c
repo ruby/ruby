@@ -325,8 +325,11 @@ rb_struct_s_def(argc, argv, klass)
     return st;
 }
 
+static size_t num_members _((VALUE));
+
 static size_t
-num_members(VALUE klass)
+num_members(klass)
+    VALUE klass;
 {
     VALUE members;
     members = rb_struct_iv_get(klass, "__members__");

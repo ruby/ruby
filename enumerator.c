@@ -655,8 +655,11 @@ yielder_mark(void *p)
     rb_gc_mark(ptr->proc);
 }
 
+static struct yielder *yielder_ptr _((VALUE));
+
 static struct yielder *
-yielder_ptr(VALUE obj)
+yielder_ptr(obj)
+    VALUE obj;
 {
     struct yielder *ptr;
 

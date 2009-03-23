@@ -682,8 +682,10 @@ match_alloc(klass)
     return (VALUE)match;
 }
 
+static void match_check _((VALUE));
 static void
-match_check(VALUE match)
+match_check(match)
+    VALUE match;
 {
     if (!RMATCH(match)->str) {
 	rb_raise(rb_eTypeError, "uninitialized Match");
@@ -1366,7 +1368,8 @@ match_string(match)
  */
 
 static VALUE
-match_inspect(VALUE match)
+match_inspect(match)
+    VALUE match;
 {
     const char *cname = rb_obj_classname(match);
     VALUE str;
@@ -2101,7 +2104,8 @@ rb_reg_s_union(self, args0)
  *     Regexp.union(/dogs/, /cats/i)        #=> /(?-mix:dogs)|(?i-mx:cats)/
  */
 static VALUE
-rb_reg_s_union_m(VALUE self, VALUE args)
+rb_reg_s_union_m(self, args)
+    VALUE self, args;
 {
     VALUE v;
     if (RARRAY_LEN(args) == 1 &&

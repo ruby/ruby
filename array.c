@@ -43,15 +43,11 @@ memfill(mem, size, val)
     }
 }
 
+static void ary_double_capa _((VALUE, long));
 static void
-ary_resize_capa(VALUE ary, long capacity)
-{
-    REALLOC_N(RARRAY(ary)->ptr, VALUE, capacity);
-    RARRAY(ary)->aux.capa = capacity;
-}
-
-static void
-ary_double_capa(VALUE ary, long min)
+ary_double_capa(ary, min)
+    VALUE ary;
+    long min;
 {
     long new_capa = RARRAY(ary)->aux.capa / 2;
 
@@ -3334,7 +3330,8 @@ rb_ary_shuffle_bang(ary)
  */
 
 static VALUE
-rb_ary_shuffle(VALUE ary)
+rb_ary_shuffle(ary)
+    VALUE ary;
 {
     ary = rb_ary_dup(ary);
     rb_ary_shuffle_bang(ary);

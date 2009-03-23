@@ -1630,11 +1630,14 @@ Init_stack(addr)
 #endif
 }
 
-void ruby_init_stack(VALUE *addr
 #ifdef __ia64
-    , void *bsp
+void ruby_init_stack(addr, bsp)
+    VALUE *addr;
+    void *bsp;
+#else
+void ruby_init_stack(addr)
+    VALUE *addr;
 #endif
-    )
 {
     if (!rb_gc_stack_start ||
         STACK_UPPER(&addr,
@@ -2135,7 +2138,8 @@ id2ref(obj, objid)
  */
 
 VALUE
-rb_obj_id(VALUE obj)
+rb_obj_id(obj)
+    VALUE obj;
 {
     /*
      *                32-bit VALUE space

@@ -757,7 +757,9 @@ rb_big2str0(x, base, trim)
 }
 
 VALUE
-rb_big2str(VALUE x, int base)
+rb_big2str(x, base)
+    VALUE x;
+    int base;
 {
     return rb_big2str0(x, base, Qtrue);
 }
@@ -1993,8 +1995,10 @@ rb_big_xor(xx, yy)
     return bignorm(z);
 }
 
+static VALUE check_shiftdown _((VALUE, VALUE));
 static VALUE
-check_shiftdown(VALUE y, VALUE x)
+check_shiftdown(y, x)
+    VALUE y, x;
 {
     if (!RBIGNUM(x)->len) return INT2FIX(0);
     if (RBIGNUM(y)->len > SIZEOF_LONG / SIZEOF_BDIGITS) {
