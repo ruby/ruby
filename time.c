@@ -192,7 +192,7 @@ time_timespec(VALUE num, int interval)
 
     switch (TYPE(num)) {
       case T_FIXNUM:
-	t.tv_sec = FIX2LONG(num);
+	t.tv_sec = NUM2TIMET(num);
 	if (interval && t.tv_sec < 0)
 	    rb_raise(rb_eArgError, "%s must be positive", tstr);
 	t.tv_nsec = 0;
@@ -218,7 +218,7 @@ time_timespec(VALUE num, int interval)
 	break;
 
       case T_BIGNUM:
-	t.tv_sec = NUM2LONG(num);
+	t.tv_sec = NUM2TIMET(num);
 	if (interval && t.tv_sec < 0)
 	    rb_raise(rb_eArgError, "%s must be positive", tstr);
 	t.tv_nsec = 0;
@@ -232,7 +232,7 @@ time_timespec(VALUE num, int interval)
             }
             i = rb_ary_entry(ary, 0);
             f = rb_ary_entry(ary, 1);
-            t.tv_sec = NUM2LONG(i);
+            t.tv_sec = NUM2TIMET(i);
             if (interval && t.tv_sec < 0)
                 rb_raise(rb_eArgError, "%s must be positive", tstr);
             f = rb_funcall(f, id_mul, 1, INT2FIX(1000000000));
@@ -324,7 +324,7 @@ time_s_at(int argc, VALUE *argv, VALUE klass)
     VALUE time, t;
 
     if (rb_scan_args(argc, argv, "11", &time, &t) == 2) {
-	ts.tv_sec = NUM2LONG(time);
+	ts.tv_sec = NUM2TIMET(time);
 	ts.tv_nsec = NUM2LONG(rb_funcall(t, id_mul, 1, INT2FIX(1000)));
     }
     else {

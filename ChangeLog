@@ -1,3 +1,8 @@
+Mon Mar 23 22:01:00 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_timespec): use NUM2TIMET.
+	  (time_s_at): ditto.
+
 Mon Mar 23 21:52:26 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* process.c (Init_process): Better patch for eliminating an
