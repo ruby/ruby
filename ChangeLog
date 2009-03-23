@@ -1,3 +1,8 @@
+Mon Mar 23 18:54:57 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* file.c (rb_file_s_stat, rb_file_s_lstat): Remove repeated type
+	  checks.
+
 Mon Mar 23 14:57:48 2009  Narihiro Nakamura  <authorNari@gmail.com>
 
 	* gc.c (init_heap): set default to heap slots length

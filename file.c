@@ -777,7 +777,6 @@ rb_file_s_stat(VALUE klass, VALUE fname)
     rb_secure(4);
     FilePathValue(fname);
     if (rb_stat(fname, &st) < 0) {
-	FilePathValue(fname);
 	rb_sys_fail(RSTRING_PTR(fname));
     }
     return stat_new(&st);
@@ -834,7 +833,7 @@ rb_file_s_lstat(VALUE klass, VALUE fname)
 
     rb_secure(2);
     FilePathValue(fname);
-    if (lstat(StringValueCStr(fname), &st) == -1) {
+    if (lstat(fname, &st) == -1) {
 	rb_sys_fail(RSTRING_PTR(fname));
     }
     return stat_new(&st);
