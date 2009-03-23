@@ -1,3 +1,10 @@
+Mon Mar 23 14:57:48 2009  Narihiro Nakamura  <authorNari@gmail.com>
+
+	* gc.c (init_heap): set default to heap slots length
+	  if HEAP_OBJ_LIMIT is larger than HEAP_MIN_SLOTS. [Bug #1310]
+	  (set_heaps_increment): increment next_heaps_length if
+	  next_heaps_length and heaps_used are same.
+
 Mon Mar 23 14:32:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_spawn): use original command if not found.

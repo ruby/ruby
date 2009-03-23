@@ -922,6 +922,10 @@ init_heap(rb_objspace_t *objspace)
 
     add = HEAP_MIN_SLOTS / HEAP_OBJ_LIMIT;
 
+    if (!add) {
+        add = 1;
+    }
+
     if ((heaps_used + add) > heaps_length) {
     	allocate_heaps(objspace, heaps_used + add);
     }
@@ -938,6 +942,11 @@ static void
 set_heaps_increment(rb_objspace_t *objspace)
 {
     size_t next_heaps_length = (size_t)(heaps_used * 1.8);
+
+    if (next_heaps_length == heaps_used) {
+        next_heaps_length++;
+    }
+
     heaps_inc = next_heaps_length - heaps_used;
 
     if (next_heaps_length > heaps_length) {
