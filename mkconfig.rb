@@ -37,8 +37,6 @@ module RbConfig
 v_fast = []
 v_others = []
 vars = {}
-has_version = false
-has_patchlevel = false
 continued_name = nil
 continued_line = nil
 File.foreach "config.status" do |line|
@@ -97,10 +95,6 @@ File.foreach "config.status" do |line|
       v_others << v
     end
     case name
-    when "MAJOR"
-      has_version = true
-    when "PATCHLEVEL"
-      has_patchlevel = true
     when "ruby_version"
       version = val[/\A"(.*)"\z/, 1]
     end
@@ -116,18 +110,16 @@ print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' u
 print "  CONFIG = {}\n"
 print "  CONFIG[\"DESTDIR\"] = DESTDIR\n"
 
-unless has_version
-  version.scan(/(\d+)\.(\d+)(?:\.(\d+))?/) {
-    print "  CONFIG[\"MAJOR\"] = \"" + $1 + "\"\n"
-    print "  CONFIG[\"MINOR\"] = \"" + $2 + "\"\n"
-    print "  CONFIG[\"TEENY\"] = \"" + $3 + "\"\n"
-  }
+versions = {}
+IO.foreach(File.join(srcdir, "version.h")) do |l|
+  m = /^\s*#\s*define\s+RUBY_(VERSION_(MAJOR|MINOR|TEENY)|PATCHLEVEL)\s+(-?\d+)/.match(l)
+  if m
+    versions[m[2]||m[1]] = m[3]
+    break if versions.size == 4
+  end
 end
-unless has_patchlevel
-  patchlevel = IO.foreach(File.join(srcdir, "version.h")) {|l|
-    m = /^\s*#\s*define\s+RUBY_PATCHLEVEL\s+(-?\d+)/.match(l) and break m[1]
-  }
-  print "  CONFIG[\"PATCHLEVEL\"] = \"#{patchlevel}\"\n"
+%w[MAJOR MINOR TEENY PATCHLEVEL].each do |v|
+  print "  CONFIG[#{v.dump}] = #{versions[v].dump}\n"
 end
 
 dest = drive ? /= \"(?!\$[\(\{])(?:[a-z]:)?/i : /= \"(?!\$[\(\{])/
