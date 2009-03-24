@@ -378,7 +378,7 @@ class CGI
         if Integer($1) < 256
           Integer($1).chr
         else
-          if Integer($1) < 65536 and ($KCODE[0] == ?u or $KCODE[0] == ?U)
+          if Integer($1) < 65536 and $KCODE[0] == ?U
             [Integer($1)].pack("U")
           else
             "&##{$1};"
@@ -388,7 +388,7 @@ class CGI
         if $1.hex < 256
           $1.hex.chr
         else
-          if $1.hex < 65536 and ($KCODE[0] == ?u or $KCODE[0] == ?U)
+          if $1.hex < 65536 and $KCODE[0] == ?U
             [$1.hex].pack("U")
           else
             "&#x#{$1};"

@@ -24,32 +24,32 @@ class String
   RE_UTF8 = Regexp.new(PATTERN_UTF8, 0, 'n')
 
   SUCC = {}
-  SUCC['s'] = Hash.new(1)
+  SUCC[?S] = Hash.new(1)
   for i in 0 .. 0x3f
-    SUCC['s'][i.chr] = 0x40 - i
+    SUCC[?S][i.chr] = 0x40 - i
   end
-  SUCC['s']["\x7e"] = 0x80 - 0x7e
-  SUCC['s']["\xfd"] = 0x100 - 0xfd
-  SUCC['s']["\xfe"] = 0x100 - 0xfe
-  SUCC['s']["\xff"] = 0x100 - 0xff
-  SUCC['e'] = Hash.new(1)
+  SUCC[?S]["\x7e"] = 0x80 - 0x7e
+  SUCC[?S]["\xfd"] = 0x100 - 0xfd
+  SUCC[?S]["\xfe"] = 0x100 - 0xfe
+  SUCC[?S]["\xff"] = 0x100 - 0xff
+  SUCC[?E] = Hash.new(1)
   for i in 0 .. 0xa0
-    SUCC['e'][i.chr] = 0xa1 - i
+    SUCC[?E][i.chr] = 0xa1 - i
   end
-  SUCC['e']["\xfe"] = 2
-  SUCC['u'] = Hash.new(1)
+  SUCC[?E]["\xfe"] = 2
+  SUCC[?U] = Hash.new(1)
   for i in 0 .. 0x7f
-    SUCC['u'][i.chr] = 0x80 - i
+    SUCC[?U][i.chr] = 0x80 - i
   end
-  SUCC['u']["\xbf"] = 0x100 - 0xbf
+  SUCC[?U]["\xbf"] = 0x100 - 0xbf
 
   def mbchar?
     case $KCODE[0]
-    when ?s, ?S
+    when ?S
       self =~ RE_SJIS
-    when ?e, ?E
+    when ?E
       self =~ RE_EUC
-    when ?u, ?U
+    when ?U
       self =~ RE_UTF8
     else
       nil
@@ -58,11 +58,11 @@ class String
 
   def end_regexp
     case $KCODE[0]
-    when ?s, ?S
+    when ?S
       /#{PATTERN_SJIS}$/on
-    when ?e, ?E
+    when ?E
       /#{PATTERN_EUC}$/on
-    when ?u, ?U
+    when ?U
       /#{PATTERN_UTF8}$/on
     else
       /.$/on
@@ -78,7 +78,7 @@ class String
   def succ!
     reg = end_regexp
     if  $KCODE != 'NONE' && self =~ reg
-      succ_table = SUCC[$KCODE[0,1].downcase]
+      succ_table = SUCC[$KCODE[0]]
       begin
 	self[-1] += succ_table[self[-1]]
 	self[-2] += 1 if self[-1] == 0

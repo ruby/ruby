@@ -1,3 +1,9 @@
+Wed Mar 25 00:20:38 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/cgi.rb: $KCODE always holds its value in upper case.
+
+	* lib/jcode.rb: Ditto.
+
 Mon Mar 23 21:54:20 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* process.c: Eliminate an "unused variable" warning.
