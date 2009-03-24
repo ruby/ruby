@@ -1387,8 +1387,9 @@ rb_io_inspect(VALUE obj)
     const char *st = "";
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
+    if (!fptr) return rb_any_to_s(obj);
     cname = rb_obj_classname(obj);
-    if (!fptr || NIL_P(fptr->pathv)) {
+    if (NIL_P(fptr->pathv)) {
         if (fptr->fd < 0) {
             path = "";
             st = "(closed)";
