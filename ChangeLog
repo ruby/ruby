@@ -1,4 +1,11 @@
-Wed Mar 25 07:44:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Mar 25 07:45:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (target_alias): replaces cpu with universal too.
+
+	* configure.in (target): replaces cpu with arch by --with-arch.
+
+	* mkconfig.rb (TOPDIR): chops arch in config instead of
+	  RUBY_PLATFORM which varies on universal_binary.
 
 	* mkconfig.rb (MAJOR, MINOR, TEENY): reads from version.h always.
 

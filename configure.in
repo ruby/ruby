@@ -179,7 +179,12 @@ if test ${target_archs+set}; then
 	RUBY_PREREQ_AC(2.63, [ to compile universal binary])
 	AC_SUBST(try_header,try_compile)
 	target=`echo $target | sed "s/^$target_cpu-/universal-/"`
+	target_alias=`echo $target_alias | sed "s/^$target_cpu-/universal-/"`
 	target_cpu=universal
+    else
+	target=`echo $target | sed "s/^$target_cpu-/${target_archs}-/"`
+	target_alias=`echo $target_alias | sed "s/^$target_cpu-/${target_archs}-/"`
+	target_cpu=${target_archs}
     fi
     CFLAGS="$CFLAGS ${ARCH_FLAG}"
     LDFLAGS="${LDFLAGS+$LDFLAGS }${ARCH_FLAG}"

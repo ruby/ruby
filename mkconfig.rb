@@ -34,6 +34,7 @@ module RbConfig
 
 ]
 
+arch = RUBY_PLATFORM
 v_fast = []
 v_others = []
 vars = {}
@@ -75,6 +76,7 @@ File.foreach "config.status" do |line|
     next if $install_name and /^RUBY_INSTALL_NAME$/ =~ name
     next if $so_name and /^RUBY_SO_NAME$/ =~  name
     next if /^(?:X|(?:MINI|RUN)RUBY$)/ =~ name
+    arch = val if name == "arch"
     if /^program_transform_name$/ =~ name and /^s(\\?.)(.*)\1$/ =~ val
       next if $install_name
       sep = %r"#{Regexp.quote($1)}"
@@ -104,7 +106,7 @@ end
 
 drive = File::PATH_SEPARATOR == ';'
 
-prefix = "/lib/ruby/#{version}/#{RUBY_PLATFORM}"
+prefix = "/lib/ruby/#{version}/#{arch}"
 print "  TOPDIR = File.dirname(__FILE__).chomp!(#{prefix.dump})\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
 print "  CONFIG = {}\n"
