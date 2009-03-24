@@ -370,7 +370,8 @@ static ac__type_sizeof_ *rbcv_ptr;
     m4_ifval([$2], [test -z "${AS_TR_SH(ac_cv_sizeof_$1)+set}" && {
     for t in $2; do
 	AC_COMPILE_IFELSE(
-	    [AC_LANG_BOOL_COMPILE_TRY(AC_INCLUDES_DEFAULT([$rbcv_var]),
+	    [AC_LANG_BOOL_COMPILE_TRY(AC_INCLUDES_DEFAULT([$4]
+		[$rbcv_var]),
 		[AS_TR_CPP(SIZEOF_$1) == sizeof($t)])], [
 		AS_TR_SH(ac_cv_sizeof_$1)=AS_TR_CPP([SIZEOF_]$t)
 		break])
@@ -382,7 +383,7 @@ static ac__type_sizeof_ *rbcv_ptr;
 	for t in $3; do
 	    cond="${cond}
 @%:@${cond+el}if defined(__${t}${s}__) || defined(__${t}${s}) || defined(_${t}${s}) || defined(${t}${s})"
-	    hdr="AC_INCLUDES_DEFAULT([
+	    hdr="AC_INCLUDES_DEFAULT([$4
 @%:@if defined(__${t}${s}__) || defined(__${t}${s}) || defined(_${t}${s}) || defined(${t}${s})
 @%:@ define AS_TR_CPP(HAVE_$1) 1
 @%:@else
@@ -446,7 +447,7 @@ RUBY_CHECK_SIZEOF(off_t)
 RUBY_CHECK_SIZEOF(void*, [int long "long long"], [ILP LP LLP])
 RUBY_CHECK_SIZEOF(float)
 RUBY_CHECK_SIZEOF(double)
-RUBY_CHECK_SIZEOF(time_t, [long "long long"])
+RUBY_CHECK_SIZEOF(time_t, [long "long long"], [], [@%:@include <time.h>])
 
 dnl RUBY_REPLACE_TYPE [typename] [default type] [macro type] [included]
 AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
