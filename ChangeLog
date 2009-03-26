@@ -414,6 +414,12 @@ Fri Mar 13 15:10:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  OPENSSL_free instead of free.  a patch from Charlie Savage a
 	  [ruby-core:22858].
 
+Fri Mar 13 21:11:51 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/sdbm/_sdbm.c: should include "ruby/defines.h" as well for
+	  prototypes of compatibility functions on Win32 platform.
+	  [ruby-core:22870]
+
 Fri Mar 13 10:42:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (AC_HEADER_STDBOOL): added.

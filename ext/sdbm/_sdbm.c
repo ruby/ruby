@@ -13,6 +13,7 @@
 
 #include "sdbm.h"
 #include "ruby/config.h"
+#include "ruby/defines.h"
 
 /*
  * sdbm - ndbm work-alike hashed database library
