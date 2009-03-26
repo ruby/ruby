@@ -63,17 +63,11 @@ class RDoc::Parser
   end
 
   ##
-  # Shamelessly stolen from the ptools gem (since RDoc cannot depend on
-  # the gem).
+  # Return _true_ if the +file+ seems like binary.
 
   def self.binary?(file)
-    s = (File.read(file, File.stat(file).blksize, 0, :mode => "rb") || "").split(//)
-
-    if s.size > 0 then
-      ((s.size - s.grep(" ".."~").size) / s.size.to_f) > 0.30
-    else
-      false
-    end
+    s = File.read(file, 1024)
+    s.count("^ -~\t\r\n").fdiv(s.size) > 0.3 || s.index("\x00") unless s.empty?
   end
   private_class_method :binary?
 

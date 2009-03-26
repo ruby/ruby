@@ -1,3 +1,13 @@
+Thu Mar 26 12:22:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/yaml/rubytypes.rb (String#is_binary_data?): TAB would be
+	  usually considered to be included in text data.
+
+	* lib/rdoc/parser.rb (RDoc::Parser.binary?): blksize may be nil
+	  and is irrelevant to whether a file is binary.  copied from
+	  above since TAB and newlines would be usually considered to be
+	  included in text data.
+
 Thu Mar 26 11:33:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/ri/paths.rb (RDoc::RI::Paths): considers
