@@ -1,3 +1,7 @@
+Fri Mar 27 01:33:37 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_cmp): negate the result of reverse comparison.
+
 Fri Mar 27 01:19:50 2009  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_cmpint): FIX2INT may fail on LP64 platforms.
