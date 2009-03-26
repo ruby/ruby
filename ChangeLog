@@ -1,3 +1,7 @@
+Fri Mar 27 01:19:50 2009  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_cmpint): FIX2INT may fail on LP64 platforms.
+
 Thu Mar 26 12:22:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb (String#is_binary_data?): TAB would be
