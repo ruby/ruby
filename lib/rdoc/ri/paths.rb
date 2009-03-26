@@ -28,10 +28,17 @@ module RDoc::RI::Paths
 
   VERSION = RbConfig::CONFIG['ruby_version']
 
-  base    = File.join(RbConfig::CONFIG['datadir'], "ri", VERSION)
+  if m = /ruby/.match(RbConfig::CONFIG['RUBY_INSTALL_NAME'])
+    m = [m.pre_match, m.post_match]
+  else
+    m = [""] * 2
+  end
+  ri = "#{m[0]}ri#{m[1]}"
+  rdoc = "#{m[0]}rdoc#{m[1]}"
+  base    = File.join(RbConfig::CONFIG['datadir'], ri, VERSION)
   SYSDIR  = File.join(base, "system")
   SITEDIR = File.join(base, "site")
-  HOMEDIR = (File.expand_path("~/.rdoc") rescue nil)
+  HOMEDIR = (File.expand_path("~/.#{rdoc}") rescue nil)
 
   begin
     require 'rubygems' unless defined?(Gem) and defined?(Gem::Enable) and

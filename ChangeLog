@@ -1,3 +1,8 @@
+Thu Mar 26 11:33:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/ri/paths.rb (RDoc::RI::Paths): considers
+	  --program-prefix and --program-suffix.  reapplied r19923.
+
 Wed Mar 25 07:45:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (target_alias): replaces cpu with universal too.
