@@ -372,7 +372,6 @@ end
 def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
   conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote,
                                 'src' => CONFTEST_C,
-                                'extout' => $extout,
                                 'arch_hdrdir' => "#$arch_hdrdir",
                                 'top_srcdir' => $top_srcdir.quote,
                                 'INCFLAGS' => "#$INCFLAGS",
@@ -388,7 +387,6 @@ end
 
 def cc_command(opt="")
   conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
-                                'extout' => $extout,
                                 'arch_hdrdir' => "#$arch_hdrdir",
                                 'top_srcdir' => $top_srcdir.quote)
   RbConfig::expand("$(CC) #$INCFLAGS #$CPPFLAGS #$CFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_C}",
@@ -397,7 +395,6 @@ end
 
 def cpp_command(outfile, opt="")
   conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
-                                'extout' => $extout,
                                 'arch_hdrdir' => "#$arch_hdrdir",
                                 'top_srcdir' => $top_srcdir.quote)
   RbConfig::expand("$(CPP) #$INCFLAGS #$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}",
