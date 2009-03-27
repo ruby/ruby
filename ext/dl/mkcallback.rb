@@ -1,6 +1,5 @@
 # -*- ruby -*-
 
-require 'mkmf'
 $:.unshift File.dirname(__FILE__)
 require 'type'
 require 'dlconfig'

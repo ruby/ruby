@@ -1,3 +1,7 @@
+Sat Mar 28 04:31:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/{mkcall,mkcallback,mkcbtable}.rb: no needs of mkmf.
+
 Sat Mar 28 04:00:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: MINIRUBY is given via make-flag.
