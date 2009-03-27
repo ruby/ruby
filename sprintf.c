@@ -123,7 +123,7 @@ sign_bits(int base, const char *p)
     (rb_raise(rb_eArgError, "named after unnumbered(%d)", posarg), 0) : \
     posarg == -1 ? \
     (rb_raise(rb_eArgError, "named after numbered"), 0) : \
-    rb_hash_fetch(get_hash(&hash, argc, argv), id))
+    (posarg = -2, rb_hash_lookup(get_hash(&hash, argc, argv), id)))
 
 #define GETNUM(n, val) \
     for (; p < end && rb_enc_isdigit(*p, enc); p++) {	\
