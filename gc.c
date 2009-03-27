@@ -1942,6 +1942,9 @@ run_final(obj)
 
     objid = rb_obj_id(obj);	/* make obj into id */
     rb_thread_critical = Qtrue;
+    if (BUILTIN_TYPE(obj) == T_DEFERRED && RDATA(obj)->dfree) {
+	(*RDATA(obj)->dfree)(DATA_PTR(obj));
+    }
     args[1] = 0;
     args[2] = (VALUE)ruby_safe_level;
     for (i=0; i<RARRAY(finalizers)->len; i++) {
@@ -2010,7 +2013,8 @@ rb_gc_call_finalizer_at_exit()
 	p = heaps[i].slot; pend = p + heaps[i].limit;
 	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
-		DATA_PTR(p) && RANY(p)->as.data.dfree) {
+		DATA_PTR(p) && RANY(p)->as.data.dfree &&
+		RANY(p)->as.basic.klass != rb_cThread) {
 		p->as.free.flags = 0;
 		if ((long)RANY(p)->as.data.dfree == -1) {
 		    RUBY_CRITICAL(free(DATA_PTR(p)));
