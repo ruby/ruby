@@ -1,3 +1,7 @@
+Sat Mar 28 04:00:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: MINIRUBY is given via make-flag.
+
 Wed Mar 25 00:20:38 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/cgi.rb: $KCODE always holds its value in upper case.
