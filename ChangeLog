@@ -1,4 +1,6 @@
-Sat Mar 28 06:18:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Mar 28 08:49:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): checks if named argument given twice.
 
 	* sprintf.c (GETNAMEARG): remembers named arg is used, to get rid
 	  of too many arguments warning.

@@ -119,11 +119,12 @@ sign_bits(int base, const char *p)
 #define GETNTHARG(nth) \
     ((nth >= argc) ? (rb_raise(rb_eArgError, "too few arguments"), 0) : argv[nth])
 
-#define GETNAMEARG(id) (posarg > 0 ? \
-    (rb_raise(rb_eArgError, "named after unnumbered(%d)", posarg), 0) : \
+#define GETNAMEARG(id, name, len) ( \
+    posarg > 0 ? \
+    (rb_raise(rb_eArgError, "named%.*s after unnumbered(%d)", (len), (name), posarg), 0) : \
     posarg == -1 ? \
-    (rb_raise(rb_eArgError, "named after numbered"), 0) : \
-    (posarg = -2, rb_hash_lookup(get_hash(&hash, argc, argv), id)))
+    (rb_raise(rb_eArgError, "named%.*s after numbered", (len), (name)), 0) :	\
+    (posarg = -2, rb_hash_lookup2(get_hash(&hash, argc, argv), id, Qundef)))
 
 #define GETNUM(n, val) \
     for (; p < end && rb_enc_isdigit(*p, enc); p++) {	\
@@ -472,6 +473,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     for (; p < end; p++) {
 	const char *t;
 	int n;
+	ID id = 0;
 
 	for (t = p; t < end && *t != '%'; t++) ;
 	PUSH(p, t - p);
@@ -544,7 +546,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		const char *start = p;
 		char term = (*p == '<') ? '>' : '}';
-		ID id;
 
 		for (; p < end && *p != term; ) {
 		    p += rb_enc_mbclen(p, end, enc);
@@ -552,8 +553,15 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		if (p >= end) {
 		    rb_raise(rb_eArgError, "malformed name - unmatched parenthesis");
 		}
+		if (id) {
+		    rb_raise(rb_eArgError, "name%.*s after <%s>",
+			     (int)(p - start + 1), start, rb_id2name(id));
+		}
 		id = rb_intern3(start + 1, p - start - 1, enc);
-		nextvalue = GETNAMEARG(ID2SYM(id));
+		nextvalue = GETNAMEARG(ID2SYM(id), start, (int)(p - start + 1));
+		if (nextvalue == Qundef) {
+		    rb_raise(rb_eKeyError, "key%.*s not found", (int)(p - start + 1), start);
+		}
 		if (term == '}') goto format_s;
 		p++;
 		goto retry;
