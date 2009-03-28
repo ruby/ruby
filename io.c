@@ -4884,6 +4884,8 @@ pop_last_hash(int *argc_p, VALUE *argv)
  *  standard input and output will be connected to the returned
  *  <code>IO</code> object.
  *
+ *  The PID of the started process can be obtained by IO#pid method.
+ *
  *  _cmd_ is a string or an array as follows.
  *
  *    cmd:
