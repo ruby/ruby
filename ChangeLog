@@ -1,3 +1,10 @@
+Sat Mar 28 11:10:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (ruby.imp): all symbols in static library need to be
+	  exported, so that encoding-extensions can be loaded.  based on a
+	  patch from Yutaka Kanemoto <kinpoco AT gmail.com> a
+	  [ruby-talk:332282].
+
 Sat Mar 28 08:49:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): checks if named argument given twice.
