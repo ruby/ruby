@@ -15,7 +15,7 @@ class TestCSVInterface < Test::Unit::TestCase
   def setup
     @path = File.join(File.dirname(__FILE__), "temp_test_data.csv")
 
-    File.open(@path, "w") do |file|
+    File.open(@path, "wb") do |file|
       file << "1\t2\t3\r\n"
       file << "4\t5\r\n"
     end
