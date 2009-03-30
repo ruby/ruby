@@ -1,3 +1,8 @@
+Mon Mar 31 08:18:57 2009  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* test/csv/test_interface.rb, test/csv/test_serialization.rb:
+	  Trying more fixes some failing tests on Windows.
+
 Mon Mar 30 19:04:25 2009  Tanaka Akira  <akr@fsij.org>
 
 	* .gdbinit (rp): show negative fixnum correctly.

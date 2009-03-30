@@ -53,7 +53,7 @@ class TestCSVInterface < Test::Unit::TestCase
   end
 
   def test_parse
-    data = File.read(@path)
+    data = File.binread(@path)
     assert_equal( @expected,
                   CSV.parse(data, col_sep: "\t", row_sep: "\r\n") )
 
@@ -99,7 +99,7 @@ class TestCSVInterface < Test::Unit::TestCase
   end
 
   def test_shift  # aliased as gets() and readline()
-    CSV.open(@path, "r+", col_sep: "\t", row_sep: "\r\n") do |csv|
+    CSV.open(@path, "rb+", col_sep: "\t", row_sep: "\r\n") do |csv|
       assert_equal(@expected.shift, csv.shift)
       assert_equal(@expected.shift, csv.shift)
       assert_equal(nil, csv.shift)
@@ -178,19 +178,19 @@ class TestCSVInterface < Test::Unit::TestCase
     File.unlink(@path)
 
     lines = [{a: 1, b: 2, c: 3}, {a: 4, b: 5, c: 6}]
-    CSV.open(@path, "w", headers: [:b, :a, :c]) do |csv|
+    CSV.open(@path, "wb", headers: [:b, :a, :c]) do |csv|
       lines.each { |line| csv << line }
     end
 
     # test writing fields in the correct order
-    File.open(@path, "r") do |f|
+    File.open(@path, "rb") do |f|
       assert_equal("2,1,3", f.gets.strip)
       assert_equal("5,4,6", f.gets.strip)
     end
 
     # test reading CSV with headers
-    CSV.open( @path, "r", headers:    [:b, :a, :c],
-                          converters: :all ) do |csv|
+    CSV.open( @path, "rb", headers:    [:b, :a, :c],
+                           converters: :all ) do |csv|
       csv.each { |line| assert_equal(lines.shift, line.to_hash) }
     end
   end
@@ -199,20 +199,20 @@ class TestCSVInterface < Test::Unit::TestCase
     File.unlink(@path)
 
     lines = [{"a" => 1, "b" => 2, "c" => 3}, {"a" => 4, "b" => 5, "c" => 6}]
-    CSV.open(@path, "w", headers: "b|a|c", col_sep: "|") do |csv|
+    CSV.open(@path, "wb", headers: "b|a|c", col_sep: "|") do |csv|
       lines.each { |line| csv << line }
     end
 
     # test writing fields in the correct order
-    File.open(@path, "r") do |f|
+    File.open(@path, "rb") do |f|
       assert_equal("2|1|3", f.gets.strip)
       assert_equal("5|4|6", f.gets.strip)
     end
 
     # test reading CSV with headers
-    CSV.open( @path, "r", headers:    "b|a|c",
-                          col_sep:    "|",
-                          converters: :all ) do |csv|
+    CSV.open( @path, "rb", headers:    "b|a|c",
+                           col_sep:    "|",
+                           converters: :all ) do |csv|
       csv.each { |line| assert_equal(lines.shift, line.to_hash) }
     end
   end
@@ -221,23 +221,23 @@ class TestCSVInterface < Test::Unit::TestCase
     File.unlink(@path)
 
     lines = [{"a" => 1, "b" => 2, "c" => 3}, {"a" => 4, "b" => 5, "c" => 6}]
-    CSV.open( @path, "w", headers:       "b|a|c",
-                          write_headers: true,
-                          col_sep:       "|" ) do |csv|
+    CSV.open( @path, "wb", headers:       "b|a|c",
+                           write_headers: true,
+                           col_sep:       "|" ) do |csv|
       lines.each { |line| csv << line }
     end
 
     # test writing fields in the correct order
-    File.open(@path, "r") do |f|
+    File.open(@path, "rb") do |f|
       assert_equal("b|a|c", f.gets.strip)
       assert_equal("2|1|3", f.gets.strip)
       assert_equal("5|4|6", f.gets.strip)
     end
 
     # test reading CSV with headers
-    CSV.open( @path, "r", headers:    true,
-                          col_sep:    "|",
-                          converters: :all ) do |csv|
+    CSV.open( @path, "rb", headers:    true,
+                           col_sep:    "|",
+                           converters: :all ) do |csv|
       csv.each { |line| assert_equal(lines.shift, line.to_hash) }
     end
   end
@@ -245,7 +245,7 @@ class TestCSVInterface < Test::Unit::TestCase
   def test_append  # aliased add_row() and puts()
     File.unlink(@path)
 
-    CSV.open(@path, "w", col_sep: "\t", row_sep: "\r\n") do |csv|
+    CSV.open(@path, "wb", col_sep: "\t", row_sep: "\r\n") do |csv|
       @expected.each { |row| csv << row }
     end
 
@@ -254,7 +254,7 @@ class TestCSVInterface < Test::Unit::TestCase
     # same thing using CSV::Row objects
     File.unlink(@path)
 
-    CSV.open(@path, "w", col_sep: "\t", row_sep: "\r\n") do |csv|
+    CSV.open(@path, "wb", col_sep: "\t", row_sep: "\r\n") do |csv|
       @expected.each { |row| csv << CSV::Row.new(Array.new, row) }
     end
 

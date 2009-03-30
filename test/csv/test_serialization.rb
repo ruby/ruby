@@ -133,7 +133,7 @@ class TestSerialization < Test::Unit::TestCase
     test_class_dump
 
     data_file = File.join(File.dirname(__FILE__), "temp_test_data.csv")
-    CSV.dump(@names, File.open(data_file, "w"))
+    CSV.dump(@names, File.open(data_file, "wb"))
 
     assert(File.exist?(data_file))
     assert_equal(<<-END_IO_DUMP.gsub(/^\s*/, ""), File.read(data_file))
