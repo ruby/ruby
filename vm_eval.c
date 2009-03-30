@@ -773,14 +773,22 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	    if (strcmp(file, "(eval)") == 0) {
 		VALUE mesg, errat, bt2;
 		extern VALUE rb_get_backtrace(VALUE info);
+		ID id_mesg;
 
+		CONST_ID(id_mesg, "mesg");
 		errat = rb_get_backtrace(errinfo);
-		mesg = rb_attr_get(errinfo, rb_intern("mesg"));
+		mesg = rb_attr_get(errinfo, id_mesg);
 		if (!NIL_P(errat) && TYPE(errat) == T_ARRAY &&
 		    (bt2 = vm_backtrace(th, -2), RARRAY_LEN(bt2) > 0)) {
 		    if (!NIL_P(mesg) && TYPE(mesg) == T_STRING && !RSTRING_LEN(mesg)) {
-			rb_str_update(mesg, 0, 0, rb_str_new2(": "));
-			rb_str_update(mesg, 0, 0, RARRAY_PTR(errat)[0]);
+			if (OBJ_FROZEN(mesg)) {
+			    VALUE m = rb_str_cat(rb_str_dup(RARRAY_PTR(errat)[0]), ": ", 2);
+			    rb_ivar_set(errinfo, id_mesg, rb_str_append(m, mesg));
+			}
+			else {
+			    rb_str_update(mesg, 0, 0, rb_str_new2(": "));
+			    rb_str_update(mesg, 0, 0, RARRAY_PTR(errat)[0]);
+			}
 		    }
 		    RARRAY_PTR(errat)[0] = RARRAY_PTR(bt2)[0];
 		}
