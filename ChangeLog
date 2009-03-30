@@ -1,3 +1,10 @@
+Mon Mar 30 12:12:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval): checks for interrupt, stack and finalizers too.
+	  [ruby-dev:38208], [Bug #1329]
+
+	* eval.c (eval): replaces the message if frozen.
+
 Sat Mar 28 04:31:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/{mkcall,mkcallback,mkcbtable}.rb: no needs of mkmf.
