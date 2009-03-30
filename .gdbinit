@@ -1,6 +1,6 @@
 define rp
   if (VALUE)$arg0 & RUBY_FIXNUM_FLAG
-    printf "FIXNUM: %ld\n", $arg0 >> 1
+    printf "FIXNUM: %ld\n", (long)$arg0 >> 1
   else
   if ((VALUE)$arg0 & ~(~(VALUE)0<<RUBY_SPECIAL_SHIFT)) == RUBY_SYMBOL_FLAG
     printf "SYMBOL(%ld)\n", $arg0 >> RUBY_SPECIAL_SHIFT
