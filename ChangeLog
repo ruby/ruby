@@ -1,3 +1,14 @@
+Thu Mar 31 18:18:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (mkintpath): new function which converts native path
+	  to format acceptable in Makefile.
+
+	* lib/mkmf.rb (configuration): leaves PATH_SEPARATOR unchanged.
+
+	* lib/mkmf.rb (configuration): convers srcdir, topdir and hdrdir.
+	  a patch by Alexey Borzenkov <snaury AT gmail.com> at
+	  [ruby-core:21448].
+
 Fri Mar 27 19:22:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (run_final): frees zombies only.  [ruby-dev:38171]
