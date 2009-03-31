@@ -3015,9 +3015,9 @@ rb_f_system(int argc, VALUE *argv)
  *          [:child, FD]              : redirect to the redirected file descriptor
  *          :close                    : close the file descriptor in child process
  *        FD is one of follows
- *          :in     : the file descriptor 0
- *          :out    : the file descriptor 1
- *          :err    : the file descriptor 2
+ *          :in     : the file descriptor 0 which is the standard input
+ *          :out    : the file descriptor 1 which is the standard output
+ *          :err    : the file descriptor 2 which is the standard error
  *          integer : the file descriptor of specified the integer
  *          io      : the file descriptor specified as io.fileno
  *      file descriptor inheritance: close non-redirected non-standard fds (3, 4, 5, ...) or not
@@ -3061,10 +3061,10 @@ rb_f_system(int argc, VALUE *argv)
  *  two integers: same as cur_limit and max_limit arguments for
  *  Process.setrlimit.
  *
- *    pid = spawn(command, :rlimit_core=>0) # never dump core.
  *    cur, max = Process.getrlimit(:CORE)
  *    pid = spawn(command, :rlimit_core=>[0,max]) # disable core temporary.
  *    pid = spawn(command, :rlimit_core=>max) # enable core dump
+ *    pid = spawn(command, :rlimit_core=>0) # never dump core.
  *
  *  The <code>:chdir</code> key in +options+ specifies the current directory.
  *
