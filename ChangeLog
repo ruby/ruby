@@ -1,3 +1,9 @@
+Tue Mar 31 15:17:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: fixed the help strings for the header and library
+	  dir switches, and updated to use AS_HELP_STRING.  patches from
+	  Richard Brown, c.f. [ruby-core:23067].
+
 Mon Mar 31 08:18:57 2009  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* test/csv/test_interface.rb, test/csv/test_serialization.rb:

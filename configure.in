@@ -15,7 +15,7 @@ dnl note that spaces after comma need to be quoted.
 dnl environment section {
 
 AC_ARG_WITH(baseruby,
-	[  --with-baseruby=RUBY use RUBY as baseruby; RUBY is the pathname of ruby],
+	AS_HELP_STRING([--with-baseruby=RUBY], [ use RUBY as baseruby; RUBY is the pathname of ruby]),
 	[
 		case "$withval" in
 		    when(*ruby*)
@@ -87,7 +87,9 @@ if test "$MAJOR" = "1"; then
   AC_DEFINE(CANONICALIZATION_FOR_MATHN)
 fi
 dnl checks for alternative programs
-AC_ARG_WITH(gcc, [  --without-gcc           never use gcc], [
+AC_ARG_WITH(gcc,
+	AS_HELP_STRING([--without-gcc], [never use gcc]),
+	[
 	case $withval in
 	    when(no)
 		: ${CC=cc}
@@ -136,12 +138,13 @@ AC_DEFUN([RUBY_PREPEND_OPTIONS],
 	done
 	$1="[$]{rb_opts}[$]$1"; }])
 
-AC_ARG_WITH(arch, [dnl
-  --with-arch=ARCHS       build an Apple/NeXT Multi Architecture Binary (MAB);
+AC_ARG_WITH(arch,
+ 	AS_HELP_STRING([--with-arch=ARCHS],
+		       [build an Apple/NeXT Multi Architecture Binary (MAB);
                           ARCHS is a comma-delimited list of architectures for
                           which to build; if this option is disabled or omitted
 			  entirely, then the package will be built only for the
-			  target platform],
+			  target platform]),
        [target_archs="$withval"], [unset target_archs])
 test ${CFLAGS+set} && CFLAGS=`echo "$CFLAGS" | sed 's/ *-arch  *[^ ]*//g'`
 test ${LDFLAGS+set} && LDFLAGS=`echo "$LDFLAGS" | sed 's/ *-arch  *[^ ]*//g'`
@@ -197,14 +200,14 @@ case $target_cpu in
   when(*)    frame_address=no;;
 esac
 AC_ARG_ENABLE(frame-address,
-       [  --enable-frame-address  use GCC __builtin_frame_address(). ],
+       AS_HELP_STRING([--enable-frame-address], [use GCC __builtin_frame_address()]),
        [frame_address=$enableval])
 if test $frame_address = yes; then
     AC_DEFINE(USE_BUILTIN_FRAME_ADDRESS)
 fi
 
 AC_ARG_ENABLE(load-relative,
-       [  --enable-load-relative  resolve load paths at run time. ],
+       AS_HELP_STRING([--enable-load-relative], [resolve load paths at run time]),
        [load_relative=$enableval])
 
 AC_ARG_PROGRAM
@@ -679,7 +682,8 @@ dnl Check whether we need to define sys_nerr locally
 AC_CHECK_DECLS([sys_nerr], [], [], [$ac_includes_default
 #include <errno.h>])
 
-AC_ARG_ENABLE(win95, [  --enable-win95          enable Windows 95 series support]
+AC_ARG_ENABLE(win95,
+	AS_HELP_STRING([--enable-win95], [enable Windows 95 series support]),
   [case "$enableval" in
     when(yes|no) enable_win95=$enableval;;
     when(*) unset enable_win95;;
@@ -708,7 +712,7 @@ when(*)
 esac
 
 AC_ARG_ENABLE(pthread,
-       [  --enable-pthread        use pthread library.],
+       AS_HELP_STRING([--enable-pthread], [use pthread library]),
        [enable_pthread=$enableval], [enable_pthread=$enable_pthread_default])
 
 dnl Checks for libraries.
@@ -1075,7 +1079,8 @@ test x$ac_cv_func__longjmp = xno && ac_cv_func__setjmp=no
 
 AC_MSG_CHECKING(for setjmp type)
 AC_ARG_WITH(setjmp-type,
-	[  --with-setjmp-type      select setjmp type], [
+	AS_HELP_STRING([--with-setjmp-type],[select setjmp type]),
+	[
 	case $withval in
 	when(__builtin_setjmp) setjmp_prefix=__builtin_;;
 	when(_setjmp) setjmp_prefix=_;;
@@ -1113,7 +1118,7 @@ AC_DEFINE_UNQUOTED([RUBY_LONGJMP(env,val)], [${setjmp_prefix}longjmp(env,val)])
 AC_DEFINE_UNQUOTED(RUBY_JMP_BUF, ${setjmp_sigmask+${setjmp_prefix}}jmp_buf)
 
 AC_ARG_ENABLE(setreuid,
-       [  --enable-setreuid       use setreuid()/setregid() according to need even if obsolete.],
+       AS_HELP_STRING([--enable-setreuid], [use setreuid()/setregid() according to need even if obsolete]),
        [use_setreuid=$enableval])
 if test "$use_setreuid" = yes; then
     AC_DEFINE(USE_SETREUID)
@@ -1498,7 +1503,7 @@ fi
 AC_CHECK_FUNCS(backtrace)
 
 AC_ARG_WITH(valgrind,
-        [  --with-valgrind         enable valgrind memcheck support.],
+        AS_HELP_STRING([--with-valgrind],[enable valgrind memcheck support]),
         [AC_CHECK_HEADERS(valgrind/memcheck.h)])
 
 dnl }
@@ -1506,7 +1511,8 @@ dnl runtime section {
 
 dnl wheather use dln_a_out or not
 AC_ARG_WITH(dln-a-out,
-	[  --with-dln-a-out        use dln_a_out if possible], [
+	AS_HELP_STRING([--with-dln-a-out], [use dln_a_out if possible]),
+	[
 	case $withval in
 	when(yes)
 	    if test "$enable_shared" = yes; then
@@ -1588,7 +1594,7 @@ if test "$with_dln_a_out" != yes; then
 
 
   AC_ARG_ENABLE(rpath,
-       [  --disable-rpath         embed run path into extension libraries.],
+       AS_HELP_STRING([--disable-rpath], [embed run path into extension libraries]),
        [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
   if test "$enable_rpath" = yes; then
     RPATHFLAG=" ${linker_flag}-R%1\$-s"
@@ -1844,7 +1850,7 @@ esac
 EXTSTATIC=
 AC_SUBST(EXTSTATIC)dnl
 AC_ARG_WITH(static-linked-ext,
-	    [  --with-static-linked-ext link external modules statically],
+	    AS_HELP_STRING([--with-static-linked-ext], [link external modules statically]),
             [case $withval in
 	     when(yes)
 		STATIC=
@@ -1913,7 +1919,7 @@ LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so'
 ENABLE_SHARED=no
 
 AC_ARG_ENABLE(shared,
-       [  --enable-shared         build a shared library for Ruby. ],
+       AS_HELP_STRING([--enable-shared], [build a shared library for Ruby]),
        [enable_shared=$enableval])
 LIBRUBYARG_SHARED='-l$(RUBY_SO_NAME)'
 if test "$enable_shared" = 'yes'; then
@@ -2017,7 +2023,7 @@ dnl build section {
 dnl build rdoc index if requested
 RDOCTARGET=""
 AC_ARG_ENABLE(install-doc,
-       [  --disable-install-doc    do not install rdoc indexes during install ],
+       AS_HELP_STRING([--disable-install-doc], [do not install rdoc indexes during install]),
        [install_doc=$enableval], [install_doc=yes])
 if test "$install_doc" != no; then
    RDOCTARGET="install-doc"
@@ -2252,7 +2258,7 @@ esac
 RUBY_LIB_PREFIX=`eval echo \\"${libdir}/${RUBY_INSTALL_NAME}\\"`
 
 AC_ARG_WITH(ruby-version,
-	    [  --with-ruby-version=STR ruby version string for version specific directories [[full]] (full|minor|STR)],
+	    AS_HELP_STRING([--with-ruby-version=STR], [ruby version string for version specific directories [[full]] (full|minor|STR)]),
             [ruby_version=$withval],
             [ruby_version=full])
 unset RUBY_LIB_VERSION
@@ -2279,13 +2285,13 @@ else
 fi
 
 AC_ARG_WITH(sitedir,
-	    [  --with-sitedir=DIR      site libraries in DIR [[LIBDIR/ruby/site_ruby]]],
+	    AS_HELP_STRING([--with-sitedir=DIR], [site libraries in DIR [[RUBY_LIB_PREFIX/site_ruby]]]),
             [sitedir=$withval],
             [sitedir='${libdir}/${RUBY_INSTALL_NAME}/site_ruby'])
 SITE_DIR=`eval echo \\"${sitedir}\\"`
 
 AC_ARG_WITH(vendordir,
-	    [  --with-vendordir=DIR    vendor libraries in DIR [[LIBDIR/ruby/vendor_ruby]]],
+	    AS_HELP_STRING([--with-vendordir=DIR], [vendor libraries in DIR [[RUBY_LIB_PREFIX/vendor_ruby]]]),
             [vendordir=$withval],
             [vendordir='${libdir}/${RUBY_INSTALL_NAME}/vendor_ruby'])
 VENDOR_DIR=`eval echo \\"${vendordir}\\"`
@@ -2383,24 +2389,24 @@ AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, RUBY_SITE_LIB2"/"RUBY_SITEARCH)
 AC_DEFINE_UNQUOTED(RUBY_VENDOR_ARCHLIB, RUBY_VENDOR_LIB2"/"RUBY_SITEARCH)
 
 AC_ARG_WITH(search-path,
-		[  --with-search-path=DIR specify the additional search path],
+		AS_HELP_STRING([--with-search-path=DIR], [specify the additional search path]),
 		[search_path=$withval])
 if test "$search_path" != ""; then
     AC_DEFINE_UNQUOTED(RUBY_SEARCH_PATH,"$search_path")
 fi
 
 AC_ARG_WITH(rubyhdrdir,
-	    [  --with-ruby-hdrdir=DIR  core headers in DIR [INCLUDEDIR]],
+	    AS_HELP_STRING([--with-rubyhdrdir=DIR], [core headers in DIR [[INCLUDEDIR/RUBY_INSTALL_NAME/RUBY_VERSION]]]),
 	    [rubyhdrdir=$withval],
 	    [rubyhdrdir='${includedir}/${RUBY_INSTALL_NAME}-${ruby_version}'])
 
 AC_ARG_WITH(sitehdrdir,
-	    [  --with-site-hdrdir=DIR  core headers in DIR [INCLUDEDIR]],
+	    AS_HELP_STRING([--with-sitehdrdir=DIR], [core site headers in DIR [RUBYHDRDIR/site_ruby]]),
 	    [sitehdrdir=$withval],
 	    [sitehdrdir='${rubyhdrdir}/site_ruby'])
 
 AC_ARG_WITH(vendorhdrdir,
-	    [  --with-vendor-hdrdir=DIR core headers in DIR [INCLUDEDIR]],
+	    AS_HELP_STRING([--with-vendorhdrdir=DIR], [ core vendor headers in DIR [RUBYHDRDIR/vendor_ruby]]),
 	    [vendorhdrdir=$withval],
 	    [vendorhdrdir='${rubyhdrdir}/vendor_ruby'])
 
@@ -2409,7 +2415,7 @@ AC_SUBST(sitehdrdir)dnl
 AC_SUBST(vendorhdrdir)dnl
 
 AC_ARG_WITH(mantype,
-		[  --with-mantype=TYPE specify man page type; TYPE is one of man and doc],
+		AS_HELP_STRING([--with-mantype=TYPE], [specify man page type; TYPE is one of man and doc]),
 		[
 			case "$withval" in
 			when(man|doc)
