@@ -76,11 +76,12 @@ File.foreach "config.status" do |line|
     next if $install_name and /^RUBY_INSTALL_NAME$/ =~ name
     next if $so_name and /^RUBY_SO_NAME$/ =~  name
     next if /^(?:X|(?:MINI|RUN)RUBY$)/ =~ name
+    next if /^(?:MAJOR|MINOR|TEENY)$/ =~ name
     arch = val if name == "arch"
     if /^program_transform_name$/ =~ name and /^s(\\?.)(.*)\1$/ =~ val
       next if $install_name
       sep = %r"#{Regexp.quote($1)}"
-      ptn = $2.sub(/\$\$/, '$').split(sep, 2)
+      ptn = $2.gsub(/\$\$/, '$').split(sep, 2)
       name = "ruby_install_name"
       val = "ruby".sub(/#{ptn[0]}/, ptn[1])
     end

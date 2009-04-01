@@ -1,3 +1,8 @@
+Wed Apr  1 18:44:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb: ignores version numbers in config.status.  replaces
+	  all $$s in program_transform_name.
+
 Wed Apr  1 15:12:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (.c.i): use CPP instead of CC, since gcc -E can'
