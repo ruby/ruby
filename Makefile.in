@@ -216,7 +216,7 @@ lex.c: defs/keywords
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -S $<
 
 .c.i:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -E $< > $@
+	$(CPP) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -E $< > $@
 
 clean-local::
 	@$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output
