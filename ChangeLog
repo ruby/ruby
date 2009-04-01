@@ -1,3 +1,8 @@
+Wed Apr  1 19:46:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): support for parallel make.  a
+	  patch from Takuto Matsuu at [ruby-dev:38220].
+
 Wed Apr  1 19:39:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LIBRUBY_LDSHARED): use $(CC) instead of cc.

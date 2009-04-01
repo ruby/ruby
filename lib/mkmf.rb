@@ -1710,7 +1710,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       mfile.print "\t@-$(RM) #{fseprepl[dest]}\n"
       mfile.print "\t@-$(RMDIRS) #{fseprepl[dir]}\n"
     else
-      mfile.print "#{dest}: #{f}\n"
+      mfile.print "#{dest}: #{dir} #{f}\n"
       mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} #{fseprepl[dir]}\n"
       if defined?($installed_list)
 	mfile.print "\t@echo #{dir}/#{File.basename(f)}>>$(INSTALLED_LIST)\n"
