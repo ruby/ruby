@@ -1,3 +1,7 @@
+Thu Apr  2 07:42:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (config.h): updated.
+
 Wed Apr  1 20:37:49 2009  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (rb_cv_fork_with_pthread): fail if the child process

@@ -528,7 +528,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define DEFAULT_KCODE KCODE_NONE
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
-#define RUBY_LIB_VERSION STRINGIZE(RUBY_VERSION_MAJOR)"."STRINGIZE(RUBY_VERSION_MINOR)"."STRINGIZE(RUBY_VERSION_TEENY)
+#define RUBY_LIB_VERSION_STYLE 3	/* full */
 #define RUBY_LIB_PREFIX "/lib/$(RUBY_INSTALL_NAME)"
 #define RUBY_LIB RUBY_LIB_PREFIX"/"RUBY_LIB_VERSION
 #define RUBY_SITE_LIB RUBY_LIB_PREFIX"/site_ruby"
@@ -537,9 +537,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RUBY_VENDOR_LIB2 RUBY_VENDOR_LIB"/"RUBY_LIB_VERSION
 #define RUBY_PLATFORM "$(arch)"
 #define RUBY_COREDLL "$(RT)"
-#define RUBY_ARCHLIB "/lib/$(RUBY_INSTALL_NAME)/$(ruby_version)/$(ARCH)-$(PLATFORM)"
-#define RUBY_SITE_ARCHLIB "/lib/$(RUBY_INSTALL_NAME)/site_ruby/$(ruby_version)/$(ARCH)-$(RT)"
-#define RUBY_VENDOR_ARCHLIB "/lib/$(RUBY_INSTALL_NAME)/vendor_ruby/$(ruby_version)/$(ARCH)-$(RT)"
+#define RUBY_ARCHLIB RUBY_LIB"/"RUBY_ARCH
+#define RUBY_SITE_ARCHLIB RUBY_SITE_LIB2"/"RUBY_SITEARCH
+#define RUBY_VENDOR_ARCHLIB RUBY_VENDOR_LIB2"/"RUBY_SITEARCH
 #define LIBRUBY_SO "$(LIBRUBY_SO)"
 #if 0
 $(BANG)if "$(RUBY_SO_NAME)"!="$$(RUBY_SO_NAME)" || "$(ARCH)-$(PLATFORM)"!="$$(ARCH)-$$(PLATFORM)"
