@@ -1,3 +1,8 @@
+Wed Apr  1 20:37:49 2009  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in (rb_cv_fork_with_pthread): fail if the child process
+	  fail.
+
 Wed Apr  1 19:46:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): support for parallel make.  a
