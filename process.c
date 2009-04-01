@@ -3220,8 +3220,8 @@ rb_f_spawn(int argc, VALUE *argv)
  *  Suspends the current thread for _duration_ seconds (which may be any number,
  *  including a +Float+ with fractional seconds). Returns the actual number of
  *  seconds slept (rounded), which may be less than that asked for if another
- *  thread calls <code>Thread#run</code>. Zero arguments causes +sleep+ to sleep
- *  forever.
+ *  thread calls <code>Thread#run</code>. Called without an argument, sleep()
+ *  will sleep forever.
  *
  *     Time.new    #=> 2008-03-08 19:56:19 +0900
  *     sleep 1.2   #=> 1
