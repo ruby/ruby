@@ -2490,6 +2490,37 @@ rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
 }
 
 
+int
+rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t * except,
+		    struct timeval *timeout)
+{
+    fd_set *r = NULL, *w = NULL, *e = NULL;
+
+    if (!read && !write && !except) {
+	if (!timeout) {
+	    rb_thread_sleep_forever();
+	    return 0;
+	}
+	rb_thread_wait_for(*timeout);
+	return 0;
+    }
+
+    if (read) {
+        rb_fd_resize(max - 1, read);
+        r = rb_fd_ptr(read);
+    }
+    if (write) {
+        rb_fd_resize(max - 1, write);
+        w = rb_fd_ptr(write);
+    }
+    if (except) {
+        rb_fd_resize(max - 1, except);
+        e = rb_fd_ptr(except);
+    }
+    return do_select(max, r, w, e, timeout);
+}
+
+
 /*
  * for GC
  */

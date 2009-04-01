@@ -1,3 +1,12 @@
+Wed Apr  1 13:46:20 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* thread.c (rb_thread_fd_select): new function to call select
+	  using rb_fdset_t.
+
+	* io.c (select_internal): use rb_thread_fd_select instead of
+	  rb_thread_select.  based on the patch from Kengo Matsuyama.
+	  [ruby-dev:38221]
+
 Wed Apr  1 13:16:19 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* process.c (rb_f_sleep): RDoc disambiguation.  [ruby-talk:332632]

@@ -244,6 +244,7 @@ typedef fd_set rb_fdset_t;
 #define rb_fd_clr(n, f)	FD_CLR(n, f)
 #define rb_fd_isset(n, f) FD_ISSET(n, f)
 #define rb_fd_copy(d, s, n) (*(d) = *(s))
+#define rb_fd_resize(n, f)	(void)(f)
 #define rb_fd_ptr(f)	(f)
 #define rb_fd_init(f)	FD_ZERO(f)
 #define rb_fd_term(f)	(void)(f)
@@ -327,6 +328,7 @@ VALUE rb_thread_create(VALUE (*)(ANYARGS), void*);
 void rb_thread_signal_raise(void *, int);
 void rb_thread_signal_exit(void *);
 int rb_thread_select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
+int rb_thread_fd_select(int, rb_fdset_t *, rb_fdset_t *, rb_fdset_t *, struct timeval *);
 void rb_thread_wait_for(struct timeval);
 VALUE rb_thread_current(void);
 VALUE rb_thread_main(void);

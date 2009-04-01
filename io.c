@@ -6635,7 +6635,7 @@ static VALUE
 select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fdset_t *fds)
 {
     VALUE res, list;
-    fd_set *rp, *wp, *ep;
+    rb_fdset_t *rp, *wp, *ep;
     rb_io_t *fptr;
     long i;
     int max = 0, n;
@@ -6658,7 +6658,7 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 	    timerec.tv_sec = timerec.tv_usec = 0;
 	    tp = &timerec;
 	}
-	rp = rb_fd_ptr(&fds[0]);
+	rp = &fds[0];
     }
     else
 	rp = 0;
@@ -6671,7 +6671,7 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 	    rb_fd_set(fptr->fd, &fds[1]);
 	    if (max < fptr->fd) max = fptr->fd;
 	}
-	wp = rb_fd_ptr(&fds[1]);
+	wp = &fds[1];
     }
     else
 	wp = 0;
@@ -6690,7 +6690,7 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
                 if (max < fptr->fd) max = fptr->fd;
             }
 	}
-	ep = rb_fd_ptr(&fds[2]);
+	ep = &fds[2];
     }
     else {
 	ep = 0;
@@ -6698,7 +6698,7 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 
     max++;
 
-    n = rb_thread_select(max, rp, wp, ep, tp);
+    n = rb_thread_fd_select(max, rp, wp, ep, tp);
     if (n < 0) {
 	rb_sys_fail(0);
     }
