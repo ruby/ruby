@@ -1667,7 +1667,7 @@ if test "$with_dln_a_out" != yes; then
 	when(rhapsody*)	: ${LDSHARED='cc -dynamic -bundle -undefined suppress'}
 			: ${LDFLAGS=""}
 			rb_cv_dlopen=yes ;;
-	when(darwin*)	: ${LDSHARED='cc -dynamic -bundle -undefined suppress -flat_namespace'}
+	when(darwin*)	: ${LDSHARED='$(CC) -dynamic -bundle -undefined suppress -flat_namespace'}
 			: ${LDFLAGS=""}
 			: ${LIBPATHENV=DYLD_LIBRARY_PATH}
 			# /usr/local/include is always searched for
@@ -1988,7 +1988,7 @@ if test "$enable_shared" = 'yes'; then
 	;;
     when(darwin*)
 	RUBY_SO_NAME="$RUBY_SO_NAME"'.$(MAJOR).$(MINOR).$(TEENY)'
-	LIBRUBY_LDSHARED='cc -dynamiclib -undefined suppress -flat_namespace'
+	LIBRUBY_LDSHARED='$(CC) -dynamiclib -undefined suppress -flat_namespace'
 	if test "$load_relative" = yes; then
 	    libprefix='@executable_path/../lib'
 	else
