@@ -1,3 +1,9 @@
+Wed Apr  1 18:53:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_dump.c (rb_vm_bugreport): should not #include inside a
+	  function, since headers may have declarations.
+	  c.f. [ruby-core:23095]
+
 Wed Apr  1 18:44:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb: ignores version numbers in config.status.  replaces

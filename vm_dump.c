@@ -576,6 +576,9 @@ bugreport_backtrace(void *arg, const char *file, int line, const char *method)
     return 0;
 }
 
+#if HAVE_BACKTRACE
+#include <execinfo.h>
+#endif
 void
 rb_vm_bugreport(void)
 {
@@ -589,7 +592,6 @@ rb_vm_bugreport(void)
     }
 
 #if HAVE_BACKTRACE
-#include <execinfo.h>
 #define MAX_NATIVE_TRACE 1024
     {
 	static void *trace[MAX_NATIVE_TRACE];
