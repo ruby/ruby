@@ -1,3 +1,8 @@
+Thu Apr  2 16:06:17 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/rss/test_atom.rb (RSS::TestAtomCore::assert_atom_content_inline_other_base64_to_s):
+	  ditto. [ruby-dev:38248]
+
 Thu Apr  2 15:43:46 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/rss-assertions.rb (RSS::Assertions::assert_atom_content_inline_other_text):
