@@ -25,7 +25,6 @@
 # Here is a simple example of usage:
 #
 #     require 'getoptlong'
-#     require 'rdoc/usage'
 #
 #     opts = GetoptLong.new(
 #       [ '--help', '-h', GetoptLong::NO_ARGUMENT ],

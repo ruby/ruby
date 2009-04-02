@@ -1,3 +1,8 @@
+Thu Apr  2 14:50:06 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/getoptlong.rb: remove unused udoc/usage from example.
+	   [ruby-core:23098]
+
 Thu Apr  2 07:42:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (config.h): updated.
