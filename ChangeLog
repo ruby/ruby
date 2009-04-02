@@ -1,3 +1,10 @@
+Thu Apr  2 14:17:09 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/openssl/test_ssl.rb (OpenSSL#test_client_session):
+	  Debian's openssl 0.9.8g-13 failed at assert(ssl.session_reused?),
+	  when use default SSLContext. [ruby-dev:36167]
+	  backported r19268 from trunk. [ruby-core:22843]
+
 Thu Mar 31 18:18:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (mkintpath): new function which converts native path

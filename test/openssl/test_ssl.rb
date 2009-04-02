@@ -416,7 +416,10 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true) do |server, port|
       2.times do
         sock = TCPSocket.new("127.0.0.1", port)
-        ssl = OpenSSL::SSL::SSLSocket.new(sock)
+        # Debian's openssl 0.9.8g-13 failed at assert(ssl.session_reused?),
+        # when use default SSLContext. [ruby-dev:36167]
+        ctx = OpenSSL::SSL::SSLContext.new("TLSv1")
+        ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
         ssl.sync_close = true
         ssl.session = last_session if last_session
         ssl.connect
