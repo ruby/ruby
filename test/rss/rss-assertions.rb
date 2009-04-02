@@ -564,7 +564,7 @@ EOA
 
         png_file = File.join(File.dirname(__FILE__), "dot.png")
         png = File.open(png_file, "rb") {|file| file.read}
-        base64_content = [png].pack("m").delete("\n")
+        base64_content = [png].pack("m")
 
         [false, true].each do |with_space|
           xml_content = base64_content

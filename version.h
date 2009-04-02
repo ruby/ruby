@@ -2,7 +2,7 @@
 #define RUBY_RELEASE_DATE "2009-04-02"
 #define RUBY_VERSION_CODE 187
 #define RUBY_RELEASE_CODE 20090402
-#define RUBY_PATCHLEVEL 157
+#define RUBY_PATCHLEVEL 158
 
 #define RUBY_VERSION_MAJOR 1
 #define RUBY_VERSION_MINOR 8
@@ -27,10 +27,4 @@ RUBY_EXTERN const char *ruby_copyright;
 
 #define RUBY_RELEASE_STR "patchlevel"
 #define RUBY_RELEASE_NUM RUBY_PATCHLEVEL
-
-
-
-
-
-
 

@@ -1,3 +1,8 @@
+Thu Apr  2 15:43:46 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/rss-assertions.rb (RSS::Assertions::assert_atom_content_inline_other_text):
+	  newlines are valid for Base64 data. [ruby-dev:38248]
+
 Thu Apr  2 14:17:09 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/openssl/test_ssl.rb (OpenSSL#test_client_session):
