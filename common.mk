@@ -84,7 +84,7 @@ VCS           = svn
 all: main
 
 main: exts
-	@$(RUNCMD) $(MKMAIN_CMD) MAKE=$(MAKE)
+	@$(RUNCMD) $(MKMAIN_CMD) $(MAKE)
 
 exts: $(MKMAIN_CMD)
 
