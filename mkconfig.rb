@@ -69,15 +69,20 @@ File.foreach "config.status" do |line|
   end
 
   if name
-    next if /^(?:ac_.*|configure_input|(?:top_)?srcdir|\w+OBJS)$/ =~ name
-    next if /^\$\(ac_\w+\)$/ =~ val
-    next if /^\$\{ac_\w+\}$/ =~ val
-    next if /^\$ac_\w+$/ =~ val
-    next if $install_name and /^RUBY_INSTALL_NAME$/ =~ name
-    next if $so_name and /^RUBY_SO_NAME$/ =~  name
-    next if /^(?:X|(?:MINI|RUN)RUBY$)/ =~ name
-    next if /^(?:MAJOR|MINOR|TEENY)$/ =~ name
-    arch = val if name == "arch"
+    case name
+    when /^(?:ac_.*|configure_input|(?:top_)?srcdir|\w+OBJS)$/; next
+    when /^(?:X|(?:MINI|RUN)RUBY$)/; next
+    when /^(?:MAJOR|MINOR|TEENY)$/; next
+    when /^RUBY_INSTALL_NAME$/; next if $install_name
+    when /^RUBY_SO_NAME$/; next if $so_name
+    when /^arch$/; if val.empty? then val = arch else arch = val end
+    when /^sitearch/; val = '$(arch)' if val.empty?
+    end
+    case val
+    when /^\$\(ac_\w+\)$/; next
+    when /^\$\{ac_\w+\}$/; next
+    when /^\$ac_\w+$/; next
+    end
     if /^program_transform_name$/ =~ name and /^s(\\?.)(.*)\1$/ =~ val
       next if $install_name
       sep = %r"#{Regexp.quote($1)}"

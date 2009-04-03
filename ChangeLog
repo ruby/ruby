@@ -1,3 +1,7 @@
+Sat Apr  4 07:38:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb (sitearch): default to arch.
+
 Fri Apr  3 14:02:42 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/irb/completion.rb (IRB::InputCompletor::Operators): Add
