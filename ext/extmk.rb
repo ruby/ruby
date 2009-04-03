@@ -570,7 +570,7 @@ $mflags.unshift("topdir=#$topdir")
 ENV.delete("RUBYOPT")
 if $command_output
   message = "echo #{message}"
-  cmd = sysquote($makeflags).join(' ')
+  cmd = $makeflags.quote.join(' ')
   open($command_output, 'wb') do |f|
     case $command_output
     when /\.sh\z/

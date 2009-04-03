@@ -1,3 +1,7 @@
+Fri Apr  3 12:45:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: quotes arguments with spaces always.
+
 Thu Apr  2 14:50:06 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/getoptlong.rb: remove unused udoc/usage from example.
