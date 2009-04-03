@@ -269,6 +269,7 @@ void rb_gc_call_finalizer_at_exit _((void));
 VALUE rb_gc_enable _((void));
 VALUE rb_gc_disable _((void));
 VALUE rb_gc_start _((void));
+#define Init_stack(addr) ruby_init_stack(addr)
 /* hash.c */
 void st_foreach_safe _((struct st_table *, int (*)(ANYARGS), unsigned long));
 void rb_hash_foreach _((VALUE, int (*)(ANYARGS), VALUE));

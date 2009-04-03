@@ -1374,7 +1374,6 @@ extern char **environ;
 char **rb_origenviron;
 
 void rb_call_inits _((void));
-void Init_stack _((VALUE*));
 void Init_heap _((void));
 void Init_ext _((void));
 
@@ -1421,7 +1420,7 @@ ruby_init()
     rb_origenviron = environ;
 #endif
 
-    Init_stack((void*)&state);
+    ruby_init_stack((void*)&state);
     Init_heap();
     PUSH_SCOPE();
     ruby_scope->local_vars = 0;
@@ -1565,7 +1564,7 @@ ruby_options(argc, argv)
 {
     int state;
 
-    Init_stack((void*)&state);
+    ruby_init_stack((void*)&state);
     PUSH_THREAD_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	ruby_process_options(argc, argv);
@@ -1621,7 +1620,7 @@ ruby_cleanup(ex)
 
     errs[1] = ruby_errinfo;
     ruby_safe_level = 0;
-    Init_stack((void *)&state);
+    ruby_init_stack((void *)&state);
     PUSH_THREAD_TAG();
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
@@ -1703,9 +1702,9 @@ ruby_stop(ex)
 int
 ruby_exec()
 {
-    volatile NODE *tmp;
+    volatile VALUE tmp;
 
-    Init_stack((void*)&tmp);
+    ruby_init_stack(&tmp);
     return ruby_exec_internal();
 }
 
@@ -12649,7 +12648,7 @@ rb_thread_create(fn, arg)
     VALUE (*fn)();
     void *arg;
 {
-    Init_stack((void *)&arg);
+    ruby_init_stack((void *)&arg);
     return rb_thread_start_0(fn, arg, rb_thread_alloc(rb_cThread));
 }
 

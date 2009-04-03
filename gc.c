@@ -1566,77 +1566,26 @@ ruby_set_stack_size(size)
 #endif
 }
 
+#undef Init_stack
+
 void
 Init_stack(addr)
     VALUE *addr;
 {
-#ifdef __ia64
-    if (rb_gc_register_stack_start == 0) {
-# if defined(__FreeBSD__)
-        /*
-         * FreeBSD/ia64 currently does not have a way for a process to get the
-         * base address for the RSE backing store, so hardcode it.
-         */
-        rb_gc_register_stack_start = (4ULL<<61);
-# elif defined(HAVE___LIBC_IA64_REGISTER_BACKING_STORE_BASE)
-#  pragma weak __libc_ia64_register_backing_store_base
-        extern unsigned long __libc_ia64_register_backing_store_base;
-        rb_gc_register_stack_start = (VALUE*)__libc_ia64_register_backing_store_base;
-# endif
-    }
-    {
-        VALUE *bsp = (VALUE*)rb_ia64_bsp();
-        if (rb_gc_register_stack_start == 0 ||
-            bsp < rb_gc_register_stack_start) {
-            rb_gc_register_stack_start = bsp;
-        }
-    }
-#endif
-#if defined(_WIN32) || defined(__CYGWIN__)
-    MEMORY_BASIC_INFORMATION m;
-    memset(&m, 0, sizeof(m));
-    VirtualQuery(&m, &m, sizeof(m));
-    rb_gc_stack_start =
-	STACK_UPPER((VALUE *)&m, (VALUE *)m.BaseAddress,
-		    (VALUE *)((char *)m.BaseAddress + m.RegionSize) - 1);
-#elif defined(STACK_END_ADDRESS)
-    {
-        extern void *STACK_END_ADDRESS;
-        rb_gc_stack_start = STACK_END_ADDRESS;
-    }
-#else
-    if (!addr) addr = (void *)&addr;
-    STACK_UPPER(&addr, addr, ++addr);
-    if (rb_gc_stack_start) {
-	if (STACK_UPPER(&addr,
-			rb_gc_stack_start > addr,
-			rb_gc_stack_start < addr))
-	    rb_gc_stack_start = addr;
-	return;
-    }
-    rb_gc_stack_start = addr;
-#endif
-#ifdef HAVE_GETRLIMIT
-    {
-	struct rlimit rlim;
-
-	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
-	    unsigned int space = rlim.rlim_cur/5;
-
-	    if (space > 1024*1024) space = 1024*1024;
-	    STACK_LEVEL_MAX = (rlim.rlim_cur - space) / sizeof(VALUE);
-	}
-    }
-#endif
+    ruby_init_stack(addr);
 }
 
+#undef ruby_init_stack
+
+void
+ruby_init_stack(addr
 #ifdef __ia64
-void ruby_init_stack(addr, bsp)
+		, bsp
+#endif
+    )
     VALUE *addr;
+#ifdef __ia64
     void *bsp;
-#else
-void ruby_init_stack(addr)
-    VALUE *addr;
 #endif
 {
     if (!rb_gc_stack_start ||

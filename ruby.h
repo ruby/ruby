@@ -595,15 +595,15 @@ VALUE rb_require _((const char*));
 
 #ifdef __ia64
 void ruby_init_stack(VALUE*, void*);
-#define RUBY_INIT_STACK \
-    VALUE variable_in_this_stack_frame; \
-    ruby_init_stack(&variable_in_this_stack_frame, rb_ia64_bsp());
+#define ruby_init_stack(addr) ruby_init_stack(addr, rb_ia64_bsp())
 #else
 void ruby_init_stack(VALUE*);
+#endif
+#define Init_stack(addr) ruby_init_stack(addr)
 #define RUBY_INIT_STACK \
     VALUE variable_in_this_stack_frame; \
     ruby_init_stack(&variable_in_this_stack_frame);
-#endif
+
 void ruby_init _((void));
 void ruby_options _((int, char**));
 NORETURN(void ruby_run _((void)));
