@@ -1,3 +1,7 @@
+Fri Apr  3 12:46:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: quotes arguments with spaces always.
+
 Fri Apr  3 12:43:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (main): passes $(MAKE) to mkmain_cmd
