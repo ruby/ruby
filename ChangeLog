@@ -1,8 +1,10 @@
-Fri Apr  3 18:34:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Apr  3 18:35:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* gc.c (Init_stack): use ruby_init_stack.  [ruby-dev:34350]
+	* Makefile.in (fake.rb): creates with config.status.
 
-	* intern.h (Init_stack): make to call ruby_init_stack.
+	* template/fake.rb.in: extracted from Makefile.in.
+
+	* configure.in (fake.rb): prefixed with $(arch)-.
 
 Fri Apr  3 13:53:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
