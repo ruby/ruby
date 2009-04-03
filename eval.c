@@ -656,7 +656,7 @@ rb_export_method(klass, name, noex)
     ID noex;
 {
     NODE *body;
-    VALUE origin;
+    VALUE origin = 0;
 
     if (klass == rb_cObject) {
 	rb_secure(4);
@@ -2405,6 +2405,7 @@ is_defined(self, node, buf)
     char *buf;
 {
     VALUE val;			/* OK */
+    volatile VALUE vval;
     int state;
 
   again:
@@ -2434,13 +2435,14 @@ is_defined(self, node, buf)
       case NODE_CALL:
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
-	    val = rb_eval(self, node->nd_recv);
+	    vval = rb_eval(self, node->nd_recv);
 	}
 	POP_TAG();
 	if (state) {
 	    ruby_errinfo = Qnil;
 	    return 0;
 	}
+	val = vval;
       check_bound:
 	{
 	    int call = nd_type(node)==NODE_CALL;
@@ -2536,7 +2538,7 @@ is_defined(self, node, buf)
       case NODE_COLON2:
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
-	    val = rb_eval(self, node->nd_head);
+	    vval = rb_eval(self, node->nd_head);
 	}
 	POP_TAG();
 	if (state) {
@@ -2544,6 +2546,7 @@ is_defined(self, node, buf)
 	    return 0;
 	}
 	else {
+	    val = vval;
 	    switch (TYPE(val)) {
 	      case T_CLASS:
 	      case T_MODULE:

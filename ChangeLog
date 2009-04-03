@@ -1,3 +1,18 @@
+Fri Apr  3 13:52:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	------------------------------------------------------------------------
+	r15996 | nobu | 2008-04-14 12:52:27 +0900 (Mon, 14 Apr 2008) | 2 lines
+
+	* gc.c (Init_stack): use ruby_init_stack.  [ruby-dev:34350]
+
+	------------------------------------------------------------------------
+	------------------------------------------------------------------------
+	r17036 | nobu | 2008-06-09 09:54:23 +0900 (Mon, 09 Jun 2008) | 2 lines
+
+	* include/ruby/intern.h (Init_stack): make to call ruby_init_stack.
+
+	------------------------------------------------------------------------
+
 Fri Apr  3 12:46:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: quotes arguments with spaces always.
