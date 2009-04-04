@@ -1,3 +1,8 @@
+Sat Apr  4 17:05:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (RB_NUM_COERCE_FUNCS_NEED_OPID): macro to
+	  check compatibility.  [ruby-dev:38162]
+
 Sat Apr  4 07:38:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb (sitearch): default to arch.

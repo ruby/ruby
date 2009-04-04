@@ -424,6 +424,7 @@ VALUE rb_marshal_load(VALUE);
 void rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE), VALUE (*loader)(VALUE, VALUE));
 /* numeric.c */
 void rb_num_zerodiv(void);
+#define RB_NUM_COERCE_FUNCS_NEED_OPID 1
 VALUE rb_num_coerce_bin(VALUE, VALUE, ID);
 VALUE rb_num_coerce_cmp(VALUE, VALUE, ID);
 VALUE rb_num_coerce_relop(VALUE, VALUE, ID);
