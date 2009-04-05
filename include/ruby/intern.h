@@ -232,6 +232,7 @@ void rb_fd_set(int, rb_fdset_t *);
 #define rb_fd_clr(n, f)		rb_w32_fdclr(n, (f)->fdset)
 #define rb_fd_isset(n, f)	rb_w32_fdisset(n, (f)->fdset)
 #define rb_fd_select(n, rfds, wfds, efds, timeout)	rb_w32_select(n, (rfds) ? ((rb_fdset_t*)rfds)->fdset : NULL, (wfds) ? ((rb_fdset_t*)wfds)->fdset : NULL, (efds) ? ((rb_fdset_t*)efds)->fdset: NULL, timeout)
+#define rb_fd_resize(n, f)	(void)(f)
 
 #define rb_fd_ptr(f)	((f)->fdset)
 #define rb_fd_max(f)	((f)->fdset->fd_count)

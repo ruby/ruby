@@ -1,3 +1,7 @@
+Sun Apr  5 18:02:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_fd_resize): does nothing on Win32.
+
 Sat Apr  4 17:05:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (RB_NUM_COERCE_FUNCS_NEED_OPID): macro to
