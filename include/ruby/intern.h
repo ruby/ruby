@@ -370,6 +370,7 @@ void rb_gc_call_finalizer_at_exit(void);
 VALUE rb_gc_enable(void);
 VALUE rb_gc_disable(void);
 VALUE rb_gc_start(void);
+#define Init_stack(addr) ruby_init_stack(addr)
 /* hash.c */
 void st_foreach_safe(struct st_table *, int (*)(ANYARGS), st_data_t);
 void rb_hash_foreach(VALUE, int (*)(ANYARGS), VALUE);
@@ -788,7 +789,6 @@ void ruby_show_copyright(void);
 ID rb_frame_callee(void);
 VALUE rb_str_succ(VALUE);
 VALUE rb_time_succ(VALUE);
-#define Init_stack(addr) ruby_init_stack(addr)
 void rb_frame_pop(void);
 int rb_frame_method_id_and_class(ID *idp, VALUE *klassp);
 
