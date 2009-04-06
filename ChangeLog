@@ -1,3 +1,8 @@
+Tue Apr  7 01:08:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_to_s): reduce fragments if no precision lost.
+	  c.f. [ruby-core:23075]
+
 Mon Apr  6 23:16:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (CFLAGS, CXXFLAGS): override with $cflags and
