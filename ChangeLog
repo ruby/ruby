@@ -1,3 +1,9 @@
+Mon Apr  6 19:26:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (utime_failed): refined the error message for EINVAL on
+	  DOSISH platforms, where it may fail depending on filesystems.
+	  see [ruby-dev:38277].
+
 Mon Apr  6 16:38:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (sys_fail2, rb_file_s_readlink, BUFCHECK, rmext),

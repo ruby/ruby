@@ -2080,25 +2080,68 @@ rb_file_s_lchown(int argc, VALUE *argv)
 
 struct timespec rb_time_timespec(VALUE time);
 
+struct utime_args {
+    const struct timespec* tsp;
+    VALUE atime, mtime;
+};
+
+#if defined DOSISH || defined __CYGWIN__
+NORETURN(static void utime_failed(const char *, const struct timespec *, VALUE, VALUE));
+
+static void
+utime_failed(const char *path, const struct timespec *tsp, VALUE atime, VALUE mtime)
+{
+    if (tsp && errno == EINVAL) {
+	VALUE e[2], a = Qnil, m = Qnil;
+	int d = 0;
+	if (!NIL_P(atime)) {
+	    a = rb_inspect(atime);
+	}
+	if (!NIL_P(mtime) && mtime != atime && !rb_equal(atime, mtime)) {
+	    m = rb_inspect(mtime);
+	}
+	if (NIL_P(a)) e[0] = m;
+	else if (NIL_P(m) || rb_str_cmp(a, m) == 0) e[0] = a;
+	else {
+	    e[0] = rb_str_plus(a, rb_str_new_cstr(" or "));
+	    rb_str_append(e[0], m);
+	    d = 1;
+	}
+	if (!NIL_P(e[0])) {
+	    if (path) {
+		if (!d) e[0] = rb_str_dup(e[0]);
+		rb_str_cat2(rb_str_cat2(e[0], " for "), path);
+	    }
+	    e[1] = INT2FIX(EINVAL);
+	    rb_exc_raise(rb_class_new_instance(2, e, rb_eSystemCallError));
+	}
+	errno = EINVAL;
+    }
+    rb_sys_fail(path);
+}
+#else
+#define utime_failed(path, tsp, atime, mtime) rb_sys_fail(path)
+#endif
+
 #if defined(HAVE_UTIMES)
 
 static void
 utime_internal(const char *path, void *arg)
 {
-    struct timespec *tsp = arg;
-    struct timeval tvbuf[2], *tvp = arg;
+    struct utime_args *v = arg;
+    const struct timespec *tsp = v->tsp;
+    struct timeval tvbuf[2], *tvp = NULL;
 
 #ifdef HAVE_UTIMENSAT
     static int try_utimensat = 1;
 
     if (try_utimensat) {
-        struct timespec *tsp = arg;
         if (utimensat(AT_FDCWD, path, tsp, 0) < 0) {
             if (errno == ENOSYS) {
                 try_utimensat = 0;
                 goto no_utimensat;
             }
-            rb_sys_fail(path);
+            utime_failed(path, tsp, v->atime, v->mtime);
         }
         return;
     }
@@ -2113,7 +2156,7 @@ no_utimensat:
         tvp = tvbuf;
     }
     if (utimes(path, tvp) < 0)
-	rb_sys_fail(path);
+	utime_failed(path, tsp, v->atime, v->mtime);
 }
 
 #else
@@ -2128,7 +2171,8 @@ struct utimbuf {
 static void
 utime_internal(const char *path, void *arg)
 {
-    struct timespec *tsp = arg;
+    struct utime_args *v = arg;
+    const struct timespec *tsp = v->tsp;
     struct utimbuf utbuf, *utp = NULL;
     if (tsp) {
         utbuf.actime = tsp[0].tv_sec;
@@ -2136,7 +2180,7 @@ utime_internal(const char *path, void *arg)
         utp = &utbuf;
     }
     if (utime(path, utp) < 0)
-	rb_sys_fail(path);
+	utime_failed(path, tsp, v->atime, v->mtime);
 }
 
 #endif
@@ -2153,20 +2197,22 @@ utime_internal(const char *path, void *arg)
 static VALUE
 rb_file_s_utime(int argc, VALUE *argv)
 {
-    VALUE atime, mtime, rest;
+    VALUE rest;
+    struct utime_args args;
     struct timespec tss[2], *tsp = NULL;
     long n;
 
     rb_secure(2);
-    rb_scan_args(argc, argv, "2*", &atime, &mtime, &rest);
+    rb_scan_args(argc, argv, "2*", &args.atime, &args.mtime, &rest);
 
-    if (!NIL_P(atime) || !NIL_P(mtime)) {
+    if (!NIL_P(args.atime) || !NIL_P(args.mtime)) {
 	tsp = tss;
-	tsp[0] = rb_time_timespec(atime);
-	tsp[1] = rb_time_timespec(mtime);
+	tsp[0] = rb_time_timespec(args.atime);
+	tsp[1] = rb_time_timespec(args.mtime);
     }
+    args.tsp = tsp;
 
-    n = apply2files(utime_internal, rest, tsp);
+    n = apply2files(utime_internal, rest, &args);
     return LONG2FIX(n);
 }
 
