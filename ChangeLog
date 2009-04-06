@@ -1,4 +1,7 @@
-Tue Apr  7 02:25:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Apr  7 02:27:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_DEFINT): should pass includes to
+	  AC_CHECK_SIZEOF and RUBY_CHECK_SIZEOF.
 
 	* configure.in (CFLAGS, CXXFLAGS): need ARCH_FLAG for universal
 	  binary.

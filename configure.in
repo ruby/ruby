@@ -938,8 +938,8 @@ RUBY_CHECK_SIZEOF(rlim_t, [int long "long long"], [], [
 ])
 
 AC_TYPE_SIZE_T
-RUBY_CHECK_SIZEOF(size_t, [int long void*])
-RUBY_CHECK_SIZEOF(ptrdiff_t, size_t)
+RUBY_CHECK_SIZEOF(size_t, [int long void*], [], [@%:@include <sys/types.h>])
+RUBY_CHECK_SIZEOF(ptrdiff_t, size_t, [], [@%:@include <stddef.h>])
 AC_STRUCT_ST_BLKSIZE
 AC_STRUCT_ST_BLOCKS
 AC_STRUCT_ST_RDEV
@@ -981,7 +981,8 @@ typedef $1 t; int s = sizeof(t) == 42;])],
 if test "${rb_cv_type_$1}" != no; then
     AC_DEFINE([HAVE_]AS_TR_CPP($1), 1)
     if test "${rb_cv_type_$1}" = yes; then
-	m4_bmatch([$2], [^[1-9][0-9]*$], [AC_CHECK_SIZEOF($1)], [RUBY_CHECK_SIZEOF($1, $2)])
+	m4_bmatch([$2], [^[1-9][0-9]*$], [AC_CHECK_SIZEOF([$1], 0, [$4])],
+			[RUBY_CHECK_SIZEOF([$1], [$2], [], [$4])])
     else
 	AC_DEFINE_UNQUOTED($1, [$rb_cv_type_$1])
 	AC_DEFINE_UNQUOTED([SIZEOF_]AS_TR_CPP($1), [SIZEOF_]AS_TR_CPP([$rb_cv_type_$1]))
@@ -1001,7 +1002,7 @@ RUBY_DEFINT(int128_t, 16)
 RUBY_DEFINT(uint128_t, 16, unsigned)
 RUBY_DEFINT(intptr_t, void*)
 RUBY_DEFINT(uintptr_t, void*, unsigned)
-RUBY_DEFINT(ssize_t, size_t)	dnl may differ from int, so not use AC_TYPE_SSIZE_T.
+RUBY_DEFINT(ssize_t, size_t, [], [@%:@include <sys/types.h>])	dnl may differ from int, so not use AC_TYPE_SSIZE_T.
 
 AC_CACHE_CHECK(for stack end address, rb_cv_stack_end_address,
 [rb_cv_stack_end_address=no
