@@ -214,8 +214,14 @@ AC_ARG_PROGRAM
 
 dnl Checks for programs.
 
-: ${CFLAGS=} ${cflags='${optflags} ${debugflags} ${warnflags}'}
-: ${CXXFLAGS=} ${cxxflags='${optflags} ${debugflags} ${warnflags}'}
+if test -z "${CFLAGS+set}"; then
+    orig_cflags="$cflags"
+    cflags="$cflags "'${optflags} ${debugflags} ${warnflags}'}
+fi
+if test -z "${CXXFLAGS+set}"; then
+    orig_cxxflags="$cxxflags"
+    cxxflags="$cxxflags "'${optflags} ${debugflags} ${warnflags}'}
+fi
 if test x"${build}" != x"${host}"; then
   AC_CHECK_TOOL(CC, gcc)
 fi
@@ -341,8 +347,8 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     warnflags="-Wall -Wno-unused-parameter -Wno-parentheses ${warnflags+$warnflags }-Wpointer-arith -Wwrite-strings"
 fi
 
-CFLAGS="${CFLAGS} `eval echo $cflags`"
-CXXFLAGS="${CXXFLAGS} `eval echo $cxxflags`"
+test -n "${cflags+set}" && CFLAGS="${CFLAGS} `eval echo $cflags`"
+test -n "${cxxflags+set}" && CXXFLAGS="${CXXFLAGS} `eval echo $cxxflags`"
 
 dnl check for large file stuff
 mv confdefs.h confdefs1.h
@@ -2198,17 +2204,23 @@ fi
 
 CPPFLAGS="$CPPFLAGS "'$(DEFS)'
 test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
-cflagspat=`eval echo '"'"${cflags}"'"' | sed 's/[[][|.*]]/\\&/g'`
-CFLAGS=`echo "$CFLAGS" | sed "s|$cflagspat"'|${cflags}|'`
+if test -n "${cflags+set}"; then
+    cflagspat=`eval echo '"'"${cflags}"'"' | sed 's/[[][|.*]]/\\&/g'`
+    CFLAGS=`echo "$CFLAGS" | sed "s|$cflagspat"'|${cflags}|'`
+fi
+if test -n "${cxxflags+set}"; then
+    cxxflagspat=`eval echo '"'"${cxxflags}"'"' | sed 's/[[][|.*]]/\\&/g'`
+    CXXFLAGS=`echo "$CXXFLAGS" | sed "s|$cxxflagspat"'|${cxxflags}|'`
+fi
 if test "${ARCH_FLAG}"; then
     archflagpat=`eval echo '"'"${ARCH_FLAG}"'"' | sed 's/[[][|.*]]/\\&/g'`
     CFLAGS=`echo "$CFLAGS" | sed "s|$archflagpat"'|$(ARCH_FLAG)|'`
+    CXXFLAGS=`echo "$CXXFLAGS" | sed "s|$archflagpat"'|$(ARCH_FLAG)|'`
     LDFLAGS=`echo "$LDFLAGS" | sed "s|$archflagpat"'|$(ARCH_FLAG)|'`
 fi
-cxxflagspat=`eval echo '"'"${cxxflags}"'"' | sed 's/[[][|.*]]/\\&/g'`
-CXXFLAGS=`echo "$CXXFLAGS" | sed "s|$cxxflagspat"'|${cxxflags}|'`
 AC_SUBST(cppflags, [])dnl
-AC_SUBST(cflags, ['${optflags} ${debugflags} ${warnflags}'])dnl
+AC_SUBST(cflags, ["$orig_cxxflags "'${optflags} ${debugflags} ${warnflags}'])dnl
+AC_SUBST(cxxflags, ["$orig_cxxflags "'${optflags} ${debugflags} ${warnflags}'])dnl
 AC_SUBST(optflags)dnl
 AC_SUBST(debugflags)dnl
 AC_SUBST(warnflags)dnl
