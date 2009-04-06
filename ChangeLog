@@ -1,3 +1,8 @@
+Tue Apr  7 02:25:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (CFLAGS, CXXFLAGS): need ARCH_FLAG for universal
+	  binary.
+
 Tue Apr  7 01:08:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_to_s): reduce fragments if no precision lost.

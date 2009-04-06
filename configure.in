@@ -348,8 +348,8 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     warnflags="-Wall -Wno-unused-parameter -Wno-parentheses ${warnflags+$warnflags }-Wpointer-arith -Wwrite-strings"
 fi
 
-test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && CFLAGS="`eval echo $cflags`"
-test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && CXXFLAGS="`eval echo $cxxflags`"
+test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
+test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
 
 dnl check for large file stuff
 mv confdefs.h confdefs1.h
@@ -2187,11 +2187,11 @@ if test "${universal_binary-no}" = yes ; then
 ], [
     AC_MSG_RESULT(no)
     archflagpat=`eval echo '"'"${ARCH_FLAG}"'"' | sed 's/[[][|.*]]/\\&/g'`
-    cflags=`echo "$CFLAGS" | sed "s|$archflagpat"'||'`
+    new_cflags=`echo "$CFLAGS" | sed "s|$archflagpat"'||'`
     for archs in ${universal_archnames}; do
 	cpu=${archs#*=}
 	archs=${archs%=*}
-	CFLAGS="$cflags -arch $archs"
+	CFLAGS="$new_cflags -arch $archs"
 	archs="__${archs}__"
 	AC_MSG_CHECKING([for macro ${archs} on ${cpu}])
 	AC_TRY_COMPILE([@%:@ifndef ${archs}
