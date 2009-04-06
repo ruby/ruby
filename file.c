@@ -2107,9 +2107,9 @@ no_utimensat:
 
     if (tsp) {
         tvbuf[0].tv_sec = tsp[0].tv_sec;
-        tvbuf[0].tv_usec = tsp[0].tv_nsec / 1000;
+        tvbuf[0].tv_usec = (int)(tsp[0].tv_nsec / 1000);
         tvbuf[1].tv_sec = tsp[1].tv_sec;
-        tvbuf[1].tv_usec = tsp[1].tv_nsec / 1000;
+        tvbuf[1].tv_usec = (int)(tsp[1].tv_nsec / 1000);
         tvp = tvbuf;
     }
     if (utimes(path, tvp) < 0)
@@ -2182,7 +2182,7 @@ sys_fail2(VALUE s1, VALUE s2)
 #endif
     const char *e1, *e2;
     int len = 5;
-    int l1 = RSTRING_LEN(s1), l2 = RSTRING_LEN(s2);
+    long l1 = RSTRING_LEN(s1), l2 = RSTRING_LEN(s2);
 
     e1 = e2 = "";
     if (l1 > max_pathlen) {
@@ -2195,11 +2195,11 @@ sys_fail2(VALUE s1, VALUE s2)
 	e2 = "...";
 	len += 3;
     }
-    len += l1 + l2;
+    len += (int)l1 + (int)l2;
     buf = ALLOCA_N(char, len);
     snprintf(buf, len, "(%.*s%s, %.*s%s)",
-	     l1, RSTRING_PTR(s1), e1,
-	     l2, RSTRING_PTR(s2), e2);
+	     (int)l1, RSTRING_PTR(s1), e1,
+	     (int)l2, RSTRING_PTR(s2), e2);
     rb_sys_fail(buf);
 }
 
@@ -2280,7 +2280,7 @@ rb_file_s_readlink(VALUE klass, VALUE path)
 #ifdef HAVE_READLINK
     char *buf;
     int size = 100;
-    int rv;
+    ssize_t rv;
     VALUE v;
 
     rb_secure(2);
@@ -2594,7 +2594,7 @@ ntfs_tail(const char *path)
 #endif
 
 #define BUFCHECK(cond) do {\
-    long bdiff = p - buf;\
+    size_t bdiff = p - buf;\
     if (cond) {\
 	do {buflen *= 2;} while (cond);\
 	rb_str_resize(result, buflen);\
@@ -2993,10 +2993,10 @@ rb_file_s_absolute_path(int argc, VALUE *argv)
     return rb_file_absolute_path(fname, dname);
 }
 
-static int
-rmext(const char *p, int l1, const char *e)
+static size_t
+rmext(const char *p, long l1, const char *e)
 {
-    int l0, l2;
+    long l0, l2;
 
     if (!e) return 0;
 
@@ -3047,7 +3047,7 @@ rb_file_s_basename(int argc, VALUE *argv)
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
     const char *root;
 #endif
-    int f, n;
+    long f, n;
 
     if (rb_scan_args(argc, argv, "11", &fname, &fext) == 2) {
 	StringValue(fext);
@@ -4581,7 +4581,7 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 		if (!is_absolute_path(f)) fname = rb_file_expand_path(fname, Qnil);
 		OBJ_FREEZE(fname);
 		*filep = fname;
-		return i+1;
+		return (int)(i+1);
 	    }
 	    rb_str_set_len(fname, fnlen);
 	}
@@ -4607,7 +4607,7 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 		RBASIC(tmp)->klass = rb_obj_class(*filep);
 		OBJ_FREEZE(tmp);
 		*filep = tmp;
-		return j+1;
+		return (int)(j+1);
 	    }
 	    FL_UNSET(tmp, FL_TAINT | FL_UNTRUSTED);
 	}

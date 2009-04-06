@@ -1974,7 +1974,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
 #endif
     if (i < 0 || (n = rb_enc_codelen((int)i, enc)) <= 0) goto out_of_range;
     str = rb_enc_str_new(0, n, enc);
-    rb_enc_mbcput(i, RSTRING_PTR(str), enc);
+    rb_enc_mbcput((int)i, RSTRING_PTR(str), enc);
     return str;
 }
 
