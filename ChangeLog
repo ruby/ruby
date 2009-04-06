@@ -1,7 +1,7 @@
-Mon Apr  6 20:16:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Apr  6 23:16:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* configure.in (CFLAGS, CXXFLAGS): use orignal values if given.
-	  [ruby-core:23130]
+	* configure.in (CFLAGS, CXXFLAGS): override with $cflags and
+	  $cxxflags if not given.  [ruby-core:23130]
 
 Fri Apr  3 18:37:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
