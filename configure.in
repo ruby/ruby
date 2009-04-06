@@ -981,8 +981,8 @@ typedef $1 t; int s = sizeof(t) == 42;])],
 if test "${rb_cv_type_$1}" != no; then
     AC_DEFINE([HAVE_]AS_TR_CPP($1), 1)
     if test "${rb_cv_type_$1}" = yes; then
-	m4_bmatch([$2], [^[1-9][0-9]*$], [AC_CHECK_SIZEOF([$1], 0, [$4])],
-			[RUBY_CHECK_SIZEOF([$1], [$2], [], [$4])])
+	m4_bmatch([$2], [^[1-9][0-9]*$], [AC_CHECK_SIZEOF([$1], 0, [AC_INCLUDES_DEFAULT([$4])])],
+			[RUBY_CHECK_SIZEOF([$1], [$2], [], [AC_INCLUDES_DEFAULT([$4])])])
     else
 	AC_DEFINE_UNQUOTED($1, [$rb_cv_type_$1])
 	AC_DEFINE_UNQUOTED([SIZEOF_]AS_TR_CPP($1), [SIZEOF_]AS_TR_CPP([$rb_cv_type_$1]))
