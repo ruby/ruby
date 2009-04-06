@@ -118,10 +118,6 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(false, StringIO.new("").isatty)
   end
 
-  def test_path
-    assert_equal(nil, StringIO.new("").path)
-  end
-
   def test_fsync
     assert_equal(0, StringIO.new("").fsync)
   end
