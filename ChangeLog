@@ -1,3 +1,8 @@
+Mon Apr  6 20:16:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (CFLAGS, CXXFLAGS): use orignal values if given.
+	  [ruby-core:23130]
+
 Fri Apr  3 18:37:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (Init_stack): use ruby_init_stack.  [ruby-dev:34350]
