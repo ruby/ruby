@@ -1,3 +1,12 @@
+Mon Apr  6 15:11:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (int_chr): checsk overflow.
+
+Mon Apr  6 10:49:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/stringio/test_stringio.rb (test_path): StringIO#path is no
+	  longer defined.  [ruby-dev:38254]
+
 Mon Apr  6 10:47:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_path): removed.  [ruby-dev:38254]

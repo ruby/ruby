@@ -1969,7 +1969,10 @@ int_chr(int argc, VALUE *argv, VALUE num)
     }
     enc = rb_to_encoding(argv[0]);
     if (!enc) enc = rb_ascii8bit_encoding();
-    if (i < 0 || (n = rb_enc_codelen(i, enc)) <= 0) goto out_of_range;
+#if SIZEOF_INT < SIZEOF_LONG
+    if (i > INT_MAX) goto out_of_range;
+#endif
+    if (i < 0 || (n = rb_enc_codelen((int)i, enc)) <= 0) goto out_of_range;
     str = rb_enc_str_new(0, n, enc);
     rb_enc_mbcput(i, RSTRING_PTR(str), enc);
     return str;
