@@ -86,11 +86,11 @@ get_strio(VALUE self)
 }
 
 static VALUE
-strio_substr(struct StringIO *ptr, int pos, int len)
+strio_substr(struct StringIO *ptr, long pos, long len)
 {
     VALUE str = ptr->string;
     rb_encoding *enc = rb_enc_get(str);
-    int rlen = RSTRING_LEN(str) - pos;
+    long rlen = RSTRING_LEN(str) - pos;
 
     if (len > rlen) len = rlen;
     if (len < 0) len = 0;
@@ -160,7 +160,7 @@ static void
 strio_init(int argc, VALUE *argv, struct StringIO *ptr)
 {
     VALUE string, mode;
-    int trunc = Qfalse;
+    int trunc = 0;
 
     switch (rb_scan_args(argc, argv, "02", &string, &mode)) {
       case 2:
@@ -1185,9 +1185,6 @@ strio_sysread(int argc, VALUE *argv, VALUE self)
 
 #define strio_syswrite strio_write
 
-/* call-seq: strio.path -> nil */
-#define strio_path strio_nil
-
 /*
  * call-seq:
  *   strio.isatty -> nil
@@ -1325,7 +1322,6 @@ Init_stringio()
     rb_define_method(StringIO, "sync", strio_get_sync, 0);
     rb_define_method(StringIO, "sync=", strio_set_sync, 1);
     rb_define_method(StringIO, "tell", strio_tell, 0);
-    rb_define_method(StringIO, "path", strio_path, 0);
 
     rb_define_method(StringIO, "each", strio_each, -1);
     rb_define_method(StringIO, "each_line", strio_each, -1);
