@@ -1,4 +1,9 @@
-Tue Apr  7 13:14:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Apr  7 13:35:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (info): shows configured names.
+
+	* configure.in (Makefile): works even if RUBY_INSTALL_NAME
+	  contains macro.
 
 	* configure.in (LIBRUBY_DLDFLAGS): compatibility version is
 	  ruby_version.

@@ -750,6 +750,16 @@ dist:
 up::
 	-@$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(srcdir)/revision.h"
 
+info: info-program info-libruby_a info-libruby_so info-arch
+info-program:
+	@echo PROGRAM=$(PROGRAM)
+info-libruby_a:
+	@echo LIBRUBY_A=$(LIBRUBY_A)
+info-libruby_so:
+	@echo LIBRUBY_SO=$(LIBRUBY_SO)
+info-arch:
+	@echo arch=$(arch)
+
 help: PHONY
 	@echo "                Makefile of Ruby"
 	@echo ""

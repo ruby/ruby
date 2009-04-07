@@ -159,7 +159,7 @@ $(LIBRUBY_SO):
 
 fake: $(arch)-fake.rb
 $(arch)-fake.rb: config.status
-		 @./config.status --file=$@:$(srcdir)/template/fake.rb.in
+		@./config.status --file=$@:$(srcdir)/template/fake.rb.in
 
 Makefile:	$(srcdir)/Makefile.in $(srcdir)/enc/Makefile.in
 

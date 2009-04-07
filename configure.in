@@ -2506,7 +2506,7 @@ AC_CONFIG_FILES(Makefile, [{
 	fi
 	sed '/^MISSING/s/\$U\././g;/^VCS *=/s#@VCS@#'"$VCS"'#;/^VCSUP *=/s#@VCSUP@#'"$VCSUP"'#' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
-	test "$RUBY_INSTALL_NAME$EXEEXT" = ruby || echo 'ruby: $(PROGRAM);'
+	${MAKE-make} info-program | grep '^PROGRAM=ruby$' > /dev/null || echo 'ruby: $(PROGRAM);'
 	if test "$gnumake" != yes; then
 	    echo ['$(MKFILES): $(srcdir)/common.mk']
 	    sed ['s/{\$([^(){}]*)[^{}]*}//g'] ${srcdir}/common.mk
@@ -2514,7 +2514,7 @@ AC_CONFIG_FILES(Makefile, [{
 	    echo 'distclean-local::; @$(RM) GNUmakefile uncommon.mk'
 	fi
       } >> confmk$$.tmp && mv -f confmk$$.tmp Makefile],
-[RUBY_INSTALL_NAME=$RUBY_INSTALL_NAME EXEEXT=$EXEEXT gnumake=$gnumake])
+[EXEEXT=$EXEEXT gnumake=$gnumake])
 AC_OUTPUT
 dnl }
 dnl }
