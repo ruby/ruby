@@ -505,6 +505,8 @@ AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
     m4_ifval([$2], AC_DEFINE_UNQUOTED(rb_[$1], $n))
     AC_DEFINE_UNQUOTED([$3]2NUM[(v)], [${rb_cv_[$1]_convertible}2NUM(v)])
     AC_DEFINE_UNQUOTED(NUM2[$3][(v)], [NUM2${rb_cv_[$1]_convertible}(v)])
+    AC_DEFINE_UNQUOTED(PRI_[$3]_PREFIX,
+	["`echo ${rb_cv_[$1]_convertible} | sed ['s/^U//;s/[^L].*//;y/L/l/']`"])
 ])
 RUBY_REPLACE_TYPE(pid_t, int, PIDT)
 RUBY_REPLACE_TYPE(uid_t, int, UIDT)
