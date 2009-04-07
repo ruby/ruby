@@ -2008,7 +2008,7 @@ if test "$enable_shared" = 'yes'; then
 	fi
 	LIBRUBY_DLDFLAGS='-install_name '${libprefix}'/lib$(RUBY_SO_NAME).dylib'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-current_version $(MAJOR).$(MINOR).$(TEENY)'
-	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(MAJOR).$(MINOR).$(TEENY)'
+	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(ruby_version)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_Init_* $(XLDFLAGS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).dylib.$(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).dylib lib$(RUBY_INSTALL_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_INSTALL_NAME).dylib'

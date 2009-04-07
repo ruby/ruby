@@ -1,4 +1,7 @@
-Tue Apr  7 13:10:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Apr  7 13:14:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBRUBY_DLDFLAGS): compatibility version is
+	  ruby_version.
 
 	* configure.in (RUBY_REPLACE_TYPE): defines type modifier prefix
 	  for printf.
