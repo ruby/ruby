@@ -1,4 +1,7 @@
-Wed Apr  8 13:57:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Apr  8 14:00:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (what_type?): fixed typo, and refined for member of
+	  aggregation types.
 
 	* lib/mkmf.rb (Logging.postpone): copy postponed output always.
 

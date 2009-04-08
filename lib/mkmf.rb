@@ -989,8 +989,7 @@ def check_sizeof(type, headers = nil, &b)
     x ? super : "failed"
   end
   checking_for checking_message("size of #{type}", headers), fmt do
-    if (($universal and
-         size = UNIVERSAL_INTS.find {|t|
+    if ((size = UNIVERSAL_INTS.find {|t|
            try_static_assert("#{expr} == sizeof(#{t})", prelude, &b)
          }) or
         size = try_constant(expr, prelude, &b))
@@ -1026,48 +1025,74 @@ int t() {return (int)(1-(conftestval#{member ? ".#{member}" : ""}));}
 SRC
 end
 
+# Used internally by the what_type? method to check if _typeof_ GCC
+# extension is available.
+def have_typeof?
+  return $typeof if defined?($typeof)
+  $typeof = %w[__typeof__ typeof].find do |t|
+    try_compile(<<SRC)
+int rbcv_foo;
+#{t}(rbcv_foo) rbcv_bar;
+SRC
+  end
+end
+
 def what_type?(type, member = nil, headers = nil, &b)
   m = "#{type}"
-  var = "*rbcv_var_"
+  var = val = "*rbcv_var_"
   func = "rbcv_func_(void)"
   if member
     m << "." << member
   else
     type, member = type.split('.', 2)
   end
-  prelude = cpp_include(headers).split(/$/)
-  prelude << "typedef #{type} rbcv_typedef_;\n"
-  prelude << "static rbcv_typedef_ #{var};\n"
-  prelude << "extern rbcv_typedef_ #{func};\n"
-  headers = [prelude]
   if member
-    var = "(#{var}).#{member}"
+    val = "(#{var}).#{member}"
   end
-  fmt = "seems %s"
+  prelude = [cpp_include(headers).split(/^/)]
+  prelude << ["typedef #{type} rbcv_typedef_;\n",
+              "extern rbcv_typedef_ *#{func};\n",
+              "static rbcv_typedef_ #{var};\n",
+             ]
+  type = "rbcv_typedef_"
+  fmt = member && !(typeof = have_typeof?) ? "seems %s" : "%s"
+  if typeof
+    var = "*rbcv_member_"
+    func = "rbcv_mem_func_(void)"
+    member = nil
+    type = "rbcv_mem_typedef_"
+    prelude[-1] << "typedef #{typeof}(#{val}) #{type};\n"
+    prelude[-1] << "extern #{type} *#{func};\n"
+    prelude[-1] << "static #{type} #{var};\n"
+    val = var
+  end
   def fmt.%(x)
     x ? super : "unknown"
   end
   checking_for checking_message(m, headers), fmt do
-    if scalar_ptr_type?(type, member, headers, &b)
-      if try_static_assert("sizeof(*#{name}) == 1", headers)
+    if scalar_ptr_type?(type, member, prelude, &b)
+      if try_static_assert("sizeof(*#{var}) == 1", prelude)
         return "string"
       end
       ptr = "*"
-    elsif scalar_type?(type, member, headers, &b)
+    elsif scalar_type?(type, member, prelude, &b)
+      unless member and !typeof or try_static_assert("(#{type})-1 < 0", prelude)
+        unsigned = "unsigned"
+      end
       ptr = ""
     else
-      return
+      next
     end
-    unsigned = try_static_assert("(rbcv_typedef_)-1 < 0", headers) ? "unsigned" : ""
-    [
-     unsigned,
-     (UNIVERSAL_INTS+["short"]).find do |t|
-       prelude = headers + [["static #{unsigned} #{t} #{ptr}#{name};\n",
-                             "extern #{unsigned} #{t} #{ptr}#{func};\n"]]
-       try_static_assert("sizeof(#{ptr}#{name}) == sizeof(#{unsigned}#{t})", prelude)
-     end,
-     ptr
-    ].compact.join(" ")
+    type = UNIVERSAL_INTS.find do |t|
+      pre = prelude
+      unless member
+        pre += [["static #{unsigned} #{t} #{ptr}#{var};\n",
+                 "extern #{unsigned} #{t} #{ptr}*#{func};\n"]]
+      end
+      try_static_assert("sizeof(#{ptr}#{val}) == sizeof(#{unsigned} #{t})", pre)
+    end
+    type or next
+    [unsigned, type, ptr].join(" ").strip
   end
 end
 
@@ -1959,7 +1984,8 @@ LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L"%s"'
 RPATHFLAG = config_string('RPATHFLAG') || ''
 LIBARG = config_string('LIBARG') || '-l%s'
 MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main() {return 0;}'
-UNIVERSAL_INTS = config_string('UNIVERSAL_INTS') {|s| Shellwords.shellwords(s)} if $universal
+UNIVERSAL_INTS = config_string('UNIVERSAL_INTS') {|s| Shellwords.shellwords(s)} ||
+  %w[int short long long\ long]
 
 sep = config_string('BUILD_FILE_SEPARATOR') {|s| ":/=#{s}" if s != "/"} || ""
 CLEANINGS = "
