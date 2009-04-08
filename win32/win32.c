@@ -2196,6 +2196,9 @@ do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 static inline int
 subtract(struct timeval *rest, const struct timeval *wait)
 {
+    if (rest->tv_sec < wait->tv_sec) {
+	return 0;
+    }
     while (rest->tv_usec < wait->tv_usec) {
 	if (rest->tv_sec <= wait->tv_sec) {
 	    return 0;
