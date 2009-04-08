@@ -273,9 +273,9 @@ module Logging
       @log, @logfile, @orgout, @orgerr = nil, tmplog, log, log
       begin
         log.print(open {yield})
+      ensure
         @log.close
         File::open(tmplog) {|t| FileUtils.copy_stream(t, log)}
-      ensure
         @log, @logfile, @orgout, @orgerr = log, *save
         @postpone -= 1
         rm_f tmplog

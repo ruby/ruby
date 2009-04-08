@@ -1,6 +1,6 @@
-Wed Apr  8 11:46:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Apr  8 13:57:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* lib/mkmf.rb (what_type?): fixed typo.
+	* lib/mkmf.rb (Logging.postpone): copy postponed output always.
 
 Wed Apr  8 09:45:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
