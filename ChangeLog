@@ -1,3 +1,7 @@
+Wed Apr  8 13:57:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (Logging.postpone): copy postponed output always.
+
 Mon Apr  6 23:16:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (CFLAGS, CXXFLAGS): override with $cflags and
