@@ -1037,7 +1037,7 @@ def what_type?(type, member = nil, headers = nil, &b)
   end
   prelude = cpp_include(headers).split(/$/)
   prelude << "typedef #{type} rbcv_typedef_;\n"
-  prelude << "static rbcv_typedef_ #{var_};\n"
+  prelude << "static rbcv_typedef_ #{var};\n"
   prelude << "extern rbcv_typedef_ #{func};\n"
   headers = [prelude]
   if member
