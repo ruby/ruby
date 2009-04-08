@@ -1,3 +1,10 @@
+Wed Apr  8 21:58:12 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* string.c (rb_str_dump): buffer length plus one byte for null
+	  terminator.  [ruby-dev:38294]
+
+	* test/ruby/test_m17n.rb (test_str_dump): add a test for above.
+
 Wed Apr  8 20:08:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_rstrip_bang): should not sign-expand non-ascii.
