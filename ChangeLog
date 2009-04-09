@@ -1,3 +1,7 @@
+Thu Apr  9 11:11:10 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/nkf/nkf.c: RDoc typo fixed.  [ruby-core:23170]
+
 Wed Apr  8 13:57:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (Logging.postpone): copy postponed output always.

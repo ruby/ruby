@@ -365,7 +365,7 @@ rb_nkf_guess2(obj, src)
  *
  *  == Description
  *
- *  This is a Ruby Extension version of nkf (Netowrk Kanji Filter).
+ *  This is a Ruby Extension version of nkf (Network Kanji Filter).
  *  It converts the first argument and return converted result. Conversion
  *  details are specified by flags as the first argument.
  *
