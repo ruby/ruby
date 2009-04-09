@@ -381,11 +381,35 @@ install?(:local, :comm, :bin, :'bin-comm') do
   if File::ALT_SEPARATOR
     ruby_bin = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
   end
+  if trans = CONFIG["program_transform_name"]
+    exp = []
+    trans.gsub!(/\$\$/, '$')
+    trans.scan(%r[\G[\s;]*(/(?:\\.|[^/])*/)?([sy])(\W)((?:\\.|(?!\3).)*)\3((?:\\.|(?!\3).)*)\3([gi]*)]) do
+      |addr, cmd, sep, pat, rep, opt|
+      addr &&= Regexp.new(addr[/\A\/(.*)\/\z/, 1])
+      case cmd
+      when 's'
+        next if pat == '^' and rep.empty?
+        exp << [addr, (opt.include?('g') ? :gsub! : :sub!),
+                Regexp.new(pat, opt.include?('i')), rep]
+      when 'y'
+        exp << [addr, :tr!, Regexp.quote(pat), rep]
+      end
+    end
+    trans = proc do |base|
+      exp.each {|addr, opt, pat, rep| base.__send__(opt, pat, rep) if !addr or addr =~ base}
+      base
+    end
+  elsif /ruby/ =~ ruby_install_name
+    trans = proc {|base| ruby_install_name.sub(/ruby/, base)}
+  else
+    trans = proc {|base| base}
+  end
   for src in Dir[File.join(srcdir, "bin/*")]
     next unless File.file?(src)
     next if /\/[.#]|(\.(old|bak|orig|rej|diff|patch|core)|~|\/core)$/i =~ src
 
-    name = ruby_install_name.sub(/ruby/, File.basename(src))
+    name = trans[File.basename(src)]
 
     shebang = ''
     body = ''

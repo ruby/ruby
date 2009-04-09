@@ -1,3 +1,8 @@
+Fri Apr 10 03:01:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb, mkconfig.rb: deal with --program-transform-name
+	  better.  now supports s, y commands and single addressing.
+
 Thu Apr  9 23:59:11 2009  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: don't override the rule for ruby.

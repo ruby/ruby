@@ -83,12 +83,33 @@ File.foreach "config.status" do |line|
     when /^\$\{ac_\w+\}$/; next
     when /^\$ac_\w+$/; next
     end
-    if /^program_transform_name$/ =~ name and /^s(\\?.)(.*)\1$/ =~ val
-      next if $install_name
-      sep = %r"#{Regexp.quote($1)}"
-      ptn = $2.gsub(/\$\$/, '$').split(sep, 2)
-      name = "ruby_install_name"
-      val = "ruby".sub(/#{ptn[0]}/, ptn[1])
+    if /^program_transform_name$/ =~ name
+      val.sub!(/\As(\W)(?:\^|\$\$)\1\1(;|\z)/, '')
+      if val.empty?
+        $install_name ||= "ruby"
+        next
+      end
+      unless $install_name
+        $install_name = "ruby"
+        val.gsub!(/\$\$/, '$')
+        val.scan(%r[\G[\s;]*(/(?:\\.|[^/])*/)?([sy])(\W)((?:\\.|(?!\3).)*)\3((?:\\.|(?!\3).)*)\3([gi]*)]) do
+          |addr, cmd, sep, pat, rep, opt|
+          if addr
+            Regexp.new(addr[/\A\/(.*)\/\z/, 1]) =~ $install_name or next
+          end
+          case cmd
+          when 's'
+            pat = Regexp.new(pat, opt.include?('i'))
+            if opt.include?('g')
+              $install_name.gsub!(pat, rep)
+            else
+              $install_name.sub!(pat, rep)
+            end
+          when 'y'
+            $install_name.tr!(Regexp.quote(pat), rep)
+          end
+        end
+      end
     end
     val.gsub!(/ +(?!-)/, "=") if name == "configure_args" && /mswin32/ =~ RUBY_PLATFORM
     val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
