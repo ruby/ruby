@@ -1,4 +1,6 @@
-Fri Apr 10 03:01:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Apr 10 03:46:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_INSTALL_NAME): use --program-transform-name.
 
 	* instruby.rb, mkconfig.rb: deal with --program-transform-name
 	  better.  now supports s, y commands and single addressing.

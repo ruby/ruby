@@ -111,6 +111,8 @@ fi
 if test "$program_prefix" = NONE; then
   program_prefix=
 fi
+RUBY_BASE_NAME=`echo ruby | sed "$program_transform_name"`
+RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
 
 AC_CANONICAL_TARGET
 target_os=`echo $target_os | sed 's/linux-gnu$/linux/;s/linux-gnu/linux-/'`
@@ -2266,10 +2268,10 @@ ri_suffix=
 test "$program_suffix" != NONE &&
   ri_suffix=$program_suffix
 
-RUBY_INSTALL_NAME="${ri_prefix}ruby${ri_suffix}"
+RUBY_INSTALL_NAME="${ri_prefix}${RUBY_BASE_NAME}${ri_suffix}"
 case "$target_os" in
   when(cygwin*|mingw*)
-    RUBYW_INSTALL_NAME="${ri_prefix}rubyw${ri_suffix}"
+    RUBYW_INSTALL_NAME="${ri_prefix}${RUBYW_BASE_NAME}${ri_suffix}"
     rubyw_install_name="$RUBYW_INSTALL_NAME"
     ;;
 esac
