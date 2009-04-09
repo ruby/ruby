@@ -1,3 +1,7 @@
+Fri Apr 10 04:54:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (Makefile): info-program needs common.mk.
+
 Fri Apr 10 03:46:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_INSTALL_NAME): use --program-transform-name.
