@@ -1,3 +1,7 @@
+Thu Apr  9 23:59:11 2009  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: don't override the rule for ruby.
+
 Wed Apr  8 21:58:12 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* string.c (rb_str_dump): buffer length plus one byte for null

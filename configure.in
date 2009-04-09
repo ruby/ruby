@@ -2506,7 +2506,7 @@ AC_CONFIG_FILES(Makefile, [{
 	fi
 	sed '/^MISSING/s/\$U\././g;/^VCS *=/s#@VCS@#'"$VCS"'#;/^VCSUP *=/s#@VCSUP@#'"$VCSUP"'#' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
-	${MAKE-make} info-program | grep '^PROGRAM=ruby$' > /dev/null || echo 'ruby: $(PROGRAM);'
+	${MAKE-make} info-program | grep '^PROGRAM=ruby$' > /dev/null || echo 'ruby: $(PROGRAM)'
 	if test "$gnumake" != yes; then
 	    echo ['$(MKFILES): $(srcdir)/common.mk']
 	    sed ['s/{\$([^(){}]*)[^{}]*}//g'] ${srcdir}/common.mk
