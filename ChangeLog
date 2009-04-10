@@ -1,3 +1,7 @@
+Fri Apr 10 11:32:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (up): updates timestamp file.
+
 Fri Apr 10 04:54:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (Makefile): info-program needs common.mk.

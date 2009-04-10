@@ -748,7 +748,7 @@ dist:
 	$(BASERUBY) $(srcdir)/tool/make-snapshot tmp $(RELNAME)
 
 up::
-	-@$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(srcdir)/revision.h"
+	-@$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(REVISION_H)"
 
 info: info-program info-libruby_a info-libruby_so info-arch
 info-program:
