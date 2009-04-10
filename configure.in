@@ -2516,7 +2516,7 @@ AC_CONFIG_FILES(Makefile, [{
 	fi
     } > confmk$$.tmp && mv -f confmk$$.tmp Makefile &&
 	${MAKE-make} info-program | grep '^PROGRAM=ruby$' > /dev/null ||
-	echo 'ruby: $(PROGRAM)' >> Makefile],
+	echo 'ruby: $(PROGRAM);' >> Makefile],
 [EXEEXT=$EXEEXT gnumake=$gnumake])
 AC_OUTPUT
 dnl }
