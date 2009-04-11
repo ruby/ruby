@@ -1,6 +1,6 @@
 Sat Apr 11 08:45:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* configure.in (Makefile): phoeny ruby target needs empty command.
+	* configure.in (Makefile): phony ruby target needs empty command.
 
 Fri Apr 10 11:32:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
