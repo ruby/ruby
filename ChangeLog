@@ -1,3 +1,8 @@
+Thu Mar  5 11:27:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (miniruby.exe): workaround for a failure of
+	  mt.exe on Windows 7 beta.  [ruby-talk:330284]
+
 Wed Mar  4 21:21:51 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/thread.rb (SizedQueue#push): fix limit condition.
