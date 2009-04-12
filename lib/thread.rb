@@ -292,7 +292,7 @@ class SizedQueue < Queue
     t = nil
     @mutex.synchronize{
       while true
-        break if @que.length <= @max
+        break if @que.length < @max
         @queue_wait.push Thread.current
         @mutex.sleep
       end

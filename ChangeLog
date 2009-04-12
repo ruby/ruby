@@ -1,3 +1,8 @@
+Wed Mar  4 21:21:51 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/thread.rb (SizedQueue#push): fix limit condition.
+	  [ruby-dev:38135]
+
 Wed Mar  4 03:42:56 2009  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv.rb: A patch from Madoka Yakamamoto to prevent an infinite
