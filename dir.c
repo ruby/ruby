@@ -83,37 +83,19 @@ char *strchr(char*,char);
 # define Next(p, e, enc) (p + rb_enc_mbclen(p, e, enc))
 # define Inc(p, e, enc) ((p) = Next(p, e, enc))
 
-static int
-char_casecmp(const char *p1, const char *p2, rb_encoding *enc, const int nocase)
-{
-    const char *p1end, *p2end;
-    unsigned int c1, c2;
-
-    if (!*p1 || !*p2) return !!*p1 - !!*p2;
-    p1end = p1 + strlen(p1);
-    p2end = p2 + strlen(p2);
-    c1 = rb_enc_codepoint(p1, p1end, enc);
-    c2 = rb_enc_codepoint(p2, p2end, enc);
-
-    if (c1 == c2) return 0;
-    if (nocase) {
-	c1 = rb_enc_toupper(c1, enc);
-	c2 = rb_enc_toupper(c2, enc);
-    }
-    return c1 - c2;
-}
-
 static char *
 bracket(
     const char *p, /* pattern (next to '[') */
+    const char *pend,
     const char *s, /* string */
+    const char *send,
     int flags,
     rb_encoding *enc)
 {
-    const char *pend = p + strlen(p);
     const int nocase = flags & FNM_CASEFOLD;
     const int escape = !(flags & FNM_NOESCAPE);
-
+    unsigned int c1, c2;
+    int r;
     int ok = 0, not = 0;
 
     if (*p == '!' || *p == '^') {
@@ -127,20 +109,39 @@ bracket(
 	    t1++;
 	if (!*t1)
 	    return NULL;
-	p = Next(t1, pend, enc);
+	p += (r = rb_enc_mbclen(p, pend, enc));
 	if (p[0] == '-' && p[1] != ']') {
 	    const char *t2 = p + 1;
+	    int r2;
 	    if (escape && *t2 == '\\')
 		t2++;
 	    if (!*t2)
 		return NULL;
-	    p = Next(t2, pend, enc);
-	    if (!ok && char_casecmp(t1, s, enc, nocase) <= 0 && char_casecmp(s, t2, enc, nocase) <= 0)
+	    p = t2 + (r2 = rb_enc_mbclen(t2, pend, enc));
+	    if (ok) continue;
+	    if ((r <= (send-s) && memcmp(t1, s, r) == 0) ||
+		(r2 <= (send-s) && memcmp(t2, s, r) == 0)) {
 		ok = 1;
+		continue;
+	    }
+	    c1 = rb_enc_codepoint(s, send, enc);
+	    if (nocase) c1 = rb_enc_toupper(c1, enc);
+	    c2 = rb_enc_codepoint(t1, pend, enc);
+	    if (nocase) c2 = rb_enc_toupper(c2, enc);
+	    if (c1 < c2) continue;
+	    c2 = rb_enc_codepoint(t2, pend, enc);
+	    if (nocase) c2 = rb_enc_toupper(c2, enc);
+	    if (c1 > c2) continue;
 	}
-	else
-	    if (!ok && char_casecmp(t1, s, enc, nocase) == 0)
-		ok = 1;
+	else {
+	    if (ok) continue;
+	    if (r <= (send-s) && memcmp(p, s, r) == 0) continue;
+	    if (!nocase) continue;
+	    c1 = rb_enc_toupper(rb_enc_codepoint(s, send, enc), enc);
+	    c2 = rb_enc_toupper(rb_enc_codepoint(p, pend, enc), enc);
+	    if (c1 != c2) continue;
+	}
+	ok = 1;
     }
 
     return ok == not ? NULL : (char *)p + 1;
@@ -175,6 +176,8 @@ fnmatch_helper(
     const char *s = *scur;
     const char *send = s + strlen(s);
 
+    int r;
+
     if (period && *s == '.' && *UNESCAPE(p) != '.') /* leading period */
 	RETURN(FNM_NOMATCH);
 
@@ -203,7 +206,7 @@ fnmatch_helper(
 	    const char *t;
 	    if (ISEND(s))
 		RETURN(FNM_NOMATCH);
-	    if ((t = bracket(p + 1, s, flags, enc)) != 0) {
+	    if ((t = bracket(p + 1, pend, s, send, flags, enc)) != 0) {
 		p = t;
 		Inc(s, send, enc);
 		continue;
@@ -218,9 +221,17 @@ fnmatch_helper(
 	    RETURN(ISEND(p) ? 0 : FNM_NOMATCH);
 	if (ISEND(p))
 	    goto failed;
-	if (char_casecmp(p, s, enc, nocase) != 0)
+	r = rb_enc_mbclen(p, pend, enc);
+	if (r <= (send-s) && memcmp(p, s, r) == 0) {
+	    p += r;
+	    s += r;
+	    continue;
+	}
+	if (!nocase) goto failed;
+	if (rb_enc_toupper(rb_enc_codepoint(p, pend, enc), enc) !=
+	    rb_enc_toupper(rb_enc_codepoint(s, send, enc), enc))
 	    goto failed;
-	Inc(p, pend, enc);
+	p += r;
 	Inc(s, send, enc);
 	continue;
 
