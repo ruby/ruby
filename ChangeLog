@@ -1,3 +1,8 @@
+Tue Mar 10 12:27:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (config.h): passes LDFLAGS to rbconfig.rb so
+	  that extconf.rb could refer it.  [ruby-core:22725]
+
 Wed Mar  4 05:19:27 2009  James Edward Gray II  <jeg2@ruby-lang.org>
 
   * lib/csv.rb: Some minor documentation fixes from Gregory Brown.

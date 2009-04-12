@@ -532,7 +532,7 @@ s,@DEFS@,$(DEFS),;t t
 s,@CPPFLAGS@,$(CPPFLAGS),;t t
 s,@CXXFLAGS@,$(CXXFLAGS),;t t
 s,@FFLAGS@,$(FFLAGS),;t t
-s,@LDFLAGS@,,;t t
+s,@LDFLAGS@,$(LDFLAGS),;t t
 s,@LIBS@,$(LIBS),;t t
 s,@exec_prefix@,$${prefix},;t t
 s,@prefix@,$(prefix),;t t
