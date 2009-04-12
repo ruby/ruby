@@ -1,4 +1,8 @@
-Tue Mar 10 12:27:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar 10 13:45:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (LDFLAGS): moved -link to TRY_LINK, LINK_SO
+	  and so on.  based on a patch by Charlie Savage at
+	  [ruby-core:22794]
 
 	* win32/Makefile.sub (config.h): passes LDFLAGS to rbconfig.rb so
 	  that extconf.rb could refer it.  [ruby-core:22725]
