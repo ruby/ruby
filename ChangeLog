@@ -1,4 +1,6 @@
-Thu Mar 12 05:16:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar 12 05:19:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (rb_iseq_disasm): RSTRING_LEN() returns long.
 
 	* process.c (rb_f_sleep): time() needs time_t.
 
