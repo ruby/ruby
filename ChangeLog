@@ -1,3 +1,8 @@
+Wed Mar 11 13:03:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/handle.c (rb_dlhandle_sym): fixed heap corruption.
+	  [ruby-core:22822]
+
 Tue Mar 10 13:45:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (LDFLAGS): moved -link to TRY_LINK, LINK_SO

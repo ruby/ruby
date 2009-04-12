@@ -160,6 +160,7 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
 
     func = dlsym(handle, name);
     CHECK_DLERROR;
+#if defined(FUNC_STDCALL)
     if( !func ){
 	int  len = strlen(name);
 	char *name_n;
@@ -167,14 +168,12 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
 	{
 	    char *name_a = (char*)xmalloc(len+2);
 	    strcpy(name_a, name);
+	    name_n = name_a;
 	    name_a[len]   = 'A';
 	    name_a[len+1] = '\0';
 	    func = dlsym(handle, name_a);
 	    CHECK_DLERROR;
-	    if( func ){
-		xfree(name_a);
-		goto found;
-	    }
+	    if( func ) goto found;
 	    name_n = xrealloc(name_a, len+6);
 	}
 #else
@@ -188,7 +187,6 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
 	    CHECK_DLERROR;
 	    if( func ) break;
 	}
-	xfree(name_n);
 	if( func ) goto found;
 	name_n[len-1] = 'A';
 	name_n[len++] = '@';
@@ -198,11 +196,13 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
 	    CHECK_DLERROR;
 	    if( func ) break;
 	}
-	if( !func ){
-	    rb_raise(rb_eDLError, "unknown symbol \"%s\"", name);
-	}
+      found:
+	xfree(name_n);
     }
-  found:
+#endif
+    if( !func ){
+	rb_raise(rb_eDLError, "unknown symbol \"%s\"", name);
+    }
 
     return PTR2NUM(func);
 }
