@@ -7616,7 +7616,7 @@ copy_stream_fallback_body(VALUE arg)
     const int buflen = 16*1024;
     VALUE n;
     VALUE buf = rb_str_buf_new(buflen);
-    long rest = stp->copy_length;
+    off_t rest = stp->copy_length;
     off_t off = stp->src_offset;
     ID read_method = id_readpartial;
 
@@ -7635,7 +7635,7 @@ copy_stream_fallback_body(VALUE arg)
         else {
             if (rest == 0)
                 break;
-            l = buflen < rest ? buflen : rest;
+            l = buflen < rest ? buflen : (long)rest;
         }
         if (stp->src_fd == -1) {
             rb_funcall(stp->src, read_method, 2, INT2FIX(l), buf);
