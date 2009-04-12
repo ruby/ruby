@@ -144,6 +144,8 @@ class Prime
   # +value+:: an arbitrary integer to be checked.
   # +generator+:: optional. A pseudo-prime generator.
   def prime?(value, generator = Prime::Generator23.new)
+    value = -value if value < 0
+    return false if value < 2
     for num in generator
       q,r = value.divmod num
       return true if q < num

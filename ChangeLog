@@ -1,3 +1,10 @@
+Wed Mar  4 00:54:43 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/prime.rb (Prime::prime?): used to return a wrong answer.
+	  [ruby-core:22646].
+
+	* test/test_prime.rb (test_prime?): test case for [ruby-core:22646].
+
 Thu Mar  5 11:27:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (miniruby.exe): workaround for a failure of
