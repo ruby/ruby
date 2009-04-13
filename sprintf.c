@@ -83,10 +83,12 @@ sign_bits(int base, const char *p)
 #define FPREC0 128
 
 #define CHECK(l) do {\
+    int cr = ENC_CODERANGE(result);\
     while (blen + (l) >= bsiz) {\
 	bsiz*=2;\
     }\
     rb_str_resize(result, bsiz);\
+    ENC_CODERANGE_SET(result, cr);\
     buf = RSTRING_PTR(result);\
 } while (0)
 
@@ -431,6 +433,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     int blen, bsiz;
     VALUE result;
 
+    long scanned = 0;
+    int coderange = ENC_CODERANGE_7BIT;
     int width, prec, flags = FNONE;
     int nextarg = 1;
     int posarg = 0;
@@ -469,6 +473,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     rb_enc_copy(result, fmt);
     buf = RSTRING_PTR(result);
     memset(buf, 0, bsiz);
+    ENC_CODERANGE_SET(result, coderange);
 
     for (; p < end; p++) {
 	const char *t;
@@ -661,6 +666,13 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		if (OBJ_TAINTED(str)) tainted = 1;
 		len = RSTRING_LEN(str);
 		rb_str_set_len(result, blen);
+		if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) {
+		    int cr = coderange;
+		    scanned = rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &cr);
+		    ENC_CODERANGE_SET(result,
+				      (cr == ENC_CODERANGE_UNKNOWN ?
+				       ENC_CODERANGE_BROKEN : (coderange = cr)));
+		}
 		enc = rb_enc_check(result, str);
 		if (flags&(FPREC|FWIDTH)) {
 		    slen = rb_enc_strlen(RSTRING_PTR(str),RSTRING_END(str),enc);
@@ -1042,6 +1054,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	const char *mesg = "too many arguments for format string";
 	if (RTEST(ruby_debug)) rb_raise(rb_eArgError, "%s", mesg);
 	if (RTEST(ruby_verbose)) rb_warn("%s", mesg);
+    }
+    if (scanned < blen) {
+	rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &coderange);
+	ENC_CODERANGE_SET(result, coderange);
     }
     rb_str_resize(result, blen);
 
