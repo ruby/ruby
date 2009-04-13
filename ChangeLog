@@ -1,3 +1,8 @@
+Mon Apr 13 11:35:55 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): optimize previous commit.
+	  [ruby-list:45954]
+
 Mon Apr 13 10:58:54 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): check encoding compatibility only on
