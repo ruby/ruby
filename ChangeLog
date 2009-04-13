@@ -1,3 +1,8 @@
+Mon Apr 13 10:58:54 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): check encoding compatibility only on
+	  real parts.
+
 Sun Apr 12 19:54:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (bracket, fnmatch_helper): compare bytewise first, to get
