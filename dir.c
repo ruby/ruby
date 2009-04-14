@@ -109,7 +109,7 @@ bracket(
 	    t1++;
 	if (!*t1)
 	    return NULL;
-	p += (r = rb_enc_mbclen(p, pend, enc));
+	p += (r = rb_enc_mbclen(t1, pend, enc));
 	if (p[0] == '-' && p[1] != ']') {
 	    const char *t2 = p + 1;
 	    int r2;
@@ -135,7 +135,10 @@ bracket(
 	}
 	else {
 	    if (ok) continue;
-	    if (r <= (send-s) && memcmp(p, s, r) == 0) continue;
+	    if (r <= (send-s) && memcmp(t1, s, r) == 0) {
+		ok = 1;
+		continue;
+	    }
 	    if (!nocase) continue;
 	    c1 = rb_enc_toupper(rb_enc_codepoint(s, send, enc), enc);
 	    c2 = rb_enc_toupper(rb_enc_codepoint(p, pend, enc), enc);
