@@ -1,3 +1,10 @@
+Wed Apr 15 20:24:49 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* array.c (rb_ary_flatten): flatten(0) works as Array#dup.
+	  [ruby-core:23168]
+
+	* test/ruby/test_array.rb: add a test for above.
+
 Wed Apr 15 11:53:35 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* dir.c (fnmatch_helper): use rb_enc_precise_mbclen and

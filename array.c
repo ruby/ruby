@@ -648,6 +648,12 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
     }
 }
 
+static VALUE
+ary_make_shared_copy(VALUE ary)
+{
+    return ary_make_partial(ary, rb_obj_class(ary), 0, RARRAY_LEN(ary));
+}
+
 enum ary_take_pos_flags
 {
     ARY_TAKE_FIRST = 0,
@@ -3360,7 +3366,7 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
 
     rb_scan_args(argc, argv, "01", &lv);
     if (!NIL_P(lv)) level = NUM2INT(lv);
-    if (level == 0) return ary;
+    if (level == 0) return ary_make_shared_copy(ary);
 
     result = flatten(ary, level, &mod);
     OBJ_INFECT(result, ary);
