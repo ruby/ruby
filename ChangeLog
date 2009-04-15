@@ -1,3 +1,8 @@
+Wed Apr 15 11:53:35 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* dir.c (fnmatch_helper): use rb_enc_precise_mbclen and
+	  fail if bytes are invalid. [ruby-dev:38307]
+
 Tue Apr 14 18:11:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (bracket): if same in bytes, path is matching.
