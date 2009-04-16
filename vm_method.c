@@ -24,6 +24,8 @@ static struct cache_entry cache[CACHE_SIZE];
 #define ruby_running (GET_VM()->running)
 /* int ruby_running = 0; */
 
+static NODE *notimplement_body = 0;
+
 void
 rb_clear_cache(void)
 {
@@ -414,6 +416,12 @@ rb_export_method(VALUE klass, ID name, ID noex)
 }
 
 int
+rb_notimplement_body_p(NODE *method)
+{
+    return method == notimplement_body ? Qtrue : Qfalse;
+}
+
+int
 rb_method_boundp(VALUE klass, ID id, int ex)
 {
     NODE *method;
@@ -422,6 +430,8 @@ rb_method_boundp(VALUE klass, ID id, int ex)
 	if (ex && (method->nd_noex & NOEX_PRIVATE)) {
 	    return Qfalse;
 	}
+        if (rb_notimplement_body_p(method->nd_body))
+           return Qfalse;
 	return Qtrue;
     }
     return Qfalse;
@@ -811,6 +821,18 @@ rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
     return mod;
 }
 
+VALUE
+rb_f_notimplement(int argc, VALUE *argv, VALUE obj)
+{
+    rb_notimplement();
+}
+
+void
+rb_define_notimplement_method_id(VALUE mod, ID id, int noex)
+{
+    rb_add_method(mod, id, notimplement_body, noex);
+}
+
 static void
 secure_visibility(VALUE self)
 {
@@ -1137,5 +1159,8 @@ Init_eval_method(void)
     singleton_removed = rb_intern("singleton_method_removed");
     undefined = rb_intern("method_undefined");
     singleton_undefined = rb_intern("singleton_method_undefined");
+
+    rb_global_variable(&notimplement_body);
+    notimplement_body = NEW_CFUNC(rb_f_notimplement, -1);
 }
 

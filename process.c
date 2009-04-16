@@ -2601,10 +2601,10 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
  *  fork doesn't copy other threads.
  */
 
+#if defined(HAVE_FORK) && !defined(CANNOT_FORK_WITH_PTHREAD)
 static VALUE
 rb_f_fork(VALUE obj)
 {
-#if defined(HAVE_FORK) && !defined(CANNOT_FORK_WITH_PTHREAD)
     rb_pid_t pid;
 
     rb_secure(2);
@@ -2630,11 +2630,10 @@ rb_f_fork(VALUE obj)
       default:
 	return PIDT2NUM(pid);
     }
-#else
-    rb_notimplement();
-#endif
 }
-
+#else
+#define rb_f_fork rb_f_notimplement
+#endif
 
 /*
  *  call-seq:

@@ -1616,6 +1616,9 @@ method_inspect(VALUE method)
     }
     rb_str_buf_cat2(str, sharp);
     rb_str_append(str, rb_id2str(data->oid));
+    if (rb_notimplement_body_p(data->body)) {
+        rb_str_buf_cat2(str, " (not-implemented)");
+    }
     rb_str_buf_cat2(str, ">");
 
     return str;

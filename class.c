@@ -807,25 +807,36 @@ rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
 void
 rb_define_method_id(VALUE klass, ID name, VALUE (*func)(ANYARGS), int argc)
 {
-    rb_add_method(klass, name, NEW_CFUNC(func,argc), NOEX_PUBLIC);
+    if (func == rb_f_notimplement)
+        rb_define_notimplement_method_id(klass, name, NOEX_PUBLIC);
+    else
+        rb_add_method(klass, name, NEW_CFUNC(func,argc), NOEX_PUBLIC);
 }
 
 void
 rb_define_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
-    rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PUBLIC);
+    rb_define_method_id(klass, rb_intern(name), func, argc);
 }
 
 void
 rb_define_protected_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
-    rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PROTECTED);
+    ID id = rb_intern(name);
+    if (func == rb_f_notimplement)
+        rb_define_notimplement_method_id(klass, id, NOEX_PROTECTED);
+    else
+        rb_add_method(klass, id, NEW_CFUNC(func, argc), NOEX_PROTECTED);
 }
 
 void
 rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
-    rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PRIVATE);
+    ID id = rb_intern(name);
+    if (func == rb_f_notimplement)
+        rb_define_notimplement_method_id(klass, id, NOEX_PRIVATE);
+    else
+        rb_add_method(klass, id, NEW_CFUNC(func, argc), NOEX_PRIVATE);
 }
 
 void

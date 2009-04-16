@@ -1926,12 +1926,7 @@ rb_file_s_lchmod(int argc, VALUE *argv)
     return LONG2FIX(n);
 }
 #else
-static VALUE
-rb_file_s_lchmod(int argc, VALUE *argv)
-{
-    rb_notimplement();
-    return Qnil;		/* not reached */
-}
+#define rb_file_s_lchmod rb_f_notimplement
 #endif
 
 struct chown_args {

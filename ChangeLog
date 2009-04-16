@@ -1,3 +1,26 @@
+Thu Apr 16 23:09:03 2009  Tanaka Akira  <akr@fsij.org>
+
+	* class.c (rb_define_method_id): use rb_define_notimplement_method_id
+	  if rb_f_notimplement is given.
+	  (rb_define_protected_method): ditto.
+	  (rb_define_private_method): ditto.
+	  (rb_define_method): use rb_define_method_id.
+
+	* include/ruby/intern.h (rb_f_notimplement): declared.
+	  (rb_define_notimplement_method_id): declared.
+
+	* proc.c (method_inspect): show not-implemented.
+
+	* vm_method.c (notimplement_body): new variable.
+	  (rb_notimplement_body_p): new function.
+	  (rb_method_boundp): return false if not implemented.
+	  (rb_f_notimplement): new function.
+	  (rb_define_notimplement_method_id): new function.
+
+	* process.c (rb_f_fork): use rb_f_notimplement if not implemented.
+
+	* file.c (rb_file_s_lchmod): use rb_f_notimplement if not implemented.
+
 Wed Apr 15 20:24:49 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (rb_ary_flatten): flatten(0) works as Array#dup.

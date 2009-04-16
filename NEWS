@@ -47,6 +47,11 @@ with all sufficient information, see the ChangeLog file.
     * extended methods:
       * string[regexp, name] is supported for named capture.
 
+  * Kernel
+    * extended methods:
+      * respond_to? returns false for not-implemented methods
+        such as fork on Windows.
+
 * rss
 
   * 0.2.4 -> 0.2.5
