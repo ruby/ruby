@@ -1,3 +1,8 @@
+Fri Apr 17 00:45:09 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* dir.c (bracket): fix escape handling for range character in bracket
+	  of fnmatch pattern.  e.g., '[a\-c]' should not match 'b'.
+
 Thu Apr 16 23:09:03 2009  Tanaka Akira  <akr@fsij.org>
 
 	* class.c (rb_define_method_id): use rb_define_notimplement_method_id
