@@ -1282,6 +1282,7 @@ rb_io_set_sync(VALUE io, VALUE sync)
     return sync;
 }
 
+#ifdef HAVE_FSYNC
 /*
  *  call-seq:
  *     ios.fsync   => 0 or nil
@@ -1297,7 +1298,6 @@ rb_io_set_sync(VALUE io, VALUE sync)
 static VALUE
 rb_io_fsync(VALUE io)
 {
-#ifdef HAVE_FSYNC
     rb_io_t *fptr;
 
     io = GetWriteIO(io);
@@ -1308,11 +1308,10 @@ rb_io_fsync(VALUE io)
     if (fsync(fptr->fd) < 0)
 	rb_sys_fail_path(fptr->pathv);
     return INT2FIX(0);
-#else
-    rb_notimplement();
-    return Qnil;		/* not reached */
-#endif
 }
+#else
+#define rb_io_fsync rb_f_notimplement
+#endif
 
 /*
  *  call-seq:
@@ -3024,6 +3023,7 @@ rb_io_isatty(VALUE io)
     return Qtrue;
 }
 
+#if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
 /*
  *  call-seq:
  *     ios.close_on_exec?   => true or false
@@ -3041,7 +3041,6 @@ rb_io_isatty(VALUE io)
 static VALUE
 rb_io_close_on_exec_p(VALUE io)
 {
-#if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
     rb_io_t *fptr;
     VALUE write_io;
     int fd, ret;
@@ -3061,12 +3060,12 @@ rb_io_close_on_exec_p(VALUE io)
         if (!(ret & FD_CLOEXEC)) return Qfalse;
     }
     return Qtrue;
-#else
-    rb_notimplement();
-    return Qnil;		/* not reached */
-#endif
 }
+#else
+#define rb_io_close_on_exec_p rb_f_notimplement
+#endif
 
+#if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
 /*
  *  call-seq:
  *     ios.close_on_exec = bool    => true or false
@@ -3082,7 +3081,6 @@ rb_io_close_on_exec_p(VALUE io)
 static VALUE
 rb_io_set_close_on_exec(VALUE io, VALUE arg)
 {
-#if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
     int flag = RTEST(arg) ? FD_CLOEXEC : 0;
     rb_io_t *fptr;
     VALUE write_io;
@@ -3111,11 +3109,11 @@ rb_io_set_close_on_exec(VALUE io, VALUE arg)
             if (ret == -1) rb_sys_fail_path(fptr->pathv);
         }
     }
-#else
-    rb_notimplement();
-#endif
     return Qnil;
 }
+#else
+#define rb_io_set_close_on_exec rb_f_notimplement
+#endif
 
 #define FMODE_PREP (1<<16)
 #define IS_PREP_STDIO(f) ((f)->mode & FMODE_PREP)
@@ -6937,6 +6935,7 @@ rb_io_ioctl(int argc, VALUE *argv, VALUE io)
     return rb_io_ctl(io, req, arg, 1);
 }
 
+#ifdef HAVE_FCNTL
 /*
  *  call-seq:
  *     ios.fcntl(integer_cmd, arg)    => integer
@@ -6953,17 +6952,16 @@ rb_io_ioctl(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_fcntl(int argc, VALUE *argv, VALUE io)
 {
-#ifdef HAVE_FCNTL
     VALUE req, arg;
 
     rb_scan_args(argc, argv, "11", &req, &arg);
     return rb_io_ctl(io, req, arg, 0);
-#else
-    rb_notimplement();
-    return Qnil;		/* not reached */
-#endif
 }
+#else
+#define rb_io_fcntl rb_f_notimplement
+#endif
 
+#if defined(HAVE_SYSCALL) && !defined(__CHECKER__)
 /*
  *  call-seq:
  *     syscall(fixnum [, args...])   => integer
@@ -6986,7 +6984,6 @@ rb_io_fcntl(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_f_syscall(int argc, VALUE *argv)
 {
-#if defined(HAVE_SYSCALL) && !defined(__CHECKER__)
 #ifdef atarist
     unsigned long arg[14]; /* yes, we really need that many ! */
 #else
@@ -7078,11 +7075,10 @@ rb_f_syscall(int argc, VALUE *argv)
 
     if (retval < 0) rb_sys_fail(0);
     return INT2NUM(retval);
-#else
-    rb_notimplement();
-    return Qnil;		/* not reached */
-#endif
 }
+#else
+#define rb_f_syscall rb_f_notimplement
+#endif
 
 static VALUE
 io_new_instance(VALUE args)

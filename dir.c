@@ -550,6 +550,7 @@ dir_each(VALUE dir)
     return dir;
 }
 
+#ifdef HAVE_TELLDIR
 /*
  *  call-seq:
  *     dir.pos => integer
@@ -566,18 +567,18 @@ dir_each(VALUE dir)
 static VALUE
 dir_tell(VALUE dir)
 {
-#ifdef HAVE_TELLDIR
     struct dir_data *dirp;
     long pos;
 
     GetDIR(dir, dirp);
     pos = telldir(dirp->dir);
     return rb_int2inum(pos);
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define dir_tell rb_f_notimplement
+#endif
 
+#ifdef HAVE_SEEKDIR
 /*
  *  call-seq:
  *     dir.seek( integer ) => dir
@@ -599,13 +600,12 @@ dir_seek(VALUE dir, VALUE pos)
     long p = NUM2LONG(pos);
 
     GetDIR(dir, dirp);
-#ifdef HAVE_SEEKDIR
     seekdir(dirp->dir, p);
     return dir;
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define dir_seek rb_f_notimplement
+#endif
 
 /*
  *  call-seq:
@@ -826,6 +826,7 @@ check_dirname(volatile VALUE *dir)
     }
 }
 
+#if defined(HAVE_CHROOT) && !defined(__CHECKER__)
 /*
  *  call-seq:
  *     Dir.chroot( string ) => 0
@@ -838,18 +839,16 @@ check_dirname(volatile VALUE *dir)
 static VALUE
 dir_s_chroot(VALUE dir, VALUE path)
 {
-#if defined(HAVE_CHROOT) && !defined(__CHECKER__)
     check_dirname(&path);
 
     if (chroot(RSTRING_PTR(path)) == -1)
 	rb_sys_fail(RSTRING_PTR(path));
 
     return INT2FIX(0);
-#else
-    rb_notimplement();
-    return Qnil;		/* not reached */
-#endif
 }
+#else
+#define dir_s_chroot rb_f_notimplement
+#endif
 
 /*
  *  call-seq:

@@ -2066,11 +2066,7 @@ rb_file_s_lchown(int argc, VALUE *argv)
     return LONG2FIX(n);
 }
 #else
-static VALUE
-rb_file_s_lchown(int argc, VALUE *argv)
-{
-    rb_notimplement();
-}
+#define rb_file_s_lchown rb_f_notimplement
 #endif
 
 struct timespec rb_time_timespec(VALUE time);
@@ -2244,6 +2240,7 @@ sys_fail2(VALUE s1, VALUE s2)
     rb_sys_fail(buf);
 }
 
+#ifdef HAVE_LINK
 /*
  *  call-seq:
  *     File.link(old_name, new_name)    => 0
@@ -2259,7 +2256,6 @@ sys_fail2(VALUE s1, VALUE s2)
 static VALUE
 rb_file_s_link(VALUE klass, VALUE from, VALUE to)
 {
-#ifdef HAVE_LINK
     rb_secure(2);
     FilePathValue(from);
     FilePathValue(to);
@@ -2268,12 +2264,12 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
 	sys_fail2(from, to);
     }
     return INT2FIX(0);
-#else
-    rb_notimplement();
-    return Qnil;		/* not reached */
-#endif
 }
+#else
+#define rb_file_s_link rb_f_notimplement
+#endif
 
+#ifdef HAVE_SYMLINK
 /*
  *  call-seq:
  *     File.symlink(old_name, new_name)   => 0
@@ -2289,7 +2285,6 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
 static VALUE
 rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
 {
-#ifdef HAVE_SYMLINK
     rb_secure(2);
     FilePathValue(from);
     FilePathValue(to);
@@ -2298,12 +2293,12 @@ rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
 	sys_fail2(from, to);
     }
     return INT2FIX(0);
-#else
-    rb_notimplement();
-    return Qnil;		/* not reached */
-#endif
 }
+#else
+#define rb_file_s_symlink rb_f_notimplement
+#endif
 
+#ifdef HAVE_READLINK
 /*
  *  call-seq:
  *     File.readlink(link_name) -> file_name
@@ -2318,7 +2313,6 @@ rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
 static VALUE
 rb_file_s_readlink(VALUE klass, VALUE path)
 {
-#ifdef HAVE_READLINK
     char *buf;
     int size = 100;
     ssize_t rv;
@@ -2343,11 +2337,10 @@ rb_file_s_readlink(VALUE klass, VALUE path)
     xfree(buf);
 
     return v;
-#else
-    rb_notimplement();
-    return Qnil;		/* not reached */
-#endif
 }
+#else
+#define rb_file_s_readlink rb_f_notimplement
+#endif
 
 static void
 unlink_internal(const char *path, void *arg)
@@ -3383,6 +3376,7 @@ rb_file_s_join(VALUE klass, VALUE args)
     return rb_file_join(args, separator);
 }
 
+#if defined(HAVE_TRUNCATE) || defined(HAVE_CHSIZE)
 /*
  *  call-seq:
  *     File.truncate(file_name, integer)  => 0
@@ -3409,8 +3403,7 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
 #ifdef HAVE_TRUNCATE
     if (truncate(StringValueCStr(path), pos) < 0)
 	rb_sys_fail(RSTRING_PTR(path));
-#else
-# ifdef HAVE_CHSIZE
+#else /* defined(HAVE_CHSIZE) */
     {
 	int tmpfd;
 
@@ -3429,13 +3422,14 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
 	}
 	close(tmpfd);
     }
-# else
-    rb_notimplement();
-# endif
 #endif
     return INT2FIX(0);
 }
+#else
+#define rb_file_s_truncate rb_f_notimplement
+#endif
 
+#if defined(HAVE_FTRUNCATE) || defined(HAVE_CHSIZE)
 /*
  *  call-seq:
  *     file.truncate(integer)    => 0
@@ -3466,16 +3460,15 @@ rb_file_truncate(VALUE obj, VALUE len)
 #ifdef HAVE_FTRUNCATE
     if (ftruncate(fptr->fd, pos) < 0)
 	rb_sys_fail_path(fptr->pathv);
-#else
-# ifdef HAVE_CHSIZE
+#else /* defined(HAVE_CHSIZE) */
     if (chsize(fptr->fd, pos) < 0)
 	rb_sys_fail(fptr->pathv);
-# else
-    rb_notimplement();
-# endif
 #endif
     return INT2FIX(0);
 }
+#else
+#define rb_file_truncate rb_f_notimplement
+#endif
 
 # ifndef LOCK_SH
 #  define LOCK_SH 1

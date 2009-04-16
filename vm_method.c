@@ -1160,7 +1160,7 @@ Init_eval_method(void)
     undefined = rb_intern("method_undefined");
     singleton_undefined = rb_intern("singleton_method_undefined");
 
-    rb_global_variable(&notimplement_body);
+    rb_global_variable((VALUE*)&notimplement_body);
     notimplement_body = NEW_CFUNC(rb_f_notimplement, -1);
 }
 

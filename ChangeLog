@@ -1,3 +1,53 @@
+Fri Apr 17 01:51:17 2009  Tanaka Akira  <akr@fsij.org>
+
+	* node.h (rb_notimplement_body_p): declared.
+
+	* vm_method.c (Init_eval_method): suppress a warning.
+
+	* io.c (rb_io_fsync): use rb_f_notimplement if not implemented.
+	  (rb_io_close_on_exec_p): ditto.
+	  (rb_io_set_close_on_exec): ditto.
+	  (rb_io_fcntl): ditto.
+	  (rb_f_syscall): ditto.
+
+	* dir.c (dir_tell): ditto.
+	  (dir_seek): ditto.
+	  (dir_s_chroot): ditto.
+
+	* process.c (proc_getpgrp): ditto.
+	  (proc_setpgrp): ditto.
+	  (proc_getpgid): ditto.
+	  (proc_setpgid): ditto.
+	  (proc_setsid): ditto.
+	  (proc_getpriority): ditto.
+	  (proc_setpriority): ditto.
+	  (proc_getrlimit): ditto.
+	  (proc_setrlimit): ditto.
+	  (p_sys_setuid): ditto.
+	  (p_sys_setruid): ditto.
+	  (p_sys_seteuid): ditto.
+	  (p_sys_setreuid): ditto.
+	  (p_sys_setresuid): ditto.
+	  (p_sys_setgid): ditto.
+	  (p_sys_setrgid): ditto.
+	  (p_sys_setegid): ditto.
+	  (p_sys_setregid): ditto.
+	  (p_sys_setreuid): ditto.
+	  (p_sys_setresgid): ditto.
+	  (p_sys_issetugid): ditto.
+	  (proc_getgroups): ditto.
+	  (proc_setgroups): ditto.
+	  (proc_initgroups): ditto.
+	  (proc_daemon): ditto.
+	  (rb_proc_times): ditto.
+
+	* file.c (rb_file_s_lchown): ditto.
+	  (rb_file_s_link): ditto.
+	  (rb_file_s_symlink): ditto.
+	  (rb_file_s_readlink): ditto.
+	  (rb_file_s_truncate): ditto.
+	  (rb_file_truncate): ditto.
+
 Fri Apr 17 00:53:47 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/cgi/core.rb (read_multipart): When path is not defined,

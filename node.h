@@ -501,6 +501,8 @@ NODE *rb_node_newnode(enum node_type,VALUE,VALUE,VALUE);
 NODE* rb_method_node(VALUE klass, ID id);
 int rb_node_arity(NODE* node);
 
+int rb_notimplement_body_p(NODE*);
+
 struct global_entry *rb_global_entry(ID);
 VALUE rb_gvar_get(struct global_entry *);
 VALUE rb_gvar_set(struct global_entry *, VALUE);

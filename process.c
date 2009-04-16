@@ -2580,6 +2580,7 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
 
 #endif
 
+#if defined(HAVE_FORK) && !defined(CANNOT_FORK_WITH_PTHREAD)
 /*
  *  call-seq:
  *     Kernel.fork  [{ block }]   => fixnum or nil
@@ -2601,7 +2602,6 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
  *  fork doesn't copy other threads.
  */
 
-#if defined(HAVE_FORK) && !defined(CANNOT_FORK_WITH_PTHREAD)
 static VALUE
 rb_f_fork(VALUE obj)
 {
@@ -3251,6 +3251,7 @@ rb_f_sleep(int argc, VALUE *argv)
 }
 
 
+#if (defined(HAVE_GETPGRP) && defined(GETPGRP_VOID)) || defined(HAVE_GETPGID)
 /*
  *  call-seq:
  *     Process.getpgrp   => integer
@@ -3265,27 +3266,25 @@ rb_f_sleep(int argc, VALUE *argv)
 static VALUE
 proc_getpgrp(void)
 {
-#if defined(HAVE_GETPGRP) && defined(GETPGRP_VOID) || defined(HAVE_GETPGID)
     rb_pid_t pgrp;
-#endif
 
     rb_secure(2);
 #if defined(HAVE_GETPGRP) && defined(GETPGRP_VOID)
     pgrp = getpgrp();
     if (pgrp < 0) rb_sys_fail(0);
     return PIDT2NUM(pgrp);
-#else
-# ifdef HAVE_GETPGID
+#else /* defined(HAVE_GETPGID) */
     pgrp = getpgid(0);
     if (pgrp < 0) rb_sys_fail(0);
     return PIDT2NUM(pgrp);
-# else
-    rb_notimplement();
-# endif
 #endif
 }
+#else
+#define proc_getpgrp rb_f_notimplement
+#endif
 
 
+#if defined(HAVE_SETPGID) || (defined(HAVE_SETPGRP) && defined(SETPGRP_VOID))
 /*
  *  call-seq:
  *     Process.setpgrp   => 0
@@ -3304,15 +3303,17 @@ proc_setpgrp(void)
   /* this confusion. */
 #ifdef HAVE_SETPGID
     if (setpgid(0,0) < 0) rb_sys_fail(0);
-#elif defined(HAVE_SETPGRP) && defined(SETPGRP_VOID)
+#else /* defined(HAVE_SETPGRP) && defined(SETPGRP_VOID) */
     if (setpgrp() < 0) rb_sys_fail(0);
-#else
-    rb_notimplement();
 #endif
     return INT2FIX(0);
 }
+#else
+#define proc_setpgrp rb_f_notimplement
+#endif
 
 
+#if defined(HAVE_GETPGID) && !defined(__CHECKER__)
 /*
  *  call-seq:
  *     Process.getpgid(pid)   => integer
@@ -3326,19 +3327,19 @@ proc_setpgrp(void)
 static VALUE
 proc_getpgid(VALUE obj, VALUE pid)
 {
-#if defined(HAVE_GETPGID) && !defined(__CHECKER__)
     rb_pid_t i;
 
     rb_secure(2);
     i = getpgid(NUM2PIDT(pid));
     if (i < 0) rb_sys_fail(0);
     return PIDT2NUM(i);
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define proc_getpgid rb_f_notimplement
+#endif
 
 
+#ifdef HAVE_SETPGID
 /*
  *  call-seq:
  *     Process.setpgid(pid, integer)   => 0
@@ -3350,7 +3351,6 @@ proc_getpgid(VALUE obj, VALUE pid)
 static VALUE
 proc_setpgid(VALUE obj, VALUE pid, VALUE pgrp)
 {
-#ifdef HAVE_SETPGID
     rb_pid_t ipid, ipgrp;
 
     rb_secure(2);
@@ -3359,12 +3359,13 @@ proc_setpgid(VALUE obj, VALUE pid, VALUE pgrp)
 
     if (setpgid(ipid, ipgrp) < 0) rb_sys_fail(0);
     return INT2FIX(0);
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define proc_setpgid rb_f_notimplement
+#endif
 
 
+#if defined(HAVE_SETSID) || (defined(HAVE_SETPGRP) && defined(TIOCNOTTY))
 /*
  *  call-seq:
  *     Process.setsid   => fixnum
@@ -3386,7 +3387,7 @@ proc_setsid(void)
     pid = setsid();
     if (pid < 0) rb_sys_fail(0);
     return PIDT2NUM(pid);
-#elif defined(HAVE_SETPGRP) && defined(TIOCNOTTY)
+#else /* defined(HAVE_SETPGRP) && defined(TIOCNOTTY) */
     rb_pid_t pid;
     int ret;
 
@@ -3407,12 +3408,14 @@ proc_setsid(void)
 	close(fd);
     }
     return PIDT2NUM(pid);
-#else
-    rb_notimplement();
 #endif
 }
+#else
+#define proc_setsid rb_f_notimplement
+#endif
 
 
+#ifdef HAVE_GETPRIORITY
 /*
  *  call-seq:
  *     Process.getpriority(kind, integer)   => fixnum
@@ -3433,7 +3436,6 @@ proc_setsid(void)
 static VALUE
 proc_getpriority(VALUE obj, VALUE which, VALUE who)
 {
-#ifdef HAVE_GETPRIORITY
     int prio, iwhich, iwho;
 
     rb_secure(2);
@@ -3444,12 +3446,13 @@ proc_getpriority(VALUE obj, VALUE which, VALUE who)
     prio = getpriority(iwhich, iwho);
     if (errno) rb_sys_fail(0);
     return INT2FIX(prio);
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define proc_getpriority rb_f_notimplement
+#endif
 
 
+#ifdef HAVE_GETPRIORITY
 /*
  *  call-seq:
  *     Process.setpriority(kind, integer, priority)   => 0
@@ -3465,7 +3468,6 @@ proc_getpriority(VALUE obj, VALUE which, VALUE who)
 static VALUE
 proc_setpriority(VALUE obj, VALUE which, VALUE who, VALUE prio)
 {
-#ifdef HAVE_GETPRIORITY
     int iwhich, iwho, iprio;
 
     rb_secure(2);
@@ -3476,10 +3478,10 @@ proc_setpriority(VALUE obj, VALUE which, VALUE who, VALUE prio)
     if (setpriority(iwhich, iwho, iprio) < 0)
 	rb_sys_fail(0);
     return INT2FIX(0);
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define proc_setpriority rb_f_notimplement
+#endif
 
 #if defined(RLIM2NUM)
 static int
@@ -3645,6 +3647,7 @@ rlimit_resource_value(VALUE rval)
 }
 #endif
 
+#if defined(HAVE_GETRLIMIT) && defined(RLIM2NUM)
 /*
  *  call-seq:
  *     Process.getrlimit(resource)   => [cur_limit, max_limit]
@@ -3668,7 +3671,6 @@ rlimit_resource_value(VALUE rval)
 static VALUE
 proc_getrlimit(VALUE obj, VALUE resource)
 {
-#if defined(HAVE_GETRLIMIT) && defined(RLIM2NUM)
     struct rlimit rlim;
 
     rb_secure(2);
@@ -3677,11 +3679,12 @@ proc_getrlimit(VALUE obj, VALUE resource)
 	rb_sys_fail("getrlimit");
     }
     return rb_assoc_new(RLIM2NUM(rlim.rlim_cur), RLIM2NUM(rlim.rlim_max));
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define proc_getrlimit rb_f_notimplement
+#endif
 
+#if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
 /*
  *  call-seq:
  *     Process.setrlimit(resource, cur_limit, max_limit)        => nil
@@ -3731,7 +3734,6 @@ proc_getrlimit(VALUE obj, VALUE resource)
 static VALUE
 proc_setrlimit(int argc, VALUE *argv, VALUE obj)
 {
-#if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
     VALUE resource, rlim_cur, rlim_max;
     struct rlimit rlim;
 
@@ -3748,10 +3750,10 @@ proc_setrlimit(int argc, VALUE *argv, VALUE obj)
 	rb_sys_fail("setrlimit");
     }
     return Qnil;
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define proc_setrlimit rb_f_notimplement
+#endif
 
 static int under_uid_switch = 0;
 static void
@@ -3785,6 +3787,7 @@ check_gid_switch(void)
  */
 
 
+#if defined HAVE_SETUID
 /*
  *  call-seq:
  *     Process::Sys.setuid(integer)   => nil
@@ -3797,17 +3800,16 @@ check_gid_switch(void)
 static VALUE
 p_sys_setuid(VALUE obj, VALUE id)
 {
-#if defined HAVE_SETUID
     check_uid_switch();
     if (setuid(NUM2UIDT(id)) != 0) rb_sys_fail(0);
-#else
-    rb_notimplement();
-#endif
     return Qnil;
 }
+#else
+#define p_sys_setuid rb_f_notimplement
+#endif
 
 
-
+#if defined HAVE_SETRUID
 /*
  *  call-seq:
  *     Process::Sys.setruid(integer)   => nil
@@ -3820,16 +3822,16 @@ p_sys_setuid(VALUE obj, VALUE id)
 static VALUE
 p_sys_setruid(VALUE obj, VALUE id)
 {
-#if defined HAVE_SETRUID
     check_uid_switch();
     if (setruid(NUM2UIDT(id)) != 0) rb_sys_fail(0);
-#else
-    rb_notimplement();
-#endif
     return Qnil;
 }
+#else
+#define p_sys_setruid rb_f_notimplement
+#endif
 
 
+#if defined HAVE_SETEUID
 /*
  *  call-seq:
  *     Process::Sys.seteuid(integer)   => nil
@@ -3842,16 +3844,16 @@ p_sys_setruid(VALUE obj, VALUE id)
 static VALUE
 p_sys_seteuid(VALUE obj, VALUE id)
 {
-#if defined HAVE_SETEUID
     check_uid_switch();
     if (seteuid(NUM2UIDT(id)) != 0) rb_sys_fail(0);
-#else
-    rb_notimplement();
-#endif
     return Qnil;
 }
+#else
+#define p_sys_seteuid rb_f_notimplement
+#endif
 
 
+#if defined HAVE_SETREUID
 /*
  *  call-seq:
  *     Process::Sys.setreuid(rid, eid)   => nil
@@ -3866,16 +3868,16 @@ p_sys_seteuid(VALUE obj, VALUE id)
 static VALUE
 p_sys_setreuid(VALUE obj, VALUE rid, VALUE eid)
 {
-#if defined HAVE_SETREUID
     check_uid_switch();
     if (setreuid(NUM2UIDT(rid),NUM2UIDT(eid)) != 0) rb_sys_fail(0);
-#else
-    rb_notimplement();
-#endif
     return Qnil;
 }
+#else
+#define p_sys_setreuid rb_f_notimplement
+#endif
 
 
+#if defined HAVE_SETRESUID
 /*
  *  call-seq:
  *     Process::Sys.setresuid(rid, eid, sid)   => nil
@@ -3890,14 +3892,13 @@ p_sys_setreuid(VALUE obj, VALUE rid, VALUE eid)
 static VALUE
 p_sys_setresuid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 {
-#if defined HAVE_SETRESUID
     check_uid_switch();
     if (setresuid(NUM2UIDT(rid),NUM2UIDT(eid),NUM2UIDT(sid)) != 0) rb_sys_fail(0);
-#else
-    rb_notimplement();
-#endif
     return Qnil;
 }
+#else
+#define p_sys_setresuid rb_f_notimplement
+#endif
 
 
 /*
@@ -4137,6 +4138,7 @@ p_uid_change_privilege(VALUE obj, VALUE id)
 
 
 
+#if defined HAVE_SETGID
 /*
  *  call-seq:
  *     Process::Sys.setgid(integer)   => nil
@@ -4149,16 +4151,16 @@ p_uid_change_privilege(VALUE obj, VALUE id)
 static VALUE
 p_sys_setgid(VALUE obj, VALUE id)
 {
-#if defined HAVE_SETGID
     check_gid_switch();
     if (setgid(NUM2GIDT(id)) != 0) rb_sys_fail(0);
-#else
-    rb_notimplement();
-#endif
     return Qnil;
 }
+#else
+#define p_sys_setgid rb_f_notimplement
+#endif
 
 
+#if defined HAVE_SETRGID
 /*
  *  call-seq:
  *     Process::Sys.setrgid(integer)   => nil
@@ -4171,17 +4173,16 @@ p_sys_setgid(VALUE obj, VALUE id)
 static VALUE
 p_sys_setrgid(VALUE obj, VALUE id)
 {
-#if defined HAVE_SETRGID
     check_gid_switch();
     if (setrgid(NUM2GIDT(id)) != 0) rb_sys_fail(0);
-#else
-    rb_notimplement();
-#endif
     return Qnil;
 }
+#else
+#define p_sys_setrgid rb_f_notimplement
+#endif
 
 
-
+#if defined HAVE_SETEGID
 /*
  *  call-seq:
  *     Process::Sys.setegid(integer)   => nil
@@ -4194,16 +4195,16 @@ p_sys_setrgid(VALUE obj, VALUE id)
 static VALUE
 p_sys_setegid(VALUE obj, VALUE id)
 {
-#if defined HAVE_SETEGID
     check_gid_switch();
     if (setegid(NUM2GIDT(id)) != 0) rb_sys_fail(0);
-#else
-    rb_notimplement();
-#endif
     return Qnil;
 }
+#else
+#define p_sys_setegid rb_f_notimplement
+#endif
 
 
+#if defined HAVE_SETREGID
 /*
  *  call-seq:
  *     Process::Sys.setregid(rid, eid)   => nil
@@ -4218,15 +4219,15 @@ p_sys_setegid(VALUE obj, VALUE id)
 static VALUE
 p_sys_setregid(VALUE obj, VALUE rid, VALUE eid)
 {
-#if defined HAVE_SETREGID
     check_gid_switch();
     if (setregid(NUM2GIDT(rid),NUM2GIDT(eid)) != 0) rb_sys_fail(0);
-#else
-    rb_notimplement();
-#endif
     return Qnil;
 }
+#else
+#define p_sys_setregid rb_f_notimplement
+#endif
 
+#if defined HAVE_SETRESGID
 /*
  *  call-seq:
  *     Process::Sys.setresgid(rid, eid, sid)   => nil
@@ -4241,16 +4242,16 @@ p_sys_setregid(VALUE obj, VALUE rid, VALUE eid)
 static VALUE
 p_sys_setresgid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 {
-#if defined HAVE_SETRESGID
     check_gid_switch();
     if (setresgid(NUM2GIDT(rid),NUM2GIDT(eid),NUM2GIDT(sid)) != 0) rb_sys_fail(0);
-#else
-    rb_notimplement();
-#endif
     return Qnil;
 }
+#else
+#define p_sys_setresgid rb_f_notimplement
+#endif
 
 
+#if defined HAVE_ISSETUGID
 /*
  *  call-seq:
  *     Process::Sys.issetugid   => true or false
@@ -4266,18 +4267,16 @@ p_sys_setresgid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 static VALUE
 p_sys_issetugid(VALUE obj)
 {
-#if defined HAVE_ISSETUGID
     rb_secure(2);
     if (issetugid()) {
 	return Qtrue;
     } else {
 	return Qfalse;
     }
-#else
-    rb_notimplement();
-    return Qnil;		/* not reached */
-#endif
 }
+#else
+#define p_sys_issetugid rb_f_notimplement
+#endif
 
 
 /*
@@ -4339,6 +4338,7 @@ proc_setgid(VALUE obj, VALUE id)
 static size_t maxgroups = 32;
 
 
+#ifdef HAVE_GETGROUPS
 /*
  *  call-seq:
  *     Process.groups   => array
@@ -4353,7 +4353,6 @@ static size_t maxgroups = 32;
 static VALUE
 proc_getgroups(VALUE obj)
 {
-#ifdef HAVE_GETGROUPS
     VALUE ary;
     size_t ngroups;
     rb_gid_t *groups;
@@ -4370,13 +4369,13 @@ proc_getgroups(VALUE obj)
 	rb_ary_push(ary, GIDT2NUM(groups[i]));
 
     return ary;
-#else
-    rb_notimplement();
-    return Qnil;
-#endif
 }
+#else
+#define proc_getgroups rb_f_notimplement
+#endif
 
 
+#ifdef HAVE_SETGROUPS
 /*
  *  call-seq:
  *     Process.groups= array   => array
@@ -4393,7 +4392,6 @@ proc_getgroups(VALUE obj)
 static VALUE
 proc_setgroups(VALUE obj, VALUE ary)
 {
-#ifdef HAVE_SETGROUPS
     size_t ngroups;
     rb_gid_t *groups;
     int i;
@@ -4434,13 +4432,13 @@ proc_setgroups(VALUE obj, VALUE ary)
 	rb_sys_fail(0);
 
     return proc_getgroups(obj);
-#else
-    rb_notimplement();
-    return Qnil;
-#endif
 }
+#else
+#define proc_setgroups rb_f_notimplement
+#endif
 
 
+#ifdef HAVE_INITGROUPS
 /*
  *  call-seq:
  *     Process.initgroups(username, gid)   => array
@@ -4461,16 +4459,14 @@ proc_setgroups(VALUE obj, VALUE ary)
 static VALUE
 proc_initgroups(VALUE obj, VALUE uname, VALUE base_grp)
 {
-#ifdef HAVE_INITGROUPS
     if (initgroups(StringValuePtr(uname), NUM2GIDT(base_grp)) != 0) {
 	rb_sys_fail(0);
     }
     return proc_getgroups(obj);
-#else
-    rb_notimplement();
-    return Qnil;
-#endif
 }
+#else
+#define proc_initgroups rb_f_notimplement
+#endif
 
 
 /*
@@ -4511,6 +4507,7 @@ proc_setmaxgroups(VALUE obj, VALUE val)
     return INT2FIX(maxgroups);
 }
 
+#if defined(HAVE_DAEMON) || defined(HAVE_FORK)
 /*
  *  call-seq:
  *     Process.daemon()                        => fixnum
@@ -4528,9 +4525,7 @@ static VALUE
 proc_daemon(int argc, VALUE *argv)
 {
     VALUE nochdir, noclose;
-#if defined(HAVE_DAEMON) || defined(HAVE_FORK)
     int n;
-#endif
 
     rb_secure(2);
     rb_scan_args(argc, argv, "02", &nochdir, &noclose);
@@ -4542,7 +4537,7 @@ proc_daemon(int argc, VALUE *argv)
     after_fork();
     if (n < 0) rb_sys_fail("daemon");
     return INT2FIX(n);
-#elif defined(HAVE_FORK)
+#else /* defined(HAVE_FORK) */
     switch (rb_fork(0, 0, 0, Qnil)) {
       case -1:
 	return (-1);
@@ -4565,10 +4560,11 @@ proc_daemon(int argc, VALUE *argv)
 	    (void)close (n);
     }
     return INT2FIX(0);
-#else
-    rb_notimplement();
 #endif
 }
+#else
+#define proc_daemon rb_f_notimplement
+#endif
 
 /********************************************************************
  *
@@ -5306,6 +5302,7 @@ p_gid_switch(VALUE obj)
 #endif
 
 
+#if defined(HAVE_TIMES) && !defined(__CHECKER__)
 /*
  *  call-seq:
  *     Process.times   => aStructTms
@@ -5321,7 +5318,6 @@ p_gid_switch(VALUE obj)
 VALUE
 rb_proc_times(VALUE obj)
 {
-#if defined(HAVE_TIMES) && !defined(__CHECKER__)
     const double hertz =
 #ifdef HAVE__SC_CLK_TCK
 	(double)sysconf(_SC_CLK_TCK);
@@ -5344,10 +5340,10 @@ rb_proc_times(VALUE obj)
 			 stime = DBL2NUM(buf.tms_stime / hertz),
 			 cutime = DBL2NUM(buf.tms_cutime / hertz),
 			 sctime = DBL2NUM(buf.tms_cstime / hertz));
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define rb_proc_times rb_f_notimplement
+#endif
 
 VALUE rb_mProcess;
 VALUE rb_mProcUID;
