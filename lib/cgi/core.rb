@@ -440,7 +440,13 @@ class CGI
         ## create body (StringIO or Tempfile)
         body = create_body(bufsize < content_length)
         class << body
-          alias local_path path
+          if method_defined?(:path)
+            alias local_path path
+          else
+            def local_path
+              nil
+            end
+          end
           attr_reader :original_filename, :content_type
         end
         ## find head and boundary

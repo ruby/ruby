@@ -1,3 +1,9 @@
+Fri Apr 17 00:53:47 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/cgi/core.rb (read_multipart): When path is not defined,
+	  define local_path as a method always returning nil instead of
+	  aliasing.  This is because StringIO#path no longer exists.
+
 Fri Apr 17 00:45:09 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* dir.c (bracket): fix escape handling for range character in bracket
