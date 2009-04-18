@@ -1,3 +1,8 @@
+Sat Apr 18 21:07:34 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/curses/curses.c: use rb_f_notimplement for methods not
+	  implemented.
+
 Fri Apr 17 01:51:17 2009  Tanaka Akira  <akr@fsij.org>
 
 	* node.h (rb_notimplement_body_p): declared.

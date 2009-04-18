@@ -159,19 +159,19 @@ curses_finalize(VALUE dummy)
     rb_gc_unregister_address(&rb_stdscr);
 }
 
+#ifdef HAVE_ISENDWIN
 /* def closed? */
 static VALUE
 curses_closed(void)
 {
-#ifdef HAVE_ISENDWIN
     if (isendwin()) {
 	return Qtrue;
     }
     return Qfalse;
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define curses_closed rb_f_notimplement
+#endif
 
 /* def clear */
 static VALUE
@@ -328,19 +328,19 @@ curses_char(VALUE c)
     }
 }
 
+#ifdef HAVE_UNGETCH
 /* def ungetch */
 static VALUE
 curses_ungetch(VALUE obj, VALUE ch)
 {
-#ifdef HAVE_UNGETCH
     int c = curses_char(ch);
     curses_stdscr();
     ungetch(c);
-#else
-    rb_notimplement();
-#endif
     return Qnil;
 }
+#else
+#define curses_ungetch rb_f_notimplement
+#endif
 
 /* def setpos(y, x) */
 static VALUE
@@ -578,58 +578,58 @@ curses_bkgd(VALUE obj, VALUE ch)
 #endif
 }
 
+#if defined(HAVE_USE_DEFAULT_COLORS)
 static VALUE
 curses_use_default_colors(VALUE obj)
 {
-#if defined(HAVE_USE_DEFAULT_COLORS)
     use_default_colors();
     return Qnil;
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define curses_use_default_colors rb_f_notimplement
+#endif
 
+#if defined(HAVE_TABSIZE)
 static VALUE
 curses_tabsize_set(VALUE obj, VALUE val)
 {
-#if defined(HAVE_TABSIZE)
     TABSIZE = NUM2INT(val);
     return INT2NUM(TABSIZE);
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define curses_tabsize_set rb_f_notimplement
+#endif
 
+#if defined(HAVE_TABSIZE)
 static VALUE
 curses_tabsize_get(VALUE ojb)
 {
-#if defined(HAVE_TABSIZE)
     return INT2NUM(TABSIZE);
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define curses_tabsize_get rb_f_notimplement
+#endif
 
+#if defined(HAVE_ESCDELAY)
 static VALUE
 curses_escdelay_set(VALUE obj, VALUE val)
 {
-#if defined(HAVE_ESCDELAY)
     ESCDELAY = NUM2INT(val);
     return INT2NUM(ESCDELAY);
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define curses_escdelay_set rb_f_notimplement
+#endif
 
+#if defined(HAVE_ESCDELAY)
 static VALUE
 curses_escdelay_get(VALUE obj)
 {
-#if defined(HAVE_ESCDELAY)
     return INT2NUM(ESCDELAY);
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define curses_escdelay_get rb_f_notimplement
+#endif
 
 static VALUE
 curses_resizeterm(VALUE obj, VALUE lin, VALUE col)
@@ -676,15 +676,15 @@ curses_can_change_color(VALUE obj)
     return can_change_color() ? Qtrue : Qfalse;
 }
 
+#if defined(HAVE_COLORS)
 static VALUE
 curses_colors(VALUE obj)
 {
-#if defined(HAVE_COLORS)
     return INT2FIX(COLORS);
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define curses_colors rb_f_notimplement
+#endif
 
 static VALUE
 curses_color_content(VALUE obj, VALUE color)
@@ -696,15 +696,15 @@ curses_color_content(VALUE obj, VALUE color)
 }
 
 
+#if defined(HAVE_COLOR_PAIRS)
 static VALUE
 curses_color_pairs(VALUE obj)
 {
-#if defined(HAVE_COLOR_PAIRS)
     return INT2FIX(COLOR_PAIRS);
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define curses_color_pairs rb_f_notimplement
+#endif
 
 static VALUE
 curses_pair_content(VALUE obj, VALUE pair)
@@ -802,36 +802,36 @@ DEFINE_MOUSE_GET_MEMBER(curs_mouse_bstate, bstate)
 #undef define_curs_mouse_member
 #endif /* USE_MOUSE */
 
+#ifdef HAVE_TIMEOUT
 static VALUE
 curses_timeout(VALUE obj, VALUE delay)
 {
-#ifdef HAVE_TIMEOUT
     timeout(NUM2INT(delay));
     return Qnil;
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define curses_timeout rb_f_notimplement
+#endif
 
+#ifdef HAVE_DEF_PROG_MODE
 static VALUE
 curses_def_prog_mode(VALUE obj)
 {
-#ifdef HAVE_DEF_PROG_MODE
     return def_prog_mode() == OK ? Qtrue : Qfalse;
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define curses_def_prog_mode rb_f_notimplement
+#endif
 
+#ifdef HAVE_RESET_PROG_MODE
 static VALUE
 curses_reset_prog_mode(VALUE obj)
 {
-#ifdef HAVE_RESET_PROG_MODE
     return reset_prog_mode() == OK ? Qtrue : Qfalse;
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define curses_reset_prog_mode rb_f_notimplement
+#endif
 
 /*-------------------------- class Window --------------------------*/
 
@@ -1426,10 +1426,10 @@ window_resize(VALUE obj, VALUE lin, VALUE col)
 }
 
 
+#ifdef HAVE_KEYPAD
 static VALUE
 window_keypad(VALUE obj, VALUE val)
 {
-#ifdef HAVE_KEYPAD
     struct windata *winp;
 
     GetWINDOW(obj,winp);
@@ -1442,15 +1442,15 @@ window_keypad(VALUE obj, VALUE val)
     return (keypad(winp->window,RTEST(val) ? TRUE : FALSE)) == OK ?
 	Qtrue : Qfalse;
 #endif
-#else
-    rb_notimplement();
-#endif /* HAVE_KEYPAD */
 }
+#else
+#define window_keypad rb_f_notimplement
+#endif
 
+#ifdef HAVE_NODELAY
 static VALUE
 window_nodelay(VALUE obj, VALUE val)
 {
-#ifdef HAVE_NODELAY
     struct windata *winp;
     GetWINDOW(obj,winp);
 
@@ -1461,24 +1461,24 @@ window_nodelay(VALUE obj, VALUE val)
 #else
     return nodelay(winp->window,RTEST(val) ? TRUE : FALSE) == OK ? Qtrue : Qfalse;
 #endif
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define window_nodelay rb_f_notimplement
+#endif
 
+#ifdef HAVE_WTIMEOUT
 static VALUE
 window_timeout(VALUE obj, VALUE delay)
 {
-#ifdef HAVE_WTIMEOUT
     struct windata *winp;
     GetWINDOW(obj,winp);
 
     wtimeout(winp->window,NUM2INT(delay));
     return Qnil;
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define window_timeout rb_f_notimplement
+#endif
 
 /*------------------------- Initialization -------------------------*/
 void
