@@ -10976,6 +10976,13 @@ rb_thread_remove(th)
     rb_thread_die(th);
     th->prev->next = th->next;
     th->next->prev = th->prev;
+
+#if defined(_THREAD_SAFE) || defined(HAVE_SETITIMER)
+    /* if this is the last ruby thread, stop timer signals */
+    if (th->next == th->prev && th->next == main_thread) {
+	rb_thread_stop_timer();
+    }
+#endif
 }
 
 static int
@@ -12347,30 +12354,58 @@ catch_timer(sig)
     /* cause EINTR */
 }
 
-static pthread_t time_thread;
+#define PER_NANO 1000000000
+
+static struct timespec *
+get_ts(struct timespec *to, long ns)
+{
+    struct timeval tv;
+
+#ifdef CLOCK_MONOTONIC
+    if (clock_gettime(CLOCK_MONOTONIC, to) != 0)
+#endif
+    {
+	gettimeofday(&tv, NULL);
+	to->tv_sec = tv.tv_sec;
+	to->tv_nsec = tv.tv_usec * 1000;
+    }
+    if ((to->tv_nsec += ns) >= PER_NANO) {
+	to->tv_sec += to->tv_nsec / PER_NANO;
+	to->tv_nsec %= PER_NANO;
+    }
+    return to;
+}
+
+static struct timer_thread {
+    pthread_cond_t cond;
+    pthread_mutex_t lock;
+    pthread_t thread;
+} time_thread = {PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER};
+
+#define safe_mutex_lock(lock) \
+    (pthread_mutex_lock(lock), \
+     pthread_cleanup_push((void (*)_((void *)))pthread_mutex_unlock, lock))
 
 static void*
 thread_timer(dummy)
     void *dummy;
 {
+    struct timer_thread *running = ((void **)dummy)[0];
+    pthread_cond_t *start = ((void **)dummy)[1];
+    struct timespec to;
+    int err;
+
     sigset_t all_signals;
 
     sigfillset(&all_signals);
     pthread_sigmask(SIG_BLOCK, &all_signals, 0);
 
-    for (;;) {
-#ifdef HAVE_NANOSLEEP
-	struct timespec req, rem;
+    safe_mutex_lock(&running->lock);
+    pthread_cond_signal(start);
 
-	req.tv_sec = 0;
-	req.tv_nsec = 10000000;
-	nanosleep(&req, &rem);
-#else
-	struct timeval tv;
-	tv.tv_sec = 0;
-	tv.tv_usec = 10000;
-	select(0, NULL, NULL, NULL, &tv);
-#endif
+#define WAIT_FOR_10MS() \
+    pthread_cond_timedwait(&running->cond, &running->lock, get_ts(&to, PER_NANO/100))
+    while ((err = WAIT_FOR_10MS()) == EINTR || err == ETIMEDOUT) {
 	if (!rb_thread_critical) {
 	    rb_thread_pending = 1;
 	    if (rb_trap_immediate) {
@@ -12378,16 +12413,39 @@ thread_timer(dummy)
 	    }
 	}
     }
+
+    pthread_cleanup_pop(1);
+
+    return NULL;
 }
 
 void
 rb_thread_start_timer()
 {
+    void *args[2];
+    static pthread_cond_t start = PTHREAD_COND_INITIALIZER;
+
+    if (!thread_init) return;
+    args[0] = &time_thread;
+    args[1] = &start;
+    safe_mutex_lock(&time_thread.lock);
+    if (pthread_create(&time_thread.thread, 0, thread_timer, args) == 0) {
+	thread_init = 1;
+	pthread_atfork(0, 0, rb_thread_stop_timer);
+	pthread_cond_wait(&start, &time_thread.lock);
+    }
+    pthread_cleanup_pop(1);
 }
 
 void
 rb_thread_stop_timer()
 {
+    if (!thread_init) return;
+    safe_mutex_lock(&time_thread.lock);
+    pthread_cond_signal(&time_thread.cond);
+    pthread_cleanup_pop(1);
+    pthread_join(time_thread.thread, NULL);
+    thread_init = 0;
 }
 #elif defined(HAVE_SETITIMER)
 static void
@@ -12408,11 +12466,12 @@ rb_thread_start_timer()
 {
     struct itimerval tval;
 
-    if (!thread_init) return;
+    if (thread_init) return;
     tval.it_interval.tv_sec = 0;
     tval.it_interval.tv_usec = 10000;
     tval.it_value = tval.it_interval;
     setitimer(ITIMER_VIRTUAL, &tval, NULL);
+    thread_init = 1;
 }
 
 void
@@ -12425,6 +12484,7 @@ rb_thread_stop_timer()
     tval.it_interval.tv_usec = 0;
     tval.it_value = tval.it_interval;
     setitimer(ITIMER_VIRTUAL, &tval, NULL);
+    thread_init = 0;
 }
 #else  /* !(_THREAD_SAFE || HAVE_SETITIMER) */
 int rb_thread_tick = THREAD_TICK;
@@ -12487,7 +12547,6 @@ rb_thread_start_0(fn, arg, th)
     }
 
     if (!thread_init) {
-	thread_init = 1;
 #if defined(HAVE_SETITIMER) || defined(_THREAD_SAFE)
 #if defined(POSIX_SIGNAL)
 	posix_signal(SIGVTALRM, catch_timer);
@@ -12495,11 +12554,7 @@ rb_thread_start_0(fn, arg, th)
 	signal(SIGVTALRM, catch_timer);
 #endif
 
-#ifdef _THREAD_SAFE
-	pthread_create(&time_thread, 0, thread_timer, 0);
-#else
 	rb_thread_start_timer();
-#endif
 #endif
     }
 

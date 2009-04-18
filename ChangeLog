@@ -1,3 +1,8 @@
+Sat Apr 18 18:25:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_remove): stops timer thread unless other
+	  threads exist.  [ruby-core:18444]
+
 Thu Apr  9 11:11:10 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/nkf/nkf.c: RDoc typo fixed.  [ruby-core:23170]
