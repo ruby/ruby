@@ -2994,6 +2994,7 @@ rb_f_system(int argc, VALUE *argv)
  *      process group:
  *        :pgroup => true or 0 : make a new process group
  *        :pgroup => pgid      : join to specified process group
+ *        :pgroup => nil       : don't change the process group (default)
  *      resource limit: resourcename is core, cpu, data, etc.  See Process.setrlimit.
  *        :rlimit_resourcename => limit
  *        :rlimit_resourcename => [cur_limit, max_limit]
