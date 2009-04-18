@@ -3921,6 +3921,7 @@ proc_getuid(VALUE obj)
 }
 
 
+#if defined(HAVE_SETRESUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRUID) || defined(HAVE_SETUID)
 /*
  *  call-seq:
  *     Process.uid= integer   => numeric
@@ -3952,11 +3953,12 @@ proc_setuid(VALUE obj, VALUE id)
 	    rb_notimplement();
 	}
     }
-#else
-    rb_notimplement();
 #endif
     return id;
 }
+#else
+#define proc_setuid rb_f_notimplement
+#endif
 
 
 /********************************************************************
@@ -4299,6 +4301,7 @@ proc_getgid(VALUE obj)
 }
 
 
+#if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETRGID) || defined(HAVE_SETGID)
 /*
  *  call-seq:
  *     Process.gid= fixnum   => fixnum
@@ -4329,11 +4332,12 @@ proc_setgid(VALUE obj, VALUE id)
 	    rb_notimplement();
 	}
     }
-#else
-    rb_notimplement();
 #endif
     return GIDT2NUM(gid);
 }
+#else
+#define proc_setgid rb_f_notimplement
+#endif
 
 
 static size_t maxgroups = 32;
