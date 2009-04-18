@@ -4805,6 +4805,12 @@ proc_seteuid(VALUE obj, VALUE euid)
     return euid;
 }
 
+#if defined(HAVE_SETRESUID) || defined(HAVE_SETREUID) || defined(HAVE_SETEUID) || defined(HAVE_SETUID)
+#define proc_seteuid_m proc_seteuid
+#else
+#define proc_seteuid_m rb_f_notimplement
+#endif
+
 static rb_uid_t
 rb_seteuid_core(rb_uid_t euid)
 {
@@ -4917,6 +4923,12 @@ proc_setegid(VALUE obj, VALUE egid)
 #endif
     return egid;
 }
+
+#if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETEGID) || defined(HAVE_SETGID)
+#define proc_setegid_m proc_setegid
+#else
+#define proc_setegid_m rb_f_notimplement
+#endif
 
 static rb_gid_t
 rb_setegid_core(rb_gid_t egid)
@@ -5502,9 +5514,9 @@ Init_process(void)
     rb_define_module_function(rb_mProcess, "gid", proc_getgid, 0);
     rb_define_module_function(rb_mProcess, "gid=", proc_setgid, 1);
     rb_define_module_function(rb_mProcess, "euid", proc_geteuid, 0);
-    rb_define_module_function(rb_mProcess, "euid=", proc_seteuid, 1);
+    rb_define_module_function(rb_mProcess, "euid=", proc_seteuid_m, 1);
     rb_define_module_function(rb_mProcess, "egid", proc_getegid, 0);
-    rb_define_module_function(rb_mProcess, "egid=", proc_setegid, 1);
+    rb_define_module_function(rb_mProcess, "egid=", proc_setegid_m, 1);
     rb_define_module_function(rb_mProcess, "initgroups", proc_initgroups, 2);
     rb_define_module_function(rb_mProcess, "groups", proc_getgroups, 0);
     rb_define_module_function(rb_mProcess, "groups=", proc_setgroups, 1);

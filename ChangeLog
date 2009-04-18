@@ -1,3 +1,9 @@
+Sun Apr 19 01:39:17 2009  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (proc_seteuid_m): defined to use rb_f_notimplement if not
+	  implemented.
+	  (proc_setegid_m): ditto.
+
 Sun Apr 19 01:03:56 2009  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (proc_setuid): use rb_f_notimplement if not implemented.
