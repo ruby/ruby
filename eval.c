@@ -12383,8 +12383,8 @@ static struct timer_thread {
 } time_thread = {PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER};
 
 #define safe_mutex_lock(lock) \
-    (pthread_mutex_lock(lock), \
-     pthread_cleanup_push((void (*)_((void *)))pthread_mutex_unlock, lock))
+    pthread_mutex_lock(lock); \
+    pthread_cleanup_push((void (*)_((void *)))pthread_mutex_unlock, lock)
 
 static void*
 thread_timer(dummy)

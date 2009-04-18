@@ -1,3 +1,8 @@
+Sat Apr 18 19:44:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (safe_mutex_lock): pthread_cleanup_push() must not be
+	  inside parens.
+
 Sat Apr 18 18:25:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_remove): stops timer thread unless other
