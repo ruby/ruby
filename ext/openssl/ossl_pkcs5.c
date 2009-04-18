@@ -7,6 +7,7 @@
 VALUE mPKCS5;
 VALUE ePKCS5;
 
+#ifdef HAVE_PKCS5_PBKDF2_HMAC
 /*
  * call-seq:
  *    PKCS5.pbkdf2_hmac(pass, salt, iter, keylen, digest) => string
@@ -25,7 +26,6 @@ VALUE ePKCS5;
 static VALUE
 ossl_pkcs5_pbkdf2_hmac(VALUE self, VALUE pass, VALUE salt, VALUE iter, VALUE keylen, VALUE digest)
 {
-#ifdef HAVE_PKCS5_PBKDF2_HMAC
     VALUE str;
     const EVP_MD *md;
     int len = NUM2INT(keylen);
@@ -40,12 +40,13 @@ ossl_pkcs5_pbkdf2_hmac(VALUE self, VALUE pass, VALUE salt, VALUE iter, VALUE key
         ossl_raise(ePKCS5, "PKCS5_PBKDF2_HMAC");
 
     return str;
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define ossl_pkcs5_pbkdf2_hmac rb_f_notimplement
+#endif
 
 
+#ifdef HAVE_PKCS5_PBKDF2_HMAC_SHA1
 /*
  * call-seq:
  *    PKCS5.pbkdf2_hmac_sha1(pass, salt, iter, keylen) => string
@@ -63,7 +64,6 @@ ossl_pkcs5_pbkdf2_hmac(VALUE self, VALUE pass, VALUE salt, VALUE iter, VALUE key
 static VALUE
 ossl_pkcs5_pbkdf2_hmac_sha1(VALUE self, VALUE pass, VALUE salt, VALUE iter, VALUE keylen)
 {
-#ifdef HAVE_PKCS5_PBKDF2_HMAC_SHA1
     VALUE str;
     int len = NUM2INT(keylen);
 
@@ -78,10 +78,10 @@ ossl_pkcs5_pbkdf2_hmac_sha1(VALUE self, VALUE pass, VALUE salt, VALUE iter, VALU
         ossl_raise(ePKCS5, "PKCS5_PBKDF2_HMAC_SHA1");
 
     return str;
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define ossl_pkcs5_pbkdf2_hmac_sha1 rb_f_notimplement
+#endif
 
 void
 Init_ossl_pkcs5()

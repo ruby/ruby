@@ -75,6 +75,7 @@ pair_yield(VALUE pair)
 }
 #endif
 
+#if defined HAVE_SOCKETPAIR
 /*
  * call-seq:
  *   Socket.pair(domain, type, protocol)       => [socket1, socket2]
@@ -99,7 +100,6 @@ pair_yield(VALUE pair)
 VALUE
 rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
 {
-#if defined HAVE_SOCKETPAIR
     VALUE domain, type, protocol;
     int d, t, p, sp[2];
     int ret;
@@ -127,10 +127,10 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
         return rb_ensure(pair_yield, r, io_close, s1);
     }
     return r;
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define rsock_sock_s_socketpair rb_f_notimplement
+#endif
 
 /*
  * call-seq:
@@ -867,11 +867,7 @@ sock_gethostname(VALUE obj)
     return rb_str_new2(un.nodename);
 }
 #else
-static VALUE
-sock_gethostname(VALUE obj)
-{
-    rb_notimplement();
-}
+#define sock_gethostname rb_f_notimplement
 #endif
 #endif
 
@@ -1470,6 +1466,7 @@ sockaddr_obj(struct sockaddr *addr)
 }
 #endif
 
+#if defined(HAVE_GETIFADDRS) || (defined(SIOCGLIFCONF) && defined(SIOCGLIFNUM) && !defined(__hpux)) || defined(SIOCGIFCONF) ||  defined(_WIN32)
 /*
  * call-seq:
  *   Socket.ip_address_list => array
@@ -1748,10 +1745,11 @@ socket_s_ip_address_list(VALUE self)
 
     CloseHandle(h);
     return list;
-#else
-    rb_notimplement();
 #endif
 }
+#else
+#define socket_s_ip_address_list rb_f_notimplement
+#endif
 
 /*
  * Class +Socket+ provides access to the underlying operating system

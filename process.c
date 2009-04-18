@@ -3304,7 +3304,7 @@ proc_setpgrp(void)
   /* this confusion. */
 #ifdef HAVE_SETPGID
     if (setpgid(0,0) < 0) rb_sys_fail(0);
-#else /* defined(HAVE_SETPGRP) && defined(SETPGRP_VOID) */
+#elif defined(HAVE_SETPGRP) && defined(SETPGRP_VOID)
     if (setpgrp() < 0) rb_sys_fail(0);
 #endif
     return INT2FIX(0);
@@ -3388,7 +3388,7 @@ proc_setsid(void)
     pid = setsid();
     if (pid < 0) rb_sys_fail(0);
     return PIDT2NUM(pid);
-#else /* defined(HAVE_SETPGRP) && defined(TIOCNOTTY) */
+#elif defined(HAVE_SETPGRP) && defined(TIOCNOTTY)
     rb_pid_t pid;
     int ret;
 
@@ -4538,7 +4538,7 @@ proc_daemon(int argc, VALUE *argv)
     after_fork();
     if (n < 0) rb_sys_fail("daemon");
     return INT2FIX(n);
-#else /* defined(HAVE_FORK) */
+#elif defined(HAVE_FORK)
     switch (rb_fork(0, 0, 0, Qnil)) {
       case -1:
 	return (-1);

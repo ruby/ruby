@@ -1,3 +1,28 @@
+Sat Apr 18 23:07:18 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/readline/readline.c: use rb_f_notimplement for methods not
+	  implemented.
+
+	* ext/openssl/ossl_engine.c: ditto.
+
+	* ext/openssl/ossl_config.c: ditto.
+
+	* ext/openssl/ossl_cipher.c: ditto.
+
+	* ext/openssl/ossl_pkcs5.c: ditto.
+
+	* ext/openssl/ossl_x509ext.c: ditto.
+
+	* ext/socket/socket.c: ditto.
+
+	* ext/socket/basicsocket.c: ditto.
+
+	* ext/socket/ancdata.c: ditto.
+
+	* ext/socket/unixsocket.c: ditto.
+
+	* ext/iconv/iconv.c: ditto.
+
 Sat Apr 18 21:07:34 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/curses/curses.c: use rb_f_notimplement for methods not

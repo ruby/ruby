@@ -171,6 +171,7 @@ sendmsg_blocking(void *data)
     return sendmsg(arg->fd, &arg->msg, 0);
 }
 
+#if defined(HAVE_SENDMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
 /*
  * call-seq:
  *   unixsocket.send_io(io) => nil
@@ -190,7 +191,6 @@ sendmsg_blocking(void *data)
 static VALUE
 unix_send_io(VALUE sock, VALUE val)
 {
-#if defined(HAVE_SENDMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
     int fd;
     rb_io_t *fptr;
     struct iomsg_arg arg;
@@ -248,11 +248,10 @@ unix_send_io(VALUE sock, VALUE val)
 	rb_sys_fail("sendmsg(2)");
 
     return Qnil;
-#else
-    rb_notimplement();
-    return Qnil;		/* not reached */
-#endif
 }
+#else
+#define unix_send_io rb_f_notimplement
+#endif
 
 static VALUE
 recvmsg_blocking(void *data)
@@ -261,6 +260,7 @@ recvmsg_blocking(void *data)
     return recvmsg(arg->fd, &arg->msg, 0);
 }
 
+#if defined(HAVE_RECVMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
 /*
  * call-seq:
  *   unixsocket.recv_io([klass [, mode]]) => io
@@ -283,7 +283,6 @@ recvmsg_blocking(void *data)
 static VALUE
 unix_recv_io(int argc, VALUE *argv, VALUE sock)
 {
-#if defined(HAVE_RECVMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
     VALUE klass, mode;
     rb_io_t *fptr;
     struct iomsg_arg arg;
@@ -390,11 +389,10 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 	ff_argv[1] = mode;
         return rb_funcall2(klass, for_fd, ff_argc, ff_argv);
     }
-#else
-    rb_notimplement();
-    return Qnil;		/* not reached */
-#endif
 }
+#else
+#define unix_recv_io rb_f_notimplement
+#endif
 
 /*
  * call-seq:

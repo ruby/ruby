@@ -192,6 +192,16 @@ ossl_config_add_value(VALUE self, VALUE section, VALUE name, VALUE value)
 #endif
 }
 
+#if !defined(OSSL_NO_CONF_API)
+static VALUE
+ossl_config_add_value_m(VALUE self, VALUE section, VALUE name, VALUE value)
+{
+    return ossl_config_add_value(self, section, name, value);
+}
+#else
+#define ossl_config_add_value_m rb_f_notimplement
+#endif
+
 static VALUE
 ossl_config_get_value(VALUE self, VALUE section, VALUE name)
 {
@@ -456,7 +466,7 @@ Init_ossl_config()
     rb_define_method(cConfig, "initialize", ossl_config_initialize, -1);
     rb_define_method(cConfig, "get_value", ossl_config_get_value, 2);
     rb_define_method(cConfig, "value", ossl_config_get_value_old, -1);
-    rb_define_method(cConfig, "add_value", ossl_config_add_value, 3);
+    rb_define_method(cConfig, "add_value", ossl_config_add_value_m, 3);
     rb_define_method(cConfig, "[]", ossl_config_get_section, 1);
     rb_define_method(cConfig, "section", ossl_config_get_section_old, 1);
     rb_define_method(cConfig, "[]=", ossl_config_set_section, 2);

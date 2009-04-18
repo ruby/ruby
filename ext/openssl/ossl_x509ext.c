@@ -163,10 +163,10 @@ ossl_x509extfactory_set_crl(VALUE self, VALUE crl)
     return crl;
 }
 
+#ifdef HAVE_X509V3_SET_NCONF
 static VALUE
 ossl_x509extfactory_set_config(VALUE self, VALUE config)
 {
-#ifdef HAVE_X509V3_SET_NCONF
     X509V3_CTX *ctx;
     CONF *conf;
 
@@ -176,10 +176,10 @@ ossl_x509extfactory_set_config(VALUE self, VALUE config)
     X509V3_set_nconf(ctx, conf);
 
     return config;
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define rb_f_fork rb_f_notimplement
+#endif
 
 static VALUE 
 ossl_x509extfactory_initialize(int argc, VALUE *argv, VALUE self)

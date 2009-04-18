@@ -244,6 +244,7 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
     return INT2FIX(0);
 }
 
+#if !defined(__BEOS__)
 /*
  * Document-method: getsockopt
  * call-seq: getsockopt(level, optname)
@@ -287,7 +288,6 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
 static VALUE
 bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
 {
-#if !defined(__BEOS__)
     int level, option;
     socklen_t len;
     char *buf;
@@ -307,10 +307,10 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
 	rb_sys_fail_path(fptr->pathv);
 
     return rsock_sockopt_new(family, level, option, rb_str_new(buf, len));
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define bsock_getsockopt rb_f_notimplement
+#endif
 
 /*
  * call-seq:
@@ -361,6 +361,7 @@ bsock_getpeername(VALUE sock)
     return rb_str_new((char*)&buf, len);
 }
 
+#if defined(HAVE_GETPEEREID) || defined(SO_PEERCRED) || defined(HAVE_GETPEERUCRED)
 /*
  * call-seq:
  *   basicsocket.getpeereid => [euid, egid]
@@ -412,10 +413,11 @@ bsock_getpeereid(VALUE self)
     ret = rb_assoc_new(UIDT2NUM(ucred_geteuid(uc)), GIDT2NUM(ucred_getegid(uc)));
     ucred_free(uc);
     return ret;
-#else
-    rb_notimplement();
 #endif
 }
+#else
+#define bsock_getpeereid rb_f_notimplement
+#endif
 
 /*
  * call-seq:

@@ -791,6 +791,7 @@ list_iconv(unsigned int namescount, const char *const *names, void *data)
 }
 #endif
 
+#if defined(HAVE_ICONVLIST) || defined(HAVE___ICONV_FREE_LIST)
 static VALUE
 iconv_s_list(void)
 {
@@ -821,11 +822,12 @@ iconv_s_list(void)
     for (i = 0; i < RARRAY_LEN(ary); i++) {
 	rb_yield(RARRAY_PTR(ary)[i]);
     }
-#else
-    rb_notimplement();
 #endif
     return Qnil;
 }
+#else
+#define iconv_s_list rb_f_notimplement
+#endif
 
 /*
  * Document-method: close
@@ -944,6 +946,7 @@ iconv_conv(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
+#ifdef ICONV_TRIVIALP
 /*
  * Document-method: trivial?
  * call-seq: trivial?
@@ -953,16 +956,16 @@ iconv_conv(int argc, VALUE *argv, VALUE self)
 static VALUE
 iconv_trivialp(VALUE self)
 {
-#ifdef ICONV_TRIVIALP
     int trivial = 0;
     iconv_ctl(self, ICONV_TRIVIALP, trivial);
     if (trivial) return Qtrue;
-#else
-    rb_notimplement();
-#endif
     return Qfalse;
 }
+#else
+#define iconv_trivialp rb_f_notimplement
+#endif
 
+#ifdef ICONV_GET_TRANSLITERATE
 /*
  * Document-method: transliterate?
  * call-seq: transliterate?
@@ -972,16 +975,16 @@ iconv_trivialp(VALUE self)
 static VALUE
 iconv_get_transliterate(VALUE self)
 {
-#ifdef ICONV_GET_TRANSLITERATE
     int trans = 0;
     iconv_ctl(self, ICONV_GET_TRANSLITERATE, trans);
     if (trans) return Qtrue;
-#else
-    rb_notimplement();
-#endif
     return Qfalse;
 }
+#else
+#define iconv_get_transliterate rb_f_notimplement
+#endif
 
+#ifdef ICONV_SET_TRANSLITERATE
 /*
  * Document-method: transliterate=
  * call-seq: cd.transliterate = flag
@@ -991,15 +994,15 @@ iconv_get_transliterate(VALUE self)
 static VALUE
 iconv_set_transliterate(VALUE self, VALUE transliterate)
 {
-#ifdef ICONV_SET_TRANSLITERATE
     int trans = RTEST(transliterate);
     iconv_ctl(self, ICONV_SET_TRANSLITERATE, trans);
-#else
-    rb_notimplement();
-#endif
     return self;
 }
+#else
+#define iconv_set_transliterate rb_f_notimplement
+#endif
 
+#ifdef ICONV_GET_DISCARD_ILSEQ
 /*
  * Document-method: discard_ilseq?
  * call-seq: discard_ilseq?
@@ -1009,16 +1012,16 @@ iconv_set_transliterate(VALUE self, VALUE transliterate)
 static VALUE
 iconv_get_discard_ilseq(VALUE self)
 {
-#ifdef ICONV_GET_DISCARD_ILSEQ
     int dis = 0;
     iconv_ctl(self, ICONV_GET_DISCARD_ILSEQ, dis);
     if (dis) return Qtrue;
-#else
-    rb_notimplement();
-#endif
     return Qfalse;
 }
+#else
+#define iconv_get_discard_ilseq rb_f_notimplement
+#endif
 
+#ifdef ICONV_SET_DISCARD_ILSEQ
 /*
  * Document-method: discard_ilseq=
  * call-seq: cd.discard_ilseq = flag
@@ -1028,14 +1031,13 @@ iconv_get_discard_ilseq(VALUE self)
 static VALUE
 iconv_set_discard_ilseq(VALUE self, VALUE discard_ilseq)
 {
-#ifdef ICONV_SET_DISCARD_ILSEQ
     int dis = RTEST(discard_ilseq);
     iconv_ctl(self, ICONV_SET_DISCARD_ILSEQ, dis);
-#else
-    rb_notimplement();
-#endif
     return self;
 }
+#else
+#define iconv_set_discard_ilseq rb_f_notimplement
+#endif
 
 /*
  * Document-method: ctlmethods

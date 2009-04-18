@@ -176,6 +176,7 @@ ancillary_data(VALUE self)
     return v;
 }
 
+#ifdef SCM_RIGHTS
 /*
  * call-seq:
  *   Socket::AncillaryData.unix_rights(io1, io2, ...) => ancillarydata
@@ -188,7 +189,6 @@ ancillary_data(VALUE self)
 static VALUE
 ancillary_s_unix_rights(int argc, VALUE *argv, VALUE klass)
 {
-#ifdef SCM_RIGHTS
     VALUE result, str, ary;
     int i;
 
@@ -216,11 +216,12 @@ ancillary_s_unix_rights(int argc, VALUE *argv, VALUE klass)
     result = ancdata_new(AF_UNIX, SOL_SOCKET, SCM_RIGHTS, str);
     rb_ivar_set(result, rb_intern("unix_rights"), ary);
     return result;
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define ancillary_s_unix_rights rb_f_notimplement
+#endif
 
+#ifdef SCM_RIGHTS
 /*
  * call-seq:
  *   ancillarydata.unix_rights => array-of-IOs or nil
@@ -253,7 +254,6 @@ ancillary_s_unix_rights(int argc, VALUE *argv, VALUE klass)
 static VALUE
 ancillary_unix_rights(VALUE self)
 {
-#ifdef SCM_RIGHTS
     int level, type;
 
     level = ancillary_level(self);
@@ -264,11 +264,12 @@ ancillary_unix_rights(VALUE self)
 
     VALUE v = rb_attr_get(self, rb_intern("unix_rights"));
     return v;
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define ancillary_unix_rights rb_f_notimplement
+#endif
 
+#if defined(SCM_TIMESTAMP) || defined(SCM_TIMESTAMPNS) || defined(SCM_BINTIME)
 /*
  * call-seq:
  *   ancillarydata.timestamp => time
@@ -300,7 +301,6 @@ ancillary_unix_rights(VALUE self)
 static VALUE
 ancillary_timestamp(VALUE self)
 {
-#if defined(SCM_TIMESTAMP) || defined(SCM_TIMESTAMPNS) || defined(SCM_BINTIME)
     int level, type;
     VALUE data;
     VALUE result = Qnil;
@@ -342,10 +342,10 @@ ancillary_timestamp(VALUE self)
         rb_raise(rb_eTypeError, "timestamp ancillary data expected");
 
     return result;
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define ancillary_timestamp rb_f_notimplement
+#endif
 
 /*
  * call-seq:
@@ -391,6 +391,7 @@ ancillary_int(VALUE self)
     return INT2NUM(i);
 }
 
+#if defined(IPPROTO_IP) && defined(IP_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN_PKTINFO) && defined(HAVE_IPI_SPEC_DST) /* GNU/Linux */
 /*
  * call-seq:
  *   Socket::AncillaryData.ip_pktinfo(addr, ifindex) => ancdata
@@ -414,7 +415,6 @@ ancillary_int(VALUE self)
 static VALUE
 ancillary_s_ip_pktinfo(int argc, VALUE *argv, VALUE self)
 {
-#if defined(IPPROTO_IP) && defined(IP_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN_PKTINFO) && defined(HAVE_IPI_SPEC_DST) /* GNU/Linux */
     VALUE v_addr, v_ifindex, v_spec_dst;
     unsigned int ifindex;
     struct sockaddr_in sa;
@@ -450,11 +450,12 @@ ancillary_s_ip_pktinfo(int argc, VALUE *argv, VALUE self)
     memcpy(&pktinfo.ipi_spec_dst, &sa.sin_addr, sizeof(pktinfo.ipi_spec_dst));
 
     return ancdata_new(AF_INET, IPPROTO_IP, IP_PKTINFO, rb_str_new((char *)&pktinfo, sizeof(pktinfo)));
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define ancillary_s_ip_pktinfo rb_f_notimplement
+#endif
 
+#if defined(IPPROTO_IP) && defined(IP_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN_PKTINFO) && defined(HAVE_IPI_SPEC_DST) /* GNU/Linux */
 /*
  * call-seq:
  *   ancdata.ip_pktinfo => [addr, ifindex, spec_dst]
@@ -477,7 +478,6 @@ ancillary_s_ip_pktinfo(int argc, VALUE *argv, VALUE self)
 static VALUE
 ancillary_ip_pktinfo(VALUE self)
 {
-#if defined(IPPROTO_IP) && defined(IP_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN_PKTINFO) && defined(HAVE_IPI_SPEC_DST) /* GNU/Linux */
     int level, type;
     VALUE data;
     struct in_pktinfo pktinfo;
@@ -505,11 +505,12 @@ ancillary_ip_pktinfo(VALUE self)
     v_spec_dst = rsock_addrinfo_new((struct sockaddr *)&sa, sizeof(sa), PF_INET, 0, 0, Qnil, Qnil);
 
     return rb_ary_new3(3, v_addr, UINT2NUM(pktinfo.ipi_ifindex), v_spec_dst);
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define ancillary_ip_pktinfo rb_f_notimplement
+#endif
 
+#if defined(IPPROTO_IPV6) && defined(IPV6_PKTINFO) /* IPv6 RFC3542 */
 /*
  * call-seq:
  *   Socket::AncillaryData.ipv6_pktinfo(addr, ifindex) => ancdata
@@ -527,7 +528,6 @@ ancillary_ip_pktinfo(VALUE self)
 static VALUE
 ancillary_s_ipv6_pktinfo(VALUE self, VALUE v_addr, VALUE v_ifindex)
 {
-#if defined(IPPROTO_IPV6) && defined(IPV6_PKTINFO) /* IPv6 RFC3542 */
     unsigned int ifindex;
     struct sockaddr_in6 sa;
     struct in6_pktinfo pktinfo;
@@ -548,10 +548,10 @@ ancillary_s_ipv6_pktinfo(VALUE self, VALUE v_addr, VALUE v_ifindex)
     pktinfo.ipi6_ifindex = ifindex;
 
     return ancdata_new(AF_INET6, IPPROTO_IPV6, IPV6_PKTINFO, rb_str_new((char *)&pktinfo, sizeof(pktinfo)));
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define ancillary_s_ipv6_pktinfo rb_f_notimplement
+#endif
 
 #if defined(IPPROTO_IPV6) && defined(IPV6_PKTINFO) /* IPv6 RFC3542 */
 static void
@@ -580,6 +580,7 @@ extract_ipv6_pktinfo(VALUE self, struct in6_pktinfo *pktinfo_ptr, struct sockadd
 }
 #endif
 
+#if defined(IPPROTO_IPV6) && defined(IPV6_PKTINFO) /* IPv6 RFC3542 */
 /*
  * call-seq:
  *   ancdata.ipv6_pktinfo => [addr, ifindex]
@@ -597,7 +598,6 @@ extract_ipv6_pktinfo(VALUE self, struct in6_pktinfo *pktinfo_ptr, struct sockadd
 static VALUE
 ancillary_ipv6_pktinfo(VALUE self)
 {
-#if defined(IPPROTO_IPV6) && defined(IPV6_PKTINFO) /* IPv6 RFC3542 */
     struct in6_pktinfo pktinfo;
     struct sockaddr_in6 sa;
     VALUE v_addr;
@@ -605,11 +605,12 @@ ancillary_ipv6_pktinfo(VALUE self)
     extract_ipv6_pktinfo(self, &pktinfo, &sa);
     v_addr = rsock_addrinfo_new((struct sockaddr *)&sa, sizeof(sa), PF_INET6, 0, 0, Qnil, Qnil);
     return rb_ary_new3(2, v_addr, UINT2NUM(pktinfo.ipi6_ifindex));
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define ancillary_ipv6_pktinfo rb_f_notimplement
+#endif
 
+#if defined(IPPROTO_IPV6) && defined(IPV6_PKTINFO) /* IPv6 RFC3542 */
 /*
  * call-seq:
  *   ancdata.ipv6_pktinfo_addr => addr
@@ -627,16 +628,16 @@ ancillary_ipv6_pktinfo(VALUE self)
 static VALUE
 ancillary_ipv6_pktinfo_addr(VALUE self)
 {
-#if defined(IPPROTO_IPV6) && defined(IPV6_PKTINFO) /* IPv6 RFC3542 */
     struct in6_pktinfo pktinfo;
     struct sockaddr_in6 sa;
     extract_ipv6_pktinfo(self, &pktinfo, &sa);
     return rsock_addrinfo_new((struct sockaddr *)&sa, sizeof(sa), PF_INET6, 0, 0, Qnil, Qnil);
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define ancillary_ipv6_pktinfo_addr rb_f_notimplement
+#endif
 
+#if defined(IPPROTO_IPV6) && defined(IPV6_PKTINFO) /* IPv6 RFC3542 */
 /*
  * call-seq:
  *   ancdata.ipv6_pktinfo_ifindex => addr
@@ -654,15 +655,14 @@ ancillary_ipv6_pktinfo_addr(VALUE self)
 static VALUE
 ancillary_ipv6_pktinfo_ifindex(VALUE self)
 {
-#if defined(IPPROTO_IPV6) && defined(IPV6_PKTINFO) /* IPv6 RFC3542 */
     struct in6_pktinfo pktinfo;
     struct sockaddr_in6 sa;
     extract_ipv6_pktinfo(self, &pktinfo, &sa);
     return UINT2NUM(pktinfo.ipi6_ifindex);
-#else
-    rb_notimplement();
-#endif
 }
+#else
+#define ancillary_ipv6_pktinfo_ifindex rb_f_notimplement
+#endif
 
 #if defined(SOL_SOCKET) && defined(SCM_RIGHTS) /* 4.4BSD */
 static int
@@ -1286,14 +1286,9 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
     return SSIZET2NUM(ss);
 }
-#else
-static VALUE
-bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
-{
-    rb_notimplement();
-}
 #endif
 
+#if defined(HAVE_SENDMSG)
 /*
  * call-seq:
  *    basicsocket.sendmsg(mesg, flags=0, dest_sockaddr=nil, *controls) => numbytes_sent
@@ -1331,7 +1326,11 @@ bsock_sendmsg(int argc, VALUE *argv, VALUE sock)
 {
     return bsock_sendmsg_internal(argc, argv, sock, 0);
 }
+#else
+#define bsock_sendmsg rb_f_notimplement
+#endif
 
+#if defined(HAVE_SENDMSG)
 /*
  * call-seq:
  *    basicsocket.sendmsg_nonblock(mesg, flags=0, dest_sockaddr=nil, *controls) => numbytes_sent
@@ -1348,6 +1347,9 @@ bsock_sendmsg_nonblock(int argc, VALUE *argv, VALUE sock)
 {
     return bsock_sendmsg_internal(argc, argv, sock, 1);
 }
+#else
+#define bsock_sendmsg_nonblock rb_f_notimplement
+#endif
 
 #if defined(HAVE_RECVMSG)
 struct recvmsg_args_struct {
@@ -1675,14 +1677,9 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
     return ret;
 }
-#else
-static VALUE
-bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
-{
-    rb_notimplement();
-}
 #endif
 
+#if defined(HAVE_RECVMSG)
 /*
  * call-seq:
  *    basicsocket.recvmsg(maxmesglen=nil, flags=0, maxcontrollen=nil, opts={}) => [mesg, sender_addrinfo, rflags, *controls]
@@ -1741,7 +1738,11 @@ bsock_recvmsg(int argc, VALUE *argv, VALUE sock)
 {
     return bsock_recvmsg_internal(argc, argv, sock, 0);
 }
+#else
+#define bsock_recvmsg rb_f_notimplement
+#endif
 
+#if defined(HAVE_RECVMSG)
 /*
  * call-seq:
  *    basicsocket.recvmsg_nonblock(maxdatalen=nil, flags=0, maxcontrollen=nil, opts={}) => [data, sender_addrinfo, rflags, *controls]
@@ -1758,6 +1759,9 @@ bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock)
 {
     return bsock_recvmsg_internal(argc, argv, sock, 1);
 }
+#else
+#define bsock_recvmsg_nonblock rb_f_notimplement
+#endif
 
 void
 Init_ancdata(void)
