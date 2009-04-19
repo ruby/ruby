@@ -1,3 +1,9 @@
+Tue Mar 17 18:00:55 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (Enumerator#{each_,}{with_index,with_object}): Fix
+	  a bug where any parameter but the first one is dropped even if
+	  multiple values are yielded with. [Bug #1198]
+
 Tue Mar 17 14:25:16 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pathname.rb (Pathname#sub): set $~ in block.binding.
