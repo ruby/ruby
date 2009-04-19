@@ -1,3 +1,8 @@
+Mon Mar 23 06:51:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend (link_so): replaces $(TARGET) with basename of the
+	  target.  [ruby-talk:330286]
+
 Wed Mar 18 02:41:33 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb (open_server_inaddr_any): fixed multiple network
