@@ -264,7 +264,7 @@ extern void *STACK_END_ADDRESS;
 
 #undef ruby_init_stack
 void
-ruby_init_stack(VALUE *addr
+ruby_init_stack(volatile VALUE *addr
 #ifdef __ia64
     , void *bsp
 #endif
@@ -278,7 +278,7 @@ ruby_init_stack(VALUE *addr
         STACK_UPPER((VALUE *)(void *)&addr,
                     native_main_thread.stack_start > addr,
                     native_main_thread.stack_start < addr)) {
-        native_main_thread.stack_start = addr;
+        native_main_thread.stack_start = (VALUE *)addr;
     }
 #endif
 #ifdef __ia64

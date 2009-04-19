@@ -653,7 +653,7 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
     if (!ptr) return ruby_xmalloc(size);
     if (size == 0) size = 1;
     if (ruby_gc_stress && !ruby_disable_gc_stress)
-      garbage_collect_with_gvl(objspace);
+	garbage_collect_with_gvl(objspace);
 
 #if CALC_EXACT_MALLOC_SIZE
     size += sizeof(size_t);
@@ -1109,7 +1109,7 @@ rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_F
 #if !STACK_GROW_DIRECTION
 int ruby_stack_grow_direction;
 int
-ruby_get_stack_grow_direction(VALUE *addr)
+ruby_get_stack_grow_direction(volatile VALUE *addr)
 {
     VALUE *end;
     SET_MACHINE_STACK_END(&end);
@@ -2122,7 +2122,7 @@ rb_gc_start(void)
 #undef Init_stack
 
 void
-Init_stack(VALUE *addr)
+Init_stack(volatile VALUE *addr)
 {
     ruby_init_stack(addr);
 }

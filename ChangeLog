@@ -1,3 +1,13 @@
+Sun Apr 19 14:43:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_cleanup): the order of local variables on stack is
+	  undefined.  should use outermost VALUE for ruby_init_stack.
+
+	* gc.c (ruby_get_stack_grow_direction, Init_stack): allows volatile
+	  pointer.
+
+	* thread_*.c (ruby_init_stack): ditto.
+
 Sun Apr 19 13:17:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gem_prelude.rb (Gem::QuickLoader#push_gem_version_on_load_path):

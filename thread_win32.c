@@ -417,7 +417,7 @@ native_cond_destroy(rb_thread_cond_t *cond)
 }
 
 void
-ruby_init_stack(VALUE *addr)
+ruby_init_stack(volatile VALUE *addr)
 {
 }
 
