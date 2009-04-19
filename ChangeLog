@@ -1,3 +1,8 @@
+Thu Mar 26 11:33:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/ri/paths.rb (RDoc::RI::Paths): considers
+	  --program-prefix and --program-suffix.  reapplied r19923.
+
 Mon Mar 23 21:41:14 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/dbm/dbm.c (fdbm_initialize): Make the file variable
