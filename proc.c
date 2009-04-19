@@ -523,13 +523,27 @@ proc_call(int argc, VALUE *argv, VALUE procval)
 			     argc, argv, blockptr);
 }
 
+#if SIZEOF_LONG > SIZEOF_INT
+static inline int
+check_argc(long argc)
+{
+    if (argc > INT_MAX || argc < 0) {
+	rb_raise(rb_eArgError, "too many arguments (%lu)",
+		 (unsigned long)argc);
+    }
+    return (int)argc;
+}
+#else
+#define check_argc(argc) (argc)
+#endif
+
 VALUE
 rb_proc_call(VALUE self, VALUE args)
 {
     rb_proc_t *proc;
     GetProcPtr(self, proc);
     return rb_vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
-			     RARRAY_LEN(args), RARRAY_PTR(args), 0);
+			     check_argc(RARRAY_LEN(args)), RARRAY_PTR(args), 0);
 }
 
 VALUE
@@ -794,7 +808,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 	rb_print_undef(rclass, oid, 0);
     }
     if (scope && (body->nd_noex & NOEX_MASK) != NOEX_PUBLIC) {
-	rb_print_undef(rclass, oid, (body->nd_noex & NOEX_MASK));
+	rb_print_undef(rclass, oid, (int)(body->nd_noex & NOEX_MASK));
     }
 
     klass = body->nd_clss;
@@ -1362,7 +1376,7 @@ rb_node_arity(NODE* body)
       case NODE_CFUNC:
 	if (body->nd_argc < 0)
 	    return -1;
-	return body->nd_argc;
+	return check_argc(body->nd_argc);
       case NODE_ZSUPER:
 	return -1;
       case NODE_ATTRSET:
@@ -1555,13 +1569,19 @@ static VALUE
 bmcall(VALUE args, VALUE method)
 {
     volatile VALUE a;
+    VALUE ret;
+    int argc;
 
     if (CLASS_OF(args) != rb_cArray) {
 	args = rb_ary_new3(1, args);
+	argc = 1;
     }
-
-    a = args;
-    return rb_method_call(RARRAY_LEN(a), RARRAY_PTR(a), method);
+    else {
+	argc = check_argc(RARRAY_LEN(args));
+    }
+    ret = rb_method_call(argc, RARRAY_PTR(args), method);
+    RB_GC_GUARD(a) = args;
+    return ret;
 }
 
 VALUE
@@ -1698,7 +1718,8 @@ curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
 	return arity;
     }
     else {
-	return rb_proc_call_with_block(proc, RARRAY_LEN(passed), RARRAY_PTR(passed), passed_proc);
+	return rb_proc_call_with_block(proc, check_argc(RARRAY_LEN(passed)),
+				       RARRAY_PTR(passed), passed_proc);
     }
 }
 
