@@ -95,6 +95,15 @@ char *strrchr _((const char*,const char));
 #include "vmsruby_private.h"
 #endif
 
+#if STACK_GROW_DIRECTION > 0
+# define STACK_UPPER(x, a, b) a
+#elif STACK_GROW_DIRECTION < 0
+# define STACK_UPPER(x, a, b) b
+#else
+int rb_stack_growup_p _((VALUE *addr));
+# define STACK_UPPER(x, a, b) (rb_stack_growup_p(x) ? a : b)
+#endif
+
 #ifdef USE_CONTEXT
 
 NORETURN(static void rb_jump_context(rb_jmpbuf_t, int));
@@ -1620,7 +1629,7 @@ ruby_cleanup(ex)
 
     errs[1] = ruby_errinfo;
     ruby_safe_level = 0;
-    ruby_init_stack((void *)&state);
+    ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
     PUSH_THREAD_TAG();
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {

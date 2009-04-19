@@ -1,3 +1,12 @@
+Sun Apr 19 14:31:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_cleanup): the order of local variables on stack is
+	  undefined.  should use outermost VALUE for ruby_init_stack.
+
+	* gc.c (rb_stack_growup_p): returns stack grows up.
+
+	* gc.c (Init_stack, ruby_init_stack): allows volatile pointer.
+
 Sat Apr 18 19:44:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (safe_mutex_lock): pthread_cleanup_push() must not be

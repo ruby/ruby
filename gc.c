@@ -533,7 +533,7 @@ stack_end_address(VALUE **stack_end_p)
 static int grow_direction;
 static int
 stack_grow_direction(addr)
-    VALUE *addr;
+    volatile VALUE *addr;
 {
     SET_STACK_END;
 
@@ -542,6 +542,13 @@ stack_grow_direction(addr)
 }
 # define stack_growup_p(x) ((grow_direction ? grow_direction : stack_grow_direction(x)) > 0)
 # define STACK_UPPER(x, a, b) (stack_growup_p(x) ? a : b)
+
+int
+rb_stack_growup_p(addr)
+    volatile VALUE *addr;
+{
+    return stack_growup_p(addr);
+}
 #endif
 
 #define GC_WATER_MARK 512
@@ -1570,7 +1577,7 @@ ruby_set_stack_size(size)
 
 void
 Init_stack(addr)
-    VALUE *addr;
+    volatile VALUE *addr;
 {
     ruby_init_stack(addr);
 }
@@ -1583,16 +1590,16 @@ ruby_init_stack(addr
 		, bsp
 #endif
     )
-    VALUE *addr;
+    volatile VALUE *addr;
 #ifdef __ia64
     void *bsp;
 #endif
 {
     if (!rb_gc_stack_start ||
         STACK_UPPER(&addr,
-                    rb_gc_stack_start > addr,
+                    addr && rb_gc_stack_start > addr,
                     rb_gc_stack_start < addr)) {
-        rb_gc_stack_start = addr;
+        rb_gc_stack_start = (VALUE *)addr;
     }
 #ifdef __ia64
     if (!rb_gc_register_stack_start ||

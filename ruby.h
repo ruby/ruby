@@ -594,14 +594,14 @@ NORETURN(void rb_throw _((const char*,VALUE)));
 VALUE rb_require _((const char*));
 
 #ifdef __ia64
-void ruby_init_stack(VALUE*, void*);
+void ruby_init_stack(volatile VALUE*, void*);
 #define ruby_init_stack(addr) ruby_init_stack(addr, rb_ia64_bsp())
 #else
-void ruby_init_stack(VALUE*);
+void ruby_init_stack(volatile VALUE*);
 #endif
 #define Init_stack(addr) ruby_init_stack(addr)
 #define RUBY_INIT_STACK \
-    VALUE variable_in_this_stack_frame; \
+    volatile VALUE variable_in_this_stack_frame; \
     ruby_init_stack(&variable_in_this_stack_frame);
 
 void ruby_init _((void));
