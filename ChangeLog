@@ -1,3 +1,9 @@
+Sun Apr 19 13:17:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gem_prelude.rb (Gem::QuickLoader#push_gem_version_on_load_path):
+	  check for requirement if the gem is installed.  a patch from
+	  Kyosuke MOROHASHI at [ruby-dev:38020].
+
 Sun Apr 19 01:39:17 2009  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (proc_seteuid_m): defined to use rb_f_notimplement if not

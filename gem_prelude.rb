@@ -245,15 +245,17 @@ if defined?(Gem) then
           requirement, version = version_requirements[0].split
           requirement.strip!
 
-          if requirement == ">" || requirement == ">="
-            if (GemVersions[gem_name] <=> Gem.calculate_integers_for_gem_version(version)) >= 0
-              return false
-            end
-          elsif requirement == "~>"
-            loaded_version = GemVersions[gem_name]
-            required_version = Gem.calculate_integers_for_gem_version(version)
-            if loaded_version && (loaded_version[0] == required_version[0])
-              return false
+          if loaded_version = GemVersions[gem_name]
+            case requirement
+            when ">", ">="
+              if (loaded_version <=> Gem.calculate_integers_for_gem_version(version)) >= 0
+                return false
+              end
+            when "~>"
+              required_version = Gem.calculate_integers_for_gem_version(version)
+              if (loaded_version[0] == required_version[0])
+                return false
+              end
             end
           end
 
