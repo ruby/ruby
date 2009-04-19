@@ -1,3 +1,7 @@
+Mon Mar 30 19:04:25 2009  Tanaka Akira  <akr@fsij.org>
+
+	* .gdbinit (rp): show negative fixnum correctly.
+
 Mon Mar 30 12:12:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (eval_string_with_cref): replaces the message if
