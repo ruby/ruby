@@ -3063,15 +3063,15 @@ quorem(Bigint *b, Bigint *S)
 static char *dtoa_result;
 #endif
 
+#ifndef MULTIPLE_THREADS
 static char *
 rv_alloc(int i)
 {
-    return
-#ifndef MULTIPLE_THREADS
-        dtoa_result =
-#endif
-        xmalloc(i);
+    return dtoa_result = xmalloc(i);
 }
+#else
+#define rv_alloc(i) xmalloc(i)
+#endif
 
 static char *
 nrv_alloc(const char *s, char **rve, int n)
@@ -3084,6 +3084,8 @@ nrv_alloc(const char *s, char **rve, int n)
         *rve = t;
     return rv;
 }
+
+#define rv_strdup(s, rve) nrv_alloc(s, rve, strlen(s)+1)
 
 #ifndef MULTIPLE_THREADS
 /* freedtoa(s) must be used to free values s returned by dtoa
@@ -3217,9 +3219,9 @@ ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
         *decpt = 9999;
 #ifdef IEEE_Arith
         if (!word1(d) && !(word0(d) & 0xfffff))
-            return nrv_alloc("Infinity", rve, 8);
+            return rv_strdup("Infinity", rve);
 #endif
-        return nrv_alloc("NaN", rve, 3);
+        return rv_strdup("NaN", rve);
     }
 #endif
 #ifdef IBM
@@ -3227,7 +3229,7 @@ ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
 #endif
     if (!dval(d)) {
         *decpt = 1;
-        return nrv_alloc("0", rve, 1);
+        return rv_strdup("0", rve);
     }
 
 #ifdef SET_INEXACT
