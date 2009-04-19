@@ -842,15 +842,10 @@ module DRb
                                   Socket::SOCK_STREAM, 
                                   0,
                                   Socket::AI_PASSIVE)
-      family = infos.collect { |af, *_| af }.uniq
-      case family
-      when ['AF_INET']
-        return TCPServer.open('0.0.0.0', port)
-      when ['AF_INET6']
-        return TCPServer.open('::', port)
-      else
-        return TCPServer.open(port)
-      end
+      families = Hash[*infos.collect { |af, *_| af }.uniq.zip([]).flatten]
+      return TCPServer.open('0.0.0.0', port) if families.has_key?('AF_INET')
+      return TCPServer.open('::', port) if families.has_key?('AF_INET6')
+      return TCPServer.open(port)
     end
 
     # Open a server listening for connections at +uri+ using 
