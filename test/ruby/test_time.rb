@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'rational'
 require 'timeout'
+require 'delegate'
 
 class TestTime < Test::Unit::TestCase
   def setup
@@ -469,5 +470,14 @@ class TestTime < Test::Unit::TestCase
     assert_equal("JANUARY", T2000.strftime("%#B"))
     assert_equal("JAN", T2000.strftime("%#h"))
     assert_equal("FRIDAY", Time.local(2008,1,4).strftime("%#A"))
+  end
+
+  def test_delegate
+    d1 = SimpleDelegator.new(t1 = Time.utc(2000))
+    d2 = SimpleDelegator.new(t2 = Time.utc(2001))
+    assert_equal(-1, t1 <=> t2)
+    assert_equal(1, t2 <=> t1)
+    assert_equal(-1, d1 <=> d2)
+    assert_equal(1, d2 <=> d1)
   end
 end
