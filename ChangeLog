@@ -1,3 +1,9 @@
+Fri Mar 13 21:11:51 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/sdbm/_sdbm.c: should include "ruby/defines.h" as well for
+	  prototypes of compatibility functions on Win32 platform.
+	  [ruby-core:22870]
+
 Thu Mar 26 11:33:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/ri/paths.rb (RDoc::RI::Paths): considers
