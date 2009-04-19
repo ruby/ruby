@@ -1,3 +1,17 @@
+Fri Apr  3 14:02:42 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/irb/completion.rb (IRB::InputCompletor::Operators): Add
+	  overloadable negative operators.
+
+	* lib/irb/ruby-lex.rb (RubyLex#lex_init): Support overloadable
+	  negative operators.
+
+	* lib/irb/ruby-lex.rb (RubyLex#identify_identifier): Minus signs
+	  need to be escaped in regexp character class.
+
+	* misc/ruby-mode.el (ruby-font-lock-keywords, ruby-parse-partial):
+	  Support overloadable negative operators.
+
 Wed Apr  1 20:37:49 2009  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (rb_cv_fork_with_pthread): fail if the child process

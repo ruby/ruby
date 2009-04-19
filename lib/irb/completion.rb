@@ -184,7 +184,7 @@ module IRB
 
     Operators = ["%", "&", "*", "**", "+",  "-",  "/",
       "<", "<<", "<=", "<=>", "==", "===", "=~", ">", ">=", ">>",
-      "[]", "[]=", "^",]
+      "[]", "[]=", "^", "!", "!=", "!~"]
 
     def self.select_message(receiver, message, candidates)
       candidates.grep(/^#{message}/).collect do |e|

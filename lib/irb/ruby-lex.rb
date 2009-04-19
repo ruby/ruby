@@ -389,7 +389,8 @@ class RubyLex
 		  "=", "==", "===", 
 		  "=~", "<=>",	
 		  "<", "<=",
-		  ">", ">=", ">>") do
+		  ">", ">=", ">>",
+		  "!", "!=", "!~") do
       |op, io|
       case @lex_state
       when EXPR_FNAME, EXPR_DOT
@@ -397,12 +398,6 @@ class RubyLex
       else
 	@lex_state = EXPR_BEG
       end
-      Token(op)
-    end
-
-    @OP.def_rules("!", "!=", "!~") do
-      |op, io|
-      @lex_state = EXPR_BEG
       Token(op)
     end
 
@@ -822,11 +817,11 @@ class RubyLex
 	      when "class"
 		valid = false unless peek_match?(/^\s*(<<|\w|::)/)
 	      when "def"
-		valid = false if peek_match?(/^\s*(([+-\/*&\|^]|<<|>>|\|\||\&\&)=|\&\&|\|\|)/)
+		valid = false if peek_match?(/^\s*(([+\-\/*&\|^]|<<|>>|\|\||\&\&)=|\&\&|\|\|)/)
 	      when "do"
-		valid = false if peek_match?(/^\s*([+-\/*]?=|\*|<|>|\&)/)
+		valid = false if peek_match?(/^\s*([+\-\/*]?=|\*|<|>|\&)/)
 	      when *ENINDENT_CLAUSE
-		valid = false if peek_match?(/^\s*([+-\/*]?=|\*|<|>|\&|\|)/)
+		valid = false if peek_match?(/^\s*([+\-\/*]?=|\*|<|>|\&|\|)/)
 	      else
 		# no nothing
 	      end

@@ -646,7 +646,7 @@ The variable ruby-indent-level controls the amount of indentation.
        ((looking-at ":\\(['\"]\\)")
         (goto-char (match-beginning 1))
         (ruby-forward-string (buffer-substring (match-beginning 1) (match-end 1)) end))
-       ((looking-at ":\\([-,.+*/%&|^~<>]=?\\|===?\\|<=>\\)")
+       ((looking-at ":\\([-,.+*/%&|^~<>]=?\\|===?\\|<=>\\|![~=]?\\)")
         (goto-char (match-end 0)))
        ((looking-at ":\\([a-zA-Z_][a-zA-Z_0-9]*[!?=]?\\)?")
         (goto-char (match-end 0)))
@@ -1386,7 +1386,7 @@ buffer position `limit' or the end of the buffer."
      '("\\(^\\|[^_]\\)\\b\\([A-Z]+\\(\\w\\|_\\)*\\)"
        2 font-lock-type-face)
      ;; symbols
-     '("\\(^\\|[^:]\\)\\(:\\([-+~]@?\\|[/%&|^`]\\|\\*\\*?\\|<\\(<\\|=>?\\)?\\|>[>=]?\\|===?\\|=~\\|\\[\\]=?\\|\\(\\w\\|_\\)+\\([!?=]\\|\\b_*\\)\\|#{[^}\n\\\\]*\\(\\\\.[^}\n\\\\]*\\)*}\\)\\)"
+     '("\\(^\\|[^:]\\)\\(:\\([-+~]@?\\|[/%&|^`]\\|\\*\\*?\\|<\\(<\\|=>?\\)?\\|>[>=]?\\|===?\\|=~\\|![~=]?\\|\\[\\]=?\\|\\(\\w\\|_\\)+\\([!?=]\\|\\b_*\\)\\|#{[^}\n\\\\]*\\(\\\\.[^}\n\\\\]*\\)*}\\)\\)"
        2 font-lock-reference-face)
      ;; expression expansion
      '("#\\({[^}\n\\\\]*\\(\\\\.[^}\n\\\\]*\\)*}\\|\\(\\$\\|@\\|@@\\)\\(\\w\\|_\\)+\\)"
