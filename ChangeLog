@@ -1,3 +1,8 @@
+Wed Apr  1 20:37:49 2009  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in (rb_cv_fork_with_pthread): fail if the child process
+	  fail.
+
 Mon Mar 30 19:04:25 2009  Tanaka Akira  <akr@fsij.org>
 
 	* .gdbinit (rp): show negative fixnum correctly.

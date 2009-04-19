@@ -1232,6 +1232,8 @@ main(int argc, char *argv[])
 	    kill(pid, SIGKILL);
 	    return EXIT_FAILURE;
 	}
+        if (!WIFEXITED(loc) || WEXITSTATUS(loc) != EXIT_SUCCESS)
+           return EXIT_FAILURE;
     }
     else {
 	if (use_threads()) return EXIT_FAILURE;
