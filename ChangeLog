@@ -1,3 +1,7 @@
+Fri Mar 27 01:19:50 2009  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_cmpint): FIX2INT may fail on LP64 platforms.
+
 Fri Mar 13 21:11:51 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/sdbm/_sdbm.c: should include "ruby/defines.h" as well for
