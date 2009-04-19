@@ -1,3 +1,8 @@
+Tue Mar 17 21:42:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot (package): creates .revision.time and passes
+	  CHDIR to create prerequisite files.
+
 Tue Mar 17 18:00:55 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (Enumerator#{each_,}{with_index,with_object}): Fix
