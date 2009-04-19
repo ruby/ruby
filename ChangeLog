@@ -1,3 +1,9 @@
+Sun Mar 29 08:59:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pathname.rb (Pathname#relative_path_from): compares path
+	  components according to system default case-sensitiveness.
+	  [ruby-core:22829]
+
 Sat Mar 28 11:10:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (ruby.imp): all symbols in static library need to be
