@@ -1,3 +1,14 @@
+Tue Apr 21 01:25:16 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bigsub_int): subtraction without making internal
+	  bignum values.
+
+	* bignum.c (bigadd_int): ditto for addition.
+
+	* bignum.c (bigtrunc): declare inline.
+
+	* bignum.c (rb_quad_pack): fix condition.
+
 Tue Apr 21 01:13:42 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 
 	* symbian/setup (config.h): added TIMET2NUM and NUM2TIMET to match the change in time.c 
