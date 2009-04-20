@@ -1,3 +1,9 @@
+Mon Apr 20 20:29:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_split_m): faster processing on 7bit strings.
+
+	* string.c (ascii_isspace): faster isspace() for 7bit strings.
+
 Sun Apr 19 14:43:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): the order of local variables on stack is

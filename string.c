@@ -5382,6 +5382,26 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     return INT2NUM(i);
 }
 
+static const char isspacetable[256] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
+#define ascii_isspace(c) isspacetable[(unsigned char)(c)]
 
 /*
  *  call-seq:
@@ -5495,21 +5515,45 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	unsigned int c;
 
 	end = beg;
-	while (ptr < eptr) {
-	    c = rb_enc_codepoint(ptr, eptr, enc);
-	    ptr += rb_enc_mbclen(ptr, eptr, enc);
-	    if (skip) {
-		if (rb_enc_isspace(c, enc)) {
+	if (is_ascii_string(str)) {
+	    while (ptr < eptr) {
+		c = (unsigned char)*ptr++;
+		if (skip) {
+		    if (ascii_isspace(c)) {
+			beg = ptr - bptr;
+		    }
+		    else {
+			end = ptr - bptr;
+			skip = 0;
+			if (!NIL_P(limit) && lim <= i) break;
+		    }
+		}
+		else if (ascii_isspace(c)) {
+		    rb_ary_push(result, rb_str_subseq(str, beg, end-beg));
+		    skip = 1;
 		    beg = ptr - bptr;
+		    if (!NIL_P(limit)) ++i;
 		}
 		else {
 		    end = ptr - bptr;
-		    skip = 0;
-		    if (!NIL_P(limit) && lim <= i) break;
 		}
 	    }
-	    else {
-		if (rb_enc_isspace(c, enc)) {
+	}
+	else {
+	    while (ptr < eptr) {
+		c = rb_enc_codepoint(ptr, eptr, enc);
+		ptr += rb_enc_mbclen(ptr, eptr, enc);
+		if (skip) {
+		    if (rb_enc_isspace(c, enc)) {
+			beg = ptr - bptr;
+		    }
+		    else {
+			end = ptr - bptr;
+			skip = 0;
+			if (!NIL_P(limit) && lim <= i) break;
+		    }
+		}
+		else if (rb_enc_isspace(c, enc)) {
 		    rb_ary_push(result, rb_str_subseq(str, beg, end-beg));
 		    skip = 1;
 		    beg = ptr - bptr;
