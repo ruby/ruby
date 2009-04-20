@@ -1,3 +1,7 @@
+Tue Apr 21 01:13:42 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
+
+	* symbian/setup (config.h): added TIMET2NUM and NUM2TIMET to match the change in time.c 
+
 Mon Apr 20 20:29:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_split_m): faster processing on 7bit strings.
