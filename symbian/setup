@@ -22,6 +22,8 @@ define config_h
 @echo>>$(1) #define SIZEOF_FLOAT 4
 @echo>>$(1) #define SIZEOF_DOUBLE 8
 @echo>>$(1) #define SIZEOF_TIME_T 4
+@echo>>$(1) #define TIMET2NUM(v) LONG2NUM(v)
+@echo>>$(1) #define NUM2TIMET(v) NUM2LONG(v)
 @echo>>$(1) #define SIZEOF_SIZE_T 4
 @echo>>$(1) #define SIZEOF_PTRDIFF_T 4
 @echo>>$(1) #define rb_pid_t pid_t
