@@ -1,3 +1,7 @@
+Tue Apr 21 07:07:45 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_push): bypass rb_ary_store().
+
 Tue Apr 21 01:25:16 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bigsub_int): subtraction without making internal

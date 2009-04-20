@@ -697,7 +697,14 @@ ary_take_first_or_last(int argc, VALUE *argv, VALUE ary, enum ary_take_pos_flags
 VALUE
 rb_ary_push(VALUE ary, VALUE item)
 {
-    rb_ary_store(ary, RARRAY_LEN(ary), item);
+    long idx = RARRAY_LEN(ary);
+
+    rb_ary_modify(ary);
+    if (idx >= ARY_CAPA(ary)) {
+	ary_double_capa(ary, idx);
+    }
+    RARRAY_PTR(ary)[idx] = item;
+    ARY_SET_LEN(ary, idx + 1);
     return ary;
 }
 
