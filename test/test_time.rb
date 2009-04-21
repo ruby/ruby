@@ -45,6 +45,11 @@ class TestTimeExtention < Test::Unit::TestCase # :nodoc:
     }
   end
 
+  def test_encode_rfc2822
+    t = Time.utc(1)
+    assert_equal("Mon, 01 Jan 0001 00:00:00 -0000", t.rfc2822)
+  end
+
   def test_rfc2616
     t = Time.utc(1994, 11, 6, 8, 49, 37)
     assert_equal(t, Time.httpdate("Sun, 06 Nov 1994 08:49:37 GMT"))
@@ -67,6 +72,11 @@ class TestTimeExtention < Test::Unit::TestCase # :nodoc:
 
     assert_equal(Time.utc(2007, 12, 23, 11, 22, 33),
                  Time.httpdate('Sunday, 23-Dec-07 11:22:33 GMT'))
+  end
+
+  def test_encode_httpdate
+    t = Time.utc(1)
+    assert_equal("Mon, 01 Jan 0001 00:00:00 GMT", t.httpdate)
   end
 
   def test_rfc3339
@@ -164,6 +174,9 @@ class TestTimeExtention < Test::Unit::TestCase # :nodoc:
     assert_equal("1970-01-01T09:00:00.0123456789+09:00", t.xmlschema(10))
     assert_equal("1970-01-01T09:00:00.0123456789012345678+09:00", t.xmlschema(19))
     assert_equal("1970-01-01T09:00:00.01234567890123456789+09:00", t.xmlschema(20))
+
+    t = Time.utc(1)
+    assert_equal("0001-01-01T00:00:00Z", t.xmlschema)
 
     begin
       Time.at(-1)

@@ -445,7 +445,7 @@ class Time
   # If +self+ is a UTC time, -0000 is used as zone.
   #
   def rfc2822
-    sprintf('%s, %02d %s %d %02d:%02d:%02d ',
+    sprintf('%s, %02d %s %04d %02d:%02d:%02d ',
       RFC2822_DAY_NAME[wday],
       day, RFC2822_MONTH_NAME[mon-1], year,
       hour, min, sec) +
@@ -477,7 +477,7 @@ class Time
   #
   def httpdate
     t = dup.utc
-    sprintf('%s, %02d %s %d %02d:%02d:%02d GMT',
+    sprintf('%s, %02d %s %04d %02d:%02d:%02d GMT',
       RFC2822_DAY_NAME[t.wday],
       t.day, RFC2822_MONTH_NAME[t.mon-1], t.year,
       t.hour, t.min, t.sec)
@@ -498,7 +498,7 @@ class Time
   # Its default value is 0.
   #
   def xmlschema(fraction_digits=0)
-    sprintf('%d-%02d-%02dT%02d:%02d:%02d',
+    sprintf('%04d-%02d-%02dT%02d:%02d:%02d',
       year, mon, day, hour, min, sec) +
     if fraction_digits == 0
       ''
