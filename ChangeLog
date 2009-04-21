@@ -1,3 +1,7 @@
+Wed Apr 22 02:10:48 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time#xmlschema): use subsec instead of nsec.
+
 Wed Apr 22 01:27:38 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_arg): use the year argument as-is.  [ruby-dev:38194]
