@@ -1,3 +1,8 @@
+Tue Apr 21 09:20:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (init_mkmf): needs default library path even if
+	  cross compiling.
+
 Tue Apr 21 07:07:45 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_push): bypass rb_ary_store().

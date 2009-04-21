@@ -1873,7 +1873,7 @@ def init_mkmf(config = CONFIG)
   $LIBRUBYARG = ""
   $LIBRUBYARG_STATIC = config['LIBRUBYARG_STATIC']
   $LIBRUBYARG_SHARED = config['LIBRUBYARG_SHARED']
-  $DEFLIBPATH = $extmk ? ["$(topdir)"] : CROSS_COMPILING ? [] : ["$(libdir)"]
+  $DEFLIBPATH = [$extmk ? "$(topdir)" : "$(libdir)"]
   $DEFLIBPATH.unshift(".")
   $LIBPATH = []
   $INSTALLFILES = []
