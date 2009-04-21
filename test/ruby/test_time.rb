@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'rational'
+require 'delegate'
 require 'timeout'
 require 'delegate'
 
@@ -101,31 +102,47 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_at
+    assert_equal(100000, Time.at("0.1").usec)
+    assert_equal(10000, Time.at("0.01").usec)
+    assert_equal(1000, Time.at("0.001").usec)
+    assert_equal(100, Time.at("0.0001").usec)
+    assert_equal(10, Time.at("0.00001").usec)
+    assert_equal(1, Time.at("0.000001").usec)
+    assert_equal(100000000, Time.at("0.1").nsec)
+    assert_equal(10000000, Time.at("0.01").nsec)
+    assert_equal(1000000, Time.at("0.001").nsec)
+    assert_equal(100000, Time.at("0.0001").nsec)
+    assert_equal(10000, Time.at("0.00001").nsec)
+    assert_equal(1000, Time.at("0.000001").nsec)
+    assert_equal(100, Time.at("0.0000001").nsec)
+    assert_equal(10, Time.at("0.00000001").nsec)
+    assert_equal(1, Time.at("0.000000001").nsec)
     assert_equal(100000, Time.at(0.1).usec)
     assert_equal(10000, Time.at(0.01).usec)
     assert_equal(1000, Time.at(0.001).usec)
     assert_equal(100, Time.at(0.0001).usec)
     assert_equal(10, Time.at(0.00001).usec)
-    assert_equal(1, Time.at(0.000001).usec)
+    assert_equal(3, Time.at(0.000003).usec)
     assert_equal(100000000, Time.at(0.1).nsec)
     assert_equal(10000000, Time.at(0.01).nsec)
     assert_equal(1000000, Time.at(0.001).nsec)
     assert_equal(100000, Time.at(0.0001).nsec)
     assert_equal(10000, Time.at(0.00001).nsec)
-    assert_equal(1000, Time.at(0.000001).nsec)
-    assert_equal(100, Time.at(0.0000001).nsec)
+    assert_equal(3000, Time.at(0.000003).nsec)
+    assert_equal(199, Time.at(0.0000002).nsec)
     assert_equal(10, Time.at(0.00000001).nsec)
     assert_equal(1, Time.at(0.000000001).nsec)
+
     assert_equal(0, Time.at(1e-10).nsec)
     assert_equal(0, Time.at(4e-10).nsec)
-    assert_equal(1, Time.at(6e-10).nsec)
+    assert_equal(0, Time.at(6e-10).nsec)
     assert_equal(1, Time.at(14e-10).nsec)
-    assert_equal(2, Time.at(16e-10).nsec)
+    assert_equal(1, Time.at(16e-10).nsec)
     if negative_time_t?
-      assert_equal(0, Time.at(-1e-10).nsec)
-      assert_equal(0, Time.at(-4e-10).nsec)
+      assert_equal(999999999, Time.at(-1e-10).nsec)
+      assert_equal(999999999, Time.at(-4e-10).nsec)
       assert_equal(999999999, Time.at(-6e-10).nsec)
-      assert_equal(999999999, Time.at(-14e-10).nsec)
+      assert_equal(999999998, Time.at(-14e-10).nsec)
       assert_equal(999999998, Time.at(-16e-10).nsec)
     end
   end
@@ -142,7 +159,7 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_utc_subsecond
-    assert_equal(100000, Time.utc(2007,1,1,0,0,1.1).usec)
+    assert_equal(500000, Time.utc(2007,1,1,0,0,1.5).usec)
     assert_equal(100000, Time.utc(2007,1,1,0,0,Rational(11,10)).usec)
   end
 
@@ -189,14 +206,14 @@ class TestTime < Test::Unit::TestCase
 
   def test_at3
     assert_equal(T2000, Time.at(T2000))
-    assert_raise(RangeError) do
-      Time.at(2**31-1, 1_000_000)
-      Time.at(2**63-1, 1_000_000)
-    end
-    assert_raise(RangeError) do
-      Time.at(-2**31, -1_000_000)
-      Time.at(-2**63, -1_000_000)
-    end
+#    assert_raise(RangeError) do
+#      Time.at(2**31-1, 1_000_000)
+#      Time.at(2**63-1, 1_000_000)
+#    end
+#    assert_raise(RangeError) do
+#      Time.at(-2**31, -1_000_000)
+#      Time.at(-2**63, -1_000_000)
+#    end
   end
 
   def test_utc_or_local
@@ -216,10 +233,15 @@ class TestTime < Test::Unit::TestCase
     end
     assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, -(2**31), :foo, :foo) }
     o = Object.new
-    def o.divmod(x); nil; end
+    def o.to_r; nil; end
     assert_raise(TypeError) { Time.gm(2000, 1, 1, 0, 0, o, :foo, :foo) }
-    def o.divmod(x); [-1, 0]; end
-    assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, o, :foo, :foo) }
+    def o.to_r; ""; end
+    assert_raise(TypeError) { Time.gm(2000, 1, 1, 0, 0, o, :foo, :foo) }
+    def o.to_r; Rational(11); end
+    assert_equal(11, Time.gm(2000, 1, 1, 0, 0, o).sec)
+    o = Object.new
+    def o.to_int; 10; end
+    assert_equal(10, Time.gm(2000, 1, 1, 0, 0, o).sec)
     assert_raise(ArgumentError) { Time.gm(2000, 13) }
 
     t = Time.local(2000)

@@ -48,7 +48,7 @@ class YAML_Unit_Tests < Test::Unit::TestCase
 	# Make a time with the time zone
 	#
 	def mktime( year, mon, day, hour, min, sec, usec, zone = "Z" )
-        usec = usec.to_s.to_f * 1000000
+        usec = Rational(usec.to_s) * 1000000
 		val = Time::utc( year.to_i, mon.to_i, day.to_i, hour.to_i, min.to_i, sec.to_i, usec )
 		if zone != "Z"
 			hour = zone[0,3].to_i * 3600

@@ -291,7 +291,7 @@ mktime_do(struct mktime_arg *arg)
     if ( len > ptr - str && ( *ptr == '-' || *ptr == '+' ) )
     {
         time_t tz_offset = strtol(ptr, NULL, 10) * 3600;
-        time_t tmp;
+        VALUE tmp;
 
         while ( *ptr != ':' && *ptr != '\0' ) ptr++;
         if ( *ptr == ':' )
@@ -309,8 +309,9 @@ mktime_do(struct mktime_arg *arg)
 
         /* Make TZ time*/
         time = rb_funcall(rb_cTime, s_utc, 6, year, mon, day, hour, min, sec);
-        tmp = NUM2LONG(rb_funcall(time, s_to_i, 0)) - tz_offset;
-        return rb_funcall(rb_cTime, s_at, 2, LONG2NUM(tmp), LONG2NUM(usec));
+        tmp = rb_funcall(time, s_to_i, 0);
+        tmp = rb_funcall(tmp, '-', 1, LONG2FIX(tz_offset));
+        return rb_funcall(rb_cTime, s_at, 2, tmp, LONG2NUM(usec));
     }
     else
     {

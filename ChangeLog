@@ -1,3 +1,15 @@
+Tue Apr 21 23:52:45 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c: remove time_t restriction from Time class.
+
+	* timev.h: new file to define struct vtm.
+
+	* strftime.c: format struct vtm instead of struct tm.
+
+	* ext/syck/rubyext.c (mktime_do): don't use time_t;
+
+	[ruby-dev:38191]
+
 Tue Apr 21 09:25:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_path, dir_each, glob_helper): use readdir_r() if
