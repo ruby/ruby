@@ -3262,18 +3262,17 @@ time_load(VALUE klass, VALUE str)
 
 /*
  *  <code>Time</code> is an abstraction of dates and times. Time is
- *  stored internally as the number of seconds and nanoseconds since
- *  the <em>Epoch</em>, January 1, 1970 00:00 UTC. On some operating
- *  systems, this offset is allowed to be negative. Also see the
- *  library modules <code>Date</code>. The
- *  <code>Time</code> class treats GMT (Greenwich Mean Time) and UTC
- *  (Coordinated Universal Time)<em>[Yes, UTC really does stand for
+ *  stored internally as the number of seconds with fraction since
+ *  the <em>Epoch</em>, January 1, 1970 00:00 UTC.
+ *  Also see the library modules <code>Date</code>.
+ *  The <code>Time</code> class treats GMT (Greenwich Mean Time) and
+ *  UTC (Coordinated Universal Time)<em>[Yes, UTC really does stand for
  *  Coordinated Universal Time. There was a committee involved.]</em>
  *  as equivalent.  GMT is the older way of referring to these
  *  baseline times but persists in the names of calls on POSIX
  *  systems.
  *
- *  All times are stored with some number of nanoseconds. Be aware of
+ *  All times may have fraction. Be aware of
  *  this fact when comparing times with each other---times that are
  *  apparently equal when displayed may be different when compared.
  */
