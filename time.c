@@ -48,7 +48,7 @@ static VALUE time_localtime(VALUE);
 static time_t timegm_noleapsecond(struct tm *tm);
 static int tmcmp(struct tm *a, struct tm *b);
 static int vtmcmp(struct vtm *a, struct vtm *b);
-static char *find_time_t(struct tm *tptr, int utc_p, time_t *tp);
+static const char *find_time_t(struct tm *tptr, int utc_p, time_t *tp);
 
 static struct vtm *localtimev(VALUE timev, struct vtm *result);
 
@@ -566,7 +566,7 @@ timegmv(struct vtm *vtm)
     VALUE timev;
     struct tm tm;
     time_t t;
-    char *errmsg;
+    const char *errmsg;
 
     /* The first leap second is 1972-06-30 23:59:60 UTC.
      * No leap seconds before. */
@@ -1535,7 +1535,7 @@ timegm_noleapsecond(struct tm *tm)
 		    DIV(tm_year+299,400))*86400;
 }
 
-static char *
+static const char *
 find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 {
     time_t guess, guess_lo, guess_hi;

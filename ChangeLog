@@ -1,3 +1,7 @@
+Wed Apr 22 00:32:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (find_time_t): constified.
+
 Wed Apr 22 00:11:19 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (leap_year_v_p): removed.
