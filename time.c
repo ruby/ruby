@@ -224,13 +224,6 @@ static const int leap_year_days_in_month[] = {
     31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
 };
 
-static int
-leap_year_v_p(VALUE year)
-{
-    int y = NUM2INT(mod(year, INT2FIX(400)));
-    return ((y % 4 == 0) && (y % 100 != 0)) || (y % 400 == 0);
-}
-
 static VALUE
 timegmv_noleapsecond(struct vtm *vtm)
 {
