@@ -478,6 +478,19 @@ dir_path(VALUE dir)
     return rb_str_dup(dirp->path);
 }
 
+#if defined HAVE_READDIR_R
+# define READDIR(dir, enc, entry, dp) (readdir_r(dir, entry, &(dp)) == 0 && dp != 0)
+#elif defined _WIN32
+# define READDIR(dir, enc, entry, dp) ((dp = rb_w32_readdir_with_enc(dir, enc)) != 0)
+#else
+# define READDIR(dir, enc, entry, dp) ((dp = readdir(dir)) != 0)
+#endif
+#if defined HAVE_READDIR_R
+# define IF_HAVE_READDIR_R(something) something
+#else
+# define IF_HAVE_READDIR_R(something) /* nothing */
+#endif
+
 /*
  *  call-seq:
  *     dir.read => string or nil
@@ -493,19 +506,13 @@ dir_path(VALUE dir)
 static VALUE
 dir_read(VALUE dir)
 {
-#ifdef _WIN32
-# define READDIR(dir, enc) rb_w32_readdir_with_enc(dir, enc)
-#else
-# define READDIR(dir, enc) readdir(dir)
-#endif
-
     struct dir_data *dirp;
     struct dirent *dp;
+    IF_HAVE_READDIR_R(struct dirent entry);
 
     GetDIR(dir, dirp);
     errno = 0;
-    dp = READDIR(dirp->dir, dirp->enc);
-    if (dp) {
+    if (READDIR(dirp->dir, dirp->enc, &entry, dp)) {
 	return rb_external_str_new_with_enc(dp->d_name, NAMLEN(dp), dirp->enc);
     }
     else if (errno == 0) {	/* end of stream */
@@ -539,11 +546,12 @@ dir_each(VALUE dir)
 {
     struct dir_data *dirp;
     struct dirent *dp;
+    IF_HAVE_READDIR_R(struct dirent entry);
 
     RETURN_ENUMERATOR(dir, 0, 0);
     GetDIR(dir, dirp);
     rewinddir(dirp->dir);
-    for (dp = READDIR(dirp->dir, dirp->enc); dp != NULL; dp = READDIR(dirp->dir, dirp->enc)) {
+    while (READDIR(dirp->dir, dirp->enc, &entry, dp)) {
 	rb_yield(rb_external_str_new_with_enc(dp->d_name, NAMLEN(dp), dirp->enc));
 	if (dirp->dir == NULL) dir_closed();
     }
@@ -1259,10 +1267,11 @@ glob_helper(
 
     if (magical || recursive) {
 	struct dirent *dp;
+	IF_HAVE_READDIR_R(struct dirent entry);
 	DIR *dirp = do_opendir(*path ? path : ".", flags);
 	if (dirp == NULL) return 0;
 
-	for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
+	while (READDIR(dirp, enc, &entry, dp)) {
 	    char *buf = join_path(path, dirsep, dp->d_name);
 	    enum answer new_isdir = UNKNOWN;
 
