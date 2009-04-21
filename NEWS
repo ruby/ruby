@@ -59,8 +59,8 @@ with all sufficient information, see the ChangeLog file.
 
   * Kernel
     * extended methods:
-      * respond_to? returns false for methods which simply raise
-        NotImplementedError such as Process.fork on Windows.
+      * respond_to? can be used to detect methods not implemented.
+        For example, Process.respond_to?(:fork) returns false on Windows.
 
 * rss
 
