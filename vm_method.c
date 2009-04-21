@@ -1110,6 +1110,10 @@ rb_respond_to(VALUE obj, ID id)
  *  Returns +true+ if _obj_ responds to the given
  *  method. Private methods are included in the search only if the
  *  optional second parameter evaluates to +true+.
+ *
+ *  If the method is not implemented,
+ *  as Process.fork on Windows, File.lchmod on GNU/Linux, etc.,
+ *  false is returned.
  */
 
 static VALUE
