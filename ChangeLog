@@ -1,3 +1,8 @@
+Tue Apr 21 09:20:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (init_mkmf): needs default library path even if
+	  cross compiling.
+
 Sun Apr 19 14:31:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): the order of local variables on stack is
