@@ -219,8 +219,6 @@ class TestTime < Test::Unit::TestCase
   def test_utc_or_local
     assert_equal(T2000, Time.gm(2000))
     assert_equal(T2000, Time.gm(0, 0, 0, 1, 1, 2000, :foo, :bar, false, :baz))
-    assert_equal(T2000, Time.gm(0))
-    assert_equal(T2000, Time.gm(100))
     assert_equal(T2000, Time.gm(2000, "jan"))
     assert_equal(T2000, Time.gm(2000, "1"))
     assert_equal(T2000, Time.gm(2000, 1, 1, 0, 0, 0, 0))

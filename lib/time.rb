@@ -258,7 +258,21 @@ class Time
         raise ArgumentError, "no time information in #{date.inspect}"
       end
       year = d[:year]
-      year = yield(year) if year && block_given?
+      if year
+        if block_given?
+          year = yield(year)
+        else
+          year = if year < 0
+                   year
+                 elsif year < 50
+                   2000 + year
+                 elsif year < 100
+                   1900 + year
+                 else
+                   year
+                 end
+        end
+      end
       make_time(year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
     end
 

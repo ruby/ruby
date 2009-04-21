@@ -1398,8 +1398,6 @@ time_arg(int argc, VALUE *argv, struct vtm *vtm)
 {
     VALUE v[8];
     int i;
-    long year;
-    VALUE x;
 
     vtm->year = INT2FIX(0);
     vtm->mon = 0;
@@ -1432,20 +1430,7 @@ time_arg(int argc, VALUE *argv, struct vtm *vtm)
 	vtm->isdst = -1;
     }
 
-    x = obj2vint(v[0]);
-    if (FIXNUM_P(x)) {
-        year = FIX2LONG(x);
-        if (0 <= year && year < 39) {
-            rb_warning("2 digits year is used: %ld", year);
-            year += 2000;
-        }
-        else if (69 <= year && year < 139) {
-            rb_warning("2 or 3 digits year is used: %ld", year);
-            year += 1900;
-        }
-        x = LONG2FIX(year);
-    }
-    vtm->year = x;
+    vtm->year = obj2vint(v[0]);
 
     if (NIL_P(v[1])) {
         vtm->mon = 1;

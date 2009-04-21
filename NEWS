@@ -52,6 +52,11 @@ with all sufficient information, see the ChangeLog file.
       * time_t restriction is removed to represent before 1901 and after 2038.
         Proleptic Gregorian calendar is used for old dates.
 
+    * incompatible changes:
+      * The year argument of Time.{utc,gm,local,mktime} is now interpreted as
+        the value itself.  For example, Time.utc(99) means the year 99 AD,
+        not 1999 AD.
+
   * Kernel
     * extended methods:
       * respond_to? returns false for methods which simply raise
