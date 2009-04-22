@@ -192,6 +192,10 @@ with all sufficient information, see the ChangeLog file.
     * Etc::Passwd.each
     * Etc::Group.each
 
+* zlib
+  * new methods:
+    * Zlib::GzipFile#path
+
 === Compatibility issues (excluding feature bug fixes)
 
   * Enumerator#rewind

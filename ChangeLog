@@ -1,3 +1,7 @@
+Thu Apr 23 01:30:37 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/zlib/zlib.c (Zlib::GzipFile#path): New method.
+
 Wed Apr 22 20:25:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_timespec): check out-of-range.  [ruby-core:23282]

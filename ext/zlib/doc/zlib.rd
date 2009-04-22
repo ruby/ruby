@@ -543,6 +543,12 @@ GzipReader should be used with associating an instance of IO class
     must respond to flush method. While `sync' mode is true,
     the compression ratio decreases sharply.
 
+--- Zlib::GzipFile#path
+
+    Returns the path string of the associated IO-like object.  This
+    method is only defined when the IO-like object responds to
+    #path().
+
 
 == Zlib::GzipFile::Error
 
