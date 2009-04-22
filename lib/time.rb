@@ -253,26 +253,13 @@ class Time
     # A failure for Time.parse should be checked, though.
     #
     def parse(date, now=self.now)
-      d = Date._parse(date, false)
+      comp = !block_given?
+      d = Date._parse(date, comp)
       if !d[:year] && !d[:mon] && !d[:mday] && !d[:hour] && !d[:min] && !d[:sec] && !d[:sec_fraction]
         raise ArgumentError, "no time information in #{date.inspect}"
       end
       year = d[:year]
-      if year
-        if block_given?
-          year = yield(year)
-        else
-          year = if year < 0
-                   year
-                 elsif year < 50
-                   2000 + year
-                 elsif year < 100
-                   1900 + year
-                 else
-                   year
-                 end
-        end
-      end
+      year = yield(year) if year && !comp
       make_time(year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
     end
 
