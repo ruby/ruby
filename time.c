@@ -1217,7 +1217,14 @@ time_timespec(VALUE num, int interval)
 	    if (f != t.tv_sec) {
 		rb_raise(rb_eRangeError, "%f out of Time range", RFLOAT_VALUE(num));
 	    }
-	    t.tv_nsec = (long)(d*1e9+0.5);
+	    t.tv_nsec = (int)(d*1e9+0.5);
+	    if (t.tv_nsec >= 1000000000) {
+		t.tv_nsec -= 1000000000;
+		if (++t.tv_sec <= 0) {
+		    --t.tv_nsec;
+		    t.tv_nsec = 999999999;
+		}
+	    }
 	}
 	break;
 
