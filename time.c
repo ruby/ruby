@@ -1534,7 +1534,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
     struct tm *tm, tm_lo, tm_hi;
     int d, have_guess;
     int find_dst;
-    IF_HAVE_GMTIME_R(struct tm result);
+    struct tm result;
 #define GUESS(p) (utc_p ? gmtime_with_leapsecond(p, &result) : LOCALTIME(p, result))
 
     find_dst = 0 < tptr->tm_isdst;

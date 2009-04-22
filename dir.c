@@ -1267,8 +1267,9 @@ glob_helper(
 
     if (magical || recursive) {
 	struct dirent *dp;
+	DIR *dirp;
 	IF_HAVE_READDIR_R(struct dirent entry);
-	DIR *dirp = do_opendir(*path ? path : ".", flags);
+	dirp = do_opendir(*path ? path : ".", flags);
 	if (dirp == NULL) return 0;
 
 	while (READDIR(dirp, enc, &entry, dp)) {

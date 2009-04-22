@@ -1,3 +1,10 @@
+Wed Apr 22 10:38:47 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* dir.c (glob_helper): C99(gcc)-ism.
+
+	* time.c (find_time_t): GUESS macro needs the variable named ``result''
+	  always.
+
 Wed Apr 22 09:27:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (localtime_with_gmtoff): fixed cross function jump.
