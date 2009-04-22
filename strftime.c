@@ -202,7 +202,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct vtm *vtm, 
 	static short first = 1;
 #ifdef POSIX_SEMANTICS
 	static char *savetz = NULL;
-	static int savetzlen = 0;
+	static size_t savetzlen = 0;
 	char *tz;
 #endif /* POSIX_SEMANTICS */
 #ifndef HAVE_TM_ZONE
@@ -250,7 +250,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct vtm *vtm, 
 	tz = getenv("TZ");
 	if (first) {
 		if (tz != NULL) {
-			int tzlen = strlen(tz);
+			size_t tzlen = strlen(tz);
 
 			savetz = (char *) malloc(tzlen + 1);
 			if (savetz != NULL) {
@@ -263,7 +263,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct vtm *vtm, 
 	}
 	/* if we have a saved TZ, and it is different, recapture and reset */
 	if (tz && savetz && (tz[0] != savetz[0] || strcmp(tz, savetz) != 0)) {
-		i = strlen(tz) + 1;
+		size_t i = strlen(tz) + 1;
 		if (i > savetzlen) {
 			savetz = (char *) realloc(savetz, i);
 			if (savetz) {
@@ -892,7 +892,7 @@ vtm2tm_noyear(const struct vtm *vtm, struct tm *result)
     tm.tm_gmtoff = NUM2LONG(vtm->utc_offset);
 #endif
 #if defined(HAVE_TM_ZONE)
-    tm.tm_zone = vtm->zone;
+    tm.tm_zone = (char *)vtm->zone;
 #endif
     *result = tm;
 }

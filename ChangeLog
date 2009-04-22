@@ -1,3 +1,7 @@
+Wed Apr 22 09:27:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (localtime_with_gmtoff): fixed cross function jump.
+
 Wed Apr 22 03:06:56 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time#rfc2822): pad leading zeros for year.

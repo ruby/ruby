@@ -27,6 +27,13 @@
 #ifndef TYPEOF_TIMEVAL_TV_SEC
 # define TYPEOF_TIMEVAL_TV_SEC time_t
 #endif
+#ifndef TYPEOF_TIMEVAL_TV_USEC
+# if INT_MAX >= 1000000
+# define TYPEOF_TIMEVAL_TV_USEC int
+# else
+# define TYPEOF_TIMEVAL_TV_USEC long
+# endif
+#endif
 
 #if SIZEOF_TIME_T == SIZEOF_LONG
 typedef unsigned long unsigned_time_t;
@@ -503,7 +510,7 @@ gmtime_with_leapsecond(const time_t *timep, struct tm *result)
     result->tm_isdst = 0;
     result->tm_gmtoff = 0;
 #if defined(HAVE_TM_ZONE)
-    result->tm_zone = "UTC";
+    result->tm_zone = (char *)"UTC";
 #endif
     return result;
 #else
@@ -746,12 +753,12 @@ guess_local_offset(struct vtm *vtm_utc)
 # if defined(NEGATIVE_TIME_T)
     /* 1901-12-13 20:45:52 UTC : The oldest time in 32-bit signed time_t. */
     if (localtime_with_gmtoff((t = (time_t)0x80000000, &t), &tm, &gmtoff))
-         off = LONG2FIX(gmtoff);
+	off = LONG2FIX(gmtoff);
     else
 # endif
     /* 1970-01-01 00:00:00 UTC : The Unix epoch - the oldest time in portable time_t. */
     if (localtime_with_gmtoff((t = 0, &t), &tm, &gmtoff))
-         off = LONG2FIX(gmtoff);
+	off = LONG2FIX(gmtoff);
 
     /* The first DST is at 1916 in German.
      * So we don't need to care DST before that. */
@@ -903,9 +910,9 @@ localtime_with_gmtoff(const time_t *t, struct tm *result, long *gmtoff)
 	long off;
 	IF_HAVE_GMTIME_R(struct tm tmbuf);
 	l = &tm;
-	u = GMTIME(&t, tmbuf);
+	u = GMTIME(t, tmbuf);
 	if (!u)
-	    goto no_localtime;
+	    return NULL;
 	if (l->tm_year != u->tm_year)
 	    off = l->tm_year < u->tm_year ? -1 : 1;
 	else if (l->tm_mon != u->tm_mon)
@@ -966,9 +973,6 @@ localtimev(VALUE timev, struct vtm *result)
             return result;
         }
     }
-#if !defined(HAVE_STRUCT_TM_TM_GMTOFF)
-  no_localtime:
-#endif
 
     if (!gmtimev(timev, result))
         return NULL;
@@ -1256,7 +1260,7 @@ time_timeval(VALUE num, int interval)
 
     ts = time_timespec(num, interval);
     tv.tv_sec = (TYPEOF_TIMEVAL_TV_SEC)ts.tv_sec;
-    tv.tv_usec = ts.tv_nsec / 1000;
+    tv.tv_usec = (TYPEOF_TIMEVAL_TV_USEC)(ts.tv_nsec / 1000);
 
     return tv;
 }
@@ -1278,7 +1282,7 @@ rb_time_timeval(VALUE time)
 	GetTimeval(time, tobj);
         ts = timev2timespec(tobj->timev);
         t.tv_sec = (TYPEOF_TIMEVAL_TV_SEC)ts.tv_sec;
-        t.tv_usec = ts.tv_nsec / 1000;
+        t.tv_usec = (TYPEOF_TIMEVAL_TV_USEC)(ts.tv_nsec / 1000);
 	return t;
     }
     return time_timeval(time, Qfalse);
