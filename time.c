@@ -73,8 +73,8 @@ static int leap_year_p(long y);
 #else
 #define IF_HAVE_GMTIME_R(x) 	/* nothing */
 #define ASCTIME(tm, buf) asctime(tm)
-#define GMTIME(tm, result) gmtime(tm)
-#define LOCALTIME(tm, result) localtime(tm)
+#define GMTIME(tm, result) (result = *gmtime(tm), &result)
+#define LOCALTIME(tm, result) (result = *localtime(tm), &result)
 #endif
 
 static ID id_divmod, id_mul, id_submicro, id_subnano;
@@ -908,7 +908,7 @@ localtime_with_gmtoff(const time_t *t, struct tm *result, long *gmtoff)
 #else
 	struct tm *u, *l;
 	long off;
-	IF_HAVE_GMTIME_R(struct tm tmbuf);
+	struct tm tmbuf;
 	l = &tm;
 	u = GMTIME(t, tmbuf);
 	if (!u)

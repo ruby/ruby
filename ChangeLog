@@ -1,3 +1,9 @@
+Wed Apr 22 11:12:15 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* time.c (GMTIME, LOCALTIME): should set result if not have *_r().
+
+	* time.c (localtime_with_gmtoff): now always needed tmbuf.
+
 Wed Apr 22 10:38:47 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* dir.c (glob_helper): C99(gcc)-ism.
