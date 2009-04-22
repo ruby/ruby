@@ -200,7 +200,14 @@ time_timeval(time, interval)
 	    if (f != t.tv_sec) {
 		rb_raise(rb_eRangeError, "%f out of Time range", RFLOAT(time)->value);
 	    }
-	    t.tv_usec = (time_t)(d*1e6+0.5);
+	    t.tv_usec = (int)(d*1e6+0.5);
+	    if (t.tv_usec >= 1000000) {
+		t.tv_usec -= 1000000;
+		if (++t.tv_sec <= 0) {
+		    --t.tv_sec;
+		    t.tv_usec = 999999;
+		}
+	    }
 	}
 	break;
 
