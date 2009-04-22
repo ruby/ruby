@@ -1380,7 +1380,7 @@ obj_free(obj)
 	    VALUE *vars = RANY(obj)->as.scope.local_vars-1;
 	    if (!(RANY(obj)->as.scope.flags & SCOPE_CLONE) && vars[0] == 0)
 		RUBY_CRITICAL(free(RANY(obj)->as.scope.local_tbl));
-	    if (RANY(obj)->as.scope.flags & SCOPE_MALLOC)
+	    if ((RANY(obj)->as.scope.flags & (SCOPE_MALLOC|SCOPE_CLONE)) == SCOPE_MALLOC)
 		RUBY_CRITICAL(free(vars));
 	}
 	break;

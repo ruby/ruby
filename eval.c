@@ -8942,7 +8942,7 @@ proc_invoke(proc, args, self, klass)
         OBJSETUP(scope, tmp, T_SCOPE);
         scope->local_tbl = _block.scope->local_tbl;
         scope->local_vars = _block.scope->local_vars;
-        scope->flags |= SCOPE_CLONE;
+        scope->flags |= SCOPE_CLONE | (_block.scope->flags & SCOPE_MALLOC);
         _block.scope = scope;
     }
     /* modify current frame */

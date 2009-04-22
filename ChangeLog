@@ -1,3 +1,10 @@
+Wed Apr 22 12:20:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (proc_invoke): shares dmethod scope local variables.
+	  a patch from coderrr at [ruby-core:23050]
+
+	* gc.c (obj_free): do not free cloned scope local variables.
+
 Tue Apr 21 09:20:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (init_mkmf): needs default library path even if
