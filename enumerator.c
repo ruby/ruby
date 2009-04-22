@@ -229,7 +229,7 @@ each_with_object_i(VALUE val, VALUE memo)
  *
  *  Iterates the given block for each element with an arbitrary
  *  object given, and returns the initially given object.
-
+ *
  *  If no block is given, returns an enumerator.
  *
  *  e.g.:
