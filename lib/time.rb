@@ -206,7 +206,7 @@ class Time
     # If a block is given, the year described in +date+ is converted by the
     # block.  For example:
     #
-    #     Time.parse(...) {|y| y < 100 ? (y >= 69 ? y + 1900 : y + 2000) : y}
+    #     Time.parse(...) {|y| 0 <= y && y < 100 ? (y >= 69 ? y + 1900 : y + 2000) : y}
     #
     # If the upper components of the given time are broken or missing, they are
     # supplied with those of +now+.  For the lower components, the minimum
