@@ -12434,7 +12434,7 @@ rb_thread_start_timer()
     void *args[2];
     static pthread_cond_t start = PTHREAD_COND_INITIALIZER;
 
-    if (!thread_init) return;
+    if (thread_init) return;
     args[0] = &time_thread;
     args[1] = &start;
     safe_mutex_lock(&time_thread.lock);

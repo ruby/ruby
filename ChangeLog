@@ -1,3 +1,8 @@
+Fri Apr 24 14:55:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_start_timer): guard condition was inverted.
+	  [ruby-dev:38319]
+
 Thu Apr 23 00:19:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_mload): initializes a variable.
