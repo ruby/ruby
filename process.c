@@ -4897,7 +4897,7 @@ proc_getegid(VALUE obj)
     return GIDT2NUM(egid);
 }
 
-
+#if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETEGID) || defined(HAVE_SETGID) || defined(_POSIX_SAVED_IDS)
 /*
  *  call-seq:
  *     Process.egid = fixnum   => fixnum
@@ -4932,6 +4932,7 @@ proc_setegid(VALUE obj, VALUE egid)
 #endif
     return egid;
 }
+#endif
 
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETEGID) || defined(HAVE_SETGID)
 #define proc_setegid_m proc_setegid
