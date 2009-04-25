@@ -1422,6 +1422,48 @@ usec2subsec(VALUE obj)
     return quo(num_exact(obj), INT2FIX(1000000));
 }
 
+static int
+month_arg(VALUE arg)
+{
+    int i, mon;
+
+    VALUE s = rb_check_string_type(arg);
+    if (!NIL_P(s)) {
+        mon = 0;
+        for (i=0; i<12; i++) {
+            if (RSTRING_LEN(s) == 3 &&
+                STRCASECMP(months[i], RSTRING_PTR(s)) == 0) {
+                mon = i+1;
+                break;
+            }
+        }
+        if (mon == 0) {
+            char c = RSTRING_PTR(s)[0];
+
+            if ('0' <= c && c <= '9') {
+                mon = obj2long(s);
+            }
+        }
+    }
+    else {
+        mon = obj2long(arg);
+    }
+    return mon;
+}
+
+static void
+validate_vtm(struct vtm *vtm)
+{
+    if (   vtm->mon  < 1 || vtm->mon  > 12
+	|| vtm->mday < 1 || vtm->mday > 31
+	|| vtm->hour < 0 || vtm->hour > 24
+	|| (vtm->hour == 24 && (vtm->min > 0 || vtm->sec > 0))
+	|| vtm->min  < 0 || vtm->min  > 59
+	|| vtm->sec  < 0 || vtm->sec  > 60
+	|| lt(vtm->subsec, INT2FIX(0)) || ge(vtm->subsec, INT2FIX(1)))
+	rb_raise(rb_eArgError, "argument out of range");
+}
+
 static void
 time_arg(int argc, VALUE *argv, struct vtm *vtm)
 {
@@ -1465,27 +1507,7 @@ time_arg(int argc, VALUE *argv, struct vtm *vtm)
         vtm->mon = 1;
     }
     else {
-	VALUE s = rb_check_string_type(v[1]);
-	if (!NIL_P(s)) {
-            vtm->mon = 0;
-	    for (i=0; i<12; i++) {
-		if (RSTRING_LEN(s) == 3 &&
-		    STRCASECMP(months[i], RSTRING_PTR(s)) == 0) {
-                    vtm->mon = i+1;
-		    break;
-		}
-	    }
-	    if (vtm->mon == 0) {
-		char c = RSTRING_PTR(s)[0];
-
-		if ('0' <= c && c <= '9') {
-                    vtm->mon = obj2long(s);
-		}
-	    }
-	}
-	else {
-            vtm->mon = obj2long(v[1]);
-	}
+        vtm->mon = month_arg(v[1]);
     }
 
     if (NIL_P(v[2])) {
@@ -1508,15 +1530,7 @@ time_arg(int argc, VALUE *argv, struct vtm *vtm)
         vtm->sec  = NIL_P(v[5])?0:obj2subsec(v[5], &vtm->subsec);
     }
 
-    /* value validation */
-    if (   vtm->mon  < 1 || vtm->mon  > 12
-	|| vtm->mday < 1 || vtm->mday > 31
-	|| vtm->hour < 0 || vtm->hour > 24
-	|| (vtm->hour == 24 && (vtm->min > 0 || vtm->sec > 0))
-	|| vtm->min  < 0 || vtm->min  > 59
-	|| vtm->sec  < 0 || vtm->sec  > 60
-	|| lt(vtm->subsec, INT2FIX(0)) || ge(vtm->subsec, INT2FIX(1)))
-	rb_raise(rb_eArgError, "argument out of range");
+    validate_vtm(vtm);
 }
 
 static int

@@ -1,3 +1,8 @@
+Sat Apr 25 16:19:48 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (month_arg): extracted from time_arg.
+	  (validate_vtm): ditto.
+
 Sat Apr 25 16:03:21 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (TIME_COPY_GMT): new macro.
