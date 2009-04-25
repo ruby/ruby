@@ -2445,13 +2445,12 @@ static VALUE
 time_succ(VALUE time)
 {
     struct time_object *tobj;
-    int gmt;
+    struct time_object *tobj2;
 
     GetTimeval(time, tobj);
-    gmt = tobj->gmt;
     time = time_new_timev(rb_cTime, add(tobj->timev, INT2FIX(1)));
-    GetTimeval(time, tobj);
-    tobj->gmt = gmt;
+    GetTimeval(time, tobj2);
+    tobj2->gmt = tobj->gmt;
     return time;
 }
 
@@ -2930,7 +2929,7 @@ strftimev(const char *fmt, VALUE time)
 
     GetTimeval(time, tobj);
     MAKE_TM(time, tobj);
-    len = rb_strftime_alloc(&buf, fmt, &tobj->vtm, tobj->timev, tobj->gmt);
+    len = rb_strftime_alloc(&buf, fmt, &tobj->vtm, tobj->timev, TIME_UTC_P(tobj));
     str = rb_str_new(buf, len);
     if (buf != buffer) xfree(buf);
     return str;
@@ -3013,7 +3012,7 @@ time_strftime(VALUE time, VALUE format)
 
 	str = rb_str_new(0, 0);
 	while (p < pe) {
-	    len = rb_strftime_alloc(&buf, p, &tobj->vtm, tobj->timev, tobj->gmt);
+	    len = rb_strftime_alloc(&buf, p, &tobj->vtm, tobj->timev, TIME_UTC_P(tobj));
 	    rb_str_cat(str, buf, len);
 	    p += strlen(p);
 	    if (buf != buffer) {
@@ -3027,7 +3026,7 @@ time_strftime(VALUE time, VALUE format)
     }
     else {
 	len = rb_strftime_alloc(&buf, RSTRING_PTR(format),
-			       	&tobj->vtm, tobj->timev, tobj->gmt);
+			       	&tobj->vtm, tobj->timev, TIME_UTC_P(tobj));
     }
     str = rb_str_new(buf, len);
     if (buf != buffer) xfree(buf);

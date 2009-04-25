@@ -1,3 +1,9 @@
+Sat Apr 25 15:39:44 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_succ): refactored to avoid gmt variable.
+	  (strftimev): use TIME_UTC_P.
+	  (time_strftime): ditto.
+
 Sat Apr 25 15:21:33 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (TIME_UTC_P): new macro..
