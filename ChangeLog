@@ -1,3 +1,32 @@
+Sat Apr 25 15:21:33 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (TIME_UTC_P): new macro..
+	  (TIME_SET_UTC): ditto.
+	  (TIME_LOCALTIME_P): ditto.
+	  (TIME_SET_LOCALTIME): ditto.
+	  (time_utc_p): use the above macro.
+	  (time_localtime): ditto.
+	  (time_localtime): ditto.
+	  (time_gmtime): ditto.
+	  (time_to_s): ditto.
+	  (time_add): ditto.
+	  (time_sec): ditto.
+	  (time_min): ditto.
+	  (time_hour): ditto.
+	  (time_mday): ditto.
+	  (time_mon): ditto.
+	  (time_year): ditto.
+	  (time_wday): ditto.
+	  (wday_p): ditto.
+	  (time_yday): ditto.
+	  (time_isdst): ditto.
+	  (time_zone): ditto.
+	  (time_utc_offset): ditto.
+	  (time_to_a): ditto.
+	  (strftimev): ditto.
+	  (time_strftime): ditto.
+	  (time_mdump): ditto.
+
 Thu Apr 23 01:30:37 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/zlib/zlib.c (Zlib::GzipFile#path): New method.

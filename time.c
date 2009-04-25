@@ -997,6 +997,19 @@ struct time_object {
 #define GetTimeval(obj, tobj) \
     Data_Get_Struct(obj, struct time_object, tobj)
 
+#define TIME_UTC_P(tobj) ((tobj)->gmt == 1)
+#define TIME_SET_UTC(tobj) ((tobj)->gmt = 1)
+
+#define TIME_LOCALTIME_P(tobj) ((tobj)->gmt == 0)
+#define TIME_SET_LOCALTIME(tobj) ((tobj)->gmt = 0)
+
+#define MAKE_TM(time, tobj) \
+  do { \
+    if ((tobj)->tm_got == 0) { \
+	time_get_tm((time), (tobj)->gmt); \
+    } \
+  } while (0)
+
 static void
 time_mark(void *ptr)
 {
@@ -2127,7 +2140,7 @@ time_utc_p(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (tobj->gmt) return Qtrue;
+    if (TIME_UTC_P(tobj)) return Qtrue;
     return Qfalse;
 }
 
@@ -2193,7 +2206,7 @@ time_localtime(VALUE time)
     struct vtm vtm;
 
     GetTimeval(time, tobj);
-    if (!tobj->gmt) {
+    if (TIME_LOCALTIME_P(tobj)) {
 	if (tobj->tm_got)
 	    return time;
     }
@@ -2206,7 +2219,7 @@ time_localtime(VALUE time)
     tobj->vtm = vtm;
 
     tobj->tm_got = 1;
-    tobj->gmt = 0;
+    TIME_SET_LOCALTIME(tobj);
     return time;
 }
 
@@ -2235,7 +2248,7 @@ time_gmtime(VALUE time)
     struct vtm vtm;
 
     GetTimeval(time, tobj);
-    if (tobj->gmt) {
+    if (TIME_UTC_P(tobj)) {
 	if (tobj->tm_got)
 	    return time;
     }
@@ -2248,7 +2261,7 @@ time_gmtime(VALUE time)
     tobj->vtm = vtm;
 
     tobj->tm_got = 1;
-    tobj->gmt = 1;
+    TIME_SET_UTC(tobj);
     return time;
 }
 
@@ -2343,7 +2356,7 @@ time_to_s(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (tobj->gmt == 1)
+    if (TIME_UTC_P(tobj))
         return strftimev("%Y-%m-%d %H:%M:%S UTC", time);
     else
         return strftimev("%Y-%m-%d %H:%M:%S %z", time);
@@ -2358,9 +2371,9 @@ time_add(struct time_object *tobj, VALUE offset, int sign)
         result = time_new_timev(rb_cTime, sub(tobj->timev, offset));
     else
         result = time_new_timev(rb_cTime, add(tobj->timev, offset));
-    if (tobj->gmt) {
+    if (TIME_UTC_P(tobj)) {
 	GetTimeval(result, tobj);
-	tobj->gmt = 1;
+        TIME_SET_UTC(tobj);
     }
     return result;
 }
@@ -2467,9 +2480,7 @@ time_sec(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got == 0) {
-	time_get_tm(time, tobj->gmt);
-    }
+    MAKE_TM(time, tobj);
     return INT2FIX(tobj->vtm.sec);
 }
 
@@ -2489,9 +2500,7 @@ time_min(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got == 0) {
-	time_get_tm(time, tobj->gmt);
-    }
+    MAKE_TM(time, tobj);
     return INT2FIX(tobj->vtm.min);
 }
 
@@ -2511,9 +2520,7 @@ time_hour(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got == 0) {
-	time_get_tm(time, tobj->gmt);
-    }
+    MAKE_TM(time, tobj);
     return INT2FIX(tobj->vtm.hour);
 }
 
@@ -2535,9 +2542,7 @@ time_mday(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got == 0) {
-	time_get_tm(time, tobj->gmt);
-    }
+    MAKE_TM(time, tobj);
     return INT2FIX(tobj->vtm.mday);
 }
 
@@ -2559,9 +2564,7 @@ time_mon(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got == 0) {
-	time_get_tm(time, tobj->gmt);
-    }
+    MAKE_TM(time, tobj);
     return INT2FIX(tobj->vtm.mon);
 }
 
@@ -2581,9 +2584,7 @@ time_year(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got == 0) {
-	time_get_tm(time, tobj->gmt);
-    }
+    MAKE_TM(time, tobj);
     return tobj->vtm.year;
 }
 
@@ -2611,18 +2612,14 @@ time_wday(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got == 0) {
-	time_get_tm(time, tobj->gmt);
-    }
+    MAKE_TM(time, tobj);
     return INT2FIX(tobj->vtm.wday);
 }
 
 #define wday_p(n) {\
     struct time_object *tobj;\
     GetTimeval(time, tobj);\
-    if (tobj->tm_got == 0) {\
-	time_get_tm(time, tobj->gmt);\
-    }\
+    MAKE_TM(time, tobj);\
     return (tobj->vtm.wday == (n)) ? Qtrue : Qfalse;\
 }
 
@@ -2754,9 +2751,7 @@ time_yday(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got == 0) {
-	time_get_tm(time, tobj->gmt);
-    }
+    MAKE_TM(time, tobj);
     return INT2FIX(tobj->vtm.yday);
 }
 
@@ -2791,9 +2786,7 @@ time_isdst(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got == 0) {
-	time_get_tm(time, tobj->gmt);
-    }
+    MAKE_TM(time, tobj);
     return tobj->vtm.isdst ? Qtrue : Qfalse;
 }
 
@@ -2816,11 +2809,9 @@ time_zone(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got == 0) {
-	time_get_tm(time, tobj->gmt);
-    }
+    MAKE_TM(time, tobj);
 
-    if (tobj->gmt == 1) {
+    if (TIME_UTC_P(tobj)) {
 	return rb_str_new2("UTC");
     }
     return rb_str_new2(tobj->vtm.zone);
@@ -2847,11 +2838,9 @@ time_utc_offset(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got == 0) {
-	time_get_tm(time, tobj->gmt);
-    }
+    MAKE_TM(time, tobj);
 
-    if (tobj->gmt == 1) {
+    if (TIME_UTC_P(tobj)) {
 	return INT2FIX(0);
     }
     else {
@@ -2880,9 +2869,7 @@ time_to_a(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got == 0) {
-	time_get_tm(time, tobj->gmt);
-    }
+    MAKE_TM(time, tobj);
     return rb_ary_new3(10,
 		    INT2FIX(tobj->vtm.sec),
 		    INT2FIX(tobj->vtm.min),
@@ -2942,9 +2929,7 @@ strftimev(const char *fmt, VALUE time)
     VALUE str;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got == 0) {
-	time_get_tm(time, tobj->gmt);
-    }
+    MAKE_TM(time, tobj);
     len = rb_strftime_alloc(&buf, fmt, &tobj->vtm, tobj->timev, tobj->gmt);
     str = rb_str_new(buf, len);
     if (buf != buffer) xfree(buf);
@@ -3011,9 +2996,7 @@ time_strftime(VALUE time, VALUE format)
     VALUE str;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got == 0) {
-	time_get_tm(time, tobj->gmt);
-    }
+    MAKE_TM(time, tobj);
     StringValue(format);
     if (!rb_enc_str_asciicompat_p(format)) {
 	rb_raise(rb_eArgError, "format should have ASCII compatible encoding");
@@ -3091,14 +3074,14 @@ time_mdump(VALUE time)
     usec = nsec / 1000;
     nsec = nsec % 1000;
 
-    p = 0x1UL        << 31 | /*  1 */
-	tobj->gmt    << 30 | /*  1 */
-	(year-1900)  << 14 | /* 16 */
-	(vtm.mon-1)  << 10 | /*  4 */
-	vtm.mday     <<  5 | /*  5 */
-	vtm.hour;            /*  5 */
-    s = vtm.min      << 26 | /*  6 */
-	vtm.sec      << 20 | /*  6 */
+    p = 0x1UL            << 31 | /*  1 */
+	TIME_UTC_P(tobj) << 30 | /*  1 */
+	(year-1900)      << 14 | /* 16 */
+	(vtm.mon-1)      << 10 | /*  4 */
+	vtm.mday         <<  5 | /*  5 */
+	vtm.hour;                /*  5 */
+    s = vtm.min          << 26 | /*  6 */
+	vtm.sec          << 20 | /*  6 */
 	usec;    /* 20 */
 
     for (i=0; i<4; i++) {
