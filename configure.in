@@ -728,6 +728,14 @@ AC_ARG_ENABLE(pthread,
 
 dnl Checks for libraries.
 case "$target_os" in
+when(*bsd*|dragonfly*)
+    ;;
+when(*)
+    ac_cv_func_daemon=no
+    ;;
+esac
+
+case "$target_os" in
 when(nextstep*)	;;
 when(openstep*)	;;
 when(rhapsody*)	;;
@@ -744,7 +752,6 @@ when(darwin*)	RUBY_PREPEND_OPTION(LIBS, -lobjc)
 		AC_MSG_RESULT($macosx_10_5)
 		if test $macosx_10_5 = yes; then
 		    ac_cv_header_ucontext_h=no
-		    ac_cv_func_daemon=no
 		else
 		    AC_DEFINE(BROKEN_SETREUID, 1)
 		    AC_DEFINE(BROKEN_SETREGID, 1)
