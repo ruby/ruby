@@ -205,6 +205,10 @@ with all sufficient information, see the ChangeLog file.
   * Socket#accept_nonblock
   * Socket#sysaccept
   * BasicSocket#getsockopt
+  * Time.utc
+  * Time.gm
+  * Time.local
+  * Time.mktime
   * Time.parse
 
     See above.
