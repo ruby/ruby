@@ -1,3 +1,7 @@
+Sat Apr 25 15:47:54 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_get_tm): take time_object instead of gmt.
+
 Sat Apr 25 15:39:44 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_succ): refactored to avoid gmt variable.

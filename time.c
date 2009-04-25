@@ -48,7 +48,6 @@ typedef unsigned LONG_LONG unsigned_time_t;
 VALUE rb_cTime;
 static VALUE time_utc_offset _((VALUE));
 
-static VALUE time_get_tm(VALUE, int);
 static VALUE time_gmtime(VALUE);
 static VALUE time_localtime(VALUE);
 
@@ -1003,10 +1002,11 @@ struct time_object {
 #define TIME_LOCALTIME_P(tobj) ((tobj)->gmt == 0)
 #define TIME_SET_LOCALTIME(tobj) ((tobj)->gmt = 0)
 
+static VALUE time_get_tm(VALUE, struct time_object *);
 #define MAKE_TM(time, tobj) \
   do { \
     if ((tobj)->tm_got == 0) { \
-	time_get_tm((time), (tobj)->gmt); \
+	time_get_tm((time), (tobj)); \
     } \
   } while (0)
 
@@ -2307,9 +2307,9 @@ time_getgmtime(VALUE time)
 }
 
 static VALUE
-time_get_tm(VALUE time, int gmt)
+time_get_tm(VALUE time, struct time_object *tobj)
 {
-    if (gmt) return time_gmtime(time);
+    if (TIME_UTC_P(tobj)) return time_gmtime(time);
     return time_localtime(time);
 }
 
