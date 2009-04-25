@@ -319,7 +319,7 @@ pst_to_s(VALUE st)
     int status;
     VALUE str;
 
-    pid = NUM2LONG(pst_pid(st));
+    pid = NUM2PIDT(pst_pid(st));
     status = PST2INT(st);
 
     str = rb_str_buf_new(0);
@@ -346,7 +346,7 @@ pst_inspect(VALUE st)
     if (NIL_P(vpid)) {
         return rb_sprintf("#<%s: uninitialized>", rb_class2name(CLASS_OF(st)));
     }
-    pid = NUM2LONG(vpid);
+    pid = NUM2PIDT(vpid);
     status = PST2INT(st);
 
     str = rb_sprintf("#<%s: ", rb_class2name(CLASS_OF(st)));
@@ -1918,7 +1918,7 @@ intrcmp(const void *a, const void *b)
 static int
 run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
-    int n, i;
+    long n, i;
     int ret;
     int extra_fd = -1;
     struct fd_pair {
@@ -2294,7 +2294,7 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
 #ifdef HAVE_FORK
     obj = rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS);
     if (obj != Qfalse) {
-        rb_close_before_exec(3, FIX2LONG(obj), e->redirect_fds);
+        rb_close_before_exec(3, FIX2INT(obj), e->redirect_fds);
     }
 #endif
 
@@ -2523,11 +2523,12 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
     after_fork();
 #ifdef FD_CLOEXEC
     if (pid && chfunc) {
+	ssize_t size;
 	close(ep[1]);
-	if ((state = read(ep[0], &err, sizeof(err))) < 0) {
+	if ((size = read(ep[0], &err, sizeof(err))) < 0) {
 	    err = errno;
 	}
-        if (state == sizeof(err) &&
+        if (size == sizeof(err) &&
             errmsg && 0 < errmsg_buflen) {
             ssize_t ret;
             ret = read(ep[0], errmsg, errmsg_buflen-1);
@@ -2536,7 +2537,7 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
             }
         }
 	close(ep[0]);
-	if (state) {
+	if (size) {
 	    if (status) {
 		rb_protect(proc_syswait, (VALUE)pid, status);
 	    }
@@ -3491,7 +3492,7 @@ rlimit_resource_name2int(const char *name, int casetype)
     size_t len = strlen(name);
     if (16 < len) return -1;
     if (casetype == 1) {
-        int i;
+        size_t i;
         char *name2 = ALLOCA_N(char, len+1);
         for (i = 0; i < len; i++) {
             if (!ISLOWER(name[i]))
@@ -4359,14 +4360,13 @@ static VALUE
 proc_getgroups(VALUE obj)
 {
     VALUE ary;
-    size_t ngroups;
+    size_t i, ngroups;
     rb_gid_t *groups;
-    int i;
 
     groups = ALLOCA_N(rb_gid_t, maxgroups);
 
     ngroups = getgroups(maxgroups, groups);
-    if (ngroups == -1)
+    if (ngroups == (size_t)-1)
 	rb_sys_fail(0);
 
     ary = rb_ary_new();
@@ -4397,9 +4397,8 @@ proc_getgroups(VALUE obj)
 static VALUE
 proc_setgroups(VALUE obj, VALUE ary)
 {
-    size_t ngroups;
+    size_t ngroups, i;
     rb_gid_t *groups;
-    int i;
     struct group *gr;
 
     Check_Type(ary, T_ARRAY);
@@ -4410,7 +4409,7 @@ proc_setgroups(VALUE obj, VALUE ary)
 
     groups = ALLOCA_N(rb_gid_t, ngroups);
 
-    for (i = 0; i < ngroups && i < RARRAY_LEN(ary); i++) {
+    for (i = 0; i < ngroups && i < (size_t)RARRAY_LEN(ary); i++) {
 	VALUE g = RARRAY_PTR(ary)[i];
 
 	if (FIXNUM_P(g)) {
@@ -4432,8 +4431,7 @@ proc_setgroups(VALUE obj, VALUE ary)
 	}
     }
 
-    i = setgroups(ngroups, groups);
-    if (i == -1)
+    if (setgroups(ngroups, groups) == -1)
 	rb_sys_fail(0);
 
     return proc_getgroups(obj);
