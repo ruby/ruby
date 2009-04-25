@@ -1,9 +1,9 @@
-Sat Apr 25 18:21:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Apr 25 19:11:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (ac_cv_func_daemon): use daemon(3) only on *BSD.
 
 	* process.c (proc_daemon): double fork to ensure not having ctty.
-	  [ruby-core:23311]
+	  [ruby-core:23305]
 
 Sat Apr 25 16:19:48 2009  Tanaka Akira  <akr@fsij.org>
 
