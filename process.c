@@ -4777,7 +4777,7 @@ proc_geteuid(VALUE obj)
     return UIDT2NUM(euid);
 }
 
-
+#if defined(HAVE_SETRESUID) || defined(HAVE_SETREUID) || defined(HAVE_SETEUID) || defined(HAVE_SETUID) || defined(_POSIX_SAVED_IDS)
 /*
  *  call-seq:
  *     Process.euid= integer
@@ -4812,6 +4812,7 @@ proc_seteuid(VALUE obj, VALUE euid)
 #endif
     return euid;
 }
+#endif
 
 #if defined(HAVE_SETRESUID) || defined(HAVE_SETREUID) || defined(HAVE_SETEUID) || defined(HAVE_SETUID)
 #define proc_seteuid_m proc_seteuid
