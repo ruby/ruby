@@ -1,3 +1,7 @@
+Sat Apr 25 15:54:04 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_mload): use TIME_SET_UTC.
+
 Sat Apr 25 15:47:54 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_get_tm): take time_object instead of gmt.
@@ -10,7 +14,7 @@ Sat Apr 25 15:39:44 2009  Tanaka Akira  <akr@fsij.org>
 
 Sat Apr 25 15:21:33 2009  Tanaka Akira  <akr@fsij.org>
 
-	* time.c (TIME_UTC_P): new macro..
+	* time.c (TIME_UTC_P): new macro.
 	  (TIME_SET_UTC): ditto.
 	  (TIME_LOCALTIME_P): ditto.
 	  (TIME_SET_LOCALTIME): ditto.

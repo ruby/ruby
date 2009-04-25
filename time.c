@@ -3234,7 +3234,7 @@ end_submicro: ;
 
     GetTimeval(time, tobj);
     tobj->tm_got = 0;
-    tobj->gmt = gmt;
+    if (gmt) TIME_SET_UTC(tobj);
     tobj->timev = timev;
 
     return time;
