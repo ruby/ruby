@@ -1002,6 +1002,8 @@ struct time_object {
 #define TIME_LOCALTIME_P(tobj) ((tobj)->gmt == 0)
 #define TIME_SET_LOCALTIME(tobj) ((tobj)->gmt = 0)
 
+#define TIME_COPY_GMT(tobj1, tobj2) ((tobj1)->gmt = (tobj2)->gmt)
+
 static VALUE time_get_tm(VALUE, struct time_object *);
 #define MAKE_TM(time, tobj) \
   do { \
@@ -1359,7 +1361,7 @@ time_s_at(int argc, VALUE *argv, VALUE klass)
         GetTimeval(time, tobj);
         t = time_new_timev(klass, tobj->timev);
 	GetTimeval(t, tobj2);
-	tobj2->gmt = tobj->gmt;
+        TIME_COPY_GMT(tobj2, tobj);
     }
     else {
         timev = num_exact(time);
@@ -2450,7 +2452,7 @@ time_succ(VALUE time)
     GetTimeval(time, tobj);
     time = time_new_timev(rb_cTime, add(tobj->timev, INT2FIX(1)));
     GetTimeval(time, tobj2);
-    tobj2->gmt = tobj->gmt;
+    TIME_COPY_GMT(tobj2, tobj);
     return time;
 }
 

@@ -1,3 +1,9 @@
+Sat Apr 25 16:03:21 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (TIME_COPY_GMT): new macro.
+	  (time_s_at): use TIME_COPY_GMT.
+	  (time_succ): ditto.
+
 Sat Apr 25 15:54:04 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_mload): use TIME_SET_UTC.
