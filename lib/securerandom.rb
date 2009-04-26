@@ -230,7 +230,11 @@ module SecureRandom
   #   p SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
   #   p SecureRandom.uuid #=> "62936e70-1815-439b-bf89-8492855a7e6b"
   #
-  # See RFC 4122 for UUID.
+  # The version 4 UUID is purely random (except the version).
+  # It doesn't contain meaningful information such as MAC address, time, etc.
+  #
+  # See RFC 4122 for details of UUID.
+  #
   def self.uuid
     ary = self.random_bytes(16).unpack("NnnnnN")
     ary[2] = (ary[2] & 0x0fff) | 0x4000
