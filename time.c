@@ -1468,7 +1468,6 @@ static void
 time_arg(int argc, VALUE *argv, struct vtm *vtm)
 {
     VALUE v[8];
-    int i;
 
     vtm->year = INT2FIX(0);
     vtm->mon = 0;
