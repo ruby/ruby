@@ -1,3 +1,11 @@
+Sun Apr 26 22:17:02 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/transcode-tb (ActionMap#each_firstbyte):
+	  if :asis collides other mappings, use another.
+
+	* tool/transcode-tb (ActionMap#generate_info):
+	  add :asis for ASIS.
+
 Sun Apr 26 21:59:43 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c (ASIS): added for multi byte direct map.

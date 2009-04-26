@@ -237,7 +237,10 @@ class ActionMap
       else
         ss.each_firstbyte {|byte, rest|
           h[byte] ||= {}
-          if h[byte][rest]
+          if h[byte][rest].nil?
+          elsif action == :asis
+            next
+          elsif h[byte][rest] != :asis
             raise "ambiguous %s or %s (%02X/%s)" % [h[byte][rest], action, byte, rest]
           end
           h[byte][rest] = action
@@ -316,6 +319,8 @@ class ActionMap
     case info
     when :nomap
       "NOMAP"
+    when :asis
+      "ASIS"
     when :undef
       "UNDEF"
     when :invalid
