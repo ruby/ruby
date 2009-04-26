@@ -1,3 +1,8 @@
+Mon Apr 27 01:25:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_getc): use rl_getc_function if
+	  possible, to get rid of hang up at EOF without a newline.
+
 Sun Apr 26 23:19:32 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/utf8_mac.trans: Add converter for UTF8-MAC.

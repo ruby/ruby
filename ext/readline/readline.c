@@ -68,8 +68,6 @@ static char **readline_attempted_completion_function(const char *text,
     str = rb_str_conv_enc(str, rb_enc_get(str), rb_locale_encoding());\
 } while (0)\
 
-#ifdef HAVE_RL_EVENT_HOOK
-#define BUSY_WAIT 0
 
 /*
  * Document-class: Readline
@@ -106,6 +104,26 @@ static char **readline_attempted_completion_function(const char *text,
  * Documented by TAKAO Kouji <kouji at takao7 dot net>.
  */
 
+#if defined HAVE_RL_GETC_FUNCTION
+static VALUE readline_instream;
+static ID id_getc;
+
+static int readline_getc(FILE *);
+static int
+readline_getc(FILE *input)
+{
+    rb_io_t *ifp = 0;
+    VALUE c;
+    if (!readline_instream) return rl_getc(input);
+    GetOpenFile(readline_instream, ifp);
+    if (rl_instream != ifp->stdio_file) return rl_getc(input);
+    c = rb_funcall(readline_instream, id_getc, 0, 0);
+    if (NIL_P(c)) return EOF;
+    return NUM2CHR(c);
+}
+#elif defined HAVE_RL_EVENT_HOOK
+#define BUSY_WAIT 0
+
 static int readline_event(void);
 static int
 readline_event(void)
@@ -122,6 +140,12 @@ readline_event(void)
 #endif
 }
 #endif
+
+static VALUE
+readline_get(VALUE prompt)
+{
+    return (VALUE)readline((char *)prompt);
+}
 
 /*
  * call-seq:
@@ -225,8 +249,7 @@ readline_readline(int argc, VALUE *argv, VALUE self)
 
     if (!isatty(0) && errno == EBADF) rb_raise(rb_eIOError, "closed stdin");
 
-    buff = (char*)rb_protect((VALUE(*)_((VALUE)))readline, (VALUE)prompt,
-                              &status);
+    buff = (char*)rb_protect(readline_get, (VALUE)prompt, &status);
     if (status) {
 #if defined HAVE_RL_CLEANUP_AFTER_SIGNAL
         /* restore terminal mode and signal handler*/
@@ -272,6 +295,9 @@ readline_s_set_input(VALUE self, VALUE input)
     Check_Type(input, T_FILE);
     GetOpenFile(input, ifp);
     rl_instream = rb_io_stdio_file(ifp);
+#ifdef HAVE_RL_GETC_FUNCTION
+    readline_instream = input;
+#endif
     return input;
 }
 
@@ -1344,7 +1370,10 @@ Init_readline()
     rb_define_const(mReadline, "VERSION", version);
 
     rl_attempted_completion_function = readline_attempted_completion_function;
-#ifdef HAVE_RL_EVENT_HOOK
+#if defined HAVE_RL_GETC_FUNCTION
+    rl_getc_function = readline_getc;
+    id_getc = rb_intern_const("getc");
+#elif defined HAVE_RL_EVENT_HOOK
     rl_event_hook = readline_event;
 #endif
 #ifdef HAVE_RL_CLEAR_SIGNALS

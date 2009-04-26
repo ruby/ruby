@@ -46,6 +46,7 @@ else
   end
 end
 
+have_readline_func("rl_getc_function")
 have_readline_func("rl_filename_completion_function")
 have_readline_func("rl_username_completion_function")
 have_readline_func("rl_completion_matches")
