@@ -92,3 +92,9 @@ assert_normal_exit %q{
     r1.close; w1.close
   }, '', ["INT"] or break
 end
+
+assert_normal_exit %q{
+  r, w = IO.pipe
+  STDOUT.reopen(w)
+  STDOUT.reopen(__FILE__, "r")
+}, '[ruby-dev:38131]'
