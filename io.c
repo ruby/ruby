@@ -5368,8 +5368,8 @@ io_reopen(VALUE io, VALUE nfile)
     fptr->mode = orig->mode | (fptr->mode & FMODE_PREP);
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
-    if (orig->pathv) fptr->pathv = orig->pathv;
-    else fptr->pathv = Qnil;
+    if (RTEST(orig->pathv)) fptr->pathv = orig->pathv;
+    else if (!IS_PREP_STDIO(fptr)) fptr->pathv = Qnil;
     fptr->finalize = orig->finalize;
 #if defined (__CYGWIN__) || !defined(HAVE_FORK)
     if (fptr->finalize == pipe_finalize)
