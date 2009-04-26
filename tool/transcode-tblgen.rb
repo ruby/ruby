@@ -433,7 +433,7 @@ End
       else
         name_hint2 = nil
         name_hint2 = "#{name_hint}_#{'%02X' % byte}" if name_hint
-        table[byte] = "/*BYTE_LOOKUP*/" + rest.generate_node(bytes_code, words_code, name_hint2, rest_valid_encoding)
+        table[byte] = "/*BYTE_LOOKUP*/" + rest.gennode(bytes_code, words_code, name_hint2, rest_valid_encoding)
       end
     }
 
