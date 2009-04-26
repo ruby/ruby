@@ -8,6 +8,8 @@ class TestOptionParser < Test::Unit::TestCase
   end
   def no_error(*args)
     assert_nothing_raised(*args) {return yield}
+  ensure
+    $!.backtrace.delete_if {|e| /\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}/o =~ e} if $!
   end
 
   def test_permute
