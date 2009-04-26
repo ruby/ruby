@@ -221,6 +221,16 @@ end
 
 ################################################
 
+# don't use Ttk widget
+Object.instance_eval{remove_const :TkCombobox} if Object.autoload? :TkCombobox
+
+# if you want to use the 'default_widget_set' selector, 
+#class TkCombobox < TkEntry; end
+#Tk.__set_toplevel_aliases__(:Tk, TkCombobox, :TkCombobox)
+
+
+################################################
+
 class TkCombobox < TkEntry
   include TkComposite
 
