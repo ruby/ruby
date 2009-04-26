@@ -107,6 +107,8 @@ extern void Init_File(void);
 # endif
 #endif
 
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+
 VALUE rb_cIO;
 VALUE rb_eEOFError;
 VALUE rb_eIOError;
@@ -320,13 +322,17 @@ static rb_encoding *io_input_encoding(rb_io_t *fptr);
 static void
 io_ungetbyte(VALUE str, rb_io_t *fptr)
 {
-    int len = RSTRING_LEN(str);
+    long len = RSTRING_LEN(str);
 
     if (fptr->rbuf == NULL) {
         fptr->rbuf_off = 0;
         fptr->rbuf_len = 0;
+#if SIZEOF_LONG > SIZEOF_INT
+	if (len > INT_MAX)
+	    rb_raise(rb_eIOError, "ungetbyte failed");
+#endif
 	if (len > 8192)
-	    fptr->rbuf_capa = len;
+	    fptr->rbuf_capa = (int)len;
 	else
 	    fptr->rbuf_capa = 8192;
         fptr->rbuf = ALLOC_N(char, fptr->rbuf_capa);
@@ -340,8 +346,8 @@ io_ungetbyte(VALUE str, rb_io_t *fptr)
                 char, fptr->rbuf_len);
         fptr->rbuf_off = fptr->rbuf_capa-fptr->rbuf_len;
     }
-    fptr->rbuf_off-=len;
-    fptr->rbuf_len+=len;
+    fptr->rbuf_off-=(int)len;
+    fptr->rbuf_len+=(int)len;
     MEMMOVE(fptr->rbuf+fptr->rbuf_off, RSTRING_PTR(str), char, len);
 }
 
@@ -516,7 +522,7 @@ internal_write_func(void *ptr)
     return write(iis->fd, iis->buf, iis->capa);
 }
 
-static int
+static ssize_t
 rb_read_internal(int fd, void *buf, size_t count)
 {
     struct io_internal_struct iis;
@@ -524,10 +530,10 @@ rb_read_internal(int fd, void *buf, size_t count)
     iis.buf = buf;
     iis.capa = count;
 
-    return rb_thread_blocking_region(internal_read_func, &iis, RUBY_UBF_IO, 0);
+    return (ssize_t)rb_thread_blocking_region(internal_read_func, &iis, RUBY_UBF_IO, 0);
 }
 
-static int
+static ssize_t
 rb_write_internal(int fd, void *buf, size_t count)
 {
     struct io_internal_struct iis;
@@ -535,7 +541,7 @@ rb_write_internal(int fd, void *buf, size_t count)
     iis.buf = buf;
     iis.capa = count;
 
-    return rb_thread_blocking_region(internal_write_func, &iis, RUBY_UBF_IO, 0);
+    return (ssize_t)rb_thread_blocking_region(internal_write_func, &iis, RUBY_UBF_IO, 0);
 }
 
 static long
@@ -587,8 +593,8 @@ io_fflush(rb_io_t *fptr)
         return 0;
     }
     if (0 <= r) {
-        fptr->wbuf_off += r;
-        fptr->wbuf_len -= r;
+        fptr->wbuf_off += (int)r;
+        fptr->wbuf_len -= (int)r;
         errno = EAGAIN;
     }
     if (rb_io_wait_writable(fptr->fd)) {
@@ -801,7 +807,7 @@ io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
                 fptr->wbuf_off = 0;
             }
             MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, RSTRING_PTR(str)+offset, char, len);
-            fptr->wbuf_len += len;
+            fptr->wbuf_len += (int)len;
             n = 0;
         }
         if (io_fflush(fptr) < 0)
@@ -846,7 +852,7 @@ io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
         fptr->wbuf_off = 0;
     }
     MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, RSTRING_PTR(str)+offset, char, len);
-    fptr->wbuf_len += len;
+    fptr->wbuf_len += (int)len;
     return len;
 }
 
@@ -1149,7 +1155,7 @@ rb_io_rewind(VALUE io)
 static int
 io_fillbuf(rb_io_t *fptr)
 {
-    int r;
+    ssize_t r;
 
     if (fptr->mode & FMODE_EOF) {
 	return -1;
@@ -1171,7 +1177,7 @@ io_fillbuf(rb_io_t *fptr)
             rb_sys_fail_path(fptr->pathv);
         }
         fptr->rbuf_off = 0;
-        fptr->rbuf_len = r;
+        fptr->rbuf_len = (int)r; /* r should be <= rbuf_capa */
         if (r == 0) {
 	    io_set_eof(fptr);
             return -1; /* EOF */
@@ -1424,11 +1430,11 @@ rb_io_to_io(VALUE io)
 static long
 read_buffered_data(char *ptr, long len, rb_io_t *fptr)
 {
-    long n;
+    int n;
 
     n = READ_DATA_PENDING_COUNT(fptr);
     if (n <= 0) return 0;
-    if (n > len) n = len;
+    if (n > len) n = (int)len;
     MEMMOVE(ptr, fptr->rbuf+fptr->rbuf_off, char, n);
     fptr->rbuf_off += n;
     fptr->rbuf_len -= n;
@@ -1440,7 +1446,7 @@ io_fread(VALUE str, long offset, rb_io_t *fptr)
 {
     long len = RSTRING_LEN(str) - offset;
     long n = len;
-    int c;
+    long c;
 
     if (READ_DATA_PENDING(fptr) == 0) {
 	while (n > 0) {
@@ -1570,9 +1576,9 @@ more_char(rb_io_t *fptr)
         ds = dp = (unsigned char *)fptr->cbuf + fptr->cbuf_off + fptr->cbuf_len;
         de = (unsigned char *)fptr->cbuf + fptr->cbuf_capa;
         res = rb_econv_convert(fptr->readconv, &sp, se, &dp, de, ECONV_PARTIAL_INPUT|ECONV_AFTER_OUTPUT);
-        fptr->rbuf_off += sp - ss;
-        fptr->rbuf_len -= sp - ss;
-        fptr->cbuf_len += dp - ds;
+        fptr->rbuf_off += (int)(sp - ss);
+        fptr->rbuf_len -= (int)(sp - ss);
+        fptr->cbuf_len += (int)(dp - ds);
 
         putbackable = rb_econv_putbackable(fptr->readconv);
         if (putbackable) {
@@ -1599,7 +1605,7 @@ more_char(rb_io_t *fptr)
                     ds = dp = (unsigned char *)fptr->cbuf + fptr->cbuf_off + fptr->cbuf_len;
                     de = (unsigned char *)fptr->cbuf + fptr->cbuf_capa;
                     res = rb_econv_convert(fptr->readconv, NULL, NULL, &dp, de, 0);
-                    fptr->cbuf_len += dp - ds;
+                    fptr->cbuf_len += (int)(dp - ds);
                     rb_econv_check_error(fptr->readconv);
                 }
             }
@@ -2104,16 +2110,17 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
                 p = fptr->cbuf+fptr->cbuf_off;
                 searchlen = fptr->cbuf_len;
                 if (0 < limit && limit < searchlen)
-                    searchlen = limit;
+                    searchlen = (int)limit;
                 e = memchr(p, delim, searchlen);
                 if (e) {
+		    int len = (int)(e-p+1);
                     if (NIL_P(str))
-                        *strp = str = rb_str_new(p, e-p+1);
+                        *strp = str = rb_str_new(p, len);
                     else
-                        rb_str_buf_cat(str, p, e-p+1);
-                    fptr->cbuf_off += e-p+1;
-                    fptr->cbuf_len -= e-p+1;
-                    limit -= e-p+1;
+                        rb_str_buf_cat(str, p, len);
+                    fptr->cbuf_off += len;
+                    fptr->cbuf_len -= len;
+                    limit -= len;
                     *lp = limit;
                     return delim;
                 }
@@ -2173,14 +2180,14 @@ static inline int
 swallow(rb_io_t *fptr, int term)
 {
     do {
-	long cnt;
+	size_t cnt;
 	while ((cnt = READ_DATA_PENDING_COUNT(fptr)) > 0) {
 	    char buf[1024];
 	    const char *p = READ_DATA_PENDING_PTR(fptr);
 	    int i;
 	    if (cnt > sizeof buf) cnt = sizeof buf;
 	    if (*p != term) return Qtrue;
-	    i = cnt;
+	    i = (int)cnt;
 	    while (--i && *++p == term);
 	    if (!read_buffered_data(buf, cnt - i, fptr)) /* must not fail */
 		rb_sys_fail_path(fptr->pathv);
@@ -2200,7 +2207,7 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc)
     int cr = 0;
 
     for (;;) {
-	long pending = READ_DATA_PENDING_COUNT(fptr);
+	int pending = READ_DATA_PENDING_COUNT(fptr);
 
 	if (pending > 0) {
 	    const char *p = READ_DATA_PENDING_PTR(fptr);
@@ -2208,7 +2215,7 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc)
 
 	    e = memchr(p, '\n', pending);
 	    if (e) {
-                pending = e - p + 1;
+                pending = (int)(e - p + 1);
 	    }
 	    if (NIL_P(str)) {
 		str = rb_str_new(p, pending);
@@ -2981,7 +2988,11 @@ rb_io_ungetc(VALUE io, VALUE c)
     }
     if (NEED_READCONV(fptr)) {
         len = RSTRING_LEN(c);
-        make_readconv(fptr, len);
+#if SIZEOF_LONG > SIZEOF_INT
+	if (len > INT_MAX)
+	    rb_raise(rb_eIOError, "ungetc failed");
+#endif
+        make_readconv(fptr, (int)len);
         if (fptr->cbuf_capa - fptr->cbuf_len < len)
             rb_raise(rb_eIOError, "ungetc failed");
         if (fptr->cbuf_off < len) {
@@ -2990,8 +3001,8 @@ rb_io_ungetc(VALUE io, VALUE c)
                     char, fptr->cbuf_len);
             fptr->cbuf_off = fptr->cbuf_capa-fptr->cbuf_len;
         }
-        fptr->cbuf_off -= len;
-        fptr->cbuf_len += len;
+        fptr->cbuf_off -= (int)len;
+        fptr->cbuf_len += (int)len;
         MEMMOVE(fptr->cbuf+fptr->cbuf_off, RSTRING_PTR(c), char, len);
     }
     else {
@@ -3127,7 +3138,7 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
 
     if (!fptr->wbuf) {
         unsigned char buf[1024];
-        int r;
+        long r;
 
         res = econv_destination_buffer_full;
         while (res == econv_destination_buffer_full) {
@@ -3169,7 +3180,7 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
         ds = dp = (unsigned char *)fptr->wbuf + fptr->wbuf_off + fptr->wbuf_len;
         de = (unsigned char *)fptr->wbuf + fptr->wbuf_capa;
         res = rb_econv_convert(fptr->writeconv, NULL, NULL, &dp, de, 0);
-        fptr->wbuf_len += dp - ds;
+        fptr->wbuf_len += (int)(dp - ds);
         if (res == econv_invalid_byte_sequence ||
             res == econv_incomplete_input ||
             res == econv_undefined_conversion) {
@@ -3966,7 +3977,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p)
 
     p = strrchr(estr, ':');
     if (p) {
-	int len = (p++) - estr;
+	long len = (p++) - estr;
 	if (len == 0 || len > ENCODING_MAXNAMELEN)
 	    idx = -1;
 	else {
@@ -4972,9 +4983,15 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
+	long len = RARRAY_LEN(tmp);
+#if SIZEOF_LONG > SIZEOF_INT
+	if (len > INT_MAX) {
+	    rb_raise(rb_eArgError, "too many arguments");
+	}
+#endif
 	tmp = rb_ary_dup(tmp);
 	RBASIC(tmp)->klass = 0;
-	port = pipe_open_v(RARRAY_LEN(tmp), RARRAY_PTR(tmp), modestr, fmode, &convconfig);
+	port = pipe_open_v((int)len, RARRAY_PTR(tmp), modestr, fmode, &convconfig);
 	rb_ary_clear(tmp);
     }
     else {
@@ -6778,7 +6795,7 @@ select_end(VALUE arg)
     struct select_args *p = (struct select_args *)arg;
     int i;
 
-    for (i = 0; i < sizeof(p->fdsets) / sizeof(p->fdsets[0]); ++i)
+    for (i = 0; i < numberof(p->fdsets); ++i)
 	rb_fd_term(&p->fdsets[i]);
     return Qnil;
 }
@@ -6811,7 +6828,7 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
 	args.timeout = &timerec;
     }
 
-    for (i = 0; i < sizeof(args.fdsets) / sizeof(args.fdsets[0]); ++i)
+    for (i = 0; i < numberof(args.fdsets); ++i)
 	rb_fd_init(&args.fdsets[i]);
 
 #ifdef HAVE_RB_FD_INIT
@@ -6824,7 +6841,7 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
 }
 
 static int
-io_cntl(int fd, int cmd, long narg, int io_p)
+io_cntl(int fd, unsigned long cmd, long narg, int io_p)
 {
     int retval;
 
@@ -6832,7 +6849,7 @@ io_cntl(int fd, int cmd, long narg, int io_p)
 # if defined(__CYGWIN__)
     retval = io_p?ioctl(fd, cmd, (void*)narg):fcntl(fd, cmd, narg);
 # else
-    retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, cmd, narg);
+    retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, (int)cmd, narg);
 # endif
 #else
     if (!io_p) {
@@ -6846,7 +6863,7 @@ io_cntl(int fd, int cmd, long narg, int io_p)
 static VALUE
 rb_io_ctl(VALUE io, VALUE req, VALUE arg, int io_p)
 {
-    int cmd = NUM2ULONG(req);
+    unsigned long cmd = NUM2ULONG(req);
     rb_io_t *fptr;
     long len = 0;
     long narg = 0;
@@ -6901,13 +6918,13 @@ rb_io_ctl(VALUE io, VALUE req, VALUE arg, int io_p)
     }
 
     if (!io_p && cmd == F_SETFL) {
-      if (narg & O_NONBLOCK) {
-        fptr->mode |= FMODE_WSPLIT_INITIALIZED;
-        fptr->mode &= ~FMODE_WSPLIT;
-      }
-      else {
-        fptr->mode &= ~(FMODE_WSPLIT_INITIALIZED|FMODE_WSPLIT);
-      }
+	if (narg & O_NONBLOCK) {
+	    fptr->mode |= FMODE_WSPLIT_INITIALIZED;
+	    fptr->mode &= ~FMODE_WSPLIT;
+	}
+	else {
+	    fptr->mode &= ~(FMODE_WSPLIT_INITIALIZED|FMODE_WSPLIT);
+	}
     }
 
     return INT2NUM(retval);
@@ -6961,7 +6978,7 @@ rb_io_fcntl(int argc, VALUE *argv, VALUE io)
 #define rb_io_fcntl rb_f_notimplement
 #endif
 
-#if defined(HAVE_SYSCALL) && !defined(__CHECKER__)
+#if defined(HAVE_SYSCALL) && !defined(__CHECKER__) && SIZEOF_LONG == SIZEOF_INT
 /*
  *  call-seq:
  *     syscall(fixnum [, args...])   => integer
@@ -7001,7 +7018,7 @@ rb_f_syscall(int argc, VALUE *argv)
     rb_secure(2);
     if (argc == 0)
 	rb_raise(rb_eArgError, "too few arguments for syscall");
-    if (argc > sizeof(arg) / sizeof(arg[0]))
+    if (argc > numberof(arg))
 	rb_raise(rb_eArgError, "too many arguments for syscall");
     arg[0] = NUM2LONG(argv[0]); argv++;
     while (items--) {
@@ -7286,13 +7303,20 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
     v = rb_hash_aref(opt, sym_open_args);
     if (!NIL_P(v)) {
 	VALUE args;
+	long n;
 
 	v = rb_convert_type(v, T_ARRAY, "Array", "to_ary");
-	args = rb_ary_new2(RARRAY_LEN(v)+1);
+	n = RARRAY_LEN(v) + 1;
+#if SIZEOF_LONG > SIZEOF_INT
+	if (n > INT_MAX) {
+	    rb_raise(rb_eArgError, "too many arguments");
+	}
+#endif
+	args = rb_ary_tmp_new(n);
 	rb_ary_push(args, argv[0]);
 	rb_ary_concat(args, v);
-
-	arg->io = rb_io_open_with_args(RARRAY_LEN(args), RARRAY_PTR(args));
+	arg->io = rb_io_open_with_args((int)n, RARRAY_PTR(args));
+	rb_ary_clear(args);	/* prevent from GC */
 	return;
     }
     arg->io = rb_io_open(argv[0], Qnil, Qnil, opt);
@@ -7622,7 +7646,7 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 #endif
 
 static ssize_t
-maygvl_copy_stream_read(struct copy_stream_struct *stp, char *buf, int len, off_t offset)
+maygvl_copy_stream_read(struct copy_stream_struct *stp, char *buf, size_t len, off_t offset)
 {
     ssize_t ss;
   retry_read:
@@ -7662,7 +7686,7 @@ maygvl_copy_stream_read(struct copy_stream_struct *stp, char *buf, int len, off_
 }
 
 static int
-nogvl_copy_stream_write(struct copy_stream_struct *stp, char *buf, int len)
+nogvl_copy_stream_write(struct copy_stream_struct *stp, char *buf, size_t len)
 {
     ssize_t ss;
     int off = 0;
@@ -7678,8 +7702,8 @@ nogvl_copy_stream_write(struct copy_stream_struct *stp, char *buf, int len)
             stp->error_no = errno;
             return -1;
         }
-        off += ss;
-        len -= ss;
+        off += (int)ss;
+        len -= (int)ss;
         stp->total += ss;
     }
     return 0;
@@ -7715,7 +7739,7 @@ nogvl_copy_stream_read_write(struct copy_stream_struct *stp)
     }
 
     while (use_eof || 0 < copy_length) {
-        if (!use_eof && copy_length < sizeof(buf)) {
+        if (!use_eof && copy_length < (off_t)sizeof(buf)) {
             len = (size_t)copy_length;
         }
         else {
@@ -7908,7 +7932,7 @@ copy_stream_body(VALUE arg)
     if (stp->src_offset == (off_t)-1 && src_fptr && src_fptr->rbuf_len) {
         size_t len = src_fptr->rbuf_len;
         VALUE str;
-        if (stp->copy_length != (off_t)-1 && stp->copy_length < len) {
+        if (stp->copy_length != (off_t)-1 && stp->copy_length < (off_t)len) {
             len = (size_t)stp->copy_length;
         }
         str = rb_str_buf_new(len);
