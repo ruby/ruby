@@ -1,3 +1,9 @@
+Sun Apr 26 20:17:24 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/rake.rb: use RbConfig::CONFIG instead of Config::CONFIG.
+
+	* lib/rbconfig/datadir.rb: ditto.
+
 Sun Apr 26 19:30:29 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_arg): unused variable removed.

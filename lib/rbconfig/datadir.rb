@@ -5,17 +5,17 @@
 #++
 
 
-module Config
+module RbConfig
 
   # Only define datadir if it doesn't already exist.
-  unless Config.respond_to?(:datadir)
+  unless RbConfig.respond_to?(:datadir)
 
     # Return the path to the data directory associated with the given
     # package name.  Normally this is just
-    # "#{Config::CONFIG['datadir']}/#{package_name}", but may be
+    # "#{RbConfig::CONFIG['datadir']}/#{package_name}", but may be
     # modified by packages like RubyGems to handle versioned data
     # directories.
-    def Config.datadir(package_name)
+    def RbConfig.datadir(package_name)
       File.join(CONFIG['datadir'], package_name)
     end
 
