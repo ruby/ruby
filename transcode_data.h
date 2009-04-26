@@ -36,6 +36,7 @@
 #define FUNso	(PType 0x0F)	/* function from start to output */
 #define STR1	(PType 0x11)	/* string 4 <= len <= 259 bytes: 1byte length + content */
 #define GB4bt	(PType 0x12)	/* GB18030 four bytes payload */
+#define ASIS	(PType 0x13)	/* multi byte direct map */
 
 #define STR1_LENGTH(byte_addr) (unsigned int)(*(byte_addr) + 4)
 #define STR1_BYTEINDEX(w) ((w) >> 6)
