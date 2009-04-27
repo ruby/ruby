@@ -1,3 +1,8 @@
+Mon Apr 27 16:47:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ruby_version): uses sed instead of grep if the
+	  result is need, to get rid of GREP_OPTIONS.  [ruby-dev:38336]
+
 Mon Apr 27 01:25:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_getc): use rl_getc_function if
