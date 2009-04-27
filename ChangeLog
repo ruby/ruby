@@ -1,3 +1,8 @@
+Tue Apr 28 07:13:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pp.rb (Struct#pretty_print): coerce to a string since
+	  anonymous class has name no longer.  [ruby-dev:38349]
+
 Mon Apr 27 16:47:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (ruby_version): uses sed instead of grep if the

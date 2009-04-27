@@ -361,7 +361,7 @@ end
 
 class Struct
   def pretty_print(q)
-    q.group(1, '#<struct ' + PP.mcall(self, Kernel, :class).name, '>') {
+    q.group(1, sprintf("#<struct %s", PP.mcall(self, Kernel, :class).name), '>') {
       q.seplist(PP.mcall(self, Struct, :members), lambda { q.text "," }) {|member|
         q.breakable
         q.text member.to_s
