@@ -1,3 +1,9 @@
+Tue Apr 28 23:05:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (get_ts): use readtime clock.  [ruby-dev:38354]
+
+	* eval.c (rb_thread_stop_timer): clear thread_init while locking.
+
 Tue Apr 28 19:10:42 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/test_timeout.rb: backported from 1.9.

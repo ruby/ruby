@@ -12370,8 +12370,8 @@ get_ts(struct timespec *to, long ns)
 {
     struct timeval tv;
 
-#ifdef CLOCK_MONOTONIC
-    if (clock_gettime(CLOCK_MONOTONIC, to) != 0)
+#ifdef CLOCK_REALTIME
+    if (clock_gettime(CLOCK_REALTIME, to) != 0)
 #endif
     {
 	gettimeofday(&tv, NULL);
@@ -12452,9 +12452,9 @@ rb_thread_stop_timer()
     if (!thread_init) return;
     safe_mutex_lock(&time_thread.lock);
     pthread_cond_signal(&time_thread.cond);
+    thread_init = 0;
     pthread_cleanup_pop(1);
     pthread_join(time_thread.thread, NULL);
-    thread_init = 0;
 }
 #elif defined(HAVE_SETITIMER)
 static void
