@@ -9,5 +9,18 @@ class TestTimeout < Test::Unit::TestCase
       timeout(0.1) { q.pop }
     }
   end
-end
 
+  def test_timeout
+    @flag = true
+    Thread.start {
+      sleep 0.1
+      @flag = false
+    }
+    assert_nothing_raised("[ruby-dev:38319]") do
+      Timeout.timeout(1) {
+        nil while @flag
+      }
+    end
+    assert !@flag, "[ruby-dev:38319]"
+  end
+end

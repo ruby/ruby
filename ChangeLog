@@ -1,3 +1,7 @@
+Tue Apr 28 19:09:45 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/test_timeout.rb (TestTimeout#test_timeout): add a test.
+
 Tue Apr 28 07:13:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/pp.rb (Struct#pretty_print): coerce to a string since
