@@ -1,3 +1,7 @@
+Tue Apr 28 19:10:42 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/test_timeout.rb: backported from 1.9.
+
 Fri Apr 24 14:55:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_start_timer): guard condition was inverted.
