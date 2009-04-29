@@ -1,3 +1,9 @@
+Wed Apr 29 21:23:40 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/iso_2022_jp.h: add CP50221.
+
+	* enc/trans/iso2022.trans: add converter for CP50221.
+
 Wed Apr 29 15:22:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_join): recursive array has no meaning as path

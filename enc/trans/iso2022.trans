@@ -38,6 +38,26 @@
   }
   transcode_generate_node(ActionMap.parse(map), "eucjp_to_stateless_iso2022jp")
 
+  map = {
+    "1b2842" => :func_so,       # designate US-ASCII to G0.             "ESC ( B"
+    "1b2849" => :func_so,       # designate JIS X 0201 katakana to G0.  "ESC ( I"
+    "1b284a" => :func_so,       # designate JIS X 0201 latin to G0.     "ESC ( J"
+    "1b2440" => :func_so,       # designate JIS X 0208 1978 to G0.      "ESC $ @"
+    "1b2442" => :func_so,       # designate JIS X 0208 1983 to G0.      "ESC $ B"
+    "0e"     => :func_so,       # designate JIS X 0201 katakana to G0.  "SO"
+    "0f"     => :func_so,       # designate US-ASCII to G0.             "SI"
+    "{00-0d,10-1a,1c-92}" => :func_si,
+  }
+  transcode_generate_node(ActionMap.parse(map), "cp50221_decoder")
+
+  map = {
+    "{0e,0f,1b}" => :undef,
+    "{00-0d,10-1a,1c-7f}" => :func_so,
+    "{a1-fe}{a1-fe}" => :func_so,
+    "8e{a1-fe}" => :func_so,
+  }
+  transcode_generate_node(ActionMap.parse(map), "cp50221_encoder")
+
 %>
 
 <%= transcode_generated_code %>
@@ -46,6 +66,7 @@
 /* ignore JIS X 0201 latin */
 #define G0_JISX0208_1978 1
 #define G0_JISX0208_1983 2
+#define G0_JISX0201_KATAKANA 3
 
 #define EMACS_MULE_LEADING_CODE_JISX0208_1978   0220
 #define EMACS_MULE_LEADING_CODE_JISX0208_1983   0222
@@ -244,6 +265,166 @@ rb_eucjp_to_stateless_iso2022jp = {
     NULL, NULL, NULL, fun_so_eucjp_to_stateless_iso2022jp,
 };
 
+static VALUE
+fun_si_cp50221_decoder(void *statep, const unsigned char *s, size_t l)
+{
+    unsigned char *sp = statep;
+    switch (*sp) {
+      case G0_ASCII:
+        return (VALUE)NOMAP;
+      case G0_JISX0201_KATAKANA:
+        if (0x21 <= s[0] && s[0] <= 0x5f)
+            return (VALUE)FUNso;
+        break;
+      case G0_JISX0208_1978:
+        if (0x21 <= s[0] && s[0] <= 0x28 || 0x30 <= s[0] && s[0] <= 0x74)
+            return (VALUE)iso2022jp_decoder_jisx0208_rest;
+        break;
+      case G0_JISX0208_1983:
+        if (0x21 <= s[0] && s[0] <= 0x28 ||
+                s[0] == 0x2D ||
+                0x30 <= s[0] && s[0] <= 0x74 ||
+                0x79 <= s[0] && s[0] <= 0x7C)
+                /* 0x7F <= s[0] && s[0] <= 0x92) */
+            return (VALUE)iso2022jp_decoder_jisx0208_rest;
+        break;
+    }
+    return (VALUE)INVALID;
+}
+
+static ssize_t
+fun_so_cp50221_decoder(void *statep, const unsigned char *s, size_t l, unsigned char* o, size_t osize)
+{
+    unsigned char *sp = statep;
+    switch (s[0]) {
+      case 0x1b:
+        if (s[1] == '(') {
+            switch (s[l-1]) {
+              case 'B':
+              case 'J':
+                *sp = G0_ASCII;
+                break;
+              case 'I':
+                *sp = G0_JISX0201_KATAKANA;
+                break;
+            }
+        }
+        else {
+            switch (s[l-1]) {
+              case '@':
+                *sp = G0_JISX0208_1978;
+                break;
+              case 'B':
+                *sp = G0_JISX0208_1983;
+                break;
+            }
+        }
+        return 0;
+      case 0x0E:
+        *sp = G0_JISX0201_KATAKANA;
+        return 0;
+      case 0x0F:
+        *sp = G0_ASCII;
+        return 0;
+      default:
+        if (*sp == G0_JISX0201_KATAKANA) {
+            o[0] = 0x8E;
+            o[1] = s[0] | 0x80;
+        }
+        /* else if (0x7F == s[0] && s[0] <= 0x88) { */
+            /* User Defined Characters */
+            /* o[n++] = s[0] | 0xE0; */
+            /* o[n++] = s[1] | 0x80; */
+        /* else if (0x89 <= s[0] && s[0] <= 0x92) { */
+            /* User Defined Characters 2 */
+            /* o[n++] = 0x8f; */
+            /* o[n++] = s[0] + 0x6C; */
+            /* o[n++] = s[1] | 0x80; */
+        /* } */
+        else {
+            /* JIS X 0208 */
+            /* NEC Special Characters */
+            /* NEC-selected IBM extended Characters */
+            o[0] = s[0] | 0x80;
+            o[1] = s[1] | 0x80;
+        }
+        return 2;
+    }
+}
+
+static const rb_transcoder
+rb_cp50221_decoder = {
+    "CP50221", "cp51932", cp50221_decoder,
+    TRANSCODE_TABLE_INFO,
+    1, /* input_unit_length */
+    3, /* max_input */
+    3, /* max_output */
+    asciicompat_decoder, /* asciicompat_type */
+    1, iso2022jp_init, iso2022jp_init, /* state_size, state_init, state_fini */
+    NULL, fun_si_cp50221_decoder, NULL, fun_so_cp50221_decoder
+};
+
+static ssize_t
+fun_so_cp50221_encoder(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
+{
+    unsigned char *sp = statep;
+    unsigned char *output0 = o;
+    int newstate;
+
+    if (l == 1)
+        newstate = G0_ASCII;
+    else if (s[0] == 0x8E) {
+        s++;
+        l = 1;
+        newstate = G0_JISX0201_KATAKANA;
+    }
+    else
+        newstate = G0_JISX0208_1983;
+
+    if (*sp != newstate) {
+        if (newstate == G0_ASCII) {
+            *o++ = 0x1b;
+            *o++ = '(';
+            *o++ = 'B';
+        }
+        else if (newstate == G0_JISX0201_KATAKANA) {
+            *o++ = 0x1b;
+            *o++ = '(';
+            *o++ = 'I';
+        }
+        else {
+            *o++ = 0x1b;
+            *o++ = '$';
+            *o++ = 'B';
+        }
+        *sp = newstate;
+    }
+
+    if (l == 1) {
+        *o++ = s[0] & 0x7f;
+    }
+    else {
+        *o++ = s[0] & 0x7f;
+        *o++ = s[1] & 0x7f;
+    }
+
+    return o - output0;
+}
+
+static const rb_transcoder
+rb_cp50221_encoder = {
+    "CP51932", "CP50221", cp50221_encoder,
+    TRANSCODE_TABLE_INFO,
+    1, /* input_unit_length */
+    3, /* max_input */
+    5, /* max_output */
+    asciicompat_encoder, /* asciicompat_type */
+    1, iso2022jp_init, iso2022jp_init, /* state_size, state_init, state_fini */
+    NULL, NULL, NULL, fun_so_cp50221_encoder,
+    finish_iso2022jp_encoder,
+    iso2022jp_encoder_reset_sequence_size, finish_iso2022jp_encoder
+};
+
 void
 Init_iso2022(void)
 {
@@ -251,5 +432,7 @@ Init_iso2022(void)
     rb_register_transcoder(&rb_iso2022jp_encoder);
     rb_register_transcoder(&rb_stateless_iso2022jp_to_eucjp);
     rb_register_transcoder(&rb_eucjp_to_stateless_iso2022jp);
+    rb_register_transcoder(&rb_cp50221_decoder);
+    rb_register_transcoder(&rb_cp50221_encoder);
 }
 
