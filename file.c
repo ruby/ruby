@@ -3298,7 +3298,7 @@ static VALUE
 file_inspect_join(VALUE ary, VALUE argp, int recur)
 {
     VALUE *arg = (VALUE *)argp;
-    if (recur) return rb_usascii_str_new2("[...]");
+    if (recur || ary == arg[0]) rb_raise(rb_eArgError, "recursive array");
     return rb_file_join(arg[0], arg[1]);
 }
 
@@ -3332,7 +3332,10 @@ rb_file_join(VALUE ary, VALUE sep)
 	  case T_STRING:
 	    break;
 	  case T_ARRAY:
-	    {
+	    if (ary == tmp) {
+		rb_raise(rb_eArgError, "recursive array");
+	    }
+	    else {
 		VALUE args[2];
 
 		args[0] = tmp;

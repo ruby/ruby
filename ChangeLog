@@ -1,3 +1,8 @@
+Wed Apr 29 15:22:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_join): recursive array has no meaning as path
+	  name.  [ruby-core:23329]
+
 Tue Apr 28 19:09:45 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/test_timeout.rb (TestTimeout#test_timeout): add a test.
