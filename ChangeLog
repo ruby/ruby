@@ -559,7 +559,7 @@ Mon Apr  6 16:38:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Apr  6 15:11:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* numeric.c (int_chr): checsk overflow.
+	* numeric.c (int_chr): checks overflow.
 
 Mon Apr  6 10:49:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -603,7 +603,7 @@ Fri Apr  3 12:45:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Apr  2 14:50:06 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* lib/getoptlong.rb: remove unused udoc/usage from example.
+	* lib/getoptlong.rb: remove unused rdoc/usage from example.
 	   [ruby-core:23098]
 
 Thu Apr  2 07:42:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1109,7 +1109,7 @@ Fri Mar 13 18:10:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Mar 13 17:04:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* include/ruby/ruby.h (bool): not define to get rid of conflic
+	* include/ruby/ruby.h (bool): not define to get rid of conflict
 	  against curses.
 
 Fri Mar 13 16:45:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1124,7 +1124,7 @@ Fri Mar 13 16:45:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  be larger than long.
 
 	* ext/openssl/ossl_ssl_session.c (ossl_ssl_session_get_time),
-	  (ossl_ssl_session_get_timeout): use TIMET2NUM() to conver
+	  (ossl_ssl_session_get_timeout): use TIMET2NUM() to convert
 	  time_t.
 
 Fri Mar 13 15:10:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1172,7 +1172,7 @@ Thu Mar 12 22:41:41 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl: suppress warnings.
 
-	* ext/openssl/ossl.h (OSSL_Debug): don't use gcc extention for
+	* ext/openssl/ossl.h (OSSL_Debug): don't use gcc extension for
 	  variadic macro.
 
 Thu Mar 12 22:29:36 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -1194,7 +1194,7 @@ Thu Mar 12 18:16:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  suppress VC type warnings.  [ruby-core:22726]
 
 	* marshal.c (div0), numeric.c (infinite_value): new functions to
-	  get rid of VC divion by 0 warnings.
+	  get rid of VC division by 0 warnings.
 
 	* st.c: use st_index_t for indexes instead of int.
 
