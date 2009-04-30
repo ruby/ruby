@@ -7,8 +7,8 @@
     str.unpack("H*")[0]
   end
 
-  transcode_tblgen("UTF-8", "UTF8-MAC", [
-    *MAC_DECOMPOSE_TBL.map{|k,v|[hexstr(k), hexstr(v)]},
+  transcode_tblgen("UTF-8", "UTF8-MAC",
+    MAC_DECOMPOSE_TBL.map{|k,v|[hexstr(k), hexstr(v)]} + [
     ["{00-7F}", :nomap],
     ["{c2-df}{80-bf}", :asis],
     ["e0{a0-bf}{80-bf}", :asis],

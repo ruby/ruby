@@ -1,3 +1,8 @@
+Thu Apr 30 15:27:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/trans/utf8_mac.trans: get rid of a 1.9 feature for cross
+	  compile.
+
 Thu Apr 30 11:35:30 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_filesystem_encoding): Change filesystem_encoding of
