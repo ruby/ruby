@@ -5,7 +5,7 @@ Wed Apr 29 15:22:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Apr 28 23:05:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* eval.c (get_ts): use readtime clock.  [ruby-dev:38354]
+	* eval.c (get_ts): use realtime clock.  [ruby-dev:38354]
 
 	* eval.c (rb_thread_stop_timer): clear thread_init while locking.
 
