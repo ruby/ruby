@@ -1037,7 +1037,7 @@ rb_filesystem_encoding(void)
     snprintf(cp, sizeof cp, "CP%d", AreFileApisANSI() ? GetACP() : GetOEMCP());
     enc = rb_enc_find(cp);
 #elif defined __APPLE__
-    enc = rb_enc_find("UTF8-MAC");
+    enc = rb_enc_find("UTF-8");
 #else
     enc = rb_default_external_encoding();
 #endif
