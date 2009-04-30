@@ -220,7 +220,7 @@ module Net   #:nodoc:
   #       HTTPUnknownResponse
   #       HTTPInformation                    # 1xx
   #           HTTPContinue                       # 100
-  #           HTTPSwitchProtocl                  # 101
+  #           HTTPSwitchProtocol                 # 101
   #       HTTPSuccess                        # 2xx
   #           HTTPOK                             # 200
   #           HTTPCreated                        # 201

@@ -1,3 +1,7 @@
+Thu Apr 30 18:18:13 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/net/http.rb: documentation typo fixed.  [ruby-core:23335]
+
 Thu Apr 30 15:27:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/trans/utf8_mac.trans: get rid of a 1.9 feature for cross
