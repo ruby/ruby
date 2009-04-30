@@ -101,13 +101,13 @@ def parse_args(argv = ARGV)
 
   $destdir ||= $mflags.defined?("DESTDIR")
   if $extout ||= $mflags.defined?("EXTOUT")
-    Config.expand($extout)
+    RbConfig.expand($extout)
   end
 
   $continue = $mflags.set?(?k)
 
   if $installed_list ||= $mflags.defined?('INSTALLED_LIST')
-    Config.expand($installed_list, RbConfig::CONFIG)
+    RbConfig.expand($installed_list, RbConfig::CONFIG)
     $installed_list = open($installed_list, "ab")
     $installed_list.sync = true
   end

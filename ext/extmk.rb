@@ -540,7 +540,7 @@ rubies = []
 %w[RUBY RUBYW STATIC_RUBY].each {|n|
   r = n
   if r = arg_config("--"+r.downcase) || config_string(r+"_INSTALL_NAME")
-    rubies << Config.expand(r+=EXEEXT)
+    rubies << RbConfig.expand(r+=EXEEXT)
     $mflags << "#{n}=#{r}"
   end
 }

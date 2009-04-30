@@ -1,3 +1,13 @@
+Fri May  1 01:31:19 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/extmk.rb: use RbConfig instead of Config.
+
+	* instruby.rb: ditto.
+
+	* lib/rubygems.rb: ditto.
+
+	* test/rubygems/test_config.rb: ditto.
+
 Thu Apr 30 21:23:30 2009  Tanaka Akira  <akr@fsij.org>
 
 	* runruby.rb: use RbConfig::CONFIG instead of Config::CONFIG.

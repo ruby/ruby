@@ -823,7 +823,7 @@ module Gem
 
 end
 
-module Config
+module RbConfig
   # :stopdoc:
   class << self
     # Return the path to the data directory associated with the named
