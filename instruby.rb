@@ -107,7 +107,7 @@ def parse_args(argv = ARGV)
   $continue = $mflags.set?(?k)
 
   if $installed_list ||= $mflags.defined?('INSTALLED_LIST')
-    Config.expand($installed_list, Config::CONFIG)
+    Config.expand($installed_list, RbConfig::CONFIG)
     $installed_list = open($installed_list, "ab")
     $installed_list.sync = true
   end

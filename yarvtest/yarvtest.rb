@@ -7,7 +7,7 @@ if /mswin32/ !~ RUBY_PLATFORM
 else
   $ruby = 'miniruby'
 end
-$matzruby = Config::CONFIG['ruby_install_name']
+$matzruby = RbConfig::CONFIG['ruby_install_name']
 
 ARGV.each{|opt|
   if /\Aruby=(.+)/ =~ opt

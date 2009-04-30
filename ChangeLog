@@ -1,3 +1,25 @@
+Thu Apr 30 21:23:30 2009  Tanaka Akira  <akr@fsij.org>
+
+	* runruby.rb: use RbConfig::CONFIG instead of Config::CONFIG.
+
+	* spec/default.mspec: ditto.
+
+	* yarvtest/yarvtest.rb: ditto.
+
+	* instruby.rb: ditto.
+
+	* benchmark/report.rb: ditto.
+
+	* benchmark/runc.rb: ditto.
+
+	* tool/eval.rb: ditto.
+
+	* test/rubygems/test_gem.rb: ditto.
+
+	* test/rubygems/test_config.rb: ditto.
+
+	* test/rubygems/test_gem_platform.rb: ditto.
+
 Thu Apr 30 18:18:13 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/net/http.rb: documentation typo fixed.  [ruby-core:23335]

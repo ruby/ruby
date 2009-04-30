@@ -25,8 +25,8 @@ end
 
 def benchmark cmd
   rubybin = ENV['RUBY'] || File.join(
-    Config::CONFIG["bindir"],
-    Config::CONFIG["ruby_install_name"] + Config::CONFIG["EXEEXT"])
+    RbConfig::CONFIG["bindir"],
+    RbConfig::CONFIG["ruby_install_name"] + RbConfig::CONFIG["EXEEXT"])
     
   IO.popen(rubybin, 'r+'){|io|
     io.write cmd

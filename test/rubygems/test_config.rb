@@ -11,7 +11,7 @@ require 'rubygems'
 class TestConfig < RubyGemTestCase
 
   def test_datadir
-    datadir = Config::CONFIG['datadir']
+    datadir = RbConfig::CONFIG['datadir']
     assert_equal "#{datadir}/xyz", Config.datadir('xyz')
   end
 

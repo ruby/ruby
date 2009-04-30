@@ -100,8 +100,8 @@ class TestGemPlatform < RubyGemTestCase
   end
 
   def test_initialize_mswin32_vc6
-    orig_RUBY_SO_NAME = Config::CONFIG['RUBY_SO_NAME']
-    Config::CONFIG['RUBY_SO_NAME'] = 'msvcrt-ruby18'
+    orig_RUBY_SO_NAME = RbConfig::CONFIG['RUBY_SO_NAME']
+    RbConfig::CONFIG['RUBY_SO_NAME'] = 'msvcrt-ruby18'
 
     expected = ['x86', 'mswin32', nil]
 
@@ -109,7 +109,7 @@ class TestGemPlatform < RubyGemTestCase
 
     assert_equal expected, platform.to_a, 'i386-mswin32 VC6'
   ensure
-    Config::CONFIG['RUBY_SO_NAME'] = orig_RUBY_SO_NAME
+    RbConfig::CONFIG['RUBY_SO_NAME'] = orig_RUBY_SO_NAME
   end
 
   def test_initialize_platform
