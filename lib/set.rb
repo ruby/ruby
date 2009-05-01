@@ -276,8 +276,8 @@ class Set
   # Merges the elements of the given enumerable object to the set and
   # returns self.
   def merge(enum)
-    if enum.is_a?(Set)
-      @hash.update(enum.instance_eval { @hash })
+    if enum.instance_of?(self.class)
+      @hash.update(enum.instance_variable_get(:@hash))
     else
       enum.each { |o| add(o) }
     end
