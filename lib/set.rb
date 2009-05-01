@@ -20,7 +20,7 @@
 #
 # The method +to_set+ is added to Enumerable for convenience.
 #
-# See the Set class for an example of usage.
+# See the Set and SortedSet documentation for examples of usage.
 
 
 #
@@ -260,8 +260,8 @@ class Set
   # Merges the elements of the given enumerable object to the set and
   # returns self.
   def merge(enum)
-    if enum.is_a?(Set)
-      @hash.update(enum.instance_eval { @hash })
+    if enum.instance_of?(self.class)
+      @hash.update(enum.instance_variable_get(:@hash))
     else
       enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
       enum.each { |o| add(o) }
@@ -441,7 +441,35 @@ class Set
   end
 end
 
-# SortedSet implements a set which elements are sorted in order.  See Set.
+# 
+# SortedSet implements a Set that guarantees that it's element are
+# yielded in sorted order (according to the return values of their
+# #<=> methods) when iterating over them.
+# 
+# All elements that are added to a SortedSet must include the
+# Comparable module.
+# 
+# Also, all elements must be <em>mutually comparable</em>: <tt>el1 <=>
+# el2</tt> must not return <tt>nil</tt> for any elements <tt>el1</tt>
+# and <tt>el2</tt>, else an ArgumentError will be raised when
+# iterating over the SortedSet.
+#
+# == Example
+# 
+#   require "set"
+#   
+#   set = SortedSet.new(2, 1, 5, 6, 4, 5, 3, 3, 3)
+#   ary = []
+#   
+#   set.each do |obj|
+#     ary << obj
+#   end
+#   
+#   p ary # => [1, 2, 3, 4, 5, 6]
+#   
+#   set2 = SortedSet.new(1, 2, "3")
+#   set2.each { |obj| } # => raises ArgumentError: comparison of Fixnum with String failed
+#   
 class SortedSet < Set
   @@setup = false
 
@@ -466,6 +494,12 @@ class SortedSet < Set
 	    @hash = RBTree.new
 	    super
 	  end
+	  
+	  def add(o)
+	    o.is_a?(Comparable) or raise ArgumentError, "value must be comparable"
+	    super
+	  end
+	  alias << add
 	}
       rescue LoadError
 	module_eval %{
@@ -485,9 +519,9 @@ class SortedSet < Set
 	  end
 
 	  def add(o)
+	    o.is_a?(Comparable) or raise ArgumentError, "value must be comparable"
 	    @keys = nil
-	    @hash[o] = true
-	    self
+	    super
 	  end
 	  alias << add
 

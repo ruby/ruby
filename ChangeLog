@@ -1,3 +1,12 @@
+Fri May  1 16:52:52 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (SortedSet#add): Do not let an uncomparable object
+	  in. [Bug #118]
+
+	* lib/set.rb (Set#merge): Only directly use the passed objects
+	  @hash instance variable when self and the passed object are
+	  instances of the same class. [Bug #118]
+
 Fri May  1 16:01:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: fixed the help strings for the header and library
