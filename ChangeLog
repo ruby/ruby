@@ -1,3 +1,7 @@
+Fri May  1 13:18:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_intern.h (_longjmp): never return.  see [ruby-core:23241]
+
 Fri May  1 01:31:19 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/extmk.rb: use RbConfig instead of Config.
