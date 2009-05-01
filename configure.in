@@ -54,7 +54,7 @@ AC_SUBST(MAJOR)
 AC_SUBST(MINOR)
 AC_SUBST(TEENY)
 dnl checks for alternative programs
-AC_ARG_WITH(gcc, [  --without-gcc           never use gcc], [
+AC_ARG_WITH(gcc, AS_HELP_STRING([--without-gcc], [never use gcc]), [
 	case $withval in
 	no)	: ${CC=cc}
 		;;
@@ -80,8 +80,8 @@ ac_install_sh='' # unusable for extension libraries.
 ifelse(currently,disabled, [
 dnl checks for fat-binary
 AC_ARG_ENABLE(fat-binary,
-       [  --enable-fat-binary=ARCHS
-                          build an Apple/NeXT Multi Architecture Binary (MAB);
+    AS_HELP_STRING([--enable-fat-binary=ARCHS],
+                         [build an Apple/NeXT Multi Architecture Binary (MAB);
                           ARCHS is a comma-delimited list of architectures for
                           which to build; if ARCHS is omitted, then the package
                           will be built for all architectures supported by the
@@ -89,7 +89,7 @@ AC_ARG_ENABLE(fat-binary,
                           for Rhapsody; "m68k,i386,sparc" for OpenStep;
                           "m68k,i386,sparc,hppa" for NextStep); if this option
                           is disabled or omitted entirely, then the package
-                          will be built only for the target platform],
+                          will be built only for the target platform]),
        [fat_binary=$enableval], [fat_binary=no])
 if test "$fat_binary" != no; then
 
@@ -138,7 +138,7 @@ case $target_cpu in
   *)    frame_address=no;;
 esac
 AC_ARG_ENABLE(frame-address,
-       [  --enable-frame-address  use GCC __builtin_frame_address(). ],
+       AS_HELP_STRING([--enable-frame-address], [use GCC __builtin_frame_address(). ]),
        [frame_address=$enableval])
 if test $frame_address = yes; then
     AC_DEFINE(USE_BUILTIN_FRAME_ADDRESS)
@@ -214,7 +214,7 @@ cygwin*|mingw*)
 		    [rb_cv_msvcrt=msvcrt])
 	test "$rb_cv_msvcrt" = "" && rb_cv_msvcrt=msvcrt])
 	AC_ARG_WITH(winsock2,
-		[  --with-winsock2         link winsock2 (MinGW only)], [
+		AS_HELP_STRING([--with-winsock2], [link winsock2 (MinGW only)]), [
 		case $withval in
 		yes) with_winsock2=yes;;
 		*)   with_winsock2=no;;
@@ -401,18 +401,18 @@ AC_CHECK_DECLS([sys_nerr], [], [], [$ac_includes_default
 
 dnl whether link libc_r or not
 AC_ARG_WITH(libc_r, 
-	[  --with-libc_r           link libc_r if possible (FreeBSD only)], [
+	AS_HELP_STRING([--with-libc_r], [link libc_r if possible (FreeBSD only)]), [
 	case $withval in
 	yes) with_libc_r=yes;;
 	*)   with_libc_r=no;;
 	esac], [with_libc_r=no])
 
 AC_ARG_ENABLE(pthread,
-       [  --enable-pthread        use pthread library.],
+       AS_HELP_STRING([--enable-pthread], [use pthread library.]),
        [enable_pthread=$enableval], [enable_pthread=no])
 
 AC_ARG_ENABLE(fastthread,
-       [  --disable-fastthread    do not use the fastthread mutex], [
+       AS_HELP_STRING([--disable-fastthread], [do not use the fastthread mutex]), [
 	: handled by ext/thread/extconf.rb
         ])
 
@@ -646,7 +646,7 @@ test x$ac_cv_func__longjmp = xno && ac_cv_func__setjmp=no
 
 AC_MSG_CHECKING(for setjmp type)
 AC_ARG_WITH(setjmp-type, 
-	[  --with-setjmp-type      select setjmp type], [
+	AS_HELP_STRING([--with-setjmp-type], [select setjmp type]), [
 	case $withval in
 	__builtin_setjmp) setjmp_prefix=__builtin_;;
 	_setjmp) setjmp_prefix=_;;
@@ -684,7 +684,7 @@ AC_DEFINE_UNQUOTED([RUBY_LONGJMP(env,val)], [${setjmp_prefix}longjmp(env,val)])
 AC_DEFINE_UNQUOTED(RUBY_JMP_BUF, ${setjmp_sigmask+${setjmp_prefix}}jmp_buf)
 
 AC_ARG_ENABLE(setreuid,
-       [  --enable-setreuid       use setreuid()/setregid() according to need even if obsolete.],
+       AS_HELP_STRING([--enable-setreuid], [use setreuid()/setregid() according to need even if obsolete.]),
        [use_setreuid=$enableval])
 if test "$use_setreuid" = yes; then
     AC_DEFINE(USE_SETREUID)
@@ -1081,7 +1081,7 @@ dnl default value for $KANJI
 DEFAULT_KCODE="KCODE_NONE"
 
 AC_ARG_WITH(default-kcode, 
-	[  --with-default-kcode=CODE specify default value for \$KCODE (utf8|euc|sjis|none)], 
+	AS_HELP_STRING([--with-default-kcode=CODE], [specify default value for \$KCODE (utf8|euc|sjis|none)]), 
 	[case $withval in
 	utf8) DEFAULT_KCODE="KCODE_UTF8";;
 	euc)  DEFAULT_KCODE="KCODE_EUC";;
@@ -1093,7 +1093,7 @@ AC_DEFINE_UNQUOTED(DEFAULT_KCODE, $DEFAULT_KCODE)
 
 dnl wheather use dln_a_out or not
 AC_ARG_WITH(dln-a-out, 
-	[  --with-dln-a-out        use dln_a_out if possible], [
+	AS_HELP_STRING([--with-dln-a-out], [use dln_a_out if possible]), [
 	case $withval in
 	dnl (
 	yes)
@@ -1171,7 +1171,7 @@ if test "$with_dln_a_out" != yes; then
 
 
   AC_ARG_ENABLE(rpath,
-       [  --disable-rpath         embed run path into extension libraries.],
+       AS_HELP_STRING([--disable-rpath], [embed run path into extension libraries.]),
        [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
   if test "$enable_rpath" = yes; then
     RPATHFLAG=" ${linker_flag}-R%1\$-s"
@@ -1387,7 +1387,7 @@ esac
 EXTSTATIC=
 AC_SUBST(EXTSTATIC)dnl
 AC_ARG_WITH(static-linked-ext,
-	    [  --with-static-linked-ext link external modules statically],
+	    AS_HELP_STRING([--with-static-linked-ext], [link external modules statically]),
             [case $withval in
 	     yes) STATIC=
 		  EXTSTATIC=static;;
@@ -1507,7 +1507,7 @@ LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so'
 ENABLE_SHARED=no
 
 AC_ARG_ENABLE(shared,
-       [  --enable-shared         build a shared library for Ruby. ],
+       AS_HELP_STRING([--enable-shared], [build a shared library for Ruby. ]),
        [enable_shared=$enableval])
 LIBRUBYARG_SHARED='-l$(RUBY_SO_NAME)'
 if test "$enable_shared" = 'yes'; then
@@ -1599,7 +1599,7 @@ AC_SUBST(ARCHFILE)
 dnl build rdoc index if requested
 RDOCTARGET=""
 AC_ARG_ENABLE(install-doc,
-       [  --enable-install-doc    build and install rdoc indexes during install ],
+       AS_HELP_STRING([--enable-install-doc], [build and install rdoc indexes during install ]),
        [install_doc=$enableval], [install_doc=no])
 if test "$install_doc" != no; then
    RDOCTARGET="install-doc"
@@ -1859,14 +1859,14 @@ AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${RUBY_SITE_LIB_PATH2}/${sitearch}")
 AC_DEFINE_UNQUOTED(RUBY_VENDOR_ARCHLIB, "${RUBY_VENDOR_LIB_PATH2}/${sitearch}")
 
 AC_ARG_WITH(search-path,
-		[  --with-search-path=DIR specify the additional search path],
+		AS_HELP_STRING([--with-search-path=DIR], [specify the additional search path]),
 		[search_path=$withval])
 if test "$search_path" != ""; then
     AC_DEFINE_UNQUOTED(RUBY_SEARCH_PATH,"$search_path")
 fi
 
 AC_ARG_WITH(mantype,
-		[  --with-mantype=TYPE specify man page type; TYPE is one of man and doc],
+	AS_HELP_STRING([--with-mantype=TYPE], [specify man page type; TYPE is one of man and doc]),
 		[
 			case "$withval" in
 			man|doc)

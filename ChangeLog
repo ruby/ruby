@@ -1,3 +1,8 @@
+Fri May  1 16:01:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: fixed the help strings for the header and library
+	  dir switches, and updated to use AS_HELP_STRING.
+
 Fri May  1 15:45:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LIBRUBY_LDSHARED): use $(CC) instead of cc.
