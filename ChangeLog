@@ -1,3 +1,7 @@
+Fri May  1 13:12:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c, gc.c (_longjmp): never return.  see [ruby-core:23241]
+
 Wed Apr 29 15:22:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_join): recursive array has no meaning as path

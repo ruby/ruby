@@ -50,7 +50,12 @@ void rb_io_fptr_finalize _((struct rb_io_t*));
 #define rb_setjmp(env) RUBY_SETJMP(env)
 #define rb_jmp_buf rb_jmpbuf_t
 #ifdef __CYGWIN__
-int _setjmp(), _longjmp();
+# ifndef _setjmp
+int _setjmp _((jmp_buf));
+# endif
+# ifndef _longjmp
+NORETURN(void _longjmp _((jmp_buf, int)));
+# endif
 #endif
 
 /* Make alloca work the best possible way.  */

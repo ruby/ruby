@@ -217,7 +217,12 @@ static int volatile freebsd_clear_carry_flag = 0;
      ((just_before_setjmp), RUBY_SETJMP(env))
 #  define ruby_longjmp(env,val) RUBY_LONGJMP(env,val)
 #  ifdef __CYGWIN__
-int _setjmp(), _longjmp();
+#    ifndef _setjmp
+int _setjmp _((jmp_buf));
+#    endif
+#    ifndef _longjmp
+NORETURN(void _longjmp _((jmp_buf, int)));
+#    endif
 #  endif
 #endif
 
