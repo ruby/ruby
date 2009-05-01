@@ -1243,7 +1243,7 @@ if test "$with_dln_a_out" != yes; then
 	rhapsody*)	: ${LDSHARED='cc -dynamic -bundle -undefined suppress'}
 			: ${LDFLAGS=""}
 			rb_cv_dlopen=yes ;;
-	darwin*)	: ${LDSHARED='cc -dynamic -bundle -undefined suppress -flat_namespace'}
+	darwin*)	: ${LDSHARED='$(CC) -dynamic -bundle -undefined suppress -flat_namespace'}
 			: ${LDFLAGS=""}
 			: ${LIBPATHENV=DYLD_LIBRARY_PATH}
 			# /usr/local/include is always searched for
@@ -1576,7 +1576,7 @@ if test "$enable_shared" = 'yes'; then
 	;;
     darwin*)
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(MAJOR).$(MINOR).$(TEENY).dylib'
-	LIBRUBY_LDSHARED='cc -dynamiclib -undefined suppress -flat_namespace'
+	LIBRUBY_LDSHARED='$(CC) -dynamiclib -undefined suppress -flat_namespace'
 	LIBRUBY_DLDFLAGS='-install_name $(libdir)/lib$(RUBY_SO_NAME).dylib -current_version $(MAJOR).$(MINOR).$(TEENY) -compatibility_version $(MAJOR).$(MINOR)'
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_SO_NAME).dylib'
 	;;
