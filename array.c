@@ -3941,8 +3941,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "initialize", rb_ary_initialize, -1);
     rb_define_method(rb_cArray, "initialize_copy", rb_ary_replace, 1);
 
-    rb_define_method(rb_cArray, "to_s", rb_ary_inspect, 0);
     rb_define_method(rb_cArray, "inspect", rb_ary_inspect, 0);
+    rb_define_alias(rb_cArray,  "to_s", "inspect");
     rb_define_method(rb_cArray, "to_a", rb_ary_to_a, 0);
     rb_define_method(rb_cArray, "to_ary", rb_ary_to_ary_m, 0);
     rb_define_method(rb_cArray, "frozen?",  rb_ary_frozen_p, 0);
