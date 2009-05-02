@@ -45,10 +45,10 @@ memfill(register VALUE *mem, register long size, register VALUE val)
 
 # define ARY_SHARED_P(ary) \
     (assert(!FL_TEST(ary, ELTS_SHARED) || !FL_TEST(ary, RARRAY_EMBED_FLAG)), \
-     FL_TEST(ary,ELTS_SHARED))
+     FL_TEST(ary,ELTS_SHARED)!=0)
 # define ARY_EMBED_P(ary) \
     (assert(!FL_TEST(ary, ELTS_SHARED) || !FL_TEST(ary, RARRAY_EMBED_FLAG)), \
-     FL_TEST(ary, RARRAY_EMBED_FLAG))
+     FL_TEST(ary, RARRAY_EMBED_FLAG)!=0)
 
 #define ARY_HEAP_PTR(a) (assert(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.ptr)
 #define ARY_HEAP_LEN(a) (assert(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.len)
@@ -192,7 +192,7 @@ static void
 rb_ary_decrement_share(VALUE shared)
 {
     if (shared) {
-	int num = ARY_SHARED_NUM(shared) - 1;
+	long num = ARY_SHARED_NUM(shared) - 1;
 	if (num == 0) {
 	    rb_ary_free(shared);
 	    rb_gc_force_recycle(shared);
@@ -222,7 +222,7 @@ rb_ary_unshare_safe(VALUE ary)
 static VALUE
 rb_ary_increment_share(VALUE shared)
 {
-    int num = ARY_SHARED_NUM(shared);
+    long num = ARY_SHARED_NUM(shared);
     if (num >= 0) {
 	ARY_SET_SHARED_NUM(shared, num + 1);
     }
