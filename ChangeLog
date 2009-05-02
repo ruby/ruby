@@ -1,3 +1,7 @@
+Sat May  2 22:53:02 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (SortedSet): Fix document. [Bug #1429]
+
 Sat May  2 10:34:29 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/utf8_mac-tbl.rb: don't use Unicode escape.
