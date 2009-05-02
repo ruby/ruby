@@ -458,7 +458,7 @@ end
 # 
 #   require "set"
 #   
-#   set = SortedSet.new(2, 1, 5, 6, 4, 5, 3, 3, 3)
+#   set = SortedSet.new([2, 1, 5, 6, 4, 5, 3, 3, 3])
 #   ary = []
 #   
 #   set.each do |obj|
@@ -467,7 +467,7 @@ end
 #   
 #   p ary # => [1, 2, 3, 4, 5, 6]
 #   
-#   set2 = SortedSet.new(1, 2, "3")
+#   set2 = SortedSet.new([1, 2, "3"])
 #   set2.each { |obj| } # => raises ArgumentError: comparison of Fixnum with String failed
 #   
 class SortedSet < Set

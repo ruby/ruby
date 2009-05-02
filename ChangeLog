@@ -1,3 +1,7 @@
+Sat May  2 22:53:02 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (SortedSet): Fix document. [Bug #1429]
+
 Fri May  1 16:52:52 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (SortedSet#add): Do not let an uncomparable object
