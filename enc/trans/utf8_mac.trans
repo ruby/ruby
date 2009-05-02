@@ -3,12 +3,8 @@
 <%
   require 'utf8_mac-tbl'
 
-  def hexstr(str)
-    str.unpack("H*")[0]
-  end
-
   transcode_tblgen("UTF-8", "UTF8-MAC",
-    MAC_DECOMPOSE_TBL.map{|k,v|[hexstr(k), hexstr(v)]} + [
+    MAC_DECOMPOSE_TBL + [
     ["{00-7F}", :nomap],
     ["{c2-df}{80-bf}", :asis],
     ["e0{a0-bf}{80-bf}", :asis],
@@ -31,13 +27,11 @@
   map["f4{80-8f}{80-bf}{80-bf}"] = :func_so
   transcode_generate_node(ActionMap.parse(map), "from_UTF8_MAC")
 
-  map = Hash[*MAC_DECOMPOSE_TBL.select{|k,v|v.length == 3}.
-    map{|k,v|[hexstr(v), hexstr(k)]}.flatten]
+  ary = MAC_DECOMPOSE_TBL.select{|k,v|v.scan(/[0-7C-F].(?:[89AB].)*/i).length == 3}
+  transcode_generate_node(ActionMap.parse(ary.map{|k,v|[v,k]}), "from_utf8_mac_nfc3")
 
-  transcode_generate_node(ActionMap.parse(map), "from_utf8_mac_nfc3")
-  map = Hash[*MAC_DECOMPOSE_TBL.select{|k,v|v.length == 2}.
-    map{|k,v|[hexstr(v), hexstr(k)]}.flatten]
-  transcode_generate_node(ActionMap.parse(map), "from_utf8_mac_nfc2")
+  ary = MAC_DECOMPOSE_TBL.select{|k,v|v.scan(/[0-7C-F].(?:[89AB].)*/i).length == 2}
+  transcode_generate_node(ActionMap.parse(ary.map{|k,v|[v,k]}), "from_utf8_mac_nfc2")
 %>
 
 <%= transcode_generated_code %>
@@ -236,7 +230,7 @@ fun_so_from_utf8_mac(void *statep,
 }
 
 static const rb_transcoder
-rb_from_utf8_mac = {
+rb_from_UTF8_MAC = {
     "UTF8-MAC", "UTF-8", from_UTF8_MAC,
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
@@ -252,6 +246,6 @@ void
 Init_utf8_mac(void)
 {
 <%= transcode_register_code %>
-    rb_register_transcoder(&rb_from_utf8_mac);
+    rb_register_transcoder(&rb_from_UTF8_MAC);
 }
 

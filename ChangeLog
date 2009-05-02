@@ -1,3 +1,9 @@
+Sat May  2 10:34:29 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/utf8_mac-tbl.rb: don't use Unicode escape.
+
+	* enc/trans/utf8_mac.trans: follow above.
+
 Sat May  2 09:19:40 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (Init_Array): made #to_s an alias to #inspect to reduce
