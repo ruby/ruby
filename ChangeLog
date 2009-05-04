@@ -1,3 +1,8 @@
+Sun Apr 19 14:43:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_cleanup): the order of local variables on stack is
+	  undefined.  should use outermost VALUE for ruby_init_stack.
+
 Mon Apr 13 11:35:55 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): optimize previous commit.

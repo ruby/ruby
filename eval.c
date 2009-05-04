@@ -13,6 +13,7 @@
 
 #include "eval_intern.h"
 #include "iseq.h"
+#include "gc.h"
 
 VALUE proc_invoke(VALUE, VALUE, VALUE, VALUE);
 VALUE rb_binding_new(void);
@@ -82,7 +83,7 @@ ruby_options(int argc, char **argv)
     int state;
     void *tree = 0;
 
-    Init_stack((void *)&state);
+    Init_stack((void *)&tree);
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	SAVE_ROOT_JMPBUF(GET_THREAD(), tree = ruby_process_options(argc, argv));
@@ -135,7 +136,7 @@ ruby_cleanup(int ex)
 
     errs[1] = th->errinfo;
     th->safe_level = 0;
-    Init_stack((void *)&state);
+    Init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
@@ -631,7 +632,7 @@ rb_rescue(VALUE (* b_proc)(ANYARGS), VALUE data1,
 VALUE
 rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
 {
-    VALUE result = Qnil;	/* OK */
+    volatile VALUE result = Qnil;
     int status;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
