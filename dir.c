@@ -109,7 +109,7 @@ bracket(
 	    t1++;
 	if (!*t1)
 	    return NULL;
-	p += (r = rb_enc_mbclen(t1, pend, enc));
+	p = t1 + (r = rb_enc_mbclen(t1, pend, enc));
 	if (p[0] == '-' && p[1] != ']') {
 	    const char *t2 = p + 1;
 	    int r2;

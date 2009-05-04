@@ -1,3 +1,8 @@
+Fri Apr 17 00:45:09 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* dir.c (bracket): fix escape handling for range character in bracket
+	  of fnmatch pattern.  e.g., '[a\-c]' should not match 'b'.
+
 Wed Apr 15 11:53:35 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* dir.c (fnmatch_helper): use rb_enc_precise_mbclen and
