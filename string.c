@@ -6070,7 +6070,8 @@ rb_str_rstrip_bang(VALUE str)
 
     /* remove trailing spaces or '\0's */
     if (single_byte_optimizable(str)) {
-	while (s < t && (*(t-1) == '\0' || rb_enc_isspace(*(t-1), enc))) t--;
+	unsigned char c;
+	while (s < t && ((c = *(t-1)) == '\0' || rb_enc_isspace(c, enc))) t--;
     }
     else {
 	char *tp;

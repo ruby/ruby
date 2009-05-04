@@ -1,3 +1,8 @@
+Wed Apr  8 20:08:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_rstrip_bang): should not sign-expand non-ascii.
+	  [ruby-core:23158]
+
 Wed Apr  8 17:29:29 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_chop_bang): reset coderange. [ruby-core:23155]
