@@ -4216,7 +4216,7 @@ proc_daemon(int argc, VALUE *argv)
 #elif defined(HAVE_FORK)
     switch (rb_fork(0, 0, 0, Qnil)) {
       case -1:
-	return (-1);
+	return INT2FIX(-1);
       case 0:
 	break;
       default:
@@ -4224,6 +4224,16 @@ proc_daemon(int argc, VALUE *argv)
     }
 
     proc_setsid();
+
+    /* must not be process-leader */
+    switch (rb_fork(0, 0, 0, Qnil)) {
+      case -1:
+	return INT2FIX(-1);
+      case 0:
+	break;
+      default:
+	_exit(0);
+    }
 
     if (!RTEST(nochdir))
 	(void)chdir("/");

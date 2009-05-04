@@ -1,3 +1,10 @@
+Sat Apr 25 19:11:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ac_cv_func_daemon): use daemon(3) only on *BSD.
+
+	* process.c (proc_daemon): double fork to ensure not having ctty.
+	  [ruby-core:23305]
+
 Sun Apr 19 14:43:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): the order of local variables on stack is
