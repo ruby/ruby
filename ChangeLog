@@ -1,3 +1,9 @@
+Sun Apr 19 13:17:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gem_prelude.rb (Gem::QuickLoader#push_gem_version_on_load_path):
+	  check for requirement if the gem is installed.  a patch from
+	  Kyosuke MOROHASHI at [ruby-dev:38020].
+
 Wed Apr 15 20:24:49 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (rb_ary_flatten): flatten(0) works as Array#dup.
