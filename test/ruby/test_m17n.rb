@@ -241,6 +241,9 @@ class TestM17N < Test::Unit::TestCase
       u("\xfc"),
       "\u3042",
       "ascii",
+
+      "\u3042".encode("UTF-16LE"),
+      "\u3042".encode("UTF-16BE"),
     ].each do |str|
       assert_equal(str, eval(str.dump), "[ruby-dev:33142]")
     end

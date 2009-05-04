@@ -4167,7 +4167,7 @@ rb_str_dump(VALUE str)
 
     result = rb_str_new5(str, 0, len);
     p = RSTRING_PTR(str); pend = p + RSTRING_LEN(str);
-    q = RSTRING_PTR(result); qend = q + len;
+    q = RSTRING_PTR(result); qend = q + len + 1;
 
     *q++ = '"';
     while (p < pend) {
