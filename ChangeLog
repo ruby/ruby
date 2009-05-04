@@ -1,3 +1,8 @@
+Tue Apr 14 18:11:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (bracket): if same in bytes, path is matching.
+	  [ruby-dev:38305]
+
 Sun Apr 12 19:54:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (bracket, fnmatch_helper): compare bytewise first, to get
