@@ -224,7 +224,9 @@ fnmatch_helper(
 	    RETURN(ISEND(p) ? 0 : FNM_NOMATCH);
 	if (ISEND(p))
 	    goto failed;
-	r = rb_enc_mbclen(p, pend, enc);
+	r = rb_enc_precise_mbclen(p, pend, enc);
+	if (!MBCLEN_CHARFOUND_P(r))
+	    goto failed;
 	if (r <= (send-s) && memcmp(p, s, r) == 0) {
 	    p += r;
 	    s += r;
