@@ -405,6 +405,7 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("hello\n"), S("hello\n\r").chop)
     assert_equal(S(""),        S("\r\n").chop)
     assert_equal(S(""),        S("").chop)
+    assert_equal(S("a").hash,  S("a\u00d8").chop.hash)
   end
 
   def test_chop!
@@ -422,6 +423,10 @@ class TestString < Test::Unit::TestCase
 
     a = S("").chop!
     assert_nil(a)
+
+    a = S("a\u00d8")
+    a.chop!
+    assert_equal(S("a").hash, a.hash)
 
     a = S("hello\n")
     b = a.dup

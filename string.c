@@ -5811,7 +5811,7 @@ rb_str_chop_bang(VALUE str)
 {
     if (RSTRING_LEN(str) > 0) {
 	long len;
-	str_modify_keep_cr(str);
+	rb_str_modify(str);
 	len = chopped_length(str);
 	STR_SET_LEN(str, len);
 	RSTRING_PTR(str)[len] = '\0';
