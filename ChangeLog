@@ -1,3 +1,10 @@
+Wed Apr 15 20:24:49 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* array.c (rb_ary_flatten): flatten(0) works as Array#dup.
+	  [ruby-core:23168]
+
+	* test/ruby/test_array.rb: add a test for above.
+
 Fri Apr 17 00:45:09 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* dir.c (bracket): fix escape handling for range character in bracket

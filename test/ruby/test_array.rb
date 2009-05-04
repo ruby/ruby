@@ -719,6 +719,11 @@ class TestArray < Test::Unit::TestCase
     a7 = a6.flatten
     assert_equal(true, a7.tainted?)
     assert_equal(true, a7.untrusted?)
+
+    a8 = @cls[[1, 2], 3]
+    a9 = a8.flatten(0)
+    assert_equal(a8, a9)
+    assert_not_same(a8, a9)
   end
 
   def test_flatten!
