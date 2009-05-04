@@ -652,6 +652,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		str = rb_obj_as_string(arg);
 		if (OBJ_TAINTED(str)) tainted = 1;
 		len = RSTRING_LEN(str);
+		rb_str_set_len(result, blen);
 		enc = rb_enc_check(result, str);
 		if (flags&(FPREC|FWIDTH)) {
 		    slen = rb_enc_strlen(RSTRING_PTR(str),RSTRING_END(str),enc);
