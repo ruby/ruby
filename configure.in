@@ -1770,7 +1770,7 @@ if test "$enable_shared" = 'yes'; then
     darwin*)
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(MAJOR).$(MINOR).$(TEENY).dylib'
 	LIBRUBY_LDSHARED='cc -dynamiclib -undefined suppress -flat_namespace'
-	LIBRUBY_DLDFLAGS='-install_name $(libdir)/lib$(RUBY_SO_NAME).dylib -current_version $(MAJOR).$(MINOR).$(TEENY) -compatibility_version $(MAJOR).$(MINOR)'
+	LIBRUBY_DLDFLAGS='-install_name $(libdir)/lib$(RUBY_SO_NAME).dylib -current_version $(MAJOR).$(MINOR).$(TEENY) -compatibility_version $(ruby_version)'
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_SO_NAME).dylib'
 	;;
     interix*)

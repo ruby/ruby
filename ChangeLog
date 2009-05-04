@@ -1,3 +1,8 @@
+Tue Apr  7 13:14:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBRUBY_DLDFLAGS): compatibility version is
+	  ruby_version.
+
 Sat Apr  4 17:05:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (RB_NUM_COERCE_FUNCS_NEED_OPID): macro to
