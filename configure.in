@@ -2218,12 +2218,12 @@ fi
 CPPFLAGS="$CPPFLAGS "'$(DEFS)'
 test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
 if test -n "${cflags+set}"; then
-    cflagspat=`eval echo '"'"${cflags}"'"' | sed 's/[[][|.*]]/\\&/g'`
-    CFLAGS=`echo "$CFLAGS" | sed "s|$cflagspat"'|${cflags}|'`
+    cflagspat=`eval echo '"'"${cflags}"'"' | sed 's/[[][|.*]]/\\&/g;s/^  */ /;s/^  *$/ /'`
+    CFLAGS=`echo " $CFLAGS " | sed "s|$cflagspat"'|${cflags}|;s/^ *//;s/ *$//'`
 fi
 if test -n "${cxxflags+set}"; then
-    cxxflagspat=`eval echo '"'"${cxxflags}"'"' | sed 's/[[][|.*]]/\\&/g'`
-    CXXFLAGS=`echo "$CXXFLAGS" | sed "s|$cxxflagspat"'|${cxxflags}|'`
+    cxxflagspat=`eval echo '"'"${cxxflags}"'"' | sed 's/[[][|.*]]/\\&/g;s/^  */ /;s/^  *$/ /'`
+    CXXFLAGS=`echo " $CXXFLAGS " | sed "s|$cxxflagspat"'|${cxxflags}|;s/^ *//;s/ *$//'`
 fi
 if test "${ARCH_FLAG}"; then
     archflagpat=`eval echo '"'"${ARCH_FLAG}"'"' | sed 's/[[][|.*]]/\\&/g'`

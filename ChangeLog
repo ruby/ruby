@@ -1,3 +1,7 @@
+Wed May  6 05:33:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (CFLAGS, CXXFLAGS): strips extra spaces.
+
 Tue May  5 11:29:07 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/ifchange: Fix: arguments which begin with minus sign may
