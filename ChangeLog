@@ -1,3 +1,7 @@
+Wed May  6 05:33:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (CFLAGS, CXXFLAGS): strips extra spaces.
+
 Sat May  2 22:53:02 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (SortedSet): Fix document. [Bug #1429]
