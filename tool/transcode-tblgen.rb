@@ -238,9 +238,9 @@ class ActionMap
         ss.each_firstbyte {|byte, rest|
           h[byte] ||= {}
           if h[byte][rest].nil?
-          elsif action == :asis
+          elsif action == :nomap0
             next
-          elsif h[byte][rest] != :asis
+          elsif h[byte][rest] != :nomap0
             raise "ambiguous %s or %s (%02X/%s)" % [h[byte][rest], action, byte, rest]
           end
           h[byte][rest] = action
@@ -317,10 +317,9 @@ class ActionMap
 
   def generate_info(info)
     case info
-    when :nomap
+    when :nomap, :nomap0
+      # :nomap0 is low priority.  it never collides.
       "NOMAP"
-    when :asis
-      "ASIS"
     when :undef
       "UNDEF"
     when :invalid

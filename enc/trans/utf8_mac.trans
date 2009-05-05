@@ -6,13 +6,13 @@
   transcode_tblgen("UTF-8", "UTF8-MAC",
     MAC_DECOMPOSE_TBL + [
     ["{00-7F}", :nomap],
-    ["{c2-df}{80-bf}", :asis],
-    ["e0{a0-bf}{80-bf}", :asis],
-    ["{e1-ec}{80-bf}{80-bf}", :asis],
-    ["ed{80-9f}{80-bf}", :asis],
-    ["{ee-ef}{80-bf}{80-bf}", :asis],
-    ["f0{90-bf}{80-bf}{80-bf}", :asis],
-    ["{f1-f3}{80-bf}{80-bf}{80-bf}", :asis],
+    ["{c2-df}{80-bf}", :nomap0],
+    ["e0{a0-bf}{80-bf}", :nomap0],
+    ["{e1-ec}{80-bf}{80-bf}", :nomap0],
+    ["ed{80-9f}{80-bf}", :nomap0],
+    ["{ee-ef}{80-bf}{80-bf}", :nomap0],
+    ["f0{90-bf}{80-bf}{80-bf}", :nomap0],
+    ["{f1-f3}{80-bf}{80-bf}{80-bf}", :nomap0],
   ])
 
   map = {}

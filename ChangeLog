@@ -1,3 +1,17 @@
+Tue May  5 07:22:37 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* transcode.c: NOMAP is now multibyte direct map.
+
+	* transcode.c: remove ASIS.
+
+	* transcode_data.h: ditto.
+
+	* tool/transcode-tb (ActionMap#generate_info): remove :asis.
+
+	* tool/transcode-tb (ActionMap#generate_info): add :nomap0.
+
+	* enc/trans/utf8_mac.trans: replace :asis by :nomap0.
+
 Sat May  2 22:53:02 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (SortedSet): Fix document. [Bug #1429]

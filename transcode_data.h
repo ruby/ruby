@@ -22,7 +22,7 @@
 
 #define PType (unsigned int)
 
-#define NOMAP	(PType 0x01)	/* single byte direct map */
+#define NOMAP	(PType 0x01)	/* direct map */
 #define ONEbt	(0x02)		/* one byte payload */
 #define TWObt	(0x03)		/* two bytes payload */
 #define THREEbt	(0x05)		/* three bytes payload */
@@ -36,7 +36,6 @@
 #define FUNso	(PType 0x0F)	/* function from start to output */
 #define STR1	(PType 0x11)	/* string 4 <= len <= 259 bytes: 1byte length + content */
 #define GB4bt	(PType 0x12)	/* GB18030 four bytes payload */
-#define ASIS	(PType 0x13)	/* multi byte direct map */
 
 #define STR1_LENGTH(byte_addr) (unsigned int)(*(byte_addr) + 4)
 #define STR1_BYTEINDEX(w) ((w) >> 6)

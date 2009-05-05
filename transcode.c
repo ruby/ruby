@@ -505,7 +505,6 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
       case 30: goto resume_label30;
       case 31: goto resume_label31;
       case 32: goto resume_label32;
-      case 33: goto resume_label33;
     }
 
     while (1) {
@@ -541,15 +540,14 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
       follow_info:
 	switch (next_info & 0x1F) {
 	  case NOMAP:
-	    SUSPEND_OBUF(3); *out_p++ = next_byte;
-	    continue;
-	  case ASIS:
 	    {
-		const unsigned char *p = inchar_start;
-		while (p < in_p) {
-		    SUSPEND_OBUF(33); *out_p++ = (unsigned char)*p++;
+		const unsigned char *pend = in_p;
+		in_p = inchar_start;
+		while (in_p < pend) {
+		    next_byte = (unsigned char)*in_p++;
+		    SUSPEND_OBUF(3); *out_p++ = next_byte;
 		}
-            }
+	    }
 	    continue;
 	  case 0x00: case 0x04: case 0x08: case 0x0C:
 	  case 0x10: case 0x14: case 0x18: case 0x1C:
