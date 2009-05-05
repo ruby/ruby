@@ -1,7 +1,27 @@
 #include "ruby.h"
 #include "unicode.h"
+#if HAVE_RE_H
+#include "re.h"
+#endif
+#if HAVE_RUBY_ST_H
+#include "ruby/st.h"
+#endif
+#if HAVE_ST_H
+#include "st.h"
+#endif
 
 #define EVIL 0x666
+
+#ifndef RHASH_TBL
+#define RHASH_TBL(hsh) (RHASH(hsh)->tbl)
+#endif
+
+#ifdef HAVE_RUBY_ENCODING_H
+#include "ruby/encoding.h"
+#define FORCE_UTF8(obj) rb_enc_associate((obj), rb_utf8_encoding())
+#else
+#define FORCE_UTF8(obj)
+#endif
 
 static VALUE mJSON, mExt, cParser, eParserError, eNestingError;
 static VALUE CNaN, CInfinity, CMinusInfinity;
@@ -390,8 +410,14 @@ static VALUE json_string_unescape(char *p, char *pe)
 
     action parse_string {
         *result = json_string_unescape(json->memo + 1, p);
-        if (NIL_P(*result)) { fhold; fbreak; } else fexec p + 1;
-    }
+        if (NIL_P(*result)) {
+			fhold;
+			fbreak;
+		} else {
+			FORCE_UTF8(*result);
+			fexec p + 1;
+		}
+	}
 
     action exit { fhold; fbreak; }
 

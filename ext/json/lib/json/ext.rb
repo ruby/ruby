@@ -10,4 +10,6 @@ module JSON
     JSON.parser = Parser
     JSON.generator = Generator
   end
+
+  JSON_LOADED = true
 end
