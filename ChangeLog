@@ -1,3 +1,8 @@
+Thu May  7 01:59:35 2009  Tanaka Akira  <akr@fsij.org>
+
+	* util.c: suppress strict-aliasing warning with gcc-4.4.0 -O2 to fix
+	  infinite loop by ruby -e "1.402e-45" .
+
 Wed May  6 09:27:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README.ja: code for THINK_C does not exist already.  [Bug #1435]
