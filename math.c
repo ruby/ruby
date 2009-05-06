@@ -308,6 +308,11 @@ math_atanh(VALUE obj, VALUE x)
  *     Math.exp(x)    => float
  *
  *  Returns e**x.
+ *
+ *    Math.exp(0)       #=> 1.0
+ *    Math.exp(1)       #=> 2.718281828459045
+ *    Math.exp(1.5)     #=> 4.4816890703380645
+ *
  */
 
 static VALUE
@@ -334,6 +339,12 @@ math_exp(VALUE obj, VALUE x)
  *  Returns the natural logarithm of <i>numeric</i>.
  *  If additional second argument is given, it will be the base
  *  of logarithm.
+ *
+ *    Math.log(1)          #=> 0.0
+ *    Math.log(Math::E)    #=> 1.0
+ *    Math.log(Math::E**3) #=> 3.0
+ *    Math.log(12,3)       #=> 2.2618595071429146
+ *
  */
 
 static VALUE
@@ -373,6 +384,12 @@ extern double log2(double);
  *     Math.log2(numeric)    => float
  *
  *  Returns the base 2 logarithm of <i>numeric</i>.
+ *
+ *    Math.log2(1)      #=> 0.0
+ *    Math.log2(2)      #=> 1.0
+ *    Math.log2(32768)  #=> 15.0
+ *    Math.log2(65536)  #=> 16.0
+ *
  */
 
 static VALUE
@@ -394,6 +411,11 @@ math_log2(VALUE obj, VALUE x)
  *     Math.log10(numeric)    => float
  *
  *  Returns the base 10 logarithm of <i>numeric</i>.
+ *
+ *    Math.log10(1)       #=> 0.0
+ *    Math.log10(10)      #=> 1.0
+ *    Math.log10(10**100) #=> 100.0
+ *
  */
 
 static VALUE
