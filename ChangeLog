@@ -1,3 +1,7 @@
+Wed May  6 16:50:20 2009  Tanaka Akira  <akr@fsij.org>
+
+	* math.c (math_gamma): use a table for positive small integers.
+
 Wed May  6 09:27:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README.ja: code for THINK_C does not exist already.  [Bug #1435]
