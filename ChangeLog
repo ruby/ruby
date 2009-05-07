@@ -1,3 +1,9 @@
+Thu May  7 14:16:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c, include/ruby/encoding.h: fixed types.
+
+	* include/ruby/encoding.h (rb_enc_nth): long is used for index.
+
 Thu May  7 14:01:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* range.c (r_le): fixed types.

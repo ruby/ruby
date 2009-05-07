@@ -143,7 +143,7 @@ search_nonascii(const char *p, const char *e)
 # define NONASCII_MASK 0x80808080UL
 #endif
 #ifdef NONASCII_MASK
-    if (sizeof(VALUE) * 2 < e - p) {
+    if ((int)sizeof(VALUE) * 2 < e - p) {
         const VALUE *s, *t;
         const VALUE lowbits = sizeof(VALUE) - 1;
         s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
@@ -957,7 +957,8 @@ static long
 str_strlen(VALUE str, rb_encoding *enc)
 {
     const char *p, *e;
-    int n, cr;
+    long n;
+    int cr;
 
     if (single_byte_optimizable(str)) return RSTRING_LEN(str);
     if (!enc) enc = STR_ENC_GET(str);
@@ -967,7 +968,7 @@ str_strlen(VALUE str, rb_encoding *enc)
     if (ENC_CODERANGE(str) == ENC_CODERANGE_VALID &&
         enc == rb_utf8_encoding()) {
         VALUE len = 0;
-	if (sizeof(VALUE) * 2 < e - p) {
+	if ((int)sizeof(VALUE) * 2 < e - p) {
 	    const VALUE *s, *t;
 	    const VALUE lowbits = sizeof(VALUE) - 1;
 	    s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
@@ -1007,10 +1008,10 @@ str_strlen(VALUE str, rb_encoding *enc)
 VALUE
 rb_str_length(VALUE str)
 {
-    int len;
+    long len;
 
     len = str_strlen(str, STR_ENC_GET(str));
-    return INT2NUM(len);
+    return LONG2NUM(len);
 }
 
 /*
@@ -1310,7 +1311,7 @@ rb_str_s_try_convert(VALUE dummy, VALUE str)
 }
 
 char*
-rb_enc_nth(const char *p, const char *e, int nth, rb_encoding *enc)
+rb_enc_nth(const char *p, const char *e, long nth, rb_encoding *enc)
 {
     if (rb_enc_mbmaxlen(enc) == 1) {
         p += nth;
@@ -1351,7 +1352,7 @@ rb_enc_nth(const char *p, const char *e, int nth, rb_encoding *enc)
 }
 
 static char*
-str_nth(const char *p, const char *e, int nth, rb_encoding *enc, int singlebyte)
+str_nth(const char *p, const char *e, long nth, rb_encoding *enc, int singlebyte)
 {
     if (singlebyte)
 	p += nth;
@@ -1364,8 +1365,8 @@ str_nth(const char *p, const char *e, int nth, rb_encoding *enc, int singlebyte)
 }
 
 /* char offset to byte offset */
-static int
-str_offset(const char *p, const char *e, int nth, rb_encoding *enc, int singlebyte)
+static long
+str_offset(const char *p, const char *e, long nth, rb_encoding *enc, int singlebyte)
 {
     const char *pp = str_nth(p, e, nth, enc, singlebyte);
     if (!pp) return e - p;
@@ -1374,9 +1375,9 @@ str_offset(const char *p, const char *e, int nth, rb_encoding *enc, int singleby
 
 #ifdef NONASCII_MASK
 static char *
-str_utf8_nth(const char *p, const char *e, int nth)
+str_utf8_nth(const char *p, const char *e, long nth)
 {
-    if (sizeof(VALUE) * 2 < nth) {
+    if ((int)SIZEOF_VALUE * 2 < nth) {
 	const VALUE *s, *t;
 	const VALUE lowbits = sizeof(VALUE) - 1;
 	s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
@@ -1388,7 +1389,7 @@ str_utf8_nth(const char *p, const char *e, int nth)
 	do {
 	    nth -= count_utf8_lead_bytes_with_word(s);
 	    s++;
-	} while (s < t && sizeof(VALUE) <= nth);
+	} while (s < t && (int)sizeof(VALUE) <= nth);
 	p = (char *)s;
     }
     while (p < e) {
@@ -1401,8 +1402,8 @@ str_utf8_nth(const char *p, const char *e, int nth)
     return (char *)p;
 }
 
-static int
-str_utf8_offset(const char *p, const char *e, int nth)
+static long
+str_utf8_offset(const char *p, const char *e, long nth)
 {
     const char *pp = str_utf8_nth(p, e, nth);
     if (!pp) return e - p;
@@ -1886,7 +1887,7 @@ rb_str_concat(VALUE str1, VALUE str2)
     if (FIXNUM_P(str2) || TYPE(str2) == T_BIGNUM) {
 	rb_encoding *enc = STR_ENC_GET(str1);
 	unsigned int c = NUM2UINT(str2);
-	int pos = RSTRING_LEN(str1);
+	long pos = RSTRING_LEN(str1);
 	int len = rb_enc_codelen(c, enc);
 	int cr = ENC_CODERANGE(str1);
 
@@ -1990,7 +1991,7 @@ hash(const unsigned char * data, size_t len, VALUE h)
 	    data += sizeof(uint32_t)-align;
 	    len -= sizeof(uint32_t)-align;
 
-	    sl = CHAR_BIT * (sizeof(uint32_t)-align);
+	    sl = CHAR_BIT * ((int)sizeof(uint32_t)-align);
 	    sr = CHAR_BIT * align;
 
 	    while (len >= sizeof(uint32_t)) {
@@ -2083,7 +2084,7 @@ rb_hash_uint32(VALUE h, unsigned int i)
 VALUE
 rb_hash_uint(VALUE h, VALUE i)
 {
-    unsigned int v = 0;
+    unsigned long v = 0;
     h += i;
 #ifdef WORDS_BIGENDIAN
 #if SIZEOF_VALUE*CHAR_BIT > 12*8
@@ -2148,7 +2149,7 @@ rb_hash_start(VALUE h)
 int
 rb_memhash(const void *ptr, long len)
 {
-    return hash(ptr, len, rb_hash_start(0));
+    return (int)hash(ptr, len, rb_hash_start(0));
 }
 
 int
@@ -2158,7 +2159,7 @@ rb_str_hash(VALUE str)
     if (e) {
 	if (rb_enc_str_asciionly_p(str)) e = 0;
     }
-    return rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str)) ^ e;
+    return (int)rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str)) ^ e;
 }
 
 int
@@ -4838,7 +4839,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    else {
 		c = errc;
 	    }
-	    if (c != -1) {
+	    if (c != (unsigned int)-1) {
 		if (save == c) {
 		    CHECK_IF_ASCII(c);
 		    continue;
@@ -6609,7 +6610,7 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
     ptr = p = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
     pend = p + len;
-    if (bits >= sizeof(long)*CHAR_BIT) {
+    if (bits >= (int)sizeof(long)*CHAR_BIT) {
 	VALUE sum = INT2FIX(0);
 
 	while (p < pend) {
