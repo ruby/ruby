@@ -1,3 +1,8 @@
+Thu May  7 21:42:51 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_rubyoptions.rb (test_indentation_check): add a test
+	  for indentation check.  [ruby-dev:38382]
+
 Thu May  7 16:40:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_flatten_bang): returns nil if nothing changed.
