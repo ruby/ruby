@@ -1,3 +1,8 @@
+Thu May  7 14:26:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_sample): negative sample number is invalid.
+	  [ruby-core:23374]
+
 Thu May  7 14:16:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c, include/ruby/encoding.h: fixed types.
