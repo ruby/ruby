@@ -41,7 +41,7 @@ range_init(range, beg, end, exclude_end)
 
     args[0] = beg;
     args[1] = end;
-    
+
     if (!FIXNUM_P(beg) || !FIXNUM_P(end)) {
 	VALUE v;
 
@@ -68,7 +68,7 @@ rb_range_new(beg, end, exclude_end)
 /*
  *  call-seq:
  *     Range.new(start, end, exclusive=false)    => range
- *  
+ *
  *  Constructs a range using the given <i>start</i> and <i>end</i>. If the third
  *  parameter is omitted or is <code>false</code>, the <i>range</i> will include
  *  the end object; otherwise, it will be excluded.
@@ -81,7 +81,7 @@ range_initialize(argc, argv, range)
     VALUE range;
 {
     VALUE beg, end, flags;
-    
+
     rb_scan_args(argc, argv, "21", &beg, &end, &flags);
     /* Ranges are immutable, so that they should be initialized only once. */
     if (rb_ivar_defined(range, id_beg)) {
@@ -95,7 +95,7 @@ range_initialize(argc, argv, range)
 /*
  *  call-seq:
  *     rng.exclude_end?    => true or false
- *  
+ *
  *  Returns <code>true</code> if <i>rng</i> excludes its end value.
  */
 
@@ -110,15 +110,15 @@ range_exclude_end_p(range)
 /*
  *  call-seq:
  *     rng == obj    => true or false
- *  
+ *
  *  Returns <code>true</code> only if <i>obj</i> is a Range, has equivalent
  *  beginning and end items (by comparing them with <code>==</code>), and has
  *  the same #exclude_end? setting as <i>rng</t>.
- *     
+ *
  *    (0..2) == (0..2)            #=> true
  *    (0..2) == Range.new(0,2)    #=> true
  *    (0..2) == (0...2)           #=> false
- *     
+ *
  */
 
 static VALUE
@@ -168,15 +168,15 @@ r_le(a, b)
 /*
  *  call-seq:
  *     rng.eql?(obj)    => true or false
- *  
+ *
  *  Returns <code>true</code> only if <i>obj</i> is a Range, has equivalent
  *  beginning and end items (by comparing them with #eql?), and has the same
  *  #exclude_end? setting as <i>rng</i>.
- *     
- *    (0..2) == (0..2)            #=> true
- *    (0..2) == Range.new(0,2)    #=> true
- *    (0..2) == (0...2)           #=> false
- *     
+ *
+ *    (0..2).eql?(0..2)            #=> true
+ *    (0..2).eql?(Range.new(0,2))  #=> true
+ *    (0..2).eql?(0...2)           #=> false
+ *
  */
 
 static VALUE
@@ -278,19 +278,19 @@ extern int ruby_float_step _((VALUE from, VALUE to, VALUE step, int excl));
 /*
  *  call-seq:
  *     rng.step(n=1) {| obj | block }    => rng
- *  
+ *
  *  Iterates over <i>rng</i>, passing each <i>n</i>th element to the block. If
  *  the range contains numbers, <i>n</i> is added for each iteration.  Otherwise
  *  <code>step</code> invokes <code>succ</code> to iterate through range
  *  elements. The following code uses class <code>Xs</code>, which is defined
  *  in the class-level documentation.
- *     
+ *
  *     range = Xs.new(1)..Xs.new(10)
  *     range.step(2) {|x| puts x}
  *     range.step(3) {|x| puts x}
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *      1 x
  *      3 xxx
  *      5 xxxxx
@@ -337,7 +337,7 @@ range_step(argc, argv, range)
 
 	if (!EXCL(range))
 	    end += 1;
-	i = FIX2LONG(b);	
+	i = FIX2LONG(b);
 	while (i < end) {
 	    rb_yield(LONG2NUM(i));
 	    if (i + unit < i) break;
@@ -407,18 +407,18 @@ each_i(v, arg)
 /*
  *  call-seq:
  *     rng.each {| i | block } => rng
- *  
+ *
  *  Iterates over the elements <i>rng</i>, passing each in turn to the
  *  block. You can only iterate if the start object of the range
  *  supports the +succ+ method (which means that you can't iterate over
  *  ranges of +Float+ objects).
- *     
+ *
  *     (10..15).each do |n|
  *        print n, ' '
  *     end
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     10 11 12 13 14 15
  */
 
@@ -464,7 +464,7 @@ range_each(range)
  *  call-seq:
  *     rng.first    => obj
  *     rng.begin    => obj
- *  
+ *
  *  Returns the first object in <i>rng</i>.
  */
 
@@ -480,9 +480,9 @@ range_first(range)
  *  call-seq:
  *     rng.end    => obj
  *     rng.last   => obj
- *  
+ *
  *  Returns the object that defines the end of <i>rng</i>.
- *     
+ *
  *     (1..10).end    #=> 10
  *     (1...10).end   #=> 10
  */
@@ -561,7 +561,7 @@ range_to_s(range)
  * call-seq:
  *   rng.inspect  => string
  *
- * Convert this range object to a printable form (using 
+ * Convert this range object to a printable form (using
  * <code>inspect</code> to convert the start and end
  * objects).
  */
@@ -588,20 +588,20 @@ range_inspect(range)
  *     rng === obj       =>  true or false
  *     rng.member?(val)  =>  true or false
  *     rng.include?(val) =>  true or false
- *  
+ *
  *  Returns <code>true</code> if <i>obj</i> is an element of
  *  <i>rng</i>, <code>false</code> otherwise. Conveniently,
  *  <code>===</code> is the comparison operator used by
  *  <code>case</code> statements.
- *     
+ *
  *     case 79
  *     when 1..50   then   print "low\n"
  *     when 51..75  then   print "medium\n"
  *     when 76..100 then   print "high\n"
  *     end
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     high
  */
 
@@ -633,17 +633,17 @@ range_include(range, val)
  *  run from the start to the end inclusively. Those created using
  *  <code>...</code> exclude the end value. When used as an iterator,
  *  ranges return each value in the sequence.
- *     
+ *
  *     (-1..-5).to_a      #=> []
  *     (-5..-1).to_a      #=> [-5, -4, -3, -2, -1]
  *     ('a'..'e').to_a    #=> ["a", "b", "c", "d", "e"]
  *     ('a'...'e').to_a   #=> ["a", "b", "c", "d"]
- *     
+ *
  *  Ranges can be constructed using objects of any type, as long as the
  *  objects can be compared using their <code><=></code> operator and
  *  they support the <code>succ</code> method to return the next object
  *  in sequence.
- *     
+ *
  *     class Xs                # represent a string of 'x's
  *       include Comparable
  *       attr :length
@@ -663,18 +663,18 @@ range_include(range, val)
  *         'x' * @length
  *       end
  *     end
- *     
+ *
  *     r = Xs.new(3)..Xs.new(6)   #=> xxx..xxxxxx
  *     r.to_a                     #=> [xxx, xxxx, xxxxx, xxxxxx]
  *     r.member?(Xs.new(5))       #=> true
- *     
+ *
  *  In the previous code example, class <code>Xs</code> includes the
  *  <code>Comparable</code> module. This is because
  *  <code>Enumerable#member?</code> checks for equality using
  *  <code>==</code>. Including <code>Comparable</code> ensures that the
  *  <code>==</code> method is defined in terms of the <code><=></code>
  *  method implemented in <code>Xs</code>.
- *     
+ *
  */
 
 void

@@ -1,3 +1,7 @@
+Thu May  7 13:58:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_eql): fixed rdoc.
+
 Thu May  7 01:59:35 2009  Tanaka Akira  <akr@fsij.org>
 
 	* util.c: suppress strict-aliasing warning with gcc-4.4.0 -O2 to fix
