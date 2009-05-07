@@ -456,8 +456,8 @@ end
 # yielded in sorted order (according to the return values of their
 # #<=> methods) when iterating over them.
 # 
-# All elements that are added to a SortedSet must include the
-# Comparable module.
+# All elements that are added to a SortedSet must respond to the <=>
+# method for comparison.
 # 
 # Also, all elements must be <em>mutually comparable</em>: <tt>el1 <=>
 # el2</tt> must not return <tt>nil</tt> for any elements <tt>el1</tt>
@@ -506,7 +506,7 @@ class SortedSet < Set
 	  end
 	  
 	  def add(o)
-	    o.is_a?(Comparable) or raise ArgumentError, "value must be comparable"
+	    o.respond_to?(:<=>) or raise ArgumentError, "value must repond to <=>"
 	    super
 	  end
 	  alias << add
@@ -529,7 +529,7 @@ class SortedSet < Set
 	  end
 
 	  def add(o)
-	    o.is_a?(Comparable) or raise ArgumentError, "value must be comparable"
+	    o.respond_to?(:<=>) or raise ArgumentError, "value must respond to <=>"
 	    @keys = nil
 	    super
 	  end

@@ -1,3 +1,8 @@
+Fri May  8 02:30:14 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (SortedSet#add): Do not require each newly added
+	  element to be Comparable but to respond to <=>. [ruby-dev:38371]
+
 Thu May  7 21:42:51 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_rubyoptions.rb (test_indentation_check): add a test
