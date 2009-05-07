@@ -68,7 +68,7 @@ Sat May  2 10:34:29 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 Sat May  2 09:19:40 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (Init_Array): made #to_s an alias to #inspect to reduce
-	  the result of recursive array.  a patch from ujihisa a
+	  the result of recursive array.  a patch from ujihisa at
 	  [ruby-dev:38362]
 
 Fri May  1 16:50:05 2009  Akinori MUSHA  <knu@iDaemons.org>
@@ -1218,7 +1218,7 @@ Fri Mar 13 16:45:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri Mar 13 15:10:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_x509ext.c (ossl_x509ext_set_value): should use
-	  OPENSSL_free instead of free.  a patch from Charlie Savage a
+	  OPENSSL_free instead of free.  a patch from Charlie Savage at
 	  [ruby-core:22858].
 
 Fri Mar 13 21:11:51 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
