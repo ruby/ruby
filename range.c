@@ -176,9 +176,9 @@ r_le(VALUE a, VALUE b)
  *  beginning and end items (by comparing them with #eql?), and has the same
  *  #exclude_end? setting as <i>rng</i>.
  *
- *    (0..2) == (0..2)            #=> true
- *    (0..2) == Range.new(0,2)    #=> true
- *    (0..2) == (0...2)           #=> false
+ *    (0..2).eql?(0..2)            #=> true
+ *    (0..2).eql?(Range.new(0,2))  #=> true
+ *    (0..2).eql?(0...2)           #=> false
  *
  */
 
