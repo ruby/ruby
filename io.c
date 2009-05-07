@@ -4593,7 +4593,7 @@ popen_exec(void *pp, char *errmsg, size_t errmsg_len)
 static VALUE
 pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig)
 {
-    int pid = 0;
+    rb_pid_t pid = 0;
     rb_io_t *fptr;
     VALUE port;
     rb_io_t *write_fptr;
