@@ -1,4 +1,6 @@
-Thu May  7 13:58:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu May  7 14:01:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (r_le): fixed types.
 
 	* range.c (range_eql): fixed rdoc.
 

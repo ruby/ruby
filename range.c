@@ -161,7 +161,7 @@ r_le(VALUE a, VALUE b)
 	return Qfalse;
     c = rb_cmpint(r, a, b);
     if (c == 0)
-	return INT2FIX(0);
+	return (int)INT2FIX(0);
     if (c < 0)
 	return Qtrue;
     return Qfalse;
@@ -213,7 +213,7 @@ range_eql(VALUE range, VALUE obj)
 static VALUE
 range_hash(VALUE range)
 {
-    unsigned hash = EXCL(range);
+    unsigned long hash = EXCL(range);
     VALUE v;
 
     hash = rb_hash_start(hash);
@@ -242,9 +242,9 @@ range_each_func(VALUE range, VALUE (*func) (VALUE, void *), void *arg)
 	}
     }
     else {
-	while (RTEST(c = r_le(v, e))) {
+	while ((c = r_le(v, e)) != Qfalse) {
 	    (*func) (v, arg);
-	    if (c == INT2FIX(0))
+	    if (c == (int)INT2FIX(0))
 		break;
 	    v = rb_funcall(v, id_succ, 0, 0);
 	}
