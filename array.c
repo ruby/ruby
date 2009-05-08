@@ -382,8 +382,16 @@ void
 rb_ary_free(VALUE ary)
 {
     if (ARY_OWNS_HEAP_P(ary)) {
-	xfree(RARRAY_PTR(ary));
+	xfree(ARY_HEAP_PTR(ary));
     }
+}
+
+static inline void
+ary_discard(VALUE ary)
+{
+    rb_ary_free(ary);
+    RBASIC(ary)->flags |= RARRAY_EMBED_FLAG;
+    RBASIC(ary)->flags &= ~RARRAY_EMBED_LEN_MASK;
 }
 
 static VALUE
@@ -3341,8 +3349,13 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
     if (level == 0) return Qnil;
 
     result = flatten(ary, level, &mod);
-    if (mod == 0) return Qnil;
+    if (mod == 0) {
+	ary_discard(result);
+	return Qnil;
+    }
+    if (!(mod = ARY_EMBED_P(result))) rb_obj_freeze(result);
     rb_ary_replace(ary, result);
+    if (mod) ARY_SET_EMBED_LEN(result, 0);
 
     return ary;
 }

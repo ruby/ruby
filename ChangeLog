@@ -1,3 +1,7 @@
+Fri May  8 10:07:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_flatten_bang): clears temporary array.
+
 Fri May  8 02:30:14 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (SortedSet#add): Do not require each newly added
