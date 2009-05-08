@@ -1,3 +1,11 @@
+Fri May  8 10:14:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, configure.in, win32/Makefile.sub (RUBY_BASE_NAME):
+	  program base name.  [ruby-dev:38241]
+
+	* configure.in (--with-soname): base name of shared library.
+	  [ruby-dev:38290]
+
 Fri May  8 10:07:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_flatten_bang): clears temporary array.

@@ -113,6 +113,8 @@ if test "$program_prefix" = NONE; then
 fi
 RUBY_BASE_NAME=`echo ruby | sed "$program_transform_name"`
 RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
+AC_SUBST(RUBY_BASE_NAME)
+AC_SUBST(RUBYW_BASE_NAME)
 
 AC_CANONICAL_TARGET
 target_os=`echo $target_os | sed 's/linux-gnu$/linux/;s/linux-gnu/linux-/'`
@@ -1932,7 +1934,10 @@ case "$target_os" in
     ;;
 esac
 
-RUBY_SO_NAME='$(RUBY_INSTALL_NAME)'
+AC_ARG_WITH(soname,
+	AS_HELP_STRING([--with-soname=SONAME], [base name of shared library]),
+	[RUBY_SO_NAME=$withval], [RUBY_SO_NAME='$(RUBY_BASE_NAME)'])
+
 LIBRUBY_LDSHARED=$LDSHARED
 LIBRUBY_DLDFLAGS=$DLDFLAGS
 LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR).$(TEENY)'
@@ -2020,7 +2025,7 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(ruby_version)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_Init_* $(XLDFLAGS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).dylib'
-	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_INSTALL_NAME).dylib'
+	LIBRUBY_ALIASES='lib$(RUBY_BASE_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_INSTALL_NAME).dylib'
 	;;
     when(interix*)
 	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
@@ -2110,16 +2115,17 @@ case "$target_os" in
 	CPPFLAGS="$CPPFLAGS -I/boot/home/config/include"
 	;;
     when(cygwin*|mingw*)
+	RUBY_SO_NAME="${RUBY_SO_NAME}${MAJOR}${MINOR}${TEENY}"
 	LIBRUBY_DLDFLAGS="${DLDFLAGS}"' -Wl,--out-implib=$(LIBRUBY)'
 	case "$target_os" in
 	when(cygwin*)
 	    if test x"$enable_shared" = xyes; then
-		LIBRUBY_SO='cyg$(RUBY_SO_NAME)'${MAJOR}${MINOR}${TEENY}.dll
+		LIBRUBY_SO='cyg$(RUBY_SO_NAME)'.dll
 		LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' $(RUBYDEF)'
 	    fi
 	    ;;
 	when(mingw*)
-	    RUBY_SO_NAME=${rb_cv_msvcrt}-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}${TEENY}
+	    RUBY_SO_NAME="${rb_cv_msvcrt}-${RUBY_SO_NAME}"
 	    if test x"$enable_shared" = xyes; then
 		LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
 		LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' $(RUBYDEF)'
@@ -2275,14 +2281,20 @@ ri_suffix=
 test "$program_suffix" != NONE &&
   ri_suffix=$program_suffix
 
-RUBY_INSTALL_NAME="${ri_prefix}${RUBY_BASE_NAME}${ri_suffix}"
+RUBY_INSTALL_NAME="${ri_prefix}"'$(RUBY_BASE_NAME)'"${ri_suffix}"
 case "$target_os" in
   when(cygwin*|mingw*)
-    RUBYW_INSTALL_NAME="${ri_prefix}${RUBYW_BASE_NAME}${ri_suffix}"
-    rubyw_install_name="$RUBYW_INSTALL_NAME"
+    RUBYW_INSTALL_NAME="${ri_prefix}"'$(RUBYW_BASE_NAME)'"${ri_suffix}"
+    rubyw_install_name='$(RUBYW_INSTALL_NAME)'
     ;;
 esac
-RUBY_LIB_PREFIX=`eval echo \\"${libdir}/${RUBY_INSTALL_NAME}\\"`
+
+rubylibprefix='${libdir}/${RUBY_BASE_NAME}'
+AC_ARG_WITH(rubylibprefix,
+	    AS_HELP_STRING([--with-rubylibprefix=DIR], [prefix for ruby libraries [[LIBDIR/RUBY_INSTALL_NAME]]]),
+	    [rubylibprefix=$withval])
+RUBY_LIB_PREFIX=`eval echo \\"${rubylibprefix}\\"`
+AC_SUBST(rubylibprefix)
 
 AC_ARG_WITH(ruby-version,
 	    AS_HELP_STRING([--with-ruby-version=STR], [ruby version string for version specific directories [[full]] (full|minor|STR)]),
@@ -2314,14 +2326,20 @@ fi
 AC_ARG_WITH(sitedir,
 	    AS_HELP_STRING([--with-sitedir=DIR], [site libraries in DIR [[RUBY_LIB_PREFIX/site_ruby]]]),
             [sitedir=$withval],
-            [sitedir='${libdir}/${RUBY_INSTALL_NAME}/site_ruby'])
-SITE_DIR=`eval echo \\"${sitedir}\\"`
+            [sitedir='${rubylibprefix}/site_ruby'])
+dir="${sitedir}"
+until SITE_DIR=`eval echo \\"${dir}\\"`; test "x${dir}" = "x${SITE_DIR}"; do
+    dir="${SITE_DIR}"
+done
 
 AC_ARG_WITH(vendordir,
 	    AS_HELP_STRING([--with-vendordir=DIR], [vendor libraries in DIR [[RUBY_LIB_PREFIX/vendor_ruby]]]),
             [vendordir=$withval],
-            [vendordir='${libdir}/${RUBY_INSTALL_NAME}/vendor_ruby'])
-VENDOR_DIR=`eval echo \\"${vendordir}\\"`
+            [vendordir='${rubylibprefix}/vendor_ruby'])
+dir="${vendordir}"
+until VENDOR_DIR=`eval echo \\"${dir}\\"`; test "x${dir}" = "x${VENDOR_DIR}"; do
+    dir="${VENDOR_DIR}"
+done
 
 if test "${LOAD_RELATIVE+set}"; then
     AC_DEFINE_UNQUOTED(LOAD_RELATIVE, $LOAD_RELATIVE)
@@ -2423,9 +2441,9 @@ if test "$search_path" != ""; then
 fi
 
 AC_ARG_WITH(rubyhdrdir,
-	    AS_HELP_STRING([--with-rubyhdrdir=DIR], [core headers in DIR [[INCLUDEDIR/RUBY_INSTALL_NAME/RUBY_VERSION]]]),
+	    AS_HELP_STRING([--with-rubyhdrdir=DIR], [core headers in DIR [[INCLUDEDIR/RUBY_BASE_NAME/RUBY_VERSION]]]),
 	    [rubyhdrdir=$withval],
-	    [rubyhdrdir='${includedir}/${RUBY_INSTALL_NAME}-${ruby_version}'])
+	    [rubyhdrdir='${includedir}/${RUBY_BASE_NAME}-${ruby_version}'])
 
 AC_ARG_WITH(sitehdrdir,
 	    AS_HELP_STRING([--with-sitehdrdir=DIR], [core site headers in DIR [RUBYHDRDIR/site_ruby]]),
@@ -2494,7 +2512,7 @@ done
 AC_SUBST(BUILTIN_TRANSSRCS)
 AC_SUBST(BUILTIN_TRANSOBJS)
 
-PACKAGE=$RUBY_INSTALL_NAME
+PACKAGE=$RUBY_BASE_NAME
 AC_SUBST(PACKAGE)
 AC_MSG_RESULT($PACKAGE library version = $ruby_version)
 
