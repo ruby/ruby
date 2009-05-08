@@ -1,3 +1,8 @@
+Fri May  8 19:17:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (check_sizeof): fixed wrong recuring result for
+	  intrinsic types.
+
 Fri May  8 10:14:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, configure.in, win32/Makefile.sub (RUBY_BASE_NAME):
