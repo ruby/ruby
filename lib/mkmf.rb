@@ -413,7 +413,20 @@ def libpathflag(libpath=$DEFLIBPATH|$LIBPATH)
 end
 
 def try_link0(src, opt="", &b)
-  try_do(src, link_command("", opt), &b)
+  cmd = link_command("", opt)
+  if $universal
+    require 'tmpdir'
+    Dir.mktmpdir("mkmf_", oldtmpdir = ENV["TMPDIR"]) do |tmpdir|
+      begin
+        ENV["TMPDIR"] = tmpdir
+        try_do(src, cmd, &b)
+      ensure
+        ENV["TMPDIR"] = oldtmpdir
+      end
+    end
+  else
+    try_do(src, cmd, &b)
+  end
 end
 
 def try_link(src, opt="", &b)

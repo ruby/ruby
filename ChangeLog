@@ -1,4 +1,7 @@
-Fri May  8 19:17:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri May  8 19:38:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (try_link0): removes waste dSYM directories lef
+	  when debug and universal-binary are enabled.
 
 	* lib/mkmf.rb (check_sizeof): fixed wrong recuring result for
 	  intrinsic types.
