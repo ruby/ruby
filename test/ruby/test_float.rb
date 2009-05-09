@@ -421,4 +421,9 @@ class TestFloat < Test::Unit::TestCase
     end
   end
 
+  def test_sleep_with_Float
+    assert_nothing_raised("[ruby-core:23282]") do
+      sleep(0.1+0.1+0.1+0.1+0.1+0.1+0.1+0.1+0.1+0.1)
+    end
+  end
 end
