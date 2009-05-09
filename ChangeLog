@@ -1,3 +1,9 @@
+Sat May  9 23:26:04 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/delegate.rb (Delegator#method_missing)
+	  (DelegateClass()#method_missing): Properly pass a given block
+	  through. [ruby-dev:38390]
+
 Fri May  8 02:34:25 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (SortedSet#add): Do not require each newly added
