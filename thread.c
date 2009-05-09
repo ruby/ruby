@@ -391,7 +391,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 		    th->local_lfp = proc->block.lfp;
 		    th->local_svar = Qnil;
 		    th->value = rb_vm_invoke_proc(th, proc, proc->block.self,
-						  RARRAY_LEN(args), RARRAY_PTR(args), 0);
+						  (int)RARRAY_LEN(args), RARRAY_PTR(args), 0);
 		}
 		else {
 		    th->value = (*th->first_func)((void *)th->first_args);
@@ -750,7 +750,7 @@ double2timeval(double d)
     time.tv_sec = (int)d;
     time.tv_usec = (int)((d - (int)d) * 1e6);
     if (time.tv_usec < 0) {
-	time.tv_usec += (long)1e6;
+	time.tv_usec += (int)1e6;
 	time.tv_sec -= 1;
     }
     return time;
@@ -2177,8 +2177,8 @@ rb_fd_zero(rb_fdset_t *fds)
 static void
 rb_fd_resize(int n, rb_fdset_t *fds)
 {
-    int m = howmany(n + 1, NFDBITS) * sizeof(fd_mask);
-    int o = howmany(fds->maxfd, NFDBITS) * sizeof(fd_mask);
+    size_t m = howmany(n + 1, NFDBITS) * sizeof(fd_mask);
+    size_t o = howmany(fds->maxfd, NFDBITS) * sizeof(fd_mask);
 
     if (m < sizeof(fd_set)) m = sizeof(fd_set);
     if (o < sizeof(fd_set)) o = sizeof(fd_set);
@@ -2214,7 +2214,7 @@ rb_fd_isset(int n, const rb_fdset_t *fds)
 void
 rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
 {
-    int size = howmany(max, NFDBITS) * sizeof(fd_mask);
+    size_t size = howmany(max, NFDBITS) * sizeof(fd_mask);
 
     if (size < sizeof(fd_set)) size = sizeof(fd_set);
     dst->maxfd = max;
@@ -2414,7 +2414,7 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 		double d = limit - timeofday();
 
 		wait_rest.tv_sec = (unsigned int)d;
-		wait_rest.tv_usec = (long)((d-(double)wait_rest.tv_sec)*1e6);
+		wait_rest.tv_usec = (int)((d-(double)wait_rest.tv_sec)*1e6);
 		if (wait_rest.tv_sec < 0)  wait_rest.tv_sec = 0;
 		if (wait_rest.tv_usec < 0) wait_rest.tv_usec = 0;
 	    }
