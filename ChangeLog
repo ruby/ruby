@@ -1,3 +1,9 @@
+Sat May  9 12:19:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c: 3rd arguemnt of rb_hash_foreach() is VALUE.
+
+	* hash.c (rb_any_hash, recursive_hash): use VALUE for hash.
+
 Sat May  9 11:14:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_f_catch): gets rid of issue with gcc 4.4.  a patch

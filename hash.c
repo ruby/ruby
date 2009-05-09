@@ -76,7 +76,7 @@ static int
 rb_any_hash(VALUE a)
 {
     VALUE hval;
-    int hnum;
+    VALUE hnum;
 
     switch (TYPE(a)) {
       case T_FIXNUM:
@@ -93,10 +93,10 @@ rb_any_hash(VALUE a)
 
       default:
         hval = rb_hash(a);
-	hnum = (int)FIX2LONG(hval);
+	hnum = FIX2LONG(hval);
     }
     hnum <<= 1;
-    return RSHIFT(hnum, 1);
+    return (int)RSHIFT(hnum, 1);
 }
 
 static const struct st_hash_type objhash = {
@@ -410,8 +410,10 @@ rb_hash_s_try_convert(VALUE dummy, VALUE hash)
 }
 
 static int
-rb_hash_rehash_i(VALUE key, VALUE value, st_table *tbl)
+rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
 {
+    st_table *tbl = (st_table *)arg;
+
     if (key != Qundef) st_insert(tbl, key, value);
     return ST_CONTINUE;
 }
@@ -448,7 +450,7 @@ rb_hash_rehash(VALUE hash)
     if (!RHASH(hash)->ntbl)
         return hash;
     tbl = st_init_table_with_size(RHASH(hash)->ntbl->type, RHASH(hash)->ntbl->num_entries);
-    rb_hash_foreach(hash, rb_hash_rehash_i, (st_data_t)tbl);
+    rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tbl);
     st_free_table(RHASH(hash)->ntbl);
     RHASH(hash)->ntbl = tbl;
 
@@ -676,8 +678,10 @@ rb_hash_set_default_proc(VALUE hash, VALUE proc)
 }
 
 static int
-key_i(VALUE key, VALUE value, VALUE *args)
+key_i(VALUE key, VALUE value, VALUE arg)
 {
+    VALUE *args = (VALUE *)arg;
+
     if (rb_equal(value, args[0])) {
 	args[1] = key;
 	return ST_STOP;
@@ -705,7 +709,7 @@ rb_hash_key(VALUE hash, VALUE value)
     args[0] = value;
     args[1] = Qnil;
 
-    rb_hash_foreach(hash, key_i, (st_data_t)args);
+    rb_hash_foreach(hash, key_i, (VALUE)args);
 
     return args[1];
 }
@@ -774,8 +778,10 @@ struct shift_var {
 };
 
 static int
-shift_i(VALUE key, VALUE value, struct shift_var *var)
+shift_i(VALUE key, VALUE value, VALUE arg)
 {
+    struct shift_var *var = (struct shift_var *)arg;
+
     if (key == Qundef) return ST_CONTINUE;
     if (var->key != Qundef) return ST_STOP;
     var->key = key;
@@ -784,8 +790,10 @@ shift_i(VALUE key, VALUE value, struct shift_var *var)
 }
 
 static int
-shift_i_safe(VALUE key, VALUE value, struct shift_var *var)
+shift_i_safe(VALUE key, VALUE value, VALUE arg)
 {
+    struct shift_var *var = (struct shift_var *)arg;
+
     if (key == Qundef) return ST_CONTINUE;
     var->key = key;
     var->val = value;
@@ -813,7 +821,7 @@ rb_hash_shift(VALUE hash)
     rb_hash_modify(hash);
     var.key = Qundef;
     rb_hash_foreach(hash, RHASH(hash)->iter_lev > 0 ? shift_i_safe : shift_i,
-		    (st_data_t)&var);
+		    (VALUE)&var);
 
     if (var.key != Qundef) {
 	if (RHASH(hash)->iter_lev > 0) {
@@ -871,7 +879,7 @@ rb_hash_delete_if(VALUE hash)
 VALUE
 rb_hash_reject_bang(VALUE hash)
 {
-    int n;
+    st_index_t n;
 
     RETURN_ENUMERATOR(hash, 0, 0);
     if (!RHASH(hash)->ntbl)
@@ -1378,8 +1386,10 @@ rb_hash_has_key(VALUE hash, VALUE key)
 }
 
 static int
-rb_hash_search_value(VALUE key, VALUE value, VALUE *data)
+rb_hash_search_value(VALUE key, VALUE value, VALUE arg)
 {
+    VALUE *data = (VALUE *)arg;
+
     if (key == Qundef) return ST_CONTINUE;
     if (rb_equal(value, data[1])) {
 	data[0] = Qtrue;
@@ -1408,7 +1418,7 @@ rb_hash_has_value(VALUE hash, VALUE val)
 
     data[0] = Qfalse;
     data[1] = val;
-    rb_hash_foreach(hash, rb_hash_search_value, (st_data_t)data);
+    rb_hash_foreach(hash, rb_hash_search_value, (VALUE)data);
     return data[0];
 }
 
@@ -1419,8 +1429,9 @@ struct equal_data {
 };
 
 static int
-eql_i(VALUE key, VALUE val1, struct equal_data *data)
+eql_i(VALUE key, VALUE val1, VALUE arg)
 {
+    struct equal_data *data = (struct equal_data *)arg;
     VALUE val2;
 
     if (key == Qundef) return ST_CONTINUE;
@@ -1428,7 +1439,7 @@ eql_i(VALUE key, VALUE val1, struct equal_data *data)
 	data->result = Qfalse;
 	return ST_STOP;
     }
-    if (!(data->eql ? rb_eql(val1, val2) : rb_equal(val1, val2))) {
+    if (!(data->eql ? rb_eql(val1, val2) : (int)rb_equal(val1, val2))) {
 	data->result = Qfalse;
 	return ST_STOP;
     }
@@ -1443,7 +1454,7 @@ recursive_eql(VALUE hash, VALUE dt, int recur)
     if (recur) return Qfalse;
     data = (struct equal_data*)dt;
     data->result = Qtrue;
-    rb_hash_foreach(hash, eql_i, (st_data_t)data);
+    rb_hash_foreach(hash, eql_i, dt);
 
     return data->result;
 }
@@ -1520,8 +1531,10 @@ rb_hash_eql(VALUE hash1, VALUE hash2)
 }
 
 static int
-hash_i(VALUE key, VALUE val, int *hval)
+hash_i(VALUE key, VALUE val, VALUE arg)
 {
+    VALUE *hval = (VALUE *)arg;
+
     if (key == Qundef) return ST_CONTINUE;
     *hval ^= rb_hash_end(rb_hash_uint(rb_hash_start(rb_hash(key)), rb_hash(val)));
     return ST_CONTINUE;
@@ -1530,7 +1543,7 @@ hash_i(VALUE key, VALUE val, int *hval)
 static VALUE
 recursive_hash(VALUE hash, VALUE dummy, int recur)
 {
-    int hval;
+    VALUE hval;
 
     if (recur) {
 	return LONG2FIX(0);
@@ -1538,7 +1551,7 @@ recursive_hash(VALUE hash, VALUE dummy, int recur)
     if (!RHASH(hash)->ntbl)
         return LONG2FIX(0);
     hval = RHASH(hash)->ntbl->num_entries;
-    rb_hash_foreach(hash, hash_i, (st_data_t)&hval);
+    rb_hash_foreach(hash, hash_i, (VALUE)&hval);
     return INT2FIX(hval);
 }
 
@@ -1663,8 +1676,10 @@ rb_hash_merge(VALUE hash1, VALUE hash2)
 }
 
 static int
-assoc_i(VALUE key, VALUE val, VALUE *args)
+assoc_i(VALUE key, VALUE val, VALUE arg)
 {
+    VALUE *args = (VALUE *)arg;
+
     if (key == Qundef) return ST_CONTINUE;
     if (RTEST(rb_equal(args[0], key))) {
 	args[1] = rb_assoc_new(key, val);
@@ -1694,13 +1709,15 @@ rb_hash_assoc(VALUE hash, VALUE obj)
 
     args[0] = obj;
     args[1] = Qnil;
-    rb_hash_foreach(hash, assoc_i, (st_data_t)args);
+    rb_hash_foreach(hash, assoc_i, (VALUE)args);
     return args[1];
 }
 
 static int
-rassoc_i(VALUE key, VALUE val, VALUE *args)
+rassoc_i(VALUE key, VALUE val, VALUE arg)
 {
+    VALUE *args = (VALUE *)arg;
+
     if (key == Qundef) return ST_CONTINUE;
     if (RTEST(rb_equal(args[0], val))) {
 	args[1] = rb_assoc_new(key, val);
@@ -1729,7 +1746,7 @@ rb_hash_rassoc(VALUE hash, VALUE obj)
 
     args[0] = obj;
     args[1] = Qnil;
-    rb_hash_foreach(hash, rassoc_i, (st_data_t)args);
+    rb_hash_foreach(hash, rassoc_i, (VALUE)args);
     return args[1];
 }
 
@@ -1860,7 +1877,7 @@ env_delete(VALUE obj, VALUE name)
     rb_secure(4);
     SafeStringValue(name);
     nam = RSTRING_PTR(name);
-    if (strlen(nam) != RSTRING_LEN(name)) {
+    if (memchr(nam, '\0', RSTRING_LEN(name))) {
 	rb_raise(rb_eArgError, "bad environment variable name");
     }
     val = getenv(nam);
@@ -1894,7 +1911,7 @@ rb_f_getenv(VALUE obj, VALUE name)
     rb_secure(4);
     SafeStringValue(name);
     nam = RSTRING_PTR(name);
-    if (strlen(nam) != RSTRING_LEN(name)) {
+    if (memchr(nam, '\0', RSTRING_LEN(name))) {
 	rb_raise(rb_eArgError, "bad environment variable name");
     }
     env = getenv(nam);
@@ -1925,7 +1942,7 @@ env_fetch(int argc, VALUE *argv)
     }
     SafeStringValue(key);
     nam = RSTRING_PTR(key);
-    if (strlen(nam) != RSTRING_LEN(key)) {
+    if (memchr(nam, '\0', RSTRING_LEN(key))) {
 	rb_raise(rb_eArgError, "bad environment variable name");
     }
     env = getenv(nam);
@@ -2065,9 +2082,9 @@ env_aset(VALUE obj, VALUE nm, VALUE val)
     StringValue(val);
     name = RSTRING_PTR(nm);
     value = RSTRING_PTR(val);
-    if (strlen(name) != RSTRING_LEN(nm))
+    if (memchr(name, '\0', RSTRING_LEN(nm)))
 	rb_raise(rb_eArgError, "bad environment variable name");
-    if (strlen(value) != RSTRING_LEN(val))
+    if (memchr(value, '\0', RSTRING_LEN(val)))
 	rb_raise(rb_eArgError, "bad environment variable value");
 
     ruby_setenv(name, value);
@@ -2367,7 +2384,7 @@ env_has_key(VALUE env, VALUE key)
 
     rb_secure(4);
     s = StringValuePtr(key);
-    if (strlen(s) != RSTRING_LEN(key))
+    if (memchr(s, '\0', RSTRING_LEN(key)))
 	rb_raise(rb_eArgError, "bad environment variable name");
     if (getenv(s)) return Qtrue;
     return Qfalse;
@@ -2380,7 +2397,7 @@ env_assoc(VALUE env, VALUE key)
 
     rb_secure(4);
     s = StringValuePtr(key);
-    if (strlen(s) != RSTRING_LEN(key))
+    if (memchr(s, '\0', RSTRING_LEN(key)))
 	rb_raise(rb_eArgError, "bad environment variable name");
     e = getenv(s);
     if (e) return rb_assoc_new(key, rb_tainted_str_new2(e));
