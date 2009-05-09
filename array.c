@@ -303,21 +303,21 @@ ary_alloc(VALUE klass)
 }
 
 static VALUE
-ary_new(VALUE klass, long len)
+ary_new(VALUE klass, long capa)
 {
     VALUE ary;
 
-    if (len < 0) {
+    if (capa < 0) {
 	rb_raise(rb_eArgError, "negative array size (or size too big)");
     }
-    if (len > ARY_MAX_SIZE) {
+    if (capa > ARY_MAX_SIZE) {
 	rb_raise(rb_eArgError, "array size too big");
     }
     ary = ary_alloc(klass);
-    if (len > RARRAY_EMBED_LEN_MAX) {
+    if (capa > RARRAY_EMBED_LEN_MAX) {
         FL_UNSET_EMBED(ary);
-        ARY_SET_PTR(ary, ALLOC_N(VALUE, len));
-        ARY_SET_CAPA(ary, len);
+        ARY_SET_PTR(ary, ALLOC_N(VALUE, capa));
+        ARY_SET_CAPA(ary, capa);
         ARY_SET_HEAP_LEN(ary, 0);
     }
 
@@ -325,9 +325,9 @@ ary_new(VALUE klass, long len)
 }
 
 VALUE
-rb_ary_new2(long len)
+rb_ary_new2(long capa)
 {
-    return ary_new(rb_cArray, len);
+    return ary_new(rb_cArray, capa);
 }
 
 
@@ -373,9 +373,9 @@ rb_ary_new4(long n, const VALUE *elts)
 }
 
 VALUE
-rb_ary_tmp_new(long len)
+rb_ary_tmp_new(long capa)
 {
-    return ary_new(0, len);
+    return ary_new(0, capa);
 }
 
 void
