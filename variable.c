@@ -1440,7 +1440,7 @@ rb_autoload_load(VALUE klass, ID id)
 
     if (!load) return Qfalse;
     file = load->nd_lit;
-    return rb_require_safe(file, load->nd_nth);
+    return rb_require_safe(file, (int)load->nd_nth);
 }
 
 VALUE
