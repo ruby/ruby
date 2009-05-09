@@ -1,3 +1,8 @@
+Sat May  9 11:14:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_f_catch): gets rid of issue with gcc 4.4.  a patch
+	  from Alexey Froloff in [ruby-core:23398].  [ruby-core:22924]
+
 Fri May  8 19:38:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (try_link0): removes waste dSYM directories lef

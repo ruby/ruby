@@ -1222,7 +1222,7 @@ rb_f_catch(int argc, VALUE *argv)
 {
     VALUE tag;
     int state;
-    VALUE val = Qnil;		/* OK */
+    volatile VALUE val = Qnil;		/* OK */
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *saved_cfp = th->cfp;
 
