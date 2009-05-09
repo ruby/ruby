@@ -1,3 +1,7 @@
+Sat May  9 19:23:46 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb: use subsec instead of nsec.
+
 Sat May  9 12:19:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c: 3rd arguemnt of rb_hash_foreach() is VALUE.

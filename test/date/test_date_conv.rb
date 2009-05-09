@@ -49,6 +49,13 @@ class TestDateConv < Test::Unit::TestCase
       assert_equal([2004, 9, 19, 1, 2, 3, 456789123],
 		   [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.nsec])
     end
+
+    if Time.allocate.respond_to?(:subsec)
+      d = DateTime.new(2004, 9, 19, 1, 2, 3, 0) + 456789123456789123.to_r/86400000000000000000000
+      t = d.to_time.utc
+      assert_equal([2004, 9, 19, 1, 2, 3, Rational(456789123456789123,1000000000000000000)],
+		   [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.subsec])
+    end
   end
 
   def test_to_date__from_time
