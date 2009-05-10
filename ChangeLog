@@ -1,4 +1,4 @@
-Sun May 10 11:13:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun May 10 11:36:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/cfunc.c (rb_dlcfunc_instance_p): new function to check if
 	  the argument is an instance of DL::CFunc.
@@ -8,6 +8,12 @@ Sun May 10 11:13:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/lib/dl/cparser.rb (DL::CParser#parse_signature): strips
 	  spaces.  based on a patch from Takashi Tamura in [ruby-dev:38398].
+
+	* ext/dl/lib/dl/value.rb (DL::ValueUtil#wrap_arg): block must be
+	  given if arg is not bound.  [ruby-dev:38404]
+
+	* ext/dl/cfunc.c (rb_dlcfunc_instance_p): new function to check if
+	  the argument is an instance of DL::CFunc.
 
 Sat May  9 19:23:46 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 

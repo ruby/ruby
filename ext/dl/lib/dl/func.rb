@@ -95,6 +95,10 @@ module DL
       end
     end
 
+    def bound?()
+      @cfunc.ptr != 0
+    end
+
     def bind_at_call(&block)
       bind(&block)
     end
