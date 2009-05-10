@@ -769,7 +769,7 @@ module Net
       "auth_#{type.to_s.downcase}".intern
     end
 
-    def check_auth_args(user, secret)
+    def check_auth_args(user, secret, authtype = DEFAULT_AUTH_TYPE)
       unless user
         raise ArgumentError, 'SMTP-AUTH requested but missing user name'
       end

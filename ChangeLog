@@ -1,3 +1,8 @@
+Mon May 11 04:39:45 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/net/smtp.rb (Net::SMTP#check_auth_args): should not change
+	  number of methods for the sake of compatibility.
+
 Sun May 10 11:36:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/cfunc.c (rb_dlcfunc_instance_p): new function to check if
