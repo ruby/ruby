@@ -1,3 +1,8 @@
+Mon May 11 08:37:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_coerce): support
+	   coercing into Rational.   [ruby-core:23415]
+
 Mon May 11 04:39:45 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/net/smtp.rb (Net::SMTP#check_auth_args): should not change
