@@ -107,75 +107,75 @@ rb_dlptr_s_allocate(VALUE klass)
 static VALUE
 rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
 {
-  VALUE ptr, sym, size;
-  struct ptr_data *data;
-  void *p = NULL;
-  freefunc_t f = NULL;
-  long s = 0;
+    VALUE ptr, sym, size;
+    struct ptr_data *data;
+    void *p = NULL;
+    freefunc_t f = NULL;
+    long s = 0;
 
-  switch (rb_scan_args(argc, argv, "12", &ptr, &size, &sym)) {
-  case 1:
-    p = (void*)(NUM2PTR(rb_Integer(ptr)));
-    break;
-  case 2:
-    p = (void*)(NUM2PTR(rb_Integer(ptr)));
-    s = NUM2LONG(size);
-    break;
-  case 3:
-    p = (void*)(NUM2PTR(rb_Integer(ptr)));
-    s = NUM2LONG(size);
-    f = NIL_P(sym) ? NULL : RCFUNC_DATA(sym)->ptr;
-    break;
-  default:
-    rb_bug("rb_dlptr_initialize");
-  }
-
-  if (p) {
-    Data_Get_Struct(self, struct ptr_data, data);
-    if (data->ptr && data->free) {
-      /* Free previous memory. Use of inappropriate initialize may cause SEGV. */
-      (*(data->free))(data->ptr);
+    switch (rb_scan_args(argc, argv, "12", &ptr, &size, &sym)) {
+      case 1:
+	p = (void*)(NUM2PTR(rb_Integer(ptr)));
+	break;
+      case 2:
+	p = (void*)(NUM2PTR(rb_Integer(ptr)));
+	s = NUM2LONG(size);
+	break;
+      case 3:
+	p = (void*)(NUM2PTR(rb_Integer(ptr)));
+	s = NUM2LONG(size);
+	f = NIL_P(sym) ? NULL : RCFUNC_DATA(sym)->ptr;
+	break;
+      default:
+	rb_bug("rb_dlptr_initialize");
     }
-    data->ptr  = p;
-    data->size = s;
-    data->free = f;
-  }
 
-  return Qnil;
+    if (p) {
+	Data_Get_Struct(self, struct ptr_data, data);
+	if (data->ptr && data->free) {
+	    /* Free previous memory. Use of inappropriate initialize may cause SEGV. */
+	    (*(data->free))(data->ptr);
+	}
+	data->ptr  = p;
+	data->size = s;
+	data->free = f;
+    }
+
+    return Qnil;
 }
 
 static VALUE
 rb_dlptr_s_malloc(int argc, VALUE argv[], VALUE klass)
 {
-  VALUE size, sym, obj;
-  int   s;
-  freefunc_t f;
+    VALUE size, sym, obj;
+    int   s;
+    freefunc_t f;
 
-  switch (rb_scan_args(argc, argv, "11", &size, &sym)) {
-  case 1:
-    s = NUM2LONG(size);
-    f = NULL;
-    break;
-  case 2:
-    s = NUM2LONG(size);
-    f = RCFUNC_DATA(sym)->ptr;
-    break;
-  default:
-    rb_bug("rb_dlptr_s_malloc");
-  }
+    switch (rb_scan_args(argc, argv, "11", &size, &sym)) {
+      case 1:
+	s = NUM2LONG(size);
+	f = NULL;
+	break;
+      case 2:
+	s = NUM2LONG(size);
+	f = RCFUNC_DATA(sym)->ptr;
+	break;
+      default:
+	rb_bug("rb_dlptr_s_malloc");
+    }
 
-  obj = rb_dlptr_malloc(s,f);
+    obj = rb_dlptr_malloc(s,f);
 
-  return obj;
+    return obj;
 }
 
 VALUE
 rb_dlptr_to_i(VALUE self)
 {
-  struct ptr_data *data;
+    struct ptr_data *data;
 
-  Data_Get_Struct(self, struct ptr_data, data);
-  return PTR2NUM(data->ptr);
+    Data_Get_Struct(self, struct ptr_data, data);
+    return PTR2NUM(data->ptr);
 }
 
 VALUE
@@ -189,156 +189,156 @@ rb_dlptr_to_value(VALUE self)
 VALUE
 rb_dlptr_ptr(VALUE self)
 {
-  struct ptr_data *data;
+    struct ptr_data *data;
 
-  Data_Get_Struct(self, struct ptr_data, data);
-  return rb_dlptr_new(*((void**)(data->ptr)),0,0);
+    Data_Get_Struct(self, struct ptr_data, data);
+    return rb_dlptr_new(*((void**)(data->ptr)),0,0);
 }
 
 VALUE
 rb_dlptr_ref(VALUE self)
 {
-  struct ptr_data *data;
+    struct ptr_data *data;
 
-  Data_Get_Struct(self, struct ptr_data, data);
-  return rb_dlptr_new(&(data->ptr),0,0);
+    Data_Get_Struct(self, struct ptr_data, data);
+    return rb_dlptr_new(&(data->ptr),0,0);
 }
 
 VALUE
 rb_dlptr_null_p(VALUE self)
 {
-  struct ptr_data *data;
+    struct ptr_data *data;
 
-  Data_Get_Struct(self, struct ptr_data, data);
-  return data->ptr ? Qfalse : Qtrue;
+    Data_Get_Struct(self, struct ptr_data, data);
+    return data->ptr ? Qfalse : Qtrue;
 }
 
 VALUE
 rb_dlptr_free_set(VALUE self, VALUE val)
 {
-  struct ptr_data *data;
-  extern VALUE rb_cDLCFunc;
+    struct ptr_data *data;
+    extern VALUE rb_cDLCFunc;
 
-  Data_Get_Struct(self, struct ptr_data, data);
-  if( rb_obj_is_kind_of(val, rb_cDLCFunc) == Qtrue ){
-      data->free = RCFUNC_DATA(val)->ptr;
-  }
-  else{
-      data->free = NUM2PTR(rb_Integer(val));
-  }
+    Data_Get_Struct(self, struct ptr_data, data);
+    if( rb_obj_is_kind_of(val, rb_cDLCFunc) == Qtrue ){
+	data->free = RCFUNC_DATA(val)->ptr;
+    }
+    else{
+	data->free = NUM2PTR(rb_Integer(val));
+    }
 
-  return Qnil;
+    return Qnil;
 }
 
 VALUE
 rb_dlptr_free_get(VALUE self)
 {
-  struct ptr_data *pdata;
+    struct ptr_data *pdata;
 
-  Data_Get_Struct(self, struct ptr_data, pdata);
+    Data_Get_Struct(self, struct ptr_data, pdata);
 
-  return rb_dlcfunc_new(pdata->free, DLTYPE_VOID, "free<anonymous>", CFUNC_CDECL);
+    return rb_dlcfunc_new(pdata->free, DLTYPE_VOID, "free<anonymous>", CFUNC_CDECL);
 }
 
 VALUE
 rb_dlptr_to_s(int argc, VALUE argv[], VALUE self)
 {
-  struct ptr_data *data;
-  VALUE arg1, val;
-  int len;
+    struct ptr_data *data;
+    VALUE arg1, val;
+    int len;
 
-  Data_Get_Struct(self, struct ptr_data, data);
-  switch (rb_scan_args(argc, argv, "01", &arg1)) {
-  case 0:
-    val = rb_tainted_str_new2((char*)(data->ptr));
-    break;
-  case 1:
-    len = NUM2INT(arg1);
-    val = rb_tainted_str_new((char*)(data->ptr), len);
-    break;
-  default:
-    rb_bug("rb_dlptr_to_s");
-  }
+    Data_Get_Struct(self, struct ptr_data, data);
+    switch (rb_scan_args(argc, argv, "01", &arg1)) {
+      case 0:
+	val = rb_tainted_str_new2((char*)(data->ptr));
+	break;
+      case 1:
+	len = NUM2INT(arg1);
+	val = rb_tainted_str_new((char*)(data->ptr), len);
+	break;
+      default:
+	rb_bug("rb_dlptr_to_s");
+    }
 
-  return val;
+    return val;
 }
 
 VALUE
 rb_dlptr_to_str(int argc, VALUE argv[], VALUE self)
 {
-  struct ptr_data *data;
-  VALUE arg1, val;
-  int len;
+    struct ptr_data *data;
+    VALUE arg1, val;
+    int len;
 
-  Data_Get_Struct(self, struct ptr_data, data);
-  switch (rb_scan_args(argc, argv, "01", &arg1)) {
-  case 0:
-    val = rb_tainted_str_new((char*)(data->ptr),data->size);
-    break;
-  case 1:
-    len = NUM2INT(arg1);
-    val = rb_tainted_str_new((char*)(data->ptr), len);
-    break;
-  default:
-    rb_bug("rb_dlptr_to_str");
-  }
+    Data_Get_Struct(self, struct ptr_data, data);
+    switch (rb_scan_args(argc, argv, "01", &arg1)) {
+      case 0:
+	val = rb_tainted_str_new((char*)(data->ptr),data->size);
+	break;
+      case 1:
+	len = NUM2INT(arg1);
+	val = rb_tainted_str_new((char*)(data->ptr), len);
+	break;
+      default:
+	rb_bug("rb_dlptr_to_str");
+    }
 
-  return val;
+    return val;
 }
 
 VALUE
 rb_dlptr_inspect(VALUE self)
 {
-  struct ptr_data *data;
-  char str[1024];
+    struct ptr_data *data;
+    char str[1024];
 
-  Data_Get_Struct(self, struct ptr_data, data);
-  snprintf(str, 1023, "#<%s:%p ptr=%p size=%ld free=%p>",
-	   rb_class2name(CLASS_OF(self)), data, data->ptr, data->size, data->free);
-  return rb_str_new2(str);
+    Data_Get_Struct(self, struct ptr_data, data);
+    snprintf(str, 1023, "#<%s:%p ptr=%p size=%ld free=%p>",
+	     rb_class2name(CLASS_OF(self)), data, data->ptr, data->size, data->free);
+    return rb_str_new2(str);
 }
 
 VALUE
 rb_dlptr_eql(VALUE self, VALUE other)
 {
-  void *ptr1, *ptr2;
-  ptr1 = rb_dlptr2cptr(self);
-  ptr2 = rb_dlptr2cptr(other);
+    void *ptr1, *ptr2;
+    ptr1 = rb_dlptr2cptr(self);
+    ptr2 = rb_dlptr2cptr(other);
 
-  return ptr1 == ptr2 ? Qtrue : Qfalse;
+    return ptr1 == ptr2 ? Qtrue : Qfalse;
 }
 
 VALUE
 rb_dlptr_cmp(VALUE self, VALUE other)
 {
-  void *ptr1, *ptr2;
-  ptr1 = rb_dlptr2cptr(self);
-  ptr2 = rb_dlptr2cptr(other);
-  return PTR2NUM((long)ptr1 - (long)ptr2);
+    void *ptr1, *ptr2;
+    ptr1 = rb_dlptr2cptr(self);
+    ptr2 = rb_dlptr2cptr(other);
+    return PTR2NUM((long)ptr1 - (long)ptr2);
 }
 
 VALUE
 rb_dlptr_plus(VALUE self, VALUE other)
 {
-  void *ptr;
-  long num, size;
+    void *ptr;
+    long num, size;
 
-  ptr = rb_dlptr2cptr(self);
-  size = RPTR_DATA(self)->size;
-  num = NUM2LONG(other);
-  return rb_dlptr_new((char *)ptr + num, size - num, 0);
+    ptr = rb_dlptr2cptr(self);
+    size = RPTR_DATA(self)->size;
+    num = NUM2LONG(other);
+    return rb_dlptr_new((char *)ptr + num, size - num, 0);
 }
 
 VALUE
 rb_dlptr_minus(VALUE self, VALUE other)
 {
-  void *ptr;
-  long num, size;
+    void *ptr;
+    long num, size;
 
-  ptr = rb_dlptr2cptr(self);
-  size = RPTR_DATA(self)->size;
-  num = NUM2LONG(other);
-  return rb_dlptr_new((char *)ptr - num, size + num, 0);
+    ptr = rb_dlptr2cptr(self);
+    size = RPTR_DATA(self)->size;
+    num = NUM2LONG(other);
+    return rb_dlptr_new((char *)ptr - num, size + num, 0);
 }
 
 VALUE
@@ -349,16 +349,16 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
     size_t offset, len;
 
     switch( rb_scan_args(argc, argv, "11", &arg0, &arg1) ){
-    case 1:
+      case 1:
 	offset = NUM2ULONG(arg0);
 	retval = INT2NUM(*((char*)RPTR_DATA(self)->ptr + offset));
 	break;
-    case 2:
+      case 2:
 	offset = NUM2ULONG(arg0);
 	len    = NUM2ULONG(arg1);
 	retval = rb_tainted_str_new((char *)RPTR_DATA(self)->ptr + offset, len);
 	break;
-    default:
+      default:
 	rb_bug("rb_dlptr_aref()");
     }
     return retval;
@@ -373,12 +373,12 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
     void *mem;
 
     switch( rb_scan_args(argc, argv, "21", &arg0, &arg1, &arg2) ){
-    case 2:
+      case 2:
 	offset = NUM2ULONG(arg0);
 	((char*)RPTR_DATA(self)->ptr)[offset] = NUM2UINT(arg1);
 	retval = arg1;
 	break;
-    case 3:
+      case 3:
 	offset = NUM2ULONG(arg0);
 	len    = NUM2ULONG(arg1);
 	if( TYPE(arg2) == T_STRING ){
@@ -393,7 +393,7 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	memcpy((char *)RPTR_DATA(self)->ptr + offset, mem, len);
 	retval = arg2;
 	break;
-    default:
+      default:
 	rb_bug("rb_dlptr_aset()");
     }
     return retval;
@@ -402,15 +402,15 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 VALUE
 rb_dlptr_size(int argc, VALUE argv[], VALUE self)
 {
-  VALUE size;
+    VALUE size;
 
-  if (rb_scan_args(argc, argv, "01", &size) == 0){
-    return LONG2NUM(RPTR_DATA(self)->size);
-  }
-  else{
-    RPTR_DATA(self)->size = NUM2LONG(size);
-    return size;
-  }
+    if (rb_scan_args(argc, argv, "01", &size) == 0){
+	return LONG2NUM(RPTR_DATA(self)->size);
+    }
+    else{
+	RPTR_DATA(self)->size = NUM2LONG(size);
+	return size;
+    }
 }
 
 VALUE
