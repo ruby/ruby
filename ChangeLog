@@ -1,3 +1,8 @@
+Sun May 10 10:40:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/lib/dl/cparser.rb (DL::CParser#parse_signature): strips
+	  spaces.  based on a patch from Takashi Tamura in [ruby-dev:38398].
+
 Sat May  9 19:23:46 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb: use subsec instead of nsec.

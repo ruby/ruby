@@ -41,7 +41,7 @@ module DL
       case signature
       when /^([\d\w@\*_\s]+)\(([\d\w\*_\s\,\[\]]*)\)$/
         ret = $1
-        args = $2
+        (args = $2).strip!
         ret = ret.split(/\s+/)
         args = args.split(/\s*,\s*/)
         func = ret.pop
