@@ -8953,6 +8953,9 @@ Init_IO(void)
 #ifdef O_NOFOLLOW
     rb_file_const("NOFOLLOW", INT2FIX(O_NOFOLLOW)); /* FreeBSD, Linux */
 #endif
+#ifdef O_NOATIME
+    rb_file_const("NOATIME", INT2FIX(O_NOATIME)); /* Linux */
+#endif
 
     sym_mode = ID2SYM(rb_intern("mode"));
     sym_perm = ID2SYM(rb_intern("perm"));
