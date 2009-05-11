@@ -1,3 +1,8 @@
+Mon May 11 21:46:20 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y: add semicolons to some grammar rules not terminated
+	  with them.  a patch from Dave B in [ruby-core:23422].
+
 Mon May 11 20:08:33 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* io.c (Init_IO): add constant File::NOATIME.  [ruby-core:23194]

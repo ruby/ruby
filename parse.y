@@ -2981,6 +2981,7 @@ k_begin		: keyword_begin
 			if (RTEST(ruby_verbose)) token_info_push(parser, "begin");
 #endif
 		    }
+		;
 
 k_if		: keyword_if
 		    {
@@ -2988,6 +2989,7 @@ k_if		: keyword_if
 			if (RTEST(ruby_verbose)) token_info_push(parser, "if");
 #endif
 		    }
+		;
 
 k_unless	: keyword_unless
 		    {
@@ -2995,6 +2997,7 @@ k_unless	: keyword_unless
 			if (RTEST(ruby_verbose)) token_info_push(parser, "unless");
 #endif
 		    }
+		;
 
 k_while		: keyword_while
 		    {
@@ -3002,6 +3005,7 @@ k_while		: keyword_while
 			if (RTEST(ruby_verbose)) token_info_push(parser, "while");
 #endif
 		    }
+		;
 
 k_until		: keyword_until
 		    {
@@ -3009,6 +3013,7 @@ k_until		: keyword_until
 			if (RTEST(ruby_verbose)) token_info_push(parser, "until");
 #endif
 		    }
+		;
 
 k_case		: keyword_case
 		    {
@@ -3016,6 +3021,7 @@ k_case		: keyword_case
 			if (RTEST(ruby_verbose)) token_info_push(parser, "case");
 #endif
 		    }
+		;
 
 k_for		: keyword_for
 		    {
@@ -3023,6 +3029,7 @@ k_for		: keyword_for
 			if (RTEST(ruby_verbose)) token_info_push(parser, "for");
 #endif
 		    }
+		;
 
 k_class		: keyword_class
 		    {
@@ -3030,6 +3037,7 @@ k_class		: keyword_class
 			if (RTEST(ruby_verbose)) token_info_push(parser, "class");
 #endif
 		    }
+		;
 
 k_module	: keyword_module
 		    {
@@ -3037,6 +3045,7 @@ k_module	: keyword_module
 			if (RTEST(ruby_verbose)) token_info_push(parser, "module");
 #endif
 		    }
+		;
 
 k_def		: keyword_def
 		    {
@@ -3044,6 +3053,7 @@ k_def		: keyword_def
 			if (RTEST(ruby_verbose)) token_info_push(parser, "def");
 #endif
 		    }
+		;
 
 k_end		: keyword_end
 		    {
@@ -3051,6 +3061,7 @@ k_end		: keyword_end
 			if (RTEST(ruby_verbose)) token_info_pop(parser, "end");  /* POP */
 #endif
 		    }
+		;
 
 then		: term
 		    /*%c%*/
