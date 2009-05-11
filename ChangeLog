@@ -1,3 +1,11 @@
+Mon May 11 23:14:06 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ext/dl/dl.c (rb_dlhandle_initialize): prohibits DL::dlopen
+	  with a tainted name of library.
+	  Patch by sheepman <sheepman AT sheepman.sakura.ne.jp>.
+
+	* ext/dl/dl.c (rb_dlhandle_sym): ditto
+
 Mon May 11 22:33:46 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* ext/dl/lib/dl/func.rb (DL::Function#call): prevents
