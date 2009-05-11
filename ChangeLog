@@ -1,3 +1,12 @@
+Mon May 11 22:33:46 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ext/dl/lib/dl/func.rb (DL::Function#call): prevents
+	  passing tainted arguments to a C function.
+	  Patch by sheepman <sheepman AT sheepman.sakura.ne.jp>.
+
+	* ext/dl/lib/dl/func.rb (DL::Function#check_safe_obj): 
+	  new method for checking #call's arguments.
+
 Tue Mar 10 04:53:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (MINIRUBY): keep macro into Makefile.

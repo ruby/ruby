@@ -25,8 +25,16 @@ module DL
       @cfunc.to_i
     end
 
+    def check_safe_obj(val)
+      if $SAFE > 0 and val.tainted?
+        raise SecurityError, 'Insecure operation'
+      end
+    end
+
     def call(*args, &block)
       funcs = []
+      args.each{|e| check_safe_obj(e) }
+      check_safe_obj(block)
       args = wrap_args(args, @stack.types, funcs, &block)
       r = @cfunc.call(@stack.pack(args))
       funcs.each{|f| f.unbind_at_call()}
