@@ -1,3 +1,9 @@
+Thu Feb 19 15:47:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/fake.rb.in: extracted from Makefile.in.
+
+	* configure.in (fake.rb): prefixed with $(arch)-.
+
 Sun Apr 26 20:21:39 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* .gitignore: added.

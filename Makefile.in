@@ -28,6 +28,7 @@ datadir = @datadir@
 arch = @arch@
 sitearch = @sitearch@
 sitedir = @sitedir@
+ruby_version = @ruby_version@
 
 TESTUI = console
 TESTS =
@@ -152,22 +153,9 @@ $(LIBRUBY_SO):
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true
 
-fake.rb:	Makefile
-		@echo ' \
-		class Object; \
-		  CROSS_COMPILING = RUBY_PLATFORM; \
-		  remove_const :RUBY_PLATFORM; \
-		  remove_const :RUBY_VERSION; \
-		  RUBY_PLATFORM = "@arch@"; \
-		  RUBY_VERSION = "@MAJOR@.@MINOR@.@TEENY@"; \
-		end; \
-		if RUBY_PLATFORM =~ /mswin|bccwin|mingw/; \
-		  class File; \
-		    remove_const :ALT_SEPARATOR; \
-		    ALT_SEPARATOR = "\\"; \
-		  end; \
-		end; \
-		' > $@
+fake: $(arch)-fake.rb
+$(arch)-fake.rb: config.status
+		 @./config.status --file=$@:$(srcdir)/template/fake.rb.in
 
 Makefile:	$(srcdir)/Makefile.in $(srcdir)/enc/Makefile.in
 

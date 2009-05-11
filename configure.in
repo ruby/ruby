@@ -1670,7 +1670,7 @@ fi
 
 if test x"$cross_compiling" = xyes; then
   test x"$MINIRUBY" = x && MINIRUBY="${RUBY-ruby} -I`pwd` -rfake"
-  PREP=fake.rb
+  PREP='$(arch)-fake.rb'
   RUNRUBY='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
 else
   MINIRUBY='./miniruby$(EXEEXT) -I$(srcdir)/lib'
