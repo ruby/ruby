@@ -1,3 +1,7 @@
+Mon May 11 13:08:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb (rubylibdir): use rubylibprefix.  [ruby-dev:38426]
+
 Mon May 11 08:37:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_coerce): support
