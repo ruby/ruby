@@ -1,3 +1,7 @@
+Fri May  1 13:18:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_intern.h (_longjmp): never return.  see [ruby-core:23241]
+
 Sun Apr 26 20:33:12 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/transcode-tb (ActionMap#generate_node):

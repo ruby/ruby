@@ -67,7 +67,12 @@ char *strrchr(const char *, const char);
 #define ruby_setjmp(env) RUBY_SETJMP(env)
 #define ruby_longjmp(env,val) RUBY_LONGJMP(env,val)
 #ifdef __CYGWIN__
-int _setjmp(), _longjmp();
+# ifndef _setjmp
+int _setjmp(jmp_buf);
+# endif
+# ifndef _longjmp
+NORETURN(void _longjmp(jmp_buf, int));
+# endif
 #endif
 
 #include <sys/types.h>
