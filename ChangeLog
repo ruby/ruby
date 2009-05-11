@@ -29,6 +29,11 @@ Sun May 10 11:36:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/dl/cfunc.c (rb_dlcfunc_instance_p): new function to check if
 	  the argument is an instance of DL::CFunc.
 
+Sat May  9 19:57:00 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_float.rb (TestFloat#test_sleep_with_Float): add a
+	  test. see [ruby-core:23282]
+
 Sat May  9 19:23:46 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb: use subsec instead of nsec.
