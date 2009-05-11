@@ -5,6 +5,7 @@ class TestOptionParser::PlaceArg < TestOptionParser
     super
     @opt.def_option("-x [VAL]") {|x| @flag = x}
     @opt.def_option("--option [VAL]") {|x| @flag = x}
+    @opt.def_option("-T [level]", /^[0-4]$/, Integer) {|x| @topt = x}
     @opt.def_option("-n") {}
   end
 
@@ -41,5 +42,12 @@ class TestOptionParser::PlaceArg < TestOptionParser
     assert_equal("foo", @flag)
     assert_equal(%w"", no_error {@opt.parse!(%w"--opt bar")})
     assert_equal("bar", @flag)
+  end
+
+  def test_conv
+    assert_equal(%w"te.rb", no_error('[ruby-dev:38333]') {@opt.parse!(%w"-T te.rb")})
+    assert_nil(@topt)
+    assert_equal(%w"te.rb", no_error('[ruby-dev:38333]') {@opt.parse!(%w"-T1 te.rb")})
+    assert_equal(1, @topt)
   end
 end
