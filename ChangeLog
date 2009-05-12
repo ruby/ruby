@@ -1,3 +1,7 @@
+Tue May 12 18:23:40 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* yarvtest: removed because it's outdated.
+
 Mon May 11 21:46:20 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y: add semicolons to some grammar rules not terminated
