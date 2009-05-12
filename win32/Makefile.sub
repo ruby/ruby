@@ -164,8 +164,9 @@ CFLAGS = $(RUNTIMEFLAG) $(DEBUGFLAGS) $(WARNFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG)
 CXXFLAGS = $(CFLAGS)
 !endif
 !if !defined(LDFLAGS)
-LDFLAGS = -link -incremental:no -debug -opt:ref -opt:icf
+LDFLAGS = -incremental:no -debug -opt:ref -opt:icf
 !endif
+LDFLAGS = -link $(LDFLAGS)
 !if !defined(XLDFLAGS)
 XLDFLAGS = -stack:$(STACK)
 !endif
