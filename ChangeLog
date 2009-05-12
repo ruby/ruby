@@ -1,3 +1,24 @@
+Tue May 12 21:03:02 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c: support fixed UTC offset.  [ruby-dev:38326]
+	  (leap_year_v_p): new macro.
+	  (TIME_FIXOFF_P): new macro.
+	  (TIME_SET_FIXOFF): new macro.
+	  (time_init_0): renamed from time_init.
+	  (time_set_utc_offset): new function.
+	  (vtm_add_offset): new function.
+	  (utc_offset_arg): new function.
+	  (time_init_1): new function.
+	  (time_init): call time_init_0 or time_init_1 according argc.
+	  (validate_utc_offset): new function.
+	  (time_localtime_m): new function.
+	  (time_fixoff): new function.
+	  (time_getlocaltime): take optional UTC offset argument.
+	  (time_get_tm): support fixed UTC offset time.
+	  (Init_Time): make Time#{initialize,localtime,getlocal} varargs.
+
+	* strftime.c (rb_strftime): vtm->zone can be NULL now.
+
 Tue May 12 18:23:40 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* yarvtest: removed because it's outdated.

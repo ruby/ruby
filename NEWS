@@ -51,6 +51,8 @@ with all sufficient information, see the ChangeLog file.
     * extended feature:
       * time_t restriction is removed to represent before 1901 and after 2038.
         Proleptic Gregorian calendar is used for old dates.
+      * Time.new have optional arguments to specify date with time offset.
+      * Time#getlocal, Time#localtime have optional time offset argument.
 
     * incompatible changes:
       * The year argument of Time.{utc,gm,local,mktime} is now interpreted as

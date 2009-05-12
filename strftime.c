@@ -610,7 +610,10 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct vtm *vtm, 
 #endif /* HAVE_TM_ZONE */
 #endif /* HAVE_TZNAME */
 #endif /* 0 */
-			tp = vtm->zone;
+                        if (vtm->zone == NULL)
+                            tp = "";
+                        else
+                            tp = vtm->zone;
 			i = strlen(tp);
 			break;
 

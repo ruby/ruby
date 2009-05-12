@@ -48,8 +48,14 @@ typedef unsigned LONG_LONG unsigned_time_t;
 VALUE rb_cTime;
 static VALUE time_utc_offset _((VALUE));
 
+static long obj2long(VALUE obj);
+static VALUE obj2vint(VALUE obj);
+static int month_arg(VALUE arg);
+static void validate_vtm(struct vtm *vtm);
+
 static VALUE time_gmtime(VALUE);
 static VALUE time_localtime(VALUE);
+static VALUE time_fixoff(VALUE);
 
 static time_t timegm_noleapsecond(struct tm *tm);
 static int tmcmp(struct tm *a, struct tm *b);
@@ -59,6 +65,7 @@ static const char *find_time_t(struct tm *tptr, int utc_p, time_t *tp);
 static struct vtm *localtimev(VALUE timev, struct vtm *result);
 
 static int leap_year_p(long y);
+#define leap_year_v_p(y) leap_year_p(NUM2LONG(mod(v, INT2FIX(400))))
 
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
@@ -1002,6 +1009,12 @@ struct time_object {
 #define TIME_LOCALTIME_P(tobj) ((tobj)->gmt == 0)
 #define TIME_SET_LOCALTIME(tobj) ((tobj)->gmt = 0)
 
+#define TIME_FIXOFF_P(tobj) ((tobj)->gmt == 2)
+#define TIME_SET_FIXOFF(tobj, off) \
+    ((tobj)->gmt = 2, \
+     (tobj)->vtm.utc_offset = (off), \
+     (tobj)->vtm.zone = NULL)
+
 #define TIME_COPY_GMT(tobj1, tobj2) ((tobj1)->gmt = (tobj2)->gmt)
 
 static VALUE time_get_tm(VALUE, struct time_object *);
@@ -1082,25 +1095,8 @@ timev2timespec(VALUE timev)
  *  initialized to the current system time.
  */
 
-/*
- *  call-seq:
- *     Time.new -> time
- *
- *  Returns a <code>Time</code> object initialized to the current system
- *  time. <b>Note:</b> The object created will be created using the
- *  resolution available on your system clock, and so may include
- *  fractional seconds.
- *
- *     a = Time.new      #=> 2007-11-19 07:50:02 -0600
- *     b = Time.new      #=> 2007-11-19 07:50:02 -0600
- *     a == b            #=> false
- *     "%.6f" % a.to_f   #=> "1195480202.282373"
- *     "%.6f" % b.to_f   #=> "1195480202.283415"
- *
- */
-
 static VALUE
-time_init(VALUE time)
+time_init_0(VALUE time)
 {
     struct time_object *tobj;
     struct timespec ts;
@@ -1126,6 +1122,289 @@ time_init(VALUE time)
     tobj->timev = timespec2timev(&ts);
 
     return time;
+}
+
+static VALUE
+time_set_utc_offset(VALUE time, VALUE off)
+{
+    struct time_object *tobj;
+    off = num_exact(off);
+
+    time_modify(time);
+    GetTimeval(time, tobj);
+
+    tobj->tm_got = 0;
+    TIME_SET_FIXOFF(tobj, off);
+
+    return time;
+}
+
+static void
+vtm_add_offset(struct vtm *vtm, VALUE off)
+{
+    int sign;
+    VALUE subsec, v;
+    int sec, min, hour;
+    int day;
+
+    vtm->utc_offset = sub(vtm->utc_offset, off);
+
+    if (RTEST(lt(off, INT2FIX(0)))) {
+        sign = -1;
+        off = neg(off);
+    }
+    else {
+        sign = 1;
+    }
+    divmodv(off, INT2FIX(1), &off, &subsec);
+    divmodv(off, INT2FIX(60), &off, &v);
+    sec = NUM2INT(v);
+    divmodv(off, INT2FIX(60), &off, &v);
+    min = NUM2INT(v);
+    divmodv(off, INT2FIX(24), &off, &v);
+    hour = NUM2INT(v);
+
+    if (sign < 0) {
+        subsec = neg(subsec);
+        sec = -sec;
+        min = -min;
+        hour = -hour;
+    }
+
+    day = 0;
+
+    if (!rb_equal(subsec, INT2FIX(0))) {
+        vtm->subsec = add(vtm->subsec, subsec);
+        if (lt(vtm->subsec, INT2FIX(0))) {
+            vtm->subsec = add(vtm->subsec, INT2FIX(1));
+            sec -= 1;
+        }
+        if (le(INT2FIX(1), vtm->subsec)) {
+            vtm->subsec = sub(vtm->subsec, INT2FIX(1));
+            sec += 1;
+        }
+        goto not_zero_sec;
+    }
+    if (sec) {
+      not_zero_sec:
+        /* If sec + subsec == 0, don't change vtm->sec.
+         * It may be 60 which is a leap second. */
+        vtm->sec += sec;
+        if (vtm->sec < 0) {
+            vtm->sec += 60;
+            min -= 1;
+        }
+        if (60 <= vtm->sec) {
+            vtm->sec -= 60;
+            min += 1;
+        }
+    }
+    if (min) {
+        vtm->min += min;
+        if (vtm->min < 0) {
+            vtm->min += 60;
+            hour -= 1;
+        }
+        if (60 <= vtm->min) {
+            vtm->min -= 60;
+            hour += 1;
+        }
+    }
+    if (hour) {
+        vtm->hour += hour;
+        if (vtm->hour < 0) {
+            vtm->hour += 24;
+            day = -1;
+        }
+        if (24 <= vtm->hour) {
+            vtm->hour -= 24;
+            day = 1;
+        }
+    }
+
+    if (day) {
+        if (day < 0) {
+            if (vtm->mon == 1 && vtm->mday == 1) {
+                vtm->mday = 31;
+                vtm->mon = 12; /* December */
+                vtm->year = sub(vtm->year, INT2FIX(1));
+                vtm->yday = leap_year_v_p(vtm->year) ? 365 : 364;
+            }
+            else if (vtm->mday == 1) {
+                const int *days_in_month = leap_year_v_p(vtm->year) ?
+                                           leap_year_days_in_month :
+                                           common_year_days_in_month;
+                vtm->mon--;
+                vtm->mday = days_in_month[vtm->mon-1];
+                vtm->yday--;
+            }
+            else {
+                vtm->mday--;
+                vtm->yday--;
+            }
+            vtm->wday = (vtm->wday + 6) % 7;
+        }
+        else {
+            int leap = leap_year_v_p(vtm->year);
+            if (vtm->mon == 12 && vtm->mday == 31) {
+                vtm->year = add(vtm->year, INT2FIX(1));
+                vtm->mon = 1; /* January */
+                vtm->mday = 1;
+                vtm->yday = 1;
+            }
+            else if (vtm->mday == (leap ? leap_year_days_in_month :
+                                          common_year_days_in_month)[vtm->mon-1]) {
+                vtm->mon++;
+                vtm->mday = 1;
+                vtm->yday++;
+            }
+            else {
+                vtm->mday++;
+                vtm->yday++;
+            }
+            vtm->wday = (vtm->wday + 1) % 7;
+        }
+    }
+}
+
+static VALUE
+utc_offset_arg(VALUE arg)
+{
+    VALUE tmp;
+    if (!NIL_P(tmp = rb_check_string_type(arg))) {
+        int n;
+        char *s = RSTRING_PTR(tmp);
+        if (!rb_enc_str_asciicompat_p(tmp) ||
+            RSTRING_LEN(tmp) != 6 ||
+            (s[0] != '+' && s[0] != '-') ||
+            !ISDIGIT(s[1]) ||
+            !ISDIGIT(s[2]) ||
+            s[3] != ':' ||
+            !ISDIGIT(s[4]) ||
+            !ISDIGIT(s[5]))
+            rb_raise(rb_eArgError, "\"+HH:MM\" or \"-HH:MM\" expected for utc_offset");
+        n = strtol(s+1, NULL, 10) * 3600;
+        n += strtol(s+4, NULL, 10) * 60;
+        if (s[0] == '-')
+            n = -n;
+        return INT2FIX(n);
+    }
+    else {
+        return num_exact(arg);
+    }
+}
+
+static VALUE
+time_init_1(int argc, VALUE *argv, VALUE time)
+{
+    struct vtm vtm;
+    VALUE v[7];
+    int i;
+    struct time_object *tobj;
+
+    vtm.wday = -1;
+    vtm.yday = 0;
+    vtm.zone = "";
+
+    /*                             year  mon   mday  hour  min   sec   off */
+    rb_scan_args(argc, argv, "16", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5],&v[6]);
+
+    vtm.year = obj2vint(v[0]);
+
+    vtm.mon = NIL_P(v[1]) ? 1 : month_arg(v[1]);
+
+    vtm.mday = NIL_P(v[2]) ? 1 : obj2long(v[2]);
+
+    vtm.hour = NIL_P(v[3]) ? 0 : obj2long(v[3]);
+
+    vtm.min  = NIL_P(v[4]) ? 0 : obj2long(v[4]);
+
+    vtm.sec = 0;
+    vtm.subsec = INT2FIX(0);
+    if (!NIL_P(v[5])) {
+        VALUE sec = num_exact(v[5]);
+        VALUE subsec;
+        divmodv(sec, INT2FIX(1), &sec, &subsec);
+        vtm.sec = NUM2INT(sec);
+        vtm.subsec = subsec;
+    }
+
+    vtm.isdst = -1;
+    vtm.utc_offset = Qnil;
+    if (!NIL_P(v[6])) {
+        VALUE arg = v[6];
+        VALUE tmp;
+        if (arg == ID2SYM(rb_intern("dst")))
+            vtm.isdst = 1;
+        else if (arg == ID2SYM(rb_intern("std")))
+            vtm.isdst = 0;
+        else
+            vtm.utc_offset = utc_offset_arg(arg);
+    }
+
+    validate_vtm(&vtm);
+
+    time_modify(time);
+    GetTimeval(time, tobj);
+    tobj->tm_got=0;
+    tobj->timev = INT2FIX(0);
+
+    if (!NIL_P(vtm.utc_offset)) {
+        VALUE off = vtm.utc_offset;
+        vtm_add_offset(&vtm, neg(off));
+        vtm.utc_offset = Qnil;
+        tobj->timev = timegmv(&vtm);
+        return time_set_utc_offset(time, off);
+    }
+    else {
+        tobj->timev = timelocalv(&vtm);
+        return time_localtime(time);
+    }
+}
+
+
+/*
+ *  call-seq:
+ *     Time.new -> time
+ *     Time.new(year) -> time
+ *     Time.new(year, month) -> time
+ *     Time.new(year, month, day) -> time
+ *     Time.new(year, month, day, hour) -> time
+ *     Time.new(year, month, day, hour, min) -> time
+ *     Time.new(year, month, day, hour, min, sec) -> time
+ *     Time.new(year, month, day, hour, min, sec, utc_offset) -> time
+ *
+ *  Returns a <code>Time</code> object.
+ *
+ *  It is initialized to the current system time if no argument.
+ *  <b>Note:</b> The object created will be created using the
+ *  resolution available on your system clock, and so may include
+ *  fractional seconds.
+ *
+ *  If one or more arguments specified, the time is initialized
+ *  to the specified time.
+ *  _sec_ may have fraction if it is a rational.
+ *
+ *  _utc_offset_ is the offset from UTC.
+ *  It is a string such as "+09:00" or a number of seconds such as 32400.
+ *
+ *     a = Time.new      #=> 2007-11-19 07:50:02 -0600
+ *     b = Time.new      #=> 2007-11-19 07:50:02 -0600
+ *     a == b            #=> false
+ *     "%.6f" % a.to_f   #=> "1195480202.282373"
+ *     "%.6f" % b.to_f   #=> "1195480202.283415"
+ *
+ *     Time.new(2008,6,21, 13,30,0, "+09:00") #=> 2008-06-21 13:30:00 +0900
+ *
+ */
+
+static VALUE
+time_init(int argc, VALUE *argv, VALUE time)
+{
+    if (argc == 0)
+        return time_init_0(time);
+    else
+        return time_init_1(argc, argv, time);
 }
 
 static void
@@ -1452,6 +1731,13 @@ month_arg(VALUE arg)
 }
 
 static void
+validate_utc_offset(VALUE utc_offset)
+{
+    if (le(utc_offset, INT2FIX(-86400)) || ge(utc_offset, INT2FIX(86400)))
+	rb_raise(rb_eArgError, "utc_offset out of range");
+}
+
+static void
 validate_vtm(struct vtm *vtm)
 {
     if (   vtm->mon  < 1 || vtm->mon  > 12
@@ -1460,7 +1746,8 @@ validate_vtm(struct vtm *vtm)
 	|| (vtm->hour == 24 && (vtm->min > 0 || vtm->sec > 0))
 	|| vtm->min  < 0 || vtm->min  > 59
 	|| vtm->sec  < 0 || vtm->sec  > 60
-	|| lt(vtm->subsec, INT2FIX(0)) || ge(vtm->subsec, INT2FIX(1)))
+        || lt(vtm->subsec, INT2FIX(0)) || ge(vtm->subsec, INT2FIX(1))
+        || (!NIL_P(vtm->utc_offset) && (validate_utc_offset(vtm->utc_offset), 0)))
 	rb_raise(rb_eArgError, "argument out of range");
 }
 
@@ -2201,19 +2488,6 @@ time_dup(VALUE time)
     return dup;
 }
 
-/*
- *  call-seq:
- *     time.localtime => time
- *
- *  Converts <i>time</i> to local time (using the local time zone in
- *  effect for this process) modifying the receiver.
- *
- *     t = Time.gm(2000, "jan", 1, 20, 15, 1)  #=> 2000-01-01 20:15:01 UTC
- *     t.gmt?                                  #=> true
- *     t.localtime                             #=> 2000-01-01 14:15:01 -0600
- *     t.gmt?                                  #=> false
- */
-
 static VALUE
 time_localtime(VALUE time)
 {
@@ -2236,6 +2510,43 @@ time_localtime(VALUE time)
     tobj->tm_got = 1;
     TIME_SET_LOCALTIME(tobj);
     return time;
+}
+
+/*
+ *  call-seq:
+ *     time.localtime => time
+ *     time.localtime(utc_offset) => time
+ *
+ *  Converts <i>time</i> to local time (using the local time zone in
+ *  effect for this process) modifying the receiver.
+ *
+ *  If _utc_offset_ is given, it is used instead of the local time.
+ *
+ *     t = Time.utc(2000, "jan", 1, 20, 15, 1) #=> 2000-01-01 20:15:01 UTC
+ *     t.utc?                                  #=> true
+ *
+ *     t.localtime                             #=> 2000-01-01 14:15:01 -0600
+ *     t.utc?                                  #=> false
+ *
+ *     t.localtime("+09:00")                   #=> 2000-01-02 05:15:01 +0900
+ *     t.utc?                                  #=> false
+ */
+
+static VALUE
+time_localtime_m(int argc, VALUE *argv, VALUE time)
+{
+    VALUE off;
+    rb_scan_args(argc, argv, "01", &off);
+
+    if (!NIL_P(off)) {
+        off = utc_offset_arg(off);
+        validate_utc_offset(off);
+
+        time_set_utc_offset(time, off);
+        return time_fixoff(time);
+    }
+
+    return time_localtime(time);
 }
 
 /*
@@ -2280,23 +2591,75 @@ time_gmtime(VALUE time)
     return time;
 }
 
+static VALUE
+time_fixoff(VALUE time)
+{
+    struct time_object *tobj;
+    struct vtm vtm;
+    VALUE off;
+
+    GetTimeval(time, tobj);
+    if (TIME_FIXOFF_P(tobj)) {
+       if (tobj->tm_got)
+           return time;
+    }
+    else {
+       time_modify(time);
+    }
+
+    if (TIME_FIXOFF_P(tobj))
+        off = tobj->vtm.utc_offset;
+    else
+        off = INT2FIX(0);
+
+    if (!gmtimev(tobj->timev, &vtm))
+       rb_raise(rb_eArgError, "gmtime error");
+
+    tobj->vtm = vtm;
+    vtm_add_offset(&tobj->vtm, off);
+
+    tobj->tm_got = 1;
+    TIME_SET_FIXOFF(tobj, off);
+    return time;
+}
+
 /*
  *  call-seq:
  *     time.getlocal => new_time
+ *     time.getlocal(utc_offset) => new_time
  *
  *  Returns a new <code>new_time</code> object representing <i>time</i> in
  *  local time (using the local time zone in effect for this process).
  *
- *     t = Time.gm(2000,1,1,20,15,1)   #=> 2000-01-01 20:15:01 UTC
- *     t.gmt?                          #=> true
+ *  If _utc_offset_ is given, it is used instead of the local time.
+ *
+ *     t = Time.utc(2000,1,1,20,15,1)  #=> 2000-01-01 20:15:01 UTC
+ *     t.utc?                          #=> true
+ *
  *     l = t.getlocal                  #=> 2000-01-01 14:15:01 -0600
- *     l.gmt?                          #=> false
+ *     l.utc?                          #=> false
  *     t == l                          #=> true
+ *
+ *     j = t.getlocal("+09:00")        #=> 2000-01-02 05:15:01 +0900
+ *     j.utc?                          #=> false
+ *     t == j                          #=> true
  */
 
 static VALUE
-time_getlocaltime(VALUE time)
+time_getlocaltime(int argc, VALUE *argv, VALUE time)
 {
+    VALUE off;
+    rb_scan_args(argc, argv, "01", &off);
+
+    if (!NIL_P(off)) {
+        off = utc_offset_arg(off);
+        validate_utc_offset(off);
+
+        time = time_dup(time);
+        time_set_utc_offset(time, off);
+        return time_fixoff(time);
+    }
+
     return time_localtime(time_dup(time));
 }
 
@@ -2325,6 +2688,7 @@ static VALUE
 time_get_tm(VALUE time, struct time_object *tobj)
 {
     if (TIME_UTC_P(tobj)) return time_gmtime(time);
+    if (TIME_FIXOFF_P(tobj)) return time_fixoff(time);
     return time_localtime(time);
 }
 
@@ -2828,6 +3192,8 @@ time_zone(VALUE time)
     if (TIME_UTC_P(tobj)) {
 	return rb_str_new2("UTC");
     }
+    if (tobj->vtm.zone == NULL)
+        return Qnil;
     return rb_str_new2(tobj->vtm.zone);
 }
 
@@ -3321,13 +3687,13 @@ Init_Time(void)
     rb_define_method(rb_cTime, "<=>", time_cmp, 1);
     rb_define_method(rb_cTime, "eql?", time_eql, 1);
     rb_define_method(rb_cTime, "hash", time_hash, 0);
-    rb_define_method(rb_cTime, "initialize", time_init, 0);
+    rb_define_method(rb_cTime, "initialize", time_init, -1);
     rb_define_method(rb_cTime, "initialize_copy", time_init_copy, 1);
 
-    rb_define_method(rb_cTime, "localtime", time_localtime, 0);
+    rb_define_method(rb_cTime, "localtime", time_localtime_m, -1);
     rb_define_method(rb_cTime, "gmtime", time_gmtime, 0);
     rb_define_method(rb_cTime, "utc", time_gmtime, 0);
-    rb_define_method(rb_cTime, "getlocal", time_getlocaltime, 0);
+    rb_define_method(rb_cTime, "getlocal", time_getlocaltime, -1);
     rb_define_method(rb_cTime, "getgm", time_getgmtime, 0);
     rb_define_method(rb_cTime, "getutc", time_getgmtime, 0);
 
