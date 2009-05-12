@@ -1299,7 +1299,6 @@ time_init_1(int argc, VALUE *argv, VALUE time)
 {
     struct vtm vtm;
     VALUE v[7];
-    int i;
     struct time_object *tobj;
 
     vtm.wday = -1;
@@ -1333,7 +1332,6 @@ time_init_1(int argc, VALUE *argv, VALUE time)
     vtm.utc_offset = Qnil;
     if (!NIL_P(v[6])) {
         VALUE arg = v[6];
-        VALUE tmp;
         if (arg == ID2SYM(rb_intern("dst")))
             vtm.isdst = 1;
         else if (arg == ID2SYM(rb_intern("std")))

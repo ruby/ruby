@@ -1,3 +1,7 @@
+Wed May 13 03:20:47 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_init_1): unused variable removed.
+
 Tue May 12 21:03:02 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c: support fixed UTC offset.  [ruby-dev:38326]
