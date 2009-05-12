@@ -1,3 +1,7 @@
+Tue May 12 13:43:35 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* win32/Makefile.sub: fixes a mistake in merging r22822.
+
 Sun Mar  8 23:02:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (LDFLAGS): always prepends -link.

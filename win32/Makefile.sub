@@ -166,7 +166,6 @@ CXXFLAGS = $(CFLAGS)
 !if !defined(LDFLAGS)
 LDFLAGS = -incremental:no -debug -opt:ref -opt:icf
 !endif
-LDFLAGS = -link $(LDFLAGS)
 !if !defined(XLDFLAGS)
 XLDFLAGS = -stack:$(STACK)
 !endif
