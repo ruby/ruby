@@ -14,6 +14,13 @@ class TestTime < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def test_new
+    assert_equal(Time.utc(2000,2,10), Time.new(2000,2,10, 11,0,0, 3600*11))
+    assert_equal(Time.utc(2000,2,10), Time.new(2000,2,9, 13,0,0, -3600*11))
+    assert_equal(Time.utc(2000,2,10), Time.new(2000,2,10, 11,0,0, "+11:00"))
+    assert_equal(Rational(1,2), Time.new(2000,2,10, 11,0,5.5, "+11:00").subsec)
+  end
+
   def test_time_add()
     assert_equal(Time.utc(2000, 3, 21, 3, 30) + 3 * 3600,
                  Time.utc(2000, 3, 21, 6, 30))
@@ -305,16 +312,24 @@ class TestTime < Test::Unit::TestCase
     t1 = Time.gm(2000)
     t2 = t1.getlocal
     assert_equal(t1, t2)
+    t3 = t1.getlocal("-02:00")
+    assert_equal(t1, t3)
+    assert_equal(-7200, t3.utc_offset)
     t1.localtime
     assert_equal(t1, t2)
     assert_equal(t1.gmt?, t2.gmt?)
+    assert_equal(t1, t3)
 
     t1 = Time.local(2000)
     t2 = t1.getgm
     assert_equal(t1, t2)
+    t3 = t1.getlocal("-02:00")
+    assert_equal(t1, t3)
+    assert_equal(-7200, t3.utc_offset)
     t1.gmtime
     assert_equal(t1, t2)
     assert_equal(t1.gmt?, t2.gmt?)
+    assert_equal(t1, t3)
   end
 
   def test_asctime
