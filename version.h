@@ -10,19 +10,7 @@
 #define RUBY_RELEASE_MONTH 5
 #define RUBY_RELEASE_DAY 13
 
-#ifdef RUBY_EXTERN
-RUBY_EXTERN const char ruby_version[];
-RUBY_EXTERN const char ruby_release_date[];
-RUBY_EXTERN const char ruby_platform[];
-RUBY_EXTERN const int ruby_patchlevel;
-RUBY_EXTERN const char ruby_description[];
-RUBY_EXTERN const char ruby_copyright[];
-#endif
-
-#define RUBY_AUTHOR "Yukihiro Matsumoto"
-#define RUBY_BIRTH_YEAR 1993
-#define RUBY_BIRTH_MONTH 2
-#define RUBY_BIRTH_DAY 24
+#include "ruby/version.h"
 
 #if !defined RUBY_LIB_VERSION && defined RUBY_LIB_VERSION_STYLE
 # if RUBY_LIB_VERSION_STYLE == 3
