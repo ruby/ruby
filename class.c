@@ -88,11 +88,13 @@ clone_method(ID mid, NODE *body, struct clone_method_data *data)
 	}
 	st_insert(data->tbl, mid,
 		  (st_data_t)
-		  NEW_FBODY(
-		      NEW_METHOD(fbody,
-				 data->klass, /* TODO */
-				 body->nd_body->nd_noex),
-		      0));
+                  NEW_NODE_LONGLIFE(
+                      NODE_FBODY,
+                      0,
+		      NEW_NODE_LONGLIFE(NODE_METHOD,
+                                        rb_gc_write_barrier(data->klass), /* TODO */
+                                        rb_gc_write_barrier(fbody),
+                                        body->nd_body->nd_noex), 0));
     }
     return ST_CONTINUE;
 }
@@ -810,7 +812,7 @@ rb_define_method_id(VALUE klass, ID name, VALUE (*func)(ANYARGS), int argc)
     if (func == rb_f_notimplement)
         rb_define_notimplement_method_id(klass, name, NOEX_PUBLIC);
     else
-        rb_add_method(klass, name, NEW_CFUNC(func,argc), NOEX_PUBLIC);
+        rb_add_method(klass, name, NEW_NODE_LONGLIFE(NODE_CFUNC, func, argc, 0), NOEX_PUBLIC);
 }
 
 void
@@ -826,7 +828,7 @@ rb_define_protected_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS)
     if (func == rb_f_notimplement)
         rb_define_notimplement_method_id(klass, id, NOEX_PROTECTED);
     else
-        rb_add_method(klass, id, NEW_CFUNC(func, argc), NOEX_PROTECTED);
+        rb_add_method(klass, id, NEW_NODE_LONGLIFE(NODE_CFUNC, func, argc, 0), NOEX_PROTECTED);
 }
 
 void
@@ -836,7 +838,7 @@ rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), 
     if (func == rb_f_notimplement)
         rb_define_notimplement_method_id(klass, id, NOEX_PRIVATE);
     else
-        rb_add_method(klass, id, NEW_CFUNC(func, argc), NOEX_PRIVATE);
+        rb_add_method(klass, id, NEW_NODE_LONGLIFE(NODE_CFUNC, func, argc, 0), NOEX_PRIVATE);
 }
 
 void

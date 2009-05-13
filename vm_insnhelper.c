@@ -1170,8 +1170,8 @@ vm_method_search(VALUE id, VALUE klass, IC ic)
 	}
 	else {
 	    mn = rb_method_node(klass, id);
-	    ic->ic_class = klass;
-	    ic->ic_method = mn;
+	    ic->ic_class = rb_gc_write_barrier(klass);
+	    ic->ic_method = (NODE *)rb_gc_write_barrier((VALUE)mn);
 	    ic->ic_vmstat = GET_VM_STATE_VERSION();
 	}
     }

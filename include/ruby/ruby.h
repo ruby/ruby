@@ -809,7 +809,7 @@ struct RBignum {
 
 #define FL_SINGLETON FL_USER0
 #define FL_MARK      (((VALUE)1)<<5)
-#define FL_RESERVED  (((VALUE)1)<<6) /* will be used in the future GC */
+#define FL_REMEMBERED_SET  (((VALUE)1)<<6)
 #define FL_FINALIZE  (((VALUE)1)<<7)
 #define FL_TAINT     (((VALUE)1)<<8)
 #define FL_UNTRUSTED (((VALUE)1)<<9)

@@ -142,9 +142,12 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
      *   nd_cnt  : alias count           // (3)
      */
     if (node) {
-	NODE *method = NEW_METHOD(node, klass, NOEX_WITH_SAFE(noex));
+        NODE *method = NEW_NODE_LONGLIFE(NODE_METHOD,
+                                         rb_gc_write_barrier(klass),
+                                         rb_gc_write_barrier((VALUE)node),
+                                         NOEX_WITH_SAFE(noex));
 	method->nd_file = (void *)mid;
-	body = NEW_FBODY(method, mid);
+	body = NEW_NODE_LONGLIFE(NODE_FBODY, mid, method, 0);
     }
     else {
 	body = 0;
@@ -195,7 +198,8 @@ void
 rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
 {
     Check_Type(klass, T_CLASS);
-    rb_add_method(rb_singleton_class(klass), ID_ALLOCATOR, NEW_CFUNC(func, 0),
+    rb_add_method(rb_singleton_class(klass), ID_ALLOCATOR,
+                  NEW_NODE_LONGLIFE(NODE_CFUNC, func, 0, 0),
 		  NOEX_PRIVATE);
 }
 
@@ -774,10 +778,14 @@ rb_alias(VALUE klass, ID name, ID def)
     }
 
     st_insert(RCLASS_M_TBL(klass), name,
-	      (st_data_t) NEW_FBODY(
-		  method = NEW_METHOD(orig_fbody->nd_body->nd_body,
-			     orig_fbody->nd_body->nd_clss,
-			     NOEX_WITH_SAFE(orig_fbody->nd_body->nd_noex)), def));
+	      (st_data_t) NEW_NODE_LONGLIFE(
+                  NODE_FBODY,
+                  def,
+                  method = NEW_NODE_LONGLIFE(NODE_METHOD,
+                                             rb_gc_write_barrier((VALUE)orig_fbody->nd_body->nd_clss),
+                                             rb_gc_write_barrier((VALUE)orig_fbody->nd_body->nd_body),
+                                             NOEX_WITH_SAFE(orig_fbody->nd_body->nd_noex)),
+                  0));
     method->nd_file = (void *)def;
 
     rb_clear_cache_by_id(name);

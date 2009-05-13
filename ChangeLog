@@ -1,3 +1,51 @@
+Wed May 13 22:34:31 2009  Narihiro Nakamura  <authorNari@gmail.com>
+
+	* gc.c: add longlife garbage collection. [ruby-dev:38423]
+	  (NORMAL_HEAPS_USED): new macro.
+	  (LONGLIFE_ALLOCATE_HEAPS_MIN): ditto.
+	  (add_longlife_heaps_slot): new function.
+	  (rb_newobj_from_longlife_heap): ditto.
+	  (rb_newobj_longlife): ditto.
+	  (rb_node_newnode_longlife): ditto.
+	  (rb_gc_write_barrier): ditto.
+	  (remembered_set_recycle): ditto.
+	  (rb_gc_mark_remembered_set): ditto.
+	  (clear_mark_longlife_heaps): ditto.
+	  (gc_sweep_for_longlife): ditto.
+	  (assign_heap_slot): new argumnent to longlife heaps slot.
+	  (add_freelist): ditto.
+	  (gc_sweep): avoid lonlife heap slot. set longlife_collection
+	  flag at add heap.
+	  (rb_gc_force_recycle): avoid mark object and remembered_set
+	  object.
+	  (garbage_collect): add longlife collection.
+	  (rb_gc_start): invoke longlife collection.
+	  (gc_profile_record_get): for longlife collction profile.
+	  (gc_profile_result): ditto.
+
+	* include/ruby/intern.h (rb_gc_write_barrier): declared.
+
+	* include/ruby/ruby.h (FL_REMEMBERED_SET): renamed from FL_RESERVED.
+
+	* debug.c (FL_REMEMBERED_SET): ditto.
+
+	* insns.def (setinlinecache): insert write barrier.
+
+	* vm_insnhelper.c (vm_method_search): ditto.
+
+	* set_relation (set_relation): use longlife object.
+
+	* vm.c (vm_define_method): ditto.
+
+	* vm_core.h (NEW_INLINE_CACHE_ENTRY): ditto.
+
+	* vm_method.c (rb_add_method): ditto.
+
+	* class.c (rb_add_method): ditto.
+
+	* node.h (NEW_NODE_LONGLIFE): new macro.
+	  (rb_node_newnode_longlife): declared.
+
 Wed May 13 15:23:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/version.h: extracted the extensions interface and

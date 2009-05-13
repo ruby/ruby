@@ -354,6 +354,7 @@ typedef struct RNode {
 #define nd_visi  u2.argc
 
 #define NEW_NODE(t,a0,a1,a2) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2))
+#define NEW_NODE_LONGLIFE(t,a0,a1,a2) rb_node_newnode_longlife((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2))
 
 #define NEW_METHOD(n,x,v) NEW_NODE(NODE_METHOD,x,n,v)
 #define NEW_FBODY(n,i) NEW_NODE(NODE_FBODY,i,n,0)
@@ -497,6 +498,7 @@ NODE *rb_compile_file(const char*, VALUE, int);
 
 void rb_add_method(VALUE, ID, NODE *, int);
 NODE *rb_node_newnode(enum node_type,VALUE,VALUE,VALUE);
+NODE *rb_node_newnode_longlife(enum node_type,VALUE,VALUE,VALUE);
 
 NODE* rb_method_node(VALUE klass, ID id);
 int rb_node_arity(NODE* node);

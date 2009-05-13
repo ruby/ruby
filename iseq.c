@@ -131,12 +131,12 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
     /* set class nest stack */
     if (type == ISEQ_TYPE_TOP) {
 	/* toplevel is private */
-	iseq->cref_stack = NEW_BLOCK(th->top_wrapper ? th->top_wrapper : rb_cObject);
+	iseq->cref_stack = NEW_NODE_LONGLIFE(NODE_BLOCK, th->top_wrapper ? th->top_wrapper : rb_cObject, 0, 0);
 	iseq->cref_stack->nd_file = 0;
 	iseq->cref_stack->nd_visi = NOEX_PRIVATE;
     }
     else if (type == ISEQ_TYPE_METHOD || type == ISEQ_TYPE_CLASS) {
-	iseq->cref_stack = NEW_BLOCK(0); /* place holder */
+	iseq->cref_stack = NEW_NODE_LONGLIFE(NODE_BLOCK,0,0,0); /* place holder */
 	iseq->cref_stack->nd_file = 0;
     }
     else if (RTEST(parent)) {

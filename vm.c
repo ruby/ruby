@@ -1702,7 +1702,7 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
     COPY_CREF(miseq->cref_stack, cref);
     miseq->klass = klass;
     miseq->defined_method_id = id;
-    newbody = NEW_NODE(RUBY_VM_METHOD_NODE, 0, miseq->self, 0);
+    newbody = NEW_NODE_LONGLIFE(RUBY_VM_METHOD_NODE, 0, rb_gc_write_barrier(miseq->self), 0);
     rb_add_method(klass, id, newbody, noex);
 
     if (!is_singleton && noex == NOEX_MODFUNC) {

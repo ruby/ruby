@@ -523,7 +523,7 @@ typedef struct {
 
 
 /* inline (method|const) cache */
-#define NEW_INLINE_CACHE_ENTRY() NEW_WHILE(Qundef, 0, 0)
+#define NEW_INLINE_CACHE_ENTRY() NEW_NODE_LONGLIFE(NODE_WHILE, Qundef, 0, 0)
 #define ic_class  u1.value
 #define ic_method u2.node
 #define ic_value  u2.value
