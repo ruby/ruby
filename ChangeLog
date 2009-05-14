@@ -1,4 +1,6 @@
-Thu May 14 16:07:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu May 14 16:13:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_getpwuid): use rb_uid_t.  [ruby-dev:38443]
 
 	* ext/stringio/stringio.c (strio_ungetbyte): encoding should no
 	  be effective.

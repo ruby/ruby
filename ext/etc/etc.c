@@ -22,10 +22,6 @@
 #include <grp.h>
 #endif
 
-#ifndef HAVE_TYPE_UID_T
-#define uid_t int
-#endif
-
 static VALUE sPasswd;
 #ifdef HAVE_GETGRENT
 static VALUE sGroup;
@@ -124,7 +120,7 @@ etc_getpwuid(int argc, VALUE *argv, VALUE obj)
 {
 #if defined(HAVE_GETPWENT)
     VALUE id;
-    uid_t uid;
+    rb_uid_t uid;
     struct passwd *pwd;
 
     rb_secure(4);
