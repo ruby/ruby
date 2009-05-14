@@ -135,7 +135,7 @@ $(MKMAIN_CMD): $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)
 
 prog: $(PROGRAM) $(WPROGRAM)
 
-loadpath: $(PREP)
+loadpath: $(PREP) PHONY
 	$(MINIRUBY) -e 'p $$:'
 
 $(PREP): $(MKFILES)
@@ -143,7 +143,7 @@ $(PREP): $(MKFILES)
 miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(ARCHFILE)
 
 GORUBY = go$(RUBY_INSTALL_NAME)
-golf: $(LIBRUBY) $(GOLFOBJS)
+golf: $(LIBRUBY) $(GOLFOBJS) PHONY
 	$(MAKE) $(MFLAGS) MAINOBJ="$(GOLFOBJS)" PROGRAM=$(GORUBY)$(EXEEXT) program
 capi: Doxyfile PHONY
 	@$(MAKEDIRS) doc/capi
@@ -347,21 +347,21 @@ post-no-install-doc::
 
 CLEAR_INSTALLED_LIST = clear-installed-list
 
-install-prereq: $(CLEAR_INSTALLED_LIST)
+install-prereq: $(CLEAR_INSTALLED_LIST) PHONY
 
-clear-installed-list:
+clear-installed-list: PHONY
 	@exit > $(INSTALLED_LIST)
 
 clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-extout
-clean-local::
+clean-local:: PHONY
 	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
 	@$(RM) *.inc y.tab.c y.output encdb.h transdb.h
-clean-ext::
-clean-golf:
+clean-ext:: PHONY
+clean-golf: PHONY
 	@$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
-clean-rdoc:
-clean-extout:
+clean-rdoc: PHONY
+clean-extout: PHONY
 	@-$(RMDIRS) $(EXTOUT)/$(arch)
 
 distclean: distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
@@ -369,10 +369,10 @@ distclean-local:: clean-local
 	@$(RM) $(MKFILES) rbconfig.rb yasmdata.rb encdb.h
 	@$(RM) config.cache config.log config.status config.status.lineno $(PRELUDES)
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
-distclean-ext::
+distclean-ext:: PHONY
 distclean-golf: clean-golf
 	@$(RM) $(GOLFPRELUDES)
-distclean-rdoc:
+distclean-rdoc: PHONY
 distclean-extout: clean-extout
 	@-$(RMDIRS) $(EXTOUT)
 
@@ -428,7 +428,15 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 
 .PRECIOUS: $(MKFILES)
 
+.PHONY: PHONY all fake prereq incs srcs preludes help
 .PHONY: test install install-nodoc install-doc dist
+.PHONY: loadpath golf capi rdoc install-prereq clear-installed-list
+.PHONY: clean clean-ext clean-local clean-enc clean-golf clean-rdoc clean-extout
+.PHONY: distclean distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
+.PHONY: realclean realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
+.PHONY: check test test-all btest btest-ruby test-sample test-knownbug
+.PHONY: run runruby parse benchmark benchmark-each tbench gdb gdb-ruby
+.PHONY: update-mspec update-rubyspec test-rubyspec
 
 PHONY:
 
