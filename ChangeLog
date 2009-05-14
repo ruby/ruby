@@ -1,3 +1,8 @@
+Thu May 14 16:07:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_ungetbyte): encoding should no
+	  be effective.
+
 Thu May 14 10:17:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sample/test.rb (valid_syntax?): defaults to us-ascii.

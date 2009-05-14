@@ -289,6 +289,21 @@ class TestStringIO < Test::Unit::TestCase
     f.close unless f.closed?
   end
 
+  def test_ungetbyte
+    s = "foo\nbar\n"
+    t = StringIO.new(s, "r")
+    t.ungetbyte(0x41)
+    assert_equal(0x41, t.getbyte)
+    t.ungetbyte("qux")
+    assert_equal("quxfoo\n", t.gets)
+    t.set_encoding("utf-8")
+    t.ungetbyte(0x89)
+    t.ungetbyte(0x8e)
+    t.ungetbyte("\xe7")
+    t.ungetbyte("\xe7\xb4\x85")
+    assert_equal("\u7d05\u7389bar\n", t.gets)
+  end
+
   def test_ungetc
     s = "1234"
     f = StringIO.new(s, "r")
