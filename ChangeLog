@@ -1,3 +1,7 @@
+Thu May 14 10:17:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sample/test.rb (valid_syntax?): defaults to us-ascii.
+
 Wed May 13 22:34:31 2009  Narihiro Nakamura  <authorNari@gmail.com>
 
 	* gc.c: add longlife garbage collection. [ruby-dev:38423]

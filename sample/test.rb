@@ -1,4 +1,5 @@
 #! /usr/bin/env ruby
+# -*- coding: us-ascii -*-
 
 $testnum=0
 $ntest=0
@@ -1932,7 +1933,7 @@ def valid_syntax?(code, fname)
   code.force_encoding("ascii-8bit")
   code = code.sub(/\A(?:\s*\#.*$)*(\n)?/n) {
     "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
-  }
+  }.force_encoding("us-ascii")
   catch {|tag| eval(code, binding, fname, 0)}
 rescue Exception
   STDERR.puts $!.message
