@@ -807,6 +807,9 @@ rb_ary_shift(VALUE ary)
 	RARRAY_PTR(ary)[0] = Qnil;
 	ary_make_shared(ary);
     }
+    else if (ARY_SHARED_NUM(ARY_SHARED(ary)) == 1) {
+	RARRAY_PTR(ary)[0] = Qnil;
+    }
     ARY_INCREASE_PTR(ary, 1);		/* shift ptr */
     ARY_INCREASE_LEN(ary, -1);
 
@@ -848,6 +851,9 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
     result = ary_take_first_or_last(argc, argv, ary, ARY_TAKE_FIRST);
     n = RARRAY_LEN(result);
     if (ARY_SHARED_P(ary)) {
+	if (ARY_SHARED_NUM(ARY_SHARED(ary)) == 1) {
+	    rb_mem_clear(RARRAY_PTR(ary), n);
+	}
         ARY_INCREASE_PTR(ary, n);
     }
     else {

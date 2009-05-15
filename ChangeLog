@@ -1,3 +1,8 @@
+Fri May 15 17:35:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_shift, rb_ary_shift_m): clears unused elements.
+	  [ruby-dev:38448]
+
 Fri May 15 15:15:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_autoload_load): checks if iv_tbl is valid.
