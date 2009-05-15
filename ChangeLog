@@ -3,6 +3,7 @@ Fri May 15 11:17:48 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/setup.mak (-version-): now version.h includes
 	  include/ruby/version.h, so need to tell to cpp to check
 	  $(srcdir)/include.
+	  reported by KIMURA Koichi at http://www.kt.rim.or.jp/%7ekbk/zakkicho/09/zakkicho0905b.html#D20090514-6
 
 Thu May 14 16:13:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
