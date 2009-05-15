@@ -11670,6 +11670,16 @@ rb_thread_join(thread, limit)
     return rb_thread_join0(rb_thread_check(thread), limit);
 }
 
+void
+rb_thread_set_join(thread, join)
+    VALUE thread, join;
+{
+    rb_thread_t th = rb_thread_check(thread);
+    rb_thread_t jth = rb_thread_check(join);
+    th->wait_for = WAIT_JOIN;
+    th->join = jth;
+}
+
 
 /*
  *  call-seq:

@@ -85,5 +85,68 @@ class TC_Thread < Test::Unit::TestCase
     assert_nothing_raised("[ruby-dev:37545]") {assert_equal(1, queue.pop)}
     assert(queue.empty?)
   end
+
+  # This test checks that a thread in Mutex#lock which is raised is
+  # completely removed from the wait_list of the mutex
+  def test_mutex_exception_handling
+    m = Mutex.new
+    m.lock
+
+    sleeping = false
+    t = Thread.new do
+      begin
+        m.lock
+      rescue
+      end
+
+      sleeping = true
+      # Keep that thread alive: if the thread returns, the test method
+      # won't be able to check that +m+ has not been taken (dead mutex
+      # owners are ignored)
+      sleep
+    end
+
+    # Wait for t to wait for the mutex and raise it
+    while true
+      sleep 0.1
+      break if t.stop?
+    end
+    t.raise ArgumentError
+    assert(t.alive? || sleeping)
+
+    # Wait for +t+ to reach the sleep
+    while true
+      sleep 0.1
+      break if t.stop?
+    end
+
+    # Now unlock. The mutex should be free, so Mutex#unlock should return nil
+    assert(! m.unlock)
+  end
+
+  def test_mutex_join
+    m = Mutex.new
+    m.lock
+    wt2 = Thread.new do
+      m.lock
+      sleep 0.5
+      m.unlock
+    end
+
+    # Ensure wt2 is waiting on m
+    sleep 0.1
+
+    wt1 = Thread.new do
+      m.lock
+      m.unlock
+    end
+    # Ensure wt1 is waiting on m
+    sleep 0.1
+
+    # Give it to wt2
+    m.unlock
+
+    assert_nothing_raised {wt1.join}
+  end
 end
 
