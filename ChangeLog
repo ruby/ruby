@@ -1,3 +1,8 @@
+Fri May 15 15:15:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_autoload_load): checks if iv_tbl is valid.
+	  [ruby-dev:38456]
+
 Fri May 15 11:17:48 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/setup.mak (-version-): now version.h includes

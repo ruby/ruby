@@ -144,3 +144,9 @@ assert_equal '3', %q{
   }
   $i
 }
+
+assert_match /::C\z/, %q{
+  c = nil
+  Module.new{|m| c = class m::C; name; end}
+  c
+}, '[ruby-dev:38456]'

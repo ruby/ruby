@@ -1432,11 +1432,23 @@ autoload_node(VALUE mod, ID id, int noload)
     return 0;
 }
 
+static NODE *
+autoload_node_ptr(VALUE mod, ID id)
+{
+    struct st_table *tbl = RCLASS_IV_TBL(mod);
+    st_data_t val;
+
+    if (!tbl || !st_lookup(tbl, id, &val) || val != Qundef) {
+	return 0;
+    }
+    return autoload_node(mod, id, 0);
+}
+
 VALUE
 rb_autoload_load(VALUE klass, ID id)
 {
     VALUE file;
-    NODE *load = autoload_node(klass, id, 0);
+    NODE *load = autoload_node_ptr(klass, id);
 
     if (!load) return Qfalse;
     file = load->nd_lit;
@@ -1446,15 +1458,10 @@ rb_autoload_load(VALUE klass, ID id)
 VALUE
 rb_autoload_p(VALUE mod, ID id)
 {
-    struct st_table *tbl = RCLASS_IV_TBL(mod);
-    st_data_t val;
-    NODE *load;
     VALUE file;
+    NODE *load = autoload_node_ptr(mod, id);
 
-    if (!tbl || !st_lookup(tbl, id, &val) || val != Qundef) {
-	return Qnil;
-    }
-    load = autoload_node(mod, id, 0);
+    if (!load) return Qnil;
     return load && (file = load->nd_lit) ? file : Qnil;
 }
 
