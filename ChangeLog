@@ -1,3 +1,8 @@
+Sat May 16 17:57:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/lib/dl/callback.rb (DL#remove_callback_internal): ignore
+	  unbound function.  [ruby-dev:38474]
+
 Sat May 16 17:51:11 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* sample/rss/rss_recent.rb, sample/rss/list_description.rb: use
