@@ -22,6 +22,8 @@ module RSS
         end
 
         class Channel < ChannelBase
+          include SetupDefaultLanguage
+
           def to_feed(feed)
             set_default_values do
               setup_values(feed)

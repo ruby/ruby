@@ -1,3 +1,10 @@
+Sat May 16 18:02:16 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/base.rb, lib/rss/maker/1.0.rb, lib/rss/maker/feed.rb,
+	test/rss/test_maker_1.0.rb, test/rss/test_maker_atom_feed.rb:
+	RSS 1.0 and Atom feed maker treat maker.channel.language as
+	maker.channel.dc_language.
+
 Sat May 16 17:57:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/lib/dl/callback.rb (DL#remove_callback_internal): ignore

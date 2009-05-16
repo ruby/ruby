@@ -95,6 +95,26 @@ module RSS
       assert_equal(rss.textinput.about, channel.textinput.resource)
     end
 
+    def test_channel_language
+      about = "http://hoge.com"
+      title = "fugafuga"
+      link = "http://hoge.com"
+      description = "fugafugafugafuga"
+      language = "ja"
+
+      rss = RSS::Maker.make("1.0") do |maker|
+        maker.channel.about = about
+        maker.channel.title = title
+        maker.channel.link = link
+        maker.channel.description = description
+        maker.channel.language = language
+
+        setup_dummy_item(maker)
+      end
+      channel = rss.channel
+      assert_equal(language, channel.dc_language)
+    end
+
     def test_not_valid_channel
       about = "http://hoge.com"
       title = "fugafuga"
