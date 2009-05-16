@@ -372,6 +372,25 @@ module RSS
       end
     end
 
+    module SetupDefaultLanguage
+      private
+      def _set_default_values(&block)
+        keep = {
+          :dc_languages => dc_languages.to_a.dup,
+        }
+        _language = language
+        if _language and
+            !dc_languages.any? {|dc_language| dc_language.value == _language}
+          dc_language = self.class::DublinCoreLanguages::DublinCoreLanguage.new(self)
+          dc_language.value = _language.dup
+          dc_languages.unshift(dc_language)
+        end
+        super(&block)
+      ensure
+        dc_languages.replace(keep[:dc_languages])
+      end
+    end
+
     class RSSBase < Base
       class << self
         def make(*args, &block)

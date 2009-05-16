@@ -392,5 +392,14 @@ module RSS
         setup_dummy_item_atom(maker)
       end
     end
+
+    def test_language
+      language = "ja"
+      feed = Maker.make("atom") do |maker|
+        setup_dummy_channel_atom(maker)
+        maker.channel.language = "ja"
+      end
+      assert_equal(language, feed.dc_language)
+    end
   end
 end
