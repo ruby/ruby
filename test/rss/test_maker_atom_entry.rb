@@ -381,7 +381,7 @@ module RSS
         end
       end
       assert_equal(date, feed.items[0].updated.content)
-      assert_equal([date], feed.items[0].dc_dates.collect {|date| date.value})
+      assert_equal([date], feed.items[0].dc_dates.collect {|_date| _date.value})
     end
   end
 end

@@ -1,5 +1,4 @@
 require "rss/2.0"
-require "rss/dublincore"
 
 module RSS
   Rss.install_ns(DC_PREFIX, DC_URI)

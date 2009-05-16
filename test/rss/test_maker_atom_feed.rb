@@ -413,7 +413,7 @@ module RSS
         end
       end
       assert_equal(date, feed.items[0].updated.content)
-      assert_equal([date], feed.items[0].dc_dates.collect {|date| date.value})
+      assert_equal([date], feed.items[0].dc_dates.collect {|_date| _date.value})
     end
 
     def test_channel_dc_date
@@ -425,7 +425,7 @@ module RSS
         setup_dummy_item_atom(maker)
       end
       assert_equal(date, feed.updated.content)
-      assert_equal([date], feed.dc_dates.collect {|date| date.value})
+      assert_equal([date], feed.dc_dates.collect {|_date| _date.value})
     end
 
     def test_item_dc_date
@@ -439,7 +439,7 @@ module RSS
         end
       end
       assert_equal(date, feed.items[0].updated.content)
-      assert_equal([date], feed.items[0].dc_dates.collect {|date| date.value})
+      assert_equal([date], feed.items[0].dc_dates.collect {|_date| _date.value})
     end
   end
 end
