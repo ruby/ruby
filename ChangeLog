@@ -1,3 +1,7 @@
+Sat May 16 18:33:15 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* NEWS: add RSS::Maker.supported?(version).
+
 Sat May 16 18:26:42 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb, test/test_parser_1.0.rb: fix foaf:Image

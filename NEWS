@@ -75,6 +75,9 @@ with all sufficient information, see the ChangeLog file.
   * RSS::Maker.[]
     * new method to return maker class.
 
+  * RSS::Maker.supported?(version)
+    * new method to check whether given version is supported.
+
 * REXML
 
   * REXML::Document.entity_expansion_limit=
