@@ -1,4 +1,7 @@
-Sat May 16 09:30:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat May 16 09:49:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (magic_comment_encoding): ignores unused emacs-style
+	  encoding comment, as like Vim styles.  [ruby-core:23470]
 
 	* defs/keywords (reserved_word): made inline function static.
 	  [ruby-core:23210]
