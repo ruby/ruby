@@ -1,3 +1,7 @@
+Sat May 16 19:52:54 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* NEWS: add RSS::Maker.supported?(version).
+
 Sat May 16 19:50:34 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb: add nil check.
