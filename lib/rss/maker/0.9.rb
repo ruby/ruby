@@ -501,6 +501,7 @@ module RSS
     add_maker("0.9", "0.92", RSS092)
     add_maker("0.91", "0.91", RSS091)
     add_maker("0.92", "0.92", RSS092)
+    add_maker("rss0.9", "0.92", RSS092)
     add_maker("rss0.91", "0.91", RSS091)
     add_maker("rss0.92", "0.92", RSS092)
   end

@@ -1,3 +1,8 @@
+Sat May 16 19:46:30 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker.rb, lib/rss/maker/0.9.rb,
+	test/test_maker_*.rb: add RSS::Maker.supported?
+
 Sat May 16 19:44:09 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/content/*, lib/rss/dublincore/*: fix circular require.
