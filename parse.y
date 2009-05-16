@@ -9715,6 +9715,14 @@ VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 
 #ifndef RIPPER
+#undef rb_reserved_word
+
+const struct kwtable *
+rb_reserved_word(const char *str, unsigned int len)
+{
+    return reserved_word(str, len);
+}
+
 static struct parser_params *
 parser_new(void)
 {

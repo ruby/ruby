@@ -1,3 +1,10 @@
+Sat May 16 09:30:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defs/keywords (reserved_word): made inline function static.
+	  [ruby-core:23210]
+
+	* parse.y (rb_reserved_word): ordinary function for ripper.
+
 Sat May 16 09:19:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (magic_comment_encoding): use rb_compile_warning() to

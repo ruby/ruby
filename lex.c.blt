@@ -1,5 +1,5 @@
-/* C code produced by gperf version 3.0.3 */
-/* Command-line: gperf -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k'1,3,$' keywords  */
+/* C code produced by gperf version 3.0.4 */
+/* Command-line: gperf -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k'1,3,$' defs/keywords  */
 
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
       && ('%' == 37) && ('&' == 38) && ('\'' == 39) && ('(' == 40) \
@@ -28,12 +28,14 @@
 error "gperf generated tables don't work with this execution character set. Please report a bug to <bug-gnu-gperf@gnu.org>."
 #endif
 
-#line 1 "keywords"
+#line 1 "defs/keywords"
 
 struct kwtable {const char *name; int id[2]; enum lex_state_e state;};
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 #ifndef RIPPER
-#line 7 "keywords"
+static const struct kwtable *reserved_word(const char *, unsigned int);
+#define rb_reserved_word(str, len) reserved_word(str, len)
+#line 9 "defs/keywords"
 struct kwtable;
 
 #define TOTAL_KEYWORDS 41
@@ -101,7 +103,7 @@ hash (str, len)
 
 #ifdef __GNUC__
 __inline
-#ifdef __GNUC_STDC_INLINE__
+#if defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__
 __attribute__ ((__gnu_inline__))
 #endif
 #endif
@@ -113,88 +115,88 @@ rb_reserved_word (str, len)
   static const struct kwtable wordlist[] =
     {
       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-#line 17 "keywords"
+#line 19 "defs/keywords"
       {"break", {keyword_break, keyword_break}, EXPR_MID},
-#line 23 "keywords"
+#line 25 "defs/keywords"
       {"else", {keyword_else, keyword_else}, EXPR_BEG},
-#line 33 "keywords"
+#line 35 "defs/keywords"
       {"nil", {keyword_nil, keyword_nil}, EXPR_END},
-#line 26 "keywords"
+#line 28 "defs/keywords"
       {"ensure", {keyword_ensure, keyword_ensure}, EXPR_BEG},
-#line 25 "keywords"
+#line 27 "defs/keywords"
       {"end", {keyword_end, keyword_end}, EXPR_END},
-#line 42 "keywords"
+#line 44 "defs/keywords"
       {"then", {keyword_then, keyword_then}, EXPR_BEG},
-#line 34 "keywords"
+#line 36 "defs/keywords"
       {"not", {keyword_not, keyword_not}, EXPR_ARG},
-#line 27 "keywords"
+#line 29 "defs/keywords"
       {"false", {keyword_false, keyword_false}, EXPR_END},
-#line 40 "keywords"
+#line 42 "defs/keywords"
       {"self", {keyword_self, keyword_self}, EXPR_END},
-#line 24 "keywords"
+#line 26 "defs/keywords"
       {"elsif", {keyword_elsif, keyword_elsif}, EXPR_VALUE},
-#line 37 "keywords"
+#line 39 "defs/keywords"
       {"rescue", {keyword_rescue, modifier_rescue}, EXPR_MID},
-#line 43 "keywords"
+#line 45 "defs/keywords"
       {"true", {keyword_true, keyword_true}, EXPR_END},
-#line 46 "keywords"
+#line 48 "defs/keywords"
       {"until", {keyword_until, modifier_until}, EXPR_VALUE},
-#line 45 "keywords"
+#line 47 "defs/keywords"
       {"unless", {keyword_unless, modifier_unless}, EXPR_VALUE},
-#line 39 "keywords"
+#line 41 "defs/keywords"
       {"return", {keyword_return, keyword_return}, EXPR_MID},
-#line 20 "keywords"
+#line 22 "defs/keywords"
       {"def", {keyword_def, keyword_def}, EXPR_FNAME},
-#line 15 "keywords"
+#line 17 "defs/keywords"
       {"and", {keyword_and, keyword_and}, EXPR_VALUE},
-#line 22 "keywords"
+#line 24 "defs/keywords"
       {"do", {keyword_do, keyword_do}, EXPR_BEG},
-#line 49 "keywords"
+#line 51 "defs/keywords"
       {"yield", {keyword_yield, keyword_yield}, EXPR_ARG},
-#line 28 "keywords"
+#line 30 "defs/keywords"
       {"for", {keyword_for, keyword_for}, EXPR_VALUE},
-#line 44 "keywords"
+#line 46 "defs/keywords"
       {"undef", {keyword_undef, keyword_undef}, EXPR_FNAME},
-#line 35 "keywords"
+#line 37 "defs/keywords"
       {"or", {keyword_or, keyword_or}, EXPR_VALUE},
-#line 30 "keywords"
+#line 32 "defs/keywords"
       {"in", {keyword_in, keyword_in}, EXPR_VALUE},
-#line 47 "keywords"
+#line 49 "defs/keywords"
       {"when", {keyword_when, keyword_when}, EXPR_VALUE},
-#line 38 "keywords"
+#line 40 "defs/keywords"
       {"retry", {keyword_retry, keyword_retry}, EXPR_END},
-#line 29 "keywords"
+#line 31 "defs/keywords"
       {"if", {keyword_if, modifier_if}, EXPR_VALUE},
-#line 18 "keywords"
+#line 20 "defs/keywords"
       {"case", {keyword_case, keyword_case}, EXPR_VALUE},
-#line 36 "keywords"
+#line 38 "defs/keywords"
       {"redo", {keyword_redo, keyword_redo}, EXPR_END},
-#line 32 "keywords"
+#line 34 "defs/keywords"
       {"next", {keyword_next, keyword_next}, EXPR_MID},
-#line 41 "keywords"
+#line 43 "defs/keywords"
       {"super", {keyword_super, keyword_super}, EXPR_ARG},
-#line 31 "keywords"
+#line 33 "defs/keywords"
       {"module", {keyword_module, keyword_module}, EXPR_VALUE},
-#line 16 "keywords"
+#line 18 "defs/keywords"
       {"begin", {keyword_begin, keyword_begin}, EXPR_BEG},
-#line 10 "keywords"
+#line 12 "defs/keywords"
       {"__LINE__", {keyword__LINE__, keyword__LINE__}, EXPR_END},
-#line 11 "keywords"
+#line 13 "defs/keywords"
       {"__FILE__", {keyword__FILE__, keyword__FILE__}, EXPR_END},
-#line 9 "keywords"
+#line 11 "defs/keywords"
       {"__ENCODING__", {keyword__ENCODING__, keyword__ENCODING__}, EXPR_END},
-#line 13 "keywords"
+#line 15 "defs/keywords"
       {"END", {keyword_END, keyword_END}, EXPR_END},
-#line 14 "keywords"
+#line 16 "defs/keywords"
       {"alias", {keyword_alias, keyword_alias}, EXPR_FNAME},
-#line 12 "keywords"
+#line 14 "defs/keywords"
       {"BEGIN", {keyword_BEGIN, keyword_BEGIN}, EXPR_END},
-#line 21 "keywords"
+#line 23 "defs/keywords"
       {"defined?", {keyword_defined, keyword_defined}, EXPR_ARG},
-#line 19 "keywords"
+#line 21 "defs/keywords"
       {"class", {keyword_class, keyword_class}, EXPR_CLASS},
       {""}, {""},
-#line 48 "keywords"
+#line 50 "defs/keywords"
       {"while", {keyword_while, modifier_while}, EXPR_VALUE}
     };
 
@@ -212,6 +214,6 @@ rb_reserved_word (str, len)
     }
   return 0;
 }
-#line 50 "keywords"
+#line 52 "defs/keywords"
 
 #endif
