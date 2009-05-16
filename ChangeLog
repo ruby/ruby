@@ -1,3 +1,11 @@
+Sat May 16 17:26:04 2009  Narihiro Nakamura  <authorNari@gmail.com>
+
+	* iseq.c (rb_iseq_clone): use longlife object and insert write barrier.
+
+	* vm_insnhelper.c (vm_cref_push): ditto.
+
+	* vm_insnhelper.h (COPY_CREF): insert write barrier.
+
 Sat May 16 13:49:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_autoload_load): gets rid of false warning.

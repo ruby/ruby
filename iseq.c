@@ -1285,9 +1285,9 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
 	iseq1->orig = iseqval;
     }
     if (newcbase) {
-	iseq1->cref_stack = NEW_BLOCK(newcbase);
+	iseq1->cref_stack = NEW_NODE_LONGLIFE(NODE_BLOCK, newcbase, 0, 0);
 	if (iseq0->cref_stack->nd_next) {
-	    iseq1->cref_stack->nd_next = iseq0->cref_stack->nd_next;
+	    iseq1->cref_stack->nd_next = (NODE *)rb_gc_write_barrier((VALUE)iseq0->cref_stack->nd_next);
 	}
     }
 
