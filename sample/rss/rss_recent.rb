@@ -4,7 +4,7 @@ require "nkf"
 class String
   # From tdiary.rb
   def shorten( len = 120 )
-    lines = NKF::nkf( "-e -m0 -f#{len}", self.gsub( /\n/, ' ' ) ).split( /\n/ )
+    lines = NKF::nkf( "-t -m0 -f#{len}", self.gsub( /\n/, ' ' ) ).split( /\n/ )
     lines[0].concat( '...' ) if lines[0] and lines[1]
     lines[0]
   end
@@ -51,7 +51,7 @@ ARGV.each do |fname|
     puts "#{fname} does not include RSS 1.0 or 0.9x/2.0"
   else
     begin
-      rss.output_encoding = "euc-jp"
+      rss.output_encoding = "utf-8"
     rescue RSS::UnknownConversionMethodError
       error($!) if verbose
     end
