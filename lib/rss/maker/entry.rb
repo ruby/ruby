@@ -135,7 +135,7 @@ module RSS
               self.id = keep[:id]
               @rights = keep[:rights]
               @title = keep[:title]
-              self.updated = keep[:prev_updated]
+              self.updated = keep[:updated]
             end
 
             Guid = Feed::Items::Item::Guid
