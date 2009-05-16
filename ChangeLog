@@ -1,3 +1,9 @@
+Sat May 16 09:03:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ruby_version): now version.h includes
+	  include/ruby/version.h, so need to tell to cpp to see
+	  $(srcdir)/include.  [ruby-core:23468]
+
 Fri May 15 17:35:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_shift, rb_ary_shift_m): clears unused elements.

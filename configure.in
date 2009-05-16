@@ -2317,7 +2317,7 @@ if test ${RUBY_LIB_VERSION_STYLE+set}; then
     echo '#include "version.h"'
     echo 'ruby_version=RUBY_LIB_VERSION'
     } > conftest.c
-    ruby_version="`$CPP -I"${srcdir}" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
+    ruby_version="`$CPP -I"${srcdir}" -I"${srcdir}/include" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
     eval $ruby_version
 else
     RUBY_LIB_VERSION="\"${ruby_version}\""
