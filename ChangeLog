@@ -1,3 +1,7 @@
+Sat May 16 18:38:32 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/parser.rb: add nil check.
+
 Sat May 16 18:36:01 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/test_maker_atom_feed.rb: suppress warnings.

@@ -446,7 +446,7 @@ module RSS
     def start_get_text_element(tag_name, prefix, ns, required_uri)
       pr = Proc.new do |text, tags|
         setter = self.class.setter(required_uri, tag_name)
-        if @last_element.respond_to?(setter)
+        if setter and @last_element.respond_to?(setter)
           if @do_validate
             getter = self.class.getter(required_uri, tag_name)
             if @last_element.__send__(getter)
