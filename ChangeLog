@@ -1,3 +1,8 @@
+Sat May 16 17:47:55 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb, test/rss/test_version.rb (RSS::VERSION):
+	0.2.5 -> 0.2.6.
+
 Sat May 16 17:26:04 2009  Narihiro Nakamura  <authorNari@gmail.com>
 
 	* iseq.c (rb_iseq_clone): use longlife object and insert write barrier.
