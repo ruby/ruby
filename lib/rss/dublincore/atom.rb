@@ -1,5 +1,4 @@
 require "rss/atom"
-require "rss/dublincore"
 
 module RSS
   module Atom

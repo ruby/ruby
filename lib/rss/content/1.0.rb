@@ -1,5 +1,4 @@
 require 'rss/1.0'
-require 'rss/content'
 
 module RSS
   RDF.install_ns(CONTENT_PREFIX, CONTENT_URI)
