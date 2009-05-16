@@ -368,5 +368,20 @@ module RSS
         setup_dummy_item_atom(maker)
       end
     end
+
+    def test_date
+      date = Time.parse("2004/11/1 10:10")
+      feed = Maker.make("atom:entry") do |maker|
+        setup_dummy_channel_atom(maker)
+        maker.channel.date = nil
+        maker.items.new_item do |item|
+          item.link = "http://example.com/article.html"
+          item.title = "Sample Article"
+          item.date = date
+        end
+      end
+      assert_equal(date, feed.items[0].updated.content)
+      assert_equal([date], feed.items[0].dc_dates.collect {|date| date.value})
+    end
   end
 end

@@ -1,3 +1,9 @@
+Sat May 16 19:38:05 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/feed.rb, test/test_maker_atom_entry.rb,
+	test/test_maker_atom_feed.rb: fix duplicated dc:date.
+	Reported by Kazuhiro NISHIYAMA. Thanks!!! [ruby-list:46014]
+
 Sat May 16 19:36:52 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb, lib/rss/maker/1.0.rb, lib/rss/maker/feed.rb,
