@@ -1,3 +1,7 @@
+Sat May 16 19:50:34 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/parser.rb: add nil check.
+
 Sat May 16 19:48:29 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb, test/test_parser_1.0.rb: fix foaf:Image
