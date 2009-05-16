@@ -124,7 +124,7 @@ static struct {
     int argc;
     char **argv;
 #if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
-    int len;
+    size_t len;
 #endif
 } origarg;
 
@@ -1623,7 +1623,7 @@ rb_load_file(const char *fname)
 extern char **environ;
 #endif
 
-static int
+static size_t
 get_arglen(int argc, char **argv)
 {
     char *s = argv[0];
@@ -1686,7 +1686,7 @@ set_arg0(VALUE val, ID id)
 #else
 
     if (i >= origarg.len) {
-	i = origarg.len;
+	i = origarg.len - 1;
     }
 
     memcpy(origarg.argv[0], s, i);
@@ -1823,24 +1823,7 @@ ruby_process_options(int argc, char **argv)
 void
 ruby_sysinit(int *argc, char ***argv)
 {
-#if defined(__APPLE__) && (defined(__MACH__) || defined(__DARWIN__))
-    int i, n = *argc, len = 0;
-    char **v1 = *argv, **v2, *p;
-
-    for (i = 0; i < n; ++i) {
-	len += strlen(v1[i]) + 1;
-    }
-    v2 = malloc((n + 1)* sizeof(char*) + len);
-    p = (char *)&v2[n + 1];
-    for (i = 0; i < n; ++i) {
-	int l = strlen(v1[i]);
-	memcpy(p, v1[i], l + 1);
-	v2[i] = p;
-	p += l + 1;
-    }
-    v2[n] = 0;
-    *argv = v2;
-#elif defined(_WIN32)
+#if defined(_WIN32)
     void rb_w32_sysinit(int *argc, char ***argv);
     rb_w32_sysinit(argc, argv);
 #endif

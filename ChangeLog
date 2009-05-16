@@ -1,3 +1,7 @@
+Sun May 17 08:55:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (set_arg0): get rids of overrun.
+
 Sat May 16 18:38:32 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb: add nil check.
