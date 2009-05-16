@@ -73,14 +73,11 @@ module RSS
           def _set_default_values(&block)
             keep = {
               :id => id,
-              :updated => updated,
             }
             self.id ||= about
-            self.updated ||= dc_date
             super(&block)
           ensure
             self.id = keep[:id]
-            self.updated = keep[:updated]
           end
 
           class SkipDays < SkipDaysBase
@@ -219,14 +216,11 @@ module RSS
             def _set_default_values(&block)
               keep = {
                 :id => id,
-                :updated => updated,
               }
               self.id ||= link
-              self.updated ||= dc_date
               super(&block)
             ensure
               self.id = keep[:id]
-              self.updated = keep[:updated]
             end
 
             class Guid < GuidBase
