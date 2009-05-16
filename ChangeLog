@@ -1,3 +1,7 @@
+Sat May 16 18:36:01 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/test_maker_atom_feed.rb: suppress warnings.
+
 Sat May 16 18:33:15 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* NEWS: add RSS::Maker.supported?(version).
