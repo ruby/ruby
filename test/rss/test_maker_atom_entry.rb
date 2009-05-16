@@ -4,6 +4,12 @@ require "rss/maker"
 
 module RSS
   class TestMakerAtomEntry < TestCase
+    def test_supported?
+      assert(RSS::Maker.supported?("atom:entry"))
+      assert(RSS::Maker.supported?("atom1.0:entry"))
+      assert(!RSS::Maker.supported?("atom2.0:entry"))
+    end
+
     def test_find_class
       assert_equal(RSS::Maker::Atom::Entry, RSS::Maker["atom:entry"])
       assert_equal(RSS::Maker::Atom::Entry, RSS::Maker["atom1.0:entry"])

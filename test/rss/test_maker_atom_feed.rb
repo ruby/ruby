@@ -4,6 +4,15 @@ require "rss/maker"
 
 module RSS
   class TestMakerAtomFeed < TestCase
+    def test_supported?
+      assert(RSS::Maker.supported?("atom"))
+      assert(RSS::Maker.supported?("atom:feed"))
+      assert(RSS::Maker.supported?("atom1.0"))
+      assert(RSS::Maker.supported?("atom1.0:feed"))
+      assert(!RSS::Maker.supported?("atom2.0"))
+      assert(!RSS::Maker.supported?("atom2.0:feed"))
+    end
+
     def test_find_class
       assert_equal(RSS::Maker::Atom::Feed, RSS::Maker["atom"])
       assert_equal(RSS::Maker::Atom::Feed, RSS::Maker["atom:feed"])

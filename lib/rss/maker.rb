@@ -27,6 +27,10 @@ module RSS
         MAKERS.values.collect {|info| info[:maker]}.uniq
       end
 
+      def supported?(version)
+        versions.include?(version)
+      end
+
       private
       # Can I remove this method?
       def maker(version)

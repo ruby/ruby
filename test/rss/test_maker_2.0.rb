@@ -4,6 +4,13 @@ require "rss/maker"
 
 module RSS
   class TestMaker20 < TestCase
+    def test_supported?
+      assert(RSS::Maker.supported?("2.0"))
+      assert(RSS::Maker.supported?("rss2.0"))
+      assert(!RSS::Maker.supported?("2.2"))
+      assert(!RSS::Maker.supported?("rss2.2"))
+    end
+
     def test_find_class
       assert_equal(RSS::Maker::RSS20, RSS::Maker["2.0"])
       assert_equal(RSS::Maker::RSS20, RSS::Maker["rss2.0"])
