@@ -1,3 +1,11 @@
+Sat May 16 10:59:54 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sample/drb/dhasenc.rb: add magic comment for encoding.
+
+	* sample/mine.rb: ditto.
+
+	* ext/tk/sample/tcltklib/sample1.rb: ditto.
+
 Sat May 16 09:49:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (magic_comment_encoding): ignores unused emacs-style

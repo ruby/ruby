@@ -1,5 +1,5 @@
 #! /usr/local/bin/ruby -d
-#! /usr/local/bin/ruby
+# -*- encoding: euc-jp -*-
 # -d オプションを付けると, デバッグ情報を表示する.
 
 # tcltk ライブラリのサンプル
