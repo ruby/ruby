@@ -6100,8 +6100,8 @@ static void
 magic_comment_encoding(struct parser_params *parser, const char *name, const char *val)
 {
     if (!comment_at_top(parser)) {
-	rb_warning("encoding '%s' is ignored, valid only in the first line except for shebang line.",
-		   val);
+	rb_warningS("encoding '%s' is ignored, valid only in the first line except for shebang line.",
+		    val);
 	return;
     }
     parser_set_encode(parser, val);
