@@ -1856,8 +1856,6 @@ ruby_process_options(int argc, char **argv)
     args.argc = argc;
     args.argv = argv;
     args.opt = cmdline_options_init(&opt);
-    opt.ext.enc.index = -1;
-    opt.intern.enc.index = -1;
     iseq = rb_vm_call_cfunc(rb_vm_top_self(),
 				    process_options, (VALUE)&args,
 				    0, rb_progname);
