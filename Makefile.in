@@ -128,7 +128,9 @@ $(LIBRUBY_SO):
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true
 
-fake.rb:	config.status
+fake: $(arch)-fake.rb
+
+$(arch)-fake.rb: config.status
 		@./config.status --file=$@:$(srcdir)/template/fake.rb.in
 
 Makefile:	$(srcdir)/Makefile.in
