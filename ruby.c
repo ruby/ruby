@@ -112,12 +112,6 @@ cmdline_options_init(struct cmdline_options *opt)
     return opt;
 }
 
-struct cmdline_arguments {
-    int argc;
-    char **argv;
-    struct cmdline_options *opt;
-};
-
 static NODE *load_file(VALUE, const char *, int, struct cmdline_options *);
 static void forbid_setid(const char *, struct cmdline_options *);
 #define forbid_setid(s) forbid_setid(s, opt)
@@ -1222,12 +1216,8 @@ rb_f_chomp(argc, argv)
 }
 
 static VALUE
-process_options(VALUE arg)
+process_options(int argc, char **argv, struct cmdline_options *opt)
 {
-    struct cmdline_arguments *argp = (struct cmdline_arguments *)arg;
-    struct cmdline_options *opt = argp->opt;
-    int argc = argp->argc;
-    char **argv = argp->argv;
     NODE *tree = 0;
     VALUE parser;
     VALUE iseq;
@@ -1754,6 +1744,7 @@ ruby_script(const char *name)
 {
     if (name) {
 	rb_progname = rb_obj_freeze(rb_external_str_new(name, strlen(name)));
+	rb_vm_set_progname(rb_progname);
     }
 }
 
@@ -1846,19 +1837,13 @@ ruby_set_argv(int argc, char **argv)
 void *
 ruby_process_options(int argc, char **argv)
 {
-    struct cmdline_arguments args;
     struct cmdline_options opt;
     VALUE iseq;
 
     ruby_script(argv[0]);  /* for the time being */
     rb_argv0 = rb_str_new4(rb_progname);
     rb_gc_register_mark_object(rb_argv0);
-    args.argc = argc;
-    args.argv = argv;
-    args.opt = cmdline_options_init(&opt);
-    iseq = rb_vm_call_cfunc(rb_vm_top_self(),
-				    process_options, (VALUE)&args,
-				    0, rb_progname);
+    iseq = process_options(argc, argv, cmdline_options_init(&opt));
     return (void*)(struct RData*)iseq;
 }
 

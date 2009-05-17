@@ -207,6 +207,7 @@ VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val);
 NODE *rb_vm_cref(void);
 VALUE rb_obj_is_proc(VALUE);
 VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, const rb_block_t *blockptr, VALUE filename);
+void rb_vm_set_progname(VALUE filename);
 void rb_thread_terminate_all(void);
 VALUE rb_vm_top_self();
 VALUE rb_vm_cbase(void);

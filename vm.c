@@ -671,13 +671,13 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
     int line_no = 0;
     const rb_iseq_t *iseq = cfp->iseq;
 
-    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
+    if (RUBY_VM_NORMAL_ISEQ_P(iseq) && iseq->insn_info_size > 0) {
 	rb_num_t i;
 	size_t pos = cfp->pc - cfp->iseq->iseq_encoded;
 
-	for (i = 0; i < iseq->insn_info_size; i++) {
+	if (iseq->insn_info_table[0].position == pos) goto found;
+	for (i = 1; i < iseq->insn_info_size; i++) {
 	    if (iseq->insn_info_table[i].position == pos) {
-		if (i == 0) goto found;
 		line_no = iseq->insn_info_table[i - 1].line_no;
 		goto found;
 	    }
@@ -1937,6 +1937,15 @@ Init_VM(void)
 	rb_define_global_const("TOPLEVEL_BINDING", rb_binding_new());
     }
     vm_init_redefined_flag();
+}
+
+void
+rb_vm_set_progname(VALUE filename)
+{
+    rb_thread_t *th = GET_VM()->main_thread;
+    rb_control_frame_t *cfp = (void *)(th->stack + th->stack_size);
+    --cfp;
+    cfp->iseq->filename = filename;
 }
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
