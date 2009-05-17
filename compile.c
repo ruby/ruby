@@ -17,6 +17,7 @@
 #include "insns.inc"
 #include "insns_info.inc"
 
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 
 typedef struct iseq_link_element {
     enum {
@@ -46,7 +47,7 @@ typedef struct iseq_label_data {
 typedef struct iseq_insn_data {
     LINK_ELEMENT link;
     enum ruby_vminsn_type insn_id;
-    int line_no;
+    long line_no;
     int operand_size;
     int sc_state;
     VALUE *operands;
@@ -55,7 +56,7 @@ typedef struct iseq_insn_data {
 typedef struct iseq_adjust_data {
     LINK_ELEMENT link;
     LABEL *label;
-    int line_no;
+    long line_no;
 } ADJUST;
 
 struct ensure_range {
@@ -326,9 +327,9 @@ static int calc_sp_depth(int depth, INSN *iobj);
 
 static void ADD_ELEM(ISEQ_ARG_DECLARE LINK_ANCHOR *anchor, LINK_ELEMENT *elem);
 
-static INSN *new_insn_body(rb_iseq_t *iseq, int line_no, int insn_id, int argc, ...);
-static LABEL *new_label_body(rb_iseq_t *iseq, int line);
-static ADJUST *new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line);
+static INSN *new_insn_body(rb_iseq_t *iseq, long line_no, int insn_id, int argc, ...);
+static LABEL *new_label_body(rb_iseq_t *iseq, long line);
+static ADJUST *new_adjust_body(rb_iseq_t *iseq, LABEL *label, long line);
 
 static int iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *anchor, NODE * n, int);
 static int iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
@@ -513,7 +514,7 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 #else
     const void * const *table = rb_vm_get_insns_address_table();
 #endif
-    int i;
+    unsigned long i;
 
     iseq->iseq_encoded = ALLOC_N(VALUE, iseq->iseq_size);
     MEMCPY(iseq->iseq_encoded, iseq->iseq, VALUE, iseq->iseq_size);
@@ -834,7 +835,7 @@ debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *anchor)
 #endif
 
 static LABEL *
-new_label_body(rb_iseq_t *iseq, int line)
+new_label_body(rb_iseq_t *iseq, long line)
 {
     LABEL *labelobj = compile_data_alloc_label(iseq);
 
@@ -848,7 +849,7 @@ new_label_body(rb_iseq_t *iseq, int line)
 }
 
 static ADJUST *
-new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line)
+new_adjust_body(rb_iseq_t *iseq, LABEL *label, long line)
 {
     ADJUST *adjust = compile_data_alloc_adjust(iseq);
     adjust->link.type = ISEQ_ELEMENT_ADJUST;
@@ -859,7 +860,7 @@ new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line)
 }
 
 static INSN *
-new_insn_core(rb_iseq_t *iseq, int line_no,
+new_insn_core(rb_iseq_t *iseq, long line_no,
 	      int insn_id, int argc, VALUE *argv)
 {
     INSN *iobj = compile_data_alloc_insn(iseq);
@@ -875,7 +876,7 @@ new_insn_core(rb_iseq_t *iseq, int line_no,
 }
 
 static INSN *
-new_insn_body(rb_iseq_t *iseq, int line_no, int insn_id, int argc, ...)
+new_insn_body(rb_iseq_t *iseq, long line_no, int insn_id, int argc, ...)
 {
     VALUE *operands = 0;
     va_list argv;
@@ -2392,7 +2393,7 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 		    NODE *rhsn, NODE *orig_lhsn)
 {
     VALUE mem[64];
-    const int memsize = sizeof(mem) / sizeof(mem[0]);
+    const int memsize = numberof(mem);
     int memindex = 0;
     int llen = 0, rlen = 0;
     int i;
@@ -5058,7 +5059,7 @@ rb_insns_name_array(void)
 {
     VALUE ary = rb_ary_new();
     int i;
-    for (i = 0; i < sizeof(insn_name_info) / sizeof(insn_name_info[0]); i++) {
+    for (i = 0; i < numberof(insn_name_info); i++) {
 	rb_ary_push(ary, rb_obj_freeze(rb_str_new2(insn_name_info[i])));
     }
     return rb_obj_freeze(ary);
@@ -5188,7 +5189,7 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 	}
 	else if (TYPE(obj) == T_ARRAY) {
 	    VALUE *argv = 0;
-	    int argc = RARRAY_LEN(obj) - 1;
+	    int argc = (int)RARRAY_LEN(obj) - 1;
 	    VALUE insn_id;
 	    VALUE insn;
 
@@ -5311,7 +5312,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 
     for (i=0; i<RARRAY_LEN(locals); i++) {
 	VALUE lv = RARRAY_PTR(locals)[i];
-	tbl[i] = FIXNUM_P(lv) ? FIX2INT(lv) : SYM2ID(CHECK_SYMBOL(lv));
+	tbl[i] = FIXNUM_P(lv) ? (ID)FIX2LONG(lv) : SYM2ID(CHECK_SYMBOL(lv));
     }
 
     /* args */
