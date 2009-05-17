@@ -1,3 +1,9 @@
+Sun May 17 18:59:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* node.h (nd_line): NODE_LMASK is not needed.
+
+	* node.h (NOEX_SAFE): made int.
+
 Sun May 17 14:23:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (rb_parse_in_eval): returns true in true eval, not in
