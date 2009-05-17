@@ -168,6 +168,10 @@ def rm_f(*files)
   FileUtils.rm_f(Dir[files.join("\0")])
 end
 
+def rm_rf(*files)
+  FileUtils.rm_rf(Dir[*files])
+end
+
 # Returns time stamp of the +target+ file if it exists and is newer
 # than or equal to all of +times+.
 def modified?(target, times)
@@ -324,6 +328,7 @@ MSG
   xsystem(command)
 ensure
   log_src(src)
+  rm_rf 'conftest.dSYM'
 end
 
 def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
