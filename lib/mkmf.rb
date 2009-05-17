@@ -12,7 +12,7 @@ CXX_EXT = %w[cc cxx cpp]
 if File::FNM_SYSCASE.zero?
   CXX_EXT.concat(%w[C])
 end
-SRC_EXT = %w[c m] << CXX_EXT
+SRC_EXT = %w[c m].concat(CXX_EXT)
 $static = nil
 $config_h = '$(arch_hdrdir)/ruby/config.h'
 $default_static = $static

@@ -1,3 +1,8 @@
+Sun May 17 23:23:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (SRC_EXT): should be flat.
+	  http://twitter.com/_tad_/status/1825862632
+
 Sun May 17 23:05:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (ruby_init_loadpath_safe): VARIABLE_LIBPATH is always
