@@ -1,3 +1,10 @@
+Sun May 17 14:23:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (rb_parse_in_eval): returns true in true eval, not in
+	  main.  [ruby-dev:38382]
+
+	* parse.y (program): inherits dvars in eval or main.
+
 Sun May 17 14:02:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (ruby_script): sets also VM toplevel program name.

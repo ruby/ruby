@@ -5416,7 +5416,7 @@ rb_local_defined(ID id)
 int
 rb_parse_in_eval(void)
 {
-    return GET_THREAD()->parse_in_eval != 0;
+    return GET_THREAD()->parse_in_eval > 0;
 }
 
 int
