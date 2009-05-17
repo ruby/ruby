@@ -344,30 +344,64 @@ ruby_init_loadpath_safe(int safe_level)
     extern const char ruby_initial_load_paths[];
     const char *paths = ruby_initial_load_paths;
 #if defined LOAD_RELATIVE
+# if defined HAVE_DLADDR || (defined __CYGWIN__ && defined CCP_WIN_A_TO_POSIX)
+#   define VARIABLE_LIBPATH 1
+# else
+#   define VARIABLE_LIBPATH 0
+# endif
+# if VARIABLE_LIBPATH
+    char *libpath;
+    VALUE sopath;
+# else
     char libpath[MAXPATHLEN + 1];
+    size_t baselen;
+# endif
     char *p;
-    int baselen;
 
 #if defined _WIN32 || defined __CYGWIN__
+# if VARIABLE_LIBPATH
+    sopath = rb_str_tmp_new(MAXPATHLEN);
+    libpath = RSTRING_PTR(sopath);
+    GetModuleFileName(libruby, libpath, MAXPATHLEN);
+# else
     GetModuleFileName(libruby, libpath, sizeof libpath);
+# endif
 #elif defined(__EMX__)
     _execname(libpath, sizeof(libpath) - 1);
 #elif defined(HAVE_DLADDR)
     Dl_info dli;
-    libpath[0] = '\0';
     if (dladdr(expand_include_path, &dli)) {
-	realpath(dli.dli_fname, libpath);
+	VALUE fname = rb_str_new_cstr(dli.dli_fname);
+	sopath = rb_file_absolute_path(fname, Qnil);
+	rb_str_resize(fname, 0);
+	libpath = RSTRING_PTR(sopath);
     }
 #endif
 
+#if !VARIABLE_LIBPATH
     libpath[sizeof(libpath) - 1] = '\0';
+#endif
 #if defined DOSISH
     translit_char(libpath, '\\', '/');
 #elif defined __CYGWIN__
     {
+# ifdef VARIABLE_LIBPATH
+	const int win_to_posix = CCP_WIN_A_TO_POSIX | CCP_RELATIVE;
+	size_t newsize = cygwin_conv_path(win_to_posix, libpath, 0, 0);
+	if (newsize > 0) {
+	    VALUE rubylib = rb_str_tmp_new(newsize);
+	    p = RSTRING_PTR(rubylib);
+	    if (cygwin_conv_path(win_to_posix, libpath, p, newsize) == 0) {
+		rb_str_resize(sopath, 0);
+		sopath = rubylib;
+		libpath = p;
+	    }
+	}
+# else
 	char rubylib[FILENAME_MAX];
 	cygwin_conv_to_posix_path(libpath, rubylib);
 	strncpy(libpath, rubylib, sizeof(libpath));
+# endif
     }
 #endif
     p = strrchr(libpath, '/');
@@ -378,6 +412,7 @@ ruby_init_loadpath_safe(int safe_level)
 	    *p = 0;
 	}
     }
+#if !VARIABLE_LIBPATH
     else {
 	strlcpy(libpath, ".", sizeof(libpath));
 	p = libpath + 1;
@@ -386,6 +421,12 @@ ruby_init_loadpath_safe(int safe_level)
     baselen = p - libpath;
 
 #define BASEPATH() rb_str_buf_cat(rb_str_buf_new(baselen+len), libpath, baselen)
+#else
+    rb_str_set_len(sopath, p - libpath);
+
+#define BASEPATH() rb_str_dup(sopath)
+#endif
+
 #define RUBY_RELATIVE(path, len) rb_str_buf_cat(BASEPATH(), path, len)
 #else
 #define RUBY_RELATIVE(path, len) rubylib_mangled_path(path, len)
@@ -398,7 +439,7 @@ ruby_init_loadpath_safe(int safe_level)
     }
 
     while (*paths) {
-	int len = strlen(paths);
+	size_t len = strlen(paths);
 	incpush(RUBY_RELATIVE(paths, len));
 	paths += len + 1;
     }

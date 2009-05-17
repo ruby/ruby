@@ -1,4 +1,8 @@
-Sun May 17 08:55:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun May 17 09:02:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_init_loadpath_safe): support for cygwin 1.7.  see
+	  [ruby-core:23241].
+	  gets rid of possible buffer overflow with realpath().
 
 	* ruby.c (set_arg0): get rids of overrun.
 
