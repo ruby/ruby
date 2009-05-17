@@ -1,3 +1,8 @@
+Sun May 17 09:31:05 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (foletypelib_name): should return
+	  encoded name corresponding to WIN32OLE.codepage.
+
 Sun May 17 09:02:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (ruby_init_loadpath_safe): support for cygwin 1.7.  see
