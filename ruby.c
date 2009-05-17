@@ -107,6 +107,8 @@ cmdline_options_init(struct cmdline_options *opt)
     MEMZERO(opt, *opt, 1);
     init_ids(opt);
     opt->src.enc.index = src_encoding_index;
+    opt->ext.enc.index = -1;
+    opt->intern.enc.index = -1;
     return opt;
 }
 
@@ -451,12 +453,12 @@ ruby_init_loadpath_safe(int safe_level)
 
 
 static void
-add_modules(struct cmdline_options *opt, const char *mod)
+add_modules(VALUE *req_list, const char *mod)
 {
-    VALUE list = opt->req_list;
+    VALUE list = *req_list;
 
     if (!list) {
-	opt->req_list = list = rb_ary_new();
+	*req_list = list = rb_ary_new();
 	RBASIC(list)->klass = 0;
     }
     rb_ary_push(list, rb_obj_freeze(rb_str_new2(mod)));
@@ -466,9 +468,9 @@ extern void Init_ext(void);
 extern VALUE rb_vm_top_self(void);
 
 static void
-require_libraries(struct cmdline_options *opt)
+require_libraries(VALUE *req_list)
 {
-    VALUE list = opt->req_list;
+    VALUE list = *req_list;
     ID require;
     rb_thread_t *th = GET_THREAD();
     rb_block_t *prev_base_block = th->base_block;
@@ -482,16 +484,16 @@ require_libraries(struct cmdline_options *opt)
 	VALUE feature = rb_ary_shift(list);
 	rb_funcall2(rb_vm_top_self(), require, 1, &feature);
     }
-    opt->req_list = 0;
+    *req_list = 0;
 
     th->parse_in_eval = prev_parse_in_eval;
     th->base_block = prev_base_block;
 }
 
 static void
-process_sflag(struct cmdline_options *opt)
+process_sflag(int *sflag)
 {
-    if (opt->sflag) {
+    if (*sflag > 0) {
 	long n;
 	VALUE *args;
 	VALUE argv = rb_argv;
@@ -548,22 +550,21 @@ process_sflag(struct cmdline_options *opt)
 	while (n--) {
 	    rb_ary_shift(argv);
 	}
+	*sflag = -1;
     }
-    opt->sflag = 0;
 }
 
 NODE *rb_parser_append_print(VALUE, NODE *);
 NODE *rb_parser_while_loop(VALUE, NODE *, int, int);
-static int proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt);
+static long proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt);
 
 static void
 moreswitches(const char *s, struct cmdline_options *opt, int envopt)
 {
-    int argc, i;
+    long argc, i, len;
     char **argv, *p;
     const char *ap = 0;
     VALUE argstr, argary;
-    int len;
 
     while (ISSPACE(*s)) s++;
     if (!*s) return;
@@ -605,7 +606,7 @@ moreswitches(const char *s, struct cmdline_options *opt, int envopt)
 }
 
 #define NAME_MATCH_P(name, str, len) \
-    ((len) < sizeof(name) && strncmp((str), name, (len)) == 0)
+    ((len) < (int)sizeof(name) && strncmp((str), name, (len)) == 0)
 
 #define UNSET_WHEN(name, bit, str, len)	\
     if (NAME_MATCH_P(name, str, len)) { \
@@ -660,7 +661,7 @@ dump_option(const char *str, int len, void *arg)
 }
 
 static void
-set_option_encoding_once(const char *type, VALUE *name, const char *e, int elen)
+set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen)
 {
     VALUE ename;
 
@@ -682,10 +683,10 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, int elen)
 #define set_source_encoding_once(opt, e, elen) \
     set_option_encoding_once("source", &opt->src.enc.name, e, elen)
 
-static int
-proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
+static long
+proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 {
-    int n, argc0 = argc;
+    long n, argc0 = argc;
     const char *s;
 
     if (argc == 0)
@@ -773,7 +774,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 	  case 's':
 	    if (envopt) goto noenvopt;
 	    forbid_setid("-s");
-	    opt->sflag = 1;
+	    if (!opt->sflag) opt->sflag = 1;
 	    s++;
 	    goto reswitch;
 
@@ -818,10 +819,10 @@ proc_options(int argc, char **argv, struct cmdline_options *opt, int envopt)
 	  case 'r':
 	    forbid_setid("-r");
 	    if (*++s) {
-		add_modules(opt, s);
+		add_modules(&opt->req_list, s);
 	    }
 	    else if (argv[1]) {
-		add_modules(opt, argv[1]);
+		add_modules(&opt->req_list, argv[1]);
 		argc--, argv++;
 	    }
 	    break;
@@ -1233,7 +1234,7 @@ process_options(VALUE arg)
     rb_encoding *enc, *lenc;
     const char *s;
     char fbuf[MAXPATHLEN];
-    int i = proc_options(argc, argv, opt, 0);
+    long i = proc_options(argc, argv, opt, 0);
     rb_thread_t *th = GET_THREAD();
     rb_env_t *env = 0;
 
@@ -1350,7 +1351,7 @@ process_options(VALUE arg)
     }
     ruby_init_gems(!(opt->disable & DISABLE_BIT(gems)));
     ruby_set_argv(argc, argv);
-    process_sflag(opt);
+    process_sflag(&opt->sflag);
 
     {
 	/* set eval context */
@@ -1378,7 +1379,7 @@ process_options(VALUE arg)
 	    eenc = lenc;
 	}
 	rb_enc_associate(opt->e_script, eenc);
-	require_libraries(opt);
+	require_libraries(&opt->req_list);
 
 	PREPARE_PARSE_MAIN({
 	    tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
@@ -1413,7 +1414,7 @@ process_options(VALUE arg)
 
     if (!tree) return Qfalse;
 
-    process_sflag(opt);
+    process_sflag(&opt->sflag);
     opt->xflag = 0;
 
     if (opt->safe_level >= 4) {
@@ -1604,7 +1605,7 @@ load_file_internal(VALUE arg)
 	else if (!NIL_P(c)) {
 	    rb_io_ungetbyte(f, c);
 	}
-	require_libraries(opt);	/* Why here? unnatural */
+	require_libraries(&opt->req_list);	/* Why here? unnatural */
     }
     if (opt->src.enc.index >= 0) {
 	enc = rb_enc_from_index(opt->src.enc.index);
@@ -1726,8 +1727,8 @@ set_arg0(VALUE val, ID id)
     setproctitle("%.*s", (int)i, s);
 #else
 
-    if (i >= origarg.len) {
-	i = origarg.len - 1;
+    if ((size_t)i >= origarg.len) {
+	i = (long)(origarg.len - 1);
     }
 
     memcpy(origarg.argv[0], s, i);
@@ -1737,7 +1738,9 @@ set_arg0(VALUE val, ID id)
 	char *t = origarg.argv[0] + i;
 	*t = '\0';
 
-	if (i + 1 < origarg.len) memset(t + 1, ' ', origarg.len - i - 1);
+	if ((size_t)(i + 1) < origarg.len) {
+	    memset(t + 1, ' ', origarg.len - i - 1);
+	}
 	for (j = 1; j < origarg.argc; j++) {
 	    origarg.argv[j] = t;
 	}

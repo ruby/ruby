@@ -1,3 +1,13 @@
+Sun May 17 09:47:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (cmdline_options_init): initialize encodings.
+
+	* ruby.c (add_modules, require_libraries, process_sflag):
+
+	* ruby.c (process_sflag): not process twice.
+
+	* ruby.c (moreswitches): get rid of possible overflow.
+
 Sun May 17 09:31:05 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (foletypelib_name): should return
