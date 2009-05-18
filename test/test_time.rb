@@ -163,12 +163,12 @@ class TestTimeExtention < Test::Unit::TestCase # :nodoc:
     assert_equal("2001-04-17T19:23:17.12345Z", t.xmlschema(5))
     assert_equal("2001-04-17T19:23:17.1Z", t.xmlschema(1))
 
-    t = Time.at(2.quo(3))
+    t = Time.at(2.quo(3)).getlocal("+09:00")
     assert_equal("1970-01-01T09:00:00.666+09:00", t.xmlschema(3))
     assert_equal("1970-01-01T09:00:00.6666666666+09:00", t.xmlschema(10))
     assert_equal("1970-01-01T09:00:00.66666666666666666666+09:00", t.xmlschema(20))
 
-    t = Time.at(123456789.quo(9999999999))
+    t = Time.at(123456789.quo(9999999999)).getlocal("+09:00")
     assert_equal("1970-01-01T09:00:00.012+09:00", t.xmlschema(3))
     assert_equal("1970-01-01T09:00:00.012345678+09:00", t.xmlschema(9))
     assert_equal("1970-01-01T09:00:00.0123456789+09:00", t.xmlschema(10))

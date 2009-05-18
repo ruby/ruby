@@ -1,3 +1,8 @@
+Tue May 19 07:52:05 2009  Tanaka Akira  <akr@fsij.org>
+
+	* test/test_time.rb: make tests timezone independent.
+	  reported by zunda.  [ruby-dev:38492] 
+
 Mon May 18 21:40:11 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pathname.rb (Pathname#sub): suppress a warning.  [ruby-dev:38488]
