@@ -1,3 +1,8 @@
+Mon May 18 21:40:11 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pathname.rb (Pathname#sub): suppress a warning.
+	  [ruby-dev:38488]
+
 Mon May 18 21:13:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/thread/thread.c (unlock_mutex_inner): should adjust join

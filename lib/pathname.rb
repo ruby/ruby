@@ -260,7 +260,7 @@ class Pathname
         ensure
           Thread.current[:pathname_sub_matchdata] = old
         end
-        yield *args
+        yield(*args)
       }
     else
       path = @path.sub(pattern, *rest)
