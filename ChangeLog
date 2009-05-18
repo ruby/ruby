@@ -1,3 +1,9 @@
+Mon May 18 21:13:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/thread/thread.c (unlock_mutex_inner): should adjust join
+	  target here but not in wake_one.  a patch from John Carter a
+	  [ruby-core:23490].
+
 Sun May 17 23:29:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (fake): prefixed with $(arch)-.

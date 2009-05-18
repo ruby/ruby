@@ -231,7 +231,7 @@ run_thread(VALUE thread)
 }
 
 static VALUE
-wake_first(List *list)
+wake_one(List *list)
 {
     VALUE waking;
 
@@ -244,22 +244,10 @@ wake_first(List *list)
 }
 
 static VALUE
-wake_one(List *list)
-{
-    VALUE waking = wake_first(list);
-
-    if (!NIL_P(waking)) {
-	adjust_join(list, waking);
-    }
-
-    return waking;
-}
-
-static VALUE
 wake_all(List *list)
 {
     while (list->entries) {
-        wake_first(list);
+        wake_one(list);
     }
     return Qnil;
 }
@@ -493,6 +481,9 @@ unlock_mutex_inner(Mutex *mutex)
     }
 
     waking = wake_one(&mutex->waiting);
+    if (!NIL_P(waking)) {
+	adjust_join(list, waking);
+    }
     mutex->owner = waking;
 
     return waking;
