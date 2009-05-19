@@ -2277,6 +2277,30 @@ time_to_f(VALUE time)
 
 /*
  *  call-seq:
+ *     time.to_r => Rational
+ *
+ *  Returns the value of <i>time</i> as a rational number of seconds
+ *  since the Epoch.
+ *
+ *     t = Time.now
+ *     p t.to_r            #=> (8807170717088293/8388608)
+ *
+ *  This methods is intended to be used to get an accurate value
+ *  representing nanoseconds from the Epoch.  You can use this
+ *  to convert time to another Epoch.
+ */
+
+static VALUE
+time_to_r(VALUE time)
+{
+    struct time_object *tobj;
+
+    GetTimeval(time, tobj);
+    return tobj->timev;
+}
+
+/*
+ *  call-seq:
  *     time.usec    => int
  *     time.tv_usec => int
  *
@@ -2803,7 +2827,7 @@ time_minus(VALUE time1, VALUE time2)
 	struct time_object *tobj2;
 
 	GetTimeval(time2, tobj2);
-        return sub(tobj->timev, tobj2->timev);
+        return rb_Float(sub(tobj->timev, tobj2->timev));
     }
     return time_add(tobj, time2, -1);
 }
@@ -3682,6 +3706,7 @@ Init_Time(void)
 
     rb_define_method(rb_cTime, "to_i", time_to_i, 0);
     rb_define_method(rb_cTime, "to_f", time_to_f, 0);
+    rb_define_method(rb_cTime, "to_r", time_to_r, 0);
     rb_define_method(rb_cTime, "<=>", time_cmp, 1);
     rb_define_method(rb_cTime, "eql?", time_eql, 1);
     rb_define_method(rb_cTime, "hash", time_hash, 0);
