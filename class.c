@@ -93,7 +93,7 @@ clone_method(ID mid, NODE *body, struct clone_method_data *data)
                       0,
 		      NEW_NODE_LONGLIFE(NODE_METHOD,
                                         rb_gc_write_barrier(data->klass), /* TODO */
-                                        rb_gc_write_barrier(fbody),
+                                        rb_gc_write_barrier((VALUE)fbody),
                                         body->nd_body->nd_noex), 0));
     }
     return ST_CONTINUE;

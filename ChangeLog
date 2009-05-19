@@ -1,3 +1,8 @@
+Tue May 19 13:59:35 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (clone_method): add cast to remove warning from
+	  rb_gc_write_barrier().
+
 Tue May 19 13:54:15 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (struct_ivar_get): new function to avoid repeated
