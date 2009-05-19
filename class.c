@@ -857,6 +857,7 @@ VALUE
 rb_singleton_class(VALUE obj)
 {
     VALUE klass;
+    ID attached;
 
     if (FIXNUM_P(obj) || SYMBOL_P(obj)) {
 	rb_raise(rb_eTypeError, "can't define singleton");
@@ -868,8 +869,9 @@ rb_singleton_class(VALUE obj)
 	rb_bug("unknown immediate %ld", obj);
     }
 
+    CONST_ID(attached, "__attached__");
     if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON) &&
-	rb_iv_get(RBASIC(obj)->klass, "__attached__") == obj) {
+	rb_ivar_get(RBASIC(obj)->klass, attached) == obj) {
 	klass = RBASIC(obj)->klass;
     }
     else {

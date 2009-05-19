@@ -1,3 +1,17 @@
+Tue May 19 13:54:15 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (struct_ivar_get): new function to avoid repeated
+	  rb_intern() calls.
+
+	* struct.c (rb_struct_iv_get): use struct_ivar_get()
+
+	* struct.c (num_members): ditto.
+
+	* struct.c (rb_struct_s_members): ditto.
+
+	* class.c (rb_singleton_class): cache symbol to reduce calls to
+	  rb_intern().
+
 Tue May 19 07:52:05 2009  Tanaka Akira  <akr@fsij.org>
 
 	* test/test_time.rb: make tests timezone independent.
