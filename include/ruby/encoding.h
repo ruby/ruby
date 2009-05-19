@@ -123,8 +123,14 @@ int rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc);
 /* -> 0x00..0x7f, -1 */
 int rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc);
 
-/* -> code or raise exception */
+
+/* -> code (and len) or raise exception */
+unsigned int rb_enc_codepoint_len(const char *p, const char *e, int *len, rb_encoding *enc);
+
+/* prototype for obsolete function */
 unsigned int rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc);
+/* overriding macro */
+#define rb_enc_codepoint(p,e,enc) rb_enc_codepoint_len((p),(e),0,(enc))
 #define rb_enc_mbc_to_codepoint(p, e, enc) ONIGENC_MBC_TO_CODE(enc,(UChar*)(p),(UChar*)(e))
 
 /* -> codelen>0 or raise exception */

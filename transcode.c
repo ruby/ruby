@@ -2027,7 +2027,7 @@ make_econv_exception(rb_econv_t *ec)
             n = rb_enc_precise_mbclen(start, end, utf8);
             if (MBCLEN_CHARFOUND_P(n) &&
                 (size_t)MBCLEN_CHARFOUND_LEN(n) == ec->last_error.error_bytes_len) {
-                unsigned int cc = rb_enc_codepoint(start, end, utf8);
+                unsigned int cc = rb_enc_mbc_to_codepoint(start, end, utf8);
                 dumped = rb_sprintf("U+%04X", cc);
             }
         }

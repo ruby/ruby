@@ -625,12 +625,12 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    if (rb_enc_strlen(RSTRING_PTR(tmp),RSTRING_END(tmp),enc) != 1) {
 			rb_raise(rb_eArgError, "%%c requires a character");
 		    }
-		    c = rb_enc_codepoint(RSTRING_PTR(tmp), RSTRING_END(tmp), enc);
+		    c = rb_enc_codepoint_len(RSTRING_PTR(tmp), RSTRING_END(tmp), &n, enc);
 		}
 		else {
 		    c = NUM2INT(val);
+		    n = rb_enc_codelen(c, enc);
 		}
-		n = rb_enc_codelen(c, enc);
 		if (n <= 0) {
 		    rb_raise(rb_eArgError, "invalid character");
 		}
