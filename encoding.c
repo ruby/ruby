@@ -727,6 +727,12 @@ rb_obj_encoding(VALUE obj)
 }
 
 int
+rb_enc_fast_mbclen(const char *p, const char *e, rb_encoding *enc)
+{
+    return ONIGENC_MBC_ENC_LEN(enc, (UChar*)p, (UChar*)e);
+}
+
+int
 rb_enc_mbclen(const char *p, const char *e, rb_encoding *enc)
 {
     int n = ONIGENC_PRECISE_MBC_ENC_LEN(enc, (UChar*)p, (UChar*)e);

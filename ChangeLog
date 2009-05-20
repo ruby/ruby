@@ -1,3 +1,17 @@
+Wed May 20 06:25:29 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* encoding.c (rb_enc_fast_mbclen): faster mbclen for strings known
+	  to be valid.
+
+	* string.c (enc_strlen): coderange specified version of
+	  rb_enc_strlen().  use rb_enc_fast_mbclen() if coderange is 7bit
+	  or valid.
+
+	* string.c (str_gsub): use rb_enc_fast_mbclen().
+
+	* string.c (rb_str_reverse, rb_str_split_m, rb_str_each_char,
+	  scan_once): ditto.
+
 Wed May 20 06:20:05 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile#unlink): close first for Windows.  a

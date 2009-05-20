@@ -112,6 +112,9 @@ rb_encoding * rb_enc_find(const char *name);
 /* -> mbclen (no error notification: 0 < ret <= e-p, no exception) */
 int rb_enc_mbclen(const char *p, const char *e, rb_encoding *enc);
 
+/* -> mbclen (only for valid encoding) */
+int rb_enc_fast_mbclen(const char *p, const char *e, rb_encoding *enc);
+
 /* -> chlen, invalid or needmore */
 int rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc);
 #define MBCLEN_CHARFOUND_P(ret)     ONIGENC_MBCLEN_CHARFOUND_P(ret)
