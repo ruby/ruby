@@ -566,6 +566,7 @@ rb_enc_get_index(VALUE obj)
     VALUE tmp;
 
     switch (BUILTIN_TYPE(obj)) {
+as_default:
         default:
 	case T_STRING:
 	case T_REGEXP:
@@ -586,6 +587,9 @@ rb_enc_get_index(VALUE obj)
 	    if (RDATA(obj)->dmark == enc_mark) {
 		i = enc_check_encoding(obj);
 	    }
+            else {
+                goto as_default;
+            }
 	    break;
     }
     return i;
