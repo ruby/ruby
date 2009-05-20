@@ -663,6 +663,25 @@ struct RArray {
      RARRAY(a)->as.ary : \
      RARRAY(a)->as.heap.ptr)
 
+#if SIZEOF_INT < SIZEOF_VALUE
+NORETURN(void rb_out_of_int(SIGNED_VALUE num));
+#endif
+
+#if SIZEOF_INT < SIZEOF_LONG
+#define rb_long2int_internal(n, i) \
+    int i = (int)(n); \
+    if ((long)i != (n)) rb_out_of_int(n)
+#ifdef __GNUC__
+#define rb_long2int(i2l_n) ({rb_long2int_internal(i2l_n, i2l_i); i2l_i;})
+#else
+static inline int
+rb_long2int(long n) {rb_long2int_internal(n, i); return i;}
+#endif
+#else
+#define rb_long2int(n) ((int)(n))
+#endif
+#define RARRAY_LENINT(ary) rb_long2int(RARRAY_LEN(ary))
+
 struct RRegexp {
     struct RBasic basic;
     struct re_pattern_buffer *ptr;

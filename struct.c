@@ -378,7 +378,7 @@ rb_struct_initialize_m(int argc, VALUE *argv, VALUE self)
 VALUE
 rb_struct_initialize(VALUE self, VALUE values)
 {
-    return rb_struct_initialize_m(RARRAY_LEN(values), RARRAY_PTR(values), self);
+    return rb_struct_initialize_m(RARRAY_LENINT(values), RARRAY_PTR(values), self);
 }
 
 static VALUE
@@ -414,10 +414,10 @@ VALUE
 rb_struct_new(VALUE klass, ...)
 {
     VALUE tmpargs[N_REF_FUNC], *mem = tmpargs;
-    long size, i;
+    int size, i;
     va_list args;
 
-    size = num_members(klass);
+    size = rb_long2int(num_members(klass));
     if (size > numberof(tmpargs)) {
 	tmpargs[0] = rb_ary_tmp_new(size);
 	mem = RARRAY_PTR(tmpargs[0]);

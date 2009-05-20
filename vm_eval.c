@@ -398,7 +398,7 @@ rb_apply(VALUE recv, ID mid, VALUE args)
     int argc;
     VALUE *argv;
 
-    argc = RARRAY_LEN(args);	/* Assigns LONG, but argc is INT */
+    argc = RARRAY_LENINT(args);
     argv = ALLOCA_N(VALUE, argc);
     MEMCPY(argv, RARRAY_PTR(args), VALUE, argc);
     return rb_call(CLASS_OF(recv), recv, mid, argc, argv, CALL_FCALL);
@@ -552,7 +552,7 @@ rb_yield_splat(VALUE values)
     if (NIL_P(tmp)) {
         rb_raise(rb_eArgError, "not an array");
     }
-    v = rb_yield_0(RARRAY_LEN(tmp), RARRAY_PTR(tmp));
+    v = rb_yield_0(RARRAY_LENINT(tmp), RARRAY_PTR(tmp));
     return v;
 }
 
@@ -909,7 +909,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 	PUSH_TAG();
 	rb_set_safe_level_force(level);
 	if ((state = EXEC_TAG()) == 0) {
-	    val = rb_funcall2(cmd, rb_intern("call"), RARRAY_LEN(arg),
+	    val = rb_funcall2(cmd, rb_intern("call"), RARRAY_LENINT(arg),
 			      RARRAY_PTR(arg));
 	}
 	POP_TAG();
@@ -951,7 +951,7 @@ yield_under(VALUE under, VALUE self, VALUE values)
 	return vm_yield_with_cref(th, 0, 0, cref);
     }
     else {
-	return vm_yield_with_cref(th, RARRAY_LEN(values), RARRAY_PTR(values), cref);
+	return vm_yield_with_cref(th, RARRAY_LENINT(values), RARRAY_PTR(values), cref);
     }
 }
 

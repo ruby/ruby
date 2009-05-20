@@ -774,7 +774,7 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
     if (!(iseq->arg_simple & 0x02) &&          /* exclude {|a|} */
             (m + iseq->arg_post_len) > 0 &&    /* this process is meaningful */
             argc == 1 && !NIL_P(ary = rb_check_array_type(argv[0]))) { /* rhs is only an array */
-        th->mark_stack_len = argc = RARRAY_LEN(ary);
+        th->mark_stack_len = argc = RARRAY_LENINT(ary);
 
         CHECK_STACK_OVERFLOW(th->cfp, argc);
 
