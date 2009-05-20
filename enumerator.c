@@ -605,7 +605,7 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
     rb_str_buf_cat2(str, rb_id2name(e->meth));
 
     if (e->args) {
-	int    argc = RARRAY_LEN(e->args);
+	long   argc = RARRAY_LEN(e->args);
 	VALUE *argv = RARRAY_PTR(e->args);
 
 	rb_str_buf_cat2(str, "(");
