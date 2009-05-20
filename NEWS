@@ -201,6 +201,14 @@ with all sufficient information, see the ChangeLog file.
   * new methods:
     * Zlib::GzipFile#path
 
+=== Compilation options
+
+* --program-prefix and --program-suffix no longer act on the shared object 
+  names nor paths to libraries.
+
+  use --with-rubylibprefix='${libruby}/${RUBY_INSTALL_NAME}' and 
+  --with-soname='${RUBY_INSTALL_NAME}' for the same result as Ruby 1.9.1.
+
 === Compatibility issues (excluding feature bug fixes)
 
   * Enumerator#rewind
@@ -215,5 +223,6 @@ with all sufficient information, see the ChangeLog file.
   * Time.local
   * Time.mktime
   * Time.parse
+  * --program-prefix and --program-suffix
 
     See above.
