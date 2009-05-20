@@ -1456,7 +1456,7 @@ zip_ary(VALUE val, NODE *memo, int argc, VALUE *argv)
 {
     volatile VALUE result = memo->u1.value;
     volatile VALUE args = memo->u2.value;
-    int n = memo->u3.cnt++;
+    long n = memo->u3.cnt++;
     volatile VALUE tmp;
     int i;
 
