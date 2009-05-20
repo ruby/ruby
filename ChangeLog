@@ -1,3 +1,8 @@
+Thu May 21 08:54:32 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/openssl/ossl_digest.c (Init_ossl_digest): avoid recursing
+	  require.
+
 Thu May 21 08:50:58 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rexml/text.rb (REXML::Text.normalize): call to_s for input.
