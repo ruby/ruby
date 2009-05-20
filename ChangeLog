@@ -1,3 +1,9 @@
+Wed May 20 19:41:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (rb_struct_new): get rid of too large alloca.
+
+	* struct.c (rb_struct_hash): use long.
+
 Wed May 20 18:58:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c, vm_insnhelper.c: argument number is restricted to

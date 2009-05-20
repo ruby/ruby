@@ -129,7 +129,8 @@ static VALUE rb_struct_ref7(VALUE obj) {return RSTRUCT_PTR(obj)[7];}
 static VALUE rb_struct_ref8(VALUE obj) {return RSTRUCT_PTR(obj)[8];}
 static VALUE rb_struct_ref9(VALUE obj) {return RSTRUCT_PTR(obj)[9];}
 
-#define N_REF_FUNC (sizeof(ref_func) / sizeof(ref_func[0]))
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+#define N_REF_FUNC numberof(ref_func)
 
 static VALUE (*const ref_func[])(VALUE) = {
     rb_struct_ref0,
@@ -342,7 +343,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     return st;
 }
 
-static size_t
+static long
 num_members(VALUE klass)
 {
     VALUE members;
@@ -412,12 +413,15 @@ rb_struct_alloc(VALUE klass, VALUE values)
 VALUE
 rb_struct_new(VALUE klass, ...)
 {
-    VALUE *mem;
+    VALUE tmpargs[N_REF_FUNC], *mem = tmpargs;
     long size, i;
     va_list args;
 
     size = num_members(klass);
-    mem = ALLOCA_N(VALUE, size);
+    if (size > numberof(tmpargs)) {
+	tmpargs[0] = rb_ary_tmp_new(size);
+	mem = RARRAY_PTR(tmpargs[0]);
+    }
     va_start(args, klass);
     for (i=0; i<size; i++) {
 	mem[i] = va_arg(args, VALUE);
@@ -809,7 +813,7 @@ static VALUE
 rb_struct_hash(VALUE s)
 {
     long i;
-    unsigned h;
+    unsigned long h;
     VALUE n;
 
     h = rb_hash_start(rb_hash(rb_obj_class(s)));
