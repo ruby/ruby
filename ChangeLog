@@ -1,3 +1,8 @@
+Thu May 21 08:50:58 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rexml/text.rb (REXML::Text.normalize): call to_s for input.
+	  [ruby-talk:337069]
+
 Mon May 18 21:40:11 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pathname.rb (Pathname#sub): suppress a warning.
