@@ -1,3 +1,8 @@
+Wed May 20 06:20:05 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile#unlink): close first for Windows.  a
+	  patch from Florian Frank.  [ruby-core:23505]
+
 Wed May 20 00:13:38 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* encoding.c (rb_enc_codepoint_len): combine rb_enc_codepoint()
