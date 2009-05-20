@@ -69,7 +69,7 @@ vm_call0(rb_thread_t * th, VALUE klass, VALUE recv, VALUE id, ID oid,
 	    cfp->method_id = oid;
 	    cfp->method_class = klass;
 
-	    val = call_cfunc(body->nd_cfnc, recv, body->nd_argc, argc, argv);
+	    val = call_cfunc(body->nd_cfnc, recv, (int)body->nd_argc, argc, argv);
 
 	    if (reg_cfp != th->cfp + 1) {
 		SDR2(reg_cfp);
@@ -199,12 +199,12 @@ rb_call0(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv,
 	    return method_missing(recv, mid, argc, argv,
 				  scope == 2 ? NOEX_VCALL : 0);
 	id = ent->mid0;
-	noex = ent->method->nd_noex;
+	noex = (int)ent->method->nd_noex;
 	klass = ent->method->nd_clss;
 	body = ent->method->nd_body;
     }
     else if ((method = rb_get_method_body(klass, id, &id)) != 0) {
-	noex = method->nd_noex;
+	noex = (int)method->nd_noex;
 	klass = method->nd_clss;
 	body = method->nd_body;
     }

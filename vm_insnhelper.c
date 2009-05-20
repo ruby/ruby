@@ -118,7 +118,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
     const int m = iseq->argc;
     int argc = orig_argc;
     VALUE *argv = orig_argv;
-    int opt_pc = 0;
+    rb_num_t opt_pc = 0;
 
     th->mark_stack_len = argc + iseq->arg_size;
 
@@ -200,7 +200,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
     }
 
     th->mark_stack_len = 0;
-    return opt_pc;
+    return (int)opt_pc;
 }
 
 static inline int
@@ -251,7 +251,7 @@ caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, VALUE flag,
 	    /* do nothing */
 	}
 	else {
-	    int len = RARRAY_LEN(tmp);
+	    long len = RARRAY_LEN(tmp);
 	    ptr = RARRAY_PTR(tmp);
 	    cfp->sp -= 1;
 
@@ -373,7 +373,7 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 
 	reg_cfp->sp -= num + 1;
 
-	val = call_cfunc(mn->nd_cfnc, recv, mn->nd_argc, num, reg_cfp->sp + 1);
+	val = call_cfunc(mn->nd_cfnc, recv, (int)mn->nd_argc, num, reg_cfp->sp + 1);
 
 	if (reg_cfp != th->cfp + 1) {
 	    rb_bug("cfp consistency error - send");
@@ -443,7 +443,7 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
     sp = rsp + iseq->arg_size;
 
     if (LIKELY(!(flag & VM_CALL_TAILCALL_BIT))) {
-	if (0) printf("local_size: %d, arg_size: %d\n",
+	if (0) printf("local_size: %"PRIdSIZE", arg_size: %d\n",
 		      iseq->local_size, iseq->arg_size);
 
 	/* clear local variables */
@@ -617,7 +617,7 @@ vm_send_optimize(rb_control_frame_t * const reg_cfp, NODE ** const mn,
 	extern VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);
 
 	if (node->nd_cfnc == rb_f_send) {
-	    int i = *num - 1;
+	    rb_num_t i = *num - 1;
 	    VALUE sym = TOPN(i);
 	    *id = SYMBOL_P(sym) ? SYM2ID(sym) : rb_to_id(sym);
 
@@ -700,7 +700,7 @@ static inline int
 vm_yield_setup_block_args_complex(rb_thread_t *th, const rb_iseq_t * iseq,
 	int argc, VALUE * argv)
 {
-    int opt_pc = 0;
+    rb_num_t opt_pc = 0;
     int i;
     const int m = iseq->argc;
     const int r = iseq->arg_rest;
@@ -750,7 +750,7 @@ vm_yield_setup_block_args_complex(rb_thread_t *th, const rb_iseq_t * iseq,
 	argv[start + i] = Qnil;
     }
 
-    return opt_pc;
+    return (int)opt_pc;
 }
 
 static inline int
@@ -762,7 +762,7 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
     int argc = orig_argc;
     const int m = iseq->argc;
     VALUE ary;
-    int opt_pc = 0;
+    rb_num_t opt_pc = 0;
 
     th->mark_stack_len = argc;
 
@@ -867,7 +867,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
 {
     rb_block_t * const block = GET_BLOCK_PTR();
     rb_iseq_t *iseq;
-    int argc = num;
+    int argc = (int)num;
 
     if (GET_ISEQ()->local_iseq->type != ISEQ_TYPE_METHOD || block == 0) {
 	rb_vm_localjump_error("no block given (yield)", Qnil, 0);
@@ -1254,8 +1254,8 @@ static VALUE
 vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	 rb_num_t throw_state, VALUE throwobj)
 {
-    rb_num_t state = throw_state & 0xff;
-    rb_num_t flag = throw_state & 0x8000;
+    int state = (int)(throw_state & 0xff);
+    int flag = (int)(throw_state & 0x8000);
     rb_num_t level = throw_state >> 16;
 
     if (state != 0) {
@@ -1398,13 +1398,13 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 }
 
 static inline void
-vm_expandarray(rb_control_frame_t *cfp, VALUE ary, int num, int flag)
+vm_expandarray(rb_control_frame_t *cfp, VALUE ary, rb_num_t num, int flag)
 {
     int is_splat = flag & 0x01;
-    int space_size = num + is_splat;
+    rb_num_t space_size = num + is_splat;
     VALUE *base = cfp->sp, *ptr;
     volatile VALUE tmp_ary;
-    int len;
+    long len;
 
     if (TYPE(ary) != T_ARRAY) {
 	ary = rb_ary_to_ary(ary);
@@ -1418,7 +1418,7 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, int num, int flag)
 
     if (flag & 0x02) {
 	/* post: ..., nil ,ary[-1], ..., ary[0..-num] # top */
-	int i = 0, j;
+	long i = 0, j;
 
 	if (len < num) {
 	    for (i=0; i<num-len; i++) {
