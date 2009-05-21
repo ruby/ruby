@@ -53,6 +53,11 @@ Wed May 20 18:34:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (inspect_enumerator): should use long.
 
+Wed May 20 09:18:44 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_count): optimized for 1byte string count by
+	  avoiding tr_setup_table().
+
 Wed May 20 06:25:29 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* encoding.c (rb_enc_fast_mbclen): faster mbclen for strings known
