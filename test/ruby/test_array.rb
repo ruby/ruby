@@ -1588,6 +1588,8 @@ class TestArray < Test::Unit::TestCase
       end
       assert_operator(h.values.min * 2, :>=, h.values.max) if n != 0
     end
+
+    assert_raise(ArgumentError, '[ruby-core:23374]') {[1, 2].sample(-1)}
   end
 
   def test_cycle

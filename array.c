@@ -3302,8 +3302,9 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     }
     rb_scan_args(argc, argv, "1", &nv);
     n = NUM2LONG(nv);
-    ptr = RARRAY_PTR(ary); 
-    len = RARRAY_LEN(ary); 
+    if (n < 0) rb_raise(rb_eArgError, "negative sample number");
+    ptr = RARRAY_PTR(ary);
+    len = RARRAY_LEN(ary);
     if (n > len) n = len;
     switch (n) {
       case 0: return rb_ary_new2(0);
