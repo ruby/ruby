@@ -1,3 +1,8 @@
+Sat May 16 09:19:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (magic_comment_encoding): use rb_compile_warning() to
+	  show the currently parsing file name.  [ruby-core:23469]
+
 Thu May 21 21:47:34 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* ext/pty/pty.c (getDevice): fixes a mistake in merging r20877.
