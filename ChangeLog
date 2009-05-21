@@ -1,4 +1,10 @@
-Sun May 10 10:40:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun May 10 11:13:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/cfunc.c (rb_dlcfunc_instance_p): new function to check if
+	  the argument is an instance of DL::CFunc.
+
+	* ext/dl/cptr.c (rb_dlptr_initialize, rb_dlptr_s_malloc): checks
+	  if DL::CFunc.  [ruby-dev:38403].
 
 	* ext/dl/lib/dl/cparser.rb (DL::CParser#parse_signature): strips
 	  spaces.  based on a patch from Takashi Tamura in [ruby-dev:38398].

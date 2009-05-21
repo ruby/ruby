@@ -9,6 +9,18 @@
 
 VALUE rb_cDLCPtr;
 
+static inline freefunc_t
+get_freefunc(VALUE func)
+{
+    if (NIL_P(func)) {
+	return NULL;
+    }
+    if (rb_dlcfunc_kind_p(func)) {
+	return RCFUNC_DATA(func)->ptr;
+    }
+    return NUM2PTR(rb_Integer(func));
+}
+
 static ID id_to_ptr;
 
 static void
@@ -124,7 +136,7 @@ rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
   case 3:
     p = (void*)(NUM2PTR(rb_Integer(ptr)));
     s = NUM2LONG(size);
-    f = NIL_P(sym) ? NULL : RCFUNC_DATA(sym)->ptr;
+    f = get_freefunc(sym);
     break;
   default:
     rb_bug("rb_dlptr_initialize");
@@ -158,7 +170,7 @@ rb_dlptr_s_malloc(int argc, VALUE argv[], VALUE klass)
     break;
   case 2:
     s = NUM2LONG(size);
-    f = RCFUNC_DATA(sym)->ptr;
+    f = get_freefunc(sym);
     break;
   default:
     rb_bug("rb_dlptr_s_malloc");
@@ -217,15 +229,9 @@ VALUE
 rb_dlptr_free_set(VALUE self, VALUE val)
 {
   struct ptr_data *data;
-  extern VALUE rb_cDLCFunc;
 
   Data_Get_Struct(self, struct ptr_data, data);
-  if( rb_obj_is_kind_of(val, rb_cDLCFunc) == Qtrue ){
-      data->free = RCFUNC_DATA(val)->ptr;
-  }
-  else{
-      data->free = NUM2PTR(rb_Integer(val));
-  }
+  data->free = get_freefunc(val);
 
   return Qnil;
 }

@@ -43,8 +43,9 @@ rb_dl_set_win32_last_error(VALUE self, VALUE val)
 
 
 void
-dlcfunc_free(struct cfunc_data *data)
+dlcfunc_free(void *ptr)
 {
+    struct cfunc_data *data = ptr;
   if( data->name ){
       xfree(data->name);
   }
@@ -105,6 +106,13 @@ rb_dlcfunc_s_allocate(VALUE klass)
   data->calltype = CFUNC_CDECL;
 
   return obj;
+}
+
+int
+rb_dlcfunc_kind_p(VALUE func)
+{
+    if (TYPE(func) == T_DATA) return 0;
+    return RDATA(func)->dfree == dlcfunc_free;
 }
 
 VALUE
