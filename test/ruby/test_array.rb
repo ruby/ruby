@@ -736,11 +736,14 @@ class TestArray < Test::Unit::TestCase
 
     a5 = @cls[ a1, @cls[], a3 ]
     assert_equal(@cls[1, 2, 3, 4, 5, 6], a5.flatten!)
+    assert_nil(a5.flatten!(0), '[ruby-core:23382]')
     assert_equal(@cls[1, 2, 3, 4, 5, 6], a5)
 
     assert_equal(@cls[], @cls[].flatten)
     assert_equal(@cls[], 
                  @cls[@cls[@cls[@cls[],@cls[]],@cls[@cls[]],@cls[]],@cls[@cls[@cls[]]]].flatten)
+
+    assert_nil(@cls[].flatten!(0), '[ruby-core:23382]')
   end
 
   def test_flatten_with_callcc

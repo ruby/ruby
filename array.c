@@ -3190,7 +3190,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
 
     rb_scan_args(argc, argv, "01", &lv);
     if (!NIL_P(lv)) level = NUM2INT(lv);
-    if (level == 0) return ary;
+    if (level == 0) return Qnil;
 
     result = flatten(ary, level, &mod);
     if (mod == 0) return Qnil;
