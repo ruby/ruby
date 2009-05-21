@@ -1,3 +1,11 @@
+Thu May 21 22:17:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/id.h.tmpl, id.h (enum ruby_method_ids): added some IDs.
+
+	* debug.c (dummy_gdb_enums): added enum ruby_method_ids.
+
+	* .gdbinit (rp): improved output of Symbol.
+
 Thu May 21 21:07:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/vsnprintf.c (BSD_vfprintf): support for 'z' modifier.

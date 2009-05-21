@@ -15,6 +15,7 @@
 #include "debug.h"
 #include "eval_intern.h"
 #include "vm_core.h"
+#include "id.h"
 
 /* for gdb */
 static const union {
@@ -22,6 +23,7 @@ static const union {
     enum ruby_value_type        value_type;
     enum ruby_tag_type          tag_type;
     enum node_type              node_type;
+    enum ruby_method_ids        method_ids;
     enum {
         RUBY_ENCODING_INLINE_MAX = ENCODING_INLINE_MAX,
         RUBY_ENCODING_SHIFT = ENCODING_SHIFT,
@@ -96,7 +98,7 @@ ruby_debug_print_value(int level, int debug_level, const char *header, VALUE obj
 	VALUE str;
 	str = rb_inspect(obj);
 	fprintf(stderr, "DBG> %s: %s\n", header,
-		obj == -1 ? "" : StringValueCStr(str));
+		obj == (VALUE)(SIGNED_VALUE)-1 ? "" : StringValueCStr(str));
 	fflush(stderr);
     }
     return obj;

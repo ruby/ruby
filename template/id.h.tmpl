@@ -63,6 +63,12 @@ enum ruby_method_ids {
     <%=token%> = <%=value%>,
 % end
 #endif
+    idDot2 = tDOT2,
+    idDot3 = tDOT3,
+    idUPlus = tUPLUS,
+    idUMinus = tUMINUS,
+    idPow = tPOW,
+    idCmp = tCMP,
     idPLUS = '+',
     idMINUS = '-',
     idMULT = '*',
@@ -79,6 +85,7 @@ enum ruby_method_ids {
     idNot = '!',
     idBackquote = '`',
     idEqTilde = tMATCH,
+    idNeqTilde = tNMATCH,
     idAREF = tAREF,
     idASET = tASET,
     idLAST_TOKEN = tLAST_TOKEN >> ID_SCOPE_SHIFT,
