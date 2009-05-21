@@ -1234,7 +1234,7 @@ Specifies the name of the script ($0).
 
 ** Hooks for the Interpreter Events
 
- void rb_add_event_hook(rb_event_hook_func_t func, rb_event_t events)
+ void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 
 Adds a hook function for the specified interpreter events.
 events should be Or'ed value of:
@@ -1251,8 +1251,12 @@ events should be Or'ed value of:
 
 The definition of rb_event_hook_func_t is below:
 
- typedef void (*rb_event_hook_func_t)(rb_event_t event, NODE *node,
+ typedef void (*rb_event_hook_func_t)(rb_event_t event, VALUE data,
  				      VALUE self, ID id, VALUE klass)
+
+The third argument `data' to rb_add_event_hook() is passed to the hook
+function as the second argument, which was the pointer to the current
+NODE in 1.8.  See RB_EVENT_HOOKS_HAVE_CALLBACK_DATA below.
 
  int rb_remove_event_hook(rb_event_hook_func_t func)
 
@@ -1292,6 +1296,11 @@ Module#methods, #singleton_methods and so on.
 Defined in ruby.h and means correspoinding header is available.  For
 instance, when HAVE_RUBY_ST_H is defined you should use ruby/st.h not
 mere st.h.
+
+ RB_EVENT_HOOKS_HAVE_CALLBACK_DATA
+
+Means that rb_add_event_hook() takes the third argument `data', to be
+passed to the given event hook function.
 
 Appendix C. Functions Available in extconf.rb
 

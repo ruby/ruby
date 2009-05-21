@@ -1,3 +1,8 @@
+Thu May 21 12:07:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RB_EVENT_HOOKS_HAVE_CALLBACK_DATA):
+	  new macro for compatibility check.
+
 Thu May 21 01:43:40 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_long2int, RARRAY_LENINT): check long to

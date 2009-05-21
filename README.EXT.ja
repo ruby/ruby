@@ -1332,7 +1332,7 @@ void ruby_script(char *name)
 
 ** インタプリタのイベントのフック
 
- void rb_add_event_hook(rb_event_hook_func_t func, rb_event_t events)
+ void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 
 指定されたインタプリタのイベントに対するフック関数を追加します．
 eventsは以下の値のorでなければなりません:
@@ -1349,8 +1349,12 @@ eventsは以下の値のorでなければなりません:
 
 rb_event_hook_func_tの定義は以下の通りです:
 
- typedef void (*rb_event_hook_func_t)(rb_event_t event, NODE *node,
+ typedef void (*rb_event_hook_func_t)(rb_event_t event, VALUE data,
  				      VALUE self, ID id, VALUE klass)
+
+rb_add_event_hook() の第3引数 data は，フック関数の第2引数と
+して渡されます．これは1.8では現在のNODEへのポインタでした．以
+下の RB_EVENT_HOOKS_HAVE_CALLBACK_DATA も参照してください．
 
  int rb_remove_event_hook(rb_event_hook_func_t func)
 
@@ -1393,6 +1397,10 @@ HAVE_RUBY_*_H
   を意味する．たとえば，HAVE_RUBY_ST_H が定義されている場合は
   単なる st.h ではなく ruby/st.h を使用する．
 
+RB_EVENT_HOOKS_HAVE_CALLBACK_DATA
+
+  rb_add_event_hook() がフック関数に渡す data を第3引数として
+  受け取ることを意味する．
 
 Appendix C. extconf.rbで使える関数たち
 

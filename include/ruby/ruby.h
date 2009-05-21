@@ -1220,6 +1220,7 @@ typedef struct rb_event_hook_struct {
     struct rb_event_hook_struct *next;
 } rb_event_hook_t;
 
+#define RB_EVENT_HOOKS_HAVE_CALLBACK_DATA 1
 void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events,
 		       VALUE data);
 int rb_remove_event_hook(rb_event_hook_func_t func);
