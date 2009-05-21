@@ -744,8 +744,37 @@ strio_ungetc(VALUE self, VALUE c)
 static VALUE
 strio_ungetbyte(VALUE self, VALUE c)
 {
-    NUM2INT(c);
-    return strio_ungetc(self, c);
+    struct StringIO *ptr = readable(StringIO(self));
+    char buf[1], *cp = buf;
+    long pos = ptr->pos, cl = 1;
+    VALUE str = ptr->string;
+
+    if (NIL_P(c)) return Qnil;
+    if (FIXNUM_P(c)) {
+	buf[0] = (char)FIX2INT(c);
+    }
+    else {
+	SafeStringValue(c);
+	cp = RSTRING_PTR(c);
+	cl = RSTRING_LEN(c);
+	if (cl == 0) return Qnil;
+    }
+    rb_str_modify(str);
+    if (cl > pos) {
+	char *s;
+	long rest = RSTRING_LEN(str) - pos;
+	rb_str_resize(str, rest + cl);
+	s = RSTRING_PTR(str);
+	memmove(s + cl, s + pos, rest);
+	pos = 0;
+    }
+    else {
+	pos -= cl;
+    }
+    memcpy(RSTRING_PTR(str) + pos, cp, cl);
+    ptr->pos = pos;
+    RB_GC_GUARD(c);
+    return Qnil;
 }
 
 /*

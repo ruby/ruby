@@ -77,6 +77,22 @@ class TestIO < Test::Unit::TestCase
     r.close
   end
 
+  def test_ungetbyte
+    t = make_tempfile
+    t.open
+    t.ungetbyte(0x41)
+    assert_equal(0x41, t.getbyte)
+    t.rewind
+    t.ungetbyte("qux")
+    assert_equal("quxfoo\n", t.gets)
+    t.set_encoding("utf-8")
+    t.ungetbyte(0x89)
+    t.ungetbyte(0x8e)
+    t.ungetbyte("\xe7")
+    t.ungetbyte("\xe7\xb4\x85")
+    assert_equal("\u7d05\u7389bar\n", t.gets)
+  end
+
   def test_each_byte
     r, w = IO.pipe
     w << "abc def"

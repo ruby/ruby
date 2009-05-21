@@ -1,3 +1,8 @@
+Thu May 14 16:07:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_ungetbyte): encoding should no
+	  be effective.
+
 Sun May 10 11:36:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/cfunc.c (rb_dlcfunc_instance_p): new function to check if
