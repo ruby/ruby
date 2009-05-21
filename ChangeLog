@@ -1,3 +1,8 @@
+Sun May 10 10:40:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/lib/dl/cparser.rb (DL::CParser#parse_signature): strips
+	  spaces.  based on a patch from Takashi Tamura in [ruby-dev:38398].
+
 Sat May  9 11:14:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_f_catch): gets rid of issue with gcc 4.4.  a patch
