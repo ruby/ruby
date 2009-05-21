@@ -284,4 +284,15 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(- -#=foo), "#!ruby -s\n", [],
                       /invalid name for global variable - -# \(NameError\)/)
   end
+
+  def test_indentation_check
+    t = Tempfile.new(["test_ruby_test_rubyoption", ".rb"])
+    t.puts "begin"
+    t.puts " end"
+    t.close
+    assert_in_out_err(["-w", t.path], "", [], /:2: warning: mismatched indentations at 'end' with 'begin' at 1/)
+    assert_in_out_err(["-wr", t.path, "-e", ""], "", [], /:2: warning: mismatched indentations at 'end' with 'begin' at 1/)
+  ensure
+    t.close(true) if t
+  end
 end
