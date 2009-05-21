@@ -1,3 +1,8 @@
+Sat May  9 11:14:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_f_catch): gets rid of issue with gcc 4.4.  a patch
+	  from Alexey Froloff in [ruby-core:23398].  [ruby-core:22924]
+
 Thu May  7 21:42:51 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_rubyoptions.rb (test_indentation_check): add a test
