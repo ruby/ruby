@@ -422,7 +422,7 @@ getDevice(int *master, int *slave, char SlaveName[DEVICELEN])
 	rb_gc();
 	get_device_once(master, slave, SlaveName, 1);
     }
-    return Qnil;
+    return;
 }
 
 /* ruby function: getpty */
