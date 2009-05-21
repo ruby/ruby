@@ -217,6 +217,7 @@ define rp
     output (enum node_type)(($flags&RUBY_NODE_TYPEMASK)>>RUBY_NODE_TYPESHIFT)
     printf "): "
     print *(NODE *)$arg0
+  else
   if ($flags & RUBY_T_MASK) == RUBY_T_ZOMBIE
     printf "T_ZOMBIE: "
     print (struct RData *)$arg0
