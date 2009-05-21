@@ -223,7 +223,7 @@ struct __siov {
 struct __suio {
 	struct	__siov *uio_iov;
 	int	uio_iovcnt;
-	int	uio_resid;
+	size_t	uio_resid;
 };
 
 #if !defined(HAVE_VSNPRINTF) || !defined(HAVE_SNPRINTF)
@@ -520,7 +520,7 @@ static int exponent __P((char *, int, int));
 #define	SHORTINT	0x040		/* short integer */
 #define	ZEROPAD		0x080		/* zero (as opposed to blank) pad */
 #define FPT		0x100		/* Floating point number */
-static int
+static ssize_t
 BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 {
 	register const char *fmt; /* format string */
@@ -529,7 +529,7 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	register const char *cp;/* handy char pointer (short term usage) */
 	register struct __siov *iovp;/* for PRINT macro */
 	register int flags;	/* flags as above */
-	int ret;		/* return value accumulator */
+	ssize_t ret;		/* return value accumulator */
 	int width;		/* width from format (%8d), or 0 */
 	int prec;		/* precision from format (%.3d), or -1 */
 	char sign;		/* sign prefix (' ', '+', '-', or \0) */
@@ -547,8 +547,8 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 #endif /* _HAVE_SANE_QUAD_ */
 	int base;		/* base for [diouxX] conversion */
 	int dprec;		/* a copy of prec if [diouxX], 0 otherwise */
-	int fieldsz;		/* field size expanded by sign, etc */
-	int realsz;		/* field size expanded by dprec */
+	long fieldsz;		/* field size expanded by sign, etc */
+	long realsz;		/* field size expanded by dprec */
 	int size;		/* size of converted field or string */
 	const char *xdigs = 0;	/* digits for [xX] conversion */
 #define NIOV 8
@@ -557,6 +557,9 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	char buf[BUF];		/* space for %c, %[diouxX], %[eEfgG] */
 	char ox[2];		/* space for 0x hex-prefix */
 	char *const ebuf = buf + sizeof(buf);
+#if SIZEOF_LONG > SIZEOF_INT
+	long ln;
+#endif
 
 	/*
 	 * Choose PADSIZE to trade efficiency vs. size.  If larger printf
@@ -592,6 +595,19 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 		PRINT(with, n); \
 	} \
 }
+#if SIZEOF_LONG > SIZEOF_INT
+	/* abandon if too larger padding */
+#define PAD_L(howmany, with) { \
+	ln = (howmany);
+	if ((long)((int)ln) != ln) { \
+	    errno = ENOMEM; \
+	    goto error; \
+	} \
+	if (ln > 0) PAD((int)ln, with); \
+}
+#else
+#define PAD_L(howmany, with) PAD(howmany, with)
+#endif
 #define	FLUSH() { \
 	if (uio.uio_resid && BSD__sprint(fp, &uio)) \
 		goto error; \
@@ -628,11 +644,12 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	 * Scan the format for conversions (`%' character).
 	 */
 	for (;;) {
+		size_t nc;
 		for (cp = fmt; (ch = *fmt) != '\0' && ch != '%'; fmt++)
 			/* void */;
-		if ((n = fmt - cp) != 0) {
-			PRINT(cp, n);
-			ret += n;
+		if ((nc = fmt - cp) != 0) {
+			PRINT(cp, nc);
+			ret += nc;
 		}
 		if (ch == '\0')
 			goto done;
@@ -716,12 +733,18 @@ reswitch:	switch (ch) {
 #if SIZEOF_PTRDIFF_T == SIZEOF_LONG
 		case 't':
 #endif
+#if SIZEOF_SIZE_T == SIZEOF_LONG
+		case 'z':
+#endif
 		case 'l':
 			flags |= LONGINT;
 			goto rflag;
 #ifdef _HAVE_SANE_QUAD_
 #if SIZEOF_PTRDIFF_T == SIZEOF_LONG_LONG
 		case 't':
+#endif
+#if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
+		case 'z':
 #endif
 		case 'q':
 			flags |= QUADINT;
@@ -832,9 +855,9 @@ fp_begin:		_double = va_arg(ap, double);
 #endif /* _HAVE_SANE_QUAD_ */
 				*va_arg(ap, long *) = ret;
 			else if (flags & SHORTINT)
-				*va_arg(ap, short *) = ret;
+				*va_arg(ap, short *) = (short)ret;
 			else
-				*va_arg(ap, int *) = ret;
+				*va_arg(ap, int *) = (int)ret;
 			continue;	/* no output */
 		case 'O':
 			flags |= LONGINT;
@@ -856,7 +879,7 @@ fp_begin:		_double = va_arg(ap, double);
 			 * defined manner.''
 			 *	-- ANSI X3J11
 			 */
-		        prec = sizeof(void*)*CHAR_BIT/4;
+			prec = (int)(sizeof(void*)*CHAR_BIT/4);
 #ifdef _HAVE_LLP64_
 			uqval = (u_long)va_arg(ap, void *);
 			flags = (flags) | QUADINT | HEXPREFIX;
@@ -883,14 +906,15 @@ fp_begin:		_double = va_arg(ap, double);
 				 */
 				const char *p = (char *)memchr(cp, 0, prec);
 
-				if (p != NULL) {
-					size = p - cp;
-					if (size > prec)
-						size = prec;
-				} else
+				if (p != NULL && (p - cp) > prec)
+					size = (int)(p - cp);
+				else
 					size = prec;
-			} else
-				size = strlen(cp);
+			}
+			else {
+				fieldsz = strlen(cp);
+				goto long_len;
+			}
 			sign = '\0';
 			break;
 		case 'U':
@@ -956,7 +980,7 @@ number:			if ((dprec = prec) >= 0)
 					cp = BSD__ultoa(ulval, ebuf, base,
 					    flags & ALT, xdigs);
 			}
-			size = ebuf - cp;
+			size = (int)(ebuf - cp);
 			break;
 		default:	/* "%?" prints ?, unless ? is NUL */
 			if (ch == '\0')
@@ -984,6 +1008,7 @@ number:			if ((dprec = prec) >= 0)
 		 * fieldsz excludes decimal prec; realsz includes it.
 		 */
 		fieldsz = size;
+long_len:
 		if (sign)
 			fieldsz++;
 		else if (flags & HEXPREFIX)
@@ -992,7 +1017,7 @@ number:			if ((dprec = prec) >= 0)
 
 		/* right-adjusting blank padding */
 		if ((flags & (LADJUST|ZEROPAD)) == 0)
-			PAD(width - realsz, blanks);
+			PAD_L(width - realsz, blanks);
 
 		/* prefix */
 		if (sign) {
@@ -1005,15 +1030,19 @@ number:			if ((dprec = prec) >= 0)
 
 		/* right-adjusting zero padding */
 		if ((flags & (LADJUST|ZEROPAD)) == ZEROPAD)
-			PAD(width - realsz, zeroes);
+			PAD_L(width - realsz, zeroes);
 
 		/* leading zeroes from decimal precision */
-		PAD(dprec - fieldsz, zeroes);
+		PAD_L(dprec - fieldsz, zeroes);
+		if (sign)
+			fieldsz--;
+		else if (flags & HEXPREFIX)
+			fieldsz -= 2;
 
 		/* the string or number proper */
 #ifdef FLOATING_POINT
 		if ((flags & FPT) == 0) {
-			PRINT(cp, size);
+			PRINT(cp, fieldsz);
 		} else {	/* glue together f_p fragments */
 			if (ch >= 'f') {	/* 'f' or 'g' */
 				if (_double == 0) {
@@ -1058,11 +1087,11 @@ number:			if ((dprec = prec) >= 0)
 			}
 		}
 #else
-		PRINT(cp, size);
+		PRINT(cp, fieldsz);
 #endif
 		/* left-adjusting padding (always blank) */
 		if (flags & LADJUST)
-			PAD(width - realsz, blanks);
+			PAD_L(width - realsz, blanks);
 
 		/* finally, adjust ret */
 		ret += width > realsz ? width : realsz;
@@ -1119,7 +1148,7 @@ cvt(value, ndigits, flags, sign, decpt, ch, length, buf)
 		while (rve < bp)
 			*rve++ = '0';
 	}
-	*length = rve - digits;
+	*length = (int)(rve - digits);
 	return (digits);
 }
 
@@ -1151,7 +1180,7 @@ exponent(p0, exp, fmtch)
 		*p++ = '0';
 		*p++ = to_char(exp);
 	}
-	return (p - p0);
+	return (int)(p - p0);
 }
 #endif /* FLOATING_POINT */
 

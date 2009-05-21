@@ -1,3 +1,7 @@
+Thu May 21 21:07:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/vsnprintf.c (BSD_vfprintf): support for 'z' modifier.
+
 Thu May 21 18:55:33 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* gem_prelude.rb (Gem.default_dir and misc.): use rubylibprefix.
