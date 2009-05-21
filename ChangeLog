@@ -1,3 +1,8 @@
+Thu May 21 18:55:33 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* gem_prelude.rb (Gem.default_dir and misc.): use rubylibprefix.
+	  follows the chagne in r23368.
+
 Thu May 21 12:07:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (RB_EVENT_HOOKS_HAVE_CALLBACK_DATA):

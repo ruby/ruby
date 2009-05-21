@@ -24,6 +24,7 @@ if defined?(Gem) then
     ConfigMap = {
       :sitedir => RbConfig::CONFIG["sitedir"],
       :ruby_version => RbConfig::CONFIG["ruby_version"],
+      :rubylibprefix => RbConfig::CONFIG["rubylibprefix"],
       :libdir => RbConfig::CONFIG["libdir"],
       :sitelibdir => RbConfig::CONFIG["sitelibdir"],
       :arch => RbConfig::CONFIG["arch"],
@@ -105,12 +106,8 @@ if defined?(Gem) then
       if defined? RUBY_FRAMEWORK_VERSION then
         File.join File.dirname(ConfigMap[:sitedir]), 'Gems',
                   ConfigMap[:ruby_version]
-      elsif RUBY_VERSION > '1.9' then
-        File.join(ConfigMap[:libdir], ConfigMap[:ruby_install_name], 'gems',
-                  ConfigMap[:ruby_version])
       else
-        File.join(ConfigMap[:libdir], ruby_engine, 'gems',
-                  ConfigMap[:ruby_version])
+        ConfigMap[:sitelibdir].sub(%r'/site_ruby/(?=[^/]+)', '/gems/')
       end
     end
   
@@ -218,8 +215,7 @@ if defined?(Gem) then
           undef_method :gem if method_defined? :gem
         end
 
-        $".delete File.join(Gem::ConfigMap[:libdir],
-                            Gem::ConfigMap[:ruby_install_name],
+        $".delete File.join(Gem::ConfigMap[:rubylibprefix],
                             Gem::ConfigMap[:ruby_version], 'rubygems.rb')
 
         require 'rubygems'
@@ -342,7 +338,7 @@ if defined?(Gem) then
 
   begin
     Gem.push_all_highest_version_gems_on_load_path
-    $" << File.join(Gem::ConfigMap[:libdir], Gem::ConfigMap[:ruby_install_name],
+    $" << File.join(Gem::ConfigMap[:rubylibprefix], 
                     Gem::ConfigMap[:ruby_version], "rubygems.rb")
   rescue Exception => e
     puts "Error loading gem paths on load path in gem_prelude"
