@@ -1,3 +1,8 @@
+Fri May 22 05:09:43 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_slice_bang): avoid call of rb_scan_args() unless
+	  it's really necessary.
+
 Thu May 21 22:17:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/id.h.tmpl, id.h (enum ruby_method_ids): added some IDs.

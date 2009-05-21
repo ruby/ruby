@@ -2175,9 +2175,9 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
     long pos, len, orig_len;
 
     rb_ary_modify_check(ary);
-    if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {
-	pos = NUM2LONG(arg1);
-	len = NUM2LONG(arg2);
+    if (argc == 2) {
+	pos = NUM2LONG(argv[0]);
+	len = NUM2LONG(argv[1]);
       delete_pos_len:
 	if (len < 0) return Qnil;
 	orig_len = RARRAY_LEN(ary);
@@ -2195,6 +2195,12 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 	rb_ary_splice(ary, pos, len, Qundef);
 	return arg2;
     }
+
+    if (argc != 1) {
+	/* error report */
+	rb_scan_args(argc, argv, "11", NULL, NULL);
+    }
+    arg1 = argv[0];
 
     if (!FIXNUM_P(arg1)) {
 	switch (rb_range_beg_len(arg1, &pos, &len, RARRAY_LEN(ary), 0)) {
