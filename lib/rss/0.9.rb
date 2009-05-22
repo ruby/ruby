@@ -411,8 +411,7 @@ module RSS
   module ListenerMixin
     private
     def initial_start_rss(tag_name, prefix, attrs, ns)
-      check_ns(tag_name, prefix, ns, "")
-      
+      check_ns(tag_name, prefix, ns, "", false)
       @rss = Rss.new(attrs['version'], @version, @encoding, @standalone)
       @rss.do_validate = @do_validate
       @rss.xml_stylesheets = @xml_stylesheets

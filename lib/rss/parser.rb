@@ -392,7 +392,7 @@ module RSS
         start_have_something_element(local, prefix, attrs, ns, next_class)
       else
         if !@do_validate or @ignore_unknown_element
-          @proc_stack.push(nil)
+          @proc_stack.push(setup_next_element_in_unknown_element)
         else
           parent = "ROOT ELEMENT???"
           if current_class.tag_name
@@ -423,13 +423,22 @@ module RSS
       [$1 || '', $2]
     end
 
-    def check_ns(tag_name, prefix, ns, require_uri)
-      unless _ns(ns, prefix) == require_uri
-        if @do_validate
+    def check_ns(tag_name, prefix, ns, require_uri, ignore_unknown_element=nil)
+      if _ns(ns, prefix) == require_uri
+        true
+      else
+        if ignore_unknown_element.nil?
+          ignore_unknown_element = @ignore_unknown_element
+        end
+
+        if ignore_unknown_element
+          false
+        elsif @do_validate
           raise NSError.new(tag_name, prefix, require_uri)
         else
           # Force bind required URI with prefix
           @ns_stack.last[prefix] = require_uri
+          true
         end
       end
     end
@@ -456,9 +465,12 @@ module RSS
     end
 
     def start_have_something_element(tag_name, prefix, attrs, ns, klass)
-      check_ns(tag_name, prefix, ns, klass.required_uri)
-      attributes = collect_attributes(tag_name, prefix, attrs, ns, klass)
-      @proc_stack.push(setup_next_element(tag_name, klass, attributes))
+      if check_ns(tag_name, prefix, ns, klass.required_uri)
+        attributes = collect_attributes(tag_name, prefix, attrs, ns, klass)
+        @proc_stack.push(setup_next_element(tag_name, klass, attributes))
+      else
+        @proc_stack.push(setup_next_element_in_unknown_element)
+      end
     end
 
     def collect_attributes(tag_name, prefix, attrs, ns, klass)
@@ -524,6 +536,11 @@ module RSS
         end
         @last_element = previous
       end
+    end
+
+    def setup_next_element_in_unknown_element
+      current_element, @last_element = @last_element, nil
+      Proc.new {@last_element = current_element}
     end
   end
 

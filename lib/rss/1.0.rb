@@ -436,7 +436,7 @@ module RSS
   module ListenerMixin
     private
     def initial_start_RDF(tag_name, prefix, attrs, ns)
-      check_ns(tag_name, prefix, ns, RDF::URI)
+      check_ns(tag_name, prefix, ns, RDF::URI, false)
 
       @rss = RDF.new(@version, @encoding, @standalone)
       @rss.do_validate = @do_validate

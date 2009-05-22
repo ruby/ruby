@@ -1,3 +1,8 @@
+Sat May 16 18:26:42 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/parser.rb, test/test_parser_1.0.rb: fix foaf:Image
+	element causes parse error even if ignore_unknown_element mode.
+
 Sat May 16 18:05:07 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/entry.rb: fix a typo.

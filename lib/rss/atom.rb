@@ -716,7 +716,7 @@ module RSS
   module ListenerMixin
     private
     def initial_start_feed(tag_name, prefix, attrs, ns)
-      check_ns(tag_name, prefix, ns, Atom::URI)
+      check_ns(tag_name, prefix, ns, Atom::URI, false)
 
       @rss = Atom::Feed.new(@version, @encoding, @standalone)
       @rss.do_validate = @do_validate
@@ -731,7 +731,7 @@ module RSS
     end
 
     def initial_start_entry(tag_name, prefix, attrs, ns)
-      check_ns(tag_name, prefix, ns, Atom::URI)
+      check_ns(tag_name, prefix, ns, Atom::URI, false)
 
       @rss = Atom::Entry.new(@version, @encoding, @standalone)
       @rss.do_validate = @do_validate
