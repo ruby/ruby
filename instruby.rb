@@ -283,7 +283,7 @@ install?(:rdoc) do
   if $rdocdir
     puts "installing rdoc"
 
-    ridatadir = File.join(CONFIG['datadir'], "ri", CONFIG['ruby_version'], "system")
+    ridatadir = File.join(CONFIG['datadir'], CONFIG['ruby_install_name'].sub('ruby', 'ri'), CONFIG['ruby_version'], "system")
     makedirs [ridatadir]
     install_recursive($rdocdir, ridatadir, :mode => $data_mode)
   end
