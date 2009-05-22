@@ -765,14 +765,15 @@ static void token_info_pop(struct parser_params*, const char *token);
 program		:  {
 			lex_state = EXPR_BEG;
 		    /*%%%*/
-			local_push(compile_for_eval);
+			$<num>$ = compile_for_eval || rb_parse_in_main();
+			local_push($<num>$);
 		    /*%
 		    %*/
 		    }
 		  top_compstmt
 		    {
 		    /*%%%*/
-			if ($2 && !compile_for_eval) {
+			if ($2 && !$<num>1) {
 			    /* last expression should not be void */
 			    if (nd_type($2) != NODE_BLOCK) void_expr($2);
 			    else {
@@ -5024,7 +5025,7 @@ yycompile0(VALUE arg, int tracing)
     NODE *tree;
     struct parser_params *parser = (struct parser_params *)arg;
 
-    if ((!compile_for_eval || rb_parse_in_main()) && rb_safe_level() == 0) {
+    if (!compile_for_eval && rb_safe_level() == 0) {
 	ruby_debug_lines = debug_lines(ruby_sourcefile);
 	if (ruby_debug_lines && ruby_sourceline > 0) {
 	    VALUE str = STR_NEW0();
