@@ -1,3 +1,15 @@
+Fri May 22 20:29:01 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* config.guess: moved into tool/.
+
+	* config.sub: ditto.
+
+	* install-sh: ditto
+
+	* configure.in: follows the moves.
+
+	* LEGAL: ditto.
+
 Fri May 22 20:10:18 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* instruby.rb: moved into tool/.

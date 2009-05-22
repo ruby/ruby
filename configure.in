@@ -1,6 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl {
 AC_INIT()
+AC_CONFIG_AUX_DIR(tool)
 
 AC_PREREQ(2.60)
 
@@ -163,7 +164,7 @@ if test ${target_archs+set}; then
 	  when(*",$archs,"*)
 	    ;;
 	  when(*)
-	    cpu=`$SHELL "$srcdir/config.sub" "${archs}-${target_os}" 2>&1` || {
+	    cpu=`$SHELL "$ac_aux_dir/config.sub" "${archs}-${target_os}" 2>&1` || {
 	        AC_MSG_RESULT([failed])
 		AC_MSG_ERROR([$cpu])
 	    }
