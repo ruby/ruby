@@ -1,3 +1,8 @@
+Sun May 17 09:31:05 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (foletypelib_name): should return
+	  encoded name corresponding to WIN32OLE.codepage.
+
 Sat May 16 18:26:42 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb, test/test_parser_1.0.rb: fix foaf:Image

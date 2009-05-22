@@ -130,7 +130,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.3.9"
+#define WIN32OLE_VERSION "1.4.0"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -5256,7 +5256,8 @@ foletypelib_guid(VALUE self)
 static VALUE
 foletypelib_name(VALUE self)
 {
-    return rb_ivar_get(self, rb_intern("name"));
+    VALUE name = rb_ivar_get(self, rb_intern("name"));
+    return rb_enc_str_new(StringValuePtr(name), strlen(StringValuePtr(name)), cWIN32OLE_enc);
 }
 
 /*
