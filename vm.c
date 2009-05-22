@@ -672,11 +672,12 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
     const rb_iseq_t *iseq = cfp->iseq;
 
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	int i;
-	int pos = cfp->pc - cfp->iseq->iseq_encoded;
+	rb_num_t i;
+	size_t pos = cfp->pc - cfp->iseq->iseq_encoded;
 
 	for (i = 0; i < iseq->insn_info_size; i++) {
 	    if (iseq->insn_info_table[i].position == pos) {
+		if (i == 0) goto found;
 		line_no = iseq->insn_info_table[i - 1].line_no;
 		goto found;
 	    }
@@ -1462,7 +1463,7 @@ static VALUE *thread_recycle_stack_slot[RECYCLE_MAX];
 static int thread_recycle_stack_count = 0;
 
 static VALUE *
-thread_recycle_stack(int size)
+thread_recycle_stack(size_t size)
 {
     if (thread_recycle_stack_count) {
 	return thread_recycle_stack_slot[--thread_recycle_stack_count];
@@ -1675,7 +1676,7 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 {
     NODE *newbody;
     VALUE klass = cref->nd_clss;
-    int noex = cref->nd_visi;
+    int noex = (int)cref->nd_visi;
     rb_iseq_t *miseq;
     GetISeqPtr(iseqval, miseq);
 
