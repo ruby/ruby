@@ -1,3 +1,7 @@
+Fri May 22 23:20:48 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* spec/default.mspec: follows runruby.rb's move at r23542.
+
 Fri May 22 21:38:55 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* NEWS: add Time#to_r.
