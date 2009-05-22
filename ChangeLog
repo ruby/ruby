@@ -1,3 +1,8 @@
+Fri May 15 15:15:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_autoload_load): checks if iv_tbl is valid.
+	  [ruby-dev:38456]
+
 Sat May 16 09:19:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (magic_comment_encoding): use rb_compile_warning() to
