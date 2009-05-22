@@ -1,3 +1,8 @@
+Sat May 16 13:49:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_autoload_load): gets rid of false warning.
+	  [ruby-core:23466]
+
 Sat May 16 10:59:54 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sample/drb/dhasenc.rb: add magic comment for encoding.

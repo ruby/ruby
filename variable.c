@@ -1399,7 +1399,7 @@ reset_safe(VALUE safe)
 }
 
 static NODE *
-autoload_node(VALUE mod, ID id, int noload)
+autoload_node(VALUE mod, ID id, const char **loadingpath)
 {
     VALUE file;
     struct st_table *tbl;
@@ -1424,14 +1424,15 @@ autoload_node(VALUE mod, ID id, int noload)
     if (!rb_ensure(autoload_provided, (VALUE)&loading, reset_safe, (VALUE)safe)) {
 	return load;
     }
-    if (!noload && loading) {
+    if (loadingpath && loading) {
+	*loadingpath = loading;
 	return load;
     }
     return 0;
 }
 
-static NODE *
-autoload_node_ptr(VALUE mod, ID id)
+static int
+autoload_node_id(VALUE mod, ID id)
 {
     struct st_table *tbl = RCLASS_IV_TBL(mod);
     st_data_t val;
@@ -1439,16 +1440,21 @@ autoload_node_ptr(VALUE mod, ID id)
     if (!tbl || !st_lookup(tbl, id, &val) || val != Qundef) {
 	return 0;
     }
-    return autoload_node(mod, id, 0);
+    return 1;
 }
 
 VALUE
-rb_autoload_load(VALUE klass, ID id)
+rb_autoload_load(VALUE mod, ID id)
 {
     VALUE file;
-    NODE *load = autoload_node_ptr(klass, id);
+    NODE *load;
+    const char *loading = 0, *src;
 
+    if (!autoload_node_id(mod, id)) return Qfalse;
+    load = autoload_node(mod, id, &loading);
     if (!load) return Qfalse;
+    src = rb_sourcefile();
+    if (src && loading && strcmp(src, loading) == 0) return Qfalse;
     file = load->nd_lit;
     return rb_require_safe(file, load->nd_nth);
 }
@@ -1457,8 +1463,11 @@ VALUE
 rb_autoload_p(VALUE mod, ID id)
 {
     VALUE file;
-    NODE *load = autoload_node_ptr(mod, id);
+    NODE *load;
+    const char *loading = 0;
 
+    if (!autoload_node_id(mod, id)) return Qnil;
+    load = autoload_node(mod, id, &loading);
     if (!load) return Qnil;
     return load && (file = load->nd_lit) ? file : Qnil;
 }
@@ -1664,7 +1673,7 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse)
   retry:
     while (tmp) {
 	if (RCLASS_IV_TBL(tmp) && st_lookup(RCLASS_IV_TBL(tmp), id, &value)) {
-	    if (value == Qundef && !autoload_node(klass, id, 1))
+	    if (value == Qundef && !autoload_node(klass, id, 0))
 		return Qfalse;
 	    return Qtrue;
 	}
