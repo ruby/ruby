@@ -4,7 +4,7 @@ load "./rbconfig.rb"
 include RbConfig
 $".unshift File.expand_path("./rbconfig.rb")
 
-srcdir = File.dirname(__FILE__)
+srcdir = File.expand_path('..', File.dirname(__FILE__))
 unless defined?(CROSS_COMPILING) and CROSS_COMPILING
   $:.replace([File.expand_path("lib", srcdir), Dir.pwd])
 end

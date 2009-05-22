@@ -1911,7 +1911,7 @@ else
   MINIRUBY='./miniruby$(EXEEXT) -I$(srcdir)/lib'
   MINIRUBY="$MINIRUBY"' -I$(EXTOUT)/common -I./- -r$(srcdir)/ext/purelib.rb'
   PREP='miniruby$(EXEEXT)'
-  RUNRUBY='$(MINIRUBY) $(srcdir)/runruby.rb --extout=$(EXTOUT)'
+  RUNRUBY='$(MINIRUBY) $(srcdir)/tool/runruby.rb --extout=$(EXTOUT)'
 fi
 AC_SUBST(MINIRUBY)
 AC_SUBST(PREP)

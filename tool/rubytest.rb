@@ -15,7 +15,7 @@ end
 $stderr.reopen($stdout)
 error = ''
 
-srcdir = File.dirname(__FILE__)
+srcdir = File.expand_path('..', File.dirname(__FILE__))
 `#{ruby} #{srcdir}/sample/test.rb`.each_line do |line|
   if line =~ /^end of test/
     print "\ntest succeeded\n"

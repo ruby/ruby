@@ -33,7 +33,7 @@ while arg = ARGV[0]
   ARGV.shift
 end
 
-srcdir ||= File.dirname(__FILE__)
+srcdir ||= File.expand_path('..', File.dirname(__FILE__))
 archdir ||= '.'
 
 abs_archdir = File.expand_path(archdir)

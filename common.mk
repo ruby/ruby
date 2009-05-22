@@ -103,7 +103,7 @@ SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
 		--make-flags="$(MAKEFLAGS)"
 EXTMK_ARGS    =	$(SCRIPT_ARGS) --extension $(EXTS) --extstatic $(EXTSTATIC) \
 		--make-flags="MINIRUBY='$(MINIRUBY)'" --
-INSTRUBY      =	$(MINIRUBY) $(srcdir)/instruby.rb
+INSTRUBY      =	$(MINIRUBY) $(srcdir)/tool/instruby.rb
 INSTRUBY_ARGS =	$(SCRIPT_ARGS) \
 		--data-mode=$(INSTALL_DATA_MODE) \
 		--prog-mode=$(INSTALL_PROG_MODE) \
@@ -396,7 +396,7 @@ btest-ruby: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 	@$(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib" -q $(OPTS)
 
 test-sample: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
-	@$(RUNRUBY) $(srcdir)/rubytest.rb
+	@$(RUNRUBY) $(srcdir)/tool/rubytest.rb
 
 test-knownbug: miniruby$(EXEEXT) $(PROGRAM) $(RBCONFIG) PHONY
 	$(MINIRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM)" $(OPTS) $(srcdir)/KNOWNBUGS.rb
@@ -410,8 +410,8 @@ extconf: $(PREP)
 	$(MAKEDIRS) "$(EXTCONFDIR)"
 	$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
-$(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
-	@$(MINIRUBY) $(srcdir)/mkconfig.rb -timestamp=$@ \
+$(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(PREP)
+	@$(MINIRUBY) $(srcdir)/tool/mkconfig.rb -timestamp=$@ \
 		-install_name=$(RUBY_INSTALL_NAME) \
 		-so_name=$(RUBY_SO_NAME) rbconfig.rb
 

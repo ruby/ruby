@@ -1,3 +1,19 @@
+Fri May 22 20:10:18 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* instruby.rb: moved into tool/.
+
+	* mkconfig.rb: ditto.
+
+	* rubytest.rb: ditto.
+
+	* runruby.rb: ditto.
+
+	* common.mk: follows the moves.
+
+	* configure.in: ditto.
+
+	* win32/Makefile.sub: ditto.
+
 Fri May 22 05:09:43 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_slice_bang): avoid call of rb_scan_args() unless

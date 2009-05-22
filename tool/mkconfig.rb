@@ -4,7 +4,7 @@
 $install_name ||= nil
 $so_name ||= nil
 
-srcdir = File.dirname(__FILE__)
+srcdir = File.expand_path('..', File.dirname(__FILE__))
 $:.replace [srcdir+"/lib"] unless defined?(CROSS_COMPILING)
 $:.unshift(".")
 
