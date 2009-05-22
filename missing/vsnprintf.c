@@ -123,6 +123,10 @@
 #define	NULL	0
 #endif
 
+#if SIZEOF_LONG > SIZEOF_INT
+# include <errno.h>
+#endif
+
 /*
  * NB: to fit things in six character monocase externals, the stdio
  * code uses the prefix `__s' for stdio objects, typically followed
@@ -598,7 +602,7 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 #if SIZEOF_LONG > SIZEOF_INT
 	/* abandon if too larger padding */
 #define PAD_L(howmany, with) { \
-	ln = (howmany);
+	ln = (howmany); \
 	if ((long)((int)ln) != ln) { \
 	    errno = ENOMEM; \
 	    goto error; \

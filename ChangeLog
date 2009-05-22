@@ -1,3 +1,9 @@
+Fri May 22 23:22:53 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* missing/vsnprintf.c (errno): [BUG] fixes a compilation 
+	  error on SIZEOF_LONG > SIZEOF_INT.
+	  (BSD_vfprintf): ditto.
+
 Fri May 22 23:20:48 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* spec/default.mspec: follows runruby.rb's move at r23542.
