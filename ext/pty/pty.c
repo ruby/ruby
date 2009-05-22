@@ -437,8 +437,8 @@ pty_close_pty(VALUE assoc)
 
 /*
  * call-seq:
- *   master_io, slave_file = PTY.open
- *   PTY.open {|master_io, slave_file| ... }
+ *   PTY.open   => [master_io, slave_file]
+ *   PTY.open {|master_io, slave_file| ... }    => block value
  *
  * Allocates a pty (pseudo-terminal).
  *
@@ -450,7 +450,7 @@ pty_close_pty(VALUE assoc)
  * The value of the block is returned.
  * master_io and slave_file is closed when return if they are not closed.
  *
- * The filename of the slave_file is slave_file.path.
+ * The path name of the terminal device can be gotten by slave_file.path.
  *
  *   PTY.open {|m, s|
  *     p m      #=> #<IO: pty /dev/pts/1>
