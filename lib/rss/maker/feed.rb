@@ -182,6 +182,7 @@ module RSS
               set_default_values do
                 entry = feed.class::Entry.new
                 set = setup_values(entry)
+                entry.dc_dates.clear
                 setup_other_elements(feed, entry)
                 if set
                   feed.entries << entry

@@ -1,3 +1,9 @@
+Sat May 16 18:02:57 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/feed.rb, test/test_maker_atom_entry.rb,
+	test/test_maker_atom_feed.rb: fix duplicated dc:date.
+	Reported by Kazuhiro NISHIYAMA. Thanks!!! [ruby-list:46014]
+
 Sat May 16 17:57:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/lib/dl/callback.rb (DL#remove_callback_internal): ignore
