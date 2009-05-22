@@ -1,3 +1,8 @@
+Wed May 20 06:20:05 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile#unlink): close first for Windows.  a
+	  patch from Florian Frank.  [ruby-core:23505]
+
 Wed May 20 00:05:52 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* vm_method.c (rb_attr): should preserve encoding info.

@@ -136,7 +136,10 @@ class Tempfile < DelegateClass(File)
   def unlink
     # keep this order for thread safeness
     begin
-      File.unlink(@tmpname) if File.exist?(@tmpname)
+      if File.exist?(@tmpname)
+        closed? or close
+        File.unlink(@tmpname)
+      end
       @@cleanlist.delete(@tmpname)
       @data = @tmpname = nil
       ObjectSpace.undefine_finalizer(self)
