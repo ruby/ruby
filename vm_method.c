@@ -432,6 +432,7 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
 {
     const char *name;
     ID attriv;
+    VALUE aname;
     int noex;
 
     if (!ex) {
@@ -459,7 +460,9 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
     if (!name) {
 	rb_raise(rb_eArgError, "argument needs to be symbol or string");
     }
-    attriv = rb_intern_str(rb_sprintf("@%s", name));
+    aname = rb_sprintf("@%s", name);
+    rb_enc_copy(aname, rb_id2str(id));
+    attriv = rb_intern_str(aname);
     if (read) {
 	rb_add_method(klass, id, NEW_IVAR(attriv), noex);
     }

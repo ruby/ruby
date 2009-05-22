@@ -1,3 +1,8 @@
+Wed May 20 00:05:52 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* vm_method.c (rb_attr): should preserve encoding info.
+	  [ruby-dev:38498]
+
 Sun May 17 14:23:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (rb_parse_in_eval): returns true in true eval, not in
