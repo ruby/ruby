@@ -1,4 +1,5 @@
 #! /usr/bin/ruby -Ke
+# -*- encoding: euc-jp -*-
 
 class Board
   def clr
