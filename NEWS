@@ -54,6 +54,9 @@ with all sufficient information, see the ChangeLog file.
       * Time.new have optional arguments to specify date with time offset.
       * Time#getlocal, Time#localtime have optional time offset argument.
 
+    * new method:
+      * Time#to_r
+
     * incompatible changes:
       * The year argument of Time.{utc,gm,local,mktime} is now interpreted as
         the value itself.  For example, Time.utc(99) means the year 99 AD,
