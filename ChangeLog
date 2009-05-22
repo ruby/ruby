@@ -1,3 +1,8 @@
+Sat May 16 17:57:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/lib/dl/callback.rb (DL#remove_callback_internal): ignore
+	  unbound function.  [ruby-dev:38474]
+
 Sat May 16 13:49:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_autoload_load): gets rid of false warning.

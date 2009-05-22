@@ -48,7 +48,7 @@ module DL
         }
       }
     end
-    if( proc_entry[ctype][index] )
+    if( index and proc_entry[ctype][index] )
       proc_entry[ctype][index] = nil
       return true
     else
