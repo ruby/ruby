@@ -2292,10 +2292,18 @@ esac
 
 rubylibprefix='${libdir}/${RUBY_BASE_NAME}'
 AC_ARG_WITH(rubylibprefix,
-	    AS_HELP_STRING([--with-rubylibprefix=DIR], [prefix for ruby libraries [[LIBDIR/RUBY_INSTALL_NAME]]]),
+	    AS_HELP_STRING([--with-rubylibprefix=DIR], [prefix for ruby libraries [[LIBDIR/RUBY_BASE_NAME]]]),
 	    [rubylibprefix=$withval])
 RUBY_LIB_PREFIX=`eval echo \\"${rubylibprefix}\\"`
 AC_SUBST(rubylibprefix)
+
+RI_BASE_NAME=`echo ${RUBY_BASE_NAME} | sed 's/ruby/ri/'`
+ridir='${DATAROOTDIR}/${RI_BASE_NAME}'
+AC_ARG_WITH(ridir,
+	    AS_HELP_STRING([--with-ridir=DIR], [ri documentation [[DATAROOTDIR/ri]]]),
+	    [ridir=$withval])
+RIDIR=`eval echo \\"${ridir}\\"`
+AC_SUBST(ridir)
 
 AC_ARG_WITH(ruby-version,
 	    AS_HELP_STRING([--with-ruby-version=STR], [ruby version string for version specific directories [[full]] (full|minor|STR)]),

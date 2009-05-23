@@ -140,9 +140,6 @@ datadir = $(prefix)/share
 !ifndef EXTOUT
 EXTOUT = .ext
 !endif
-!ifndef RIDATADIR
-RIDATADIR = $(DESTDIR)$(datadir)/ri/$(MAJOR).$(MINOR)/system
-!endif
 !ifndef TESTUI
 TESTUI = console
 !endif
@@ -595,6 +592,7 @@ s,@includedir@,$${prefix}/include,;t t
 s,@oldincludedir@,/usr/include,;t t
 s,@infodir@,$${prefix}/info,;t t
 s,@mandir@,$${prefix}/man,;t t
+s,@ridir@,$${prefix}/share/ri,;t t
 s,@build@,$(CPU)-pc-$(PLATFORM),;t t
 s,@build_alias@,$(CPU)-$(PLATFORM),;t t
 s,@build_cpu@,$(CPU),;t t

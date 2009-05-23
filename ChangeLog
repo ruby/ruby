@@ -1,3 +1,22 @@
+Sun May 24 00:52:54 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* configure.in ($ridir): new configuration. [ruby-core:23520].
+	  c.f. [ruby-core:23519].
+
+	  (--with-ridir): new configure option.
+
+	* tool/instruby.rb (:doc, :rdoc): uses $ridir instead of
+	  a fixed path.
+
+	* lib/rdoc/ri/paths.rb: follows $ridir.
+
+	* Makefile.in: removes RIDATADIR which is no longer used.
+
+	* bcc32/Makefile.sub: generates the 'ridir' entry for RbConfig.
+	  removes RIDATADIR which is no longer used.
+
+	* win32/Makefile.sub: ditto.
+
 Sat May 23 23:52:33 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_each_char): return original string.

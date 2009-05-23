@@ -28,14 +28,25 @@ module RDoc::RI::Paths
 
   VERSION = RbConfig::CONFIG['ruby_version']
 
-  if m = /ruby/.match(RbConfig::CONFIG['RUBY_INSTALL_NAME'])
-    m = [m.pre_match, m.post_match]
+  if VERSION > '1.9.1'
+    if m = /ruby/.match(RbConfig::CONFIG['RUBY_INSTALL_NAME'])
+      m = [m.pre_match, m.post_match]
+    else
+      m = [""] * 2
+    end
+    ri = "#{m[0]}ri#{m[1]}"
+    rdoc = "#{m[0]}rdoc#{m[1]}"
+    base    = File.join(RbConfig::CONFIG['datadir'], ri, VERSION)
   else
-    m = [""] * 2
+    if m = /ruby/.match(RbConfig::CONFIG['RUBY_BASE_NAME'])
+      m = [m.pre_match, m.post_match]
+    else
+      m = [""] * 2
+    end
+    ri = "#{m[0]}ri#{m[1]}"
+    rdoc = "#{m[0]}rdoc#{m[1]}"
+    base = File.join(RbConfig::CONFIG['ridir'], VERSION)
   end
-  ri = "#{m[0]}ri#{m[1]}"
-  rdoc = "#{m[0]}rdoc#{m[1]}"
-  base    = File.join(RbConfig::CONFIG['datadir'], ri, VERSION)
   SYSDIR  = File.join(base, "system")
   SITEDIR = File.join(base, "site")
   HOMEDIR = (File.expand_path("~/.#{rdoc}") rescue nil)
