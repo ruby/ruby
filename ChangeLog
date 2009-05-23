@@ -1,3 +1,8 @@
+Sat May 23 18:48:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/cptr.c (rb_dlptr_cmp): return signed value, and restric
+	  to Fixnum.  [ruby-dev:38533]
+
 Fri May 22 23:22:53 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* missing/vsnprintf.c (errno): [BUG] fixes a compilation 

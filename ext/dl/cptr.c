@@ -318,9 +318,12 @@ VALUE
 rb_dlptr_cmp(VALUE self, VALUE other)
 {
     void *ptr1, *ptr2;
+    SIGNED_VALUE diff;
     ptr1 = rb_dlptr2cptr(self);
     ptr2 = rb_dlptr2cptr(other);
-    return PTR2NUM((long)ptr1 - (long)ptr2);
+    diff = (SIGNED_VALUE)ptr1 - (SIGNED_VALUE)ptr2;
+    if (!diff) return INT2FIX(0);
+    return diff > 0 ? INT2NUM(1) : INT2NUM(-1);
 }
 
 VALUE
