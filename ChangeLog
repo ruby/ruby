@@ -1,3 +1,11 @@
+Sat May 23 23:52:33 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_each_char): return original string.
+	  [ruby-core:23499]
+
+	* string.c (rb_str_each_codepoint): protect string from
+	  modification.
+
 Sat May 23 21:48:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/handle.c (rb_dlhandle_s_sym): added a method to access

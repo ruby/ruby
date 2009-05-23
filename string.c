@@ -5925,6 +5925,7 @@ rb_str_each_byte(VALUE str)
 static VALUE
 rb_str_each_char(VALUE str)
 {
+    VALUE orig = str;
     int i, len, n;
     const char *ptr;
     rb_encoding *enc;
@@ -5948,7 +5949,7 @@ rb_str_each_char(VALUE str)
 	    rb_yield(rb_str_subseq(str, i, n));
 	}
     }
-    return str;
+    return orig;
 }
 
 /*
@@ -5984,6 +5985,7 @@ rb_str_each_char(VALUE str)
 static VALUE
 rb_str_each_codepoint(VALUE str)
 {
+    VALUE orig = str;
     int len, n;
     unsigned int c;
     const char *ptr, *end;
@@ -5991,6 +5993,7 @@ rb_str_each_codepoint(VALUE str)
 
     if (single_byte_optimizable(str)) return rb_str_each_byte(str);
     RETURN_ENUMERATOR(str, 0, 0);
+    str = rb_str_new4(str);
     ptr = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
     end = RSTRING_END(str);
@@ -6000,7 +6003,7 @@ rb_str_each_codepoint(VALUE str)
 	rb_yield(UINT2NUM(c));
 	ptr += n;
     }
-    return str;
+    return orig;
 }
 
 static long
