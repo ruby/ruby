@@ -1,3 +1,11 @@
+Sat May 23 21:48:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/handle.c (rb_dlhandle_s_sym): added a method to access
+	  using RTLD_NEXT.  [ruby-dev:38152]
+
+	* ext/dl/handle.c (Init_dlhandle): added constants DEFAULT and
+	  NEXT which correspond to RTLD_DEFAULT and RTLD_NEXT.
+
 Sat May 23 18:53:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/lib/dl/cparser.rb (DL::CParser#parse_struct_signature):
