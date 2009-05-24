@@ -1,3 +1,7 @@
+Mon May 25 05:02:34 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (HTTP_STATUS): typo fixed.   [ruby-dev:38538]
+
 Thu May 21 08:54:32 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/openssl/ossl_digest.c (Init_ossl_digest): avoid recursing
