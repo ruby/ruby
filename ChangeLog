@@ -1,3 +1,8 @@
+Mon May 25 07:50:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_partition): should use the converted result.  a
+	  patch from Marc-Andre Lafortune at [ruby-core:23540].
+
 Mon May 25 05:32:19 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi/core.rb (CGI::HTTP_STATUS): typo fixed.  a patch from
