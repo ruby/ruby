@@ -1,3 +1,12 @@
+Sun May 24 22:48:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_exec_recursive_paired): new function for proper
+	  handling of recursive arrays.  [EXPERIMENTAL] [ruby-core:23402]
+
+	* array.c (rb_ary_equal, rb_ary_eql, rb_ary_cmp): use above.
+
+	* hash.c (hash_equal): ditto.
+
 Sun May 24 22:39:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (syserr_initialize): errno is int.

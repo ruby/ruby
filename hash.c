@@ -1451,7 +1451,7 @@ recursive_eql(VALUE hash, VALUE dt, int recur)
 {
     struct equal_data *data;
 
-    if (recur) return Qfalse;
+    if (recur) return Qtrue;	/* Subtle! */
     data = (struct equal_data*)dt;
     data->result = Qtrue;
     rb_hash_foreach(hash, eql_i, dt);
@@ -1488,7 +1488,7 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 
     data.tbl = RHASH(hash2)->ntbl;
     data.eql = eql;
-    return rb_exec_recursive(recursive_eql, hash1, (VALUE)&data);
+    return rb_exec_recursive_paired(recursive_eql, hash1, hash2, (VALUE)&data);
 }
 
 /*

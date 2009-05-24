@@ -3310,26 +3310,39 @@ rb_barrier_destroy(VALUE self)
 static ID recursive_key;
 
 static VALUE
-recursive_check(VALUE hash, VALUE obj)
+recursive_check(VALUE hash, VALUE obj, VALUE paired_obj)
 {
     if (NIL_P(hash) || TYPE(hash) != T_HASH) {
 	return Qfalse;
     }
     else {
-	VALUE list = rb_hash_aref(hash, ID2SYM(rb_frame_this_func()));
+	VALUE sym = ID2SYM(rb_frame_this_func());
+	VALUE list = rb_hash_aref(hash, sym);
+	VALUE pair_list;
 
 	if (NIL_P(list) || TYPE(list) != T_HASH)
 	    return Qfalse;
-	if (NIL_P(rb_hash_lookup(list, obj)))
+	pair_list = rb_hash_lookup2(list, obj, Qundef);
+	if (pair_list == Qundef)
 	    return Qfalse;
+	if (paired_obj) {
+	    if (TYPE(pair_list) != T_HASH) {
+		if (pair_list != paired_obj)
+		    return Qfalse;
+	    }
+	    else {
+		if (NIL_P(rb_hash_lookup(pair_list, paired_obj)))
+		    return Qfalse;
+	    }
+	}
 	return Qtrue;
     }
 }
 
 static VALUE
-recursive_push(VALUE hash, VALUE obj)
+recursive_push(VALUE hash, VALUE obj, VALUE paired_obj)
 {
-    VALUE list, sym;
+    VALUE list, sym, pair_list;
 
     sym = ID2SYM(rb_frame_this_func());
     if (NIL_P(hash) || TYPE(hash) != T_HASH) {
@@ -3344,59 +3357,97 @@ recursive_push(VALUE hash, VALUE obj)
 	list = rb_hash_new();
 	rb_hash_aset(hash, sym, list);
     }
-    rb_hash_aset(list, obj, Qtrue);
+    if (!paired_obj) {
+	rb_hash_aset(list, obj, Qtrue);
+    }
+    else if ((pair_list = rb_hash_lookup2(list, obj, Qundef)) == Qundef) {
+	rb_hash_aset(list, obj, paired_obj);
+    }
+    else {
+	if (TYPE(pair_list) != T_HASH){
+	    VALUE other_paired_obj = pair_list;
+	    pair_list = rb_hash_new();
+	    rb_hash_aset(pair_list, other_paired_obj, Qtrue);
+	    rb_hash_aset(list, obj, pair_list);
+	}
+	rb_hash_aset(pair_list, paired_obj, Qtrue);
+    }
     return hash;
 }
 
 static void
-recursive_pop(VALUE hash, VALUE obj)
+recursive_pop(VALUE hash, VALUE obj, VALUE paired_obj)
 {
-    VALUE list, sym;
+    VALUE list, sym, pair_list, symname, thrname;
 
     sym = ID2SYM(rb_frame_this_func());
     if (NIL_P(hash) || TYPE(hash) != T_HASH) {
-	VALUE symname;
-	VALUE thrname;
 	symname = rb_inspect(sym);
 	thrname = rb_inspect(rb_thread_current());
-
 	rb_raise(rb_eTypeError, "invalid inspect_tbl hash for %s in %s",
 		 StringValuePtr(symname), StringValuePtr(thrname));
     }
     list = rb_hash_aref(hash, sym);
     if (NIL_P(list) || TYPE(list) != T_HASH) {
-	VALUE symname = rb_inspect(sym);
-	VALUE thrname = rb_inspect(rb_thread_current());
+	symname = rb_inspect(sym);
+	thrname = rb_inspect(rb_thread_current());
 	rb_raise(rb_eTypeError, "invalid inspect_tbl list for %s in %s",
 		 StringValuePtr(symname), StringValuePtr(thrname));
+    }
+    if (paired_obj) {
+	pair_list = rb_hash_lookup2(list, obj, Qundef);
+	if (pair_list == Qundef) {
+	    symname = rb_inspect(sym);
+	    thrname = rb_inspect(rb_thread_current());
+	    rb_raise(rb_eTypeError, "invalid inspect_tbl pair_list for %s in %s",
+		     StringValuePtr(symname), StringValuePtr(thrname));
+	}
+	if (TYPE(pair_list) == T_HASH) {
+	    rb_hash_delete(pair_list, paired_obj);
+	    if (!RHASH_EMPTY_P(pair_list)) {
+		return; /* keep hash until is empty */
+	    }
+	}
     }
     rb_hash_delete(list, obj);
 }
 
-VALUE
-rb_exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
+static VALUE
+exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE arg)
 {
     volatile VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
     VALUE objid = rb_obj_id(obj);
 
-    if (recursive_check(hash, objid)) {
+    if (recursive_check(hash, objid, pairid)) {
 	return (*func) (obj, arg, Qtrue);
     }
     else {
 	VALUE result = Qundef;
 	int state;
 
-	hash = recursive_push(hash, objid);
+	hash = recursive_push(hash, objid, pairid);
 	PUSH_TAG();
 	if ((state = EXEC_TAG()) == 0) {
 	    result = (*func) (obj, arg, Qfalse);
 	}
 	POP_TAG();
-	recursive_pop(hash, objid);
+	recursive_pop(hash, objid, pairid);
 	if (state)
 	    JUMP_TAG(state);
 	return result;
     }
+}
+
+VALUE
+rb_exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
+{
+    return exec_recursive(func, obj, 0, arg);
+}
+
+VALUE
+rb_exec_recursive_paired(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE paired_obj, VALUE arg)
+{
+    return exec_recursive(func, obj, rb_obj_id(paired_obj), arg);
 }
 
 /* tracer */

@@ -2740,7 +2740,7 @@ recursive_equal(VALUE ary1, VALUE ary2, int recur)
 {
     long i;
 
-    if (recur) return Qfalse;
+    if (recur) return Qtrue; /* Subtle! */
     for (i=0; i<RARRAY_LEN(ary1); i++) {
 	if (!rb_equal(rb_ary_elt(ary1, i), rb_ary_elt(ary2, i)))
 	    return Qfalse;
@@ -2773,7 +2773,7 @@ rb_ary_equal(VALUE ary1, VALUE ary2)
 	return rb_equal(ary2, ary1);
     }
     if (RARRAY_LEN(ary1) != RARRAY_LEN(ary2)) return Qfalse;
-    return rb_exec_recursive(recursive_equal, ary1, ary2);
+    return rb_exec_recursive_paired(recursive_equal, ary1, ary2, ary2);
 }
 
 static VALUE
@@ -2781,7 +2781,7 @@ recursive_eql(VALUE ary1, VALUE ary2, int recur)
 {
     long i;
 
-    if (recur) return Qfalse;
+    if (recur) return Qtrue; /* Subtle! */
     for (i=0; i<RARRAY_LEN(ary1); i++) {
 	if (!rb_eql(rb_ary_elt(ary1, i), rb_ary_elt(ary2, i)))
 	    return Qfalse;
@@ -2803,7 +2803,7 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
     if (ary1 == ary2) return Qtrue;
     if (TYPE(ary2) != T_ARRAY) return Qfalse;
     if (RARRAY_LEN(ary1) != RARRAY_LEN(ary2)) return Qfalse;
-    return rb_exec_recursive(recursive_eql, ary1, ary2);
+    return rb_exec_recursive_paired(recursive_eql, ary1, ary2, ary2);
 }
 
 static VALUE
@@ -2870,7 +2870,7 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
 {
     long i, len;
 
-    if (recur) return Qnil;
+    if (recur) return Qundef;	/* Subtle! */
     len = RARRAY_LEN(ary1);
     if (len > RARRAY_LEN(ary2)) {
 	len = RARRAY_LEN(ary2);
@@ -2912,7 +2912,7 @@ rb_ary_cmp(VALUE ary1, VALUE ary2)
 
     ary2 = to_ary(ary2);
     if (ary1 == ary2) return INT2FIX(0);
-    v = rb_exec_recursive(recursive_cmp, ary1, ary2);
+    v = rb_exec_recursive_paired(recursive_cmp, ary1, ary2, ary2);
     if (v != Qundef) return v;
     len = RARRAY_LEN(ary1) - RARRAY_LEN(ary2);
     if (len == 0) return INT2FIX(0);
