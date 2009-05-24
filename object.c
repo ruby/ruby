@@ -772,6 +772,8 @@ static st_table *immediate_frozen_tbl = 0;
  *  There is no way to unfreeze a frozen object. See also
  *  <code>Object#frozen?</code>.
  *
+ *  This method returns self.
+ *
  *     a = [ "a", "b", "c" ]
  *     a.freeze
  *     a << "z"
@@ -1176,9 +1178,11 @@ rb_mod_to_s(VALUE klass)
 
 /*
  *  call-seq:
- *     mod.freeze
+ *     mod.freeze       => mod
  *
  *  Prevents further modifications to <i>mod</i>.
+ *
+ *  This method returns self.
  */
 
 static VALUE
