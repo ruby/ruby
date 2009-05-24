@@ -3,6 +3,13 @@ Mon May 25 07:50:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* string.c (rb_str_partition): should use the converted result.  a
 	  patch from Marc-Andre Lafortune at [ruby-core:23540].
 
+Mon May 25 06:25:38 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_hash.rb (TestHash::test_equal2): recursive hashes
+	  are handled properly now. ref: [ruby-core:23402]
+
+	* test/ruby/test_m17n.rb (TestM17N#test_sprintf_p): test fixed
+
 Mon May 25 05:32:19 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi/core.rb (CGI::HTTP_STATUS): typo fixed.  a patch from
