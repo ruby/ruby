@@ -1,7 +1,9 @@
-Mon May 25 07:50:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon May 25 08:06:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_partition): should use the converted result.  a
 	  patch from Marc-Andre Lafortune at [ruby-core:23540].
+
+	* string.c (rb_str_rpartition): ditto.
 
 Mon May 25 06:25:38 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

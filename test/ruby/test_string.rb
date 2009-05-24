@@ -1712,6 +1712,8 @@ class TestString < Test::Unit::TestCase
     assert_equal(%w(hel l o), "hello".rpartition(/l/))
     assert_equal(%w(hel l o), "hello".rpartition("l"))
     assert_raise(TypeError) { "hello".rpartition(1) }
+    def (hyphen = Object.new).to_str; "-"; end
+    assert_equal(%w(foo - bar), "foo-bar".rpartition(hyphen), '[ruby-core:23540]')
   end
 
   def test_setter
