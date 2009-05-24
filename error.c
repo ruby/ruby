@@ -949,7 +949,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "01", &mesg);
 	error = rb_const_get(klass, rb_intern("Errno"));
     }
-    if (!NIL_P(error)) err = strerror(NUM2LONG(error));
+    if (!NIL_P(error)) err = strerror(NUM2INT(error));
     else err = "unknown error";
     if (!NIL_P(mesg)) {
 	VALUE str = mesg;

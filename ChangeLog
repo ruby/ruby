@@ -1,3 +1,7 @@
+Sun May 24 22:39:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (syserr_initialize): errno is int.
+
 Sun May 24 00:52:54 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* configure.in ($ridir): new configuration. [ruby-core:23520].
