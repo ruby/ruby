@@ -4,9 +4,9 @@ load "./rbconfig.rb"
 include RbConfig
 $".unshift File.expand_path("./rbconfig.rb")
 
-srcdir = File.expand_path('..', File.dirname(__FILE__))
+srcdir = File.expand_path('../..', __FILE__)
 unless defined?(CROSS_COMPILING) and CROSS_COMPILING
-  $:.replace([File.expand_path("lib", srcdir), Dir.pwd])
+  $:.replace([srcdir+"/lib", Dir.pwd])
 end
 require 'fileutils'
 require 'shellwords'

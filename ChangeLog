@@ -1,3 +1,7 @@
+Mon May 25 11:47:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/mkconfig.rb, tool/instruby.rb: removed redundant code.
+
 Mon May 25 09:34:09 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_hash): avoid calling rb_enc_str_asciionly_p().
