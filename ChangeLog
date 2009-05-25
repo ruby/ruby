@@ -1,3 +1,8 @@
+Tue May 26 03:41:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (rb_gmtime, rb_localtime): gmtime and localtime return
+	  NULL on error.  [ruby-core:23551]
+
 Tue May 26 03:38:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_each_char, rb_str_each_codepoint): string

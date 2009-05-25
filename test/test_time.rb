@@ -1,7 +1,7 @@
 require 'time'
 require 'test/unit'
 
-class TestTimeExtention < Test::Unit::TestCase # :nodoc:
+class TestTimeExtension < Test::Unit::TestCase # :nodoc:
   def test_rfc822
     assert_equal(Time.utc(1976, 8, 26, 14, 30) + 4 * 3600,
                  Time.rfc2822("26 Aug 76 14:30 EDT"))
