@@ -433,11 +433,17 @@ void rb_set_errinfo(VALUE);
 
 SIGNED_VALUE rb_num2long(VALUE);
 VALUE rb_num2ulong(VALUE);
+#define NUM2LONG_internal(x) (FIXNUM_P(x) ? FIX2LONG(x) : rb_num2long(x))
+#ifdef __GNUC__
+#define NUM2LONG(x) \
+    __extension__ ({VALUE num2long_x = (x); NUM2LONG_internal(num2long_x);})
+#else
 static inline long
 NUM2LONG(VALUE x)
 {
-    return FIXNUM_P(x) ? FIX2LONG(x) : rb_num2long(x);
+    return NUM2LONG_internal(x);
 }
+#endif
 #define NUM2ULONG(x) rb_num2ulong((VALUE)x)
 #if SIZEOF_INT < SIZEOF_LONG
 long rb_num2int(VALUE);
@@ -672,7 +678,7 @@ NORETURN(void rb_out_of_int(SIGNED_VALUE num));
     int i = (int)(n); \
     if ((long)i != (n)) rb_out_of_int(n)
 #ifdef __GNUC__
-#define rb_long2int(i2l_n) ({rb_long2int_internal(i2l_n, i2l_i); i2l_i;})
+#define rb_long2int(i2l_n) __extension__ ({rb_long2int_internal(i2l_n, i2l_i); i2l_i;})
 #else
 static inline int
 rb_long2int(long n) {rb_long2int_internal(n, i); return i;}

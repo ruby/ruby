@@ -1,3 +1,7 @@
+Tue May 26 05:38:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (NUM2LONG): added GCC specific optimization.
+
 Tue May 26 03:41:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (rb_gmtime, rb_localtime): gmtime and localtime return
