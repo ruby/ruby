@@ -1,4 +1,6 @@
-Tue May 26 05:38:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue May 26 05:39:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (FilePathValue): prevent from GC.
 
 	* include/ruby/ruby.h (NUM2LONG): added GCC specific optimization.
 
