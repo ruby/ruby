@@ -1,3 +1,8 @@
+Tue May 26 03:38:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_each_char, rb_str_each_codepoint): string
+	  length must be long.
+
 Mon May 25 13:27:32 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* lib/mkmf.rb: dont use gsub! method for frozen string.

@@ -5933,7 +5933,7 @@ static VALUE
 rb_str_each_char(VALUE str)
 {
     VALUE orig = str;
-    int i, len, n;
+    long i, len, n;
     const char *ptr;
     rb_encoding *enc;
 
@@ -5993,7 +5993,8 @@ static VALUE
 rb_str_each_codepoint(VALUE str)
 {
     VALUE orig = str;
-    int len, n;
+    long len;
+    int n;
     unsigned int c;
     const char *ptr, *end;
     rb_encoding *enc;
