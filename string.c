@@ -815,10 +815,36 @@ rb_obj_as_string(VALUE obj)
 }
 
 static VALUE
+str_replace(VALUE str, VALUE str2)
+{
+    long len;
+
+    len = RSTRING_LEN(str2);
+    if (STR_ASSOC_P(str2)) {
+	str2 = rb_str_new4(str2);
+    }
+    if (STR_SHARED_P(str2)) {
+	STR_SET_NOEMBED(str);
+	RSTRING(str)->as.heap.len = len;
+	RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
+	FL_SET(str, ELTS_SHARED);
+	FL_UNSET(str, STR_ASSOC);
+	RSTRING(str)->as.heap.aux.shared = RSTRING(str2)->as.heap.aux.shared;
+    }
+    else {
+	str_replace_shared(str, str2);
+    }
+
+    OBJ_INFECT(str, str2);
+    rb_enc_cr_str_exact_copy(str, str2);
+    return str;
+}
+
+static VALUE
 str_duplicate(VALUE klass, VALUE str)
 {
     VALUE dup = str_alloc(klass);
-    rb_str_replace(dup, str);
+    str_replace(dup, str);
     return dup;
 }
 
@@ -831,7 +857,7 @@ rb_str_dup(VALUE str)
 VALUE
 rb_str_resurrect(VALUE str)
 {
-    return rb_str_replace(str_alloc(rb_cString), str);
+    return str_replace(str_alloc(rb_cString), str);
 }
 
 /*
@@ -2179,8 +2205,8 @@ int
 rb_str_hash(VALUE str)
 {
     int e = ENCODING_GET(str);
-    if (e) {
-	if (rb_enc_str_asciionly_p(str)) e = 0;
+    if (e && rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
+	e = 0;
     }
     return (int)rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str)) ^ e;
 }
@@ -3840,30 +3866,11 @@ rb_str_gsub(int argc, VALUE *argv, VALUE str)
 VALUE
 rb_str_replace(VALUE str, VALUE str2)
 {
-    long len;
     if (str == str2) return str;
 
     StringValue(str2);
-    len = RSTRING_LEN(str2);
-    if (STR_ASSOC_P(str2)) {
-	str2 = rb_str_new4(str2);
-    }
     str_discard(str);
-    if (STR_SHARED_P(str2)) {
-	STR_SET_NOEMBED(str);
-	RSTRING(str)->as.heap.len = len;
-	RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
-	FL_SET(str, ELTS_SHARED);
-	FL_UNSET(str, STR_ASSOC);
-	RSTRING(str)->as.heap.aux.shared = RSTRING(str2)->as.heap.aux.shared;
-    }
-    else {
-	str_replace_shared(str, rb_str_new4(str2));
-    }
-
-    OBJ_INFECT(str, str2);
-    rb_enc_cr_str_exact_copy(str, str2);
-    return str;
+    return str_replace(str, str2);
 }
 
 /*

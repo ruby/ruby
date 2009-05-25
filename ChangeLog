@@ -1,3 +1,13 @@
+Mon May 25 09:34:09 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_hash): avoid calling rb_enc_str_asciionly_p().
+
+	* string.c (rb_str_replace): avoid redundant calling rb_str_new4().
+
+	* string.c (str_replace): factor out replacement from
+	  rb_str_replace() without type check nor discarding the
+	  destination contents.
+
 Mon May 25 08:06:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_partition): should use the converted result.  a
