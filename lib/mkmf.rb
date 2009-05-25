@@ -1655,7 +1655,7 @@ def create_makefile(target, srcprefix = nil)
   end
   $srcs = srcs
   for i in $objs
-    i.sub!(/\.o\z/, ".#{$OBJEXT}")
+    i = i.sub(/\.o\z/, ".#{$OBJEXT}")
   end
 
   target = nil if $objs.empty?
