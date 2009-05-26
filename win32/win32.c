@@ -27,6 +27,9 @@
 #include <winbase.h>
 #include <wincon.h>
 #include <shlobj.h>
+#if _MSC_VER >= 1400
+#include <crtdbg.h>
+#endif
 #ifdef __MINGW32__
 #include <mswsock.h>
 #include <mbstring.h>
@@ -366,9 +369,16 @@ flock(int fd, int oper)
 static void init_stdhandle(void);
 
 #if _MSC_VER >= 1400
-static void invalid_parameter(const wchar_t *expr, const wchar_t *func, const wchar_t *file, unsigned int line, uintptr_t dummy)
+static void
+invalid_parameter(const wchar_t *expr, const wchar_t *func, const wchar_t *file, unsigned int line, uintptr_t dummy)
 {
     // nothing to do
+}
+
+static int __cdecl
+rtc_error_handler(int e, const char *src, int line, const char *exe, const char *fmt, ...)
+{
+    return 0;
 }
 #endif
 
@@ -452,7 +462,9 @@ NtInitialize(int *argc, char ***argv)
 #if _MSC_VER >= 1400
     static void set_pioinfo_extra(void);
 
+    _CrtSetReportMode(_CRT_ASSERT, 0);
     _set_invalid_parameter_handler(invalid_parameter);
+    _RTC_SetErrorFunc(rtc_error_handler);
     set_pioinfo_extra();
 #endif
 
@@ -4199,3 +4211,5 @@ rb_w32_fsopen(const char *path, const char *mode, int shflags)
     return f;
 }
 #endif
+
+RUBY_EXTERN int __cdecl _CrtDbgReportW() {return 0;}

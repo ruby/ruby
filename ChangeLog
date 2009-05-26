@@ -1,3 +1,8 @@
+Tue May 26 21:09:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (_CrtDbgReportW): prevent from false positive
+	  assertions in msvcrtd.  [ruby-core:22116]
+
 Tue May 26 21:02:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/ostruct.rb (OpenStruct#new_ostruct_member): checks if frozen.
