@@ -1,4 +1,6 @@
-Tue May 26 13:58:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue May 26 14:24:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c: fixed types.
 
 	* common.mk (bignum.o, numeric.o): depend on util.h.
 

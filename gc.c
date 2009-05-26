@@ -289,7 +289,7 @@ enum lifetime {
 struct heaps_slot {
     void *membase;
     RVALUE *slot;
-    int limit;
+    size_t limit;
     enum lifetime lifetime;
 };
 
@@ -619,7 +619,7 @@ garbage_collect_with_gvl(rb_objspace_t *objspace)
     }
     else {
 	if (ruby_native_thread_p()) {
-	    return (VALUE)rb_thread_call_with_gvl(gc_with_gvl, (void *)objspace);
+	    return (int)(VALUE)rb_thread_call_with_gvl(gc_with_gvl, (void *)objspace);
 	}
 	else {
 	    /* no ruby thread */
@@ -888,7 +888,7 @@ assign_heap_slot(rb_objspace_t *objspace, RVALUE **list, enum lifetime lifetime)
 {
     RVALUE *p, *pend, *membase;
     size_t hi, lo, mid;
-    int objs;
+    size_t objs;
 
     objs = HEAP_OBJ_LIMIT;
     p = (RVALUE*)malloc(HEAP_SIZE);
@@ -901,7 +901,7 @@ assign_heap_slot(rb_objspace_t *objspace, RVALUE **list, enum lifetime lifetime)
     membase = p;
     if ((VALUE)p % sizeof(RVALUE) != 0) {
 	p = (RVALUE*)((VALUE)p + sizeof(RVALUE) - ((VALUE)p % sizeof(RVALUE)));
-	if ((HEAP_SIZE - HEAP_OBJ_LIMIT * sizeof(RVALUE)) < ((char*)p - (char*)membase)) {
+	if ((HEAP_SIZE - HEAP_OBJ_LIMIT * sizeof(RVALUE)) < (size_t)((char*)p - (char*)membase)) {
 	    objs--;
 	}
     }
@@ -1848,7 +1848,7 @@ gc_sweep(rb_objspace_t *objspace)
     final_list = deferred_final_list;
     deferred_final_list = 0;
     for (i = 0; i < heaps_used; i++) {
-	int free_num = 0, final_num = 0;
+	size_t free_num = 0, final_num = 0;
 	RVALUE *free = freelist;
 	RVALUE *final = final_list;
 	int deferred;
@@ -2186,7 +2186,7 @@ rb_gc_mark_remembered_set(rb_objspace_t *objspace)
 static void
 clear_mark_longlife_heaps(rb_objspace_t *objspace)
 {
-    int i;
+    size_t i;
 
     for (i = 0; i < heaps_used; i++) {
         RVALUE *p, *pend;
