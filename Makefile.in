@@ -189,14 +189,14 @@ update-rubyspec:
 	if [ -d $(srcdir)/rubyspec ]; then \
 	  cd $(srcdir)/rubyspec/mspec; \
 	  git pull; \
-	  cd ../spec/rubyspec; \
+	  cd ../spec; \
 	  git pull; \
 	else \
+	  mkdir $(srcdir)/rubyspec; \
 	  git clone $(MSPEC_GIT_URL) $(srcdir)/rubyspec/mspec; \
-	  git clone $(RUBYSPEC_GIT_URL) $(srcdir)/rubyspec/spec/rubyspec; \
+	  git clone $(RUBYSPEC_GIT_URL) $(srcdir)/rubyspec/spec; \
 	fi
 
 test-rubyspec:
 	@if [ ! -d $(srcdir)/rubyspec ]; then echo No rubyspec here.  make update-rubyspec first.; exit 1; fi
-	$(RUNRUBY) $(srcdir)/rubyspec/mspec/bin/mspec -r$(srcdir)/ext/purelib.rb $(srcdir)/rubyspec/spec/rubyspec/$(MAJOR).$(MINOR)
-
+	RUBY_EXE="$(RUNRUBY)" $(RUNRUBY) $(srcdir)/rubyspec/mspec/bin/mspec-run --background --prefix $(srcdir)/rubyspec/spec -B $(srcdir)/rubyspec/spec/ruby.$(MAJOR).$(MINOR).mspec
