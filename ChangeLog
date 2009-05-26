@@ -1,3 +1,8 @@
+Tue May 26 21:02:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ostruct.rb (OpenStruct#new_ostruct_member): checks if frozen.
+	  [ruby-talk:328195], [ruby-core:22142]
+
 Tue May 26 21:00:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/ostruct.rb (OpenStruct#inspect): fixed the recursion check.
