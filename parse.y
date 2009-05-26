@@ -4885,7 +4885,8 @@ parser_yyerror(struct parser_params *parser, const char *msg)
     const int max_line_margin = 30;
     const char *p, *pe;
     char *buf;
-    int len, i;
+    long len;
+    int i;
 
     compile_error(PARSER_ARG "%s", msg);
     p = lex_p;
@@ -4922,7 +4923,7 @@ parser_yyerror(struct parser_params *parser, const char *msg)
 	buf[len] = '\0';
 	rb_compile_error_append("%s%s%s", pre, buf, post);
 
-	i = lex_p - p;
+	i = (int)(lex_p - p);
 	p2 = buf; pe = buf + len;
 
 	while (p2 < pe) {
