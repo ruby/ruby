@@ -1654,8 +1654,8 @@ def create_makefile(target, srcprefix = nil)
     srcs = $objs.collect {|o| o.sub(/\.o\z/, '.c')}
   end
   $srcs = srcs
-  for i in $objs
-    i = i.sub(/\.o\z/, ".#{$OBJEXT}")
+  $objs.map! do |obj|
+    obj.sub(/\.o\z/, ".#{$OBJEXT}")
   end
 
   target = nil if $objs.empty?
