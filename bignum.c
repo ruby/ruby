@@ -132,7 +132,8 @@ bignew_1(VALUE klass, long len, int sign)
 	RBIGNUM_SET_LEN(big, len);
     }
     else {
-	rb_big_resize((VALUE)big, len);
+	RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
+	RBIGNUM(big)->as.heap.len = len;
     }
 
     return (VALUE)big;
@@ -186,11 +187,13 @@ bigtrunc(VALUE x)
 
     if (len == 0) return x;
     while (--len && !ds[len]);
-    rb_big_resize(x, len+1);
+    if (RBIGNUM_LEN(x) > len+1) {
+	rb_big_resize(x, len+1);
+    }
     return x;
 }
 
-static VALUE
+static inline VALUE
 bigfixize(VALUE x)
 {
     long len = RBIGNUM_LEN(x);
@@ -2392,7 +2395,8 @@ rb_big_fdiv(VALUE x, VALUE y)
 	VALUE z;
 	int ex, ey;
 
-	ex = (RBIGNUM_LEN(bigtrunc(x)) - 1) * BITSPERDIG;
+	bigtrunc(x);
+	ex = (RBIGNUM_LEN(x) - 1) * BITSPERDIG;
 	ex += bdigbitsize(BDIGITS(x)[RBIGNUM_LEN(x) - 1]);
 	ex -= 2 * DBL_BIGDIG * BITSPERDIG;
 	if (ex) x = big_shift(x, ex);
@@ -2401,7 +2405,8 @@ rb_big_fdiv(VALUE x, VALUE y)
 	  case T_FIXNUM:
 	    y = rb_int2big(FIX2LONG(y));
 	  case T_BIGNUM: {
-	    ey = (RBIGNUM_LEN(bigtrunc(y)) - 1) * BITSPERDIG;
+	    bigtrunc(y);
+	    ey = (RBIGNUM_LEN(y) - 1) * BITSPERDIG;
 	    ey += bdigbitsize(BDIGITS(y)[RBIGNUM_LEN(y) - 1]);
 	    ey -= DBL_BIGDIG * BITSPERDIG;
 	    if (ey) y = big_shift(y, ey);
@@ -2875,7 +2880,8 @@ rb_big_aref(VALUE x, VALUE y)
     if (TYPE(y) == T_BIGNUM) {
 	if (!RBIGNUM_SIGN(y))
 	    return INT2FIX(0);
-	if (RBIGNUM_LEN(bigtrunc(y)) > DIGSPERLONG) {
+	bigtrunc(y);
+	if (RBIGNUM_LEN(y) > DIGSPERLONG) {
 	  out_of_range:
 	    return RBIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(1);
 	}

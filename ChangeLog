@@ -2,6 +2,14 @@ Tue May 26 11:01:41 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* lib/mkmf.rb: use map! to replace strings in $objs array.
 
+Tue May 26 10:12:08 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bignew_1): inline memory allocation.
+
+	* bignum.c (bigtrunc): call rb_big_resize() only when needed.
+
+	* bignum.c (bigfixize): declare inline.
+
 Tue May 26 05:39:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (FilePathValue): prevent from GC.
