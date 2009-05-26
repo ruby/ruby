@@ -106,7 +106,7 @@ static char **readline_attempted_completion_function(const char *text,
 
 #if defined HAVE_RL_GETC_FUNCTION
 static VALUE readline_instream;
-static ID id_getc;
+static ID id_getbyte;
 
 static int readline_getc(FILE *);
 static int
@@ -117,7 +117,7 @@ readline_getc(FILE *input)
     if (!readline_instream) return rl_getc(input);
     GetOpenFile(readline_instream, ifp);
     if (rl_instream != ifp->stdio_file) return rl_getc(input);
-    c = rb_funcall(readline_instream, id_getc, 0, 0);
+    c = rb_funcall(readline_instream, id_getbyte, 0, 0);
     if (NIL_P(c)) return EOF;
     return NUM2CHR(c);
 }
@@ -1372,7 +1372,7 @@ Init_readline()
     rl_attempted_completion_function = readline_attempted_completion_function;
 #if defined HAVE_RL_GETC_FUNCTION
     rl_getc_function = readline_getc;
-    id_getc = rb_intern_const("getc");
+    id_getbyte = rb_intern_const("getbyte");
 #elif defined HAVE_RL_EVENT_HOOK
     rl_event_hook = readline_event;
 #endif
