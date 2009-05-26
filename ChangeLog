@@ -1,3 +1,8 @@
+Tue May 26 20:50:32 2009  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (rb_thread_schedule): handle EBADF of select as well.
+	  [ruby-core:21264]
+
 Wed Apr  8 18:59:52 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (subtruct): check tv_sec.

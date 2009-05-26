@@ -74,7 +74,16 @@ char *strrchr _((const char*,const char));
 
 #include <time.h>
 
-#ifdef __BEOS__
+#if defined(HAVE_FCNTL_H) || defined(_WIN32)
+#include <fcntl.h>
+#elif defined(HAVE_SYS_FCNTL_H)
+#include <sys/fcntl.h>
+#endif
+#ifdef __CYGWIN__
+#include <io.h>
+#endif
+
+#if defined(__BEOS__) && !defined(BONE)
 #include <net/socket.h>
 #endif
 
@@ -11084,20 +11093,60 @@ rb_thread_schedule()
 #ifdef ERESTART
 	    if (e == ERESTART) goto again;
 #endif
-	    FOREACH_THREAD_FROM(curr, th) {
-		if (th->wait_for & WAIT_SELECT) {
-		    int v = 0;
+            if (e == EBADF) {
+                int badfd = -1;
+                int fd;
+                int dummy;
+                for (fd = 0; fd <= max; fd++) {
+                    if ((FD_ISSET(fd, &readfds) ||
+                         FD_ISSET(fd, &writefds) ||
+                         FD_ISSET(fd, &exceptfds)) &&
+                        fcntl(fd, F_GETFD, &dummy) == -1 &&
+                        errno == EBADF) {
+                        badfd = fd;
+                        break;
+                    }
+                }
+                if (badfd != -1) {
+                    FOREACH_THREAD_FROM(curr, th) {
+                        if (th->wait_for & WAIT_FD) {
+                            if (th->fd == badfd) {
+                                found = 1;
+                                th->status = THREAD_RUNNABLE;
+                                th->fd = 0;
+                                break;
+                            }
+                        }
+                        if (th->wait_for & WAIT_SELECT) {
+                            if (FD_ISSET(badfd, &th->readfds) ||
+                                FD_ISSET(badfd, &th->writefds) ||
+                                FD_ISSET(badfd, &th->exceptfds)) {
+                                found = 1;
+                                th->status = THREAD_RUNNABLE;
+                                th->select_value = -EBADF;
+                                break;
+                            }
+                        }
+                    }
+                    END_FOREACH_FROM(curr, th);
+                }
+            }
+            else {
+                FOREACH_THREAD_FROM(curr, th) {
+                    if (th->wait_for & WAIT_SELECT) {
+                        int v = 0;
 
-		    v |= find_bad_fds(&readfds, &th->readfds, th->fd);
-		    v |= find_bad_fds(&writefds, &th->writefds, th->fd);
-		    v |= find_bad_fds(&exceptfds, &th->exceptfds, th->fd);
-		    if (v) {
-			th->select_value = n;
-			n = max;
-		    }
-		}
-	    }
-	    END_FOREACH_FROM(curr, th);
+                        v |= find_bad_fds(&readfds, &th->readfds, th->fd);
+                        v |= find_bad_fds(&writefds, &th->writefds, th->fd);
+                        v |= find_bad_fds(&exceptfds, &th->exceptfds, th->fd);
+                        if (v) {
+                            th->select_value = n;
+                            n = max;
+                        }
+                    }
+                }
+                END_FOREACH_FROM(curr, th);
+            }
 	}
  	if (select_timeout && n == 0) {
  	    if (now < 0.0) now = timeofday();
@@ -11408,6 +11457,10 @@ rb_thread_select(max, read, write, except, timeout)
     if (read) *read = curr_thread->readfds;
     if (write) *write = curr_thread->writefds;
     if (except) *except = curr_thread->exceptfds;
+    if (curr_thread->select_value < 0) {
+        errno = -curr_thread->select_value;
+        return -1;
+    }
     return curr_thread->select_value;
 }
 
