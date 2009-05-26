@@ -40,9 +40,9 @@ extern "C" {
 #endif
 #endif
 
-#define scan_oct ruby_scan_oct
+#define scan_oct(s,l,e) (int)ruby_scan_oct(s,l,e)
 unsigned long ruby_scan_oct(const char *, size_t, size_t *);
-#define scan_hex ruby_scan_hex
+#define scan_hex(s,l,e) (int)ruby_scan_hex(s,l,e)
 unsigned long ruby_scan_hex(const char *, size_t, size_t *);
 
 #if defined(__CYGWIN32__) || defined(_WIN32)
@@ -69,6 +69,20 @@ char *ruby_getcwd(void);
 double ruby_strtod(const char *, char **);
 #undef strtod
 #define strtod(s,e) ruby_strtod(s,e)
+
+#if defined _MSC_VER && _MSC_VER >= 1300
+#pragma warning(push)
+#pragma warning(disable:4723)
+#endif
+static inline double
+ruby_div0(double x)
+{
+    double t = 0.0;
+    return x / t;
+}
+#if defined _MSC_VER && _MSC_VER >= 1300
+#pragma warning(pop)
+#endif
 
 void ruby_each_words(const char *, void (*)(const char*, int, void*), void *);
 

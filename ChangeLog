@@ -1,3 +1,13 @@
+Tue May 26 13:58:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (bignum.o, numeric.o): depend on util.h.
+
+	* bignum.c, marshal.c: fixed types.
+
+	* numeric.c (infinite_value): use ruby_div0.
+
+	* include/ruby/util.h (ruby_div0): moved from marshal.c.
+
 Tue May 26 11:01:41 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* lib/mkmf.rb: use map! to replace strings in $objs array.

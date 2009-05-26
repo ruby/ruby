@@ -30,7 +30,7 @@
 #if SIZEOF_SHORT == SIZEOF_BDIGITS
 #define SHORTLEN(x) (x)
 #else
-static int
+static long
 shortlen(long len, BDIGIT *ds)
 {
     BDIGIT num;
@@ -188,7 +188,7 @@ class2path(VALUE klass)
 static void w_long(long, struct dump_arg*);
 
 static void
-w_nbyte(const char *s, int n, struct dump_arg *arg)
+w_nbyte(const char *s, long n, struct dump_arg *arg)
 {
     VALUE buf = arg->str;
     rb_str_buf_cat(buf, s, n);
@@ -207,7 +207,7 @@ w_byte(char c, struct dump_arg *arg)
 }
 
 static void
-w_bytes(const char *s, int n, struct dump_arg *arg)
+w_bytes(const char *s, long n, struct dump_arg *arg)
 {
     w_long(n, arg);
     w_nbyte(s, n, arg);
@@ -245,7 +245,7 @@ w_long(long x, struct dump_arg *arg)
 	w_byte((char)((x - 5)&0xff), arg);
 	return;
     }
-    for (i=1;i<sizeof(long)+1;i++) {
+    for (i=1;i<(int)sizeof(long)+1;i++) {
 	buf[i] = (char)(x & 0xff);
 	x = RSHIFT(x,8);
 	if (x == 0) {
@@ -306,8 +306,9 @@ save_mantissa(double d, char *buf)
 }
 
 static double
-load_mantissa(double d, const char *buf, int len)
+load_mantissa(double d, const char *buf, long len)
 {
+    if (!len) return d;
     if (--len > 0 && !*buf++) {	/* binary mantissa mark */
 	int e, s = d < 0, dig = 0;
 	unsigned long m;
@@ -363,7 +364,7 @@ w_float(double d, struct dump_arg *arg)
 	else           strcpy(buf, "0");
     }
     else {
-	int len;
+	size_t len;
 
 	/* xxx: should not use system's sprintf(3) */
 	snprintf(buf, sizeof(buf), "%.*g", FLOAT_DIG, d);
@@ -988,7 +989,7 @@ r_long(struct load_arg *arg)
 	if (4 < c && c < 128) {
 	    return c - 5;
 	}
-	if (c > sizeof(long)) long_toobig(c);
+	if (c > (int)sizeof(long)) long_toobig(c);
 	x = 0;
 	for (i=0;i<c;i++) {
 	    x |= (long)r_byte(arg) << (8*i);
@@ -999,7 +1000,7 @@ r_long(struct load_arg *arg)
 	    return c + 5;
 	}
 	c = -c;
-	if (c > sizeof(long)) long_toobig(c);
+	if (c > (int)sizeof(long)) long_toobig(c);
 	x = -1;
 	for (i=0;i<c;i++) {
 	    x &= ~((long)0xff << (8*i));
@@ -1201,19 +1202,7 @@ obj_alloc_by_path(const char *path, struct load_arg *arg)
     return rb_obj_alloc(klass);
 }
 
-#if defined _MSC_VER && _MSC_VER >= 1300
-#pragma warning(push)
-#pragma warning(disable:4723)
-#endif
-static double
-div0(double x)
-{
-    double t = 0.0;
-    return x / t;
-}
-#if defined _MSC_VER && _MSC_VER >= 1300
-#pragma warning(pop)
-#endif
+#define div0(x) ruby_div0(x)
 
 static VALUE
 r_object0(struct load_arg *arg, int *ivp, VALUE extmod)

@@ -10,6 +10,7 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
+#include "ruby/util.h"
 
 #include <math.h>
 #include <float.h>
@@ -28,9 +29,9 @@ VALUE rb_cBignum;
 #define BDIGITS(x) (RBIGNUM_DIGITS(x))
 #define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
 #define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
-#define DIGSPERLONG ((unsigned int)(SIZEOF_LONG/SIZEOF_BDIGITS))
+#define DIGSPERLONG (SIZEOF_LONG/SIZEOF_BDIGITS)
 #if HAVE_LONG_LONG
-# define DIGSPERLL ((unsigned int)(SIZEOF_LONG_LONG/SIZEOF_BDIGITS))
+# define DIGSPERLL (SIZEOF_LONG_LONG/SIZEOF_BDIGITS)
 #endif
 #define BIGUP(x) ((BDIGIT_DBL)(x) << BITSPERDIG)
 #define BIGDN(x) RSHIFT(x,BITSPERDIG)
@@ -200,7 +201,7 @@ bigfixize(VALUE x)
     BDIGIT *ds = BDIGITS(x);
 
     if (len == 0) return INT2FIX(0);
-    if (len*SIZEOF_BDIGITS <= sizeof(long)) {
+    if ((size_t)(len*SIZEOF_BDIGITS) <= sizeof(long)) {
 	long num = 0;
 #if 2*SIZEOF_BDIGITS > SIZEOF_LONG
 	num = (long)ds[0];
@@ -532,7 +533,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     }
     len *= strlen(str)*sizeof(char);
 
-    if (len <= (sizeof(long)*CHAR_BIT)) {
+    if ((size_t)len <= (sizeof(long)*CHAR_BIT)) {
 	unsigned long val = STRTOUL(str, &end, base);
 
 	if (str < end && *end == '_') goto bigparse;
@@ -797,7 +798,8 @@ power_cache_get_power0(int base, int i)
 static VALUE
 power_cache_get_power(int base, long n1, long* m1)
 {
-    long i, j, m;
+    int i, m;
+    long j;
     VALUE t;
 
     if (n1 <= KARATSUBA_DIGITS)
@@ -1197,20 +1199,27 @@ big2dbl(VALUE x)
 	    }
 	    dl = ds[i];
 	    if (bits && (dl & (1UL << (bits %= BITSPERDIG)))) {
-		int carry = dl & ~(~0UL << bits);
+		int carry = dl & ~(~(BDIGIT)0 << bits);
 		if (!carry) {
 		    while (i-- > 0) {
 			if ((carry = ds[i]) != 0) break;
 		    }
 		}
 		if (carry) {
-		    dl &= ~0UL << bits;
-		    dl += 1UL << bits;
+		    dl &= (BDIGIT)~0 << bits;
+		    dl += (BDIGIT)1 << bits;
 		    if (!dl) d += 1;
 		}
 	    }
 	    d = dl + BIGRAD*d;
-	    if (lo) d = ldexp(d, lo * BITSPERDIG);
+	    if (lo) {
+		if (lo > INT_MAX / BITSPERDIG)
+		    d = HUGE_VAL;
+		else if (lo < INT_MIN / BITSPERDIG)
+		    d = 0.0;
+		else
+		    d = ldexp(d, (int)(lo * BITSPERDIG));
+	    }
 	}
     }
     if (!RBIGNUM_SIGN(x)) d = -d;
@@ -1477,7 +1486,7 @@ bigsub_int(VALUE x, long y0)
 	for (i=0; i<xn; i++) {
 	}
 	RBIGNUM_SET_SIGN(z, !RBIGNUM_SIGN(x));
-	zds[0] = -num;
+	zds[0] = (BDIGIT)-num;
 	return bignorm(z);
     }
     zds[0] = BIGLO(num);
@@ -1485,7 +1494,7 @@ bigsub_int(VALUE x, long y0)
     i = 1;
 #else
     num = 0;
-    for (i=0; i<sizeof(y)/sizeof(BDIGIT); i++) {
+    for (i=0; i<(int)(sizeof(y)/sizeof(BDIGIT)); i++) {
 	num += (BDIGIT_DBL_SIGNED)xds[i] - BIGLO(y);
 	zds[i] = BIGLO(num);
 	num = BIGDN(num);
@@ -1535,7 +1544,7 @@ bigadd_int(VALUE x, long y)
     i = 1;
 #else
     num = 0;
-    for (i=0; i<sizeof(y)/sizeof(BDIGIT); i++) {
+    for (i=0; i<(int)(sizeof(y)/sizeof(BDIGIT)); i++) {
 	num += (BDIGIT_DBL)xds[i] + BIGLO(y);
 	zds[i] = BIGLO(num);
 	num = BIGDN(num);
@@ -2363,12 +2372,13 @@ bdigbitsize(BDIGIT x)
 static VALUE big_lshift(VALUE, unsigned long);
 static VALUE big_rshift(VALUE, unsigned long);
 
-static VALUE big_shift(VALUE x, int n)
+static VALUE
+big_shift(VALUE x, long n)
 {
     if (n < 0)
-	return big_lshift(x, (unsigned int)-n);
+	return big_lshift(x, (unsigned long)-n);
     else if (n > 0)
-	return big_rshift(x, (unsigned int)n);
+	return big_rshift(x, (unsigned long)n);
     return x;
 }
 
@@ -2393,11 +2403,13 @@ rb_big_fdiv(VALUE x, VALUE y)
     if (isinf(dx)) {
 #define DBL_BIGDIG ((DBL_MANT_DIG + BITSPERDIG) / BITSPERDIG)
 	VALUE z;
-	int ex, ey;
+	long l, ex, ey;
+	int i;
 
 	bigtrunc(x);
-	ex = (RBIGNUM_LEN(x) - 1) * BITSPERDIG;
-	ex += bdigbitsize(BDIGITS(x)[RBIGNUM_LEN(x) - 1]);
+	l = RBIGNUM_LEN(x) - 1;
+	ex = l * BITSPERDIG;
+	ex += bdigbitsize(BDIGITS(x)[l]);
 	ex -= 2 * DBL_BIGDIG * BITSPERDIG;
 	if (ex) x = big_shift(x, ex);
 
@@ -2406,18 +2418,27 @@ rb_big_fdiv(VALUE x, VALUE y)
 	    y = rb_int2big(FIX2LONG(y));
 	  case T_BIGNUM: {
 	    bigtrunc(y);
-	    ey = (RBIGNUM_LEN(y) - 1) * BITSPERDIG;
-	    ey += bdigbitsize(BDIGITS(y)[RBIGNUM_LEN(y) - 1]);
+	    l = RBIGNUM_LEN(y) - 1;
+	    ey = l * BITSPERDIG;
+	    ey += bdigbitsize(BDIGITS(y)[l]);
 	    ey -= DBL_BIGDIG * BITSPERDIG;
 	    if (ey) y = big_shift(y, ey);
 	  bignum:
 	    bigdivrem(x, y, &z, 0);
-	    return DBL2NUM(ldexp(big2dbl(z), ex - ey));
+	    l = ex - ey;
+#if SIZEOF_LONG > SIZEOF_INT
+	    {
+		/* Visual C++ can't be here */
+		if (l > INT_MAX) return DBL2NUM(ruby_div0(1.0));
+		if (l < INT_MIN) return DBL2NUM(0.0);
+	    }
+#endif
+	    return DBL2NUM(ldexp(big2dbl(z), (int)l));
 	  }
 	  case T_FLOAT:
 	    if (isnan(RFLOAT_VALUE(y))) return y;
-	    y = dbl2big(ldexp(frexp(RFLOAT_VALUE(y), &ey), DBL_MANT_DIG));
-	    ey -= DBL_MANT_DIG;
+	    y = dbl2big(ldexp(frexp(RFLOAT_VALUE(y), &i), DBL_MANT_DIG));
+	    ey = i - DBL_MANT_DIG;
 	    goto bignum;
 	}
     }
@@ -2746,7 +2767,7 @@ big_lshift(VALUE x, unsigned long shift)
 {
     BDIGIT *xds, *zds;
     long s1 = shift/BITSPERDIG;
-    int s2 = shift%BITSPERDIG;
+    int s2 = (int)(shift%BITSPERDIG);
     VALUE z;
     BDIGIT_DBL num = 0;
     long len, i;
@@ -2812,7 +2833,7 @@ big_rshift(VALUE x, unsigned long shift)
 {
     BDIGIT *xds, *zds;
     long s1 = shift/BITSPERDIG;
-    int s2 = shift%BITSPERDIG;
+    int s2 = (int)(shift%BITSPERDIG);
     VALUE z;
     BDIGIT_DBL num = 0;
     long i, j;

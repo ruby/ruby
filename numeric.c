@@ -11,6 +11,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/util.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
@@ -2449,19 +2450,7 @@ int_pow(long x, unsigned long y)
     return LONG2NUM(z);
 }
 
-#if defined _MSC_VER && _MSC_VER >= 1300
-#pragma warning(push)
-#pragma warning(disable:4723)
-#endif
-static inline double
-infinite_value(void)
-{
-    static const double zero = 0.0;
-    return 1.0 / zero;
-}
-#if defined _MSC_VER && _MSC_VER >= 1300
-#pragma warning(pop)
-#endif
+#define infinite_value() ruby_div0(1.0)
 
 /*
  *  call-seq:
