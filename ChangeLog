@@ -1,3 +1,11 @@
+Tue May 26 21:00:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ostruct.rb (OpenStruct#inspect): fixed the recursion check.
+	  Patch by Kornelius Kalnbach.  [ruby-core:20992].
+
+	* test/ostruct/test_ostruct.rb: test for inspect.
+	  Patch by Kornelius Kalnbach.  [ruby-core:20992].
+
 Tue May 26 20:50:32 2009  Tanaka Akira  <akr@fsij.org>
 
 	* eval.c (rb_thread_schedule): handle EBADF of select as well.
