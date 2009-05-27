@@ -471,6 +471,7 @@ static int
 w_obj_each(ID id, VALUE value, struct dump_call_arg *arg)
 {
     if (id == rb_id_encoding()) return ST_CONTINUE;
+    if (id == rb_intern("E")) return ST_CONTINUE;
     w_symbol(id, arg->arg);
     w_object(value, arg->arg, arg->limit);
     return ST_CONTINUE;
@@ -488,6 +489,19 @@ w_encoding(VALUE obj, long num, struct dump_call_arg *arg)
 	return;
     }
     w_long(num + 1, arg->arg);
+
+    /* special treatment for US-ASCII and UTF-8 */
+    if (encidx == rb_usascii_encindex()) {
+	w_symbol(rb_intern("E"), arg->arg);
+	w_object(Qfalse, arg->arg, arg->limit);
+	return;
+    }
+    else if (encidx == rb_utf8_encindex()) {
+	w_symbol(rb_intern("E"), arg->arg);
+	w_object(Qtrue, arg->arg, arg->limit);
+	return;
+    }
+
     w_symbol(rb_id_encoding(), arg->arg);
     do {
 	if (!arg->arg->encodings)
@@ -1151,6 +1165,11 @@ r_ivar(VALUE obj, struct load_arg *arg)
 	    if (id == rb_id_encoding()) {
 		int idx = rb_enc_find_index(StringValueCStr(val));
 		if (idx > 0) rb_enc_associate_index(obj, idx);
+	    }
+	    if (id == rb_intern("E")) {
+		if (val == Qfalse) rb_enc_associate_index(obj, rb_usascii_encindex());
+		else if (val == Qtrue) rb_enc_associate_index(obj, rb_utf8_encindex());
+		/* bogus ignore */
 	    }
 	    else {
 		rb_ivar_set(obj, id, val);

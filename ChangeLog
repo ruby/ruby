@@ -13,6 +13,13 @@ Wed May 27 18:00:15 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bigand_int): even less object allocation.
 
+Wed May 27 14:29:55 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_encoding): more compact encoding information for
+	  US-ASCII and UTF-8.  [incompatible] [experimental]
+
+	* marshal.c (r_ivar): restore :E encoding information.
+
 Wed May 27 14:08:39 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* st.c (st_insert2): new function with processing new key,
