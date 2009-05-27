@@ -601,15 +601,13 @@ rb_vm_bugreport(void)
 
 	fprintf(stderr, "-- C level backtrace information "
 		"-------------------------------------------\n");
-	for (i=0; i<n; i++) {
-	    const char *info = syms ? syms[i] : "";
-	    fprintf(stderr, "%p %s\n", trace[i], info);
-	}
-	fprintf(stderr, "\n");
-
 	if (syms) {
+	    for (i=0; i<n; i++) {
+		fprintf(stderr, "%s\n", syms[i]);
+	    }
 	    free(syms);
 	}
+	fprintf(stderr, "\n");
     }
 #endif
 }
