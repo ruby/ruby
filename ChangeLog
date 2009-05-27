@@ -2,6 +2,17 @@ Wed May 27 23:00:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (struct parser_params): lex_gets_ptr should be long.
 
+Wed May 27 18:00:15 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bigand_int): new function to calculate bignum and
+	  fixnum without allocating internal bignum.
+
+	* bignum.c (bigor_int): ditto.
+
+	* bignum.c (bigxor_int): ditto.
+
+	* bignum.c (bigand_int): even less object allocation.
+
 Wed May 27 14:08:39 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* st.c (st_insert2): new function with processing new key,
