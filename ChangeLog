@@ -1,3 +1,8 @@
+Thu May 28 03:43:10 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_strftime): update RDoc according to info from
+	  Marc-Andre Lafortune in [ruby-core:23575].  [ruby-core:23564]
+
 Thu May 28 02:40:54 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/uri: don't set @parser if it is DEFAULT_PARSER for marshaling
