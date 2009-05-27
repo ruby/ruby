@@ -13,7 +13,7 @@ ARGV.options do
   |opts|
   opts.banner << " argv..."
 
-  # separater
+  # separator
   opts.on_tail
   opts.on_tail("common options:")
 

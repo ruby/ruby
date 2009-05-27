@@ -1,3 +1,7 @@
+Thu May 28 03:47:46 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sample/optparse/opttest.rb: typo fixed.  [ruby-dev:38544]
+
 Thu May 28 03:43:10 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_strftime): update RDoc according to info from
