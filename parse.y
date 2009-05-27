@@ -221,7 +221,7 @@ struct parser_params {
     int parser_heredoc_end;
     int parser_command_start;
     NODE *parser_deferred_nodes;
-    int parser_lex_gets_ptr;
+    long parser_lex_gets_ptr;
     VALUE (*parser_lex_gets)(struct parser_params*,VALUE);
     struct local_vars *parser_lvtbl;
     int parser_ruby__end__seen;
@@ -5347,7 +5347,7 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 	    }
 	    lex_p += numlen;
             if (regexp_literal) {
-                tokcopy(numlen);
+                tokcopy((int)numlen);
             }
             else if (codepoint >= 0x80) {
 		*encp = UTF8_ENC();
@@ -5504,6 +5504,7 @@ parser_tokadd_escape(struct parser_params *parser, rb_encoding **encp)
 {
     int c;
     int flags = 0;
+    size_t numlen;
 
   first:
     switch (c = nextc()) {
@@ -5514,25 +5515,19 @@ parser_tokadd_escape(struct parser_params *parser, rb_encoding **encp)
       case '4': case '5': case '6': case '7':
 	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
 	{
-	    size_t numlen;
-	    int oct;
-
-	    oct = scan_oct(--lex_p, 3, &numlen);
+	    scan_oct(--lex_p, 3, &numlen);
 	    if (numlen == 0) goto eof;
 	    lex_p += numlen;
-	    tokcopy(numlen + 1);
+	    tokcopy((int)numlen + 1);
 	}
 	return 0;
 
       case 'x':	/* hex constant */
 	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
 	{
-	    size_t numlen;
-	    int hex;
-
-	    hex = tok_hex(&numlen);
+	    tok_hex(&numlen);
 	    if (numlen == 0) goto eof;
-	    tokcopy(numlen + 2);
+	    tokcopy((int)numlen + 2);
 	}
 	return 0;
 
@@ -5647,7 +5642,7 @@ parser_tokadd_string(struct parser_params *parser,
     static const char mixed_msg[] = "%s mixed within %s source";
 
 #define mixed_error(enc1, enc2) if (!errbuf) {	\
-	int len = sizeof(mixed_msg) - 4;	\
+	size_t len = sizeof(mixed_msg) - 4;	\
 	len += strlen(rb_enc_name(enc1));	\
 	len += strlen(rb_enc_name(enc2));	\
 	errbuf = ALLOCA_N(char, len);		\
