@@ -93,6 +93,7 @@ st_table *st_init_strcasetable_with_size(int);
 int st_delete(st_table *, st_data_t *, st_data_t *); /* returns 0:notfound 1:deleted */
 int st_delete_safe(st_table *, st_data_t *, st_data_t *, st_data_t);
 int st_insert(st_table *, st_data_t, st_data_t);
+int st_insert2(st_table *, st_data_t, st_data_t, st_data_t (*)(st_data_t));
 int st_lookup(st_table *, st_data_t, st_data_t *);
 int st_get_key(st_table *, st_data_t, st_data_t *);
 int st_foreach(st_table *, int (*)(ANYARGS), st_data_t);

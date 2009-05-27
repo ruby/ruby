@@ -2,6 +2,14 @@ Wed May 27 23:00:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (struct parser_params): lex_gets_ptr should be long.
 
+Wed May 27 14:08:39 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* st.c (st_insert2): new function with processing new key,
+	  e.g. copy.
+
+	* hash.c (rb_hash_aset): use st_insert2() to reduce redundant
+	  st_lookup calls.
+
 Wed May 27 02:31:38 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_getc): the function for
