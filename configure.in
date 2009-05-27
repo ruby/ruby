@@ -930,7 +930,7 @@ AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(limits.h sys/file.h sys/ioctl.h sys/syscall.h\
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
 		 syscall.h pwd.h grp.h a.out.h utime.h direct.h sys/resource.h \
-		 sys/mkdev.h sys/utime.h xti.h netinet/in_systm.h float.h ieeefp.h pthread.h \
+		 sys/mkdev.h sys/utime.h xti.h netinet/in_systm.h float.h ieeefp.h \
 		 ucontext.h intrinsics.h langinfo.h locale.h sys/sendfile.h time.h \
 		 net/socket.h sys/socket.h)
 
@@ -2166,6 +2166,17 @@ case "$target_os" in
 	;;
 esac
 MINIOBJS="$MINIDLNOBJ"
+
+case "$THREAD_MODEL" in
+when(pthread)
+    AC_CHECK_HEADERS(pthread.h)
+    ;;
+when(win32)
+    ;;
+when(*)
+    AC_MSG_ERROR(unknown thread model $THREAD_MODEL)
+    ;;
+esac
 
 case "$FIRSTMAKEFILE" in
 when(*GNUmakefile:*)

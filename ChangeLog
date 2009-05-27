@@ -1,3 +1,8 @@
+Thu May 28 07:39:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (THREAD_MODEL): reject unknown value and checks
+	  pthread.h only when pthread.  [ruby-core:23577]
+
 Thu May 28 03:47:46 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sample/optparse/opttest.rb: typo fixed.  [ruby-dev:38544]
