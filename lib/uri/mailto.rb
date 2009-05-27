@@ -159,7 +159,7 @@ module URI
       return true unless v
       return true if v.size == 0
 
-      if @parser.regexp[:OPAQUE] !~ v || /\A#{MAILBOX_PATTERN}*\z/o !~ v
+      if parser.regexp[:OPAQUE] !~ v || /\A#{MAILBOX_PATTERN}*\z/o !~ v
         raise InvalidComponentError,
           "bad component(expected opaque component): #{v}"
       end
@@ -183,7 +183,7 @@ module URI
       return true unless v
       return true if v.size == 0
 
-      if @parser.regexp[:OPAQUE] !~ v ||
+      if parser.regexp[:OPAQUE] !~ v ||
           /\A(#{HEADER_PATTERN}(?:\&#{HEADER_PATTERN})*)\z/o !~ v
         raise InvalidComponentError,
           "bad component(expected opaque component): #{v}"
@@ -239,18 +239,18 @@ module URI
     #   # => "To: ruby-list@ruby-lang.org\nSubject: subscribe\nCc: myaddr\n\n\n"
     #
     def to_mailtext
-      to = @parser.unescape(@to)
+      to = parser.unescape(@to)
       head = ''
       body = ''
       @headers.each do |x|
         case x[0]
         when 'body'
-          body = @parser.unescape(x[1])
+          body = parser.unescape(x[1])
         when 'to'
-          to << ', ' + @parser.unescape(x[1])
+          to << ', ' + parser.unescape(x[1])
         else
-          head << @parser.unescape(x[0]).capitalize + ': ' +
-            @parser.unescape(x[1])  + "\n"
+          head << parser.unescape(x[0]).capitalize + ': ' +
+            parser.unescape(x[1])  + "\n"
         end
       end
 
