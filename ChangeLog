@@ -1,3 +1,8 @@
+Fri May 29 10:04:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_inspect): rescurses with defined ID to get rid
+	  of extra call.  [ruby-core:23601]
+
 Fri May 29 09:30:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (collect_all): checks interrupts.  [ruby-core:23594]
