@@ -900,8 +900,8 @@ Init_Struct(void)
     rb_define_method(rb_cStruct, "eql?", rb_struct_eql, 1);
     rb_define_method(rb_cStruct, "hash", rb_struct_hash, 0);
 
-    rb_define_method(rb_cStruct, "to_s", rb_struct_inspect, 0);
     rb_define_method(rb_cStruct, "inspect", rb_struct_inspect, 0);
+    rb_define_alias(rb_cStruct,  "to_s", "inspect");
     rb_define_method(rb_cStruct, "to_a", rb_struct_to_a, 0);
     rb_define_method(rb_cStruct, "values", rb_struct_to_a, 0);
     rb_define_method(rb_cStruct, "size", rb_struct_size, 0);

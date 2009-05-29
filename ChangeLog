@@ -1,7 +1,13 @@
+Fri May 29 17:10:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (Init_Struct): made #to_s an alias to #inspect to
+	  reduce the result of recursive struct.  a patch from ujihisa a
+	  [ruby-dev:38554].
+
 Fri May 29 17:08:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (Init_Hash): made #to_s an alias to #inspect to reduce
-	  the result of recursive array.  a patch from ujihisa a
+	  the result of recursive hash.  a patch from ujihisa a
 	  [ruby-core:23601].  [ruby-dev:38555]
 
 Fri May 29 09:30:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
