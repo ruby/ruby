@@ -482,7 +482,7 @@ unlock_mutex_inner(Mutex *mutex)
 
     waking = wake_one(&mutex->waiting);
     if (!NIL_P(waking)) {
-	adjust_join(list, waking);
+	adjust_join(&mutex->waiting, waking);
     }
     mutex->owner = waking;
 
