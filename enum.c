@@ -362,6 +362,7 @@ collect_i(VALUE i, VALUE ary, int argc, VALUE *argv)
 static VALUE
 collect_all(VALUE i, VALUE ary, int argc, VALUE *argv)
 {
+    rb_thread_check_ints();
     rb_ary_push(ary, enum_values_pack(argc, argv));
 
     return Qnil;
