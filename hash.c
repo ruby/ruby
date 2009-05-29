@@ -1231,21 +1231,19 @@ rb_hash_to_a(VALUE hash)
 }
 
 static int
-inspect_i(VALUE key, VALUE value, VALUE args)
+inspect_i(VALUE key, VALUE value, VALUE str)
 {
-    VALUE *arg = (VALUE *)args;
-    VALUE str = arg[0], str2;
-    ID funcid = (ID)arg[1];
+    VALUE str2;
 
     if (key == Qundef) return ST_CONTINUE;
     if (RSTRING_LEN(str) > 1) {
 	rb_str_cat2(str, ", ");
     }
-    str2 = rb_obj_as_string(rb_funcall(key, funcid, 0, 0));
+    str2 = rb_inspect(key);
     rb_str_buf_append(str, str2);
     OBJ_INFECT(str, str2);
     rb_str_buf_cat2(str, "=>");
-    str2 = rb_obj_as_string(rb_funcall(value, funcid, 0, 0));
+    str2 = rb_inspect(value);
     rb_str_buf_append(str, str2);
     OBJ_INFECT(str, str2);
 
@@ -1253,15 +1251,13 @@ inspect_i(VALUE key, VALUE value, VALUE args)
 }
 
 static VALUE
-inspect_hash(VALUE hash, VALUE funcname, int recur)
+inspect_hash(VALUE hash, VALUE dummy, int recur)
 {
-    VALUE str, args[2];
+    VALUE str;
 
     if (recur) return rb_usascii_str_new2("{...}");
     str = rb_str_buf_new2("{");
-    args[0] = str;
-    args[1] = funcname;
-    rb_hash_foreach(hash, inspect_i, (VALUE)args);
+    rb_hash_foreach(hash, inspect_i, str);
     rb_str_buf_cat2(str, "}");
     OBJ_INFECT(str, hash);
 
@@ -1284,7 +1280,7 @@ rb_hash_inspect(VALUE hash)
 {
     if (RHASH_EMPTY_P(hash))
 	return rb_usascii_str_new2("{}");
-    return rb_exec_recursive(inspect_hash, hash, (VALUE)rb_frame_this_func());
+    return rb_exec_recursive(inspect_hash, hash, 0);
 }
 
 /*
@@ -2628,8 +2624,8 @@ Init_Hash(void)
 
     rb_define_method(rb_cHash,"to_hash", rb_hash_to_hash, 0);
     rb_define_method(rb_cHash,"to_a", rb_hash_to_a, 0);
-    rb_define_method(rb_cHash,"to_s", rb_hash_inspect, 0);
     rb_define_method(rb_cHash,"inspect", rb_hash_inspect, 0);
+    rb_define_alias(rb_cHash, "to_s", "inspect");
 
     rb_define_method(rb_cHash,"==", rb_hash_equal, 1);
     rb_define_method(rb_cHash,"[]", rb_hash_aref, 1);
