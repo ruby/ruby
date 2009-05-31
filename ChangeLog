@@ -1,3 +1,8 @@
+Mon Jun  1 07:20:02 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_f): returns Inf if
+	  exp is bigger than DBL_MANT_DIG.
+
 Sun May 31 23:28:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): checks for duplication of source

@@ -592,14 +592,16 @@ BigDecimal_to_f(VALUE self)
 
     GUARD_OBJ(p,GetVpValue(self,1));
     if(VpVtoD(&d, &e, p)!=1) return rb_float_new(d);
+    if (e > DBL_MAX_10_EXP) goto erange;
     buf = ALLOCA_N(char,(unsigned int)VpNumOfChars(p,"E"));
     VpToString(p, buf, 0, 0);
     errno = 0;
     d = strtod(buf, 0);
     if(errno == ERANGE) {
+      erange:
        VpException(VP_EXCEPTION_OVERFLOW,"BigDecimal to Float conversion",0);
-       if(d>0.0) return rb_float_new(DBL_MAX);
-       else      return rb_float_new(-DBL_MAX);
+       if(d>0.0) d = VpGetDoublePosInf();
+       else      d = VpGetDoubleNegInf();
     }
     return rb_float_new(d);
 }
