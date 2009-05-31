@@ -1643,20 +1643,22 @@ def create_makefile(target, srcprefix = nil)
   srcprefix ||= '$(srcdir)'
   RbConfig::expand(srcdir = srcprefix.dup)
 
+  ext = ".#{$OBJEXT}"
   if not $objs
-    $objs = []
-    srcs = Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
-    for f in srcs
-      obj = File.basename(f, ".*") << ".o"
-      $objs.push(obj) unless $objs.index(obj)
+    srcs = $srcs || Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
+    objs = srcs.inject(Hash.new {[]}) {|h, f| h[File.basename(f, ".*") << ext] <<= f; h}
+    $objs = objs.keys
+    unless objs.delete_if {|b, f| f.size == 1}.empty?
+      dups = objs.sort.map {|b, f|
+        "#{b[/.*\./]}{#{f.collect {|n| n[/([^.]+)\z/]}.join(',')}}"
+      }
+      abort "source files duplication - #{dups.join(", ")}"
     end
-  elsif !(srcs = $srcs)
-    srcs = $objs.collect {|o| o.sub(/\.o\z/, '.c')}
+  else
+    $objs.collect! {|o| File.basename(o, ".*") << ext} unless $OBJEXT == "o"
+    srcs = $srcs || $objs.collect {|o| o.chomp(ext) << ".c"}
   end
   $srcs = srcs
-  $objs.map! do |obj|
-    obj.sub(/\.o\z/, ".#{$OBJEXT}")
-  end
 
   target = nil if $objs.empty?
 
