@@ -1457,19 +1457,18 @@ def create_makefile(target, srcprefix = nil)
   srcprefix ||= '$(srcdir)'
   Config::expand(srcdir = srcprefix.dup)
 
+  ext = ".#{$OBJEXT}"
   if not $objs
-    $objs = []
-    srcs = Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
-    for f in srcs
-      obj = File.basename(f, ".*") << ".o"
-      $objs.push(obj) unless $objs.index(obj)
+    srcs = $srcs ||= Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
+    objs = srcs.inject(Hash.new {[]}) {|h, f| h[File.basename(f, ".*") << ext] <<= f; h}
+    $objs = objs.keys
+    objs.delete_if {|b, f| f.size == 1}
+    unless objs.empty?
+      raise "source files duplication - #{objs.sort.map {|b, f| f.inspect}.join(", ")}"
     end
-  elsif !(srcs = $srcs)
-    srcs = $objs.collect {|obj| obj.sub(/\.o\z/, '.c')}
-  end
-  $srcs = srcs
-  for i in $objs
-    i.sub!(/\.o\z/, ".#{$OBJEXT}")
+  else
+    $objs.collect! {|o| o.chomp(".o") << ext} unless $OBJEXT == "o"
+    $srcs ||= $objs.collect {|o| o.chomp(ext) << ".c"}
   end
 
   target = nil if $objs.empty?

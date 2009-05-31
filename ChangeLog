@@ -1,3 +1,8 @@
+Sun May 31 23:28:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): checks for duplication of source
+	  files.
+
 Sun May 31 23:26:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (istrailinggarbage): fixed typo.
