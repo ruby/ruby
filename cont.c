@@ -29,8 +29,8 @@ typedef struct rb_context_struct {
     VALUE value;
     VALUE *vm_stack;
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-    int vm_stack_slen;  /* length of stack (head of th->stack) */
-    int vm_stack_clen;  /* length of control frames (tail of th->stack) */
+    size_t vm_stack_slen;  /* length of stack (head of th->stack) */
+    size_t vm_stack_clen;  /* length of control frames (tail of th->stack) */
 #endif
     VALUE *machine_stack;
     VALUE *machine_stack_src;
@@ -179,7 +179,7 @@ fiber_free(void *ptr)
 static void
 cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 {
-    int size;
+    size_t size;
     rb_thread_t *sth = &cont->saved_thread;
 
     SET_MACHINE_STACK_END(&th->machine_stack_end);
