@@ -173,5 +173,10 @@ class TestFiber < Test::Unit::TestCase
     fib.resume
     assert_equal(false, fib.alive?)
   end
+
+  def test_resume_self
+    f = Fiber.new {f.resume}
+    assert_raise(FiberError, '[ruby-core:23651]') {f.transfer}
+  end
 end
 

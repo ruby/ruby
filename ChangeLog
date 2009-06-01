@@ -1,3 +1,10 @@
+Mon Jun  1 11:21:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (cont_capture, fiber_store): reraise transferred error.
+
+	* cont.c (fiber_switch): transfers dead fiber error to the previouse
+	  or root fiber if the current fiber is dead.  [ruby-core:23651]
+
 Mon Jun  1 10:41:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_exc_new2): optimization for literal.
