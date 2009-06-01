@@ -693,6 +693,12 @@ size_t rb_str_capacity(VALUE);
 	rb_str_cat(str, ptr, strlen(ptr)) :	\
 	rb_str_cat2(str, ptr);			\
 })
+#define rb_exc_new2(klass, ptr) __extension__ ( \
+{						\
+    (__builtin_constant_p(ptr)) ?	        \
+	rb_exc_new(klass, ptr, strlen(ptr)) :	\
+	rb_exc_new2(klass, ptr);		\
+})
 #endif
 #define rb_str_new2 rb_str_new_cstr
 #define rb_str_new3 rb_str_new_shared

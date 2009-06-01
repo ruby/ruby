@@ -348,6 +348,8 @@ VALUE rb_eSystemCallError;
 VALUE rb_mErrno;
 static VALUE rb_eNOERROR;
 
+#undef rb_exc_new2
+
 VALUE
 rb_exc_new(VALUE etype, const char *ptr, long len)
 {

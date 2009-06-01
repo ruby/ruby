@@ -1,3 +1,7 @@
+Mon Jun  1 10:41:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_exc_new2): optimization for literal.
+
 Mon Jun  1 07:20:02 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_f): returns Inf if
