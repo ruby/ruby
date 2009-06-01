@@ -1,3 +1,10 @@
+Mon Jun  1 20:45:48 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): should set srcs in all paths.
+
+	* lib/mkmf.rb (create_makefile): $objs somtimes includes files with
+	  $OBJEXT instead of ".o".
+
 Mon Jun  1 09:02:48 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (VpAlloc): avoid ALLOCA_N() to avoid

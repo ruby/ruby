@@ -1467,8 +1467,8 @@ def create_makefile(target, srcprefix = nil)
       raise "source files duplication - #{objs.sort.map {|b, f| f.inspect}.join(", ")}"
     end
   else
-    $objs.collect! {|o| o.chomp(".o") << ext} unless $OBJEXT == "o"
-    $srcs ||= $objs.collect {|o| o.chomp(ext) << ".c"}
+    $objs.collect! {|o| o.sub(/\.o\z/, ext)} unless $OBJEXT == "o"
+    srcs = $srcs ||= $objs.collect {|o| o.chomp(ext) << ".c"}
   end
 
   target = nil if $objs.empty?
