@@ -1,3 +1,7 @@
+Tue Jun  2 13:27:21 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ripper/test_filter.rb: add tests. see [ruby-dev:37856]
+
 Mon Jun  1 11:21:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (cont_capture, fiber_store): reraise transferred error.
