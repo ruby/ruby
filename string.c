@@ -3744,7 +3744,6 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
                 val = rb_obj_as_string(val);
             }
 	    str_mod_check(str, sp, slen);
-	    if (bang) str_frozen_check(str);
 	    if (val == dest) { 	/* paranoid check [ruby-dev:24827] */
 		rb_raise(rb_eRuntimeError, "block should not cheat");
 	    }
@@ -3808,6 +3807,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 static VALUE
 rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
 {
+    str_modify_keep_cr(str);
     return str_gsub(argc, argv, str, 1);
 }
 
@@ -4048,6 +4048,9 @@ rb_str_reverse_bang(VALUE str)
 	else {
 	    rb_str_shared_replace(str, rb_str_reverse(str));
 	}
+    }
+    else {
+	str_modify_keep_cr(str);
     }
     return str;
 }
@@ -6044,12 +6047,15 @@ chopped_length(VALUE str)
 static VALUE
 rb_str_chop_bang(VALUE str)
 {
+    str_modify_keep_cr(str);
     if (RSTRING_LEN(str) > 0) {
 	long len;
-	rb_str_modify(str);
 	len = chopped_length(str);
 	STR_SET_LEN(str, len);
 	RSTRING_PTR(str)[len] = '\0';
+	if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
+	    ENC_CODERANGE_CLEAR(str);
+	}
 	return str;
     }
     return Qnil;
@@ -6100,6 +6106,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
     char *p, *pp, *e;
     long len, rslen;
 
+    str_modify_keep_cr(str);
     len = RSTRING_LEN(str);
     if (len == 0) return Qnil;
     p = RSTRING_PTR(str);
@@ -6108,7 +6115,6 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 	rs = rb_rs;
 	if (rs == rb_default_rs) {
 	  smart_chomp:
-	    str_modify_keep_cr(str);
 	    enc = rb_enc_get(str);
 	    if (rb_enc_mbminlen(enc) > 1) {
 		pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
@@ -6160,7 +6166,6 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 		len--;
 	}
 	if (len < RSTRING_LEN(str)) {
-	    str_modify_keep_cr(str);
 	    STR_SET_LEN(str, len);
 	    RSTRING_PTR(str)[len] = '\0';
 	    return str;
@@ -6182,7 +6187,6 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 	 memcmp(RSTRING_PTR(rs), pp, rslen) == 0)) {
 	if (rb_enc_left_char_head(p, pp, e, enc) != pp)
 	    return Qnil;
-	str_modify_keep_cr(str);
 	if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
 	    ENC_CODERANGE_CLEAR(str);
 	}
@@ -6301,6 +6305,7 @@ rb_str_rstrip_bang(VALUE str)
     rb_encoding *enc;
     char *s, *t, *e;
 
+    str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str);
@@ -6324,7 +6329,6 @@ rb_str_rstrip_bang(VALUE str)
     if (t < e) {
 	int len = t-RSTRING_PTR(str);
 
-	str_modify_keep_cr(str);
 	STR_SET_LEN(str, len);
 	RSTRING_PTR(str)[len] = '\0';
 	return str;

@@ -2,6 +2,19 @@ Tue Jun  2 13:27:21 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ripper/test_filter.rb: add tests. see [ruby-dev:37856]
 
+Tue Jun  2 07:44:43 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_gsub_bang): modify check at the beginning.
+	  [ruby-core:23662]  ref [ruby-core:23657]
+
+	* string.c (rb_str_rstrip_bang): ditto.  [ruby-core:23657]
+
+	* string.c (rb_str_chop_bang): ditto.
+
+	* string.c (rb_str_chomp_bang): ditto.
+
+	* string.c (rb_str_reverse_bang): modify check added.  [ruby-core:23671]
+
 Mon Jun  1 11:21:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (cont_capture, fiber_store): reraise transferred error.
