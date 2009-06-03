@@ -1,5 +1,5 @@
 #
-# = base64.rb: methods for base64-encoding and -decoding stings
+# = base64.rb: methods for base64-encoding and -decoding strings
 #
 # Author:: Yukihiro Matsumoto 
 # Documentation:: Dave Thomas and Gavin Sinclair
