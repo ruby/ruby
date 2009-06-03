@@ -1958,7 +1958,7 @@ Init_bigdecimal(void)
  *
  */
 #ifdef _DEBUG
-/*static int gfDebug = 1;*/         /* Debug switch */
+static int gfDebug = 1;         /* Debug switch */
 static int gfCheckVal = 1;      /* Value checking flag in VpNmlz()  */
 #endif /* _DEBUG */
 
