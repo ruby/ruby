@@ -1,3 +1,7 @@
+Wed Jun  3 09:03:23 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_first): should check negative length.
+
 Tue Jun  2 17:32:40 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (first_i): Enumerator#first should consume only what is

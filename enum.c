@@ -654,6 +654,9 @@ enum_first(int argc, VALUE *argv, VALUE obj)
 	rb_scan_args(argc, argv, "01", &n);
 	len = NUM2LONG(n);
 	if (len == 0) return rb_ary_new2(0);
+	if (len < 0) {
+	    rb_raise(rb_eArgError, "negative length");
+	}
 	ary[0] = len;
 	ary[1] = rb_ary_new2(len);
     }
