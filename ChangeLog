@@ -1,3 +1,7 @@
+Wed Jun  3 21:16:30 2009  Tanaka Akira  <akr@fsij.org>
+
+	* file.c: include fcntl.h for O_RDONLY on Solaris.
+
 Wed Jun  3 21:09:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (rv_strdup): macro to duplicate nul-terminated string.
