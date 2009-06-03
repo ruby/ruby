@@ -1,3 +1,7 @@
+Thu Jun  4 02:25:51 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/base64.rb: typo fixed.  a patch from okkez.   [ruby-dev:38564]
+
 Wed Jun  3 09:03:23 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_first): should check negative length.

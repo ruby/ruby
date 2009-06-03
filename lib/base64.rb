@@ -1,5 +1,5 @@
 #
-# = base64.rb: methods for base64-encoding and -decoding stings
+# = base64.rb: methods for base64-encoding and -decoding strings
 #
 
 # The Base64 module provides for the encoding (#encode64, #strict_encode64,
