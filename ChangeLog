@@ -1,3 +1,9 @@
+Wed Jun  3 20:54:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval): needs to guard intermediate string objects.
+	  based on a patch from Brent Roman <brent AT mbari.org> a
+	  [ruby-core:22584].
+
 Tue May 26 21:24:01 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* Makefile.in (update-rubyspec, test-rubyspec): Catch up to
