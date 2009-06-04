@@ -105,6 +105,13 @@ representation of var.  These macros will skip the replacement if var is
 a String.  Notice that the macros take only the lvalue as their
 argument, to change the value of var in place.
 
+You can also use the macro named StringValueCStr(). This is just
+like StringValuePtr(), but always add nul character at the end of
+the result. If the result contains nul character, this macro causes
+the ArgumentError exception.
+StringValuePtr() doesn't gurantee to exist nul at the end of the
+result, and the result may contain nul.
+
 In version 1.6 or earlier, STR2CSTR() was used to do the same thing
 but now it is deprecated in version 1.7, because STR2CSTR() has a risk
 of a dangling pointer problem in the to_str() impliclit conversion.
@@ -115,10 +122,10 @@ can be cast to retrieve the pointer to the struct.  The casting macro
 will be of the form RXXXX for each data type; for instance, RARRAY(obj). 
 See "ruby.h".
 
-For example, `RSTRING(str)->len' is the way to get the size of the
-Ruby String object.  The allocated region can be accessed by
-`RSTRING(str)->ptr'.  For arrays, use `RARRAY(ary)->len' and
-`RARRAY(ary)->ptr' respectively.
+There are some accessing macros for structure members, for example
+`RSTRING_LEN(s)' to get the size of the Ruby String object.  The
+allocated region can be accessed by `RSTRING_PTR(str)'.  For arrays,
+use `RARRAY_LEN(ary)' and `RARRAY_PTR(ary)' respectively.
 
 Notice: Do not change the value of the structure directly, unless you
 are responsible for the result.  This ends up being the cause of interesting
@@ -209,7 +216,7 @@ interpreter. Some (not all) of the useful functions are listed below:
 
 2. Extending Ruby with C
 
-2.1 Addding new features to Ruby
+2.1 Adding new features to Ruby
 
 You can add new features (classes, methods, etc.) to the Ruby
 interpreter.  Ruby provides APIs for defining the following things:

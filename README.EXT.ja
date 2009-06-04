@@ -117,6 +117,13 @@ obsolete となり、代わりに StringValue() と StringValuePtr()
 てから var の文字列表現に対する char* を返すマクロです。var の
 内容を直接置き換える処理が入るので、var は lvalue である必要が
 あります。
+また，StringValuePtr() に類似した StringValueCStr() というマ
+クロもあります．StringValueCStr(var) は var を String に置き
+換えてから var の文字列表現に対する char* を返します．返され
+る文字列の末尾には nul 文字が付加されます．なお，途中に nul
+文字が含まれる場合は ArgumentError が発生します．
+一方，StringValuePtr() では，末尾に nul 文字がある保証はなく，
+途中に nul 文字が含まれている可能性もあります．
 
 それ以外のデータタイプは対応するCの構造体があります．対応す
 る構造体のあるVALUEはそのままキャスト(型変換)すれば構造体の
@@ -129,10 +136,10 @@ obsolete となり、代わりに StringValue() と StringValuePtr()
 ruby.hでは構造体へキャストするマクロも「RXXXXX()」(全部大文
 字にしたもの)という名前で提供されています(例: RSTRING())．
 
-例えば，文字列strの長さを得るためには「RSTRING(str)->len」と
-し，文字列strをchar*として得るためには「RSTRING(str)->ptr」
-とします．配列の場合には，それぞれ「RARRAY(ary)->len」，
-「RARRAY(ary)->ptr」となります．
+例えば，文字列strの長さを得るためには「RSTRING_LEN(str)」とし，
+文字列strをchar*として得るためには「RSTRING_PTR(str)」としま
+す．配列の場合には，それぞれ「RARRAY_LEN(ary)」，
+「RARRAY_PTR(ary)」となります．
 
 Rubyの構造体を直接アクセスする時に気をつけなければならないこ
 とは，配列や文字列の構造体の中身は参照するだけで，直接変更し
