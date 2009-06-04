@@ -125,9 +125,9 @@ casting macro will be of the form RXXXX for each data type; for
 instance, RARRAY(obj).  See "ruby.h".
 
 There are some accessing macros for structure members, for example
-`RSTRING_LEN(s)' to to get the size of the Ruby String object.  The
-allocated region can be accessed by `RSTRING_PTR(str).  For arrays, use
-`RARRAY_LEN(ary) and `RARRAY_PTR(ary) respectively.
+`RSTRING_LEN(str)' to get the size of the Ruby String object.  The
+allocated region can be accessed by `RSTRING_PTR(str)'.  For arrays,
+use `RARRAY_LEN(ary)' and `RARRAY_PTR(ary)' respectively.
 
 Notice: Do not change the value of the structure directly, unless you
 are responsible for the result.  This ends up being the cause of
