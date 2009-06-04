@@ -1,3 +1,8 @@
+Fri Jun  5 07:12:32 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/mkmf.rb (#link_command): should dup CONFTEST_C which is
+	  frozen.  ref  [ruby-core:23675].  [ruby-core:23702]
+
 Thu Jun  4 02:25:51 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/base64.rb: typo fixed.  a patch from okkez.   [ruby-dev:38564]
