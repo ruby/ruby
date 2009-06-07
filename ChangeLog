@@ -1,3 +1,18 @@
+Mon Jun  8 08:15:36 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (VpAlloc): avoid ALLOCA_N() to avoid
+	  segmentation fault caused by (insanely) long decimal values.
+	  backported from 1.9. CVE-2009-1904
+ 
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_dump, BigDecimal_to_i,
+	  BigDecimal_to_f, BigDecimal_to_s, BigDecimal_split,
+	  BigDecimal_inspect): ditto.
+
+Mon Jun  8 08:15:36 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_f): returns Inf if
+	  exp is bigger than DBL_MANT_DIG.
+
 Wed Jun  3 21:16:30 2009  Tanaka Akira  <akr@fsij.org>
 
 	* file.c: include fcntl.h for O_RDONLY on Solaris.
