@@ -824,13 +824,13 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_to_c
     c = nil.to_c
-    assert_equal([0,0] , [c.real, c.imag])
+    assert_equal([0,0], [c.real, c.imag])
 
     c = 0.to_c
-    assert_equal([0,0] , [c.real, c.imag])
+    assert_equal([0,0], [c.real, c.imag])
 
     c = 1.to_c
-    assert_equal([1,0] , [c.real, c.imag])
+    assert_equal([1,0], [c.real, c.imag])
 
     c = 1.1.to_c
     assert_equal([1.1, 0], [c.real, c.imag])

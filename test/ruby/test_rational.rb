@@ -920,20 +920,20 @@ class Rational_Test < Test::Unit::TestCase
 
   def test_to_r
     c = nil.to_r
-    assert_equal([0,1] , [c.numerator, c.denominator])
+    assert_equal([0,1], [c.numerator, c.denominator])
 
     c = 0.to_r
-    assert_equal([0,1] , [c.numerator, c.denominator])
+    assert_equal([0,1], [c.numerator, c.denominator])
 
     c = 1.to_r
-    assert_equal([1,1] , [c.numerator, c.denominator])
+    assert_equal([1,1], [c.numerator, c.denominator])
 
     c = 1.1.to_r
     assert_equal([2476979795053773, 2251799813685248],
 		 [c.numerator, c.denominator])
 
     c = Rational(1,2).to_r
-    assert_equal([1,2] , [c.numerator, c.denominator])
+    assert_equal([1,2], [c.numerator, c.denominator])
 
     if @complex
       if @keiju
