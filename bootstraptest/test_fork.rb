@@ -20,3 +20,9 @@ assert_finish 10, %q{
   rescue NotImplementedError
   end
 }, '[ruby-core:22158]'
+
+assert_normal_exit(<<'End', '[ruby-dev:37934]')
+  Thread.new { sleep 1; Thread.kill Thread.main }
+  Process.setrlimit(:NPROC, 1)
+  fork {}
+End

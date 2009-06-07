@@ -797,7 +797,8 @@ rb_thread_create_timer_thread(void)
 	err = pthread_create(&timer_thread_id, &attr, thread_timer, 0);
 	if (err != 0) {
 	    native_mutex_unlock(&timer_thread_lock);
-	    rb_bug("rb_thread_create_timer_thread: return non-zero (%d)", err);
+	    fprintf(stderr, "[FATAL] Failed to create timer thread (errno: %d)\n", err);
+	    exit(EXIT_FAILURE);
 	}
 	native_cond_wait(&timer_thread_cond, &timer_thread_lock);
 	native_mutex_unlock(&timer_thread_lock);

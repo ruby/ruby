@@ -1,3 +1,10 @@
+Mon Jun  8 05:07:41 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_pthread.c (rb_thread_create_timer_thread): print fatal error
+	  message to stderr instead of using rb_bug().
+
+	* KNOWNBUGS.rb, bootstraptest/test_fork.rb: move a fixed test.
+
 Sun Jun  7 22:44:20 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/cmath.rb (log): avoided redundant expression.
