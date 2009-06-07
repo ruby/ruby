@@ -38,8 +38,7 @@ module CMath
     if z.real? and z >= 0 and (b.nil? or b >= 0)
       log!(*args)
     else
-      r, theta = z.polar
-      a = Complex(log!(r.abs), theta)
+      a = Complex(log!(z.abs), z.arg)
       if b
 	a /= log(b)
       end
