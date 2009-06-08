@@ -232,7 +232,7 @@ class MIMEMessage
   end
 
   def to_s
-    str = headers_str + "\r\n\r\n" + conent_str
+    str = headers_str + "\r\n\r\n" + content_str
   end
 end
 
