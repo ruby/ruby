@@ -185,8 +185,8 @@ enum {
     RAISED_STACKOVERFLOW = 2,
     RAISED_NOMEMORY = 4
 };
-int rb_thread_set_raised(rb_thread_t *th);
-int rb_thread_reset_raised(rb_thread_t *th);
+int rb_threadptr_set_raised(rb_thread_t *th);
+int rb_threadptr_reset_raised(rb_thread_t *th);
 #define rb_thread_raised_set(th, f)   ((th)->raised_flag |= (f))
 #define rb_thread_raised_reset(th, f) ((th)->raised_flag &= ~(f))
 #define rb_thread_raised_p(th, f)     (((th)->raised_flag & (f)) != 0)

@@ -215,7 +215,7 @@ error_handle(int ex)
     int status = EXIT_FAILURE;
     rb_thread_t *th = GET_THREAD();
 
-    if (rb_thread_set_raised(th))
+    if (rb_threadptr_set_raised(th))
 	return EXIT_FAILURE;
     switch (ex & TAG_MASK) {
       case 0:
@@ -267,6 +267,6 @@ error_handle(int ex)
 	rb_bug("Unknown longjmp status %d", ex);
 	break;
     }
-    rb_thread_reset_raised(th);
+    rb_threadptr_reset_raised(th);
     return status;
 }

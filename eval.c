@@ -341,7 +341,7 @@ rb_longjmp(int tag, volatile VALUE mesg)
     const char *file;
     volatile int line = 0;
 
-    if (rb_thread_set_raised(th)) {
+    if (rb_threadptr_set_raised(th)) {
 	th->errinfo = exception_error;
 	JUMP_TAG(TAG_FATAL);
     }
@@ -391,7 +391,7 @@ rb_longjmp(int tag, volatile VALUE mesg)
 	    th->errinfo = mesg;
 	}
 	else if (status) {
-	    rb_thread_reset_raised(th);
+	    rb_threadptr_reset_raised(th);
 	    JUMP_TAG(status);
 	}
     }

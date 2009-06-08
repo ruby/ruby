@@ -664,12 +664,12 @@ rb_signal_exec(rb_thread_t *th, int sig)
 #ifdef SIGUSR2
 	  case SIGUSR2:
 #endif
-	    rb_thread_signal_raise(th, sig);
+	    rb_threadptr_signal_raise(th, sig);
 	    break;
 	}
     }
     else if (cmd == Qundef) {
-	rb_thread_signal_exit(th);
+	rb_threadptr_signal_exit(th);
     }
     else {
 	signal_exec(cmd, safe, sig);

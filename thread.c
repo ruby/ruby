@@ -65,7 +65,7 @@ static void sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec);
 static void sleep_forever(rb_thread_t *th, int nodeadlock);
 static double timeofday(void);
 struct timeval rb_time_interval(VALUE);
-static int rb_thread_dead(rb_thread_t *th);
+static int rb_threadptr_dead(rb_thread_t *th);
 
 static void rb_check_deadlock(rb_vm_t *vm);
 
@@ -249,7 +249,7 @@ reset_unblock_function(rb_thread_t *th, const struct rb_unblock_callback *old)
 }
 
 static void
-rb_thread_interrupt(rb_thread_t *th)
+rb_threadptr_interrupt(rb_thread_t *th)
 {
     native_mutex_lock(&th->interrupt_lock);
     RUBY_VM_SET_INTERRUPT(th);
@@ -272,7 +272,7 @@ terminate_i(st_data_t key, st_data_t val, rb_thread_t *main_thread)
 
     if (th != main_thread) {
 	thread_debug("terminate_i: %p\n", (void *)th);
-	rb_thread_interrupt(th);
+	rb_threadptr_interrupt(th);
 	th->thrown_errinfo = eTerminateSignal;
 	th->status = THREAD_TO_KILL;
     }
@@ -350,7 +350,7 @@ thread_cleanup_func(void *th_ptr)
 }
 
 extern void ruby_error_print(void);
-static VALUE rb_thread_raise(int, VALUE *, rb_thread_t *);
+static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
 void rb_thread_recycle_stack_release(VALUE *);
 
 void
@@ -429,7 +429,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	if (th != main_th) {
 	    if (TYPE(errinfo) == T_OBJECT) {
 		/* treat with normal error object */
-		rb_thread_raise(1, &errinfo, main_th);
+		rb_threadptr_raise(main_th, 1, &errinfo);
 	    }
 	}
 	TH_POP_TAG();
@@ -449,7 +449,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	join_th = th->join_list_head;
 	while (join_th) {
 	    if (join_th == main_th) errinfo = Qnil;
-	    rb_thread_interrupt(join_th);
+	    rb_threadptr_interrupt(join_th);
 	    switch (join_th->status) {
 	      case THREAD_STOPPED: case THREAD_STOPPED_FOREVER:
 		join_th->status = THREAD_RUNNABLE;
@@ -1180,7 +1180,7 @@ thread_s_pass(VALUE klass)
  */
 
 void
-rb_thread_execute_interrupts(rb_thread_t *th)
+rb_threadptr_execute_interrupts(rb_thread_t *th)
 {
     if (GET_VM()->main_thread == th) {
 	while (rb_signal_buff_size() && !th->exec_signal) native_thread_yield();
@@ -1254,18 +1254,18 @@ rb_gc_mark_threads(void)
 /*****************************************************/
 
 static void
-rb_thread_ready(rb_thread_t *th)
+rb_threadptr_ready(rb_thread_t *th)
 {
-    rb_thread_interrupt(th);
+    rb_threadptr_interrupt(th);
 }
 
 static VALUE
-rb_thread_raise(int argc, VALUE *argv, rb_thread_t *th)
+rb_threadptr_raise(rb_thread_t *th, int argc, VALUE *argv)
 {
     VALUE exc;
 
   again:
-    if (rb_thread_dead(th)) {
+    if (rb_threadptr_dead(th)) {
 	return Qnil;
     }
 
@@ -1276,30 +1276,28 @@ rb_thread_raise(int argc, VALUE *argv, rb_thread_t *th)
 
     exc = rb_make_exception(argc, argv);
     th->thrown_errinfo = exc;
-    rb_thread_ready(th);
+    rb_threadptr_ready(th);
     return Qnil;
 }
 
 void
-rb_thread_signal_raise(void *thptr, int sig)
+rb_threadptr_signal_raise(rb_thread_t *th, int sig)
 {
     VALUE argv[2];
-    rb_thread_t *th = thptr;
 
     argv[0] = rb_eSignal;
     argv[1] = INT2FIX(sig);
-    rb_thread_raise(2, argv, th->vm->main_thread);
+    rb_threadptr_raise(th->vm->main_thread, 2, argv);
 }
 
 void
-rb_thread_signal_exit(void *thptr)
+rb_threadptr_signal_exit(rb_thread_t *th)
 {
     VALUE argv[2];
-    rb_thread_t *th = thptr;
 
     argv[0] = rb_eSystemExit;
     argv[1] = rb_str_new2("exit");
-    rb_thread_raise(2, argv, th->vm->main_thread);
+    rb_threadptr_raise(th->vm->main_thread, 2, argv);
 }
 
 void
@@ -1311,7 +1309,7 @@ ruby_thread_stack_overflow(rb_thread_t *th)
 }
 
 int
-rb_thread_set_raised(rb_thread_t *th)
+rb_threadptr_set_raised(rb_thread_t *th)
 {
     if (th->raised_flag & RAISED_EXCEPTION) {
 	return 1;
@@ -1321,7 +1319,7 @@ rb_thread_set_raised(rb_thread_t *th)
 }
 
 int
-rb_thread_reset_raised(rb_thread_t *th)
+rb_threadptr_reset_raised(rb_thread_t *th)
 {
     if (!(th->raised_flag & RAISED_EXCEPTION)) {
 	return 0;
@@ -1360,7 +1358,7 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
 {
     rb_thread_t *th;
     GetThreadPtr(self, th);
-    rb_thread_raise(argc, argv, th);
+    rb_threadptr_raise(th, argc, argv);
     return Qnil;
 }
 
@@ -1396,7 +1394,7 @@ rb_thread_kill(VALUE thread)
 
     thread_debug("rb_thread_kill: %p (%p)\n", (void *)th, (void *)th->thread_id);
 
-    rb_thread_interrupt(th);
+    rb_threadptr_interrupt(th);
     th->thrown_errinfo = eKillSignal;
     th->status = THREAD_TO_KILL;
 
@@ -1466,7 +1464,7 @@ rb_thread_wakeup(VALUE thread)
     if (th->status == THREAD_KILLED) {
 	rb_raise(rb_eThreadError, "killed thread");
     }
-    rb_thread_ready(th);
+    rb_threadptr_ready(th);
     if (th->status != THREAD_TO_KILL) {
 	th->status = THREAD_RUNNABLE;
     }
@@ -1748,7 +1746,7 @@ thread_status_name(enum rb_thread_status status)
 }
 
 static int
-rb_thread_dead(rb_thread_t *th)
+rb_threadptr_dead(rb_thread_t *th)
 {
     return th->status == THREAD_KILLED;
 }
@@ -1782,7 +1780,7 @@ rb_thread_status(VALUE thread)
     rb_thread_t *th;
     GetThreadPtr(thread, th);
 
-    if (rb_thread_dead(th)) {
+    if (rb_threadptr_dead(th)) {
 	if (!NIL_P(th->errinfo) && !FIXNUM_P(th->errinfo)
 	    /* TODO */ ) {
 	    return Qnil;
@@ -1811,7 +1809,7 @@ rb_thread_alive_p(VALUE thread)
     rb_thread_t *th;
     GetThreadPtr(thread, th);
 
-    if (rb_thread_dead(th))
+    if (rb_threadptr_dead(th))
 	return Qfalse;
     return Qtrue;
 }
@@ -1834,7 +1832,7 @@ rb_thread_stop_p(VALUE thread)
     rb_thread_t *th;
     GetThreadPtr(thread, th);
 
-    if (rb_thread_dead(th))
+    if (rb_threadptr_dead(th))
 	return Qtrue;
     if (th->status == THREAD_STOPPED || th->status == THREAD_STOPPED_FOREVER)
 	return Qtrue;
@@ -2569,7 +2567,7 @@ timer_thread_function(void *arg)
 		     thread_status_name(prev_status), sig);
 	mth->exec_signal = sig;
 	if (mth->status != THREAD_KILLED) mth->status = THREAD_RUNNABLE;
-	rb_thread_interrupt(mth);
+	rb_threadptr_interrupt(mth);
 	mth->status = prev_status;
     }
 
@@ -3474,14 +3472,29 @@ thread_reset_event_flags(rb_thread_t *th)
     }
 }
 
-void
-rb_thread_add_event_hook(rb_thread_t *th,
+static void
+rb_threadptr_add_event_hook(rb_thread_t *th, 
 			 rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 {
     rb_event_hook_t *hook = alloc_event_hook(func, events, data);
     hook->next = th->event_hooks;
     th->event_hooks = hook;
     thread_reset_event_flags(th);
+}
+
+static rb_thread_t *
+thval2thread_t(VALUE thval)
+{
+    rb_thread_t *th;
+    GetThreadPtr(thval, th);
+    return th;
+}
+
+void
+rb_thread_add_event_hook(VALUE thval,
+			 rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
+{
+    rb_threadptr_add_event_hook(thval2thread_t(thval), func, events, data);
 }
 
 static int
@@ -3542,12 +3555,18 @@ remove_event_hook(rb_event_hook_t **root, rb_event_hook_func_t func)
     return -1;
 }
 
-int
-rb_thread_remove_event_hook(rb_thread_t *th, rb_event_hook_func_t func)
+static int
+rb_threadptr_revmove_event_hook(rb_thread_t *th, rb_event_hook_func_t func)
 {
     int ret = remove_event_hook(&th->event_hooks, func);
     thread_reset_event_flags(th);
     return ret;
+}
+
+int
+rb_thread_remove_event_hook(VALUE thval, rb_event_hook_func_t func)
+{
+    return rb_threadptr_revmove_event_hook(thval2thread_t(thval), func);
 }
 
 int
@@ -3569,7 +3588,7 @@ clear_trace_func_i(st_data_t key, st_data_t val, st_data_t flag)
 {
     rb_thread_t *th;
     GetThreadPtr((VALUE)key, th);
-    rb_thread_remove_event_hook(th, 0);
+    rb_threadptr_revmove_event_hook(th, 0);
     return ST_CONTINUE;
 }
 
@@ -3649,7 +3668,7 @@ thread_add_trace_func(rb_thread_t *th, VALUE trace)
 	rb_raise(rb_eTypeError, "trace_func needs to be Proc");
     }
 
-    rb_thread_add_event_hook(th, call_trace_func, RUBY_EVENT_ALL, trace);
+    rb_threadptr_add_event_hook(th, call_trace_func, RUBY_EVENT_ALL, trace);
 }
 
 static VALUE
@@ -3666,7 +3685,7 @@ thread_set_trace_func_m(VALUE obj, VALUE trace)
 {
     rb_thread_t *th;
     GetThreadPtr(obj, th);
-    rb_thread_remove_event_hook(th, call_trace_func);
+    rb_threadptr_revmove_event_hook(th, call_trace_func);
 
     if (NIL_P(trace)) {
 	return Qnil;
@@ -3778,7 +3797,7 @@ ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
 	th->tracing = 1;
     }
 
-    raised = rb_thread_reset_raised(th);
+    raised = rb_threadptr_reset_raised(th);
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
@@ -3786,7 +3805,7 @@ ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
     }
 
     if (raised) {
-	rb_thread_set_raised(th);
+	rb_threadptr_set_raised(th);
     }
     POP_TAG();
 
@@ -3979,7 +3998,7 @@ rb_check_deadlock(rb_vm_t *vm)
 	printf("%d %d %p %p\n", vm->living_threads->num_entries, vm->sleeper, GET_THREAD(), vm->main_thread);
 	st_foreach(vm->living_threads, debug_i, (st_data_t)0);
 #endif
-	rb_thread_raise(2, argv, vm->main_thread);
+	rb_threadptr_raise(vm->main_thread, 2, argv);
     }
 }
 

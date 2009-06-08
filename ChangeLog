@@ -1,3 +1,18 @@
+Tue Jun  9 01:07:33 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c: rename functions which require a parameter
+	  "rb_thread_t *", the prefix to be rb_threadptr_ instead of
+	  rb_thread_.
+
+	* thread.c (rb_thread_add_event_hook(), rb_thread_remove_event_hook):
+	  change the parameter type from rb_thread_t * to VALUE.
+
+	* eval.c, eval_error.c, eval_intern.h, signal.c, vm_core.h, vm_eval.c:
+	  ditto.
+
+	* include/ruby/intern.h: remove decl of rb_thread_signal_raise() and
+	  rb_thread_signal_exit().
+
 Mon Jun  8 05:07:41 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c (rb_thread_create_timer_thread): print fatal error

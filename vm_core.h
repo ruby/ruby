@@ -625,11 +625,13 @@ extern rb_vm_t *ruby_current_vm;
 #define RUBY_VM_SET_FINALIZER_INTERRUPT(th) ((th)->interrupt_flag |= 0x04)
 #define RUBY_VM_INTERRUPTED(th) ((th)->interrupt_flag & 0x02)
 
-void rb_thread_execute_interrupts(rb_thread_t *);
+void rb_threadptr_signal_raise(rb_thread_t *th, int sig);
+void rb_threadptr_signal_exit(rb_thread_t *th);
+void rb_threadptr_execute_interrupts(rb_thread_t *);
 
 #define RUBY_VM_CHECK_INTS_TH(th) do { \
   if (UNLIKELY(th->interrupt_flag)) { \
-    rb_thread_execute_interrupts(th); \
+    rb_threadptr_execute_interrupts(th); \
   } \
 } while (0)
 
