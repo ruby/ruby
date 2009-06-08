@@ -882,10 +882,11 @@ rb_hash_reject_bang(VALUE hash)
     st_index_t n;
 
     RETURN_ENUMERATOR(hash, 0, 0);
+    rb_hash_modify(hash);
     if (!RHASH(hash)->ntbl)
         return Qnil;
     n = RHASH(hash)->ntbl->num_entries;
-    rb_hash_delete_if(hash);
+    rb_hash_foreach(hash, delete_if_i, hash);
     if (n == RHASH(hash)->ntbl->num_entries) return Qnil;
     return hash;
 }
@@ -1601,7 +1602,7 @@ static int
 rb_hash_update_i(VALUE key, VALUE value, VALUE hash)
 {
     if (key == Qundef) return ST_CONTINUE;
-    rb_hash_aset(hash, key, value);
+    st_insert(RHASH(hash)->ntbl, key, value);
     return ST_CONTINUE;
 }
 
@@ -1612,7 +1613,7 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
     if (rb_hash_has_key(hash, key)) {
 	value = rb_yield_values(3, key, rb_hash_aref(hash, key), value);
     }
-    rb_hash_aset(hash, key, value);
+    st_insert(RHASH(hash)->ntbl, key, value);
     return ST_CONTINUE;
 }
 
@@ -1642,6 +1643,7 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
 static VALUE
 rb_hash_update(VALUE hash1, VALUE hash2)
 {
+    rb_hash_modify(hash1);
     hash2 = to_hash(hash2);
     if (rb_block_given_p()) {
 	rb_hash_foreach(hash2, rb_hash_update_block_i, hash1);

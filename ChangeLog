@@ -9,6 +9,19 @@ Sun Jun  7 22:44:20 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/cmath.rb (log): avoided redundant expression.
 
+Sat Jun  6 02:49:05 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_reject_bang): always check frozen status.
+	  [ruby-core:23715]
+
+	* hash.c (rb_hash_update): ditto.
+
+	* hash.c (rb_hash_reject_bang): call rb_hash_foreach() directly.
+
+	* hash.c (rb_hash_update_i): call st_insert() directly.
+
+	* hash.c (rb_hash_update_block_i): ditto.
+
 Fri Jun  5 07:12:32 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/mkmf.rb (#link_command): should dup CONFTEST_C which is
