@@ -1,4 +1,7 @@
-Tue Jun  9 15:11:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jun  9 15:13:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_s_glob): fixed rdoc.  a patch from Joseph Pecoraro a
+	  [ruby-core:23767].
 
 	* dir.c (sys_warning): get rid of type-punning function cast.
 
