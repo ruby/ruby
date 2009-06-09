@@ -101,6 +101,7 @@ CP            = cp
 MV            = mv
 RM            = rm -f
 RMDIRS        = @RMDIRS@
+RMALL         = @RMALL@
 NM            = @NM@
 AR            = @AR@
 ARFLAGS       = rcu

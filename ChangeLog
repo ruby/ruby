@@ -1,3 +1,7 @@
+Tue Jun  9 10:58:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, win32/Makefile.sub (RMALL): need for distclean-rdoc.
+
 Tue Jun  9 01:07:33 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c: rename functions which require a parameter
