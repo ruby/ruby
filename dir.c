@@ -910,15 +910,16 @@ dir_s_rmdir(VALUE obj, VALUE dir)
     return INT2FIX(0);
 }
 
-static void
-sys_warning_1(const char* mesg)
+static VALUE
+sys_warning_1(VALUE mesg)
 {
-    rb_sys_warning("%s", mesg);
+    rb_sys_warning("%s", (const char *)mesg);
+    return Qnil;
 }
 
-#define GLOB_VERBOSE	(1UL << (sizeof(int) * CHAR_BIT - 1))
+#define GLOB_VERBOSE	(1U << (sizeof(int) * CHAR_BIT - 1))
 #define sys_warning(val) \
-    (void)((flags & GLOB_VERBOSE) && rb_protect((VALUE (*)(VALUE))sys_warning_1, (VALUE)(val), 0))
+    (void)((flags & GLOB_VERBOSE) && rb_protect(sys_warning_1, (VALUE)(val), 0))
 
 #define GLOB_ALLOC(type) (type *)malloc(sizeof(type))
 #define GLOB_ALLOC_N(type, n) (type *)malloc(sizeof(type) * (n))
@@ -1383,7 +1384,7 @@ ruby_glob0(const char *path, int flags, ruby_glob_func *func, VALUE arg, rb_enco
     struct glob_pattern *list;
     const char *root, *start;
     char *buf;
-    int n;
+    size_t n;
     int status;
 
     start = root = path;

@@ -1,3 +1,9 @@
+Tue Jun  9 15:11:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (sys_warning): get rid of type-punning function cast.
+
+	* dir.c (ruby_glob0): get rid of possible overflow.
+
 Tue Jun  9 10:58:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, win32/Makefile.sub (RMALL): need for distclean-rdoc.
