@@ -1,3 +1,8 @@
+Tue Jun  9 22:38:09 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/cmath.rb (log10): raised exception when the given number is
+	  a negative real.
+
 Tue Jun  9 15:13:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_s_glob): fixed rdoc.  a patch from Joseph Pecoraro a
