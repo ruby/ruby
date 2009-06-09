@@ -55,16 +55,6 @@ class TestGemCommand < RubyGemTestCase
     assert_equal [], h
   end
 
-  def test_add_option_overlapping_common_and_local_options
-    @cmd.add_option('-x', '--zip', 'BAD!') do end
-    @cmd.add_option('-z', '--exe', 'BAD!') do end
-    @cmd.add_option('-x', '--exe', 'BAD!') do end
-
-    assert_match %r|-x, --exe|, @cmd.parser.to_s
-    refute_match %r|-z, --exe|, @cmd.parser.to_s
-    refute_match %r|-x, --zip|, @cmd.parser.to_s
-  end
-
   def test_basic_accessors
     assert_equal "doit", @cmd.command
     assert_equal "gem doit", @cmd.program_name
@@ -182,9 +172,9 @@ class TestGemCommand < RubyGemTestCase
     assert @cmd.handles?(['--help', 'command'])
     assert @cmd.handles?(['-f', 'filename'])
     assert @cmd.handles?(['--file=filename'])
-    assert ! @cmd.handles?(['-z'])
-    assert ! @cmd.handles?(['-f'])
-    assert ! @cmd.handles?(['--toothpaste'])
+    refute @cmd.handles?(['-z'])
+    refute @cmd.handles?(['-f'])
+    refute @cmd.handles?(['--toothpaste'])
 
     args = ['-h', 'command']
     @cmd.handles?(args)

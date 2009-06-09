@@ -58,7 +58,7 @@ class TestGemPackageTarHeader < TarTestCase
     assert_equal 'user',  @tar_header.uname,    'uname'
     assert_equal '00',    @tar_header.version,  'version'
 
-    assert !@tar_header.empty?, 'empty'
+    refute_empty @tar_header, 'empty'
   end
 
   def test_initialize_bad
@@ -80,13 +80,13 @@ class TestGemPackageTarHeader < TarTestCase
   end
 
   def test_empty_eh
-    assert !@tar_header.empty?
+    refute_empty @tar_header
 
     @tar_header = Gem::Package::TarHeader.new :name => 'x', :prefix => '',
                                               :mode => 0, :size => 0,
                                               :empty => true
 
-    assert @tar_header.empty?
+    assert_empty @tar_header
   end
 
   def test_equals2

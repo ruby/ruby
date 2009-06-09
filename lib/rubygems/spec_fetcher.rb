@@ -1,6 +1,6 @@
 require 'zlib'
+require 'fileutils'
 
-require 'rubygems'
 require 'rubygems/remote_fetcher'
 require 'rubygems/user_interaction'
 
@@ -26,6 +26,11 @@ class Gem::SpecFetcher
 
   attr_reader :specs # :nodoc:
 
+  ##
+  # Cache of prerelease specs
+
+  attr_reader :prerelease_specs # :nodoc:
+
   @fetcher = nil
 
   def self.fetcher
@@ -42,6 +47,7 @@ class Gem::SpecFetcher
 
     @specs = {}
     @latest_specs = {}
+    @prerelease_specs = {}
 
     @fetcher = Gem::RemoteFetcher.fetcher
   end
@@ -56,10 +62,10 @@ class Gem::SpecFetcher
   ##
   # Fetch specs matching +dependency+.  If +all+ is true, all matching
   # versions are returned.  If +matching_platform+ is false, all platforms are
-  # returned.
+  # returned. If +prerelease+ is true, prerelease versions are included.
 
-  def fetch(dependency, all = false, matching_platform = true)
-    specs_and_sources = find_matching dependency, all, matching_platform
+  def fetch(dependency, all = false, matching_platform = true, prerelease = false)
+    specs_and_sources = find_matching dependency, all, matching_platform, prerelease
 
     specs_and_sources.map do |spec_tuple, source_uri|
       [fetch_spec(spec_tuple, URI.parse(source_uri)), source_uri]
@@ -110,10 +116,10 @@ class Gem::SpecFetcher
   # versions are returned.  If +matching_platform+ is false, gems for all
   # platforms are returned.
 
-  def find_matching(dependency, all = false, matching_platform = true)
+  def find_matching(dependency, all = false, matching_platform = true, prerelease = false)
     found = {}
 
-    list(all).each do |source_uri, specs|
+    list(all, prerelease).each do |source_uri, specs|
       found[source_uri] = specs.select do |spec_name, version, spec_platform|
         dependency =~ Gem::Dependency.new(spec_name, version) and
           (not matching_platform or Gem::Platform.match(spec_platform))
@@ -155,28 +161,37 @@ class Gem::SpecFetcher
 
   ##
   # Returns a list of gems available for each source in Gem::sources.  If
-  # +all+ is true, all versions are returned instead of only latest versions.
+  # +all+ is true, all versions are returned instead of only latest
+  # versions. If +prerelease+ is true, include prerelease versions.
 
-  def list(all = false)
+  def list(all = false, prerelease = false)
+    # TODO: make type the only argument
+    type = if all
+             :all
+           elsif prerelease
+             :prerelease
+           else
+             :latest
+           end
+
     list = {}
 
-    file = all ? 'specs' : 'latest_specs'
+    file = { :latest => 'latest_specs',
+      :prerelease => 'prerelease_specs',
+      :all => 'specs' }[type]
 
+    cache = { :latest => @latest_specs,
+      :prerelease => @prerelease_specs,
+      :all => @specs }[type]
+    
     Gem.sources.each do |source_uri|
       source_uri = URI.parse source_uri
 
-      if all and @specs.include? source_uri then
-        list[source_uri] = @specs[source_uri]
-      elsif not all and @latest_specs.include? source_uri then
-        list[source_uri] = @latest_specs[source_uri]
-      else
-        specs = load_specs source_uri, file
-
-        cache = all ? @specs : @latest_specs
-
-        cache[source_uri] = specs
-        list[source_uri] = specs
+      unless cache.include? source_uri
+        cache[source_uri] = load_specs source_uri, file
       end
+
+      list[source_uri] = cache[source_uri]
     end
 
     list
@@ -206,7 +221,14 @@ class Gem::SpecFetcher
       loaded = true
     end
 
-    specs = Marshal.load spec_dump
+    specs = begin
+              Marshal.load spec_dump
+            rescue ArgumentError
+              spec_dump = @fetcher.fetch_path spec_path
+              loaded = true
+
+              Marshal.load spec_dump
+            end
 
     if loaded and @update_cache then
       begin

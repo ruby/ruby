@@ -49,7 +49,7 @@ class TestGemPackageTarOutput < TarTestCase
     gz = Zlib::GzipReader.new StringIO.new(data)
     assert_equal "This is some metadata\n", gz.read
 
-    assert files.empty?
+    assert_empty files
   ensure
     gz.close if gz
   end
@@ -82,7 +82,7 @@ class TestGemPackageTarOutput < TarTestCase
       name, data = files.shift
       assert_equal 'metadata.gz.sig', name
 
-      assert files.empty?
+      assert_empty files
     end
   end
 

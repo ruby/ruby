@@ -105,7 +105,7 @@ class TestGemCommandsCertCommand < RubyGemTestCase
     assert_equal "Removed '/CN=rubygems/DC=example/DC=com'\n", @ui.output
     assert_equal '', @ui.error
 
-    assert !File.exist?(@cert_file_name)
+    refute File.exist?(@cert_file_name)
   end
 
   def test_execute_sign

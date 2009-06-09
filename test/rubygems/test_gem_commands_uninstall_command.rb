@@ -53,9 +53,10 @@ class TestGemCommandsUninstallCommand < GemInstallerTestCase
       end
     end
 
-    assert_match(/\AUnknown gem foo >= 0$/, e.message)
+    assert_match(/\Acannot uninstall, check `gem list -d foo`$/, e.message)
     output = @ui.output.split "\n"
-    assert output.empty?, "UI output should be empty after an uninstall error"
+    assert_empty output, "UI output should be empty after an uninstall error"
   end
+
 end
 

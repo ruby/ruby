@@ -1,4 +1,3 @@
-require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require File.join(File.expand_path(File.dirname(__FILE__)),
                   'gem_installer_test_case')
 require 'rubygems/install_update_options'
@@ -21,6 +20,11 @@ class TestGemInstallUpdateOptions < GemInstallerTestCase
     assert @cmd.handles?(args)
   end
 
+  def test_prerelease
+    @cmd.handle_options %w[--prerelease]
+    assert_equal true, @cmd.options[:prerelease]
+  end
+
   def test_security_policy
     @cmd.handle_options %w[-P HighSecurity]
 
@@ -38,6 +42,8 @@ class TestGemInstallUpdateOptions < GemInstallerTestCase
   def test_user_install_enabled
     @cmd.handle_options %w[--user-install]
 
+    assert @cmd.options[:user_install]
+
     @installer = Gem::Installer.new @gem, @cmd.options
     @installer.install
     assert File.exist?(File.join(Gem.user_dir, 'gems'))
@@ -46,15 +52,23 @@ class TestGemInstallUpdateOptions < GemInstallerTestCase
   end
 
   def test_user_install_disabled_read_only
-    @cmd.handle_options %w[--no-user-install]
+    if win_platform?
+      skip('test_user_install_disabled_read_only test skipped on MS Windows')
+    else
+      @cmd.handle_options %w[--no-user-install]
 
-    File.chmod 0755, @userhome
-    FileUtils.chmod 0000, @gemhome
+      refute @cmd.options[:user_install]
 
-    assert_raises(Gem::FilePermissionError) do
-      @installer = Gem::Installer.new @gem, @cmd.options
+      File.chmod 0755, @userhome
+      FileUtils.chmod 0000, @gemhome
+
+      assert_raises(Gem::FilePermissionError) do
+        @installer = Gem::Installer.new @gem, @cmd.options
+      end
     end
   ensure
     FileUtils.chmod 0755, @gemhome
   end
+
 end
+

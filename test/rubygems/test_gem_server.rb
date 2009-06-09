@@ -222,6 +222,16 @@ class TestGemServer < RubyGemTestCase
     assert_equal Gem::Platform.local, spec.platform
   end
 
+  def test_rdoc
+    data = StringIO.new "GET /rdoc?q=a HTTP/1.0\r\n\r\n"
+    @req.parse data
+
+    @server.rdoc @req, @res
+
+    assert_equal 200, @res.status, @res.body
+    assert_match %r|No documentation found|, @res.body
+    assert_equal 'text/html', @res['content-type']
+  end
 
   def test_root
     data = StringIO.new "GET / HTTP/1.0\r\n\r\n"

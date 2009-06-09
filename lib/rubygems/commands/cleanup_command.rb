@@ -1,6 +1,7 @@
 require 'rubygems/command'
 require 'rubygems/source_index'
 require 'rubygems/dependency_list'
+require 'rubygems/uninstaller'
 
 class Gem::Commands::CleanupCommand < Gem::Command
 
@@ -22,6 +23,13 @@ class Gem::Commands::CleanupCommand < Gem::Command
     "--no-dryrun"
   end
 
+  def description # :nodoc:
+    <<-EOF
+The cleanup command removes old gems from GEM_HOME.  If an older version is
+installed elsewhere in GEM_PATH the cleanup command won't touch it.
+    EOF
+  end
+
   def usage # :nodoc:
     "#{program_name} [GEMNAME ...]"
   end
@@ -41,7 +49,8 @@ class Gem::Commands::CleanupCommand < Gem::Command
 
     unless options[:args].empty? then
       options[:args].each do |gem_name|
-        specs = Gem.cache.search(/^#{gem_name}$/i)
+        dep = Gem::Dependency.new gem_name, Gem::Requirement.default
+        specs = Gem.source_index.search dep
         specs.each do |spec|
           gems_to_cleanup << spec
         end
@@ -56,7 +65,6 @@ class Gem::Commands::CleanupCommand < Gem::Command
       primary_gems[spec.name].version != spec.version
     }
 
-    uninstall_command = Gem::CommandManager.instance['uninstall']
     deplist = Gem::DependencyList.new
     gems_to_cleanup.uniq.each do |spec| deplist.add spec end
 
@@ -69,14 +77,21 @@ class Gem::Commands::CleanupCommand < Gem::Command
         say "Attempting to uninstall #{spec.full_name}"
 
         options[:args] = [spec.name]
-        options[:version] = "= #{spec.version}"
-        options[:executables] = false
 
-        uninstaller = Gem::Uninstaller.new spec.name, options
+        uninstall_options = {
+          :executables => false,
+          :version => "= #{spec.version}",
+        }
+
+        if Gem.user_dir == spec.installation_path then
+          uninstall_options[:install_dir] = spec.installation_path
+        end
+
+        uninstaller = Gem::Uninstaller.new spec.name, uninstall_options
 
         begin
           uninstaller.uninstall
-        rescue Gem::DependencyRemovalException,
+        rescue Gem::DependencyRemovalException, Gem::InstallError,
                Gem::GemNotInHomeException => e
           say "Unable to uninstall #{spec.full_name}:"
           say "\t#{e.class}: #{e.message}"

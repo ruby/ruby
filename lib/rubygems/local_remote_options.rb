@@ -23,7 +23,9 @@ module Gem::LocalRemoteOptions
         raise OptionParser::InvalidArgument, value
       end
 
-      raise OptionParser::InvalidArgument, value unless uri.scheme == 'http'
+      unless ['http', 'https', 'file'].include?(uri.scheme)
+         raise OptionParser::InvalidArgument, value
+      end
 
       value
     end
@@ -90,7 +92,7 @@ module Gem::LocalRemoteOptions
       source << '/' if source !~ /\/\z/
 
       if options[:added_source] then
-        Gem.sources << source
+        Gem.sources << source unless Gem.sources.include?(source)
       else
         options[:added_source] = true
         Gem.sources.replace [source]
@@ -99,10 +101,9 @@ module Gem::LocalRemoteOptions
   end
 
   ##
-  # Add the --update-source option
+  # Add the --update-sources option
 
   def add_update_sources_option
-
     add_option(:"Local/Remote", '-u', '--[no-]update-sources',
                'Update local source cache') do |value, options|
       Gem.configuration.update_sources = value

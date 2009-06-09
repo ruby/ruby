@@ -151,7 +151,7 @@ gems:
       fetcher.fetch_size 'gems.example.com/yaml'
     end
 
-    assert_equal 'uri is not an HTTP URI', e.message
+    assert_equal 'uri scheme is invalid', e.message
   end
 
   def test_fetch_size_socket_error
@@ -227,6 +227,21 @@ gems:
   def test_download_local
     FileUtils.mv @a1_gem, @tempdir
     local_path = File.join @tempdir, "#{@a1.full_name}.gem"
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::RemoteFetcher.fetcher
+    end
+
+    assert_equal File.join(@gemhome, 'cache', "#{@a1.full_name}.gem"),
+                 inst.download(@a1, local_path)
+  end
+
+  def test_download_local_space
+    space_path = File.join @tempdir, 'space path'
+    FileUtils.mkdir space_path
+    FileUtils.mv @a1_gem, space_path
+    local_path = File.join space_path, "#{@a1.full_name}.gem"
     inst = nil
 
     Dir.chdir @tempdir do
@@ -461,6 +476,13 @@ gems:
     end
 
     assert_equal nil, fetcher.fetch_path(URI.parse(@gem_repo), Time.at(0))
+  end
+
+  def test_get_proxy_from_env_auto_normalizes
+    fetcher = Gem::RemoteFetcher.new(nil)
+    ENV['HTTP_PROXY'] = 'fakeurl:12345'
+
+    assert_equal('http://fakeurl:12345', fetcher.get_proxy_from_env.to_s)
   end
 
   def test_get_proxy_from_env_empty

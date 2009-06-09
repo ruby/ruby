@@ -1,6 +1,6 @@
 #
-# This file defines a $log variable for logging, and a time() method for recording timing
-# information.
+# This file defines a $log variable for logging, and a time() method for
+# recording timing information.
 #
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
@@ -8,18 +8,21 @@
 # See LICENSE.txt for permissions.
 #++
 
+require 'rubygems'
+
+file, lineno = Gem.location_of_caller
+
+warn "#{file}:#{lineno}:Warning: RubyGems' lib/rubygems/timer.rb deprecated and will be removed on or after June 2009."
 
 $log = Object.new
-def $log.debug(str)
-  STDERR.puts str
+
+# :stopdoc:
+def $log.debug(message)
+  Gem.debug message
 end
 
-def time(msg, width=25)
-  t = Time.now
-  return_value = yield
-  elapsed = Time.now.to_f - t.to_f
-  elapsed = sprintf("%3.3f", elapsed)
-  $log.debug "#{msg.ljust(width)}: #{elapsed}s"
-  return_value
+def time(msg, width=25, &block)
+  Gem.time(msg, width, &block)
 end
+# :startdoc:
 

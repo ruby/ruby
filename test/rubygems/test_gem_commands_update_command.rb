@@ -8,6 +8,9 @@ class TestGemCommandsUpdateCommand < RubyGemTestCase
 
     @cmd = Gem::Commands::UpdateCommand.new
 
+    @cmd.options[:generate_rdoc] = false
+    @cmd.options[:generate_ri]   = false
+
     util_setup_fake_fetcher
 
     @a1_path = File.join @gemhome, 'cache', "#{@a1.full_name}.gem"
@@ -27,6 +30,8 @@ class TestGemCommandsUpdateCommand < RubyGemTestCase
     Gem::Installer.new(@a1_path).install
 
     @cmd.options[:args] = []
+    @cmd.options[:generate_rdoc] = true
+    @cmd.options[:generate_ri]   = true
 
     use_ui @ui do
       @cmd.execute
@@ -37,8 +42,10 @@ class TestGemCommandsUpdateCommand < RubyGemTestCase
     assert_equal "Updating #{@a2.name}", out.shift
     assert_equal "Successfully installed #{@a2.full_name}", out.shift
     assert_equal "Gems updated: #{@a2.name}", out.shift
+    assert_equal "Installing ri documentation for a-2...", out.shift
+    assert_equal "Installing RDoc documentation for a-2...", out.shift
 
-    assert out.empty?, out.inspect
+    assert_empty out
   end
 
   # before:
@@ -101,7 +108,7 @@ class TestGemCommandsUpdateCommand < RubyGemTestCase
     assert_equal "Gems updated: #{@c2.name}, #{@b2.name}, #{@a2.name}",
                  out.shift
 
-    assert out.empty?, out.inspect
+    assert_empty out
   end
 
   def test_execute_named
@@ -121,7 +128,7 @@ class TestGemCommandsUpdateCommand < RubyGemTestCase
     assert_equal "Successfully installed #{@a2.full_name}", out.shift
     assert_equal "Gems updated: #{@a2.name}", out.shift
 
-    assert out.empty?, out.inspect
+    assert_empty out
   end
 
   def test_execute_named_up_to_date
@@ -139,7 +146,7 @@ class TestGemCommandsUpdateCommand < RubyGemTestCase
     assert_equal "Updating installed gems", out.shift
     assert_equal "Nothing to update", out.shift
 
-    assert out.empty?, out.inspect
+    assert_empty out
   end
 
   def test_execute_up_to_date
@@ -157,8 +164,6 @@ class TestGemCommandsUpdateCommand < RubyGemTestCase
     assert_equal "Updating installed gems", out.shift
     assert_equal "Nothing to update", out.shift
 
-    assert out.empty?, out.inspect
+    assert_empty out
   end
-
 end
-

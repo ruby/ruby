@@ -7,7 +7,23 @@ class Gem::Commands::ServerCommand < Gem::Command
     super 'server', 'Documentation and gem repository HTTP server',
           :port => 8808, :gemdir => Gem.dir, :daemon => false
 
-    add_option '-p', '--port=PORT', Integer,
+    OptionParser.accept :Port do |port|
+      if port =~ /\A\d+\z/ then
+        port = Integer port
+        raise OptionParser::InvalidArgument, "#{port}: not a port number" if
+          port > 65535
+
+        port
+      else
+        begin
+          Socket.getservbyname port
+        rescue SocketError => e
+          raise OptionParser::InvalidArgument, "#{port}: no such named service"
+        end
+      end
+    end
+
+    add_option '-p', '--port=PORT', :Port,
                'port to listen on' do |port, options|
       options[:port] = port
     end
@@ -37,6 +53,12 @@ for gem installation.
 
 To install gems from a running server, use `gem install GEMNAME --source
 http://gem_server_host:8808`
+
+You can set up a shortcut to gem server documentation using the URL:
+
+  http://localhost:8808/rdoc?q=%s - Firefox
+  http://localhost:8808/rdoc?q=* - LaunchBar
+
     EOF
   end
 

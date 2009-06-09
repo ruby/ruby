@@ -60,8 +60,9 @@ class TestGemLocalRemoteOptions < RubyGemTestCase
     s1 = URI.parse 'http://more-gems.example.com/'
     s2 = URI.parse 'http://even-more-gems.example.com/'
     s3 = URI.parse 'http://other-gems.example.com/some_subdir'
+    s4 = URI.parse 'http://more-gems.example.com/' # Intentional duplicate
 
-    @cmd.handle_options %W[--source #{s1} --source #{s2} --source #{s3}]
+    @cmd.handle_options %W[--source #{s1} --source #{s2} --source #{s3} --source #{s4}]
 
     assert_equal [s1.to_s, s2.to_s, "#{s3}/"], Gem.sources
   end

@@ -286,7 +286,7 @@ class Gem::SourceInfoCache
       next unless Gem.sources.include? source_uri
       # TODO - Remove this gunk after 2008/11
       unless pattern.kind_of?(Gem::Dependency)
-        pattern = Gem::Dependency.new(pattern, Gem::Requirement.default)
+        pattern = Gem::Dependency.new(pattern, Gem::Requirement.default) 
       end
       sic_entry.source_index.search pattern, platform_only
     end.flatten.compact
@@ -306,7 +306,7 @@ class Gem::SourceInfoCache
 
       # TODO - Remove this gunk after 2008/11
       unless pattern.kind_of?(Gem::Dependency)
-        pattern = Gem::Dependency.new(pattern, Gem::Requirement.default)
+        pattern = Gem::Dependency.new(pattern, Gem::Requirement.default) 
       end
 
       sic_entry.source_index.search(pattern, only_platform).each do |spec|

@@ -1,5 +1,3 @@
-require 'rubygems'
-
 ##
 # Available list of platforms for targeting Gem installations.
 
@@ -105,6 +103,10 @@ class Gem::Platform
   def to_s
     to_a.compact.join '-'
   end
+  
+  def empty?
+    to_s.empty?
+  end
 
   ##
   # Is +other+ equal to this platform?  Two platforms are equal if they have
@@ -143,14 +145,14 @@ class Gem::Platform
     when String then
       # This data is from http://gems.rubyforge.org/gems/yaml on 19 Aug 2007
       other = case other
-              when /^i686-darwin(\d)/ then     ['x86',       'darwin',  $1]
-              when /^i\d86-linux/ then         ['x86',       'linux',   nil]
-              when 'java', 'jruby' then        [nil,         'java',    nil]
-              when /mswin32(\_(\d+))?/ then    ['x86',       'mswin32', $2]
-              when 'powerpc-darwin' then       ['powerpc',   'darwin',  nil]
-              when /powerpc-darwin(\d)/ then   ['powerpc',   'darwin',  $1]
-              when /sparc-solaris2.8/ then     ['sparc',     'solaris', '2.8']
-              when /universal-darwin(\d)/ then ['universal', 'darwin',  $1]
+              when /^i686-darwin(\d)/     then ['x86',       'darwin',  $1    ]
+              when /^i\d86-linux/         then ['x86',       'linux',   nil   ]
+              when 'java', 'jruby'        then [nil,         'java',    nil   ]
+              when /mswin32(\_(\d+))?/    then ['x86',       'mswin32', $2    ]
+              when 'powerpc-darwin'       then ['powerpc',   'darwin',  nil   ]
+              when /powerpc-darwin(\d)/   then ['powerpc',   'darwin',  $1    ]
+              when /sparc-solaris2.8/     then ['sparc',     'solaris', '2.8' ]
+              when /universal-darwin(\d)/ then ['universal', 'darwin',  $1    ]
               else                             other
               end
 

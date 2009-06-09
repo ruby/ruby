@@ -5,7 +5,6 @@
 #++
 
 require 'yaml'
-require 'rubygems'
 
 # Store the gem command options specified in the configuration file.  The
 # config file object acts much like a hash.
@@ -36,7 +35,8 @@ class Gem::ConfigFile
 
       CSIDL_COMMON_APPDATA = 0x0023
       path = 0.chr * 260
-      SHGetFolderPath = Win32API.new 'shell32', 'SHGetFolderPath', 'PLPLP', 'L', :stdcall
+      SHGetFolderPath = Win32API.new 'shell32', 'SHGetFolderPath', 'PLPLP', 'L',
+                                     :stdcall
       SHGetFolderPath.call nil, CSIDL_COMMON_APPDATA, nil, 1, path
 
       path.strip

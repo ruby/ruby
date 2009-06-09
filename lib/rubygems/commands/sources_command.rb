@@ -3,8 +3,11 @@ require 'rubygems/command'
 require 'rubygems/remote_fetcher'
 require 'rubygems/source_info_cache'
 require 'rubygems/spec_fetcher'
+require 'rubygems/local_remote_options'
 
 class Gem::Commands::SourcesCommand < Gem::Command
+
+  include Gem::LocalRemoteOptions
 
   def initialize
     super 'sources',
@@ -30,6 +33,8 @@ class Gem::Commands::SourcesCommand < Gem::Command
     add_option '-u', '--update', 'Update source cache' do |value, options|
       options[:update] = value
     end
+
+    add_proxy_option
   end
 
   def defaults_str

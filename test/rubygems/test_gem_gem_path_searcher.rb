@@ -51,7 +51,7 @@ class TestGemGemPathSearcher < RubyGemTestCase
   end
 
   def test_matching_file_eh
-    assert !@gps.matching_file?(@foo1, 'bar')
+    refute @gps.matching_file?(@foo1, 'bar')
     assert @gps.matching_file?(@foo1, 'foo')
   end
 

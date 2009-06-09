@@ -12,7 +12,7 @@ class Gem::Commands::UnpackCommand < Gem::Command
           :version => Gem::Requirement.default,
           :target  => Dir.pwd
 
-    add_option('--target', 'target directory for unpacking') do |value, options|
+    add_option('--target=DIR', 'target directory for unpacking') do |value, options|
       options[:target] = value
     end
 
@@ -35,18 +35,20 @@ class Gem::Commands::UnpackCommand < Gem::Command
   # TODO: allow, e.g., 'gem unpack rake-0.3.1'.  Find a general solution for
   # this, so that it works for uninstall as well.  (And check other commands
   # at the same time.)
-  def execute
-    gemname = get_one_gem_name
-    path = get_path(gemname, options[:version])
 
-    if path then
-      basename = File.basename(path).sub(/\.gem$/, '')
-      target_dir = File.expand_path File.join(options[:target], basename)
-      FileUtils.mkdir_p target_dir
-      Gem::Installer.new(path, :unpack => true).unpack target_dir
-      say "Unpacked gem: '#{target_dir}'"
-    else
-      alert_error "Gem '#{gemname}' not installed."
+  def execute
+    get_all_gem_names.each do |name|
+      path = get_path name, options[:version]
+
+      if path then
+        basename = File.basename(path).sub(/\.gem$/, '')
+        target_dir = File.expand_path File.join(options[:target], basename)
+        FileUtils.mkdir_p target_dir
+        Gem::Installer.new(path, :unpack => true).unpack target_dir
+        say "Unpacked gem: '#{target_dir}'"
+      else
+        alert_error "Gem '#{name}' not installed."
+      end
     end
   end
 

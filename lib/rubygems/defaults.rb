@@ -20,8 +20,13 @@ module Gem
     if defined? RUBY_FRAMEWORK_VERSION then
       File.join File.dirname(ConfigMap[:sitedir]), 'Gems',
                 ConfigMap[:ruby_version]
+    # 1.9.2dev reverted to 1.8 style path
+    elsif RUBY_VERSION > '1.9' and RUBY_VERSION < '1.9.2' then
+      File.join(ConfigMap[:libdir], ConfigMap[:ruby_install_name], 'gems',
+                ConfigMap[:ruby_version])
     else
-      ConfigMap[:sitelibdir].sub(%r'/site_ruby/(?=[^/]+)', '/gems/')
+      File.join(ConfigMap[:libdir], ruby_engine, 'gems',
+                ConfigMap[:ruby_version])
     end
   end
 
@@ -37,15 +42,25 @@ module Gem
   # Default gem load path
 
   def self.default_path
-    [user_dir, default_dir]
+    if File.exist?(Gem.user_home)
+      [user_dir, default_dir]
+    else
+      [default_dir]
+    end
   end
 
   ##
   # Deduce Ruby's --program-prefix and --program-suffix from its install name
 
   def self.default_exec_format
-    baseruby = ConfigMap[:BASERUBY] || 'ruby'
-    ConfigMap[:RUBY_INSTALL_NAME].sub(baseruby, '%s') rescue '%s'
+    exec_format = ConfigMap[:ruby_install_name].sub('ruby', '%s') rescue '%s'
+
+    unless exec_format =~ /%s/ then
+      raise Gem::Exception,
+        "[BUG] invalid exec_format #{exec_format.inspect}, no %s"
+    end
+
+    exec_format
   end
 
   ##

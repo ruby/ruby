@@ -11,6 +11,52 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
     @cmd.options[:generate_ri] = false
   end
 
+  def test_execute_exclude_prerelease
+    util_setup_fake_fetcher(:prerelease)
+    util_setup_spec_fetcher @a2, @a2_pre
+
+    @fetcher.data["#{@gem_repo}gems/#{@a2.full_name}.gem"] =
+      read_binary(File.join(@gemhome, 'cache', "#{@a2.full_name}.gem"))
+    @fetcher.data["#{@gem_repo}gems/#{@a2_pre.full_name}.gem"] =
+      read_binary(File.join(@gemhome, 'cache', "#{@a2_pre.full_name}.gem"))
+
+    @cmd.options[:args] = [@a2.name]
+
+    use_ui @ui do
+      e = assert_raises Gem::SystemExitException do
+        @cmd.execute
+      end
+      assert_equal 0, e.exit_code, @ui.error
+    end
+
+    assert_match(/Successfully installed #{@a2.full_name}$/, @ui.output)
+    refute_match(/Successfully installed #{@a2_pre.full_name}$/, @ui.output)
+  end
+
+  def test_execute_explicit_version_includes_prerelease
+    util_setup_fake_fetcher(:prerelease)
+    util_setup_spec_fetcher @a2, @a2_pre
+
+    @fetcher.data["#{@gem_repo}gems/#{@a2.full_name}.gem"] =
+      read_binary(File.join(@gemhome, 'cache', "#{@a2.full_name}.gem"))
+    @fetcher.data["#{@gem_repo}gems/#{@a2_pre.full_name}.gem"] =
+      read_binary(File.join(@gemhome, 'cache', "#{@a2_pre.full_name}.gem"))
+
+    @cmd.handle_options [@a2_pre.name, '--version', @a2_pre.version.to_s]
+    assert @cmd.options[:prerelease]
+    assert @cmd.options[:version].satisfied_by?(@a2_pre.version)
+
+    use_ui @ui do
+      e = assert_raises Gem::SystemExitException do
+        @cmd.execute
+      end
+      assert_equal 0, e.exit_code, @ui.error
+    end
+
+    refute_match(/Successfully installed #{@a2.full_name}$/, @ui.output)
+    assert_match(/Successfully installed #{@a2_pre.full_name}$/, @ui.output)
+  end
+
   def test_execute_include_dependencies
     @cmd.options[:include_dependencies] = true
     @cmd.options[:args] = []
@@ -57,6 +103,34 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
     assert out.empty?, out.inspect
   end
 
+  def test_no_user_install
+    skip 'skipped on MS Windows (chmod has no effect)' if win_platform?
+
+    util_setup_fake_fetcher
+    @cmd.options[:user_install] = false
+
+    FileUtils.mv File.join(@gemhome, 'cache', "#{@a2.full_name}.gem"),
+                 File.join(@tempdir)
+
+    @cmd.options[:args] = [@a2.name]
+
+    use_ui @ui do
+      orig_dir = Dir.pwd
+      begin
+        File.chmod 0755, @userhome
+        File.chmod 0555, @gemhome
+
+        Dir.chdir @tempdir
+        assert_raises Gem::FilePermissionError do
+          @cmd.execute
+        end
+      ensure
+        Dir.chdir orig_dir
+        File.chmod 0755, @gemhome
+      end
+    end
+  end
+
   def test_execute_local_missing
     util_setup_fake_fetcher
     @cmd.options[:domain] = :local
@@ -100,6 +174,29 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
                  @ui.error
   end
 
+  def test_execute_prerelease
+    util_setup_fake_fetcher(:prerelease)
+    util_setup_spec_fetcher @a2, @a2_pre
+
+    @fetcher.data["#{@gem_repo}gems/#{@a2.full_name}.gem"] =
+      read_binary(File.join(@gemhome, 'cache', "#{@a2.full_name}.gem"))
+    @fetcher.data["#{@gem_repo}gems/#{@a2_pre.full_name}.gem"] =
+      read_binary(File.join(@gemhome, 'cache', "#{@a2_pre.full_name}.gem"))
+
+    @cmd.options[:prerelease] = true
+    @cmd.options[:args] = [@a2_pre.name]
+
+    use_ui @ui do
+      e = assert_raises Gem::SystemExitException do
+        @cmd.execute
+      end
+      assert_equal 0, e.exit_code, @ui.error
+    end
+
+    refute_match(/Successfully installed #{@a2.full_name}$/, @ui.output)
+    assert_match(/Successfully installed #{@a2_pre.full_name}$/, @ui.output)
+  end
+
   def test_execute_remote
     @cmd.options[:generate_rdoc] = true
     @cmd.options[:generate_ri] = true
@@ -112,17 +209,10 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
 
     @cmd.options[:args] = [@a2.name]
 
-    err = ""
-    class << err
-      alias write <<
-    end
     use_ui @ui do
       e = assert_raises Gem::SystemExitException do
-        stderr, $stderr = $stderr, err
-        begin
+        capture_io do
           @cmd.execute
-        ensure
-          $stderr = stderr
         end
       end
       assert_equal 0, e.exit_code
@@ -136,7 +226,6 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
     assert_equal "Installing RDoc documentation for #{@a2.full_name}...",
                  out.shift
     assert out.empty?, out.inspect
-    assert_match /^Updating class cache with \d+ classes/, err
   end
 
   def test_execute_two

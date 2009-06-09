@@ -13,8 +13,10 @@ class TestGemDependencyInstaller < RubyGemTestCase
     write_file File.join('gems', 'a-1', 'bin', 'a_bin') do |fp|
       fp.puts "#!/usr/bin/ruby"
     end
+
     @a1, @a1_gem = util_gem 'a', '1' do |s| s.executables << 'a_bin' end
     @aa1, @aa1_gem = util_gem 'aa', '1'
+    @a1_pre, @a1_pre_gem = util_gem 'a', '1.a'
 
     @b1, @b1_gem = util_gem 'b', '1' do |s|
       s.add_dependency 'a'
@@ -44,8 +46,8 @@ class TestGemDependencyInstaller < RubyGemTestCase
     @fetcher = Gem::FakeFetcher.new
     Gem::RemoteFetcher.fetcher = @fetcher
 
-    si = util_setup_spec_fetcher @a1, @b1, @d1, @d2, @x1_m, @x1_o, @w1, @y1,
-                                 @y1_1_p, @z1
+    si = util_setup_spec_fetcher(@a1, @a1_pre, @b1, @d1, @d2, @x1_m, @x1_o, @w1, @y1,
+                                 @y1_1_p, @z1)
 
     util_clear_gems
   end
@@ -257,7 +259,7 @@ class TestGemDependencyInstaller < RubyGemTestCase
       inst.install 'a'
     end
 
-    assert_match %r|\A#!/\S+/env #{Gem::ConfigMap[:RUBY_INSTALL_NAME]}\n|,
+    assert_match %r|\A#!/\S+/env #{Gem::ConfigMap[:ruby_install_name]}\n|,
                  File.read(File.join(@gemhome, 'bin', 'a_bin'))
   end
 
@@ -356,13 +358,15 @@ class TestGemDependencyInstaller < RubyGemTestCase
     FileUtils.mv @b1_gem, @tempdir
     inst = nil
 
-    Gem.source_index.gems.delete @a1.full_name
+    Gem.source_index.remove_spec @a1.full_name
+    Gem.source_index.remove_spec @a1_pre.full_name
 
     Dir.chdir @tempdir do
       e = assert_raises Gem::InstallError do
         inst = Gem::DependencyInstaller.new :domain => :local
         inst.install 'b'
       end
+
       assert_equal 'b requires a (>= 0, runtime)', e.message
     end
 
@@ -632,5 +636,16 @@ class TestGemDependencyInstaller < RubyGemTestCase
     assert_equal %w[d-1 e-1], inst.gems_to_install.map { |s| s.full_name }
   end
 
-end
+  def test_prerelease_uses_pre_index
+    installer = Gem::DependencyInstaller.new
+    pre_installer = Gem::DependencyInstaller.new(:prerelease => true)
+    dependency = Gem::Dependency.new('a', Gem::Requirement.default)
 
+    releases = installer.find_gems_with_sources(dependency).map{ |gems, *| gems }
+    prereleases = pre_installer.find_gems_with_sources(dependency).map{ |gems, *| gems }
+
+    assert releases.select{ |s| s.name == 'a' and s.version.to_s == '1' }.first
+    assert releases.select{ |s| s.name == 'a' and s.version.to_s == '1.a' }.empty?
+    assert_equal [@a1_pre], prereleases
+  end
+end

@@ -14,6 +14,10 @@ class TestGemExtExtConfBuilder < RubyGemTestCase
   end
 
   def test_class_build
+    if vc_windows? && !nmake_found?
+      skip("test_class_build skipped - nmake not found")
+    end
+
     File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
       extconf.puts "require 'mkmf'\ncreate_makefile 'foo'"
     end
@@ -46,6 +50,10 @@ class TestGemExtExtConfBuilder < RubyGemTestCase
   end
 
   def test_class_build_extconf_fail
+    if vc_windows? && !nmake_found?
+      skip("test_class_build_extconf_fail skipped - nmake not found")
+    end
+
     File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
       extconf.puts "require 'mkmf'"
       extconf.puts "have_library 'nonexistent' or abort 'need libnonexistent'"
@@ -69,6 +77,10 @@ checking for main\(\) in .*?nonexistent/m, error.message)
   end
 
   def test_class_make
+    if vc_windows? && !nmake_found?
+      skip("test_class_make skipped - nmake not found")
+    end
+
     output = []
     makefile_path = File.join(@ext, 'Makefile')
     File.open makefile_path, 'w' do |makefile|
@@ -82,14 +94,8 @@ checking for main\(\) in .*?nonexistent/m, error.message)
       Gem::Ext::ExtConfBuilder.make @ext, output
     end
 
-    case RUBY_PLATFORM
-    when /mswin/ then
-      assert_equal 'nmake', output[0]
-      assert_equal 'nmake install', output[2]
-    else
-      assert_equal 'make', output[0]
-      assert_equal 'make install', output[2]
-    end
+    assert_equal make_command, output[0]
+    assert_equal "#{make_command} install", output[2]
 
     edited_makefile = <<-EOF
 RUBYARCHDIR = #{@ext}$(target_prefix)

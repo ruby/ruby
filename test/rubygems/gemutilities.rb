@@ -8,24 +8,35 @@ at_exit { $SAFE = 1 }
 
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
-require 'rubygems'
+if RUBY_VERSION > '1.9' then
+  Gem::QuickLoader.load_full_rubygems_library
+else
+  require 'rubygems'
+end
 require 'fileutils'
 begin
+  gem 'minitest', '>= 1.3.1'
   require 'minitest/unit'
-rescue LoadError
-  warn "Install minitest gem"
+rescue Gem::LoadError
+  warn "Install minitest gem >= 1.3.1"
   raise
 end
 require 'tmpdir'
 require 'uri'
 require 'rubygems/package'
 require 'rubygems/test_utilities'
+require 'pp'
+
+begin
+  gem 'rdoc'
+rescue Gem::LoadError
+end
+
+require 'rdoc/rdoc'
 
 require File.join(File.expand_path(File.dirname(__FILE__)), 'mockgemui')
 
 module Gem
-  @ruby = ENV['RUBY']
-
   def self.searcher=(searcher)
     MUTEX.synchronize do @searcher = searcher end
   end
@@ -64,6 +75,8 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
     @latest_usrcache = File.join(@gemhome, ".gem", "latest_user_cache")
     @userhome = File.join @tempdir, 'userhome'
 
+    Gem.ensure_gem_subdirectories @gemhome
+
     @orig_ENV_HOME = ENV['HOME']
     ENV['HOME'] = @userhome
     Gem.instance_variable_set :@user_home, nil
@@ -85,7 +98,7 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
     Gem::SpecFetcher.fetcher = nil
 
     @orig_BASERUBY = Gem::ConfigMap[:BASERUBY]
-    Gem::ConfigMap[:BASERUBY] = Gem::ConfigMap[:RUBY_INSTALL_NAME]
+    Gem::ConfigMap[:BASERUBY] = Gem::ConfigMap[:ruby_install_name]
 
     @orig_arch = Gem::ConfigMap[:arch]
 
@@ -158,6 +171,13 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
 
     gem = File.join(@tempdir, "#{gem.full_name}.gem").untaint
     Gem::Installer.new(gem, :wrappers => true).install
+  end
+
+  def mu_pp(obj)
+    s = ''
+    s = PP.pp obj, s
+    s = s.force_encoding(Encoding.default_external) if defined? Encoding
+    s.chomp
   end
 
   def prep_cache_files(lc)
@@ -254,10 +274,8 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
         Gem::Builder.new(spec).build
       end
 
-      cache_dir = File.join(@gemhome, 'cache')
-      FileUtils.mkdir_p cache_dir
       FileUtils.mv "#{spec.full_name}.gem",
-                   File.join(cache_dir, "#{spec.original_name}.gem")
+                   File.join(@gemhome, 'cache', "#{spec.original_name}.gem")
     end
   end
 
@@ -294,14 +312,30 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
     out.string
   end
 
-  def util_make_gems
+  def util_make_gems(prerelease = false)
+    @a1 = quick_gem 'a', '1' do |s|
+      s.files = %w[lib/code.rb]
+      s.require_paths = %w[lib]
+      s.date = Gem::Specification::TODAY - 86400
+      s.homepage = 'http://a.example.com'
+      s.email = %w[example@example.com example2@example.com]
+      s.authors = %w[Example Example2]
+      s.description = <<-DESC
+This line is really, really long.  So long, in fact, that it is more than eighty characters long!  The purpose of this line is for testing wrapping behavior because sometimes people don't wrap their text to eighty characters.  Without the wrapping, the text might not look good in the RSS feed.
+
+Also, a list:
+  * An entry that's actually kind of sort
+  * an entry that's really long, which will probably get wrapped funny.  That's ok, somebody wasn't thinking straight when they made it more than eighty characters.
+      DESC
+    end
+
     init = proc do |s|
       s.files = %w[lib/code.rb]
       s.require_paths = %w[lib]
     end
 
-    @a1 = quick_gem('a', '1', &init)
     @a2 = quick_gem('a', '2', &init)
+    @a3a = quick_gem('a', '3.a', &init)
     @a_evil9 = quick_gem('a_evil', '9', &init)
     @b2 = quick_gem('b', '2', &init)
     @c1_2   = quick_gem('c', '1.2',   &init)
@@ -312,13 +346,23 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
       s.instance_variable_set :@original_platform, 'i386-linux'
     end
 
+    if prerelease
+      @a2_pre = quick_gem('a', '2.a', &init)
+      write_file File.join(*%W[gems #{@a2_pre.original_name} lib code.rb]) do
+      end
+      util_build_gem @a2_pre
+    end
+
     write_file File.join(*%W[gems #{@a1.original_name} lib code.rb]) do end
     write_file File.join(*%W[gems #{@a2.original_name} lib code.rb]) do end
+    write_file File.join(*%W[gems #{@a3a.original_name} lib code.rb]) do end
     write_file File.join(*%W[gems #{@b2.original_name} lib code.rb]) do end
     write_file File.join(*%W[gems #{@c1_2.original_name} lib code.rb]) do end
     write_file File.join(*%W[gems #{@pl1.original_name} lib code.rb]) do end
 
-    [@a1, @a2, @a_evil9, @b2, @c1_2, @pl1].each { |spec| util_build_gem spec }
+    [@a1, @a2, @a3a, @a_evil9, @b2, @c1_2, @pl1].each do |spec|
+      util_build_gem spec
+    end
 
     FileUtils.rm_r File.join(@gemhome, 'gems', @pl1.original_name)
 
@@ -338,26 +382,28 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
     platform
   end
 
-  def util_setup_fake_fetcher
+  def util_setup_fake_fetcher(prerelease = false)
     require 'zlib'
     require 'socket'
     require 'rubygems/remote_fetcher'
 
     @fetcher = Gem::FakeFetcher.new
 
-    util_make_gems
+    util_make_gems(prerelease)
 
-    @all_gems = [@a1, @a2, @a_evil9, @b2, @c1_2].sort
+    @all_gems = [@a1, @a2, @a3a, @a_evil9, @b2, @c1_2].sort
     @all_gem_names = @all_gems.map { |gem| gem.full_name }
 
-    gem_names = [@a1.full_name, @a2.full_name, @b2.full_name]
+    gem_names = [@a1.full_name, @a2.full_name, @a3a.full_name, @b2.full_name]
     @gem_names = gem_names.sort.join("\n")
 
     @source_index = Gem::SourceIndex.new
     @source_index.add_spec @a1
     @source_index.add_spec @a2
+    @source_index.add_spec @a3a
     @source_index.add_spec @a_evil9
     @source_index.add_spec @c1_2
+    @source_index.add_spec @a2_pre if prerelease
 
     Gem::RemoteFetcher.fetcher = @fetcher
   end
@@ -400,7 +446,13 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
       spec_fetcher.latest_specs[@uri] << spec_tuple
     end
 
-    si.gems.sort_by { |_,spec| spec }.each do |_, spec|
+    spec_fetcher.prerelease_specs[@uri] = []
+    si.prerelease_specs.sort.each do |spec|
+      spec_tuple = [spec.name, spec.version, spec.original_platform]
+      spec_fetcher.prerelease_specs[@uri] << spec_tuple
+    end
+
+    (si.gems.merge si.prerelease_gems).sort_by { |_,spec| spec }.each do |_, spec|
       path = "#{@gem_repo}quick/Marshal.#{Gem.marshal_version}/#{spec.original_name}.gemspec.rz"
       data = Marshal.dump spec
       data_deflate = Zlib::Deflate.deflate data
@@ -420,6 +472,42 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
 
   def win_platform?
     Gem.win_platform?
+  end
+
+  # Returns whether or not we're on a version of Ruby built with VC++ (or
+  # Borland) versus Cygwin, Mingw, etc.
+  #
+  def self.vc_windows?
+    RUBY_PLATFORM.match('mswin')
+  end
+
+  # Returns whether or not we're on a version of Ruby built with VC++ (or
+  # Borland) versus Cygwin, Mingw, etc.
+  #
+  def vc_windows?
+    RUBY_PLATFORM.match('mswin')
+  end
+
+  # Returns the make command for the current platform. For versions of Ruby
+  # built on MS Windows with VC++ or Borland it will return 'nmake'. On all
+  # other platforms, including Cygwin, it will return 'make'.
+  #
+  def self.make_command
+    vc_windows? ? 'nmake' : 'make'
+  end
+
+  # Returns the make command for the current platform. For versions of Ruby
+  # built on MS Windows with VC++ or Borland it will return 'nmake'. On all
+  # other platforms, including Cygwin, it will return 'make'.
+  #
+  def make_command
+    vc_windows? ? 'nmake' : 'make'
+  end
+
+  # Returns whether or not the nmake command could be found.
+  #
+  def nmake_found?
+    system('nmake /? 1>NUL 2>&1')
   end
 
   # NOTE Allow tests to use a random (but controlled) port number instead of

@@ -4,8 +4,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems'
-
 ##
 # The Dependency class holds a Gem name and a Gem::Requirement
 
@@ -72,13 +70,28 @@ class Gem::Dependency
   alias requirements_list requirement_list
 
   def normalize
-    ver = @version_requirement.instance_eval { @version }
+    ver = @version_requirement.instance_variable_get :@version
     @version_requirements = Gem::Requirement.new([ver])
     @version_requirement = nil
   end
 
   def to_s # :nodoc:
     "#{name} (#{version_requirements}, #{@type || :runtime})"
+  end
+
+  def pretty_print(q) # :nodoc:
+    q.group 1, 'Gem::Dependency.new(', ')' do
+      q.pp @name
+      q.text ','
+      q.breakable
+
+      q.pp @version_requirements
+
+      q.text ','
+      q.breakable
+
+      q.pp @type
+    end
   end
 
   def ==(other) # :nodoc:
@@ -89,15 +102,22 @@ class Gem::Dependency
   end
 
   ##
-  # Uses this dependency as a pattern to compare to the dependency +other+.
-  # This dependency will match if the name matches the other's name, and other
-  # has only an equal version requirement that satisfies this dependency.
+  # Uses this dependency as a pattern to compare to +other+.  This dependency
+  # will match if the name matches the other's name, and other has only an
+  # equal version requirement that satisfies this dependency.
 
   def =~(other)
-    return false unless self.class === other
+    other = if self.class === other then
+              other
+            else
+              return false unless other.respond_to? :name and
+                                  other.respond_to? :version
+
+              Gem::Dependency.new other.name, other.version
+            end
 
     pattern = @name
-    pattern = /\A#{@name}\Z/ unless Regexp === pattern
+    pattern = /\A#{Regexp.escape @name}\Z/ unless Regexp === pattern
 
     return false unless pattern =~ other.name
 
@@ -111,8 +131,17 @@ class Gem::Dependency
     version_requirements.satisfied_by? version
   end
 
-  def hash # :nodoc:
+  ##
+  # A dependency's hash is the sum of the hash of the #name, #type and
+  # #version_requirements
+
+  def hash
     name.hash + type.hash + version_requirements.hash
+  end
+
+  def inspect # :nodoc:
+    "<%s type=%p name=%p requirements=%p>" % [self.class, @type, @name,
+      version_requirements.to_s]
   end
 
 end

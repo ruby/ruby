@@ -4,23 +4,30 @@
 # See LICENSE.txt for permissions.
 #++
 
+#--
 # Some system might not have OpenSSL installed, therefore the core
 # library file openssl might not be available.  We localize testing
 # for the presence of OpenSSL in this file.
+#++
 
 module Gem
   class << self
+    ##
     # Is SSL (used by the signing commands) available on this
     # platform?
+
     def ssl_available?
-      require 'rubygems/gem_openssl'
       @ssl_available
     end
 
-    # Set the value of the ssl_available flag.
+    ##
+    # Is SSL available?
+
     attr_writer :ssl_available
 
+    ##
     # Ensure that SSL is available.  Throw an exception if it is not.
+
     def ensure_ssl_available
       unless ssl_available?
         fail Gem::Exception, "SSL is not installed on this system"
@@ -61,6 +68,8 @@ rescue LoadError, StandardError
   Gem.ssl_available = false
 end
 
+# :stopdoc:
+
 module Gem::SSL
 
   # We make our own versions of the constants here.  This allows us
@@ -70,7 +79,7 @@ module Gem::SSL
   # These constants are only used during load time.  At runtime, any
   # method that makes a direct reference to SSL software must be
   # protected with a Gem.ensure_ssl_available call.
-  #
+
   if Gem.ssl_available? then
     PKEY_RSA = OpenSSL::PKey::RSA
     DIGEST_SHA1 = OpenSSL::Digest::SHA1
@@ -80,4 +89,6 @@ module Gem::SSL
   end
 
 end
+
+# :startdoc:
 

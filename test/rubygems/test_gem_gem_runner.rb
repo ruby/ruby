@@ -30,5 +30,16 @@ class TestGemGemRunner < RubyGemTestCase
     assert_equal %w[--all], Gem::DocManager.configured_args
   end
 
+  def test_build_args__are_handled
+    Gem.clear_paths
+
+    gr = Gem::GemRunner.new
+    assert_raises(Gem::SystemExitException) do
+      gr.run(%W[--help -- --build_arg1 --build_arg2])
+    end
+
+    assert_equal %w[--build_arg1 --build_arg2], Gem::Command.build_args
+  end
+
 end
 

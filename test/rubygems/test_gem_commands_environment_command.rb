@@ -24,7 +24,7 @@ class TestGemCommandsEnvironmentCommand < RubyGemTestCase
     assert_match %r|INSTALLATION DIRECTORY: #{Regexp.escape @gemhome}|,
                  @ui.output
     assert_match %r|RUBYGEMS PREFIX: |, @ui.output
-    assert_match %r|RUBY EXECUTABLE:.*#{Gem::ConfigMap[:RUBY_INSTALL_NAME]}|,
+    assert_match %r|RUBY EXECUTABLE:.*#{Gem::ConfigMap[:ruby_install_name]}|,
                  @ui.output
     assert_match %r|EXECUTABLE DIRECTORY:|, @ui.output
     assert_match %r|RUBYGEMS PLATFORMS:|, @ui.output

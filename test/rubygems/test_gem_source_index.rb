@@ -208,269 +208,6 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
     assert_equal @fetcher, @source_index.fetcher
   end
 
-  def test_fetch_bulk_index_compressed
-    util_setup_bulk_fetch true
-
-    use_ui @ui do
-      fetched_index = @source_index.fetch_bulk_index @uri
-      assert_equal [@a1.full_name, @a2.full_name, @a_evil9.full_name,
-                    @c1_2.full_name].sort,
-                   fetched_index.gems.map { |n,s| n }.sort
-    end
-
-    paths = @fetcher.paths
-
-    assert_equal "#{@gem_repo}Marshal.#{@marshal_version}.Z", paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  end
-
-  def test_fetch_bulk_index_error
-    @fetcher.data["#{@gem_repo}Marshal.#{@marshal_version}.Z"] = proc { raise SocketError }
-    @fetcher.data["#{@gem_repo}Marshal.#{@marshal_version}"] = proc { raise SocketError }
-    @fetcher.data["#{@gem_repo}yaml.Z"] = proc { raise SocketError }
-    @fetcher.data["#{@gem_repo}yaml"] = proc { raise SocketError }
-
-    e = assert_raises Gem::RemoteSourceException do
-      use_ui @ui do
-        @source_index.fetch_bulk_index @uri
-      end
-    end
-
-    paths = @fetcher.paths
-
-    assert_equal "#{@gem_repo}Marshal.#{@marshal_version}.Z", paths.shift
-    assert_equal "#{@gem_repo}Marshal.#{@marshal_version}", paths.shift
-    assert_equal "#{@gem_repo}yaml.Z", paths.shift
-    assert_equal "#{@gem_repo}yaml", paths.shift
-
-    assert paths.empty?, paths.join(', ')
-
-    assert_equal 'Error fetching remote gem cache: SocketError',
-                 e.message
-  end
-
-  def test_fetch_bulk_index_fallback
-    @fetcher.data["#{@gem_repo}Marshal.#{@marshal_version}.Z"] =
-      proc { raise SocketError }
-    @fetcher.data["#{@gem_repo}Marshal.#{@marshal_version}"] =
-      proc { raise SocketError }
-    @fetcher.data["#{@gem_repo}yaml.Z"] = proc { raise SocketError }
-    @fetcher.data["#{@gem_repo}yaml"] = @source_index.to_yaml
-
-    use_ui @ui do
-      fetched_index = @source_index.fetch_bulk_index @uri
-      assert_equal [@a1.full_name, @a2.full_name, @a_evil9.full_name,
-                    @c1_2.full_name].sort,
-                   fetched_index.gems.map { |n,s| n }.sort
-    end
-
-    paths = @fetcher.paths
-
-    assert_equal "#{@gem_repo}Marshal.#{@marshal_version}.Z", paths.shift
-    assert_equal "#{@gem_repo}Marshal.#{@marshal_version}", paths.shift
-    assert_equal "#{@gem_repo}yaml.Z", paths.shift
-    assert_equal "#{@gem_repo}yaml", paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  end
-
-  def test_fetch_bulk_index_marshal_mismatch
-    marshal = @source_index.dump
-    marshal[0] = (Marshal::MAJOR_VERSION - 1).chr
-
-    @fetcher.data["#{@gem_repo}Marshal.#{@marshal_version}"] = marshal
-    @fetcher.data["#{@gem_repo}yaml"] = @source_index.to_yaml
-
-    use_ui @ui do
-      fetched_index = @source_index.fetch_bulk_index @uri
-      assert_equal [@a1.full_name, @a2.full_name, @a_evil9.full_name,
-                    @c1_2.full_name].sort,
-                   fetched_index.gems.map { |n,s| n }.sort
-    end
-
-    paths = @fetcher.paths
-
-    assert_equal "#{@gem_repo}Marshal.#{@marshal_version}.Z", paths.shift
-    assert_equal "#{@gem_repo}Marshal.#{@marshal_version}", paths.shift
-    assert_equal "#{@gem_repo}yaml.Z", paths.shift
-    assert_equal "#{@gem_repo}yaml", paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  end
-
-  def test_fetch_bulk_index_uncompressed
-    util_setup_bulk_fetch false
-    use_ui @ui do
-      fetched_index = @source_index.fetch_bulk_index @uri
-      assert_equal [@a1.full_name, @a2.full_name, @a_evil9.full_name,
-                    @c1_2.full_name].sort,
-                   fetched_index.gems.map { |n,s| n }.sort
-    end
-
-    paths = @fetcher.paths
-
-    assert_equal "#{@gem_repo}Marshal.#{@marshal_version}.Z", paths.shift
-    assert_equal "#{@gem_repo}Marshal.#{@marshal_version}", paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  end
-
-  def test_fetch_quick_index
-    index = util_zip @gem_names
-    latest_index = util_zip [@a2.full_name, @b2.full_name].join("\n")
-
-    @fetcher.data["#{@gem_repo}quick/index.rz"] = index
-    @fetcher.data["#{@gem_repo}quick/latest_index.rz"] = latest_index
-
-    quick_index = @source_index.fetch_quick_index @uri, false
-    assert_equal [@a2.full_name, @b2.full_name].sort,
-                 quick_index.sort
-
-    paths = @fetcher.paths
-
-    assert_equal "#{@gem_repo}quick/latest_index.rz", paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  end
-
-  def test_fetch_quick_index_all
-    index = util_zip @gem_names
-    latest_index = util_zip [@a2.full_name, @b2.full_name].join("\n")
-
-    @fetcher.data["#{@gem_repo}quick/index.rz"] = index
-    @fetcher.data["#{@gem_repo}quick/latest_index.rz"] = latest_index
-
-    quick_index = @source_index.fetch_quick_index @uri, true
-    assert_equal [@a1.full_name, @a2.full_name, @b2.full_name].sort,
-                 quick_index.sort
-
-    paths = @fetcher.paths
-
-    assert_equal "#{@gem_repo}quick/index.rz", paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  end
-
-  def test_fetch_quick_index_error
-    @fetcher.data["#{@gem_repo}quick/index.rz"] =
-      proc { raise Exception }
-
-    e = assert_raises Gem::OperationNotSupportedError do
-      @source_index.fetch_quick_index @uri, true
-    end
-
-    assert_equal 'No quick index found: Exception', e.message
-
-    paths = @fetcher.paths
-
-    assert_equal "#{@gem_repo}quick/index.rz", paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  end
-
-  def test_fetch_quick_index_fallback
-    index = util_zip @gem_names
-
-    @fetcher.data["#{@gem_repo}quick/index.rz"] = index
-
-    quick_index = @source_index.fetch_quick_index @uri, false
-    assert_equal @gem_names.split, quick_index.sort
-
-    paths = @fetcher.paths
-
-    assert_equal "#{@gem_repo}quick/latest_index.rz", paths.shift
-    assert_equal "#{@gem_repo}quick/index.rz", paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  end
-
-  def test_fetch_quick_index_subdir
-    latest_index = util_zip [@a2.full_name, @b2.full_name].join("\n")
-    repo = URI.parse "#{@gem_repo}~nobody/mirror/"
-
-    @fetcher.data["#{repo}quick/latest_index.rz"] = latest_index
-
-    quick_index = @source_index.fetch_quick_index repo, false
-    assert_equal [@a2.full_name, @b2.full_name].sort,
-                 quick_index.sort
-
-    paths = @fetcher.paths
-
-    assert_equal "#{repo}quick/latest_index.rz", paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  end
-
-  def test_fetch_single_spec
-    a1_spec_url = "#{@gem_repo}quick/Marshal.#{Gem.marshal_version}/#{@a1.full_name}.gemspec.rz"
-    @fetcher.data[a1_spec_url] = util_zip Marshal.dump(@a1)
-
-    spec = @source_index.send :fetch_single_spec, URI.parse(@gem_repo),
-                              @a1.full_name
-
-    assert_equal @a1.full_name, spec.full_name
-
-    paths = @fetcher.paths
-
-    assert_equal a1_spec_url, paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  end
-
-  def test_fetch_single_spec_subdir
-    repo = URI.parse "#{@gem_repo}~nobody/mirror/"
-
-    a1_spec_url = "#{repo}quick/Marshal.#{Gem.marshal_version}/#{@a1.full_name}.gemspec.rz"
-    @fetcher.data[a1_spec_url] = util_zip Marshal.dump(@a1)
-
-    spec = @source_index.send :fetch_single_spec, repo, @a1.full_name
-
-    assert_equal @a1.full_name, spec.full_name
-
-    paths = @fetcher.paths
-
-    assert_equal a1_spec_url, paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  end
-
-  def test_fetch_single_spec_yaml
-    a1_spec_url = "#{@gem_repo}quick/#{@a1.full_name}.gemspec.rz"
-    @fetcher.data[a1_spec_url] = util_zip @a1.to_yaml
-
-    repo = URI.parse @gem_repo
-
-    spec = @source_index.send :fetch_single_spec, repo, @a1.full_name
-
-    assert_equal @a1.full_name, spec.full_name
-
-    paths = @fetcher.paths
-
-    assert_equal "#{@gem_repo}quick/Marshal.#{Gem.marshal_version}/#{@a1.full_name}.gemspec.rz", paths.shift
-    assert_equal a1_spec_url, paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  end
-
-  def test_fetch_single_spec_yaml_subdir
-    repo = URI.parse "#{@gem_repo}~nobody/mirror/"
-
-    a1_spec_url = "#{repo}quick/#{@a1.full_name}.gemspec.rz"
-    @fetcher.data[a1_spec_url] = util_zip @a1.to_yaml
-
-    spec = @source_index.send :fetch_single_spec, repo, @a1.full_name
-
-    assert_equal @a1.full_name, spec.full_name
-
-    paths = @fetcher.paths
-
-    assert_equal "#{repo}quick/Marshal.#{Gem.marshal_version}/#{@a1.full_name}.gemspec.rz", paths.shift
-    assert_equal a1_spec_url, paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  end
-
   def test_find_missing
     missing = @source_index.find_missing [@b2.full_name]
     assert_equal [@b2.full_name], missing
@@ -485,7 +222,7 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
   end
 
   def test_find_name
-    assert_equal [@a1, @a2], @source_index.find_name('a')
+    assert_equal [@a1, @a2, @a3a], @source_index.find_name('a')
     assert_equal [@a2], @source_index.find_name('a', '= 2')
     assert_equal [], @source_index.find_name('bogusstring')
     assert_equal [], @source_index.find_name('a', '= 3')
@@ -593,14 +330,25 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
     assert_equal [updated_platform.name], @source_index.outdated
   end
 
+  def test_prerelease_specs_kept_in_right_place
+    gem_a1_alpha = quick_gem 'abba', '1.a'
+    @source_index.add_spec gem_a1_alpha
+
+    refute @source_index.latest_specs.include?(gem_a1_alpha)
+    assert_nil @source_index.specification(gem_a1_alpha.full_name)
+    assert @source_index.prerelease_specs.include?(gem_a1_alpha)
+
+    # TODO: don't think this tests writing prerelease index to disk
+  end
+
   def test_refresh_bang
-    a1_spec = File.join @gemhome, "specifications", "#{@a1.full_name}.gemspec"
+    a1_spec = File.join @gemhome, "specifications", "#{@a1.full_name}.gemspec" 
 
     FileUtils.mv a1_spec, @tempdir
 
     source_index = Gem::SourceIndex.from_installed_gems
 
-    assert !source_index.gems.include?(@a1.full_name)
+    refute source_index.gems.include?(@a1.full_name)
 
     FileUtils.mv File.join(@tempdir, "#{@a1.full_name}.gemspec"), a1_spec
 
@@ -640,13 +388,28 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
     assert_equal gems, @source_index.gems.map { |n,s| n }.sort
   end
 
+  def test_remove_spec
+    deleted = @source_index.remove_spec 'a-1'
+
+    assert_equal %w[a-2 a-3.a a_evil-9 c-1.2],
+                 @source_index.all_gems.values.map { |s| s.full_name }.sort
+
+    deleted = @source_index.remove_spec 'a-3.a'
+
+    assert_equal %w[a-2 a_evil-9 c-1.2],
+                 @source_index.all_gems.values.map { |s| s.full_name }.sort
+  end
+
   def test_search
     requirement = Gem::Requirement.create '= 9'
     with_version = Gem::Dependency.new(/^a/, requirement)
     assert_equal [@a_evil9], @source_index.search(with_version)
 
     with_default = Gem::Dependency.new(/^a/, Gem::Requirement.default)
-    assert_equal [@a1, @a2, @a_evil9], @source_index.search(with_default)
+    assert_equal [@a1, @a2, @a3a, @a_evil9], @source_index.search(with_default)
+
+    c1_1_dep = Gem::Dependency.new 'c', '~> 1.1'
+    assert_equal [@c1_2], @source_index.search(c1_1_dep)
   end
 
   def test_search_platform
@@ -690,186 +453,6 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
   def test_unzip
     input = "x\234+\316\317MU(I\255(\001\000\021\350\003\232"
     assert_equal 'some text', @source_index.unzip(input)
-  end
-
-  def test_update_bulk
-    util_setup_bulk_fetch true
-
-    @source_index.gems.replace({})
-    assert_equal [], @source_index.gems.keys.sort
-
-    use_ui @ui do
-      @source_index.update @uri, true
-
-      assert_equal [@a1.full_name, @a2.full_name, @a_evil9.full_name,
-                    @c1_2.full_name],
-                   @source_index.gems.keys.sort
-    end
-
-    paths = @fetcher.paths
-
-    assert_equal "#{@gem_repo}quick/index.rz", paths.shift
-    assert_equal "#{@gem_repo}Marshal.#{@marshal_version}.Z", paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  end
-
-  def test_update_incremental
-    old_gem_conf = Gem.configuration
-    Gem.configuration = Gem::ConfigFile.new([])
-
-    latest_names = [@a2, @a_evil9, @b2, @c1_2].map { |s| s.full_name }
-    latest_index = util_zip latest_names.join("\n")
-    @fetcher.data["#{@gem_repo}quick/latest_index.rz"] = latest_index
-
-    marshal_uri = File.join @gem_repo, "quick", "Marshal.#{@marshal_version}",
-                            "#{@b2.full_name}.gemspec.rz"
-    @fetcher.data[marshal_uri] = util_zip Marshal.dump(@b2)
-
-    use_ui @ui do
-      @source_index.update @uri, false
-
-      assert_equal latest_names, @source_index.gems.keys.sort
-    end
-
-    paths = @fetcher.paths
-    assert_equal "#{@gem_repo}quick/latest_index.rz", paths.shift
-    assert_equal marshal_uri, paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  ensure
-    Gem.configuration = old_gem_conf
-  end
-
-  def test_update_incremental_all
-    old_gem_conf = Gem.configuration
-    Gem.configuration = Gem::ConfigFile.new([])
-
-    quick_index = util_zip @all_gem_names.join("\n")
-    @fetcher.data["#{@gem_repo}quick/index.rz"] = quick_index
-
-    marshal_uri = File.join @gem_repo, "quick", "Marshal.#{@marshal_version}",
-                            "#{@b2.full_name}.gemspec.rz"
-    @fetcher.data[marshal_uri] = util_zip Marshal.dump(@b2)
-
-    use_ui @ui do
-      @source_index.update @uri, true
-
-      assert_equal @all_gem_names, @source_index.gems.keys.sort
-    end
-
-    paths = @fetcher.paths
-    assert_equal "#{@gem_repo}quick/index.rz", paths.shift
-    assert_equal marshal_uri, paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  ensure
-    Gem.configuration = old_gem_conf
-  end
-
-  def test_update_incremental_fallback
-    old_gem_conf = Gem.configuration
-    Gem.configuration = Gem::ConfigFile.new([])
-
-    quick_index = util_zip @all_gem_names.join("\n")
-    @fetcher.data["#{@gem_repo}quick/index.rz"] = quick_index
-
-    marshal_uri = File.join @gem_repo, "quick", "Marshal.#{@marshal_version}",
-                            "#{@b2.full_name}.gemspec.rz"
-
-    yaml_uri = "#{@gem_repo}quick/#{@b2.full_name}.gemspec.rz"
-    @fetcher.data[yaml_uri] = util_zip @b2.to_yaml
-
-    use_ui @ui do
-      @source_index.update @uri, true
-
-      assert_equal @all_gem_names, @source_index.gems.keys.sort
-    end
-
-    paths = @fetcher.paths
-    assert_equal "#{@gem_repo}quick/index.rz", paths.shift
-    assert_equal marshal_uri, paths.shift
-    assert_equal yaml_uri, paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  ensure
-    Gem.configuration = old_gem_conf
-  end
-
-  def test_update_incremental_marshal_mismatch
-    old_gem_conf = Gem.configuration
-    Gem.configuration = Gem::ConfigFile.new([])
-
-    quick_index = util_zip @all_gem_names.join("\n")
-    @fetcher.data["#{@gem_repo}quick/index.rz"] = quick_index
-
-    marshal_uri = File.join @gem_repo, "quick", "Marshal.#{@marshal_version}",
-                            "#{@b2.full_name}.gemspec.rz"
-    marshal_data = Marshal.dump(@b2)
-    marshal_data[0] = (Marshal::MAJOR_VERSION - 1).chr
-    @fetcher.data[marshal_uri] = util_zip marshal_data
-
-    yaml_uri = "#{@gem_repo}quick/#{@b2.full_name}.gemspec.rz"
-    @fetcher.data[yaml_uri] = util_zip @b2.to_yaml
-
-    use_ui @ui do
-      @source_index.update @uri, true
-
-      assert_equal @all_gem_names, @source_index.gems.keys.sort
-    end
-
-    paths = @fetcher.paths
-    assert_equal "#{@gem_repo}quick/index.rz", paths.shift
-    assert_equal marshal_uri, paths.shift
-    assert_equal yaml_uri, paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  ensure
-    Gem.configuration = old_gem_conf
-  end
-
-  def test_update_subdir
-    @gem_repo = @gem_repo + 'subdir/'
-
-    util_setup_bulk_fetch true
-
-    @source_index.gems.replace({})
-    assert_equal [], @source_index.gems.keys.sort
-
-    uri = @uri.to_s + 'subdir/'
-
-    use_ui @ui do
-      @source_index.update uri, true
-
-      assert_equal [@a1.full_name, @a2.full_name, @a_evil9.full_name,
-                    @c1_2.full_name],
-                   @source_index.gems.keys.sort
-    end
-
-    paths = @fetcher.paths
-
-    assert_equal "#{@gem_repo}quick/index.rz", paths.shift
-    assert_equal "#{@gem_repo}Marshal.#{@marshal_version}.Z", paths.shift
-
-    assert paths.empty?, paths.join(', ')
-  end
-
-  def test_update_with_missing
-    marshal_uri = File.join @gem_repo, "quick", "Marshal.#{@marshal_version}",
-                            "#{@c1_2.full_name}.gemspec.rz"
-    dumped = Marshal.dump @c1_2
-    @fetcher.data[marshal_uri] = util_zip(dumped)
-
-    use_ui @ui do
-      @source_index.update_with_missing @uri, [@c1_2.full_name]
-    end
-
-    spec = @source_index.specification(@c1_2.full_name)
-    # We don't care about the equality of undumped attributes
-    @c1_2.files = spec.files
-    @c1_2.loaded_from = spec.loaded_from
-
-    assert_equal @c1_2, spec
   end
 
   def util_setup_bulk_fetch(compressed)

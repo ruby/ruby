@@ -35,7 +35,7 @@ class TestGemCommandsPristineCommand < RubyGemTestCase
 
     assert_equal "Restoring gem(s) to pristine condition...", out.shift
     assert_equal "Restored #{a.full_name}", out.shift
-    assert out.empty?, out.inspect
+    assert_empty out, out.inspect
   end
 
   def test_execute_all
@@ -63,7 +63,7 @@ class TestGemCommandsPristineCommand < RubyGemTestCase
 
     assert_equal "Restoring gem(s) to pristine condition...", out.shift
     assert_equal "Restored #{a.full_name}", out.shift
-    assert out.empty?, out.inspect
+    assert_empty out, out.inspect
   end
 
   def test_execute_missing_cache_gem
@@ -86,7 +86,7 @@ class TestGemCommandsPristineCommand < RubyGemTestCase
     out = @ui.output.split "\n"
 
     assert_equal "Restoring gem\(s\) to pristine condition...", out.shift
-    assert out.empty?, out.inspect
+    assert_empty out, out.inspect
 
     assert_equal "ERROR:  Cached gem for #{a.full_name} not found, use `gem install` to restore\n",
                  @ui.error

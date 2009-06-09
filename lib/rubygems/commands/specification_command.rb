@@ -12,7 +12,8 @@ class Gem::Commands::SpecificationCommand < Gem::Command
 
   def initialize
     super 'specification', 'Display gem specification (in yaml)',
-          :domain => :local, :version => Gem::Requirement.default
+          :domain => :local, :version => Gem::Requirement.default,
+          :format => :yaml
 
     add_version_option('examine')
     add_platform_option
@@ -22,25 +23,61 @@ class Gem::Commands::SpecificationCommand < Gem::Command
       options[:all] = true
     end
 
+    add_option('--ruby', 'Output ruby format') do |value, options|
+      options[:format] = :ruby
+    end
+
+    add_option('--yaml', 'Output RUBY format') do |value, options|
+      options[:format] = :yaml
+    end
+
+    add_option('--marshal', 'Output Marshal format') do |value, options|
+      options[:format] = :marshal
+    end
+
     add_local_remote_options
   end
 
   def arguments # :nodoc:
-    "GEMFILE       name of gem to show the gemspec for"
+    <<-ARGS
+GEMFILE       name of gem to show the gemspec for
+FIELD         name of gemspec field to show
+    ARGS
   end
 
   def defaults_str # :nodoc:
-    "--local --version '#{Gem::Requirement.default}'"
+    "--local --version '#{Gem::Requirement.default}' --yaml"
   end
 
   def usage # :nodoc:
-    "#{program_name} [GEMFILE]"
+    "#{program_name} [GEMFILE] [FIELD]"
   end
 
   def execute
     specs = []
-    gem = get_one_gem_name
+    gem = options[:args].shift
+
+    unless gem then
+      raise Gem::CommandLineError,
+            "Please specify a gem name or file on the command line"
+    end
+
     dep = Gem::Dependency.new gem, options[:version]
+
+    field = get_one_optional_argument
+
+    if field then
+      field = field.intern
+
+      if options[:format] == :ruby then
+        raise Gem::CommandLineError, "--ruby and FIELD are mutually exclusive"
+      end
+
+      unless Gem::Specification.attribute_names.include? field then
+        raise Gem::CommandLineError,
+              "no field %p on Gem::Specification" % field.to_s
+      end
+    end
 
     if local? then
       if File.exist? gem then
@@ -63,7 +100,17 @@ class Gem::Commands::SpecificationCommand < Gem::Command
       terminate_interaction 1
     end
 
-    output = lambda { |s| say s.to_yaml; say "\n" }
+    output = lambda do |s|
+      s = s.send field if field
+
+      say case options[:format]
+          when :ruby then s.to_ruby
+          when :marshal then Marshal.dump s
+          else s.to_yaml
+          end
+
+      say "\n"
+    end
 
     if options[:all] then
       specs.each(&output)

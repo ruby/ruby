@@ -23,6 +23,19 @@ class TestGemVersionOption < RubyGemTestCase
     assert @cmd.handles?(%w[--version >1])
   end
 
+  def test_enables_prerelease
+    @cmd.add_version_option
+
+    @cmd.handle_options %w[mygem -v 0.2.0.a]
+    assert @cmd.options[:prerelease]
+
+    @cmd.handle_options %w[mygem -v 0.2.0]
+    refute @cmd.options[:prerelease]
+
+    @cmd.handle_options %w[mygem]
+    refute @cmd.options[:prerelease]
+  end
+
   def test_platform_option
     @cmd.add_platform_option
 

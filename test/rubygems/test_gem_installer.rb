@@ -31,7 +31,7 @@ if ARGV.first =~ /^_(.*)_$/ and Gem::Version.correct? $1 then
 end
 
 gem 'a', version
-load 'my_exec'
+load Gem.bin_path('a', 'my_exec', version)
     EOF
 
     wrapper = @installer.app_script_text 'my_exec'
@@ -46,7 +46,7 @@ load 'my_exec'
     assert_equal '', @ui.output
     assert_equal '', @ui.error
 
-    assert !File.exist?('gem_make.out')
+    refute File.exist?('gem_make.out')
   end
 
   def test_build_extensions_extconf_bad
@@ -288,12 +288,16 @@ load 'my_exec'
     util_make_exec
 
     Dir.mkdir util_inst_bindir
-    File.chmod 0000, util_inst_bindir
 
-    assert_raises Gem::FilePermissionError do
-      @installer.generate_bin
+    if win_platform?
+      skip('test_generate_bin_script_no_perms skipped on MS Windows')
+    else
+      File.chmod 0000, util_inst_bindir
+
+      assert_raises Gem::FilePermissionError do
+        @installer.generate_bin
+      end
     end
-
   ensure
     File.chmod 0700, util_inst_bindir unless $DEBUG
   end
@@ -373,12 +377,16 @@ load 'my_exec'
     @installer.gem_dir = util_gem_dir
 
     Dir.mkdir util_inst_bindir
-    File.chmod 0000, util_inst_bindir
 
-    assert_raises Gem::FilePermissionError do
-      @installer.generate_bin
+    if win_platform?
+      skip('test_generate_bin_symlink_no_perms skipped on MS Windows')
+    else
+      File.chmod 0000, util_inst_bindir
+
+      assert_raises Gem::FilePermissionError do
+        @installer.generate_bin
+      end
     end
-
   ensure
     File.chmod 0700, util_inst_bindir unless $DEBUG
   end
@@ -535,7 +543,7 @@ load 'my_exec'
     cache_file = File.join @gemhome, 'cache', "#{@spec.full_name}.gem"
 
     Gem.pre_install do |installer|
-      assert !File.exist?(cache_file), 'cache file should not exist yet'
+      refute File.exist?(cache_file), 'cache file should not exist yet'
     end
 
     Gem.post_install do |installer|
@@ -771,7 +779,7 @@ load 'my_exec'
     assert @installer.installation_satisfies_dependency?(dep)
 
     dep = Gem::Dependency.new 'a', '> 2'
-    assert ! @installer.installation_satisfies_dependency?(dep)
+    refute @installer.installation_satisfies_dependency?(dep)
   end
 
   def test_shebang
@@ -818,7 +826,7 @@ load 'my_exec'
     @installer.env_shebang = true
 
     shebang = @installer.shebang 'my_exec'
-    assert_equal "#!/usr/bin/env #{Gem::ConfigMap[:RUBY_INSTALL_NAME]}", shebang
+    assert_equal "#!/usr/bin/env #{Gem::ConfigMap[:ruby_install_name]}", shebang
   end
 
   def test_shebang_nested
@@ -884,7 +892,7 @@ load 'my_exec'
     spec_dir = File.join @gemhome, 'specifications'
     spec_file = File.join spec_dir, "#{@spec.full_name}.gemspec"
     FileUtils.rm spec_file
-    assert !File.exist?(spec_file)
+    refute File.exist?(spec_file)
 
     @installer.spec = @spec
     @installer.gem_home = @gemhome

@@ -4,20 +4,17 @@
 # See LICENSE.txt for permissions.
 #++
 
-
 module RbConfig
 
-  # Only define datadir if it doesn't already exist.
-  unless RbConfig.respond_to?(:datadir)
+  ##
+  # Return the path to the data directory associated with the given package
+  # name.  Normally this is just
+  # "#{RbConfig::CONFIG['datadir']}/#{package_name}", but may be modified by
+  # packages like RubyGems to handle versioned data directories.
 
-    # Return the path to the data directory associated with the given
-    # package name.  Normally this is just
-    # "#{RbConfig::CONFIG['datadir']}/#{package_name}", but may be
-    # modified by packages like RubyGems to handle versioned data
-    # directories.
-    def RbConfig.datadir(package_name)
-      File.join(CONFIG['datadir'], package_name)
-    end
+  def self.datadir(package_name)
+    File.join(CONFIG['datadir'], package_name)
+  end unless RbConfig.respond_to?(:datadir)
 
-  end
 end
+

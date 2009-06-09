@@ -3,8 +3,6 @@
 # See LICENSE.txt for additional licensing information.
 #--
 
-require 'rubygems/package'
-
 ##
 # TarOutput is a wrapper to TarWriter that builds gem-format tar file.
 #
@@ -66,8 +64,10 @@ class Gem::Package::TarOutput
       Zlib::GzipWriter.wrap(sio || inner) do |os|
 
         Gem::Package::TarWriter.new os do |data_tar_writer|
+          # :stopdoc:
           def data_tar_writer.metadata() @metadata end
           def data_tar_writer.metadata=(metadata) @metadata = metadata end
+          # :startdoc:
 
           yield data_tar_writer
 

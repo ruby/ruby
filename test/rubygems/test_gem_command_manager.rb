@@ -7,29 +7,16 @@
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/command_manager'
 
-class InterruptCommand < Gem::Command
-
-  def initialize
-    super('interrupt', 'Raises an Interrupt Exception', {})
-  end
-
-  def execute
-    raise Interrupt, "Interrupt exception"
-  end
-
-end
-
 class TestGemCommandManager < RubyGemTestCase
 
   def setup
     super
 
-    @command_manager = Gem::CommandManager.new
+    @command_manager = Gem::CommandManager.instance
   end
 
   def test_run_interrupt
     use_ui @ui do
-      @command_manager.register_command :interrupt
       assert_raises MockGemUi::TermError do
         @command_manager.run 'interrupt'
       end

@@ -3,21 +3,40 @@
 # See LICENSE.txt for additional licensing information.
 #--
 
-require 'rubygems/package'
+##
+# Allows writing of tar files
 
 class Gem::Package::TarWriter
 
   class FileOverflow < StandardError; end
 
+  ##
+  # IO wrapper that allows writing a limited amount of data
+
   class BoundedStream
 
-    attr_reader :limit, :written
+    ##
+    # Maximum number of bytes that can be written
+
+    attr_reader :limit
+
+    ##
+    # Number of bytes written
+
+    attr_reader :written
+
+    ##
+    # Wraps +io+ and allows up to +limit+ bytes to be written
 
     def initialize(io, limit)
       @io = io
       @limit = limit
       @written = 0
     end
+
+    ##
+    # Writes +data+ onto the IO, raising a FileOverflow exception if the
+    # number of bytes will be more than #limit
 
     def write(data)
       if data.size + @written > @limit
@@ -30,17 +49,29 @@ class Gem::Package::TarWriter
 
   end
 
+  ##
+  # IO wrapper that provides only #write
+
   class RestrictedStream
+
+    ##
+    # Creates a new RestrictedStream wrapping +io+
 
     def initialize(io)
       @io = io
     end
+
+    ##
+    # Writes +data+ onto the IO
 
     def write(data)
       @io.write data
     end
 
   end
+
+  ##
+  # Creates a new TarWriter, yielding it if a block is given
 
   def self.new(io)
     writer = super
@@ -56,12 +87,19 @@ class Gem::Package::TarWriter
     nil
   end
 
+  ##
+  # Creates a new TarWriter that will write to +io+
+
   def initialize(io)
     @io = io
     @closed = false
   end
 
-  def add_file(name, mode)
+  ##
+  # Adds file +name+ with permissions +mode+, and yields an IO for writing the
+  # file to
+
+  def add_file(name, mode) # :yields: io
     check_closed
 
     raise Gem::Package::NonSeekableIO unless @io.respond_to? :pos=
@@ -90,7 +128,11 @@ class Gem::Package::TarWriter
     self
   end
 
-  def add_file_simple(name, mode, size)
+  ##
+  # Add file +name+ with permissions +mode+ +size+ bytes long.  Yields an IO
+  # to write the file to.
+
+  def add_file_simple(name, mode, size) # :yields: io
     check_closed
 
     name, prefix = split_name name
@@ -112,9 +154,15 @@ class Gem::Package::TarWriter
     self
   end
 
+  ##
+  # Raises IOError if the TarWriter is closed
+
   def check_closed
     raise IOError, "closed #{self.class}" if closed?
   end
+
+  ##
+  # Closes the TarWriter
 
   def close
     check_closed
@@ -125,15 +173,24 @@ class Gem::Package::TarWriter
     @closed = true
   end
 
+  ##
+  # Is the TarWriter closed?
+
   def closed?
     @closed
   end
+
+  ##
+  # Flushes the TarWriter's IO
 
   def flush
     check_closed
 
     @io.flush if @io.respond_to? :flush
   end
+
+  ##
+  # Creates a new directory in the tar file +name+ with +mode+
 
   def mkdir(name, mode)
     check_closed
@@ -148,6 +205,9 @@ class Gem::Package::TarWriter
 
     self
   end
+
+  ##
+  # Splits +name+ into a name and prefix that can fit in the TarHeader
 
   def split_name(name) # :nodoc:
     raise Gem::Package::TooLongFileName if name.size > 256
@@ -169,7 +229,7 @@ class Gem::Package::TarWriter
       name = newname
 
       if name.size > 100 or prefix.size > 155 then
-        raise Gem::Package::TooLongFileName
+        raise Gem::Package::TooLongFileName 
       end
     end
 

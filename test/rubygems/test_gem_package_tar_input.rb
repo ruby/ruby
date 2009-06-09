@@ -48,7 +48,7 @@ class TestGemPackageTarInput < TarTestCase
       meta = @spec.to_yaml
 
       f.write tar_file_header("metadata", "", 0644, meta.size)
-      f.write meta + "\0" * (1024 - meta.size)
+      f.write meta + "\0" * (1024 - meta.size) 
       f.write "\0" * 1024
     end
 
@@ -92,8 +92,8 @@ class TestGemPackageTarInput < TarTestCase
           tar_input.extract_entry @tempdir, entry
           name = File.join @tempdir, entry.header.name
 
-          if entry.directory?
-            assert File.dir?(name)
+          if entry.directory? then
+            assert File.directory?(name)
           else
             assert File.file?(name)
             assert_equal @entry_sizes[i], File.stat(name).size
@@ -111,7 +111,7 @@ class TestGemPackageTarInput < TarTestCase
 
     @entry_files.each_with_index do |x, i|
       assert File.file?(x)
-      assert_equal @entry_contents[i], File.read_b(x)
+      assert_equal @entry_contents[i], Gem.read_binary(x)
     end
   end
 

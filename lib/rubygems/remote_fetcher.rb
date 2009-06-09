@@ -55,7 +55,7 @@ class Gem::RemoteFetcher
   #        HTTP_PROXY_PASS)
   # * <tt>:no_proxy</tt>: ignore environment variables and _don't_ use a proxy
 
-  def initialize(proxy)
+  def initialize(proxy = nil)
     Socket.do_not_reverse_lookup = true
 
     @connections = {}
@@ -86,7 +86,11 @@ class Gem::RemoteFetcher
 
     FileUtils.mkdir_p cache_dir rescue nil unless File.exist? cache_dir
 
-    source_uri = URI.parse source_uri unless URI::Generic === source_uri
+   # Always escape URI's to deal with potential spaces and such
+    unless URI::Generic === source_uri
+      source_uri = URI.parse(URI.escape(source_uri))
+    end
+
     scheme = source_uri.scheme
 
     # URI.parse gets confused by MS Windows paths with forward slashes.
@@ -101,7 +105,7 @@ class Gem::RemoteFetcher
 
           remote_gem_path = source_uri + "gems/#{gem_file_name}"
 
-          gem = Gem::RemoteFetcher.fetcher.fetch_path remote_gem_path
+          gem = self.fetch_path remote_gem_path
         rescue Gem::RemoteFetcher::FetchError
           raise if spec.original_platform == spec.platform
 
@@ -112,16 +116,34 @@ class Gem::RemoteFetcher
 
           remote_gem_path = source_uri + "gems/#{alternate_name}"
 
-          gem = Gem::RemoteFetcher.fetcher.fetch_path remote_gem_path
+          gem = self.fetch_path remote_gem_path
         end
 
         File.open local_gem_path, 'wb' do |fp|
           fp.write gem
         end
       end
-    when nil, 'file' then # TODO test for local overriding cache
+    when 'file' then
       begin
-        FileUtils.cp source_uri.to_s, local_gem_path
+        path = source_uri.path
+        path = File.dirname(path) if File.extname(path) == '.gem'
+
+        remote_gem_path = File.join(path, 'gems', gem_file_name)
+
+        FileUtils.cp(remote_gem_path, local_gem_path)
+      rescue Errno::EACCES
+        local_gem_path = source_uri.to_s
+      end
+
+      say "Using local gem #{local_gem_path}" if
+        Gem.configuration.really_verbose
+    when nil then # TODO test for local overriding cache
+      begin
+        if Gem.win_platform? && source_uri.scheme && !source_uri.path.include?(':')
+          FileUtils.cp URI.unescape(source_uri.scheme + ':' + source_uri.path), local_gem_path
+        else
+          FileUtils.cp URI.unescape(source_uri.path), local_gem_path
+        end
       rescue Errno::EACCES
         local_gem_path = source_uri.to_s
       end
@@ -177,7 +199,7 @@ class Gem::RemoteFetcher
 
     return nil if env_proxy.nil? or env_proxy.empty?
 
-    uri = URI.parse env_proxy
+    uri = URI.parse(normalize_uri(env_proxy))
 
     if uri and uri.user.nil? and uri.password.nil? then
       # Probably we have http_proxy_* variables?
@@ -233,10 +255,25 @@ class Gem::RemoteFetcher
   def open_uri_or_path(uri, last_modified = nil, head = false, depth = 0)
     raise "block is dead" if block_given?
 
-    return open(get_file_uri_path(uri)) if file_uri? uri
-
     uri = URI.parse uri unless URI::Generic === uri
-    raise ArgumentError, 'uri is not an HTTP URI' unless URI::HTTP === uri
+
+    # This check is redundant unless Gem::RemoteFetcher is likely
+    # to be used directly, since the scheme is checked elsewhere.
+    # - Daniel Berger
+    unless ['http', 'https', 'file'].include?(uri.scheme)
+     raise ArgumentError, 'uri scheme is invalid'
+    end
+
+    if uri.scheme == 'file'
+      path = uri.path
+
+      # Deal with leading slash on Windows paths
+      if path[0].chr == '/' && path[1].chr =~ /[a-zA-Z]/ && path[2].chr == ':'
+         path = path[1..-1]
+      end
+
+      return Gem.read_binary(path)
+    end
 
     fetch_type = head ? Net::HTTP::Head : Net::HTTP::Get
     response   = request uri, fetch_type, last_modified
@@ -324,20 +361,6 @@ class Gem::RemoteFetcher
 
     connection.finish
     connection.start
-  end
-
-  ##
-  # Checks if the provided string is a file:// URI.
-
-  def file_uri?(uri)
-    uri =~ %r{\Afile://}
-  end
-
-  ##
-  # Given a file:// URI, returns its local path.
-
-  def get_file_uri_path(uri)
-    uri.sub(%r{\Afile://}, '')
   end
 
 end

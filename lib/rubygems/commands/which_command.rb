@@ -46,7 +46,7 @@ class Gem::Commands::WhichCommand < Gem::Command
         end
 
         say "(checking gem #{spec.full_name} for #{arg})" if
-          Gem.configuration.verbose
+          Gem.configuration.verbose and $stdout.tty?
       end
 
       paths = find_paths arg, dirs

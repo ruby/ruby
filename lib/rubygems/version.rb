@@ -4,27 +4,81 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems'
-
 ##
-# The Version class processes string versions into comparable values
+# The Version class processes string versions into comparable
+# values. A version string should normally be a series of numbers
+# separated by periods. Each part (digits separated by periods) is
+# considered its own number, and these are used for sorting. So for
+# instance, 3.10 sorts higher than 3.2 because ten is greater than
+# two.
+#
+# If any part contains letters (currently only a-z are supported) then
+# that version is considered prerelease. Versions with a prerelease
+# part in the Nth part sort less than versions with N-1 parts. Prerelease
+# parts are sorted alphabetically using the normal Ruby string sorting
+# rules.
+#
+# Prereleases sort between real releases (newest to oldest):
+#
+# 1. 1.0
+# 2. 1.0.b
+# 3. 1.0.a
+# 4. 0.9
 
 class Gem::Version
 
+  class Part
+    include Comparable
+
+    attr_reader :value
+
+    def initialize(value)
+      @value = (value =~ /\A\d+\z/) ? value.to_i : value
+    end
+
+    def to_s
+      self.value.to_s
+    end
+
+    def inspect
+      @value
+    end
+
+    def alpha?
+      String === value
+    end
+
+    def numeric?
+      Fixnum === value
+    end
+
+    def <=>(other)
+      if    self.numeric? && other.alpha? then
+        1
+      elsif self.alpha? && other.numeric? then
+        -1
+      else
+        self.value <=> other.value
+      end
+    end
+
+    def succ
+      self.class.new(self.value.succ)
+    end
+  end
+
   include Comparable
 
-  attr_reader :ints
+  VERSION_PATTERN = '[0-9]+(\.[0-9a-z]+)*'
 
   attr_reader :version
 
-  ##
-  # Returns true if +version+ is a valid version string.
-
   def self.correct?(version)
-    case version
-    when Integer, /\A\s*(\d+(\.-?\d+)*)*\s*\z/ then true
-    else false
-    end
+    pattern = /\A\s*(#{VERSION_PATTERN})*\s*\z/
+
+    version.is_a? Integer or
+      version =~ pattern or
+      version.to_s =~ pattern
   end
 
   ##
@@ -47,7 +101,7 @@ class Gem::Version
 
   ##
   # Constructs a Version from the +version+ string.  A version string is a
-  # series of digits separated by dots.
+  # series of digits or ASCII letters separated by dots.
 
   def initialize(version)
     raise ArgumentError, "Malformed version number string #{version}" unless
@@ -60,44 +114,41 @@ class Gem::Version
     "#<#{self.class} #{@version.inspect}>"
   end
 
+  ##
   # Dump only the raw version string, not the complete object
+
   def marshal_dump
     [@version]
   end
 
+  ##
   # Load custom marshal format
+
   def marshal_load(array)
     self.version = array[0]
+  end
+
+  def parts
+    @parts ||= normalize
   end
 
   ##
   # Strip ignored trailing zeros.
 
   def normalize
-    @ints = build_array_from_version_string
-
-    return if @ints.length == 1
-
-    @ints.pop while @ints.last == 0
-
-    @ints = [0] if @ints.empty?
+    parts_arr = parse_parts_from_version_string
+    if parts_arr.length != 1
+      parts_arr.pop while parts_arr.last && parts_arr.last.value == 0
+      parts_arr = [Part.new(0)] if parts_arr.empty?
+    end
+    parts_arr
   end
 
   ##
   # Returns the text representation of the version
-  #
-  # return:: [String] version as string
-  #
+
   def to_s
     @version
-  end
-
-  ##
-  # Returns an integer array representation of this Version.
-
-  def to_ints
-    normalize unless @ints
-    @ints
   end
 
   def to_yaml_properties
@@ -107,6 +158,23 @@ class Gem::Version
   def version=(version)
     @version = version.to_s.strip
     normalize
+  end
+
+  ##
+  # A version is considered a prerelease if any part contains a letter.
+
+  def prerelease?
+    parts.any? { |part| part.alpha? }
+  end
+  
+  ##
+  # The release for this version (e.g. 1.2.0.a -> 1.2.0)
+  # Non-prerelease versions return themselves
+  def release
+    return self unless prerelease?
+    rel_parts = parts.dup
+    rel_parts.pop while rel_parts.any? { |part| part.alpha? }
+    self.class.new(rel_parts.join('.'))
   end
 
   def yaml_initialize(tag, values)
@@ -120,7 +188,14 @@ class Gem::Version
   def <=>(other)
     return nil unless self.class === other
     return 1 unless other
-    @ints <=> other.ints
+    mine, theirs = balance(self.parts.dup, other.parts.dup)
+    mine <=> theirs
+  end
+
+  def balance(a, b)
+    a << Part.new(0) while a.size < b.size
+    b << Part.new(0) while b.size < a.size
+    [a, b]
   end
 
   ##
@@ -135,24 +210,33 @@ class Gem::Version
     @version.hash
   end
 
-  # Return a new version object where the next to the last revision
-  # number is one greater. (e.g.  5.3.1 => 5.4)
+  ##
+  # Return a new version object where the next to the last revision number is
+  # one greater. (e.g.  5.3.1 => 5.4)
+  #
+  # Pre-release (alpha) parts are ignored. (e.g 5.3.1.b2 => 5.4)
+
   def bump
-    ints = build_array_from_version_string
-    ints.pop if ints.size > 1
-    ints[-1] += 1
-    self.class.new(ints.join("."))
+    parts = parse_parts_from_version_string
+    parts.pop while parts.any? { |part| part.alpha? }
+    parts.pop if parts.size > 1
+    parts[-1] = parts[-1].succ
+    self.class.new(parts.join("."))
   end
 
-  def build_array_from_version_string
-    @version.to_s.scan(/\d+/).map { |s| s.to_i }
+  def parse_parts_from_version_string # :nodoc:
+    @version.to_s.scan(/[0-9a-z]+/i).map { |s| Part.new(s) }
   end
-  private :build_array_from_version_string
+
+  def pretty_print(q) # :nodoc:
+    q.text "Gem::Version.new(#{@version.inspect})"
+  end
 
   #:stopdoc:
 
   require 'rubygems/requirement'
 
+  ##
   # Gem::Requirement's original definition is nested in Version.
   # Although an inappropriate place, current gems specs reference the nested
   # class name explicitly.  To remain compatible with old software loading

@@ -56,7 +56,8 @@ class MockGemUi < Gem::StreamUI
   def terminate_interaction(status=0)
     @terminated = true
 
-    raise TermError
+    raise TermError unless status == 0
+    raise Gem::SystemExitException, status
   end
 
 end

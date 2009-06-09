@@ -4,8 +4,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems'
-
 ##
 # GemPathSearcher has the capability to find loadable files inside
 # gems.  It generates data up front to speed up searches later.
@@ -80,11 +78,15 @@ class Gem::GemPathSearcher
 
   ##
   # Return a list of all installed gemspecs, sorted by alphabetical order and
-  # in reverse version order.
+  # in reverse version order.  (bar-2, bar-1, foo-2)
 
   def init_gemspecs
-    Gem.source_index.map { |_, spec| spec }.sort { |a,b|
-      (a.name <=> b.name).nonzero? || (b.version <=> a.version)
+    specs = Gem.source_index.map { |_, spec| spec }
+
+    specs.sort { |a, b|
+      names = a.name <=> b.name
+      next names if names.nonzero?
+      b.version <=> a.version
     }
   end
 

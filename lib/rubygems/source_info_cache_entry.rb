@@ -13,8 +13,8 @@ class Gem::SourceInfoCacheEntry
   attr_reader :source_index
 
   ##
-  # The size of the of the source entry.  Used to determine if the
-  # source index has changed.
+  # The size of the source entry.  Used to determine if the source index has
+  # changed.
 
   attr_reader :size
 

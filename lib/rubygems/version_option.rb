@@ -41,6 +41,7 @@ module Gem::VersionOption
                "Specify version of gem to #{task}", *wrap) do
                  |value, options|
       options[:version] = value
+      options[:prerelease] = true if value.prerelease?
     end
   end
 

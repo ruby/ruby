@@ -1,20 +1,6 @@
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems/package'
 
-class File
-
-  # straight from setup.rb
-  def self.dir?(path)
-    # for corrupted windows stat()
-    File.directory?((path[-1,1] == '/') ? path : path + '/')
-  end
-
-  def self.read_b(name)
-    File.open(name, "rb") { |f| f.read }
-  end
-
-end
-
 class TarTestCase < RubyGemTestCase
 
   def ASCIIZ(str, length)
@@ -49,7 +35,7 @@ class TarTestCase < RubyGemTestCase
       linkname 100
       magic 6
       version 2
-      uname 32
+      uname 32 
       gname 32
       devmajor 8
       devminor 8
@@ -68,7 +54,7 @@ class TarTestCase < RubyGemTestCase
         next
       end
 
-      assert_equal expected[offset, length], actual[offset, length],
+      assert_equal expected[offset, length], actual[offset, length], 
                    "Field #{name} of the tar header differs."
 
       offset += length

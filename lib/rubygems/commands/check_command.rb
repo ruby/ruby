@@ -21,6 +21,10 @@ class Gem::Commands::CheckCommand < Gem::Command
       options[:alien] = true
     end
 
+    add_option('-v', '--verbose', "Spew more words") do |value, options|
+      options[:verbose] = true
+    end
+
     add_option('-t', '--test', "Run unit tests for gem") do |value, options|
       options[:test] = true
     end
@@ -38,16 +42,17 @@ class Gem::Commands::CheckCommand < Gem::Command
 
     if options[:alien]
       say "Performing the 'alien' operation"
-      Gem::Validator.new.alien.each do |key, val|
-        if(val.size > 0)
+      say
+      gems = get_all_gem_names rescue []
+      Gem::Validator.new.alien(gems).sort.each do |key, val|
+        unless val.empty? then
           say "#{key} has #{val.size} problems"
           val.each do |error_entry|
-            say "\t#{error_entry.path}:"
-            say "\t#{error_entry.problem}"
-            say
+            say "  #{error_entry.path}:"
+            say "    #{error_entry.problem}"
           end
         else
-          say "#{key} is error-free"
+          say "#{key} is error-free" if options[:verbose]
         end
         say
       end

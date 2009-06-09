@@ -1,3 +1,7 @@
+Wed Jun 10 06:28:15 2009  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems*: Upgrade to RubyGems 1.3.4 r2223.
+
 Tue Jun  9 22:38:09 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/cmath.rb (log10): raised exception when the given number is

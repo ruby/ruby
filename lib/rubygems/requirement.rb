@@ -4,8 +4,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/version'
-
 ##
 # Requirement version includes a prefaced comparator in addition
 # to a version number.
@@ -26,10 +24,10 @@ class Gem::Requirement
     "<"  =>  lambda { |v, r| v < r },
     ">=" =>  lambda { |v, r| v >= r },
     "<=" =>  lambda { |v, r| v <= r },
-    "~>" =>  lambda { |v, r| v >= r && v < r.bump }
+    "~>" =>  lambda { |v, r| v = v.release; v >= r && v < r.bump }
   }
 
-  OP_RE = /#{OPS.keys.map{ |k| Regexp.quote k }.join '|'}/o
+  OP_RE = OPS.keys.map{ |k| Regexp.quote k }.join '|'
 
   ##
   # Factory method to create a Gem::Requirement object.  Input may be a
@@ -65,7 +63,7 @@ class Gem::Requirement
 
   ##
   # Constructs a Requirement from +requirements+ which can be a String, a
-  # Gem::Version, or an Array of those.  See parse for details on the
+  # Gem::Version, or an Array of those.  See #parse for details on the
   # formatting of requirement strings.
 
   def initialize(requirements)
@@ -99,11 +97,15 @@ class Gem::Requirement
     as_list.join(", ")
   end
 
+  def pretty_print(q) # :nodoc:
+    q.group 1, 'Gem::Requirement.new(', ')' do
+      q.pp as_list
+    end
+  end
+
   def as_list
     normalize
-    @requirements.collect { |req|
-      "#{req[0]} #{req[1]}"
-    }
+    @requirements.map do |op, version| "#{op} #{version}" end
   end
 
   def normalize
@@ -129,18 +131,23 @@ class Gem::Requirement
     OPS[op].call(version, required_version)
   end
 
+  def prerelease?
+    # TODO: why is @requirements a nested array?
+    @requirements.any?{ |r| r[1].prerelease? }
+  end
+
   ##
   # Parse the version requirement obj returning the operator and version.
   #
   # The requirement can be a String or a Gem::Version.  A String can be an
-  # operator (<, <=, =, =>, >, !=, ~>), a version number, or both, operator
+  # operator (<, <=, =, >=, >, !=, ~>), a version number, or both, operator
   # first.
 
   def parse(obj)
     case obj
-    when /^\s*(#{OP_RE})\s*([0-9.]+)\s*$/o then
+    when /^\s*(#{OP_RE})\s*(#{Gem::Version::VERSION_PATTERN})\s*$/o then
       [$1, Gem::Version.new($2)]
-    when /^\s*([0-9.]+)\s*$/ then
+    when /^\s*(#{Gem::Version::VERSION_PATTERN})\s*$/o then
       ['=', Gem::Version.new($1)]
     when /^\s*(#{OP_RE})\s*$/o then
       [$1, Gem::Version.new('0')]

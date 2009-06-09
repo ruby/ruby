@@ -20,6 +20,10 @@ class TestGemDependency < RubyGemTestCase
     @r1_0 = Gem::Requirement.new ['> 1.0']
   end
 
+  def dep(name, version)
+    Gem::Dependency.new name, version
+  end
+
   def test_initialize
     assert_equal "pkg", @pkg1_0.name
     assert_equal @r1_0, @pkg1_0.version_requirements
@@ -96,10 +100,6 @@ class TestGemDependency < RubyGemTestCase
   end
 
   def test_equals_tilde
-    def dep(name, version)
-      Gem::Dependency.new name, version
-    end
-
     a0   = dep 'a', '0'
     a1   = dep 'a', '1'
     b0   = dep 'b', '0'
@@ -108,14 +108,64 @@ class TestGemDependency < RubyGemTestCase
     pa0r = dep(/a/, '>= 0')
     pab0r = dep(/a|b/, '>= 0')
 
-    assert((a0    =~ a0), 'match self')
-    assert((pa0   =~ a0), 'match version exact')
-    assert((pa0   =~ a1), 'match version')
-    assert((pa0r  =~ a0), 'match regex simple')
-    assert((pab0r =~ a0), 'match regex complex')
+    assert_match a0,    a0, 'match self'
+    assert_match pa0,   a0, 'match version exact'
+    assert_match pa0,   a1, 'match version'
+    assert_match pa0r,  a0, 'match regex simple'
+    assert_match pab0r, a0, 'match regex complex'
 
-    assert(!(pa0r =~ b0),         'fail match regex')
-    assert(!(pa0r =~ Object.new), 'fail match Object')
+    refute_match pa0r, b0,         'fail match regex'
+    refute_match pa0r, Object.new, 'fail match Object'
+  end
+
+  def test_equals_tilde_escape
+    a1 = Gem::Dependency.new 'a', '1'
+
+    pab1  = Gem::Dependency.new 'a|b', '>= 1'
+    pab1r = Gem::Dependency.new(/a|b/, '>= 1')
+
+    refute_match pab1,  a1, 'escaped'
+    assert_match pab1r, a1, 'exact regexp'
+  end
+
+  def test_equals_tilde_object
+    a0 = Object.new
+
+    def a0.name() 'a' end
+    def a0.version() '0' end
+
+    pa0  = Gem::Dependency.new 'a', '>= 0'
+
+    assert_match pa0, a0, 'match version exact'
+  end
+
+  def test_equals_tilde_spec
+    def spec(name, version)
+      Gem::Specification.new do |spec|
+        spec.name = name
+        spec.version = version
+      end
+    end
+
+    a0   = spec 'a', '0'
+    a1   = spec 'a', '1'
+    b0   = spec 'b', '0'
+
+    pa0  = dep 'a', '>= 0'
+    pa0r = dep(/a/, '>= 0')
+    pab0r = dep(/a|b/, '>= 0')
+
+    assert_match pa0, a0,   'match version exact'
+    assert_match pa0, a1,   'match version'
+
+    assert_match pa0r, a0,  'match regex simple'
+    assert_match pa0r, a1,  'match regex simple'
+
+    assert_match pab0r, a0, 'match regex complex'
+    assert_match pab0r, b0, 'match regex complex'
+
+    refute_match pa0r, b0,         'fail match regex'
+    refute_match pa0r, Object.new, 'fail match Object'
   end
 
   def test_hash
@@ -135,5 +185,6 @@ class TestGemDependency < RubyGemTestCase
 
     refute_equal(runtime.hash, development.hash)
   end
+
 end
 
