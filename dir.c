@@ -816,6 +816,7 @@ dir_s_getwd(VALUE dir)
     rb_secure(4);
     path = my_getcwd();
     cwd = rb_tainted_str_new2(path);
+    rb_enc_associate(cwd, rb_filesystem_encoding());
 
     xfree(path);
     return cwd;
