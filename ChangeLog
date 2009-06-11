@@ -1,3 +1,8 @@
+Fri Jun 12 02:41:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_replace_shared): shared target must be frozen.
+	  [ruby-core:23727]
+
 Thu Jun 11 21:05:09 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/cmath.rb (exp): omitted redundant function call.

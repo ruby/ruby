@@ -14,6 +14,7 @@
 #include "ruby/ruby.h"
 #include "ruby/re.h"
 #include "ruby/encoding.h"
+#include <assert.h>
 
 #define BEG(no) regs->beg[no]
 #define END(no) regs->end[no]
@@ -599,6 +600,7 @@ str_replace_shared(VALUE str2, VALUE str)
     }
     else {
 	FL_SET(str2, STR_NOEMBED);
+	str = rb_str_new_frozen(str);
 	RSTRING(str2)->as.heap.len = RSTRING_LEN(str);
 	RSTRING(str2)->as.heap.ptr = RSTRING_PTR(str);
 	RSTRING(str2)->as.heap.aux.shared = str;
@@ -643,8 +645,10 @@ str_new4(VALUE klass, VALUE str)
     RSTRING(str2)->as.heap.len = RSTRING_LEN(str);
     RSTRING(str2)->as.heap.ptr = RSTRING_PTR(str);
     if (STR_SHARED_P(str)) {
+	VALUE shared = RSTRING(str)->as.heap.aux.shared;
+	assert(OBJ_FROZEN(shared));
 	FL_SET(str2, ELTS_SHARED);
-	RSTRING(str2)->as.heap.aux.shared = RSTRING(str)->as.heap.aux.shared;
+	RSTRING(str2)->as.heap.aux.shared = shared;
     }
     else {
 	FL_SET(str, ELTS_SHARED);
@@ -664,6 +668,7 @@ rb_str_new_frozen(VALUE orig)
     klass = rb_obj_class(orig);
     if (STR_SHARED_P(orig) && (str = RSTRING(orig)->as.heap.aux.shared)) {
 	long ofs;
+	assert(OBJ_FROZEN(str));
 	ofs = RSTRING_LEN(str) - RSTRING_LEN(orig);
 	if ((ofs > 0) || (klass != RBASIC(str)->klass) ||
 	    (!OBJ_TAINTED(str) && OBJ_TAINTED(orig))) {
@@ -824,12 +829,14 @@ str_replace(VALUE str, VALUE str2)
 	str2 = rb_str_new4(str2);
     }
     if (STR_SHARED_P(str2)) {
+	VALUE shared = RSTRING(str2)->as.heap.aux.shared;
+	assert(OBJ_FROZEN(shared));
 	STR_SET_NOEMBED(str);
 	RSTRING(str)->as.heap.len = len;
 	RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
 	FL_SET(str, ELTS_SHARED);
 	FL_UNSET(str, STR_ASSOC);
-	RSTRING(str)->as.heap.aux.shared = RSTRING(str2)->as.heap.aux.shared;
+	RSTRING(str)->as.heap.aux.shared = shared;
     }
     else {
 	str_replace_shared(str, str2);
