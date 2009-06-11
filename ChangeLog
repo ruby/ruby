@@ -1,3 +1,8 @@
+Thu Jun 11 13:29:16 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (VpToString): fixed a bug introduced
+	  in r23613.  [ruby-talk:338957]
+
 Thu Jun  4 02:25:51 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/base64.rb: typo fixed.  a patch from okkez.   [ruby-dev:38564]
