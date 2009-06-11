@@ -1,3 +1,33 @@
+Thu Jun 11 15:05:00 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (VpCtoV): big number should result
+	  to infinite.  backported from 1.9.
+
+	* ext/bigdecimal/bigdecimal.c (VpIsRoundMode): rounding mode
+	  condition check updated.  backported from 1.9.
+
+	* ext/bigdecimal/bigdecimal.c (VpPower): should handle NaN and
+	  Inf.  backported from 1.9.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_DoDivmod): divmod should
+	  raise ZeroDivisionError.  backported from 1.9.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_mode): should check
+	  exception for VP_EXCEPTION_UNDERFLOW and VP_EXCEPTION_ZERODIVIDE.
+	  backported from 1.9.
+
+	* ext/bigdecimal/bigdecimal.c (VpException): ditto.
+
+	* ext/bigdecimal/bigdecimal.h (VP_EXCEPTION_ZERODIVIDE): new error
+	  code.  backported from 1.9.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_div2, BigDecimal_round,
+	  BigDecimal_truncate, BigDecimal_floor, BigDecimal_ceil): eagerly convert
+	  bigdecimal to integer.  backported from 1.9.
+
+	* ext/bigdecimal/bigdecimal.c (VpMult): free internal Real.
+	  backported from 1.9.
+
 Thu Jun 11 13:29:16 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (VpToString): fixed a bug introduced

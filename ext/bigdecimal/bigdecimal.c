@@ -22,7 +22,10 @@
 #include <float.h>
 #include <math.h>
 #include "math.h"
-#include "version.h"
+
+#ifdef HAVE_IEEEFP_H
+#include <ieeefp.h>
+#endif
  
 /* #define ENABLE_NUMERIC_STRING */
 
@@ -411,9 +414,20 @@ BigDecimal_mode(int argc, VALUE *argv, VALUE self)
             VpSetException((unsigned short)((val==Qtrue)?(fo|VP_EXCEPTION_INFINITY):
                            (fo&(~VP_EXCEPTION_INFINITY))));
         }
+        fo = VpGetException();
         if(f&VP_EXCEPTION_NaN) {
             VpSetException((unsigned short)((val==Qtrue)?(fo|VP_EXCEPTION_NaN):
                            (fo&(~VP_EXCEPTION_NaN))));
+        }
+        fo = VpGetException();
+        if(f&VP_EXCEPTION_UNDERFLOW) {
+            VpSetException((unsigned short)((val==Qtrue)?(fo|VP_EXCEPTION_UNDERFLOW):
+                           (fo&(~VP_EXCEPTION_UNDERFLOW))));
+        }
+        fo = VpGetException();
+        if(f&VP_EXCEPTION_ZERODIVIDE) {
+            VpSetException((unsigned short)((val==Qtrue)?(fo|VP_EXCEPTION_ZERODIVIDE):
+                           (fo&(~VP_EXCEPTION_ZERODIVIDE))));
         }
         fo = VpGetException();
         return INT2FIX(fo);
@@ -956,7 +970,9 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
 
     if(VpIsNaN(a) || VpIsNaN(b)) goto NaN;
     if(VpIsInf(a) || VpIsInf(b)) goto NaN;
-    if(VpIsZero(b))              goto NaN;
+    if(VpIsZero(b)) {
+	rb_raise(rb_eZeroDivError, "divided by 0");
+    }
     if(VpIsZero(a)) {
        GUARD_OBJ(c,VpCreateRbObject(1, "0"));
        GUARD_OBJ(d,VpCreateRbObject(1, "0"));
@@ -1113,7 +1129,7 @@ BigDecimal_div2(int argc, VALUE *argv, VALUE self)
        Real *mod;
        obj = BigDecimal_DoDivmod(self,b,&div,&mod);
        if(obj!=(VALUE)0) return obj;
-       return ToValue(div);
+       return BigDecimal_to_i(ToValue(div));
     } else {    /* div in BigDecimal sense */
        U_LONG ix = (U_LONG)GetPositiveInt(n);
        if(ix==0) return BigDecimal_div(self,b);
@@ -1311,6 +1327,9 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
     GUARD_OBJ(c,VpCreateRbObject(mx, "0"));
     VpSetPrecLimit(pl);
     VpActiveRound(c,a,sw,iLoc);
+    if (argc == 0) {
+	return BigDecimal_to_i(ToValue(c));
+    }
     return ToValue(c);
 }
 
@@ -1355,6 +1374,9 @@ BigDecimal_truncate(int argc, VALUE *argv, VALUE self)
     GUARD_OBJ(c,VpCreateRbObject(mx, "0"));
     VpSetPrecLimit(pl);
     VpActiveRound(c,a,VP_ROUND_DOWN,iLoc); /* 0: truncate */
+    if (argc == 0) {
+	return BigDecimal_to_i(ToValue(c));
+    }
     return ToValue(c);
 }
 
@@ -1415,6 +1437,9 @@ BigDecimal_floor(int argc, VALUE *argv, VALUE self)
     GUARD_OBJ(c,VpCreateRbObject(mx, "0"));
     VpSetPrecLimit(pl);
     VpActiveRound(c,a,VP_ROUND_FLOOR,iLoc);
+    if (argc == 0) {
+	return BigDecimal_to_i(ToValue(c));
+    }
     return ToValue(c);
 }
 
@@ -1459,6 +1484,9 @@ BigDecimal_ceil(int argc, VALUE *argv, VALUE self)
     GUARD_OBJ(c,VpCreateRbObject(mx, "0"));
     VpSetPrecLimit(pl);
     VpActiveRound(c,a,VP_ROUND_CEIL,iLoc);
+    if (argc == 0) {
+	return BigDecimal_to_i(ToValue(c));
+    }
     return ToValue(c);
 }
 
@@ -1741,7 +1769,7 @@ BigDecimal_new(int argc, VALUE *argv, VALUE self)
   *
   * A limit of 0, the default, means no upper limit.
   *
-  * The limit specified by this method takes priority over any limit 
+  * The limit specified by this method takes less priority over any limit 
   * specified to instance methods such as ceil, floor, truncate, or round.
   */
 static VALUE
@@ -1846,7 +1874,7 @@ Init_bigdecimal(void)
 
     /* 
      * 0x01: Determines what happens when the result of a computation is an
-     * underflow (a result too large to be represented). See BigDecimal.mode.
+     * overflow (a result too large to be represented). See BigDecimal.mode.
      */
     rb_define_const(rb_cBigDecimal, "EXCEPTION_OVERFLOW",INT2FIX(VP_EXCEPTION_OVERFLOW));
 
@@ -2097,9 +2125,9 @@ VpGetRoundMode(void)
 VP_EXPORT int
 VpIsRoundMode(unsigned long n)
 {
-    if(n==VP_ROUND_UP      || n!=VP_ROUND_DOWN      ||
-       n==VP_ROUND_HALF_UP || n!=VP_ROUND_HALF_DOWN ||
-       n==VP_ROUND_CEIL    || n!=VP_ROUND_FLOOR     ||
+    if(n==VP_ROUND_UP      || n==VP_ROUND_DOWN      ||
+       n==VP_ROUND_HALF_UP || n==VP_ROUND_HALF_DOWN ||
+       n==VP_ROUND_CEIL    || n==VP_ROUND_FLOOR     ||
        n==VP_ROUND_HALF_EVEN
       ) return 1;
     return 0;
@@ -2219,18 +2247,12 @@ VpException(unsigned short f, const char *str,int always)
         switch(f)
         {
         /*
-        case VP_EXCEPTION_ZERODIVIDE:
         case VP_EXCEPTION_OVERFLOW:
         */
+        case VP_EXCEPTION_ZERODIVIDE:
         case VP_EXCEPTION_INFINITY:
-             exc = rb_eFloatDomainError;
-             goto raise;
         case VP_EXCEPTION_NaN:
-             exc = rb_eFloatDomainError;
-             goto raise;
         case VP_EXCEPTION_UNDERFLOW:
-             exc = rb_eFloatDomainError;
-             goto raise;
         case VP_EXCEPTION_OP:
              exc = rb_eFloatDomainError;
              goto raise;
@@ -3168,7 +3190,10 @@ VpMult(Real *c, Real *a, Real *b)
     /* set LHSV c info */
 
     c->exponent = a->exponent;    /* set exponent */
-    if(!AddExponent(c,b->exponent)) return 0;
+    if(!AddExponent(c,b->exponent)) {
+	if(w) VpFree(c);
+	return 0;
+    }
     VpSetSign(c,VpGetSign(a)*VpGetSign(b));    /* set sign  */
     Carry = 0;
     nc = ind_c = MxIndAB;
@@ -3939,7 +3964,12 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
             es = e*((S_INT)BASE_FIG);
             e = e * 10 + exp_chr[i] - '0';
             if(es>e*((S_INT)BASE_FIG)) {
-                return VpException(VP_EXCEPTION_INFINITY,"exponent overflow",0);
+                VpException(VP_EXCEPTION_INFINITY,"exponent overflow",0);
+                sign = 1;
+                if(int_chr[0] == '-') sign = -1;
+                if(signe > 0) VpSetInf(a, sign);
+                else VpSetZero(a, sign);
+                return 1;
             }
             ++i;
         }
@@ -4627,8 +4657,20 @@ VpPower(Real *y, Real *x, S_INT n)
         }
         goto Exit;
     }
-    if(!VpIsDef(x)) {
-        VpSetNaN(y); /* Not sure !!! */
+    if(VpIsNaN(x)) {
+        VpSetNaN(y);
+        goto Exit;
+    }
+    if(VpIsInf(x)) {
+        if(n==0) {
+            VpSetOne(y);
+            goto Exit;
+        }
+        if(n>0) {
+            VpSetInf(y, (n%2==0 || VpIsPosInf(x)) ? 1 : -1);
+            goto Exit;
+        }
+        VpSetZero(y, (n%2==0 || VpIsPosInf(x)) ? 1 : -1);
         goto Exit;
     }
 
