@@ -2054,7 +2054,9 @@ Init_bigdecimal(void)
  */
 #ifdef _DEBUG
 static int gfDebug = 1;         /* Debug switch */
+#if 0
 static int gfCheckVal = 1;      /* Value checking flag in VpNmlz()  */
+#endif
 #endif /* _DEBUG */
 
 static U_LONG gnPrecLimit = 0;  /* Global upper limit of the precision newly allocated */
@@ -2507,8 +2509,8 @@ VpInit(U_LONG BaseVal)
         printf("  BASE   = %lu\n", BASE);
         printf("  HALF_BASE = %lu\n", HALF_BASE);
         printf("  BASE1  = %lu\n", BASE1);
-        printf("  BASE_FIG  = %lu\n", BASE_FIG);
-        printf("  DBLE_FIG  = %lu\n", DBLE_FIG);
+        printf("  BASE_FIG  = %d\n", BASE_FIG);
+        printf("  DBLE_FIG  = %d\n", DBLE_FIG);
     }
 #endif /* _DEBUG */
 
@@ -3658,7 +3660,7 @@ Exit:
  *    a  ... VP variable to be printed
  */
 VP_EXPORT int
-VPrint(FILE *fp, char *cntl_chr, Real *a)
+VPrint(FILE *fp, const char *cntl_chr, Real *a)
 {
     U_LONG i, j, nc, nd, ZeroSup;
     U_LONG n, m, e, nn;
@@ -3702,7 +3704,7 @@ VPrint(FILE *fp, char *cntl_chr, Real *a)
                     while(m) {
                         nn = e / m;
                         if((!ZeroSup) || nn) {
-                            nc += fprintf(fp, "%lu", nn);    /* The reading zero(s) */
+                            nc += fprintf(fp, "%lu", nn);    /* The leading zero(s) */
                             /* as 0.00xx will not */
                             /* be printed. */
                             ++nd;
@@ -3824,7 +3826,7 @@ VpSzMantissa(Real *a,char *psz)
             while(m) {
                 nn = e / m;
                 if((!ZeroSup) || nn) {
-                    sprintf(psz, "%lu", nn);    /* The reading zero(s) */
+                    sprintf(psz, "%lu", nn);    /* The leading zero(s) */
                     psz += strlen(psz);
                     /* as 0.00xx will be ignored. */
                     ZeroSup = 0;    /* Set to print succeeding zeros */
@@ -4179,7 +4181,7 @@ Exit:
     if(gfDebug) {
         VPrint(stdout, " VpVtoD: m=%\n", m);
         printf("   d=%e * 10 **%ld\n", *d, *e);
-        printf("   DBLE_FIG = %ld\n", DBLE_FIG);
+        printf("   DBLE_FIG = %d\n", DBLE_FIG);
     }
 #endif /*_DEBUG */
     return f;
@@ -4447,11 +4449,11 @@ VpMidRound(Real *y, int f, int nf)
     nf += y->exponent*((int)BASE_FIG);
     exptoadd=0;
     if (nf < 0) {
-		/* rounding position too left(large). */
-		if((f!=VP_ROUND_CEIL) && (f!=VP_ROUND_FLOOR)) {
-			VpSetZero(y,VpGetSign(y)); /* truncate everything */
-			return 0;
-		}
+	/* rounding position too left(large). */
+	if((f!=VP_ROUND_CEIL) && (f!=VP_ROUND_FLOOR)) {
+	    VpSetZero(y,VpGetSign(y)); /* truncate everything */
+	    return 0;
+	}
         exptoadd = -nf;
         nf = 0;
     }
