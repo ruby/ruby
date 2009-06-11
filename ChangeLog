@@ -1,3 +1,11 @@
+Thu Jun 11 17:49:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (gfCheckVal): never used.
+
+	* ext/bigdecimal/bigdecimal.c (VpInit): fixed format modifiers.
+
+	* ext/bigdecimal/bigdecimal.c (VPrint): constified.
+
 Thu Jun 11 15:05:00 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (VpCtoV): big number should result

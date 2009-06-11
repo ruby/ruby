@@ -211,7 +211,7 @@ VP_EXPORT Real *VpOne(void);
 #define VpExponent(a)   (a->exponent)
 #ifdef _DEBUG
 int VpVarCheck(Real * v);
-VP_EXPORT int VPrint(FILE *fp,char *cntl_chr,Real *a);
+VP_EXPORT int VPrint(FILE *fp,const char *cntl_chr,Real *a);
 #endif /* _DEBUG */
 
 #if defined(__cplusplus)
