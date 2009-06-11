@@ -28,8 +28,9 @@ module CMath
     if z.real?
       exp!(z)
     else
-      Complex(exp!(z.real) * cos!(z.imag),
-	      exp!(z.real) * sin!(z.imag))
+      ere = exp!(z.real)
+      Complex(ere * cos!(z.imag),
+	      ere * sin!(z.imag))
     end
   end
 
@@ -94,7 +95,7 @@ module CMath
     if z.real?
       tan!(z)
     else
-      sin(z)/cos(z)
+      sin(z) / cos(z)
     end
   end
 
@@ -156,19 +157,19 @@ module CMath
     end
   end
 
-  def acosh(z)
-    if z.real? and z >= 1
-      acosh!(z)
-    else
-      log(z + sqrt(z * z - 1.0))
-    end
-  end
-
   def asinh(z)
     if z.real?
       asinh!(z)
     else
       log(z + sqrt(1.0 + z * z))
+    end
+  end
+
+  def acosh(z)
+    if z.real? and z >= 1
+      acosh!(z)
+    else
+      log(z + sqrt(z * z - 1.0))
     end
   end
 

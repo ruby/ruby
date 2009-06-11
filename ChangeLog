@@ -1,3 +1,7 @@
+Thu Jun 11 21:05:09 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/cmath.rb (exp): omitted redundant function call.
+
 Thu Jun 11 17:49:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (gfCheckVal): never used.
