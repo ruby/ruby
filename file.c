@@ -2793,6 +2793,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	p = buf + (s - b);
 	BUFCHECK(bdiff >= buflen);
 	memset(buf, '/', p - buf);
+	rb_enc_copy(result, fname);
     }
     if (p > buf && p[-1] == '/')
 	--p;

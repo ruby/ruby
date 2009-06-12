@@ -1,3 +1,8 @@
+Fri Jun 12 14:56:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): associate the input encoding when
+	  copying an absolute path.  [ruby-dev:38594]
+
 Fri Jun 12 02:41:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_replace_shared): shared target must be frozen.
