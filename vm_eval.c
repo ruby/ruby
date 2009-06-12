@@ -1363,7 +1363,7 @@ rb_backtrace_each(rb_backtrace_iter_func *iter, void *arg)
  *     for i in 1..10
  *        # ...
  *     end
- *     local_variables   #=> ["fred", "i"]
+ *     local_variables   #=> [:fred, :i]
  */
 
 static VALUE
