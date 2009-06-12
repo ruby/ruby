@@ -1,3 +1,8 @@
+Sat Jun 13 07:06:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_f_catch): updated rdoc about generalized argument,
+	  and the case without arguments.  [ruby-core:23827]
+
 Sat Jun 13 06:50:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/net/protocol.rb (Net::BufferedIO#rbuf_fill): TimeoutError is
