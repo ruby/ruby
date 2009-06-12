@@ -137,7 +137,7 @@ module Net # :nodoc:
         if IO.select([@io], nil, nil, @read_timeout)
           retry
         else
-          raise Timeout::TimeoutError
+          raise Timeout::Error
         end
       rescue IO::WaitWritable
         # OpenSSL::Buffering#read_nonblock may fail with IO::WaitWritable.
@@ -145,7 +145,7 @@ module Net # :nodoc:
         if IO.select(nil, [@io], nil, @read_timeout)
           retry
         else
-          raise Timeout::TimeoutError
+          raise Timeout::Error
         end
       end
     end
