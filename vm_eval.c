@@ -1140,7 +1140,7 @@ rb_mod_module_exec(int argc, VALUE *argv, VALUE mod)
  *     throw(symbol [, obj])
  *
  *  Transfers control to the end of the active +catch+ block
- *  waiting for _symbol_. Raises +NameError+ if there
+ *  waiting for _symbol_. Raises +ArgumentError+ if there
  *  is no +catch+ block for the symbol. The optional second
  *  parameter supplies a return value for the +catch+ block,
  *  which otherwise defaults to +nil+. For examples, see

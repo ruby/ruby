@@ -1,3 +1,8 @@
+Sat Jun 13 06:45:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_f_throw): fixed rdoc about execption.
+	  [ruby-core:23824]
+
 Fri Jun 12 14:56:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): associate the input encoding when
