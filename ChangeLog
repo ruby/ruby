@@ -1,3 +1,8 @@
+Fri Jun 12 16:36:44 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (VpToString): fixed a bug introduced
+	  in r23613.  [ruby-talk:338957]
+
 Mon Jun  8 10:58:41 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (rb_thread_schedule): mswin32 doesn't have F_GETFD, so check
