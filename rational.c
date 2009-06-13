@@ -1064,89 +1064,13 @@ nurat_round_n(int argc, VALUE *argv, VALUE self)
     return nurat_round_common(argc, argv, self, nurat_round);
 }
 
-#define f_size(x) rb_funcall(x, rb_intern("size"), 0)
-#define f_rshift(x,y) rb_funcall(x, rb_intern(">>"), 1, y)
-
-inline static long
-i_ilog2(VALUE x)
-{
-    long q, r, fx;
-
-    assert(!f_lt_p(x, ONE));
-
-    q = (NUM2LONG(f_size(x)) - sizeof(long)) * 8 + 1;
-
-    if (q > 0)
-	x = f_rshift(x, LONG2NUM(q));
-
-    fx = NUM2LONG(x);
-
-    r = -1;
-    while (fx) {
-	fx >>= 1;
-	r += 1;
-    }
-
-    return q + r;
-}
-
-static long ml;
+#define f_fdiv(x,y) rb_funcall(x, rb_intern("fdiv"), 1, y)
 
 static VALUE
 nurat_to_f(VALUE self)
 {
-    VALUE num, den;
-    int minus = 0;
-    long nl, dl, ne, de;
-    int e;
-    double f;
-
-    {
-	get_dat1(self);
-
-	if (f_zero_p(dat->num))
-	    return rb_float_new(0.0);
-
-	num = dat->num;
-	den = dat->den;
-    }
-
-    if (f_negative_p(num)) {
-	num = f_negate(num);
-	minus = 1;
-    }
-
-    nl = i_ilog2(num);
-    dl = i_ilog2(den);
-
-    ne = 0;
-    if (nl > ml) {
-	ne = nl - ml;
-	num = f_rshift(num, LONG2NUM(ne));
-    }
-
-    de = 0;
-    if (dl > ml) {
-	de = dl - ml;
-	den = f_rshift(den, LONG2NUM(de));
-    }
-
-    e = (int)(ne - de);
-
-    if ((e > DBL_MAX_EXP) || (e < DBL_MIN_EXP)) {
-	rb_warning("%s out of Float range", rb_obj_classname(self));
-	return rb_float_new(e > 0 ? HUGE_VAL : 0.0);
-    }
-
-    f = NUM2DBL(num) / NUM2DBL(den);
-    if (minus)
-	f = -f;
-    f = ldexp(f, e);
-
-    if (isinf(f) || isnan(f))
-	rb_warning("%s out of Float range", rb_obj_classname(self));
-
-    return rb_float_new(f);
+    get_dat1(self);
+    return f_fdiv(dat->num, dat->den);
 }
 
 static VALUE
@@ -1568,8 +1492,6 @@ Init_Rational(void)
     id_to_i = rb_intern("to_i");
     id_to_s = rb_intern("to_s");
     id_truncate = rb_intern("truncate");
-
-    ml = (long)(log(DBL_MAX) / log(2.0) - 1);
 
     rb_cRational = rb_define_class(RATIONAL_NAME, rb_cNumeric);
 
