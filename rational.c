@@ -1,5 +1,5 @@
 /*
-  rational.c: Coded by Tadayoshi Funaba 2008
+  rational.c: Coded by Tadayoshi Funaba 2008,2009
 
   This implementation is based on Keiju Ishitsuka's Rational library
   which is written in ruby.
@@ -26,8 +26,8 @@
 
 VALUE rb_cRational;
 
-static ID id_abs, id_cmp, id_convert, id_equal_p, id_expt, id_floor,
-    id_idiv, id_inspect, id_integer_p, id_negate, id_to_f,
+static ID id_abs, id_cmp, id_convert, id_equal_p, id_expt, id_fdiv,
+    id_floor, id_idiv, id_inspect, id_integer_p, id_negate, id_to_f,
     id_to_i, id_to_s, id_truncate;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
@@ -154,6 +154,7 @@ f_equal_p(VALUE x, VALUE y)
 }
 
 fun2(expt)
+fun2(fdiv)
 fun2(idiv)
 
 inline static VALUE
@@ -1064,8 +1065,6 @@ nurat_round_n(int argc, VALUE *argv, VALUE self)
     return nurat_round_common(argc, argv, self, nurat_round);
 }
 
-#define f_fdiv(x,y) rb_funcall(x, rb_intern("fdiv"), 1, y)
-
 static VALUE
 nurat_to_f(VALUE self)
 {
@@ -1483,6 +1482,7 @@ Init_Rational(void)
     id_convert = rb_intern("convert");
     id_equal_p = rb_intern("==");
     id_expt = rb_intern("**");
+    id_fdiv = rb_intern("fdiv");
     id_floor = rb_intern("floor");
     id_idiv = rb_intern("div");
     id_inspect = rb_intern("inspect");

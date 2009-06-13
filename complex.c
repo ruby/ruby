@@ -1,5 +1,5 @@
 /*
-  complex.c: Coded by Tadayoshi Funaba 2008
+  complex.c: Coded by Tadayoshi Funaba 2008,2009
 
   This implementation is based on Keiju Ishitsuka's Complex library
   which is written in ruby.
@@ -22,9 +22,9 @@
 VALUE rb_cComplex;
 
 static ID id_abs, id_abs2, id_arg, id_cmp, id_conj, id_convert,
-    id_denominator, id_divmod, id_equal_p, id_expt, id_floor,
-    id_idiv, id_inspect, id_negate, id_numerator, id_polar, id_quo,
-    id_real_p, id_to_f, id_to_i, id_to_r, id_to_s;
+    id_denominator, id_divmod, id_equal_p, id_expt, id_fdiv, id_floor,
+    id_idiv, id_inspect, id_negate, id_numerator, id_quo, id_real_p,
+    id_to_f, id_to_i, id_to_r, id_to_s;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -162,7 +162,6 @@ fun1(floor)
 fun1(inspect)
 fun1(negate)
 fun1(numerator)
-fun1(polar)
 fun1(real_p)
 
 fun1(to_f)
@@ -181,6 +180,7 @@ f_equal_p(VALUE x, VALUE y)
 }
 
 fun2(expt)
+fun2(fdiv)
 fun2(idiv)
 fun2(quo)
 
@@ -620,10 +620,9 @@ nucomp_mul(VALUE self, VALUE other)
     return rb_num_coerce_bin(self, other, '*');
 }
 
-#define f_div f_quo
-
 static VALUE
-nucomp_div(VALUE self, VALUE other)
+nucomp_divide(VALUE self, VALUE other,
+	      VALUE (*func)(VALUE, VALUE), ID id)
 {
     if (k_complex_p(other)) {
 	get_dat2(self, other);
@@ -634,33 +633,34 @@ nucomp_div(VALUE self, VALUE other)
 	    TYPE(bdat->imag) == T_FLOAT) {
 	    VALUE magn = m_hypot(bdat->real, bdat->imag);
 	    VALUE tmp = f_complex_new_bang2(CLASS_OF(self),
-					    f_div(bdat->real, magn),
-					    f_div(bdat->imag, magn));
-	    return f_div(f_mul(self, f_conj(tmp)), magn);
+					    (*func)(bdat->real, magn),
+					    (*func)(bdat->imag, magn));
+	    return (*func)(f_mul(self, f_conj(tmp)), magn);
 	}
-	return f_div(f_mul(self, f_conj(other)), f_abs2(other));
+	return (*func)(f_mul(self, f_conj(other)), f_abs2(other));
     }
     if (k_numeric_p(other) && f_real_p(other)) {
 	get_dat1(self);
 
 	return f_complex_new2(CLASS_OF(self),
-			      f_div(dat->real, other),
-			      f_div(dat->imag, other));
+			      (*func)(dat->real, other),
+			      (*func)(dat->imag, other));
     }
-    return rb_num_coerce_bin(self, other, '/');
+    return rb_num_coerce_bin(self, other, id);
 }
 
-#undef f_div
+static VALUE
+nucomp_div(VALUE self, VALUE other)
+{
+    return nucomp_divide(self, other, f_quo, id_quo);
+}
+
 #define nucomp_quo nucomp_div
 
 static VALUE
 nucomp_fdiv(VALUE self, VALUE other)
 {
-    get_dat1(self);
-
-    return f_div(f_complex_new2(CLASS_OF(self),
-				f_to_f(dat->real),
-				f_to_f(dat->imag)), other);
+    return nucomp_divide(self, other, f_fdiv, id_fdiv);
 }
 
 static VALUE
@@ -673,19 +673,17 @@ nucomp_expt(VALUE self, VALUE other)
 	other = f_numerator(other); /* good? */
 
     if (k_complex_p(other)) {
-	VALUE a, r, theta, ore, oim, nr, ntheta;
+	VALUE r, theta, nr, ntheta;
 
 	get_dat1(other);
 
-	a = f_polar(self);
-	r = RARRAY_PTR(a)[0];
-	theta = RARRAY_PTR(a)[1];
+	r = f_abs(self);
+	theta = f_arg(self);
 
-	ore = dat->real;
-	oim = dat->imag;
-	nr = m_exp_bang(f_sub(f_mul(ore, m_log_bang(r)),
-			      f_mul(oim, theta)));
-	ntheta = f_add(f_mul(theta, ore), f_mul(oim, m_log_bang(r)));
+	nr = m_exp_bang(f_sub(f_mul(dat->real, m_log_bang(r)),
+			      f_mul(dat->imag, theta)));
+	ntheta = f_add(f_mul(theta, dat->real),
+		       f_mul(dat->imag, m_log_bang(r)));
 	return f_complex_polar(CLASS_OF(self), nr, ntheta);
     }
     if (k_integer_p(other)) {
@@ -717,13 +715,12 @@ nucomp_expt(VALUE self, VALUE other)
 	return f_expt(f_div(f_to_r(ONE), self), f_negate(other));
     }
     if (k_numeric_p(other) && f_real_p(other)) {
-	VALUE a, r, theta;
+	VALUE r, theta;
 
-	a = f_polar(self);
-	r = RARRAY_PTR(a)[0];
-	theta = RARRAY_PTR(a)[1];
+	r = f_abs(self);
+	theta = f_arg(self);
 	return f_complex_polar(CLASS_OF(self), f_expt(r, other),
-			      f_mul(theta, other));
+			       f_mul(theta, other));
     }
     return rb_num_coerce_bin(self, other, id_expt);
 }
@@ -1386,12 +1383,12 @@ Init_Complex(void)
     id_divmod = rb_intern("divmod");
     id_equal_p = rb_intern("==");
     id_expt = rb_intern("**");
+    id_fdiv = rb_intern("fdiv");
     id_floor = rb_intern("floor");
     id_idiv = rb_intern("div");
     id_inspect = rb_intern("inspect");
     id_negate = rb_intern("-@");
     id_numerator = rb_intern("numerator");
-    id_polar = rb_intern("polar");
     id_quo = rb_intern("quo");
     id_real_p = rb_intern("real?");
     id_to_f = rb_intern("to_f");
