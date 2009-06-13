@@ -1,3 +1,7 @@
+Sun Jun 14 01:53:00 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* transcode.c (transcode_restartable0): can't build with VC9.
+
 Sun Jun 14 01:23:41 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_to_f): use fdiv.

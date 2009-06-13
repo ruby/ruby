@@ -540,15 +540,16 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
       follow_info:
 	switch (next_info & 0x1F) {
 	  case NOMAP:
-	    {
-		const unsigned char *pend = in_p;
-		in_p = inchar_start;
-		while (in_p < pend) {
-		    next_byte = (unsigned char)*in_p++;
-		    SUSPEND_OBUF(3); *out_p++ = next_byte;
-		}
-	    }
-	    continue;
+            {
+                const unsigned char *char_start;
+                size_t char_len, i = 0;
+                char_start = transcode_char_start(tc, *in_pos, inchar_start, in_p, &char_len);
+                while (i < char_len) {
+                    SUSPEND_OBUF(3);
+                    *out_p++ = char_start[i++];
+                }
+            }
+            continue;
 	  case 0x00: case 0x04: case 0x08: case 0x0C:
 	  case 0x10: case 0x14: case 0x18: case 0x1C:
             SUSPEND_AFTER_OUTPUT(25);
