@@ -3379,17 +3379,17 @@ econv_result_to_symbol(rb_econv_result_t res)
  *
  * example:
  *   ec = Encoding::Converter.new("UTF-8", "UTF-16BE")
- *   ret = ec.primitive_convert(src="pi", dst="", 100)
+ *   ret = ec.primitive_convert(src="pi", dst="", nil, 100)
  *   p [ret, src, dst] #=> [:finished, "", "\x00p\x00i"]
  *
  *   ec = Encoding::Converter.new("UTF-8", "UTF-16BE")
- *   ret = ec.primitive_convert(src="pi", dst="", 1)
+ *   ret = ec.primitive_convert(src="pi", dst="", nil, 1)
  *   p [ret, src, dst] #=> [:destination_buffer_full, "i", "\x00"]
- *   ret = ec.primitive_convert(src, dst="", 1)
+ *   ret = ec.primitive_convert(src, dst="", nil, 1)
  *   p [ret, src, dst] #=> [:destination_buffer_full, "", "p"]
- *   ret = ec.primitive_convert(src, dst="", 1)
+ *   ret = ec.primitive_convert(src, dst="", nil, 1)
  *   p [ret, src, dst] #=> [:destination_buffer_full, "", "\x00"]
- *   ret = ec.primitive_convert(src, dst="", 1)
+ *   ret = ec.primitive_convert(src, dst="", nil, 1)
  *   p [ret, src, dst] #=> [:finished, "", "i"]
  *
  */
