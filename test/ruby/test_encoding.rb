@@ -60,4 +60,12 @@ class TestEncoding < Test::Unit::TestCase
       assert_instance_of(String, v)
     end
   end
+
+  def test_marshal
+    str = "".force_encoding("EUC-JP")
+    str2 = Marshal.load(Marshal.dump(str))
+    assert_equal(str, str2)
+    str2 = Marshal.load(Marshal.dump(str2))
+    assert_equal(str, str2, '[ruby-dev:38596]')
+  end
 end

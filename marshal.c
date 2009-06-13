@@ -1159,14 +1159,14 @@ r_ivar(VALUE obj, struct load_arg *arg)
 
     len = r_long(arg);
     if (len > 0) {
-	while (len--) {
+	do {
 	    ID id = r_symbol(arg);
 	    VALUE val = r_object(arg);
 	    if (id == rb_id_encoding()) {
 		int idx = rb_enc_find_index(StringValueCStr(val));
 		if (idx > 0) rb_enc_associate_index(obj, idx);
 	    }
-	    if (id == rb_intern("E")) {
+	    else if (id == rb_intern("E")) {
 		if (val == Qfalse) rb_enc_associate_index(obj, rb_usascii_encindex());
 		else if (val == Qtrue) rb_enc_associate_index(obj, rb_utf8_encindex());
 		/* bogus ignore */
@@ -1174,7 +1174,7 @@ r_ivar(VALUE obj, struct load_arg *arg)
 	    else {
 		rb_ivar_set(obj, id, val);
 	    }
-	}
+	} while (--len > 0);
     }
 }
 
