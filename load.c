@@ -247,7 +247,7 @@ rb_provide_feature(VALUE feature)
 void
 rb_provide(const char *feature)
 {
-    rb_provide_feature(rb_str_new2(feature));
+    rb_provide_feature(rb_usascii_str_new2(feature));
 }
 
 NORETURN(static void load_failed(VALUE));

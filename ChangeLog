@@ -1,4 +1,6 @@
-Sat Jun 13 14:58:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jun 13 15:00:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_provide): assumes us-ascii only.
 
 	* load.c (rb_require_safe): FilePathValue() implies rb_str_new4().
 
