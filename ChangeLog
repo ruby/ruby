@@ -1,4 +1,6 @@
-Sat Jun 13 14:57:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jun 13 14:58:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_require_safe): FilePathValue() implies rb_str_new4().
 
 	* load.c (rb_mod_autoload): try conversion to path like as
 	  require.  [ruby-core:23834]

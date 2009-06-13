@@ -545,7 +545,7 @@ load_ext(VALUE path)
 VALUE
 rb_require_safe(VALUE fname, int safe)
 {
-    VALUE result = Qnil;
+    volatile VALUE result = Qnil;
     rb_thread_t *th = GET_THREAD();
     volatile VALUE errinfo = th->errinfo;
     int state;
@@ -563,7 +563,6 @@ rb_require_safe(VALUE fname, int safe)
 
 	rb_set_safe_level_force(safe);
 	FilePathValue(fname);
-	RB_GC_GUARD(fname) = rb_str_new4(fname);
 	rb_set_safe_level_force(0);
 	found = search_required(fname, &path);
 	if (found) {
