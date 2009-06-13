@@ -654,7 +654,7 @@ rb_mod_autoload(VALUE mod, VALUE sym, VALUE file)
 {
     ID id = rb_to_id(sym);
 
-    Check_SafeStr(file);
+    FilePathValue(file);
     rb_autoload(mod, id, RSTRING_PTR(file));
     return Qnil;
 }

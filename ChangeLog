@@ -1,3 +1,8 @@
+Sat Jun 13 14:57:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_mod_autoload): try conversion to path like as
+	  require.  [ruby-core:23834]
+
 Sat Jun 13 09:58:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_ivar): should not set internal encoding ivar as an
