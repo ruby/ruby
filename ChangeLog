@@ -1,4 +1,6 @@
-Sat Jun 13 15:00:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jun 13 15:03:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (load_lock): show backtrace at circular require.
 
 	* load.c (rb_provide): assumes us-ascii only.
 
