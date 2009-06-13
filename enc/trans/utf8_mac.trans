@@ -199,15 +199,6 @@ fun_so_from_utf8_mac(void *statep,
       case 1:
         n = from_utf8_mac_finish(sp, o, osize);
         break;
-      case 3:
-        if (s[0] == 0xE3 && s[1] == 0x82 && (s[2] == 0x99 || s[2] == 0x9A)) {
-            n = from_utf8_mac_finish(sp, o, osize);
-            o[n++] = *s++;
-            o[n++] = *s++;
-            o[n++] = *s++;
-            return n;
-        }
-        break;
       case 4:
         n = from_utf8_mac_finish(sp, o, osize);
         o[n++] = *s++;
