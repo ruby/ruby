@@ -1348,6 +1348,25 @@ rb_make_backtrace(void)
 }
 
 VALUE
+rb_thread_backtrace(VALUE thval)
+{
+    rb_thread_t *th;
+    GetThreadPtr(thval, th);
+
+    switch (th->status) {
+      case THREAD_RUNNABLE:
+      case THREAD_STOPPED:
+      case THREAD_STOPPED_FOREVER:
+	break;
+      case THREAD_TO_KILL:
+      case THREAD_KILLED:
+	return Qnil;
+    }
+
+    return vm_backtrace(th, 0);
+}
+
+VALUE
 rb_backtrace_each(rb_backtrace_iter_func *iter, void *arg)
 {
     return vm_backtrace_each(GET_THREAD(), -1, iter, arg);

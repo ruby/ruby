@@ -1,3 +1,9 @@
+Sun Jun 14 14:57:57 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c, vm_eval.c: add Thread.backtrace. 
+
+	* test/ruby/test_thread.rb: add a test.
+
 Sun Jun 14 13:58:32 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* transcode.c (transcode_restartable0): revert last commit because

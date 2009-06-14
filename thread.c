@@ -3817,6 +3817,14 @@ ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
     return result;
 }
 
+VALUE rb_thread_backtrace(VALUE thval);
+
+static VALUE
+rb_thread_backtrace_m(VALUE thval)
+{
+    return rb_thread_backtrace(thval);
+}
+
 /*
  *  +Thread+ encapsulates the behavior of a thread of
  *  execution, including the main thread of the Ruby script.
@@ -3873,6 +3881,7 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "abort_on_exception=", rb_thread_abort_exc_set, 1);
     rb_define_method(rb_cThread, "safe_level", rb_thread_safe_level, 0);
     rb_define_method(rb_cThread, "group", rb_thread_group, 0);
+    rb_define_method(rb_cThread, "backtrace", rb_thread_backtrace_m, 0);
 
     rb_define_method(rb_cThread, "inspect", rb_thread_inspect, 0);
 
