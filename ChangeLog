@@ -1,3 +1,8 @@
+Sun Jun 14 10:23:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_size): added rdoc.  a patch from Run Paint Run
+	  Run at [ruby-core:23839].
+
 Sun Jun 14 07:53:26 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_fdiv): use fdiv recursively.

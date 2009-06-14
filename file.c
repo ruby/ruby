@@ -1806,6 +1806,16 @@ rb_file_ctime(VALUE obj)
     return stat_ctime(&st);
 }
 
+/*
+ *  call-seq:
+ *     file.size    => integer
+ *
+ *  Returns the size of <i>file</i> in bytes.
+ *
+ *     File.new("testfile").size   #=> 66
+ *
+ */
+
 static VALUE
 rb_file_size(VALUE obj)
 {
