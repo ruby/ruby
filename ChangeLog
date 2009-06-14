@@ -1,3 +1,8 @@
+Sun Jun 14 13:58:32 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* transcode.c (transcode_restartable0): revert last commit because
+	  this change cause SEGV at test-all.
+
 Sun Jun 14 10:49:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_find_file_ext, rb_find_file): canonicalize absolute
