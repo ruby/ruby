@@ -4621,12 +4621,11 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
     }
 
     if (is_absolute_path(f) || is_explicit_relative(f)) {
-	fname = rb_str_dup(*filep);
+	fname = rb_file_expand_path(*filep, Qnil);
 	fnlen = RSTRING_LEN(fname);
 	for (i=0; ext[i]; i++) {
 	    rb_str_cat2(fname, ext[i]);
 	    if (file_load_ok(StringValueCStr(fname))) {
-		if (!is_absolute_path(f)) fname = rb_file_expand_path(fname, Qnil);
 		OBJ_FREEZE(fname);
 		*filep = fname;
 		return (int)(i+1);
@@ -4685,7 +4684,7 @@ rb_find_file(VALUE path)
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
 	if (!file_load_ok(f)) return 0;
-	if (!is_absolute_path(f)) path = rb_file_expand_path(path, Qnil);
+	path = rb_file_expand_path(path, Qnil);
 	return path;
     }
 

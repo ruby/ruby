@@ -1,4 +1,7 @@
-Sun Jun 14 10:23:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jun 14 10:49:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_find_file_ext, rb_find_file): canonicalize absolute
+	  paths.  [ruby-core:23845]
 
 	* file.c (rb_file_size): added rdoc.  a patch from Run Paint Run
 	  Run at [ruby-core:23839].
