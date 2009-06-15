@@ -1,3 +1,8 @@
+Mon Jun 15 22:35:31 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* bignum.c (rb_big2db): (-Float::MAX.to_i*2).to_f should return
+	  -HUGE_VAL (-Infinity).
+
 Mon Jun 15 18:48:41 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (argf_each_line): should return self.  [ruby-core:23852]
