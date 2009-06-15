@@ -187,9 +187,12 @@ rb_call0(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv,
     rb_thread_t *th = GET_THREAD();
 
     if (!klass) {
+        const char *adj = "terminated";
+        if (!IMMEDIATE_P(recv) && RBASIC(recv)->flags != 0)
+            adj = "hidden";
 	rb_raise(rb_eNotImpError,
-		 "method `%s' called on terminated object (%p)",
-		 rb_id2name(mid), (void *)recv);
+		 "method `%s' called on %s object (%p)",
+		 rb_id2name(mid), adj, (void *)recv);
     }
     /* is it in the method cache? */
     ent = cache + EXPR1(klass, mid);

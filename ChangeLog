@@ -1,3 +1,7 @@
+Tue Jun 16 01:50:02 2009  Tanaka Akira  <akr@fsij.org>
+
+	* vm_eval.c (rb_call0): refine exception message for hidden objects.
+
 Mon Jun 15 22:35:31 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* bignum.c (rb_big2db): (-Float::MAX.to_i*2).to_f should return
