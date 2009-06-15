@@ -1233,10 +1233,10 @@ rb_big2dbl(VALUE x)
 
     if (isinf(d)) {
 	rb_warning("Bignum out of Float range");
-	if (signbit(d))
-	  d = -HUGE_VAL;
+	if (d < 0.0)
+	    d = -HUGE_VAL;
 	else
-	  d = HUGE_VAL;
+	    d = HUGE_VAL;
     }
     return d;
 }
