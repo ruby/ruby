@@ -1,3 +1,8 @@
+Mon Jun 15 17:48:42 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (os_obj_of): invoke garbage collection before iteration, to
+	  avoid accessing half recycled object references.  [ruby-dev:38613]
+
 Mon Jun 15 11:04:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* .gdbinit (rp, iseq): load dummy_gdb_enums on demand.
