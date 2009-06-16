@@ -3221,7 +3221,7 @@ fptr_finalize(rb_io_t *fptr, int noraise)
         if (io_fflush(fptr) < 0 && NIL_P(err))
             err = noraise ? Qtrue : INT2NUM(errno);
     }
-    if (IS_PREP_STDIO(fptr) || fptr->fd <= 2) {
+    if (noraise && (IS_PREP_STDIO(fptr) || fptr->fd <= 2)) {
         goto check_err;
     }
     if (fptr->stdio_file) {
@@ -8473,7 +8473,7 @@ argf_binmode_p(VALUE argf)
 static VALUE
 argf_skip(VALUE argf)
 {
-    if (ARGF.next_p != -1) {
+    if (ARGF.init_p && ARGF.next_p == 0) {
 	argf_close(ARGF.current_file);
 	ARGF.next_p = 1;
     }

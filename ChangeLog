@@ -1,3 +1,10 @@
+Tue Jun 16 06:40:31 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (fptr_finalize): should close stdin/stdout/stderr when
+	  closed explicitly.   [ruby-core:23853]
+
+	* io.c (argf_skip): should close only when current_file is available.
+
 Tue Jun 16 01:50:02 2009  Tanaka Akira  <akr@fsij.org>
 
 	* vm_eval.c (rb_call0): refine exception message for hidden objects.
