@@ -1,3 +1,9 @@
+Tue Jun 16 22:47:37 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (fptr_finalize): revert last change.  [ruby-dev:38648]
+
+	* io.c (fptr_finalize): skip close(2) for fd 0,1,2.
+
 Tue Jun 16 20:07:09 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c (transcode_restartable0): refix can't build with VC9.

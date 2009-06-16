@@ -3221,8 +3221,8 @@ fptr_finalize(rb_io_t *fptr, int noraise)
         if (io_fflush(fptr) < 0 && NIL_P(err))
             err = noraise ? Qtrue : INT2NUM(errno);
     }
-    if (noraise && (IS_PREP_STDIO(fptr) || fptr->fd <= 2)) {
-        goto check_err;
+    if (IS_PREP_STDIO(fptr) || fptr->fd <= 2) {
+        goto skip_fd_close;
     }
     if (fptr->stdio_file) {
         /* fptr->stdio_file is deallocated anyway
@@ -3237,11 +3237,11 @@ fptr_finalize(rb_io_t *fptr, int noraise)
         if (close(fptr->fd) < 0 && NIL_P(err))
             err = noraise ? Qtrue : INT2NUM(errno);
     }
+  skip_fd_close:
     fptr->fd = -1;
     fptr->stdio_file = 0;
     fptr->mode &= ~(FMODE_READABLE|FMODE_WRITABLE);
 
-  check_err:
     if (!NIL_P(err) && !noraise) {
         switch(TYPE(err)) {
           case T_FIXNUM:
