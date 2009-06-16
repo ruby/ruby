@@ -919,6 +919,15 @@ rb_free_generic_ivar(VALUE obj)
 	st_free_table((st_table *)tbl);
 }
 
+size_t
+rb_geneic_ivar_memsize(VALUE obj)
+{
+    st_data_t tbl;
+    if (st_delete(generic_iv_tbl, &obj, &tbl))
+      return st_memsize((st_table *)tbl);
+    return 0;
+}
+
 void
 rb_copy_generic_ivar(VALUE clone, VALUE obj)
 {

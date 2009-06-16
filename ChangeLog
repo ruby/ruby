@@ -1,3 +1,17 @@
+Wed Jun 17 07:24:26 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (rb_ary_memsize): added.
+
+	* io.c (rb_io_memsize): added.
+
+	* regcomp.c (onig_memsize): added.
+
+	* string.c (rb_str_memsize): added.
+
+	* transcode.c (rb_transcoding_memsize, rb_econv_memsize): added.
+
+	* variable.c (rb_geneic_ivar_memsize): added.
+
 Wed Jun 17 07:04:33 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (iseq_memsize): added.  Use RTypedData instead of RData

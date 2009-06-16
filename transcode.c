@@ -798,6 +798,24 @@ rb_transcoding_close(rb_transcoding *tc)
     xfree(tc);
 }
 
+static size_t
+rb_transcoding_memsize(rb_transcoding *tc)
+{
+    size_t size = sizeof(rb_transcoding);
+    const rb_transcoder *tr = tc->transcoder;
+
+    if (TRANSCODING_STATE_EMBED_MAX < tr->state_size) {
+	size += tr->state_size;
+    }
+    if (sizeof(tc->readbuf.ary) < tr->max_input) {
+	size += tr->max_input;
+    }
+    if (sizeof(tc->writebuf.ary) < tr->max_output) {
+	size += tr->max_output;
+    }
+    return size;
+}
+
 static rb_econv_t *
 rb_econv_alloc(int n_hint)
 {
@@ -1661,6 +1679,28 @@ rb_econv_close(rb_econv_t *ec)
     xfree(ec->in_buf_start);
     xfree(ec->elems);
     xfree(ec);
+}
+
+size_t
+rb_econv_memsize(rb_econv_t *ec)
+{
+    size_t size = sizeof(rb_econv_t);
+    int i;
+
+    if (ec->replacement_allocated) {
+	size += ec->replacement_len;
+    }
+    for (i = 0; i < ec->num_trans; i++) {
+	size += rb_transcoding_memsize(ec->elems[i].tc);
+
+	if (ec->elems[i].out_buf_start) {
+            size += ec->elems[i].out_buf_end - ec->elems[i].out_buf_start;
+	}
+    }
+    size += ec->in_buf_end - ec->in_buf_start;
+    size += sizeof(rb_econv_elem_t) * ec->num_allocated;
+
+    return size;
 }
 
 int
