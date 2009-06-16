@@ -1,3 +1,8 @@
+Tue Jun 16 16:09:59 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
+
+	* parse.y (parser_read_escape, parser_tokadd_escape): 
+	  replace scan_oct as ruby_scan_oct.
+
 Tue Jun 16 06:40:31 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (fptr_finalize): should close stdin/stdout/stderr when

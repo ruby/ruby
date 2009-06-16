@@ -5437,7 +5437,7 @@ parser_read_escape(struct parser_params *parser, int flags,
       case '4': case '5': case '6': case '7':
 	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
 	pushback(c);
-	c = scan_oct(lex_p, 3, &numlen);
+	c = ruby_scan_oct(lex_p, 3, &numlen);
 	lex_p += numlen;
 	return c;
 
@@ -5515,7 +5515,7 @@ parser_tokadd_escape(struct parser_params *parser, rb_encoding **encp)
       case '4': case '5': case '6': case '7':
 	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
 	{
-	    scan_oct(--lex_p, 3, &numlen);
+	    ruby_scan_oct(--lex_p, 3, &numlen);
 	    if (numlen == 0) goto eof;
 	    lex_p += numlen;
 	    tokcopy((int)numlen + 1);
