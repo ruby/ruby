@@ -1,3 +1,8 @@
+Tue Jun 16 22:23:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_open), math.c (domain_check), object.c (boot_defclass):
+	  constified.
+
 Tue Jun 16 09:11:36 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (argf_close): always call #close method.  [ruby-core:23853]

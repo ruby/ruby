@@ -22,10 +22,12 @@ VALUE rb_mMath;
     Need_Float(y);\
 } while (0)
 
+static void domain_check _((double x, const char *msg));
+
 static void
 domain_check(x, msg)
     double x;
-    char *msg;
+    const char *msg;
 {
     while(1) {
 	if (errno) {

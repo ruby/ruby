@@ -3092,8 +3092,10 @@ pipe_del_fptr(fptr)
     }
 }
 
+static void pipe_atexit _((void));
+
 static void
-pipe_atexit _((void))
+pipe_atexit()
 {
     struct pipe_list *list = pipe_list;
     struct pipe_list *tmp;
@@ -3606,9 +3608,11 @@ rb_f_open(argc, argv)
     return rb_io_s_open(argc, argv, rb_cFile);
 }
 
+static VALUE rb_io_open _((const char *fname, const char *mode));
+
 static VALUE
 rb_io_open(fname, mode)
-    char *fname, *mode;
+    const char *fname, *mode;
 {
     if (fname[0] == '|') {
 	return pipe_open(0, fname+1, mode);

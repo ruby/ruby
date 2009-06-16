@@ -2614,9 +2614,11 @@ rb_f_array(obj, arg)
     return rb_Array(arg);
 }
 
+static VALUE boot_defclass _((const char *name, VALUE super));
+
 static VALUE
 boot_defclass(name, super)
-    char *name;
+    const char *name;
     VALUE super;
 {
     extern st_table *rb_class_tbl;
