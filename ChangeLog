@@ -1,3 +1,20 @@
+Wed Jun 17 06:19:06 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: New structure RTypedData, added.
+	  This structure incldues more explicit type information for
+	  T_DATA objects.  If RData(obj)->dfree is immediate value `1' on
+	  T_DATA object obj, obj is needed to be accessed with RTYPEDDATA(obj)
+	  instead of RDATA(obj).  A RTypedData structure points the structure
+	  rb_typed_data_t.  rb_typed_data_t includes information such as the
+	  type name of this data, mark and free function what RData includes,
+	  and memsize function show how data consuming the memory size.
+	  Note that you do not need any change existing T_DATA objects.
+	  If you use RDataType instead of RData on T_DATA object,
+	  you can specify explicit type information.
+
+	* gc.c (rb_data_typed_object_alloc, rb_objspace_data_type_memsize,
+	  rb_objspace_data_type_name): added.
+
 Wed Jun 17 06:14:23 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: fix indent.

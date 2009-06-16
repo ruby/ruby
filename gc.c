@@ -264,6 +264,7 @@ typedef struct RVALUE {
 	struct RRegexp regexp;
 	struct RHash   hash;
 	struct RData   data;
+	struct RTypedData   typeddata;
 	struct RStruct rstruct;
 	struct RBignum bignum;
 	struct RFile   file;
@@ -1177,6 +1178,44 @@ rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_F
     return (VALUE)data;
 }
 
+VALUE
+rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *type)
+{
+    NEWOBJ(data, struct RTypedData);
+
+    if (klass) Check_Type(klass, T_CLASS);
+
+    OBJSETUP(data, klass, T_DATA);
+
+    data->data = datap;
+    data->typed_flag = 1;
+    data->type = type;
+
+    return (VALUE)data;
+}
+
+size_t
+rb_objspace_data_type_memsize(VALUE obj)
+{
+    if (RTYPEDDATA_P(obj)) {
+	return RTYPEDDATA_TYPE(obj)->dsize(RTYPEDDATA_DATA(obj));
+    }
+    else {
+	return 0;
+    }
+}
+
+const char *
+rb_objspace_data_type_name(VALUE obj)
+{
+    if (RTYPEDDATA_P(obj)) {
+	return RTYPEDDATA_TYPE(obj)->name;
+    }
+    else {
+	return 0;
+    }
+}
+
 #ifdef __ia64
 #define SET_STACK_END (SET_MACHINE_STACK_END(&th->machine_stack_end), th->machine_register_stack_end = rb_ia64_bsp())
 #else
@@ -1695,7 +1734,12 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	break;
 
       case T_DATA:
+	if (RTYPEDDATA_P(obj)) {
+	    if (obj->as.typeddata.type->dmark) (*obj->as.typeddata.type->dmark)(DATA_PTR(obj));
+	}
+	else {
 	if (obj->as.data.dmark) (*obj->as.data.dmark)(DATA_PTR(obj));
+	}
 	break;
 
       case T_OBJECT:
@@ -2058,6 +2102,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_DATA:
 	if (DATA_PTR(obj)) {
+	    if (RTYPEDDATA_P(obj)) {
+		RDATA(obj)->dfree = RANY(obj)->as.typeddata.type->dfree;
+	    }
 	    if ((long)RANY(obj)->as.data.dfree == -1) {
 		xfree(DATA_PTR(obj));
 	    }
@@ -2652,12 +2699,19 @@ run_final(rb_objspace_t *objspace, VALUE obj)
     long i;
     int status;
     VALUE args[3], table, objid;
+    RUBY_DATA_FUNC free_func = 0;
 
     objid = rb_obj_id(obj);	/* make obj into id */
     RBASIC(obj)->klass = 0;
 
-    if (RDATA(obj)->dfree) {
-	(*RDATA(obj)->dfree)(DATA_PTR(obj));
+    if (RTYPEDDATA_P(obj)) {
+	free_func = RTYPEDDATA_TYPE(obj)->dfree;
+    }
+    else {
+	free_func = RDATA(obj)->dfree;
+    }
+    if (free_func) {
+	(*free_func)(DATA_PTR(obj));
     }
 
     if (finalizer_table &&

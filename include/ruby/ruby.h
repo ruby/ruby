@@ -735,7 +735,26 @@ struct RData {
     void *data;
 };
 
+typedef struct rb_data_type_struct {
+    const char *name;
+    void (*dmark)(void*);
+    void (*dfree)(void*);
+    size_t (*dsize)(void *);
+    void *ary[4]; /* for extension */
+} rb_data_type_t;
+
+struct RTypedData {
+    struct RBasic basic;
+    const rb_data_type_t *type;
+    VALUE typed_flag; /* 1 or not */
+    void *data;
+};
+
 #define DATA_PTR(dta) (RDATA(dta)->data)
+
+#define RTYPEDDATA_P(v)    (RTYPEDDATA(v)->typed_flag == 1)
+#define RTYPEDDATA_TYPE(v) (RTYPEDDATA(v)->type)
+#define RTYPEDDATA_DATA(v) (RTYPEDDATA(v)->data)
 
 /*
 #define RUBY_DATA_FUNC(func) ((void (*)(void*))func)
@@ -743,6 +762,7 @@ struct RData {
 typedef void (*RUBY_DATA_FUNC)(void*);
 
 VALUE rb_data_object_alloc(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
+VALUE rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *);
 
 #define Data_Wrap_Struct(klass,mark,free,sval)\
     rb_data_object_alloc(klass,sval,(RUBY_DATA_FUNC)mark,(RUBY_DATA_FUNC)free)
@@ -751,6 +771,15 @@ VALUE rb_data_object_alloc(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
     sval = ALLOC(type),\
     memset(sval, 0, sizeof(type)),\
     Data_Wrap_Struct(klass,mark,free,sval)\
+)
+
+#define Data_Wrap_TypedStruct(klass,data_type,sval)\
+  rb_data_typed_object_alloc(klass,sval,data_type)
+
+#define Data_Make_TypedStruct(klass, type, data_type, sval) (\
+    sval = ALLOC(type),\
+    memset(sval, 0, sizeof(type)),\
+    Data_Wrap_TypedStruct(klass,data_type,sval)\
 )
 
 #define Data_Get_Struct(obj,type,sval) do {\
@@ -826,6 +855,7 @@ struct RBignum {
 #define RARRAY(obj)  (R_CAST(RArray)(obj))
 #define RHASH(obj)   (R_CAST(RHash)(obj))
 #define RDATA(obj)   (R_CAST(RData)(obj))
+#define RTYPEDDATA(obj)   (R_CAST(RTypedData)(obj))
 #define RSTRUCT(obj) (R_CAST(RStruct)(obj))
 #define RBIGNUM(obj) (R_CAST(RBignum)(obj))
 #define RFILE(obj)   (R_CAST(RFile)(obj))
