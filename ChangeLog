@@ -1,3 +1,11 @@
+Wed Jun 17 07:04:33 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_memsize): added.  Use RTypedData instead of RData
+	  for ISeq.
+
+	* vm.c (env_memsize, vm_memsize, thread_memsize): added.  Use
+	  RTypedData instead of RData for Env, VM, Thread.
+
 Wed Jun 17 06:48:28 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* st.c, include/ruby/st.h (st_memsize): added.  This function returns

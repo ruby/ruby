@@ -183,18 +183,6 @@ vm_get_ruby_level_caller_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
 #define ENV_VAL(env)        ((env)[1])
 
 static void
-env_free(void * const ptr)
-{
-    RUBY_FREE_ENTER("env");
-    if (ptr) {
-	const rb_env_t * const env = ptr;
-	RUBY_FREE_UNLESS_NULL(env->env);
-	ruby_xfree(ptr);
-    }
-    RUBY_FREE_LEAVE("env");
-}
-
-static void
 env_mark(void * const ptr)
 {
     RUBY_MARK_ENTER("env");
@@ -224,12 +212,43 @@ env_mark(void * const ptr)
     RUBY_MARK_LEAVE("env");
 }
 
+static void
+env_free(void * const ptr)
+{
+    RUBY_FREE_ENTER("env");
+    if (ptr) {
+	const rb_env_t * const env = ptr;
+	RUBY_FREE_UNLESS_NULL(env->env);
+	ruby_xfree(ptr);
+    }
+    RUBY_FREE_LEAVE("env");
+}
+
+static size_t
+env_memsize(void *ptr)
+{
+    if (ptr) {
+	const rb_env_t * const env = ptr;
+	size_t size = sizeof(rb_env_t);
+	if (env->env) {
+	    size += env->env_size * sizeof(VALUE);
+	}
+	return size;
+    }
+    return 0;
+}
+
+rb_data_type_t env_data_type = {
+    "VM/env",
+    env_mark, env_free, env_memsize,
+};
+
 static VALUE
 env_alloc(void)
 {
     VALUE obj;
     rb_env_t *env;
-    obj = Data_Make_Struct(rb_cEnv, rb_env_t, env_mark, env_free, env);
+    obj = Data_Make_TypedStruct(rb_cEnv, rb_env_t, &env_data_type, env);
     env->env = 0;
     env->prev_envval = 0;
     env->block.iseq = 0;
@@ -1377,23 +1396,6 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
 
 /* vm */
 
-static void
-vm_free(void *ptr)
-{
-    RUBY_FREE_ENTER("vm");
-    if (ptr) {
-	rb_vm_t *vmobj = ptr;
-
-	st_free_table(vmobj->living_threads);
-	vmobj->living_threads = 0;
-	/* TODO: MultiVM Instance */
-	/* VM object should not be cleaned by GC */
-	/* ruby_xfree(ptr); */
-	/* ruby_current_vm = 0; */
-    }
-    RUBY_FREE_LEAVE("vm");
-}
-
 static int
 vm_mark_each_thread_func(st_data_t key, st_data_t value, st_data_t dummy)
 {
@@ -1447,6 +1449,40 @@ rb_vm_mark(void *ptr)
 }
 
 static void
+vm_free(void *ptr)
+{
+    RUBY_FREE_ENTER("vm");
+    if (ptr) {
+	rb_vm_t *vmobj = ptr;
+
+	st_free_table(vmobj->living_threads);
+	vmobj->living_threads = 0;
+	/* TODO: MultiVM Instance */
+	/* VM object should not be cleaned by GC */
+	/* ruby_xfree(ptr); */
+	/* ruby_current_vm = 0; */
+    }
+    RUBY_FREE_LEAVE("vm");
+}
+
+static size_t
+vm_memsize(void *ptr)
+{
+    if (ptr) {
+	rb_vm_t *vmobj = ptr;
+	return sizeof(rb_vm_t) + st_memsize(vmobj->living_threads);
+    }
+    else {
+	return 0;
+    }
+}
+
+rb_data_type_t vm_data_type = {
+    "VM",
+    rb_vm_mark, vm_free, vm_memsize,
+};
+
+static void
 vm_init2(rb_vm_t *vm)
 {
     MEMZERO(vm, rb_vm_t, 1);
@@ -1498,52 +1534,6 @@ thread_recycle_struct(void)
     return p;
 }
 #endif
-
-static void
-thread_free(void *ptr)
-{
-    rb_thread_t *th;
-    RUBY_FREE_ENTER("thread");
-
-    if (ptr) {
-	th = ptr;
-
-	if (!th->root_fiber) {
-	    RUBY_FREE_UNLESS_NULL(th->stack);
-	}
-
-	if (th->locking_mutex != Qfalse) {
-	    rb_bug("thread_free: locking_mutex must be NULL (%p:%ld)", (void *)th, th->locking_mutex);
-	}
-	if (th->keeping_mutexes != NULL) {
-	    rb_bug("thread_free: keeping_mutexes must be NULL (%p:%ld)", (void *)th, th->locking_mutex);
-	}
-
-	if (th->local_storage) {
-	    st_free_table(th->local_storage);
-	}
-
-#if USE_VALUE_CACHE
-	{
-	    VALUE *ptr = th->value_cache_ptr;
-	    while (*ptr) {
-		VALUE v = *ptr;
-		RBASIC(v)->flags = 0;
-		RBASIC(v)->klass = 0;
-		ptr++;
-	    }
-	}
-#endif
-
-	if (th->vm && th->vm->main_thread == th) {
-	    RUBY_GC_INFO("main thread\n");
-	}
-	else {
-	    ruby_xfree(ptr);
-	}
-    }
-    RUBY_FREE_LEAVE("thread");
-}
 
 void rb_gc_mark_machine_stack(rb_thread_t *th);
 
@@ -1604,16 +1594,91 @@ rb_thread_mark(void *ptr)
     RUBY_MARK_LEAVE("thread");
 }
 
+static void
+thread_free(void *ptr)
+{
+    rb_thread_t *th;
+    RUBY_FREE_ENTER("thread");
+
+    if (ptr) {
+	th = ptr;
+
+	if (!th->root_fiber) {
+	    RUBY_FREE_UNLESS_NULL(th->stack);
+	}
+
+	if (th->locking_mutex != Qfalse) {
+	    rb_bug("thread_free: locking_mutex must be NULL (%p:%ld)", (void *)th, th->locking_mutex);
+	}
+	if (th->keeping_mutexes != NULL) {
+	    rb_bug("thread_free: keeping_mutexes must be NULL (%p:%ld)", (void *)th, th->locking_mutex);
+	}
+
+	if (th->local_storage) {
+	    st_free_table(th->local_storage);
+	}
+
+#if USE_VALUE_CACHE
+	{
+	    VALUE *ptr = th->value_cache_ptr;
+	    while (*ptr) {
+		VALUE v = *ptr;
+		RBASIC(v)->flags = 0;
+		RBASIC(v)->klass = 0;
+		ptr++;
+	    }
+	}
+#endif
+
+	if (th->vm && th->vm->main_thread == th) {
+	    RUBY_GC_INFO("main thread\n");
+	}
+	else {
+	    ruby_xfree(ptr);
+	}
+    }
+    RUBY_FREE_LEAVE("thread");
+}
+
+static size_t
+thread_memsize(void *ptr)
+{
+    RUBY_FREE_ENTER("thread");
+
+    if (ptr) {
+	rb_thread_t *th = ptr;
+	size_t size = sizeof(rb_thread_t);
+
+	if (!th->root_fiber) {
+	    size += th->stack_size * sizeof(VALUE);
+	}
+	if (th->local_storage) {
+	    st_memsize(th->local_storage);
+	}
+	return size;
+    }
+    else {
+	return 0;
+    }
+}
+
+rb_data_type_t thread_data_type = {
+    "VM/thread",
+    rb_thread_mark,
+    thread_free,
+    thread_memsize,
+};
+
 static VALUE
 thread_alloc(VALUE klass)
 {
     VALUE volatile obj;
 #ifdef USE_THREAD_RECYCLE
     rb_thread_t *th = thread_recycle_struct();
-    obj = Data_Wrap_Struct(klass, rb_thread_mark, thread_free, th);
+    obj = Data_Wrap_TypedStruct(klass, &thread_data_type, th);
 #else
     rb_thread_t *th;
-    obj = Data_Make_Struct(klass, rb_thread_t, rb_thread_mark, thread_free, th);
+    obj = Data_Make_TypedStruct(klass, rb_thread_t, &thread_data_type, th);
 #endif
     return obj;
 }
@@ -1914,10 +1979,10 @@ Init_VM(void)
 	rb_iseq_t *iseq;
 
 	/* create vm object */
-	vm->self = Data_Wrap_Struct(rb_cRubyVM, rb_vm_mark, vm_free, vm);
+	vm->self = Data_Wrap_TypedStruct(rb_cRubyVM, &vm_data_type, vm);
 
 	/* create main thread */
-	th_self = th->self = Data_Wrap_Struct(rb_cThread, rb_thread_mark, thread_free, th);
+	th_self = th->self = Data_Wrap_TypedStruct(rb_cThread, &thread_data_type, th);
 	vm->main_thread = th;
 	vm->running_thread = th;
 	th->vm = vm;

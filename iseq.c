@@ -111,15 +111,53 @@ iseq_mark(void *ptr)
     RUBY_MARK_LEAVE("iseq");
 }
 
+static size_t
+iseq_memsize(void *ptr)
+{
+    size_t size = sizeof(rb_iseq_t);
+    rb_iseq_t *iseq;
+
+    if (ptr) {
+	iseq = ptr;
+	if (!iseq->orig) {
+	    if (iseq->iseq != iseq->iseq_encoded) {
+		size += iseq->iseq_size * sizeof(VALUE);
+	    }
+
+	    size += iseq->iseq_size * sizeof(VALUE);
+	    size += iseq->insn_info_size * sizeof(struct iseq_insn_info_entry);
+	    size += iseq->local_table_size * sizeof(ID);
+	    size += iseq->catch_table_size * sizeof(struct iseq_catch_table_entry);
+	    size += iseq->arg_opts * sizeof(VALUE);
+
+	    if (iseq->compile_data) {
+		struct iseq_compile_data_storage *cur;
+
+		cur = iseq->compile_data->storage_head;
+		while (cur) {
+		    size += cur->size + sizeof(struct iseq_compile_data_storage);
+		    cur = cur->next;
+		}
+		size += sizeof(struct iseq_compile_data);
+	    }
+	}
+    }
+
+    return size;
+}
+
+static const rb_data_type_t iseq_data_type = {
+    "iseq",
+    iseq_mark,
+    iseq_free,
+    iseq_memsize,
+};
+
 static VALUE
 iseq_alloc(VALUE klass)
 {
-    VALUE volatile obj;
     rb_iseq_t *iseq;
-
-    obj = Data_Make_Struct(klass, rb_iseq_t, iseq_mark, iseq_free, iseq);
-    MEMZERO(iseq, rb_iseq_t, 1);
-    return obj;
+    return Data_Make_TypedStruct(klass, rb_iseq_t, &iseq_data_type, iseq);
 }
 
 static void
