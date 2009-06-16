@@ -1738,7 +1738,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	    if (obj->as.typeddata.type->dmark) (*obj->as.typeddata.type->dmark)(DATA_PTR(obj));
 	}
 	else {
-	if (obj->as.data.dmark) (*obj->as.data.dmark)(DATA_PTR(obj));
+	    if (obj->as.data.dmark) (*obj->as.data.dmark)(DATA_PTR(obj));
 	}
 	break;
 
