@@ -2384,16 +2384,53 @@ Init_heap(void)
     init_heap(&rb_objspace);
 }
 
-static VALUE
-os_obj_of(rb_objspace_t *objspace, VALUE of)
+/*
+ * rb_objspace_each_objects() is special C API to walk through
+ * Ruby object space.  This C API is too difficult to use it.
+ * To be frank, you should not use it. Or you need to read the
+ * source code of this function and understand what this function does.
+ *
+ * 'callback' will be called several times (the number of heap slot,
+ * at current implementation) with:
+ *   vstart: a pointer to the first living object of the heap_slot.
+ *   vend: a pointer to next to the valid heap_slot area.
+ *   stride: a distance to next VALUE.
+ *
+ * If callback() returns non-zero, the iteration will be stopped.
+ *
+ * This is a sample callback code to iterate liveness objects:
+ *
+ *   int
+ *   sample_callback(void *vstart, void *vend, int stride, void *data) {
+ *     VALUE v = (VALUE)vstart;
+ *     for (; v != (VALUE)vend; v += stride) {
+ *       if (RBASIC(v)->flasgs) { // liveness check
+ *       // do something with live object 'v'
+ *     }
+ *     return 0; // continue to iteration
+ *   }
+ *
+ * Note: 'vstart' is not a top of heap_slot.  This point the first
+ *       living object to grasp at least one object to avoid GC issue.
+ *       This means that you can not walk through all Ruby object slot
+ *       including freed object slot.
+ *
+ * Note: On this implementation, 'stride' is same as sizeof(RVALUE).
+ *       However, there are possibilities to pass variable values with
+ *       'stride' with some reasons.  You must use stride instead of
+ *       use some constant value in the iteration.
+ */
+void
+rb_objspace_each_objects(int (*callback)(void *vstart, void *vend,
+					 size_t stride, void *d),
+			 void *data)
 {
     size_t i;
-    size_t n = 0;
     RVALUE *membase = 0;
-    RVALUE *p, *pend;
+    RVALUE *pstart, *pend;
+    rb_objspace_t *objspace = &rb_objspace;
     volatile VALUE v;
 
-    rb_garbage_collect();
     i = 0;
     while (i < heaps_used) {
         while (0 < i && (uintptr_t)membase < (uintptr_t)heaps[i-1].membase)
@@ -2404,8 +2441,38 @@ os_obj_of(rb_objspace_t *objspace, VALUE of)
             break;
         membase = heaps[i].membase;
 
-	p = heaps[i].slot; pend = p + heaps[i].limit;
-	for (;p < pend; p++) {
+	pstart = heaps[i].slot;
+	pend = pstart + heaps[i].limit;
+
+	for (; pstart != pend; pstart++) {
+	    if (pstart->as.basic.flags) {
+		v = (VALUE)pstart; /* acquire to save this object */
+		break;
+	    }
+	}
+	if (pstart != pend) {
+	    if ((*callback)(pstart, pend, sizeof(RVALUE), data)) {
+		return;
+	    }
+	}
+    }
+
+    return;
+}
+
+struct os_each_struct {
+    size_t num;
+    VALUE of;
+};
+
+static int
+os_obj_of_i(void *vstart, void *vend, size_t stride, void *data)
+{
+    struct os_each_struct *oes = (struct os_each_struct *)data;
+    RVALUE *p = (RVALUE *)vstart, *pend = (RVALUE *)vend;
+    volatile VALUE v;
+
+    for (; p != pend; p++) {
 	    if (p->as.basic.flags) {
 		switch (BUILTIN_TYPE(p)) {
 		  case T_NONE:
@@ -2414,20 +2481,31 @@ os_obj_of(rb_objspace_t *objspace, VALUE of)
 		  case T_ZOMBIE:
 		    continue;
 		  case T_CLASS:
-		    if (FL_TEST(p, FL_SINGLETON)) continue;
+		if (FL_TEST(p, FL_SINGLETON))
+		  continue;
 		  default:
 		    if (!p->as.basic.klass) continue;
                     v = (VALUE)p;
-		    if (!of || rb_obj_is_kind_of(v, of)) {
+		if (!oes->of || rb_obj_is_kind_of(v, oes->of)) {
 			rb_yield(v);
-			n++;
+		    oes->num++;
 		    }
 		}
 	    }
 	}
+
+    return 0;
     }
 
-    return SIZET2NUM(n);
+static VALUE
+os_obj_of(VALUE of)
+{
+    struct os_each_struct oes;
+
+    oes.num = 0;
+    oes.of = of;
+    rb_objspace_each_objects(os_obj_of_i, &oes);
+    return SIZET2NUM(oes.num);
 }
 
 /*
@@ -2476,7 +2554,7 @@ os_each_obj(int argc, VALUE *argv, VALUE os)
 	rb_scan_args(argc, argv, "01", &of);
     }
     RETURN_ENUMERATOR(os, 1, &of);
-    return os_obj_of(&rb_objspace, of);
+    return os_obj_of(of);
 }
 
 /*
