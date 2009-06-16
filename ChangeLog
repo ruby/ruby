@@ -1,3 +1,7 @@
+Wed Jun 17 06:14:23 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: fix indent.
+
 Wed Jun 17 06:05:03 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_objspace_each_objects): New C API, added.

@@ -2433,13 +2433,13 @@ rb_objspace_each_objects(int (*callback)(void *vstart, void *vend,
 
     i = 0;
     while (i < heaps_used) {
-        while (0 < i && (uintptr_t)membase < (uintptr_t)heaps[i-1].membase)
-            i--;
-        while (i < heaps_used && (uintptr_t)heaps[i].membase <= (uintptr_t)membase )
-            i++;
-        if (heaps_used <= i)
-            break;
-        membase = heaps[i].membase;
+	while (0 < i && (uintptr_t)membase < (uintptr_t)heaps[i-1].membase)
+	  i--;
+	while (i < heaps_used && (uintptr_t)heaps[i].membase <= (uintptr_t)membase )
+	  i++;
+	if (heaps_used <= i)
+	  break;
+	membase = heaps[i].membase;
 
 	pstart = heaps[i].slot;
 	pend = pstart + heaps[i].limit;
@@ -2473,29 +2473,29 @@ os_obj_of_i(void *vstart, void *vend, size_t stride, void *data)
     volatile VALUE v;
 
     for (; p != pend; p++) {
-	    if (p->as.basic.flags) {
-		switch (BUILTIN_TYPE(p)) {
-		  case T_NONE:
-		  case T_ICLASS:
-		  case T_NODE:
-		  case T_ZOMBIE:
-		    continue;
-		  case T_CLASS:
+	if (p->as.basic.flags) {
+	    switch (BUILTIN_TYPE(p)) {
+	      case T_NONE:
+	      case T_ICLASS:
+	      case T_NODE:
+	      case T_ZOMBIE:
+		continue;
+	      case T_CLASS:
 		if (FL_TEST(p, FL_SINGLETON))
 		  continue;
-		  default:
-		    if (!p->as.basic.klass) continue;
-                    v = (VALUE)p;
+	      default:
+		if (!p->as.basic.klass) continue;
+		v = (VALUE)p;
 		if (!oes->of || rb_obj_is_kind_of(v, oes->of)) {
-			rb_yield(v);
+		    rb_yield(v);
 		    oes->num++;
-		    }
 		}
 	    }
 	}
+    }
 
     return 0;
-    }
+}
 
 static VALUE
 os_obj_of(VALUE of)
