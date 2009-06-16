@@ -1,3 +1,8 @@
+Wed Jun 17 07:36:22 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/httputils.rb (parse_form_data): escape boundary of
+	  multipart/form-data when embed in regexp.
+
 Wed Jun 17 07:24:26 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (rb_ary_memsize): added.
