@@ -747,6 +747,8 @@ nucomp_coerce(VALUE self, VALUE other)
 {
     if (k_numeric_p(other) && f_real_p(other))
 	return rb_assoc_new(f_complex_new_bang1(CLASS_OF(self), other), self);
+    if (TYPE(other) == T_COMPLEX)
+	return rb_assoc_new(other, self);
 
     rb_raise(rb_eTypeError, "%s can't be coerced into %s",
 	     rb_obj_classname(other), rb_obj_classname(self));

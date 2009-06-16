@@ -704,6 +704,12 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(false, Rational(1) == '')
   end
 
+  def test_coerce
+    assert_equal([Rational(2),Rational(1)], Rational(1).coerce(2))
+    assert_equal([Rational(2.2),Rational(1)], Rational(1).coerce(2.2))
+    assert_equal([Rational(2),Rational(1)], Rational(1).coerce(Rational(2)))
+  end
+
   def test_unify
     if @unify
       assert_instance_of(Fixnum, Rational(1,2) + Rational(1,2))
