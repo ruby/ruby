@@ -658,16 +658,12 @@ class TestArgf < Test::Unit::TestCase
 
   def test_skip
     ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
-      begin
-        ARGF.skip
-      rescue
-        puts "cannot skip" # ???
-      end
+      ARGF.skip
       puts ARGF.gets
       ARGF.skip
       puts ARGF.read
     SRC
-      assert_equal("cannot skip\n1\n3\n4\n5\n6\n", f.read)
+      assert_equal("1\n3\n4\n5\n6\n", f.read)
     end
   end
 
