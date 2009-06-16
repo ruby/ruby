@@ -256,6 +256,17 @@ st_free_table(st_table *table)
     free(table);
 }
 
+size_t
+st_memsize(st_table *table)
+{
+    if (table->entries_packed) {
+	return table->num_bins * sizeof (void *) + sizeof(st_table);
+    }
+    else {
+	return table->num_entries * sizeof(struct st_table_entry) + table->num_bins * sizeof (void *) + sizeof(st_table);
+    }
+}
+
 #define PTR_NOT_EQUAL(table, ptr, hash_val, key) \
 ((ptr) != 0 && (ptr->hash != (hash_val) || !EQUAL((table), (key), (ptr)->key)))
 

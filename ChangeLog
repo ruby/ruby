@@ -1,3 +1,8 @@
+Wed Jun 17 06:48:28 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* st.c, include/ruby/st.h (st_memsize): added.  This function returns
+	  the memory usage of st_talbe.
+
 Wed Jun 17 06:19:06 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: New structure RTypedData, added.
