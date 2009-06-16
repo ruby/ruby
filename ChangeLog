@@ -1,3 +1,8 @@
+Wed Jun 17 08:10:38 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace: added.  objspace library extends some methods to
+	  ObjectSpace module.
+
 Wed Jun 17 08:14:01 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_coerce): accepts Complex instances.

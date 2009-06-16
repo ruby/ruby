@@ -1,0 +1,2 @@
+
+create_makefile('objspace')
