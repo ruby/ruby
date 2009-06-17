@@ -528,9 +528,8 @@ class TestStringScanner < Test::Unit::TestCase
     s.terminate
     assert_nil s.matched_size
 
-    # obsolete
     s = StringScanner.new('test string')
-    assert_nil s.matchedsize
+    assert_nil s.matched_size
     s.scan(/test/)
     assert_equal 4, s.matched_size
     s.terminate

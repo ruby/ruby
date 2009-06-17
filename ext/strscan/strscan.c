@@ -931,17 +931,6 @@ strscan_matched_size(VALUE self)
 }
 
 /*
- * Equivalent to #matched_size.
- * This method is obsolete; use #matched_size instead.
- */
-static VALUE
-strscan_matchedsize(VALUE self)
-{
-    rb_warning("StringScanner#matchedsize is obsolete; use #matched_size instead");
-    return strscan_matched_size(self);
-}
-
-/*
  * call-seq: [](n)
  *
  * Return the n-th subgroup in the most recent match.
@@ -1317,7 +1306,6 @@ Init_strscan()
     rb_define_method(StringScanner, "matched?",    strscan_matched_p,   0);
     rb_define_method(StringScanner, "matched",     strscan_matched,     0);
     rb_define_method(StringScanner, "matched_size", strscan_matched_size, 0);
-    rb_define_method(StringScanner, "matchedsize", strscan_matchedsize, 0);
     rb_define_method(StringScanner, "[]",          strscan_aref,        1);
     rb_define_method(StringScanner, "pre_match",   strscan_pre_match,   0);
     rb_define_method(StringScanner, "post_match",  strscan_post_match,  0);
