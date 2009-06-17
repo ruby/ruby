@@ -215,6 +215,11 @@ class TestFloat < Test::Unit::TestCase
 
     assert_equal(-1, 1.0 <=> 2**32)
 
+    assert_equal(1, inf <=> (Float::MAX.to_i*2))
+    assert_equal(-1, -inf <=> (-Float::MAX.to_i*2))
+    assert_equal(-1, (Float::MAX.to_i*2) <=> inf)
+    assert_equal(1, (-Float::MAX.to_i*2) <=> -inf)
+
     assert_raise(ArgumentError) { 1.0 > nil }
     assert_raise(ArgumentError) { 1.0 >= nil }
     assert_raise(ArgumentError) { 1.0 < nil }
