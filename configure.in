@@ -2309,12 +2309,13 @@ RUBY_LIB_PREFIX=`eval echo \\"${rubylibprefix}\\"`
 AC_SUBST(rubylibprefix)
 
 RI_BASE_NAME=`echo ${RUBY_BASE_NAME} | sed 's/ruby/ri/'`
-ridir='${DATAROOTDIR}/${RI_BASE_NAME}'
+ridir='${datarootdir}/${RI_BASE_NAME}'
 AC_ARG_WITH(ridir,
 	    AS_HELP_STRING([--with-ridir=DIR], [ri documentation [[DATAROOTDIR/ri]]]),
 	    [ridir=$withval])
 RIDIR=`eval echo \\"${ridir}\\"`
 AC_SUBST(ridir)
+AC_SUBST(RI_BASE_NAME)
 
 AC_ARG_WITH(ruby-version,
 	    AS_HELP_STRING([--with-ruby-version=STR], [ruby version string for version specific directories [[full]] (full|minor|STR)]),

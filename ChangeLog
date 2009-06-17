@@ -1,3 +1,8 @@
+Thu Jun 18 01:09:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ridir, RI_BASE_NAME): fixed for path expansion.
+	  [ruby-core:23876]
+
 Wed Jun 17 23:46:08 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_coerce): accepts Complex when the imag is
