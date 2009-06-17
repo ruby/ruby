@@ -769,7 +769,7 @@ nurat_div(VALUE self, VALUE other)
 static VALUE
 nurat_fdiv(VALUE self, VALUE other)
 {
-    return f_div(f_to_f(self), other);
+    return f_to_f(f_div(self, other));
 }
 
 static VALUE

@@ -2269,6 +2269,8 @@ fixdivmod(long x, long y, long *divp, long *modp)
  *
  */
 
+VALUE rb_big_fdiv(VALUE x, VALUE y);
+
 static VALUE
 fix_fdiv(VALUE x, VALUE y)
 {
@@ -2277,7 +2279,7 @@ fix_fdiv(VALUE x, VALUE y)
     }
     switch (TYPE(y)) {
       case T_BIGNUM:
-	return DBL2NUM((double)FIX2LONG(x) / rb_big2dbl(y));
+	return rb_big_fdiv(rb_int2big(FIX2LONG(x)), y);
       case T_FLOAT:
 	return DBL2NUM((double)FIX2LONG(x) / RFLOAT_VALUE(y));
       default:

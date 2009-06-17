@@ -4,6 +4,9 @@ class TestBignum < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
     $VERBOSE = nil
+    @fmax = Float::MAX.to_i
+    @fmax2 = @fmax * 2
+    @big = (1 << 63) - 1
   end
 
   def teardown
@@ -395,4 +398,19 @@ class TestBignum < Test::Unit::TestCase
     e = assert_raise(RangeError) {(1 << big).to_s}
     assert_match(/too big to convert/, e.message)
   end
+
+  def test_fix_fdiv
+    assert_not_equal(0, 1.fdiv(@fmax2))
+    assert_in_delta(0.5, 1.fdiv(@fmax2) * @fmax, 0.01)
+  end
+
+  def test_big_fdiv
+    assert_equal(1, @big.fdiv(@big))
+    assert_not_equal(0, @big.fdiv(@fmax2))
+    assert_not_equal(0, @fmax2.fdiv(@big))
+    assert_not_equal(0, @fmax2.fdiv(@fmax2))
+    assert_in_delta(0.5, @fmax.fdiv(@fmax2), 0.01)
+    assert_in_delta(1.0, @fmax2.fdiv(@fmax2), 0.01)
+  end
+
 end
