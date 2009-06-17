@@ -1,3 +1,9 @@
+Wed Jun 17 14:37:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sample/test.rb (valid_syntax?): skips BOM.  [ruby-dev:38666]
+
+	* test/ruby/test_system.rb (TestSystem#valid_syntax?): ditto.
+
 Wed Jun 17 13:54:18 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/strscan/strscan.c (Init_strscan): remove obsolete

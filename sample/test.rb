@@ -1930,10 +1930,11 @@ end
 
 def valid_syntax?(code, fname)
   p fname
-  code.force_encoding("ascii-8bit")
-  code = code.sub(/\A(?:\s*\#.*$)*(\n)?/n) {
+  code = code.dup.force_encoding("ascii-8bit")
+  code.sub!(/\A(\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
     "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
-  }.force_encoding("us-ascii")
+  }
+  code.force_encoding("us-ascii")
   catch {|tag| eval(code, binding, fname, 0)}
 rescue Exception
   STDERR.puts $!.message
