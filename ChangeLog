@@ -1,3 +1,11 @@
+Wed Jun 17 12:37:37 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* thread.c (ruby_thread_stack_overflow): call rb_exc_raise() on
+	  stack overflows in the signal handler, if sigaltstack is
+	  available.  On stack overflow (and with sigaltstack), the signal
+	  handler is more likely to have room to create an exception
+	  object.  [ruby-core:23813]
+
 Wed Jun 17 08:10:38 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace: added.  objspace library extends some methods to
