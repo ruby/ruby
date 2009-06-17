@@ -1931,7 +1931,7 @@ end
 def valid_syntax?(code, fname)
   p fname
   code = code.dup.force_encoding("ascii-8bit")
-  code.sub!(/\A(\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
+  code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
     "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
   }
   code.force_encoding("us-ascii")
