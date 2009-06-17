@@ -902,6 +902,10 @@ nurat_coerce(VALUE self, VALUE other)
 	return rb_assoc_new(other, f_to_f(self));
       case T_RATIONAL:
 	return rb_assoc_new(other, self);
+      case T_COMPLEX:
+	if (k_exact_p(RCOMPLEX(other)->imag) && f_zero_p(RCOMPLEX(other)->imag))
+	    return rb_assoc_new(f_rational_new_bang1
+				(CLASS_OF(self), RCOMPLEX(other)->real), self);
     }
 
     rb_raise(rb_eTypeError, "%s can't be coerced into %s",

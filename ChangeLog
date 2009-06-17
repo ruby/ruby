@@ -1,3 +1,8 @@
+Wed Jun 17 23:46:08 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c (nurat_coerce): accepts Complex when the imag is
+	  exact zero.
+
 Wed Jun 17 21:25:54 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* bignum.c (rb_big_fdiv): checks whether the given second argument
