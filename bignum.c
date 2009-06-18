@@ -2042,8 +2042,8 @@ rb_big_lshift(x, y)
 	y = rb_to_int(y);
     }
 
-    if (neg) return big_rshift(x, shift);
-    return big_lshift(x, shift);
+    x = neg ? big_rshift(x, shift) : big_lshift(x, shift);
+    return bignorm(x);
 }
 
 static VALUE
@@ -2071,7 +2071,7 @@ big_lshift(x, shift)
 	num = BIGDN(num);
     }
     *zds = BIGLO(num);
-    return bignorm(z);
+    return z;
 }
 
 /*
@@ -2111,8 +2111,8 @@ rb_big_rshift(x, y)
 	y = rb_to_int(y);
     }
 
-    if (neg) return big_lshift(x, shift);
-    return big_rshift(x, shift);
+    x = neg ? big_lshift(x, shift) : big_rshift(x, shift);
+    return bignorm(x);
 }
 
 static VALUE
@@ -2157,7 +2157,7 @@ big_rshift(x, shift)
     if (!RBIGNUM(x)->sign) {
 	get2comp(z);
     }
-    return bignorm(z);
+    return z;
 }
 
 /*

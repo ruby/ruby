@@ -1,3 +1,8 @@
+Fri Jun 19 08:14:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (big_lshift, big_rshift): return Bignum always withou
+	  normalization.  [ruby-dev:38680]
+
 Wed Jun 17 07:44:27 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/httputils.rb (parse_form_data): escape boundary of
