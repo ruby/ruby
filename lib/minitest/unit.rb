@@ -343,7 +343,7 @@ module MiniTest
     def location e
       last_before_assertion = ""
       e.backtrace.reverse_each do |s|
-        break if s =~ /in .(assert|refute|flunk|pass|fail|raise)/
+        break if s =~ /in .(assert|refute|flunk|pass|fail|raise|must|wont)/
         last_before_assertion = s
       end
       last_before_assertion.sub(/:in .*$/, '')
@@ -430,30 +430,30 @@ module MiniTest
     end
 
     class TestCase
-      attr_reader :name
+      attr_reader :__name__
 
       def run runner
         result = '.'
         begin
           @passed = nil
           self.setup
-          self.__send__ self.name
+          self.__send__ self.__name__
           @passed = true
         rescue Exception => e
           @passed = false
-          result = runner.puke(self.class, self.name, e)
+          result = runner.puke(self.class, self.__name__, e)
         ensure
           begin
             self.teardown
           rescue Exception => e
-            result = runner.puke(self.class, self.name, e)
+            result = runner.puke(self.class, self.__name__, e)
           end
         end
         result
       end
 
       def initialize name
-        @name = name
+        @__name__ = name
         @passed = nil
       end
 
