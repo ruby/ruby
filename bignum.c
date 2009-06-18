@@ -2412,23 +2412,23 @@ big_fdiv(VALUE x, VALUE y)
       case T_FIXNUM:
 	y = rb_int2big(FIX2LONG(y));
       case T_BIGNUM: {
-	  bigtrunc(y);
-	  l = RBIGNUM_LEN(y) - 1;
-	  ey = l * BITSPERDIG;
-	  ey += bdigbitsize(BDIGITS(y)[l]);
-	  ey -= DBL_BIGDIG * BITSPERDIG;
-	  if (ey) y = big_shift(y, ey);
-	  bignum:
-	  bigdivrem(x, y, &z, 0);
-	  l = ex - ey;
+	bigtrunc(y);
+	l = RBIGNUM_LEN(y) - 1;
+	ey = l * BITSPERDIG;
+	ey += bdigbitsize(BDIGITS(y)[l]);
+	ey -= DBL_BIGDIG * BITSPERDIG;
+	if (ey) y = big_shift(y, ey);
+      bignum:
+	bigdivrem(x, y, &z, 0);
+	l = ex - ey;
 #if SIZEOF_LONG > SIZEOF_INT
-	  {
-	      /* Visual C++ can't be here */
-	      if (l > INT_MAX) return DBL2NUM(ruby_div0(1.0));
-	      if (l < INT_MIN) return DBL2NUM(0.0);
-	  }
+	{
+	    /* Visual C++ can't be here */
+	    if (l > INT_MAX) return DBL2NUM(ruby_div0(1.0));
+	    if (l < INT_MIN) return DBL2NUM(0.0);
+	}
 #endif
-	  return DBL2NUM(ldexp(big2dbl(z), (int)l));
+	return DBL2NUM(ldexp(big2dbl(z), (int)l));
       }
       case T_FLOAT:
 	y = dbl2big(ldexp(frexp(RFLOAT_VALUE(y), &i), DBL_MANT_DIG));
@@ -2896,8 +2896,8 @@ rb_big_lshift(VALUE x, VALUE y)
 	y = rb_to_int(y);
     }
 
-    if (neg) return big_rshift(x, shift);
-    return big_lshift(x, shift);
+    x = neg ? big_rshift(x, shift) : big_lshift(x, shift);
+    return bignorm(x);
 }
 
 static VALUE
@@ -2923,7 +2923,7 @@ big_lshift(VALUE x, unsigned long shift)
 	num = BIGDN(num);
     }
     *zds = BIGLO(num);
-    return bignorm(z);
+    return z;
 }
 
 /*
@@ -2962,8 +2962,8 @@ rb_big_rshift(VALUE x, VALUE y)
 	y = rb_to_int(y);
     }
 
-    if (neg) return big_lshift(x, shift);
-    return big_rshift(x, shift);
+    x = neg ? big_lshift(x, shift) : big_rshift(x, shift);
+    return bignorm(x);
 }
 
 static VALUE
@@ -3006,7 +3006,7 @@ big_rshift(VALUE x, unsigned long shift)
     if (!RBIGNUM_SIGN(x)) {
 	get2comp(z);
     }
-    return bignorm(z);
+    return z;
 }
 
 /*

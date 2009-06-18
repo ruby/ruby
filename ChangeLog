@@ -1,3 +1,8 @@
+Fri Jun 19 08:14:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (big_lshift, big_rshift): return Bignum always withou
+	  normalization.  [ruby-dev:38679]
+
 Thu Jun 18 22:31:38 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_s_convert): calls to_r when the given argument
@@ -124,7 +129,7 @@ Wed Jun 17 07:04:33 2009  Koichi Sasada  <ko1@atdot.net>
 Wed Jun 17 06:48:28 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* st.c, include/ruby/st.h (st_memsize): added.  This function returns
-	  the memory usage of st_talbe.
+	  the memory usage of st_table.
 
 Wed Jun 17 06:19:06 2009  Koichi Sasada  <ko1@atdot.net>
 
