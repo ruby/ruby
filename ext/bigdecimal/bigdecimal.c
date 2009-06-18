@@ -605,7 +605,7 @@ BigDecimal_to_f(VALUE self)
 
     GUARD_OBJ(p,GetVpValue(self,1));
     if (VpVtoD(&d, &e, p)!=1) return rb_float_new(d);
-    if (e > DBL_MAX_10_EXP) goto erange;
+    if (e > DBL_MAX_10_EXP+BASE_FIG) goto erange;
     str = rb_str_new(0, VpNumOfChars(p,"E"));
     buf = RSTRING_PTR(str);
     VpToString(p, buf, 0, 0);

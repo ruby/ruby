@@ -18,6 +18,11 @@ Thu Jun 18 16:21:05 2009  Ryan Davis  <ryand-ruby@zenspider.com>
 	* lib/minitest/*.rb: Imported minitest 1.4.0 r5083.
 	* test/minitest/*.rb: ditto.
 
+Thu Jun 18 10:12:49 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_f): went infinity too
+	  early.  add BASE_FIG margin.  [ruby-dev:38673]
+
 Thu Jun 18 01:35:51 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (flo_cmp): Infinity is greater than any bignum
