@@ -317,8 +317,8 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     ai = Addrinfo.tcp("0.0.0.0", 4649).family_addrinfo("127.0.0.1", 80)
     assert_equal(["127.0.0.1", 80], ai.ip_unpack)
     assert_equal(Socket::SOCK_STREAM, ai.socktype)
-    ai = Addrinfo.unix("/tmp/sock").family_addrinfo("/tmp/sock2")
-    assert_equal("/tmp/sock2", ai.unix_path)
+    ai = Addrinfo.unix("/testdir/sock").family_addrinfo("/testdir/sock2")
+    assert_equal("/testdir/sock2", ai.unix_path)
     assert_equal(Socket::SOCK_STREAM, ai.socktype)
     assert_raise(SocketError) { Addrinfo.tcp("0.0.0.0", 4649).family_addrinfo("::1", 80) }
   end
@@ -547,7 +547,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
       assert_nil(Addrinfo.ip("::1").ipv6_to_ipv4)
       assert_nil(Addrinfo.ip("192.0.2.3").ipv6_to_ipv4)
       if HAS_UNIXSOCKET
-        assert_nil(Addrinfo.unix("/tmp/sock").ipv6_to_ipv4)
+        assert_nil(Addrinfo.unix("/testdir/sock").ipv6_to_ipv4)
       end
     end
   end
@@ -555,8 +555,8 @@ class TestSocketAddrinfo < Test::Unit::TestCase
   if HAS_UNIXSOCKET
 
     def test_addrinfo_unix
-      ai = Addrinfo.unix("/tmp/sock")
-      assert_equal("/tmp/sock", Socket.unpack_sockaddr_un(ai))
+      ai = Addrinfo.unix("/testdir/sock")
+      assert_equal("/testdir/sock", Socket.unpack_sockaddr_un(ai))
       assert_equal(Socket::AF_UNIX, ai.afamily)
       assert_equal(Socket::PF_UNIX, ai.pfamily)
       assert_equal(Socket::SOCK_STREAM, ai.socktype)
@@ -564,8 +564,8 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     end
 
     def test_addrinfo_unix_dgram
-      ai = Addrinfo.unix("/tmp/sock", :DGRAM)
-      assert_equal("/tmp/sock", Socket.unpack_sockaddr_un(ai))
+      ai = Addrinfo.unix("/testdir/sock", :DGRAM)
+      assert_equal("/testdir/sock", Socket.unpack_sockaddr_un(ai))
       assert_equal(Socket::AF_UNIX, ai.afamily)
       assert_equal(Socket::PF_UNIX, ai.pfamily)
       assert_equal(Socket::SOCK_DGRAM, ai.socktype)
@@ -573,18 +573,18 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     end
 
     def test_addrinfo_unix_path
-      ai = Addrinfo.unix("/tmp/sock1")
-      assert_equal("/tmp/sock1", ai.unix_path)
+      ai = Addrinfo.unix("/testdir/sock1")
+      assert_equal("/testdir/sock1", ai.unix_path)
     end
 
     def test_addrinfo_inspect_sockaddr_unix
-      ai = Addrinfo.unix("/tmp/test_addrinfo_inspect_sockaddr_unix")
-      assert_equal("/tmp/test_addrinfo_inspect_sockaddr_unix", ai.inspect_sockaddr)
+      ai = Addrinfo.unix("/testdir/test_addrinfo_inspect_sockaddr_unix")
+      assert_equal("/testdir/test_addrinfo_inspect_sockaddr_unix", ai.inspect_sockaddr)
     end
 
     def test_addrinfo_new_unix
-      ai = Addrinfo.new(["AF_UNIX", "/tmp/sock"])
-      assert_equal("/tmp/sock", Socket.unpack_sockaddr_un(ai))
+      ai = Addrinfo.new(["AF_UNIX", "/testdir/sock"])
+      assert_equal("/testdir/sock", Socket.unpack_sockaddr_un(ai))
       assert_equal(Socket::AF_UNIX, ai.afamily)
       assert_equal(Socket::PF_UNIX, ai.pfamily)
       assert_equal(Socket::SOCK_STREAM, ai.socktype) # UNIXSocket/UNIXServer is SOCK_STREAM only.
@@ -592,7 +592,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     end
 
     def test_addrinfo_predicates_unix
-      unix_ai = Addrinfo.new(Socket.sockaddr_un("/tmp/sososo"))
+      unix_ai = Addrinfo.new(Socket.sockaddr_un("/testdir/sososo"))
       assert(!unix_ai.ip?)
       assert(!unix_ai.ipv4?)
       assert(!unix_ai.ipv6?)
@@ -600,7 +600,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     end
 
     def test_marshal_unix
-      ai1 = Addrinfo.unix("/var/tmp/sock")
+      ai1 = Addrinfo.unix("/testdir/sock")
       ai2 = Marshal.load(Marshal.dump(ai1))
       assert_equal(ai1.afamily, ai2.afamily)
       assert_equal(ai1.unix_path, ai2.unix_path)

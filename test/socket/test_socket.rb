@@ -14,7 +14,7 @@ class TestSocket < Test::Unit::TestCase
   def test_unpack_sockaddr
     sockaddr_in = Socket.sockaddr_in(80, "")
     assert_raise(ArgumentError) { Socket.unpack_sockaddr_un(sockaddr_in) }
-    sockaddr_un = Socket.sockaddr_un("/tmp/s")
+    sockaddr_un = Socket.sockaddr_un("/testdir/s")
     assert_raise(ArgumentError) { Socket.unpack_sockaddr_in(sockaddr_un) }
     assert_raise(ArgumentError) { Socket.unpack_sockaddr_in("") }
     assert_raise(ArgumentError) { Socket.unpack_sockaddr_un("") }
