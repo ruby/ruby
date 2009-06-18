@@ -126,8 +126,8 @@ class Complex_Test < Test::Unit::TestCase
     if @rational && !@keiju
       assert_equal(Complex(1,1),Complex('3/3','3/3'))
     end
-    assert_raise(ArgumentError){Complex(nil)}
-    assert_raise(ArgumentError){Complex(Object.new)}
+    assert_raise(TypeError){Complex(nil)}
+    assert_raise(TypeError){Complex(Object.new)}
     assert_raise(ArgumentError){Complex()}
     assert_raise(ArgumentError){Complex(1,2,3)}
 

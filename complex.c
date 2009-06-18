@@ -1248,6 +1248,9 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 
     rb_scan_args(argc, argv, "11", &a1, &a2);
 
+    if (NIL_P(a1) || (argc == 2 && NIL_P(a2)))
+	rb_raise(rb_eTypeError, "can't convert nil into Complex");
+
     backref = rb_backref_get();
     rb_match_busy(backref);
 
@@ -1302,6 +1305,9 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
     if (argc == 1) {
 	if (k_numeric_p(a1) && !f_real_p(a1))
 	    return a1;
+	/* expect raise exception for consistency */
+	if (!k_numeric_p(a1))
+	    return rb_convert_type(a1, T_COMPLEX, "Complex", "to_c");
     }
     else {
 	if ((k_numeric_p(a1) && k_numeric_p(a2)) &&

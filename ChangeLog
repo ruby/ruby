@@ -1,3 +1,13 @@
+Thu Jun 18 22:31:38 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c (nurat_s_convert): calls to_r when the given argument
+	  is non-integer.
+
+	* rational.c (nurat_s_convert): raises TypeError when the given
+	  argument is nil.
+
+	* complex.c (nucomp_s_convert): ditto.
+
 Thu Jun 18 20:32:11 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* numeric.c (num_numerator, num_denominator): use

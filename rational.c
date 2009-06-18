@@ -1410,6 +1410,9 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 
     rb_scan_args(argc, argv, "11", &a1, &a2);
 
+    if (NIL_P(a1) || (argc == 2 && NIL_P(a2)))
+	rb_raise(rb_eTypeError, "can't convert nil into Rational");
+
     switch (TYPE(a1)) {
       case T_COMPLEX:
 	if (k_exact_p(RCOMPLEX(a1)->imag) && f_zero_p(RCOMPLEX(a1)->imag))
@@ -1458,8 +1461,8 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
     }
 
     if (argc == 1) {
-	if (k_numeric_p(a1) && !f_integer_p(a1))
-	    return a1;
+	if (!(k_numeric_p(a1) && k_integer_p(a1)))
+	    return rb_convert_type(a1, T_RATIONAL, "Rational", "to_r");
     }
     else {
 	if ((k_numeric_p(a1) && k_numeric_p(a2)) &&

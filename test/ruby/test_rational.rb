@@ -124,9 +124,9 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(3),Rational('3'))
     assert_equal(Rational(1),Rational('3.0','3.0'))
     assert_equal(Rational(1),Rational('3/3','3/3'))
-    assert_raise(ArgumentError){Rational(nil)}
+    assert_raise(TypeError){Rational(nil)}
     assert_raise(ArgumentError){Rational('')}
-    assert_raise(ArgumentError){Rational(Object.new)}
+    assert_raise(TypeError){Rational(Object.new)}
     assert_raise(ArgumentError){Rational()}
     assert_raise(ArgumentError){Rational(1,2,3)}
 
