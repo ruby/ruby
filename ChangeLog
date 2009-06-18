@@ -1,3 +1,8 @@
+Thu Jun 18 20:32:11 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* numeric.c ( num_numerator, num_denominator): use
+	  to_r [ruby-core:23910].
+
 Thu Jun 18 16:21:05 2009  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*.rb: Imported minitest 1.4.0 r5083.
