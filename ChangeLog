@@ -1,3 +1,7 @@
+Fri Jun 19 20:53:54 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* encoding.c (rb_enc_name_list): update RDoc.  [ruby-core:23926]
+
 Fri Jun 19 20:44:45 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: constant COMPLEX_NAME has been removed.
