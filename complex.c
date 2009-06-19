@@ -11,10 +11,6 @@
 #define NDEBUG
 #include <assert.h>
 
-#ifndef COMPLEX_NAME
-#define COMPLEX_NAME "Complex"
-#endif
-
 #define ZERO INT2FIX(0)
 #define ONE INT2FIX(1)
 #define TWO INT2FIX(2)
@@ -1404,7 +1400,7 @@ Init_Complex(void)
     id_to_r = rb_intern("to_r");
     id_to_s = rb_intern("to_s");
 
-    rb_cComplex = rb_define_class(COMPLEX_NAME, rb_cNumeric);
+    rb_cComplex = rb_define_class("Complex", rb_cNumeric);
 
     rb_define_alloc_func(rb_cComplex, nucomp_s_alloc);
     rb_undef_method(CLASS_OF(rb_cComplex), "allocate");
@@ -1420,7 +1416,7 @@ Init_Complex(void)
     rb_define_singleton_method(rb_cComplex, "rect", nucomp_s_new, -1);
     rb_define_singleton_method(rb_cComplex, "polar", nucomp_s_polar, 2);
 
-    rb_define_global_function(COMPLEX_NAME, nucomp_f_complex, -1);
+    rb_define_global_function("Complex", nucomp_f_complex, -1);
 
     rb_undef_method(rb_cComplex, "<");
     rb_undef_method(rb_cComplex, "<=");

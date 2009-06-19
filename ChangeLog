@@ -1,3 +1,9 @@
+Fri Jun 19 20:44:45 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: constant COMPLEX_NAME has been removed.
+
+	* rational.c: constant RATIONAL_NAME has been removed.
+
 Fri Jun 19 20:39:46 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c: added rdoc.  a patch from Run Paint Run Run.
