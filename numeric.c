@@ -425,7 +425,8 @@ num_int_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.abs  =>  num or numeric
+ *     num.abs        =>  num or numeric
+ *     num.magnitude  =>  num or numeric
  *
  *  Returns the absolute value of <i>num</i>.
  *
@@ -463,9 +464,9 @@ num_zero_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.nonzero?  =>  num or nil
+ *     num.nonzero?  =>  self or nil
  *
- *  Returns <i>num</i> if <i>num</i> is not zero, <code>nil</code>
+ *  Returns <i>self</i> if <i>num</i> is not zero, <code>nil</code>
  *  otherwise. This behavior is useful when chaining comparisons:
  *
  *     a = %w( z Bb bB bb BB a aA Aa AA A )
@@ -801,6 +802,9 @@ flo_divmod(VALUE x, VALUE y)
  *  flt ** other  =>  float
  *
  * Raises <code>float</code> the <code>other</code> power.
+ *
+ *    2.0**3      #=> 8.0
+ *    (-8.0)**0.5 #=> NaN  # try Complex(-8.0)**0.5
  */
 
 static VALUE
@@ -1167,7 +1171,8 @@ flo_to_f(VALUE num)
 
 /*
  *  call-seq:
- *     flt.abs  =>  float
+ *     flt.abs        =>  float
+ *     flt.magnitude  =>  num or numeric
  *
  *  Returns the absolute value of <i>flt</i>.
  *
@@ -1498,21 +1503,22 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
 
 /*
  *  call-seq:
- *     num.step(limit, step ) {|i| block }  =>  self
+ *     num.step(limit[, step]) {|i| block }  =>  self
+ *     num.step(limit[, step])               =>  enumerator
  *
  *  Invokes <em>block</em> with the sequence of numbers starting at
- *  <i>num</i>, incremented by <i>step</i> on each call. The loop
- *  finishes when the value to be passed to the block is greater than
- *  <i>limit</i> (if <i>step</i> is positive) or less than
- *  <i>limit</i> (if <i>step</i> is negative). If all the arguments are
- *  integers, the loop operates using an integer counter. If any of the
- *  arguments are floating point numbers, all are converted to floats,
- *  and the loop is executed <i>floor(n + n*epsilon)+ 1</i> times,
- *  where <i>n = (limit - num)/step</i>. Otherwise, the loop
- *  starts at <i>num</i>, uses either the <code><</code> or
- *  <code>></code> operator to compare the counter against
- *  <i>limit</i>, and increments itself using the <code>+</code>
- *  operator.
+ *  <i>num</i>, incremented by <i>step</i> (default 1) on each
+ *  call. The loop finishes when the value to be passed to the block
+ *  is greater than <i>limit</i> (if <i>step</i> is positive) or less
+ *  than <i>limit</i> (if <i>step</i> is negative). If all the
+ *  arguments are integers, the loop operates using an integer
+ *  counter. If any of the arguments are floating point numbers, all
+ *  are converted to floats, and the loop is executed <i>floor(n +
+ *  n*epsilon)+ 1</i> times, where <i>n = (limit -
+ *  num)/step</i>. Otherwise, the loop starts at <i>num</i>, uses
+ *  either the <code><</code> or <code>></code> operator to compare
+ *  the counter against <i>limit</i>, and increments itself using the
+ *  <code>+</code> operator.
  *
  *     1.step(10, 2) { |i| print i, " " }
  *     Math::E.step(Math::PI, 0.2) { |f| print f, " " }
@@ -2438,6 +2444,7 @@ int_pow(long x, unsigned long y)
  *    2 ** 3      #=> 8
  *    2 ** -1     #=> 0.5
  *    2 ** 0.5    #=> 1.4142135623731
+ *    (-8)**0.5   #=> NaN  # try Complex(-8)**Rational(1,2)
  */
 
 static VALUE
@@ -2861,7 +2868,8 @@ fix_to_f(VALUE num)
 
 /*
  *  call-seq:
- *     fix.abs  =>  fix
+ *     fix.abs        =>  fix
+ *     fix.magnitude  =>  fix
  *
  *  Returns the absolute value of <i>fix</i>.
  *
@@ -2903,6 +2911,7 @@ fix_size(VALUE fix)
 /*
  *  call-seq:
  *     int.upto(limit) {|i| block }  =>  self
+ *     int.upto(limit)               =>  enumerator
  *
  *  Iterates <em>block</em>, passing in integer values from <i>int</i>
  *  up to and including <i>limit</i>.
@@ -2941,6 +2950,7 @@ int_upto(VALUE from, VALUE to)
 /*
  *  call-seq:
  *     int.downto(limit) {|i| block }  =>  self
+ *     int.downto(limit)               =>  enumerator
  *
  *  Iterates <em>block</em>, passing decreasing values from <i>int</i>
  *  down to and including <i>limit</i>.
@@ -2980,6 +2990,7 @@ int_downto(VALUE from, VALUE to)
 /*
  *  call-seq:
  *     int.times {|i| block }  =>  self
+ *     int.times               =>  enumerator
  *
  *  Iterates block <i>int</i> times, passing in values from zero to
  *  <i>int</i> - 1.

@@ -1,3 +1,7 @@
+Fri Jun 19 23:43:38 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* numeric.c: edited rdoc.
+
 Fri Jun 19 22:58:16 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c; edited rdoc.
