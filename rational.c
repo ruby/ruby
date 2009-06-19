@@ -1019,19 +1019,19 @@ nurat_cmp(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   rat == numeric  =>  +true+ or +false+
+ *   rat == object  =>  true or false
  *
- * Tests for equality. Returns +true+ if _rat_ is equal to _numeric_; +false+
+ * Tests for equality. Returns +true+ if _rat_ is equal to _object_; +false+
  * otherwise.
  *
  * For example:
  *
- *     Rational(2, 3)  == Rational(2, 3)  #=> +true+
- *     Rational(5)     == 5               #=> +true+
- *     Rational(7, 1)  == Rational(7)     #=> +true+
- *     Rational(-2, 9) == Rational(-9, 2) #=> +false+
- *     Rational(9, 8)  == 4               #=> +false+
- *     Rational(5, 3)  == 'string'        #=> +false+
+ *     Rational(2, 3)  == Rational(2, 3)  #=> true
+ *     Rational(5)     == 5               #=> true
+ *     Rational(7, 1)  == Rational(7)     #=> true
+ *     Rational(-2, 9) == Rational(-9, 2) #=> false
+ *     Rational(9, 8)  == 4               #=> false
+ *     Rational(5, 3)  == 'string'        #=> false
  */
 static VALUE
 nurat_equal_p(VALUE self, VALUE other)
@@ -1121,8 +1121,8 @@ nurat_idiv(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   rat.modulo(numeric)  =>  numeric
- *   rat % numeric        =>  numeric
+ *   rat.modulo(numeric)  =>  real
+ *   rat % numeric        =>  real
  *
  * Returns the modulo of _rat_ and _numeric_ as a +Numeric+ object.
  *
@@ -1152,8 +1152,9 @@ nurat_mod(VALUE self, VALUE other)
  * call-seq:
  *   rat.divmod(numeric)  =>  array
  *
- * Returns a two-element +Array+ containing the quotient and modulus obtained
- * by dividing _rat_ by _numeric_. Both elements are +Numeric+.
+ * Returns a two-element +Array+ containing the quotient and modulus
+ * obtained by dividing _rat_ by _numeric_. The first element is
+ * an integer. The second selement is a real.
  *
  * A +ZeroDivisionError+ is raised if _numeric_ is 0. A +FloatDomainError+ is
  * raised if _numeric_ is 0.0. A +TypeError+ is raised unless _numeric_ is a
@@ -1187,7 +1188,7 @@ nurat_quot(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   rat.remainder(numeric)  =>  numeric_result
+ *   rat.remainder(numeric)  =>  real
  *
  * Returns the remainder of dividing _rat_ by _numeric_ as a +Numeric+ object.
  *
@@ -1327,7 +1328,7 @@ nurat_round_common(int argc, VALUE *argv, VALUE self,
 /*
  * call-seq:
  *   rat.floor               =>  integer
- *   rat.floor(precision=0)  =>  numeric
+ *   rat.floor(precision=0)  =>  rational
  *
  * Returns the largest integer less than or equal to _rat_ as an +Integer+
  * object. Contrast with +Rational#ceil+.
@@ -1362,7 +1363,7 @@ nurat_floor_n(int argc, VALUE *argv, VALUE self)
 /*
  * call-seq:
  *   rat.ceil               =>  integer
- *   rat.ceil(precision=0)  =>  numeric
+ *   rat.ceil(precision=0)  =>  rational
  *
  * Returns the smallest integer greater than or equal to _rat_ as an +Integer+
  * object. Contrast with +Rational#floor+.
@@ -1397,7 +1398,7 @@ nurat_ceil_n(int argc, VALUE *argv, VALUE self)
 /*
  * call-seq:
  *   rat.truncate               =>  integer
- *   rat.truncate(precision=0)  =>  numeric
+ *   rat.truncate(precision=0)  =>  rational
  *
  * Truncates self to an integer and returns the result as an +Integer+ object.
  *
@@ -1431,7 +1432,7 @@ nurat_truncate_n(int argc, VALUE *argv, VALUE self)
 /*
  * call-seq:
  *   rat.round               =>  integer
- *   rat.round(precision=0)  =>  numeric
+ *   rat.round(precision=0)  =>  rational
  *
  * Rounds _rat_ to an integer, and returns the result as an +Integer+ object.
  *
@@ -1799,13 +1800,9 @@ float_denominator(VALUE self)
 
 /*
  * call-seq:
- *   nil.to_r  =>  Rational(0, 1)
+ *   nil.to_r  =>  (0/1)
  *
  * Returns a +Rational+ object representing _nil_ as a rational number.
- *
- * For example:
- *
- *     nil.to_r    #=> (0/1)
  */
 static VALUE
 nilclass_to_r(VALUE self)
@@ -2139,7 +2136,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  *     Rational(0.5)    #=> (1/2)
  *     Rational("2/7")  #=> (2/7)
  *     Rational("0.25") #=> (1/4)
- *     Rational(10e3)   #=> (10000/1)
+ *     Rational("10e3") #=> (10000/1)
  *
  * The first argument is the numerator, the second the denominator. If the
  * denominator is not supplied it defaults to 1. The arguments can be

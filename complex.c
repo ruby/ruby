@@ -527,7 +527,7 @@ nucomp_s_polar(VALUE klass, VALUE abs, VALUE arg)
 
 /*
  * call-seq:
- *   cmp.real  =>  numeric
+ *   cmp.real  =>  real
  *
  * Returns the real part.
  */
@@ -540,8 +540,8 @@ nucomp_real(VALUE self)
 
 /*
  * call-seq:
- *   cmp.imag       =>  numeric
- *   cmp.imaginary  =>  numeric
+ *   cmp.imag       =>  real
+ *   cmp.imaginary  =>  real
  *
  * Returns the imaginary part.
  */
@@ -793,9 +793,9 @@ nucomp_expt(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   cmp == numeric  =>  true or false
+ *   cmp == object  =>  true or false
  *
- * Returns true if cmp equals numeric numerically.
+ * Returns true if cmp equals object numerically.
  */
 static VALUE
 nucomp_equal_p(VALUE self, VALUE other)
@@ -843,7 +843,7 @@ nucomp_abs(VALUE self)
 
 /*
  * call-seq:
- *   cmp.abs2  =>  float
+ *   cmp.abs2  =>  real
  *
  * Returns square of the absolute value.
  */
@@ -898,8 +898,8 @@ nucomp_polar(VALUE self)
 
 /*
  * call-seq:
- *   cmp.conj       =>  numeric
- *   cmp.conjucate  =>  numeric
+ *   cmp.conj       =>  complex
+ *   cmp.conjucate  =>  complex
  *
  * Returns the complex conjucate.
  */
@@ -949,7 +949,7 @@ extern VALUE rb_lcm(VALUE x, VALUE y);
 
 /*
  * call-seq:
- *   cmp.denominator  =>  numeric
+ *   cmp.denominator  =>  integer
  *
  * Returns the denominator.
  *
@@ -1559,7 +1559,7 @@ numeric_imag(VALUE self)
 
 /*
  * call-seq:
- *   num.abs2  =>  numeric
+ *   num.abs2  =>  real
  *
  * Returns square of self.
  */
@@ -1573,11 +1573,11 @@ numeric_abs2(VALUE self)
 
 /*
  * call-seq:
- *   num.arg    =>  numeric
- *   num.angle  =>  numeric
- *   num.phase  =>  numeric
+ *   num.arg    =>  float
+ *   num.angle  =>  float
+ *   num.phase  =>  float
  *
- * Returns 0 if the value is positive otherwise pi.
+ * Returns 0 if the value is positive, pi otherwise.
  */
 static VALUE
 numeric_arg(VALUE self)
@@ -1625,14 +1625,14 @@ numeric_conj(VALUE self)
 }
 
 /*
- * Complex provides complex number class.
- * it's so simple.  it's not real.  but really numeric.
+ * Complex provides complex number.
+ * it's simple.  it's not real.  but really numeric.
  *
  *     Complex(0)          #=> (0+0i)
  *     Complex(1, 2)       #=> (1+2i)
  *     Complex.rect(1, 2)  #=> (1+2i)
  *     Complex(1.1, 3.3)   #=> (1.1+3.3i)
- *     Complex(Rational(1, 2),Rational(2, 3))
+ *     Complex(Rational(1, 2), Rational(2, 3))
  *                         #=> ((1/2)+(2/3)*i)
  *     Complex.polar(1, 2) #=> (-0.4161468365471424+0.9092974268256817i)
  *

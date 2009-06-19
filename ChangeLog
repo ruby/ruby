@@ -1,3 +1,11 @@
+Sat Jun 20 08:56:47 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: edited rdoc.
+
+	* rational.c: ditto.
+
+	* numeric.c: ditto.
+
 Sat Jun 20 07:17:52 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/monitor.rb (MonitorMixin::extend_object): should use

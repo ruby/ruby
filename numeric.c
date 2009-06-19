@@ -256,7 +256,7 @@ num_uminus(VALUE num)
 
 /*
  *  call-seq:
- *     num.quo(numeric)  =>  result
+ *     num.quo(numeric)  =>  real
  *
  *  Returns most exact division (rational for integers, float for floats).
  */
@@ -355,7 +355,7 @@ num_divmod(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.modulo(numeric)  =>  result
+ *     num.modulo(numeric)  =>  real
  *
  *     x.modulo(y) means x-y*(x/y).floor
  *
@@ -373,7 +373,7 @@ num_modulo(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.remainder(numeric)  =>  result
+ *     num.remainder(numeric)  =>  real
  *
  *     x.remainder(y) means x-y*(x/y).truncate
  *
@@ -425,8 +425,8 @@ num_int_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.abs        =>  num
- *     num.magnitude  =>  num
+ *     num.abs        =>  numeric
+ *     num.magnitude  =>  numeric
  *
  *  Returns the absolute value of <i>num</i>.
  *
@@ -502,7 +502,7 @@ num_to_int(VALUE num)
  *
  * Document-class: Float
  *
- *  <code>Float</code> objects represent real numbers using the native
+ *  <code>Float</code> objects represent inexact numbers using the native
  *  architecture's double-precision floating point representation.
  */
 
@@ -804,7 +804,7 @@ flo_divmod(VALUE x, VALUE y)
  * Raises <code>float</code> the <code>other</code> power.
  *
  *    2.0**3      #=> 8.0
- *    (-8.0)**0.5 #=> NaN  # try Complex(-8.0)**0.5
+ *    (-8.0)**0.5 #=> NaN  # try (-8.0)**Complex(0.5)
  */
 
 static VALUE
@@ -934,10 +934,10 @@ rb_dbl_cmp(double a, double b)
 
 /*
  *  call-seq:
- *     flt <=> numeric  =>  -1, 0, +1
+ *     flt <=> real  =>  -1, 0, +1
  *
  *  Returns -1, 0, or +1 depending on whether <i>flt</i> is less than,
- *  equal to, or greater than <i>numeric</i>. This is the basis for the
+ *  equal to, or greater than <i>real</i>. This is the basis for the
  *  tests in <code>Comparable</code>.
  */
 
@@ -978,9 +978,9 @@ flo_cmp(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   flt > other  =>  true or false
+ *   flt > real  =>  true or false
  *
- * <code>true</code> if <code>flt</code> is greater than <code>other</code>.
+ * <code>true</code> if <code>flt</code> is greater than <code>real</code>.
  */
 
 static VALUE
@@ -1016,10 +1016,10 @@ flo_gt(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   flt >= other  =>  true or false
+ *   flt >= real  =>  true or false
  *
  * <code>true</code> if <code>flt</code> is greater than
- * or equal to <code>other</code>.
+ * or equal to <code>real</code>.
  */
 
 static VALUE
@@ -1055,9 +1055,9 @@ flo_ge(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   flt < other  =>  true or false
+ *   flt < real  =>  true or false
  *
- * <code>true</code> if <code>flt</code> is less than <code>other</code>.
+ * <code>true</code> if <code>flt</code> is less than <code>real</code>.
  */
 
 static VALUE
@@ -1093,10 +1093,10 @@ flo_lt(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   flt <= other  =>  true or false
+ *   flt <= rael  =>  true or false
  *
  * <code>true</code> if <code>flt</code> is less than
- * or equal to <code>other</code>.
+ * or equal to <code>real</code>.
  */
 
 static VALUE
@@ -1800,12 +1800,12 @@ rb_num2ull(VALUE val)
 
 /*
  *  call-seq:
- *     int.to_i      =>  int
- *     int.to_int    =>  int
- *     int.floor     =>  int
- *     int.ceil      =>  int
- *     int.round     =>  int
- *     int.truncate  =>  int
+ *     int.to_i      =>  integer
+ *     int.to_int    =>  integer
+ *     int.floor     =>  integer
+ *     int.ceil      =>  integer
+ *     int.round     =>  integer
+ *     int.truncate  =>  integer
  *
  *  As <i>int</i> is already an <code>Integer</code>, all these
  *  methods simply return the receiver.
@@ -2329,8 +2329,8 @@ fix_idiv(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    fix % other        =>  numeric
- *    fix.modulo(other)  =>  numeric
+ *    fix % other        =>  real
+ *    fix.modulo(other)  =>  real
  *
  *  Returns <code>fix</code> modulo <code>other</code>.
  *  See <code>numeric.divmod</code> for more information.
@@ -2436,15 +2436,15 @@ int_pow(long x, unsigned long y)
 
 /*
  *  call-seq:
- *    fix ** other  =>  numeric
+ *    fix ** numeric  =>  numeric_result
  *
- *  Raises <code>fix</code> to the <code>other</code> power, which may
+ *  Raises <code>fix</code> to the <code>numeric</code> power, which may
  *  be negative or fractional.
  *
  *    2 ** 3      #=> 8
  *    2 ** -1     #=> 0.5
  *    2 ** 0.5    #=> 1.4142135623731
- *    (-8)**0.5   #=> NaN  # try Complex(-8)**Rational(1,2)
+ *    (-8)**0.5   #=> NaN  # try (-8)**Complex(0.5)
  */
 
 static VALUE
@@ -2554,10 +2554,10 @@ fix_cmp(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix > other  =>  true or false
+ *   fix > real  =>  true or false
  *
  * Returns <code>true</code> if the value of <code>fix</code> is
- * greater than that of <code>other</code>.
+ * greater than that of <code>real</code>.
  */
 
 static VALUE
@@ -2579,10 +2579,10 @@ fix_gt(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix >= other  =>  true or false
+ *   fix >= real  =>  true or false
  *
  * Returns <code>true</code> if the value of <code>fix</code> is
- * greater than or equal to that of <code>other</code>.
+ * greater than or equal to that of <code>real</code>.
  */
 
 static VALUE
@@ -2604,10 +2604,10 @@ fix_ge(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix < other  =>  true or false
+ *   fix < real  =>  true or false
  *
  * Returns <code>true</code> if the value of <code>fix</code> is
- * less than that of <code>other</code>.
+ * less than that of <code>real</code>.
  */
 
 static VALUE
@@ -2629,10 +2629,10 @@ fix_lt(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix <= other  =>  true or false
+ *   fix <= rael  =>  true or false
  *
  * Returns <code>true</code> if the value of <code>fix</code> is
- * less than or equal to that of <code>other</code>.
+ * less than or equal to that of <code>real</code>.
  */
 
 static VALUE
@@ -2682,7 +2682,7 @@ bit_coerce(VALUE x)
 
 /*
  * call-seq:
- *   fix & other  =>  integer
+ *   fix & integer  =>  integer_result
  *
  * Bitwise AND.
  */
@@ -2701,7 +2701,7 @@ fix_and(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix | other  =>  integer
+ *   fix | integer  =>  integer_result
  *
  * Bitwise OR.
  */
@@ -2720,7 +2720,7 @@ fix_or(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix ^ other  =>  integer
+ *   fix ^ integer  =>  integer_result
  *
  * Bitwise EXCLUSIVE OR.
  */
@@ -2868,8 +2868,8 @@ fix_to_f(VALUE num)
 
 /*
  *  call-seq:
- *     fix.abs        =>  fix
- *     fix.magnitude  =>  fix
+ *     fix.abs        =>  integer
+ *     fix.magnitude  =>  integer
  *
  *  Returns the absolute value of <i>fix</i>.
  *
