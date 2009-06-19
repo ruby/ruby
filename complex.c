@@ -814,10 +814,6 @@ nucomp_equal_p(VALUE self, VALUE other)
     return f_equal_p(other, self);
 }
 
-/*
- * call-seq:
- *   cmp.coerce(numeric)  =>  array
- */
 static VALUE
 nucomp_coerce(VALUE self, VALUE other)
 {
@@ -1315,6 +1311,24 @@ make_patterns(void)
 #define id_gsub_bang rb_intern("gsub!")
 #define f_gsub_bang(x,y,z) rb_funcall(x, id_gsub_bang, 2, y, z)
 
+/*
+ * call-seq:
+ *   string.to_c  =>  complex
+ *
+ * Returns a complex which denotes string form.
+ *
+ * For example:
+ *
+ *     '9'.to_c          #=> (9+0i)
+ *     '-3/2'.to_c       #=> ((-3/2)+0i)
+ *     '-i'.to_c         #=> (0-1i)
+ *     '45i'.to_c        #=> (0+45i)
+ *     '3-4i'.to_c       #=> (3-4i)
+ *     '-4e2-4e-2i'.to_c #=> (-400.0-0.04i)
+ *     '-0.0-0.0i'.to_c  #=> (-0.0-0.0i)
+ *     '1/2+3/4i'.to_c   #=> ((1/2)+(3/4)*i)
+ *     'ruby'.to_c       #=> (0+0i)
+ */
 static VALUE
 string_to_c_internal(VALUE self)
 {

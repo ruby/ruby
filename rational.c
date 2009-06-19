@@ -1070,26 +1070,6 @@ nurat_equal_p(VALUE self, VALUE other)
     }
 }
 
-/*
- * call-seq:
- *   rat.coerce(numeric)  =>  array
- *
- * If _numeric_ is a +Rational+ object, returns an +Array+ containing _rat_
- * and _numeric_. Otherwise, returns an +Array+ with both _rat_ and _numeric_
- * represented in the most accurate common format. This coercion mechanism is
- * used by Ruby to handle mixed-type numeric operations: it is intended to
- * find a compatible common type between the two operands of the operator.
- *
- * For example:
- *
- *     Rational(2).coerce(Rational(3))  #=> [(2), (3)]
- *     Rational(5).coerce(7)            #=> [(7, 1), (5, 1)]
- *     Rational(9, 8).coerce(4)         #=> [(4, 1), (9, 8)]
- *     Rational(7, 12).coerce(9.9876)   #=> [9.9876, 0.5833333333333334]
- *     Rational(4).coerce(9/0.0)        #=> [Infinity, 4.0]
- *     Rational(5, 3).coerce('string')  #=> TypeError: String can't be
- *                                      #   coerced into Rational
- */
 static VALUE
 nurat_coerce(VALUE self, VALUE other)
 {
@@ -1360,17 +1340,18 @@ nurat_round_common(int argc, VALUE *argv, VALUE self,
  *
  * For example:
  *
- *     Rational(2, 3).floor   #=> 0
- *     Rational(3).floor      #=> 3
- *     Rational(300.6).floor  #=> 300
- *     Rational(98,71).floor  #=> 1
- *     Rational(-30,2).floor  #=> -15
+ *     Rational(2, 3).floor    #=> 0
+ *     Rational(3).floor       #=> 3
+ *     Rational(300.6).floor   #=> 300
+ *     Rational(98,71).floor   #=> 1
+ *     Rational(-30,2).floor   #=> -15
+ *     Rational(-30,-11).floor #=> 2
  *
- *     Rational(-1.125).floor.to_f     #=> -2.0
- *     Rational(-1.125).floor(1).to_f  #=> -1.2
  *     Rational(-1.125).floor(2).to_f  #=> -1.13
- *     Rational(-1.125).floor(-2).to_f #=> -100.0
+ *     Rational(-1.125).floor(1).to_f  #=> -1.2
+ *     Rational(-1.125).floor.to_f     #=> -2.0
  *     Rational(-1.125).floor(-1).to_f #=> -10.0
+ *     Rational(-1.125).floor(-2).to_f #=> -100.0
  */
 static VALUE
 nurat_floor_n(int argc, VALUE *argv, VALUE self)
@@ -1394,15 +1375,17 @@ nurat_floor_n(int argc, VALUE *argv, VALUE self)
  *
  * For example:
  *
- *     Rational(2, 3).ceil   #=> 1
- *     Rational(3).ceil      #=> 3
- *     Rational(300.6).ceil  #=> 301
- *     Rational(98, 71).ceil #=> 2
- *     Rational(-30, 2).ceil #=> -15
+ *     Rational(2, 3).ceil    #=> 1
+ *     Rational(3).ceil       #=> 3
+ *     Rational(300.6).ceil   #=> 301
+ *     Rational(98, 71).ceil  #=> 2
+ *     Rational(-30, 2).ceil  #=> -15
+ *     Rational(-30,-11).ceil #=> 3
  *
- *     Rational(-1.125).ceil.to_f     #=> -1.0
- *     Rational(-1.125).ceil(1).to_f  #=> -1.1
  *     Rational(-1.125).ceil(2).to_f  #=> -1.12
+ *     Rational(-1.125).ceil(1).to_f  #=> -1.1
+ *     Rational(-1.125).ceil.to_f     #=> -1.0
+ *     Rational(-1.125).ceil(-1).to_f #=> 0.0
  *     Rational(-1.125).ceil(-2).to_f #=> 0.0
  */
 static VALUE
@@ -1778,8 +1761,9 @@ integer_denominator(VALUE self)
  *
  * For example:
  *
- *     0.3.numerator  #=> 5404319552844595  #  machine dependent
- *     lambda{|x| x.numerator.fdiv(x.denominator)}.call(0.3)  #=> 0.3
+ *     n = 0.3.numerator   #=> 5404319552844595  # machine dependent
+ *     d = 0.3.denominator #=> 18014398509481984 # machine dependent
+ *     n.fdiv(d)           #=> 0.3
  */
 static VALUE
 float_numerator(VALUE self)
@@ -1796,10 +1780,7 @@ float_numerator(VALUE self)
  *
  * Returns the denominator of _flo_ as an +Integer+ object.
  *
- * For example:
- *
- *     0.3.denominator  #=> 18014398509481984  # machine dependent
- *     lambda{|x| x.numerator.fdiv(x.denominator)}.call(0.3)  #=> 0.3
+ * See Float#numerator.
  */
 static VALUE
 float_denominator(VALUE self)
