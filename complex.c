@@ -1311,24 +1311,6 @@ make_patterns(void)
 #define id_gsub_bang rb_intern("gsub!")
 #define f_gsub_bang(x,y,z) rb_funcall(x, id_gsub_bang, 2, y, z)
 
-/*
- * call-seq:
- *   string.to_c  =>  complex
- *
- * Returns a complex which denotes string form.
- *
- * For example:
- *
- *     '9'.to_c          #=> (9+0i)
- *     '-3/2'.to_c       #=> ((-3/2)+0i)
- *     '-i'.to_c         #=> (0-1i)
- *     '45i'.to_c        #=> (0+45i)
- *     '3-4i'.to_c       #=> (3-4i)
- *     '-4e2-4e-2i'.to_c #=> (-400.0-0.04i)
- *     '-0.0-0.0i'.to_c  #=> (-0.0-0.0i)
- *     '1/2+3/4i'.to_c   #=> ((1/2)+(3/4)*i)
- *     'ruby'.to_c       #=> (0+0i)
- */
 static VALUE
 string_to_c_internal(VALUE self)
 {
@@ -1428,6 +1410,24 @@ string_to_c_strict(VALUE self)
 #define id_gsub rb_intern("gsub")
 #define f_gsub(x,y,z) rb_funcall(x, id_gsub, 2, y, z)
 
+/*
+ * call-seq:
+ *   str.to_c  =>  complex
+ *
+ * Returns a complex which denotes string form.
+ *
+ * For example:
+ *
+ *     '9'.to_c          #=> (9+0i)
+ *     '-3/2'.to_c       #=> ((-3/2)+0i)
+ *     '-i'.to_c         #=> (0-1i)
+ *     '45i'.to_c        #=> (0+45i)
+ *     '3-4i'.to_c       #=> (3-4i)
+ *     '-4e2-4e-2i'.to_c #=> (-400.0-0.04i)
+ *     '-0.0-0.0i'.to_c  #=> (-0.0-0.0i)
+ *     '1/2+3/4i'.to_c   #=> ((1/2)+(3/4)*i)
+ *     'ruby'.to_c       #=> (0+0i)
+ */
 static VALUE
 string_to_c(VALUE self)
 {
@@ -1591,7 +1591,7 @@ numeric_arg(VALUE self)
  * call-seq:
  *   num.rect  =>  array
  *
- * This means [num, 0].
+ * Returns an array [num, 0].
  */
 static VALUE
 numeric_rect(VALUE self)
@@ -1603,7 +1603,7 @@ numeric_rect(VALUE self)
  * call-seq:
  *   num.polar  =>  array
  *
- * This means [num.abs, num.arg].
+ * Returns an array [num.abs, num.arg].
  */
 static VALUE
 numeric_polar(VALUE self)
@@ -1613,8 +1613,8 @@ numeric_polar(VALUE self)
 
 /*
  * call-seq:
- *   cmp.conj       =>  self
- *   cmp.conjucate  =>  self
+ *   num.conj       =>  self
+ *   num.conjucate  =>  self
  *
  * Returns self.
  */

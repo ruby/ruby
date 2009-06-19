@@ -1723,6 +1723,12 @@ numeric_numerator(VALUE self)
     return f_numerator(f_to_r(self));
 }
 
+/*
+ * call-seq:
+ *   num.denominator  =>  integer
+ *
+ * Returns the denominator of _num_ as an +Integer+ object.
+ */
 static VALUE
 numeric_denominator(VALUE self)
 {
@@ -2009,7 +2015,7 @@ string_to_r_strict(VALUE self)
 
 /*
  * call-seq:
- *   string.to_r  =>  rational
+ *   str.to_r  =>  rational
  *
  * Returns a +Rational+ object representing _string_ as a rational number.
  * Leading and trailing whitespace is ignored. Underscores may be used to

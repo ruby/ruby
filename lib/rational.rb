@@ -1,3 +1,5 @@
+# :enddoc:
+
 class Fixnum
 
   alias quof fdiv

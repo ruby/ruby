@@ -1,8 +1,14 @@
+Sat Jun 20 06:56:31 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: edited rdoc.
+
+	* rational.c: ditto.
+
 Sat Jun 20 05:08:59 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
-	* complex.c; edited rdoc.
+	* complex.c: edited rdoc.
 
-	* rational.c; ditto.
+	* rational.c: ditto.
 
 Sat Jun 20 04:30:35 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 

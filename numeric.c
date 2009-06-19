@@ -425,8 +425,8 @@ num_int_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.abs        =>  num or numeric
- *     num.magnitude  =>  num or numeric
+ *     num.abs        =>  num
+ *     num.magnitude  =>  num
  *
  *  Returns the absolute value of <i>num</i>.
  *
@@ -1172,7 +1172,7 @@ flo_to_f(VALUE num)
 /*
  *  call-seq:
  *     flt.abs        =>  float
- *     flt.magnitude  =>  num or numeric
+ *     flt.magnitude  =>  float
  *
  *  Returns the absolute value of <i>flt</i>.
  *

@@ -1,3 +1,5 @@
+# :enddoc:
+
 require 'cmath'
 
 unless defined?(Math.exp!)
