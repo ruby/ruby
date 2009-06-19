@@ -525,6 +525,12 @@ nucomp_s_polar(VALUE klass, VALUE abs, VALUE arg)
     return f_complex_polar(klass, abs, arg);
 }
 
+/*
+ * call-seq:
+ *   cmp.real  =>  numeric
+ *
+ * Returns the real part.
+ */
 static VALUE
 nucomp_real(VALUE self)
 {
@@ -532,6 +538,13 @@ nucomp_real(VALUE self)
     return dat->real;
 }
 
+/*
+ * call-seq:
+ *   cmp.imag       =>  numeric
+ *   cmp.imaginary  =>  numeric
+ *
+ * Returns the imaginary part.
+ */
 static VALUE
 nucomp_imag(VALUE self)
 {
@@ -539,6 +552,12 @@ nucomp_imag(VALUE self)
     return dat->imag;
 }
 
+/*
+ *  call-seq:
+ *     -cmp  =>  complex
+ *
+ *  Returns negation of the value.
+ */
 static VALUE
 nucomp_negate(VALUE self)
 {
@@ -547,6 +566,12 @@ nucomp_negate(VALUE self)
 			f_negate(dat->real), f_negate(dat->imag));
 }
 
+/*
+ * call-seq:
+ *   cmp + numeric  =>  complex
+ *
+ * Performs addition.
+ */
 static VALUE
 nucomp_add(VALUE self, VALUE other)
 {
@@ -569,6 +594,12 @@ nucomp_add(VALUE self, VALUE other)
     return rb_num_coerce_bin(self, other, '+');
 }
 
+/*
+ * call-seq:
+ *   cmp - numeric  =>  complex
+ *
+ * Performs subtraction.
+ */
 static VALUE
 nucomp_sub(VALUE self, VALUE other)
 {
@@ -591,6 +622,12 @@ nucomp_sub(VALUE self, VALUE other)
     return rb_num_coerce_bin(self, other, '-');
 }
 
+/*
+ * call-seq:
+ *   cmp * numeric  =>  complex
+ *
+ * Performs multiplication.
+ */
 static VALUE
 nucomp_mul(VALUE self, VALUE other)
 {
@@ -645,6 +682,18 @@ nucomp_divide(VALUE self, VALUE other,
     return rb_num_coerce_bin(self, other, id);
 }
 
+/*
+ * call-seq:
+ *   cmp / numeric     =>  complex
+ *   cmp.quo(numeric)  =>  complex
+ *
+ * Performs division.
+ *
+ * For example:
+ *
+ *     Complex(10.0) / 3 #=> (3.3333333333333335+(0/1)*i)
+ *     Complex(10)   / 3 #=> ((10/3)+(0/1)*i)  # not (3+0i)
+ */
 static VALUE
 nucomp_div(VALUE self, VALUE other)
 {
@@ -653,12 +702,33 @@ nucomp_div(VALUE self, VALUE other)
 
 #define nucomp_quo nucomp_div
 
+/*
+ * call-seq:
+ *   cmp.fdiv(numeric)  =>  complex
+ *
+ * Performs division as each part is a float, never returns float.
+ *
+ * For example:
+ *
+ *     Complex(11,22).fdiv(3) #=> (3.6666666666666665+7.333333333333333i)
+ */
 static VALUE
 nucomp_fdiv(VALUE self, VALUE other)
 {
     return nucomp_divide(self, other, f_fdiv, id_fdiv);
 }
 
+/*
+ * call-seq:
+ *   cmp ** numeric  =>  complex
+ *
+ * Performs exponentiation.
+ *
+ * For example:
+ *
+ *     Complex('i')**2            #=> (-1+0i)
+ *     Complex(-8)**Rational(1,3) #=> (1.0000000000000002+1.7320508075688772i)
+ */
 static VALUE
 nucomp_expt(VALUE self, VALUE other)
 {
@@ -721,6 +791,12 @@ nucomp_expt(VALUE self, VALUE other)
     return rb_num_coerce_bin(self, other, id_expt);
 }
 
+/*
+ * call-seq:
+ *   cmp == numeric  =>  true or false
+ *
+ * Returns true if cmp equals numeric numerically.
+ */
 static VALUE
 nucomp_equal_p(VALUE self, VALUE other)
 {
@@ -738,6 +814,10 @@ nucomp_equal_p(VALUE self, VALUE other)
     return f_equal_p(other, self);
 }
 
+/*
+ * call-seq:
+ *   cmp.coerce(numeric)  =>  array
+ */
 static VALUE
 nucomp_coerce(VALUE self, VALUE other)
 {
@@ -751,6 +831,13 @@ nucomp_coerce(VALUE self, VALUE other)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *   cmp.abs        =>  float
+ *   cmp.magnitude  =>  float
+ *
+ * Returns the absolute part of its polar form.
+ */
 static VALUE
 nucomp_abs(VALUE self)
 {
@@ -758,6 +845,12 @@ nucomp_abs(VALUE self)
     return m_hypot(dat->real, dat->imag);
 }
 
+/*
+ * call-seq:
+ *   cmp.abs2  =>  float
+ *
+ * Returns square of the absolute value.
+ */
 static VALUE
 nucomp_abs2(VALUE self)
 {
@@ -766,6 +859,14 @@ nucomp_abs2(VALUE self)
 		 f_mul(dat->imag, dat->imag));
 }
 
+/*
+ * call-seq:
+ *   cmp.arg    =>  float
+ *   cmp.angle  =>  float
+ *   cmp.phase  =>  float
+ *
+ * Returns the angle part of its polar form.
+ */
 static VALUE
 nucomp_arg(VALUE self)
 {
@@ -773,6 +874,13 @@ nucomp_arg(VALUE self)
     return m_atan2_bang(dat->imag, dat->real);
 }
 
+/*
+ * call-seq:
+ *   cmp.rect         =>  array
+ *   cmp.rectangular  =>  array
+ *
+ * Returns an array [cmp.real, cmp.imag].
+ */
 static VALUE
 nucomp_rect(VALUE self)
 {
@@ -780,12 +888,25 @@ nucomp_rect(VALUE self)
     return rb_assoc_new(dat->real, dat->imag);
 }
 
+/*
+ * call-seq:
+ *   cmp.polar  =>  array
+ *
+ * Returns an array [cmp.abs, cmp.arg].
+ */
 static VALUE
 nucomp_polar(VALUE self)
 {
     return rb_assoc_new(f_abs(self), f_arg(self));
 }
 
+/*
+ * call-seq:
+ *   cmp.conj       =>  numeric
+ *   cmp.conjucate  =>  numeric
+ *
+ * Returns the complex conjucate.
+ */
 static VALUE
 nucomp_conj(VALUE self)
 {
@@ -801,6 +922,12 @@ nucomp_true(VALUE self)
 }
 #endif
 
+/*
+ * call-seq:
+ *   cmp.real?  =>  false
+ *
+ * Returns false.
+ */
 static VALUE
 nucomp_false(VALUE self)
 {
@@ -824,6 +951,16 @@ nucomp_inexact_p(VALUE self)
 
 extern VALUE rb_lcm(VALUE x, VALUE y);
 
+/*
+ * call-seq:
+ *   cmp.denominator  =>  numeric
+ *
+ * Returns the denominator.
+ *
+ * This means cmp.real.denominator.lcm(cmp.denominator).
+ *
+ * See Complex#numerator.
+ */
 static VALUE
 nucomp_denominator(VALUE self)
 {
@@ -831,6 +968,22 @@ nucomp_denominator(VALUE self)
     return rb_lcm(f_denominator(dat->real), f_denominator(dat->imag));
 }
 
+/*
+ * call-seq:
+ *   cmp.numerator  =>  numeric
+ *
+ * Returns the numerator.
+ *
+ * For example:
+ *
+ *     c = Complex('1/2+2/3i') #=> ((1/2)+(2/3)*i)
+ *     n = c.numerator         #=> (3+4i)
+ *     d = c.denominator       #=> 6
+ *     n/d                     #=> ((1/2)+(2/3)*i)
+ *     Complex(Rational(n.real, d), Rational(n.imag, d))
+ *                             #=> ((1/2)+(2/3)*i)
+ * See Complex#denominator.
+ */
 static VALUE
 nucomp_numerator(VALUE self)
 {
@@ -929,12 +1082,24 @@ nucomp_format(VALUE self, VALUE (*func)(VALUE))
     return s;
 }
 
+/*
+ * call-seq:
+ *   cmp.to_s  =>  string
+ *
+ * Returns the value as a string.
+ */
 static VALUE
 nucomp_to_s(VALUE self)
 {
     return nucomp_format(self, f_to_s);
 }
 
+/*
+ * call-seq:
+ *   cmp.inspect  =>  string
+ *
+ * Returns the value as a string for inspection.
+ */
 static VALUE
 nucomp_inspect(VALUE self)
 {
@@ -999,6 +1164,12 @@ rb_Complex(VALUE x, VALUE y)
     return nucomp_s_convert(2, a, rb_cComplex);
 }
 
+/*
+ * call-seq:
+ *   cmp.to_i  =>  integer
+ *
+ * Returns the value as an integer if can.
+ */
 static VALUE
 nucomp_to_i(VALUE self)
 {
@@ -1012,6 +1183,12 @@ nucomp_to_i(VALUE self)
     return f_to_i(dat->real);
 }
 
+/*
+ * call-seq:
+ *   cmp.to_f  =>  float
+ *
+ * Returns the value as a float if can.
+ */
 static VALUE
 nucomp_to_f(VALUE self)
 {
@@ -1025,6 +1202,12 @@ nucomp_to_f(VALUE self)
     return f_to_f(dat->real);
 }
 
+/*
+ * call-seq:
+ *   cmp.to_r  =>  rational
+ *
+ * Returns the value as a rational if can.
+ */
 static VALUE
 nucomp_to_r(VALUE self)
 {
@@ -1038,12 +1221,24 @@ nucomp_to_r(VALUE self)
     return f_to_r(dat->real);
 }
 
+/*
+ * call-seq:
+ *   nil.to_c  =>  complex
+ *
+ * Returns zero as a complex.
+ */
 static VALUE
 nilclass_to_c(VALUE self)
 {
     return rb_complex_new1(INT2FIX(0));
 }
 
+/*
+ * call-seq:
+ *   num.to_c  =>  complex
+ *
+ * Returns the value as a complex.
+ */
 static VALUE
 numeric_to_c(VALUE self)
 {
@@ -1323,18 +1518,37 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 
 /* --- */
 
+/*
+ * call-seq:
+ *   num.real  =>  self
+ *
+ * Returns self.
+ */
 static VALUE
 numeric_real(VALUE self)
 {
     return self;
 }
 
+/*
+ * call-seq:
+ *   num.imag       =>  0
+ *   num.imaginary  =>  0
+ *
+ * Returns zero.
+ */
 static VALUE
 numeric_imag(VALUE self)
 {
     return INT2FIX(0);
 }
 
+/*
+ * call-seq:
+ *   num.abs2  =>  numeric
+ *
+ * Returns square of self.
+ */
 static VALUE
 numeric_abs2(VALUE self)
 {
@@ -1343,6 +1557,14 @@ numeric_abs2(VALUE self)
 
 #define id_PI rb_intern("PI")
 
+/*
+ * call-seq:
+ *   num.arg    =>  numeric
+ *   num.angle  =>  numeric
+ *   num.phase  =>  numeric
+ *
+ * Returns 0 if the value is positive otherwise pi.
+ */
 static VALUE
 numeric_arg(VALUE self)
 {
@@ -1351,24 +1573,61 @@ numeric_arg(VALUE self)
     return rb_const_get(rb_mMath, id_PI);
 }
 
+/*
+ * call-seq:
+ *   num.rect  =>  array
+ *
+ * This means [num, 0].
+ */
 static VALUE
 numeric_rect(VALUE self)
 {
     return rb_assoc_new(self, INT2FIX(0));
 }
 
+/*
+ * call-seq:
+ *   num.polar  =>  array
+ *
+ * This means [num.abs, num.arg].
+ */
 static VALUE
 numeric_polar(VALUE self)
 {
     return rb_assoc_new(f_abs(self), f_arg(self));
 }
 
+/*
+ * call-seq:
+ *   cmp.conj       =>  self
+ *   cmp.conjucate  =>  self
+ *
+ * Returns self.
+ */
 static VALUE
 numeric_conj(VALUE self)
 {
     return self;
 }
 
+/*
+ * Complex provides complex number class.
+ * it's so simple.  it's not real.  but really numeric.
+ *
+ *     Complex(0)          #=> (0+0i)
+ *     Complex(1, 2)       #=> (1+2i)
+ *     Complex.rect(1, 2)  #=> (1+2i)
+ *     Complex(1.1, 3.3)   #=> (1.1+3.3i)
+ *     Complex(Rational(1, 2),Rational(2, 3))
+ *                         #=> ((1/2)+(2/3)*i)
+ *     Complex.polar(1, 2) #=> (-0.4161468365471424+0.9092974268256817i)
+ *
+ *     Complex('i')        #=> (0+1i)
+ *     Complex('1+2i')     #=> (1+2i)
+ *     Complex('1.1+3.3i') #=> (1.1+3.3i)
+ *     Complex('1/2+2/3i') #=> ((1/2)+(2/3)*i)
+ *     Complex('1@2')      #=> (-0.4161468365471424+0.9092974268256817i)
+ */
 void
 Init_Complex(void)
 {

@@ -1,3 +1,7 @@
+Sat Jun 20 03:34:16 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: added rdoc.
+
 Fri Jun 19 23:43:38 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* numeric.c: edited rdoc.
