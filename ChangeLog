@@ -1,3 +1,7 @@
+Fri Jun 19 20:39:46 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c: added rdoc.  a patch from Run Paint Run Run.
+
 Fri Jun 19 17:04:59 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (flo_cmp): should always return nil for NaN.
