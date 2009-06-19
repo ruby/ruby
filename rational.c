@@ -1243,29 +1243,6 @@ nurat_quotrem(VALUE self, VALUE other)
 }
 #endif
 
-/*
- * call-seq:
- *   rat.abs  =>  rational
- *
- * Returns the absolute value of _rat_. If _rat_ is positive, it is
- * returned; if _rat_ is negative its negation is returned. The return value
- * is a +Rational+ object.
- *
- * For example:
- *
- *     Rational(2).abs       #=> (2/1)
- *     Rational(-2).abs      #=> (2/1)
- *     Rational(-8, -1).abs  #=> (8/1)
- *     Rational(-20, 7).abs  #=> (20/7)
- */
-static VALUE
-nurat_abs(VALUE self)
-{
-    if (f_positive_p(self))
-	return self;
-    return f_negate(self);
-}
-
 #if 0
 /* :nodoc: */
 static VALUE
@@ -2297,8 +2274,6 @@ Init_Rational(void)
 #if 0
     rb_define_method(rb_cRational, "quotrem", nurat_quotrem, 1);
 #endif
-
-    rb_define_method(rb_cRational, "abs", nurat_abs, 0);
 
 #if 0
     rb_define_method(rb_cRational, "rational?", nurat_true, 0);

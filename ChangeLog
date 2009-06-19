@@ -1,3 +1,7 @@
+Sat Jun 20 04:30:35 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c (nurat_abs); removed.
+
 Sat Jun 20 03:34:16 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: added rdoc.
