@@ -937,6 +937,7 @@ flo_cmp(VALUE x, VALUE y)
     double a, b;
 
     a = RFLOAT_VALUE(x);
+    if (isnan(a)) return Qnil;
     switch (TYPE(y)) {
       case T_FIXNUM:
 	b = (double)FIX2LONG(y);
@@ -955,6 +956,11 @@ flo_cmp(VALUE x, VALUE y)
 	break;
 
       default:
+	if (isinf(a) && (!rb_respond_to(y, rb_intern("infinite?")) ||
+			 !RTEST(rb_funcall(y, rb_intern("infinite?"), 0, 0)))) {
+	    if (a > 0.0) return INT2FIX(1);
+	    return INT2FIX(-1);
+	}
 	return rb_num_coerce_cmp(x, y, rb_intern("<=>"));
     }
     return rb_dbl_cmp(a, b);
