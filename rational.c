@@ -510,12 +510,12 @@ nurat_f_rational(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *   rat.numerator   =>  integer
- * 
+ *   rat.numerator  =>  integer
+ *
  * Returns the numerator of _rat_ as an +Integer+ object.
  *
  * For example:
- * 
+ *
  *     Rational(7).numerator         #=> 7
  *     Rational(7, 1).numerator      #=> 7
  *     Rational(4.3, 40.3).numerator #=> 4841369599423283
@@ -529,16 +529,15 @@ nurat_numerator(VALUE self)
     return dat->num;
 }
 
-
 /*
  * call-seq:
- *   rat.denominator   =>  integer
- * 
+ *   rat.denominator  =>  integer
+ *
  * Returns the denominator of _rat_ as an +Integer+ object. If _rat_ was
  * created without an explicit denominator, +1+ is returned.
  *
  * For example:
- * 
+ *
  *     Rational(7).denominator         #=> 1
  *     Rational(7, 1).denominator      #=> 1
  *     Rational(4.3, 40.3).denominator #=> 45373766245757744
@@ -639,7 +638,7 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 
 /*
  * call-seq:
- *   rat + numeric   =>  numeric_result
+ *   rat + numeric  =>  numeric_result
  *
  * Performs addition. The class of the resulting object depends on
  * the class of _numeric_ and on the magnitude of the
@@ -687,10 +686,10 @@ nurat_add(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   rat - numeric   =>  numeric_result
+ *   rat - numeric  =>  numeric_result
  *
  * Performs subtraction. The class of the resulting object depends on the
- * class of _numeric_ and on the magnitude of the result. 
+ * class of _numeric_ and on the magnitude of the result.
  *
  * A +TypeError+ is raised unless _numeric_ is a +Numeric+ object.
  *
@@ -772,10 +771,10 @@ f_muldiv(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 
 /*
  * call-seq:
- *   rat * numeric   =>  numeric_result
+ *   rat * numeric  =>  numeric_result
  *
  * Performs multiplication. The class of the resulting object depends on
- * the class of _numeric_ and on the magnitude of the result. 
+ * the class of _numeric_ and on the magnitude of the result.
  *
  * A +TypeError+ is raised unless _numeric_ is a +Numeric+ object.
  *
@@ -818,11 +817,11 @@ nurat_mul(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   rat / numeric    =>  numeric_result
- *   rat.quo(numeric) =>  numeric_result
+ *   rat / numeric     =>  numeric_result
+ *   rat.quo(numeric)  =>  numeric_result
  *
  * Performs division. The class of the resulting object depends on the class
- * of _numeric_ and on the magnitude of the result. 
+ * of _numeric_ and on the magnitude of the result.
  *
  * A +TypeError+ is raised unless _numeric_ is a +Numeric+ object. A
  * +ZeroDivisionError+ is raised if _numeric_ is 0.
@@ -872,10 +871,10 @@ nurat_div(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   rat.fdiv(numeric)    =>  float
+ *   rat.fdiv(numeric)  =>  float
  *
  * Performs float division: dividing _rat_ by _numeric_. The return value is a
- * +Float+ object. 
+ * +Float+ object.
  *
  * A +TypeError+ is raised unless _numeric_ is a +Numeric+ object.
  *
@@ -895,7 +894,7 @@ nurat_fdiv(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   rat ** numeric   =>  numeric_result
+ *   rat ** numeric  =>  numeric_result
  *
  * Performs exponentiation, i.e. it raises _rat_ to the exponent _numeric_.
  * The class of the resulting object depends on the class of _numeric_ and on
@@ -906,7 +905,7 @@ nurat_fdiv(VALUE self, VALUE other)
  *
  *     Rational(2, 3)  ** Rational(2, 3)  #=> 0.7631428283688879
  *     Rational(900)   ** Rational(1)     #=> (900/1)
- *     Rational(-2, 9) ** Rational(-9, 2) #=> NaN
+ *     Rational(-2, 9) ** Rational(-9, 2) #=> (4.793639101185069e-13-869.8739233809262i)
  *     Rational(9, 8)  ** 4               #=> (6561/4096)
  *     Rational(20, 9) ** 9.8             #=> 2503.325740344559
  *     Rational(3, 2)  ** 2**3            #=> (6561/256)
@@ -952,6 +951,8 @@ nurat_expt(VALUE self, VALUE other)
 	}
       case T_FLOAT:
       case T_RATIONAL:
+	if (f_negative_p(self))
+	    return f_expt(rb_complex_new1(self), other); /* explicitly */
 	return f_expt(f_to_f(self), other);
       default:
 	return rb_num_coerce_bin(self, other, id_expt);
@@ -960,11 +961,11 @@ nurat_expt(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   rat <=> numeric   =>  -1, 0, +1
+ *   rat <=> numeric  =>  -1, 0, +1
  *
  * Performs comparison. Returns -1, 0, or +1 depending on whether _rat_ is
  * less than, equal to, or greater than _numeric_. This is the basis for the
- * tests in +Comparable+. 
+ * tests in +Comparable+.
  *
  * A +TypeError+ is raised unless _numeric_ is a +Numeric+ object.
  *
@@ -1018,7 +1019,7 @@ nurat_cmp(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   rat == numeric   =>  +true+ or +false+
+ *   rat == numeric  =>  +true+ or +false+
  *
  * Tests for equality. Returns +true+ if _rat_ is equal to _numeric_; +false+
  * otherwise.
@@ -1071,7 +1072,7 @@ nurat_equal_p(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   rat.coerce(numeric)   =>  array
+ *   rat.coerce(numeric)  =>  array
  *
  * If _numeric_ is a +Rational+ object, returns an +Array+ containing _rat_
  * and _numeric_. Otherwise, returns an +Array+ with both _rat_ and _numeric_
@@ -1080,7 +1081,7 @@ nurat_equal_p(VALUE self, VALUE other)
  * find a compatible common type between the two operands of the operator.
  *
  * For example:
- * 
+ *
  *     Rational(2).coerce(Rational(3))  #=> [(2), (3)]
  *     Rational(5).coerce(7)            #=> [(7, 1), (5, 1)]
  *     Rational(9, 8).coerce(4)         #=> [(4, 1), (9, 8)]
@@ -1113,17 +1114,17 @@ nurat_coerce(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   rat.div(numeric)   =>  integer
+ *   rat.div(numeric)  =>  integer
  *
  * Uses +/+ to divide _rat_ by _numeric_, then returns the floor of the result
  * as an +Integer+ object.
  *
  * A +TypeError+ is raised unless _numeric_ is a +Numeric+ object. A
  * +ZeroDivisionError+ is raised if _numeric_ is 0. A +FloatDomainError+ is
- * raised if _numeric_ is 0.0. 
- * 
+ * raised if _numeric_ is 0.0.
+ *
  * For example:
- * 
+ *
  *     Rational(2, 3).div(Rational(2, 3))   #=> 1
  *     Rational(-2, 9).div(Rational(-9, 2)) #=> 0
  *     Rational(3, 4).div(0.1)              #=> 7
@@ -1140,19 +1141,19 @@ nurat_idiv(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   rat.modulo(numeric)   =>  numeric
- *   rat % numeric         =>  numeric
+ *   rat.modulo(numeric)  =>  numeric
+ *   rat % numeric        =>  numeric
  *
- * Returns the modulo of _rat_ and _numeric_ as a +Numeric+ object, i.e.:
+ * Returns the modulo of _rat_ and _numeric_ as a +Numeric+ object.
  *
- *     _rat_-_numeric_*(rat/numeric).floor 
- * 
+ *     x.modulo(y) means x-y*(x/y).floor
+ *
  * A +TypeError+ is raised unless _numeric_ is a +Numeric+ object. A
  * +ZeroDivisionError+ is raised if _numeric_ is 0. A +FloatDomainError+ is
  * raised if _numeric_ is 0.0.
- * 
+ *
  * For example:
- * 
+ *
  *     Rational(2, 3)  % Rational(2, 3)  #=> (0/1)
  *     Rational(2)     % Rational(300)   #=> (2/1)
  *     Rational(-2, 9) % Rational(9, -2) #=> (-2/9)
@@ -1167,20 +1168,19 @@ nurat_mod(VALUE self, VALUE other)
     return f_sub(self, f_mul(other, val));
 }
 
-
 /*
  * call-seq:
- *   rat.divmod(numeric)   =>  array
+ *   rat.divmod(numeric)  =>  array
  *
  * Returns a two-element +Array+ containing the quotient and modulus obtained
- * by dividing _rat_ by _numeric_. Both elements are +Numeric+. 
+ * by dividing _rat_ by _numeric_. Both elements are +Numeric+.
  *
  * A +ZeroDivisionError+ is raised if _numeric_ is 0. A +FloatDomainError+ is
  * raised if _numeric_ is 0.0. A +TypeError+ is raised unless _numeric_ is a
  * +Numeric+ object.
- * 
+ *
  * For example:
- * 
+ *
  *     Rational(3).divmod(3)                   #=> [1, (0/1)]
  *     Rational(4).divmod(3)                   #=> [1, (1/1)]
  *     Rational(5).divmod(3)                   #=> [1, (2/1)]
@@ -1206,24 +1206,24 @@ nurat_quot(VALUE self, VALUE other)
 #endif
 
 /*
- * call-seq: rat.remainder(numeric)   =>  numeric_result
+ * call-seq:
+ *   rat.remainder(numeric)  =>  numeric_result
  *
- * Returns the remainder of dividing _rat_ by _numeric_ as a +Numeric+ object,
- * i.e.:
+ * Returns the remainder of dividing _rat_ by _numeric_ as a +Numeric+ object.
  *
- *     _rat_-_numeric_*(_rat_/_numeric_).truncate
+ *     x.remainder(y) means x-y*(x/y).truncate
  *
  * A +ZeroDivisionError+ is raised if _numeric_ is 0. A +FloatDomainError+ is
  * raised if the result is Infinity or NaN, or _numeric_ is 0.0. A +TypeError+
  * is raised unless _numeric_ is a +Numeric+ object.
  *
  * For example:
- * 
+ *
  *     Rational(3, 4).remainder(Rational(3))   #=> (3/4)
  *     Rational(12,13).remainder(-8)           #=> (12/13)
  *     Rational(2,3).remainder(-Rational(3,2)) #=> (2/3)
  *     Rational(-5,7).remainder(7.1)           #=> -0.7142857142857143
- *     Rational(1).remainder(0)                # ZeroDivisionError: 
+ *     Rational(1).remainder(0)                # ZeroDivisionError:
  *                                             # divided by zero
  */
 static VALUE
@@ -1245,14 +1245,14 @@ nurat_quotrem(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   rat.abs   =>  rational
+ *   rat.abs  =>  rational
  *
  * Returns the absolute value of _rat_. If _rat_ is positive, it is
  * returned; if _rat_ is negative its negation is returned. The return value
- * is a +Rational+ object. 
+ * is a +Rational+ object.
  *
  * For example:
- * 
+ *
  *     Rational(2).abs       #=> (2/1)
  *     Rational(-2).abs      #=> (2/1)
  *     Rational(-8, -1).abs  #=> (8/1)
@@ -1292,12 +1292,15 @@ nurat_ceil(VALUE self)
 
 /*
  * call-seq:
- *   rat.to_i   =>  integer
+ *   rat.to_i  =>  integer
  *
  * Returns _rat_ truncated to an integer as an +Integer+ object.
  *
+ *  Equivalent to
+ *  <i>rat</i>.<code>truncate(</code>.
+ *
  * For example:
- * 
+ *
  *   Rational(2, 3).to_i   #=> 0
  *   Rational(3).to_i      #=> 3
  *   Rational(300.6).to_i  #=> 300
@@ -1366,9 +1369,9 @@ nurat_round_common(int argc, VALUE *argv, VALUE self,
 
 /*
  * call-seq:
- *   rat.floor              =>  integer
- *   rat.floor(precision=0) =>  numeric
- *   
+ *   rat.floor               =>  integer
+ *   rat.floor(precision=0)  =>  numeric
+ *
  * Returns the largest integer less than or equal to _rat_ as an +Integer+
  * object. Contrast with +Rational#ceil+.
  *
@@ -1377,9 +1380,9 @@ nurat_round_common(int argc, VALUE *argv, VALUE self,
  * decimal places. If _precision_ is negative, the result is rounded downwards
  * to the nearest 10**_precision_. By default _precision_ is equal to 0,
  * causing the result to be a whole number.
- * 
+ *
  * For example:
- * 
+ *
  *     Rational(2, 3).floor   #=> 0
  *     Rational(3).floor      #=> 3
  *     Rational(300.6).floor  #=> 300
@@ -1400,9 +1403,9 @@ nurat_floor_n(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   rat.ceil              =>  integer
- *   rat.ceil(precision=0) =>  numeric
- *   
+ *   rat.ceil               =>  integer
+ *   rat.ceil(precision=0)  =>  numeric
+ *
  * Returns the smallest integer greater than or equal to _rat_ as an +Integer+
  * object. Contrast with +Rational#floor+.
  *
@@ -1413,7 +1416,7 @@ nurat_floor_n(int argc, VALUE *argv, VALUE self)
  * causing the result to be a whole number.
  *
  * For example:
- * 
+ *
  *     Rational(2, 3).ceil   #=> 1
  *     Rational(3).ceil      #=> 3
  *     Rational(300.6).ceil  #=> 301
@@ -1445,7 +1448,7 @@ nurat_ceil_n(int argc, VALUE *argv, VALUE self)
  * causing the result to be a whole number.
  *
  * For example:
- * 
+ *
  *     Rational(2, 3).truncate     #=> 0
  *     Rational(3).truncate        #=> 3
  *     Rational(300.6).truncate    #=> 300
@@ -1467,9 +1470,9 @@ nurat_truncate_n(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   rat.round             =>  integer
+ *   rat.round               =>  integer
  *   rat.round(precision=0)  =>  numeric
- * 
+ *
  * Rounds _rat_ to an integer, and returns the result as an +Integer+ object.
  *
  * An optional _precision_ argument can be supplied as an +Integer+. If
@@ -1481,7 +1484,7 @@ nurat_truncate_n(int argc, VALUE *argv, VALUE self)
  * A +TypeError+ is raised if _integer_ is given and not an +Integer+ object.
  *
  * For example:
- * 
+ *
  *     Rational(9, 3.3).round    #=> 3
  *     Rational(9, 3.3).round(1) #=> (27/10)
  *     Rational(9,3.3).round(2)  #=> (273/100)
@@ -1493,7 +1496,7 @@ nurat_truncate_n(int argc, VALUE *argv, VALUE self)
  *     Rational(-123.456).round.to_f     #=> -123.0
  *     Rational(-123.456).round(-1).to_f #=> -120.0
  *     Rational(-123.456).round(-2).to_f #=> -100.0
- * 
+ *
  */
 static VALUE
 nurat_round_n(int argc, VALUE *argv, VALUE self)
@@ -1503,13 +1506,13 @@ nurat_round_n(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   rat.to_f             =>  float
- * 
+ *   rat.to_f  =>  float
+ *
  * Converts _rat_ to a floating point number and returns the result as a
  * +Float+ object.
  *
  * For example:
- * 
+ *
  *     Rational(2).to_f      #=> 2.0
  *     Rational(9, 4).to_f   #=> 2.25
  *     Rational(-3, 4).to_f  #=> -0.75
@@ -1524,12 +1527,12 @@ nurat_to_f(VALUE self)
 
 /*
  * call-seq:
- *   rat.to_r             =>  self
- * 
+ *   rat.to_r  =>  self
+ *
  * Returns self, i.e. a +Rational+ object representing _rat_.
  *
  * For example:
- * 
+ *
  *     Rational(2).to_r      #=> (2/1)
  *     Rational(-8, 6).to_r  #=> (-4/3)
  *     Rational(39.2).to_r   #=> (2758454771764429/70368744177664)
@@ -1571,13 +1574,13 @@ nurat_format(VALUE self, VALUE (*func)(VALUE))
 
 /*
  * call-seq:
- *   rat.to_s             =>  string
- * 
+ *   rat.to_s  =>  string
+ *
  * Returns a +String+ representation of _rat_ in the form
  * "_numerator_/_denominator_".
  *
  * For example:
- * 
+ *
  *     Rational(2).to_s      #=> "2/1"
  *     Rational(-8, 6).to_s  #=> "-4/3"
  *     Rational(0.5).to_s    #=> "1/2"
@@ -1590,13 +1593,13 @@ nurat_to_s(VALUE self)
 
 /*
  * call-seq:
- *   rat.inspect             =>  string
- * 
+ *   rat.inspect  =>  string
+ *
  * Returns a +String+ containing a human-readable representation of _rat_ in
  * the form "(_numerator_/_denominator_)".
  *
  * For example:
- * 
+ *
  *     Rational(2).to_s      #=> "(2/1)"
  *     Rational(-8, 6).to_s  #=> "(-4/3)"
  *     Rational(0.5).to_s    #=> "(1/2)"
@@ -1644,16 +1647,16 @@ nurat_marshal_load(VALUE self, VALUE a)
 
 /*
  * call-seq:
- *   int.gcd(_int2_)             =>  integer
- * 
+ *   int.gcd(_int2_)  =>  integer
+ *
  * Returns the greatest common divisor of _int_ and _int2_: the largest
  * positive integer that divides the two without a remainder. The result is an
- * +Integer+ object. 
+ * +Integer+ object.
  *
  * An +ArgumentError+ is raised unless _int2_ is an +Integer+ object.
  *
  * For example:
- * 
+ *
  *     2.gcd(2)      #=> 2
  *     -2.gcd(2)     #=> 2
  *     8.gcd(6)      #=> 2
@@ -1668,8 +1671,8 @@ rb_gcd(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   int.lcm(_int2_)             =>  integer
- * 
+ *   int.lcm(_int2_)  =>  integer
+ *
  * Returns the least common multiple (or "lowest common multiple") of _int_
  * and _int2_: the smallest positive integer that is a multiple of both
  * integers. The result is an +Integer+ object.
@@ -1677,7 +1680,7 @@ rb_gcd(VALUE self, VALUE other)
  * An +ArgumentError+ is raised unless _int2_ is an +Integer+ object.
  *
  * For example:
- * 
+ *
  *     2.lcm(2)      #=> 2
  *     -2.gcd(2)     #=> 2
  *     8.gcd(6)      #=> 24
@@ -1692,17 +1695,17 @@ rb_lcm(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   int.gcdlcm(_int2_)             =>  array
- * 
+ *   int.gcdlcm(_int2_)  =>  array
+ *
  * Returns a two-element +Array+ containing _int_.gcd(_int2_) and
  * _int_.lcm(_int2_) respectively. That is, the greatest common divisor of
  * _int_ and _int2_, then the least common multiple of _int_ and _int2_. Both
- * elements are +Integer+ objects. 
+ * elements are +Integer+ objects.
  *
  * An +ArgumentError+ is raised unless _int2_ is an +Integer+ object.
  *
  * For example:
- * 
+ *
  *     2.gcdlcm(2)      #=> [2, 2]
  *     -2.gcdlcm(2)     #=> [2, 2]
  *     8.gcdlcm(6)      #=> [2, 24]
@@ -1748,6 +1751,12 @@ rb_Rational(VALUE x, VALUE y)
 #define id_to_r rb_intern("to_r")
 #define f_to_r(x) rb_funcall(x, id_to_r, 0)
 
+/*
+ * call-seq:
+ *   num.numerator  =>  integer
+ *
+ * Returns the numerator of _num_ as an +Integer+ object.
+ */
 static VALUE
 numeric_numerator(VALUE self)
 {
@@ -1760,18 +1769,36 @@ numeric_denominator(VALUE self)
     return f_denominator(f_to_r(self));
 }
 
+/*
+ * call-seq:
+ *   int.numerator  =>  self
+ *
+ * Returns self.
+ */
 static VALUE
 integer_numerator(VALUE self)
 {
     return self;
 }
 
+/*
+ * call-seq:
+ *   int.numerator  =>  1
+ *
+ * Returns 1.
+ */
 static VALUE
 integer_denominator(VALUE self)
 {
     return INT2FIX(1);
 }
 
+/*
+ * call-seq:
+ *   flo.numerator  =>  integer
+ *
+ * Returns the numerator of _flo_ as an +Integer+ object.
+ */
 static VALUE
 float_numerator(VALUE self)
 {
@@ -1781,6 +1808,12 @@ float_numerator(VALUE self)
     return rb_call_super(0, 0);
 }
 
+/*
+ * call-seq:
+ *   flo.denominator  =>  integer
+ *
+ * Returns the denominator of _flo_ as an +Integer+ object.
+ */
 static VALUE
 float_denominator(VALUE self)
 {
@@ -1792,12 +1825,12 @@ float_denominator(VALUE self)
 
 /*
  * call-seq:
- *   nil.to_r             =>  Rational(0, 1)
- * 
+ *   nil.to_r  =>  Rational(0, 1)
+ *
  * Returns a +Rational+ object representing _nil_ as a rational number.
  *
  * For example:
- * 
+ *
  *     nil.to_r    #=> (0/1)
  */
 static VALUE
@@ -1809,12 +1842,12 @@ nilclass_to_r(VALUE self)
 
 /*
  * call-seq:
- *   int.to_r             =>  rational
- * 
+ *   int.to_r  =>  rational
+ *
  * Returns a +Rational+ object representing _int_ as a rational number.
  *
  * For example:
- * 
+ *
  *     1.to_r    #=> (1/1)
  *     12.to_r   #=> (12/1)
  */
@@ -1850,13 +1883,13 @@ float_decode(VALUE self)
 
 /*
  * call-seq:
- *   flt.to_r             =>  rational
- * 
+ *   flt.to_r  =>  rational
+ *
  * Returns _flt_ as an +Rational+ object. Raises a +FloatDomainError+ if _flt_
  * is +Infinity+ or +NaN+.
  *
  * For example:
- * 
+ *
  *     2.0.to_r      #=> (2/1)
  *     2.5.to_r      #=> (5/2)
  *     -0.75.to_r    #=> (-3/4)
@@ -2009,15 +2042,15 @@ string_to_r_strict(VALUE self)
 
 /*
  * call-seq:
- *   string.to_r             =>  rational
- * 
+ *   string.to_r  =>  rational
+ *
  * Returns a +Rational+ object representing _string_ as a rational number.
  * Leading and trailing whitespace is ignored. Underscores may be used to
  * separate numbers. If _string_ is not recognised as a rational, (0/1) is
  * returned.
- * 
+ *
  * For example:
- * 
+ *
  *     "2".to_r      #=> (2/1)
  *     "300/2".to_r  #=> (150/1)
  *     "-9.2/3".to_r #=> (-46/15)
@@ -2137,14 +2170,14 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  *
  * The first argument is the numerator, the second the denominator. If the
  * denominator is not supplied it defaults to 1. The arguments can be
- * +Numeric+ or +String+ objects. 
+ * +Numeric+ or +String+ objects.
  *
  *     Rational(12) == Rational(12, 1) #=> true
  *
  * A +ZeroDivisionError+ will be raised if 0 is specified as the denominator:
  *
  *     Rational(3, 0)  #=> ZeroDivisionError: divided by zero
- * 
+ *
  * The numerator and denominator of a +Rational+ object can be retrieved with
  * the +Rational#numerator+ and +Rational#denominator+ accessors,
  * respectively.
@@ -2163,28 +2196,28 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  *     30.to_r          #=> (30/1)
  *     3.33.to_r        #=> (1874623344892969/562949953421312)
  *     '33/3'.to_r      #=> (11/1)
- * 
+ *
  * The reverse operations work as you would expect:
- *    
+ *
  *     Rational(30, 1).to_i                              #=> 30
  *     Rational(1874623344892969, 562949953421312).to_f  #=> 3.33
  *     Rational(11, 1).to_s                              #=> "11/1"
- *     
+ *
  * +Rational+ objects can be compared with other +Numeric+ objects using the
  * normal semantics:
  *
  *     Rational(20, 10) == Rational(2, 1) #=> true
  *     Rational(10) > Rational(1)         #=> true
  *     Rational(9, 2) <=> Rational(8, 3)  #=> 1
- * 
+ *
  * Similarly, standard mathematical operations support +Rational+ objects, too:
  *
  *     Rational(9, 2) * 2                #=> (9/1)
  *     Rational(12, 29) / Rational(2,3)  #=> (18/29)
  *     Rational(7,5) + Rational(60)      #=> (307/5)
  *     Rational(22, 5) - Rational(5, 22) #=> (459/110)
- *     Rational(2,3) ** 3                #=> (8/27)       
- */ 
+ *     Rational(2,3) ** 3                #=> (8/27)
+ */
 void
 Init_Rational(void)
 {
@@ -2249,7 +2282,7 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "divmod", nurat_divmod, 1);
 
 #if 0
-    rb_define_method(rb_cRational, "quot", nurat_quot, 1); 
+    rb_define_method(rb_cRational, "quot", nurat_quot, 1);
 #endif
     rb_define_method(rb_cRational, "remainder", nurat_rem, 1);
 #if 0

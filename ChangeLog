@@ -1,3 +1,18 @@
+Fri Jun 19 22:21:17 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* numeric.c: edited rdoc.
+
+Fri Jun 19 21:56:01 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c (nurat_expt): delegates to complex when self is
+	  negative.  bacause Float#** does not produce complex.
+
+Fri Jun 19 21:40:58 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* numeric.c: edited rdoc.
+
+	* rational.c: ditto.
+
 Fri Jun 19 20:53:54 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* encoding.c (rb_enc_name_list): update RDoc.  [ruby-core:23926]
