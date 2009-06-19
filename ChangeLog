@@ -1,3 +1,9 @@
+Fri Jun 19 09:28:45 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* numeric.c (*_numerator,*_denominator): moved to rational.c.
+
+	* rational.c (*_numerator,*_denominator): moved from numeric.c.
+
 Fri Jun 19 08:14:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (big_lshift, big_rshift): return Bignum always withou
