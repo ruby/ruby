@@ -1,3 +1,9 @@
+Sat Jun 20 07:17:52 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/monitor.rb (MonitorMixin::extend_object): should use
+	  #__send__ instead of #send to avoid possible name conflict.  
+	  [ruby-core:23907]
+
 Sat Jun 20 06:56:31 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: edited rdoc.
