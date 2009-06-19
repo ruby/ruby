@@ -1798,6 +1798,11 @@ integer_denominator(VALUE self)
  *   flo.numerator  =>  integer
  *
  * Returns the numerator of _flo_ as an +Integer+ object.
+ *
+ * For example:
+ *
+ *     0.3.numerator  #=> 5404319552844595  #  machine dependent
+ *     lambda{|x| x.numerator.fdiv(x.denominator)}.call(0.3)  #=> 0.3
  */
 static VALUE
 float_numerator(VALUE self)
@@ -1813,6 +1818,11 @@ float_numerator(VALUE self)
  *   flo.denominator  =>  integer
  *
  * Returns the denominator of _flo_ as an +Integer+ object.
+ *
+ * For example:
+ *
+ *     0.3.denominator  #=> 18014398509481984  # machine dependent
+ *     lambda{|x| x.numerator.fdiv(x.denominator)}.call(0.3)  #=> 0.3
  */
 static VALUE
 float_denominator(VALUE self)
@@ -1838,7 +1848,6 @@ nilclass_to_r(VALUE self)
 {
     return rb_rational_new1(INT2FIX(0));
 }
-
 
 /*
  * call-seq:
