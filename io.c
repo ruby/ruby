@@ -7197,7 +7197,7 @@ pipe_pair_close(VALUE rw)
  *  If a block is given, the block is called and
  *  returns the value of the block.
  *  <i>read_io</i> and <i>write_io</i> are sent to the block as arguments.
- *   In this form, read_io and write_io are closed when IO.pipe returns.
+ *  If read_io and write_io are not closed when IO.pipe returns, they are closed.
  *
  *  Not available on all platforms.
  *
