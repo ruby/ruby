@@ -279,6 +279,7 @@ cont_capture(volatile int *stat)
 	VALUE value;
 
 	value = cont->value;
+	if (cont->argc == -1) rb_exc_raise(value);
 	cont->value = Qnil;
 	*stat = 1;
 	return value;
@@ -832,6 +833,7 @@ fiber_store(rb_fiber_t *next_fib)
     if (ruby_setjmp(fib->cont.jmpbuf)) {
 	/* restored */
 	GetFiberPtr(th->fiber, fib);
+	if (fib->cont.argc == -1) rb_exc_raise(fib->cont.value);
 	return fib->cont.value;
     }
     else {
@@ -857,7 +859,15 @@ fiber_switch(VALUE fibval, int argc, VALUE *argv, int is_resume)
 	rb_raise(rb_eFiberError, "fiber called across trap");
     }
     else if (fib->status == TERMINATED) {
-	rb_raise(rb_eFiberError, "dead fiber called");
+	value = rb_exc_new2(rb_eFiberError, "dead fiber called");
+	if (th->fiber != fibval) rb_exc_raise(value);
+	fibval = fib->prev;
+	if (NIL_P(fibval)) fibval = th->root_fiber;
+	GetFiberPtr(fibval, fib);
+	cont = &fib->cont;
+	cont->argc = -1;
+	cont->value = value;
+	cont_restore_0(cont, &value);
     }
 
     if (is_resume) {
@@ -868,7 +878,7 @@ fiber_switch(VALUE fibval, int argc, VALUE *argv, int is_resume)
     cont->value = make_passing_arg(argc, argv);
 
     if ((value = fiber_store(fib)) == Qundef) {
-	cont_restore_0(&fib->cont, &value);
+	cont_restore_0(cont, &value);
 	rb_bug("rb_fiber_resume: unreachable");
     }
 

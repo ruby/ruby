@@ -1,3 +1,10 @@
+Mon Jun  1 11:21:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (cont_capture, fiber_store): reraise transferred error.
+
+	* cont.c (fiber_switch): transfers dead fiber error to the previouse
+	  or root fiber if the current fiber is dead.  [ruby-core:23651]
+
 Mon Jun  1 07:20:02 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_f): returns Inf if

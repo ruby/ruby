@@ -164,5 +164,10 @@ class TestFiber < Test::Unit::TestCase
     assert_equal(nil, Thread.current[:v]); fb.resume
     assert_equal(nil, Thread.current[:v]);
   end
+
+  def test_resume_self
+    f = Fiber.new {f.resume}
+    assert_raise(FiberError, '[ruby-core:23651]') {f.transfer}
+  end
 end
 
