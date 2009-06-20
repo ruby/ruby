@@ -381,7 +381,7 @@ VALUE rb_str_export(VALUE);
 VALUE rb_str_export_locale(VALUE);
 
 VALUE rb_get_path(VALUE);
-#define FilePathValue(v) ((v) = rb_get_path(v))
+#define FilePathValue(v) (RB_GC_GUARD(v) = rb_get_path(v))
 
 VALUE rb_get_path_no_checksafe(VALUE);
 #define FilePathStringValue(v) ((v) = rb_get_path_no_checksafe(v))
