@@ -770,7 +770,7 @@ class TestM17N < Test::Unit::TestCase
     #assert_strenc("\"\xC2\xA1\"", 'Windows-31J', s("%p") % s("\xc2\xa1"))
     assert_strenc("\"\xC2\xA1\"", 'UTF-8', u("%p") % u("\xc2\xa1"))
 
-    assert_strenc('"\xC2\xA1"', 'US-ASCII', "%10p" % a("\xc2\xa1"))
+    assert_strenc('"\xC2\xA1"', 'ASCII-8BIT', "%10p" % a("\xc2\xa1"))
     assert_strenc("       \"\xC2\xA1\"", 'EUC-JP', "%10p" % e("\xc2\xa1"))
     #assert_strenc("       \"\xC2\xA1\"", 'Windows-31J', "%10p" % s("\xc2\xa1"))
     assert_strenc("       \"\xC2\xA1\"", 'UTF-8', "%10p" % u("\xc2\xa1"))
