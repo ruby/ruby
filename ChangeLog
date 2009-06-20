@@ -1,4 +1,8 @@
-Sat May 23 18:48:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat May 23 18:53:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/lib/dl/cparser.rb (DL::CParser#parse_struct_signature):
+	  splitting with regexp source string is obsolete.  a patch from
+	  Minwoo Lee at [ruby-core:23494].
 
 	* ext/dl/cptr.c (rb_dlptr_cmp): return signed value, and restric
 	  to Fixnum.  [ruby-dev:38533]

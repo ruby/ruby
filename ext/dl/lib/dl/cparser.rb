@@ -2,7 +2,7 @@ module DL
   module CParser
     def parse_struct_signature(signature, tymap=nil)
       if( signature.is_a?(String) )
-        signature = signature.split("\s*,\s*")
+        signature = signature.split(/\s*,\s*/)
       end
       mems = []
       tys  = []
