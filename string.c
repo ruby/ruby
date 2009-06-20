@@ -6645,6 +6645,7 @@ rb_str_partition(VALUE str, VALUE sep)
 	    rb_raise(rb_eTypeError, "type mismatch: %s given",
 		     rb_obj_classname(sep));
 	}
+	sep = tmp;
 	pos = rb_str_index(str, sep, 0);
     }
     if (pos < 0) {
@@ -6692,6 +6693,7 @@ rb_str_rpartition(VALUE str, VALUE sep)
 	    rb_raise(rb_eTypeError, "type mismatch: %s given",
 		     rb_obj_classname(sep));
 	}
+	sep = tmp;
 	pos = rb_str_sublen(str, pos);
 	pos = rb_str_rindex(str, sep, pos);
     }
