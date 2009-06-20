@@ -1092,91 +1092,6 @@ nurat_coerce(VALUE self, VALUE other)
     return Qnil;
 }
 
-/*
- * call-seq:
- *   rat.div(numeric)  =>  integer
- *
- * Uses +/+ to divide _rat_ by _numeric_, then returns the floor of the result
- * as an +Integer+ object.
- *
- * A +TypeError+ is raised unless _numeric_ is a +Numeric+ object. A
- * +ZeroDivisionError+ is raised if _numeric_ is 0. A +FloatDomainError+ is
- * raised if _numeric_ is 0.0.
- *
- * For example:
- *
- *     Rational(2, 3).div(Rational(2, 3))   #=> 1
- *     Rational(-2, 9).div(Rational(-9, 2)) #=> 0
- *     Rational(3, 4).div(0.1)              #=> 7
- *     Rational(-9).div(9.9)                #=> -1
- *     Rational(3.12).div(0.5)              #=> 6
- *     Rational(200, 51).div(0)             #=> ZeroDivisionError:
- *                                          #   divided by zero
- */
-static VALUE
-nurat_idiv(VALUE self, VALUE other)
-{
-    return f_floor(f_div(self, other));
-}
-
-/*
- * call-seq:
- *   rat.modulo(numeric)  =>  real
- *   rat % numeric        =>  real
- *
- * Returns the modulo of _rat_ and _numeric_ as a +Numeric+ object.
- *
- *     x.modulo(y) means x-y*(x/y).floor
- *
- * A +TypeError+ is raised unless _numeric_ is a +Numeric+ object. A
- * +ZeroDivisionError+ is raised if _numeric_ is 0. A +FloatDomainError+ is
- * raised if _numeric_ is 0.0.
- *
- * For example:
- *
- *     Rational(2, 3)  % Rational(2, 3)  #=> (0/1)
- *     Rational(2)     % Rational(300)   #=> (2/1)
- *     Rational(-2, 9) % Rational(9, -2) #=> (-2/9)
- *     Rational(8.2)   % 3.2             #=> 1.799999999999999
- *     Rational(198.1) % 2.3e3           #=> 198.1
- *     Rational(2, 5)  % 0.0             #=> FloatDomainError: Infinity
- */
-static VALUE
-nurat_mod(VALUE self, VALUE other)
-{
-    VALUE val = f_floor(f_div(self, other));
-    return f_sub(self, f_mul(other, val));
-}
-
-/*
- * call-seq:
- *   rat.divmod(numeric)  =>  array
- *
- * Returns a two-element +Array+ containing the quotient and modulus
- * obtained by dividing _rat_ by _numeric_. The first element is
- * an integer. The second selement is a real.
- *
- * A +ZeroDivisionError+ is raised if _numeric_ is 0. A +FloatDomainError+ is
- * raised if _numeric_ is 0.0. A +TypeError+ is raised unless _numeric_ is a
- * +Numeric+ object.
- *
- * For example:
- *
- *     Rational(3).divmod(3)                   #=> [1, (0/1)]
- *     Rational(4).divmod(3)                   #=> [1, (1/1)]
- *     Rational(5).divmod(3)                   #=> [1, (2/1)]
- *     Rational(6).divmod(3)                   #=> [2, (0/1)]
- *     Rational(2, 3).divmod(Rational(2, 3))   #=> [1, (0/1)]
- *     Rational(-2, 9).divmod(Rational(9, -2)) #=> [0, (-2/9)]
- *     Rational(11.5).divmod(Rational(3.5))    #=> [3, (1/1)]
- */
-static VALUE
-nurat_divmod(VALUE self, VALUE other)
-{
-    VALUE val = f_floor(f_div(self, other));
-    return rb_assoc_new(val, f_sub(self, f_mul(other, val)));
-}
-
 #if 0
 /* :nodoc: */
 static VALUE
@@ -1184,37 +1099,8 @@ nurat_quot(VALUE self, VALUE other)
 {
     return f_truncate(f_div(self, other));
 }
-#endif
 
-/*
- * call-seq:
- *   rat.remainder(numeric)  =>  real
- *
- * Returns the remainder of dividing _rat_ by _numeric_ as a +Numeric+ object.
- *
- *     x.remainder(y) means x-y*(x/y).truncate
- *
- * A +ZeroDivisionError+ is raised if _numeric_ is 0. A +FloatDomainError+ is
- * raised if the result is Infinity or NaN, or _numeric_ is 0.0. A +TypeError+
- * is raised unless _numeric_ is a +Numeric+ object.
- *
- * For example:
- *
- *     Rational(3, 4).remainder(Rational(3))   #=> (3/4)
- *     Rational(12,13).remainder(-8)           #=> (12/13)
- *     Rational(2,3).remainder(-Rational(3,2)) #=> (2/3)
- *     Rational(-5,7).remainder(7.1)           #=> -0.7142857142857143
- *     Rational(1).remainder(0)                # ZeroDivisionError:
- *                                             # divided by zero
- */
-static VALUE
-nurat_rem(VALUE self, VALUE other)
-{
-    VALUE val = f_truncate(f_div(self, other));
-    return f_sub(self, f_mul(other, val));
-}
 
-#if 0
 /* :nodoc: */
 static VALUE
 nurat_quotrem(VALUE self, VALUE other)
@@ -2241,21 +2127,12 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "==", nurat_equal_p, 1);
     rb_define_method(rb_cRational, "coerce", nurat_coerce, 1);
 
-    rb_define_method(rb_cRational, "div", nurat_idiv, 1);
-
 #if 0 /* NUBY */
     rb_define_method(rb_cRational, "//", nurat_idiv, 1);
 #endif
 
-    rb_define_method(rb_cRational, "modulo", nurat_mod, 1);
-    rb_define_method(rb_cRational, "%", nurat_mod, 1);
-    rb_define_method(rb_cRational, "divmod", nurat_divmod, 1);
-
 #if 0
     rb_define_method(rb_cRational, "quot", nurat_quot, 1);
-#endif
-    rb_define_method(rb_cRational, "remainder", nurat_rem, 1);
-#if 0
     rb_define_method(rb_cRational, "quotrem", nurat_quotrem, 1);
 #endif
 

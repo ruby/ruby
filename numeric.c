@@ -282,8 +282,6 @@ num_fdiv(VALUE x, VALUE y)
 }
 
 
-static VALUE num_floor(VALUE num);
-
 /*
  *  call-seq:
  *     num.div(numeric)  =>  integer
@@ -302,9 +300,53 @@ static VALUE
 num_div(VALUE x, VALUE y)
 {
     if (rb_equal(INT2FIX(0), y)) rb_num_zerodiv();
-    return num_floor(rb_funcall(x, '/', 1, y));
+    return rb_funcall(rb_funcall(x, '/', 1, y), rb_intern("floor"), 0);
 }
 
+
+/*
+ *  call-seq:
+ *     num.modulo(numeric)  =>  real
+ *
+ *     x.modulo(y) means x-y*(x/y).floor
+ *
+ *  Equivalent to
+ *  <i>num</i>.<code>divmod(</code><i>aNumeric</i><code>)[1]</code>.
+ *
+ *  See <code>Numeric#divmod</code>.
+ */
+
+static VALUE
+num_modulo(VALUE x, VALUE y)
+{
+    return rb_funcall(x, '-', 1,
+		      rb_funcall(y, '*', 1,
+				 rb_funcall(x, rb_intern("div"), 1, y)));
+}
+
+/*
+ *  call-seq:
+ *     num.remainder(numeric)  =>  real
+ *
+ *     x.remainder(y) means x-y*(x/y).truncate
+ *
+ *  See <code>Numeric#divmod</code>.
+ */
+
+static VALUE
+num_remainder(VALUE x, VALUE y)
+{
+    VALUE z = rb_funcall(x, '%', 1, y);
+
+    if ((!rb_equal(z, INT2FIX(0))) &&
+	((RTEST(rb_funcall(x, '<', 1, INT2FIX(0))) &&
+	  RTEST(rb_funcall(y, '>', 1, INT2FIX(0)))) ||
+	 (RTEST(rb_funcall(x, '>', 1, INT2FIX(0))) &&
+	  RTEST(rb_funcall(y, '<', 1, INT2FIX(0)))))) {
+	return rb_funcall(z, '-', 1, y);
+    }
+    return z;
+}
 
 /*
  *  call-seq:
@@ -350,49 +392,7 @@ num_div(VALUE x, VALUE y)
 static VALUE
 num_divmod(VALUE x, VALUE y)
 {
-    return rb_assoc_new(num_div(x, y), rb_funcall(x, '%', 1, y));
-}
-
-/*
- *  call-seq:
- *     num.modulo(numeric)  =>  real
- *
- *     x.modulo(y) means x-y*(x/y).floor
- *
- *  Equivalent to
- *  <i>num</i>.<code>divmod(</code><i>aNumeric</i><code>)[1]</code>.
- *
- *  See <code>Numeric#divmod</code>.
- */
-
-static VALUE
-num_modulo(VALUE x, VALUE y)
-{
-    return rb_funcall(x, '%', 1, y);
-}
-
-/*
- *  call-seq:
- *     num.remainder(numeric)  =>  real
- *
- *     x.remainder(y) means x-y*(x/y).truncate
- *
- *  See <code>Numeric#divmod</code>.
- */
-
-static VALUE
-num_remainder(VALUE x, VALUE y)
-{
-    VALUE z = rb_funcall(x, '%', 1, y);
-
-    if ((!rb_equal(z, INT2FIX(0))) &&
-	((RTEST(rb_funcall(x, '<', 1, INT2FIX(0))) &&
-	  RTEST(rb_funcall(y, '>', 1, INT2FIX(0)))) ||
-	 (RTEST(rb_funcall(x, '>', 1, INT2FIX(0))) &&
-	  RTEST(rb_funcall(y, '<', 1, INT2FIX(0)))))) {
-	return rb_funcall(z, '-', 1, y);
-    }
-    return z;
+    return rb_assoc_new(num_div(x, y), num_modulo(x, y));
 }
 
 /*
@@ -3153,6 +3153,7 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "fdiv", num_fdiv, 1);
     rb_define_method(rb_cNumeric, "div", num_div, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);
+    rb_define_method(rb_cNumeric, "%", num_modulo, 1);
     rb_define_method(rb_cNumeric, "modulo", num_modulo, 1);
     rb_define_method(rb_cNumeric, "remainder", num_remainder, 1);
     rb_define_method(rb_cNumeric, "abs", num_abs, 0);

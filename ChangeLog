@@ -1,3 +1,16 @@
+Sat Jun 20 21:11:43 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* numeric.c (num_div): don't use num_floor which is actually
+	  flo_floor.
+
+	* numeric.c (num_modulo): don't call '%'.
+
+	* numeric.c (num_divmod): use num_modulo.
+
+	* numeric.c: defined '%'.
+
+	* rational.c (nurat_idiv,nurat_mod,nurat_divmod,nurat_rem): removed.
+	
 Sat Jun 20 20:28:44 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: edited rdoc.
