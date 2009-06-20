@@ -1,3 +1,8 @@
+Tue May 26 03:38:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_each_char, rb_str_each_codepoint): string
+	  length must be long.
+
 Mon May 25 08:06:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_partition): should use the converted result.  a
