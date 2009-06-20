@@ -380,6 +380,13 @@ nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
     }
 }
 
+/*
+ * call-seq:
+ *   Complex.rect(real[, imag])         =>  complex
+ *   Complex.rectangular(real[, imag])  =>  complex
+ *
+ * Returns a complex object which denotes the given rectangular form.
+ */
 static VALUE
 nucomp_s_new(int argc, VALUE *argv, VALUE klass)
 {
@@ -519,6 +526,12 @@ f_complex_polar(VALUE klass, VALUE x, VALUE y)
 					  f_mul(x, m_sin(y)));
 }
 
+/*
+ * call-seq:
+ *   Complex.polar(abs, arg)  =>  complex
+ *
+ * Returns a complex object which denotes the given polar form.
+ */
 static VALUE
 nucomp_s_polar(VALUE klass, VALUE abs, VALUE arg)
 {

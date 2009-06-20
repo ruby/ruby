@@ -502,8 +502,9 @@ num_to_int(VALUE num)
  *
  * Document-class: Float
  *
- *  <code>Float</code> objects represent inexact numbers using the native
- *  architecture's double-precision floating point representation.
+ *  <code>Float</code> objects represent inexact real numbers using
+ *  the native architecture's double-precision floating point
+ *  representation.
  */
 
 VALUE
