@@ -1,3 +1,8 @@
+Mon May 25 05:32:19 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi/core.rb (CGI::HTTP_STATUS): typo fixed.  a patch from
+	  Nobuhiro IMAI.  [ruby-dev:38538]
+
 Mon May 25 06:25:38 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_hash.rb (TestHash::test_equal2): recursive hashes
