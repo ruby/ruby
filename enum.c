@@ -616,14 +616,14 @@ first_i(VALUE i, VALUE *ary, int argc, VALUE *argv)
 	rb_iter_break();
     }
     else {
-	long n = NUM2LONG(ary[0]);
+	long n = ary[0];
 
+	rb_ary_push(ary[1], i);
+	n--;
 	if (n <= 0) {
 	    rb_iter_break();
 	}
-	rb_ary_push(ary[1], i);
-	n--;
-	ary[0] = INT2NUM(n);
+	ary[0] = n;
     }
     return Qnil;
 }
@@ -648,9 +648,13 @@ enum_first(int argc, VALUE *argv, VALUE obj)
 	ary[0] = ary[1] = Qnil;
     }
     else {
+	long len;
+
 	rb_scan_args(argc, argv, "01", &n);
-	ary[0] = n;
-	ary[1] = rb_ary_new2(NUM2LONG(n));
+	len = NUM2LONG(n);
+	if (len == 0) return rb_ary_new2(0);
+	ary[0] = len;
+	ary[1] = rb_ary_new2(len);
     }
     rb_block_call(obj, id_each, 0, 0, first_i, (VALUE)ary);
 
