@@ -45,7 +45,7 @@ Sat Jun 20 05:08:59 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Sat Jun 20 04:30:35 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
-	* rational.c (nurat_abs); removed.
+	* rational.c (nurat_abs): removed.
 
 Sat Jun 20 03:34:16 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
@@ -57,7 +57,7 @@ Fri Jun 19 23:43:38 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Fri Jun 19 22:58:16 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
-	* rational.c; edited rdoc.
+	* rational.c: edited rdoc.
 
 Fri Jun 19 22:21:17 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
@@ -52301,7 +52301,7 @@ Wed Mar  2 16:03:08 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/tcltklib.c: enforce thread-check and exception-handling to
 	  avoid SEGV trouble.
 
-	* ext/tk/tkutil/tkutil.c; fix a bug on converting a SJIS string array
+	* ext/tk/tkutil/tkutil.c: fix a bug on converting a SJIS string array
 	  to a Tcl's list string.
 
 	* ext/tk/tcltklib.c: wrap Tcl's original "namespace" command to
