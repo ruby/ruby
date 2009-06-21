@@ -1,3 +1,8 @@
+Thu Jun 11 15:27:17 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/prime.rb: documentation typo fixed.  a patch from okkez.
+	  [ruby-dev:38586]
+
 Wed Jun 10 18:15:17 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* dir.c (dir_s_getwd): directory path's encoding should be filesystem's

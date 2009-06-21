@@ -118,7 +118,7 @@ class Prime
   # if no block given. 
   #
   # == Description
-  # Calls +block+ once for each prime numer, passing the prime as
+  # Calls +block+ once for each prime number, passing the prime as
   # a parameter.
   #
   # +ubound+::
@@ -127,7 +127,7 @@ class Prime
   #
   # == Note
   # +Prime+.+new+ returns a object extended by +Prime+::+OldCompatibility+
-  # in order to compatibility to Ruby 1.9, and +Prime+#each is overwritten
+  # in order to compatibility to Ruby 1.8, and +Prime+#each is overwritten
   # by +Prime+::+OldCompatibility+#+each+.
   #
   # +Prime+.+new+ is now obsolete. Use +Prime+.+instance+.+each+ or simply
