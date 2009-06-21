@@ -28,6 +28,7 @@ class Dir
       len = getdir.call(windir, windir.size)
       windir = File.expand_path(windir[0, len])
     end
+    windir.force_encoding(Dir.pwd.encoding)
     temp = File.join(windir.untaint, 'temp')
     @@systmpdir = temp if File.directory?(temp) and File.writable?(temp)
   rescue LoadError
