@@ -1,3 +1,8 @@
+Sun Jun 21 10:46:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (enc_arg): default interanl encoding may not be set.
+	  [ruby-core:23932]
+
 Sat Jun 20 07:17:52 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/monitor.rb (MonitorMixin::extend_object): should use

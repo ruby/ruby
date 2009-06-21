@@ -2394,13 +2394,13 @@ enc_arg(volatile VALUE *arg, const char **name_p, rb_encoding **enc_p)
     int encidx;
     VALUE encval;
 
-    if ((encidx = rb_to_encoding_index(encval = *arg)) < 0) {
+    if (((encidx = rb_to_encoding_index(encval = *arg)) < 0) ||
+	!(enc = rb_enc_from_index(encidx))) {
 	enc = NULL;
 	encidx = 0;
 	n = StringValueCStr(*arg);
     }
     else {
-	enc = rb_enc_from_index(encidx);
 	n = rb_enc_name(enc);
     }
 
