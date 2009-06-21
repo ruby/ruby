@@ -1,3 +1,8 @@
+Thu Jun 18 20:32:11 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* numeric.c ( num_numerator, num_denominator): use
+	  to_r [ruby-core:23910].
+
 Thu Jun 18 01:35:51 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (flo_cmp): Infinity is greater than any bignum

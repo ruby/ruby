@@ -1748,13 +1748,15 @@ rb_num2ull(VALUE val)
 static VALUE
 num_numerator(VALUE num)
 {
-    return rb_funcall(rb_Rational1(num), rb_intern("numerator"), 0);
+    return rb_funcall(rb_funcall(num, rb_intern("to_r"), 0),
+		      rb_intern("numerator"), 0);
 }
 
 static VALUE
 num_denominator(VALUE num)
 {
-    return rb_funcall(rb_Rational1(num), rb_intern("denominator"), 0);
+    return rb_funcall(rb_funcall(num, rb_intern("to_r"), 0),
+		      rb_intern("denominator"), 0);
 }
 
 /*
