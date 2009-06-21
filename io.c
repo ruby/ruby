@@ -8292,7 +8292,7 @@ argf_binmode_p(VALUE argf)
 static VALUE
 argf_skip(VALUE argf)
 {
-    if (ARGF.next_p != -1) {
+    if (ARGF.init_p && ARGF.next_p == 0) {
 	argf_close(ARGF.current_file);
 	ARGF.next_p = 1;
     }

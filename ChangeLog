@@ -1,3 +1,12 @@
+Wed Jun 17 00:31:30 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_argf.rb (TestArgf#test_skip): updated test
+	  according to clarified behavior.
+
+Tue Jun 16 06:40:31 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_skip): should close only when current_file is available.
+
 Mon Jun 15 22:35:31 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* bignum.c (rb_big2db): (-Float::MAX.to_i*2).to_f should return
