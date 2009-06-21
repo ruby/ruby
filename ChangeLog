@@ -1,3 +1,8 @@
+Tue Jun  9 15:13:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_s_glob): fixed rdoc.  a patch from Joseph Pecoraro a
+	  [ruby-core:23767].
+
 Tue Jun  9 10:58:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, win32/Makefile.sub (RMALL): need for distclean-rdoc.
