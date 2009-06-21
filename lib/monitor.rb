@@ -91,13 +91,13 @@ module MonitorMixin
       if timeout
         raise NotImplementedError, "timeout is not implemented yet"
       end
-      @monitor.send(:mon_check_owner)
-      count = @monitor.send(:mon_exit_for_cond)
+      @monitor.__send__(:mon_check_owner)
+      count = @monitor.__send__(:mon_exit_for_cond)
       begin
         @cond.wait(@monitor.instance_variable_get("@mon_mutex"))
         return true
       ensure
-        @monitor.send(:mon_enter_for_cond, count)
+        @monitor.__send__(:mon_enter_for_cond, count)
       end
     end
     
@@ -114,12 +114,12 @@ module MonitorMixin
     end
     
     def signal
-      @monitor.send(:mon_check_owner)
+      @monitor.__send__(:mon_check_owner)
       @cond.signal
     end
     
     def broadcast
-      @monitor.send(:mon_check_owner)
+      @monitor.__send__(:mon_check_owner)
       @cond.broadcast
     end
     
@@ -137,7 +137,7 @@ module MonitorMixin
   
   def self.extend_object(obj)
     super(obj)
-    obj.send(:mon_initialize)
+    obj.__send__(:mon_initialize)
   end
   
   #
