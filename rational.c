@@ -902,6 +902,8 @@ nurat_coerce(VALUE self, VALUE other)
 	return rb_assoc_new(f_rational_new_bang1(CLASS_OF(self), other), self);
       case T_FLOAT:
 	return rb_assoc_new(other, f_to_f(self));
+      case T_RATIONAL:
+	return rb_assoc_new(other, self);
     }
 
     rb_raise(rb_eTypeError, "%s can't be coerced into %s",
