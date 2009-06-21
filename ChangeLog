@@ -1,3 +1,10 @@
+Thu Jun 18 01:35:51 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (flo_cmp): Infinity is greater than any bignum
+	  number.  [ruby-dev:38672]
+
+	* bignum.c (rb_big_cmp): ditto.
+
 Thu Jun 18 01:29:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): drive letter is ascii only.
