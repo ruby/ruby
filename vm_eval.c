@@ -1138,11 +1138,11 @@ NORETURN(static VALUE rb_f_throw _((int, VALUE *)));
 
 /*
  *  call-seq:
- *     throw(symbol [, obj])
+ *     throw(tag [, obj])
  *
  *  Transfers control to the end of the active +catch+ block
- *  waiting for _symbol_. Raises +ArgumentError+ if there
- *  is no +catch+ block for the symbol. The optional second
+ *  waiting for _tag_. Raises +ArgumentError+ if there
+ *  is no +catch+ block for the _tag_. The optional second
  *  parameter supplies a return value for the +catch+ block,
  *  which otherwise defaults to +nil+. For examples, see
  *  <code>Kernel::catch</code>.
@@ -1198,12 +1198,12 @@ rb_throw_obj(VALUE tag, VALUE val)
 
 /*
  *  call-seq:
- *     catch(symbol) {| | block }  > obj
+ *     catch([arg]) {|tag| block }  => obj
  *
  *  +catch+ executes its block. If a +throw+ is
  *  executed, Ruby searches up its stack for a +catch+ block
  *  with a tag corresponding to the +throw+'s
- *  _symbol_. If found, that block is terminated, and
+ *  _tag_. If found, that block is terminated, and
  *  +catch+ returns the value given to +throw+. If
  *  +throw+ is not called, the block terminates normally, and
  *  the value of +catch+ is the value of the last expression
@@ -1225,6 +1225,12 @@ rb_throw_obj(VALUE tag, VALUE val)
  *     2
  *     1
  *     0
+ *
+ *  when _arg_ is given, +catch+ yields it as is, or when no
+ *  _arg_ is given, +catch+ assigns a new unique object to
+ *  +throw+.  this is usefull for nested +catch+.  _arg_ can
+ *  be an arbitrary object, not only Symbol.
+ *
  */
 
 static VALUE
