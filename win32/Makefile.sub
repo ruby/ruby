@@ -66,6 +66,7 @@ AUTOCONF = autoconf
 IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
 RMDIRS = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
+RMALL = $(COMSPEC) /C rmdir /s /q
 CP = copy > nul
 MV = move > nul
 !if !defined(BASERUBY)
