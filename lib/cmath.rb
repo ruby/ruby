@@ -48,7 +48,7 @@ module CMath
   end
 
   def log10(z)
-    if z.real?
+    if z.real? and z >= 0
       log10!(z)
     else
       log(z) / log!(10)
