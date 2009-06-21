@@ -85,6 +85,7 @@ void *alloca ();
 int ruby_gc_debug_indent = 0;
 
 #undef GC_DEBUG
+#define GC_DEBUG
 
 /* for GC profile */
 #define GC_PROFILE_MORE_DETAIL 0
@@ -266,7 +267,7 @@ typedef struct RVALUE {
 	struct RComplex complex;
     } as;
 #ifdef GC_DEBUG
-    char *file;
+    const char *file;
     int   line;
 #endif
 } RVALUE;
@@ -2164,6 +2165,7 @@ os_obj_of(rb_objspace_t *objspace, VALUE of)
     RVALUE *p, *pend;
     volatile VALUE v;
 
+    rb_garbage_collect();
     i = 0;
     while (i < heaps_used) {
         while (0 < i && (uintptr_t)membase < (uintptr_t)heaps[i-1].membase)

@@ -1,3 +1,8 @@
+Mon Jun 15 17:48:42 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (os_obj_of): invoke garbage collection before iteration, to
+	  avoid accessing half recycled object references.  [ruby-dev:38613]
+
 Sat Jun 13 07:06:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_f_catch): updated rdoc about generalized argument,
