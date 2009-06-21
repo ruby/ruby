@@ -1218,6 +1218,57 @@ rb_Rational(VALUE x, VALUE y)
     return nurat_s_convert(2, a, rb_cRational);
 }
 
+#define id_numerator rb_intern("numerator")
+#define f_numerator(x) rb_funcall(x, id_numerator, 0)
+
+#define id_denominator rb_intern("denominator")
+#define f_denominator(x) rb_funcall(x, id_denominator, 0)
+
+#define id_to_r rb_intern("to_r")
+#define f_to_r(x) rb_funcall(x, id_to_r, 0)
+
+static VALUE
+numeric_numerator(VALUE self)
+{
+    return f_numerator(f_to_r(self));
+}
+
+static VALUE
+numeric_denominator(VALUE self)
+{
+    return f_denominator(f_to_r(self));
+}
+
+static VALUE
+integer_numerator(VALUE self)
+{
+    return self;
+}
+
+static VALUE
+integer_denominator(VALUE self)
+{
+    return INT2FIX(1);
+}
+
+static VALUE
+float_numerator(VALUE self)
+{
+    double d = RFLOAT_VALUE(self);
+    if (isinf(d) || isnan(d))
+	return self;
+    return rb_call_super(0, 0);
+}
+
+static VALUE
+float_denominator(VALUE self)
+{
+    double d = RFLOAT_VALUE(self);
+    if (isinf(d) || isnan(d))
+	return INT2FIX(1);
+    return rb_call_super(0, 0);
+}
+
 static VALUE
 nilclass_to_r(VALUE self)
 {
@@ -1593,6 +1644,15 @@ Init_Rational(void)
     rb_define_method(rb_cInteger, "gcd", rb_gcd, 1);
     rb_define_method(rb_cInteger, "lcm", rb_lcm, 1);
     rb_define_method(rb_cInteger, "gcdlcm", rb_gcdlcm, 1);
+
+    rb_define_method(rb_cNumeric, "numerator", numeric_numerator, 0);
+    rb_define_method(rb_cNumeric, "denominator", numeric_denominator, 0);
+
+    rb_define_method(rb_cInteger, "numerator", integer_numerator, 0);
+    rb_define_method(rb_cInteger, "denominator", integer_denominator, 0);
+
+    rb_define_method(rb_cFloat, "numerator", float_numerator, 0);
+    rb_define_method(rb_cFloat, "denominator", float_denominator, 0);
 
     rb_define_method(rb_cNilClass, "to_r", nilclass_to_r, 0);
     rb_define_method(rb_cInteger, "to_r", integer_to_r, 0);

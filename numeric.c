@@ -1355,7 +1355,6 @@ flo_truncate(VALUE num)
     return LONG2FIX(val);
 }
 
-
 /*
  *  call-seq:
  *     num.floor    => integer
@@ -1745,20 +1744,6 @@ rb_num2ull(VALUE val)
 
 #endif  /* HAVE_LONG_LONG */
 
-static VALUE
-num_numerator(VALUE num)
-{
-    return rb_funcall(rb_funcall(num, rb_intern("to_r"), 0),
-		      rb_intern("numerator"), 0);
-}
-
-static VALUE
-num_denominator(VALUE num)
-{
-    return rb_funcall(rb_funcall(num, rb_intern("to_r"), 0),
-		      rb_intern("denominator"), 0);
-}
-
 /*
  * Document-class: Integer
  *
@@ -1957,18 +1942,6 @@ int_ord(num)
     VALUE num;
 {
     return num;
-}
-
-static VALUE
-int_numerator(VALUE num)
-{
-    return num;
-}
-
-static VALUE
-int_denominator(VALUE num)
-{
-    return INT2FIX(1);
 }
 
 /********************************************************************
@@ -3140,9 +3113,6 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "truncate", num_truncate, 0);
     rb_define_method(rb_cNumeric, "step", num_step, -1);
 
-    rb_define_method(rb_cNumeric, "numerator", num_numerator, 0);
-    rb_define_method(rb_cNumeric, "denominator", num_denominator, 0);
-
     rb_cInteger = rb_define_class("Integer", rb_cNumeric);
     rb_undef_alloc_func(rb_cInteger);
     rb_undef_method(CLASS_OF(rb_cInteger), "new");
@@ -3164,9 +3134,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "ceil", int_to_i, 0);
     rb_define_method(rb_cInteger, "truncate", int_to_i, 0);
     rb_define_method(rb_cInteger, "round", int_round, -1);
-
-    rb_define_method(rb_cInteger, "numerator", int_numerator, 0);
-    rb_define_method(rb_cInteger, "denominator", int_denominator, 0);
 
     rb_cFixnum = rb_define_class("Fixnum", rb_cInteger);
 
