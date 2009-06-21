@@ -2665,6 +2665,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	    memcpy(p, s, 2);
 	    p += 2;
 	    s += 2;
+	    rb_enc_associate_index(result, rb_usascii_encindex());
 	}
 	else {
 	    /* specified drive, but not full path */

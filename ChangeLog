@@ -1,3 +1,8 @@
+Thu Jun 18 01:29:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): drive letter is ascii only.
+	  [ruby-dev:38612]
+
 Wed Jun 17 23:46:08 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_coerce): accepts Complex when the imag is
