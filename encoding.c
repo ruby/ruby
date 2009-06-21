@@ -1301,8 +1301,6 @@ rb_enc_name_list_i(st_data_t name, st_data_t idx, st_data_t arg)
  *       "Windows-31J",
  *       "BINARY", "CP932", "eucJP"]
  *
- * This list doesn't include dummy encodings.
- *
  */
 
 static VALUE
