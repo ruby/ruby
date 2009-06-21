@@ -1,3 +1,8 @@
+Fri Jun 12 14:56:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): associate the input encoding when
+	  copying an absolute path.  [ruby-dev:38594]
+
 Thu Jun 11 15:27:17 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/prime.rb: documentation typo fixed.  a patch from okkez.
