@@ -1,3 +1,8 @@
+Fri Jun 19 08:14:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (big_lshift, big_rshift): return Bignum always withou
+	  normalization.  [ruby-dev:38679]
+
 Thu Jun 18 20:32:11 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* numeric.c ( num_numerator, num_denominator): use
@@ -47,7 +52,59 @@ Wed Jun 17 07:36:22 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 	* lib/webrick/httputils.rb (parse_form_data): escape boundary of
 	  multipart/form-data when embed in regexp.
 
+<<<<<<< HEAD:ChangeLog
 Tue Jun 16 22:47:37 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+=======
+Wed Jun 17 07:24:26 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (rb_ary_memsize): added.
+
+	* io.c (rb_io_memsize): added.
+
+	* regcomp.c (onig_memsize): added.
+
+	* string.c (rb_str_memsize): added.
+
+	* transcode.c (rb_transcoding_memsize, rb_econv_memsize): added.
+
+	* variable.c (rb_geneic_ivar_memsize): added.
+
+Wed Jun 17 07:04:33 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_memsize): added.  Use RTypedData instead of RData
+	  for ISeq.
+
+	* vm.c (env_memsize, vm_memsize, thread_memsize): added.  Use
+	  RTypedData instead of RData for Env, VM, Thread.
+
+Wed Jun 17 06:48:28 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* st.c, include/ruby/st.h (st_memsize): added.  This function returns
+	  the memory usage of st_table.
+
+Wed Jun 17 06:19:06 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: New structure RTypedData, added.
+	  This structure incldues more explicit type information for
+	  T_DATA objects.  If RData(obj)->dfree is immediate value `1' on
+	  T_DATA object obj, obj is needed to be accessed with RTYPEDDATA(obj)
+	  instead of RDATA(obj).  A RTypedData structure points the structure
+	  rb_typed_data_t.  rb_typed_data_t includes information such as the
+	  type name of this data, mark and free function what RData includes,
+	  and memsize function show how data consuming the memory size.
+	  Note that you do not need any change existing T_DATA objects.
+	  If you use RDataType instead of RData on T_DATA object,
+	  you can specify explicit type information.
+
+	* gc.c (rb_data_typed_object_alloc, rb_objspace_data_type_memsize,
+	  rb_objspace_data_type_name): added.
+
+Wed Jun 17 06:14:23 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: fix indent.
+
+Wed Jun 17 06:05:03 2009  Koichi Sasada  <ko1@atdot.net>
+>>>>>>> 1b4d30a... * bignum.c (big_lshift, big_rshift): return Bignum always without:ChangeLog
 
 	* io.c (fptr_finalize): skip close(2) for fd 0,1,2.
 
