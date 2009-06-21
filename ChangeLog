@@ -1,3 +1,11 @@
+Wed Jun 17 12:37:37 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* thread.c (ruby_thread_stack_overflow): call rb_exc_raise() on
+	  stack overflows in the signal handler, if sigaltstack is
+	  available.  On stack overflow (and with sigaltstack), the signal
+	  handler is more likely to have room to create an exception
+	  object.  [ruby-core:23813]
+
 Wed Jun 17 08:14:01 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_coerce): accepts Complex instances.

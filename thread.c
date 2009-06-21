@@ -1302,12 +1302,21 @@ rb_thread_signal_exit(void *thptr)
     rb_thread_raise(2, argv, th->vm->main_thread);
 }
 
+#if defined(POSIX_SIGNAL) && defined(SIGSEGV) && defined(HAVE_SIGALTSTACK)
+#define USE_SIGALTSTACK
+#endif
+
 void
 ruby_thread_stack_overflow(rb_thread_t *th)
 {
-    th->errinfo = sysstack_error;
     th->raised_flag = 0;
+#ifdef USE_SIGALTSTACK
+    th->raised_flag = 0;
+    rb_exc_raise(sysstack_error);
+#else
+    th->errinfo = sysstack_error;
     TH_JUMP_TAG(th, TAG_RAISE);
+#endif
 }
 
 int
