@@ -1,3 +1,9 @@
+Fri Jun 19 20:44:45 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: constant COMPLEX_NAME has been removed.
+
+	* rational.c: constant RATIONAL_NAME has been removed.
+
 Fri Jun 19 17:04:59 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (flo_cmp): should always return nil for NaN.
