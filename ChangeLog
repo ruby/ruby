@@ -1,3 +1,9 @@
+Mon Jun 15 18:48:41 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_each_line): should return self.  [ruby-core:23852]
+
+	* io.c (argf_each_byte, argf_each_char): ditto.
+
 Mon Jun 15 17:48:42 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (os_obj_of): invoke garbage collection before iteration, to
