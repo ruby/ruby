@@ -1,3 +1,8 @@
+Sun Jun 21 10:47:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::Entry_#copy_file): open with
+	  default umask.  [ruby-core:23952]
+
 Sun Jun 21 10:46:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (enc_arg): default interanl encoding may not be set.

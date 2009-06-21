@@ -1261,7 +1261,9 @@ module FileUtils
     end
 
     def copy_file(dest)
-      IO.copy_stream(path(),  dest)
+      File.open(dest, 'wb') do |f|
+        IO.copy_stream(path(), f)
+      end
     end
 
     def copy_metadata(path)
