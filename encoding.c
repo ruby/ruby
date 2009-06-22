@@ -456,11 +456,11 @@ require_enc(VALUE enclib)
 static int
 load_encoding(const char *name)
 {
-    VALUE enclib = rb_sprintf("enc/%s", name);
+    VALUE enclib = rb_sprintf("enc/%s.so", name);
     VALUE verbose = ruby_verbose;
     VALUE debug = ruby_debug;
     VALUE loaded;
-    char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib);
+    char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib) - 3;
     int idx;
 
     while (s < e) {

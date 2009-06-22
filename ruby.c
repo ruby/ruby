@@ -1298,7 +1298,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     rb_obj_freeze(opt->script_name);
 
     ruby_init_loadpath_safe(opt->safe_level);
-    rb_enc_find_index("encdb.so");
+    rb_enc_find_index("encdb");
     lenc = rb_locale_encoding();
     rb_enc_associate(rb_progname, lenc);
     parser = rb_parser_new();
