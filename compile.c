@@ -520,7 +520,7 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
     MEMCPY(iseq->iseq_encoded, iseq->iseq, VALUE, iseq->iseq_size);
 
     for (i = 0; i < iseq->iseq_size; /* */ ) {
-	int insn = iseq->iseq_encoded[i];
+	int insn = (int)iseq->iseq_encoded[i];
 	int len = insn_len(insn);
 	iseq->iseq_encoded[i] = (VALUE)table[insn];
 	i += len;
@@ -1066,7 +1066,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	 *  if "r" is 1, it's means "{|x,|}" type block parameter.
 	 */
 
-	iseq->argc = node_args->nd_frml;
+	iseq->argc = (int)node_args->nd_frml;
 	debugs("  - argc: %d\n", iseq->argc);
 
 	if (node_aux) {
@@ -1081,7 +1081,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    if (node_aux) {
 		ID post_start_id = node_aux->nd_pid;
 		iseq->arg_post_start = get_dyna_var_idx_at_raw(iseq, post_start_id);
-		iseq->arg_post_len = node_aux->nd_plen;
+		iseq->arg_post_len = (int)node_aux->nd_plen;
 		node_init = node_aux->nd_next;
 	    }
 	}
@@ -1191,7 +1191,7 @@ iseq_set_local_table(rb_iseq_t *iseq, ID *tbl)
     int size;
 
     if (tbl) {
-	size = *tbl;
+	size = (int)*tbl;
 	tbl++;
     }
     else {
@@ -1544,7 +1544,7 @@ iseq_set_exception_table(rb_iseq_t *iseq)
     int tlen, i;
     struct iseq_catch_table_entry *entry;
 
-    tlen = RARRAY_LEN(iseq->compile_data->catch_table_ary);
+    tlen = (int)RARRAY_LEN(iseq->compile_data->catch_table_ary);
     tptr = RARRAY_PTR(iseq->compile_data->catch_table_ary);
 
     iseq->catch_table = tlen ? ALLOC_N(struct iseq_catch_table_entry, tlen) : 0;
@@ -2237,7 +2237,7 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
 	       VALUE opt_p, int poped)
 {
     NODE *node = node_root;
-    int len = node->nd_alen, line = nd_line(node), i=0;
+    int len = (int)node->nd_alen, line = (int)nd_line(node), i=0;
     DECL_ANCHOR(anchor);
 
     INIT_ANCHOR(anchor);
@@ -2488,7 +2488,7 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int poped)
 		/*a, b, *r, p1, p2 */
 		NODE *postn = splatn->nd_2nd;
 		NODE *restn = splatn->nd_1st;
-		int num = postn->nd_alen;
+		int num = (int)postn->nd_alen;
 		int flag = 0x02 | (((VALUE)restn == (VALUE)-1) ? 0x00 : 0x01);
 
 		ADD_INSN2(ret, nd_line(splatn), expandarray,
@@ -2954,7 +2954,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	return COMPILE_OK;
     }
 
-    iseq->compile_data->last_line = nd_line(node);
+    iseq->compile_data->last_line = (int)nd_line(node);
     debug_node_start(node);
 
     type = nd_type(node);
