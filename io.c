@@ -1319,6 +1319,34 @@ rb_io_fsync(VALUE io)
 #define rb_io_fsync rb_f_notimplement
 #endif
 
+#ifdef HAVE_FDATASYNC
+/*
+ *  call-seq:
+ *     ios.fdatasync   => 0 or nil
+ *
+ *  Immediately writes all buffered data in <em>ios</em> to disk.
+ *  Returns <code>nil</code> if the underlying operating system does not
+ *  support <em>fdatasync(2)</em>.
+ */
+
+static VALUE
+rb_io_fdatasync(VALUE io)
+{
+    rb_io_t *fptr;
+
+    io = GetWriteIO(io);
+    GetOpenFile(io, fptr);
+
+    if (io_fflush(fptr) < 0)
+        rb_sys_fail(0);
+    if (fdatasync(fptr->fd) < 0)
+	rb_sys_fail_path(fptr->pathv);
+    return INT2FIX(0);
+}
+#else
+#define rb_io_fdatasync rb_f_notimplement
+#endif
+
 /*
  *  call-seq:
  *     ios.fileno    => fixnum
@@ -8781,6 +8809,7 @@ Init_IO(void)
     rb_define_method(rb_cIO, "to_io", rb_io_to_io, 0);
 
     rb_define_method(rb_cIO, "fsync",   rb_io_fsync, 0);
+    rb_define_method(rb_cIO, "fdatasync",   rb_io_fdatasync, 0);
     rb_define_method(rb_cIO, "sync",   rb_io_sync, 0);
     rb_define_method(rb_cIO, "sync=",  rb_io_set_sync, 1);
 
