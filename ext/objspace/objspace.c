@@ -34,7 +34,7 @@ size_t rb_ary_memsize(VALUE);
 size_t st_memsize(st_table *);
 size_t rb_io_memsize(rb_io_t *);
 size_t onig_memsize(regex_t *);
-size_t rb_geneic_ivar_memsize(VALUE);
+size_t rb_generic_ivar_memsize(VALUE);
 size_t rb_objspace_data_type_memsize(VALUE obj);
 
 void rb_objspace_each_objects(
@@ -51,7 +51,7 @@ memsize_of(VALUE obj)
     }
 
     if (FL_TEST(obj, FL_EXIVAR)) {
-	size += rb_geneic_ivar_memsize(obj);
+	size += rb_generic_ivar_memsize(obj);
     }
 
     switch (BUILTIN_TYPE(obj)) {

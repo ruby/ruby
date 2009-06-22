@@ -1,3 +1,10 @@
+Mon Jun 22 23:24:22 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_generic_ivar_memsize): typo fixed.  a patch from
+	  Kazuhiro NISHIYAMA.  [ruby-dev:38700]
+
+	* ext/objspace/objspace.c (memsize_of): ditto.
+
 Mon Jun 22 21:21:59 2009  Tanaka Akira  <akr@fsij.org>
 
 	* io.c: remove __CHECKER__ test.

@@ -920,7 +920,7 @@ rb_free_generic_ivar(VALUE obj)
 }
 
 size_t
-rb_geneic_ivar_memsize(VALUE obj)
+rb_generic_ivar_memsize(VALUE obj)
 {
     st_data_t tbl;
     if (st_delete(generic_iv_tbl, &obj, &tbl))
