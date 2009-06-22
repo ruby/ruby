@@ -439,10 +439,6 @@ ruby_init_loadpath_safe(int safe_level)
 	incpush(RUBY_RELATIVE(paths, len));
 	paths += len + 1;
     }
-
-    if (safe_level == 0) {
-	rb_ary_push(load_path, rb_str_new_cstr("."));
-    }
 }
 
 
