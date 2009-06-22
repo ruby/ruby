@@ -1,4 +1,7 @@
-Mon Jun 22 14:35:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jun 22 14:41:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options), enc/prelude.rb: encdb and transdb are
+	  extension libraries.
 
 	* ruby.c (process_options): set progname earlier.
 
