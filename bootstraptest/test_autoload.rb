@@ -70,7 +70,7 @@ assert_finish 5, %q{
 assert_equal 'A::C', %q{
   open("zzz.rb", "w") {}
   class A
-    autoload :C, "zzz"
+    autoload :C, "./zzz"
     class C
     end
     C

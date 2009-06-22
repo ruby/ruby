@@ -228,7 +228,7 @@ assert_equal 'ok', %{
       end
     END
   end
-  require "zzz.rb"
+  require "./zzz.rb"
   $result
 }
 
