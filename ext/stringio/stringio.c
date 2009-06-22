@@ -824,6 +824,37 @@ strio_each_char(VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *   strio.each_codepoint {|c| block }  -> strio
+ *
+ * See IO#each_codepoint.
+ */
+static VALUE
+strio_each_codepoint(VALUE self)
+{
+    struct StringIO *ptr;
+    rb_encoding *enc;
+    unsigned int c;
+    int n;
+
+    RETURN_ENUMERATOR(self, 0, 0);
+
+    ptr = readable(StringIO(self));
+    enc = rb_enc_get(ptr->string);
+    for (;;) {
+	if (ptr->pos >= RSTRING_LEN(ptr->string)) {
+	    return self;
+	}
+
+	c = rb_enc_codepoint_len(RSTRING_PTR(ptr->string)+ptr->pos,
+				 RSTRING_END(ptr->string), &n, enc);
+	rb_yield(UINT2NUM(c));
+	ptr->pos += n;
+    }
+    return self;
+}
+
 /* Boyer-Moore search: copied from regex.c */
 static void
 bm_init_skip(long *skip, const char *pat, long m)
@@ -1359,6 +1390,8 @@ Init_stringio()
     rb_define_method(StringIO, "bytes", strio_each_byte, 0);
     rb_define_method(StringIO, "each_char", strio_each_char, 0);
     rb_define_method(StringIO, "chars", strio_each_char, 0);
+    rb_define_method(StringIO, "each_codepoint", strio_each_codepoint, 0);
+    rb_define_method(StringIO, "codepoints", strio_each_codepoint, 0);
     rb_define_method(StringIO, "getc", strio_getc, 0);
     rb_define_method(StringIO, "ungetc", strio_ungetc, 1);
     rb_define_method(StringIO, "ungetbyte", strio_ungetbyte, 1);

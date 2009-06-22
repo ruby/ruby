@@ -2641,7 +2641,7 @@ rb_io_each_byte(VALUE io)
 	    fptr->rbuf_len--;
 	    rb_yield(INT2FIX(*p & 0xff));
 	    p++;
-    errno = 0;
+	    errno = 0;
 	}
 	rb_io_check_readable(fptr);
 	READ_CHECK(fptr);
@@ -2776,6 +2776,89 @@ rb_io_each_char(VALUE io)
 
 /*
  *  call-seq:
+ *     ios.each_codepoint {|c| block }  => ios
+ *
+ *  Passes the <code>Integer</code> ordinal of each character in <i>ios</i>,
+ *  passing the codepoint as an argument. The stream must be opened for
+ *  reading or an <code>IOError</code> will be raised.
+ */
+
+static VALUE
+rb_io_each_codepoint(VALUE io)
+{
+    rb_io_t *fptr;
+    rb_encoding *enc;
+    unsigned int c;
+    int r, n;
+
+    RETURN_ENUMERATOR(io, 0, 0);
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+
+    READ_CHECK(fptr);
+    if (NEED_READCONV(fptr)) {
+	for (;;) {
+	    make_readconv(fptr, 0);
+	    for (;;) {
+		if (fptr->cbuf_len) {
+		    if (fptr->encs.enc)
+			r = rb_enc_precise_mbclen(fptr->cbuf+fptr->cbuf_off,
+						  fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
+						  fptr->encs.enc);
+		    else
+			r = ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(1);
+		    if (!MBCLEN_NEEDMORE_P(r))
+			break;
+		    if (fptr->cbuf_len == fptr->cbuf_capa) {
+			rb_raise(rb_eIOError, "too long character");
+		    }
+		}
+		if (more_char(fptr) == -1) {
+		    /* ignore an incomplete character before EOF */
+		    return io;
+		}
+	    }
+	    if (MBCLEN_INVALID_P(r)) {
+		rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
+	    }
+	    n = MBCLEN_CHARFOUND_LEN(r);
+	    c = rb_enc_codepoint(fptr->cbuf+fptr->cbuf_off,
+				 fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
+				 fptr->encs.enc);
+	    fptr->rbuf_off += n;
+	    fptr->rbuf_len -= n;
+	    rb_yield(UINT2NUM(c));
+	}
+    }
+    enc = io_input_encoding(fptr);
+    for (;;) {
+	if (io_fillbuf(fptr) < 0) {
+	    return io;
+	}
+	r = rb_enc_precise_mbclen(fptr->rbuf+fptr->rbuf_off,
+				  fptr->rbuf+fptr->rbuf_off+fptr->rbuf_len, enc);
+	if (MBCLEN_CHARFOUND_P(r) &&
+	    (n = MBCLEN_CHARFOUND_LEN(r)) <= fptr->rbuf_len) {
+	    c = rb_enc_codepoint(fptr->rbuf+fptr->rbuf_off,
+				 fptr->rbuf+fptr->rbuf_off+fptr->rbuf_len, enc);
+	    fptr->rbuf_off += n;
+	    fptr->rbuf_len -= n;
+	    rb_yield(UINT2NUM(c));
+	}
+	else if (MBCLEN_INVALID_P(r)) {
+	    rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
+	}
+	else {
+	    continue;
+	}
+    }
+    return io;
+}
+
+
+
+/*
+ *  call-seq:
  *     ios.lines(sep=$/)     => anEnumerator
  *     ios.lines(limit)      => anEnumerator
  *     ios.lines(sep, limit) => anEnumerator
@@ -2834,6 +2917,21 @@ static VALUE
 rb_io_chars(VALUE io)
 {
     return rb_enumeratorize(io, ID2SYM(rb_intern("each_char")), 0, 0);
+}
+
+/*
+ *  call-seq:
+ *     ios.codepoints   => anEnumerator
+ *
+ *  Returns an enumerator that gives each codepoint in <em>ios</em>.
+ *  The stream must be opened for reading or an <code>IOError</code>
+ *  will be raised.
+ */
+
+static VALUE
+rb_io_codepoints(VALUE io)
+{
+    return rb_enumeratorize(io, ID2SYM(rb_intern("each_codepoint")), 0, 0);
 }
 
 /*
@@ -8797,9 +8895,11 @@ Init_IO(void)
     rb_define_method(rb_cIO, "each_line",  rb_io_each_line, -1);
     rb_define_method(rb_cIO, "each_byte",  rb_io_each_byte, 0);
     rb_define_method(rb_cIO, "each_char",  rb_io_each_char, 0);
+    rb_define_method(rb_cIO, "each_codepoint",  rb_io_each_codepoint, 0);
     rb_define_method(rb_cIO, "lines",  rb_io_lines, -1);
     rb_define_method(rb_cIO, "bytes",  rb_io_bytes, 0);
     rb_define_method(rb_cIO, "chars",  rb_io_chars, 0);
+    rb_define_method(rb_cIO, "codepoints",  rb_io_codepoints, 0);
 
     rb_define_method(rb_cIO, "syswrite", rb_io_syswrite, 1);
     rb_define_method(rb_cIO, "sysread",  rb_io_sysread, -1);

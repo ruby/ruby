@@ -340,6 +340,11 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(%w(1 2 3 4), f.each_char.to_a)
   end
 
+  def test_each_codepoint
+    f = StringIO.new("1234")
+    assert_equal([49, 50, 51, 52], f.each_codepoint.to_a)
+  end
+
   def test_gets2
     f = StringIO.new("foo\nbar\nbaz\n")
     assert_equal("fo", f.gets(2))

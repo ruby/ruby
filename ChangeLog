@@ -1,3 +1,10 @@
+Mon Jun 22 17:15:38 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_each_codepoint): new method.
+	  [ruby-core:23949]
+
+	* ext/stringio/stringio.c (strio_each_codepoint): ditto.
+
 Mon Jun 22 16:26:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (ruby_init_loadpath_safe): removed "." from load_path.
