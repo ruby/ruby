@@ -1,3 +1,10 @@
+Mon Jun 22 16:14:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_set_arguments, iseq_compile_each): internal
+	  arrays must be hidden.  [ruby-dev:38613]
+
+	* vm.c (Init_top_self): ditto.
+
 Mon Jun 22 14:41:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options), enc/prelude.rb: encdb and transdb are

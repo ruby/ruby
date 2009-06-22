@@ -1089,7 +1089,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	if (node_opt) {
 	    NODE *node = node_opt;
 	    LABEL *label;
-	    VALUE labels = rb_ary_new();
+	    VALUE labels = rb_ary_tmp_new(1);
 	    int i = 0, j;
 
 	    while (node) {
@@ -1113,6 +1113,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    for (j = 0; j < i; j++) {
 		iseq->arg_opt_table[j] &= ~1;
 	    }
+	    rb_ary_clear(labels);
 	}
 	else {
 	    iseq->arg_opts = 0;
@@ -3013,7 +3014,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	DECL_ANCHOR(head);
 	DECL_ANCHOR(body_seq);
 	DECL_ANCHOR(cond_seq);
-	VALUE special_literals = rb_ary_new();
+	VALUE special_literals = rb_ary_tmp_new(1);
 
 	INIT_ANCHOR(head);
 	INIT_ANCHOR(body_seq);
