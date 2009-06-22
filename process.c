@@ -3315,7 +3315,7 @@ proc_setpgrp(void)
 #endif
 
 
-#if defined(HAVE_GETPGID) && !defined(__CHECKER__)
+#if defined(HAVE_GETPGID)
 /*
  *  call-seq:
  *     Process.getpgid(pid)   => integer
@@ -3939,7 +3939,7 @@ proc_setuid(VALUE obj, VALUE id)
     check_uid_switch();
 
     uid = NUM2UIDT(id);
-#if defined(HAVE_SETRESUID) &&  !defined(__CHECKER__)
+#if defined(HAVE_SETRESUID)
     if (setresuid(uid, -1, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREUID
     if (setreuid(uid, -1) < 0) rb_sys_fail(0);
@@ -4318,7 +4318,7 @@ proc_setgid(VALUE obj, VALUE id)
     check_gid_switch();
 
     gid = NUM2GIDT(id);
-#if defined(HAVE_SETRESGID) && !defined(__CHECKER__)
+#if defined(HAVE_SETRESGID)
     if (setresgid(gid, -1, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREGID
     if (setregid(gid, -1) < 0) rb_sys_fail(0);
@@ -4794,7 +4794,7 @@ proc_seteuid(VALUE obj, VALUE euid)
     check_uid_switch();
 
     uid = NUM2UIDT(euid);
-#if defined(HAVE_SETRESUID) && !defined(__CHECKER__)
+#if defined(HAVE_SETRESUID)
     if (setresuid(-1, uid, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREUID
     if (setreuid(-1, uid) < 0) rb_sys_fail(0);
@@ -4829,7 +4829,7 @@ rb_seteuid_core(rb_uid_t euid)
 
     uid = getuid();
 
-#if defined(HAVE_SETRESUID) && !defined(__CHECKER__)
+#if defined(HAVE_SETRESUID)
     if (uid != euid) {
 	if (setresuid(-1,euid,euid) < 0) rb_sys_fail(0);
 	SAVED_USER_ID = euid;
@@ -4914,7 +4914,7 @@ proc_setegid(VALUE obj, VALUE egid)
     check_gid_switch();
 
     gid = NUM2GIDT(egid);
-#if defined(HAVE_SETRESGID) && !defined(__CHECKER__)
+#if defined(HAVE_SETRESGID)
     if (setresgid(-1, gid, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREGID
     if (setregid(-1, gid) < 0) rb_sys_fail(0);
@@ -4949,7 +4949,7 @@ rb_setegid_core(rb_gid_t egid)
 
     gid = getgid();
 
-#if defined(HAVE_SETRESGID) && !defined(__CHECKER__)
+#if defined(HAVE_SETRESGID)
     if (gid != egid) {
 	if (setresgid(-1,egid,egid) < 0) rb_sys_fail(0);
 	SAVED_GROUP_ID = egid;
@@ -5009,7 +5009,7 @@ p_gid_grant_privilege(VALUE obj, VALUE id)
 static VALUE
 p_uid_exchangeable(void)
 {
-#if defined(HAVE_SETRESUID) &&  !defined(__CHECKER__)
+#if defined(HAVE_SETRESUID)
     return Qtrue;
 #elif defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID)
     return Qtrue;
@@ -5041,7 +5041,7 @@ p_uid_exchange(VALUE obj)
     uid = getuid();
     euid = geteuid();
 
-#if defined(HAVE_SETRESUID) &&  !defined(__CHECKER__)
+#if defined(HAVE_SETRESUID)
     if (setresuid(euid, uid, uid) < 0) rb_sys_fail(0);
     SAVED_USER_ID = uid;
 #elif defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID)
@@ -5066,7 +5066,7 @@ p_uid_exchange(VALUE obj)
 static VALUE
 p_gid_exchangeable(void)
 {
-#if defined(HAVE_SETRESGID) &&  !defined(__CHECKER__)
+#if defined(HAVE_SETRESGID)
     return Qtrue;
 #elif defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID)
     return Qtrue;
@@ -5098,7 +5098,7 @@ p_gid_exchange(VALUE obj)
     gid = getgid();
     egid = getegid();
 
-#if defined(HAVE_SETRESGID) &&  !defined(__CHECKER__)
+#if defined(HAVE_SETRESGID)
     if (setresgid(egid, gid, gid) < 0) rb_sys_fail(0);
     SAVED_GROUP_ID = gid;
 #elif defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID)
@@ -5329,7 +5329,7 @@ p_gid_switch(VALUE obj)
 #endif
 
 
-#if defined(HAVE_TIMES) && !defined(__CHECKER__)
+#if defined(HAVE_TIMES)
 /*
  *  call-seq:
  *     Process.times   => aStructTms

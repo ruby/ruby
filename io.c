@@ -7118,7 +7118,7 @@ rb_io_fcntl(int argc, VALUE *argv, VALUE io)
 #define rb_io_fcntl rb_f_notimplement
 #endif
 
-#if defined(HAVE_SYSCALL) && !defined(__CHECKER__) && SIZEOF_LONG == SIZEOF_INT
+#if defined(HAVE_SYSCALL) && SIZEOF_LONG == SIZEOF_INT
 /*
  *  call-seq:
  *     syscall(fixnum [, args...])   => integer

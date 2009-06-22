@@ -2030,7 +2030,7 @@ rb_file_chown(VALUE obj, VALUE owner, VALUE group)
     return INT2FIX(0);
 }
 
-#if defined(HAVE_LCHOWN) && !defined(__CHECKER__)
+#if defined(HAVE_LCHOWN)
 static void
 lchown_internal(const char *path, void *arg)
 {
@@ -3567,7 +3567,6 @@ rb_thread_flock(void *data)
 static VALUE
 rb_file_flock(VALUE obj, VALUE operation)
 {
-#ifndef __CHECKER__
     rb_io_t *fptr;
     int op[2], op1;
 
@@ -3601,7 +3600,6 @@ rb_file_flock(VALUE obj, VALUE operation)
 	    rb_sys_fail_path(fptr->pathv);
 	}
     }
-#endif
     return INT2FIX(0);
 }
 #undef flock

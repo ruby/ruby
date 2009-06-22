@@ -835,7 +835,7 @@ check_dirname(volatile VALUE *dir)
     }
 }
 
-#if defined(HAVE_CHROOT) && !defined(__CHECKER__)
+#if defined(HAVE_CHROOT)
 /*
  *  call-seq:
  *     Dir.chroot( string ) => 0

@@ -16,12 +16,6 @@
 # include <stdlib.h>
 #endif
 
-#ifdef __CHECKER__
-#undef HAVE_DLOPEN
-#undef USE_DLN_A_OUT
-#undef USE_DLN_DLOPEN
-#endif
-
 #ifdef USE_DLN_A_OUT
 char *dln_argv0;
 #endif
