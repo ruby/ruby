@@ -199,7 +199,7 @@ class TestRubyOptions < Test::Unit::TestCase
     ENV['RUBYOPT'] = ' - -'
     assert_in_out_err([], "", [], [])
 
-    assert_in_out_err(['-e', 'p $:.include?(".")'], "", ["true"], [])
+    assert_in_out_err(['-e', 'p $:.include?(".")'], "", ["false"], [])
 
     ENV['RUBYOPT'] = '-e "p 1"'
     assert_in_out_err([], "", [], /invalid switch in RUBYOPT: -e \(RuntimeError\)/)
