@@ -1224,7 +1224,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     rb_encoding *enc, *lenc;
     const char *s;
     char fbuf[MAXPATHLEN];
-    long i = proc_options(argc, argv, opt, 0);
+    int i = (int)proc_options(argc, argv, opt, 0);
     rb_thread_t *th = GET_THREAD();
     rb_env_t *env = 0;
 
@@ -1340,6 +1340,8 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	}
     }
     ruby_init_gems(!(opt->disable & DISABLE_BIT(gems)));
+    rb_progname = opt->script_name;
+    rb_vm_set_progname(rb_progname);
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 
@@ -1447,7 +1449,6 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     rb_define_readonly_boolean("$-a", opt->do_split);
 
     rb_set_safe_level(opt->safe_level);
-    rb_progname = opt->script_name;
 
     return iseq;
 }

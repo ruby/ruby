@@ -1,3 +1,7 @@
+Mon Jun 22 14:35:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): set progname earlier.
+
 Mon Jun 22 13:50:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_fdatasync): new method IO#fdatasync.
