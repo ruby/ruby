@@ -1,3 +1,12 @@
+Tue Jun 23 21:28:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_get_path_check): check with given safe level.
+
+	* file.c (rb_find_file_ext_safe, rb_find_file_safe): ditto.
+
+	* safe.c (rb_insecure_operation): function to raise security
+	  error.
+
 Tue Jun 23 20:32:43 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* gc.c: remove the definition of GC_DEBUG (debugging macro).
