@@ -1,3 +1,8 @@
+Tue Jun 23 16:16:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ruby_version): defaults revision to 0 when no
+	  revision.h exists.
+
 Tue Jun 23 16:04:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_find_file_ext, rb_find_file): no needs to expand

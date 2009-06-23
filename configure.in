@@ -2335,6 +2335,7 @@ if test ${RUBY_LIB_VERSION_STYLE+set}; then
     {
     echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
     echo '#define STRINGIZE(x) x'
+    test -f revision.h -o -f "${srcdir}/revision.h" || echo '#define RUBY_REVISION 0'
     echo '#include "version.h"'
     echo 'ruby_version=RUBY_LIB_VERSION'
     } > conftest.c
