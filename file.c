@@ -4590,6 +4590,12 @@ file_load_ok(const char *path)
     return ret;
 }
 
+int
+rb_file_load_ok(const char *path)
+{
+    return file_load_ok(path);
+}
+
 static int
 is_explicit_relative(const char *path)
 {
@@ -4600,33 +4606,50 @@ is_explicit_relative(const char *path)
 
 VALUE rb_get_load_path(void);
 
+static VALUE
+copy_path_class(VALUE path, VALUE orig)
+{
+    RBASIC(path)->klass = rb_obj_class(orig);
+    OBJ_FREEZE(path);
+    return path;
+}
+
 int
 rb_find_file_ext(VALUE *filep, const char *const *ext)
 {
-    const char *f = RSTRING_PTR(*filep);
-    VALUE fname, load_path, tmp;
+    return rb_find_file_ext_safe(filep, ext, rb_safe_level());
+}
+
+int
+rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
+{
+    const char *f = StringValueCStr(*filep);
+    VALUE fname = *filep, load_path, tmp;
     long i, j, fnlen;
+    int expanded = 0;
 
     if (!ext[0]) return 0;
 
     if (f[0] == '~') {
 	fname = rb_file_expand_path(*filep, Qnil);
-	if (rb_safe_level() >= 2 && OBJ_TAINTED(fname)) {
+	if (safe_level >= 1 && OBJ_TAINTED(fname)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
-	OBJ_FREEZE(fname);
-	f = StringValueCStr(fname);
+	f = RSTRING_PTR(fname);
 	*filep = fname;
+	expanded = 1;
     }
 
-    if (is_absolute_path(f) || is_explicit_relative(f)) {
-	fname = rb_file_expand_path(*filep, Qnil);
+    if (expanded || is_absolute_path(f) || is_explicit_relative(f)) {
+	if (safe_level >= 1 && !fpath_check(f)) {
+	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
+	}
+	if (!expanded) fname = rb_file_expand_path(fname, Qnil);
 	fnlen = RSTRING_LEN(fname);
 	for (i=0; ext[i]; i++) {
 	    rb_str_cat2(fname, ext[i]);
-	    if (file_load_ok(StringValueCStr(fname))) {
-		OBJ_FREEZE(fname);
-		*filep = fname;
+	    if (file_load_ok(RSTRING_PTR(fname))) {
+		*filep = copy_path_class(fname, *filep);
 		return (int)(i+1);
 	    }
 	    rb_str_set_len(fname, fnlen);
@@ -4634,7 +4657,11 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 	return 0;
     }
 
-    load_path = rb_get_load_path();
+    if (safe_level >= 4) {
+	rb_raise(rb_eSecurityError, "loading from non-absolute path %s", f);
+    }
+
+    RB_GC_GUARD(load_path) = rb_get_load_path();
     if (!load_path) return 0;
 
     fname = rb_str_dup(*filep);
@@ -4650,9 +4677,7 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 	    if (RSTRING_LEN(str) == 0) continue;
 	    file_expand_path(fname, str, 0, tmp);
 	    if (file_load_ok(RSTRING_PTR(tmp))) {
-		RBASIC(tmp)->klass = rb_obj_class(*filep);
-		OBJ_FREEZE(tmp);
-		*filep = tmp;
+		*filep = copy_path_class(tmp, *filep);
 		return (int)(j+1);
 	    }
 	    FL_UNSET(tmp, FL_TAINT | FL_UNTRUSTED);
@@ -4666,28 +4691,37 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 VALUE
 rb_find_file(VALUE path)
 {
+    return rb_find_file_safe(path, rb_safe_level());
+}
+
+VALUE
+rb_find_file_safe(VALUE path, int safe_level)
+{
     VALUE tmp, load_path;
     const char *f = StringValueCStr(path);
+    int expanded = 0;
 
     if (f[0] == '~') {
-	path = rb_file_expand_path(path, Qnil);
-	if (rb_safe_level() >= 1 && OBJ_TAINTED(path)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
-	}
-	OBJ_FREEZE(path);
-	f = StringValueCStr(path);
-    }
-
-    if (is_absolute_path(f) || is_explicit_relative(f)) {
-	if (rb_safe_level() >= 1 && !fpath_check(f)) {
+	tmp = rb_file_expand_path(path, Qnil);
+	if (safe_level >= 1 && OBJ_TAINTED(tmp)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
+	path = copy_path_class(tmp, path);
+	f = RSTRING_PTR(path);
+	expanded = 1;
+    }
+
+    if (expanded || is_absolute_path(f) || is_explicit_relative(f)) {
+	if (safe_level >= 1 && !fpath_check(f)) {
+	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
+	}
 	if (!file_load_ok(f)) return 0;
-	path = rb_file_expand_path(path, Qnil);
+	if (!expanded)
+	    path = copy_path_class(rb_file_expand_path(path, Qnil), path);
 	return path;
     }
 
-    if (rb_safe_level() >= 4) {
+    if (safe_level >= 4) {
 	rb_raise(rb_eSecurityError, "loading from non-absolute path %s", f);
     }
 
@@ -4706,19 +4740,17 @@ rb_find_file(VALUE path)
 	    }
 	}
 	return 0;
-      found:
-	RBASIC(tmp)->klass = rb_obj_class(path);
-	OBJ_FREEZE(tmp);
     }
     else {
 	return 0;		/* no path, no load */
     }
 
-    if (rb_safe_level() >= 1 && !fpath_check(f)) {
+  found:
+    if (safe_level >= 1 && !fpath_check(f)) {
 	rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
     }
 
-    return tmp;
+    return copy_path_class(tmp, path);
 }
 
 static void

@@ -252,10 +252,9 @@ rb_provide(const char *feature)
 
 NORETURN(static void load_failed(VALUE));
 
-void
-rb_load(VALUE fname, int wrap)
+static void
+rb_load_internal(VALUE fname, int wrap)
 {
-    VALUE tmp;
     int state;
     rb_thread_t *th = GET_THREAD();
     volatile VALUE wrapper = th->top_wrapper;
@@ -265,14 +264,6 @@ rb_load(VALUE fname, int wrap)
 #ifndef __GNUC__
     rb_thread_t *volatile th0 = th;
 #endif
-
-    FilePathValue(fname);
-    fname = rb_str_new4(fname);
-    tmp = rb_find_file(fname);
-    if (!tmp) {
-	load_failed(fname);
-    }
-    RB_GC_GUARD(fname) = rb_str_new4(tmp);
 
     th->errinfo = Qnil; /* ensure */
 
@@ -325,6 +316,14 @@ rb_load(VALUE fname, int wrap)
 }
 
 void
+rb_load(VALUE fname, int wrap)
+{
+    VALUE tmp = rb_find_file(FilePathValue(fname));
+    if (!tmp) load_failed(fname);
+    rb_load_internal(tmp, wrap);
+}
+
+void
 rb_load_protect(VALUE fname, int wrap, int *state)
 {
     int status;
@@ -355,10 +354,16 @@ rb_load_protect(VALUE fname, int wrap, int *state)
 static VALUE
 rb_f_load(int argc, VALUE *argv)
 {
-    VALUE fname, wrap;
+    VALUE fname, wrap, path;
 
     rb_scan_args(argc, argv, "11", &fname, &wrap);
-    rb_load(fname, RTEST(wrap));
+    path = rb_find_file(FilePathValue(fname));
+    if (!path) {
+	if (!rb_file_load_ok(RSTRING_PTR(fname)))
+	    load_failed(fname);
+	path = fname;
+    }
+    rb_load_internal(path, RTEST(wrap));
     return Qtrue;
 }
 
@@ -435,7 +440,7 @@ rb_f_require(VALUE obj, VALUE fname)
 }
 
 static int
-search_required(VALUE fname, volatile VALUE *path)
+search_required(VALUE fname, volatile VALUE *path, int safe_level)
 {
     VALUE tmp;
     char *ext, *ftptr;
@@ -450,7 +455,7 @@ search_required(VALUE fname, volatile VALUE *path)
 		if (loading) *path = rb_str_new2(loading);
 		return 'r';
 	    }
-	    if ((tmp = rb_find_file(fname)) != 0) {
+	    if ((tmp = rb_find_file_safe(fname, safe_level)) != 0) {
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 		if (!rb_feature_p(ftptr, ext, Qtrue, Qtrue, &loading) || loading)
 		    *path = tmp;
@@ -466,7 +471,7 @@ search_required(VALUE fname, volatile VALUE *path)
 	    tmp = rb_str_new(RSTRING_PTR(fname), ext - RSTRING_PTR(fname));
 #ifdef DLEXT2
 	    OBJ_FREEZE(tmp);
-	    if (rb_find_file_ext(&tmp, loadable_ext + 1)) {
+	    if (rb_find_file_ext_safe(&tmp, loadable_ext + 1, safe_level)) {
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue, &loading) || loading)
 		    *path = tmp;
@@ -475,7 +480,7 @@ search_required(VALUE fname, volatile VALUE *path)
 #else
 	    rb_str_cat2(tmp, DLEXT);
 	    OBJ_FREEZE(tmp);
-	    if ((tmp = rb_find_file(tmp)) != 0) {
+	    if ((tmp = rb_find_file_safe(tmp, safe_level)) != 0) {
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue, &loading) || loading)
 		    *path = tmp;
@@ -488,7 +493,7 @@ search_required(VALUE fname, volatile VALUE *path)
 		if (loading) *path = rb_str_new2(loading);
 		return 's';
 	    }
-	    if ((tmp = rb_find_file(fname)) != 0) {
+	    if ((tmp = rb_find_file_safe(fname, safe_level)) != 0) {
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue, &loading) || loading)
 		    *path = tmp;
@@ -501,8 +506,7 @@ search_required(VALUE fname, volatile VALUE *path)
 	return 'r';
     }
     tmp = fname;
-    type = rb_find_file_ext(&tmp, loadable_ext);
-    tmp = rb_file_expand_path(tmp, Qnil);
+    type = rb_find_file_ext_safe(&tmp, loadable_ext, safe_level);
     switch (type) {
       case 0:
 	if (ft)
@@ -567,19 +571,15 @@ rb_require_safe(VALUE fname, int safe)
 	rb_set_safe_level_force(safe);
 	FilePathValue(fname);
 	rb_set_safe_level_force(0);
-	found = search_required(fname, &path);
+	found = search_required(fname, &path, safe);
 	if (found) {
 	    if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
 		result = Qfalse;
 	    }
 	    else {
-		if (safe > 0 && OBJ_TAINTED(path)) {
-		    rb_raise(rb_eSecurityError, "cannot load from insecure path - %s",
-			     RSTRING_PTR(path));
-		}
 		switch (found) {
 		  case 'r':
-		    rb_load(path, 0);
+		    rb_load_internal(path, 0);
 		    break;
 
 		  case 's':
