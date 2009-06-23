@@ -101,13 +101,17 @@ VALUE rb_cFile;
 VALUE rb_mFileTest;
 VALUE rb_cStat;
 
+#define insecure_obj_p(obj, level) (level >= 4 || (level > 0 && OBJ_TAINTED(obj)))
+
 static VALUE
-rb_get_path_check(VALUE obj, int check)
+rb_get_path_check(VALUE obj, int level)
 {
     VALUE tmp;
     ID to_path;
 
-    if (check) rb_check_safe_obj(obj);
+    if (insecure_obj_p(obj, level)) {
+	rb_insecure_operation();
+    }
     tmp = rb_check_string_type(obj);
     if (!NIL_P(tmp)) goto exit;
 
@@ -120,8 +124,8 @@ rb_get_path_check(VALUE obj, int check)
     }
   exit:
     StringValueCStr(tmp);
-    if (check && obj != tmp) {
-	rb_check_safe_obj(tmp);
+    if (obj != tmp && insecure_obj_p(tmp, level)) {
+	rb_insecure_operation();
     }
     return rb_str_new4(tmp);
 }
@@ -135,7 +139,7 @@ rb_get_path_no_checksafe(VALUE obj)
 VALUE
 rb_get_path(VALUE obj)
 {
-    return rb_get_path_check(obj, 1);
+    return rb_get_path_check(obj, rb_safe_level());
 }
 
 static long
@@ -4673,7 +4677,7 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
 	for (i = 0; i < RARRAY_LEN(load_path); i++) {
 	    VALUE str = RARRAY_PTR(load_path)[i];
 
-	    FilePathValue(str);
+	    RB_GC_GUARD(str) = rb_get_path_check(str, safe_level);
 	    if (RSTRING_LEN(str) == 0) continue;
 	    file_expand_path(fname, str, 0, tmp);
 	    if (file_load_ok(RSTRING_PTR(tmp))) {
@@ -4732,7 +4736,7 @@ rb_find_file_safe(VALUE path, int safe_level)
 	tmp = rb_str_tmp_new(MAXPATHLEN + 2);
 	for (i = 0; i < RARRAY_LEN(load_path); i++) {
 	    VALUE str = RARRAY_PTR(load_path)[i];
-	    FilePathValue(str);
+	    RB_GC_GUARD(str) = rb_get_path_check(str, safe_level);
 	    if (RSTRING_LEN(str) > 0) {
 		file_expand_path(path, str, 0, tmp);
 		f = RSTRING_PTR(tmp);

@@ -427,6 +427,7 @@ int rb_safe_level(void);
 void rb_set_safe_level(int);
 void rb_set_safe_level_force(int);
 void rb_secure_update(VALUE);
+NORETURN(void rb_insecure_operation(void));
 
 VALUE rb_errinfo(void);
 void rb_set_errinfo(VALUE);

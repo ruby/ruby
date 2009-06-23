@@ -98,16 +98,22 @@ rb_secure_update(VALUE obj)
 }
 
 void
+rb_insecure_operation(void)
+{
+    if (rb_frame_callee()) {
+	rb_raise(rb_eSecurityError, "Insecure operation - %s",
+		 rb_id2name(rb_frame_callee()));
+    }
+    else {
+	rb_raise(rb_eSecurityError, "Insecure operation: -r");
+    }
+}
+
+void
 rb_check_safe_obj(VALUE x)
 {
     if (rb_safe_level() > 0 && OBJ_TAINTED(x)) {
-	if (rb_frame_callee()) {
-	    rb_raise(rb_eSecurityError, "Insecure operation - %s",
-		     rb_id2name(rb_frame_callee()));
-	}
-	else {
-	    rb_raise(rb_eSecurityError, "Insecure operation: -r");
-	}
+	rb_insecure_operation();
     }
     rb_secure(4);
 }
