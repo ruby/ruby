@@ -2505,12 +2505,8 @@ AC_SUBST(MANTYPE)
 arch_hdrdir="${EXTOUT}/include/${arch}/ruby"
 $MAKEDIRS "${arch_hdrdir}"
 config_h="${arch_hdrdir}/config.h"
-if test -f "${config_h}" && tr -d '\015' < confdefs.h | cmp -s "${config_h}" -; then
-  echo "config.h unchanged"
-else
-  echo "creating config.h"
-  tr -d '\015' < confdefs.h > "${config_h}"
-fi
+tr -d '\015' < confdefs.h | grep -v "^#define PACKAGE_" |
+${srcdir}/tool/ifchange "${config_h}" -
 tr -d '\015' < largefile.h > confdefs.h
 rm largefile.h
 
