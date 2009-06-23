@@ -84,9 +84,6 @@ void *alloca ();
 
 int ruby_gc_debug_indent = 0;
 
-#undef GC_DEBUG
-#define GC_DEBUG
-
 /* for GC profile */
 #define GC_PROFILE_MORE_DETAIL 0
 typedef struct gc_profile_record {

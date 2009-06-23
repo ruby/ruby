@@ -1,3 +1,7 @@
+Tue Jun 23 20:32:43 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* gc.c: remove the definition of GC_DEBUG (debugging macro).
+
 Tue Jun 23 16:16:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (ruby_version): defaults revision to 0 when no
