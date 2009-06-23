@@ -31,6 +31,9 @@ with all sufficient information, see the ChangeLog file.
         if defined.
 
   * IO
+    * new method:
+      * IO#fdatasync
+
     * extended methods:
       * IO.pipe can take a block.
 
