@@ -7,14 +7,15 @@
 ;;;  $Author$
 ;;;  created at: Thu Apr 26 13:54:01 JST 2007
 ;;;
-;;; sets ruby style if it seems like a source of ruby.
+;;; To switch to the "ruby" style automatically if it looks like a
+;;; source file of ruby, add ruby-style-c-mode to c-mode-hook:
 ;;;
 ;;;   (require 'ruby-style)
 ;;;   (add-hook 'c-mode-hook 'ruby-style-c-mode)
 ;;;   (add-hook 'c++-mode-hook 'ruby-style-c-mode)
 ;;;
-;;; uses ruby style always.
-;;;   (setq-default c-file-style "ruby")
+;;; Customize the c-default-style variable to set the default style
+;;; for each CC major mode.
 
 (defconst ruby-style-revision "$Revision$"
   "Ruby style revision string.")
@@ -71,6 +72,6 @@
                   (case-fold-search nil))
               (goto-char (point-min))
               (re-search-forward "Copyright (C) .* Yukihiro Matsumoto" head t))))
-      (setq c-file-style "ruby")))
+      (c-set-style "ruby")))
 
 (provide 'ruby-style)

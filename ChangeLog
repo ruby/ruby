@@ -1,3 +1,8 @@
+Wed Jun 24 11:41:20 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-style.el: It is too late to set c-file-style in
+	  c-mode-hook (at least on Emacs 23).  Call c-set-style instead.
+
 Tue Jun 23 21:28:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_get_path_check): check with given safe level.
