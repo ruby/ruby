@@ -1,4 +1,4 @@
-#!./miniruby -s
+#!./miniruby -sI.
 
 $name = $library = $description = nil
 
