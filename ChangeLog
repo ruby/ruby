@@ -1,3 +1,10 @@
+Tue Jun 23 01:17:38 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ruby.c (process_options): don't specify .so for encdb here.
+	  "." is replaced by "_" in load_encoding.
+
+	* encoding.c (load_encoding): add .so here. 
+
 Mon Jun 22 14:41:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options), enc/prelude.rb: encdb and transdb are
