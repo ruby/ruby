@@ -1,3 +1,8 @@
+Thu Jun 25 06:25:49 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (first_i): wrong condition for no argument #first.
+	  [ruby-core:24017]
+
 Wed Jun 24 20:19:11 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_s_now): new function.  Time.now don't take arguments.
