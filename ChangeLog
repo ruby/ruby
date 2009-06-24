@@ -1,3 +1,10 @@
+Mon Jun 22 14:41:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options), enc/prelude.rb: encdb and transdb are
+	  extension libraries.
+
+	* ruby.c (process_options): set progname earlier.
+
 Sun Jun 21 22:33:05 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* load.c (Init_load): $: must be readonly.  [ruby-dev:38690]
