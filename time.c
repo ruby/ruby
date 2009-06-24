@@ -1619,6 +1619,21 @@ rb_time_timespec(VALUE time)
 
 /*
  *  call-seq:
+ *     Time.now => time
+ *
+ *  Creates a new time object for the current time.
+ *
+ *     Time.now            #=> 2009-06-24 12:39:54 +0900
+ */
+
+static VALUE
+time_s_now(VALUE klass)
+{
+    return rb_class_new_instance(0, NULL, klass);
+}
+
+/*
+ *  call-seq:
  *     Time.at(time) => time
  *     Time.at(seconds_with_frac) => time
  *     Time.at(seconds, microseconds_with_frac) => time
@@ -3728,7 +3743,7 @@ Init_Time(void)
     rb_include_module(rb_cTime, rb_mComparable);
 
     rb_define_alloc_func(rb_cTime, time_s_alloc);
-    rb_define_singleton_method(rb_cTime, "now", rb_class_new_instance, -1);
+    rb_define_singleton_method(rb_cTime, "now", time_s_now, 0);
     rb_define_singleton_method(rb_cTime, "at", time_s_at, -1);
     rb_define_singleton_method(rb_cTime, "utc", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "gm", time_s_mkutc, -1);
