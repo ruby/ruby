@@ -1992,7 +1992,7 @@ Init_top_self(void)
     rb_define_singleton_method(rb_vm_top_self(), "to_s", main_to_s, 0);
 
     /* initialize mark object array */
-    vm->mark_object_ary = rb_ary_new();
+    vm->mark_object_ary = rb_ary_tmp_new(1);
 }
 
 VALUE *
