@@ -2822,7 +2822,8 @@ rb_io_each_codepoint(VALUE io)
 		}
 	    }
 	    if (MBCLEN_INVALID_P(r)) {
-		rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
+		rb_raise(rb_eArgError, "invalid byte sequence in %s",
+			 rb_enc_name(fptr->encs.enc));
 	    }
 	    n = MBCLEN_CHARFOUND_LEN(r);
 	    c = rb_enc_codepoint(fptr->cbuf+fptr->cbuf_off,
