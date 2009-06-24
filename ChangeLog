@@ -1,3 +1,8 @@
+Wed Jun 24 16:08:03 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/resource.rb: CONFIG["TEENY"] is not ruby's version but API's
+	  one.  So need to use RUBY_VERSION instead.
+
 Wed Jun 24 16:07:04 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/mkexports.rb: rbconfig.rb exists on ".".
