@@ -1,3 +1,8 @@
+Wed Jun 24 15:02:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_set_encode): show the erred file name instead of
+	  the file that requires it.  [ruby-core:24006]
+
 Wed Jun 24 11:41:20 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-style.el: It is too late to set c-file-style in
