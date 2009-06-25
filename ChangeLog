@@ -1,3 +1,8 @@
+Thu Jun 25 17:58:39 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_binmode_m): should call rb_io_ascii8bit_binmode() to
+	  set its encoding to ASCII-8BIT.  [ruby-core:24029]
+
 Thu Jun 25 13:04:58 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* instruby.rb: '&' in sed s command's replacement is '\&' in ruby.
