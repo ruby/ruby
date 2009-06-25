@@ -319,10 +319,11 @@ module MiniTest
   end
 
   class Unit
-    VERSION = "1.4.0"
+    VERSION = "1.4.2"
 
     attr_accessor :report, :failures, :errors, :skips
     attr_accessor :test_count, :assertion_count
+    attr_accessor :start_time
 
     @@installed_at_exit ||= false
     @@out = $stdout
@@ -400,10 +401,16 @@ module MiniTest
 
       @@out.puts
 
-      format = "%d tests, %d assertions, %d failures, %d errors, %d skips"
-      @@out.puts format % [test_count, assertion_count, failures, errors, skips]
+      status
 
       return failures + errors if @test_count > 0 # or return nil...
+    rescue Interrupt
+      abort 'Interrupted'
+    end
+
+    def status io = @@out
+      format = "%d tests, %d assertions, %d failures, %d errors, %d skips"
+      io.puts format % [test_count, assertion_count, failures, errors, skips]
     end
 
     def run_test_suites filter = /./
@@ -415,10 +422,10 @@ module MiniTest
           inst._assertions = 0
           @@out.print "#{suite}##{test}: " if @verbose
 
-          t = Time.now if @verbose
+          @start_time = Time.now
           result = inst.run(self)
 
-          @@out.print "%.2f s: " % (Time.now - t) if @verbose
+          @@out.print "%.2f s: " % (Time.now - @start_time) if @verbose
           @@out.print result
           @@out.puts if @verbose
           @test_count += 1
@@ -432,22 +439,38 @@ module MiniTest
     class TestCase
       attr_reader :__name__
 
+      PASSTHROUGH_EXCEPTIONS = [NoMemoryError, SignalException, Interrupt,
+        SystemExit]
+
+      SUPPORTS_INFO_SIGNAL = Signal.list['INFO']
+
       def run runner
+        trap 'INFO' do
+          warn '%s#%s %.2fs' % [self.class, self.__name__,
+            (Time.now - runner.start_time)]
+          runner.status $stderr
+        end if SUPPORTS_INFO_SIGNAL
+
         result = '.'
         begin
           @passed = nil
           self.setup
           self.__send__ self.__name__
           @passed = true
+        rescue *PASSTHROUGH_EXCEPTIONS
+          raise
         rescue Exception => e
           @passed = false
           result = runner.puke(self.class, self.__name__, e)
         ensure
           begin
             self.teardown
+          rescue *PASSTHROUGH_EXCEPTIONS
+            raise
           rescue Exception => e
             result = runner.puke(self.class, self.__name__, e)
           end
+          trap 'INFO', 'DEFAULT' if SUPPORTS_INFO_SIGNAL
         end
         result
       end
@@ -499,3 +522,15 @@ module MiniTest
     end # class TestCase
   end # class Test
 end # module Mini
+
+if $DEBUG then
+  # this helps me ferret out porting issues
+  module Test; end
+  module Test::Unit; end
+  class Test::Unit::TestCase
+    def self.inherited x
+      raise "You're running minitest and test/unit in the same process: #{x}"
+    end
+  end
+end
+
