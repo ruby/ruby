@@ -1,6 +1,7 @@
 Thu Jun 25 13:04:58 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* instruby.rb: '&' in sed s command's replacement is '\&' in ruby.
+	  [ruby-dev:38713]
 
 Thu Jun 25 06:50:23 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
