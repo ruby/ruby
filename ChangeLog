@@ -1,3 +1,7 @@
+Thu Jun 25 15:53:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file): preserves $..  [ruby-core:24024]
+
 Fri Jun 19 08:14:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (big_lshift, big_rshift): return Bignum always withou

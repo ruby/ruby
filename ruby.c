@@ -864,12 +864,19 @@ proc_options(argc, argv)
 
 extern int ruby__end__seen;
 
-static void
-load_file(fname, script)
+struct load_file_arg {
     const char *fname;
     int script;
+};
+
+static VALUE
+load_file_internal(arg)
+    VALUE arg;
 {
     extern VALUE rb_stdin;
+    struct load_file_arg *argp = (struct load_file_arg *)arg;
+    const char *fname = argp->fname;
+    int script = argp->script;
     VALUE f;
     int line_start = 1;
 
@@ -919,7 +926,7 @@ load_file(fname, script)
 	c = rb_io_getc(f);
 	if (c == INT2FIX('#')) {
 	    line = rb_io_gets(f);
-	    if (NIL_P(line)) return;
+	    if (NIL_P(line)) return Qnil;
 	    line_start++;
 
 	    if (RSTRING(line)->len > 2 && RSTRING(line)->ptr[0] == '!') {
@@ -972,7 +979,7 @@ load_file(fname, script)
 	    rb_io_ungetc(f, c);
 	}
 	require_libraries();	/* Why here? unnatural */
-	if (NIL_P(c)) return;
+	if (NIL_P(c)) return Qnil;
     }
     rb_compile_file(fname, f, line_start);
     if (script && ruby__end__seen) {
@@ -985,6 +992,26 @@ load_file(fname, script)
     if (ruby_parser_stack_on_heap()) {
         rb_gc();
     }
+
+    return Qnil;
+}
+
+static VALUE
+restore_lineno(lineno)
+    VALUE lineno;
+{
+    return rb_gv_set("$.", lineno);
+}
+
+static void
+load_file(fname, script)
+    const char *fname;
+    int script;
+{
+    struct load_file_arg arg;
+    arg.fname = fname;
+    arg.script = script;
+    rb_ensure(load_file_internal, (VALUE)&arg, restore_lineno, rb_gv_get("$."));
 }
 
 void
