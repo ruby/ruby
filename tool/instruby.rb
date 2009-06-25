@@ -391,7 +391,7 @@ install?(:local, :comm, :bin, :'bin-comm') do
       when 's'
         next if pat == '^' and rep.empty?
         exp << [addr, (opt.include?('g') ? :gsub! : :sub!),
-                Regexp.new(pat, opt.include?('i')), rep]
+                Regexp.new(pat, opt.include?('i')), rep.gsub(/&/){'\&'}]
       when 'y'
         exp << [addr, :tr!, Regexp.quote(pat), rep]
       end
