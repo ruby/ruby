@@ -511,7 +511,27 @@ pty_detach_process(struct pty_info *info)
     return Qnil;
 }
 
-/* ruby function: getpty */
+/*
+ * call-seq:
+ *   PTY.spawn(command...) {|r, w, pid| ... }   => nil
+ *   PTY.spawn(command...)                      => r, w, pid
+ *   PTY.getpty(command...) {|r, w, pid| ... }  => nil
+ *   PTY.getpty(command...)                     => r, w, pid
+ *
+ * spawns the specified command on a newly allocated pty.
+ *
+ * The command's controlling tty is set to the slave device of the pty.
+ * Also its standard input/output/error is redirected to the slave device.
+ *
+ * PTY.spawn returns two IO objects and PID.
+ * PID is the process ID of the command.
+ * The two IO objects are connected to the master device of the pty.
+ * The first IO object is opened as read mode and
+ * The second is opened as write mode.
+ *
+ * If a block is given, two IO objects and PID is yielded.
+ *
+ */
 static VALUE
 pty_getpty(int argc, VALUE *argv, VALUE self)
 {
@@ -533,6 +553,8 @@ pty_getpty(int argc, VALUE *argv, VALUE self)
 
     wfptr->mode = rb_io_mode_flags("w") | FMODE_SYNC;
     wfptr->fd = dup(info.fd);
+    if (wfptr->fd == -1)
+        rb_sys_fail("dup()");
     wfptr->pathv = rfptr->pathv;
 
     res = rb_ary_new2(3);
