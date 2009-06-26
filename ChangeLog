@@ -1,3 +1,8 @@
+Fri Jun 26 11:02:28 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb (CXX_EXT): cygwin's filesystem (= Windows) is case
+	  insensitive.
+
 Thu Jun 25 15:53:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (load_file): preserves $..  [ruby-core:24024]
@@ -84,7 +89,7 @@ Mon Jun  1 20:45:48 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): should set srcs in all paths.
 
-	* lib/mkmf.rb (create_makefile): $objs somtimes includes files with
+	* lib/mkmf.rb (create_makefile): $objs sometimes includes files with
 	  $OBJEXT instead of ".o".
 
 Mon Jun  1 09:02:48 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>

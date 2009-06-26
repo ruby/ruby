@@ -9,7 +9,7 @@ CONFIG = Config::MAKEFILE_CONFIG
 ORIG_LIBPATH = ENV['LIB']
 
 CXX_EXT = %w[cc cxx cpp]
-if /mswin|bccwin|mingw|msdosdjgpp|human|os2/ !~ CONFIG['build_os']
+if /mswin|bccwin|mingw|cygwin|msdosdjgpp|human|os2/ !~ CONFIG['build_os']
   CXX_EXT.concat(%w[C])
 end
 SRC_EXT = %w[c m].concat(CXX_EXT)
