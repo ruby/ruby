@@ -1,3 +1,8 @@
+Fri Jun 26 16:32:59 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (COMPILE_PRELUDE): need -I. before -rrbconfig.
+	  [ruby-dev:38714]
+
 Thu Jun 25 18:41:51 2009  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*.rb: Imported minitest 1.4.2 r5269.
