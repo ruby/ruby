@@ -199,15 +199,11 @@ class TestRubyOptions < Test::Unit::TestCase
     ENV['RUBYOPT'] = ' - -'
     assert_in_out_err([], "", [], [])
 
-    assert_in_out_err(['-e', 'p $:.include?(".")'], "", ["false"], [])
-
     ENV['RUBYOPT'] = '-e "p 1"'
     assert_in_out_err([], "", [], /invalid switch in RUBYOPT: -e \(RuntimeError\)/)
 
     ENV['RUBYOPT'] = '-T1'
     assert_in_out_err([], "", [], /no program input from stdin allowed in tainted mode \(SecurityError\)/)
-
-    assert_in_out_err(['-e', 'p $:.include?(".")'], "", ["false"], [])
 
     ENV['RUBYOPT'] = '-T4'
     assert_in_out_err([], "", [], /no program input from stdin allowed in tainted mode \(SecurityError\)/)

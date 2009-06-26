@@ -1,3 +1,12 @@
+Fri Jun 26 17:33:46 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_rubyopt):
+	  test suite add '.' to RUBYLIB.  remove checks.
+
+	* test/ruby/test_require.rb (TestRequire#test_tainted_loadpath):
+	  the default tempdir directory /tmp is world writable, so
+	  SecrurityError would be raised.  check removed.
+
 Fri Jun 26 16:32:59 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk (COMPILE_PRELUDE): need -I. before -rrbconfig.

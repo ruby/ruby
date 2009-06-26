@@ -230,8 +230,11 @@ class TestRequire < Test::Unit::TestCase
       abs_dir = "#{ abs_dir }"
       $: << abs_dir.taint
       $SAFE = 1
-      require "#{ t.path }"
-      p :ok
+      begin
+        require "#{ file }"
+      rescue SecurityError
+        p :ok
+      end
     INPUT
 
     assert_in_out_err([], <<-INPUT, %w(:ok), [])
