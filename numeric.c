@@ -1945,9 +1945,14 @@ int_chr(int argc, VALUE *argv, VALUE num)
 
     switch (argc) {
       case 0:
-	if (i < 0 || 0xff < i) {
+	if (i < 0) {
 	  out_of_range:
 	    rb_raise(rb_eRangeError, "%"PRIdVALUE " out of char range", i);
+	}
+	if (0xff < i) {
+	    enc = rb_default_internal_encoding();
+	    if (!enc) goto out_of_range;
+	    goto decode;
 	}
 	c = (char)i;
 	if (i < 0x80) {
@@ -1964,6 +1969,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
     }
     enc = rb_to_encoding(argv[0]);
     if (!enc) enc = rb_ascii8bit_encoding();
+  decode:
 #if SIZEOF_INT < SIZEOF_LONG
     if (i > INT_MAX) goto out_of_range;
 #endif
