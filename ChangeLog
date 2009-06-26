@@ -1,3 +1,10 @@
+Sat Jun 27 03:09:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_rewind): need to rewind $. and ARGF.lineno.
+	  [ruby-core:24046]
+
+	* io.c (struct argf): refactoring on $. and ARGF.lineno behavior.
+
 Fri Jun 26 21:48:30 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pty/pty.c (pty_getpty): check dup failure.
