@@ -1,7 +1,7 @@
 Sat Jun 27 03:16:56 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (int_chr): use default_internal encoding as default
-	  destination encoding if set.  [ruby-dev:38717]
+	  destination encoding if set.  [ruby-core:23997]
 
 Sat Jun 27 03:09:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
