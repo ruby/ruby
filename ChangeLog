@@ -1,3 +1,13 @@
+Sat Jun 27 19:06:22 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_addsub): new
+
+	* complex.c (nucomp_{add,sub}): use nucomp_addsub.
+
+	* complex.c (nucomp_divide): changed the algorithm.
+
+	* complex.c (nucomp_abs): added shortcuts.
+
 Sat Jun 27 16:56:33 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_cmp): use rb_num_coerce_cmp.

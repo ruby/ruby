@@ -585,6 +585,29 @@ nucomp_negate(VALUE self)
 			f_negate(dat->real), f_negate(dat->imag));
 }
 
+static VALUE
+nucomp_addsub(VALUE self, VALUE other,
+	      VALUE (*func)(VALUE, VALUE), ID id)
+{
+    if (k_complex_p(other)) {
+	VALUE real, imag;
+
+	get_dat2(self, other);
+
+	real = (*func)(adat->real, bdat->real);
+	imag = (*func)(adat->imag, bdat->imag);
+
+	return f_complex_new2(CLASS_OF(self), real, imag);
+    }
+    if (k_numeric_p(other) && f_real_p(other)) {
+	get_dat1(self);
+
+	return f_complex_new2(CLASS_OF(self),
+			      (*func)(dat->real, other), dat->imag);
+    }
+    return rb_num_coerce_bin(self, other, id);
+}
+
 /*
  * call-seq:
  *    cmp + numeric  ->  complex
@@ -594,23 +617,7 @@ nucomp_negate(VALUE self)
 static VALUE
 nucomp_add(VALUE self, VALUE other)
 {
-    if (k_complex_p(other)) {
-	VALUE real, imag;
-
-	get_dat2(self, other);
-
-	real = f_add(adat->real, bdat->real);
-	imag = f_add(adat->imag, bdat->imag);
-
-	return f_complex_new2(CLASS_OF(self), real, imag);
-    }
-    if (k_numeric_p(other) && f_real_p(other)) {
-	get_dat1(self);
-
-	return f_complex_new2(CLASS_OF(self),
-			      f_add(dat->real, other), dat->imag);
-    }
-    return rb_num_coerce_bin(self, other, '+');
+    return nucomp_addsub(self, other, f_add, '+');
 }
 
 /*
@@ -622,23 +629,7 @@ nucomp_add(VALUE self, VALUE other)
 static VALUE
 nucomp_sub(VALUE self, VALUE other)
 {
-    if (k_complex_p(other)) {
-	VALUE real, imag;
-
-	get_dat2(self, other);
-
-	real = f_sub(adat->real, bdat->real);
-	imag = f_sub(adat->imag, bdat->imag);
-
-	return f_complex_new2(CLASS_OF(self), real, imag);
-    }
-    if (k_numeric_p(other) && f_real_p(other)) {
-	get_dat1(self);
-
-	return f_complex_new2(CLASS_OF(self),
-			      f_sub(dat->real, other), dat->imag);
-    }
-    return rb_num_coerce_bin(self, other, '-');
+    return nucomp_addsub(self, other, f_sub, '-');
 }
 
 /*
@@ -658,7 +649,7 @@ nucomp_mul(VALUE self, VALUE other)
 	real = f_sub(f_mul(adat->real, bdat->real),
 		     f_mul(adat->imag, bdat->imag));
 	imag = f_add(f_mul(adat->real, bdat->imag),
-		      f_mul(adat->imag, bdat->real));
+		     f_mul(adat->imag, bdat->real));
 
 	return f_complex_new2(CLASS_OF(self), real, imag);
     }
@@ -677,19 +668,42 @@ nucomp_divide(VALUE self, VALUE other,
 	      VALUE (*func)(VALUE, VALUE), ID id)
 {
     if (k_complex_p(other)) {
+	int flo;
 	get_dat2(self, other);
 
-	if (TYPE(adat->real)  == T_FLOAT ||
-	    TYPE(adat->imag) == T_FLOAT ||
-	    TYPE(bdat->real)  == T_FLOAT ||
-	    TYPE(bdat->imag) == T_FLOAT) {
-	    VALUE magn = m_hypot(bdat->real, bdat->imag);
-	    VALUE tmp = f_complex_new_bang2(CLASS_OF(self),
-					    (*func)(bdat->real, magn),
-					    (*func)(bdat->imag, magn));
-	    return (*func)(f_mul(self, f_conj(tmp)), magn);
+	flo = (k_float_p(adat->real) || k_float_p(adat->imag) ||
+	       k_float_p(bdat->real) || k_float_p(bdat->imag));
+
+	if (f_gt_p(f_abs(bdat->real), f_abs(bdat->imag))) {
+	    VALUE r, n;
+
+	    r = (*func)(bdat->imag, bdat->real);
+	    n = f_mul(bdat->real, f_add(ONE, f_mul(r, r)));
+	    if (flo)
+		return f_complex_new2(CLASS_OF(self),
+				      (*func)(self, n),
+				      (*func)(f_negate(f_mul(self, r)), n));
+	    return f_complex_new2(CLASS_OF(self),
+				  (*func)(f_add(adat->real,
+						f_mul(adat->imag, r)), n),
+				  (*func)(f_sub(adat->imag,
+						f_mul(adat->real, r)), n));
 	}
-	return (*func)(f_mul(self, f_conj(other)), f_abs2(other));
+	else {
+	    VALUE r, n;
+
+	    r = (*func)(bdat->real, bdat->imag);
+	    n = f_mul(bdat->imag, f_add(ONE, f_mul(r, r)));
+	    if (flo)
+		return f_complex_new2(CLASS_OF(self),
+				      (*func)(f_mul(self, r), n),
+				      (*func)(f_negate(self), n));
+	    return f_complex_new2(CLASS_OF(self),
+				  (*func)(f_add(f_mul(adat->real, r),
+						adat->imag), n),
+				  (*func)(f_sub(f_mul(adat->imag, r),
+						adat->real), n));
+	}
     }
     if (k_numeric_p(other) && f_real_p(other)) {
 	get_dat1(self);
@@ -858,6 +872,19 @@ static VALUE
 nucomp_abs(VALUE self)
 {
     get_dat1(self);
+
+    if (f_zero_p(dat->real)) {
+	VALUE a = f_abs(dat->imag);
+	if (k_float_p(dat->real) && !k_float_p(dat->imag))
+	    a = f_to_f(a);
+	return a;
+    }
+    if (f_zero_p(dat->imag)) {
+	VALUE a = f_abs(dat->real);
+	if (!k_float_p(dat->real) && k_float_p(dat->imag))
+	    a = f_to_f(a);
+	return a;
+    }
     return m_hypot(dat->real, dat->imag);
 }
 
