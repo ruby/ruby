@@ -1,3 +1,8 @@
+Sun Jun 28 05:11:03 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enum.c (enum_first): Perform negative length check before
+	  attempting to make an array.
+
 Sat Jun 27 13:47:19 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* NEWS, lib/rss/maker/base.rb, test/rss/test_maker_2.0.rb: add
