@@ -72,7 +72,7 @@ with all sufficient information, see the ChangeLog file.
 
 * rss
 
-  * 0.2.4 -> 0.2.5
+  * 0.2.4 -> 0.2.7.
 
   * RSS::Maker.make
     * raise an exception not returns nil for invalid feed making.

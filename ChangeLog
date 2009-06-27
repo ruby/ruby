@@ -1,3 +1,9 @@
+Sat Jun 27 13:41:00 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* NEWS: rss: 0.2.5 -> 0.2.7.
+
+	* lib/rss/rss.rb, test/rss/test_version.rb: 0.2.6 -> 0.2.7.
+
 Sat Jun 27 03:16:56 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (int_chr): use default_internal encoding as default
