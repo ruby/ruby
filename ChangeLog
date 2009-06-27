@@ -1,3 +1,11 @@
+Sat Jun 27 16:45:10 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: revised rdoc.
+
+	* rational.c: ditto.
+
+	* numeric.c: ditto.
+
 Sat Jun 27 13:44:48 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* NEWS, lib/rss/maker/base.rb, test/rss/test_maker_2.0.rb: add

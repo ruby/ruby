@@ -103,7 +103,7 @@ rb_num_zerodiv(void)
 
 /*
  *  call-seq:
- *     num.coerce(numeric)  =>  array
+ *     num.coerce(numeric)  ->  array
  *
  *  If <i>aNumeric</i> is the same type as <i>num</i>, returns an array
  *  containing <i>aNumeric</i> and <i>num</i>. Otherwise, returns an
@@ -225,7 +225,7 @@ num_init_copy(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     +num  =>  num
+ *     +num  ->  num
  *
  *  Unary Plus---Returns the receiver's value.
  */
@@ -238,7 +238,7 @@ num_uplus(VALUE num)
 
 /*
  *  call-seq:
- *     -num  =>  numeric
+ *     -num  ->  numeric
  *
  *  Unary Minus---Returns the receiver's value, negated.
  */
@@ -256,7 +256,7 @@ num_uminus(VALUE num)
 
 /*
  *  call-seq:
- *     num.quo(numeric)  =>  real
+ *     num.quo(numeric)  ->  real
  *
  *  Returns most exact division (rational for integers, float for floats).
  */
@@ -270,7 +270,7 @@ num_quo(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.fdiv(numeric)  =>  float
+ *     num.fdiv(numeric)  ->  float
  *
  *  Returns float division.
  */
@@ -284,7 +284,7 @@ num_fdiv(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.div(numeric)  =>  integer
+ *     num.div(numeric)  ->  integer
  *
  *  Uses <code>/</code> to perform division, then converts the result to
  *  an integer. <code>numeric</code> does not define the <code>/</code>
@@ -306,7 +306,7 @@ num_div(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.modulo(numeric)  =>  real
+ *     num.modulo(numeric)  ->  real
  *
  *     x.modulo(y) means x-y*(x/y).floor
  *
@@ -326,7 +326,7 @@ num_modulo(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.remainder(numeric)  =>  real
+ *     num.remainder(numeric)  ->  real
  *
  *     x.remainder(y) means x-y*(x/y).truncate
  *
@@ -350,7 +350,7 @@ num_remainder(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.divmod(numeric)  =>  array
+ *     num.divmod(numeric)  ->  array
  *
  *  Returns an array containing the quotient and modulus obtained by
  *  dividing <i>num</i> by <i>numeric</i>. If <code>q, r =
@@ -397,7 +397,7 @@ num_divmod(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.real?  =>  true or false
+ *     num.real?  ->  true or false
  *
  *  Returns <code>true</code> if <i>num</i> is a <code>Real</code>
  *  (i.e. non <code>Complex</code>).
@@ -411,7 +411,7 @@ num_real_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.integer?  =>  true or false
+ *     num.integer?  ->  true or false
  *
  *  Returns <code>true</code> if <i>num</i> is an <code>Integer</code>
  *  (including <code>Fixnum</code> and <code>Bignum</code>).
@@ -425,8 +425,8 @@ num_int_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.abs        =>  numeric
- *     num.magnitude  =>  numeric
+ *     num.abs        ->  numeric
+ *     num.magnitude  ->  numeric
  *
  *  Returns the absolute value of <i>num</i>.
  *
@@ -447,7 +447,7 @@ num_abs(VALUE num)
 
 /*
  *  call-seq:
- *     num.zero?  =>  true or false
+ *     num.zero?  ->  true or false
  *
  *  Returns <code>true</code> if <i>num</i> has a zero value.
  */
@@ -464,7 +464,7 @@ num_zero_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.nonzero?  =>  self or nil
+ *     num.nonzero?  ->  self or nil
  *
  *  Returns <i>self</i> if <i>num</i> is not zero, <code>nil</code>
  *  otherwise. This behavior is useful when chaining comparisons:
@@ -485,7 +485,7 @@ num_nonzero_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.to_int  =>  integer
+ *     num.to_int  ->  integer
  *
  *  Invokes the child class's <code>to_i</code> method to convert
  *  <i>num</i> to an integer.
@@ -519,7 +519,7 @@ rb_float_new(double d)
 
 /*
  *  call-seq:
- *     flt.to_s  =>  string
+ *     flt.to_s  ->  string
  *
  *  Returns a string containing a representation of self. As well as a
  *  fixed or exponential form of the number, the call may return
@@ -573,7 +573,7 @@ flo_coerce(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *    -float  =>  float
+ *    -float  ->  float
  *
  * Returns float, negated.
  */
@@ -586,7 +586,7 @@ flo_uminus(VALUE flt)
 
 /*
  * call-seq:
- *   float + other  =>  float
+ *   float + other  ->  float
  *
  * Returns a new float which is the sum of <code>float</code>
  * and <code>other</code>.
@@ -609,7 +609,7 @@ flo_plus(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   float + other  =>  float
+ *   float + other  ->  float
  *
  * Returns a new float which is the difference of <code>float</code>
  * and <code>other</code>.
@@ -632,7 +632,7 @@ flo_minus(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   float * other  =>  float
+ *   float * other  ->  float
  *
  * Returns a new float which is the product of <code>float</code>
  * and <code>other</code>.
@@ -655,7 +655,7 @@ flo_mul(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   float / other  =>  float
+ *   float / other  ->  float
  *
  * Returns a new float which is the result of dividing
  * <code>float</code> by <code>other</code>.
@@ -718,8 +718,8 @@ flodivmod(double x, double y, double *divp, double *modp)
 
 /*
  *  call-seq:
- *     flt % other        =>  float
- *     flt.modulo(other)  =>  float
+ *     flt % other        ->  float
+ *     flt.modulo(other)  ->  float
  *
  *  Return the modulo after division of <code>flt</code> by <code>other</code>.
  *
@@ -767,7 +767,7 @@ dbl2ival(double d)
 
 /*
  *  call-seq:
- *     flt.divmod(numeric)  =>  array
+ *     flt.divmod(numeric)  ->  array
  *
  *  See <code>Numeric#divmod</code>.
  */
@@ -800,7 +800,7 @@ flo_divmod(VALUE x, VALUE y)
 /*
  * call-seq:
  *
- *  flt ** other  =>  float
+ *  flt ** other  ->  float
  *
  * Raises <code>float</code> the <code>other</code> power.
  *
@@ -825,7 +825,7 @@ flo_pow(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.eql?(numeric)  =>  true or false
+ *     num.eql?(numeric)  ->  true or false
  *
  *  Returns <code>true</code> if <i>num</i> and <i>numeric</i> are the
  *  same type and have equal values.
@@ -845,7 +845,7 @@ num_eql(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num <=> other  =>  0 or nil
+ *     num <=> other  ->  0 or nil
  *
  *  Returns zero if <i>num</i> equals <i>other</i>, <code>nil</code>
  *  otherwise.
@@ -867,7 +867,7 @@ num_equal(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     flt == obj  =>  true or false
+ *     flt == obj  ->  true or false
  *
  *  Returns <code>true</code> only if <i>obj</i> has the same value
  *  as <i>flt</i>. Contrast this with <code>Float#eql?</code>, which
@@ -907,7 +907,7 @@ flo_eq(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   flt.hash  =>  integer
+ *   flt.hash  ->  integer
  *
  * Returns a hash code for this float.
  */
@@ -935,7 +935,7 @@ rb_dbl_cmp(double a, double b)
 
 /*
  *  call-seq:
- *     flt <=> real  =>  -1, 0, +1
+ *     flt <=> real  ->  -1, 0, +1
  *
  *  Returns -1, 0, or +1 depending on whether <i>flt</i> is less than,
  *  equal to, or greater than <i>real</i>. This is the basis for the
@@ -979,7 +979,7 @@ flo_cmp(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   flt > real  =>  true or false
+ *   flt > real  ->  true or false
  *
  * <code>true</code> if <code>flt</code> is greater than <code>real</code>.
  */
@@ -1017,7 +1017,7 @@ flo_gt(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   flt >= real  =>  true or false
+ *   flt >= real  ->  true or false
  *
  * <code>true</code> if <code>flt</code> is greater than
  * or equal to <code>real</code>.
@@ -1056,7 +1056,7 @@ flo_ge(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   flt < real  =>  true or false
+ *   flt < real  ->  true or false
  *
  * <code>true</code> if <code>flt</code> is less than <code>real</code>.
  */
@@ -1094,7 +1094,7 @@ flo_lt(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   flt <= rael  =>  true or false
+ *   flt <= rael  ->  true or false
  *
  * <code>true</code> if <code>flt</code> is less than
  * or equal to <code>real</code>.
@@ -1133,7 +1133,7 @@ flo_le(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     flt.eql?(obj)  =>  true or false
+ *     flt.eql?(obj)  ->  true or false
  *
  *  Returns <code>true</code> only if <i>obj</i> is a
  *  <code>Float</code> with the same value as <i>flt</i>. Contrast this
@@ -1159,7 +1159,7 @@ flo_eql(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   flt.to_f  =>  self
+ *   flt.to_f  ->  self
  *
  * As <code>flt</code> is already a float, returns <i>self</i>.
  */
@@ -1172,8 +1172,8 @@ flo_to_f(VALUE num)
 
 /*
  *  call-seq:
- *     flt.abs        =>  float
- *     flt.magnitude  =>  float
+ *     flt.abs        ->  float
+ *     flt.magnitude  ->  float
  *
  *  Returns the absolute value of <i>flt</i>.
  *
@@ -1191,7 +1191,7 @@ flo_abs(VALUE flt)
 
 /*
  *  call-seq:
- *     flt.zero?  =>  true or false
+ *     flt.zero?  ->  true or false
  *
  *  Returns <code>true</code> if <i>flt</i> is 0.0.
  *
@@ -1208,7 +1208,7 @@ flo_zero_p(VALUE num)
 
 /*
  *  call-seq:
- *     flt.nan?  =>  true or false
+ *     flt.nan?  ->  true or false
  *
  *  Returns <code>true</code> if <i>flt</i> is an invalid IEEE floating
  *  point number.
@@ -1229,7 +1229,7 @@ flo_is_nan_p(VALUE num)
 
 /*
  *  call-seq:
- *     flt.infinite?  =>  nil, -1, +1
+ *     flt.infinite?  ->  nil, -1, +1
  *
  *  Returns <code>nil</code>, -1, or +1 depending on whether <i>flt</i>
  *  is finite, -infinity, or +infinity.
@@ -1253,7 +1253,7 @@ flo_is_infinite_p(VALUE num)
 
 /*
  *  call-seq:
- *     flt.finite?  =>  true or false
+ *     flt.finite?  ->  true or false
  *
  *  Returns <code>true</code> if <i>flt</i> is a valid IEEE floating
  *  point number (it is not infinite, and <code>nan?</code> is
@@ -1279,7 +1279,7 @@ flo_is_finite_p(VALUE num)
 
 /*
  *  call-seq:
- *     flt.floor  =>  integer
+ *     flt.floor  ->  integer
  *
  *  Returns the largest integer less than or equal to <i>flt</i>.
  *
@@ -1304,7 +1304,7 @@ flo_floor(VALUE num)
 
 /*
  *  call-seq:
- *     flt.ceil  =>  integer
+ *     flt.ceil  ->  integer
  *
  *  Returns the smallest <code>Integer</code> greater than or equal to
  *  <i>flt</i>.
@@ -1330,10 +1330,10 @@ flo_ceil(VALUE num)
 
 /*
  *  call-seq:
- *     flt.round([ndigits])  =>  integer or float
+ *     flt.round([ndigits])  ->  integer or float
  *
  *  Rounds <i>flt</i> to a given precision in decimal digits (default 0 digits).
- *  Precision may be negative.  Returns a a floating point number when ndigits
+ *  Precision may be negative.  Returns a floating point number when ndigits
  *  is more than one.
  *
  *     1.5.round      #=> 2
@@ -1379,9 +1379,9 @@ flo_round(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *     flt.to_i      =>  integer
- *     flt.to_int    =>  integer
- *     flt.truncate  =>  integer
+ *     flt.to_i      ->  integer
+ *     flt.to_int    ->  integer
+ *     flt.truncate  ->  integer
  *
  *  Returns <i>flt</i> truncated to an <code>Integer</code>.
  */
@@ -1404,7 +1404,7 @@ flo_truncate(VALUE num)
 
 /*
  *  call-seq:
- *     num.floor  =>  integer
+ *     num.floor  ->  integer
  *
  *  Returns the largest integer less than or equal to <i>num</i>.
  *  <code>Numeric</code> implements this by converting <i>anInteger</i>
@@ -1423,7 +1423,7 @@ num_floor(VALUE num)
 
 /*
  *  call-seq:
- *     num.ceil  =>  integer
+ *     num.ceil  ->  integer
  *
  *  Returns the smallest <code>Integer</code> greater than or equal to
  *  <i>num</i>. Class <code>Numeric</code> achieves this by converting
@@ -1444,10 +1444,10 @@ num_ceil(VALUE num)
 
 /*
  *  call-seq:
- *     num.round([ndigits])  =>  integer or float
+ *     num.round([ndigits])  ->  integer or float
  *
  *  Rounds <i>num</i> to a given precision in decimal digits (default 0 digits).
- *  Precision may be negative.  Returns a a floating point number when ndigits
+ *  Precision may be negative.  Returns a floating point number when ndigits
  *  is more than one.  <code>Numeric</code> implements this by converting itself
  *  to a <code>Float</code> and invoking <code>Float#round</code>.
  */
@@ -1460,7 +1460,7 @@ num_round(int argc, VALUE* argv, VALUE num)
 
 /*
  *  call-seq:
- *     num.truncate  =>  integer
+ *     num.truncate  ->  integer
  *
  *  Returns <i>num</i> truncated to an integer. <code>Numeric</code>
  *  implements this by converting its value to a float and invoking
@@ -1504,8 +1504,8 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
 
 /*
  *  call-seq:
- *     num.step(limit[, step]) {|i| block }  =>  self
- *     num.step(limit[, step])               =>  enumerator
+ *     num.step(limit[, step]) {|i| block }  ->  self
+ *     num.step(limit[, step])               ->  enumerator
  *
  *  Invokes <em>block</em> with the sequence of numbers starting at
  *  <i>num</i>, incremented by <i>step</i> (default 1) on each
@@ -1801,12 +1801,12 @@ rb_num2ull(VALUE val)
 
 /*
  *  call-seq:
- *     int.to_i      =>  integer
- *     int.to_int    =>  integer
- *     int.floor     =>  integer
- *     int.ceil      =>  integer
- *     int.round     =>  integer
- *     int.truncate  =>  integer
+ *     int.to_i      ->  integer
+ *     int.to_int    ->  integer
+ *     int.floor     ->  integer
+ *     int.ceil      ->  integer
+ *     int.round     ->  integer
+ *     int.truncate  ->  integer
  *
  *  As <i>int</i> is already an <code>Integer</code>, all these
  *  methods simply return the receiver.
@@ -1820,7 +1820,7 @@ int_to_i(VALUE num)
 
 /*
  *  call-seq:
- *     int.integer?  =>  true
+ *     int.integer?  ->  true
  *
  *  Always returns <code>true</code>.
  */
@@ -1833,7 +1833,7 @@ int_int_p(VALUE num)
 
 /*
  *  call-seq:
- *     int.odd?  =>  true or false
+ *     int.odd?  ->  true or false
  *
  *  Returns <code>true</code> if <i>int</i> is an odd number.
  */
@@ -1849,7 +1849,7 @@ int_odd_p(VALUE num)
 
 /*
  *  call-seq:
- *     int.even?  =>  true or false
+ *     int.even?  ->  true or false
  *
  *  Returns <code>true</code> if <i>int</i> is an even number.
  */
@@ -1865,8 +1865,8 @@ int_even_p(VALUE num)
 
 /*
  *  call-seq:
- *     fixnum.next  =>  integer
- *     fixnum.succ  =>  integer
+ *     fixnum.next  ->  integer
+ *     fixnum.succ  ->  integer
  *
  *  Returns the <code>Integer</code> equal to <i>int</i> + 1.
  *
@@ -1883,8 +1883,8 @@ fix_succ(VALUE num)
 
 /*
  *  call-seq:
- *     int.next  =>  integer
- *     int.succ  =>  integer
+ *     int.next  ->  integer
+ *     int.succ  ->  integer
  *
  *  Returns the <code>Integer</code> equal to <i>int</i> + 1.
  *
@@ -1904,7 +1904,7 @@ int_succ(VALUE num)
 
 /*
  *  call-seq:
- *     int.pred  =>  integer
+ *     int.pred  ->  integer
  *
  *  Returns the <code>Integer</code> equal to <i>int</i> - 1.
  *
@@ -1924,7 +1924,7 @@ int_pred(VALUE num)
 
 /*
  *  call-seq:
- *     int.chr([encoding])  =>  string
+ *     int.chr([encoding])  ->  string
  *
  *  Returns a string containing the character represented by the
  *  receiver's value according to +encoding+.
@@ -1981,7 +1981,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *     int.ord  =>  self
+ *     int.ord  ->  self
  *
  *  Returns the int itself.
  *
@@ -2020,7 +2020,7 @@ int_ord(num)
 
 /*
  * call-seq:
- *   -fix  =>  integer
+ *   -fix  ->  integer
  *
  * Negates <code>fix</code> (which might return a Bignum).
  */
@@ -2062,7 +2062,7 @@ rb_fix2str(VALUE x, int base)
 
 /*
  *  call-seq:
- *     fix.to_s(base=10)  =>  string
+ *     fix.to_s(base=10)  ->  string
  *
  *  Returns a string containing the representation of <i>fix</i> radix
  *  <i>base</i> (between 2 and 36).
@@ -2093,7 +2093,7 @@ fix_to_s(int argc, VALUE *argv, VALUE x)
 
 /*
  * call-seq:
- *   fix + numeric  =>  numeric_result
+ *   fix + numeric  ->  numeric_result
  *
  * Performs addition: the class of the resulting object depends on
  * the class of <code>numeric</code> and on the magnitude of the
@@ -2126,7 +2126,7 @@ fix_plus(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix - numeric  =>  numeric_result
+ *   fix - numeric  ->  numeric_result
  *
  * Performs subtraction: the class of the resulting object depends on
  * the class of <code>numeric</code> and on the magnitude of the
@@ -2164,7 +2164,7 @@ fix_minus(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix * numeric  =>  numeric_result
+ *   fix * numeric  ->  numeric_result
  *
  * Performs multiplication: the class of the resulting object depends on
  * the class of <code>numeric</code> and on the magnitude of the
@@ -2246,7 +2246,7 @@ fixdivmod(long x, long y, long *divp, long *modp)
 
 /*
  *  call-seq:
- *     fix.fdiv(numeric)  =>  float
+ *     fix.fdiv(numeric)  ->  float
  *
  *  Returns the floating point result of dividing <i>fix</i> by
  *  <i>numeric</i>.
@@ -2308,7 +2308,7 @@ fix_divide(VALUE x, VALUE y, ID op)
 
 /*
  * call-seq:
- *   fix / numeric  =>  numeric_result
+ *   fix / numeric  ->  numeric_result
  *
  * Performs division: the class of the resulting object depends on
  * the class of <code>numeric</code> and on the magnitude of the
@@ -2323,7 +2323,7 @@ fix_div(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix.div(numeric)  =>  integer
+ *   fix.div(numeric)  ->  integer
  *
  * Performs integer division: returns integer value.
  */
@@ -2336,8 +2336,8 @@ fix_idiv(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    fix % other        =>  real
- *    fix.modulo(other)  =>  real
+ *    fix % other        ->  real
+ *    fix.modulo(other)  ->  real
  *
  *  Returns <code>fix</code> modulo <code>other</code>.
  *  See <code>numeric.divmod</code> for more information.
@@ -2370,7 +2370,7 @@ fix_mod(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     fix.divmod(numeric)  =>  array
+ *     fix.divmod(numeric)  ->  array
  *
  *  See <code>Numeric#divmod</code>.
  */
@@ -2443,7 +2443,7 @@ int_pow(long x, unsigned long y)
 
 /*
  *  call-seq:
- *    fix ** numeric  =>  numeric_result
+ *    fix ** numeric  ->  numeric_result
  *
  *  Raises <code>fix</code> to the <code>numeric</code> power, which may
  *  be negative or fractional.
@@ -2508,7 +2508,7 @@ fix_pow(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix == other  =>  true or false
+ *   fix == other  ->  true or false
  *
  * Return <code>true</code> if <code>fix</code> equals <code>other</code>
  * numerically.
@@ -2534,7 +2534,7 @@ fix_equal(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     fix <=> numeric  =>  -1, 0, +1
+ *     fix <=> numeric  ->  -1, 0, +1
  *
  *  Comparison---Returns -1, 0, or +1 depending on whether <i>fix</i> is
  *  less than, equal to, or greater than <i>numeric</i>. This is the
@@ -2561,7 +2561,7 @@ fix_cmp(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix > real  =>  true or false
+ *   fix > real  ->  true or false
  *
  * Returns <code>true</code> if the value of <code>fix</code> is
  * greater than that of <code>real</code>.
@@ -2586,7 +2586,7 @@ fix_gt(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix >= real  =>  true or false
+ *   fix >= real  ->  true or false
  *
  * Returns <code>true</code> if the value of <code>fix</code> is
  * greater than or equal to that of <code>real</code>.
@@ -2611,7 +2611,7 @@ fix_ge(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix < real  =>  true or false
+ *   fix < real  ->  true or false
  *
  * Returns <code>true</code> if the value of <code>fix</code> is
  * less than that of <code>real</code>.
@@ -2636,7 +2636,7 @@ fix_lt(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix <= rael  =>  true or false
+ *   fix <= rael  ->  true or false
  *
  * Returns <code>true</code> if the value of <code>fix</code> is
  * less than or equal to that of <code>real</code>.
@@ -2661,7 +2661,7 @@ fix_le(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   ~fix  =>  integer
+ *   ~fix  ->  integer
  *
  * One's complement: returns a number where each bit is flipped.
  */
@@ -2689,7 +2689,7 @@ bit_coerce(VALUE x)
 
 /*
  * call-seq:
- *   fix & integer  =>  integer_result
+ *   fix & integer  ->  integer_result
  *
  * Bitwise AND.
  */
@@ -2708,7 +2708,7 @@ fix_and(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix | integer  =>  integer_result
+ *   fix | integer  ->  integer_result
  *
  * Bitwise OR.
  */
@@ -2727,7 +2727,7 @@ fix_or(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix ^ integer  =>  integer_result
+ *   fix ^ integer  ->  integer_result
  *
  * Bitwise EXCLUSIVE OR.
  */
@@ -2749,7 +2749,7 @@ static VALUE fix_rshift(long, unsigned long);
 
 /*
  * call-seq:
- *   fix << count  =>  integer
+ *   fix << count  ->  integer
  *
  * Shifts _fix_ left _count_ positions (right if _count_ is negative).
  */
@@ -2781,7 +2781,7 @@ fix_lshift(long val, unsigned long width)
 
 /*
  * call-seq:
- *   fix >> count  =>  integer
+ *   fix >> count  ->  integer
  *
  * Shifts _fix_ right _count_ positions (left if _count_ is negative).
  */
@@ -2814,7 +2814,7 @@ fix_rshift(long val, unsigned long i)
 
 /*
  *  call-seq:
- *     fix[n]  =>  0, 1
+ *     fix[n]  ->  0, 1
  *
  *  Bit Reference---Returns the <em>n</em>th bit in the binary
  *  representation of <i>fix</i>, where <i>fix</i>[0] is the least
@@ -2857,7 +2857,7 @@ fix_aref(VALUE fix, VALUE idx)
 
 /*
  *  call-seq:
- *     fix.to_f  =>  float
+ *     fix.to_f  ->  float
  *
  *  Converts <i>fix</i> to a <code>Float</code>.
  *
@@ -2875,8 +2875,8 @@ fix_to_f(VALUE num)
 
 /*
  *  call-seq:
- *     fix.abs        =>  integer
- *     fix.magnitude  =>  integer
+ *     fix.abs        ->  integer
+ *     fix.magnitude  ->  integer
  *
  *  Returns the absolute value of <i>fix</i>.
  *
@@ -2899,7 +2899,7 @@ fix_abs(VALUE fix)
 
 /*
  *  call-seq:
- *     fix.size  =>  fixnum
+ *     fix.size  ->  fixnum
  *
  *  Returns the number of <em>bytes</em> in the machine representation
  *  of a <code>Fixnum</code>.
@@ -2917,8 +2917,8 @@ fix_size(VALUE fix)
 
 /*
  *  call-seq:
- *     int.upto(limit) {|i| block }  =>  self
- *     int.upto(limit)               =>  enumerator
+ *     int.upto(limit) {|i| block }  ->  self
+ *     int.upto(limit)               ->  enumerator
  *
  *  Iterates <em>block</em>, passing in integer values from <i>int</i>
  *  up to and including <i>limit</i>.
@@ -2956,8 +2956,8 @@ int_upto(VALUE from, VALUE to)
 
 /*
  *  call-seq:
- *     int.downto(limit) {|i| block }  =>  self
- *     int.downto(limit)               =>  enumerator
+ *     int.downto(limit) {|i| block }  ->  self
+ *     int.downto(limit)               ->  enumerator
  *
  *  Iterates <em>block</em>, passing decreasing values from <i>int</i>
  *  down to and including <i>limit</i>.
@@ -2996,8 +2996,8 @@ int_downto(VALUE from, VALUE to)
 
 /*
  *  call-seq:
- *     int.times {|i| block }  =>  self
- *     int.times               =>  enumerator
+ *     int.times {|i| block }  ->  self
+ *     int.times               ->  enumerator
  *
  *  Iterates block <i>int</i> times, passing in values from zero to
  *  <i>int</i> - 1.
@@ -3075,7 +3075,7 @@ int_round(int argc, VALUE* argv, VALUE num)
 
 /*
  *  call-seq:
- *     fix.zero?  =>  true or false
+ *     fix.zero?  ->  true or false
  *
  *  Returns <code>true</code> if <i>fix</i> is zero.
  *
@@ -3092,7 +3092,7 @@ fix_zero_p(VALUE num)
 
 /*
  *  call-seq:
- *     fix.odd?  =>  true or false
+ *     fix.odd?  ->  true or false
  *
  *  Returns <code>true</code> if <i>fix</i> is an odd number.
  */
@@ -3108,7 +3108,7 @@ fix_odd_p(VALUE num)
 
 /*
  *  call-seq:
- *     fix.even?  =>  true or false
+ *     fix.even?  ->  true or false
  *
  *  Returns <code>true</code> if <i>fix</i> is an even number.
  */
