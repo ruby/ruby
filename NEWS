@@ -144,7 +144,7 @@ with all sufficient information, see the ChangeLog file.
 
 * rss
 
-  * 0.2.4 -> 0.2.5
+  * 0.2.4 -> 0.2.7.
 
   * RSS::Maker.make
     * raise an exception not returns nil for invalid feed making.
@@ -155,6 +155,11 @@ with all sufficient information, see the ChangeLog file.
 
   * RSS::Maker.supported?(version)
     * new method to check whether given version is supported.
+
+  * RSS::Maker: item.guid.permanent_link?
+    * new alias of item.guid.isPermaLink
+  * RSS::Maker: item.guid.permanent_link=
+    * new alias of item.guid.isPermaLink=
 
 * REXML
 

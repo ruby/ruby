@@ -1,3 +1,12 @@
+Sat Jun 27 13:47:19 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* NEWS, lib/rss/maker/base.rb, test/rss/test_maker_2.0.rb: add
+	item.guid.permanent_link? and item.guid.permanent_link=.
+
+	* NEWS: rss: 0.2.5 -> 0.2.7.
+
+	* lib/rss/rss.rb, test/rss/test_version.rb: 0.2.6 -> 0.2.7.
+
 Fri Jun 26 11:02:28 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (CXX_EXT): cygwin's filesystem (= Windows) is case

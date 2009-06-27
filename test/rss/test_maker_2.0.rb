@@ -488,6 +488,26 @@ module RSS
       assert_equal(content, guid.content)
     end
 
+    def test_guid_permanent_link
+      content = "http://inessential.com/2002/09/01.php#a2"
+
+      rss = RSS::Maker.make("2.0") do |maker|
+        setup_dummy_channel(maker)
+        setup_dummy_item(maker)
+
+        guid = maker.items.last.guid
+        assert_equal(nil, guid.permanent_link?)
+        assert_equal(guid.isPermaLink, guid.permanent_link?)
+        guid.permanent_link = true
+        assert_equal(true, guid.permanent_link?)
+        assert_equal(guid.isPermaLink, guid.permanent_link?)
+        guid.content = content
+      end
+      guid = rss.channel.items.last.guid
+      assert_equal(true, guid.isPermaLink)
+      assert_equal(content, guid.content)
+    end
+
     def test_not_valid_guid
       content = "http://inessential.com/2002/09/01.php#a2"
       
