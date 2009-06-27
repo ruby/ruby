@@ -1473,7 +1473,7 @@ string_to_c_strict(VALUE self)
  * Returns a complex which denotes the string form.  The parser
  * ignores leading whitespaces and trailing garbage.  Any digit
  * sequences can be separeted by an underscore.  Returns zero for null
- * string.
+ * or garbage string.
  *
  * For example:
  *
