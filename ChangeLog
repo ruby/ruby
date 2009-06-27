@@ -1,3 +1,7 @@
+Sat Jun 27 16:56:33 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c (nurat_cmp): use rb_num_coerce_cmp.
+
 Sat Jun 27 16:45:10 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: revised rdoc.

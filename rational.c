@@ -979,7 +979,7 @@ nurat_cmp(VALUE self, VALUE other)
 	    return f_cmp(f_sub(num1, num2), ZERO);
 	}
       default:
-	return rb_num_coerce_bin(self, other, id_cmp);
+	return rb_num_coerce_cmp(self, other, id_cmp);
     }
 }
 
