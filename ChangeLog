@@ -1,3 +1,8 @@
+Sat Jun 27 13:44:48 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* NEWS, lib/rss/maker/base.rb, test/rss/test_maker_2.0.rb: add
+	item.guid.permanent_link? and item.guid.permanent_link=.
+
 Sat Jun 27 13:41:00 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* NEWS: rss: 0.2.5 -> 0.2.7.

@@ -746,6 +746,14 @@ module RSS
             attr_accessor element
             add_need_initialize_variable(element)
           end
+
+          def permanent_link?
+            isPermaLink
+          end
+
+          def permanent_link=(bool)
+            self.isPermaLink = bool
+          end
         end
 
         class EnclosureBase < Base
