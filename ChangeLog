@@ -1,3 +1,13 @@
+Sun Jun 28 23:32:11 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_div): raises ZeroDivisionError immediately
+	  when the given second argument is zero.
+
+	* rational.c (nurat_fdiv): never raise even if the given second
+	  argument is zero.
+
+	* rational.c (rb_raise_zerodiv): changed the message (zero to 0).
+
 Sun Jun 28 22:25:07 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_expt): convert to a float when the given power

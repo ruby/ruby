@@ -727,6 +727,8 @@ f_divide(VALUE self, VALUE other,
     return rb_num_coerce_bin(self, other, id);
 }
 
+#define rb_raise_zerodiv() rb_raise(rb_eZeroDivError, "divided by 0")
+
 /*
  * call-seq:
  *    cmp / numeric     ->  complex
@@ -742,6 +744,8 @@ f_divide(VALUE self, VALUE other,
 static VALUE
 nucomp_div(VALUE self, VALUE other)
 {
+    if (f_zero_p(other))
+	rb_raise_zerodiv();
     return f_divide(self, other, f_quo, id_quo);
 }
 

@@ -321,7 +321,7 @@ nurat_s_alloc(VALUE klass)
     return nurat_s_new_internal(klass, ZERO, ONE);
 }
 
-#define rb_raise_zerodiv() rb_raise(rb_eZeroDivError, "divided by zero")
+#define rb_raise_zerodiv() rb_raise(rb_eZeroDivError, "divided by 0")
 
 #if 0
 static VALUE
@@ -867,6 +867,8 @@ nurat_div(VALUE self, VALUE other)
 static VALUE
 nurat_fdiv(VALUE self, VALUE other)
 {
+    if (f_zero_p(other))
+	return f_div(self, f_to_f(other));
     return f_to_f(f_div(self, other));
 }
 
