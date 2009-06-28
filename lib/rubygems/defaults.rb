@@ -20,8 +20,11 @@ module Gem
     if defined? RUBY_FRAMEWORK_VERSION then
       File.join File.dirname(ConfigMap[:sitedir]), 'Gems',
                 ConfigMap[:ruby_version]
-    # 1.9.2dev reverted to 1.8 style path
-    elsif RUBY_VERSION > '1.9' and RUBY_VERSION < '1.9.2' then
+    elsif RUBY_VERSION >= '1.9.2' then
+      File.join(ConfigMap[:rubylibprefix], 'gems',
+                ConfigMap[:ruby_version])
+    # only Ruby 1.9.1 has a peculiar feature
+    elsif RUBY_VERSION > '1.9' and 
       File.join(ConfigMap[:libdir], ConfigMap[:ruby_install_name], 'gems',
                 ConfigMap[:ruby_version])
     else

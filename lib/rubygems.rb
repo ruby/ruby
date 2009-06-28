@@ -173,6 +173,7 @@ module Gem
     :bindir => RbConfig::CONFIG["bindir"],
     :datadir => RbConfig::CONFIG["datadir"],
     :libdir => RbConfig::CONFIG["libdir"],
+    :rubylibprefix => RbConfig::CONFIG["rubylibprefix"],
     :ruby_install_name => RbConfig::CONFIG["ruby_install_name"],
     :ruby_version => RbConfig::CONFIG["ruby_version"],
     :sitedir => RbConfig::CONFIG["sitedir"],

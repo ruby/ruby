@@ -1,3 +1,10 @@
+Sun Jun 28 19:02:07 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/rubygems.rb (ConfigMap[:rubylibprefix]): new entry
+
+	* lib/rubygems/defaults.rb (Gem.default_dir): considers
+	  "--with-rubylibprefix" configure option.
+
 Sun Jun 28 09:21:00 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: renamed some static functions.
