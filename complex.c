@@ -227,6 +227,18 @@ k_integer_p(VALUE x)
 }
 
 inline static VALUE
+k_fixnum_p(VALUE x)
+{
+    return f_kind_of_p(x, rb_cFixnum);
+}
+
+inline static VALUE
+k_bignum_p(VALUE x)
+{
+    return f_kind_of_p(x, rb_cBignum);
+}
+
+inline static VALUE
 k_float_p(VALUE x)
 {
     return f_kind_of_p(x, rb_cFloat);
@@ -831,7 +843,7 @@ nucomp_expt(VALUE self, VALUE other)
 		       f_mul(dat->imag, m_log_bang(r)));
 	return f_complex_polar(CLASS_OF(self), nr, ntheta);
     }
-    if (k_integer_p(other)) {
+    if (k_fixnum_p(other)) {
 	if (f_gt_p(other, ZERO)) {
 	    VALUE x, z, n;
 
@@ -862,9 +874,12 @@ nucomp_expt(VALUE self, VALUE other)
     if (k_numeric_p(other) && f_real_p(other)) {
 	VALUE r, theta;
 
+	if (k_bignum_p(other))
+	    rb_warn("in a**b, b may be too big");
+
 	r = f_abs(self);
 	theta = f_arg(self);
-	return f_complex_polar(CLASS_OF(self), f_expt(r, other),
+	return f_complex_polar(CLASS_OF(self), rb_fexpt(r, other),
 			       f_mul(theta, other));
     }
     return rb_num_coerce_bin(self, other, id_expt);

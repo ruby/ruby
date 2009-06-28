@@ -902,7 +902,6 @@ nurat_expt(VALUE self, VALUE other)
 
     switch (TYPE(other)) {
       case T_FIXNUM:
-      case T_BIGNUM:
 	{
 	    VALUE num, den;
 
@@ -924,6 +923,8 @@ nurat_expt(VALUE self, VALUE other)
 	    }
 	    return f_rational_new2(CLASS_OF(self), num, den);
 	}
+      case T_BIGNUM:
+	rb_warn("in a**b, b may be too big");
       case T_FLOAT:
       case T_RATIONAL:
 	return rb_fexpt(f_to_f(self), other);
