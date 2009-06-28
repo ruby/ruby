@@ -1,3 +1,9 @@
+Sun Jun 28 09:21:00 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: renamed some static functions.
+
+	* rational.c: ditto.
+
 Sat Jun 27 19:06:22 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_addsub): new

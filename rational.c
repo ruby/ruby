@@ -934,7 +934,7 @@ nurat_expt(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat <=> numeric  ->  -1, 0 or +1
+ *    rat <=> numeric  ->  -1, 0, +1 or nil
  *
  * Performs comparison and returns -1, 0, or +1.
  *
@@ -1156,8 +1156,7 @@ nurat_round(VALUE self)
 }
 
 static VALUE
-nurat_round_common(int argc, VALUE *argv, VALUE self,
-		   VALUE (*func)(VALUE))
+f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 {
     VALUE n, b, s;
 
@@ -1205,7 +1204,7 @@ nurat_round_common(int argc, VALUE *argv, VALUE self,
 static VALUE
 nurat_floor_n(int argc, VALUE *argv, VALUE self)
 {
-    return nurat_round_common(argc, argv, self, nurat_floor);
+    return f_round_common(argc, argv, self, nurat_floor);
 }
 
 /*
@@ -1231,7 +1230,7 @@ nurat_floor_n(int argc, VALUE *argv, VALUE self)
 static VALUE
 nurat_ceil_n(int argc, VALUE *argv, VALUE self)
 {
-    return nurat_round_common(argc, argv, self, nurat_ceil);
+    return f_round_common(argc, argv, self, nurat_ceil);
 }
 
 /*
@@ -1257,7 +1256,7 @@ nurat_ceil_n(int argc, VALUE *argv, VALUE self)
 static VALUE
 nurat_truncate_n(int argc, VALUE *argv, VALUE self)
 {
-    return nurat_round_common(argc, argv, self, nurat_truncate);
+    return f_round_common(argc, argv, self, nurat_truncate);
 }
 
 /*
@@ -1284,7 +1283,7 @@ nurat_truncate_n(int argc, VALUE *argv, VALUE self)
 static VALUE
 nurat_round_n(int argc, VALUE *argv, VALUE self)
 {
-    return nurat_round_common(argc, argv, self, nurat_round);
+    return f_round_common(argc, argv, self, nurat_round);
 }
 
 /*
@@ -1342,7 +1341,7 @@ nurat_hash(VALUE self)
 }
 
 static VALUE
-nurat_format(VALUE self, VALUE (*func)(VALUE))
+f_format(VALUE self, VALUE (*func)(VALUE))
 {
     VALUE s;
     get_dat1(self);
@@ -1369,7 +1368,7 @@ nurat_format(VALUE self, VALUE (*func)(VALUE))
 static VALUE
 nurat_to_s(VALUE self)
 {
-    return nurat_format(self, f_to_s);
+    return f_format(self, f_to_s);
 }
 
 /*
@@ -1390,7 +1389,7 @@ nurat_inspect(VALUE self)
     VALUE s;
 
     s = rb_usascii_str_new2("(");
-    rb_str_concat(s, nurat_format(self, f_inspect));
+    rb_str_concat(s, f_format(self, f_inspect));
     rb_str_cat2(s, ")");
 
     return s;

@@ -585,9 +585,9 @@ nucomp_negate(VALUE self)
 			f_negate(dat->real), f_negate(dat->imag));
 }
 
-static VALUE
-nucomp_addsub(VALUE self, VALUE other,
-	      VALUE (*func)(VALUE, VALUE), ID id)
+inline static VALUE
+f_addsub(VALUE self, VALUE other,
+	 VALUE (*func)(VALUE, VALUE), ID id)
 {
     if (k_complex_p(other)) {
 	VALUE real, imag;
@@ -617,7 +617,7 @@ nucomp_addsub(VALUE self, VALUE other,
 static VALUE
 nucomp_add(VALUE self, VALUE other)
 {
-    return nucomp_addsub(self, other, f_add, '+');
+    return f_addsub(self, other, f_add, '+');
 }
 
 /*
@@ -629,7 +629,7 @@ nucomp_add(VALUE self, VALUE other)
 static VALUE
 nucomp_sub(VALUE self, VALUE other)
 {
-    return nucomp_addsub(self, other, f_sub, '-');
+    return f_addsub(self, other, f_sub, '-');
 }
 
 /*
@@ -663,9 +663,9 @@ nucomp_mul(VALUE self, VALUE other)
     return rb_num_coerce_bin(self, other, '*');
 }
 
-static VALUE
-nucomp_divide(VALUE self, VALUE other,
-	      VALUE (*func)(VALUE, VALUE), ID id)
+inline static VALUE
+f_divide(VALUE self, VALUE other,
+	 VALUE (*func)(VALUE, VALUE), ID id)
 {
     if (k_complex_p(other)) {
 	int flo;
@@ -730,7 +730,7 @@ nucomp_divide(VALUE self, VALUE other,
 static VALUE
 nucomp_div(VALUE self, VALUE other)
 {
-    return nucomp_divide(self, other, f_quo, id_quo);
+    return f_divide(self, other, f_quo, id_quo);
 }
 
 #define nucomp_quo nucomp_div
@@ -748,7 +748,7 @@ nucomp_div(VALUE self, VALUE other)
 static VALUE
 nucomp_fdiv(VALUE self, VALUE other)
 {
-    return nucomp_divide(self, other, f_fdiv, id_fdiv);
+    return f_divide(self, other, f_fdiv, id_fdiv);
 }
 
 /*
@@ -1113,7 +1113,7 @@ f_tpositive_p(VALUE x)
 }
 
 static VALUE
-nucomp_format(VALUE self, VALUE (*func)(VALUE))
+f_format(VALUE self, VALUE (*func)(VALUE))
 {
     VALUE s, impos;
 
@@ -1141,7 +1141,7 @@ nucomp_format(VALUE self, VALUE (*func)(VALUE))
 static VALUE
 nucomp_to_s(VALUE self)
 {
-    return nucomp_format(self, f_to_s);
+    return f_format(self, f_to_s);
 }
 
 /*
@@ -1156,7 +1156,7 @@ nucomp_inspect(VALUE self)
     VALUE s;
 
     s = rb_usascii_str_new2("(");
-    rb_str_concat(s, nucomp_format(self, f_inspect));
+    rb_str_concat(s, f_format(self, f_inspect));
     rb_str_cat2(s, ")");
 
     return s;
