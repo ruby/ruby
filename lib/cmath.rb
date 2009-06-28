@@ -63,7 +63,8 @@ module CMath
 	sqrt!(z)
       end
     else
-      if z.imag < 0
+      if z.imag < 0 ||
+	  (z.imag == 0 && z.imag.to_s[0] == '-')
 	sqrt(z.conjugate).conjugate
       else
 	r = z.abs
