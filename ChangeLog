@@ -1,3 +1,9 @@
+Sun Jun 28 19:48:29 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_expt): some improvements.
+
+	* rational.c (nurat_expt): ditto.
+
 Sun Jun 28 19:03:46 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* tool/instruby.rb (:gem): registers the bundled version

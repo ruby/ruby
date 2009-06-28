@@ -751,6 +751,37 @@ nucomp_fdiv(VALUE self, VALUE other)
     return f_divide(self, other, f_fdiv, id_fdiv);
 }
 
+static VALUE
+m_log(VALUE x)
+{
+    if (f_real_p(x) && f_positive_p(x))
+	return m_log_bang(x);
+    return rb_complex_new2(m_log_bang(f_abs(x)), f_arg(x));
+}
+
+static VALUE
+m_exp(VALUE x)
+{
+    VALUE ere;
+
+    if (f_real_p(x))
+	return m_exp_bang(x);
+    {
+	get_dat1(x);
+	ere = m_exp_bang(dat->real);
+	return rb_complex_new2(f_mul(ere, m_cos_bang(dat->imag)),
+			       f_mul(ere, m_sin_bang(dat->imag)));
+    }
+}
+
+VALUE
+rb_fexpt(VALUE x, VALUE y)
+{
+    if (f_zero_p(x) || (!k_float_p(x) && !k_float_p(y)))
+	return f_expt(x, y);
+    return m_exp(f_mul(m_log(x), y));
+}
+
 /*
  * call-seq:
  *    cmp ** numeric  ->  complex
@@ -769,7 +800,22 @@ nucomp_expt(VALUE self, VALUE other)
 	return f_complex_new_bang1(CLASS_OF(self), ONE);
 
     if (k_rational_p(other) && f_one_p(f_denominator(other)))
-	other = f_numerator(other); /* good? */
+	other = f_numerator(other); /* c14n */
+
+    if (k_complex_p(other)) {
+	get_dat1(other);
+
+	if (f_zero_p(dat->imag))
+	    other = dat->real; /* c14n */
+    }
+
+    {
+	get_dat1(self);
+
+	if (f_zero_p(dat->imag) && f_real_p(other))
+	    return f_complex_new1(CLASS_OF(self),
+				  rb_fexpt(dat->real, other)); /* c14n */
+    }
 
     if (k_complex_p(other)) {
 	VALUE r, theta, nr, ntheta;

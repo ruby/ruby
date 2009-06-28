@@ -870,6 +870,8 @@ nurat_fdiv(VALUE self, VALUE other)
     return f_to_f(f_div(self, other));
 }
 
+extern VALUE rb_fexpt(VALUE x, VALUE y);
+
 /*
  * call-seq:
  *    rat ** numeric  ->  numeric_result
@@ -895,7 +897,7 @@ nurat_expt(VALUE self, VALUE other)
 	get_dat1(other);
 
 	if (f_one_p(dat->den))
-	    other = dat->num; /* good? */
+	    other = dat->num; /* c14n */
     }
 
     switch (TYPE(other)) {
@@ -924,9 +926,7 @@ nurat_expt(VALUE self, VALUE other)
 	}
       case T_FLOAT:
       case T_RATIONAL:
-	if (f_negative_p(self))
-	    return f_expt(rb_complex_new1(self), other); /* explicitly */
-	return f_expt(f_to_f(self), other);
+	return rb_fexpt(f_to_f(self), other);
       default:
 	return rb_num_coerce_bin(self, other, id_expt);
     }
@@ -956,7 +956,7 @@ nurat_cmp(VALUE self, VALUE other)
 	    get_dat1(self);
 
 	    if (FIXNUM_P(dat->den) && FIX2LONG(dat->den) == 1)
-		return f_cmp(dat->num, other);
+		return f_cmp(dat->num, other); /* c14n */
 	    return f_cmp(self, f_rational_new_bang1(CLASS_OF(self), other));
 	}
       case T_FLOAT:
