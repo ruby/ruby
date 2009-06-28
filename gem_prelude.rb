@@ -91,29 +91,32 @@ if defined?(Gem) then
     end
 
     # begin rubygems/defaults
-  
+
     @post_install_hooks   ||= []
     @post_uninstall_hooks ||= []
     @pre_uninstall_hooks  ||= []
     @pre_install_hooks    ||= []
-  
+
     ##
     # An Array of the default sources that come with RubyGems
-  
+
     def self.default_sources
       %w[http://gems.rubyforge.org/]
     end
-  
+
     ##
     # Default home directory path to be used if an alternate value is not
     # specified in the environment
-  
+
     def self.default_dir
       if defined? RUBY_FRAMEWORK_VERSION then
         File.join File.dirname(ConfigMap[:sitedir]), 'Gems',
                   ConfigMap[:ruby_version]
-      # 1.9.2dev reverted to 1.8 style path
-      elsif RUBY_VERSION > '1.9' and RUBY_VERSION < '1.9.2' then
+      elsif RUBY_VERSION >= '1.9.2' then
+        File.join(ConfigMap[:rubylibprefix], 'gems',
+                  ConfigMap[:ruby_version])
+      # only Ruby 1.9.1 has a peculiar feature
+      elsif RUBY_VERSION > '1.9' and 
         File.join(ConfigMap[:libdir], ConfigMap[:ruby_install_name], 'gems',
                   ConfigMap[:ruby_version])
       else

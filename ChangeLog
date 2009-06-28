@@ -1,3 +1,8 @@
+Sun Jun 28 23:10:55 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* gem_prelude.c (Gem.default_dir): follows the change on 
+	  lib/rubygems/default.rb in r23879
+
 Sun Jun 28 23:32:11 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_div): raises ZeroDivisionError immediately
