@@ -1,6 +1,12 @@
+Sun Jun 28 19:03:46 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* tool/instruby.rb (:gem): registers the bundled version
+	  of minitest as a gem as rdoc or rake. 
+	  c.f. [ruby-dev:38692].
+
 Sun Jun 28 19:02:07 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* lib/rubygems.rb (ConfigMap[:rubylibprefix]): new entry
+	* lib/rubygems.rb (ConfigMap[:rubylibprefix]): new entry.
 
 	* lib/rubygems/defaults.rb (Gem.default_dir): considers
 	  "--with-rubylibprefix" configure option.

@@ -511,13 +511,17 @@ install?(:ext, :comm, :gem) do
   prepare "default gems", gpath, directories
 
   destdir = File.join(gpath, directories.grep(/^spec/)[0])
-  gems = %w[rake rdoc]
-  gems.each do |gem|
-    lib = File.join(srcdir, "lib/#{gem}.rb")
+  default_gems = [
+    ['rake', 'rake.rb'],
+    ['rdoc', 'rdoc.rb'],
+    ['minitest', 'minitest/unit.rb'],
+  ]
+  default_gems.each do |name, lib|
+    lib = File.join(srcdir, "lib", lib)
     version = open(lib) {|f| f.find {|s| /^\s*\w*VERSION\s*=(?!=)/ =~ s}} or next
     version = version.split(%r"=\s*", 2)[1].strip
-    open_for_install(File.join(destdir, "#{gem}.gemspec"), $data_mode) do |f|
-      "Gem::Specification.new {|s| s.name, s.version = #{gem.dump}, #{version}}\n"
+    open_for_install(File.join(destdir, "#{name}.gemspec"), $data_mode) do |f|
+      "Gem::Specification.new {|s| s.name, s.version = #{name.dump}, #{version}}\n"
     end
   end
 end
