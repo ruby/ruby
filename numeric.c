@@ -935,11 +935,11 @@ rb_dbl_cmp(double a, double b)
 
 /*
  *  call-seq:
- *     flt <=> real  ->  -1, 0, +1
+ *     flt <=> real  ->  -1, 0, +1 or nil
  *
- *  Returns -1, 0, or +1 depending on whether <i>flt</i> is less than,
- *  equal to, or greater than <i>real</i>. This is the basis for the
- *  tests in <code>Comparable</code>.
+ *  Returns -1, 0, +1 or nil depending on whether <i>flt</i> is less
+ *  than, equal to, or greater than <i>real</i>. This is the basis for
+ *  the tests in <code>Comparable</code>.
  */
 
 static VALUE
@@ -2534,11 +2534,12 @@ fix_equal(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     fix <=> numeric  ->  -1, 0, +1
+ *     fix <=> numeric  ->  -1, 0, +1 or nil
  *
- *  Comparison---Returns -1, 0, or +1 depending on whether <i>fix</i> is
- *  less than, equal to, or greater than <i>numeric</i>. This is the
- *  basis for the tests in <code>Comparable</code>.
+ *  Comparison---Returns -1, 0, +1 or nil depending on whether
+ *  <i>fix</i> is less than, equal to, or greater than
+ *  <i>numeric</i>. This is the basis for the tests in
+ *  <code>Comparable</code>.
  */
 
 static VALUE
