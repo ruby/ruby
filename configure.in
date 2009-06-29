@@ -304,6 +304,9 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_INSTALL
 
+AC_CHECK_TOOL(DOT, dot)
+AC_CHECK_TOOL(DOXYGEN, doxygen)
+
 # checks for UNIX variants that set C preprocessor variables
 AC_USE_SYSTEM_EXTENSIONS
 
