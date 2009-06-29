@@ -1,3 +1,7 @@
+Tue Jun 30 08:42:34 2009  Eric Hodel  <drbrain@segment7.net>
+
+	* tool/instruby.rb: summary is required in a .gemspec.
+
 Tue Jun 30 01:35:12 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* tool/strip-rdocs.rb: supports QT style doxy-comments.
