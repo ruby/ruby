@@ -2642,7 +2642,7 @@ ntfs_tail(const char *path)
 #endif
 
 #define BUFCHECK(cond) do {\
-    size_t bdiff = p - buf;\
+    bdiff = p - buf;\
     if (cond) {\
 	do {buflen *= 2;} while (cond);\
 	rb_str_resize(result, buflen);\
@@ -2711,7 +2711,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 {
     const char *s, *b;
     char *buf, *p, *pend, *root;
-    size_t buflen, dirlen;
+    size_t buflen, dirlen, bdiff;
     int tainted;
     rb_encoding *extenc = 0;
 
