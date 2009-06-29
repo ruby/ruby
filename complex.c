@@ -825,14 +825,6 @@ nucomp_expt(VALUE self, VALUE other)
 	    other = dat->real; /* c14n */
     }
 
-    {
-	get_dat1(self);
-
-	if (k_exact_p(dat->imag) && f_zero_p(dat->imag) && f_real_p(other))
-	    return f_complex_new1(CLASS_OF(self),
-				  rb_fexpt(dat->real, other)); /* c14n */
-    }
-
     if (k_complex_p(other)) {
 	VALUE r, theta, nr, ntheta;
 
@@ -883,7 +875,8 @@ nucomp_expt(VALUE self, VALUE other)
 
 	r = f_abs(self);
 	theta = f_arg(self);
-	return f_complex_polar(CLASS_OF(self), rb_fexpt(r, other),
+
+	return f_complex_polar(CLASS_OF(self), f_expt(r, other),
 			       f_mul(theta, other));
     }
     return rb_num_coerce_bin(self, other, id_expt);

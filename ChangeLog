@@ -1,3 +1,7 @@
+Tue Jun 30 01:19:53 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_expt): do not use rb_fexpt.
+
 Mon Jun 29 22:50:10 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* Doxyfile.in: removed. merged into template/Doxyfile.template
