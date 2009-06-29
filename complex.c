@@ -19,8 +19,8 @@ VALUE rb_cComplex;
 
 static ID id_abs, id_abs2, id_arg, id_cmp, id_conj, id_convert,
     id_denominator, id_divmod, id_equal_p, id_expt, id_fdiv, id_floor,
-    id_idiv, id_inspect, id_negate, id_numerator, id_quo, id_real_p,
-    id_to_f, id_to_i, id_to_r, id_to_s;
+    id_idiv, id_imag, id_inspect, id_negate, id_numerator, id_quo,
+    id_real, id_real_p, id_to_f, id_to_i, id_to_r, id_to_s;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -155,9 +155,11 @@ fun1(arg)
 fun1(conj)
 fun1(denominator)
 fun1(floor)
+fun1(imag)
 fun1(inspect)
 fun1(negate)
 fun1(numerator)
+fun1(real)
 fun1(real_p)
 
 fun1(to_f)
@@ -778,16 +780,14 @@ m_log(VALUE x)
 static VALUE
 m_exp(VALUE x)
 {
-    VALUE ere;
+    VALUE ere, im;
 
     if (f_real_p(x))
 	return m_exp_bang(x);
-    {
-	get_dat1(x);
-	ere = m_exp_bang(dat->real);
-	return rb_complex_new2(f_mul(ere, m_cos_bang(dat->imag)),
-			       f_mul(ere, m_sin_bang(dat->imag)));
-    }
+    ere = m_exp_bang(f_real(x));
+    im = f_imag(x);
+    return rb_complex_new2(f_mul(ere, m_cos_bang(im)),
+			   f_mul(ere, m_sin_bang(im)));
 }
 
 VALUE
@@ -821,14 +821,14 @@ nucomp_expt(VALUE self, VALUE other)
     if (k_complex_p(other)) {
 	get_dat1(other);
 
-	if (f_zero_p(dat->imag))
+	if (k_exact_p(dat->imag) && f_zero_p(dat->imag))
 	    other = dat->real; /* c14n */
     }
 
     {
 	get_dat1(self);
 
-	if (f_zero_p(dat->imag) && f_real_p(other))
+	if (k_exact_p(dat->imag) && f_zero_p(dat->imag) && f_real_p(other))
 	    return f_complex_new1(CLASS_OF(self),
 				  rb_fexpt(dat->real, other)); /* c14n */
     }
@@ -1801,10 +1801,12 @@ Init_Complex(void)
     id_fdiv = rb_intern("fdiv");
     id_floor = rb_intern("floor");
     id_idiv = rb_intern("div");
+    id_imag = rb_intern("imag");
     id_inspect = rb_intern("inspect");
     id_negate = rb_intern("-@");
     id_numerator = rb_intern("numerator");
     id_quo = rb_intern("quo");
+    id_real = rb_intern("real");
     id_real_p = rb_intern("real?");
     id_to_f = rb_intern("to_f");
     id_to_i = rb_intern("to_i");
