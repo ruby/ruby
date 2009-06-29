@@ -524,7 +524,7 @@ install?(:ext, :comm, :gem) do
       <<-GEMSPEC
 Gem::Specification.new do |s|
   s.name = #{name.dump}
-  s.version = #{version.dump}
+  s.version = #{version}
   s.summary = "This #{name} is bundled with Ruby"
 end
       GEMSPEC
