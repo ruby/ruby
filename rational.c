@@ -927,6 +927,7 @@ nurat_expt(VALUE self, VALUE other)
 	}
       case T_BIGNUM:
 	rb_warn("in a**b, b may be too big");
+	/* fall through */
       case T_FLOAT:
       case T_RATIONAL:
 	return rb_fexpt(f_to_f(self), other);
