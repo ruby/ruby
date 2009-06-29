@@ -2450,7 +2450,6 @@ boot_defmetametaclass(VALUE klass, VALUE metametaclass)
 
 
 /*!
- *--
  * Initializes the world of objects and classes.
  *
  * At first, the function bootstraps the class hierarchy.
@@ -2466,7 +2465,10 @@ boot_defmetametaclass(VALUE klass, VALUE metametaclass)
  *
  * Then, the function defines classes, modules and methods as usual.
  * \ingroup class
- *++
+ */
+
+/*
+ *
  *  <code>BasicObject</code> is the parent class of all classes in Ruby.
  *  It's an explicit blank class.  <code>Object</code>, the root of Ruby's
  *  class hierarchy is a direct subclass of <code>BasicObject</code>.  Its
