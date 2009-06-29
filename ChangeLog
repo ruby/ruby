@@ -1,3 +1,8 @@
+Mon Jun 29 13:18:42 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils#fu_get_gid): stringify group
+	  argument before making regexp match.  [ruby-dev:38155]
+
 Fri Jun 12 16:36:44 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (VpToString): fixed a bug introduced

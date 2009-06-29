@@ -984,6 +984,7 @@ module FileUtils
 
     def fu_get_gid(group)   #:nodoc:
       return nil unless group
+      group = group.to_s
       if /\A\d+\z/ =~ group
       then group.to_i
       else Etc.getgrnam(group).gid
