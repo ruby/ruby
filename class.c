@@ -9,6 +9,20 @@
 
 **********************************************************************/
 
+/*!
+ * \defgroup class Classes and their hierarchy.
+ * \par Terminology
+ * - class: same as in Ruby.
+ * - singleton class: class for a particular object
+ * - eigenclass: = singleton class
+ * - metaclass: class of a class. metaclass is a kind of singleton class.
+ * - metametaclass: class of a metaclass.
+ * - meta^(n)-class: class of a meta^(n-1)-class.
+ * - attached object: A singleton class knows its unique instance.
+ *   The instance is called the attached object for the singleton class.
+ * \{
+ */
+
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "node.h"
@@ -16,6 +30,18 @@
 
 extern st_table *rb_class_tbl;
 
+/**
+ * Allocates a struct RClass for a new class.
+ *
+ * \param flags     initial value for basic.flags of the returned class.
+ * \param klass     the class of the returned class.
+ * \return          an uninitialized Class object.
+ * \pre  \p klass must refer \c Class class or an ancestor of Class.
+ * \pre  \code (flags | T_CLASS) != 0  \endcode
+ * \post the returned class can safely be \c #initialize 'd.
+ *
+ * \note this function is not Class#allocate.
+ */
 static VALUE
 class_alloc(VALUE flags, VALUE klass)
 {
@@ -30,6 +56,16 @@ class_alloc(VALUE flags, VALUE klass)
     return (VALUE)obj;
 }
 
+
+/*!
+ * A utility function that wraps class_alloc.
+ *
+ * allocates a class and initializes safely.
+ * \param super     a class from which the new class derives.
+ * \return          a class object.
+ * \pre  \a super must be a class.
+ * \post the metaclass of the new class is Class.
+ */
 VALUE
 rb_class_boot(VALUE super)
 {
@@ -42,6 +78,13 @@ rb_class_boot(VALUE super)
     return (VALUE)klass;
 }
 
+
+/*!
+ * Ensures a class can be derived from super.
+ *
+ * \param super a reference to an object.
+ * \exception TypeError if \a super is not a Class or \a super is a singleton class.
+ */
 void
 rb_check_inheritable(VALUE super)
 {
@@ -54,6 +97,13 @@ rb_check_inheritable(VALUE super)
     }
 }
 
+
+/*!
+ * Creates a new class.
+ * \param super     a class from which the new class derives.
+ * \exception TypeError \a super is not inheritable.
+ * \exception TypeError \a super is the Class class.
+ */
 VALUE
 rb_class_new(VALUE super)
 {
@@ -189,6 +239,13 @@ rb_singleton_class_attached(VALUE klass, VALUE obj)
 }
 
 
+/*!
+ * Creates a meta^(n+1)-class for a meta^(n)-class.
+ * \param metaclass     a class of a class
+ * \return              the created meta^(n+1)-class.
+ * \pre \a metaclass is a metaclass
+ * \post the class of \a metaclass is the returned class.
+ */
 static VALUE
 make_metametaclass(VALUE metaclass)
 {
@@ -224,6 +281,16 @@ make_metametaclass(VALUE metaclass)
 }
 
 
+/*!
+ * \internal
+ * Creates a singleton class for an object.
+ *
+ * \note DO NOT USE the function in an extension libraries. Use rb_singleton_class.
+ * \param obj    An object.
+ * \param super  A class from which the singleton class derives.
+ *        \note \a super is ignored if \a obj is a metaclass.
+ * \return       The singleton class of the object.
+ */
 VALUE
 rb_make_metaclass(VALUE obj, VALUE super)
 {
@@ -1040,3 +1107,7 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d%s)",
 		 argc, n_mand, f_var ? "+" : "");
 }
+
+/*!
+ * \}
+ */

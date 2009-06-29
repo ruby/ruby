@@ -69,7 +69,7 @@ HIDE_UNDOC_MEMBERS     = NO
 HIDE_UNDOC_CLASSES     = NO
 HIDE_FRIEND_COMPOUNDS  = NO
 HIDE_IN_BODY_DOCS      = YES
-INTERNAL_DOCS          = NO
+INTERNAL_DOCS          = YES
 CASE_SENSE_NAMES       = NO
 HIDE_SCOPE_NAMES       = NO
 SHOW_INCLUDE_FILES     = YES
@@ -112,7 +112,7 @@ EXCLUDE_SYMBOLS        =
 EXAMPLE_PATH           = 
 EXAMPLE_PATTERNS       = 
 EXAMPLE_RECURSIVE      = NO
-IMAGE_PATH             = 
+IMAGE_PATH             = <%= "#{srcdir}/doc/images" %>
 FILTER_PATTERNS        = 
 FILTER_SOURCE_FILES    = YES
 #---------------------------------------------------------------------------
@@ -253,7 +253,7 @@ CALLER_GRAPH           = NO
 GRAPHICAL_HIERARCHY    = NO
 DIRECTORY_GRAPH        = NO
 DOT_IMAGE_FORMAT       = png
-DOT_PATH               = <%= dot %>
+DOT_PATH               =
 DOTFILE_DIRS           = 
 DOT_GRAPH_MAX_NODES    = 50
 MAX_DOT_GRAPH_DEPTH    = 0
