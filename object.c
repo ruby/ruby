@@ -2427,27 +2427,25 @@ boot_defmetametaclass(VALUE klass, VALUE metametaclass)
  *  that follows, the vertical arrows represent inheritance, and the
  *  parentheses meta-classes. All metaclasses are instances
  *  of the class `Class'.
+ *                             +---------+             +-...
+ *                             |         |             |
+ *             BasicObject-----|-->(BasicObject)-------|-...
+ *                 ^           |         ^             |
+ *                 |           |         |             |
+ *              Object---------|----->(Object)---------|-...
+ *                 ^           |         ^             |
+ *                 |           |         |             |
+ *                 +-------+   |         +--------+    |
+ *                 |       |   |         |        |    |
+ *                 |    Module-|---------|--->(Module)-|-...
+ *                 |       ^   |         |        ^    |
+ *                 |       |   |         |        |    |
+ *                 |     Class-|---------|---->(Class)-|-...
+ *                 |       ^   |         |        ^    |
+ *                 |       +---+         |        +----+
+ *                 |                     |
+ *    obj--->OtherClass---------->(OtherClass)-----------...
  *
- *                             +-----------------+
- *                            |                  |
- *           BasicObject-->(BasicObject)         |
- *                ^           ^                  |
- *                |           |                  |
- *              Object---->(Object)              |
- *               ^  ^        ^  ^                |
- *               |  |        |  |                |
- *               |  |  +-----+  +---------+      |
- *               |  |  |                  |      |
- *               |  +-----------+         |      |
- *               |     |        |         |      |
- *        +------+     |     Module--->(Module)  |
- *        |            |        ^         ^      |
- *   OtherClass-->(OtherClass)  |         |      |
- *                              |         |      |
- *                            Class---->(Class)  |
- *                              ^                |
- *                              |                |
- *                              +----------------+
  */
 
 
