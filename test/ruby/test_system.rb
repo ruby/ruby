@@ -60,6 +60,28 @@ class TestSystem < Test::Unit::TestCase
 
       File.unlink tmpfilename or `/bin/rm -f "#{tmpfilename}"`
       File.unlink "#{tmpfilename}.bak" or `/bin/rm -f "#{tmpfilename}.bak"`
+
+      if /mswin|mingw/ =~ RUBY_PLATFORM
+        testname = '[ruby-dev:38588]'
+        batch = "batch_tmp.#{$$}"
+        tmpfilename = "#{tmpdir}/#{batch}.bat"
+        open(tmpfilename, "wb") {|f| f.print "\r\n"}
+        assert(system(tmpfilename), testname)
+        assert(system("#{tmpdir}/#{batch}"), testname)
+        assert(system(tmpfilename, "1"), testname)
+        assert(system("#{tmpdir}/#{batch}", "1"), testname)
+        begin
+          path = ENV["PATH"]
+          ENV["PATH"] = "#{tmpdir.tr(File::SEPARATOR, File::ALT_SEPARATOR)}#{File::PATH_SEPARATOR + path if path}"
+          assert(system("#{batch}.bat"), testname)
+          assert(system(batch), testname)
+          assert(system("#{batch}.bat", "1"), testname)
+          assert(system(batch, "1"), testname)
+        ensure
+          ENV["PATH"] = path
+        end
+        File.unlink tmpfilename
+      end
     }
   end
 

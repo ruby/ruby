@@ -1519,7 +1519,12 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
     struct stat st;
     size_t i, fspace;
 #ifdef DOSISH
-    int is_abs = 0, has_path = 0, has_ext = 0;
+    static const char extension[][5] = {
+	".exe", ".com", ".cmd", ".bat",
+    };
+    size_t j;
+    int is_abs = 0, has_path = 0;
+    const char *ext = 0;
     const char *p = fname;
 #endif
 
@@ -1546,15 +1551,23 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	switch (*p) {
 	  case '/': case '\\':
 	    has_path = 1;
-	    has_ext = 0;
+	    ext = 0;
 	    p++;
 	    break;
 	  case '.':
-	    has_ext = 1;
+	    ext = p;
 	    p++;
 	    break;
 	  default:
 	    p = CharNext(p);
+	}
+    }
+    if (ext) {
+	for (j = 0; STRCASECMP(ext, extension[j]); j++) {
+	    if (j == sizeof(extension) / sizeof(extension[0])) {
+		ext = 0;
+		break;
+	    }
 	}
     }
     ep = bp = 0;
@@ -1562,7 +1575,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	RETURN_IF(is_abs);
     }
     else if (has_path) {
-	RETURN_IF(has_ext);
+	RETURN_IF(ext);
 	i = p - fname;
 	if (i + 1 > size) goto toolong;
 	fspace = size - i - 1;
@@ -1646,15 +1659,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	memcpy(bp, fname, i + 1);
 
 #if defined(DOSISH)
-	if (exe_flag && !has_ext) {
-	    static const char extension[][5] = {
-#if defined(__EMX__) || defined(_WIN32)
-		".exe", ".com", ".cmd", ".bat",
-/* end of __EMX__ or _WIN32 */
-#endif
-	    };
-	    size_t j;
-
+	if (exe_flag && !ext) {
 	  needs_extension:
 	    for (j = 0; j < sizeof(extension) / sizeof(extension[0]); j++) {
 		if (fspace < strlen(extension[j])) {
