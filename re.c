@@ -2564,7 +2564,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos)
 		return pos;
 	    }
 	}
-	pos = rb_reg_adjust_startpos(re, str, pos, 0);
+	pos = rb_str_offset(str, pos);
     }
     return rb_reg_search(re, str, pos, 0);
 }

@@ -1440,6 +1440,13 @@ str_offset(const char *p, const char *e, long nth, rb_encoding *enc, int singleb
     return pp - p;
 }
 
+long
+rb_str_offset(VALUE str, long pos)
+{
+    return str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
+		      STR_ENC_GET(str), single_byte_optimizable(str));
+}
+
 #ifdef NONASCII_MASK
 static char *
 str_utf8_nth(const char *p, const char *e, long nth)
@@ -2563,9 +2570,8 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
     switch (TYPE(sub)) {
       case T_REGEXP:
 	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
-		     rb_enc_check(str, sub), single_byte_optimizable(str));
+			 rb_enc_check(str, sub), single_byte_optimizable(str));
 
-	pos = rb_reg_adjust_startpos(sub, str, pos, 0);
 	pos = rb_reg_search(sub, str, pos, 0);
 	pos = rb_str_sublen(str, pos);
 	break;
@@ -2680,7 +2686,6 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 			 STR_ENC_GET(str), single_byte_optimizable(str));
 
 	if (!RREGEXP(sub)->ptr || RREGEXP_SRC_LEN(sub)) {
-	    pos = rb_reg_adjust_startpos(sub, str, pos, 1);
 	    pos = rb_reg_search(sub, str, pos, 1);
 	    pos = rb_str_sublen(str, pos);
 	}
