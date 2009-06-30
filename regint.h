@@ -352,7 +352,7 @@ typedef unsigned char  Bits;
 typedef Bits           BitSet[BITSET_SIZE];
 typedef Bits*          BitSetRef;
 
-#define SIZE_BITSET        sizeof(BitSet)
+#define SIZE_BITSET        (int)sizeof(BitSet)
 
 #define BITSET_CLEAR(bs) do {\
   int i;\
@@ -582,15 +582,15 @@ typedef short int StateCheckNumType;
 typedef void* PointerType;
 
 #define SIZE_OPCODE           1
-#define SIZE_RELADDR          sizeof(RelAddrType)
-#define SIZE_ABSADDR          sizeof(AbsAddrType)
-#define SIZE_LENGTH           sizeof(LengthType)
-#define SIZE_MEMNUM           sizeof(MemNumType)
-#define SIZE_STATE_CHECK_NUM  sizeof(StateCheckNumType)
-#define SIZE_REPEATNUM        sizeof(RepeatNumType)
-#define SIZE_OPTION           sizeof(OnigOptionType)
-#define SIZE_CODE_POINT       sizeof(OnigCodePoint)
-#define SIZE_POINTER          sizeof(PointerType)
+#define SIZE_RELADDR          (int)sizeof(RelAddrType)
+#define SIZE_ABSADDR          (int)sizeof(AbsAddrType)
+#define SIZE_LENGTH           (int)sizeof(LengthType)
+#define SIZE_MEMNUM           (int)sizeof(MemNumType)
+#define SIZE_STATE_CHECK_NUM  (int)sizeof(StateCheckNumType)
+#define SIZE_REPEATNUM        (int)sizeof(RepeatNumType)
+#define SIZE_OPTION           (int)sizeof(OnigOptionType)
+#define SIZE_CODE_POINT       (int)sizeof(OnigCodePoint)
+#define SIZE_POINTER          (int)sizeof(PointerType)
 
 
 #define GET_RELADDR_INC(addr,p)    PLATFORM_GET_INC(addr,   p, RelAddrType)
@@ -760,7 +760,7 @@ typedef struct _OnigStackType {
 
 typedef struct {
   void* stack_p;
-  int   stack_n;
+  size_t stack_n;
   OnigOptionType options;
   OnigRegion*    region;
   const UChar* start;   /* search start position (for \G: BEGIN_POSITION) */

@@ -792,14 +792,19 @@ match_alloc(VALUE klass)
 }
 
 typedef struct {
-    int byte_pos;
-    int char_pos;
+    long byte_pos;
+    long char_pos;
 } pair_t;
 
 static int
 pair_byte_cmp(const void *pair1, const void *pair2)
 {
-    return ((pair_t*)pair1)->byte_pos - ((pair_t*)pair2)->byte_pos;
+    long diff = ((pair_t*)pair1)->byte_pos - ((pair_t*)pair2)->byte_pos;
+#if SIZEOF_LONG > SIZEOF_INT
+    return diff ? diff > 0 ? 1 : -1 : 0;
+#else
+    return (int)diff;
+#endif
 }
 
 static void
@@ -1254,10 +1259,10 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     return reg;
 }
 
-int
-rb_reg_adjust_startpos(VALUE re, VALUE str, int pos, int reverse)
+long
+rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int reverse)
 {
-    int range;
+    long range;
     rb_encoding *enc;
     UChar *p, *string;
 
@@ -1285,10 +1290,10 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, int pos, int reverse)
     return pos;
 }
 
-int
-rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
+long
+rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
 {
-    int result;
+    long result;
     VALUE match;
     struct re_registers regi, *regs = &regi;
     char *range = RSTRING_PTR(str);
@@ -1344,7 +1349,7 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
 	}
 	else {
 	    onig_errmsg_buffer err = "";
-	    onig_error_code_to_str((UChar*)err, result);
+	    onig_error_code_to_str((UChar*)err, (int)result);
 	    rb_reg_raise(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), err, 0);
 	}
     }
@@ -1686,7 +1691,8 @@ match_aref(int argc, VALUE *argv, VALUE match)
 static VALUE
 match_entry(VALUE match, long n)
 {
-    return rb_reg_nth_match(n, match);
+    /* n should not exceed num_regs */
+    return rb_reg_nth_match((int)n, match);
 }
 
 
@@ -1875,12 +1881,12 @@ again:
       case '0': case '1': case '2': case '3':
       case '4': case '5': case '6': case '7':
         p--;
-        code = ruby_scan_oct(p, end < p+3 ? end-p : 3, &len);
+        code = scan_oct(p, end < p+3 ? end-p : 3, &len);
         p += len;
         break;
 
       case 'x': /* \xHH */
-        code = ruby_scan_hex(p, end < p+2 ? end-p : 2, &len);
+        code = scan_hex(p, end < p+2 ? end-p : 2, &len);
         if (len < 1) {
             errcpy(err, "invalid hex escape");
             return -1;
@@ -2307,7 +2313,7 @@ rb_reg_preprocess_dregexp(VALUE ary)
 }
 
 static int
-rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
+rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
 		  int options, onig_errmsg_buffer err)
 {
     struct RRegexp *re = RREGEXP(obj);
@@ -2476,7 +2482,8 @@ rb_reg_regcomp(VALUE str)
 static VALUE
 rb_reg_hash(VALUE re)
 {
-    int hashval, len;
+    unsigned long hashval;
+    long len;
     char *p;
 
     rb_reg_check(re);
@@ -2488,7 +2495,7 @@ rb_reg_hash(VALUE re)
     }
     hashval = hashval + (hashval>>5);
 
-    return INT2FIX(hashval);
+    return LONG2FIX(hashval);
 }
 
 

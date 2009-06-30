@@ -217,7 +217,7 @@ onig_strncmp(const UChar* s1, const UChar* s2, int n)
 extern void
 onig_strcpy(UChar* dest, const UChar* src, const UChar* end)
 {
-  int len = end - src;
+  ptrdiff_t len = end - src;
   if (len > 0) {
     xmemcpy(dest, src, len);
     dest[len] = (UChar )0;
@@ -228,7 +228,8 @@ onig_strcpy(UChar* dest, const UChar* src, const UChar* end)
 static UChar*
 strdup_with_null(OnigEncoding enc, UChar* s, UChar* end)
 {
-  int slen, term_len, i;
+  ptrdiff_t slen;
+  int term_len, i;
   UChar *r;
 
   slen = end - s;
@@ -389,7 +390,7 @@ onig_st_insert_strend(hash_table_type* table, const UChar* str_key,
 
 typedef struct {
   UChar* name;
-  int    name_len;   /* byte length */
+  size_t name_len;   /* byte length */
   int    back_num;   /* number of backrefs */
   int    back_alloc;
   int    back_ref1;
@@ -1413,10 +1414,10 @@ node_new_option(OnigOptionType option)
 extern int
 onig_node_str_cat(Node* node, const UChar* s, const UChar* end)
 {
-  int addlen = end - s;
+  ptrdiff_t addlen = end - s;
 
   if (addlen > 0) {
-    int len  = NSTR(node)->end - NSTR(node)->s;
+    ptrdiff_t len  = NSTR(node)->end - NSTR(node)->s;
 
     if (NSTR(node)->capa > 0 || (len + addlen > NODE_STR_BUF_SIZE - 1)) {
       UChar* p;

@@ -57,7 +57,7 @@ onigenc_mbclen_approximate(const OnigUChar* p,const OnigUChar* e, struct OnigEnc
   if (ONIGENC_MBCLEN_CHARFOUND_P(ret))
     return ONIGENC_MBCLEN_CHARFOUND_LEN(ret);
   else if (ONIGENC_MBCLEN_NEEDMORE_P(ret))
-    return e-p+ONIGENC_MBCLEN_NEEDMORE_LEN(ret);
+    return (int)(e-p)+ONIGENC_MBCLEN_NEEDMORE_LEN(ret);
   return 1;
 }
 
@@ -757,7 +757,7 @@ onigenc_mb2_code_to_mbc(OnigEncoding enc, OnigCodePoint code, UChar *buf)
   if (enclen(enc, buf, p) != (p - buf))
     return ONIGERR_INVALID_CODE_POINT_VALUE;
 #endif
-  return p - buf;
+  return (int)(p - buf);
 }
 
 extern int
@@ -780,7 +780,7 @@ onigenc_mb4_code_to_mbc(OnigEncoding enc, OnigCodePoint code, UChar *buf)
   if (enclen(enc, buf, p) != (p - buf))
     return ONIGERR_INVALID_CODE_POINT_VALUE;
 #endif
-  return p - buf;
+  return (int)(p - buf);
 }
 
 extern int
@@ -870,7 +870,7 @@ onigenc_with_ascii_strncmp(OnigEncoding enc, const UChar* p, const UChar* end,
 static int
 resize_property_list(int new_size, const OnigCodePoint*** plist, int* psize)
 {
-  int size;
+  size_t size;
   const OnigCodePoint **list = *plist;
 
   size = sizeof(OnigCodePoint*) * new_size;

@@ -413,7 +413,7 @@ onig_region_copy(OnigRegion* to, OnigRegion* from)
 #define STACK_SAVE do{\
   if (stk_base != stk_alloc) {\
     msa->stack_p = stk_base;\
-    msa->stack_n = stk_end - stk_base;\
+    msa->stack_n = stk_end - stk_base; /* TODO: check overflow */\
   };\
 } while(0)
 
@@ -436,7 +436,7 @@ static int
 stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 	     OnigStackType** arg_stk, OnigStackType* stk_alloc, OnigMatchArg* msa)
 {
-  unsigned int n;
+  size_t n;
   OnigStackType *x, *stk_base, *stk_end, *stk;
 
   stk_base = *arg_stk_base;
@@ -1242,7 +1242,7 @@ typedef struct {
 
 /* match data(str - end) from position (sstart). */
 /* if sstart == str then set sprev to NULL. */
-static int
+static long
 match_at(regex_t* reg, const UChar* str, const UChar* end,
 #ifdef USE_MATCH_RANGE_MUST_BE_INSIDE_OF_SPECIFIED_RANGE
 	 const UChar* right_range,
@@ -3064,11 +3064,11 @@ map_search_backward(OnigEncoding enc, UChar map[],
   return (UChar* )NULL;
 }
 
-extern int
+extern long
 onig_match(regex_t* reg, const UChar* str, const UChar* end, const UChar* at, OnigRegion* region,
 	    OnigOptionType option)
 {
-  int r;
+  long r;
   UChar *prev;
   OnigMatchArg msa;
 
@@ -3260,7 +3260,7 @@ static int set_bm_backward_skip P_((UChar* s, UChar* end, OnigEncoding enc,
 
 #define BM_BACKWARD_SEARCH_LENGTH_THRESHOLD   100
 
-static int
+static long
 backward_search_range(regex_t* reg, const UChar* str, const UChar* end,
 		      UChar* s, const UChar* range, UChar* adjrange,
 		      UChar** low, UChar** high)
@@ -3365,7 +3365,7 @@ backward_search_range(regex_t* reg, const UChar* str, const UChar* end,
 }
 
 
-extern int
+extern long
 onig_search(regex_t* reg, const UChar* str, const UChar* end,
 	    const UChar* start, const UChar* range, OnigRegion* region, OnigOptionType option)
 {

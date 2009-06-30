@@ -232,7 +232,7 @@ static int to_ascii(OnigEncoding enc, UChar *s, UChar *end,
     *is_over = ((p < end) ? 1 : 0);
   }
   else {
-    len = MIN((end - s), buf_size);
+    len = (int)MIN((end - s), buf_size);
     xmemcpy(buf, s, (size_t )len);
     *is_over = ((buf_size < (end - s)) ? 1 : 0);
   }
@@ -256,7 +256,8 @@ onig_error_code_to_str(s, code, va_alist)
 {
   UChar *p, *q;
   OnigErrorInfo* einfo;
-  int len, is_over;
+  size_t len;
+  int is_over;
   UChar parbuf[MAX_ERROR_PAR_LEN];
   va_list vargs;
 
@@ -327,7 +328,8 @@ onig_snprintf_with_pattern(buf, bufsize, enc, pat, pat_end, fmt, va_alist)
     va_dcl
 #endif
 {
-  int n, need, len;
+  size_t need;
+  int n, len;
   UChar *p, *s, *bp;
   UChar bs[6];
   va_list args;

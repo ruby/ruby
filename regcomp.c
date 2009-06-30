@@ -52,7 +52,7 @@ static unsigned char PadBuf[WORD_ALIGNMENT_SIZE];
 static UChar*
 str_dup(UChar* s, UChar* end)
 {
-  int len = end - s;
+  ptrdiff_t len = end - s;
 
   if (len > 0) {
     UChar* r = (UChar* )xmalloc(len + 1);
@@ -73,7 +73,7 @@ swap_node(Node* a, Node* b)
   if (NTYPE(a) == NT_STR) {
     StrNode* sn = NSTR(a);
     if (sn->capa == 0) {
-      int len = sn->end - sn->s;
+      size_t len = sn->end - sn->s;
       sn->s   = sn->buf;
       sn->end = sn->s + len;
     }
@@ -82,7 +82,7 @@ swap_node(Node* a, Node* b)
   if (NTYPE(b) == NT_STR) {
     StrNode* sn = NSTR(b);
     if (sn->capa == 0) {
-      int len = sn->end - sn->s;
+      size_t len = sn->end - sn->s;
       sn->s   = sn->buf;
       sn->end = sn->s + len;
     }
@@ -416,7 +416,7 @@ compile_tree_n_times(Node* node, int n, regex_t* reg)
 }
 
 static int
-add_compile_string_length(UChar* s ARG_UNUSED, int mb_len, int str_len,
+add_compile_string_length(UChar* s ARG_UNUSED, int mb_len, OnigDistance str_len,
                           regex_t* reg ARG_UNUSED, int ignore_case)
 {
   int len;
