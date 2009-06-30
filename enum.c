@@ -31,8 +31,9 @@ enum_values_pack(int argc, VALUE *argv)
 #define enum_yield rb_yield_values2
 
 static VALUE
-grep_i(VALUE i, VALUE *arg, int argc, VALUE *argv)
+grep_i(VALUE i, VALUE args, int argc, VALUE *argv)
 {
+    VALUE *arg = (VALUE *)args;
     ENUM_WANT_SVALUE();
 
     if (RTEST(rb_funcall(arg[0], id_eqq, 1, i))) {
@@ -42,8 +43,9 @@ grep_i(VALUE i, VALUE *arg, int argc, VALUE *argv)
 }
 
 static VALUE
-grep_iter_i(VALUE i, VALUE *arg, int argc, VALUE *argv)
+grep_iter_i(VALUE i, VALUE args, int argc, VALUE *argv)
 {
+    VALUE *arg = (VALUE *)args;
     ENUM_WANT_SVALUE();
 
     if (RTEST(rb_funcall(arg[0], id_eqq, 1, i))) {
