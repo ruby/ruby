@@ -113,7 +113,7 @@ getdynamic
 ()
 (VALUE val)
 {
-    int i;
+    rb_num_t i;
     VALUE *dfp2 = GET_DFP();
     for (i = 0; i < level; i++) {
 	dfp2 = GET_PREV_DFP(dfp2);
@@ -134,7 +134,7 @@ setdynamic
 (VALUE val)
 ()
 {
-    int i;
+    rb_num_t i;
     VALUE *dfp2 = GET_DFP();
     for (i = 0; i < level; i++) {
 	dfp2 = GET_PREV_DFP(dfp2);
@@ -387,10 +387,10 @@ concatstrings
 (...)
 (VALUE val) // inc += 1 - num;
 {
-    int i;
+    rb_num_t i = num;
 
     val = rb_str_new(0, 0);
-    for (i = num - 1; i >= 0; i--) {
+    while (i-- > 0) {
 	const VALUE v = TOPN(i);
 	rb_str_append(val, v);
     }
@@ -424,13 +424,13 @@ toregexp
 (VALUE val) // inc += 1 - cnt;
 {
     VALUE rb_reg_new_ary(VALUE ary, int options);
-    int i;
+    rb_num_t i;
     const VALUE ary = rb_ary_tmp_new(cnt);
     for (i = 0; i < cnt; i++) {
         rb_ary_store(ary, cnt-i-1, TOPN(i));
     }
     POPN(cnt);
-    val = rb_reg_new_ary(ary, opt);
+    val = rb_reg_new_ary(ary, (int)opt);
     rb_ary_clear(ary);
 }
 
@@ -481,7 +481,7 @@ expandarray
 (..., VALUE ary)
 (...) // inc += num - 1 + (flag & 1 ? 1 : 0);
 {
-    vm_expandarray(GET_CFP(), ary, num, flag);
+    vm_expandarray(GET_CFP(), ary, num, (int)flag);
 }
 
 /**
@@ -605,7 +605,7 @@ newrange
 (VALUE low, VALUE high)
 (VALUE val)
 {
-    val = rb_range_new(low, high, flag);
+    val = rb_range_new(low, high, (int)flag);
 }
 
 /**********************************************************/
@@ -652,7 +652,7 @@ dupn
 (...)
 (...) // inc += n;
 {
-    int i;
+    rb_num_t i;
     VALUE *sp = STACK_ADDR_FROM_TOP(n);
     for (i = 0; i < n; i++) {
 	GET_SP()[i] = sp[i];
@@ -851,7 +851,7 @@ trace
 ()
 ()
 {
-    rb_event_flag_t flag = nf;
+    rb_event_flag_t flag = (rb_event_flag_t)nf;
 
     EXEC_EVENT_HOOK(th, flag, GET_SELF(), 0, 0 /* TODO: id, klass */);
 }
@@ -982,7 +982,7 @@ send
     NODE *mn;
     VALUE recv, klass;
     rb_block_t *blockptr = 0;
-    rb_num_t num = caller_setup_args(th, GET_CFP(), op_flag, op_argc,
+    rb_num_t num = caller_setup_args(th, GET_CFP(), op_flag, (int)op_argc,
 				     (rb_iseq_t *)blockiseq, &blockptr);
     rb_num_t flag = op_flag;
     ID id = op_id;
@@ -1014,7 +1014,8 @@ invokesuper
 (VALUE val) // inc += - (int)(op_argc + ((op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? 1 : 0));
 {
     rb_block_t *blockptr = !(op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? GET_BLOCK_PTR() : 0;
-    int num = caller_setup_args(th, GET_CFP(), op_flag, op_argc, blockiseq, &blockptr);
+    rb_num_t num = caller_setup_args(th, GET_CFP(), op_flag,
+				     (int)op_argc, blockiseq, &blockptr);
     VALUE recv, klass;
     NODE *mn;
     ID id;
