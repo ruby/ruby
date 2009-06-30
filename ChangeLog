@@ -1,3 +1,7 @@
+Tue Jun 30 11:05:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (dln_find_1): fixed index overrun.
+
 Tue Jun 30 08:42:34 2009  Eric Hodel  <drbrain@segment7.net>
 
 	* tool/instruby.rb: summary is required in a .gemspec.
