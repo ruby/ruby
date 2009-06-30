@@ -1,4 +1,6 @@
-Tue Jun 30 16:48:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jun 30 16:53:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/file2lastrev.rb: get rid of global variables.
 
 	* tool/compile_prelude.rb: use US-ASCII name.
 

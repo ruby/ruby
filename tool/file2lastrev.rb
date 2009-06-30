@@ -48,25 +48,27 @@ def get_revisions(path)
   return last, changed
 end
 
-def raise_if_conflict
-  raise "you can specify only one of --changed, --revision.h and --doxygen" if $output
+@output = nil
+def self.output=(output)
+  if @output and @output != output
+    raise "you can specify only one of --changed, --revision.h and --doxygen"
+  end
+  @output = output
 end
+@suppress_not_found = false
 
 parser = OptionParser.new {|opts|
   opts.on("--changed", "changed rev") do
-    raise_if_conflict
-    $output = :changed
+    self.output = :changed
   end
   opts.on("--revision.h") do
-    raise_if_conflict
-    $output = :revision_h
+    self.output = :revision_h
   end
   opts.on("--doxygen") do
-    raise_if_conflict
-    $output = :doxygen
+    self.output = :doxygen
   end
   opts.on("-q", "--suppress_not_found") do
-    $suppress_not_found = true
+    @suppress_not_found = true
   end
 }
 parser.parse!
@@ -75,10 +77,10 @@ parser.parse!
 begin
   last, changed = get_revisions(ARGV.shift)
 rescue VCSNotFoundError
-  raise unless $suppress_not_found
+  raise unless @suppress_not_found
 end
 
-case $output
+case @output
 when :changed, nil
   puts changed
 when :revision_h
@@ -86,5 +88,5 @@ when :revision_h
 when :doxygen
   puts "r#{changed}/r#{last}"
 else
-  raise "unknown output format `#{$output}'"
+  raise "unknown output format `#{@output}'"
 end
