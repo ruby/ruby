@@ -493,12 +493,12 @@ w_encoding(VALUE obj, long num, struct dump_call_arg *arg)
     /* special treatment for US-ASCII and UTF-8 */
     if (encidx == rb_usascii_encindex()) {
 	w_symbol(rb_intern("E"), arg->arg);
-	w_object(Qfalse, arg->arg, arg->limit);
+	w_object(Qfalse, arg->arg, arg->limit + 1);
 	return;
     }
     else if (encidx == rb_utf8_encindex()) {
 	w_symbol(rb_intern("E"), arg->arg);
-	w_object(Qtrue, arg->arg, arg->limit);
+	w_object(Qtrue, arg->arg, arg->limit + 1);
 	return;
     }
 
@@ -511,7 +511,7 @@ w_encoding(VALUE obj, long num, struct dump_call_arg *arg)
 	name = (st_data_t)rb_str_new2(rb_enc_name(enc));
 	st_insert(arg->arg->encodings, (st_data_t)rb_enc_name(enc), name);
     } while (0);
-    w_object(name, arg->arg, arg->limit);
+    w_object(name, arg->arg, arg->limit + 1);
 }
 
 static void
