@@ -112,12 +112,23 @@ static ID id_eq, id_ne, id_quo, id_div, id_cmp, id_lshift;
 #define add(x,y) (rb_funcall((x), '+', 1, (y)))
 #define sub(x,y) (rb_funcall((x), '-', 1, (y)))
 #define mul(x,y) (rb_funcall((x), '*', 1, (y)))
-#define quo(x,y) (rb_funcall((x), id_quo, 1, (y)))
 #define div(x,y) (rb_funcall((x), id_div, 1, (y)))
 #define mod(x,y) (rb_funcall((x), '%', 1, (y)))
 #define neg(x) (sub(INT2FIX(0), (x)))
 #define cmp(x,y) (rb_funcall((x), id_cmp, 1, (y)))
 #define lshift(x,y) (rb_funcall((x), id_lshift, 1, (y)))
+
+static VALUE
+quo(VALUE x, VALUE y)
+{
+    VALUE ret;
+    ret = rb_funcall((x), id_quo, 1, (y));
+    if (TYPE(ret) == T_RATIONAL &&
+        ((struct RRational *)ret)->den == INT2FIX(1)) {
+        ret = ((struct RRational *)ret)->num;
+    }
+    return ret;
+}
 
 static void
 divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
