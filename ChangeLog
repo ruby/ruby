@@ -1,3 +1,8 @@
+Thu Jul  2 08:04:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (num_exact): rb_check_to_integer() can deal with both of
+	  Fixnum and Bignum together.
+
 Thu Jul  2 07:53:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): fixed wrong variable.

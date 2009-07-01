@@ -160,14 +160,11 @@ num_exact(VALUE v)
       case T_NIL:
         goto typeerror;
 
-      default:
-      {
+      default: {
         VALUE tmp;
         if (!NIL_P(tmp = rb_check_convert_type(v, T_RATIONAL, "Rational", "to_r")))
             v = tmp;
-        else if (!NIL_P(tmp = rb_check_convert_type(v, T_FIXNUM, "Integer", "to_int")))
-            v = tmp;
-        else if (!NIL_P(tmp = rb_check_convert_type(v, T_BIGNUM, "Integer", "to_int")))
+        else if (!NIL_P(tmp = rb_check_to_integer(v, "to_int")))
             v = tmp;
         else {
           typeerror:
