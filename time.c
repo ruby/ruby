@@ -1466,7 +1466,6 @@ time_new_internal(VALUE klass, VALUE timev)
 {
     VALUE time = time_s_alloc(klass);
     struct time_object *tobj;
-    struct timespec ts;
 
     GetTimeval(time, tobj);
     tobj->timev = num_exact(timev);
