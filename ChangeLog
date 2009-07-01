@@ -1,3 +1,7 @@
+Thu Jul  2 07:53:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): fixed wrong variable.
+
 Thu Jul  2 05:37:38 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (num_exact): use to_r for T_FLOAT.
