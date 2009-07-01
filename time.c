@@ -154,55 +154,8 @@ num_exact(VALUE v)
         break;
 
       case T_FLOAT:
-      {
-        double d = NUM2DBL(v);
-        int exp;
-        static long r = 0;
-        static int n = 0;
-        if (r == 0) {
-            long rr = FLT_RADIX;
-            int nn = 1;
-            while (rr < FIXNUM_MAX / FLT_RADIX) {
-                rr *= FLT_RADIX;
-                nn++;
-            }
-            n = nn;
-            r = rr;
-        }
-        d = frexp(d, &exp);
-        v = INT2FIX(0);
-        while (d != 0) {
-            long u;
-            exp -= n;
-            d *= r;
-            v = mul(v, LONG2FIX(r));
-            u = (long)d;
-            d -= u;
-            v = add(v, LONG2FIX(u));
-        }
-        if (exp < 0) {
-            VALUE w;
-            w = INT2FIX(1);
-            if (FLT_RADIX == 2)
-                w = lshift(w, INT2FIX(-exp));
-            else
-                while (exp) {
-                    w = mul(w, INT2FIX(FLT_RADIX));
-                    exp++;
-                }
-            v = quo(v, w);
-        }
-        else {
-            if (FLT_RADIX == 2)
-                v = lshift(v, INT2FIX(exp));
-            else
-                while (exp) {
-                    v = mul(v, INT2FIX(FLT_RADIX));
-                    exp--;
-                }
-        }
+        v = rb_convert_type(v, T_RATIONAL, "Rational", "to_r");
         break;
-      }
 
       case T_NIL:
         goto typeerror;
