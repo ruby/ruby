@@ -1,3 +1,8 @@
+Wed Jul  1 15:49:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (PUSH_ANCHOR, POP_ANCHOR, rb_thread_start_0): separated
+	  anchors from PROT_THREAD.  [ruby-core:24097]
+
 Sun Jun 28 05:11:03 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enum.c (enum_first): Perform negative length check before

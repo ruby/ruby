@@ -1142,11 +1142,11 @@ struct ruby_env {
 static void push_thread_anchor _((struct ruby_env *));
 static void pop_thread_anchor _((struct ruby_env *));
 
-#define PUSH_THREAD_TAG() PUSH_TAG(PROT_THREAD); \
+#define PUSH_ANCHOR() PUSH_TAG(PROT_NONE);	 \
     do {					 \
 	struct ruby_env _interp;		 \
 	push_thread_anchor(&_interp);
-#define POP_THREAD_TAG()			 \
+#define POP_ANCHOR()				 \
 	pop_thread_anchor(&_interp);		 \
     } while (0);				 \
     POP_TAG()
@@ -1579,7 +1579,7 @@ ruby_options(argc, argv)
     int state;
 
     ruby_init_stack((void*)&state);
-    PUSH_THREAD_TAG();
+    PUSH_ANCHOR();
     if ((state = EXEC_TAG()) == 0) {
 	ruby_process_options(argc, argv);
     }
@@ -1591,7 +1591,7 @@ ruby_options(argc, argv)
 	tracing = 0;
 	exit(error_handle(state));
     }
-    POP_THREAD_TAG();
+    POP_ANCHOR();
 }
 
 void rb_exec_end_proc _((void));
@@ -1635,7 +1635,7 @@ ruby_cleanup(ex)
     errs[1] = ruby_errinfo;
     ruby_safe_level = 0;
     ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
-    PUSH_THREAD_TAG();
+    PUSH_ANCHOR();
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
 	ruby_finalize_0();
@@ -1653,7 +1653,7 @@ ruby_cleanup(ex)
     ruby_errinfo = errs[1];
     ex = error_handle(ex);
     ruby_finalize_1();
-    POP_THREAD_TAG();
+    POP_ANCHOR();
 
     for (nerr = 0; nerr < sizeof(errs) / sizeof(errs[0]); ++nerr) {
 	VALUE err = errs[nerr];
@@ -1691,7 +1691,7 @@ ruby_exec_internal()
 {
     int state;
 
-    PUSH_THREAD_TAG();
+    PUSH_ANCHOR();
     PUSH_ITER(ITER_NOT);
     /* default visibility is private at toplevel */
     SCOPE_SET(SCOPE_PRIVATE);
@@ -1702,7 +1702,7 @@ ruby_exec_internal()
 	rb_thread_start_1();
     }
     POP_ITER();
-    POP_THREAD_TAG();
+    POP_ANCHOR();
     return state;
 }
 
@@ -5596,7 +5596,7 @@ rb_protect(proc, data, state)
     VALUE result = Qnil;	/* OK */
     int status;
 
-    PUSH_THREAD_TAG();
+    PUSH_ANCHOR();
     cont_protect = (VALUE)rb_node_newnode(NODE_MEMO, cont_protect, 0, 0);
     if ((status = EXEC_TAG()) == 0) {
 	result = (*proc)(data);
@@ -5605,7 +5605,7 @@ rb_protect(proc, data, state)
 	rb_thread_start_1();
     }
     cont_protect = ((NODE *)cont_protect)->u1.value;
-    POP_THREAD_TAG();
+    POP_ANCHOR();
     if (state) {
 	*state = status;
     }
@@ -7162,14 +7162,14 @@ rb_load_protect(fname, wrap, state)
 {
     int status;
 
-    PUSH_THREAD_TAG();
+    PUSH_ANCHOR();
     if ((status = EXEC_TAG()) == 0) {
 	rb_load(fname, wrap);
     }
     else if (status == TAG_THREAD) {
 	rb_thread_start_1();
     }
-    POP_THREAD_TAG();
+    POP_ANCHOR();
     if (state) *state = status;
 }
 
@@ -12608,7 +12608,7 @@ rb_thread_start_0(fn, arg, th)
 
     thread_insert(th);
 
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG(PROT_THREAD);
     if ((state = EXEC_TAG()) == 0) {
 	if (THREAD_SAVE_CONTEXT(th) == 0) {
 	    curr_thread = th;
