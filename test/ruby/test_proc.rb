@@ -101,4 +101,11 @@ class TestProc < Test::Unit::TestCase
     c.new.x(nil)
     assert_equal(2, a, '[ruby-core:23050]')
   end
+
+  def given_block(&b) b end
+  def test_return_from_proc
+    a_proc = eval("Proc.new { return }", TOPLEVEL_BINDING)
+    res = given_block(&a_proc)
+    assert_raise(LocalJumpError, '[ruby-core:24097]') {res.call}
+  end
 end
