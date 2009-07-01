@@ -383,6 +383,7 @@ class TestSocket < Test::Unit::TestCase
     assert_match(pat, stamp.inspect)
     t = stamp.timestamp
     assert_match(pat, t.strftime("%Y-%m-%d"))
+    assert_equal(stamp.data[-8,8].unpack("Q")[0], t.subsec * 2**64)
   end
 
 end if defined?(Socket)

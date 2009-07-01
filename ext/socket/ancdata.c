@@ -327,14 +327,20 @@ ancillary_timestamp(VALUE self)
     }
 # endif
 
+#define add(x,y) (rb_funcall((x), '+', 1, (y)))
+#define mul(x,y) (rb_funcall((x), '*', 1, (y)))
+#define quo(x,y) (rb_funcall((x), rb_intern("quo"), 1, (y)))
+
 # ifdef SCM_BINTIME
     if (level == SOL_SOCKET && type == SCM_BINTIME &&
         RSTRING_LEN(data) == sizeof(struct bintime)) {
         struct bintime bt;
-        struct timespec ts;
+	VALUE d, timev;
         memcpy((char*)&bt, RSTRING_PTR(data), sizeof(bt));
-        bintime2timespec(&bt, &ts);
-        result = rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+	d = ULL2NUM(0x100000000UL);
+	d = mul(d,d);
+	timev = add(TIMET2NUM(bt.sec), quo(ULL2NUM(bt.frac), d));
+        result = rb_time_num_new(timev, Qnil);
     }
 # endif
 

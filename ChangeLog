@@ -1,3 +1,16 @@
+Wed Jul  1 21:09:25 2009  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_time_num_new): declared.
+
+	* time.c (nsec2timev): extracted from time_new_internal.
+	  (time_new_internal): change argument to VALUE.
+	  (rb_time_new): follow the argument change.
+	  (rb_time_nano_new): ditto.
+	  (rb_time_num_new): new function.
+
+	* ext/socket/ancdata.c (ancillary_timestamp): use rb_time_num_new to
+	  represent struct bintime preciously.
+
 Wed Jul  1 08:46:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_encoding): encodings need extra depth.

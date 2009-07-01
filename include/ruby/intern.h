@@ -745,6 +745,7 @@ VALUE rb_barrier_destroy(VALUE self);
 /* time.c */
 VALUE rb_time_new(time_t, long);
 VALUE rb_time_nano_new(time_t, long);
+VALUE rb_time_num_new(VALUE, VALUE);
 /* variable.c */
 VALUE rb_mod_name(VALUE);
 VALUE rb_class_path(VALUE);

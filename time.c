@@ -51,6 +51,7 @@ static VALUE time_utc_offset _((VALUE));
 static long obj2long(VALUE obj);
 static VALUE obj2vint(VALUE obj);
 static int month_arg(VALUE arg);
+static void validate_utc_offset(VALUE utc_offset);
 static void validate_vtm(struct vtm *vtm);
 
 static VALUE time_gmtime(VALUE);
@@ -1451,18 +1452,24 @@ time_overflow_p(time_t *secp, long *nsecp)
     *nsecp = nsec;
 }
 
+static VALUE nsec2timev(time_t sec, long nsec)
+{
+    struct timespec ts;
+    time_overflow_p(&sec, &nsec);
+    ts.tv_sec = sec;
+    ts.tv_nsec = nsec;
+    return timespec2timev(&ts);
+}
+
 static VALUE
-time_new_internal(VALUE klass, time_t sec, long nsec)
+time_new_internal(VALUE klass, VALUE timev)
 {
     VALUE time = time_s_alloc(klass);
     struct time_object *tobj;
     struct timespec ts;
 
     GetTimeval(time, tobj);
-    time_overflow_p(&sec, &nsec);
-    ts.tv_sec = sec;
-    ts.tv_nsec = nsec;
-    tobj->timev = timespec2timev(&ts);
+    tobj->timev = num_exact(timev);
 
     return time;
 }
@@ -1470,13 +1477,28 @@ time_new_internal(VALUE klass, time_t sec, long nsec)
 VALUE
 rb_time_new(time_t sec, long usec)
 {
-    return time_new_internal(rb_cTime, sec, usec * 1000);
+    return time_new_internal(rb_cTime, nsec2timev(sec, usec * 1000));
 }
 
 VALUE
 rb_time_nano_new(time_t sec, long nsec)
 {
-    return time_new_internal(rb_cTime, sec, nsec);
+    return time_new_internal(rb_cTime, nsec2timev(sec, nsec));
+}
+
+VALUE
+rb_time_num_new(VALUE timev, VALUE off)
+{
+    VALUE time = time_new_internal(rb_cTime, timev);
+
+    if (!NIL_P(off)) {
+        off = utc_offset_arg(off);
+        validate_utc_offset(off);
+        time_set_utc_offset(time, off);
+        return time;
+    }
+
+    return time;
 }
 
 static VALUE
