@@ -112,7 +112,7 @@ range_exclude_end_p(VALUE range)
  *
  *  Returns <code>true</code> only if <i>obj</i> is a Range, has equivalent
  *  beginning and end items (by comparing them with <code>==</code>), and has
- *  the same #exclude_end? setting as <i>rng</t>.
+ *  the same <code>exclude_end?</code> setting as <i>rng</i>.
  *
  *    (0..2) == (0..2)            #=> true
  *    (0..2) == Range.new(0,2)    #=> true
