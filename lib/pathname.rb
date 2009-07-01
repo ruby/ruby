@@ -251,7 +251,21 @@ class Pathname
 
   # Return a pathname which is substituted by String#sub.
   def sub(pattern, *rest, &block)
-    self.class.new(@path.sub(pattern, *rest, &block))
+    if block
+      path = @path.sub(pattern, *rest) {|*args|
+        begin
+          old = Thread.current[:pathname_sub_matchdata]
+          Thread.current[:pathname_sub_matchdata] = $~
+          eval("$~ = Thread.current[:pathname_sub_matchdata]", block.binding)
+        ensure
+          Thread.current[:pathname_sub_matchdata] = old
+        end
+        yield *args
+      }
+    else
+      path = @path.sub(pattern, *rest)
+    end
+    self.class.new(path)
   end
 
   if File::ALT_SEPARATOR
