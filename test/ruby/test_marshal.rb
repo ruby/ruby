@@ -116,6 +116,7 @@ class TestMarshal < Test::Unit::TestCase
   def test_limit
     assert_equal([[[]]], Marshal.load(Marshal.dump([[[]]], 3)))
     assert_raise(ArgumentError) { Marshal.dump([[[]]], 2) }
+    assert_nothing_raised(ArgumentError, '[ruby-core:24100]') { Marshal.dump("\u3042", 1) }
   end
 
   def test_userdef_invalid
