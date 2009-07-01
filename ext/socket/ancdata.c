@@ -281,9 +281,6 @@ ancillary_unix_rights(VALUE self)
  * - SOL_SOCKET/SCM_TIMESTAMPNS (nano second) GNU/Linux
  * - SOL_SOCKET/SCM_BINTIME (2**(-64) second) FreeBSD
  *
- * Note that Time cannot represent SCM_BINTIME timestamps accurately
- * because Time represents a time in nano second granularity.
- *
  *   Addrinfo.udp("127.0.0.1", 0).bind {|s1|
  *     Addrinfo.udp("127.0.0.1", 0).bind {|s2|
  *       s1.setsockopt(:SOCKET, :TIMESTAMP, true)
