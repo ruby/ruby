@@ -947,7 +947,7 @@ module Net
       @greeting = get_response
       if @greeting.name == "BYE"
         @sock.close
-        raise ByeResponseError, @greeting.raw_data
+        raise ByeResponseError, @greeting
       end
 
       @client_thread = Thread.current
@@ -993,7 +993,7 @@ module Net
               end
               if resp.name == "BYE" && @logout_command_tag.nil?
                 @sock.close
-                @exception = ByeResponseError.new(resp.raw_data)
+                @exception = ByeResponseError.new(resp)
                 break
               end
             when ContinuationRequest
@@ -1025,9 +1025,9 @@ module Net
       resp = @tagged_responses.delete(tag)
       case resp.name
       when /\A(?:NO)\z/ni
-        raise NoResponseError, resp.data.text
+        raise NoResponseError, resp
       when /\A(?:BAD)\z/ni
-        raise BadResponseError, resp.data.text
+        raise BadResponseError, resp
       else
         return resp
       end
@@ -3328,6 +3328,16 @@ module Net
     # Superclass of all errors used to encapsulate "fail" responses
     # from the server.
     class ResponseError < Error
+
+      # The response that caused this error
+      attr_accessor :response
+
+      def initialize(response)
+        @response = response
+
+        super @response.data.text
+      end
+
     end
 
     # Error raised upon a "NO" response from the server, indicating
