@@ -1860,15 +1860,31 @@ timegm_noleapsecond(struct tm *tm)
 		    DIV(tm_year+299,400))*86400;
 }
 
+#ifdef FIND_TIME_NUMGUESS
+static unsigned long long find_time_numguess;
+
+static VALUE find_time_numguess_getter(void)
+{
+    return ULL2NUM(find_time_numguess);
+}
+#endif
+
 static const char *
 find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 {
     time_t guess, guess_lo, guess_hi;
     struct tm *tm, tm_lo, tm_hi;
-    int d, have_guess;
+    int d;
     int find_dst;
     struct tm result;
+    int try_interpolation;
+    unsigned long range;
+
+#ifdef FIND_TIME_NUMGUESS
+#define GUESS(p) (find_time_numguess++, (utc_p ? gmtime_with_leapsecond(p, &result) : LOCALTIME(p, result)))
+#else
 #define GUESS(p) (utc_p ? gmtime_with_leapsecond(p, &result) : LOCALTIME(p, result))
+#endif
 
     find_dst = 0 < tptr->tm_isdst;
 
@@ -1918,122 +1934,133 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
     if (d == 0) { guess = guess_hi; goto found; }
     tm_hi = *tm;
 
-    have_guess = 0;
+    try_interpolation = 1;
 
     while (guess_lo + 1 < guess_hi) {
-	/* there is a gap between guess_lo and guess_hi. */
-	unsigned long range = 0;
-	if (!have_guess) {
-	    int a, b;
-	    /*
-	      Try precious guess by a linear interpolation at first.
-	      `a' and `b' is a coefficient of guess_lo and guess_hi as:
+        if (try_interpolation == 1) {
+            int a, b;
+            /* there is a gap between guess_lo and guess_hi. */
+            range = 0;
+            /*
+              Try precious guess by a linear interpolation at first.
+              `a' and `b' is a coefficient of guess_lo and guess_hi as:
 
-	        guess = (guess_lo * a + guess_hi * b) / (a + b)
+                guess = (guess_lo * a + guess_hi * b) / (a + b)
 
-	      However this causes overflow in most cases, following assignment
-	      is used instead:
+              However this causes overflow in most cases, following assignment
+              is used instead:
 
-		guess = guess_lo / d * a + (guess_lo % d) * a / d
-			+ guess_hi / d * b + (guess_hi % d) * b / d
-		where d = a + b
+                guess = guess_lo / d * a + (guess_lo % d) * a / d
+                        + guess_hi / d * b + (guess_hi % d) * b / d
+                where d = a + b
 
-	      To avoid overflow in this assignment, `d' is restricted to less than
-	      sqrt(2**31).  By this restriction and other reasons, the guess is
-	      not accurate and some error is expected.  `range' approximates
-	      the maximum error.
+              To avoid overflow in this assignment, `d' is restricted to less than
+              sqrt(2**31).  By this restriction and other reasons, the guess is
+              not accurate and some error is expected.  `range' approximates
+              the maximum error.
 
-	      When these parameters are not suitable, i.e. guess is not within
-	      guess_lo and guess_hi, simple guess by binary search is used.
-	    */
-	    range = 366 * 24 * 60 * 60;
-	    a = (tm_hi.tm_year - tptr->tm_year);
-	    b = (tptr->tm_year - tm_lo.tm_year);
-	    /* 46000 is selected as `some big number less than sqrt(2**31)'. */
-	    if (a + b <= 46000 / 12) {
-		range = 31 * 24 * 60 * 60;
-		a *= 12;
-		b *= 12;
-		a += tm_hi.tm_mon - tptr->tm_mon;
-		b += tptr->tm_mon - tm_lo.tm_mon;
-		if (a + b <= 46000 / 31) {
-		    range = 24 * 60 * 60;
-		    a *= 31;
-		    b *= 31;
-		    a += tm_hi.tm_mday - tptr->tm_mday;
-		    b += tptr->tm_mday - tm_lo.tm_mday;
-		    if (a + b <= 46000 / 24) {
-			range = 60 * 60;
-			a *= 24;
-			b *= 24;
-			a += tm_hi.tm_hour - tptr->tm_hour;
-			b += tptr->tm_hour - tm_lo.tm_hour;
-			if (a + b <= 46000 / 60) {
-			    range = 60;
-			    a *= 60;
-			    b *= 60;
-			    a += tm_hi.tm_min - tptr->tm_min;
-			    b += tptr->tm_min - tm_lo.tm_min;
-			    if (a + b <= 46000 / 60) {
-				range = 1;
-				a *= 60;
-				b *= 60;
-				a += tm_hi.tm_sec - tptr->tm_sec;
-				b += tptr->tm_sec - tm_lo.tm_sec;
-			    }
-			}
-		    }
-		}
-	    }
-	    if (a <= 0) a = 1;
-	    if (b <= 0) b = 1;
-	    d = a + b;
-	    /*
-	      Although `/' and `%' may produce unexpected result with negative
-	      argument, it doesn't cause serious problem because there is a
-	      fail safe.
-	    */
-	    guess = guess_lo / d * a + (guess_lo % d) * a / d
-		    + guess_hi / d * b + (guess_hi % d) * b / d;
-	    have_guess = 1;
-	}
+              When these parameters are not suitable, i.e. guess is not within
+              guess_lo and guess_hi, simple guess by binary search is used.
+            */
+            range = 366 * 24 * 60 * 60;
+            a = (tm_hi.tm_year - tptr->tm_year);
+            b = (tptr->tm_year - tm_lo.tm_year);
+            /* 46000 is selected as `some big number less than sqrt(2**31)'. */
+            if (a + b <= 46000 / 12) {
+                range = 31 * 24 * 60 * 60;
+                a *= 12;
+                b *= 12;
+                a += tm_hi.tm_mon - tptr->tm_mon;
+                b += tptr->tm_mon - tm_lo.tm_mon;
+                if (a + b <= 46000 / 31) {
+                    range = 24 * 60 * 60;
+                    a *= 31;
+                    b *= 31;
+                    a += tm_hi.tm_mday - tptr->tm_mday;
+                    b += tptr->tm_mday - tm_lo.tm_mday;
+                    if (a + b <= 46000 / 24) {
+                        range = 60 * 60;
+                        a *= 24;
+                        b *= 24;
+                        a += tm_hi.tm_hour - tptr->tm_hour;
+                        b += tptr->tm_hour - tm_lo.tm_hour;
+                        if (a + b <= 46000 / 60) {
+                            range = 60;
+                            a *= 60;
+                            b *= 60;
+                            a += tm_hi.tm_min - tptr->tm_min;
+                            b += tptr->tm_min - tm_lo.tm_min;
+                            if (a + b <= 46000 / 60) {
+                                range = 1;
+                                a *= 60;
+                                b *= 60;
+                                a += tm_hi.tm_sec - tptr->tm_sec;
+                                b += tptr->tm_sec - tm_lo.tm_sec;
+                            }
+                        }
+                    }
+                }
+            }
+            if (a <= 0) a = 1;
+            if (b <= 0) b = 1;
+            d = a + b;
+            /*
+              Although `/' and `%' may produce unexpected result with negative
+              argument, it doesn't cause serious problem because there is a
+              fail safe.
+            */
+            guess = guess_lo / d * a + (guess_lo % d) * a / d
+                    + guess_hi / d * b + (guess_hi % d) * b / d;
+            try_interpolation = 2;
+        }
+        else if (try_interpolation == 2) {
+            guess = guess - range;
+            range = 0;
+            try_interpolation = 1;
+        }
+        else if (try_interpolation == 3) {
+            guess = guess + range;
+            range = 0;
+            try_interpolation = 1;
+        }
 
-	if (guess <= guess_lo || guess_hi <= guess) {
-	    /* Precious guess is invalid. try binary search. */
-	    guess = guess_lo / 2 + guess_hi / 2;
-	    if (guess <= guess_lo)
-		guess = guess_lo + 1;
-	    else if (guess >= guess_hi)
-		guess = guess_hi - 1;
-	    range = 0;
-	}
+        if (try_interpolation == 0 || guess <= guess_lo || guess_hi <= guess) {
+            /* Precious guess is invalid. try binary search. */
+            guess = guess_lo / 2 + guess_hi / 2;
+            if (guess <= guess_lo)
+                guess = guess_lo + 1;
+            else if (guess >= guess_hi)
+                guess = guess_hi - 1;
+            range = 0;
+            try_interpolation = 1;
+        }
 
 	tm = GUESS(&guess);
 	if (!tm) goto error;
-	have_guess = 0;
 
 	d = tmcmp(tptr, tm);
-	if (d < 0) {
-	    guess_hi = guess;
-	    tm_hi = *tm;
-	    if (range) {
-		guess = guess - range;
-		range = 0;
-		if (guess_lo < guess && guess < guess_hi)
-		    have_guess = 1;
-	    }
-	}
-	else if (d > 0) {
-	    guess_lo = guess;
-	    tm_lo = *tm;
-	    if (range) {
-		guess = guess + range;
-		range = 0;
-		if (guess_lo < guess && guess < guess_hi)
-		    have_guess = 1;
-	    }
-	}
-	else {
+
+        if (d < 0) {
+            if (range)
+                try_interpolation = 2;
+            else if ((unsigned_time_t)(guess-guess_lo) > (unsigned_time_t)(guess_hi-guess))
+                try_interpolation = 0;
+            else
+                try_interpolation = 1;
+            guess_hi = guess;
+            tm_hi = *tm;
+        }
+        else if (d > 0) {
+            if (range)
+                try_interpolation = 3;
+            else if ((unsigned_time_t)(guess-guess_lo) < (unsigned_time_t)(guess_hi-guess))
+                try_interpolation = 0;
+            else
+                try_interpolation = 1;
+            guess_lo = guess;
+            tm_lo = *tm;
+        }
+        else {
           found:
 	    if (!utc_p) {
 		/* If localtime is nonmonotonic, another result may exist. */
@@ -3802,5 +3829,9 @@ Init_Time(void)
     /* Time will support marshal_dump and marshal_load in the future (1.9 maybe) */
     rb_define_method(rb_cTime, "marshal_dump", time_mdump, 0);
     rb_define_method(rb_cTime, "marshal_load", time_mload, 1);
+#endif
+
+#ifdef FIND_TIME_NUMGUESS
+    rb_define_virtual_variable("$find_time_numguess", find_time_numguess_getter, NULL);
 #endif
 }
