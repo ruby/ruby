@@ -1,3 +1,7 @@
+Fri Jul  3 02:52:20 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (find_time_t): time guess strategy refined again.
+
 Fri Jul  3 00:36:16 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (find_time_t): time guess strategy refined.
