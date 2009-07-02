@@ -1878,7 +1878,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
     int find_dst;
     struct tm result;
     int try_interpolation;
-    unsigned long range;
+    unsigned long range = 0;
 
 #ifdef FIND_TIME_NUMGUESS
 #define GUESS(p) (find_time_numguess++, (utc_p ? gmtime_with_leapsecond(p, &result) : LOCALTIME(p, result)))
