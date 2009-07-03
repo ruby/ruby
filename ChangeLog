@@ -1,3 +1,8 @@
+Fri Jul  3 09:05:38 2009  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb (open_server_inaddr_any): fixed multiple network
+	  families problem. a patch from Charl Matthee at [ruby-core:21033].
+
 Wed Jul  1 15:46:30 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pathname.rb (Pathname#sub): set $~ in block.binding.
