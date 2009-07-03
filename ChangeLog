@@ -1,3 +1,9 @@
+Fri Jul  3 19:48:40 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: undef-ed shome methods.  [ruby-core:24110]
+
+	* complex.c (Numeric#arg): NaN for NaN.  [ruby-core:24116]
+
 Fri Jul  3 18:35:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (struct rb_iseq_struct): fixed types.

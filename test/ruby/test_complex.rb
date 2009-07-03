@@ -519,7 +519,7 @@ class Complex_Test < Test::Unit::TestCase
       assert_instance_of(Fixnum, Complex(1,2) - Complex(1,2))
       assert_instance_of(Fixnum, Complex(1,2) * 0)
       assert_instance_of(Fixnum, Complex(1,2) / Complex(1,2))
-      assert_instance_of(Fixnum, Complex(1,2).div(Complex(1,2)))
+#      assert_instance_of(Fixnum, Complex(1,2).div(Complex(1,2)))
       assert_instance_of(Fixnum, Complex(1,2).quo(Complex(1,2)))
 #      assert_instance_of(Fixnum, Complex(1,2) ** 0) # mathn's bug
     end
@@ -779,17 +779,19 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_respond
     c = Complex(1,1)
+    assert_equal(false, c.respond_to?(:%))
     assert_equal(false, c.respond_to?(:<))
     assert_equal(false, c.respond_to?(:<=))
     assert_equal(false, c.respond_to?(:<=>))
     assert_equal(false, c.respond_to?(:>))
     assert_equal(false, c.respond_to?(:>=))
     assert_equal(false, c.respond_to?(:between?))
-#    assert_equal(false, c.respond_to?(:div)) # ?
+    assert_equal(false, c.respond_to?(:div))
     assert_equal(false, c.respond_to?(:divmod))
     assert_equal(false, c.respond_to?(:floor))
     assert_equal(false, c.respond_to?(:ceil))
     assert_equal(false, c.respond_to?(:modulo))
+    assert_equal(false, c.respond_to?(:remainder))
     assert_equal(false, c.respond_to?(:round))
     assert_equal(false, c.respond_to?(:step))
     assert_equal(false, c.respond_to?(:tunrcate))

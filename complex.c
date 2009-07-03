@@ -1690,9 +1690,9 @@ numeric_abs2(VALUE self)
 
 /*
  * call-seq:
- *    num.arg    ->  float
- *    num.angle  ->  float
- *    num.phase  ->  float
+ *    num.arg    ->  0 or float
+ *    num.angle  ->  0 or float
+ *    num.phase  ->  0 or float
  *
  * Returns 0 if the value is positive, pi otherwise.
  */
@@ -1739,6 +1739,22 @@ static VALUE
 numeric_conj(VALUE self)
 {
     return self;
+}
+
+/*
+ * call-seq:
+ *    flo.arg    ->  0 or float
+ *    flo.angle  ->  0 or float
+ *    flo.phase  ->  0 or float
+ *
+ * Returns 0 if the value is positive, pi otherwise.
+ */
+static VALUE
+float_arg(VALUE self)
+{
+    if (isnan(RFLOAT_VALUE(self)))
+	return self;
+    return rb_call_super(0, 0);
 }
 
 /*
@@ -1824,16 +1840,19 @@ Init_Complex(void)
 
     rb_define_global_function("Complex", nucomp_f_complex, -1);
 
+    rb_undef_method(rb_cComplex, "%");
     rb_undef_method(rb_cComplex, "<");
     rb_undef_method(rb_cComplex, "<=");
     rb_undef_method(rb_cComplex, "<=>");
     rb_undef_method(rb_cComplex, ">");
     rb_undef_method(rb_cComplex, ">=");
     rb_undef_method(rb_cComplex, "between?");
+    rb_undef_method(rb_cComplex, "div");
     rb_undef_method(rb_cComplex, "divmod");
     rb_undef_method(rb_cComplex, "floor");
     rb_undef_method(rb_cComplex, "ceil");
     rb_undef_method(rb_cComplex, "modulo");
+    rb_undef_method(rb_cComplex, "remainder");
     rb_undef_method(rb_cComplex, "round");
     rb_undef_method(rb_cComplex, "step");
     rb_undef_method(rb_cComplex, "truncate");
@@ -1920,6 +1939,10 @@ Init_Complex(void)
     rb_define_method(rb_cNumeric, "polar", numeric_polar, 0);
     rb_define_method(rb_cNumeric, "conjugate", numeric_conj, 0);
     rb_define_method(rb_cNumeric, "conj", numeric_conj, 0);
+
+    rb_define_method(rb_cFloat, "arg", float_arg, 0);
+    rb_define_method(rb_cFloat, "angle", float_arg, 0);
+    rb_define_method(rb_cFloat, "phase", float_arg, 0);
 
     rb_define_const(rb_cComplex, "I",
 		    f_complex_new_bang2(rb_cComplex, ZERO, ONE));
