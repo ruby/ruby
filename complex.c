@@ -1536,6 +1536,8 @@ string_to_c_strict(VALUE self)
  * For example:
  *
  *    '9'.to_c           #=> (9+0i)
+ *    '2.5'.to_c         #=> (2.5+0i)
+ *    '2.5/1'.to_c       #=> ((5/2)+0i)
  *    '-3/2'.to_c        #=> ((-3/2)+0i)
  *    '-i'.to_c          #=> (0-1i)
  *    '45i'.to_c         #=> (0+45i)
