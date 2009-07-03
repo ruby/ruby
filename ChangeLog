@@ -1,3 +1,7 @@
+Fri Jul  3 22:48:45 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (find_time_t): less number of guesses for hh:mm:60.
+
 Fri Jul  3 21:30:14 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_equal_p): removed.

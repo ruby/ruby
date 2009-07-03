@@ -1862,10 +1862,12 @@ timegm_noleapsecond(struct tm *tm)
 
 #if 0
 #define DEBUG_FIND_TIME_NUMGUESS
-#define DEBUG_REPORT_GUESSRANGE fprintf(stderr, "find time guess range: %ld - %ld : %lu\n", guess_lo, guess_hi, (unsigned_time_t)(guess_hi-guess_lo))
+#define DEBUG_GUESSRANGE
 #endif
 
-#ifndef DEBUG_REPORT_GUESSRANGE
+#ifdef DEBUG_GUESSRANGE
+#define DEBUG_REPORT_GUESSRANGE fprintf(stderr, "find time guess range: %ld - %ld : %lu\n", guess_lo, guess_hi, (unsigned_time_t)(guess_hi-guess_lo))
+#else
 #define DEBUG_REPORT_GUESSRANGE
 #endif
 
@@ -1962,15 +1964,23 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
             if (status == 1) {
                 time_t guess0_hi = timegm_noleapsecond(&tm_hi);
                 guess = guess_hi - (guess0_hi - guess0);
+                if (guess == guess_hi) /* hh:mm:60 tends to cause this condition. */
+                    guess--;
                 status = 2;
             }
             else if (status == 2) {
                 time_t guess0_lo = timegm_noleapsecond(&tm_lo);
                 guess = guess_lo + (guess0 - guess0_lo);
+                if (guess == guess_lo)
+                    guess++;
                 status = 0;
             }
             if (guess <= guess_lo || guess_hi <= guess) {
                 /* Precious guess is invalid. try binary search. */
+#ifdef DEBUG_GUESSRANGE
+                if (guess <= guess_lo) fprintf(stderr, "too small guess: %ld <= %ld\n", guess, guess_lo);
+                if (guess_hi <= guess) fprintf(stderr, "too big guess: %ld <= %ld\n", guess_hi, guess);
+#endif
                 goto binsearch;
             }
         }
