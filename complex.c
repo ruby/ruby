@@ -18,9 +18,9 @@
 VALUE rb_cComplex;
 
 static ID id_abs, id_abs2, id_arg, id_cmp, id_conj, id_convert,
-    id_denominator, id_divmod, id_eqeq_p, id_equal_p, id_expt, id_fdiv,
-    id_floor, id_idiv, id_imag, id_inspect, id_negate, id_numerator,
-    id_quo, id_real, id_real_p, id_to_f, id_to_i, id_to_r, id_to_s;
+    id_denominator, id_divmod, id_eqeq_p, id_expt, id_fdiv,  id_floor,
+    id_idiv, id_imag, id_inspect, id_negate, id_numerator, id_quo,
+    id_real, id_real_p, id_to_f, id_to_i, id_to_r, id_to_s;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -168,14 +168,6 @@ fun1(to_r)
 fun1(to_s)
 
 fun2(divmod)
-
-inline static VALUE
-f_equal_p(VALUE x, VALUE y)
-{
-    if (FIXNUM_P(x) && FIXNUM_P(y))
-	return f_boolcast(FIX2LONG(x) == FIX2LONG(y));
-    return rb_funcall(x, id_equal_p, 1, y);
-}
 
 inline static VALUE
 f_eqeq_p(VALUE x, VALUE y)
@@ -888,24 +880,6 @@ nucomp_expt(VALUE self, VALUE other)
 			       f_mul(theta, other));
     }
     return rb_num_coerce_bin(self, other, id_expt);
-}
-
-/*
- * call-seq:
- *    cmp == object  ->  true or false
- *
- * Returns true if cmp is same as object.
- */
-static VALUE
-nucomp_equal_p(VALUE self, VALUE other)
-{
-    if (k_complex_p(other)) {
-	get_dat2(self, other);
-
-	return f_boolcast(f_equal_p(adat->real, bdat->real) &&
-			  f_equal_p(adat->imag, bdat->imag));
-    }
-    return Qfalse;
 }
 
 /*
@@ -1831,7 +1805,6 @@ Init_Complex(void)
     id_convert = rb_intern("convert");
     id_denominator = rb_intern("denominator");
     id_divmod = rb_intern("divmod");
-    id_equal_p = rb_intern("equal?");
     id_eqeq_p = rb_intern("==");
     id_expt = rb_intern("**");
     id_fdiv = rb_intern("fdiv");
@@ -1901,7 +1874,6 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "fdiv", nucomp_fdiv, 1);
     rb_define_method(rb_cComplex, "**", nucomp_expt, 1);
 
-    rb_define_method(rb_cComplex, "equal?", nucomp_equal_p, 1);
     rb_define_method(rb_cComplex, "==", nucomp_eqeq_p, 1);
     rb_define_method(rb_cComplex, "coerce", nucomp_coerce, 1);
 

@@ -1,3 +1,7 @@
+Fri Jul  3 21:30:14 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_equal_p): removed.
+
 Fri Jul  3 21:07:29 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c: renamed equal_p to eqeq_p.
