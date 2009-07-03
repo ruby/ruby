@@ -79,6 +79,15 @@ Wed Jul  1 06:47:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (enum_grep): gets rid of type-punning calls.
 
+Wed Jul  1 06:36:28 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_join): add Enumerable#join.
+
+	* array.c (ary_join_1): recursive join for Enumerators (and
+	  objects with #to_a).
+
+	* array.c (rb_ary_join): performance tune.
+
 Tue Jun 30 18:19:07 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_hash): documentation fix.  a patch from

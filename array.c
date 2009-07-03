@@ -1519,14 +1519,86 @@ rb_ary_resurrect(VALUE ary)
 
 extern VALUE rb_output_fs;
 
+static void ary_join_1(VALUE ary, VALUE sep, long i, VALUE result);
+
 static VALUE
-recursive_join(VALUE ary, VALUE argp, int recur)
+recursive_join(VALUE obj, VALUE argp, int recur)
 {
     VALUE *arg = (VALUE *)argp;
+    VALUE ary = arg[0];
+    VALUE sep = arg[1];
+    VALUE result = arg[2];
+
     if (recur) {
-	return rb_usascii_str_new2("[...]");
+	rb_str_buf_cat_ascii(result, "[...]");
     }
-    return rb_ary_join(arg[0], arg[1]);
+    else {
+	ary_join_1(ary, sep, 0, result);
+    }
+    return Qnil;
+}
+
+static void
+ary_join_0(VALUE ary, VALUE sep, long max, VALUE result)
+{
+    long i;
+    VALUE val;
+
+    for (i=0; i<max; i++) {
+	val = RARRAY_PTR(ary)[i];
+	if (i > 0 && !NIL_P(sep))
+	    rb_str_buf_append(result, sep);
+	rb_str_buf_append(result, val);
+	if (OBJ_TAINTED(val)) OBJ_TAINT(result);
+	if (OBJ_UNTRUSTED(val)) OBJ_TAINT(result);
+    }
+}
+
+static void
+ary_join_1(VALUE ary, VALUE sep, long i, VALUE result)
+{
+    VALUE val, tmp;
+
+    for (; i<RARRAY_LEN(ary); i++) {
+	if (i > 0 && !NIL_P(sep))
+	    rb_str_buf_append(result, sep);
+
+	val = RARRAY_PTR(ary)[i];
+	switch (TYPE(val)) {
+	  case T_STRING:
+	  str_join:
+	    rb_str_buf_append(result, val);
+	    break;
+	  case T_ARRAY:
+	  ary_join:
+	    if (val == ary) {
+		val = rb_usascii_str_new2("[...]");
+		goto str_join;
+	    }
+	    else {
+		VALUE args[3];
+		
+		args[0] = val;
+		args[1] = sep;
+		args[2] = result;
+		rb_exec_recursive(recursive_join, ary, (VALUE)args);
+	    }
+	    break;
+	  default:
+	    tmp = rb_check_string_type(val);
+	    if (!NIL_P(tmp)) {
+		val = tmp;
+		goto str_join;
+	    }
+	    tmp = rb_check_convert_type(val, T_ARRAY, "Array", "to_a");
+	    if (!NIL_P(tmp)) {
+		val = tmp;
+		goto ary_join;
+	    }
+	    val = rb_obj_as_string(val);
+	    goto str_join;
+	}
+    }
 }
 
 VALUE
@@ -1535,50 +1607,37 @@ rb_ary_join(VALUE ary, VALUE sep)
     long len = 1, i;
     int taint = Qfalse;
     int untrust = Qfalse;
-    VALUE result, tmp;
+    VALUE val, tmp, result;
 
     if (RARRAY_LEN(ary) == 0) return rb_str_new(0, 0);
     if (OBJ_TAINTED(ary) || OBJ_TAINTED(sep)) taint = Qtrue;
     if (OBJ_UNTRUSTED(ary) || OBJ_UNTRUSTED(sep)) untrust = Qtrue;
 
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-	tmp = rb_check_string_type(RARRAY_PTR(ary)[i]);
-	len += NIL_P(tmp) ? 10 : RSTRING_LEN(tmp);
-    }
     if (!NIL_P(sep)) {
 	StringValue(sep);
 	len += RSTRING_LEN(sep) * (RARRAY_LEN(ary) - 1);
     }
-    result = rb_str_buf_new(len);
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	tmp = RARRAY_PTR(ary)[i];
-	switch (TYPE(tmp)) {
-	  case T_STRING:
-	    break;
-	  case T_ARRAY:
-	    if (tmp == ary) {
-		tmp = rb_usascii_str_new2("[...]");
-	    }
-	    else {
-		VALUE args[2];
+	val = RARRAY_PTR(ary)[i];
+	tmp = rb_check_string_type(val);
 
-		args[0] = tmp;
-		args[1] = sep;
-		tmp = rb_exec_recursive(recursive_join, ary, (VALUE)args);
-	    }
-	    break;
-	  default:
-	    tmp = rb_obj_as_string(tmp);
+	if (NIL_P(tmp) || tmp != val) {
+	    result = rb_str_buf_new(len + (RARRAY_LEN(ary)-i)*10);
+	    if (taint) OBJ_TAINT(result);
+	    if (untrust) OBJ_UNTRUST(result);
+	    ary_join_0(ary, sep, i, result);
+	    ary_join_1(ary, sep, i, result);
+	    return result;
 	}
-	if (i > 0 && !NIL_P(sep))
-	    rb_str_buf_append(result, sep);
-	rb_str_buf_append(result, tmp);
-	if (OBJ_TAINTED(tmp)) taint = Qtrue;
-	if (OBJ_UNTRUSTED(tmp)) untrust = Qtrue;
+
+	len += RSTRING_LEN(tmp);
     }
 
+    result = rb_str_buf_new(len);
     if (taint) OBJ_TAINT(result);
     if (untrust) OBJ_UNTRUST(result);
+    ary_join_0(ary, sep, RARRAY_LEN(ary), result);
+
     return result;
 }
 
