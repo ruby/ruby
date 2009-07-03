@@ -871,7 +871,8 @@ Tue Apr 21 01:25:16 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Apr 21 01:13:42 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 
-	* symbian/setup (config.h): added TIMET2NUM and NUM2TIMET to match the change in time.c 
+	* symbian/setup (config.h): added TIMET2NUM and NUM2TIMET to match
+	  the change in time.c
 
 Mon Apr 20 20:29:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -1480,7 +1481,7 @@ Thu Mar 19 20:29:40 2009  Tanaka Akira  <akr@fsij.org>
 	* lib/net/protocol.rb (rbuf_fill): rescue IO::WaitReadable and
 	  IO::WaitWritable.
 
-	  [ruby-core:22539], [ruby-dev:38140] 
+	  [ruby-core:22539], [ruby-dev:38140]
 
 Thu Mar 19 18:49:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -2364,7 +2365,7 @@ Sat Feb 28 21:52:37 2009  Tanaka Akira  <akr@fsij.org>
 	* vm_eval.c (rb_iterate): use volatile to suppress warnings.
 
 	* eval.c (ruby_cleanup): ditto.
-	
+
 Sat Feb 28 20:09:40 2009  Tanaka Akira  <akr@fsij.org>
 
 	* eval_error.c (error_print): use volatile to suppress warnings.
@@ -2503,7 +2504,7 @@ Wed Feb 25 23:23:03 2009  Tanaka Akira  <akr@fsij.org>
 	  NotImplementedError if no fd passing feature.
 	  (ancillary_timestamp): raise NotImplementedError if no timestamp
 	  feature.
-	  
+
 Wed Feb 25 23:18:53 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (ancillary_s_unix_rights): new method.
@@ -2940,7 +2941,7 @@ Thu Feb 19 03:28:59 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 Thu Feb 19 03:12:51 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	* test/ruby/test_file_exhaustive.rb: skip some tests if euid == 0. 
+	* test/ruby/test_file_exhaustive.rb: skip some tests if euid == 0.
 	  a patch from Lucas Nussbaum in [ruby-core:22209].
 
 Thu Feb 19 03:00:49 2009  Akinori MUSHA  <knu@iDaemons.org>
