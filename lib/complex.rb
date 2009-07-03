@@ -58,11 +58,7 @@ class Numeric
   # See Complex#arg.
   #
   def arg
-    if self >= 0
-      return 0
-    else
-      return Math::PI
-    end
+    Math.atan2!(0, self)
   end
   alias angle arg
   

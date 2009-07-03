@@ -1,3 +1,8 @@
+Fri Jul  3 06:19:58 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/complex.rb (Numeric#arg): should return NaN for NaN.
+	  [ruby-core:24116]
+
 Wed Jul  1 15:49:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (PUSH_ANCHOR, POP_ANCHOR, rb_thread_start_0): separated
