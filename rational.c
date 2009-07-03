@@ -22,7 +22,7 @@
 
 VALUE rb_cRational;
 
-static ID id_abs, id_cmp, id_convert, id_equal_p, id_expt, id_fdiv,
+static ID id_abs, id_cmp, id_convert, id_eqeq_p, id_expt, id_fdiv,
     id_floor, id_idiv, id_inspect, id_integer_p, id_negate, id_to_f,
     id_to_i, id_to_s, id_truncate;
 
@@ -142,11 +142,11 @@ fun1(to_s)
 fun1(truncate)
 
 inline static VALUE
-f_equal_p(VALUE x, VALUE y)
+f_eqeq_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
 	return f_boolcast(FIX2LONG(x) == FIX2LONG(y));
-    return rb_funcall(x, id_equal_p, 1, y);
+    return rb_funcall(x, id_eqeq_p, 1, y);
 }
 
 fun2(expt)
@@ -168,7 +168,7 @@ f_zero_p(VALUE x)
 {
     if (FIXNUM_P(x))
 	return f_boolcast(FIX2LONG(x) == 0);
-    return rb_funcall(x, id_equal_p, 1, ZERO);
+    return rb_funcall(x, id_eqeq_p, 1, ZERO);
 }
 
 #define f_nonzero_p(x) (!f_zero_p(x))
@@ -178,7 +178,7 @@ f_one_p(VALUE x)
 {
     if (FIXNUM_P(x))
 	return f_boolcast(FIX2LONG(x) == 1);
-    return rb_funcall(x, id_equal_p, 1, ONE);
+    return rb_funcall(x, id_eqeq_p, 1, ONE);
 }
 
 inline static VALUE
@@ -586,7 +586,7 @@ inline static VALUE
 f_imul(long x, long y)
 {
     VALUE r = f_imul_orig(x, y);
-    assert(f_equal_p(r, f_mul(LONG2NUM(x), LONG2NUM(y))));
+    assert(f_eqeq_p(r, f_mul(LONG2NUM(x), LONG2NUM(y))));
     return r;
 }
 #endif
@@ -1002,7 +1002,7 @@ nurat_cmp(VALUE self, VALUE other)
  *    Rational('1/2') == '1/2'            #=> false
  */
 static VALUE
-nurat_equal_p(VALUE self, VALUE other)
+nurat_eqeq_p(VALUE self, VALUE other)
 {
     switch (TYPE(other)) {
       case T_FIXNUM:
@@ -1017,12 +1017,12 @@ nurat_equal_p(VALUE self, VALUE other)
 		return Qfalse;
 	    if (FIX2LONG(dat->den) != 1)
 		return Qfalse;
-	    if (f_equal_p(dat->num, other))
+	    if (f_eqeq_p(dat->num, other))
 		return Qtrue;
 	    return Qfalse;
 	}
       case T_FLOAT:
-	return f_equal_p(f_to_f(self), other);
+	return f_eqeq_p(f_to_f(self), other);
       case T_RATIONAL:
 	{
 	    get_dat2(self, other);
@@ -1030,11 +1030,11 @@ nurat_equal_p(VALUE self, VALUE other)
 	    if (f_zero_p(adat->num) && f_zero_p(bdat->num))
 		return Qtrue;
 
-	    return f_boolcast(f_equal_p(adat->num, bdat->num) &&
-			      f_equal_p(adat->den, bdat->den));
+	    return f_boolcast(f_eqeq_p(adat->num, bdat->num) &&
+			      f_eqeq_p(adat->den, bdat->den));
 	}
       default:
-	return f_equal_p(other, self);
+	return f_eqeq_p(other, self);
     }
 }
 
@@ -1988,7 +1988,7 @@ Init_Rational(void)
     id_abs = rb_intern("abs");
     id_cmp = rb_intern("<=>");
     id_convert = rb_intern("convert");
-    id_equal_p = rb_intern("==");
+    id_eqeq_p = rb_intern("==");
     id_expt = rb_intern("**");
     id_fdiv = rb_intern("fdiv");
     id_floor = rb_intern("floor");
@@ -2027,7 +2027,7 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "**", nurat_expt, 1);
 
     rb_define_method(rb_cRational, "<=>", nurat_cmp, 1);
-    rb_define_method(rb_cRational, "==", nurat_equal_p, 1);
+    rb_define_method(rb_cRational, "==", nurat_eqeq_p, 1);
     rb_define_method(rb_cRational, "coerce", nurat_coerce, 1);
 
 #if 0 /* NUBY */

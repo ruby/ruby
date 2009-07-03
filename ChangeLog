@@ -1,3 +1,12 @@
+Fri Jul  3 21:07:29 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c: renamed equal_p to eqeq_p.
+
+	* complex.c: ditto.
+
+	* complex.c (nucomp_equal_p): added.
+	  Complex(NaN).equal?(Complex(NaN)) should return true.
+
 Fri Jul  3 19:48:40 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: undef-ed shome methods.  [ruby-core:24110]

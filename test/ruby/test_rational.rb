@@ -697,7 +697,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(nil, Rational(0) <=> 'foo')
   end
 
-  def test_equal
+  def test_eqeq
     assert(Rational(1,1) == Rational(1))
     assert(Rational(-1,1) == Rational(-1))
 

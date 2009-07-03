@@ -489,6 +489,18 @@ class Complex_Test < Test::Unit::TestCase
   end
 
   def test_equal
+    unless @unify
+      assert_equal(true, Complex(1,0).equal?(Complex(1)))
+      assert_equal(false, Complex(1,0).equal?(Complex(1.0)))
+      if (0.0/0).nan?
+	nan = 0.0/0
+	assert_equal(true, Complex(nan).equal?(Complex(nan)))
+	assert_equal(false, Complex(nan).equal?(nan))
+      end
+    end
+  end
+
+  def test_eqeq
     assert(Complex(1,0) == Complex(1))
     assert(Complex(-1,0) == Complex(-1))
 
@@ -890,6 +902,13 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(0, 1.0.arg)
     assert_equal(0, 1.0.angle)
     assert_equal(0, 1.0.phase)
+
+    if (0.0/0).nan?
+      nan = 0.0/0
+      assert(nan.arg.equal?(nan))
+      assert(nan.angle.equal?(nan))
+      assert(nan.phase.equal?(nan))
+    end
 
     assert_equal(Math::PI, -1.arg)
     assert_equal(Math::PI, -1.angle)

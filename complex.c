@@ -18,9 +18,9 @@
 VALUE rb_cComplex;
 
 static ID id_abs, id_abs2, id_arg, id_cmp, id_conj, id_convert,
-    id_denominator, id_divmod, id_equal_p, id_expt, id_fdiv, id_floor,
-    id_idiv, id_imag, id_inspect, id_negate, id_numerator, id_quo,
-    id_real, id_real_p, id_to_f, id_to_i, id_to_r, id_to_s;
+    id_denominator, id_divmod, id_eqeq_p, id_equal_p, id_expt, id_fdiv,
+    id_floor, id_idiv, id_imag, id_inspect, id_negate, id_numerator,
+    id_quo, id_real, id_real_p, id_to_f, id_to_i, id_to_r, id_to_s;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -177,6 +177,14 @@ f_equal_p(VALUE x, VALUE y)
     return rb_funcall(x, id_equal_p, 1, y);
 }
 
+inline static VALUE
+f_eqeq_p(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x) && FIXNUM_P(y))
+	return f_boolcast(FIX2LONG(x) == FIX2LONG(y));
+    return rb_funcall(x, id_eqeq_p, 1, y);
+}
+
 fun2(expt)
 fun2(fdiv)
 fun2(idiv)
@@ -197,7 +205,7 @@ f_zero_p(VALUE x)
 {
     if (FIXNUM_P(x))
 	return f_boolcast(FIX2LONG(x) == 0);
-    return rb_funcall(x, id_equal_p, 1, ZERO);
+    return rb_funcall(x, id_eqeq_p, 1, ZERO);
 }
 
 #define f_nonzero_p(x) (!f_zero_p(x))
@@ -207,7 +215,7 @@ f_one_p(VALUE x)
 {
     if (FIXNUM_P(x))
 	return f_boolcast(FIX2LONG(x) == 1);
-    return rb_funcall(x, id_equal_p, 1, ONE);
+    return rb_funcall(x, id_eqeq_p, 1, ONE);
 }
 
 inline static VALUE
@@ -886,7 +894,7 @@ nucomp_expt(VALUE self, VALUE other)
  * call-seq:
  *    cmp == object  ->  true or false
  *
- * Returns true if cmp equals object numerically.
+ * Returns true if cmp is same as object.
  */
 static VALUE
 nucomp_equal_p(VALUE self, VALUE other)
@@ -897,12 +905,30 @@ nucomp_equal_p(VALUE self, VALUE other)
 	return f_boolcast(f_equal_p(adat->real, bdat->real) &&
 			  f_equal_p(adat->imag, bdat->imag));
     }
+    return Qfalse;
+}
+
+/*
+ * call-seq:
+ *    cmp == object  ->  true or false
+ *
+ * Returns true if cmp equals object numerically.
+ */
+static VALUE
+nucomp_eqeq_p(VALUE self, VALUE other)
+{
+    if (k_complex_p(other)) {
+	get_dat2(self, other);
+
+	return f_boolcast(f_eqeq_p(adat->real, bdat->real) &&
+			  f_eqeq_p(adat->imag, bdat->imag));
+    }
     if (k_numeric_p(other) && f_real_p(other)) {
 	get_dat1(self);
 
-	return f_boolcast(f_equal_p(dat->real, other) && f_zero_p(dat->imag));
+	return f_boolcast(f_eqeq_p(dat->real, other) && f_zero_p(dat->imag));
     }
-    return f_equal_p(other, self);
+    return f_eqeq_p(other, self);
 }
 
 /* :nodoc: */
@@ -1131,7 +1157,7 @@ nucomp_eql_p(VALUE self, VALUE other)
 
 	return f_boolcast((CLASS_OF(adat->real) == CLASS_OF(bdat->real)) &&
 			  (CLASS_OF(adat->imag) == CLASS_OF(bdat->imag)) &&
-			  f_equal_p(self, other));
+			  f_eqeq_p(self, other));
 
     }
     return Qfalse;
@@ -1805,7 +1831,8 @@ Init_Complex(void)
     id_convert = rb_intern("convert");
     id_denominator = rb_intern("denominator");
     id_divmod = rb_intern("divmod");
-    id_equal_p = rb_intern("==");
+    id_equal_p = rb_intern("equal?");
+    id_eqeq_p = rb_intern("==");
     id_expt = rb_intern("**");
     id_fdiv = rb_intern("fdiv");
     id_floor = rb_intern("floor");
@@ -1874,7 +1901,8 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "fdiv", nucomp_fdiv, 1);
     rb_define_method(rb_cComplex, "**", nucomp_expt, 1);
 
-    rb_define_method(rb_cComplex, "==", nucomp_equal_p, 1);
+    rb_define_method(rb_cComplex, "equal?", nucomp_equal_p, 1);
+    rb_define_method(rb_cComplex, "==", nucomp_eqeq_p, 1);
     rb_define_method(rb_cComplex, "coerce", nucomp_coerce, 1);
 
     rb_define_method(rb_cComplex, "abs", nucomp_abs, 0);
