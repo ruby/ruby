@@ -1,3 +1,9 @@
+Fri Jul  3 18:35:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (struct rb_iseq_struct): fixed types.
+
+	* vm_core.h (ic_vmstat): VM state version is VALUE.
+
 Fri Jul  3 02:52:20 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (find_time_t): time guess strategy refined again.

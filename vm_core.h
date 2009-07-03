@@ -135,7 +135,7 @@ struct rb_iseq_struct {
 
     /* insn info, must be freed */
     struct iseq_insn_info_entry *insn_info_table;
-    unsigned long insn_info_size;
+    size_t insn_info_size;
 
     ID *local_table;		/* must free */
     int local_table_size;
@@ -176,7 +176,7 @@ struct rb_iseq_struct {
     int arg_size;
     VALUE *arg_opt_table;
 
-    int stack_max; /* for stack overflow check */
+    size_t stack_max; /* for stack overflow check */
 
     /* catch table */
     struct iseq_catch_table_entry *catch_table;
@@ -527,7 +527,7 @@ typedef struct {
 #define ic_class  u1.value
 #define ic_method u2.node
 #define ic_value  u2.value
-#define ic_vmstat u3.cnt
+#define ic_vmstat u3.value
 typedef NODE *IC;
 
 void rb_vm_change_state(void);
