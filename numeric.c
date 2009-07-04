@@ -756,13 +756,7 @@ dbl2ival(double d)
 	d = round(d);
 	return LONG2FIX((long)d);
     }
-    else if (isnan(d) || isinf(d)) {
-	/* special case: cannot return integer value */
-	return rb_float_new(d);
-    }
-    else {
-	return rb_dbl2big(d);
-    }
+    return rb_dbl2big(d);
 }
 
 /*

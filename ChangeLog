@@ -1,3 +1,8 @@
+Sat Jul  4 08:20:03 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (dbl2ival): should raise FloatDomainError on Infinity
+	  and NaN as 1.8 does.  [ruby-dev:38726]
+
 Fri Jul  3 22:48:45 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (find_time_t): less number of guesses for hh:mm:60.
