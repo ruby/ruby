@@ -435,7 +435,7 @@ rb_method_boundp(VALUE klass, ID id, int ex)
 	    return Qfalse;
 	}
         if (rb_notimplement_body_p(method->nd_body))
-           return Qfalse;
+	    return Qfalse;
 	return Qtrue;
     }
     return Qfalse;
@@ -1175,7 +1175,7 @@ Init_eval_method(void)
     undefined = rb_intern("method_undefined");
     singleton_undefined = rb_intern("singleton_method_undefined");
 
-    rb_global_variable((VALUE*)&notimplement_body);
     notimplement_body = NEW_CFUNC(rb_f_notimplement, -1);
+    rb_gc_register_mark_object((VALUE)notimplement_body);
 }
 
