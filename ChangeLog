@@ -1,4 +1,8 @@
-Sun Jul  5 08:11:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jul  5 08:14:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_add_method, remove_method, rb_undef): fixed
+	  minor grammatical errors in warnings.  a patch from Run Pain
+	  Run Run at [ruby-core:24141].
 
 	* vm_method.c (Init_eval_method): registers notimplement_body as a
 	  mark-object.
