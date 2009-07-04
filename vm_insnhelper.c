@@ -761,7 +761,7 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
     int i;
     int argc = orig_argc;
     const int m = iseq->argc;
-    VALUE ary;
+    VALUE ary, arg0;
     rb_num_t opt_pc = 0;
 
     th->mark_stack_len = argc;
@@ -771,14 +771,18 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
      *  => {|a|} => a = [1, 2]
      *  => {|a, b|} => a, b = [1, 2]
      */
+    arg0 = argv[0];
     if (!(iseq->arg_simple & 0x02) &&          /* exclude {|a|} */
             (m + iseq->arg_post_len) > 0 &&    /* this process is meaningful */
-            argc == 1 && !NIL_P(ary = rb_check_array_type(argv[0]))) { /* rhs is only an array */
+            argc == 1 && !NIL_P(ary = rb_check_array_type(arg0))) { /* rhs is only an array */
         th->mark_stack_len = argc = RARRAY_LENINT(ary);
 
         CHECK_STACK_OVERFLOW(th->cfp, argc);
 
         MEMCPY(argv, RARRAY_PTR(ary), VALUE, argc);
+    }
+    else {
+        argv[0] = arg0;
     }
 
     for (i=argc; i<m; i++) {

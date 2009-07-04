@@ -747,4 +747,11 @@ class TestProc < Test::Unit::TestCase
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
     assert_equal(source_location_test - 1, lineno)
   end
+
+  def test_splat_without_respond_to
+    def (obj = Object.new).respond_to?(m); false end
+    [obj].each do |a, b|
+      assert_equal([obj, nil], [a, b], '[ruby-core:24139]')
+    end
+  end
 end
