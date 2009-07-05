@@ -1803,6 +1803,14 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
     return Qnil;		/* not reached */
 }
 
+/*
+ *  call-seq:
+ *     enum.join(sep=$,)    -> str
+ *
+ *  Returns a string created by converting each element of the
+ *  <i>enum</i> to a string, separated by <i>sep</i>.
+ */
+
 static VALUE
 enum_join(int argc, VALUE *argv, VALUE obj)
 {
