@@ -1,3 +1,7 @@
+Mon Jul  6 00:41:41 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c: edited rdoc.
+
 Sun Jul  5 23:55:57 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (find_time_t): fix Time.local(2009,2,31) failure on 64bit

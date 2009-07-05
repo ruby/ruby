@@ -542,10 +542,10 @@ nurat_numerator(VALUE self)
  *
  * For example:
  *
- *    Rational(7).denominator        #=> 1
- *    Rational(7, 1).denominator     #=> 1
- *    Rational(9, -4).denominator    #=> 4
- *    Rational(-2, -10).denominator  #=> 5
+ *    Rational(7).denominator             #=> 1
+ *    Rational(7, 1).denominator          #=> 1
+ *    Rational(9, -4).denominator         #=> 4
+ *    Rational(-2, -10).denominator       #=> 5
  *    rat.numerator.gcd(rat.denominator)  #=> 1
  */
 static VALUE
@@ -1557,7 +1557,7 @@ integer_numerator(VALUE self)
 
 /*
  * call-seq:
- *    int.numerator  ->  1
+ *    int.denominator  ->  1
  *
  * Returns 1.
  */
