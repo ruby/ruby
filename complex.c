@@ -548,13 +548,25 @@ f_complex_polar(VALUE klass, VALUE x, VALUE y)
 
 /*
  * call-seq:
- *    Complex.polar(abs, arg)  ->  complex
+ *    Complex.polar(abs[, arg])  ->  complex
  *
  * Returns a complex object which denotes the given polar form.
  */
 static VALUE
-nucomp_s_polar(VALUE klass, VALUE abs, VALUE arg)
+nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
 {
+    VALUE abs, arg;
+
+    switch (rb_scan_args(argc, argv, "11", &abs, &arg)) {
+      case 1:
+	nucomp_real_check(abs);
+	arg = ZERO;
+	break;
+      default:
+	nucomp_real_check(abs);
+	nucomp_real_check(arg);
+	break;
+    }
     return f_complex_polar(klass, abs, arg);
 }
 
@@ -1260,7 +1272,7 @@ rb_complex_new(VALUE x, VALUE y)
 VALUE
 rb_complex_polar(VALUE x, VALUE y)
 {
-    return nucomp_s_polar(rb_cComplex, x, y);
+    return f_complex_polar(rb_cComplex, x, y);
 }
 
 static VALUE nucomp_s_convert(int argc, VALUE *argv, VALUE klass);
@@ -1840,7 +1852,7 @@ Init_Complex(void)
 
     rb_define_singleton_method(rb_cComplex, "rectangular", nucomp_s_new, -1);
     rb_define_singleton_method(rb_cComplex, "rect", nucomp_s_new, -1);
-    rb_define_singleton_method(rb_cComplex, "polar", nucomp_s_polar, 2);
+    rb_define_singleton_method(rb_cComplex, "polar", nucomp_s_polar, -1);
 
     rb_define_global_function("Complex", nucomp_f_complex, -1);
 

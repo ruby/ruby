@@ -1,3 +1,7 @@
+Sun Jul  5 22:43:13 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_s_polar): now arg is optional.
+
 Sun Jul  5 20:40:35 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (float_arg): returns PI for -0.0.
