@@ -1887,7 +1887,7 @@ static const char *
 find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 {
     time_t guess, guess0, guess_lo, guess_hi;
-    struct tm *tm, tm_lo, tm_hi;
+    struct tm *tm, tm0, tm_lo, tm_hi;
     int d;
     int find_dst;
     struct tm result;
@@ -1895,19 +1895,67 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 
 #define GUESS(p) (DEBUG_FIND_TIME_NUMGUESS_INC (utc_p ? gmtime_with_leapsecond(p, &result) : LOCALTIME(p, result)))
 
+    guess_lo = TIMET_MIN;
+    guess_hi = TIMET_MAX;
+
     find_dst = 0 < tptr->tm_isdst;
 
-#ifdef NEGATIVE_TIME_T
-    guess_lo = (time_t)~((unsigned_time_t)~(time_t)0 >> 1);
-#else
-    guess_lo = 0;
-#endif
-    guess_hi = ((time_t)-1) < ((time_t)0) ?
-	       (time_t)((unsigned_time_t)~(time_t)0 >> 1) :
-	       ~(time_t)0;
+    tm0 = *tptr;
+    if (tm0.tm_mon < 0) {
+      tm0.tm_mon = 0;
+      tm0.tm_mday = 1;
+      tm0.tm_hour = 0;
+      tm0.tm_min = 0;
+      tm0.tm_sec = 0;
+    }
+    else if (11 < tm0.tm_mon) {
+      tm0.tm_mon = 11;
+      tm0.tm_mday = 31;
+      tm0.tm_hour = 23;
+      tm0.tm_min = 59;
+      tm0.tm_sec = 60;
+    }
+    else if (tm0.tm_mday < 1) {
+      tm0.tm_mday = 1;
+      tm0.tm_hour = 0;
+      tm0.tm_min = 0;
+      tm0.tm_sec = 0;
+    }
+    else if ((d = (leap_year_p(1900 + tm0.tm_year) ?
+                   leap_year_days_in_month :
+		   common_year_days_in_month)[tm0.tm_mon]) < tm0.tm_mday) {
+      tm0.tm_mday = d;
+      tm0.tm_hour = 23;
+      tm0.tm_min = 59;
+      tm0.tm_sec = 60;
+    }
+    else if (tm0.tm_hour < 0) {
+      tm0.tm_hour = 0;
+      tm0.tm_min = 0;
+      tm0.tm_sec = 0;
+    }
+    else if (23 < tm0.tm_hour) {
+      tm0.tm_hour = 23;
+      tm0.tm_min = 59;
+      tm0.tm_sec = 60;
+    }
+    else if (tm0.tm_min < 0) {
+      tm0.tm_min = 0;
+      tm0.tm_sec = 0;
+    }
+    else if (59 < tm0.tm_min) {
+      tm0.tm_min = 59;
+      tm0.tm_sec = 60;
+    }
+    else if (tm0.tm_sec < 0) {
+      tm0.tm_sec = 0;
+    }
+    else if (60 < tm0.tm_sec) {
+      tm0.tm_sec = 60;
+    }
 
     DEBUG_REPORT_GUESSRANGE;
-    guess0 = guess = timegm_noleapsecond(tptr);
+    guess0 = guess = timegm_noleapsecond(&tm0);
     tm = GUESS(&guess);
     if (tm) {
 	d = tmcmp(tptr, tm);
