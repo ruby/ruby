@@ -1756,7 +1756,9 @@ float_arg(VALUE self)
 {
     if (isnan(RFLOAT_VALUE(self)))
 	return self;
-    return rb_call_super(0, 0);
+    if (f_tpositive_p(self))
+	return INT2FIX(0);
+    return rb_const_get(rb_mMath, id_PI);
 }
 
 /*

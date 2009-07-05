@@ -1,3 +1,7 @@
+Sun Jul  5 20:40:35 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (float_arg): returns PI for -0.0.
+
 Sun Jul  5 14:04:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_threadptr_exec_event_hooks): new function to
