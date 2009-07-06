@@ -751,13 +751,13 @@ proc_eq(VALUE self, VALUE other)
 static VALUE
 proc_hash(VALUE self)
 {
-    int hash;
+    long hash;
     rb_proc_t *proc;
     GetProcPtr(self, proc);
     hash = (long)proc->block.iseq;
     hash ^= (long)proc->envval;
     hash ^= (long)proc->block.lfp >> 16;
-    return INT2FIX(hash);
+    return LONG2FIX(hash);
 }
 
 /*
