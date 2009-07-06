@@ -283,4 +283,18 @@ class TestEnumerable < Test::Unit::TestCase
   def test_reverse_each
     assert_equal([2,1,3,2,1], @obj.reverse_each.to_a)
   end
+
+  def test_join
+    assert_equal("abc", ("a".."c").join(""))
+    assert_equal("a-b-c", ("a".."c").join("-"))
+    class << (e = Object.new.extend(Enumerable))
+      def to_s
+        "e"
+      end
+      def each
+        yield self
+      end
+    end
+    assert_equal("e", e.join(""))
+  end
 end
