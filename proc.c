@@ -1765,9 +1765,17 @@ static VALUE
 make_curry_proc(VALUE proc, VALUE passed, VALUE arity)
 {
     VALUE args = rb_ary_new3(3, proc, passed, arity);
+    rb_proc_t *procp;
+    int is_lambda;
+
+    GetProcPtr(proc, procp);
+    is_lambda = procp->is_lambda;
     rb_ary_freeze(passed);
     rb_ary_freeze(args);
-    return rb_proc_new(curry, args);
+    proc = rb_proc_new(curry, args);
+    GetProcPtr(proc, procp);
+    procp->is_lambda = is_lambda;
+    return proc;
 }
 
 static VALUE
@@ -1781,7 +1789,7 @@ curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
     passed = rb_ary_plus(passed, rb_ary_new4(argc, argv));
     rb_ary_freeze(passed);
 
-    if(RARRAY_LEN(passed) < FIX2INT(arity)) {
+    if (RARRAY_LEN(passed) < FIX2INT(arity)) {
 	if (!NIL_P(passed_proc)) {
 	    rb_warn("given block not used");
 	}

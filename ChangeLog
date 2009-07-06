@@ -1,4 +1,7 @@
-Mon Jul  6 09:23:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jul  6 09:31:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (make_curry_proc): should propagate lambda-ness.
+	  [ruby-core:24127]
 
 	* proc.c (proc_hash): use long.
 
