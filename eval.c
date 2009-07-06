@@ -233,6 +233,7 @@ static VALUE rb_f_binding _((VALUE));
 static void rb_f_END _((void));
 static VALUE rb_f_block_given_p _((void));
 static VALUE block_pass _((VALUE,NODE*));
+static void eval_check_tick _((void));
 
 VALUE rb_cMethod;
 static VALUE method_call _((int, VALUE*, VALUE));
@@ -2962,6 +2963,7 @@ rb_eval(self, n)
     goto finish; \
 } while (0)
 
+    eval_check_tick();
   again:
     if (!node) RETURN(Qnil);
 
@@ -5612,6 +5614,17 @@ stack_check()
     }
 }
 
+static void
+eval_check_tick()
+{
+    static int tick;
+    if ((++tick & 0xff) == 0) {
+	CHECK_INTS;		/* better than nothing */
+	stack_check();
+	rb_gc_finalize_deferred();
+    }
+}
+
 static int last_call_status;
 
 #define CSTAT_PRIV  1
@@ -5843,7 +5856,6 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
     NODE *b2;		/* OK */
     volatile VALUE result = Qnil;
     int itr;
-    static int tick;
     TMP_PROTECT;
     volatile int safe = -1;
 
@@ -5862,11 +5874,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 	break;
     }
 
-    if ((++tick & 0xff) == 0) {
-	CHECK_INTS;		/* better than nothing */
-	stack_check();
-	rb_gc_finalize_deferred();
-    }
+    eval_check_tick();
     if (argc < 0) {
 	VALUE tmp;
 	VALUE *nargv;
@@ -6601,14 +6609,22 @@ eval(self, src, scope, file, line)
 	if (state == TAG_RAISE) {
 	    if (strcmp(file, "(eval)") == 0) {
 		VALUE mesg, errat, bt2;
+		ID id_mesg;
 
+		id_mesg = rb_intern("mesg");
 		errat = get_backtrace(ruby_errinfo);
-		mesg = rb_attr_get(ruby_errinfo, rb_intern("mesg"));
+		mesg = rb_attr_get(ruby_errinfo, id_mesg);
 		if (!NIL_P(errat) && TYPE(errat) == T_ARRAY &&
 		    (bt2 = backtrace(-2), RARRAY_LEN(bt2) > 0)) {
 		    if (!NIL_P(mesg) && TYPE(mesg) == T_STRING) {
-			rb_str_update(mesg, 0, 0, rb_str_new2(": "));
-			rb_str_update(mesg, 0, 0, RARRAY_PTR(errat)[0]);
+			if (OBJ_FROZEN(mesg)) {
+			    VALUE m = rb_str_cat(rb_str_dup(RARRAY_PTR(errat)[0]), ": ", 2);
+			    rb_ivar_set(ruby_errinfo, id_mesg, rb_str_append(m, mesg));
+			}
+			else {
+			    rb_str_update(mesg, 0, 0, rb_str_new2(": "));
+			    rb_str_update(mesg, 0, 0, RARRAY_PTR(errat)[0]);
+			}
 		    }
 		    RARRAY_PTR(errat)[0] = RARRAY_PTR(bt2)[0];
 		}

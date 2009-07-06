@@ -1,3 +1,10 @@
+Mon Jul  6 16:01:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval): checks for interrupt, stack and finalizers too.
+	  [ruby-dev:38208], [Bug #1329]
+
+	* eval.c (eval): replaces the message if frozen.
+
 Sun Jul  5 03:50:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb: use Kernel.exit to get rid of using
