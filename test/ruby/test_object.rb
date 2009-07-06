@@ -233,12 +233,12 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_redefine_method_which_may_case_serious_problem
-    assert_in_out_err([], <<-INPUT, [], /warning: redefining `object_id' may cause serious problem$/)
+    assert_in_out_err([], <<-INPUT, [], /warning: redefining `object_id' may cause serious problems$/)
       $VERBOSE = false
       def (Object.new).object_id; end
     INPUT
 
-    assert_in_out_err([], <<-INPUT, [], /warning: redefining `__send__' may cause serious problem$/)
+    assert_in_out_err([], <<-INPUT, [], /warning: redefining `__send__' may cause serious problems$/)
       $VERBOSE = false
       def (Object.new).__send__; end
     INPUT
@@ -266,7 +266,7 @@ class TestObject < Test::Unit::TestCase
     end
 
     %w(object_id __send__ initialize).each do |m|
-      assert_in_out_err([], <<-INPUT, %w(:ok), /warning: removing `#{m}' may cause serious problem$/)
+      assert_in_out_err([], <<-INPUT, %w(:ok), /warning: removing `#{m}' may cause serious problems$/)
         $VERBOSE = false
         begin
           Class.new.instance_eval { remove_method(:#{m}) }
