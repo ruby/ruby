@@ -412,6 +412,7 @@ enum_to_a(int argc, VALUE *argv, VALUE obj)
     VALUE ary = rb_ary_new();
 
     rb_block_call(obj, id_each, argc, argv, collect_all, ary);
+    OBJ_INFECT(ary, obj);
 
     return ary;
 }
@@ -605,6 +606,7 @@ enum_group_by(VALUE obj)
 
     hash = rb_hash_new();
     rb_block_call(obj, id_each, 0, 0, group_by_i, hash);
+    OBJ_INFECT(hash, obj);
 
     return hash;
 }
@@ -816,6 +818,8 @@ enum_sort_by(VALUE obj)
 	RARRAY_PTR(ary)[i] = RNODE(RARRAY_PTR(ary)[i])->u2.value;
     }
     RBASIC(ary)->klass = rb_cArray;
+    OBJ_INFECT(ary, obj);
+
     return ary;
 }
 

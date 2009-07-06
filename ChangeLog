@@ -19,6 +19,13 @@ Mon Jul  6 09:04:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* enum.c (enum_join): deals with self recursive objects to get rid
 	  of infinite recursion.  [ruby-core:24150]
 
+Mon Jul  6 08:00:10 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_to_a): should propagate taint to the return value.
+	  [ruby-core:24152]
+
+	* enum.c (enum_sort_by): ditto.
+
 Mon Jul  6 00:41:41 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c: edited rdoc.
