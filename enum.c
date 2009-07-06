@@ -1803,6 +1803,30 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
     return Qnil;		/* not reached */
 }
 
+static VALUE
+join_i(VALUE i, VALUE args, int argc, VALUE *argv)
+{
+    VALUE *arg = (VALUE *)args;
+    ENUM_WANT_SVALUE();
+    if (!arg[0]) {
+	arg[0] = rb_usascii_str_new(0, 0);
+    }
+    else if (!NIL_P(arg[1])) {
+	rb_str_buf_append(arg[0], arg[1]);
+    }
+    return rb_str_buf_append(arg[0], rb_obj_as_string(i));
+}
+
+VALUE
+rb_enum_join(VALUE obj, VALUE sep)
+{
+    VALUE args[2];
+    args[0] = 0;
+    args[1] = sep;
+    rb_block_call(obj, id_each, 0, 0, join_i, (VALUE)args);
+    return args[0] ? args[0] : rb_str_new(0, 0);
+}
+
 /*
  *  call-seq:
  *     enum.join(sep=$,)    -> str
@@ -1819,7 +1843,7 @@ enum_join(int argc, VALUE *argv, VALUE obj)
     rb_scan_args(argc, argv, "01", &sep);
     if (NIL_P(sep)) sep = rb_output_fs;
 
-    return rb_ary_join(enum_to_a(0, 0, obj), sep);
+    return rb_enum_join(obj, sep);
 }
 
 /*
