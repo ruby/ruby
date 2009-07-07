@@ -1,3 +1,8 @@
+Tue Jul  7 12:47:28 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (rb_enum_join): should propagate taint to the return
+	  value.  the change was overridden by r23967.  [ruby-core:24176]
+
 Tue Jul  7 11:56:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (GC_PROF_SET_MALLOC_INFO, GC_PROF_SET_HEAP_INFO): simplified.

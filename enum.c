@@ -1825,10 +1825,14 @@ VALUE
 rb_enum_join(VALUE obj, VALUE sep)
 {
     VALUE args[2];
+
     args[0] = 0;
     args[1] = sep;
     rb_block_call(obj, id_each, 0, 0, join_i, (VALUE)args);
-    return args[0] ? args[0] : rb_str_new(0, 0);
+    if (!args[0]) args[0] = rb_str_new(0, 0);
+    OBJ_INFECT(args[0], obj);
+
+    return args[0];
 }
 
 /*
