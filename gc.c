@@ -205,22 +205,22 @@ getrusage_time(void)
     } while(0)
 #define GC_PROF_SET_MALLOC_INFO do {\
 	if (objspace->profile.run) {\
-	    size_t count = objspace->profile.count;\
-	    objspace->profile.record[count].allocate_increase = malloc_increase;\
-	    objspace->profile.record[count].allocate_limit = malloc_limit; \
+	    gc_profile_record *record = &objspace->profile.record[objspace->profile.count];\
+	    record->allocate_increase = malloc_increase;\
+	    record->allocate_limit = malloc_limit; \
 	}\
     } while(0)
 #define GC_PROF_SET_HEAP_INFO do {\
 	if (objspace->profile.run) {\
-	    size_t count = objspace->profile.count;\
-	    objspace->profile.record[count].heap_use_slots = heaps_used;\
-	    objspace->profile.record[count].heap_longlife_use_slots = objspace->heap.longlife_used;\
-	    objspace->profile.record[count].heap_live_objects = live + objspace->profile.longlife_objects;\
-	    objspace->profile.record[count].heap_free_objects = freed + (objspace->heap.longlife_used * HEAP_OBJ_LIMIT - objspace->profile.longlife_objects); \
-	    objspace->profile.record[count].heap_total_objects = heaps_used * HEAP_OBJ_LIMIT;\
-	    objspace->profile.record[count].have_finalize = final_list ? Qtrue : Qfalse;\
-	    objspace->profile.record[count].heap_use_size = (live + objspace->profile.longlife_objects) * sizeof(RVALUE); \
-	    objspace->profile.record[count].heap_total_size = heaps_used * (HEAP_OBJ_LIMIT * sizeof(RVALUE));\
+	    gc_profile_record *record = &objspace->profile.record[objspace->profile.count];\
+	    record->heap_use_slots = heaps_used;\
+	    record->heap_longlife_use_slots = objspace->heap.longlife_used;\
+	    record->heap_live_objects = live + objspace->profile.longlife_objects;\
+	    record->heap_free_objects = freed + (objspace->heap.longlife_used * HEAP_OBJ_LIMIT - objspace->profile.longlife_objects); \
+	    record->heap_total_objects = heaps_used * HEAP_OBJ_LIMIT;\
+	    record->have_finalize = final_list ? Qtrue : Qfalse;\
+	    record->heap_use_size = (live + objspace->profile.longlife_objects) * sizeof(RVALUE); \
+	    record->heap_total_size = heaps_used * (HEAP_OBJ_LIMIT * sizeof(RVALUE));\
 	}\
     } while(0)
 #else
@@ -233,10 +233,10 @@ getrusage_time(void)
 #define GC_PROF_SET_MALLOC_INFO
 #define GC_PROF_SET_HEAP_INFO do {\
 	if (objspace->profile.run) {\
-	    size_t count = objspace->profile.count;\
-	    objspace->profile.record[count].heap_total_objects = heaps_used * HEAP_OBJ_LIMIT;\
-	    objspace->profile.record[count].heap_use_size = (live + objspace->profile.longlife_objects) * sizeof(RVALUE); \
-	    objspace->profile.record[count].heap_total_size = heaps_used * HEAP_SIZE;\
+	    gc_profile_record *record = &objspace->profile.record[objspace->profile.count];\
+	    record->heap_total_objects = heaps_used * HEAP_OBJ_LIMIT;\
+	    record->heap_use_size = (live + objspace->profile.longlife_objects) * sizeof(RVALUE); \
+	    record->heap_total_size = heaps_used * HEAP_SIZE;\
 	}\
     } while(0)
 #endif

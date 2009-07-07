@@ -1,3 +1,7 @@
+Tue Jul  7 11:56:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (GC_PROF_SET_MALLOC_INFO, GC_PROF_SET_HEAP_INFO): simplified.
+
 Tue Jul  7 10:12:37 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_io_ext_int_to_encs): Set external encoding if
