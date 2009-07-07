@@ -1,6 +1,6 @@
 #
 #   irb/locale.rb - internationalization module
-#   	$Release Version: 0.9.5$
+#   	$Release Version: 0.9.6$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
@@ -141,7 +141,7 @@ module IRB
       dir = File.dirname(file)
       dir = "" if dir == "."
       base = File.basename(file)
-      if dir[0] == ?/ #/
+      if dir =~ /^\//
 	  return lc_path = search_file(dir, base)
       else
 	for path in $:

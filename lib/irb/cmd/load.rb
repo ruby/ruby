@@ -1,6 +1,6 @@
 #
 #   load.rb -
-#   	$Release Version: 0.9.5$
+#   	$Release Version: 0.9.6$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #

@@ -1,6 +1,6 @@
 #
 #   irb/init.rb - irb initialize module
-#   	$Release Version: 0.9.5$
+#   	$Release Version: 0.9.6$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
@@ -44,7 +44,7 @@ module IRB
 
     @CONF[:MATH_MODE] = false
     @CONF[:USE_READLINE] = false unless defined?(ReadlineInputMethod)
-    @CONF[:INSPECT_MODE] = nil
+    @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
     @CONF[:USE_LOADER] = false
     @CONF[:IGNORE_SIGINT] = true
@@ -145,7 +145,11 @@ module IRB
 	opt = $1 || ARGV.shift
 	set_encoding(*opt.split(':', 2))
       when "--inspect"
-	@CONF[:INSPECT_MODE] = true
+	if /^-/ !~ ARGV.first 
+	  @CONF[:INSPECT_MODE] = ARGV.shift
+	else
+	  @CONF[:INSPECT_MODE] = true
+	end
       when "--noinspect"
 	@CONF[:INSPECT_MODE] = false
       when "--readline"

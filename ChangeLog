@@ -1,3 +1,7 @@
+Tue Jul  7 20:23:27 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* bin/irb, lib/irb.rb lib/irb/*: irb-0.9.6, extend inspect-mode
+
 Tue Jul  7 17:00:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_gc_call_finalizer_at_exit): deal with typed struct like

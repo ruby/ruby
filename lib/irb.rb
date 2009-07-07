@@ -1,6 +1,6 @@
 #
 #   irb.rb - irb main module
-#   	$Release Version: 0.9.5 $
+#   	$Release Version: 0.9.6 $
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
@@ -298,11 +298,7 @@ module IRB
     end
 
     def output_value
-      if @context.inspect?
-        printf @context.return_format, @context.last_value.inspect
-      else
-        printf @context.return_format, @context.last_value
-      end
+      printf @context.return_format, @context.inspect_last_value
     end
 
     def inspect

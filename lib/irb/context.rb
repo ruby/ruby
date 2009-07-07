@@ -1,6 +1,6 @@
 #
 #   irb/context.rb - irb context
-#   	$Release Version: 0.9.5$
+#   	$Release Version: 0.9.6$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
@@ -9,6 +9,7 @@
 #
 #
 require "irb/workspace"
+require "irb/inspector"
 
 module IRB
   class Context
@@ -34,8 +35,8 @@ module IRB
       @load_modules = IRB.conf[:LOAD_MODULES]
 
       @use_readline = IRB.conf[:USE_READLINE]
-      @inspect_mode = IRB.conf[:INSPECT_MODE]
 
+      self.inspect_mode = IRB.conf[:INSPECT_MODE]
       self.math_mode = IRB.conf[:MATH_MODE] if IRB.conf[:MATH_MODE]
       self.use_tracer = IRB.conf[:USE_TRACER] if IRB.conf[:USE_TRACER]
       self.use_loader = IRB.conf[:USE_LOADER] if IRB.conf[:USE_LOADER]
@@ -189,14 +190,48 @@ module IRB
     end
 
     def inspect_mode=(opt)
-      if opt
+
+      if i = INSPECTORS[opt]
 	@inspect_mode = opt
+	@inspect_method = i
+	i.init
       else
-	@inspect_mode = !@inspect_mode
+	case opt
+	when nil
+	  if INSPECTORS.keys_with_inspector(INSPECTORS[true]).include?(@inspect_mode)
+	    self.inspect_mode = false
+	  elsif INSPECTORS.keys_with_inspector(INSPECTORS[false]).include?(@inspect_mode)
+	    self.inspect_mode = true
+	  else
+	    puts "Can't switch inspect mode."
+	    return
+	  end
+	when /^\s*\{.*\}\s*$/
+	  begin
+	    inspector = eval "proc#{opt}"
+	  rescue Exception
+	    puts "Can't switch inspect mode(#{opt})."
+	    return
+	  end
+	  self.inspect_mode = inspector
+	when Proc
+	  self.inspect_mode = IRB::Inspector(opt)
+	when Inspector
+	  prefix = "usr%d"
+	  i = 1
+	  while INSPECTORS[format(prefix, i)]; i += 1; end
+	  @inspect_mode = format(prefix, i)
+	  @inspect_method = opt
+	  INSPECTORS.def_inspector(format(prefix, i), @inspect_method)
+	else
+	  puts "Can't switch inspect mode(#{opt})."
+	  return
+	end
       end
       print "Switch to#{unless @inspect_mode; ' non';end} inspect mode.\n" if verbose?
       @inspect_mode
     end
+
 
     def use_readline=(opt)
       @use_readline = opt
@@ -218,6 +253,10 @@ module IRB
       set_last_value(@workspace.evaluate(self, line, irb_path, line_no))
 #      @workspace.evaluate("_ = IRB.conf[:MAIN_CONTEXT]._")
 #      @_ = @workspace.evaluate(line, irb_path, line_no)
+    end
+
+    def inspect_last_value
+      @inspect_method.inspect_value(@last_value)
     end
 
     alias __exit__ exit
