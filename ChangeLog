@@ -1,3 +1,8 @@
+Tue Jul  7 13:34:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (rb_enum_join): non-nil separator must be convertible to
+	  String.  [ruby-core:24172]
+
 Tue Jul  7 12:47:28 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (rb_enum_join): should propagate taint to the return

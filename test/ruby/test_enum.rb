@@ -285,8 +285,15 @@ class TestEnumerable < Test::Unit::TestCase
   end
 
   def test_join
+    ofs = $,
     assert_equal("abc", ("a".."c").join(""))
     assert_equal("a-b-c", ("a".."c").join("-"))
+    $, = "-"
+    assert_equal("a-b-c", ("a".."c").join())
+    $, = nil
+    assert_equal("abc", ("a".."c").join())
+    assert_equal("123", (1..3).join())
+    assert_raise(TypeError, '[ruby-core:24172]') {("a".."c").join(1)}
     class << (e = Object.new.extend(Enumerable))
       def to_s
         "e"
@@ -296,5 +303,7 @@ class TestEnumerable < Test::Unit::TestCase
       end
     end
     assert_equal("e", e.join(""))
+  ensure
+    $, = ofs
   end
 end

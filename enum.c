@@ -1828,6 +1828,7 @@ rb_enum_join(VALUE obj, VALUE sep)
 
     args[0] = 0;
     args[1] = sep;
+    if (!NIL_P(sep)) StringValue(args[1]);
     rb_block_call(obj, id_each, 0, 0, join_i, (VALUE)args);
     if (!args[0]) args[0] = rb_str_new(0, 0);
     OBJ_INFECT(args[0], obj);
