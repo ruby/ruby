@@ -163,7 +163,7 @@ iseq_alloc(VALUE klass)
 static void
 set_relation(rb_iseq_t *iseq, const VALUE parent)
 {
-    const int type = iseq->type;
+    const VALUE type = iseq->type;
     rb_thread_t *th = GET_THREAD();
 
     /* set class nest stack */
@@ -979,7 +979,7 @@ rb_iseq_disasm(VALUE self)
     }
 
     /* show each line */
-    for (i = 0; i < size;) {
+    for (i = 0; (size_t)i < size;) {
 	i += rb_iseq_disasm_insn(str, iseq, i, iseqdat, child);
     }
 
@@ -1408,7 +1408,7 @@ rb_iseq_build_for_ruby2cext(
     const char *name,
     const char *filename)
 {
-    int i;
+    unsigned long i;
     VALUE iseqval = iseq_alloc(rb_cISeq);
     rb_iseq_t *iseq;
     GetISeqPtr(iseqval, iseq);
