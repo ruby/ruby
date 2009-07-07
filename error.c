@@ -316,6 +316,26 @@ rb_check_type(VALUE x, int t)
     }
 }
 
+void *
+rb_check_typed_struct(VALUE obj, const rb_data_type_t *data_type)
+{
+    const char *etype;
+    static const char mesg[] = "wrong argument type %s (expected %s)";
+
+    if (SPECIAL_CONST_P(obj) || BUILTIN_TYPE(obj) != T_DATA) {
+	Check_Type(obj, T_DATA);
+    }
+    if (!RTYPEDDATA_P(obj)) {
+	etype = rb_obj_classname(obj);
+	rb_raise(rb_eTypeError, mesg, etype, data_type->name);
+    }
+    else if (RTYPEDDATA_TYPE(obj) != data_type) {
+	etype = RTYPEDDATA_TYPE(obj)->name;
+	rb_raise(rb_eTypeError, mesg, etype, data_type->name);
+    }
+    return DATA_PTR(obj);
+}
+
 /* exception classes */
 #include <errno.h>
 

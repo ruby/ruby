@@ -764,6 +764,8 @@ typedef void (*RUBY_DATA_FUNC)(void*);
 
 VALUE rb_data_object_alloc(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
 VALUE rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *);
+void *rb_check_typed_struct(VALUE, const rb_data_type_t *);
+#define Check_TypedStruct(v,t) rb_check_typed_struct((VALUE)(v),t)
 
 #define Data_Wrap_Struct(klass,mark,free,sval)\
     rb_data_object_alloc(klass,sval,(RUBY_DATA_FUNC)mark,(RUBY_DATA_FUNC)free)
@@ -786,6 +788,10 @@ VALUE rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t 
 #define Data_Get_Struct(obj,type,sval) do {\
     Check_Type(obj, T_DATA); \
     sval = (type*)DATA_PTR(obj);\
+} while (0)
+
+#define Data_Get_TypedStruct(obj,type,data_type,sval) do {\
+    sval = (type*)rb_check_typed_struct(obj, data_type); \
 } while (0)
 
 #define RSTRUCT_EMBED_LEN_MAX 3

@@ -1,3 +1,11 @@
+Tue Jul  7 13:44:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_check_typed_struct): new function to check typed
+	  struct.
+
+	* include/ruby/ruby.h (Check_TypedStruct, Data_Get_TypedStruct):
+	  new macro to check typed struct.
+
 Tue Jul  7 13:36:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (DEFINE_ENUMFUNCS): included function signature.
