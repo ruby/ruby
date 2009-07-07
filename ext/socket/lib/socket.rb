@@ -208,7 +208,7 @@ class Socket
     end
   end
 
-  # creates a new socket object connected to host:port using TCP.
+  # creates a new socket object connected to host:port using TCP/IP.
   #
   # If local_host:local_port is given,
   # the socket is bound to it.
@@ -318,7 +318,7 @@ class Socket
     private :tcp_server_sockets_port0
   end
 
-  # creates TCP server sockets for _host_ and _port_.
+  # creates TCP/IP server sockets for _host_ and _port_.
   # _host_ is optional.
   #
   # If no block given,
@@ -412,7 +412,7 @@ class Socket
     }
   end
 
-  # creates a TCP server on _port_ and calls the block for each connection accepted.
+  # creates a TCP/IP server on _port_ and calls the block for each connection accepted.
   # The block is called with a socket and a client_address as an Addrinfo object.
   #
   # If _host_ is specified, it is used with _port_ to determine the server addresses.
@@ -462,7 +462,7 @@ class Socket
   # :call-seq:
   #   Socket.udp_server_sockets([host, ] port)
   #
-  # Creates UDP sockets for a UDP server.
+  # Creates UDP/IP sockets for a UDP server.
   #
   # If no block given, it returns an array of sockets.
   #
@@ -473,7 +473,7 @@ class Socket
   # If _port_ is zero, some port is choosen.
   # But the choosen port is used for the all sockets.
   #
-  #   # UDP echo server
+  #   # UDP/IP echo server
   #   Socket.udp_server_sockets(0) {|sockets|
   #     p sockets.first.local_address.ip_port     #=> 32963
   #     Socket.udp_server_loop_on(sockets) {|msg, msg_src|
@@ -555,7 +555,7 @@ class Socket
   # :call-seq:
   #   Socket.udp_server_loop_on(sockets) {|msg, msg_src| ... }
   #
-  # Run UDP server loop on the given sockets.
+  # Run UDP/IP server loop on the given sockets.
   #
   # The return value of Socket.udp_server_sockets is appropriate for the argument.
   #
@@ -589,7 +589,7 @@ class Socket
   #   Socket.udp_server_loop(port) {|msg, msg_src| ... }
   #   Socket.udp_server_loop(host, port) {|msg, msg_src| ... }
   #
-  # creates a UDP server on _port_ and calls the block for each message arrived.
+  # creates a UDP/IP server on _port_ and calls the block for each message arrived.
   # The block is called with the message and its source information.
   #
   # This method allocates sockets internally using _port_.
@@ -600,7 +600,7 @@ class Socket
   # The _msg_src_ is a Socket::UDPSource object.
   # It is used for reply.
   #
-  #   # UDP echo server.
+  #   # UDP/IP echo server.
   #   Socket.udp_server_loop(9261) {|msg, msg_src|
   #     msg_src.reply msg
   #   }
@@ -611,7 +611,7 @@ class Socket
     }
   end
 
-  # UDP address information used by Socket.udp_server_loop.
+  # UDP/IP address information used by Socket.udp_server_loop.
   class UDPSource
     def initialize(remote_address, local_address, &reply_proc)
       @remote_address = remote_address
