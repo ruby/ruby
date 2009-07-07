@@ -238,7 +238,7 @@ env_memsize(void *ptr)
     return 0;
 }
 
-rb_data_type_t env_data_type = {
+static const rb_data_type_t env_data_type = {
     "VM/env",
     env_mark, env_free, env_memsize,
 };
@@ -1477,7 +1477,7 @@ vm_memsize(void *ptr)
     }
 }
 
-rb_data_type_t vm_data_type = {
+static const rb_data_type_t vm_data_type = {
     "VM",
     rb_vm_mark, vm_free, vm_memsize,
 };
@@ -1662,7 +1662,7 @@ thread_memsize(void *ptr)
     }
 }
 
-rb_data_type_t thread_data_type = {
+static const rb_data_type_t thread_data_type = {
     "VM/thread",
     rb_thread_mark,
     thread_free,
