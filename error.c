@@ -316,6 +316,16 @@ rb_check_type(VALUE x, int t)
     }
 }
 
+int
+rb_typed_struct_is_kind_of(VALUE obj, const rb_data_type_t *data_type)
+{
+    if (SPECIAL_CONST_P(obj) || BUILTIN_TYPE(obj) != T_DATA ||
+	!RTYPEDDATA_P(obj) || RTYPEDDATA_TYPE(obj) != data_type) {
+	return 0;
+    }
+    return 1;
+}
+
 void *
 rb_check_typed_struct(VALUE obj, const rb_data_type_t *data_type)
 {
