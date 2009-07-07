@@ -1,9 +1,10 @@
-Tue Jul  7 16:54:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jul  7 17:00:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_gc_call_finalizer_at_exit): deal with typed struct like
+	  as obj_free().
 
 	* error.c (rb_typed_struct_is_kind_of): new function to see if the
 	  given typed struct.
-
-Tue Jul  7 13:44:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_check_typed_struct): new function to check typed
 	  struct.

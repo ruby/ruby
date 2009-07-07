@@ -2802,6 +2802,9 @@ rb_gc_call_finalizer_at_exit(void)
 		DATA_PTR(p) && RANY(p)->as.data.dfree &&
 		RANY(p)->as.basic.klass != rb_cThread && RANY(p)->as.basic.klass != rb_cMutex) {
 		p->as.free.flags = 0;
+		if (RTYPEDDATA_P(p)) {
+		    RDATA(p)->dfree = RANY(p)->as.typeddata.type->dfree;
+		}
 		if ((long)RANY(p)->as.data.dfree == -1) {
 		    xfree(DATA_PTR(p));
 		}
