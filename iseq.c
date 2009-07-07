@@ -157,7 +157,7 @@ static VALUE
 iseq_alloc(VALUE klass)
 {
     rb_iseq_t *iseq;
-    return Data_Make_TypedStruct(klass, rb_iseq_t, &iseq_data_type, iseq);
+    return TypedData_Make_Struct(klass, rb_iseq_t, &iseq_data_type, iseq);
 }
 
 static void

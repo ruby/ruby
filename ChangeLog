@@ -1,3 +1,15 @@
+Wed Jul  8 04:28:16 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h:
+	  rename
+	    "...TypeStruct" and "typed_struct" to
+	    "TypedData..." and "typeddata", respectively.
+	  rename
+	    rb_data_type_t#name to
+	    rb_data_type_t#wrap_struct_name.
+
+	* error.c, gc.c, iseq.c, vm.c: ditto.
+
 Tue Jul  7 20:23:27 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* bin/irb, lib/irb.rb lib/irb/*: irb-0.9.6, extend inspect-mode

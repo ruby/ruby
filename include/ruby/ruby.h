@@ -737,7 +737,7 @@ struct RData {
 };
 
 typedef struct rb_data_type_struct {
-    const char *name;
+    const char *wrap_struct_name;
     void (*dmark)(void*);
     void (*dfree)(void*);
     size_t (*dsize)(void *);
@@ -764,9 +764,9 @@ typedef void (*RUBY_DATA_FUNC)(void*);
 
 VALUE rb_data_object_alloc(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
 VALUE rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *);
-int rb_typed_struct_is_kind_of(VALUE, const rb_data_type_t *);
-void *rb_check_typed_struct(VALUE, const rb_data_type_t *);
-#define Check_TypedStruct(v,t) rb_check_typed_struct((VALUE)(v),t)
+int rb_typeddata_is_kind_of(VALUE, const rb_data_type_t *);
+void *rb_check_typeddata(VALUE, const rb_data_type_t *);
+#define Check_TypedStruct(v,t) rb_check_typeddata((VALUE)(v),t)
 #define RUBY_TYPED_DEFAULT_FREE ((void (*)(void *))-1)
 
 #define Data_Wrap_Struct(klass,mark,free,sval)\
@@ -778,13 +778,13 @@ void *rb_check_typed_struct(VALUE, const rb_data_type_t *);
     Data_Wrap_Struct(klass,mark,free,sval)\
 )
 
-#define Data_Wrap_TypedStruct(klass,data_type,sval)\
+#define TypedData_Wrap_Struct(klass,data_type,sval)\
   rb_data_typed_object_alloc(klass,sval,data_type)
 
-#define Data_Make_TypedStruct(klass, type, data_type, sval) (\
+#define TypedData_Make_Struct(klass, type, data_type, sval) (\
     sval = ALLOC(type),\
     memset(sval, 0, sizeof(type)),\
-    Data_Wrap_TypedStruct(klass,data_type,sval)\
+    TypedData_Wrap_Struct(klass,data_type,sval)\
 )
 
 #define Data_Get_Struct(obj,type,sval) do {\
@@ -792,8 +792,8 @@ void *rb_check_typed_struct(VALUE, const rb_data_type_t *);
     sval = (type*)DATA_PTR(obj);\
 } while (0)
 
-#define Data_Get_TypedStruct(obj,type,data_type,sval) do {\
-    sval = (type*)rb_check_typed_struct(obj, data_type); \
+#define TypedData_Get_Struct(obj,type,data_type,sval) do {\
+    sval = (type*)rb_check_typeddata(obj, data_type); \
 } while (0)
 
 #define RSTRUCT_EMBED_LEN_MAX 3

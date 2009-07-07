@@ -248,7 +248,7 @@ env_alloc(void)
 {
     VALUE obj;
     rb_env_t *env;
-    obj = Data_Make_TypedStruct(rb_cEnv, rb_env_t, &env_data_type, env);
+    obj = TypedData_Make_Struct(rb_cEnv, rb_env_t, &env_data_type, env);
     env->env = 0;
     env->prev_envval = 0;
     env->block.iseq = 0;
@@ -1675,10 +1675,10 @@ thread_alloc(VALUE klass)
     VALUE volatile obj;
 #ifdef USE_THREAD_RECYCLE
     rb_thread_t *th = thread_recycle_struct();
-    obj = Data_Wrap_TypedStruct(klass, &thread_data_type, th);
+    obj = TypedData_Wrap_Struct(klass, &thread_data_type, th);
 #else
     rb_thread_t *th;
-    obj = Data_Make_TypedStruct(klass, rb_thread_t, &thread_data_type, th);
+    obj = TypedData_Make_Struct(klass, rb_thread_t, &thread_data_type, th);
 #endif
     return obj;
 }
@@ -1979,10 +1979,10 @@ Init_VM(void)
 	rb_iseq_t *iseq;
 
 	/* create vm object */
-	vm->self = Data_Wrap_TypedStruct(rb_cRubyVM, &vm_data_type, vm);
+	vm->self = TypedData_Wrap_Struct(rb_cRubyVM, &vm_data_type, vm);
 
 	/* create main thread */
-	th_self = th->self = Data_Wrap_TypedStruct(rb_cThread, &thread_data_type, th);
+	th_self = th->self = TypedData_Wrap_Struct(rb_cThread, &thread_data_type, th);
 	vm->main_thread = th;
 	vm->running_thread = th;
 	th->vm = vm;

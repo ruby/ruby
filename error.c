@@ -317,7 +317,7 @@ rb_check_type(VALUE x, int t)
 }
 
 int
-rb_typed_struct_is_kind_of(VALUE obj, const rb_data_type_t *data_type)
+rb_typeddata_is_kind_of(VALUE obj, const rb_data_type_t *data_type)
 {
     if (SPECIAL_CONST_P(obj) || BUILTIN_TYPE(obj) != T_DATA ||
 	!RTYPEDDATA_P(obj) || RTYPEDDATA_TYPE(obj) != data_type) {
@@ -327,7 +327,7 @@ rb_typed_struct_is_kind_of(VALUE obj, const rb_data_type_t *data_type)
 }
 
 void *
-rb_check_typed_struct(VALUE obj, const rb_data_type_t *data_type)
+rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
 {
     const char *etype;
     static const char mesg[] = "wrong argument type %s (expected %s)";
@@ -337,11 +337,11 @@ rb_check_typed_struct(VALUE obj, const rb_data_type_t *data_type)
     }
     if (!RTYPEDDATA_P(obj)) {
 	etype = rb_obj_classname(obj);
-	rb_raise(rb_eTypeError, mesg, etype, data_type->name);
+	rb_raise(rb_eTypeError, mesg, etype, data_type->wrap_struct_name);
     }
     else if (RTYPEDDATA_TYPE(obj) != data_type) {
-	etype = RTYPEDDATA_TYPE(obj)->name;
-	rb_raise(rb_eTypeError, mesg, etype, data_type->name);
+	etype = RTYPEDDATA_TYPE(obj)->wrap_struct_name;
+	rb_raise(rb_eTypeError, mesg, etype, data_type->wrap_struct_name);
     }
     return DATA_PTR(obj);
 }

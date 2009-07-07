@@ -1206,7 +1206,7 @@ const char *
 rb_objspace_data_type_name(VALUE obj)
 {
     if (RTYPEDDATA_P(obj)) {
-	return RTYPEDDATA_TYPE(obj)->name;
+	return RTYPEDDATA_TYPE(obj)->wrap_struct_name;
     }
     else {
 	return 0;
