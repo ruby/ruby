@@ -1,3 +1,8 @@
+Tue Jul  7 10:12:37 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (rb_io_ext_int_to_encs): Set external encoding if
+	  ext==intern. [ruby-dev:38278]
+
 Mon Jul  6 09:31:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (make_curry_proc): should propagate lambda-ness.
