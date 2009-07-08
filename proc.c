@@ -255,12 +255,25 @@ binding_mark(void *ptr)
     RUBY_MARK_LEAVE("binding");
 }
 
+static size_t
+binding_memsize(void *ptr)
+{
+    return ptr ? sizeof(rb_binding_t) : 0;
+}
+
+static const rb_data_type_t binding_data_type = {
+    "binding",
+    binding_mark,
+    binding_free,
+    binding_memsize,
+};
+
 static VALUE
 binding_alloc(VALUE klass)
 {
     VALUE obj;
     rb_binding_t *bind;
-    obj = Data_Make_Struct(klass, rb_binding_t, binding_mark, binding_free, bind);
+    obj = TypedData_Make_Struct(klass, rb_binding_t, &binding_data_type, bind);
     return obj;
 }
 
