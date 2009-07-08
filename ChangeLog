@@ -1,3 +1,7 @@
+Wed Jul  8 21:00:37 2009  Keiju Ishitsuka  <keiju@emperor2.pendome>
+
+	* lib/irb/inspector.rb: forget svn add.
+
 Wed Jul  8 19:10:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_check_type): rejects typed data.
