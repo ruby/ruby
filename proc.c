@@ -29,7 +29,7 @@ VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 
 static VALUE bmcall(VALUE, VALUE);
 static int method_arity(VALUE);
-static VALUE rb_obj_is_method(VALUE m);
+static int rb_obj_is_method(VALUE m);
 static rb_iseq_t *get_method_iseq(VALUE method);
 
 /* Proc */
@@ -62,21 +62,30 @@ proc_mark(void *ptr)
     RUBY_MARK_LEAVE("proc");
 }
 
+static size_t
+proc_memsize(void *ptr)
+{
+    return ptr ? sizeof(rb_proc_t) : 0;
+}
+
+static const rb_data_type_t proc_data_type = {
+    "proc",
+    proc_mark,
+    proc_free,
+    proc_memsize,
+};
+
 VALUE
 rb_proc_alloc(VALUE klass)
 {
-    VALUE obj;
     rb_proc_t *proc;
-    obj = Data_Make_Struct(klass, rb_proc_t, proc_mark, proc_free, proc);
-    MEMZERO(proc, rb_proc_t, 1);
-    return obj;
+    return TypedData_Make_Struct(klass, rb_proc_t, &proc_data_type, proc);
 }
 
 VALUE
 rb_obj_is_proc(VALUE proc)
 {
-    if (TYPE(proc) == T_DATA &&
-	RDATA(proc)->dfree == (RUBY_DATA_FUNC) proc_free) {
+    if (rb_typeddata_is_kind_of(proc, &proc_data_type)) {
 	return Qtrue;
     }
     else {
@@ -724,8 +733,7 @@ proc_eq(VALUE self, VALUE other)
 	return Qtrue;
     }
     else {
-	if (TYPE(other)          == T_DATA &&
-	    RDATA(other)->dmark  == proc_mark) {
+	if (rb_obj_is_proc(other)) {
 	    rb_proc_t *p1, *p2;
 	    GetProcPtr(self, p1);
 	    GetProcPtr(other, p2);
@@ -818,22 +826,39 @@ proc_to_proc(VALUE self)
 }
 
 static void
-bm_mark(struct METHOD *data)
+bm_mark(void *ptr)
 {
+    struct METHOD *data = ptr;
     rb_gc_mark(data->rclass);
     rb_gc_mark(data->oclass);
     rb_gc_mark(data->recv);
     rb_gc_mark((VALUE)data->body);
 }
 
+static size_t
+bm_memsize(void *ptr)
+{
+    return ptr ? sizeof(struct METHOD) : 0;
+}
+
+static const rb_data_type_t method_data_type = {
+    "method",
+    bm_mark,
+    RUBY_TYPED_DEFAULT_FREE,
+    bm_memsize,
+};
+
+static inline int
+rb_obj_is_method(VALUE m)
+{
+    return rb_typeddata_is_kind_of(m, &method_data_type);
+}
+
 NODE *
 rb_method_body(VALUE method)
 {
-    struct METHOD *data;
-
-    if (TYPE(method) == T_DATA &&
-	RDATA(method)->dmark == (RUBY_DATA_FUNC) bm_mark) {
-	Data_Get_Struct(method, struct METHOD, data);
+    if (rb_obj_is_method(method)) {
+	struct METHOD *data = DATA_PTR(method);
 	return data->body;
     }
     else {
@@ -874,7 +899,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     }
     if (TYPE(klass) == T_ICLASS)
 	klass = RBASIC(klass)->klass;
-    method = Data_Make_Struct(mclass, struct METHOD, bm_mark, -1, data);
+    method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
     data->oclass = klass;
     data->recv = obj;
 
@@ -926,14 +951,14 @@ method_eq(VALUE method, VALUE other)
 {
     struct METHOD *m1, *m2;
 
-    if (TYPE(other) != T_DATA
-	|| RDATA(other)->dmark != (RUBY_DATA_FUNC) bm_mark)
+    if (!rb_obj_is_method(other))
 	return Qfalse;
     if (CLASS_OF(method) != CLASS_OF(other))
 	return Qfalse;
 
-    Data_Get_Struct(method, struct METHOD, m1);
-    Data_Get_Struct(other, struct METHOD, m2);
+    Check_TypedStruct(method, &method_data_type);
+    m1 = (struct METHOD *)DATA_PTR(method);
+    m2 = (struct METHOD *)DATA_PTR(other);
 
     if (m1->oclass != m2->oclass || m1->rclass != m2->rclass ||
 	m1->recv != m2->recv || m1->body != m2->body)
@@ -955,7 +980,7 @@ method_hash(VALUE method)
     struct METHOD *m;
     long hash;
 
-    Data_Get_Struct(method, struct METHOD, m);
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, m);
     hash = (long)m->oclass;
     hash ^= (long)m->rclass;
     hash ^= (long)m->recv;
@@ -979,9 +1004,9 @@ method_unbind(VALUE obj)
     VALUE method;
     struct METHOD *orig, *data;
 
-    Data_Get_Struct(obj, struct METHOD, orig);
+    TypedData_Get_Struct(obj, struct METHOD, &method_data_type, orig);
     method =
-	Data_Make_Struct(rb_cUnboundMethod, struct METHOD, bm_mark, -1, data);
+	TypedData_Make_Struct(rb_cUnboundMethod, struct METHOD, &method_data_type, data);
     data->oclass = orig->oclass;
     data->recv = Qundef;
     data->id = orig->id;
@@ -1005,7 +1030,7 @@ method_receiver(VALUE obj)
 {
     struct METHOD *data;
 
-    Data_Get_Struct(obj, struct METHOD, data);
+    TypedData_Get_Struct(obj, struct METHOD, &method_data_type, data);
     return data->recv;
 }
 
@@ -1021,7 +1046,7 @@ method_name(VALUE obj)
 {
     struct METHOD *data;
 
-    Data_Get_Struct(obj, struct METHOD, data);
+    TypedData_Get_Struct(obj, struct METHOD, &method_data_type, data);
     return ID2SYM(data->id);
 }
 
@@ -1037,7 +1062,7 @@ method_owner(VALUE obj)
 {
     struct METHOD *data;
 
-    Data_Get_Struct(obj, struct METHOD, data);
+    TypedData_Get_Struct(obj, struct METHOD, &method_data_type, data);
     return data->oclass;
 }
 
@@ -1187,7 +1212,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
     }
 
-    if (RDATA(body)->dmark == (RUBY_DATA_FUNC) bm_mark) {
+    if (rb_obj_is_method(body)) {
 	struct METHOD *method = (struct METHOD *)DATA_PTR(body);
 	VALUE rclass = method->rclass;
 	if (rclass != mod) {
@@ -1245,8 +1270,8 @@ method_clone(VALUE self)
     VALUE clone;
     struct METHOD *orig, *data;
 
-    Data_Get_Struct(self, struct METHOD, orig);
-    clone = Data_Make_Struct(CLASS_OF(self), struct METHOD, bm_mark, -1, data);
+    TypedData_Get_Struct(self, struct METHOD, &method_data_type, orig);
+    clone = TypedData_Make_Struct(CLASS_OF(self), struct METHOD, &method_data_type, data);
     CLONESETUP(clone, self);
     *data = *orig;
 
@@ -1274,7 +1299,7 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
     int state;
     volatile int safe = -1;
 
-    Data_Get_Struct(method, struct METHOD, data);
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     if (data->recv == Qundef) {
 	rb_raise(rb_eTypeError, "can't call unbound method; bind first");
     }
@@ -1398,7 +1423,7 @@ umethod_bind(VALUE method, VALUE recv)
 {
     struct METHOD *data, *bound;
 
-    Data_Get_Struct(method, struct METHOD, data);
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     if (data->rclass != CLASS_OF(recv)) {
 	if (FL_TEST(data->rclass, FL_SINGLETON)) {
 	    rb_raise(rb_eTypeError,
@@ -1410,7 +1435,7 @@ umethod_bind(VALUE method, VALUE recv)
 	}
     }
 
-    method = Data_Make_Struct(rb_cMethod, struct METHOD, bm_mark, -1, bound);
+    method = TypedData_Make_Struct(rb_cMethod, struct METHOD, &method_data_type, bound);
     *bound = *data;
     bound->recv = recv;
     bound->rclass = CLASS_OF(recv);
@@ -1495,7 +1520,7 @@ method_arity(VALUE method)
 {
     struct METHOD *data;
 
-    Data_Get_Struct(method, struct METHOD, data);
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     return rb_node_arity(data->body);
 }
 
@@ -1519,7 +1544,7 @@ get_method_iseq(VALUE method)
     NODE *body;
     rb_iseq_t *iseq;
 
-    Data_Get_Struct(method, struct METHOD, data);
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     body = data->body;
     switch (nd_type(body)) {
       case NODE_BMETHOD:
@@ -1582,7 +1607,7 @@ method_inspect(VALUE method)
     const char *s;
     const char *sharp = "#";
 
-    Data_Get_Struct(method, struct METHOD, data);
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     str = rb_str_buf_new2("#<");
     s = rb_obj_classname(method);
     rb_str_buf_cat2(str, s);
@@ -1689,15 +1714,6 @@ method_proc(VALUE method)
     GetProcPtr(procval, proc);
     proc->is_from_method = 1;
     return procval;
-}
-
-static VALUE
-rb_obj_is_method(VALUE m)
-{
-    if (TYPE(m) == T_DATA && RDATA(m)->dmark == (RUBY_DATA_FUNC) bm_mark) {
-	return Qtrue;
-    }
-    return Qfalse;
 }
 
 /*

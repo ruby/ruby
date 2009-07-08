@@ -1,3 +1,7 @@
+Wed Jul  8 17:13:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c ({proc,method}_data_type): typed.
+
 Wed Jul  8 16:47:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_basename): returns new string instead of
