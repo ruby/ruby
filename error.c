@@ -282,12 +282,14 @@ rb_check_type(VALUE x, int t)
     const struct types *type = builtin_types;
     const struct types *const typeend = builtin_types +
 	sizeof(builtin_types) / sizeof(builtin_types[0]);
+    int xt;
 
     if (x == Qundef) {
 	rb_bug("undef leaked to the Ruby space");
     }
 
-    if (TYPE(x) != t) {
+    xt = TYPE(x);
+    if (xt != t || (xt == T_DATA && RTYPEDDATA_P(x))) {
 	while (type < typeend) {
 	    if (type->type == t) {
 		const char *etype;
