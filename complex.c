@@ -758,8 +758,10 @@ f_divide(VALUE self, VALUE other,
 static VALUE
 nucomp_div(VALUE self, VALUE other)
 {
-    if (f_zero_p(other))
+#if 0 /* too much cost */
+    if (f_zero_p(other) && k_exact_p(self) && k_exact_p(other))
 	rb_raise_zerodiv();
+#endif
     return f_divide(self, other, f_quo, id_quo);
 }
 
@@ -824,7 +826,7 @@ rb_fexpt(VALUE x, VALUE y)
 static VALUE
 nucomp_expt(VALUE self, VALUE other)
 {
-    if (k_exact_p(other) && f_zero_p(other))
+    if (f_zero_p(other) && k_exact_p(other))
 	return f_complex_new_bang1(CLASS_OF(self), ONE);
 
     if (k_rational_p(other) && f_one_p(f_denominator(other)))

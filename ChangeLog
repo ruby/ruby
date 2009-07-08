@@ -1,3 +1,7 @@
+Wed Jul  8 23:13:54 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_div): omitted zero division check.
+
 Wed Jul  8 21:00:37 2009  Keiju Ishitsuka  <keiju@emperor2.pendome>
 
 	* lib/irb/inspector.rb: forget svn add.
