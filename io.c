@@ -3934,11 +3934,26 @@ rb_io_fmode_modestr(int fmode)
     return NULL;		/* not reached */
 }
 
+static int
+io_encname_bom_p(const char *name, long len) {
+    if (len) {
+	if (len > 4 && strncasecmp(name + len - 4, "-bom", 4) == 0)
+	    return 1;
+    }
+    else {
+	const char *p = strchr(name, ':');
+	if (!p) p = name + strlen(name);
+	if (p - name > 4 && strncasecmp(p - 4, "-bom", 4) == 0)
+	    return 1;
+    }
+    return 0;
+}
+
 int
 rb_io_modestr_fmode(const char *modestr)
 {
     int fmode = 0;
-    const char *m = modestr;
+    const char *m = modestr, *p = NULL;
 
     switch (*m++) {
       case 'r':
@@ -3969,6 +3984,7 @@ rb_io_modestr_fmode(const char *modestr)
 	  default:
             goto error;
 	  case ':':
+	    p = m;
             goto finished;
         }
     }
@@ -3976,6 +3992,8 @@ rb_io_modestr_fmode(const char *modestr)
   finished:
     if ((fmode & FMODE_BINMODE) && (fmode & FMODE_TEXTMODE))
         goto error;
+    if (p && io_encname_bom_p(p, 0))
+	fmode |= FMODE_STRIP_BOM;
 
     return fmode;
 }
@@ -4126,14 +4144,24 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p)
 	if (len == 0 || len > ENCODING_MAXNAMELEN)
 	    idx = -1;
 	else {
+	    if (io_encname_bom_p(estr, len))
+		len -= 4;
 	    memcpy(encname, estr, len);
 	    encname[len] = '\0';
 	    estr = encname;
 	    idx = rb_enc_find_index(encname);
 	}
     }
-    else
+    else {
+	long len = strlen(estr);
+	if (io_encname_bom_p(estr, len)) {
+	    len -= 4;
+	    memcpy(encname, estr, len);
+	    encname[len] = '\0';
+	    estr = encname;
+	}
 	idx = rb_enc_find_index(estr);
+    }
 
     if (idx >= 0)
 	ext_enc = rb_enc_from_index(idx);
@@ -4309,6 +4337,8 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
         if (p) {
             has_enc = 1;
             parse_mode_enc(p+1, &enc, &enc2);
+	    if (io_encname_bom_p(p+1, 0))
+		fmode |= FMODE_STRIP_BOM;
         }
 	else {
 	    rb_encoding *e;
@@ -4493,6 +4523,84 @@ io_check_tty(rb_io_t *fptr)
         fptr->mode |= FMODE_TTY|FMODE_DUPLEX;
 }
 
+static VALUE rb_io_internal_encoding(VALUE);
+static void io_encoding_set(rb_io_t *, VALUE, VALUE, VALUE);
+
+static int
+io_strip_bom(VALUE io) {
+    int b1, b2, b3, b4;
+    switch (b1 = FIX2INT(rb_io_getbyte(io))) {
+      case 0xEF:
+	b2 = FIX2INT(rb_io_getbyte(io));
+	if (b2 == 0xBB) {
+	    b3 = FIX2INT(rb_io_getbyte(io));
+	    if (b3 == 0xBF) {
+		return rb_utf8_encindex();
+	    }
+	    rb_io_ungetbyte(io, INT2FIX(b3));
+	}
+	rb_io_ungetbyte(io, INT2FIX(b2));
+	break;
+
+      case 0xFE:
+	b2 = FIX2INT(rb_io_getbyte(io));
+	if (b2 == 0xFF) {
+	    return rb_enc_find_index("UTF-16BE");
+	}
+	rb_io_ungetbyte(io, INT2FIX(b2));
+	break;
+
+      case 0xFF:
+	b2 = FIX2INT(rb_io_getbyte(io));
+	if (b2 == 0xFF) {
+	    b3 = FIX2INT(rb_io_getbyte(io));
+	    if (b3 == 0) {
+		b4 = FIX2INT(rb_io_getbyte(io));
+		if (b4 == 0) {
+		    return rb_enc_find_index("UTF-32LE");
+		}
+		rb_io_ungetbyte(io, INT2FIX(b4));
+	    }
+	    else {
+		return rb_enc_find_index("UTF-16LE");
+	    }
+	    rb_io_ungetbyte(io, INT2FIX(b3));
+	}
+	rb_io_ungetbyte(io, INT2FIX(b2));
+	break;
+
+      case 0:
+	b2 = FIX2INT(rb_io_getbyte(io));
+	if (b2 == 0) {
+	    b3 = FIX2INT(rb_io_getbyte(io));
+	    if (b3 == 0xFE) {
+		b4 = FIX2INT(rb_io_getbyte(io));
+		if (b4 == 0xFF) {
+		    return rb_enc_find_index("UTF-32BE");
+		}
+		rb_io_ungetbyte(io, INT2FIX(b4));
+	    }
+	    rb_io_ungetbyte(io, INT2FIX(b3));
+	}
+	rb_io_ungetbyte(io, INT2FIX(b2));
+	break;
+    }
+    rb_io_ungetbyte(io, INT2FIX(b1));
+    return 0;
+}
+
+static void
+io_set_encoding_by_bom(VALUE io) {
+    int idx = io_strip_bom(io);
+
+    if (idx) {
+	rb_io_t *fptr;
+	GetOpenFile(io, fptr);
+	io_encoding_set(fptr, rb_enc_from_encoding(rb_enc_from_index(idx)),
+		rb_io_internal_encoding(io), Qnil);
+    }
+}
+
 static VALUE
 rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode, convconfig_t *convconfig, mode_t perm)
 {
@@ -4513,6 +4621,7 @@ rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode, convconfig
     fptr->pathv = rb_str_new_frozen(filename);
     fptr->fd = rb_sysopen(fptr->pathv, oflags, perm);
     io_check_tty(fptr);
+    if (fmode & FMODE_STRIP_BOM) io_set_encoding_by_bom(io);
 
     return io;
 }
@@ -6250,6 +6359,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     else if (fileno(stderr) == fd)
 	fp->stdio_file = stderr;
 
+    if (fmode & FMODE_STRIP_BOM) io_set_encoding_by_bom(io);
     return io;
 }
 

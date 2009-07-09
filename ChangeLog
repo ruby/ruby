@@ -1,3 +1,17 @@
+Thu Jul  9 23:28:48 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/io.h (FMODE_STRIP_BOM): new constant.
+
+	* io.c (io_encname_bom_p): judge whether the encoding name
+	  is *-bom or not.
+	  (parse_mode_enc): drop "-bom".
+	  (rb_io_modestr_fmode): set FMODE_STRIP_BOM if needed.
+	  (rb_io_extract_modeenc): ditto.
+	  (io_strip_bom): strip bom if exists.
+	  (io_set_encoding_by_bom): set encoding if there is bom.
+	  Set encoding and strip bom when modeenc string is "r:foo-bom"
+	  [ruby-dev:37236]
+
 Thu Jul  9 21:56:59 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* marshal.c (r_object0): replace \u by u when the regexp is
