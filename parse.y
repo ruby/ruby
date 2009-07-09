@@ -5076,6 +5076,8 @@ lex_getline(struct parser_params *parser)
     return line;
 }
 
+static const rb_data_type_t parser_data_type;
+
 #ifndef RIPPER
 NODE*
 rb_compile_string(const char *f, VALUE s, int line)
@@ -5092,7 +5094,7 @@ rb_parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int lin
     NODE *node;
     volatile VALUE tmp;
 
-    Data_Get_Struct(vparser, struct parser_params, parser);
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
     lex_gets = lex_get_str;
     lex_gets_ptr = 0;
     lex_input = s;
@@ -5138,7 +5140,7 @@ rb_parser_compile_file(volatile VALUE vparser, const char *f, VALUE file, int st
     volatile VALUE tmp;
     NODE *node;
 
-    Data_Get_Struct(vparser, struct parser_params, parser);
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
     lex_gets = lex_io_gets;
     lex_input = file;
     lex_pbeg = lex_p = lex_pend = 0;
@@ -9040,7 +9042,7 @@ rb_parser_append_print(VALUE vparser, NODE *node)
 
     if (!node) return node;
 
-    Data_Get_Struct(vparser, struct parser_params, parser);
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
 
     node = node->nd_body;
 
@@ -9072,7 +9074,7 @@ rb_parser_while_loop(VALUE vparser, NODE *node, int chop, int split)
 
     if (!node) return node;
 
-    Data_Get_Struct(vparser, struct parser_params, parser);
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
 
     node = node->nd_body;
 
@@ -9716,6 +9718,34 @@ parser_free(void *ptr)
     xfree(p);
 }
 
+static size_t
+parser_memsize(void *ptr)
+{
+    struct parser_params *p = (struct parser_params*)ptr;
+    struct local_vars *local;
+    size_t size = sizeof(*p);
+
+    if (!ptr) return 0;
+    size += p->parser_toksiz;
+    for (local = p->parser_lvtbl; local; local = local->prev) {
+	size += sizeof(*local);
+	if (local->vars) size += local->vars->capa * sizeof(ID);
+    }
+#ifndef RIPPER
+    if (p->parser_ruby_sourcefile) {
+	size += strlen(p->parser_ruby_sourcefile) + 1;
+    }
+#endif
+    return size;
+}
+
+static const rb_data_type_t parser_data_type = {
+    "parser",
+    parser_mark,
+    parser_free,
+    parser_memsize,
+};
+
 VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 
@@ -9744,7 +9774,7 @@ rb_parser_new(void)
 {
     struct parser_params *p = parser_new();
 
-    return Data_Wrap_Struct(0, parser_mark, parser_free, p);
+    return TypedData_Wrap_Struct(0, &parser_data_type, p);
 }
 
 /*
@@ -9759,7 +9789,7 @@ rb_parser_end_seen_p(VALUE vparser)
 {
     struct parser_params *parser;
 
-    Data_Get_Struct(vparser, struct parser_params, parser);
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
     return ruby__end__seen ? Qtrue : Qfalse;
 }
 
@@ -9774,7 +9804,7 @@ rb_parser_encoding(VALUE vparser)
 {
     struct parser_params *parser;
 
-    Data_Get_Struct(vparser, struct parser_params, parser);
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
     return rb_enc_from_encoding(parser->enc);
 }
 
@@ -9789,7 +9819,7 @@ rb_parser_get_yydebug(VALUE self)
 {
     struct parser_params *parser;
 
-    Data_Get_Struct(self, struct parser_params, parser);
+    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, parser);
     return yydebug ? Qtrue : Qfalse;
 }
 
@@ -9804,7 +9834,7 @@ rb_parser_set_yydebug(VALUE self, VALUE flag)
 {
     struct parser_params *parser;
 
-    Data_Get_Struct(self, struct parser_params, parser);
+    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, parser);
     yydebug = RTEST(flag);
     return flag;
 }
@@ -10126,7 +10156,7 @@ ripper_s_allocate(VALUE klass)
 
     p = ALLOC_N(struct parser_params, 1);
     MEMZERO(p, struct parser_params, 1);
-    self = Data_Wrap_Struct(klass, parser_mark, parser_free, p);
+    self = TypedData_Wrap_Struct(klass, &parser_data_type, p);
     p->value = self;
     return self;
 }
@@ -10149,7 +10179,7 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
     struct parser_params *parser;
     VALUE src, fname, lineno;
 
-    Data_Get_Struct(self, struct parser_params, parser);
+    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, parser);
     rb_scan_args(argc, argv, "12", &src, &fname, &lineno);
     if (rb_obj_respond_to(src, ripper_id_gets, 0)) {
         parser->parser_lex_gets = ripper_lex_get_generic;
@@ -10188,7 +10218,7 @@ ripper_parse0(VALUE parser_v)
 {
     struct parser_params *parser;
 
-    Data_Get_Struct(parser_v, struct parser_params, parser);
+    TypedData_Get_Struct(parser_v, struct parser_params, &parser_data_type, parser);
     parser_prepare(parser);
     ripper_yyparse((void*)parser);
     return parser->result;
@@ -10199,7 +10229,7 @@ ripper_ensure(VALUE parser_v)
 {
     struct parser_params *parser;
 
-    Data_Get_Struct(parser_v, struct parser_params, parser);
+    TypedData_Get_Struct(parser_v, struct parser_params, &parser_data_type, parser);
     parser->parsing_thread = Qnil;
     return Qnil;
 }
@@ -10215,7 +10245,7 @@ ripper_parse(VALUE self)
 {
     struct parser_params *parser;
 
-    Data_Get_Struct(self, struct parser_params, parser);
+    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, parser);
     if (!ripper_initialized_p(parser)) {
         rb_raise(rb_eArgError, "method called for uninitialized object");
     }
@@ -10244,7 +10274,7 @@ ripper_column(VALUE self)
     struct parser_params *parser;
     long col;
 
-    Data_Get_Struct(self, struct parser_params, parser);
+    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, parser);
     if (!ripper_initialized_p(parser)) {
         rb_raise(rb_eArgError, "method called for uninitialized object");
     }
@@ -10265,7 +10295,7 @@ ripper_lineno(VALUE self)
 {
     struct parser_params *parser;
 
-    Data_Get_Struct(self, struct parser_params, parser);
+    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, parser);
     if (!ripper_initialized_p(parser)) {
         rb_raise(rb_eArgError, "method called for uninitialized object");
     }
