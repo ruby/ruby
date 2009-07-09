@@ -16,6 +16,7 @@ Thu Jul  9 21:56:59 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* marshal.c (r_object0): replace \u by u when the regexp is
 	  made by Ruby 1.8. [ruby-dev:36750]
+
 Wed Jul  8 23:13:54 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_div): omitted zero division check.

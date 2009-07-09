@@ -99,7 +99,7 @@ compile_warn_print(const char *file, int line, const char *fmt, va_list args)
     int len;
 
     compile_snprintf(buf, BUFSIZ, file, line, fmt, args);
-    len = strlen(buf);
+    len = (int)strlen(buf);
     buf[len++] = '\n';
     rb_write_error2(buf, len);
 }
@@ -142,7 +142,7 @@ warn_print(const char *fmt, va_list args)
     int len;
 
     err_snprintf(buf, BUFSIZ, fmt, args);
-    len = strlen(buf);
+    len = (int)strlen(buf);
     buf[len++] = '\n';
     rb_write_error2(buf, len);
 }
