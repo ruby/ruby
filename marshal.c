@@ -1393,8 +1393,19 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	{
 	    volatile VALUE str = r_bytes(arg);
 	    int options = r_byte(arg);
+	    v = r_entry(rb_reg_new("", 0, options), arg);
+	    if (ivp) {
+		r_ivar(v, arg);
+		rb_p(v);
+		*ivp = Qfalse;
+	    }
+	    rb_enc_copy(str, v);
+	    if (rb_enc_get_index(str) != rb_utf8_encindex()) {
+#define f_gsub_bang(x,y,z) rb_funcall(x, rb_intern("gsub!"), 2, y, z)
+		f_gsub_bang(str, rb_reg_new("\\\\u", 3, 0), rb_usascii_str_new_cstr("u"));
+	    }
 	    v = r_entry(rb_reg_new_str(str, options), arg);
-            v = r_leave(v, arg);
+	    v = r_leave(v, arg);
 	}
 	break;
 
