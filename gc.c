@@ -1193,7 +1193,7 @@ void
 rb_gc_force_recycle(p)
     VALUE p;
 {
-    add_freelist(p);
+    add_freelist((RVALUE*)p);
 }
 
 static inline void
