@@ -1,3 +1,10 @@
+Thu Jul  9 17:58:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (proc_invoke): shares dmethod scope local variables.
+	  a patch from coderrr at [ruby-core:23050]
+
+	* gc.c (obj_free): do not free cloned scope local variables.
+
 Wed Jul  8 19:28:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_remove): stops timer thread unless other

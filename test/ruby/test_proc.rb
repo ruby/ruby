@@ -91,4 +91,14 @@ class TestProc < Test::Unit::TestCase
     assert_equal(10, Proc.new{|&b| b.call(10)}.call {|x| x})
     assert_equal(12, Proc.new{|a,&b| b.call(a)}.call(12) {|x| x})
   end
+
+  def test_define_method_scope
+    a = 1
+    c = Class.new
+    c.send(:define_method, :x) do |*|
+      lambda {a = 2}.call
+    end
+    c.new.x(nil)
+    assert_equal(2, a, '[ruby-core:23050]')
+  end
 end
