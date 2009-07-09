@@ -43,6 +43,7 @@ if enable_config("ipv6", default_ipv6)
   if checking_for("ipv6") {try_link(<<EOF)}
 #include <sys/types.h>
 #include <sys/socket.h>
+int
 main()
 {
   socket(AF_INET6, SOCK_STREAM, 0);
@@ -135,6 +136,7 @@ getaddr_info_ok = enable_config("wide-getaddrinfo") do
 #define AF_LOCAL AF_UNIX
 #endif
 
+int
 main()
 {
   int passive, gaierr, inet4 = 0, inet6 = 0;

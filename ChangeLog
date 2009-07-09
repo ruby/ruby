@@ -6,6 +6,8 @@ Thu Jul 9 11:22:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
 	* node.h: Remove surplus comma
 
+	* ext/socket/extconf.rb: Corrected function definitions to specify return values.
+
 Mon Jun  8 12:46:00 2009  Kirk Haines <khaines@ruby-lang.org>
 
 	* lib/soap/mimemessage.rb: Fixed a typo -- conent -> content
