@@ -1898,7 +1898,8 @@ run_final(obj)
 
     objid = rb_obj_id(obj);	/* make obj into id */
     rb_thread_critical = Qtrue;
-    if (BUILTIN_TYPE(obj) == T_DEFERRED && RDATA(obj)->dfree) {
+    /* NOTE: This change below, adding DATA_PTR(obj) to the if line, is a stopgap fix for segfaults; the reason for DATA_PTR(obj) == 0 needs to be found and fixed. */
+    if (BUILTIN_TYPE(obj) == T_DEFERRED && RDATA(obj)->dfree && DATA_PTR(obj)) {
 	(*RDATA(obj)->dfree)(DATA_PTR(obj));
     }
     args[1] = 0;

@@ -1,3 +1,7 @@
+Thu Jul 9 11:22:00 2009 Kirk Haines <khaines@ruby-lang.org>
+
+	* gc.c: Add a check for DATA_PTR(obj) to run_final as a stopgap fix for debilitating segfaults.
+
 Mon Jun  8 12:46:00 2009  Kirk Haines <khaines@ruby-lang.org>
 
 	* lib/soap/mimemessage.rb: Fixed a typo -- conent -> content
