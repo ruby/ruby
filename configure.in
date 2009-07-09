@@ -1297,7 +1297,7 @@ rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no, rb_cv_missing_fconvert=no
     if test "$rb_cv_missing_fconvert" = yes; then
       AC_DEFINE(MISSING_FCONVERT)
     fi
-    AC_LIBOBJ([x68.o])
+    AC_LIBOBJ([x68])
     CFLAGS="$CFLAGS -fansi-only"
     XCFLAGS="$XCFLAGS -cc1-stack=262144 -cpp-stack=2694144"
     EXEEXT=.x
@@ -1614,7 +1614,7 @@ case "$target_os" in
     RUBY_LIB_PREFIX="/lib/ruby"
     ;;
   *)
-    RUBY_LIB_PREFIX="${prefix}/lib/ruby"
+    RUBY_LIB_PREFIX="${libdir}/ruby"
     ;;
 esac
 RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${MAJOR}.${MINOR}"
@@ -1622,7 +1622,7 @@ RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${MAJOR}.${MINOR}"
 AC_ARG_WITH(sitedir,
 	    [  --with-sitedir=DIR      site libraries in DIR [PREFIX/lib/ruby/site_ruby]],
             [sitedir=$withval],
-            [sitedir='${prefix}/lib/ruby/site_ruby'])
+            [sitedir='${libdir}/ruby/site_ruby'])
 SITE_DIR=`eval echo \\"${sitedir}\\"`
 case "$target_os" in
   cygwin*|mingw*|*djgpp*|os2-emx*)

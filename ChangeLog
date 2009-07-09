@@ -10,6 +10,8 @@ Thu Jul 9 11:22:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
 	* lib/date.rb: Removed private on to_date and to_datetime 
 
+	* configure.in: Little fixes for x64 libdir/sitedir.
+
 Mon Jun  8 12:46:00 2009  Kirk Haines <khaines@ruby-lang.org>
 
 	* lib/soap/mimemessage.rb: Fixed a typo -- conent -> content
