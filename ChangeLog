@@ -30,7 +30,7 @@ Fri Jul 10 14:44:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* random.c (struct MT): ruby already assumes int has 32bit a
 	  least, so no needs to use long.
 
-	* random.c (rand_init):
+	* random.c (rand_init): copies data to be used really only.
 
 Fri Jul 10 11:41:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
