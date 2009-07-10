@@ -59,18 +59,24 @@ The original copyright notice follows.
    email: matumoto@math.keio.ac.jp
 */
 
+#include <limits.h>
+typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
+
 /* Period parameters */
 #define N 624
 #define M 397
-#define MATRIX_A 0x9908b0dfUL   /* constant vector a */
-#define UMASK 0x80000000UL /* most significant w-r bits */
-#define LMASK 0x7fffffffUL /* least significant r bits */
+#define MATRIX_A 0x9908b0dfU	/* constant vector a */
+#define UMASK 0x80000000U	/* most significant w-r bits */
+#define LMASK 0x7fffffffU	/* least significant r bits */
 #define MIXBITS(u,v) ( ((u) & UMASK) | ((v) & LMASK) )
-#define TWIST(u,v) ((MIXBITS(u,v) >> 1) ^ ((v)&1UL ? MATRIX_A : 0UL))
+#define TWIST(u,v) ((MIXBITS(u,v) >> 1) ^ ((v)&1U ? MATRIX_A : 0U))
+
+enum {MT_MAX_STATE = N};
 
 struct MT {
-    unsigned long state[N]; /* the array for the state vector  */
-    unsigned long *next;
+    /* assume int is enough to store 32bits */
+    unsigned int state[N]; /* the array for the state vector  */
+    unsigned int *next;
     int left;
 };
 
@@ -79,17 +85,17 @@ struct MT {
 
 /* initializes state[N] with a seed */
 static void
-init_genrand(struct MT *mt, unsigned long s)
+init_genrand(struct MT *mt, unsigned int s)
 {
     int j;
-    mt->state[0] = s & 0xffffffffUL;
+    mt->state[0] = s & 0xffffffffU;
     for (j=1; j<N; j++) {
-        mt->state[j] = (1812433253UL * (mt->state[j-1] ^ (mt->state[j-1] >> 30)) + j);
+        mt->state[j] = (1812433253U * (mt->state[j-1] ^ (mt->state[j-1] >> 30)) + j);
         /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
         /* In the previous versions, MSBs of the seed affect   */
         /* only MSBs of the array state[].                        */
         /* 2002/01/09 modified by Makoto Matsumoto             */
-        mt->state[j] &= 0xffffffffUL;  /* for >32 bit machines */
+        mt->state[j] &= 0xffffffff;  /* for >32 bit machines */
     }
     mt->left = 1;
     mt->next = mt->state + N - 1;
@@ -100,40 +106,40 @@ init_genrand(struct MT *mt, unsigned long s)
 /* key_length is its length */
 /* slight change for C++, 2004/2/26 */
 static void
-init_by_array(struct MT *mt, unsigned long init_key[], int key_length)
+init_by_array(struct MT *mt, unsigned int init_key[], int key_length)
 {
     int i, j, k;
-    init_genrand(mt, 19650218UL);
+    init_genrand(mt, 19650218U);
     i=1; j=0;
     k = (N>key_length ? N : key_length);
     for (; k; k--) {
-        mt->state[i] = (mt->state[i] ^ ((mt->state[i-1] ^ (mt->state[i-1] >> 30)) * 1664525UL))
+        mt->state[i] = (mt->state[i] ^ ((mt->state[i-1] ^ (mt->state[i-1] >> 30)) * 1664525U))
           + init_key[j] + j; /* non linear */
-        mt->state[i] &= 0xffffffffUL; /* for WORDSIZE > 32 machines */
+        mt->state[i] &= 0xffffffffU; /* for WORDSIZE > 32 machines */
         i++; j++;
         if (i>=N) { mt->state[0] = mt->state[N-1]; i=1; }
         if (j>=key_length) j=0;
     }
     for (k=N-1; k; k--) {
-        mt->state[i] = (mt->state[i] ^ ((mt->state[i-1] ^ (mt->state[i-1] >> 30)) * 1566083941UL))
+        mt->state[i] = (mt->state[i] ^ ((mt->state[i-1] ^ (mt->state[i-1] >> 30)) * 1566083941U))
           - i; /* non linear */
-        mt->state[i] &= 0xffffffffUL; /* for WORDSIZE > 32 machines */
+        mt->state[i] &= 0xffffffffU; /* for WORDSIZE > 32 machines */
         i++;
         if (i>=N) { mt->state[0] = mt->state[N-1]; i=1; }
     }
 
-    mt->state[0] = 0x80000000UL; /* MSB is 1; assuring non-zero initial array */
+    mt->state[0] = 0x80000000U; /* MSB is 1; assuring non-zero initial array */
 }
 
 static void
 next_state(struct MT *mt)
 {
-    unsigned long *p = mt->state;
+    unsigned int *p = mt->state;
     int j;
 
     /* if init_genrand() has not been called, */
     /* a default initial seed is used         */
-    if (!genrand_initialized(mt)) init_genrand(mt, 5489UL);
+    if (!genrand_initialized(mt)) init_genrand(mt, 5489U);
 
     mt->left = N;
     mt->next = mt->state;
@@ -148,18 +154,18 @@ next_state(struct MT *mt)
 }
 
 /* generates a random number on [0,0xffffffff]-interval */
-static unsigned long
+static unsigned int
 genrand_int32(struct MT *mt)
 {
-    unsigned long y;
+    unsigned int y;
 
     if (--mt->left <= 0) next_state(mt);
     y = *mt->next++;
 
     /* Tempering */
     y ^= (y >> 11);
-    y ^= (y << 7) & 0x9d2c5680UL;
-    y ^= (y << 15) & 0xefc60000UL;
+    y ^= (y << 7) & 0x9d2c5680;
+    y ^= (y << 15) & 0xefc60000;
     y ^= (y >> 18);
 
     return y;
@@ -169,7 +175,7 @@ genrand_int32(struct MT *mt)
 static double
 genrand_real(struct MT *mt)
 {
-    unsigned long a=genrand_int32(mt)>>5, b=genrand_int32(mt)>>6;
+    unsigned int a = genrand_int32(mt)>>5, b = genrand_int32(mt)>>6;
     return(a*67108864.0+b)*(1.0/9007199254740992.0);
 }
 /* These real versions are due to Isaku Wada, 2002/01/09 added */
@@ -195,7 +201,7 @@ genrand_real(struct MT *mt)
 
 struct RandSeed {
     VALUE value;
-    unsigned long initial[DEFAULT_SEED_CNT];
+    unsigned int initial[DEFAULT_SEED_CNT];
 };
 
 struct Random {
@@ -217,39 +223,46 @@ rb_genrand_real(void)
     return genrand_real(&default_mt.mt);
 }
 
+#define SIZEOF_INT32 (31/CHAR_BIT + 1)
+
 static VALUE
 rand_init(struct MT *mt, VALUE vseed)
 {
     volatile VALUE seed;
-    long len;
-    unsigned long *buf;
+    long blen = 0;
+    int len;
+    unsigned int *buf;
 
     seed = rb_to_int(vseed);
     switch (TYPE(seed)) {
       case T_FIXNUM:
-          len = sizeof(VALUE);
-          break;
+	len = (int)sizeof(VALUE);
+	break;
       case T_BIGNUM:
-          len = RBIGNUM_LEN(seed) * SIZEOF_BDIGITS;
-          if (len == 0)
-              len = 4;
-          break;
+	blen = RBIGNUM_LEN(seed);
+	if (blen == 0)
+	    len = 4;
+	else if (blen > MT_MAX_STATE * SIZEOF_INT32 / SIZEOF_BDIGITS)
+	    blen = (len = MT_MAX_STATE) * SIZEOF_INT32 / SIZEOF_BDIGITS;
+	else
+	    len = (int)blen * SIZEOF_BDIGITS;
+	break;
       default:
-          rb_raise(rb_eTypeError, "failed to convert %s into Integer",
-                   rb_obj_classname(vseed));
+	rb_raise(rb_eTypeError, "failed to convert %s into Integer",
+		 rb_obj_classname(vseed));
     }
     len = (len + 3) / 4; /* number of 32bit words */
-    buf = ALLOC_N(unsigned long, len); /* allocate longs for init_by_array */
+    buf = ALLOC_N(unsigned int, len); /* allocate longs for init_by_array */
     memset(buf, 0, len * sizeof(long));
     if (FIXNUM_P(seed)) {
-        buf[0] = FIX2ULONG(seed) & 0xffffffff;
+        buf[0] = (unsigned int)(FIX2ULONG(seed) & 0xffffffff);
 #if SIZEOF_LONG > 4
-        buf[1] = FIX2ULONG(seed) >> 32;
+        buf[1] = (unsigned int)(FIX2ULONG(seed) >> 32);
 #endif
     }
     else {
-        int i, j;
-        for (i = RBIGNUM_LEN(seed)-1; 0 <= i; i--) {
+        long i, j;
+        for (i = blen-1; 0 <= i; i--) {
             j = i * SIZEOF_BDIGITS / 4;
 #if SIZEOF_BDIGITS < 4
             buf[j] <<= SIZEOF_BDIGITS * 8;
@@ -272,10 +285,10 @@ rand_init(struct MT *mt, VALUE vseed)
     return seed;
 }
 
-#define DEFAULT_SEED_LEN (DEFAULT_SEED_CNT * sizeof(long))
+#define DEFAULT_SEED_LEN (DEFAULT_SEED_CNT * sizeof(int))
 
 static void
-fill_random_seed(unsigned long seed[DEFAULT_SEED_CNT])
+fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
 {
     static int n = 0;
     struct timeval tv;
@@ -307,9 +320,15 @@ fill_random_seed(unsigned long seed[DEFAULT_SEED_CNT])
 
     gettimeofday(&tv, 0);
     seed[0] ^= tv.tv_usec;
-    seed[1] ^= tv.tv_sec;
+    seed[1] ^= (unsigned int)tv.tv_sec;
+#if SIZEOF_TIME_T > SIZEOF_INT
+    seed[1] ^= (unsigned int)(tv.tv_sec >> SIZEOF_INT * CHAR_BIT);
+#endif
     seed[2] ^= getpid() ^ (n++ << 16);
-    seed[3] ^= (unsigned long)&seed;
+    seed[3] ^= (unsigned int)(VALUE)&seed;
+#if SIZEOF_VOIDP > SIZEOF_INT
+    seed[2] ^= (unsigned int)((VALUE)&seed >> SIZEOF_INT * CHAR_BIT);
+#endif
 }
 
 static VALUE
@@ -323,7 +342,7 @@ make_seed_value(const void *ptr)
     rb_big_resize((VALUE)big, DEFAULT_SEED_LEN / SIZEOF_BDIGITS + 1);
     digits = RBIGNUM_DIGITS(big);
 
-    MEMCPY((char *)RBIGNUM_DIGITS(big), ptr, char, DEFAULT_SEED_LEN);
+    MEMCPY(digits, ptr, char, DEFAULT_SEED_LEN);
 
     /* set leading-zero-guard if need. */
     digits[RBIGNUM_LEN(big)-1] = digits[RBIGNUM_LEN(big)-2] <= 1 ? 1 : 0;
@@ -334,7 +353,7 @@ make_seed_value(const void *ptr)
 static VALUE
 random_seed(void)
 {
-    unsigned long buf[DEFAULT_SEED_CNT];
+    unsigned int buf[DEFAULT_SEED_CNT];
     fill_random_seed(buf);
     return make_seed_value(buf);
 }
@@ -410,7 +429,8 @@ limited_big_rand(struct MT *mt, struct RBignum *limit)
 {
     unsigned long mask, lim, rnd;
     struct RBignum *val;
-    int i, len, boundary;
+    long i, len;
+    int boundary;
 
     len = (RBIGNUM_LEN(limit) * SIZEOF_BDIGITS + 3) / 4;
     val = (struct RBignum *)rb_big_clone((VALUE)limit);
@@ -449,7 +469,7 @@ limited_big_rand(struct MT *mt, struct RBignum *limit)
         else {
             rnd = 0;
         }
-        BIG_SET32(val, i, rnd);
+        BIG_SET32(val, i, (BDIGIT)rnd);
     }
     return rb_big_norm((VALUE)val);
 }
