@@ -1,7 +1,15 @@
+Fri Jul 10 16:30:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (recursive_join): use obj to tell if recursion occurs.
+	  [ruby-core:24150]
+
+	* enum.c (enum_join): reverted r23966.  [ruby-core:24196]
+
 Fri Jul 10 14:41:34 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* marshal.c (r_object0): set encoding only if the encoding
 	  is not US-ASCII.
+
 Fri Jul 10 14:44:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (struct MT): ruby already assumes int has 32bit a

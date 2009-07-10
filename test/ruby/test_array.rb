@@ -1491,6 +1491,11 @@ class TestArray < Test::Unit::TestCase
     a = []
     a << a
     assert_equal("[...]", a.join)
+
+    def (a = Object.new).to_a
+      [self]
+    end
+    assert_equal("[...]", [a].join, , '[ruby-core:24150]')
   end
 
   def test_to_a2

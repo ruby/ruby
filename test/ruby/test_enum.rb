@@ -295,14 +295,23 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal("123", (1..3).join())
     assert_raise(TypeError, '[ruby-core:24172]') {("a".."c").join(1)}
     class << (e = Object.new.extend(Enumerable))
-      def to_s
-        "e"
-      end
       def each
         yield self
       end
     end
-    assert_equal("e", e.join(""))
+    assert_equal("[...]", e.join(""), '[ruby-core:24150]')
+    assert_equal("[...]", [e].join(""), '[ruby-core:24150]')
+    e = Class.new {
+      include Enumerable
+      def initialize(*args)
+        @e = args
+      end
+      def each
+        @e.each {|e| yield e}
+      end
+    }
+    e = e.new(1, e.new(2, e.new(3, e.new(4, 5))))
+    assert_equal("1:2:3:4:5", e.join(':'), '[ruby-core:24196]')
   ensure
     $, = ofs
   end

@@ -1519,7 +1519,7 @@ rb_ary_resurrect(VALUE ary)
 
 extern VALUE rb_output_fs;
 
-static void ary_join_1(VALUE ary, VALUE sep, long i, VALUE result);
+static void ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result);
 
 static VALUE
 recursive_join(VALUE obj, VALUE argp, int recur)
@@ -1533,7 +1533,7 @@ recursive_join(VALUE obj, VALUE argp, int recur)
 	rb_str_buf_cat_ascii(result, "[...]");
     }
     else {
-	ary_join_1(ary, sep, 0, result);
+	ary_join_1(obj, ary, sep, 0, result);
     }
     return Qnil;
 }
@@ -1555,7 +1555,7 @@ ary_join_0(VALUE ary, VALUE sep, long max, VALUE result)
 }
 
 static void
-ary_join_1(VALUE ary, VALUE sep, long i, VALUE result)
+ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result)
 {
     VALUE val, tmp;
 
@@ -1581,7 +1581,7 @@ ary_join_1(VALUE ary, VALUE sep, long i, VALUE result)
 		args[0] = val;
 		args[1] = sep;
 		args[2] = result;
-		rb_exec_recursive(recursive_join, ary, (VALUE)args);
+		rb_exec_recursive(recursive_join, obj, (VALUE)args);
 	    }
 	    break;
 	  default:
@@ -1592,6 +1592,7 @@ ary_join_1(VALUE ary, VALUE sep, long i, VALUE result)
 	    }
 	    tmp = rb_check_convert_type(val, T_ARRAY, "Array", "to_a");
 	    if (!NIL_P(tmp)) {
+		obj = val;
 		val = tmp;
 		goto ary_join;
 	    }
@@ -1626,7 +1627,7 @@ rb_ary_join(VALUE ary, VALUE sep)
 	    if (taint) OBJ_TAINT(result);
 	    if (untrust) OBJ_UNTRUST(result);
 	    ary_join_0(ary, sep, i, result);
-	    ary_join_1(ary, sep, i, result);
+	    ary_join_1(ary, ary, sep, i, result);
 	    return result;
 	}
 
