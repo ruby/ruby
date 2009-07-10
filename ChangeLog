@@ -1,3 +1,8 @@
+Fri Jul 10 23:04:16 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (io_strip_bom): Fix condition of second byte of
+	  UTF-16LE/UTF-32LE.
+
 Fri Jul 10 21:45:30 2009  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/extconf.rb: checked rl_refresh_line in readline.

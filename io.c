@@ -4554,7 +4554,7 @@ io_strip_bom(VALUE io)
 
       case 0xFF:
 	b2 = FIX2INT(rb_io_getbyte(io));
-	if (b2 == 0xFF) {
+	if (b2 == 0xFE) {
 	    b3 = FIX2INT(rb_io_getbyte(io));
 	    if (b3 == 0) {
 		b4 = FIX2INT(rb_io_getbyte(io));
