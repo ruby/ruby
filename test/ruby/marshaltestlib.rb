@@ -1,3 +1,4 @@
+# coding: utf-8
 module MarshalTestLib
   # include this module to a Test::Unit::TestCase and definde encode(o) and
   # decode(s) methods.  e.g.
@@ -245,6 +246,12 @@ module MarshalTestLib
     marshal_equal(/a/)
     marshal_equal(/A/i)
     marshal_equal(/A/mx)
+    marshal_equal(/a\u3042/)
+    marshal_equal(/aあ/)
+    assert_equal(Regexp.new("あ".force_encoding("ASCII-8BIT")),
+                 Marshal.load("\004\b/\b\343\201\202\000"))
+    assert_equal(/au3042/, Marshal.load("\004\b/\fa\\u3042\000"))
+    #assert_equal(/au3042/u, Marshal.load("\004\b/\fa\\u3042@")) # spec
   end
 
   def test_regexp_subclass
