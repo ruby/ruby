@@ -414,8 +414,8 @@ limited_rand(struct MT *mt, unsigned long limit)
   retry:
     val = 0;
     for (i = SIZEOF_LONG/4-1; 0 <= i; i--) {
-        if (mask >> (i * 32)) {
-            val |= genrand_int32(mt) << (i * 32);
+        if ((mask >> (i * 32)) & 0xffffffff) {
+            val |= (unsigned long)genrand_int32(mt) << (i * 32);
             val &= mask;
             if (limit < val)
                 goto retry;
