@@ -1570,6 +1570,7 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result)
 	    rb_str_buf_append(result, val);
 	    break;
 	  case T_ARRAY:
+	    obj = val;
 	  ary_join:
 	    if (val == ary) {
 		val = rb_usascii_str_new2("[...]");

@@ -1496,6 +1496,7 @@ class TestArray < Test::Unit::TestCase
       [self]
     end
     assert_equal("[...]", [a].join, '[ruby-core:24150]')
+    assert_equal("12345", [1,[2,[3,4],5]].join)
   end
 
   def test_to_a2
