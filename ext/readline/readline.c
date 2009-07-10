@@ -1043,6 +1043,26 @@ readline_s_get_filename_quote_characters(VALUE self, VALUE str)
 #define readline_s_get_filename_quote_characters rb_f_notimplement
 #endif
 
+#ifdef HAVE_RL_REFRESH_LINE
+/*
+ * call-seq:
+ *   Readline.refresh_line -> nil
+ *
+ * Clear the current input line.
+ *
+ * Raises SecurityError exception if $SAFE is 4.
+ */
+static VALUE
+readline_s_refresh_line(self)
+{
+ rb_secure(4);
+ rl_refresh_line(0, 0);
+ return Qnil;
+}
+#else
+#define readline_s_refresh_line rb_f_notimplement
+#endif
+
 static VALUE
 hist_to_s(VALUE self)
 {
@@ -1350,6 +1370,8 @@ Init_readline()
 			       readline_s_set_filename_quote_characters, 1);
     rb_define_singleton_method(mReadline, "filename_quote_characters",
 			       readline_s_get_filename_quote_characters, 0);
+    rb_define_singleton_method(mReadline, "refresh_line",
+                               readline_s_refresh_line, 0);
 
     history = rb_obj_alloc(rb_cObject);
     rb_extend_object(history, rb_mEnumerable);

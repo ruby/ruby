@@ -1,3 +1,10 @@
+Fri Jul 10 21:45:30 2009  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/extconf.rb: checked rl_refresh_line in readline.
+
+	* ext/readline/readline.c (readline_s_refresh_line): add new
+	  method, a patch from Koichiro Ohba. see [ruby-list:45922].
+
 Fri Jul 10 21:00:05 2009  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/extconf.rb: checked rl_line_buffer and rl_point in

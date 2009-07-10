@@ -21,6 +21,7 @@ begin
      "completer_quote_characters",
      "filename_quote_characters=",
      "filename_quote_characters",
+     "refresh_line",
     ].each do |method_name|
       define_method(method_name.to_sym) do |*args|
         raise NotImplementedError
