@@ -130,5 +130,13 @@ class TestSuper < Test::Unit::TestCase
     a = A.new
     a.uu(12)
     assert_equal("A#tt", a.tt(12), "[ruby-core:3856]")
+    e = assert_raise(RuntimeError, "[ruby-core:24244]") {
+      lambda {
+        Class.new do
+          define_method(:a) {super}.call
+        end
+      }.call
+    }
+    assert_match(/implicit argument passing of super from method defined by define_method/, e.message)
   end
 end

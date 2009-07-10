@@ -360,10 +360,18 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	      int num, ID id, ID oid, VALUE recv, VALUE klass,
 	      VALUE flag, const NODE *mn, const rb_block_t *blockptr)
 {
-    VALUE val;
+    VALUE val = 0;
+    int state = 0;
 
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
-    {
+    TH_PUSH_TAG(th);
+    if (th->event_flags & RUBY_EVENT_C_RETURN) {
+	state = TH_EXEC_TAG();
+    }
+    else {
+	_th->tag = _tag.prev;
+    }
+    if (state == 0) {
 	rb_control_frame_t *cfp =
 	    vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
 			  recv, (VALUE) blockptr, 0, reg_cfp->sp, 0, 1);
@@ -381,7 +389,9 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 
 	vm_pop_frame(th);
     }
+    TH_POP_TAG();
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, id, klass);
+    if (state) TH_JUMP_TAG(th, state);
 
     return val;
 }
@@ -1228,6 +1238,11 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *ip,
 	/* defined by Module#define_method() */
 	rb_control_frame_t *lcfp = GET_CFP();
 
+	if (!sigval) {
+	    /* zsuper */
+	    rb_raise(rb_eRuntimeError, "implicit argument passing of super from method defined by define_method() is not supported. Specify all arguments explicitly.");
+	}
+
 	while (lcfp->iseq != ip) {
 	    VALUE *tdfp = GET_PREV_DFP(lcfp->dfp);
 	    while (1) {
@@ -1240,11 +1255,6 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *ip,
 
 	id = lcfp->method_id;
 	klass = vm_search_normal_superclass(lcfp->method_class, recv);
-
-	if (sigval == Qfalse) {
-	    /* zsuper */
-	    rb_raise(rb_eRuntimeError, "implicit argument passing of super from method defined by define_method() is not supported. Specify all arguments explicitly.");
-	}
     }
     else {
 	klass = vm_search_normal_superclass(ip->klass, recv);
