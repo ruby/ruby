@@ -1,4 +1,8 @@
-Thu Jul 9 11:22:00 2009 Kirk Haines <khaines@ruby-lang.org>
+Fri Jul 10 04:00:00 2009 Kirk Haines <khaines@ruby-lang.org>
+
+	* file.c: Added FCNTL inclusion to fix a compile error with solaris (backport from r22812)
+
+Thu Jul  9 11:22:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
 	* gc.c: Add a check for DATA_PTR(obj) to run_final as a stopgap fix for debilitating segfaults.
 

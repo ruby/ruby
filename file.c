@@ -71,6 +71,10 @@ char *strrchr _((const char*,const char));
 #include <sys/mkdev.h>
 #endif
 
+#if defined(HAVE_FCNTL_H)
+#include <fcntl.h>
+#endif
+
 #if !defined HAVE_LSTAT && !defined lstat
 #define lstat stat
 #endif
