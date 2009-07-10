@@ -12,6 +12,10 @@ Thu Jul 9 11:22:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
 	* configure.in: Little fixes for x64 libdir/sitedir.
 
+	* lib/ostruct.rb: Fixed buggy openstruct#inspect recursion.
+
+	* test/ostruct/test_ostruct.rb: Modified tests to fit the #inspect fix.
+
 Mon Jun  8 12:46:00 2009  Kirk Haines <khaines@ruby-lang.org>
 
 	* lib/soap/mimemessage.rb: Fixed a typo -- conent -> content

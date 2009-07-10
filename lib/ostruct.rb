@@ -111,25 +111,23 @@ class OpenStruct
   def inspect
     str = "#<#{self.class}"
 
-    Thread.current[InspectKey] ||= []
-    if Thread.current[InspectKey].include?(self) then
-      str << " ..."
-    else
+    ids = (Thread.current[InspectKey] ||= [])
+    if ids.include?(object_id)
+      return str << ' ...>'
+    end
+
+    ids << object_id
+    begin
       first = true
       for k,v in @table
         str << "," unless first
         first = false
-
-        Thread.current[InspectKey] << v
-        begin
-          str << " #{k}=#{v.inspect}"
-        ensure
-          Thread.current[InspectKey].pop
-        end
+        str << " #{k}=#{v.inspect}"
       end
+      return str << '>'
+    ensure
+      ids.pop
     end
-
-    str << ">"
   end
   alias :to_s :inspect
 

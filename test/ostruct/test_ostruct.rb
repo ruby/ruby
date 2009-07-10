@@ -20,4 +20,12 @@ class TC_OpenStruct < Test::Unit::TestCase
     o2.instance_eval{@table = {:a => 'b'}}
     assert_not_equal(o1, o2)
   end
+  
+  def test_inspect
+    foo = OpenStruct.new
+    foo.bar = OpenStruct.new
+    assert_equal('#<OpenStruct bar=#<OpenStruct>>', foo.inspect)
+    foo.bar.foo = foo
+    assert_equal('#<OpenStruct bar=#<OpenStruct foo=#<OpenStruct ...>>>', foo.inspect)
+  end
 end
