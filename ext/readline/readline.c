@@ -452,7 +452,7 @@ readline_attempted_completion_function(const char *text, int start, int end)
     VALUE proc, ary, temp;
     char **result;
     int case_fold;
-    int i, matches;
+    long i, matches;
 
     proc = rb_attr_get(mReadline, completion_proc);
     if (NIL_P(proc))
@@ -1053,11 +1053,11 @@ readline_s_get_filename_quote_characters(VALUE self, VALUE str)
  * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
-readline_s_refresh_line(self)
+readline_s_refresh_line(VALUE self)
 {
- rb_secure(4);
- rl_refresh_line(0, 0);
- return Qnil;
+    rb_secure(4);
+    rl_refresh_line(0, 0);
+    return Qnil;
 }
 #else
 #define readline_s_refresh_line rb_f_notimplement
@@ -1371,7 +1371,7 @@ Init_readline()
     rb_define_singleton_method(mReadline, "filename_quote_characters",
 			       readline_s_get_filename_quote_characters, 0);
     rb_define_singleton_method(mReadline, "refresh_line",
-                               readline_s_refresh_line, 0);
+			       readline_s_refresh_line, 0);
 
     history = rb_obj_alloc(rb_cObject);
     rb_extend_object(history, rb_mEnumerable);

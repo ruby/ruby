@@ -1,3 +1,11 @@
+Sat Jul 11 07:11:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_attempted_completion_function):
+	  array length is long.
+
+	* ext/readline/readline.c (readline_s_get_filename_quote_characters):
+	  missing type of self.
+
 Sat Jul 11 02:37:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (limited_rand): expands to long before shift so tha
