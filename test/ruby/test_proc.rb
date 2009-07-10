@@ -86,4 +86,15 @@ class TestProc < Test::Unit::TestCase
     b = lambda {}
     assert_not_equal(a, b)
   end
+
+  def test_define_method_scope
+    a = 1
+    c = Class.new
+    c.send(:define_method, :x) do |*|
+      lambda {a = 2}.call
+    end
+    c.new.x(nil)
+    assert_equal(2, a, '[ruby-core:23050]')
+  end
+
 end
