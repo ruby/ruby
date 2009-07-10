@@ -1,3 +1,7 @@
+Fri Jul 10 23:10:11 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (io_strip_bom): ungetbyte third byte when UTF-16LE.
+
 Fri Jul 10 23:04:16 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (io_strip_bom): Fix condition of second byte of

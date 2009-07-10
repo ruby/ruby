@@ -4564,6 +4564,7 @@ io_strip_bom(VALUE io)
 		rb_io_ungetbyte(io, INT2FIX(b4));
 	    }
 	    else {
+		rb_io_ungetbyte(io, INT2FIX(b3));
 		return rb_enc_find_index("UTF-16LE");
 	    }
 	    rb_io_ungetbyte(io, INT2FIX(b3));
