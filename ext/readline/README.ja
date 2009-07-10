@@ -167,15 +167,30 @@ Readline.completion_case_fold -> bool
   ユーザの入力を補完する際、大文字と小文字を区別する／しないを取得します。
   bool が真ならば区別しません。bool が偽ならば区別します。
 
- なお、Readline.completion_case_fold= メソッドで指定したオブジェクトを
- そのまま取得するので、次のような動作をします。
+  なお、Readline.completion_case_fold= メソッドで指定したオブジェクトを
+  そのまま取得するので、次のような動作をします。
 
-   require "readline"
-   
-   Readline.completion_case_fold = "This is a String."
-   p Readline.completion_case_fold # => "This is a String."
+    require "readline"
+    
+    Readline.completion_case_fold = "This is a String."
+    p Readline.completion_case_fold # => "This is a String."
 
   $SAFE が 4 の場合、例外 SecurityError が発生します。
+
+Readline.line_buffer -> string
+
+  入力中の行全体を返します。complete_proc の中で使用することを想定し
+  ています。Readline.line_buffer の長さは GNU Readline の rl_end 変数の
+  値と一致します。
+
+Readline.point -> int
+
+  現在のカーソルの位置を返します。
+  Readline モジュールは補完対象の単語の開始位置の情報を提供していません。
+  しかしながら、 completion_proc の中で入力した単語 text と
+  Readline.point を使用することで開始位置を導くことができます。
+
+    開始位置 = 入力した単語の長さ - Readline.point
 
 Readline.vi_editing_mode -> nil
 

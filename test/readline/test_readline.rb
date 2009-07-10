@@ -3,6 +3,8 @@ begin
 =begin
   class << Readline
     [
+     "line_buffer",
+     "point",
      "set_screen_size",
      "get_screen_size",
      "vi_editing_mode",
@@ -63,6 +65,8 @@ class TestReadline < Test::Unit::TestCase
        ["completer_quote_characters"],
        ["filename_quote_characters=", "\\"],
        ["filename_quote_characters"],
+       ["line_buffer"],
+       ["point"],
        ["set_screen_size", 1, 1],
        ["get_screen_size"],
       ]
@@ -78,41 +82,83 @@ class TestReadline < Test::Unit::TestCase
     end
   end
 
-  def test_readline
-    stdin = Tempfile.new("test_readline_stdin")
-    stdout = Tempfile.new("test_readline_stdout")
-    begin
-      stdin.write("hello\n")
-      stdin.close
-      stdout.close
-      line = replace_stdio(stdin.path, stdout.path) {
-        Readline.readline("> ", true)
-      }
-      assert_equal("hello", line)
-      assert_equal(true, line.tainted?)
-      stdout.open
-      assert_equal("> ", stdout.read(2))
-      assert_equal(1, Readline::HISTORY.length)
-      assert_equal("hello", Readline::HISTORY[0])
-      assert_raise(SecurityError) do
-        Thread.start {
-          $SAFE = 1
-          replace_stdio(stdin.path, stdout.path) do
-            Readline.readline("> ".taint)
-          end
-        }.join
+  if !/EditLine/n.match(Readline::VERSION)
+    def test_readline
+      stdin = Tempfile.new("test_readline_stdin")
+      stdout = Tempfile.new("test_readline_stdout")
+      begin
+        stdin.write("hello\n")
+        stdin.close
+        stdout.close
+        line = replace_stdio(stdin.path, stdout.path) {
+          Readline.readline("> ", true)
+        }
+        assert_equal("hello", line)
+        assert_equal(true, line.tainted?)
+        stdout.open
+        assert_equal("> ", stdout.read(2))
+        assert_equal(1, Readline::HISTORY.length)
+        assert_equal("hello", Readline::HISTORY[0])
+        assert_raise(SecurityError) do
+          Thread.start {
+            $SAFE = 1
+            replace_stdio(stdin.path, stdout.path) do
+              Readline.readline("> ".taint)
+            end
+          }.join
+        end
+        assert_raise(SecurityError) do
+          Thread.start {
+            $SAFE = 4
+            replace_stdio(stdin.path, stdout.path) { Readline.readline("> ") }
+          }.join
+        end
+      ensure
+        stdin.close(true)
+        stdout.close(true)
       end
-      assert_raise(SecurityError) do
-        Thread.start {
-          $SAFE = 4
-          replace_stdio(stdin.path, stdout.path) { Readline.readline("> ") }
-        }.join
+    end 
+    
+    # line_buffer
+    # point
+    def test_line_buffer__point
+      begin
+        Readline.line_buffer
+        Readline.point
+      rescue NotImplementedError
+        return
       end
-    ensure
-      stdin.close(true)
-      stdout.close(true)
+      
+      stdin = Tempfile.new("test_readline_stdin")
+      stdout = Tempfile.new("test_readline_stdout")
+      begin
+        actual_text = nil
+        actual_line_buffer = nil
+        actual_point = nil
+        Readline.completion_proc = proc { |text|
+          actual_text = text
+          actual_point = Readline.point
+          actual_buffer_line = Readline.line_buffer
+          stdin.write(" finish\n")
+          stdin.close
+          stdout.close
+          return ["complete"]
+        }
+        stdin.write("first second\t")
+        stdin.flush
+        line = replace_stdio(stdin.path, stdout.path) {
+          Readline.readline("> ", false)
+        }
+        assert_equal("first second", actual_line_buffer)
+        assert_equal(12, actual_point)
+        assert_equal("first complete finish", Readline.line_buffer)
+        assert_equal(21, Readline.point)
+      ensure
+        stdin.close(true)
+        stdout.close(true)
+      end
     end
-  end if !/EditLine/n.match(Readline::VERSION)
+  end
 
   def test_input=
     assert_raise(TypeError) do

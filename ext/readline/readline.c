@@ -398,6 +398,54 @@ readline_s_get_completion_case_fold(VALUE self)
     return rb_attr_get(mReadline, completion_case_fold);
 }
 
+#ifdef HAVE_RL_LINE_BUFFER
+/*
+ * call-seq:
+ *   Readline.line_buffer -> string
+ *
+ * Returns the full line that is being edited. This is useful from
+ * within the complete_proc for determining the context of the
+ * completion request.
+ *
+ * The length of +Readline.line_buffer+ and GNU Readline's rl_end are
+ * same.
+ */
+static VALUE
+readline_s_get_line_buffer(VALUE self)
+{
+    rb_secure(4);
+    if (rl_line_buffer == NULL)
+	return Qnil;
+    return rb_tainted_str_new2(rl_line_buffer);
+}
+#else
+#define readline_s_get_line_buffer rb_f_notimplement
+#endif
+
+#ifdef HAVE_RL_POINT
+/*
+ * call-seq:
+ *   Readline.point -> int
+ *
+ * Returns the index of the current cursor position in
+ * +Readline.line_buffer+.
+ *
+ * The index in +Readline.line_buffer+ which matches the start of
+ * input-string passed to completion_proc is computed by subtracting
+ * the length of input-string from +Readline.point+.
+ *
+ *   start = (the length of input-string) - Readline.point
+ */
+static VALUE
+readline_s_get_point(VALUE self)
+{
+    rb_secure(4);
+    return INT2NUM(rl_point);
+}
+#else
+#define readline_s_get_point rb_f_notimplement
+#endif
+
 static char **
 readline_attempted_completion_function(const char *text, int start, int end)
 {
@@ -1262,6 +1310,10 @@ Init_readline()
 			       readline_s_set_completion_case_fold, 1);
     rb_define_singleton_method(mReadline, "completion_case_fold",
 			       readline_s_get_completion_case_fold, 0);
+    rb_define_singleton_method(mReadline, "line_buffer",
+			       readline_s_get_line_buffer, 0);
+    rb_define_singleton_method(mReadline, "point",
+			       readline_s_get_point, 0);
     rb_define_singleton_method(mReadline, "set_screen_size",
 			       readline_s_set_screen_size, 2);
     rb_define_singleton_method(mReadline, "get_screen_size",
