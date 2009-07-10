@@ -3935,15 +3935,16 @@ rb_io_fmode_modestr(int fmode)
 }
 
 static int
-io_encname_bom_p(const char *name, long len) {
+io_encname_bom_p(const char *name, long len)
+{
     if (len) {
-	if (len > 4 && strncasecmp(name + len - 4, "-bom", 4) == 0)
+	if (len > 4 && STRNCASECMP(name + len - 4, "-bom", 4) == 0)
 	    return 1;
     }
     else {
 	const char *p = strchr(name, ':');
 	if (!p) p = name + strlen(name);
-	if (p - name > 4 && strncasecmp(p - 4, "-bom", 4) == 0)
+	if (p - name > 4 && STRNCASECMP(p - 4, "-bom", 4) == 0)
 	    return 1;
     }
     return 0;
@@ -4527,7 +4528,8 @@ static VALUE rb_io_internal_encoding(VALUE);
 static void io_encoding_set(rb_io_t *, VALUE, VALUE, VALUE);
 
 static int
-io_strip_bom(VALUE io) {
+io_strip_bom(VALUE io)
+{
     int b1, b2, b3, b4;
     switch (b1 = FIX2INT(rb_io_getbyte(io))) {
       case 0xEF:
@@ -4590,7 +4592,8 @@ io_strip_bom(VALUE io) {
 }
 
 static void
-io_set_encoding_by_bom(VALUE io) {
+io_set_encoding_by_bom(VALUE io)
+{
     int idx = io_strip_bom(io);
 
     if (idx) {
