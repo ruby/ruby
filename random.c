@@ -253,11 +253,11 @@ rand_init(struct MT *mt, VALUE vseed)
     }
     len = (len + 3) / 4; /* number of 32bit words */
     buf = ALLOC_N(unsigned int, len); /* allocate longs for init_by_array */
-    memset(buf, 0, len * sizeof(long));
+    memset(buf, 0, len * sizeof(int));
     if (FIXNUM_P(seed)) {
-        buf[0] = (unsigned int)(FIX2ULONG(seed) & 0xffffffff);
+	buf[0] = (unsigned int)(FIX2ULONG(seed) & 0xffffffff);
 #if SIZEOF_LONG > 4
-        buf[1] = (unsigned int)(FIX2ULONG(seed) >> 32);
+	buf[1] = (unsigned int)(FIX2ULONG(seed) >> 32);
 #endif
     }
     else {
@@ -322,7 +322,7 @@ fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
     seed[0] ^= tv.tv_usec;
     seed[1] ^= (unsigned int)tv.tv_sec;
 #if SIZEOF_TIME_T > SIZEOF_INT
-    seed[1] ^= (unsigned int)(tv.tv_sec >> SIZEOF_INT * CHAR_BIT);
+    seed[0] ^= (unsigned int)(tv.tv_sec >> SIZEOF_INT * CHAR_BIT);
 #endif
     seed[2] ^= getpid() ^ (n++ << 16);
     seed[3] ^= (unsigned int)(VALUE)&seed;
