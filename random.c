@@ -223,6 +223,8 @@ rb_genrand_real(void)
     return genrand_real(&default_mt.mt);
 }
 
+#define roomof(n, m) (int)(((n)+(m)-1) / (m))
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 #define SIZEOF_INT32 (31/CHAR_BIT + 1)
 
 static VALUE
@@ -230,48 +232,47 @@ rand_init(struct MT *mt, VALUE vseed)
 {
     volatile VALUE seed;
     long blen = 0;
-    int len;
-    unsigned int *buf;
+    int i, j, len;
+    unsigned int buf0[SIZEOF_LONG / SIZEOF_INT32 * 4], *buf = buf0;
 
     seed = rb_to_int(vseed);
     switch (TYPE(seed)) {
       case T_FIXNUM:
-	len = (int)sizeof(VALUE);
+	len = 1;
+	buf[0] = (unsigned int)(FIX2ULONG(seed) & 0xffffffff);
+#if SIZEOF_LONG > SIZEOF_INT32
+	if ((buf[1] = (unsigned int)(FIX2ULONG(seed) >> 32)) != 0) ++len;
+#endif
 	break;
       case T_BIGNUM:
 	blen = RBIGNUM_LEN(seed);
-	if (blen == 0)
-	    len = 4;
-	else if (blen > MT_MAX_STATE * SIZEOF_INT32 / SIZEOF_BDIGITS)
+	if (blen == 0) {
+	    len = 1;
+	}
+	else if (blen > MT_MAX_STATE * SIZEOF_INT32 / SIZEOF_BDIGITS) {
 	    blen = (len = MT_MAX_STATE) * SIZEOF_INT32 / SIZEOF_BDIGITS;
-	else
-	    len = (int)blen * SIZEOF_BDIGITS;
+	    len = roomof(len, SIZEOF_INT32);
+	}
+	else {
+	    len = roomof((int)blen * SIZEOF_BDIGITS, SIZEOF_INT32);
+	}
+	/* allocate ints for init_by_array */
+	if (len > numberof(buf0)) buf = ALLOC_N(unsigned int, len);
+	memset(buf, 0, len * sizeof(*buf));
+	len = 0;
+	for (i = (int)(blen-1); 0 <= i; i--) {
+	    j = i * SIZEOF_BDIGITS / SIZEOF_INT32;
+#if SIZEOF_BDIGITS < SIZEOF_INT32
+	    buf[j] <<= SIZEOF_BDIGITS * CHAR_BIT;
+#endif
+	    buf[j] |= RBIGNUM_DIGITS(seed)[i];
+	    if (!len && buf[j]) len = j;
+	}
+	++len;
 	break;
       default:
 	rb_raise(rb_eTypeError, "failed to convert %s into Integer",
 		 rb_obj_classname(vseed));
-    }
-    len = (len + 3) / 4; /* number of 32bit words */
-    buf = ALLOC_N(unsigned int, len); /* allocate longs for init_by_array */
-    memset(buf, 0, len * sizeof(int));
-    if (FIXNUM_P(seed)) {
-	buf[0] = (unsigned int)(FIX2ULONG(seed) & 0xffffffff);
-#if SIZEOF_LONG > 4
-	buf[1] = (unsigned int)(FIX2ULONG(seed) >> 32);
-#endif
-    }
-    else {
-        long i, j;
-        for (i = blen-1; 0 <= i; i--) {
-            j = i * SIZEOF_BDIGITS / 4;
-#if SIZEOF_BDIGITS < 4
-            buf[j] <<= SIZEOF_BDIGITS * 8;
-#endif
-            buf[j] |= RBIGNUM_DIGITS(seed)[i];
-        }
-    }
-    while (1 < len && buf[len-1] == 0) {
-        len--;
     }
     if (len <= 1) {
         init_genrand(mt, buf[0]);
@@ -281,7 +282,7 @@ rand_init(struct MT *mt, VALUE vseed)
             len--;
         init_by_array(mt, buf, len);
     }
-    xfree(buf);
+    if (buf != buf0) xfree(buf);
     return seed;
 }
 
