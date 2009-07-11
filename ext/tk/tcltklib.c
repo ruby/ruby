@@ -6132,7 +6132,7 @@ get_obj_from_str(str)
         /* binary string */
         return Tcl_NewByteArrayObj((const unsigned char *)s, RSTRING_LEN(str));
 #endif
-    } else if (strlen(s) != RSTRING_LEN(str)) {
+    } else if (memchr(s, 0, RSTRING_LEN(str))) {
         /* probably binary string */
         return Tcl_NewByteArrayObj((const unsigned char *)s, RSTRING_LEN(str));
     } else {
