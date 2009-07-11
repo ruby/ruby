@@ -1,3 +1,7 @@
+Sat Jul 11 14:43:34 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/ruby/test_io_m17n.rb (test_strip_bom): added.
+
 Sat Jul 11 07:11:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_attempted_completion_function):

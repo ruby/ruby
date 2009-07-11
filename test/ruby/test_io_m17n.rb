@@ -1691,5 +1691,19 @@ EOT
       assert_equal("\"&#x4E02;\"".force_encoding("ascii-8bit"), content)
     }
   end
+
+  def test_strip_bom
+    with_tmpdir {
+      text = "\uFEFFa"
+      %w/UTF-8 UTF-16BE UTF-16LE UTF-32BE UTF-32LE/.each do |name|
+        path = '%s-bom.txt' % name
+        content = text.encode(name)
+        generate_file(path, content)
+        result = File.read(path, mode: 'rb:utf-7-bom')
+        assert_equal(content[1].force_encoding("ascii-8bit"),
+                     result.force_encoding("ascii-8bit"))
+      end
+    }
+  end
 end
 
