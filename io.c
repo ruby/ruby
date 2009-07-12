@@ -7441,6 +7441,7 @@ pipe_pair_close(VALUE rw)
  *  returns the value of the block.
  *  <i>read_io</i> and <i>write_io</i> are sent to the block as arguments.
  *  If read_io and write_io are not closed when the block exits, they are closed.
+ *  i.e. closing read_io and/or write_io doesn't cause an error.
  *
  *  Not available on all platforms.
  *
