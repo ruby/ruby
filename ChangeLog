@@ -1,3 +1,8 @@
+Wed Jul  1 08:46:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_encoding): encodings need extra depth.
+	  [ruby-core:24100]
+
 Tue Jun 30 17:44:24 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (reg_match_pos): adjust offset based on characters, not
