@@ -1,3 +1,12 @@
+Mon Jul 13 01:36:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_timeval): rounds subsecond toward zero.
+
+Mon Jul 13 01:36:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_timeval): check out-of-range.  [ruby-core:23282]
+	  [Bug #1396]
+
 Thu Jul  9 17:58:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (proc_invoke): shares dmethod scope local variables.
