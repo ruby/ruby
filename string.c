@@ -6624,13 +6624,16 @@ rb_str_center(int argc, VALUE *argv, VALUE str)
 /*
  *  call-seq:
  *     str.partition(sep)              => [head, sep, tail]
- *  
- *  Searches the string for <i>sep</i> and returns the part before
- *  it, the <i>sep</i>, and the part after it.  If <i>sep</i> is not found,
- *  returns <i>str</i> and two empty strings.
- *     
+ *     str.partition(regexp)           => [head, match, tail]
+ *
+ *  Searches <i>sep</i> or pattern (<i>regexp</i>) in the string
+ *  and returns the part before it, the match, and the part
+ *  after it.
+ *  If it is not found, returns two empty strings and <i>str</i>.
+ *
  *     "hello".partition("l")         #=> ["he", "l", "lo"]
  *     "hello".partition("x")         #=> ["hello", "", ""]
+ *     "hello".partition(/.l/)        #=> ["h", "el", "lo"]
  */
 
 static VALUE
@@ -6670,15 +6673,17 @@ rb_str_partition(VALUE str, VALUE sep)
 
 /*
  *  call-seq:
- *     str.rpartition(sep)            => [head, sep, tail]
- *  
- *  Searches <i>sep</i> in the string from the end of the string, and
- *  returns the part before it, the <i>sep</i>, and the part after it.
- *  If <i>sep</i> is not found, returns two empty strings and
- *  <i>str</i>.
- *     
+ *     str.rpartition(sep)             => [head, sep, tail]
+ *     str.rpartition(regexp)          => [head, match, tail]
+ *
+ *  Searches <i>sep</i> or pattern (<i>regexp</i>) in the string from the end
+ *  of the string, and returns the part before it, the match, and the part
+ *  after it.
+ *  If it is not found, returns two empty strings and <i>str</i>.
+ *
  *     "hello".rpartition("l")         #=> ["hel", "l", "o"]
  *     "hello".rpartition("x")         #=> ["", "", "hello"]
+ *     "hello".rpartition(/.l/)        #=> ["he", "ll", "o"]
  */
 
 static VALUE

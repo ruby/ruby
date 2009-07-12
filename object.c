@@ -1304,8 +1304,8 @@ rb_mod_gt(VALUE mod, VALUE arg)
  *  
  *  Comparison---Returns -1 if <i>mod</i> includes <i>other_mod</i>, 0 if
  *  <i>mod</i> is the same as <i>other_mod</i>, and +1 if <i>mod</i> is
- *  included by <i>other_mod</i> or if <i>mod</i> has no relationship with
- *  <i>other_mod</i>. Returns <code>nil</code> if <i>other_mod</i> is
+ *  included by <i>other_mod</i>. Returns <code>nil</code> if <i>mod</i>
+ *  has no relationship with <i>other_mod</i> or if <i>other_mod</i> is
  *  not a module.
  */
 

@@ -1533,9 +1533,9 @@ recursive_hash(VALUE hash, VALUE dummy, int recur)
 
 /*
  *  call-seq:
- *     array.hash   -> fixnum
+ *     hsh.hash   -> fixnum
  *
- *  Compute a hash-code for this array. Two arrays with the same content
+ *  Compute a hash-code for this hash. Two hashes with the same content
  *  will have the same hash code (and will compare using <code>eql?</code>).
  */
 

@@ -1,3 +1,16 @@
+Tue Jun 30 18:19:07 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_hash): documentation fix.  a patch from
+	  Marc-Andre Lafortune.  [ruby-core:23943]
+
+	* object.c (rb_mod_cmp): ditto.
+
+	* range.c (range_eq): ditto.
+
+	* string.c (rb_str_partition, rb_str_rpartition): ditto.
+
+	* struct.c (rb_struct_s_def): ditto.
+
 Wed Jul  1 08:46:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_encoding): encodings need extra depth.

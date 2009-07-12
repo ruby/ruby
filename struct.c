@@ -298,8 +298,8 @@ rb_struct_define(const char *name, ...)
  *  which can then be used to create specific instances of the new
  *  structure. The number of actual parameters must be
  *  less than or equal to the number of attributes defined for this
- *  class; unset parameters default to \nil{}.  Passing too many
- *  parameters will raise an \E{ArgumentError}.
+ *  class; unset parameters default to <code>nil</code>.  Passing too many
+ *  parameters will raise an <code>ArgumentError</code>.
  *
  *  The remaining methods listed in this section (class and instance)
  *  are defined for this generated class. 
