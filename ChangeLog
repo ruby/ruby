@@ -1,3 +1,9 @@
+Sun Jul 12 23:51:39 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* hash.c (env_str_new): use rb_locale_str_new instead of
+	  rb_tainted_str_new. rb_locale_str_new set string locale
+	  encoding and tainted.
+
 Sun Jul 12 23:56:40 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: added some shortcuts.
@@ -41,7 +47,7 @@ Sat Jul 11 07:11:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Jul 11 02:37:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* random.c (limited_rand): expands to long before shift so tha
+	* random.c (limited_rand): expands to long before shift so that
 	  the result does not overflow.
 
 Sat Jul 11 00:16:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>

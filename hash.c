@@ -1857,7 +1857,7 @@ extern char **environ;
 static VALUE
 env_str_new(const char *ptr, long len)
 {
-    VALUE str = rb_tainted_str_new(ptr, len);
+    VALUE str = rb_locale_str_new(ptr, len);
 
     rb_obj_freeze(str);
     return str;
