@@ -1,3 +1,7 @@
+Tue Jun 30 16:48:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/compile_prelude.rb: use US-ASCII name.
+
 Tue Jun 30 11:05:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (dln_find_1): fixed index overrun.
