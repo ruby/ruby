@@ -214,6 +214,9 @@ k_rational_p(VALUE x)
 #define k_exact_p(x) (!k_float_p(x))
 #define k_inexact_p(x) k_float_p(x)
 
+#define k_exact_zero_p(x) (k_exact_p(x) && f_zero_p(x))
+#define k_exact_one_p(x) (k_exact_p(x) && f_one_p(x))
+
 #ifndef NDEBUG
 #define f_gcd f_gcd_orig
 #endif
@@ -892,7 +895,7 @@ extern VALUE rb_fexpt(VALUE x, VALUE y);
 static VALUE
 nurat_expt(VALUE self, VALUE other)
 {
-    if (k_exact_p(other) && f_zero_p(other))
+    if (k_exact_zero_p(other))
 	return f_rational_new_bang1(CLASS_OF(self), ONE);
 
     if (k_rational_p(other)) {
@@ -1051,7 +1054,7 @@ nurat_coerce(VALUE self, VALUE other)
       case T_RATIONAL:
 	return rb_assoc_new(other, self);
       case T_COMPLEX:
-	if (k_exact_p(RCOMPLEX(other)->imag) && f_zero_p(RCOMPLEX(other)->imag))
+	if (k_exact_zero_p(RCOMPLEX(other)->imag))
 	    return rb_assoc_new(f_rational_new_bang1
 				(CLASS_OF(self), RCOMPLEX(other)->real), self);
     }
@@ -1882,13 +1885,13 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 
     switch (TYPE(a1)) {
       case T_COMPLEX:
-	if (k_exact_p(RCOMPLEX(a1)->imag) && f_zero_p(RCOMPLEX(a1)->imag))
+	if (k_exact_zero_p(RCOMPLEX(a1)->imag))
 	    a1 = RCOMPLEX(a1)->real;
     }
 
     switch (TYPE(a2)) {
       case T_COMPLEX:
-	if (k_exact_p(RCOMPLEX(a2)->imag) && f_zero_p(RCOMPLEX(a2)->imag))
+	if (k_exact_zero_p(RCOMPLEX(a2)->imag))
 	    a2 = RCOMPLEX(a2)->real;
     }
 
@@ -1923,7 +1926,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 
     switch (TYPE(a1)) {
       case T_RATIONAL:
-	if (argc == 1 || (k_exact_p(a2) && f_one_p(a2)))
+	if (argc == 1 || (k_exact_one_p(a2)))
 	    return a1;
     }
 

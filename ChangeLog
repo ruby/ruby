@@ -1,3 +1,9 @@
+Sun Jul 12 21:07:46 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: use k_exact_{zero,one}_p macro.
+
+	* rational.c: ditto.
+
 Sun Jul 12 20:42:58 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* numeric.c (fix_divide): added an entry to rational.

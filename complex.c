@@ -261,6 +261,9 @@ k_complex_p(VALUE x)
 #define k_exact_p(x) (!k_float_p(x))
 #define k_inexact_p(x) k_float_p(x)
 
+#define k_exact_zero_p(x) (k_exact_p(x) && f_zero_p(x))
+#define k_exact_one_p(x) (k_exact_p(x) && f_one_p(x))
+
 #define get_dat1(x) \
     struct RComplex *dat;\
     dat = ((struct RComplex *)(x))
@@ -362,7 +365,7 @@ nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
 #ifdef CANON
 #define CL_CANON
 #ifdef CL_CANON
-    if (f_zero_p(imag) && k_exact_p(imag) && canonicalization)
+    if (k_exact_zero_p(imag) && canonicalization)
 	return real;
 #else
     if (f_zero_p(imag) && canonicalization)
@@ -758,10 +761,6 @@ f_divide(VALUE self, VALUE other,
 static VALUE
 nucomp_div(VALUE self, VALUE other)
 {
-#if 0 /* too much cost */
-    if (f_zero_p(other) && k_exact_p(self) && k_exact_p(other))
-	rb_raise_zerodiv();
-#endif
     return f_divide(self, other, f_quo, id_quo);
 }
 
@@ -832,7 +831,7 @@ f_reciprocal(VALUE x)
 static VALUE
 nucomp_expt(VALUE self, VALUE other)
 {
-    if (f_zero_p(other) && k_exact_p(other))
+    if (k_exact_zero_p(other))
 	return f_complex_new_bang1(CLASS_OF(self), ONE);
 
     if (k_rational_p(other) && f_one_p(f_denominator(other)))
@@ -841,7 +840,7 @@ nucomp_expt(VALUE self, VALUE other)
     if (k_complex_p(other)) {
 	get_dat1(other);
 
-	if (k_exact_p(dat->imag) && f_zero_p(dat->imag))
+	if (k_exact_zero_p(dat->imag))
 	    other = dat->real; /* c14n */
     }
 
@@ -1062,7 +1061,7 @@ static VALUE
 nucomp_exact_p(VALUE self)
 {
     get_dat1(self);
-    return f_boolcast(f_exact_p(dat->real) && f_exact_p(dat->imag));
+    return f_boolcast(k_exact_p(dat->real) && k_exact_p(dat->imag));
 }
 
 /* :nodoc: */
@@ -1625,7 +1624,7 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 	{
 	    get_dat1(a1);
 
-	    if (k_exact_p(dat->imag) && f_zero_p(dat->imag))
+	    if (k_exact_zero_p(dat->imag))
 		a1 = dat->real;
 	}
     }
@@ -1635,14 +1634,14 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 	{
 	    get_dat1(a2);
 
-	    if (k_exact_p(dat->imag) && f_zero_p(dat->imag))
+	    if (k_exact_zero_p(dat->imag))
 		a2 = dat->real;
 	}
     }
 
     switch (TYPE(a1)) {
       case T_COMPLEX:
-	if (argc == 1 || (k_exact_p(a2) && f_zero_p(a2)))
+	if (argc == 1 || (k_exact_zero_p(a2)))
 	    return a1;
     }
 
