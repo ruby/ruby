@@ -1337,6 +1337,14 @@ numeric_abs2(VALUE self)
 
 #define id_PI rb_intern("PI")
 
+/*
+ * call-seq:
+ *    num.arg    ->  0 or float
+ *    num.angle  ->  0 or float
+ *    num.phase  ->  0 or float
+ *
+ * Returns 0 if the value is positive, pi otherwise.
+ */
 static VALUE
 numeric_arg(VALUE self)
 {
@@ -1363,6 +1371,54 @@ numeric_conj(VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *    flo.arg    ->  0 or float
+ *    flo.angle  ->  0 or float
+ *    flo.phase  ->  0 or float
+ *
+ * Returns 0 if the value is positive, pi otherwise.
+ */
+static VALUE
+float_arg(VALUE self)
+{
+    if (isnan(RFLOAT_VALUE(self)))
+	return self;
+    return rb_call_super(0, 0);
+}
+
+/*
+ * A complex number can be represented as a paired real number with
+ * imaginary unit; a+bi.  Where a is real part, b is imaginary part
+ * and i is imaginary unit.  Real a equals complex a+0i
+ * mathematically.
+ *
+ * In ruby, you can create complex object with Complex, Complex::rect,
+ * Complex::polar or to_c method.
+ *
+ *    Complex(1)           #=> (1+0i)
+ *    Complex(2, 3)        #=> (2+3i)
+ *    Complex.polar(2, 3)  #=> (-1.9799849932008908+0.2822400161197344i)
+ *    3.to_c               #=> (3+0i)
+ *
+ * You can also create complex object from floating-point numbers or
+ * strings.
+ *
+ *    Complex(0.3)         #=> (0.3+0i)
+ *    Complex('0.3-0.5i')  #=> (0.3-0.5i)
+ *    Complex('2/3+3/4i')  #=> ((2/3)+(3/4)*i)
+ *    Complex('1@2')       #=> (-0.4161468365471424+0.9092974268256817i)
+ *
+ *    0.3.to_c             #=> (0.3+0i)
+ *    '0.3-0.5i'.to_c      #=> (0.3-0.5i)
+ *    '2/3+3/4i'.to_c      #=> ((2/3)+(3/4)*i)
+ *    '1@2'.to_c           #=> (-0.4161468365471424+0.9092974268256817i)
+ *
+ * A complex object is either an exact or an inexact number.
+ *
+ *    Complex(1, 1) / 2    #=> ((1/2)+(1/2)*i)
+ *    Complex(1, 1) / 2.0  #=> (0.5+0.5i)
+ */
 void
 Init_Complex(void)
 {
@@ -1413,16 +1469,19 @@ Init_Complex(void)
 
     rb_define_global_function("Complex", nucomp_f_complex, -1);
 
+    rb_undef_method(rb_cComplex, "%");
     rb_undef_method(rb_cComplex, "<");
     rb_undef_method(rb_cComplex, "<=");
     rb_undef_method(rb_cComplex, "<=>");
     rb_undef_method(rb_cComplex, ">");
     rb_undef_method(rb_cComplex, ">=");
     rb_undef_method(rb_cComplex, "between?");
+    rb_undef_method(rb_cComplex, "div");
     rb_undef_method(rb_cComplex, "divmod");
     rb_undef_method(rb_cComplex, "floor");
     rb_undef_method(rb_cComplex, "ceil");
     rb_undef_method(rb_cComplex, "modulo");
+    rb_undef_method(rb_cComplex, "remainder");
     rb_undef_method(rb_cComplex, "round");
     rb_undef_method(rb_cComplex, "step");
     rb_undef_method(rb_cComplex, "truncate");
@@ -1509,6 +1568,10 @@ Init_Complex(void)
     rb_define_method(rb_cNumeric, "polar", numeric_polar, 0);
     rb_define_method(rb_cNumeric, "conjugate", numeric_conj, 0);
     rb_define_method(rb_cNumeric, "conj", numeric_conj, 0);
+
+    rb_define_method(rb_cFloat, "arg", float_arg, 0);
+    rb_define_method(rb_cFloat, "angle", float_arg, 0);
+    rb_define_method(rb_cFloat, "phase", float_arg, 0);
 
     rb_define_const(rb_cComplex, "I",
 		    f_complex_new_bang2(rb_cComplex, ZERO, ONE));
