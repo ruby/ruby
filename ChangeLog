@@ -1,3 +1,7 @@
+Fri Jun 26 21:48:30 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pty/pty.c (pty_getpty): check dup failure.
+
 Thu Jun 25 17:58:39 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (argf_binmode_m): should call rb_io_ascii8bit_binmode() to
