@@ -1564,8 +1564,8 @@ dln_find_1(const char *fname, const char *path, char *fbuf, int size,
 	}
     }
     if (ext) {
-	for (j = 0; STRCASECMP(ext, extension[j]); j++) {
-	    if (j == sizeof(extension) / sizeof(extension[0])) {
+	for (j = 0; STRCASECMP(ext, extension[j]); ) {
+	    if (++j == sizeof(extension) / sizeof(extension[0])) {
 		ext = 0;
 		break;
 	    }
