@@ -12,9 +12,6 @@ module Tk
   end
 end
 
-Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Treeview, :TkTreeview)
-
-
 module Tk::Tile::TreeviewConfig
   include TkItemConfigMethod
 
@@ -519,16 +516,20 @@ module Tk::Tile::TreeviewConfig
     end
   end
 
+  alias __itemcget_tkstring itemcget_tkstring
   alias __itemcget itemcget
   alias __itemcget_strict itemcget_strict
   alias __itemconfigure itemconfigure
   alias __itemconfiginfo itemconfiginfo
   alias __current_itemconfiginfo current_itemconfiginfo
 
-  private :__itemcget, :__itemcget_strict
+  private :__itemcget_tkstring, :__itemcget, :__itemcget_strict
   private :__itemconfigure, :__itemconfiginfo, :__current_itemconfiginfo
 
   # Treeview Item
+  def itemcget_tkstring(tagOrId, option)
+    __itemcget_tkstring([:item, tagOrId], option)
+  end
   def itemcget(tagOrId, option)
     __itemcget([:item, tagOrId], option)
   end
@@ -546,6 +547,9 @@ module Tk::Tile::TreeviewConfig
   end
 
   # Treeview Column
+  def columncget_tkstring(tagOrId, option)
+    __itemcget_tkstring([:column, tagOrId], option)
+  end
   def columncget(tagOrId, option)
     __itemcget([:column, tagOrId], option)
   end
@@ -561,6 +565,7 @@ module Tk::Tile::TreeviewConfig
   def current_columnconfiginfo(tagOrId, slot=nil)
     __current_itemconfiginfo([:column, tagOrId], slot)
   end
+  alias column_cget_tkstring columncget_tkstring
   alias column_cget columncget
   alias column_cget_strict columncget_strict
   alias column_configure columnconfigure
@@ -568,6 +573,19 @@ module Tk::Tile::TreeviewConfig
   alias current_column_configinfo current_columnconfiginfo
 
   # Treeview Heading
+  def headingcget_tkstring(tagOrId, option)
+    if __tile_specific_item_optkeys([:heading, tagOrId]).index(option.to_s)
+      begin
+        # On tile-0.7.{2-8}, 'state' options has no '-' at its head.
+        tk_call(*(__item_cget_cmd([:heading, tagOrId]) << option.to_s))
+      rescue
+        # Maybe, 'state' option has '-' in future.
+        tk_call(*(__item_cget_cmd([:heading, tagOrId]) << "-#{option}"))
+      end
+    else
+      __itemcget_tkstring([:heading, tagOrId], option)
+    end
+  end
   def headingcget_strict(tagOrId, option)
     if __tile_specific_item_optkeys([:heading, tagOrId]).index(option.to_s)
       begin
@@ -630,6 +648,7 @@ module Tk::Tile::TreeviewConfig
   def current_headingconfiginfo(tagOrId, slot=nil)
     __current_itemconfiginfo([:heading, tagOrId], slot)
   end
+  alias heading_cget_tkstring headingcget_tkstring
   alias heading_cget headingcget
   alias heading_cget_strict headingcget_strict
   alias heading_configure headingconfigure
@@ -637,6 +656,9 @@ module Tk::Tile::TreeviewConfig
   alias current_heading_configinfo current_headingconfiginfo
 
   # Treeview Tag
+  def tagcget_tkstring(tagOrId, option)
+    __itemcget_tkstring([:tag, :configure, tagOrId], option)
+  end
   def tagcget(tagOrId, option)
     __itemcget([:tag, :configure, tagOrId], option)
   end
@@ -652,6 +674,7 @@ module Tk::Tile::TreeviewConfig
   def current_tagconfiginfo(tagOrId, slot=nil)
     __current_itemconfiginfo([:tag, :configure, tagOrId], slot)
   end
+  alias tag_cget_tkstring tagcget_tkstring
   alias tag_cget tagcget
   alias tag_cget_strict tagcget_strict
   alias tag_configure tagconfigure
@@ -737,6 +760,9 @@ class Tk::Tile::Treeview::Item < TkObject
     @id
   end
 
+  def cget_tkstring(option)
+    @t.itemcget_tkstring(@id, option)
+  end
   def cget(option)
     @t.itemcget(@id, option)
   end
@@ -768,6 +794,11 @@ class Tk::Tile::Treeview::Item < TkObject
     configure('open', false)
     self
   end
+
+  def tag_has?(tag)
+    @t.tag_has?(tag, @id)
+  end
+  alias has_tag? tag_has?
 
   def bbox(column=None)
     @t.bbox(@id, column)
@@ -907,7 +938,7 @@ class Tk::Tile::Treeview::Tag < TkObject
 
   TagID_TBL = TkCore::INTERP.create_table
 
-  (Tag_ID = ['tile_treeview_tag'.freeze, '00000'.taint]).instance_eval{
+  (Tag_ID = ['tile_treeview_tag'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -950,6 +981,11 @@ class Tk::Tile::Treeview::Tag < TkObject
     @id
   end
 
+  def tag_has?(item)
+    @t.tag_has?(@id, item)
+  end
+  alias added? tag_has?
+
   def bind(seq, *args)
     if TkComm._callback_entry?(args[0]) || !block_given?
       cmd = args.shift
@@ -979,6 +1015,9 @@ class Tk::Tile::Treeview::Tag < TkObject
     @t.tag_bindinfo(@id, seq)
   end
 
+  def cget_tkstring(option)
+    @t.tagcget_tkstring(@id, option)
+  end
   def cget(option)
     @t.tagcget(@id, option)
   end
@@ -1014,7 +1053,7 @@ class Tk::Tile::Treeview < TkWindow
     TkCommandNames = ['::treeview'.freeze].freeze
   end
   WidgetClassName = 'Treeview'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __destroy_hook__
     Tk::Tile::Treeview::Item::ItemID_TBL.mutex.synchronize{
@@ -1098,14 +1137,29 @@ class Tk::Tile::Treeview < TkWindow
     end
   end
 
+  def identify_region(x, y)
+    tk_send('identify', 'region', x, y)
+  end
+
+  def identify_item(x, y)
+    id = tk_send('identify', 'item', x, y)
+    (id.empty?)? nil: Tk::Tile::Treeview::Item.id2obj(self, id)
+  end
+
+  def identify_element(x, y)
+    tk_send('identify', 'element', x, y)
+  end
+
   def row_identify(x, y)
     id = tk_send('identify', 'row', x, y)
     (id.empty?)? nil: Tk::Tile::Treeview::Item.id2obj(self, id)
   end
+  alias identify_row row_identify
 
   def column_identify(x, y)
     tk_send('identify', 'column', x, y)
   end
+  alias identify_column column_identify
 
   def index(item)
     number(tk_send('index', item))
@@ -1204,6 +1258,15 @@ class Tk::Tile::Treeview < TkWindow
     self
   end
 
+  def tag_has?(tag, item)
+    bool(tk_send('tag', 'has', tagid(tag), tagid(item)))
+  end
+  def tag_has(tag)
+    tk_split_simplelist(tk_send('tag', 'has', tagid(tag))).collect{|id|
+      Tk::Tile::Treeview::Item.id2obj(self, id)
+    }
+  end
+
   def tag_bind(tag, seq, *args)
     if TkComm._callback_entry?(args[0]) || !block_given?
       cmd = args.shift
@@ -1237,3 +1300,7 @@ class Tk::Tile::Treeview < TkWindow
   end
   alias tagbindinfo tag_bindinfo
 end
+
+#Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Treeview, :TkTreeview)
+Tk.__set_loaded_toplevel_aliases__('tkextlib/tile/treeview.rb',
+                                   :Ttk, Tk::Tile::Treeview, :TkTreeview)

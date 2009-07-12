@@ -8,7 +8,7 @@ end
 ########################
 
 require 'tkutil'
-require 'tk'
+require 'tk' unless Object.const_defined? :TkComm
 
 ########################
 
@@ -481,6 +481,26 @@ module TkEvent
             end
           end
         })
+      end
+    elsif cmd.respond_to?(:arity) && cmd.arity == 0  # args.size == 0
+      args = ''
+      if cmd.kind_of?(String)
+        id = cmd
+      elsif cmd.kind_of?(TkCallbackEntry)
+        id = install_cmd(cmd)
+      else
+        id = install_cmd(proc{
+                           begin
+                             TkUtil.eval_cmd(cmd)
+                           rescue Exception=>e
+                             if TkCore::INTERP.kind_of?(TclTkIp)
+                               fail e
+                             else
+                               # MultiTkIp
+                               fail Exception, "#{e.class}: #{e.message.dup}"
+                             end
+                           end
+                         })
       end
     else
       keys, args = klass._get_all_subst_keys

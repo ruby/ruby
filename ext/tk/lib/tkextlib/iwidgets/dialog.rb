@@ -16,5 +16,5 @@ end
 class Tk::Iwidgets::Dialog
   TkCommandNames = ['::iwidgets::dialog'.freeze].freeze
   WidgetClassName = 'Dialog'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 end

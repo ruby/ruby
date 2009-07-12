@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Datefield
   TkCommandNames = ['::iwidgets::datefield'.freeze].freeze
   WidgetClassName = 'Datefield'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __boolval_optkeys
     super() << 'gmt'

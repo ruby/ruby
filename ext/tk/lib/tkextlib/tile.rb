@@ -18,10 +18,37 @@ require 'tkextlib/tile/setup.rb'
 # TkPackage.require('tile', '0.7')
 if Tk::TK_MAJOR_VERSION > 8 ||
     (Tk::TK_MAJOR_VERSION == 8 && Tk::TK_MINOR_VERSION >= 5)
-  TkPackage.require('tile') # for compatibility (version check of 'tile')
-  verstr = TkPackage.require('Ttk')
+  begin
+    TkPackage.require('tile') # for compatibility (version check of 'tile')
+  rescue RuntimeError
+    # ignore, even if cannot find package 'tile'
+  end
+  pkgname = 'Ttk'
 else
-  verstr = TkPackage.require('tile')
+  pkgname = 'tile'
+end
+
+begin
+  verstr = TkPackage.require(pkgname)
+rescue RuntimeError
+  # define dummy methods
+  module Tk
+    module Tile
+      CANNOT_FIND_PACKAGE = true
+      def self.const_missing(sym)
+        TkPackage.require(PACKAGE_NAME)
+      end
+      def self.method_missing(*args)
+        TkPackage.require(PACKAGE_NAME)
+      end
+    end
+  end
+  Tk.__cannot_find_tk_package_for_widget_set__(:Ttk, pkgname)
+  if pkgname == 'Ttk'
+    verstr = Tk::TK_PATCHLEVEL  # dummy
+  else
+    verstr = '0.7'  # dummy
+  end
 end
 
 ver = verstr.split('.')
@@ -403,6 +430,9 @@ module Tk
 
     autoload :TSeparator,    'tkextlib/tile/tseparator'
     autoload :Separator,     'tkextlib/tile/tseparator'
+
+    autoload :TSpinbox,      'tkextlib/tile/tspinbox'
+    autoload :Spinbox,       'tkextlib/tile/tspinbox'
 
     autoload :TSquare,       'tkextlib/tile/tsquare'
     autoload :Square,        'tkextlib/tile/tsquare'

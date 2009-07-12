@@ -6,7 +6,7 @@ require 'tk'
 class Tk::Scale<TkWindow
   TkCommandNames = ['scale'.freeze].freeze
   WidgetClassName = 'Scale'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def create_self(keys)
     if keys and keys != None
@@ -108,4 +108,5 @@ class Tk::Scale<TkWindow
 end
 
 #TkScale = Tk::Scale unless Object.const_defined? :TkScale
-Tk.__set_toplevel_aliases__(:Tk, Tk::Scale, :TkScale)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::Scale, :TkScale)
+Tk.__set_loaded_toplevel_aliases__('tk/scale.rb', :Tk, Tk::Scale, :TkScale)

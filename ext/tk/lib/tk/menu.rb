@@ -33,13 +33,14 @@ module TkMenuEntryConfig
   end
   private :__item_val2ruby_optkeys
 
+  alias entrycget_tkstring itemcget_tkstring
   alias entrycget itemcget
   alias entrycget_strict itemcget_strict
   alias entryconfigure itemconfigure
   alias entryconfiginfo itemconfiginfo
   alias current_entryconfiginfo current_itemconfiginfo
 
-  private :itemcget, :itemcget_strict
+  private :itemcget_tkstring, :itemcget, :itemcget_strict
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 end
 
@@ -50,7 +51,7 @@ class Tk::Menu<TkWindow
 
   TkCommandNames = ['menu'.freeze].freeze
   WidgetClassName = 'Menu'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   #def create_self(keys)
   #  if keys and keys != None
@@ -386,8 +387,32 @@ class Tk::Menu<TkWindow
 end
 
 #TkMenu = Tk::Menu unless Object.const_defined? :TkMenu
-Tk.__set_toplevel_aliases__(:Tk, Tk::Menu, :TkMenu)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::Menu, :TkMenu)
+Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::Menu, :TkMenu)
 
+
+module Tk::Menu::TkInternalFunction; end
+class << Tk::Menu::TkInternalFunction
+  # These methods calls internal functions of Tcl/Tk.
+  # So, They may not work on your Tcl/Tk.
+  def next_menu(menu, dir='next')
+    dir = dir.to_s
+    case dir
+    when 'next', 'forward', 'down'
+      dir = 'right'
+    when 'previous', 'backward', 'up'
+      dir = 'left'
+    end
+
+    Tk.tk_call('::tk::MenuNextMenu', menu, dir)
+  end
+
+  def next_entry(menu, delta)
+    # delta is increment value of entry index.
+    # For example, +1 denotes 'next entry' and -1 denotes 'previous entry'.
+    Tk.tk_call('::tk::MenuNextEntry', menu, delta)
+  end
+end
 
 class Tk::MenuClone<Tk::Menu
 =begin
@@ -446,7 +471,9 @@ end
 Tk::CloneMenu = Tk::MenuClone
 #TkMenuClone = Tk::MenuClone unless Object.const_defined? :TkMenuClone
 #TkCloneMenu = Tk::CloneMenu unless Object.const_defined? :TkCloneMenu
-Tk.__set_toplevel_aliases__(:Tk, Tk::MenuClone, :TkMenuClone, :TkCloneMenu)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::MenuClone, :TkMenuClone, :TkCloneMenu)
+Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::MenuClone,
+                                   :TkMenuClone, :TkCloneMenu)
 
 module Tk::SystemMenu
   def initialize(parent, keys=nil)
@@ -480,7 +507,9 @@ class Tk::SysMenu_Help<Tk::Menu
   SYSMENU_NAME = 'help'
 end
 #TkSysMenu_Help = Tk::SysMenu_Help unless Object.const_defined? :TkSysMenu_Help
-Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_Help, :TkSysMenu_Help)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_Help, :TkSysMenu_Help)
+Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::SysMenu_Help,
+                                   :TkSysMenu_Help)
 
 
 class Tk::SysMenu_System<Tk::Menu
@@ -489,7 +518,9 @@ class Tk::SysMenu_System<Tk::Menu
   SYSMENU_NAME = 'system'
 end
 #TkSysMenu_System = Tk::SysMenu_System unless Object.const_defined? :TkSysMenu_System
-Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_System, :TkSysMenu_System)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_System, :TkSysMenu_System)
+Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::SysMenu_System,
+                                   :TkSysMenu_System)
 
 
 class Tk::SysMenu_Apple<Tk::Menu
@@ -498,13 +529,15 @@ class Tk::SysMenu_Apple<Tk::Menu
   SYSMENU_NAME = 'apple'
 end
 #TkSysMenu_Apple = Tk::SysMenu_Apple unless Object.const_defined? :TkSysMenu_Apple
-Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_Apple, :TkSysMenu_Apple)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_Apple, :TkSysMenu_Apple)
+Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::SysMenu_Apple,
+                                   :TkSysMenu_Apple)
 
 
 class Tk::Menubutton<Tk::Label
   TkCommandNames = ['menubutton'.freeze].freeze
   WidgetClassName = 'Menubutton'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
   def create_self(keys)
     if keys and keys != None
       unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
@@ -541,7 +574,9 @@ end
 Tk::MenuButton = Tk::Menubutton
 #TkMenubutton = Tk::Menubutton unless Object.const_defined? :TkMenubutton
 #TkMenuButton = Tk::MenuButton unless Object.const_defined? :TkMenuButton
-Tk.__set_toplevel_aliases__(:Tk, Tk::Menubutton, :TkMenubutton, :TkMenuButton)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::Menubutton, :TkMenubutton, :TkMenuButton)
+Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::Menubutton,
+                                   :TkMenubutton, :TkMenuButton)
 
 
 class Tk::OptionMenubutton<Tk::Menubutton
@@ -677,5 +712,7 @@ end
 Tk::OptionMenuButton = Tk::OptionMenubutton
 #TkOptionMenubutton = Tk::OptionMenubutton unless Object.const_defined? :TkOptionMenubutton
 #TkOptionMenuButton = Tk::OptionMenuButton unless Object.const_defined? :TkOptionMenuButton
-Tk.__set_toplevel_aliases__(:Tk, Tk::OptionMenubutton,
-                            :TkOptionMenubutton, :TkOptionMenuButton)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::OptionMenubutton,
+#                            :TkOptionMenubutton, :TkOptionMenuButton)
+Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::OptionMenubutton,
+                                   :TkOptionMenubutton, :TkOptionMenuButton)

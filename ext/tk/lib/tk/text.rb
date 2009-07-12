@@ -29,6 +29,9 @@ module TkTextTagConfig
   end
   private :__item_pathname
 
+  def tag_cget_tkstring(tagOrId, option)
+    itemcget_tkstring(['tag', tagOrId], option)
+  end
   def tag_cget(tagOrId, option)
     itemcget(['tag', tagOrId], option)
   end
@@ -45,6 +48,9 @@ module TkTextTagConfig
     current_itemconfiginfo(['tag', tagOrId], slot)
   end
 
+  def window_cget_tkstring(tagOrId, option)
+    itemcget_tkstring(['window', tagOrId], option)
+  end
   def window_cget(tagOrId, option)
     itemcget(['window', tagOrId], option)
   end
@@ -61,7 +67,7 @@ module TkTextTagConfig
     current_itemconfiginfo(['window', tagOrId], slot)
   end
 
-  private :itemcget, :itemcget_strict
+  private :itemcget_tkstring, :itemcget, :itemcget_strict
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 end
 
@@ -251,7 +257,7 @@ class Tk::Text<TkTextWin
 
   TkCommandNames = ['text'.freeze].freeze
   WidgetClassName = 'Text'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.new(*args, &block)
     obj = super(*args){}
@@ -1570,7 +1576,8 @@ class Tk::Text<TkTextWin
 end
 
 #TkText = Tk::Text unless Object.const_defined? :TkText
-Tk.__set_toplevel_aliases__(:Tk, Tk::Text, :TkText)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::Text, :TkText)
+Tk.__set_loaded_toplevel_aliases__('tk/text.rb', :Tk, Tk::Text, :TkText)
 
 
 #######################################
@@ -1587,7 +1594,8 @@ class Tk::Text::Peer < Tk::Text
 
   def create_self(keys)
     if keys and keys != None
-      tk_call_without_enc(@src_text.path, 'peer', 'create', @path)
+      tk_call_without_enc(@src_text.path, 'peer', 'create',
+                          @path, *hash_kv(keys, true))
     else
       tk_call_without_enc(@src_text.path, 'peer', 'create', @path)
     end

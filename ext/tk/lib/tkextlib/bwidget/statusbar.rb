@@ -17,10 +17,10 @@ end
 class Tk::BWidget::StatusBar
   TkCommandNames = ['StatusBar'.freeze].freeze
   WidgetClassName = 'StatusBar'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __boolval_optkeys
-    super() << 'showresize'
+    super() << 'showresize' << 'showseparator' << 'showresizesep'
   end
   private :__boolval_optkeys
 
@@ -29,7 +29,17 @@ class Tk::BWidget::StatusBar
     self
   end
 
-  def delete(*wins)
+  def remove(*wins)
+    tk_send('remove', *wins)
+    self
+  end
+
+  def remove_with_destroy(*wins)
+    tk_send('remove', '-destroy', *wins)
+    self
+  end
+
+  def delete(*wins) # same to 'remove_with_destroy'
     tk_send('delete', *wins)
     self
   end
@@ -47,6 +57,6 @@ class Tk::BWidget::StatusBar
   end
 
   def items
-    list(tk_send('items'))
+    simplelist(tk_send('items')).map{|w| window(w)}
   end
 end

@@ -24,7 +24,7 @@ class Tk::BWidget::SelectColor
 
   TkCommandNames = ['SelectColor'.freeze].freeze
   WidgetClassName = 'SelectColor'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def dialog(keys={})
     newkeys = @keys.dup

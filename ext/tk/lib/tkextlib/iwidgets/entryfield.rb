@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Entryfield
   TkCommandNames = ['::iwidgets::entryfield'.freeze].freeze
   WidgetClassName = 'Entryfield'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __font_optkeys
     super() << 'textfont'

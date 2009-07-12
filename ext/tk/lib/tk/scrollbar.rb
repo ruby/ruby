@@ -6,7 +6,7 @@ require 'tk'
 class Tk::Scrollbar<TkWindow
   TkCommandNames = ['scrollbar'.freeze].freeze
   WidgetClassName = 'Scrollbar'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def create_self(keys)
     @assigned = []
@@ -148,7 +148,9 @@ class Tk::Scrollbar<TkWindow
 end
 
 #TkScrollbar = Tk::Scrollbar unless Object.const_defined? :TkScrollbar
-Tk.__set_toplevel_aliases__(:Tk, Tk::Scrollbar, :TkScrollbar)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::Scrollbar, :TkScrollbar)
+Tk.__set_loaded_toplevel_aliases__('tk/scrollbar.rb', :Tk, Tk::Scrollbar,
+                                   :TkScrollbar)
 
 
 class Tk::XScrollbar<Tk::Scrollbar
@@ -161,7 +163,9 @@ class Tk::XScrollbar<Tk::Scrollbar
 end
 
 #TkXScrollbar = Tk::XScrollbar unless Object.const_defined? :TkXScrollbar
-Tk.__set_toplevel_aliases__(:Tk, Tk::XScrollbar, :TkXScrollbar)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::XScrollbar, :TkXScrollbar)
+Tk.__set_loaded_toplevel_aliases__('tk/scrollbar.rb', :Tk, Tk::XScrollbar,
+                                   :TkXScrollbar)
 
 
 class Tk::YScrollbar<Tk::Scrollbar
@@ -174,4 +178,6 @@ class Tk::YScrollbar<Tk::Scrollbar
 end
 
 #TkYScrollbar = Tk::YScrollbar unless Object.const_defined? :TkYScrollbar
-Tk.__set_toplevel_aliases__(:Tk, Tk::YScrollbar, :TkYScrollbar)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::YScrollbar, :TkYScrollbar)
+Tk.__set_loaded_toplevel_aliases__('tk/scrollbar.rb', :Tk, Tk::YScrollbar,
+                                   :TkYScrollbar)

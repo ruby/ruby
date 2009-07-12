@@ -233,6 +233,8 @@ class << Tk::Tile::Style
   def element_create(name, type, *args)
     if type == 'image' || type == :image
       element_create_image(name, *args)
+    elsif type == 'vsapi' || type == :vsapi
+      element_create_vsapi(name, *args)
     else
       tk_call(TkCommandNames[0], 'element', 'create', name, type, *args)
     end
@@ -277,6 +279,24 @@ class << Tk::Tile::Style
         tk_call(TkCommandNames[0], 'element', 'create', name, 'image', spec)
       end
     end
+  end
+
+  def element_create_vsapi(name, class_name, part_id, *args)
+    # supported on Tcl/Tk 8.6 or later
+
+    # argument check
+    if (state_map = args.shift || None)
+      if state_map.kind_of?(Hash)
+        opts = _symbolkey2str(state_map)
+        state_map = None
+      end
+    end
+    opts = args.shift || None
+    fail ArgumentError, "too many arguments" unless args.empty?
+
+    # define a Microsoft Visual Styles element
+    tk_call(TkCommandNames[0], 'element', 'create', name, 'vsapi', 
+            class_name, part_id, state_map, opts)
   end
 
   def element_names()

@@ -16,5 +16,5 @@ end
 class Tk::BWidget::Separator
   TkCommandNames = ['Separator'.freeze].freeze
   WidgetClassName = 'Separator'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 end

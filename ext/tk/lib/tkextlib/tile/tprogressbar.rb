@@ -13,9 +13,6 @@ module Tk
   end
 end
 
-Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Progressbar, :TkProgressbar)
-
-
 class Tk::Tile::TProgressbar
   include Tk::Tile::TileWidget
 
@@ -25,7 +22,7 @@ class Tk::Tile::TProgressbar
     TkCommandNames = ['::tprogressbar'.freeze].freeze
   end
   WidgetClassName = 'TProgressbar'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.style(*args)
     [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
@@ -54,3 +51,7 @@ class Tk::Tile::TProgressbar
     end
   end
 end
+
+#Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Progressbar, :TkProgressbar)
+Tk.__set_loaded_toplevel_aliases__('tkextlib/tile/tprogressbar.rb',
+                                   :Ttk, Tk::Tile::Progressbar, :TkProgressbar)

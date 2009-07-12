@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Extfileselectiondialog
   TkCommandNames = ['::iwidgets::extfileselectiondialog'.freeze].freeze
   WidgetClassName = 'Extfileselectiondialog'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def child_site
     window(tk_call(@path, 'childsite'))

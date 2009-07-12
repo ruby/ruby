@@ -19,8 +19,9 @@ module Tk::BLT
 
     TkCommandNames = ['::blt::htext'.freeze].freeze
     WidgetClassName = 'Htext'.freeze
-    WidgetClassNames[WidgetClassName] = self
+    WidgetClassNames[WidgetClassName] ||= self
 
+    alias window_cget_tkstring itemcget_tkstring
     alias window_cget itemcget
     alias window_cget_strict itemcget_strict
     alias window_configure itemconfigure

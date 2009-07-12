@@ -11,7 +11,7 @@ class TkFont
 
   TkCommandNames = ['font'.freeze].freeze
 
-  (Tk_FontID = ["@font".freeze, "00000".taint]).instance_eval{
+  (Tk_FontID = ["@font".freeze, TkUtil.untrust("00000")]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -211,7 +211,7 @@ class TkFont
     end
   end
   def TkFont.actual_hash(fnt, option=nil)
-    Hash[TkFont.actual_hash(fnt, option)]
+    Hash[TkFont.actual(fnt, option)]
   end
 
   def TkFont.actual_displayof(fnt, win, option=nil)
@@ -224,7 +224,7 @@ class TkFont
     end
   end
   def TkFont.actual_hash_displayof(fnt, option=nil)
-    Hash[TkFont.actual_hash_displayof(fnt, option)]
+    Hash[TkFont.actual_displayof(fnt, option)]
   end
 
   def TkFont.configure(fnt, slot, value=None)
@@ -2199,7 +2199,7 @@ module TkFont::CoreMethods
     alias measure_core            measure_core_tk4x
     alias metrics_core            metrics_core_tk4x
 
-  when /^8\.[0-5]/
+  when /^8\.[0-9]/
     alias actual_core             actual_core_tk8x
     alias configure_core          configure_core_tk8x
     alias configinfo_core         configinfo_core_tk8x
@@ -2341,4 +2341,11 @@ if Tk::TCL_MAJOR_VERSION > 8 ||
     'systemAlertHeaderFont', 'systemToolbarFont', 'systemMiniSystemFont',
     'systemDetailSystemFont', 'systemDetailEmphasizedSystemFont'
   ]
+end
+
+#######################################
+# autoload
+#######################################
+class TkFont
+  autoload :Chooser, 'tk/fontchooser'
 end

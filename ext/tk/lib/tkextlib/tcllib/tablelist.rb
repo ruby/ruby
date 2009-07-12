@@ -10,7 +10,8 @@ require 'tkextlib/tcllib.rb'
 
 # check Tile extension :: If already loaded, use tablelist_tile.
 unless defined? Tk::Tcllib::Tablelist_usingTile
-  Tk::Tcllib::Tablelist_usingTile = TkPackage.provide('tile')
+  Tk::Tcllib::Tablelist_usingTile = 
+    TkPackage.provide('tile') || TkPackage.provide('Ttk')
 end
 
 if Tk::Tcllib::Tablelist_usingTile
@@ -20,8 +21,8 @@ if Tk::Tcllib::Tablelist_usingTile
 else
   # without Tile
 
-  # TkPackage.require('Tablelist', '4.2')
-  TkPackage.require('Tablelist')
+  # TkPackage.require('tablelist', '4.2')
+  TkPackage.require('tablelist')
 
   require 'tkextlib/tcllib/tablelist_core'
 end

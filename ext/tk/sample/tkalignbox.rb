@@ -10,10 +10,17 @@
 
 require 'tk'
 
-class TkAlignBox < TkFrame
+module Tk
+  module RbWidget
+    class AlignBox < TkFrame
+    end
+  end
+end
+
+class Tk::RbWidget::AlignBox < TkFrame
   def initialize(*args)
-    if self.class == TkAlignBox
-      fail RuntimeError, "TkAlignBox is an abstract class"
+    if self.class == Tk::RbWidget::AlignBox
+      fail RuntimeError, "Tk::AlignBox is an abstract class"
     end
     @padx = 0
     @pady = 0
@@ -31,12 +38,12 @@ class TkAlignBox < TkFrame
   end
 
   def _set_framesize
-    fail RuntimeError, "TkAlignBox is an abstract class"
+    fail RuntimeError, "Tk::AlignBox is an abstract class"
   end
   private :_set_framesize
 
   def _place_config(widget, idx, cnt)
-    fail RuntimeError, "TkAlignBox is an abstract class"
+    fail RuntimeError, "Tk::AlignBox is an abstract class"
   end
   private :_place_config
 
@@ -117,7 +124,7 @@ class TkAlignBox < TkFrame
   attr_accessor :propagate
 end
 
-class TkHBox < TkAlignBox
+class Tk::RbWidget::HBox < Tk::RbWidget::AlignBox
   def _set_framesize
     bd = self.borderwidth
     self.width((@max_width + 2*@padx) * @widgets.size + 2*bd)
@@ -134,9 +141,9 @@ class TkHBox < TkAlignBox
   end
   private :_place_config
 end
-TkHLBox = TkHBox
+Tk::RbWidget::HLBox = Tk::RbWidget::HBox
 
-class TkHRBox < TkHBox
+class Tk::RbWidget::HRBox < Tk::RbWidget::HBox
   def _place_config(widget, idx, cnt)
     widget.place_in(self,
                     'relx'=>(cnt - idx - 1)/cnt, 'x'=>@padx,
@@ -147,7 +154,7 @@ class TkHRBox < TkHBox
   private :_place_config
 end
 
-class TkVBox < TkAlignBox
+class Tk::RbWidget::VBox < Tk::RbWidget::AlignBox
   def _set_framesize
     bd = self.borderwidth
     self.width(@max_width + 2*@padx + 2*bd)
@@ -164,9 +171,9 @@ class TkVBox < TkAlignBox
   end
   private :_place_config
 end
-TkVTBox = TkVBox
+Tk::RbWidget::VTBox = Tk::RbWidget::VBox
 
-class TkVBBox < TkVBox
+class Tk::RbWidget::VBBox < Tk::RbWidget::VBox
   def _place_config(widget, idx, cnt)
     widget.place_in(self,
                     'relx'=>0, 'x'=>@padx,
@@ -181,31 +188,34 @@ end
 # test
 ################################################
 if __FILE__ == $0
-  f = TkHBox.new(:borderwidth=>3, :relief=>'ridge').pack
+  f = Tk::RbWidget::HBox.new(:borderwidth=>3, :relief=>'ridge').pack
   f.add(TkButton.new(f, :text=>'a'),
         TkButton.new(f, :text=>'aa', :font=>'Helvetica 16'),
         TkButton.new(f, :text=>'aaa'),
         TkButton.new(f, :text=>'aaaa'))
 
-  f = TkHBox.new(:borderwidth=>3, :relief=>'ridge',
-                 :padx=>7, :pady=>3, :background=>'yellow').pack
+  f = Tk::RbWidget::HBox.new(:borderwidth=>3, :relief=>'ridge',
+                             :padx=>7, :pady=>3, :background=>'yellow').pack
   f.add(TkButton.new(f, :text=>'a'),
         TkButton.new(f, :text=>'aa', :font=>'Helvetica 16'),
         TkButton.new(f, :text=>'aaa'),
         TkButton.new(f, :text=>'aaaa'))
 
-  f = TkVBox.new(:borderwidth=>5, :relief=>'groove').pack
+  f = Tk::RbWidget::VBox.new(:borderwidth=>5, 
+                             :relief=>'groove').pack(:fill=>:y, :expand=>true)
   f.add(TkButton.new(f, :text=>'a'),
         TkButton.new(f, :text=>'aa', :font=>'Helvetica 30'),
         TkButton.new(f, :text=>'aaa'),
         TkButton.new(f, :text=>'aaaa'))
 
-  f = TkHRBox.new(:borderwidth=>3, :relief=>'raised').pack(:fill=>:x)
+  f = Tk::RbWidget::HRBox.new(:borderwidth=>3, 
+                              :relief=>'raised').pack(:fill=>:x)
   f.add(TkButton.new(f, :text=>'a'),
         TkButton.new(f, :text=>'aa'),
         TkButton.new(f, :text=>'aaa'))
 
-  f = TkVBBox.new(:borderwidth=>3, :relief=>'ridge').pack(:fill=>:x)
+  f = Tk::RbWidget::VBBox.new(:borderwidth=>3, 
+                              :relief=>'ridge').pack(:fill=>:x)
   f.propagate = false
   f.height 100
   f.add(TkFrame.new(f){|ff|

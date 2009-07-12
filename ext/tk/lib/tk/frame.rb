@@ -6,7 +6,7 @@ require 'tk'
 class Tk::Frame<TkWindow
   TkCommandNames = ['frame'.freeze].freeze
   WidgetClassName = 'Frame'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
 ################# old version
 #  def initialize(parent=nil, keys=nil)
@@ -128,4 +128,5 @@ class Tk::Frame<TkWindow
 end
 
 #TkFrame = Tk::Frame unless Object.const_defined? :TkFrame
-Tk.__set_toplevel_aliases__(:Tk, Tk::Frame, :TkFrame)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::Frame, :TkFrame)
+Tk.__set_loaded_toplevel_aliases__('tk/frame.rb', :Tk, Tk::Frame, :TkFrame)

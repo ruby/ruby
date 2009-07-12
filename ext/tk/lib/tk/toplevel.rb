@@ -11,7 +11,7 @@ class Tk::Toplevel<TkWindow
 
   TkCommandNames = ['toplevel'.freeze].freeze
   WidgetClassName = 'Toplevel'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
 ################# old version
 #  def initialize(parent=nil, screen=nil, classname=nil, keys=nil)
@@ -259,4 +259,6 @@ class Tk::Toplevel<TkWindow
 end
 
 #TkToplevel = Tk::Toplevel unless Object.const_defined? :TkToplevel
-Tk.__set_toplevel_aliases__(:Tk, Tk::Toplevel, :TkToplevel)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::Toplevel, :TkToplevel)
+Tk.__set_loaded_toplevel_aliases__('tk/toplevel.rb', :Tk, Tk::Toplevel,
+                                   :TkToplevel)

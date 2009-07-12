@@ -17,7 +17,7 @@ end
 class Tk::BWidget::MessageDlg
   TkCommandNames = ['MessageDlg'.freeze].freeze
   WidgetClassName = 'MessageDlg'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def initialize(parent=nil, keys=nil)
     @relative = ''

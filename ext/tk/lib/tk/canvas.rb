@@ -45,7 +45,7 @@ class Tk::Canvas<TkWindow
 
   TkCommandNames = ['canvas'.freeze].freeze
   WidgetClassName = 'Canvas'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __destroy_hook__
     TkcItem::CItemID_TBL.delete(@path)
@@ -264,6 +264,12 @@ class Tk::Canvas<TkWindow
     tk_send_without_enc('icursor', tagid(tagOrId), index)
     self
   end
+
+  def imove(tagOrId, idx, x, y)
+    tk_send_without_enc('imove', tagid(tagOrId), idx, x, y)
+    self
+  end
+  alias i_move imove
 
   def index(tagOrId, idx)
     number(tk_send_without_enc('index', tagid(tagOrId), idx))
@@ -523,10 +529,17 @@ class Tk::Canvas<TkWindow
     self
   end
 
-  def move(tag, x, y)
-    tk_send_without_enc('move', tagid(tag), x, y)
+  def move(tag, dx, dy)
+    tk_send_without_enc('move', tagid(tag), dx, dy)
     self
   end
+
+  def moveto(tag, x, y)
+    # Tcl/Tk 8.6 or later
+    tk_send_without_enc('moveto', tagid(tag), x, y)
+    self
+  end
+  alias move_to moveto
 
   def postscript(keys)
     tk_send("postscript", *hash_kv(keys))
@@ -540,6 +553,15 @@ class Tk::Canvas<TkWindow
     end
     self
   end
+
+  def rchars(tag, first, last, str_or_coords)
+    # Tcl/Tk 8.6 or later
+    str_or_coords = str_or_coords.flatten if str_or_coords.kinad_of? Array
+    tk_send_without_enc('rchars', tagid(tag), first, last, str_or_coords)
+    self
+  end
+  alias replace_chars rchars
+  alias replace_coords rchars
 
   def scale(tag, x, y, xs, ys)
     tk_send_without_enc('scale', tagid(tag), x, y, xs, ys)
@@ -581,7 +603,8 @@ class Tk::Canvas<TkWindow
 end
 
 #TkCanvas = Tk::Canvas unless Object.const_defined? :TkCanvas
-Tk.__set_toplevel_aliases__(:Tk, Tk::Canvas, :TkCanvas)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::Canvas, :TkCanvas)
+Tk.__set_loaded_toplevel_aliases__('tk/canvas.rb', :Tk, Tk::Canvas, :TkCanvas)
 
 
 class TkcItem<TkObject

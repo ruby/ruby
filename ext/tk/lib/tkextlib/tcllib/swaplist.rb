@@ -33,7 +33,7 @@ end
 class Tk::Tcllib::Swaplist_Dialog
   TkCommandNames = ['::swaplist::swaplist'.freeze].freeze
   WidgetClassName = 'Swaplist'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.show(*args)
     dialog = self.new(*args)

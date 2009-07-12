@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Shell
   TkCommandNames = ['::iwidgets::shell'.freeze].freeze
   WidgetClassName = 'Shell'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def activate
     tk_call(@path, 'activate')  # may return val of deactibate method

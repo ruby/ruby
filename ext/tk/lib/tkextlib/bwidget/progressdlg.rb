@@ -19,7 +19,7 @@ end
 class Tk::BWidget::ProgressDlg
   TkCommandNames = ['ProgressDlg'.freeze].freeze
   WidgetClassName = 'ProgressDlg'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def create_self(keys)
     # NOT create widget for reusing the object

@@ -170,9 +170,12 @@ else
   }
   scr.command(proc{|*args| txt.yview(*args)})
 #  txt.pack('in'=>textFrame, 'expand'=>'yes', 'fill'=>'both', 'padx'=>1)
-  txt.pack('in'=>textFrame, 'expand'=>'yes', 'fill'=>'both')
+#  txt.pack('in'=>textFrame, 'expand'=>'yes', 'fill'=>'both')
 #  textFrame.pack('expand'=>'yes', 'fill'=>'both', 'padx'=>1, 'pady'=>2)
   textFrame.pack('expand'=>'yes', 'fill'=>'both')
+  #  $root.withdraw.deiconify
+  Tk.update_idletasks
+  txt.pack('in'=>textFrame, 'expand'=>'yes', 'fill'=>'both')
 
   statusBar = TkFrame.new($root) {|f|
     if $tk_version =~ /^4.*/
@@ -1035,7 +1038,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-                'message'=>"Ruby/Tk widget demonstration Ver.1.7.0-en\n\n" + 
+                'message'=>"Ruby/Tk widget demonstration Ver.1.7.1-en\n\n" + 
                            "based on demos of Tk8.1 -- 8.5  " + 
                            "( Copyright of Tcl/Tk demos:: " + 
                            "(c) 1996-1997 Sun Microsystems, Inc. / " + 

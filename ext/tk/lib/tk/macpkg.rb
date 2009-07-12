@@ -23,7 +23,9 @@ end
 module Tk::MacResource
 end
 #TkMacResource = Tk::MacResource
-Tk.__set_toplevel_aliases__(:Tk, Tk::MacResource, :TkMacResource)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::MacResource, :TkMacResource)
+Tk.__set_loaded_toplevel_aliases__('tk/macpkg.rb', :Tk, Tk::MacResource,
+                                   :TkMacResource)
 
 module Tk::MacResource
   extend Tk

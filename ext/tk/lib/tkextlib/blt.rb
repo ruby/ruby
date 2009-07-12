@@ -19,6 +19,8 @@ TkPackage.require('BLT')
 module Tk
   module BLT
     TkComm::TkExtlibAutoloadModule.unshift(self)
+    # Require autoload-symbols which is a same name as widget classname.
+    # Those are used at  TkComm._genobj_for_tkwidget method.
 
     extend TkCore
 

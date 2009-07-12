@@ -1,11 +1,20 @@
 #
-#  tkcombobox.rb : TkAutoScrollbox & TkCombobox
+#  tkcombobox.rb : auto scrollbox & combobox
 #
 #                         by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 require 'tk'
 
-class TkAutoScrollbox < TkListbox
+module Tk
+  module RbWidget
+    class AutoScrollListbox < TkListbox
+    end
+    class Combobox < TkEntry
+    end
+  end
+end
+
+class Tk::RbWidget::AutoScrollListbox
   include TkComposite
 
   @@up_bmp = TkBitmapImage.new(:data=><<EOD)
@@ -221,17 +230,7 @@ end
 
 ################################################
 
-# don't use Ttk widget
-Object.instance_eval{remove_const :TkCombobox} if Object.autoload? :TkCombobox
-
-# if you want to use the 'default_widget_set' selector, 
-#class TkCombobox < TkEntry; end
-#Tk.__set_toplevel_aliases__(:Tk, TkCombobox, :TkCombobox)
-
-
-################################################
-
-class TkCombobox < TkEntry
+class Tk::RbWidget::Combobox < TkEntry
   include TkComposite
 
   @@down_btn_bmp = TkBitmapImage.new(:data=><<EOD)
@@ -251,6 +250,7 @@ static unsigned char up_arrow_bits[] = {
 EOD
 
   def _button_proc(dir = true)
+    return if @ent.state == 'disabled'
     @btn.relief(:sunken)
     x = @frame.winfo_rootx
     y = @frame.winfo_rooty
@@ -275,9 +275,10 @@ EOD
     @top.grab
 
     begin
-      @var.tkwait
-      if (idx = @var.to_i) >= 0
-        @ent.value = @lst.get(idx)
+      @wait_var.tkwait
+      if (idx = @wait_var.to_i) >= 0
+        # @ent.value = @lst.get(idx)
+        _set_entry_value(@lst.get(idx))
       end
       @top.withdraw
       @btn.relief(:raised)
@@ -297,18 +298,65 @@ EOD
     @btn.bind('1', proc{_button_proc(true)})
     @btn.bind('3', proc{_button_proc(false)})
 
-    @lst.bind('1', proc{|y| @var.value = @lst.nearest(y)}, '%y')
-    @lst.bind('Return', proc{@var.value = @lst.curselection[0]})
+    @lst.bind('1', proc{|y| @wait_var.value = @lst.nearest(y)}, '%y')
+    @lst.bind('Return', proc{@wait_var.value = @lst.curselection[0]})
 
     cancel = TkVirtualEvent.new('2', '3', 'Escape')
-    @lst.bind(cancel, proc{@var.value = -1})
+    @lst.bind(cancel, proc{@wait_var.value = -1})
   end
   private :_init_bindings
+
+  def _set_entry_value(val)
+    @ent.textvariable.value = val
+  end
+  private :_set_entry_value
+
+  #----------------------------------------------------
+
+  def _state_control(value = None)
+    if value == None
+      # get
+      @ent.state
+    else
+      # set
+      @ent.state(value.to_s)
+      case value = @ent.state # regulate 'state' string
+      when 'normal', 'readonly'
+        @btn.state 'normal'
+      when 'disabled'
+        @btn.state 'disabled'
+      else
+        # unknown : do nothing
+      end
+    end
+  end
+  private :_state_control
+
+  def __methodcall_optkeys  # { key=>method, ... }
+    {'state' => :_state_control}
+  end
+  private :__methodcall_optkeys
+
+  #----------------------------------------------------
+
+  def _textvariable_control(var = None)
+    if var == None
+      # get
+      ((var = @ent.textvariable) === @default_var)? nil: var
+    else
+      # set
+      @var = var
+      tk_send('configure', '-textvariable', (@var)? var: @default_var)
+    end
+  end
+  private :_textvariable_control
+
+  #----------------------------------------------------
 
   def initialize_composite(keys={})
     keys = _symbolkey2str(keys)
 
-    @btn = TkLabel.new(@frame, :relief=>:raised, :borderwidth=>3,
+    @btn = TkLabel.new(@frame, :relief=>:raised, :borderwidth=>2,
                        :image=>@@down_btn_bmp).pack(:side=>:right,
                                                     :ipadx=>2, :fill=>:y)
     @ent = TkEntry.new(@frame).pack(:side=>:left)
@@ -322,15 +370,20 @@ EOD
 
     startwait = keys.delete('startwait'){300}
     interval = keys.delete('interval'){150}
-    @lst = TkAutoScrollbox.new(@top,
-                               :startwait=>startwait,
-                               :interval=>interval).pack(:fill=>:both,
-                                                         :expand=>true)
+    @lst = Tk::RbWidget::AutoScrollListbox.new(@top, :scrollbar=>true, 
+                                               :startwait=>startwait,
+                                               :interval=>interval)
+    @lst.pack(:fill=>:both, :expand=>true)
     @ent_list = []
 
-    @var = TkVariable.new
+    @wait_var = TkVariable.new
+    @var = @default_var = TkVariable.new
+
+    @ent.textvariable @default_var
 
     _init_bindings
+
+    option_methods('textvariable' => :_textvariable_control)
 
     delegate('DEFAULT', @ent)
     delegate('height', @lst)
@@ -339,6 +392,8 @@ EOD
 
     delegate('arrowrelief', @lst)
     delegate('arrowborderwidth', @lst)
+
+    delegate('state', false)
 
     if mode = keys.delete('scrollbar')
       scrollbar(mode)
@@ -405,10 +460,14 @@ end
 # test
 ################################################
 if __FILE__ == $0
+# e0 = Tk::RbWidget::Combobox.new.pack
+# e0.values(%w(aa bb cc dd ee ff gg hh ii jj kk ll mm nn oo pp qq rr ss tt uu))
+
   v = TkVariable.new
-  e = TkCombobox.new(:height=>7, :scrollbar=>true, :textvariable=>v,
-                     :arrowrelief=>:flat, :arrowborderwidth=>0,
-                     :startwait=>400, :interval=>200).pack
+  e = Tk::RbWidget::Combobox.new(:height=>7, :scrollbar=>true, 
+                                 :textvariable=>v,
+                                 :arrowrelief=>:flat, :arrowborderwidth=>0,
+                                 :startwait=>400, :interval=>200).pack
   e.values(%w(aa bb cc dd ee ff gg hh ii jj kk ll mm nn oo pp qq rr ss tt uu))
   #e.see(e.list_index('end') - 2)
   e.value = 'cc'
@@ -421,8 +480,10 @@ if __FILE__ == $0
   TkFrame.new(:relief=>:raised, :borderwidth=>2,
               :height=>3).pack(:fill=>:x, :expand=>true, :padx=>5, :pady=>3)
 
-  l = TkAutoScrollbox.new(nil, :relief=>:groove, :borderwidth=>4,
-                          :width=>20).pack(:fill=>:both, :expand=>true)
+  l = Tk::RbWidget::AutoScrollListbox.new(nil, :relief=>:groove, 
+                                          :borderwidth=>4,:height=>7, 
+                                          :width=>20).pack(:fill=>:both, 
+                                                           :expand=>true)
   (0..20).each{|i| l.insert('end', "line #{i}")}
 
   TkFrame.new(:relief=>:ridge, :borderwidth=>3){

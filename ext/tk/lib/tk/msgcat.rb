@@ -36,7 +36,7 @@ class TkMsgCatalog < TkObject
 
   MSGCAT_EXT = '.msg'
 
-  UNKNOWN_CBTBL = Hash.new{|hash,key| hash[key] = {}}.taint
+  UNKNOWN_CBTBL = TkUtil.untrust(Hash.new{|hash,key| hash[key] = {}})
 
   TkCore::INTERP.add_tk_procs('::msgcat::mcunknown', 'args', <<-'EOL')
     if {[set st [catch {eval {ruby_cmd TkMsgCatalog callback} [namespace current] $args} ret]] != 0} {

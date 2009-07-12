@@ -17,7 +17,7 @@ end
 class Tk::Iwidgets::Scrolledlistbox
   TkCommandNames = ['::iwidgets::scrolledlistbox'.freeze].freeze
   WidgetClassName = 'Scrolledlistbox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'textbackground'

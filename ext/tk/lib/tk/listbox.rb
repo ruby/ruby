@@ -21,7 +21,7 @@ class Tk::Listbox<TkTextWin
 
   TkCommandNames = ['listbox'.freeze].freeze
   WidgetClassName = 'Listbox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   #def create_self(keys)
   #  if keys and keys != None
@@ -279,4 +279,6 @@ class Tk::Listbox<TkTextWin
 end
 
 #TkListbox = Tk::Listbox unless Object.const_defined? :TkListbox
-Tk.__set_toplevel_aliases__(:Tk, Tk::Listbox, :TkListbox)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::Listbox, :TkListbox)
+Tk.__set_loaded_toplevel_aliases__('tk/listbox.rb', :Tk, Tk::Listbox,
+                                   :TkListbox)

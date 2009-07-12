@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Selectionbox
   TkCommandNames = ['::iwidgets::selectionbox'.freeze].freeze
   WidgetClassName = 'Selectionbox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __boolval_optkeys
     super() << 'itemson' << 'selectionon'

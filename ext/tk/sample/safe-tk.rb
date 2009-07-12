@@ -11,13 +11,16 @@ TkFrame.new(:borderwidth=>2, :height=>3,
             :relief=>:sunken).pack(:fill=>:x, :expand=>true,
                                    :padx=>10, :pady=>7)
 
+safe0_p = proc{|*args| p args}
+
 ###############################
 
 puts "---- create a safe slave IP with Ruby's safe-level == 1 ----------"
-ip = MultiTkIp.new_safe_slave(1)
+ip = MultiTkIp.new_safe_slave(1){|*args| safe0_p["safe_slave safe_level == #{$SAFE}", args]}
 
 puts "\n---- create procs ----------"
 puts 'x = proc{p [\'proc x\', "$SAFE==#{$SAFE}"]; exit}'
+#x = proc{p ['proc x', "$SAFE==#{$SAFE}"]; exit}
 x = proc{p ['proc x', "$SAFE==#{$SAFE}"]; exit}
 TkLabel.new(:text=>'x = proc{p [\'proc x\', "$SAFE==#{$SAFE}"]; exit}',
             :anchor=>:w).pack(:fill=>:x)
@@ -46,7 +49,9 @@ p lbl = ip.eval_proc{
                :command=>proc{l.text($SAFE)}).pack(:fill=>:x, :padx=>5)
   TkButton.new(:text=>':command=>x', :command=>x).pack(:fill=>:x, :padx=>5)
   TkButton.new(:text=>':command=>proc{exit}',
-               :command=>proc{exit}).pack(:fill=>:x, :padx=>5)
+               :command=>proc{
+                 safe0_p["'exit' is called at $SAFE=#{$SAFE}"];exit}
+               ).pack(:fill=>:x, :padx=>5)
   TkFrame.new(:borderwidth=>2, :height=>3,
               :relief=>:sunken).pack(:fill=>:x, :expand=>true,
                                      :padx=>10, :pady=>7)
@@ -68,10 +73,24 @@ p ip.eval_proc(proc{
                  TkButton.new(:text=>':command=>proc{y.call(l)}',
                               :command=>proc{y.call(l)}).pack(:fill=>:x,
                                                               :padx=>5)
+                 TkButton.new(:text=>':command=>proc{Proc.new(&y).call(l)}',
+                              :command=>proc{
+                                Proc.new(&y).call(l)
+                              }).pack(:fill=>:x, :padx=>5)
+                 TkButton.new(:text=>':command=>proc{MultiTkIp._proc_on_current_safelevel(y).call(l)}',
+                              :command=>proc{
+                                MultiTkIp._proc_on_current_safelevel(y).call(l)
+                              }).pack(:fill=>:x, :padx=>5)
+if Object.const_defined?(:RubyVM) && ::RubyVM.class == Class
                  TkButton.new(:text=>':command=>proc{Thread.new(l, &y).value}',
                               :command=>proc{
                                 Thread.new(l, &y).value
                               }).pack(:fill=>:x, :padx=>5)
+else
+  # KNOWN BUG:: 
+  #   Current multi-tk.rb cannot support long term threads on callbacks.
+  #   Such a thread freezes the Ruby/Tk process.
+end
                  TkButton.new(:text=>':command=>proc{z.call}',
                               :command=>proc{z.call}).pack(:fill=>:x, :padx=>5)
                  TkFrame.new(:borderwidth=>2, :height=>3,

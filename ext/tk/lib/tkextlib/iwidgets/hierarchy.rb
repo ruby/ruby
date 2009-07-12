@@ -20,7 +20,7 @@ class Tk::Iwidgets::Hierarchy
 
   TkCommandNames = ['::iwidgets::hierarchy'.freeze].freeze
   WidgetClassName = 'Hierarchy'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   ####################################
 

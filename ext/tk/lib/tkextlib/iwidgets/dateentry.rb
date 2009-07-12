@@ -16,5 +16,5 @@ end
 class Tk::Iwidgets::Dateentry
   TkCommandNames = ['::iwidgets::dateentry'.freeze].freeze
   WidgetClassName = 'Dateentry'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 end

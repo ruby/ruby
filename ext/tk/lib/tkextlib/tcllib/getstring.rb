@@ -34,7 +34,7 @@ end
 class Tk::Tcllib::GetString_Dialog
   TkCommandNames = ['::getstring::tk_getString'.freeze].freeze
   WidgetClassName = 'TkSDialog'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.show(*args)
     dialog = self.new(*args)

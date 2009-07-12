@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Toolbar
   TkCommandNames = ['::iwidgets::toolbar'.freeze].freeze
   WidgetClassName = 'Toolbar'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __tkvariable_optkeys
     super() << 'helpvariable'

@@ -19,7 +19,7 @@ require 'tkextlib/vu.rb'
 class Tk::Vu::Bargraph < TkWindow
   TkCommandNames = ['::vu::bargraph'.freeze].freeze
   WidgetClassName = 'Bargraph'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   ###############################
 

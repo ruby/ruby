@@ -10,8 +10,8 @@ class MultiTkIp; end
 class RemoteTkIp < MultiTkIp; end
 
 class MultiTkIp
-  @@IP_TABLE = {}.taint unless defined?(@@IP_TABLE)
-  @@TK_TABLE_LIST = [].taint unless defined?(@@TK_TABLE_LIST)
+  @@IP_TABLE = TkUtil.untrust({}) unless defined?(@@IP_TABLE)
+  @@TK_TABLE_LIST = TkUtil.untrust([]) unless defined?(@@TK_TABLE_LIST)
   def self._IP_TABLE; @@IP_TABLE; end
   def self._TK_TABLE_LIST; @@TK_TABLE_LIST; end
 
@@ -88,14 +88,14 @@ class RemoteTkIp
     @slave_ip_tbl = {}
     @slave_ip_top = {}
 
-    @force_default_encoding ||= [false].taint
-    @encoding ||= [nil].taint
+    @force_default_encoding ||= TkUtil.untrust([false])
+    @encoding ||= TkUtil.untrust([nil])
     def @encoding.to_s; self.join(nil); end
 
-    @tk_windows.taint unless @tk_windows.tainted?
-    @tk_table_list.taint unless @tk_table_list.tainted?
-    @slave_ip_tbl.taint unless @slave_ip_tbl.tainted?
-    @slave_ip_top.taint unless @slave_ip_top.tainted?
+    TkUtil.untrust(@tk_windows)    unless @tk_windows.tainted?
+    TkUtil.untrust(@tk_table_list) unless @tk_table_list.tainted?
+    TkUtil.untrust(@slave_ip_tbl)  unless @slave_ip_tbl.tainted?
+    TkUtil.untrust(@slave_ip_top)  unless @slave_ip_top.tainted?
 
     @system = Object.new
 
@@ -119,7 +119,7 @@ class RemoteTkIp
 
     @@IP_TABLE[@threadgroup] = self
     @@TK_TABLE_LIST.size.times{
-      (tbl = {}).tainted? || tbl.taint
+      (tbl = {}).tainted? || TkUtil.untrust(tbl)
       @tk_table_list << tbl
     }
 

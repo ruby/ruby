@@ -162,6 +162,13 @@ module TkItemConfigMethod
 
   ################################################
 
+
+  def itemcget_tkstring(tagOrId, option)
+    opt = option.to_s
+    fail ArgumentError, "Invalid option `#{option.inspect}'" if opt.length == 0
+    tk_call_without_enc(*(__item_cget_cmd(tagid(tagOrId)) << "-#{opt}"))
+  end
+
   def __itemcget_core(tagOrId, option)
     orig_opt = option
     option = option.to_s

@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Spinint
   TkCommandNames = ['::iwidgets::spinint'.freeze].freeze
   WidgetClassName = 'Spinint'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __boolval_optkeys
     super() << 'wrap'

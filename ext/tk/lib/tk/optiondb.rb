@@ -8,7 +8,7 @@ module TkOptionDB
   extend Tk
 
   TkCommandNames = ['option'.freeze].freeze
-  (CmdClassID = ['CMD_CLASS'.freeze, '00000'.taint]).instance_eval{
+  (CmdClassID = ['CMD_CLASS'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze

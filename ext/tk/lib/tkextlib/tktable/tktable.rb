@@ -74,6 +74,9 @@ module Tk::TkTable::ConfigMethod
   end
   private :__item_val2ruby_optkeys
 
+  def tag_cget_tkstring(tagOrId, option)
+    itemcget_tkstring(['tag', tagid(tagOrId)], option)
+  end
   def tag_cget(tagOrId, option)
     itemcget(['tag', tagid(tagOrId)], option)
   end
@@ -90,6 +93,9 @@ module Tk::TkTable::ConfigMethod
     current_itemconfiginfo(['tag', tagid(tagOrId)], slot)
   end
 
+  def window_cget_tkstring(tagOrId, option)
+    itemcget_tkstring(['window', tagid(tagOrId)], option)
+  end
   def window_cget(tagOrId, option)
     itemcget(['window', tagid(tagOrId)], option)
   end
@@ -114,7 +120,7 @@ module Tk::TkTable::ConfigMethod
     current_itemconfiginfo(['window', tagid(tagOrId)], slot)
   end
 
-  private :itemcget, :itemcget_strict
+  private :itemcget_tkstring, :itemcget, :itemcget_strict
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 end
 
@@ -125,7 +131,7 @@ class Tk::TkTable::CellTag
 
   CellTagID_TBL = TkCore::INTERP.create_table
 
-  (CellTag_ID = ['tktbl:celltag'.freeze, '00000'.taint]).instance_eval{
+  (CellTag_ID = ['tktbl:celltag'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -197,6 +203,9 @@ class Tk::TkTable::CellTag
     @t.tag_lower(@id, target)
   end
 
+  def cget_tkstring(key)
+    @t.tag_cget_tkstring(@id, key)
+  end
   def cget(key)
     @t.tag_cget(@id, key)
   end
@@ -253,7 +262,7 @@ end
 class Tk::TkTable
   TkCommandNames = ['table'.freeze].freeze
   WidgetClassName = 'Table'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   include Scrollable
   include Tk::TkTable::ConfigMethod

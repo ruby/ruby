@@ -17,7 +17,7 @@ end
 class Tk::Iwidgets::Scrolledtext
   TkCommandNames = ['::iwidgets::scrolledtext'.freeze].freeze
   WidgetClassName = 'Scrolledtext'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'textbackground'
@@ -116,6 +116,10 @@ class Tk::Iwidgets::Scrolledtext
     get('-displaychars', *index)
   end
 
+  def image_cget_tkstring(index, slot)
+    _fromUTF8(tk_send_without_enc('image', 'cget',
+                                  _get_eval_enc_str(index), "-#{slot.to_s}"))
+  end
   def image_cget_strict(index, slot)
     case slot.to_s
     when 'text', 'label', 'show', 'data', 'file'

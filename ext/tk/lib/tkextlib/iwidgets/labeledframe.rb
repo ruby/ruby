@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Labeledframe
   TkCommandNames = ['::iwidgets::labeledframe'.freeze].freeze
   WidgetClassName = 'Labeledframe'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'labeltext'

@@ -140,8 +140,7 @@ module TclTklib
   [module methods]
      get_version()
         : return an array of major, minor, release-type number, 
-        : number, release-type name, and patchlevel of current 
-        : Tcl/Tk library.
+        : and patchlevel of current Tcl/Tk library.
 
      mainloop(check_root = true)
        : Starts the eventloop. If 'check_root' is true, this method 
@@ -353,6 +352,11 @@ class TclTkIp
        : On _eval command, auto_load mechanism words. So if succeed 
        : to _eval and regist the command once, after that, the
        : command can be called by _invoke. 
+
+    _cancel_eval(str)
+    _cancel_eval_unwind(str)
+       : (Tcl/Tk8.6 or later)
+       : Call Tcl_CancelEval() function, and cancel evaluation.
 
     _toUTF8(str, encoding=nil)
     _fromUTF8(str, encoding=nil)

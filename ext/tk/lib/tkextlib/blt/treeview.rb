@@ -95,6 +95,9 @@ module Tk::BLT::Treeview::ConfigMethod
   end
   private :__item_pathname
 
+  def column_cget_tkstring(name, option)
+    itemcget_tkstring(['column', name], option)
+  end
   def column_cget(name, option)
     itemcget(['column', name], option)
   end
@@ -111,6 +114,9 @@ module Tk::BLT::Treeview::ConfigMethod
     current_itemconfiginfo(['column', name], slot)
   end
 
+  def button_cget_tkstring(option)
+    itemcget_tkstring('button', option)
+  end
   def button_cget(option)
     itemcget('button', option)
   end
@@ -127,6 +133,9 @@ module Tk::BLT::Treeview::ConfigMethod
     current_itemconfiginfo('button', slot)
   end
 
+  def entry_cget_tkstring(option)
+    itemcget_tkstring('entry', option)
+  end
   def entry_cget(option)
     ret = itemcget('entry', option)
     if option == 'bindtags' || option == :bindtags
@@ -181,6 +190,9 @@ module Tk::BLT::Treeview::ConfigMethod
     ret
   end
 
+  def sort_cget_tkstring(option)
+    itemcget_tkstring('sort', option)
+  end
   def sort_cget(option)
     itemcget('sort', option)
   end
@@ -197,6 +209,9 @@ module Tk::BLT::Treeview::ConfigMethod
     current_itemconfiginfo('sort', slot)
   end
 
+  def text_cget_tkstring(option)
+    itemcget_tkstring('text', option)
+  end
   def text_cget(option)
     itemcget('text', option)
   end
@@ -213,14 +228,14 @@ module Tk::BLT::Treeview::ConfigMethod
     current_itemconfiginfo('text', slot)
   end
 
-  private :itemcget, :itemcget_strict
+  private :itemcget_tkstring, :itemcget, :itemcget_strict
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 end
 
 class Tk::BLT::Treeview
   TkCommandNames = ['::blt::treeview'.freeze].freeze
   WidgetClassName = 'TreeView'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   include Scrollable
   include ValidateConfigure
@@ -1029,7 +1044,7 @@ class Tk::BLT::Treeview::Node < TkObject
 
   TreeNodeID_TBL = TkCore::INTERP.create_table
 
-  (TreeNode_ID = ['blt_treeview_node'.freeze, '00000'.taint]).instance_eval{
+  (TreeNode_ID = ['blt_treeview_node'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -1150,7 +1165,7 @@ class Tk::BLT::Treeview::Tag < TkObject
 
   TreeTagID_TBL = TkCore::INTERP.create_table
 
-  (TreeTag_ID = ['blt_treeview_tag'.freeze, '00000'.taint]).instance_eval{
+  (TreeTag_ID = ['blt_treeview_tag'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -1268,5 +1283,5 @@ end
 class Tk::BLT::Hiertable
   TkCommandNames = ['::blt::hiertable'.freeze].freeze
   WidgetClassName = 'Hiertable'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 end

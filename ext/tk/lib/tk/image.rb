@@ -11,7 +11,7 @@ class TkImage<TkObject
 
   Tk_IMGTBL = TkCore::INTERP.create_table
 
-  (Tk_Image_ID = ['i'.freeze, '00000'.taint]).instance_eval{
+  (Tk_Image_ID = ['i'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze

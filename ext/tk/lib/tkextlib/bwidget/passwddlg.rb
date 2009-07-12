@@ -17,7 +17,7 @@ end
 class Tk::BWidget::PasswdDlg
   TkCommandNames = ['PasswdDlg'.freeze].freeze
   WidgetClassName = 'PasswdDlg'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'loginhelptext' << 'loginlabel' << 'logintext' <<

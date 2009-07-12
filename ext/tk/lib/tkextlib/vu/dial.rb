@@ -19,7 +19,7 @@ require 'tkextlib/vu.rb'
 class Tk::Vu::Dial < TkWindow
   TkCommandNames = ['::vu::dial'.freeze].freeze
   WidgetClassName = 'Dial'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   ###############################
 

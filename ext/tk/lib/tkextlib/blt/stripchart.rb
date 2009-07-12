@@ -11,7 +11,7 @@ module Tk::BLT
   class Stripchart < TkWindow
     TkCommandNames = ['::blt::stripchart'.freeze].freeze
     WidgetClassName = 'Stripchart'.freeze
-    WidgetClassNames[WidgetClassName] = self
+    WidgetClassNames[WidgetClassName] ||= self
 
     include PlotComponent
     include GraphCommand
@@ -28,7 +28,7 @@ module Tk::BLT
     private :__strval_optkeys
 
 =begin
-    BarElement_ID = ['blt_stripchart_bar'.freeze, '00000'.taint].freeze
+    BarElement_ID = ['blt_stripchart_bar'.freeze, TkUtil.untrust('00000')].freeze
 
     def bar(elem=nil, keys={})
       if elem.kind_of?(Hash)

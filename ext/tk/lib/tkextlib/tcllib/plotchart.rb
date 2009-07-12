@@ -62,6 +62,7 @@ require 'tkextlib/tcllib.rb'
 
 # TkPackage.require('Plotchart', '0.9')
 # TkPackage.require('Plotchart', '1.1')
+# TkPackage.require('Plotchart', '1.6.3')
 TkPackage.require('Plotchart')
 
 module Tk
@@ -107,6 +108,29 @@ module Tk::Tcllib::Plotchart
 
   def self.coords_3D_to_pixel(w, x, y, z)
     list(tk_call_without_enc('::Plotchart::coords3DToPixel', w.path, x, y, z))
+  end
+
+  def self.plotconfig(*args)
+    case args.length
+    when 0, 1, 2
+      # 0: (no args) --> list of chat types
+      # 1: charttype --> list of components
+      # 2: charttype, component --> list of properties
+      simplelist(tk_call('::Plotchart::plotconfig', *args))
+    when 3
+      # 3: charttype, component, property --> current value
+      tk_call('::Plotchart::plotconfig', *args)
+    else
+      # 4: charttype, component, property, value : set new value
+      # 5+: Error on Tcl/Tk
+      tk_call('::Plotchart::plotconfig', *args)
+      nil
+    end
+  end
+
+  def self.plotpack(w, dir, *plots)
+    tk_call_without_enc('::Plotchart::plotpack', w.path, dir, *plots)
+    w
   end
 
   def self.polar_coordinates(w, radmax)
@@ -157,8 +181,7 @@ module Tk::Tcllib::Plotchart
       if key.kind_of?(Hash)
         tk_call_without_enc(@chart, 'xconfig', *hash_kv(key, true))
       else
-        tk_call_without_enc(@chart, 'xconfig',
-                            "-#{key}", _get_eval_enc_str(value))
+        tk_call(@chart, 'xconfig', "-#{key}",value)
       end
       self
     end
@@ -167,13 +190,86 @@ module Tk::Tcllib::Plotchart
       if key.kind_of?(Hash)
         tk_call_without_enc(@chart, 'yconfig', *hash_kv(key, true))
       else
-        tk_call_without_enc(@chart, 'yconfig',
-                            "-#{key}", _get_eval_enc_str(value))
+        tk_call(@chart, 'yconfig', "-#{key}", value)
       end
       self
     end
 
+    def background(part, color_or_image, dir)
+      tk_call_without_enc(@chart, 'background',
+                          part, color_or_image, dir)
+      self
+    end
+
+    def xticklines(color=None)
+      tk_call(@chart, 'xticklines', color)
+      self
+    end
+
+    def yticklines(color=None)
+      tk_call(@chart, 'yticklines', color)
+      self
+    end
+
+    def legendconfig(key, value=None)
+      if key.kind_of?(Hash)
+        tk_call_without_enc(@chart, 'legendconfig', *hash_kv(key, true))
+      else
+        tk_call(@chart, 'legendconfig', "-#{key}", value)
+      end
+      self
+    end
+
+    def legend(series, text)
+      tk_call_without_enc(@chart, 'legend', 
+                          _get_eval_enc_str(series), _get_eval_enc_str(text))
+      self
+    end
+
+    def balloon(*args) # args => (x, y, text, dir) or ([x, y], text, dir)
+      if args[0].kind_of?(Array)
+        # args => ([x, y], text, dir)
+        x, y = args.shift
+      else
+        # args => (x, y, text, dir)
+        x = args.shift
+        y = args.shift
+      end
+
+      text, dir = args
+
+      tk_call_without_enc(@chart, 'balloon', x, y, 
+                          _get_eval_enc_str(text), dir)
+      self
+    end
+
+    def balloonconfig(key, value=None)
+      if key.kind_of?(Hash)
+        tk_call_without_enc(@chart, 'balloonconfig', *hash_kv(key, true))
+      else
+        tk_call(@chart, 'balloonconfig', "-#{key}", value)
+      end
+    end
+
+    def plaintext(*args) # args => (x, y, text, dir) or ([x, y], text, dir)
+      if args[0].kind_of?(Array)
+        # args => ([x, y], text, dir)
+        x, y = args.shift
+      else
+        # args => (x, y, text, dir)
+        x = args.shift
+        y = args.shift
+      end
+
+      text, dir = args
+
+      tk_call_without_enc(@chart, 'plaintext', x, y, 
+                          _get_eval_enc_str(text), dir)
+      self
+    end
+
     ############################
+
     def view_port(*args) # args := pxmin, pymin, pxmax, pymax
       tk_call_without_enc('::Plotchart::viewPort', @path, *(args.flatten))
       self
@@ -198,6 +294,11 @@ module Tk::Tcllib::Plotchart
 
     def coords_3D_to_pixel(x, y, z)
       list(tk_call_without_enc('::Plotchart::coords3DToPixel', @path, x, y, z))
+    end
+
+    def plotpack(dir, *plots)
+      tk_call_without_enc('::Plotchart::plotpack', @path, dir, *plots)
+      self
     end
 
     def polar_coordinates(radmax)
@@ -281,27 +382,27 @@ module Tk::Tcllib::Plotchart
       vals = array2tk_list(vals) if vals.kind_of?(Array)
       clss = array2tk_list(clss) if clss.kind_of?(Array)
 
-      tk_call_without_enc(@chart, 'contourlines', xcrd, ycrd, vals, clss)
+      tk_call(@chart, 'contourlines', xcrd, ycrd, vals, clss)
       self
     end
 
-    def contourfill(xcrd, ycrd, vals, klasses=None)
+    def contourfill(xcrd, ycrd, vals, clss=None)
       xcrd = array2tk_list(xcrd) if xcrd.kind_of?(Array)
       ycrd = array2tk_list(ycrd) if ycrd.kind_of?(Array)
       vals = array2tk_list(vals) if vals.kind_of?(Array)
       clss = array2tk_list(clss) if clss.kind_of?(Array)
 
-      tk_call_without_enc(@chart, 'contourfill', xcrd, ycrd, vals, clss)
+      tk_call(@chart, 'contourfill', xcrd, ycrd, vals, clss)
       self
     end
 
-    def contourbox(xcrd, ycrd, vals, klasses=None)
+    def contourbox(xcrd, ycrd, vals, clss=None)
       xcrd = array2tk_list(xcrd) if xcrd.kind_of?(Array)
       ycrd = array2tk_list(ycrd) if ycrd.kind_of?(Array)
       vals = array2tk_list(vals) if vals.kind_of?(Array)
       clss = array2tk_list(clss) if clss.kind_of?(Array)
 
-      tk_call_without_enc(@chart, 'contourbox', xcrd, ycrd, vals, clss)
+      tk_call(@chart, 'contourbox', xcrd, ycrd, vals, clss)
       self
     end
 
@@ -324,9 +425,69 @@ module Tk::Tcllib::Plotchart
       if key.kind_of?(Hash)
         tk_call_without_enc(@chart, 'dataconfig', series, *hash_kv(key, true))
       else
-        tk_call_without_enc(@chart, 'dataconfig', series,
-                            "-#{key}", _get_eval_enc_str(value))
+        tk_call(@chart, 'dataconfig', series, "-#{key}", value)
       end
+    end
+
+    def rescale(xscale, yscale) # xscale|yscale => [newmin, newmax, newstep]
+      tk_call_without_enc(@chart, 'rescale', xscale, yscale)
+      self
+    end
+
+    def trend(series, xcrd, ycrd)
+      tk_call_without_enc(@chart, 'trend',
+                          _get_eval_enc_str(series), xcrd, ycrd)
+      self
+    end
+
+    def rchart(series, xcrd, ycrd)
+      tk_call_without_enc(@chart, 'rchart',
+                          _get_eval_enc_str(series), xcrd, ycrd)
+      self
+    end
+
+    def interval(series, xcrd, ymin, ymax, ycenter=None)
+      tk_call(@chart, 'interval', series, xcrd, ymin, ymax, ycenter)
+      self
+    end
+
+    def box_and_whiskers(series, xcrd, ycrd)
+      tk_call_without_enc(@chart, 'box-and-whiskers',
+                          _get_eval_enc_str(series), xcrd, ycrd)
+      self
+    end
+    alias box_whiskers box_and_whiskers
+
+    def vectorconfig(series, key, value=None)
+      if key.kind_of?(Hash)
+        tk_call_without_enc(@chart, 'vectorconfig',
+                            _get_eval_enc_str(series), *hash_kv(key, true))
+      else
+        tk_call(@chart, 'vectorconfig', series, "-#{key}", value)
+      end
+      self
+    end
+
+    def vector(series, xcrd, ycrd, ucmp, vcmp)
+      tk_call_without_enc(@chart, 'vector', _get_eval_enc_str(series),
+                          xcrd, ycrd, ucmp, vcmp)
+      self
+    end
+
+    def dotconfig(series, key, value=None)
+      if key.kind_of?(Hash)
+        tk_call_without_enc(@chart, 'dotconfig',
+                            _get_eval_enc_str(series), *hash_kv(key, true))
+      else
+        tk_call(@chart, 'dotconfig', series, "-#{key}", value)
+      end
+      self
+    end
+
+    def dot(series, xcrd, ycrd, value)
+      tk_call_without_enc(@chart, 'dot', _get_eval_enc_str(series), 
+                          xcrd, ycrd, value)
+      self
     end
   end
 
@@ -335,6 +496,30 @@ module Tk::Tcllib::Plotchart
     TkCommandNames = [
       'canvas'.freeze,
       '::Plotchart::createStripchart'.freeze
+    ].freeze
+  end
+
+  ############################
+  class TXPlot < XYPlot
+    TkCommandNames = [
+      'canvas'.freeze,
+      '::Plotchart::createTXPlot'.freeze
+    ].freeze
+  end
+
+  ############################
+  class XLogYPlot < XYPlot
+    TkCommandNames = [
+      'canvas'.freeze,
+      '::Plotchart::createXLogYPlot'.freeze
+    ].freeze
+  end
+
+  ############################
+  class Histogram < XYPlot
+    TkCommandNames = [
+      'canvas'.freeze,
+      '::Plotchart::createHistgram'.freeze
     ].freeze
   end
 
@@ -389,10 +574,10 @@ module Tk::Tcllib::Plotchart
 
     def dataconfig(series, key, value=None)
       if key.kind_of?(Hash)
-        tk_call_without_enc(@chart, 'dataconfig', series, *hash_kv(key, true))
+        tk_call_without_enc(@chart, 'dataconfig', _get_eval_enc_str(series),
+                            *hash_kv(key, true))
       else
-        tk_call_without_enc(@chart, 'dataconfig', series,
-                            "-#{key}", _get_eval_enc_str(value))
+        tk_call(@chart, 'dataconfig', series, "-#{key}", value)
       end
     end
   end
@@ -541,12 +726,30 @@ module Tk::Tcllib::Plotchart
       self
     end
 
+    def plot_line(dat, color)
+      # dat has to be provided as a 2 level array.
+      # 1st level contains rows, drawn in y-direction,
+      # and each row is an array whose elements are drawn in x-direction,
+      # for the columns.
+      tk_call_without_enc(@chart, 'plotline', dat, color)
+      self
+    end
+
     def plot_data(dat)
       # dat has to be provided as a 2 level array.
       # 1st level contains rows, drawn in y-direction,
       # and each row is an array whose elements are drawn in x-direction,
       # for the columns.
       tk_call_without_enc(@chart, 'plotdata', dat)
+      self
+    end
+
+    def zconfig(key, value=None)
+      if key.kind_of?(Hash)
+        tk_call_without_enc(@chart, 'zconfig', *hash_kv(key, true))
+      else
+        tk_call(@chart, 'zconfig', "-#{key}", value)
+      end
       self
     end
 
@@ -559,6 +762,132 @@ module Tk::Tcllib::Plotchart
     alias colors  colour
     alias color   colour
   end
+
+  ############################
+  class Barchart3D < Tk::Canvas
+    include ChartMethod
+
+    TkCommandNames = [
+      'canvas'.freeze,
+      '::Plotchart::create3DBarchart'.freeze
+    ].freeze
+
+    def initialize(*args) # args := ([parent,] yaxis, nobars [, keys])
+                          # yaxis  := Array of [minimum, maximum, stepsize]
+                          # nobars := number of bars
+      if args[0].kind_of?(Array)
+        @yaxis = args.shift
+        @nobars = args.shift
+
+        super(*args) # create canvas widget
+      else
+        parent = args.shift
+
+        @yaxis = args.shift
+        @nobars = args.shift
+
+        if parent.kind_of?(Tk::Canvas)
+          @path = parent.path
+        else
+          super(parent, *args) # create canvas widget
+        end
+      end
+
+      @chart = _create_chart
+    end
+
+    def _create_chart
+      p self.class::TkCommandNames[1] if $DEBUG
+      tk_call_without_enc(self.class::TkCommandNames[1], @path,
+                          array2tk_list(@yaxis), @nobars)
+    end
+    private :_create_chart
+
+    def plot(label, yvalue, color)
+      tk_call_without_enc(@chart, 'plot', _get_eval_enc_str(label), 
+                          _get_eval_enc_str(yvalue), color)
+      self
+    end
+
+    def config(key, value=None)
+      if key.kind_of?(Hash)
+        tk_call_without_enc(@chart, 'config', *hash_kv(key, true))
+      else
+        tk_call(@chart, 'config', "-#{key}", value)
+      end
+      self
+    end
+  end
+
+  ############################
+  class RibbonChart3D < Tk::Canvas
+    include ChartMethod
+
+    TkCommandNames = [
+      'canvas'.freeze,
+      '::Plotchart::create3DRibbonChart'.freeze
+    ].freeze
+
+    def initialize(*args) # args := ([parent,] names, yaxis, zaxis [, keys])
+                          # names := Array of the series
+                          # yaxis := Array of [minimum, maximum, stepsize]
+                          # zaxis := Array of [minimum, maximum, stepsize]
+      if args[0].kind_of?(Array)
+        @names = args.shift
+        @yaxis = args.shift
+        @zaxis = args.shift
+
+        super(*args) # create canvas widget
+      else
+        parent = args.shift
+
+        @names = args.shift
+        @yaxis = args.shift
+        @zaxis = args.shift
+
+        if parent.kind_of?(Tk::Canvas)
+          @path = parent.path
+        else
+          super(parent, *args) # create canvas widget
+        end
+      end
+
+      @chart = _create_chart
+    end
+
+    def _create_chart
+      p self.class::TkCommandNames[1] if $DEBUG
+      tk_call_without_enc(self.class::TkCommandNames[1], @path,
+                          array2tk_list(@names),
+                          array2tk_list(@yaxis),
+                          array2tk_list(@zaxis))
+    end
+    private :_create_chart
+
+    def line(*args) # xypairs, color
+      color = args.pop # last argument is a color
+      xypairs = TkComm.slice_ary(args.flatten, 2) # regenerate xypairs
+      tk_call_without_enc(@chart, 'line', xypairs, color)
+      self
+    end
+
+    def area(*args) # xypairs, color
+      color = args.pop # last argument is a color
+      xypairs = TkComm.slice_ary(args.flatten, 2) # regenerate xypairs
+      tk_call_without_enc(@chart, 'area', xypairs, color)
+      self
+    end
+
+    def zconfig(key, value=None)
+      if key.kind_of?(Hash)
+        tk_call_without_enc(@chart, 'zconfig', *hash_kv(key, true))
+      else
+        tk_call(@chart, 'zconfig',"-#{key}", value)
+      end
+      self
+    end
+  end
+
 
   ############################
   class Piechart < Tk::Canvas
@@ -586,9 +915,76 @@ module Tk::Tcllib::Plotchart
     private :_create_chart
 
     def plot(*dat)  # argument is a list of [label, value]
-      tk_call_without_enc(@chart, 'plot', dat.flatten)
+      tk_call(@chart, 'plot', dat.flatten)
       self
     end
+
+    def colours(*list)
+      tk_call_without_enc(@chart, 'colours', *list)
+      self
+    end
+    alias colors  colours
+  end
+
+
+  ############################
+  class Radialchart < Tk::Canvas
+    include ChartMethod
+
+    TkCommandNames = [
+      'canvas'.freeze,
+      '::Plotchart::createRadialchart'.freeze
+    ].freeze
+
+    def initialize(*args) # args := ([parent,] names, scale, style [, keys])
+                          # radius_data := Array of [maximum_radius, stepsize]
+      if args[0].kind_of?(Array)
+        @names = args.shift
+        @scale = args.shift
+        @style = args.shift
+
+        super(*args) # create canvas widget
+      else
+        parent = args.shift
+
+        @names = args.shift
+        @scale = args.shift
+        @style = args.shift
+
+        if parent.kind_of?(Tk::Canvas)
+          @path = parent.path
+        else
+          super(parent, *args) # create canvas widget
+        end
+      end
+
+      @chart = _create_chart
+    end
+
+    def _create_chart
+      p self.class::TkCommandNames[1] if $DEBUG
+      tk_call_without_enc(self.class::TkCommandNames[1], @path,
+                          array2tk_list(@names), @scale, @style)
+    end
+    private :_create_chart
+
+    def __destroy_hook__
+      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.mutex.synchronize{
+        Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+      }
+    end
+
+    def plot(data, color, thickness)
+      tk_call_without_enc(@chart, 'plot', _get_eval_enc_str(data),
+                          color, thickness)
+      self
+    end
+
+    def colours(*list)
+      tk_call_without_enc(@chart, 'colours', *list)
+      self
+    end
+    alias colors  colours
   end
 
   ############################
@@ -655,13 +1051,13 @@ module Tk::Tcllib::Plotchart
     end
 
     def plot(series, dat, col=None)
-      tk_call_without_enc(@chart, 'plot', series, dat, col)
+      tk_call(@chart, 'plot', series, dat, col)
       self
     end
 
     def colours(*cols)
       # set the colours to be used
-      tk_call_without_enc(@chart, 'colours', *cols)
+      tk_call(@chart, 'colours', *cols)
       self
     end
     alias colour colours
@@ -675,6 +1071,102 @@ module Tk::Tcllib::Plotchart
       'canvas'.freeze,
       '::Plotchart::createHorizontalBarchart'.freeze
     ].freeze
+  end
+
+  ############################
+  class Boxplot < Tk::Canvas
+    include ChartMethod
+
+    TkCommandNames = [
+      'canvas'.freeze,
+      '::Plotchart::createBoxplot'.freeze
+    ].freeze
+
+    def initialize(*args) # args := ([parent,] xaxis, ylabels [, keys])
+                          # xaxis := Array of [minimum, maximum, stepsize]
+                          # yaxis := List of labels for the y-axis
+      if args[0].kind_of?(Array)
+        @xaxis   = args.shift
+        @ylabels = args.shift
+
+        super(*args) # create canvas widget
+      else
+        parent = args.shift
+
+        @xaxis   = args.shift
+        @ylabels = args.shift
+
+        if parent.kind_of?(Tk::Canvas)
+          @path = parent.path
+        else
+          super(parent, *args) # create canvas widget
+        end
+      end
+
+      @chart = _create_chart
+    end
+
+    def _create_chart
+      p self.class::TkCommandNames[1] if $DEBUG
+      tk_call_without_enc(self.class::TkCommandNames[1], @path,
+                          array2tk_list(@xaxis), array2tk_list(@ylabels))
+    end
+    private :_create_chart
+
+    def __destroy_hook__
+      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.mutex.synchronize{
+        Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+      }
+    end
+
+    def plot(label, *values)
+      tk_call(@chart, 'plot', label, values.flatten)
+      self
+    end
+  end
+
+  ############################
+  class RightAxis < Tk::Canvas
+    include ChartMethod
+
+    TkCommandNames = [
+      'canvas'.freeze,
+      '::Plotchart::createRightAxis'.freeze
+    ].freeze
+
+    def initialize(*args) # args := ([parent,] yaxis [, keys])
+                          # yaxis := Array of [minimum, maximum, stepsize]
+      if args[0].kind_of?(Array)
+        @yaxis   = args.shift
+
+        super(*args) # create canvas widget
+      else
+        parent = args.shift
+
+        @yaxis   = args.shift
+
+        if parent.kind_of?(Tk::Canvas)
+          @path = parent.path
+        else
+          super(parent, *args) # create canvas widget
+        end
+      end
+
+      @chart = _create_chart
+    end
+
+    def _create_chart
+      p self.class::TkCommandNames[1] if $DEBUG
+      tk_call_without_enc(self.class::TkCommandNames[1], @path,
+                          array2tk_list(@yaxis))
+    end
+    private :_create_chart
+
+    def __destroy_hook__
+      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.mutex.synchronize{
+        Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+      }
+    end
   end
 
   ############################
@@ -723,46 +1215,60 @@ module Tk::Tcllib::Plotchart
     private :_create_chart
 
     def period(txt, time_begin, time_end, col=None)
-      tk_call_without_enc(@chart, 'period', txt, time_begin, time_end, col)
+      tk_call(@chart, 'period', txt, time_begin, time_end, col)
       self
     end
 
     def milestone(txt, time, col=None)
-      tk_call_without_enc(@chart, 'milestone', txt, time, col)
+      tk_call(@chart, 'milestone', txt, time, col)
       self
     end
 
     def vertline(txt, time)
-      tk_call_without_enc(@chart, 'vertline', txt, time)
+      tk_call(@chart, 'vertline', txt, time)
+      self
+    end
+
+    def hscroll=(scr)
+      tk_call_without_enc(@chart, 'hscroll', scr)
+      scr
+    end
+    def hscroll(scr)
+      tk_call_without_enc(@chart, 'hscroll', scr)
+      self
+    end
+
+    def vscroll=(scr)
+      tk_call_without_enc(@chart, 'vscroll', scr)
+      scr
+    end
+    def vscroll(scr)
+      tk_call_without_enc(@chart, 'vscroll', scr)
       self
     end
   end
 
   ############################
-  class Gnattchart < Tk::Canvas
+  class Ganttchart < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
       'canvas'.freeze,
-      '::Plotchart::createGnattchart'.freeze
+      '::Plotchart::createGanttchart'.freeze
     ].freeze
 
     def initialize(*args)
       # args := ([parent,] time_begin, time_end, items [, text_width] [, keys])
       # time_begin := String of time format (e.g. "1 january 2004")
       # time_end   := String of time format (e.g. "1 january 2004")
-      # items := Expected/maximum number of items
-      #          ( This determines the vertical spacing. )
+      # args := Expected/maximum number of items
+      #          ( This determines the vertical spacing. ), 
+      #         Expected/maximum width of items, 
+      #         Option Hash ( { key=>value, ... } )
       if args[0].kind_of?(String)
         @time_begin = args.shift
         @time_end   = args.shift
-        @items      = args.shift
-
-        if args[0].kind_of?(Fixnum)
-          @text_width = args.shift
-        else
-          @text_width = None
-        end
+        @args  = args
 
         super(*args) # create canvas widget
       else
@@ -770,13 +1276,7 @@ module Tk::Tcllib::Plotchart
 
         @time_begin = args.shift
         @time_end   = args.shift
-        @items      = args.shift
-
-        if args[0].kind_of?(Fixnum)
-          @text_width = args.shift
-        else
-          @text_width = None
-        end
+        @args  = args
 
         if parent.kind_of?(Tk::Canvas)
           @path = parent.path
@@ -790,25 +1290,25 @@ module Tk::Tcllib::Plotchart
 
     def _create_chart
       p self.class::TkCommandNames[1] if $DEBUG
-      tk_call_without_enc(self.class::TkCommandNames[1], @path,
-                          @time_begin, @time_end, @items, @text_width)
+      tk_call(self.class::TkCommandNames[1], @path,
+              @time_begin, @time_end, *args)
     end
     private :_create_chart
 
     def task(txt, time_begin, time_end, completed=0.0)
-      list(tk_call_without_enc(@chart, 'task', txt, time_begin, time_end,
-                               completed)).collect!{|id|
+      list(tk_call(@chart, 'task', txt, time_begin, time_end,
+                   completed)).collect!{|id|
         TkcItem.id2obj(self, id)
       }
     end
 
     def milestone(txt, time, col=None)
-      tk_call_without_enc(@chart, 'milestone', txt, time, col)
+      tk_call(@chart, 'milestone', txt, time, col)
       self
     end
 
     def vertline(txt, time)
-      tk_call_without_enc(@chart, 'vertline', txt, time)
+      tk_call(@chart, 'vertline', txt, time)
       self
     end
 
@@ -816,23 +1316,41 @@ module Tk::Tcllib::Plotchart
       from_task = array2tk_list(from_task) if from_task.kind_of?(Array)
       to_task   = array2tk_list(to_task)   if to_task.kind_of?(Array)
 
-      tk_call_without_enc(@chart, 'connect', from_task, to_task)
+      tk_call(@chart, 'connect', from_task, to_task)
       self
     end
 
     def summary(txt, tasks)
       tasks = array2tk_list(tasks) if tasks.kind_of?(Array)
-      tk_call_without_enc(@chart, 'summary', tasks)
+      tk_call(@chart, 'summary', tasks)
       self
     end
 
     def color_of_part(keyword, newcolor)
-      tk_call_without_enc(@chart, 'color', keyword, newcolor)
+      tk_call(@chart, 'color', keyword, newcolor)
       self
     end
 
     def font_of_part(keyword, newfont)
-      tk_call_without_enc(@chart, 'font', keyword, newfont)
+      tk_call(@chart, 'font', keyword, newfont)
+      self
+    end
+
+    def hscroll=(scr)
+      tk_call_without_enc(@chart, 'hscroll', scr)
+      scr
+    end
+    def hscroll(scr)
+      tk_call_without_enc(@chart, 'hscroll', scr)
+      self
+    end
+
+    def vscroll=(scr)
+      tk_call_without_enc(@chart, 'vscroll', scr)
+      scr
+    end
+    def vscroll(scr)
+      tk_call_without_enc(@chart, 'vscroll', scr)
       self
     end
   end
@@ -841,7 +1359,7 @@ module Tk::Tcllib::Plotchart
   class PlotSeries < TkObject
     SeriesID_TBL = TkCore::INTERP.create_table
 
-    (Series_ID = ['series'.freeze, '00000'.taint]).instance_eval{
+    (Series_ID = ['series'.freeze, TkUtil.untrust('00000')]).instance_eval{
       @mutex = Mutex.new
       def mutex; @mutex; end
       freeze

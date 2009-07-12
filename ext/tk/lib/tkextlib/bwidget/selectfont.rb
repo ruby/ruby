@@ -23,12 +23,17 @@ class Tk::BWidget::SelectFont
 
   TkCommandNames = ['SelectFont'.freeze].freeze
   WidgetClassName = 'SelectFont'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'sampletext' <<  'title'
   end
   private :__strval_optkeys
+
+  def __boolval_optkeys
+    super() << 'nosizes'
+  end
+  private :__boolval_optkeys
 
   def __font_optkeys
     [] # without fontobj operation

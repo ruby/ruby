@@ -11,7 +11,7 @@ class TkTextTag<TkObject
 
   TTagID_TBL = TkCore::INTERP.create_table
 
-  (Tk_TextTag_ID = ['tag'.freeze, '00000'.taint]).instance_eval{
+  (Tk_TextTag_ID = ['tag'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -129,6 +129,9 @@ class TkTextTag<TkObject
     val
   end
 
+  def cget_tkstring(key)
+    @t.tag_cget_tkstring @id, key
+  end
   def cget(key)
     @t.tag_cget @id, key
   end

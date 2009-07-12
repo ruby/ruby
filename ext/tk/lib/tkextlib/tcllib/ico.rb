@@ -8,7 +8,7 @@
 
 require 'tk'
 require 'tk/image'
-require 'tkextlib/tcllib.rb'
+#require 'tkextlib/tcllib.rb'
 
 # TkPackage.require('ico', '0.3')
 TkPackage.require('ico')
@@ -38,8 +38,38 @@ class Tk::Tcllib::ICO
                                       *hash_kv(keys, true)))
   end
 
+  def self.icons(file, keys=nil)
+    tk_split_simplelist(tk_call_without_enc('::ico::icons', file,
+                                            *hash_kv(keys, true))).map{|elem|
+      num_or_str(elem)
+    }
+  end
+
+  def self.get_members(file, name, keys=nil)
+    tk_split_simplelist(tk_call_without_enc('::ico::getMembers', file, name,
+                                            *hash_kv(keys, true))).map{|elem|
+      name, width, height, bpp =  tk_split_simplelist(elem)
+      [name, number(width), number(height), number(bpp)]
+    }
+  end
+
   def self.get(file, index, keys=nil)
     tk_call_without_enc('::ico::getIcon', file, index, *hash_kv(keys, true))
+  end
+  def self.get_icon(*args)
+    get(*args)
+  end
+
+  def self.get_by_name(file, name, keys=nil)
+    tk_call_without_enc('::ico::getIconByName', file, name,
+                        *hash_kv(keys, true))
+  end
+  def self.get_icon_by_name(*args)
+    get_by_name(*args)
+  end
+
+  def self.get_fileicon(file, keys=nil)
+    tk_call_without_enc('::ico::getFileIcon', file, *hash_kv(keys, true))
   end
 
   def self.get_image(file, index, keys={})

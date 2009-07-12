@@ -7,11 +7,21 @@
 # please try to use the Tix extension of Tcl/Tk under Ruby/Tk.
 #
 # The interval time to display a balloon help is defined 'interval' option
-# (default is 1000ms).
+# (default is 750ms).
 #
 require 'tk'
 
-class TkBalloonHelp<TkLabel
+module Tk
+  module RbWidget
+    class BalloonHelp<TkLabel
+    end
+  end
+end
+class Tk::RbWidget::BalloonHelp<TkLabel
+  DEFAULT_FOREGROUND = 'black'
+  DEFAULT_BACKGROUND = 'white'
+  DEFAULT_INTERVAL   = 750
+
   def _balloon_binding(interval)
     @timer = TkAfter.new(interval, 1, proc{show})
     def @timer.interval(val)
@@ -50,10 +60,13 @@ class TkBalloonHelp<TkLabel
 
     @command = keys.delete('command')
 
-    @interval = keys.delete('interval'){1000}
+    @interval = keys.delete('interval'){DEFAULT_INTERVAL}
     _balloon_binding(@interval)
 
-    @label = TkLabel.new(@frame, 'background'=>'bisque').pack
+    # @label = TkLabel.new(@frame, 'background'=>'bisque').pack
+    @label = TkLabel.new(@frame, 
+                         'foreground'=>DEFAULT_FOREGROUND, 
+                         'background'=>DEFAULT_BACKGROUND).pack
     @label.configure(_symbolkey2str(keys)) unless keys.empty?
     @path = @label
   end
@@ -118,41 +131,42 @@ end
 if __FILE__ == $0
   TkButton.new('text'=>'This button has a balloon help') {|b|
     pack('fill'=>'x')
-    TkBalloonHelp.new(b, 'text'=>' Message ')
+    Tk::RbWidget::BalloonHelp.new(b, 'text'=>' Message ')
   }
   TkButton.new('text'=>'This button has another balloon help') {|b|
     pack('fill'=>'x')
-    TkBalloonHelp.new(b, 'text'=>'configured message',
-                      'interval'=>200, 'font'=>'courier',
-                      'background'=>'gray', 'foreground'=>'red')
+    Tk::RbWidget::BalloonHelp.new(b, 
+                        'text'=>"CONFIGURED MESSAGE\nchange colors, and so on",
+                        'interval'=>200, 'font'=>'courier',
+                        'background'=>'gray', 'foreground'=>'red')
   }
 
   sb = TkScrollbox.new.pack(:fill=>:x)
   sb.insert(:end, *%w(aaa bbb ccc ddd eee fff ggg hhh iii jjj kkk lll mmm))
 =begin
   # CASE1 : command takes no arguemnt
-  bh = TkBalloonHelp.new(sb, :interval=>500,
-                         :relief=>:ridge, :background=>'white',
-                         :command=>proc{
-                           y = TkWinfo.pointery(sb) - TkWinfo.rooty(sb)
-                           bh.text "current index == #{sb.nearest(y)}"
-                         })
+  bh = Tk::RbWidget::BalloonHelp.new(sb, :interval=>500,
+                           :relief=>:ridge, :background=>'white',
+                           :command=>proc{
+                             y = TkWinfo.pointery(sb) - TkWinfo.rooty(sb)
+                             bh.text "current index == #{sb.nearest(y)}"
+                           })
 =end
 =begin
   # CASE2 : command takes 2 arguemnts
-  bh = TkBalloonHelp.new(sb, :interval=>500,
-                         :relief=>:ridge, :background=>'white',
-                         :command=>proc{|x, y|
-                           bh.text "current index == #{sb.nearest(y)}"
-                         })
+  bh = Tk::RbWidget::BalloonHelp.new(sb, :interval=>500,
+                           :relief=>:ridge, :background=>'white',
+                           :command=>proc{|x, y|
+                             bh.text "current index == #{sb.nearest(y)}"
+                           })
 =end
 =begin
   # CASE3 : command takes 3 arguemnts
-  TkBalloonHelp.new(sb, :interval=>500,
-                    :relief=>:ridge, :background=>'white',
-                    :command=>proc{|x, y, bhelp|
-                      bhelp.text "current index == #{sb.nearest(y)}"
-                    })
+  Tk::RbWidget::BalloonHelp.new(sb, :interval=>500,
+                      :relief=>:ridge, :background=>'white',
+                      :command=>proc{|x, y, bhelp|
+                        bhelp.text "current index == #{sb.nearest(y)}"
+                      })
 =end
 =begin
   # CASE4a : command is a Proc object and takes 4 arguemnts
@@ -160,16 +174,16 @@ if __FILE__ == $0
     bhelp.text "current index == #{parent.nearest(y)}"
   }
 
-  TkBalloonHelp.new(sb, :interval=>500,
-                    :relief=>:ridge, :background=>'white',
-                    :command=>cmd)
+  Tk::RbWidget::BalloonHelp.new(sb, :interval=>500,
+                      :relief=>:ridge, :background=>'white',
+                      :command=>cmd)
 
   sb2 = TkScrollbox.new.pack(:fill=>:x)
   sb2.insert(:end, *%w(AAA BBB CCC DDD EEE FFF GGG HHH III JJJ KKK LLL MMM))
-  TkBalloonHelp.new(sb2, :interval=>500,
-                    :padx=>5, :relief=>:raised,
-                    :background=>'gray25', :foreground=>'white',
-                    :command=>cmd)
+  Tk::RbWidget::BalloonHelp.new(sb2, :interval=>500,
+                      :padx=>5, :relief=>:raised,
+                      :background=>'gray25', :foreground=>'white',
+                      :command=>cmd)
 =end
 #=begin
   # CASE4b : command is a Method object and takes 4 arguemnts
@@ -178,16 +192,16 @@ if __FILE__ == $0
   end
   cmd = self.method(:set_msg)
 
-  TkBalloonHelp.new(sb, :interval=>500,
-                    :relief=>:ridge, :background=>'white',
-                    :command=>cmd)
+  Tk::RbWidget::BalloonHelp.new(sb, :interval=>500,
+                                :relief=>:ridge, :background=>'white',
+                                :command=>cmd)
 
   sb2 = TkScrollbox.new.pack(:fill=>:x)
   sb2.insert(:end, *%w(AAA BBB CCC DDD EEE FFF GGG HHH III JJJ KKK LLL MMM))
-  TkBalloonHelp.new(sb2, :interval=>500,
-                    :padx=>5, :relief=>:raised,
-                    :background=>'gray25', :foreground=>'white',
-                    :command=>cmd)
+  Tk::RbWidget::BalloonHelp.new(sb2, :interval=>500,
+                                :padx=>5, :relief=>:raised,
+                                :background=>'gray25', :foreground=>'white',
+                                :command=>cmd)
 #=end
 
   Tk.mainloop

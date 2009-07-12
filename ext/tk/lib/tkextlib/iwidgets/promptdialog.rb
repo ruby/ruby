@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Promptdialog
   TkCommandNames = ['::iwidgets::promptdialog'.freeze].freeze
   WidgetClassName = 'Promptdialog'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   # index method is not available, because it shows index of the entry field
   def default(name)

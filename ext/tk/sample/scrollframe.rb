@@ -1,11 +1,11 @@
 #
-#  Tk::ScrollFrame class
+#  Tk::RbWidget::ScrollFrame class
 #
 #    This widget class is a frame widget with scrollbars.
 #    The ScrollFrame doesn't propagate the size of embedded widgets.
 #    When it is configured, scrollregion of the container is changed.
 #
-#    Scrollbars can be toggled by Tk::ScrollFrame#vscroll & hscroll.
+#    Scrollbars can be toggled by Tk::RbWidget::ScrollFrame#vscroll & hscroll.
 #    If horizontal or virtical scrollbar is turned off, the horizontal
 #    or virtical size of embedded widgets is propagated.
 #
@@ -13,7 +13,7 @@
 #
 require 'tk'
 
-class Tk::ScrollFrame < TkFrame
+class Tk::RbWidget::ScrollFrame < TkFrame
   include TkComposite
 
   DEFAULT_WIDTH  = 200
@@ -209,7 +209,8 @@ end
 
 # test
 if __FILE__ == $0
-  f = Tk::ScrollFrame.new(:scrollbarwidth=>10, :width=>300, :height=>200)
+  f = Tk::RbWidget::ScrollFrame.new(:scrollbarwidth=>10, 
+                                    :width=>300, :height=>200)
   f.pack(:expand=>true, :fill=>:both)
 
   TkButton.new(f, :text=>'foo button', :command=>proc{puts 'foo'}).pack
@@ -220,17 +221,26 @@ if __FILE__ == $0
 
   # f.hscroll(false)
 
+  # add a text widget
   Tk.after(3000){
     t = TkText.new(f).pack(:expand=>true, :fill=>:both)
-    t.insert(:end, 'Here is a text widget')
+    t.insert(:end, "An example of Tk::RbWidget::ScrollFrame widget.\n\n")
+    t.insert(:end, "Here is a text widget.\n")
+    t.insert(:end, "Please resize the application window, ")
+    t.insert(:end, "and try the scrollbars ")
+    t.insert(:end, "to move the view of packed widgets.\n")
   }
 
+  # remove a vertical scrollbar, and then the scrollframe is not scrollable.
   Tk.after(6000){ f.vscroll(false) }
 
+  # add a vertical scrollbar, and make the scrollframe scrollable. 
   Tk.after(9000){ f.vscroll(true) }
 
+  # remove a horizontal scrollbar, and then the scrollframe is not scrollable.
   Tk.after(12000){ f.hscroll(false) }
 
+  # add a horizontal scrollbar, and make the scrollframe scrollable. 
   Tk.after(15000){ f.hscroll(true) }
 
   Tk.mainloop

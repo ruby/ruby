@@ -13,9 +13,6 @@ module Tk
   end
 end
 
-Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Label, :TkLabel)
-
-
 class Tk::Tile::TLabel < Tk::Label
   include Tk::Tile::TileWidget
 
@@ -25,9 +22,13 @@ class Tk::Tile::TLabel < Tk::Label
     TkCommandNames = ['::tlabel'.freeze].freeze
   end
   WidgetClassName = 'TLabel'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.style(*args)
     [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
   end
 end
+
+#Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Label, :TkLabel)
+Tk.__set_loaded_toplevel_aliases__('tkextlib/tile/tlabel.rb',
+                                   :Ttk, Tk::Tile::Label, :TkLabel)

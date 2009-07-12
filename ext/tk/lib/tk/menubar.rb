@@ -93,24 +93,30 @@ class TkMenubar<Tk::Frame
   include TkComposite
   include TkMenuSpec
 
-  def initialize(parent = nil, spec = nil, options = nil)
+  def initialize(parent = nil, spec = nil, options = {})
     if parent.kind_of? Hash
-      options = _symbolkey2str(parent)
-      spec = options.delete('spec')
-      super(options)
-    else
-      super(parent, options)
+      options = parent
+      parent = nil
+      spec = (options.has_key?('spec'))? options.delete('spec'): nil
     end
+
+    _symbolkey2str(options)
+    menuspec_opt = {}
+    TkMenuSpec::MENUSPEC_OPTKEYS.each{|key|
+      menuspec_opt[key] = options.delete(key) if options.has_key?(key)
+    }
+
+    super(parent, options)
 
     @menus = []
 
-    spec.each{|info| add_menu(info)} if spec
+    spec.each{|info| add_menu(info, menuspec_opt)} if spec
 
     options.each{|key, value| configure(key, value)} if options
   end
 
-  def add_menu(menu_info)
-    mbtn, menu = _create_menubutton(@frame, menu_info)
+  def add_menu(menu_info, menuspec_opt={})
+    mbtn, menu = _create_menubutton(@frame, menu_info, menuspec_opt)
 
     submenus = _get_cascade_menus(menu).flatten
 

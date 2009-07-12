@@ -26,10 +26,41 @@ module Tk::Tcllib
         ''
       end
     end
+
+    #--- followings may be private functions of tklib
+    def self.isa(compare_as, *args)
+      begin
+        return Tk.tk_call('::widget::isa', compare_as, *args)
+      rescue => e
+        if TkComm.bool(Tk.tk_call('info','command','::widget::isa')) ||
+            ! TkComm.bool(Tk.tk_call('info','command','::widget::validate'))
+          fail e
+        end
+      end
+      Tk.tk_call('::widget::validate', compare_as, *args)
+    end
+    def self.validate(compare_as, *args)
+      begin
+        return Tk.tk_call('::widget::validate', compare_as, *args)
+      rescue => e
+        if TkComm.bool(Tk.tk_call('info','command','::widget::validate')) ||
+            ! TkComm.bool(Tk.tk_call('info','command','::widget::isa'))
+          fail e
+        end
+      end
+      Tk.tk_call('::widget::isa', compare_as, *args)
+    end
   end
 end
 
 module Tk::Tcllib::Widget
+  TkComm::TkExtlibAutoloadModule.unshift(self)
+
+  autoload :Calendar,           'tkextlib/tcllib/calendar'
+
+  autoload :Canvas_Sqmap,       'tkextlib/tcllib/canvas_sqmap'
+  autoload :Canvas_Zoom,        'tkextlib/tcllib/canvas_zoom'
+
   autoload :Dialog,             'tkextlib/tcllib/dialog'
 
   autoload :Panelframe,         'tkextlib/tcllib/panelframe'
@@ -45,4 +76,7 @@ module Tk::Tcllib::Widget
 
   autoload :Superframe,         'tkextlib/tcllib/superframe'
   autoload :SuperFrame,         'tkextlib/tcllib/superframe'
+
+  autoload :Toolbar,            'tkextlib/tcllib/toolbar'
+  autoload :ToolbarItem,        'tkextlib/tcllib/toolbar'
 end

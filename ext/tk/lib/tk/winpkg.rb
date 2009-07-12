@@ -10,7 +10,8 @@ require 'tk'
 module Tk::WinDDE
 end
 #TkWinDDE = Tk::WinDDE
-Tk.__set_toplevel_aliases__(:Tk, Tk::WinDDE, :TkWinDDE)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::WinDDE, :TkWinDDE)
+Tk.__set_loaded_toplevel_aliases__('tk/winpkg.rb', :Tk, Tk::WinDDE, :TkWinDDE)
 
 module Tk::WinDDE
   extend Tk
@@ -93,7 +94,9 @@ end
 module Tk::WinRegistry
 end
 #TkWinRegistry = Tk::WinRegistry
-Tk.__set_toplevel_aliases__(:Tk, Tk::WinRegistry, :TkWinRegistry)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::WinRegistry, :TkWinRegistry)
+Tk.__set_loaded_toplevel_aliases__('tk/winpkg.rb', :Tk, Tk::WinRegistry,
+                                   :TkWinRegistry)
 
 module Tk::WinRegistry
   extend Tk

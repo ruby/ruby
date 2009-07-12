@@ -17,7 +17,7 @@ end
 class Tk::Iwidgets::Scrolledcanvas
   TkCommandNames = ['::iwidgets::scrolledcanvas'.freeze].freeze
   WidgetClassName = 'Scrolledcanvas'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   ################################
 

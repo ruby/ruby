@@ -16,7 +16,7 @@ end
 class Tk::BWidget::ScrollView
   TkCommandNames = ['ScrollView'.freeze].freeze
   WidgetClassName = 'ScrollView'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'fill'

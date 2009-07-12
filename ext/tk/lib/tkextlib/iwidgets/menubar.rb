@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Menubar
   TkCommandNames = ['::iwidgets::menubar'.freeze].freeze
   WidgetClassName = 'Menubar'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'menubuttons'
@@ -61,13 +61,14 @@ class Tk::Iwidgets::Menubar
     end
   end
 
+  alias menucget_tkstring itemcget_tkstring
   alias menucget itemcget
   alias menucget_strict itemcget_strict
   alias menuconfigure itemconfigure
   alias menuconfiginfo itemconfiginfo
   alias current_menuconfiginfo current_itemconfiginfo
 
-  private :itemcget, :itemcget_strict
+  private :itemcget_tkstring, :itemcget, :itemcget_strict
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
   ####################################

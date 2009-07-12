@@ -12,6 +12,12 @@ module Tk
   end
 end
 
+begin
+  TkPackage.require('ttk::dialog') # this may be required.
+rescue RuntimeError
+  # ignore
+end
+
 class Tk::Tile::Dialog
   TkCommandNames = ['::ttk::dialog'.freeze].freeze
 

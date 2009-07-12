@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Scrolledframe
   TkCommandNames = ['::iwidgets::scrolledframe'.freeze].freeze
   WidgetClassName = 'Scrolledframe'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def child_site
     window(tk_call(@path, 'childsite'))

@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Panedwindow
   TkCommandNames = ['::iwidgets::panedwindow'.freeze].freeze
   WidgetClassName = 'Panedwindow'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   ####################################
 
@@ -41,13 +41,14 @@ class Tk::Iwidgets::Panedwindow
     end
   end
 
+  alias panecget_tkstring itemcget_tkstring
   alias panecget itemcget
   alias panecget_strict itemcget_strict
   alias paneconfigure itemconfigure
   alias paneconfiginfo itemconfiginfo
   alias current_paneconfiginfo current_itemconfiginfo
 
-  private :itemcget, :itemcget_strict
+  private :itemcget_tkstring, :itemcget, :itemcget_strict
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
   ####################################

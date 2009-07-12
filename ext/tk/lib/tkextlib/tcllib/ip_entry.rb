@@ -33,13 +33,18 @@ module Tk
       end
     end
     IPEntry = IP_Entry
+
+    class IP_Entry6 < IP_Entry
+    end
+    IPEntry6 = IP_Entry6
+    IP6_Entry = IP_Entry6
   end
 end
 
 class Tk::Tcllib::IP_Entry
   TkCommandNames = ['::ipentry::ipentry'.freeze].freeze
   WidgetClassName = 'IPEntry'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def create_self(keys)
     if keys and keys != None
@@ -63,4 +68,8 @@ class Tk::Tcllib::IP_Entry
   def insert(*ip)
     tk_send_without_enc('insert', array2tk_list(ip.flatten))
   end
+end
+
+class Tk::Tcllib::IP_Entry6 < Tk::Tcllib::IP_Entry 
+  TkCommandNames = ['::ipentry::ipentry6'.freeze].freeze
 end

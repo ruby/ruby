@@ -18,6 +18,8 @@ TkPackage.require('BWidget')
 module Tk
   module BWidget
     TkComm::TkExtlibAutoloadModule.unshift(self)
+    # Require autoload-symbols which is a same name as widget classname.
+    # Those are used at  TkComm._genobj_for_tkwidget method.
 
     extend TkCore
 

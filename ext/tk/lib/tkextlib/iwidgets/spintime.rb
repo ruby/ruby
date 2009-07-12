@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Spintime
   TkCommandNames = ['::iwidgets::spintime'.freeze].freeze
   WidgetClassName = 'Spintime'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __boolval_optkeys
     super() << 'houron' << 'militaryon' << 'minutelabel' << 'secondlabel'

@@ -13,9 +13,6 @@ module Tk
   end
 end
 
-Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Separator, :TkSeparator)
-
-
 class Tk::Tile::TSeparator < TkWindow
   include Tk::Tile::TileWidget
 
@@ -25,9 +22,13 @@ class Tk::Tile::TSeparator < TkWindow
     TkCommandNames = ['::tseparator'.freeze].freeze
   end
   WidgetClassName = 'TSeparator'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.style(*args)
     [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
   end
 end
+
+#Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Separator, :TkSeparator)
+Tk.__set_loaded_toplevel_aliases__('tkextlib/tile/tseparator.rb',
+                                   :Ttk, Tk::Tile::Separator, :TkSeparator)

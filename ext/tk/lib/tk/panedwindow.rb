@@ -6,7 +6,7 @@ require 'tk'
 class Tk::PanedWindow<TkWindow
   TkCommandNames = ['panedwindow'.freeze].freeze
   WidgetClassName = 'Panedwindow'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
   #def create_self(keys)
   #  if keys and keys != None
   #    tk_call_without_enc('panedwindow', @path, *hash_kv(keys, true))
@@ -254,5 +254,7 @@ end
 Tk::Panedwindow = Tk::PanedWindow
 #TkPanedWindow = Tk::PanedWindow unless Object.const_defined? :TkPanedWindow
 #TkPanedwindow = Tk::Panedwindow unless Object.const_defined? :TkPanedwindow
-Tk.__set_toplevel_aliases__(:Tk, Tk::PanedWindow,
-                            :TkPanedWindow, :TkPanedwindow)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::PanedWindow,
+#                            :TkPanedWindow, :TkPanedwindow)
+Tk.__set_loaded_toplevel_aliases__('tk/panedwindow.rb', :Tk, Tk::PanedWindow,
+                                   :TkPanedWindow, :TkPanedwindow)

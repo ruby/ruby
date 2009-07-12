@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Extfileselectionbox
   TkCommandNames = ['::iwidgets::extfileselectionbox'.freeze].freeze
   WidgetClassName = 'Extfileselectionbox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() + [

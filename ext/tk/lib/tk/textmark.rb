@@ -9,7 +9,7 @@ class TkTextMark<TkObject
 
   TMarkID_TBL = TkCore::INTERP.create_table
 
-  (Tk_TextMark_ID = ['mark'.freeze, '00000'.taint]).instance_eval{
+  (Tk_TextMark_ID = ['mark'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze

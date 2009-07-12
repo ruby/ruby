@@ -13,9 +13,6 @@ module Tk
   end
 end
 
-Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Combobox, :TkCombobox)
-
-
 class Tk::Tile::TCombobox < Tk::Tile::TEntry
   include Tk::Tile::TileWidget
 
@@ -25,7 +22,7 @@ class Tk::Tile::TCombobox < Tk::Tile::TEntry
     TkCommandNames = ['::tcombobox'.freeze].freeze
   end
   WidgetClassName = 'TCombobox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __boolval_optkeys
     super() << 'exportselection'
@@ -52,3 +49,7 @@ class Tk::Tile::TCombobox < Tk::Tile::TEntry
     tk_send('set', val)
   end
 end
+
+#Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Combobox, :TkCombobox)
+Tk.__set_loaded_toplevel_aliases__('tkextlib/tile/tcombobox.rb',
+                                   :Ttk, Tk::Tile::Combobox, :TkCombobox)

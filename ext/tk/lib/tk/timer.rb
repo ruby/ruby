@@ -11,13 +11,13 @@ class TkTimer
 
   TkCommandNames = ['after'.freeze].freeze
 
-  (Tk_CBID = ['a'.freeze, '00000'.taint]).instance_eval{
+  (Tk_CBID = ['a'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
   }
 
-  Tk_CBTBL = {}.taint
+  Tk_CBTBL = TkUtil.untrust({})
 
   TkCore::INTERP.add_tk_procs('rb_after', 'id', <<-'EOL')
     if {[set st [catch {eval {ruby_cmd TkTimer callback} $id} ret]] != 0} {

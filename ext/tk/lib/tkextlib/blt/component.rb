@@ -82,6 +82,9 @@ module Tk::BLT
     end
     private :__item_pathname
 
+    def axis_cget_tkstring(id, option)
+      ret = itemcget_tkstring(['axis', tagid(id)], option)
+    end
     def axis_cget(id, option)
       ret = itemcget(['axis', tagid(id)], option)
     end
@@ -118,6 +121,9 @@ module Tk::BLT
       current_itemconfiginfo(['axis', tagid(id)], slot)
     end
 
+    def crosshairs_cget_tkstring(option)
+      itemcget_tkstring('crosshairs', option)
+    end
     def crosshairs_cget(option)
       itemcget('crosshairs', option)
     end
@@ -134,6 +140,9 @@ module Tk::BLT
       current_itemconfiginfo('crosshairs', slot)
     end
 
+    def element_cget_tkstring(id, option)
+      itemcget_tkstring(['element', tagid(id)], option)
+    end
     def element_cget(id, option)
       itemcget(['element', tagid(id)], option)
     end
@@ -158,6 +167,9 @@ module Tk::BLT
       current_itemconfiginfo(['element', tagid(id)], slot)
     end
 
+    def bar_cget_tkstring(id, option)
+      itemcget_tkstring(['bar', tagid(id)], option)
+    end
     def bar_cget(id, option)
       itemcget(['bar', tagid(id)], option)
     end
@@ -182,6 +194,9 @@ module Tk::BLT
       current_itemconfiginfo(['bar', tagid(id)], slot)
     end
 
+    def line_cget_tkstring(id, option)
+      itemcget_tkstring(['line', tagid(id)], option)
+    end
     def line_cget(id, option)
       itemcget(['line', tagid(id)], option)
     end
@@ -206,6 +221,9 @@ module Tk::BLT
       current_itemconfiginfo(['line', tagid(id)], slot)
     end
 
+    def gridline_cget_tkstring(option)
+      itemcget_tkstring('grid', option)
+    end
     def gridline_cget(option)
       itemcget('grid', option)
     end
@@ -222,6 +240,9 @@ module Tk::BLT
       current_itemconfiginfo('grid', slot)
     end
 
+    def legend_cget_tkstring(option)
+      itemcget_tkstring('legend', option)
+    end
     def legend_cget(option)
       itemcget('legend', option)
     end
@@ -238,6 +259,9 @@ module Tk::BLT
       current_itemconfiginfo('legend', slot)
     end
 
+    def pen_cget_tkstring(id, option)
+      itemcget_tkstring(['pen', tagid(id)], option)
+    end
     def pen_cget(id, option)
       itemcget(['pen', tagid(id)], option)
     end
@@ -262,6 +286,9 @@ module Tk::BLT
       current_itemconfiginfo(['pen', tagid(id)], slot)
     end
 
+    def postscript_cget_tkstring(option)
+      itemcget_tkstring('postscript', option)
+    end
     def postscript_cget(option)
       itemcget('postscript', option)
     end
@@ -278,6 +305,9 @@ module Tk::BLT
       current_itemconfiginfo('postscript', slot)
     end
 
+    def marker_cget_tkstring(id, option)
+      itemcget_tkstring(['marker', tagid(id)], option)
+    end
     def marker_cget(id, option)
       itemcget(['marker', tagid(id)], option)
     end
@@ -302,12 +332,16 @@ module Tk::BLT
       current_itemconfiginfo(['marker', tagid(id)], slot)
     end
 
+    alias __itemcget_tkstring itemcget_tkstring
     alias __itemcget itemcget
     alias __itemcget_strict itemcget_strict
     alias __itemconfiginfo itemconfiginfo
     alias __current_itemconfiginfo current_itemconfiginfo
-    private :__itemcget, :__itemconfiginfo, :__current_itemconfiginfo
+    private :__itemcget_tkstring, :__itemcget, :__itemconfiginfo, :__current_itemconfiginfo
 
+    def itemcget_tkstring(tagOrId, option)
+      __itemcget_tkstring(tagid(tagOrId), option)
+    end
     def itemcget_strict(tagOrId, option)
       ret = __itemcget(tagid(tagOrId), option)
       if option == 'bindtags' || option == :bindtags
@@ -373,13 +407,13 @@ module Tk::BLT
       ret
     end
 
-    private :itemcget, :itemcget_strict
+    private :itemcget_tkstring, :itemcget, :itemcget_strict
     private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
     #################
 
     class Axis < TkObject
-      (OBJ_ID = ['blt_chart_axis'.freeze, '00000'.taint]).instance_eval{
+      (OBJ_ID = ['blt_chart_axis'.freeze, TkUtil.untrust('00000')]).instance_eval{
         @mutex = Mutex.new
         def mutex; @mutex; end
         freeze
@@ -477,6 +511,9 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        @chart.axis_cget_tkstring(@id, option)
+      end
       def cget(option)
         @chart.axis_cget(@id, option)
       end
@@ -582,6 +619,9 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        @chart.crosshair_cget_tkstring(option)
+      end
       def cget(option)
         @chart.crosshair_cget(option)
       end
@@ -631,7 +671,7 @@ module Tk::BLT
         ElementID_TBL.mutex.synchronize{ ElementID_TBL.clear }
       }
 
-      (OBJ_ID = ['blt_chart_element'.freeze, '00000'.taint]).instance_eval{
+      (OBJ_ID = ['blt_chart_element'.freeze, TkUtil.untrust('00000')]).instance_eval{
         @mutex = Mutex.new
         def mutex; @mutex; end
         freeze
@@ -729,6 +769,10 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        # @chart.element_cget(@id, option)
+        @chart.__send__(@typename + '_cget_tkstring', @id, option)
+      end
       def cget(option)
         # @chart.element_cget(@id, option)
         @chart.__send__(@typename + '_cget', @id, option)
@@ -833,6 +877,9 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        @chart.gridline_cget_tkstring(option)
+      end
       def cget(option)
         @chart.gridline_cget(option)
       end
@@ -907,6 +954,9 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        @chart.legend_cget_tkstring(option)
+      end
       def cget(option)
         @chart.legend_cget(option)
       end
@@ -940,7 +990,7 @@ module Tk::BLT
     #################
 
     class Pen < TkObject
-      (OBJ_ID = ['blt_chart_pen'.freeze, '00000'.taint]).instance_eval{
+      (OBJ_ID = ['blt_chart_pen'.freeze, TkUtil.untrust('00000')]).instance_eval{
         @mutex = Mutex.new
         def mutex; @mutex; end
         freeze
@@ -1036,6 +1086,9 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        @chart.pen_cget_tkstring(@id, option)
+      end
       def cget(option)
         @chart.pen_cget(@id, option)
       end
@@ -1106,6 +1159,9 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        @chart.postscript_cget_tkstring(option)
+      end
       def cget(option)
         @chart.postscript_cget(option)
       end
@@ -1269,6 +1325,9 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        @chart.marker_cget_tkstring(@id, option)
+      end
       def cget(option)
         @chart.marker_cget(@id, option)
       end
@@ -1854,6 +1913,9 @@ module Tk::BLT
 
     ###################
 
+    def xaxis_cget_tkstring(option)
+      itemcget_tkstring('xaxis', option)
+    end
     def xaxis_cget(option)
       itemcget('xaxis', option)
     end
@@ -1926,6 +1988,9 @@ module Tk::BLT
       end
     end
 
+    def x2axis_cget_tkstring(option)
+      itemcget_tkstring('x2axis', option)
+    end
     def x2axis_cget(option)
       itemcget('x2axis', option)
     end
@@ -1998,6 +2063,9 @@ module Tk::BLT
       end
     end
 
+    def yaxis_cget_tkstring(option)
+      itemcget_tkstring('yaxis', option)
+    end
     def yaxis_cget(option)
       itemcget('yaxis', option)
     end
@@ -2070,6 +2138,9 @@ module Tk::BLT
       end
     end
 
+    def y2axis_cget_tkstring(option)
+      itemcget_tkstring('y2axis', option)
+    end
     def y2axis_cget(option)
       itemcget('y2axis', option)
     end

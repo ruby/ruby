@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Tabset
   TkCommandNames = ['::iwidgets::tabset'.freeze].freeze
   WidgetClassName = 'Tabset'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   ####################################
 
@@ -41,13 +41,14 @@ class Tk::Iwidgets::Tabset
     end
   end
 
+  alias tabcget_tkstring itemcget_tkstring
   alias tabcget itemcget
   alias tabcget_strict itemcget_strict
   alias tabconfigure itemconfigure
   alias tabconfiginfo itemconfiginfo
   alias current_tabconfiginfo current_itemconfiginfo
 
-  private :itemcget, :itemcget_strict
+  private :itemcget_tkstring, :itemcget, :itemcget_strict
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
   ####################################

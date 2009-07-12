@@ -272,7 +272,7 @@ module Tk::BLT
         TreeTagID_TBL.mutex.synchronize{ TreeTagID_TBL.clear }
       }
 
-      (TreeTag_ID = ['blt_tree_tag'.freeze, '00000'.taint]).instance_eval{
+      (TreeTag_ID = ['blt_tree_tag'.freeze, TkUtil.untrust('00000')]).instance_eval{
         @mutex = Mutex.new
         def mutex; @mutex; end
         freeze
@@ -578,7 +578,7 @@ module Tk::BLT
 
     TreeID_TBL = TkCore::INTERP.create_table
 
-    (Tree_ID = ['blt_tree'.freeze, '00000'.taint]).instance_eval{
+    (Tree_ID = ['blt_tree'.freeze, TkUtil.untrust('00000')]).instance_eval{
       @mutex = Mutex.new
       def mutex; @mutex; end
       freeze

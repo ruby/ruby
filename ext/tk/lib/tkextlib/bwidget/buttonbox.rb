@@ -17,7 +17,7 @@ end
 class Tk::BWidget::ButtonBox
   TkCommandNames = ['ButtonBox'.freeze].freeze
   WidgetClassName = 'ButtonBox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   include TkItemConfigMethod
 

@@ -25,7 +25,7 @@ class Tk::BWidget::ListBox
 
   TkCommandNames = ['ListBox'.freeze].freeze
   WidgetClassName = 'ListBox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   class Event_for_Items < TkEvent::Event
     def self._get_extra_args_tbl
@@ -212,7 +212,7 @@ class Tk::BWidget::ListBox::Item
 
   ListItem_TBL = TkCore::INTERP.create_table
 
-  (ListItem_ID = ['bw:item'.freeze, '00000'.taint]).instance_eval{
+  (ListItem_ID = ['bw:item'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -294,6 +294,9 @@ class Tk::BWidget::ListBox::Item
     val
   end
 
+  def cget_tkstring(key)
+    @listbox.itemcget_tkstring(@id, key)
+  end
   def cget(key)
     @listbox.itemcget(@id, key)
   end

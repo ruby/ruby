@@ -36,7 +36,7 @@ end
 
 class Tk::HTML_Widget::ClippingWindow
   WidgetClassName = 'HtmlClip'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   HtmlClip_TBL = TkCore::INTERP.create_table
 
@@ -101,7 +101,7 @@ class Tk::HTML_Widget
 
   TkCommandNames = ['html'.freeze].freeze
   WidgetClassName = 'Html'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def create_self(keys)
     if keys and keys != None

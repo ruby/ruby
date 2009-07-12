@@ -17,7 +17,7 @@ end
 class Tk::BWidget::PanelFrame
   TkCommandNames = ['PanelFrame'.freeze].freeze
   WidgetClassName = 'PanelFrame'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() + ['panelforeground', 'panelbackground']
@@ -47,11 +47,21 @@ class Tk::BWidget::PanelFrame
   end
 
   def items
-    list(tk_send('items'))
+    simplelist(tk_send('items')).map{|w| window(w)}
   end
 
   def remove(*wins)
     tk_send('remove', *wins)
+    self
+  end
+
+  def remove_with_destroy(*wins)
+    tk_send('remove', '-destroy', *wins)
+    self
+  end
+
+  def delete(*wins) # same to 'remove_with_destroy'
+    tk_send('delete', *wins)
     self
   end
 end

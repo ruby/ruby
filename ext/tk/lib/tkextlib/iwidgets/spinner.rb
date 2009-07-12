@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Spinner
   TkCommandNames = ['::iwidgets::spinner'.freeze].freeze
   WidgetClassName = 'Spinner'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   ####################################
 

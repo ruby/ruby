@@ -3,8 +3,21 @@ ActiveTcl is ActiveState's quality-assured distribution of Tcl.
 # see <http://www.activestate.com/Products/ActiveTcl/>
 #     <http://www.tcl.tk/>
 
+First of all, please try to configure without any options.
+"extconf.rb" searches ActiveTcl as default action.
+If you have ActiveTcl and standard (or your own) Tcl/Tk on your
+environment and don't want to use ActiveTcl on your Ruby/Tk, please
+use --without-ActiveTcl option.
+
+When "extconf.rb" fails to find your ActiveTcl libraries, please try
+the followings.
+
 If you want to use ActiveTcl binary package as the Tcl/Tk libraries, 
 please use the following configure options.
+
+   --with-ActiveTcl=<ActiveTcl_root>
+     ( When without argument; no <ActiveTcl_root>; only '--with-ActiveTcl', 
+       it same to '--with-ActiveTcl=/opt/ActiveTcl*/lib' )
 
    --with-tcl-dir=<ActiveTcl_root>
    --with-tk-dir=<ActiveTcl_root>

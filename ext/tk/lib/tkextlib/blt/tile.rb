@@ -8,6 +8,10 @@ require 'tkextlib/blt.rb'
 
 module Tk::BLT
   module Tile
+    TkComm::TkExtlibAutoloadModule.unshift(self)
+    # Require autoload-symbols which is a same name as widget classname.
+    # Those are used at  TkComm._genobj_for_tkwidget method.
+
     autoload :Button,      'tkextlib/blt/tile/button.rb'
     autoload :CheckButton, 'tkextlib/blt/tile/checkbutton.rb'
     autoload :Checkbutton, 'tkextlib/blt/tile/checkbutton.rb'

@@ -235,8 +235,8 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
 
    モジュールメソッド
       get_version()
-         : Tcl/Tk の major, minor, release-type 番号, release-type 名,
-         : patchlevel を配列にして返す．
+         : Tcl/Tk の major, minor, release-type 番号, patchlevel を
+         : 配列にして返す．
 
       mainloop(check_root = true)
          : イベントループを起動する．check_root が true であれば，
@@ -463,6 +463,11 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : _eval では auto_load 機構が働くため，一度 _eval を実行
          : して登録に成功しさえすれば，以降は _invoke でも利用で
          : きるようになる．
+
+      _cancel_eval(str)
+      _cancel_eval_unwind(str)
+         : (Tcl/Tk8.6 or later)
+         : Tcl_CancelEval() 関数を呼び出し，eval の実行を打ち切る．
 
       _toUTF8(str, encoding=nil)
       _fromUTF8(str, encoding=nil)

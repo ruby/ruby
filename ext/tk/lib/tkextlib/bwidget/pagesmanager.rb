@@ -17,7 +17,7 @@ end
 class Tk::BWidget::PagesManager
   TkCommandNames = ['PagesManager'.freeze].freeze
   WidgetClassName = 'PagesManager'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def tagid(id)
     # id.to_s

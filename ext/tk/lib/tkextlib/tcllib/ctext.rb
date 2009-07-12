@@ -35,7 +35,7 @@ end
 class Tk::Tcllib::CText
   TkCommandNames = ['ctext'.freeze].freeze
   WidgetClassName = 'Ctext'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def create_self(keys)
     if keys and keys != None

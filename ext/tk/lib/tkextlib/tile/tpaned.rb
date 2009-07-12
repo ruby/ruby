@@ -13,10 +13,6 @@ module Tk
   end
 end
 
-Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Panedwindow,
-                            :TkPanedwindow, :TkPanedWindow)
-
-
 class Tk::Tile::TPaned < TkWindow
   include Tk::Tile::TileWidget
 
@@ -30,7 +26,7 @@ class Tk::Tile::TPaned < TkWindow
     TkCommandNames = ['::tpaned'.freeze].freeze
   end
   WidgetClassName = 'TPaned'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.style(*args)
     [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
@@ -65,6 +61,12 @@ class Tk::Tile::TPaned < TkWindow
     tk_send_without_enc('insert', pos, win, *hash_kv(keys))
     self
   end
+
+  def panecget_tkstring(pane, slot)
+    pane = _epath(pane)
+    tk_send_without_enc('pane', pane, "-#{slot}")
+  end
+  alias pane_cget_tkstring panecget_tkstring
 
   def panecget_strict(pane, slot)
     pane = _epath(pane)
@@ -221,11 +223,23 @@ class Tk::Tile::TPaned < TkWindow
   end
   alias current_pane_configinfo current_paneconfiginfo
 
+  def panes
+    tk_split_simplelist(tk_send_without_enc('panes')).map{|w|
+      (obj = window(w))? obj: w
+    }
+  end
+
   def identify(x, y)
-    list(tk_send_without_enc('identify', x, y))
+    num_or_nil(tk_send_without_enc('identify', x, y))
   end
 
   def sashpos(idx, newpos=None)
     num_or_str(tk_send_without_enc('sashpos', idx, newpos))
   end
 end
+
+#Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Panedwindow,
+#                            :TkPanedwindow, :TkPanedWindow)
+Tk.__set_loaded_toplevel_aliases__('tkextlib/tile/tpaned.rb',
+                                   :Ttk, Tk::Tile::Panedwindow,
+                                   :TkPanedwindow, :TkPanedWindow)

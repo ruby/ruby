@@ -322,7 +322,7 @@ module Tk::TreeCtrl::ConfigMethod
 
   def __item_boolval_optkeys(id)
     if id == 'debug'
-      ['data', 'display', 'enable']
+      ['data', 'display', 'enable', 'span', 'textlayout']
     elsif id == 'dragimage'
       ['visible']
     elsif id == 'marquee'
@@ -330,7 +330,7 @@ module Tk::TreeCtrl::ConfigMethod
     elsif id.kind_of?(Array)
       case id[0]
       when 'item'
-        ['button', 'visible']
+        ['visible', 'wrap', 'open', 'returnid', 'visible']
       when 'column'
         if id[1] == 'drag'
           ['enable']
@@ -339,11 +339,11 @@ module Tk::TreeCtrl::ConfigMethod
             'visible', 'widthhack']
         end
       when 'element'
-        ['draw', 'filled', 'showfocus', 'destroy']
+        ['draw', 'filled', 'showfocus', 'clip', 'destroy']
       when 'notify'
         ['active']
       when 'style'
-        ['detach']
+        ['detach', 'indent', 'visible']
       else
         if id[0].kind_of?(Array) && id[0][1] == 'element'
           ['filled', 'showfocus']
@@ -401,6 +401,20 @@ module Tk::TreeCtrl::ConfigMethod
   end
   private :__item_listval_optkeys
 
+  def __item_val2ruby_optkeys(id)
+    if id.kind_of?(Array)
+      case id[0]
+      when 'item'
+        { 'button' => proc{|id,val| (val == 'auto')? val: TkComm.bool(val)} }
+      else
+        []
+      end
+    else
+      []
+    end
+  end
+  private :__item_val2ruby_optkeys
+
   def __item_keyonly_optkeys(id)  # { def_key=>(undef_key|nil), ... }
     {
       'notreally'=>nil,
@@ -414,6 +428,9 @@ module Tk::TreeCtrl::ConfigMethod
   end
   private :__item_keyonly_optkeys
 
+  def column_cget_tkstring(tagOrId, option)
+    itemcget_tkstring(['column', tagOrId], option)
+  end
   def column_cget(tagOrId, option)
     itemcget(['column', tagOrId], option)
   end
@@ -430,6 +447,9 @@ module Tk::TreeCtrl::ConfigMethod
     current_itemconfiginfo(['column', tagOrId], slot)
   end
 
+  def column_dragcget_tkstring(option)
+    itemcget_tkstring(['column', 'drag'], option)
+  end
   def column_dragcget(option)
     itemcget(['column', 'drag'], option)
   end
@@ -446,6 +466,9 @@ module Tk::TreeCtrl::ConfigMethod
     current_itemconfiginfo(['column', 'drag'], slot)
   end
 
+  def debug_cget_tkstring(option)
+    itemcget_tkstring('debug', option)
+  end
   def debug_cget(option)
     itemcget('debug', option)
   end
@@ -462,6 +485,9 @@ module Tk::TreeCtrl::ConfigMethod
     current_itemconfiginfo('debug', slot)
   end
 
+  def dragimage_cget_tkstring(option)
+    itemcget_tkstring('dragimage', option)
+  end
   def dragimage_cget(option)
     itemcget('dragimage', option)
   end
@@ -478,6 +504,9 @@ module Tk::TreeCtrl::ConfigMethod
     current_itemconfiginfo('dragimage', slot)
   end
 
+  def element_cget_tkstring(tagOrId, option)
+    itemcget_tkstring(['element', tagOrId], option)
+  end
   def element_cget(tagOrId, option)
     itemcget(['element', tagOrId], option)
   end
@@ -494,6 +523,9 @@ module Tk::TreeCtrl::ConfigMethod
     current_itemconfiginfo(['element', tagOrId], slot)
   end
 
+  def item_cget_tkstring(tagOrId, option)
+    itemcget_tkstring(['item', tagOrId], option)
+  end
   def item_cget(tagOrId, option)
     itemcget(['item', tagOrId], option)
   end
@@ -510,6 +542,9 @@ module Tk::TreeCtrl::ConfigMethod
     current_itemconfiginfo(['item', tagOrId], slot)
   end
 
+  def item_element_cget_tkstring(item, column, elem, option)
+    itemcget_tkstring([['item', 'element'], [item, column, elem]], option)
+  end
   def item_element_cget(item, column, elem, option)
     itemcget([['item', 'element'], [item, column, elem]], option)
   end
@@ -526,6 +561,9 @@ module Tk::TreeCtrl::ConfigMethod
     current_itemconfiginfo([['item', 'element'], [item, column, elem]], slot)
   end
 
+  def marquee_cget_tkstring(option)
+    itemcget_tkstring('marquee', option)
+  end
   def marquee_cget(option)
     itemcget('marquee', option)
   end
@@ -542,6 +580,11 @@ module Tk::TreeCtrl::ConfigMethod
     current_itemconfiginfo('marquee', slot)
   end
 
+  def notify_cget_tkstring(win, pattern, option)
+    pattern = "<#{pattern}>"
+    # "notify" doesn't have cget subcommand.
+    tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(['notify', [win, pattern]])) << "-#{option}")), false, true)[-1]
+  end
   def notify_cget(win, pattern, option)
     pattern = "<#{pattern}>"
     # "notify" doesn't have cget subcommand.
@@ -571,6 +614,9 @@ module Tk::TreeCtrl::ConfigMethod
     current_itemconfiginfo(['notify', [win, pattern]], slot)
   end
 
+  def style_cget_tkstring(tagOrId, option)
+    itemcget_tkstring(['style', tagOrId], option)
+  end
   def style_cget(tagOrId, option)
     itemcget(['style', tagOrId], option)
   end
@@ -587,7 +633,7 @@ module Tk::TreeCtrl::ConfigMethod
     current_itemconfiginfo(['style', tagOrId], slot)
   end
 
-  private :itemcget, :itemcget_strict
+  private :itemcget_tkstring, :itemcget, :itemcget_strict
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 end
 
@@ -599,7 +645,7 @@ class Tk::TreeCtrl
 
   TkCommandNames = ['treectrl'.freeze].freeze
   WidgetClassName = 'TreeCtrl'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   #########################
 
@@ -631,7 +677,7 @@ class Tk::TreeCtrl
     [
       'itemwidthequal', 'usetheme',
       'showbuttons', 'showheader', 'showlines', 'showroot',
-      'showrootbutton', 'showrootlines',
+      'showrootbutton', 'showrootlines', 'showrootchildbuttons'
     ]
   end
   private :__boolval_optkeys
@@ -1547,8 +1593,8 @@ class Tk::TreeCtrl
     self
   end
 
-  def see(item)
-    tk_send('see', item)
+  def see(item, column=None, keys={})
+    tk_send('see', item, column, *hash_kv(keys))
     self
   end
 
@@ -1686,7 +1732,7 @@ end
 class Tk::TreeCtrl::Column < TkObject
   TreeCtrlColumnID_TBL = TkCore::INTERP.create_table
 
-  (TreeCtrlColumnID = ['treectrl_column'.freeze, '00000'.taint]).instance_eval{
+  (TreeCtrlColumnID = ['treectrl_column'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -1741,6 +1787,9 @@ class Tk::TreeCtrl::Column < TkObject
     @id.to_s.dup
   end
 
+  def cget_tkstring(opt)
+    @tree.column_cget_tkstring(@tree.column_index(@id), opt)
+  end
   def cget(opt)
     @tree.column_cget(@tree.column_index(@id), opt)
   end
@@ -1789,7 +1838,7 @@ end
 class Tk::TreeCtrl::Element < TkObject
   TreeCtrlElementID_TBL = TkCore::INTERP.create_table
 
-  (TreeCtrlElementID = ['treectrl_element'.freeze, '00000'.taint]).instance_eval{
+  (TreeCtrlElementID = ['treectrl_element'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -1844,6 +1893,9 @@ class Tk::TreeCtrl::Element < TkObject
     @id.dup
   end
 
+  def cget_tkstring(opt)
+    @tree.element_cget_tkstring(@id, opt)
+  end
   def cget(opt)
     @tree.element_cget(@id, opt)
   end
@@ -1978,6 +2030,9 @@ class Tk::TreeCtrl::Item < TkObject
     self
   end
 
+  def cget_tkstring(opt)
+    @tree.item_cget_tkstring(@id, opt)
+  end
   def cget(opt)
     @tree.item_cget(@id, opt)
   end
@@ -2014,7 +2069,10 @@ class Tk::TreeCtrl::Item < TkObject
     @tree.item_element_actual(@id, column, elem, key)
   end
 
-  def element_cget(opt)
+  def element_cget_tkstring(opt)
+    @tree.item_element_cget(@id, opt)
+  end
+  def element_cget_tkstring(opt)
     @tree.item_element_cget(@id, opt)
   end
   def element_cget_strict(opt)
@@ -2218,7 +2276,7 @@ end
 class Tk::TreeCtrl::Style < TkObject
   TreeCtrlStyleID_TBL = TkCore::INTERP.create_table
 
-  (TreeCtrlStyleID = ['treectrl_style'.freeze, '00000'.taint]).instance_eval{
+  (TreeCtrlStyleID = ['treectrl_style'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -2268,6 +2326,9 @@ class Tk::TreeCtrl::Style < TkObject
     @id.dup
   end
 
+  def cget_tkstring(opt)
+    @tree.style_cget_tkstring(@id, opt)
+  end
   def cget(opt)
     @tree.style_cget(@id, opt)
   end

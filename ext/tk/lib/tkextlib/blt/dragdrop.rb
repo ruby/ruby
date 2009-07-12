@@ -15,7 +15,7 @@ module Tk::BLT
 
     class Token < TkWindow
       WidgetClassName = 'DragDropToken'.freeze
-      WidgetClassNames[WidgetClassName] = self
+      WidgetClassNames[WidgetClassName] ||= self
 
       def initialize(arg)
         if arg.kind_of?(Hash) # arg is a hash includes the widgetpath of token
@@ -55,6 +55,7 @@ module Tk::BLT
       private :__item_strval_optkeys
 
       undef itemcget
+      undef itemcget_tkstring
       private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
       def source_configure(win, slot, value=None)

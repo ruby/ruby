@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Radiobox
   TkCommandNames = ['::iwidgets::radiobox'.freeze].freeze
   WidgetClassName = 'Radiobox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   ####################################
 
@@ -46,13 +46,14 @@ class Tk::Iwidgets::Radiobox
     end
   end
 
+  alias buttoncget_tkstring itemcget_tkstring
   alias buttoncget itemcget
   alias buttoncget_strict itemcget_strict
   alias buttonconfigure itemconfigure
   alias buttonconfiginfo itemconfiginfo
   alias current_buttonconfiginfo current_itemconfiginfo
 
-  private :itemcget, :itemcget_strict
+  private :itemcget_tkstring, :itemcget, :itemcget_strict
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
   ####################################

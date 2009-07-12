@@ -52,7 +52,7 @@ class Tk::Root<TkWindow
   end
 
   WidgetClassName = 'Tk'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.to_eval
     # self::WidgetClassName

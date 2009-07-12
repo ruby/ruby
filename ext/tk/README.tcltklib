@@ -1,18 +1,53 @@
 To compile 'tcltklib', you must have Tcl/Tk libraries on your environment. 
-Although 'extconf.rb' script searches Tcl/Tk libraries and header files, 
+Although 'extconf.rb' script searches Tcl/Tk libraries and header files
+(as default, searches tclConfig.sh/tkConfig.sh and use the defintions on
+those; ActiveTcl has high priority on searching unless --without-ActiveTcl),
 sometimes fails to find them. And then, 'tcltklib' cannot be compiled. If 
 Tcl/Tk libraries or header files are installed but are not found, you can 
 give the information by arguments of the 'configure' script. Please give 
 some or all of the following options. 
 
+ --with-tk-old-extconf         use old "extconf.rb" (default: false).
+                               If current extconf.rb doesn't work properly
+                               (or your install process is based on old 
+                               documant about Ruby/Tk install), please try
+			       this option.
+
+ --with-ActiveTcl / --without-ActiveTcl
+ --with-ActiveTcl=<dir>        search ActiveTcl libraries (default: true).
+                               When true, try to find installed ActiveTcl. 
+                               When <dir> is given, use it as the ActiveTcl's
+			       top directory (use <dir>/lib, and so on).
+                               Old "extconf.rb" doesn't support this option.
+
+ --with-tk-shlib-search-path=<paths>
+                               teach the paths for loading shared-libraries 
+                               to linker.
+                               <paths> is a path list with the same format 
+                               as PATH environment variable.
+                               This option may be experimental.
+                               Old "extconf.rb" doesn't support this option.
+
  --with-tcltkversion=<version> 
       force version of Tcl/Tk libaray
       (e.g. libtcl8.4g.so ==> --with-tcltkversion=8.4g)
+
+ --without-tcl-config / --without-tk-config
+ --with-tclConfig-dir=<dir>       
+ --with-tkConfig-dir=<dir>     the directory contains 'tclConfig.sh' and 
+                               'tkConfig.sh'. 
+			       Current "extconf.rb" uses the information 
+                               on tclConfig.sh/tkConfig.rb, if possible.
+                               Old "extconf.rb" doesn't support this option.
 
  --with-tcllib=<libname>       (e.g. libtcl8.4.so ==> --with-tcllib=tcl8.4)
  --with-tklib=<libname>        (e.g. libtk8.4.so  ==> --with-tklib=tk8.4)
 
  --enable-tcltk-stubs          (if you force to enable stubs)
+                               On old "extconf.rb", default is false.
+                               On current "extconf.rb", default is true when 
+                               tclConfig.sh/tkConfig.sh have TCL_STUB_LIB_SPEC
+                               /TK_STUB_LIB_SPEC, else default is false.
 
  --with-tcl-dir=<path> 
       equal to "--with-tcl-include=<path>/include --with-tcl-lib=<path>/lib"
@@ -35,6 +70,12 @@ some or all of the following options.
                                "<dir>/Tcl.framework" and "<dir>/Tk.framework".
                                When this option is given, it is assumed that 
                                --enable-tcltk-framework option is given also.
+
+ --with-tcl-framework-dir=<dir>
+      Tcl framework directory (e.g. "/Library/Frameworks/Tcl.framework")
+
+ --with-tk-framework-dir=<dir>
+      Tk framework directory (e.g. "/Library/Frameworks/Tk.framework")
 
  --with-tcl-framework-header=<dir>
       Tcl framework headers directory 

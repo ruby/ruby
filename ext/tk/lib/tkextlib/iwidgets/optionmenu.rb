@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Optionmenu
   TkCommandNames = ['::iwidgets::optionmenu'.freeze].freeze
   WidgetClassName = 'Optionmenu'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __boolval_optkeys
     super() << 'cyclicon'

@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Pushbutton
   TkCommandNames = ['::iwidgets::pushbutton'.freeze].freeze
   WidgetClassName = 'Pushbutton'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __boolval_optkeys
     super() << 'defaultring'

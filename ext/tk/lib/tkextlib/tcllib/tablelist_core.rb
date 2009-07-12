@@ -67,6 +67,9 @@ module Tk::Tcllib::TablelistItemConfig
     [self.path, mixed_id[0] + 'configure', _to_idx(mixed_id[1])]
   end
 
+  def cell_cget_tkstring(tagOrId, option)
+    itemcget_tkstring(['cell', tagOrId], option)
+  end
   def cell_cget(tagOrId, option)
     itemcget(['cell', tagOrId], option)
   end
@@ -82,12 +85,16 @@ module Tk::Tcllib::TablelistItemConfig
   def current_cell_configinfo(tagOrId, slot=nil)
     current_itemconfiginfo(['cell', tagOrId], slot)
   end
+  alias cellcget_tkstring cell_cget_tkstring
   alias cellcget cell_cget
   alias cellcget_strict cell_cget_strict
   alias cellconfigure cell_configure
   alias cellconfiginfo cell_configinfo
   alias current_cellconfiginfo current_cell_configinfo
 
+  def column_cget_tkstring(tagOrId, option)
+    itemcget_tkstring(['column', tagOrId], option)
+  end
   def column_cget(tagOrId, option)
     itemcget(['column', tagOrId], option)
   end
@@ -103,12 +110,16 @@ module Tk::Tcllib::TablelistItemConfig
   def current_column_configinfo(tagOrId, slot=nil)
     current_itemconfiginfo(['column', tagOrId], slot)
   end
+  alias columncget_tkstring column_cget_tkstring
   alias columncget column_cget
   alias columncget_strict column_cget_strict
   alias columnconfigure column_configure
   alias columnconfiginfo column_configinfo
   alias current_columnconfiginfo current_column_configinfo
 
+  def row_cget_tkstring(tagOrId, option)
+    itemcget_tkstring(['row', tagOrId], option)
+  end
   def row_cget(tagOrId, option)
     itemcget(['row', tagOrId], option)
   end
@@ -124,13 +135,14 @@ module Tk::Tcllib::TablelistItemConfig
   def current_row_configinfo(tagOrId, slot=nil)
     current_itemconfiginfo(['row', tagOrId], slot)
   end
+  alias rowcget_tkstring row_cget_tkstring
   alias rowcget row_cget
   alias rowcget_strict row_cget_strict
   alias rowconfigure row_configure
   alias rowconfiginfo row_configinfo
   alias current_rowconfiginfo current_row_configinfo
 
-  private :itemcget, :itemcget_strict
+  private :itemcget_tkstring, :itemcget, :itemcget_strict
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 end
 
@@ -140,7 +152,7 @@ class Tk::Tcllib::Tablelist
 
   TkCommandNames = ['::tablelist::tablelist'.freeze].freeze
   WidgetClassName = 'Tablelist'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def create_self(keys)
     if keys and keys != None
@@ -165,16 +177,16 @@ class Tk::Tcllib::Tablelist
   private :__strval_optkeys
 
   def __boolval_optkeys
-    super() + [
+    super() - ['takefocus'] + [
       'forceeditendcommand', 'movablecolumns', 'movablerows',
-      'protecttitlecolumns', 'resizablecolumns',
+      'protecttitlecolumns', 'resizablecolumns', 'setfocus',
       'showarrow', 'showlabels', 'showseparators'
     ]
   end
   private :__boolval_optkeys
 
   def __listval_optkeys
-    super() + ['columns']
+    super() + ['columns', 'columntitles']
   end
   private :__listval_optkeys
 
@@ -186,7 +198,21 @@ class Tk::Tcllib::Tablelist
   def __val2ruby_optkeys  # { key=>proc, ... }
     # The method is used to convert a opt-value to a ruby's object.
     # When get the value of the option "key", "proc.call(value)" is called.
-    super().update('stretch'=>proc{|v| (v == 'all')? v: simplelist(v)})
+    super().update('stretch'=>proc{|v|
+                     (v == 'all')? v: simplelist(v)
+                   },
+                   'takefocus'=>proc{|v|
+                     case v
+                     when '1'
+                       true
+                     when '0'
+                       false
+                     when ''
+                       nil
+                     else # cmd
+                       tk_tcl2ruby(cmd)
+                       end
+                   })
   end
   private :__val2ruby_optkeys
 
@@ -196,6 +222,18 @@ class Tk::Tcllib::Tablelist
     # That is, "-#{key} #{proc.call(value)}".
     super().update('stretch'=>proc{|v|
                      (v.kind_of?(Array))? v.collect{|e| _to_idx(e)}: v
+                   },
+                   'takefocus'=>proc{|v|
+                     case v
+                     when true
+                       '1'
+                     when false
+                       '0'
+                     when nil
+                       ''
+                     else
+                       _get_eval_string(v)
+                     end
                    })
   end
   private :__ruby2val_optkeys
@@ -211,14 +249,15 @@ class Tk::Tcllib::Tablelist
     if id[0] == 'cell'
       super(id) + ['title']
     else
-      super(id) - ['text'] + ['title']
+      super(id) - ['text'] + ['title', 'name']
     end
   end
   private :__item_strval_optkeys
 
   def __item_boolval_optkeys(id)
     super(id) + [
-      'editable', 'hide', 'resizable', 'showarrow', 'stretchable',
+      'changesnipside', 'editable', 'hide', 'resizable', 'selectable',
+      'showarrow', 'showlinenumbers', 'stretchable', 'stretchwindow', 'wrap'
     ]
   end
   private :__item_boolval_optkeys
@@ -286,6 +325,23 @@ class Tk::Tcllib::Tablelist
   end
   alias cancelediting cancel_editing
 
+  def get_cellattrib(name=nil)
+    if name && name != None
+      tk_send('cellattrib', name)
+    else
+      ret = []
+      lst = simplelist(tk_send('cellattrib'))
+      until lst.empty?
+        ret << ( [lst.shift] << lst.shift )
+      end
+      ret
+    end
+  end
+  def set_cellattrib(*args)
+    tk_send('cellattrib', *(args.flatten))
+    self
+  end
+
   def cellindex(idx)
     _from_idx(tk_send('cellindex', _to_idx(idx)))
   end
@@ -321,6 +377,23 @@ class Tk::Tcllib::Tablelist
     self
   end
 
+  def get_columnattrib(name=nil)
+    if name && name != None
+      tk_send('columnattrib', name)
+    else
+      ret = []
+      lst = simplelist(tk_send('columnattrib'))
+      until lst.empty?
+        ret << ( [lst.shift] << lst.shift )
+      end
+      ret
+    end
+  end
+  def set_columnattrib(*args)
+    tk_send('columnattrib', *(args.flatten))
+    self
+  end
+
   def columncount
     number(tk_send('columncount'))
   end
@@ -328,6 +401,83 @@ class Tk::Tcllib::Tablelist
   def columnindex(idx)
     number(tk_send('columnindex', _to_idx(idx)))
   end
+
+  def columnwidth(idx, opt=nil)
+    if opt
+      number(tk_send('columnwidth', _to_idx(idx), "-#{opt}"))
+    else
+      number(tk_send('columnwidth', _to_idx(idx)))
+    end
+  end
+  def requested_columnwidth(idx)
+    columnwidth(idx, 'requested')
+  end
+  def stretched_columnwidth(idx)
+    columnwidth(idx, 'stretched')
+  end
+  def total_columnwidth(idx)
+    columnwidth(idx, 'total')
+  end
+
+  def configcelllist(lst) # lst ==> [idx, opt, val, idx, opt, val, ...] 
+    ary = []
+    lst.slice(3){|idx, opt, val|
+      ary << _to_idx(idx) << "-#{opt}" << val
+    }
+    tk_send('configcelllist', ary)
+    self
+  end
+  alias config_celllist configcelllist
+
+  def configcells(*args) # args ==> idx, opt, val, idx, opt, val, ...
+    ary = []
+    args.slice(3){|idx, opt, val|
+      ary << _to_idx(idx) << "-#{opt}" << val
+    }
+    tk_send('configcells', *ary)
+    self
+  end
+  alias config_cells configcells
+
+  def configcolumnlist(lst) # lst ==> [idx, opt, val, idx, opt, val, ...] 
+    ary = []
+    lst.slice(3){|idx, opt, val|
+      ary << _to_idx(idx) << "-#{opt}" << val
+    }
+    tk_send('configcolumnlist', ary)
+    self
+  end
+  alias config_columnlist configcolumnlist
+
+  def configcolumns(*args) # args ==> idx, opt, val, idx, opt, val, ...
+    ary = []
+    args.slice(3){|idx, opt, val|
+      ary << _to_idx(idx) << "-#{opt}" << val
+    }
+    tk_send('configcolumns', *ary)
+    self
+  end
+  alias config_columns configcolumns
+
+  def configrowlist(lst) # lst ==> [idx, opt, val, idx, opt, val, ...] 
+    ary = []
+    lst.slice(3){|idx, opt, val|
+      ary << _to_idx(idx) << "-#{opt}" << val
+    }
+    tk_send('configrowlist', ary)
+    self
+  end
+  alias config_rowlist configrowlist
+
+  def configrows(*args) # args ==> idx, opt, val, idx, opt, val, ...
+    ary = []
+    args.slice(3){|idx, opt, val|
+      ary << _to_idx(idx) << "-#{opt}" << val
+    }
+    tk_send('configrows', *ary)
+    self
+  end
+  alias config_rows configrows
 
   def containing(y)
     idx = num_or_str(tk_send('containing', y))
@@ -392,6 +542,10 @@ class Tk::Tcllib::Tablelist
   end
   alias editcell edit_cell
 
+  def editwintag
+    TkBindTag.new_by_name(tk_send('editwintag'))
+  end
+
   def editwinpath
     window(tk_send('editwinpath'))
   end
@@ -411,6 +565,11 @@ class Tk::Tcllib::Tablelist
     self
   end
   alias finishediting finish_editing
+
+  def formatinfo
+    key, row, col = simplelist(tk_send('formatinfo'))
+    [key, number(row), number(col)]
+  end
 
   def get(first, last=nil)
     if first.kind_of?(Array)
@@ -455,6 +614,22 @@ class Tk::Tcllib::Tablelist
   end
   alias getkeys get_keys
 
+  def has_attrib?(name)
+    bool(tk_send('hasattrib', name))
+  end
+
+  def has_cellattrib?(idx, name)
+    bool(tk_send('hascellattrib', _to_idx(idx), name))
+  end
+
+  def has_columnattrib?(idx, name)
+    bool(tk_send('hascolumnattrib', _to_idx(idx), name))
+  end
+
+  def has_rowattrib?(idx, name)
+    bool(tk_send('hasrowattrib', _to_idx(idx), name))
+  end
+
   def imagelabelpath(idx)
     window(tk_send('imagelabelpath', _to_idx(idx)))
   end
@@ -486,6 +661,16 @@ class Tk::Tcllib::Tablelist
   end
   alias insertlist insert_list
 
+  def is_elem_snipped?(cellidx, tkvar)
+    bool(tk_send('iselemsnipped', _to_idx(cellidx), tkvar))
+  end
+  alias elem_snipped? is_elem_snipped?
+
+  def is_title_snipped?(colidx, tkvar)
+    bool(tk_send('istitlesnipped', _to_idx(colidx), tkvar))
+  end
+  alias title_snipped? is_title_snipped?
+
   def itemlistvar
     TkVarAccess.new(tk_send('itemlistvar'))
   end
@@ -496,6 +681,10 @@ class Tk::Tcllib::Tablelist
 
   def labels
     simplelist(tk_send('labels'))
+  end
+
+  def labeltag
+    TkBindTag.new_by_name(tk_send('labeltag'))
   end
 
   def move(src, target)
@@ -534,6 +723,23 @@ class Tk::Tcllib::Tablelist
     self
   end
   alias resetsortinfo reset_sortinfo
+
+  def get_rowattrib(name=nil)
+    if name && name != None
+      tk_send('rowattrib', name)
+    else
+      ret = []
+      lst = simplelist(tk_send('rowattrib'))
+      until lst.empty?
+        ret << ( [lst.shift] << lst.shift )
+      end
+      ret
+    end
+  end
+  def set_rowattrib(*args)
+    tk_send('rowattrib', *(args.flatten))
+    self
+  end
 
   def scan_mark(x, y)
     tk_send('scan', 'mark', x, y)
@@ -633,7 +839,22 @@ class Tk::Tcllib::Tablelist
     self
   end
 
-  DEFAULT_sortByColumn_cmd = '::tablelist::sortByColumn'
+
+  # default of 'labelcommand' option
+  DEFAULT_labelcommand_value = 
+    DEFAULT_sortByColumn_cmd = '::tablelist::sortByColumn'
+
+  # default of 'labelcommand2' option
+  DEFAULT_labelcommand2_value = 
+    DEFAULT_addToSortColumns_cmd = '::tablelist::addToSortColumns'
+
+  def sortByColumn_with_event_generate(idx)
+    tk_call('::tablelist::sortByColumn', @path, _to_idx(idx))
+  end
+
+  def addToSortColumns_with_event_generate(idx)
+    tk_call('::tablelist::addToSortColumns', @path, _to_idx(idx))
+  end
 
   def sort_by_column(idx, order=nil)
     if order
@@ -659,13 +880,47 @@ class Tk::Tcllib::Tablelist
     self
   end
 
+  def sort_by_columnlist(idxlist, orderlist=None)
+    # orderlist :: list of 'increasing' or 'decreasing'
+    tk_send('sortbycolumnlist', idxlist.map{|idx| _to_idx(idx)}, orderlist)
+    self
+  end
+
   def sortcolumn
     idx = num_or_str(tk_send('sortcolum'))
     (idx.kind_of?(Fixnum) && idx < 0)?  nil: idx
   end
 
+  def sortcolumnlist
+    simplelist(tk_send('sortcolumlist')).map{|col| num_or_str(col)}
+  end
+
   def sortorder
     tk_send('sortorder')
+  end
+
+  def sortorderlist
+    simplelist(tk_send('sortorderlist'))
+  end
+
+  def toggle_columnhide(first, last=nil)
+    if first.kind_of?(Array)
+      tk_send('togglecolumnhide', first.collect{|idx| _to_idx(idx)})
+    else
+      first = _to_idx(first)
+      last = (last)? _to_idx(last): first
+      tk_send('togglecolumnhide', first, last)
+    end
+  end
+
+  def toggle_rowhide(first, last=nil)
+    if first.kind_of?(Array)
+      tk_send('togglerowhide', first.collect{|idx| _to_idx(idx)})
+    else
+      first = _to_idx(first)
+      last = (last)? _to_idx(last): first
+      tk_send('togglerowhide', first, last)
+    end
   end
 
   def toggle_visibility(first, last=nil)
@@ -680,6 +935,26 @@ class Tk::Tcllib::Tablelist
   end
   alias togglevisibility toggle_visibility
 
+  def unset_attrib(name)
+    tk_send('unsetattrib', name)
+    self
+  end
+
+  def unset_cellattrib(idx, name)
+    tk_send('unsetcellattrib', _to_idx(idx), name)
+    self
+  end
+
+  def unset_columnattrib(idx, name)
+    tk_send('unsetcolumnattrib', _to_idx(idx), name)
+    self
+  end
+
+  def unset_rowattrib(idx, name)
+    tk_send('unsetrowattrib', _to_idx(idx), name)
+    self
+  end
+
   def windowpath(idx)
     window(tk_send('windowpath', _to_idx(idx)))
   end
@@ -691,6 +966,11 @@ class << Tk::Tcllib::Tablelist
   def getTablelistPath(descendant)
     window(Tk.tk_call('::tablelist::getTablelistPath', descendant))
   end
+
+  def getTablelistColumn(descendant)
+    num_or_str(Tk.tk_call('::tablelist::getTablelistColumn', headerlabel))
+  end
+
 
   def convEventFields(descendant, x, y)
     window(Tk.tk_call('::tablelist::convEventFields', descendant, x, y))
@@ -765,6 +1045,16 @@ class << Tk::Tcllib::Tablelist
       gmt = None
     end
     Tk.tk_call('::tablelist::addTimeMentry', format, separator, gmt, name)
+  end
+
+  def addDateTimeMentry(format, date_sep, time_sep, gmt=false, name=None)
+    if gmt && gmt != None
+      gmt = '-gmt'
+    else
+      gmt = None
+    end
+    Tk.tk_call('::tablelist::addDateTimeMentry', 
+               format, date_sep, time_sep, gmt, name)
   end
 
   def addFixedPointMentry(count1, count2, comma=false, name=None)

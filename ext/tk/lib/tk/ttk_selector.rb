@@ -53,21 +53,43 @@ module Tk
 
     :TkTreeview     => 'tkextlib/tile/treeview',
   }
-  @TOPLEVEL_ALIAS_TABLE[:Tile] = @TOPLEVEL_ALIAS_TABLE[:Ttk]
+
+  # @TOPLEVEL_ALIAS_TABLE[:Tile] = @TOPLEVEL_ALIAS_TABLE[:Ttk]
+  Tk.__create_widget_set__(:Tile, :Ttk)
+
+  ############################################
+  #  depend on the version of Tcl/Tk
+  major, minor, type, patchlevel = TclTkLib.get_version
+
+  #  ttk::spinbox is supported on Tcl/Tk8.6b1 or later
+  if ([major,minor,type,patchlevel] <=> 
+        [8,6,TclTkLib::RELEASE_TYPE::BETA,1]) >= 0
+    @TOPLEVEL_ALIAS_TABLE[:Ttk].update(
+      :TkSpinbox => 'tkextlib/tile/tspinbox'
+    )
+  end
 
   ################################################
   # register some Ttk widgets as default
   # (Ttk is a standard library on Tcl/Tk8.5+)
   @TOPLEVEL_ALIAS_TABLE[:Ttk].each{|sym, file|
-    unless Object.autoload?(sym) || Object.const_defined?(sym)
-      Object.autoload(sym, file)
-    end
+    #unless Tk::TOPLEVEL_ALIASES.autoload?(sym) || Tk::TOPLEVEL_ALIASES.const_defined?(sym)
+    #   @TOPLEVEL_ALIAS_OWNER[sym] = :Ttk
+    #   Tk::TOPLEVEL_ALIASES.autoload(sym, file)
+    #end
+    Tk.__regist_toplevel_aliases__(:Ttk, file, sym)
   }
 
   ################################################
 
-  @TOPLEVEL_ALIAS_SETUP_PROC[:Tile] =
-    @TOPLEVEL_ALIAS_SETUP_PROC[:Ttk] = proc{|mod|
+  # @TOPLEVEL_ALIAS_SETUP_PROC[:Tile] =
+  #   @TOPLEVEL_ALIAS_SETUP_PROC[:Ttk] = proc{|mod|
+  #   unless Tk.autoload?(:Tile) || Tk.const_defined?(:Tile)
+  #     Object.autoload :Ttk, 'tkextlib/tile'
+  #     Tk.autoload :Tile, 'tkextlib/tile'
+  #   end
+  # }
+  Tk.__toplevel_alias_setup_proc__(:Ttk, :Tile){|mod|
     unless Tk.autoload?(:Tile) || Tk.const_defined?(:Tile)
       Object.autoload :Ttk, 'tkextlib/tile'
       Tk.autoload :Tile, 'tkextlib/tile'

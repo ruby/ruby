@@ -42,18 +42,24 @@ module Tk
   module Tcllib
     TkComm::TkExtlibAutoloadModule.unshift(self)
 
+    # package:: autoscroll
+    autoload :Autoscroll,         'tkextlib/tcllib/autoscroll'
+
     # package:: ctext
     autoload :CText,              'tkextlib/tcllib/ctext'
+
+    # package:: cursor
+    autoload :Cursor,             'tkextlib/tcllib/cursor'
+
+    # package:: datefield
+    autoload :Datefield,          'tkextlib/tcllib/datefield'
+    autoload :DateField,          'tkextlib/tcllib/datefield'
 
     # package:: getstring
     autoload :GetString_Dialog,   'tkextlib/tcllib/getstring'
 
     # package:: history
     autoload :History,            'tkextlib/tcllib/history'
-
-    # package:: datefield
-    autoload :Datefield,          'tkextlib/tcllib/datefield'
-    autoload :DateField,          'tkextlib/tcllib/datefield'
 
     # package:: ico
     autoload :ICO,                'tkextlib/tcllib/ico'
@@ -62,11 +68,20 @@ module Tk
     autoload :IP_Entry,           'tkextlib/tcllib/ip_entry'
     autoload :IPEntry,            'tkextlib/tcllib/ip_entry'
 
-    # package:: swaplist
-    autoload :Swaplist_Dialog,    'tkextlib/tcllib/swaplist'
+    # package:: khim
+    autoload :KHIM,               'tkextlib/tcllib/khim'
+
+    # package:: ntext
+    autoload :Ntext,              'tkextlib/tcllib/ntext'
 
     # package:: Plotchart
     autoload :Plotchart,          'tkextlib/tcllib/plotchart'
+
+    # package:: style
+    autoload :Style,              'tkextlib/tcllib/style'
+
+    # package:: swaplist
+    autoload :Swaplist_Dialog,    'tkextlib/tcllib/swaplist'
 
     # package:: tablelist
     autoload :Tablelist,           'tkextlib/tcllib/tablelist'
@@ -81,7 +96,7 @@ module Tk
     autoload :Tooltip,            'tkextlib/tcllib/tooltip'
 
     # package:: widget
-    autoload :Wdiget,             'tkextlib/tcllib/widget'
+    autoload :Widget,             'tkextlib/tcllib/widget'
   end
 end
 

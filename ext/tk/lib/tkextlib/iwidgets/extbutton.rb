@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Extbutton
   TkCommandNames = ['::iwidgets::extbutton'.freeze].freeze
   WidgetClassName = 'Extbutton'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'bitmapforeground' << 'ringbackground'

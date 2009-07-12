@@ -19,7 +19,7 @@ class Tk::BWidget::NoteBook
 
   TkCommandNames = ['NoteBook'.freeze].freeze
   WidgetClassName = 'NoteBook'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   class Event_for_Tabs < TkEvent::Event
     def self._get_extra_args_tbl

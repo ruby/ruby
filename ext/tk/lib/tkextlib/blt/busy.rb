@@ -44,6 +44,7 @@ class << Tk::BLT::Busy
   private :__item_config_cmd
 
   undef itemcget
+  undef itemcget_tkstring
   alias configure itemconfigure
   alias configinfo itemconfiginfo
   alias current_configinfo current_itemconfiginfo
