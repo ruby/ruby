@@ -1,3 +1,8 @@
+Sun Jul 12 23:30:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_to_integer, rb_check_to_integer): return Bignum
+	  as-is.
+
 Sun Jul 12 21:07:46 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: use k_exact_{zero,one}_p macro.
