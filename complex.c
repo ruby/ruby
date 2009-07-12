@@ -812,6 +812,12 @@ rb_fexpt(VALUE x, VALUE y)
     return m_exp(f_mul(m_log(x), y));
 }
 
+inline static VALUE
+f_reciprocal(VALUE x)
+{
+    return f_quo(ONE, x);
+}
+
 /*
  * call-seq:
  *    cmp ** numeric  ->  complex
@@ -879,7 +885,7 @@ nucomp_expt(VALUE self, VALUE other)
 	    }
 	    return z;
 	}
-	return f_expt(f_div(f_to_r(ONE), self), f_negate(other));
+	return f_expt(f_reciprocal(self), f_negate(other));
     }
     if (k_numeric_p(other) && f_real_p(other)) {
 	VALUE r, theta;

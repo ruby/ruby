@@ -1428,6 +1428,13 @@ nurat_marshal_load(VALUE self, VALUE a)
 
 /* --- */
 
+VALUE
+rb_rational_reciprocal(VALUE x)
+{
+    get_dat1(x);
+    return f_rational_new_no_reduce2(CLASS_OF(x), dat->den, dat->num);
+}
+
 /*
  * call-seq:
  *    int.gcd(int2)  ->  integer

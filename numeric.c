@@ -2268,6 +2268,8 @@ fix_fdiv(VALUE x, VALUE y)
     }
 }
 
+VALUE rb_rational_reciprocal(VALUE x);
+
 static VALUE
 fix_divide(VALUE x, VALUE y, ID op)
 {
@@ -2295,6 +2297,10 @@ fix_divide(VALUE x, VALUE y, ID op)
 		return rb_dbl2big(floor(div));
 	    }
 	}
+      case T_RATIONAL:
+	if (op == '/' && FIX2LONG(x) == 1)
+	    return rb_rational_reciprocal(y);
+	return rb_funcall(rb_rational_new1(x), op, 1, y);
       default:
 	return rb_num_coerce_bin(x, y, op);
     }
