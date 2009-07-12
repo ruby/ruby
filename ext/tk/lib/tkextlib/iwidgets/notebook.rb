@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Notebook
   TkCommandNames = ['::iwidgets::notebook'.freeze].freeze
   WidgetClassName = 'Notebook'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   ####################################
 
@@ -41,13 +41,14 @@ class Tk::Iwidgets::Notebook
     end
   end
 
+  alias pagecget_tkstring itemcget_tkstring
   alias pagecget itemcget
   alias pagecget_strict itemcget_strict
   alias pageconfigure itemconfigure
   alias pageconfiginfo itemconfiginfo
   alias current_pageconfiginfo current_itemconfiginfo
 
-  private :itemcget, :itemcget_strict
+  private :itemcget_tkstring, :itemcget, :itemcget_strict
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
   ####################################

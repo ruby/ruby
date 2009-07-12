@@ -14,7 +14,7 @@ module Tk::BLT
 
     WATCH_ID_TBL = TkCore::INTERP.create_table
 
-    (BLT_WATCH_ID = ['blt_watch_id'.freeze, '00000'.taint]).instance_eval{
+    (BLT_WATCH_ID = ['blt_watch_id'.freeze, TkUtil.untrust('00000')]).instance_eval{
       @mutex = Mutex.new
       def mutex; @mutex; end
       freeze

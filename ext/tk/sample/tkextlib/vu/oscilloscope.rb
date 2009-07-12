@@ -22,26 +22,26 @@ geo_t1  = [15, 88]
 c = TkCanvas.new(:width=>220, :height=>190).pack(:fill=>:both, :expand=>true)
 
 #---background
-TkcRectangle.new(c, geo_fr, :width=>4, :fill=>'aquamarine3', 
+TkcRectangle.new(c, geo_fr, :width=>4, :fill=>'aquamarine3',
                  :tags=>['osc', 'frbg'])
 
 #---channel 0
-ch0 = Tk::Vu::TkcStripchart.new(c, geo_ch0, 
-                                :fill=>'', :jumpscroll=>false, 
-                                :outline=>'', :scaleline=>'', 
+ch0 = Tk::Vu::TkcStripchart.new(c, geo_ch0,
+                                :fill=>'', :jumpscroll=>false,
+                                :outline=>'', :scaleline=>'',
                                 :stripline=>'cyan', :tags=>['osc', 'ch0'])
 
 #---channel 1
-ch1 = Tk::Vu::TkcStripchart.new(c, geo_ch1, 
-                                :fill=>'', :jumpscroll=>0, 
-                                :outline=>'', :scaleline=>'', 
+ch1 = Tk::Vu::TkcStripchart.new(c, geo_ch1,
+                                :fill=>'', :jumpscroll=>0,
+                                :outline=>'', :scaleline=>'',
                                 :stripline=>'red', :tags=>['osc', 'ch1'])
 
 #---frame
 TkcRectangle.new(c, geo_fr, :width=>4, :tags=>['osc', 'frfg'])
 
 #---position
-txt1 = TkcText.new(c, geo_t1, :text=>"B1-Motion: X:%X\tY:%Y", 
+txt1 = TkcText.new(c, geo_t1, :text=>"B1-Motion: X:%X\tY:%Y",
                    :anchor=>:nw, :tags=>['osc', 'txt1'])
 
 #---BINDINGS

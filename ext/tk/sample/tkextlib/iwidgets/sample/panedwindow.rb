@@ -11,7 +11,7 @@ pw.add('bottom', :margin=>10, :minimum=>10)
 pw.pack(:fill=>:both, :expand=>true)
 
 pw.child_site_list.each{|pane|
-  TkButton.new(pane, :text=>pane.path, :relief=>:raised, 
+  TkButton.new(pane, :text=>pane.path, :relief=>:raised,
                :borderwidth=>2).pack(:fill=>:both, :expand=>true)
 }
 

@@ -55,18 +55,20 @@ script may give you some hints about that.
 
 ===< support with some examples (may be beta quality) >=======================
 
-Tcllib       1.8     
-Tklib        0.4.1   http://sourceforge.net/projects/tcllib      ==> tcllib
+Tcllib       1.11.1  
+Tklib        0.5     http://sourceforge.net/projects/tcllib      ==> tcllib
+                       ( partial support; primary support target is Tklib)
 
 IWidgets     4.0.2   http://sourceforge.net/projects/incrtcl     ==> iwidgets
 
-BWidgets     1.7     http://sourceforge.net/projects/tcllib      ==> bwidget
+BWidget      1.8 [ CVS/Hd(2009-07-02) ]
+                     http://sourceforge.net/projects/tcllib      ==> bwidget
 
-TkTable      2.9     http://sourceforge.net/projects/tktable     ==> tktable
+TkTable      2.10    http://sourceforge.net/projects/tktable     ==> tktable
                          * see also <http://www.korus.hu/~fery/ruby/tktable.rb>
                                     written by Ferenc Engard (ferenc@engard.hu)
 
-vu           2.3.0   http://sourceforge.net/projects/tktable     ==> vu
+Vu widgets   2.3.0   http://sourceforge.net/projects/tktable     ==> vu
 
 TkHTML       2.0     http://www.hwaci.com/sw/tkhtml/             ==> tkHTML
 
@@ -80,25 +82,25 @@ BLT          2.4z    http://sourceforge.net/projects/blt
                                 (http://raa.ruby-lang.org/)
                       ==> blt
 
-TkTreeCtrl   CVS/Hd(2005-12-02)
-                     http://sourceforge.net/projects/tktreectrl  ==> treectrl
+TkTreeCtrl   2.2.9
+                     http://tktreectrl.sourceforge.net/          ==> treectrl
 
-Tile         0.8.0/8.5.1
+Tile         0.8.3/8.6b1
                      http://sourceforge.net/projects/tktable     ==> tile
 
 
 
 ===< support (may be alpha or beta quality) >=================================
 
-IncrTcl      CVS/Hd(2005-02-14)
+IncrTcl      CVS/Hd(2008-12-15)
                      http://sourceforge.net/projects/incrtcl     ==> itcl, itk
 
-TclX         CVS/Hd(2005-02-07)
+TclX         CVS/Hd(2008-12-15)
                      http://sourceforge.net/projects/tclx
                        ==> tclx (partial support; infox command and 
                                                    XPG/3 message catalogs only)
 
-Trofs        0.4.3   http://math.nist.gov/~DPorter/tcltk/trofs/
+Trofs        0.4.4   http://math.nist.gov/~DPorter/tcltk/trofs/
 
 
 

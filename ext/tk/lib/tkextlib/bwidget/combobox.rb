@@ -21,7 +21,12 @@ class Tk::BWidget::ComboBox
 
   TkCommandNames = ['ComboBox'.freeze].freeze
   WidgetClassName = 'ComboBox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
+
+  def __boolval_optkeys
+    super() << 'autocomplete' << 'autopost'
+  end
+  private :__boolval_optkeys
 
   def get_listbox(&b)
     win = window(tk_send_without_enc('getlistbox'))
@@ -34,6 +39,12 @@ class Tk::BWidget::ComboBox
     end
     win
   end
+
+  def clear_value
+    tk_send_without_enc('clearvalue')
+    self
+  end
+  alias clearvalue clear_value
 
   def icursor(idx)
     tk_send_without_enc('icursor', idx)

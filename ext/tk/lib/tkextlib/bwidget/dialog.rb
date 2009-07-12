@@ -18,12 +18,17 @@ end
 class Tk::BWidget::Dialog
   TkCommandNames = ['Dialog'.freeze].freeze
   WidgetClassName = 'Dialog'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   include TkItemConfigMethod
 
+  def __numstrval_optkeys
+    super() << 'buttonwidth'
+  end
+  private :__numstrval_optkeys
+
   def __strval_optkeys
-    super() << 'title'
+    super() << 'title' << 'geometry'
   end
   private :__strval_optkeys
 
@@ -52,13 +57,20 @@ class Tk::BWidget::Dialog
   def create_self(keys)
     cmd = self.class::TkCommandNames[0]
     if keys and keys != None
-      tk_call_without_enc(cmd, @path, '-parent', @relative, 
+      tk_call_without_enc(cmd, @path, '-parent', @relative,
                           *hash_kv(keys, true))
     else
       tk_call_without_enc(cmd, @path, '-parent', @relative)
     end
   end
 
+  def cget_tkstring(slot)
+    if slot.to_s == 'relative'
+      super('parent')
+    else
+      super(slot)
+    end
+  end
   def cget_strict(slot)
     if slot.to_s == 'relative'
       super('parent')

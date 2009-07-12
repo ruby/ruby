@@ -3,7 +3,7 @@
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 #   * Part of tcllib extension
-#   * Provides tooltips, a small text message that is displayed when the 
+#   * Provides tooltips, a small text message that is displayed when the
 #     mouse hovers over a widget.
 #
 
@@ -34,6 +34,8 @@ module Tk::Tcllib::Tooltip
   extend TkCore
 
   WidgetClassName = 'Tooltip'.freeze
+  WidgetClassNames[WidgetClassName] ||= self
+
   def self.database_classname
     self::WidgetClassName
   end
@@ -64,6 +66,13 @@ module Tk::Tcllib::Tooltip
     self.delay(millisecs)
   end
 
+  def self.fade?
+    bool(tk_call_without_enc('::tooltip::tooltip', 'fade'))
+  end
+  def self.fade(mode)
+    tk_call_without_enc('::tooltip::tooltip', 'fade', mode)
+  end
+
   def self.disable
     tk_call_without_enc('::tooltip::tooltip', 'disable')
     false
@@ -86,7 +95,7 @@ module Tk::Tcllib::Tooltip
     else
       args = msg
     end
-    tk_call_without_enc('::tooltip::tooltip', widget.path, *args)
+    tk_call('::tooltip::tooltip', widget.path, *args)
   end
 
   def self.erase(widget)

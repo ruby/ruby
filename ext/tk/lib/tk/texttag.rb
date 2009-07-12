@@ -11,7 +11,7 @@ class TkTextTag<TkObject
 
   TTagID_TBL = TkCore::INTERP.create_table
 
-  (Tk_TextTag_ID = ['tag'.freeze, '00000'.taint]).instance_eval{
+  (Tk_TextTag_ID = ['tag'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -26,7 +26,7 @@ class TkTextTag<TkObject
     TTagID_TBL.mutex.synchronize{
       if TTagID_TBL[tpath]
         TTagID_TBL[tpath][id]? TTagID_TBL[tpath][id]: id
-      else 
+      else
         id
       end
     }
@@ -84,13 +84,13 @@ class TkTextTag<TkObject
   end
 
   def add(*indices)
-    tk_call_without_enc(@t.path, 'tag', 'add', @id, 
+    tk_call_without_enc(@t.path, 'tag', 'add', @id,
                         *(indices.collect{|idx| _get_eval_enc_str(idx)}))
     self
   end
 
   def remove(*indices)
-    tk_call_without_enc(@t.path, 'tag', 'remove', @id, 
+    tk_call_without_enc(@t.path, 'tag', 'remove', @id,
                         *(indices.collect{|idx| _get_eval_enc_str(idx)}))
     self
   end
@@ -105,16 +105,16 @@ class TkTextTag<TkObject
   end
 
   def nextrange(first, last=None)
-    simplelist(tk_call_without_enc(@t.path, 'tag', 'nextrange', @id, 
-                                   _get_eval_enc_str(first), 
+    simplelist(tk_call_without_enc(@t.path, 'tag', 'nextrange', @id,
+                                   _get_eval_enc_str(first),
                                    _get_eval_enc_str(last))).collect{|idx|
       Tk::Text::IndexString.new(idx)
     }
   end
 
   def prevrange(first, last=None)
-    simplelist(tk_call_without_enc(@t.path, 'tag', 'prevrange', @id, 
-                                   _get_eval_enc_str(first), 
+    simplelist(tk_call_without_enc(@t.path, 'tag', 'prevrange', @id,
+                                   _get_eval_enc_str(first),
                                    _get_eval_enc_str(last))).collect{|idx|
       Tk::Text::IndexString.new(idx)
     }
@@ -129,6 +129,9 @@ class TkTextTag<TkObject
     val
   end
 
+  def cget_tkstring(key)
+    @t.tag_cget_tkstring @id, key
+  end
   def cget(key)
     @t.tag_cget @id, key
   end
@@ -142,7 +145,7 @@ class TkTextTag<TkObject
       _fromUTF8(tk_call_without_enc(@t.path, 'tag', 'cget', @id, "-#{key}"))
     when 'font', 'kanjifont'
       #fnt = tk_tcl2ruby(tk_call(@t.path, 'tag', 'cget', @id, "-#{key}"))
-      fnt = tk_tcl2ruby(_fromUTF8(tk_call_without_enc(@t.path, 'tag', 'cget', 
+      fnt = tk_tcl2ruby(_fromUTF8(tk_call_without_enc(@t.path, 'tag', 'cget',
                                                       @id, '-font')))
       unless fnt.kind_of?(TkFont)
         fnt = tagfontobj(@id, fnt)
@@ -154,7 +157,7 @@ class TkTextTag<TkObject
         fnt
       end
     else
-      tk_tcl2ruby(_fromUTF8(tk_call_without_enc(@t.path, 'tag', 'cget', 
+      tk_tcl2ruby(_fromUTF8(tk_call_without_enc(@t.path, 'tag', 'cget',
                                                 @id, "-#{key}")))
     end
   end
@@ -227,13 +230,13 @@ class TkTextTag<TkObject
   end
 
   def raise(above=None)
-    tk_call_without_enc(@t.path, 'tag', 'raise', @id, 
+    tk_call_without_enc(@t.path, 'tag', 'raise', @id,
                         _get_eval_enc_str(above))
     self
   end
 
   def lower(below=None)
-    tk_call_without_enc(@t.path, 'tag', 'lower', @id, 
+    tk_call_without_enc(@t.path, 'tag', 'lower', @id,
                         _get_eval_enc_str(below))
     self
   end

@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Mainwindow
   TkCommandNames = ['::iwidgets::mainwindow'.freeze].freeze
   WidgetClassName = 'Mainwindow'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __boolval_optkeys
     super() << 'helpline' << 'statusline'

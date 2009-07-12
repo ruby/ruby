@@ -26,13 +26,13 @@ quit_btn = TkButton.new(f, :text=>"Exit", :command=>proc{exit})
 Tk.grid(pie, :sticky=>:news)
 Tk.grid(f, :sticky=>:ew)
 
-Tk.pack(fast_btn, slow_btn, quit_btn, 
+Tk.pack(fast_btn, slow_btn, quit_btn,
         :in=>f, :side=>:left, :fill=>:both, :expand=>true, :padx=>6, :pady=>4)
 
 Tk.root.grid_columnconfigure(0, :weight=>1)
 Tk.root.grid_rowconfigure(0, :weight=>1)
 
-priv = { 
+priv = {
   :x=>0, :y=>0, :pie_in=>false, :angle=>pie[:angle], :origin=>pie[:origin]
 }
 
@@ -46,9 +46,9 @@ pie.bind('ButtonPress-1', proc{|w, x, y|
 
 pie.bind('B1-Motion', proc{|w, x, y|
            if priv[:pie_in]
-             w.configure(:angle=>priv[:angle] + (priv[:y] - y)/3, 
-                         :origin=>(priv[:origin] + 
-                                   ((w.winfo_height/2.2 > y)? -1: 1) * 
+             w.configure(:angle=>priv[:angle] + (priv[:y] - y)/3,
+                         :origin=>(priv[:origin] +
+                                   ((w.winfo_height/2.2 > y)? -1: 1) *
                                    (priv[:x] - x)/3) % 360)
            end
          }, '%W %x %y')

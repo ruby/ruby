@@ -7,7 +7,7 @@
 #
 require 'tk'
 
-if (Tk::TK_MAJOR_VERSION < 8 || 
+if (Tk::TK_MAJOR_VERSION < 8 ||
     (Tk::TK_MAJOR_VERSION == 8 && Tk::TK_MINOR_VERSION < 4))
   # call setup script  --  <libdir>/tkextlib/vu.rb
   require 'tkextlib/vu.rb'

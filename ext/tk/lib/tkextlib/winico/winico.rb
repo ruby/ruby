@@ -46,7 +46,7 @@ class Tk::Winico
   end
 
   def self.info
-    simplelist(Tk.tk_call('winico', 'info')).collect{|id| 
+    simplelist(Tk.tk_call('winico', 'info')).collect{|id|
       Tk::Winico.id2obj(id)
     }
   end
@@ -82,7 +82,7 @@ class Tk::Winico
     elsif winico_id
       @id = winico_id
     else
-      fail ArgumentError, 
+      fail ArgumentError,
            "must be given proper information from where loading icons"
     end
     @path = @id
@@ -96,7 +96,7 @@ class Tk::Winico
   end
 
   def set_window(win_id, *opts) # opts := ?'big'|'small'?, ?pos?
-    # NOTE:: the window, which is denoted by win_id, MUST BE MAPPED. 
+    # NOTE:: the window, which is denoted by win_id, MUST BE MAPPED.
     #        If not, then this may fail or crash.
     tk_call('winico', 'setwindow', win_id, @id, *opts)
   end
@@ -119,22 +119,22 @@ class Tk::Winico
   class Winico_callback < TkValidateCommand
     class ValidateArgs < TkUtil::CallbackSubst
       KEY_TBL = [
-        [ ?m, ?s, :message ], 
-        [ ?i, ?x, :icon ], 
-        [ ?x, ?n, :x ], 
-        [ ?y, ?n, :y ], 
-        [ ?X, ?n, :last_x ], 
-        [ ?Y, ?n, :last_y ], 
-        [ ?t, ?n, :tickcount ], 
-        [ ?w, ?n, :icon_idnum ], 
-        [ ?l, ?n, :msg_idnum ], 
+        [ ?m, ?s, :message ],
+        [ ?i, ?x, :icon ],
+        [ ?x, ?n, :x ],
+        [ ?y, ?n, :y ],
+        [ ?X, ?n, :last_x ],
+        [ ?Y, ?n, :last_y ],
+        [ ?t, ?n, :tickcount ],
+        [ ?w, ?n, :icon_idnum ],
+        [ ?l, ?n, :msg_idnum ],
         nil
       ]
 
       PROC_TBL = [
-        [ ?n, TkComm.method(:number) ], 
-        [ ?s, TkComm.method(:string) ], 
-        [ ?x, proc{|id| 
+        [ ?n, TkComm.method(:number) ],
+        [ ?s, TkComm.method(:string) ],
+        [ ?x, proc{|id|
             Tk::Winico::WinicoID_TBL.mutex.synchronize{
               if Tk::Winico::WinicoID_TBL.key?(id)
                 obj = Tk::Winico::WinicoID_TBL[id]
@@ -146,7 +146,7 @@ class Tk::Winico
               end
               obj
             }
-          } ], 
+          } ],
         nil
       ]
 

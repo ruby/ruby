@@ -8,12 +8,12 @@ class TkNamespace < TkObject
   extend Tk
 
   TkCommandNames = [
-    'namespace'.freeze, 
+    'namespace'.freeze,
   ].freeze
 
   Tk_Namespace_ID_TBL = TkCore::INTERP.create_table
 
-  (Tk_Namespace_ID = ["ns".freeze, "00000".taint]).instance_eval{
+  (Tk_Namespace_ID = ["ns".freeze, TkUtil.untrust("00000")]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -46,7 +46,7 @@ class TkNamespace < TkObject
     private :__config_cmd
 
     def __configinfo_struct
-      {:key=>0, :alias=>nil, :db_name=>nil, :db_class=>nil, 
+      {:key=>0, :alias=>nil, :db_name=>nil, :db_class=>nil,
         :default_value=>nil, :current_value=>2}
     end
     private :__configinfo_struct
@@ -122,8 +122,8 @@ class TkNamespace < TkObject
 
         if TkComm::GET_CONFIGINFO_AS_ARRAY
           Tk_Namespace_ID_TBL.mutex.synchronize{
-            info.map!{|inf| 
-              if inf[0] == 'namespace' && 
+            info.map!{|inf|
+              if inf[0] == 'namespace' &&
                   TkNamespace::Tk_Namespace_ID_TBL.key?(inf[-1])
                 [inf[0], TkNamespace::Tk_Namespace_ID_TBL[inf[-1]]]
               else
@@ -160,19 +160,19 @@ class TkNamespace < TkObject
     def tk_call(*args)
       #super('namespace', 'eval', @namespace, *args)
       args = args.collect{|arg| (s = _get_eval_string(arg, true))? s: ''}
-      super('namespace', 'eval', @namespace, 
+      super('namespace', 'eval', @namespace,
             TkCore::INTERP._merge_tklist(*args))
     end
     def tk_call_without_enc(*args)
       #super('namespace', 'eval', @namespace, *args)
       args = args.collect{|arg| (s = _get_eval_string(arg, true))? s: ''}
-      super('namespace', 'eval', @namespace, 
+      super('namespace', 'eval', @namespace,
             TkCore::INTERP._merge_tklist(*args))
     end
     def tk_call_with_enc(*args)
       #super('namespace', 'eval', @namespace, *args)
       args = args.collect{|arg| (s = _get_eval_string(arg, true))? s: ''}
-      super('namespace', 'eval', @namespace, 
+      super('namespace', 'eval', @namespace,
             TkCore::INTERP._merge_tklist(*args))
     end
 
@@ -223,19 +223,19 @@ class TkNamespace < TkObject
   def tk_call(*args)
     #super('namespace', 'eval', @fullname, *args)
     args = args.collect{|arg| (s = _get_eval_string(arg, true))? s: ''}
-    super('namespace', 'eval', @fullname, 
+    super('namespace', 'eval', @fullname,
           TkCore::INTERP._merge_tklist(*args))
   end
   def tk_call_without_enc(*args)
     #super('namespace', 'eval', @fullname, *args)
     args = args.collect{|arg| (s = _get_eval_string(arg, true))? s: ''}
-    super('namespace', 'eval', @fullname,  
+    super('namespace', 'eval', @fullname,
           TkCore::INTERP._merge_tklist(*args))
   end
   def tk_call_with_enc(*args)
     #super('namespace', 'eval', @fullname, *args)
     args = args.collect{|arg| (s = _get_eval_string(arg, true))? s: ''}
-    super('namespace', 'eval', @fullname, 
+    super('namespace', 'eval', @fullname,
           TkCore::INTERP._merge_tklist(*args))
   end
   alias ns_tk_call             tk_call
@@ -318,7 +318,7 @@ class TkNamespace < TkObject
     else
       fail ArgumentError, "String or Proc is expected"
     end
-    TkNamespace::NsCode.new(tk_call_without_enc('namespace', 'code', 
+    TkNamespace::NsCode.new(tk_call_without_enc('namespace', 'code',
                                                 _get_eval_string(cmd, false)))
   end
 =end
@@ -350,8 +350,8 @@ class TkNamespace < TkObject
     else
       fail ArgumentError, "String or Proc is expected"
     end
-    TkNamespace::NsCode.new(tk_call_without_enc('namespace', 'code', 
-                                                _get_eval_string(cmd, false)), 
+    TkNamespace::NsCode.new(tk_call_without_enc('namespace', 'code',
+                                                _get_eval_string(cmd, false)),
                             true)
   end
 

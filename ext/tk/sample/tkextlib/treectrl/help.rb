@@ -4,7 +4,7 @@
 def demoHelpContents(t)
   height = t.font.metrics(:linespace)
   height = 18 if height < 18
-  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false, 
+  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false,
               :itemheight=>height, :selectmode=>:browse)
 
   init_pics('help-*')
@@ -20,16 +20,16 @@ def demoHelpContents(t)
 
   t.element_create('e1', :image, :image=>@images['help-page'])
   t.element_create('e2', :image, :image=>[
-                     @images['help-book-open'], ['open'], 
-                     @images['help-book-closed'], [], 
+                     @images['help-book-open'], ['open'],
+                     @images['help-book-closed'], [],
                    ])
-  t.element_create('e3', :text, 
-                   :font=>[t.font.dup.underline(true), ['mouseover']], 
+  t.element_create('e3', :text,
+                   :font=>[t.font.dup.underline(true), ['mouseover']],
                    :fill=>[
-                     @SystemHighlightText, ['selected', 'focus'], 
+                     @SystemHighlightText, ['selected', 'focus'],
                      'blue', ['mouseover']
                    ])
-  t.element_create('e4', :rect, :showfocus=>true, 
+  t.element_create('e4', :rect, :showfocus=>true,
                    :fill=>[@SystemHighlight, ['selected', 'focus']])
 
   # book
@@ -49,21 +49,21 @@ def demoHelpContents(t)
   parentList = [:root, '', '', '', '', '', '']
   parent = :root
   [
-     [0, 's1', "Welcome to Help"], 
-     [0, 's2', "Introducing Windows 98"], 
-        [1, 's2', "How to Use Help"], 
-           [2, 's1', "Find a topic"], 
+     [0, 's1', "Welcome to Help"],
+     [0, 's2', "Introducing Windows 98"],
+        [1, 's2', "How to Use Help"],
+           [2, 's1', "Find a topic"],
            [2, 's1', "Get more out of help"],
         [1, 's2', "Register Your Software"],
-           [2, 's1', "Registering Windows 98 online"], 
-        [1, 's2', "What's New in Windows 98"], 
-           [2, 's1', "Innovative, easy-to-use features"], 
-           [2, 's1', "Improved reliability"], 
-           [2, 's1', "A faster operating system"], 
-           [2, 's1', "True Web integration"], 
-           [2, 's1', "More entertaining and fun"], 
-        [1, 's2', "If You're New to Windows 98"], 
-           [2, 's2', "Tips for Macintosh Users"], 
+           [2, 's1', "Registering Windows 98 online"],
+        [1, 's2', "What's New in Windows 98"],
+           [2, 's1', "Innovative, easy-to-use features"],
+           [2, 's1', "Improved reliability"],
+           [2, 's1', "A faster operating system"],
+           [2, 's1', "True Web integration"],
+           [2, 's1', "More entertaining and fun"],
+        [1, 's2', "If You're New to Windows 98"],
+           [2, 's2', "Tips for Macintosh Users"],
               [3, 's1', "Why does the mouse have two buttons?"]
   ].each{|depth, style, text|
     item = t.item_create
@@ -81,7 +81,7 @@ def demoHelpContents(t)
 
   treeCtrlHelp = TkBindTag.new
 
-  treeCtrlHelp.bind('Double-ButtonPress-1', 
+  treeCtrlHelp.bind('Double-ButtonPress-1',
                     proc{|w, x, y|
                       if w.identify(x, y)[0] == 'header'
                         Tk::TreeCtrl::BindCallback.doubleButton1(w, x, y)
@@ -91,25 +91,25 @@ def demoHelpContents(t)
                       Tk.callback_break
                     }, '%W %x %y')
 
-  treeCtrlHelp.bind('ButtonPress-1', 
+  treeCtrlHelp.bind('ButtonPress-1',
                     proc{|w, x, y|
                       helpButton1(w, x, y)
                       Tk.callback_break
                     }, '%W %x %y')
 
-  treeCtrlHelp.bind('Button1-Motion', 
+  treeCtrlHelp.bind('Button1-Motion',
                     proc{|w, x, y|
                       helpMotion1(w, x, y)
                       Tk.callback_break
                     }, '%W %x %y')
 
-  treeCtrlHelp.bind('Button1-Leave', 
+  treeCtrlHelp.bind('Button1-Leave',
                     proc{|w, x, y|
                       helpLeave1(w, x, y)
                       Tk.callback_break
                     }, '%W %x %y')
 
-  treeCtrlHelp.bind('ButtonRelease-1', 
+  treeCtrlHelp.bind('ButtonRelease-1',
                     proc{|w, x, y|
                       helpRelease1(w, x, y)
                       Tk.callback_break
@@ -119,7 +119,7 @@ def demoHelpContents(t)
 
   treeCtrlHelp.bind('Leave', proc{|w, x, y| helpMotion(w, x, y) }, '%W %x %y')
 
-  treeCtrlHelp.bind('KeyPress-Return', 
+  treeCtrlHelp.bind('KeyPress-Return',
                     proc{|w, x, y|
                       if w.selection_get.length == 1
                         if $Version_1_1_OrLater
@@ -141,7 +141,7 @@ end
 def demoHelpContents2(t)
   height = t.font.metrics(:linespace)
   height = 18 if height < 18
-  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false, 
+  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false,
               :itemheight=>height, :selectmode=>:browse)
 
   init_pics('help-*')
@@ -154,19 +154,19 @@ def demoHelpContents2(t)
 
   t.element_create('e1', :image, :image=>@images['help-page'])
   t.element_create('e2', :image, :image=>[
-                     @images['help-book-open'], ['open'], 
-                     @images['help-book-closed'], [], 
+                     @images['help-book-open'], ['open'],
+                     @images['help-book-closed'], [],
                    ])
-  t.element_create('e3', :text, 
+  t.element_create('e3', :text,
                    :fill=>[
-                     @SystemHighlightText, ['selected', 'focus'], 
+                     @SystemHighlightText, ['selected', 'focus'],
                      'blue', []
                    ])
-  t.element_create('e4', :rect, :showfocus=>true, 
+  t.element_create('e4', :rect, :showfocus=>true,
                    :fill=>[@SystemHighligh, ['selected', 'focus']])
-  t.element_create('e5', :text, :font=>t.font.dup.underline(true), 
+  t.element_create('e5', :text, :font=>t.font.dup.underline(true),
                    :fill=>[
-                     @SystemHighlightText, ['selected', 'focus'], 
+                     @SystemHighlightText, ['selected', 'focus'],
                      'blue', []
                    ])
 
@@ -201,21 +201,21 @@ def demoHelpContents2(t)
   parentList = [:root, '', '', '', '', '', '']
   parent = :root
   [
-     [0, 's1', "Welcome to Help"], 
-     [0, 's2', "Introducing Windows 98"], 
-        [1, 's2', "How to Use Help"], 
-           [2, 's1' "Find a topic"], 
+     [0, 's1', "Welcome to Help"],
+     [0, 's2', "Introducing Windows 98"],
+        [1, 's2', "How to Use Help"],
+           [2, 's1' "Find a topic"],
            [2, 's1', "Get more out of help"],
         [1, 's2', "Register Your Software"],
-           [2, 's1', "Registering Windows 98 online"], 
-        [1, 's2', "What's New in Windows 98"], 
-           [2, 's1', "Innovative, easy-to-use features"], 
-           [2, 's1', "Improved reliability"], 
-           [2, 's1', "A faster operating system"], 
-           [2, 's1', "True Web integration"], 
-           [2, 's1', "More entertaining and fun"], 
-        [1, 's2', "If You're New to Windows 98"], 
-           [2, 's2', "Tips for Macintosh Users"], 
+           [2, 's1', "Registering Windows 98 online"],
+        [1, 's2', "What's New in Windows 98"],
+           [2, 's1', "Innovative, easy-to-use features"],
+           [2, 's1', "Improved reliability"],
+           [2, 's1', "A faster operating system"],
+           [2, 's1', "True Web integration"],
+           [2, 's1', "More entertaining and fun"],
+        [1, 's2', "If You're New to Windows 98"],
+           [2, 's2', "Tips for Macintosh Users"],
               [3, 's1', "Why does the mouse have two buttons?"]
   ].each{|depth, style, text|
     item = t.item_create
@@ -233,7 +233,7 @@ def demoHelpContents2(t)
 
   treeCtrlHelp = TkBindTag.new
 
-  treeCtrlHelp.bind('Double-ButtonPress-1', 
+  treeCtrlHelp.bind('Double-ButtonPress-1',
                     proc{|w, x, y|
                       if w.identify(x, y)[0] == 'header'
                         Tk::TreeCtrl::BindCallback.doubleButton1(w, x, y)
@@ -243,25 +243,25 @@ def demoHelpContents2(t)
                       Tk.callback_break
                     }, '%W %x %y')
 
-  treeCtrlHelp.bind('ButtonPress-1', 
+  treeCtrlHelp.bind('ButtonPress-1',
                     proc{|w, x, y|
                       helpButton1(w, x, y)
                       Tk.callback_break
                     }, '%W %x %y')
 
-  treeCtrlHelp.bind('Button1-Motion', 
+  treeCtrlHelp.bind('Button1-Motion',
                     proc{|w, x, y|
                       helpMotion1(w, x, y)
                       Tk.callback_break
                     }, '%W %x %y')
 
-  treeCtrlHelp.bind('Button1-Leave', 
+  treeCtrlHelp.bind('Button1-Leave',
                     proc{|w, x, y|
                       helpLeave1(w, x, y)
                       Tk.callback_break
                     }, '%W %x %y')
 
-  treeCtrlHelp.bind('ButtonRelease-1', 
+  treeCtrlHelp.bind('ButtonRelease-1',
                     proc{|w, x, y|
                       helpRelease1(w, x, y)
                       Tk.callback_break
@@ -271,7 +271,7 @@ def demoHelpContents2(t)
 
   treeCtrlHelp.bind('Leave', proc{|w, x, y| helpMotion(w, x, y) }, '%W %x %y')
 
-  treeCtrlHelp.bind('KeyPress-Return', 
+  treeCtrlHelp.bind('KeyPress-Return',
                     proc{|w, x, y|
                       if w.selection_get.length == 1
                         w.item_toggle(w.selection_get[0])

@@ -13,9 +13,6 @@ module Tk
   end
 end
 
-Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Button, :TkButton)
-
-
 class Tk::Tile::TButton < Tk::Button
   include Tk::Tile::TileWidget
 
@@ -25,9 +22,13 @@ class Tk::Tile::TButton < Tk::Button
     TkCommandNames = ['::tbutton'.freeze].freeze
   end
   WidgetClassName = 'TButton'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.style(*args)
     [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
   end
 end
+
+#Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Button, :TkButton)
+Tk.__set_loaded_toplevel_aliases__('tkextlib/tile/tbutton.rb',
+                                   :Ttk, Tk::Tile::Button, :TkButton)

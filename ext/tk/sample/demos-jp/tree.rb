@@ -8,7 +8,7 @@
 # based on "Id: tree.tcl,v 1.4 2007/12/13 15:27:07 dgp Exp"
 
 if defined?($tree_demo) && $tree_demo
-  $tree_demo.destroy 
+  $tree_demo.destroy
   $tree_demo = nil
 end
 
@@ -21,8 +21,8 @@ $tree_demo = TkToplevel.new {|w|
 base_frame = TkFrame.new($tree_demo).pack(:fill=>:both, :expand=>true)
 
 ## Explanatory text
-Ttk::Label.new(base_frame, :font=>$font, :wraplength=>'4i', 
-               :justify=>:left, :anchor=>'n', :padding=>[10, 2, 10, 6], 
+Ttk::Label.new(base_frame, :font=>$font, :wraplength=>'4i',
+               :justify=>:left, :anchor=>'n', :padding=>[10, 2, 10, 6],
                :text=><<EOL).pack(:fill=>:x)
 Ttkとは，テーマ指定可能な新しいウィジェット集合です．\
 このサンプルは，ファイルシステムのような階層的なデータ集合を\
@@ -38,16 +38,16 @@ EOL
 Ttk::Frame.new(base_frame) {|frame|
   sep = Ttk::Separator.new(frame)
   Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
-  TkGrid('x', 
-         Ttk::Button.new(frame, :text=>'コード参照', 
-                         :image=>$image['view'], :compound=>:left, 
-                         :command=>proc{showCode 'tree'}), 
-         Ttk::Button.new(frame, :text=>'閉じる', 
-                         :image=>$image['delete'], :compound=>:left, 
+  TkGrid('x',
+         Ttk::Button.new(frame, :text=>'コード参照',
+                         :image=>$image['view'], :compound=>:left,
+                         :command=>proc{showCode 'tree'}),
+         Ttk::Button.new(frame, :text=>'閉じる',
+                         :image=>$image['delete'], :compound=>:left,
                          :command=>proc{
                            $tree_demo.destroy
                            $tree_demo = nil
-                         }), 
+                         }),
          :padx=>4, :pady=>4)
   grid_columnconfigure(0, :weight=>1)
   pack(:side=>:bottom, :fill=>:x)
@@ -56,7 +56,7 @@ Ttk::Frame.new(base_frame) {|frame|
 ## Code to populate the roots of the tree (can be more than one on Windows)
 def populate_roots(tree)
   TkComm.simplelist(Tk.tk_call('file', 'volumes')).sort.each{|dir|
-    populate_tree(tree, tree.insert(nil, :end, :text=>dir, 
+    populate_tree(tree, tree.insert(nil, :end, :text=>dir,
                                     :values=>[dir, 'directory']))
   }
 end
@@ -69,7 +69,7 @@ def populate_tree(tree, node)
   tree.delete(tree.children(node))
   Dir.glob("#{path}/*").sort.each{|f|
     type = File.ftype(f)
-    id = tree.insert(node, :end, 
+    id = tree.insert(node, :end,
                      :text=>File.basename(f), :values=>[f, type]).id
     if type == 'directory'
       ## Make it so that this node is openable
@@ -95,7 +95,7 @@ def populate_tree(tree, node)
 end
 
 ## Create the tree and set it up
-tree = Ttk::Treeview.new(base_frame, :columns=>%w(fullpath type size), 
+tree = Ttk::Treeview.new(base_frame, :columns=>%w(fullpath type size),
                          :displaycolumns=>['size'])
 if Tk.windowingsystem != 'aqua'
   vsb = tree.yscrollbar(Ttk::Scrollbar.new(base_frame))

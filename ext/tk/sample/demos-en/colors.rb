@@ -9,7 +9,7 @@
 
 # toplevel widget
 if defined?($colors_demo) && $colors_demo
-  $colors_demo.destroy 
+  $colors_demo.destroy
   $colors_demo = nil
 end
 

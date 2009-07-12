@@ -2,7 +2,7 @@
 require 'tk'
 require 'tkextlib/blt'
 
-file = File.join(File.dirname(File.expand_path(__FILE__)), 
+file = File.join(File.dirname(File.expand_path(__FILE__)),
                  'images', 'buckskin.gif')
 bgTexture = TkPhotoImage.new(:file=>file)
 
@@ -39,10 +39,10 @@ v_x.expr("random(#{v_x})")
 v_y.expr("random(#{v_y})")
 v_x.sort(v_y)
 
-plot = Tk::BLT::PlotComponent::Element.new(graph, :symbol=>:square, 
-                                           :color=>'green4', :fill=>'green2', 
-                                           :linewidth=>0, :outlinewidth=>1, 
-                                           :pixels=>4, :label=>'plot', 
+plot = Tk::BLT::PlotComponent::Element.new(graph, :symbol=>:square,
+                                           :color=>'green4', :fill=>'green2',
+                                           :linewidth=>0, :outlinewidth=>1,
+                                           :pixels=>4, :label=>'plot',
                                            :xdata=>v_x, :ydata=>v_y)
 
 Tk.root.minsize(0, 0)

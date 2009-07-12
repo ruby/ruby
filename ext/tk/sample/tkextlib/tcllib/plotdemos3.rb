@@ -7,9 +7,9 @@ require 'tkextlib/tcllib/plotchart'
 # Set up a strip chart
 ###############################
 
-Tk::Tcllib::Plotchart::Stripchart.new([0.0, 100.0, 10.0], 
-                                      [0.0, 100.0, 20.0], 
-                                      :background=>'white', 
+Tk::Tcllib::Plotchart::Stripchart.new([0.0, 100.0, 10.0],
+                                      [0.0, 100.0, 20.0],
+                                      :background=>'white',
                                       :width=>400, :height=>200){|chart|
   title "Aha!"
   pack(:fill=>:both, :side=>:top)
@@ -38,8 +38,8 @@ Tk::Tcllib::Plotchart::Stripchart.new([0.0, 100.0, 10.0],
 ###############################
 # Set up an isometric plot
 ###############################
-Tk::Tcllib::Plotchart::IsometricPlot.new([0.0, 100.0], [0.0, 200.0], :noaxes, 
-                                         :background=>'white', 
+Tk::Tcllib::Plotchart::IsometricPlot.new([0.0, 100.0], [0.0, 200.0], :noaxes,
+                                         :background=>'white',
                                          :width=>400, :height=>200){|chart|
   pack(:fill=>:both, :side=>:top)
   set_zoom_pan
@@ -54,17 +54,17 @@ Tk::Tcllib::Plotchart::IsometricPlot.new([0.0, 100.0], [0.0, 200.0], :noaxes,
 # Check the symbols
 ###############################
 TkToplevel.new(:title=>'h'){|h|
-  Tk::Tcllib::Plotchart::XYPlot.new(h, [0.0, 100.0, 10.0], 
-                                       [0.0, 100.0, 20.0], 
-                                    :bg=>'white', 
+  Tk::Tcllib::Plotchart::XYPlot.new(h, [0.0, 100.0, 10.0],
+                                       [0.0, 100.0, 20.0],
+                                    :bg=>'white',
                                     :width=>400, :height=>200){|chart|
     pack(:fill=>:both)
 
     yconfig(:format=>"%12.2e")
 
-    series1 = Tk::Tcllib::Plotchart::PlotSeries.new(chart, :colour=>'red', 
+    series1 = Tk::Tcllib::Plotchart::PlotSeries.new(chart, :colour=>'red',
                                                     :type=>:symbol)
-    series2 = Tk::Tcllib::Plotchart::PlotSeries.new(chart, :colour=>'green', 
+    series2 = Tk::Tcllib::Plotchart::PlotSeries.new(chart, :colour=>'green',
                                                     :type=>:both)
 
     x = 5.0

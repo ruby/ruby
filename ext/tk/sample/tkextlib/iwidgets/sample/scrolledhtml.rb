@@ -4,7 +4,7 @@ require 'tkextlib/iwidgets'
 
 TkOption.add('*textBackground', 'white')
 
-sh = Tk::Iwidgets::Scrolledhtml.new(:fontname=>'helvetica', 
+sh = Tk::Iwidgets::Scrolledhtml.new(:fontname=>'helvetica',
                                     :linkcommand=>proc{|href|
                                       sh.import_link(href)
                                     })

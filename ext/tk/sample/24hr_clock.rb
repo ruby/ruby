@@ -19,7 +19,7 @@ class Clock
     @mark_color    = 'black'
     @submark_color = 'gray50'
 
-    @c = TkCanvas.new(:width=>2*@size, :height=>2*@size, 
+    @c = TkCanvas.new(:width=>2*@size, :height=>2*@size,
                      :scrollregion=>[-@size, -@size, @size, @size]
                      ).pack(:fill=>:both, :expand=>true)
 
@@ -59,26 +59,26 @@ class Clock
   def _create_marks
     @mark_tag = TkcTag.new(@c)
 
-    TkcLine.new(@c, 0, -0.90*@size, 0, -0.85*@size, 
-                :tags=>[@tag, @mark_tag], 
+    TkcLine.new(@c, 0, -0.90*@size, 0, -0.85*@size,
+                :tags=>[@tag, @mark_tag],
                 :width=>@mark_width, :fill=>@mark_color)
-    TkcLine.new(@c, 0.90*@size, 0, 0.85*@size, 0, 
-                :tags=>[@tag, @mark_tag], 
+    TkcLine.new(@c, 0.90*@size, 0, 0.85*@size, 0,
+                :tags=>[@tag, @mark_tag],
                 :width=>@mark_width, :fill=>@mark_color)
-    TkcLine.new(@c, 0, 0.90*@size, 0, 0.85*@size, 
-                :tags=>[@tag, @mark_tag], 
+    TkcLine.new(@c, 0, 0.90*@size, 0, 0.85*@size,
+                :tags=>[@tag, @mark_tag],
                 :width=>@mark_width, :fill=>@mark_color)
-    TkcLine.new(@c, -0.90*@size, 0, -0.85*@size, 0, 
-                :tags=>[@tag, @mark_tag], 
+    TkcLine.new(@c, -0.90*@size, 0, -0.85*@size, 0,
+                :tags=>[@tag, @mark_tag],
                 :width=>@mark_width, :fill=>@mark_color)
 
-    TkcText.new(@c, [0, -0.92*@size], :text=>0, 
+    TkcText.new(@c, [0, -0.92*@size], :text=>0,
                 :anchor=>'s', :fill=>@mark_color)
-    TkcText.new(@c, [0.92*@size, 0], :text=>@clock.div(4), 
+    TkcText.new(@c, [0.92*@size, 0], :text=>@clock.div(4),
                 :anchor=>'w', :fill=>@mark_color)
-    TkcText.new(@c, [0, 0.92*@size], :text=>@clock.div(2), 
+    TkcText.new(@c, [0, 0.92*@size], :text=>@clock.div(2),
                 :anchor=>'n', :fill=>@mark_color)
-    TkcText.new(@c, [-0.92*@size, 0], :text=>@clock.div(4)*3, 
+    TkcText.new(@c, [-0.92*@size, 0], :text=>@clock.div(4)*3,
                 :anchor=>'e', :fill=>@mark_color)
 
     [30.0, 60.0].each{|angle|
@@ -92,17 +92,17 @@ class Clock
       x2 = 0.85*x_base
       y2 = 0.85*y_base
 
-      TkcLine.new(@c, x1, y1, x2, y2, 
-                  :tags=>[@tag, @mark_tag], 
+      TkcLine.new(@c, x1, y1, x2, y2,
+                  :tags=>[@tag, @mark_tag],
                   :width=>@mark_width, :fill=>@mark_color)
-      TkcLine.new(@c, x1, -y1, x2, -y2, 
-                  :tags=>[@tag, @mark_tag], 
+      TkcLine.new(@c, x1, -y1, x2, -y2,
+                  :tags=>[@tag, @mark_tag],
                   :width=>@mark_width, :fill=>@mark_color)
-      TkcLine.new(@c, -x1, y1, -x2, y2, 
-                  :tags=>[@tag, @mark_tag], 
+      TkcLine.new(@c, -x1, y1, -x2, y2,
+                  :tags=>[@tag, @mark_tag],
                   :width=>@mark_width, :fill=>@mark_color)
-      TkcLine.new(@c, -x1, -y1, -x2, -y2, 
-                  :tags=>[@tag, @mark_tag], 
+      TkcLine.new(@c, -x1, -y1, -x2, -y2,
+                  :tags=>[@tag, @mark_tag],
                   :width=>@mark_width, :fill=>@mark_color)
 
       x3 = 0.92*x_base
@@ -114,13 +114,13 @@ class Clock
         dh = angle.to_i/30
       end
 
-      TkcText.new(@c, x3, -y3, :text=>dh, 
+      TkcText.new(@c, x3, -y3, :text=>dh,
                   :anchor=>'sw', :fill=>@mark_color)
-      TkcText.new(@c, x3, y3, :text=>@clock.div(2)-dh, 
+      TkcText.new(@c, x3, y3, :text=>@clock.div(2)-dh,
                   :anchor=>'nw', :fill=>@mark_color)
-      TkcText.new(@c, -x3, y3, :text=>@clock.div(2)+dh, 
+      TkcText.new(@c, -x3, y3, :text=>@clock.div(2)+dh,
                   :anchor=>'ne', :fill=>@mark_color)
-      TkcText.new(@c, -x3, -y3, :text=>@clock-dh, 
+      TkcText.new(@c, -x3, -y3, :text=>@clock-dh,
                   :anchor=>'se', :fill=>@mark_color)
     }
 
@@ -136,17 +136,17 @@ class Clock
         x2 = 0.875*x_base
         y2 = 0.875*y_base
 
-        TkcLine.new(@c, x1, y1, x2, y2, 
-                    :tags=>[@tag, @mark_tag], 
+        TkcLine.new(@c, x1, y1, x2, y2,
+                    :tags=>[@tag, @mark_tag],
                     :width=>@mark_width, :fill=>@submark_color)
-        TkcLine.new(@c, x1, -y1, x2, -y2, 
-                    :tags=>[@tag, @mark_tag], 
+        TkcLine.new(@c, x1, -y1, x2, -y2,
+                    :tags=>[@tag, @mark_tag],
                     :width=>@mark_width, :fill=>@submark_color)
-        TkcLine.new(@c, -x1, y1, -x2, y2, 
-                    :tags=>[@tag, @mark_tag], 
+        TkcLine.new(@c, -x1, y1, -x2, y2,
+                    :tags=>[@tag, @mark_tag],
                     :width=>@mark_width, :fill=>@submark_color)
-        TkcLine.new(@c, -x1, -y1, -x2, -y2, 
-                    :tags=>[@tag, @mark_tag], 
+        TkcLine.new(@c, -x1, -y1, -x2, -y2,
+                    :tags=>[@tag, @mark_tag],
                     :width=>@mark_width, :fill=>@submark_color)
       }
     end
@@ -162,48 +162,48 @@ class Clock
     second_hand_width = 1 # 0.4*@cdot_size
 
     @hour_hand_coords = [
-      [0, -0.5*@cdot_size], 
-      [hour_hand_width, -0.5*@cdot_size-hour_hand_width], 
-      [hour_hand_width, -hour_hand_len+hour_hand_width], 
-      [0, -hour_hand_len], 
-      [-hour_hand_width, -hour_hand_len+hour_hand_width], 
-      [-hour_hand_width, -0.5*@cdot_size-hour_hand_width], 
+      [0, -0.5*@cdot_size],
+      [hour_hand_width, -0.5*@cdot_size-hour_hand_width],
+      [hour_hand_width, -hour_hand_len+hour_hand_width],
+      [0, -hour_hand_len],
+      [-hour_hand_width, -hour_hand_len+hour_hand_width],
+      [-hour_hand_width, -0.5*@cdot_size-hour_hand_width],
     ]
     @minute_hand_coords = [
-      [0, -0.5*@cdot_size], 
-      [minute_hand_width, -0.5*@cdot_size - minute_hand_width], 
-      [minute_hand_width, -minute_hand_len+minute_hand_width], 
-      [0, -minute_hand_len], 
-      [-minute_hand_width, -minute_hand_len+minute_hand_width], 
-      [-minute_hand_width, -0.5*@cdot_size-minute_hand_width], 
+      [0, -0.5*@cdot_size],
+      [minute_hand_width, -0.5*@cdot_size - minute_hand_width],
+      [minute_hand_width, -minute_hand_len+minute_hand_width],
+      [0, -minute_hand_len],
+      [-minute_hand_width, -minute_hand_len+minute_hand_width],
+      [-minute_hand_width, -0.5*@cdot_size-minute_hand_width],
     ]
     @second_hand_coords = [
-      [0, -0.5*@cdot_size], 
-      [second_hand_width, -0.5*@cdot_size - second_hand_width], 
-      [second_hand_width, -second_hand_len+second_hand_width], 
-      [0, -second_hand_len], 
-      [-second_hand_width, -second_hand_len+second_hand_width], 
-      [-second_hand_width, -0.5*@cdot_size-second_hand_width], 
+      [0, -0.5*@cdot_size],
+      [second_hand_width, -0.5*@cdot_size - second_hand_width],
+      [second_hand_width, -second_hand_len+second_hand_width],
+      [0, -second_hand_len],
+      [-second_hand_width, -second_hand_len+second_hand_width],
+      [-second_hand_width, -0.5*@cdot_size-second_hand_width],
     ]
 
-    @hour_hand = TkcPolygon.new(@c, @hour_hand_coords, 
-                                :tags=>[@tag, @hand_tag], 
-                                :outline=>@hour_hand_color, 
+    @hour_hand = TkcPolygon.new(@c, @hour_hand_coords,
+                                :tags=>[@tag, @hand_tag],
+                                :outline=>@hour_hand_color,
                                 :fill=>@hour_hand_color)
 
-    @minute_hand = TkcPolygon.new(@c, @minute_hand_coords, 
-                                  :tags=>[@tag, @hand_tag], 
-                                  :outline=>@minute_hand_color, 
+    @minute_hand = TkcPolygon.new(@c, @minute_hand_coords,
+                                  :tags=>[@tag, @hand_tag],
+                                  :outline=>@minute_hand_color,
                                   :fill=>@minute_hand_color)
 
-    @second_hand = TkcPolygon.new(@c, @second_hand_coords, 
-                                  :tags=>[@tag, @hand_tag], 
-                                  :outline=>@second_hand_color, 
+    @second_hand = TkcPolygon.new(@c, @second_hand_coords,
+                                  :tags=>[@tag, @hand_tag],
+                                  :outline=>@second_hand_color,
                                   :fill=>@second_hand_color)
 
-    @center_dot = TkcOval.new(@c, 
-                              [-@cdot_size, -@cdot_size], 
-                              [@cdot_size, @cdot_size], 
+    @center_dot = TkcOval.new(@c,
+                              [-@cdot_size, -@cdot_size],
+                              [@cdot_size, @cdot_size],
                               :outline=>@cdot_color, :fill=>@cdot_color)
   end
   private :_create_hands
@@ -269,8 +269,8 @@ class Clock
       extent = -span/2.0
     end
 
-    pie = TkcArc.new(@c, @circle_coords, :tags=>[@tag], 
-                     :outline=>'black', 'fill'=>color, 
+    pie = TkcArc.new(@c, @circle_coords, :tags=>[@tag],
+                     :outline=>'black', 'fill'=>color,
                      :start=>start, :extent=>extent)
     _raise_hands
     _raise_marks

@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Toolbar
   TkCommandNames = ['::iwidgets::toolbar'.freeze].freeze
   WidgetClassName = 'Toolbar'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __tkvariable_optkeys
     super() << 'helpvariable'
@@ -105,7 +105,7 @@ class Tk::Iwidgets::Toolbar
     else
       tag = Tk::Itk::Component.new(self)
     end
-    window(tk_call(@path, 'insert', index(idx), type, 
+    window(tk_call(@path, 'insert', index(idx), type,
                    tagid(tag), *hash_kv(keys)))
     tag
   end

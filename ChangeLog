@@ -1,3 +1,29 @@
+Mon Jul 13 08:01:00 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: New strategy for searching Tcl/Tk libraries.
+
+	* ext/tk/*: Support new features of Tcl/Tk8.6b1 and minor bug fixes.
+	     ( [KNOWN BUG] Ruby/Tk on Ruby 1.9 will not work on Cygwin. )
+
+	* ext/tk/*: Unify sources between Ruby 1.8 & 1.9.
+	            Improve default_widget_set handling.
+
+	* ext/tk/*: Multi-TkInterpreter (multi-tk.rb) works on Ruby 1.8 & 1.9.
+	     ( [KNOWN BUG] On Ruby 1.8, join to a long term Thread on Tk
+	        callbacks may freeze. On Ruby 1.9, cannot create a second 
+	        master interpreter (creating slaves are OK); supported master
+	        interpreter is the default master interpreter only. )
+
+	* ext/tk/lib/tkextlib/*: Update supported versions of Tk extensions.
+	         Tcllib 1.8/Tklib 0.4.1  ==>  Tcllib 1.11.1/Tklib 0.5
+	         BWidgets 1.7            ==>  BWidgets 1.8
+	         TkTable 2.9             ==>  TkTable 2.10
+	         TkTreeCtrl 2005-12-02   ==>  TkTreeCtrl 2.2.9
+	         Tile 0.8.0/8.5.1        ==>  Tile 0.8.3/8.6b1
+	         IncrTcl 2005-02-14      ==>  IncrTcl 2008-12-15
+	         TclX 2005-02-07         ==>  TclX 2008-12-15
+	         Trofs 0.4.3             ==>  Trofs 0.4.4
+
 Mon Jul 13 01:18:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_timeval): rounds subsecond toward zero.

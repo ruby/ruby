@@ -18,7 +18,7 @@ def floorDisplay2(w,active)
   w.delete('all')
   $activeFloor2 = active
 
-  # First go through the three floors, displaying the backgrounds for 
+  # First go through the three floors, displaying the backgrounds for
   # each floor.
 
   floor2_bg1(w,$floor2_colors['bg1'],$floor2_colors['outline1'])
@@ -29,12 +29,12 @@ def floorDisplay2(w,active)
 
   w.raise("floor#{active}")
 
-  # Create a dummy item just to mark this point in the display list, 
+  # Create a dummy item just to mark this point in the display list,
   # so we can insert highlights here.
 
   w.create(TkcRectangle,0,100,1,101,'fill'=>'','outline'=>'','tags'=>'marker')
 
-  # Add the walls and labels for the active floor, along with 
+  # Add the walls and labels for the active floor, along with
   # transparent polygons that define the rooms on the floor.
   # Make sure that the room polygons are on top.
 
@@ -299,7 +299,7 @@ def floor2_bg3(w,fill,outline)
   w.create(TkcLine,21,331,0,331, 'fill'=>outline, 'tags'=>['floor3','bg'])
   w.create(TkcLine,21,331,21,133, 'fill'=>outline, 'tags'=>['floor3','bg'])
   w.create(TkcLine,96,133,21,133, 'fill'=>outline, 'tags'=>['floor3','bg'])
-  w.create(TkcLine,107,300,159,300,159,248,107,248,107,300, 
+  w.create(TkcLine,107,300,159,300,159,248,107,248,107,300,
               'fill'=>outline, 'tags'=>['floor3','bg'])
 end
 
@@ -313,316 +313,316 @@ end
 # color -       Color to use for drawing foreground information.
 
 def floor2_fg1(w,color)
-  i = TkcPolygon.new(w,375,246,375,172,341,172,341,246, 
+  i = TkcPolygon.new(w,375,246,375,172,341,172,341,246,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '101'
   $floorItems2['101'] = i
-  w.create(TkcText,358,209, 'text'=>'101', 'fill'=>color, 
+  w.create(TkcText,358,209, 'text'=>'101', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,307,240,339,240,339,206,307,206, 
+  i = TkcPolygon.new(w,307,240,339,240,339,206,307,206,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = 'Pub Lift1'
   $floorItems2['Pub Lift1'] = i
-  w.create(TkcText,323,223, 'text'=>'Pub Lift1', 'fill'=>color, 
+  w.create(TkcText,323,223, 'text'=>'Pub Lift1', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,339,205,307,205,307,171,339,171, 
+  i = TkcPolygon.new(w,339,205,307,205,307,171,339,171,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = 'Priv Lift1'
   $floorItems2['Priv Lift1'] = i
-  w.create(TkcText,323,188, 'text'=>'Priv Lift1', 'fill'=>color, 
+  w.create(TkcText,323,188, 'text'=>'Priv Lift1', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,42,389,42,337,1,337,1,389, 
+  i = TkcPolygon.new(w,42,389,42,337,1,337,1,389,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '110'
   $floorItems2['110'] = i
-  w.create(TkcText,21.5,363, 'text'=>'110', 'fill'=>color, 
+  w.create(TkcText,21.5,363, 'text'=>'110', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,59,389,59,385,90,385,90,337,44,337,44,389, 
+  i = TkcPolygon.new(w,59,389,59,385,90,385,90,337,44,337,44,389,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '109'
   $floorItems2['109'] = i
-  w.create(TkcText,67,363, 'text'=>'109', 'fill'=>color, 
+  w.create(TkcText,67,363, 'text'=>'109', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,51,300,51,253,6,253,6,300, 
+  i = TkcPolygon.new(w,51,300,51,253,6,253,6,300,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '111'
   $floorItems2['111'] = i
-  w.create(TkcText,28.5,276.5, 'text'=>'111', 'fill'=>color, 
+  w.create(TkcText,28.5,276.5, 'text'=>'111', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,98,248,98,309,79,309,79,248, 
+  i = TkcPolygon.new(w,98,248,98,309,79,309,79,248,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '117B'
   $floorItems2['117B'] = i
-  w.create(TkcText,88.5,278.5, 'text'=>'117B', 'fill'=>color, 
+  w.create(TkcText,88.5,278.5, 'text'=>'117B', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,51,251,51,204,6,204,6,251, 
+  i = TkcPolygon.new(w,51,251,51,204,6,204,6,251,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '112'
   $floorItems2['112'] = i
-  w.create(TkcText,28.5,227.5, 'text'=>'112', 'fill'=>color, 
+  w.create(TkcText,28.5,227.5, 'text'=>'112', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,6,156,51,156,51,203,6,203, 
+  i = TkcPolygon.new(w,6,156,51,156,51,203,6,203,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '113'
   $floorItems2['113'] = i
-  w.create(TkcText,28.5,179.5, 'text'=>'113', 'fill'=>color, 
+  w.create(TkcText,28.5,179.5, 'text'=>'113', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,85,169,79,169,79,192,85,192, 
+  i = TkcPolygon.new(w,85,169,79,169,79,192,85,192,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '117A'
   $floorItems2['117A'] = i
-  w.create(TkcText,82,180.5, 'text'=>'117A', 'fill'=>color, 
+  w.create(TkcText,82,180.5, 'text'=>'117A', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,77,302,77,168,53,168,53,302, 
+  i = TkcPolygon.new(w,77,302,77,168,53,168,53,302,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '117'
   $floorItems2['117'] = i
-  w.create(TkcText,65,235, 'text'=>'117', 'fill'=>color, 
+  w.create(TkcText,65,235, 'text'=>'117', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,51,155,51,115,6,115,6,155, 
+  i = TkcPolygon.new(w,51,155,51,115,6,115,6,155,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '114'
   $floorItems2['114'] = i
-  w.create(TkcText,28.5,135, 'text'=>'114', 'fill'=>color, 
+  w.create(TkcText,28.5,135, 'text'=>'114', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,95,115,53,115,53,168,95,168, 
+  i = TkcPolygon.new(w,95,115,53,115,53,168,95,168,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '115'
   $floorItems2['115'] = i
-  w.create(TkcText,74,141.5, 'text'=>'115', 'fill'=>color, 
+  w.create(TkcText,74,141.5, 'text'=>'115', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,87,113,87,27,10,27,10,113, 
+  i = TkcPolygon.new(w,87,113,87,27,10,27,10,113,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '116'
   $floorItems2['116'] = i
-  w.create(TkcText,48.5,70, 'text'=>'116', 'fill'=>color, 
+  w.create(TkcText,48.5,70, 'text'=>'116', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,89,91,128,91,128,113,89,131, 
+  i = TkcPolygon.new(w,89,91,128,91,128,113,89,131,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '118'
   $floorItems2['118'] = i
-  w.create(TkcText,108.5,102, 'text'=>'118', 'fill'=>color, 
+  w.create(TkcText,108.5,102, 'text'=>'118', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
   i = TkcPolygon.new(w,178,128,178,132,216,132,216,91,
-                     163,91,163,112,149,112,149,128, 
+                     163,91,163,112,149,112,149,128,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '120'
   $floorItems2['120'] = i
-  w.create(TkcText,189.5,111.5, 'text'=>'120', 'fill'=>color, 
+  w.create(TkcText,189.5,111.5, 'text'=>'120', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
   i = TkcPolygon.new(w,79,193,87,193,87,169,136,169,136,192,
-                     156,192,156,169,175,169,175,246,79,246, 
+                     156,192,156,169,175,169,175,246,79,246,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '122'
   $floorItems2['122'] = i
-  w.create(TkcText,131,207.5, 'text'=>'122', 'fill'=>color, 
+  w.create(TkcText,131,207.5, 'text'=>'122', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,138,169,154,169,154,191,138,191, 
+  i = TkcPolygon.new(w,138,169,154,169,154,191,138,191,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '121'
   $floorItems2['121'] = i
-  w.create(TkcText,146,180, 'text'=>'121', 'fill'=>color, 
+  w.create(TkcText,146,180, 'text'=>'121', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,99,300,126,300,126,309,99,309, 
+  i = TkcPolygon.new(w,99,300,126,300,126,309,99,309,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '106A'
   $floorItems2['106A'] = i
-  w.create(TkcText,112.5,304.5, 'text'=>'106A', 'fill'=>color, 
+  w.create(TkcText,112.5,304.5, 'text'=>'106A', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,128,299,128,309,150,309,150,248,99,248,99,299, 
+  i = TkcPolygon.new(w,128,299,128,309,150,309,150,248,99,248,99,299,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '105'
   $floorItems2['105'] = i
-  w.create(TkcText,124.5,278.5, 'text'=>'105', 'fill'=>color, 
+  w.create(TkcText,124.5,278.5, 'text'=>'105', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,174,309,174,300,152,300,152,309, 
+  i = TkcPolygon.new(w,174,309,174,300,152,300,152,309,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '106B'
   $floorItems2['106B'] = i
-  w.create(TkcText,163,304.5, 'text'=>'106B', 'fill'=>color, 
+  w.create(TkcText,163,304.5, 'text'=>'106B', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,176,299,176,309,216,309,216,248,152,248,152,299, 
+  i = TkcPolygon.new(w,176,299,176,309,216,309,216,248,152,248,152,299,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '104'
   $floorItems2['104'] = i
-  w.create(TkcText,184,278.5, 'text'=>'104', 'fill'=>color, 
+  w.create(TkcText,184,278.5, 'text'=>'104', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,138,385,138,337,91,337,91,385, 
+  i = TkcPolygon.new(w,138,385,138,337,91,337,91,385,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '108'
   $floorItems2['108'] = i
-  w.create(TkcText,114.5,361, 'text'=>'108', 'fill'=>color, 
+  w.create(TkcText,114.5,361, 'text'=>'108', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,256,337,140,337,140,385,256,385, 
+  i = TkcPolygon.new(w,256,337,140,337,140,385,256,385,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '107'
   $floorItems2['107'] = i
-  w.create(TkcText,198,361, 'text'=>'107', 'fill'=>color, 
+  w.create(TkcText,198,361, 'text'=>'107', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,300,353,300,329,260,329,260,353, 
+  i = TkcPolygon.new(w,300,353,300,329,260,329,260,353,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = 'Smoking'
   $floorItems2['Smoking'] = i
-  w.create(TkcText,280,341, 'text'=>'Smoking', 'fill'=>color, 
+  w.create(TkcText,280,341, 'text'=>'Smoking', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,314,135,314,170,306,170,306,246,177,246,177,135, 
+  i = TkcPolygon.new(w,314,135,314,170,306,170,306,246,177,246,177,135,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '123'
   $floorItems2['123'] = i
-  w.create(TkcText,245.5,190.5, 'text'=>'123', 'fill'=>color, 
+  w.create(TkcText,245.5,190.5, 'text'=>'123', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,217,248,301,248,301,326,257,326,257,310,217,310, 
+  i = TkcPolygon.new(w,217,248,301,248,301,326,257,326,257,310,217,310,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '103'
   $floorItems2['103'] = i
-  w.create(TkcText,259,287, 'text'=>'103', 'fill'=>color, 
+  w.create(TkcText,259,287, 'text'=>'103', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,396,188,377,188,377,169,316,169,316,131,396,131, 
+  i = TkcPolygon.new(w,396,188,377,188,377,169,316,169,316,131,396,131,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '124'
   $floorItems2['124'] = i
-  w.create(TkcText,356,150, 'text'=>'124', 'fill'=>color, 
+  w.create(TkcText,356,150, 'text'=>'124', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,397,226,407,226,407,189,377,189,377,246,397,246, 
+  i = TkcPolygon.new(w,397,226,407,226,407,189,377,189,377,246,397,246,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '125'
   $floorItems2['125'] = i
-  w.create(TkcText,392,217.5, 'text'=>'125', 'fill'=>color, 
+  w.create(TkcText,392,217.5, 'text'=>'125', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,399,187,409,187,409,207,474,207,474,164,399,164, 
+  i = TkcPolygon.new(w,399,187,409,187,409,207,474,207,474,164,399,164,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '126'
   $floorItems2['126'] = i
-  w.create(TkcText,436.5,185.5, 'text'=>'126', 'fill'=>color, 
+  w.create(TkcText,436.5,185.5, 'text'=>'126', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
   i = TkcPolygon.new(w,409,209,409,229,399,229,399,253,
-                     486,253,486,239,474,239,474,209, 
+                     486,253,486,239,474,239,474,209,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '127'
   $floorItems2['127'] = i
-  w.create(TkcText,436.5,'231', 'text'=>'127', 'fill'=>color, 
+  w.create(TkcText,436.5,'231', 'text'=>'127', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
   i = TkcPolygon.new(w,501,164,501,174,495,174,495,188,
-                     490,188,490,204,476,204,476,164, 
+                     490,188,490,204,476,204,476,164,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = 'MShower'
   $floorItems2['MShower'] = i
-  w.create(TkcText,488.5,'184', 'text'=>'MShower', 'fill'=>color, 
+  w.create(TkcText,488.5,'184', 'text'=>'MShower', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,497,176,513,176,513,204,492,204,492,190,497,190, 
+  i = TkcPolygon.new(w,497,176,513,176,513,204,492,204,492,190,497,190,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = 'Closet'
   $floorItems2['Closet'] = i
-  w.create(TkcText,502.5,190, 'text'=>'Closet', 'fill'=>color, 
+  w.create(TkcText,502.5,190, 'text'=>'Closet', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,476,237,476,206,513,206,513,254,488,254,488,237, 
+  i = TkcPolygon.new(w,476,237,476,206,513,206,513,254,488,254,488,237,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = 'WShower'
   $floorItems2['WShower'] = i
-  w.create(TkcText,494.5,230, 'text'=>'WShower', 'fill'=>color, 
+  w.create(TkcText,494.5,230, 'text'=>'WShower', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
   i = TkcPolygon.new(w,486,131,558,131,558,135,724,135,724,166,
                      697,166,697,275,553,275,531,254,515,254,
-                     515,174,503,174,503,161,486,161, 
+                     515,174,503,174,503,161,486,161,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '130'
   $floorItems2['130'] = i
-  w.create(TkcText,638.5,205, 'text'=>'130', 'fill'=>color, 
+  w.create(TkcText,638.5,205, 'text'=>'130', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
   i = TkcPolygon.new(w,308,242,339,242,339,248,342,248,
                      342,246,397,246,397,276,393,276,
-                     393,309,300,309,300,248,308,248, 
+                     393,309,300,309,300,248,308,248,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '102'
   $floorItems2['102'] = i
-  w.create(TkcText,367.5,278.5, 'text'=>'102', 'fill'=>color, 
+  w.create(TkcText,367.5,278.5, 'text'=>'102', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,397,255,486,255,486,276,397,276, 
+  i = TkcPolygon.new(w,397,255,486,255,486,276,397,276,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '128'
   $floorItems2['128'] = i
-  w.create(TkcText,441.5,265.5, 'text'=>'128', 'fill'=>color, 
+  w.create(TkcText,441.5,265.5, 'text'=>'128', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
   i = TkcPolygon.new(w,510,309,486,309,486,255,530,255,
                      552,277,561,277,561,325,510,325,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '129'
   $floorItems2['129'] = i
-  w.create(TkcText,535.5,293, 'text'=>'129', 'fill'=>color, 
+  w.create(TkcText,535.5,293, 'text'=>'129', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
   i = TkcPolygon.new(w,696,281,740,281,740,387,642,387,
-                     642,389,561,389,561,277,696,277, 
+                     642,389,561,389,561,277,696,277,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '133'
   $floorItems2['133'] = i
-  w.create(TkcText,628.5,335, 'text'=>'133', 'fill'=>color, 
+  w.create(TkcText,628.5,335, 'text'=>'133', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,742,387,742,281,800,281,800,387, 
+  i = TkcPolygon.new(w,742,387,742,281,800,281,800,387,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '132'
   $floorItems2['132'] = i
-  w.create(TkcText,771,334, 'text'=>'132', 'fill'=>color, 
+  w.create(TkcText,771,334, 'text'=>'132', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,800,168,800,280,699,280,699,168, 
+  i = TkcPolygon.new(w,800,168,800,280,699,280,699,168,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '134'
   $floorItems2['134'] = i
-  w.create(TkcText,749.5,224, 'text'=>'134', 'fill'=>color, 
+  w.create(TkcText,749.5,224, 'text'=>'134', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
-  i = TkcPolygon.new(w,726,131,726,166,800,166,800,131, 
+  i = TkcPolygon.new(w,726,131,726,166,800,166,800,131,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '135'
   $floorItems2['135'] = i
-  w.create(TkcText,763,148.5, 'text'=>'135', 'fill'=>color, 
+  w.create(TkcText,763,148.5, 'text'=>'135', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
   i = TkcPolygon.new(w,340,360,335,363,331,365,326,366,304,366,
                      304,312,396,312,396,288,400,288,404,288,
                      409,290,413,292,418,297,421,302,422,309,
                      421,318,417,325,411,330,405,332,397,333,
                      344,333,340,334,336,336,335,338,332,342,
-                     331,347,332,351,334,354,336,357,341,359, 
+                     331,347,332,351,334,354,336,357,341,359,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = 'Ramona Stair'
   $floorItems2['Ramona Stair'] = i
-  w.create(TkcText,368,323, 'text'=>'Ramona Stair', 'fill'=>color, 
+  w.create(TkcText,368,323, 'text'=>'Ramona Stair', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
   i = TkcPolygon.new(w,30,23,30,5,93,5,98,5,104,7,110,10,116,16,119,20,
-                     122,28,123,32,123,68,220,68,220,87,90,87,90,23, 
+                     122,28,123,32,123,68,220,68,220,87,90,87,90,23,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = 'University Stair'
   $floorItems2['University Stair'] = i
-  w.create(TkcText,155,77.5, 'text'=>'University Stair', 'fill'=>color, 
+  w.create(TkcText,155,77.5, 'text'=>'University Stair', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
   i = TkcPolygon.new(w,282,37,295,40,312,49,323,56,337,70,352,56,
                      358,48,363,39,365,29,348,25,335,22,321,14,
                      300,5,283,1,260,0,246,0,242,2,236,4,231,8,
-                     227,13,223,17,221,22,220,34,260,34, 
+                     227,13,223,17,221,22,220,34,260,34,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = 'Plaza Stair'
   $floorItems2['Plaza Stair'] = i
-  w.create(TkcText,317.5,28.5, 'text'=>'Plaza Stair', 'fill'=>color, 
+  w.create(TkcText,317.5,28.5, 'text'=>'Plaza Stair', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
   i = TkcPolygon.new(w,220,34,260,34,282,37,295,40,312,49,
                      323,56,337,70,350,83,365,94,377,100,
-                     386,104,386,128,220,128, 
+                     386,104,386,128,220,128,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = 'Plaza Deck'
   $floorItems2['Plaza Deck'] = i
-  w.create(TkcText,303,81, 'text'=>'Plaza Deck', 'fill'=>color, 
+  w.create(TkcText,303,81, 'text'=>'Plaza Deck', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
   i = TkcPolygon.new(w,257,336,77,336,6,336,6,301,77,301,77,310,257,310,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '106'
   $floorItems2['106'] = i
-  w.create(TkcText,131.5,318.5, 'text'=>'106', 'fill'=>color, 
+  w.create(TkcText,131.5,318.5, 'text'=>'106', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
   i = TkcPolygon.new(w,146,110,162,110,162,91,130,91,130,115,95,115,
                      95,128,114,128,114,151,157,151,157,153,112,153,
-                     112,130,97,130,97,168,175,168,175,131,146,131, 
+                     112,130,97,130,97,168,175,168,175,131,146,131,
                      'fill'=>'', 'tags'=>['floor1','room'])
   $floorLabels2[i.id] = '119'
   $floorItems2['119'] = i
-  w.create(TkcText,143.5,133, 'text'=>'119', 'fill'=>color, 
+  w.create(TkcText,143.5,133, 'text'=>'119', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor1','label'])
   w.create(TkcLine,155,191,155,189, 'fill'=>color, 'tags'=>['floor1','wall'])
   w.create(TkcLine,155,177,155,169, 'fill'=>color, 'tags'=>['floor1','wall'])
@@ -795,321 +795,321 @@ end
 
 def floor2_fg2(w,color)
   i = TkcPolygon.new(w,748,188,755,188,755,205,758,205,758,222,
-                     800,222,800,168,748,168, 
+                     800,222,800,168,748,168,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '238'
   $floorItems2['238'] = i
-  w.create(TkcText,774,195, 'text'=>'238', 'fill'=>color, 
+  w.create(TkcText,774,195, 'text'=>'238', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
   i = TkcPolygon.new(w,726,188,746,188,746,166,800,166,800,131,726,131,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '237'
   $floorItems2['237'] = i
-  w.create(TkcText,763,148.5, 'text'=>'237', 'fill'=>color, 
+  w.create(TkcText,763,148.5, 'text'=>'237', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
   i = TkcPolygon.new(w,497,187,497,204,559,204,559,324,641,324,
                      643,324,643,291,641,291,641,205,696,205,
                      696,291,694,291,694,314,715,314,715,291,
-                     715,205,755,205,755,190,724,190,724,187, 
+                     715,205,755,205,755,190,724,190,724,187,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '246'
   $floorItems2['246'] = i
-  w.create(TkcText,600,264, 'text'=>'246', 'fill'=>color, 
+  w.create(TkcText,600,264, 'text'=>'246', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,694,279,643,279,643,314,694,314, 
+  i = TkcPolygon.new(w,694,279,643,279,643,314,694,314,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '247'
   $floorItems2['247'] = i
-  w.create(TkcText,668.5,296.5, 'text'=>'247', 'fill'=>color, 
+  w.create(TkcText,668.5,296.5, 'text'=>'247', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
   i = TkcPolygon.new(w,232,250,308,250,308,242,339,242,339,246,
                      397,246,397,255,476,255,476,250,482,250,559,250,
-                     559,274,482,274,482,278,396,278,396,274,232,274, 
+                     559,274,482,274,482,278,396,278,396,274,232,274,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '202'
   $floorItems2['202'] = i
-  w.create(TkcText,285.5,260, 'text'=>'202', 'fill'=>color, 
+  w.create(TkcText,285.5,260, 'text'=>'202', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
   i = TkcPolygon.new(w,53,228,53,338,176,338,233,338,233,196,
                      306,196,306,180,175,180,175,169,156,169,
-                     156,196,176,196,176,228, 
+                     156,196,176,196,176,228,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '206'
   $floorItems2['206'] = i
-  w.create(TkcText,143,267, 'text'=>'206', 'fill'=>color, 
+  w.create(TkcText,143,267, 'text'=>'206', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,51,277,6,277,6,338,51,338, 
+  i = TkcPolygon.new(w,51,277,6,277,6,338,51,338,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '212'
   $floorItems2['212'] = i
-  w.create(TkcText,28.5,307.5, 'text'=>'212', 'fill'=>color, 
+  w.create(TkcText,28.5,307.5, 'text'=>'212', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,557,276,486,276,486,309,510,309,510,325,557,325, 
+  i = TkcPolygon.new(w,557,276,486,276,486,309,510,309,510,325,557,325,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '245'
   $floorItems2['245'] = i
-  w.create(TkcText,521.5,300.5, 'text'=>'245', 'fill'=>color, 
+  w.create(TkcText,521.5,300.5, 'text'=>'245', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,560,389,599,389,599,326,560,326, 
+  i = TkcPolygon.new(w,560,389,599,389,599,326,560,326,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '244'
   $floorItems2['244'] = i
-  w.create(TkcText,579.5,357.5, 'text'=>'244', 'fill'=>color, 
+  w.create(TkcText,579.5,357.5, 'text'=>'244', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,601,389,601,326,643,326,643,389, 
+  i = TkcPolygon.new(w,601,389,601,326,643,326,643,389,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '243'
   $floorItems2['243'] = i
-  w.create(TkcText,622,357.5, 'text'=>'243', 'fill'=>color, 
+  w.create(TkcText,622,357.5, 'text'=>'243', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,688,316,645,316,645,365,688,365, 
+  i = TkcPolygon.new(w,688,316,645,316,645,365,688,365,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '242'
   $floorItems2['242'] = i
-  w.create(TkcText,666.5,340.5, 'text'=>'242', 'fill'=>color, 
+  w.create(TkcText,666.5,340.5, 'text'=>'242', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,802,367,759,367,759,226,802,226, 
+  i = TkcPolygon.new(w,802,367,759,367,759,226,802,226,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = 'Barbecue Deck'
   $floorItems2['Barbecue Deck'] = i
-  w.create(TkcText,780.5,296.5, 'text'=>'Barbecue Deck', 'fill'=>color, 
+  w.create(TkcText,780.5,296.5, 'text'=>'Barbecue Deck', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,755,262,755,314,717,314,717,262, 
+  i = TkcPolygon.new(w,755,262,755,314,717,314,717,262,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '240'
   $floorItems2['240'] = i
-  w.create(TkcText,736,288, 'text'=>'240', 'fill'=>color, 
+  w.create(TkcText,736,288, 'text'=>'240', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,755,316,689,316,689,365,755,365, 
+  i = TkcPolygon.new(w,755,316,689,316,689,365,755,365,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '241'
   $floorItems2['241'] = i
-  w.create(TkcText,722,340.5, 'text'=>'241', 'fill'=>color, 
+  w.create(TkcText,722,340.5, 'text'=>'241', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,755,206,717,206,717,261,755,261, 
+  i = TkcPolygon.new(w,755,206,717,206,717,261,755,261,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '239'
   $floorItems2['239'] = i
-  w.create(TkcText,736,233.5, 'text'=>'239', 'fill'=>color, 
+  w.create(TkcText,736,233.5, 'text'=>'239', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,695,277,643,277,643,206,695,206, 
+  i = TkcPolygon.new(w,695,277,643,277,643,206,695,206,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '248'
   $floorItems2['248'] = i
-  w.create(TkcText,669,241.5, 'text'=>'248', 'fill'=>color, 
+  w.create(TkcText,669,241.5, 'text'=>'248', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,676,135,676,185,724,185,724,135, 
+  i = TkcPolygon.new(w,676,135,676,185,724,185,724,135,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '236'
   $floorItems2['236'] = i
-  w.create(TkcText,700,160, 'text'=>'236', 'fill'=>color, 
+  w.create(TkcText,700,160, 'text'=>'236', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,675,135,635,135,635,145,628,145,628,185,675,185, 
+  i = TkcPolygon.new(w,675,135,635,135,635,145,628,145,628,185,675,185,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '235'
   $floorItems2['235'] = i
-  w.create(TkcText,651.5,160, 'text'=>'235', 'fill'=>color, 
+  w.create(TkcText,651.5,160, 'text'=>'235', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
   i = TkcPolygon.new(w,626,143,633,143,633,135,572,135,
-                     572,143,579,143,579,185,626,185, 
+                     572,143,579,143,579,185,626,185,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '234'
   $floorItems2['234'] = i
-  w.create(TkcText,606,160, 'text'=>'234', 'fill'=>color, 
+  w.create(TkcText,606,160, 'text'=>'234', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
   i = TkcPolygon.new(w,557,135,571,135,571,145,578,145,
-                     578,185,527,185,527,131,557,131, 
+                     578,185,527,185,527,131,557,131,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '233'
   $floorItems2['233'] = i
-  w.create(TkcText,552.5,158, 'text'=>'233', 'fill'=>color, 
+  w.create(TkcText,552.5,158, 'text'=>'233', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
   i = TkcPolygon.new(w,476,249,557,249,557,205,476,205,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '230'
   $floorItems2['230'] = i
-  w.create(TkcText,516.5,227, 'text'=>'230', 'fill'=>color, 
+  w.create(TkcText,516.5,227, 'text'=>'230', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,476,164,486,164,486,131,525,131,525,185,476,185, 
+  i = TkcPolygon.new(w,476,164,486,164,486,131,525,131,525,185,476,185,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '232'
   $floorItems2['232'] = i
-  w.create(TkcText,500.5,158, 'text'=>'232', 'fill'=>color, 
+  w.create(TkcText,500.5,158, 'text'=>'232', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,476,186,495,186,495,204,476,204, 
+  i = TkcPolygon.new(w,476,186,495,186,495,204,476,204,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '229'
   $floorItems2['229'] = i
-  w.create(TkcText,485.5,195, 'text'=>'229', 'fill'=>color, 
+  w.create(TkcText,485.5,195, 'text'=>'229', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,474,207,409,207,409,187,399,187,399,164,474,164, 
+  i = TkcPolygon.new(w,474,207,409,207,409,187,399,187,399,164,474,164,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '227'
   $floorItems2['227'] = i
-  w.create(TkcText,436.5,185.5, 'text'=>'227', 'fill'=>color, 
+  w.create(TkcText,436.5,185.5, 'text'=>'227', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,399,228,399,253,474,253,474,209,409,209,409,228, 
+  i = TkcPolygon.new(w,399,228,399,253,474,253,474,209,409,209,409,228,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '228'
   $floorItems2['228'] = i
-  w.create(TkcText,436.5,231, 'text'=>'228', 'fill'=>color, 
+  w.create(TkcText,436.5,231, 'text'=>'228', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,397,246,397,226,407,226,407,189,377,189,377,246, 
+  i = TkcPolygon.new(w,397,246,397,226,407,226,407,189,377,189,377,246,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '226'
   $floorItems2['226'] = i
-  w.create(TkcText,392,217.5, 'text'=>'226', 'fill'=>color, 
+  w.create(TkcText,392,217.5, 'text'=>'226', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,377,169,316,169,316,131,397,131,397,188,377,188, 
+  i = TkcPolygon.new(w,377,169,316,169,316,131,397,131,397,188,377,188,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '225'
   $floorItems2['225'] = i
-  w.create(TkcText,356.5,150, 'text'=>'225', 'fill'=>color, 
+  w.create(TkcText,356.5,150, 'text'=>'225', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,234,198,306,198,306,249,234,249, 
+  i = TkcPolygon.new(w,234,198,306,198,306,249,234,249,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '224'
   $floorItems2['224'] = i
-  w.create(TkcText,270,223.5, 'text'=>'224', 'fill'=>color, 
+  w.create(TkcText,270,223.5, 'text'=>'224', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,270,179,306,179,306,170,314,170,314,135,270,135, 
+  i = TkcPolygon.new(w,270,179,306,179,306,170,314,170,314,135,270,135,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '223'
   $floorItems2['223'] = i
-  w.create(TkcText,292,157, 'text'=>'223', 'fill'=>color, 
+  w.create(TkcText,292,157, 'text'=>'223', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,268,179,221,179,221,135,268,135, 
+  i = TkcPolygon.new(w,268,179,221,179,221,135,268,135,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '222'
   $floorItems2['222'] = i
-  w.create(TkcText,244.5,157, 'text'=>'222', 'fill'=>color, 
+  w.create(TkcText,244.5,157, 'text'=>'222', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,177,179,219,179,219,135,177,135, 
+  i = TkcPolygon.new(w,177,179,219,179,219,135,177,135,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '221'
   $floorItems2['221'] = i
-  w.create(TkcText,198,157, 'text'=>'221', 'fill'=>color, 
+  w.create(TkcText,198,157, 'text'=>'221', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,299,327,349,327,349,284,341,284,341,276,299,276, 
+  i = TkcPolygon.new(w,299,327,349,327,349,284,341,284,341,276,299,276,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '204'
   $floorItems2['204'] = i
-  w.create(TkcText,324,301.5, 'text'=>'204', 'fill'=>color, 
+  w.create(TkcText,324,301.5, 'text'=>'204', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,234,276,297,276,297,327,257,327,257,338,234,338, 
+  i = TkcPolygon.new(w,234,276,297,276,297,327,257,327,257,338,234,338,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '205'
   $floorItems2['205'] = i
-  w.create(TkcText,265.5,307, 'text'=>'205', 'fill'=>color, 
+  w.create(TkcText,265.5,307, 'text'=>'205', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
   i = TkcPolygon.new(w,256,385,256,340,212,340,212,385,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '207'
   $floorItems2['207'] = i
-  w.create(TkcText,234,362.5, 'text'=>'207', 'fill'=>color, 
+  w.create(TkcText,234,362.5, 'text'=>'207', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,210,340,164,340,164,385,210,385, 
+  i = TkcPolygon.new(w,210,340,164,340,164,385,210,385,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '208'
   $floorItems2['208'] = i
-  w.create(TkcText,187,362.5, 'text'=>'208', 'fill'=>color, 
+  w.create(TkcText,187,362.5, 'text'=>'208', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,115,340,162,340,162,385,115,385, 
+  i = TkcPolygon.new(w,115,340,162,340,162,385,115,385,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '209'
   $floorItems2['209'] = i
-  w.create(TkcText,138.5,362.5, 'text'=>'209', 'fill'=>color, 
+  w.create(TkcText,138.5,362.5, 'text'=>'209', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,89,228,89,156,53,156,53,228, 
+  i = TkcPolygon.new(w,89,228,89,156,53,156,53,228,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '217'
   $floorItems2['217'] = i
-  w.create(TkcText,71,192, 'text'=>'217', 'fill'=>color, 
+  w.create(TkcText,71,192, 'text'=>'217', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,89,169,97,169,97,190,89,190, 
+  i = TkcPolygon.new(w,89,169,97,169,97,190,89,190,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '217A'
   $floorItems2['217A'] = i
-  w.create(TkcText,93,179.5, 'text'=>'217A', 'fill'=>color, 
+  w.create(TkcText,93,179.5, 'text'=>'217A', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,89,156,89,168,95,168,95,135,53,135,53,156, 
+  i = TkcPolygon.new(w,89,156,89,168,95,168,95,135,53,135,53,156,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '216'
   $floorItems2['216'] = i
-  w.create(TkcText,71,145.5, 'text'=>'216', 'fill'=>color, 
+  w.create(TkcText,71,145.5, 'text'=>'216', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,51,179,51,135,6,135,6,179, 
+  i = TkcPolygon.new(w,51,179,51,135,6,135,6,179,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '215'
   $floorItems2['215'] = i
-  w.create(TkcText,28.5,157, 'text'=>'215', 'fill'=>color, 
+  w.create(TkcText,28.5,157, 'text'=>'215', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,51,227,6,227,6,180,51,180, 
+  i = TkcPolygon.new(w,51,227,6,227,6,180,51,180,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '214'
   $floorItems2['214'] = i
-  w.create(TkcText,28.5,203.5, 'text'=>'214', 'fill'=>color, 
+  w.create(TkcText,28.5,203.5, 'text'=>'214', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,51,275,6,275,6,229,51,229, 
+  i = TkcPolygon.new(w,51,275,6,275,6,229,51,229,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '213'
   $floorItems2['213'] = i
-  w.create(TkcText,28.5,252, 'text'=>'213', 'fill'=>color, 
+  w.create(TkcText,28.5,252, 'text'=>'213', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,114,340,67,340,67,385,114,385, 
+  i = TkcPolygon.new(w,114,340,67,340,67,385,114,385,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '210'
   $floorItems2['210'] = i
-  w.create(TkcText,90.5,362.5, 'text'=>'210', 'fill'=>color, 
+  w.create(TkcText,90.5,362.5, 'text'=>'210', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,59,389,59,385,65,385,65,340,1,340,1,389, 
+  i = TkcPolygon.new(w,59,389,59,385,65,385,65,340,1,340,1,389,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '211'
   $floorItems2['211'] = i
-  w.create(TkcText,33,364.5, 'text'=>'211', 'fill'=>color, 
+  w.create(TkcText,33,364.5, 'text'=>'211', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,393,309,350,309,350,282,342,282,342,276,393,276, 
+  i = TkcPolygon.new(w,393,309,350,309,350,282,342,282,342,276,393,276,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '203'
   $floorItems2['203'] = i
-  w.create(TkcText,367.5,292.5, 'text'=>'203', 'fill'=>color, 
+  w.create(TkcText,367.5,292.5, 'text'=>'203', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
   i = TkcPolygon.new(w,99,191,91,191,91,226,174,226,174,198,
-                     154,198,154,192,109,192,109,169,99,169, 
+                     154,198,154,192,109,192,109,169,99,169,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '220'
   $floorItems2['220'] = i
-  w.create(TkcText,132.5,208.5, 'text'=>'220', 'fill'=>color, 
+  w.create(TkcText,132.5,208.5, 'text'=>'220', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,339,205,307,205,307,171,339,171, 
+  i = TkcPolygon.new(w,339,205,307,205,307,171,339,171,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = 'Priv Lift2'
   $floorItems2['Priv Lift2'] = i
-  w.create(TkcText,323,188, 'text'=>'Priv Lift2', 'fill'=>color, 
+  w.create(TkcText,323,188, 'text'=>'Priv Lift2', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,307,240,339,240,339,206,307,206, 
+  i = TkcPolygon.new(w,307,240,339,240,339,206,307,206,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = 'Pub Lift 2'
   $floorItems2['Pub Lift 2'] = i
-  w.create(TkcText,323,223, 'text'=>'Pub Lift 2', 'fill'=>color, 
+  w.create(TkcText,323,223, 'text'=>'Pub Lift 2', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,175,168,97,168,97,131,175,131, 
+  i = TkcPolygon.new(w,175,168,97,168,97,131,175,131,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '218'
   $floorItems2['218'] = i
-  w.create(TkcText,136,149.5, 'text'=>'218', 'fill'=>color, 
+  w.create(TkcText,136,149.5, 'text'=>'218', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,154,191,111,191,111,169,154,169, 
+  i = TkcPolygon.new(w,154,191,111,191,111,169,154,169,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '219'
   $floorItems2['219'] = i
-  w.create(TkcText,132.5,180, 'text'=>'219', 'fill'=>color, 
+  w.create(TkcText,132.5,180, 'text'=>'219', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
-  i = TkcPolygon.new(w,375,246,375,172,341,172,341,246, 
+  i = TkcPolygon.new(w,375,246,375,172,341,172,341,246,
                      'fill'=>'', 'tags'=>['floor2','room'])
   $floorLabels2[i.id] = '201'
   $floorItems2['201'] = i
-  w.create(TkcText,358,209, 'text'=>'201', 'fill'=>color, 
+  w.create(TkcText,358,209, 'text'=>'201', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor2','label'])
   w.create(TkcLine,641,186,678,186, 'fill'=>color, 'tags'=>['floor2','wall'])
   w.create(TkcLine,757,350,757,367, 'fill'=>color, 'tags'=>['floor2','wall'])
@@ -1280,206 +1280,206 @@ def floor2_fg3(w,color)
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '316'
   $floorItems2['316'] = i
-  w.create(TkcText,79.5,204, 'text'=>'316', 'fill'=>color, 
+  w.create(TkcText,79.5,204, 'text'=>'316', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,115,368,162,368,162,323,115,323, 
+  i = TkcPolygon.new(w,115,368,162,368,162,323,115,323,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '309'
   $floorItems2['309'] = i
-  w.create(TkcText,138.5,345.5, 'text'=>'309', 'fill'=>color, 
+  w.create(TkcText,138.5,345.5, 'text'=>'309', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,164,323,164,368,211,368,211,323, 
+  i = TkcPolygon.new(w,164,323,164,368,211,368,211,323,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '308'
   $floorItems2['308'] = i
-  w.create(TkcText,187.5,345.5, 'text'=>'308', 'fill'=>color, 
+  w.create(TkcText,187.5,345.5, 'text'=>'308', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,256,368,212,368,212,323,256,323, 
+  i = TkcPolygon.new(w,256,368,212,368,212,323,256,323,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '307'
   $floorItems2['307'] = i
-  w.create(TkcText,234,345.5, 'text'=>'307', 'fill'=>color, 
+  w.create(TkcText,234,345.5, 'text'=>'307', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,244,276,297,276,297,327,260,327,260,321,244,321, 
+  i = TkcPolygon.new(w,244,276,297,276,297,327,260,327,260,321,244,321,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '305'
   $floorItems2['305'] = i
-  w.create(TkcText,270.5,301.5, 'text'=>'305', 'fill'=>color, 
+  w.create(TkcText,270.5,301.5, 'text'=>'305', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
   i = TkcPolygon.new(w,251,219,251,203,244,203,244,219,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '324B'
   $floorItems2['324B'] = i
-  w.create(TkcText,247.5,211, 'text'=>'324B', 'fill'=>color, 
+  w.create(TkcText,247.5,211, 'text'=>'324B', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,251,249,244,249,244,232,251,232, 
+  i = TkcPolygon.new(w,251,249,244,249,244,232,251,232,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '324A'
   $floorItems2['324A'] = i
-  w.create(TkcText,247.5,240.5, 'text'=>'324A', 'fill'=>color, 
+  w.create(TkcText,247.5,240.5, 'text'=>'324A', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,223,135,223,179,177,179,177,135, 
+  i = TkcPolygon.new(w,223,135,223,179,177,179,177,135,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '320'
   $floorItems2['320'] = i
-  w.create(TkcText,200,157, 'text'=>'320', 'fill'=>color, 
+  w.create(TkcText,200,157, 'text'=>'320', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,114,368,114,323,67,323,67,368, 
+  i = TkcPolygon.new(w,114,368,114,323,67,323,67,368,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '310'
   $floorItems2['310'] = i
-  w.create(TkcText,90.5,345.5, 'text'=>'310', 'fill'=>color, 
+  w.create(TkcText,90.5,345.5, 'text'=>'310', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,23,277,23,321,68,321,68,277, 
+  i = TkcPolygon.new(w,23,277,23,321,68,321,68,277,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '312'
   $floorItems2['312'] = i
-  w.create(TkcText,45.5,299, 'text'=>'312', 'fill'=>color, 
+  w.create(TkcText,45.5,299, 'text'=>'312', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,23,229,68,229,68,275,23,275, 
+  i = TkcPolygon.new(w,23,229,68,229,68,275,23,275,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '313'
   $floorItems2['313'] = i
-  w.create(TkcText,45.5,252, 'text'=>'313', 'fill'=>color, 
+  w.create(TkcText,45.5,252, 'text'=>'313', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,68,227,23,227,23,180,68,180, 
+  i = TkcPolygon.new(w,68,227,23,227,23,180,68,180,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '314'
   $floorItems2['314'] = i
-  w.create(TkcText,40.5,203.5, 'text'=>'314', 'fill'=>color, 
+  w.create(TkcText,40.5,203.5, 'text'=>'314', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,95,179,95,135,23,135,23,179, 
+  i = TkcPolygon.new(w,95,179,95,135,23,135,23,179,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '315'
   $floorItems2['315'] = i
-  w.create(TkcText,59,157, 'text'=>'315', 'fill'=>color, 
+  w.create(TkcText,59,157, 'text'=>'315', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,99,226,99,204,91,204,91,226, 
+  i = TkcPolygon.new(w,99,226,99,204,91,204,91,226,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '316B'
   $floorItems2['316B'] = i
-  w.create(TkcText,95,215, 'text'=>'316B', 'fill'=>color, 
+  w.create(TkcText,95,215, 'text'=>'316B', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,91,202,99,202,99,180,91,180, 
+  i = TkcPolygon.new(w,91,202,99,202,99,180,91,180,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '316A'
   $floorItems2['316A'] = i
-  w.create(TkcText,95,191, 'text'=>'316A', 'fill'=>color, 
+  w.create(TkcText,95,191, 'text'=>'316A', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
   i = TkcPolygon.new(w,97,169,109,169,109,192,154,192,154,198,
-                     174,198,174,226,101,226,101,179,97,179, 
+                     174,198,174,226,101,226,101,179,97,179,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '319'
   $floorItems2['319'] = i
-  w.create(TkcText,141.5,209, 'text'=>'319', 'fill'=>color, 
+  w.create(TkcText,141.5,209, 'text'=>'319', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,65,368,58,368,58,389,1,389,1,333,23,333,23,323,65,323, 
+  i = TkcPolygon.new(w,65,368,58,368,58,389,1,389,1,333,23,333,23,323,65,323,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '311'
   $floorItems2['311'] = i
-  w.create(TkcText,29.5,361, 'text'=>'311', 'fill'=>color, 
+  w.create(TkcText,29.5,361, 'text'=>'311', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,154,191,111,191,111,169,154,169, 
+  i = TkcPolygon.new(w,154,191,111,191,111,169,154,169,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '318'
   $floorItems2['318'] = i
-  w.create(TkcText,132.5,180, 'text'=>'318', 'fill'=>color, 
+  w.create(TkcText,132.5,180, 'text'=>'318', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,175,168,97,168,97,131,175,131, 
+  i = TkcPolygon.new(w,175,168,97,168,97,131,175,131,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '317'
   $floorItems2['317'] = i
-  w.create(TkcText,136,149.5, 'text'=>'317', 'fill'=>color, 
+  w.create(TkcText,136,149.5, 'text'=>'317', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,274,194,274,221,306,221,306,194, 
+  i = TkcPolygon.new(w,274,194,274,221,306,221,306,194,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '323'
   $floorItems2['323'] = i
-  w.create(TkcText,290,207.5, 'text'=>'323', 'fill'=>color, 
+  w.create(TkcText,290,207.5, 'text'=>'323', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,306,222,274,222,274,249,306,249, 
+  i = TkcPolygon.new(w,306,222,274,222,274,249,306,249,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '325'
   $floorItems2['325'] = i
-  w.create(TkcText,290,235.5, 'text'=>'325', 'fill'=>color, 
+  w.create(TkcText,290,235.5, 'text'=>'325', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,263,179,224,179,224,135,263,135, 
+  i = TkcPolygon.new(w,263,179,224,179,224,135,263,135,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '321'
   $floorItems2['321'] = i
-  w.create(TkcText,243.5,157, 'text'=>'321', 'fill'=>color, 
+  w.create(TkcText,243.5,157, 'text'=>'321', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
   i = TkcPolygon.new(w,314,169,306,169,306,192,273,192,
-                     264,181,264,135,314,135, 
+                     264,181,264,135,314,135,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '322'
   $floorItems2['322'] = i
-  w.create(TkcText,293.5,163.5, 'text'=>'322', 'fill'=>color, 
+  w.create(TkcText,293.5,163.5, 'text'=>'322', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,307,240,339,240,339,206,307,206, 
+  i = TkcPolygon.new(w,307,240,339,240,339,206,307,206,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = 'Pub Lift3'
   $floorItems2['Pub Lift3'] = i
-  w.create(TkcText,323,223, 'text'=>'Pub Lift3', 'fill'=>color, 
+  w.create(TkcText,323,223, 'text'=>'Pub Lift3', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,339,205,307,205,307,171,339,171, 
+  i = TkcPolygon.new(w,339,205,307,205,307,171,339,171,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = 'Priv Lift3'
   $floorItems2['Priv Lift3'] = i
-  w.create(TkcText,323,188, 'text'=>'Priv Lift3', 'fill'=>color, 
+  w.create(TkcText,323,188, 'text'=>'Priv Lift3', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,350,284,376,284,376,276,397,276,397,309,350,309, 
+  i = TkcPolygon.new(w,350,284,376,284,376,276,397,276,397,309,350,309,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '303'
   $floorItems2['303'] = i
-  w.create(TkcText,373.5,292.5, 'text'=>'303', 'fill'=>color, 
+  w.create(TkcText,373.5,292.5, 'text'=>'303', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
   i = TkcPolygon.new(w,272,203,272,249,252,249,252,230,
-                     244,230,244,221,252,221,252,203, 
+                     244,230,244,221,252,221,252,203,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '324'
   $floorItems2['324'] = i
-  w.create(TkcText,262,226, 'text'=>'324', 'fill'=>color, 
+  w.create(TkcText,262,226, 'text'=>'324', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,299,276,299,327,349,327,349,284,341,284,341,276, 
+  i = TkcPolygon.new(w,299,276,299,327,349,327,349,284,341,284,341,276,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '304'
   $floorItems2['304'] = i
-  w.create(TkcText,324,301.5, 'text'=>'304', 'fill'=>color, 
+  w.create(TkcText,324,301.5, 'text'=>'304', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,375,246,375,172,341,172,341,246, 
+  i = TkcPolygon.new(w,375,246,375,172,341,172,341,246,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '301'
   $floorItems2['301'] = i
-  w.create(TkcText,358,209, 'text'=>'301', 'fill'=>color, 
+  w.create(TkcText,358,209, 'text'=>'301', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,397,246,377,246,377,185,397,185, 
+  i = TkcPolygon.new(w,397,246,377,246,377,185,397,185,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '327'
   $floorItems2['327'] = i
-  w.create(TkcText,387,215.5, 'text'=>'327', 'fill'=>color, 
+  w.create(TkcText,387,215.5, 'text'=>'327', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
-  i = TkcPolygon.new(w,316,131,316,169,377,169,377,185,397,185,397,131, 
+  i = TkcPolygon.new(w,316,131,316,169,377,169,377,185,397,185,397,131,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '326'
   $floorItems2['326'] = i
-  w.create(TkcText,365.5,150, 'text'=>'326', 'fill'=>color, 
+  w.create(TkcText,365.5,150, 'text'=>'326', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
   i = TkcPolygon.new(w,308,251,242,251,242,274,342,274,342,282,375, 282,
-                     375,274,397,274,397,248,339,248,339,242,308,242, 
+                     375,274,397,274,397,248,339,248,339,242,308,242,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '302'
   $floorItems2['302'] = i
-  w.create(TkcText,319.5,261, 'text'=>'302', 'fill'=>color, 
+  w.create(TkcText,319.5,261, 'text'=>'302', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
   i = TkcPolygon.new(w,70,321,242,321,242,200,259,200,259,203,272,203,
                      272,193,263,180,242,180,175,180,175,169,156,169,
                      156,196,177,196,177,228,107,228,70,228,70,275,107,275,
-                     107,248,160,248,160,301,107,301,107,275,70,275, 
+                     107,248,160,248,160,301,107,301,107,275,70,275,
                      'fill'=>'', 'tags'=>['floor3','room'])
   $floorLabels2[i.id] = '306'
   $floorItems2['306'] = i
-  w.create(TkcText,200.5,284.5, 'text'=>'306', 'fill'=>color, 
+  w.create(TkcText,200.5,284.5, 'text'=>'306', 'fill'=>color,
               'anchor'=>'c', 'tags'=>['floor3','label'])
   w.create(TkcLine,341,275,341,283, 'fill'=>color, 'tags'=>['floor3','wall'])
   w.create(TkcLine,162,197,155,197, 'fill'=>color, 'tags'=>['floor3','wall'])
@@ -1574,7 +1574,7 @@ end
 
 # toplevel widget が存在すれば削除する
 if defined?($floor2_demo) && $floor2_demo
-  $floor2_demo.destroy 
+  $floor2_demo.destroy
   $floor2_demo = nil
 end
 
@@ -1590,7 +1590,7 @@ $floor2_demo = TkToplevel.new {|w|
 base_frame = TkFrame.new($floor2_demo).pack(:fill=>:both, :expand=>true)
 
 # label 生成
-TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'8i', 'justify'=>'left', 
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'8i', 'justify'=>'left',
             'text'=>"このウィンドウにはディジタルエクイップメント社のウェスタンリサーチラボラトリ (DECWRL) の間取りが書かれたキャンバス widget が入っています。これは 3階建てで、常にそのうちの1階分が選択、つまりその間取りが表示されるようになっています。ある階を選択するには、その上でマウスの左ボタンをクリックしてください。マウスが選択されている階の上を動くと、その下にある部屋の色が変わり、部屋番号が「部屋番号:」エントリに表示されます。また、エントリに部屋番号を書くとその部屋の色が変わります。"){
   pack('side'=>'top')
 }
@@ -1622,10 +1622,10 @@ $floorItems2 = {}
 if $tk_version =~ /^4\.[01]/
   $floor2_canvas_frame = TkFrame.new(base_frame,'bd'=>2,'relief'=>'sunken',
                                     'highlightthickness'=>2)
-  $floor2_canvas = TkCanvas.new($floor2_canvas_frame, 
-                               'width'=>900, 'height'=>500, 'borderwidth'=>0, 
+  $floor2_canvas = TkCanvas.new($floor2_canvas_frame,
+                               'width'=>900, 'height'=>500, 'borderwidth'=>0,
                                'highlightthickness'=>0) {|c|
-    TkScrollbar.new(base_frame, 'orient'=>'horiz', 
+    TkScrollbar.new(base_frame, 'orient'=>'horiz',
                     'command'=>proc{|*args| c.xview(*args)}){|hs|
       c.xscrollcommand(proc{|first,last| hs.set first,last})
       pack('side'=>'bottom', 'fill'=>'x')
@@ -1646,20 +1646,20 @@ else
     v = TkScrollbar.new(f, 'highlightthickness'=>0, 'orient'=>'vertical')
 
     TkFrame.new(f, 'bd'=>2, 'relief'=>'sunken') {|f1|
-      $floor2_canvas = TkCanvas.new(f1, 'width'=>900, 'height'=>500, 
-                                   'borderwidth'=>0, 
+      $floor2_canvas = TkCanvas.new(f1, 'width'=>900, 'height'=>500,
+                                   'borderwidth'=>0,
                                    'highlightthickness'=>0) {
         xscrollcommand(proc{|first,last| h.set first,last})
         yscrollcommand(proc{|first,last| v.set first,last})
         pack('expand'=>'yes', 'fill'=>'both')
       }
-      grid('padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>0, 
+      grid('padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>0,
            'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
     }
 
-    v.grid('padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>1, 
+    v.grid('padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>1,
            'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
-    h.grid('padx'=>1, 'pady'=>1, 'row'=>1, 'column'=>0, 
+    h.grid('padx'=>1, 'pady'=>1, 'row'=>1, 'column'=>0,
            'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
 
     TkGrid.rowconfigure(f, 0, 'weight'=>1, 'minsize'=>0)
@@ -1675,7 +1675,7 @@ end
 # Create an entry for displaying and typing in current room.
 
 $currentRoom2 = TkVariable.new
-$floor2_entry = TkEntry.new($floor2_canvas, 'width'=>10, 'relief'=>'sunken', 
+$floor2_entry = TkEntry.new($floor2_canvas, 'width'=>10, 'relief'=>'sunken',
                            'bd'=>2, 'textvariable'=>$currentRoom2)
 
 # Choose colors, then fill in the floorplan.
@@ -1712,7 +1712,7 @@ $floor2_canvas.itembind('floor3', '1', proc{floorDisplay2 $floor2_canvas,3})
 $floor2_canvas.itembind('room', 'Enter', proc{newRoom2 $floor2_canvas})
 $floor2_canvas.itembind('room', 'Leave', proc{$currentRoom2.value = ''})
 $floor2_canvas.bind('2', proc{|x,y| $floor2_canvas.scan_mark x,y}, '%x %y')
-$floor2_canvas.bind('B2-Motion', 
+$floor2_canvas.bind('B2-Motion',
                    proc{|x,y| $floor2_canvas.scan_dragto x,y}, '%x %y')
 $floor2_canvas.bind('Destroy', proc{$currentRoom2.unset})
 $currentRoom2.value = ''

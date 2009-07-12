@@ -23,15 +23,15 @@ cols = 20
 
 lbl = TkLabel.new(:text=>"TkTable v2 Example")
 
-table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :variable=>ary, 
-                        :width=>6, :height=>6, 
-                        :titlerows=>1, :titlecols=>2, 
-                        :roworigin=>-5, :colorigin=>-2, 
+table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :variable=>ary,
+                        :width=>6, :height=>6,
+                        :titlerows=>1, :titlecols=>2,
+                        :roworigin=>-5, :colorigin=>-2,
                         :coltagcommand=>proc{|col|
                           col = Integer(col)
                           (col>0 && col%2 == 1)? 'OddCol': ''
-                        }, 
-                        :selectmode=>:extended, :flashmode=>true, 
+                        },
+                        :selectmode=>:extended, :flashmode=>true,
                         :rowstretch=>:unset, :colstretch=>:unset,
                         :selecttitles=>false, :drawmode=>:single)
 
@@ -67,8 +67,8 @@ table.tag_cell('logo', [1,2], [2,3], [4,1])
 table.tag_cell('dis', [2,1], [1,-1], [3,0])
 table.set_width([-2,8], [-1,9], [0, 12], [4, 14])
 
-table.set([1,1], "multi-line\ntext\nmight be\ninteresting", 
-          [3,2], "more\nmulti-line\nplaying\n", 
+table.set([1,1], "multi-line\ntext\nmight be\ninteresting",
+          [3,2], "more\nmulti-line\nplaying\n",
           [2,2], "null\0byte")
 
 # This is in the row span

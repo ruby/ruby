@@ -2,7 +2,7 @@
 #
 # This script implements the "ss" application.  "ss" implements
 # a presentation slide-show based on HTML slides.
-# 
+#
 require 'tk'
 require 'tkextlib/tkHTML'
 
@@ -45,18 +45,18 @@ EOD
 
     @key_block = false
 
-    Tk::HTML_Widget::ClippingWindow.bind('1', 
-                                         proc{|w, ksym| key_press(w, ksym)}, 
+    Tk::HTML_Widget::ClippingWindow.bind('1',
+                                         proc{|w, ksym| key_press(w, ksym)},
                                          '%W Down')
-    Tk::HTML_Widget::ClippingWindow.bind('3', 
-                                         proc{|w, ksym| key_press(w, ksym)}, 
+    Tk::HTML_Widget::ClippingWindow.bind('3',
+                                         proc{|w, ksym| key_press(w, ksym)},
                                          '%W Up')
-    Tk::HTML_Widget::ClippingWindow.bind('2', 
-                                         proc{|w, ksym| key_press(w, ksym)}, 
+    Tk::HTML_Widget::ClippingWindow.bind('2',
+                                         proc{|w, ksym| key_press(w, ksym)},
                                          '%W Down')
 
-    Tk::HTML_Widget::ClippingWindow.bind('KeyPress', 
-                                         proc{|w, ksym| key_press(w, ksym)}, 
+    Tk::HTML_Widget::ClippingWindow.bind('KeyPress',
+                                         proc{|w, ksym| key_press(w, ksym)},
                                          '%W %K')
 
     ############################################
@@ -64,37 +64,37 @@ EOD
     # Build the half-size view of the page
     #
     menu_spec = [
-      [['File', 0], 
-        ['Open',        proc{sel_load()},   0], 
-        ['Full Screen', proc{fullscreen()}, 0], 
-        ['Refresh',     proc{refresh()},    0], 
+      [['File', 0],
+        ['Open',        proc{sel_load()},   0],
+        ['Full Screen', proc{fullscreen()}, 0],
+        ['Refresh',     proc{refresh()},    0],
         '---',
         ['Exit', proc{exit}, 1]]
     ]
 
     mbar = @root.add_menubar(menu_spec)
 
-    @html = Tk::HTML_Widget.new(:width=>512, :height=>384, 
-                                :padx=>5, :pady=>9, 
+    @html = Tk::HTML_Widget.new(:width=>512, :height=>384,
+                                :padx=>5, :pady=>9,
                                 :formcommand=>proc{|*args| form_cmd(*args)},
                                 :imagecommand=>proc{|*args|
                                   image_cmd(1, *args)
-                                }, 
+                                },
                                 :scriptcommand=>proc{|*args|
                                   script_cmd(*args)
-                                }, 
+                                },
                                 :appletcommand=>proc{|*args|
                                   applet_cmd(*args)
-                                }, 
-                                :hyperlinkcommand=>proc{|*args| 
+                                },
+                                :hyperlinkcommand=>proc{|*args|
                                   hyper_cmd(*args)
-                                }, 
+                                },
                                 :fontcommand=>proc{|*args|
                                   pick_font(*args)
-                                }, 
+                                },
                                 :appletcommand=>proc{|*args|
                                   run_applet('small', *args)
-                                }, 
+                                },
                                 :bg=>'white', :tablerelief=>:raised)
 
     @html.token_handler('meta', proc{|*args| meta(@html, *args)})
@@ -127,9 +127,9 @@ EOD
   # html[:fontcommand] = pick_font
   def pick_font(size, attrs)
     # puts "FontCmd: #{size} #{attrs}"
-    [ ((attrs =~ /fixed/)? 'courier': 'charter'), 
-      (12 * (1.2**(size.to_f - 4.0))).to_i, 
-      ((attrs =~ /italic/)? 'italic': 'roman'), 
+    [ ((attrs =~ /fixed/)? 'courier': 'charter'),
+      (12 * (1.2**(size.to_f - 4.0))).to_i,
+      ((attrs =~ /italic/)? 'italic': 'roman'),
       ((attrs =~ /bold/)? 'bold': 'normal') ].join(' ')
   end
 
@@ -139,9 +139,9 @@ EOD
     baseFontSize = 24
 
     # puts "FontCmd: #{size} #{attrs}"
-    [ ((attrs =~ /fixed/)? 'courier': 'charter'), 
-      (baseFontSize * (1.2**(size.to_f - 4.0))).to_i, 
-      ((attrs =~ /italic/)? 'italic': 'roman'), 
+    [ ((attrs =~ /fixed/)? 'courier': 'charter'),
+      (baseFontSize * (1.2**(size.to_f - 4.0))).to_i,
+      ((attrs =~ /italic/)? 'italic': 'roman'),
       ((attrs =~ /bold/)? 'bold': 'normal')  ].join(' ')
   end
 
@@ -244,7 +244,7 @@ EOD
   #
   def sel_load
     filetypes = [
-      ['Html Files', ['.html', '.htm']], 
+      ['Html Files', ['.html', '.htm']],
       ['All Files', '*']
     ]
 
@@ -280,7 +280,7 @@ EOD
     rescue
       ret = nil
       fp = nil
-      Tk.messageBox(:icon=>'error', :message=>"fail to open '#{name}'", 
+      Tk.messageBox(:icon=>'error', :message=>"fail to open '#{name}'",
                     :type=>:ok)
     ensure
       fp.close if fp
@@ -371,32 +371,32 @@ EOD
 
     width  =  @root.winfo_screenwidth
     height =  @root.winfo_screenheight
-    @fswin = TkToplevel.new(:overrideredirect=>true, 
+    @fswin = TkToplevel.new(:overrideredirect=>true,
                             :geometry=>"#{width}x#{height}+0+0")
 
-    @html_fs = Tk::HTML_Widget.new(@fswin, :padx=>5, :pady=>9, 
+    @html_fs = Tk::HTML_Widget.new(@fswin, :padx=>5, :pady=>9,
                                    :formcommand=>proc{|*args|
                                      form_cmd(*args)
                                    },
-                                   :imagecommand=>proc{|*args| 
+                                   :imagecommand=>proc{|*args|
                                      image_cmd(0, *args)
-                                   }, 
+                                   },
                                    :scriptcommand=>proc{|*args|
                                      script_cmd(*args)
-                                   }, 
+                                   },
                                    :appletcommand=>proc{|*args|
                                      applet_cmd(*args)
-                                   }, 
-                                   :hyperlinkcommand=>proc{|*args| 
+                                   },
+                                   :hyperlinkcommand=>proc{|*args|
                                      hyper_cmd(*args)
-                                   }, 
+                                   },
                                    :appletcommand=>proc{|*args|
                                      run_applet('big', *args)
-                                   }, 
+                                   },
                                    :fontcommand=>proc{|*args|
                                      pick_font_fs(*args)
-                                   }, 
-                                   :bg=>'white', :tablerelief=>:raised, 
+                                   },
+                                   :bg=>'white', :tablerelief=>:raised,
                                    :cursor=>:tcross) {
       pack(:fill=>:both, :expand=>true)
       token_handler('meta', proc{|*args| meta(self, *args)})

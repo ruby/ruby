@@ -17,7 +17,7 @@ end
 class Tk::Iwidgets::Scrolledlistbox
   TkCommandNames = ['::iwidgets::scrolledlistbox'.freeze].freeze
   WidgetClassName = 'Scrolledlistbox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'textbackground'
@@ -141,7 +141,7 @@ class Tk::Iwidgets::Scrolledlistbox
   def get(first, last=nil)
     if last
       # tk_split_simplelist(_fromUTF8(tk_send_without_enc('get', first, last)))
-      tk_split_simplelist(tk_send_without_enc('get', first, last), 
+      tk_split_simplelist(tk_send_without_enc('get', first, last),
                           false, true)
     else
       _fromUTF8(tk_send_without_enc('get', first))

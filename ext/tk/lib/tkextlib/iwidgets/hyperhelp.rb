@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Hyperhelp
   TkCommandNames = ['::iwidgets::hyperhelp'.freeze].freeze
   WidgetClassName = 'Hyperhelp'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'helpdir'

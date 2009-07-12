@@ -7,13 +7,14 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2008-05-23"
+#define TKUTIL_RELEASE_DATE "2009-07-12"
 
 #include "ruby.h"
 
-#ifdef HAVE_RUBY_SIGNAL_H
-#include "ruby/signal.h"
+#ifdef RUBY_VM
+static VALUE rb_thread_critical; /* dummy */
 #else
+/* On Ruby 1.8.x, use rb_thread_critical (defined at rubysig.h) */
 #include "rubysig.h"
 #endif
 #ifdef HAVE_RUBY_ST_H
@@ -59,6 +60,9 @@ static unsigned long CALLBACK_ID_NUM = 0;
 
 /*************************************/
 
+#if defined(HAVE_RB_OBJ_INSTANCE_EXEC) && !defined(RUBY_VM)
+extern VALUE rb_obj_instance_exec _((int, VALUE*, VALUE));
+#endif
 static VALUE
 tk_s_new(argc, argv, klass)
     int argc;
@@ -83,10 +87,32 @@ static VALUE
 tkNone_to_s(self)
     VALUE self;
 {
+    return rb_str_new2("");
+}
+
+static VALUE
+tkNone_inspect(self)
+    VALUE self;
+{
     return rb_str_new2("None");
 }
 
 /*************************************/
+
+static VALUE
+tk_obj_untrust(self, obj)
+    VALUE self;
+    VALUE obj;
+{
+#ifdef HAVE_RB_OBJ_TAINT
+  rb_obj_taint(obj);
+#endif
+#ifdef HAVE_RB_OBJ_UNTRUST
+  rb_obj_untrust(obj);
+#endif
+
+  return obj;
+}
 
 static VALUE
 tk_eval_cmd(argc, argv, self)
@@ -1074,6 +1100,18 @@ tcl2rb_num_or_str(self, value)
                       rb_eArgError, 0);
 }
 
+static VALUE
+tcl2rb_num_or_nil(self, value)
+    VALUE self;
+    VALUE value;
+{
+    rb_check_type(value, T_STRING);
+
+    if (RSTRING_LEN(value) == 0) return Qnil;
+
+    return tkstr_to_number(value);
+}
+
 
 /*************************************/
 
@@ -1757,7 +1795,7 @@ Init_tkutil()
     TK_None = rb_obj_alloc(rb_cObject);
     rb_define_const(mTK, "None", TK_None);
     rb_define_singleton_method(TK_None, "to_s", tkNone_to_s, 0);
-    rb_define_singleton_method(TK_None, "inspect", tkNone_to_s, 0);
+    rb_define_singleton_method(TK_None, "inspect", tkNone_inspect, 0);
     OBJ_FREEZE(TK_None);
 
     /* --------------------- */
@@ -1765,6 +1803,8 @@ Init_tkutil()
     CALLBACK_TABLE = rb_hash_new();
 
     /* --------------------- */
+    rb_define_singleton_method(mTK, "untrust", tk_obj_untrust, 1);
+
     rb_define_singleton_method(mTK, "eval_cmd", tk_eval_cmd, -1);
     rb_define_singleton_method(mTK, "callback", tk_do_callback, -1);
     rb_define_singleton_method(mTK, "install_cmd", tk_install_cmd, -1);
@@ -1781,6 +1821,7 @@ Init_tkutil()
     rb_define_singleton_method(mTK, "number", tcl2rb_number, 1);
     rb_define_singleton_method(mTK, "string", tcl2rb_string, 1);
     rb_define_singleton_method(mTK, "num_or_str", tcl2rb_num_or_str, 1);
+    rb_define_singleton_method(mTK, "num_or_nil", tcl2rb_num_or_nil, 1);
 
     rb_define_method(mTK, "_toUTF8", tk_toUTF8, -1);
     rb_define_method(mTK, "_fromUTF8", tk_fromUTF8, -1);
@@ -1794,6 +1835,7 @@ Init_tkutil()
     rb_define_method(mTK, "number", tcl2rb_number, 1);
     rb_define_method(mTK, "string", tcl2rb_string, 1);
     rb_define_method(mTK, "num_or_str", tcl2rb_num_or_str, 1);
+    rb_define_method(mTK, "num_or_nil", tcl2rb_num_or_nil, 1);
 
     /* --------------------- */
     rb_global_variable(&ENCODING_NAME_UTF8);

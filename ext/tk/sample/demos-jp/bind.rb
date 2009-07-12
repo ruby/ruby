@@ -5,7 +5,7 @@
 
 # toplevel widget が存在すれば削除する
 if defined?($bind_demo) && $bind_demo
-  $bind_demo.destroy 
+  $bind_demo.destroy
   $bind_demo = nil
 end
 
@@ -59,7 +59,7 @@ txt = TkText.new(base_frame){|t|
 
   # スタイル設定
   if TkWinfo.depth($root).to_i > 1
-    tagstyle_bold = {'background'=>'#43ce80', 'relief'=>'raised', 
+    tagstyle_bold = {'background'=>'#43ce80', 'relief'=>'raised',
                      'borderwidth'=>1}
     tagstyle_normal = {'background'=>'', 'relief'=>'flat'}
   else
@@ -75,44 +75,44 @@ txt = TkText.new(base_frame){|t|
   insert('end', "\n\n")
   insert('end', '2. 簡単な 2次元のプロット。データを表す点を動かすことができる。', (d2 = TkTextTag.new(t)) )
   insert('end', "\n\n")
-  insert('end', '3. テキストアイテムのアンカーと行揃え。', 
+  insert('end', '3. テキストアイテムのアンカーと行揃え。',
          (d3 = TkTextTag.new(t)) )
   insert('end', "\n\n")
-  insert('end', '4. ラインアイテムのための矢印の頭の形のエディタ。', 
+  insert('end', '4. ラインアイテムのための矢印の頭の形のエディタ。',
          (d4 = TkTextTag.new(t)) )
   insert('end', "\n\n")
-  insert('end', '5. タブストップを変更するための機能つきのルーラー。', 
+  insert('end', '5. タブストップを変更するための機能つきのルーラー。',
          (d5 = TkTextTag.new(t)) )
   insert('end', "\n\n")
-  insert('end', 
-         '6. キャンバスがどうやってスクロールするのかを示すグリッド。', 
+  insert('end',
+         '6. キャンバスがどうやってスクロールするのかを示すグリッド。',
          (d6 = TkTextTag.new(t)) )
 
   # binding
   [d1, d2, d3, d4, d5, d6].each{|tag|
     tag_binding_for_bind_demo(tag, tagstyle_bold, tagstyle_normal)
   }
-  d1.bind('1', 
+  d1.bind('1',
           proc{
             eval_samplecode(`cat #{[$demo_dir,'items.rb'].join(File::Separator)}`, 'items.rb')
           })
-  d2.bind('1', 
+  d2.bind('1',
           proc{
             eval_samplecode(`cat #{[$demo_dir,'plot.rb'].join(File::Separator)}`, 'plot.rb')
           })
-  d3.bind('1', 
+  d3.bind('1',
           proc{
             eval_samplecode(`cat #{[$demo_dir,'ctext.rb'].join(File::Separator)}`, 'ctext.rb')
           })
-  d4.bind('1', 
+  d4.bind('1',
           proc{
             eval_samplecode(`cat #{[$demo_dir,'arrow.rb'].join(File::Separator)}`, 'arrow.rb')
           })
-  d5.bind('1', 
+  d5.bind('1',
           proc{
             eval_samplecode(`cat #{[$demo_dir,'ruler.rb'].join(File::Separator)}`, 'ruler.rb')
           })
-  d6.bind('1', 
+  d6.bind('1',
           proc{
             eval_samplecode(`cat #{[$demo_dir,'cscroll.rb'].join(File::Separator)}`, 'cscroll.rb')
           })

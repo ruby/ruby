@@ -8,20 +8,20 @@ require 'tk/entry'
 class Tk::Spinbox<Tk::Entry
   TkCommandNames = ['spinbox'.freeze].freeze
   WidgetClassName = 'Spinbox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   class SpinCommand < TkValidateCommand
     class ValidateArgs < TkUtil::CallbackSubst
       KEY_TBL = [
-        [ ?d, ?s, :direction ], 
-        [ ?s, ?e, :current ], 
-        [ ?W, ?w, :widget ], 
+        [ ?d, ?s, :direction ],
+        [ ?s, ?e, :current ],
+        [ ?W, ?w, :widget ],
         nil
       ]
 
       PROC_TBL = [
-        [ ?s, TkComm.method(:string) ], 
-        [ ?w, TkComm.method(:window) ], 
+        [ ?s, TkComm.method(:string) ],
+        [ ?w, TkComm.method(:window) ],
 
         [ ?e, proc{|val|
             #enc = Tk.encoding
@@ -32,7 +32,7 @@ class Tk::Spinbox<Tk::Entry
               TkComm::string(val)
             end
           }
-        ], 
+        ],
 
         nil
       ]
@@ -100,13 +100,36 @@ class Tk::Spinbox<Tk::Entry
     tk_send_without_enc('identify', x, y)
   end
 
+  def invoke(elem)
+    tk_send_without_enc('invoke', elem)
+    self
+  end
+
   def spinup
-    tk_send_without_enc('invoke', 'spinup')
+    begin
+      tk_send_without_enc('invoke', 'buttonup')
+    rescue RuntimeError => e
+      # old version of element?
+      begin
+        tk_send_without_enc('invoke', 'spinup')
+      rescue
+        fail e
+      end
+    end
     self
   end
 
   def spindown
-    tk_send_without_enc('invoke', 'spindown')
+    begin
+      tk_send_without_enc('invoke', 'buttondown')
+    rescue RuntimeError => e
+      # old version of element?
+      begin
+        tk_send_without_enc('invoke', 'spinup')
+      rescue
+        fail e
+      end
+    end
     self
   end
 
@@ -116,4 +139,6 @@ class Tk::Spinbox<Tk::Entry
 end
 
 #TkSpinbox = Tk::Spinbox unless Object.const_defined? :TkSpinbox
-Tk.__set_toplevel_aliases__(:Tk, Tk::Spinbox, :TkSpinbox)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::Spinbox, :TkSpinbox)
+Tk.__set_loaded_toplevel_aliases__('tk/spinbox.rb', :Tk, Tk::Spinbox,
+                                   :TkSpinbox)

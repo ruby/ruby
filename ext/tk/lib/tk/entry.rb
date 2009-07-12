@@ -13,7 +13,7 @@ class Tk::Entry<Tk::Label
 
   TkCommandNames = ['entry'.freeze].freeze
   WidgetClassName = 'Entry'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   #def create_self(keys)
   #  super(__conv_vcmd_on_hash_kv(keys))
@@ -116,4 +116,5 @@ class Tk::Entry<Tk::Label
 end
 
 #TkEntry = Tk::Entry unless Object.const_defined? :TkEntry
-Tk.__set_toplevel_aliases__(:Tk, Tk::Entry, :TkEntry)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::Entry, :TkEntry)
+Tk.__set_loaded_toplevel_aliases__('tk/entry.rb', :Tk, Tk::Entry, :TkEntry)

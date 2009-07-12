@@ -5,7 +5,7 @@
 
 # toplevel widget
 if defined?($menu84_demo) && $menu84_demo
-  $menu84_demo.destroy 
+  $menu84_demo.destroy
   $menu84_demo = nil
 end
 
@@ -37,9 +37,9 @@ TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
 
 menustatus = TkVariable.new("    ")
 TkFrame.new(base_frame) {|frame|
-  TkLabel.new(frame, 'textvariable'=>menustatus, 'relief'=>'sunken', 
-              'bd'=>1, 'font'=>['Helvetica', '10'], 
-              'anchor'=>'w').pack('side'=>'left', 'padx'=>2, 
+  TkLabel.new(frame, 'textvariable'=>menustatus, 'relief'=>'sunken',
+              'bd'=>1, 'font'=>['Helvetica', '10'],
+              'anchor'=>'w').pack('side'=>'left', 'padx'=>2,
                                   'expand'=>true, 'fill'=>'both')
   pack('side'=>'bottom', 'fill'=>'x', 'pady'=>2)
 }
@@ -94,8 +94,8 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
   $menu84_frame.add('cascade', 'label'=>'Basic', 'menu'=>m, 'underline'=>0)
   add('command', 'label'=>'Long entry that does nothing')
   ['A','B','C','D','E','F','G'].each{|c|
-    add('command', 'label'=>"Print letter \"#{c}\"", 
-        'underline'=>14, 'accelerator'=>"Meta+#{c}", 
+    add('command', 'label'=>"Print letter \"#{c}\"",
+        'underline'=>14, 'accelerator'=>"Meta+#{c}",
         'command'=>proc{print c,"\n"}, 'accelerator'=>"#{modifier}+#{c}")
     $menu84_demo.bind("#{modifier}-#{c.downcase}", proc{print c,"\n"})
   }
@@ -103,17 +103,17 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
 
 TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
   $menu84_frame.add('cascade', 'label'=>'Cascades', 'menu'=>m, 'underline'=>0)
-  add('command', 'label'=>'Print hello', 
-      'command'=>proc{print "Hello\n"}, 
+  add('command', 'label'=>'Print hello',
+      'command'=>proc{print "Hello\n"},
       'accelerator'=>"#{modifier}+H", 'underline'=>6)
   $menu84_demo.bind("#{modifier}-h", proc{print "Hello\n"})
-  add('command', 'label'=>'Print goodbye', 
-      'command'=>proc{print "Goodbye\n"}, 
+  add('command', 'label'=>'Print goodbye',
+      'command'=>proc{print "Goodbye\n"},
       'accelerator'=>"#{modifier}+G", 'underline'=>6)
   $menu84_demo.bind("#{modifier}-g", proc{print "Goodbye\n"})
 
   TkMenu.new(m, 'tearoff'=>false) {|cascade_check|
-    m.add('cascade', 'label'=>'Check button', 
+    m.add('cascade', 'label'=>'Check button',
           'menu'=>cascade_check, 'underline'=>0)
     oil = TkVariable.new(0)
     add('check', 'label'=>'オイル検査', 'variable'=>oil)
@@ -124,18 +124,18 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
     lights = TkVariable.new(0)
     add('check', 'label'=>'ライト検査', 'variable'=>lights)
     add('separator')
-    add('command', 'label'=>'Show current values', 
-        'command'=>proc{showVars($menu84_demo, 
-                                 ['オイル', oil], 
-                                 ['トランスミッション', trans], 
-                                 ['ブレーキ', brakes], 
+    add('command', 'label'=>'Show current values',
+        'command'=>proc{showVars($menu84_demo,
+                                 ['オイル', oil],
+                                 ['トランスミッション', trans],
+                                 ['ブレーキ', brakes],
                                  ['ライト', lights])} )
     invoke 1
     invoke 3
   }
 
   TkMenu.new(m, 'tearoff'=>false) {|cascade_radio|
-    m.add('cascade', 'label'=>'Radio buttons', 
+    m.add('cascade', 'label'=>'Radio buttons',
           'menu'=>cascade_radio, 'underline'=>0)
     pointSize = TkVariable.new
     add('radio', 'label'=>'10 point', 'variable'=>pointSize, 'value'=>10)
@@ -149,9 +149,9 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
     add('radio', 'label'=>'Bold', 'variable'=>style, 'value'=>'bold')
     add('radio', 'label'=>'Italic', 'variable'=>style, 'value'=>'italic')
     add('separator')
-    add('command', 'label'=>'現在値の表示', 
-        'command'=>proc{showVars($menu84_demo, 
-                                 ['pointSize', pointSize], 
+    add('command', 'label'=>'現在値の表示',
+        'command'=>proc{showVars($menu84_demo,
+                                 ['pointSize', pointSize],
                                  ['style', style])} )
     invoke 1
     invoke 7
@@ -160,15 +160,15 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
 
 TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
   $menu84_frame.add('cascade', 'label'=>'Icons', 'menu'=>m, 'underline'=>0)
-  add('command', 'hidemargin'=>1, 
+  add('command', 'hidemargin'=>1,
       'bitmap'=>'@'+[$demo_dir,'..',
                       'images','pattern.xbm'].join(File::Separator),
-      'command'=>proc{TkDialog.new('title'=>'Bitmap Menu Entry', 
+      'command'=>proc{TkDialog.new('title'=>'Bitmap Menu Entry',
                                    'text'=>'あなたが選択したメニュー項目は、文字列の代わりにビットマップイメージで項目を表示したものです。それ以外の点では、ほかのメニュー項目との間で特に違いがあるわけではありません。',
-                                   'bitmap'=>'', 'default'=>0, 
+                                   'bitmap'=>'', 'default'=>0,
                                    'buttons'=>'閉じる')} )
   ['info', 'questhead', 'error'].each{|icon|
-    add('command', 'bitmap'=>icon, 'hidemargin'=>1, 
+    add('command', 'bitmap'=>icon, 'hidemargin'=>1,
         'command'=>proc{print "You invoked the #{icon} bitmap\n"})
   }
 
@@ -179,14 +179,14 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
   $menu84_frame.add('cascade', 'label'=>'More', 'menu'=>m, 'underline'=>0)
   [ 'An entry','Another entry','Does nothing','Does almost nothing',
     'Make life meaningful' ].each{|i|
-    add('command', 'label'=>i, 
+    add('command', 'label'=>i,
         'command'=>proc{print "You invoked \"#{i}\"\n"})
   }
 
-  m.entryconfigure('Does almost nothing', 
-                   'bitmap'=>'questhead', 'compound'=>'left', 
+  m.entryconfigure('Does almost nothing',
+                   'bitmap'=>'questhead', 'compound'=>'left',
                    'command'=>proc{
-                     TkDialog.new('title'=>'Compound Menu Entry', 
+                     TkDialog.new('title'=>'Compound Menu Entry',
                                   'message'=>'あなたが選択したメニュー項目は、ビットマップイメージと文字列とを同時に一つの項目に表示するようにしたものです。それ以外の点では、ほかのメニュー項目との間で特に違いがあるわけではありません。',
                                   'buttons'=>['了解'], 'bitmap'=>'')
                    })
@@ -195,7 +195,7 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
 TkMenu.new($menu84_frame) {|m|
   $menu84_frame.add('cascade', 'label'=>'Colors', 'menu'=>m, 'underline'=>0)
   ['red', 'orange', 'yellow', 'green', 'blue'].each{|c|
-    add('command', 'label'=>c, 'background'=>c, 
+    add('command', 'label'=>c, 'background'=>c,
         'command'=>proc{print "You invoked \"#{c}\"\n"})
   }
 }

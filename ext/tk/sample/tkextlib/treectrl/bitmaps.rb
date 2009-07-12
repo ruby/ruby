@@ -4,12 +4,12 @@
 def demoBitmaps(t)
   #if $Version_1_1_OrLater
   if @has_bgimg
-    t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false, 
-                :selectmode=>:browse, :orient=>:horizontal, :wrap=>'5 items', 
+    t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false,
+                :selectmode=>:browse, :orient=>:horizontal, :wrap=>'5 items',
                 :showheader=>false, :backgroundimage=>@images['sky'])
   else
-    t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false, 
-                :selectmode=>:browse, :orient=>:horizontal, :wrap=>'5 items', 
+    t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false,
+                :selectmode=>:browse, :orient=>:horizontal, :wrap=>'5 items',
                 :showheader=>false)
   end
 
@@ -19,15 +19,15 @@ def demoBitmaps(t)
     t.column_configure(0, :itembackground=>['gray90', []])
   end
 
-  t.element_create('elemTxt', :text, 
+  t.element_create('elemTxt', :text,
                    :fill=>[@SystemHighlightText, ['selected', 'focus']])
-  t.element_create('elemSelTxt', :rect, :showfocus=>true, 
+  t.element_create('elemSelTxt', :rect, :showfocus=>true,
                    :fill=>[@SystemHighlight, ['selected', 'focus']])
-  t.element_create('elemSelBmp', :rect, :outlinewidth=>4, 
+  t.element_create('elemSelBmp', :rect, :outlinewidth=>4,
                    :outline=>[@SystemHighlight, ['selected', 'focus']])
-  t.element_create('elemBmp', :bitmap, 
-                   :foreground=>[@SystemHighlight, ['selected', 'focus']], 
-                   :background=>'linen', 
+  t.element_create('elemBmp', :bitmap,
+                   :foreground=>[@SystemHighlight, ['selected', 'focus']],
+                   :background=>'linen',
                    :bitmap=>['question' ['selected']])
 
   s = t.style_create('STYLE', :orient=>:vertical)
@@ -42,7 +42,7 @@ def demoBitmaps(t)
     t.defaultstyle = [s]
   end
 
-  bitmap_names = %w(error gray75 gray50 gray25 gray12 
+  bitmap_names = %w(error gray75 gray50 gray25 gray12
                     hourglass info questhead question warning)
 
   bitmap_names.each{|name|
@@ -60,15 +60,15 @@ def demoBitmaps(t)
     t.item_style_set(i, 0, s)
     t.item_text(i, 0, name)
     if true
-      t.item_element_configure(i, 0, 'elemBmp', :bitmap=>name, 
-                               :foreground=>['brown', ''], 
+      t.item_element_configure(i, 0, 'elemBmp', :bitmap=>name,
+                               :foreground=>['brown', ''],
                                :background=>['', ''])
     else
-      t.item_element_configure(i, 0, 'elemBmp', :bitmap=>name, 
+      t.item_element_configure(i, 0, 'elemBmp', :bitmap=>name,
                                :foreground=>[
-                                 @SystemHighlight, ['selected', 'focus'], 
+                                 @SystemHighlight, ['selected', 'focus'],
                                  'brown', []
-                               ], 
+                               ],
                                :background=>['', []])
     end
     t.item_lastchild(:root, i)

@@ -7,56 +7,56 @@ require 'tk'
 TkLabel.new(:text=>'Sample of TkMenubutton').pack(:side=>:top)
 
 TkFrame.new{|f|
-  pack(:side=>:top) 
+  pack(:side=>:top)
 
 
-  TkMenubutton.new(:parent=>f, :text=>'Right', :underline=>0, 
+  TkMenubutton.new(:parent=>f, :text=>'Right', :underline=>0,
                    :direction=>:right, :relief=>:raised){|mb|
     menu TkMenu.new(:parent=>mb, :tearoff=>0){
-      add(:command, :label=>'Right menu: first item', 
-                    :command=>proc{print 'You have selected the first item' + 
+      add(:command, :label=>'Right menu: first item',
+                    :command=>proc{print 'You have selected the first item' +
                                          " from the Right menu.\n"})
-      add(:command, :label=>'Right menu: second item', 
-                    :command=>proc{print 'You have selected the second item' + 
+      add(:command, :label=>'Right menu: second item',
+                    :command=>proc{print 'You have selected the second item' +
                                          " from the Right menu.\n"})
     }
     pack(:side=>:left, :padx=>25, :pady=>25)
   }
 
-  TkMenubutton.new(:parent=>f, :text=>'Below', :underline=>0, 
+  TkMenubutton.new(:parent=>f, :text=>'Below', :underline=>0,
                    :direction=>:below, :relief=>:raised){|mb|
     menu(TkMenu.new(:parent=>mb, :tearoff=>0){
-      add(:command, :label=>'Below menu: first item', 
-                    :command=>proc{print 'You have selected the first item' + 
+      add(:command, :label=>'Below menu: first item',
+                    :command=>proc{print 'You have selected the first item' +
                                          " from the Below menu.\n"})
-      add(:command, :label=>'Below menu: second item', 
-                    :command=>proc{print 'You have selected the second item' + 
+      add(:command, :label=>'Below menu: second item',
+                    :command=>proc{print 'You have selected the second item' +
                                          " from the Below menu.\n"})
     })
     pack(:side=>:left, :padx=>25, :pady=>25)
   }
 
-  TkMenubutton.new(:parent=>f, :text=>'Above', :underline=>0, 
+  TkMenubutton.new(:parent=>f, :text=>'Above', :underline=>0,
                    :direction=>:above, :relief=>:raised){|mb|
     menu TkMenu.new(:parent=>mb, :tearoff=>0){
-      add(:command, :label=>'Above menu: first item', 
-                    :command=>proc{print 'You have selected the first item' + 
+      add(:command, :label=>'Above menu: first item',
+                    :command=>proc{print 'You have selected the first item' +
                                          " from the Above menu.\n"})
-      add(:command, :label=>'Above menu: second item', 
-                    :command=>proc{print 'You have selected the second item' + 
+      add(:command, :label=>'Above menu: second item',
+                    :command=>proc{print 'You have selected the second item' +
                                          " from the Above menu.\n"})
     }
     pack(:side=>:left, :padx=>25, :pady=>25)
   }
 
-  TkMenubutton.new(:parent=>f, :text=>'Left', :underline=>0, 
+  TkMenubutton.new(:parent=>f, :text=>'Left', :underline=>0,
                    :direction=>:left, :relief=>:raised){|mb|
     menu(TkMenu.new(:parent=>mb, :tearoff=>0){
-      add(:command, :label=>'Left menu: first item', 
-                    :command=>proc{print 'You have selected the first item' + 
+      add(:command, :label=>'Left menu: first item',
+                    :command=>proc{print 'You have selected the first item' +
                                          " from the Left menu.\n"})
-      add(:command, :label=>'Left menu: second item', 
-                    :command=>proc{print 'You have selected the second item' + 
+      add(:command, :label=>'Left menu: second item',
+                    :command=>proc{print 'You have selected the second item' +
                                          " from the Left menu.\n"})
     })
     pack(:side=>:left, :padx=>25, :pady=>25)
@@ -64,20 +64,20 @@ TkFrame.new{|f|
 }
 
 ############################
-TkFrame.new(:borderwidth=>2, :relief=>:sunken, 
+TkFrame.new(:borderwidth=>2, :relief=>:sunken,
             :height=>5).pack(:side=>:top, :fill=>:x, :padx=>20)
 ############################
 
 TkLabel.new(:text=>'Sample of TkOptionMenu').pack(:side=>:top)
 
-colors = %w(Black red4 DarkGreen NavyBlue gray75 Red Green Blue gray50 
+colors = %w(Black red4 DarkGreen NavyBlue gray75 Red Green Blue gray50
             Yellow Cyan Magenta White Brown DarkSeaGreen DarkViolet)
 
 TkFrame.new{|f|
-  pack(:side=>:top) 
+  pack(:side=>:top)
 
-  b1 = TkOptionMenubutton . 
-    new(:parent=>f, :values=>%w(one two three)) . 
+  b1 = TkOptionMenubutton .
+    new(:parent=>f, :values=>%w(one two three)) .
     pack(:side=>:left, :padx=>25, :pady=>25)
 
   b2 = TkOptionMenubutton.new(:parent=>f, :values=>colors) {|optMB|
@@ -96,7 +96,7 @@ TkFrame.new{|f|
         put 'Black',  *[14,  2, 16, 14]
         put color,    *[ 2,  2, 14, 14]
       }
-      optMB.entryconfigure(color, :hidemargin=>1, 
+      optMB.entryconfigure(color, :hidemargin=>1,
                            :image=>no_sel, :selectimage=>sel)
     }
     optMB.menuconfigure(:tearoff, 1)
@@ -114,7 +114,7 @@ TkFrame.new{|f|
 }
 
 ############################
-TkFrame.new(:borderwidth=>2, :relief=>:sunken, 
+TkFrame.new(:borderwidth=>2, :relief=>:sunken,
             :height=>5).pack(:side=>:top, :fill=>:x, :padx=>20)
 ############################
 

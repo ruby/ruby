@@ -33,7 +33,7 @@ end
 class Tk::Tcllib::Swaplist_Dialog
   TkCommandNames = ['::swaplist::swaplist'.freeze].freeze
   WidgetClassName = 'Swaplist'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.show(*args)
     dialog = self.new(*args)
@@ -44,7 +44,7 @@ class Tk::Tcllib::Swaplist_Dialog
     self.show(*args)
   end
 
-  def initialize(*args) 
+  def initialize(*args)
     # args = (parent=nil, complete_list=[], selected_list=[], keys=nil)
     keys = args.pop
     if keys.kind_of?(Hash)
@@ -74,9 +74,9 @@ class Tk::Tcllib::Swaplist_Dialog
 
   def show
     @variable.value = ''
-    @status = bool(tk_call(self.class::TkCommandNames[0], 
-                           @path, @variable, 
-                           @complete_list, @selected_list, 
+    @status = bool(tk_call(self.class::TkCommandNames[0],
+                           @path, @variable,
+                           @complete_list, @selected_list,
                            *hash_kv(@keys)))
   end
   alias display show

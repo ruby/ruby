@@ -8,7 +8,7 @@
 # based on Tcl/Tk8.4.4 widget demos
 
 if defined?($entry3_demo) && $entry3_demo
-  $entry3_demo.destroy 
+  $entry3_demo.destroy
   $entry3_demo = nil
 end
 
@@ -20,8 +20,8 @@ $entry3_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($entry3_demo).pack(:fill=>:both, :expand=>true)
 
-TkLabel.new(base_frame, 
-            :font=>$font, :wraplength=>'5i', :justify=>:left, 
+TkLabel.new(base_frame,
+            :font=>$font, :wraplength=>'5i', :justify=>:left,
             :text=><<EOL).pack(:side=>:top)
 以下には４種類のエントリボックスが表示されています．各エントリボックスは，\
 マウスクリックで選択し文字を打ち込むことが可能ですが，それぞれがどのような\
@@ -68,20 +68,20 @@ TkFrame.new(base_frame){|f|
 def focusAndFlash(widget, fg, bg, count=5)
   return if count <= 0
   if fg && !fg.empty? && bg && !bg.empty?
-    TkTimer.new(200, count, 
-                proc{widget.configure(:foreground=>bg, :background=>fg)}, 
+    TkTimer.new(200, count,
+                proc{widget.configure(:foreground=>bg, :background=>fg)},
                 proc{widget.configure(:foreground=>fg, :background=>bg)}
                 ).start
   else
     # TkTimer.new(150, 3){Tk.bell}.start
     Tk.bell
-    TkTimer.new(200, count, 
-                proc{widget.configure(:foreground=>'white', 
-                                      :background=>'black')}, 
-                proc{widget.configure(:foreground=>'black', 
+    TkTimer.new(200, count,
+                proc{widget.configure(:foreground=>'white',
+                                      :background=>'black')},
+                proc{widget.configure(:foreground=>'black',
                                       :background=>'white')}
                 ).at_end{begin
-                           widget.configure(:foreground=>fg, 
+                           widget.configure(:foreground=>fg,
                                             :background=>bg)
                          rescue
                            # ignore
@@ -91,7 +91,7 @@ def focusAndFlash(widget, fg, bg, count=5)
 end
 
 l1 = TkLabelFrame.new(base_frame, :text=>"整数エントリ")
-TkEntry.new(l1, :validate=>:focus, 
+TkEntry.new(l1, :validate=>:focus,
             :vcmd=>[
               proc{|s| s == '' || /^[+-]?\d+$/ =~ s }, '%P'
             ]) {|e|
@@ -102,7 +102,7 @@ TkEntry.new(l1, :validate=>:focus,
 }
 
 l2 = TkLabelFrame.new(base_frame, :text=>"長さ制約付きエントリ")
-TkEntry.new(l2, :validate=>:key, :invcmd=>proc{Tk.bell}, 
+TkEntry.new(l2, :validate=>:key, :invcmd=>proc{Tk.bell},
             :vcmd=>[proc{|s| s.length < 10}, '%P']
             ).pack(:fill=>:x, :expand=>true, :padx=>'1m', :pady=>'1m')
 
@@ -176,7 +176,7 @@ end
 
 def validatePhoneChange(widget, vmode, idx, char)
   return true if idx == nil
-  Tk.after_idle(proc{widget.configure(:validate=>vmode, 
+  Tk.after_idle(proc{widget.configure(:validate=>vmode,
                                       :invcmd=>proc{Tk.bell})})
   if !(idx<3 || idx==6 || idx==7 || idx==11 || idx>15) && char =~ /[0-9A-Za-z]/
     widget.delete(idx)
@@ -191,10 +191,10 @@ end
 
 
 l3 = TkLabelFrame.new(base_frame, :text=>"米国電話番号エントリ")
-TkEntry.new(l3, :validate=>:key, :invcmd=>proc{Tk.bell}, 
-            :textvariable=>entry3content, 
+TkEntry.new(l3, :validate=>:key, :invcmd=>proc{Tk.bell},
+            :textvariable=>entry3content,
             :vcmd=>[
-              proc{|w,v,i,s| validatePhoneChange(w,v,i,s)}, 
+              proc{|w,v,i,s| validatePhoneChange(w,v,i,s)},
               "%W %v %i %S"
             ]){|e|
   # Click to focus goes to the first editable character...
@@ -210,9 +210,9 @@ TkEntry.new(l3, :validate=>:key, :invcmd=>proc{Tk.bell},
 }
 
 l4 = TkLabelFrame.new(base_frame, :text=>"パスワードエントリ")
-TkEntry.new(l4, :validate=>:key, :show=>'*', 
+TkEntry.new(l4, :validate=>:key, :show=>'*',
             :vcmd=>[
-              proc{|s| s.length <= 8}, 
+              proc{|s| s.length <= 8},
               '%P'
             ]).pack(:fill=>:x, :expand=>true, :padx=>'1m', :pady=>'1m')
 

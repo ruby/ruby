@@ -13,13 +13,10 @@ module Tk
   end
 end
 
-Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Notebook, :TkNotebook)
-
-
 class Tk::Tile::TNotebook < TkWindow
   ################################
   include TkItemConfigMethod
-  
+
   def __item_cget_cmd(id)
     [self.path, 'tab', id]
   end
@@ -46,8 +43,11 @@ class Tk::Tile::TNotebook < TkWindow
   alias tabconfiginfo itemconfiginfo
   alias current_tabconfiginfo current_itemconfiginfo
 
+  def tabcget_tkstring(tagOrId, option)
+    tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{option}")), false, true)[-1]
+  end
   def tabcget_strict(tagOrId, option)
-    tabconfigure(tagOrId, option)[-1]
+    tabconfiginfo(tagOrId, option)[-1]
   end
   def tabcget(tagOrId, option)
     unless TkItemConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
@@ -80,7 +80,7 @@ class Tk::Tile::TNotebook < TkWindow
     TkCommandNames = ['::tnotebook'.freeze].freeze
   end
   WidgetClassName = 'TNotebook'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.style(*args)
     [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
@@ -109,7 +109,11 @@ class Tk::Tile::TNotebook < TkWindow
   def forget(idx)
     tk_send('forget', idx)
     self
-  end    
+  end
+
+  def hide(idx)
+    tk_send('hide', idx)
+  end
 
   def index(idx)
     number(tk_send('index', idx))
@@ -137,3 +141,7 @@ class Tk::Tile::TNotebook < TkWindow
     list(tk_send('tabs'))
   end
 end
+
+#Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Notebook, :TkNotebook)
+Tk.__set_loaded_toplevel_aliases__('tkextlib/tile/tnotebook.rb',
+                                   :Ttk, Tk::Tile::Notebook, :TkNotebook)

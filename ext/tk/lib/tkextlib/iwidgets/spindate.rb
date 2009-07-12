@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Spindate
   TkCommandNames = ['::iwidgets::spindate'.freeze].freeze
   WidgetClassName = 'Spindate'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __boolval_optkeys
     super() << 'dayon' << 'monthon' << 'yearon'

@@ -13,7 +13,7 @@ module Tk::BLT
 
       TabID_TBL = TkCore::INTERP.create_table
 
-      (TabsetTab_ID = ['blt_tabset_tab'.freeze, '00000'.taint]).instance_eval{
+      (TabsetTab_ID = ['blt_tabset_tab'.freeze, TkUtil.untrust('00000')]).instance_eval{
         @mutex = Mutex.new
         def mutex; @mutex; end
         freeze
@@ -132,6 +132,9 @@ module Tk::BLT
         @t.tab_bindinfo(@id, context)
       end
 
+      def cget_tkstring(*args)
+        @t.tab_cget_tkstring(@id, *args)
+      end
       def cget(*args)
         @t.tab_cget(@id, *args)
       end
@@ -210,7 +213,7 @@ module Tk::BLT
 
     TkCommandNames = ['::blt::tabset'.freeze].freeze
     WidgetClassName = 'Tabset'.freeze
-    WidgetClassNames[WidgetClassName] = self
+    WidgetClassNames[WidgetClassName] ||= self
 
     def __destroy_hook__
       Tk::BLT::Tabset::Tab::TabID_TBL.mutex.synchronize{
@@ -249,6 +252,7 @@ module Tk::BLT
     end
     private :__item_pathname
 
+    alias tab_cget_tkstring itemcget_tkstring
     alias tab_cget itemcget
     alias tab_cget_strict itemcget_strict
     alias tab_configure itemconfigure

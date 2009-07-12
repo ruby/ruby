@@ -11,7 +11,7 @@ module Tk::BLT
   class Barchart < TkWindow
     TkCommandNames = ['::blt::barchart'.freeze].freeze
     WidgetClassName = 'Barchart'.freeze
-    WidgetClassNames[WidgetClassName] = self
+    WidgetClassNames[WidgetClassName] ||= self
 
     include PlotComponent
     include GraphCommand
@@ -22,7 +22,7 @@ module Tk::BLT
     private :__boolval_optkeys
 
     def __strval_optkeys
-      ['text', 'label', 'title', 'file', 
+      ['text', 'label', 'title', 'file',
         'background', 'plotbackground']
     end
     private :__strval_optkeys
@@ -33,7 +33,7 @@ module Tk::BLT
     private :__tkvariable_optkeys
 
 =begin
-    BarElement_ID = ['blt_barchart_bar'.freeze, '00000'.taint].freeze
+    BarElement_ID = ['blt_barchart_bar'.freeze, TkUtil.untrust('00000')].freeze
 
     def bar(elem=nil, keys={})
       if elem.kind_of?(Hash)

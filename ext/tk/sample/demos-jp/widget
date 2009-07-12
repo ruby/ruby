@@ -2,7 +2,8 @@
 # -*- coding: euc-jp -*-
 
 # 漢字コード設定 ( tk.rb のロード時の encoding 推定/設定に使われる )
-if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!!!!
+#if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!!!!
+unless defined?(::Encoding.default_external)
   $KCODE = 'euc'
 else
   DEFAULT_TK_ENCODING = 'EUC-JP'
@@ -189,10 +190,14 @@ else
     yscrollcommand proc{|first,last| scr.set first,last}
   }
   scr.command(proc{|*args| txt.yview(*args)})
+
 #  txt.pack('in'=>textFrame, 'expand'=>'yes', 'fill'=>'both', 'padx'=>1)
-  txt.pack('in'=>textFrame, 'expand'=>'yes', 'fill'=>'both')
+#  txt.pack('in'=>textFrame, 'expand'=>'yes', 'fill'=>'both')
 #  textFrame.pack('expand'=>'yes', 'fill'=>'both', 'padx'=>1, 'pady'=>2)
   textFrame.pack('expand'=>'yes', 'fill'=>'both')
+  #  $root.withdraw.deiconify
+  Tk.update_idletasks
+  txt.pack('in'=>textFrame, 'expand'=>'yes', 'fill'=>'both')
 
   statusBar = TkFrame.new($root) {|f|
     if $tk_version =~ /^4.*/
@@ -881,18 +886,12 @@ def showCode1(demo)
 
   $code_window.title("Demo code: #{file}")
   $code_window.iconname(file)
-#  fid = open(file, 'r')
-  fid = open([$demo_dir, file].join(File::Separator), 'r')
+  code = open([$demo_dir, file].join(File::Separator), 'r'){|fid| fid.read }
   $code_text.delete('1.0', 'end')
-  #$code_text.insert('1.0', `cat #{file}`)
-  $code_text.insert('1.0', fid.read)
-  #$code_mark = TkTextMark.new($code_text, '1.0')
-  #$code_text.set_insert('1.0')
+  code.force_encoding('EUC-JP') if defined?(::Encoding.default_external)
+  $code_text.insert('1.0', code)
   TkTextMarkInsert.new($code_text,'1.0')
-
   $set_linenum.call($code_text)
-
-  fid.close
 end
 
 def showCode2(demo)
@@ -973,14 +972,12 @@ def showCode2(demo)
 
   $code_window.title("Demo code: #{file}")
   $code_window.iconname(file)
-  fid = open([$demo_dir, file].join(File::Separator), 'r')
+  code = open([$demo_dir, file].join(File::Separator), 'r'){|fid| fid.read }
   $code_text.delete('1.0', 'end')
-  $code_text.insert('1.0', fid.read)
+  code.force_encoding('EUC-JP') if defined?(::Encoding.default_external)
+  $code_text.insert('1.0', code)
   TkTextMarkInsert.new($code_text,'1.0')
-
   $set_linenum.call($code_text)
-
-  fid.close
 end
 
 if $tk_major_ver < 8
@@ -1077,7 +1074,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.7.0-jp\n\n" + 
+                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.7.1-jp\n\n" + 
                            "based on demos of Tk8.1 -- 8.5  " + 
                            "( Copyright of Tcl/Tk demos:: " + 
                            "(c) 1996-1997 Sun Microsystems, Inc. / " + 

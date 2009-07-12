@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Canvasprintbox
   TkCommandNames = ['::iwidgets::canvasprintbox'.freeze].freeze
   WidgetClassName = 'Canvasprintbox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'filename'

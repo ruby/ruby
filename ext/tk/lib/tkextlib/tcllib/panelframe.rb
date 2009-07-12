@@ -37,7 +37,7 @@ class Tk::Tcllib::Widget::PanelFrame
 
   def create_self(keys)
     if keys and keys != None
-      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+      tk_call_without_enc(self.class::TkCommandNames[0], @path,
                           *hash_kv(keys, true))
     else
       tk_call_without_enc(self.class::TkCommandNames[0], @path)
@@ -60,11 +60,17 @@ class Tk::Tcllib::Widget::PanelFrame
 
   def remove(*wins)
     tk_send('remove', *wins)
+    self
   end
   def remove_destroy(*wins)
     tk_send('remove', '-destroy', *wins)
+    self
   end
-  alias delete remove_destroy
+
+  def delete(*wins)
+    tk_send('delete', *wins)
+    self
+  end
 
   def items
     simplelist(tk_send('items')).collect!{|w| window(w)}

@@ -5,7 +5,7 @@
 ## This demos shows the use of the validation mechanism of the table
 ## and uses the table's cache (no -command or -variable) with a cute
 ## dynamic row routine.
-## 
+##
 ## ( based on 'dynarows.tcl' included source archive of tktable extension )
 ##
 require 'tk'
@@ -24,7 +24,7 @@ def table_validate(w, idx)
   begin
     time = Tk.tk_call('clock', 'scan', val)
     date = []
-    Tk.tk_call('clock', 'format', time, 
+    Tk.tk_call('clock', 'format', time,
                :format=>'%m %d %Y').split(' ').each{|item|
       date << item.sub(/^\s*0*/,'')
     }
@@ -54,12 +54,12 @@ end
 
 lbl = TkLabel.new(:text=>"Dynamic Date Validated Rows")
 
-table = Tk::TkTable.new(:rows=>2, :cols=>3, :cache=>1, :selecttype=>:row, 
-                        :titlerows=>1, :titlecols=>1, :height=>5, 
-                        :colstretch=>:unset, :rowstretch=>:unset, 
-                        :autoclear=>true, 
+table = Tk::TkTable.new(:rows=>2, :cols=>3, :cache=>1, :selecttype=>:row,
+                        :titlerows=>1, :titlecols=>1, :height=>5,
+                        :colstretch=>:unset, :rowstretch=>:unset,
+                        :autoclear=>true,
                         :browsecommand=>[
-                          proc{|w,s| table_validate(w, s)}, 
+                          proc{|w,s| table_validate(w, s)},
                           '%W %s'
                         ])
 table.set([0,1], 'Begin', [0,2], 'End', [1,0], '*')

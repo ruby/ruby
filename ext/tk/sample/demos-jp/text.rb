@@ -5,7 +5,7 @@
 
 # toplevel widget が存在すれば削除する
 if defined?($text_demo) && $text_demo
-  $text_demo.destroy 
+  $text_demo.destroy
   $text_demo = nil
 end
 

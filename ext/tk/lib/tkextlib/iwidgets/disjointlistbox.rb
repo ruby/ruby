@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Disjointlistbox
   TkCommandNames = ['::iwidgets::disjointlistbox'.freeze].freeze
   WidgetClassName = 'Disjointlistbox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'lhslabeltext' << 'rhslabeltext' << 'lhsbuttonlabel' << 'rhsbuttonlabel'

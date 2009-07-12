@@ -17,7 +17,7 @@ end
 class Tk::BWidget::Label
   TkCommandNames = ['Label'.freeze].freeze
   WidgetClassName = 'Label'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'helptext'

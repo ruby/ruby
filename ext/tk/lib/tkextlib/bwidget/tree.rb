@@ -22,11 +22,11 @@ class Tk::BWidget::Tree
 
   TkCommandNames = ['Tree'.freeze].freeze
   WidgetClassName = 'Tree'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   class Event_for_Items < TkEvent::Event
     def self._get_extra_args_tbl
-      [ 
+      [
         TkComm.method(:string)   # item idenfier
       ]
     end
@@ -38,7 +38,7 @@ class Tk::BWidget::Tree
   private :__strval_optkeys
 
   def __boolval_optkeys
-    super() << 'dragenabled' << 'dropenabled' << 
+    super() << 'dragenabled' << 'dropenabled' <<
       'redraw' << 'selectfill' << 'showlines'
   end
   private :__boolval_optkeys
@@ -57,6 +57,37 @@ class Tk::BWidget::Tree
     end
   end
 
+  def areabind(context, *args)
+    if TkComm._callback_entry?(args[0]) || !block_given?
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
+    _bind_for_event_class(Event_for_Items, [path, 'bindArea'],
+                          context, cmd, *args)
+    self
+  end
+
+  def areabind_append(context, *args)
+    if TkComm._callback_entry?(args[0]) || !block_given?
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
+    _bind_append_for_event_class(Event_for_Items, [path, 'bindArea'],
+                                 context, cmd, *args)
+    self
+  end
+
+  def areabind_remove(*args)
+    _bind_remove_for_event_class(Event_for_Items, [path, 'bindArea'], *args)
+    self
+  end
+
+  def areabindinfo(*args)
+    _bindinfo_for_event_class(Event_for_Items, [path, 'bindArea'], *args)
+  end
+
   #def imagebind(*args)
   #  _bind_for_event_class(Event_for_Items, [path, 'bindImage'], *args)
   #  self
@@ -68,7 +99,7 @@ class Tk::BWidget::Tree
     else
       cmd = Proc.new
     end
-    _bind_for_event_class(Event_for_Items, [path, 'bindImage'], 
+    _bind_for_event_class(Event_for_Items, [path, 'bindImage'],
                           context, cmd, *args)
     self
   end
@@ -84,7 +115,7 @@ class Tk::BWidget::Tree
     else
       cmd = Proc.new
     end
-    _bind_append_for_event_class(Event_for_Items, [path, 'bindImage'], 
+    _bind_append_for_event_class(Event_for_Items, [path, 'bindImage'],
                                  context, cmd, *args)
     self
   end
@@ -109,7 +140,7 @@ class Tk::BWidget::Tree
     else
       cmd = Proc.new
     end
-    _bind_for_event_class(Event_for_Items, [path, 'bindText'], 
+    _bind_for_event_class(Event_for_Items, [path, 'bindText'],
                           context, cmd, *args)
     self
   end
@@ -125,7 +156,7 @@ class Tk::BWidget::Tree
     else
       cmd = Proc.new
     end
-    _bind_append_for_event_class(Event_for_Items, [path, 'bindText'], 
+    _bind_append_for_event_class(Event_for_Items, [path, 'bindText'],
                                  context, cmd, *args)
     self
   end
@@ -158,6 +189,16 @@ class Tk::BWidget::Tree
     bool(tk_send('exists', tagid(node)))
   end
 
+  def find(findinfo, confine=None)
+    Tk::BWidget::Tree::Node.id2obj(self, tk_send(findinfo, confine))
+  end
+  def find_position(x, y, confine=None)
+    self.find(_at(x,y), confine)
+  end
+  def find_line(linenum)
+    self.find(linenum)
+  end
+
   def index(node)
     num_or_str(tk_send('index', tagid(node)))
   end
@@ -165,6 +206,10 @@ class Tk::BWidget::Tree
   def insert(idx, parent, node, keys={})
     tk_send('insert', idx, tagid(parent), tagid(node), *hash_kv(keys))
     self
+  end
+
+  def line(node)
+    number(tk_send('line', tagid(node)))
   end
 
   def move(parent, node, idx)
@@ -183,7 +228,7 @@ class Tk::BWidget::Tree
   end
 
   def open?(node)
-    bool(@tree.itemcget(tagid(node), 'open'))
+    bool(self.itemcget(tagid(node), 'open'))
   end
 
   def open_tree(node, recurse=None)
@@ -206,7 +251,7 @@ class Tk::BWidget::Tree
   end
 
   def selection_add(*args)
-    tk_send_without_enc('selection', 'add', 
+    tk_send_without_enc('selection', 'add',
                         *(args.collect{|node| tagid(node)}))
     self
   end
@@ -221,30 +266,30 @@ class Tk::BWidget::Tree
   end
 
   def selection_include?(*args)
-    bool(tk_send_without_enc('selection', 'get', 
+    bool(tk_send_without_enc('selection', 'get',
                              *(args.collect{|node| tagid(node)})))
   end
 
   def selection_range(*args)
-    tk_send_without_enc('selection', 'range', 
+    tk_send_without_enc('selection', 'range',
                         *(args.collect{|node| tagid(node)}))
     self
   end
 
   def selection_remove(*args)
-    tk_send_without_enc('selection', 'remove', 
+    tk_send_without_enc('selection', 'remove',
                         *(args.collect{|node| tagid(node)}))
     self
   end
 
   def selection_set(*args)
-    tk_send_without_enc('selection', 'set', 
+    tk_send_without_enc('selection', 'set',
                         *(args.collect{|node| tagid(node)}))
     self
   end
 
   def selection_toggle(*args)
-    tk_send_without_enc('selection', 'toggle', 
+    tk_send_without_enc('selection', 'toggle',
                         *(args.collect{|node| tagid(node)}))
     self
   end
@@ -264,7 +309,7 @@ class Tk::BWidget::Tree::Node
 
   TreeNode_TBL = TkCore::INTERP.create_table
 
-  (TreeNode_ID = ['bw:node'.freeze, '00000'.taint]).instance_eval{
+  (TreeNode_ID = ['bw:node'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -298,7 +343,7 @@ class Tk::BWidget::Tree::Node
       @tree = tree.tree
       parent = tree.parent
     else
-      fail RuntimeError, 
+      fail RuntimeError,
         "expect Tk::BWidget::Tree or Tk::BWidget::Tree::Node for 1st argument"
     end
 
@@ -355,6 +400,9 @@ class Tk::BWidget::Tree::Node
     val
   end
 
+  def cget_tkstring(key)
+    @tree.itemcget_tkstring(@id, key)
+  end
   def cget(key)
     @tree.itemcget(@id, key)
   end
@@ -450,4 +498,3 @@ class Tk::BWidget::Tree::Node
     @tree.visible(@id)
   end
 end
-

@@ -12,61 +12,61 @@ v_rot    = TkVariable.new
 v_linked = TkVariable.new
 v_needle = TkVariable.new
 
-volume = Tk::Vu::Dial.new(:label=>"Volume", :from=>-0.1, :to=>0.1, 
-                          :resolution=>0.001, :minortickinterval=>0.01, 
-                          :tickinterval=>0.1, :beginangle=>-20, 
+volume = Tk::Vu::Dial.new(:label=>"Volume", :from=>-0.1, :to=>0.1,
+                          :resolution=>0.001, :minortickinterval=>0.01,
+                          :tickinterval=>0.1, :beginangle=>-20,
                           :endangle=>260, :variable=>v_volume)
 
-speed = Tk::Vu::Dial.new(:label=>"Speed", :from=>2000, :to=>100, 
-                         :resolution=>10, :tickinterval=>100, 
-                         :minortickinterval=>0, :variable=>v_speed, 
+speed = Tk::Vu::Dial.new(:label=>"Speed", :from=>2000, :to=>100,
+                         :resolution=>10, :tickinterval=>100,
+                         :minortickinterval=>0, :variable=>v_speed,
                          :showtags=>:label, :showvalue=>false)
 
 speed.set_tag_constrain(100, 'Fast', 2000, 'Slow')
 
-fwd  = Tk::Vu::Dial.new(:from=>-10.0, :to=>-20.0, :resolution=>0.1, 
-                        :tickinterval=>5.0, :minortickinterval=>1.0, 
+fwd  = Tk::Vu::Dial.new(:from=>-10.0, :to=>-20.0, :resolution=>0.1,
+                        :tickinterval=>5.0, :minortickinterval=>1.0,
                         :variable=>v_dir)
 
-rev  = Tk::Vu::Dial.new(:from=>-20.0, :to=>-10.0, :resolution=>0.1, 
-                        :tickinterval=>5.0, :minortickinterval=>1.0, 
+rev  = Tk::Vu::Dial.new(:from=>-20.0, :to=>-10.0, :resolution=>0.1,
+                        :tickinterval=>5.0, :minortickinterval=>1.0,
                         :variable=>v_dir)
 
-small = Tk::Vu::Dial.new(:font=>"Helvetica -10", :from=>0, :to=>10, 
+small = Tk::Vu::Dial.new(:font=>"Helvetica -10", :from=>0, :to=>10,
                          :resolution=>0.05, :tickinterval=>2,
-                         :minortickinterval=>0.5, :radius=>20, 
-                         :dialcolor=>'red2', :activebackground=>'red', 
+                         :minortickinterval=>0.5, :radius=>20,
+                         :dialcolor=>'red2', :activebackground=>'red',
                          :variable=>v_rot)
 
-large = Tk::Vu::Dial.new(:font=>"Helvetica -8", :from=>0, :to=>10, 
+large = Tk::Vu::Dial.new(:font=>"Helvetica -8", :from=>0, :to=>10,
                          :resolution=>0.05, :tickinterval=>1,
-                         :minortickinterval=>0.25, :radius=>40, 
-                         :dialcolor=>'red2', :activebackground=>'red', 
+                         :minortickinterval=>0.25, :radius=>40,
+                         :dialcolor=>'red2', :activebackground=>'red',
                          :variable=>v_rot)
 
-turn = Tk::Vu::Dial.new(:needlecolor=>'red', :label=>"Linked", 
+turn = Tk::Vu::Dial.new(:needlecolor=>'red', :label=>"Linked",
                         :variable=>v_linked)
 
 scale = TkScale.new(:label=>"Linked", :variable=>v_linked)
 
-d1 = Tk::Vu::Dial.new(:resolution=>0.0001, :from=>-0.1, :to=>0.1, 
-                      :showvalue=>true, :minortickinterval=>0.01, 
-                      :tickinterval=>0.1, :radius=>30, :label=>"Dial", 
-                      :beginangle=>-20, :endangle=>260, :variable=>v_needle, 
+d1 = Tk::Vu::Dial.new(:resolution=>0.0001, :from=>-0.1, :to=>0.1,
+                      :showvalue=>true, :minortickinterval=>0.01,
+                      :tickinterval=>0.1, :radius=>30, :label=>"Dial",
+                      :beginangle=>-20, :endangle=>260, :variable=>v_needle,
                       :relief=>:raised)
 
-d2 = Tk::Vu::Dial.new(:resolution=>0.01, :from=>-0.1, :to=>0.1, 
-                      :showvalue=>true, :minortickinterval=>0.01, 
-                      :tickinterval=>0.1, :radius=>30, :label=>"Dial 2", 
-                      :beginangle=>-20, :endangle=>260, :variable=>v_needle, 
-                      :dialrelief=>:flat, :needlecolor=>'red', 
+d2 = Tk::Vu::Dial.new(:resolution=>0.01, :from=>-0.1, :to=>0.1,
+                      :showvalue=>true, :minortickinterval=>0.01,
+                      :tickinterval=>0.1, :radius=>30, :label=>"Dial 2",
+                      :beginangle=>-20, :endangle=>260, :variable=>v_needle,
+                      :dialrelief=>:flat, :needlecolor=>'red',
                       :needletype=>:triangle, :relief=>:sunken)
 
-d3 = Tk::Vu::Dial.new(:resolution=>0.001, :from=>-0.1, :to=>0.1, 
-                      :showvalue=>true, :minortickinterval=>0.01, 
-                      :tickinterval=>0.1, :radius=>30, :label=>"Dial 3", 
-                      :beginangle=>-20, :endangle=>260, :variable=>v_needle, 
-                      :dialrelief=>:flat, :needlecolor=>'blue', 
+d3 = Tk::Vu::Dial.new(:resolution=>0.001, :from=>-0.1, :to=>0.1,
+                      :showvalue=>true, :minortickinterval=>0.01,
+                      :tickinterval=>0.1, :radius=>30, :label=>"Dial 3",
+                      :beginangle=>-20, :endangle=>260, :variable=>v_needle,
+                      :dialrelief=>:flat, :needlecolor=>'blue',
                       :needletype=>:arc, :relief=>:ridge)
 
 f_btns = TkFrame.new

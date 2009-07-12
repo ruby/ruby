@@ -11,7 +11,7 @@ module Tk::BLT
   class Graph < TkWindow
     TkCommandNames = ['::blt::graph'.freeze].freeze
     WidgetClassName = 'Graph'.freeze
-    WidgetClassNames[WidgetClassName] = self
+    WidgetClassNames[WidgetClassName] ||= self
 
     include PlotComponent
     include GraphCommand
@@ -27,7 +27,7 @@ module Tk::BLT
     private :__strval_optkeys
 
 =begin
-    BarElement_ID = ['blt_graph_bar'.freeze, '00000'.taint].freeze
+    BarElement_ID = ['blt_graph_bar'.freeze, TkUtil.untrust('00000')].freeze
 
     def bar(elem=nil, keys={})
       if elem.kind_of?(Hash)

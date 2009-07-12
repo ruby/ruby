@@ -17,5 +17,5 @@ end
 class Tk::BWidget::ArrowButton
   TkCommandNames = ['ArrowButton'.freeze].freeze
   WidgetClassName = 'ArrowButton'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 end

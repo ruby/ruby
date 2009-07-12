@@ -11,13 +11,13 @@ class TkTimer
 
   TkCommandNames = ['after'.freeze].freeze
 
-  (Tk_CBID = ['a'.freeze, '00000'.taint]).instance_eval{
+  (Tk_CBID = ['a'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
   }
 
-  Tk_CBTBL = {}.taint
+  Tk_CBTBL = TkUtil.untrust({})
 
   TkCore::INTERP.add_tk_procs('rb_after', 'id', <<-'EOL')
     if {[set st [catch {eval {ruby_cmd TkTimer callback} $id} ret]] != 0} {
@@ -76,7 +76,7 @@ class TkTimer
     rescue Interrupt
       exit!(1)
     rescue Exception => e
-      if @cancel_on_exception && 
+      if @cancel_on_exception &&
           @cancel_on_exception.find{|exc| e.kind_of?(exc)}
         cancel
         @return_value = e
@@ -180,12 +180,12 @@ class TkTimer
     @after_script = nil
 
     @cancel_on_exception = DEFAULT_IGNORE_EXCEPTIONS
-    # Unless @cancel_on_exception, Ruby/Tk shows an error dialog box when 
-    # an excepsion is raised on TkTimer callback procedure. 
-    # If @cancel_on_exception is an array of exception classes and the raised 
-    # exception is included in the array, Ruby/Tk cancels executing TkTimer 
-    # callback procedures silently (TkTimer#cancel is called and no dialog is 
-    # shown). 
+    # Unless @cancel_on_exception, Ruby/Tk shows an error dialog box when
+    # an excepsion is raised on TkTimer callback procedure.
+    # If @cancel_on_exception is an array of exception classes and the raised
+    # exception is included in the array, Ruby/Tk cancels executing TkTimer
+    # callback procedures silently (TkTimer#cancel is called and no dialog is
+    # shown).
 
     if b
       case args.size
@@ -229,7 +229,7 @@ class TkTimer
   end
 
   def current_status
-    [@running, @current_sleep, @current_proc, @current_args, 
+    [@running, @current_sleep, @current_proc, @current_args,
       @do_loop, @cancel_on_exception]
   end
 
@@ -484,11 +484,11 @@ class TkTimer
 
   def at_end(*arg, &b)
     if arg.empty?
-      if b 
+      if b
         @at_end_proc = b
-      else 
+      else
         # no proc
-        return @at_end_proc 
+        return @at_end_proc
       end
     else
       fail ArgumentError, "wrong number of arguments" if arg.length != 1 || b
@@ -504,17 +504,17 @@ class TkTimer
 
     unless @running
       if @return_value.kind_of?(Exception)
-        fail @return_value 
+        fail @return_value
       else
-        return @return_value 
+        return @return_value
       end
     end
 
     @wait_var.wait(on_thread, check_root)
     if @return_value.kind_of?(Exception)
-      fail @return_value 
+      fail @return_value
     else
-      @return_value 
+      @return_value
     end
   end
   def eventloop_wait(check_root = false)
@@ -628,12 +628,12 @@ class TkRTTimer < TkTimer
     if @est_time
       @est_time = Time.at(@est_time.to_i, @est_time.usec + sleep*1000)
     else
-      @est_time = Time.at(@cb_start_time.to_i, 
+      @est_time = Time.at(@cb_start_time.to_i,
                           @cb_start_time.usec + sleep*1000)
     end
 
     now = Time.now
-    real_sleep = ((@est_time.to_i - now.to_i + @offset_s)*1000.0 + 
+    real_sleep = ((@est_time.to_i - now.to_i + @offset_s)*1000.0 +
                   (@est_time.usec - now.usec + @offset_u)/1000.0).round
     if real_sleep <= 0
       real_sleep = 0
@@ -653,7 +653,7 @@ class TkRTTimer < TkTimer
 
       if @current_sleep == 0
         @offset_list.push([
-                            @offset_s - @cb_start_time.to_i, 
+                            @offset_s - @cb_start_time.to_i,
                             @offset_u - @cb_start_time.usec
                           ])
       else

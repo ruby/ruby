@@ -26,6 +26,9 @@ module Tk::BLT
         self
       end
 
+      def blt_table_cget_tkstring(*args)
+        Tk::BLT::Table.cget_tkstring(self, *args)
+      end
       def blt_table_cget(*args)
         Tk::BLT::Table.cget(self, *args)
       end
@@ -92,6 +95,9 @@ module Tk::BLT
         self
       end
 
+      def blt_table_itemcget_tkstring(*args)
+        Tk::BLT::Table.itemcget_tkstring(self, *args)
+      end
       def blt_table_itemcget(*args)
         Tk::BLT::Table.itemcget(self, *args)
       end
@@ -141,13 +147,14 @@ class << Tk::BLT::Table
   end
   private :__item_pathname
 
+  alias __itemcget_tkstring itemcget_tkstring
   alias __itemcget itemcget
   alias __itemcget_strict itemcget_strict
   alias __itemconfigure itemconfigure
   alias __itemconfiginfo itemconfiginfo
   alias __current_itemconfiginfo current_itemconfiginfo
 
-  private :__itemcget, :__itemcget_strict
+  private :__itemcget_tkstring, :__itemcget, :__itemcget_strict
   private :__itemconfigure, :__itemconfiginfo, :__current_itemconfiginfo
 
   def __boolval_optkeys
@@ -180,6 +187,9 @@ class << Tk::BLT::Table
 
   ############################################
 
+  def cget_tkstring(container, option)
+    __itemcget_tkstring([container], option)
+  end
   def cget(container, option)
     __itemcget([container], option)
   end
@@ -199,6 +209,9 @@ class << Tk::BLT::Table
     __current_itemconfiginfo([container], *args)
   end
 
+  def itemcget_tkstring(container, item, option)
+    __itemcget_tkstring([container, tagid(item)], option)
+  end
   def itemcget(container, item, option)
     __itemcget([container, tagid(item)], option)
   end

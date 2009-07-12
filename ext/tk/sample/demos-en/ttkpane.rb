@@ -5,7 +5,7 @@
 # based on "Id: ttkpane.tcl,v 1.3 2007/12/13 15:27:07 dgp Exp"
 
 if defined?($ttkpane_demo) && $ttkpane_demo
-  $ttkpane_demo.destroy 
+  $ttkpane_demo.destroy
   $ttkpane_demo = nil
 end
 
@@ -17,7 +17,7 @@ $ttkpane_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($ttkpane_demo).pack(:fill=>:both, :expand=>true)
 
-Ttk::Label.new(base_frame, :font=>$font, :wraplength=>'4i', :justify=>:left, 
+Ttk::Label.new(base_frame, :font=>$font, :wraplength=>'4i', :justify=>:left,
                :text=><<EOL).pack(:side=>:top, :fill=>:x)
 This demonstration shows off a nested set of themed paned windows. \
 Their sizes can be changed by grabbing the area \
@@ -30,16 +30,16 @@ Ttk::Separator.new(base_frame).pack(:side=>:top, :fill=>:x)
 Ttk::Frame.new(base_frame) {|frame|
   sep = Ttk::Separator.new(frame)
   Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
-  TkGrid('x', 
-         Ttk::Button.new(frame, :text=>'See Code', 
-                         :image=>$image['view'], :compound=>:left, 
-                         :command=>proc{showCode 'ttkpane'}), 
-         Ttk::Button.new(frame, :text=>'Dismiss', 
-                         :image=>$image['delete'], :compound=>:left, 
+  TkGrid('x',
+         Ttk::Button.new(frame, :text=>'See Code',
+                         :image=>$image['view'], :compound=>:left,
+                         :command=>proc{showCode 'ttkpane'}),
+         Ttk::Button.new(frame, :text=>'Dismiss',
+                         :image=>$image['delete'], :compound=>:left,
                          :command=>proc{
                            $ttkpane_demo.destroy
                            $ttkpane_demo = nil
-                         }), 
+                         }),
          :padx=>4, :pady=>4)
   grid_columnconfigure(0, :weight=>1)
   pack(:side=>:bottom, :fill=>:x)
@@ -59,25 +59,25 @@ if Tk.windowingsystem == 'aqua'
 end
 
 # Fill the button pane
-Ttk::Button.new(left_top, :text=>'Press Me', 
+Ttk::Button.new(left_top, :text=>'Press Me',
                 :command=>proc{
-                  Tk.messageBox(:type=>'ok', :icon=>'info', :message=>'Ouch!', 
-                                :detail=>'That hurt...', :parent=>base_frame, 
+                  Tk.messageBox(:type=>'ok', :icon=>'info', :message=>'Ouch!',
+                                :detail=>'That hurt...', :parent=>base_frame,
                                 :title=>'Button Pressed')
                 }).pack(:padx=>2, :pady=>5)
 
 
 zones_list = [
-  [':Europe/Berlin'], 
-  [':America/Argentina/Buenos_Aires', ':America/Buenos_Aires'], 
-  [':Africa/Johannesburg'], 
-  [':Europe/London'], 
-  [':America/Los_Angeles'], 
+  [':Europe/Berlin'],
+  [':America/Argentina/Buenos_Aires', ':America/Buenos_Aires'],
+  [':Africa/Johannesburg'],
+  [':Europe/London'],
+  [':America/Los_Angeles'],
   [':Europe/Moscow'],
-  [':America/New_York'], 
-  [':Asia/Singapore'], 
-  [':Australia/Sydney'], 
-  [':Asia/Tokyo'], 
+  [':America/New_York'],
+  [':Asia/Singapore'],
+  [':Australia/Sydney'],
+  [':Asia/Tokyo'],
 ]
 
 zones = []
@@ -155,7 +155,7 @@ time = TkVariable.new_hash
 case tzinfo
 when :tcl
   update_proc = proc{|now, tz, label|
-    time[label] = Tk.tk_call('clock', 'format', now.tv_sec, 
+    time[label] = Tk.tk_call('clock', 'format', now.tv_sec,
                              '-timezone', tz, '-format', '%T')
   }
 when :tzinfo
@@ -176,7 +176,7 @@ end
 zones.each_with_index{|(zone, label), idx|
   Ttk::Separator.new(left_bot).pack(:fill=>:x) if idx > 0
   Ttk::Label.new(left_bot, :text=>label, :anchor=>'w').pack(:fill=>:x)
-  Ttk::Label.new(left_bot, :textvariable=>time.ref(label), 
+  Ttk::Label.new(left_bot, :textvariable=>time.ref(label),
                  :anchor=>'w').pack(:fill=>:x)
 }
 

@@ -5,7 +5,7 @@
 
 # destroy toplevel widget for this demo script
 if defined?($aniwave_demo) && $aniwave_demo
-  $aniwave_demo.destroy 
+  $aniwave_demo.destroy
   $aniwave_demo = nil
 end
 
@@ -51,11 +51,11 @@ class AnimatedWaveDemo
     @direction = dir
 
     # create canvas widget
-    @c = TkCanvas.new(frame, :width=>300, :height=>200, 
+    @c = TkCanvas.new(frame, :width=>300, :height=>200,
                       :background=>'black')
     @c.pack(:padx=>10, :pady=>10, :expand=>true)
 
-    # Creates a coordinates list of a wave. 
+    # Creates a coordinates list of a wave.
     @waveCoords = []
     @backupCoords = []
     n = 0
@@ -67,10 +67,10 @@ class AnimatedWaveDemo
 
     # Create a smoothed line and arrange for its coordinates to be the
     # contents of the variable waveCoords.
-    @line = TkcLine.new(@c, @waveCoords, 
+    @line = TkcLine.new(@c, @waveCoords,
                         :width=>1, :fill=>'green', :smooth=>true)
 
-    # Main animation "loop". 
+    # Main animation "loop".
     # Theoretically 100 frames-per-second (==10ms between frames)
     @timer = TkTimer.new(10){ basicMotion; reverser }
 

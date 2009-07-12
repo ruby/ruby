@@ -14,7 +14,7 @@ module TkWinfo
 
   def TkWinfo.atom(name, win=nil)
     if win
-      number(tk_call_without_enc('winfo', 'atom', '-displayof', win, 
+      number(tk_call_without_enc('winfo', 'atom', '-displayof', win,
                                  _get_eval_enc_str(name)))
     else
       number(tk_call_without_enc('winfo', 'atom', _get_eval_enc_str(name)))
@@ -26,7 +26,7 @@ module TkWinfo
 
   def TkWinfo.atomname(id, win=nil)
     if win
-      _fromUTF8(tk_call_without_enc('winfo', 'atomname', 
+      _fromUTF8(tk_call_without_enc('winfo', 'atomname',
                                     '-displayof', win, id))
     else
       _fromUTF8(tk_call_without_enc('winfo', 'atomname', id))
@@ -67,7 +67,7 @@ module TkWinfo
 
   def TkWinfo.containing(rootX, rootY, win=nil)
     if win
-      window(tk_call_without_enc('winfo', 'containing', 
+      window(tk_call_without_enc('winfo', 'containing',
                                  '-displayof', win, rootX, rootY))
     else
       window(tk_call_without_enc('winfo', 'containing', rootX, rootY))
@@ -128,7 +128,7 @@ module TkWinfo
                           false, true)
     else
       #tk_split_simplelist(tk_call_without_enc('winfo', 'interps'))
-      tk_split_simplelist(tk_call_without_enc('winfo', 'interps'), 
+      tk_split_simplelist(tk_call_without_enc('winfo', 'interps'),
                           false, true)
     end
   end
@@ -303,7 +303,7 @@ module TkWinfo
 
   def TkWinfo.visualsavailable(win, includeids=false)
     if includeids
-      list(tk_call_without_enc('winfo', 'visualsavailable', 
+      list(tk_call_without_enc('winfo', 'visualsavailable',
                                win, "includeids"))
     else
       list(tk_call_without_enc('winfo', 'visualsavailable', win))

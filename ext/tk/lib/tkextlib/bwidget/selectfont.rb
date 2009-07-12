@@ -23,12 +23,17 @@ class Tk::BWidget::SelectFont
 
   TkCommandNames = ['SelectFont'.freeze].freeze
   WidgetClassName = 'SelectFont'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'sampletext' <<  'title'
   end
   private :__strval_optkeys
+
+  def __boolval_optkeys
+    super() << 'nosizes'
+  end
+  private :__boolval_optkeys
 
   def __font_optkeys
     [] # without fontobj operation
@@ -80,7 +85,7 @@ class Tk::BWidget::SelectFont::Toolbar
     keys = {} unless keys
     keys = _symbolkey2str(keys)
     keys['type'] = 'toolbar'  # 'toolbar' type returns widget path
-    window(tk_call(Tk::BWidget::SelectFont::TkCommandNames[0], 
+    window(tk_call(Tk::BWidget::SelectFont::TkCommandNames[0],
                    @path, *hash_kv(keys)))
   end
 end

@@ -33,13 +33,14 @@ module TkMenuEntryConfig
   end
   private :__item_val2ruby_optkeys
 
+  alias entrycget_tkstring itemcget_tkstring
   alias entrycget itemcget
   alias entrycget_strict itemcget_strict
   alias entryconfigure itemconfigure
   alias entryconfiginfo itemconfiginfo
   alias current_entryconfiginfo current_itemconfiginfo
 
-  private :itemcget, :itemcget_strict
+  private :itemcget_tkstring, :itemcget, :itemcget_strict
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 end
 
@@ -50,7 +51,7 @@ class Tk::Menu<TkWindow
 
   TkCommandNames = ['menu'.freeze].freeze
   WidgetClassName = 'Menu'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   #def create_self(keys)
   #  if keys and keys != None
@@ -155,13 +156,13 @@ class Tk::Menu<TkWindow
     _fromUTF8(tk_send_without_enc('invoke', _get_eval_enc_str(index)))
   end
   def insert(index, type, keys=nil)
-    tk_send_without_enc('insert', _get_eval_enc_str(index), 
+    tk_send_without_enc('insert', _get_eval_enc_str(index),
                         type, *hash_kv(keys, true))
     self
   end
   def delete(first, last=nil)
     if last
-      tk_send_without_enc('delete', _get_eval_enc_str(first), 
+      tk_send_without_enc('delete', _get_eval_enc_str(first),
                           _get_eval_enc_str(last))
     else
       tk_send_without_enc('delete', _get_eval_enc_str(first))
@@ -170,7 +171,7 @@ class Tk::Menu<TkWindow
   end
   def popup(x, y, index=nil)
     if index
-      tk_call_without_enc('tk_popup', path, x, y, 
+      tk_call_without_enc('tk_popup', path, x, y,
                           _get_eval_enc_str(index))
     else
       tk_call_without_enc('tk_popup', path, x, y)
@@ -214,7 +215,7 @@ class Tk::Menu<TkWindow
   def entrycget(index, key)
     case key.to_s
     when 'text', 'label', 'show'
-      _fromUTF8(tk_send_without_enc('entrycget', 
+      _fromUTF8(tk_send_without_enc('entrycget',
                                     _get_eval_enc_str(index), "-#{key}"))
     when 'font', 'kanjifont'
       #fnt = tk_tcl2ruby(tk_send('entrycget', index, "-#{key}"))
@@ -234,20 +235,20 @@ class Tk::Menu<TkWindow
   end
   def entryconfigure(index, key, val=None)
     if key.kind_of? Hash
-      if (key['font'] || key[:font] || 
-          key['kanjifont'] || key[:kanjifont] || 
-          key['latinfont'] || key[:latinfont] || 
+      if (key['font'] || key[:font] ||
+          key['kanjifont'] || key[:kanjifont] ||
+          key['latinfont'] || key[:latinfont] ||
           key['asciifont'] || key[:asciifont])
         tagfont_configure(index, _symbolkey2str(key))
       else
-        tk_send_without_enc('entryconfigure', _get_eval_enc_str(index), 
+        tk_send_without_enc('entryconfigure', _get_eval_enc_str(index),
                             *hash_kv(key, true))
       end
 
     else
-      if (key == 'font' || key == :font || 
-          key == 'kanjifont' || key == :kanjifont || 
-          key == 'latinfont' || key == :latinfont || 
+      if (key == 'font' || key == :font ||
+          key == 'kanjifont' || key == :kanjifont ||
+          key == 'latinfont' || key == :latinfont ||
           key == 'asciifont' || key == :asciifont )
         if val == None
           tagfontobj(index)
@@ -284,16 +285,16 @@ class Tk::Menu<TkWindow
           else
             if conf[3]
               if conf[3].index('{')
-                conf[3] = tk_split_list(conf[3]) 
+                conf[3] = tk_split_list(conf[3])
               else
-                conf[3] = tk_tcl2ruby(conf[3]) 
+                conf[3] = tk_tcl2ruby(conf[3])
               end
             end
             if conf[4]
               if conf[4].index('{')
-                conf[4] = tk_split_list(conf[4]) 
+                conf[4] = tk_split_list(conf[4])
               else
-                conf[4] = tk_tcl2ruby(conf[4]) 
+                conf[4] = tk_tcl2ruby(conf[4])
               end
             end
           end
@@ -331,16 +332,16 @@ class Tk::Menu<TkWindow
           else
             if conf[2]
               if conf[2].index('{')
-                conf[2] = tk_split_list(conf[2]) 
+                conf[2] = tk_split_list(conf[2])
               else
-                conf[2] = tk_tcl2ruby(conf[2]) 
+                conf[2] = tk_tcl2ruby(conf[2])
               end
             end
             if conf[3]
               if conf[3].index('{')
-                conf[3] = tk_split_list(conf[3]) 
+                conf[3] = tk_split_list(conf[3])
               else
-                conf[3] = tk_tcl2ruby(conf[3]) 
+                conf[3] = tk_tcl2ruby(conf[3])
               end
             end
           end
@@ -386,8 +387,32 @@ class Tk::Menu<TkWindow
 end
 
 #TkMenu = Tk::Menu unless Object.const_defined? :TkMenu
-Tk.__set_toplevel_aliases__(:Tk, Tk::Menu, :TkMenu)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::Menu, :TkMenu)
+Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::Menu, :TkMenu)
 
+
+module Tk::Menu::TkInternalFunction; end
+class << Tk::Menu::TkInternalFunction
+  # These methods calls internal functions of Tcl/Tk.
+  # So, They may not work on your Tcl/Tk.
+  def next_menu(menu, dir='next')
+    dir = dir.to_s
+    case dir
+    when 'next', 'forward', 'down'
+      dir = 'right'
+    when 'previous', 'backward', 'up'
+      dir = 'left'
+    end
+
+    Tk.tk_call('::tk::MenuNextMenu', menu, dir)
+  end
+
+  def next_entry(menu, delta)
+    # delta is increment value of entry index.
+    # For example, +1 denotes 'next entry' and -1 denotes 'previous entry'.
+    Tk.tk_call('::tk::MenuNextEntry', menu, delta)
+  end
+end
 
 class Tk::MenuClone<Tk::Menu
 =begin
@@ -446,7 +471,9 @@ end
 Tk::CloneMenu = Tk::MenuClone
 #TkMenuClone = Tk::MenuClone unless Object.const_defined? :TkMenuClone
 #TkCloneMenu = Tk::CloneMenu unless Object.const_defined? :TkCloneMenu
-Tk.__set_toplevel_aliases__(:Tk, Tk::MenuClone, :TkMenuClone, :TkCloneMenu)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::MenuClone, :TkMenuClone, :TkCloneMenu)
+Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::MenuClone,
+                                   :TkMenuClone, :TkCloneMenu)
 
 module Tk::SystemMenu
   def initialize(parent, keys=nil)
@@ -480,7 +507,9 @@ class Tk::SysMenu_Help<Tk::Menu
   SYSMENU_NAME = 'help'
 end
 #TkSysMenu_Help = Tk::SysMenu_Help unless Object.const_defined? :TkSysMenu_Help
-Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_Help, :TkSysMenu_Help)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_Help, :TkSysMenu_Help)
+Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::SysMenu_Help,
+                                   :TkSysMenu_Help)
 
 
 class Tk::SysMenu_System<Tk::Menu
@@ -489,7 +518,9 @@ class Tk::SysMenu_System<Tk::Menu
   SYSMENU_NAME = 'system'
 end
 #TkSysMenu_System = Tk::SysMenu_System unless Object.const_defined? :TkSysMenu_System
-Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_System, :TkSysMenu_System)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_System, :TkSysMenu_System)
+Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::SysMenu_System,
+                                   :TkSysMenu_System)
 
 
 class Tk::SysMenu_Apple<Tk::Menu
@@ -498,29 +529,31 @@ class Tk::SysMenu_Apple<Tk::Menu
   SYSMENU_NAME = 'apple'
 end
 #TkSysMenu_Apple = Tk::SysMenu_Apple unless Object.const_defined? :TkSysMenu_Apple
-Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_Apple, :TkSysMenu_Apple)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_Apple, :TkSysMenu_Apple)
+Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::SysMenu_Apple,
+                                   :TkSysMenu_Apple)
 
 
 class Tk::Menubutton<Tk::Label
   TkCommandNames = ['menubutton'.freeze].freeze
   WidgetClassName = 'Menubutton'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
   def create_self(keys)
     if keys and keys != None
       unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
         # tk_call_without_enc('menubutton', @path, *hash_kv(keys, true))
-        tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+        tk_call_without_enc(self.class::TkCommandNames[0], @path,
                             *hash_kv(keys, true))
       else
         begin
-          tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+          tk_call_without_enc(self.class::TkCommandNames[0], @path,
                               *hash_kv(keys, true))
         rescue
           tk_call_without_enc(self.class::TkCommandNames[0], @path)
           keys = __check_available_configure_options(keys)
           unless keys.empty?
             tk_call_without_enc('destroy', @path) rescue nil
-            tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+            tk_call_without_enc(self.class::TkCommandNames[0], @path,
                                 *hash_kv(keys, true))
           end
         end
@@ -541,7 +574,9 @@ end
 Tk::MenuButton = Tk::Menubutton
 #TkMenubutton = Tk::Menubutton unless Object.const_defined? :TkMenubutton
 #TkMenuButton = Tk::MenuButton unless Object.const_defined? :TkMenuButton
-Tk.__set_toplevel_aliases__(:Tk, Tk::Menubutton, :TkMenubutton, :TkMenuButton)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::Menubutton, :TkMenubutton, :TkMenuButton)
+Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::Menubutton,
+                                   :TkMenubutton, :TkMenuButton)
 
 
 class Tk::OptionMenubutton<Tk::Menubutton
@@ -571,7 +606,7 @@ class Tk::OptionMenubutton<Tk::Menubutton
     parent = nil
     if !args.empty? && (args[0].kind_of?(TkWindow) || args[0] == nil)
       keys.delete('parent') # ignore
-      parent = args.shift 
+      parent = args.shift
     else
       parent = keys.delete('parent')
     end
@@ -579,7 +614,7 @@ class Tk::OptionMenubutton<Tk::Menubutton
     @variable = nil
     if !args.empty? && (args[0].kind_of?(TkVariable) || args[0] == nil)
       keys.delete('variable') # ignore
-      @variable = args.shift 
+      @variable = args.shift
     else
       @variable = keys.delete('variable')
     end
@@ -593,7 +628,7 @@ class Tk::OptionMenubutton<Tk::Menubutton
     end
 
     install_win(if parent then parent.path end)
-    @menu = OptionMenu.new(tk_call('tk_optionMenu', 
+    @menu = OptionMenu.new(tk_call('tk_optionMenu',
                                    @path, @variable.id, *args))
 
     configure(keys) if keys
@@ -612,7 +647,7 @@ class Tk::OptionMenubutton<Tk::Menubutton
     self
   end
   def add(value)
-    @menu.add('radiobutton', 'variable'=>@variable, 
+    @menu.add('radiobutton', 'variable'=>@variable,
               'label'=>value, 'value'=>value)
     self
   end
@@ -623,7 +658,7 @@ class Tk::OptionMenubutton<Tk::Menubutton
     @menu.invoke(index)
   end
   def insert(index, value)
-    @menu.insert(index, 'radiobutton', 'variable'=>@variable, 
+    @menu.insert(index, 'radiobutton', 'variable'=>@variable,
               'label'=>value, 'value'=>value)
     self
   end
@@ -677,5 +712,7 @@ end
 Tk::OptionMenuButton = Tk::OptionMenubutton
 #TkOptionMenubutton = Tk::OptionMenubutton unless Object.const_defined? :TkOptionMenubutton
 #TkOptionMenuButton = Tk::OptionMenuButton unless Object.const_defined? :TkOptionMenuButton
-Tk.__set_toplevel_aliases__(:Tk, Tk::OptionMenubutton, 
-                            :TkOptionMenubutton, :TkOptionMenuButton)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::OptionMenubutton,
+#                            :TkOptionMenubutton, :TkOptionMenuButton)
+Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::OptionMenubutton,
+                                   :TkOptionMenubutton, :TkOptionMenuButton)

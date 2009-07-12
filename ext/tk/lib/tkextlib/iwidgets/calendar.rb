@@ -16,11 +16,11 @@ end
 class Tk::Iwidgets::Calendar
   TkCommandNames = ['::iwidgets::calendar'.freeze].freeze
   WidgetClassName = 'Calendar'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() + [
-      'buttonforeground', 'outline', 'selectcolor', 
+      'buttonforeground', 'outline', 'selectcolor',
       'weekdaybackground', 'weekendbackground'
     ]
   end

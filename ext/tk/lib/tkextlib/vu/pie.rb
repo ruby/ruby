@@ -37,7 +37,7 @@ end
 class Tk::Vu::Pie < TkWindow
   TkCommandNames = ['::vu::pie'.freeze].freeze
   WidgetClassName = 'Pie'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __destroy_hook__
     Tk::Vu::PieSlice::SliceID_TBL.delete(@path)
@@ -117,7 +117,7 @@ end
 class Tk::Vu::PieSlice
   SliceID_TBL = TkCore::INTERP.create_table
 
-  (Pie_Slice_ID = ['vu:pie'.freeze, '00000'.taint]).instance_eval{
+  (Pie_Slice_ID = ['vu:pie'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -171,6 +171,10 @@ class Tk::Vu::PieSlice
   def []=(key,val)
     configure key, val
     val
+  end
+
+  def cget_tkstring(slot)
+    @pie.itemcget_tkstring(@id, slot)
   end
 
   def cget(slot)

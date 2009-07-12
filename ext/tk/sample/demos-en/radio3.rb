@@ -8,7 +8,7 @@
 
 # toplevel widget
 if defined?($radio3_demo) && $radio3_demo
-  $radio3_demo.destroy 
+  $radio3_demo.destroy
   $radio3_demo = nil
 end
 
@@ -21,7 +21,7 @@ $radio3_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($radio3_demo).pack(:fill=>:both, :expand=>true)
 
-# label 
+# label
 msg = TkLabel.new(base_frame) {
   font $font
   wraplength '5i'
@@ -35,50 +35,50 @@ size = TkVariable.new
 color = TkVariable.new
 align = TkVariable.new
 
-# frame 
+# frame
 TkFrame.new(base_frame) {|frame|
-  TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2), 
+  TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2),
          :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
-  TkGrid('x', 
-         TkButton.new(frame, :text=>'See Variables', 
-                      :image=>$image['view'], :compound=>:left, 
+  TkGrid('x',
+         TkButton.new(frame, :text=>'See Variables',
+                      :image=>$image['view'], :compound=>:left,
                       :command=>proc{
-                        showVars(base_frame, ['size', size], 
+                        showVars(base_frame, ['size', size],
                                  ['color', color], ['compound', align])
-                      }), 
-         TkButton.new(frame, :text=>'See Code', 
-                      :image=>$image['view'], :compound=>:left, 
-                      :command=>proc{showCode 'radio3'}), 
-         TkButton.new(frame, :text=>'Dismiss', 
-                      :image=>$image['delete'], :compound=>:left, 
+                      }),
+         TkButton.new(frame, :text=>'See Code',
+                      :image=>$image['view'], :compound=>:left,
+                      :command=>proc{showCode 'radio3'}),
+         TkButton.new(frame, :text=>'Dismiss',
+                      :image=>$image['delete'], :compound=>:left,
                       :command=>proc{
                         tmppath = $radio3_demo
                         $radio3_demo = nil
                         $showVarsWin[tmppath.path] = nil
                         tmppath.destroy
-                      }), 
+                      }),
          :padx=>4, :pady=>4)
   frame.grid_columnconfigure(0, :weight=>1)
   TkGrid(frame, :row=>3, :column=>0, :columnspan=>3, :sticky=>'nsew')
 }
 
-# frame 
-f_left  = TkLabelFrame.new(base_frame, 'text'=>'Point Size', 
+# frame
+f_left  = TkLabelFrame.new(base_frame, 'text'=>'Point Size',
                            'pady'=>2, 'padx'=>2)
-f_mid   = TkLabelFrame.new(base_frame, 'text'=>'Color', 
+f_mid   = TkLabelFrame.new(base_frame, 'text'=>'Color',
                            'pady'=>2, 'padx'=>2)
-f_right = TkLabelFrame.new(base_frame, 'text'=>'Alignment', 
+f_right = TkLabelFrame.new(base_frame, 'text'=>'Alignment',
                            'pady'=>2, 'padx'=>2)
 f_left .grid('column'=>0, 'row'=>1, 'pady'=>'.5c', 'padx'=>'.5c', 'rowspan'=>2)
 f_mid  .grid('column'=>1, 'row'=>1, 'pady'=>'.5c', 'padx'=>'.5c', 'rowspan'=>2)
 f_right.grid('column'=>2, 'row'=>1, 'pady'=>'.5c', 'padx'=>'.5c')
 
-TkButton.new(base_frame, 'text'=>'Tristate', 
+TkButton.new(base_frame, 'text'=>'Tristate',
              'command'=>proc{size.value = 'multi'; color.value = 'multi'}){
   grid('column'=>2, 'row'=>2, 'pady'=>'.5c', 'padx'=>'.5c')
 }
 
-# radiobutton 
+# radiobutton
 [10, 12, 14, 18, 24].each {|sz|
   TkRadioButton.new(f_left) {
     text "Point Size #{sz}"
@@ -101,14 +101,14 @@ TkButton.new(base_frame, 'text'=>'Tristate',
   }.pack('side'=>'top', 'pady'=>2, 'fill'=>'x')
 }
 
-# label = TkLabel.new(f_right, 'text'=>'Label', 'bitmap'=>'questhead', 
-label = Tk::Label.new(f_right, 'text'=>'Label', 'bitmap'=>'questhead', 
+# label = TkLabel.new(f_right, 'text'=>'Label', 'bitmap'=>'questhead',
+label = Tk::Label.new(f_right, 'text'=>'Label', 'bitmap'=>'questhead',
                     'compound'=>'left')
 label.configure('width'=>TkWinfo.reqwidth(label), 'compound'=>'top')
 label.height(TkWinfo.reqheight(label))
 a_btn = ['Top', 'Left', 'Right', 'Bottom'].collect{|a|
-  TkRadioButton.new(f_right, 'text'=>a, 'variable'=>align, 'relief'=>'flat', 
-                    'value'=>a.downcase, 'indicatoron'=>0, 'width'=>7, 
+  TkRadioButton.new(f_right, 'text'=>a, 'variable'=>align, 'relief'=>'flat',
+                    'value'=>a.downcase, 'indicatoron'=>0, 'width'=>7,
                     'command'=>proc{label.compound(align.value)})
 }
 

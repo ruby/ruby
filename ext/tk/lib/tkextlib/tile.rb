@@ -16,12 +16,39 @@ require 'tkextlib/tile/setup.rb'
 # TkPackage.require('tile', '0.4')
 # TkPackage.require('tile', '0.6')
 # TkPackage.require('tile', '0.7')
-if Tk::TK_MAJOR_VERSION > 8 || 
+if Tk::TK_MAJOR_VERSION > 8 ||
     (Tk::TK_MAJOR_VERSION == 8 && Tk::TK_MINOR_VERSION >= 5)
-  TkPackage.require('tile') # for compatibility (version check of 'tile')
-  verstr = TkPackage.require('Ttk')
+  begin
+    TkPackage.require('tile') # for compatibility (version check of 'tile')
+  rescue RuntimeError
+    # ignore, even if cannot find package 'tile'
+  end
+  pkgname = 'Ttk'
 else
-  verstr = TkPackage.require('tile')
+  pkgname = 'tile'
+end
+
+begin
+  verstr = TkPackage.require(pkgname)
+rescue RuntimeError
+  # define dummy methods
+  module Tk
+    module Tile
+      CANNOT_FIND_PACKAGE = true
+      def self.const_missing(sym)
+        TkPackage.require(PACKAGE_NAME)
+      end
+      def self.method_missing(*args)
+        TkPackage.require(PACKAGE_NAME)
+      end
+    end
+  end
+  Tk.__cannot_find_tk_package_for_widget_set__(:Ttk, pkgname)
+  if pkgname == 'Ttk'
+    verstr = Tk::TK_PATCHLEVEL  # dummy
+  else
+    verstr = '0.7'  # dummy
+  end
 end
 
 ver = verstr.split('.')
@@ -105,17 +132,17 @@ module Tk
 
     def self.__define_LoadImages_proc_for_compatibility__!
       # Ttk 8.5 (Tile 0.8) lost 'LoadImages' utility procedure.
-      # So, some old scripts doen't work, because those scripts use the 
-      # procedure to define local styles. 
-      # Of course, rewriting such Tcl/Tk scripts isn't difficult for 
-      # Tcl/Tk users. However, it may be troublesome for Ruby/Tk users 
+      # So, some old scripts doen't work, because those scripts use the
+      # procedure to define local styles.
+      # Of course, rewriting such Tcl/Tk scripts isn't difficult for
+      # Tcl/Tk users. However, it may be troublesome for Ruby/Tk users
       # who use such Tcl/Tk scripts as it is.
-      # This method may help Ruby/Tk users who don't want to modify old 
+      # This method may help Ruby/Tk users who don't want to modify old
       # Tcl/Tk scripts for the latest version of Ttk (Tile) extension.
-      # This method defines a comaptible 'LoadImages' procedure on the 
-      # Tcl/Tk interpreter working under Ruby/Tk. 
-      # Please give attention to use this method. It may conflict with 
-      # some definitions on Tcl/Tk scripts. 
+      # This method defines a comaptible 'LoadImages' procedure on the
+      # Tcl/Tk interpreter working under Ruby/Tk.
+      # Please give attention to use this method. It may conflict with
+      # some definitions on Tcl/Tk scripts.
       klass_name = self.name
       proc_name = 'LoadImages'
       if Tk::Tile::USE_TTK_NAMESPACE
@@ -140,7 +167,7 @@ module Tk
           next
         end
         TkNamespace.eval(ns){
-          TkCore::INTERP.add_tk_procs(proc_name, 'imgdir {patterns {*.gif}}', 
+          TkCore::INTERP.add_tk_procs(proc_name, 'imgdir {patterns {*.gif}}',
                                       <<-'EOS')
             foreach pattern $patterns {
               foreach file [glob -directory $imgdir $pattern] {
@@ -166,7 +193,7 @@ module Tk
         pat ||= TkComm::None
         images = Hash[*TkComm.simplelist(Tk.tk_call(cmd, imgdir, pat))]
         images.keys.each{|k|
-          images[k] = TkPhotoImage.new(:imagename=>images[k], 
+          images[k] = TkPhotoImage.new(:imagename=>images[k],
                                        :without_creating=>true)
         }
       else ## TILE_SPEC_VERSION_ID >= 8
@@ -181,7 +208,7 @@ module Tk
             Dir.glob(pat).each{|f|
               img = File.basename(f, '.*')
               unless TkComm.bool(Tk.info('exists', "images(#{img})"))
-                Tk.tk_call('set', "images(#{img})", 
+                Tk.tk_call('set', "images(#{img})",
                            Tk.tk_call('image', 'create', 'photo', '-file', f))
               end
             }
@@ -189,7 +216,7 @@ module Tk
         }
         images = Hash[*TkComm.simplelist(Tk.tk_call('array', 'get', 'images'))]
         images.keys.each{|k|
-          images[k] = TkPhotoImage.new(:imagename=>images[k], 
+          images[k] = TkPhotoImage.new(:imagename=>images[k],
                                        :without_creating=>true)
         }
       end
@@ -213,8 +240,8 @@ module Tk
       begin
         TkComm.simplelist(Tk.tk_call_without_enc(*cmd))
       rescue
-        TkComm.simplelist(Tk.tk_call('lsearch', '-all', '-inline', 
-                                     Tk::Tile::Style.theme_names, 
+        TkComm.simplelist(Tk.tk_call('lsearch', '-all', '-inline',
+                                     Tk::Tile::Style.theme_names,
                                      glob_ptn))
       end
     end
@@ -264,8 +291,8 @@ module Tk
       Icon         = 'TkIconFont'
 
       TkFont::SYSTEM_FONT_NAMES.add [
-        'TkDefaultFont', 'TkTextFont', 'TkHeadingFont', 
-        'TkCaptionFont', 'TkTooltipFont', 'TkFixedFont', 
+        'TkDefaultFont', 'TkTextFont', 'TkHeadingFont',
+        'TkCaptionFont', 'TkTooltipFont', 'TkFixedFont',
         'TkMenuFont', 'TkSmallCaptionFont', 'TkIconFont'
       ]
     end
@@ -280,7 +307,7 @@ module Tk
           until lst.empty?
             if lst[0][0] == ?-
               k = lst.shift[1..-1]
-              children = lst.shift 
+              children = lst.shift
               children = _style_layout(children) if children.kind_of?(Array)
               keys[k] = children
             else
@@ -332,7 +359,7 @@ module Tk
       end
       alias tile_identify ttk_identify
 
-      # remove instate/state/identify method 
+      # remove instate/state/identify method
       # to avoid the conflict with widget options
       if Tk.const_defined?(:USE_OBSOLETE_TILE_STATE_METHOD) && Tk::USE_OBSOLETE_TILE_STATE_METHOD
         alias instate  ttk_instate
@@ -403,6 +430,9 @@ module Tk
 
     autoload :TSeparator,    'tkextlib/tile/tseparator'
     autoload :Separator,     'tkextlib/tile/tseparator'
+
+    autoload :TSpinbox,      'tkextlib/tile/tspinbox'
+    autoload :Spinbox,       'tkextlib/tile/tspinbox'
 
     autoload :TSquare,       'tkextlib/tile/tsquare'
     autoload :Square,        'tkextlib/tile/tsquare'

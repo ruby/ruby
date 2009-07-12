@@ -2,7 +2,7 @@
 require 'tk'
 require 'tkextlib/blt'
 
-file = File.join(File.dirname(File.expand_path(__FILE__)), 
+file = File.join(File.dirname(File.expand_path(__FILE__)),
                  'images', 'sample.gif')
 if File.exist?(file)
   src = TkPhotoImage.new(:file=>file)
@@ -30,9 +30,9 @@ Tk.root.background('white')
   l_hdr = TkLabel.new(:text=>"#{iw} x #{ih}")
   l_ftr = TkLabel.new(:text=>"#{r}%")
   l_img = TkLabel.new(:image=>dst)
-  Tk::BLT::Table.add(Tk.root, 
-                     [0,i], l_hdr, 
-                     [1,i], l_img, 
+  Tk::BLT::Table.add(Tk.root,
+                     [0,i], l_hdr,
+                     [1,i], l_img,
                      [2,i], l_ftr)
   Tk.update
 }

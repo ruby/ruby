@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Selectiondialog
   TkCommandNames = ['::iwidgets::selectiondialog'.freeze].freeze
   WidgetClassName = 'Selectiondialog'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def child_site
     window(tk_call(@path, 'childsite'))

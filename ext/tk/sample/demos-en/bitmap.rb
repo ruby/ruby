@@ -17,7 +17,7 @@
 def bitmapRow(w,*args)
   TkFrame.new(w){|row|
     pack('side'=>'top', 'fill'=>'both')
-    for bitmap in args 
+    for bitmap in args
       TkFrame.new(row){|base|
         pack('side'=>'left', 'fill'=>'both', 'pady'=>'.25c', 'padx'=>'.25c')
         TkLabel.new(base, 'text'=>bitmap, 'width'=>9).pack('side'=>'bottom')
@@ -29,7 +29,7 @@ end
 
 # toplevel widget
 if defined?($bitmap_demo) && $bitmap_demo
-  $bitmap_demo.destroy 
+  $bitmap_demo.destroy
   $bitmap_demo = nil
 end
 
@@ -43,7 +43,7 @@ $bitmap_demo = TkToplevel.new {|w|
 base_frame = TkFrame.new($bitmap_demo).pack(:fill=>:both, :expand=>true)
 
 # label
-TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left', 
+TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left',
             'text'=>"This window displays all of Tk's built-in bitmaps, along with the names you can use for them in Tcl scripts."){
   pack('side'=>'top')
 }
@@ -66,7 +66,7 @@ $bitmap_buttons = TkFrame.new(base_frame) {|frame|
 }
 $bitmap_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# frame 
+# frame
 TkFrame.new(base_frame){|f|
   bitmapRow(f,'error','gray25','gray50','hourglass')
   bitmapRow(f,'info','question','questhead','warning')

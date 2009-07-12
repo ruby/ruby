@@ -17,7 +17,7 @@ end
 class Tk::Iwidgets::Scrolledcanvas
   TkCommandNames = ['::iwidgets::scrolledcanvas'.freeze].freeze
   WidgetClassName = 'Scrolledcanvas'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   ################################
 
@@ -103,7 +103,7 @@ class Tk::Iwidgets::Scrolledcanvas
   end
 
   def bbox(tagOrId, *tags)
-    list(tk_send_without_enc('bbox', tagid(tagOrId), 
+    list(tk_send_without_enc('bbox', tagid(tagOrId),
                              *tags.collect{|t| tagid(t)}))
   end
 
@@ -165,7 +165,7 @@ class Tk::Iwidgets::Scrolledcanvas
   end
 
   def dchars(tag, first, last=None)
-    tk_send_without_enc('dchars', tagid(tag), 
+    tk_send_without_enc('dchars', tagid(tag),
                         _get_eval_enc_str(first), _get_eval_enc_str(last))
     self
   end
@@ -176,7 +176,7 @@ class Tk::Iwidgets::Scrolledcanvas
       tbl = TkcItem::CItemID_TBL[self.path]
     }
     if tbl
-      find('withtag', *args).each{|item| 
+      find('withtag', *args).each{|item|
         if item.kind_of?(TkcItem)
           TkcItem::CItemID_TBL.mutex.synchronize{
             tbl.delete(item.id)
@@ -195,7 +195,7 @@ class Tk::Iwidgets::Scrolledcanvas
   end
 
   def find(mode, *args)
-    list(tk_send_without_enc('find', mode, *args)).collect!{|id| 
+    list(tk_send_without_enc('find', mode, *args)).collect!{|id|
       TkcItem.id2obj(self, id)
     }
   end
@@ -251,7 +251,7 @@ class Tk::Iwidgets::Scrolledcanvas
   end
 
   def insert(tagOrId, index, string)
-    tk_send_without_enc('insert', tagid(tagOrId), index, 
+    tk_send_without_enc('insert', tagid(tagOrId), index,
                         _get_eval_enc_str(string))
     self
   end

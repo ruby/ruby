@@ -4,7 +4,7 @@
 
 # toplevel widget
 if defined?($entry1_demo) && $entry1_demo
-  $entry1_demo.destroy 
+  $entry1_demo.destroy
   $entry1_demo = nil
 end
 
@@ -43,13 +43,13 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# 
+#
 e1 = TkEntry.new(base_frame, 'relief'=>'sunken')
 e2 = TkEntry.new(base_frame, 'relief'=>'sunken')
 e3 = TkEntry.new(base_frame, 'relief'=>'sunken')
 [e1,e2,e3].each{|w| w.pack('side'=>'top', 'padx'=>10, 'pady'=>5, 'fill'=>'x')}
 
-# 
+#
 e1.insert(0, 'Initial value')
 e2.insert('end', "This entry contains a long value, much too long ")
 e2.insert('end', "to fit in the window at one time, so long in fact ")

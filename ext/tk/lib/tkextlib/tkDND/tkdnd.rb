@@ -30,30 +30,30 @@ module Tk
 
     class DND_Subst < TkUtil::CallbackSubst
       KEY_TBL = [
-        [ ?a, ?l, :actions ], 
-        [ ?A, ?s, :action ], 
-        [ ?b, ?L, :codes ], 
-        [ ?c, ?s, :code ], 
-        [ ?d, ?l, :descriptions ], 
-        [ ?D, ?l, :data ], 
-        [ ?L, ?l, :source_types ], 
-        [ ?m, ?l, :modifiers ], 
-        [ ?t, ?l, :types ], 
-        [ ?T, ?s, :type ], 
-        [ ?W, ?w, :widget ], 
-        [ ?x, ?n, :x ], 
-        [ ?X, ?n, :x_root ], 
-        [ ?y, ?n, :y ], 
-        [ ?Y, ?n, :y_root ], 
+        [ ?a, ?l, :actions ],
+        [ ?A, ?s, :action ],
+        [ ?b, ?L, :codes ],
+        [ ?c, ?s, :code ],
+        [ ?d, ?l, :descriptions ],
+        [ ?D, ?l, :data ],
+        [ ?L, ?l, :source_types ],
+        [ ?m, ?l, :modifiers ],
+        [ ?t, ?l, :types ],
+        [ ?T, ?s, :type ],
+        [ ?W, ?w, :widget ],
+        [ ?x, ?n, :x ],
+        [ ?X, ?n, :x_root ],
+        [ ?y, ?n, :y ],
+        [ ?Y, ?n, :y_root ],
         nil
       ]
 
       PROC_TBL = [
-        [ ?n, TkComm.method(:num_or_str) ], 
-        [ ?s, TkComm.method(:string) ], 
-        [ ?l, TkComm.method(:list) ], 
-        [ ?L, TkComm.method(:simplelist) ], 
-        [ ?w, TkComm.method(:window) ], 
+        [ ?n, TkComm.method(:num_or_str) ],
+        [ ?s, TkComm.method(:string) ],
+        [ ?l, TkComm.method(:list) ],
+        [ ?L, TkComm.method(:simplelist) ],
+        [ ?w, TkComm.method(:window) ],
         nil
       ]
 
@@ -101,11 +101,11 @@ module Tk
       #def dnd_bindtarget(type, event, cmd=Proc.new, prior=50, *args)
       #  event = tk_event_sequence(event)
       #  if prior.kind_of?(Numeric)
-      #    tk_call('dnd', 'bindtarget', @path, type, event, 
-      #            install_bind_for_event_class(DND_Subst, cmd, *args), 
+      #    tk_call('dnd', 'bindtarget', @path, type, event,
+      #            install_bind_for_event_class(DND_Subst, cmd, *args),
       #            prior)
       #  else
-      #    tk_call('dnd', 'bindtarget', @path, type, event, 
+      #    tk_call('dnd', 'bindtarget', @path, type, event,
       #            install_bind_for_event_class(DND_Subst, cmd, prior, *args))
       #  end
       #  self
@@ -123,11 +123,11 @@ module Tk
 
         event = tk_event_sequence(event)
         if prior.kind_of?(Numeric)
-          tk_call('dnd', 'bindtarget', @path, type, event, 
-                  install_bind_for_event_class(DND_Subst, cmd, *args), 
+          tk_call('dnd', 'bindtarget', @path, type, event,
+                  install_bind_for_event_class(DND_Subst, cmd, *args),
                   prior)
         else
-          tk_call('dnd', 'bindtarget', @path, type, event, 
+          tk_call('dnd', 'bindtarget', @path, type, event,
                   install_bind_for_event_class(DND_Subst, cmd, prior, *args))
         end
         self

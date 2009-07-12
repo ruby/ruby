@@ -4,7 +4,7 @@
 # based on Tcl/Tk8.5.0 widget demos
 
 if defined?($textpeer_demo) && $textpeer_demo
-  $textpeer_demo.destroy 
+  $textpeer_demo.destroy
   $textpeer_demo = nil
 end
 
@@ -39,9 +39,9 @@ def makeClone(count, win, txt)
   peer = TkText::Peer.new(txt, win, :widgetname=>"text#{cnt}")
   sbar = TkScrollbar.new(win, :widgetname=>"sb#{cnt}")
   peer.yscrollbar sbar
-  b1 = TkButton.new(win, :widgetname=>"clone#{cnt}", :text=>'Make Peer', 
+  b1 = TkButton.new(win, :widgetname=>"clone#{cnt}", :text=>'Make Peer',
                     :command=>proc{makeClone(count, win, peer)})
-  b2 = TkButton.new(win, :widgetname=>"kill#{cnt}", :text=>'Delete Peer', 
+  b2 = TkButton.new(win, :widgetname=>"kill#{cnt}", :text=>'Delete Peer',
                     :command=>proc{killClone(win, cnt)})
   row = cnt * 2
   TkGrid.configure(peer, sbar, b1, :sticky=>'nsew', :row=>row)
@@ -51,7 +51,7 @@ def makeClone(count, win, txt)
 end
 
 def killClone(win, cnt)
-  Tk.destroy("#{win.path}.text#{cnt}",  "#{win.path}.sb#{cnt}", 
+  Tk.destroy("#{win.path}.text#{cnt}",  "#{win.path}.sb#{cnt}",
              "#{win.path}.clone#{cnt}", "#{win.path}.kill#{cnt}")
 end
 

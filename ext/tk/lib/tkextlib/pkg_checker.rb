@@ -151,7 +151,7 @@ def subdir_check(dir, verbose=false)
       if err.empty?
         print 'Ready : ', path, ' : require->', suc.inspect, "\n"
       else
-        print '*LACK : ', path, ' : require->', suc.inspect, 
+        print '*LACK : ', path, ' : require->', suc.inspect,
           '  FAIL->', err.inspect, "\n"
       end
     end
@@ -176,7 +176,7 @@ Dir.chdir(dir)
   if err.empty?
     print 'Ready : ', f, ' : require->', suc.inspect, "\n"
   else
-    print '*LACK : ', f, ' : require->', suc.inspect, 
+    print '*LACK : ', f, ' : require->', suc.inspect,
       '  FAIL->', err.inspect, "\n"
   end
 

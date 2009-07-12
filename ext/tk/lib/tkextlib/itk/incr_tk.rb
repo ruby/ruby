@@ -99,7 +99,7 @@ module Tk
       def itk_option_define(name, resource, klass, init, config=None)
         tk_call('itk_option', 'define', name, resource, klass, init, config)
       end
-      
+
       def itk_option_remove(*args)
         tk_call('itk_option', 'remove', *args)
       end
@@ -111,7 +111,7 @@ module Tk
     class Toplevel < Archetype
       TkCommandNames = ['::itk::Toplevel'].freeze
       WidgetClassName = 'Toplevel'.freeze
-      WidgetClassNames[WidgetClassName] = self
+      WidgetClassNames[WidgetClassName] ||= self
 
       include Wm
       include TkMenuSpec
@@ -127,7 +127,7 @@ module Tk
     class Widget < Archetype
       TkCommandNames = ['::itk::Widget'].freeze
       WidgetClassName = 'Widget'.freeze
-      WidgetClassNames[WidgetClassName] = self
+      WidgetClassNames[WidgetClassName] ||= self
     end
 
 
@@ -146,7 +146,7 @@ module Tk
 
       ComponentID_TBL = TkCore::INTERP.create_table
 
-      (Itk_Component_ID = ['itk:component'.freeze, '00000'.taint]).instance_eval{
+      (Itk_Component_ID = ['itk:component'.freeze, TkUtil.untrust('00000')]).instance_eval{
         @mutex = Mutex.new
         def mutex; @mutex; end
         freeze
@@ -192,7 +192,7 @@ module Tk
         ComponentID_TBL.mutex.synchronize{
           if ComponentID_TBL.key?(master)
             if ComponentID_TBL[master].key?(component)
-              return ComponentID_TBL[master][component] 
+              return ComponentID_TBL[master][component]
             end
           else
             ComponentID_TBL[master] = {}

@@ -34,10 +34,10 @@ module Tk
     def self.create(*args)  # icon, icon, ..., ?option=>value, ...?
       if args[-1].kind_of?(Hash)
         keys = args.pop
-        icons = simplelist(tk_call('::icons::icons', 'create', 
+        icons = simplelist(tk_call('::icons::icons', 'create',
                                    *(hash_kv(keys) << (args.flatten))))
       else
-        icons = simplelist(tk_call('::icons::icons', 'create', 
+        icons = simplelist(tk_call('::icons::icons', 'create',
                                    args.flatten))
       end
 
@@ -66,7 +66,7 @@ module Tk
     def self.query(*args)  # icon, icon, ..., ?option=>value, ...?
       if args[-1].kind_of?(Hash)
         keys = args.pop
-        simplelist(tk_call('::icons::icons', 'query', 
+        simplelist(tk_call('::icons::icons', 'query',
                            *(hash_kv(keys) << (args.flatten))))
       else
         simplelist(tk_call('::icons::icons', 'query', args.flatten))
@@ -121,7 +121,7 @@ module Tk
     end
 
     def query(keys={})
-      list(simplelist(tk_call('::icons::icons', 'query', 
+      list(simplelist(tk_call('::icons::icons', 'query',
                                *(hash_kv(keys) << @name))
                       )[0])
     end

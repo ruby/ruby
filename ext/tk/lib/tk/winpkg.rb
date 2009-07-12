@@ -10,7 +10,8 @@ require 'tk'
 module Tk::WinDDE
 end
 #TkWinDDE = Tk::WinDDE
-Tk.__set_toplevel_aliases__(:Tk, Tk::WinDDE, :TkWinDDE)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::WinDDE, :TkWinDDE)
+Tk.__set_loaded_toplevel_aliases__('tk/winpkg.rb', :Tk, Tk::WinDDE, :TkWinDDE)
 
 module Tk::WinDDE
   extend Tk
@@ -45,7 +46,7 @@ module Tk::WinDDE
         elsif args.size == 0
           tk_call('dde', 'servername', force, exact, *hash_kv(keys))
         else
-          tk_call('dde', 'servername', force, exact, 
+          tk_call('dde', 'servername', force, exact,
                   *((hash_kv(keys) << '--') + args))
         end
       else
@@ -86,14 +87,16 @@ module Tk::WinDDE
     tk_call('dde', 'eval', -async, topic, cmd, *args)
   end
 
-  module_function :servername, :execute, :async_execute, 
+  module_function :servername, :execute, :async_execute,
                   :poke, :request, :services, :eval
 end
 
 module Tk::WinRegistry
 end
 #TkWinRegistry = Tk::WinRegistry
-Tk.__set_toplevel_aliases__(:Tk, Tk::WinRegistry, :TkWinRegistry)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::WinRegistry, :TkWinRegistry)
+Tk.__set_loaded_toplevel_aliases__('tk/winpkg.rb', :Tk, Tk::WinRegistry,
+                                   :TkWinRegistry)
 
 module Tk::WinRegistry
   extend Tk

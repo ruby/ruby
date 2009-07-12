@@ -34,7 +34,7 @@ end
 class Tk::Tcllib::GetString_Dialog
   TkCommandNames = ['::getstring::tk_getString'.freeze].freeze
   WidgetClassName = 'TkSDialog'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.show(*args)
     dialog = self.new(*args)
@@ -74,7 +74,7 @@ class Tk::Tcllib::GetString_Dialog
 
   def show
     @variable.value = ''
-    @status = bool(tk_call(self.class::TkCommandNames[0], 
+    @status = bool(tk_call(self.class::TkCommandNames[0],
                            @path, @variable, @text, *hash_kv(@keys)))
   end
   alias display show

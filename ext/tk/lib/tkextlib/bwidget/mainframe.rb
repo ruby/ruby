@@ -18,7 +18,7 @@ end
 class Tk::BWidget::MainFrame
   TkCommandNames = ['MainFrame'.freeze].freeze
   WidgetClassName = 'MainFrame'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'progressfg'
@@ -109,6 +109,10 @@ class Tk::BWidget::MainFrame
       end
     end
     win
+  end
+
+  def get_menustate(tag)
+    tk_send('getmenustate', tag) # return state name string
   end
 
   def set_menustate(tag, state)

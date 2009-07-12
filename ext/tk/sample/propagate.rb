@@ -3,7 +3,7 @@ require 'tk'
 
 TkLabel.new(:text=>"Please click the bottom frame").pack
 
-f = TkFrame.new(:width=>400, :height=>100, :background=>'yellow', 
+f = TkFrame.new(:width=>400, :height=>100, :background=>'yellow',
                 :relief=>'ridge', :borderwidth=>5).pack
 
 # TkPack.propagate(f, false) # <== important!!

@@ -3,10 +3,10 @@
 #
 #    see <http://wiki.tcl.tk/10615>
 #
-#  Note:  optional argument '-font' of the Tcl library is changed to 
-#         'itemfont' on this Ruby library, because of avoiding font 
-#         operation trouble in 'initialize' method  ( see the following 
-#         test script ). 
+#  Note:  optional argument '-font' of the Tcl library is changed to
+#         'itemfont' on this Ruby library, because of avoiding font
+#         operation trouble in 'initialize' method  ( see the following
+#         test script ).
 #
 ##########################################################################
 require 'tk'
@@ -68,9 +68,9 @@ end
 if __FILE__ == $0
   TkLabel.new(:text=><<EOL, :relief=>:ridge, :justify=>:left).pack
 
- This is a sample to use a Tcl library script on Ruby/Tk. 
- This sample loads tktree.tcl (see <http://wiki.tcl.tk/10615>) 
- and calls functions of the Tcl script. 
+ This is a sample to use a Tcl library script on Ruby/Tk.
+ This sample loads tktree.tcl (see <http://wiki.tcl.tk/10615>)
+ and calls functions of the Tcl script.
 EOL
 
   items = %w(/group1/item1 /group1/item2 /group1/subgroup/item1 /group2/item1 /item1)
@@ -79,14 +79,14 @@ EOL
   tr1.focus
 
   items.each{|item|
-    tr1.newitem(item, 
+    tr1.newitem(item,
                 :command=>proc{Tk.messageBox(:message=>"#{item} executed")})
   }
 
   f = TkFrame.new.pack(:expand=>true, :fill=>:both)
-  tr2 = TkTree.new(f, :bg=>'black', #:itemfont=>{:family=>'Times', :size=>14}, 
-                   :textcolor=>'red', :bd=>4, :relief=>:ridge, 
-                   :selectbackground=>'darkBlue', :selectforeground=>'yellow', 
+  tr2 = TkTree.new(f, :bg=>'black', #:itemfont=>{:family=>'Times', :size=>14},
+                   :textcolor=>'red', :bd=>4, :relief=>:ridge,
+                   :selectbackground=>'darkBlue', :selectforeground=>'yellow',
                    :selectborderwidth=>3, :linecolor=>'yellow') {
     yscrollbar(TkScrollbar.new(f, :width=>10).pack(:side=>:right, :fill=>:y))
     xscrollbar(TkScrollbar.new(f, :width=>10).pack(:side=>:bottom, :fill=>:x))
@@ -94,8 +94,8 @@ EOL
   }
 
   items.each{|item|
-    tr2.newitem(item, :textcolor=>'green', :image=>'', 
-                :itemfont=>{:family=>'Times', :size=>10}, 
+    tr2.newitem(item, :textcolor=>'green', :image=>'',
+                :itemfont=>{:family=>'Times', :size=>10},
                 :command=>proc{Tk.messageBox(:message=>"#{item} executed")})
   }
 

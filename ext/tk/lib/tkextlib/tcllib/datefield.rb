@@ -7,12 +7,12 @@
 #
 # (The following is the original description of the library.)
 #
-# The datefield package provides the datefield widget which is an enhanced 
-# text entry widget for the purpose of date entry. Only valid dates of the 
+# The datefield package provides the datefield widget which is an enhanced
+# text entry widget for the purpose of date entry. Only valid dates of the
 # form MM/DD/YYYY can be entered.
-# 
-# The datefield widget is, in fact, just an entry widget with specialized 
-# bindings. This means all the command and options for an entry widget apply 
+#
+# The datefield widget is, in fact, just an entry widget with specialized
+# bindings. This means all the command and options for an entry widget apply
 # equally here.
 
 require 'tk'
@@ -47,7 +47,7 @@ class Tk::Tcllib::Datefield
 
   def create_self(keys)
     if keys and keys != None
-      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+      tk_call_without_enc(self.class::TkCommandNames[0], @path,
                           *hash_kv(keys, true))
     else
       tk_call_without_enc(self.class::TkCommandNames[0], @path)

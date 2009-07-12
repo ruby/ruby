@@ -67,11 +67,11 @@ module Tk
 
     def initialize(str, enc = nil)
       super(str)
-      # @encoding = ( enc || 
-      #              ((self.class::Encoding)? 
+      # @encoding = ( enc ||
+      #              ((self.class::Encoding)?
       #                  self.class::Encoding : Tk.encoding_system) )
       enc ||= (self.class::Encoding)?
-                         self.class::Encoding : 
+                         self.class::Encoding :
                          ((Tk.encoding)? Tk.encoding : Tk.encoding_system)
       if TkCore::WITH_ENCODING
         unless encobj = Tk::Encoding::ENCODING_TABLE.get_obj(enc)

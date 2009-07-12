@@ -19,7 +19,7 @@ require 'tkextlib/vu.rb'
 class Tk::Vu::Bargraph < TkWindow
   TkCommandNames = ['::vu::bargraph'.freeze].freeze
   WidgetClassName = 'Bargraph'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   ###############################
 
@@ -30,10 +30,10 @@ class Tk::Vu::Bargraph < TkWindow
 
   def __strval_optkeys
     super() + [
-      'title', 
-      'barbackground', 'barcolor', 'barcolour', 
-      'tickcolor', 'tickcolour', 
-      'textcolor', 'textcolour', 
+      'title',
+      'barbackground', 'barcolor', 'barcolour',
+      'tickcolor', 'tickcolour',
+      'textcolor', 'textcolour',
     ]
   end
   private :__strval_optkeys

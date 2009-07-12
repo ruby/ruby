@@ -17,7 +17,7 @@ end
 class Tk::BWidget::MessageDlg
   TkCommandNames = ['MessageDlg'.freeze].freeze
   WidgetClassName = 'MessageDlg'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def initialize(parent=nil, keys=nil)
     @relative = ''
@@ -185,7 +185,7 @@ class Tk::BWidget::MessageDlg
 
   def create
     # return the index of the pressed button, or nil if it is destroyed
-    ret = num_or_str(tk_call(self.class::TkCommandNames[0], 
+    ret = num_or_str(tk_call(self.class::TkCommandNames[0],
                              @path, *hash_kv(@keys)))
     (ret < 0)? nil: ret
   end

@@ -6,7 +6,7 @@
 # based on "Id: paned2.tcl,v 1.1 2002/02/22 14:07:01 dkf Exp"
 
 if defined?($paned2_demo) && $paned2_demo
-  $paned2_demo.destroy 
+  $paned2_demo.destroy
   $paned2_demo = nil
 end
 
@@ -18,8 +18,8 @@ $paned2_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($paned2_demo).pack(:fill=>:both, :expand=>true)
 
-TkLabel.new(base_frame, 
-            :font=>$font, :wraplength=>'4i', :justify=>:left, 
+TkLabel.new(base_frame,
+            :font=>$font, :wraplength=>'4i', :justify=>:left,
             :text=><<EOL).pack(:side=>:top)
 The sash between the two scrolled windows below can be used to divide the area between them.  Use the left mouse button to resize without redrawing by just moving the sash, and use the middle mouse button to resize opaquely (always redrawing the windows in each position.)
 If your Tk library linked to Ruby doesn't include a 'panedwindow', this demo doesn't work. Please use later version of Tk which supports a 'panedwindow'.
@@ -42,23 +42,23 @@ TkFrame.new(base_frame){|f|
 paneList = TkVariable.new  # define as normal variable (not array)
 paneList.value = [         # ruby's array --> tcl's list
     'List of Ruby/Tk Widgets',
-    'TkButton', 
-    'TkCanvas', 
-    'TkCheckbutton', 
-    'TkEntry', 
-    'TkFrame', 
-    'TkLabel', 
-    'TkLabelframe', 
-    'TkListbox', 
-    'TkMenu', 
-    'TkMenubutton', 
-    'TkMessage', 
-    'TkPanedwindow', 
-    'TkRadiobutton', 
-    'TkScale', 
-    'TkScrollbar', 
-    'TkSpinbox', 
-    'TkText', 
+    'TkButton',
+    'TkCanvas',
+    'TkCheckbutton',
+    'TkEntry',
+    'TkFrame',
+    'TkLabel',
+    'TkLabelframe',
+    'TkListbox',
+    'TkMenu',
+    'TkMenubutton',
+    'TkMessage',
+    'TkPanedwindow',
+    'TkRadiobutton',
+    'TkScale',
+    'TkScrollbar',
+    'TkSpinbox',
+    'TkText',
     'TkToplevel'
 ]
 
@@ -69,13 +69,13 @@ TkPanedwindow.new(base_frame, :orient=>:vertical){|f|
   add(TkFrame.new(f){|paned2_top|
         TkListbox.new(paned2_top, :listvariable=>paneList) {
           # Invert the first item to highlight it
-          itemconfigure(0, :background=>self.cget(:foreground), 
+          itemconfigure(0, :background=>self.cget(:foreground),
                            :foreground=>self.cget(:background) )
-          yscrollbar(TkScrollbar.new(paned2_top).pack(:side=>:right, 
+          yscrollbar(TkScrollbar.new(paned2_top).pack(:side=>:right,
                                                       :fill=>:y))
           pack(:fill=>:both, :expand=>true)
         }
-      }, 
+      },
 
       TkFrame.new(f, :height=>120) {|paned2_bottom|
         # The bottom window is a text widget with scrollbar

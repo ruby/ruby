@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Scrolledhtml
   TkCommandNames = ['::iwidgets::scrolledhtml'.freeze].freeze
   WidgetClassName = 'Scrolledhtml'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __boolval_optkeys
     super() << 'update'

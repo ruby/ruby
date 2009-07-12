@@ -32,22 +32,22 @@ module TkTreatItemFont
 
     if key
       pathname = [win, tag, key].join(';')
-      TkFont.used_on(pathname) || 
-        TkFont.init_widget_font(pathname, 
+      TkFont.used_on(pathname) ||
+        TkFont.init_widget_font(pathname,
                                 *(__item_confinfo_cmd(tagid(tagOrId))))
     elsif optkeys.size == 1
       pathname = [win, tag, optkeys[0]].join(';')
-      TkFont.used_on(pathname) || 
-        TkFont.init_widget_font(pathname, 
+      TkFont.used_on(pathname) ||
+        TkFont.init_widget_font(pathname,
                                 *(__item_confinfo_cmd(tagid(tagOrId))))
     else
       fonts = {}
       optkeys.each{|key|
         key = key.to_s
         pathname = [win, tag, key].join(';')
-        fonts[key] = 
-          TkFont.used_on(pathname) || 
-          TkFont.init_widget_font(pathname, 
+        fonts[key] =
+          TkFont.used_on(pathname) ||
+          TkFont.init_widget_font(pathname,
                                   *(__item_confinfo_cmd(tagid(tagOrId))))
       }
       fonts
@@ -73,13 +73,13 @@ module TkTreatItemFont
           slot.delete(a_optkey)
           slot.delete(k_optkey)
 
-          fnt.call_font_configure([pathname, optkey], 
+          fnt.call_font_configure([pathname, optkey],
                                   *(__item_config_cmd(tagid(tagOrId)) << {}))
           next
         else
           if fnt
-            if (slot.key?(l_optkey) || 
-                slot.key?(a_optkey) || 
+            if (slot.key?(l_optkey) ||
+                slot.key?(a_optkey) ||
                 slot.key?(k_optkey))
               fnt = TkFont.new(fnt)
 
@@ -90,7 +90,7 @@ module TkTreatItemFont
               fnt.latin_replace(lfnt) if lfnt
               fnt.kanji_replace(kfnt) if kfnt
 
-              fnt.call_font_configure([pathname, optkey], 
+              fnt.call_font_configure([pathname, optkey],
                                       *(__item_config_cmd(tagid(tagOrId)) << {}))
               next
             else
@@ -115,7 +115,7 @@ module TkTreatItemFont
       kfnt = slot.delete(k_optkey)
 
       if lfnt && kfnt
-        TkFont.new(lfnt, kfnt).call_font_configure([pathname, optkey], 
+        TkFont.new(lfnt, kfnt).call_font_configure([pathname, optkey],
                                                    *(__item_config_cmd(tagid(tagOrId)) << {}))
       elsif lfnt
         latintagfont_configure([lfnt, optkey])
@@ -264,10 +264,10 @@ module TkTreatItemFont
     end
 
     if targetkey
-      fnt.call_font_configure([__item_pathname(tagid(tagOrId)), targetkey], 
+      fnt.call_font_configure([__item_pathname(tagid(tagOrId)), targetkey],
                               *(__item_config_cmd(tagid(tagOrId)) << {}))
     else
-      fnt.call_font_configure(__item_pathname(tagid(tagOrId)), 
+      fnt.call_font_configure(__item_pathname(tagid(tagOrId)),
                               *(__item_config_cmd(tagid(tagOrId)) << {}))
     end
     self
@@ -276,10 +276,10 @@ module TkTreatItemFont
 
   def latintagfont_copy(tagOrId, win, wintag=nil, winkey=nil, targetkey=nil)
     if targetkey
-      fontobj(targetkey).dup.call_font_configure([__item_pathname(tagid(tagOrId)), targetkey], 
+      fontobj(targetkey).dup.call_font_configure([__item_pathname(tagid(tagOrId)), targetkey],
                                                  *(__item_config_cmd(tagid(tagOrId)) << {}))
     else
-      fontobj.dup.call_font_configure(__item_pathname(tagid(tagOrId)), 
+      fontobj.dup.call_font_configure(__item_pathname(tagid(tagOrId)),
                                       *(__item_config_cmd(tagid(tagOrId)) << {}))
     end
 
@@ -302,10 +302,10 @@ module TkTreatItemFont
 
   def kanjifont_copy(tagOrId, win, wintag=nil, winkey=nil, targetkey=nil)
     if targetkey
-      fontobj(targetkey).dup.call_font_configure([__item_pathname(tagid(tagOrId)), targetkey], 
+      fontobj(targetkey).dup.call_font_configure([__item_pathname(tagid(tagOrId)), targetkey],
                                                  *(__item_config_cmd(tagid(tagOrId)) << {}))
     else
-        fontobj.dup.call_font_configure(__item_pathname(tagid(tagOrId)), 
+        fontobj.dup.call_font_configure(__item_pathname(tagid(tagOrId)),
                                         *(__item_config_cmd(tagid(tagOrId)) << {}))
     end
 

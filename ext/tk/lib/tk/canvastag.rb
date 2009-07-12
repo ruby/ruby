@@ -60,6 +60,9 @@ module TkcTagAccess
     @c.itembindinfo(@id, seq)
   end
 
+  def cget_tkstring(option)
+    @c.itemcget_tkstring(@id, option)
+  end
   def cget(option)
     @c.itemcget(@id, option)
   end
@@ -116,6 +119,13 @@ module TkcTagAccess
     self
   end
 
+  def imove(idx, x, y)
+    # Tcl/Tk 8.6 or later
+    @c.imove(@id, idx, x, y)
+    self
+  end
+  alias i_move imove
+
   def index(idx)
     @c.index(@id, idx)
   end
@@ -135,6 +145,13 @@ module TkcTagAccess
     self
   end
 
+  def moveto(x, y)
+    # Tcl/Tk 8.6 or later
+    @c.moveto(@id, x, y)
+    self
+  end
+  alias move_to moveto
+
   def raise(abovethis=None)
     @c.raise(@id, abovethis)
     self
@@ -144,6 +161,14 @@ module TkcTagAccess
     @c.scale(@id, xorigin, yorigin, xscale, yscale)
     self
   end
+
+  def rchars(first, last, str_or_coords)
+    # Tcl/Tk 8.6 or later
+    @c.rchars(@id, first, last, str_or_coords)
+    self
+  end
+  alias replace_chars rchars
+  alias replace_coords rchars
 
   def select_adjust(index)
     @c.select('adjust', @id, index)
@@ -203,7 +228,7 @@ class TkcTag<TkObject
 
   CTagID_TBL = TkCore::INTERP.create_table
 
-  (Tk_CanvasTag_ID = ['ctag'.freeze, '00000'.taint]).instance_eval{
+  (Tk_CanvasTag_ID = ['ctag'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -218,7 +243,7 @@ class TkcTag<TkObject
     CTagID_TBL.mutex.synchronize{
       if CTagID_TBL[cpath]
         CTagID_TBL[cpath][id]? CTagID_TBL[cpath][id]: id
-      else 
+      else
         id
       end
     }
@@ -389,7 +414,7 @@ class TkcTagCurrent<TkcTagString
 end
 
 class TkcGroup<TkcTag
-  (Tk_cGroup_ID = ['tkcg'.freeze, '00000'.taint]).instance_eval{
+  (Tk_cGroup_ID = ['tkcg'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -414,7 +439,7 @@ class TkcGroup<TkcTag
     include(*args) if args != []
   end
   #private :create_self
-  
+
   def include(*tags)
     for i in tags
       #i.addtag(@id)

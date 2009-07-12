@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Scopedobject
   TkCommandNames = ['::iwidgets::scopedobject'.freeze].freeze
   WidgetClassName = 'Scopedobject'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def initialize(obj_name, keys={})
     @path = tk_call(self.class::TkCommandNames[0], obj_name, *hash_kv(keys))

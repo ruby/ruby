@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Messagebox
   TkCommandNames = ['::iwidgets::messagebox'.freeze].freeze
   WidgetClassName = 'Messagebox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   ####################################
 
@@ -46,13 +46,14 @@ class Tk::Iwidgets::Messagebox
   end
   private :__item_boolval_optkeys
 
+  alias typecget_tkstring itemcget_tkstring
   alias typecget itemcget
   alias typecget_strict itemcget_strict
   alias typeconfigure itemconfigure
   alias typeconfiginfo itemconfiginfo
   alias current_typeconfiginfo current_itemconfiginfo
 
-  private :itemcget, :itemcget_strict
+  private :itemcget_tkstring, :itemcget, :itemcget_strict
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
   ####################################

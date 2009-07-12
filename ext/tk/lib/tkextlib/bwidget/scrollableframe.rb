@@ -19,7 +19,7 @@ class Tk::BWidget::ScrollableFrame
 
   TkCommandNames = ['ScrollableFrame'.freeze].freeze
   WidgetClassName = 'ScrollableFrame'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def get_frame(&b)
     win = window(tk_send_without_enc('getframe'))

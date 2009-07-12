@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Spinner
   TkCommandNames = ['::iwidgets::spinner'.freeze].freeze
   WidgetClassName = 'Spinner'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   ####################################
 
@@ -25,16 +25,16 @@ class Tk::Iwidgets::Spinner
   class EntryfieldValidate < TkValidateCommand
     #class CalCmdArgs < TkUtil::CallbackSubst
     class ValidateArgs < TkUtil::CallbackSubst
-      KEY_TBL  = [ 
-        [ ?c, ?s, :char ], 
-        [ ?P, ?s, :post ], 
-        [ ?S, ?s, :current ], 
-        [ ?W, ?w, :widget ], 
+      KEY_TBL  = [
+        [ ?c, ?s, :char ],
+        [ ?P, ?s, :post ],
+        [ ?S, ?s, :current ],
+        [ ?W, ?w, :widget ],
         nil
       ]
-      PROC_TBL = [ 
-        [ ?s, TkComm.method(:string) ], 
-        [ ?w, TkComm.method(:window) ], 
+      PROC_TBL = [
+        [ ?s, TkComm.method(:string) ],
+        [ ?w, TkComm.method(:window) ],
         nil
       ]
 

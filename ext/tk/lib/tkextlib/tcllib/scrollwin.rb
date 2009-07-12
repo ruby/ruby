@@ -42,7 +42,7 @@ class Tk::Tcllib::Widget::ScrolledWindow
 
   def create_self(keys)
     if keys and keys != None
-      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+      tk_call_without_enc(self.class::TkCommandNames[0], @path,
                           *hash_kv(keys, true))
     else
       tk_call_without_enc(self.class::TkCommandNames[0], @path)

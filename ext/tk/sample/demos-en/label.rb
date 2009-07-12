@@ -8,11 +8,11 @@
 
 # toplevel widget
 if defined?($label_demo) && $label_demo
-  $label_demo.destroy 
+  $label_demo.destroy
   $label_demo = nil
 end
 
-# demo toplevel widget 
+# demo toplevel widget
 $label_demo = TkToplevel.new {|w|
   title("Label Demonstration")
   iconname("label")
@@ -21,7 +21,7 @@ $label_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($label_demo).pack(:fill=>:both, :expand=>true)
 
-# label 
+# label
 msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
@@ -30,7 +30,7 @@ msg = TkLabel.new(base_frame) {
 }
 msg.pack('side'=>'top')
 
-# frame 
+# frame
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
@@ -48,15 +48,15 @@ TkFrame.new(base_frame) {|frame|
 
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# label demo 
+# label demo
 f_left = TkFrame.new(base_frame)
 f_right = TkFrame.new(base_frame)
-[f_left, f_right].each{|w| w.pack('side'=>'left', 'expand'=>'yes', 
+[f_left, f_right].each{|w| w.pack('side'=>'left', 'expand'=>'yes',
                                   'padx'=>10, 'pady'=>10, 'fill'=>'both')}
 
-# label 
+# label
 [ TkLabel.new(f_left, 'text'=>'First label'),
-  TkLabel.new(f_left, 'text'=>'Second label, raised', 
+  TkLabel.new(f_left, 'text'=>'Second label, raised',
               'relief'=>'raised'),
   TkLabel.new(f_left, 'text'=>'Third label, sunken', 'relief'=>'sunken')
 ].each{|w| w.pack('side'=>'top', 'expand'=>'yes', 'pady'=>2, 'anchor'=>'w')}

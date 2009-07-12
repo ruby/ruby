@@ -13,9 +13,6 @@ module Tk
   end
 end
 
-Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Entry, :TkEntry)
-
-
 class Tk::Tile::TEntry < Tk::Entry
   include Tk::Tile::TileWidget
 
@@ -25,7 +22,7 @@ class Tk::Tile::TEntry < Tk::Entry
     TkCommandNames = ['::tentry'.freeze].freeze
   end
   WidgetClassName = 'TEntry'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __optkey_aliases
     {:vcmd=>:validatecommand, :invcmd=>:invalidcommand}
@@ -46,3 +43,7 @@ class Tk::Tile::TEntry < Tk::Entry
     [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
   end
 end
+
+#Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Entry, :TkEntry)
+Tk.__set_loaded_toplevel_aliases__('tkextlib/tile/tentry.rb',
+                                   :Ttk, Tk::Tile::Entry, :TkEntry)

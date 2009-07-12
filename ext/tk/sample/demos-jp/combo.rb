@@ -7,7 +7,7 @@
 # based on "Id: combo.tcl,v 1.3 2007/12/13 15:27:07 dgp Exp"
 
 if defined?($combo_demo) && $combo_demo
-  $combo_demo.destroy 
+  $combo_demo.destroy
   $combo_demo = nil
 end
 
@@ -19,7 +19,7 @@ $combo_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($combo_demo).pack(:fill=>:both, :expand=>true)
 
-Ttk::Label.new(base_frame, :font=>$font, :wraplength=>'5i', :justify=>:left, 
+Ttk::Label.new(base_frame, :font=>$font, :wraplength=>'5i', :justify=>:left,
                :text=><<EOL).pack(:side=>:top, :fill=>:x)
 以下では3種類のコンボボックスが表示されています．\
 最初のものは，エントリウィジェットと同じ様に，\
@@ -42,24 +42,24 @@ ozCity      = TkVariable.new
 Ttk::Frame.new(base_frame) {|frame|
   sep = Ttk::Separator.new(frame)
   Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
-  TkGrid('x', 
-         Ttk::Button.new(frame, :text=>'変数参照', 
-                         :image=>$image['view'], :compound=>:left, 
+  TkGrid('x',
+         Ttk::Button.new(frame, :text=>'変数参照',
+                         :image=>$image['view'], :compound=>:left,
                          :command=>proc{
-                           showVars(base_frame, 
-                                    ['firstVariable', firstValue], 
-                                    ['secondVariable', secondValue], 
+                           showVars(base_frame,
+                                    ['firstVariable', firstValue],
+                                    ['secondVariable', secondValue],
                                     ['ozCity', ozCity])
-                         }), 
-         Ttk::Button.new(frame, :text=>'コード参照', 
-                         :image=>$image['view'], :compound=>:left, 
-                         :command=>proc{showCode 'combo'}), 
-         Ttk::Button.new(frame, :text=>'閉じる', 
-                         :image=>$image['delete'], :compound=>:left, 
+                         }),
+         Ttk::Button.new(frame, :text=>'コード参照',
+                         :image=>$image['view'], :compound=>:left,
+                         :command=>proc{showCode 'combo'}),
+         Ttk::Button.new(frame, :text=>'閉じる',
+                         :image=>$image['delete'], :compound=>:left,
                          :command=>proc{
                            $combo_demo.destroy
                            $combo_demo = nil
-                         }), 
+                         }),
          :padx=>4, :pady=>4)
   grid_columnconfigure(0, :weight=>1)
   pack(:side=>:bottom, :fill=>:x)
@@ -68,7 +68,7 @@ Ttk::Frame.new(base_frame) {|frame|
 frame = Ttk::Frame.new(base_frame).pack(:fill=>:both, :expand=>true)
 
 australianCities = [
-  'キャンベラ', 'シドニー', 'メルボルン', 'パース', 'アデレード', 
+  'キャンベラ', 'シドニー', 'メルボルン', 'パース', 'アデレード',
   'ブリスベーン', 'ホバート', 'ダーウィン', 'アリス スプリングス'
 ]
 
@@ -82,17 +82,17 @@ Tk.pack(Ttk::Labelframe.new(frame, :text=>'Fully Editable'){|f|
               w.values <<= w.value unless w.values.include?(w.value)
             }
           }.pack(:pady=>5, :padx=>10)
-        }, 
+        },
 
         Ttk::LabelFrame.new(frame, :text=>'Disabled'){|f|
           Ttk::Combobox.new(f, :textvariable=>secondValue, :state=>:disabled) .
             pack(:pady=>5, :padx=>10)
-        }, 
+        },
 
         Ttk::LabelFrame.new(frame, :text=>'Defined List Only'){|f|
-          Ttk::Combobox.new(f, :textvariable=>ozCity, :state=>:readonly, 
+          Ttk::Combobox.new(f, :textvariable=>ozCity, :state=>:readonly,
                             :values=>australianCities) .
             pack(:pady=>5, :padx=>10)
-        }, 
+        },
 
         :side=>:top, :pady=>5, :padx=>10)

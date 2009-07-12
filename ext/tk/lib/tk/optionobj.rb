@@ -1,10 +1,10 @@
 #
 # tk/optionobj.rb : control options for a group of widgets
 #
-#  NOTE: If you want to use key-only option (no value), 
-#        use Tk::None for the value of the key-only option. 
+#  NOTE: If you want to use key-only option (no value),
+#        use Tk::None for the value of the key-only option.
 #
-#        e.g. hash_kv({'aaa'=>1, 'bbb'=>Tk::None, 'ccc'=>3}) 
+#        e.g. hash_kv({'aaa'=>1, 'bbb'=>Tk::None, 'ccc'=>3})
 #                 => ["-aaa", 1, "-bbb", "-ccc", 3]
 #
 require 'tk'
@@ -36,7 +36,7 @@ module Tk
     def _remove_win(win)
       if win.kind_of?(Array)
         widget, method = win
-        @observ.delete_if{|x| 
+        @observ.delete_if{|x|
           if x.kind_of?(Array)
             x[0] == widget
           else
@@ -56,15 +56,15 @@ module Tk
     private :_remove_win
 
     def assign(*wins)
-      # win := 
+      # win :=
       #   widget             #==> call widget.configure(hash)
       #   [widget]           #==> call widget.configure(hash)
       #   [widget, nil, {src=>target, ... }]
-      #                      #==> call widget.configure(hash) 
+      #                      #==> call widget.configure(hash)
       #                               with converting hash-key
       #   [widget, method]   #==> call widget.method(hash)
       #   [widget, method, {src=>target, ... }]
-      #                      #==> call widget.method(hash) 
+      #                      #==> call widget.method(hash)
       #                               with converting hash-key
       #   [widget [receiver, method, arg, ... ]]
       #                      #==> call receiver.method(arg, ... , hash)
@@ -74,7 +74,7 @@ module Tk
       #
       # src := option_name_on_optobj
       #
-      # target := 
+      # target :=
       #   nil                #==> not use the src
       #   option_name_on_target_widget
       #   [ option_name_on_target_widget, ... ]
@@ -123,7 +123,7 @@ module Tk
                 next unless key
                 if key.kind_of?(Array)
                   key.each{|k| hash[k] = val}
-                else              
+                else
                   hash[key] = val
                 end
               }

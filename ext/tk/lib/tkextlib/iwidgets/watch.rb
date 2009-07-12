@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Watch
   TkCommandNames = ['::iwidgets::watch'.freeze].freeze
   WidgetClassName = 'Watch'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __boolval_optkeys
     super() << 'showampm'
@@ -24,7 +24,7 @@ class Tk::Iwidgets::Watch
   private :__boolval_optkeys
 
   def __strval_optkeys
-    super() << 'clockcolor' << 'hourcolor' << 'minutecolor' << 
+    super() << 'clockcolor' << 'hourcolor' << 'minutecolor' <<
       'pivotcolor' << 'secondcolor' << 'tickcolor'
   end
   private :__strval_optkeys

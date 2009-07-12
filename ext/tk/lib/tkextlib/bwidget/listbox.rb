@@ -11,7 +11,7 @@ module Tk
   module BWidget
     class ListBox < TkWindow
       # is NOT a subclass of a listbox widget class.
-      # because it constructed on a canvas widget. 
+      # because it constructed on a canvas widget.
 
       class Item < TkObject
       end
@@ -25,11 +25,11 @@ class Tk::BWidget::ListBox
 
   TkCommandNames = ['ListBox'.freeze].freeze
   WidgetClassName = 'ListBox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   class Event_for_Items < TkEvent::Event
     def self._get_extra_args_tbl
-      [ 
+      [
         TkComm.method(:string)   # item idenfier
       ]
     end
@@ -60,7 +60,7 @@ class Tk::BWidget::ListBox
     else
       cmd = Proc.new
     end
-    _bind_for_event_class(Event_for_Items, [path, 'bindImage'], 
+    _bind_for_event_class(Event_for_Items, [path, 'bindImage'],
                           context, cmd, *args)
     self
   end
@@ -76,7 +76,7 @@ class Tk::BWidget::ListBox
     else
       cmd = Proc.new
     end
-    _bind_append_for_event_class(Event_for_Items, [path, 'bindImage'], 
+    _bind_append_for_event_class(Event_for_Items, [path, 'bindImage'],
                                  context, cmd, *args)
     self
   end
@@ -101,7 +101,7 @@ class Tk::BWidget::ListBox
     else
       cmd = Proc.new
     end
-    _bind_for_event_class(Event_for_Items, [path, 'bindText'], 
+    _bind_for_event_class(Event_for_Items, [path, 'bindText'],
                           context, cmd, *args)
     self
   end
@@ -117,7 +117,7 @@ class Tk::BWidget::ListBox
     else
       cmd = Proc.new
     end
-    _bind_append_for_event_class(Event_for_Items, [path, 'bindText'], 
+    _bind_append_for_event_class(Event_for_Items, [path, 'bindText'],
                                  context, cmd, *args)
     self
   end
@@ -183,19 +183,19 @@ class Tk::BWidget::ListBox
   end
 
   def selection_set(*args)
-    tk_send_without_enc('selection', 'set', 
+    tk_send_without_enc('selection', 'set',
                         *(args.collect{|item| tagid(item)}))
     self
   end
 
   def selection_add(*args)
-    tk_send_without_enc('selection', 'add', 
+    tk_send_without_enc('selection', 'add',
                         *(args.collect{|item| tagid(item)}))
     self
   end
 
   def selection_remove(*args)
-    tk_send_without_enc('selection', 'remove', 
+    tk_send_without_enc('selection', 'remove',
                         *(args.collect{|item| tagid(item)}))
     self
   end
@@ -212,7 +212,7 @@ class Tk::BWidget::ListBox::Item
 
   ListItem_TBL = TkCore::INTERP.create_table
 
-  (ListItem_ID = ['bw:item'.freeze, '00000'.taint]).instance_eval{
+  (ListItem_ID = ['bw:item'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -237,7 +237,7 @@ class Tk::BWidget::ListBox::Item
     if lbox.kind_of?(Tk::BWidget::ListBox)
       @listbox = lbox
     else
-      fail RuntimeError, 
+      fail RuntimeError,
         "expect Tk::BWidget::ListBox or Tk::BWidget::ListBox::Item for 1st argument"
     end
 
@@ -294,6 +294,9 @@ class Tk::BWidget::ListBox::Item
     val
   end
 
+  def cget_tkstring(key)
+    @listbox.itemcget_tkstring(@id, key)
+  end
   def cget(key)
     @listbox.itemcget(@id, key)
   end

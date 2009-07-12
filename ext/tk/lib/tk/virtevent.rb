@@ -9,7 +9,7 @@ class TkVirtualEvent<TkObject
 
   TkCommandNames = ['event'.freeze].freeze
 
-  (TkVirtualEventID = ["VirtEvent".freeze, "00000".taint]).instance_eval{
+  (TkVirtualEventID = ["VirtEvent".freeze, TkUtil.untrust("00000")]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -80,8 +80,8 @@ class TkVirtualEvent<TkObject
 
   def _add_sequences(seq_ary)
     unless seq_ary.empty?
-      tk_call_without_enc('event', 'add', "<#{@id}>", 
-                          *(seq_ary.collect{|seq| 
+      tk_call_without_enc('event', 'add', "<#{@id}>",
+                          *(seq_ary.collect{|seq|
                               "<#{tk_event_sequence(seq)}>"
                             }) )
     end
@@ -106,8 +106,8 @@ class TkVirtualEvent<TkObject
         TkVirtualEventTBL.delete(@id)
       }
     else
-      tk_call_without_enc('event', 'delete', "<#{@id}>", 
-                          *(sequences.collect{|seq| 
+      tk_call_without_enc('event', 'delete', "<#{@id}>",
+                          *(sequences.collect{|seq|
                               "<#{tk_event_sequence(seq)}>"
                             }) )
       if tk_call_without_enc('event','info',"<#{@id}>").empty?

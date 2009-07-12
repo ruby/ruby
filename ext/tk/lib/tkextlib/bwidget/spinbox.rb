@@ -20,7 +20,7 @@ class Tk::BWidget::SpinBox
 
   TkCommandNames = ['SpinBox'.freeze].freeze
   WidgetClassName = 'SpinBox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'helptext' << 'insertbackground' << 'entryfg' << 'entrybg'

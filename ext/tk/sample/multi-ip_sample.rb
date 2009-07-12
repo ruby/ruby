@@ -19,7 +19,6 @@ cmd = Proc.new{|txt|
   else
     root = TkRoot.new(:title=>'timer sample')
   end
-
   label = TkLabel.new(:parent=>root, :relief=>:raised, :width=>10) \
                   .pack(:side=>:bottom, :fill=>:both)
 
@@ -48,6 +47,7 @@ cmd = Proc.new{|txt|
   b_start = TkButton.new(:text=>'Start', :state=>:disabled) {
     pack(:side=>:left, :fill=>:both, :expand=>true)
   }
+
   b_stop  = TkButton.new(:text=>'Stop', :state=>:normal) {
     pack('side'=>'left', 'fill'=>'both', 'expand'=>'yes')
   }
@@ -80,19 +80,20 @@ safe_slave2.eval_proc(cmd, 'safe2')      # label -> .w00020
 cmd.call('master')                       # label -> .w00024
 
 #second_master = MultiTkIp.new(&cmd)
+#second_master = MultiTkIp.new(:safe=>2){p [:second_master, $SAFE]}
 
 TkTimer.new(2000, -1, proc{p ['safe1', safe_slave1.deleted?]}).start
 TkTimer.new(2000, -1, proc{p ['safe2', safe_slave2.deleted?]}).start
 TkTimer.new(2000, -1, proc{p ['trusted', trusted_slave.deleted?]}).start
 
-TkTimer.new(5000, 1, 
+TkTimer.new(5000, 1,
             proc{
               safe_slave1.eval_proc{Tk.root.destroy}
               safe_slave1.delete
               print "*** The safe_slave1 is deleted by the timer.\n"
             }).start
 
-TkTimer.new(10000, 1, 
+TkTimer.new(10000, 1,
             proc{
               trusted_slave.eval_proc{Tk.root.destroy}
               trusted_slave.delete

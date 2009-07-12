@@ -16,5 +16,5 @@ end
 class Tk::BWidget::ProgressBar
   TkCommandNames = ['ProgressBar'.freeze].freeze
   WidgetClassName = 'ProgressBar'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 end

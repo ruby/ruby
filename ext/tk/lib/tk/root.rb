@@ -16,7 +16,7 @@ class Tk::Root<TkWindow
 
   def Root.new(keys=nil, &b)
     unless TkCore::INTERP.tk_windows['.']
-      TkCore::INTERP.tk_windows['.'] = 
+      TkCore::INTERP.tk_windows['.'] =
         super(:without_creating=>true, :widgetname=>'.'){}
     end
     root = TkCore::INTERP.tk_windows['.']
@@ -52,7 +52,7 @@ class Tk::Root<TkWindow
   end
 
   WidgetClassName = 'Tk'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.to_eval
     # self::WidgetClassName
@@ -70,8 +70,8 @@ class Tk::Root<TkWindow
 
   def add_menu(menu_info, tearoff=false, opts=nil)
     # See tk/menuspec.rb for menu_info.
-    # opts is a hash of default configs for all of cascade menus. 
-    # Configs of menu_info can override it. 
+    # opts is a hash of default configs for all of cascade menus.
+    # Configs of menu_info can override it.
     if tearoff.kind_of?(Hash)
       opts = tearoff
       tearoff = false
@@ -82,7 +82,7 @@ class Tk::Root<TkWindow
   def add_menubar(menu_spec, tearoff=false, opts=nil)
     # See tk/menuspec.rb for menu_spec.
     # opts is a hash of default configs for all of cascade menus.
-    # Configs of menu_spec can override it. 
+    # Configs of menu_spec can override it.
     menu_spec.each{|info| add_menu(info, tearoff, opts)}
     self.menu
   end

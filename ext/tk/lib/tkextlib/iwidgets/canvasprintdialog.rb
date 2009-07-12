@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Canvasprintdialog
   TkCommandNames = ['::iwidgets::canvasprintdialog'.freeze].freeze
   WidgetClassName = 'Canvasprintdialog'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def get_output
     tk_call(@path, 'getoutput')

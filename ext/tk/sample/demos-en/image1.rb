@@ -7,7 +7,7 @@
 
 # toplevel widget
 if defined?($image1_demo) && $image1_demo
-  $image1_demo.destroy 
+  $image1_demo.destroy
   $image1_demo = nil
 end
 

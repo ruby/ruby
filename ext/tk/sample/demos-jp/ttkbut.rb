@@ -9,7 +9,7 @@
 # based on "Id: ttkbut.tcl,v 1.4 2007/12/13 15:27:07 dgp Exp"
 
 if defined?($ttkbut_demo) && $ttkbut_demo
-  $ttkbut_demo.destroy 
+  $ttkbut_demo.destroy
   $ttkbut_demo = nil
 end
 
@@ -21,7 +21,7 @@ $ttkbut_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($ttkbut_demo).pack(:fill=>:both, :expand=>true)
 
-Ttk::Label.new(base_frame, :font=>$font, :wraplength=>'4i', :justify=>:left, 
+Ttk::Label.new(base_frame, :font=>$font, :wraplength=>'4i', :justify=>:left,
                :text=><<EOL).pack(:side=>:top, :fill=>:x)
 Ttkとは，テーマ指定可能な新しいウィジェット集合です．\
 今，あなたが目にしているのはTtkのテーマ化ラベルで，\
@@ -40,11 +40,11 @@ EOL
 ## Add buttons for setting the theme
 buttons = Ttk::Labelframe.new(base_frame, :text=>'ボタン')
 # Ttk::Style.theme_names.each{|theme|
-#   Ttk::Button.new(buttons, :text=>theme, 
+#   Ttk::Button.new(buttons, :text=>theme,
 #                   :command=>proc{Ttk::Style.theme_use theme}).pack(:pady=>2)
 # }
 Ttk.themes.each{|theme|
-  Ttk::Button.new(buttons, :text=>theme, 
+  Ttk::Button.new(buttons, :text=>theme,
                   :command=>proc{Ttk.set_theme theme}).pack(:pady=>2)
 }
 
@@ -68,9 +68,9 @@ end
 ## Set up the checkbutton group
 checks = Ttk::Labelframe.new(base_frame, :text=>'チェックボタン')
 enabled = TkVariable.new(true)
-e = Ttk::Checkbutton.new(checks, :text=>'有効化', :variable=>enabled, 
+e = Ttk::Checkbutton.new(checks, :text=>'有効化', :variable=>enabled,
                          :command=>proc{
-                           setState($ttkbut_demo, 
+                           setState($ttkbut_demo,
                                     ((enabled.bool)? "!disabled" : "disabled"),
                                     e)
                          })
@@ -96,15 +96,15 @@ radios = Ttk::Labelframe.new(base_frame, :text=>'ラジオボタン')
 
 happyness = TkVariable.new
 
-r1 = Ttk::Radiobutton.new(radios, :variable=>happyness, 
+r1 = Ttk::Radiobutton.new(radios, :variable=>happyness,
                           :text=>'Great', :value=>'great')
-r2 = Ttk::Radiobutton.new(radios, :variable=>happyness, 
+r2 = Ttk::Radiobutton.new(radios, :variable=>happyness,
                           :text=>'Good', :value=>'good')
-r3 = Ttk::Radiobutton.new(radios, :variable=>happyness, 
+r3 = Ttk::Radiobutton.new(radios, :variable=>happyness,
                           :text=>'Ok', :value=>'ok')
-r4 = Ttk::Radiobutton.new(radios, :variable=>happyness, 
+r4 = Ttk::Radiobutton.new(radios, :variable=>happyness,
                           :text=>'Poor', :value=>'poor')
-r5 = Ttk::Radiobutton.new(radios, :variable=>happyness, 
+r5 = Ttk::Radiobutton.new(radios, :variable=>happyness,
                           :text=>'Awful', :value=>'awful')
 
 Tk.pack(r1, r2, r3, r4, r5, :fill=>:x, :padx=>3, :pady=>2)
@@ -113,26 +113,26 @@ Tk.pack(r1, r2, r3, r4, r5, :fill=>:x, :padx=>3, :pady=>2)
 Ttk::Frame.new(base_frame) {|frame|
   sep = Ttk::Separator.new(frame)
   Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
-  TkGrid('x', 
-         Ttk::Button.new(frame, :text=>'変数参照', 
-                         :image=>$image['view'], :compound=>:left, 
+  TkGrid('x',
+         Ttk::Button.new(frame, :text=>'変数参照',
+                         :image=>$image['view'], :compound=>:left,
                          :command=>proc{
-                           showVars(base_frame, ['有効化', enabled], 
-                                    ['チーズ', cheese], ['トマト', tomato], 
-                                    ['バジル', basil], ['オレガノ', oregano], 
+                           showVars(base_frame, ['有効化', enabled],
+                                    ['チーズ', cheese], ['トマト', tomato],
+                                    ['バジル', basil], ['オレガノ', oregano],
                                     ['幸福度', happyness])
-                         }), 
-         Ttk::Button.new(frame, :text=>'コード参照', 
-                         :image=>$image['view'], :compound=>:left, 
-                         :command=>proc{showCode 'ttkbut'}), 
-         Ttk::Button.new(frame, :text=>'閉じる', 
-                         :image=>$image['delete'], :compound=>:left, 
+                         }),
+         Ttk::Button.new(frame, :text=>'コード参照',
+                         :image=>$image['view'], :compound=>:left,
+                         :command=>proc{showCode 'ttkbut'}),
+         Ttk::Button.new(frame, :text=>'閉じる',
+                         :image=>$image['delete'], :compound=>:left,
                          :command=>proc{
                            tmppath = $ttkbut_demo
                            $ttkbut_demo = nil
                            $showVarsWin[tmppath.path] = nil
                            tmppath.destroy
-                         }), 
+                         }),
          :padx=>4, :pady=>4)
   grid_columnconfigure(0, :weight=>1)
   pack(:side=>:bottom, :fill=>:x, :expand=>true)

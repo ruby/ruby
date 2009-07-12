@@ -11,7 +11,7 @@ class TkImage<TkObject
 
   Tk_IMGTBL = TkCore::INTERP.create_table
 
-  (Tk_Image_ID = ['i'.freeze, '00000'.taint]).instance_eval{
+  (Tk_Image_ID = ['i'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end
     freeze
@@ -45,7 +45,7 @@ class TkImage<TkObject
             keys.delete('imagename')
             keys.delete('without_creating')
             obj.instance_eval{
-              tk_call_without_enc('image', 'create', 
+              tk_call_without_enc('image', 'create',
                                   @type, @path, *hash_kv(keys, true))
             }
           end
@@ -78,7 +78,7 @@ class TkImage<TkObject
       }
     end
     unless without_creating
-      tk_call_without_enc('image', 'create', 
+      tk_call_without_enc('image', 'create',
                           @type, @path, *hash_kv(keys, true))
     end
   end

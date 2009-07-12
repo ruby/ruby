@@ -4,7 +4,7 @@
 ##
 ## This demos shows how you can simulate a 3D table
 ## and has other basic features to begin a basic spreadsheet
-## 
+##
 ## ( based on 'spreadsheet.tcl' included source archive of tktable extension )
 ##
 require 'tk'
@@ -67,15 +67,15 @@ optmenu = TkOptionMenubutton.new(page, *(%w(AA BB CC DD)))
 fill_table(table_list, page.value)
 fill_table(table_list, 'BB', Integer(rows/2), Integer(cols/2))
 
-table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :width=>5, :height=>5, 
-                        :variable=>table_list[page.value], 
-                        :titlerows=>1, :titlecols=>1, 
+table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :width=>5, :height=>5,
+                        :variable=>table_list[page.value],
+                        :titlerows=>1, :titlecols=>1,
                         :coltagcommand=>proc{|n| colorize(n)},
-                        :flashmode=>true, :selectmode=>:extended, 
-                        :colstretch=>:unset, :rowstretch=>:unset, 
+                        :flashmode=>true, :selectmode=>:extended,
+                        :colstretch=>:unset, :rowstretch=>:unset,
                         :browsecommand=>proc{|e| cur_var.value = e.new_index})
 
-page.trace(:w, proc{|var, elem, op| 
+page.trace(:w, proc{|var, elem, op|
              changepage(table_list, table, entry, color, var, elem, op)
            })
 
@@ -128,7 +128,7 @@ menu = TkMenu.new
 m_file = TkMenu.new(menu)
 Tk.root.menu(menu)
 menu.add(:cascade, :label=>'File', :underline=>0, :menu=>m_file)
-m_file.add(:command, :label=>'Fill Array', 
+m_file.add(:command, :label=>'Fill Array',
            :command=>proc{ fill_table(table_list, page.value) })
 m_file.add(:command, :label=>'Quit', :command=>proc{exit})
 

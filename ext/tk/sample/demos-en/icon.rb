@@ -8,7 +8,7 @@
 
 # toplevel widget
 if defined?($icon_demo) && $icon_demo
-  $icon_demo.destroy 
+  $icon_demo.destroy
   $icon_demo = nil
 end
 
@@ -48,7 +48,7 @@ TkFrame.new(base_frame) {|frame|
 
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# image 
+# image
 flagup = \
 TkBitmapImage.new('file'=>[$demo_dir,'..',
                            'images','flagup.xbm'].join(File::Separator),

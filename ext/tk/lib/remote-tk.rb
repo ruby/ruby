@@ -10,8 +10,8 @@ class MultiTkIp; end
 class RemoteTkIp < MultiTkIp; end
 
 class MultiTkIp
-  @@IP_TABLE = {}.taint unless defined?(@@IP_TABLE)
-  @@TK_TABLE_LIST = [].taint unless defined?(@@TK_TABLE_LIST)
+  @@IP_TABLE = TkUtil.untrust({}) unless defined?(@@IP_TABLE)
+  @@TK_TABLE_LIST = TkUtil.untrust([]) unless defined?(@@TK_TABLE_LIST)
   def self._IP_TABLE; @@IP_TABLE; end
   def self._TK_TABLE_LIST; @@TK_TABLE_LIST; end
 
@@ -88,10 +88,14 @@ class RemoteTkIp
     @slave_ip_tbl = {}
     @slave_ip_top = {}
 
-    @tk_windows.taint unless @tk_windows.tainted?
-    @tk_table_list.taint unless @tk_table_list.tainted?
-    @slave_ip_tbl.taint unless @slave_ip_tbl.tainted?
-    @slave_ip_top.taint unless @slave_ip_top.tainted?
+    @force_default_encoding ||= TkUtil.untrust([false])
+    @encoding ||= TkUtil.untrust([nil])
+    def @encoding.to_s; self.join(nil); end
+
+    TkUtil.untrust(@tk_windows)    unless @tk_windows.tainted?
+    TkUtil.untrust(@tk_table_list) unless @tk_table_list.tainted?
+    TkUtil.untrust(@slave_ip_tbl)  unless @slave_ip_tbl.tainted?
+    TkUtil.untrust(@slave_ip_top)  unless @slave_ip_top.tainted?
 
     @system = Object.new
 
@@ -114,8 +118,8 @@ class RemoteTkIp
     @@DEFAULT_MASTER.assign_receiver_and_watchdog(self)
 
     @@IP_TABLE[@threadgroup] = self
-    @@TK_TABLE_LIST.size.times{ 
-      (tbl = {}).tainted? || tbl.taint
+    @@TK_TABLE_LIST.size.times{
+      (tbl = {}).tainted? || TkUtil.untrust(tbl)
       @tk_table_list << tbl
     }
 
@@ -154,13 +158,13 @@ class RemoteTkIp
 
     return nil if timeout < 1
     @ret_val.value = ''
-    @interp._invoke('send', '-async', @remote, 
-                    'send', '-async', Tk.appname, 
+    @interp._invoke('send', '-async', @remote,
+                    'send', '-async', Tk.appname,
                     "set #{@ret_val.id} ready")
     Tk.update
     if @ret_val != 'ready'
       (1..(timeout*5)).each{
-        sleep 0.2 
+        sleep 0.2
         Tk.update
         break if @ret_val == 'ready'
       }
@@ -204,10 +208,10 @@ class RemoteTkIp
     cmds = @interp._merge_tklist(*TkUtil::_conv_args([], enc_mode, *cmds))
     if @displayof
       if async
-        @interp.__invoke('send', '-async', '-displayof', @displayof, 
+        @interp.__invoke('send', '-async', '-displayof', @displayof,
                          '--', @remote, *cmds)
       else
-        @interp.__invoke('send', '-displayof', @displayof, 
+        @interp.__invoke('send', '-displayof', @displayof,
                          '--', @remote, *cmds)
       end
     else
@@ -229,7 +233,7 @@ class RemoteTkIp
 
   def is_rubytk?
     return false if _appsend(false, false, 'info', 'command', 'ruby') == ""
-    [ _appsend(false, false, 'ruby', 'RUBY_VERSION'), 
+    [ _appsend(false, false, 'ruby', 'RUBY_VERSION'),
       _appsend(false, false, 'set', 'tk_patchLevel') ]
   end
 
@@ -298,7 +302,7 @@ class RemoteTkIp
     raise SecurityError, "no permission to manipulate" unless self.manipulable?
 
     if @displayof
-      lst = @interp._invoke_without_enc('winfo', 'interps', 
+      lst = @interp._invoke_without_enc('winfo', 'interps',
                                         '-displayof', @displayof)
     else
       lst = @interp._invoke_without_enc('winfo', 'interps')

@@ -10,7 +10,7 @@ module Tk::BLT
   class Container < TkWindow
     TkCommandNames = ['::blt::container'.freeze].freeze
     WidgetClassName = 'Container'.freeze
-    WidgetClassNames[WidgetClassName] = self
+    WidgetClassNames[WidgetClassName] ||= self
 
     def __strval_optkeys
       super() << 'name'

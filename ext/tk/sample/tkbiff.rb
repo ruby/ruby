@@ -11,10 +11,10 @@ end
 if ARGV.length == 0
   if ENV['MAIL']
     $spool = ENV['MAIL']
-  else  
+  else
     $spool = '/var/spool/mail/' + ENV['USER']
   end
-else 
+else
   $spool = ARGV[0]
 end
 
@@ -40,7 +40,7 @@ class Mail
     @body = []
     while line = f.gets()
       line.chop!
-      next if /^From / =~ line  # skip From-line  
+      next if /^From / =~ line  # skip From-line
       break if /^$/ =~ line     # end of header
       if /^(\S+):\s*(.*)/ =~ line
         @header[attr = $1.capitalize] = $2

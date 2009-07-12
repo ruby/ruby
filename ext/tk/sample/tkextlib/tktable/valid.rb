@@ -4,7 +4,7 @@
 ##
 ## This demos shows the use of the validation mechanism of the table
 ## and uses the table's cache (no -command or -variable)
-## 
+##
 ## ( based on 'valid.tcl' included source archive of tktable extension )
 ##
 require 'tk'
@@ -53,12 +53,12 @@ end
 
 lbl = TkLabel.new(:text=>"TkTable v1 Validated Table Example")
 
-table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :cache=>1, 
-                        :width=>5, :height=>5, :titlerows=>1, :titlecols=>1, 
+table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :cache=>1,
+                        :width=>5, :height=>5, :titlerows=>1, :titlecols=>1,
                         :coltagcommand=>proc{|n| colorize(n)},
-                        :flashmode=>true, :selectmode=>:extended, 
-                        :colstretch=>:unset, :rowstretch=>:unset, 
-                        :validate=>true, 
+                        :flashmode=>true, :selectmode=>:extended,
+                        :colstretch=>:unset, :rowstretch=>:unset,
+                        :validate=>true,
                         :validatecommand=>proc{|e|
                           unless e.widget.tag_include?('title', e.index)
                             validate_proc(e.column, e.new_value)

@@ -15,10 +15,6 @@ module Tk
   end
 end
 
-Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Radiobutton, 
-                            :TkRadiobutton, :TkRadioButton)
-
-
 class Tk::Tile::TRadioButton < Tk::RadioButton
   include Tk::Tile::TileWidget
 
@@ -28,9 +24,15 @@ class Tk::Tile::TRadioButton < Tk::RadioButton
     TkCommandNames = ['::tradiobutton'.freeze].freeze
   end
   WidgetClassName = 'TRadiobutton'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.style(*args)
     [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
   end
 end
+
+#Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Radiobutton,
+#                            :TkRadiobutton, :TkRadioButton)
+Tk.__set_loaded_toplevel_aliases__('tkextlib/tile/tradiobutton.rb',
+                                   :Ttk, Tk::Tile::Radiobutton,
+                                   :TkRadiobutton, :TkRadioButton)

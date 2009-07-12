@@ -1,5 +1,5 @@
 #
-# tk/composite.rb : 
+# tk/composite.rb :
 #
 require 'tk'
 
@@ -145,16 +145,34 @@ module TkComposite
     str.chop << ' @epath=' << @epath.inspect << '>'
   end
 
+  def _get_opt_method_list(arg)
+    m_set, m_cget, m_info = arg
+    m_set  = m_set.to_s
+    m_cget = m_set if !m_cget && self.method(m_set).arity == -1
+    m_cget = m_cget.to_s if m_cget
+    m_info = m_info.to_s if m_info
+    [m_set, m_cget, m_info]
+  end
+  private :_get_opt_method_list
+
   def option_methods(*opts)
-    opts.each{|m_set, m_cget, m_info|
-      m_set  = m_set.to_s
-      m_cget = m_set if !m_cget && self.method(m_set).arity == -1
-      m_cget = m_cget.to_s if m_cget
-      m_info = m_info.to_s if m_info
-      @option_methods[m_set] = {
-        :set  => m_set, :cget => m_cget, :info => m_info
+    if opts.size == 1 && opts[0].kind_of?(Hash)
+      # {name => [m_set, m_cget, m_info], name => method} style
+      opts[0].each{|name, arg|
+        m_set, m_cget, m_info = _get_opt_method_list(arg)
+        @option_methods[name.to_s] = {
+          :set => m_set, :cget => m_cget, :info => m_info
+        }
       }
-    }
+    else
+      # [m_set, m_cget, m_info] or method style
+      opts.each{|arg|
+        m_set, m_cget, m_info = _get_opt_method_list(arg)
+        @option_methods[m_set] = {
+          :set => m_set, :cget => m_cget, :info => m_info
+        }
+      }
+    end
   end
 
   def delegate_alias(alias_opt, option, *wins)
@@ -214,6 +232,14 @@ module TkComposite
     return None
   end
   private :__cget_delegates
+
+  def cget_tkstring(slot)
+    if (ret = __cget_delegates(slot)) == None
+      super(slot)
+    else
+      _get_eval_string(ret)
+    end
+  end
 
   def cget(slot)
     if (ret = __cget_delegates(slot)) == None
@@ -358,7 +384,7 @@ module TkComposite
             opt, wins = tbl[0]
             next unless wins && wins[-1]
             if slot == opt
-              info_list.delete_if{|i| i[0] == slot} << 
+              info_list.delete_if{|i| i[0] == slot} <<
                 wins[-1].configinfo(slot)
             else
               info = wins[-1].configinfo(opt)
@@ -367,7 +393,7 @@ module TkComposite
             end
           else
             opt, wins = tbl[-1]
-            info_list.delete_if{|i| i[0] == slot} << 
+            info_list.delete_if{|i| i[0] == slot} <<
               [slot, '', '', '', wins[-1].cget(opt)]
           end
         }

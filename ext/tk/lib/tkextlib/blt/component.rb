@@ -22,15 +22,15 @@ module Tk::BLT
       private :__item_numstrval_optkeys
 
       def __item_boolval_optkeys(id)
-        ['hide', 'under', 'descending', 'logscale', 'loose', 'showticks', 
-          'titlealternate', 'scalesymbols', 'minor', 'raised', 
+        ['hide', 'under', 'descending', 'logscale', 'loose', 'showticks',
+          'titlealternate', 'scalesymbols', 'minor', 'raised',
           'center', 'decoration', 'landscape', 'maxpect']
       end
       private :__item_boolval_optkeys
 
       def __item_strval_optkeys(id)
-        ['text', 'label', 'limits', 'title', 
-          'show', 'file', 'maskdata', 'maskfile', 
+        ['text', 'label', 'limits', 'title',
+          'show', 'file', 'maskdata', 'maskfile',
           'color', 'titlecolor', 'fill', 'outline', 'offdash']
       end
       private :__item_strval_optkeys
@@ -82,6 +82,9 @@ module Tk::BLT
     end
     private :__item_pathname
 
+    def axis_cget_tkstring(id, option)
+      ret = itemcget_tkstring(['axis', tagid(id)], option)
+    end
     def axis_cget(id, option)
       ret = itemcget(['axis', tagid(id)], option)
     end
@@ -94,7 +97,7 @@ module Tk::BLT
         value = None
         slot = _symbolkey2str(slot)
         if cmd = slot.delete('command')
-          slot['command'] = proc{|w, tick| 
+          slot['command'] = proc{|w, tick|
             cmd.call(TkComm.window(w), TkComm.num_or_str(tick))
           }
         end
@@ -103,7 +106,7 @@ module Tk::BLT
         slot = args.pop
         if slot == :command || slot == 'command'
           cmd = value
-          value = proc{|w, tick| 
+          value = proc{|w, tick|
             cmd.call(TkComm.window(w), TkComm.num_or_str(tick))
           }
         end
@@ -118,6 +121,9 @@ module Tk::BLT
       current_itemconfiginfo(['axis', tagid(id)], slot)
     end
 
+    def crosshairs_cget_tkstring(option)
+      itemcget_tkstring('crosshairs', option)
+    end
     def crosshairs_cget(option)
       itemcget('crosshairs', option)
     end
@@ -134,6 +140,9 @@ module Tk::BLT
       current_itemconfiginfo('crosshairs', slot)
     end
 
+    def element_cget_tkstring(id, option)
+      itemcget_tkstring(['element', tagid(id)], option)
+    end
     def element_cget(id, option)
       itemcget(['element', tagid(id)], option)
     end
@@ -158,6 +167,9 @@ module Tk::BLT
       current_itemconfiginfo(['element', tagid(id)], slot)
     end
 
+    def bar_cget_tkstring(id, option)
+      itemcget_tkstring(['bar', tagid(id)], option)
+    end
     def bar_cget(id, option)
       itemcget(['bar', tagid(id)], option)
     end
@@ -182,6 +194,9 @@ module Tk::BLT
       current_itemconfiginfo(['bar', tagid(id)], slot)
     end
 
+    def line_cget_tkstring(id, option)
+      itemcget_tkstring(['line', tagid(id)], option)
+    end
     def line_cget(id, option)
       itemcget(['line', tagid(id)], option)
     end
@@ -206,6 +221,9 @@ module Tk::BLT
       current_itemconfiginfo(['line', tagid(id)], slot)
     end
 
+    def gridline_cget_tkstring(option)
+      itemcget_tkstring('grid', option)
+    end
     def gridline_cget(option)
       itemcget('grid', option)
     end
@@ -222,6 +240,9 @@ module Tk::BLT
       current_itemconfiginfo('grid', slot)
     end
 
+    def legend_cget_tkstring(option)
+      itemcget_tkstring('legend', option)
+    end
     def legend_cget(option)
       itemcget('legend', option)
     end
@@ -238,6 +259,9 @@ module Tk::BLT
       current_itemconfiginfo('legend', slot)
     end
 
+    def pen_cget_tkstring(id, option)
+      itemcget_tkstring(['pen', tagid(id)], option)
+    end
     def pen_cget(id, option)
       itemcget(['pen', tagid(id)], option)
     end
@@ -262,6 +286,9 @@ module Tk::BLT
       current_itemconfiginfo(['pen', tagid(id)], slot)
     end
 
+    def postscript_cget_tkstring(option)
+      itemcget_tkstring('postscript', option)
+    end
     def postscript_cget(option)
       itemcget('postscript', option)
     end
@@ -278,6 +305,9 @@ module Tk::BLT
       current_itemconfiginfo('postscript', slot)
     end
 
+    def marker_cget_tkstring(id, option)
+      itemcget_tkstring(['marker', tagid(id)], option)
+    end
     def marker_cget(id, option)
       itemcget(['marker', tagid(id)], option)
     end
@@ -302,12 +332,16 @@ module Tk::BLT
       current_itemconfiginfo(['marker', tagid(id)], slot)
     end
 
+    alias __itemcget_tkstring itemcget_tkstring
     alias __itemcget itemcget
     alias __itemcget_strict itemcget_strict
     alias __itemconfiginfo itemconfiginfo
     alias __current_itemconfiginfo current_itemconfiginfo
-    private :__itemcget, :__itemconfiginfo, :__current_itemconfiginfo
+    private :__itemcget_tkstring, :__itemcget, :__itemconfiginfo, :__current_itemconfiginfo
 
+    def itemcget_tkstring(tagOrId, option)
+      __itemcget_tkstring(tagid(tagOrId), option)
+    end
     def itemcget_strict(tagOrId, option)
       ret = __itemcget(tagid(tagOrId), option)
       if option == 'bindtags' || option == :bindtags
@@ -373,13 +407,13 @@ module Tk::BLT
       ret
     end
 
-    private :itemcget, :itemcget_strict
+    private :itemcget_tkstring, :itemcget, :itemcget_strict
     private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
     #################
 
     class Axis < TkObject
-      (OBJ_ID = ['blt_chart_axis'.freeze, '00000'.taint]).instance_eval{
+      (OBJ_ID = ['blt_chart_axis'.freeze, TkUtil.untrust('00000')]).instance_eval{
         @mutex = Mutex.new
         def mutex; @mutex; end
         freeze
@@ -477,6 +511,9 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        @chart.axis_cget_tkstring(@id, option)
+      end
       def cget(option)
         @chart.axis_cget(@id, option)
       end
@@ -520,7 +557,7 @@ module Tk::BLT
       def name
         @axis
       end
-        
+
       def transform(val)
         @chart.axis_transform(@id, val)
       end
@@ -582,6 +619,9 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        @chart.crosshair_cget_tkstring(option)
+      end
       def cget(option)
         @chart.crosshair_cget(option)
       end
@@ -631,7 +671,7 @@ module Tk::BLT
         ElementID_TBL.mutex.synchronize{ ElementID_TBL.clear }
       }
 
-      (OBJ_ID = ['blt_chart_element'.freeze, '00000'.taint]).instance_eval{
+      (OBJ_ID = ['blt_chart_element'.freeze, TkUtil.untrust('00000')]).instance_eval{
         @mutex = Mutex.new
         def mutex; @mutex; end
         freeze
@@ -729,6 +769,10 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        # @chart.element_cget(@id, option)
+        @chart.__send__(@typename + '_cget_tkstring', @id, option)
+      end
       def cget(option)
         # @chart.element_cget(@id, option)
         @chart.__send__(@typename + '_cget', @id, option)
@@ -833,6 +877,9 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        @chart.gridline_cget_tkstring(option)
+      end
       def cget(option)
         @chart.gridline_cget(option)
       end
@@ -907,6 +954,9 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        @chart.legend_cget_tkstring(option)
+      end
       def cget(option)
         @chart.legend_cget(option)
       end
@@ -940,7 +990,7 @@ module Tk::BLT
     #################
 
     class Pen < TkObject
-      (OBJ_ID = ['blt_chart_pen'.freeze, '00000'.taint]).instance_eval{
+      (OBJ_ID = ['blt_chart_pen'.freeze, TkUtil.untrust('00000')]).instance_eval{
         @mutex = Mutex.new
         def mutex; @mutex; end
         freeze
@@ -1036,6 +1086,9 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        @chart.pen_cget_tkstring(@id, option)
+      end
       def cget(option)
         @chart.pen_cget(@id, option)
       end
@@ -1106,6 +1159,9 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        @chart.postscript_cget_tkstring(option)
+      end
       def cget(option)
         @chart.postscript_cget(option)
       end
@@ -1221,7 +1277,7 @@ module Tk::BLT
           fail RuntimeError, "#{self} is an abstract class"
         end
         args, fontkeys = _parse_create_args(keys)
-        idnum = tk_call_without_enc(chart.path, 'marker', 'create', 
+        idnum = tk_call_without_enc(chart.path, 'marker', 'create',
                                     self::MarkerTypeName, *args)
         chart.marker_configure(idnum, fontkeys) unless fontkeys.empty?
         idnum.to_i  # 'item id' is an integer number
@@ -1229,7 +1285,7 @@ module Tk::BLT
 
       def self.create_type(chart, type, keys={})
         args, fontkeys = _parse_create_args(keys)
-        idnum = tk_call_without_enc(chart.path, 'marker', 'create', 
+        idnum = tk_call_without_enc(chart.path, 'marker', 'create',
                                     type, *args)
         chart.marker_configure(idnum, fontkeys) unless fontkeys.empty?
         id = idnum.to_i  # 'item id' is an integer number
@@ -1269,6 +1325,9 @@ module Tk::BLT
         @id
       end
 
+      def cget_tkstring(option)
+        @chart.marker_cget_tkstring(@id, option)
+      end
       def cget(option)
         @chart.marker_cget(@id, option)
       end
@@ -1486,7 +1545,7 @@ module Tk::BLT
       list(tk_send('axis', 'limits', tagid(id)))
     end
     def axis_names(*pats)
-      simplelist(tk_send('axis', 'names', 
+      simplelist(tk_send('axis', 'names',
                          *(pats.collect{|pat| tagid(pat)}))).collect{|axis|
         Tk::BLT::PlotComponent::Axis.id2obj(self, axis)
       }
@@ -1500,11 +1559,11 @@ module Tk::BLT
     end
     def axis_use(id, target=nil)
       if target
-        Tk::BLT::PlotComponent::Axis.id2obj(self, 
-                                            tk_send('axis', 'use', 
+        Tk::BLT::PlotComponent::Axis.id2obj(self,
+                                            tk_send('axis', 'use',
                                                     tagid(id), tagid(target)))
       else
-        Tk::BLT::PlotComponent::Axis.id2obj(self, 
+        Tk::BLT::PlotComponent::Axis.id2obj(self,
                                             tk_send('axis', 'use', tagid(id)))
       end
     end
@@ -1544,10 +1603,10 @@ module Tk::BLT
     def element_closest(x, y, var, *args)
       if args[-1].kind_of?(Hash)
         keys = args.pop
-        bool(tk_send('element', 'closest', x, y, var, 
+        bool(tk_send('element', 'closest', x, y, var,
                      *(hash_kv(keys).concat(args.collect{|id| tagid(id)}))))
       else
-        bool(tk_send('element', 'closest', x, y, var, 
+        bool(tk_send('element', 'closest', x, y, var,
                      *(args.collect{|id| tagid(id)})))
       end
     end
@@ -1563,7 +1622,7 @@ module Tk::BLT
       bool(tk_send('element', 'exists', tagid(id)))
     end
     def element_names(*pats)
-      simplelist(tk_send('element', 'names', 
+      simplelist(tk_send('element', 'names',
                          *(pats.collect{|pat| tagid(pat)}))).collect{|elem|
         Tk::BLT::PlotComponent::Element.id2obj(self, elem)
       }
@@ -1601,10 +1660,10 @@ module Tk::BLT
     def bar_closest(x, y, var, *args)
       if args[-1].kind_of?(Hash)
         keys = args.pop
-        bool(tk_send('bar', 'closest', x, y, var, 
+        bool(tk_send('bar', 'closest', x, y, var,
                      *(hash_kv(keys).concat(args.collect{|id| tagid(id)}))))
       else
-        bool(tk_send('bar', 'closest', x, y, var, 
+        bool(tk_send('bar', 'closest', x, y, var,
                      *(args.collect{|id| tagid(id)})))
       end
     end
@@ -1620,7 +1679,7 @@ module Tk::BLT
       bool(tk_send('bar', 'exists', tagid(id)))
     end
     def bar_names(*pats)
-      simplelist(tk_send('bar', 'names', 
+      simplelist(tk_send('bar', 'names',
                          *(pats.collect{|pat| tagid(pat)}))).collect{|elem|
         Tk::BLT::PlotComponent::Element.id2obj(self, elem)
       }
@@ -1658,10 +1717,10 @@ module Tk::BLT
     def line_closest(x, y, var, *args)
       if args[-1].kind_of?(Hash)
         keys = args.pop
-        bool(tk_send('line', 'closest', x, y, var, 
+        bool(tk_send('line', 'closest', x, y, var,
                      *(hash_kv(keys).concat(args.collect{|id| tagid(id)}))))
       else
-        bool(tk_send('line', 'closest', x, y, var, 
+        bool(tk_send('line', 'closest', x, y, var,
                      *(args.collect{|id| tagid(id)})))
       end
     end
@@ -1677,7 +1736,7 @@ module Tk::BLT
       bool(tk_send('line', 'exists', tagid(id)))
     end
     def line_names(*pats)
-      simplelist(tk_send('line', 'names', 
+      simplelist(tk_send('line', 'names',
                          *(pats.collect{|pat| tagid(pat)}))).collect{|elem|
         Tk::BLT::PlotComponent::Element.id2obj(self, elem)
       }
@@ -1723,7 +1782,7 @@ module Tk::BLT
         keys.delete('without_creating')
       end
 
-      legend = self.class.new(parent, :without_creating=>true, 
+      legend = self.class.new(parent, :without_creating=>true,
                               :widgetname=>widgetname)
       class << legend
         def __destroy_hook__
@@ -1740,24 +1799,24 @@ module Tk::BLT
     end
 
     def legend_activate(*pats)
-      list(tk_send('legend', 'activate', 
+      list(tk_send('legend', 'activate',
                    *(pats.collect{|pat| tagid(pat)}))).collect{|elem|
         Tk::BLT::PlotComponent::Element.id2obj(self, elem)
       }
     end
     def legend_deactivate(*pats)
-      list(tk_send('legend', 'deactivate', 
+      list(tk_send('legend', 'deactivate',
                    *(pats.collect{|pat| tagid(pat)}))).collect{|elem|
         Tk::BLT::PlotComponent::Element.id2obj(self, elem)
       }
     end
     def legend_get(pos, y=nil)
       if y
-        Tk::BLT::PlotComponent::Element.id2obj(self, 
-                                               tk_send('legend', 'get', 
+        Tk::BLT::PlotComponent::Element.id2obj(self,
+                                               tk_send('legend', 'get',
                                                        _at(pos, y)))
       else
-        Tk::BLT::PlotComponent::Element.id2obj(self, 
+        Tk::BLT::PlotComponent::Element.id2obj(self,
                                                tk_send('legend', 'get', pos))
       end
     end
@@ -1773,7 +1832,7 @@ module Tk::BLT
       self
     end
     def pen_names(*pats)
-      simplelist(tk_send('pen', 'names', 
+      simplelist(tk_send('pen', 'names',
                          *(pats.collect{|pat| tagid(pat)}))).collect{|pen|
         Tk::BLT::PlotComponent::Pen.id2obj(self, pen)
       }
@@ -1843,7 +1902,7 @@ module Tk::BLT
       bool(tk_send('marker', 'exists', tagid(id)))
     end
     def marker_names(*pats)
-      simplelist(tk_send('marker', 'names', 
+      simplelist(tk_send('marker', 'names',
                          *(pats.collect{|pat| tagid(pat)}))).collect{|id|
         Tk::BLT::PlotComponent::Marker.id2obj(self, id)
       }
@@ -1854,6 +1913,9 @@ module Tk::BLT
 
     ###################
 
+    def xaxis_cget_tkstring(option)
+      itemcget_tkstring('xaxis', option)
+    end
     def xaxis_cget(option)
       itemcget('xaxis', option)
     end
@@ -1864,13 +1926,13 @@ module Tk::BLT
       if slot.kind_of?(Hash)
         slot = _symbolkey2str(slot)
         if cmd = slot.delete('command')
-          slot['command'] = proc{|w, tick| 
+          slot['command'] = proc{|w, tick|
             cmd.call(TkComm.window(w), TkComm.num_or_str(tick))
           }
         end
       elsif slot == :command || slot == 'command'
         cmd = value
-        value = proc{|w, tick| 
+        value = proc{|w, tick|
           cmd.call(TkComm.window(w), TkComm.num_or_str(tick))
         }
       end
@@ -1918,14 +1980,17 @@ module Tk::BLT
     end
     def xaxis_use(target=nil)
       if target
-        Tk::BLT::PlotComponent::Axis.id2obj(self, 
-                                            tk_send('xaxis', 'use', 
+        Tk::BLT::PlotComponent::Axis.id2obj(self,
+                                            tk_send('xaxis', 'use',
                                                     tagid(target)))
       else
         Tk::BLT::PlotComponent::Axis.id2obj(self, tk_send('xaxis', 'use'))
       end
     end
 
+    def x2axis_cget_tkstring(option)
+      itemcget_tkstring('x2axis', option)
+    end
     def x2axis_cget(option)
       itemcget('x2axis', option)
     end
@@ -1936,13 +2001,13 @@ module Tk::BLT
       if slot.kind_of?(Hash)
         slot = _symbolkey2str(slot)
         if cmd = slot.delete('command')
-          slot['command'] = proc{|w, tick| 
+          slot['command'] = proc{|w, tick|
             cmd.call(TkComm.window(w), TkComm.num_or_str(tick))
           }
         end
       elsif slot == :command || slot == 'command'
         cmd = value
-        value = proc{|w, tick| 
+        value = proc{|w, tick|
           cmd.call(TkComm.window(w), TkComm.num_or_str(tick))
         }
       end
@@ -1990,14 +2055,17 @@ module Tk::BLT
     end
     def x2axis_use(target=nil)
       if target
-        Tk::BLT::PlotComponent::Axis.id2obj(self, 
-                                            tk_send('x2axis', 'use', 
+        Tk::BLT::PlotComponent::Axis.id2obj(self,
+                                            tk_send('x2axis', 'use',
                                                     tagid(target)))
       else
         Tk::BLT::PlotComponent::Axis.id2obj(self, tk_send('x2axis', 'use'))
       end
     end
 
+    def yaxis_cget_tkstring(option)
+      itemcget_tkstring('yaxis', option)
+    end
     def yaxis_cget(option)
       itemcget('yaxis', option)
     end
@@ -2008,13 +2076,13 @@ module Tk::BLT
       if slot.kind_of?(Hash)
         slot = _symbolkey2str(slot)
         if cmd = slot.delete('command')
-          slot['command'] = proc{|w, tick| 
+          slot['command'] = proc{|w, tick|
             cmd.call(TkComm.window(w), TkComm.num_or_str(tick))
           }
         end
       elsif slot == :command || slot == 'command'
         cmd = value
-        value = proc{|w, tick| 
+        value = proc{|w, tick|
           cmd.call(TkComm.window(w), TkComm.num_or_str(tick))
         }
       end
@@ -2062,14 +2130,17 @@ module Tk::BLT
     end
     def yaxis_use(target=nil)
       if target
-        Tk::BLT::PlotComponent::Axis.id2obj(self, 
-                                            tk_send('yaxis', 'use', 
+        Tk::BLT::PlotComponent::Axis.id2obj(self,
+                                            tk_send('yaxis', 'use',
                                                     tagid(target)))
       else
         Tk::BLT::PlotComponent::Axis.id2obj(self, tk_send('yaxis', 'use'))
       end
     end
 
+    def y2axis_cget_tkstring(option)
+      itemcget_tkstring('y2axis', option)
+    end
     def y2axis_cget(option)
       itemcget('y2axis', option)
     end
@@ -2080,13 +2151,13 @@ module Tk::BLT
       if slot.kind_of?(Hash)
         slot = _symbolkey2str(slot)
         if cmd = slot.delete('command')
-          slot['command'] = proc{|w, tick| 
+          slot['command'] = proc{|w, tick|
             cmd.call(TkComm.window(w), TkComm.num_or_str(tick))
           }
         end
       elsif slot == :command || slot == 'command'
         cmd = value
-        value = proc{|w, tick| 
+        value = proc{|w, tick|
           cmd.call(TkComm.window(w), TkComm.num_or_str(tick))
         }
       end
@@ -2134,8 +2205,8 @@ module Tk::BLT
     end
     def y2axis_use(target=nil)
       if target
-        Tk::BLT::PlotComponent::Axis.id2obj(self, 
-                                            tk_send('y2axis', 'use', 
+        Tk::BLT::PlotComponent::Axis.id2obj(self,
+                                            tk_send('y2axis', 'use',
                                                     tagid(target)))
       else
         Tk::BLT::PlotComponent::Axis.id2obj(self, tk_send('y2axis', 'use'))

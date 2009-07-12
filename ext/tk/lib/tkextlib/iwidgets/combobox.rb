@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Combobox
   TkCommandNames = ['::iwidgets::combobox'.freeze].freeze
   WidgetClassName = 'Combobox'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __boolval_optkeys
     super() << 'completion' << 'dropdown' << 'editable' << 'unique'

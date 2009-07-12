@@ -8,7 +8,7 @@
 
 # toplevel widget
 if defined?($image2_demo) && $image2_demo
-  $image2_demo.destroy 
+  $image2_demo.destroy
   $image2_demo = nil
 end
 
@@ -87,13 +87,13 @@ TkFrame.new(base_frame){|w|
 
 }.pack('side'=>'top', 'anchor'=>'w')
 
-# image 
+# image
 [ TkFrame.new(base_frame, 'height'=>'3m', 'width'=>20),
   TkLabel.new(base_frame, 'text'=>'Image:'),
   TkLabel.new(base_frame, 'image'=>$image2a)
 ].each{|w| w.pack('side'=>'top', 'anchor'=>'w')}
 
-# 
+#
 def loadDir(w)
   w.delete(0,'end')
   Dir.glob([$dirName,'*'].join(File::Separator)).sort.each{|f|

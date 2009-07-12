@@ -2,7 +2,7 @@
 require 'tk'
 require 'tkextlib/blt'
 
-file = File.join(File.dirname(File.expand_path(__FILE__)), 
+file = File.join(File.dirname(File.expand_path(__FILE__)),
                  'images', 'qv100.t.gif')
 if File.exist?(file)
   src = TkPhotoImage.new(:file=>file)

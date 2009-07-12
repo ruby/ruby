@@ -7,8 +7,8 @@ mainloop = Thread.new{Tk.mainloop}
 #
 # Standard question message dialog used for confirmation.
 #
-md = Tk::Iwidgets::Messagedialog.new(:title=>'Message Dialog', 
-                                     :text=>'Are you sure ? ', 
+md = Tk::Iwidgets::Messagedialog.new(:title=>'Message Dialog',
+                                     :text=>'Are you sure ? ',
                                      :bitmap=>'questhead', :modality=>:global)
 
 md.buttonconfigure('OK', :text=>'Yes')
@@ -32,8 +32,8 @@ md.destroy
 #
 bmp = '@' + File.join(File.dirname(File.expand_path(__FILE__)), '../catalog_demo/images/text.xbm')
 
-cr = Tk::Iwidgets::Messagedialog.new(:title=>'Copyright', 
-                                     :bitmap=>bmp, :imagepos=>:n, 
+cr = Tk::Iwidgets::Messagedialog.new(:title=>'Copyright',
+                                     :bitmap=>bmp, :imagepos=>:n,
                                      :text=>"Copyright 200x XXX Corporation\nAll rights reserved")
 
 cr.hide('Cancel')

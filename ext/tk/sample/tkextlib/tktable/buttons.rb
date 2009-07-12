@@ -14,11 +14,11 @@ tab  = TkVariable.new_hash
 rows = 20
 cols = 20
 
-table = Tk::TkTable.new(:rows=>rows + 1, :cols=>cols + 1, 
-                        :variable=>tab, :titlerows=>1, :titlecols=>1, 
-                        :roworigin=>-1, :colorigin=>-1, 
-                        :colwidth=>4, :width=>8, :height=>8, 
-                        :cursor=>'top_left_arrow', :borderwidth=>2, 
+table = Tk::TkTable.new(:rows=>rows + 1, :cols=>cols + 1,
+                        :variable=>tab, :titlerows=>1, :titlecols=>1,
+                        :roworigin=>-1, :colorigin=>-1,
+                        :colwidth=>4, :width=>8, :height=>8,
+                        :cursor=>'top_left_arrow', :borderwidth=>2,
                         :flashmode=>false, :state=>:disabled)
 
 sx = table.xscrollbar(TkScrollbar.new)
@@ -67,7 +67,7 @@ table.bind('1', proc{|w, x, y|
   0.step(cols){|j|
     if i == 0
       tab[-1,j] = j
-    end 
+    end
     tab[i,j] = "OFF"
     table.tag_cell('OFF', "#{i},#{j}")
   }

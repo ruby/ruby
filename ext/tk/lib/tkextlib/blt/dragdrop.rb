@@ -15,7 +15,7 @@ module Tk::BLT
 
     class Token < TkWindow
       WidgetClassName = 'DragDropToken'.freeze
-      WidgetClassNames[WidgetClassName] = self
+      WidgetClassNames[WidgetClassName] ||= self
 
       def initialize(arg)
         if arg.kind_of?(Hash) # arg is a hash includes the widgetpath of token
@@ -55,6 +55,7 @@ module Tk::BLT
       private :__item_strval_optkeys
 
       undef itemcget
+      undef itemcget_tkstring
       private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
       def source_configure(win, slot, value=None)
@@ -77,7 +78,7 @@ module Tk::BLT
         ]
 
         PROC_TBL = [
-          [ ?w, TkComm.method(:window) ], 
+          [ ?w, TkComm.method(:window) ],
           nil
         ]
 
@@ -120,8 +121,8 @@ module Tk::BLT
         ]
 
         PROC_TBL = [
-          [ ?b, TkComm.method(:bool) ], 
-          [ ?w, TkComm.method(:window) ], 
+          [ ?b, TkComm.method(:bool) ],
+          [ ?w, TkComm.method(:window) ],
           nil
         ]
 
@@ -175,9 +176,9 @@ module Tk::BLT
       ]
 
       PROC_TBL = [
-        [ ?i, TkComm.method(:string) ], 
-        [ ?v, TkComm.method(:tk_tcl2ruby) ], 
-        [ ?w, TkComm.method(:window) ], 
+        [ ?i, TkComm.method(:string) ],
+        [ ?v, TkComm.method(:tk_tcl2ruby) ],
+        [ ?w, TkComm.method(:window) ],
         nil
       ]
 
@@ -203,14 +204,14 @@ module Tk::BLT
     end
 
     def self.source_handler(win, datatype, cmd=Proc.new, *args)
-      _bind_for_event_class(DnD_Handle, 
-                            ['::blt::drag&drop', 'source', win, 'handler'], 
+      _bind_for_event_class(DnD_Handle,
+                            ['::blt::drag&drop', 'source', win, 'handler'],
                             cmd, *args)
     end
 
     def self.target_handler(win, datatype, cmd=Proc.new, *args)
-      _bind_for_event_class(DnD_Handle, 
-                            ['::blt::drag&drop', 'target', win, 'handler'], 
+      _bind_for_event_class(DnD_Handle,
+                            ['::blt::drag&drop', 'target', win, 'handler'],
                             cmd, *args)
     end
 

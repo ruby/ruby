@@ -55,14 +55,14 @@ class PhotoCanvas < TkScrolledCanvas
 
 USAGE = <<EOT
 --- WHAT IS ---
-You can write comments on the loaded image, and save it as a Postscipt 
-file (original image file is not modified). Each comment is drawn as a 
-set of an indicator circle, an arrow, and a memo text. See the following 
+You can write comments on the loaded image, and save it as a Postscipt
+file (original image file is not modified). Each comment is drawn as a
+set of an indicator circle, an arrow, and a memo text. See the following
 how to write comments.
-This can save the list of memo texts to another file. It may useful to 
+This can save the list of memo texts to another file. It may useful to
 search the saved Postscript file by the comments on them.
-This may not support multibyte characters (multibyte texts are broken on 
-a Postscript file). It depends on features of canvas widgets of Tcl/Tk 
+This may not support multibyte characters (multibyte texts are broken on
+a Postscript file). It depends on features of canvas widgets of Tcl/Tk
 libraries linked your Ruby/Tk. If you use Tcl/Tk8.0-jp (Japanized Tcl/Tk),
 you can (possibly) get a Japanese Postscript file.
 
@@ -108,8 +108,8 @@ EOT
     @border = 2
     @selectborder = 1
     @delta = @border + @selectborder
-    @entry = TkEntry.new(self, :relief=>:ridge, :borderwidth=>@border, 
-                         :selectborderwidth=>@selectborder, 
+    @entry = TkEntry.new(self, :relief=>:ridge, :borderwidth=>@border,
+                         :selectborderwidth=>@selectborder,
                          :highlightthickness=>0)
     @entry.bind('Return'){@state.value = 0}
 
@@ -131,7 +131,7 @@ EOT
       x = w.canvasx(x)
       y = w.canvasy(y)
       tag = nil
-      w.find_overlapping(x - @overlap_d, y - @overlap_d, 
+      w.find_overlapping(x - @overlap_d, y - @overlap_d,
                          x + @overlap_d, y + @overlap_d).find{|item|
         ! (item.tags.find{|name|
              if name =~ /^(#{@memo_id_head}\d+)$/
@@ -161,8 +161,8 @@ EOT
   def _state1(x,y) # set center
     @mode = 1
 
-    @target = TkcOval.new(self, 
-                          [canvasx(x), canvasy(y)], [canvasx(x), canvasy(y)], 
+    @target = TkcOval.new(self,
+                          [canvasx(x), canvasy(y)], [canvasx(x), canvasy(y)],
                           :outline=>@col, :width=>3, :tags=>[@memo_id_tag])
     @items << @target
     @mark = [x,y]
@@ -175,16 +175,16 @@ EOT
     @mode = 2
 
     r = Integer(Math.sqrt((x-@mark[0])**2 + (y-@mark[1])**2))
-    @target.coords([canvasx(@mark[0] - r), canvasy(@mark[1] - r)], 
+    @target.coords([canvasx(@mark[0] - r), canvasy(@mark[1] - r)],
                    [canvasx(@mark[0] + r), canvasy(@mark[1] + r)])
   end
 
   def _state3(x,y) # set line start
     @mode = 3
 
-    @target = TkcLine.new(self, 
-                          [canvasx(x), canvasy(y)], [canvasx(x), canvasy(y)], 
-                          :arrow=>:first, :arrowshape=>[10, 14, 5], 
+    @target = TkcLine.new(self,
+                          [canvasx(x), canvasy(y)], [canvasx(x), canvasy(y)],
+                          :arrow=>:first, :arrowshape=>[10, 14, 5],
                           :fill=>@col, :tags=>[@memo_id_tag])
     @items << @target
     @mark = [x, y]
@@ -196,7 +196,7 @@ EOT
   def _state4(x,y) # create line
     @mode = 4
 
-    @target.coords([canvasx(@mark[0]), canvasy(@mark[1])], 
+    @target.coords([canvasx(@mark[0]), canvasy(@mark[1])],
                    [canvasx(x), canvasy(y)])
   end
 
@@ -232,8 +232,8 @@ EOT
     @entry.value = ''
     @entry.configure(:justify=>justify, :font=>@font, :foreground=>@col)
 
-    ewin = TkcWindow.new(self, [canvasx(x)+dx, canvasy(y)+dy], 
-                         :window=>@entry, :state=>:normal, :anchor=>anchor, 
+    ewin = TkcWindow.new(self, [canvasx(x)+dx, canvasy(y)+dy],
+                         :window=>@entry, :state=>:normal, :anchor=>anchor,
                          :tags=>[@memo_id_tag])
 
     @entry.focus
@@ -243,9 +243,9 @@ EOT
 
     ewin.delete
 
-    @target = TkcText.new(self, [canvasx(x), canvasy(y)], 
-                          :anchor=>anchor, :justify=>justify, 
-                          :fill=>@col, :font=>@font, :text=>@entry.value, 
+    @target = TkcText.new(self, [canvasx(x), canvasy(y)],
+                          :anchor=>anchor, :justify=>justify,
+                          :fill=>@col, :font=>@font, :text=>@entry.value,
                           :tags=>[@memo_id_tag])
 
     _state0()
@@ -305,9 +305,9 @@ def open_file(canvas, fname)
   end
 
   filetypes = [
-    ['GIF Files', '.gif'], 
-    ['GIF Files', [], 'GIFF'], 
-    ['PPM Files', '.ppm'], 
+    ['GIF Files', '.gif'],
+    ['GIF Files', [], 'GIFF'],
+    ['PPM Files', '.ppm'],
     ['PGM Files', '.pgm']
   ]
 
@@ -339,7 +339,7 @@ def open_file(canvas, fname)
   begin
     canvas.load_photo(fpath)
   rescue => e
-    Tk.messageBox(:icon=>'error', :type=>'ok', 
+    Tk.messageBox(:icon=>'error', :type=>'ok',
                   :message=>"Fail to read '#{fpath}'.\n#{e.message}")
   end
 
@@ -354,11 +354,11 @@ def save_memo(canvas, fname)
   initname = fname.value
   if initname != '-'
     initname = File.basename(initname, File.extname(initname))
-    fpath = Tk.getSaveFile(:filetypes=>[ ['Text Files', '.txt'], 
-                                         ['ALL Files', '*'] ], 
+    fpath = Tk.getSaveFile(:filetypes=>[ ['Text Files', '.txt'],
+                                         ['ALL Files', '*'] ],
                            :initialfile=>initname)
   else
-    fpath = Tk.getSaveFile(:filetypes=>[ ['Text Files', '.txt'], 
+    fpath = Tk.getSaveFile(:filetypes=>[ ['Text Files', '.txt'],
                                          ['ALL Files', '*'] ])
   end
   return if fpath.empty?
@@ -366,7 +366,7 @@ def save_memo(canvas, fname)
   begin
     fid = open(fpath, 'w')
   rescue => e
-    Tk.messageBox(:icon=>'error', :type=>'ok', 
+    Tk.messageBox(:icon=>'error', :type=>'ok',
                   :message=>"Fail to open '#{fname.value}'.\n#{e.message}")
   end
 
@@ -384,24 +384,24 @@ def ps_print(canvas, fname)
   initname = fname.value
   if initname != '-'
     initname = File.basename(initname, File.extname(initname))
-    fpath = Tk.getSaveFile(:filetypes=>[ ['Postscript Files', '.ps'], 
-                                         ['ALL Files', '*'] ], 
+    fpath = Tk.getSaveFile(:filetypes=>[ ['Postscript Files', '.ps'],
+                                         ['ALL Files', '*'] ],
                            :initialfile=>initname)
   else
-    fpath = Tk.getSaveFile(:filetypes=>[ ['Postscript Files', '.ps'], 
+    fpath = Tk.getSaveFile(:filetypes=>[ ['Postscript Files', '.ps'],
                                          ['ALL Files', '*'] ])
   end
   return if fpath.empty?
 
   bbox = canvas.bbox('all')
-  canvas.postscript(:file=>fpath, :x=>bbox[0], :y=>bbox[1], 
+  canvas.postscript(:file=>fpath, :x=>bbox[0], :y=>bbox[1],
                     :width=>bbox[2] - bbox[0], :height=>bbox[3] - bbox[1])
 end
 
 # --------------------------------
 def quit(canvas)
-  ret = Tk.messageBox(:icon=>'warning', :type=>'okcancel', 
-                      :default=>'cancel', 
+  ret = Tk.messageBox(:icon=>'warning', :type=>'okcancel',
+                      :default=>'cancel',
                       :message=>'Realy quit? ')
   exit if ret == 'ok'
 end
@@ -413,11 +413,11 @@ root = TkRoot.new(:title=>'Fig Memo')
 # create canvas frame
 canvas = PhotoCanvas.new(root).pack(:fill=>:both, :expand=>true)
 usage_frame = TkFrame.new(root, :relief=>:ridge, :borderwidth=>2)
-hide_btn = TkButton.new(usage_frame, :text=>'hide usage', 
-                        :font=>{:size=>8}, :pady=>1, 
+hide_btn = TkButton.new(usage_frame, :text=>'hide usage',
+                        :font=>{:size=>8}, :pady=>1,
                         :command=>proc{usage_frame.unpack})
 hide_btn.pack(:anchor=>'e', :padx=>5)
-usage = TkLabel.new(usage_frame, :text=>PhotoCanvas::USAGE, 
+usage = TkLabel.new(usage_frame, :text=>PhotoCanvas::USAGE,
                     :font=>'Helvetica 8', :justify=>:left).pack
 
 show_usage = proc{
@@ -426,20 +426,20 @@ show_usage = proc{
 
 fname = TkVariable.new('-')
 f = TkFrame.new(root, :relief=>:sunken, :borderwidth=>1).pack(:fill=>:x)
-label = TkLabel.new(f, :textvariable=>fname, 
-                    :font=>{:size=>-12, :weight=>:bold}, 
+label = TkLabel.new(f, :textvariable=>fname,
+                    :font=>{:size=>-12, :weight=>:bold},
                     :anchor=>'w').pack(:side=>:left, :fill=>:x, :padx=>10)
 
 # create menu
 mspec = [
-  [ ['File', 0], 
-    ['Show Usage',      proc{show_usage.call}, 5], 
-    '---', 
-    ['Open Image File', proc{open_file(canvas, fname)}, 0], 
-    ['Save Memo Texts', proc{save_memo(canvas, fname)}, 0], 
-    '---', 
-    ['Save Postscript', proc{ps_print(canvas, fname)}, 5], 
-    '---', 
+  [ ['File', 0],
+    ['Show Usage',      proc{show_usage.call}, 5],
+    '---',
+    ['Open Image File', proc{open_file(canvas, fname)}, 0],
+    ['Save Memo Texts', proc{save_memo(canvas, fname)}, 0],
+    '---',
+    ['Save Postscript', proc{ps_print(canvas, fname)}, 5],
+    '---',
     ['Quit', proc{quit(canvas)}, 0]
   ]
 ]

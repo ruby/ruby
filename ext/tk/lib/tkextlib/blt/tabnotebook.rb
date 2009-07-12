@@ -11,7 +11,7 @@ module Tk::BLT
   class Tabnotebook < Tabset
     TkCommandNames = ['::blt::tabnotebook'.freeze].freeze
     WidgetClassName = 'Tabnotebook'.freeze
-    WidgetClassNames[WidgetClassName] = self
+    WidgetClassNames[WidgetClassName] ||= self
 
     class Tab < Tk::BLT::Tabset::Tab
       def self.new(parent, pos=nil, name=nil, keys={})
@@ -99,7 +99,7 @@ module Tk::BLT
         pos = nil
       end
       pos = 'end' if pos.nil?
-      Tk::BLT::Tabnotebook::Tab.new(self, nil, 
+      Tk::BLT::Tabnotebook::Tab.new(self, nil,
                                     tk_send('insert', tagindex(pos), keys))
 
     end

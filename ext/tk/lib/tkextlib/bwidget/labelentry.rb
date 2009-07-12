@@ -21,7 +21,7 @@ class Tk::BWidget::LabelEntry
 
   TkCommandNames = ['LabelEntry'.freeze].freeze
   WidgetClassName = 'LabelEntry'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'helptext' << 'insertbackground' << 'entryfg' << 'entrybg'

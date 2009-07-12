@@ -17,9 +17,6 @@ module Tk
   end
 end
 
-Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Scale, :TkScale)
-
-
 class Tk::Tile::TScale < Tk::Scale
   include Tk::Tile::TileWidget
 
@@ -29,11 +26,13 @@ class Tk::Tile::TScale < Tk::Scale
     TkCommandNames = ['::tscale'.freeze].freeze
   end
   WidgetClassName = 'TScale'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.style(*args)
     [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
   end
+
+  alias identify ttk_identify
 end
 
 class Tk::Tile::TProgress < Tk::Tile::TScale
@@ -45,9 +44,13 @@ class Tk::Tile::TProgress < Tk::Tile::TScale
     TkCommandNames = ['::tprogress'.freeze].freeze
   end
   WidgetClassName = 'TProgress'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def self.style(*args)
     [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
   end
 end
+
+#Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Scale, :TkScale)
+Tk.__set_loaded_toplevel_aliases__('tkextlib/tile/tscale.rb',
+                                   :Ttk, Tk::Tile::Scale, :TkScale)

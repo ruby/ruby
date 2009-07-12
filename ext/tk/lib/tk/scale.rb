@@ -6,7 +6,7 @@ require 'tk'
 class Tk::Scale<TkWindow
   TkCommandNames = ['scale'.freeze].freeze
   WidgetClassName = 'Scale'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def create_self(keys)
     if keys and keys != None
@@ -16,11 +16,11 @@ class Tk::Scale<TkWindow
       end
       unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
         #tk_call_without_enc('scale', @path, *hash_kv(keys, true))
-        tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+        tk_call_without_enc(self.class::TkCommandNames[0], @path,
                             *hash_kv(keys, true))
       else
         begin
-          tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+          tk_call_without_enc(self.class::TkCommandNames[0], @path,
                               *hash_kv(keys, true))
         rescue
           tk_call_without_enc(self.class::TkCommandNames[0], @path)
@@ -33,7 +33,7 @@ class Tk::Scale<TkWindow
               configure(keys)
             else
               # re-create widget
-              tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+              tk_call_without_enc(self.class::TkCommandNames[0], @path,
                                   *hash_kv(keys, true))
             end
           end
@@ -69,7 +69,7 @@ class Tk::Scale<TkWindow
   def configure(slot, value=None)
     if (slot == 'command' || slot == :command)
       configure('command'=>value)
-    elsif slot.kind_of?(Hash) && 
+    elsif slot.kind_of?(Hash) &&
         (slot.key?('command') || slot.key?(:command))
       slot = _symbolkey2str(slot)
       slot['command'] = _wrap_command_arg(slot.delete('command'))
@@ -108,4 +108,5 @@ class Tk::Scale<TkWindow
 end
 
 #TkScale = Tk::Scale unless Object.const_defined? :TkScale
-Tk.__set_toplevel_aliases__(:Tk, Tk::Scale, :TkScale)
+#Tk.__set_toplevel_aliases__(:Tk, Tk::Scale, :TkScale)
+Tk.__set_loaded_toplevel_aliases__('tk/scale.rb', :Tk, Tk::Scale, :TkScale)

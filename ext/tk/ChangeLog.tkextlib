@@ -1,3 +1,17 @@
+2009-07-12  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/*: update release.
+	     Tcllib 1.8/Tklib 0.4.1  ==>  Tcllib 1.11.1/Tklib 0.5
+	     BWidgets 1.7            ==>  BWidgets 1.8
+	     TkTable 2.9             ==>  TkTable 2.10
+	     TkTreeCtrl 2005-12-02   ==>  TkTreeCtrl 2.2.9
+	     Tile 0.8.0/8.5.1        ==>  Tile 0.8.3/8.6b1
+	     IncrTcl 2005-02-14      ==>  IncrTcl 2008-12-15
+	     TclX 2005-02-07         ==>  TclX 2008-12-15
+	     Trofs 0.4.3             ==>  Trofs 0.4.4
+
+--------------< ... some bug fixes ... >------------------
+
 Tue Nov 25 03:37:42 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/blt/tabset.rb, 

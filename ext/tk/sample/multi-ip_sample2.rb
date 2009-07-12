@@ -14,7 +14,7 @@ cmd = proc{|s|
   sleep s
   TkButton.new(:text=>'b2: p $SAFE', :command=>proc{p $SAFE}).pack(:fill=>:x)
   sleep s
-  TkButton.new(:text=>'b3: p MultiTkIp.ip_name', 
+  TkButton.new(:text=>'b3: p MultiTkIp.ip_name',
                :command=>proc{p MultiTkIp.ip_name}).pack(:fill=>:x)
   sleep s
   TkButton.new(:text=>'EXIT', :command=>proc{exit}).pack(:fill=>:x)

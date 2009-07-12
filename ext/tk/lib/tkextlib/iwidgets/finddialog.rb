@@ -16,11 +16,11 @@ end
 class Tk::Iwidgets::Finddialog
   TkCommandNames = ['::iwidgets::finddialog'.freeze].freeze
   WidgetClassName = 'Finddialog'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() + [
-      'patternbackground', 'patternforeground', 
+      'patternbackground', 'patternforeground',
       'searchbackground', 'searchforeground'
     ]
   end

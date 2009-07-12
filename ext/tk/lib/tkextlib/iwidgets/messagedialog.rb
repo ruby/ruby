@@ -16,5 +16,5 @@ end
 class Tk::Iwidgets::Messagedialog
   TkCommandNames = ['::iwidgets::messagedialog'.freeze].freeze
   WidgetClassName = 'Messagedialog'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 end

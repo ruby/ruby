@@ -17,10 +17,10 @@ end
 class Tk::BWidget::PasswdDlg
   TkCommandNames = ['PasswdDlg'.freeze].freeze
   WidgetClassName = 'PasswdDlg'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
-    super() << 'loginhelptext' << 'loginlabel' << 'logintext' << 
+    super() << 'loginhelptext' << 'loginlabel' << 'logintext' <<
       'passwdlabel' << 'passwdtext'
   end
   private :__strval_optkeys
@@ -31,13 +31,13 @@ class Tk::BWidget::PasswdDlg
   private :__boolval_optkeys
 
   def __tkvariable_optkeys
-    super() << 'loginhelpvar' << 'logintextvariable' << 
+    super() << 'loginhelpvar' << 'logintextvariable' <<
       'passwdhelpvar' << 'passwdtextvariable'
   end
   private :__tkvariable_optkeys
 
   def create
-    login, passwd = simplelist(tk_call(self.class::TkCommandNames[0], 
+    login, passwd = simplelist(tk_call(self.class::TkCommandNames[0],
                                        @path, *hash_kv(@keys)))
     [login, passwd]
   end

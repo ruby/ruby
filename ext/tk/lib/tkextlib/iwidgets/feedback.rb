@@ -16,7 +16,7 @@ end
 class Tk::Iwidgets::Feedback
   TkCommandNames = ['::iwidgets::feedback'.freeze].freeze
   WidgetClassName = 'Feedback'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def __strval_optkeys
     super() << 'barcolor'

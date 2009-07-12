@@ -21,7 +21,7 @@ def optionMenu(menubutton, varName, firstValue, *rest)
   for i in rest
     menu.add 'radio', 'label'=>i, 'variable'=>varName
   end
-  
+
   return menu
 end
 
@@ -188,7 +188,7 @@ msg.pack('side'=>'top', 'padx'=>25, 'pady'=>25)
 TkFrame.new(center) {|f|
   menubuttonoptions = TkVariable.new
   mbutton = TkMenubutton.new(f)
-  options = optionMenu(mbutton, menubuttonoptions, 
+  options = optionMenu(mbutton, menubuttonoptions,
                        'one', 'two', 'three')
   mbutton.pack('side'=>'left', 'padx'=>25, 'pady'=>25)
   paletteColor = TkVariable.new

@@ -8,7 +8,7 @@ top = TkFrame.new(root) {
 }
 msg = TkMessage.new(top) {
   text "File main.c hasn't been saved to disk since \
-it was last modified.  What should I do?" 
+it was last modified.  What should I do?"
   justify 'center'
   aspect 200
   font '-Adobe-helvetica-medium-r-normal--*-240*'

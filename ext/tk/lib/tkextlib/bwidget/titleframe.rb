@@ -17,7 +17,7 @@ end
 class Tk::BWidget::TitleFrame
   TkCommandNames = ['TitleFrame'.freeze].freeze
   WidgetClassName = 'TitleFrame'.freeze
-  WidgetClassNames[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] ||= self
 
   def get_frame(&b)
     win = window(tk_send_without_enc('getframe'))

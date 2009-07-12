@@ -21,16 +21,16 @@ class << Tk::Tile::Style
     TkCommandNames = ['style'.freeze].freeze
 
     # --- Tk::Tile::Style.__define_wrapper_proc_for_compatibility__! ---
-    # On Ttk (Tile) extension, 'style' command has imcompatible changes 
-    # depend on the version of the extention. It requires modifying the 
-    # Tcl/Tk scripts to define local styles. The rule for modification 
-    # is a simple one. But, if users want to keep compatibility between 
-    # versions of the extension, they will have to contrive to do that. 
+    # On Ttk (Tile) extension, 'style' command has imcompatible changes
+    # depend on the version of the extention. It requires modifying the
+    # Tcl/Tk scripts to define local styles. The rule for modification
+    # is a simple one. But, if users want to keep compatibility between
+    # versions of the extension, they will have to contrive to do that.
     # It may be troublesome, especially for Ruby/Tk users.
-    # This method may help such work. This method make some definitions 
-    # on the Tcl/Tk interpreter to work with different version of style 
-    # command format. Please give attention to use this method. It may 
-    # conflict with some definitions on Tcl/Tk scripts. 
+    # This method may help such work. This method make some definitions
+    # on the Tcl/Tk interpreter to work with different version of style
+    # command format. Please give attention to use this method. It may
+    # conflict with some definitions on Tcl/Tk scripts.
     if Tk::Tile::TILE_SPEC_VERSION_ID < 7
       def __define_wrapper_proc_for_compatibility__!
         __define_themes_and_setTheme_proc__!
@@ -210,7 +210,7 @@ class << Tk::Tile::Style
   end
 
   def lookup(style, opt, state=None, fallback_value=None)
-    tk_call(TkCommandNames[0], 'lookup', style, 
+    tk_call(TkCommandNames[0], 'lookup', style,
             '-' << opt.to_s, state, fallback_value)
   end
 
@@ -233,6 +233,8 @@ class << Tk::Tile::Style
   def element_create(name, type, *args)
     if type == 'image' || type == :image
       element_create_image(name, *args)
+    elsif type == 'vsapi' || type == :vsapi
+      element_create_vsapi(name, *args)
     else
       tk_call(TkCommandNames[0], 'element', 'create', name, type, *args)
     end
@@ -253,7 +255,7 @@ class << Tk::Tile::Style
       # probably, command format is tile 0.8+ (Tcl/Tk8.5+) style
       if Tk::Tile::TILE_SPEC_VERSION_ID >= 8
         if opts
-          tk_call(TkCommandNames[0], 
+          tk_call(TkCommandNames[0],
                   'element', 'create', name, 'image', spec, opts)
         else
           tk_call(TkCommandNames[0], 'element', 'create', name, 'image', spec)
@@ -262,7 +264,7 @@ class << Tk::Tile::Style
         fail ArgumentError, 'illegal arguments' if opts.key?('map')
         base = spec.shift
         opts['map'] = spec
-        tk_call(TkCommandNames[0], 
+        tk_call(TkCommandNames[0],
                 'element', 'create', name, 'image', base, opts)
       end
     else
@@ -271,12 +273,30 @@ class << Tk::Tile::Style
         spec = [spec, *(opts.delete('map'))] if opts.key?('map')
       end
       if opts
-        tk_call(TkCommandNames[0], 
+        tk_call(TkCommandNames[0],
                 'element', 'create', name, 'image', spec, opts)
       else
         tk_call(TkCommandNames[0], 'element', 'create', name, 'image', spec)
       end
     end
+  end
+
+  def element_create_vsapi(name, class_name, part_id, *args)
+    # supported on Tcl/Tk 8.6 or later
+
+    # argument check
+    if (state_map = args.shift || None)
+      if state_map.kind_of?(Hash)
+        opts = _symbolkey2str(state_map)
+        state_map = None
+      end
+    end
+    opts = args.shift || None
+    fail ArgumentError, "too many arguments" unless args.empty?
+
+    # define a Microsoft Visual Styles element
+    tk_call(TkCommandNames[0], 'element', 'create', name, 'vsapi', 
+            class_name, part_id, state_map, opts)
   end
 
   def element_names()

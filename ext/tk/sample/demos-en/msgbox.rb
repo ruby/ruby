@@ -7,7 +7,7 @@
 
 # toplevel widget
 if defined?($msgbox_demo) && $msgbox_demo
-  $msgbox_demo.destroy 
+  $msgbox_demo.destroy
   $msgbox_demo = nil
 end
 
@@ -49,9 +49,9 @@ TkFrame.new(base_frame) {|frame|
 # frame
 $msgbox_leftframe  = TkFrame.new(base_frame)
 $msgbox_rightframe = TkFrame.new(base_frame)
-$msgbox_leftframe .pack('side'=>'left', 'expand'=>'yes', 'fill'=>'y', 
+$msgbox_leftframe .pack('side'=>'left', 'expand'=>'yes', 'fill'=>'y',
                         'pady'=>'.5c', 'padx'=>'.5c')
-$msgbox_rightframe.pack('side'=>'left', 'expand'=>'yes', 'fill'=>'y', 
+$msgbox_rightframe.pack('side'=>'left', 'expand'=>'yes', 'fill'=>'y',
                         'pady'=>'.5c', 'padx'=>'.5c')
 
 TkLabel.new($msgbox_leftframe, 'text'=>'Icon').pack('side'=>'top')
@@ -60,9 +60,9 @@ TkFrame.new($msgbox_leftframe, 'relief'=>'ridge', 'bd'=>1, 'height'=>2)\
 
 $msgboxIcon = TkVariable.new('info')
 ['error', 'info', 'question', 'warning'].each {|icon|
-  TkRadioButton.new($msgbox_leftframe, 'text'=>icon, 'variable'=>$msgboxIcon, 
-                    'relief'=>'flat', 'value'=>icon, 'width'=>16, 
-                    'anchor'=>'w').pack('side'=>'top', 'pady'=>2, 
+  TkRadioButton.new($msgbox_leftframe, 'text'=>icon, 'variable'=>$msgboxIcon,
+                    'relief'=>'flat', 'value'=>icon, 'width'=>16,
+                    'anchor'=>'w').pack('side'=>'top', 'pady'=>2,
                                         'anchor'=>'w', 'fill'=>'x')
 }
 
@@ -71,20 +71,20 @@ TkFrame.new($msgbox_rightframe, 'relief'=>'ridge', 'bd'=>1, 'height'=>2)\
 .pack('side'=>'top', 'fill'=>'x', 'expand'=>'no')
 
 $msgboxType = TkVariable.new('ok')
-['abortretryignore', 'ok', 'okcancel', 
+['abortretryignore', 'ok', 'okcancel',
   'retrycancel', 'yesno', 'yesnocancel'].each {|type|
-  TkRadioButton.new($msgbox_rightframe, 'text'=>type, 'variable'=>$msgboxType, 
-                    'relief'=>'flat', 'value'=>type, 'width'=>16, 
-                    'anchor'=>'w').pack('side'=>'top', 'pady'=>2, 
+  TkRadioButton.new($msgbox_rightframe, 'text'=>type, 'variable'=>$msgboxType,
+                    'relief'=>'flat', 'value'=>type, 'width'=>16,
+                    'anchor'=>'w').pack('side'=>'top', 'pady'=>2,
                                         'anchor'=>'w', 'fill'=>'x')
 }
 
 def showMessageBox(w)
-  button = Tk.messageBox('icon'=>$msgboxIcon.value, 'type'=>$msgboxType.value, 
+  button = Tk.messageBox('icon'=>$msgboxIcon.value, 'type'=>$msgboxType.value,
                          'title'=>'Message', 'parent'=>w,
                          'message'=>"This is a \"#{$msgboxType.value}\" type messagebox with the \"#{$msgboxIcon.value}\" icon")
 
-  Tk.messageBox('icon'=>'info', 'type'=>'ok', 'parent'=>w, 
+  Tk.messageBox('icon'=>'info', 'type'=>'ok', 'parent'=>w,
                 'message'=>"You have selected  \"#{button}\"")
 end
 
