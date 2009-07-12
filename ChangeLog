@@ -1,3 +1,12 @@
+Tue Jun 30 17:44:24 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (reg_match_pos): adjust offset based on characters, not
+	  bytes.  [ruby-dev:38722]
+
+	* string.c (rb_str_offset): new function.
+
+	* string.c (rb_str_index_m): no call to rb_reg_adjust_startpos().
+
 Tue Jun 30 16:48:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/compile_prelude.rb: use US-ASCII name.
