@@ -6236,7 +6236,7 @@ argf_next_argv(VALUE argf)
 		}
 		ARGF.current_file = prep_io(fr, FMODE_READABLE, rb_cFile, fn);
 	    }
-	    if (ARGF.binmode) rb_io_binmode(ARGF.current_file);
+	    if (ARGF.binmode) rb_io_ascii8bit_binmode(ARGF.current_file);
 	    if (ARGF.encs.enc) {
 		rb_io_t *fptr;
 
@@ -8279,7 +8279,8 @@ argf_binmode_m(VALUE argf)
     ARGF.binmode = 1;
     next_argv();
     ARGF_FORWARD(0, 0);
-    rb_io_binmode(ARGF.current_file);
+    rb_io_ascii8bit_binmode(ARGF.current_file);
+
     return argf;
 }
 
