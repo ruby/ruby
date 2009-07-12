@@ -1,3 +1,8 @@
+Mon Jun 29 17:14:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): should copy original encoding.
+	  [ruby-dev:38612]
+
 Sat Jun 27 03:09:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (argf_rewind): need to rewind $. and ARGF.lineno.
