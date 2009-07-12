@@ -1,3 +1,8 @@
+Sun Jul  5 08:08:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_yield_setup_block_args): restores the firs
+	  arg where is overwritten at funcall.  [ruby-core:24139]
+
 Fri Jul  3 19:48:40 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: undef-ed shome methods.  [ruby-core:24110]

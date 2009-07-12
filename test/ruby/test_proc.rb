@@ -673,4 +673,30 @@ class TestProc < Test::Unit::TestCase
     }.call(1,2,3,4,5)
     assert_equal([1,2,[3],4,5], r, "[ruby-core:19485]")
   end
+
+  def test_to_s
+    assert_match(/^#<Proc:0x\h+@#{ Regexp.quote(__FILE__) }:\d+>$/, proc {}.to_s)
+    assert_match(/^#<Proc:0x\h+@#{ Regexp.quote(__FILE__) }:\d+ \(lambda\)>$/, lambda {}.to_s)
+    assert_match(/^#<Proc:0x\h+ \(lambda\)>$/, method(:p).to_proc.to_s)
+    x = proc {}
+    x.taint
+    assert(x.to_s.tainted?)
+  end
+
+  def source_location_test
+    __LINE__
+  end
+
+  def test_source_location
+    file, lineno = method(:source_location_test).source_location
+    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
+    assert_equal(source_location_test - 1, lineno)
+  end
+
+  def test_splat_without_respond_to
+    def (obj = Object.new).respond_to?(m); false end
+    [obj].each do |a, b|
+      assert_equal([obj, nil], [a, b], '[ruby-core:24139]')
+    end
+  end
 end
