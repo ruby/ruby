@@ -607,23 +607,23 @@ enum_group_by(VALUE obj)
 }
 
 static VALUE
-first_i(VALUE i, VALUE *ary, int argc, VALUE *argv)
+first_i(VALUE i, VALUE *params, int argc, VALUE *argv)
 {
     ENUM_WANT_SVALUE();
 
-    if (NIL_P(ary[0])) {
-	ary[1] = i;
+    if (NIL_P(params[1])) {
+	params[1] = i;
 	rb_iter_break();
     }
     else {
-	long n = ary[0];
+	long n = params[0];
 
-	rb_ary_push(ary[1], i);
+	rb_ary_push(params[1], i);
 	n--;
 	if (n <= 0) {
 	    rb_iter_break();
 	}
-	ary[0] = n;
+	params[0] = n;
     }
     return Qnil;
 }
@@ -642,10 +642,10 @@ first_i(VALUE i, VALUE *ary, int argc, VALUE *argv)
 static VALUE
 enum_first(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE n, ary[2];
+    VALUE n, params[2];
 
     if (argc == 0) {
-	ary[0] = ary[1] = Qnil;
+	params[0] = params[1] = Qnil;
     }
     else {
 	long len;
@@ -653,12 +653,12 @@ enum_first(int argc, VALUE *argv, VALUE obj)
 	rb_scan_args(argc, argv, "01", &n);
 	len = NUM2LONG(n);
 	if (len == 0) return rb_ary_new2(0);
-	ary[0] = len;
-	ary[1] = rb_ary_new2(len);
+	params[0] = len;
+	params[1] = rb_ary_new2(len);
     }
-    rb_block_call(obj, id_each, 0, 0, first_i, (VALUE)ary);
+    rb_block_call(obj, id_each, 0, 0, first_i, (VALUE)params);
 
-    return ary[1];
+    return params[1];
 }
 
 
