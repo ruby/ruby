@@ -1,3 +1,7 @@
+Thu Jul  2 07:53:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): fixed wrong variable.
+
 Tue Jun 30 18:19:07 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_hash): documentation fix.  a patch from

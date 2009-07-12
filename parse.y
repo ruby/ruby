@@ -7056,7 +7056,7 @@ parser_yylex(struct parser_params *parser)
 		    }
 		    else {
 			int c0 = nextc();
-			if (c == -1 || !ISDIGIT(c0)) {
+			if (c0 == -1 || !ISDIGIT(c0)) {
 			    pushback(c0);
 			    goto decode_num;
 			}
