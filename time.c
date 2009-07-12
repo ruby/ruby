@@ -1499,21 +1499,16 @@ time_timespec(VALUE num, int interval)
 	    double f, d;
 
 	    d = modf(RFLOAT_VALUE(num), &f);
-            if (d < 0) {
-                d += 1;
-                f -= 1;
-            }
+	    if (d >= 0) {
+		t.tv_nsec = (int)(d*1e9+0.5);
+	    }
+	    else if ((t.tv_nsec = (int)(-d*1e9+0.5)) > 0) {
+		t.tv_nsec = 1000000000 - t.tv_nsec;
+		f -= 1;
+	    }
 	    t.tv_sec = (time_t)f;
 	    if (f != t.tv_sec) {
 		rb_raise(rb_eRangeError, "%f out of Time range", RFLOAT_VALUE(num));
-	    }
-	    t.tv_nsec = (int)(d*1e9+0.5);
-	    if (t.tv_nsec >= 1000000000) {
-		t.tv_nsec -= 1000000000;
-		if (++t.tv_sec <= 0) {
-		    --t.tv_nsec;
-		    t.tv_nsec = 999999999;
-		}
 	    }
 	}
 	break;

@@ -1,3 +1,7 @@
+Mon Jul 13 01:18:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_timespec): rounds subsecond toward zero.
+
 Sun Jul 12 23:51:39 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* hash.c (env_str_new): use rb_locale_str_new instead of
