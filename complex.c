@@ -195,8 +195,18 @@ f_negative_p(VALUE x)
 inline static VALUE
 f_zero_p(VALUE x)
 {
-    if (FIXNUM_P(x))
+    switch (TYPE(x)) {
+      case T_FIXNUM:
 	return f_boolcast(FIX2LONG(x) == 0);
+      case T_BIGNUM:
+	return Qfalse;
+      case T_RATIONAL:
+      {
+	  VALUE num = RRATIONAL(x)->num;
+
+	  return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 0);
+      }
+    }
     return rb_funcall(x, id_eqeq_p, 1, ZERO);
 }
 
@@ -205,8 +215,20 @@ f_zero_p(VALUE x)
 inline static VALUE
 f_one_p(VALUE x)
 {
-    if (FIXNUM_P(x))
+    switch (TYPE(x)) {
+      case T_FIXNUM:
 	return f_boolcast(FIX2LONG(x) == 1);
+      case T_BIGNUM:
+	return Qfalse;
+      case T_RATIONAL:
+      {
+	  VALUE num = RRATIONAL(x)->num;
+	  VALUE den = RRATIONAL(x)->den;
+
+	  return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 1 &&
+			    FIXNUM_P(den) && FIX2LONG(den) == 1);
+      }
+    }
     return rb_funcall(x, id_eqeq_p, 1, ONE);
 }
 
@@ -860,27 +882,33 @@ nucomp_expt(VALUE self, VALUE other)
     }
     if (k_fixnum_p(other)) {
 	if (f_gt_p(other, ZERO)) {
-	    VALUE x, z, n;
+	    VALUE x, z;
+	    long n;
 
 	    x = self;
 	    z = x;
-	    n = f_sub(other, ONE);
+	    n = FIX2LONG(other) - 1;
 
-	    while (f_nonzero_p(n)) {
-		VALUE a;
+	    while (n) {
+		long q, r;
 
-		while (a = f_divmod(n, TWO),
-		       f_zero_p(RARRAY_PTR(a)[1])) {
+		while (1) {
 		    get_dat1(x);
+
+		    q = n / 2;
+		    r = n % 2;
+
+		    if (r)
+			break;
 
 		    x = f_complex_new2(CLASS_OF(self),
 				       f_sub(f_mul(dat->real, dat->real),
 					     f_mul(dat->imag, dat->imag)),
 				       f_mul(f_mul(TWO, dat->real), dat->imag));
-		    n = RARRAY_PTR(a)[0];
+		    n = q;
 		}
 		z = f_mul(z, x);
-		n = f_sub(n, ONE);
+		n--;
 	    }
 	    return z;
 	}

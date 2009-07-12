@@ -166,8 +166,18 @@ f_negative_p(VALUE x)
 inline static VALUE
 f_zero_p(VALUE x)
 {
-    if (FIXNUM_P(x))
+    switch (TYPE(x)) {
+      case T_FIXNUM:
 	return f_boolcast(FIX2LONG(x) == 0);
+      case T_BIGNUM:
+	return Qfalse;
+      case T_RATIONAL:
+      {
+	  VALUE num = RRATIONAL(x)->num;
+
+	  return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 0);
+      }
+    }
     return rb_funcall(x, id_eqeq_p, 1, ZERO);
 }
 
@@ -176,8 +186,20 @@ f_zero_p(VALUE x)
 inline static VALUE
 f_one_p(VALUE x)
 {
-    if (FIXNUM_P(x))
+    switch (TYPE(x)) {
+      case T_FIXNUM:
 	return f_boolcast(FIX2LONG(x) == 1);
+      case T_BIGNUM:
+	return Qfalse;
+      case T_RATIONAL:
+      {
+	  VALUE num = RRATIONAL(x)->num;
+	  VALUE den = RRATIONAL(x)->den;
+
+	  return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 1 &&
+			    FIXNUM_P(den) && FIX2LONG(den) == 1);
+      }
+    }
     return rb_funcall(x, id_eqeq_p, 1, ONE);
 }
 
@@ -845,6 +867,10 @@ nurat_div(VALUE self, VALUE other)
 	    rb_raise_zerodiv();
 	{
 	    get_dat2(self, other);
+
+	    if (f_one_p(self))
+		return f_rational_new_no_reduce2(CLASS_OF(self),
+						 bdat->den, bdat->num);
 
 	    return f_muldiv(self,
 			    adat->num, adat->den,

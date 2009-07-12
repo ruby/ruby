@@ -1,3 +1,9 @@
+Sun Jul 12 23:56:40 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: added some shortcuts.
+
+	* rational.c: ditto.
+
 Sun Jul 12 23:30:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_to_integer, rb_check_to_integer): return Bignum
