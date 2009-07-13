@@ -1,3 +1,8 @@
+Sun Jul  5 14:04:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_threadptr_exec_event_hooks): new function to
+	  execute event hooks, with preserving errinfo.  [ruby-core:24118]
+
 Sun Jul  5 08:08:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_yield_setup_block_args): restores the firs

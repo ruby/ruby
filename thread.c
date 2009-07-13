@@ -3484,6 +3484,32 @@ set_threads_event_flags(int flag)
     st_foreach(GET_VM()->living_threads, set_threads_event_flags_i, (st_data_t) flag);
 }
 
+static inline void
+exec_event_hooks(const rb_event_hook_t *hook, rb_event_flag_t flag, VALUE self, ID id, VALUE klass)
+{
+    for (; hook; hook = hook->next) {
+	if (flag & hook->flag) {
+	    (*hook->func)(flag, hook->data, self, id, klass);
+	}
+    }
+}
+
+void
+rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t flag, VALUE self, ID id, VALUE klass)
+{
+    const VALUE errinfo = th->errinfo;
+    const rb_event_flag_t wait_event = th->event_flags;
+
+    if (self == rb_mRubyVMFrozenCore) return;
+    if (wait_event & flag) {
+	exec_event_hooks(th->event_hooks, flag, self, id, klass);
+    }
+    if (wait_event & RUBY_EVENT_VM) {
+	exec_event_hooks(th->vm->event_hooks, flag, self, id, klass);
+    }
+    th->errinfo = errinfo;
+}
+
 void
 rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 {

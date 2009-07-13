@@ -181,4 +181,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_invalid_proc
     assert_raise(TypeError) { set_trace_func(1) }
   end
+
+  def test_raise_in_trace
+    set_trace_func proc {raise rescue nil}
+    assert_equal(42, (raise rescue 42), '[ruby-core:24118]')
+  end
 end
