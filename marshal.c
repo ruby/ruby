@@ -1374,7 +1374,6 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    v = r_entry(rb_reg_new("", 0, options), arg);
 	    if (ivp) {
 		r_ivar(v, arg);
-		rb_p(v);
 		*ivp = Qfalse;
 	    }
 	    rb_enc_copy(str, v);
