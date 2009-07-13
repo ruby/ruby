@@ -1406,7 +1406,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    }
 	    str = r_entry(rb_reg_new_str(str, options), arg);
 	    rb_copy_generic_ivar(str, v);
-	    v = r_leave(v, arg);
+	    v = r_leave(str, arg);
 	}
 	break;
 

@@ -1,12 +1,16 @@
+Tue Jul 14 01:24:56 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* marshal.c (r_object0): should return real object.
+
 Tue Jul 14 01:06:31 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
- 	* enumerator.c (yielder_yield_i): use rb_proc_new instead of
- 	  rb_iterate.  [ruby-dev:38518]
- 
- 	* README.EXT: rb_iterate is obsolete since 1.9; use rb_block_call
- 	  instead.
- 
- 	* README.EXT.ja: ditto.
+	* enumerator.c (yielder_yield_i): use rb_proc_new instead of
+	  rb_iterate.  [ruby-dev:38518]
+
+	* README.EXT: rb_iterate is obsolete since 1.9; use rb_block_call
+	  instead.
+
+	* README.EXT.ja: ditto.
 
 Tue Jul 14 00:45:41 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
@@ -5761,7 +5765,7 @@ Tue Jan 13 18:21:44 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 Tue Jan 13 18:19:49 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_io_initialize): workaround for Windows. [ruby-dev:37686]
-          (also see [ruby-dev:37721])
+	  (also see [ruby-dev:37721])
 
 Tue Jan 13 17:29:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
