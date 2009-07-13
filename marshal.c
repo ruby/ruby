@@ -1376,7 +1376,8 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		r_ivar(v, arg);
 		*ivp = Qfalse;
 	    }
-	    rb_enc_copy(str, v);
+	    if (rb_enc_get_index(v) != rb_usascii_encindex())
+		rb_enc_copy(str, v);
 	    if (rb_enc_get_index(str) != rb_utf8_encindex()) {
 #define f_gsub_bang(x,y,z) rb_funcall(x, rb_intern("gsub!"), 2, y, z)
 		f_gsub_bang(str, rb_reg_new("\\\\u", 3, 0), rb_usascii_str_new_cstr("u"));

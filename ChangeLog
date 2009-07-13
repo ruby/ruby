@@ -1,3 +1,8 @@
+Fri Jul 10 14:41:34 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* marshal.c (r_object0): set encoding only if the encoding
+	  is not US-ASCII.
+
 Fri Jul 10 11:41:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_obj_{untrust,untrusted,trust}): added
