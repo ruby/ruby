@@ -431,7 +431,7 @@ class PStore
   def on_windows?
     is_windows = RUBY_PLATFORM =~ /mswin/  ||
                  RUBY_PLATFORM =~ /mingw/  ||
-                 RUBY_PLATFORM =~ /bbcwin/ ||
+                 RUBY_PLATFORM =~ /bccwin/ ||
                  RUBY_PLATFORM =~ /wince/
     self.class.__send__(:define_method, :on_windows?) do
       is_windows
