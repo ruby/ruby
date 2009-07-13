@@ -1,3 +1,8 @@
+Tue Jul 14 00:45:41 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/ruby/test_case.rb (TestCase#test_deoptimization):
+	  test for [ruby-core:23190].
+
 Mon Jul 13 22:49:50 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/prime.rb (Prime#prime_division): now decomposes
