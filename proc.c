@@ -1264,6 +1264,32 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
     return body;
 }
 
+/*
+ *  call-seq:
+ *     define_singleton_method(symbol, method) => new_method
+ *     define_singleton_method(symbol) { block } => proc
+ *
+ *  Defines a singleton method in the receiver. The _method_
+ *  parameter can be a +Proc+ or +Method+ object.
+ *  If a block is specified, it is used as the method body. 
+ *
+ *     class A
+ *       class << self
+ *         def class_name
+ *           to_s
+ *         end
+ *       end
+ *     end
+ *     A.define_singleton_method(:who_am_i) do
+ *       "I am: #{class_name}"
+ *     end
+ *     A.who_am_i   # ==> "I am: A"
+ *
+ *     guy = "Bob"
+ *     guy.define_singleton_method(:hello) { "#{self}: Hello there!" }
+ *     guy.hello    # =>  "Bob: Hello there!"
+ */
+
 static VALUE
 rb_obj_define_method(int argc, VALUE *argv, VALUE obj)
 {
