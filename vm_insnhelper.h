@@ -140,7 +140,7 @@ extern VALUE ruby_vm_const_missing_count;
 #define GET_GLOBAL(entry)       rb_gvar_get((struct global_entry*)entry)
 #define SET_GLOBAL(entry, val)  rb_gvar_set((struct global_entry*)entry, val)
 
-#define GET_CONST_INLINE_CACHE(dst) ((IC) * (GET_PC() + (dst) + 1))
+#define GET_CONST_INLINE_CACHE(dst) ((IC) * (GET_PC() + (dst) + 2))
 
 /**********************************************************/
 /* deal with values                                       */

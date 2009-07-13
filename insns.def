@@ -150,11 +150,11 @@ setdynamic
  */
 DEFINE_INSN
 getinstancevariable
-(ID id)
+(ID id, IC ic)
 ()
 (VALUE val)
 {
-    val = rb_ivar_get(GET_SELF(), id);
+    val = vm_getivar(GET_SELF(), id, ic);
 }
 
 /**
@@ -1175,7 +1175,7 @@ branchunless
  */
 DEFINE_INSN
 getinlinecache
-(IC ic, OFFSET dst)
+(OFFSET dst, IC ic)
 ()
 (VALUE val)
 {
@@ -1196,7 +1196,7 @@ getinlinecache
  */
 DEFINE_INSN
 onceinlinecache
-(IC ic, OFFSET dst)
+(OFFSET dst, IC ic)
 ()
 (VALUE val)
 {

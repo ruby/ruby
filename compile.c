@@ -899,13 +899,12 @@ new_insn_send(rb_iseq_t *iseq, int line_no,
 {
     INSN *iobj = 0;
     VALUE *operands =
-      (VALUE *)compile_data_alloc(iseq, sizeof(VALUE) * 5);
+      (VALUE *)compile_data_alloc(iseq, sizeof(VALUE) * 4);
     operands[0] = id;
     operands[1] = argc;
     operands[2] = block;
     operands[3] = flag;
-    operands[4] = 0;
-    iobj = new_insn_core(iseq, line_no, BIN(send), 5, operands);
+    iobj = new_insn_core(iseq, line_no, BIN(send), 4, operands);
     return iobj;
 }
 
@@ -1319,7 +1318,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	switch (list->type) {
 	  case ISEQ_ELEMENT_INSN:
 	    {
-		int j, len, insn;
+		int j, len, insn, iclen = 0, i;
 		const char *types;
 		VALUE *operands;
 
@@ -1339,12 +1338,19 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		types = insn_op_types(insn);
 		len = insn_len(insn);
 
+		for (i=0; i<len; i++) {
+		    if (types[i] == TS_IC) {
+			iclen++;
+		    }
+		}
+
 		/* operand check */
-		if (iobj->operand_size != len - 1) {
+		if (iobj->operand_size + iclen != len - 1) {
+		    printf("%d, %d, %d\n", iobj->operand_size, iclen, len);
 		    dump_disasm_list(list);
 		    rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
 				     "operand size miss! (%d for %d)",
-				     iobj->operand_size, len - 1);
+				     iobj->operand_size + iclen, len - 1);
 		    xfree(generated_iseq);
 		    xfree(insn_info_table);
 		    return 0;
@@ -1779,22 +1785,6 @@ insn_set_specialized_instruction(INSN *iobj, int insn_id)
 }
 
 static int
-insn_set_specialized_instruction_with_ic(INSN *iobj, int insn_id, int n)
-{
-    int i;
-    iobj->insn_id = insn_id;
-    iobj->operand_size = n;
-
-    /* max of n is 4 */
-    for (i=0; i<n; i++) {
-	iobj->operands[i] = Qnil;
-    }
-
-    return COMPILE_OK;
-}
-
-
-static int
 iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 {
     if (iobj->insn_id == BIN(send)) {
@@ -1813,7 +1803,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		    insn_set_specialized_instruction(iobj, BIN(opt_succ));
 		}
 		else if (mid == idNot) {
-		    insn_set_specialized_instruction_with_ic(iobj, BIN(opt_not), 1);
+		    insn_set_specialized_instruction(iobj, BIN(opt_not));
 		}
 	    }
 	    else if (argc == 1) {
@@ -1835,10 +1825,10 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		    insn_set_specialized_instruction(iobj, BIN(opt_mod));
 		}
 		else if (mid == idEq) {
-		    insn_set_specialized_instruction_with_ic(iobj, BIN(opt_eq), 1);
+		    insn_set_specialized_instruction(iobj, BIN(opt_eq));
 		}
 		else if (mid == idNeq) {
-		    insn_set_specialized_instruction_with_ic(iobj, BIN(opt_neq), 2);
+		    insn_set_specialized_instruction(iobj, BIN(opt_neq));
 		}
 		else if (mid == idLT) {
 		    insn_set_specialized_instruction(iobj, BIN(opt_lt));
@@ -4310,7 +4300,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    LABEL *lend = NEW_LABEL(nd_line(node));
 
 	    ADD_LABEL(ret, lstart);
-	    ADD_INSN2(ret, nd_line(node), getinlinecache, 0, lend);
+	    ADD_INSN1(ret, nd_line(node), getinlinecache, lend);
 	    ADD_INSN1(ret, nd_line(node), getconstant, ID2SYM(node->nd_vid));
 	    ADD_INSN1(ret, nd_line(node), setinlinecache, lstart);
 	    ADD_LABEL(ret, lend);
@@ -4465,7 +4455,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	LABEL *lend = NEW_LABEL(nd_line(node));
 
 	ADD_LABEL(ret, lstart);
-	ADD_INSN2(ret, nd_line(node), onceinlinecache, 0, lend);
+	ADD_INSN1(ret, nd_line(node), onceinlinecache, lend);
 	ADD_INSN(ret, nd_line(node), pop);
 
 	compile_dregx(iseq, ret, node);
@@ -4634,7 +4624,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    if (LIST_SIZE_ZERO(pref)) {
 		if (iseq->compile_data->option->inline_const_cache) {
 		    ADD_LABEL(ret, lstart);
-		    ADD_INSN2(ret, nd_line(node), getinlinecache, 0, lend);
+		    ADD_INSN1(ret, nd_line(node), getinlinecache, lend);
 		}
 		else {
 		    ADD_INSN(ret, nd_line(node), putnil);
@@ -4672,7 +4662,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	/* add cache insn */
 	if (iseq->compile_data->option->inline_const_cache) {
 	    ADD_LABEL(ret, lstart);
-	    ADD_INSN2(ret, nd_line(node), getinlinecache, 0, lend);
+	    ADD_INSN1(ret, nd_line(node), getinlinecache, lend);
 	    ADD_INSN(ret, nd_line(node), pop);
 	}
 
@@ -4813,7 +4803,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	VALUE block = NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq), ISEQ_TYPE_BLOCK);
 
 	ADD_LABEL(ret, lstart);
-	ADD_INSN2(ret, nd_line(node), onceinlinecache, 0, lend);
+	ADD_INSN1(ret, nd_line(node), onceinlinecache, lend);
 	ADD_INSN(ret, nd_line(node), pop);
 
 	ADD_INSN1(ret, nd_line(node), putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));

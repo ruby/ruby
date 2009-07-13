@@ -1,3 +1,15 @@
+Mon Jul 13 13:35:08 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def, vm_insnhelper.c (getinstancevariable):
+	  fix to use inline cache.
+
+	* compile.c: fix to skip inline cache entry (IC).  IC is added
+	  automatically by compiler.
+
+	* insns.def, vm_insnhelper.h: fix IC positions.
+
+	* iseq.c: increment minor_version of ISeq because of above change.
+
 Mon Jul 13 08:01:00 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: New strategy for searching Tcl/Tk libraries.

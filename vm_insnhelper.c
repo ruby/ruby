@@ -1171,6 +1171,53 @@ vm_get_cvar_base(NODE *cref)
     return klass;
 }
 
+static VALUE
+vm_getivar(VALUE obj, ID id, IC ic)
+{
+#if 1
+    if (TYPE(obj) ==  T_OBJECT) {
+	VALUE val = Qundef;
+	VALUE klass = RBASIC(obj)->klass;
+
+	if (ic->ic_class == klass) {
+	    long index = ic->ic_vmstat;
+	    long len = ROBJECT_NUMIV(obj);
+	    VALUE *ptr = ROBJECT_IVPTR(obj);
+
+	    if (index < len) {
+		val = ptr[index];
+	    }
+	}
+	else {
+	    st_data_t index;
+	    long len = ROBJECT_NUMIV(obj);
+	    VALUE *ptr = ROBJECT_IVPTR(obj);
+	    struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+
+	    if (iv_index_tbl) {
+		if (st_lookup(iv_index_tbl, id, &index)) {
+		    if (index < len) {
+			val = ptr[index];
+		    }
+		    ic->ic_class = CLASS_OF(obj);
+		    ic->ic_vmstat = index;
+		}
+	    }
+	}
+	if (UNLIKELY(val == Qundef)) {
+	    rb_warning("instance variable %s not initialized", rb_id2name(id));
+	    val = Qnil;
+	}
+	return val;
+    }
+    else {
+	return rb_ivar_get(obj, id);
+    }
+#else
+    return rb_ivar_get(obj, id);
+#endif
+}
+
 static inline NODE *
 vm_method_search(VALUE id, VALUE klass, IC ic)
 {

@@ -1294,8 +1294,8 @@ iseq_data_to_ary(rb_iseq_t *iseq)
      *  :catch_table, :bytecode]
      */
     rb_ary_push(val, rb_str_new2("YARVInstructionSequence/SimpleDataFormat"));
-    rb_ary_push(val, INT2FIX(1));
-    rb_ary_push(val, INT2FIX(1));
+    rb_ary_push(val, INT2FIX(1)); /* major */
+    rb_ary_push(val, INT2FIX(2)); /* minor */
     rb_ary_push(val, INT2FIX(1));
     rb_ary_push(val, misc);
     rb_ary_push(val, iseq->name);
