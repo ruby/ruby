@@ -176,6 +176,18 @@ class TestProc < Test::Unit::TestCase
 
     b = proc { :foo }
     assert_equal(:foo, b.curry[])
+
+    b = lambda {|x, y, &b| b.call(x + y) }.curry
+    b = b.call(2) { raise }
+    b = b.call(3) {|x| x + 4 }
+    assert_equal(9, b)
+
+    l = proc {}
+    assert_equal(false, l.lambda?)
+    assert_equal(false, l.curry.lambda?, '[ruby-core:24127]')
+    l = lambda {}
+    assert_equal(true, l.lambda?)
+    assert_equal(true, l.curry.lambda?, '[ruby-core:24127]')
   end
  
   def test_curry_ski_fib

@@ -1,3 +1,8 @@
+Mon Jul  6 09:31:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (make_curry_proc): should propagate lambda-ness.
+	  [ruby-core:24127]
+
 Sun Jul  5 14:04:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_threadptr_exec_event_hooks): new function to
