@@ -5034,9 +5034,19 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
 	    rb_thread_sleep(1);
 	    break;
 	  default:
-	    if (eargp)
-		rb_run_exec_options(&sarg, NULL);
-	    rb_sys_fail(cmd);
+	    {
+		int e = errno;
+		if (eargp)
+		    rb_run_exec_options(&sarg, NULL);
+		close(pair[0]);
+		close(pair[1]);
+		if ((fmode & (FMODE_READABLE|FMODE_WRITABLE)) == (FMODE_READABLE|FMODE_WRITABLE)) {
+		    close(write_pair[0]);
+		    close(write_pair[1]);
+		}
+		errno = e;
+		rb_sys_fail(cmd);
+	    }
 	    break;
 	}
     }
