@@ -1,3 +1,10 @@
+Mon Jul  6 08:00:10 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_to_a): should propagate taint to the return value.
+	  [ruby-core:24152]
+
+	* enum.c (enum_sort_by): ditto.
+
 Mon Jul  6 09:31:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (make_curry_proc): should propagate lambda-ness.
