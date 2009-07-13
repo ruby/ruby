@@ -279,7 +279,7 @@ module TkMenuSpec
       end
     end
 
-    keys = default_opts.dup
+    keys = (default_opts)? default_opts.dup: {}
 
     tearoff = keys.delete('tearoff') if keys.key?('tearoff')
     tearoff = false unless tearoff # nil --> false
