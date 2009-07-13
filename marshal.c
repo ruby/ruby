@@ -1393,7 +1393,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	{
 	    volatile VALUE str = r_bytes(arg);
 	    int options = r_byte(arg);
-	    VALUE v = rb_reg_new("", 0, options);
+	    v = rb_reg_new("", 0, options);
 	    if (ivp) {
 		r_ivar(v, arg);
 		*ivp = Qfalse;

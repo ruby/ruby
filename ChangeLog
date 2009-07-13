@@ -1,3 +1,8 @@
+Mon Jul 13 20:21:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (r_object0): should not shadow outer variable not to
+	  return Qnil always.
+
 Mon Jul 13 19:41:05 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* marshal.c (r_object0): copy instance variables to new regexp.
