@@ -1159,12 +1159,23 @@ Sets the value of the instance variable.
 
 ** Control Structure
 
- VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
+ VALUE rb_block_call(VALUE recv, ID mid, int argc, VALUE * argv,
+		     VALUE (*func) (ANYARGS), VALUE data2)
+
+Calls a method on the recv, with the method name specified by the
+symbol mid, supplying func as the block.  func will receive the
+value from yield as the first argument, data2 as the second, and
+argc/argv as the third/fourth arguments.
+
+ [OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
 
 Calls the function func1, supplying func2 as the block.  func1 will be
 called with the argument arg1.  func2 receives the value from yield as
 the first argument, arg2 as the second argument.
  
+When rb_iterate is used in 1.9, func1 has to call some Ruby-level method.
+This function is obsolete since 1.9; use rb_block_call instead.
+
  VALUE rb_yield(VALUE val)
 
 Evaluates the block with value val.
