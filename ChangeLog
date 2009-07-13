@@ -1,9 +1,14 @@
+Thu Jul  9 21:56:59 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* marshal.c (r_object0): replace \u by u when the regexp is
+	  made by Ruby 1.8. [ruby-dev:36750]
+
 Wed Jul  8 16:47:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_basename): returns new string instead of
 	  shared string from FilePathStringValue().  [ruby-core:24199]
 
-2009-07-07  Eric Hodel  <drbrain@segment7.net>
+Wed Jul  8 04:28:16 2009  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/.document:  Update with extensions that appear to have
 	  documentation.  [ruby-core:24181]
