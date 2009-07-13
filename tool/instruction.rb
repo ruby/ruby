@@ -977,6 +977,8 @@ class RubyVM
       # operands info
       operands_info = ''
       operands_num_info = ''
+      icoperands_num_info = ''
+
       @insns.each{|insn|
         opes = insn.opes
         operands_info << '  '
@@ -987,6 +989,12 @@ class RubyVM
 
         num = opes.size + 1
         operands_num_info << "  #{num},\n"
+
+        icnum = 0
+        opes.each{|e|
+          icnum += 1 if e[0] == 'IC'
+        }
+        icoperands_num_info << "  #{icnum},\n"
       }
 
       # stack num

@@ -1,3 +1,18 @@
+Mon Jul 13 17:49:11 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h, compile.c: declare struct iseq_inline_cache_entry.
+	  Inline cache (IC) entries are no longer GC managed object.
+	  IC entries are freed when ISeq is freed.
+
+	* iseq.c: fix mark, free, memsize functions for above change.
+
+	* insns.def: remove rb_gc_write_barrier().
+
+	* vm_insnhelper.c (vm_method_search): ditto.
+
+	* tool/instruction.rb, template/insns_info.inc.tmpl (insn_iclen):
+	  added.
+
 Mon Jul 13 13:35:08 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def, vm_insnhelper.c (getinstancevariable):

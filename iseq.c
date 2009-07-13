@@ -74,6 +74,7 @@ iseq_free(void *ptr)
 	    RUBY_FREE_UNLESS_NULL(iseq->iseq);
 	    RUBY_FREE_UNLESS_NULL(iseq->insn_info_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->local_table);
+	    RUBY_FREE_UNLESS_NULL(iseq->ic_entries);
 	    RUBY_FREE_UNLESS_NULL(iseq->catch_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->arg_opt_table);
 	    compile_data_free(iseq->compile_data);
@@ -86,11 +87,12 @@ iseq_free(void *ptr)
 static void
 iseq_mark(void *ptr)
 {
-    rb_iseq_t *iseq;
     RUBY_MARK_ENTER("iseq");
 
     if (ptr) {
-	iseq = ptr;
+	int i;
+	rb_iseq_t *iseq = ptr;
+
 	RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->name), RSTRING_PTR(iseq->filename));
 	RUBY_MARK_UNLESS_NULL(iseq->mark_ary);
 	RUBY_MARK_UNLESS_NULL(iseq->name);
@@ -101,6 +103,11 @@ iseq_mark(void *ptr)
 /* 	RUBY_MARK_UNLESS_NULL((VALUE)iseq->node); */
 /*	RUBY_MARK_UNLESS_NULL(iseq->cached_special_block); */
 	RUBY_MARK_UNLESS_NULL(iseq->orig);
+
+	for (i=0; i<iseq->ic_size; i++) {
+	    RUBY_MARK_UNLESS_NULL(iseq->ic_entries[i].ic_class);
+	    RUBY_MARK_UNLESS_NULL(iseq->ic_entries[i].ic_value);
+	}
 
 	if (iseq->compile_data != 0) {
 	    RUBY_MARK_UNLESS_NULL(iseq->compile_data->mark_ary);
@@ -129,6 +136,7 @@ iseq_memsize(void *ptr)
 	    size += iseq->local_table_size * sizeof(ID);
 	    size += iseq->catch_table_size * sizeof(struct iseq_catch_table_entry);
 	    size += iseq->arg_opts * sizeof(VALUE);
+	    size += iseq->ic_size * sizeof(struct iseq_inline_cache_entry);
 
 	    if (iseq->compile_data) {
 		struct iseq_compile_data_storage *cur;

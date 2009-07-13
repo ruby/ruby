@@ -23,6 +23,10 @@ static const int insn_len_info[] = {
 <%= operands_num_info %>
 };
 
+static const int insn_iclen_info[] = {
+<%= icoperands_num_info %>
+};
+
 #ifdef USE_INSN_RET_NUM
 static const int insn_stack_push_num_info[] = {
 <%= stack_num_info %>
@@ -79,5 +83,13 @@ static int
 insn_ret_num(int insn)
 {
   return insn_stack_push_num_info[insn];
+}
+#endif
+
+#ifdef USE_INSN_ICLEN
+static int
+insn_iclen(int insn)
+{
+    return insn_iclen_info[insn];
 }
 #endif

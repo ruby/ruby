@@ -12,6 +12,7 @@
 #include "ruby/ruby.h"
 
 #define USE_INSN_STACK_INCREASE 1
+#define USE_INSN_ICLEN 1
 #include "vm_core.h"
 #include "iseq.h"
 #include "insns.inc"
@@ -1260,6 +1261,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     struct iseq_insn_info_entry *insn_info_table;
     LINK_ELEMENT *list;
     VALUE *generated_iseq;
+    int ic_size = 0;
+    int ic_index = 0;
 
     int k, pos, sp, stack_max = 0, line = 0;
 
@@ -1273,6 +1276,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		iobj = (INSN *)list;
 		line = iobj->line_no;
 		pos += insn_data_length(iobj);
+		ic_size += insn_iclen(iobj->insn_id);
 		k++;
 		break;
 	    }
@@ -1310,6 +1314,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     /* make instruction sequence */
     generated_iseq = ALLOC_N(VALUE, pos);
     insn_info_table = ALLOC_N(struct iseq_insn_info_entry, k);
+    iseq->ic_entries = ALLOC_N(struct iseq_inline_cache_entry, ic_size);
+    MEMZERO(iseq->ic_entries, struct iseq_inline_cache_entry, ic_size);
+    iseq->ic_size = ic_size;
 
     list = FIRST_ELEMENT(anchor);
     k = pos = sp = 0;
@@ -1318,7 +1325,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	switch (list->type) {
 	  case ISEQ_ELEMENT_INSN:
 	    {
-		int j, len, insn, iclen = 0, i;
+		int j, len, insn, iclen = 0;
 		const char *types;
 		VALUE *operands;
 
@@ -1337,12 +1344,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		generated_iseq[pos] = insn;
 		types = insn_op_types(insn);
 		len = insn_len(insn);
-
-		for (i=0; i<len; i++) {
-		    if (types[i] == TS_IC) {
-			iclen++;
-		    }
-		}
+		iclen = insn_iclen(insn);
 
 		/* operand check */
 		if (iobj->operand_size + iclen != len - 1) {
@@ -1432,9 +1434,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			}
 		      case TS_IC: /* inline cache */
 			{
-			    VALUE v = (VALUE)NEW_INLINE_CACHE_ENTRY();
-			    generated_iseq[pos + 1 + j] = v;
-			    iseq_add_mark_object(iseq, v);
+			    IC ic = &iseq->ic_entries[ic_index++];
+			    if (UNLIKELY(ic_index > ic_size)) {
+				rb_bug("iseq_set_sequence: ic_index overflow: index: %d, size: %d",
+				       ic_index, ic_size);
+			    }
+			    generated_iseq[pos + 1 + j] = (VALUE)ic;
 			    break;
 			}
 		      case TS_ID: /* ID */
@@ -5241,8 +5246,6 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			argv[j] = (VALUE)rb_global_entry(SYM2ID(op));
 			break;
 		      case TS_IC:
-			argv[j] = (VALUE)NEW_INLINE_CACHE_ENTRY();
-			iseq_add_mark_object(iseq, argv[j]);
 			break;
 		      case TS_ID:
 			argv[j] = rb_convert_type(op, T_SYMBOL,

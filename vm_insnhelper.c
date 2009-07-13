@@ -1180,7 +1180,7 @@ vm_getivar(VALUE obj, ID id, IC ic)
 	VALUE klass = RBASIC(obj)->klass;
 
 	if (ic->ic_class == klass) {
-	    long index = ic->ic_vmstat;
+	    long index = ic->ic_index;
 	    long len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
 
@@ -1199,8 +1199,8 @@ vm_getivar(VALUE obj, ID id, IC ic)
 		    if (index < len) {
 			val = ptr[index];
 		    }
-		    ic->ic_class = CLASS_OF(obj);
-		    ic->ic_vmstat = index;
+		    ic->ic_class = RBASIC(obj)->klass;
+		    ic->ic_index = index;
 		}
 	    }
 	}
@@ -1231,8 +1231,8 @@ vm_method_search(VALUE id, VALUE klass, IC ic)
 	}
 	else {
 	    mn = rb_method_node(klass, id);
-	    ic->ic_class = rb_gc_write_barrier(klass);
-	    ic->ic_method = (NODE *)rb_gc_write_barrier((VALUE)mn);
+	    ic->ic_class = klass;
+	    ic->ic_method = mn;
 	    ic->ic_vmstat = GET_VM_STATE_VERSION();
 	}
     }

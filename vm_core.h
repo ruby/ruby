@@ -106,6 +106,18 @@ typedef struct rb_compile_option_struct {
     int debug_level;
 } rb_compile_option_t;
 
+struct iseq_inline_cache_entry {
+    long  ic_vmstat;
+    VALUE ic_class;
+    union {
+	NODE *method;
+	VALUE value;
+    } value;
+#define ic_value value.value
+#define ic_method value.method
+#define ic_index ic_vmstat
+};
+
 #if 1
 #define GetCoreDataFromValue(obj, type, ptr) do { \
     ptr = (type*)DATA_PTR(obj); \
@@ -142,6 +154,9 @@ struct rb_iseq_struct {
 
     /* method, class frame: sizeof(vars) + 1, block frame: sizeof(vars) */
     int local_size;
+
+    struct iseq_inline_cache_entry *ic_entries;
+    int ic_size;
 
     /**
      * argument information
@@ -522,13 +537,8 @@ typedef struct {
   (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_CFUNC)
 
 
-/* inline (method|const) cache */
-#define NEW_INLINE_CACHE_ENTRY() NEW_NODE_LONGLIFE(NODE_WHILE, Qundef, 0, 0)
-#define ic_class  u1.value
-#define ic_method u2.node
-#define ic_value  u2.value
-#define ic_vmstat u3.value
-typedef NODE *IC;
+/* inline cache */
+typedef struct iseq_inline_cache_entry *IC;
 
 void rb_vm_change_state(void);
 
