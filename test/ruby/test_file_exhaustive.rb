@@ -385,8 +385,10 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_basename
     assert_equal(File.basename(@file).sub(/\.test$/, ""), File.basename(@file, ".test"))
-    assert_equal("", File.basename(""))
-    assert_equal("foo", File.basename("foo"))
+    assert_equal("", s = File.basename(""))
+    assert(!s.frozen?, '[ruby-core:24199]')
+    assert_equal("foo", s = File.basename("foo"))
+    assert(!s.frozen?, '[ruby-core:24199]')
     assert_equal("foo", File.basename("foo", ".ext"))
     assert_equal("foo", File.basename("foo.ext", ".ext"))
     assert_equal("foo", File.basename("foo.ext", ".*"))
