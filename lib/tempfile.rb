@@ -190,7 +190,7 @@ class Tempfile < DelegateClass(File)
     #
     # If a block is given, it will be passed tempfile as an argument,
     # and the tempfile will automatically be closed when the block
-    # terminates.  In this case, open() returns nil.
+    # terminates.  The call returns the value of the block.
     def open(*args)
       tempfile = new(*args)
 
