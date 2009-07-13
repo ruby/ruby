@@ -1,3 +1,8 @@
+Tue Jul 14 01:28:17 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/ruby/test_m17n.rb (TestM17N#test_env): the encoding of
+	  ENV is now locale encoding.
+
 Tue Jul 14 01:24:56 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* marshal.c (r_object0): should return real object.

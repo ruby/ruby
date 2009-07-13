@@ -1132,9 +1132,10 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_env
+    locale_encoding = Encoding.find("locale")
     ENV.each {|k, v|
-      assert_equal(Encoding::ASCII_8BIT, k.encoding)
-      assert_equal(Encoding::ASCII_8BIT, v.encoding)
+      assert_equal(locale_encoding, k.encoding)
+      assert_equal(locale_encoding, v.encoding)
     }
   end
 
