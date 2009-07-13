@@ -3868,7 +3868,7 @@ rb_io_ext_int_to_encs(rb_encoding *ext, rb_encoding *intern, rb_encoding **enc, 
 	intern = rb_default_internal_encoding();
     if (intern == NULL || intern == (rb_encoding *)Qnil || intern == ext) {
 	/* No internal encoding => use external + no transcoding */
-	*enc = default_ext ? NULL : ext;
+	*enc = (default_ext && intern != ext) ? NULL : ext;
 	*enc2 = NULL;
     }
     else {
