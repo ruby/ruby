@@ -58,8 +58,10 @@ class Numeric
   # See Complex#arg.
   #
   def arg
-    if self >= 0
+    if self > 0 || (self == 0 && self.to_s != '-0.0') # This string comparison stuff is gross. Better way?
       return 0
+    elsif self.to_f.nan?
+      return self
     else
       return Math::PI
     end
