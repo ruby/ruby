@@ -2182,7 +2182,8 @@ class MultiTkIp
   end
   private :eval_proc_core
 
-if WITH_RUBY_VM  ### Ruby 1.9
+if false && WITH_RUBY_VM  ### Ruby 1.9
+  # Not stable, so disable this feature
   def eval_callback(*args)
     if block_given?
       cmd = Proc.new

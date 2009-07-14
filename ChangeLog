@@ -1,3 +1,8 @@
+Tue Jul 14 09:26:14 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: Long-term-callback support isn't stable yet.
+	  So, disable the feature and waiting for improvement in the future.
+
 Mon Jul 13 08:01:00 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: New strategy for searching Tcl/Tk libraries.
