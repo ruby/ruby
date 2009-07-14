@@ -81,7 +81,7 @@ p ip.eval_proc(proc{
                               :command=>proc{
                                 MultiTkIp._proc_on_current_safelevel(y).call(l)
                               }).pack(:fill=>:x, :padx=>5)
-if Object.const_defined?(:RubyVM) && ::RubyVM.class == Class
+if false && Object.const_defined?(:RubyVM) && ::RubyVM.class == Class
                  TkButton.new(:text=>':command=>proc{Thread.new(l, &y).value}',
                               :command=>proc{
                                 Thread.new(l, &y).value
