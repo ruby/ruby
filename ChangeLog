@@ -1,3 +1,7 @@
+Wed Jul 15 06:21:50 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: --with-{tcl,tk}-dir doesn't work.[ruby-dev:38782]
+
 Wed Jul 15 04:22:54 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/cgi/test_cgi_multipart.rb (CGIMultipartTest#_prepare):
