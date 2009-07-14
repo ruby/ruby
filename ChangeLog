@@ -1,3 +1,7 @@
+Wed Jul 15 06:21:50 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: --with-{tcl,tk}-dir doesn't work.[ruby-dev:38782]
+
 Tue Jul 14 09:26:14 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: Long-term-callback support isn't stable yet.

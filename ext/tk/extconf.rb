@@ -1173,8 +1173,8 @@ if TkLib_Config["tcltk-framework"]
 end
 
 # search Tcl/Tk libraries
-tk_idir,  tk_ldir  = dir_config("tk")  if with_config('tk')
-tcl_idir, tcl_ldir = dir_config("tcl") if with_config('tcl')
+tk_idir,  tk_ldir  = dir_config("tk")
+tcl_idir, tcl_ldir = dir_config("tcl")
 
 tk_ldir2  = with_config("tk-lib")
 tcl_ldir2 = with_config("tcl-lib")
