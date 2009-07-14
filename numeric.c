@@ -933,6 +933,10 @@ flo_cmp(x, y)
 	break;
 
       case T_BIGNUM:
+	if (isinf(a)) {
+	    if (a > 0.0) return INT2FIX(1);
+	    else return INT2FIX(-1);
+	}
 	b = rb_big2dbl(y);
 	break;
 

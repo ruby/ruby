@@ -987,7 +987,15 @@ rb_big_cmp(x, y)
 	break;
 
       case T_FLOAT:
-	return rb_dbl_cmp(rb_big2dbl(x), RFLOAT(y)->value);
+       {
+           double a = RFLOAT(y)->value;
+       
+           if (isinf(a)) {
+               if (a > 0.0) return INT2FIX(-1);
+               else return INT2FIX(1);
+           }
+           return rb_dbl_cmp(rb_big2dbl(x), a);
+       }
 
       default:
 	return rb_num_coerce_cmp(x, y);

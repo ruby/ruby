@@ -1323,6 +1323,10 @@ if test "$prefix" = NONE; then
   prefix=$ac_default_prefix
 fi
 
+if test "$exec_prefix" = NONE; then
+  exec_prefix=$prefix
+fi
+
 #if test "$fat_binary" != no ; then
 #  CFLAGS="$CFLAGS $ARCH_FLAG"
 #fi
@@ -1614,7 +1618,7 @@ case "$target_os" in
     RUBY_LIB_PREFIX="/lib/ruby"
     ;;
   *)
-    RUBY_LIB_PREFIX="${libdir}/ruby"
+    RUBY_LIB_PREFIX="`eval "echo ${libdir}"`/ruby"
     ;;
 esac
 RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${MAJOR}.${MINOR}"
@@ -1622,7 +1626,7 @@ RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${MAJOR}.${MINOR}"
 AC_ARG_WITH(sitedir,
 	    [  --with-sitedir=DIR      site libraries in DIR [PREFIX/lib/ruby/site_ruby]],
             [sitedir=$withval],
-            [sitedir='${libdir}/ruby/site_ruby'])
+            [sitedir="`eval "echo ${libdir}"`/lib/ruby/site_ruby"])
 SITE_DIR=`eval echo \\"${sitedir}\\"`
 case "$target_os" in
   cygwin*|mingw*|*djgpp*|os2-emx*)

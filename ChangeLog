@@ -1,3 +1,9 @@
+Mon Jul 13 12:00:00 2009 Kirk Haines <khaines@ruby-lang.org>
+
+	* numeric.c, bignum.c: Applied changes from r23730. Infinity is > any bignum number in comparisons.
+
+	* configure.in: fixed problems with using $libdir instead of $prefix/lib for RUBY_LIB and friends.
+
 Fri Jul 10 04:00:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
 	* file.c: Added FCNTL inclusion to fix a compile error with solaris (backport from r22812)
