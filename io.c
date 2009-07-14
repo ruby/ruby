@@ -6342,7 +6342,11 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     int fd, fmode, oflags = O_RDONLY;
     convconfig_t convconfig;
     VALUE opt;
+#if defined(HAVE_FCNTL) && defined(F_GETFL)
+    int ofmode;
+#else
     struct stat st;
+#endif
 
     rb_secure(4);
 
@@ -6351,15 +6355,23 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &fmode, &convconfig);
 
     fd = NUM2INT(fnum);
-    if (fstat(fd, &st) == -1) rb_sys_fail(0);
-    UPDATE_MAXFD(fd);
-    if (NIL_P(vmode)) {
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
-        oflags = fcntl(fd, F_GETFL);
-        if (oflags == -1) rb_sys_fail(0);
-        fmode = rb_io_oflags_fmode(oflags);
+    oflags = fcntl(fd, F_GETFL);
+    if (oflags == -1) rb_sys_fail(0);
+#else
+    if (fstat(fd, &st) == -1) rb_sys_fail(0);
 #endif
+    UPDATE_MAXFD(fd);
+#if defined(HAVE_FCNTL) && defined(F_GETFL)
+    ofmode = rb_io_oflags_fmode(oflags);
+    if (NIL_P(vmode)) {
+	fmode = ofmode;
     }
+    else if ((~ofmode & fmode) & FMODE_READWRITE) {
+	VALUE error = INT2FIX(EINVAL);
+	rb_exc_raise(rb_class_new_instance(1, &error, rb_eSystemCallError));
+    }
+#endif
     MakeOpenFile(io, fp);
     fp->fd = fd;
     fp->mode = fmode;

@@ -1379,6 +1379,9 @@ class TestIO < Test::Unit::TestCase
 
     fd = IO.sysopen(t.path, "w")
     assert_kind_of(Integer, fd)
+    %w[r r+ w+ a+].each do |mode|
+      assert_raise(Errno::EINVAL, '[ruby-dev:38571]') {IO.new(fd, mode)}
+    end
     f = IO.new(fd, "w")
     f.write("FOO\n")
     f.close
