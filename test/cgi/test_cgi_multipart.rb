@@ -136,9 +136,9 @@ class CGIMultipartTest < Test::Unit::TestCase
     ENV['REQUEST_METHOD'] = 'POST'
     ## set $stdin
     tmpfile = if RUBY_VERSION >="1.9"
-                Tempfile.new(self.name, :binmode => true)
+                Tempfile.new('test_cgi_multipart', :binmode => true)
               else
-                Tempfile.new(self.name)
+                Tempfile.new('test_cgi_multipart')
               end
     tmpfile << input
     tmpfile.rewind()
