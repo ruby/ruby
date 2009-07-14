@@ -12252,8 +12252,8 @@ get_ts(struct timespec *to, long ns)
 {
     struct timeval tv;
 
-#ifdef CLOCK_MONOTONIC
-    if (clock_gettime(CLOCK_MONOTONIC, to) != 0)
+#ifdef CLOCK_REALTIME
+    if (clock_gettime(CLOCK_REALTIME, to) != 0)
 #endif
     {
 	gettimeofday(&tv, NULL);
@@ -12274,8 +12274,8 @@ static struct timer_thread {
 } time_thread = {PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER};
 
 #define safe_mutex_lock(lock) \
-    (pthread_mutex_lock(lock), \
-     pthread_cleanup_push((void (*)_((void *)))pthread_mutex_unlock, lock))
+    pthread_mutex_lock(lock); \
+    pthread_cleanup_push((void (*)_((void *)))pthread_mutex_unlock, lock)
 
 static void*
 thread_timer(dummy)
@@ -12316,7 +12316,7 @@ rb_thread_start_timer()
     void *args[2];
     static pthread_cond_t start = PTHREAD_COND_INITIALIZER;
 
-    if (!thread_init) return;
+    if (thread_init) return;
     args[0] = &time_thread;
     args[1] = &start;
     safe_mutex_lock(&time_thread.lock);
@@ -12334,9 +12334,9 @@ rb_thread_stop_timer()
     if (!thread_init) return;
     safe_mutex_lock(&time_thread.lock);
     pthread_cond_signal(&time_thread.cond);
+    thread_init = 0;
     pthread_cleanup_pop(1);
     pthread_join(time_thread.thread, NULL);
-    thread_init = 0;
 }
 #elif defined(HAVE_SETITIMER)
 static void

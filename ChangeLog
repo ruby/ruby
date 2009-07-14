@@ -1,3 +1,19 @@
+Tue Jul 14 19:57:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (get_ts): use readtime clock.  [ruby-dev:38354]
+
+	* eval.c (rb_thread_stop_timer): clear thread_init while locking.
+
+Tue Jul 14 19:57:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_start_timer): guard condition was inverted.
+	  [ruby-dev:38319]
+
+Tue Jul 14 19:57:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (safe_mutex_lock): pthread_cleanup_push() must not be
+	  inside parens.
+
 Mon Jul 13 01:36:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_timeval): rounds subsecond toward zero.
