@@ -2378,6 +2378,8 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 
     switch (TYPE(sub)) {
       case T_REGEXP:
+	if (pos > str_strlen(str, STR_ENC_GET(str)))
+	    return Qnil;
 	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
 			 rb_enc_check(str, sub), single_byte_optimizable(str));
 

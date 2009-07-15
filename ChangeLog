@@ -1,3 +1,8 @@
+Tue Jul 14 17:29:20 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_index_m): return nil if pos is out of string.
+	  [ruby-core:23660]
+
 Tue Jul 14 01:06:31 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
  	* enumerator.c (yielder_yield_i): use rb_proc_new instead of
