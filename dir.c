@@ -1561,14 +1561,13 @@ push_glob(VALUE ary, VALUE str, int flags)
 {
     struct glob_args args;
     rb_encoding *enc = rb_enc_get(str);
-    volatile VALUE vstr = str; /* for GC mark */
 
     if (enc == rb_usascii_encoding()) enc = rb_filesystem_encoding();
     args.func = push_pattern;
     args.value = ary;
     args.enc = enc;
 
-    return ruby_brace_glob0(RSTRING_PTR(str), flags | GLOB_VERBOSE,
+    return ruby_brace_glob0(StringValuePtr(str), flags | GLOB_VERBOSE,
 			    rb_glob_caller, (VALUE)&args, enc);
 }
 

@@ -1,3 +1,7 @@
+Thu Jul 16 08:56:32 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* dir.c (push_glob): re-fix GC problem.
+
 Thu Jul 16 08:55:27 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: add method.h.
