@@ -1,3 +1,7 @@
+Wed Jul 15 16:29:35 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (LIBPATHFLAG): path is already quoted in mkmf.rb.
+
 Wed Jul 15 06:21:50 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: --with-{tcl,tk}-dir doesn't work.[ruby-dev:38782]
