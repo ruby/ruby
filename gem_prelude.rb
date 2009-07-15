@@ -235,16 +235,40 @@ if defined?(Gem) then
           Gem::GEM_PRELUDE_METHODS.each do |method_name|
             undef_method method_name
           end
+          undef_method :const_missing
+          undef_method :method_missing
         end
 
         Kernel.module_eval do
           undef_method :gem if method_defined? :gem
         end
 
-        $".delete File.join(Gem::ConfigMap[:rubylibprefix],
-                            Gem::ConfigMap[:ruby_version], 'rubygems.rb')
-
+        $".delete path_to_full_rubygems_library
+        $".each do |path|
+          if /#{Regexp.escape File::SEPARATOR}rubygems\.rb\z/ =~ path
+            raise LoadError, "another rubygems is already loaded from #{path}"
+          end
+        end
         require 'rubygems'
+      end
+
+      def self.fake_rubygems_as_loaded
+        path = path_to_full_rubygems_library
+        $" << path unless $".include?(path)
+      end
+
+      def self.path_to_full_rubygems_library
+        installed_path = File.join(Gem::ConfigMap[:rubylibprefix], Gem::ConfigMap[:ruby_version])
+        if $:.include?(installed_path)
+          return File.join(installed_path, 'rubygems.rb')
+        else # e.g., on test-all
+          $:.each do |dir|
+            if File.exist?( path = File.join(dir, 'rubygems.rb') )
+              return path
+            end
+          end
+          raise LoadError, 'rubygems.rb'
+        end
       end
 
       GemPaths = {}
@@ -367,8 +391,7 @@ if defined?(Gem) then
 
   begin
     Gem.push_all_highest_version_gems_on_load_path
-    $" << File.join(Gem::ConfigMap[:rubylibprefix],
-                    Gem::ConfigMap[:ruby_version], "rubygems.rb")
+    Gem::QuickLoader.fake_rubygems_as_loaded
   rescue Exception => e
     puts "Error loading gem paths on load path in gem_prelude"
     puts e
