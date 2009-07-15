@@ -1,3 +1,30 @@
+Wed Jul 15 23:46:55 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h, vm_core.h: add rb_method_entry_t.  Remove nodes around
+	  method management.  This change affect some VM control stack structure.
+
+	* vm.c, vm_insnhelper.c, vm_method.c, vm_eval.c: ditto.  and make some
+	  refactoring.
+
+	* insns.def, class.c, eval.c, proc.c, vm_dump.c : ditto.
+
+	* vm_core.h, compile.c (iseq_specialized_instruction): remove
+	  VM_CALL_SEND_BIT.  use another optimization tech for Kernel#send.
+
+	* node.h: remove unused node types.
+
+	* ext/objspace/objspace.c (count_nodes): ditto.
+
+	* gc.c: add mark/free functions for method entry.
+
+	* include/ruby/intern.h: remove decl of
+	  rb_define_notimplement_method_id().  nobody can use it
+	  because noex is not opend.
+
+	* iseq.c (iseq_mark): fix to check ic_method is available.
+
+	* iseq.c (rb_iseq_disasm): fix to use rb_method_get_iseq().
+
 Wed Jul 15 23:45:11 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* dir.c (push_glob): fix GC problem.

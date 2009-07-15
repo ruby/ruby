@@ -1435,12 +1435,6 @@ mark_tbl(rb_objspace_t *objspace, st_table *tbl, int lev)
     st_foreach(tbl, mark_entry, (st_data_t)&arg);
 }
 
-void
-rb_mark_tbl(st_table *tbl)
-{
-    mark_tbl(&rb_objspace, tbl, 0);
-}
-
 static int
 mark_key(VALUE key, VALUE value, st_data_t data)
 {
@@ -1488,6 +1482,64 @@ void
 rb_mark_hash(st_table *tbl)
 {
     mark_hash(&rb_objspace, tbl, 0);
+}
+
+static void
+mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me, int lev)
+{
+    gc_mark(objspace, me->klass, lev);
+    switch (me->type) {
+      case VM_METHOD_TYPE_ISEQ:
+	gc_mark(objspace, me->body.iseq->self, lev);
+	break;
+      case VM_METHOD_TYPE_BMETHOD:
+	gc_mark(objspace, me->body.proc, lev);
+	break;
+      default:
+	break; /* ignore */
+    }
+}
+
+void
+rb_gc_mark_method_entry(const rb_method_entry_t *me)
+{
+    mark_method_entry(&rb_objspace, me, 0);
+}
+
+static int
+mark_method_entry_i(ID key, const rb_method_entry_t *me, st_data_t data)
+{
+    struct mark_tbl_arg *arg = (void*)data;
+    mark_method_entry(arg->objspace, me, arg->lev);
+    return ST_CONTINUE;
+}
+
+static void
+mark_m_tbl(rb_objspace_t *objspace, st_table *tbl, int lev) {
+    struct mark_tbl_arg arg;
+    if (!tbl) return;
+    arg.objspace = objspace;
+    arg.lev = lev;
+    st_foreach(tbl, mark_method_entry_i, (st_data_t)&arg);
+}
+
+static int
+free_method_entry_i(ID key, rb_method_entry_t *me, st_data_t data)
+{
+    xfree(me);
+    return ST_CONTINUE;
+}
+
+static void
+free_m_table(st_table *tbl)
+{
+    st_foreach(tbl, free_method_entry_i, 0);
+}
+
+void
+rb_mark_tbl(st_table *tbl)
+{
+    mark_tbl(&rb_objspace, tbl, 0);
 }
 
 void
@@ -1591,7 +1643,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	    ptr = (VALUE)obj->as.node.u3.node;
 	    goto again;
 
-	  case NODE_METHOD:	/* 1,2 */
 	  case NODE_WHILE:
 	  case NODE_UNTIL:
 	  case NODE_AND:
@@ -1612,7 +1663,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	  case NODE_ARGSCAT:
 	    gc_mark(objspace, (VALUE)obj->as.node.u1.node, lev);
 	    /* fall through */
-	  case NODE_FBODY:	/* 2 */
 	  case NODE_GASGN:
 	  case NODE_LASGN:
 	  case NODE_DASGN:
@@ -1653,7 +1703,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 
 	  case NODE_ZARRAY:	/* - */
 	  case NODE_ZSUPER:
-	  case NODE_CFUNC:
 	  case NODE_VCALL:
 	  case NODE_GVAR:
 	  case NODE_LVAR:
@@ -1669,7 +1718,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	  case NODE_TRUE:
 	  case NODE_FALSE:
 	  case NODE_ERRINFO:
-	  case NODE_ATTRSET:
 	  case NODE_BLOCK_ARG:
 	    break;
 	  case NODE_ALLOCA:
@@ -1698,7 +1746,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
       case T_ICLASS:
       case T_CLASS:
       case T_MODULE:
-	mark_tbl(objspace, RCLASS_M_TBL(obj), lev);
+	mark_m_tbl(objspace, RCLASS_M_TBL(obj), lev);
 	mark_tbl(objspace, RCLASS_IV_TBL(obj), lev);
 	ptr = RCLASS_SUPER(obj);
 	goto again;
@@ -2072,7 +2120,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_MODULE:
       case T_CLASS:
 	rb_clear_cache_by_class((VALUE)obj);
-	st_free_table(RCLASS_M_TBL(obj));
+	free_m_table(RCLASS_M_TBL(obj));
 	if (RCLASS_IV_TBL(obj)) {
 	    st_free_table(RCLASS_IV_TBL(obj));
 	}

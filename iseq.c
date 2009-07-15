@@ -107,6 +107,9 @@ iseq_mark(void *ptr)
 	for (i=0; i<iseq->ic_size; i++) {
 	    RUBY_MARK_UNLESS_NULL(iseq->ic_entries[i].ic_class);
 	    RUBY_MARK_UNLESS_NULL(iseq->ic_entries[i].ic_value);
+	    if (iseq->ic_entries[i].ic_method) {
+		rb_gc_mark_method_entry(iseq->ic_entries[i].ic_method);
+	    }
 	}
 
 	if (iseq->compile_data != 0) {
@@ -1002,17 +1005,14 @@ rb_iseq_disasm(VALUE self)
 static VALUE
 iseq_s_disasm(VALUE klass, VALUE body)
 {
-    extern NODE *rb_method_body(VALUE body);
-    NODE *node;
     VALUE ret = Qnil;
+    rb_iseq_t *iseq;
+    extern rb_iseq_t *rb_method_get_iseq(VALUE body);
 
     rb_secure(1);
 
-    if ((node = rb_method_body(body)) != 0) {
-	if (nd_type(node) == RUBY_VM_METHOD_NODE) {
- 	    VALUE iseqval = (VALUE)node->nd_body;
-	    ret = rb_iseq_disasm(iseqval);
-	}
+    if ((iseq = rb_method_get_iseq(body)) != 0) {
+	ret = rb_iseq_disasm(iseq->self);
     }
 
     return ret;

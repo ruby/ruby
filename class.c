@@ -25,7 +25,8 @@
 
 #include "ruby/ruby.h"
 #include "ruby/st.h"
-#include "node.h"
+#include "method.h"
+#include "vm_core.h"
 #include <ctype.h>
 
 extern st_table *rb_class_tbl;
@@ -123,28 +124,19 @@ struct clone_method_data {
 VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
 
 static int
-clone_method(ID mid, NODE *body, struct clone_method_data *data)
+clone_method(ID mid, const rb_method_entry_t *me, struct clone_method_data *data)
 {
-    if (body == 0) {
-	st_insert(data->tbl, mid, 0);
-    }
-    else {
-	NODE *fbody = body->nd_body->nd_body;
-
-	if (nd_type(fbody) == RUBY_VM_METHOD_NODE) {
-	    fbody = NEW_NODE(RUBY_VM_METHOD_NODE, 0,
-			     rb_iseq_clone((VALUE)fbody->nd_body, data->klass),
-			     0);
-	}
-	st_insert(data->tbl, mid,
-		  (st_data_t)
-                  NEW_NODE_LONGLIFE(
-                      NODE_FBODY,
-                      0,
-		      NEW_NODE_LONGLIFE(NODE_METHOD,
-                                        rb_gc_write_barrier(data->klass), /* TODO */
-                                        rb_gc_write_barrier((VALUE)fbody),
-                                        body->nd_body->nd_noex), 0));
+    switch (me->type) {
+      case VM_METHOD_TYPE_ISEQ: {
+	  VALUE newiseqval = rb_iseq_clone(me->body.iseq->self, data->klass);
+	  rb_iseq_t *iseq;
+	  GetISeqPtr(newiseqval, iseq);
+	  rb_add_method(data->klass, mid, VM_METHOD_TYPE_ISEQ, iseq, me->flag);
+	  break;
+      }
+      default:
+	rb_add_method_me(data->klass, mid, me, me->flag);
+	break;
     }
     return ST_CONTINUE;
 }
@@ -674,7 +666,7 @@ ins_methods_pub_i(ID name, long type, VALUE ary)
 }
 
 static int
-method_entry(ID key, NODE *body, st_table *list)
+method_entry(ID key, const rb_method_entry_t *me, st_table *list)
 {
     long type;
 
@@ -683,11 +675,11 @@ method_entry(ID key, NODE *body, st_table *list)
     }
 
     if (!st_lookup(list, key, 0)) {
-	if (body ==0 || !body->nd_body->nd_body) {
+	if (!me || me->type == VM_METHOD_TYPE_UNDEF) {
 	    type = -1; /* none */
 	}
 	else {
-	    type = VISI(body->nd_body->nd_noex);
+	    type = VISI(me->flag);
 	}
 	st_add_direct(list, key, type);
     }
@@ -874,44 +866,33 @@ rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
 }
 
 void
-rb_define_method_id(VALUE klass, ID name, VALUE (*func)(ANYARGS), int argc)
+rb_define_method_id(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc)
 {
-    if (func == rb_f_notimplement)
-        rb_define_notimplement_method_id(klass, name, NOEX_PUBLIC);
-    else
-        rb_add_method(klass, name, NEW_NODE_LONGLIFE(NODE_CFUNC, func, argc, 0), NOEX_PUBLIC);
+    rb_add_method_cfunc(klass, mid, func, argc, NOEX_PUBLIC);
 }
 
 void
 rb_define_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
-    rb_define_method_id(klass, rb_intern(name), func, argc);
+    rb_add_method_cfunc(klass, rb_intern(name), func, argc, NOEX_PUBLIC);
 }
 
 void
 rb_define_protected_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
-    ID id = rb_intern(name);
-    if (func == rb_f_notimplement)
-        rb_define_notimplement_method_id(klass, id, NOEX_PROTECTED);
-    else
-        rb_add_method(klass, id, NEW_NODE_LONGLIFE(NODE_CFUNC, func, argc, 0), NOEX_PROTECTED);
+    rb_add_method_cfunc(klass, rb_intern(name), func, argc, NOEX_PROTECTED);
 }
 
 void
 rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
-    ID id = rb_intern(name);
-    if (func == rb_f_notimplement)
-        rb_define_notimplement_method_id(klass, id, NOEX_PRIVATE);
-    else
-        rb_add_method(klass, id, NEW_NODE_LONGLIFE(NODE_CFUNC, func, argc, 0), NOEX_PRIVATE);
+    rb_add_method_cfunc(klass, rb_intern(name), func, argc, NOEX_PRIVATE);
 }
 
 void
 rb_undef_method(VALUE klass, const char *name)
 {
-    rb_add_method(klass, rb_intern(name), 0, NOEX_UNDEF);
+    rb_add_method(klass, rb_intern(name), VM_METHOD_TYPE_UNDEF, 0, NOEX_UNDEF);
 }
 
 #define SPECIAL_SINGLETON(x,c) do {\

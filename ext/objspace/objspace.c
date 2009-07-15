@@ -350,9 +350,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 	    VALUE node;
 	    switch (i) {
 #define COUNT_NODE(n) case n: node = ID2SYM(rb_intern(#n)); break;
-		COUNT_NODE(NODE_METHOD);
-		COUNT_NODE(NODE_FBODY);
-		COUNT_NODE(NODE_CFUNC);
 		COUNT_NODE(NODE_SCOPE);
 		COUNT_NODE(NODE_BLOCK);
 		COUNT_NODE(NODE_IF);
@@ -441,7 +438,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_DOT3);
 		COUNT_NODE(NODE_FLIP2);
 		COUNT_NODE(NODE_FLIP3);
-		COUNT_NODE(NODE_ATTRSET);
 		COUNT_NODE(NODE_SELF);
 		COUNT_NODE(NODE_NIL);
 		COUNT_NODE(NODE_TRUE);

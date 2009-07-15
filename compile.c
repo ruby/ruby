@@ -1855,12 +1855,6 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		}
 	    }
 	}
-
-	if (argc > 0) {
-	    if (mid == idSend || mid == id__send__ ) {
-		OPERAND_AT(iobj, 3) |= INT2FIX(VM_CALL_SEND_BIT);
-	    }
-	}
     }
     return COMPILE_OK;
 }

@@ -785,11 +785,11 @@ defined
 	break;
       case DEFINED_METHOD:{
 	  VALUE klass = CLASS_OF(v);
-	  NODE *method = (NODE *) rb_method_node(klass, SYM2ID(obj));
+	  const rb_method_entry_t *me = rb_method_entry(klass, SYM2ID(obj));
 
-	  if (method) {
-	      if (!(method->nd_noex & NOEX_PRIVATE)) {
-		  if (!((method->nd_noex & NOEX_PROTECTED) &&
+	  if (me) {
+	      if (!(me->flag & NOEX_PRIVATE)) {
+		  if (!((me->flag & NOEX_PROTECTED) &&
 			!rb_obj_is_kind_of(GET_SELF(),
 					   rb_class_real(klass)))) {
 		      expr_type = "method";
@@ -979,7 +979,7 @@ send
 (...)
 (VALUE val) // inc += - (int)(op_argc + ((op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? 1 : 0));
 {
-    NODE *mn;
+    const rb_method_entry_t *me;
     VALUE recv, klass;
     rb_block_t *blockptr = 0;
     rb_num_t num = caller_setup_args(th, GET_CFP(), op_flag, (int)op_argc,
@@ -990,14 +990,8 @@ send
     /* get receiver */
     recv = (flag & VM_CALL_FCALL_BIT) ? GET_SELF() : TOPN(num);
     klass = CLASS_OF(recv);
-    mn = vm_method_search(id, klass, ic);
-
-    /* send/funcall optimization */
-    if (flag & VM_CALL_SEND_BIT) {
-	vm_send_optimize(GET_CFP(), &mn, &flag, &num, &id, klass);
-    }
-
-    CALL_METHOD(num, blockptr, flag, id, mn, recv);
+    me = vm_method_search(id, klass, ic);
+    CALL_METHOD(num, blockptr, flag, id, me, recv);
 }
 
 /**
@@ -1017,15 +1011,15 @@ invokesuper
     rb_num_t num = caller_setup_args(th, GET_CFP(), op_flag,
 				     (int)op_argc, blockiseq, &blockptr);
     VALUE recv, klass;
-    NODE *mn;
     ID id;
-    const VALUE flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;
+    VALUE flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;
+    const rb_method_entry_t *me;
 
     recv = GET_SELF();
     vm_search_superclass(GET_CFP(), GET_ISEQ(), recv, TOPN(num), &id, &klass);
-    mn = rb_method_node(klass, id);
+    me = rb_method_entry(klass, id);
 
-    CALL_METHOD(num, blockptr, flag, id, mn, recv);
+    CALL_METHOD(num, blockptr, flag, id, me, recv);
 }
 
 /**
@@ -1629,10 +1623,10 @@ opt_neq
 (VALUE val)
 {
     extern VALUE rb_obj_not_equal(VALUE obj1, VALUE obj2);
-    NODE *mn = vm_method_search(idNeq, CLASS_OF(recv), ic1);
+    const rb_method_entry_t *me = vm_method_search(idNeq, CLASS_OF(recv), ic1);
     val = Qundef;
 
-    if (check_cfunc(mn, rb_obj_not_equal)) {
+    if (check_cfunc(me, rb_obj_not_equal)) {
 	val = opt_eq_func(recv, obj, ic2);
 
 	if (val != Qundef) {
@@ -1997,9 +1991,9 @@ opt_not
 (VALUE val)
 {
     extern VALUE rb_obj_not(VALUE obj);
-    NODE *mn = vm_method_search(idNot, CLASS_OF(recv), ic);
+    const rb_method_entry_t *me = vm_method_search(idNot, CLASS_OF(recv), ic);
 
-    if (check_cfunc(mn, rb_obj_not)) {
+    if (check_cfunc(me, rb_obj_not)) {
 	val = RTEST(recv) ? Qfalse : Qtrue;
     }
     else {

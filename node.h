@@ -20,12 +20,6 @@ extern "C" {
 #endif
 
 enum node_type {
-    NODE_METHOD,
-#define NODE_METHOD      NODE_METHOD
-    NODE_FBODY,
-#define NODE_FBODY       NODE_FBODY
-    NODE_CFUNC,
-#define NODE_CFUNC       NODE_CFUNC
     NODE_SCOPE,
 #define NODE_SCOPE       NODE_SCOPE
     NODE_BLOCK,
@@ -202,8 +196,6 @@ enum node_type {
 #define NODE_FLIP2       NODE_FLIP2
     NODE_FLIP3,
 #define NODE_FLIP3       NODE_FLIP3
-    NODE_ATTRSET,
-#define NODE_ATTRSET     NODE_ATTRSET
     NODE_SELF,
 #define NODE_SELF        NODE_SELF
     NODE_NIL,
@@ -356,11 +348,8 @@ typedef struct RNode {
 #define NEW_NODE(t,a0,a1,a2) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2))
 #define NEW_NODE_LONGLIFE(t,a0,a1,a2) rb_node_newnode_longlife((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2))
 
-#define NEW_METHOD(n,x,v) NEW_NODE(NODE_METHOD,x,n,v)
-#define NEW_FBODY(n,i) NEW_NODE(NODE_FBODY,i,n,0)
 #define NEW_DEFN(i,a,d,p) NEW_NODE(NODE_DEFN,0,i,NEW_SCOPE(a,d))
 #define NEW_DEFS(r,i,a,d) NEW_NODE(NODE_DEFS,r,i,NEW_SCOPE(a,d))
-#define NEW_CFUNC(f,c) NEW_NODE(NODE_CFUNC,f,c,0)
 #define NEW_IFUNC(f,c) NEW_NODE(NODE_IFUNC,f,c,0)
 #define NEW_SCOPE(a,b) NEW_NODE(NODE_SCOPE,local_tbl(),b,a)
 #define NEW_BLOCK(a) NEW_NODE(NODE_BLOCK,a,0,0)
@@ -446,7 +435,6 @@ typedef struct RNode {
 #define NEW_COLON3(i) NEW_NODE(NODE_COLON3,0,i,0)
 #define NEW_DOT2(b,e) NEW_NODE(NODE_DOT2,b,e,0)
 #define NEW_DOT3(b,e) NEW_NODE(NODE_DOT3,b,e,0)
-#define NEW_ATTRSET(a) NEW_NODE(NODE_ATTRSET,a,0,0)
 #define NEW_SELF() NEW_NODE(NODE_SELF,0,0,0)
 #define NEW_NIL() NEW_NODE(NODE_NIL,0,0,0)
 #define NEW_TRUE() NEW_NODE(NODE_TRUE,0,0,0)
@@ -460,30 +448,6 @@ typedef struct RNode {
 #define NEW_PRELUDE(p,b) NEW_NODE(NODE_PRELUDE,p,b,0)
 #define NEW_OPTBLOCK(a) NEW_NODE(NODE_OPTBLOCK,a,0,0)
 
-#define NOEX_PUBLIC    0x00
-#define NOEX_NOSUPER   0x01
-#define NOEX_PRIVATE   0x02
-#define NOEX_PROTECTED 0x04
-#define NOEX_MASK      0x06 /* 0110 */
-#define NOEX_BASIC     0x08
-
-#define NOEX_UNDEF     NOEX_NOSUPER
-
-#define NOEX_MODFUNC   0x12
-#define NOEX_SUPER     0x20
-#define NOEX_VCALL     0x40
-
-#define NOEX_SAFE(n) ((int)((n) >> 8) & 0x0F)
-#define NOEX_WITH(n, s) ((s << 8) | (n) | (ruby_running ? 0 : NOEX_BASIC))
-#define NOEX_WITH_SAFE(n) NOEX_WITH(n, rb_safe_level())
-
-#define CALL_PUBLIC 0
-#define CALL_FCALL  1
-#define CALL_VCALL  2
-#define CALL_SUPER  3
-
-#define RUBY_VM_METHOD_NODE NODE_METHOD
-
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);
 VALUE rb_parser_encoding(VALUE);
@@ -496,19 +460,8 @@ NODE *rb_compile_cstr(const char*, const char*, int, int);
 NODE *rb_compile_string(const char*, VALUE, int);
 NODE *rb_compile_file(const char*, VALUE, int);
 
-void rb_add_method(VALUE, ID, NODE *, int);
 NODE *rb_node_newnode(enum node_type,VALUE,VALUE,VALUE);
 NODE *rb_node_newnode_longlife(enum node_type,VALUE,VALUE,VALUE);
-
-NODE* rb_method_node(VALUE klass, ID id);
-int rb_node_arity(NODE* node);
-
-int rb_notimplement_body_p(NODE*);
-
-struct global_entry *rb_global_entry(ID);
-VALUE rb_gvar_get(struct global_entry *);
-VALUE rb_gvar_set(struct global_entry *, VALUE);
-VALUE rb_gvar_defined(struct global_entry *);
 
 #if defined(__cplusplus)
 #if 0

@@ -575,7 +575,7 @@ vm_yield(rb_thread_t *th, int argc, const VALUE *argv)
 
 VALUE
 rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
-		  int argc, const VALUE *argv, rb_block_t * blockptr)
+		  int argc, const VALUE *argv, const rb_block_t * blockptr)
 {
     VALUE val = Qundef;
     int state;
@@ -734,7 +734,7 @@ vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *
 	    }
 	}
 	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
-	    if ((*iter)(arg, file, line_no, rb_id2name(cfp->method_id))) break;
+	    if ((*iter)(arg, file, line_no, rb_id2name(cfp->me->original_id))) break;
 	}
 	cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp);
     }
@@ -929,22 +929,23 @@ rb_iter_break(void)
 static st_table *vm_opt_method_table = 0;
 
 static void
-rb_vm_check_redefinition_opt_method(const NODE *node)
+rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me)
 {
     VALUE bop;
-
-    if (st_lookup(vm_opt_method_table, (st_data_t)node, &bop)) {
-	ruby_vm_redefined_flag[bop] = 1;
+    if (me->type == VM_METHOD_TYPE_CFUNC) {
+	if (st_lookup(vm_opt_method_table, (st_data_t)me, &bop)) {
+	    ruby_vm_redefined_flag[bop] = 1;
+	}
     }
 }
 
 static void
 add_opt_method(VALUE klass, ID mid, VALUE bop)
 {
-    NODE *node;
-    if (st_lookup(RCLASS_M_TBL(klass), mid, (void *)&node) &&
-	nd_type(node->nd_body->nd_body) == NODE_CFUNC) {
-	st_insert(vm_opt_method_table, (st_data_t)node, (st_data_t)bop);
+    rb_method_entry_t *me;
+    if (st_lookup(RCLASS_M_TBL(klass), mid, (void *)&me) &&
+	me->type == VM_METHOD_TYPE_CFUNC) {
+	st_insert(vm_opt_method_table, (st_data_t)me, (st_data_t)bop);
     }
     else {
 	rb_bug("undefined optimized method: %s", rb_id2name(mid));
@@ -1323,8 +1324,8 @@ rb_thread_method_id_and_class(rb_thread_t *th,
     rb_control_frame_t *cfp = th->cfp;
     rb_iseq_t *iseq = cfp->iseq;
     if (!iseq) {
-	if (idp) *idp = cfp->method_id;
-	if (klassp) *klassp = cfp->method_class;
+	if (idp) *idp = cfp->me->original_id;
+	if (klassp) *klassp = cfp->me->klass;
 	return 1;
     }
     while (iseq) {
@@ -1367,10 +1368,10 @@ rb_thread_current_status(const rb_thread_t *th)
 			     file, line_no, RSTRING_PTR(iseq->name));
 	}
     }
-    else if (cfp->method_id) {
+    else if (cfp->me->original_id) {
 	str = rb_sprintf("`%s#%s' (cfunc)",
-			 RSTRING_PTR(rb_class_name(cfp->method_class)),
-			 rb_id2name(cfp->method_id));
+			 RSTRING_PTR(rb_class_name(cfp->me->klass)),
+			 rb_id2name(cfp->me->original_id));
     }
 
     return str;
@@ -1739,7 +1740,6 @@ static void
 vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 		 rb_num_t is_singleton, NODE *cref)
 {
-    NODE *newbody;
     VALUE klass = cref->nd_clss;
     int noex = (int)cref->nd_visi;
     rb_iseq_t *miseq;
@@ -1768,11 +1768,10 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
     COPY_CREF(miseq->cref_stack, cref);
     miseq->klass = klass;
     miseq->defined_method_id = id;
-    newbody = NEW_NODE_LONGLIFE(RUBY_VM_METHOD_NODE, 0, rb_gc_write_barrier(miseq->self), 0);
-    rb_add_method(klass, id, newbody, noex);
+    rb_add_method(klass, id, VM_METHOD_TYPE_ISEQ, miseq, noex);
 
     if (!is_singleton && noex == NOEX_MODFUNC) {
-	rb_add_method(rb_singleton_class(klass), id, newbody, NOEX_PUBLIC);
+	rb_add_method(rb_singleton_class(klass), id, VM_METHOD_TYPE_ISEQ, miseq, NOEX_PUBLIC);
     }
     INC_VM_STATE_VERSION();
 }

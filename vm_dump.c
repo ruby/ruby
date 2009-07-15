@@ -112,9 +112,9 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	    }
 	}
     }
-    else if (cfp->method_id) {
-	iseq_name = rb_id2name(cfp->method_id);
-	snprintf(posbuf, MAX_POSBUF, ":%s", rb_id2name(cfp->method_id));
+    else if (cfp->me) {
+	iseq_name = rb_id2name(cfp->me->original_id);
+	snprintf(posbuf, MAX_POSBUF, ":%s", rb_id2name(cfp->me->original_id));
 	line = -1;
     }
 
@@ -253,7 +253,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 
     if (iseq == 0) {
 	if (RUBYVM_CFUNC_FRAME_P(cfp)) {
-	    name = rb_id2name(cfp->method_id);
+	    name = rb_id2name(cfp->me->original_id);
 	}
 	else {
 	    name = "?";

@@ -684,7 +684,7 @@ frame_func_id(rb_control_frame_t *cfp)
 {
     rb_iseq_t *iseq = cfp->iseq;
     if (!iseq) {
-	return cfp->method_id;
+	return cfp->me->original_id;
     }
     while (iseq) {
 	if (RUBY_VM_IFUNC_P(iseq)) {

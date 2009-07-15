@@ -159,8 +159,8 @@ extern VALUE ruby_vm_const_missing_count;
   c1->nd_next = (NODE *)rb_gc_write_barrier((VALUE)__tmp_c2->nd_next);\
 } while (0)
 
-#define CALL_METHOD(num, blockptr, flag, id, mn, recv) do { \
-    VALUE v = vm_call_method(th, GET_CFP(), num, blockptr, flag, id, mn, recv); \
+#define CALL_METHOD(num, blockptr, flag, id, me, recv) do { \
+    VALUE v = vm_call_method(th, GET_CFP(), num, blockptr, flag, id, me, recv); \
     if (v == Qundef) { \
 	RESTORE_REGS(); \
 	NEXT_INSN(); \
@@ -189,7 +189,7 @@ extern VALUE ruby_vm_const_missing_count;
 
 #define CALL_SIMPLE_METHOD(num, id, recv) do { \
     VALUE klass = CLASS_OF(recv); \
-    CALL_METHOD(num, 0, 0, id, rb_method_node(klass, id), recv); \
+    CALL_METHOD(num, 0, 0, id, rb_method_entry(klass, id), recv); \
 } while (0)
 
 #endif /* RUBY_INSNHELPER_H */

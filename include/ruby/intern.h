@@ -275,7 +275,6 @@ int rb_method_basic_definition_p(VALUE, ID);
 VALUE rb_eval_cmd(VALUE, VALUE, int);
 int rb_obj_respond_to(VALUE, ID, int);
 int rb_respond_to(VALUE, ID);
-void rb_define_notimplement_method_id(VALUE mod, ID id, int noex);
 VALUE rb_f_notimplement(int argc, VALUE *argv, VALUE obj);
 void rb_interrupt(void);
 VALUE rb_apply(VALUE, ID, VALUE);
