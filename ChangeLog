@@ -1,3 +1,7 @@
+Thu Jul 16 08:57:44 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_method.c: separate clearing cache entry code.
+
 Thu Jul 16 08:56:32 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* dir.c (push_glob): re-fix GC problem.

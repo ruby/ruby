@@ -34,7 +34,8 @@ rb_clear_cache(void)
     ent = cache;
     end = ent + CACHE_SIZE;
     while (ent < end) {
-	ent->me = ent->mid = 0;
+	ent->me = 0;
+	ent->mid = 0;
 	ent++;
     }
 }
@@ -52,7 +53,8 @@ rb_clear_cache_for_undef(VALUE klass, ID id)
     end = ent + CACHE_SIZE;
     while (ent < end) {
 	if ((ent->me && ent->me->klass == klass) && ent->mid == id) {
-	    ent->me = ent->mid = 0;
+	    ent->me = 0;
+	    ent->mid = 0;
 	}
 	ent++;
     }
@@ -71,7 +73,8 @@ rb_clear_cache_by_id(ID id)
     end = ent + CACHE_SIZE;
     while (ent < end) {
 	if (ent->mid == id) {
-	    ent->me = ent->mid = 0;
+	    ent->me = 0;
+	    ent->mid = 0;
 	}
 	ent++;
     }
@@ -90,7 +93,8 @@ rb_clear_cache_by_class(VALUE klass)
     end = ent + CACHE_SIZE;
     while (ent < end) {
 	if (ent->klass == klass || (ent->me && ent->me->klass == klass)) {
-	    ent->me = ent->mid = 0;
+	    ent->me = 0;
+	    ent->mid = 0;
 	}
 	ent++;
     }
