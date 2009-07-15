@@ -1,3 +1,13 @@
+Tue Jul 14 01:06:31 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+ 	* enumerator.c (yielder_yield_i): use rb_proc_new instead of
+ 	  rb_iterate.  [ruby-dev:38518]
+ 
+ 	* README.EXT: rb_iterate is obsolete since 1.9; use rb_block_call
+ 	  instead.
+ 
+ 	* README.EXT.ja: ditto.
+
 Mon Jul 13 22:49:50 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/prime.rb (Prime#prime_division): now decomposes

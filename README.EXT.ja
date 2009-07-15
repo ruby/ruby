@@ -1234,12 +1234,23 @@ VALUE rb_iv_set(VALUE obj, const char *name, VALUE val)
 
 ** 制御構造
 
-VALUE rb_iterate(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
+VALUE rb_block_call(VALUE obj, ID mid, int argc, VALUE * argv,
+		    VALUE (*func) (ANYARGS), VALUE data2)
+
+  funcをブロックとして設定し, objをレシーバ, argcとargvを引
+  数としてmidメソッドを呼び出す. funcは第一引数にyieldされた
+  値, 第二引数にdata2, 第三, 第四引数にargcとargvを受け取る.
+
+[OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
 
   func2をブロックとして設定し, func1をイテレータとして呼ぶ． 
   func1には arg1が引数として渡され, func2には第1引数にイテレー
   タから与えられた値, 第2引数にarg2が渡される．
  
+  1.9でrb_iterateを使う場合は, func1の中でRubyレベルのメソッド
+  を呼び出さなければならない.
+  1.9でobsoleteとなった. 代わりにrb_block_callが用意された.
+
 VALUE rb_yield(VALUE val)
 
   valを値としてイテレータブロックを呼び出す．
