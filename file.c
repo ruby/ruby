@@ -3124,8 +3124,8 @@ rb_file_join(ary, sep)
 	  case T_STRING:
 	    break;
 	  case T_ARRAY:
-	    if (rb_inspecting_p(tmp)) {
-		tmp = rb_str_new2("[...]");
+	    if (tmp == ary || rb_inspecting_p(tmp)) {
+		rb_raise(rb_eArgError, "recursive array");
 	    }
 	    else {
 		VALUE args[2];
