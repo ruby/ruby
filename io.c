@@ -6479,7 +6479,8 @@ static void
 argf_free(void *ptr)
 {
     struct argf *p = ptr;
-    free(p->inplace);
+    xfree(p->inplace);
+    xfree(p);
 }
 
 static inline void
