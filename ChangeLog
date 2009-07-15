@@ -1,3 +1,7 @@
+Wed Jul 15 23:45:11 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* dir.c (push_glob): fix GC problem.
+
 Wed Jul 15 17:33:52 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* ext/purelib.rb: translates a fake path to rubygems in $" into
