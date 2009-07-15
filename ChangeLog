@@ -1,3 +1,7 @@
+Thu Jul 16 08:55:27 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: add method.h.
+
 Thu Jul 16 08:53:26 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* io.c (argf_free): free data body.
