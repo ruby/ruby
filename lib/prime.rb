@@ -194,7 +194,12 @@ class Prime
   #
   def prime_division(value, generator= Prime::Generator23.new)
     raise ZeroDivisionError if value == 0
-    pv = []
+    if value < 0
+      value = -value
+      pv = [[-1, 1]]
+    else
+      pv = []
+    end
     for prime in generator
       count = 0
       while (value1, mod = value.divmod(prime)

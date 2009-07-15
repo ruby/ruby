@@ -98,10 +98,15 @@ class TestPrime < Test::Unit::TestCase
     def test_prime_division
       pd = PRIMES.inject(&:*).prime_division
       assert_equal PRIMES.map{|p| [p, 1]}, pd
+
+      pd = (-PRIMES.inject(&:*)).prime_division
+      assert_equal [-1, *PRIMES].map{|p| [p, 1]}, pd
     end
 
     def test_from_prime_division
       assert_equal PRIMES.inject(&:*), Integer.from_prime_division(PRIMES.map{|p| [p,1]})
+
+      assert_equal -PRIMES.inject(&:*), Integer.from_prime_division([[-1, 1]] + PRIMES.map{|p| [p,1]})
     end
 
     def test_prime?
