@@ -2,7 +2,7 @@
 
   method.h -
 
-  $Author: ko1 $
+  $Author$
   created at: Wed Jul 15 20:02:33 2009
 
   Copyright (C) 2009 Koichi Sasada
