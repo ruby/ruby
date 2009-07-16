@@ -1,3 +1,12 @@
+Thu Jul 16 20:58:18 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole.rb (test_s_codepage_changed,
+	  test_s_locale_set, test_s_locale_change): skip test if Japanese
+	  locale is not installed. [ruby-core:23806]
+	
+	* test/win32ole/test_win32ole_variant.rb (test_conversion_str2cy):
+	  dito.
+
 Thu Jul 16 19:02:28 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/lib/socket.rb (Socket.tcp_server_sockets_port0): servers

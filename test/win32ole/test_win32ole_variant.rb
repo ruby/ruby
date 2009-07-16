@@ -384,9 +384,15 @@ if defined?(WIN32OLE_VARIANT)
 
     def test_conversion_str2cy
       begin
-        WIN32OLE.locale = 0x0411 # set locale Japanese
-        obj = WIN32OLE_VARIANT.new("\\10,000", WIN32OLE::VARIANT::VT_CY)
-        assert_equal("10000", obj.value)
+        begin
+          WIN32OLE.locale = 0x0411 # set locale Japanese
+        rescue WIN32OLERuntimeError
+          STDERR.puts("\n#{__FILE__}:#{__LINE__}:#{self.class.name}.test_conversion_str2cy is skipped(Japanese locale is not installed)")
+        end
+        if WIN32OLE.locale == 0x0411
+          obj = WIN32OLE_VARIANT.new("\\10,000", WIN32OLE::VARIANT::VT_CY)
+          assert_equal("10000", obj.value)
+        end
       ensure
         WIN32OLE.locale = WIN32OLE::LOCALE_SYSTEM_DEFAULT
       end

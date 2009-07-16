@@ -344,8 +344,11 @@ if defined?(WIN32OLE)
 
         WIN32OLE.codepage = cp
         file = fso.opentextfile(fname, 2, true)
-        file.write [0x3042].pack("U*").force_encoding("UTF-8")
-        file.close
+        begin
+          file.write [0x3042].pack("U*").force_encoding("UTF-8")
+        ensure
+          file.close
+        end
         str = ""
         open(fname, "r:ascii-8bit") {|ifs|
           str = ifs.read
@@ -360,8 +363,11 @@ if defined?(WIN32OLE)
         if (WIN32OLE.codepage == 20932)
           WIN32OLE.codepage = cp
           file = fso.opentextfile(fname, 2, true)
-          file.write [164, 162].pack("c*").force_encoding("EUC-JP")
-          file.close
+          begin
+            file.write [164, 162].pack("c*").force_encoding("EUC-JP")
+          ensure
+            file.close
+          end
           open(fname, "r:ascii-8bit") {|ifs|
             str = ifs.read
           }
@@ -398,7 +404,12 @@ if defined?(WIN32OLE)
 
     def test_s_locale_set
       begin
-        WIN32OLE.locale = 1041
+        begin
+          WIN32OLE.locale = 1041
+        rescue WIN32OLERuntimeError
+          STDERR.puts("\n#{__FILE__}:#{__LINE__}:#{self.class.name}.test_s_locale_set is skipped(Japanese locale is not installed)")
+          return
+        end
         assert_equal(1041, WIN32OLE.locale)
         WIN32OLE.locale = WIN32OLE::LOCALE_SYSTEM_DEFAULT
         assert_raise(WIN32OLERuntimeError) {
@@ -412,16 +423,30 @@ if defined?(WIN32OLE)
 
     def test_s_locale_change
       begin
-        WIN32OLE.locale = 0x0411
-        obj = WIN32OLE_VARIANT.new("\\100,000", WIN32OLE::VARIANT::VT_CY)
-        assert_equal("100000", obj.value)
-        assert_raise(WIN32OLERuntimeError) {
-          obj = WIN32OLE_VARIANT.new("$100.000", WIN32OLE::VARIANT::VT_CY)
-        }
+        begin
+          WIN32OLE.locale = 0x0411
+        rescue WIN32OLERuntimeError
+        end
+        if WIN32OLE.locale == 0x0411
+          obj = WIN32OLE_VARIANT.new("\\100,000", WIN32OLE::VARIANT::VT_CY)
+          assert_equal("100000", obj.value)
+          assert_raise(WIN32OLERuntimeError) {
+            obj = WIN32OLE_VARIANT.new("$100.000", WIN32OLE::VARIANT::VT_CY)
+          }
+        else
+          STDERR.puts("\n#{__FILE__}:#{__LINE__}:#{self.class.name}.test_s_locale_change is skipped(Japanese locale is not installed)")
+        end
 
-        WIN32OLE.locale = 1033
-        obj = WIN32OLE_VARIANT.new("$100,000", WIN32OLE::VARIANT::VT_CY)
-        assert_equal("100000", obj.value)
+        begin
+          WIN32OLE.locale = 1033
+        rescue WIN32OLERuntimeError
+        end
+        if WIN32OLE.locale == 1033
+          obj = WIN32OLE_VARIANT.new("$100,000", WIN32OLE::VARIANT::VT_CY)
+          assert_equal("100000", obj.value)
+        else
+          STDERR.puts("\n#{__FILE__}:#{__LINE__}:#{self.class.name}.test_s_locale_change is skipped(US English locale is not installed)")
+        end
       ensure
         WIN32OLE.locale = WIN32OLE::LOCALE_SYSTEM_DEFAULT
       end
