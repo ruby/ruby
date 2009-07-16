@@ -45,85 +45,85 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
   again:
     switch (me->type) {
       case VM_METHOD_TYPE_ISEQ: {
-	  rb_control_frame_t *reg_cfp;
-	  int i;
+	rb_control_frame_t *reg_cfp;
+	int i;
 
-	  rb_vm_set_finish_env(th);
-	  reg_cfp = th->cfp;
+	rb_vm_set_finish_env(th);
+	reg_cfp = th->cfp;
 
-	  CHECK_STACK_OVERFLOW(reg_cfp, argc + 1);
+	CHECK_STACK_OVERFLOW(reg_cfp, argc + 1);
 
-	  *reg_cfp->sp++ = recv;
-	  for (i = 0; i < argc; i++) {
-	      *reg_cfp->sp++ = argv[i];
-	  }
+	*reg_cfp->sp++ = recv;
+	for (i = 0; i < argc; i++) {
+	    *reg_cfp->sp++ = argv[i];
+	}
 
-	  vm_setup_method(th, reg_cfp, recv, argc, blockptr, 0 /* flag */, me);
-	  val = vm_exec(th);
-	  break;
+	vm_setup_method(th, reg_cfp, recv, argc, blockptr, 0 /* flag */, me);
+	val = vm_exec(th);
+	break;
       }
       case VM_METHOD_TYPE_CFUNC: {
-	  EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
-	  {
-	      rb_control_frame_t *reg_cfp = th->cfp;
-	      rb_control_frame_t *cfp =
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
+	{
+	    rb_control_frame_t *reg_cfp = th->cfp;
+	    rb_control_frame_t *cfp =
 		vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
 			      recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
 
-	      cfp->me = me;
-	      val = call_cfunc(me->body.cfunc.func, recv, me->body.cfunc.argc, argc, argv);
+	    cfp->me = me;
+	    val = call_cfunc(me->body.cfunc.func, recv, me->body.cfunc.argc, argc, argv);
 
-	      if (reg_cfp != th->cfp + 1) {
-		  rb_bug("cfp consistency error - call0");
-	      }
-	      vm_pop_frame(th);
-	  }
-	  EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, id, klass);
-	  break;
+	    if (reg_cfp != th->cfp + 1) {
+		rb_bug("cfp consistency error - call0");
+	    }
+	    vm_pop_frame(th);
+	}
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, id, klass);
+	break;
       }
       case VM_METHOD_TYPE_ATTRSET: {
-	  if (argc != 1) {
-	      rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
-	  }
-	  val = rb_ivar_set(recv, me->body.attr_id, argv[0]);
-	  break;
+	if (argc != 1) {
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
+	}
+	val = rb_ivar_set(recv, me->body.attr_id, argv[0]);
+	break;
       }
       case VM_METHOD_TYPE_IVAR: {
-	  if (argc != 0) {
-	      rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
-	  }
-	  val = rb_attr_get(recv, me->body.attr_id);
-	  break;
+	if (argc != 0) {
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
+	}
+	val = rb_attr_get(recv, me->body.attr_id);
+	break;
       }
       case VM_METHOD_TYPE_BMETHOD: {
-	  val = vm_call_bmethod(th, recv, argc, argv, blockptr, me);
-	  break;
+	val = vm_call_bmethod(th, recv, argc, argv, blockptr, me);
+	break;
       }
       case VM_METHOD_TYPE_ZSUPER: {
-	  klass = RCLASS_SUPER(klass);
-	  if (!klass || !(me = rb_method_entry(klass, id))) {
-	      return method_missing(recv, id, argc, argv, 0);
-	  }
-	  RUBY_VM_CHECK_INTS();
-	  goto again;
+	klass = RCLASS_SUPER(klass);
+	if (!klass || !(me = rb_method_entry(klass, id))) {
+	    return method_missing(recv, id, argc, argv, 0);
+	}
+	RUBY_VM_CHECK_INTS();
+	goto again;
       }
       case VM_METHOD_TYPE_OPTIMIZED: {
-	  switch (me->body.optimize_type) {
-	    case OPTIMIZED_METHOD_TYPE_SEND:
-	      val = send_internal(argc, argv, recv, NOEX_NOSUPER | NOEX_PRIVATE);
-	      break;
-	    case OPTIMIZED_METHOD_TYPE_CALL: {
-		rb_proc_t *proc;
-		GetProcPtr(recv, proc);
-		val = rb_vm_invoke_proc(th, proc, proc->block.self, argc, argv, blockptr);
-		break;
-	    }
-	    default:
-	      rb_bug("vm_call0: unsupported optimized method type (%d)", me->body.optimize_type);
-	      val = Qundef;
-	      break;
+	switch (me->body.optimize_type) {
+	  case OPTIMIZED_METHOD_TYPE_SEND:
+	    val = send_internal(argc, argv, recv, NOEX_NOSUPER | NOEX_PRIVATE);
+	    break;
+	  case OPTIMIZED_METHOD_TYPE_CALL: {
+	    rb_proc_t *proc;
+	    GetProcPtr(recv, proc);
+	    val = rb_vm_invoke_proc(th, proc, proc->block.self, argc, argv, blockptr);
+	    break;
 	  }
-	  break;
+	  default:
+	    rb_bug("vm_call0: unsupported optimized method type (%d)", me->body.optimize_type);
+	    val = Qundef;
+	    break;
+	}
+	break;
       }
       default:
 	rb_bug("vm_call0: unsupported method type (%d)", me->type);
