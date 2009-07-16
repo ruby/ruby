@@ -312,7 +312,7 @@ class Socket
     }
     sockets
   ensure
-    sockets.each {|s| s.close if !s.closed? } if $!
+    sockets.each {|s| s.close if !s.closed? } if $! && sockets
   end
   class << self
     private :tcp_server_sockets_port0
