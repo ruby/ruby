@@ -5648,6 +5648,9 @@ io_reopen(VALUE io, VALUE nfile)
         if (io_fflush(fptr) < 0)
             rb_sys_fail(0);
     }
+    else {
+	io_tell(fptr);
+    }
 
     /* copy rb_io_t structure */
     fptr->mode = orig->mode | (fptr->mode & FMODE_PREP);
