@@ -1837,7 +1837,6 @@ else
 	DLEXT=dll;;
     when(cygwin*|mingw*|*djgpp*)
 	LOAD_RELATIVE=1
-	AC_DEFINE(MANGLED_PATH)
 	DLEXT=so;;
     when(*)
 	DLEXT=so;;
