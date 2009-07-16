@@ -423,7 +423,7 @@ fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
     seed[0] ^= tv.tv_usec;
     seed[1] ^= (unsigned int)tv.tv_sec;
 #if SIZEOF_TIME_T > SIZEOF_INT
-    seed[0] ^= (unsigned int)(tv.tv_sec >> SIZEOF_INT * CHAR_BIT);
+    seed[0] ^= (unsigned int)((time_t)tv.tv_sec >> SIZEOF_INT * CHAR_BIT);
 #endif
     seed[2] ^= getpid() ^ (n++ << 16);
     seed[3] ^= (unsigned int)(VALUE)&seed;

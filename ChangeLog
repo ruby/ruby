@@ -1,3 +1,7 @@
+Thu Jul 16 18:42:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (fill_random_seed): suppress a warning.
+
 Thu Jul 16 18:30:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_aset, recursive_hash): rejects recursive hash.
