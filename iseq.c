@@ -791,7 +791,7 @@ insn_operand_intern(rb_iseq_t *iseq,
 	}
       case TS_GENTRY:
 	{
-	    struct global_entry *entry = (struct global_entry *)op;
+	    struct rb_global_entry *entry = (struct rb_global_entry *)op;
 	    ret = rb_str_dup(rb_id2str(entry->id));
 	}
 	break;
@@ -1213,7 +1213,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 		break;
 	      case TS_GENTRY:
 		{
-		    struct global_entry *entry = (struct global_entry *)*seq;
+		    struct rb_global_entry *entry = (struct rb_global_entry *)*seq;
 		    rb_ary_push(ary, ID2SYM(entry->id));
 		}
 		break;

@@ -137,8 +137,8 @@ extern VALUE ruby_vm_const_missing_count;
 
 #define GET_PREV_DFP(dfp)                ((VALUE *)((dfp)[0] & ~0x03))
 
-#define GET_GLOBAL(entry)       rb_gvar_get((struct global_entry*)entry)
-#define SET_GLOBAL(entry, val)  rb_gvar_set((struct global_entry*)entry, val)
+#define GET_GLOBAL(entry)       rb_gvar_get((struct rb_global_entry*)entry)
+#define SET_GLOBAL(entry, val)  rb_gvar_set((struct rb_global_entry*)entry, val)
 
 #define GET_CONST_INLINE_CACHE(dst) ((IC) * (GET_PC() + (dst) + 2))
 

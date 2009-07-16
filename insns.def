@@ -761,7 +761,7 @@ defined
 	klass = vm_get_cbase(GET_ISEQ(), GET_LFP(), GET_DFP());
 	break;
       case DEFINED_GVAR:
-	if (rb_gvar_defined((struct global_entry *)(obj & ~1))) {
+	if (rb_gvar_defined((struct rb_global_entry *)(obj & ~1))) {
 	    expr_type = "global-variable";
 	}
 	break;

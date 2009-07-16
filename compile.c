@@ -1447,8 +1447,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			break;
 		      case TS_GENTRY:
 			{
-			    struct global_entry *entry =
-				(struct global_entry *)(operands[j] & (~1));
+			    struct rb_global_entry *entry =
+				(struct rb_global_entry *)(operands[j] & (~1));
 			    generated_iseq[pos + 1 + j] = (VALUE)entry;
 			}
 			break;
@@ -4975,7 +4975,7 @@ insn_data_to_s_detail(INSN *iobj)
 		break;
 	      case TS_GENTRY:
 		{
-		    struct global_entry *entry = (struct global_entry *)
+		    struct rb_global_entry *entry = (struct rb_global_entry *)
 		      (OPERAND_AT(iobj, j) & (~1));
 		    rb_str_cat2(str, rb_id2name(entry->id));
 		}

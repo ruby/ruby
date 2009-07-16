@@ -491,16 +491,6 @@ typedef struct {
     VALUE env;
 } rb_binding_t;
 
-struct global_entry {
-    struct global_variable *var;
-    ID id;
-};
-
-struct global_entry *rb_global_entry(ID);
-VALUE rb_gvar_get(struct global_entry *);
-VALUE rb_gvar_set(struct global_entry *, VALUE);
-VALUE rb_gvar_defined(struct global_entry *);
-
 /* used by compile time and send insn */
 #define VM_CALL_ARGS_SPLAT_BIT     (0x01 << 1)
 #define VM_CALL_ARGS_BLOCKARG_BIT  (0x01 << 2)

@@ -289,6 +289,7 @@ rb_obj_classname(VALUE obj)
 }
 
 #define global_variable rb_global_variable
+#define global_entry rb_global_entry
 
 #define gvar_getter_t rb_gvar_getter_t
 #define gvar_setter_t rb_gvar_setter_t
@@ -309,11 +310,6 @@ struct global_variable {
     gvar_marker_t *marker;
     int block_trace;
     struct trace_var *trace;
-};
-
-struct global_entry {
-    struct global_variable *var;
-    ID id;
 };
 
 #define undef_getter	rb_gvar_undef_getter
