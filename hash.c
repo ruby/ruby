@@ -1016,6 +1016,9 @@ VALUE
 rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 {
     rb_hash_modify(hash);
+    if (hash == key) {
+	rb_raise(rb_eArgError, "recursive key for hash");
+    }
     if (RHASH(hash)->ntbl->type == &identhash || rb_obj_class(key) != rb_cString) {
 	st_insert(RHASH(hash)->ntbl, key, val);
     }
@@ -1546,7 +1549,7 @@ recursive_hash(VALUE hash, VALUE dummy, int recur)
     VALUE hval;
 
     if (recur) {
-	return LONG2FIX(0);
+	rb_raise(rb_eArgError, "recursive key for hash");
     }
     if (!RHASH(hash)->ntbl)
         return LONG2FIX(0);
