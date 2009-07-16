@@ -1178,7 +1178,10 @@ module TkCore
       if WITH_RUBY_VM ### check Ruby 1.9 !!!!!!!
         # *** NEED TO FIX ***
         ip = TclTkIp.new(name, opts)
-        if ip._invoke_without_enc('tk', 'windowingsystem') == 'aqua' &&
+        if RUBY_PLATFORM =~ /cygwin/
+          RUN_EVENTLOOP_ON_MAIN_THREAD = true
+          INTERP = ip
+        elsif ip._invoke_without_enc('tk', 'windowingsystem') == 'aqua' &&
             (TclTkLib.get_version<=>[8,4,TclTkLib::RELEASE_TYPE::FINAL,6]) > 0
           # *** KNOWN BUG ***
           #   Main event loop thread of TkAqua (> Tk8.4.9) must be the main
@@ -5636,7 +5639,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2009-07-12'.freeze
+  RELEASE_DATE = '2009-07-16'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

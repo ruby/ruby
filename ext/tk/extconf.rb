@@ -1,6 +1,6 @@
 ##############################################################
 # extconf.rb for tcltklib
-# release date: 2009-07-12
+# release date: 2009-07-15
 ##############################################################
 require 'mkmf'
 
@@ -214,6 +214,11 @@ def get_shlib_path_head
     }
   end
 
+  unless TkLib_Config["space-on-tk-libpath"]
+    path_head.delete_if{|path| path =~ / /}
+    path_dirs.delete_if{|path| path =~ / /}
+  end
+
   [path_head, path_dirs]
 end
 
@@ -417,6 +422,10 @@ def search_tclConfig(*paths) # list of lib-dir or [tcl-libdir, tk-libdir]
       dirs << dir
       dirs << File.expand_path(File.join(dir, '..'))
     }
+
+    unless TkLib_Config["space-on-tk-libpath"]
+      dirs.delete_if{|path| path =~ / /}
+    end
 
     config_dir.concat(dirs.zip(dirs))
 
@@ -627,7 +636,14 @@ def check_shlib_search_path(paths)
 
   path_list = check_NG_path(path_list)
 
-  path_list.each{|path| $LIBPATH |= [path.strip] }
+  if is_win32?
+    # exist-dir only
+    path_list.each{|path|
+      path = path.strip; $LIBPATH |= [path] if File.directory?(path)
+    }
+  else
+    path_list.each{|path| $LIBPATH |= [path.strip] }
+  end
 end
 
 def find_tcl(tcllib, stubs, version, *opt_paths)
@@ -646,6 +662,10 @@ def find_tcl(tcllib, stubs, version, *opt_paths)
     "/Tcl/lib", "/Program Files/Tcl/lib"
   ].find_all{|dir| File.directory?(dir)}
 
+  unless TkLib_Config["space-on-tk-libpath"]
+    default_paths.delete_if{|path| path =~ / /}
+  end
+
   if (paths = opt_paths.compact).empty?
     if TclConfig_Info['config_file_path']
       # use definisions on tclConfig.sh
@@ -654,9 +674,11 @@ def find_tcl(tcllib, stubs, version, *opt_paths)
 
       unless stubs
         #*** Probably, TCL_LIBS is a subset of TK_LIBS. ***
-        # $LDFLAGS << ' ' << TclConfig_Info['TCL_LIBS']
-        # $DLDFLAGS << ' ' << TclConfig_Info['TCL_LIBS']
-        $LDFLAGS << ' ' << TclConfig_Info['TCL_LIB_SPEC']
+        unless is_win32? # ignore tclConfig on Windows
+          # $LDFLAGS << ' ' << TclConfig_Info['TCL_LIBS']
+          # $DLDFLAGS << ' ' << TclConfig_Info['TCL_LIBS']
+          $LDFLAGS << ' ' << TclConfig_Info['TCL_LIB_SPEC']
+        end
         return true
       end
 
@@ -666,9 +688,11 @@ def find_tcl(tcllib, stubs, version, *opt_paths)
         return false
       else
         #*** Probably, TCL_LIBS is a subset of TK_LIBS. ***
-        # $LDFLAGS << ' ' << TclConfig_Info['TCL_LIBS']
-        # $DLDFLAGS << ' ' << TclConfig_Info['TCL_LIBS']
-        $LDFLAGS << ' ' << TclConfig_Info['TCL_STUB_LIB_SPEC']
+        unless is_win32? # ignore tclConfig on Windows
+          # $LDFLAGS << ' ' << TclConfig_Info['TCL_LIBS']
+          # $DLDFLAGS << ' ' << TclConfig_Info['TCL_LIBS']
+          $LDFLAGS << ' ' << TclConfig_Info['TCL_STUB_LIB_SPEC']
+        end
         return true
       end
     end
@@ -742,6 +766,10 @@ def find_tk(tklib, stubs, version, *opt_paths)
     "/Tcl/lib", "/Program Files/Tcl/lib"
   ].find_all{|dir| File.directory?(dir)}
 
+  unless TkLib_Config["space-on-tk-libpath"]
+    default_paths.delete_if{|path| path =~ / /}
+  end
+
   if (paths = opt_paths.compact).empty?
     if TkConfig_Info['config_file_path']
       # use definisions on tkConfig.sh
@@ -749,9 +777,12 @@ def find_tk(tklib, stubs, version, *opt_paths)
       $LIBPATH |= [$2] unless $2.empty?
 
       unless stubs
-        $LDFLAGS << ' ' << parse_TK_LIBS(TkConfig_Info['TK_LIBS'])
-        # $DLDFLAGS << ' ' << parse_TK_LIBS(TkConfig_Info['TK_LIBS'])
-        $LDFLAGS << ' ' << TkConfig_Info['TK_LIB_SPEC']
+        unless is_win32? # ignore tclConfig on Windows
+          # $LDFLAGS << ' ' << parse_TK_LIBS(TkConfig_Info['TK_LIBS'])
+          $LDFLAGS << ' ' << TkConfig_Info['TK_LIBS'] unless is_win32?
+          # $DLDFLAGS << ' ' << parse_TK_LIBS(TkConfig_Info['TK_LIBS'])
+          $LDFLAGS << ' ' << TkConfig_Info['TK_LIB_SPEC'] unless is_win32?
+        end
         return true
       end
 
@@ -759,9 +790,12 @@ def find_tk(tklib, stubs, version, *opt_paths)
         puts "#{TkConfig_Info['config_file_path']} tells us that your Tcl/Tk library doesn't support stub."
         return false
       else
-        $LDFLAGS << ' ' << parse_TK_LIBS(TkConfig_Info['TK_LIBS'])
-        # $DLDFLAGS << ' ' << parse_TK_LIBS(TkConfig_Info['TK_LIBS'])
-        $LDFLAGS << ' ' << TkConfig_Info['TK_STUB_LIB_SPEC']
+        unless is_win32? # ignore tclConfig on Windows
+          # $LDFLAGS << ' ' << parse_TK_LIBS(TkConfig_Info['TK_LIBS'])
+          $LDFLAGS << ' ' << TkConfig_Info['TK_LIBS']
+          # $DLDFLAGS << ' ' << parse_TK_LIBS(TkConfig_Info['TK_LIBS'])
+          $LDFLAGS << ' ' << TkConfig_Info['TK_STUB_LIB_SPEC']
+        end
         return true
       end
     end
@@ -817,6 +851,10 @@ def find_tcltk_header(tclver, tkver)
     "c:/Tcl/include", "c:/Program Files/Tcl/include",
     "/Tcl/include", "/Program Files/Tcl/include"
   ].find_all{|dir| File.directory?(dir)}
+
+  unless TkLib_Config["space-on-tk-libpath"]
+    base_dir.delete_if{|path| path =~ / /}
+  end
 
   if TclConfig_Info['TCL_INCLUDE_SPEC'] && 
       have_tcl_h = try_cpp('tcl.h', TclConfig_Info['TCL_INCLUDE_SPEC'])
@@ -1122,6 +1160,10 @@ if activeTcl = with_config("ActiveTcl", true)
   activeTcl = '/opt/ActiveTcl*/lib' unless activeTcl.kind_of? String
 end
 TkLib_Config["ActiveTcl"] = activeTcl
+
+# allow space chars on a libpath
+TkLib_Config["space-on-tk-libpath"] = 
+  enable_config("space-on-tk-libpath", ! is_win32?)
 
 # enable Tcl/Tk stubs?
 =begin

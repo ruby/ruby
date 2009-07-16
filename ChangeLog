@@ -1,3 +1,11 @@
+Thu Jul 16 23:32:16 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb,ext/tk/config_list.in: ignore paths which includes
+	  white space characters on Windows.[ruby-dev:38794]
+
+	* ext/tk/lib/tk.rb: works on Cygwin (limitation:: Tk.mainloop works on
+	  the main thread only).
+
 Thu Jul 16 20:58:18 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole.rb (test_s_codepage_changed,
