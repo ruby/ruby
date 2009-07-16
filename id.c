@@ -24,7 +24,6 @@ Init_id(void)
     REGISTER_SYMID(idIFUNC, "<IFUNC>");
     REGISTER_SYMID(idCFUNC, "<CFUNC>");
     REGISTER_SYMID(idRespond_to, "respond_to?");
-    REGISTER_SYMID(idThrowState, "#__ThrowState__");
 
     REGISTER_SYMID(id_core_set_method_alias,   	    "core#set_method_alias");
     REGISTER_SYMID(id_core_set_variable_alias, 	    "core#set_variable_alias");

@@ -1113,11 +1113,6 @@ vm_exec(rb_thread_t *th)
 
 	err = th->errinfo;
 
-	if (state == TAG_RAISE) {
-	    if (OBJ_FROZEN(err)) rb_exc_raise(err);
-	    rb_ivar_set(err, idThrowState, INT2FIX(state));
-	}
-
       exception_handler:
 	cont_pc = cont_sp = catch_iseqval = 0;
 

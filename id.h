@@ -61,14 +61,13 @@ enum ruby_method_ids {
     idRespond_to = 366,
     idIFUNC = 367,
     idCFUNC = 368,
-    idThrowState = 369,
-    id_core_set_method_alias = 370,
-    id_core_set_variable_alias = 371,
-    id_core_undef_method = 372,
-    id_core_define_method = 373,
-    id_core_define_singleton_method = 374,
-    id_core_set_postexe = 375,
-    tLAST_TOKEN = 376,
+    id_core_set_method_alias = 369,
+    id_core_set_variable_alias = 370,
+    id_core_undef_method = 371,
+    id_core_define_method = 372,
+    id_core_define_singleton_method = 373,
+    id_core_set_postexe = 374,
+    tLAST_TOKEN = 375,
 #endif
     idDot2 = tDOT2,
     idDot3 = tDOT3,
@@ -156,14 +155,13 @@ ruby_method_id_check_for(idNULL, 365);
 ruby_method_id_check_for(idRespond_to, 366);
 ruby_method_id_check_for(idIFUNC, 367);
 ruby_method_id_check_for(idCFUNC, 368);
-ruby_method_id_check_for(idThrowState, 369);
-ruby_method_id_check_for(id_core_set_method_alias, 370);
-ruby_method_id_check_for(id_core_set_variable_alias, 371);
-ruby_method_id_check_for(id_core_undef_method, 372);
-ruby_method_id_check_for(id_core_define_method, 373);
-ruby_method_id_check_for(id_core_define_singleton_method, 374);
-ruby_method_id_check_for(id_core_set_postexe, 375);
-ruby_method_id_check_for(tLAST_TOKEN, 376);
+ruby_method_id_check_for(id_core_set_method_alias, 369);
+ruby_method_id_check_for(id_core_set_variable_alias, 370);
+ruby_method_id_check_for(id_core_undef_method, 371);
+ruby_method_id_check_for(id_core_define_method, 372);
+ruby_method_id_check_for(id_core_define_singleton_method, 373);
+ruby_method_id_check_for(id_core_set_postexe, 374);
+ruby_method_id_check_for(tLAST_TOKEN, 375);
 };
 #endif
 

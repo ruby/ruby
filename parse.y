@@ -746,7 +746,6 @@ static void token_info_pop(struct parser_params*, const char *token);
 %nonassoc idRespond_to
 %nonassoc idIFUNC
 %nonassoc idCFUNC
-%nonassoc idThrowState
 %nonassoc id_core_set_method_alias
 %nonassoc id_core_set_variable_alias
 %nonassoc id_core_undef_method
