@@ -53,6 +53,12 @@ bigzero_p(VALUE x)
 }
 
 int
+rb_bigzero_p(VALUE x)
+{
+    return BIGZEROP(x);
+}
+
+int
 rb_cmpint(VALUE val, VALUE a, VALUE b)
 {
     if (NIL_P(val)) {
@@ -141,6 +147,12 @@ bignew_1(VALUE klass, long len, int sign)
 }
 
 #define bignew(len,sign) bignew_1(rb_cBignum,len,sign)
+
+VALUE
+rb_big_new(long len, int sign)
+{
+    return bignew(len, sign != 0);
+}
 
 VALUE
 rb_big_clone(VALUE x)

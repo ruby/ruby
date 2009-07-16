@@ -1,4 +1,7 @@
-Thu Jul 16 15:00:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jul 16 15:52:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_new, rb_bigzero_p), range.c (rb_range_values):
+	  added for random.c.
 
 	* random.c (rb_random_t): objectified.  [EXPERIMENTAL]
 	  [ruby-dev:30954]

@@ -601,12 +601,11 @@ range_max(VALUE range)
     }
 }
 
-
-VALUE
-rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
+int
+rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
 {
     VALUE b, e;
-    long beg, end, excl;
+    int excl;
 
     if (rb_obj_is_kind_of(range, rb_cRange)) {
 	b = RANGE_BEG(range);
@@ -620,9 +619,25 @@ rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
 	e = rb_funcall(range, id_end, 0);
 	excl = RTEST(rb_funcall(range, rb_intern("exclude_end?"), 0));
     }
+    *begp = b;
+    *endp = e;
+    *exclp = excl;
+    return Qtrue;
+}
+
+VALUE
+rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
+{
+    long beg, end, origbeg, origend;
+    VALUE b, e;
+    int excl;
+
+    if (!rb_range_values(range, &b, &e, &excl))
+	return Qfalse;
     beg = NUM2LONG(b);
     end = NUM2LONG(e);
-
+    origbeg = beg;
+    origend = end;
     if (beg < 0) {
 	beg += len;
 	if (beg < 0)
@@ -649,7 +664,7 @@ rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
   out_of_range:
     if (err) {
 	rb_raise(rb_eRangeError, "%ld..%s%ld out of range",
-		 NUM2LONG(b), excl ? "." : "", NUM2LONG(e));
+		 origbeg, excl ? "." : "", origend);
     }
     return Qnil;
 }

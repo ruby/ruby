@@ -75,6 +75,8 @@ VALUE rb_ary_cmp(VALUE, VALUE);
 VALUE rb_ary_replace(VALUE copy, VALUE orig);
 VALUE rb_get_values_at(VALUE, long, int, VALUE*, VALUE(*)(VALUE,long));
 /* bignum.c */
+VALUE rb_big_new(long, int);
+int rb_bigzero_p(VALUE x);
 VALUE rb_big_clone(VALUE);
 void rb_big_2comp(VALUE);
 VALUE rb_big_norm(VALUE);
@@ -520,6 +522,7 @@ VALUE rb_detach_process(rb_pid_t pid);
 /* range.c */
 VALUE rb_range_new(VALUE, VALUE, int);
 VALUE rb_range_beg_len(VALUE, long*, long*, long, int);
+int rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp);
 /* random.c */
 unsigned long rb_genrand_int32(void);
 double rb_genrand_real(void);
