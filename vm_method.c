@@ -814,10 +814,9 @@ rb_alias(VALUE klass, ID name, ID def)
     if (!orig_me || orig_me->type == VM_METHOD_TYPE_UNDEF) {
 	if (TYPE(klass) == T_MODULE) {
 	    orig_me = search_method(rb_cObject, def);
-
-	    if (!orig_me || !orig_me->type == VM_METHOD_TYPE_UNDEF) {
-		rb_print_undef(klass, def, 0);
-	    }
+	}
+	if (!orig_me || !orig_me->type == VM_METHOD_TYPE_UNDEF) {
+	    rb_print_undef(klass, def, 0);
 	}
     }
     if (FL_TEST(klass, FL_SINGLETON)) {

@@ -1,3 +1,9 @@
+Thu Jul 16 17:41:28 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_method.c (rb_alias): fix a case which try non-existing method alias.
+
+	* test/ruby/test_alias.rb: add a test.
+
 Thu Jul 16 15:52:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_new, rb_bigzero_p), range.c (rb_range_values):

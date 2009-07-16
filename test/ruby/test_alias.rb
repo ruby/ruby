@@ -61,4 +61,12 @@ class TestAlias < Test::Unit::TestCase
     }.call
     assert_raise(SecurityError) { d.mm }
   end
+
+  def test_nonexistmethod
+    assert_raise(NameError){
+      Class.new{
+        alias_method :foobarxyzzy, :barbaz
+      }
+    }
+  end
 end
