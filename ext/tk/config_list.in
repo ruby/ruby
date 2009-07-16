@@ -1,6 +1,6 @@
 ##############################################
 # configure options for Ruby/Tk
-# release date:  2009-07-12
+# release date:  2009-07-15
 ##############################################
 with tk-old-extconf
 with ActiveTcl
@@ -33,3 +33,4 @@ with X11-lib
 enable pthread
 enable tcl-thread
 with tclConfig-file
+enable space-on-tk-libpath
