@@ -1,3 +1,9 @@
+Thu Jul 16 09:35:06 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/delegate.rb (Delegator#method_missing)
+	  (DelegateClass()#method_missing): Properly pass a given block
+	  through. [ruby-dev:38390]
+
 Wed Jul 15 11:40:34 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_join): recursive array has no meaning as path
