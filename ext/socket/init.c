@@ -532,7 +532,7 @@ rsock_getfamily(int sockfd)
 
     ss.ss_family = AF_UNSPEC;
     if (getsockname(sockfd, (struct sockaddr*)&ss, &sslen) < 0)
-        rb_sys_fail("getsockname(2)");
+        return AF_UNSPEC;
 
     return ss.ss_family;
 }

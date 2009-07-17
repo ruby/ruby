@@ -1,3 +1,8 @@
+Fri Jul 17 13:35:47 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/init.c (rsock_getfamily): return AF_UNSPEC if getsockname
+	  is failed.  [ruby-core:24383]
+ 
 Fri Jul 17 01:22:57 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (recursive_join): raise ArgumentError for joining
