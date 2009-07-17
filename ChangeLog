@@ -1,3 +1,8 @@
+Sat Jul 18 00:44:43 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* gc.c (rb_gc_call_finalizer_at_exit): finalizer_table can be NULL.
+	  [ruby-core:24395]
+
 Thu Jul 16 09:35:06 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/delegate.rb (Delegator#method_missing)
