@@ -282,18 +282,6 @@ random_alloc(VALUE klass)
     return obj;
 }
 
-static void
-dump_mt(const struct MT *mt, const char *s)
-{
-    int i, n = mt->next - mt->state;
-    static FILE *f;
-    if (!f) f = fopen("rand.data", "w");
-    fprintf(f, "%s\nleft=%d\n", s, mt->left);
-    for (i = 0; i < MT_MAX_STATE; ++i) {
-	fprintf(f, " %s %u\n", i == n ? "*" : " ", mt->state[i]);
-    }
-}
-
 static VALUE
 rand_init(struct MT *mt, VALUE vseed)
 {
@@ -382,7 +370,6 @@ random_init(int argc, VALUE *argv, VALUE obj)
 	rb_scan_args(argc, argv, "01", &vseed);
     }
     rnd->seed = rand_init(&rnd->mt, vseed);
-    dump_mt(&rnd->mt, "random_init");
     return obj;
 }
 
@@ -666,7 +653,6 @@ rb_f_srand(int argc, VALUE *argv, VALUE obj)
     }
     old = default_rand.rnd.seed;
     default_rand.rnd.seed = rand_init(&default_rand.rnd.mt, seed);
-    dump_mt(&default_rand.rnd.mt, "srand");
 
     return old;
 }
