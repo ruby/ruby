@@ -375,19 +375,25 @@ random_init(int argc, VALUE *argv, VALUE obj)
 
 #define DEFAULT_SEED_LEN (DEFAULT_SEED_CNT * sizeof(int))
 
+#if defined(S_ISCHR) && !defined(DOSISH)
+# define USE_DEV_URANDOM 1
+#else
+# define USE_DEV_URANDOM 0
+#endif
+
 static void
 fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
 {
     static int n = 0;
     struct timeval tv;
-#ifdef S_ISCHR
+#if USE_DEV_URANDOM
     int fd;
     struct stat statbuf;
 #endif
 
     memset(seed, 0, DEFAULT_SEED_LEN);
 
-#ifdef S_ISCHR
+#if USE_DEV_URANDOM
     if ((fd = open("/dev/urandom", O_RDONLY
 #ifdef O_NONBLOCK
             |O_NONBLOCK
