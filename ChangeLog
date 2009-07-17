@@ -1,3 +1,13 @@
+Fri Jul 17 01:22:57 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (recursive_join): raise ArgumentError for joining
+	  recursive array.
+
+	* array.c (ary_join_1): ditto.
+
+	* test/ruby/test_array.rb (TestArray#test_join2): test updated for
+	  recursive join.
+
 Thu Jul 16 23:32:16 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb,ext/tk/config_list.in: ignore paths which includes

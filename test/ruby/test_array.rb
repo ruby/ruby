@@ -1490,12 +1490,12 @@ class TestArray < Test::Unit::TestCase
   def test_join2
     a = []
     a << a
-    assert_equal("[...]", a.join)
+    assert_raise(ArgumentError){a.join}
 
     def (a = Object.new).to_a
       [self]
     end
-    assert_equal("[...]", [a].join, '[ruby-core:24150]')
+    assert_raise(ArgumentError, '[ruby-core:24150]'){[a].join}
     assert_equal("12345", [1,[2,[3,4],5]].join)
   end
 

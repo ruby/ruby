@@ -1530,7 +1530,7 @@ recursive_join(VALUE obj, VALUE argp, int recur)
     VALUE result = arg[2];
 
     if (recur) {
-	rb_str_buf_cat_ascii(result, "[...]");
+	rb_raise(rb_eArgError, "recursive array join");
     }
     else {
 	ary_join_1(obj, ary, sep, 0, result);
@@ -1573,8 +1573,7 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result)
 	    obj = val;
 	  ary_join:
 	    if (val == ary) {
-		val = rb_usascii_str_new2("[...]");
-		goto str_join;
+		rb_raise(rb_eArgError, "recursive array join");
 	    }
 	    else {
 		VALUE args[3];
