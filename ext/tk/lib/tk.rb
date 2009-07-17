@@ -119,7 +119,7 @@ module TkComm
       classname_def = ''
     else # ruby_class == nil
       if Tk.const_defined?(tk_class)
-        mod.const_get(tk_class)  # auto_load
+        Tk.const_get(tk_class)  # auto_load
         ruby_class = WidgetClassNames[tk_class]
       end
 

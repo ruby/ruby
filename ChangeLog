@@ -1,3 +1,8 @@
+Sat Jul 18 07:56:00 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: fail to create a widget object for an unknown
+	  wiget path. 
+
 Sat Jul 18 07:06:31 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb,ext/tk/lib/tk/grid.rb: Bug fix on grid_slaves().
