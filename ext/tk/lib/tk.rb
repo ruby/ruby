@@ -5265,14 +5265,12 @@ class TkWindow<TkObject
     TkGrid.columnconfigure(self, index, keys)
   end
   alias grid_columnconfigure grid_columnconfig
-  alias grid_column grid_columnconfig
 
   def grid_rowconfig(index, keys)
     #tk_call('grid', 'rowconfigure', epath, index, *hash_kv(keys))
     TkGrid.rowconfigure(self, index, keys)
   end
   alias grid_rowconfigure grid_rowconfig
-  alias grid_row grid_rowconfig
 
   def grid_columnconfiginfo(index, slot=nil)
     #if slot
@@ -5300,6 +5298,22 @@ class TkWindow<TkObject
     #  info
     #end
     TkGrid.rowconfiginfo(self, index, slot)
+  end
+
+  def grid_column(index, keys=nil)
+    if keys.kind_of?(Hash)
+      grid_columnconfigure(index, keys)
+    else
+      grid_columnconfiginfo(index, keys)
+    end
+  end
+
+  def grid_row(index, keys=nil)
+    if keys.kind_of?(Hash)
+      grid_rowconfigure(index, keys)
+    else
+      grid_rowconfiginfo(index, keys)
+    end
   end
 
   def grid_info()
@@ -5338,9 +5352,9 @@ class TkWindow<TkObject
     TkGrid.size(self)
   end
 
-  def grid_slaves(args)
+  def grid_slaves(keys = nil)
     #list(tk_call('grid', 'slaves', epath, *hash_kv(args)))
-    TkGrid.slaves(self, args)
+    TkGrid.slaves(self, keys)
   end
 
   def place(keys)
@@ -5639,7 +5653,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2009-07-16'.freeze
+  RELEASE_DATE = '2009-07-18'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
