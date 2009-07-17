@@ -1,3 +1,9 @@
+Fri Nov 28 17:52:26 2008  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* lib/foerwardable.rb: should be usable def_single_delegator for
+	  Class and Module.
+	  [ruby-dev:38815]
+
 Thu Jul 16 18:28:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* id.c (Init_id), vm.c (vm_exec): @#__ThrowState__ is no longer
