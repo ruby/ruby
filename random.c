@@ -911,6 +911,26 @@ random_float(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
+ * call-seq:
+ *     prng1 == prng2 -> true or false
+ *
+ * Returns true if the generators' states equal.
+ */
+static VALUE
+random_equal(VALUE self, VALUE other)
+{
+    rb_random_t *r1, *r2;
+    if (rb_obj_class(self) != rb_obj_class(other)) return Qfalse;
+    r1 = get_rnd(self);
+    r2 = get_rnd(other);
+    if (!RTEST(rb_funcall2(r1->seed, rb_intern("=="), 1, &r2->seed))) return Qfalse;
+    if (memcmp(r1->mt.state, r2->mt.state, sizeof(r1->mt.state))) return Qfalse;
+    if ((r1->mt.next - r1->mt.state) != (r2->mt.next - r2->mt.state)) return Qfalse;
+    if (r1->mt.left != r2->mt.left) return Qfalse;
+    return Qtrue;
+}
+
+/*
  *  call-seq:
  *     rand(max=0)    => number
  *
@@ -991,6 +1011,7 @@ Init_Random(void)
     rb_define_method(rb_cRandom, "marshal_load", random_load, 1);
     rb_define_method(rb_cRandom, "state", random_state, 0);
     rb_define_method(rb_cRandom, "left", random_left, 0);
+    rb_define_method(rb_cRandom, "==", random_equal, 1);
 
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
     rb_define_singleton_method(rb_cRandom, "rand", rb_f_rand, -1);

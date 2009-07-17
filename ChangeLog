@@ -1,3 +1,7 @@
+Fri Jul 17 13:55:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (random_equal): new method Random#==.
+
 Fri Jul 17 13:35:47 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/init.c (rsock_getfamily): return AF_UNSPEC if getsockname
