@@ -767,12 +767,6 @@ class TestHash < Test::Unit::TestCase
     assert(h1 != h2)
     h1 = {1=>2}; h2 = {1=>4}
     assert(h1 != h2)
-
-    h1 = {}; h1[h1] = h1; h1.rehash
-    h2 = {}; h2[h2] = h2; h2.rehash
-    # assert(h1 != h2)
-    # recursive hashes are handled properly now. [ruby-core:23402]
-    assert(h1 == h2)
   end
 
   def test_eql
