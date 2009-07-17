@@ -1550,7 +1550,7 @@ push_glob(VALUE ary, VALUE str, int flags)
     args.value = ary;
     args.enc = enc;
 
-    return ruby_brace_glob0(RSTRING_PTR(str), flags | GLOB_VERBOSE,
+    return ruby_brace_glob0(StringValuePtr(str), flags | GLOB_VERBOSE,
 			    rb_glob_caller, (VALUE)&args, enc);
 }
 
