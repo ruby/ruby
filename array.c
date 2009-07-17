@@ -2884,7 +2884,7 @@ recursive_hash(VALUE ary, VALUE dummy, int recur)
     VALUE n;
 
     if (recur) {
-	return LONG2FIX(0);
+        rb_raise(rb_eArgError, "recursive key for hash");
     }
     h = rb_hash_start(RARRAY_LEN(ary));
     for (i=0; i<RARRAY_LEN(ary); i++) {

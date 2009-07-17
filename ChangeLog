@@ -1,3 +1,7 @@
+Fri Jul 17 16:45:22 2009  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (recursive_hash): reject recursive key.
+
 Fri Jul 17 15:20:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (DIGSPERINT): fix for LP64.
