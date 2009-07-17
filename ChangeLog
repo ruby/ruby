@@ -1,3 +1,10 @@
+Sat Jul 18 00:23:47 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ext/readline/readline.c (Init_readline): rl_catch_signals does
+	  not exist on some platform like Mac OS X 10.5.
+
+	* ext/readline/extconf.rb: checks existance of rl_catch_signals.
+
 Fri Jul 17 22:37:22 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/socket.c (socket_s_ip_address_list): drop inactive

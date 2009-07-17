@@ -66,6 +66,7 @@ have_readline_var("rl_point")
 # workaround for native windows.
 /mswin|bccwin|mingw/ !~ RUBY_PLATFORM && have_readline_var("rl_event_hook")
 /mswin|bccwin|mingw/ !~ RUBY_PLATFORM && have_readline_var("rl_catch_sigwinch")
+/mswin|bccwin|mingw/ !~ RUBY_PLATFORM && have_readline_var("rl_catch_signals")
 have_readline_func("rl_cleanup_after_signal")
 have_readline_func("rl_clear_signals")
 have_readline_func("rl_set_screen_size")

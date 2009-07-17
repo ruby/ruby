@@ -1451,7 +1451,9 @@ Init_readline()
 #elif defined HAVE_RL_EVENT_HOOK
     rl_event_hook = readline_event;
 #endif
+#ifdef HAVE_RL_CATCH_SIGNALS
     rl_catch_signals = 0;
+#endif
 #ifdef HAVE_RL_CATCH_SIGWINCH
     rl_catch_sigwinch = 0;
 #endif
