@@ -226,7 +226,7 @@ rb_genrand_real(void)
 #define BDIGITS(x) (RBIGNUM_DIGITS(x))
 #define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
 #define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
-#define DIGSPERINT (SIZEOF_LONG/SIZEOF_BDIGITS)
+#define DIGSPERINT (SIZEOF_INT/SIZEOF_BDIGITS)
 #define BIGUP(x) ((BDIGIT_DBL)(x) << BITSPERDIG)
 #define BIGDN(x) RSHIFT(x,BITSPERDIG)
 #define BIGLO(x) ((BDIGIT)((x) & (BIGRAD-1)))
@@ -615,7 +615,7 @@ random_load(VALUE obj, VALUE dump)
 		do {
 		    x = (x << CHAR_BIT * SIZEOF_BDIGITS) | *--d;
 		} while (--len % DIGSPERINT);
-#endif
+# endif
 		mt->state[len / DIGSPERINT] = (unsigned int)x;
 	    } while (len > 0);
 	}

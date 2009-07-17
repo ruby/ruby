@@ -1,4 +1,6 @@
-Fri Jul 17 13:58:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jul 17 15:20:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (DIGSPERINT): fix for LP64.
 
 	* random.c (fill_random_seed): /dev/urandom is not available on
 	  DOSISH systems.
