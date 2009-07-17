@@ -1,3 +1,8 @@
+Sat Jul 18 07:06:31 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb,ext/tk/lib/tk/grid.rb: Bug fix on grid_slaves().
+	  Extend usage pattern of grid_column()/grid_row().
+
 Thu Jul 16 23:32:16 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb,ext/tk/config_list.in: ignore paths which includes
