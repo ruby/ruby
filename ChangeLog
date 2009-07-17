@@ -1,3 +1,11 @@
+Fri Jul 17 22:29:21 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/readline/readline.c (Init_readline): use rl_catch_sigwinch only
+	  when existing.
+
+	* ext/readline/extconf.rb: check existance of rl_catch_sigwinch, and
+	  workaround for native Win32 readline port.
+
 Fri Jul 17 18:18:23 2009  Tanaka Akira  <akr@fsij.org>
 
 	* range.c (recursive_hash): extracted from range_hash.  reject

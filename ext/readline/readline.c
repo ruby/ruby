@@ -1452,7 +1452,9 @@ Init_readline()
     rl_event_hook = readline_event;
 #endif
     rl_catch_signals = 0;
+#ifdef HAVE_RL_CATCH_SIGWINCH
     rl_catch_sigwinch = 0;
+#endif
 #ifdef HAVE_RL_CLEAR_SIGNALS
     rl_clear_signals();
 #endif
