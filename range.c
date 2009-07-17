@@ -201,6 +201,26 @@ range_eql(VALUE range, VALUE obj)
     return Qtrue;
 }
 
+static VALUE
+recursive_hash(VALUE range, VALUE dummy, int recur)
+{
+    unsigned long hash = EXCL(range);
+    VALUE v;
+
+    if (recur) {
+        rb_raise(rb_eArgError, "recursive key for hash");
+    }
+    hash = rb_hash_start(hash);
+    v = rb_hash(RANGE_BEG(range));
+    hash = rb_hash_uint(hash, NUM2LONG(v));
+    v = rb_hash(RANGE_END(range));
+    hash = rb_hash_uint(hash, NUM2LONG(v));
+    hash = rb_hash_uint(hash, EXCL(range) << 24);
+    hash = rb_hash_end(hash);
+
+    return LONG2FIX(hash);
+}
+
 /*
  * call-seq:
  *   rng.hash    => fixnum
@@ -213,18 +233,7 @@ range_eql(VALUE range, VALUE obj)
 static VALUE
 range_hash(VALUE range)
 {
-    unsigned long hash = EXCL(range);
-    VALUE v;
-
-    hash = rb_hash_start(hash);
-    v = rb_hash(RANGE_BEG(range));
-    hash = rb_hash_uint(hash, NUM2LONG(v));
-    v = rb_hash(RANGE_END(range));
-    hash = rb_hash_uint(hash, NUM2LONG(v));
-    hash = rb_hash_uint(hash, EXCL(range) << 24);
-    hash = rb_hash_end(hash);
-
-    return LONG2FIX(hash);
+    return rb_exec_recursive(recursive_hash, range, 0);
 }
 
 static void

@@ -1,3 +1,9 @@
+Fri Jul 17 18:18:23 2009  Tanaka Akira  <akr@fsij.org>
+
+	* range.c (recursive_hash): extracted from range_hash.  reject
+	  recursive key.
+	  (range_hash): use recursive_hash.
+
 Fri Jul 17 18:11:32 2009  Tanaka Akira  <akr@fsij.org>
 
 	* struct.c (recursive_hash): extracted from rb_struct_hash.  reject
