@@ -261,7 +261,7 @@ class TestSocket < Test::Unit::TestCase
     end
 
     Socket.udp_server_sockets(0) {|sockets|
-      skip "need sendmsg and recvmsg" unless sockets.respond_to?(:sendmsg)
+      skip "need sendmsg and recvmsg" unless sockets[0].respond_to?(:sendmsg)
       famlies = {}
       sockets.each {|s| famlies[s.local_address.afamily] = true }
       ip_addrs.reject! {|ai| !famlies[ai.afamily] }
