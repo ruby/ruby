@@ -1,3 +1,12 @@
+Fri Jul 17 22:37:22 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/socket.c (socket_s_ip_address_list): drop inactive
+	  adapters.
+
+	* test/socket/test_{nonblock,addrinfo,socket}.rb: skip some tests on
+	  Windows.
+	  [ruby-core:23051]
+
 Fri Jul 17 22:29:21 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/readline/readline.c (Init_readline): use rl_catch_sigwinch only

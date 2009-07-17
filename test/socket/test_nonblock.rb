@@ -196,6 +196,8 @@ class TestSocketNonblock < Test::Unit::TestCase
         loop {
           c.sendmsg_nonblock("a" * 100000)
         }
+      rescue NotImplementedError
+        skip "sendmsg not implemented on this platform."
       rescue Errno::EWOULDBLOCK
         assert_kind_of(IO::WaitWritable, $!)
       end
@@ -206,6 +208,8 @@ class TestSocketNonblock < Test::Unit::TestCase
     tcp_pair {|c, s|
       begin
         c.recvmsg_nonblock(4096)
+      rescue NotImplementedError
+        skip "sendmsg not implemented on this platform."
       rescue Errno::EWOULDBLOCK
         assert_kind_of(IO::WaitReadable, $!)
       end

@@ -317,6 +317,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     ai = Addrinfo.tcp("0.0.0.0", 4649).family_addrinfo("127.0.0.1", 80)
     assert_equal(["127.0.0.1", 80], ai.ip_unpack)
     assert_equal(Socket::SOCK_STREAM, ai.socktype)
+    return unless Addrinfo.respond_to?(:unix)
     ai = Addrinfo.unix("/testdir/sock").family_addrinfo("/testdir/sock2")
     assert_equal("/testdir/sock2", ai.unix_path)
     assert_equal(Socket::SOCK_STREAM, ai.socktype)

@@ -36,19 +36,22 @@ class TestSocket < Test::Unit::TestCase
 
   def test_initialize
     Socket.open(Socket::AF_INET, Socket::SOCK_STREAM, 0) {|s|
+      s.bind(Socket.sockaddr_in(0, "127.0.0.1"))
       addr = s.getsockname
       assert_nothing_raised { Socket.unpack_sockaddr_in(addr) }
-      assert_raise(ArgumentError) { Socket.unpack_sockaddr_un(addr) }
+      assert_raise(ArgumentError, NoMethodError) { Socket.unpack_sockaddr_un(addr) }
     }
     Socket.open("AF_INET", "SOCK_STREAM", 0) {|s|
+      s.bind(Socket.sockaddr_in(0, "127.0.0.1"))
       addr = s.getsockname
       assert_nothing_raised { Socket.unpack_sockaddr_in(addr) }
-      assert_raise(ArgumentError) { Socket.unpack_sockaddr_un(addr) }
+      assert_raise(ArgumentError, NoMethodError) { Socket.unpack_sockaddr_un(addr) }
     }
     Socket.open(:AF_INET, :SOCK_STREAM, 0) {|s|
+      s.bind(Socket.sockaddr_in(0, "127.0.0.1"))
       addr = s.getsockname
       assert_nothing_raised { Socket.unpack_sockaddr_in(addr) }
-      assert_raise(ArgumentError) { Socket.unpack_sockaddr_un(addr) }
+      assert_raise(ArgumentError, NoMethodError) { Socket.unpack_sockaddr_un(addr) }
     }
   end
 
@@ -254,10 +257,11 @@ class TestSocket < Test::Unit::TestCase
     begin
       ip_addrs = Socket.ip_address_list
     rescue NotImplementedError
-      return
+      skip "Socket.ip_address_list not implemented"
     end
 
     Socket.udp_server_sockets(0) {|sockets|
+      skip "need sendmsg and recvmsg" unless sockets.respond_to?(:sendmsg)
       famlies = {}
       sockets.each {|s| famlies[s.local_address.afamily] = true }
       ip_addrs.reject! {|ai| !famlies[ai.afamily] }

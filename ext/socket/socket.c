@@ -1693,7 +1693,7 @@ socket_s_ip_address_list(VALUE self)
 	DWORD dummy9;
 	DWORD dummy10;
 	DWORD IfType;
-	int dummy11;
+	int OperStatus;
 	DWORD dummy12;
 	DWORD dummy13[16];
 	void *dummy14;
@@ -1733,12 +1733,22 @@ socket_s_ip_address_list(VALUE self)
     for (; adapters; adapters = adapters->Next) {
 	ip_adapter_unicast_address_t *uni;
 	ip_adapter_anycast_address_t *any;
+	if (adapters->OperStatus != 1)	/* 1 means IfOperStatusUp */
+	    continue;
 	for (uni = adapters->FirstUnicastAddress; uni; uni = uni->Next) {
+#ifndef INET6
+	    if (uni->Address.lpSockaddr->sa_family == AF_INET)
+#else
 	    if (IS_IP_FAMILY(uni->Address.lpSockaddr->sa_family))
+#endif
 		rb_ary_push(list, sockaddr_obj(uni->Address.lpSockaddr));
 	}
 	for (any = adapters->FirstAnycastAddress; any; any = any->Next) {
+#ifndef INET6
+	    if (any->Address.lpSockaddr->sa_family == AF_INET)
+#else
 	    if (IS_IP_FAMILY(any->Address.lpSockaddr->sa_family))
+#endif
 		rb_ary_push(list, sockaddr_obj(any->Address.lpSockaddr));
 	}
     }
