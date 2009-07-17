@@ -96,7 +96,7 @@ class Struct
 
   def to_json(*args)
     klass = self.class.name
-    klass.nil? and raise JSON::JSONError, "Only named structs are supported!"
+    klass.to_s.empty? and raise JSON::JSONError, "Only named structs are supported!"
     {
       'json_class' => klass,
       'v'     => values,

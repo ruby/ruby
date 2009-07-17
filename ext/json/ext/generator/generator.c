@@ -1,7 +1,32 @@
 #include <string.h>
 #include "ruby.h"
+#if HAVE_RUBY_ST_H
+#include "ruby/st.h"
+#endif
+#if HAVE_ST_H
+#include "st.h"
+#endif
 #include "unicode.h"
 #include <math.h>
+
+#ifndef RHASH_TBL
+#define RHASH_TBL(hsh) (RHASH(hsh)->tbl)
+#endif
+
+#ifndef RHASH_SIZE
+#define RHASH_SIZE(hsh) (RHASH(hsh)->tbl->num_entries)
+#endif
+
+#ifndef RFLOAT_VALUE
+#define RFLOAT_VALUE(val) (RFLOAT(val)->value)
+#endif
+
+#ifdef HAVE_RUBY_ENCODING_H
+#include "ruby/encoding.h"
+#define FORCE_UTF8(obj) rb_enc_associate((obj), rb_utf8_encoding())
+#else
+#define FORCE_UTF8(obj)
+#endif
 
 #define check_max_nesting(state, depth) do {                                   \
     long current_nesting = 1 + depth;                                          \
@@ -163,6 +188,7 @@ static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self)
         }
     }
     OBJ_INFECT(result, self);
+    FORCE_UTF8(result);
     return result;
 }
 
@@ -260,6 +286,7 @@ static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self) {
         result = mArray_json_transfrom(self, Vstate, Vdepth);
     }
     OBJ_INFECT(result, self);
+    FORCE_UTF8(result);
     return result;
 }
 
@@ -270,7 +297,9 @@ static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self) {
  */
 static VALUE mInteger_to_json(int argc, VALUE *argv, VALUE self)
 {
-    return rb_funcall(self, i_to_s, 0);
+    VALUE result = rb_funcall(self, i_to_s, 0);
+    FORCE_UTF8(result);
+    return result;
 }
 
 /*
@@ -281,27 +310,29 @@ static VALUE mInteger_to_json(int argc, VALUE *argv, VALUE self)
 static VALUE mFloat_to_json(int argc, VALUE *argv, VALUE self)
 {
     JSON_Generator_State *state = NULL;
-    VALUE Vstate, rest, tmp;
+    VALUE Vstate, rest, tmp, result;
     double value = RFLOAT_VALUE(self);
     rb_scan_args(argc, argv, "01*", &Vstate, &rest);
     if (!NIL_P(Vstate)) Data_Get_Struct(Vstate, JSON_Generator_State, state);
     if (isinf(value)) {
         if (!state || state->allow_nan) {
-            return rb_funcall(self, i_to_s, 0);
+            result = rb_funcall(self, i_to_s, 0);
         } else {
             tmp = rb_funcall(self, i_to_s, 0);
             rb_raise(eGeneratorError, "%u: %s not allowed in JSON", __LINE__, StringValueCStr(tmp));
         }
     } else if (isnan(value)) {
         if (!state || state->allow_nan) {
-            return rb_funcall(self, i_to_s, 0);
+            result = rb_funcall(self, i_to_s, 0);
         } else {
             tmp = rb_funcall(self, i_to_s, 0);
             rb_raise(eGeneratorError, "%u: %s not allowed in JSON", __LINE__, StringValueCStr(tmp));
         }
     } else {
-        return rb_funcall(self, i_to_s, 0);
+        result = rb_funcall(self, i_to_s, 0);
     }
+    FORCE_UTF8(result);
+    return result;
 }
 
 /*
@@ -310,7 +341,9 @@ static VALUE mFloat_to_json(int argc, VALUE *argv, VALUE self)
  * Extends _modul_ with the String::Extend module.
  */
 static VALUE mString_included_s(VALUE self, VALUE modul) {
-    return rb_funcall(modul, i_extend, 1, mString_Extend);
+    VALUE result = rb_funcall(modul, i_extend, 1, mString_Extend);
+    FORCE_UTF8(result);
+    return result;
 }
 
 /*
@@ -326,6 +359,7 @@ static VALUE mString_to_json(int argc, VALUE *argv, VALUE self)
     rb_str_buf_cat2(result, "\"");
     JSON_convert_UTF8_to_JSON(result, self, strictConversion);
     rb_str_buf_cat2(result, "\"");
+    FORCE_UTF8(result);
     return result;
 }
 
@@ -343,6 +377,7 @@ static VALUE mString_to_json_raw_object(VALUE self) {
     rb_hash_aset(result, rb_funcall(mJSON, i_create_id, 0), rb_class_name(rb_obj_class(self)));
     ary = rb_funcall(self, i_unpack, 1, rb_str_new2("C*"));
     rb_hash_aset(result, rb_str_new2("raw"), ary);
+    FORCE_UTF8(result);
     return result;
 }
 
@@ -353,9 +388,11 @@ static VALUE mString_to_json_raw_object(VALUE self) {
  * to_json_raw_object of this String.
  */
 static VALUE mString_to_json_raw(int argc, VALUE *argv, VALUE self) {
-    VALUE obj = mString_to_json_raw_object(self);
+    VALUE result, obj = mString_to_json_raw_object(self);
     Check_Type(obj, T_HASH);
-    return mHash_to_json(argc, argv, obj);
+    result = mHash_to_json(argc, argv, obj);
+    FORCE_UTF8(result);
+    return result;
 }
 
 /*
@@ -378,7 +415,9 @@ static VALUE mString_Extend_json_create(VALUE self, VALUE o) {
  */
 static VALUE mTrueClass_to_json(int argc, VALUE *argv, VALUE self)
 {
-    return rb_str_new2("true");
+    VALUE result = rb_str_new2("true");
+    FORCE_UTF8(result);
+    return result;
 }
 
 /*
@@ -388,7 +427,9 @@ static VALUE mTrueClass_to_json(int argc, VALUE *argv, VALUE self)
  */
 static VALUE mFalseClass_to_json(int argc, VALUE *argv, VALUE self)
 {
-    return rb_str_new2("false");
+    VALUE result = rb_str_new2("false");
+    FORCE_UTF8(result);
+    return result;
 }
 
 /*
@@ -397,7 +438,9 @@ static VALUE mFalseClass_to_json(int argc, VALUE *argv, VALUE self)
  */
 static VALUE mNilClass_to_json(int argc, VALUE *argv, VALUE self)
 {
-    return rb_str_new2("null");
+    VALUE result = rb_str_new2("null");
+    FORCE_UTF8(result);
+    return result;
 }
 
 /*
@@ -409,9 +452,11 @@ static VALUE mNilClass_to_json(int argc, VALUE *argv, VALUE self)
  */
 static VALUE mObject_to_json(int argc, VALUE *argv, VALUE self)
 {
-    VALUE string = rb_funcall(self, i_to_s, 0);
+    VALUE result, string = rb_funcall(self, i_to_s, 0);
     Check_Type(string, T_STRING);
-    return mString_to_json(argc, argv, string);
+    result = mString_to_json(argc, argv, string);
+    FORCE_UTF8(result);
+    return result;
 }
 
 /* 

@@ -77,57 +77,121 @@ require 'json/common'
 #
 # == Speed Comparisons
 #
-# I have created some benchmark results (see the benchmarks subdir of the
-# package) for the JSON-Parser to estimate the speed up in the C extension:
+# I have created some benchmark results (see the benchmarks/data-p4-3Ghz
+# subdir of the package) for the JSON-parser to estimate the speed up in the C
+# extension:
 #
-# JSON::Pure::Parser::  28.90  calls/second
-# JSON::Ext::Parser::  505.50 calls/second
+#  Comparing times (call_time_mean):
+#   1 ParserBenchmarkExt#parser   900 repeats:
+#         553.922304770 (  real) ->   21.500x
+#           0.001805307
+#   2 ParserBenchmarkYAML#parser  1000 repeats:
+#         224.513358139 (  real) ->    8.714x
+#           0.004454078
+#   3 ParserBenchmarkPure#parser  1000 repeats:
+#          26.755020642 (  real) ->    1.038x
+#           0.037376163
+#   4 ParserBenchmarkRails#parser 1000 repeats:
+#          25.763381731 (  real) ->    1.000x
+#           0.038814780
+#             calls/sec (  time) ->    speed  covers
+#             secs/call
 #
-# This is ca. <b>17.5</b> times the speed of the pure Ruby implementation.
+# In the table above 1 is JSON::Ext::Parser, 2 is YAML.load with YAML
+# compatbile JSON document, 3 is is JSON::Pure::Parser, and 4 is
+# ActiveSupport::JSON.decode. The ActiveSupport JSON-decoder converts the
+# input first to YAML and then uses the YAML-parser, the conversion seems to
+# slow it down so much that it is only as fast as the JSON::Pure::Parser!
 #
-# I have benchmarked the JSON-Generator as well. This generates a few more
-# values, because there are different modes, that also influence the achieved
+# If you look at the benchmark data you can see that this is mostly caused by
+# the frequent high outliers - the median of the Rails-parser runs is still
+# overall smaller than the median of the JSON::Pure::Parser runs:
+#
+#  Comparing times (call_time_median):
+#   1 ParserBenchmarkExt#parser   900 repeats:
+#         800.592479481 (  real) ->   26.936x
+#           0.001249075
+#   2 ParserBenchmarkYAML#parser  1000 repeats:
+#         271.002390644 (  real) ->    9.118x
+#           0.003690004
+#   3 ParserBenchmarkRails#parser 1000 repeats:
+#          30.227910865 (  real) ->    1.017x
+#           0.033082008
+#   4 ParserBenchmarkPure#parser  1000 repeats:
+#          29.722384421 (  real) ->    1.000x
+#           0.033644676
+#             calls/sec (  time) ->    speed  covers
+#             secs/call
+#
+# I have benchmarked the JSON-Generator as well. This generated a few more
+# values, because there are different modes that also influence the achieved
 # speed:
 #
-# * JSON::Pure::Generator:
-#   generate::        35.06 calls/second
-#   pretty_generate:: 34.00 calls/second
-#   fast_generate::   41.06 calls/second
+#  Comparing times (call_time_mean):
+#   1 GeneratorBenchmarkExt#generator_fast    1000 repeats:
+#         547.354332608 (  real) ->   15.090x
+#           0.001826970
+#   2 GeneratorBenchmarkExt#generator_safe    1000 repeats:
+#         443.968212317 (  real) ->   12.240x
+#           0.002252414
+#   3 GeneratorBenchmarkExt#generator_pretty  900 repeats:
+#         375.104545883 (  real) ->   10.341x
+#           0.002665923
+#   4 GeneratorBenchmarkPure#generator_fast   1000 repeats:
+#          49.978706968 (  real) ->    1.378x
+#           0.020008521
+#   5 GeneratorBenchmarkRails#generator       1000 repeats:
+#          38.531868759 (  real) ->    1.062x
+#           0.025952543
+#   6 GeneratorBenchmarkPure#generator_safe   1000 repeats:
+#          36.927649925 (  real) ->    1.018x 7 (>=3859)
+#           0.027079979
+#   7 GeneratorBenchmarkPure#generator_pretty 1000 repeats:
+#          36.272134441 (  real) ->    1.000x 6 (>=3859)
+#           0.027569373
+#             calls/sec (  time) ->    speed  covers
+#             secs/call
 #
-# * JSON::Ext::Generator:
-#   generate::        492.11 calls/second
-#   pretty_generate:: 348.85 calls/second
-#   fast_generate::   541.60 calls/second
+# In the table above 1-3 are JSON::Ext::Generator methods. 4, 6, and 7 are
+# JSON::Pure::Generator methods and 5 is the Rails JSON generator. It is now a
+# bit faster than the generator_safe and generator_pretty methods of the pure
+# variant but slower than the others.
 #
-# * Speedup Ext/Pure:
-#   generate safe::   14.0 times
-#   generate pretty:: 10.3 times
-#   generate fast::   13.2 times
+# To achieve the fastest JSON text output, you can use the fast_generate
+# method. Beware, that this will disable the checking for circular Ruby data
+# structures, which may cause JSON to go into an infinite loop.
 #
-# The rails framework includes a generator as well, also it seems to be rather
-# slow: I measured only 23.87 calls/second which is slower than any of my pure
-# generator results. Here a comparison of the different speedups with the Rails
-# measurement as the divisor:
+# Here are the median comparisons for completeness' sake:
 #
-# * Speedup Pure/Rails:
-#   generate safe::   1.5 times
-#   generate pretty:: 1.4 times
-#   generate fast::   1.7 times
-#
-# * Speedup Ext/Rails:
-#   generate safe::   20.6 times
-#   generate pretty:: 14.6 times
-#   generate fast::   22.7 times
-#
-# To achieve the fastest JSON text output, you can use the
-# fast_generate/fast_unparse methods. Beware, that this will disable the
-# checking for circular Ruby data structures, which may cause JSON to go into
-# an infinite loop.
+#  Comparing times (call_time_median):
+#   1 GeneratorBenchmarkExt#generator_fast    1000 repeats:
+#         708.258020939 (  real) ->   16.547x
+#           0.001411915
+#   2 GeneratorBenchmarkExt#generator_safe    1000 repeats:
+#         569.105020353 (  real) ->   13.296x
+#           0.001757145
+#   3 GeneratorBenchmarkExt#generator_pretty  900 repeats:
+#         482.825371244 (  real) ->   11.280x
+#           0.002071142
+#   4 GeneratorBenchmarkPure#generator_fast   1000 repeats:
+#          62.717626652 (  real) ->    1.465x
+#           0.015944481
+#   5 GeneratorBenchmarkRails#generator       1000 repeats:
+#          43.965681162 (  real) ->    1.027x
+#           0.022745013
+#   6 GeneratorBenchmarkPure#generator_safe   1000 repeats:
+#          43.929073409 (  real) ->    1.026x 7 (>=3859)
+#           0.022763968
+#   7 GeneratorBenchmarkPure#generator_pretty 1000 repeats:
+#          42.802514491 (  real) ->    1.000x 6 (>=3859)
+#           0.023363113
+#             calls/sec (  time) ->    speed  covers
+#             secs/call
 #
 # == Examples
 #
-# To create a JSON text from a ruby data structure, you
-# can call JSON.generate (or JSON.unparse) like that:
+# To create a JSON text from a ruby data structure, you can call JSON.generate
+# like that:
 #
 #  json = JSON.generate [1, 2, {"a"=>3.141}, false, true, nil, 4..10]
 #  # => "[1,2,{\"a\":3.141},false,true,null,\"4..10\"]"
@@ -210,8 +274,8 @@ require 'json/common'
 #    }
 #  ]
 #
-# There are also the methods Kernel#j for unparse, and Kernel#jj for
-# pretty_unparse output to the console, that work analogous to Core Ruby's p
+# There are also the methods Kernel#j for generate, and Kernel#jj for
+# pretty_generate output to the console, that work analogous to Core Ruby's p
 # and the pp library's pp methods.
 #
 # The script tools/server.rb contains a small example if you want to test, how
@@ -230,6 +294,4 @@ module JSON
       require 'json/pure'
     end
   end
-
-  JSON_LOADED = true
 end

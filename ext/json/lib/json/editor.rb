@@ -769,7 +769,12 @@ module JSON
             iter.type, iter.content = 'FalseClass', 'false'
           end
         when 'Numeric'
-          iter.content = (Integer(value) rescue Float(value) rescue 0).to_s
+          iter.content =
+            if value == 'Infinity'
+              value
+            else
+              (Integer(value) rescue Float(value) rescue 0).to_s
+            end
         when 'String'
           iter.content = value
         when 'Hash', 'Array'
@@ -937,7 +942,11 @@ module JSON
             type = types[type_input.active]
             @content = case type
             when 'Numeric'
-              Integer(value_input.text) rescue Float(value_input.text) rescue 0
+              if (t = value_input.text) == 'Infinity'
+                1 / 0.0
+              else
+                Integer(t) rescue Float(t) rescue 0
+              end
             else
               value_input.text
             end.to_s
