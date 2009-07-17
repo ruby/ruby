@@ -223,4 +223,23 @@ class TestException < Test::Unit::TestCase
       end
     INPUT
   end
+
+  def test_safe4
+    cmd = proc{raise SystemExit}
+    safe0_p = proc{|*args| args}
+
+    test_proc = proc {
+      $SAFE = 4
+      begin
+        cmd.call
+      rescue SystemExit => e
+        safe0_p["SystemExit: #{e.inspect}"]
+        raise e
+      rescue Exception => e
+        safe0_p["Exception (NOT SystemExit): #{e.inspect}"]
+        raise e
+      end
+    }
+    assert_raise(SystemExit, '[ruby-dev:38760]') {test_proc.call}
+  end
 end

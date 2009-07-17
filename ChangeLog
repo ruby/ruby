@@ -1,3 +1,8 @@
+Thu Jul 16 18:28:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* id.c (Init_id), vm.c (vm_exec): @#__ThrowState__ is no longer
+	  used.  [ruby-dev:38760]
+
 Thu Jul 16 08:56:32 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* dir.c (push_glob): re-fix GC problem.
