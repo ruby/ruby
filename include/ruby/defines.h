@@ -197,6 +197,18 @@ void xfree(void*);
 
 #ifdef RUBY_EXPORT
 #undef RUBY_EXTERN
+
+#ifndef FALSE
+# define FALSE 0
+#elif FALSE
+# error FALSE must be false
+#endif
+#ifndef TRUE
+# define TRUE 1
+#elif !TRUE
+# error TRUE must be true
+#endif
+
 #endif
 
 #ifndef RUBY_EXTERN
