@@ -380,6 +380,9 @@ random_init(int argc, VALUE *argv, VALUE obj)
 #else
 # define USE_DEV_URANDOM 0
 #endif
+#ifdef _WIN32
+#include <wincrypt.h>
+#endif
 
 static void
 fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
@@ -414,7 +417,7 @@ fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
     }
 #elif defined(_WIN32)
     if (CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
-	CryptGenRandom(prov, DEFAULT_SEED_LEN, seed);
+	CryptGenRandom(prov, DEFAULT_SEED_LEN, (void *)seed);
 	CryptReleaseContext(prov, 0);
     }
 #endif
