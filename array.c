@@ -1606,13 +1606,13 @@ VALUE
 rb_ary_join(VALUE ary, VALUE sep)
 {
     long len = 1, i;
-    int taint = Qfalse;
-    int untrust = Qfalse;
+    int taint = FALSE;
+    int untrust = FALSE;
     VALUE val, tmp, result;
 
     if (RARRAY_LEN(ary) == 0) return rb_str_new(0, 0);
-    if (OBJ_TAINTED(ary) || OBJ_TAINTED(sep)) taint = Qtrue;
-    if (OBJ_UNTRUSTED(ary) || OBJ_UNTRUSTED(sep)) untrust = Qtrue;
+    if (OBJ_TAINTED(ary) || OBJ_TAINTED(sep)) taint = TRUE;
+    if (OBJ_UNTRUSTED(ary) || OBJ_UNTRUSTED(sep)) untrust = TRUE;
 
     if (!NIL_P(sep)) {
 	StringValue(sep);
@@ -1676,8 +1676,8 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
     str = rb_str_buf_new2("[");
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	s = rb_inspect(RARRAY_PTR(ary)[i]);
-	if (OBJ_TAINTED(s)) tainted = Qtrue;
-	if (OBJ_UNTRUSTED(s)) untrust = Qtrue;
+	if (OBJ_TAINTED(s)) tainted = TRUE;
+	if (OBJ_UNTRUSTED(s)) untrust = TRUE;
 	if (i > 0) rb_str_buf_cat2(str, ", ");
 	rb_str_buf_append(str, s);
     }
@@ -2579,10 +2579,10 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
     VALUE item, arg1, arg2;
     long beg = 0, end = 0, len = 0;
     VALUE *p, *pend;
-    int block_p = Qfalse;
+    int block_p = FALSE;
 
     if (rb_block_given_p()) {
-	block_p = Qtrue;
+	block_p = TRUE;
 	rb_scan_args(argc, argv, "02", &arg1, &arg2);
 	argc += 1;		/* hackish */
     }
