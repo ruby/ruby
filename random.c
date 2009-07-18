@@ -389,6 +389,8 @@ fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
 #if USE_DEV_URANDOM
     int fd;
     struct stat statbuf;
+#elif defined(_WIN32)
+    HCRYPTPROV prov;    
 #endif
 
     memset(seed, 0, DEFAULT_SEED_LEN);
@@ -409,6 +411,11 @@ fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
             (void)read(fd, seed, DEFAULT_SEED_LEN);
         }
         close(fd);
+    }
+#elif defined(_WIN32)
+    if (CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+	CryptGenRandom(prov, DEFAULT_SEED_LEN, seed);
+	CryptReleaseContext(prov, 0);
     }
 #endif
 
