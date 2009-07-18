@@ -381,6 +381,11 @@ random_init(int argc, VALUE *argv, VALUE obj)
 # define USE_DEV_URANDOM 0
 #endif
 #ifdef _WIN32
+# if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0400
+#  undef _WIN32_WINNT
+#  define _WIN32_WINNT 0x400
+#  undef __WINCRYPT_H__
+# endif
 #include <wincrypt.h>
 #endif
 
@@ -393,7 +398,7 @@ fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
     int fd;
     struct stat statbuf;
 #elif defined(_WIN32)
-    HCRYPTPROV prov;    
+    HCRYPTPROV prov;
 #endif
 
     memset(seed, 0, DEFAULT_SEED_LEN);
