@@ -1,3 +1,7 @@
+Sat Jul 18 17:43:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_hash_cmp): got rid of overflow.
+
 Sat Jul 18 16:03:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/defines.h (TRUE, FALSE): for internal use.

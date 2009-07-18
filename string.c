@@ -2239,7 +2239,7 @@ rb_str_hash(VALUE str)
 int
 rb_str_hash_cmp(VALUE str1, VALUE str2)
 {
-    int len;
+    long len;
 
     if (!rb_str_comparable(str1, str2)) return 1;
     if (RSTRING_LEN(str1) == (len = RSTRING_LEN(str2)) &&
