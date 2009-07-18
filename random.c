@@ -211,7 +211,7 @@ struct Random {
 
 static struct Random default_rand;
 
-unsigned long
+unsigned int
 rb_genrand_int32(void)
 {
     return genrand_int32(&default_rand.rnd.mt);
@@ -767,6 +767,20 @@ rb_rand_internal(unsigned long i)
     return limited_rand(mt, i);
 }
 
+unsigned int
+rb_random_int32(VALUE obj)
+{
+    rb_random_t *rnd = get_rnd(obj);
+    return genrand_int32(&rnd->mt);
+}
+
+double
+rb_random_real(VALUE obj)
+{
+    rb_random_t *rnd = get_rnd(obj);
+    return genrand_real(&rnd->mt);
+}
+
 /*
  * call-seq: prng.bytes(size) -> prng
  *
@@ -776,8 +790,13 @@ rb_rand_internal(unsigned long i)
 static VALUE
 random_bytes(VALUE obj, VALUE len)
 {
+    return rb_random_bytes(obj, FIX2LONG(rb_to_int(len)));
+}
+
+VALUE
+rb_random_bytes(VALUE obj, long n)
+{
     rb_random_t *rnd = get_rnd(obj);
-    long n = FIX2LONG(rb_to_int(len));
     VALUE bytes = rb_str_new(0, n);
     char *ptr = RSTRING_PTR(bytes);
     unsigned int r, i;
@@ -868,8 +887,8 @@ rand_int(struct MT *mt, VALUE vmax)
  *
  * Otherwise, it raises an ArgumentError.
  */
-static VALUE
-random_int(VALUE obj, VALUE vmax)
+VALUE
+rb_random_int(VALUE obj, VALUE vmax)
 {
     VALUE v, beg = Qundef;
     rb_random_t *rnd = get_rnd(obj);
@@ -886,6 +905,8 @@ random_int(VALUE obj, VALUE vmax)
     if (NIL_P(v)) v = INT2FIX(0);
     return add_to_begin(beg, v);
 }
+
+#define random_int rb_random_int
 
 /*
  * call-seq:

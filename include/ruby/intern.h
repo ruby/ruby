@@ -524,9 +524,13 @@ VALUE rb_range_new(VALUE, VALUE, int);
 VALUE rb_range_beg_len(VALUE, long*, long*, long, int);
 int rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp);
 /* random.c */
-unsigned long rb_genrand_int32(void);
+unsigned int rb_genrand_int32(void);
 double rb_genrand_real(void);
 void rb_reset_random_seed(void);
+VALUE rb_random_bytes(VALUE rnd, long n);
+VALUE rb_random_int(VALUE rnd, VALUE max);
+unsigned int rb_random_int32(VALUE rnd);
+double rb_random_real(VALUE rnd);
 /* re.c */
 #define rb_memcmp memcmp
 int rb_memcicmp(const void*,const void*,long);
