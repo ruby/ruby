@@ -1,3 +1,10 @@
+Sat Jul 18 23:44:59 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (reg_enc_error): use rb_enc_get to get the encoding of
+	  a Regexp object. REGEXP(re)->ptr->enc is the encoding of the
+	  regexp engin for patterns and target strings.
+	  [ruby-core:23208]
+
 Sat Jul 18 17:43:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_hash_cmp): got rid of overflow.
