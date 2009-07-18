@@ -539,16 +539,16 @@ rb_enc_find(const char *name)
 static inline int
 enc_capable(VALUE obj)
 {
-    if (SPECIAL_CONST_P(obj)) return Qfalse;
+    if (SPECIAL_CONST_P(obj)) return FALSE;
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
       case T_REGEXP:
       case T_FILE:
-	return Qtrue;
+	return TRUE;
       case T_DATA:
-	if (RDATA(obj)->dmark == enc_mark) return Qtrue;
+	if (RDATA(obj)->dmark == enc_mark) return TRUE;
       default:
-	return Qfalse;
+	return FALSE;
     }
 }
 
@@ -744,7 +744,7 @@ rb_enc_mbclen(const char *p, const char *e, rb_encoding *enc)
         return MBCLEN_CHARFOUND_LEN(n);
     else {
         int min = rb_enc_mbminlen(enc);
-        return min <= e-p ? min : e-p;
+        return min <= e-p ? min : (int)(e-p);
     }
 }
 
@@ -756,7 +756,7 @@ rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc)
         return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(1);
     n = ONIGENC_PRECISE_MBC_ENC_LEN(enc, (UChar*)p, (UChar*)e);
     if (e-p < n)
-        return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(n-(e-p));
+        return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(n-(int)(e-p));
     return n;
 }
 
@@ -1071,10 +1071,11 @@ struct default_encoding {
 static int
 enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const char *name)
 {
-    int overridden = Qfalse;
+    int overridden = FALSE;
+
     if (def->index != -2)
 	/* Already set */
-	overridden = Qtrue;
+	overridden = TRUE;
 
     if (NIL_P(encoding)) {
 	def->index = -1;

@@ -389,7 +389,7 @@ enumerator_each(VALUE obj)
     if (!rb_block_given_p()) return obj;
     e = enumerator_ptr(obj);
     if (e->args) {
-	argc = RARRAY_LEN(e->args);
+	argc = RARRAY_LENINT(e->args);
 	argv = RARRAY_PTR(e->args);
     }
     return rb_block_call(e->obj, e->meth, argc, argv,
@@ -430,7 +430,7 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
     memo = NIL_P(memo) ? 0 : (VALUE)NUM2LONG(memo);
     e = enumerator_ptr(obj);
     if (e->args) {
-	argc = RARRAY_LEN(e->args);
+	argc = RARRAY_LENINT(e->args);
 	argv = RARRAY_PTR(e->args);
     }
     else {
@@ -486,7 +486,7 @@ enumerator_with_object(VALUE obj, VALUE memo)
     RETURN_ENUMERATOR(obj, 1, &memo);
     e = enumerator_ptr(obj);
     if (e->args) {
-	argc = RARRAY_LEN(e->args);
+	argc = RARRAY_LENINT(e->args);
 	argv = RARRAY_PTR(e->args);
     }
     rb_block_call(e->obj, e->meth, argc, argv,
@@ -616,8 +616,8 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
 	    rb_str_concat(str, rb_inspect(arg));
 	    rb_str_buf_cat2(str, argc > 0 ? ", " : ")");
 
-	    if (OBJ_TAINTED(arg)) tainted = Qtrue;
-	    if (OBJ_UNTRUSTED(arg)) untrusted = Qtrue;
+	    if (OBJ_TAINTED(arg)) tainted = TRUE;
+	    if (OBJ_UNTRUSTED(arg)) untrusted = TRUE;
 	}
     }
 

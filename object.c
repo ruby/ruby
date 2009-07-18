@@ -99,7 +99,7 @@ VALUE
 rb_obj_hash(VALUE obj)
 {
     VALUE oid = rb_obj_id(obj);
-    unsigned h = rb_hash_end(rb_hash_start(NUM2LONG(oid)));
+    unsigned long h = rb_hash_end(rb_hash_start(NUM2LONG(oid)));
     return LONG2NUM(h);
 }
 
@@ -1549,7 +1549,7 @@ rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_attr(klass, rb_to_id(argv[i]), Qtrue, Qfalse, Qtrue);
+	rb_attr(klass, rb_to_id(argv[i]), TRUE, FALSE, TRUE);
     }
     return Qnil;
 }
@@ -1559,7 +1559,7 @@ rb_mod_attr(int argc, VALUE *argv, VALUE klass)
 {
     if (argc == 2 && (argv[1] == Qtrue || argv[1] == Qfalse)) {
 	rb_warning("optional boolean argument is obsoleted");
-	rb_attr(klass, rb_to_id(argv[0]), 1, RTEST(argv[1]), Qtrue);
+	rb_attr(klass, rb_to_id(argv[0]), 1, RTEST(argv[1]), TRUE);
 	return Qnil;
     }
     return rb_mod_attr_reader(argc, argv, klass);
@@ -1579,7 +1579,7 @@ rb_mod_attr_writer(int argc, VALUE *argv, VALUE klass)
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_attr(klass, rb_to_id(argv[i]), Qfalse, Qtrue, Qtrue);
+	rb_attr(klass, rb_to_id(argv[i]), FALSE, TRUE, TRUE);
     }
     return Qnil;
 }
@@ -1605,7 +1605,7 @@ rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_attr(klass, rb_to_id(argv[i]), Qtrue, Qtrue, Qtrue);
+	rb_attr(klass, rb_to_id(argv[i]), TRUE, TRUE, TRUE);
     }
     return Qnil;
 }
@@ -2024,7 +2024,7 @@ rb_convert_type(VALUE val, int type, const char *tname, const char *method)
     VALUE v;
 
     if (TYPE(val) == type) return val;
-    v = convert_type(val, tname, method, Qtrue);
+    v = convert_type(val, tname, method, TRUE);
     if (TYPE(v) != type) {
 	const char *cname = rb_obj_classname(val);
 	rb_raise(rb_eTypeError, "can't convert %s to %s (%s#%s gives %s)",
@@ -2040,7 +2040,7 @@ rb_check_convert_type(VALUE val, int type, const char *tname, const char *method
 
     /* always convert T_DATA */
     if (TYPE(val) == type && type != T_DATA) return val;
-    v = convert_type(val, tname, method, Qfalse);
+    v = convert_type(val, tname, method, FALSE);
     if (NIL_P(v)) return Qnil;
     if (TYPE(v) != type) {
 	const char *cname = rb_obj_classname(val);
@@ -2058,7 +2058,7 @@ rb_to_integer(VALUE val, const char *method)
 
     if (FIXNUM_P(val)) return val;
     if (TYPE(val) == T_BIGNUM) return val;
-    v = convert_type(val, "Integer", method, Qtrue);
+    v = convert_type(val, "Integer", method, TRUE);
     if (!rb_obj_is_kind_of(v, rb_cInteger)) {
 	const char *cname = rb_obj_classname(val);
 	rb_raise(rb_eTypeError, "can't convert %s to Integer (%s#%s gives %s)",
@@ -2074,7 +2074,7 @@ rb_check_to_integer(VALUE val, const char *method)
 
     if (FIXNUM_P(val)) return val;
     if (TYPE(val) == T_BIGNUM) return val;
-    v = convert_type(val, "Integer", method, Qfalse);
+    v = convert_type(val, "Integer", method, FALSE);
     if (!rb_obj_is_kind_of(v, rb_cInteger)) {
 	return Qnil;
     }
@@ -2105,7 +2105,7 @@ rb_Integer(VALUE val)
 	return val;
 
       case T_STRING:
-	return rb_str_to_inum(val, 0, Qtrue);
+	return rb_str_to_inum(val, 0, TRUE);
 
       case T_NIL:
 	rb_raise(rb_eTypeError, "can't convert nil into Integer");
@@ -2114,7 +2114,7 @@ rb_Integer(VALUE val)
       default:
 	break;
     }
-    tmp = convert_type(val, "Integer", "to_int", Qfalse);
+    tmp = convert_type(val, "Integer", "to_int", FALSE);
     if (NIL_P(tmp)) {
 	return rb_to_integer(val, "to_i");
     }
@@ -2152,7 +2152,10 @@ rb_cstr_to_dbl(const char *p, int badcheck)
     double d;
     const char *ellipsis = "";
     int w;
-#define OutOfRange() (((w = end - p) > 20) ? (w = 20, ellipsis = "...") : (ellipsis = ""))
+    enum {max_width = 20};
+#define OutOfRange() ((end - p > max_width) ? \
+		      (w = max_width, ellipsis = "...") : \
+		      (w = (int)(end - p), ellipsis = ""))
 
     if (!p) return 0.0;
     q = p;
@@ -2225,15 +2228,15 @@ rb_str_to_dbl(VALUE str, int badcheck)
     s = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
     if (s) {
+	if (badcheck && memchr(s, '\0', len)) {
+	    rb_raise(rb_eArgError, "string for Float contains null byte");
+	}
 	if (s[len]) {		/* no sentinel somehow */
 	    char *p = ALLOCA_N(char, len+1);
 
 	    MEMCPY(p, s, char, len);
 	    p[len] = '\0';
 	    s = p;
-	}
-	if (badcheck && len != strlen(s)) {
-	    rb_raise(rb_eArgError, "string for Float contains null byte");
 	}
     }
     return rb_cstr_to_dbl(s, badcheck);
@@ -2253,7 +2256,7 @@ rb_Float(VALUE val)
 	return DBL2NUM(rb_big2dbl(val));
 
       case T_STRING:
-	return DBL2NUM(rb_str_to_dbl(val, Qtrue));
+	return DBL2NUM(rb_str_to_dbl(val, TRUE));
 
       case T_NIL:
 	rb_raise(rb_eTypeError, "can't convert nil into Float");

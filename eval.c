@@ -15,6 +15,8 @@
 #include "iseq.h"
 #include "gc.h"
 
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+
 VALUE proc_invoke(VALUE, VALUE, VALUE, VALUE);
 VALUE rb_binding_new(void);
 NORETURN(void rb_raise_jump(VALUE));
@@ -157,7 +159,7 @@ ruby_cleanup(volatile int ex)
     POP_TAG();
     rb_thread_stop_timer_thread();
 
-    for (nerr = 0; nerr < sizeof(errs) / sizeof(errs[0]); ++nerr) {
+    for (nerr = 0; nerr < numberof(errs); ++nerr) {
 	VALUE err = errs[nerr];
 
 	if (!RTEST(err)) continue;
@@ -534,10 +536,10 @@ rb_block_given_p(void)
 
     if ((th->cfp->lfp[0] & 0x02) == 0 &&
 	GC_GUARDED_PTR_REF(th->cfp->lfp[0])) {
-	return Qtrue;
+	return TRUE;
     }
     else {
-	return Qfalse;
+	return FALSE;
     }
 }
 
@@ -577,13 +579,13 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	th->cfp = cfp; /* restore */
 
 	if (state == TAG_RAISE) {
-	    int handle = Qfalse;
+	    int handle = FALSE;
 	    VALUE eclass;
 
 	    va_init_list(args, data2);
 	    while ((eclass = va_arg(args, VALUE)) != 0) {
 		if (rb_obj_is_kind_of(th->errinfo, eclass)) {
-		    handle = Qtrue;
+		    handle = TRUE;
 		    break;
 		}
 	    }

@@ -409,7 +409,7 @@ proc_new(VALUE klass, int is_lambda)
     if (is_lambda) {
 	rb_proc_t *proc;
 	GetProcPtr(procval, proc);
-	proc->is_lambda = Qtrue;
+	proc->is_lambda = TRUE;
     }
     return procval;
 }
@@ -434,7 +434,7 @@ proc_new(VALUE klass, int is_lambda)
 static VALUE
 rb_proc_s_new(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE block = proc_new(klass, Qfalse);
+    VALUE block = proc_new(klass, FALSE);
 
     rb_obj_call_init(block, argc, argv);
     return block;
@@ -450,13 +450,13 @@ rb_proc_s_new(int argc, VALUE *argv, VALUE klass)
 VALUE
 rb_block_proc(void)
 {
-    return proc_new(rb_cProc, Qfalse);
+    return proc_new(rb_cProc, FALSE);
 }
 
 VALUE
 rb_block_lambda(void)
 {
-    return proc_new(rb_cProc, Qtrue);
+    return proc_new(rb_cProc, TRUE);
 }
 
 VALUE
@@ -1095,13 +1095,13 @@ method_owner(VALUE obj)
 VALUE
 rb_obj_method(VALUE obj, VALUE vid)
 {
-    return mnew(CLASS_OF(obj), obj, rb_to_id(vid), rb_cMethod, Qfalse);
+    return mnew(CLASS_OF(obj), obj, rb_to_id(vid), rb_cMethod, FALSE);
 }
 
 VALUE
 rb_obj_public_method(VALUE obj, VALUE vid)
 {
-    return mnew(CLASS_OF(obj), obj, rb_to_id(vid), rb_cMethod, Qtrue);
+    return mnew(CLASS_OF(obj), obj, rb_to_id(vid), rb_cMethod, TRUE);
 }
 
 /*
@@ -1139,13 +1139,13 @@ rb_obj_public_method(VALUE obj, VALUE vid)
 static VALUE
 rb_mod_instance_method(VALUE mod, VALUE vid)
 {
-    return mnew(mod, Qundef, rb_to_id(vid), rb_cUnboundMethod, Qfalse);
+    return mnew(mod, Qundef, rb_to_id(vid), rb_cUnboundMethod, FALSE);
 }
 
 static VALUE
 rb_mod_public_instance_method(VALUE mod, VALUE vid)
 {
-    return mnew(mod, Qundef, rb_to_id(vid), rb_cUnboundMethod, Qtrue);
+    return mnew(mod, Qundef, rb_to_id(vid), rb_cUnboundMethod, TRUE);
 }
 
 /*
@@ -1232,8 +1232,8 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	if (BUILTIN_TYPE(proc->block.iseq) != T_NODE) {
 	    proc->block.iseq->defined_method_id = id;
 	    proc->block.iseq->klass = mod;
-	    proc->is_lambda = Qtrue;
-	    proc->is_from_method = Qtrue;
+	    proc->is_lambda = TRUE;
+	    proc->is_from_method = TRUE;
 	}
 	rb_add_method(mod, id, VM_METHOD_TYPE_BMETHOD, (void *)body, noex);
     }

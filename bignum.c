@@ -1051,7 +1051,7 @@ big2ulong(VALUE x, const char *type, int check)
 VALUE
 rb_big2ulong_pack(VALUE x)
 {
-    VALUE num = big2ulong(x, "unsigned long", Qfalse);
+    VALUE num = big2ulong(x, "unsigned long", FALSE);
     if (!RBIGNUM_SIGN(x)) {
 	return (VALUE)(-(SIGNED_VALUE)num);
     }
@@ -1061,7 +1061,7 @@ rb_big2ulong_pack(VALUE x)
 VALUE
 rb_big2ulong(VALUE x)
 {
-    VALUE num = big2ulong(x, "unsigned long", Qtrue);
+    VALUE num = big2ulong(x, "unsigned long", TRUE);
 
     if (!RBIGNUM_SIGN(x)) {
 	if ((SIGNED_VALUE)num < 0) {
@@ -1075,7 +1075,7 @@ rb_big2ulong(VALUE x)
 SIGNED_VALUE
 rb_big2long(VALUE x)
 {
-    VALUE num = big2ulong(x, "long", Qtrue);
+    VALUE num = big2ulong(x, "long", TRUE);
 
     if ((SIGNED_VALUE)num < 0 &&
 	(RBIGNUM_SIGN(x) || (SIGNED_VALUE)num != LONG_MIN)) {
@@ -2902,7 +2902,7 @@ rb_big_lshift(VALUE x, VALUE y)
 		if (!NIL_P(t)) return t;
 		neg = 1;
 	    }
-	    shift = big2ulong(y, "long", Qtrue);
+	    shift = big2ulong(y, "long", TRUE);
 	    break;
 	}
 	y = rb_to_int(y);
@@ -2968,7 +2968,7 @@ rb_big_rshift(VALUE x, VALUE y)
 	    else {
 		neg = 1;
 	    }
-	    shift = big2ulong(y, "long", Qtrue);
+	    shift = big2ulong(y, "long", TRUE);
 	    break;
 	}
 	y = rb_to_int(y);
@@ -3056,7 +3056,7 @@ rb_big_aref(VALUE x, VALUE y)
 	  out_of_range:
 	    return RBIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(1);
 	}
-	shift = big2ulong(y, "long", Qfalse);
+	shift = big2ulong(y, "long", FALSE);
     }
     else {
 	i = NUM2LONG(y);

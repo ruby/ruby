@@ -701,7 +701,7 @@ static VALUE
 chdir_yield(struct chdir_data *args)
 {
     dir_chdir(args->new_path);
-    args->done = Qtrue;
+    args->done = TRUE;
     chdir_blocking++;
     if (chdir_thread == Qnil)
 	chdir_thread = rb_thread_current();
@@ -788,7 +788,7 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
 
 	args.old_path = rb_tainted_str_new2(cwd); xfree(cwd);
 	args.new_path = path;
-	args.done = Qfalse;
+	args.done = FALSE;
 	return rb_ensure(chdir_yield, (VALUE)&args, chdir_restore, (VALUE)&args);
     }
     dir_chdir(path);

@@ -491,7 +491,7 @@ rb_include_module(VALUE klass, VALUE module)
     OBJ_INFECT(klass, module);
     c = klass;
     while (module) {
-	int superclass_seen = Qfalse;
+	int superclass_seen = FALSE;
 
 	if (RCLASS_M_TBL(klass) == RCLASS_M_TBL(module))
 	    rb_raise(rb_eArgError, "cyclic include detected");
@@ -507,7 +507,7 @@ rb_include_module(VALUE klass, VALUE module)
 		}
 		break;
 	      case T_CLASS:
-		superclass_seen = Qtrue;
+		superclass_seen = TRUE;
 		break;
 	    }
 	}
@@ -694,7 +694,7 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int (*func) (ID, lo
     st_table *list;
 
     if (argc == 0) {
-	recur = Qtrue;
+	recur = TRUE;
     }
     else {
 	VALUE r;
@@ -975,7 +975,7 @@ rb_define_alias(VALUE klass, const char *name1, const char *name2)
 void
 rb_define_attr(VALUE klass, const char *name, int read, int write)
 {
-    rb_attr(klass, rb_intern(name), read, write, Qfalse);
+    rb_attr(klass, rb_intern(name), read, write, FALSE);
 }
 
 #include <stdarg.h>

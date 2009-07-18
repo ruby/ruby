@@ -459,7 +459,7 @@ w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
 {
     VALUE klass = CLASS_OF(obj);
 
-    w_extended(klass, arg, Qtrue);
+    w_extended(klass, arg, TRUE);
     klass = rb_class_real(klass);
     if (klass != super) {
 	w_byte(TYPE_UCLASS, arg);
@@ -598,8 +598,8 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	w_symbol(SYM2ID(obj), arg);
     }
     else {
-	if (OBJ_TAINTED(obj)) arg->taint = Qtrue;
-	if (OBJ_UNTRUSTED(obj)) arg->untrust = Qtrue;
+	if (OBJ_TAINTED(obj)) arg->taint = TRUE;
+	if (OBJ_UNTRUSTED(obj)) arg->untrust = TRUE;
 
 	if (rb_respond_to(obj, s_mdump)) {
 	    volatile VALUE v;
@@ -608,7 +608,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 	    v = rb_funcall(obj, s_mdump, 0, 0);
 	    check_dump_arg(arg, s_mdump);
-	    w_class(TYPE_USRMARSHAL, obj, arg, Qfalse);
+	    w_class(TYPE_USRMARSHAL, obj, arg, FALSE);
 	    w_object(v, arg, limit);
 	    if (hasiv) w_ivar(obj, 0, &c_arg);
 	    return;
@@ -626,7 +626,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    if ((hasiv2 = has_ivars(v, ivtbl2)) != 0 && !hasiv) {
 		w_byte(TYPE_IVAR, arg);
 	    }
-	    w_class(TYPE_USERDEF, obj, arg, Qfalse);
+	    w_class(TYPE_USERDEF, obj, arg, FALSE);
 	    w_bytes(RSTRING_PTR(v), RSTRING_LEN(v), arg);
             if (hasiv2) {
 		w_ivar(v, ivtbl2, &c_arg);
@@ -757,7 +757,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    break;
 
 	  case T_STRUCT:
-	    w_class(TYPE_STRUCT, obj, arg, Qtrue);
+	    w_class(TYPE_STRUCT, obj, arg, TRUE);
 	    {
 		long len = RSTRUCT_LEN(obj);
 		VALUE mem;
@@ -773,7 +773,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    break;
 
 	  case T_OBJECT:
-	    w_class(TYPE_OBJECT, obj, arg, Qtrue);
+	    w_class(TYPE_OBJECT, obj, arg, TRUE);
 	    w_objivar(obj, &c_arg);
 	    break;
 
@@ -788,7 +788,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 		}
 		v = rb_funcall(obj, s_dump_data, 0);
 		check_dump_arg(arg, s_dump_data);
-		w_class(TYPE_DATA, obj, arg, Qtrue);
+		w_class(TYPE_DATA, obj, arg, TRUE);
 		w_object(v, arg, limit);
 	    }
 	    break;
@@ -883,8 +883,8 @@ marshal_dump(int argc, VALUE *argv)
     arg.dest = 0;
     arg.symbols = st_init_numtable();
     arg.data    = st_init_numtable();
-    arg.taint   = Qfalse;
-    arg.untrust = Qfalse;
+    arg.taint   = FALSE;
+    arg.untrust = FALSE;
     arg.compat_tbl = st_init_numtable();
     arg.encodings = 0;
     arg.str = rb_str_buf_new(0);
@@ -1050,8 +1050,8 @@ r_bytes0(long len, struct load_arg *arg)
 	if (NIL_P(str)) goto too_short;
 	StringValue(str);
 	if (RSTRING_LEN(str) != len) goto too_short;
-	if (OBJ_TAINTED(str)) arg->taint = Qtrue;
-	if (OBJ_UNTRUSTED(str)) arg->untrust = Qtrue;
+	if (OBJ_TAINTED(str)) arg->taint = TRUE;
+	if (OBJ_UNTRUSTED(str)) arg->untrust = TRUE;
     }
     return str;
 }
@@ -1246,7 +1246,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_IVAR:
         {
-	    int ivar = Qtrue;
+	    int ivar = TRUE;
 
 	    v = r_object0(arg, &ivar, extmod);
 	    if (ivar) r_ivar(v, arg);
@@ -1396,7 +1396,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    v = rb_reg_new("", 0, options);
 	    if (ivp) {
 		r_ivar(v, arg);
-		*ivp = Qfalse;
+		*ivp = FALSE;
 	    }
 	    if (rb_enc_get_index(v) != rb_usascii_encindex())
 		rb_enc_copy(str, v);
@@ -1493,7 +1493,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    data = r_string(arg);
 	    if (ivp) {
 		r_ivar(data, arg);
-		*ivp = Qfalse;
+		*ivp = FALSE;
 	    }
 	    v = rb_funcall(klass, s_load, 1, data);
 	    check_load_arg(arg, s_load);
@@ -1542,10 +1542,10 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
        {
            VALUE klass = path2class(r_unique(arg));
            if (rb_respond_to(klass, s_alloc)) {
-	       static int warn = Qtrue;
+	       static int warn = TRUE;
 	       if (warn) {
 		   rb_warn("define `allocate' instead of `_alloc'");
-		   warn = Qfalse;
+		   warn = FALSE;
 	       }
 	       v = rb_funcall(klass, s_alloc, 0);
 	       check_load_arg(arg, s_alloc);
@@ -1667,7 +1667,7 @@ marshal_load(int argc, VALUE *argv)
 	if (rb_respond_to(port, s_binmode)) {
 	    rb_funcall2(port, s_binmode, 0, 0);
 	}
-	arg.taint = Qtrue;
+	arg.taint = TRUE;
     }
     else {
 	rb_raise(rb_eTypeError, "instance of IO needed");

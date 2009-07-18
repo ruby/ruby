@@ -1516,7 +1516,7 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 static VALUE
 rb_hash_equal(VALUE hash1, VALUE hash2)
 {
-    return hash_equal(hash1, hash2, Qfalse);
+    return hash_equal(hash1, hash2, FALSE);
 }
 
 /*
@@ -1530,7 +1530,7 @@ rb_hash_equal(VALUE hash1, VALUE hash2)
 static VALUE
 rb_hash_eql(VALUE hash1, VALUE hash2)
 {
-    return hash_equal(hash1, hash2, Qtrue);
+    return hash_equal(hash1, hash2, TRUE);
 }
 
 static int

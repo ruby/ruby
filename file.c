@@ -885,7 +885,7 @@ group_member(GETGROUPS_T gid)
 {
 #ifndef _WIN32
     if (getgid() == gid || getegid() == gid)
-	return Qtrue;
+	return TRUE;
 
 # ifdef HAVE_GETGROUPS
 #  ifndef NGROUPS
@@ -902,11 +902,11 @@ group_member(GETGROUPS_T gid)
 	anum = getgroups(NGROUPS, gary);
 	while (--anum >= 0)
 	    if (gary[anum] == gid)
-		return Qtrue;
+		return TRUE;
     }
 # endif
 #endif
-    return Qfalse;
+    return FALSE;
 }
 #endif
 
@@ -4543,7 +4543,7 @@ static int
 fpath_check(const char *path)
 {
 #if ENABLE_PATH_CHECK
-    return path_check_0(rb_str_new2(path), Qfalse);
+    return path_check_0(rb_str_new2(path), FALSE);
 #else
     return 1;
 #endif
@@ -4564,7 +4564,7 @@ rb_path_check(const char *path)
     if (!p) p = pend;
 
     for (;;) {
-	if (!path_check_0(rb_str_new(p0, p - p0), Qtrue)) {
+	if (!path_check_0(rb_str_new(p0, p - p0), TRUE)) {
 	    return 0;		/* not safe */
 	}
 	p0 = p + 1;

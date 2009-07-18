@@ -159,25 +159,25 @@ do_coerce(VALUE *x, VALUE *y, int err)
 	if (err) {
 	    rb_raise(rb_eTypeError, "coerce must return [x, y]");
 	}
-	return Qfalse;
+	return FALSE;
     }
 
     *x = RARRAY_PTR(ary)[0];
     *y = RARRAY_PTR(ary)[1];
-    return Qtrue;
+    return TRUE;
 }
 
 VALUE
 rb_num_coerce_bin(VALUE x, VALUE y, ID func)
 {
-    do_coerce(&x, &y, Qtrue);
+    do_coerce(&x, &y, TRUE);
     return rb_funcall(x, func, 1, y);
 }
 
 VALUE
 rb_num_coerce_cmp(VALUE x, VALUE y, ID func)
 {
-    if (do_coerce(&x, &y, Qfalse))
+    if (do_coerce(&x, &y, FALSE))
 	return rb_funcall(x, func, 1, y);
     return Qnil;
 }
@@ -187,7 +187,7 @@ rb_num_coerce_relop(VALUE x, VALUE y, ID func)
 {
     VALUE c, x0 = x, y0 = y;
 
-    if (!do_coerce(&x, &y, Qfalse) ||
+    if (!do_coerce(&x, &y, FALSE) ||
 	NIL_P(c = rb_funcall(x, func, 1, y))) {
 	rb_cmperr(x0, y0);
 	return Qnil;		/* not reached */
@@ -249,7 +249,7 @@ num_uminus(VALUE num)
     VALUE zero;
 
     zero = INT2FIX(0);
-    do_coerce(&zero, &num, Qtrue);
+    do_coerce(&zero, &num, TRUE);
 
     return rb_funcall(zero, '-', 1, num);
 }
@@ -1491,9 +1491,9 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
 		rb_yield(DBL2NUM(i*unit+beg));
 	    }
 	}
-	return Qtrue;
+	return TRUE;
     }
-    return Qfalse;
+    return FALSE;
 }
 
 /*
@@ -1567,7 +1567,7 @@ num_step(int argc, VALUE *argv, VALUE from)
 	    }
 	}
     }
-    else if (!ruby_float_step(from, to, step, Qfalse)) {
+    else if (!ruby_float_step(from, to, step, FALSE)) {
 	VALUE i = from;
 	ID cmp;
 

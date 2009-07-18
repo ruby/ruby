@@ -628,7 +628,7 @@ rb_io_wait_readable(int f)
       case ERESTART:
 #endif
 	rb_thread_wait_fd(f);
-	return Qtrue;
+	return TRUE;
 
       case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
@@ -642,10 +642,10 @@ rb_io_wait_readable(int f)
 #else
 	rb_thread_select(f + 1, rb_fd_ptr(&rfds), NULL, NULL, NULL);
 #endif
-	return Qtrue;
+	return TRUE;
 
       default:
-	return Qfalse;
+	return FALSE;
     }
 }
 
@@ -673,7 +673,7 @@ rb_io_wait_writable(int f)
       case ERESTART:
 #endif
 	rb_thread_fd_writable(f);
-	return Qtrue;
+	return TRUE;
 
       case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
@@ -687,10 +687,10 @@ rb_io_wait_writable(int f)
 #else
 	rb_thread_select(f + 1, NULL, rb_fd_ptr(&wfds), NULL, NULL);
 #endif
-	return Qtrue;
+	return TRUE;
 
       default:
-	return Qfalse;
+	return FALSE;
     }
 }
 
@@ -2217,7 +2217,7 @@ swallow(rb_io_t *fptr, int term)
 	    const char *p = READ_DATA_PENDING_PTR(fptr);
 	    int i;
 	    if (cnt > sizeof buf) cnt = sizeof buf;
-	    if (*p != term) return Qtrue;
+	    if (*p != term) return TRUE;
 	    i = (int)cnt;
 	    while (--i && *++p == term);
 	    if (!read_buffered_data(buf, cnt - i, fptr)) /* must not fail */
@@ -2226,7 +2226,7 @@ swallow(rb_io_t *fptr, int term)
 	rb_thread_wait_fd(fptr->fd);
 	rb_io_check_closed(fptr);
     } while (io_fillbuf(fptr) == 0);
-    return Qfalse;
+    return FALSE;
 }
 
 static VALUE
@@ -3434,7 +3434,7 @@ rb_io_fptr_finalize(rb_io_t *fptr)
     fptr->pathv = Qnil;
     fptr->write_lock = 0;
     if (0 <= fptr->fd)
-	rb_io_fptr_cleanup(fptr, Qtrue);
+	rb_io_fptr_cleanup(fptr, TRUE);
     if (fptr->rbuf) {
         free(fptr->rbuf);
         fptr->rbuf = 0;
@@ -3474,7 +3474,7 @@ rb_io_close(VALUE io)
     if (io != write_io) {
         write_fptr = RFILE(write_io)->fptr;
         if (write_fptr && 0 <= write_fptr->fd) {
-            rb_io_fptr_cleanup(write_fptr, Qtrue);
+            rb_io_fptr_cleanup(write_fptr, TRUE);
         }
     }
 
@@ -3483,7 +3483,7 @@ rb_io_close(VALUE io)
     if (fptr->fd < 0) return Qnil;
 
     fd = fptr->fd;
-    rb_io_fptr_cleanup(fptr, Qfalse);
+    rb_io_fptr_cleanup(fptr, FALSE);
     rb_thread_fd_close(fd);
 
     if (fptr->pid) {
@@ -3613,7 +3613,7 @@ rb_io_close_read(VALUE io)
     write_io = GetWriteIO(io);
     if (io != write_io) {
 	rb_io_t *wfptr;
-        rb_io_fptr_cleanup(fptr, Qfalse);
+        rb_io_fptr_cleanup(fptr, FALSE);
 	GetOpenFile(write_io, wfptr);
         RFILE(io)->fptr = wfptr;
         RFILE(write_io)->fptr = NULL;
@@ -5114,7 +5114,7 @@ pipe_open_v(int argc, VALUE *argv, const char *modestr, int fmode, convconfig_t 
 {
     VALUE prog;
     struct rb_exec_arg earg;
-    prog = rb_exec_arg_init(argc, argv, Qfalse, &earg);
+    prog = rb_exec_arg_init(argc, argv, FALSE, &earg);
     return pipe_open(&earg, prog, modestr, fmode, convconfig);
 }
 
@@ -5134,7 +5134,7 @@ pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig
         return pipe_open(0, 0, modestr, fmode, convconfig);
     }
 
-    rb_exec_arg_init(argc, argv, Qtrue, &earg);
+    rb_exec_arg_init(argc, argv, TRUE, &earg);
     return pipe_open(&earg, prog, modestr, fmode, convconfig);
 }
 
@@ -5548,18 +5548,18 @@ static VALUE
 rb_f_open(int argc, VALUE *argv)
 {
     ID to_open = 0;
-    int redirect = Qfalse;
+    int redirect = FALSE;
 
     if (argc >= 1) {
 	CONST_ID(to_open, "to_open");
 	if (rb_respond_to(argv[0], to_open)) {
-	    redirect = Qtrue;
+	    redirect = TRUE;
 	}
 	else {
 	    VALUE tmp = argv[0];
 	    FilePathValue(tmp);
 	    if (NIL_P(tmp)) {
-		redirect = Qtrue;
+		redirect = TRUE;
 	    }
 	    else {
                 VALUE cmd = check_pipe_command(tmp);
@@ -6683,7 +6683,7 @@ argf_next_argv(VALUE argf)
 	}
 	else {
 	    ARGF.next_p = 1;
-	    return Qfalse;
+	    return FALSE;
 	}
     }
     else if (ARGF.next_p == -1) {
@@ -6694,7 +6694,7 @@ argf_next_argv(VALUE argf)
 	    rb_stdout = orig_stdout;
 	}
     }
-    return Qtrue;
+    return TRUE;
 }
 
 static VALUE

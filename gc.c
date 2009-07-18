@@ -541,7 +541,7 @@ gc_profile_enable(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    objspace->profile.run = Qtrue;
+    objspace->profile.run = TRUE;
     return Qnil;
 }
 
@@ -559,7 +559,7 @@ gc_profile_disable(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    objspace->profile.run = Qfalse;
+    objspace->profile.run = FALSE;
     return Qnil;
 }
 
@@ -788,7 +788,7 @@ rb_gc_enable(void)
     rb_objspace_t *objspace = &rb_objspace;
     int old = dont_gc;
 
-    dont_gc = Qfalse;
+    dont_gc = FALSE;
     return old;
 }
 
@@ -810,7 +810,7 @@ rb_gc_disable(void)
     rb_objspace_t *objspace = &rb_objspace;
     int old = dont_gc;
 
-    dont_gc = Qtrue;
+    dont_gc = TRUE;
     return old;
 }
 
@@ -987,9 +987,9 @@ heaps_increment(rb_objspace_t *objspace)
     if (heaps_inc > 0) {
         assign_heap_slot(objspace, &freelist, lifetime_normal);
 	heaps_inc--;
-	return Qtrue;
+	return TRUE;
     }
-    return Qfalse;
+    return FALSE;
 }
 
 #define LONGLIFE_ALLOCATE_HEAPS_MIN 10
@@ -1335,8 +1335,8 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
     register struct heaps_slot *heap;
     register size_t hi, lo, mid;
 
-    if (p < lomem || p > himem) return Qfalse;
-    if ((VALUE)p % sizeof(RVALUE) != 0) return Qfalse;
+    if (p < lomem || p > himem) return FALSE;
+    if ((VALUE)p % sizeof(RVALUE) != 0) return FALSE;
 
     /* check if p looks like a pointer using bsearch*/
     lo = 0;
@@ -1346,14 +1346,14 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 	heap = &heaps[mid];
 	if (heap->slot <= p) {
 	    if (p < heap->slot + heap->limit)
-		return Qtrue;
+		return TRUE;
 	    lo = mid + 1;
 	}
 	else {
 	    hi = mid;
 	}
     }
-    return Qfalse;
+    return FALSE;
 }
 
 VALUE
@@ -1997,7 +1997,7 @@ gc_sweep(rb_objspace_t *objspace)
     malloc_increase = 0;
     if (freed < free_min) {
         if (!heaps_inc && objspace->heap.longlife_used)
-            objspace->flags.longlife_collection = Qtrue;
+            objspace->flags.longlife_collection = TRUE;
         set_heaps_increment(objspace);
         heaps_increment(objspace);
     }
@@ -2065,7 +2065,7 @@ gc_sweep_for_longlife(rb_objspace_t *objspace)
     }
 
     remembered_set_recycle(objspace);
-    objspace->flags.longlife_collection = Qfalse;
+    objspace->flags.longlife_collection = FALSE;
     objspace->profile.longlife_objects = objspace->profile.longlife_objects - freed;
 }
 
@@ -2305,7 +2305,7 @@ garbage_collect(rb_objspace_t *objspace)
     if (GC_NOTIFY) printf("start garbage_collect()\n");
 
     if (!heaps) {
-	return Qfalse;
+	return FALSE;
     }
 
     if (dont_gc || during_gc) {
@@ -2315,7 +2315,7 @@ garbage_collect(rb_objspace_t *objspace)
                 heaps_increment(objspace);
             }
 	}
-	return Qtrue;
+	return TRUE;
     }
     during_gc++;
     objspace->count++;
@@ -2379,7 +2379,7 @@ garbage_collect(rb_objspace_t *objspace)
 
     GC_PROF_TIMER_STOP;
     if (GC_NOTIFY) printf("end garbage_collect()\n");
-    return Qtrue;
+    return TRUE;
 }
 
 int
@@ -2425,7 +2425,7 @@ rb_gc_start(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
     if (objspace->heap.longlife_used) {
-        objspace->flags.longlife_collection = Qtrue;
+        objspace->flags.longlife_collection = TRUE;
     }
     rb_gc();
     return Qnil;

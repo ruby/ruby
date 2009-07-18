@@ -225,17 +225,17 @@ rb_feature_provided(const char *feature, const char **loading)
     }
     if (ext && !strchr(ext, '/')) {
 	if (IS_RBEXT(ext)) {
-	    if (rb_feature_p(feature, ext, Qtrue, Qfalse, loading)) return Qtrue;
-	    return Qfalse;
+	    if (rb_feature_p(feature, ext, Qtrue, Qfalse, loading)) return TRUE;
+	    return FALSE;
 	}
 	else if (IS_SOEXT(ext) || IS_DLEXT(ext)) {
-	    if (rb_feature_p(feature, ext, Qfalse, Qfalse, loading)) return Qtrue;
-	    return Qfalse;
+	    if (rb_feature_p(feature, ext, Qfalse, Qfalse, loading)) return TRUE;
+	    return FALSE;
 	}
     }
-    if (rb_feature_p(feature, feature + strlen(feature), Qtrue, Qfalse, loading))
-	return Qtrue;
-    return Qfalse;
+    if (rb_feature_p(feature, feature + strlen(feature), TRUE, FALSE, loading))
+	return TRUE;
+    return FALSE;
 }
 
 static void
@@ -259,7 +259,7 @@ rb_load_internal(VALUE fname, int wrap)
     rb_thread_t *th = GET_THREAD();
     volatile VALUE wrapper = th->top_wrapper;
     volatile VALUE self = th->top_self;
-    volatile int loaded = Qfalse;
+    volatile int loaded = FALSE;
     volatile int mild_compile_error;
 #ifndef __GNUC__
     rb_thread_t *volatile th0 = th;
@@ -287,7 +287,7 @@ rb_load_internal(VALUE fname, int wrap)
 
 	th->mild_compile_error++;
 	node = (NODE *)rb_load_file(RSTRING_PTR(fname));
-	loaded = Qtrue;
+	loaded = TRUE;
 	iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, Qfalse);
 	th->mild_compile_error--;
 	rb_iseq_eval(iseq);
@@ -451,20 +451,20 @@ search_required(VALUE fname, volatile VALUE *path, int safe_level)
     ext = strrchr(ftptr = RSTRING_PTR(fname), '.');
     if (ext && !strchr(ext, '/')) {
 	if (IS_RBEXT(ext)) {
-	    if (rb_feature_p(ftptr, ext, Qtrue, Qfalse, &loading)) {
+	    if (rb_feature_p(ftptr, ext, TRUE, FALSE, &loading)) {
 		if (loading) *path = rb_str_new2(loading);
 		return 'r';
 	    }
 	    if ((tmp = rb_find_file_safe(fname, safe_level)) != 0) {
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, Qtrue, Qtrue, &loading) || loading)
+		if (!rb_feature_p(ftptr, ext, TRUE, TRUE, &loading) || loading)
 		    *path = tmp;
 		return 'r';
 	    }
 	    return 0;
 	}
 	else if (IS_SOEXT(ext)) {
-	    if (rb_feature_p(ftptr, ext, Qfalse, Qfalse, &loading)) {
+	    if (rb_feature_p(ftptr, ext, FALSE, FALSE, &loading)) {
 		if (loading) *path = rb_str_new2(loading);
 		return 's';
 	    }
@@ -482,26 +482,26 @@ search_required(VALUE fname, volatile VALUE *path, int safe_level)
 	    OBJ_FREEZE(tmp);
 	    if ((tmp = rb_find_file_safe(tmp, safe_level)) != 0) {
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue, &loading) || loading)
+		if (!rb_feature_p(ftptr, ext, FALSE, TRUE, &loading) || loading)
 		    *path = tmp;
 		return 's';
 	    }
 #endif
 	}
 	else if (IS_DLEXT(ext)) {
-	    if (rb_feature_p(ftptr, ext, Qfalse, Qfalse, &loading)) {
+	    if (rb_feature_p(ftptr, ext, FALSE, FALSE, &loading)) {
 		if (loading) *path = rb_str_new2(loading);
 		return 's';
 	    }
 	    if ((tmp = rb_find_file_safe(fname, safe_level)) != 0) {
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue, &loading) || loading)
+		if (!rb_feature_p(ftptr, ext, FALSE, TRUE, &loading) || loading)
 		    *path = tmp;
 		return 's';
 	    }
 	}
     }
-    else if ((ft = rb_feature_p(ftptr, 0, Qfalse, Qfalse, &loading)) == 'r') {
+    else if ((ft = rb_feature_p(ftptr, 0, FALSE, FALSE, &loading)) == 'r') {
 	if (loading) *path = rb_str_new2(loading);
 	return 'r';
     }
@@ -512,14 +512,14 @@ search_required(VALUE fname, volatile VALUE *path, int safe_level)
 	if (ft)
 	    break;
 	ftptr = RSTRING_PTR(tmp);
-	return rb_feature_p(ftptr, 0, Qfalse, Qtrue, 0);
+	return rb_feature_p(ftptr, 0, FALSE, TRUE, 0);
 
       default:
 	if (ft)
 	    break;
       case 1:
 	ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-	if (rb_feature_p(ftptr, ext, !--type, Qtrue, &loading) && !loading)
+	if (rb_feature_p(ftptr, ext, !--type, TRUE, &loading) && !loading)
 	    break;
 	*path = tmp;
     }
