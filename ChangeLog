@@ -1,3 +1,7 @@
+Sun Jul 19 17:32:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_read): should taint the result.   [ruby-dev:38826]
+
 Sun Jul 19 11:00:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (me_opts): fixed optimized method aliasing.
