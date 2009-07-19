@@ -261,10 +261,10 @@ class TestSocket < Test::Unit::TestCase
     end
 
     Socket.udp_server_sockets(0) {|sockets|
-      skip "need sendmsg and recvmsg" unless sockets[0].respond_to?(:sendmsg)
       famlies = {}
       sockets.each {|s| famlies[s.local_address.afamily] = true }
       ip_addrs.reject! {|ai| !famlies[ai.afamily] }
+      skipped = false
       begin
         port = sockets.first.local_address.ip_port
 
@@ -289,13 +289,20 @@ class TestSocket < Test::Unit::TestCase
             assert_equal(ai.ip_address, addr.ip_address)
           }
         }
+      rescue NotImplementedError
+        skipped = true
+        skip "need sendmsg and recvmsg"
       ensure
         if th
-          Addrinfo.udp("127.0.0.1", port).connect {|s| s.sendmsg "exit" }
-          unless th.join(10)
-            Thread.kill th
-            th.join(10)
-            raise "thread killed"
+          if skipped
+            Thread.kill th unless th.join(10)
+          else
+            Addrinfo.udp("127.0.0.1", port).connect {|s| s.sendmsg "exit" }
+            unless th.join(10)
+              Thread.kill th
+              th.join(10)
+              raise "thread killed"
+            end
           end
         end
       end
