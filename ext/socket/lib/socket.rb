@@ -404,7 +404,7 @@ class Socket
       readable.each {|r|
         begin
           sock, addr = r.accept_nonblock
-        rescue Errno::EWOULDBLOCK
+        rescue IO::WaitReadable
           next
         end
         yield sock, addr
@@ -567,7 +567,7 @@ class Socket
       readable.each {|r|
         begin
           msg, sender_addrinfo, rflags, *controls = r.recvmsg_nonblock
-        rescue Errno::EWOULDBLOCK
+        rescue IO::WaitReadable
           next
         end
         ai = r.local_address

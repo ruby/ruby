@@ -1,3 +1,9 @@
+Sun Jul 19 10:54:56 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (Socket.accept_loop): rescue
+	  IO::WaitReadable instead of Errno::EWOULDBLOCK.
+	  (Socket.udp_server_loop_on): ditto.
+
 Sat Jul 18 23:44:59 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (reg_enc_error): use rb_enc_get to get the encoding of
