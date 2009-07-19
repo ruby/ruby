@@ -138,6 +138,30 @@ class TestSocketNonblock < Test::Unit::TestCase
     serv.close if serv && !serv.closed?
   end
 
+  def udp_pair
+    s1 = UDPSocket.new
+    s1.bind('127.0.0.1', 0)
+    af, port1, host, addr1 = s1.addr
+
+    s2 = UDPSocket.new
+    s2.bind('127.0.0.1', 0)
+    af, port2, host, addr2 = s2.addr
+
+    s1.connect(addr2, port2)
+    s2.connect(addr1, port1)
+
+    if block_given?
+      begin
+        yield s1, s2
+      ensure
+        s1.close if !s1.closed?
+        s2.close if !s2.closed?
+      end
+    else
+      return s1, s2
+    end
+  end
+
   def test_tcp_recv_nonblock
     c, s = tcp_pair
     assert_raise(IO::WaitReadable) { c.recv_nonblock(100) }
@@ -191,13 +215,15 @@ class TestSocketNonblock < Test::Unit::TestCase
 =end
 
   def test_sendmsg_nonblock_error
-    tcp_pair {|c, s|
+    udp_pair {|s1, s2|
       begin
         loop {
-          c.sendmsg_nonblock("a" * 100000)
+          s1.sendmsg_nonblock("a" * 100000)
         }
       rescue NotImplementedError
         skip "sendmsg not implemented on this platform."
+      rescue Errno::EMSGSIZE
+        # UDP has 64K limit (if no Jumbograms).  No problem.
       rescue Errno::EWOULDBLOCK
         assert_kind_of(IO::WaitWritable, $!)
       end
@@ -205,11 +231,11 @@ class TestSocketNonblock < Test::Unit::TestCase
   end
 
   def test_recvmsg_nonblock_error
-    tcp_pair {|c, s|
+    udp_pair {|s1, s2|
       begin
-        c.recvmsg_nonblock(4096)
+        s1.recvmsg_nonblock(4096)
       rescue NotImplementedError
-        skip "sendmsg not implemented on this platform."
+        skip "recvmsg not implemented on this platform."
       rescue Errno::EWOULDBLOCK
         assert_kind_of(IO::WaitReadable, $!)
       end
