@@ -1,3 +1,9 @@
+Sun Jul 19 20:41:24 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (make_patterns): do not use \d.
+
+	* rational.c (make_patterns): ditto.
+
 Sun Jul 19 17:32:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_read): should taint the result.   [ruby-dev:38826]
