@@ -69,4 +69,12 @@ class TestAlias < Test::Unit::TestCase
       }
     }
   end
+
+  def test_send_alias
+    x = "abc"
+    class << x
+      alias_method :try, :__send__
+    end
+    assert_equal("ABC", x.try(:upcase), '[ruby-dev:38824]')
+  end
 end

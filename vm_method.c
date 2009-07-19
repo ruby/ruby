@@ -758,6 +758,8 @@ me_opts(const rb_method_entry_t *me)
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_UNDEF:
 	return 0;
+      case VM_METHOD_TYPE_OPTIMIZED:
+	return (void *)me->body.optimize_type;
       default:
 	rb_bug("rb_add_method: unsupported method type (%d)\n", me->type);
 	return 0;

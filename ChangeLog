@@ -1,3 +1,8 @@
+Sun Jul 19 11:00:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (me_opts): fixed optimized method aliasing.
+	  [ruby-dev:38824]
+
 Sun Jul 19 10:54:56 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (Socket.accept_loop): rescue
