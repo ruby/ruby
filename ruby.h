@@ -30,6 +30,9 @@ extern "C" {
 #ifndef NORETURN
 # define NORETURN(x) x
 #endif
+#ifndef DEPRECATED
+# define DEPRECATED(x) x
+#endif
 #ifndef NOINLINE
 # define NOINLINE(x) x
 #endif
@@ -239,7 +242,7 @@ char *rb_string_value_cstr _((volatile VALUE*));
 #define StringValueCStr(v) rb_string_value_cstr(&(v))
 
 void rb_check_safe_obj _((VALUE));
-void rb_check_safe_str _((VALUE));
+DEPRECATED(void rb_check_safe_str _((VALUE)));
 #define SafeStringValue(v) do {\
     StringValue(v);\
     rb_check_safe_obj(v);\
@@ -290,7 +293,7 @@ double rb_num2dbl _((VALUE));
 #define NUM2DBL(x) rb_num2dbl((VALUE)(x))
 
 /* obsolete API - use StringValue() */
-char *rb_str2cstr _((VALUE,long*));
+DEPRECATED(char *rb_str2cstr _((VALUE,long*)));
 /* obsolete API - use StringValuePtr() */
 #define STR2CSTR(x) rb_str2cstr((VALUE)(x),0)
 

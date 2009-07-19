@@ -8388,7 +8388,7 @@ rb_mod_autoload(mod, sym, file)
 {
     ID id = rb_to_id(sym);
 
-    Check_SafeStr(file);
+    SafeStringValue(file);
     rb_autoload(mod, id, RSTRING(file)->ptr);
     return Qnil;
 }
