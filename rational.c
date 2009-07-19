@@ -1695,6 +1695,9 @@ float_decode(VALUE self)
 }
 #endif
 
+#define id_lshift rb_intern("<<")
+#define f_lshift(x,n) rb_funcall(x, id_lshift, 1, n)
+
 /*
  * call-seq:
  *    flt.to_r  ->  rational
@@ -1717,7 +1720,20 @@ float_to_r(VALUE self)
     VALUE f, n;
 
     float_decode_internal(self, &f, &n);
+#if FLT_RADIX == 2
+    {
+	long ln = FIX2LONG(n);
+
+	if (ln == 0)
+	    return f_to_r(f);
+	if (ln > 0)
+	    return f_to_r(f_lshift(f, n));
+	ln = -ln;
+	return rb_rational_new2(f, f_lshift(ONE, INT2FIX(ln)));
+    }
+#else
     return f_to_r(f_mul(f, f_expt(INT2FIX(FLT_RADIX), n)));
+#endif
 }
 
 static VALUE rat_pat, an_e_pat, a_dot_pat, underscores_pat, an_underscore;
