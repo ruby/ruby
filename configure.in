@@ -1626,7 +1626,7 @@ RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${MAJOR}.${MINOR}"
 AC_ARG_WITH(sitedir,
 	    [  --with-sitedir=DIR      site libraries in DIR [PREFIX/lib/ruby/site_ruby]],
             [sitedir=$withval],
-            [sitedir="`eval "echo ${libdir}"`/lib/ruby/site_ruby"])
+            [sitedir="`eval "echo ${libdir}"`/ruby/site_ruby"])
 SITE_DIR=`eval echo \\"${sitedir}\\"`
 case "$target_os" in
   cygwin*|mingw*|*djgpp*|os2-emx*)
