@@ -148,6 +148,9 @@ with all sufficient information, see the ChangeLog file.
     * Socket.tcp
     * Socket.tcp_server_loop
     * Socket.tcp_server_sockets
+    * Socket.udp_server_sockets
+    * Socket.udp_server_loop_on
+    * Socket.udp_server_loop
     * Socket.unix
     * Socket.unix_server_loop
     * Socket.unix_server_socket
