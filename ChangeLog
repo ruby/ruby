@@ -1,3 +1,7 @@
+Mon Jul 20 20:35:55 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (rb_f_open): add rdoc about specifying ext_enc as *-bom.
+
 Mon Jul 20 19:00:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (compile_dstr_fragments): reduced needless literal.

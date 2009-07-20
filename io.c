@@ -5467,6 +5467,9 @@ check_pipe_command(VALUE filename_or_command)
  *  read string will be tagged by the encoding in reading,
  *  and output string will be converted
  *  to the specified encoding in writing.
+ *  If ext_enc ends with '-bom', check whether the input has a BOM. If
+ *  there is a BOM, strip it and set external encoding as
+ *  what the BOM tells. If there is no BOM, use ext_enc without '-bom'.
  *  If two encoding names,
  *  ext_enc and int_enc (external encoding and internal encoding),
  *  are specified, the read string is converted from ext_enc
