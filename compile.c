@@ -2143,11 +2143,14 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int *cntp
 {
     NODE *list = node->nd_next;
     VALUE lit = node->nd_lit;
-    int cnt = 1;
+    int cnt = 0;
 
     debugp_param("nd_lit", lit);
-    hide_obj(lit);
-    ADD_INSN1(ret, nd_line(node), putobject, lit);
+    if (!NIL_P(lit)) {
+	hide_obj(lit);
+	cnt++;
+	ADD_INSN1(ret, nd_line(node), putobject, lit);
+    }
 
     while (list) {
 	COMPILE(ret, "each string", list->nd_head);

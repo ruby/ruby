@@ -3806,7 +3806,7 @@ xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 				nd_set_type(node, NODE_DXSTR);
 				break;
 			      default:
-				node = NEW_NODE(NODE_DXSTR, STR_NEW0(), 1, NEW_LIST(node));
+				node = NEW_NODE(NODE_DXSTR, Qnil, 1, NEW_LIST(node));
 				break;
 			    }
 			}
@@ -3835,7 +3835,7 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 			    }
 			    break;
 			  default:
-			    node = NEW_NODE(NODE_DSTR, STR_NEW0(), 1, NEW_LIST(node));
+			    node = NEW_NODE(NODE_DSTR, Qnil, 1, NEW_LIST(node));
 			  case NODE_DSTR:
 			    if (options & RE_OPTION_ONCE) {
 				nd_set_type(node, NODE_DREGX_ONCE);
@@ -3844,7 +3844,7 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 				nd_set_type(node, NODE_DREGX);
 			    }
 			    node->nd_cflag = options & RE_OPTION_MASK;
-                            reg_fragment_check(node->nd_lit, options);
+			    if (!NIL_P(node->nd_lit)) reg_fragment_check(node->nd_lit, options);
                             for (list = node->nd_next; list; list = list->nd_next) {
                                 if (nd_type(list->nd_head) == NODE_STR) {
                                     reg_fragment_check(list->nd_head->nd_lit, options);
@@ -4081,7 +4081,7 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 				nd_set_type($$, NODE_LIT);
 				break;
 			      default:
-				$$ = NEW_NODE(NODE_DSYM, STR_NEW0(), 1, NEW_LIST($$));
+				$$ = NEW_NODE(NODE_DSYM, Qnil, 1, NEW_LIST($$));
 				break;
 			    }
 			}
@@ -7809,7 +7809,7 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
 
     htype = nd_type(head);
     if (htype == NODE_EVSTR) {
-	NODE *node = NEW_DSTR(STR_NEW0());
+	NODE *node = NEW_DSTR(Qnil);
 	head = list_append(node, head);
     }
     switch (nd_type(tail)) {
@@ -7858,7 +7858,7 @@ static NODE *
 evstr2dstr_gen(struct parser_params *parser, NODE *node)
 {
     if (nd_type(node) == NODE_EVSTR) {
-	node = list_append(NEW_DSTR(STR_NEW0()), node);
+	node = list_append(NEW_DSTR(Qnil), node);
     }
     return node;
 }

@@ -1,3 +1,11 @@
+Mon Jul 20 19:00:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_dstr_fragments): reduced needless literal.
+
+	* parse.y (xstring, regexp, dsym, literal_concat, evstr2dstr):
+	  literal at the top of dstr is no longer needed if it is empty,
+	  since concatstrings and toregexp always create new strings.
+
 Mon Jul 20 12:51:39 2009  wanabe  <s.wanabe@gmail.com>
 
 	* lib/matrix.rb (Matrix#rank): revert a part of r20859 to avoid
@@ -27,7 +35,7 @@ Sun Jul 19 20:41:24 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Sun Jul 19 17:32:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* io.c (io_read): should taint the result.   [ruby-dev:38826]
+	* io.c (io_read): should taint the result.  [ruby-dev:38826]
 
 Sun Jul 19 11:00:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

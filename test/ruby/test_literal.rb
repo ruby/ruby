@@ -59,6 +59,10 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal '16', "#{2 ** 4}"
     s = "string"
     assert_equal s, "#{s}"
+    a = 'Foo'
+    b = "#{a}" << 'Bar'
+    assert_equal('Foo', a, 'r3842')
+    assert_equal('FooBar', b, 'r3842')
   end
 
   def test_dsymbol
