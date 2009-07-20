@@ -15,7 +15,7 @@ class Addrinfo
     if args.empty?
       raise ArgumentError, "no address specified"
     elsif Addrinfo === args.first
-      raise ArgumentError, "too man argument" if args.length != 1
+      raise ArgumentError, "too many arguments" if args.length != 1
     elsif self.ip?
       raise ArgumentError, "IP address needs host and port but #{args.length} arguments given" if args.length != 2
       host, port = args

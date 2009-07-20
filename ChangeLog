@@ -1,3 +1,8 @@
+Mon Jul 20 10:55:18 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (Addrinfo#family_addrinfo): fix a typo in
+	  error message.  patch by Nobuhiro IMAI.  [ruby-dev:38828]
+
 Sun Jul 19 22:22:54 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (float_to_r): an improvement.
