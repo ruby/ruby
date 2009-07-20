@@ -389,21 +389,31 @@ clean-enc distclean-enc realclean-enc:
 
 check: test test-all
 
-btest: miniruby$(EXEEXT) PHONY
+btest: miniruby$(EXEEXT) $(TEST_RUNNABLE)-btest
+no-btest: PHONY
+yes-btest: PHONY
 	$(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(MINIRUBY)" $(OPTS)
 
-btest-ruby: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
+btest-ruby: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) $(TEST_RUNNABLE)-btest-ruby
+no-btest-ruby: PHONY
+yes-btest-ruby: PHONY
 	@$(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib" -q $(OPTS)
 
-test-sample: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
+test-sample: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) $(TEST_RUNNABLE)-test-sample
+no-test-sample: PHONY
+yes-test-sample: PHONY
 	@$(RUNRUBY) $(srcdir)/tool/rubytest.rb
 
-test-knownbug: miniruby$(EXEEXT) $(PROGRAM) $(RBCONFIG) PHONY
+test-knownbug: miniruby$(EXEEXT) $(PROGRAM) $(RBCONFIG) $(TEST_RUNNABLE)-test-knownbug
+no-test-knownbug: PHONY
+yes-test-knownbug: PHONY
 	$(MINIRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM)" $(OPTS) $(srcdir)/KNOWNBUGS.rb
 
 test: test-sample btest-ruby test-knownbug
 
-test-all:
+test-all: $(TEST_RUNNABLE)-test-all
+no-test-all: PHONY
+yes-test-all: PHONY
 	$(RUNRUBY) "$(srcdir)/test/runner.rb" $(TESTS)
 
 extconf: $(PREP)
