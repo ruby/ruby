@@ -1,3 +1,7 @@
+Tue Jul 21 21:37:19 2009  Keiju Ishitsuka  <keiju@emperor2.pendome>
+
+	* lib/irb/cmd/help.rb: fixed irb's "help" command. [ruby-core:22310].
+
 Tue Jul 21 20:41:20 2009  Keiju Ishitsuka  <keiju@emperor2.pendome>
 
 	* lib/tracer.rb: no show lines unkonwn line number. [ruby-core:22096],
