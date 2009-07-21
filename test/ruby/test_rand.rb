@@ -164,4 +164,9 @@ class TestRand < Test::Unit::TestCase
     srand(0)
     assert_equal([1,4,2,5,3], [1,2,3,4,5].shuffle)
   end
+
+  def test_big_seed
+    srand(2**1000000-1)
+    assert_equal(1143843490, rand(0x100000000))
+  end
 end

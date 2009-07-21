@@ -304,11 +304,9 @@ rand_init(struct MT *mt, VALUE vseed)
 	if (blen == 0) {
 	    len = 1;
 	}
-	else if (blen > MT_MAX_STATE * SIZEOF_INT32 / SIZEOF_BDIGITS) {
-	    blen = (len = MT_MAX_STATE) * SIZEOF_INT32 / SIZEOF_BDIGITS;
-	    len = roomof(len, SIZEOF_INT32);
-	}
 	else {
+	    if (blen > MT_MAX_STATE * SIZEOF_INT32 / SIZEOF_BDIGITS)
+		blen = (len = MT_MAX_STATE) * SIZEOF_INT32 / SIZEOF_BDIGITS;
 	    len = roomof((int)blen * SIZEOF_BDIGITS, SIZEOF_INT32);
 	}
 	/* allocate ints for init_by_array */

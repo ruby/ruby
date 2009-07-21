@@ -1,3 +1,10 @@
+Tue Jul 21 23:47:38 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* random.c (rand_init): array length of random seed was broken, which
+	  causes memory error with srand(2**1000000-1).
+
+	* test/ruby/test_rand.c: test for above.
+
 Tue Jul 21 21:37:19 2009  Keiju Ishitsuka  <keiju@emperor2.pendome>
 
 	* lib/irb/cmd/help.rb: fixed irb's "help" command. [ruby-core:22310].
