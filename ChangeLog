@@ -1,3 +1,8 @@
+Wed Jul 22 00:34:39 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* lib/irb.rb, lib/irb/init.rb, lib/irb/ext/save-history.rb: add
+	  IRB::irb_at_exit. no use finalizer saving history. [ruby-dev-38563]
+
 Tue Jul 21 23:47:38 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* random.c (rand_init): array length of random seed was broken, which
@@ -5,11 +10,11 @@ Tue Jul 21 23:47:38 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_rand.c: test for above.
 
-Tue Jul 21 21:37:19 2009  Keiju Ishitsuka  <keiju@emperor2.pendome>
+Tue Jul 21 21:37:19 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb/cmd/help.rb: fixed irb's "help" command. [ruby-core:22310].
 
-Tue Jul 21 20:41:20 2009  Keiju Ishitsuka  <keiju@emperor2.pendome>
+Tue Jul 21 20:41:20 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/tracer.rb: no show lines unkonwn line number. [ruby-core:22096],
           no trace display  c-call and c-return as default.
@@ -618,7 +623,7 @@ Wed Jul  8 23:13:54 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_div): omitted zero division check.
 
-Wed Jul  8 21:00:37 2009  Keiju Ishitsuka  <keiju@emperor2.pendome>
+Wed Jul  8 21:00:37 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb/inspector.rb: forget svn add.
 
