@@ -2770,7 +2770,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 		}
 		/* thru */
 	      default:
-		errno = map_errno(err);
+		errno = map_errno(WSAGetLastError());
 		/* thru */
 	      case WAIT_OBJECT_0 + 1:
 		/* interrupted */
@@ -2814,6 +2814,211 @@ rb_w32_sendto(int fd, const char *buf, int len, int flags,
 {
     return overlapped_socket_io(FALSE, fd, (char *)buf, len, flags,
 				(struct sockaddr *)to, &tolen);
+}
+
+#ifndef WSAID_WSARECVMSG
+typedef struct {
+    SOCKADDR *name;
+    int namelen;
+    WSABUF *lpBuffers;
+    DWORD dwBufferCount;
+    WSABUF Control;
+    DWORD dwFlags;
+} WSAMSG;
+#define WSAID_WSARECVMSG {0xf689d7c8,0x6f1f,0x436b,{0x8a,0x53,0xe5,0x4f,0xe3,0x51,0xc3,0x22}}
+#endif
+#ifndef WSAID_WSASENDMSG
+#define WSAID_WSASENDMSG {0xa441e712,0x754f,0x43ca,{0x84,0xa7,0x0d,0xee,0x44,0xcf,0x60,0x6d}}
+#endif
+
+#define msghdr_to_wsamsg(msg, wsamsg) \
+    do { \
+	int i; \
+	(wsamsg)->name = (msg)->msg_name; \
+	(wsamsg)->namelen = (msg)->msg_namelen; \
+	(wsamsg)->lpBuffers = ALLOCA_N(WSABUF, (msg)->msg_iovlen); \
+	(wsamsg)->dwBufferCount = (msg)->msg_iovlen; \
+	for (i = 0; i < (msg)->msg_iovlen; ++i) { \
+	    (wsamsg)->lpBuffers[i].buf = (msg)->msg_iov[i].iov_base; \
+	    (wsamsg)->lpBuffers[i].len = (msg)->msg_iov[i].iov_len; \
+	} \
+	(wsamsg)->Control.buf = (msg)->msg_control; \
+	(wsamsg)->Control.len = (msg)->msg_controllen; \
+	(wsamsg)->dwFlags = (msg)->msg_flags; \
+    } while (0)
+
+int
+recvmsg(int fd, struct msghdr *msg, int flags)
+{
+    typedef int (WSAAPI *WSARecvMsg_t)(SOCKET, WSAMSG *, DWORD *, WSAOVERLAPPED *, LPWSAOVERLAPPED_COMPLETION_ROUTINE);
+    static WSARecvMsg_t pWSARecvMsg = NULL;
+    WSAMSG wsamsg;
+    SOCKET s;
+    st_data_t data;
+    int mode;
+    DWORD len;
+    int ret;
+
+    if (!NtSocketsInitialized)
+	StartSockets();
+
+    s = TO_SOCKET(fd);
+
+    if (!pWSARecvMsg) {
+	static GUID guid = WSAID_WSARECVMSG;
+	DWORD dmy;
+	WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid),
+		 &pWSARecvMsg, sizeof(pWSARecvMsg), &dmy, NULL, NULL);
+	if (!pWSARecvMsg)
+	    rb_notimplement();
+    }
+
+    msghdr_to_wsamsg(msg, &wsamsg);
+    wsamsg.dwFlags |= flags;
+
+    st_lookup(socklist, (st_data_t)s, &data);
+    mode = (int)data;
+    if (!cancel_io || (mode & O_NONBLOCK)) {
+	RUBY_CRITICAL({
+	    if ((ret = pWSARecvMsg(s, &wsamsg, &len, NULL, NULL)) == SOCKET_ERROR) {
+		errno = map_errno(WSAGetLastError());
+		len = -1;
+	    }
+	});
+    }
+    else {
+	DWORD size;
+	int err;
+	WSAOVERLAPPED wol;
+	memset(&wol, 0, sizeof(wol));
+	RUBY_CRITICAL({
+	    wol.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	    ret = pWSARecvMsg(s, &wsamsg, &len, &wol, NULL);
+	});
+
+	if (ret != SOCKET_ERROR) {
+	    /* nothing to do */
+	}
+	else if ((err = WSAGetLastError()) == WSA_IO_PENDING) {
+	    DWORD flg;
+	    switch (rb_w32_wait_events_blocking(&wol.hEvent, 1, INFINITE)) {
+	      case WAIT_OBJECT_0:
+		RUBY_CRITICAL(
+		    ret = WSAGetOverlappedResult(s, &wol, &size, TRUE, &flg)
+		    );
+		if (ret) {
+		    len = size;
+		    break;
+		}
+		/* thru */
+	      default:
+		errno = map_errno(WSAGetLastError());
+		/* thru */
+	      case WAIT_OBJECT_0 + 1:
+		/* interrupted */
+		len = -1;
+		cancel_io((HANDLE)s);
+		break;
+	    }
+	}
+	else {
+	    errno = map_errno(err);
+	    len = -1;
+	}
+	CloseHandle(&wol.hEvent);
+    }
+    if (ret == SOCKET_ERROR)
+	return -1;
+
+    /* WSAMSG to msghdr */
+    msg->msg_name = wsamsg.name;
+    msg->msg_namelen = wsamsg.namelen;
+    msg->msg_flags = wsamsg.dwFlags;
+
+    return len;
+}
+
+int
+sendmsg(int fd, const struct msghdr *msg, int flags)
+{
+    typedef int (WSAAPI *WSASendMsg_t)(SOCKET, const WSAMSG *, DWORD, DWORD *, WSAOVERLAPPED *, LPWSAOVERLAPPED_COMPLETION_ROUTINE);
+    static WSASendMsg_t pWSASendMsg = NULL;
+    WSAMSG wsamsg;
+    SOCKET s;
+    st_data_t data;
+    int mode;
+    DWORD len;
+    int ret;
+
+    if (!NtSocketsInitialized)
+	StartSockets();
+
+    s = TO_SOCKET(fd);
+
+    if (!pWSASendMsg) {
+	static GUID guid = WSAID_WSASENDMSG;
+	DWORD dmy;
+	WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid),
+		 &pWSASendMsg, sizeof(pWSASendMsg), &dmy, NULL, NULL);
+	if (!pWSASendMsg)
+	    rb_notimplement();
+    }
+
+    msghdr_to_wsamsg(msg, &wsamsg);
+
+    st_lookup(socklist, (st_data_t)s, &data);
+    mode = (int)data;
+    if (!cancel_io || (mode & O_NONBLOCK)) {
+	RUBY_CRITICAL({
+	    if ((ret = pWSASendMsg(s, &wsamsg, flags, &len, NULL, NULL)) == SOCKET_ERROR) {
+		errno = map_errno(WSAGetLastError());
+		len = -1;
+	    }
+	});
+    }
+    else {
+	DWORD size;
+	int err;
+	WSAOVERLAPPED wol;
+	memset(&wol, 0, sizeof(wol));
+	RUBY_CRITICAL({
+	    wol.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	    ret = pWSASendMsg(s, &wsamsg, flags, &len, &wol, NULL);
+	});
+
+	if (ret != SOCKET_ERROR) {
+	    /* nothing to do */
+	}
+	else if ((err = WSAGetLastError()) == WSA_IO_PENDING) {
+	    DWORD flg;
+	    switch (rb_w32_wait_events_blocking(&wol.hEvent, 1, INFINITE)) {
+	      case WAIT_OBJECT_0:
+		RUBY_CRITICAL(
+		    ret = WSAGetOverlappedResult(s, &wol, &size, TRUE, &flg)
+		    );
+		if (ret) {
+		    len = size;
+		    break;
+		}
+		/* thru */
+	      default:
+		errno = map_errno(WSAGetLastError());
+		/* thru */
+	      case WAIT_OBJECT_0 + 1:
+		/* interrupted */
+		len = -1;
+		cancel_io((HANDLE)s);
+		break;
+	    }
+	}
+	else {
+	    errno = map_errno(err);
+	    len = -1;
+	}
+	CloseHandle(&wol.hEvent);
+    }
+
+    return len;
 }
 
 #undef setsockopt

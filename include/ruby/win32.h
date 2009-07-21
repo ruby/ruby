@@ -203,6 +203,21 @@ struct timezone {
 #undef isascii
 #define isascii __isascii
 #endif
+
+struct iovec {
+    void *iov_base;
+    size_t iov_len;
+};
+struct msghdr {
+    void *msg_name;
+    int msg_namelen;
+    struct iovec *msg_iov;
+    int msg_iovlen;
+    void *msg_control;
+    int msg_controllen;
+    int msg_flags;
+};
+
 #define NtInitialize ruby_sysinit
 extern int    rb_w32_cmdvector(const char *, char ***);
 extern rb_pid_t  rb_w32_pipe_exec(const char *, const char *, int, int *, int *);
@@ -224,6 +239,8 @@ extern int    WSAAPI rb_w32_recv(int, char *, int, int);
 extern int    WSAAPI rb_w32_recvfrom(int, char *, int, int, struct sockaddr *, int *);
 extern int    WSAAPI rb_w32_send(int, const char *, int, int);
 extern int    WSAAPI rb_w32_sendto(int, const char *, int, int, const struct sockaddr *, int);
+extern int    recvmsg(int, struct msghdr *, int);
+extern int    sendmsg(int, const struct msghdr *, int);
 extern int    WSAAPI rb_w32_setsockopt(int, int, int, const char *, int);
 extern int    WSAAPI rb_w32_shutdown(int, int);
 extern int    WSAAPI rb_w32_socket(int, int, int);

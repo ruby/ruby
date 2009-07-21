@@ -1,3 +1,9 @@
+Tue Jul 21 13:36:20 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.[ch] (recvmsg, sendmsg): new functions to support recvmsg/
+	  sendmsg like UNIX. these functions are experimental and not tested
+	  well. bug reports are welcome.
+
 Tue Jul 21 13:35:21 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (TEST_RUNNABLE): follow r24209.
