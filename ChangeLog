@@ -1,3 +1,8 @@
+Tue Jul 21 12:38:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_generic_ivar_memsize): should not remove generic
+	  instance variable table.
+
 Mon Jul 20 20:35:55 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_f_open): add rdoc about specifying ext_enc as *-bom.

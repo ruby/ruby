@@ -908,10 +908,10 @@ rb_mark_generic_ivar_tbl(void)
 void
 rb_free_generic_ivar(VALUE obj)
 {
-    st_data_t tbl;
+    st_data_t key = (st_data_t)obj, tbl;
 
     if (!generic_iv_tbl) return;
-    if (st_delete(generic_iv_tbl, &obj, &tbl))
+    if (st_delete(generic_iv_tbl, &key, &tbl))
 	st_free_table((st_table *)tbl);
 }
 
@@ -919,8 +919,8 @@ size_t
 rb_generic_ivar_memsize(VALUE obj)
 {
     st_data_t tbl;
-    if (st_delete(generic_iv_tbl, &obj, &tbl))
-      return st_memsize((st_table *)tbl);
+    if (st_lookup(generic_iv_tbl, (st_data_t)obj, &tbl))
+	return st_memsize((st_table *)tbl);
     return 0;
 }
 
@@ -931,7 +931,7 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
 
     if (!generic_iv_tbl) return;
     if (!FL_TEST(obj, FL_EXIVAR)) {
-clear:
+      clear:
         if (FL_TEST(clone, FL_EXIVAR)) {
             rb_free_generic_ivar(clone);
             FL_UNSET(clone, FL_EXIVAR);
