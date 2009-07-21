@@ -1,3 +1,14 @@
+Tue Jul 21 16:24:41 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (vtdate2rbtime): VT_DATE variant object 
+	  is converted to Time object now. 
+
+	* test/win32ole/test_win32ole_variant.rb (test_s_new_with_nil,
+	  test_conversion_time2date, test_conversion_str2date,
+	  test_conversion_vt_date, test_set_value): ditto.
+
+	* ext/win32ole/win32ole.c (rbtime2vtdate): refactoring. 
+
 Tue Jul 21 16:07:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tracer.rb: toplevel caller exists now.  [ruby-core:24454]

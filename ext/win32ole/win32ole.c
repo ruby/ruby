@@ -130,7 +130,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.4.0"
+#define WIN32OLE_VERSION "1.4.1"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -278,13 +278,8 @@ static HRESULT ( STDMETHODCALLTYPE GetTypeInfo )(IDispatch __RPC_FAR * This, UIN
 static HRESULT ( STDMETHODCALLTYPE GetIDsOfNames )(IDispatch __RPC_FAR * This, REFIID riid, LPOLESTR __RPC_FAR *rgszNames, UINT cNames, LCID lcid, DISPID __RPC_FAR *rgDispId);
 static HRESULT ( STDMETHODCALLTYPE Invoke )( IDispatch __RPC_FAR * This, DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS __RPC_FAR *pDispParams, VARIANT __RPC_FAR *pVarResult, EXCEPINFO __RPC_FAR *pExcepInfo, UINT __RPC_FAR *puArgErr);
 static IDispatch* val2dispatch(VALUE val);
-static void time2d(int hh, int mm, int ss, double *pv);
-static void d2time(double v, int *hh, int *mm, int *ss);
-static void civil2jd(int y, int m, int d, long *jd);
-static void jd2civil(long day, int *yy, int *mm, int *dd);
-static void double2time(double v, int *y, int *m, int *d, int *hh, int *mm, int *ss);
-static double time_object2date(VALUE tmobj);
-static VALUE date2time_str(double date);
+static double rbtime2vtdate(VALUE tmobj);
+static VALUE vtdate2rbtime(double date);
 static rb_encoding *ole_cp2encoding(UINT cp);
 static UINT ole_encoding2cp(rb_encoding *enc);
 NORETURN(static void failed_load_conv51932(void));
@@ -791,126 +786,41 @@ val2dispatch(VALUE val)
     return &pdisp->dispatch;
 }
 
-static void
-time2d(int hh, int mm, int ss, double *pv)
-{
-    *pv =  (hh * 60.0 * 60.0 + mm * 60.0 + ss) / 86400.0;
-}
-
-static void
-d2time(double v, int *hh, int *mm, int *ss)
-{
-    double d_hh, d_mm, d_ss;
-    int    i_hh, i_mm, i_ss;
-
-    double d = fabs(v * 86400.0);
-
-    d_hh = d / 3600.0;
-    i_hh = (int)d_hh;
-
-    d = d - i_hh * 3600.0;
-
-    d_mm = d / 60.0;
-    i_mm = (int)d_mm;
-
-    d = d - i_mm * 60.0;
-
-    d_ss = d * 10.0 + 5;
-    
-    i_ss = (int)d_ss / 10;
-
-    if(i_ss == 60) {
-        i_mm += 1;
-        i_ss = 0;
-    }
-
-    if (i_mm == 60) {
-        i_hh += 1;
-        i_mm = 0;
-    }
-    if (i_hh == 24) {
-        i_hh = 0;
-    }
-    
-    *hh = i_hh;
-    *mm = i_mm;
-    *ss = i_ss;
-}
-
-static void
-civil2jd(int y, int m, int d, long *jd)
-{
-    long a, b;
-    if (m <= 2) {
-        y -= 1;
-        m += 12;
-    }
-    a = (long)(y / 100.0);
-    b = 2 - a + (long)(a / 4.0);
-    *jd = (long)(365.25 * (double)(y + 4716))
-         + (long)(30.6001 * (m + 1))
-         + d + b - 1524;
-}
-
-static void
-jd2civil(long day, int *yy, int *mm, int *dd)
-{
-    long x, a, b, c, d, e;
-    x = (long)(((double)day - 1867216.25) / 36524.25);
-    a = day + 1 + x - (long)(x / 4.0);
-    b = a + 1524;
-    c = (long)(((double)b -122.1) /365.25);
-    d = (long)(365.25 * c);
-    e = (long)((double)(b - d) / 30.6001);
-    *dd = b - d - (long)(30.6001 * e);
-    if (e <= 13) {
-        *mm = e - 1;
-        *yy = c - 4716;
-    }
-    else {
-        *mm = e - 13;
-        *yy = c - 4715;
-    }
-}
-
-static void
-double2time(double v, int *y, int *m, int *d, int *hh, int *mm, int *ss)
-{
-    long day;
-    double t;
-
-    day = (long)v;
-    t = v - day;
-    jd2civil(2415019 + day, y, m, d);
-
-    d2time(t, hh, mm, ss);
-}
-
 static double
-time_object2date(VALUE tmobj)
+rbtime2vtdate(VALUE tmobj)
 {
-    long y, m, d, hh, mm, ss;
-    long day;
-    double t;
-    y = FIX2INT(rb_funcall(tmobj, rb_intern("year"), 0));
-    m = FIX2INT(rb_funcall(tmobj, rb_intern("month"), 0));
-    d = FIX2INT(rb_funcall(tmobj, rb_intern("mday"), 0));
-    hh = FIX2INT(rb_funcall(tmobj, rb_intern("hour"), 0));
-    mm = FIX2INT(rb_funcall(tmobj, rb_intern("min"), 0));
-    ss = FIX2INT(rb_funcall(tmobj, rb_intern("sec"), 0));
-    civil2jd(y, m, d, &day);
-    time2d(hh, mm, ss, &t);
-    return t + day - 2415019;
+    SYSTEMTIME st;
+    double t = 0;
+    memset(&st, 0, sizeof(SYSTEMTIME));
+    st.wYear = FIX2INT(rb_funcall(tmobj, rb_intern("year"), 0));
+    st.wMonth = FIX2INT(rb_funcall(tmobj, rb_intern("month"), 0));
+    st.wDay = FIX2INT(rb_funcall(tmobj, rb_intern("mday"), 0));
+    st.wHour = FIX2INT(rb_funcall(tmobj, rb_intern("hour"), 0));
+    st.wMinute = FIX2INT(rb_funcall(tmobj, rb_intern("min"), 0));
+    st.wSecond = FIX2INT(rb_funcall(tmobj, rb_intern("sec"), 0));
+    st.wMilliseconds = FIX2INT(rb_funcall(tmobj, rb_intern("nsec"), 0)) / 1000000;
+    SystemTimeToVariantTime(&st, &t);
+    return t;
 }
 
 static VALUE
-date2time_str(double date)
+vtdate2rbtime(double date)
 {
-    int y, m, d, hh, mm, ss;
-    double2time(date, &y, &m, &d, &hh, &mm, &ss);
-    return rb_sprintf(
-            "%04d/%02d/%02d %02d:%02d:%02d",
-            y, m, d, hh, mm, ss);
+    SYSTEMTIME st;
+    VALUE v;
+    VariantTimeToSystemTime(date, &st);
+
+    v = rb_funcall(rb_cTime, rb_intern("new"), 6,
+		      INT2FIX(st.wYear),
+		      INT2FIX(st.wMonth),
+		      INT2FIX(st.wDay),
+		      INT2FIX(st.wHour),
+		      INT2FIX(st.wMinute),
+		      INT2FIX(st.wSecond));
+    if (st.wMilliseconds > 0) {
+	return rb_funcall(v, rb_intern("+"), 1, rb_float_new((double)(st.wMilliseconds / 1000.0)));
+    }
+    return v;
 }
 
 #define ENC_MACHING_CP(enc,encname,cp) if(strcasecmp(rb_enc_name((enc)),(encname)) == 0) return cp
@@ -1680,7 +1590,7 @@ ole_val2variant(VALUE val, VARIANT *var)
 
     if (rb_obj_is_kind_of(val, rb_cTime)) {
         V_VT(var) = VT_DATE;
-        V_DATE(var) = time_object2date(val);
+        V_DATE(var) = rbtime2vtdate(val);
         return;
     }
     switch (TYPE(val)) {
@@ -2332,7 +2242,7 @@ ole_variant2val(VARIANT *pvar)
         else
             date = V_DATE(pvar);
 
-        obj =  date2time_str(date);
+        obj =  vtdate2rbtime(date);
         break;
     }
     case VT_CY:
