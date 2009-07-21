@@ -1,3 +1,7 @@
+Tue Jul 21 16:07:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tracer.rb: toplevel caller exists now.  [ruby-core:24454]
+
 Tue Jul 21 13:36:20 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.[ch] (recvmsg, sendmsg): new functions to support recvmsg/
