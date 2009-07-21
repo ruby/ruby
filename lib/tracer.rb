@@ -1,27 +1,44 @@
-#
-#   tracer.rb -
-#   	$Release Version: 0.2$
-#   	$Revision: 1.8 $
-#   	by Keiju ISHITSUKA(Nippon Rational Inc.)
+#   tracer.rb - 
+#   	$Release Version: 0.3$
+#   	$Revision: 1.12 $
+#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 # --
 #
+#   
 #
-#
+require "thread"
 
 #
 # tracer main class
 #
 class Tracer
-  @RCS_ID='-$Id: tracer.rb,v 1.8 1998/05/19 03:42:49 keiju Exp keiju $-'
-
-  @stdout = STDOUT
-  @verbose = false
   class << self
     attr_accessor :verbose
     alias verbose? verbose
+
     attr_accessor :stdout
+    attr_reader :stdout_mutex
+
+    # display process id?
+    attr_accessor :display_process_id
+    alias display_process_id? display_process_id
+
+    # display thread id?
+    attr_accessor :display_thread_id
+    alias display_thread_id? display_thread_id
+
+    # display builtin method call?
+    attr_accessor :display_c_call
+    alias display_c_call? display_c_call
   end
+  Tracer::stdout = STDOUT
+  Tracer::verbose = false
+  Tracer::display_process_id = false
+  Tracer::display_thread_id = true
+  Tracer::display_c_call = false
+
+  @stdout_mutex = Mutex.new
 
   EVENT_SYMBOL = {
     "line" => "-",
@@ -29,8 +46,10 @@ class Tracer
     "return" => "<",
     "class" => "C",
     "end" => "E",
-    "c-call" => ">",
-    "c-return" => "<",
+    "raise" => "^",
+    "c-call" => "}",
+    "c-return" => "{",
+    "unknown" => "?"
   }
 
   def initialize
@@ -84,7 +103,7 @@ class Tracer
 
     unless list = SCRIPT_LINES__[file]
       begin
-	f = open(file)
+	f = File::open(file)
 	begin
 	  SCRIPT_LINES__[file] = list = f.readlines
 	ensure
@@ -117,16 +136,27 @@ class Tracer
       return unless p.call event, file, line, id, binding, klass
     end
 
-    # saved_crit = Thread.critical
-    # Thread.critical = true
-    stdout.printf("#%d:%s:%d:%s:%s: %s",
-      get_thread_no,
-      file,
-      line,
-      klass || '',
-      EVENT_SYMBOL[event],
-      get_line(file, line))
-    # Thread.critical = saved_crit
+    return unless Tracer::display_c_call? or 
+      event != "c-call" && event != "c-return"
+
+    Tracer::stdout_mutex.synchronize do
+      if EVENT_SYMBOL[event]
+	stdout.printf("<%d>", $$) if Tracer::display_process_id?
+	stdout.printf("#%d:", get_thread_no) if Tracer::display_thread_id?
+	if line == 0
+	  source = "?\n"
+	else
+	  source = get_line(file, line)
+	end
+	printf("%s:%d:%s:%s: %s",
+	       file,
+	       line,
+	       klass || '', 
+	       EVENT_SYMBOL[event],
+	       source)
+      end
+    end
+
   end
 
   Single = new
@@ -149,7 +179,6 @@ class Tracer
   def Tracer.add_filter(p = proc)
     Single.add_filter(p)
   end
-
 end
 
 SCRIPT_LINES__ = {} unless defined? SCRIPT_LINES__
@@ -161,6 +190,6 @@ if $0 == __FILE__
   ARGV.shift
   Tracer.on
   require $0
-elsif caller.size == 1
+elsif caller.size <= 1 
   Tracer.on
 end
