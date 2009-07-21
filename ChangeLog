@@ -1,3 +1,7 @@
+Wed Jul 22 02:33:57 2009  Keiju Ishitsuka  <keiju@emperor2.pendome>
+
+	* lib/irb.rb: forget svn commit.
+
 Wed Jul 22 01:20:54 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bootstraptest/test_io.rb: block write may block for long time.

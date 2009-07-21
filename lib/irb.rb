@@ -65,10 +65,18 @@ module IRB
       irb.signal_handle
     end
 
-    catch(:IRB_EXIT) do
-      irb.eval_input
+    begin
+      catch(:IRB_EXIT) do
+	irb.eval_input
+      end
+    ensure
+      irb_at_exit
     end
 #    print "\n"
+  end
+
+  def IRB.irb_at_exit
+    @CONF[:AT_EXIT].each{|hook| hook.call}
   end
 
   def IRB.irb_exit(irb, ret)
