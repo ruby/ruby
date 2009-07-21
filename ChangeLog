@@ -1,3 +1,7 @@
+Tue Jul 21 13:35:21 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (TEST_RUNNABLE): follow r24209.
+
 Tue Jul 21 12:45:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_gc_enable, rb_gc_disable): should return Qtrue/Qfalse.

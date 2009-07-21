@@ -76,6 +76,9 @@ MV = move > nul
 !if !defined(BASERUBY)
 BASERUBY = ruby
 !endif
+!if !defined(TEST_RUNNABLE)
+TEST_RUNNABLE = yes
+!endif
 
 !if !defined(PROCESSOR_ARCHITECTURE)
 PROCESSOR_ARCHITECTURE = x86
