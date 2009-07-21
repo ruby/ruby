@@ -789,7 +789,7 @@ rb_gc_enable(void)
     int old = dont_gc;
 
     dont_gc = FALSE;
-    return old;
+    return old ? Qtrue : Qfalse;
 }
 
 /*
@@ -811,7 +811,7 @@ rb_gc_disable(void)
     int old = dont_gc;
 
     dont_gc = TRUE;
-    return old;
+    return old ? Qtrue : Qfalse;
 }
 
 VALUE rb_mGC;

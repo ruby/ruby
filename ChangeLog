@@ -1,3 +1,7 @@
+Tue Jul 21 12:45:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_gc_enable, rb_gc_disable): should return Qtrue/Qfalse.
+
 Tue Jul 21 12:38:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_generic_ivar_memsize): should not remove generic
