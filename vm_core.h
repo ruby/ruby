@@ -143,6 +143,7 @@ struct rb_iseq_struct {
     unsigned long iseq_size;
     VALUE mark_ary;	/* Array: includes operands which should be GC marked */
     VALUE coverage;     /* coverage array */
+    unsigned short line_no;
 
     /* insn info, must be freed */
     struct iseq_insn_info_entry *insn_info_table;
@@ -444,8 +445,8 @@ typedef struct rb_thread_struct
 VALUE rb_iseq_new(NODE*, VALUE, VALUE, VALUE, VALUE);
 VALUE rb_iseq_new_top(NODE *node, VALUE name, VALUE filename, VALUE parent);
 VALUE rb_iseq_new_main(NODE *node, VALUE filename);
-VALUE rb_iseq_new_with_bopt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE);
-VALUE rb_iseq_new_with_opt(NODE*, VALUE, VALUE, VALUE, VALUE, const rb_compile_option_t*);
+VALUE rb_iseq_new_with_bopt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+VALUE rb_iseq_new_with_opt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE, const rb_compile_option_t*);
 VALUE rb_iseq_compile(VALUE src, VALUE file, VALUE line);
 VALUE rb_iseq_disasm(VALUE self);
 VALUE rb_iseq_disasm_insn(VALUE str, VALUE *iseqval, int pos, rb_iseq_t *iseq, VALUE child);

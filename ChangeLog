@@ -1,3 +1,17 @@
+Wed Jul 22 22:23:24 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_core.h (struct rb_iseq_t): add a new field line_no.  This field
+	  represents line number from which the original code of the iseq
+	  starts.  [ruby-dev:38698]
+
+	* iseq.c, compile.c: ditto.
+
+	* parse.y: line number hack (for Proc#source_location) is no longer
+	  needed.
+
+	* test/ruby/test_settracefunc.rb: line number of set_trace_func is now
+	  compatible with 1.8's.
+
 Wed Jul 22 22:16:48 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* method.h : Commas at end of enum list not allowed as of C89

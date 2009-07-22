@@ -213,7 +213,7 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
 
 static VALUE
 prepare_iseq_build(rb_iseq_t *iseq,
-		   VALUE name, VALUE filename,
+		   VALUE name, VALUE filename, VALUE line_no,
 		   VALUE parent, VALUE type, VALUE block_opt,
 		   const rb_compile_option_t *option)
 {
@@ -222,6 +222,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
 
     iseq->name = name;
     iseq->filename = filename;
+    iseq->line_no = line_no;
     iseq->defined_method_id = 0;
     iseq->mark_ary = rb_ary_new();
     RBASIC(iseq->mark_ary)->klass = 0;
@@ -365,14 +366,14 @@ VALUE
 rb_iseq_new(NODE *node, VALUE name, VALUE filename,
 	      VALUE parent, VALUE type)
 {
-    return rb_iseq_new_with_opt(node, name, filename, parent, type,
+    return rb_iseq_new_with_opt(node, name, filename, INT2FIX(0), parent, type,
 				&COMPILE_OPTION_DEFAULT);
 }
 
 VALUE
 rb_iseq_new_top(NODE *node, VALUE name, VALUE filename, VALUE parent)
 {
-    return rb_iseq_new_with_opt(node, name, filename, parent, ISEQ_TYPE_TOP,
+    return rb_iseq_new_with_opt(node, name, filename, INT2FIX(0), parent, ISEQ_TYPE_TOP,
 				&COMPILE_OPTION_DEFAULT);
 }
 
@@ -381,12 +382,12 @@ rb_iseq_new_main(NODE *node, VALUE filename)
 {
     rb_thread_t *th = GET_THREAD();
     VALUE parent = th->base_block->iseq->self;
-    return rb_iseq_new_with_opt(node, rb_str_new2("<main>"), filename,
+    return rb_iseq_new_with_opt(node, rb_str_new2("<main>"), filename, INT2FIX(0),
 				parent, ISEQ_TYPE_MAIN, &COMPILE_OPTION_DEFAULT);
 }
 
 static VALUE
-rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE filename,
+rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE filename, VALUE line_no,
 				VALUE parent, VALUE type, VALUE bopt,
 				const rb_compile_option_t *option)
 {
@@ -396,28 +397,28 @@ rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE filename,
     GetISeqPtr(self, iseq);
     iseq->self = self;
 
-    prepare_iseq_build(iseq, name, filename, parent, type, bopt, option);
+    prepare_iseq_build(iseq, name, filename, line_no, parent, type, bopt, option);
     rb_iseq_compile_node(self, node);
     cleanup_iseq_build(iseq);
     return self;
 }
 
 VALUE
-rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE filename,
+rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE filename, VALUE line_no,
 		     VALUE parent, VALUE type,
 		     const rb_compile_option_t *option)
 {
     /* TODO: argument check */
-    return rb_iseq_new_with_bopt_and_opt(node, name, filename, parent, type,
+    return rb_iseq_new_with_bopt_and_opt(node, name, filename, line_no, parent, type,
 					   Qfalse, option);
 }
 
 VALUE
-rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE filename,
+rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE filename, VALUE line_no,
 		       VALUE parent, VALUE type, VALUE bopt)
 {
     /* TODO: argument check */
-    return rb_iseq_new_with_bopt_and_opt(node, name, filename, parent, type,
+    return rb_iseq_new_with_bopt_and_opt(node, name, filename, line_no, parent, type,
 					   bopt, &COMPILE_OPTION_DEFAULT);
 }
 
@@ -431,7 +432,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     VALUE iseqval = iseq_alloc(self);
 
     VALUE magic, version1, version2, format_type, misc;
-    VALUE name, filename;
+    VALUE name, filename, line_no;
     VALUE type, body, locals, args, exception;
 
     VALUE iseq_type;
@@ -441,7 +442,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     int i = 0;
 
     /* [magic, major_version, minor_version, format_type, misc,
-     *  name, filename,
+     *  name, filename, line_no,
      *  type, locals, args, exception_table, body]
      */
 
@@ -455,6 +456,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 
     name        = CHECK_STRING(rb_ary_entry(data, i++));
     filename    = CHECK_STRING(rb_ary_entry(data, i++));
+    line_no     = CHECK_INTEGER(rb_ary_entry(data, i++));
 
     type        = CHECK_SYMBOL(rb_ary_entry(data, i++));
     locals      = CHECK_ARRAY(rb_ary_entry(data, i++));
@@ -496,7 +498,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     }
 
     make_compile_option(&option, opt);
-    prepare_iseq_build(iseq, name, filename,
+    prepare_iseq_build(iseq, name, filename, line_no,
 		       parent, iseq_type, 0, &option);
 
     rb_iseq_build_from_ary(iseq, locals, args, exception, body);
@@ -544,11 +546,11 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE line, VALUE opt)
 
     if (th->base_block && th->base_block->iseq) {
 	return rb_iseq_new_with_opt(node, th->base_block->iseq->name,
-				    file, th->base_block->iseq->self,
+				    file, line, th->base_block->iseq->self,
 				    ISEQ_TYPE_EVAL, &option);
     }
     else {
-	return rb_iseq_new_with_opt(node, rb_str_new2("<compiled>"), file, Qfalse,
+	return rb_iseq_new_with_opt(node, rb_str_new2("<compiled>"), file, line, Qfalse,
 				    ISEQ_TYPE_TOP, &option);
     }
 }
@@ -593,7 +595,7 @@ iseq_s_compile_file(int argc, VALUE *argv, VALUE self)
     parser = rb_parser_new();
     node = rb_parser_compile_file(parser, fname, f, NUM2INT(line));
     make_compile_option(&option, opt);
-    return rb_iseq_new_with_opt(node, rb_str_new2("<main>"), file, Qfalse,
+    return rb_iseq_new_with_opt(node, rb_str_new2("<main>"), file, line, Qfalse,
 				ISEQ_TYPE_TOP, &option);
 }
 
@@ -659,7 +661,7 @@ iseq_to_a(VALUE self)
 int
 rb_iseq_first_lineno(rb_iseq_t *iseq)
 {
-    return iseq->insn_info_table[0].line_no;
+    return FIX2INT(iseq->line_no);
 }
 
 /* TODO: search algorithm is brute force.
@@ -1298,7 +1300,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 
     /*
      * [:magic, :major_version, :minor_version, :format_type, :misc,
-     *  :name, :filename, :type, :locals, :args,
+     *  :name, :filename, :line_no, :type, :locals, :args,
      *  :catch_table, :bytecode]
      */
     rb_ary_push(val, rb_str_new2("YARVInstructionSequence/SimpleDataFormat"));
@@ -1308,6 +1310,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     rb_ary_push(val, misc);
     rb_ary_push(val, iseq->name);
     rb_ary_push(val, iseq->filename);
+    rb_ary_push(val, iseq->line_no);
     rb_ary_push(val, type);
     rb_ary_push(val, locals);
     rb_ary_push(val, args);
@@ -1414,7 +1417,8 @@ rb_iseq_build_for_ruby2cext(
     const VALUE *arg_opt_table,
     const struct iseq_catch_table_entry *catch_table,
     const char *name,
-    const char *filename)
+    const char *filename,
+    const unsigned short line_no)
 {
     unsigned long i;
     VALUE iseqval = iseq_alloc(rb_cISeq);
@@ -1425,6 +1429,7 @@ rb_iseq_build_for_ruby2cext(
     *iseq = *iseq_template;
     iseq->name = rb_str_new2(name);
     iseq->filename = rb_str_new2(filename);
+    iseq->line_no = line_no;
     iseq->mark_ary = rb_ary_tmp_new(3);
     iseq->self = iseqval;
 
