@@ -326,15 +326,19 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
- *     Hash[ [key =>|, value]* ]   => hash
+ *     Hash[ key, value, ... ]   => hash
+ *     Hash[ [ [key, value], ... ] ]   => hash
+ *     Hash[ object ]   => hash
  *
  *  Creates a new hash populated with the given objects. Equivalent to
- *  the literal <code>{ <i>key</i>, <i>value</i>, ... }</code>. Keys and
- *  values occur in pairs, so there must be an even number of arguments.
+ *  the literal <code>{ <i>key</i> => <i>value</i>, ... }</code>. In the first
+ *  form, keys and values occur in pairs, so there must be an even number of arguments.
+ *  The second and third form take a single argument which is either
+ *  an array of key-value pairs or an object convertible to a hash.
  *
- *     Hash["a", 100, "b", 200]       #=> {"a"=>100, "b"=>200}
- *     Hash["a" => 100, "b" => 200]   #=> {"a"=>100, "b"=>200}
- *     { "a" => 100, "b" => 200 }     #=> {"a"=>100, "b"=>200}
+ *     Hash["a", 100, "b", 200]             #=> {"a"=>100, "b"=>200}
+ *     Hash[ [ ["a", 100], ["b", 200] ] ]   #=> {"a"=>100, "b"=>200}
+ *     Hash["a" => 100, "b" => 200]         #=> {"a"=>100, "b"=>200}
  */
 
 static VALUE
