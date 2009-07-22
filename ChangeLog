@@ -1,3 +1,11 @@
+Wed Jul 22 22:16:48 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* method.h : Commas at end of enum list not allowed as of C89
+
+	* vm_method.c (rb_add_method): avoid C++ comment
+
+	* vm_insnhelper.c (vm_call_cfunc): ditto.
+
 Wed Jul 22 20:42:52 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/extconf.rb: define IPPROTO_IPV6 macro for recent Windows

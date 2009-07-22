@@ -203,8 +203,9 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 	    old_me->type != VM_METHOD_TYPE_UNDEF) {
 	    rb_warning("method redefined; discarding old %s", rb_id2name(mid));
 	}
-
+#if defined(__cplusplus) || (__STDC_VERSION__ >= 199901L)
 	// TODO: free old_me
+#endif
     }
 
     /* check mid */
