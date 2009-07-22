@@ -286,7 +286,7 @@ module REXML
     EREFERENCE = /&(?!#{Entity::NAME};)/
     # Escapes all possible entities
     def Text::normalize( input, doctype=nil, entity_filter=nil )
-      copy = input
+      copy = input.to_s
       # Doing it like this rather than in a loop improves the speed
       #copy = copy.gsub( EREFERENCE, '&amp;' )
       copy = copy.gsub( "&", "&amp;" )

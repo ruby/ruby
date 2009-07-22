@@ -1,3 +1,8 @@
+Wed Jul 22 23:39:34 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rexml/text.rb (REXML::Text.normalize): call to_s for input.
+	  [ruby-talk:337069]
+
 Tue Jul 21 18:21:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (SRC_EXT): should be flat.
