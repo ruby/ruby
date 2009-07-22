@@ -58,6 +58,10 @@ init_inetsock_internal(struct inetsock_arg *arg)
 
     arg->fd = fd = -1;
     for (res = arg->remote.res; res; res = res->ai_next) {
+#if !defined(INET6) && defined(AF_INET6)
+	if (res->ai_family == AF_INET6)
+	    continue;
+#endif
 	status = rsock_socket(res->ai_family,res->ai_socktype,res->ai_protocol);
 	syscall = "socket(2)";
 	fd = status;

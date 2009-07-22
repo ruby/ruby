@@ -1,3 +1,8 @@
+Wed Jul 22 17:41:08 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/ipsocket.c (init_inetsock_internal): drop IPv6 addresses
+	  if INET6 is not defined.
+
 Wed Jul 22 17:29:59 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/extconf.rb: enable ipv6 support for win32.
