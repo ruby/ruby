@@ -56,7 +56,7 @@ def each_const
       make_value = "INT2NUM"
     end
     guard = nil
-    if /\A(AF_INET6|PF_INET6)\z/ =~ name
+    if /\A(AF_INET6|PF_INET6|IPV6_.*)\z/ =~ name
       # IPv6 is not supported although AF_INET6 is defined on bcc32/mingw
       guard = "defined(INET6)"
     end

@@ -1,3 +1,8 @@
+Wed Jul 22 19:32:10 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/mkconstants.rb: define IPV6_* constants only when INET6
+	  is defined.
+
 Wed Jul 22 19:23:04 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/extconf.rb: ipv6 support is disabled by default on mswin.
