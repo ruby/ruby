@@ -1,3 +1,7 @@
+Wed Jul 22 19:23:04 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/extconf.rb: ipv6 support is disabled by default on mswin.
+
 Wed Jul 22 17:41:08 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/ipsocket.c (init_inetsock_internal): drop IPv6 addresses
