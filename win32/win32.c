@@ -2816,7 +2816,7 @@ rb_w32_sendto(int fd, const char *buf, int len, int flags,
 				(struct sockaddr *)to, &tolen);
 }
 
-#ifndef WSAID_WSARECVMSG
+#if !defined(MSG_TRUNC) && !defined(__MINGW32__)
 typedef struct {
     SOCKADDR *name;
     int namelen;
@@ -2825,6 +2825,8 @@ typedef struct {
     WSABUF Control;
     DWORD dwFlags;
 } WSAMSG;
+#endif
+#ifndef WSAID_WSARECVMSG
 #define WSAID_WSARECVMSG {0xf689d7c8,0x6f1f,0x436b,{0x8a,0x53,0xe5,0x4f,0xe3,0x51,0xc3,0x22}}
 #endif
 #ifndef WSAID_WSASENDMSG
