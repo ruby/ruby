@@ -37,7 +37,9 @@ default_ipv6 = /cygwin|beos|haiku/ !~ RUBY_PLATFORM
 if enable_config("ipv6", default_ipv6)
   if checking_for("ipv6") {try_link(<<EOF)}
 #include <sys/types.h>
+#ifndef _WIN32
 #include <sys/socket.h>
+#endif
 int
 main()
 {

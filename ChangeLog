@@ -1,3 +1,7 @@
+Wed Jul 22 17:29:59 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/extconf.rb: enable ipv6 support for win32.
+
 Wed Jul 22 16:38:39 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* hash.c (Hash::[]): rdoc. patch by Marc-Andre Lafortune.
