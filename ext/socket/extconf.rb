@@ -324,6 +324,9 @@ have_func("getpeereid")
 have_header("ucred.h", headers)
 have_func("getpeerucred")
 
+# workaround for recent Windows SDK
+$defs << "-DIPPROTO_IPV6=IPPROTO_IPV6" if have_const("IPPROTO_IPV6") && !have_macro("IPPROTO_IPV6")
+
 $distcleanfiles << "constants.h" << "constdefs.*"
 
 if have_func(test_func)
