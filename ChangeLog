@@ -1,3 +1,8 @@
+Thu Jul 23 08:53:24 2009  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/markup/simple_markup/: Remove useless directory.
+	  [Bug #1343]
+
 Thu Jul 23 08:52:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (random_{state,left}): internal/debug use.
