@@ -516,6 +516,7 @@ mt_state(const struct MT *mt)
     return rb_big_norm(bigo);
 }
 
+/* :nodoc: */
 static VALUE
 random_state(VALUE obj)
 {
@@ -523,12 +524,14 @@ random_state(VALUE obj)
     return mt_state(&rnd->mt);
 }
 
+/* :nodoc: */
 static VALUE
 random_s_state(VALUE klass)
 {
     return mt_state(&default_rand.rnd.mt);
 }
 
+/* :nodoc: */
 static VALUE
 random_left(VALUE obj)
 {
@@ -536,6 +539,7 @@ random_left(VALUE obj)
     return INT2FIX(rnd->mt.left);
 }
 
+/* :nodoc: */
 static VALUE
 random_s_left(VALUE klass)
 {
@@ -1049,13 +1053,13 @@ Init_Random(void)
     rb_define_method(rb_cRandom, "initialize_copy", random_copy, 1);
     rb_define_method(rb_cRandom, "marshal_dump", random_dump, 0);
     rb_define_method(rb_cRandom, "marshal_load", random_load, 1);
-    rb_define_method(rb_cRandom, "state", random_state, 0);
-    rb_define_method(rb_cRandom, "left", random_left, 0);
+    rb_define_private_method(rb_cRandom, "state", random_state, 0);
+    rb_define_private_method(rb_cRandom, "left", random_left, 0);
     rb_define_method(rb_cRandom, "==", random_equal, 1);
 
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
     rb_define_singleton_method(rb_cRandom, "rand", rb_f_rand, -1);
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
-    rb_define_singleton_method(rb_cRandom, "state", random_s_state, 0);
-    rb_define_singleton_method(rb_cRandom, "left", random_s_left, 0);
+    rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
+    rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
 }

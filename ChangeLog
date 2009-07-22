@@ -1,9 +1,13 @@
+Thu Jul 23 08:52:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (random_{state,left}): internal/debug use.
+
 Wed Jul 22 19:29:26 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_module.rb (TestModule#test_alias): warning
 	  message updated.
 
-Thu Jul 23 00:39:25 2009    <nobu@ruby-lang.org>
+Thu Jul 23 00:39:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (class.o): depends on vm_core.h.
 
