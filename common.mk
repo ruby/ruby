@@ -497,7 +497,7 @@ VM_CORE_H_INCLUDES = {$(VPATH)}vm_core.h {$(VPATH)}vm_opts.h \
 
 array.$(OBJEXT): {$(VPATH)}array.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h
 bignum.$(OBJEXT): {$(VPATH)}bignum.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h
-class.$(OBJEXT): {$(VPATH)}class.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h
+class.$(OBJEXT): {$(VPATH)}class.c $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES)
 compar.$(OBJEXT): {$(VPATH)}compar.c $(RUBY_H_INCLUDES)
 complex.$(OBJEXT): {$(VPATH)}complex.c $(RUBY_H_INCLUDES)
 dir.$(OBJEXT): {$(VPATH)}dir.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
