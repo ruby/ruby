@@ -522,6 +522,7 @@ init_leap_second_info()
         now = time(NULL);
         gmtime(&now);
         tm = gmtime_with_leapsecond(&now, &result);
+        if (!tm) return;
         this_year = tm->tm_year;
 
         max = ~(time_t)0;

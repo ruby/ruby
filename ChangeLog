@@ -1,3 +1,8 @@
+Thu Jul 23 00:10:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (init_leap_second_info): checks the result of gmtime to
+	  suppress warnings.
+
 Wed Jul 22 22:23:24 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_core.h (struct rb_iseq_t): add a new field line_no.  This field
