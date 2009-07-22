@@ -530,7 +530,7 @@ class TestModule < Test::Unit::TestCase
       m.class_eval { alias foo bar }
     end
 
-    assert_in_out_err([], <<-INPUT, %w(2), /warning: discarding old foo$/)
+    assert_in_out_err([], <<-INPUT, %w(2), /discarding old foo$/)
       $VERBOSE = true
       c = Class.new
       c.class_eval do
