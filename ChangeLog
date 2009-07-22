@@ -61,6 +61,11 @@ Wed Jul 22 10:00:53 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (WSAMSG): get rid of compile error on VC9 and mingw.
 
+Wed Jul 22 06:35:56 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_enum.rb (TestEnumerable#each): recursive join now
+	  raises ArgumentError.
+
 Wed Jul 22 02:33:57 2009  Keiju Ishitsuka  <keiju@emperor2.pendome>
 
 	* lib/irb.rb: forget svn commit.

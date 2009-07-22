@@ -299,8 +299,8 @@ class TestEnumerable < Test::Unit::TestCase
         yield self
       end
     end
-    assert_equal("[...]", e.join(""), '[ruby-core:24150]')
-    assert_equal("[...]", [e].join(""), '[ruby-core:24150]')
+    assert_raise(ArgumentError){e.join("")}
+    assert_raise(ArgumentError){[e].join("")}
     e = Class.new {
       include Enumerable
       def initialize(*args)
