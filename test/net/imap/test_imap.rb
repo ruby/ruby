@@ -18,6 +18,18 @@ class IMAPTest < Test::Unit::TestCase
     assert_equal(utf8, s)
   end
 
+  def test_format_date
+    time = Time.mktime(2009, 7, 24)
+    s = Net::IMAP.format_date(time)
+    assert_equal("24-Jul-2009", s)
+  end
+
+  def test_format_datetime
+    time = Time.mktime(2009, 7, 24, 1, 23, 45)
+    s = Net::IMAP.format_datetime(time)
+    assert_match(/\A24-Jul-2009 01:23 [+\-]\d{4}\z/, s)
+  end
+
   def test_imaps_unknown_ca
     if defined?(OpenSSL)
       assert_raise(OpenSSL::SSL::SSLError) do
@@ -104,6 +116,58 @@ class IMAPTest < Test::Unit::TestCase
         assert_raise(EOFError) do
           imap.logout
         end
+      ensure
+        imap.disconnect if imap
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_idle
+    server = TCPServer.new(0)
+    port = server.addr[1]
+    requests = []
+    Thread.start do
+      begin
+        sock = server.accept
+        begin
+          sock.print("* OK test server\r\n")
+          requests.push(sock.gets)
+          sock.print("+ idling\r\n")
+          sock.print("* 3 EXISTS\r\n")
+          sock.print("* 2 EXPUNGE\r\n")
+          requests.push(sock.gets)
+          sock.print("RUBY0001 OK IDLE terminated\r\n")
+          sock.gets
+          sock.print("* BYE terminating connection\r\n")
+          sock.print("RUBY0002 OK LOGOUT completed\r\n")
+        ensure
+          sock.close
+        end
+      rescue
+      end
+    end
+    begin
+      begin
+        imap = Net::IMAP.new("localhost", :port => port)
+        responses = []
+        imap.idle do |res|
+          responses.push(res)
+          if res.name == "EXPUNGE"
+            imap.idle_done
+          end
+        end
+        assert_equal(3, responses.length)
+        assert_instance_of(Net::IMAP::ContinuationRequest, responses[0])
+        assert_equal("EXISTS", responses[1].name)
+        assert_equal(3, responses[1].data)
+        assert_equal("EXPUNGE", responses[2].name)
+        assert_equal(2, responses[2].data)
+        assert_equal(2, requests.length)
+        assert_equal("RUBY0001 IDLE\r\n", requests[0])
+        assert_equal("DONE\r\n", requests[1])
+        imap.logout
       ensure
         imap.disconnect if imap
       end

@@ -1,3 +1,14 @@
+Fri Jul 24 00:13:41 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (resp_text_code): accepts response codes without
+	  text.  [ruby-core:24194]
+
+	* lib/net/imap.rb (idle, idle_done): new methods for the IMAP4 IDLE
+	  command (RFC 2177).  Thanks, Eric Hodel.
+
+	* lib/net/imap.rb (format_date, format_datetime): new method to
+	  format IMAP-style date/datetime. Thanks, Eric Hodel.
+
 Thu Jul 23 17:31:02 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb/ruby-lex.rb: make irb be able to parse

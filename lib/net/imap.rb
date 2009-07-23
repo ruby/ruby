@@ -838,6 +838,41 @@ module Net
       return thread_internal("UID THREAD", algorithm, search_keys, charset)
     end
 
+    # Sends an IDLE command that waits for notifications of new or expunged
+    # messages.  Yields responses from the server during the IDLE.
+    #
+    # Use #idle_done() to leave IDLE.
+    def idle(&response_handler)
+      raise LocalJumpError, "no block given" unless response_handler
+
+      response = nil
+
+      synchronize do
+        tag = Thread.current[:net_imap_tag] = generate_tag
+        put_string("#{tag} IDLE#{CRLF}")
+
+        add_response_handler(response_handler)
+        @idle_done_cond = new_cond
+        @idle_done_cond.wait
+        @idle_done_cond = nil
+        remove_response_handler(response_handler)
+        put_string("DONE#{CRLF}")
+        response = get_tagged_response(tag, "IDLE")
+      end
+
+      return response
+    end
+
+    # Leaves IDLE.
+    def idle_done
+      if @idle_done_cond.nil?
+        raise Net::IMAP::Error, "not during IDLE"
+      end
+      synchronize do
+        @idle_done_cond.signal
+      end
+    end
+
     # Decode a string from modified UTF-7 format to UTF-8.
     #
     # UTF-7 is a 7-bit encoding of Unicode [UTF7].  IMAP uses a
@@ -871,6 +906,16 @@ module Net
           "&" + base64.delete("=\n").tr("/", ",") + "-"
         end
       }.force_encoding("ASCII-8BIT")
+    end
+
+    # Formats +time+ as an IMAP-style date.
+    def self.format_date(time)
+      return time.strftime('%d-%b-%Y')
+    end
+
+    # Formats +time+ as an IMAP-style date-time.
+    def self.format_datetime(time)
+      return time.strftime('%d-%b-%Y %H:%M %z')
     end
 
     private
@@ -2776,11 +2821,16 @@ module Net
           match(T_SPACE)
           result = ResponseCode.new(name, number)
         else
-          match(T_SPACE)
-          @lex_state = EXPR_CTEXT
-          token = match(T_TEXT)
-          @lex_state = EXPR_BEG
-          result = ResponseCode.new(name, token.value)
+          token = lookahead
+          if token.symbol == T_SPACE
+            shift_token
+            @lex_state = EXPR_CTEXT
+            token = match(T_TEXT)
+            @lex_state = EXPR_BEG
+            result = ResponseCode.new(name, token.value)
+          else
+            result = ResponseCode.new(name, nil)
+          end
         end
         match(T_RBRA)
         @lex_state = EXPR_RTEXT
