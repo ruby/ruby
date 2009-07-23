@@ -1,3 +1,8 @@
+Thu Jul 23 14:35:02 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_{open,wopen}): fixed typos. these conditions
+	  mean to call runtime's open() if textmode.
+
 Thu Jul 23 08:53:24 2009  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/markup/simple_markup/: Remove useless directory.
