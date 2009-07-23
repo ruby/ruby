@@ -1,3 +1,7 @@
+Thu Jul 23 17:26:51 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: should not create "config_list" in a $srcdir.
+
 Thu Jul 23 14:35:02 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_{open,wopen}): fixed typos. these conditions
