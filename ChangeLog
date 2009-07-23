@@ -1,3 +1,8 @@
+Thu Jul 23 17:31:02 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* lib/irb/ruby-lex.rb: make irb be able to parse
+	  string_dvar. [ruby-core: 24051]
+
 Thu Jul 23 17:26:51 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: should not create "config_list" in a $srcdir.
@@ -89,7 +94,7 @@ Wed Jul 22 06:35:56 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* test/ruby/test_enum.rb (TestEnumerable#each): recursive join now
 	  raises ArgumentError.
 
-Wed Jul 22 02:33:57 2009  Keiju Ishitsuka  <keiju@emperor2.pendome>
+Wed Jul 22 02:33:57 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb.rb: forget svn commit.
 
