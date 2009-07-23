@@ -1,3 +1,7 @@
+Thu Jul 23 17:26:51 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: should not create "config_list" in a $srcdir.
+
 Thu Jul 23 15:04:20 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb.rb, lib/irb/init.rb, lib/irb/ext/save-history.rb: add

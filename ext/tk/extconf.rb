@@ -1,6 +1,6 @@
 ##############################################################
 # extconf.rb for tcltklib
-# release date: 2009-07-15
+# release date: 2009-07-23
 ##############################################################
 require 'mkmf'
 
@@ -22,8 +22,8 @@ end
 # check configs
 ##############################################################
 $cleanfiles << 'config_list'
-config_list_file = File.join(File.dirname(__FILE__),'config_list')
-config_list_file_source = config_list_file + '.in'
+config_list_file = 'config_list'
+config_list_file_source = File.join(File.dirname(__FILE__),'config_list.in')
 if !File.exist?(config_list_file) || 
     File.ctime(config_list_file_source) > File.ctime(config_list_file)
   old_config_list_file = config_list_file_source
@@ -84,19 +84,19 @@ end
 if update_flag
   puts "Configure options for Ruby/Tk may be updated."
   puts "So, delete files which depend on old configs."
-  File.delete(*(Dir.glob(File.join(File.dirname(__FILE__), 
-                                   "*.#{CONFIG['DLEXT']}"))))
-  File.delete(*(Dir.glob(File.join(File.dirname(__FILE__), "*.#{$OBJEXT}"))))
-  File.delete(File.join(File.dirname(__FILE__), 'Makefile')) rescue nil
+  File.delete(*Dir.glob("*.#{CONFIG['DLEXT']}"))
+  File.delete(*Dir.glob("*.#{$OBJEXT}"))
+  File.delete('Makefile') rescue nil
 
 else
-  makefile = File.join(File.dirname(__FILE__),'Makefile')
+  makefile = 'Makefile'
   if File.exist?(makefile) && 
       File.ctime(config_list_file) > File.ctime(makefile)
     # no need to update Makefile
     exit
   end
 end
+
 
 ##############################################################
 # fuctions
