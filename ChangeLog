@@ -1,3 +1,11 @@
+Fri Jul 24 18:03:01 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (idle): leaves IDLE in a ensure clause.  a patch
+	  from Eric Hodel.
+
+	* test/net/imap/test_imap.rb (setup, teardown): turn on
+	  Socket.do_not_reverse_lookup in tests.
+
 Fri Jul 24 00:13:41 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (resp_text_code): accepts response codes without

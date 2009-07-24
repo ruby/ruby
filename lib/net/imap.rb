@@ -851,13 +851,16 @@ module Net
         tag = Thread.current[:net_imap_tag] = generate_tag
         put_string("#{tag} IDLE#{CRLF}")
 
-        add_response_handler(response_handler)
-        @idle_done_cond = new_cond
-        @idle_done_cond.wait
-        @idle_done_cond = nil
-        remove_response_handler(response_handler)
-        put_string("DONE#{CRLF}")
-        response = get_tagged_response(tag, "IDLE")
+        begin
+          add_response_handler(response_handler)
+          @idle_done_cond = new_cond
+          @idle_done_cond.wait
+          @idle_done_cond = nil
+        ensure
+          remove_response_handler(response_handler)
+          put_string("DONE#{CRLF}")
+          response = get_tagged_response(tag, "IDLE")
+        end
       end
 
       return response
@@ -865,10 +868,10 @@ module Net
 
     # Leaves IDLE.
     def idle_done
-      if @idle_done_cond.nil?
-        raise Net::IMAP::Error, "not during IDLE"
-      end
       synchronize do
+        if @idle_done_cond.nil?
+          raise Net::IMAP::Error, "not during IDLE"
+        end
         @idle_done_cond.signal
       end
     end
@@ -985,6 +988,7 @@ module Net
       @response_handlers = []
       @tagged_response_arrival = new_cond
       @continuation_request_arrival = new_cond
+      @idle_done_cond = nil
       @logout_command_tag = nil
       @debug_output_bol = true
       @exception = nil

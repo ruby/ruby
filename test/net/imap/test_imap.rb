@@ -6,6 +6,15 @@ class IMAPTest < Test::Unit::TestCase
   SERVER_KEY = File.expand_path("server.key", File.dirname(__FILE__))
   SERVER_CERT = File.expand_path("server.crt", File.dirname(__FILE__))
 
+  def setup
+    @do_not_reverse_lookup = Socket.do_not_reverse_lookup
+    Socket.do_not_reverse_lookup = true
+  end
+
+  def teardown
+    Socket.do_not_reverse_lookup = @do_not_reverse_lookup
+  end
+
   def test_encode_utf7
     utf8 = "\357\274\241\357\274\242\357\274\243".force_encoding("UTF-8")
     s = Net::IMAP.encode_utf7(utf8)
@@ -168,6 +177,91 @@ class IMAPTest < Test::Unit::TestCase
         assert_equal("RUBY0001 IDLE\r\n", requests[0])
         assert_equal("DONE\r\n", requests[1])
         imap.logout
+      ensure
+        imap.disconnect if imap
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_exception_during_idle
+    server = TCPServer.new(0)
+    port = server.addr[1]
+    requests = []
+    Thread.start do
+      begin
+        sock = server.accept
+        begin
+          sock.print("* OK test server\r\n")
+          requests.push(sock.gets)
+          sock.print("+ idling\r\n")
+          sock.print("* 3 EXISTS\r\n")
+          sock.print("* 2 EXPUNGE\r\n")
+          requests.push(sock.gets)
+          sock.print("RUBY0001 OK IDLE terminated\r\n")
+          sock.gets
+          sock.print("* BYE terminating connection\r\n")
+          sock.print("RUBY0002 OK LOGOUT completed\r\n")
+        ensure
+          sock.close
+        end
+      rescue
+      end
+    end
+    begin
+      begin
+        imap = Net::IMAP.new("localhost", :port => port)
+        begin
+          th = Thread.current
+          m = Monitor.new
+          c = m.new_cond
+          Thread.start do
+            m.synchronize do
+              c.wait
+            end
+            th.raise(Interrupt)
+          end
+          imap.idle do |res|
+            m.synchronize do
+              c.signal
+            end
+          end
+        rescue Interrupt
+        end
+        assert_equal(2, requests.length)
+        assert_equal("RUBY0001 IDLE\r\n", requests[0])
+        assert_equal("DONE\r\n", requests[1])
+        imap.logout
+      ensure
+        imap.disconnect if imap
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_idle_done_not_during_idle
+    server = TCPServer.new(0)
+    port = server.addr[1]
+    requests = []
+    Thread.start do
+      begin
+        sock = server.accept
+        begin
+          sock.print("* OK test server\r\n")
+        ensure
+          sock.close
+        end
+      rescue
+      end
+    end
+    begin
+      begin
+        imap = Net::IMAP.new("localhost", :port => port)
+        assert_raise(Net::IMAP::Error) do
+          imap.idle_done
+        end
       ensure
         imap.disconnect if imap
       end
