@@ -1,3 +1,8 @@
+Fri Jul 24 20:33:49 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/time.rb, test/test_time.rb: Move test code to a separate
+	  file to save memory and compile time. [Bug #1812]
+
 Thu Jul 23 17:26:51 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: should not create "config_list" in a $srcdir.
