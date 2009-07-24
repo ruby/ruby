@@ -19,6 +19,7 @@ def c_esc(str)
 end
 
 class StrSet
+  attr_reader :pat
   def self.parse(pattern)
     if /\A\s*(([0-9a-f][0-9a-f]|\{([0-9a-f][0-9a-f]|[0-9a-f][0-9a-f]-[0-9a-f][0-9a-f])(,([0-9a-f][0-9a-f]|[0-9a-f][0-9a-f]-[0-9a-f][0-9a-f]))*\})+(\s+|\z))*\z/i !~ pattern
       raise ArgumentError, "invalid pattern: #{pattern.inspect}"
@@ -68,7 +69,7 @@ class StrSet
 
   def eql?(other)
     self.class == other.class &&
-    @pat == other.instance_eval { @pat }
+    @pat == other.pat
   end
 
   alias == eql?

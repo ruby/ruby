@@ -1,3 +1,17 @@
+Fri Jul 24 19:19:19 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/trans/big5.trans, big5-hkscs-tbl.rb:
+	  new Chinese BIG5-HKSCS transcoding (with Tatsuya Mizuno)
+
+	* test/ruby/test_transcode.rb: added tests for the above
+	  (with Tatsuya Mizuno)
+
+	* enc/big5.c: Added BIG5-HKSCS as a replicate encoding of BIG5
+	  (short term solution, needs more work; with Tatsuya Mizuno)
+
+	* tool/transcode-tblgen.rb: made 'pat' directly accessible in
+	  class StrSet
+
 Fri Jul 24 18:03:01 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (idle): leaves IDLE in a ensure clause.  a patch
