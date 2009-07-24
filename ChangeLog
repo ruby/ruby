@@ -1,3 +1,7 @@
+Fri Jul 24 17:19:40 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (HTTP_STATUS): typo fixed.   [ruby-dev:38538]
+
 Wed Jul 22 23:39:34 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rexml/text.rb (REXML::Text.normalize): call to_s for input.
