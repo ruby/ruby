@@ -1,7 +1,12 @@
+Sat Jul 25 01:05:59 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/big5.c: Fix EncLen_BIG5 for Big5-HKSCS. see [ruby-core:24390]
+
 Fri Jul 24 19:19:19 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/trans/big5.trans, big5-hkscs-tbl.rb:
 	  new Chinese BIG5-HKSCS transcoding (with Tatsuya Mizuno)
+	  see [ruby-core:24390]
 
 	* test/ruby/test_transcode.rb: added tests for the above
 	  (with Tatsuya Mizuno)
