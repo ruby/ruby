@@ -1,4 +1,4 @@
-Tue Apr 21 01:09:14 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
+Sun Jul 26 01:09:14 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 
 	* ext/bigdecimal.c: moved BASE_FIG definition before it is used
 	  first time.
