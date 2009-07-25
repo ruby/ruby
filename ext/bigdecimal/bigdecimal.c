@@ -39,6 +39,24 @@ VALUE rb_cBigDecimal;
 #define SAVE(p)  PUSH(p->obj);
 #define GUARD_OBJ(p,y) {p=y;SAVE(p);}
 
+#ifndef BASE_FIG
+static U_LONG BASE_FIG = 4;     /* =log10(BASE)  */
+static U_LONG BASE = 10000L;    /* Base value(value must be 10**BASE_FIG) */
+                /* The value of BASE**2 + BASE must be represented */
+                /* within one U_LONG. */
+static U_LONG HALF_BASE = 5000L;/* =BASE/2  */
+static U_LONG BASE1 = 1000L;    /* =BASE/10  */
+#else
+#ifndef BASE
+#error BASE_FIG is defined but BASE is not
+#endif
+#define HALF_BASE (BASE/2)
+#define BASE1 (BASE/10)
+#endif
+#ifndef DBLE_FIG
+#define DBLE_FIG (DBL_DIG+1)    /* figure of double */
+#endif
+
 /*
  * ================== Ruby Interface part ==========================
  */
@@ -2061,24 +2079,6 @@ static int gfCheckVal = 1;      /* Value checking flag in VpNmlz()  */
 
 static U_LONG gnPrecLimit = 0;  /* Global upper limit of the precision newly allocated */
 static U_LONG gfRoundMode = VP_ROUND_HALF_UP; /* Mode for general rounding operation   */
-
-#ifndef BASE_FIG
-static U_LONG BASE_FIG = 4;     /* =log10(BASE)  */
-static U_LONG BASE = 10000L;    /* Base value(value must be 10**BASE_FIG) */
-                /* The value of BASE**2 + BASE must be represented */
-                /* within one U_LONG. */
-static U_LONG HALF_BASE = 5000L;/* =BASE/2  */
-static U_LONG BASE1 = 1000L;    /* =BASE/10  */
-#else
-#ifndef BASE
-#error BASE_FIG is defined but BASE is not
-#endif
-#define HALF_BASE (BASE/2)
-#define BASE1 (BASE/10)
-#endif
-#ifndef DBLE_FIG
-#define DBLE_FIG (DBL_DIG+1)    /* figure of double */
-#endif
 
 static Real *VpConstOne;    /* constant 1.0 */
 static Real *VpPt5;        /* constant 0.5 */
