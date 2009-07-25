@@ -195,6 +195,11 @@ void xfree(void*);
 # include <sys/select.h>
 #endif
 
+#ifdef __SYMBIAN32__
+# define FALSE 0
+# define TRUE 1
+#endif
+
 #ifdef RUBY_EXPORT
 #undef RUBY_EXTERN
 
