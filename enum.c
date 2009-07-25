@@ -667,11 +667,11 @@ first_i(i, ary)
     else {
 	long n = NUM2LONG(ary[0]);
 
+	rb_ary_push(ary[1], i);
+	n--;
 	if (n <= 0) {
 	    rb_iter_break();
 	}
-	rb_ary_push(ary[1], i);
-	n--;
 	ary[0] = INT2NUM(n);
     }
     return Qnil;
@@ -700,9 +700,12 @@ enum_first(argc, argv, obj)
 	ary[0] = ary[1] = Qnil;
     }
     else {
+	long len;
 	rb_scan_args(argc, argv, "01", &n);
-	ary[0] = n;
-	ary[1] = rb_ary_new2(NUM2LONG(n));
+	len = NUM2LONG(n);
+	if (len == 0) return rb_ary_new2(0);
+	ary[0] = INT2NUM(len);
+	ary[1] = rb_ary_new2(len);
     }
     rb_block_call(obj, id_each, 0, 0, first_i, (VALUE)ary);
 
@@ -1609,8 +1612,8 @@ take_i(i, arg)
     VALUE i;
     VALUE *arg;
 {
-    if (arg[1]-- == 0) rb_iter_break();
     rb_ary_push(arg[0], i);
+    if (--arg[1] == 0) rb_iter_break();
     return Qnil;
 }
 
@@ -1637,6 +1640,7 @@ enum_take(obj, n)
 	rb_raise(rb_eArgError, "attempt to take negative size");
     }
 
+    if (len == 0) return rb_ary_new2(0);
     args[1] = len;
     args[0] = rb_ary_new();
     rb_block_call(obj, id_each, 0, 0, take_i, (VALUE)args);
