@@ -36,6 +36,9 @@ class Complex_Test < Test::Unit::TestCase
       assert_instance_of(ComplexSub, c5)
     end
 
+    c1 = Complex(1)
+    assert_equal(c1.hash, c.hash, '[ruby-dev:38850]')
+    assert_equal([true, true], [c.eql?(c1), c1.eql?(c)])
   end
 
   def test_eql_p

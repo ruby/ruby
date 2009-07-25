@@ -1,3 +1,9 @@
+Sat Jul 25 13:44:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c (nucomp_hash), rational.c (nurat_hash): not to use
+	  hash value of class so that equality against subclasses can
+	  work.  [ruby-dev:38850]
+
 Sat Jul 25 01:05:59 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/big5.c: Fix EncLen_BIG5 for Big5-HKSCS. see [ruby-core:24390]

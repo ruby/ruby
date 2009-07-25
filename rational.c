@@ -1360,15 +1360,14 @@ nurat_to_r(VALUE self)
 static VALUE
 nurat_hash(VALUE self)
 {
-    long v, h[3];
+    long v, h[2];
     VALUE n;
 
     get_dat1(self);
-    h[0] = rb_hash(rb_obj_class(self));
     n = rb_hash(dat->num);
-    h[1] = NUM2LONG(n);
+    h[0] = NUM2LONG(n);
     n = rb_hash(dat->den);
-    h[2] = NUM2LONG(n);
+    h[1] = NUM2LONG(n);
     v = rb_memhash(h, sizeof(h));
     return LONG2FIX(v);
 }

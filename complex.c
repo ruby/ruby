@@ -1156,15 +1156,14 @@ nucomp_numerator(VALUE self)
 static VALUE
 nucomp_hash(VALUE self)
 {
-    long v, h[3];
+    long v, h[2];
     VALUE n;
 
     get_dat1(self);
-    h[0] = rb_hash(rb_obj_class(self));
     n = rb_hash(dat->real);
-    h[1] = NUM2LONG(n);
+    h[0] = NUM2LONG(n);
     n = rb_hash(dat->imag);
-    h[2] = NUM2LONG(n);
+    h[1] = NUM2LONG(n);
     v = rb_memhash(h, sizeof(h));
     return LONG2FIX(v);
 }
