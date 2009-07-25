@@ -72,7 +72,7 @@ class TestArgf < Test::Unit::TestCase
       p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["5", 5, "5", 8]
       p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["6", 6, "6", 9]
     SRC
-    expected = src.scan(/\#=> *(.*+)/).flatten
+    expected = src.scan(/\#=> *(.+)/).flatten
     ruby('-e', src, @t1.path, @t2.path, @t3.path) do |f|
       f.each_with_index do |a, i|
         assert_equal(expected.shift, a.chomp, "[ruby-dev:34445]: line #{i}")
@@ -102,7 +102,7 @@ class TestArgf < Test::Unit::TestCase
       a.gets; p $.  #=> 2001
       a.gets; p $.  #=> 2001
     SRC
-    expected = src.scan(/\#=> *(.*+)/).join(",")
+    expected = src.scan(/\#=> *(.+)/).join(",")
     ruby('-e', src, @t1.path, @t2.path, @t3.path) do |f|
       assert_equal(expected, f.read.chomp.gsub("\n", ","))
     end
@@ -125,7 +125,7 @@ class TestArgf < Test::Unit::TestCase
       a.gets; p $.  #=> 2000
       a.gets; p $.  #=> 2000
     SRC
-    expected = src.scan(/\#=> *(.*+)/).join(",")
+    expected = src.scan(/\#=> *(.+)/).join(",")
     ruby('-e', src, @t1.path, @t2.path, @t3.path) do |f|
       assert_equal(expected, f.read.chomp.gsub("\n", ","))
     end
@@ -433,7 +433,7 @@ class TestArgf < Test::Unit::TestCase
       end
     SRC
       a = f.read.split("\n")
-      ((%w(true false) * 4).take(7) + %w(end)).each do |x|
+      (%w(false) + (%w(false true) * 3) + %w(end)).each do |x|
         assert_equal(x, a.shift)
       end
     end

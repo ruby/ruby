@@ -1,3 +1,9 @@
+Sat Jul 25 17:49:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_eof): should not have reached EOF before trying to
+	  read.  based on a patch by Heesob Park <phasis AT gmail.com> a
+	  [ruby-core:24559].  [ruby-core:24557]
+
 Sat Jul 25 13:44:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* complex.c (nucomp_hash), rational.c (nurat_hash): not to use
