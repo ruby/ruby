@@ -125,7 +125,7 @@ class Tracer
       line,
       klass || '',
       EVENT_SYMBOL[event],
-      get_line(file, line))
+      line == 0 ? "?\n" : get_line(file, line))
     # Thread.critical = saved_crit
   end
 

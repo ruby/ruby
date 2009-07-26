@@ -1,3 +1,8 @@
+Tue Jul 21 20:41:20 2009  Keiju Ishitsuka  <keiju@emperor2.pendome>
+
+	* lib/tracer.rb: no show lines unkonwn line number. [ruby-core:22096],
+          no trace display  c-call and c-return as default.
+
 Tue Jul 21 16:07:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tracer.rb: toplevel caller exists now.  [ruby-core:24454]
