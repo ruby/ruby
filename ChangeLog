@@ -1,3 +1,8 @@
+Sun Jul 26 19:17:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_eof): go to the next file if called after ARGF.close
+	  or ARGF.skip.  [ruby-core:24561]
+
 Sun Jul 26 18:30:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_call_method): __send__ can call protected

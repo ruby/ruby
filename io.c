@@ -8502,6 +8502,7 @@ argf_eof(VALUE argf)
 {
     if (RTEST(ARGF.current_file)) {
 	if (ARGF.init_p == 0) return Qtrue;
+	next_argv();
 	ARGF_FORWARD(0, 0);
 	if (rb_io_eof(ARGF.current_file)) {
 	    return Qtrue;
