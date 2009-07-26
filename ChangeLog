@@ -181,20 +181,19 @@ Tue Jul 21 21:37:19 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb/cmd/help.rb: fixed irb's "help" command. [ruby-core:22310].
 
-
 	* lib/tracer.rb: no show lines unkonwn line number. [ruby-core:22096],
           no trace display  c-call and c-return as default.
 
 Tue Jul 21 16:24:41 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (vtdate2rbtime): VT_DATE variant object 
-	  is converted to Time object now. 
+	* ext/win32ole/win32ole.c (vtdate2rbtime): VT_DATE variant object
+	  is converted to Time object now.
 
 	* test/win32ole/test_win32ole_variant.rb (test_s_new_with_nil,
 	  test_conversion_time2date, test_conversion_str2date,
 	  test_conversion_vt_date, test_set_value): ditto.
 
-	* ext/win32ole/win32ole.c (rbtime2vtdate): refactoring. 
+	* ext/win32ole/win32ole.c (rbtime2vtdate): refactoring.
 
 Tue Jul 21 16:07:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -304,7 +303,7 @@ Sat Jul 18 09:07:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Jul 18 07:56:00 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: fail to create a widget object for an unknown
-	  wiget path. 
+	  wiget path.
 
 Sat Jul 18 07:06:31 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -372,7 +371,7 @@ Fri Jul 17 13:35:47 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/init.c (rsock_getfamily): return AF_UNSPEC if getsockname
 	  is failed.  [ruby-core:24383]
- 
+
 Fri Jul 17 01:22:57 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (recursive_join): raise ArgumentError for joining
@@ -396,7 +395,7 @@ Thu Jul 16 20:58:18 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	* test/win32ole/test_win32ole.rb (test_s_codepage_changed,
 	  test_s_locale_set, test_s_locale_change): skip test if Japanese
 	  locale is not installed. [ruby-core:23806]
-	
+
 	* test/win32ole/test_win32ole_variant.rb (test_conversion_str2cy):
 	  dito.
 
@@ -510,7 +509,7 @@ Wed Jul 15 17:33:52 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	  more rubygems.rb.
 	  Resolves many failures in test/rubygems/*.
 
-	* gem_prelude.rb (Gem.load_full_rubygems_library): supports case 
+	* gem_prelude.rb (Gem.load_full_rubygems_library): supports case
 	  the rubygems to load is not in $(rubylibprefix).
 	  (Gem.path_to_full_rubygems_library): new method for the changes in
 	  purelib.rb and Gem.load_full_rubygems_library.
@@ -631,7 +630,7 @@ Mon Jul 13 08:01:00 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/*: Multi-TkInterpreter (multi-tk.rb) works on Ruby 1.8 & 1.9.
 	     ( [KNOWN BUG] On Ruby 1.8, join to a long term Thread on Tk
-	        callbacks may freeze. On Ruby 1.9, cannot create a second 
+	        callbacks may freeze. On Ruby 1.9, cannot create a second
 	        master interpreter (creating slaves are OK); supported master
 	        interpreter is the default master interpreter only. )
 
@@ -1113,7 +1112,7 @@ Mon Jun 29 17:14:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Jun 28 23:10:55 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* gem_prelude.c (Gem.default_dir): follows the change on 
+	* gem_prelude.c (Gem.default_dir): follows the change on
 	  lib/rubygems/default.rb in r23879
 
 Sun Jun 28 23:32:11 2009  Tadayoshi Funaba  <tadf@dotrb.org>
@@ -1146,7 +1145,7 @@ Sun Jun 28 19:48:29 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 Sun Jun 28 19:03:46 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* tool/instruby.rb (:gem): registers the bundled version
-	  of minitest as a gem as rdoc or rake. 
+	  of minitest as a gem as rdoc or rake.
 	  c.f. [ruby-dev:38692].
 
 Sun Jun 28 19:02:07 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
@@ -1313,7 +1312,7 @@ Tue Jun 23 01:17:38 2009  Tanaka Akira  <akr@fsij.org>
 	* ruby.c (process_options): don't specify .so for encdb here.
 	  "." is replaced by "_" in load_encoding.
 
-	* encoding.c (load_encoding): add .so here. 
+	* encoding.c (load_encoding): add .so here.
 
 Mon Jun 22 23:24:22 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -1391,7 +1390,7 @@ Sat Jun 20 21:11:43 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 	* numeric.c: defined '%'.
 
 	* rational.c (nurat_idiv,nurat_mod,nurat_divmod,nurat_rem): removed.
-	
+
 Sat Jun 20 20:28:44 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: edited rdoc.
@@ -1409,7 +1408,7 @@ Sat Jun 20 08:56:47 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 Sat Jun 20 07:17:52 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/monitor.rb (MonitorMixin::extend_object): should use
-	  #__send__ instead of #send to avoid possible name conflict.  
+	  #__send__ instead of #send to avoid possible name conflict.
 	  [ruby-core:23907]
 
 Sat Jun 20 06:56:31 2009  Tadayoshi Funaba  <tadf@dotrb.org>
@@ -1657,7 +1656,7 @@ Tue Jun 16 20:07:09 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Tue Jun 16 16:09:59 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
-	* parse.y (parser_read_escape, parser_tokadd_escape): 
+	* parse.y (parser_read_escape, parser_tokadd_escape):
 	  replace scan_oct as ruby_scan_oct.
 
 Tue Jun 16 06:40:31 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1694,7 +1693,7 @@ Mon Jun 15 11:04:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Jun 14 14:57:57 2009  Koichi Sasada  <ko1@atdot.net>
 
-	* thread.c, vm_eval.c: add Thread.backtrace. 
+	* thread.c, vm_eval.c: add Thread.backtrace.
 
 	* test/ruby/test_thread.rb: add a test.
 
@@ -2131,7 +2130,7 @@ Sat May 23 18:53:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri May 22 23:22:53 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* missing/vsnprintf.c (errno): [BUG] fixes a compilation 
+	* missing/vsnprintf.c (errno): [BUG] fixes a compilation
 	  error on SIZEOF_LONG > SIZEOF_INT.
 	  (BSD_vfprintf): ditto.
 
@@ -2306,7 +2305,7 @@ Tue May 19 13:54:15 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue May 19 07:52:05 2009  Tanaka Akira  <akr@fsij.org>
 
 	* test/test_time.rb: make tests timezone independent.
-	  reported by zunda.  [ruby-dev:38492] 
+	  reported by zunda.  [ruby-dev:38492]
 
 Mon May 18 21:40:11 2009  Tanaka Akira  <akr@fsij.org>
 
@@ -14548,7 +14547,6 @@ Fri Sep 12 21:55:43 2008  Tanaka Akira  <akr@fsij.org>
 	  (rb_econv_add_converter): extracted from rb_econv_decorate_at.
 	  (rb_econv_decorate_at): use rb_econv_add_converter.
 
-
 Fri Sep 12 21:22:09 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_t): new field: started.
@@ -20859,7 +20857,6 @@ Tue Jul  1 21:32:43 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	  ENV["rake"].
 
 	* test/rubygems/test_gem_uninstaller.rb: ditto.
-
 
 Tue Jul  1 21:13:17 2008  Koichi Sasada  <ko1@atdot.net>
 
@@ -27207,7 +27204,6 @@ Tue Feb 12 15:27:19 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	  mkconfig.rb, sample/test.rb, template/vm.inc.tmpl,
 	  test/ruby/test_stringchar.rb: fixes around String#gsub.
 
-
 Tue Feb 12 15:11:47 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/lib/json/pure/generator.rb,
@@ -30357,7 +30353,6 @@ Wed Dec 26 22:47:31 2007  NARUSE, Yui <naruse@ruby-lang.org>
 
 	* lib/resolv.rb (Resolv::IPv6#to_name): ip6.int is obsoleted by
 	  ip6.arpa.
-
 
 Wed Dec 26 21:27:02 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
@@ -52944,25 +52939,21 @@ Tue Apr  5 15:15:26 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/image.rb: supproted new Dublin Core API.
 
-
 	* lib/rss/trackback.rb (RSS::TrackBackUtils.new_with_value_if_need):
 	  moved to RSS::Utils.
 
 	* lib/rss/utils.rb (RSS::Utils.new_with_value_if_need):
 	  moved from RSS::TrackBackUtils.
 
-
 	* lib/rss/maker/image.rb: fixed invalid argument of
 	  add_need_initialize_variable bug.
 
 	* lib/rss/maker/trackback.rb: ditto.
 
-
 	* lib/rss/rss.rb (Hash#merge): added for ruby 1.6.
 
 	* lib/rss/rss.rb (RSS::BaseModel.date_writer): changed to accept nil
 	  for date value.
-
 
 	* test/test_dublincore.rb: added tests for plural accessor and
 	  multiple Dublin Core items.
@@ -57857,7 +57848,6 @@ Tue Sep 14 16:59:37 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/safe-tk.rb: new sample script
 
-
 Mon Sep 13 21:33:40 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509name.c (ossl_x509name_to_s): add optional
@@ -58700,7 +58690,6 @@ Thu Jul 15 10:15:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tkextlib/: add Iwidget and TkTable extension support
 
 	* ext/tk/sample/tkextlib/: add samples of Iwidget and TkTable
-
 
 Wed Jul 14 23:49:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
