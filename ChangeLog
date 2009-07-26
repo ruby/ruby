@@ -1,3 +1,18 @@
+Sat Jul 18 00:23:47 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ext/readline/readline.c (Init_readline): rl_catch_signals does
+	  not exist on some platform like Mac OS X 10.5.
+
+	* ext/readline/extconf.rb: checks existance of rl_catch_signals.
+
+Fri Jul 17 22:29:21 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/readline/readline.c (Init_readline): use rl_catch_sigwinch only
+	  when existing.
+
+	* ext/readline/extconf.rb: check existance of rl_catch_sigwinch, and
+	  workaround for native Win32 readline port.
+
 Fri Nov 28 17:52:26 2008  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/foerwardable.rb: should be usable def_single_delegator for
