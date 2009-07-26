@@ -113,6 +113,8 @@ module IRB
 #    @CONF[:LC_MESSAGES] = "en"
     @CONF[:LC_MESSAGES] = Locale.new
     
+    @CONF[:AT_EXIT] = []
+    
     @CONF[:DEBUG_LEVEL] = 1
   end
 
