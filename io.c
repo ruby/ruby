@@ -6119,7 +6119,7 @@ Init_IO()
     rb_define_singleton_method(argf, "lineno=",  argf_set_lineno, 1);
 
     rb_global_variable(&current_file);
-    rb_define_readonly_variable("$FILENAME", &filename);
+    rb_define_virtual_variable("$FILENAME", argf_filename, 0);
     filename = rb_str_new2("-");
 
     rb_define_virtual_variable("$-i", opt_i_get, opt_i_set);

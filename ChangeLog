@@ -1,3 +1,8 @@
+Sun Jul 26 18:42:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (Init_IO): $FILENAME should correspond to the first elemen
+	  of ARGV initially.
+
 Fri Jul 24 20:33:49 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/time.rb, test/test_time.rb: Move test code to a separate
