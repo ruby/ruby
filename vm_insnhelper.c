@@ -547,46 +547,45 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		}
 	      }
 	      case VM_METHOD_TYPE_OPTIMIZED:{
-		  switch (me->body.optimize_type) {
-		    case OPTIMIZED_METHOD_TYPE_SEND: {
-			rb_control_frame_t *reg_cfp = cfp;
-			rb_num_t i = num - 1;
-			VALUE sym;
+		switch (me->body.optimize_type) {
+		  case OPTIMIZED_METHOD_TYPE_SEND: {
+		    rb_control_frame_t *reg_cfp = cfp;
+		    rb_num_t i = num - 1;
+		    VALUE sym;
 
-			if (num == 0) {
-			    rb_raise(rb_eArgError, "no method name given");
-			}
-
-			sym = TOPN(i);
-			id = SYMBOL_P(sym) ? SYM2ID(sym) : rb_to_id(sym);
-			/* shift arguments */
-			if (i > 0) {
-			    MEMMOVE(&TOPN(i), &TOPN(i-1), VALUE, i);
-			}
-			me = rb_method_entry(CLASS_OF(recv), id);
-			num -= 1;
-			DEC_SP(1);
-			flag |= VM_CALL_FCALL_BIT;
-
-			goto start_method_dispatch;
+		    if (num == 0) {
+			rb_raise(rb_eArgError, "no method name given");
 		    }
-		      break;
-		    case OPTIMIZED_METHOD_TYPE_CALL: {
-			rb_proc_t *proc;
-			int argc = num;
-			VALUE *argv = ALLOCA_N(VALUE, num);
-			GetProcPtr(recv, proc);
-			MEMCPY(argv, cfp->sp - num, VALUE, num);
-			cfp->sp -= num + 1;
 
-			val = rb_vm_invoke_proc(th, proc, proc->block.self, argc, argv, blockptr);
+		    sym = TOPN(i);
+		    id = SYMBOL_P(sym) ? SYM2ID(sym) : rb_to_id(sym);
+		    /* shift arguments */
+		    if (i > 0) {
+			MEMMOVE(&TOPN(i), &TOPN(i-1), VALUE, i);
 		    }
-		      break;
-		    default:
-		      rb_bug("eval_invoke_method: unsupported optimized method type (%d)",
-			     me->body.optimize_type);
+		    me = rb_method_entry(CLASS_OF(recv), id);
+		    num -= 1;
+		    DEC_SP(1);
+		    flag |= VM_CALL_FCALL_BIT;
+
+		    goto start_method_dispatch;
 		  }
-		  break;
+		  case OPTIMIZED_METHOD_TYPE_CALL: {
+		    rb_proc_t *proc;
+		    int argc = num;
+		    VALUE *argv = ALLOCA_N(VALUE, num);
+		    GetProcPtr(recv, proc);
+		    MEMCPY(argv, cfp->sp - num, VALUE, num);
+		    cfp->sp -= num + 1;
+
+		    val = rb_vm_invoke_proc(th, proc, proc->block.self, argc, argv, blockptr);
+		    break;
+		  }
+		  default:
+		    rb_bug("eval_invoke_method: unsupported optimized method type (%d)",
+			   me->body.optimize_type);
+		}
+		break;
 	      }
 	      default:{
 		rb_bug("eval_invoke_method: unsupported method type (%d)", me->type);
