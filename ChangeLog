@@ -22,7 +22,6 @@ Tue Jul 21 19:34:56 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* io.c (rb_io_flush): fsync() after buffer is flushed on win32.
 	  backported from trunk.  [ruby-core:20043]
 
-
 Sun Jul 19 14:03:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (DEPRECATED): backported from trunk.
@@ -42,7 +41,7 @@ Sat Jul 18 12:05:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Jul 18 07:56:00 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: fail to create a widget object for an unknown
-	  wiget path. 
+	  wiget path.
 
 Sat Jul 18 07:06:31 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -78,7 +77,7 @@ Mon Jul 13 08:01:00 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/*: Multi-TkInterpreter (multi-tk.rb) works on Ruby 1.8 & 1.9.
 	     ( [KNOWN BUG] On Ruby 1.8, join to a long term Thread on Tk
-	        callbacks may freeze. On Ruby 1.9, cannot create a second 
+	        callbacks may freeze. On Ruby 1.9, cannot create a second
 	        master interpreter (creating slaves are OK); supported master
 	        interpreter is the default master interpreter only. )
 
@@ -219,7 +218,7 @@ Mon Jun  1 09:02:48 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* ext/bigdecimal/bigdecimal.c (VpAlloc): avoid ALLOCA_N() to avoid
 	  segmentation fault caused by (insanely) long decimal values.
 	  backported from 1.9.
- 
+
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_dump, BigDecimal_to_i,
 	  BigDecimal_to_f, BigDecimal_to_s, BigDecimal_split,
 	  BigDecimal_inspect): ditto.
@@ -1377,8 +1376,8 @@ Tue Nov 25 16:09:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Nov 25 03:37:42 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tkextlib/blt/tabset.rb, 
-	  ext/tk/lib/tkextlib/blt/tabnotebook.rb: 
+	* ext/tk/lib/tkextlib/blt/tabset.rb,
+	  ext/tk/lib/tkextlib/blt/tabnotebook.rb:
 	  fix many bugs. Now, those work properly.
 
 Mon Nov 24 23:53:44 2008  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
@@ -1395,7 +1394,7 @@ Mon Nov 24 23:47:22 2008  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tkextlib/blt.rb, ext/tk/lib/tkextlib/blt/vector.rb: 
+	* ext/tk/lib/tkextlib/blt.rb, ext/tk/lib/tkextlib/blt/vector.rb:
 	  fix NameError bug.
 
 Wed Nov 19 17:52:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1419,7 +1418,7 @@ Wed Nov 19 00:58:55 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 Tue Nov 18 20:30:08 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/net/ftp.rb (Net::FTP#open_socket): SOCKSsocket is obsolete.
-	  a patch from Alan Johnson <alan.wayne.johnson at gmail.com> in 
+	  a patch from Alan Johnson <alan.wayne.johnson at gmail.com> in
 	  [ruby-core:19982].
 
 Tue Nov 18 16:18:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
