@@ -1998,6 +1998,7 @@ io_read(int argc, VALUE *argv, VALUE io)
         return Qnil;
     }
     rb_str_resize(str, n);
+    OBJ_TAINT(str);
 
     return str;
 }

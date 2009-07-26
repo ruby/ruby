@@ -1368,4 +1368,10 @@ class TestIO < Test::Unit::TestCase
       }
     }
   end
+
+  def test_tainted
+    t = make_tempfile
+    assert(File.read(t.path, 4).tainted?, '[ruby-dev:38826]')
+    assert(File.open(t.path) {|f| f.read(4)}.tainted?, '[ruby-dev:38826]')
+  end
 end
