@@ -27,8 +27,14 @@ extern "C" {
 
 // #include <stdarg.h> conflict with varargs.h?
 #if !defined(WSAAPI)
+#if defined(__cplusplus) && defined(_MSC_VER)
+extern "C++" {			/* template without extern "C++" */
+#endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#if defined(__cplusplus) && defined(_MSC_VER)
+}
+#endif
 #endif
 
 #define NT 1			/* deprecated */
