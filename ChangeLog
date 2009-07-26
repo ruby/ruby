@@ -1,3 +1,7 @@
+Tue Jul 21 16:07:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tracer.rb: toplevel caller exists now.  [ruby-core:24454]
+
 Mon Jul 20 12:51:39 2009  wanabe  <s.wanabe@gmail.com>
 
 	* lib/matrix.rb (Matrix#rank): revert a part of r20859 to avoid
