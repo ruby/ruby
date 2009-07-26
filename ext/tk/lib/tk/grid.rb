@@ -104,14 +104,12 @@ module TkGrid
     tk_call_without_enc("grid", 'columnconfigure', 
                         master, index, *hash_kv(args))
   end
-  alias column columnconfigure
 
   def rowconfigure(master, index, args)
     # master = master.epath if master.kind_of?(TkObject)
     master = _epath(master)
     tk_call_without_enc("grid", 'rowconfigure', master, index, *hash_kv(args))
   end
-  alias row rowconfigure
 
   def columnconfiginfo(master, index, slot=nil)
     # master = master.epath if master.kind_of?(TkObject)
@@ -168,6 +166,22 @@ module TkGrid
         end
       end
       info
+    end
+  end
+
+  def column(master, index, keys=nil)
+    if keys.kind_of?(Hash)
+      columnconfigure(master, index, keys)
+    else
+      columnconfiginfo(master, index, keys)
+    end
+  end
+
+  def row(master, index, keys=nil)
+    if keys.kind_of?(Hash)
+      rowconfigure(master, index, keys)
+    else
+      rowconfiginfo(master, index, keys)
     end
   end
 
@@ -228,7 +242,7 @@ module TkGrid
     list(tk_call_without_enc('grid', 'size', master))
   end
 
-  def slaves(master, args)
+  def slaves(master, keys=nil)
     # master = master.epath if master.kind_of?(TkObject)
     master = _epath(master)
     list(tk_call_without_enc('grid', 'slaves', master, *hash_kv(args)))
