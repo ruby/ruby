@@ -260,6 +260,18 @@ class TestArgf < Test::Unit::TestCase
         assert_equal(x, a.shift)
       end
     end
+
+    t1 = Tempfile.new("foo")
+    t1.binmode
+    t1.puts "foo"
+    t1.close
+    t2 = Tempfile.new("bar")
+    t2.binmode
+    t2.puts "bar"
+    t2.close
+    ruby('-e', 'STDERR.reopen(STDOUT); ARGF.gets; ARGF.skip; p ARGF.eof?', t1.path, t2.path) do |f|
+      assert_equal(%w(false), f.read.split(/\n/))
+    end
   end
 
   def test_read
