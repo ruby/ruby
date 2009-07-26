@@ -771,7 +771,7 @@ class Matrix
     end
     rank = 0
     k = 0
-    loop do
+    begin
       if (akk = a[k][k]) == 0
         i = k
         exists = true
@@ -813,8 +813,7 @@ class Matrix
         end
       end
       rank += 1
-      break unless (k += 1) <= a_column_size - 1
-    end
+    end while (k += 1) <= a_column_size - 1
     return rank
   end
 
