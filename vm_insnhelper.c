@@ -496,6 +496,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	       ID id, const rb_method_entry_t *me, VALUE recv)
 {
     VALUE val;
+    int opt_send = 0;
 
   start_method_dispatch:
 
@@ -567,6 +568,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		    num -= 1;
 		    DEC_SP(1);
 		    flag |= VM_CALL_FCALL_BIT;
+		    opt_send = 1;
 
 		    goto start_method_dispatch;
 		  }
@@ -605,7 +607,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		}
 		val = vm_method_missing(th, id, recv, num, blockptr, stat);
 	    }
-	    else if ((me->flag & NOEX_MASK) & NOEX_PROTECTED) {
+	    else if (!opt_send && (me->flag & NOEX_MASK) & NOEX_PROTECTED) {
 		VALUE defined_class = me->klass;
 
 		if (TYPE(defined_class) == T_ICLASS) {

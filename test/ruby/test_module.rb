@@ -104,12 +104,15 @@ class TestModule < Test::Unit::TestCase
     private_class_method :cm1, "cm3"
 
     def aClass
+      :aClass
     end
 
     def aClass1
+      :aClass1
     end
 
     def aClass2
+      :aClass2
     end
 
     private :aClass1
@@ -118,15 +121,18 @@ class TestModule < Test::Unit::TestCase
 
   class BClass < AClass
     def bClass1
+      :bClass1
     end
 
     private
 
     def bClass2
+      :bClass2
     end
 
     protected
     def bClass3
+      :bClass3
     end
   end
 
@@ -489,7 +495,7 @@ class TestModule < Test::Unit::TestCase
 
     c = Class.new
     assert_raise(NameError) do
-      c.instance_eval { attr_reader :"$" }
+      c.instance_eval { attr_reader :"." }
     end
   end
 
@@ -720,5 +726,19 @@ class TestModule < Test::Unit::TestCase
         c2.instance_eval { include(m) }
       }.call
     end
+  end
+
+  def test_send
+    a = AClass.new
+    assert_equal(:aClass, a.__send__(:aClass))
+    assert_equal(:aClass1, a.__send__(:aClass1))
+    assert_equal(:aClass2, a.__send__(:aClass2))
+    b = BClass.new
+    assert_equal(:aClass, b.__send__(:aClass))
+    assert_equal(:aClass1, b.__send__(:aClass1))
+    assert_equal(:aClass2, b.__send__(:aClass2))
+    assert_equal(:bClass1, b.__send__(:bClass1))
+    assert_equal(:bClass2, b.__send__(:bClass2))
+    assert_equal(:bClass3, b.__send__(:bClass3))
   end
 end
