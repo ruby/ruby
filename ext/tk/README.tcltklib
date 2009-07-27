@@ -113,6 +113,7 @@ options may be useful.
 
   --enable-tcl-thread/--disable-tcl-thread
   --with-tclConfig-file=<path of 'tclConfig.sh'>
+  --with-tkConfig-file=<path of 'tkConfig.sh'>
 
 It is not need that 'tclConfig.sh' is a normal Tcl/Tk's tclConfig.sh. 
 But the file is expected to include the line "TCL_THREADS=0" or "...=1".

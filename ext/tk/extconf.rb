@@ -1,6 +1,6 @@
 ##############################################################
 # extconf.rb for tcltklib
-# release date: 2009-07-23
+# release date: 2009-07-28
 ##############################################################
 require 'mkmf'
 
@@ -369,22 +369,8 @@ def get_libpath(lib_flag, lib_spec)
   libpath = lib_spec.gsub(/(#{lib_flag}|-L)/, "").strip
 end
 
-def search_tclConfig(*paths) # list of lib-dir or [tcl-libdir, tk-libdir]
-  TkLib_Config["tclConfig_paths"] = []
+def get_tclConfig_dirs
   config_dir = []
-
-  paths.compact!
-
-  fixed_tclConfig = ! paths.empty?
-
-  paths.each{|path|
-    if path.kind_of?(Array)
-      config_dir << path
-    else
-      dirs = Dir.glob(path)
-      config_dir.concat(dirs.zip(dirs))
-    end
-  }
 
   if is_win32?
     if TkLib_Config["ActiveTcl"]
@@ -477,20 +463,43 @@ def search_tclConfig(*paths) # list of lib-dir or [tcl-libdir, tk-libdir]
       "/Network/Library/Frameworks", "/System/Library/Frameworks"
     ].each{|framework|
       config_dir << [File.expand_path(File.join(framework, 'Tcl.framework')),
-                     File.expand_path(File.join(framework, 'Tk.framework'))]
+        File.expand_path(File.join(framework, 'Tk.framework'))]
+    }
+  end
+
+  config_dir
+end
+
+def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
+  TkLib_Config["tclConfig_paths"] = []
+
+  paths.compact!
+  if paths.empty?
+    config_dir = get_tclConfig_dirs
+  else
+    # fixed tclConfig
+    config_dir = []
+    paths.each{|path|
+      if path.kind_of?(Array)
+        config_dir << path
+      else
+        dirs = Dir.glob(path)
+        config_dir.concat(dirs.zip(dirs))
+      end
     }
   end
 
   tclver, tkver = TkLib_Config['tcltkversion']
   conf = nil
 
-  config_dir.map{|dir|
+  (config_dir | config_dir).map{|dir|
     if dir.kind_of? Array
       [dir[0].strip.chomp('/'), dir[1].strip.chomp('/')]
     else
       dir.strip.chomp('/')
     end
   }.each{|dir|
+    print(".") # progress
     # print("check #{dir} ==>");
     if dir.kind_of? Array
       tcldir, tkdir = dir
@@ -498,9 +507,21 @@ def search_tclConfig(*paths) # list of lib-dir or [tcl-libdir, tk-libdir]
       tcldir = tkdir = dir
     end
 
-    ['Config-shared.sh','config-shared.sh','Config.sh','config.sh'].each{|f|
-      tclpath = File.join(tcldir, 'tcl' << f)
-      tkpath  = File.join(tkdir,  'tk'  << f)
+    tails = ['Config-shared.sh', 'config-shared.sh', 'Config.sh', 'config.sh']
+
+    if File.file?(tcldir)
+      tclcfg_files = [tcldir] * tails.length
+    else
+      tclcfg_files = tails.map{|f| File.join(tcldir, 'tcl' << f)}
+    end
+
+    if File.file?(tkdir)
+      tkcfg_files = [tkdir] * tails.length
+    else
+      tkcfg_files = tails.map{|f| File.join(tcldir, 'tk' << f)}
+    end
+
+    tclcfg_files.zip(tkcfg_files).uniq.each{|tclpath, tkpath|
       next if !File.exist?(tclpath) || !File.exist?(tkpath)
 
       # parse tclConfig.sh/tkConfig.sh
@@ -520,8 +541,50 @@ def search_tclConfig(*paths) # list of lib-dir or [tcl-libdir, tk-libdir]
         next
       end
 
+      # check Tcl library
+      if TkLib_Config["tcltk-stubs"]
+        stub = "stub"
+        tclfunc = "Tcl_InitStubs"
+        tkfunc  = "Tk_InitStubs"
+      else
+        stub = ""
+        tclfunc = "Tcl_FindExecutable"
+        tkfunc  = "Tk_Init"
+      end
+      dir = File.dirname(tclpath)
+      libpath = $LIBPATH
+      tcllibs = nil
+      begin
+        tcllib_ok = Dir.glob(File.join(dir, "*tcl#{stub}#{tclconf['TCL_MAJOR_VERSION']}{.,}#{tclconf['TCL_MINOR_VERSION']}*.*")).find{|file|
+          if file =~ /^.*(tcl#{stub}#{tclconf['TCL_MAJOR_VERSION']}(\.|)#{tclconf['TCL_MINOR_VERSION']}.*)\.[^.]*$/
+            #puts "check #{file} #{$1} #{tclfunc} #{dir}"
+            #find_library($1, tclfunc, dir)
+            tcllibs = append_library($libs, $1)
+            $LIBPATH = libpath | [dir]
+            try_func(tclfunc, tcllibs)
+          end
+        }
+        tklib_ok = Dir.glob(File.join(dir, "*tk#{stub}#{tkconf['TK_MAJOR_VERSION']}{.,}#{tkconf['TK_MINOR_VERSION']}*.*")).find{|file|
+          if file =~ /^.*(tk#{stub}#{tkconf['TK_MAJOR_VERSION']}(\.|)#{tkconf['TK_MINOR_VERSION']}.*)\.[^.]*$/
+            #puts "check #{file} #{$1} #{tkfunc} #{dir}"
+            # find_library($1, tkfunc, dir)
+            tklibs = append_library(tcllibs, $1)
+            $LIBPATH = libpath | [dir]
+            try_func(tkfunc, tklibs)
+          end
+        }
+      ensure
+        $LIBPATH = libpath
+      end
+
+      unless tcllib_ok && tklib_ok
+        puts "WARNIG: find #{tclpath.inspect}, but cannot find valid Tcl/Tk libraries on the same directory. So, ignore it."
+        TkLib_Config["tcltk-NG-path"] << File.dirname(tclpath)
+        next
+      end
+
       #return [tclpath, tkpath]
-      # print(" #{[tclpath, tkpath]}");
+      # print(" #{[tclpath, tkpath].inspect}");
       TkLib_Config["tclConfig_paths"] << [tclpath, tkpath]
     }
 
@@ -537,11 +600,17 @@ def search_tclConfig(*paths) # list of lib-dir or [tcl-libdir, tk-libdir]
   end
 end
 
-def get_tclConfig(tclConfig_file, tclConfig_dir, tkConfig_dir)
-  use_tclConfig = (tclConfig_file != false) && 
+def get_tclConfig(tclConfig_file, tkConfig_file, tclConfig_dir, tkConfig_dir)
+  use_tclConfig = (tclConfig_file != false) && (tkConfig_file != false) && 
     (tclConfig_dir != false) && (tkConfig_dir != false)
 
+  unless use_tclConfig
+    puts("Don't use [tclConfig.sh, tkConfig.sh]")
+    return [nil, nil]
+  end
+
   tclConfig_file = nil unless tclConfig_file.kind_of? String
+  tkConfig_file = nil unless tkConfig_file.kind_of? String
   tclConfig_dir = nil unless tclConfig_dir.kind_of? String
   tkConfig_dir = nil unless tkConfig_dir.kind_of? String
 
@@ -552,34 +621,46 @@ def get_tclConfig(tclConfig_file, tclConfig_dir, tkConfig_dir)
       tclConfig_dir = tkConfig_dir
     end
   end
+  unless tkConfig_dir
+    if tkConfig_file
+      tkConfig_dir = File.dirname(tkConfig_file)
+    elsif tclConfig_dir
+      tkConfig_dir = tclConfig_dir
+    end
+  end
   tkConfig_dir ||= tclConfig_dir
 
   TkLib_Config["tclConfig-file"] = tclConfig_file
+  TkLib_Config["tkConfig-file"] = tkConfig_file
   TkLib_Config["tclConfig-dir"] = tclConfig_dir
   TkLib_Config["tkConfig-dir"] = tkConfig_dir
 
-  unless use_tclConfig
-    puts("Don't use [tclConfig.sh, tkConfig.sh]")
+  print("Search tclConfig.sh and tkConfig.sh.")
+  if tclConfig_dir
+    tclConfig, tkConfig = 
+      search_tclConfig([ ((tclConfig_file)? tclConfig_file: tclConfig_dir), 
+                         ((tkConfig_file)?  tkConfig_file:  tkConfig_dir) ])
   else
-    puts("Search tclConfig.sh and tkConfig.sh.")
-    if tclConfig_dir
-      tclConfig, tkConfig = search_tclConfig([tclConfig_dir, tkConfig_dir])
-    else
-      tclConfig, tkConfig = search_tclConfig()
-    end
-    # TclConfig_Info = TkLib_Config["tclConfig_info"]
-    # TkConfig_Info  = TkLib_Config["tkConfig_info"]
+    tclConfig, tkConfig = search_tclConfig()
+  end
+  print("\n")
+  # TclConfig_Info = TkLib_Config["tclConfig_info"]
+  # TkConfig_Info  = TkLib_Config["tkConfig_info"]
 
-    if tclConfig && tkConfig
-      puts("Use [tclConfig.sh,tkConfig.sh] == ['#{tclConfig}','#{tkConfig}']")
-      $LIBPATH |= [File.dirname(tclConfig)]
-      $LIBPATH |= [File.dirname(tkConfig)]
-      #TkLib_Config["tclConfig_paths"].each{|tclcfg, tkcfg|
-      #  $LIBPATH |= [File.dirname(tclcfg)] | [File.dirname(tkcfg)]
-      #}
-    else
-      puts("Fail to find [tclConfig.sh, tkConfig.sh]")
-    end
+  if tclConfig && tkConfig
+    dirs = TkLib_Config["tclConfig_paths"].map{|tclpath, tkpath|
+      File.dirname(tclpath)
+    }
+    dirs |= dirs
+    puts("Valid tclConfig.sh and tkConfig.sh are found in #{dirs.inspect}")
+    puts("Use [tclConfig.sh,tkConfig.sh] == ['#{tclConfig}','#{tkConfig}']")
+    $LIBPATH |= [File.dirname(tclConfig)]
+    $LIBPATH |= [File.dirname(tkConfig)]
+    #TkLib_Config["tclConfig_paths"].each{|tclcfg, tkcfg|
+    #  $LIBPATH |= [File.dirname(tclcfg)] | [File.dirname(tkcfg)]
+    #}
+  else
+    puts("Fail to find [tclConfig.sh, tkConfig.sh]")
   end
 
   [tclConfig, tkConfig]
@@ -646,8 +727,28 @@ def check_shlib_search_path(paths)
   end
 end
 
+def search_vers_on_path(vers, path, *heads)
+  files = Dir.glob(File.join(path, "*{#{heads.join(',')}}*.{#{CONFIG['LIBEXT']},#{CONFIG['DLEXT']}}"))
+  vers.find_all{|ver| files.find{|f| f =~ /(#{ver}|#{ver.delete('.')})/} }
+end
+
 def find_tcl(tcllib, stubs, version, *opt_paths)
-  puts "Search Tcl library"
+  print "Search Tcl library"
+
+  if stubs
+    func = "Tcl_InitStubs"
+    lib = "tclstub"
+  else
+    func = "Tcl_FindExecutable"
+    lib = "tcl"
+  end
+
+  if version && ! version.empty?
+    versions = [version]
+  else
+    versions = TkLib_Config['search_versions']
+  end
+
   default_paths = []
 
   default_paths.concat [
@@ -667,72 +768,63 @@ def find_tcl(tcllib, stubs, version, *opt_paths)
   end
 
   if (paths = opt_paths.compact).empty?
-    if TclConfig_Info['config_file_path']
+    unless TclConfig_Info['config_file_path']
+      paths = check_NG_path(default_paths)
+
+    else
       # use definisions on tclConfig.sh
       TclConfig_Info['TCL_LIB_SPEC'].sub(TclConfig_Info['TCL_LIB_FLAG'],"").strip.sub("-L","") =~ /("|'|)([^"']+)\1/
       $LIBPATH |= [$2] unless $2.empty?
 
-      unless stubs
+      if stubs
+        if TclConfig_Info['TCL_SUPPORTS_STUBS'] == '0' ||
+            TclConfig_Info['TCL_STUB_LIB_SPEC'].strip.empty?
+          print(".\n") # progress
+          puts "#{TclConfig_Info['config_file_path']} tells us that your Tcl/Tk library doesn't support stub."
+          return false
+        else
+          #*** Probably, TCL_LIBS is a subset of TK_LIBS. ***
+          unless is_win32? # ignore tclConfig on Windows
+            # $LDFLAGS << ' ' << TclConfig_Info['TCL_LIBS']
+            # $DLDFLAGS << ' ' << TclConfig_Info['TCL_LIBS']
+            $LDFLAGS << ' ' << TclConfig_Info['TCL_STUB_LIB_SPEC']
+          end
+        end
+      else
         #*** Probably, TCL_LIBS is a subset of TK_LIBS. ***
         unless is_win32? # ignore tclConfig on Windows
           # $LDFLAGS << ' ' << TclConfig_Info['TCL_LIBS']
           # $DLDFLAGS << ' ' << TclConfig_Info['TCL_LIBS']
           $LDFLAGS << ' ' << TclConfig_Info['TCL_LIB_SPEC']
         end
-        return true
       end
 
-      if TclConfig_Info['TCL_SUPPORTS_STUBS'] == '0' ||
-          TclConfig_Info['TCL_STUB_LIB_SPEC'].strip.empty?
-        puts "#{TclConfig_Info['config_file_path']} tells us that your Tcl/Tk library doesn't support stub."
-        return false
-      else
-        #*** Probably, TCL_LIBS is a subset of TK_LIBS. ***
-        unless is_win32? # ignore tclConfig on Windows
-          # $LDFLAGS << ' ' << TclConfig_Info['TCL_LIBS']
-          # $DLDFLAGS << ' ' << TclConfig_Info['TCL_LIBS']
-          $LDFLAGS << ' ' << TclConfig_Info['TCL_STUB_LIB_SPEC']
-        end
-        return true
-      end
+      paths = [File.dirname(TclConfig_Info['config_file_path'])]
+      versions = [TclConfig_Info['TCL_VERSION']]
     end
-
-    paths = check_NG_path(default_paths)
   end
 
-  if stubs
-    func = "Tcl_InitStubs"
-    lib = "tclstub"
-  else
-    func = "Tcl_FindExecutable"
-    lib = "tcl"
-  end
+  ret = paths.map{|path|
+    if tcllib
+      print(".")
+      [path, find_library(tcllib, func, path)]
+    else
+      st = search_vers_on_path(versions, path, lib, 'tcl').find{|ver|
+        (print(".");find_library("#{lib}#{ver}", func, path)) or
+          (print(".");find_library("#{lib}#{ver.delete('.')}", func, path)) or
+          (print(".");find_library("#{lib}#{ver}g", func, path)) or
+          (print(".");find_library("#{lib}#{ver.delete('.')}g", func, path)) or
+          (print(".");find_library("tcl#{ver}", func, path)) or
+          (print(".");find_library("tcl#{ver.delete('.')}", func, path)) or
+          (print(".");find_library("tcl#{ver}g", func, path)) or
+          (print(".");find_library("tcl#{ver.delete('.')}g", func, path))
+      } || (!version && (print(".");find_library(lib, func, path)))
+      [path, st]
+    end
+  }
 
-  if version && ! version.empty?
-    versions = [version]
-  else
-    versions = TkLib_Config['search_versions']
-  end
-
-  if tcllib
-    st = find_library(tcllib, func, *paths)
-  else
-    st = versions.find { |ver|
-           find_library("#{lib}#{ver}", func, *paths) or
-           find_library("#{lib}#{ver.delete('.')}", func, *paths) or
-           find_library("#{lib}#{ver}g", func, *paths) or
-           find_library("#{lib}#{ver.delete('.')}g", func, *paths) or
-           find_library("tcl#{ver}", func, *paths) or
-           find_library("tcl#{ver.delete('.')}", func, *paths) or
-           find_library("tcl#{ver}g", func, *paths) or
-           find_library("tcl#{ver.delete('.')}g", func, *paths)
-         } || (!version && find_library(lib, func, *paths))
-  end
-
-  unless st
-    puts("Warning:: cannot find Tcl library. tcltklib will not be compiled (tcltklib is disabled on your Ruby == Ruby/Tk will not work). Please check configure options.")
-  end
-  st
+  print("\n") # progress
+  ret
 end
 
 def parse_TK_LIBS(tklibs)
@@ -751,7 +843,22 @@ def parse_TK_LIBS(tklibs)
 end
 
 def find_tk(tklib, stubs, version, *opt_paths)
-  puts "Search Tk library"
+  print "Search Tk library"
+
+  if stubs
+    func = "Tk_InitStubs"
+    lib = "tkstub"
+  else
+    func = "Tk_Init"
+    lib = "tk"
+  end
+
+  if version && ! version.empty?
+    versions = [version]
+  else
+    versions = TkLib_Config['search_versions']
+  end
+
   default_paths = []
 
   default_paths.concat [
@@ -771,71 +878,79 @@ def find_tk(tklib, stubs, version, *opt_paths)
   end
 
   if (paths = opt_paths.compact).empty?
-    if TkConfig_Info['config_file_path']
+    unless TkConfig_Info['config_file_path']
+      paths = check_NG_path(default_paths)
+
+    else
       # use definisions on tkConfig.sh
       TkConfig_Info['TK_LIB_SPEC'].sub(TkConfig_Info['TK_LIB_FLAG'],"").strip.sub("-L","") =~ /("|'|)([^"']+)\1/
       $LIBPATH |= [$2] unless $2.empty?
 
-      unless stubs
+      if stubs
+        if TkConfig_Info['TK_STUB_LIB_SPEC'].strip.empty?
+          print(".\n") # progress
+          puts "#{TkConfig_Info['config_file_path']} tells us that your Tcl/Tk library doesn't support stub."
+          return false
+        else
+          unless is_win32? # ignore tclConfig on Windows
+            # $LDFLAGS << ' ' << parse_TK_LIBS(TkConfig_Info['TK_LIBS'])
+            $LDFLAGS << ' ' << TkConfig_Info['TK_LIBS']
+            # $DLDFLAGS << ' ' << parse_TK_LIBS(TkConfig_Info['TK_LIBS'])
+            $LDFLAGS << ' ' << TkConfig_Info['TK_STUB_LIB_SPEC']
+          end
+        end
+      else
         unless is_win32? # ignore tclConfig on Windows
           # $LDFLAGS << ' ' << parse_TK_LIBS(TkConfig_Info['TK_LIBS'])
           $LDFLAGS << ' ' << TkConfig_Info['TK_LIBS'] unless is_win32?
           # $DLDFLAGS << ' ' << parse_TK_LIBS(TkConfig_Info['TK_LIBS'])
           $LDFLAGS << ' ' << TkConfig_Info['TK_LIB_SPEC'] unless is_win32?
         end
-        return true
       end
 
-      if TkConfig_Info['TK_STUB_LIB_SPEC'].strip.empty?
-        puts "#{TkConfig_Info['config_file_path']} tells us that your Tcl/Tk library doesn't support stub."
-        return false
-      else
-        unless is_win32? # ignore tclConfig on Windows
-          # $LDFLAGS << ' ' << parse_TK_LIBS(TkConfig_Info['TK_LIBS'])
-          $LDFLAGS << ' ' << TkConfig_Info['TK_LIBS']
-          # $DLDFLAGS << ' ' << parse_TK_LIBS(TkConfig_Info['TK_LIBS'])
-          $LDFLAGS << ' ' << TkConfig_Info['TK_STUB_LIB_SPEC']
-        end
-        return true
-      end
+      paths = [File.dirname(TkConfig_Info['config_file_path'])]
+      versions = [TkConfig_Info['TK_VERSION']]
     end
-
-    paths = check_NG_path(default_paths)
   end
 
-  if stubs
-    func = "Tk_InitStubs"
-    lib = "tkstub"
-  else
-    func = "Tk_Init"
-    lib = "tk"
+  ret = paths.map{|path|
+    if tklib
+      print(".")
+      [path, find_library(tklib, func, path)]
+    else
+      st = search_vers_on_path(versions, path, lib, 'tk').find{|ver|
+        (print(".");find_library("#{lib}#{ver}", func, path)) or
+          (print(".");find_library("#{lib}#{ver.delete('.')}", func, path)) or
+          (print(".");find_library("#{lib}#{ver}g", func, path)) or
+          (print(".");find_library("#{lib}#{ver.delete('.')}g", func, path)) or
+          (print(".");find_library("tk#{ver}", func, path)) or
+          (print(".");find_library("tk#{ver.delete('.')}", func, path)) or
+          (print(".");find_library("tk#{ver}g", func, path)) or
+          (print(".");find_library("tk#{ver.delete('.')}g", func, path))
+      } || (!version && (print(".");find_library(lib, func, path)))
+      [path, st]
+    end
+  }
+
+  print("\n") # progress
+  ret
+end
+
+def find_tcltk_library(tcllib, tklib, stubs, tclversion, tkversion, 
+                       tcl_opt_paths, tk_opt_paths)
+  ret = find_tcl(tcllib, stubs, tclversion, *tcl_opt_paths)
+  unless ret && ret.find{|path, val| val}
+    puts("Warning:: cannot find Tcl library. tcltklib will not be compiled (tcltklib is disabled on your Ruby == Ruby/Tk will not work). Please check configure options.")
+    return false
   end
 
-  if version && ! version.empty?
-    versions = [version]
-  else
-    versions = TkLib_Config['search_versions']
-  end
-
-  if tklib
-    st = find_library(tklib, func, *paths)
-  else
-    st = versions.find { |ver|
-           find_library("#{lib}#{ver}", func, *paths) or
-           find_library("#{lib}#{ver.delete('.')}", func, *paths) or
-           find_library("#{lib}#{ver}g", func, *paths) or
-           find_library("#{lib}#{ver.delete('.')}g", func, *paths) or
-           find_library("tk#{ver}", func, *paths) or
-           find_library("tk#{ver.delete('.')}", func, *paths) or
-           find_library("tk#{ver}g", func, *paths) or
-           find_library("tk#{ver.delete('.')}g", func, *paths)
-         } || (!version && find_library(lib, func, *paths))
-  end
-
-  unless st
+  ret = find_tk(tklib, stubs, tkversion, *tk_opt_paths)
+  unless ret && ret.find{|path, val| val}
     puts("Warning:: cannot find Tk library. tcltklib will not be compiled (tcltklib is disabled on your Ruby == Ruby/Tk will not work). Please check configure options.")
+    return false
   end
-  st
+
+  true
 end
 
 def find_tcltk_header(tclver, tkver)
@@ -943,20 +1058,25 @@ def search_X_libraries
     if TkConfig_Info['TK_XINCLUDES'] && TkConfig_Info['TK_XLIBSW'] &&
         !TkConfig_Info['TK_XINCLUDES'].strip.empty? &&
         !TkConfig_Info['TK_XLIBSW'].strip.empty?
-      use_X = true && with_config("X11", (! is_win32?))
+      #use_X = true && with_config("X11", ! is_win32?)
+      use_X = with_config("X11", true)
     else
-      use_X = false || with_config("X11", false)
+      #use_X = false || with_config("X11", false)
+      use_X = with_config("X11", false)
     end
   else
     # depend on configure options
-    use_X = with_config("X11", (! is_win32?))
+    use_X = with_config("X11", !(is_win32? || TkLib_Config["tcltk-framework"]))
   end
 
   if use_X
     puts("Use X11 libraries.")
     x11_idir, x11_ldir = dir_config("X11")
     x11_ldir2 = with_config("X11-lib")
-    exit unless find_X11(x11_ldir2, x11_ldir)
+    unless find_X11(x11_ldir2, x11_ldir)
+      puts("Can't find X11 libraries. So, can't make tcltklib.so which is required by Ruby/Tk.")
+      exit
+    end
   end
 
   use_X
@@ -1120,25 +1240,42 @@ end
 ##############################################################
 # main
 ##############################################################
-# check header files
+# check header file
+print("check functions.")
 have_func("ruby_native_thread_p", "ruby.h")
+print(".") # progress
 have_func("rb_errinfo", "ruby.h")
+print(".") # progress
 have_func("rb_safe_level", "ruby.h")
+print(".") # progress
 have_func("rb_hash_lookup", "ruby.h")
+print(".") # progress
 have_func("rb_proc_new", "ruby.h")
+print(".") # progress
 have_func("rb_obj_untrust", "ruby.h")
+print(".") # progress
 have_func("rb_obj_taint", "ruby.h")
+print(".") # progress
 have_func("rb_set_safe_level_force", "ruby.h")
+print("\n") # progress
 
+print("check struct members.")
 have_struct_member("struct RArray", "ptr", "ruby.h")
+print(".") # progress
 have_struct_member("struct RArray", "len", "ruby.h")
+print("\n") # progress
 
 # check libraries
 unless is_win32?
+  print("check libraries.")
   have_library("nsl", "t_open")
+  print(".") # progress
   have_library("socket", "socket")
+  print(".") # progress
   have_library("dl", "dlopen")
+  print(".") # progress
   have_library("m", "log")
+  print("\n") # progress
 end
 $CPPFLAGS += ' -D_WIN32' if /cygwin/ =~ RUBY_PLATFORM
 
@@ -1146,12 +1283,13 @@ $CPPFLAGS += ' -D_WIN32' if /cygwin/ =~ RUBY_PLATFORM
 TkLib_Config["ruby_with_thread"] = 
   macro_defined?('HAVE_NATIVETHREAD', '#include "ruby.h"')
 
+
 #---------------------------------------------------
 # check requirement of Tcl/tk version
 tcltk_version = with_config("tcltkversion")
 tclver, tkver = 
   TkLib_Config["tcltkversion"] = check_tcltk_version(tcltk_version)
-puts("Specified Tcl/Tk version is #{[tclver, tkver]}") if tclver && tkver
+puts("Specified Tcl/Tk version is #{[tclver, tkver].inspect}") if tclver&&tkver
 
 # use ActiveTcl ?
 #if activeTcl = with_config("ActiveTcl")
@@ -1187,21 +1325,38 @@ if (TkLib_Config["tcltk-stubs"] = stubs)
   $CPPFLAGS += ' -DUSE_TCL_STUBS -DUSE_TK_STUBS'
 end
 
+# directory configuration of Tcl/Tk libraries
+tk_idir,  tk_ldir  = dir_config("tk")
+tcl_idir, tcl_ldir = dir_config("tcl")
+
+tcl_idir = tk_idir unless tcl_idir
+tcl_ldir = tk_ldir unless tcl_ldir
+tk_idir = tcl_idir unless tk_idir
+tk_ldir = tcl_ldir unless tk_ldir
+
 # get tclConfig.sh/tkConfig.sh
 TkLib_Config["tcltk-NG-path"] = []
 tclcfg, tkcfg = get_tclConfig(with_config("tclConfig-file", true),
-                              with_config("tclConfig-dir", true),
-                              with_config("tkConfig-dir", true))
+                              with_config("tkConfig-file", true),
+                              with_config("tclConfig-dir", tcl_ldir || true),
+                              with_config("tkConfig-dir", tk_ldir || true))
 TclConfig_Info = TkLib_Config["tclConfig_info"] || {}
 TkConfig_Info  = TkLib_Config["tkConfig_info"] || {}
 TclConfig_Info['config_file_path'] = tclcfg
 TkConfig_Info['config_file_path'] = tkcfg
 
+TclConfig_Info['TCL_INCLUDE_SPEC'] = "-I#{tcl_idir.quote}" if tcl_idir
+TkConfig_Info['TK_INCLUDE_SPEC']   = "-I#{tk_idir.quote}"  if tk_idir
+
+tk_cfg_dir  = File.dirname(TkConfig_Info['config_file_path'])  rescue nil
+tcl_cfg_dir = File.dirname(TclConfig_Info['config_file_path']) rescue nil
+
+tk_ldir_list  = [tk_ldir,  tk_cfg_dir]
+tcl_ldir_list = [tcl_ldir, tcl_cfg_dir]
+
+
 # check tk_shlib_search_path
 check_shlib_search_path(with_config('tk-shlib-search-path'))
-
-# search X libraries
-use_X = search_X_libraries
 
 # set TCL_DEFS and TK_DEFS
 # $CPPFLAGS += " #{TclConfig_Info['TCL_DEFS']}"
@@ -1214,28 +1369,20 @@ if TkLib_Config["tcltk-framework"]
   setup_for_macosx_framework
 end
 
-# search Tcl/Tk libraries
-tk_idir,  tk_ldir  = dir_config("tk")
-tcl_idir, tcl_ldir = dir_config("tcl")
-
-tk_ldir2  = with_config("tk-lib")
-tcl_ldir2 = with_config("tcl-lib")
-
-tk_ldir_list  = [tk_ldir2,  tk_ldir]
-tcl_ldir_list = [tcl_ldir2, tcl_ldir]
-
+# name of  Tcl/Tk libraries
 tklib = with_config("tklib")
 tcllib = with_config("tcllib")
 
-TclConfig_Info['TCL_INCLUDE_SPEC'] = "-I#{tcl_idir.quote}" if tcl_idir
-TkConfig_Info['TK_INCLUDE_SPEC']   = "-I#{tk_idir.quote}"  if tk_idir
+# search X libraries
+use_X = search_X_libraries
+
 
 #---------------------------------------------------
 
 if (TkLib_Config["tcltk-framework"] ||
       ( find_tcltk_header(tclver, tkver) &&
-          find_tcl(tcllib, stubs, tclver, *tcl_ldir_list) &&
-          find_tk(tklib, stubs, tkver, *tk_ldir_list) ) ) &&
+          find_tcltk_library(tcllib, tklib, stubs, tclver, tkver, 
+                             tcl_ldir_list, tk_ldir_list) ) ) &&
     (stubs || pthread_check())
   # create Makefile
 
