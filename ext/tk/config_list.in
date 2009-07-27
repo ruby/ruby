@@ -1,22 +1,24 @@
 ##############################################
 # configure options for Ruby/Tk
-# release date:  2009-07-15
+# release date:  2009-07-28
 ##############################################
 with tk-old-extconf
 with ActiveTcl
 with tk-shlib-search-path
+enable tcltk-stubs
 with tcltkversion
 with tcl-config
 with tk-config
 with tclConfig-dir
 with tkConfig-dir
+with tclConfig-file
+with tkConfig-file
 with tcllib
 with tklib
-enable tcltk-stubs
 with tcl-dir
 with tk-dir
 with tcl-include
-with tcl-lib
+with tk-include
 with tcl-lib
 with tk-lib
 enable mac-tcltk-framework
@@ -32,5 +34,4 @@ with X11-include
 with X11-lib
 enable pthread
 enable tcl-thread
-with tclConfig-file
 enable space-on-tk-libpath

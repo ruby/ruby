@@ -1,3 +1,11 @@
+Tue Jul 28 04:34:05 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/extconf.rb: bug fix and ignore invalid Tcl/Tk libraries.
+
+	* ext/tk/lib/config_list.in: bug fix and add a new option.
+
+	* ext/tk/lib/README.tcltklib: update for a new option.
+
 Mon Jul 27 19:03:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_*str_new_cstr, rb_str_buf_new_cstr),
