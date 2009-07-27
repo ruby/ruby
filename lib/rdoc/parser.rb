@@ -66,8 +66,8 @@ class RDoc::Parser
   # Return _true_ if the +file+ seems like binary.
 
   def self.binary?(file)
-    s = File.read(file, 1024)
-    s.count("^ -~\t\r\n").fdiv(s.size) > 0.3 || s.index("\x00") unless s.empty?
+    s = File.read(file, 1024) or return false
+    s.count("^ -~\t\r\n").fdiv(s.size) > 0.3 || s.index("\x00")
   end
   private_class_method :binary?
 
