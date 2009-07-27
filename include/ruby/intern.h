@@ -658,56 +658,56 @@ size_t rb_str_capacity(VALUE);
 #define rb_str_new_cstr(str) __extension__ (	\
 {						\
     (__builtin_constant_p(str)) ?		\
-	rb_str_new(str, strlen(str)) :		\
+	rb_str_new(str, (long)strlen(str)) :	\
 	rb_str_new_cstr(str);			\
 })
 #define rb_tainted_str_new_cstr(str) __extension__ ( \
 {					       \
     (__builtin_constant_p(str)) ?	       \
-	rb_tainted_str_new(str, strlen(str)) : \
+	rb_tainted_str_new(str, (long)strlen(str)) : \
 	rb_tainted_str_new_cstr(str);	       \
 })
 #define rb_usascii_str_new_cstr(str) __extension__ ( \
 {					       \
     (__builtin_constant_p(str)) ?	       \
-	rb_usascii_str_new(str, strlen(str)) : \
+	rb_usascii_str_new(str, (long)strlen(str)) : \
 	rb_usascii_str_new_cstr(str);	       \
 })
 #define rb_external_str_new_cstr(str) __extension__ ( \
 {						\
     (__builtin_constant_p(str)) ?		\
-	rb_external_str_new(str, strlen(str)) : \
+	rb_external_str_new(str, (long)strlen(str)) : \
 	rb_external_str_new_cstr(str);		\
 })
 #define rb_locale_str_new_cstr(str) __extension__ ( \
 {					       \
     (__builtin_constant_p(str)) ?	       \
-	rb_locale_str_new(str, strlen(str)) :  \
+	rb_locale_str_new(str, (long)strlen(str)) :  \
 	rb_locale_str_new_cstr(str);	       \
 })
 #define rb_str_buf_new_cstr(str) __extension__ ( \
 {						\
     (__builtin_constant_p(str)) ?		\
-	rb_str_buf_cat(rb_str_buf_new(strlen(str)), \
-		       str, strlen(str)) :	\
+	rb_str_buf_cat(rb_str_buf_new((long)strlen(str)), \
+		       str, (long)strlen(str)) : \
 	rb_str_buf_new_cstr(str);		\
 })
 #define rb_str_buf_cat2(str, ptr) __extension__ ( \
 {						\
     (__builtin_constant_p(ptr)) ?	        \
-	rb_str_buf_cat(str, ptr, strlen(ptr)) :	\
+	rb_str_buf_cat(str, ptr, (long)strlen(ptr)) : \
 	rb_str_buf_cat2(str, ptr);		\
 })
 #define rb_str_cat2(str, ptr) __extension__ (	\
 {						\
     (__builtin_constant_p(ptr)) ?	        \
-	rb_str_cat(str, ptr, strlen(ptr)) :	\
+	rb_str_cat(str, ptr, (long)strlen(ptr)) : \
 	rb_str_cat2(str, ptr);			\
 })
 #define rb_exc_new2(klass, ptr) __extension__ ( \
 {						\
     (__builtin_constant_p(ptr)) ?	        \
-	rb_exc_new(klass, ptr, strlen(ptr)) :	\
+	rb_exc_new(klass, ptr, (long)strlen(ptr)) : \
 	rb_exc_new2(klass, ptr);		\
 })
 #endif
