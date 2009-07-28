@@ -1398,7 +1398,7 @@ Sun Jun 21 10:47:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Jun 21 10:46:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* transcode.c (enc_arg): default interanl encoding may not be set.
+	* transcode.c (enc_arg): default internal encoding may not be set.
 	  [ruby-core:23932]
 
 Sat Jun 20 21:11:43 2009  Tadayoshi Funaba  <tadf@dotrb.org>
@@ -1469,7 +1469,7 @@ Fri Jun 19 22:21:17 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 Fri Jun 19 21:56:01 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_expt): delegates to complex when self is
-	  negative.  bacause Float#** does not produce complex.
+	  negative.  because Float#** does not produce complex.
 
 Fri Jun 19 21:40:58 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
@@ -1506,7 +1506,7 @@ Fri Jun 19 09:28:45 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Fri Jun 19 08:14:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* bignum.c (big_lshift, big_rshift): return Bignum always withou
+	* bignum.c (big_lshift, big_rshift): return Bignum always without
 	  normalization.  [ruby-dev:38679]
 
 Thu Jun 18 22:31:38 2009  Tadayoshi Funaba  <tadf@dotrb.org>
@@ -1640,7 +1640,7 @@ Wed Jun 17 06:48:28 2009  Koichi Sasada  <ko1@atdot.net>
 Wed Jun 17 06:19:06 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: New structure RTypedData, added.
-	  This structure incldues more explicit type information for
+	  This structure includes more explicit type information for
 	  T_DATA objects.  If RData(obj)->dfree is immediate value `1' on
 	  T_DATA object obj, obj is needed to be accessed with RTYPEDDATA(obj)
 	  instead of RDATA(obj).  A RTypedData structure points the structure
@@ -1784,7 +1784,7 @@ Sat Jun 13 06:50:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Jun 13 06:45:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* vm_eval.c (rb_f_throw): fixed rdoc about execption.
+	* vm_eval.c (rb_f_throw): fixed rdoc about exception.
 	  [ruby-core:23824]
 
 Fri Jun 12 14:56:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1924,7 +1924,7 @@ Mon Jun  1 11:21:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (cont_capture, fiber_store): reraise transferred error.
 
-	* cont.c (fiber_switch): transfers dead fiber error to the previouse
+	* cont.c (fiber_switch): transfers dead fiber error to the previous
 	  or root fiber if the current fiber is dead.  [ruby-core:23651]
 
 Mon Jun  1 10:41:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -2148,7 +2148,7 @@ Sat May 23 18:53:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  splitting with regexp source string is obsolete.  a patch from
 	  Minwoo Lee at [ruby-core:23494].
 
-	* ext/dl/cptr.c (rb_dlptr_cmp): return signed value, and restric
+	* ext/dl/cptr.c (rb_dlptr_cmp): return signed value, and restrict
 	  to Fixnum.  [ruby-dev:38533]
 
 Fri May 22 23:22:53 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
@@ -2213,7 +2213,7 @@ Thu May 21 21:07:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu May 21 18:55:33 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* gem_prelude.rb (Gem.default_dir and misc.): use rubylibprefix.
-	  follows the chagne in r23368.
+	  follows the change in r23368.
 
 Thu May 21 12:07:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -2539,15 +2539,15 @@ Wed May 13 22:34:31 2009  Narihiro Nakamura  <authorNari@gmail.com>
 	  (rb_gc_mark_remembered_set): ditto.
 	  (clear_mark_longlife_heaps): ditto.
 	  (gc_sweep_for_longlife): ditto.
-	  (assign_heap_slot): new argumnent to longlife heaps slot.
+	  (assign_heap_slot): new argument to longlife heaps slot.
 	  (add_freelist): ditto.
-	  (gc_sweep): avoid lonlife heap slot. set longlife_collection
+	  (gc_sweep): avoid longlife heap slot. set longlife_collection
 	  flag at add heap.
 	  (rb_gc_force_recycle): avoid mark object and remembered_set
 	  object.
 	  (garbage_collect): add longlife collection.
 	  (rb_gc_start): invoke longlife collection.
-	  (gc_profile_record_get): for longlife collction profile.
+	  (gc_profile_record_get): for longlife collection profile.
 	  (gc_profile_result): ditto.
 
 	* include/ruby/intern.h (rb_gc_write_barrier): declared.
@@ -2576,7 +2576,7 @@ Wed May 13 22:34:31 2009  Narihiro Nakamura  <authorNari@gmail.com>
 Wed May 13 15:23:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/version.h: extracted the extensions interface and
-	  the never-changable info.
+	  the never-changeable info.
 
 Wed May 13 03:20:47 2009  Tanaka Akira  <akr@fsij.org>
 
