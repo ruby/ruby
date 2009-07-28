@@ -1,3 +1,9 @@
+Tue Jul 28 19:36:26 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (rb_method_entry_arity): support optimized method (send).
+
+	* test/ruby/test_method.rb: add a test for above.
+
 Tue Jul 28 04:34:05 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/extconf.rb: bug fix and ignore invalid Tcl/Tk libraries.

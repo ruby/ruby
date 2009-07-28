@@ -51,6 +51,10 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(-3, method(:mo6).arity)
   end
 
+  def test_arity_special
+    assert_equal(-1, method(:__send__).arity)
+  end
+
   def test_unbind
     assert_equal(:derived, Derived.new.foo)
     um = Derived.new.method(:foo).unbind
