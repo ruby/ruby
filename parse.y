@@ -3831,7 +3831,7 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 			    }
 			    break;
 			  default:
-			    node = NEW_NODE(NODE_DSTR, Qnil, 1, NEW_LIST(node));
+			    node = NEW_NODE(NODE_DSTR, STR_NEW0(), 1, NEW_LIST(node));
 			  case NODE_DSTR:
 			    if (options & RE_OPTION_ONCE) {
 				nd_set_type(node, NODE_DREGX_ONCE);
