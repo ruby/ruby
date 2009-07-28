@@ -1,3 +1,8 @@
+Tue Jul 28 15:48:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_event_all, rb_add_event_hook): merged thread-switch
+	  events for RubyCocoa.  [ruby-dev:38924]
+
 Tue Jul 28 04:34:05 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/extconf.rb: bug fix and ignore invalid Tcl/Tk libraries.

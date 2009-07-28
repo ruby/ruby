@@ -2627,6 +2627,10 @@ rb_obj_is_proc(proc)
     return Qfalse;
 }
 
+static void thread_deliver_event _((rb_event_hook_func_t,rb_event_t));
+
+const rb_event_t rb_event_all = RUBY_EVENT_ALL;
+
 void
 rb_add_event_hook(func, events)
     rb_event_hook_func_t func;
@@ -2639,6 +2643,9 @@ rb_add_event_hook(func, events)
     hook->events = events;
     hook->next = event_hooks;
     event_hooks = hook;
+    if (events & RUBY_EVENT_THREAD_INIT) {
+	thread_deliver_event(func, RUBY_EVENT_THREAD_INIT);
+    }
 }
 
 int
@@ -10656,10 +10663,25 @@ rb_gc_abort_threads()
     } END_FOREACH_FROM(main_thread, th);
 }
 
+static void
+thread_deliver_event(func, event)
+    rb_event_hook_func_t func;
+    rb_event_t event;
+{
+    rb_thread_t th;
+
+    FOREACH_THREAD(th) {
+	(*func)(event, 0, th->thread, 0, RBASIC(th->thread)->klass);
+    } END_FOREACH(th);
+}
+
 static inline void
 stack_free(th)
     rb_thread_t th;
 {
+    EXEC_EVENT_HOOK(RUBY_EVENT_THREAD_FREE, 0,
+		    th->thread, 0, RBASIC(th->thread)->klass);
+
     if (th->stk_ptr) free(th->stk_ptr);
     th->stk_ptr = 0;
 #ifdef __ia64
@@ -10719,6 +10741,9 @@ rb_thread_save_context(th)
     VALUE *pos;
     size_t len;
     static VALUE tval;
+    
+    EXEC_EVENT_HOOK(RUBY_EVENT_THREAD_SAVE, th->node,
+		    th->thread, 0, RBASIC(th->thread)->klass);
 
     len = ruby_stack_length(&pos);
     th->stk_len = 0;
@@ -10958,6 +10983,8 @@ rb_thread_restore_context(th, exit)
     int exit;
 {
     if (!th->stk_ptr) rb_bug("unsaved context");
+    EXEC_EVENT_HOOK(RUBY_EVENT_THREAD_RESTORE, th->node,
+		    th->thread, 0, RBASIC(th->thread)->klass);
     stack_extend(th, exit);
 }
 
@@ -12357,6 +12384,9 @@ rb_thread_alloc(klass)
 
     THREAD_ALLOC(th);
     th->thread = Data_Wrap_Struct(klass, thread_mark, thread_free, th);
+
+    EXEC_EVENT_HOOK(RUBY_EVENT_THREAD_INIT, ruby_current_node,
+		    th->thread, 0, RBASIC(th->thread)->klass);
 
     for (vars = th->dyna_vars; vars; vars = vars->next) {
 	if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;

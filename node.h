@@ -15,6 +15,9 @@
 
 #if defined(__cplusplus)
 extern "C" {
+#if 0
+}
+#endif
 #endif
 
 enum node_type {
@@ -368,12 +371,18 @@ typedef unsigned int rb_event_t;
 #define RUBY_EVENT_C_CALL   0x20
 #define RUBY_EVENT_C_RETURN 0x40
 #define RUBY_EVENT_RAISE    0x80
-#define RUBY_EVENT_ALL      0xff
+#define RUBY_EVENT_THREAD_INIT    0x0100
+#define RUBY_EVENT_THREAD_FREE    0x0200
+#define RUBY_EVENT_THREAD_SAVE    0x0400
+#define RUBY_EVENT_THREAD_RESTORE 0x0800
+#define RUBY_EVENT_THREAD_ALL     0x0f00
+#define RUBY_EVENT_ALL      0xfff
 
 typedef void (*rb_event_hook_func_t) _((rb_event_t,NODE*,VALUE,ID,VALUE));
 NODE *rb_copy_node_scope _((NODE *, NODE *));
 void rb_add_event_hook _((rb_event_hook_func_t,rb_event_t));
 int rb_remove_event_hook _((rb_event_hook_func_t));
+extern const rb_event_t rb_event_all;
 
 #if defined(HAVE_GETCONTEXT) && defined(HAVE_SETCONTEXT)
 #include <ucontext.h>
@@ -484,6 +493,9 @@ int rb_thread_reset_raised(rb_thread_t th);
 #define rb_thread_raised_clear(th)    (rb_thread_raised_reset(th, RAISED_MASK))
 
 #if defined(__cplusplus)
+#if 0
+extern "C" {
+#endif
 }  /* extern "C" { */
 #endif
 
