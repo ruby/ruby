@@ -1,3 +1,8 @@
+Wed Jul 29 03:34:46 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h, vm_insnhelper.c (vm_call_method): revive
+	  VM_CALL_OPT_SEND_BIT and use it to recognize "send" method.
+
 Wed Jul 29 03:11:59 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (rb_method_entry_arity): support not_implemented method.

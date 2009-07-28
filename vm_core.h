@@ -500,6 +500,7 @@ typedef struct {
 #define VM_CALL_TAILCALL_BIT       (0x01 << 5)
 #define VM_CALL_TAILRECURSION_BIT  (0x01 << 6)
 #define VM_CALL_SUPER_BIT          (0x01 << 7)
+#define VM_CALL_OPT_SEND_BIT       (0x01 << 8)
 
 #define VM_SPECIAL_OBJECT_VMCORE   0x01
 #define VM_SPECIAL_OBJECT_CBASE    0x02
