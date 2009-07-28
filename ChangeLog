@@ -1,3 +1,8 @@
+Wed Jul 29 03:11:59 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (rb_method_entry_arity): support not_implemented method.
+	  (I have no idea to test it)
+
 Tue Jul 28 19:36:26 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (rb_method_entry_arity): support optimized method (send).

@@ -1487,6 +1487,9 @@ rb_method_entry_arity(const rb_method_entry_t *me)
 	      return -(iseq->argc + 1 + iseq->arg_post_len);
 	  }
       }
+      case VM_METHOD_TYPE_UNDEF:
+      case VM_METHOD_TYPE_NOTIMPLEMENTED:
+	return 0;
       case VM_METHOD_TYPE_OPTIMIZED: {
 	  switch (me->body.optimize_type) {
 	    case OPTIMIZED_METHOD_TYPE_SEND:
@@ -1495,9 +1498,8 @@ rb_method_entry_arity(const rb_method_entry_t *me)
 	      break;
 	  }
       }
-      default:
-	rb_bug("rb_method_entry_arity: invalid method entry type (%d)", me->type);
     }
+    rb_bug("rb_method_entry_arity: invalid method entry type (%d)", me->type);
 }
 
 /*
