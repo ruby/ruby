@@ -270,7 +270,6 @@ module JSON
       proc.call result
     end
   end
-  private :recurse_proc
   module_function :recurse_proc
 
   alias restore load

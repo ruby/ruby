@@ -1,3 +1,8 @@
+Wed Jul 29 03:36:24 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/json/lib/json/common.rb (JSON#recurse_proc): remove
+	  unnecessary private specifier.  [ruby-dev:38929]
+
 Wed Jul 29 03:34:46 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h, vm_insnhelper.c (vm_call_method): revive
