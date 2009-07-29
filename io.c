@@ -4484,10 +4484,7 @@ static void
 argf_close(file)
     VALUE file;
 {
-    if (TYPE(file) == T_FILE)
-	rb_io_close(file);
-    else
-	rb_funcall3(file, rb_intern("close"), 0, 0);
+    rb_funcall3(file, rb_intern("close"), 0, 0);
 }
 
 static int
@@ -5735,7 +5732,7 @@ argf_binmode()
 static VALUE
 argf_skip()
 {
-    if (next_p != -1) {
+    if (init_p && next_p == 0) {
 	argf_close(current_file);
 	next_p = 1;
     }

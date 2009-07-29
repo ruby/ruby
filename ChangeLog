@@ -1,3 +1,9 @@
+Wed Jul 29 11:19:47 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_close): always call #close method.  [ruby-core:23853]
+
+	* io.c (argf_skip): should close only when current_file is available.
+
 Sat Jul 25 21:26:18 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (first_i): Enumerator#first should consume only what is
