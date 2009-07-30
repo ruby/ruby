@@ -7833,9 +7833,7 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
 	    head = tail;
 	}
 	else {
-	    nd_set_type(tail, NODE_ARRAY);
-	    tail->nd_head = NEW_STR(tail->nd_lit);
-	    list_concat(head, tail);
+	    list_concat(head, NEW_ARRAY(tail));
 	}
 	break;
 

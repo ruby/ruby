@@ -1,3 +1,10 @@
+Fri Jul 31 02:57:39 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* parse.y (literal_concat_gen): NODE_DSTR was incorrectly handled as
+	  NODE_STR.  [ruby-dev:38968]
+
+	* bootstraptest/test_syntax.rb: add a test for above.
+
 Fri Jul 31 00:55:48 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_module.rb (test_ancestors, test_included_modules):
