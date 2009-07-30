@@ -2644,6 +2644,10 @@ str_encode_associate(VALUE str, int encidx)
 static VALUE
 str_encode_bang(int argc, VALUE *argv, VALUE str)
 {
+    if (OBJ_FROZEN(str)) { /* in future, may use str_frozen_check from string.c, but that's currently static */
+	rb_raise(rb_eRuntimeError, "string frozen");
+    }
+
     VALUE newstr = str;
     int encidx = str_transcode(argc, argv, &newstr);
 

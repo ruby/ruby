@@ -11,6 +11,8 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(Encoding::UndefinedConversionError) { "\x80".encode('utf-8','ASCII-8BIT') }
     assert_raise(Encoding::InvalidByteSequenceError) { "\x80".encode('utf-8','US-ASCII') }
     assert_raise(Encoding::UndefinedConversionError) { "\xA5".encode('utf-8','iso-8859-3') }
+    assert_raise(RuntimeError) { 'hello'.freeze.encode!('iso-8859-1') }
+    assert_raise(RuntimeError) { '\u3053\u3093\u306b\u3061\u306f'.freeze.encode!('iso-8859-1') } # こんにちは
   end
 
   def test_arguments

@@ -1,3 +1,9 @@
+Thu Jul 30 18:39:39 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode.c: added check for frozen string for encode! (see Bug #1836)
+
+	* test/ruby/test_transcode.rb: added tests for the above
+
 Thu Jul 30 16:45:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (defineclass): preserve encoding of class/module
