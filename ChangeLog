@@ -1,3 +1,8 @@
+Fri Jul 31 00:30:54 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_insnhelper.c (vm_call_cfunc): let set_trace_func use called_id
+	  instead of original_id.
+
 Thu Jul 30 23:04:32 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* gem_prelude.rb (Gem.path): uses Gem.default_path as a default value

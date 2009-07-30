@@ -362,7 +362,7 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
     VALUE val = 0;
     int state = 0;
     VALUE klass = me->klass;
-    ID id = me->original_id;
+    ID id = me->called_id;
 
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
 
