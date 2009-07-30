@@ -741,4 +741,12 @@ class TestModule < Test::Unit::TestCase
     assert_equal(:bClass2, b.__send__(:bClass2))
     assert_equal(:bClass3, b.__send__(:bClass3))
   end
+
+
+  def test_nonascii_name
+    c = eval("class ::C\u{df}; self; end")
+    assert_equal("C\u{df}", c.name, '[ruby-core:24600]')
+    c = eval("class C\u{df}; self; end")
+    assert_equal("TestModule::C\u{df}", c.name, '[ruby-core:24600]')
+  end
 end
