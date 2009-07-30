@@ -797,7 +797,7 @@ rb_random_real(VALUE obj)
 static VALUE
 random_bytes(VALUE obj, VALUE len)
 {
-    return rb_random_bytes(obj, FIX2LONG(rb_to_int(len)));
+    return rb_random_bytes(obj, NUM2LONG(rb_to_int(len)));
 }
 
 VALUE

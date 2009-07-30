@@ -1,3 +1,8 @@
+Thu Jul 30 21:43:41 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* random.c (random_bytes): use NUM2LONG instead of FIX2LONG because
+	  Random#bytes may receive bignum.
+
 Thu Jul 30 21:39:42 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (iseq_compile_each): fix stack consistency error.
