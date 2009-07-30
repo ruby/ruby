@@ -8,6 +8,8 @@ class CGICookieTest < Test::Unit::TestCase
 
   def setup
     ENV['REQUEST_METHOD'] = 'GET'
+    @str1="\xE3\x82\x86\xE3\x82\x93\xE3\x82\x86\xE3\x82\x93"
+    @str1.force_encoding("UTF-8") if RUBY_VERSION>="1.9"
   end
 
   def teardown
@@ -18,20 +20,21 @@ class CGICookieTest < Test::Unit::TestCase
 
 
   def test_cgi_cookie_new_simple
-    cookie = CGI::Cookie.new('name1', 'val1', '&<>"', "\245\340\245\271\245\253")
+    cookie = CGI::Cookie.new('name1', 'val1', '&<>"', @str1)
     assert_equal('name1', cookie.name)
-    assert_equal(['val1', '&<>"', "\245\340\245\271\245\253"], cookie.value)
+    assert_equal(['val1', '&<>"', @str1], cookie.value)
     assert_nil(cookie.domain)
     assert_nil(cookie.expires)
     assert_equal('', cookie.path)
     assert_equal(false, cookie.secure)
-    assert_equal("name1=val1&%26%3C%3E%22&%A5%E0%A5%B9%A5%AB; path=", cookie.to_s)
+    assert_equal("name1=val1&%26%3C%3E%22&%E3%82%86%E3%82%93%E3%82%86%E3%82%93; path=", cookie.to_s)
   end
 
 
   def test_cgi_cookie_new_complex
     t = Time.gm(2030, 12, 31, 23, 59, 59)
-    value = ['val1', '&<>"', "\245\340\245\271\245\253"]
+    value = ['val1', '&<>"', "\xA5\xE0\xA5\xB9\xA5\xAB"]
+    value[2].force_encoding("EUC-JP") if RUBY_VERSION>="1.9"
     cookie = CGI::Cookie.new('name'=>'name1',
                              'value'=>value,
                              'path'=>'/cgi-bin/myapp/',
@@ -65,11 +68,11 @@ class CGICookieTest < Test::Unit::TestCase
 
   def test_cgi_cookie_parse
     ## ';' separator
-    cookie_str = 'name1=val1&val2; name2=val2&%26%3C%3E%22;_session_id=12345'
+    cookie_str = 'name1=val1&val2; name2=val2&%26%3C%3E%22&%E3%82%86%E3%82%93%E3%82%86%E3%82%93;_session_id=12345'
     cookies = CGI::Cookie.parse(cookie_str)
     list = [
       ['name1', ['val1', 'val2']],
-      ['name2', ['val2', '&<>"']],
+      ['name2', ['val2', '&<>"',@str1]],
       ['_session_id', ['12345']],
     ]
     list.each do |name, value|
@@ -78,7 +81,7 @@ class CGICookieTest < Test::Unit::TestCase
       assert_equal(value, cookie.value)
     end
     ## ',' separator
-    cookie_str = 'name1=val1&val2, name2=val2&%26%3C%3E%22,_session_id=12345'
+    cookie_str = 'name1=val1&val2, name2=val2&%26%3C%3E%22&%E3%82%86%E3%82%93%E3%82%86%E3%82%93,_session_id=12345'
     cookies = CGI::Cookie.parse(cookie_str)
     list.each do |name, value|
       cookie = cookies[name]

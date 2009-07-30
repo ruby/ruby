@@ -123,7 +123,7 @@ class CGI
       next unless name and values
       name = CGI::unescape(name)
       values ||= ""
-      values = values.split('&').collect{|v| CGI::unescape(v) }
+      values = values.split('&').collect{|v| CGI::unescape(v,@@accept_charset) }
       if cookies.has_key?(name)
         values = cookies[name].value + values
       end

@@ -7,14 +7,14 @@ require 'tmpdir'
 
 class CGISessionTest < Test::Unit::TestCase
   def setup
-    @session_dir = File.join(Dir.mktmpdir('__test_dir__'), 'session_dir')
+    @session_dir = File.join(File.dirname(__FILE__), 'session_dir')
     FileUtils.mkdir_p @session_dir
   end
 
   def teardown
     @environ.each do |key, val| ENV.delete(key) end
     $stdout = STDOUT
-    FileUtils.rm_rf(File.dirname(@session_dir))
+    FileUtils.rm_rf(@session_dir)
   end
 
   def test_cgi_session_filestore
