@@ -98,7 +98,7 @@ init_genrand(struct MT *mt, unsigned int s)
         mt->state[j] &= 0xffffffff;  /* for >32 bit machines */
     }
     mt->left = 1;
-    mt->next = mt->state + N - 1;
+    mt->next = mt->state + N;
 }
 
 /* initialize by an array with array-length */

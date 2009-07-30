@@ -1,3 +1,9 @@
+Thu Jul 30 21:48:56 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* random.c (init_genrand): ensure invariant of mt->next and mt->left.
+	  mt->next should always equal mt->state + N + 1 - mt->left.
+	  In fact, 'r = Random.new(0); r == r.dup' has returned false.
+
 Thu Jul 30 21:43:41 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* random.c (random_bytes): use NUM2LONG instead of FIX2LONG because
