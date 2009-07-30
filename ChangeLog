@@ -1,3 +1,7 @@
+Thu Jul 30 21:56:18 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_rand.rb: add tests for Random class.
+
 Thu Jul 30 21:48:56 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* random.c (init_genrand): ensure invariant of mt->next and mt->left.
