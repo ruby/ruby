@@ -29,4 +29,9 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal(@str1.encoding, CGI::unescape('%26%3C%3E%22+%E3%82%86%E3%82%93%E3%82%86%E3%82%93').encoding) if RUBY_VERSION>="1.9"
   end
 
+  def test_cgi_pretty
+    assert_equal("<HTML>\n  <BODY>\n  </BODY>\n</HTML>\n",CGI::pretty("<HTML><BODY></BODY></HTML>"))
+    assert_equal("<HTML>\n\t<BODY>\n\t</BODY>\n</HTML>\n",CGI::pretty("<HTML><BODY></BODY></HTML>","\t"))
+  end
+
 end
