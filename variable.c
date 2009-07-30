@@ -21,7 +21,7 @@ void rb_vm_inc_const_missing_count(void);
 
 st_table *rb_global_tbl;
 st_table *rb_class_tbl;
-static ID autoload, classpath, tmp_classpath;
+static ID autoload, classpath, tmp_classpath, classid;
 
 void
 Init_var_tables(void)
@@ -31,6 +31,7 @@ Init_var_tables(void)
     CONST_ID(autoload, "__autoload__");
     CONST_ID(classpath, "__classpath__");
     CONST_ID(tmp_classpath, "__tmp_classpath__");
+    CONST_ID(classid, "__classid__");
 }
 
 struct fc_result {
@@ -147,10 +148,6 @@ classname(VALUE klass)
     if (!klass) klass = rb_cObject;
     if (RCLASS_IV_TBL(klass)) {
 	if (!st_lookup(RCLASS_IV_TBL(klass), (st_data_t)classpath, &n)) {
-	    ID classid;
-
-	    CONST_ID(classid, "__classid__");
-
 	    if (!st_lookup(RCLASS_IV_TBL(klass), (st_data_t)classid, &n)) {
 		return find_class_path(klass);
 	    }
@@ -273,7 +270,7 @@ rb_path2class(const char *path)
 void
 rb_name_class(VALUE klass, ID id)
 {
-    rb_iv_set(klass, "__classid__", ID2SYM(id));
+    rb_ivar_set(klass, classid, ID2SYM(id));
 }
 
 VALUE

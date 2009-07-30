@@ -1,4 +1,6 @@
-Thu Jul 30 16:10:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jul 30 16:12:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (Init_var_tables): initializes __classid__ ID.
 
 	* variable.c: use st_data_t for st functions.
 
