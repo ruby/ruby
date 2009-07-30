@@ -1,3 +1,8 @@
+Fri Jul 31 00:55:48 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_module.rb (test_ancestors, test_included_modules):
+	  ignore rake mixins.
+
 Fri Jul 31 00:30:54 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_insnhelper.c (vm_call_cfunc): let set_trace_func use called_id
@@ -23277,12 +23282,12 @@ Sun May 25 17:52:25 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 Sun May 25 04:30:45 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	* test/ruby/test_modules.rb (remove_json_mixins): change judgment
+	* test/ruby/test_module.rb (remove_json_mixins): change judgment
 	  condition.
 
 Sun May 25 03:54:39 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	* test/ruby/test_modules.rb (test_ancestors, test_included_modules):
+	* test/ruby/test_module.rb (test_ancestors, test_included_modules):
 	  ignore json mixins.
 
 Sun May 25 02:37:25 2008  Koichi Sasada  <ko1@atdot.net>

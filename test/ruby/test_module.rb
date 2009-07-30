@@ -72,6 +72,12 @@ class TestModule < Test::Unit::TestCase
     list.reject {|c| c.to_s.start_with?("JSON") }
   end
 
+  def remove_rake_mixins(list)
+    list.
+      reject {|c| c.to_s == "RakeFileUtils" }.
+      reject {|c| c.to_s.start_with?("FileUtils") }
+  end
+
   module Mixin
     MIXIN = 1
     def mixin
@@ -205,9 +211,9 @@ class TestModule < Test::Unit::TestCase
     assert_equal([Mixin],            Mixin.ancestors)
 
     assert_equal([Object, Kernel, BasicObject],
-                 remove_json_mixins(remove_pp_mixins(Object.ancestors)))
+                 remove_rake_mixins(remove_json_mixins(remove_pp_mixins(Object.ancestors))))
     assert_equal([String, Comparable, Object, Kernel, BasicObject],
-                 remove_json_mixins(remove_pp_mixins(String.ancestors)))
+                 remove_rake_mixins(remove_json_mixins(remove_pp_mixins(String.ancestors))))
   end
 
   def test_class_eval
@@ -246,9 +252,9 @@ class TestModule < Test::Unit::TestCase
     assert_equal([], Mixin.included_modules)
     assert_equal([Mixin], User.included_modules)
     assert_equal([Kernel],
-                 remove_json_mixins(remove_pp_mixins(Object.included_modules)))
+                 remove_rake_mixins(remove_json_mixins(remove_pp_mixins(Object.included_modules))))
     assert_equal([Comparable, Kernel],
-                 remove_json_mixins(remove_pp_mixins(String.included_modules)))
+                 remove_rake_mixins(remove_json_mixins(remove_pp_mixins(String.included_modules))))
   end
 
   def test_instance_methods
