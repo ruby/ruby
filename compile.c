@@ -3799,12 +3799,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	    ADD_INSNL(ret, nd_line(node), jump, lfin);
 	    ADD_LABEL(ret, label);
-	    if (id == 0 || id == 1) {	/* 0: or, 1: and */
-		ADD_INSN(ret, nd_line(node), swap);
-		ADD_INSN(ret, nd_line(node), pop);
-		ADD_INSN(ret, nd_line(node), swap);
-		ADD_INSN(ret, nd_line(node), pop);
-	    }
+	    ADD_INSN1(ret, nd_line(node), setn, INT2FIX(FIX2INT(argc) + 1));
+	    ADD_INSN1(ret, nd_line(node), adjuststack, INT2FIX(FIX2INT(argc) + 1));
 	    ADD_LABEL(ret, lfin);
 	}
 	else {

@@ -1151,3 +1151,13 @@ assert_normal_exit %q{
     e.message == "undefined method `lalala!' for \"a\":String" ? :ok : :ng
   end
 }, '[ruby-core:22298]'
+
+assert_equal 'ok', %q{
+  "hello"[0] ||= "H"
+  "ok"
+}
+
+assert_equal 'ok', %q{
+  "hello"[0, 1] ||= "H"
+  "ok"
+}
