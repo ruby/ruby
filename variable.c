@@ -193,7 +193,7 @@ rb_class_path(VALUE klass)
     if (!NIL_P(path)) return path;
     if (RCLASS_IV_TBL(klass) && st_lookup(RCLASS_IV_TBL(klass),
 					  (st_data_t)tmp_classpath, &n)) {
-	return path;
+	return (VALUE)n;
     }
     else {
 	const char *s = "Class";
