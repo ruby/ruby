@@ -1,3 +1,13 @@
+Thu Jul 30 22:28:04 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* tool/compile_prelude.rb: replaces "require" with in-place evaluation
+	  so that copy & paste for lib/rubygems/default.rb is not necessary.
+
+	* gem_prelude.rb: removes copied codes from lib/rubygems/defaults.rb.
+	  uses require instead.
+
+	* common.mk (prelude.c): adds dependency for lib/rubygems/defaults.rb.
+
 Thu Jul 30 21:56:18 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_rand.rb: add tests for Random class.
