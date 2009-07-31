@@ -1399,6 +1399,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     else if (!rb_default_internal_encoding())
 	/* Freeze default_internal */
 	rb_enc_set_default_internal(Qnil);
+    rb_stdio_set_default_encoding();
 
     if (!tree) return Qfalse;
 

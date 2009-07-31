@@ -1,3 +1,10 @@
+Fri Jul 31 16:28:33 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (rb_stdio_set_default_encoding): added.
+
+	* ruby.c (process_options): call rb_stdio_set_default_encoding
+	  after setting defualt internal and external.
+
 Fri Jul 31 15:06:33 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/compile_prelude.rb: too long string literal causes compile error

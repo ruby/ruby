@@ -8407,6 +8407,17 @@ rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
     return io;
 }
 
+void
+rb_stdio_set_default_encoding()
+{
+    extern VALUE rb_stdin, rb_stdout, rb_stderr;
+    VALUE val = Qnil;
+
+    rb_io_set_encoding(1, &val, rb_stdin);
+    rb_io_set_encoding(1, &val, rb_stdout);
+    rb_io_set_encoding(1, &val, rb_stderr);
+}
+
 static VALUE
 argf_external_encoding(VALUE argf)
 {
