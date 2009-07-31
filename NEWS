@@ -9,6 +9,13 @@ with all sufficient information, see the ChangeLog file.
 
 == Changes since the 1.8.7 release
 
+=== Lexical changes
+
+* new hash immediates
+
+  Ruby 1.9 style hash syntax e.g. { key: value } is now also supported
+  in 1.8.  You can also write a method invocation syntax foo bar: baz.
+
 === Configuration changes
 
 * version specific directories
