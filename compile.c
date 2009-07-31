@@ -4188,10 +4188,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_RETURN:{
 	rb_iseq_t *is = iseq;
 
-	while (is) {
+	if (is) {
 	    if (is->type == ISEQ_TYPE_TOP || is->type == ISEQ_TYPE_CLASS) {
 		COMPILE_ERROR((ERROR_ARGS "Invalid return"));
-		break;
 	    }
 	    else {
 		LABEL *splabel = 0;
@@ -4219,7 +4218,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 			ADD_INSN(ret, nd_line(node), pop);
 		    }
 		}
-		break;
 	    }
 	}
 	break;

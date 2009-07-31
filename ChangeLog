@@ -1,3 +1,7 @@
+Fri Jul 31 11:48:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): used more appropriate construct.
+
 Fri Jul 31 10:54:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (literal_concat_gen): reduced unnecessary node at string
