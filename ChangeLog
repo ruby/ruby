@@ -1,3 +1,9 @@
+Fri Jul 31 17:17:17 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* parse.y: Support for { key: value } -style hash immediates.
+	  [ruby-core:21946][ruby-core:22286]
+	* keywords: ditto.
+
 Tue Jul 28 15:48:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_event_all, rb_add_event_hook): merged thread-switch
