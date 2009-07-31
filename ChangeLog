@@ -1,3 +1,8 @@
+Fri Jul 31 18:01:34 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/securerandom.rb (SecureRandom.random_bytes): return string should
+	  be ASCII-8BIT.  [ruby-core:24640]
+
 Fri Jul 31 16:28:33 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_stdio_set_default_encoding): added.

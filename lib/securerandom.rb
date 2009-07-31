@@ -104,7 +104,7 @@ module SecureRandom
       end
     end
     if @has_win32
-      bytes = " " * n
+      bytes = " ".force_encoding("ASCII-8BIT") * n
       if @crypt_gen_random.call(@hProv, bytes.size, bytes) == 0
         raise SystemCallError, "CryptGenRandom failed: #{lastWin32ErrorMessage}"
       end
