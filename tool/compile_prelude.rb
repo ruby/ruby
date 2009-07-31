@@ -51,17 +51,22 @@ lines_list = preludes.map {|filename|
         "nil"
       end
     }
-    line.gsub!(/require\s*(\(?)\s*(["'])(.*?)\2\s*\1/) {
+    if /require\s*(\(?)\s*(["'])(.*?)\2\s*\1/ =~ line
       orig, path = $&, $3
       srcdir = File.expand_path("../..", __FILE__)
       path = File.expand_path(path, srcdir)
       if File.exist?(path)
-        "eval(%s, TOPLEVEL_BINDING, %s, %d)" % [ File.read(path).dump, prelude_name(filename, path).dump, 1]
+        lines << c_esc("eval(")
+        File.readlines(path).each do |line|
+          lines << c_esc(line.dump)
+        end
+        lines << c_esc(", TOPLEVEL_BINDING, %s, %d)" % [ prelude_name(filename, path).dump, 1])
       else
-        orig
+        lines << c_esc(orig)
       end
-    }
-    lines << c_esc(line)
+    else
+      lines << c_esc(line)
+    end
   }
   setup_lines = []
   if need_ruby_prefix
