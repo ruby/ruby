@@ -2644,12 +2644,15 @@ str_encode_associate(VALUE str, int encidx)
 static VALUE
 str_encode_bang(int argc, VALUE *argv, VALUE str)
 {
+    VALUE newstr;
+    int encidx;
+
     if (OBJ_FROZEN(str)) { /* in future, may use str_frozen_check from string.c, but that's currently static */
 	rb_raise(rb_eRuntimeError, "string frozen");
     }
 
-    VALUE newstr = str;
-    int encidx = str_transcode(argc, argv, &newstr);
+    newstr = str;
+    encidx = str_transcode(argc, argv, &newstr);
 
     if (encidx < 0) return str;
     rb_str_shared_replace(str, newstr);

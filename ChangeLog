@@ -1,3 +1,7 @@
+Fri Jul 31 13:15:27 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* transcode.c (str_encode_bang): C99ism.
+
 Fri Jul 31 11:48:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): used more appropriate construct.
