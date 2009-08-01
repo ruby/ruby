@@ -1,3 +1,8 @@
+Sat Aug  1 18:50:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (random_float): rejects Infinity and NaN.
+	  [ruby-core:24651]
+
 Sat Aug  1 18:34:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (gem): suppressed warnings.

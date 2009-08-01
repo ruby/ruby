@@ -196,6 +196,8 @@ genrand_real(struct MT *mt)
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+#include <math.h>
+#include <errno.h>
 
 typedef struct {
     VALUE seed;
@@ -939,6 +941,10 @@ random_float(int argc, VALUE *argv, VALUE obj)
 	    !NIL_P(vmax = rb_to_float(vmax)) ||
 	    (vmax = range_values(vmax, &beg)) != Qfalse) {
 	    max = RFLOAT_VALUE(vmax);
+	    if (isinf(max) || isnan(max)) {
+		VALUE error = INT2FIX(EDOM);
+		rb_exc_raise(rb_class_new_instance(1, &error, rb_eSystemCallError));
+	    }
 	}
 	else {
 	    beg = Qundef;
