@@ -3115,7 +3115,7 @@ enum string_type {
     str_sword  = (STR_FUNC_QWORDS),
     str_dword  = (STR_FUNC_QWORDS|STR_FUNC_EXPAND),
     str_ssym   = (STR_FUNC_SYMBOL),
-    str_dsym   = (STR_FUNC_SYMBOL|STR_FUNC_EXPAND),
+    str_dsym   = (STR_FUNC_SYMBOL|STR_FUNC_EXPAND)
 };
 
 static void

@@ -404,7 +404,7 @@ enum rb_thread_status {
     THREAD_TO_KILL,
     THREAD_RUNNABLE,
     THREAD_STOPPED,
-    THREAD_KILLED,
+    THREAD_KILLED
 };
 
 typedef struct rb_thread *rb_thread_t;
