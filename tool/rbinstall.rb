@@ -516,15 +516,16 @@ install?(:ext, :comm, :gem) do
     ['rdoc', 'rdoc.rb'],
     ['minitest', 'minitest/unit.rb'],
   ]
-  default_gems.each do |name, lib|
-    lib = File.join(srcdir, "lib", lib)
-    version = open(lib) {|f| f.find {|s| /^\s*\w*VERSION\s*=(?!=)/ =~ s}} or next
-    version = version.split(%r"=\s*", 2)[1].strip
-    open_for_install(File.join(destdir, "#{name}.gemspec"), $data_mode) do |f|
+  default_gems.each do |name, src|
+    src = File.join(srcdir, "lib", src)
+    version = open(src) {|f| f.find {|s| /^\s*\w*VERSION\s*=(?!=)/ =~ s}} or next
+    version = version.split(%r"=\s*", 2)[1].strip[/\A([\'\"])(.*?)\1/, 2]
+    puts "#{" "*30}#{name} #{version}"
+    open_for_install(File.join(destdir, "#{name}.gemspec"), $data_mode) do
       <<-GEMSPEC
 Gem::Specification.new do |s|
   s.name = #{name.dump}
-  s.version = #{version}
+  s.version = #{version.dump}
   s.summary = "This #{name} is bundled with Ruby"
 end
       GEMSPEC
