@@ -4871,8 +4871,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    if (r == errc) r = trrepl.now;
 	    if (c < 256) {
 		trans[c] = r;
-		if (r > 255 || (r > 127 && rb_enc_mbmaxlen(enc) != 1))
-		    singlebyte = 0;
+		if (rb_enc_codelen(r, enc) != 1) singlebyte = 0;
 	    }
 	    else {
 		if (!hash) hash = rb_hash_new();
