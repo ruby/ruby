@@ -855,27 +855,32 @@ add_to_begin(VALUE beg, VALUE offset)
 static VALUE
 rand_int(struct MT *mt, VALUE vmax)
 {
+    long max;
+    unsigned long r;
+
     if (FIXNUM_P(vmax)) {
-	long max = FIX2LONG(vmax);
-	unsigned long r;
+	max = FIX2LONG(vmax);
 	if (!max) return Qnil;
 	r = limited_rand(mt, (unsigned long)(max < 0 ? -max : max) - 1);
 	return ULONG2NUM(r);
     }
     else {
-	struct RBignum *limit = (struct RBignum *)vmax;
+	VALUE ret;
 	if (rb_bigzero_p(vmax)) return Qnil;
-	if (!RBIGNUM_SIGN(limit)) {
-	    limit = (struct RBignum *)rb_big_clone(vmax);
-	    RBIGNUM_SET_SIGN(limit, 1);
+	if (!RBIGNUM_SIGN(vmax)) {
+	    vmax = rb_big_clone(vmax);
+	    RBIGNUM_SET_SIGN(vmax, 1);
 	}
-	limit = (struct RBignum *)rb_big_minus((VALUE)limit, INT2FIX(1));
-	if (FIXNUM_P((VALUE)limit)) {
-	    if (FIX2LONG((VALUE)limit) == -1)
-		return Qnil;
-	    return LONG2NUM(limited_rand(mt, FIX2LONG((VALUE)limit)));
+	vmax = rb_big_minus(vmax, INT2FIX(1));
+	if (FIXNUM_P(vmax)) {
+	    max = FIX2LONG(vmax);
+	    if (max == -1) return Qnil;
+	    r = limited_rand(mt, max);
+	    return LONG2NUM(r);
 	}
-	return limited_big_rand(mt, limit);
+	ret = limited_big_rand(mt, RBIGNUM(vmax));
+	RB_GC_GUARD(vmax);
+	return ret;
     }
 }
 

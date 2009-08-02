@@ -4,13 +4,24 @@ class TestRand < Test::Unit::TestCase
   def assert_random_int(ws, m, init = 0)
     srand(init)
     rnds = [Random.new(init)]
-    ws.each do |w|
+    rnds2 = [rnds[0].dup]
+    rnds3 = [rnds[0].dup]
+    ws.each_with_index do |w, i|
       w = w.to_i
       assert_equal(w, rand(m))
       rnds.each do |rnd|
         assert_equal(w, rnd.int(m))
       end
+      rnds2.each do |rnd|
+        r=rnd.int(i...(m+i))
+        assert_equal(w+i, r)
+      end
+      rnds3.each do |rnd|
+        r=rnd.int(i..(m+i-1))
+        assert_equal(w+i, r)
+      end
       rnds << Marshal.load(Marshal.dump(rnds[-1]))
+      rnds2 << Marshal.load(Marshal.dump(rnds2[-1]))
     end
   end
 
