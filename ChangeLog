@@ -1,3 +1,8 @@
+Mon Aug  3 00:32:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (rb_random_int): arguments have to be converted to
+	  integer.  [ruby-core:24679]
+
 Sun Aug  2 21:04:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (literal_concat0): tail can be nil.  [ruby-dev:38980]

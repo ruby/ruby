@@ -911,9 +911,10 @@ rb_random_int(VALUE obj, VALUE vmax)
     if (NIL_P(v)) {
 	/* range like object support */
 	if (!(v = range_values(vmax, &beg))) {
-	    beg = Qundef;
-	    NUM2LONG(vmax);
+	    v = vmax;
 	}
+	v = rb_to_int(v);
+	beg = rb_to_int(beg);
     }
     v = rand_int(&rnd->mt, v);
     if (NIL_P(v)) v = INT2FIX(0);

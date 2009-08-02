@@ -344,6 +344,7 @@ END
        1267650600228229401496703205383).each do |w|
       assert_equal(w.to_i, r.int(2**100+5..2**100+9))
     end
+    assert_equal(3, r.int(3.1..4), '[ruby-core:24679]')
   end
 
   def test_random_float
