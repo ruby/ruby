@@ -1,3 +1,6 @@
+#!/bin/sh
+exec ruby -x "$0" "$@"
+#!ruby
 # $Id$
 
 # NOTE:
