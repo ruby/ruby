@@ -831,3 +831,8 @@ assert_normal_exit %q{
 assert_equal 'ok', %q{
   "#{}""#{}ok"
 }, '[ruby-dev:38968]'
+
+
+assert_equal 'ok', %q{
+  "o" "#{}k"
+}, '[ruby-dev:38980]'

@@ -7782,6 +7782,7 @@ list_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
 static int
 literal_concat0(struct parser_params *parser, VALUE head, VALUE tail)
 {
+    if (NIL_P(tail)) return 1;
     if (!rb_enc_compatible(head, tail)) {
 	compile_error(PARSER_ARG "string literal encodings differ (%s / %s)",
 		      rb_enc_name(rb_enc_get(head)),
