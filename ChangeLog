@@ -1,3 +1,8 @@
+Sun Aug  2 16:53:19 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_rand.rb: add tests for Random#float's rejection
+	  against Infinity and NaN.
+
 Sun Aug  2 14:20:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (rand_int): prevent from GC.

@@ -354,6 +354,9 @@ END
     assert_in_delta(1.0897663659937937, r.float(2), 0.0001)
     assert_in_delta(5.3704626067153264e+29, r.float(2**100), 10**25)
 
+    assert_raise(Errno::EDOM, Errno::ERANGE) { r.float(1.0 / 0.0) }
+    assert_raise(Errno::EDOM, Errno::ERANGE) { r.float(0.0 / 0.0) }
+
     # is this intentional?
     assert_raise(TypeError) { r.float(1..2) }
   end
