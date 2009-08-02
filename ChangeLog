@@ -1,3 +1,7 @@
+Sun Aug  2 20:09:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_combination, rb_ary_product): prevent from GC.
+
 Sun Aug  2 16:53:19 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_rand.rb: add tests for Random#float's rejection
