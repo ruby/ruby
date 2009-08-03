@@ -1,3 +1,8 @@
+Mon Aug  3 14:46:53 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/complex.rb (Numeric#arg): should return NaN for NaN.
+	  [ruby-core:24116]
+
 Thu Jul 30 09:27:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (big_lshift, big_rshift): return Bignum always withou
