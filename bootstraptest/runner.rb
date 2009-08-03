@@ -1,6 +1,4 @@
-#!/bin/sh
-exec ruby -x "$0" "$@"
-#!ruby
+"exec" "${RUBY-ruby}" "-x" "$0" "$@"; true # -*- mode: ruby; coding: utf-8 -*-
 # $Id$
 
 # NOTE:
