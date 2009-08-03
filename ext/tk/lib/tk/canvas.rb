@@ -172,7 +172,7 @@ class Tk::Canvas<TkWindow
   alias canvas_y canvasy
 
   def coords(tag, *args)
-    if args == []
+    if args.empty?
       tk_split_list(tk_send_without_enc('coords', tagid(tag)))
     else
       tk_send_without_enc('coords', tagid(tag), *(args.flatten))

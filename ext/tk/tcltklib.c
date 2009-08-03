@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2009-07-12"
+#define TCLTKLIB_RELEASE_DATE "2009-08-04"
 
 #include "ruby.h"
 
@@ -12,6 +12,7 @@
 #include "ruby/encoding.h"
 #endif
 #ifndef HAVE_RUBY_RUBY_H
+#undef RUBY_RELEASE_DATE
 #include "version.h"
 #endif
 
@@ -1538,8 +1539,12 @@ lib_num_of_mainwindows(self)
 
 #ifdef RUBY_USE_NATIVE_THREAD  /* Ruby 1.9+ !!! */
 static VALUE
+#ifdef HAVE_PROTOTYPES
+call_DoOneEvent_core(VALUE flag_val)
+#else
 call_DoOneEvent_core(flag_val)
     VALUE flag_val;
+#endif
 {
     int flag;
 
@@ -1552,16 +1557,24 @@ call_DoOneEvent_core(flag_val)
 }
 
 static VALUE
+#ifdef HAVE_PROTOTYPES
+call_DoOneEvent(VALUE flag_val)
+#else
 call_DoOneEvent(flag_val)
     VALUE flag_val;
+#endif
 {
   return tk_funcall(call_DoOneEvent_core, 0, (VALUE*)NULL, flag_val);
 }
 
 #else  /* Ruby 1.8- */
 static VALUE
+#ifdef HAVE_PROTOTYPES
+call_DoOneEvent(VALUE flag_val)
+#else
 call_DoOneEvent(flag_val)
     VALUE flag_val;
+#endif
 {
     int flag;
 
@@ -1576,8 +1589,12 @@ call_DoOneEvent(flag_val)
 
 
 static VALUE
+#ifdef HAVE_PROTOTYPES
+eventloop_sleep(VALUE dummy)
+#else
 eventloop_sleep(dummy)
     VALUE dummy;
+#endif
 {
     struct timeval t;
 
@@ -1585,7 +1602,7 @@ eventloop_sleep(dummy)
       return Qnil;
     }
 
-    t.tv_sec = (time_t)0;
+    t.tv_sec = 0;
     t.tv_usec = (long)(no_event_wait*1000.0);
 
 #ifdef HAVE_NATIVETHREAD
@@ -1716,7 +1733,7 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
 
     if (update_flag) DUMP1("update loop start!!");
 
-    t.tv_sec = (time_t)0;
+    t.tv_sec = 0;
     t.tv_usec = (long)(no_event_wait*1000.0);
 
     Tcl_DeleteTimerHandler(timer_token);
@@ -2302,9 +2319,9 @@ lib_watchdog_core(check_rootwidget)
     int   check = RTEST(check_rootwidget);
     struct timeval t0, t1;
 
-    t0.tv_sec  = (time_t)0;
+    t0.tv_sec  = 0;
     t0.tv_usec = (long)((NO_THREAD_INTERRUPT_TIME)*1000.0);
-    t1.tv_sec  = (time_t)0;
+    t1.tv_sec  = 0;
     t1.tv_usec = (long)((WATCHDOG_INTERVAL)*1000.0);
 
     /* check other watchdog thread */
@@ -2446,8 +2463,12 @@ _thread_call_proc(arg)
 }
 
 static VALUE
+#ifdef HAVE_PROTOTYPES
+_thread_call_proc_value(VALUE th)
+#else
 _thread_call_proc_value(th)
     VALUE th;
+#endif
 {
     return rb_funcall(th, ID_value, 0);
 }
@@ -2684,10 +2705,14 @@ TkStringValue(obj)
 }
 
 static int
+#ifdef HAVE_PROTOTYPES
+tcl_protect_core(Tcl_Interp *interp, VALUE (*proc)(VALUE), VALUE data)
+#else
 tcl_protect_core(interp, proc, data) /* should not raise exception */
     Tcl_Interp *interp;
     VALUE (*proc)();
     VALUE data;
+#endif
 {
     volatile VALUE ret, exc = Qnil;
     int status = 0;
@@ -3205,17 +3230,27 @@ ip_ruby_cmd(clientData, interp, argc, argv)
 /*****************************/
 static int
 #if TCL_MAJOR_VERSION >= 8
+#ifdef HAVE_PROTOTYPES
+ip_InterpExitObjCmd(ClientData clientData, Tcl_Interp *interp, 
+		    int argc, Tcl_Obj *CONST argv[])
+#else
 ip_InterpExitObjCmd(clientData, interp, argc, argv)
     ClientData clientData;
     Tcl_Interp *interp; 
     int argc;
     Tcl_Obj *CONST argv[];
+#endif
 #else /* TCL_MAJOR_VERSION < 8 */
+#ifdef HAVE_PROTOTYPES
+ip_InterpExitCommand(ClientData clientData, Tcl_Interp *interp,
+		     int argc, char *argv[])
+#else
 ip_InterpExitCommand(clientData, interp, argc, argv)
     ClientData clientData;
     Tcl_Interp *interp;
     int argc;
     char *argv[];
+#endif
 #endif
 {
     DUMP1("start ip_InterpExitCommand");
@@ -3228,26 +3263,39 @@ ip_InterpExitCommand(clientData, interp, argc, argv)
         Tcl_ResetResult(interp);
         /* Tcl_Preserve(interp); */
         /* Tcl_Eval(interp, "interp eval {} {destroy .}; interp delete {}"); */
-        ip_finalize(interp);
-        Tcl_DeleteInterp(interp);
-        Tcl_Release(interp);
+	if (!Tcl_InterpDeleted(interp)) {
+	  ip_finalize(interp);
+
+	  Tcl_DeleteInterp(interp);
+	  Tcl_Release(interp);
+	}
     }
     return TCL_OK;
 }
 
 static int
 #if TCL_MAJOR_VERSION >= 8
+#ifdef HAVE_PROTOTYPES
+ip_RubyExitObjCmd(ClientData clientData, Tcl_Interp *interp,
+		  int argc, Tcl_Obj *CONST argv[])
+#else
 ip_RubyExitObjCmd(clientData, interp, argc, argv)
     ClientData clientData;
     Tcl_Interp *interp; 
     int argc;
     Tcl_Obj *CONST argv[];
+#endif
 #else /* TCL_MAJOR_VERSION < 8 */
+#ifdef HAVE_PROTOTYPES
+ip_RubyExitCommand(ClientData clientData, Tcl_Interp *interp,
+		   int argc, char *argv[])
+#else
 ip_RubyExitCommand(clientData, interp, argc, argv)
     ClientData clientData;
     Tcl_Interp *interp;
     int argc;
     char *argv[];
+#endif
 #endif
 {
     int state;
@@ -3277,9 +3325,12 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
     Tcl_ResetResult(interp);
 
     if (rb_safe_level() >= 4 || Tcl_IsSafe(interp)) {
-        ip_finalize(interp);
-        Tcl_DeleteInterp(interp);
-        Tcl_Release(interp);
+	if (!Tcl_InterpDeleted(interp)) {
+	  ip_finalize(interp);
+
+	  Tcl_DeleteInterp(interp);
+	  Tcl_Release(interp);
+	}
         return TCL_OK;
     }
 
@@ -3607,7 +3658,7 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
     DUMP1("set idle proc");
     Tcl_DoWhenIdle(rb_threadUpdateProc, (ClientData) param);
 
-    t.tv_sec  = (time_t)0;
+    t.tv_sec  = 0;
     t.tv_usec = (long)((EVENT_HANDLER_TIMEOUT)*1000.0);
 
     while(!param->done) {
@@ -3687,14 +3738,14 @@ VwaitVarProc(clientData, interp, name1, name2, flags)
 #if TCL_MAJOR_VERSION >= 8
 static int
 ip_rbVwaitObjCmd(clientData, interp, objc, objv)
-    ClientData clientData;
+    ClientData clientData; /* Not used */
     Tcl_Interp *interp; 
     int objc;
     Tcl_Obj *CONST objv[];
 #else /* TCL_MAJOR_VERSION < 8 */
 static int
 ip_rbVwaitCommand(clientData, interp, objc, objv)
-    ClientData clientData;
+    ClientData clientData; /* Not used */
     Tcl_Interp *interp;
     int objc;
     char *objv[];
@@ -3967,10 +4018,10 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 	&& eventloop_thread != rb_thread_current()) {
 #if TCL_MAJOR_VERSION >= 8
         DUMP1("call ip_rb_threadTkWaitObjCmd");
-        return ip_rb_threadTkWaitObjCmd(clientData, interp, objc, objv);
+        return ip_rb_threadTkWaitObjCmd((ClientData)tkwin, interp, objc, objv);
 #else /* TCL_MAJOR_VERSION < 8 */
         DUMP1("call ip_rb_threadTkWaitCommand");
-        return ip_rb_threadTkWwaitCommand(clientData, interp, objc, objv);
+        return ip_rb_threadTkWwaitCommand((ClientData)tkwin, interp, objc, objv);
 #endif
     }
 #endif
@@ -4394,7 +4445,7 @@ ip_rb_threadVwaitObjCmd(clientData, interp, objc, objv)
 #else /* TCL_MAJOR_VERSION < 8 */
 static int
 ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
-    ClientData clientData;
+    ClientData clientData; /* Not used */
     Tcl_Interp *interp;
     int objc;
     char *objv[];
@@ -4500,7 +4551,7 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
         return TCL_ERROR;
     }
 
-    t.tv_sec  = (time_t)0;
+    t.tv_sec  = 0;
     t.tv_usec = (long)((EVENT_HANDLER_TIMEOUT)*1000.0);
 
     while(!param->done) {
@@ -4580,6 +4631,8 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
     if (rb_thread_alone() || eventloop_thread == current_thread) {
 #if TCL_MAJOR_VERSION >= 8
         DUMP1("call ip_rbTkWaitObjCmd");
+        DUMP2("eventloop_thread %lx", eventloop_thread);
+        DUMP2("current_thread %lx", current_thread);
         return ip_rbTkWaitObjCmd(clientData, interp, objc, objv);
 #else /* TCL_MAJOR_VERSION < 8 */
         DUMP1("call rb_VwaitCommand");
@@ -4722,7 +4775,7 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
             return TCL_ERROR;
         }
 
-	t.tv_sec  = (time_t)0;
+	t.tv_sec  = 0;
 	t.tv_usec = (long)((EVENT_HANDLER_TIMEOUT)*1000.0);
 
         while(!param->done) {
@@ -4808,7 +4861,7 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 
         rb_thread_critical = thr_crit_bup;
 
-	t.tv_sec  = (time_t)0;
+	t.tv_sec  = 0;
 	t.tv_usec = (long)((EVENT_HANDLER_TIMEOUT)*1000.0);
 
         while(param->done != TKWAIT_MODE_VISIBILITY) {
@@ -4930,7 +4983,7 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 
         rb_thread_critical = thr_crit_bup;
 
-	t.tv_sec  = (time_t)0;
+	t.tv_sec  = 0;
 	t.tv_usec = (long)((EVENT_HANDLER_TIMEOUT)*1000.0);
 
         while(param->done != TKWAIT_MODE_DESTROY) {
@@ -5049,11 +5102,13 @@ delete_slaves(ip)
                 slave = Tcl_GetSlave(ip, slave_name);
                 if (slave == (Tcl_Interp*)NULL) continue;
 
-                /* call ip_finalize */
-                ip_finalize(slave);
+		if (!Tcl_InterpDeleted(slave)) {
+		  /* call ip_finalize */
+		  ip_finalize(slave);
 
-                Tcl_DeleteInterp(slave);
-                /* Tcl_Release(slave); */
+		  Tcl_DeleteInterp(slave);
+		  /* Tcl_Release(slave); */
+		}
             }
         }
 
@@ -5091,10 +5146,12 @@ delete_slaves(ip)
                 slave = Tcl_GetSlave(ip, slave_name);
                 if (slave == (Tcl_Interp*)NULL) continue;
 
-                /* call ip_finalize */
-                ip_finalize(slave);
+		if (!Tcl_InterpDeleted(slave)) {
+		  /* call ip_finalize */
+		  ip_finalize(slave);
 
-                Tcl_DeleteInterp(slave);
+		  Tcl_DeleteInterp(slave);
+		}
             }
         }
     }
@@ -5106,25 +5163,38 @@ delete_slaves(ip)
 
 /* finalize operation */
 static void
+#ifdef HAVE_PROTOTYPES
+lib_mark_at_exit(VALUE self)
+#else
 lib_mark_at_exit(self)
     VALUE self;
+#endif
 {
     at_exit = 1;
 }
 
 static int
 #if TCL_MAJOR_VERSION >= 8
+#ifdef HAVE_PROTOTYPES
+ip_null_proc(ClientData clientData, Tcl_Interp *interp,
+	     int argc, Tcl_Obj *CONST argv[])
+#else
 ip_null_proc(clientData, interp, argc, argv)
     ClientData clientData;
     Tcl_Interp *interp; 
     int argc;
     Tcl_Obj *CONST argv[];
+#endif
 #else /* TCL_MAJOR_VERSION < 8 */
+#ifdef HAVE_PROTOTYPES
+ip_null_proc(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+#else
 ip_null_proc(clientData, interp, argc, argv)
     ClientData clientData;
     Tcl_Interp *interp;
     int argc;
     char *argv[];
+#endif
 #endif
 {
     Tcl_ResetResult(interp);
@@ -5306,9 +5376,12 @@ ip_free(ptr)
             return;
         }
 
-        ip_finalize(ptr->ip);
-        Tcl_DeleteInterp(ptr->ip); 
-        Tcl_Release(ptr->ip); 
+	if (!Tcl_InterpDeleted(ptr->ip)) {
+	  ip_finalize(ptr->ip);
+
+	  Tcl_DeleteInterp(ptr->ip); 
+	  Tcl_Release(ptr->ip); 
+	}
 
         ptr->ip = (Tcl_Interp*)NULL;
         free(ptr);
@@ -5339,11 +5412,11 @@ ip_replace_wait_commands(interp, mainWin)
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"vwait\")");
     Tcl_CreateObjCommand(interp, "vwait", ip_rbVwaitObjCmd, 
-                         (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
+                         (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
     DUMP1("Tcl_CreateCommand(\"vwait\")");
     Tcl_CreateCommand(interp, "vwait", ip_rbVwaitCommand, 
-                      (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
+                      (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #endif
 
     /* replace 'tkwait' command */
@@ -5361,11 +5434,11 @@ ip_replace_wait_commands(interp, mainWin)
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"thread_vwait\")");
     Tcl_CreateObjCommand(interp, "thread_vwait", ip_rb_threadVwaitObjCmd, 
-                         (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
+                         (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
     DUMP1("Tcl_CreateCommand(\"thread_vwait\")");
     Tcl_CreateCommand(interp, "thread_vwait", ip_rb_threadVwaitCommand, 
-                      (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
+                      (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #endif
 
     /* add 'thread_tkwait' command */
@@ -5402,6 +5475,72 @@ ip_replace_wait_commands(interp, mainWin)
 #endif
 }
 
+
+#if TCL_MAJOR_VERSION >= 8
+static int
+ip_rb_replaceSlaveTkCmdsObjCmd(clientData, interp, objc, objv)
+    ClientData clientData;
+    Tcl_Interp *interp; 
+    int objc;
+    Tcl_Obj *CONST objv[];
+#else /* TCL_MAJOR_VERSION < 8 */
+static int
+ip_rb_replaceSlaveTkCmdsCommand(clientData, interp, objc, objv)
+    ClientData clientData;
+    Tcl_Interp *interp;
+    int objc;
+    char *objv[];
+#endif
+{
+    char *slave_name;
+    Tcl_Interp *slave;
+    Tk_Window mainWin;
+
+    if (objc != 2) {
+#ifdef Tcl_WrongNumArgs
+        Tcl_WrongNumArgs(interp, 1, objv, "slave_name");
+#else
+	char *nameString;
+#if TCL_MAJOR_VERSION >= 8
+        nameString = Tcl_GetStringFromObj(objv[0], (int*)NULL);
+#else /* TCL_MAJOR_VERSION < 8 */
+        nameString = objv[0];
+#endif
+        Tcl_AppendResult(interp, "wrong number of arguments: should be \"",
+                         nameString, " slave_name\"", (char *) NULL);
+#endif
+    }
+
+#if TCL_MAJOR_VERSION >= 8
+    slave_name = Tcl_GetStringFromObj(objv[1], (int*)NULL);
+#else
+    slave_name = objv[1];
+#endif
+
+    slave = Tcl_GetSlave(interp, slave_name);
+    if (slave == NULL) {
+        Tcl_AppendResult(interp, "cannot find slave \"", 
+                         slave_name, "\"", (char *)NULL);
+	return TCL_ERROR;
+    }
+    mainWin = Tk_MainWindow(slave);
+
+    /* replace 'exit' command --> 'interp_exit' command */
+#if TCL_MAJOR_VERSION >= 8
+    DUMP1("Tcl_CreateObjCommand(\"exit\") --> \"interp_exit\"");
+    Tcl_CreateObjCommand(slave, "exit", ip_InterpExitObjCmd, 
+                         (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
+#else /* TCL_MAJOR_VERSION < 8 */
+    DUMP1("Tcl_CreateCommand(\"exit\") --> \"interp_exit\"");
+    Tcl_CreateCommand(slave, "exit", ip_InterpExitCommand, 
+                      (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
+#endif
+
+    /* replace vwait and tkwait */
+    ip_replace_wait_commands(slave, mainWin);
+
+    return TCL_OK;
+}
 
 
 #if TCL_MAJOR_VERSION >= 8
@@ -5497,9 +5636,13 @@ ip_wrap_namespace_command(interp)
 
 /* call when interpreter is deleted */
 static void
+#ifdef HAVE_PROTOTYPES
+ip_CallWhenDeleted(ClientData clientData, Tcl_Interp *ip)
+#else
 ip_CallWhenDeleted(clientData, ip)
     ClientData clientData;
     Tcl_Interp *ip;
+#endif
 {
     int  thr_crit_bup;
     /* Tk_Window main_win = (Tk_Window) clientData; */
@@ -5712,6 +5855,17 @@ ip_init(argc, argv, self)
     /* wrap namespace command */
     ip_wrap_namespace_command(ptr->ip);
 
+    /* define command to replace commands which depend on slave's MainWindow */
+#if TCL_MAJOR_VERSION >= 8
+    Tcl_CreateObjCommand(ptr->ip, "__replace_slave_tk_commands__", 
+			 ip_rb_replaceSlaveTkCmdsObjCmd, 
+                         (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+#else /* TCL_MAJOR_VERSION < 8 */
+    Tcl_CreateCommand(ptr->ip, "__replace_slave_tk_commands__", 
+		      ip_rb_replaceSlaveTkCmdsCommand, 
+                      (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+#endif
+
     /* set finalizer */
     Tcl_CallWhenDeleted(ptr->ip, ip_CallWhenDeleted, (ClientData)mainWin);
 
@@ -5814,6 +5968,17 @@ ip_create_slave_core(interp, argc, argv)
 
     /* wrap namespace command */
     ip_wrap_namespace_command(slave->ip);
+
+    /* define command to replace cmds which depend on slave-slave's MainWin */
+#if TCL_MAJOR_VERSION >= 8
+    Tcl_CreateObjCommand(slave->ip, "__replace_slave_tk_commands__", 
+			 ip_rb_replaceSlaveTkCmdsObjCmd, 
+                         (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+#else /* TCL_MAJOR_VERSION < 8 */
+    Tcl_CreateCommand(slave->ip, "__replace_slave_tk_commands__", 
+		      ip_rb_replaceSlaveTkCmdsCommand, 
+                      (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+#endif
 
     /* set finalizer */
     Tcl_CallWhenDeleted(slave->ip, ip_CallWhenDeleted, (ClientData)mainWin);
@@ -6109,7 +6274,8 @@ ip_delete(self)
     int  thr_crit_bup;
     struct tcltkip *ptr = get_ip(self);
 
-    if (ptr == (struct tcltkip *)NULL || ptr->ip == (Tcl_Interp*)NULL) {
+    /* if (ptr == (struct tcltkip *)NULL || ptr->ip == (Tcl_Interp*)NULL) { */
+    if (deleted_ip(ptr)) {
         DUMP1("delete deleted IP");
         return Qnil;
     }
@@ -6117,12 +6283,14 @@ ip_delete(self)
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
 
-    DUMP1("call ip_finalize");
-    ip_finalize(ptr->ip);
-
     DUMP1("delete interp");
-    Tcl_DeleteInterp(ptr->ip);
-    Tcl_Release(ptr->ip);
+    if (!Tcl_InterpDeleted(ptr->ip)) {
+      DUMP1("call ip_finalize");
+      ip_finalize(ptr->ip);
+
+      Tcl_DeleteInterp(ptr->ip);
+      Tcl_Release(ptr->ip);
+    }
 
     rb_thread_critical = thr_crit_bup;
 
@@ -6541,7 +6709,7 @@ tk_funcall(func, argc, argv, obj)
     rb_thread_critical = thr_crit_bup;
 
     /* wait for the handler to be processed */
-    t.tv_sec  = (time_t)0;
+    t.tv_sec  = 0;
     t.tv_usec = (long)((EVENT_HANDLER_TIMEOUT)*1000.0);
 
     DUMP2("callq wait for handler (current thread:%lx)", current);
@@ -6617,8 +6785,12 @@ struct call_eval_info {
 };
 
 static VALUE
+#ifdef HAVE_PROTOTYPES
+call_tcl_eval(VALUE arg)
+#else
 call_tcl_eval(arg)
     VALUE arg;
+#endif
 {
     struct call_eval_info *inf = (struct call_eval_info *)arg;
 
@@ -7030,7 +7202,7 @@ ip_eval(self, str)
     rb_thread_critical = thr_crit_bup;
 
     /* wait for the handler to be processed */
-    t.tv_sec  = (time_t)0;
+    t.tv_sec  = 0;
     t.tv_usec = (long)((EVENT_HANDLER_TIMEOUT)*1000.0);
 
     DUMP2("evq wait for handler (current thread:%lx)", current);
@@ -7792,8 +7964,12 @@ struct invoke_info {
 };
 
 static VALUE
+#ifdef HAVE_PROTOTYPES
+invoke_tcl_proc(VALUE arg)
+#else
 invoke_tcl_proc(arg)
     VALUE arg;
+#endif
 {
     struct invoke_info *inf = (struct invoke_info *)arg;
     int i, len;
@@ -8510,7 +8686,7 @@ ip_invoke_with_position(argc, argv, obj, position)
     rb_thread_critical = thr_crit_bup;
 
     /* wait for the handler to be processed */
-    t.tv_sec  = (time_t)0;
+    t.tv_sec  = 0;
     t.tv_usec = (long)((EVENT_HANDLER_TIMEOUT)*1000.0);
 
     DUMP2("ivq wait for handler (current thread:%lx)", current);

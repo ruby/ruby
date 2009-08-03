@@ -428,7 +428,7 @@ class TkTimer
 
   def restart(*restart_args, &b)
     cancel if @running
-    if restart_args == [] && !b
+    if restart_args.empty? && !b
       start(@init_sleep, @init_proc, *@init_args)
     else
       start(*restart_args, &b)
