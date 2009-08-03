@@ -1,3 +1,9 @@
+Mon Aug  3 18:12:54 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* thread.c (recursive_push): untrust internal hash to prevent
+	  unexpected SecurityError.  a patch from Kazuhiro NISHIYAMA.
+	  Fix: #1864  [ruby-dev:38982]
+
 Mon Aug  3 17:06:05 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/README: updated.  a patch from Daniel Bovensiepen.

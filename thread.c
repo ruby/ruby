@@ -3362,6 +3362,7 @@ recursive_push(VALUE hash, VALUE obj, VALUE paired_obj)
     }
     if (NIL_P(list) || TYPE(list) != T_HASH) {
 	list = rb_hash_new();
+	OBJ_UNTRUST(list);
 	rb_hash_aset(hash, sym, list);
     }
     if (!paired_obj) {
@@ -3374,6 +3375,7 @@ recursive_push(VALUE hash, VALUE obj, VALUE paired_obj)
 	if (TYPE(pair_list) != T_HASH){
 	    VALUE other_paired_obj = pair_list;
 	    pair_list = rb_hash_new();
+	    OBJ_UNTRUST(pair_list);
 	    rb_hash_aset(pair_list, other_paired_obj, Qtrue);
 	    rb_hash_aset(list, obj, pair_list);
 	}
