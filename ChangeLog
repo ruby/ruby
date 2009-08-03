@@ -1,4 +1,7 @@
-Mon Aug  3 13:05:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Aug  3 15:48:40 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_{permutation,combination}): disallow reentrance
+	  with continuation since work-buffers cannot restore.
 
 	* array.c (rb_ary_{permutation,combination,product}): must not use
 	  ary_discard on strings.

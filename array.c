@@ -3647,6 +3647,9 @@ rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
 }
 
 #define tmpbuf(n, size) rb_str_tmp_new((n)*(size))
+#define tmpbuf_discard(s) (rb_str_resize((s), 0L), RBASIC(s)->klass = rb_cString)
+#define tmpary(n) rb_ary_tmp_new(n)
+#define tmpary_discard(a) (ary_discard(a), RBASIC(a)->klass = rb_cArray)
 
 /*
  * Recursively compute permutations of r elements of the set [0..n-1].
@@ -3684,6 +3687,9 @@ permute0(long n, long r, long *p, long index, int *used, VALUE values)
 		for (j = 0; j < r; j++) result_array[j] = values_array[p[j]];
 		ARY_SET_LEN(result, r);
 		rb_yield(result);
+		if (RBASIC(values)->klass) {
+		    rb_raise(rb_eRuntimeError, "permute reentered");
+		}
 	    }
 	}
     }
@@ -3748,8 +3754,8 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 	for (i = 0; i < n; i++) used[i] = 0; /* initialize array */
 
 	permute0(n, r, p, 0, used, ary0); /* compute and yield permutations */
-	rb_str_resize(t0, 0L);
-	rb_str_resize(t1, 0L);
+	tmpbuf_discard(t0);
+	tmpbuf_discard(t1);
 	RBASIC(ary0)->klass = rb_cArray;
     }
     return ary;
@@ -3822,11 +3828,10 @@ rb_ary_combination(VALUE ary, VALUE num)
 	volatile VALUE t0 = tmpbuf(n+1, sizeof(long));
 	long *stack = (long*)RSTRING_PTR(t0);
 	long nlen = combi_len(len, n);
-	volatile VALUE cc = rb_ary_new2(n);
+	volatile VALUE cc = tmpary(n);
 	VALUE *chosen = RARRAY_PTR(cc);
 	long lev = 0;
 
-	RBASIC(cc)->klass = 0;
 	MEMZERO(stack, long, n);
 	stack[0] = -1;
 	for (i = 0; i < nlen; i++) {
@@ -3835,12 +3840,15 @@ rb_ary_combination(VALUE ary, VALUE num)
 		chosen[lev] = RARRAY_PTR(ary)[stack[lev+1] = stack[lev]+1];
 	    }
 	    rb_yield(rb_ary_new4(n, chosen));
+	    if (RBASIC(t0)->klass) {
+		rb_raise(rb_eRuntimeError, "combination reentered");
+	    }
 	    do {
 		stack[lev--]++;
 	    } while (lev && (stack[lev+1]+n == len+lev+1));
 	}
-	rb_str_resize(t0, 0L);
-	ary_discard(cc);
+	tmpbuf_discard(t0);
+	tmpary_discard(cc);
     }
     return ary;
 }
@@ -3918,8 +3926,8 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 	    counters[m]++;
 	}
     }
-    rb_str_resize(t0, 0L);
-    rb_str_resize(t1, 0L);
+    tmpbuf_discard(t0);
+    tmpbuf_discard(t1);
 
     return result;
 }
