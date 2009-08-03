@@ -1,3 +1,9 @@
+Mon Aug  3 17:24:30 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_connect): return value was broken when some
+	  error occurred.
+	  [ruby-core:24234]
+
 Sun Aug  2 06:08:17 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* node.h (rb_thread_status): ISO C89 do not allow a comma at the end of enum.
