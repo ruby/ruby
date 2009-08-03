@@ -50,7 +50,7 @@ stubs = enable_config("tcltk_stubs") || with_config("tcltk_stubs")
 use_X = with_config("X11", (! is_win32))
 
 def find_tcl(tcllib, stubs)
-  paths = ["/usr/local/lib", "/usr/pkg/lib", "/usr/lib"]
+  paths = ["/usr/local/lib64", "/usr/local/lib", "/usr/pkg/lib64", "/usr/pkg/lib", "/usr/lib64", "/usr/lib"]
   if stubs
     func = "Tcl_InitStubs"
     lib = "tclstub"
@@ -276,8 +276,10 @@ end
 if tcltk_framework || 
    (have_header("tcl.h") && have_header("tk.h") &&
       ( !use_X || find_library("X11", "XOpenDisplay",
-                               "/usr/X11/lib", "/usr/lib/X11", 
-                               "/usr/X11R6/lib", "/usr/openwin/lib")) &&
+                               "/usr/X11/lib64",     "/usr/X11/lib",
+                               "/usr/lib64/X11",     "/usr/lib/X11",
+                               "/usr/X11R6/lib64",   "/usr/X11R6/lib",
+                               "/usr/openwin/lib64", "/usr/openwin/lib")) &&
     find_tcl(tcllib, stubs) &&
     find_tk(tklib, stubs))
   $CPPFLAGS += ' -DUSE_TCL_STUBS -DUSE_TK_STUBS' if stubs

@@ -1604,6 +1604,8 @@ class Time
     DateTime.new!(DateTime.jd_to_ajd(jd, fr, of), of, DateTime::ITALY)
   end
 
+  private :to_date, :to_datetime
+
 end
 
 class Date

@@ -1,3 +1,11 @@
+Mon Aug 3  10:06:00 2009 Kirk Haines <khaines@ruby-lang.org>
+
+	* lib/date.rb: Added private on to_date and to_datetime back; this should not have been backported to 1.8.6 from 1.9 yet, since it hasn't gone into 1.8.8/1.8.7.
+
+Wed Jul 29 17:04:00 2009 Kirk Haines <khaines@ruby-lang.org>
+
+	* ext/tk/extconf.rb: Added some additional paths where TCL files are common found; fixes problems with building on some distributions.
+
 Tue Jul 14 13:14:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
 	* lib/complex.rb: Adjust #angle/#arg NaN return as per issue #1715 and recent rubyspec changes. Adjust angle/arg handling of (-0.0).angle as per r23960 & recent rubyspec changes.
