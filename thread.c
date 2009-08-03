@@ -3354,6 +3354,7 @@ recursive_push(VALUE hash, VALUE obj, VALUE paired_obj)
     sym = ID2SYM(rb_frame_this_func());
     if (NIL_P(hash) || TYPE(hash) != T_HASH) {
 	hash = rb_hash_new();
+	OBJ_UNTRUST(hash);
 	rb_thread_local_aset(rb_thread_current(), recursive_key, hash);
 	list = Qnil;
     }
