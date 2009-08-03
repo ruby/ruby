@@ -1,4 +1,6 @@
-Mon Aug  3 15:48:40 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Aug  3 15:56:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (permute0): use chars for boolean array.
 
 	* array.c (rb_ary_{permutation,combination}): disallow reentrance
 	  with continuation since work-buffers cannot restore.

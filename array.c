@@ -3664,7 +3664,7 @@ rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
  * values: the Ruby array that holds the actual values to permute
  */
 static void
-permute0(long n, long r, long *p, long index, int *used, VALUE values)
+permute0(long n, long r, long *p, long index, char *used, VALUE values)
 {
     long i,j;
     for (i = 0; i < n; i++) {
@@ -3746,12 +3746,12 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
     else {             /* this is the general case */
 	volatile VALUE t0 = tmpbuf(n,sizeof(long));
 	long *p = (long*)RSTRING_PTR(t0);
-	volatile VALUE t1 = tmpbuf(n,sizeof(int));
-	int *used = (int*)RSTRING_PTR(t1);
+	volatile VALUE t1 = tmpbuf(n,sizeof(char));
+	char *used = (char*)RSTRING_PTR(t1);
 	VALUE ary0 = ary_make_substitution(ary); /* private defensive copy of ary */
 	RBASIC(ary0)->klass = 0;
 
-	for (i = 0; i < n; i++) used[i] = 0; /* initialize array */
+	MEMZERO(used, char, n); /* initialize array */
 
 	permute0(n, r, p, 0, used, ary0); /* compute and yield permutations */
 	tmpbuf_discard(t0);
