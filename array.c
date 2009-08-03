@@ -3748,8 +3748,8 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 	for (i = 0; i < n; i++) used[i] = 0; /* initialize array */
 
 	permute0(n, r, p, 0, used, ary0); /* compute and yield permutations */
-	ary_discard(t0);
-	ary_discard(t1);
+	rb_str_resize(t0, 0L);
+	rb_str_resize(t1, 0L);
 	RBASIC(ary0)->klass = rb_cArray;
     }
     return ary;
@@ -3839,7 +3839,7 @@ rb_ary_combination(VALUE ary, VALUE num)
 		stack[lev--]++;
 	    } while (lev && (stack[lev+1]+n == len+lev+1));
 	}
-	ary_discard(t0);
+	rb_str_resize(t0, 0L);
 	ary_discard(cc);
     }
     return ary;
@@ -3918,8 +3918,8 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 	    counters[m]++;
 	}
     }
-    ary_discard(t0);
-    ary_discard(t1);
+    rb_str_resize(t0, 0L);
+    rb_str_resize(t1, 0L);
 
     return result;
 }
