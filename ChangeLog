@@ -1,3 +1,8 @@
+Tue Aug  4 06:30:01 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_replace): should copy compare_by_identity status as well.
+	  [ruby-core:24728]
+
 Tue Aug  4 05:43:03 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* thread.c (recursive_push): need to set UNTRUST.  [ruby-dev:38997]

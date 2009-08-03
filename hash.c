@@ -1060,6 +1060,10 @@ rb_hash_replace(VALUE hash, VALUE hash2)
     hash2 = to_hash(hash2);
     if (hash == hash2) return hash;
     rb_hash_clear(hash);
+    if (RHASH(hash2)->ntbl) {
+	rb_hash_tbl(hash);
+	RHASH(hash)->ntbl->type = RHASH(hash2)->ntbl->type;
+    }
     rb_hash_foreach(hash2, replace_i, hash);
     RHASH(hash)->ifnone = RHASH(hash2)->ifnone;
     if (FL_TEST(hash2, HASH_PROC_DEFAULT)) {
