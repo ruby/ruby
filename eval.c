@@ -766,7 +766,7 @@ rb_mod_append_features(VALUE module, VALUE include)
  *  call-seq:
  *     include(module, ...)    => self
  *
- *  Invokes <code>Module.append_features</code> on each parameter in turn.
+ *  Invokes <code>Module.append_features</code> on each parameter in reverse order.
  */
 
 static VALUE
