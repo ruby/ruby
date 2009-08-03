@@ -118,6 +118,27 @@ MultiTkIp_OK.freeze
 ################################################
 # methods for construction
 class MultiTkIp
+  class Command_Queue < Queue
+    def initialize(interp)
+      @interp = interp
+      super()
+    end
+
+    def push(value)
+      if !@interp || @interp.deleted?
+        fail RuntimeError, "Tk interpreter is already deleted"
+      end
+      super(value)
+    end
+    alias << push
+    alias enq push
+
+    def close
+      @interp = nil
+    end
+  end
+  Command_Queue.freeze
+
   BASE_DIR = File.dirname(__FILE__)
 
   WITH_RUBY_VM  = Object.const_defined?(:RubyVM) && ::RubyVM.class == Class
@@ -692,15 +713,29 @@ class MultiTkIp
       begin
         loop do
           sleep 1
-          receiver.kill if @interp.deleted?
+          if @interp.deleted?
+            receiver.kill
+            @cmd_queue.close
+          end
           break unless receiver.alive?
         end
       rescue Exception
         # ignore all kind of Exception
       end
+
       # receiver is dead
+      retry_count = 3
       loop do
-        thread, cmd, *args = @cmd_queue.deq
+        Thread.pass
+        begin
+          thread, cmd, *args = @cmd_queue.deq(true) # non-block
+        rescue ThreadError
+          # queue is empty
+          retry_count -= 1
+          break if retry_count <= 0
+          sleep 0.5
+          retry
+        end
         next unless thread
         if thread.alive?
           if @interp.deleted?
@@ -838,7 +873,7 @@ class MultiTkIp
 
     @safe_level = [$SAFE]
 
-    @cmd_queue = Queue.new
+    @cmd_queue = MultiTkIp::Command_Queue.new(@interp)
 
     @cmd_receiver, @receiver_watchdog = _create_receiver_and_watchdog(@safe_level[0])
 
@@ -1228,6 +1263,7 @@ class MultiTkIp
         @slave_ip_top[ip_name] = top_path
       end
       @interp._eval("::safe::loadTk #{ip_name} #{_keys2opts(tk_opts)}")
+      @interp._invoke('__replace_slave_tk_commands__', ip_name)
     else
       @slave_ip_top[ip_name] = nil
     end
@@ -1259,6 +1295,7 @@ class MultiTkIp
     slave_ip._invoke('set', 'argv0', name) if name.kind_of?(String)
     slave_ip._invoke('set', 'argv', _keys2opts(keys))
     @interp._invoke('load', '', 'Tk', ip_name)
+    @interp._invoke('__replace_slave_tk_commands__', ip_name)
     @slave_ip_tbl[ip_name] = slave_ip
     [slave_ip, ip_name]
   end
@@ -1373,16 +1410,20 @@ class MultiTkIp
           current[:status] = status
 
           begin
-            current[:status].value = interp.mainloop(true)
-          rescue SystemExit=>e
-            current[:status].value = e
-          rescue Exception=>e
-            current[:status].value = e
-            retry if interp.has_mainwindow?
+            begin
+              current[:status].value = interp.mainloop(true)
+            rescue SystemExit=>e
+              current[:status].value = e
+            rescue Exception=>e
+              current[:status].value = e
+              retry if interp.has_mainwindow?
+            ensure
+              mutex.synchronize{ cond_var.broadcast }
+            end
+            current[:status].value = interp.mainloop(false)
           ensure
-            mutex.synchronize{ cond_var.broadcast }
+            interp.delete
           end
-          current[:status].value = interp.mainloop(false)
         }
         until @interp_thread[:interp]
           Thread.pass
@@ -1456,7 +1497,7 @@ class MultiTkIp
 
     @pseudo_toplevel = [false, nil]
 
-    @cmd_queue = Queue.new
+    @cmd_queue = MultiTkIp::Command_Queue.new(@interp)
 
 =begin
     @cmd_receiver, @receiver_watchdog = _create_receiver_and_watchdog(@safe_level[0])

@@ -211,7 +211,7 @@ class TkPhotoImage<TkImage
   end
 
   def put(data, *opts)
-    if opts == []
+    if opts.empty?
       tk_send('put', data)
     elsif opts.size == 1 && opts[0].kind_of?(Hash)
       tk_send('put', data, *_photo_hash_kv(opts[0]))

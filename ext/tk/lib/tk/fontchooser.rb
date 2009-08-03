@@ -31,7 +31,7 @@ class << TkFont::Chooser
     end
   end
 
-  def __conviginfo_value(key, val)
+  def __configinfo_value(key, val)
     case key
     when 'parent'
       window(val)
@@ -51,7 +51,7 @@ class << TkFont::Chooser
       val
     end
   end
-  private :__conviginfo_value
+  private :__configinfo_value
 
   def configinfo(option=nil)
     if !option && TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
@@ -59,7 +59,7 @@ class << TkFont::Chooser
       ret = []
       TkComm.slice_ary(lst, 2){|k, v|
         k = k[1..-1]
-        ret << [k, __conviginfo_value(k, v)]
+        ret << [k, __configinfo_value(k, v)]
       }
       ret
     else
@@ -71,14 +71,14 @@ class << TkFont::Chooser
     if option
       opt = option.to_s
       fail ArgumentError, "Invalid option `#{option.inspect}'" if opt.empty?
-      __conviginfo_value(option.to_s, tk_call('tk','fontchooser',
+      __configinfo_value(option.to_s, tk_call('tk','fontchooser',
                                               'configure',"-#{opt}"))
     else
       lst = tk_split_simplelist(tk_call('tk', 'fontchooser', 'configure'))
       ret = {}
       TkComm.slice_ary(lst, 2){|k, v|
         k = k[1..-1]
-        ret[k] = __conviginfo_value(k, v)
+        ret[k] = __configinfo_value(k, v)
       }
       ret
     end
@@ -144,6 +144,16 @@ class << TkFont::Chooser
         :font=>target.actual_hash, 
         :command=>proc{|fnt, *args| 
           target.configure(TkFont.actual_hash(fnt))
+        }
+      }
+    elsif target.kind_of? Hash
+      # key=>value list or OptionObj
+      fnt = target[:font] rescue ''
+      fnt = fnt.actual_hash if fnt.kind_of?(TkFont)
+      configs = {
+        :font => fnt,
+        :command=>proc{|fnt, *args| 
+          target[:font] = TkFont.actual_hash(fnt)
         }
       }
     else

@@ -1,3 +1,17 @@
+Tue Aug  4 03:56:51 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tcltklib.c: fix trouble on old-style C function
+	  declarations [ruby-core:22871].
+
+	* ext/tk/lib/tcltklib.c: (ruby_1_8) fix warning about RUBY_RELEASE_DATE
+
+	* ext/tk/lib/tk/multi-tk.rb: kill zombie threads.
+
+	* ext/tk/lib/tk/fontchooser.rb: fix typo and support OptionObj.
+
+	* ext/tk/lib/tk/{canvas.rb,virtevent.rb,image.rb,timer.rb}:
+	  don't create unnecessary array.
+
 Mon Aug  3 22:19:24 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* eval.c (rb_mod_include): fix document.  [ruby-core:24675]

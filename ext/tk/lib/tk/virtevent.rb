@@ -100,7 +100,7 @@ class TkVirtualEvent<TkObject
   end
 
   def delete(*sequences)
-    if sequences == []
+    if sequences.empty?
       tk_call_without_enc('event', 'delete', "<#{@id}>")
       TkVirtualEventTBL.mutex.synchronize{
         TkVirtualEventTBL.delete(@id)
