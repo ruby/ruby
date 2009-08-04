@@ -1,3 +1,7 @@
+Tue Aug 4   8:53:00 2009 Kirk Haines <khaines@ruby-lang.org>
+
+	* lib/rdoc/parsers/parse_c.rb: Fixed a small error in the documentation.
+
 Mon Aug 3  10:06:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
 	* lib/date.rb: Added private on to_date and to_datetime back; this should not have been backported to 1.8.6 from 1.9 yet, since it hasn't gone into 1.8.8/1.8.7.
