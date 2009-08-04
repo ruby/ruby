@@ -34,11 +34,15 @@ encdirs.each do |encdir|
     next if files[fn]
     files[fn] = true
     open(File.join(encdir,fn)) do |f|
-      orig = nil
       name = nil
       f.each_line do |line|
         if (/^OnigEncodingDefine/ =~ line)..(/"(.*?)"/ =~ line)
           if $1
+            if name
+              lines << %[ENC_SET_BASE("#$1", "#{name}");]
+            else
+              name = $1
+            end
             check_duplication(defs, $1, fn, $.)
             encodings << $1
             count += 1

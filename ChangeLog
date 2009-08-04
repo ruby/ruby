@@ -1,3 +1,14 @@
+Tue Aug  4 09:33:54 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_enc_set_base): Add for setting base encoding
+	  with their names. this is internal function.
+
+	* template/encdb.h.tmpl: specify ENC_SET_BASE for second encodings in
+	  each encoding files.
+
+	* enc/encdb.c (rb_enc_set_base): add a declaration.
+	  (ENC_SET_BASE): ditto.
+
 Tue Aug  4 06:30:01 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_replace): should copy compare_by_identity status as well.

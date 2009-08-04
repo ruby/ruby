@@ -275,6 +275,18 @@ set_base_encoding(int index, rb_encoding *base)
     return enc;
 }
 
+/* for encdb.h
+ * Set base encoding for encodings which are not replicas
+ * but not in their own files.
+ */
+void
+rb_enc_set_base(const char *name, const char *orig)
+{
+    int idx = rb_enc_registered(name);
+    int origidx = rb_enc_registered(orig);
+    set_base_encoding(idx, rb_enc_from_index(origidx));
+}
+
 int
 rb_enc_replicate(const char *name, rb_encoding *encoding)
 {
