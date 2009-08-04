@@ -68,7 +68,7 @@ require 'rdoc/known_classes'
 # Ruby function is in the same source file as the rb_define_method call.
 # If this isn't the case, add the comment:
 #
-#    rb_define_method(....);  // in: filename
+#    rb_define_method(....);  // in filename
 #
 # As an example, we might have an extension that defines multiple classes
 # in its Init_xxx method. We could document them using
