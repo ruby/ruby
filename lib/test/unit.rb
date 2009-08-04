@@ -32,7 +32,7 @@ module Test
       end
 
       files.map! {|f|
-        f = f.gsub(Regexp.compile(Regexp.quote(File::ALT_SEPARATOR)), File::SEPARATOR) if File::ALT_SEPARATOR
+        f = f.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
         if File.directory? f
           Dir["#{f}/**/test_*.rb"]
         elsif File.file? f
@@ -47,12 +47,12 @@ module Test
       files.reject! {|f| reject_pat =~ f }
 
       files.each {|f|
-        d = File.dirname(File.expand_path(f))
+        d = File.dirname(path = File.expand_path(f))
         unless $:.include? d
           $: << d
         end
         begin
-          require f
+          require path
         rescue LoadError
           puts "#{f}: #{$!}"
         end

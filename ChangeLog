@@ -1,3 +1,8 @@
+Wed Aug  5 03:28:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit.setup_argv): expands paths before
+	  requiring.  [ruby-dev:39012]
+
 Wed Aug  5 01:38:27 2009  Yusuke Endoh  <mame@tsg.ne.jp>
  
 	* lib/pp.rb (guard_inspect_key): untrust internal hash to prevent
