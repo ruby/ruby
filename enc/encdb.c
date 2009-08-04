@@ -18,7 +18,7 @@ void rb_enc_set_base(const char *name, const char *orig);
 #define ENC_ALIAS(name, orig) rb_encdb_alias(name, orig)
 #define ENC_DUMMY(name) rb_encdb_dummy(name)
 #define ENC_DEFINE(name) rb_encdb_declare(name)
-#define ENC_SET_BASE(name) rb_enc_set_base(name)
+#define ENC_SET_BASE(name, orig) rb_enc_set_base(name, orig)
 
 void
 Init_encdb(void)

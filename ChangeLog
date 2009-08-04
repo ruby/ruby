@@ -1,3 +1,8 @@
+Tue Aug  4 12:40:45 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/encdb.c (ENC_SET_BASE): fix typo.
+	  patch by ujihisa [ruby-dev:39004]
+
 Tue Aug  4 09:41:11 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/big5.c (EncLen_Big5): back to original Big5 table.
