@@ -1,3 +1,9 @@
+Tue Aug  4 15:06:58 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/ipaddr.rb (IPAddr#{eql?,hash}): Add IPAddr#{eql?,hash} so
+	  that an IPAddr object can be used as a hash key, a set element,
+	  etc.; suggested by Nick Brown <nick@nick-brown.com>.
+
 Tue Aug  4 13:07:10 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/oniguruma.h (ONIG_SYN_WARN_CC_DUP): defined.
