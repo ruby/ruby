@@ -1,3 +1,8 @@
+Tue Aug  4 22:10:34 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (has_redirection): need to execute shell if commandline
+	  includes newline.  cf. [ruby-core:24560]
+
 Tue Aug  4 15:06:58 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/ipaddr.rb (IPAddr#{eql?,hash}): Add IPAddr#{eql?,hash} so
