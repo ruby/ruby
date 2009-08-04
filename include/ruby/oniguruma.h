@@ -466,6 +466,7 @@ ONIG_EXTERN const OnigSyntaxType*   OnigDefaultSyntax;
 /* syntax (behavior) warning */
 #define ONIG_SYN_WARN_CC_OP_NOT_ESCAPED          (1U<<24) /* [,-,] */
 #define ONIG_SYN_WARN_REDUNDANT_NESTED_REPEAT    (1U<<25) /* (?:a*)+ */
+#define ONIG_SYN_WARN_CC_DUP                     (1U<<26) /* [aa] */
 
 /* meta character specifiers (onig_set_meta_char()) */
 #define ONIG_META_CHAR_ESCAPE               0
