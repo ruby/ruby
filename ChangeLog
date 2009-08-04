@@ -1,3 +1,15 @@
+Tue Aug  4 09:41:11 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/big5.c (EncLen_Big5): back to original Big5 table.
+	  (EncLen_Big5_HKSCS): for Big5-HKSCS.
+	  (trans): add the lead byte table for Big5-HKSCS.
+	  (big5_mbc_enc_len): abstract function for Big5 series.
+	  (big5_mbc_enc_len): for Big5.
+	  (big5_hkscs_mbc_enc_len): for Big5-HKSCS.
+	  (BIG5_HKSCS_P): added.
+	  (BIG5_ISMB_FIRST): add routine for Big5-HKSCS.
+	  (big5_hkscs): add for Big5-HKSCS.
+
 Tue Aug  4 09:33:54 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_enc_set_base): Add for setting base encoding

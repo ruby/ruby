@@ -30,6 +30,24 @@
 #include "regenc.h"
 
 static const int EncLen_BIG5[] = {
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1
+};
+static const int EncLen_BIG5_HKSCS[] = {
  /* LEN  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
  /* 0 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
  /* 1 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -88,24 +106,54 @@ static const signed char trans[][0x100] = {
     /* d */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
     /* e */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
     /* f */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, F 
+  },
+  { /* S2   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
+    /* 0 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 1 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 2 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 3 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 4 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 5 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 6 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 7 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 8 */ F, F, F, F, F, F, F, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* 9 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* a */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* b */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* c */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* d */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* e */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* f */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, F
   }
 };
 #undef A
 #undef F
 
 static int
-big5_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
+big5_mbc_enc_len0(const UChar* p, const UChar* e, int tridx, const int tbl[])
 {
   int firstbyte = *p++;
-  state_t s = trans[0][firstbyte];
+  state_t s = trans[tridx][firstbyte];
 #define RETURN(n) \
     return s == ACCEPT ? ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(n) : \
                          ONIGENC_CONSTRUCT_MBCLEN_INVALID()
   if (s < 0) RETURN(1);
-  if (p == e) return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(EncLen_BIG5[firstbyte]-1);
+  if (p == e) return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(tbl[firstbyte]-1);
   s = trans[s][*p++];
   RETURN(2);
 #undef RETURN
+}
+
+static int
+big5_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
+{
+    return big5_mbc_enc_len0(p, e, 0, EncLen_BIG5);
+}
+
+static int
+big5_hkscs_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
+{
+    return big5_mbc_enc_len0(p, e, 2, EncLen_BIG5_HKSCS);
 }
 
 static OnigCodePoint
@@ -162,7 +210,11 @@ static const char BIG5_CAN_BE_TRAIL_TABLE[256] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0
 };
 
-#define BIG5_ISMB_FIRST(byte)  (EncLen_BIG5[byte] > 1)
+#define BIG5_HKSCS_P(enc) ((enc)->precise_mbc_enc_len == big5_hkscs_mbc_enc_len)
+#define BIG5_ISMB_FIRST(byte)  ( \
+	BIG5_HKSCS_P(enc) ? EncLen_BIG5_HKSCS[byte] > 1 : \
+	EncLen_BIG5[byte] > 1 \
+	)
 #define BIG5_ISMB_TRAIL(byte)  BIG5_CAN_BE_TRAIL_TABLE[(byte)]
 
 static UChar*
@@ -229,5 +281,22 @@ ENC_ALIAS("CP950", "Big5")
  * Source:   See (http://www.iana.org/assignments/charset-reg/Big5-HKSCS)
  * Alias: None
  */
-ENC_REPLICATE("Big5-HKSCS", "Big5")
+OnigEncodingDefine(big5_hkscs, BIG5_HKSCS) = {
+  big5_hkscs_mbc_enc_len,
+  "Big5-HKSCS",     /* name */
+  2,          /* max enc length */
+  1,          /* min enc length */
+  onigenc_is_mbc_newline_0x0a,
+  big5_mbc_to_code,
+  onigenc_mb2_code_to_mbclen,
+  big5_code_to_mbc,
+  big5_mbc_case_fold,
+  onigenc_ascii_apply_all_case_fold,
+  onigenc_ascii_get_case_fold_codes_by_str,
+  onigenc_minimum_property_name_to_ctype,
+  big5_is_code_ctype,
+  onigenc_not_support_get_ctype_code_range,
+  big5_left_adjust_char_head,
+  big5_is_allowed_reverse_match
+};
 ENC_ALIAS("CP951", "Big5-HKSCS")
