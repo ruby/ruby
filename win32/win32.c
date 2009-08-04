@@ -1196,8 +1196,8 @@ has_redirection(const char *cmd)
     const char *ptr;
 
     //
-    // Scan the string, looking for redirection (< or >) or pipe 
-    // characters (|) that are not in a quoted string
+    // Scan the string, looking for redirection characters (< or >), pipe
+    // character (|) or newline (\n) that are not in a quoted string
     //
 
     for (ptr = cmd; *ptr;) {
@@ -1214,6 +1214,7 @@ has_redirection(const char *cmd)
 	  case '>':
 	  case '<':
 	  case '|':
+	  case '\n':
 	    if (!quote)
 		return TRUE;
 	    ptr++;

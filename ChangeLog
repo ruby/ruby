@@ -1,3 +1,8 @@
+Tue Aug  4 22:15:27 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (has_redirection): need to execute shell if commandline
+	  includes newline.  cf. [ruby-core:24560]
+
 Tue Aug  4 03:56:51 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tcltklib.c: fix trouble on old-style C function
