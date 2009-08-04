@@ -1,3 +1,10 @@
+Wed Aug  5 01:38:27 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+ 
+	* lib/pp.rb (guard_inspect_key): untrust internal hash to prevent
+	  unexpected SecurityError.
+
+	* test/ruby/test_object.rb: add a test for [ruby-dev:38982].
+
 Wed Aug  5 00:33:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/parser/c.rb: fixed a small error in the documentation.

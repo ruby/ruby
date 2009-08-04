@@ -413,4 +413,40 @@ class TestObject < Test::Unit::TestCase
     assert_equal(true, s.untrusted?)
     assert_equal(true, s.tainted?)
   end
+
+  def test_exec_recursive
+    Thread.current[:__recursive_key__] = nil
+    a = [[]]
+    a.inspect
+
+    assert_nothing_raised do
+      -> do
+        $SAFE = 4
+        begin
+          a.hash
+        rescue ArgumentError
+        end
+      end.call
+    end
+
+    -> do
+      assert_nothing_raised do
+        $SAFE = 4
+        a.inspect
+      end
+    end.call
+
+    -> do
+      o = Object.new
+      def o.to_ary(x); end
+      def o.==(x); $SAFE = 4; false; end
+      a = [[o]]
+      b = []
+      b << b
+
+      assert_nothing_raised do
+        b == a
+      end
+    end.call
+  end
 end
