@@ -304,7 +304,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(/a/, eval(%q(s="\u0061";/#{s}/n)))
     assert_raise(RegexpError) { s = "\u3042"; eval(%q(/#{s}/n)) }
     assert_raise(RegexpError) { s = "\u0061"; eval(%q(/\u3042#{s}/n)) }
-    assert_raise(ArgumentError) { s1=[0xff].pack("C"); s2="\u3042"; eval(%q(/#{s1}#{s2}/)) }
+    assert_raise(RegexpError) { s1=[0xff].pack("C"); s2="\u3042"; eval(%q(/#{s1}#{s2}/)) }
 
     assert_raise(ArgumentError) { s = '\x'; /#{ s }/ }
 
