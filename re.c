@@ -2264,13 +2264,14 @@ rb_reg_check_preprocess(VALUE str)
 }
 
 static VALUE
-rb_reg_preprocess_dregexp(VALUE ary)
+rb_reg_preprocess_dregexp(VALUE ary, int options)
 {
     rb_encoding *fixed_enc = 0;
     rb_encoding *regexp_enc = 0;
     onig_errmsg_buffer err = "";
     int i;
     VALUE result = 0;
+    rb_encoding *ascii8bit = rb_ascii8bit_encoding();
 
     if (RARRAY_LEN(ary) == 0) {
         rb_raise(rb_eArgError, "no arguments given");
@@ -2282,10 +2283,16 @@ rb_reg_preprocess_dregexp(VALUE ary)
         char *p, *end;
         rb_encoding *src_enc;
 
+	src_enc = rb_enc_get(str);
+	if (options & ARG_ENCODING_NONE &&
+		src_enc != ascii8bit &&
+		rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
+	    rb_raise(rb_eRegexpError, "/.../n has a non escaped non ASCII character in non ASCII-8BIT script");
+	}
+
         StringValue(str);
         p = RSTRING_PTR(str);
         end = p + RSTRING_LEN(str);
-        src_enc = rb_enc_get(str);
 
         buf = rb_reg_preprocess(p, end, src_enc, &fixed_enc, err);
 
@@ -2421,7 +2428,7 @@ rb_reg_new_str(VALUE s, int options)
 VALUE
 rb_reg_new_ary(VALUE ary, int opt)
 {
-    return rb_reg_new_str(rb_reg_preprocess_dregexp(ary), opt);
+    return rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
 }
 
 VALUE
