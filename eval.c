@@ -1291,10 +1291,12 @@ error_print()
     if (EXEC_TAG()) goto error;
     if (NIL_P(errat)){
 	ruby_set_current_source();
-	if (ruby_sourcefile)
-	    warn_printf("%s:%d", ruby_sourcefile, ruby_sourceline);
-	else
+	if (!ruby_sourcefile)
 	    warn_printf("%d", ruby_sourceline);
+	else if (!ruby_sourceline)
+	    warn_printf("%s", ruby_sourcefile);
+	else
+	    warn_printf("%s:%d", ruby_sourcefile, ruby_sourceline);
     }
     else if (RARRAY(errat)->len == 0) {
 	error_pos();
@@ -3411,8 +3413,11 @@ rb_eval(self, n)
 		result = prot_tag->retval;
 	    }
 	    POP_TAG();
-	    if (state != TAG_RAISE) ruby_errinfo = e_info;
-	    if (state) {
+	    switch (state) {
+	      case 0: break;
+	      default:
+		ruby_errinfo = e_info;
+	      case TAG_RAISE: case TAG_FATAL:
 		JUMP_TAG(state);
 	    }
 	    /* no exception raised */
@@ -4658,6 +4663,7 @@ rb_longjmp(tag, mesg)
 
     if (rb_thread_set_raised(th)) {
 	ruby_errinfo = exception_error;
+	rb_thread_reset_raised(th);
 	JUMP_TAG(TAG_FATAL);
     }
     if (NIL_P(mesg)) mesg = ruby_errinfo;
