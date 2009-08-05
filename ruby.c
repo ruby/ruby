@@ -1508,6 +1508,7 @@ load_file_internal(VALUE arg)
 	rb_funcall(f, set_encoding, 1, rb_enc_from_encoding(enc));
 
 	if (opt->xflag) {
+	  search_shebang:
 	    forbid_setid("-x");
 	    opt->xflag = Qfalse;
 	    while (!NIL_P(line = rb_io_gets(f))) {
@@ -1532,37 +1533,8 @@ load_file_internal(VALUE arg)
 		    return 0;
 
 		if ((p = strstr(RSTRING_PTR(line), "ruby")) == 0) {
-		    void rb_thread_stop_timer_thread(void);
-		    /* not ruby script, kick the program */
-		    char **argv;
-		    char *path;
-		    char *pend = RSTRING_PTR(line) + RSTRING_LEN(line);
-
-		    p = RSTRING_PTR(line);	/* skip `#!' */
-		    if (pend[-1] == '\n')
-			pend--;	/* chomp line */
-		    if (pend[-1] == '\r')
-			pend--;
-		    *pend = '\0';
-		    while (p < pend && ISSPACE(*p))
-			p++;
-		    path = p;	/* interpreter path */
-		    while (p < pend && !ISSPACE(*p))
-			p++;
-		    *p++ = '\0';
-		    if (p < pend) {
-			argv = ALLOCA_N(char *, origarg.argc + 3);
-			argv[1] = p;
-			MEMCPY(argv + 2, origarg.argv + 1, char *, origarg.argc);
-		    }
-		    else {
-			argv = origarg.argv;
-		    }
-		    argv[0] = path;
-		    rb_thread_stop_timer_thread();
-		    execv(path, argv);
-
-		    rb_fatal("Can't exec %s", path);
+		    /* not ruby script, assume -x flag */
+		    goto search_shebang;
 		}
 
 	      start_read:

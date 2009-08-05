@@ -46,6 +46,18 @@ class TestSystem < Test::Unit::TestCase
       assert_equal('555', `#{ruby} -x #{tmpfilename} -zzz=555`)
 
       tmp = open(tmpfilename, "w")
+      tmp.print "#! /non/exist\\interpreter?/./to|be:ignored\n";
+      tmp.print "this is a leading junk\n";
+      tmp.print "#! /usr/local/bin/ruby -s\n";
+      tmp.print "print $zzz\n";
+      tmp.print "__END__\n";
+      tmp.print "this is a trailing junk\n";
+      tmp.close
+
+      assert_equal('', `#{ruby} #{tmpfilename}`)
+      assert_equal('555', `#{ruby} #{tmpfilename} -zzz=555`)
+
+      tmp = open(tmpfilename, "w")
       for i in 1..5
         tmp.print i, "\n"
       end

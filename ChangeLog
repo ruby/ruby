@@ -1,3 +1,8 @@
+Wed Aug  5 19:19:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file_internal): assumes -x flag if no "ruby" is in
+	  the shebang line.  [ruby-dev:39015]
+
 Wed Aug  5 19:11:01 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ruby.c (rb_stdio_set_default_encoding): declared.
