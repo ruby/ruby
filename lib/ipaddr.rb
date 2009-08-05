@@ -338,7 +338,7 @@ class IPAddr
 
   # Returns a hash value used by Hash, Set, and Array classes
   def hash
-    return (@addr.hash << 1) | (ipv4? ? 0 : 1)
+    return ([@addr, @mask_addr].hash << 1) | (ipv4? ? 0 : 1)
   end
 
   # Creates a Range object for the network address.
@@ -827,17 +827,19 @@ class TC_Operator < Test::Unit::TestCase
     a4 = IPAddr.new('3ffe:505:2::1')
     a5 = IPAddr.new('127.0.0.1')
     a6 = IPAddr.new('::1')
+    a7 = IPAddr.new('192.168.2.0/25')
+    a8 = IPAddr.new('192.168.2.0/25')
 
-    h = { a1 => 'ipv4', a2 => 'ipv4', a3 => 'ipv6', a4 => 'ipv6', a5 => 'ipv4', a6 => 'ipv6' }
-    assert_equal(4, h.size)
+    h = { a1 => 'ipv4', a2 => 'ipv4', a3 => 'ipv6', a4 => 'ipv6', a5 => 'ipv4', a6 => 'ipv6', a7 => 'ipv4', a8 => 'ipv4'}
+    assert_equal(5, h.size)
     assert_equal('ipv4', h[a1])
     assert_equal('ipv4', h[a2])
     assert_equal('ipv6', h[a3])
     assert_equal('ipv6', h[a4])
 
     require 'set'
-    s = Set[a1, a2, a3, a4, a5, a6]
-    assert_equal(4, s.size)
+    s = Set[a1, a2, a3, a4, a5, a6, a7, a8]
+    assert_equal(5, s.size)
     assert_equal(true, s.include?(a1))
     assert_equal(true, s.include?(a2))
     assert_equal(true, s.include?(a3))
