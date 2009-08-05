@@ -87,10 +87,12 @@ error_print(void)
     if (NIL_P(errat)) {
 	const char *file = rb_sourcefile();
 	int line = rb_sourceline();
-	if (file)
-	    warn_printf("%s:%d", file, line);
-	else
+	if (!file)
 	    warn_printf("%d", line);
+	else if (!line)
+	    warn_printf("%s", file, line);
+	else
+	    warn_printf("%s:%d", file, line);
     }
     else if (RARRAY_LEN(errat) == 0) {
 	error_pos();
