@@ -1,5 +1,5 @@
 define rp
-  if dummy_gdb_enums.special_consts
+  if ruby_dummy_gdb_enums.special_consts
   end
   if (VALUE)($arg0) & RUBY_FIXNUM_FLAG
     printf "FIXNUM: %ld\n", (long)($arg0) >> 1

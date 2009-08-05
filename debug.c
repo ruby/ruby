@@ -18,7 +18,7 @@
 #include "id.h"
 
 /* for gdb */
-static const union {
+const union {
     enum ruby_special_consts    special_consts;
     enum ruby_value_type        value_type;
     enum ruby_tag_type          tag_type;
@@ -67,7 +67,7 @@ static const union {
         RUBY_NODE_LMASK     = NODE_LMASK,
         RUBY_NODE_FL_NEWLINE   = NODE_FL_NEWLINE
     } various;
-} dummy_gdb_enums;
+} ruby_dummy_gdb_enums;
 
 const VALUE RUBY_FL_USER19    = FL_USER19;
 
