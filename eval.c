@@ -3413,11 +3413,10 @@ rb_eval(self, n)
 		result = prot_tag->retval;
 	    }
 	    POP_TAG();
-	    switch (state) {
-	      case 0: break;
-	      default:
+	    if (state != TAG_RAISE && state != TAG_FATAL) {
 		ruby_errinfo = e_info;
-	      case TAG_RAISE: case TAG_FATAL:
+	    }
+	    if (state) {
 		JUMP_TAG(state);
 	    }
 	    /* no exception raised */
