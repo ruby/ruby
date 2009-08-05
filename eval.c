@@ -11386,24 +11386,25 @@ rb_thread_schedule()
 	}
 	if ((th->status == THREAD_RUNNABLE || th == th_found) && th->stk_ptr) {
 	    if (!next || next->priority < th->priority) {
-                if (th == th_found) {
-                    th_found->status = THREAD_RUNNABLE;
-                    th_found->wait_for = 0;
-                    if (th->wait_for&WAIT_FD) {
-                        th_found->fd = 0;
-                    }
-                    else { /* th->wait_for&WAIT_SELECT */
-                        n = intersect_fds(&readfds, &th_found->readfds, max) +
-                            intersect_fds(&writefds, &th_found->writefds, max) +
-                            intersect_fds(&exceptfds, &th_found->exceptfds, max);
-                        th_found->select_value = n;
-                    }
-                }
 	        next = th;
             }
 	}
     }
     END_FOREACH_FROM(curr, th);
+
+    if (found && next == th_found) {
+        th_found->status = THREAD_RUNNABLE;
+        if (th->wait_for&WAIT_FD) {
+            th_found->fd = 0;
+        }
+        else { /* th->wait_for&WAIT_SELECT */
+            n = intersect_fds(&readfds, &th_found->readfds, max) +
+                intersect_fds(&writefds, &th_found->writefds, max) +
+                intersect_fds(&exceptfds, &th_found->exceptfds, max);
+            th_found->select_value = n;
+        }
+        th_found->wait_for = 0;
+    }
 
     if (!next) {
 	/* raise fatal error to main thread */
