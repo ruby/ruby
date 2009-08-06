@@ -1,9 +1,7 @@
 require_relative 'base'
 
-module TestMkmf
-  class TestSizeof < Test::Unit::TestCase
-    include TestMkmf
-
+class TestMkmf
+  class TestSizeof < TestMkmf
     def test_sizeof
       open("confdefs.h", "w") {|f|
         f.puts "typedef struct {char x;} test1_t;"
