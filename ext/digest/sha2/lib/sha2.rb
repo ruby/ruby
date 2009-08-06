@@ -10,6 +10,7 @@
 #   $Id$
 
 require 'digest'
+require 'digest/sha2.so'
 
 module Digest
   #
