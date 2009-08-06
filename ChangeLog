@@ -1,3 +1,9 @@
+Fri Aug  7 02:03:48 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/sha2/sha2.[ch]: Update to 1.0 RELEASE which fixes an
+	  off-by-one bug in SHA-256 hashing.  Reduce differences from
+	  the original while at it. [Bug #1799]
+
 Fri Aug  7 02:00:06 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/*/extconf.rb: inttypes.h and unistd.h need not be
