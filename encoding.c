@@ -45,6 +45,9 @@ void rb_enc_init(void);
 #define ENCODING_COUNT ENCINDEX_BUILTIN_MAX
 #define UNSPECIFIED_ENCODING INT_MAX
 
+#define ENCODING_NAMELEN_MAX 63
+#define valid_encoding_name_p(name) ((name) && strlen(name) <= ENCODING_NAMELEN_MAX)
+
 #define enc_autoload_p(enc) (!rb_enc_mbmaxlen(enc))
 
 static int load_encoding(const char *name);
@@ -189,6 +192,7 @@ enc_register_at(int index, const char *name, rb_encoding *encoding)
     struct rb_encoding_entry *ent = &enc_table.list[index];
     VALUE list;
 
+    if (!valid_encoding_name_p(name)) return -1;
     if (!ent->name) {
 	ent->name = name = strdup(name);
     }
@@ -384,6 +388,7 @@ enc_alias_internal(const char *alias, int idx)
 static int
 enc_alias(const char *alias, int idx)
 {
+    if (!valid_encoding_name_p(alias)) return -1;
     alias = enc_alias_internal(alias, idx);
     set_encoding_const(alias, rb_enc_from_index(idx));
     return idx;
@@ -1078,7 +1083,7 @@ rb_filesystem_encoding(void)
     snprintf(cp, sizeof cp, "CP%d", AreFileApisANSI() ? GetACP() : GetOEMCP());
     enc = rb_enc_find(cp);
 #elif defined __APPLE__
-    enc = rb_enc_find("UTF-8");
+    enc = rb_utf8_encoding();
 #else
     enc = rb_default_external_encoding();
 #endif
@@ -1290,17 +1295,22 @@ set_encoding_const(const char *name, rb_encoding *enc)
 	}
     }
     if (!*s) {
+	if (s - name > ENCODING_NAMELEN_MAX) return;
 	valid = 1;
 	rb_define_const(rb_cEncoding, name, encoding);
     }
     if (!valid || haslower) {
-	int len = strlen(name) + 1;
+	size_t len = s - name;
+	if (len > ENCODING_NAMELEN_MAX) return;
 	if (!haslower || !hasupper) {
 	    do {
 		if (ISLOWER(*s)) haslower = 1;
 		if (ISUPPER(*s)) hasupper = 1;
 	    } while (*++s && (!haslower || !hasupper));
+	    len = s - name;
 	}
+	len += strlen(s);
+	if (len++ > ENCODING_NAMELEN_MAX) return;
 	MEMCPY(s = ALLOCA_N(char, len), name, char, len);
 	name = s;
 	if (!valid) {

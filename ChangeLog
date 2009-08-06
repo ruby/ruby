@@ -1,4 +1,7 @@
-Thu Aug  6 16:25:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug  6 16:26:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (valid_encoding_name_p): rejects too long encoding
+	  names.
 
 	* encoding.c (encoding_data_type): typed data.
 
