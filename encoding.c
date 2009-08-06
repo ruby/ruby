@@ -49,15 +49,22 @@ void rb_enc_init(void);
 
 static int load_encoding(const char *name);
 
-static void
-enc_mark(void *ptr)
+static size_t
+enc_memsize(void *p)
 {
+    return 0;
 }
+
+static const rb_data_type_t encoding_data_type = {
+    "encoding", 0, 0, enc_memsize,
+};
+
+#define is_data_encoding(obj) (RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj) != &encoding_data_type)
 
 static VALUE
 enc_new(rb_encoding *encoding)
 {
-    return Data_Wrap_Struct(rb_cEncoding, enc_mark, 0, encoding);
+    return TypedData_Wrap_Struct(rb_cEncoding, &encoding_data_type, encoding);
 }
 
 VALUE
@@ -97,8 +104,7 @@ check_encoding(rb_encoding *enc)
 static int
 enc_check_encoding(VALUE obj)
 {
-    if (SPECIAL_CONST_P(obj) || BUILTIN_TYPE(obj) != T_DATA ||
-	RDATA(obj)->dmark != enc_mark) {
+    if (SPECIAL_CONST_P(obj) || !rb_typeddata_is_kind_of(obj, &encoding_data_type)) {
 	return -1;
     }
     return check_encoding(RDATA(obj)->data);
@@ -551,14 +557,14 @@ rb_enc_find(const char *name)
 static inline int
 enc_capable(VALUE obj)
 {
-    if (SPECIAL_CONST_P(obj)) return FALSE;
+    if (SPECIAL_CONST_P(obj)) return SYMBOL_P(obj);
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
       case T_REGEXP:
       case T_FILE:
 	return TRUE;
       case T_DATA:
-	if (RDATA(obj)->dmark == enc_mark) return TRUE;
+	if (!is_data_encoding(obj)) return TRUE;
       default:
 	return FALSE;
     }
@@ -577,6 +583,10 @@ rb_enc_get_index(VALUE obj)
     int i = -1;
     VALUE tmp;
 
+    if (SPECIAL_CONST_P(obj)) {
+	if (!SYMBOL_P(obj)) return -1;
+	obj = rb_id2str(SYM2ID(obj));
+    }
     switch (BUILTIN_TYPE(obj)) {
       as_default:
       default:
@@ -596,7 +606,7 @@ rb_enc_get_index(VALUE obj)
 	else obj = tmp;
 	if (NIL_P(obj)) break;
       case T_DATA:
-	if (RDATA(obj)->dmark == enc_mark) {
+	if (is_data_encoding(obj)) {
 	    i = enc_check_encoding(obj);
 	}
 	else {
