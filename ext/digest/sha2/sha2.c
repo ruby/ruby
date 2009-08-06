@@ -569,9 +569,9 @@ void SHA256_Update(SHA256_CTX* context, const sha2_byte *data, size_t len) {
 }
 
 #ifdef RUBY
-void SHA256_Final(sha2_byte digest[], SHA256_CTX* context) {
-#else
 void SHA256_Finish(SHA256_CTX* context, sha2_byte digest[]) {
+#else
+void SHA256_Final(sha2_byte digest[], SHA256_CTX* context) {
 #endif
 	sha2_word32	*d = (sha2_word32*)digest;
 	unsigned int	usedspace;
@@ -940,9 +940,9 @@ void SHA512_Last(SHA512_CTX* context) {
 }
 
 #ifdef RUBY
-void SHA512_Final(sha2_byte digest[], SHA512_CTX* context) {
-#else
 void SHA512_Finish(SHA512_CTX* context, sha2_byte digest[]) {
+#else
+void SHA512_Final(sha2_byte digest[], SHA512_CTX* context) {
 #endif
 	sha2_word64	*d = (sha2_word64*)digest;
 
@@ -1023,9 +1023,9 @@ void SHA384_Update(SHA384_CTX* context, const sha2_byte* data, size_t len) {
 }
 
 #ifdef RUBY
-void SHA384_Final(sha2_byte digest[], SHA384_CTX* context) {
-#else
 void SHA384_Finish(SHA384_CTX* context, sha2_byte digest[]) {
+#else
+void SHA384_Final(sha2_byte digest[], SHA384_CTX* context) {
 #endif
 	sha2_word64	*d = (sha2_word64*)digest;
 
