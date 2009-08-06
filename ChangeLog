@@ -1,3 +1,8 @@
+Fri Aug  7 01:35:26 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/*/extconf.rb: inttypes.h and unistd.h need not be
+	  checked here. [ruby-dev:39032]
+
 Fri Aug  7 01:04:17 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb (search_tclConfig): fix logic bug.
