@@ -1,4 +1,4 @@
-Thu Aug  6 16:26:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug  6 16:36:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (valid_encoding_name_p): rejects too long encoding
 	  names.
@@ -7,6 +7,9 @@ Thu Aug  6 16:26:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_capable, rb_enc_get_index): Symbol is encoding
 	  capable.
+
+	* encoding.c (rb_enc_associate_index): cannot set encoding on
+	  special constants.
 
 Thu Aug  6 15:44:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
