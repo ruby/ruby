@@ -1,3 +1,7 @@
+Fri Aug  7 03:25:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_error.c (error_print): removed an extra argument.
+
 Fri Aug  7 03:22:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_exc_raise, rb_exc_fatal): nil is used to reraise.

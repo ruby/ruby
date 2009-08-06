@@ -90,7 +90,7 @@ error_print(void)
 	if (!file)
 	    warn_printf("%d", line);
 	else if (!line)
-	    warn_printf("%s", file, line);
+	    warn_printf("%s", file);
 	else
 	    warn_printf("%s:%d", file, line);
     }
