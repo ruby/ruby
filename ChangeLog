@@ -1,3 +1,8 @@
+Thu Aug  6 19:46:56 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/sha2/sha2.h (BYTE_ORDER): Define BYTE_ORDER as
+	  necessary. [ruby-dev:39029]
+
 Thu Aug  6 16:36:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (valid_encoding_name_p): rejects too long encoding

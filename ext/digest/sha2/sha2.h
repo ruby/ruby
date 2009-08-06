@@ -54,7 +54,16 @@ extern "C" {
 #  undef NOPROTO 
 # else
 #  define NOPROTO
-# endif
+# endif /* HAVE_PROTOTYPES */
+# ifndef BYTE_ORDER
+#  define LITTLE_ENDIAN	1234
+#  define BIG_ENDIAN	4321
+#  ifdef WORDS_BIGENDIAN
+#   define BYTE_ORDER	BIG_ENDIAN
+#  else
+#   define BYTE_ORDER	LITTLE_ENDIAN 
+#  endif
+# endif /* BYTE_ORDER */
 # define SHA2_USE_INTTYPES_H
 #else /* RUBY */
 #ifdef SHA2_USE_INTTYPES_H
