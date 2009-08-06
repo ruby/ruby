@@ -155,7 +155,9 @@ end
 topdir = File.dirname(libdir = File.dirname(__FILE__))
 extdir = File.expand_path("ext", topdir)
 path = File.expand_path($0)
-$extmk = path[0, topdir.size+1] == topdir+"/" && %r"\A(ext|enc|tool)\z" =~ File.dirname(path[topdir.size+1..-1])
+$extmk = path[0, topdir.size+1] == topdir+"/"
+$extmk &&= %r"\A(?:ext|enc|tool|test(?:/.+))\z" =~ File.dirname(path[topdir.size+1..-1])
+$extmk &&= true
 if not $extmk and File.exist?(($hdrdir = RbConfig::CONFIG["rubyhdrdir"]) + "/ruby/ruby.h")
   $topdir = $hdrdir
   $top_srcdir = $hdrdir
@@ -990,7 +992,7 @@ end
 # For example, if check_sizeof('mystruct') returned 12, then the
 # SIZEOF_MYSTRUCT=12 preprocessor macro would be passed to the compiler.
 #
-def check_sizeof(type, headers = nil, &b)
+def check_sizeof(type, headers = nil, opts = "", &b)
   typename, member = type.split('.', 2)
   prelude = cpp_include(headers).split(/$/)
   prelude << "typedef #{typename} rbcv_typedef_;\n"
@@ -1812,19 +1814,19 @@ site-install-rb: install-rb
 
   return unless target
 
-  mfile.puts SRC_EXT.collect {|ext| ".path.#{ext} = $(VPATH)"} if $nmake == ?b
+  mfile.puts SRC_EXT.collect {|e| ".path.#{e} = $(VPATH)"} if $nmake == ?b
   mfile.print ".SUFFIXES: .#{SRC_EXT.join(' .')} .#{$OBJEXT}\n"
   mfile.print "\n"
 
-  CXX_EXT.each do |ext|
+  CXX_EXT.each do |e|
     COMPILE_RULES.each do |rule|
-      mfile.printf(rule, ext, $OBJEXT)
+      mfile.printf(rule, e, $OBJEXT)
       mfile.printf("\n\t%s\n\n", COMPILE_CXX)
     end
   end
-  %w[c].each do |ext|
+  %w[c].each do |e|
     COMPILE_RULES.each do |rule|
-      mfile.printf(rule, ext, $OBJEXT)
+      mfile.printf(rule, e, $OBJEXT)
       mfile.printf("\n\t%s\n\n", COMPILE_C)
     end
   end
