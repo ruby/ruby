@@ -795,6 +795,8 @@ rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2)
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_UNDEF:
 	return 1;
+      case VM_METHOD_TYPE_OPTIMIZED:
+	return m1->body.optimize_type == m2->body.optimize_type;
       default:
 	rb_bug("rb_add_method: unsupported method type (%d)\n", m1->type);
 	return 0;

@@ -1,3 +1,13 @@
+Thu Aug  6 15:44:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_method_entry_eq): deals with optimized method
+	  properly.  [ruby-core:24789]
+
+Thu Aug  6 13:30:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/mkmf/base.rb (TestMkmf): was turned into a class, because
+	  MiniUnit doesn't complain even if a testcase has no tests.
+
 Thu Aug  6 13:00:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (check_sizeof): added optional compiler option
