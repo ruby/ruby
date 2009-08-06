@@ -11392,7 +11392,7 @@ rb_thread_schedule()
     }
     END_FOREACH_FROM(curr, th);
 
-    if (found && next == th_found) {
+    if (th_found && next == th_found) {
         th_found->status = THREAD_RUNNABLE;
         if (th->wait_for&WAIT_FD) {
             th_found->fd = 0;
