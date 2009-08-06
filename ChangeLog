@@ -1,3 +1,9 @@
+Fri Aug  7 01:49:41 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/sha2/sha2.c: The ULL suffix is not supported by
+	  pre-C99 compilers, so resurrect the ULL() macro to regain
+	  portability. [ruby-dev:39032]
+
 Fri Aug  7 01:35:26 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/*/extconf.rb: inttypes.h and unistd.h need not be

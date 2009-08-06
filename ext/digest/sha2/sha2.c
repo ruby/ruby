@@ -128,6 +128,11 @@ typedef u_int64_t sha2_word64;	/* Exactly 8 bytes */
 #define SHA512_SHORT_BLOCK_LENGTH	(SHA512_BLOCK_LENGTH - 16)
 
 
+#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)) || defined(__GNUC__) || defined(_HPUX_SOURCE) || defined(__IBMC__)
+#define ULL(number)	number##ULL
+#else
+#define ULL(number)	(uint64_t)(number)
+#endif
 /*** ENDIAN REVERSAL MACROS *******************************************/
 #if BYTE_ORDER == LITTLE_ENDIAN
 #define REVERSE32(w,x)	{ \
@@ -138,10 +143,10 @@ typedef u_int64_t sha2_word64;	/* Exactly 8 bytes */
 #define REVERSE64(w,x)	{ \
 	sha2_word64 tmp = (w); \
 	tmp = (tmp >> 32) | (tmp << 32); \
-	tmp = ((tmp & 0xff00ff00ff00ff00ULL) >> 8) | \
-	      ((tmp & 0x00ff00ff00ff00ffULL) << 8); \
-	(x) = ((tmp & 0xffff0000ffff0000ULL) >> 16) | \
-	      ((tmp & 0x0000ffff0000ffffULL) << 16); \
+	tmp = ((tmp & ULL(0xff00ff00ff00ff00)) >> 8) | \
+	      ((tmp & ULL(0x00ff00ff00ff00ff)) << 8); \
+	(x) = ((tmp & ULL(0xffff0000ffff0000)) >> 16) | \
+	      ((tmp & ULL(0x0000ffff0000ffff)) << 16); \
 }
 #endif /* BYTE_ORDER == LITTLE_ENDIAN */
 
@@ -262,70 +267,70 @@ const static sha2_word32 sha256_initial_hash_value[8] = {
 
 /* Hash constant words K for SHA-384 and SHA-512: */
 const static sha2_word64 K512[80] = {
-	0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL,
-	0xb5c0fbcfec4d3b2fULL, 0xe9b5dba58189dbbcULL,
-	0x3956c25bf348b538ULL, 0x59f111f1b605d019ULL,
-	0x923f82a4af194f9bULL, 0xab1c5ed5da6d8118ULL,
-	0xd807aa98a3030242ULL, 0x12835b0145706fbeULL,
-	0x243185be4ee4b28cULL, 0x550c7dc3d5ffb4e2ULL,
-	0x72be5d74f27b896fULL, 0x80deb1fe3b1696b1ULL,
-	0x9bdc06a725c71235ULL, 0xc19bf174cf692694ULL,
-	0xe49b69c19ef14ad2ULL, 0xefbe4786384f25e3ULL,
-	0x0fc19dc68b8cd5b5ULL, 0x240ca1cc77ac9c65ULL,
-	0x2de92c6f592b0275ULL, 0x4a7484aa6ea6e483ULL,
-	0x5cb0a9dcbd41fbd4ULL, 0x76f988da831153b5ULL,
-	0x983e5152ee66dfabULL, 0xa831c66d2db43210ULL,
-	0xb00327c898fb213fULL, 0xbf597fc7beef0ee4ULL,
-	0xc6e00bf33da88fc2ULL, 0xd5a79147930aa725ULL,
-	0x06ca6351e003826fULL, 0x142929670a0e6e70ULL,
-	0x27b70a8546d22ffcULL, 0x2e1b21385c26c926ULL,
-	0x4d2c6dfc5ac42aedULL, 0x53380d139d95b3dfULL,
-	0x650a73548baf63deULL, 0x766a0abb3c77b2a8ULL,
-	0x81c2c92e47edaee6ULL, 0x92722c851482353bULL,
-	0xa2bfe8a14cf10364ULL, 0xa81a664bbc423001ULL,
-	0xc24b8b70d0f89791ULL, 0xc76c51a30654be30ULL,
-	0xd192e819d6ef5218ULL, 0xd69906245565a910ULL,
-	0xf40e35855771202aULL, 0x106aa07032bbd1b8ULL,
-	0x19a4c116b8d2d0c8ULL, 0x1e376c085141ab53ULL,
-	0x2748774cdf8eeb99ULL, 0x34b0bcb5e19b48a8ULL,
-	0x391c0cb3c5c95a63ULL, 0x4ed8aa4ae3418acbULL,
-	0x5b9cca4f7763e373ULL, 0x682e6ff3d6b2b8a3ULL,
-	0x748f82ee5defb2fcULL, 0x78a5636f43172f60ULL,
-	0x84c87814a1f0ab72ULL, 0x8cc702081a6439ecULL,
-	0x90befffa23631e28ULL, 0xa4506cebde82bde9ULL,
-	0xbef9a3f7b2c67915ULL, 0xc67178f2e372532bULL,
-	0xca273eceea26619cULL, 0xd186b8c721c0c207ULL,
-	0xeada7dd6cde0eb1eULL, 0xf57d4f7fee6ed178ULL,
-	0x06f067aa72176fbaULL, 0x0a637dc5a2c898a6ULL,
-	0x113f9804bef90daeULL, 0x1b710b35131c471bULL,
-	0x28db77f523047d84ULL, 0x32caab7b40c72493ULL,
-	0x3c9ebe0a15c9bebcULL, 0x431d67c49c100d4cULL,
-	0x4cc5d4becb3e42b6ULL, 0x597f299cfc657e2aULL,
-	0x5fcb6fab3ad6faecULL, 0x6c44198c4a475817ULL
+	ULL(0x428a2f98d728ae22), ULL(0x7137449123ef65cd),
+	ULL(0xb5c0fbcfec4d3b2f), ULL(0xe9b5dba58189dbbc),
+	ULL(0x3956c25bf348b538), ULL(0x59f111f1b605d019),
+	ULL(0x923f82a4af194f9b), ULL(0xab1c5ed5da6d8118),
+	ULL(0xd807aa98a3030242), ULL(0x12835b0145706fbe),
+	ULL(0x243185be4ee4b28c), ULL(0x550c7dc3d5ffb4e2),
+	ULL(0x72be5d74f27b896f), ULL(0x80deb1fe3b1696b1),
+	ULL(0x9bdc06a725c71235), ULL(0xc19bf174cf692694),
+	ULL(0xe49b69c19ef14ad2), ULL(0xefbe4786384f25e3),
+	ULL(0x0fc19dc68b8cd5b5), ULL(0x240ca1cc77ac9c65),
+	ULL(0x2de92c6f592b0275), ULL(0x4a7484aa6ea6e483),
+	ULL(0x5cb0a9dcbd41fbd4), ULL(0x76f988da831153b5),
+	ULL(0x983e5152ee66dfab), ULL(0xa831c66d2db43210),
+	ULL(0xb00327c898fb213f), ULL(0xbf597fc7beef0ee4),
+	ULL(0xc6e00bf33da88fc2), ULL(0xd5a79147930aa725),
+	ULL(0x06ca6351e003826f), ULL(0x142929670a0e6e70),
+	ULL(0x27b70a8546d22ffc), ULL(0x2e1b21385c26c926),
+	ULL(0x4d2c6dfc5ac42aed), ULL(0x53380d139d95b3df),
+	ULL(0x650a73548baf63de), ULL(0x766a0abb3c77b2a8),
+	ULL(0x81c2c92e47edaee6), ULL(0x92722c851482353b),
+	ULL(0xa2bfe8a14cf10364), ULL(0xa81a664bbc423001),
+	ULL(0xc24b8b70d0f89791), ULL(0xc76c51a30654be30),
+	ULL(0xd192e819d6ef5218), ULL(0xd69906245565a910),
+	ULL(0xf40e35855771202a), ULL(0x106aa07032bbd1b8),
+	ULL(0x19a4c116b8d2d0c8), ULL(0x1e376c085141ab53),
+	ULL(0x2748774cdf8eeb99), ULL(0x34b0bcb5e19b48a8),
+	ULL(0x391c0cb3c5c95a63), ULL(0x4ed8aa4ae3418acb),
+	ULL(0x5b9cca4f7763e373), ULL(0x682e6ff3d6b2b8a3),
+	ULL(0x748f82ee5defb2fc), ULL(0x78a5636f43172f60),
+	ULL(0x84c87814a1f0ab72), ULL(0x8cc702081a6439ec),
+	ULL(0x90befffa23631e28), ULL(0xa4506cebde82bde9),
+	ULL(0xbef9a3f7b2c67915), ULL(0xc67178f2e372532b),
+	ULL(0xca273eceea26619c), ULL(0xd186b8c721c0c207),
+	ULL(0xeada7dd6cde0eb1e), ULL(0xf57d4f7fee6ed178),
+	ULL(0x06f067aa72176fba), ULL(0x0a637dc5a2c898a6),
+	ULL(0x113f9804bef90dae), ULL(0x1b710b35131c471b),
+	ULL(0x28db77f523047d84), ULL(0x32caab7b40c72493),
+	ULL(0x3c9ebe0a15c9bebc), ULL(0x431d67c49c100d4c),
+	ULL(0x4cc5d4becb3e42b6), ULL(0x597f299cfc657e2a),
+	ULL(0x5fcb6fab3ad6faec), ULL(0x6c44198c4a475817)
 };
 
 /* Initial hash value H for SHA-384 */
 const static sha2_word64 sha384_initial_hash_value[8] = {
-	0xcbbb9d5dc1059ed8ULL,
-	0x629a292a367cd507ULL,
-	0x9159015a3070dd17ULL,
-	0x152fecd8f70e5939ULL,
-	0x67332667ffc00b31ULL,
-	0x8eb44a8768581511ULL,
-	0xdb0c2e0d64f98fa7ULL,
-	0x47b5481dbefa4fa4ULL
+	ULL(0xcbbb9d5dc1059ed8),
+	ULL(0x629a292a367cd507),
+	ULL(0x9159015a3070dd17),
+	ULL(0x152fecd8f70e5939),
+	ULL(0x67332667ffc00b31),
+	ULL(0x8eb44a8768581511),
+	ULL(0xdb0c2e0d64f98fa7),
+	ULL(0x47b5481dbefa4fa4)
 };
 
 /* Initial hash value H for SHA-512 */
 const static sha2_word64 sha512_initial_hash_value[8] = {
-	0x6a09e667f3bcc908ULL,
-	0xbb67ae8584caa73bULL,
-	0x3c6ef372fe94f82bULL,
-	0xa54ff53a5f1d36f1ULL,
-	0x510e527fade682d1ULL,
-	0x9b05688c2b3e6c1fULL,
-	0x1f83d9abfb41bd6bULL,
-	0x5be0cd19137e2179ULL
+	ULL(0x6a09e667f3bcc908),
+	ULL(0xbb67ae8584caa73b),
+	ULL(0x3c6ef372fe94f82b),
+	ULL(0xa54ff53a5f1d36f1),
+	ULL(0x510e527fade682d1),
+	ULL(0x9b05688c2b3e6c1f),
+	ULL(0x1f83d9abfb41bd6b),
+	ULL(0x5be0cd19137e2179)
 };
 
 /*
