@@ -186,6 +186,7 @@ class2path(VALUE klass)
 }
 
 static void w_long(long, struct dump_arg*);
+static void w_encoding(VALUE obj, long num, struct dump_call_arg *arg);
 
 static void
 w_nbyte(const char *s, long n, struct dump_arg *arg)
@@ -378,20 +379,34 @@ w_float(double d, struct dump_arg *arg)
 static void
 w_symbol(ID id, struct dump_arg *arg)
 {
-    const char *sym;
+    VALUE sym;
     st_data_t num;
+    int encidx = -1;
 
     if (st_lookup(arg->symbols, id, &num)) {
 	w_byte(TYPE_SYMLINK, arg);
 	w_long((long)num, arg);
     }
     else {
-	sym = rb_id2name(id);
+	sym = rb_id2str(id);
 	if (!sym) {
 	    rb_raise(rb_eTypeError, "can't dump anonymous ID %ld", id);
 	}
+	encidx = rb_enc_get_index(sym);
+	if (encidx == rb_usascii_encindex()) {
+	    encidx = -1;
+	}
+	else if (rb_enc_str_coderange(sym) != ENC_CODERANGE_7BIT) {
+	    w_byte(TYPE_IVAR, arg);
+	}
 	w_byte(TYPE_SYMBOL, arg);
-	w_bytes(sym, strlen(sym), arg);
+	w_bytes(RSTRING_PTR(sym), RSTRING_LEN(sym), arg);
+	if (encidx != -1) {
+	    struct dump_call_arg c_arg;
+	    c_arg.limit = 1;
+	    c_arg.arg = arg;
+	    w_encoding(sym, 0, &c_arg);
+	}
 	st_add_direct(arg->symbols, id, arg->symbols->num_entries);
     }
 }
@@ -951,6 +966,7 @@ mark_load_arg(void *ptr)
 
 static VALUE r_entry(VALUE v, struct load_arg *arg);
 static VALUE r_object(struct load_arg *arg);
+static ID r_symbol(struct load_arg *arg);
 static VALUE path2class(const char *path);
 
 static int
@@ -1056,6 +1072,20 @@ r_bytes0(long len, struct load_arg *arg)
     return str;
 }
 
+static int
+id2encidx(ID id, VALUE val)
+{
+    if (id == rb_id_encoding()) {
+	return rb_enc_find_index(StringValueCStr(val));
+    }
+    else if (id == rb_intern("E")) {
+	if (val == Qfalse) return rb_usascii_encindex();
+	else if (val == Qtrue) return rb_utf8_encindex();
+	/* bogus ignore */
+    }
+    return -1;
+}
+
 static ID
 r_symlink(struct load_arg *arg)
 {
@@ -1069,11 +1099,22 @@ r_symlink(struct load_arg *arg)
 }
 
 static ID
-r_symreal(struct load_arg *arg)
+r_symreal(struct load_arg *arg, int ivar)
 {
     volatile VALUE s = r_bytes(arg);
-    ID id = rb_intern(RSTRING_PTR(s));
+    ID id;
+    int idx = -1;
 
+    if (ivar) {
+	long num = r_long(arg);
+	while (num-- > 0) {
+	    id = r_symbol(arg);
+	    idx = id2encidx(id, r_object(arg));
+	}
+    }
+    if (idx < 0) idx = rb_usascii_encindex();
+    rb_enc_associate_index(s, idx);
+    id = rb_intern_str(s);
     st_insert(arg->symbols, arg->symbols->num_entries, id);
 
     return id;
@@ -1082,15 +1123,22 @@ r_symreal(struct load_arg *arg)
 static ID
 r_symbol(struct load_arg *arg)
 {
-    int type;
+    int type, ivar = 0;
 
+  again:
     switch ((type = r_byte(arg))) {
+      case TYPE_IVAR:
+	ivar = 1;
+	goto again;
       case TYPE_SYMBOL:
-	return r_symreal(arg);
+	return r_symreal(arg, ivar);
       case TYPE_SYMLINK:
+	if (ivar) {
+	    rb_raise(rb_eArgError, "dump format error (symlink with encoding)");
+	}
 	return r_symlink(arg);
       default:
-	rb_raise(rb_eArgError, "dump format error(0x%x)", type);
+	rb_raise(rb_eArgError, "dump format error for symbol(0x%x)", type);
 	break;
     }
 }
@@ -1162,14 +1210,9 @@ r_ivar(VALUE obj, struct load_arg *arg)
 	do {
 	    ID id = r_symbol(arg);
 	    VALUE val = r_object(arg);
-	    if (id == rb_id_encoding()) {
-		int idx = rb_enc_find_index(StringValueCStr(val));
-		if (idx > 0) rb_enc_associate_index(obj, idx);
-	    }
-	    else if (id == rb_intern("E")) {
-		if (val == Qfalse) rb_enc_associate_index(obj, rb_usascii_encindex());
-		else if (val == Qtrue) rb_enc_associate_index(obj, rb_utf8_encindex());
-		/* bogus ignore */
+	    int idx = id2encidx(id, val);
+	    if (idx >= 0) {
+		rb_enc_associate_index(obj, idx);
 	    }
 	    else {
 		rb_ivar_set(obj, id, val);
@@ -1599,7 +1642,13 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	break;
 
       case TYPE_SYMBOL:
-	v = ID2SYM(r_symreal(arg));
+	if (ivp) {
+	    v = ID2SYM(r_symreal(arg, *ivp));
+	    *ivp = FALSE;
+	}
+	else {
+	    v = ID2SYM(r_symreal(arg, 0));
+	}
 	v = r_leave(v, arg);
 	break;
 

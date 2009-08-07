@@ -1,3 +1,9 @@
+Sat Aug  8 06:18:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_symbol r_symlink, r_symbol, r_object0): fix for
+	  non-ascii symbols.  loading such symbols can cause segfaults in
+	  older versions.  [ruby-core:24788]
+
 Fri Aug  7 03:25:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_error.c (error_print): removed an extra argument.
