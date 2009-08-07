@@ -49,6 +49,10 @@ extern "C" {
  */
 #include <sys/types.h>
 
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
+
 #ifdef RUBY
 # ifdef HAVE_PROTOTYPES
 #  undef NOPROTO 
