@@ -10336,6 +10336,7 @@ extern VALUE rb_last_status;
 #define WAIT_TIME	(1<<2)
 #define WAIT_JOIN	(1<<3)
 #define WAIT_PID	(1<<4)
+#define WAIT_DONE	(1<<5)
 
 /* +infty, for this purpose */
 #define DELAY_INFTY 1E30
@@ -11161,7 +11162,6 @@ rb_thread_schedule()
     rb_thread_t next;		/* OK */
     rb_thread_t th;
     rb_thread_t curr;
-    rb_thread_t th_found = 0;
     int found = 0;
 
     fd_set readfds;
@@ -11200,6 +11200,7 @@ rb_thread_schedule()
     now = -1.0;
 
     FOREACH_THREAD_FROM(curr, th) {
+        th->wait_for &= ~WAIT_DONE;
 	if (!found && th->status <= THREAD_RUNNABLE) {
 	    found = 1;
 	}
@@ -11232,7 +11233,12 @@ rb_thread_schedule()
 	    if (now < 0.0) now = timeofday();
 	    th_delay = th->delay - now;
 	    if (th_delay <= 0.0) {
-		th->status = THREAD_RUNNABLE;
+                if (th->wait_for & WAIT_SELECT) {
+                    need_select = 1;
+                }
+                else {
+                    th->status = THREAD_RUNNABLE;
+                }
 		found = 1;
 	    }
 	    else if (th_delay < delay) {
@@ -11353,22 +11359,22 @@ rb_thread_schedule()
 	if (n > 0) {
 	    now = -1.0;
 	    /* Some descriptors are ready.
-             * Choose a thread which may run next.
-             * Don't change the status of threads which don't run next.
+             * The corresponding threads are runnable as next.
+             * Mark them with WAIT_DONE.
+             * Don't change the status to runnable here because
+             * threads which don't run next should not be changed.
              */
 	    FOREACH_THREAD_FROM(curr, th) {
 		if ((th->wait_for&WAIT_FD) && FD_ISSET(th->fd, &readfds)) {
-                    th_found = th;
+                    th->wait_for |= WAIT_DONE;
 		    found = 1;
-                    break;
 		}
 		if ((th->wait_for&WAIT_SELECT) &&
 		    (match_fds(&readfds, &th->readfds, max) ||
 		     match_fds(&writefds, &th->writefds, max) ||
 		     match_fds(&exceptfds, &th->exceptfds, max))) {
-                    th_found = th;
+                    th->wait_for |= WAIT_DONE;
                     found = 1;
-                    break;
 		}
 	    }
 	    END_FOREACH_FROM(curr, th);
@@ -11384,7 +11390,7 @@ rb_thread_schedule()
 	    next = th;
 	    break;
 	}
-	if ((th->status == THREAD_RUNNABLE || th == th_found) && th->stk_ptr) {
+	if ((th->status == THREAD_RUNNABLE || (th->wait_for & WAIT_DONE)) && th->stk_ptr) {
 	    if (!next || next->priority < th->priority) {
 	        next = th;
             }
@@ -11392,18 +11398,18 @@ rb_thread_schedule()
     }
     END_FOREACH_FROM(curr, th);
 
-    if (th_found && next == th_found) {
-        th_found->status = THREAD_RUNNABLE;
-        if (th->wait_for&WAIT_FD) {
-            th_found->fd = 0;
+    if (next && (next->wait_for & WAIT_DONE)) {
+        next->status = THREAD_RUNNABLE;
+        if (next->wait_for&WAIT_FD) {
+            next->fd = 0;
         }
-        else { /* th->wait_for&WAIT_SELECT */
-            n = intersect_fds(&readfds, &th_found->readfds, max) +
-                intersect_fds(&writefds, &th_found->writefds, max) +
-                intersect_fds(&exceptfds, &th_found->exceptfds, max);
-            th_found->select_value = n;
+        else { /* next->wait_for&WAIT_SELECT */
+            n = intersect_fds(&readfds, &next->readfds, max) +
+                intersect_fds(&writefds, &next->writefds, max) +
+                intersect_fds(&exceptfds, &next->exceptfds, max);
+            next->select_value = n;
         }
-        th_found->wait_for = 0;
+        next->wait_for = 0;
     }
 
     if (!next) {
@@ -11415,15 +11421,16 @@ rb_thread_schedule()
 	    TRAP_END;
 	}
 	FOREACH_THREAD_FROM(curr, th) {
+            int wait_for = th->wait_for & ~WAIT_DONE;
 	    warn_printf("deadlock 0x%lx: %s:",
 			th->thread, thread_status_name(th->status));
-	    if (th->wait_for & WAIT_FD) warn_printf("F(%d)", th->fd);
-	    if (th->wait_for & WAIT_SELECT) warn_printf("S");
-	    if (th->wait_for & WAIT_TIME) warn_printf("T(%f)", th->delay);
-	    if (th->wait_for & WAIT_JOIN)
+	    if (wait_for & WAIT_FD) warn_printf("F(%d)", th->fd);
+	    if (wait_for & WAIT_SELECT) warn_printf("S");
+	    if (wait_for & WAIT_TIME) warn_printf("T(%f)", th->delay);
+	    if (wait_for & WAIT_JOIN)
 		warn_printf("J(0x%lx)", th->join ? th->join->thread : 0);
-	    if (th->wait_for & WAIT_PID) warn_printf("P");
-	    if (!th->wait_for) warn_printf("-");
+	    if (wait_for & WAIT_PID) warn_printf("P");
+	    if (!wait_for) warn_printf("-");
 	    warn_printf(" %s - %s:%d\n",
 			th==main_thread ? "(main)" : "",
 			th->node->nd_file, nd_line(th->node));

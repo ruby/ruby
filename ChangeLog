@@ -1,6 +1,12 @@
+Fri Aug  7 23:36:07 2009  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (rb_thread_schedule): need select for WAIT_SELECT, even if
+	  already timeout.  [ruby-dev:38971]
+	  (WAIT_DONE): defined for mark threads which can be runnable.
+
 Fri Aug  7 20:18:21 2009  Tanaka Akira  <akr@fsij.org>
 
-	* ext/digest/sha2/sha2.h: include inttypes.h for uint32_h, etc.
+	* ext/digest/sha2/sha2.h: include inttypes.h for uint32_t, etc.
 
 	* ext/digest/sha2/extconf.rb: check inttypes.h.
 
