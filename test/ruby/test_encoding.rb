@@ -44,6 +44,13 @@ class TestEncoding < Test::Unit::TestCase
     assert_equal(false, Encoding::UTF_8.dummy?)
   end
 
+  def test_ascii_compatible_p
+    assert_equal(true, Encoding::ASCII_8BIT.ascii_compatible?)
+    assert_equal(true, Encoding::UTF_8.ascii_compatible?)
+    assert_equal(false, Encoding::UTF_16BE.ascii_compatible?)
+    assert_equal(false, Encoding::ISO_2022_JP.ascii_compatible?)
+  end
+
   def test_name_list
     assert_instance_of(Array, Encoding.name_list)
     Encoding.name_list.each do |x|

@@ -377,6 +377,22 @@ enc_dummy_p(VALUE enc)
     return ENC_DUMMY_P(enc_table.list[must_encoding(enc)].enc) ? Qtrue : Qfalse;
 }
 
+/*
+ * call-seq:
+ *   enc.ascii_compatible? => true or false
+ *
+ * Returns whether ASCII-compatible or not.
+ *
+ *   Encoding::UTF_8.ascii_compatible?     #=> true
+ *   Encoding::UTF_16BE.ascii_compatible?  #=> false
+ *
+ */
+static VALUE
+enc_ascii_compatible_p(VALUE enc)
+{
+    return rb_enc_asciicompat(enc_table.list[must_encoding(enc)].enc) ? Qtrue : Qfalse;
+}
+
 static const char *
 enc_alias_internal(const char *alias, int idx)
 {
@@ -1428,6 +1444,7 @@ Init_Encoding(void)
     rb_define_method(rb_cEncoding, "name", enc_name, 0);
     rb_define_method(rb_cEncoding, "names", enc_names, 0);
     rb_define_method(rb_cEncoding, "dummy?", enc_dummy_p, 0);
+    rb_define_method(rb_cEncoding, "ascii_compatible?", enc_ascii_compatible_p, 0);
     rb_define_singleton_method(rb_cEncoding, "list", enc_list, 0);
     rb_define_singleton_method(rb_cEncoding, "name_list", rb_enc_name_list, 0);
     rb_define_singleton_method(rb_cEncoding, "aliases", rb_enc_aliases, 0);
