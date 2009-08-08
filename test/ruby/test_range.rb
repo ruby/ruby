@@ -89,6 +89,8 @@ class TestRange < Test::Unit::TestCase
     assert(r != (1..2))
     assert(r != (0..2))
     assert(r != (0...1))
+    subclass = Class.new(Range)
+    assert(r == subclass.new(0,1))
   end
 
   def test_eql
@@ -99,6 +101,8 @@ class TestRange < Test::Unit::TestCase
     assert(!r.eql?(1..2))
     assert(!r.eql?(0..2))
     assert(!r.eql?(0...1))
+    subclass = Class.new(Range)
+    assert(r.eql?(subclass.new(0,1)))
   end
 
   def test_hash

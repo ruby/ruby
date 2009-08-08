@@ -125,7 +125,7 @@ range_eq(VALUE range, VALUE obj)
 {
     if (range == obj)
 	return Qtrue;
-    if (!rb_obj_is_instance_of(obj, rb_obj_class(range)))
+    if (!rb_obj_is_kind_of(obj, rb_cRange))
 	return Qfalse;
 
     if (!rb_equal(RANGE_BEG(range), RANGE_BEG(obj)))
@@ -187,7 +187,7 @@ range_eql(VALUE range, VALUE obj)
 {
     if (range == obj)
 	return Qtrue;
-    if (!rb_obj_is_instance_of(obj, rb_obj_class(range)))
+    if (!rb_obj_is_kind_of(obj, rb_cRange))
 	return Qfalse;
 
     if (!rb_eql(RANGE_BEG(range), RANGE_BEG(obj)))
