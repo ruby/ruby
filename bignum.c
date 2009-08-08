@@ -46,8 +46,10 @@ static int
 bigzero_p(VALUE x)
 {
     long i;
+    BDIGIT *ds = BDIGITS(x);
+
     for (i = RBIGNUM_LEN(x) - 1; 0 <= i; i--) {
-	if (BDIGITS(x)[i]) return 0;
+	if (ds[i]) return 0;
     }
     return 1;
 }
