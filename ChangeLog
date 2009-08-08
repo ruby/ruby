@@ -1,3 +1,9 @@
+Sat Jul 25 17:49:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_eof): should not have reached EOF before trying to
+	  read.  based on a patch by Heesob Park <phasis AT gmail.com> a
+	  [ruby-core:24559].  [ruby-core:24557]
+
 Thu Jul 23 17:31:02 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb/ruby-lex.rb: make irb be able to parse

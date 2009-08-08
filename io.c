@@ -8041,7 +8041,7 @@ argf_to_io(VALUE argf)
 static VALUE
 argf_eof(VALUE argf)
 {
-    if (ARGF.current_file) {
+    if (RTEST(ARGF.current_file)) {
 	if (ARGF.init_p == 0) return Qtrue;
 	ARGF_FORWARD(0, 0);
 	if (rb_io_eof(ARGF.current_file)) {
