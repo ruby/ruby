@@ -566,27 +566,31 @@ rb_enc_get_index(VALUE obj)
     VALUE tmp;
 
     switch (BUILTIN_TYPE(obj)) {
-        default:
-	case T_STRING:
-	case T_REGEXP:
-	    i = ENCODING_GET_INLINED(obj);
-	    if (i == ENCODING_INLINE_MAX) {
-		VALUE iv;
+      as_default:
+      default:
+      case T_STRING:
+      case T_REGEXP:
+	i = ENCODING_GET_INLINED(obj);
+	if (i == ENCODING_INLINE_MAX) {
+	    VALUE iv;
 
-		iv = rb_ivar_get(obj, rb_id_encoding());
-		i = NUM2INT(iv);
-	    }
-	    break;
-	case T_FILE:
-	    tmp = rb_funcall(obj, rb_intern("internal_encoding"), 0, 0);
-	    if (NIL_P(tmp)) obj = rb_funcall(obj, rb_intern("external_encoding"), 0, 0);
-	    else obj = tmp;
-	    if (NIL_P(obj)) break;
-	case T_DATA:
-	    if (RDATA(obj)->dmark == enc_mark) {
-		i = enc_check_encoding(obj);
-	    }
-	    break;
+	    iv = rb_ivar_get(obj, rb_id_encoding());
+	    i = NUM2INT(iv);
+	}
+	break;
+      case T_FILE:
+	tmp = rb_funcall(obj, rb_intern("internal_encoding"), 0, 0);
+	if (NIL_P(tmp)) obj = rb_funcall(obj, rb_intern("external_encoding"), 0, 0);
+	else obj = tmp;
+	if (NIL_P(obj)) break;
+      case T_DATA:
+	if (RDATA(obj)->dmark == enc_mark) {
+	    i = enc_check_encoding(obj);
+	}
+	else {
+	    goto as_default;
+	}
+	break;
     }
     return i;
 }
