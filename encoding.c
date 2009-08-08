@@ -539,7 +539,7 @@ rb_enc_find(const char *name)
 static inline int
 enc_capable(VALUE obj)
 {
-    if (SPECIAL_CONST_P(obj)) return Qfalse;
+    if (SPECIAL_CONST_P(obj)) return SYMBOL_P(obj);
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
       case T_REGEXP:
@@ -565,6 +565,10 @@ rb_enc_get_index(VALUE obj)
     int i = -1;
     VALUE tmp;
 
+    if (SPECIAL_CONST_P(obj)) {
+	if (!SYMBOL_P(obj)) return -1;
+	obj = rb_id2str(SYM2ID(obj));
+    }
     switch (BUILTIN_TYPE(obj)) {
       as_default:
       default:
