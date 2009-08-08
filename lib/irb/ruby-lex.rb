@@ -1047,6 +1047,8 @@ class RubyLex
       while ch = getc
 	if @quoted == ch and nest == 0
 	  break
+	elsif ch == "#" and peek(0) == "{"
+	  identify_string_dvar
 	elsif @ltype != "'" && @ltype != "]" && @ltype != ":" and ch == "#"
 	  subtype = true
 	elsif ch == '\\' and @ltype == "'" #'
@@ -1080,6 +1082,42 @@ class RubyLex
       @ltype = nil
       @quoted = nil
       @lex_state = EXPR_END
+    end
+  end
+
+  def identify_string_dvar
+    begin
+      getc
+
+      reserve_continue = @continue
+      reserve_ltype = @ltype
+      reserve_indent = @indent
+      reserve_indent_stack = @indent_stack
+      reserve_state = @lex_state
+      reserve_quoted = @quoted
+
+      @ltype = nil
+      @quoted = nil
+      @indent = 0
+      @indent_stack = []
+      @lex_state = EXPR_BEG
+      
+      loop do
+	@continue = false
+	prompt
+	tk = token
+	if @ltype or @continue or @indent > 0
+	  next
+	end
+	break if tk.kind_of?(TkRBRACE)
+      end
+    ensure
+      @continue = reserve_continue
+      @ltype = reserve_ltype
+      @indent = reserve_indent
+      @indent_stack = reserve_indent_stack
+      @lex_state = reserve_state
+      @quoted = reserve_quoted
     end
   end
   

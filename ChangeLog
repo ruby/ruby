@@ -1,3 +1,8 @@
+Thu Jul 23 17:31:02 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* lib/irb/ruby-lex.rb: make irb be able to parse
+	  string_dvar. [ruby-core: 24051]
+
 Wed Jul 22 22:23:24 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_core.h (struct rb_iseq_t): add a new field line_no.  This field
