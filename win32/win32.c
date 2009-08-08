@@ -2394,14 +2394,11 @@ rb_w32_connect(int s, const struct sockaddr *addr, int addrlen)
     RUBY_CRITICAL({
 	r = connect(TO_SOCKET(s), addr, addrlen);
 	if (r == SOCKET_ERROR) {
-	    r = WSAGetLastError();
-	    if (r != WSAEWOULDBLOCK) {
-		errno = map_errno(r);
-	    }
-	    else {
+	    int err = WSAGetLastError();
+	    if (err != WSAEWOULDBLOCK)
+		errno = map_errno(err);
+	    else
 		errno = EINPROGRESS;
-		r = -1;
-	    }
 	}
     });
     return r;
