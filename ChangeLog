@@ -1,3 +1,8 @@
+Tue Aug  4 22:10:34 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (has_redirection): need to execute shell if commandline
+	  includes newline.  cf. [ruby-core:24560]
+
 Tue Aug  4 05:43:03 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* thread.c (recursive_push): need to set UNTRUST.  [ruby-dev:38997]
