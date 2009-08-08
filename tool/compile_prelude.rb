@@ -51,8 +51,8 @@ lines_list = preludes.map {|filename|
         "nil"
       end
     }
-    if /require\s*(\(?)\s*(["'])(.*?)\2\s*\1/ =~ line
-      orig, path = $&, $3
+    if /require\s*\(?\s*(["'])(.*?)\1\s*\)?/ =~ line
+      orig, path = $&, $2
       srcdir = File.expand_path("../..", __FILE__)
       path = File.expand_path(path, srcdir)
       if File.exist?(path)

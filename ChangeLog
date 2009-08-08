@@ -1,3 +1,8 @@
+Sun Aug  9 02:07:41 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* tool/compile_prelude.rb: fixes a regexp pattern for require.
+	  It had matched 'require("foo"('.
+
 Sat Aug  8 11:42:44 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bigzero_p): removing BDIGITS() inside of the
