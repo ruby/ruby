@@ -1,3 +1,7 @@
+Tue Aug  4 05:43:03 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* thread.c (recursive_push): need to set UNTRUST.  [ruby-dev:38997]
+
 Mon Aug  3 18:25:08 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sample/svr.rb: obsolete TCPserver renamed.  [ruby-core:24712]
