@@ -1,7 +1,7 @@
 Sat Aug  8 11:42:44 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bigzero_p): removing BDIGITS() inside of the
-	  loop. inspired by Hitohiro Kanai's blog entry
+	  loop. inspired by Masahiro Kanai's blog entry
 	  <http://d.hatena.ne.jp/CanI/20090807/1249657492>.
 
 Sat Aug  8 06:18:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
