@@ -42,7 +42,7 @@ if defined?(Gem) then
     def self.path
       @gem_path ||= nil
       unless @gem_path
-        paths = [ENV['GEM_PATH']]
+        paths = [ENV['GEM_PATH'] || default_path]
         paths << APPLE_GEM_HOME if defined? APPLE_GEM_HOME
         set_paths(paths.compact.join(File::PATH_SEPARATOR))
       end
@@ -84,7 +84,17 @@ if defined?(Gem) then
     def self.ensure_gem_subdirectories(path)
     end
 
-  
+    def self.user_home
+      @user_home ||= File.expand_path("~")
+    rescue
+      if File::ALT_SEPARATOR then
+        "C:/"
+      else
+        "/"
+      end
+    end
+
+
     @post_install_hooks   ||= []
     @post_uninstall_hooks ||= []
     @pre_uninstall_hooks  ||= []
