@@ -1,3 +1,8 @@
+Sun Aug  9 07:25:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/ripper/eventids2.c (token_to_eventid): added
+	  keyword_do_LAMBDA.  [ruby-dev:39049]
+
 Sun Aug  9 02:07:41 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* tool/compile_prelude.rb: fixes a regexp pattern for require.

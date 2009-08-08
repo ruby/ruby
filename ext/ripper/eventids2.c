@@ -185,6 +185,7 @@ static const struct token_assoc {
     {keyword__ENCODING__, &ripper_id_kw},
     {keyword_BEGIN,	&ripper_id_kw},
     {keyword_END,	&ripper_id_kw},
+    {keyword_do_LAMBDA,	&ripper_id_kw},
     {tAMPER,		&ripper_id_op},
     {tANDOP,		&ripper_id_op},
     {tAREF,		&ripper_id_op},
