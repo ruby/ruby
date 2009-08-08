@@ -1370,6 +1370,7 @@ process_options(VALUE arg)
     else if (!rb_default_internal_encoding())
 	/* Freeze default_internal */
 	rb_enc_set_default_internal(Qnil);
+    rb_stdio_set_default_encoding();
 
     if (!tree) return Qfalse;
 
