@@ -3,7 +3,7 @@
 
 require "socket"
 
-gs = TCPserver.open(0)
+gs = TCPServer.open(0)
 addr = gs.addr
 addr.shift
 printf("server is on %s\n", addr.join(":"))

@@ -12,7 +12,7 @@ names = []
 threads = []
 
 res.each do |i|
-  s = TCPserver.new(i[3], i[1])
+  s = TCPServer.new(i[3], i[1])
   n = Socket.getnameinfo(s.getsockname, Socket::NI_NUMERICHOST|Socket::NI_NUMERICSERV).join(" port ")
   sockpool.push s
   names.push n
