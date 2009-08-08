@@ -1,3 +1,10 @@
+Wed Aug  5 01:38:27 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+ 
+	* lib/pp.rb (guard_inspect_key): untrust internal hash to prevent
+	  unexpected SecurityError.
+
+	* test/ruby/test_object.rb: add a test for [ruby-dev:38982].
+
 Tue Aug  4 22:10:34 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (has_redirection): need to execute shell if commandline
