@@ -2,6 +2,8 @@ if dummy_gdb_enums.special_consts
 end
 
 define rp
+  if ruby_dummy_gdb_enums.special_consts
+  end
   if (VALUE)$arg0 & RUBY_FIXNUM_FLAG
     printf "FIXNUM: %ld\n", (long)$arg0 >> 1
   else
