@@ -370,7 +370,7 @@ assert_equal %q{}, %q{
 }
 
 ##
-assert_match /undefined method `foo\'/, %q{
+assert_match /undefined method `foo\'/, %q{#`
   STDERR.reopen(STDOUT)
   class C
     def inspect
@@ -402,3 +402,15 @@ assert_equal 'nil', %q{
   exc.inspect
 }, '[ruby-dev:32608]'
 
+assert_equal 'exception class/object expected', %q{
+  class ZeroDivisionError
+    def self.new(message)
+      42
+    end
+  end
+  begin
+    1/0
+  rescue Exception => e
+    e.message
+  end
+}, '[ruby-core:24767]'
