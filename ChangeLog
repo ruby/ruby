@@ -1,3 +1,9 @@
+Wed Aug  5 12:39:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_longjmp): reset raised flag before fatal error.
+
+	* eval_error.c (error_print): file can be NULL. line can be 0.
+
 Wed Aug  5 01:38:27 2009  Yusuke Endoh  <mame@tsg.ne.jp>
  
 	* lib/pp.rb (guard_inspect_key): untrust internal hash to prevent

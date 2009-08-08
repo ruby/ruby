@@ -345,6 +345,7 @@ rb_longjmp(int tag, VALUE mesg)
 
     if (rb_thread_set_raised(th)) {
 	th->errinfo = exception_error;
+	rb_thread_reset_raised(th);
 	JUMP_TAG(TAG_FATAL);
     }
 
