@@ -3,6 +3,9 @@ Thu Aug  6 16:25:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* encoding.c (enc_capable, rb_enc_get_index): Symbol is encoding
 	  capable.
 
+	* encoding.c (rb_enc_associate_index): cannot set encoding on
+	  special constants.
+
 Wed Aug  5 19:11:01 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ruby.c (rb_stdio_set_default_encoding): declared.

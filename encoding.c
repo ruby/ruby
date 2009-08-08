@@ -617,6 +617,9 @@ rb_enc_associate_index(VALUE obj, int idx)
 /*    enc_check_capable(obj);*/
     if (rb_enc_get_index(obj) == idx)
     	return obj;
+    if (SPECIAL_CONST_P(obj)) {
+	rb_raise(rb_eArgError, "cannot set encoding");
+    }
     if (!ENC_CODERANGE_ASCIIONLY(obj) ||
 	!rb_enc_asciicompat(rb_enc_from_index(idx))) {
 	ENC_CODERANGE_CLEAR(obj);
