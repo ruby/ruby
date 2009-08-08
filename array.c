@@ -3401,6 +3401,7 @@ rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
 }
 
 #define tmpbuf(n, size) rb_str_tmp_new((n)*(size))
+#define tmpary(n) rb_ary_tmp_new(n)
 
 /*
  * Recursively compute permutations of r elements of the set [0..n-1].
@@ -3438,6 +3439,9 @@ permute0(long n, long r, long *p, long index, int *used, VALUE values)
 		for (j = 0; j < r; j++) result_array[j] = values_array[p[j]];
 		ARY_SET_LEN(result, r);
 		rb_yield(result);
+		if (RBASIC(values)->klass) {
+		    rb_raise(rb_eRuntimeError, "permute reentered");
+		}
 	    }
 	}
     }
@@ -3576,11 +3580,10 @@ rb_ary_combination(VALUE ary, VALUE num)
 	volatile VALUE t0 = tmpbuf(n+1, sizeof(long));
 	long *stack = (long*)RSTRING_PTR(t0);
 	long nlen = combi_len(len, n);
-	volatile VALUE cc = rb_ary_new2(n);
+	volatile VALUE cc = tmpary(n);
 	VALUE *chosen = RARRAY_PTR(cc);
 	long lev = 0;
 
-	RBASIC(cc)->klass = 0;
 	MEMZERO(stack, long, n);
 	stack[0] = -1;
 	for (i = 0; i < nlen; i++) {
@@ -3589,6 +3592,9 @@ rb_ary_combination(VALUE ary, VALUE num)
 		chosen[lev] = RARRAY_PTR(ary)[stack[lev+1] = stack[lev]+1];
 	    }
 	    rb_yield(rb_ary_new4(n, chosen));
+	    if (RBASIC(t0)->klass) {
+		rb_raise(rb_eRuntimeError, "combination reentered");
+	    }
 	    do {
 		stack[lev--]++;
 	    } while (lev && (stack[lev+1]+n == len+lev+1));
