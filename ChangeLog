@@ -1,3 +1,13 @@
+Sat Aug  1 19:23:27 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (tr_trans): change condition of singlebyte
+	  optimization.
+
+Sat Aug  1 05:18:36 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (tr_trans): can't use singlebyte optimization when
+	  the replacement is multibyte. [ruby-core:24612]
+
 Fri Jul 31 16:28:33 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_stdio_set_default_encoding): added.
