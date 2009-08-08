@@ -1,3 +1,15 @@
+Fri Jul 31 10:54:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (literal_concat_gen): reduced unnecessary node at string
+	  literal concatenation with empty head dstr.  [ruby-dev:38968]
+
+Fri Jul 31 02:57:39 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* parse.y (literal_concat_gen): NODE_DSTR was incorrectly handled as
+	  NODE_STR.  [ruby-dev:38968]
+
+	* bootstraptest/test_syntax.rb: add a test for above.
+
 Thu Jul 30 23:04:32 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* gem_prelude.rb (Gem.path): uses Gem.default_path as a default value

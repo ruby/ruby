@@ -828,3 +828,6 @@ assert_normal_exit %q{
   p a.compact!
 }
 
+assert_equal 'ok', %q{
+  "#{}""#{}ok"
+}, '[ruby-dev:38968]'
