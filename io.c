@@ -7949,7 +7949,7 @@ rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
 }
 
 void
-rb_stdio_set_default_encoding()
+rb_stdio_set_default_encoding(void)
 {
     extern VALUE rb_stdin, rb_stdout, rb_stderr;
     VALUE val = Qnil;

@@ -1188,6 +1188,8 @@ rb_f_chomp(argc, argv)
     return str;
 }
 
+void rb_stdio_set_default_encoding(void);
+
 static VALUE
 process_options(VALUE arg)
 {
