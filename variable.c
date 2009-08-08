@@ -212,6 +212,23 @@ rb_class_path(VALUE klass)
 }
 
 void
+rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
+{
+    VALUE str;
+
+    if (under == rb_cObject) {
+	str = rb_str_new_frozen(name);
+    }
+    else {
+	str = rb_str_dup(rb_class_path(under));
+	rb_str_cat2(str, "::");
+	rb_str_append(str, name);
+	OBJ_FREEZE(str);
+    }
+    rb_ivar_set(klass, classpath, str);
+}
+
+void
 rb_set_class_path(VALUE klass, VALUE under, const char *name)
 {
     VALUE str;

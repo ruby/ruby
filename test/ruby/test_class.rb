@@ -144,4 +144,11 @@ class TestClass < Test::Unit::TestCase
     assert_raise(TypeError) { Class.allocate.new }
     assert_raise(TypeError) { Class.allocate.superclass }
   end
+
+  def test_nonascii_name
+    c = eval("class ::C\u{df}; self; end")
+    assert_equal("C\u{df}", c.name, '[ruby-core:24600]')
+    c = eval("class C\u{df}; self; end")
+    assert_equal("TestClass::C\u{df}", c.name, '[ruby-core:24600]')
+  end
 end

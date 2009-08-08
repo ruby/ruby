@@ -1,3 +1,11 @@
+Thu Jul 30 16:45:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (defineclass): preserve encoding of class/module
+	  names.  [ruby-core:24600]
+
+	* variable.c (rb_set_class_path_string): set class path with a
+	  string value.
+
 Sat Jul 25 17:49:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (argf_eof): should not have reached EOF before trying to
