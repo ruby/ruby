@@ -1,11 +1,9 @@
 /*
- * sha2.c
- *
- * Version 1.0.0beta1
- *
- * Written by Aaron D. Gifford <me@aarongifford.com>
- *
- * Copyright 2000 Aaron D. Gifford.  All rights reserved.
+ * FILE:	sha2.c
+ * AUTHOR:	Aaron D. Gifford - http://www.aarongifford.com/
+ * 
+ * Copyright (c) 2000-2001, Aaron D. Gifford
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -19,10 +17,10 @@
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  * 
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR(S) AND CONTRIBUTOR(S) ``AS IS'' AND
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTOR(S) ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR(S) OR CONTRIBUTOR(S) BE LIABLE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTOR(S) BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -31,15 +29,15 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
+ * $OrigId: sha2.c,v 1.1 2001/11/08 00:01:51 adg Exp adg $
+ * $RoughId: sha2.c,v 1.3 2002/02/26 22:03:36 knu Exp $
+ * $Id$
  */
 
-/* $RoughId: sha2.c,v 1.3 2002/02/26 22:03:36 knu Exp $ */
-/* $Id$ */
-
-#include "sha2.h"
-#include <stdio.h>
+#include "defs.h"
 #include <string.h>	/* memcpy()/memset() or bcopy()/bzero() */
 #include <assert.h>	/* assert() */
+#include "sha2.h"
 
 /*
  * ASSERT NOTE:
@@ -63,15 +61,64 @@
 
 
 /*** SHA-256/384/512 Machine Architecture Definitions *****************/
+/*
+ * BYTE_ORDER NOTE:
+ *
+ * Please make sure that your system defines BYTE_ORDER.  If your
+ * architecture is little-endian, make sure it also defines
+ * LITTLE_ENDIAN and that the two (BYTE_ORDER and LITTLE_ENDIAN) are
+ * equivilent.
+ *
+ * If your system does not define the above, then you can do so by
+ * hand like this:
+ *
+ *   #define LITTLE_ENDIAN 1234
+ *   #define BIG_ENDIAN    4321
+ *
+ * And for little-endian machines, add:
+ *
+ *   #define BYTE_ORDER LITTLE_ENDIAN 
+ *
+ * Or for big-endian machines:
+ *
+ *   #define BYTE_ORDER BIG_ENDIAN
+ *
+ * The FreeBSD machine this was written on defines BYTE_ORDER
+ * appropriately by including <sys/types.h> (which in turn includes
+ * <machine/endian.h> where the appropriate definitions are actually
+ * made).
+ */
+#if !defined(BYTE_ORDER) || (BYTE_ORDER != LITTLE_ENDIAN && BYTE_ORDER != BIG_ENDIAN)
+#error Define BYTE_ORDER to be equal to either LITTLE_ENDIAN or BIG_ENDIAN
+#endif
+
+/*
+ * Define the followingsha2_* types to types of the correct length on
+ * the native archtecture.   Most BSD systems and Linux define u_intXX_t
+ * types.  Machines with very recent ANSI C headers, can use the
+ * uintXX_t definintions from inttypes.h by defining SHA2_USE_INTTYPES_H
+ * during compile or in the sha.h header file.
+ *
+ * Machines that support neither u_intXX_t nor inttypes.h's uintXX_t
+ * will need to define these three typedefs below (and the appropriate
+ * ones in sha.h too) by hand according to their system architecture.
+ *
+ * Thank you, Jun-ichiro itojun Hagino, for suggesting using u_intXX_t
+ * types and pointing out recent ANSI C support for uintXX_t in inttypes.h.
+ */
+#ifdef SHA2_USE_INTTYPES_H
+
 typedef uint8_t  sha2_byte;	/* Exactly 1 byte */
 typedef uint32_t sha2_word32;	/* Exactly 4 bytes */
 typedef uint64_t sha2_word64;	/* Exactly 8 bytes */
 
-#if defined(__GNUC__) || defined(_HPUX_SOURCE) || defined(__IBMC__)
-#define ULL(number)	number##ULL
-#else
-#define ULL(number)	(uint64_t)(number)
-#endif
+#else /* SHA2_USE_INTTYPES_H */
+
+typedef u_int8_t  sha2_byte;	/* Exactly 1 byte */
+typedef u_int32_t sha2_word32;	/* Exactly 4 bytes */
+typedef u_int64_t sha2_word64;	/* Exactly 8 bytes */
+
+#endif /* SHA2_USE_INTTYPES_H */
 
 
 /*** SHA-256/384/512 Various Length Definitions ***********************/
@@ -81,8 +128,13 @@ typedef uint64_t sha2_word64;	/* Exactly 8 bytes */
 #define SHA512_SHORT_BLOCK_LENGTH	(SHA512_BLOCK_LENGTH - 16)
 
 
+#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)) || defined(__GNUC__) || defined(_HPUX_SOURCE) || defined(__IBMC__)
+#define ULL(number)	number##ULL
+#else
+#define ULL(number)	(uint64_t)(number)
+#endif
 /*** ENDIAN REVERSAL MACROS *******************************************/
-#ifndef WORDS_BIGENDIAN
+#if BYTE_ORDER == LITTLE_ENDIAN
 #define REVERSE32(w,x)	{ \
 	sha2_word32 tmp = (w); \
 	tmp = (tmp >> 16) | (tmp << 16); \
@@ -96,7 +148,7 @@ typedef uint64_t sha2_word64;	/* Exactly 8 bytes */
 	(x) = ((tmp & ULL(0xffff0000ffff0000)) >> 16) | \
 	      ((tmp & ULL(0x0000ffff0000ffff)) << 16); \
 }
-#endif
+#endif /* BYTE_ORDER == LITTLE_ENDIAN */
 
 /*
  * Macro for incrementally adding the unsigned 64-bit integer n to the
@@ -281,6 +333,12 @@ const static sha2_word64 sha512_initial_hash_value[8] = {
 	ULL(0x5be0cd19137e2179)
 };
 
+/*
+ * Constant used by SHA256/384/512_End() functions for converting the
+ * digest to a readable hexadecimal character string:
+ */
+static const char *sha2_hex_digits = "0123456789abcdef";
+
 
 /*** SHA-256: *********************************************************/
 void SHA256_Init(SHA256_CTX* context) {
@@ -296,7 +354,7 @@ void SHA256_Init(SHA256_CTX* context) {
 
 /* Unrolled SHA-256 round macros: */
 
-#ifndef WORDS_BIGENDIAN
+#if BYTE_ORDER == LITTLE_ENDIAN
 
 #define ROUND256_0_TO_15(a,b,c,d,e,f,g,h)	\
 	REVERSE32(*data++, W256[j]); \
@@ -307,7 +365,7 @@ void SHA256_Init(SHA256_CTX* context) {
 	j++
 
 
-#else
+#else /* BYTE_ORDER == LITTLE_ENDIAN */
 
 #define ROUND256_0_TO_15(a,b,c,d,e,f,g,h)	\
 	T1 = (h) + Sigma1_256(e) + Ch((e), (f), (g)) + \
@@ -316,7 +374,7 @@ void SHA256_Init(SHA256_CTX* context) {
 	(h) = T1 + Sigma0_256(a) + Maj((a), (b), (c)); \
 	j++
 
-#endif
+#endif /* BYTE_ORDER == LITTLE_ENDIAN */
 
 #define ROUND256(a,b,c,d,e,f,g,h)	\
 	s0 = W256[(j+1)&0x0f]; \
@@ -406,15 +464,15 @@ void SHA256_Transform(SHA256_CTX* context, const sha2_word32* data) {
 
 	j = 0;
 	do {
-#ifndef WORDS_BIGENDIAN
+#if BYTE_ORDER == LITTLE_ENDIAN
 		/* Copy data while converting to host byte order */
 		REVERSE32(*data++,W256[j]);
 		/* Apply the SHA-256 compression function to update a..h */
 		T1 = h + Sigma1_256(e) + Ch(e, f, g) + K256[j] + W256[j];
-#else
+#else /* BYTE_ORDER == LITTLE_ENDIAN */
 		/* Apply the SHA-256 compression function to update a..h with copy */
 		T1 = h + Sigma1_256(e) + Ch(e, f, g) + K256[j] + (W256[j] = *data++);
-#endif
+#endif /* BYTE_ORDER == LITTLE_ENDIAN */
 		T2 = Sigma0_256(a) + Maj(a, b, c);
 		h = g;
 		g = f;
@@ -476,7 +534,7 @@ void SHA256_Update(SHA256_CTX* context, const sha2_byte *data, size_t len) {
 	}
 
 	/* Sanity check: */
-	assert(context != NULL && data != NULL);
+	assert(context != (SHA256_CTX*)0 && data != (sha2_byte*)0);
 
 	usedspace = (context->bitcount >> 3) % SHA256_BLOCK_LENGTH;
 	if (usedspace > 0) {
@@ -501,7 +559,7 @@ void SHA256_Update(SHA256_CTX* context, const sha2_byte *data, size_t len) {
 	}
 	while (len >= SHA256_BLOCK_LENGTH) {
 		/* Process as many complete blocks as we can */
-		SHA256_Transform(context, (const sha2_word32*)data);
+		SHA256_Transform(context, (sha2_word32*)data);
 		context->bitcount += SHA256_BLOCK_LENGTH << 3;
 		len -= SHA256_BLOCK_LENGTH;
 		data += SHA256_BLOCK_LENGTH;
@@ -515,17 +573,21 @@ void SHA256_Update(SHA256_CTX* context, const sha2_byte *data, size_t len) {
 	usedspace = freespace = 0;
 }
 
+#ifdef RUBY
 void SHA256_Finish(SHA256_CTX* context, sha2_byte digest[]) {
+#else
+void SHA256_Final(sha2_byte digest[], SHA256_CTX* context) {
+#endif
 	sha2_word32	*d = (sha2_word32*)digest;
 	unsigned int	usedspace;
 
 	/* Sanity check: */
-	assert(context != NULL);
+	assert(context != (SHA256_CTX*)0);
 
 	/* If no digest buffer is passed, we don't bother doing this: */
 	if (digest != (sha2_byte*)0) {
 		usedspace = (context->bitcount >> 3) % SHA256_BLOCK_LENGTH;
-#ifndef WORDS_BIGENDIAN
+#if BYTE_ORDER == LITTLE_ENDIAN
 		/* Convert FROM host byte order */
 		REVERSE64(context->bitcount,context->bitcount);
 #endif
@@ -559,7 +621,7 @@ void SHA256_Finish(SHA256_CTX* context, sha2_byte digest[]) {
 		/* Final transform: */
 		SHA256_Transform(context, (sha2_word32*)context->buffer);
 
-#ifndef WORDS_BIGENDIAN
+#if BYTE_ORDER == LITTLE_ENDIAN
 		{
 			/* Convert TO host byte order */
 			int	j;
@@ -574,9 +636,45 @@ void SHA256_Finish(SHA256_CTX* context, sha2_byte digest[]) {
 	}
 
 	/* Clean up state data: */
-	MEMSET_BZERO(context, sizeof(SHA256_CTX));
+	MEMSET_BZERO(context, sizeof(context));
 	usedspace = 0;
 }
+
+char *SHA256_End(SHA256_CTX* context, char buffer[]) {
+	sha2_byte	digest[SHA256_DIGEST_LENGTH], *d = digest;
+	int		i;
+
+	/* Sanity check: */
+	assert(context != (SHA256_CTX*)0);
+
+	if (buffer != (char*)0) {
+#ifdef RUBY
+		SHA256_Finish(context, digest);
+#else
+		SHA256_Final(digest, context);
+#endif
+
+		for (i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+			*buffer++ = sha2_hex_digits[(*d & 0xf0) >> 4];
+			*buffer++ = sha2_hex_digits[*d & 0x0f];
+			d++;
+		}
+		*buffer = (char)0;
+	} else {
+		MEMSET_BZERO(context, sizeof(context));
+	}
+	MEMSET_BZERO(digest, SHA256_DIGEST_LENGTH);
+	return buffer;
+}
+
+char* SHA256_Data(const sha2_byte* data, size_t len, char digest[SHA256_DIGEST_STRING_LENGTH]) {
+	SHA256_CTX	context;
+
+	SHA256_Init(&context);
+	SHA256_Update(&context, data, len);
+	return SHA256_End(&context, digest);
+}
+
 
 /*** SHA-512: *********************************************************/
 void SHA512_Init(SHA512_CTX* context) {
@@ -591,7 +689,7 @@ void SHA512_Init(SHA512_CTX* context) {
 #ifdef SHA2_UNROLL_TRANSFORM
 
 /* Unrolled SHA-512 round macros: */
-#ifndef WORDS_BIGENDIAN
+#if BYTE_ORDER == LITTLE_ENDIAN
 
 #define ROUND512_0_TO_15(a,b,c,d,e,f,g,h)	\
 	REVERSE64(*data++, W512[j]); \
@@ -602,7 +700,7 @@ void SHA512_Init(SHA512_CTX* context) {
 	j++
 
 
-#else
+#else /* BYTE_ORDER == LITTLE_ENDIAN */
 
 #define ROUND512_0_TO_15(a,b,c,d,e,f,g,h)	\
 	T1 = (h) + Sigma1_512(e) + Ch((e), (f), (g)) + \
@@ -611,7 +709,7 @@ void SHA512_Init(SHA512_CTX* context) {
 	(h) = T1 + Sigma0_512(a) + Maj((a), (b), (c)); \
 	j++
 
-#endif
+#endif /* BYTE_ORDER == LITTLE_ENDIAN */
 
 #define ROUND512(a,b,c,d,e,f,g,h)	\
 	s0 = W512[(j+1)&0x0f]; \
@@ -696,15 +794,15 @@ void SHA512_Transform(SHA512_CTX* context, const sha2_word64* data) {
 
 	j = 0;
 	do {
-#ifndef WORDS_BIGENDIAN
+#if BYTE_ORDER == LITTLE_ENDIAN
 		/* Convert TO host byte order */
 		REVERSE64(*data++, W512[j]);
 		/* Apply the SHA-512 compression function to update a..h */
 		T1 = h + Sigma1_512(e) + Ch(e, f, g) + K512[j] + W512[j];
-#else
+#else /* BYTE_ORDER == LITTLE_ENDIAN */
 		/* Apply the SHA-512 compression function to update a..h with copy */
 		T1 = h + Sigma1_512(e) + Ch(e, f, g) + K512[j] + (W512[j] = *data++);
-#endif
+#endif /* BYTE_ORDER == LITTLE_ENDIAN */
 		T2 = Sigma0_512(a) + Maj(a, b, c);
 		h = g;
 		g = f;
@@ -766,7 +864,7 @@ void SHA512_Update(SHA512_CTX* context, const sha2_byte *data, size_t len) {
 	}
 
 	/* Sanity check: */
-	assert(context != NULL && data != NULL);
+	assert(context != (SHA512_CTX*)0 && data != (sha2_byte*)0);
 
 	usedspace = (context->bitcount[0] >> 3) % SHA512_BLOCK_LENGTH;
 	if (usedspace > 0) {
@@ -779,7 +877,7 @@ void SHA512_Update(SHA512_CTX* context, const sha2_byte *data, size_t len) {
 			ADDINC128(context->bitcount, freespace << 3);
 			len -= freespace;
 			data += freespace;
-			SHA512_Transform(context, (const sha2_word64*)context->buffer);
+			SHA512_Transform(context, (sha2_word64*)context->buffer);
 		} else {
 			/* The buffer is not yet full */
 			MEMCPY_BCOPY(&context->buffer[usedspace], data, len);
@@ -791,7 +889,7 @@ void SHA512_Update(SHA512_CTX* context, const sha2_byte *data, size_t len) {
 	}
 	while (len >= SHA512_BLOCK_LENGTH) {
 		/* Process as many complete blocks as we can */
-		SHA512_Transform(context, (const sha2_word64*)data);
+		SHA512_Transform(context, (sha2_word64*)data);
 		ADDINC128(context->bitcount, SHA512_BLOCK_LENGTH << 3);
 		len -= SHA512_BLOCK_LENGTH;
 		data += SHA512_BLOCK_LENGTH;
@@ -809,7 +907,7 @@ void SHA512_Last(SHA512_CTX* context) {
 	unsigned int	usedspace;
 
 	usedspace = (context->bitcount[0] >> 3) % SHA512_BLOCK_LENGTH;
-#ifndef WORDS_BIGENDIAN
+#if BYTE_ORDER == LITTLE_ENDIAN
 	/* Convert FROM host byte order */
 	REVERSE64(context->bitcount[0],context->bitcount[0]);
 	REVERSE64(context->bitcount[1],context->bitcount[1]);
@@ -826,7 +924,7 @@ void SHA512_Last(SHA512_CTX* context) {
 				MEMSET_BZERO(&context->buffer[usedspace], SHA512_BLOCK_LENGTH - usedspace);
 			}
 			/* Do second-to-last transform: */
-			SHA512_Transform(context, (const sha2_word64*)context->buffer);
+			SHA512_Transform(context, (sha2_word64*)context->buffer);
 
 			/* And set-up for the last transform: */
 			MEMSET_BZERO(context->buffer, SHA512_BLOCK_LENGTH - 2);
@@ -843,21 +941,25 @@ void SHA512_Last(SHA512_CTX* context) {
 	*(sha2_word64*)&context->buffer[SHA512_SHORT_BLOCK_LENGTH+8] = context->bitcount[0];
 
 	/* Final transform: */
-	SHA512_Transform(context, (const sha2_word64*)context->buffer);
+	SHA512_Transform(context, (sha2_word64*)context->buffer);
 }
 
+#ifdef RUBY
 void SHA512_Finish(SHA512_CTX* context, sha2_byte digest[]) {
+#else
+void SHA512_Final(sha2_byte digest[], SHA512_CTX* context) {
+#endif
 	sha2_word64	*d = (sha2_word64*)digest;
 
 	/* Sanity check: */
-	assert(context != NULL);
+	assert(context != (SHA512_CTX*)0);
 
 	/* If no digest buffer is passed, we don't bother doing this: */
 	if (digest != (sha2_byte*)0) {
 		SHA512_Last(context);
 
 		/* Save the hash data for output: */
-#ifndef WORDS_BIGENDIAN
+#if BYTE_ORDER == LITTLE_ENDIAN
 		{
 			/* Convert TO host byte order */
 			int	j;
@@ -872,8 +974,44 @@ void SHA512_Finish(SHA512_CTX* context, sha2_byte digest[]) {
 	}
 
 	/* Zero out state data */
-	MEMSET_BZERO(context, sizeof(SHA512_CTX));
+	MEMSET_BZERO(context, sizeof(context));
 }
+
+char *SHA512_End(SHA512_CTX* context, char buffer[]) {
+	sha2_byte	digest[SHA512_DIGEST_LENGTH], *d = digest;
+	int		i;
+
+	/* Sanity check: */
+	assert(context != (SHA512_CTX*)0);
+
+	if (buffer != (char*)0) {
+#ifdef RUBY
+		SHA512_Finish(context, digest);
+#else
+		SHA512_Final(digest, context);
+#endif
+
+		for (i = 0; i < SHA512_DIGEST_LENGTH; i++) {
+			*buffer++ = sha2_hex_digits[(*d & 0xf0) >> 4];
+			*buffer++ = sha2_hex_digits[*d & 0x0f];
+			d++;
+		}
+		*buffer = (char)0;
+	} else {
+		MEMSET_BZERO(context, sizeof(context));
+	}
+	MEMSET_BZERO(digest, SHA512_DIGEST_LENGTH);
+	return buffer;
+}
+
+char* SHA512_Data(const sha2_byte* data, size_t len, char digest[SHA512_DIGEST_STRING_LENGTH]) {
+	SHA512_CTX	context;
+
+	SHA512_Init(&context);
+	SHA512_Update(&context, data, len);
+	return SHA512_End(&context, digest);
+}
+
 
 /*** SHA-384: *********************************************************/
 void SHA384_Init(SHA384_CTX* context) {
@@ -889,18 +1027,22 @@ void SHA384_Update(SHA384_CTX* context, const sha2_byte* data, size_t len) {
 	SHA512_Update((SHA512_CTX*)context, data, len);
 }
 
+#ifdef RUBY
 void SHA384_Finish(SHA384_CTX* context, sha2_byte digest[]) {
+#else
+void SHA384_Final(sha2_byte digest[], SHA384_CTX* context) {
+#endif
 	sha2_word64	*d = (sha2_word64*)digest;
 
 	/* Sanity check: */
-	assert(context != NULL);
+	assert(context != (SHA384_CTX*)0);
 
 	/* If no digest buffer is passed, we don't bother doing this: */
 	if (digest != (sha2_byte*)0) {
 		SHA512_Last((SHA512_CTX*)context);
 
 		/* Save the hash data for output: */
-#ifndef WORDS_BIGENDIAN
+#if BYTE_ORDER == LITTLE_ENDIAN
 		{
 			/* Convert TO host byte order */
 			int	j;
@@ -915,5 +1057,41 @@ void SHA384_Finish(SHA384_CTX* context, sha2_byte digest[]) {
 	}
 
 	/* Zero out state data */
-	MEMSET_BZERO(context, sizeof(SHA384_CTX));
+	MEMSET_BZERO(context, sizeof(context));
 }
+
+char *SHA384_End(SHA384_CTX* context, char buffer[]) {
+	sha2_byte	digest[SHA384_DIGEST_LENGTH], *d = digest;
+	int		i;
+
+	/* Sanity check: */
+	assert(context != (SHA384_CTX*)0);
+
+	if (buffer != (char*)0) {
+#ifdef RUBY
+		SHA384_Finish(context, digest);
+#else
+		SHA384_Final(digest, context);
+#endif
+
+		for (i = 0; i < SHA384_DIGEST_LENGTH; i++) {
+			*buffer++ = sha2_hex_digits[(*d & 0xf0) >> 4];
+			*buffer++ = sha2_hex_digits[*d & 0x0f];
+			d++;
+		}
+		*buffer = (char)0;
+	} else {
+		MEMSET_BZERO(context, sizeof(context));
+	}
+	MEMSET_BZERO(digest, SHA384_DIGEST_LENGTH);
+	return buffer;
+}
+
+char* SHA384_Data(const sha2_byte* data, size_t len, char digest[SHA384_DIGEST_STRING_LENGTH]) {
+	SHA384_CTX	context;
+
+	SHA384_Init(&context);
+	SHA384_Update(&context, data, len);
+	return SHA384_End(&context, digest);
+}
+

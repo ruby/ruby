@@ -1,3 +1,33 @@
+Fri Aug  7 01:49:41 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/sha2/sha2.c: The ULL suffix is not supported by
+	  pre-C99 compilers, so resurrect the ULL() macro to regain
+	  portability. [ruby-dev:39032]
+
+Fri Aug  7 01:35:26 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/*/extconf.rb: inttypes.h and unistd.h need not be
+	  checked here. [ruby-dev:39032]
+
+Thu Aug  6 21:18:15 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/digest/sha2/lib/sha2.rb: should require sha2.so.
+
+Thu Aug  6 21:11:40 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/digest/sha2/sha2.c (*_Final): typos.
+
+Thu Aug  6 19:46:56 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/sha2/sha2.h (BYTE_ORDER): Define BYTE_ORDER as
+	  necessary. [ruby-dev:39029]
+
+Thu Aug  6 01:37:20 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/sha2/sha2.[ch]: Update to 1.0 RELEASE which fixes an
+	  off-by-one bug in SHA-256 hashing.  Reduce differences from
+	  the original while at it. [Bug #1799]
+
 Thu Aug  6 16:25:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_capable, rb_enc_get_index): Symbol is encoding
