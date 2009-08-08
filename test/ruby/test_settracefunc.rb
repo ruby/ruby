@@ -68,7 +68,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["c-return", 5, :+, Fixnum],
                  events.shift)
-    assert_equal(["return", 4, :add, self.class],
+    assert_equal(["return", 6, :add, self.class],
                  events.shift)
     assert_equal(["line", 8, __method__, self.class],
                  events.shift)
@@ -98,7 +98,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["c-return", 4, :inherited, Class],
                  events.shift)
-    assert_equal(["class", 7, nil, nil],
+    assert_equal(["class", 4, nil, nil],
                  events.shift)
     assert_equal(["line", 5, nil, nil],
                  events.shift)
@@ -120,7 +120,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["call", 5, :bar, Foo],
                  events.shift)
-    assert_equal(["return", 5, :bar, Foo],
+    assert_equal(["return", 6, :bar, Foo],
                  events.shift)
     assert_equal(["line", 9, __method__, self.class],
                  events.shift)

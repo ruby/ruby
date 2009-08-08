@@ -166,14 +166,11 @@ PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
 #define iseq_filename(iseq) \
   (((rb_iseq_t*)DATA_PTR(iseq))->filename)
 
-#define NEW_ISEQVAL(node, name, type)       \
-  new_child_iseq(iseq, node, name, 0, type)
+#define NEW_ISEQVAL(node, name, type, line_no)       \
+  new_child_iseq(iseq, node, name, 0, type, line_no)
 
-#define NEW_CHILD_ISEQVAL(node, name, type)       \
-  new_child_iseq(iseq, node, name, iseq->self, type)
-
-#define NEW_SPECIAQL_BLOCK_ISEQVAL(iseq, sym) \
-  new_child_iseq(iseq, iseq->node, iseq->name, iseq->parent_iseq, iseq->type, sym)
+#define NEW_CHILD_ISEQVAL(node, name, type, line_no)       \
+  new_child_iseq(iseq, node, name, iseq->self, type, line_no)
 
 /* add instructions */
 #define ADD_SEQ(seq1, seq2) \
@@ -447,13 +444,13 @@ rb_iseq_compile_node(VALUE self, NODE *node)
 	    break;
 	  }
 	  case ISEQ_TYPE_CLASS: {
-	    ADD_TRACE(ret, nd_line(node), RUBY_EVENT_CLASS);
+	    ADD_TRACE(ret, FIX2INT(iseq->line_no), RUBY_EVENT_CLASS);
 	    COMPILE(ret, "scoped node", node->nd_body);
 	    ADD_TRACE(ret, nd_line(node), RUBY_EVENT_END);
 	    break;
 	  }
 	  case ISEQ_TYPE_METHOD: {
-	    ADD_TRACE(ret, nd_line(node), RUBY_EVENT_CALL);
+	    ADD_TRACE(ret, FIX2INT(iseq->line_no), RUBY_EVENT_CALL);
 	    COMPILE(ret, "scoped node", node->nd_body);
 	    ADD_TRACE(ret, nd_line(node), RUBY_EVENT_RETURN);
 	    break;
@@ -910,12 +907,12 @@ new_insn_send(rb_iseq_t *iseq, int line_no,
 
 static VALUE
 new_child_iseq(rb_iseq_t *iseq, NODE *node,
-	       VALUE name, VALUE parent, VALUE type)
+	       VALUE name, VALUE parent, VALUE type, int line_no)
 {
     VALUE ret;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
-    ret = rb_iseq_new_with_opt(node, name, iseq_filename(iseq->self),
+    ret = rb_iseq_new_with_opt(node, name, iseq_filename(iseq->self), INT2FIX(line_no),
 			       parent, type, iseq->compile_data->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
     iseq_add_mark_object(iseq, ret);
@@ -2683,7 +2680,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 					     rb_str_concat(rb_str_new2
 							   ("defined guard in "),
 							   iseq->name),
-					     ISEQ_TYPE_DEFINED_GUARD);
+					     ISEQ_TYPE_DEFINED_GUARD, 0);
 
 	    defined_expr(iseq, ret, node->nd_recv, lfinish, Qfalse);
 	    ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
@@ -3261,7 +3258,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	    iseq->compile_data->current_block =
 		NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq),
-				  ISEQ_TYPE_BLOCK);
+				  ISEQ_TYPE_BLOCK, nd_line(node));
 
 	    mid = idEach;
 	    ADD_SEND_R(ret, nd_line(node), ID2SYM(idEach), INT2FIX(0),
@@ -3270,7 +3267,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	else {
 	    iseq->compile_data->current_block =
 		NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq),
-				  ISEQ_TYPE_BLOCK);
+				  ISEQ_TYPE_BLOCK, nd_line(node));
 	    COMPILE(ret, "iter caller", node->nd_iter);
 	}
 	ADD_LABEL(ret, retry_end_l);
@@ -3504,7 +3501,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	VALUE rescue = NEW_CHILD_ISEQVAL(
 	    node->nd_resq,
 	    rb_str_concat(rb_str_new2("rescue in "), iseq->name),
-	    ISEQ_TYPE_RESCUE);
+	    ISEQ_TYPE_RESCUE, nd_line(node));
 
 	ADD_LABEL(ret, lstart);
 	COMPILE(ret, "rescue head", node->nd_head);
@@ -3586,7 +3583,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 					 rb_str_concat(rb_str_new2
 						       ("ensure in "),
 						       iseq->name),
-					 ISEQ_TYPE_ENSURE);
+					 ISEQ_TYPE_ENSURE, nd_line(node));
 	LABEL *lstart = NEW_LABEL(nd_line(node));
 	LABEL *lend = NEW_LABEL(nd_line(node));
 	LABEL *lcont = NEW_LABEL(nd_line(node));
@@ -4500,7 +4497,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_DEFN:{
 	VALUE iseqval = NEW_ISEQVAL(node->nd_defn,
 				    rb_str_dup(rb_id2str(node->nd_mid)),
-				    ISEQ_TYPE_METHOD);
+				    ISEQ_TYPE_METHOD, nd_line(node));
 
 	debugp_param("defn/iseq", iseqval);
 
@@ -4520,7 +4517,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_DEFS:{
 	VALUE iseqval = NEW_ISEQVAL(node->nd_defn,
 				    rb_str_dup(rb_id2str(node->nd_mid)),
-				    ISEQ_TYPE_METHOD);
+				    ISEQ_TYPE_METHOD, nd_line(node));
 
 	debugp_param("defs/iseq", iseqval);
 
@@ -4574,7 +4571,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    NEW_CHILD_ISEQVAL(
 		node->nd_body,
 		rb_sprintf("<class:%s>", rb_id2name(node->nd_cpath->nd_mid)),
-		ISEQ_TYPE_CLASS);
+		ISEQ_TYPE_CLASS, nd_line(node));
 	compile_cpath(ret, iseq, node->nd_cpath);
 	COMPILE(ret, "super", node->nd_super);
 	ADD_INSN3(ret, nd_line(node), defineclass,
@@ -4589,7 +4586,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	VALUE iseqval = NEW_CHILD_ISEQVAL(
 	    node->nd_body,
 	    rb_sprintf("<module:%s>", rb_id2name(node->nd_cpath->nd_mid)),
-	    ISEQ_TYPE_CLASS);
+	    ISEQ_TYPE_CLASS, nd_line(node));
 
 	compile_cpath(ret, iseq, node->nd_cpath);
 	ADD_INSN (ret, nd_line(node), putnil); /* dummy */
@@ -4604,7 +4601,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	ID singletonclass;
 	VALUE iseqval =
 	    NEW_ISEQVAL(node->nd_body, rb_str_new2("singletonclass"),
-			ISEQ_TYPE_CLASS);
+			ISEQ_TYPE_CLASS, nd_line(node));
 
 	COMPILE(ret, "sclass#recv", node->nd_recv);
 	ADD_INSN (ret, nd_line(node), putnil);
@@ -4806,7 +4803,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_POSTEXE:{
 	LABEL *lstart = NEW_LABEL(nd_line(node));
 	LABEL *lend = NEW_LABEL(nd_line(node));
-	VALUE block = NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq), ISEQ_TYPE_BLOCK);
+	VALUE block = NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, nd_line(node));
 
 	ADD_LABEL(ret, lstart);
 	ADD_INSN2(ret, nd_line(node), onceinlinecache, 0, lend);
@@ -4899,7 +4896,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_LAMBDA:{
 	/* compile same as lambda{...} */
-	VALUE block = NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq), ISEQ_TYPE_BLOCK);
+	VALUE block = NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, nd_line(node));
 	VALUE argc = INT2FIX(0);
 	ADD_CALL_RECEIVER(ret, nd_line(node));
 	ADD_CALL_WITH_BLOCK(ret, nd_line(node), ID2SYM(idLambda), argc, block);
