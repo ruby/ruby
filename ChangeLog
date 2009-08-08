@@ -1,3 +1,8 @@
+Fri Jul 31 18:01:34 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/securerandom.rb (SecureRandom.random_bytes): return string should
+	  be ASCII-8BIT.  [ruby-core:24640]
+
 Fri Jul 31 10:54:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (literal_concat_gen): reduced unnecessary node at string
