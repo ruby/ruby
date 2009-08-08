@@ -413,12 +413,18 @@ rb_longjmp(int tag, VALUE mesg)
 void
 rb_exc_raise(VALUE mesg)
 {
+    if (!NIL_P(mesg)) {
+	mesg = rb_make_exception(1, &mesg);
+    }
     rb_longjmp(TAG_RAISE, mesg);
 }
 
 void
 rb_exc_fatal(VALUE mesg)
 {
+    if (!NIL_P(mesg)) {
+	mesg = rb_make_exception(1, &mesg);
+    }
     rb_longjmp(TAG_FATAL, mesg);
 }
 
