@@ -897,6 +897,8 @@ flo_hash(VALUE num)
     int hash;
 
     d = RFLOAT_VALUE(num);
+    /* normalize -0.0 to 0.0 */
+    if (d == 0.0) d = 0.0;
     hash = rb_memhash(&d, sizeof(d));
     return INT2FIX(hash);
 }
