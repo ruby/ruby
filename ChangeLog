@@ -1,3 +1,8 @@
+Mon Aug  3 17:06:05 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/README: updated.  a patch from Daniel Bovensiepen.
+	  [ruby-core:24693]
+
 Mon Aug  3 16:28:09 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_connect): return value was broken when some
