@@ -1284,6 +1284,7 @@ VALUE
 rb_big_cmp(VALUE x, VALUE y)
 {
     long xlen = RBIGNUM_LEN(x);
+    BDIGIT *xds, *yds;
 
     switch (TYPE(y)) {
       case T_FIXNUM:
@@ -1315,9 +1316,12 @@ rb_big_cmp(VALUE x, VALUE y)
     if (xlen > RBIGNUM_LEN(y))
 	return (RBIGNUM_SIGN(x)) ? INT2FIX(1) : INT2FIX(-1);
 
-    while(xlen-- && (BDIGITS(x)[xlen]==BDIGITS(y)[xlen]));
+    xds = BDIGITS(x);
+    yds = BDIGITS(y);
+
+    while(xlen-- && (xds[xlen]==yds[xlen]));
     if (-1 == xlen) return INT2FIX(0);
-    return (BDIGITS(x)[xlen] > BDIGITS(y)[xlen]) ?
+    return (xds[xlen] > yds[xlen]) ?
 	(RBIGNUM_SIGN(x) ? INT2FIX(1) : INT2FIX(-1)) :
 	    (RBIGNUM_SIGN(x) ? INT2FIX(-1) : INT2FIX(1));
 }
@@ -1461,18 +1465,21 @@ bigsub(VALUE x, VALUE y)
 {
     VALUE z = 0;
     long i = RBIGNUM_LEN(x);
+    BDIGIT *xds, *yds;
 
     /* if x is larger than y, swap */
     if (RBIGNUM_LEN(x) < RBIGNUM_LEN(y)) {
 	z = x; x = y; y = z;	/* swap x y */
     }
     else if (RBIGNUM_LEN(x) == RBIGNUM_LEN(y)) {
+	xds = BDIGITS(x);
+	yds = BDIGITS(y);
 	while (i > 0) {
 	    i--;
-	    if (BDIGITS(x)[i] > BDIGITS(y)[i]) {
+	    if (xds[i] > yds[i]) {
 		break;
 	    }
-	    if (BDIGITS(x)[i] < BDIGITS(y)[i]) {
+	    if (xds[i] < yds[i]) {
 		z = x; x = y; y = z;	/* swap x y */
 		break;
 	    }
@@ -1732,7 +1739,8 @@ static long
 big_real_len(VALUE x)
 {
     long i = RBIGNUM_LEN(x);
-    while (--i && !BDIGITS(x)[i]);
+    BDIGIT *xds = BDIGITS(x);
+    while (--i && !xds[i]);
     return i + 1;
 }
 
@@ -1742,18 +1750,20 @@ bigmul1_normal(VALUE x, VALUE y)
     long i, j;
     BDIGIT_DBL n = 0;
     VALUE z = bignew(RBIGNUM_LEN(x) + RBIGNUM_LEN(y) + 1, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
-    BDIGIT *zds;
+    BDIGIT *xds, *yds, *zds;
 
     j = RBIGNUM_LEN(x) + RBIGNUM_LEN(y) + 1;
+    xds = BDIGITS(x);
+    yds = BDIGITS(y);
     zds = BDIGITS(z);
     while (j--) zds[j] = 0;
     for (i = 0; i < RBIGNUM_LEN(x); i++) {
 	BDIGIT_DBL dd;
-	dd = BDIGITS(x)[i];
+	dd = xds[i];
 	if (dd == 0) continue;
 	n = 0;
 	for (j = 0; j < RBIGNUM_LEN(y); j++) {
-	    BDIGIT_DBL ee = n + (BDIGIT_DBL)dd * BDIGITS(y)[j];
+	    BDIGIT_DBL ee = n + (BDIGIT_DBL)dd * yds[j];
 	    n = zds[i + j] + ee;
 	    if (ee) zds[i + j] = BIGLO(n);
 	    n = BIGDN(n);
@@ -1774,6 +1784,7 @@ bigmul1_balance(VALUE x, VALUE y)
 {
     VALUE z, t1, t2;
     long i, xn, yn, r, n;
+    BDIGIT *yds, *zds, *t1ds;
 
     xn = RBIGNUM_LEN(x);
     yn = RBIGNUM_LEN(y);
@@ -1782,17 +1793,21 @@ bigmul1_balance(VALUE x, VALUE y)
     z = bignew(xn + yn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
     t1 = bignew(xn, 1);
 
-    for (i = 0; i < xn + yn; i++) BDIGITS(z)[i] = 0;
+    yds = BDIGITS(y);
+    zds = BDIGITS(z);
+    t1ds = BDIGITS(t1);
+
+    for (i = 0; i < xn + yn; i++) zds[i] = 0;
 
     n = 0;
     while (yn > 0) {
 	r = xn > yn ? yn : xn;
-	MEMCPY(BDIGITS(t1), BDIGITS(y) + n, BDIGIT, r);
+	MEMCPY(t1ds, yds + n, BDIGIT, r);
 	RBIGNUM_SET_LEN(t1, r);
 	t2 = bigmul0(x, t1);
-	bigadd_core(BDIGITS(z) + n, RBIGNUM_LEN(z) - n,
+	bigadd_core(zds + n, RBIGNUM_LEN(z) - n,
 		    BDIGITS(t2), big_real_len(t2),
-		    BDIGITS(z) + n, RBIGNUM_LEN(z) - n);
+		    zds + n, RBIGNUM_LEN(z) - n);
 	yn -= r;
 	n += r;
     }
@@ -1806,18 +1821,19 @@ big_split(VALUE v, long n, VALUE *ph, VALUE *pl)
 {
     long hn, ln;
     VALUE h, l;
+    BDIGIT *vds = BDIGITS(v);
 
     ln = RBIGNUM_LEN(v) > n ? n : RBIGNUM_LEN(v);
     hn = RBIGNUM_LEN(v) - ln;
 
-    while (--hn && !BDIGITS(v)[hn + ln]);
+    while (--hn && !vds[hn + ln]);
     h = bignew(hn += 2, 1);
-    MEMCPY(BDIGITS(h), BDIGITS(v) + ln, BDIGIT, hn);
+    MEMCPY(BDIGITS(h), vds + ln, BDIGIT, hn);
     BDIGITS(h)[hn - 1] = 0;
 
-    while (--ln && !BDIGITS(v)[ln]);
+    while (--ln && !vds[ln]);
     l = bignew(ln += 2, 1);
-    MEMCPY(BDIGITS(l), BDIGITS(v), BDIGIT, ln);
+    MEMCPY(BDIGITS(l), vds, BDIGIT, ln);
     BDIGITS(l)[ln - 1] = 0;
 
     *pl = l;
