@@ -3,7 +3,7 @@ Sun Aug  9 21:14:03 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/extconf.rb (search_tclConfig): last change isn't enough.
 	  fixed it.
 
-	* ext/tk/tcltklib.c (Init_tcltklib): avoid warning.
+	* ext/tk/tcltklib.c (Init_tcltklib): avoid warning when disable-pthread
 
 Fri Aug  7 23:36:07 2009  Tanaka Akira  <akr@fsij.org>
 
