@@ -1,3 +1,8 @@
+Sun Aug  9 17:43:44 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* lib/irb.rb, lib/irb/init.rb, lib/irb/ext/save-history.rb: add
+	  IRB::irb_at_exit. no use finalizer saving history. [ruby-dev-38563]
+
 Wed Aug  5 15:29:54 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_io_flush): fsync() after buffer is flushed on win32.
