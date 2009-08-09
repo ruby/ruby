@@ -14,6 +14,7 @@
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "ruby/encoding.h"
 #include "node.h"
 
 void rb_vm_change_state(void);
@@ -249,19 +250,23 @@ rb_set_class_path(VALUE klass, VALUE under, const char *name)
 }
 
 VALUE
-rb_path2class(const char *path)
+rb_path_to_class(VALUE pathname)
 {
-    const char *pbeg, *p;
+    rb_encoding *enc = rb_enc_get(pathname);
+    const char *pbeg, *p, *path = RSTRING_PTR(pathname);
     ID id;
     VALUE c = rb_cObject;
 
+    if (!rb_enc_asciicompat(enc)) {
+	rb_raise(rb_eArgError, "invalid class path encoding (non ASCII)");
+    }
+    pbeg = p = path;
     if (path[0] == '#') {
 	rb_raise(rb_eArgError, "can't retrieve anonymous class %s", path);
     }
-    pbeg = p = path;
     while (*p) {
 	while (*p && *p != ':') p++;
-	id = rb_intern2(pbeg, p-pbeg);
+	id = rb_intern3(pbeg, p-pbeg, enc);
 	if (p[0] == ':') {
 	    if (p[1] != ':') goto undefined_class;
 	    p += 2;
@@ -282,6 +287,12 @@ rb_path2class(const char *path)
     }
 
     return c;
+}
+
+VALUE
+rb_path2class(const char *path)
+{
+    return rb_path_to_class(rb_usascii_str_new_cstr(path));
 }
 
 void

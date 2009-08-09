@@ -602,7 +602,7 @@ time.$(OBJEXT): {$(VPATH)}time.c $(RUBY_H_INCLUDES) \
   $(ENCODING_H_INCLUDES)
 util.$(OBJEXT): {$(VPATH)}util.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h
 variable.$(OBJEXT): {$(VPATH)}variable.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}node.h {$(VPATH)}util.h
+  {$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}encoding.h
 version.$(OBJEXT): {$(VPATH)}version.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}version.h $(srcdir)/revision.h
 

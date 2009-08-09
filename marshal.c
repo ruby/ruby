@@ -168,18 +168,28 @@ mark_dump_arg(void *ptr)
     rb_mark_hash(p->compat_tbl);
 }
 
+static void
+must_not_be_anonymous(const char *type, VALUE path)
+{
+    char *n = RSTRING_PTR(path);
+
+    if (!rb_enc_asciicompat(rb_enc_get(path))) {
+	/* cannot occur? */
+	rb_raise(rb_eTypeError, "can't dump non-ascii %s name", type);
+    }
+    if (n[0] == '#') {
+	rb_raise(rb_eTypeError, "can't dump anonymous %s %s", type,
+		 (int)RSTRING_LEN(path), n);
+    }
+}
+
 static VALUE
 class2path(VALUE klass)
 {
     VALUE path = rb_class_path(klass);
-    char *n = RSTRING_PTR(path);
 
-    if (n[0] == '#') {
-	rb_raise(rb_eTypeError, "can't dump anonymous %s %s",
-		 (TYPE(klass) == T_CLASS ? "class" : "module"),
-		 n);
-    }
-    if (rb_path2class(n) != rb_class_real(klass)) {
+    must_not_be_anonymous((TYPE(klass) == T_CLASS ? "class" : "module"), path);
+    if (rb_path_to_class(path) != rb_class_real(klass)) {
 	rb_raise(rb_eTypeError, "%s can't be referred to", n);
     }
     return path;
@@ -412,12 +422,10 @@ w_symbol(ID id, struct dump_arg *arg)
 }
 
 static void
-w_unique(const char *s, struct dump_arg *arg)
+w_unique(VALUE s, struct dump_arg *arg)
 {
-    if (s[0] == '#') {
-	rb_raise(rb_eTypeError, "can't dump anonymous class %s", s);
-    }
-    w_symbol(rb_intern(s), arg);
+    must_not_be_anonymous("class", s);
+    w_symbol(rb_intern_str(s), arg);
 }
 
 static void w_object(VALUE,struct dump_arg*,int);
@@ -433,8 +441,6 @@ hash_each(VALUE key, VALUE value, struct dump_call_arg *arg)
 static void
 w_extended(VALUE klass, struct dump_arg *arg, int check)
 {
-    const char *path;
-
     if (check && FL_TEST(klass, FL_SINGLETON)) {
 	if (RCLASS_M_TBL(klass)->num_entries ||
 	    (RCLASS_IV_TBL(klass) && RCLASS_IV_TBL(klass)->num_entries > 1)) {
@@ -443,7 +449,7 @@ w_extended(VALUE klass, struct dump_arg *arg, int check)
 	klass = RCLASS_SUPER(klass);
     }
     while (BUILTIN_TYPE(klass) == T_ICLASS) {
-	path = rb_class2name(RBASIC(klass)->klass);
+	VALUE path = rb_class_name(RBASIC(klass)->klass);
 	w_byte(TYPE_EXTENDED, arg);
 	w_unique(path, arg);
 	klass = RCLASS_SUPER(klass);
@@ -453,8 +459,7 @@ w_extended(VALUE klass, struct dump_arg *arg, int check)
 static void
 w_class(char type, VALUE obj, struct dump_arg *arg, int check)
 {
-    volatile VALUE p;
-    char *path;
+    VALUE path;
     st_data_t real_obj;
     VALUE klass;
 
@@ -464,8 +469,7 @@ w_class(char type, VALUE obj, struct dump_arg *arg, int check)
     klass = CLASS_OF(obj);
     w_extended(klass, arg, check);
     w_byte(type, arg);
-    p = class2path(rb_class_real(klass));
-    path = RSTRING_PTR(p);
+    path = class2path(rb_class_real(klass));
     w_unique(path, arg);
 }
 
@@ -478,7 +482,7 @@ w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
     klass = rb_class_real(klass);
     if (klass != super) {
 	w_byte(TYPE_UCLASS, arg);
-	w_unique(RSTRING_PTR(class2path(klass)), arg);
+	w_unique(class2path(klass), arg);
     }
 }
 
@@ -967,7 +971,7 @@ mark_load_arg(void *ptr)
 static VALUE r_entry(VALUE v, struct load_arg *arg);
 static VALUE r_object(struct load_arg *arg);
 static ID r_symbol(struct load_arg *arg);
-static VALUE path2class(const char *path);
+static VALUE path2class(VALUE path);
 
 static int
 r_byte(struct load_arg *arg)
@@ -1143,10 +1147,10 @@ r_symbol(struct load_arg *arg)
     }
 }
 
-static const char*
+static VALUE
 r_unique(struct load_arg *arg)
 {
-    return rb_id2name(r_symbol(arg));
+    return rb_id2str(r_symbol(arg));
 }
 
 static VALUE
@@ -1222,29 +1226,31 @@ r_ivar(VALUE obj, struct load_arg *arg)
 }
 
 static VALUE
-path2class(const char *path)
+path2class(VALUE path)
 {
-    VALUE v = rb_path2class(path);
+    VALUE v = rb_path_to_class(path);
 
     if (TYPE(v) != T_CLASS) {
-	rb_raise(rb_eArgError, "%s does not refer to class", path);
+	rb_raise(rb_eArgError, "%.*s does not refer to class",
+		 (int)RSTRING_LEN(path), RSTRING_PTR(path));
     }
     return v;
 }
 
 static VALUE
-path2module(const char *path)
+path2module(VALUE path)
 {
-    VALUE v = rb_path2class(path);
+    VALUE v = rb_path_to_class(path);
 
     if (TYPE(v) != T_MODULE) {
-	rb_raise(rb_eArgError, "%s does not refer to module", path);
+	rb_raise(rb_eArgError, "%.*s does not refer to module",
+		 (int)RSTRING_LEN(path), RSTRING_PTR(path));
     }
     return v;
 }
 
 static VALUE
-obj_alloc_by_path(const char *path, struct load_arg *arg)
+obj_alloc_by_path(VALUE path, struct load_arg *arg)
 {
     VALUE klass;
     st_data_t data;
@@ -1615,7 +1621,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
         {
 	    volatile VALUE str = r_bytes(arg);
 
-	    v = rb_path2class(RSTRING_PTR(str));
+	    v = rb_path_to_class(str);
 	    v = r_entry(v, arg);
             v = r_leave(v, arg);
 	}
@@ -1625,7 +1631,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
         {
 	    volatile VALUE str = r_bytes(arg);
 
-	    v = path2class(RSTRING_PTR(str));
+	    v = path2class(str);
 	    v = r_entry(v, arg);
             v = r_leave(v, arg);
 	}
@@ -1635,7 +1641,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
         {
 	    volatile VALUE str = r_bytes(arg);
 
-	    v = path2module(RSTRING_PTR(str));
+	    v = path2module(str);
 	    v = r_entry(v, arg);
             v = r_leave(v, arg);
 	}

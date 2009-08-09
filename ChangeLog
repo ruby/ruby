@@ -1,3 +1,14 @@
+Mon Aug 10 06:55:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (class2path, w_unique, w_extended, w_class, w_uclass):
+	  deal with non-ascii class path.  [ruby-core:24790]
+
+	* marshal.c (r_unique, path2class, path2module, obj_alloc_by_path),
+	  (r_object0): ditto.
+
+	* variable.c (rb_path_to_class): new encoding-aware function to
+	  get a class from its name.
+
 Sun Aug  9 21:14:03 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb (search_tclConfig): last change isn't enough.
