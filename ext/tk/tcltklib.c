@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2009-08-04"
+#define TCLTKLIB_RELEASE_DATE "2009-08-09"
 
 #include "ruby.h"
 
@@ -10544,9 +10544,11 @@ Init_tcltklib()
 
     /* --------------------------------------------------------------- */
 
+#ifdef HAVE_NATIVETHREAD
     /* if ruby->nativethread-supprt and tcltklib->doen't, 
        the following will cause link-error. */
     ruby_native_thread_p();
+#endif
 
     /* --------------------------------------------------------------- */
 
