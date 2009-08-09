@@ -10544,9 +10544,11 @@ Init_tcltklib()
 
     /* --------------------------------------------------------------- */
 
+#ifdef HAVE_NATIVETHREAD
     /* if ruby->nativethread-supprt and tcltklib->doen't, 
        the following will cause link-error. */
     ruby_native_thread_p();
+#endif
 
     /* --------------------------------------------------------------- */
 

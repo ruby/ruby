@@ -1,3 +1,10 @@
+Sun Aug  9 21:14:03 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb (search_tclConfig): last change isn't enough.
+	  fixed it.
+
+	* ext/tk/tcltklib.c (Init_tcltklib): avoid warning.
+
 Fri Aug  7 23:36:07 2009  Tanaka Akira  <akr@fsij.org>
 
 	* eval.c (rb_thread_schedule): need select for WAIT_SELECT, even if

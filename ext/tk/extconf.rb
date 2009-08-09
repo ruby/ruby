@@ -1,6 +1,6 @@
 ##############################################################
 # extconf.rb for tcltklib
-# release date: 2009-08-07
+# release date: 2009-08-09
 ##############################################################
 require 'mkmf'
 
@@ -530,15 +530,15 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
       tkconf = parse_tclConfig(tkpath)
       next if tkver && tkver !~ /^#{tkconf['TK_MAJOR_VERSION']}(\.?)#{tkconf['TK_MINOR_VERSION']}/
 
-      # find tclConfig.sh & tkConfig.sh
-      conf = [tclconf, tkconf] unless conf
-
       # nativethread check
       if !TkLib_Config["ruby_with_thread"] && tclconf['TCL_THREADS'] == '1'
         puts "WARNIG: find #{tclpath.inspect}, but it WITH nativethread-support under ruby WITHOUT nativethread-support. So, ignore it."
         TkLib_Config["tcltk-NG-path"] << File.dirname(tclpath)
         next
       end
+
+      # find tclConfig.sh & tkConfig.sh
+      conf = [tclconf, tkconf] unless conf
 
       # check Tcl library
       if TkLib_Config["tcltk-stubs"]
