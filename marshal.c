@@ -168,7 +168,7 @@ mark_dump_arg(void *ptr)
     rb_mark_hash(p->compat_tbl);
 }
 
-static void
+static const char *
 must_not_be_anonymous(const char *type, VALUE path)
 {
     char *n = RSTRING_PTR(path);
@@ -178,17 +178,19 @@ must_not_be_anonymous(const char *type, VALUE path)
 	rb_raise(rb_eTypeError, "can't dump non-ascii %s name", type);
     }
     if (n[0] == '#') {
-	rb_raise(rb_eTypeError, "can't dump anonymous %s %s", type,
+	rb_raise(rb_eTypeError, "can't dump anonymous %s %.*s", type,
 		 (int)RSTRING_LEN(path), n);
     }
+    return n;
 }
 
 static VALUE
 class2path(VALUE klass)
 {
     VALUE path = rb_class_path(klass);
+    const char *n;
 
-    must_not_be_anonymous((TYPE(klass) == T_CLASS ? "class" : "module"), path);
+    n = must_not_be_anonymous((TYPE(klass) == T_CLASS ? "class" : "module"), path);
     if (rb_path_to_class(path) != rb_class_real(klass)) {
 	rb_raise(rb_eTypeError, "%s can't be referred to", n);
     }
