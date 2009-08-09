@@ -86,10 +86,11 @@ COMMONOBJS    = array.$(OBJEXT) \
 		$(BUILTIN_TRANSOBJS) \
 		$(MISSING)
 
-OBJS          = dln.$(OBJEXT) \
+EXPORTOBJS    = dln.$(OBJEXT) \
 		encoding.$(OBJEXT) \
-		prelude.$(OBJEXT) \
 		$(COMMONOBJS)
+
+OBJS          = $(EXPORTOBJS) prelude.$(OBJEXT)
 
 GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
 
@@ -168,8 +169,8 @@ $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 	@$(RM) $@
 	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
 
-ruby.imp: $(OBJS)
-	@$(NM) -Pgp $(OBJS) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
+ruby.imp: $(EXPORTOBJS)
+	@$(NM) -Pgp $(EXPORTOBJS) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
 
 install: install-nodoc $(RDOCTARGET)
 install-all: install-nodoc install-doc install-capi

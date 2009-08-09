@@ -1,3 +1,8 @@
+Sun Aug  9 16:36:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (ruby.imp): excluded prelude.o to get rid of circular
+	  dependency.  [ruby-dev:39052]
+
 Sun Aug  9 14:49:24 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bignum.c (rb_big_cmp, bigsub, big_real_len, bigmul1_normal,
@@ -8,6 +13,7 @@ Sat Aug  8 17:03:21 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (enc_ascii_compatible_p): added. [ruby-core:24793]
 	  (Init_Encoding): New API Encoding#ascii_compatible?.
+
 Sun Aug  9 07:25:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/ripper/eventids2.c (token_to_eventid): added
