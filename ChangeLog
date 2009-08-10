@@ -391,7 +391,7 @@ Fri Jul 31 16:28:33 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 	* io.c (rb_stdio_set_default_encoding): added.
 
 	* ruby.c (process_options): call rb_stdio_set_default_encoding
-	  after setting defualt internal and external.
+	  after setting default internal and external.
 
 Fri Jul 31 15:06:33 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -663,7 +663,7 @@ Wed Jul 22 22:23:24 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 Wed Jul 22 22:16:48 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
-	* method.h : Commas at end of enum list not allowed as of C89
+	* method.h: Commas at end of enum list not allowed as of C89
 
 	* vm_method.c (rb_add_method): avoid C++ comment
 
@@ -730,7 +730,7 @@ Tue Jul 21 21:37:19 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb/cmd/help.rb: fixed irb's "help" command. [ruby-core:22310].
 
-	* lib/tracer.rb: no show lines unkonwn line number. [ruby-core:22096],
+	* lib/tracer.rb: no show lines unknown line number. [ruby-core:22096],
 	  no trace display  c-call and c-return as default.
 
 Tue Jul 21 16:24:41 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
@@ -825,7 +825,7 @@ Sat Jul 18 23:44:59 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (reg_enc_error): use rb_enc_get to get the encoding of
 	  a Regexp object. REGEXP(re)->ptr->enc is the encoding of the
-	  regexp engin for patterns and target strings.
+	  regexp engine for patterns and target strings.
 	  [ruby-core:23208]
 
 Sat Jul 18 17:43:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -852,7 +852,7 @@ Sat Jul 18 09:07:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Jul 18 07:56:00 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: fail to create a widget object for an unknown
-	  wiget path.
+	  widget path.
 
 Sat Jul 18 07:06:31 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -946,7 +946,7 @@ Thu Jul 16 20:58:18 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	  locale is not installed. [ruby-core:23806]
 
 	* test/win32ole/test_win32ole_variant.rb (test_conversion_str2cy):
-	  dito.
+	  ditto.
 
 Thu Jul 16 19:02:28 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -996,7 +996,7 @@ Thu Jul 16 12:42:10 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 	  before rl_cleanup_after_signal.
 
 	* ext/readline/readline.c (Init_readline): set rl_catch_signals and
-	  rl_catch_signwinch as 0. [ruby-core:21884]
+	  rl_catch_sigwinch as 0. [ruby-core:21884]
 
 Thu Jul 16 08:59:22 2009  Koichi Sasada  <ko1@atdot.net>
 
@@ -1041,7 +1041,7 @@ Wed Jul 15 23:46:55 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/intern.h: remove decl of
 	  rb_define_notimplement_method_id().  nobody can use it
-	  because noex is not opend.
+	  because noex is not opened.
 
 	* iseq.c (iseq_mark): fix to check ic_method is available.
 
@@ -1307,7 +1307,7 @@ Fri Jul 10 11:41:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Jul 10 10:25:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* vm_insnhelper.c (vm_search_superclass): checks for implici
+	* vm_insnhelper.c (vm_search_superclass): checks for implicit
 	  argument passing before method search.  [ruby-core:24244]
 
 Fri Jul 10 07:22:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1766,7 +1766,7 @@ Fri Jun 26 17:33:46 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_require.rb (TestRequire#test_tainted_loadpath):
 	  the default tempdir directory /tmp is world writable, so
-	  SecrurityError would be raised.  check removed.
+	  SecurityError would be raised.  check removed.
 
 Fri Jun 26 16:32:59 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
