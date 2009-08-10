@@ -370,7 +370,6 @@ void rb_gc_mark_maybe(VALUE);
 void rb_gc_mark(VALUE);
 void rb_gc_force_recycle(VALUE);
 void rb_gc(void);
-VALUE rb_gc_write_barrier(VALUE);
 void rb_gc_copy_finalizer(VALUE,VALUE);
 void rb_gc_finalize_deferred(void);
 void rb_gc_call_finalizer_at_exit(void);
