@@ -1,3 +1,7 @@
+Mon Aug 10 21:45:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_path2class): no deprecation.
+
 Mon Aug 10 10:57:59 2009  Narihiro Nakamura  <authorNari@gmail.com>
 
 	* gc.c: reject unused longlife gc. longlife gc target is loglife
