@@ -1,6 +1,8 @@
 Mon Aug 10 10:57:59 2009  Narihiro Nakamura  <authorNari@gmail.com>
 
-	* gc.c: reject unused longlife gc.
+	* gc.c: reject unused longlife gc. longlife gc target is loglife
+	  node by method table and vm inline cache. but, fixed it at
+	  r24085, r24128. so I rejected longlife gc.
 
 	* debug.c: ditto.
 
