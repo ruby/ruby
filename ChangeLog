@@ -1,3 +1,7 @@
+Tue Aug 11 21:42:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (num_divmod): fixed rdoc.  [ruby-core:24862]
+
 Tue Aug 11 13:59:25 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_sysopen): workaround for MSVCRT's bug.
