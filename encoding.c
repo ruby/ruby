@@ -62,7 +62,7 @@ static const rb_data_type_t encoding_data_type = {
     "encoding", 0, 0, enc_memsize,
 };
 
-#define is_data_encoding(obj) (RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj) != &encoding_data_type)
+#define is_data_encoding(obj) (RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj) == &encoding_data_type)
 
 static VALUE
 enc_new(rb_encoding *encoding)
@@ -585,7 +585,7 @@ enc_capable(VALUE obj)
       case T_FILE:
 	return TRUE;
       case T_DATA:
-	if (!is_data_encoding(obj)) return TRUE;
+	if (is_data_encoding(obj)) return TRUE;
       default:
 	return FALSE;
     }
