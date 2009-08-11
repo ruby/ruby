@@ -442,7 +442,7 @@ class TestDateStrptime < Test::Unit::TestCase
     assert_equal([n.year, 11, 6, 0, 0, 0],
 		 [d.year, d.strftime('%W').to_i, d.wday, d.hour, d.min, d.sec])
     d = DateTime.strptime('2004-11', '%Y-%W')
-    assert_equal([2004, 11, 0, 0, 0, 0],
+    assert_equal([2004, 11, 1, 0, 0, 0],
 		 [d.year, d.strftime('%W').to_i, d.wday, d.hour, d.min, d.sec])
   end
 

@@ -1,7 +1,7 @@
 #
 # date.rb - date and time library
 #
-# Author: Tadayoshi Funaba 1998-2008
+# Author: Tadayoshi Funaba 1998-2009
 #
 # Documentation: William Webber <william@williamwebber.com>
 #
@@ -927,7 +927,7 @@ class Date
 	  elem[e] = d.__send__(e)
 	end
 	elem[:wnum1] ||= 0
-	elem[:wday]  ||= 0
+	elem[:wday]  ||= 1
       end
     end
 
