@@ -258,10 +258,10 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_shebang
     assert_in_out_err([], "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux\r\np 1\r\n",
-                      [], /Can't exec [\/\\]test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/)
+                      [], /: no Ruby script found in input/)
 
     assert_in_out_err([], "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux -foo -bar\r\np 1\r\n",
-                      [], /Can't exec [\/\\]test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/)
+                      [], /: no Ruby script found in input/)
 
     assert_in_out_err([], "#!ruby -KU -Eutf-8\r\np \"\u3042\"\r\n") do |r, e|
       assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
