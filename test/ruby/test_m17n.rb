@@ -7,6 +7,7 @@ class TestM17N < Test::Unit::TestCase
   end
 
   module AESU
+    def ua(str) str.dup.force_encoding("US-ASCII") end
     def a(str) str.dup.force_encoding("ASCII-8BIT") end
     def e(str) str.dup.force_encoding("EUC-JP") end
     def s(str) str.dup.force_encoding("Windows-31J") end
@@ -1300,6 +1301,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_compatible
     assert_nil Encoding.compatible?("",0)
+    assert_equal(Encoding::UTF_8, Encoding.compatible?(u(""), ua("abc")))
     assert_equal(Encoding::UTF_8, Encoding.compatible?(Encoding::UTF_8, Encoding::UTF_8))
     assert_equal(Encoding::UTF_8, Encoding.compatible?(Encoding::UTF_8, Encoding::US_ASCII))
     assert_equal(Encoding::ASCII_8BIT,
