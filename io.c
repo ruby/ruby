@@ -2922,10 +2922,16 @@ rb_sysopen(fname, flags, mode)
 {
     int fd;
 
+#ifdef _WIN32
+    errno = EINVAL;
+#endif
     fd = open(fname, flags, mode);
     if (fd < 0) {
 	if (errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
+#ifdef _WIN32
+	    errno = EINVAL;
+#endif
 	    fd = open(fname, flags, mode);
 	}
 	if (fd < 0) {
