@@ -2977,7 +2977,14 @@ rb_f_system(int argc, VALUE *argv)
  *     Process.spawn([env,] command... [,options])     => pid
  *
  *  spawn executes specified command and return its pid.
- *  It doesn't wait for end of the command.
+ *
+ *  This method doesn't wait for end of the command.
+ *  The parent process should
+ *  use <code>Process.wait</code> to collect
+ *  the termination status of its child or
+ *  use <code>Process.detach</code> to register
+ *  disinterest in their status;
+ *  otherwise, the operating system may accumulate zombie processes.
  *
  *  spawn has bunch of options to specify process attributes:
  *
