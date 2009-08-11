@@ -1,3 +1,7 @@
+Tue Aug 11 21:42:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (num_divmod): fixed rdoc.  [ruby-core:24862]
+
 Mon Aug 10 21:45:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_path2class): no deprecation.
