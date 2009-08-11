@@ -13,8 +13,6 @@ $objs = [
 
 have_header("sys/cdefs.h")
 
-have_header("inttypes.h")
-
 $preload = %w[digest]
 
 if have_type("uint64_t", "defs.h", $defs.join(' '))

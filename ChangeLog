@@ -1,3 +1,10 @@
+Wed Aug 12 00:04:33 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/digest/sha2/sha2.h: need to include defs.h instead of inttypes.h
+	  because VC6 doesn't have the latter.
+
+	* ext/digest/sha2/extconf.rb: rollback r24441.
+
 Tue Aug 11 21:42:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (num_divmod): fixed rdoc.  [ruby-core:24862]

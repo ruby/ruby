@@ -49,11 +49,8 @@ extern "C" {
  */
 #include <sys/types.h>
 
-#ifdef HAVE_INTTYPES_H
-#include <inttypes.h>
-#endif
-
 #ifdef RUBY
+# include "defs.h"
 # ifdef HAVE_PROTOTYPES
 #  undef NOPROTO 
 # else
@@ -70,11 +67,9 @@ extern "C" {
 # endif /* BYTE_ORDER */
 # define SHA2_USE_INTTYPES_H
 #else /* RUBY */
-#ifdef SHA2_USE_INTTYPES_H
-
-#include <inttypes.h>
-
-#endif /* SHA2_USE_INTTYPES_H */
+# ifdef SHA2_USE_INTTYPES_H
+#  include <inttypes.h>
+# endif /* SHA2_USE_INTTYPES_H */
 #endif /* RUBY */
 
 
