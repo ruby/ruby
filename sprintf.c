@@ -482,6 +482,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 
 	for (t = p; t < end && *t != '%'; t++) ;
 	PUSH(p, t - p);
+	if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) {
+	    scanned = rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &coderange);
+	    ENC_CODERANGE_SET(result, coderange);
+	}
 	if (t >= end) {
 	    /* end of fmt string */
 	    goto sprint_exit;
@@ -673,7 +677,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 				      (cr == ENC_CODERANGE_UNKNOWN ?
 				       ENC_CODERANGE_BROKEN : (coderange = cr)));
 		}
-		enc = rb_enc_check(result, str);
+		enc = rb_enc_check((RSTRING_LEN(result) == 0 ? fmt : result), str);
 		if (flags&(FPREC|FWIDTH)) {
 		    slen = rb_enc_strlen(RSTRING_PTR(str),RSTRING_END(str),enc);
 		    if (slen < 0) {
@@ -1054,10 +1058,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	const char *mesg = "too many arguments for format string";
 	if (RTEST(ruby_debug)) rb_raise(rb_eArgError, "%s", mesg);
 	if (RTEST(ruby_verbose)) rb_warn("%s", mesg);
-    }
-    if (scanned < blen) {
-	rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &coderange);
-	ENC_CODERANGE_SET(result, coderange);
     }
     rb_str_resize(result, blen);
 
