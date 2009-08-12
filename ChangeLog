@@ -1,3 +1,9 @@
+Wed Aug 12 15:52:04 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* class.c (rb_define_module_id_under): fix the name.
+
+	* class.c (rb_define_module_under): fix for prevvious changes.
+
 Wed Aug 12 15:32:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_define_class_id_under, rb_define_module_id_under):

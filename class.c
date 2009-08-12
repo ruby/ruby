@@ -437,7 +437,7 @@ rb_define_module_under(VALUE outer, const char *name)
 }
 
 VALUE
-rb_define_module_under(VALUE outer, ID id)
+rb_define_module_id_under(VALUE outer, ID id)
 {
     VALUE module;
 
@@ -450,7 +450,7 @@ rb_define_module_under(VALUE outer, ID id)
     }
     module = rb_define_module_id(id);
     rb_const_set(outer, id, module);
-    rb_set_class_path(module, outer, name);
+    rb_set_class_path_string(module, outer, rb_id2str(id));
 
     return module;
 }
