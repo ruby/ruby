@@ -52,6 +52,9 @@ EOF
 end
 
 if ipv6
+  if $mingw
+    $CPPFLAGS << " -D_WIN32_WINNT=0x501"
+  end
   ipv6lib = nil
   class << (fmt = "unknown")
     def %(s) s || self end
