@@ -359,26 +359,30 @@ rb_define_class(const char *name, VALUE super)
 VALUE
 rb_define_class_under(VALUE outer, const char *name, VALUE super)
 {
-    VALUE klass;
-    ID id;
+    return rb_define_class_id_under(outer, rb_intern(name), super);
+}
 
-    id = rb_intern(name);
+VALUE
+rb_define_class_id_under(VALUE outer, ID id, VALUE super)
+{
+    VALUE klass;
+
     if (rb_const_defined_at(outer, id)) {
 	klass = rb_const_get_at(outer, id);
 	if (TYPE(klass) != T_CLASS) {
-	    rb_raise(rb_eTypeError, "%s is not a class", name);
+	    rb_raise(rb_eTypeError, "%s is not a class", rb_id2name(id));
 	}
 	if (rb_class_real(RCLASS_SUPER(klass)) != super) {
-	    rb_name_error(id, "%s is already defined", name);
+	    rb_name_error(id, "%s is already defined", rb_id2name(id));
 	}
 	return klass;
     }
     if (!super) {
 	rb_warn("no super class for `%s::%s', Object assumed",
-		rb_class2name(outer), name);
+		rb_class2name(outer), rb_id2name(id));
     }
     klass = rb_define_class_id(id, super);
-    rb_set_class_path(klass, outer, name);
+    rb_set_class_path_string(klass, outer, rb_id2str(id));
     rb_const_set(outer, id, klass);
     rb_class_inherited(super, klass);
 
@@ -429,10 +433,14 @@ rb_define_module(const char *name)
 VALUE
 rb_define_module_under(VALUE outer, const char *name)
 {
-    VALUE module;
-    ID id;
+    return rb_define_module_id_under(outer, rb_intern(name));
+}
 
-    id = rb_intern(name);
+VALUE
+rb_define_module_under(VALUE outer, ID id)
+{
+    VALUE module;
+
     if (rb_const_defined_at(outer, id)) {
 	module = rb_const_get_at(outer, id);
 	if (TYPE(module) == T_MODULE)

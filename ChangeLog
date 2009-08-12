@@ -1,3 +1,13 @@
+Wed Aug 12 15:32:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_define_class_id_under, rb_define_module_id_under):
+	  new functions to define a nested class/module with non-ascii
+	  name.
+
+	* struct.c (make_struct): use name with encoding.
+
+	* struct.c (inspect_struct): ditto.  [ruby-core:24849]
+
 Wed Aug 12 Wed Aug 12 14:54:34 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def, vm.c, vm_insnhelper.c, vm_insnhelper.h: check

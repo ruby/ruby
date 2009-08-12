@@ -196,7 +196,7 @@ make_struct(VALUE name, VALUE members, VALUE klass)
 	    rb_warn("redefining constant Struct::%s", StringValuePtr(name));
 	    rb_mod_remove_const(klass, ID2SYM(id));
 	}
-	nstr = rb_define_class_under(klass, rb_id2name(id), klass);
+	nstr = rb_define_class_id_under(klass, id, klass);
     }
     rb_ivar_set(nstr, id_members, members);
 
@@ -496,27 +496,28 @@ rb_struct_each_pair(VALUE s)
 static VALUE
 inspect_struct(VALUE s, VALUE dummy, int recur)
 {
-    const char *cname = rb_class2name(rb_obj_class(s));
-    VALUE str, members;
+    VALUE cname = rb_class_name(rb_obj_class(s));
+    VALUE members, str = rb_str_new2("#<struct ");
     long i;
+    char first = RSTRING_PTR(cname)[0];
 
+    if (recur || first != '#') {
+	rb_str_append(str, cname);
+    }
     if (recur) {
-	return rb_sprintf("#<struct %s:...>", cname);
+	return rb_str_cat2(str, ":...>");
     }
 
     members = rb_struct_members(s);
-    if (cname[0] == '#') {
-	str = rb_str_new2("#<struct ");
-    }
-    else {
-	str = rb_sprintf("#<struct %s ", cname);
-    }
     for (i=0; i<RSTRUCT_LEN(s); i++) {
 	VALUE slot;
 	ID id;
 
 	if (i > 0) {
 	    rb_str_cat2(str, ", ");
+	}
+	else if (first != '#') {
+	    rb_str_cat2(str, " ");
 	}
 	slot = RARRAY_PTR(members)[i];
 	id = SYM2ID(slot);
