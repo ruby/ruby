@@ -122,7 +122,7 @@ class TestStruct < Test::Unit::TestCase
     o = klass.new(1)
     assert_equal("#<struct a=1>", o.inspect)
     o.a = o
-    assert(o.inspect =~ /^#<struct a=#<struct #<.*?>:...>>$/)
+    assert_match(/^#<struct a=#<struct #<.*?>:...>>$/, o.inspect)
 
     Struct.new("Foo", :a)
     o = Struct::Foo.new(1)
