@@ -1592,3 +1592,21 @@ opt_eq_func(VALUE recv, VALUE obj, IC ic)
 
     return val;
 }
+
+struct opt_case_dispatch_i_arg {
+    VALUE obj;
+    int label;
+};
+
+static int
+opt_case_dispatch_i(st_data_t key, st_data_t data, struct opt_case_dispatch_i_arg *arg)
+{
+    if (RTEST(rb_funcall((VALUE)key, idEqq, 1, arg->obj))) {
+	arg->label = FIX2INT((VALUE)data);
+	return ST_STOP;
+    }
+    else {
+	return ST_CONTINUE;
+    }
+}
+

@@ -968,6 +968,7 @@ vm_init_redefined_flag(void)
     OP(DIV, DIV), (C(Fixnum), C(Float));
     OP(MOD, MOD), (C(Fixnum), C(Float));
     OP(Eq, EQ), (C(Fixnum), C(Float), C(String));
+    OP(Eqq, EQQ), (C(Fixnum), C(Bignum), C(Float), C(Symbol), C(String));
     OP(LT, LT), (C(Fixnum));
     OP(LE, LE), (C(Fixnum));
     OP(LTLT, LTLT), (C(String), C(Array));

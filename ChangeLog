@@ -1,3 +1,13 @@
+Wed Aug 12 Wed Aug 12 14:54:34 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def, vm.c, vm_insnhelper.c, vm_insnhelper.h: check
+	  definition of (classes)#=== for case/when optimization.
+	  Fix Bug #1376 [ruby-core:23190].
+
+	* string.c (Init_String), bignum.c (Init_Bignum),
+	  numeric.c (Init_Numeric): define String#===, Symbol#===,
+	  Bignum#===, Fixnum#===, Float#=== as same as (classes)#==.
+
 Wed Aug 12 14:14:42 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (readdir_internal): free old temporary filename.

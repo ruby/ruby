@@ -3222,6 +3222,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "magnitude", fix_abs, 0);
 
     rb_define_method(rb_cFixnum, "==", fix_equal, 1);
+    rb_define_method(rb_cFixnum, "===", fix_equal, 1);
     rb_define_method(rb_cFixnum, "<=>", fix_cmp, 1);
     rb_define_method(rb_cFixnum, ">",  fix_gt, 1);
     rb_define_method(rb_cFixnum, ">=", fix_ge, 1);
@@ -3275,6 +3276,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "divmod", flo_divmod, 1);
     rb_define_method(rb_cFloat, "**", flo_pow, 1);
     rb_define_method(rb_cFloat, "==", flo_eq, 1);
+    rb_define_method(rb_cFloat, "===", flo_eq, 1);
     rb_define_method(rb_cFloat, "<=>", flo_cmp, 1);
     rb_define_method(rb_cFloat, ">",  flo_gt, 1);
     rb_define_method(rb_cFloat, ">=", flo_ge, 1);

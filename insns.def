@@ -1233,13 +1233,24 @@ opt_case_dispatch
 (..., VALUE key)
 () // inc += -1;
 {
-    if (0) {
-	/* TODO: if some === method is overrided */
-    }
-    else {
+    if (BASIC_OP_UNREDEFINED_P(BOP_EQQ)) {
 	VALUE val;
 	if (st_lookup(RHASH_TBL(hash), key, &val)) {
 	    JUMP(FIX2INT(val));
+	}
+	else {
+	    JUMP(else_offset);
+	}
+    }
+    else {
+	struct opt_case_dispatch_i_arg arg = {
+	    key, -1
+	};
+
+	st_foreach(RHASH_TBL(hash), opt_case_dispatch_i, &arg);
+
+	if (arg.label != -1) {
+	    JUMP(arg.label);
 	}
 	else {
 	    JUMP(else_offset);
