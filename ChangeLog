@@ -1,7 +1,7 @@
 Wed Aug 12 21:07:46 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/extconf.rb: if ipv6 is enabled, the version of Windows
-	  most be XP or later.
+	  must be XP or later.
 	  [ruby-core:24601]
 
 Wed Aug 12 15:59:29 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
