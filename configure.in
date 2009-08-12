@@ -769,12 +769,25 @@ when(darwin*)	RUBY_PREPEND_OPTION(LIBS, -lobjc)
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+
 int
 main()
 {
-   char buf[256];
-   strcpy(buf, crypt("", "\xE0\xA0"));
-   return strcmp(buf, crypt("", "\xE0\xA0"));
+    int i;
+    for (i = 0; i < 128*128; i++) {
+	char salt[2], buf[256], *s;
+	salt[0] = 0x80 | (i & 0x7f);
+	salt[1] = 0x80 | (i >> 7);
+	strcpy(buf, crypt("", salt));
+	if (strcmp(buf, s = crypt("", salt))) {
+#if 0
+	    printf("%.2x%.2x: %s -> %s\n", (unsigned char)salt[0], (unsigned char)salt[1],
+		   buf+2, s+2);
+#endif
+	    return 1;
+	}
+    }
+    return 0;
 }
 ],
 	            rb_cv_broken_crypt=no,
