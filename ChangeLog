@@ -1,3 +1,8 @@
+Wed Aug 12 14:14:42 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (readdir_internal): free old temporary filename.
+	  [ruby-core:24820]
+
 Wed Aug 12 12:59:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_new_frozen): must not change encoding of frozen

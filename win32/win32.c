@@ -1765,6 +1765,8 @@ readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, struct direct *, rb_enco
 	//
 	// first set up the structure to return
 	//
+	if (dirp->dirstr.d_name)
+	    free(dirp->dirstr.d_name);
 	conv(dirp->curr, &dirp->dirstr, enc);
 
 	//
@@ -3585,8 +3587,8 @@ rb_w32_getcwd(char *buffer, int size)
 	size = len;
 	if (!p) {
 	    errno = ENOMEM;
-        return NULL;
-    }
+	    return NULL;
+	}
     }
 
     if (!GetCurrentDirectory(size, p)) {
