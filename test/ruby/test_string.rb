@@ -1791,4 +1791,17 @@ class TestString < Test::Unit::TestCase
       ("aaaaaaaa".."zzzzzzzz").each {|s| s.to_sym }
     INPUT
   end
+
+  def test_shared_force_encoding
+    s = "\u{3066}\u{3059}\u{3068}".gsub(//, '')
+    h = {}
+    h[s] = nil
+    k = h.keys[0]
+    assert_equal(s, k, '[ruby-dev:39068]')
+    assert_equal(Encoding::UTF_8, k.encoding, '[ruby-dev:39068]')
+    s.dup.force_encoding(Encoding::ASCII_8BIT).gsub(//, '')
+    k = h.keys[0]
+    assert_equal(s, k, '[ruby-dev:39068]')
+    assert_equal(Encoding::UTF_8, k.encoding, '[ruby-dev:39068]')
+  end
 end

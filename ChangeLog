@@ -1,3 +1,8 @@
+Wed Aug 12 12:59:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_new_frozen): must not change encoding of frozen
+	  shared string.  [ruby-dev:39068]
+
 Wed Aug 12 11:51:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_broken_crypt): needs more checks.

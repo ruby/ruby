@@ -671,13 +671,14 @@ rb_str_new_frozen(VALUE orig)
 	assert(OBJ_FROZEN(str));
 	ofs = RSTRING_LEN(str) - RSTRING_LEN(orig);
 	if ((ofs > 0) || (klass != RBASIC(str)->klass) ||
-	    (!OBJ_TAINTED(str) && OBJ_TAINTED(orig))) {
+	    (!OBJ_TAINTED(str) && OBJ_TAINTED(orig)) ||
+	    ENCODING_GET(str) != ENCODING_GET(orig)) {
 	    str = str_new3(klass, str);
 	    RSTRING(str)->as.heap.ptr += ofs;
 	    RSTRING(str)->as.heap.len -= ofs;
+	    rb_enc_cr_str_exact_copy(str, orig);
+	    OBJ_INFECT(str, orig);
 	}
-	rb_enc_cr_str_exact_copy(str, orig);
-	OBJ_INFECT(str, orig);
     }
     else if (STR_EMBED_P(orig)) {
 	str = str_new(klass, RSTRING_PTR(orig), RSTRING_LEN(orig));
