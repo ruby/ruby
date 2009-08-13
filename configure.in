@@ -189,6 +189,7 @@ if test ${target_archs+set}; then
 	target=`echo $target | sed "s/^$target_cpu-/universal-/"`
 	target_alias=`echo $target_alias | sed "s/^$target_cpu-/universal-/"`
 	target_cpu=universal
+	cross_compiling=yes
     else
 	target=`echo $target | sed "s/^$target_cpu-/${target_archs}-/"`
 	target_alias=`echo $target_alias | sed "s/^$target_cpu-/${target_archs}-/"`
@@ -380,7 +381,7 @@ esac
 AC_CHECK_TYPES([long long, off_t])
 
 AC_CACHE_CHECK([char bit], [rb_cv_char_bit],
-    [_AC_COMPUTE_INT_COMPILE([CHAR_BIT], [rb_cv_char_bit],
+    [AC_COMPUTE_INT([CHAR_BIT], [rb_cv_char_bit],
 	[AC_INCLUDES_DEFAULT([@%:@include <limits.h>])], [rb_cv_char_bit=8])])
 
 dnl RUBY_CHECK_SIZEOF [typename], [maybe same size types], [macros], [include]
@@ -426,14 +427,14 @@ static ac__type_sizeof_ *rbcv_ptr;
     m4_ifval([$2][$3], [case "${AS_TR_SH(ac_cv_sizeof_$1)}" in
     when([SIZEOF_*]);;
     when(*)])
-    _AC_COMPUTE_INT_COMPILE(AS_TR_CPP(SIZEOF_$1), [t], [AC_INCLUDES_DEFAULT([$4])]
+    AC_COMPUTE_INT(AS_TR_CPP(SIZEOF_$1), [t], [AC_INCLUDES_DEFAULT([$4])]
 [${cond+$cond
 @%:@else}
 $rbcv_var
 ${cond+@%:@endif}
 @%:@ifndef AS_TR_CPP(SIZEOF_$1)
 @%:@define AS_TR_CPP(SIZEOF_$1) 0
-@%:@endif], [unset t])
+@%:@endif], [t=0])
     if test ${t-0} != 0; then
 	AS_TR_SH(ac_cv_sizeof_$1)="${AS_TR_SH(ac_cv_sizeof_$1)+${AS_TR_SH(ac_cv_sizeof_$1)-} }${t}"
     fi
