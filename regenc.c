@@ -136,7 +136,7 @@ onigenc_strlen_null(OnigEncoding enc, const UChar* s)
 {
   int n = 0;
   UChar* p = (UChar* )s;
-  UChar* e = p + strlen((const char *)s);
+  UChar* e;
 
   while (1) {
     if (*p == '\0') {
@@ -152,6 +152,7 @@ onigenc_strlen_null(OnigEncoding enc, const UChar* s)
       }
       if (len == 1) return n;
     }
+    e = p + ONIGENC_MBC_MAXLEN(enc);
     p += ONIGENC_MBC_ENC_LEN(enc, p, e);
     n++;
   }
@@ -162,7 +163,7 @@ onigenc_str_bytelen_null(OnigEncoding enc, const UChar* s)
 {
   UChar* start = (UChar* )s;
   UChar* p = (UChar* )s;
-  UChar* e = p + strlen((const char *)s);
+  UChar* e;
 
   while (1) {
     if (*p == '\0') {
@@ -178,6 +179,7 @@ onigenc_str_bytelen_null(OnigEncoding enc, const UChar* s)
       }
       if (len == 1) return (int )(p - start);
     }
+    e = p + ONIGENC_MBC_MAXLEN(enc);
     p += ONIGENC_MBC_ENC_LEN(enc, p, e);
   }
 }
