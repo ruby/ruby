@@ -52,7 +52,7 @@ with all sufficient information, see the ChangeLog file.
   * Array#flatten
   * Array#flatten!
 
-    Takes an optional argument that determines the level of recursion
+    Take an optional argument that determines the level of recursion
     to flatten.
 
   * Array#eql?
@@ -65,7 +65,7 @@ with all sufficient information, see the ChangeLog file.
   * Array#index
   * Array#rindex
 
-    Take a block instead of an argument.
+    Use a given block if no argument is given.
 
   * Array#collect!
   * Array#map!
@@ -622,6 +622,19 @@ with all sufficient information, see the ChangeLog file.
       hd = Digest::MD5.new("string").hexdigest
       # After (works with any version)
       hd = Digest::MD5.hexdigest("string")
+
+  * Digest::Base#==
+
+    * self == string
+
+      Automatic detection between binary digest values and hexadecimal
+      digest values has been dropped.  It is always assumed that a
+      binary digest value is given for comparison.
+
+    * self == md
+
+      Digest objects are compared by the resulting digest values, not
+      by the exact vector states.
 
 * fileutils
 
