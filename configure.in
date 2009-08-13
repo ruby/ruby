@@ -237,17 +237,21 @@ esac
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_INSTALL
+AC_PROG_MKDIR_P
 
 # checks for UNIX variants that set C preprocessor variables
 AC_USE_SYSTEM_EXTENSIONS
 
 AC_SUBST(RM, ['rm -f'])
 AC_SUBST(CP, ['cp'])
-if $as_mkdir_p; then
-  AC_SUBST(MAKEDIRS, ['mkdir -p'])
+if test "x$MKDIR_P" != "x -d"; then
+  MAKEDIRS="$MKDIR_P"
+elif test -n "$INSTALL"; then
+  MAKEDIRS="$INSTALL -d"
 else
-  AC_SUBST(MAKEDIRS, ['install -d'])
+  MAKEDIRS='install -d'
 fi
+AC_SUBST(MAKEDIRS)
 
 dnl check for large file stuff
 mv confdefs.h confdefs1.h
