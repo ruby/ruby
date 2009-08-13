@@ -1,3 +1,8 @@
+Thu Aug 13 18:40:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CHECK_SIZEOF): set cross_compiling to yes
+	  only when AC_COMPUTE_INT, and inverted the arguments.
+
 Thu Aug 13 18:22:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_CHECK_SIZEOF): use AC_COMPUTE_INT instead of
