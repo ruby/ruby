@@ -48,11 +48,6 @@ Wed Aug 12 11:51:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_broken_crypt): needs more checks.
 
-Wed Aug 12 08:39:15 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* sprintf.c (rb_str_format): should preserve format encoding
-	  before raising CompatibilityError.  [ruby-list:46274]
-
 Wed Aug 12 07:41:31 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_enc_compatible): If a string is empty and

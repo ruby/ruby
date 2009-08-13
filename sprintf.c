@@ -677,7 +677,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 				      (cr == ENC_CODERANGE_UNKNOWN ?
 				       ENC_CODERANGE_BROKEN : (coderange = cr)));
 		}
-		enc = rb_enc_check((RSTRING_LEN(result) == 0 ? fmt : result), str);
+		enc = rb_enc_check(result, str);
 		if (flags&(FPREC|FWIDTH)) {
 		    slen = rb_enc_strlen(RSTRING_PTR(str),RSTRING_END(str),enc);
 		    if (slen < 0) {
