@@ -1134,10 +1134,23 @@ vm_exec(rb_thread_t *th)
 			SET_THROWOBJ_STATE(err, state = TAG_BREAK);
 		    }
 		    else {
-			result = GET_THROWOBJ_VAL(err);
-			th->errinfo = Qnil;
-			th->cfp += 2;
-			goto finish_vme;
+			for (i = 0; i < cfp->iseq->catch_table_size; i++) {
+			    entry = &cfp->iseq->catch_table[i];
+			    if (entry->start < epc && entry->end >= epc) {
+				if (entry->type == CATCH_TYPE_ENSURE) {
+				    catch_iseqval = entry->iseq;
+				    cont_pc = entry->cont;
+				    cont_sp = entry->sp;
+				    break;
+				}
+			    }
+			}
+			if (!catch_iseqval) {
+			    result = GET_THROWOBJ_VAL(err);
+			    th->errinfo = Qnil;
+			    th->cfp += 2;
+			    goto finish_vme;
+			}
 		    }
 		    /* through */
 		}
