@@ -97,7 +97,7 @@ SETUP         =
 EXTSTATIC     = @EXTSTATIC@
 SET_LC_MESSAGES = env LC_MESSAGES=C
 
-MAKEDIRS      = @MAKEDIRS@
+MAKEDIRS      = @MKDIR_P@
 CP            = cp
 MV            = mv
 RM            = rm -f

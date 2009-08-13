@@ -303,6 +303,7 @@ esac
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_INSTALL
+AC_PROG_MKDIR_P
 
 AC_CHECK_TOOL(DOT, dot)
 AC_CHECK_TOOL(DOXYGEN, doxygen)
@@ -312,8 +313,10 @@ AC_USE_SYSTEM_EXTENSIONS
 
 AC_SUBST(RM, ['rm -f'])
 AC_SUBST(CP, ['cp'])
-if $as_mkdir_p; then
-  MAKEDIRS='mkdir -p'
+if test "x$MKDIR_P" != "x -d"; then
+  MAKEDIRS="$MKDIR_P"
+elif test -n "$INSTALL"; then
+  MAKEDIRS="$INSTALL -d"
 else
   MAKEDIRS='install -d'
 fi
@@ -2522,7 +2525,7 @@ fi
 AC_SUBST(MANTYPE)
 
 arch_hdrdir="${EXTOUT}/include/${arch}/ruby"
-$MAKEDIRS "${arch_hdrdir}"
+AS_MKDIR_P("${arch_hdrdir}")
 config_h="${arch_hdrdir}/config.h"
 tr -d '\015' < confdefs.h | grep -v "^#define PACKAGE_" |
 ${srcdir}/tool/ifchange "${config_h}" -

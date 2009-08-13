@@ -48,7 +48,7 @@ RUBY     = $(MINIRUBY)
 WORKDIRS = $(ENCSODIR) $(TRANSSODIR) enc enc/trans
 
 RM = @RM@
-MAKEDIRS = @MAKEDIRS@
+MAKEDIRS = @MKDIR_P@
 
 .SUFFIXES: .trans
 
