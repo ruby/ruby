@@ -819,7 +819,7 @@ with all sufficient information, see the ChangeLog file.
 
       Automatic detection between binary digest values and hexadecimal
       digest values has been dropped.  It is always assumed that a
-      binary digest value is given for comparison.
+      hexadecimal digest value is given for comparison.
 
     * self == md
 
