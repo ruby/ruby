@@ -1247,7 +1247,7 @@ opt_case_dispatch
 	    key, -1
 	};
 
-	st_foreach(RHASH_TBL(hash), opt_case_dispatch_i, &arg);
+	st_foreach(RHASH_TBL(hash), opt_case_dispatch_i, (st_data_t)&arg);
 
 	if (arg.label != -1) {
 	    JUMP(arg.label);
