@@ -407,7 +407,7 @@ curses_addstr(obj, str)
 {
     curses_stdscr();
     if (!NIL_P(str)) {
-	addstr(STR2CSTR(str));
+	addstr(StringValueCStr(str));
     }
     return Qnil;
 }
@@ -1124,7 +1124,7 @@ window_addstr(obj, str)
 	struct windata *winp;
 
 	GetWINDOW(obj, winp);
-	waddstr(winp->window, STR2CSTR(str));
+	waddstr(winp->window, StringValueCStr(str));
     }
     return Qnil;
 }

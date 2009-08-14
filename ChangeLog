@@ -1,3 +1,9 @@
+Fri Aug 14 19:57:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/curses/curses.c ({curses,window}_addstr),
+	  ext/openssl/ossl_x509store.c (ossl_x509store_add_{file,path}):
+	  replaced deprecated funtion.
+
 Fri Aug 14 14:03:46 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* configure.in: only check pthread.h in case of --enable-pthread
