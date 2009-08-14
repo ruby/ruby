@@ -442,18 +442,18 @@ class TestM17N < Test::Unit::TestCase
 
   def test_regexp_embed
     r = eval(e("/\xc2\xa1/"))
-    assert_raise(ArgumentError) { eval(s("/\xc2\xa1\#{r}/s")) }
-    assert_raise(ArgumentError) { eval(s("/\#{r}\xc2\xa1/s")) }
+    assert_raise(RegexpError) { eval(s("/\xc2\xa1\#{r}/s")) }
+    assert_raise(RegexpError) { eval(s("/\#{r}\xc2\xa1/s")) }
 
     r = /\xc2\xa1/e
-    assert_raise(ArgumentError) { eval(s("/\xc2\xa1\#{r}/s")) }
-    assert_raise(ArgumentError) { eval(s("/\#{r}\xc2\xa1/s")) }
+    assert_raise(RegexpError) { eval(s("/\xc2\xa1\#{r}/s")) }
+    assert_raise(RegexpError) { eval(s("/\#{r}\xc2\xa1/s")) }
 
     r = eval(e("/\xc2\xa1/"))
-    assert_raise(ArgumentError) { /\xc2\xa1#{r}/s }
+    assert_raise(RegexpError) { /\xc2\xa1#{r}/s }
 
     r = /\xc2\xa1/e
-    assert_raise(ArgumentError) { /\xc2\xa1#{r}/s }
+    assert_raise(RegexpError) { /\xc2\xa1#{r}/s }
 
     r1 = Regexp.new('foo'.force_encoding("ascii-8bit"))
     r2 = eval('/bar#{r1}/'.force_encoding('ascii-8bit'))
@@ -1255,7 +1255,7 @@ class TestM17N < Test::Unit::TestCase
     assert_regexp_usascii_literal('/\u1234#{%q"\x80"}/', nil, SyntaxError)
     assert_regexp_usascii_literal('/\u1234#{"\x80"}/', nil, SyntaxError)
     assert_regexp_usascii_literal('/\u1234\x80/', nil, SyntaxError)
-    assert_regexp_usascii_literal('/\u1234#{}\x80/', nil, ArgumentError)
+    assert_regexp_usascii_literal('/\u1234#{}\x80/', nil, RegexpError)
   end
 
   def test_gbk

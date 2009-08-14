@@ -2301,7 +2301,7 @@ rb_reg_preprocess_dregexp(VALUE ary, int options)
 
         if (fixed_enc != 0) {
             if (regexp_enc != 0 && regexp_enc != fixed_enc) {
-                rb_raise(rb_eArgError, "encoding mismatch in dynamic regexp : %s and %s",
+                rb_raise(rb_eRegexpError, "encoding mismatch in dynamic regexp : %s and %s",
                          rb_enc_name(regexp_enc), rb_enc_name(fixed_enc));
             }
             regexp_enc = fixed_enc;
