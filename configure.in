@@ -2489,7 +2489,7 @@ if test "$search_path" != ""; then
 fi
 
 AC_ARG_WITH(rubyhdrdir,
-	    AS_HELP_STRING([--with-rubyhdrdir=DIR], [core headers in DIR [[INCLUDEDIR/RUBY_BASE_NAME/RUBY_VERSION]]]),
+	    AS_HELP_STRING([--with-rubyhdrdir=DIR], [core headers in DIR [[INCLUDEDIR/RUBY_BASE_NAME-RUBY_VERSION]]]),
 	    [rubyhdrdir=$withval],
 	    [rubyhdrdir='${includedir}/${RUBY_BASE_NAME}-${ruby_version}'])
 
