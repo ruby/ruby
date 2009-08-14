@@ -1,3 +1,10 @@
+Fri Aug 14 20:03:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_check_safe_str): deprecated.
+
+	* ext/openssl/ossl_x509store.c (ossl_x509store_add_{file,path}):
+	  replaced deprecated funtion.
+
 Fri Aug 14 17:59:12 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (rb_reg_preprocess_dregexp): change Exception class to
