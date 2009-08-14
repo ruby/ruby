@@ -49,8 +49,8 @@ module Digest
         key = @md.digest(key)
       end
 
-      ipad = Array.new(block_len).fill(0x36)
-      opad = Array.new(block_len).fill(0x5c)
+      ipad = Array.new(block_len, 0x36)
+      opad = Array.new(block_len, 0x5c)
 
       key.bytes.each_with_index { |c, i|
         ipad[i] ^= c
@@ -58,8 +58,8 @@ module Digest
       }
 
       @key = key.freeze
-      @ipad = ipad.inject('') { |s, c| s << c.chr }.freeze
-      @opad = opad.inject('') { |s, c| s << c.chr }.freeze
+      @ipad = ipad.pack('C*').freeze
+      @opad = opad.pack('C*').freeze
       @md.update(@ipad)
     end
 
@@ -102,7 +102,7 @@ module Digest
 end
 
 if $0 == __FILE__
-  eval DATA.read, nil, $0, __LINE__+4
+  eval DATA.gets(nil), nil, $0, DATA.lineno
 end
 
 __END__

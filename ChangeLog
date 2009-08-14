@@ -1,3 +1,8 @@
+Fri Aug 14 16:28:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/digest/lib/digest/hmac.rb (Digest::HMAC#initialize): faster
+	  code.
+
 Fri Aug 14 14:31:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rubyhdrdir): fixed typo.  [ruby-dev:39079]
