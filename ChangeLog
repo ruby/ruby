@@ -1,3 +1,8 @@
+Fri Aug 14 14:03:46 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* configure.in: only check pthread.h in case of --enable-pthread
+	  backport from trunk. [ruby-talk:343878] [ruby-core:23577]
+
 Thu Aug 13 16:20:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, Makefile.in (MAKEDIRS): used MKDIR_P instead of

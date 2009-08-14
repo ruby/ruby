@@ -561,7 +561,7 @@ AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h sys/syscall.h\
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
 		 syscall.h pwd.h grp.h a.out.h utime.h memory.h direct.h sys/resource.h \
-		 sys/mkdev.h sys/utime.h netinet/in_systm.h float.h ieeefp.h pthread.h \
+		 sys/mkdev.h sys/utime.h netinet/in_systm.h float.h ieeefp.h \
 		 ucontext.h intrinsics.h)
 
 dnl Check additional types.
@@ -1046,6 +1046,7 @@ int main()
 AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $rb_cv_stack_grow_dir)
 
 if test x"$enable_pthread" = xyes; then
+    AC_CHECK_HEADERS([pthread.h])
     for pthread_lib in pthread pthreads c c_r; do
 	AC_CHECK_LIB($pthread_lib, pthread_kill,
 		     rb_with_pthread=yes, rb_with_pthread=no)
