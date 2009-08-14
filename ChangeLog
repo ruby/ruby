@@ -1,3 +1,7 @@
+Fri Aug 14 17:17:42 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/Makefile.in (MKDIRS): revert r24525.
+
 Fri Aug 14 16:28:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/digest/lib/digest/hmac.rb (Digest::HMAC#initialize): faster
