@@ -1547,16 +1547,9 @@ inline
 VALUE
 opt_eq_func(VALUE recv, VALUE obj, IC ic)
 {
-    VALUE val = Qundef;
-
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_EQ)) {
-	if (recv == obj) {
-	    val = Qtrue;
-	}
-	else {
-	    val = Qfalse;
-	}
+	return (recv == obj) ? Qtrue : Qfalse;
     }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
 	if (HEAP_CLASS_OF(recv) == rb_cFloat &&
@@ -1566,31 +1559,27 @@ opt_eq_func(VALUE recv, VALUE obj, IC ic)
 	    double b = RFLOAT_VALUE(obj);
 
 	    if (isnan(a) || isnan(b)) {
-		val = Qfalse;
+		return Qfalse;
 	    }
-	    else if (a == b) {
-		val = Qtrue;
-	    }
-	    else {
-		val = Qfalse;
-	    }
+	    return  (a == b) ? Qtrue : Qfalse;
 	}
 	else if (HEAP_CLASS_OF(recv) == rb_cString &&
 		 HEAP_CLASS_OF(obj) == rb_cString &&
 		 BASIC_OP_UNREDEFINED_P(BOP_EQ)) {
-	    val = rb_str_equal(recv, obj);
-	}
-	else {
-	    const rb_method_entry_t *me = vm_method_search(idEq, CLASS_OF(recv), ic);
-	    extern VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
-
-	    if (check_cfunc(me, rb_obj_equal)) {
-		return recv == obj ? Qtrue : Qfalse;
-	    }
+	    return rb_str_equal(recv, obj);
 	}
     }
 
-    return val;
+    {
+	const rb_method_entry_t *me = vm_method_search(idEq, CLASS_OF(recv), ic);
+	extern VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
+
+	if (check_cfunc(me, rb_obj_equal)) {
+	    return recv == obj ? Qtrue : Qfalse;
+	}
+    }
+
+    return Qundef;
 }
 
 struct opt_case_dispatch_i_arg {
