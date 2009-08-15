@@ -665,6 +665,13 @@ class TestRegexp < Test::Unit::TestCase
     check(/\A[[^b-c]&&[^e]&&a-f]\z/, %w(a d f), %w(b c e g 0))
     check(/\A[\n\r\t]\z/, ["\n", "\r", "\t"])
     failcheck('[9-1]')
+
+    assert_match(/\A\d+\z/, "0123456789")
+    assert_no_match(/\d/, "\uff10\uff11\uff12\uff13\uff14\uff15\uff16\uff17\uff18\uff19")
+    assert_match(/\A\w+\z/, "09azAZ_")
+    assert_no_match(/\w/, "\uff10\uff19\uff41\uff5a\uff21\uff3a")
+    assert_match(/\A\s+\z/, "\r\n\v\f\r\s")
+    assert_no_match(/\s/, "\u0085")
   end
 
   def test_posix_bracket

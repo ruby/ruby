@@ -1,3 +1,21 @@
+Sun Aug 16 00:30:33 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/oniguruma.h
+	  (ONIGENC_CTYPE_SPECIAL_MASK): added.
+	  (ONIGENC_CTYPE_D): ditto.
+	  (ONIGENC_CTYPE_S): ditto.
+	  (ONIGENC_CTYPE_W): ditto.
+
+	* regparse.c: \d, \s and \w are now non Unicode class.
+	  [ruby-dev:39026]
+	  (fetch_token_in_cc): use ONIGENC_CTYPE_[DSW] for \d/\s/\w.
+	  (fetch_token): ditto.
+	  (add_ctype_to_cc): add routines for ONIGENC_CTYPE_[DSW].
+	  (parse_exp): ditto.
+
+	* test/ruby/test_regexp.rb (TestRegexp#test_char_class):
+	  add tests for above.
+
 Sat Aug 15 10:39:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (fname, string_dvar, sym, dsym, f_arglist): removed
