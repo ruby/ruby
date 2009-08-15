@@ -684,6 +684,12 @@ class TestRegexp < Test::Unit::TestCase
     failcheck('[[:alpha')
     failcheck('[[:alpha:')
     failcheck('[[:alp:]]')
+
+    assert_match(/\A[[:digit:]]+\z/, "\uff10\uff11\uff12\uff13\uff14\uff15\uff16\uff17\uff18\uff19")
+    assert_match(/\A[[:alnum:]]+\z/, "\uff10\uff19\uff41\uff5a\uff21\uff3a")
+    assert_match(/\A[[:space:]]+\z/, "\r\n\v\f\r\s\u0085")
+    assert_match(/\A[[:ascii:]]+\z/, "\x00\x7F")
+    assert_no_match(/[[:ascii:]]/, "\x80\xFF")
   end
 
   def test_backward

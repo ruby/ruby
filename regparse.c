@@ -3797,8 +3797,7 @@ add_ctype_to_cc_by_range(CClassNode* cc, int ctype ARG_UNUSED, int not,
       for (j  = ONIGENC_CODE_RANGE_FROM(mbr, i);
            j <= ONIGENC_CODE_RANGE_TO(mbr, i); j++) {
 	if (j >= sb_out) {
-	  if (j == ONIGENC_CODE_RANGE_TO(mbr, i)) i++;
-	  else if (j > ONIGENC_CODE_RANGE_FROM(mbr, i)) {
+	  if (j > ONIGENC_CODE_RANGE_FROM(mbr, i)) {
 	    r = add_code_range_to_buf(&(cc->mbuf), env, j,
 				      ONIGENC_CODE_RANGE_TO(mbr, i));
 	    if (r != 0) return r;
