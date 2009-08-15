@@ -1705,21 +1705,19 @@ fname		: tIDENTIFIER
 		| tFID
 		| op
 		    {
-		    /*%%%*/
 			lex_state = EXPR_END;
+		    /*%%%*/
 			$$ = $1;
 		    /*%
-			lex_state = EXPR_END;
 			$$ = $1;
 		    %*/
 		    }
 		| reswords
 		    {
-		    /*%%%*/
 			lex_state = EXPR_END;
+		    /*%%%*/
 			$$ = $<id>1;
 		    /*%
-			lex_state = EXPR_END;
 			$$ = $1;
 		    %*/
 		    }
@@ -4041,11 +4039,10 @@ string_dvar	: tGVAR
 
 symbol		: tSYMBEG sym
 		    {
-		    /*%%%*/
 			lex_state = EXPR_END;
+		    /*%%%*/
 			$$ = $2;
 		    /*%
-			lex_state = EXPR_END;
 			$$ = dispatch1(symbol, $2);
 		    %*/
 		    }
@@ -4059,8 +4056,8 @@ sym		: fname
 
 dsym		: tSYMBEG xstring_contents tSTRING_END
 		    {
-		    /*%%%*/
 			lex_state = EXPR_END;
+		    /*%%%*/
 			if (!($$ = $2)) {
 			    $$ = NEW_LIT(ID2SYM(rb_intern("")));
 			}
@@ -4082,7 +4079,6 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 			    }
 			}
 		    /*%
-			lex_state = EXPR_END;
 			$$ = dispatch1(dyna_symbol, $2);
 		    %*/
 		    }
@@ -4178,13 +4174,11 @@ f_arglist	: '(' f_args rparen
 		    {
 		    /*%%%*/
 			$$ = $2;
-			lex_state = EXPR_BEG;
-			command_start = Qtrue;
 		    /*%
 			$$ = dispatch1(paren, $2);
+		    %*/
 			lex_state = EXPR_BEG;
 			command_start = Qtrue;
-		    %*/
 		    }
 		| f_args term
 		    {
@@ -8916,7 +8910,7 @@ static void
 reg_fragment_check_gen(struct parser_params* parser, VALUE str, int options)
 {
     VALUE err;
-    reg_fragment_setenc_gen(parser, str, options);
+    reg_fragment_setenc(str, options);
     err = rb_reg_check_preprocess(str);
     if (err != Qnil) {
         err = rb_obj_as_string(err);
@@ -10084,7 +10078,7 @@ ripper_id2sym(ID id)
         if (!name) {
             rb_bug("cannot convert ID to string: %ld", (unsigned long)id);
         }
-        break;
+        return ID2SYM(id);
     }
     return ID2SYM(rb_intern(name));
 }

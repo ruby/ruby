@@ -1,3 +1,8 @@
+Sat Aug 15 10:39:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (fname, string_dvar, sym, dsym, f_arglist): removed
+	  duplications.
+
 Fri Aug 14 20:03:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_check_safe_str): deprecated.
