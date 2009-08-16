@@ -1,3 +1,11 @@
+Mon Aug 17 08:31:56 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/delta.rb: merged from date4.  [experimental]
+
+	* lib/date/delta/parser.*: ditto.
+
+	* lib/date.rb: followed the above changes.
+
 Mon Aug 17 08:19:03 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb (strptime): removed \v; since \s includes \v.
