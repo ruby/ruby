@@ -395,6 +395,11 @@ Wed Aug  5 18:46:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* debug.c (ruby_dummy_gdb_enums): made public.  [ruby-dev:39001]
 
+Wed Aug  5 13:49:09 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_upto): generate numerical sequence when
+	  characters in both edges are all digits.  [ruby-talk:343186]
+
 Wed Aug  5 12:54:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_exc_raise, rb_exc_fatal): require exception object.

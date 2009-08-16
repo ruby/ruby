@@ -9,6 +9,12 @@ class TestRange < Test::Unit::TestCase
     assert_equal(["a", "b"], ("a" .. "b").to_a)
   end
 
+  def test_range_numeric_string
+    assert_equal(["6", "7", "8"], ("6".."8").to_a, "[ruby-talk:343187]")
+    assert_equal(["6", "7"], ("6"..."8").to_a)
+    assert_equal(["9", "10"], ("9".."10").to_a)
+  end
+
   def test_evaluation_order
     arr = [1,2]
     r = (arr.shift)..(arr.shift)

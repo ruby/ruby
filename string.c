@@ -3070,7 +3070,7 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
     VALUE end, exclusive;
     VALUE current, after_end;
     ID succ;
-    int n, excl;
+    int n, excl, ascii;
     rb_encoding *enc;
 
     rb_scan_args(argc, argv, "11", &end, &exclusive);
@@ -3079,8 +3079,9 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
     CONST_ID(succ, "succ");
     StringValue(end);
     enc = rb_enc_check(beg, end);
-    if (RSTRING_LEN(beg) == 1 && RSTRING_LEN(end) == 1 &&
-	is_ascii_string(beg) && is_ascii_string(end)) {
+    ascii = (is_ascii_string(beg) && is_ascii_string(end));
+    /* single character */
+    if (RSTRING_LEN(beg) == 1 && RSTRING_LEN(end) == 1 && ascii) {
 	char c = RSTRING_PTR(beg)[0];
 	char e = RSTRING_PTR(end)[0];
 
@@ -3093,6 +3094,47 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
 	}
 	return beg;
     }
+    /* both edges are all digits */
+    if (ascii && ISDIGIT(RSTRING_PTR(beg)[0]) && ISDIGIT(RSTRING_PTR(end)[0])) {
+	char *s, *send;
+	VALUE b, e;
+
+	s = RSTRING_PTR(beg); send = RSTRING_END(beg);
+	while (s < send) {
+	    if (!ISDIGIT(*s)) goto no_digits;
+	    s++;
+	}
+	s = RSTRING_PTR(end); send = RSTRING_END(end);
+	while (s < send) {
+	    if (!ISDIGIT(*s)) goto no_digits;
+	    s++;
+	}
+	b = rb_str_to_inum(beg, 10, Qfalse);
+	e = rb_str_to_inum(end, 10, Qfalse);
+	if (FIXNUM_P(b) && FIXNUM_P(e)) {
+	    long bi = FIX2LONG(b);
+	    long ei = FIX2LONG(e);
+	    char buf[sizeof(long)*3+1];
+
+	    while (bi <= ei) {
+		if (excl && bi == ei) break;
+		sprintf(buf, "%ld", bi);
+		rb_yield(rb_usascii_str_new_cstr(buf));
+		bi++;
+	    }
+	}
+	else {
+	    ID op = excl ? '<' : rb_intern("<=");
+
+	    while (rb_funcall(b, op, 1, e)) {
+		rb_yield(rb_obj_as_string(b));
+		b = rb_funcall(b, succ, 0, 0);
+	    }
+	}
+	return beg;
+    }
+    /* normal case */
+  no_digits:
     n = rb_str_cmp(beg, end);
     if (n > 0 || (excl && n == 0)) return beg;
 
