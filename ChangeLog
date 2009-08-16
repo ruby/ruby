@@ -1,3 +1,10 @@
+Mon Aug 17 07:16:10 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (num_imaginary): num#i to return imaginary counterpart
+	  of the given numeric.
+
+	* complex.c (Init_Complex): undef #i for complex numbers.
+
 Mon Aug 17 00:17:33 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/complex.rb, lib/rational.rb: added warning messages.

@@ -1906,6 +1906,7 @@ Init_Complex(void)
     rb_undef_method(rb_cComplex, "round");
     rb_undef_method(rb_cComplex, "step");
     rb_undef_method(rb_cComplex, "truncate");
+    rb_undef_method(rb_cComplex, "i");
 
 #if 0 /* NUBY */
     rb_undef_method(rb_cComplex, "//");

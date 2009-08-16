@@ -238,6 +238,21 @@ num_uplus(VALUE num)
 
 /*
  *  call-seq:
+ *     num.i  ->  Complex(0,num)
+ *
+ *  Returns the corresponding imaginary number.
+ *  Not available for complex numbers.
+ */
+
+static VALUE
+num_imaginary(VALUE num)
+{
+    return rb_complex_new(INT2FIX(0), num);
+}
+
+
+/*
+ *  call-seq:
  *     -num  ->  numeric
  *
  *  Unary Minus---Returns the receiver's value, negated.
@@ -3154,6 +3169,7 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "initialize_copy", num_init_copy, 1);
     rb_define_method(rb_cNumeric, "coerce", num_coerce, 1);
 
+    rb_define_method(rb_cNumeric, "i", num_imaginary, 0);
     rb_define_method(rb_cNumeric, "+@", num_uplus, 0);
     rb_define_method(rb_cNumeric, "-@", num_uminus, 0);
     rb_define_method(rb_cNumeric, "<=>", num_cmp, 1);
