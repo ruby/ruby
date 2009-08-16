@@ -1,7 +1,8 @@
-Sun Aug 16 09:47:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Aug 16 10:38:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* vm_dump.c (bugreport_backtrace): rb_backtrace_iter_func now
-	  takes VALUE as file and method names.
+	* vm.c (vm_backtrace_each, vm_backtrace_push),
+	  vm_eval.c (print_backtrace), vm_dump.c (bugreport_backtrace):
+	  rb_backtrace_iter_func now takes VALUE as file and method names.
 
 Sun Aug 16 03:06:59 2009  Koichi Sasada  <ko1@atdot.net>
 

@@ -1345,9 +1345,10 @@ rb_f_caller(int argc, VALUE *argv)
 }
 
 static int
-print_backtrace(void *arg, const char *file, int line, const char *method)
+print_backtrace(void *arg, VALUE file, int line, VALUE method)
 {
-    fprintf((FILE *)arg, "\tfrom %s:%d:in `%s'\n", file, line, method);
+    fprintf((FILE *)arg, "\tfrom %s:%d:in `%s'\n",
+	    RSTRING_PTR(file), line, RSTRING_PTR(method));
     return Qfalse;
 }
 

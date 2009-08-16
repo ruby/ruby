@@ -712,7 +712,7 @@ vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *
 {
     const rb_control_frame_t *limit_cfp = th->cfp;
     const rb_control_frame_t *cfp = (void *)(th->stack + th->stack_size);
-    const char *file = "ruby";
+    VALUE file = Qnil;
     int line_no = 0;
 
     cfp -= 2;
@@ -722,19 +722,20 @@ vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *
 	}
     }
     limit_cfp = RUBY_VM_NEXT_CONTROL_FRAME(limit_cfp);
-    if (th->vm->progname) file = RSTRING_PTR(th->vm->progname);
+    if (th->vm->progname) file = th->vm->progname;
     while (cfp > limit_cfp) {
 	if (cfp->iseq != 0) {
 	    if (cfp->pc != 0) {
 		rb_iseq_t *iseq = cfp->iseq;
 
 		line_no = rb_vm_get_sourceline(cfp);
-		file = RSTRING_PTR(iseq->filename);
-		if ((*iter)(arg, file, line_no, RSTRING_PTR(iseq->name))) break;
+		file = iseq->filename;
+		if ((*iter)(arg, file, line_no, iseq->name)) break;
 	    }
 	}
 	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
-	    if ((*iter)(arg, file, line_no, rb_id2name(cfp->me->original_id))) break;
+	    if (NIL_P(file)) file = rb_str_new_cstr("ruby");
+	    if ((*iter)(arg, file, line_no, rb_id2str(cfp->me->original_id))) break;
 	}
 	cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp);
     }
@@ -742,13 +743,17 @@ vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *
 }
 
 static int
-vm_backtrace_push(void *arg, const char *file, int line_no, const char *name)
+vm_backtrace_push(void *arg, VALUE file, int line_no, VALUE name)
 {
     VALUE *aryp = arg;
+    VALUE bt;
+
     if (!*aryp) {
 	*aryp = rb_ary_new();
     }
-    rb_ary_push(*aryp, rb_sprintf("%s:%d:in `%s'", file, line_no, name));
+    bt = rb_enc_sprintf(rb_enc_compatible(file, name), "%s:%d:in `%s'",
+			RSTRING_PTR(file), line_no, RSTRING_PTR(name));
+    rb_ary_push(*aryp, bt);
     return 0;
 }
 
