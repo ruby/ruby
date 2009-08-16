@@ -1,3 +1,8 @@
+Sun Aug 16 23:58:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (yylex): should dispatch scan-event even when follows
+	  just after delayed-token.  [ruby-dev:37855] [Bug #1071]
+
 Sun Aug 16 22:20:16 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb: reverted.

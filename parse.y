@@ -7612,7 +7612,6 @@ yylex(void *p)
 #ifdef RIPPER
     if (!NIL_P(parser->delayed)) {
 	ripper_dispatch_delayed_token(parser, t);
-	return t;
     }
     if (t != 0)
 	ripper_dispatch_scan_event(parser, t);
