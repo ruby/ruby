@@ -1,3 +1,8 @@
+Sun Aug 16 09:47:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_dump.c (bugreport_backtrace): rb_backtrace_iter_func now
+	  takes VALUE as file and method names.
+
 Sun Aug 16 03:06:59 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (opt_eq_func): fix optimization bug.  This issue
