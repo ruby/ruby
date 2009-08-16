@@ -1,3 +1,9 @@
+Mon Aug 17 07:59:00 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* numeric.c (flo_pow,fix_pow): may return complex number.
+
+	* bignum.c (rb_big_pow): ditto.
+
 Mon Aug 17 07:16:10 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (num_imaginary): num#i to return imaginary counterpart

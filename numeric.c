@@ -814,7 +814,6 @@ flo_divmod(VALUE x, VALUE y)
  * Raises <code>float</code> the <code>other</code> power.
  *
  *    2.0**3      #=> 8.0
- *    (-8.0)**0.5 #=> NaN  # try (-8.0)**Complex(0.5)
  */
 
 static VALUE
@@ -826,7 +825,13 @@ flo_pow(VALUE x, VALUE y)
       case T_BIGNUM:
 	return DBL2NUM(pow(RFLOAT_VALUE(x), rb_big2dbl(y)));
       case T_FLOAT:
-	return DBL2NUM(pow(RFLOAT_VALUE(x), RFLOAT_VALUE(y)));
+	{
+	    double dx = RFLOAT_VALUE(x);
+	    double dy = RFLOAT_VALUE(y);
+	    if (dx < 0 && dy != round(dy))
+		return rb_funcall(rb_complex_raw1(x), rb_intern("**"), 1, y);
+	    return DBL2NUM(pow(dx, dy));
+	}
       default:
 	return rb_num_coerce_bin(x, y, rb_intern("**"));
     }
@@ -2468,7 +2473,6 @@ int_pow(long x, unsigned long y)
  *    2 ** 3      #=> 8
  *    2 ** -1     #=> 0.5
  *    2 ** 0.5    #=> 1.4142135623731
- *    (-8)**0.5   #=> NaN  # try (-8)**Complex(0.5)
  */
 
 static VALUE
@@ -2517,7 +2521,12 @@ fix_pow(VALUE x, VALUE y)
 	    return DBL2NUM(RFLOAT_VALUE(y) < 0 ? infinite_value() : 0.0);
 	}
 	if (a == 1) return DBL2NUM(1.0);
-	return DBL2NUM(pow((double)a, RFLOAT_VALUE(y)));
+	{
+	    double dy = RFLOAT_VALUE(y);
+	    if (a < 0 && dy != round(dy))
+		return rb_funcall(rb_complex_raw1(x), rb_intern("**"), 1, y);
+	    return DBL2NUM(pow((double)a, dy));
+	}
       default:
 	return rb_num_coerce_bin(x, y, rb_intern("**"));
     }

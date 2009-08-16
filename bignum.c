@@ -2544,6 +2544,8 @@ rb_big_pow(VALUE x, VALUE y)
     switch (TYPE(y)) {
       case T_FLOAT:
 	d = RFLOAT_VALUE(y);
+	if ((!RBIGNUM_SIGN(x) && !BIGZEROP(x)) && d != round(d))
+	    return rb_funcall(rb_complex_raw1(x), rb_intern("**"), 1, y);
 	break;
 
       case T_BIGNUM:
