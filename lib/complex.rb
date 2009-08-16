@@ -1,6 +1,6 @@
 # :enddoc:
 
-warn 'lib/complex.rb is deprecated'
+warn('lib/complex.rb is deprecated') if $VERBOSE
 
 require 'cmath'
 

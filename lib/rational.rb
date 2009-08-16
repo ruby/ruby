@@ -1,6 +1,6 @@
 # :enddoc:
 
-warn 'lib/rational.rb is deprecated'
+warn('lib/rational.rb is deprecated') if $VERBOSE
 
 class Fixnum
 
