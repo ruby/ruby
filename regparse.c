@@ -335,11 +335,11 @@ str_end_cmp(st_str_end_key* x, st_str_end_key* y)
   return 0;
 }
 
-static int
+static st_index_t
 str_end_hash(st_str_end_key* x)
 {
   UChar *p;
-  int val = 0;
+  st_index_t val = 0;
 
   p = x->s;
   while (p < x->end) {
@@ -350,7 +350,7 @@ str_end_hash(st_str_end_key* x)
 }
 
 extern hash_table_type*
-onig_st_init_strend_table_with_size(int size)
+onig_st_init_strend_table_with_size(st_index_t size)
 {
   static const struct st_hash_type hashType = {
     str_end_cmp,
@@ -4548,7 +4548,6 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
  err:
   if (cc != NCCLASS(*np))
     bbuf_free(cc->mbuf);
-  onig_node_free(*np);
   return r;
 }
 
@@ -4782,7 +4781,10 @@ parse_enclose(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
   r = fetch_token(tok, &p, end, env);
   if (r < 0) return r;
   r = parse_subexp(&target, tok, term, &p, end, env);
-  if (r < 0) return r;
+  if (r < 0) {
+    onig_node_free(target);
+    return r;
+  }
 
   if (NTYPE(*np) == NT_ANCHOR)
     NANCHOR(*np)->target = target;
@@ -4918,7 +4920,7 @@ static int type_cclass_cmp(type_cclass_key* x, type_cclass_key* y)
   return 0;
 }
 
-static int type_cclass_hash(type_cclass_key* key)
+static st_index_t type_cclass_hash(type_cclass_key* key)
 {
   int i, val;
   UChar *p;
@@ -5121,7 +5123,10 @@ parse_exp(Node** np, OnigToken* tok, int term,
       if (r < 0) goto err;
       r = parse_subexp(&target, tok, term, src, end, env);
       env->option = prev;
-      if (r < 0) goto err;
+      if (r < 0) {
+	onig_node_free(target);
+	return r;
+      }
       NENCLOSE(*np)->target = target;
       return tok->type;
     }
@@ -5495,7 +5500,10 @@ parse_branch(Node** top, OnigToken* tok, int term,
 
   *top = NULL;
   r = parse_exp(&node, tok, term, src, end, env);
-  if (r < 0) return r;
+  if (r < 0) {
+    onig_node_free(node);
+    return r;
+  }
 
   if (r == TK_EOT || r == term || r == TK_ALT) {
     *top = node;
@@ -5506,7 +5514,7 @@ parse_branch(Node** top, OnigToken* tok, int term,
     while (r != TK_EOT && r != term && r != TK_ALT) {
       r = parse_exp(&node, tok, term, src, end, env);
       if (r < 0) {
-	onig_node_free(*top);
+	onig_node_free(node);
 	return r;
       }
 
@@ -5551,7 +5559,7 @@ parse_subexp(Node** top, OnigToken* tok, int term,
       }
       r = parse_branch(&node, tok, term, src, end, env);
       if (r < 0) {
-	onig_node_free(*top);
+	onig_node_free(node);
 	return r;
       }
 
@@ -5565,6 +5573,7 @@ parse_subexp(Node** top, OnigToken* tok, int term,
     }
   }
   else {
+    onig_node_free(node);
   err:
     if (term == TK_SUBEXP_CLOSE)
       return ONIGERR_END_PATTERN_WITH_UNMATCHED_PARENTHESIS;
