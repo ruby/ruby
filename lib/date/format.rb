@@ -544,8 +544,8 @@ class Date
 	  e._cent ||= if val >= 69 then 19 else 20 end
 	when 'Z', /\A:{0,3}z/
 	  return unless str.sub!(/\A((?:gmt|utc?)?[-+]\d+(?:[,.:]\d+(?::\d+)?)?
-				    |[[:alpha:].\s]+(?:standard|daylight)\s+time\b
-				    |[[:alpha:]]+(?:\s+dst)?\b
+				    |[a-z.\s]+(?:standard|daylight)\s+time\b
+				    |[a-z]+(?:\s+dst)?\b
 				    )/ix, '')
 	  val = $1
 	  e.zone = val
@@ -560,8 +560,8 @@ class Date
 	end
       else
 	case c
-	when /\A[\s\v]/
-	  str.sub!(/\A[\s\v]+/, '')
+	when /\A\s/
+	  str.sub!(/\A\s+/, '')
 	else
 	  return unless str.sub!(Regexp.new('\\A' + Regexp.quote(a)), '')
 	end
@@ -703,9 +703,9 @@ class Date
 		   (
 		     (?:gmt|utc?)?[-+]\d+(?:[,.:]\d+(?::\d+)?)?
 		   |
-		     [[:alpha:].\s]+(?:standard|daylight)\stime\b
+		     [a-z.\s]+(?:standard|daylight)\stime\b
 		   |
-		     [[:alpha:]]+(?:\sdst)?\b
+		     [a-z]+(?:\sdst)?\b
 		   )
 		 )?
 		/ix,
@@ -1034,7 +1034,7 @@ class Date
 
     e._comp = comp
 
-    str.gsub!(/[^-+',.\/:@[:alnum:]\[\]]+/, ' ')
+    str.gsub!(/[^-+',.\/:@0-9a-zA-Z\[\]]+/, ' ')
 
     _parse_time(str, e) # || _parse_beat(str, e)
     _parse_day(str, e)

@@ -407,7 +407,7 @@ class RubyLex
       if @lex_state != EXPR_END && @lex_state != EXPR_CLASS &&
 	  (@lex_state != EXPR_ARG || @space_seen)
 	c = peek(0)
-	if /\S/ =~ c && (/["'`]/ =~ c || /[\w_]/ =~ c || c == "-")
+	if /\S/ =~ c && (/["'`]/ =~ c || /\w/ =~ c || c == "-")
 	  tk = identify_here_document
 	end
       end
@@ -728,7 +728,7 @@ class RubyLex
       printf "MATCH: start %s: %s\n", op, io.inspect if RubyLex.debug?
       if peek(0) =~ /[0-9]/
 	t = identify_number
-      elsif peek(0) =~ /[\w_]/
+      elsif peek(0) =~ /\w/
 	t = identify_identifier
       end
       printf "MATCH: end %s: %s\n", op, io.inspect if RubyLex.debug?
