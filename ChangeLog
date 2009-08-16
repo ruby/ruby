@@ -1,3 +1,7 @@
+Sun Aug 16 22:20:16 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/format.rb: reverted.
+
 Sun Aug 16 21:31:21 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/date/format.rb: suppressed a warning.
