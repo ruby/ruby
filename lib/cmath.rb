@@ -148,7 +148,7 @@ module CMath
     if z.real? and z >= -1 and z <= 1
       asin!(z)
     else
-      Complex(0, -1.0) * log(Complex(0, 1.0) * z + sqrt(1.0 - z * z))
+      (-1.0).i * log(1.0.i * z + sqrt(1.0 - z * z))
     end
   end
 
@@ -156,7 +156,7 @@ module CMath
     if z.real? and z >= -1 and z <= 1
       acos!(z)
     else
-      Complex(0, -1.0) * log(z + Complex(0, 1.0) * sqrt(1.0 - z * z))
+      (-1.0).i * log(z + 1.0.i * sqrt(1.0 - z * z))
     end
   end
 
@@ -164,7 +164,7 @@ module CMath
     if z.real?
       atan!(z)
     else
-      Complex(0, 1.0) * log((Complex(0, 1.0) + z) / (Complex(0, 1.0) - z)) / 2.0
+      1.0.i * log((1.0.i + z) / (1.0.i - z)) / 2.0
     end
   end
 
@@ -172,7 +172,7 @@ module CMath
     if y.real? and x.real?
       atan2!(y,x)
     else
-      Complex(0, -1.0) * log((x + Complex(0, 1.0) * y) / sqrt(x * x + y * y))
+      (-1.0).i * log((x + 1.0.i * y) / sqrt(x * x + y * y))
     end
   end
 
