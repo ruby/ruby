@@ -639,6 +639,21 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal(d, DateTime.parse(d.to_s))
   end
 
+  def test_parse_utf8
+    h = DateTime._parse(
+"Sun\xe3\x80\x80Aug 16 01:02:03 \xe6\x97\xa5\xe6\x9c\xac 2009".
+			force_encoding('utf-8'))
+    assert_equal(2009, h[:year])
+    assert_equal(8, h[:mon])
+    assert_equal(16, h[:mday])
+    assert_equal(0, h[:wday])
+    assert_equal(1, h[:hour])
+    assert_equal(2, h[:min])
+    assert_equal(3, h[:sec])
+    assert_equal("\xe6\x97\xa5\xe6\x9c\xac".
+		 force_encoding('utf-8'), h[:zone])
+  end
+
   def test_parse__ex
     assert_raise(ArgumentError) do
       Date.parse('')

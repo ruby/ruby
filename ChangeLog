@@ -1,3 +1,7 @@
+Mon Aug 17 08:19:03 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/format.rb (strptime): removed \v; since \s includes \v.
+
 Mon Aug 17 08:14:26 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_rationalize) added.  [experimental]

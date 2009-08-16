@@ -1,4 +1,4 @@
-# format.rb: Written by Tadayoshi Funaba 1999-2008
+# format.rb: Written by Tadayoshi Funaba 1999-2009
 # $Id: format.rb,v 2.43 2008-01-17 20:16:31+09 tadf Exp $
 
 class Date
@@ -560,8 +560,8 @@ class Date
 	end
       else
 	case c
-	when /\A[\s\v]/
-	  str.sub!(/\A[\s\v]+/, '')
+	when /\A\s/
+	  str.sub!(/\A\s+/, '')
 	else
 	  return unless str.sub!(Regexp.new('\\A' + Regexp.quote(a)), '')
 	end
