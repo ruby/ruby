@@ -1,5 +1,7 @@
 # :enddoc:
 
+warn 'lib/complex.rb is deprecated'
+
 require 'cmath'
 
 unless defined?(Math.exp!)

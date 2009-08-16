@@ -6,7 +6,7 @@ benchmark.rb	a benchmark utility
 cgi.rb		CGI support library
 cgi/session.rb	CGI session class
 cmath.rb	math support for complex numbers
-complex.rb	includes cmath and set complex arithemtic as default
+complex.rb	includes cmath and set complex arithemtic as default (obsolete)
 csv.rb		CSV parser/generator
 date.rb		date object
 date/format.rb	date parsing and formatting
@@ -24,7 +24,7 @@ gserver.rb	general TCP server
 ipaddr.rb	defines the IPAddr class
 irb.rb		interactive ruby
 logger.rb	simple logging utility
-mathn.rb	extended math operation
+mathn.rb	extended math operation (obsolete)
 matrix.rb	matrix calculation library
 minitest/unit	minimal drop-in replacement for test-unit	
 mkmf.rb		Makefile maker
@@ -52,7 +52,7 @@ profiler.rb	ruby profiler module
 pstore.rb	persistent object strage using marshal
 racc/parser.rb	racc (Ruby yACC) runtime
 rake.rb		Ruby Make
-rational.rb	rational number support
+rational.rb	rational number support (obsolete)
 rdoc		source-code documentation tool
 resolv-replace.rb	replace Socket DNS by resolve.rb
 resolv.rb	DNS resolver in Ruby
