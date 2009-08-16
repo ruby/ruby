@@ -335,11 +335,11 @@ str_end_cmp(st_str_end_key* x, st_str_end_key* y)
   return 0;
 }
 
-static st_index_t
+static int
 str_end_hash(st_str_end_key* x)
 {
   UChar *p;
-  st_index_t val = 0;
+  int val = 0;
 
   p = x->s;
   while (p < x->end) {
@@ -350,7 +350,7 @@ str_end_hash(st_str_end_key* x)
 }
 
 extern hash_table_type*
-onig_st_init_strend_table_with_size(st_index_t size)
+onig_st_init_strend_table_with_size(int size)
 {
   static const struct st_hash_type hashType = {
     str_end_cmp,
@@ -4920,7 +4920,7 @@ static int type_cclass_cmp(type_cclass_key* x, type_cclass_key* y)
   return 0;
 }
 
-static st_index_t type_cclass_hash(type_cclass_key* key)
+static int type_cclass_hash(type_cclass_key* key)
 {
   int i, val;
   UChar *p;
@@ -5120,7 +5120,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
 
       env->option = NENCLOSE(*np)->option;
       r = fetch_token(tok, src, end, env);
-      if (r < 0) goto err;
+      if (r < 0) return r;
       r = parse_subexp(&target, tok, term, src, end, env);
       env->option = prev;
       if (r < 0) {
@@ -5148,11 +5148,11 @@ parse_exp(Node** np, OnigToken* tok, int term,
 
       while (1) {
 	r = fetch_token(tok, src, end, env);
-	if (r < 0) goto err;
+	if (r < 0) return r;
 	if (r != TK_STRING) break;
 
 	r = onig_node_str_cat(*np, tok->backp, *src);
-	if (r < 0) goto err;
+	if (r < 0) return r;
       }
 
     string_end:
@@ -5177,7 +5177,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
 	}
 
 	r = fetch_token(tok, src, end, env);
-	if (r < 0) goto err;
+	if (r < 0) return r;
 	if (r != TK_RAW_BYTE) {
 	  /* Don't use this, it is wrong for little endian encodings. */
 #ifdef USE_PAD_TO_SHORT_BYTE_CHAR
@@ -5195,7 +5195,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
 	}
 
 	r = node_str_cat_char(*np, (UChar )tok->u.c);
-	if (r < 0) goto err;
+	if (r < 0) return r;
 
 	len++;
       }
@@ -5356,7 +5356,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
 					i_apply_case_fold, &iarg);
 	if (r != 0) {
 	  onig_node_free(iarg.alt_root);
-	  goto err;
+	  return r;
 	}
 	if (IS_NOT_NULL(iarg.alt_root)) {
           Node* work = onig_node_new_alt(*np, iarg.alt_root);
@@ -5441,7 +5441,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
 
   re_entry:
     r = fetch_token(tok, src, end, env);
-    if (r < 0) goto err;
+    if (r < 0) return r;
 
   repeat:
     if (r == TK_OP_REPEAT || r == TK_INTERVAL) {
@@ -5453,7 +5453,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
       CHECK_NULL_RETURN_MEMERR(qn);
       NQTFR(qn)->greedy = tok->u.repeat.greedy;
       r = set_quantifier(qn, *targetp, group, env);
-      if (r < 0) goto err;
+      if (r < 0) return r;
 
       if (tok->u.repeat.possessive != 0) {
 	Node* en;
@@ -5483,9 +5483,6 @@ parse_exp(Node** np, OnigToken* tok, int term,
       }
       goto re_entry;
     }
-
-  err:
-    onig_node_free(*np);
   }
 
   return r;
@@ -5543,7 +5540,10 @@ parse_subexp(Node** top, OnigToken* tok, int term,
 
   *top = NULL;
   r = parse_branch(&node, tok, term, src, end, env);
-  if (r < 0) return r;
+  if (r < 0) {
+    onig_node_free(node);
+    return r;
+  }
 
   if (r == term) {
     *top = node;
@@ -5553,10 +5553,7 @@ parse_subexp(Node** top, OnigToken* tok, int term,
     headp = &(NCDR(*top));
     while (r == TK_ALT) {
       r = fetch_token(tok, src, end, env);
-      if (r < 0) {
-	onig_node_free(*top);
-	return r;
-      }
+      if (r < 0) return r;
       r = parse_branch(&node, tok, term, src, end, env);
       if (r < 0) {
 	onig_node_free(node);
@@ -5567,10 +5564,8 @@ parse_subexp(Node** top, OnigToken* tok, int term,
       headp = &(NCDR(*headp));
     }
 
-    if (tok->type != (enum TokenSyms )term) {
-      onig_node_free(*top);
+    if (tok->type != (enum TokenSyms )term)
       goto err;
-    }
   }
   else {
     onig_node_free(node);
