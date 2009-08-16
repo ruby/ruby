@@ -197,8 +197,12 @@ class TestEncodings < Test::Unit::TestCase
   def test_can_write_csv_in_any_encoding
     each_encoding do |encoding|
       # test generate_line with encoding hint
-      csv = %w[abc d|ef].map { |f| f.encode(encoding) }.
-                         to_csv(col_sep: "|", encoding: encoding.name)
+      begin
+        csv = %w[abc d|ef].map { |f| f.encode(encoding) }.
+          to_csv(col_sep: "|", encoding: encoding.name)
+      rescue Encoding::ConverterNotFoundError
+        next
+      end
       assert_equal(encoding, csv.encoding)
 
       # test generate_line with encoding guessing from fields
