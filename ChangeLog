@@ -1,3 +1,8 @@
+Mon Aug 17 14:35:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lex_get_str, lex_io_gets, rb_parser_compile_string):
+	  must be ascii compatible.
+
 Mon Aug 17 10:37:41 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regparse.c (add_code_range_to_buf0): added with checkdup argument.
