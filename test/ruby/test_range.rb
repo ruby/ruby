@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'delegate'
 
 class TestRange < Test::Unit::TestCase
   def test_range_string
@@ -13,6 +14,8 @@ class TestRange < Test::Unit::TestCase
     assert_equal(["6", "7", "8"], ("6".."8").to_a, "[ruby-talk:343187]")
     assert_equal(["6", "7"], ("6"..."8").to_a)
     assert_equal(["9", "10"], ("9".."10").to_a)
+    assert_equal(["9", "10"], (SimpleDelegator.new("9").."10").to_a)
+    assert_equal(["9", "10"], ("9"..SimpleDelegator.new("10")).to_a)
   end
 
   def test_evaluation_order

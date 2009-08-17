@@ -1,3 +1,7 @@
+Tue Aug 18 01:21:31 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_each): should honor to_str conversion.
+
 Mon Aug 17 23:45:40 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/delta.rb: removed require 'date'.  added to_c.

@@ -436,19 +436,23 @@ range_each(VALUE range)
 	    rb_yield(LONG2FIX(i));
 	}
     }
-    else if (TYPE(beg) == T_STRING) {
-	VALUE args[2];
-
-	args[0] = end;
-	args[1] = EXCL(range) ? Qtrue : Qfalse;
-	rb_block_call(beg, rb_intern("upto"), 2, args, rb_yield, 0);
-    }
     else {
-	if (!rb_respond_to(beg, id_succ)) {
-	    rb_raise(rb_eTypeError, "can't iterate from %s",
-		     rb_obj_classname(beg));
+	VALUE tmp = rb_check_string_type(beg);
+
+	if (!NIL_P(tmp)) {
+	    VALUE args[2];
+
+	    args[0] = end;
+	    args[1] = EXCL(range) ? Qtrue : Qfalse;
+	    rb_block_call(tmp, rb_intern("upto"), 2, args, rb_yield, 0);
 	}
-	range_each_func(range, each_i, NULL);
+	else {
+	    if (!rb_respond_to(beg, id_succ)) {
+		rb_raise(rb_eTypeError, "can't iterate from %s",
+			 rb_obj_classname(beg));
+	    }
+	    range_each_func(range, each_i, NULL);
+	}
     }
     return range;
 }
