@@ -1,3 +1,10 @@
+Tue Aug 18 01:57:00 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_step): treat symbols specially so that iterating
+	  over symbols should work like strings.  [ruby-core:24780]
+
+	* range.c (range_each): ditto.
+
 Tue Aug 18 01:21:31 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (range_each): should honor to_str conversion.

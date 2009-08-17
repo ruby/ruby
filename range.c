@@ -261,6 +261,24 @@ range_each_func(VALUE range, VALUE (*func) (VALUE, void *), void *arg)
 }
 
 static VALUE
+sym_step_i(VALUE i, void *arg)
+{
+    VALUE *iter = arg;
+
+    if (FIXNUM_P(iter[0])) {
+	iter[0] -= INT2FIX(1) & ~FIXNUM_FLAG;
+    }
+    else {
+	iter[0] = rb_funcall(iter[0], '-', 1, INT2FIX(1));
+    }
+    if (iter[0] == INT2FIX(0)) {
+	rb_yield(rb_str_intern(i));
+	iter[0] = iter[1];
+    }
+    return Qnil;
+}
+
+static VALUE
 step_i(VALUE i, void *arg)
 {
     VALUE *iter = arg;
@@ -347,6 +365,15 @@ range_step(int argc, VALUE *argv, VALUE range)
 	}
 
     }
+    else if (SYMBOL_P(b) && SYMBOL_P(e)) { /* symbols are special */
+	VALUE args[2], iter[2];
+
+	args[0] = rb_sym_to_s(e);
+	args[1] = EXCL(range) ? Qtrue : Qfalse;
+	iter[0] = INT2FIX(1);
+	iter[1] = step;
+	rb_block_call(rb_sym_to_s(b), rb_intern("upto"), 2, args, sym_step_i, (VALUE)iter);
+    }
     else if (ruby_float_step(b, e, step, EXCL(range))) {
 	/* done */
     }
@@ -398,6 +425,13 @@ each_i(VALUE v, void *arg)
     return Qnil;
 }
 
+static VALUE
+sym_each_i(VALUE v, void *arg)
+{
+    rb_yield(rb_str_intern(v));
+    return Qnil;
+}
+
 /*
  *  call-seq:
  *     rng.each {| i | block } => rng
@@ -435,6 +469,13 @@ range_each(VALUE range)
 	for (i = FIX2LONG(beg); i < lim; i++) {
 	    rb_yield(LONG2FIX(i));
 	}
+    }
+    else if (SYMBOL_P(beg) && SYMBOL_P(end)) { /* symbols are special */
+	VALUE args[2];
+
+	args[0] = rb_sym_to_s(end);
+	args[1] = EXCL(range) ? Qtrue : Qfalse;
+	rb_block_call(rb_sym_to_s(beg), rb_intern("upto"), 2, args, sym_each_i, 0);
     }
     else {
 	VALUE tmp = rb_check_string_type(beg);
