@@ -1,6 +1,5 @@
 # delta.rb: Written by Tadayoshi Funaba 2004-2009
 
-require 'date'
 require 'date/delta/parser'
 
 class Date
@@ -375,6 +374,7 @@ class Date
     def to_i() dx_conv0(:to_i) end
     def to_f() dx_conv0(:to_f) end
     def to_r() dx_conv0(:to_r) end
+    def to_c() @delta end
 
     alias_method :to_int, :to_i
 
