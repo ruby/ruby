@@ -1,3 +1,7 @@
+Tue Aug 18 13:46:14 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
+
+	* touch test/rdoc/empty.dat to run test_rdoc_parser.rb
+
 Tue Aug 18 11:37:24 2009  wanabe  <s.wanabe@gmail.com>
 
 	* vm_insnhelper.c (vm_call_cfunc): ensure hook c-return.
