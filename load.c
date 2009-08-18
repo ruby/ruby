@@ -225,11 +225,11 @@ rb_feature_provided(const char *feature, const char **loading)
     }
     if (ext && !strchr(ext, '/')) {
 	if (IS_RBEXT(ext)) {
-	    if (rb_feature_p(feature, ext, Qtrue, Qfalse, loading)) return TRUE;
+	    if (rb_feature_p(feature, ext, TRUE, FALSE, loading)) return TRUE;
 	    return FALSE;
 	}
 	else if (IS_SOEXT(ext) || IS_DLEXT(ext)) {
-	    if (rb_feature_p(feature, ext, Qfalse, Qfalse, loading)) return TRUE;
+	    if (rb_feature_p(feature, ext, FALSE, FALSE, loading)) return TRUE;
 	    return FALSE;
 	}
     }
