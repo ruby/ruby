@@ -32,6 +32,7 @@ struct enumerator {
     VALUE args;
     VALUE fib;
     VALUE dst;
+    VALUE lookahead;
     VALUE no_next;
 };
 
@@ -59,6 +60,7 @@ enumerator_mark(void *p)
     rb_gc_mark(ptr->args);
     rb_gc_mark(ptr->fib);
     rb_gc_mark(ptr->dst);
+    rb_gc_mark(ptr->lookahead);
 }
 
 static struct enumerator *
@@ -281,6 +283,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
     if (argc) ptr->args = rb_ary_new4(argc, argv);
     ptr->fib = 0;
     ptr->dst = Qnil;
+    ptr->lookahead = Qundef;
     ptr->no_next = Qfalse;
 
     return enum_obj;
@@ -361,6 +364,7 @@ enumerator_init_copy(VALUE obj, VALUE orig)
     ptr1->meth = ptr0->meth;
     ptr1->args = ptr0->args;
     ptr1->fib  = 0;
+    ptr1->lookahead  = Qundef;
 
     return obj;
 }
@@ -519,6 +523,7 @@ next_init(VALUE obj, struct enumerator *e)
     VALUE curr = rb_fiber_current();
     e->dst = curr;
     e->fib = rb_fiber_new(next_i, obj);
+    e->lookahead = Qundef;
 }
 
 /*
@@ -526,8 +531,8 @@ next_init(VALUE obj, struct enumerator *e)
  *   e.next   => object
  *
  * Returns the next object in the enumerator, and move the internal
- * position forward.  When the position reached at the end, internal
- * position is rewound then StopIteration is raised.
+ * position forward.  When the position reached at the end, StopIteration
+ * is raised.
  *
  * Note that enumeration sequence by next method does not affect other
  * non-external enumeration methods, unless underlying iteration
@@ -540,6 +545,16 @@ enumerator_next(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
     VALUE curr, v;
+
+    if (e->lookahead != Qundef) {
+        v = e->lookahead;
+        e->lookahead = Qundef;
+        return v;
+    }
+
+    if (e->no_next)
+	rb_raise(rb_eStopIteration, "iteration reached at end");
+
     curr = rb_fiber_current();
 
     if (!e->fib || !rb_fiber_alive_p(e->fib)) {
@@ -550,9 +565,35 @@ enumerator_next(VALUE obj)
     if (e->no_next) {
 	e->fib = 0;
 	e->dst = Qnil;
-	e->no_next = Qfalse;
+	e->lookahead = Qundef;
 	rb_raise(rb_eStopIteration, "iteration reached at end");
     }
+    return v;
+}
+
+/*
+ * call-seq:
+ *   e.peek   => object
+ *
+ * Returns the next object in the enumerator, but don't move the internal
+ * position forward.  When the position reached at the end, StopIteration
+ * is raised.
+ *
+ */
+
+static VALUE
+enumerator_peek(VALUE obj)
+{
+    struct enumerator *e = enumerator_ptr(obj);
+    VALUE v;
+
+    if (e->lookahead != Qundef) {
+        v = e->lookahead;
+        return v;
+    }
+
+    v = enumerator_next(obj);
+    e->lookahead = v;
     return v;
 }
 
@@ -575,6 +616,7 @@ enumerator_rewind(VALUE obj)
 
     e->fib = 0;
     e->dst = Qnil;
+    e->lookahead = Qundef;
     e->no_next = Qfalse;
     return obj;
 }
@@ -868,6 +910,7 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "with_index", enumerator_with_index, -1);
     rb_define_method(rb_cEnumerator, "with_object", enumerator_with_object, 1);
     rb_define_method(rb_cEnumerator, "next", enumerator_next, 0);
+    rb_define_method(rb_cEnumerator, "peek", enumerator_peek, 0);
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
     rb_define_method(rb_cEnumerator, "inspect", enumerator_inspect, 0);
 

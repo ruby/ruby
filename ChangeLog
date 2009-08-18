@@ -1,3 +1,9 @@
+Tue Aug 18 21:00:26 2009  Tanaka Akira  <akr@fsij.org>
+
+	* enumerator.c (enumerator_peek): new method Enumerator#peek.
+	  (enumerator_next): don't rewind at end.
+	  [ruby-dev:38932]
+
 Tue Aug 18 13:46:14 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* touch test/rdoc/empty.dat to run test_rdoc_parser.rb

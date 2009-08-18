@@ -130,5 +130,27 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal(3, e.next)
     assert_raise(StopIteration) { e.next }
   end
+
+  def test_peek
+    a = [1]
+    e = a.each
+    assert_equal(1, e.peek)
+    assert_equal(1, e.peek)
+    assert_equal(1, e.next)
+    assert_raise(StopIteration) { e.peek }
+    assert_raise(StopIteration) { e.peek }
+  end
+
+  def test_next_after_stopiteration
+    a = [1]
+    e = a.each
+    assert_equal(1, e.next)
+    assert_raise(StopIteration) { e.next }
+    assert_raise(StopIteration) { e.next }
+    e.rewind
+    assert_equal(1, e.next)
+    assert_raise(StopIteration) { e.next }
+    assert_raise(StopIteration) { e.next }
+  end
 end
 
