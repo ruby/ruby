@@ -1,3 +1,8 @@
+Wed Aug 19 01:08:34 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* compile.c (NODE_RETURN): fire return event at explicit return.
+	  [ruby-dev:38701]
+
 Tue Aug 18 21:00:26 2009  Tanaka Akira  <akr@fsij.org>
 
 	* enumerator.c (enumerator_peek): new method Enumerator#peek.
