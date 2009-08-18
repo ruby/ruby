@@ -129,6 +129,89 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal([], events)
   end
 
+  def test_return # [ruby-dev:38701]
+    events = []
+    eval <<-EOF.gsub(/^.*?: /, "")
+     1: set_trace_func(Proc.new { |event, file, lineno, mid, binding, klass|
+     2:   events << [event, lineno, mid, klass]
+     3: })
+     4: def foo(a)
+     5:   return if a
+     6:   return
+     7: end
+     8: foo(true)
+     9: foo(false)
+    10: set_trace_func(nil)
+    EOF
+    assert_equal(["c-return", 3, :set_trace_func, Kernel],
+                 events.shift)
+    assert_equal(["line", 4, __method__, self.class],
+                 events.shift)
+    assert_equal(["c-call", 4, :method_added, Module],
+                 events.shift)
+    assert_equal(["c-return", 4, :method_added, Module],
+                 events.shift)
+    assert_equal(["line", 8, __method__, self.class],
+                 events.shift)
+    assert_equal(["call", 4, :foo, self.class],
+                 events.shift)
+    assert_equal(["line", 5, :foo, self.class],
+                 events.shift)
+    assert_equal(["return", 5, :foo, self.class],
+                 events.shift)
+    assert_equal(["line", 9, :test_return, self.class],
+                 events.shift)
+    assert_equal(["call", 4, :foo, self.class],
+                 events.shift)
+    assert_equal(["line", 5, :foo, self.class],
+                 events.shift)
+    assert_equal(["return", 7, :foo, self.class],
+                 events.shift)
+    assert_equal(["line", 10, :test_return, self.class],
+                 events.shift)
+    assert_equal(["c-call", 10, :set_trace_func, Kernel],
+                 events.shift)
+    assert_equal([], events)
+  end
+
+  def test_return2 # [ruby-core:24463]
+    events = []
+    eval <<-EOF.gsub(/^.*?: /, "")
+     1: set_trace_func(Proc.new { |event, file, lineno, mid, binding, klass|
+     2:   events << [event, lineno, mid, klass]
+     3: })
+     4: def foo
+     5:   a = 5
+     6:   return a
+     7: end
+     8: foo
+     9: set_trace_func(nil)
+    EOF
+    assert_equal(["c-return", 3, :set_trace_func, Kernel],
+                 events.shift)
+    assert_equal(["line", 4, __method__, self.class],
+                 events.shift)
+    assert_equal(["c-call", 4, :method_added, Module],
+                 events.shift)
+    assert_equal(["c-return", 4, :method_added, Module],
+                 events.shift)
+    assert_equal(["line", 8, __method__, self.class],
+                 events.shift)
+    assert_equal(["call", 4, :foo, self.class],
+                 events.shift)
+    assert_equal(["line", 5, :foo, self.class],
+                 events.shift)
+    assert_equal(["line", 6, :foo, self.class],
+                 events.shift)
+    assert_equal(["return", 7, :foo, self.class],
+                 events.shift)
+    assert_equal(["line", 9, :test_return2, self.class],
+                 events.shift)
+    assert_equal(["c-call", 9, :set_trace_func, Kernel],
+                 events.shift)
+    assert_equal([], events)
+  end
+
   def test_raise
     events = []
     eval <<-EOF.gsub(/^.*?: /, "")

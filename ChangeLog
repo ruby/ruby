@@ -1,3 +1,8 @@
+Wed Aug 19 02:54:01 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_settracefunc.rb (test_return, test_return2): add two
+	  tests for [ruby-dev:38701] and [ruby-core:24463].
+
 Wed Aug 19 01:08:34 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (NODE_RETURN): fire return event at explicit return.
