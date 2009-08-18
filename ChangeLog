@@ -1,3 +1,11 @@
+Tue Aug 18 11:37:24 2009  wanabe  <s.wanabe@gmail.com>
+
+	* vm_insnhelper.c (vm_call_cfunc): ensure hook c-return.
+	  [Bug #1588]
+
+	* test/ruby/test_settracefunc.rb (TestSetTraceFunc#test_raise):
+	  follow above.
+
 Tue Aug 18 01:57:00 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (range_step): treat symbols specially so that iterating

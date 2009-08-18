@@ -370,7 +370,7 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 #if defined(__cplusplus) || (__STDC_VERSION__ >= 199901L)
     // TODO: fix me.  separate event
 #endif
-    if (th->event_flags & RUBY_EVENT_C_RETURN) {
+    if (th->event_flags & (RUBY_EVENT_C_RETURN | RUBY_EVENT_VM)) {
 	state = TH_EXEC_TAG();
     }
     else {
