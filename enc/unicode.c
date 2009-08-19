@@ -10609,140 +10609,129 @@ static PosixBracketEntryType HashEntryData[] = {
   { (UChar* )NULL,                    -1,  0 }
 };
 
-#ifdef USE_UNICODE_PROPERTIES
-#define CODE_RANGES_NUM     115
-#else
-#define CODE_RANGES_NUM      15
-#endif
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+#define CODE_RANGES_NUM numberof(CodeRanges)
 
-static const OnigCodePoint* CodeRanges[CODE_RANGES_NUM];
-static int CodeRangeTableInited = 0;
-
-static void init_code_range_array(void) {
-  THREAD_ATOMIC_START;
-
-  CodeRanges[0] = CR_NEWLINE;
-  CodeRanges[1] = CR_Alpha;
-  CodeRanges[2] = CR_Blank;
-  CodeRanges[3] = CR_Cntrl;
-  CodeRanges[4] = CR_Digit;
-  CodeRanges[5] = CR_Graph;
-  CodeRanges[6] = CR_Lower;
-  CodeRanges[7] = CR_Print;
-  CodeRanges[8] = CR_Punct;
-  CodeRanges[9] = CR_Space;
-  CodeRanges[10] = CR_Upper;
-  CodeRanges[11] = CR_XDigit;
-  CodeRanges[12] = CR_Word;
-  CodeRanges[13] = CR_Alnum;
-  CodeRanges[14] = CR_ASCII;
+static const OnigCodePoint* const CodeRanges[] = {
+  CR_NEWLINE,
+  CR_Alpha,
+  CR_Blank,
+  CR_Cntrl,
+  CR_Digit,
+  CR_Graph,
+  CR_Lower,
+  CR_Print,
+  CR_Punct,
+  CR_Space,
+  CR_Upper,
+  CR_XDigit,
+  CR_Word,
+  CR_Alnum,
+  CR_ASCII,
 
 #ifdef USE_UNICODE_PROPERTIES
-  CodeRanges[15] = CR_Any;
-  CodeRanges[16] = CR_Assigned;
-  CodeRanges[17] = CR_C;
-  CodeRanges[18] = CR_Cc;
-  CodeRanges[19] = CR_Cf;
-  CodeRanges[20] = CR_Cn;
-  CodeRanges[21] = CR_Co;
-  CodeRanges[22] = CR_Cs;
-  CodeRanges[23] = CR_L;
-  CodeRanges[24] = CR_Ll;
-  CodeRanges[25] = CR_Lm;
-  CodeRanges[26] = CR_Lo;
-  CodeRanges[27] = CR_Lt;
-  CodeRanges[28] = CR_Lu;
-  CodeRanges[29] = CR_M;
-  CodeRanges[30] = CR_Mc;
-  CodeRanges[31] = CR_Me;
-  CodeRanges[32] = CR_Mn;
-  CodeRanges[33] = CR_N;
-  CodeRanges[34] = CR_Nd;
-  CodeRanges[35] = CR_Nl;
-  CodeRanges[36] = CR_No;
-  CodeRanges[37] = CR_P;
-  CodeRanges[38] = CR_Pc;
-  CodeRanges[39] = CR_Pd;
-  CodeRanges[40] = CR_Pe;
-  CodeRanges[41] = CR_Pf;
-  CodeRanges[42] = CR_Pi;
-  CodeRanges[43] = CR_Po;
-  CodeRanges[44] = CR_Ps;
-  CodeRanges[45] = CR_S;
-  CodeRanges[46] = CR_Sc;
-  CodeRanges[47] = CR_Sk;
-  CodeRanges[48] = CR_Sm;
-  CodeRanges[49] = CR_So;
-  CodeRanges[50] = CR_Z;
-  CodeRanges[51] = CR_Zl;
-  CodeRanges[52] = CR_Zp;
-  CodeRanges[53] = CR_Zs;
-  CodeRanges[54] = CR_Arabic;
-  CodeRanges[55] = CR_Armenian;
-  CodeRanges[56] = CR_Bengali;
-  CodeRanges[57] = CR_Bopomofo;
-  CodeRanges[58] = CR_Braille;
-  CodeRanges[59] = CR_Buginese;
-  CodeRanges[60] = CR_Buhid;
-  CodeRanges[61] = CR_Canadian_Aboriginal;
-  CodeRanges[62] = CR_Cherokee;
-  CodeRanges[63] = CR_Common;
-  CodeRanges[64] = CR_Coptic;
-  CodeRanges[65] = CR_Cypriot;
-  CodeRanges[66] = CR_Cyrillic;
-  CodeRanges[67] = CR_Deseret;
-  CodeRanges[68] = CR_Devanagari;
-  CodeRanges[69] = CR_Ethiopic;
-  CodeRanges[70] = CR_Georgian;
-  CodeRanges[71] = CR_Glagolitic;
-  CodeRanges[72] = CR_Gothic;
-  CodeRanges[73] = CR_Greek;
-  CodeRanges[74] = CR_Gujarati;
-  CodeRanges[75] = CR_Gurmukhi;
-  CodeRanges[76] = CR_Han;
-  CodeRanges[77] = CR_Hangul;
-  CodeRanges[78] = CR_Hanunoo;
-  CodeRanges[79] = CR_Hebrew;
-  CodeRanges[80] = CR_Hiragana;
-  CodeRanges[81] = CR_Inherited;
-  CodeRanges[82] = CR_Kannada;
-  CodeRanges[83] = CR_Katakana;
-  CodeRanges[84] = CR_Kharoshthi;
-  CodeRanges[85] = CR_Khmer;
-  CodeRanges[86] = CR_Lao;
-  CodeRanges[87] = CR_Latin;
-  CodeRanges[88] = CR_Limbu;
-  CodeRanges[89] = CR_Linear_B;
-  CodeRanges[90] = CR_Malayalam;
-  CodeRanges[91] = CR_Mongolian;
-  CodeRanges[92] = CR_Myanmar;
-  CodeRanges[93] = CR_New_Tai_Lue;
-  CodeRanges[94] = CR_Ogham;
-  CodeRanges[95] = CR_Old_Italic;
-  CodeRanges[96] = CR_Old_Persian;
-  CodeRanges[97] = CR_Oriya;
-  CodeRanges[98] = CR_Osmanya;
-  CodeRanges[99] = CR_Runic;
-  CodeRanges[100] = CR_Shavian;
-  CodeRanges[101] = CR_Sinhala;
-  CodeRanges[102] = CR_Syloti_Nagri;
-  CodeRanges[103] = CR_Syriac;
-  CodeRanges[104] = CR_Tagalog;
-  CodeRanges[105] = CR_Tagbanwa;
-  CodeRanges[106] = CR_Tai_Le;
-  CodeRanges[107] = CR_Tamil;
-  CodeRanges[108] = CR_Telugu;
-  CodeRanges[109] = CR_Thaana;
-  CodeRanges[110] = CR_Thai;
-  CodeRanges[111] = CR_Tibetan;
-  CodeRanges[112] = CR_Tifinagh;
-  CodeRanges[113] = CR_Ugaritic;
-  CodeRanges[114] = CR_Yi;
+  CR_Any,
+  CR_Assigned,
+  CR_C,
+  CR_Cc,
+  CR_Cf,
+  CR_Cn,
+  CR_Co,
+  CR_Cs,
+  CR_L,
+  CR_Ll,
+  CR_Lm,
+  CR_Lo,
+  CR_Lt,
+  CR_Lu,
+  CR_M,
+  CR_Mc,
+  CR_Me,
+  CR_Mn,
+  CR_N,
+  CR_Nd,
+  CR_Nl,
+  CR_No,
+  CR_P,
+  CR_Pc,
+  CR_Pd,
+  CR_Pe,
+  CR_Pf,
+  CR_Pi,
+  CR_Po,
+  CR_Ps,
+  CR_S,
+  CR_Sc,
+  CR_Sk,
+  CR_Sm,
+  CR_So,
+  CR_Z,
+  CR_Zl,
+  CR_Zp,
+  CR_Zs,
+  CR_Arabic,
+  CR_Armenian,
+  CR_Bengali,
+  CR_Bopomofo,
+  CR_Braille,
+  CR_Buginese,
+  CR_Buhid,
+  CR_Canadian_Aboriginal,
+  CR_Cherokee,
+  CR_Common,
+  CR_Coptic,
+  CR_Cypriot,
+  CR_Cyrillic,
+  CR_Deseret,
+  CR_Devanagari,
+  CR_Ethiopic,
+  CR_Georgian,
+  CR_Glagolitic,
+  CR_Gothic,
+  CR_Greek,
+  CR_Gujarati,
+  CR_Gurmukhi,
+  CR_Han,
+  CR_Hangul,
+  CR_Hanunoo,
+  CR_Hebrew,
+  CR_Hiragana,
+  CR_Inherited,
+  CR_Kannada,
+  CR_Katakana,
+  CR_Kharoshthi,
+  CR_Khmer,
+  CR_Lao,
+  CR_Latin,
+  CR_Limbu,
+  CR_Linear_B,
+  CR_Malayalam,
+  CR_Mongolian,
+  CR_Myanmar,
+  CR_New_Tai_Lue,
+  CR_Ogham,
+  CR_Old_Italic,
+  CR_Old_Persian,
+  CR_Oriya,
+  CR_Osmanya,
+  CR_Runic,
+  CR_Shavian,
+  CR_Sinhala,
+  CR_Syloti_Nagri,
+  CR_Syriac,
+  CR_Tagalog,
+  CR_Tagbanwa,
+  CR_Tai_Le,
+  CR_Tamil,
+  CR_Telugu,
+  CR_Thaana,
+  CR_Thai,
+  CR_Tibetan,
+  CR_Tifinagh,
+  CR_Ugaritic,
+  CR_Yi,
 #endif /* USE_UNICODE_PROPERTIES */
-
-  CodeRangeTableInited = 1;
-  THREAD_ATOMIC_END;
-}
+};
 
 extern int
 onigenc_unicode_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc ARG_UNUSED)
@@ -10759,8 +10748,6 @@ onigenc_unicode_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncodi
     return ONIGERR_TYPE_BUG;
   }
 
-  if (CodeRangeTableInited == 0) init_code_range_array();
-
   return onig_is_in_code_range((UChar* )CodeRanges[ctype], code);
 }
 
@@ -10771,8 +10758,6 @@ onigenc_unicode_ctype_code_range(int ctype, const OnigCodePoint* ranges[])
   if (ctype >= CODE_RANGES_NUM) {
     return ONIGERR_TYPE_BUG;
   }
-
-  if (CodeRangeTableInited == 0) init_code_range_array();
 
   *ranges = CodeRanges[ctype];
 
@@ -10846,7 +10831,7 @@ onigenc_unicode_property_name_to_ctype(OnigEncoding enc, UChar* name, UChar* end
     return ONIGERR_INVALID_CHAR_PROPERTY_NAME;
   }
 
-  return ctype;
+  return (int)ctype;
 }
 
 
@@ -10905,12 +10890,11 @@ static int init_case_fold_table(void)
 
   FoldTable = st_init_numtable_with_size(1200);
   if (ONIG_IS_NULL(FoldTable)) return ONIGERR_MEMORY;
-  for (i = 0; i < (int )(sizeof(CaseFold)/sizeof(CaseFold_11_Type)); i++) {
+  for (i = 0; i < numberof(CaseFold); i++) {
     p = &CaseFold[i];
     st_add_direct(FoldTable, (st_data_t )p->from, (st_data_t )&(p->to));
   }
-  for (i = 0; i < (int )(sizeof(CaseFold_Locale)/sizeof(CaseFold_11_Type));
-       i++) {
+  for (i = 0; i < numberof(CaseFold_Locale); i++) {
     p = &CaseFold_Locale[i];
     st_add_direct(FoldTable, (st_data_t )p->from, (st_data_t )&(p->to));
   }
@@ -10918,14 +10902,11 @@ static int init_case_fold_table(void)
   Unfold1Table = st_init_numtable_with_size(1000);
   if (ONIG_IS_NULL(Unfold1Table)) return ONIGERR_MEMORY;
 
-  for (i = 0; i < (int )(sizeof(CaseUnfold_11)/sizeof(CaseUnfold_11_Type));
-       i++) {
+  for (i = 0; i < numberof(CaseUnfold_11); i++) {
     p1 = &CaseUnfold_11[i];
     st_add_direct(Unfold1Table, (st_data_t )p1->from, (st_data_t )&(p1->to));
   }
-  for (i = 0;
-       i < (int )(sizeof(CaseUnfold_11_Locale)/sizeof(CaseUnfold_11_Type));
-       i++) {
+  for (i = 0; i < numberof(CaseUnfold_11_Locale); i++) {
     p1 = &CaseUnfold_11_Locale[i];
     st_add_direct(Unfold1Table, (st_data_t )p1->from, (st_data_t )&(p1->to));
   }
@@ -10933,14 +10914,11 @@ static int init_case_fold_table(void)
   Unfold2Table = st_init_table_with_size(&type_code2_hash, 200);
   if (ONIG_IS_NULL(Unfold2Table)) return ONIGERR_MEMORY;
 
-  for (i = 0; i < (int )(sizeof(CaseUnfold_12)/sizeof(CaseUnfold_12_Type));
-       i++) {
+  for (i = 0; i < numberof(CaseUnfold_12); i++) {
     p2 = &CaseUnfold_12[i];
     st_add_direct(Unfold2Table, (st_data_t )p2->from, (st_data_t )(&p2->to));
   }
-  for (i = 0;
-       i < (int )(sizeof(CaseUnfold_12_Locale)/sizeof(CaseUnfold_12_Type));
-       i++) {
+  for (i = 0; i < numberof(CaseUnfold_12_Locale); i++) {
     p2 = &CaseUnfold_12_Locale[i];
     st_add_direct(Unfold2Table, (st_data_t )p2->from, (st_data_t )(&p2->to));
   }
@@ -10948,8 +10926,7 @@ static int init_case_fold_table(void)
   Unfold3Table = st_init_table_with_size(&type_code3_hash, 30);
   if (ONIG_IS_NULL(Unfold3Table)) return ONIGERR_MEMORY;
 
-  for (i = 0; i < (int )(sizeof(CaseUnfold_13)/sizeof(CaseUnfold_13_Type));
-       i++) {
+  for (i = 0; i < numberof(CaseUnfold_13); i++) {
     p3 = &CaseUnfold_13[i];
     st_add_direct(Unfold3Table, (st_data_t )p3->from, (st_data_t )(&p3->to));
   }
@@ -11023,8 +11000,7 @@ onigenc_unicode_apply_all_case_fold(OnigCaseFoldType flag,
 
   /* if (CaseFoldInited == 0) init_case_fold_table(); */
 
-  for (i = 0; i < (int )(sizeof(CaseUnfold_11)/sizeof(CaseUnfold_11_Type));
-       i++) {
+  for (i = 0; i < numberof(CaseUnfold_11); i++) {
     p11 = &CaseUnfold_11[i];
     for (j = 0; j < p11->to.n; j++) {
       code = p11->from;
@@ -11063,9 +11039,7 @@ onigenc_unicode_apply_all_case_fold(OnigCaseFoldType flag,
   }
   else {
 #endif
-    for (i = 0;
-	 i < (int )(sizeof(CaseUnfold_11_Locale)/sizeof(CaseUnfold_11_Type));
-	 i++) {
+    for (i = 0; i < numberof(CaseUnfold_11_Locale); i++) {
       p11 = &CaseUnfold_11_Locale[i];
       for (j = 0; j < p11->to.n; j++) {
 	code = p11->from;
@@ -11092,8 +11066,7 @@ onigenc_unicode_apply_all_case_fold(OnigCaseFoldType flag,
 #endif
 
   if ((flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
-    for (i = 0; i < (int )(sizeof(CaseUnfold_12)/sizeof(CaseUnfold_12_Type));
-	 i++) {
+    for (i = 0; i < numberof(CaseUnfold_12); i++) {
       for (j = 0; j < CaseUnfold_12[i].to.n; j++) {
 	r = (*f)(CaseUnfold_12[i].to.code[j],
 		 (OnigCodePoint* )CaseUnfold_12[i].from, 2, arg);
@@ -11112,9 +11085,7 @@ onigenc_unicode_apply_all_case_fold(OnigCaseFoldType flag,
 #ifdef USE_UNICODE_CASE_FOLD_TURKISH_AZERI
     if ((flag & ONIGENC_CASE_FOLD_TURKISH_AZERI) == 0) {
 #endif
-      for (i = 0;
-	   i < (int )(sizeof(CaseUnfold_12_Locale)/sizeof(CaseUnfold_12_Type));
-	   i++) {
+      for (i = 0; i < numberof(CaseUnfold_12_Locale); i++) {
 	for (j = 0; j < CaseUnfold_12_Locale[i].to.n; j++) {
 	  r = (*f)(CaseUnfold_12_Locale[i].to.code[j],
 		   (OnigCodePoint* )CaseUnfold_12_Locale[i].from, 2, arg);
@@ -11134,8 +11105,7 @@ onigenc_unicode_apply_all_case_fold(OnigCaseFoldType flag,
     }
 #endif
 
-    for (i = 0; i < (int )(sizeof(CaseUnfold_13)/sizeof(CaseUnfold_13_Type));
-	 i++) {
+    for (i = 0; i < numberof(CaseUnfold_13); i++) {
       for (j = 0; j < CaseUnfold_13[i].to.n; j++) {
 	r = (*f)(CaseUnfold_13[i].to.code[j],
 		 (OnigCodePoint* )CaseUnfold_13[i].from, 3, arg);

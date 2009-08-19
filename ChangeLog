@@ -1,3 +1,7 @@
+Wed Aug 19 11:32:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/unicode.c (CodeRanges): initialized statically.
+
 Wed Aug 19 02:54:01 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_settracefunc.rb (test_return, test_return2): add two
