@@ -19,6 +19,60 @@
  *
  * A class which provides a method `each' to be used as an Enumerable
  * object.
+ *
+ * An enumerator can be created by following methods.
+ * - Kernel#to_enum
+ * - Kernel#enum_for 
+ * - Enumerator.new
+ *
+ * Also, most iteration methods without a block returns an enumerator.
+ * For example, Array#map returns an enumerator if no block given.
+ * The enumerator has with_index.
+ * So ary.map.with_index works as follows.
+ *
+ *   p [1,2,3].map.with_index {|o, i| o+i } #=> [1, 3, 5]
+ *
+ * An enumerator object can be used as an external iterator.
+ * I.e.  Enumerator#next returns the next value of the iterator.
+ * Enumerator#next raises StopIteration at end.
+ *
+ *   e = [1,2,3].each   # enumerator object.
+ *   p e.next   #=> 1
+ *   p e.next   #=> 2
+ *   p e.next   #=> 3
+ *   p e.next   #raises StopIteration
+ *
+ * An external iterator can be used to implement an internal iterator as follows.
+ *
+ *   def ext_each(e)
+ *     while true
+ *       begin
+ *         vs = e.next_values
+ *       rescue StopIteration
+ *         return $!.result
+ *       end
+ *       y = yield *vs
+ *       e.feed y
+ *     end
+ *   end
+ *
+ *   o = Object.new
+ *   def o.each
+ *     p yield
+ *     p yield 1
+ *     p yield(1, 2)
+ *   3
+ *   end
+ *
+ *   # use o.each as an internal iterator directly.
+ *   p o.each {|*x| p x; [:b, *x] }
+ *   #=> [], [:b], [1], [:b, 1], [1, 2], [:b, 1, 2], 3
+ *
+ *   # convert o.each to an external external iterator for
+ *   # implementing an internal iterator.
+ *   p ext_each(o.to_enum) {|*x| p x; [:b, *x] }
+ *   #=> [], [:b], [1], [:b, 1], [1, 2], [:b, 1, 2], 3 
+ *
  */
 VALUE rb_cEnumerator;
 static ID id_rewind, id_each;
@@ -33,7 +87,8 @@ struct enumerator {
     VALUE fib;
     VALUE dst;
     VALUE lookahead;
-    VALUE no_next;
+    VALUE feedvalue;
+    VALUE stop_exc;
 };
 
 static VALUE rb_cGenerator, rb_cYielder;
@@ -61,6 +116,8 @@ enumerator_mark(void *p)
     rb_gc_mark(ptr->fib);
     rb_gc_mark(ptr->dst);
     rb_gc_mark(ptr->lookahead);
+    rb_gc_mark(ptr->feedvalue);
+    rb_gc_mark(ptr->stop_exc);
 }
 
 static struct enumerator *
@@ -284,7 +341,8 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
     ptr->fib = 0;
     ptr->dst = Qnil;
     ptr->lookahead = Qundef;
-    ptr->no_next = Qfalse;
+    ptr->feedvalue = Qundef;
+    ptr->stop_exc = Qfalse;
 
     return enum_obj;
 }
@@ -365,6 +423,7 @@ enumerator_init_copy(VALUE obj, VALUE orig)
     ptr1->args = ptr0->args;
     ptr1->fib  = 0;
     ptr1->lookahead  = Qundef;
+    ptr1->feedvalue  = Qundef;
 
     return obj;
 }
@@ -502,8 +561,15 @@ enumerator_with_object(VALUE obj, VALUE memo)
 static VALUE
 next_ii(VALUE i, VALUE obj, int argc, VALUE *argv)
 {
-    rb_fiber_yield(argc, argv);
-    return Qnil;
+    struct enumerator *e = enumerator_ptr(obj);
+    VALUE feedvalue = Qnil;
+    VALUE args = rb_ary_new4(argc, argv);
+    rb_fiber_yield(1, &args);
+    if (e->feedvalue != Qundef) {
+        feedvalue = e->feedvalue;
+        e->feedvalue = Qundef;
+    }
+    return feedvalue;
 }
 
 static VALUE
@@ -511,9 +577,11 @@ next_i(VALUE curr, VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
     VALUE nil = Qnil;
+    VALUE result;
 
-    rb_block_call(obj, id_each, 0, 0, next_ii, obj);
-    e->no_next = Qtrue;
+    result = rb_block_call(obj, id_each, 0, 0, next_ii, obj);
+    e->stop_exc = rb_exc_new2(rb_eStopIteration, "iteration reached at end");
+    rb_ivar_set(e->stop_exc, rb_intern("result"), result);
     return rb_fiber_yield(1, &nil);
 }
 
@@ -524,6 +592,102 @@ next_init(VALUE obj, struct enumerator *e)
     e->dst = curr;
     e->fib = rb_fiber_new(next_i, obj);
     e->lookahead = Qundef;
+    e->feedvalue = Qundef;
+}
+
+/*
+ * call-seq:
+ *   e.next_values   => array
+ *
+ * Returns the next object as an array in the enumerator,
+ * and move the internal position forward.
+ * When the position reached at the end, StopIteration is raised.
+ *
+ * This method can be used to distinguish <code>yield</code> and <code>yield nil</code>.
+ *
+ *   o = Object.new
+ *   def o.each
+ *     yield
+ *     yield 1
+ *     yield 1, 2
+ *     yield nil
+ *     yield [1, 2]
+ *   end
+ *   e = o.to_enum
+ *   p e.next_values
+ *   p e.next_values
+ *   p e.next_values
+ *   p e.next_values
+ *   p e.next_values
+ *   e = o.to_enum
+ *   p e.next
+ *   p e.next
+ *   p e.next
+ *   p e.next
+ *   p e.next
+ *
+ *   # result
+ *   # next_values      next
+ *   # []               nil
+ *   # [1]              1
+ *   # [1, 2]           [1, 2]
+ *   # [nil]            nil
+ *   # [[1, 2]]         [1, 2]
+ *
+ * Note that enumeration sequence by next_values method does not affect other
+ * non-external enumeration methods, unless underlying iteration
+ * methods itself has side-effect, e.g. IO#each_line.
+ *
+ */
+
+static VALUE
+enumerator_next_values(VALUE obj)
+{
+    struct enumerator *e = enumerator_ptr(obj);
+    VALUE curr, v;
+
+    if (e->lookahead != Qundef) {
+        v = e->lookahead;
+        e->lookahead = Qundef;
+        return v;
+    }
+
+    if (e->stop_exc)
+	rb_exc_raise(e->stop_exc);
+
+    curr = rb_fiber_current();
+
+    if (!e->fib || !rb_fiber_alive_p(e->fib)) {
+	next_init(obj, e);
+    }
+
+    v = rb_fiber_resume(e->fib, 1, &curr);
+    if (e->stop_exc) {
+	e->fib = 0;
+	e->dst = Qnil;
+	e->lookahead = Qundef;
+	e->feedvalue = Qundef;
+	rb_exc_raise(e->stop_exc);
+    }
+    return v;
+}
+
+static VALUE
+ary2sv(VALUE args)
+{
+    if (TYPE(args) != T_ARRAY)
+        return args;
+
+    switch (RARRAY_LEN(args)) {
+      case 0:
+        return Qnil;
+
+      case 1:
+        return RARRAY_PTR(args)[0];
+
+      default:
+        return args;
+    }
 }
 
 /*
@@ -543,31 +707,48 @@ next_init(VALUE obj, struct enumerator *e)
 static VALUE
 enumerator_next(VALUE obj)
 {
+    VALUE vs = enumerator_next_values(obj);
+    return ary2sv(vs);
+}
+
+/*
+ * call-seq:
+ *   e.peek_values   => array
+ *
+ * Returns the next object as an array in the enumerator,
+ * but don't move the internal position forward.
+ * When the position reached at the end, StopIteration is raised.
+ *
+ *   o = Object.new
+ *   def o.each
+ *     yield  
+ *     yield 1
+ *     yield 1, 2
+ *   end
+ *   e = o.to_enum
+ *   p e.peek_values    #=> []
+ *   e.next  
+ *   p e.peek_values    #=> [1]
+ *   e.next  
+ *   p e.peek_values    #=> [1, 2]
+ *   e.next  
+ *   p e.peek_values    # raises StopIteration
+ *
+ */
+
+static VALUE
+enumerator_peek_values(VALUE obj)
+{
     struct enumerator *e = enumerator_ptr(obj);
-    VALUE curr, v;
+    VALUE v;
 
     if (e->lookahead != Qundef) {
         v = e->lookahead;
-        e->lookahead = Qundef;
         return v;
     }
 
-    if (e->no_next)
-	rb_raise(rb_eStopIteration, "iteration reached at end");
-
-    curr = rb_fiber_current();
-
-    if (!e->fib || !rb_fiber_alive_p(e->fib)) {
-	next_init(obj, e);
-    }
-
-    v = rb_fiber_resume(e->fib, 1, &curr);
-    if (e->no_next) {
-	e->fib = 0;
-	e->dst = Qnil;
-	e->lookahead = Qundef;
-	rb_raise(rb_eStopIteration, "iteration reached at end");
-    }
+    v = enumerator_next_values(obj);
+    e->lookahead = v;
     return v;
 }
 
@@ -584,17 +765,45 @@ enumerator_next(VALUE obj)
 static VALUE
 enumerator_peek(VALUE obj)
 {
+    VALUE vs = enumerator_peek_values(obj);
+    return ary2sv(vs);
+}
+
+/*
+ * call-seq:
+ *   e.feed obj   => nil
+ *
+ * Set the value for the next yield in the enumerator returns.
+ *
+ * If the value is not set, yield returns nil.
+ *
+ * This value is cleared after used.
+ *
+ *   o = Object.new
+ *   def o.each
+ *     p yield          #=> 1
+ *     p yield          #=> nil
+ *     p yield
+ *   end
+ *   e = o.to_enum
+ *   e.next
+ *   e.feed 1
+ *   e.next
+ *   e.next
+ *
+ */
+
+static VALUE
+enumerator_feed(VALUE obj, VALUE v)
+{
     struct enumerator *e = enumerator_ptr(obj);
-    VALUE v;
 
-    if (e->lookahead != Qundef) {
-        v = e->lookahead;
-        return v;
+    if (e->feedvalue != Qundef) {
+	rb_raise(rb_eTypeError, "feed value already set");
     }
+    e->feedvalue = v;
 
-    v = enumerator_next(obj);
-    e->lookahead = v;
-    return v;
+    return Qnil;
 }
 
 /*
@@ -617,7 +826,8 @@ enumerator_rewind(VALUE obj)
     e->fib = 0;
     e->dst = Qnil;
     e->lookahead = Qundef;
-    e->no_next = Qfalse;
+    e->feedvalue = Qundef;
+    e->stop_exc = Qfalse;
     return obj;
 }
 
@@ -754,9 +964,7 @@ yielder_yield(VALUE obj, VALUE args)
 {
     struct yielder *ptr = yielder_ptr(obj);
 
-    rb_proc_call(ptr->proc, args);
-
-    return obj;
+    return rb_proc_call(ptr->proc, args);
 }
 
 static VALUE
@@ -883,9 +1091,42 @@ generator_each(VALUE obj)
 
     yielder = yielder_new();
 
-    rb_proc_call(ptr->proc, rb_ary_new3(1, yielder));
+    return rb_proc_call(ptr->proc, rb_ary_new3(1, yielder));
+}
 
-    return obj;
+/*
+ * StopIteration
+ */
+
+/*
+ * call-seq:
+ *   stopiteration.result       => value
+ *
+ * Returns the return value of the iterator.
+ *
+ *
+ *   o = Object.new
+ *   def o.each
+ *     yield 1
+ *     yield 2
+ *     yield 3
+ *     100
+ *   end
+ *   e = o.to_enum
+ *   p e.next                   #=> 1
+ *   p e.next                   #=> 2
+ *   p e.next                   #=> 3
+ *   begin
+ *     e.next
+ *   rescue StopIteration
+ *     p $!.result              #=> 100
+ *   end
+ * 
+ */
+static VALUE
+stop_result(VALUE self)
+{
+    return rb_attr_get(self, rb_intern("result"));
 }
 
 void
@@ -909,12 +1150,16 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "each_with_object", enumerator_with_object, 1);
     rb_define_method(rb_cEnumerator, "with_index", enumerator_with_index, -1);
     rb_define_method(rb_cEnumerator, "with_object", enumerator_with_object, 1);
+    rb_define_method(rb_cEnumerator, "next_values", enumerator_next_values, 0);
+    rb_define_method(rb_cEnumerator, "peek_values", enumerator_peek_values, 0);
     rb_define_method(rb_cEnumerator, "next", enumerator_next, 0);
     rb_define_method(rb_cEnumerator, "peek", enumerator_peek, 0);
+    rb_define_method(rb_cEnumerator, "feed", enumerator_feed, 1);
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
     rb_define_method(rb_cEnumerator, "inspect", enumerator_inspect, 0);
 
     rb_eStopIteration = rb_define_class("StopIteration", rb_eIndexError);
+    rb_define_method(rb_eStopIteration, "result", stop_result, 0);
 
     /* Generator */
     rb_cGenerator = rb_define_class_under(rb_cEnumerator, "Generator", rb_cObject);

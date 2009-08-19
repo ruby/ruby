@@ -8,7 +8,6 @@ reference information is supplied with.  For a full list of changes
 with all sufficient information, see the ChangeLog file.
 
 == Changes since the 1.9.1 release
-
 === Library updates (outstanding ones only)
 
 * builtin classes
@@ -22,6 +21,13 @@ with all sufficient information, see the ChangeLog file.
       * Dir.home
 
   * Enumerator
+    * new methods:
+      * Enumerator#peek
+      * Enumerator#next_values
+      * Enumerator#peek_values
+      * Enumerator#feed
+      * StopIteration#result
+
     * extended methods:
       * #with_index accepts an optional argument that specifies the
         index number to start with, defaulted to 0.
@@ -29,6 +35,7 @@ with all sufficient information, see the ChangeLog file.
     * incompatible changes:
       * #rewind now calls the "rewind" method of the enclosed object
         if defined.
+      * #next doesn't clear the position at end.
 
   * IO
     * new method:

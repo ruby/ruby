@@ -152,5 +152,130 @@ class TestEnumerator < Test::Unit::TestCase
     assert_raise(StopIteration) { e.next }
     assert_raise(StopIteration) { e.next }
   end
+
+  def test_stop_result
+    a = [1]
+    res = a.each {}
+    e = a.each
+    assert_equal(1, e.next)
+    exc = assert_raise(StopIteration) { e.next }
+    assert_equal(res, exc.result)
+  end
+
+  def test_next_values
+    o = Object.new
+    def o.each
+      yield
+      yield 1
+      yield 1, 2
+    end
+    e = o.to_enum
+    assert_equal(nil, e.next)
+    assert_equal(1, e.next)
+    assert_equal([1,2], e.next)
+    e = o.to_enum
+    assert_equal([], e.next_values)
+    assert_equal([1], e.next_values)
+    assert_equal([1,2], e.next_values)
+  end
+
+  def test_peek_values
+    o = Object.new
+    def o.each
+      yield
+      yield 1
+      yield 1, 2
+    end
+    e = o.to_enum
+    assert_equal(nil, e.peek)
+    assert_equal(nil, e.next)
+    assert_equal(1, e.peek)
+    assert_equal(1, e.next)
+    assert_equal([1,2], e.peek)
+    assert_equal([1,2], e.next)
+    e = o.to_enum
+    assert_equal([], e.peek_values)
+    assert_equal([], e.next_values)
+    assert_equal([1], e.peek_values)
+    assert_equal([1], e.next_values)
+    assert_equal([1,2], e.peek_values)
+    assert_equal([1,2], e.next_values)
+    e = o.to_enum
+    assert_equal([], e.peek_values)
+    assert_equal(nil, e.next)
+    assert_equal([1], e.peek_values)
+    assert_equal(1, e.next)
+    assert_equal([1,2], e.peek_values)
+    assert_equal([1,2], e.next)
+    e = o.to_enum
+    assert_equal(nil, e.peek)
+    assert_equal([], e.next_values)
+    assert_equal(1, e.peek)
+    assert_equal([1], e.next_values)
+    assert_equal([1,2], e.peek)
+    assert_equal([1,2], e.next_values)
+  end
+
+  def test_feed
+    o = Object.new
+    def o.each(ary)
+      ary << yield
+      ary << yield
+      ary << yield
+    end
+    ary = []
+    e = o.to_enum(:each, ary)
+    e.next
+    e.feed 1
+    e.next
+    e.feed 2
+    e.next
+    e.feed 3
+    assert_raise(StopIteration) { e.next }
+    assert_equal([1,2,3], ary)
+  end
+
+  def test_feed_mixed
+    o = Object.new
+    def o.each(ary)
+      ary << yield
+      ary << yield
+      ary << yield
+    end
+    ary = []
+    e = o.to_enum(:each, ary)
+    e.next
+    e.feed 1
+    e.next
+    e.next
+    e.feed 3
+    assert_raise(StopIteration) { e.next }
+    assert_equal([1,nil,3], ary)
+  end
+
+  def test_feed_twice
+    o = Object.new
+    def o.each(ary)
+      ary << yield
+      ary << yield
+      ary << yield
+    end
+    ary = []
+    e = o.to_enum(:each, ary)
+    e.feed 1
+    assert_raise(TypeError) { e.feed 2 }
+  end
+
+  def test_feed_yielder
+    x = nil
+    e = Enumerator.new {|y| x = y.yield; 10 }
+    e.next
+    e.feed 100
+    exc = assert_raise(StopIteration) { e.next }
+    assert_equal(100, x)
+    assert_equal(10, exc.result)
+  end
+
+
 end
 

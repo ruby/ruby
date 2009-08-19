@@ -1,3 +1,23 @@
+Thu Aug 20 01:28:42 2009  Tanaka Akira  <akr@fsij.org>
+
+	* enumerator.c: implement Enumerator#{next_values,peek_values,feed}
+	  and StopIteration#result.  [ruby-dev:39109]
+	  (struct enumerator): replace no_next by stop_exc.
+	  new field feedvalue.
+	  (enumerator_mark): mark feedvalue and stop_exc.
+	  (enumerator_init): initialize feedvalue and stop_exc.
+	  (enumerator_init_copy): initialize feedvalue.
+	  (next_ii): send yield arguments as an array.  return feedvalue.
+	  (next_i): generate StopIteration exception here.  set result.
+	  (next_init): initialize feedvalue.
+	  (enumerator_next_values): new method Enumerator#next_values.
+	  (ary2sv): new function.
+	  (enumerator_peek_values): new method Enumerator#peek_values.
+	  (enumerator_feed): new method Enumerator#feed.
+	  (yielder_yield): return the yield value.
+	  (generator_each): return the iterator value.
+	  (stop_result): new method StopIteration#result.
+
 Thu Aug 20 01:06:48 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (DEFINE_STRUCT_DIRENT): use union to allocate sufficient
