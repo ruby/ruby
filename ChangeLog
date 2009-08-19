@@ -1,3 +1,7 @@
+Wed Aug 19 1:49:00 2009 Kirk Haines <khaines@ruby-lang.org>
+
+	* Backport #1232; Writes one extra byte to the buffer in order to prevent overrun.
+
 Tue Aug 4   8:53:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_c.rb: Fixed a small error in the documentation.
