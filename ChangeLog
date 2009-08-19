@@ -1,3 +1,13 @@
+Thu Aug 20 01:06:48 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (DEFINE_STRUCT_DIRENT): use union to allocate sufficient
+	  memory space for Solaris.  a patch from Naohisa GOTO
+	  <ngoto at gen-info.osaka-u.ac.jp> in [ruby-dev:39132].
+	  [ruby-dev:39062]
+
+	* configure.in (SIZEOF_STRUCT_DIRENT_TOO_SMALL): Solaris dirent
+	  check.
+
 Wed Aug 19 11:32:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/unicode.c (CodeRanges): initialized statically.

@@ -750,6 +750,10 @@ when(*)
 esac
 
 case "$target_os" in
+when(solaris*)
+		AC_DEFINE(SIZEOF_STRUCT_DIRENT_TOO_SMALL, 1)
+		LIBS="-lm $LIBS"
+		;;
 when(nextstep*)	;;
 when(openstep*)	;;
 when(rhapsody*)	;;
