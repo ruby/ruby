@@ -625,13 +625,12 @@ next_init(VALUE obj, struct enumerator *e)
  *   p e.next
  *   p e.next
  *
- *   # result
- *   # next_values      next
- *   # []               nil
- *   # [1]              1
- *   # [1, 2]           [1, 2]
- *   # [nil]            nil
- *   # [[1, 2]]         [1, 2]
+ *   ## yield args       next_values      next
+ *   #  yield            []               nil
+ *   #  yield 1          [1]              1
+ *   #  yield 1, 2       [1, 2]           [1, 2]
+ *   #  yield nil        [nil]            nil
+ *   #  yield [1, 2]     [[1, 2]]         [1, 2]
  *
  * Note that enumeration sequence by next_values method does not affect other
  * non-external enumeration methods, unless underlying iteration
