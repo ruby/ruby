@@ -228,6 +228,7 @@ module SecureRandom
   # SecureRandom.uuid generates a v4 random UUID (Universally Unique IDentifier).
   #
   #   p SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
+  #   p SecureRandom.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
   #   p SecureRandom.uuid #=> "62936e70-1815-439b-bf89-8492855a7e6b"
   #
   # The version 4 UUID is purely random (except the version).
