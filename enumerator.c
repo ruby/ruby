@@ -592,7 +592,6 @@ next_init(VALUE obj, struct enumerator *e)
     e->dst = curr;
     e->fib = rb_fiber_new(next_i, obj);
     e->lookahead = Qundef;
-    e->feedvalue = Qundef;
 }
 
 /*

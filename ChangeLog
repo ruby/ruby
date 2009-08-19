@@ -1,3 +1,7 @@
+Thu Aug 20 02:32:08 2009  Tanaka Akira  <akr@fsij.org>
+
+	* enumerator.c (next_init): don't clear feedvalue.
+
 Thu Aug 20 01:28:42 2009  Tanaka Akira  <akr@fsij.org>
 
 	* enumerator.c: implement Enumerator#{next_values,peek_values,feed}

@@ -266,6 +266,40 @@ class TestEnumerator < Test::Unit::TestCase
     assert_raise(TypeError) { e.feed 2 }
   end
 
+  def test_feed_before_first_next
+    o = Object.new
+    def o.each(ary)
+      ary << yield
+      ary << yield
+      ary << yield
+    end
+    ary = []
+    e = o.to_enum(:each, ary)
+    e.feed 1
+    e.next
+    e.next
+    assert_equal([1], ary)
+  end
+
+  def test_rewind_clear_feed
+    o = Object.new
+    def o.each(ary)
+      ary << yield
+      ary << yield
+      ary << yield
+    end
+    ary = []
+    e = o.to_enum(:each, ary)
+    e.next
+    e.feed 1
+    e.next
+    e.feed 2
+    e.rewind
+    e.next
+    e.next
+    assert_equal([1,nil], ary)
+  end
+
   def test_feed_yielder
     x = nil
     e = Enumerator.new {|y| x = y.yield; 10 }
