@@ -4456,7 +4456,7 @@ sysopen_func(void *ptr)
 }
 
 static inline int
-rb_sysopen_internal(const struct sysopen_struct *data)
+rb_sysopen_internal(struct sysopen_struct *data)
 {
     return (int)rb_thread_blocking_region(sysopen_func, data, RUBY_UBF_IO, 0);
 }
