@@ -1,3 +1,7 @@
+Thu Aug 20 23:56:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_sysopen): moved sysopen_struct from rb_sysopen_internal.
+
 Thu Aug 20 23:39:51 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* parse.y (reduce_nodes_gen): preserve NODE_FL_NEWLINE flag during

@@ -4406,7 +4406,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 }
 
 struct sysopen_struct {
-    const char *fname;
+    VALUE fname;
     int oflags;
     mode_t perm;
 #ifdef _WIN32
@@ -4414,62 +4414,76 @@ struct sysopen_struct {
 #endif
 };
 
-static VALUE
-sysopen_func(void *ptr)
-{
-    struct sysopen_struct *data = ptr;
 #ifdef _WIN32
-    if (data->wchar)
-	return (VALUE)rb_w32_wopen((WCHAR *)data->fname, data->oflags,
-				   data->perm);
-#endif
-    return (VALUE)open(data->fname, data->oflags, data->perm);
-}
-
-static int
-rb_sysopen_internal(VALUE fname, int oflags, mode_t perm)
+static rb_encoding *
+w32_utf16(void)
 {
-#ifdef _WIN32
     static rb_encoding *utf16 = (rb_encoding *)-1;
-#endif
-    struct sysopen_struct data;
-    data.fname = RSTRING_PTR(fname);
-    data.oflags = oflags;
-    data.perm = perm;
-#ifdef _WIN32
     if (utf16 == (rb_encoding *)-1) {
 	utf16 = rb_enc_find("UTF-16LE");
 	if (utf16 == rb_ascii8bit_encoding())
 	    utf16 = NULL;
     }
+    return utf16;
+}
+
+static int
+w32_conv_to_utf16(volatile VALUE *strp)
+{
+    rb_encoding *utf16 = w32_utf16();
     if (utf16) {
-	VALUE wfname = rb_str_encode(fname, rb_enc_from_encoding(utf16), 0,
-				     Qnil);
-	rb_enc_str_buf_cat(wfname, "", 1, utf16); /* workaround */
-	data.fname = RSTRING_PTR(wfname);
-	data.wchar = 1;
+	VALUE wstr = rb_str_encode(*strp, rb_enc_from_encoding(utf16), 0, Qnil);
+	rb_enc_str_buf_cat(wstr, "", 1, utf16); /* workaround */
+	*strp = wstr;
+	return 1;
     }
     else {
-	data.wchar = 0;
+	return 0;
     }
+}
 #endif
-    return (int)rb_thread_blocking_region(sysopen_func, &data, RUBY_UBF_IO, 0);
+
+static VALUE
+sysopen_func(void *ptr)
+{
+    const struct sysopen_struct *data = ptr;
+    const char *fname = RSTRING_PTR(data->fname); 
+#ifdef _WIN32
+    if (data->wchar)
+	return (VALUE)rb_w32_wopen((WCHAR *)fname, data->oflags, data->perm);
+#endif
+    return (VALUE)open(fname, data->oflags, data->perm);
+}
+
+static inline int
+rb_sysopen_internal(const struct sysopen_struct *data)
+{
+    return (int)rb_thread_blocking_region(sysopen_func, data, RUBY_UBF_IO, 0);
 }
 
 static int
 rb_sysopen(VALUE fname, int oflags, mode_t perm)
 {
     int fd;
+    struct sysopen_struct data;
 
 #ifdef O_BINARY
     oflags |= O_BINARY;
 #endif
+    data.fname = fname;
+    data.oflags = oflags;
+    data.perm = perm;
+#ifdef _WIN32
+    if ((data.wchar = w32_conv_to_utf16(&data.fname)) != 0) {
+	OBJ_FREEZE(data.fname);
+    }
+#endif
 
-    fd = rb_sysopen_internal(fname, oflags, perm);
+    fd = rb_sysopen_internal(&data);
     if (fd < 0) {
 	if (errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
-	    fd = rb_sysopen_internal(fname, oflags, perm);
+	    fd = rb_sysopen_internal(&data);
 	}
 	if (fd < 0) {
 	    rb_sys_fail(RSTRING_PTR(fname));
