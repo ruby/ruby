@@ -1,3 +1,8 @@
+Thu Aug 20 08:39:50 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* thread.c (rb_thread_terminate_all): do not ignore interrupt when
+	  reaping threads on termination.  [ruby-dev:39107]
+
 Thu Aug 20 02:32:08 2009  Tanaka Akira  <akr@fsij.org>
 
 	* enumerator.c (next_init): don't clear feedvalue.

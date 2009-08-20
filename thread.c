@@ -298,6 +298,9 @@ rb_thread_terminate_all(void)
 {
     rb_thread_t *th = GET_THREAD(); /* main thread */
     rb_vm_t *vm = th->vm;
+    VALUE einfo = vm->main_thread->errinfo;
+    int state;
+
     if (vm->main_thread != th) {
 	rb_bug("rb_thread_terminate_all: called by child thread (%p, %p)",
 	       (void *)vm->main_thread, (void *)th);
@@ -313,13 +316,14 @@ rb_thread_terminate_all(void)
 
     while (!rb_thread_alone()) {
 	PUSH_TAG();
-	if (EXEC_TAG() == 0) {
+	if ((state = EXEC_TAG()) == 0) {
 	    rb_thread_schedule();
 	}
-	else {
-	    /* ignore exception */
-	}
 	POP_TAG();
+	if (state && einfo != vm->main_thread->errinfo &&
+	    RUBY_VM_SET_INTERRUPT(vm->main_thread)) {
+	    break;
+	}
     }
     rb_thread_stop_timer_thread();
 }
