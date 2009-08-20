@@ -1,3 +1,7 @@
+Fri Aug 21 00:08:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/ri/paths.rb (RDoc::RI::Paths): Gem::Enable has been obsolete.
+
 Thu Aug 20 23:56:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_sysopen): moved sysopen_struct from rb_sysopen_internal.
