@@ -9152,8 +9152,10 @@ static struct symbols {
     ID last_id;
     st_table *sym_id;
     st_table *id_str;
+#if ENABLE_SELECTOR_NAMESPACE
     st_table *ivar2_id;
     st_table *id_ivar2;
+#endif
     VALUE op_sym[tLAST_TOKEN];
 } global_symbols = {tLAST_ID};
 
@@ -9162,6 +9164,7 @@ static const struct st_hash_type symhash = {
     rb_str_hash,
 };
 
+#if ENABLE_SELECTOR_NAMESPACE
 struct ivar2_key {
     ID id;
     VALUE klass;
@@ -9186,14 +9189,17 @@ static const struct st_hash_type ivar2_hash_type = {
     ivar2_cmp,
     ivar2_hash,
 };
+#endif
 
 void
 Init_sym(void)
 {
     global_symbols.sym_id = st_init_table_with_size(&symhash, 1000);
     global_symbols.id_str = st_init_numtable_with_size(1000);
+#if ENABLE_SELECTOR_NAMESPACE
     global_symbols.ivar2_id = st_init_table_with_size(&ivar2_hash_type, 1000);
     global_symbols.id_ivar2 = st_init_numtable_with_size(1000);
+#endif
 
     Init_id();
 }

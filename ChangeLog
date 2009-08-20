@@ -1,3 +1,7 @@
+Thu Aug 20 12:09:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (ivar2_hash_type): disabled for now.
+
 Thu Aug 20 08:39:50 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* thread.c (rb_thread_terminate_all): do not ignore interrupt when
