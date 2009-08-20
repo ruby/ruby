@@ -1,6 +1,10 @@
+Thu Augh 20 9:43:00 2009 Kirk Haines <khaines@ruby-lang.org>
+
+	* Backport #1001; Handle EBADF to fix problem with interpreter wide deadlock when native close() is called on fd which is currently being IO#select()ed.
+
 Wed Aug 19 1:49:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
-	* Backport #1232; Writes one extra byte to the buffer in order to prevent overrun.
+	* Backport #1232; Writes one extra byte to the buffer in order to prevent overrun. r24583
 
 Tue Aug 4   8:53:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
