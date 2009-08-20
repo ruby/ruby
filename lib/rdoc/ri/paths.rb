@@ -51,33 +51,7 @@ module RDoc::RI::Paths
   SITEDIR = File.join(base, "site")
   HOMEDIR = (File.expand_path("~/.#{rdoc}") rescue nil)
 
-  begin
-    require 'rubygems' unless defined?(Gem)
-
-    # HACK dup'd from Gem.latest_partials and friends
-    all_paths = []
-
-    all_paths = Gem.path.map do |dir|
-      Dir[File.join(dir, 'doc', '*', 'ri')]
-    end.flatten
-
-    ri_paths = {}
-
-    all_paths.each do |dir|
-      base = File.basename File.dirname(dir)
-      if base =~ /(.*)-((\d+\.)*\d+)/ then
-        name, version = $1, $2
-        ver = Gem::Version.new version
-        if ri_paths[name].nil? or ver > ri_paths[name][0] then
-          ri_paths[name] = [ver, dir]
-        end
-      end
-    end
-
-    GEMDIRS = ri_paths.map { |k,v| v.last }.sort
-  rescue LoadError
-    GEMDIRS = []
-  end
+  autoload(:GEMDIRS, File.expand_path('../gemdirs.rb', __FILE__))
 
   # Returns the selected documentation directories as an Array, or PATH if no
   # overriding directories were given.

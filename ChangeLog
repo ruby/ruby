@@ -1,3 +1,15 @@
+Fri Aug 21 07:25:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/ri/gemdirs.rb: split from lib/rdoc/ri/paths.rb to ge
+	  rid of loading rubygems and searching all gems always.
+
+Fri Aug 21 07:14:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_PROGRAM_VERSION, RUBY_RELEASE_DATE): extracts
+	  from version.h for cross-compiling.
+
+	* template/fake.rb.in (RUBY_VERSION, RUBY_DESCRIPTION): use above.
+
 Fri Aug 21 00:08:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/ri/paths.rb (RDoc::RI::Paths): Gem::Enable has been obsolete.
