@@ -9148,6 +9148,10 @@ static const struct {
 
 #define op_tbl_count (sizeof(op_tbl) / sizeof(op_tbl[0]))
 
+#ifndef ENABLE_SELECTOR_NAMESPACE
+#define ENABLE_SELECTOR_NAMESPACE 0
+#endif
+
 static struct symbols {
     ID last_id;
     st_table *sym_id;
