@@ -144,6 +144,7 @@ readline_event(void)
 static VALUE
 readline_get(VALUE prompt)
 {
+    rl_prep_terminal(1);
     return (VALUE)readline((char *)prompt);
 }
 
