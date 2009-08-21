@@ -640,7 +640,9 @@ us_ascii.$(OBJEXT): {$(VPATH)}us_ascii.c {$(VPATH)}regenc.h \
 unicode.$(OBJEXT): {$(VPATH)}unicode.c {$(VPATH)}regint.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}st.h {$(VPATH)}ruby.h \
-  {$(VPATH)}missing.h {$(VPATH)}intern.h
+  {$(VPATH)}missing.h {$(VPATH)}intern.h \
+  {$(VPATH)}enc/unicode/name2ctype.h
+
 utf_8.$(OBJEXT): {$(VPATH)}utf_8.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}oniguruma.h
 
@@ -678,7 +680,7 @@ srcs-enc: $(ENC_MK)
 	$(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
 
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(VPATH)}known_errors.inc \
-      $(srcdir)/revision.h $(REVISION_H)
+      $(srcdir)/revision.h $(REVISION_H) enc/unicode/name2ctype.h
 
 insns: $(INSNS)
 

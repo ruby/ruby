@@ -10486,128 +10486,7 @@ static const CaseUnfold_13_Type CaseUnfold_13[] = {
  { {0x03c9, 0x0342, 0x03b9}, {1, {0x1ff7 }}}
 };
 
-
-static PosixBracketEntryType HashEntryData[] = {
-  { (UChar* )"NEWLINE",                0,  7 },
-  { (UChar* )"Alpha",                  1,  5 },
-  { (UChar* )"Blank",                  2,  5 },
-  { (UChar* )"Cntrl",                  3,  5 },
-  { (UChar* )"Digit",                  4,  5 },
-  { (UChar* )"Graph",                  5,  5 },
-  { (UChar* )"Lower",                  6,  5 },
-  { (UChar* )"Print",                  7,  5 },
-  { (UChar* )"Punct",                  8,  5 },
-  { (UChar* )"Space",                  9,  5 },
-  { (UChar* )"Upper",                 10,  5 },
-  { (UChar* )"XDigit",                11,  6 },
-  { (UChar* )"Word",                  12,  4 },
-  { (UChar* )"Alnum",                 13,  5 },
-  { (UChar* )"ASCII",                 14,  5 },
-
-#ifdef USE_UNICODE_PROPERTIES
-  { (UChar* )"Any",                   15,  3 },
-  { (UChar* )"Assigned",              16,  8 },
-  { (UChar* )"C",                     17,  1 },
-  { (UChar* )"Cc",                    18,  2 },
-  { (UChar* )"Cf",                    19,  2 },
-  { (UChar* )"Cn",                    20,  2 },
-  { (UChar* )"Co",                    21,  2 },
-  { (UChar* )"Cs",                    22,  2 },
-  { (UChar* )"L",                     23,  1 },
-  { (UChar* )"Ll",                    24,  2 },
-  { (UChar* )"Lm",                    25,  2 },
-  { (UChar* )"Lo",                    26,  2 },
-  { (UChar* )"Lt",                    27,  2 },
-  { (UChar* )"Lu",                    28,  2 },
-  { (UChar* )"M",                     29,  1 },
-  { (UChar* )"Mc",                    30,  2 },
-  { (UChar* )"Me",                    31,  2 },
-  { (UChar* )"Mn",                    32,  2 },
-  { (UChar* )"N",                     33,  1 },
-  { (UChar* )"Nd",                    34,  2 },
-  { (UChar* )"Nl",                    35,  2 },
-  { (UChar* )"No",                    36,  2 },
-  { (UChar* )"P",                     37,  1 },
-  { (UChar* )"Pc",                    38,  2 },
-  { (UChar* )"Pd",                    39,  2 },
-  { (UChar* )"Pe",                    40,  2 },
-  { (UChar* )"Pf",                    41,  2 },
-  { (UChar* )"Pi",                    42,  2 },
-  { (UChar* )"Po",                    43,  2 },
-  { (UChar* )"Ps",                    44,  2 },
-  { (UChar* )"S",                     45,  1 },
-  { (UChar* )"Sc",                    46,  2 },
-  { (UChar* )"Sk",                    47,  2 },
-  { (UChar* )"Sm",                    48,  2 },
-  { (UChar* )"So",                    49,  2 },
-  { (UChar* )"Z",                     50,  1 },
-  { (UChar* )"Zl",                    51,  2 },
-  { (UChar* )"Zp",                    52,  2 },
-  { (UChar* )"Zs",                    53,  2 },
-  { (UChar* )"Arabic",                54,  6 },
-  { (UChar* )"Armenian",              55,  8 },
-  { (UChar* )"Bengali",               56,  7 },
-  { (UChar* )"Bopomofo",              57,  8 },
-  { (UChar* )"Braille",               58,  7 },
-  { (UChar* )"Buginese",              59,  8 },
-  { (UChar* )"Buhid",                 60,  5 },
-  { (UChar* )"Canadian_Aboriginal",   61, 19 },
-  { (UChar* )"Cherokee",              62,  8 },
-  { (UChar* )"Common",                63,  6 },
-  { (UChar* )"Coptic",                64,  6 },
-  { (UChar* )"Cypriot",               65,  7 },
-  { (UChar* )"Cyrillic",              66,  8 },
-  { (UChar* )"Deseret",               67,  7 },
-  { (UChar* )"Devanagari",            68, 10 },
-  { (UChar* )"Ethiopic",              69,  8 },
-  { (UChar* )"Georgian",              70,  8 },
-  { (UChar* )"Glagolitic",            71, 10 },
-  { (UChar* )"Gothic",                72,  6 },
-  { (UChar* )"Greek",                 73,  5 },
-  { (UChar* )"Gujarati",              74,  8 },
-  { (UChar* )"Gurmukhi",              75,  8 },
-  { (UChar* )"Han",                   76,  3 },
-  { (UChar* )"Hangul",                77,  6 },
-  { (UChar* )"Hanunoo",               78,  7 },
-  { (UChar* )"Hebrew",                79,  6 },
-  { (UChar* )"Hiragana",              80,  8 },
-  { (UChar* )"Inherited",             81,  9 },
-  { (UChar* )"Kannada",               82,  7 },
-  { (UChar* )"Katakana",              83,  8 },
-  { (UChar* )"Kharoshthi",            84, 10 },
-  { (UChar* )"Khmer",                 85,  5 },
-  { (UChar* )"Lao",                   86,  3 },
-  { (UChar* )"Latin",                 87,  5 },
-  { (UChar* )"Limbu",                 88,  5 },
-  { (UChar* )"Linear_B",              89,  8 },
-  { (UChar* )"Malayalam",             90,  9 },
-  { (UChar* )"Mongolian",             91,  9 },
-  { (UChar* )"Myanmar",               92,  7 },
-  { (UChar* )"New_Tai_Lue",           93, 11 },
-  { (UChar* )"Ogham",                 94,  5 },
-  { (UChar* )"Old_Italic",            95, 10 },
-  { (UChar* )"Old_Persian",           96, 11 },
-  { (UChar* )"Oriya",                 97,  5 },
-  { (UChar* )"Osmanya",               98,  7 },
-  { (UChar* )"Runic",                 99,  5 },
-  { (UChar* )"Shavian",              100,  7 },
-  { (UChar* )"Sinhala",              101,  7 },
-  { (UChar* )"Syloti_Nagri",         102, 12 },
-  { (UChar* )"Syriac",               103,  6 },
-  { (UChar* )"Tagalog",              104,  7 },
-  { (UChar* )"Tagbanwa",             105,  8 },
-  { (UChar* )"Tai_Le",               106,  6 },
-  { (UChar* )"Tamil",                107,  5 },
-  { (UChar* )"Telugu",               108,  6 },
-  { (UChar* )"Thaana",               109,  6 },
-  { (UChar* )"Thai",                 110,  4 },
-  { (UChar* )"Tibetan",              111,  7 },
-  { (UChar* )"Tifinagh",             112,  8 },
-  { (UChar* )"Ugaritic",             113,  8 },
-  { (UChar* )"Yi",                   114,  2 },
-#endif /* USE_UNICODE_PROPERTIES */
-  { (UChar* )NULL,                    -1,  0 }
-};
+#include "enc/unicode/name2ctype.h"
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 #define CODE_RANGES_NUM numberof(CodeRanges)
@@ -10777,33 +10656,11 @@ onigenc_utf16_32_get_ctype_code_range(OnigCtype ctype, OnigCodePoint* sb_out,
 
 #define PROPERTY_NAME_MAX_SIZE    20
 
-static st_table* NameCtypeTable;
-static int NameTableInited = 0;
-
-static int init_name_ctype_table(void)
-{
-  PosixBracketEntryType *pb;
-
-  THREAD_ATOMIC_START;
-
-  NameCtypeTable = onig_st_init_strend_table_with_size(100);
-  if (ONIG_IS_NULL(NameCtypeTable)) return ONIGERR_MEMORY;
-
-  for (pb = HashEntryData; ONIG_IS_NOT_NULL(pb->name); pb++) {
-    onig_st_insert_strend(NameCtypeTable, pb->name, pb->name + pb->len,
-			  (st_data_t )pb->ctype);
-  }
-
-  NameTableInited = 1;
-  THREAD_ATOMIC_END;
-  return 0;
-}
-
 extern int
 onigenc_unicode_property_name_to_ctype(OnigEncoding enc, UChar* name, UChar* end)
 {
   int len;
-  st_data_t ctype;
+  int ctype;
   UChar buf[PROPERTY_NAME_MAX_SIZE];
   UChar *p;
   OnigCodePoint code;
@@ -10824,14 +10681,11 @@ onigenc_unicode_property_name_to_ctype(OnigEncoding enc, UChar* name, UChar* end
 
   buf[len] = 0;
 
-  if (NameTableInited == 0)  init_name_ctype_table();
-
-  if (onig_st_lookup_strend(NameCtypeTable, buf, buf + len,
-			    &ctype) == 0) {
+  if ((ctype = uniname2ctype(buf, len)) < 0) {
     return ONIGERR_INVALID_CHAR_PROPERTY_NAME;
   }
 
-  return (int)ctype;
+  return ctype;
 }
 
 

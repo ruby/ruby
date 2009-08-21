@@ -1,0 +1,134 @@
+%{
+struct uniname2ctype_struct {
+  int name, ctype;
+};
+
+static const struct uniname2ctype_struct *uniname2ctype_p(const char *, unsigned int);
+%}
+struct uniname2ctype_struct;
+%%
+NEWLINE,                0
+Alpha,                  1
+Blank,                  2
+Cntrl,                  3
+Digit,                  4
+Graph,                  5
+Lower,                  6
+Print,                  7
+Punct,                  8
+Space,                  9
+Upper,                 10
+XDigit,                11
+Word,                  12
+Alnum,                 13
+ASCII,                 14
+#ifdef USE_UNICODE_PROPERTIES
+Any,                   15
+Assigned,              16
+C,                     17
+Cc,                    18
+Cf,                    19
+Cn,                    20
+Co,                    21
+Cs,                    22
+L,                     23
+Ll,                    24
+Lm,                    25
+Lo,                    26
+Lt,                    27
+Lu,                    28
+M,                     29
+Mc,                    30
+Me,                    31
+Mn,                    32
+N,                     33
+Nd,                    34
+Nl,                    35
+No,                    36
+P,                     37
+Pc,                    38
+Pd,                    39
+Pe,                    40
+Pf,                    41
+Pi,                    42
+Po,                    43
+Ps,                    44
+S,                     45
+Sc,                    46
+Sk,                    47
+Sm,                    48
+So,                    49
+Z,                     50
+Zl,                    51
+Zp,                    52
+Zs,                    53
+Arabic,                54
+Armenian,              55
+Bengali,               56
+Bopomofo,              57
+Braille,               58
+Buginese,              59
+Buhid,                 60
+Canadian_Aboriginal,   61
+Cherokee,              62
+Common,                63
+Coptic,                64
+Cypriot,               65
+Cyrillic,              66
+Deseret,               67
+Devanagari,            68
+Ethiopic,              69
+Georgian,              70
+Glagolitic,            71
+Gothic,                72
+Greek,                 73
+Gujarati,              74
+Gurmukhi,              75
+Han,                   76
+Hangul,                77
+Hanunoo,               78
+Hebrew,                79
+Hiragana,              80
+Inherited,             81
+Kannada,               82
+Katakana,              83
+Kharoshthi,            84
+Khmer,                 85
+Lao,                   86
+Latin,                 87
+Limbu,                 88
+Linear_B,              89
+Malayalam,             90
+Mongolian,             91
+Myanmar,               92
+New_Tai_Lue,           93
+Ogham,                 94
+Old_Italic,            95
+Old_Persian,           96
+Oriya,                 97
+Osmanya,               98
+Runic,                 99
+Shavian,              100
+Sinhala,              101
+Syloti_Nagri,         102
+Syriac,               103
+Tagalog,              104
+Tagbanwa,             105
+Tai_Le,               106
+Tamil,                107
+Telugu,               108
+Thaana,               109
+Thai,                 110
+Tibetan,              111
+Tifinagh,             112
+Ugaritic,             113
+Yi,                   114
+#endif /* USE_UNICODE_PROPERTIES */
+%%
+static int
+uniname2ctype(const UChar *name, unsigned int len)
+{
+  const struct uniname2ctype_struct *p = uniname2ctype_p((const char *)name, len);
+  if (p) return p->ctype;
+  return -1;
+}

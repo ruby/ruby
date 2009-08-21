@@ -208,6 +208,28 @@ lex.c: defs/keywords
 	  cp $@ $(srcdir)/lex.c.blt; \
 	fi
 
+NAME2CTYPE_OPTIONS = -7 -c -j1 -i1 -t -C -P -T -H uniname2ctype_hash -Q uniname2ctype_pool -N uniname2ctype_p
+
+enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
+	$(MAKEDIRS) $(@D)
+	@\
+	if cmp -s $(?:.kwd=.src) $?; then \
+	  set -x; \
+	  cp $(?:.kwd=.h.blt) $@; \
+	else \
+	  trap '$(RM) $@-1.h $@-2.h' 0 && \
+	  set -x; \
+	  sed '/^#ifdef USE_UNICODE_PROPERTIES/,/^#endif/d' $? | gperf $(NAME2CTYPE_OPTIONS) > $@-1.h && \
+	  gperf $(NAME2CTYPE_OPTIONS) < $? > $@-2.h && \
+	  diff -DUSE_UNICODE_PROPERTIES $@-1.h $@-2.h > $@.tmp; \
+	  mv $@.tmp $@ && \
+	  cp $? $(?:.kwd=.src) && \
+	  cp $@ $(?:.kwd=.h.blt); \
+	fi
+
+enc/unicode/name2ctype_prop.h: $(srcdir)/enc/unicode/name2ctype.kwd
+	$(MAKEDIRS) $(@D)
+
 .c.@OBJEXT@:
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $<
 

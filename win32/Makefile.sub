@@ -853,6 +853,10 @@ end
 lex.c: {$(srcdir)}lex.c.blt
 	copy $(?:/=\) $@
 
+enc/unicode/name2ctype.h: {$(srcdir)}enc/unicode/name2ctype.h.blt
+	$(MAKEDIRS) $(@D:/=\)
+	copy $(?:/=\) $(@:/=\)
+
 $(OBJS): {$(hdrdir)/ruby}win32.h
 
 dir.$(OBJEXT) win32.$(OBJEXT): {$(srcdir)}win32/dir.h
