@@ -30,13 +30,14 @@
  * The enumerator has with_index.
  * So ary.map.with_index works as follows.
  *
- *   p [1,2,3].map.with_index {|o, i| o+i } #=> [1, 3, 5]
+ *   p %w[foo bar baz].map.with_index {|w,i| "#{i}:#{w}" }
+ *   #=> ["0:foo", "1:bar", "2:baz"]
  *
  * An enumerator object can be used as an external iterator.
  * I.e.  Enumerator#next returns the next value of the iterator.
  * Enumerator#next raises StopIteration at end.
  *
- *   e = [1,2,3].each   # enumerator object.
+ *   e = [1,2,3].each   # returns an enumerator object.
  *   p e.next   #=> 1
  *   p e.next   #=> 2
  *   p e.next   #=> 3
