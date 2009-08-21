@@ -363,7 +363,7 @@ code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc ARG_UNUSED)
     }
 
     *p++ = UTF8_TRAIL0(code);
-    return p - buf;
+    return (int)(p - buf);
   }
 }
 
