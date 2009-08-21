@@ -3989,7 +3989,7 @@ rb_io_modestr_fmode(const char *modestr)
     if ((fmode & FMODE_BINMODE) && (fmode & FMODE_TEXTMODE))
         goto error;
     if (p && io_encname_bom_p(p, 0))
-	fmode |= FMODE_STRIP_BOM;
+	fmode |= FMODE_SETENC_BY_BOM;
 
     return fmode;
 }
@@ -4334,7 +4334,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
             has_enc = 1;
             parse_mode_enc(p+1, &enc, &enc2);
 	    if (io_encname_bom_p(p+1, 0))
-		fmode |= FMODE_STRIP_BOM;
+		fmode |= FMODE_SETENC_BY_BOM;
         }
 	else {
 	    rb_encoding *e;
@@ -4634,7 +4634,7 @@ rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode, convconfig
     fptr->pathv = rb_str_new_frozen(filename);
     fptr->fd = rb_sysopen(fptr->pathv, oflags, perm);
     io_check_tty(fptr);
-    if (fmode & FMODE_STRIP_BOM) io_set_encoding_by_bom(io);
+    if (fmode & FMODE_SETENC_BY_BOM) io_set_encoding_by_bom(io);
 
     return io;
 }
@@ -6400,7 +6400,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     else if (fileno(stderr) == fd)
 	fp->stdio_file = stderr;
 
-    if (fmode & FMODE_STRIP_BOM) io_set_encoding_by_bom(io);
+    if (fmode & FMODE_SETENC_BY_BOM) io_set_encoding_by_bom(io);
     return io;
 }
 
