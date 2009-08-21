@@ -4049,6 +4049,7 @@ rb_check_deadlock(rb_vm_t *vm)
 	printf("%d %d %p %p\n", vm->living_threads->num_entries, vm->sleeper, GET_THREAD(), vm->main_thread);
 	st_foreach(vm->living_threads, debug_i, (st_data_t)0);
 #endif
+	vm->sleeper--;
 	rb_threadptr_raise(vm->main_thread, 2, argv);
     }
 }

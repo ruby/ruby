@@ -1,3 +1,9 @@
+Sat Aug 22 00:03:19 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (rb_check_deadlock): decrease number of sleepers before
+	  deadlock detection because the deadlock exception makes main thread
+	  run.  [ruby-dev:39142]
+
 Fri Aug 21 22:34:58 2009  Tanaka Akira  <akr@fsij.org>
 
 	* enumerator.c (get_next_values): extracted from
