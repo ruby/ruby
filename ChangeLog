@@ -1,3 +1,10 @@
+Thu Aug 20 01:24:55 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (rb_io_fmode_modestr): change modestr syntax for BOM
+	  to "BOM|UTF-*". [ruby-dev:39106]
+
+	* io.c (parse_mode_enc): ditto.
+
 Fri Aug 21 15:01:35 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_readline): use rb_prep_terminal

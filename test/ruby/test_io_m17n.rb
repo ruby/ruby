@@ -1699,7 +1699,7 @@ EOT
         path = '%s-bom.txt' % name
         content = text.encode(name)
         generate_file(path, content)
-        result = File.read(path, mode: 'rb:utf-7-bom')
+        result = File.read(path, mode: 'rb:BOM|UTF-8')
         assert_equal(content[1].force_encoding("ascii-8bit"),
                      result.force_encoding("ascii-8bit"))
       end

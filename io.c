@@ -3938,17 +3938,11 @@ rb_io_fmode_modestr(int fmode)
 static int
 io_encname_bom_p(const char *name, long len)
 {
-    if (len) {
-	if (len > 4 && STRNCASECMP(name + len - 4, "-bom", 4) == 0)
-	    return 1;
-    }
-    else {
+    if (!len) {
 	const char *p = strchr(name, ':');
-	if (!p) p = name + strlen(name);
-	if (p - name > 4 && STRNCASECMP(p - 4, "-bom", 4) == 0)
-	    return 1;
+	len = p ? p - name : strlen(name);
     }
-    return 0;
+    return len > 8 && STRNCASECMP(name, "bom|utf-", 8) == 0;
 }
 
 int
@@ -4147,7 +4141,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p)
 	    idx = -1;
 	else {
 	    if (io_encname_bom_p(estr, len))
-		len -= 4;
+		estr += 4;
 	    memcpy(encname, estr, len);
 	    encname[len] = '\0';
 	    estr = encname;
@@ -4157,7 +4151,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p)
     else {
 	long len = strlen(estr);
 	if (io_encname_bom_p(estr, len)) {
-	    len -= 4;
+	    estr += 4;
 	    memcpy(encname, estr, len);
 	    encname[len] = '\0';
 	    estr = encname;
@@ -5481,9 +5475,9 @@ check_pipe_command(VALUE filename_or_command)
  *  read string will be tagged by the encoding in reading,
  *  and output string will be converted
  *  to the specified encoding in writing.
- *  If ext_enc ends with '-bom', check whether the input has a BOM. If
+ *  If ext_enc starts with 'BOM|', check whether the input has a BOM. If
  *  there is a BOM, strip it and set external encoding as
- *  what the BOM tells. If there is no BOM, use ext_enc without '-bom'.
+ *  what the BOM tells. If there is no BOM, use ext_enc without 'BOM|'.
  *  If two encoding names,
  *  ext_enc and int_enc (external encoding and internal encoding),
  *  are specified, the read string is converted from ext_enc
