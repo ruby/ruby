@@ -144,7 +144,6 @@ readline_event(void)
 static VALUE
 readline_get(VALUE prompt)
 {
-    rl_prep_terminal(1);
     return (VALUE)readline((char *)prompt);
 }
 
@@ -250,6 +249,9 @@ readline_readline(int argc, VALUE *argv, VALUE self)
 
     if (!isatty(0) && errno == EBADF) rb_raise(rb_eIOError, "closed stdin");
 
+#ifdef _WIN32
+    rl_prep_terminal(1);
+#endif
     buff = (char*)rb_protect(readline_get, (VALUE)prompt, &status);
     if (status) {
 #if defined HAVE_RL_CLEANUP_AFTER_SIGNAL
