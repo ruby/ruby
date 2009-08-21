@@ -680,7 +680,7 @@ enumerator_next_values(VALUE obj)
 }
 
 static VALUE
-ary2sv(VALUE args)
+ary2sv(VALUE args, int dup)
 {
     if (TYPE(args) != T_ARRAY)
         return args;
@@ -693,6 +693,8 @@ ary2sv(VALUE args)
         return RARRAY_PTR(args)[0];
 
       default:
+        if (dup)
+            return rb_ary_dup(args);
         return args;
     }
 }
@@ -715,7 +717,18 @@ static VALUE
 enumerator_next(VALUE obj)
 {
     VALUE vs = enumerator_next_values(obj);
-    return ary2sv(vs);
+    return ary2sv(vs, 0);
+}
+
+static VALUE
+enumerator_peek_values(VALUE obj)
+{
+    struct enumerator *e = enumerator_ptr(obj);
+
+    if (e->lookahead == Qundef) {
+        e->lookahead = get_next_values(obj, e);
+    }
+    return e->lookahead;
 }
 
 /*
@@ -744,14 +757,9 @@ enumerator_next(VALUE obj)
  */
 
 static VALUE
-enumerator_peek_values(VALUE obj)
+enumerator_peek_values_m(VALUE obj)
 {
-    struct enumerator *e = enumerator_ptr(obj);
-
-    if (e->lookahead == Qundef) {
-        e->lookahead = get_next_values(obj, e);
-    }
-    return e->lookahead;
+    return rb_ary_dup(enumerator_peek_values(obj));
 }
 
 /*
@@ -768,7 +776,7 @@ static VALUE
 enumerator_peek(VALUE obj)
 {
     VALUE vs = enumerator_peek_values(obj);
-    return ary2sv(vs);
+    return ary2sv(vs, 1);
 }
 
 /*
@@ -1153,7 +1161,7 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "with_index", enumerator_with_index, -1);
     rb_define_method(rb_cEnumerator, "with_object", enumerator_with_object, 1);
     rb_define_method(rb_cEnumerator, "next_values", enumerator_next_values, 0);
-    rb_define_method(rb_cEnumerator, "peek_values", enumerator_peek_values, 0);
+    rb_define_method(rb_cEnumerator, "peek_values", enumerator_peek_values_m, 0);
     rb_define_method(rb_cEnumerator, "next", enumerator_next, 0);
     rb_define_method(rb_cEnumerator, "peek", enumerator_peek, 0);
     rb_define_method(rb_cEnumerator, "feed", enumerator_feed, 1);

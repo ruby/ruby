@@ -141,6 +141,28 @@ class TestEnumerator < Test::Unit::TestCase
     assert_raise(StopIteration) { e.peek }
   end
 
+  def test_peek_modify
+    o = Object.new
+    def o.each
+      yield 1,2
+    end
+    e = o.to_enum
+    a = e.peek
+    a << 3
+    assert_equal([1,2], e.peek)
+  end
+
+  def test_peek_values_modify
+    o = Object.new
+    def o.each
+      yield 1,2
+    end
+    e = o.to_enum
+    a = e.peek_values
+    a << 3
+    assert_equal([1,2], e.peek)
+  end
+
   def test_next_after_stopiteration
     a = [1]
     e = a.each

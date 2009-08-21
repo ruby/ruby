@@ -1,3 +1,12 @@
+Sat Aug 22 00:48:08 2009  Tanaka Akira  <akr@fsij.org>
+
+	* enumerator.c (ary2sv): add dup argument.
+	  (enumerator_next): call ary2sv with dup=0.
+	  (enumerator_peek): call ary2sv with dup=1 to return duplicated array.
+	  (enumerator_peek_values_m): new function to return duplicated array.
+	  (Init_Enumerator): use enumerator_peek_values_m as
+	  Enumerator#peek_value.
+
 Sat Aug 22 00:03:19 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (rb_check_deadlock): decrease number of sleepers before
