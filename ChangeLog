@@ -1,3 +1,10 @@
+Fri Aug 21 22:34:58 2009  Tanaka Akira  <akr@fsij.org>
+
+	* enumerator.c (get_next_values): extracted from
+	  enumerator_next_values.
+	  (enumerator_next_values): use get_next_values.
+	  (enumerator_peek_values): ditto.
+
 Fri Aug 21 17:01:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/unicode/name2ctype.h: split from enc/unicode.c and made a

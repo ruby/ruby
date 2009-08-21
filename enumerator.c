@@ -594,6 +594,31 @@ next_init(VALUE obj, struct enumerator *e)
     e->lookahead = Qundef;
 }
 
+static VALUE
+get_next_values(VALUE obj, struct enumerator *e)
+{
+    VALUE curr, vs;
+
+    if (e->stop_exc)
+	rb_exc_raise(e->stop_exc);
+
+    curr = rb_fiber_current();
+
+    if (!e->fib || !rb_fiber_alive_p(e->fib)) {
+	next_init(obj, e);
+    }
+
+    vs = rb_fiber_resume(e->fib, 1, &curr);
+    if (e->stop_exc) {
+	e->fib = 0;
+	e->dst = Qnil;
+	e->lookahead = Qundef;
+	e->feedvalue = Qundef;
+	rb_exc_raise(e->stop_exc);
+    }
+    return vs;
+}
+
 /*
  * call-seq:
  *   e.next_values   => array
@@ -642,32 +667,15 @@ static VALUE
 enumerator_next_values(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
-    VALUE curr, v;
+    VALUE vs;
 
     if (e->lookahead != Qundef) {
-        v = e->lookahead;
+        vs = e->lookahead;
         e->lookahead = Qundef;
-        return v;
+        return vs;
     }
 
-    if (e->stop_exc)
-	rb_exc_raise(e->stop_exc);
-
-    curr = rb_fiber_current();
-
-    if (!e->fib || !rb_fiber_alive_p(e->fib)) {
-	next_init(obj, e);
-    }
-
-    v = rb_fiber_resume(e->fib, 1, &curr);
-    if (e->stop_exc) {
-	e->fib = 0;
-	e->dst = Qnil;
-	e->lookahead = Qundef;
-	e->feedvalue = Qundef;
-	rb_exc_raise(e->stop_exc);
-    }
-    return v;
+    return get_next_values(obj, e);
 }
 
 static VALUE
@@ -738,16 +746,11 @@ static VALUE
 enumerator_peek_values(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
-    VALUE v;
 
-    if (e->lookahead != Qundef) {
-        v = e->lookahead;
-        return v;
+    if (e->lookahead == Qundef) {
+        e->lookahead = get_next_values(obj, e);
     }
-
-    v = enumerator_next_values(obj);
-    e->lookahead = v;
-    return v;
+    return e->lookahead;
 }
 
 /*
