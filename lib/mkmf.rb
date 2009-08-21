@@ -194,11 +194,13 @@ class Array
 end
 
 def rm_f(*files)
-  FileUtils.rm_f(Dir[*files])
+  opt = ([files.pop] if Hash === files.last)
+  FileUtils.rm_f(Dir[*files], *opt)
 end
 
 def rm_rf(*files)
-  FileUtils.rm_rf(Dir[*files])
+  opt = ([files.pop] if Hash === files.last)
+  FileUtils.rm_rf(Dir[*files], *opt)
 end
 
 # Returns time stamp of the +target+ file if it exists and is newer
