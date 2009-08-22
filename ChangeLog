@@ -1,3 +1,8 @@
+Sat Aug 22 12:08:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit.run=, Test::Unit.run?): fixed rdoc.
+	  [ruby-core:25034]
+
 Fri Aug 14 19:57:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/curses/curses.c ({curses,window}_addstr),
