@@ -26,8 +26,8 @@
  * - Enumerator.new
  *
  * Also, most iteration methods without a block returns an enumerator.
- * For example, Array#map returns an enumerator if no block given.
- * The enumerator has with_index.
+ * For example, Array#map returns an enumerator if a block is not given.
+ * The enumerator has the with_index method.
  * So ary.map.with_index works as follows.
  *
  *   p %w[foo bar baz].map.with_index {|w,i| "#{i}:#{w}" }
@@ -52,7 +52,7 @@
  *       rescue StopIteration
  *         return $!.result
  *       end
- *       y = yield *vs
+ *       y = yield(*vs)
  *       e.feed y
  *     end
  *   end
@@ -60,7 +60,7 @@
  *   o = Object.new
  *   def o.each
  *     p yield
- *     p yield 1
+ *     p yield(1)
  *     p yield(1, 2)
  *   3
  *   end
@@ -69,7 +69,7 @@
  *   p o.each {|*x| p x; [:b, *x] }
  *   #=> [], [:b], [1], [:b, 1], [1, 2], [:b, 1, 2], 3
  *
- *   # convert o.each to an external external iterator for
+ *   # convert o.each to an external iterator for
  *   # implementing an internal iterator.
  *   p ext_each(o.to_enum) {|*x| p x; [:b, *x] }
  *   #=> [], [:b], [1], [:b, 1], [1, 2], [:b, 1, 2], 3 
@@ -707,6 +707,13 @@ ary2sv(VALUE args, int dup)
  * position forward.  When the position reached at the end, StopIteration
  * is raised.
  *
+ *   a = [1,2,3]
+ *   e = a.to_enum
+ *   p e.next   #=> 1
+ *   p e.next   #=> 2
+ *   p e.next   #=> 3
+ *   p e.next   #raises StopIteration
+ *
  * Note that enumeration sequence by next method does not affect other
  * non-external enumeration methods, unless underlying iteration
  * methods itself has side-effect, e.g. IO#each_line.
@@ -749,6 +756,7 @@ enumerator_peek_values(VALUE obj)
  *   p e.peek_values    #=> []
  *   e.next  
  *   p e.peek_values    #=> [1]
+ *   p e.peek_values    #=> [1]
  *   e.next  
  *   p e.peek_values    #=> [1, 2]
  *   e.next  
@@ -770,6 +778,16 @@ enumerator_peek_values_m(VALUE obj)
  * position forward.  When the position reached at the end, StopIteration
  * is raised.
  *
+ *   a = [1,2,3]
+ *   e = a.to_enum
+ *   p e.next   #=> 1
+ *   p e.peek   #=> 2
+ *   p e.peek   #=> 2
+ *   p e.peek   #=> 2
+ *   p e.next   #=> 2
+ *   p e.next   #=> 3
+ *   p e.next   #raises StopIteration
+ *
  */
 
 static VALUE
@@ -785,21 +803,33 @@ enumerator_peek(VALUE obj)
  *
  * Set the value for the next yield in the enumerator returns.
  *
- * If the value is not set, yield returns nil.
+ * If the value is not set, the yield returns nil.
  *
  * This value is cleared after used.
  *
  *   o = Object.new
  *   def o.each
- *     p yield          #=> 1
- *     p yield          #=> nil
- *     p yield
+ *     # (2)
+ *     x = yield               
+ *     p x          #=> "foo"
+ *     # (5)
+ *     x = yield                 
+ *     p x          #=> nil
+ *     # (7)
+ *     x = yield
+ *     # not reached
+ *     p x
  *   end
  *   e = o.to_enum
+ *   # (1)
  *   e.next
- *   e.feed 1
+ *   # (3)
+ *   e.feed "foo"
+ *   # (4)
  *   e.next
+ *   # (6)
  *   e.next
+ *   # (8)
  *
  */
 
@@ -1113,7 +1143,6 @@ generator_each(VALUE obj)
  *   stopiteration.result       => value
  *
  * Returns the return value of the iterator.
- *
  *
  *   o = Object.new
  *   def o.each
