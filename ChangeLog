@@ -1,3 +1,9 @@
+Sun Aug 23 00:56:13 2009  Tanaka Akira  <akr@fsij.org>
+
+	* thread.c (rb_thread_schedule): don't recur infinitely.
+	  (rb_threadptr_execute_interrupts): ditto.
+	  [ruby-dev:38060]
+
 Sat Aug 22 15:07:23 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/syck/rubyext.c (id_hash_new): new function to create a hash
