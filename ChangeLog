@@ -4,7 +4,7 @@ Sat Aug 22 15:07:23 2009  Tanaka Akira  <akr@fsij.org>
 	  which key is compared by object id.
 	  (syck_emitter_reset): use id_hash_new for bonus->data.
 
-	* lib/yaml.rb (YAML.quick_emit): give the object itself to eimitter.
+	* lib/yaml.rb (YAML.quick_emit): give the object itself to emitter.
 	  don't use object_id and hash.
 
 Sat Aug 22 13:05:22 2009  NARUSE, Yui  <naruse@ruby-lang.org>
@@ -88,7 +88,7 @@ Thu Aug 20 23:39:51 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 Thu Aug 20 14:39:47 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_get): add rl_prep_terminal(1).
-	  insited by jitte [ruby-list:43546]
+	  incited by jitte [ruby-list:43546]
 
 Thu Aug 20 12:09:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -311,7 +311,7 @@ Fri Aug 14 20:03:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* include/ruby/ruby.h (rb_check_safe_str): deprecated.
 
 	* ext/openssl/ossl_x509store.c (ossl_x509store_add_{file,path}):
-	  replaced deprecated funtion.
+	  replaced deprecated function.
 
 Fri Aug 14 17:59:12 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -392,7 +392,7 @@ Wed Aug 12 15:52:04 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* class.c (rb_define_module_id_under): fix the name.
 
-	* class.c (rb_define_module_under): fix for prevvious changes.
+	* class.c (rb_define_module_under): fix for previous changes.
 
 Wed Aug 12 15:32:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -1332,7 +1332,7 @@ Sat Jul 18 00:23:47 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	* ext/readline/readline.c (Init_readline): rl_catch_signals does
 	  not exist on some platform like Mac OS X 10.5.
 
-	* ext/readline/extconf.rb: checks existance of rl_catch_signals.
+	* ext/readline/extconf.rb: checks existence of rl_catch_signals.
 
 Fri Jul 17 22:37:22 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -1348,7 +1348,7 @@ Fri Jul 17 22:29:21 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* ext/readline/readline.c (Init_readline): use rl_catch_sigwinch only
 	  when existing.
 
-	* ext/readline/extconf.rb: check existance of rl_catch_sigwinch, and
+	* ext/readline/extconf.rb: check existence of rl_catch_sigwinch, and
 	  workaround for native Win32 readline port.
 
 Fri Jul 17 18:18:23 2009  Tanaka Akira  <akr@fsij.org>
@@ -3644,7 +3644,7 @@ Sat May  9 19:23:46 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Sat May  9 12:19:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* hash.c: 3rd arguemnt of rb_hash_foreach() is VALUE.
+	* hash.c: 3rd argument of rb_hash_foreach() is VALUE.
 
 	* hash.c (rb_any_hash, recursive_hash): use VALUE for hash.
 
@@ -3655,10 +3655,10 @@ Sat May  9 11:14:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri May  8 19:38:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* lib/mkmf.rb (try_link0): removes waste dSYM directories lef
+	* lib/mkmf.rb (try_link0): removes waste dSYM directories left
 	  when debug and universal-binary are enabled.
 
-	* lib/mkmf.rb (check_sizeof): fixed wrong recuring result for
+	* lib/mkmf.rb (check_sizeof): fixed wrong recurring result for
 	  intrinsic types.
 
 Fri May  8 10:14:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -3769,7 +3769,7 @@ Fri May  1 16:50:05 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 Fri May  1 16:44:11 2009  Akinori MUSHA  <knu@iDaemons.org>
 
-	* lib/set.rb (SortedSet#add): Do not let an uncomparable object
+	* lib/set.rb (SortedSet#add): Do not let an incomparable object
 	  in. [Bug #118]
 
 Fri May  1 13:18:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -51711,7 +51711,7 @@ Sat Aug  6 12:35:24 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk/{label,radiobutton}.rb: removed its own
 	  {variable,textvariable} function.
 
-	* ext/tk/lib/tk/variable.rb: retains backward conpatibility.
+	* ext/tk/lib/tk/variable.rb: retains backward compatibility.
 
 Fri Aug  5 12:48:31 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
@@ -51721,7 +51721,7 @@ Fri Aug  5 12:48:31 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Fri Aug  5 12:36:40 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* lib/mkmf.rb (create_makefile): need to convert path separetor
+	* lib/mkmf.rb (create_makefile): need to convert path separator
 	  before invoking install command.
 
 Fri Aug  5 08:08:05 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -51776,7 +51776,7 @@ Thu Aug  4 18:38:36 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/toplevel.rb: ditto.
 
-	* ext/tk/lib/tkextlib/SUPPRT_STATUS: update RELEASE_DATE
+	* ext/tk/lib/tkextlib/SUPPORT_STATUS: update RELEASE_DATE
 
 Thu Aug  4 13:30:15 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -51804,7 +51804,7 @@ Thu Aug  4 00:24:59 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Wed Aug  3 21:59:16 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/variable.rb: TkVariable#trace didn't work on
-	  TkVariable retrived from TkVariable.new_hash.ref. [ruby-dev:26721]
+	  TkVariable retrieved from TkVariable.new_hash.ref. [ruby-dev:26721]
 
 Wed Aug  3 12:40:28 2005  Tadashi Saito  <shiba@mail2.accsnet.ne.jp>
 
@@ -51918,12 +51918,12 @@ Thu Jul 28 18:09:55 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  init cost of Tk's MainWindow is not so small. And that makes it
 	  impossible to use libraries written with Tcl functions only on
 	  an environment without a graphical display. This changes support
-	  delaying initalization of Tk_Stubs until the script needs Tk.
+	  delaying initialization of Tk_Stubs until the script needs Tk.
 
 	* ext/tk/stubs.h: New file. Define prototypes and return codes of
 	  functions on stubs.c.
 
-	* ext/tk/tcltklib.c: Support delaying initalization of Tk_Stubs
+	* ext/tk/tcltklib.c: Support delaying initialization of Tk_Stubs
 	  until the script needs Tk.
 
 	* ext/tk/tcltklib.c: Show friendly error messages for errors on
@@ -51937,7 +51937,7 @@ Thu Jul 28 18:09:55 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  of encoding.
 
 	* ext/tk/lib/multi-tk.rb: MultiTkIp#eval_string and bg_eval_string
-	  don't work propery.
+	  don't work properly.
 
 	* ext/tk/lib/tk.rb: Forget extending Tk::Encoding module to Tk.
 
@@ -52038,7 +52038,7 @@ Tue Jul 26 18:11:33 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Jul 26 12:57:40 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* ext/openssl/openssl_missin.c: include <openssl/engine.h> before
+	* ext/openssl/openssl_missing.c: include <openssl/engine.h> before
 	  <openssl/x509_vfy.h> to avoid compilation error of mswin32.
 	  suggested by NAKAMURA Usaku.
 
@@ -52177,7 +52177,7 @@ Wed Jul 20 18:07:11 2005  Tanaka Akira  <akr@m17n.org>
 Wed Jul 20 10:04:51 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_class_path): need to adjust snprintf() len for
-	  teminating NUL.  [ruby-dev:26581]
+	  terminating NUL.  [ruby-dev:26581]
 
 Wed Jul 20 03:58:52 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
