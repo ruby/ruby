@@ -1,10 +1,8 @@
-Sat Aug 22 13:46:15 2009  Tanaka Akira  <akr@fsij.org>
+Sat Aug 22 15:07:23 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/syck/rubyext.c (id_hash_new): new function to create a hash
 	  which key is compared by object id.
-	  (syck_parser_load): use id_hash_new for bonus->data.
-	  (syck_parser_load_documents): ditto.
-	  (syck_emitter_reset): ditto.
+	  (syck_emitter_reset): use id_hash_new for bonus->data.
 
 	* lib/yaml.rb (YAML.quick_emit): give the object itself to eimitter.
 	  don't use object_id and hash.

@@ -837,15 +837,6 @@ syck_parser_bufsize_get(VALUE self)
     return INT2FIX( parser->bufsize );
 }
 
-static VALUE
-id_hash_new(void)
-{
-    VALUE hash;
-    hash = rb_hash_new();
-    rb_funcall(hash, rb_intern("compare_by_identity"), 0);
-    return hash;
-}
-
 /*
  * YAML::Syck::Parser.load( IO or String )
  */
@@ -865,7 +856,7 @@ syck_parser_load(int argc, VALUE *argv, VALUE self)
 
     bonus = (struct parser_xtra *)parser->bonus;
     bonus->taint = syck_parser_assign_io(parser, &port);
-    bonus->data = id_hash_new();
+    bonus->data = rb_hash_new();
     bonus->resolver = rb_attr_get( self, s_resolver );
     if ( NIL_P( proc ) ) bonus->proc = 0;
     else                 bonus->proc = proc;
@@ -898,7 +889,7 @@ syck_parser_load_documents(int argc, VALUE *argv, VALUE self)
     while ( 1 )
     {
         /* Reset hash for tracking nodes */
-        bonus->data = id_hash_new();
+        bonus->data = rb_hash_new();
 
         /* Parse a document */
         v = syck_parse( parser );
@@ -1945,6 +1936,15 @@ syck_emitter_s_alloc(VALUE class)
 
     rb_ivar_set( pobj, s_out, rb_funcall( cOut, s_new, 1, pobj ) );
     return pobj;
+}
+
+static VALUE
+id_hash_new(void)
+{
+    VALUE hash;
+    hash = rb_hash_new();
+    rb_funcall(hash, rb_intern("compare_by_identity"), 0);
+    return hash;
 }
 
 /*
