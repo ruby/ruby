@@ -62,7 +62,7 @@
  *     p yield
  *     p yield(1)
  *     p yield(1, 2)
- *   3
+ *     3
  *   end
  *
  *   # use o.each as an internal iterator directly.
