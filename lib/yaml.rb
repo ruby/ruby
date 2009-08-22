@@ -384,10 +384,6 @@ module YAML
             else
                 emitter.reset( opts )
             end
-        oid =
-            case oid when Fixnum, NilClass; oid
-            else oid = "#{oid.object_id}-#{oid.hash}"
-            end
         out.emit( oid, &e )
 	end
 

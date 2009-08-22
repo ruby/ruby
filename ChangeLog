@@ -1,3 +1,14 @@
+Sat Aug 22 13:46:15 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/syck/rubyext.c (id_hash_new): new function to create a hash
+	  which key is compared by object id.
+	  (syck_parser_load): use id_hash_new for bonus->data.
+	  (syck_parser_load_documents): ditto.
+	  (syck_emitter_reset): ditto.
+
+	* lib/yaml.rb (YAML.quick_emit): give the object itself to eimitter.
+	  don't use object_id and hash.
+
 Sat Aug 22 13:05:22 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* Makefile.in: use CP and MV macros.
