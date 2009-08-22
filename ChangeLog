@@ -1,3 +1,7 @@
+Sat Aug 22 13:05:22 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* Makefile.in: use CP and MV macros.
+
 Sat Aug 22 01:29:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (rm_f, rm_rf): pass the last hash through if exists.

@@ -136,7 +136,7 @@ all:
 .NOEXPORT:
 
 miniruby$(EXEEXT):
-		@-if test -f $@; then mv -f $@ $@.old; $(RM) $@.old; fi
+		@-if test -f $@; then $(MV) -f $@ $@.old; $(RM) $@.old; fi
 		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(ARCHFILE) $(LIBS) $(OUTFLAG)$@
 
 $(PROGRAM):
@@ -199,13 +199,13 @@ lex.c: defs/keywords
 	@\
 	if cmp -s $(srcdir)/defs/lex.c.src $?; then \
 	  set -x; \
-	  cp $(srcdir)/lex.c.blt $@; \
+	  $(CP) $(srcdir)/lex.c.blt $@; \
 	else \
 	  set -x; \
 	  gperf -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? > $@.tmp && \
-	  mv $@.tmp $@ && \
-	  cp $? $(srcdir)/defs/lex.c.src && \
-	  cp $@ $(srcdir)/lex.c.blt; \
+	  $(MV) $@.tmp $@ && \
+	  $(CP) $? $(srcdir)/defs/lex.c.src && \
+	  $(CP) $@ $(srcdir)/lex.c.blt; \
 	fi
 
 NAME2CTYPE_OPTIONS = -7 -c -j1 -i1 -t -C -P -T -H uniname2ctype_hash -Q uniname2ctype_pool -N uniname2ctype_p
@@ -215,16 +215,16 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	@\
 	if cmp -s $(?:.kwd=.src) $?; then \
 	  set -x; \
-	  cp $(?:.kwd=.h.blt) $@; \
+	  $(CP) $(?:.kwd=.h.blt) $@; \
 	else \
 	  trap '$(RM) $@-1.h $@-2.h' 0 && \
 	  set -x; \
 	  sed '/^#ifdef USE_UNICODE_PROPERTIES/,/^#endif/d' $? | gperf $(NAME2CTYPE_OPTIONS) > $@-1.h && \
 	  gperf $(NAME2CTYPE_OPTIONS) < $? > $@-2.h && \
 	  diff -DUSE_UNICODE_PROPERTIES $@-1.h $@-2.h > $@.tmp; \
-	  mv $@.tmp $@ && \
-	  cp $? $(?:.kwd=.src) && \
-	  cp $@ $(?:.kwd=.h.blt); \
+	  $(MV) $@.tmp $@ && \
+	  $(CP) $? $(?:.kwd=.src) && \
+	  $(CP) $@ $(?:.kwd=.h.blt); \
 	fi
 
 enc/unicode/name2ctype_prop.h: $(srcdir)/enc/unicode/name2ctype.kwd
