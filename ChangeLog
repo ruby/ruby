@@ -1,3 +1,8 @@
+Sun Aug 23 15:12:22 2009  Tanaka Akira  <akr@fsij.org>
+
+	* bootstraptest/runner.rb (Dir.mktmpdir): updated to latest.
+	  (in_temporary_working_directory): temporary directory name changed.
+	  
 Sun Aug 23 00:56:13 2009  Tanaka Akira  <akr@fsij.org>
 
 	* thread.c (rb_thread_schedule): don't recur infinitely.
@@ -10624,6 +10629,7 @@ Sun Dec 14 12:51:48 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	* random.c (rb_rand_internal): used by Bignum#*.
 
 	* test/ruby/test_bignum.rb: add some tests for above.
+
 Sun Dec 14 01:35:48 2008  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (forked_child): new variable.
