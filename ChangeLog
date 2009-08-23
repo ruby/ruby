@@ -1,3 +1,7 @@
+Sun Aug 23 15:22:45 2009  Tanaka Akira  <akr@fsij.org>
+
+	* bootstraptest/runner.rb (main): "usage" description updated.
+
 Sun Aug 23 15:12:22 2009  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (Dir.mktmpdir): updated to latest.
