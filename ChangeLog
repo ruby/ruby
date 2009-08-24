@@ -1,3 +1,9 @@
+Mon Aug 24 13:24:07 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (MAKEDIRS): define.
+
+	* common.mk (capi): using $(MAKEDIRS), so depends on $(PREP).
+
 Mon Aug 24 13:14:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_CHECK_SIZEOF): set cross_compiling only when
