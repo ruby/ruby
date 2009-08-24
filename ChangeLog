@@ -1,3 +1,8 @@
+Mon Aug 24 13:14:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CHECK_SIZEOF): set cross_compiling only when
+	  universal binary.
+
 Mon Aug 24 12:55:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (enc/unicode/name2ctype.h): use md instead of

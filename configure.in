@@ -385,10 +385,10 @@ esac
 AC_CHECK_TYPES([long long, off_t])
 
 AC_CACHE_CHECK([char bit], [rb_cv_char_bit],
-    [cross_compiling=yes
+    [test "$universal_binary" = yes && cross_compiling=yes
     AC_COMPUTE_INT([rb_cv_char_bit], [CHAR_BIT],
 	[AC_INCLUDES_DEFAULT([@%:@include <limits.h>])], [rb_cv_char_bit=8])
-    cross_compiling=$real_cross_compiling])
+    test "$universal_binary" = yes && cross_compiling=$real_cross_compiling])
 
 dnl RUBY_CHECK_SIZEOF [typename], [maybe same size types], [macros], [include]
 AC_DEFUN([RUBY_CHECK_SIZEOF],
@@ -433,7 +433,7 @@ static ac__type_sizeof_ *rbcv_ptr;
     m4_ifval([$2][$3], [case "${AS_TR_SH(ac_cv_sizeof_$1)}" in
     when([SIZEOF_*]);;
     when(*)])
-    cross_compiling=yes
+    test "$universal_binary" = yes && cross_compiling=yes
     AC_COMPUTE_INT([t], AS_TR_CPP(SIZEOF_$1), [AC_INCLUDES_DEFAULT([$4])]
 [${cond+$cond
 @%:@else}
@@ -442,7 +442,7 @@ ${cond+@%:@endif}
 @%:@ifndef AS_TR_CPP(SIZEOF_$1)
 @%:@define AS_TR_CPP(SIZEOF_$1) 0
 @%:@endif], [t=0])
-    cross_compiling=$real_cross_compiling
+    test "$universal_binary" = yes && cross_compiling=$real_cross_compiling
     if test ${t-0} != 0; then
 	AS_TR_SH(ac_cv_sizeof_$1)="${AS_TR_SH(ac_cv_sizeof_$1)+${AS_TR_SH(ac_cv_sizeof_$1)-} }${t}"
     fi
