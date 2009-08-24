@@ -1,3 +1,10 @@
+Mon Aug 24 16:35:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c (st_delete_safe): deals with packed entries.
+	  [ruby-core:25080]
+
+	* st.c (st_cleanup_safe): ditto.  [ruby-core:25081]
+
 Mon Aug 24 13:24:07 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (MAKEDIRS): define.
