@@ -237,6 +237,7 @@ RUNRUBY = $(RUNRUBY) "$(srcdir)/tool/runruby.rb" --extout="$(EXTOUT)" $(RUNRUBYO
 !ifndef RUBY
 RUBY = ruby
 !endif
+MAKEDIRS = @$(MINIRUBY) -run -e mkdir -- -p
 
 !if !defined(STACK)
 !if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"

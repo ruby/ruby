@@ -146,7 +146,7 @@ miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DM
 GORUBY = go$(RUBY_INSTALL_NAME)
 golf: $(LIBRUBY) $(GOLFOBJS) PHONY
 	$(MAKE) $(MFLAGS) MAINOBJ="$(GOLFOBJS)" PROGRAM=$(GORUBY)$(EXEEXT) program
-capi: Doxyfile PHONY
+capi: Doxyfile PHONY $(PREP)
 	@$(MAKEDIRS) doc/capi
 	@$(DOXYGEN)
 
