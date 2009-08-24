@@ -1,3 +1,9 @@
+Mon Aug 24 21:31:37 2009  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/base.rb, test/rss/test_maker_2.0.rb: fix a bug
+	that RSS Maker doesn't accept 'false' as guid's isPermaLink.
+	Reported by Joe Holt. Thanks!!!
+
 Mon Aug 24 18:58:56 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/missing.h (vsnprintf): rollback a part of r24179, because
