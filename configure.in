@@ -1723,7 +1723,8 @@ if test "$with_dln_a_out" != yes; then
 	when(rhapsody*)	: ${LDSHARED='cc -dynamic -bundle -undefined suppress'}
 			: ${LDFLAGS=""}
 			rb_cv_dlopen=yes ;;
-	when(darwin*)	: ${LDSHARED='$(CC) -dynamic -bundle -undefined suppress -flat_namespace'}
+	when(darwin*)	: ${LDSHARED='$(CC) -dynamic -bundle'}
+			: ${DLDFLAGS="${linker_flag}-undefined${linker_flag:+,}dynamic_lookup ${linker_flag}-multiply_defined${linker_flag:+,}suppress ${linker_flag}-flat_namespace"}
 			: ${LDFLAGS=""}
 			: ${LIBPATHENV=DYLD_LIBRARY_PATH}
 			# /usr/local/include is always searched for
@@ -2049,13 +2050,13 @@ if test "$enable_shared" = 'yes'; then
 	;;
     when(darwin*)
 	RUBY_SO_NAME="$RUBY_SO_NAME"'.$(MAJOR).$(MINOR).$(TEENY)'
-	LIBRUBY_LDSHARED='$(CC) -dynamiclib -undefined suppress -flat_namespace'
+	LIBRUBY_LDSHARED='$(CC) -dynamiclib'
 	if test "$load_relative" = yes; then
 	    libprefix='@executable_path/../lib'
 	else
 	    libprefix='$(libdir)'
 	fi
-	LIBRUBY_DLDFLAGS='-install_name '${libprefix}'/$(LIBRUBY_SO)'
+	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-install_name '${libprefix}'/$(LIBRUBY_SO)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-current_version $(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(ruby_version)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_Init_* $(XLDFLAGS)'

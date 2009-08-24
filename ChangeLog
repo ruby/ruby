@@ -1,3 +1,8 @@
+Tue Aug 25 02:16:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (DLDFLAGS): use linker_flag and changed undefined
+	  and multiply_defined behaviors. cf [ruby-core:25086].
+
 Mon Aug 24 21:31:37 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb, test/rss/test_maker_2.0.rb: fix a bug
