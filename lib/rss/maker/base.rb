@@ -238,7 +238,7 @@ module RSS
             setter = "#{var}="
             if target.respond_to?(setter)
               value = __send__(var)
-              if value
+              unless value.nil?
                 target.__send__(setter, value)
                 set = true
               end
