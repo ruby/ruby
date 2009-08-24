@@ -1,3 +1,8 @@
+Mon Aug 24 12:55:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (enc/unicode/name2ctype.h): use md instead of
+	  $(MAKEDIRS).
+
 Sun Aug 23 15:22:45 2009  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (main): "usage" description updated.
