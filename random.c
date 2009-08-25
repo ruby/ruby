@@ -318,7 +318,7 @@ rand_init(struct MT *mt, VALUE vseed)
 	for (i = (int)(blen-1); 0 <= i; i--) {
 	    j = i * SIZEOF_BDIGITS / SIZEOF_INT32;
 #if SIZEOF_BDIGITS < SIZEOF_INT32
-	    buf[j] <<= SIZEOF_BDIGITS * CHAR_BIT;
+	    buf[j] <<= BITSPERDIG;
 #endif
 	    buf[j] |= RBIGNUM_DIGITS(seed)[i];
 	    if (!len && buf[j]) len = j;
@@ -590,13 +590,13 @@ random_load(VALUE obj, VALUE dump)
 	x = FIX2ULONG(state);
 	mt->state[0] = (unsigned int)x;
 #if SIZEOF_LONG / SIZEOF_INT >= 2
-	mt->state[1] = (unsigned int)(x >> CHAR_BIT * SIZEOF_BDIGITS);
+	mt->state[1] = (unsigned int)(x >> BITSPERDIG);
 #endif
 #if SIZEOF_LONG / SIZEOF_INT >= 3
-	mt->state[2] = (unsigned int)(x >> 2 * CHAR_BIT * SIZEOF_BDIGITS);
+	mt->state[2] = (unsigned int)(x >> 2 * BITSPERDIG);
 #endif
 #if SIZEOF_LONG / SIZEOF_INT >= 4
-	mt->state[3] = (unsigned int)(x >> 3 * CHAR_BIT * SIZEOF_BDIGITS);
+	mt->state[3] = (unsigned int)(x >> 3 * BITSPERDIG);
 #endif
     }
     else {
@@ -616,7 +616,7 @@ random_load(VALUE obj, VALUE dump)
 # else
 	    x = 0;
 	    do {
-		x = (x << CHAR_BIT * SIZEOF_BDIGITS) | *--d;
+		x = (x << BITSPERDIG) | *--d;
 	    } while (--len % DIGSPERINT);
 # endif
 	    mt->state[len / DIGSPERINT] = (unsigned int)x;
@@ -629,10 +629,10 @@ random_load(VALUE obj, VALUE dump)
 		x = *--d;
 # if DIGSPERINT == 2
 		--len;
-		x = (x << CHAR_BIT * SIZEOF_BDIGITS) | *--d;
+		x = (x << BITSPERDIG) | *--d;
 # elif SIZEOF_BDIGITS < SIZEOF_INT
 		do {
-		    x = (x << CHAR_BIT * SIZEOF_BDIGITS) | *--d;
+		    x = (x << BITSPERDIG) | *--d;
 		} while (--len % DIGSPERINT);
 # endif
 		mt->state[len / DIGSPERINT] = (unsigned int)x;
