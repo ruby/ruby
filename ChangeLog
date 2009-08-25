@@ -1,3 +1,18 @@
+Tue Aug 25 23:51:07 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/enc-unicode.rb: added for generate name2ctype.kwd.
+	  contributed by Run Paint Run Run [ruby-core:24775]
+
+	* enc/unicode.c (CodeRanges): move definitions to name2ctype.h.
+
+	* enc/unicode/name2ctype.h.blt, enc/unicode/name2ctype.kwd,
+	  enc/unicode/name2ctype.src: updated to v5.1.
+
+	* enc/unicode/UnicodeData.txt, enc/unicode/Scripts.txt: added v5.1.
+
+	* Makefile.in: add rule to generate name2ctype.kwd from
+	  UnicodeData.txt and Scripts.txt.
+
 Tue Aug 25 22:31:51 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (MKDIR_P): Set 'mkdir -p' to MKDIR_P

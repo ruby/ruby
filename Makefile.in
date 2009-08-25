@@ -207,6 +207,8 @@ lex.c: defs/keywords
 	  $(CP) $? $(srcdir)/defs/lex.c.src && \
 	  $(CP) $@ $(srcdir)/lex.c.blt; \
 	fi
+$(srcdir)/enc/unicode/name2ctype.kwd: enc/unicode/UnicodeData.txt enc/unicode/Scripts.txt
+	$(BASERUBY) $(srcdir)/tool/enc-unicode.rb $? > $@
 
 NAME2CTYPE_OPTIONS = -7 -c -j1 -i1 -t -C -P -T -H uniname2ctype_hash -Q uniname2ctype_pool -N uniname2ctype_p
 
