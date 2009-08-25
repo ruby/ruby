@@ -1,7 +1,8 @@
-Tue Aug 25 11:42:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Aug 25 12:22:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (enc/unicode/name2ctype.h): explicitly ignores the
-	  result of diff.
+	  result of diff and turns -e option off, because *BSD make passes
+	  it by default.
 
 Tue Aug 25 02:16:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

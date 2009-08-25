@@ -212,7 +212,7 @@ NAME2CTYPE_OPTIONS = -7 -c -j1 -i1 -t -C -P -T -H uniname2ctype_hash -Q uniname2
 
 enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	$(MAKEDIRS) $(@D)
-	@\
+	@set +e; \
 	if cmp -s $(?:.kwd=.src) $?; then \
 	  set -x; \
 	  $(CP) $(?:.kwd=.h.blt) $@; \
@@ -226,9 +226,6 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	  $(CP) $? $(?:.kwd=.src) && \
 	  $(CP) $@ $(?:.kwd=.h.blt); \
 	fi
-
-enc/unicode/name2ctype_prop.h: $(srcdir)/enc/unicode/name2ctype.kwd
-	$(MAKEDIRS) $(@D)
 
 .c.@OBJEXT@:
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $<
