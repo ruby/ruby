@@ -1,8 +1,14 @@
-Thu Augh 20 9:43:00 2009 Kirk Haines <khaines@ruby-lang.org>
+Tue Aug 25 11:48:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
-	* Backport #1001; Handle EBADF to fix problem with interpreter wide deadlock when native close() is called on fd which is currently being IO#select()ed.
+	* Backport #1168; Wrong result of File.extname for a path that contains a space before the extension.
 
-Wed Aug 19 1:49:00 2009 Kirk Haines <khaines@ruby-lang.org>
+	* Backport #1975 [ruby-core:25025]; Dir.mktmpdir exists in the rest of the 1.8 line, and it is used in the test suite that goes with backport #1168. It doesn't conflict with any existing 1.8.6 art, and is a pure-ruby addition to Dir, so I backported it to 1.8.6 from 1.8.7.
+
+Thu Aug 20  9:43:00 2009 Kirk Haines <khaines@ruby-lang.org>
+
+	* Backport #1001; Handle EBADF to fix problem with interpreter wide deadlock when native close() is called on fd which is currently being IO#select()ed. r24600
+
+Wed Aug 19  1:49:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
 	* Backport #1232; Writes one extra byte to the buffer in order to prevent overrun. r24583
 
