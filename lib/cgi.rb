@@ -306,7 +306,7 @@ class CGI
     "METHOD_NOT_ALLOWED"  => "405 Method Not Allowed",
     "NOT_ACCEPTABLE"      => "406 Not Acceptable",
     "LENGTH_REQUIRED"     => "411 Length Required",
-    "PRECONDITION_FAILED" => "412 Rrecondition Failed",
+    "PRECONDITION_FAILED" => "412 Precondition Failed",
     "SERVER_ERROR"        => "500 Internal Server Error",
     "NOT_IMPLEMENTED"     => "501 Method Not Implemented",
     "BAD_GATEWAY"         => "502 Bad Gateway",
