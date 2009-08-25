@@ -221,7 +221,7 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	  set -x; \
 	  sed '/^#ifdef USE_UNICODE_PROPERTIES/,/^#endif/d' $? | gperf $(NAME2CTYPE_OPTIONS) > $@-1.h && \
 	  gperf $(NAME2CTYPE_OPTIONS) < $? > $@-2.h && \
-	  diff -DUSE_UNICODE_PROPERTIES $@-1.h $@-2.h > $@.tmp; \
+	  diff -DUSE_UNICODE_PROPERTIES $@-1.h $@-2.h > $@.tmp || :; \
 	  $(MV) $@.tmp $@ && \
 	  $(CP) $? $(?:.kwd=.src) && \
 	  $(CP) $@ $(?:.kwd=.h.blt); \

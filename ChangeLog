@@ -1,3 +1,8 @@
+Tue Aug 25 11:42:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (enc/unicode/name2ctype.h): explicitly ignores the
+	  result of diff.
+
 Tue Aug 25 02:16:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (DLDFLAGS): use linker_flag and changed undefined
