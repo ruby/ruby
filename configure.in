@@ -309,12 +309,13 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_INSTALL
 AC_PROG_MKDIR_P
-if test "x$MKDIR_P" != "x -d"; then
-elif test x"$as_mkdir_p" != xfalse; then
-  MKDIR_P='mkdir -p'
-  echo "use 'mkdir -p' as MKDIR_P"
-else
-  AC_MSG_ERROR([mkdir -p is required])
+if test "x$MKDIR_P" = "x -d"; then
+  if test x"$as_mkdir_p" != xfalse; then
+    MKDIR_P='mkdir -p'
+    echo "use 'mkdir -p' as MKDIR_P"
+  else
+    AC_MSG_ERROR([mkdir -p is required])
+  fi
 fi
 MAKEDIRS="$MKDIR_P"
 AC_SUBST(MAKEDIRS)
