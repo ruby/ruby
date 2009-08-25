@@ -84,6 +84,13 @@ with all sufficient information, see the ChangeLog file.
     New alias to #include? for the forward compatibility with 1.9, in
     which the behavior of Range#include? has changed.
 
+  * Regexp
+
+    The regular expression /\s/ now properly matches a vertical tab
+    character (VT: "\v") and /\S/ does not.  It was a bug that /\s/
+    did not match VT when /[\s]/ does.  It is clear that VT should
+    always be regarded as white space, not to mention String#strip.
+
   * String#getbyte
   * String#setbyte
   * String#ord
