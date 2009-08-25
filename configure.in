@@ -309,6 +309,15 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_INSTALL
 AC_PROG_MKDIR_P
+if test "x$MKDIR_P" != "x -d"; then
+elif test x"$as_mkdir_p" != xfalse; then
+  MKDIR_P='mkdir -p'
+  echo "use 'mkdir -p' as MKDIR_P"
+else
+  AC_MSG_ERROR([mkdir -p is required])
+fi
+MAKEDIRS="$MKDIR_P"
+AC_SUBST(MAKEDIRS)
 
 AC_CHECK_TOOL(DOT, dot)
 AC_CHECK_TOOL(DOXYGEN, doxygen)
@@ -318,14 +327,6 @@ AC_USE_SYSTEM_EXTENSIONS
 
 AC_SUBST(RM, ['rm -f'])
 AC_SUBST(CP, ['cp'])
-if test "x$MKDIR_P" != "x -d"; then
-  MAKEDIRS="$MKDIR_P"
-elif test -n "$INSTALL"; then
-  MAKEDIRS="$INSTALL -d"
-else
-  MAKEDIRS='install -d'
-fi
-AC_SUBST(MAKEDIRS)
 AC_SUBST(RMDIRS, ['$(top_srcdir)/tool/rmdirs'])
 AC_SUBST(RMALL, ['rm -fr'])
 
