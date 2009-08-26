@@ -91,7 +91,7 @@ module Test
           end
           find_test_cases(already_gathered).each{|t| add_suite(suites, t.suite)}
         ensure
-          $:.delete_at($:.rindex(dir)) if(dir)
+          $:.delete_at($:.index(dir)) if(dir)
         end
 
 	def realdir(path)

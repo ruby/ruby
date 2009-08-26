@@ -1,3 +1,7 @@
+Wed Aug 26 19:17:47 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/test/unit/collector/dir.rb: $: bug fix. [ruby-core:24115]
+
 Mon Aug 24 21:33:34 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb, test/rss/test_maker_2.0.rb: fix a bug
