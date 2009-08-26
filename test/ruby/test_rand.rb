@@ -10,14 +10,14 @@ class TestRand < Test::Unit::TestCase
       w = w.to_i
       assert_equal(w, rand(m))
       rnds.each do |rnd|
-        assert_equal(w, rnd.int(m))
+        assert_equal(w, rnd.rand(m))
       end
       rnds2.each do |rnd|
-        r=rnd.int(i...(m+i))
+        r=rnd.rand(i...(m+i))
         assert_equal(w+i, r)
       end
       rnds3.each do |rnd|
-        r=rnd.int(i..(m+i-1))
+        r=rnd.rand(i..(m+i-1))
         assert_equal(w+i, r)
       end
       rnds << Marshal.load(Marshal.dump(rnds[-1]))
@@ -110,64 +110,61 @@ class TestRand < Test::Unit::TestCase
                       0x4000000000000001)
   end
 
-  def test_neg_0x10000000000
+  def test_0x10000000000
     ws = %w(455570294424 1073054410371 790795084744 2445173525 1088503892627)
     assert_random_int(ws, 0x10000000000, 3)
-    assert_random_int(ws, -0x10000000000, 3)
   end
 
-  def test_neg_0x10000
+  def test_0x10000
     ws = %w(2732 43567 42613 52416 45891)
     assert_random_int(ws, 0x10000)
-    assert_random_int(ws, -0x10000)
   end
 
   def test_types
     srand(0)
     rnd = Random.new(0)
     assert_equal(44, rand(100.0))
-    assert_equal(44, rnd.int(100.0))
+    assert_equal(44, rnd.rand(100))
     assert_equal(1245085576965981900420779258691, rand((2**100).to_f))
-    assert_equal(1245085576965981900420779258691, rnd.int((2**100).to_f))
+    assert_equal(1245085576965981900420779258691, rnd.rand(2**100))
     assert_equal(914679880601515615685077935113, rand(-(2**100).to_f))
-    assert_equal(914679880601515615685077935113, rnd.int(-(2**100).to_f))
 
     srand(0)
     rnd = Random.new(0)
     assert_equal(997707939797331598305742933184, rand(2**100))
-    assert_equal(997707939797331598305742933184, rnd.int(2**100))
+    assert_equal(997707939797331598305742933184, rnd.rand(2**100))
     assert_in_delta(0.602763376071644, rand((2**100).coerce(0).first),
                     0.000000000000001)
-    assert_equal(0, rnd.int((2**100).coerce(0).first))
+    assert_raise(ArgumentError) {rnd.rand((2**100).coerce(0).first)}
 
     srand(0)
     rnd = Random.new(0)
     assert_in_delta(0.548813503927325, rand(nil),
                     0.000000000000001)
-    assert_in_delta(0.548813503927325, rnd.float(),
+    assert_in_delta(0.548813503927325, rnd.rand(),
                     0.000000000000001)
     srand(0)
     rnd = Random.new(0)
     o = Object.new
     def o.to_int; 100; end
     assert_equal(44, rand(o))
-    assert_equal(44, rnd.int(o))
+    assert_equal(44, rnd.rand(o))
     assert_equal(47, rand(o))
-    assert_equal(47, rnd.int(o))
+    assert_equal(47, rnd.rand(o))
     assert_equal(64, rand(o))
-    assert_equal(64, rnd.int(o))
+    assert_equal(64, rnd.rand(o))
   end
 
   def test_srand
     srand
     assert_kind_of(Integer, rand(2))
-    assert_kind_of(Integer, Random.new.int(2))
+    assert_kind_of(Integer, Random.new.rand(2))
 
     srand(2**100)
     rnd = Random.new(2**100)
     %w(3258412053).each {|w|
       assert_equal(w.to_i, rand(0x100000000))
-      assert_equal(w.to_i, rnd.int(0x100000000))
+      assert_equal(w.to_i, rnd.rand(0x100000000))
     }
   end
 
@@ -183,21 +180,25 @@ class TestRand < Test::Unit::TestCase
   def test_random_gc
     r = Random.new(0)
     %w(2357136044 2546248239 3071714933).each do |w|
-      assert_equal(w.to_i, r.int(0x100000000))
+      assert_equal(w.to_i, r.rand(0x100000000))
     end
     GC.start
     %w(3626093760 2588848963 3684848379).each do |w|
-      assert_equal(w.to_i, r.int(0x100000000))
+      assert_equal(w.to_i, r.rand(0x100000000))
     end
   end
 
   def test_random_type_error
     assert_raise(TypeError) { Random.new(Object.new) }
-    assert_raise(TypeError) { Random.new(0).int(Object.new) }
+    assert_raise(TypeError) { Random.new(0).rand(Object.new) }
   end
 
   def test_random_argument_error
-    assert_raise(ArgumentError) { Random.new(0).float(0, 0) }
+    r = Random.new(0)
+    assert_raise(ArgumentError) { r.rand(0, 0) }
+    assert_raise(ArgumentError, '[ruby-core:24677]') { r.rand(-1) }
+    assert_raise(ArgumentError, '[ruby-core:24677]') { r.rand(-1.0) }
+    assert_raise(ArgumentError, '[ruby-core:24677]') { r.rand(0) }
   end
 
   def test_random_seed
@@ -210,17 +211,17 @@ class TestRand < Test::Unit::TestCase
     r1 = Random.new(0)
     r2 = r1.dup
     %w(2357136044 2546248239 3071714933).each do |w|
-      assert_equal(w.to_i, r1.int(0x100000000))
+      assert_equal(w.to_i, r1.rand(0x100000000))
     end
     %w(2357136044 2546248239 3071714933).each do |w|
-      assert_equal(w.to_i, r2.int(0x100000000))
+      assert_equal(w.to_i, r2.rand(0x100000000))
     end
     r2 = r1.dup
     %w(3626093760 2588848963 3684848379).each do |w|
-      assert_equal(w.to_i, r1.int(0x100000000))
+      assert_equal(w.to_i, r1.rand(0x100000000))
     end
     %w(3626093760 2588848963 3684848379).each do |w|
-      assert_equal(w.to_i, r2.int(0x100000000))
+      assert_equal(w.to_i, r2.rand(0x100000000))
     end
   end
 
@@ -309,16 +310,16 @@ END
     srand(0)
     assert_equal(state, r.instance_eval { state })
     assert_equal(state, Random.instance_eval { state })
-    r.int(0x100)
+    r.rand(0x100)
     assert_equal(state, r.instance_eval { state })
   end
 
   def test_random_left
     r = Random.new(0)
     assert_equal(1, r.instance_eval { left })
-    r.int(0x100)
+    r.rand(0x100)
     assert_equal(624, r.instance_eval { left })
-    r.int(0x100)
+    r.rand(0x100)
     assert_equal(623, r.instance_eval { left })
     srand(0)
     assert_equal(1, Random.instance_eval { left })
@@ -337,29 +338,34 @@ END
 
   def test_random_range
     r = Random.new(0)
-    %w(9 5 8).each {|w| assert_equal(w.to_i, r.int(5..9)) }
-    %w(-237 731 383).each {|w| assert_equal(w.to_i, r.int(-1000..1000)) }
+    %w(9 5 8).each {|w| assert_equal(w.to_i, r.rand(5..9)) }
+    %w(-237 731 383).each {|w| assert_equal(w.to_i, r.rand(-1000..1000)) }
     %w(1267650600228229401496703205382
        1267650600228229401496703205384
        1267650600228229401496703205383).each do |w|
-      assert_equal(w.to_i, r.int(2**100+5..2**100+9))
+      assert_equal(w.to_i, r.rand(2**100+5..2**100+9))
     end
-    assert_equal(3, r.int(3.1..4), '[ruby-core:24679]')
+    v = r.rand(3.1..4)
+    assert_instance_of(Float, v, '[ruby-core:24679]')
+    assert_includes(3.1..4, v)
   end
 
   def test_random_float
     r = Random.new(0)
-    assert_in_delta(0.5488135039273248, r.float, 0.0001)
-    assert_in_delta(0.7151893663724195, r.float, 0.0001)
-    assert_in_delta(0.6027633760716439, r.float, 0.0001)
-    assert_in_delta(1.0897663659937937, r.float(2), 0.0001)
-    assert_in_delta(5.3704626067153264e+29, r.float(2**100), 10**25)
+    assert_in_delta(0.5488135039273248, r.rand, 0.0001)
+    assert_in_delta(0.7151893663724195, r.rand, 0.0001)
+    assert_in_delta(0.6027633760716439, r.rand, 0.0001)
+    assert_in_delta(1.0897663659937937, r.rand(2.0), 0.0001)
+    assert_in_delta(5.3704626067153264e+29, r.rand((2**100).to_f), 10**25)
 
-    assert_raise(Errno::EDOM, Errno::ERANGE) { r.float(1.0 / 0.0) }
-    assert_raise(Errno::EDOM, Errno::ERANGE) { r.float(0.0 / 0.0) }
+    assert_raise(Errno::EDOM, Errno::ERANGE) { r.rand(1.0 / 0.0) }
+    assert_raise(Errno::EDOM, Errno::ERANGE) { r.rand(0.0 / 0.0) }
 
-    # is this intentional?
-    assert_raise(TypeError) { r.float(1..2) }
+    r = Random.new(0)
+    assert_in_delta(1.5488135039273248, r.rand(1.0...2.0), 0.0001, '[ruby-core:24655]')
+    assert_in_delta(1.7151893663724195, r.rand(1.0...2.0), 0.0001, '[ruby-core:24655]')
+    assert_in_delta(7.027633760716439, r.rand(1.0...11.0), 0.0001, '[ruby-core:24655]')
+    assert_in_delta(3.0897663659937937, r.rand(2.0...4.0), 0.0001, '[ruby-core:24655]')
   end
 
   def test_random_equal
@@ -368,9 +374,9 @@ END
     assert(r == r.dup)
     r1 = r.dup
     r2 = r.dup
-    r1.int(0x100)
+    r1.rand(0x100)
     assert(r1 != r2)
-    r2.int(0x100)
+    r2.rand(0x100)
     assert(r1 == r2)
   end
 end

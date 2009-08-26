@@ -178,6 +178,16 @@ genrand_real(struct MT *mt)
     unsigned int a = genrand_int32(mt)>>5, b = genrand_int32(mt)>>6;
     return(a*67108864.0+b)*(1.0/9007199254740992.0);
 }
+
+/* generates a random number on [0,1] with 53-bit resolution*/
+static double int_pair_to_real_inclusive(unsigned int a, unsigned int b);
+static double
+genrand_real2(struct MT *mt)
+{
+    unsigned int a = genrand_int32(mt), b = genrand_int32(mt);
+    return int_pair_to_real_inclusive(a, b);
+}
+
 /* These real versions are due to Isaku Wada, 2002/01/09 added */
 
 #undef N
@@ -237,6 +247,57 @@ rb_genrand_real(void)
 #define roomof(n, m) (int)(((n)+(m)-1) / (m))
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 #define SIZEOF_INT32 (31/CHAR_BIT + 1)
+
+static double
+int_pair_to_real_inclusive(unsigned int a, unsigned int b)
+{
+    VALUE x = rb_big_new(roomof(64, BITSPERDIG), 1);
+    VALUE m = rb_big_new(roomof(53, BITSPERDIG), 1);
+    BDIGIT *xd = BDIGITS(x);
+    int i = 0;
+    double r;
+
+    xd[i++] = (BDIGIT)b;
+#if BITSPERDIG < 32
+    xd[i++] = (BDIGIT)(b >> BITSPERDIG);
+#endif
+    xd[i++] = (BDIGIT)a;
+#if BITSPERDIG < 32
+    xd[i++] = (BDIGIT)(a >> BITSPERDIG);
+#endif
+    xd = BDIGITS(m);
+#if BITSPERDIG < 53
+    MEMZERO(xd, BDIGIT, roomof(53, BITSPERDIG) - 1);
+#endif
+    xd[53 / BITSPERDIG] = 1 << 53 % BITSPERDIG;
+    xd[0] |= 1;
+    x = rb_big_mul(x, m);
+    if (FIXNUM_P(x)) {
+#if CHAR_BIT * SIZEOF_LONG > 64
+	r = (double)(FIX2ULONG(x) >> 64);
+#else
+	return 0.0;
+#endif
+    }
+    else {
+#if 64 % BITSPERDIG == 0
+	long len = RBIGNUM_LEN(x);
+	xd = BDIGITS(x);
+	MEMMOVE(xd, xd + 64 / BITSPERDIG, BDIGIT, len - 64 / BITSPERDIG);
+	MEMZERO(xd + len - 64 / BITSPERDIG, BDIGIT, 64 / BITSPERDIG);
+	r = rb_big2dbl(x);
+#else
+	x = rb_big_rshift(x, INT2FIX(64));
+	if (FIXNUM_P(x)) {
+	    r = (double)FIX2ULONG(x);
+	}
+	else {
+	    r = rb_big2dbl(x);
+	}
+#endif
+    }
+    return ldexp(r, -53);
+}
 
 VALUE rb_cRandom;
 #define id_minus '-'
@@ -829,19 +890,14 @@ rb_random_bytes(VALUE obj, long n)
 }
 
 static VALUE
-range_values(VALUE vmax, VALUE *begp)
+range_values(VALUE vmax, VALUE *begp, int *exclp)
 {
-    VALUE end, r, one = INT2FIX(1);
-    int excl;
+    VALUE end, r;
 
-    if (!rb_range_values(vmax, begp, &end, &excl)) return Qfalse;
+    if (!rb_range_values(vmax, begp, &end, exclp)) return Qfalse;
     if (!rb_respond_to(end, id_minus)) return Qfalse;
     r = rb_funcall2(end, id_minus, 1, begp);
     if (NIL_P(r)) return Qfalse;
-    if (!excl && rb_respond_to(r, id_plus)) {
-	r = rb_funcall2(r, id_plus, 1, &one);
-	if (NIL_P(r)) return Qfalse;
-    }
     return r;
 }
 
@@ -853,7 +909,7 @@ add_to_begin(VALUE beg, VALUE offset)
 }
 
 static VALUE
-rand_int(struct MT *mt, VALUE vmax)
+rand_int(struct MT *mt, VALUE vmax, int restrictive)
 {
     long max;
     unsigned long r;
@@ -861,13 +917,18 @@ rand_int(struct MT *mt, VALUE vmax)
     if (FIXNUM_P(vmax)) {
 	max = FIX2LONG(vmax);
 	if (!max) return Qnil;
-	r = limited_rand(mt, (unsigned long)(max < 0 ? -max : max) - 1);
+	if (max < 0) {
+	    if (restrictive) return Qnil;
+	    max = -max;
+	}
+	r = limited_rand(mt, (unsigned long)max - 1);
 	return ULONG2NUM(r);
     }
     else {
 	VALUE ret;
 	if (rb_bigzero_p(vmax)) return Qnil;
 	if (!RBIGNUM_SIGN(vmax)) {
+	    if (restrictive) return Qnil;
 	    vmax = rb_big_clone(vmax);
 	    RBIGNUM_SET_SIGN(vmax, 1);
 	}
@@ -884,86 +945,110 @@ rand_int(struct MT *mt, VALUE vmax)
     }
 }
 
+static inline double
+float_value(VALUE v)
+{
+    double x = RFLOAT_VALUE(v);
+    if (isinf(x) || isnan(x)) {
+	VALUE error = INT2FIX(EDOM);
+	rb_exc_raise(rb_class_new_instance(1, &error, rb_eSystemCallError));
+    }
+    return x;
+}
+
 /*
- * call-seq: prng.int(limit) -> integer
+ * call-seq:
+ *     prng.rand -> float
+ *     prng.rand(limit) -> number
  *
  * When the argument is an +Integer+ or a +Bignum+, it returns a
  * random integer greater than or equal to zero and less than the
  * argument.  Unlike Random#rand, when the argument is a negative
  * integer or zero, it raises an ArgumentError.
  *
+ * When the argument is a +Float+, it returns a random floating point
+ * number between 0.0 and _max_, including 0.0 and excluding _max_.
+ *
  * When the argument _limit_ is a +Range+, it returns a random
- * integer from integers where range.member?(integer) == true.
- *     prng.int(5..9)  # => one of [5, 6, 7, 8, 9]
- *     prng.int(5...9) # => one of [5, 6, 7, 8]
+ * number where range.member?(number) == true.
+ *     prng.rand(5..9)  # => one of [5, 6, 7, 8, 9]
+ *     prng.rand(5...9) # => one of [5, 6, 7, 8]
+ *     prng.rand(5.0..9.0) # => between 5.0 and 9.0, including 9.0
+ *     prng.rand(5.0...9.0) # => between 5.0 and 9.0, excluding 9.0
  *
  * +begin+/+end+ of the range have to have subtruct and add methods.
  *
  * Otherwise, it raises an ArgumentError.
  */
-VALUE
-rb_random_int(VALUE obj, VALUE vmax)
-{
-    VALUE v, beg = Qundef;
-    rb_random_t *rnd = get_rnd(obj);
-
-    v = rb_check_to_integer(vmax, "to_int");
-    if (NIL_P(v)) {
-	/* range like object support */
-	if (!(v = range_values(vmax, &beg))) {
-	    v = vmax;
-	}
-	v = rb_to_int(v);
-	beg = rb_to_int(beg);
-    }
-    v = rand_int(&rnd->mt, v);
-    if (NIL_P(v)) v = INT2FIX(0);
-    return add_to_begin(beg, v);
-}
-
-#define random_int rb_random_int
-
-/*
- * call-seq:
- *     prng.float -> float
- *     prng.float([max=1.0]) -> float
- *
- * Returns a random floating point number between 0.0 and _max_,
- * including 0.0 and excluding _max_.
- */
 static VALUE
-random_float(int argc, VALUE *argv, VALUE obj)
+random_rand(int argc, VALUE *argv, VALUE obj)
 {
     rb_random_t *rnd = get_rnd(obj);
-    VALUE vmax, beg = Qundef;
-    double max = 0, r;
+    VALUE vmax, beg = Qundef, v;
+    int excl = 0;
 
-    switch (argc) {
-      case 0:
-	break;
-      case 1:
-	vmax = argv[0];
-	if (TYPE(vmax) == T_FLOAT ||
-	    !NIL_P(vmax = rb_to_float(vmax)) ||
-	    (vmax = range_values(vmax, &beg)) != Qfalse) {
-	    max = RFLOAT_VALUE(vmax);
-	    if (isinf(max) || isnan(max)) {
-		VALUE error = INT2FIX(EDOM);
-		rb_exc_raise(rb_class_new_instance(1, &error, rb_eSystemCallError));
+    if (argc == 0) {
+      zero_arg:
+	return rb_float_new(genrand_real(&rnd->mt));
+    }
+    else if (argc != 1) {
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0..1)", argc);
+    }
+    vmax = argv[0];
+    if (NIL_P(vmax)) {
+	goto zero_arg;
+    }
+    else if (TYPE(vmax) != T_FLOAT && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
+	v = rand_int(&rnd->mt, vmax = v, 1);
+    }
+    else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
+	double max = float_value(v);
+	if (max > 0.0)
+	    v = rb_float_new(max * genrand_real(&rnd->mt));
+	else
+	    v = Qnil;
+    }
+    else if ((v = range_values(vmax, &beg, &excl)) != Qfalse) {
+	vmax = v;
+	if (TYPE(vmax) != T_FLOAT && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
+	    long max;
+	    vmax = v;
+	    v = Qnil;
+	    if (FIXNUM_P(vmax)) {
+	      fixnum:
+		if ((max = FIX2LONG(vmax) - excl) > 0) {
+		    unsigned long r = limited_rand(&rnd->mt, (unsigned long)max);
+		    v = ULONG2NUM(r);
+		}
+	    }
+	    else if (BUILTIN_TYPE(vmax) == T_BIGNUM && RBIGNUM_SIGN(vmax) && !rb_bigzero_p(vmax)) {
+		vmax = excl ? rb_big_minus(vmax, INT2FIX(1)) : rb_big_norm(vmax);
+		if (FIXNUM_P(vmax)) {
+		    excl = 0;
+		    goto fixnum;
+		}
+		v = limited_big_rand(&rnd->mt, RBIGNUM(vmax));
 	    }
 	}
-	else {
-	    beg = Qundef;
-	    Check_Type(argv[0], T_FLOAT);
+	else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
+	    double max = float_value(v), r;
+	    v = Qnil;
+	    if (max > 0.0) {
+		if (excl) {
+		    r = genrand_real(&rnd->mt);
+		}
+		else {
+		    r = genrand_real2(&rnd->mt);
+		}
+		v = rb_float_new(r * max);
+	    }
 	}
-	break;
-      default:
-	rb_scan_args(argc, argv, "01", 0);
-	break;
     }
-    r = genrand_real(&rnd->mt);
-    if (argc) r *= max;
-    return add_to_begin(beg, rb_float_new(r));
+    else {
+	NUM2LONG(vmax);
+    }
+    if (NIL_P(v)) rb_raise(rb_eArgError, "invalid argument");
+    return add_to_begin(beg, v);
 }
 
 /*
@@ -1019,7 +1104,7 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
     rb_scan_args(argc, argv, "01", &vmax);
     if (NIL_P(vmax)) goto zero_arg;
     vmax = rb_to_int(vmax);
-    if (vmax == INT2FIX(0) || NIL_P(r = rand_int(mt, vmax))) {
+    if (vmax == INT2FIX(0) || NIL_P(r = rand_int(mt, vmax, 0))) {
       zero_arg:
 	return DBL2NUM(genrand_real(mt));
     }
@@ -1058,9 +1143,8 @@ Init_Random(void)
     rb_cRandom = rb_define_class("Random", rb_cObject);
     rb_define_alloc_func(rb_cRandom, random_alloc);
     rb_define_method(rb_cRandom, "initialize", random_init, -1);
-    rb_define_method(rb_cRandom, "int", random_int, 1);
+    rb_define_method(rb_cRandom, "rand", random_rand, -1);
     rb_define_method(rb_cRandom, "bytes", random_bytes, 1);
-    rb_define_method(rb_cRandom, "float", random_float, -1);
     rb_define_method(rb_cRandom, "seed", random_get_seed, 0);
     rb_define_method(rb_cRandom, "initialize_copy", random_copy, 1);
     rb_define_method(rb_cRandom, "marshal_dump", random_dump, 0);

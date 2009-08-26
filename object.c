@@ -2299,6 +2299,16 @@ rb_to_float(VALUE val)
     return rb_convert_type(val, T_FLOAT, "Float", "to_f");
 }
 
+VALUE
+rb_check_to_float(VALUE val)
+{
+    if (TYPE(val) == T_FLOAT) return val;
+    if (!rb_obj_is_kind_of(val, rb_cNumeric)) {
+	return Qnil;
+    }
+    return rb_check_convert_type(val, T_FLOAT, "Float", "to_f");
+}
+
 double
 rb_num2dbl(VALUE val)
 {
