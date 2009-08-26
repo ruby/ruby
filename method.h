@@ -59,7 +59,7 @@ typedef struct rb_method_entry_struct {
 	rb_iseq_t *iseq;            /* should be mark */
 	rb_method_cfunc_t cfunc;
 	ID attr_id;
-	VALUE proc;
+	VALUE proc;                 /* should be mark */
 	enum method_optimized_type {
 	    OPTIMIZED_METHOD_TYPE_SEND,
 	    OPTIMIZED_METHOD_TYPE_CALL

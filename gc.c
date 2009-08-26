@@ -1405,7 +1405,8 @@ mark_method_entry_i(ID key, const rb_method_entry_t *me, st_data_t data)
 }
 
 static void
-mark_m_tbl(rb_objspace_t *objspace, st_table *tbl, int lev) {
+mark_m_tbl(rb_objspace_t *objspace, st_table *tbl, int lev)
+{
     struct mark_tbl_arg arg;
     if (!tbl) return;
     arg.objspace = objspace;
