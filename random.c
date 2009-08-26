@@ -760,10 +760,11 @@ make_mask(unsigned long x)
 static unsigned long
 limited_rand(struct MT *mt, unsigned long limit)
 {
-    unsigned long mask = make_mask(limit);
     int i;
-    unsigned long val;
+    unsigned long val, mask;
 
+    if (!limit) return 0;
+    mask = make_mask(limit);
   retry:
     val = 0;
     for (i = SIZEOF_LONG/SIZEOF_INT32-1; 0 <= i; i--) {
@@ -1016,7 +1017,7 @@ random_rand(int argc, VALUE *argv, VALUE obj)
 	    v = Qnil;
 	    if (FIXNUM_P(vmax)) {
 	      fixnum:
-		if ((max = FIX2LONG(vmax) - excl) > 0) {
+		if ((max = FIX2LONG(vmax) - excl) >= 0) {
 		    unsigned long r = limited_rand(&rnd->mt, (unsigned long)max);
 		    v = ULONG2NUM(r);
 		}
@@ -1041,6 +1042,9 @@ random_rand(int argc, VALUE *argv, VALUE obj)
 		    r = genrand_real2(&rnd->mt);
 		}
 		v = rb_float_new(r * max);
+	    }
+	    else if (max == 0.0 && !excl) {
+		v = rb_float_new(0.0);
 	    }
 	}
     }

@@ -1,3 +1,8 @@
+Wed Aug 26 23:58:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (random_rand): fixed for edge cases of ranges.
+	  [ruby-dev:39166]
+
 Wed Aug 26 21:49:23 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/tempfile.rb: add documents from Hongli Lai's fork.
