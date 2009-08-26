@@ -1,3 +1,10 @@
+Thu Aug 27 08:16:34 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/strscan/strscan.c (strscan_set_string): set string should not be
+	  dupped or frozen, because freezing it causes #concat method failure,
+	  and unnecessary to dup without freezing.  a patch from Aaron
+	  Patterson at [ruby-core:25145].
+
 Thu Aug 27 02:06:11 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* Makefile.in (enc/unicode/name2ctype.kwd):

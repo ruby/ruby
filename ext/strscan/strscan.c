@@ -321,8 +321,7 @@ strscan_set_string(VALUE self, VALUE str)
 
     Data_Get_Struct(self, struct strscanner, p);
     StringValue(str);
-    p->str = rb_str_dup(str);
-    rb_obj_freeze(p->str);
+    p->str = str;
     p->curr = 0;
     CLEAR_MATCH_STATUS(p);
     return str;
