@@ -19,7 +19,7 @@ require 'thread'
 # == Synopsis
 #
 #   require 'tempfile'
-#   
+#
 #   file = Tempfile.new('foo')
 #   file.path      # => A unique filename in the OS's temp directory,
 #                  #    e.g.: "/tmp/foo.24722.0"
@@ -45,7 +45,7 @@ require 'thread'
 # Therefore, one should always call #unlink or close in an ensure block, like
 # this:
 #
-#   file = Tempfile.new('foo)
+#   file = Tempfile.new('foo')
 #   begin
 #      ...do something with file...
 #   ensure
@@ -98,7 +98,7 @@ class Tempfile < DelegateClass(File)
   #
   #   file = Tempfile.new('hello')
   #   file.path  # => something like: "/tmp/foo2843-8392-92849382--0"
-  #   
+  #
   #   # Use the Array form to enforce an extension in the filename:
   #   file = Tempfile.new(['hello', '.jpg'])
   #   file.path  # => something like: "/tmp/foo2843-8392-92849382--0.jpg"
@@ -119,12 +119,12 @@ class Tempfile < DelegateClass(File)
   # options, e.g.:
   #
   #   Tempfile.new('hello', '/home/aisaka', :encoding => 'ascii-8bit')
-  #   
+  #
   #   # You can also omit the 'tmpdir' parameter:
   #   Tempfile.new('hello', :encoding => 'ascii-8bit')
   #
   # === Exceptions
-  # 
+  #
   # Under rare circumstances, this constructor can raise an instance of
   # Tempfile::CreationError. This could happen if a large number
   # of threads or processes are simultaneously trying to create temp files
@@ -236,7 +236,7 @@ class Tempfile < DelegateClass(File)
   # the file after using it, as is explained in the "Explicit close" good
   # practice section in the Tempfile overview:
   #
-  #   file = Tempfile.new('foo)
+  #   file = Tempfile.new('foo')
   #   begin
   #      ...do something with file...
   #   ensure
@@ -336,7 +336,7 @@ class Tempfile < DelegateClass(File)
     #   Tempfile.open('foo', '/home/temp') do |f|
     #      ... do something with f ...
     #   end
-    #   
+    #
     #   # Equivalent:
     #   f = Tempfile.open('foo', '/home/temp')
     #   begin
