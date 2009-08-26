@@ -1,3 +1,8 @@
+Wed Aug 26 18:59:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/test_tempfile.rb: merged from Hongli Lai's fork.
+	  cf [ruby-core:25131].
+
 Wed Aug 26 18:49:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile#close!): should not undefine finalizer
