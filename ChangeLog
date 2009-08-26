@@ -1,3 +1,8 @@
+Wed Aug 26 12:36:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (collect_local_variables_in_env): skips internal variables.
+	  [ruby-core:25125]
+
 Tue Aug 25 23:51:07 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/enc-unicode.rb: added for generate name2ctype.kwd.

@@ -382,7 +382,7 @@ collect_local_variables_in_env(rb_env_t * const env, const VALUE ary)
     int i;
     for (i = 0; i < env->block.iseq->local_table_size; i++) {
 	ID lid = env->block.iseq->local_table[i];
-	if (lid) {
+	if (rb_is_local_id(lid)) {
 	    rb_ary_push(ary, ID2SYM(lid));
 	}
     }
