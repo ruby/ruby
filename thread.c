@@ -2355,7 +2355,7 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 	  struct timeval *timeout)
 {
     int result, lerrno;
-    fd_set orig_read, orig_write, orig_except;
+    fd_set orig_read = {}, orig_write = {}, orig_except = {};
 
 #ifndef linux
     double limit = 0;
