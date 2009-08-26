@@ -1,3 +1,11 @@
+Wed Aug 26 14:34:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile#close!, Tempfile#path): added side
+	  notes from Hongli Lai's fork.
+
+	* lib/tempfile.rb (Tempfile#unlink, Tempfile.callback): do nothing
+	  any more once unlinked.
+
 Wed Aug 26 13:48:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile#unlink): reverted r23494, since the

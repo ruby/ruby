@@ -11,7 +11,7 @@ require 'thread'
 # A class for managing temporary files.  This library is written to be
 # thread safe.
 class Tempfile < DelegateClass(File)
-  MAX_TRY = 10
+  MAX_TRY = 10  # :nodoc:
   @@cleanlist = []
   @@lock = Mutex.new
 
@@ -53,7 +53,7 @@ class Tempfile < DelegateClass(File)
       rescue
         failure += 1
         retry if failure < MAX_TRY
-        raise "cannot generate tempfile `%s'" % tmpname
+        raise "cannot generate tempfile `#{tmpname}'"
       end
     }
 
@@ -122,11 +122,10 @@ class Tempfile < DelegateClass(File)
   end
 
   # Closes and unlinks the file.
+  # Has the same effect as called <tt>close(true)</tt>.
   def close!
     _close
-    @clean_proc.call
-    ObjectSpace.undefine_finalizer(self)
-    @data = @tmpname = nil
+    unlink
   end
 
   # Unlinks the file.  On UNIX-like systems, it is often a good idea
@@ -135,11 +134,14 @@ class Tempfile < DelegateClass(File)
   # file.
   def unlink
     # keep this order for thread safeness
+    return unless @tmpname
     begin
       if File.exist?(@tmpname)
         File.unlink(@tmpname)
       end
       @@cleanlist.delete(@tmpname)
+      # remove tmpname and cleanlist from callback
+      @data[0] = @data[2] = nil
       @data = @tmpname = nil
       ObjectSpace.undefine_finalizer(self)
     rescue Errno::EACCES
@@ -149,6 +151,7 @@ class Tempfile < DelegateClass(File)
   alias delete unlink
 
   # Returns the full path name of the temporary file.
+  # This will be nil if #unlink has been called.
   def path
     @tmpname
   end
@@ -177,8 +180,10 @@ class Tempfile < DelegateClass(File)
 	  tmpfile.close if tmpfile
 
 	  # keep this order for thread safeness
-	  File.unlink(path) if File.exist?(path)
-	  cleanlist.delete(path) if cleanlist
+	  if path
+	    File.unlink(path) if File.exist?(path)
+	    cleanlist.delete(path) if cleanlist
+	  end
 
 	  print "done\n" if $DEBUG
 	end
