@@ -126,6 +126,7 @@ class Tempfile < DelegateClass(File)
   def close!
     _close
     unlink
+    ObjectSpace.undefine_finalizer(self)
   end
 
   # Unlinks the file.  On UNIX-like systems, it is often a good idea
@@ -143,7 +144,6 @@ class Tempfile < DelegateClass(File)
       # remove tmpname and cleanlist from callback
       @data[0] = @data[2] = nil
       @data = @tmpname = nil
-      ObjectSpace.undefine_finalizer(self)
     rescue Errno::EACCES
       # may not be able to unlink on Windows; just ignore
     end
