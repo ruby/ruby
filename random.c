@@ -902,13 +902,6 @@ range_values(VALUE vmax, VALUE *begp, int *exclp)
     return r;
 }
 
-static inline VALUE
-add_to_begin(VALUE beg, VALUE offset)
-{
-    if (beg == Qundef) return offset;
-    return rb_funcall2(beg, id_plus, 1, &offset);
-}
-
 static VALUE
 rand_int(struct MT *mt, VALUE vmax, int restrictive)
 {
@@ -1049,10 +1042,28 @@ random_rand(int argc, VALUE *argv, VALUE obj)
 	}
     }
     else {
+	v = Qnil;
 	NUM2LONG(vmax);
     }
-    if (NIL_P(v)) rb_raise(rb_eArgError, "invalid argument");
-    return add_to_begin(beg, v);
+    if (NIL_P(v)) {
+	VALUE mesg = rb_str_new_cstr("invalid argument - ");
+	rb_str_append(mesg, rb_obj_as_string(argv[0]));
+	rb_exc_raise(rb_exc_new3(rb_eArgError, mesg));
+    }
+    if (beg == Qundef) return v;
+    if (FIXNUM_P(beg) && FIXNUM_P(v)) {
+	long x = FIX2LONG(beg) + FIX2LONG(v);
+	return LONG2NUM(x);
+    }
+    switch (BUILTIN_TYPE(v)) {
+      case T_BIGNUM:
+	return rb_big_plus(v, beg);
+      case T_FLOAT:
+	RFLOAT_VALUE(v) += RFLOAT_VALUE(rb_check_to_float(beg));
+	return v;
+      default:
+	return rb_funcall2(v, id_plus, 1, &beg);
+    }
 }
 
 /*

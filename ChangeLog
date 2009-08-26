@@ -1,4 +1,6 @@
-Wed Aug 26 23:58:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Aug 26 23:59:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (random_rand): refined error message.
 
 	* random.c (random_rand): fixed for edge cases of ranges.
 	  [ruby-dev:39166]
