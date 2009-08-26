@@ -92,7 +92,7 @@ File.foreach "config.status" do |line|
       unless $install_name
         $install_name = "ruby"
         val.gsub!(/\$\$/, '$')
-        val.scan(%r[\G[\s;]*(/(?:\\.|[^/])*/)?([sy])(\\?\W)((?:\\.|(?!\3).)*)\3((?:\\.|(?!\3).)*)\3([gi]*)]) do
+        val.scan(%r[\G[\s;]*(/(?:\\.|[^/])*/)?([sy])(\\?\W)((?:(?!\3)(?:\\.|.))*)\3((?:(?!\3)(?:\\.|.))*)\3([gi]*)]) do
           |addr, cmd, sep, pat, rep, opt|
           if addr
             Regexp.new(addr[/\A\/(.*)\/\z/, 1]) =~ $install_name or next
