@@ -370,8 +370,11 @@ ruby_init_loadpath_safe(int safe_level)
 	VALUE fname = rb_str_new_cstr(dli.dli_fname);
 	sopath = rb_file_absolute_path(fname, Qnil);
 	rb_str_resize(fname, 0);
-	libpath = RSTRING_PTR(sopath);
     }
+    else {
+	sopath = rb_str_new(0, 0);
+    }
+    libpath = RSTRING_PTR(sopath);
 #endif
 
 #if !VARIABLE_LIBPATH
