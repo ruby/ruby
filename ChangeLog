@@ -1,3 +1,8 @@
+Thu Aug 27 13:51:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (random_rand): random integer can be a fixnum for
+	  bignum range.  [ruby-dev:39173]
+
 Thu Aug 27 08:16:34 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/strscan/strscan.c (strscan_set_string): set string should not be

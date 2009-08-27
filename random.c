@@ -1055,7 +1055,7 @@ random_rand(int argc, VALUE *argv, VALUE obj)
 	long x = FIX2LONG(beg) + FIX2LONG(v);
 	return LONG2NUM(x);
     }
-    switch (BUILTIN_TYPE(v)) {
+    switch (TYPE(v)) {
       case T_BIGNUM:
 	return rb_big_plus(v, beg);
       case T_FLOAT:
