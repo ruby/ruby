@@ -581,7 +581,7 @@ next_i(VALUE curr, VALUE obj)
     VALUE result;
 
     result = rb_block_call(obj, id_each, 0, 0, next_ii, obj);
-    e->stop_exc = rb_exc_new2(rb_eStopIteration, "iteration reached at end");
+    e->stop_exc = rb_exc_new2(rb_eStopIteration, "iteration reached an end");
     rb_ivar_set(e->stop_exc, rb_intern("result"), result);
     return rb_fiber_yield(1, &nil);
 }

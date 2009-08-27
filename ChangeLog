@@ -1,3 +1,8 @@
+Fri Aug 28 07:25:25 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enumerator.c (next_i): typo fixed (reached at end -> reached an
+	  end).  pointed out by James Edward Gray II at LoneStar RubyConf.
+
 Thu Aug 27 18:31:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (rb_remove_method_id): exported.
