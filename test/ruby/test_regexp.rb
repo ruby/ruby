@@ -287,6 +287,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_unescape
     assert_raise(ArgumentError) { s = '\\'; /#{ s }/ }
+    assert_equal(/\xFF/n, /#{ s="\\xFF" }/n)
     assert_equal(/\177/, (s = '\177'; /#{ s }/))
     assert_raise(ArgumentError) { s = '\u'; /#{ s }/ }
     assert_raise(ArgumentError) { s = '\u{ ffffffff }'; /#{ s }/ }

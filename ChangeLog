@@ -1,3 +1,8 @@
+Thu Aug 27 14:32:31 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_preprocess_dregexp): set encoding as ASCII-8BIT
+	  when /n is specified and the embeded string is escaped text.
+
 Thu Aug 27 13:51:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (random_rand): random integer can be a fixnum for

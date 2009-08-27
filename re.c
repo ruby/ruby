@@ -2285,9 +2285,11 @@ rb_reg_preprocess_dregexp(VALUE ary, int options)
 
 	src_enc = rb_enc_get(str);
 	if (options & ARG_ENCODING_NONE &&
-		src_enc != ascii8bit &&
-		rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
-	    rb_raise(rb_eRegexpError, "/.../n has a non escaped non ASCII character in non ASCII-8BIT script");
+		src_enc != ascii8bit) {
+	    if (rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT)
+		rb_raise(rb_eRegexpError, "/.../n has a non escaped non ASCII character in non ASCII-8BIT script");
+	    else
+		src_enc = ascii8bit;
 	}
 
         StringValue(str);
