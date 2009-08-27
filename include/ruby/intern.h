@@ -263,6 +263,7 @@ NORETURN(void rb_exc_fatal(VALUE));
 VALUE rb_f_exit(int,VALUE*);
 VALUE rb_f_abort(int,VALUE*);
 void rb_remove_method(VALUE, const char*);
+void rb_remove_method_id(VALUE, ID);
 #define rb_disable_super(klass, name) ((void)0)
 #define rb_enable_super(klass, name) ((void)0)
 #define HAVE_RB_DEFINE_ALLOC_FUNC 1

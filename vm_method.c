@@ -100,12 +100,14 @@ rb_clear_cache_by_class(VALUE klass)
     }
 }
 
-VALUE rb_f_notimplement(int argc, VALUE *argv, VALUE obj)
+VALUE
+rb_f_notimplement(int argc, VALUE *argv, VALUE obj)
 {
     rb_notimplement();
 }
 
-static void rb_define_notimplement_method_id(VALUE mod, ID id, rb_method_flag_t noex)
+static void
+rb_define_notimplement_method_id(VALUE mod, ID id, rb_method_flag_t noex)
 {
     rb_add_method(mod, id, VM_METHOD_TYPE_NOTIMPLEMENTED, 0, noex);
 }
@@ -324,8 +326,8 @@ rb_method_entry(VALUE klass, ID id)
     return rb_get_method_entry(klass, id);
 }
 
-static void
-remove_method(VALUE klass, ID mid)
+void
+rb_remove_method_id(VALUE klass, ID mid)
 {
     st_data_t data;
     rb_method_entry_t *me = 0;
@@ -366,6 +368,8 @@ remove_method(VALUE klass, ID mid)
 	rb_funcall(klass, removed, 1, ID2SYM(mid));
     }
 }
+
+#define remove_method(klass, mid) rb_remove_method_id(klass, mid)
 
 void
 rb_remove_method(VALUE klass, const char *name)
