@@ -529,6 +529,11 @@ typedef struct {
 /* inline cache */
 typedef struct iseq_inline_cache_entry *IC;
 
+extern VALUE ruby_vm_global_state_version;
+
+#define GET_VM_STATE_VERSION() (ruby_vm_global_state_version)
+#define INC_VM_STATE_VERSION() \
+  (ruby_vm_global_state_version = (ruby_vm_global_state_version+1) & 0x8fffffff)
 void rb_vm_change_state(void);
 
 typedef VALUE CDHASH;

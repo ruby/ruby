@@ -1,6 +1,9 @@
-Fri Aug 28 09:34:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug 28 10:21:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (iseq_mark): skip outdated cache entries.
+
+	* vm_core.h ({GET,INC}_VM_STATE_VERSION): moved from
+	  vm_insnhelper.h.
 
 Fri Aug 28 07:25:25 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
