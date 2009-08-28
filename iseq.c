@@ -108,6 +108,7 @@ iseq_mark(void *ptr)
 	    struct iseq_inline_cache_entry *const ic = &iseq->ic_entries[i];
 	    RUBY_MARK_UNLESS_NULL(ic->ic_class);
 	    RUBY_MARK_UNLESS_NULL(ic->ic_value);
+	    if (ic->ic_vmstat != GET_VM_STATE_VERSION()) continue;
 	    if (ic->ic_method) {
 		rb_gc_mark_method_entry(ic->ic_method);
 	    }
