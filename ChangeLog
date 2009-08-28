@@ -1,3 +1,8 @@
+Fri Aug 28 13:30:43 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread.c (do_select): rollback r24680. void struct initializer is
+	  invalid.
+
 Fri Aug 28 11:45:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* method.h (rb_method_definition_t): split from rb_method_entry_
