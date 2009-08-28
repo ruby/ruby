@@ -1870,8 +1870,7 @@ ole_show_help(helpfile, helpcontext)
  *  Displays helpfile. The 1st argument specifies WIN32OLE_TYPE
  *  object or WIN32OLE_METHOD object or helpfile.
  *
- *     excel = WIN32OLE.new('Excel.Application')
- *     typeobj = excel.ole_type
+ *     typeobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Application')
  *     WIN32OLE.ole_show_help(typeobj)
  */
 static VALUE

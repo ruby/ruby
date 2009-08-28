@@ -1,3 +1,8 @@
+Sat Aug 29 07:03:26 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (fole_s_show_help): fixed the comment
+	  of WIN32OLE.ole_show_help usage.
+
 Wed Aug 26 19:17:47 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/test/unit/collector/dir.rb: $: bug fix. [ruby-core:24115]
