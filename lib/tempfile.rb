@@ -307,7 +307,7 @@ class Tempfile < DelegateClass(File)
 	if pid == $$
 	  path, tmpfile, cleanlist = *data
 
-	  print "removing ", path, "..." if $DEBUG
+	  STDERR.print "removing ", path, "..." if $DEBUG
 
 	  tmpfile.close if tmpfile
 
@@ -317,7 +317,7 @@ class Tempfile < DelegateClass(File)
 	    cleanlist.delete(path) if cleanlist
 	  end
 
-	  print "done\n" if $DEBUG
+	  STDERR.print "done\n" if $DEBUG
 	end
       }
     end
