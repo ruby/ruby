@@ -1,3 +1,8 @@
+Fri Aug 28 20:34:24 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: use SafeStringValue instead of
+	  Check_SafeStr.
+
 Fri Aug 28 13:30:43 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread.c (do_select): rollback r24680. void struct initializer is

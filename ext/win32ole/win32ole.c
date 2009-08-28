@@ -2654,10 +2654,10 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
     ole_initialize();
 
     rb_scan_args(argc, argv, "1*", &svr_name, &others);
-    Check_SafeStr(svr_name);
+    SafeStringValue(svr_name);
     if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
-        rb_raise(rb_eSecurityError, "Insecure Object Connection - %s",
-                 StringValuePtr(svr_name));
+        rb_raise(rb_eSecurityError, "Insecure Object Connection - %s", 
+		 StringValuePtr(svr_name));
     }
 
     /* get CLSID from OLE server name */
@@ -3142,13 +3142,13 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     rb_call_super(0, 0);
     rb_scan_args(argc, argv, "11*", &svr_name, &host, &others);
 
-    Check_SafeStr(svr_name);
+    SafeStringValue(svr_name);
     if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
         rb_raise(rb_eSecurityError, "Insecure Object Creation - %s",
                  StringValuePtr(svr_name));
     }
     if (!NIL_P(host)) {
-	Check_SafeStr(host);
+	SafeStringValue(host);
         if (rb_safe_level() > 0 && OBJ_TAINTED(host)) {
             rb_raise(rb_eSecurityError, "Insecure Object Creation - %s",
                      StringValuePtr(svr_name));
@@ -4677,7 +4677,7 @@ fole_method_help(VALUE self, VALUE cmdname)
     struct oledata *pole;
     VALUE method, obj;
 
-    Check_SafeStr(cmdname);
+    SafeStringValue(cmdname);
     OLEData_Get_Struct(self, pole);
     hr = typeinfo_from_ole(pole, &pTypeInfo);
     if(FAILED(hr))
@@ -5109,7 +5109,7 @@ foletypelib_initialize(VALUE self, VALUE args)
 
     typelib = rb_ary_entry(args, 0);
 
-    Check_SafeStr(typelib);
+    SafeStringValue(typelib);
 
     found = oletypelib_search_registry(self, typelib);
     if (found == Qfalse) {
@@ -5418,8 +5418,8 @@ foletype_initialize(VALUE self, VALUE typelib, VALUE oleclass)
     ITypeLib *pTypeLib;
     HRESULT hr;
 
-    Check_SafeStr(oleclass);
-    Check_SafeStr(typelib);
+    SafeStringValue(oleclass);
+    SafeStringValue(typelib);
     file = typelib_file(typelib);
     if (file == Qnil) {
         file = typelib;
@@ -6428,7 +6428,7 @@ folemethod_initialize(VALUE self, VALUE oletype, VALUE method)
     struct oletypedata *ptype;
     VALUE obj = Qnil;
     if (rb_obj_is_kind_of(oletype, cWIN32OLE_TYPE)) {
-        Check_SafeStr(method);
+        SafeStringValue(method);
         Data_Get_Struct(oletype, struct oletypedata, ptype);
         obj = olemethod_from_typeinfo(self, ptype->pTypeInfo, method);
         if (obj == Qnil) {
@@ -8099,7 +8099,7 @@ ev_advise(int argc, VALUE *argv, VALUE self)
             rb_raise(rb_eSecurityError, "Insecure Event Creation - %s",
                      StringValuePtr(itf));
         }
-        Check_SafeStr(itf);
+        SafeStringValue(itf);
         pitf = StringValuePtr(itf);
         hr = find_iid(ole, pitf, &iid, &pTypeInfo);
     }
