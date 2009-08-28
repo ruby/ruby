@@ -1,7 +1,9 @@
-Sat Aug 29 03:11:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Aug 29 03:27:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile#make_tmpname): removed thread race
 	  condition.
+
+	* lib/tmpdir.rb (Dir.mktmpdir): ditto.
 
 Fri Aug 28 20:29:34 2009  Akinori MUSHA  <knu@iDaemons.org>
 
