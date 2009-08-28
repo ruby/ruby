@@ -13,6 +13,12 @@ Sat Aug 22 12:08:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/test/unit.rb (Test::Unit.run=, Test::Unit.run?): fixed rdoc.
 	  [ruby-core:25034]
 
+Fri Aug 21 00:39:17 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* parse.y (opt_call_args): fix to pass "make test-all".
+
+	* parse.y (arg_value): fix to pass "make test".
+
 Fri Aug 14 19:57:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/curses/curses.c ({curses,window}_addstr),
@@ -138,6 +144,26 @@ Sun Aug  2 06:08:17 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
 	* node.h (rb_thread_status): ISO C89 do not allow a comma at the end of enum.
 
 	* parse.y (string_type): ditto.
+
+Sun Aug  2 11:58:22 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* parse.y: looser splatting in arguments.
+
+Sun Aug  2 06:51:41 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* parse.y (when_args): no longer needed.
+
+Sun Aug  2 05:06:12 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* parse.y (mlhs_basic): looser splatting in multi-assignment.
+
+Sun Aug  2 04:54:01 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* parse.y (f_args): looser formal optional / rest argumets.
+
+	* parse.y (new_args): raise syntax error for unsupported synax.
+
+	* eval.c (rb_call0): ditto.
 
 Sat Aug  1 07:51:32 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
