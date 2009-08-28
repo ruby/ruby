@@ -105,17 +105,19 @@ iseq_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(iseq->orig);
 
 	for (i=0; i<iseq->ic_size; i++) {
-	    RUBY_MARK_UNLESS_NULL(iseq->ic_entries[i].ic_class);
-	    RUBY_MARK_UNLESS_NULL(iseq->ic_entries[i].ic_value);
-	    if (iseq->ic_entries[i].ic_method) {
-		rb_gc_mark_method_entry(iseq->ic_entries[i].ic_method);
+	    struct iseq_inline_cache_entry *const ic = &iseq->ic_entries[i];
+	    RUBY_MARK_UNLESS_NULL(ic->ic_class);
+	    RUBY_MARK_UNLESS_NULL(ic->ic_value);
+	    if (ic->ic_method) {
+		rb_gc_mark_method_entry(ic->ic_method);
 	    }
 	}
 
 	if (iseq->compile_data != 0) {
-	    RUBY_MARK_UNLESS_NULL(iseq->compile_data->mark_ary);
-	    RUBY_MARK_UNLESS_NULL(iseq->compile_data->err_info);
-	    RUBY_MARK_UNLESS_NULL(iseq->compile_data->catch_table_ary);
+	    struct iseq_compile_data *const compile_data = iseq->compile_data;
+	    RUBY_MARK_UNLESS_NULL(compile_data->mark_ary);
+	    RUBY_MARK_UNLESS_NULL(compile_data->err_info);
+	    RUBY_MARK_UNLESS_NULL(compile_data->catch_table_ary);
 	}
     }
     RUBY_MARK_LEAVE("iseq");
