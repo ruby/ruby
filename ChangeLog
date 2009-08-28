@@ -1,3 +1,8 @@
+Sat Aug 29 03:11:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile#make_tmpname): removed thread race
+	  condition.
+
 Fri Aug 28 20:29:34 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/tempfile.rb (Tempfile#callback): Debug information should be

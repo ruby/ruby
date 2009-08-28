@@ -125,12 +125,8 @@ class Tempfile < DelegateClass(File)
   #
   # === Exceptions
   #
-  # Under rare circumstances, this constructor can raise an instance of
-  # Tempfile::CreationError. This could happen if a large number
-  # of threads or processes are simultaneously trying to create temp files
-  # and stepping on each others' toes. If Tempfile.new cannot find
-  # a unique filename within a limited number of tries, then it will raise
-  # this exception.
+  # If Tempfile.new cannot find a unique filename within a limited
+  # number of tries, then it will raise an exception.
   def initialize(basename, *rest)
     # I wish keyword argument settled soon.
     if opts = Hash.try_convert(rest[-1])
@@ -191,7 +187,8 @@ class Tempfile < DelegateClass(File)
     end
 
     t = Time.now.strftime("%Y%m%d")
-    path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}-#{n}#{suffix}"
+    th = Thread.current.object_id
+    path = "#{prefix}#{t}-#{$$}-#{th.to_s(36)}-#{rand(0x100000000).to_s(36)}-#{n}#{suffix}"
   end
   private :make_tmpname
 
