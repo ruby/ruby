@@ -16,7 +16,7 @@ struct METHOD {
     VALUE recv;
     VALUE rclass;
     ID id;
-    rb_method_entry_t *me;
+    rb_method_entry_t me;
 };
 
 VALUE rb_cUnboundMethod;
@@ -843,7 +843,18 @@ bm_mark(void *ptr)
     struct METHOD *data = ptr;
     rb_gc_mark(data->rclass);
     rb_gc_mark(data->recv);
-    rb_gc_mark_method_entry(data->me);
+    rb_gc_mark_method_entry(&data->me);
+}
+
+static void
+bm_free(void *ptr)
+{
+    struct METHOD *data = ptr;
+    rb_method_definition_t *def = data->me.def;
+    if (def->alias_count == 0)
+	xfree(def);
+    else if (def->alias_count > 0)
+	def->alias_count--;
 }
 
 static size_t
@@ -855,7 +866,7 @@ bm_memsize(void *ptr)
 static const rb_data_type_t method_data_type = {
     "method",
     bm_mark,
-    RUBY_TYPED_DEFAULT_FREE,
+    bm_free,
     bm_memsize,
 };
 
@@ -873,18 +884,20 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     ID rid = id;
     struct METHOD *data;
     rb_method_entry_t *me;
+    rb_method_definition_t *def;
 
   again:
     me = rb_method_entry(klass, id);
-    if (!me) {
+    if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	rb_print_undef(klass, id, 0);
     }
+    def = me->def;
     if (scope && (me->flag & NOEX_MASK) != NOEX_PUBLIC) {
-	rb_print_undef(rclass, me->original_id, (int)(me->flag & NOEX_MASK));
+	rb_print_undef(rclass, def->original_id, (int)(me->flag & NOEX_MASK));
     }
-    if (me->type == VM_METHOD_TYPE_ZSUPER) {
+    if (def->type == VM_METHOD_TYPE_ZSUPER) {
 	klass = RCLASS_SUPER(me->klass);
-	id = me->original_id;
+	id = def->original_id;
 	goto again;
     }
 
@@ -904,7 +917,8 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     data->recv = obj;
     data->rclass = rclass;
     data->id = rid;
-    data->me = me;
+    data->me = *me;
+    if (def) def->alias_count++;
 
     OBJ_INFECT(method, klass);
 
@@ -959,7 +973,7 @@ method_eq(VALUE method, VALUE other)
     m1 = (struct METHOD *)DATA_PTR(method);
     m2 = (struct METHOD *)DATA_PTR(other);
 
-    if (!rb_method_entry_eq(m1->me, m2->me) ||
+    if (!rb_method_entry_eq(&m1->me, &m2->me) ||
 	m1->rclass != m2->rclass ||
 	m1->recv != m2->recv) {
 	return Qfalse;
@@ -984,7 +998,7 @@ method_hash(VALUE method)
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, m);
     hash =  (long)m->rclass;
     hash ^= (long)m->recv;
-    hash ^= (long)m->me;
+    hash ^= (long)m->me.def;
 
     return INT2FIX(hash);
 }
@@ -1010,6 +1024,7 @@ method_unbind(VALUE obj)
     data->recv = Qundef;
     data->id = orig->id;
     data->me = orig->me;
+    if (orig->me.def) orig->me.def->alias_count++;
     data->rclass = orig->rclass;
     OBJ_INFECT(method, obj);
 
@@ -1061,7 +1076,7 @@ method_owner(VALUE obj)
     struct METHOD *data;
 
     TypedData_Get_Struct(obj, struct METHOD, &method_data_type, data);
-    return data->me->klass;
+    return data->me.klass;
 }
 
 /*
@@ -1223,7 +1238,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 			 rb_class2name(rclass));
 	    }
 	}
-	rb_add_method_me(mod, id, method->me, noex);
+	rb_add_method_me(mod, id, &method->me, noex);
     }
     else if (rb_obj_is_proc(body)) {
 	rb_proc_t *proc;
@@ -1294,6 +1309,7 @@ method_clone(VALUE self)
     clone = TypedData_Make_Struct(CLASS_OF(self), struct METHOD, &method_data_type, data);
     CLONESETUP(clone, self);
     *data = *orig;
+    if (data->me.def) data->me.def->alias_count++;
 
     return clone;
 }
@@ -1336,7 +1352,7 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
 			 const rb_method_entry_t *me);
 
 	PASS_PASSED_BLOCK_TH(th);
-	result = rb_vm_call(th, data->recv, data->id,  argc, argv, data->me);
+	result = rb_vm_call(th, data->recv, data->id,  argc, argv, &data->me);
     }
     POP_TAG();
     if (safe >= 0)
@@ -1456,6 +1472,7 @@ umethod_bind(VALUE method, VALUE recv)
 
     method = TypedData_Make_Struct(rb_cMethod, struct METHOD, &method_data_type, bound);
     *bound = *data;
+    if (bound->me.def) bound->me.def->alias_count++;
     bound->recv = recv;
     bound->rclass = CLASS_OF(recv);
 
@@ -1465,11 +1482,13 @@ umethod_bind(VALUE method, VALUE recv)
 int
 rb_method_entry_arity(const rb_method_entry_t *me)
 {
-    switch (me->type) {
+    const rb_method_definition_t *def = me->def;
+    if (!def) return 0;
+    switch (def->type) {
       case VM_METHOD_TYPE_CFUNC:
-	if (me->body.cfunc.argc < 0)
+	if (def->body.cfunc.argc < 0)
 	    return -1;
-	return check_argc(me->body.cfunc.argc);
+	return check_argc(def->body.cfunc.argc);
       case VM_METHOD_TYPE_ZSUPER:
 	return -1;
       case VM_METHOD_TYPE_ATTRSET:
@@ -1477,9 +1496,9 @@ rb_method_entry_arity(const rb_method_entry_t *me)
       case VM_METHOD_TYPE_IVAR:
 	return 0;
       case VM_METHOD_TYPE_BMETHOD:
-	return rb_proc_arity(me->body.proc);
+	return rb_proc_arity(def->body.proc);
       case VM_METHOD_TYPE_ISEQ: {
-	rb_iseq_t *iseq = me->body.iseq;
+	rb_iseq_t *iseq = def->body.iseq;
 	if (iseq->arg_rest == -1 && iseq->arg_opts == 0) {
 	    return iseq->argc;
 	}
@@ -1491,7 +1510,7 @@ rb_method_entry_arity(const rb_method_entry_t *me)
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
 	return 0;
       case VM_METHOD_TYPE_OPTIMIZED: {
-	switch (me->body.optimize_type) {
+	switch (def->body.optimize_type) {
 	  case OPTIMIZED_METHOD_TYPE_SEND:
 	    return -1;
 	  default:
@@ -1499,7 +1518,7 @@ rb_method_entry_arity(const rb_method_entry_t *me)
 	}
       }
     }
-    rb_bug("rb_method_entry_arity: invalid method entry type (%d)", me->type);
+    rb_bug("rb_method_entry_arity: invalid method entry type (%d)", def->type);
 }
 
 /*
@@ -1548,7 +1567,7 @@ method_arity(VALUE method)
     struct METHOD *data;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    return rb_method_entry_arity(data->me);
+    return rb_method_entry_arity(&data->me);
 }
 
 int
@@ -1568,16 +1587,16 @@ rb_iseq_t *
 rb_method_get_iseq(VALUE method)
 {
     struct METHOD *data;
-    rb_method_entry_t *me;
+    rb_method_definition_t *def;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    me = data->me;
+    def = data->me.def;
 
-    switch (me->type) {
+    switch (def->type) {
       case VM_METHOD_TYPE_BMETHOD:
-	return get_proc_iseq(me->body.proc, 0);
+	return get_proc_iseq(def->body.proc, 0);
       case VM_METHOD_TYPE_ISEQ:
-	return me->body.iseq;
+	return def->body.iseq;
       default:
 	return 0;
     }
@@ -1638,11 +1657,11 @@ method_inspect(VALUE method)
     rb_str_buf_cat2(str, s);
     rb_str_buf_cat2(str, ": ");
 
-    if (FL_TEST(data->me->klass, FL_SINGLETON)) {
-	VALUE v = rb_iv_get(data->me->klass, "__attached__");
+    if (FL_TEST(data->me.klass, FL_SINGLETON)) {
+	VALUE v = rb_iv_get(data->me.klass, "__attached__");
 
 	if (data->recv == Qundef) {
-	    rb_str_buf_append(str, rb_inspect(data->me->klass));
+	    rb_str_buf_append(str, rb_inspect(data->me.klass));
 	}
 	else if (data->recv == v) {
 	    rb_str_buf_append(str, rb_inspect(v));
@@ -1658,15 +1677,15 @@ method_inspect(VALUE method)
     }
     else {
 	rb_str_buf_cat2(str, rb_class2name(data->rclass));
-	if (data->rclass != data->me->klass) {
+	if (data->rclass != data->me.klass) {
 	    rb_str_buf_cat2(str, "(");
-	    rb_str_buf_cat2(str, rb_class2name(data->me->klass));
+	    rb_str_buf_cat2(str, rb_class2name(data->me.klass));
 	    rb_str_buf_cat2(str, ")");
 	}
     }
     rb_str_buf_cat2(str, sharp);
-    rb_str_append(str, rb_id2str(data->me->original_id));
-    if (data->me->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
+    rb_str_append(str, rb_id2str(data->me.def->original_id));
+    if (data->me.def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
         rb_str_buf_cat2(str, " (not-implemented)");
     }
     rb_str_buf_cat2(str, ">");

@@ -735,7 +735,7 @@ vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *
 	}
 	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
 	    if (NIL_P(file)) file = rb_str_new_cstr("ruby");
-	    if ((*iter)(arg, file, line_no, rb_id2str(cfp->me->original_id))) break;
+	    if ((*iter)(arg, file, line_no, rb_id2str(cfp->me->def->original_id))) break;
 	}
 	cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp);
     }
@@ -937,7 +937,7 @@ static void
 rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me)
 {
     VALUE bop;
-    if (me->type == VM_METHOD_TYPE_CFUNC) {
+    if (!me->def || me->def->type == VM_METHOD_TYPE_CFUNC) {
 	if (st_lookup(vm_opt_method_table, (st_data_t)me, &bop)) {
 	    ruby_vm_redefined_flag[bop] = 1;
 	}
@@ -948,8 +948,8 @@ static void
 add_opt_method(VALUE klass, ID mid, VALUE bop)
 {
     rb_method_entry_t *me;
-    if (st_lookup(RCLASS_M_TBL(klass), mid, (void *)&me) &&
-	me->type == VM_METHOD_TYPE_CFUNC) {
+    if (st_lookup(RCLASS_M_TBL(klass), mid, (void *)&me) && me->def &&
+	me->def->type == VM_METHOD_TYPE_CFUNC) {
 	st_insert(vm_opt_method_table, (st_data_t)me, (st_data_t)bop);
     }
     else {
@@ -1338,7 +1338,7 @@ rb_thread_method_id_and_class(rb_thread_t *th,
     rb_control_frame_t *cfp = th->cfp;
     rb_iseq_t *iseq = cfp->iseq;
     if (!iseq) {
-	if (idp) *idp = cfp->me->original_id;
+	if (idp) *idp = cfp->me->def->original_id;
 	if (klassp) *klassp = cfp->me->klass;
 	return 1;
     }
@@ -1382,10 +1382,10 @@ rb_thread_current_status(const rb_thread_t *th)
 			     file, line_no, RSTRING_PTR(iseq->name));
 	}
     }
-    else if (cfp->me->original_id) {
+    else if (cfp->me->def->original_id) {
 	str = rb_sprintf("`%s#%s' (cfunc)",
 			 RSTRING_PTR(rb_class_name(cfp->me->klass)),
-			 rb_id2name(cfp->me->original_id));
+			 rb_id2name(cfp->me->def->original_id));
     }
 
     return str;

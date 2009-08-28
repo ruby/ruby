@@ -1,3 +1,10 @@
+Fri Aug 28 11:45:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* method.h (rb_method_definition_t): split from rb_method_entry_
+	  to deal aliases.  [ruby-dev:39165]
+
+	* proc.c (struct METHOD): contains rb_method_entry_t copy.
+
 Fri Aug 28 10:21:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (iseq_mark): skip outdated cache entries.

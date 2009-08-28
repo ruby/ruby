@@ -1377,13 +1377,16 @@ rb_mark_hash(st_table *tbl)
 static void
 mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me, int lev)
 {
+    const rb_method_definition_t *def = me->def;
+
     gc_mark(objspace, me->klass, lev);
-    switch (me->type) {
+    if (!def) return;
+    switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
-	gc_mark(objspace, me->body.iseq->self, lev);
+	gc_mark(objspace, def->body.iseq->self, lev);
 	break;
       case VM_METHOD_TYPE_BMETHOD:
-	gc_mark(objspace, me->body.proc, lev);
+	gc_mark(objspace, def->body.proc, lev);
 	break;
       default:
 	break; /* ignore */
@@ -1417,7 +1420,7 @@ mark_m_tbl(rb_objspace_t *objspace, st_table *tbl, int lev)
 static int
 free_method_entry_i(ID key, rb_method_entry_t *me, st_data_t data)
 {
-    xfree(me);
+    rb_free_method_entry(me);
     return ST_CONTINUE;
 }
 

@@ -126,17 +126,14 @@ VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
 static int
 clone_method(ID mid, const rb_method_entry_t *me, struct clone_method_data *data)
 {
-    switch (me->type) {
-      case VM_METHOD_TYPE_ISEQ: {
-	  VALUE newiseqval = rb_iseq_clone(me->body.iseq->self, data->klass);
-	  rb_iseq_t *iseq;
-	  GetISeqPtr(newiseqval, iseq);
-	  rb_add_method(data->klass, mid, VM_METHOD_TYPE_ISEQ, iseq, me->flag);
-	  break;
-      }
-      default:
+    if (me->def && me->def->type == VM_METHOD_TYPE_ISEQ) {
+	VALUE newiseqval = rb_iseq_clone(me->def->body.iseq->self, data->klass);
+	rb_iseq_t *iseq;
+	GetISeqPtr(newiseqval, iseq);
+	rb_add_method(data->klass, mid, VM_METHOD_TYPE_ISEQ, iseq, me->flag);
+    }
+    else {
 	rb_add_method_me(data->klass, mid, me, me->flag);
-	break;
     }
     return ST_CONTINUE;
 }
@@ -683,7 +680,7 @@ method_entry(ID key, const rb_method_entry_t *me, st_table *list)
     }
 
     if (!st_lookup(list, key, 0)) {
-	if (!me || me->type == VM_METHOD_TYPE_UNDEF) {
+	if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	    type = -1; /* none */
 	}
 	else {

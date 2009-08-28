@@ -113,8 +113,8 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	}
     }
     else if (cfp->me) {
-	iseq_name = rb_id2name(cfp->me->original_id);
-	snprintf(posbuf, MAX_POSBUF, ":%s", rb_id2name(cfp->me->original_id));
+	iseq_name = rb_id2name(cfp->me->def->original_id);
+	snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
 	line = -1;
     }
 

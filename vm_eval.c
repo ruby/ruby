@@ -33,17 +33,19 @@ static inline VALUE
 vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	 const rb_method_entry_t *me)
 {
+    const rb_method_definition_t *def = me->def;
     VALUE val;
     VALUE klass = me->klass;
     const rb_block_t *blockptr = 0;
 
+    if (!def) return Qnil;
     if (th->passed_block) {
 	blockptr = th->passed_block;
 	th->passed_block = 0;
     }
 
   again:
-    switch (me->type) {
+    switch (def->type) {
       case VM_METHOD_TYPE_ISEQ: {
 	rb_control_frame_t *reg_cfp;
 	int i;
@@ -71,7 +73,7 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 			      recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
 
 	    cfp->me = me;
-	    val = call_cfunc(me->body.cfunc.func, recv, me->body.cfunc.argc, argc, argv);
+	    val = call_cfunc(def->body.cfunc.func, recv, def->body.cfunc.argc, argc, argv);
 
 	    if (reg_cfp != th->cfp + 1) {
 		rb_bug("cfp consistency error - call0");
@@ -85,14 +87,14 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	if (argc != 1) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
 	}
-	val = rb_ivar_set(recv, me->body.attr_id, argv[0]);
+	val = rb_ivar_set(recv, def->body.attr_id, argv[0]);
 	break;
       }
       case VM_METHOD_TYPE_IVAR: {
 	if (argc != 0) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
 	}
-	val = rb_attr_get(recv, me->body.attr_id);
+	val = rb_attr_get(recv, def->body.attr_id);
 	break;
       }
       case VM_METHOD_TYPE_BMETHOD: {
@@ -105,10 +107,11 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	    return method_missing(recv, id, argc, argv, 0);
 	}
 	RUBY_VM_CHECK_INTS();
+	if (!(def = me->def)) return Qnil;
 	goto again;
       }
       case VM_METHOD_TYPE_OPTIMIZED: {
-	switch (me->body.optimize_type) {
+	switch (def->body.optimize_type) {
 	  case OPTIMIZED_METHOD_TYPE_SEND:
 	    val = send_internal(argc, argv, recv, NOEX_NOSUPER | NOEX_PRIVATE);
 	    break;
@@ -119,14 +122,14 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	    break;
 	  }
 	  default:
-	    rb_bug("vm_call0: unsupported optimized method type (%d)", me->body.optimize_type);
+	    rb_bug("vm_call0: unsupported optimized method type (%d)", def->body.optimize_type);
 	    val = Qundef;
 	    break;
 	}
 	break;
       }
       default:
-	rb_bug("vm_call0: unsupported method type (%d)", me->type);
+	rb_bug("vm_call0: unsupported method type (%d)", def->type);
 	val = Qundef;
     }
     RUBY_VM_CHECK_INTS();
@@ -156,7 +159,7 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
 	if (klass == 0) {
 	    klass = vm_search_normal_superclass(cfp->me->klass, recv);
 	}
-	id = cfp->me->original_id;
+	id = cfp->me->def->original_id;
     }
     else {
 	rb_bug("vm_call_super: should not be reached");
@@ -212,14 +215,14 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
     ent = cache + EXPR1(klass, mid);
 
     if (ent->mid == mid && ent->klass == klass) {
-	if (!ent->me) {
-	  return method_missing(recv, mid, argc, argv,
-				scope == CALL_VCALL ? NOEX_VCALL : 0);
-	}
 	me = ent->me;
+	if (UNDEFINED_METHOD_ENTRY_P(me)) {
+	    return method_missing(recv, mid, argc, argv,
+				  scope == CALL_VCALL ? NOEX_VCALL : 0);
+	}
 	klass = me->klass;
     }
-    else if ((me = rb_method_entry(klass, mid)) != 0) {
+    else if ((me = rb_method_entry(klass, mid)) != 0 && me->def) {
 	klass = me->klass;
     }
     else {
@@ -230,7 +233,7 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 			      scope == CALL_VCALL ? NOEX_VCALL : 0);
     }
 
-    oid = me->original_id;
+    oid = me->def->original_id;
     noex = me->flag;
 
     if (oid != idMethodMissing) {
