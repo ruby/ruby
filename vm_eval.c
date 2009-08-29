@@ -191,6 +191,20 @@ stack_check(void)
     }
 }
 
+/*!
+ * \internal
+ * calls the specified method.
+ *
+ * This function is called by functions in rb_call* family.
+ * \param recv   receiver of the method
+ * \param mid    an ID that represents the name of the method
+ * \param argc   the number of method arguments
+ * \param argv   a pointer to an array of method arguments
+ * \param scope  
+ * \param self   self in the caller. Qundef means the current control frame's self.
+ *
+ * \note \a self is used in order to controlling access to protected methods.
+ */
 static inline VALUE
 rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 	 call_type scope, VALUE self)
@@ -269,6 +283,18 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
     return vm_call0(th, recv, mid, argc, argv, me);
 }
 
+
+/*!
+ * \internal
+ * calls the specified method.
+ *
+ * This function is called by functions in rb_call* family.
+ * \param recv   receiver
+ * \param mid    an ID that represents the name of the method
+ * \param argc   the number of method arguments
+ * \param argv   a pointer to an array of method arguments
+ * \param scope  
+ */
 static inline VALUE
 rb_call(VALUE recv, ID mid, int argc, const VALUE *argv, call_type scope)
 {
@@ -412,6 +438,14 @@ rb_raise_method_missing(rb_thread_t *th, int argc, VALUE *argv,
     raise_method_missing(th, argc, argv, obj, call_status | NOEX_MISSING);
 }
 
+/*!
+ * Calls a method
+ * \param recv   receiver of the method
+ * \param mid    an ID that represents the name of the method
+ * \param args   an Array object which contains method arguments
+ *
+ * \pre \a args must refer an Array object.
+ */
 VALUE
 rb_apply(VALUE recv, ID mid, VALUE args)
 {
@@ -424,6 +458,15 @@ rb_apply(VALUE recv, ID mid, VALUE args)
     return rb_call(recv, mid, argc, argv, CALL_FCALL);
 }
 
+/*!
+ * Calls a method
+ * \param recv   receiver of the method
+ * \param mid    an ID that represents the name of the method
+ * \param n      the number of arguments
+ * \param ...    arbitrary number of method arguments
+ *
+ * \pre each of arguments after \a n must be a VALUE.
+ */
 VALUE
 rb_funcall(VALUE recv, ID mid, int n, ...)
 {
@@ -447,12 +490,28 @@ rb_funcall(VALUE recv, ID mid, int n, ...)
     return rb_call(recv, mid, n, argv, CALL_FCALL);
 }
 
+/*!
+ * Calls a method
+ * \param recv   receiver of the method
+ * \param mid    an ID that represents the name of the method
+ * \param argc   the number of arguments
+ * \param argv   pointer to an array of method arguments
+ */
 VALUE
 rb_funcall2(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     return rb_call(recv, mid, argc, argv, CALL_FCALL);
 }
 
+/*!
+ * Calls a method.
+ *
+ * Same as rb_funcall2 but this function can call only public methods.
+ * \param recv   receiver of the method
+ * \param mid    an ID that represents the name of the method
+ * \param argc   the number of arguments
+ * \param argv   pointer to an array of method arguments
+ */
 VALUE
 rb_funcall3(VALUE recv, ID mid, int argc, const VALUE *argv)
 {

@@ -303,6 +303,17 @@ rb_make_metaclass(VALUE obj, VALUE super)
     }
 }
 
+
+/*!
+ * Defines a new class.
+ * \param id     ignored
+ * \param super  A class from which the new class will derive. NULL means \c Object class.
+ * \return       the created class
+ * \throw TypeError if super is not a \c Class object.
+ *
+ * \note the returned class will not be associated with \a id.
+ *       You must explicitly set a class name if necessary.
+ */
 VALUE
 rb_define_class_id(ID id, VALUE super)
 {
@@ -315,6 +326,15 @@ rb_define_class_id(ID id, VALUE super)
     return klass;
 }
 
+
+/*!
+ * Calls Class#inherited.
+ * \param super  A class which will be called #inherited.
+ *               NULL means Object class.
+ * \param klass  A Class object which derived from \a super
+ * \return the value \c Class#inherited's returns
+ * \pre Each of \a super and \a klass must be a \c Class object.
+ */
 VALUE
 rb_class_inherited(VALUE super, VALUE klass)
 {
@@ -324,6 +344,23 @@ rb_class_inherited(VALUE super, VALUE klass)
     return rb_funcall(super, inherited, 1, klass);
 }
 
+
+
+/*!
+ * Defines a top-level class.
+ * \param name   name of the class
+ * \param super  a class from which the new class will derive. 
+ *               NULL means \c Object class.
+ * \return the created class
+ * \throw TypeError if the constant name \a name is already taken but 
+ *                  the constant is not a \c Class.
+ * \throw NameError if the class is already defined but the class can not
+ *                  be reopened because its superclass is not \a super.
+ * \post top-level constant named \a name refers the returned class.
+ *
+ * \note if a class named \a name is already defined and its superclass is
+ *       \a super, the function just returns the defined class.
+ */
 VALUE
 rb_define_class(const char *name, VALUE super)
 {
@@ -353,12 +390,46 @@ rb_define_class(const char *name, VALUE super)
     return klass;
 }
 
+
+/*!
+ * Defines a class under the namespace of \a outer.
+ * \param outer  a class which contains the new class.
+ * \param name   name of the new class
+ * \param super  a class from which the new class will derive. 
+ *               NULL means \c Object class.
+ * \return the created class
+ * \throw TypeError if the constant name \a name is already taken but 
+ *                  the constant is not a \c Class.
+ * \throw NameError if the class is already defined but the class can not
+ *                  be reopened because its superclass is not \a super.
+ * \post top-level constant named \a name refers the returned class.
+ *
+ * \note if a class named \a name is already defined and its superclass is
+ *       \a super, the function just returns the defined class.
+ */
 VALUE
 rb_define_class_under(VALUE outer, const char *name, VALUE super)
 {
     return rb_define_class_id_under(outer, rb_intern(name), super);
 }
 
+
+/*!
+ * Defines a class under the namespace of \a outer.
+ * \param outer  a class which contains the new class.
+ * \param id     name of the new class
+ * \param super  a class from which the new class will derive. 
+ *               NULL means \c Object class.
+ * \return the created class
+ * \throw TypeError if the constant name \a name is already taken but 
+ *                  the constant is not a \c Class.
+ * \throw NameError if the class is already defined but the class can not
+ *                  be reopened because its superclass is not \a super.
+ * \post top-level constant named \a name refers the returned class.
+ *
+ * \note if a class named \a name is already defined and its superclass is
+ *       \a super, the function just returns the defined class.
+ */
 VALUE
 rb_define_class_id_under(VALUE outer, ID id, VALUE super)
 {
@@ -870,6 +941,63 @@ rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
     return ary;
 }
 
+/*!
+ * \}
+ */
+/*!
+ * \defgroup defmethod Defining methods
+ * There are some APIs to define a method from C.
+ * These API takes a C function as a method body.
+ *
+ * \par Method body functions
+ * Method body functions must return a VALUE and 
+ * can be one of the following form:
+ * <dl>
+ * <dt>Fixed number of parameters</dt>
+ * <dd>
+ *     This form is a normal C function, excepting it takes 
+ *     a receiver object as the first argument.
+ *
+ *     \code
+ *     static VALUE my_method(VALUE self, VALUE x, VALUE y);
+ *     \endcode
+ * </dd>
+ * <dt>argc and argv style</dt>
+ * <dd>
+ *     This form takes three parameters: \a argc, \a argv and \a self.
+ *     \a self is the receiver. \a argc is the number of arguments.
+ *     \a argv is a pointer to an array of the arguments.
+ *
+ *     \code
+ *     static VALUE my_method(int argc, VALUE *argv, VALUE self);
+ *     \endcode
+ * </dd>
+ * <dt>Ruby array style</dt>
+ * <dd>
+ *     This form takes two parameters: self and args.
+ *     \a self is the receiver. \a args is an Array object which 
+ *     containts the arguments.
+ *
+ *     \code
+ *     static VALUE my_method(VALUE self, VALUE args);
+ *     \endcode
+ * </dd>
+ *
+ * \par Number of parameters
+ * Method defining APIs takes the number of parameters which the
+ * method will takes. This number is called \a argc.
+ * \a argc can be:
+ * <dl>
+ * <dt>zero or positive number</dt>
+ * <dd>This means the method body function takes a fixed number of parameters</dd>
+ * <dt>-1</dt>
+ * <dd>This means the method body function is "argc and argv" style.</dd>
+ * <dt>-2</dt>
+ * <dd>This means the method body function is "self and args" style.</dd>
+ * </dl>
+ * \{
+ */
+
 void
 rb_define_method_id(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc)
 {
@@ -900,12 +1028,34 @@ rb_undef_method(VALUE klass, const char *name)
     rb_add_method(klass, rb_intern(name), VM_METHOD_TYPE_UNDEF, 0, NOEX_UNDEF);
 }
 
+/*!
+ * \}
+ */
+/*!
+ * \addtogroup class
+ * \{
+ */
+
 #define SPECIAL_SINGLETON(x,c) do {\
     if (obj == (x)) {\
 	return c;\
     }\
 } while (0)
 
+
+/*!
+ * Returns the singleton class of \a obj.
+ *
+ * \param obj an arbitrary object.
+ * \throw TypeError if \a obj is a Fixnum or a Symbol.
+ * \return the singleton class.
+ *
+ * \post \a obj has the singleton class.
+ * \note a new singleton class will be created 
+ *       if \a obj does not have it.
+ * \note the singleton classes for nil, true and false are:
+ *       NilClass, TrueClass and FalseClass.
+ */
 VALUE
 rb_singleton_class(VALUE obj)
 {
@@ -952,12 +1102,37 @@ rb_singleton_class(VALUE obj)
     return klass;
 }
 
+/*!
+ * \}
+ */
+
+/*!
+ * \addtogroup defmethod
+ * \{
+ */
+
+/*!
+ * Defines a singleton method for \a obj.
+ * \param obj    an arbitrary object
+ * \param name   name of the singleton method
+ * \param func   the method body
+ * \param argc   the number of parameters, or -1 or -2. see \ref defmethod.
+ */
 void
 rb_define_singleton_method(VALUE obj, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
     rb_define_method(rb_singleton_class(obj), name, func, argc);
 }
 
+
+
+/*!
+ * Defines a module function for \a module.
+ * \param module  an module or a class.
+ * \param name    name of the function
+ * \param func    the method body
+ * \param argc    the number of parameters, or -1 or -2. see \ref defmethod.
+ */
 void
 rb_define_module_function(VALUE module, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
@@ -965,18 +1140,39 @@ rb_define_module_function(VALUE module, const char *name, VALUE (*func)(ANYARGS)
     rb_define_singleton_method(module, name, func, argc);
 }
 
+
+/*!
+ * Defines a global function
+ * \param name    name of the function
+ * \param func    the method body
+ * \param argc    the number of parameters, or -1 or -2. see \ref defmethod.
+ */
 void
 rb_define_global_function(const char *name, VALUE (*func)(ANYARGS), int argc)
 {
     rb_define_module_function(rb_mKernel, name, func, argc);
 }
 
+
+/*!
+ * Defines an alias of a method.
+ * \param klass  the class which the original method belongs to
+ * \param name1  a new name for the method
+ * \param name2  the original name of the method
+ */
 void
 rb_define_alias(VALUE klass, const char *name1, const char *name2)
 {
     rb_alias(klass, rb_intern(name1), rb_intern(name2));
 }
 
+/*!
+ * Defines (a) public accessor method(s) for an attribute.
+ * \param klass  the class which the attribute will belongs to
+ * \param name   name of the attribute
+ * \param read   a getter method for the attribute will be defined if \a read is non-zero.
+ * \param write  a setter method for the attribute will be defined if \a write is non-zero.
+ */
 void
 rb_define_attr(VALUE klass, const char *name, int read, int write)
 {
