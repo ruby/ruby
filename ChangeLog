@@ -1,3 +1,13 @@
+Sun Aug 30 03:59:43 2009  Tanaka Akira  <akr@fsij.org>
+
+	* timev.h (TIME_SCALE): defined as 1000000000.
+	  (struct vtm): subsec is replaced by subsecx.
+	  subsec * TIME_SCALE == subsecx.
+	
+	* time.c: avoid rational in most cases.
+	  (struct time_object): timev is replaced by timexv.
+	  timev * TIME_SCALE == timexv.
+
 Sun Aug 30 03:17:25 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (init_leap_second_info): use TIMET_MAX.
