@@ -1,3 +1,7 @@
+Sat Aug 29 12:16:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tmpdir.rb (Dir.mktmpdir): rolled back r24699.  [ruby-dev:39193]
+
 Sat Aug 29 03:27:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile#make_tmpname): removed thread race

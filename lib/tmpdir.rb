@@ -111,10 +111,9 @@ class Dir
     end
     tmpdir ||= Dir.tmpdir
     t = Time.now.strftime("%Y%m%d")
-    th = Thread.current.object_id.to_s(36)
     n = nil
     begin
-      path = "#{tmpdir}/#{prefix}#{t}-#{$$}-#{th}-#{rand(0x100000000).to_s(36)}"
+      path = "#{tmpdir}/#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}"
       path << "-#{n}" if n
       path << suffix
       Dir.mkdir(path, 0700)
