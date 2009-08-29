@@ -470,10 +470,12 @@ if defined? Zlib
     def test_read
       t = Tempfile.new("test_zlib_gzip_reader")
       t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
+      str = "\u3042\u3044\u3046"
+      Zlib::GzipWriter.open(t.path) {|gz| gz.print(str) }
 
-      f = Zlib::GzipReader.open(t.path)
+      f = Zlib::GzipReader.open(t.path, encoding: "UTF-8")
       assert_raise(ArgumentError) { f.read(-1) }
+      assert_equal(str, f.read)
     end
 
     def test_readpartial

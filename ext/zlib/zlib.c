@@ -2202,7 +2202,7 @@ gzfile_read_all(struct gzfile *gz)
     dst = zstream_detach_buffer(&gz->z);
     gzfile_calc_crc(gz, dst);
     OBJ_TAINT(dst);
-    return dst;
+    return gzfile_newstr(gz, dst);
 }
 
 static VALUE
