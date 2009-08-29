@@ -1,3 +1,10 @@
+Sat Aug 29 20:40:02 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* vm_eval.c (rb_call0): gets rid of checking method cache twice.
+
+	* method.h (rb_get_method_entry): added a prototype of the function.
+	  (rb_method_entry_without_cache): more friendly name.
+
 Sat Aug 29 12:16:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tmpdir.rb (Dir.mktmpdir): rolled back r24699.  [ruby-dev:39193]

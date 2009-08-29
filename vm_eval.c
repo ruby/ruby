@@ -222,7 +222,7 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 	}
 	klass = me->klass;
     }
-    else if ((me = rb_method_entry(klass, mid)) != 0 && me->def) {
+    else if ((me = rb_method_entry_without_cache(klass, mid)) != 0 && me->def) {
 	klass = me->klass;
     }
     else {
