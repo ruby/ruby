@@ -1,3 +1,7 @@
+Sun Aug 30 03:17:25 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (init_leap_second_info): use TIMET_MAX.
+
 Sun Aug 30 01:15:31 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/zlib/zlib.c (gzfile_read_all): use gzfile_newstr;

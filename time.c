@@ -45,6 +45,9 @@ typedef unsigned LONG_LONG unsigned_time_t;
 # error cannot find integer type which size is same as time_t.
 #endif
 
+#define TIMET_MAX (~(time_t)0 <= 0 ? (time_t)((~(unsigned_time_t)0) >> 1) : (~(unsigned_time_t)0))
+#define TIMET_MIN (~(time_t)0 <= 0 ? (time_t)(((unsigned_time_t)1) << (sizeof(time_t) * CHAR_BIT - 1)) : (time_t)0)
+
 VALUE rb_cTime;
 static VALUE time_utc_offset _((VALUE));
 
@@ -515,7 +518,7 @@ init_leap_second_info()
      * So no one knows leap seconds in the future after the next year.
      */
     if (this_year == 0) {
-        time_t now, max;
+        time_t now;
         struct tm *tm, result;
         struct vtm vtm;
         VALUE timev;
@@ -525,13 +528,8 @@ init_leap_second_info()
         if (!tm) return;
         this_year = tm->tm_year;
 
-        max = ~(time_t)0;
-        if (max <= (time_t)0) {
-            /* time_t is signed */
-            max = (~(unsigned_time_t)0) >> 1;
-        }
-        if (max - now < (time_t)(366*86400))
-            known_leap_seconds_limit = max;
+        if (TIMET_MAX - now < (time_t)(366*86400))
+            known_leap_seconds_limit = TIMET_MAX;
         else
             known_leap_seconds_limit = now + (time_t)(366*86400);
 
@@ -878,9 +876,6 @@ timelocalv(struct vtm *vtm)
     else
         return lt(vtm1.utc_offset, vtm2.utc_offset) ? timev1 : timev2;
 }
-
-#define TIMET_MAX (~(time_t)0 <= 0 ? (time_t)((~(unsigned_time_t)0) >> 1) : (~(unsigned_time_t)0))
-#define TIMET_MIN (~(time_t)0 <= 0 ? (time_t)(((unsigned_time_t)1) << (sizeof(time_t) * CHAR_BIT - 1)) : (time_t)0)
 
 static struct tm *
 localtime_with_gmtoff(const time_t *t, struct tm *result, long *gmtoff)
