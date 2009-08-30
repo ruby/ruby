@@ -1246,7 +1246,15 @@ gc_sweep()
     /* clear finalization list */
     if (final_list) {
 	deferred_final_list = final_list;
-	rb_thread_pending = 1;
+	if (!freelist && !rb_thread_critical) {
+	    rb_gc_finalize_deferred();
+	}
+	else {
+	    rb_thread_pending = 1;
+	}
+	if (!freelist) {
+	    add_heap();
+	}
 	return;
     }
     free_unused_heaps();

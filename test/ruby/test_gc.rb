@@ -26,5 +26,9 @@ class TestGc < Test::Unit::TestCase
     }
     GC.start
     assert true   # reach here or dumps core
+    100000.times {
+      Time.now
+    }
+    assert true, '[ruby-dev:39201]'   # reach here or dumps core
   end
 end

@@ -1,3 +1,8 @@
+Sun Aug 30 15:12:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (gc_sweep): makes new room if object space is full of
+	  finalized objects and has no free objects.  [ruby-dev:39201]
+
 Sat Aug 29 07:03:26 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (fole_s_show_help): fixed the comment
