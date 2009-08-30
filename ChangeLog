@@ -1,3 +1,9 @@
+Sun Aug 30 09:45:11 2009  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigmul1_single): new function specialized respect to
+	  multiply two single digit bignums.
+	  (bigmul0): use bigmul1_single.
+
 Sun Aug 30 03:59:43 2009  Tanaka Akira  <akr@fsij.org>
 
 	* timev.h (TIME_SCALE): defined as 1000000000.

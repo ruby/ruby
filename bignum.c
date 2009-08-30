@@ -1746,6 +1746,24 @@ big_real_len(VALUE x)
 }
 
 static VALUE
+bigmul1_single(VALUE x, VALUE y)
+{
+    BDIGIT_DBL n;
+    VALUE z = bignew(2, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
+    BDIGIT *xds, *yds, *zds;
+
+    xds = BDIGITS(x);
+    yds = BDIGITS(y);
+    zds = BDIGITS(z);
+
+    n = (BDIGIT_DBL)xds[0] * yds[0];
+    zds[0] = BIGLO(n);
+    zds[1] = BIGDN(n);
+
+    return z;
+}
+
+static VALUE
 bigmul1_normal(VALUE x, VALUE y)
 {
     long xl = RBIGNUM_LEN(x), yl = RBIGNUM_LEN(y), i, j = xl + yl + 1;
@@ -2022,6 +2040,7 @@ bigmul0(VALUE x, VALUE y)
     if (xn < KARATSUBA_MUL_DIGITS) {
       normal:
 	if (x == y) return bigsqr_fast(x);
+	if (xn == 1 && yn == 1) return bigmul1_single(x, y);
     	return bigmul1_normal(x, y);
     }
 
