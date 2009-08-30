@@ -116,28 +116,46 @@ static ID id_eq, id_ne, id_quo, id_div, id_cmp, id_lshift;
 static VALUE
 add(VALUE x, VALUE y)
 {
-    switch (TYPE(x)) {
-      case T_BIGNUM: return rb_big_plus(x, y);
-      default: return rb_funcall(x, '+', 1, y);
+    if (FIXNUM_P(x) && FIXNUM_P(y)) {
+        long l = FIX2LONG(x) + FIX2LONG(y);
+        if (FIXABLE(l)) return LONG2FIX(l);
+        return LONG2NUM(l);
     }
+    if (TYPE(x) == T_BIGNUM) return rb_big_plus(x, y);
+    return rb_funcall(x, '+', 1, y);
 }
 
 static VALUE
 sub(VALUE x, VALUE y)
 {
-    switch (TYPE(x)) {
-      case T_BIGNUM: return rb_big_minus(x, y);
-      default: return rb_funcall(x, '-', 1, y);
+    if (FIXNUM_P(x) && FIXNUM_P(y)) {
+        long l = FIX2LONG(x) - FIX2LONG(y);
+        if (FIXABLE(l)) return LONG2FIX(l);
+        return LONG2NUM(l);
     }
+    if (TYPE(x) == T_BIGNUM) return rb_big_minus(x, y);
+    return rb_funcall(x, '-', 1, y);
 }
 
 static VALUE
 mul(VALUE x, VALUE y)
 {
-    switch (TYPE(x)) {
-      case T_BIGNUM: return rb_big_mul(x, y);
-      default: return rb_funcall(x, '*', 1, y);
+    if (FIXNUM_P(x) && FIXNUM_P(y)) {
+#if HAVE_LONG_LONG && SIZEOF_LONG * 2 <= SIZEOF_LONG_LONG 
+        LONG_LONG ll = (LONG_LONG)FIX2LONG(x) * FIX2LONG(y);
+        if (FIXABLE(ll)) return LONG2FIX(ll);
+        return LL2NUM(ll);
+#else
+        long a, b, c;
+        a = FIX2LONG(x);
+        if (a == 0) return x;
+        b = FIX2LONG(y);
+        c = a * b;
+        if (c / a == b && FIXABLE(c)) return LONG2FIX(c);
+#endif
     }
+    if (TYPE(x) == T_BIGNUM) return rb_big_mul(x, y);
+    return rb_funcall(x, '*', 1, y);
 }
 
 #define div(x,y) (rb_funcall((x), id_div, 1, (y)))

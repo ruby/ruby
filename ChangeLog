@@ -1,3 +1,9 @@
+Sun Aug 30 13:00:11 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (add): shortcut implemented for fixnums.
+	  (sub): ditto.
+	  (mul): ditto.
+
 Sun Aug 30 10:24:43 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (eq): apply RTEST.
