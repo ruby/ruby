@@ -498,7 +498,8 @@ VM_CORE_H_INCLUDES = {$(VPATH)}vm_core.h {$(VPATH)}vm_opts.h \
 
 array.$(OBJEXT): {$(VPATH)}array.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h
 bignum.$(OBJEXT): {$(VPATH)}bignum.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h
-class.$(OBJEXT): {$(VPATH)}class.c $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES)
+class.$(OBJEXT): {$(VPATH)}class.c $(RUBY_H_INCLUDES) \
+  $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h
 compar.$(OBJEXT): {$(VPATH)}compar.c $(RUBY_H_INCLUDES)
 complex.$(OBJEXT): {$(VPATH)}complex.c $(RUBY_H_INCLUDES)
 dir.$(OBJEXT): {$(VPATH)}dir.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
@@ -514,12 +515,11 @@ encoding.$(OBJEXT): {$(VPATH)}encoding.c $(RUBY_H_INCLUDES) \
 enum.$(OBJEXT): {$(VPATH)}enum.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h \
   {$(VPATH)}util.h
 enumerator.$(OBJEXT): {$(VPATH)}enumerator.c $(RUBY_H_INCLUDES)
-error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}known_errors.inc $(RUBY_H_INCLUDES) \
-  $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h
+error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}known_errors.inc \
+  $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h
 eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}eval_intern.h \
   $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) {$(VPATH)}eval_error.c \
-  {$(VPATH)}eval_jump.c {$(VPATH)}debug.h {$(VPATH)}gc.h \
-  {$(VPATH)}iseq.h
+  {$(VPATH)}eval_jump.c {$(VPATH)}debug.h {$(VPATH)}gc.h {$(VPATH)}iseq.h
 load.$(OBJEXT): {$(VPATH)}load.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}util.h $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) \
   {$(VPATH)}dln.h {$(VPATH)}debug.h
@@ -532,20 +532,22 @@ gc.$(OBJEXT): {$(VPATH)}gc.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h \
 hash.$(OBJEXT): {$(VPATH)}hash.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h
 inits.$(OBJEXT): {$(VPATH)}inits.c $(RUBY_H_INCLUDES)
 io.$(OBJEXT): {$(VPATH)}io.c $(RUBY_H_INCLUDES) {$(VPATH)}io.h \
-  {$(VPATH)}util.h $(ENCODING_H_INCLUDES)
+  {$(VPATH)}util.h $(ENCODING_H_INCLUDES) {$(VPATH)}dln.h
 main.$(OBJEXT): {$(VPATH)}main.c $(RUBY_H_INCLUDES) {$(VPATH)}debug.h \
   {$(VPATH)}node.h
 marshal.$(OBJEXT): {$(VPATH)}marshal.c $(RUBY_H_INCLUDES) {$(VPATH)}io.h \
   $(ENCODING_H_INCLUDES) {$(VPATH)}util.h
 math.$(OBJEXT): {$(VPATH)}math.c $(RUBY_H_INCLUDES)
-numeric.$(OBJEXT): {$(VPATH)}numeric.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
-  $(ENCODING_H_INCLUDES)
+numeric.$(OBJEXT): {$(VPATH)}numeric.c $(RUBY_H_INCLUDES) \
+  {$(VPATH)}util.h $(ENCODING_H_INCLUDES)
 object.$(OBJEXT): {$(VPATH)}object.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h
-pack.$(OBJEXT): {$(VPATH)}pack.c $(RUBY_H_INCLUDES)
-parse.$(OBJEXT): {$(VPATH)}parse.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}node.h $(ENCODING_H_INCLUDES) $(ID_H_INCLUDES) \
-  {$(VPATH)}regenc.h {$(VPATH)}regex.h {$(VPATH)}util.h {$(VPATH)}lex.c \
-  {$(VPATH)}defs/keywords {$(VPATH)}id.c
+pack.$(OBJEXT): {$(VPATH)}pack.c $(RUBY_H_INCLUDES) {$(VPATH)}encoding.h \
+  {$(VPATH)}oniguruma.h
+parse.$(OBJEXT): {$(VPATH)}parse.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h \
+  $(ENCODING_H_INCLUDES) $(ID_H_INCLUDES) {$(VPATH)}regenc.h \
+  {$(VPATH)}regex.h {$(VPATH)}util.h {$(VPATH)}lex.c \
+  {$(VPATH)}defs/keywords {$(VPATH)}id.c {$(VPATH)}parse.y \
+  {$(VPATH)}parse.h
 proc.$(OBJEXT): {$(VPATH)}proc.c {$(VPATH)}eval_intern.h \
   $(RUBY_H_INCLUDES) {$(VPATH)}gc.h $(VM_CORE_H_INCLUDES) \
   {$(VPATH)}debug.h
@@ -586,7 +588,7 @@ st.$(OBJEXT): {$(VPATH)}st.c {$(VPATH)}config.h {$(VPATH)}defines.h \
   {$(VPATH)}st.h {$(VPATH)}ruby.h {$(VPATH)}missing.h {$(VPATH)}intern.h
 strftime.$(OBJEXT): {$(VPATH)}strftime.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}timev.h
 string.$(OBJEXT): {$(VPATH)}string.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h \
   {$(VPATH)}regex.h $(ENCODING_H_INCLUDES)
 struct.$(OBJEXT): {$(VPATH)}struct.c $(RUBY_H_INCLUDES)
@@ -599,10 +601,11 @@ cont.$(OBJEXT): {$(VPATH)}cont.c $(RUBY_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}gc.h {$(VPATH)}eval_intern.h \
   {$(VPATH)}debug.h
 time.$(OBJEXT): {$(VPATH)}time.c $(RUBY_H_INCLUDES) \
-  $(ENCODING_H_INCLUDES)
+  $(ENCODING_H_INCLUDES) {$(VPATH)}timev.h
 util.$(OBJEXT): {$(VPATH)}util.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h
 variable.$(OBJEXT): {$(VPATH)}variable.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}encoding.h
+  {$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}encoding.h \
+  {$(VPATH)}oniguruma.h
 version.$(OBJEXT): {$(VPATH)}version.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}version.h $(srcdir)/revision.h
 
@@ -640,8 +643,7 @@ us_ascii.$(OBJEXT): {$(VPATH)}us_ascii.c {$(VPATH)}regenc.h \
 unicode.$(OBJEXT): {$(VPATH)}unicode.c {$(VPATH)}regint.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}st.h {$(VPATH)}ruby.h \
-  {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}enc/unicode/name2ctype.h
+  {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}enc/unicode/name2ctype.h
 
 utf_8.$(OBJEXT): {$(VPATH)}utf_8.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}oniguruma.h

@@ -1,3 +1,7 @@
+Sun Aug 30 14:11:45 2009  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk: dependencies updated.
+
 Sun Aug 30 13:00:11 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (add): shortcut implemented for fixnums.
@@ -100,7 +104,7 @@ Thu Aug 27 18:31:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Aug 27 14:32:31 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (rb_reg_preprocess_dregexp): set encoding as ASCII-8BIT
-	  when /n is specified and the embeded string is escaped text.
+	  when /n is specified and the embedded string is escaped text.
 
 Thu Aug 27 13:51:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -110,7 +114,7 @@ Thu Aug 27 13:51:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Aug 27 08:16:34 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/strscan/strscan.c (strscan_set_string): set string should not be
-	  dupped or frozen, because freezing it causes #concat method failure,
+	  duped or frozen, because freezing it causes #concat method failure,
 	  and unnecessary to dup without freezing.  a patch from Aaron
 	  Patterson at [ruby-core:25145].
 
