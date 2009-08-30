@@ -1,3 +1,12 @@
+Sun Aug 30 10:24:43 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (eq): apply RTEST.
+	  (ne): ditto.
+	  (add): avoid method dispatch for bignums.
+	  (sub): ditto.
+	  (mul): ditto.
+	  (mod): ditto.
+
 Sun Aug 30 09:45:11 2009  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigmul1_single): new function specialized respect to
