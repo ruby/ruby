@@ -5351,7 +5351,7 @@ static void print_tree P_((FILE* f, Node* node));
 
 extern int
 onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
-	      OnigErrorInfo* einfo)
+	      OnigErrorInfo* einfo, const char *sourcefile, int sourceline)
 {
 #define COMPILE_INIT_SIZE  20
 
@@ -5362,6 +5362,8 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   UnsetAddrList  uslist;
 #endif
 
+  scan_env.sourcefile = sourcefile;
+  scan_env.sourceline = sourceline;
   reg->state = ONIG_STATE_COMPILING;
 
 #ifdef ONIG_DEBUG
@@ -5616,7 +5618,7 @@ onig_new(regex_t** reg, const UChar* pattern, const UChar* pattern_end,
                       enc, syntax);
   if (r) return r;
 
-  r = onig_compile(*reg, pattern, pattern_end, einfo);
+  r = onig_compile(*reg, pattern, pattern_end, einfo, NULL, 0);
   if (r) {
     onig_free(*reg);
     *reg = NULL;

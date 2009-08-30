@@ -528,7 +528,7 @@ rb_reg_to_s(VALUE re)
 	    if (r == 0) {
 		 ++ptr;
  		 len -= 2;
-		 err = (onig_compile(rp, ptr, ptr + len, NULL) != 0);
+		 err = (onig_compile(rp, ptr, ptr + len, NULL, NULL, 0) != 0);
 	    }
 	    onig_free(rp);
 	}
@@ -731,7 +731,8 @@ rb_reg_named_captures(VALUE re)
 }
 
 static Regexp*
-make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_buffer err)
+make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_buffer err,
+	const char *sourcefile, int sourceline)
 {
     Regexp *rp;
     int r;
@@ -751,7 +752,7 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
 	return 0;
     }
 
-    r = onig_compile(rp, (UChar*)s, (UChar*)(s + len), &einfo);
+    r = onig_compile(rp, (UChar*)s, (UChar*)(s + len), &einfo, sourcefile, sourceline);
 
     if (r != 0) {
 	onig_free(rp);
@@ -2323,7 +2324,8 @@ rb_reg_preprocess_dregexp(VALUE ary, int options)
 
 static int
 rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
-		  int options, onig_errmsg_buffer err)
+		  int options, onig_errmsg_buffer err,
+		  const char *sourcefile, int sourceline)
 {
     struct RRegexp *re = RREGEXP(obj);
     VALUE unescaped;
@@ -2372,7 +2374,8 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
     }
 
     re->ptr = make_regexp(RSTRING_PTR(unescaped), RSTRING_LEN(unescaped), enc,
-			  options & ARG_REG_OPTION_MASK, err);
+			  options & ARG_REG_OPTION_MASK, err,
+			  sourcefile, sourceline);
     if (!re->ptr) return -1;
     re->src = rb_enc_str_new(s, len, enc);
     OBJ_FREEZE(re->src);
@@ -2381,7 +2384,8 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
 }
 
 static int
-rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err)
+rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
+	const char *sourcefile, int sourceline)
 {
     int ret;
     rb_encoding *enc = rb_enc_get(str);
@@ -2396,7 +2400,7 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err)
         }
     }
     ret = rb_reg_initialize(obj, RSTRING_PTR(str), RSTRING_LEN(str), enc,
-			    options, err);
+			    options, err, sourcefile, sourceline);
     RB_GC_GUARD(str);
     return ret;
 }
@@ -2420,7 +2424,7 @@ rb_reg_new_str(VALUE s, int options)
     VALUE re = rb_reg_s_alloc(rb_cRegexp);
     onig_errmsg_buffer err = "";
 
-    if (rb_reg_initialize_str(re, s, options, err) != 0) {
+    if (rb_reg_initialize_str(re, s, options, err, NULL, 0) != 0) {
 	rb_reg_raise_str(s, options, err);
     }
 
@@ -2439,7 +2443,7 @@ rb_enc_reg_new(const char *s, long len, rb_encoding *enc, int options)
     VALUE re = rb_reg_s_alloc(rb_cRegexp);
     onig_errmsg_buffer err = "";
 
-    if (rb_reg_initialize(re, s, len, enc, options, err) != 0) {
+    if (rb_reg_initialize(re, s, len, enc, options, err, NULL, 0) != 0) {
 	rb_enc_reg_raise(s, len, enc, options, err);
     }
 
@@ -2453,13 +2457,13 @@ rb_reg_new(const char *s, long len, int options)
 }
 
 VALUE
-rb_reg_compile(VALUE str, int options)
+rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline)
 {
     VALUE re = rb_reg_s_alloc(rb_cRegexp);
     onig_errmsg_buffer err = "";
 
     if (!str) str = rb_str_new(0,0);
-    if (rb_reg_initialize_str(re, str, options, err) != 0) {
+    if (rb_reg_initialize_str(re, str, options, err, sourcefile, sourceline) != 0) {
 	rb_set_errinfo(rb_reg_error_desc(str, options, err));
 	return Qnil;
     }
@@ -2809,7 +2813,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	ptr = RREGEXP_SRC_PTR(re);
 	len = RREGEXP_SRC_LEN(re);
 	enc = rb_enc_get(re);
-	if (rb_reg_initialize(self, ptr, len, enc, flags, err)) {
+	if (rb_reg_initialize(self, ptr, len, enc, flags, err, NULL, 0)) {
 	    str = rb_enc_str_new(ptr, len, enc);
 	    rb_reg_raise_str(str, flags, err);
 	}
@@ -2833,8 +2837,8 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	str = argv[0];
 	ptr = StringValuePtr(str);
 	if (enc
-	    ? rb_reg_initialize(self, ptr, RSTRING_LEN(str), enc, flags, err)
-	    : rb_reg_initialize_str(self, str, flags, err)) {
+	    ? rb_reg_initialize(self, ptr, RSTRING_LEN(str), enc, flags, err, NULL, 0)
+	    : rb_reg_initialize_str(self, str, flags, err, NULL, 0)) {
 	    rb_reg_raise_str(str, flags, err);
 	}
     }
@@ -3159,7 +3163,8 @@ rb_reg_init_copy(VALUE copy, VALUE re)
     rb_reg_check(re);
     s = RREGEXP_SRC_PTR(re);
     len = RREGEXP_SRC_LEN(re);
-    if (rb_reg_initialize(copy, s, len, rb_enc_get(re), rb_reg_options(re), err) != 0) {
+    if (rb_reg_initialize(copy, s, len, rb_enc_get(re), rb_reg_options(re),
+		err, NULL, 0) != 0) {
 	rb_reg_raise(s, len, err, re);
     }
     return copy;

@@ -307,6 +307,8 @@ typedef struct {
   int has_recursion;
 #endif
   int warnings_flag;
+  const char* sourcefile;
+  int sourceline;
 } ScanEnv;
 
 

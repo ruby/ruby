@@ -2877,7 +2877,11 @@ CC_DUP_WARN(ScanEnv *env)
     onig_snprintf_with_pattern(buf, WARN_BUFSIZE, env->enc,
 	    env->pattern, env->pattern_end,
 	    (UChar* )"character class has duplicated range");
-    (*onig_warn)((char* )buf);
+
+    if (env->sourcefile == NULL)
+	(*onig_warn)((char* )buf);
+    else
+	rb_compile_warn(env->sourcefile, env->sourceline, (char* )buf);
   }
 }
 

@@ -8888,7 +8888,7 @@ dvar_curr_gen(struct parser_params *parser, ID id)
 	    vtable_included(lvtbl->vars, id));
 }
 
-VALUE rb_reg_compile(VALUE str, int options);
+VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
 VALUE rb_reg_check_preprocess(VALUE);
 
 static void
@@ -9030,7 +9030,7 @@ reg_compile_gen(struct parser_params* parser, VALUE str, int options)
 
     reg_fragment_setenc(str, options);
     err = rb_errinfo();
-    re = rb_reg_compile(str, options & RE_OPTION_MASK);
+    re = rb_reg_compile(str, options & RE_OPTION_MASK, ruby_sourcefile, ruby_sourceline);
     if (NIL_P(re)) {
 	ID mesg = rb_intern("mesg");
 	VALUE m = rb_attr_get(rb_errinfo(), mesg);
