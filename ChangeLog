@@ -1,3 +1,7 @@
+Sun Aug 30 23:44:09 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (find_time_t): use mktime for the first guess.
+
 Sun Aug 30 16:38:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_enc_symname2_p): not depend on nul terminator.
