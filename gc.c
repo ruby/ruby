@@ -1348,7 +1348,7 @@ obj_free(obj)
 	break;
       case T_FILE:
 	if (RANY(obj)->as.file.fptr) {
- 	    make_io_deferred(RANY(obj));
+	    make_io_deferred(RANY(obj));
 	    return 1;
 	}
 	break;
@@ -1975,7 +1975,7 @@ rb_gc_call_finalizer_at_exit()
 
     /* run finalizers */
     if (need_call_final) {
- 	finalize_deferred();
+	finalize_deferred();
 	for (i = 0; i < heaps_used; i++) {
 	    p = heaps[i].slot; pend = p + heaps[i].limit;
 	    while (p < pend) {
@@ -2005,16 +2005,16 @@ rb_gc_call_finalizer_at_exit()
 		    RUBY_CRITICAL(free(DATA_PTR(p)));
 		}
 		else if (RANY(p)->as.data.dfree) {
- 		    make_deferred(RANY(p));
- 		    RANY(p)->as.free.next = final_list;
- 		    final_list = p;
+		    make_deferred(RANY(p));
+		    RANY(p)->as.free.next = final_list;
+		    final_list = p;
 		}
 	    }
 	    else if (BUILTIN_TYPE(p) == T_FILE) {
- 		if (RANY(p)->as.file.fptr) {
- 		    make_io_deferred(RANY(p));
- 		    RANY(p)->as.free.next = final_list;
- 		    final_list = p;
+		if (RANY(p)->as.file.fptr) {
+		    make_io_deferred(RANY(p));
+		    RANY(p)->as.free.next = final_list;
+		    final_list = p;
 		}
 	    }
 	    p++;
