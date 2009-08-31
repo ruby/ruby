@@ -30,6 +30,7 @@
 #include <ctype.h>
 
 extern st_table *rb_class_tbl;
+static ID id_attached;
 
 /**
  * Allocates a struct RClass for a new class.
@@ -190,7 +191,7 @@ rb_singleton_class_clone(VALUE obj)
     else {
 	struct clone_method_data data;
 	/* copy singleton(unnamed) class */
-        VALUE clone = class_alloc(RBASIC(klass)->flags, 0);
+	VALUE clone = class_alloc(RBASIC(klass)->flags, 0);
 
 	if (BUILTIN_TYPE(obj) == T_CLASS) {
 	    RBASIC(clone)->klass = (VALUE)clone;
@@ -214,92 +215,155 @@ rb_singleton_class_clone(VALUE obj)
     }
 }
 
+/*!
+ * Attach a object to a singleton class.
+ * @pre \a klass is the singleton class of \a obj.
+ */
 void
 rb_singleton_class_attached(VALUE klass, VALUE obj)
 {
     if (FL_TEST(klass, FL_SINGLETON)) {
-	ID attached;
 	if (!RCLASS_IV_TBL(klass)) {
 	    RCLASS_IV_TBL(klass) = st_init_numtable();
 	}
-	CONST_ID(attached, "__attached__");
-	st_insert(RCLASS_IV_TBL(klass), attached, obj);
+	st_insert(RCLASS_IV_TBL(klass), id_attached, obj);
     }
 }
 
 
-/*!
- * Creates a meta^(n+1)-class for a meta^(n)-class.
- * \param metaclass     a class of a class
- * \return              the created meta^(n+1)-class.
- * \pre \a metaclass is a metaclass
- * \post the class of \a metaclass is the returned class.
- */
-static VALUE
-make_metametaclass(VALUE metaclass)
-{
-    VALUE metametaclass, super_of_metaclass;
 
-    if (RBASIC(metaclass)->klass == metaclass) { /* for meta^(n)-class of Class */
-        metametaclass = rb_class_boot(Qnil);
-        RBASIC(metametaclass)->klass = metametaclass;
+#define METACLASS_OF(k) RBASIC(k)->klass    
+
+/*!
+ * whether k is a meta^(n)-class of Class class
+ * @retval 1 if \a k is a meta^(n)-class of Class class (n >= 0)
+ * @retval 0 otherwise
+ */
+#define META_CLASS_OF_CLASS_CLASS_P(k)  (METACLASS_OF(k) == k)
+
+
+/*!
+ * ensures \a klass belongs to its own eigenclass.
+ * @return the eigenclass of \a klass
+ * @post \a klass belongs to the returned eigenclass.
+ *       i.e. the attached object of the eigenclass is \a klass.
+ * @note this macro creates a new eigenclass if necessary.
+ */
+#define ENSURE_EIGENCLASS(klass) \
+ (rb_ivar_get(METACLASS_OF(klass), id_attached) == klass ? METACLASS_OF(klass) : make_metaclass(klass))
+
+
+/*!
+ * Creates a metaclass of \a klass
+ * \param klass     a class
+ * \return          created metaclass for the class
+ * \pre \a klass is a Class object
+ * \pre \a klass has no singleton class.
+ * \post the class of \a klass is the returned class.
+ * \post the returned class is meta^(n+1)-class when \a klass is a meta^(n)-klass for n >= 0
+ */
+static inline VALUE
+make_metaclass(VALUE klass)
+{
+    VALUE super;
+    VALUE metaclass = rb_class_boot(Qundef);
+
+    FL_SET(metaclass, FL_SINGLETON);
+    rb_singleton_class_attached(metaclass, klass);
+
+    if (META_CLASS_OF_CLASS_CLASS_P(klass)) {
+	METACLASS_OF(klass) = METACLASS_OF(metaclass) = metaclass;
     }
     else {
-        metametaclass = rb_class_boot(Qnil);
-        RBASIC(metametaclass)->klass =
-            (RBASIC(RBASIC(metaclass)->klass)->klass == RBASIC(metaclass)->klass)
-            ? make_metametaclass(RBASIC(metaclass)->klass)
-            : RBASIC(RBASIC(metaclass)->klass)->klass;
+	VALUE tmp = METACLASS_OF(klass); /* for a meta^(n)-class klass, tmp is meta^(n)-class of Class class */
+	METACLASS_OF(klass) = metaclass;
+	METACLASS_OF(metaclass) = ENSURE_EIGENCLASS(tmp);
     }
 
-    FL_SET(metametaclass, FL_SINGLETON);
-    rb_singleton_class_attached(metametaclass, metaclass);
-    RBASIC(metaclass)->klass = metametaclass;
+    super = RCLASS_SUPER(klass);
+    while (FL_TEST(super, T_ICLASS)) super = RCLASS_SUPER(super);
+    RCLASS_SUPER(metaclass) = super ? ENSURE_EIGENCLASS(super) : rb_cClass;
 
-    super_of_metaclass = RCLASS_SUPER(metaclass);
-    while (FL_TEST(super_of_metaclass, T_ICLASS)) {
-        super_of_metaclass = RCLASS_SUPER(super_of_metaclass);
+    OBJ_INFECT(metaclass, RCLASS_SUPER(metaclass));
+
+    return metaclass;
+}
+
+/*!
+ * Creates a singleton class for \a obj.
+ * \pre \a obj must not a immediate nor a special const.
+ * \pre \a obj must not a Class object.
+ * \pre \a obj has no singleton class.
+ */
+static inline VALUE
+make_singleton_class(VALUE obj)
+{
+    VALUE metasuper;
+    VALUE super = RBASIC(obj)->klass;
+    VALUE klass = rb_class_boot(super);
+
+    FL_SET(klass, FL_SINGLETON);
+    RBASIC(obj)->klass = klass;
+    rb_singleton_class_attached(klass, obj);
+
+    metasuper = RBASIC(rb_class_real(super))->klass;
+    /* metaclass of a superclass may be NULL at boot time */
+    if (metasuper) {
+	RBASIC(klass)->klass = metasuper;
     }
-    RCLASS_SUPER(metametaclass) =
-        rb_iv_get(RBASIC(super_of_metaclass)->klass, "__attached__") == super_of_metaclass
-        ? RBASIC(super_of_metaclass)->klass
-        : make_metametaclass(super_of_metaclass);
-    OBJ_INFECT(metametaclass, RCLASS_SUPER(metametaclass));
+    return klass;
+}
 
-    return metametaclass;
+
+static VALUE
+boot_defclass(const char *name, VALUE super)
+{
+    extern st_table *rb_class_tbl;
+    VALUE obj = rb_class_boot(super);
+    ID id = rb_intern(name);
+
+    rb_name_class(obj, id);
+    st_add_direct(rb_class_tbl, id, obj);
+    rb_const_set((rb_cObject ? rb_cObject : obj), id, obj);
+    return obj;
+}
+
+void
+Init_class_hierarchy(void)
+{
+    id_attached = rb_intern("__attached__");
+
+    rb_cBasicObject = boot_defclass("BasicObject", 0);
+    rb_cObject = boot_defclass("Object", rb_cBasicObject);
+    rb_cModule = boot_defclass("Module", rb_cObject);
+    rb_cClass =  boot_defclass("Class",  rb_cModule);
+
+    RBASIC(rb_cClass)->klass 
+	= RBASIC(rb_cModule)->klass
+	= RBASIC(rb_cObject)->klass
+	= RBASIC(rb_cBasicObject)->klass
+	= rb_cClass;
 }
 
 
 /*!
  * \internal
- * Creates a singleton class for an object.
+ * Creates a new *singleton class* for an object.
  *
- * \note DO NOT USE the function in an extension libraries. Use rb_singleton_class.
- * \param obj    An object.
- * \param super  A class from which the singleton class derives.
- *        \note \a super is ignored if \a obj is a metaclass.
- * \return       The singleton class of the object.
+ * \pre \a obj has no singleton class.
+ * \note DO NOT USE the function in an extension libraries. Use \ref rb_singleton_class.
+ * \param obj     An object.
+ * \param unused  ignored.
+ * \return        The singleton class of the object.
  */
 VALUE
-rb_make_metaclass(VALUE obj, VALUE super)
+rb_make_metaclass(VALUE obj, VALUE unused)
 {
-    if (BUILTIN_TYPE(obj) == T_CLASS && FL_TEST(obj, FL_SINGLETON)) { /* obj is a metaclass */
-        return make_metametaclass(obj);
+    if (BUILTIN_TYPE(obj) == T_CLASS) {
+	return make_metaclass(obj);
     }
     else {
-	VALUE metasuper;
-	VALUE klass = rb_class_boot(super);
-
-	FL_SET(klass, FL_SINGLETON);
-	RBASIC(obj)->klass = klass;
-	rb_singleton_class_attached(klass, obj);
-
-	metasuper = RBASIC(rb_class_real(super))->klass;
-	/* metaclass of a superclass may be NULL at boot time */
-	if (metasuper) {
-	    RBASIC(klass)->klass = metasuper;
-	}
-	return klass;
+	return make_singleton_class(obj);
     }
 }
 
@@ -1044,23 +1108,18 @@ rb_undef_method(VALUE klass, const char *name)
 
 
 /*!
- * Returns the singleton class of \a obj.
+ * \internal
+ * Returns the singleton class of \a obj. Creates it if necessary.
  *
- * \param obj an arbitrary object.
- * \throw TypeError if \a obj is a Fixnum or a Symbol.
- * \return the singleton class.
- *
- * \post \a obj has the singleton class.
- * \note a new singleton class will be created 
- *       if \a obj does not have it.
- * \note the singleton classes for nil, true and false are:
- *       NilClass, TrueClass and FalseClass.
+ * \note DO NOT expose the returned singleton class to
+ *       outside of class.c.
+ *       Use \ref rb_singleton_class instead for 
+ *       consistency of the metaclass hierarchy.
  */
-VALUE
-rb_singleton_class(VALUE obj)
+static VALUE
+singleton_class_of(VALUE obj)
 {
     VALUE klass;
-    ID attached;
 
     if (FIXNUM_P(obj) || SYMBOL_P(obj)) {
 	rb_raise(rb_eTypeError, "can't define singleton");
@@ -1072,19 +1131,14 @@ rb_singleton_class(VALUE obj)
 	rb_bug("unknown immediate %ld", obj);
     }
 
-    CONST_ID(attached, "__attached__");
     if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON) &&
-	rb_ivar_get(RBASIC(obj)->klass, attached) == obj) {
+	rb_ivar_get(RBASIC(obj)->klass, id_attached) == obj) {
 	klass = RBASIC(obj)->klass;
     }
     else {
 	klass = rb_make_metaclass(obj, RBASIC(obj)->klass);
     }
 
-    if (BUILTIN_TYPE(obj) == T_CLASS) {
-	if (rb_iv_get(RBASIC(klass)->klass, "__attached__") != klass)
-	    make_metametaclass(klass);
-    }
     if (OBJ_TAINTED(obj)) {
 	OBJ_TAINT(klass);
     }
@@ -1098,6 +1152,35 @@ rb_singleton_class(VALUE obj)
 	FL_UNSET(klass, FL_UNTRUSTED);
     }
     if (OBJ_FROZEN(obj)) OBJ_FREEZE(klass);
+
+    return klass;
+}
+
+
+/*!
+ * Returns the singleton class of \a obj. Creates it if necessary.
+ *
+ * \param obj an arbitrary object.
+ * \throw TypeError if \a obj is a Fixnum or a Symbol.
+ * \return the singleton class.
+ *
+ * \post \a obj has its own singleton class.
+ * \post if \a obj is a class, 
+ *       the returned singleton class also has its own 
+ *       singleton class in order to keep consistency of the
+ *       inheritance structure of metaclasses.
+ * \note a new singleton class will be created 
+ *       if \a obj does not have it.
+ * \note the singleton classes for nil, true and false are:
+ *       NilClass, TrueClass and FalseClass.
+ */
+VALUE
+rb_singleton_class(VALUE obj)
+{
+    VALUE klass = singleton_class_of(obj);
+
+    /* ensures an exposed class belongs to its own eigenclass */
+    if (TYPE(obj) == T_CLASS) ENSURE_EIGENCLASS(klass); 
 
     return klass;
 }
@@ -1121,7 +1204,7 @@ rb_singleton_class(VALUE obj)
 void
 rb_define_singleton_method(VALUE obj, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
-    rb_define_method(rb_singleton_class(obj), name, func, argc);
+    rb_define_method(singleton_class_of(obj), name, func, argc);
 }
 
 

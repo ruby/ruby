@@ -2386,25 +2386,6 @@ rb_f_array(VALUE obj, VALUE arg)
     return rb_Array(arg);
 }
 
-static VALUE
-boot_defclass(const char *name, VALUE super)
-{
-    extern st_table *rb_class_tbl;
-    VALUE obj = rb_class_boot(super);
-    ID id = rb_intern(name);
-
-    rb_name_class(obj, id);
-    st_add_direct(rb_class_tbl, id, obj);
-    rb_const_set((rb_cObject ? rb_cObject : obj), id, obj);
-    return obj;
-}
-
-static void
-boot_defmetametaclass(VALUE klass, VALUE metametaclass)
-{
-    RBASIC(RBASIC(klass)->klass)->klass = metametaclass;
-}
-
 /*
  *  Document-class: Class
  *
@@ -2504,25 +2485,13 @@ boot_defmetametaclass(VALUE klass, VALUE metametaclass)
 void
 Init_Object(void)
 {
+    extern void Init_class_hierarchy(void);
     int i;
+
+    Init_class_hierarchy();
 
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
-
-    VALUE metaclass;
-
-    rb_cBasicObject = boot_defclass("BasicObject", 0);
-    rb_cObject = boot_defclass("Object", rb_cBasicObject);
-    rb_cModule = boot_defclass("Module", rb_cObject);
-    rb_cClass =  boot_defclass("Class",  rb_cModule);
-
-    metaclass = rb_make_metaclass(rb_cBasicObject, rb_cClass);
-    metaclass = rb_make_metaclass(rb_cObject, metaclass);
-    metaclass = rb_make_metaclass(rb_cModule, metaclass);
-    metaclass = rb_make_metaclass(rb_cClass, metaclass);
-    boot_defmetametaclass(rb_cModule, metaclass);
-    boot_defmetametaclass(rb_cObject, metaclass);
-    boot_defmetametaclass(rb_cBasicObject, metaclass);
 
     rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_dummy, 0);
     rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);

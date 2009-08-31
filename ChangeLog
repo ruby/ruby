@@ -1,3 +1,27 @@
+Mon Aug 31 14:17:09 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* class.c: refactored singleton class related matters.
+	  Handles eigenclasses and plain classes transparently.
+
+	  (make_metaclass): renamed from make_metametaclass.
+	  (METACLASS_OF): new utility macro
+	  (META_CLASS_OF_CLASS_CLASS): ditto.
+	  (ENSURE_EIGENCLASS): ditto.
+	  (make_singleton_class): extracted from rb_singleton_class.
+	  (boot_defclass): moved from object.c
+	  (Init_class_hierarchy): extracted from Init_Object.
+	  (rb_make_metaclass): refactored.
+	  (singleton_class_of): extracted from rb_singleton_class.
+	  (rb_singleton_class): refactored.
+	  (rb_define_singleton_method): it needs a metaclass only
+	  but not its metametaclass.
+	  
+	* object.c: booting class hierarchy was moved to class.c
+	  for keeping dependency between compilation units least.
+	  (Init_Object): extracting the booting into 
+	  Init_class_hierarchy. 
+	  (boot_defclass): moved to class.c.
+
 Sun Aug 30 23:44:09 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (find_time_t): use mktime for the first guess.
