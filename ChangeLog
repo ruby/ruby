@@ -1,3 +1,8 @@
+Mon Aug 31 16:20:41 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* class.c (make_singleton_class): variable name changed.
+	  removed an unnecessary conditional.
+
 Mon Aug 31 14:17:09 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* class.c: refactored singleton class related matters.

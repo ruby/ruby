@@ -298,19 +298,14 @@ make_metaclass(VALUE klass)
 static inline VALUE
 make_singleton_class(VALUE obj)
 {
-    VALUE metasuper;
-    VALUE super = RBASIC(obj)->klass;
-    VALUE klass = rb_class_boot(super);
+    VALUE orig_class = RBASIC(obj)->klass;
+    VALUE klass = rb_class_boot(orig_class);
 
     FL_SET(klass, FL_SINGLETON);
     RBASIC(obj)->klass = klass;
     rb_singleton_class_attached(klass, obj);
 
-    metasuper = RBASIC(rb_class_real(super))->klass;
-    /* metaclass of a superclass may be NULL at boot time */
-    if (metasuper) {
-	RBASIC(klass)->klass = metasuper;
-    }
+    METACLASS_OF(klass) = METACLASS_OF(rb_class_real(orig_class));
     return klass;
 }
 
