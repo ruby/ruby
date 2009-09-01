@@ -1,3 +1,8 @@
+Wed Sep  2 02:32:46 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json/lib/json/common.rb (NaN): Change definition
+	  of NaN to 0.0/0 for 1.8/1.9 compatibility.
+
 Wed Sep  2 01:16:32 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json: Update to JSON 1.1.9.

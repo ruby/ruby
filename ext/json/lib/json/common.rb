@@ -74,7 +74,7 @@ module JSON
   end
   self.create_id = 'json_class'
 
-  NaN           = (-1.0) ** 0.5
+  NaN           = 0.0/0
 
   Infinity      = 1.0/0
 
