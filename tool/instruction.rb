@@ -1,4 +1,4 @@
-#
+#!./miniruby
 #
 #
 
@@ -505,14 +505,9 @@ class RubyVM
         orets = insn.rets
         oopes = insn.opes
         ocomm = insn.comm
+        oname = insn.name
 
-        after = nil
-        SPECIAL_INSN_FOR_SC_AFTER.any?{|k, v|
-          if k =~ insn.name
-            after = v
-            break
-          end
-        }
+        after = SPECIAL_INSN_FOR_SC_AFTER.find {|k, v| k =~ oname}
 
         insns = []
         FROM_SC.each{|from|

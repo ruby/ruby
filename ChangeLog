@@ -1,3 +1,8 @@
+Wed Sep  2 07:42:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/instruction.rb (RubyVM::InstructionsLoader#make_stackcaching_insns):
+	  simplified.
+
 Wed Sep  2 02:32:46 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/lib/json/common.rb (NaN): Change definition
