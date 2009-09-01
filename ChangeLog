@@ -1,3 +1,8 @@
+Tue Sep  1 19:56:28 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_eval.c (eval_string_with_cref): fix to check local_table_size.
+	  [ruby-dev:39205] [Bug #2024]
+
 Mon Aug 31 16:20:41 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* class.c (make_singleton_class): variable name changed.
