@@ -1,5 +1,12 @@
+#!/usr/bin/env ruby
+# -*- coding: utf-8 -*-
+
 require 'test/unit'
-require 'json'
+case ENV['JSON']
+when 'pure' then require 'json/pure'
+when 'ext'  then require 'json/ext'
+else             require 'json'
+end
 
 class TC_JSONGenerate < Test::Unit::TestCase
   include JSON
@@ -70,30 +77,30 @@ EOT
     #assert s.check_circular
     h = { 1=>2 }
     h[3] = h
-    assert_raise(JSON::CircularDatastructure) {  generate(h) }
-    assert_raise(JSON::CircularDatastructure) {  generate(h, s) }
+    assert_raises(JSON::CircularDatastructure) {  generate(h) }
+    assert_raises(JSON::CircularDatastructure) {  generate(h, s) }
     s = JSON.state.new(:check_circular => true)
     #assert s.check_circular
     a = [ 1, 2 ]
     a << a
-    assert_raise(JSON::CircularDatastructure) {  generate(a, s) }
+    assert_raises(JSON::CircularDatastructure) {  generate(a, s) }
   end
 
   def test_allow_nan
-    assert_raise(GeneratorError) { generate([JSON::NaN]) }
+    assert_raises(GeneratorError) { generate([JSON::NaN]) }
     assert_equal '[NaN]', generate([JSON::NaN], :allow_nan => true)
     assert_equal '[NaN]', fast_generate([JSON::NaN])
-    assert_raise(GeneratorError) { pretty_generate([JSON::NaN]) }
+    assert_raises(GeneratorError) { pretty_generate([JSON::NaN]) }
     assert_equal "[\n  NaN\n]", pretty_generate([JSON::NaN], :allow_nan => true)
-    assert_raise(GeneratorError) { generate([JSON::Infinity]) }
+    assert_raises(GeneratorError) { generate([JSON::Infinity]) }
     assert_equal '[Infinity]', generate([JSON::Infinity], :allow_nan => true)
     assert_equal '[Infinity]', fast_generate([JSON::Infinity])
-    assert_raise(GeneratorError) { pretty_generate([JSON::Infinity]) }
+    assert_raises(GeneratorError) { pretty_generate([JSON::Infinity]) }
     assert_equal "[\n  Infinity\n]", pretty_generate([JSON::Infinity], :allow_nan => true)
-    assert_raise(GeneratorError) { generate([JSON::MinusInfinity]) }
+    assert_raises(GeneratorError) { generate([JSON::MinusInfinity]) }
     assert_equal '[-Infinity]', generate([JSON::MinusInfinity], :allow_nan => true)
     assert_equal '[-Infinity]', fast_generate([JSON::MinusInfinity])
-    assert_raise(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
+    assert_raises(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
     assert_equal "[\n  -Infinity\n]", pretty_generate([JSON::MinusInfinity], :allow_nan => true)
   end
 end

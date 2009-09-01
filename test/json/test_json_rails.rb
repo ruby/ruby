@@ -1,6 +1,12 @@
 #!/usr/bin/env ruby
+# -*- coding: utf-8 -*-
 
 require 'test/unit'
+case ENV['JSON']
+when 'pure' then require 'json/pure'
+when 'ext'  then require 'json/ext'
+else             require 'json'
+end
 require 'json/add/rails'
 require 'date'
 
@@ -17,7 +23,7 @@ class TC_JSONRails < Test::Unit::TestCase
     def ==(other)
       a == other.a
     end
-
+    
     def self.json_create(object)
       new(*object['args'])
     end
@@ -50,13 +56,38 @@ class TC_JSONRails < Test::Unit::TestCase
     end
   end
 
+  class D
+    def initialize
+      @foo = 666
+    end
+
+    attr_reader :foo
+
+    def ==(other)
+      foo == other.foo
+    end
+  end
+
   def test_extended_json
     a = A.new(666)
     assert A.json_creatable?
+    assert_equal 666, a.a
     json = generate(a)
     a_again = JSON.parse(json)
     assert_kind_of a.class, a_again
     assert_equal a, a_again
+    assert_equal 666, a_again.a
+  end
+
+  def test_extended_json_generic_object
+    d = D.new
+    assert D.json_creatable?
+    assert_equal 666, d.foo
+    json = generate(d)
+    d_again = JSON.parse(json)
+    assert_kind_of d.class, d_again
+    assert_equal d, d_again
+    assert_equal 666, d_again.foo
   end
 
   def test_extended_json_disabled
@@ -85,11 +116,12 @@ class TC_JSONRails < Test::Unit::TestCase
     c = C.new # with rails addition all objects are theoretically creatable
     assert C.json_creatable?
     json = generate(c)
-    assert_raise(ArgumentError) { JSON.parse(json) }
+    assert_raises(ArgumentError) { JSON.parse(json) }
   end
 
   def test_raw_strings
     raw = ''
+    raw.respond_to?(:encode!) and raw.encode!(Encoding::ASCII_8BIT)
     raw_array = []
     for i in 0..255
       raw << i

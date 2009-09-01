@@ -1,6 +1,12 @@
 #!/usr/bin/env ruby
+# -*- coding:utf-8 -*-
 
 require 'test/unit'
+case ENV['JSON']
+when 'pure' then require 'json/pure'
+when 'ext'  then require 'json/ext'
+else             require 'json'
+end
 require 'json/add/core'
 require 'date'
 
@@ -17,7 +23,7 @@ class TC_JSONAddition < Test::Unit::TestCase
     def ==(other)
       a == other.a
     end
-
+    
     def self.json_create(object)
       new(*object['args'])
     end
@@ -89,11 +95,12 @@ class TC_JSONAddition < Test::Unit::TestCase
     c = C.new
     assert !C.json_creatable?
     json = generate(c)
-    assert_raise(ArgumentError) { JSON.parse(json) }
+    assert_raises(ArgumentError) { JSON.parse(json) }
   end
 
   def test_raw_strings
     raw = ''
+    raw.respond_to?(:encode!) and raw.encode!(Encoding::ASCII_8BIT)
     raw_array = []
     for i in 0..255
       raw << i
@@ -129,7 +136,7 @@ EOT
     assert_equal s, JSON(JSON(s))
     struct = Struct.new :foo, :bar
     s = struct.new 4711, 'foot'
-    assert_raise(JSONError) { JSON(s) }
+    assert_raises(JSONError) { JSON(s) }
     begin
       raise TypeError, "test me"
     rescue TypeError => e

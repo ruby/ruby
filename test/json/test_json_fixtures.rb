@@ -1,7 +1,12 @@
 #!/usr/bin/env ruby
+# -*- coding: utf-8 -*-
 
 require 'test/unit'
-require 'json'
+case ENV['JSON']
+when 'pure' then require 'json/pure'
+when 'ext'  then require 'json/ext'
+else             require 'json'
+end
 
 class TC_JSONFixtures < Test::Unit::TestCase
   def setup
@@ -20,7 +25,7 @@ class TC_JSONFixtures < Test::Unit::TestCase
 
   def test_failing
     for name, source in @failed
-      assert_raise(JSON::ParserError, JSON::NestingError,
+      assert_raises(JSON::ParserError, JSON::NestingError,
         "Did not fail for fixture '#{name}'") do
         JSON.parse(source)
       end

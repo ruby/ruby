@@ -2,7 +2,11 @@
 # -*- coding: utf-8 -*-
 
 require 'test/unit'
-require 'json'
+case ENV['JSON']
+when 'pure' then require 'json/pure'
+when 'ext'  then require 'json/ext'
+else             require 'json'
+end
 
 class TC_JSONUnicode < Test::Unit::TestCase
   include JSON
