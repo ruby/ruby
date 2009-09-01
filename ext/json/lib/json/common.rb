@@ -309,6 +309,8 @@ module JSON
 end
 
 module ::Kernel
+  private
+
   # Outputs _objs_ to STDOUT as JSON strings in the shortest form, that is in
   # one line.
   def j(*objs)

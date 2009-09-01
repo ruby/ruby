@@ -81,7 +81,7 @@ char *JSON_convert_UTF16_to_UTF8 (
         buf[1] = *p++;
         buf[2] = *p++;
         buf[3] = *p++;
-        tmpPtr[i] = strtol(buf, NULL, 16);
+        tmpPtr[i] = (UTF16)strtol(buf, NULL, 16);
         p += 2;
     }
 

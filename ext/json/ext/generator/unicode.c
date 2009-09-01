@@ -144,8 +144,6 @@ void JSON_convert_UTF8_to_JSON(VALUE buffer, VALUE string, ConversionFlags flags
                     rb_str_buf_cat2(buffer, "\\\"");
                 } else if (ch == '\\') {
                     rb_str_buf_cat2(buffer, "\\\\");
-                } else if (ch == '/') {
-                    rb_str_buf_cat2(buffer, "\\/");
                 } else if (ch >= 0x20 && ch <= 0x7f) {
                     rb_str_buf_cat(buffer, (char *) source - 1, 1);
                 } else if (ch == '\n') {

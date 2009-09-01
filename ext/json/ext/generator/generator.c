@@ -496,7 +496,7 @@ static VALUE cState_s_allocate(VALUE klass)
  * Configure this State instance with the Hash _opts_, and return
  * itself.
  */
-static inline VALUE cState_configure(VALUE self, VALUE opts)
+static VALUE cState_configure(VALUE self, VALUE opts)
 {
     VALUE tmp;
     GET_STATE(self);
