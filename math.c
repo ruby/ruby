@@ -13,6 +13,8 @@
 #include <math.h>
 #include <errno.h>
 
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+
 VALUE rb_mMath;
 
 extern VALUE rb_to_float(VALUE val);
@@ -663,13 +665,14 @@ math_gamma(VALUE obj, VALUE x)
     };
     double d0, d;
     double intpart, fracpart;
+    int n;
     Need_Float(x);
     d0 = RFLOAT_VALUE(x);
     fracpart = modf(d0, &intpart);
     if (fracpart == 0.0 &&
-            0 < intpart &&
-            (size_t)intpart <= sizeof(fact_table)/sizeof(*fact_table)) {
-        return DBL2NUM(fact_table[(int)intpart - 1]);
+	0 < intpart &&
+	(n = (int)intpart - 1) < numberof(fact_table)) {
+        return DBL2NUM(fact_table[n]);
     }
     errno = 0;
     d = tgamma(d0);
