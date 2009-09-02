@@ -29,20 +29,17 @@ domain_check(x, msg)
     double x;
     const char *msg;
 {
-    while(1) {
-	if (errno) {
-	    rb_sys_fail(msg);
-	}
-	if (isnan(x)) {
+    if (!isnan(x)) return;
+    else {
+	if (!errno) {
 #if defined(EDOM)
 	    errno = EDOM;
-#elif defined(ERANGE)
+#else
 	    errno = ERANGE;
 #endif
-	    continue;
 	}
-	break;
     }
+    rb_sys_fail(msg);
 }
 
 

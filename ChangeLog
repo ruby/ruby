@@ -1,3 +1,7 @@
+Wed Sep  2 13:47:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* math.c (domain_check): simplified.
+
 Sun Aug 30 15:12:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (gc_sweep): makes new room if object space is full of
