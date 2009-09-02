@@ -25,21 +25,18 @@ extern VALUE rb_to_float(VALUE val);
 static void
 domain_check(double x, double y, const char *msg)
 {
-    while(1) {
-	if (errno) {
-	    rb_sys_fail(msg);
-	}
-	if (isnan(y)) {
-	    if (isnan(x)) break;
+    if (!isnan(y)) return;
+    else if (isnan(x)) return;
+    else {
+	if (!errno) {
 #if defined(EDOM)
 	    errno = EDOM;
-#elif defined(ERANGE)
+#else
 	    errno = ERANGE;
 #endif
-	    continue;
 	}
-	break;
     }
+    rb_sys_fail(msg);
 }
 
 static void
