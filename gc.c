@@ -1428,6 +1428,7 @@ static void
 free_m_table(st_table *tbl)
 {
     st_foreach(tbl, free_method_entry_i, 0);
+    st_free_table(tbl);
 }
 
 void
