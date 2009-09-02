@@ -637,7 +637,7 @@ math_erfc(VALUE obj, VALUE x)
 static VALUE
 math_gamma(VALUE obj, VALUE x)
 {
-    static double fact_table[] = {
+    static const double fact_table[] = {
         /* fact(0) */ 1.0,
         /* fact(1) */ 1.0,
         /* fact(2) */ 2.0,
