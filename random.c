@@ -957,7 +957,7 @@ float_value(VALUE v)
  *
  * When the argument is an +Integer+ or a +Bignum+, it returns a
  * random integer greater than or equal to zero and less than the
- * argument.  Unlike Random#rand, when the argument is a negative
+ * argument.  Unlike Random.rand, when the argument is a negative
  * integer or zero, it raises an ArgumentError.
  *
  * When the argument is a +Float+, it returns a random floating point
