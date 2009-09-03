@@ -1968,6 +1968,7 @@ Init_Dir(void)
 
     rb_define_method(rb_cDir,"initialize", dir_initialize, -1);
     rb_define_method(rb_cDir,"path", dir_path, 0);
+    rb_define_method(rb_cDir,"to_path", dir_path, 0);
     rb_define_method(rb_cDir,"inspect", dir_inspect, 0);
     rb_define_method(rb_cDir,"read", dir_read, 0);
     rb_define_method(rb_cDir,"each", dir_each, 0);
