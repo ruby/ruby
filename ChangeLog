@@ -1,3 +1,8 @@
+Thu Sep  3 17:56:40 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (literal_concat_gen): concat body from dstr instead of
+	  nd_next.  [ruby-core:25284]
+
 Wed Sep  2 16:49:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* math.c (math_gamma): get rid of direct comparison between too

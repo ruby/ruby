@@ -192,3 +192,11 @@ assert_normal_exit %q{
   rescue
   end
 }, '[ruby-dev:34536]'
+
+assert_equal 'ok', %q{
+  "#{}""#{}ok"
+}, '[ruby-dev:38968]'
+
+assert_equal 'ok', %q{
+  "#{}o""#{}k""#{}"
+}, '[ruby-core:25284]'

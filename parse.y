@@ -7844,7 +7844,9 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
 	    head = tail;
 	}
 	else if (NIL_P(tail->nd_lit)) {
-	    list_concat(head, tail->nd_next);
+	    head->nd_alen += tail->nd_alen - 1;
+	    head->nd_next->nd_end->nd_next = tail->nd_next;
+	    head->nd_next->nd_end = tail->nd_next->nd_end;
 	    rb_gc_force_recycle((VALUE)tail);
 	}
 	else {
