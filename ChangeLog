@@ -1,3 +1,7 @@
+Fri Sep  4 20:40:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (round): added declaration.  [ruby-dev:39222]
+
 Fri Sep  4 09:52:58 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* NEWS: forgot to mention about new looser splats.
