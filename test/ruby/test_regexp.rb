@@ -778,4 +778,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_nothing_raised { 0x03ffffff.chr("utf-8").size }
     assert_nothing_raised { 0x7fffffff.chr("utf-8").size }
   end
+
+  def test_matchdata
+    a = "haystack".match(/hay/)
+    b = "haystack".match(/hay/)
+    assert_equal(a, b, '[ruby-core:24748]')
+    h = {a => 42}
+    assert_equal(42, h[b], '[ruby-core:24748]')
+  end
 end

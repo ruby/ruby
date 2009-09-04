@@ -1,12 +1,11 @@
-Sat Sep  5 08:49:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Sep  5 08:51:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* re.c (update_char_offset):
-	* re.c (rb_reg_equal):
-	* re.c (reg_match_pos):
-	* re.c (rb_reg_eqq):
-	* re.c (static VALUE):
-	* re.c (Init_Regexp):
-	[ruby-core:24748]
+	* re.c (update_char_offset): position should be long.
+
+	* re.c (match_hash, match_equal): new methods.  [ruby-core:24748]
+
+	* re.c (reg_match_pos, rb_reg_eqq, rb_reg_s_quote): get rid of use
+	  VALUE as int.
 
 Fri Sep  4 20:40:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

@@ -2543,6 +2543,55 @@ rb_reg_equal(VALUE re1, VALUE re2)
     return Qfalse;
 }
 
+/*
+ * call-seq:
+ *    mtch.hash   => integer
+ *
+ * Produce a hash based on the target string, regexp and matched
+ * positions of this matchdata.
+ */
+
+static VALUE
+match_hash(VALUE match)
+{
+    const struct re_registers *regs;
+    VALUE h;
+    unsigned long hashval = rb_hash_start(rb_str_hash(RMATCH(match)->str));
+
+    h = rb_reg_hash(RMATCH(match)->regexp);
+    rb_hash_uint(hashval, FIX2LONG(h));
+    regs = RMATCH_REGS(match);
+    hashval = rb_hash_uint(hashval, regs->num_regs);
+    hashval = rb_hash_uint(hashval, rb_memhash(regs->beg, regs->num_regs * sizeof(*regs->beg)));
+    hashval = rb_hash_uint(hashval, rb_memhash(regs->end, regs->num_regs * sizeof(*regs->end)));
+    hashval = rb_hash_end(hashval);
+    return LONG2FIX(hashval);
+}
+
+/*
+ * call-seq:
+ *    mtch == mtch2   => true or false
+ *
+ *  Equality---Two matchdata are equal if their target strings,
+ *  patterns, and matched positions are identical.
+ */
+
+static VALUE
+match_equal(VALUE match1, VALUE match2)
+{
+    const struct re_registers *regs1, *regs2;
+    if (match1 == match2) return Qtrue;
+    if (TYPE(match2) != T_MATCH) return Qfalse;
+    if (!rb_str_equal(RMATCH(match1)->str, RMATCH(match2)->str)) return Qfalse;
+    if (!rb_reg_equal(RMATCH(match1)->regexp, RMATCH(match2)->regexp)) return Qfalse;
+    regs1 = RMATCH_REGS(match1);
+    regs2 = RMATCH_REGS(match2);
+    if (regs1->num_regs != regs2->num_regs) return Qfalse;
+    if (memcmp(regs1->beg, regs2->beg, regs1->num_regs * sizeof(*regs1->beg))) return Qfalse;
+    if (memcmp(regs1->end, regs2->end, regs1->num_regs * sizeof(*regs1->end))) return Qfalse;
+    return Qtrue;
+}
+
 static VALUE
 reg_operand(VALUE s, int check)
 {
