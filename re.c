@@ -813,8 +813,8 @@ update_char_offset(VALUE match)
 {
     struct rmatch *rm = RMATCH(match)->rmatch;
     struct re_registers *regs;
-    int num_regs;
-    int i, num_pos, c;
+    int i, num_regs, num_pos;
+    long c;
     char *s, *p, *q, *e;
     rb_encoding *enc;
     pair_t *pairs;
@@ -2568,7 +2568,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos)
 	rb_backref_set(Qnil);
 	return -1;
     }
-    *strp = str = reg_operand(str, Qtrue);
+    *strp = str = reg_operand(str, TRUE);
     if (pos != 0) {
 	if (pos < 0) {
 	    VALUE l = rb_str_length(str);
@@ -2662,7 +2662,7 @@ rb_reg_eqq(VALUE re, VALUE str)
 {
     long start;
 
-    str = reg_operand(str, Qfalse);
+    str = reg_operand(str, FALSE);
     if (NIL_P(str)) {
 	rb_backref_set(Qnil);
 	return Qfalse;
@@ -2960,7 +2960,7 @@ rb_reg_quote(VALUE str)
 static VALUE
 rb_reg_s_quote(VALUE c, VALUE str)
 {
-    return rb_reg_quote(reg_operand(str, Qtrue));
+    return rb_reg_quote(reg_operand(str, TRUE));
 }
 
 int
