@@ -2713,11 +2713,11 @@ VALUE
 rb_io_binmode(io)
     VALUE io;
 {
-#if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
-#ifdef __human68k__
+#if (defined(O_BINARY) && O_BINARY) || (defined(_IOBIN) && _IOBIN)
+#if (defined(_IOBIN) && _IOBIN)	/* __human68k__ */
     if (fptr->f)
 	fmode(fptr->f, _IOBIN);
     if (fptr->f2)
