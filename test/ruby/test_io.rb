@@ -1463,4 +1463,10 @@ class TestIO < Test::Unit::TestCase
     assert(File.read(t.path, 4).tainted?, '[ruby-dev:38826]')
     assert(File.open(t.path) {|f| f.read(4)}.tainted?, '[ruby-dev:38826]')
   end
+
+  def test_binmode_after_closed
+    t = make_tempfile
+    t.close
+    assert_raise(IOError) {t.binmode}
+  end
 end
