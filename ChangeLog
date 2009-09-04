@@ -1,3 +1,7 @@
+Fri Sep  4 20:40:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (round): added declaration.  [ruby-dev:39222]
+
 Fri Sep  4 06:15:39 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (Init_Dir): alias Dir#path to Dir#to_path.  [ruby-core:25326]

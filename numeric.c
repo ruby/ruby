@@ -63,6 +63,8 @@
 #define DBL_EPSILON 2.2204460492503131e-16
 #endif
 
+extern double round(double);
+
 #ifndef HAVE_ROUND
 double
 round(double x)
@@ -79,9 +81,6 @@ round(double x)
     }
     return x;
 }
-#elif defined(__BEOS__)
-/* appears to be a bug in the BeOS headers */
-double round(double x);
 #endif
 
 static ID id_coerce, id_to_i, id_eq;
