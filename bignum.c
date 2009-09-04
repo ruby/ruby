@@ -2308,7 +2308,9 @@ rb_big_divide(VALUE x, VALUE y, ID op)
  *  call-seq:
  *     big / other     => Numeric
  *
- *  Divides big by other, returning the result.
+ * Performs division: the class of the resulting object depends on
+ * the class of <code>numeric</code> and on the magnitude of the
+ * result.
  */
 
 VALUE
@@ -2316,6 +2318,13 @@ rb_big_div(VALUE x, VALUE y)
 {
     return rb_big_divide(x, y, '/');
 }
+
+/*
+ *  call-seq:
+ *     big.div(other)  => integer
+ *
+ * Performs integer division: returns integer value.
+ */
 
 VALUE
 rb_big_idiv(VALUE x, VALUE y)
