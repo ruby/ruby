@@ -5546,6 +5546,7 @@ argf_eof()
 {
     if (current_file) {
 	if (init_p == 0) return Qtrue;
+	next_argv();
 	ARGF_FORWARD(0, 0);
 	if (rb_io_eof(current_file)) {
 	    return Qtrue;

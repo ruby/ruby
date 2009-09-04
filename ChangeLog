@@ -1,3 +1,8 @@
+Fri Sep  4 10:03:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_eof): go to the next file if called after ARGF.close
+	  or ARGF.skip.  a patch from Mike Kasick at [ruby-core:24561].
+
 Sun Aug  9 17:43:44 2009  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb.rb, lib/irb/init.rb, lib/irb/ext/save-history.rb: add
