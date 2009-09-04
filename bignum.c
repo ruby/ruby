@@ -2314,13 +2314,13 @@ rb_big_divide(VALUE x, VALUE y, ID op)
 VALUE
 rb_big_div(VALUE x, VALUE y)
 {
-  return rb_big_divide(x, y, '/');
+    return rb_big_divide(x, y, '/');
 }
 
 VALUE
 rb_big_idiv(VALUE x, VALUE y)
 {
-  return rb_big_divide(x, y, rb_intern("div"));
+    return rb_big_divide(x, y, rb_intern("div"));
 }
 
 /*
