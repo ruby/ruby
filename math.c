@@ -661,7 +661,8 @@ math_gamma(VALUE obj, VALUE x)
         /* fact(21) */ 51090942171709440000.0,
         /* fact(22) */ 1124000727777607680000.0,
         /* fact(23)=25852016738884976640000 needs 56bit mantissa which is
-         * impossible to represent exactly in IEEE 754 double. */
+         * impossible to represent exactly in IEEE 754 double which have
+         * 53bit mantissa. */
     };
     double d0, d;
     double intpart, fracpart;
