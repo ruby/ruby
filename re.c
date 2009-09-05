@@ -3513,4 +3513,7 @@ Init_Regexp(void)
     rb_define_method(rb_cMatch, "to_s", match_to_s, 0);
     rb_define_method(rb_cMatch, "inspect", match_inspect, 0);
     rb_define_method(rb_cMatch, "string", match_string, 0);
+    rb_define_method(rb_cMatch, "hash", match_hash, 0);
+    rb_define_method(rb_cMatch, "eql?", match_equal, 1);
+    rb_define_method(rb_cMatch, "==", match_equal, 1);
 }
