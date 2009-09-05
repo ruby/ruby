@@ -507,7 +507,7 @@ class TestBasicInstructions < Test::Unit::TestCase
     Bug1996 = '[ruby-dev:39163], [ruby-core:25143]'
   end
 
-  def test_opassign
+  def test_opassign2_1
     x = nil
     assert_equal 1, x ||= 1
     assert_equal 1, x
@@ -521,7 +521,9 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal 5, x
     assert_equal 4, x -= 1
     assert_equal 4, x
+  end
 
+  def test_opassign2_2
     y = OP.new
     y.x = nil
     assert_equal 1, y.x ||= 1, OP::Bug1996
@@ -536,9 +538,11 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal 5, y.x
     assert_equal 4, y.x -= 1, OP::Bug1996
     assert_equal 4, y.x
+  end
 
+  def test_opassign2_3
     z = OP.new
-    z.x = y
+    z.x = OP.new
     z.x.x = nil
     assert_equal 1, z.x.x ||= 1, OP::Bug1996
     assert_equal 1, z.x.x
@@ -552,7 +556,9 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal 5, z.x.x
     assert_equal 4, z.x.x -= 1, OP::Bug1996
     assert_equal 4, z.x.x
+  end
 
+  def test_opassign1_1
     a = []
     a[0] = nil
     assert_equal 1, a[0] ||= 1
