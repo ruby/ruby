@@ -19,6 +19,8 @@
 #include "insns_info.inc"
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+#define FIXNUM_INC(n, i) ((n)+(INT2FIX(i)&~FIXNUM_FLAG))
+#define FIXNUM_OR(n, x) ((n)|INT2FIX(i))
 
 typedef struct iseq_link_element {
     enum {
@@ -1772,7 +1774,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	if (piobj->insn_id == BIN(send) &&
 	    piobj->operands[2] == 0 /* block */
 	    ) {
-	    piobj->operands[3] = INT2FIX(FIX2INT(piobj->operands[3]) | VM_CALL_TAILCALL_BIT);
+	    piobj->operands[3] = FIXNUM_OR(piobj->operands[3], VM_CALL_TAILCALL_BIT);
 	}
     }
     return COMPILE_OK;
@@ -2340,7 +2342,7 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
 	iobj = (INSN *)POP_ELEMENT(ret); /* pop send insn */
 
 	dupidx = iobj->operands[1];
-	dupidx = INT2FIX(FIX2INT(dupidx) + 1);
+	dupidx = FIXNUM_INC(dupidx, 1);
 	iobj->operands[1] = dupidx;
 
 	ADD_INSN1(ret, nd_line(node), topn, dupidx);
@@ -3757,7 +3759,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	else {
 	    argc = INT2FIX(0);
 	}
-	ADD_INSN1(ret, nd_line(node), dupn, INT2FIX(FIX2INT(argc)+1));
+	ADD_INSN1(ret, nd_line(node), dupn, FIXNUM_INC(argc, 1));
 	ADD_SEND_R(ret, nd_line(node), ID2SYM(idAREF), argc, Qfalse, LONG2FIX(flag));
 
 	if (id == 0 || id == 1) {
@@ -3795,12 +3797,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	    else {
 		ADD_SEND_R(ret, nd_line(node), ID2SYM(idASET),
-			   INT2FIX(FIX2INT(argc) + 1), Qfalse, LONG2FIX(flag));
+			   FIXNUM_INC(argc, 1), Qfalse, LONG2FIX(flag));
 	    }
 	    ADD_INSNL(ret, nd_line(node), jump, lfin);
 	    ADD_LABEL(ret, label);
-	    ADD_INSN1(ret, nd_line(node), setn, INT2FIX(FIX2INT(argc) + 1));
-	    ADD_INSN1(ret, nd_line(node), adjuststack, INT2FIX(FIX2INT(argc) + 1));
+	    ADD_INSN1(ret, nd_line(node), setn, FIXNUM_INC(argc, 1));
+	    ADD_INSN1(ret, nd_line(node), adjuststack, FIXNUM_INC(argc, 1));
 	    ADD_LABEL(ret, lfin);
 	}
 	else {
@@ -3814,7 +3816,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	    else {
 		ADD_SEND_R(ret, nd_line(node), ID2SYM(idASET),
-			   INT2FIX(FIX2INT(argc) + 1), Qfalse, LONG2FIX(flag));
+			   FIXNUM_INC(argc, 1), Qfalse, LONG2FIX(flag));
 	    }
 	}
 
@@ -4860,12 +4862,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	    if (flag & VM_CALL_ARGS_BLOCKARG_BIT) {
 		ADD_INSN1(ret, nd_line(node), topn, INT2FIX(1));
-		ADD_INSN1(ret, nd_line(node), setn, INT2FIX(FIX2INT(argc) + 3));
+		ADD_INSN1(ret, nd_line(node), setn, FIXNUM_INC(argc, 3));
 		ADD_INSN (ret, nd_line(node), pop);
 	    }
 	    else {
-	    ADD_INSN1(ret, nd_line(node), setn, INT2FIX(FIX2INT(argc) + 1));
-	}
+		ADD_INSN1(ret, nd_line(node), setn, FIXNUM_INC(argc, 1));
+	    }
 	}
 	else {
 	    ADD_SEQ(ret, recv);
