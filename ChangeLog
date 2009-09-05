@@ -1,3 +1,8 @@
+Sat Sep  5 10:38:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): &&= and ||= should return rhs.
+	  [ruby-dev:39163] (#1996), [ruby-core:25143]
+
 Sat Sep  5 08:51:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (update_char_offset): position should be long.

@@ -499,52 +499,73 @@ class TestBasicInstructions < Test::Unit::TestCase
   end
 
   class OP
-    attr_accessor :x
+    attr_reader :x
+    def x=(x)
+      @x = x
+      :Bug1996
+    end
+    Bug1996 = '[ruby-dev:39163], [ruby-core:25143]'
   end
 
   def test_opassign
     x = nil
-    x ||= 1
+    assert_equal 1, x ||= 1
     assert_equal 1, x
-    x &&= 2
+    assert_equal 2, x &&= 2
     assert_equal 2, x
-    x ||= 3
+    assert_equal 2, x ||= 3
     assert_equal 2, x
-    x &&= 4
+    assert_equal 4, x &&= 4
+    assert_equal 4, x
+    assert_equal 5, x += 1
+    assert_equal 5, x
+    assert_equal 4, x -= 1
     assert_equal 4, x
 
     y = OP.new
     y.x = nil
-    y.x ||= 1
+    assert_equal 1, y.x ||= 1, OP::Bug1996
     assert_equal 1, y.x
-    y.x &&= 2
+    assert_equal 2, y.x &&= 2, OP::Bug1996
     assert_equal 2, y.x
-    y.x ||= 3
+    assert_equal 2, y.x ||= 3
     assert_equal 2, y.x
-    y.x &&= 4
+    assert_equal 4, y.x &&= 4, OP::Bug1996
+    assert_equal 4, y.x
+    assert_equal 5, y.x += 1, OP::Bug1996
+    assert_equal 5, y.x
+    assert_equal 4, y.x -= 1, OP::Bug1996
     assert_equal 4, y.x
 
     z = OP.new
     z.x = y
     z.x.x = nil
-    z.x.x ||= 1
+    assert_equal 1, z.x.x ||= 1, OP::Bug1996
     assert_equal 1, z.x.x
-    z.x.x &&= 2
+    assert_equal 2, z.x.x &&= 2, OP::Bug1996
     assert_equal 2, z.x.x
-    z.x.x ||= 3
+    assert_equal 2, z.x.x ||= 3
     assert_equal 2, z.x.x
-    z.x.x &&= 4
+    assert_equal 4, z.x.x &&= 4, OP::Bug1996
+    assert_equal 4, z.x.x
+    assert_equal 5, z.x.x += 1, OP::Bug1996
+    assert_equal 5, z.x.x
+    assert_equal 4, z.x.x -= 1, OP::Bug1996
     assert_equal 4, z.x.x
 
     a = []
     a[0] = nil
-    a[0] ||= 1
+    assert_equal 1, a[0] ||= 1
     assert_equal 1, a[0]
-    a[0] &&= 2
+    assert_equal 2, a[0] &&= 2
     assert_equal 2, a[0]
-    a[0] ||= 3
+    assert_equal 2, a[0] ||= 3
     assert_equal 2, a[0]
-    a[0] &&= 4
+    assert_equal 4, a[0] &&= 4
+    assert_equal 4, a[0]
+    assert_equal 5, a[0] += 1
+    assert_equal 5, a[0]
+    assert_equal 4, a[0] -= 1
     assert_equal 4, a[0]
   end
 

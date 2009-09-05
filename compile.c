@@ -3842,22 +3842,26 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  if lcfin  # r o
 	  pop       # r
 	  eval v    # r v
-	  send a=   # v
-	  jump lfin # v
+	  swap      # v r
+	  topn 1    # v r v
+	  send a=   # v ?
+	  jump lfin # v ?
 
 	  lcfin:      # r o
 	  swap      # o r
-	  pop       # o
 
-	  lfin:       # v
+	  lfin:       # o ?
+	  pop       # o
 
 	  # and
 	  dup       # r o o
 	  unless lcfin
 	  pop       # r
 	  eval v    # r v
-	  send a=   # v
-	  jump lfin # v
+	  swap      # v r
+	  topn 1    # v r v
+	  send a=   # v ?
+	  jump lfin # v ?
 
 	  # others
 	  eval v    # r o v
@@ -3881,26 +3885,32 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	    ADD_INSN(ret, nd_line(node), pop);
 	    COMPILE(ret, "NODE_OP_ASGN2 val", node->nd_value);
+	    ADD_INSN(ret, nd_line(node), swap);
+	    ADD_INSN1(ret, nd_line(node), topn, INT2FIX(1));
 	    ADD_SEND(ret, nd_line(node), ID2SYM(node->nd_next->nd_aid),
 		     INT2FIX(1));
 	    ADD_INSNL(ret, nd_line(node), jump, lfin);
 
 	    ADD_LABEL(ret, lcfin);
 	    ADD_INSN(ret, nd_line(node), swap);
-	    ADD_INSN(ret, nd_line(node), pop);
 
 	    ADD_LABEL(ret, lfin);
+	    ADD_INSN(ret, nd_line(node), pop);
+	    if (poped) {
+		/* we can apply more optimize */
+		ADD_INSN(ret, nd_line(node), pop);
+	    }
 	}
 	else {
 	    COMPILE(ret, "NODE_OP_ASGN2 val", node->nd_value);
 	    ADD_SEND(ret, nd_line(node), ID2SYM(node->nd_next->nd_mid),
 		     INT2FIX(1));
+	    if (!poped) {
+		ADD_INSN(ret, nd_line(node), swap);
+		ADD_INSN1(ret, nd_line(node), topn, INT2FIX(1));
+	    }
 	    ADD_SEND(ret, nd_line(node), ID2SYM(node->nd_next->nd_aid),
 		     INT2FIX(1));
-	}
-
-	if (poped) {
-	    /* we can apply more optimize */
 	    ADD_INSN(ret, nd_line(node), pop);
 	}
 	break;
