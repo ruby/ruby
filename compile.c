@@ -20,7 +20,7 @@
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 #define FIXNUM_INC(n, i) ((n)+(INT2FIX(i)&~FIXNUM_FLAG))
-#define FIXNUM_OR(n, x) ((n)|INT2FIX(i))
+#define FIXNUM_OR(n, i) ((n)|INT2FIX(i))
 
 typedef struct iseq_link_element {
     enum {
