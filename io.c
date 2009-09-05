@@ -6715,7 +6715,7 @@ argf_next_argv(VALUE argf)
 		}
 		ARGF.current_file = prep_io(fr, FMODE_READABLE, rb_cFile, fn);
 	    }
-           if (ARGF.binmode) rb_io_ascii8bit_binmode(ARGF.current_file);
+	    if (ARGF.binmode) rb_io_ascii8bit_binmode(ARGF.current_file);
 	    if (ARGF.encs.enc) {
 		rb_io_t *fptr;
 
@@ -9788,7 +9788,7 @@ Init_IO(void)
     /*
      * Hack to get rdoc to regard ARGF as a class:
      * rb_cARGF = rb_define_class("ARGF", rb_cObject);
-     * */
+     */
     rb_cARGF = rb_class_new(rb_cObject);
     rb_set_class_path(rb_cARGF, rb_cObject, "ARGF.class");
     rb_define_alloc_func(rb_cARGF, argf_alloc);
