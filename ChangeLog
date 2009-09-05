@@ -1,3 +1,8 @@
+Sun Sep  6 05:19:09 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c: Add rdoc for ARGF.
+	  contributed by Run Paint Run Run. [ruby-core:23854]
+
 Sat Sep  5 15:21:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): op_asgn to aref should return rhs.
