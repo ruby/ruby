@@ -3733,13 +3733,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	/*
 	 * a[x] (op)= y
 	 *
-	 * eval a    # a
-	 * eval x    # a x
-	 * dupn 2    # a x a x
-	 * send :[]  # a x a[x]
-	 * eval y    # a x a[x] y
-	 * send op   # a x a[x]+y
-	 * send []=  # ret
+	 * nil       # nil
+	 * eval a    # nil a
+	 * eval x    # nil a x
+	 * dupn 2    # nil a x a x
+	 * send :[]  # nil a x a[x]
+	 * eval y    # nil a x a[x] y
+	 * send op   # nil a x ret
+	 * setn 3    # ret a x ret
+	 * send []=  # ret ?
+	 * pop       # ret
 	 */
 
 	/*
@@ -3750,6 +3753,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	 *              nd_mid
 	 */
 
+	if (!poped) {
+	    ADD_INSN(ret, nd_line(node), putnil);
+	}
 	COMPILE(ret, "NODE_OP_ASGN1 recv", node->nd_recv);
 	if (nd_type(node->nd_args->nd_body) != NODE_ZARRAY) {
 	    INIT_ANCHOR(args);
@@ -3775,20 +3781,21 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    LABEL *label = NEW_LABEL(nd_line(node));
 	    LABEL *lfin = NEW_LABEL(nd_line(node));
 
+	    ADD_INSN(ret, nd_line(node), dup);
 	    if (id == 0) {
 		/* or */
-		ADD_INSN(ret, nd_line(node), dup);
 		ADD_INSNL(ret, nd_line(node), branchif, label);
-		ADD_INSN(ret, nd_line(node), pop);
 	    }
 	    else {
 		/* and */
-		ADD_INSN(ret, nd_line(node), dup);
 		ADD_INSNL(ret, nd_line(node), branchunless, label);
-		ADD_INSN(ret, nd_line(node), pop);
 	    }
+	    ADD_INSN(ret, nd_line(node), pop);
 
 	    COMPILE(ret, "NODE_OP_ASGN1 args->head: ", node->nd_args->nd_head);
+	    if (!poped) {
+		ADD_INSN1(ret, nd_line(node), setn, FIXNUM_INC(argc, 2));
+	    }
 	    if (flag & VM_CALL_ARGS_SPLAT_BIT) {
 		ADD_INSN1(ret, nd_line(node), newarray, INT2FIX(1));
 		ADD_INSN(ret, nd_line(node), concatarray);
@@ -3799,15 +3806,21 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		ADD_SEND_R(ret, nd_line(node), ID2SYM(idASET),
 			   FIXNUM_INC(argc, 1), Qfalse, LONG2FIX(flag));
 	    }
+	    ADD_INSN(ret, nd_line(node), pop);
 	    ADD_INSNL(ret, nd_line(node), jump, lfin);
 	    ADD_LABEL(ret, label);
-	    ADD_INSN1(ret, nd_line(node), setn, FIXNUM_INC(argc, 1));
-	    ADD_INSN1(ret, nd_line(node), adjuststack, FIXNUM_INC(argc, 1));
+	    if (!poped) {
+		ADD_INSN1(ret, nd_line(node), setn, FIXNUM_INC(argc, 2));
+	    }
+	    ADD_INSN1(ret, nd_line(node), adjuststack, FIXNUM_INC(argc, 2));
 	    ADD_LABEL(ret, lfin);
 	}
 	else {
 	    COMPILE(ret, "NODE_OP_ASGN1 args->head: ", node->nd_args->nd_head);
 	    ADD_SEND(ret, nd_line(node), ID2SYM(id), INT2FIX(1));
+	    if (!poped) {
+		ADD_INSN1(ret, nd_line(node), setn, FIXNUM_INC(argc, 2));
+	    }
 	    if (flag & VM_CALL_ARGS_SPLAT_BIT) {
 		ADD_INSN1(ret, nd_line(node), newarray, INT2FIX(1));
 		ADD_INSN(ret, nd_line(node), concatarray);
@@ -3818,9 +3831,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		ADD_SEND_R(ret, nd_line(node), ID2SYM(idASET),
 			   FIXNUM_INC(argc, 1), Qfalse, LONG2FIX(flag));
 	    }
-	}
-
-	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);
 	}
 

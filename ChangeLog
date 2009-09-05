@@ -1,3 +1,8 @@
+Sat Sep  5 15:21:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): op_asgn to aref should return rhs.
+	  [ruby-core:25387]
+
 Sat Sep  5 10:38:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): &&= and ||= should return rhs.
