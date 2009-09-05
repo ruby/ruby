@@ -695,6 +695,13 @@ flo_div(VALUE x, VALUE y)
     }
 }
 
+/*
+ *  call-seq:
+ *     float.quo(numeric)  ->  float
+ *
+ *  Returns float / numeric.
+ */
+
 static VALUE
 flo_quo(VALUE x, VALUE y)
 {
@@ -2259,6 +2266,8 @@ fixdivmod(long x, long y, long *divp, long *modp)
     if (modp) *modp = mod;
 }
 
+VALUE rb_big_fdiv(VALUE x, VALUE y);
+
 /*
  *  call-seq:
  *     fix.fdiv(numeric)  ->  float
@@ -2270,8 +2279,6 @@ fixdivmod(long x, long y, long *divp, long *modp)
  *     654321.fdiv(13731.24)   #=> 47.6519964693647
  *
  */
-
-VALUE rb_big_fdiv(VALUE x, VALUE y);
 
 static VALUE
 fix_fdiv(VALUE x, VALUE y)
@@ -3061,6 +3068,19 @@ int_dotimes(VALUE num)
     }
     return num;
 }
+
+/*
+ *  call-seq:
+ *     num.round([ndigits])  ->  integer or float
+ *
+ *  Rounds <i>flt</i> to a given precision in decimal digits (default 0 digits).
+ *  Precision may be negative.  Returns a floating point number when +ndigits+
+ *  is positive, +self+ for zero, and round down for negative.
+ *
+ *     1.round        #=> 1
+ *     1.round(2)     #=> 1.0
+ *     15.round(-1)   #=> 20
+ */
 
 static VALUE
 int_round(int argc, VALUE* argv, VALUE num)
