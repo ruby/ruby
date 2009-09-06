@@ -1917,7 +1917,7 @@ opt_aset
  */
 DEFINE_INSN
 opt_length
-()
+(IC ic)
 (VALUE recv)
 (VALUE val)
 {
@@ -1939,7 +1939,7 @@ opt_length
     else {
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
-	CALL_SIMPLE_METHOD(0, idLength, recv);
+	CALL_SIMPLE_METHOD_IC(0, idLength, recv, ic);
     }
 }
 
@@ -1950,7 +1950,7 @@ opt_length
  */
 DEFINE_INSN
 opt_size
-()
+(IC ic)
 (VALUE recv)
 (VALUE val)
 {
@@ -1972,7 +1972,7 @@ opt_size
     else {
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
-	CALL_SIMPLE_METHOD(0, idSize, recv);
+	CALL_SIMPLE_METHOD_IC(0, idSize, recv, ic);
     }
 }
 

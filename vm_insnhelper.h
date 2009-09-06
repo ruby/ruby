@@ -189,4 +189,9 @@ extern VALUE ruby_vm_const_missing_count;
     CALL_METHOD(num, 0, 0, id, rb_method_entry(klass, id), recv); \
 } while (0)
 
+#define CALL_SIMPLE_METHOD_IC(num, id, recv, ic) do { \
+    VALUE klass = CLASS_OF(recv); \
+    CALL_METHOD(num, 0, 0, id, vm_method_search(id, klass, ic), recv); \
+} while (0)
+
 #endif /* RUBY_INSNHELPER_H */

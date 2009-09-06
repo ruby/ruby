@@ -1,3 +1,10 @@
+Sun Sep  6 18:13:54 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.h (CALL_SIMPLE_METHOD_IC): make a macro
+	  invoke simple method with inline cache entry.
+
+	* insns.def (opt_length, opt_size): fix to use inline method cache.
+
 Sun Sep  6 17:47:21 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* template/id.h.tmpl: fix this.
