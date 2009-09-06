@@ -1183,14 +1183,14 @@ vm_get_cvar_base(NODE *cref)
 }
 
 
-#ifndef ENABLE_IC_FOR_IVAR
-#define ENABLE_IC_FOR_IVAR 1
+#ifndef USE_IC_FOR_IVAR
+#define USE_IC_FOR_IVAR 1
 #endif
 
 static VALUE
 vm_getivar(VALUE obj, ID id, IC ic)
 {
-#if ENABLE_IC_FOR_IVAR
+#if USE_IC_FOR_IVAR
     if (TYPE(obj) ==  T_OBJECT) {
 	VALUE val = Qundef;
 	VALUE klass = RBASIC(obj)->klass;
@@ -1237,7 +1237,7 @@ vm_getivar(VALUE obj, ID id, IC ic)
 static void
 vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
 {
-#if ENABLE_IC_FOR_IVAR
+#if USE_IC_FOR_IVAR
     if (!OBJ_UNTRUSTED(obj) && rb_safe_level() >= 4) {
 	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
     }
