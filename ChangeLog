@@ -1,3 +1,9 @@
+Sun Sep  6 17:47:21 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* template/id.h.tmpl: fix this.
+
+	* id.h: removed.  Because this file is generated automatically.
+
 Sun Sep  6 17:31:28 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_specialized_instruction), insns.def (opt_size):
