@@ -1,3 +1,8 @@
+Sun Sep  6 16:13:06 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def (setinstancevariable), vm_insnhelper.c (vm_setivar): 
+	  fix to use inline cache (trivial optimization).
+
 Sun Sep  6 10:34:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c: fixed rdoc, a patch from Nobuhiro IMAI at [ruby-core:25433].

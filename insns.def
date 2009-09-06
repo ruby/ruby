@@ -165,11 +165,11 @@ getinstancevariable
  */
 DEFINE_INSN
 setinstancevariable
-(ID id)
+(ID id, IC ic)
 (VALUE val)
 ()
 {
-    rb_ivar_set(GET_SELF(), id, val);
+    vm_setivar(GET_SELF(), id, val, ic);
 }
 
 /**

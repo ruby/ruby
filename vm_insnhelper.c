@@ -1182,10 +1182,15 @@ vm_get_cvar_base(NODE *cref)
     return klass;
 }
 
+
+#ifndef ENABLE_IC_FOR_IVAR
+#define ENABLE_IC_FOR_IVAR 1
+#endif
+
 static VALUE
 vm_getivar(VALUE obj, ID id, IC ic)
 {
-#if 1
+#if ENABLE_IC_FOR_IVAR
     if (TYPE(obj) ==  T_OBJECT) {
 	VALUE val = Qundef;
 	VALUE klass = RBASIC(obj)->klass;
@@ -1210,7 +1215,7 @@ vm_getivar(VALUE obj, ID id, IC ic)
 		    if (index < len) {
 			val = ptr[index];
 		    }
-		    ic->ic_class = RBASIC(obj)->klass;
+		    ic->ic_class = klass;
 		    ic->ic_index = index;
 		}
 	    }
@@ -1226,6 +1231,47 @@ vm_getivar(VALUE obj, ID id, IC ic)
     }
 #else
     return rb_ivar_get(obj, id);
+#endif
+}
+
+static void
+vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
+{
+#if ENABLE_IC_FOR_IVAR
+    if (!OBJ_UNTRUSTED(obj) && rb_safe_level() >= 4) {
+	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
+    }
+    if (OBJ_FROZEN(obj)) {
+	rb_error_frozen("object");
+    }
+
+    if (TYPE(obj) == T_OBJECT) {
+	VALUE klass = RBASIC(obj)->klass;
+	st_data_t index;
+
+	if (ic->ic_class == klass) {
+	    long index = ic->ic_index;
+	    long len = ROBJECT_NUMIV(obj);
+	    VALUE *ptr = ROBJECT_IVPTR(obj);
+
+	    if (index < len) {
+		ptr[index] = val;
+		return; /* inline cache hit */
+	    }
+	}
+	else {
+	    struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+
+	    if (iv_index_tbl && st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
+		ic->ic_class = klass;
+		ic->ic_index = index;
+	    }
+	    /* fall through */
+	}
+    }
+    rb_ivar_set(obj, id, val);
+#else
+    rb_ivar_set(obj, id, val);
 #endif
 }
 
