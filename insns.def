@@ -1921,8 +1921,8 @@ opt_length
 (VALUE recv)
 (VALUE val)
 {
-    if (!SPECIAL_CONST_P(recv) &&
-	BASIC_OP_UNREDEFINED_P(BOP_LENGTH)) {
+    if (LIKELY(!SPECIAL_CONST_P(recv) &&
+	       BASIC_OP_UNREDEFINED_P(BOP_LENGTH))) {
 	if (HEAP_CLASS_OF(recv) == rb_cString) {
 	    val = rb_str_length(recv);
 	}
@@ -1940,6 +1940,39 @@ opt_length
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	CALL_SIMPLE_METHOD(0, idLength, recv);
+    }
+}
+
+/**
+  @c optimize
+  @e optimized size
+  @j ç≈ìKâªÇ≥ÇÍÇΩ recv.size()ÅB
+ */
+DEFINE_INSN
+opt_size
+()
+(VALUE recv)
+(VALUE val)
+{
+    if (LIKELY(BASIC_OP_UNREDEFINED_P(BOP_SIZE) &&
+	       !SPECIAL_CONST_P(recv))) {
+	if (HEAP_CLASS_OF(recv) == rb_cString) {
+	    val = rb_str_length(recv);
+	}
+	else if (HEAP_CLASS_OF(recv) == rb_cArray) {
+	    val = LONG2NUM(RARRAY_LEN(recv));
+	}
+	else if (HEAP_CLASS_OF(recv) == rb_cHash) {
+	    val = INT2FIX(RHASH_SIZE(recv));
+	}
+	else {
+	    goto INSN_LABEL(normal_dispatch);
+	}
+    }
+    else {
+      INSN_LABEL(normal_dispatch):
+	PUSH(recv);
+	CALL_SIMPLE_METHOD(0, idSize, recv);
     }
 }
 

@@ -1803,6 +1803,9 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		if (mid == idLength) {
 		    insn_set_specialized_instruction(iobj, BIN(opt_length));
 		}
+		else if (mid == idSize) {
+		    insn_set_specialized_instruction(iobj, BIN(opt_size));
+		}
 		else if (mid == idSucc) {
 		    insn_set_specialized_instruction(iobj, BIN(opt_succ));
 		}

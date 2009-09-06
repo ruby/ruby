@@ -1,3 +1,10 @@
+Sun Sep  6 17:31:28 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_specialized_instruction), insns.def (opt_size):
+	  optimize #size methods (by specialized instruction).
+
+	* id.c, id.h, vm.c, vm_insnhelper.h: ditto.
+
 Sun Sep  6 16:13:06 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (setinstancevariable), vm_insnhelper.c (vm_setivar): 
