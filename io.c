@@ -8976,8 +8976,8 @@ argf_getc(VALUE argf)
  *
  *     ARGF.getbyte #=> 102
  *     ARGF.getbyte #=> 111
+ *     ARGF.getbyte #=> 111
  *     ARGF.getbyte #=> 10
- *     ARGF.getbyte #=> nil
  *     ARGF.getbyte #=> nil
  */
 static VALUE
