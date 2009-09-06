@@ -1287,7 +1287,7 @@ opt_checkenv
  */
 DEFINE_INSN
 opt_plus
-()
+(IC ic)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1363,7 +1363,7 @@ opt_plus
  */
 DEFINE_INSN
 opt_minus
-()
+(IC ic)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1412,7 +1412,7 @@ opt_minus
  */
 DEFINE_INSN
 opt_mult
-()
+(IC ic)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1465,7 +1465,7 @@ opt_mult
  */
 DEFINE_INSN
 opt_div
-()
+(IC ic)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1529,7 +1529,7 @@ opt_div
  */
 DEFINE_INSN
 opt_mod
-()
+(IC ic)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1629,16 +1629,16 @@ opt_eq
  */
 DEFINE_INSN
 opt_neq
-(IC ic1, IC ic2)
+(IC ic, IC ic_eq)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
     extern VALUE rb_obj_not_equal(VALUE obj1, VALUE obj2);
-    const rb_method_entry_t *me = vm_method_search(idNeq, CLASS_OF(recv), ic1);
+    const rb_method_entry_t *me = vm_method_search(idNeq, CLASS_OF(recv), ic);
     val = Qundef;
 
     if (check_cfunc(me, rb_obj_not_equal)) {
-	val = opt_eq_func(recv, obj, ic2);
+	val = opt_eq_func(recv, obj, ic_eq);
 
 	if (val != Qundef) {
 	    val = RTEST(val) ? Qfalse : Qtrue;
@@ -1660,7 +1660,7 @@ opt_neq
  */
 DEFINE_INSN
 opt_lt
-()
+(IC ic)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1710,7 +1710,7 @@ opt_lt
  */
 DEFINE_INSN
 opt_le
-()
+(IC ic)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1740,7 +1740,7 @@ opt_le
  */
 DEFINE_INSN
 opt_gt
-()
+(IC ic)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1790,7 +1790,7 @@ opt_gt
  */
 DEFINE_INSN
 opt_ge
-()
+(IC ic)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1819,7 +1819,7 @@ opt_ge
  */
 DEFINE_INSN
 opt_ltlt
-()
+(IC ic)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1853,7 +1853,7 @@ opt_ltlt
  */
 DEFINE_INSN
 opt_aref
-()
+(IC ic)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1883,7 +1883,7 @@ opt_aref
  */
 DEFINE_INSN
 opt_aset
-()
+(IC ic)
 (VALUE recv, VALUE obj, VALUE set)
 (VALUE val)
 {
@@ -1939,7 +1939,7 @@ opt_length
     else {
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
-	CALL_SIMPLE_METHOD_IC(0, idLength, recv, ic);
+	CALL_SIMPLE_METHOD(0, idLength, recv);
     }
 }
 
@@ -1972,7 +1972,7 @@ opt_size
     else {
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
-	CALL_SIMPLE_METHOD_IC(0, idSize, recv, ic);
+	CALL_SIMPLE_METHOD(0, idSize, recv);
     }
 }
 
@@ -1983,7 +1983,7 @@ opt_size
  */
 DEFINE_INSN
 opt_succ
-()
+(IC ic)
 (VALUE recv)
 (VALUE val)
 {

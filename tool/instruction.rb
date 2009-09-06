@@ -704,7 +704,7 @@ class RubyVM
         end
 
         re = /\b#{var}\b/n
-        if re =~ insn.body or re =~ insn.sp_inc or insn.rets.any?{|t, v| re =~ v}
+        if re =~ insn.body or re =~ insn.sp_inc or insn.rets.any?{|t, v| re =~ v} or re =~ 'ic'
           ops << "  #{type} #{var} = (#{type})GET_OPERAND(#{i+1});"
         end
         n   += 1

@@ -1,3 +1,15 @@
+Mon Sep  7 05:38:34 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def (opt_*): add IC operands.
+
+	* vm_insnhelper.h (CALL_SIMPLE_METHOD): add a version which
+	  use an inline cache.  USE_IC_FOR_SPECIALIZED_METHOD macro
+	  switchs the behaviour.  This change also removes
+	  CALL_SIMPLE_METHOD_IC() macro.
+
+	* tool/instruction.rb: fix elimination process to ignore
+	  variable "ic".
+
 Mon Sep  7 05:21:09 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* Makefile.in, common.mk: move a id.h generation rule.
