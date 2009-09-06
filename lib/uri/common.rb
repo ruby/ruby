@@ -501,6 +501,7 @@ module URI
     #   # => "@%3F@%21"
     #
     def escape(*arg)
+      warn "#{caller(1)[0]}: warning: URI.escape is obsolete" if $VERBOSE
       DEFAULT_PARSER.escape(*arg)
     end
     alias encode escape
@@ -526,6 +527,7 @@ module URI
     #   # => "http://example.com/?a=\t\r"
     #
     def unescape(*arg)
+      warn "#{caller(1)[0]}: warning: URI.unescape is obsolete" if $VERBOSE
       DEFAULT_PARSER.unescape(*arg)
     end
     alias decode unescape
