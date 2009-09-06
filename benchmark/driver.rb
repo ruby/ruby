@@ -4,8 +4,6 @@
 
 first = true
 
-p RUBY_VERSION
-
 begin
   require 'optparse'
 rescue LoadError

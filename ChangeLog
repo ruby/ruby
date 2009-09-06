@@ -1,3 +1,7 @@
+Mon Sep  7 05:07:59 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: remove RUBY_VERSION output.
+
 Mon Sep  7 05:06:16 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c: rename macro name ENABLE_IC_FOR_IVAR
