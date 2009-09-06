@@ -4662,6 +4662,7 @@ void
 rb_exc_raise(mesg)
     VALUE mesg;
 {
+    mesg = rb_make_exception(1, &mesg);
     rb_longjmp(TAG_RAISE, mesg);
 }
 
@@ -4669,6 +4670,7 @@ void
 rb_exc_fatal(mesg)
     VALUE mesg;
 {
+    mesg = rb_make_exception(1, &mesg);
     rb_longjmp(TAG_FATAL, mesg);
 }
 
