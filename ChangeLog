@@ -1,3 +1,7 @@
+Mon Sep  7 05:21:09 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* Makefile.in, common.mk: move a id.h generation rule.
+
 Mon Sep  7 05:07:59 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb: remove RUBY_VERSION output.

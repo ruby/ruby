@@ -686,6 +686,10 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(
 
 insns: $(INSNS)
 
+id.h: parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
+	$(BASERUBY) $(srcdir)/tool/generic_erb.rb --output=$@ \
+		$(srcdir)/template/id.h.tmpl --vpath=$(VPATH) parse.h
+
 node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
