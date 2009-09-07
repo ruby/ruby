@@ -1873,6 +1873,7 @@ extern VALUE *rb_gc_register_stack_start;
 
 /* debug functions */
 
+/* :nodoc: */
 static VALUE
 sdr(void)
 {
@@ -1880,6 +1881,7 @@ sdr(void)
     return Qnil;
 }
 
+/* :nodoc: */
 static VALUE
 nsdr(void)
 {
