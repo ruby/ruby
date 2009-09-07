@@ -1042,6 +1042,7 @@ rb_io_tell(VALUE io)
     GetOpenFile(io, fptr);
     pos = io_tell(fptr);
     if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
+    pos -= fptr->rbuf_len;
     return OFFT2NUM(pos);
 }
 

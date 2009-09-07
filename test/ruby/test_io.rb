@@ -121,16 +121,22 @@ class TestIO < Test::Unit::TestCase
   def test_ungetbyte
     t = make_tempfile
     t.open
+    t.binmode
     t.ungetbyte(0x41)
+    assert_equal(-1, t.pos)
     assert_equal(0x41, t.getbyte)
     t.rewind
+    assert_equal(0, t.pos)
     t.ungetbyte("qux")
+    assert_equal(-3, t.pos)
     assert_equal("quxfoo\n", t.gets)
+    assert_equal(4, t.pos)
     t.set_encoding("utf-8")
     t.ungetbyte(0x89)
     t.ungetbyte(0x8e)
     t.ungetbyte("\xe7")
     t.ungetbyte("\xe7\xb4\x85")
+    assert_equal(-2, t.pos)
     assert_equal("\u7d05\u7389bar\n", t.gets)
   end
 
