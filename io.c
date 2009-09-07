@@ -3938,11 +3938,13 @@ rb_io_fmode_modestr(int fmode)
 static int
 io_encname_bom_p(const char *name, long len)
 {
+    static const char bom_prefix[] = "bom|utf-";
+    enum {bom_prefix_len = (int)sizeof(bom_prefix) - 1};
     if (!len) {
 	const char *p = strchr(name, ':');
-	len = p ? p - name : strlen(name);
+	len = p ? (long)(p - name) : (long)strlen(name);
     }
-    return len > 8 && STRNCASECMP(name, "bom|utf-", 8) == 0;
+    return len > bom_prefix_len && STRNCASECMP(name, bom_prefix, bom_prefix_len) == 0;
 }
 
 int
