@@ -1,3 +1,18 @@
+Mon Sep  7 19:52:44 2009  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (rb_thread_schedule): need select for WAIT_SELECT, even if
+	  already timeout.  [ruby-dev:38971]
+	  (WAIT_DONE): defined for mark threads which can be runnable.
+
+Mon Sep  7 19:52:44 2009  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (rb_thread_schedule): refine previous change.
+
+Mon Sep  7 19:52:44 2009  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (rb_thread_schedule): fix condition for making thread
+	  runnable.  [ruby-core:23515]
+
 Sun Sep  6 19:47:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_exc_raise, rb_exc_fatal): require exception object.
