@@ -81,7 +81,13 @@ module IRB
   end
 
   INSPECTORS.def_inspector([false, :to_s, :raw]){|v| v.to_s}
-  INSPECTORS.def_inspector([true, :p, :inspect]){|v| v.inspect}
+  INSPECTORS.def_inspector([true, :p, :inspect]){|v| 
+    begin
+      v.inspect
+    rescue NoMethodError
+      puts "(Object doesn't support #inspect)"
+    end
+  }
   INSPECTORS.def_inspector([:pp, :pretty_inspect], proc{require "pp"}){|v| v.pretty_inspect.chomp}
   INSPECTORS.def_inspector([:yaml, :YAML], proc{require "yaml"}){|v| 
     begin
