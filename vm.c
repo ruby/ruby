@@ -1573,6 +1573,7 @@ rb_thread_mark(void *ptr)
 
 	    while (cfp != limit_cfp) {
 		rb_gc_mark(cfp->proc);
+		if (cfp->iseq) rb_gc_mark(cfp->iseq->self);
 		cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 	    }
 	}
