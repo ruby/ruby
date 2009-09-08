@@ -3,8 +3,8 @@ require "fileutils"
 require "tmpdir"
 
 class String
-  def start_with(prefix)
-    self =~ /^#{prefix}/
+  def start_with?(prefix)
+    self[0..(prefix.length - 1)] == prefix
   end
 end
 

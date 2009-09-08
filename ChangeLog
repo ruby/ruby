@@ -1,3 +1,9 @@
+Fri Aug 28 12:54:00 2009 Kirk Haines <khaines@ruby-lang.org>
+
+	* Backport #1524 [ruby-core:23567]; lib/ostrct.rb (OpenStruct@new_ostruct_member): check if it's; also a little code cleanup to do a few things more efficiently. Tests adjusted accordingly.
+
+	* test/ruby/test_file_exhaustive.rb: Fixed a mistake in the monkey patched String#start_with? method required by the test suite.
+
 Tue Aug 25 11:48:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
 	* Backport #1168; Wrong result of File.extname for a path that contains a space before the extension.
