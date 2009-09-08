@@ -1,3 +1,8 @@
+Tue Sep  8 18:10:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/compile_prelude.rb: evaluates in the main context.
+	  [ruby-core:25474]
+
 Tue Sep  8 11:53:58 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (iseq_mark): no need to mark inline cache entries.
