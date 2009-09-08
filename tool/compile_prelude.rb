@@ -100,7 +100,7 @@ void
 Init_<%=init_name%>(void)
 {
 % lines_list.each_with_index {|(setup_lines, lines), i|
-  rb_iseq_eval_main(rb_iseq_compile(
+  rb_iseq_eval(rb_iseq_compile(
     rb_usascii_str_new(prelude_code<%=i%>, sizeof(prelude_code<%=i%>) - 1),
     rb_usascii_str_new(prelude_name<%=i%>, sizeof(prelude_name<%=i%>) - 1),
     INT2FIX(<%=1-setup_lines.length%>)));
