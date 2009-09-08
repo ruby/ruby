@@ -1200,6 +1200,7 @@ onceinlinecache
     }
     else {
 	/* none */
+	ic->ic_value = Qundef;
 	val = Qnil;
     }
 }
@@ -1217,6 +1218,9 @@ setinlinecache
 {
     IC ic = GET_CONST_INLINE_CACHE(dst);
 
+    if (ic->ic_value == Qundef) {
+	rb_ary_push(GET_ISEQ()->mark_ary, val);
+    }
     ic->ic_value = val;
     ic->ic_vmstat = GET_VM_STATE_VERSION() - ruby_vm_const_missing_count;
     ruby_vm_const_missing_count = 0;

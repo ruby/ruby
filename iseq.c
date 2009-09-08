@@ -90,7 +90,6 @@ iseq_mark(void *ptr)
     RUBY_MARK_ENTER("iseq");
 
     if (ptr) {
-	int i;
 	rb_iseq_t *iseq = ptr;
 
 	RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->name), RSTRING_PTR(iseq->filename));
@@ -103,16 +102,6 @@ iseq_mark(void *ptr)
 /* 	RUBY_MARK_UNLESS_NULL((VALUE)iseq->node); */
 /*	RUBY_MARK_UNLESS_NULL(iseq->cached_special_block); */
 	RUBY_MARK_UNLESS_NULL(iseq->orig);
-
-	for (i=0; i<iseq->ic_size; i++) {
-	    struct iseq_inline_cache_entry *const ic = &iseq->ic_entries[i];
-	    RUBY_MARK_UNLESS_NULL(ic->ic_class);
-	    RUBY_MARK_UNLESS_NULL(ic->ic_value);
-	    if (ic->ic_vmstat != GET_VM_STATE_VERSION()) continue;
-	    if (ic->ic_method) {
-		rb_gc_mark_method_entry(ic->ic_method);
-	    }
-	}
 
 	if (iseq->compile_data != 0) {
 	    struct iseq_compile_data *const compile_data = iseq->compile_data;

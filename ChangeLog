@@ -1,3 +1,10 @@
+Tue Sep  8 11:53:58 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_mark): no need to mark inline cache entries.
+
+	* insns.def (onceinlinecache, setinlinecache): save a value
+	  to mark cached value.
+
 Tue Sep  8 08:32:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/dl/test_{cfunc,ptr}.rb: added tests from Aaron Patterson.
