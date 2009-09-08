@@ -99,8 +99,10 @@ iseq_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL((VALUE)iseq->cref_stack);
 	RUBY_MARK_UNLESS_NULL(iseq->klass);
 	RUBY_MARK_UNLESS_NULL(iseq->coverage);
-/* 	RUBY_MARK_UNLESS_NULL((VALUE)iseq->node); */
-/*	RUBY_MARK_UNLESS_NULL(iseq->cached_special_block); */
+#if 0
+	RUBY_MARK_UNLESS_NULL((VALUE)iseq->node);
+	RUBY_MARK_UNLESS_NULL(iseq->cached_special_block);
+#endif
 	RUBY_MARK_UNLESS_NULL(iseq->orig);
 
 	if (iseq->compile_data != 0) {
