@@ -204,7 +204,7 @@ range_eql(VALUE range, VALUE obj)
 static VALUE
 recursive_hash(VALUE range, VALUE dummy, int recur)
 {
-    unsigned long hash = EXCL(range);
+    st_index_t hash = EXCL(range);
     VALUE v;
 
     if (recur) {

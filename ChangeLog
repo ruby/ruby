@@ -1,3 +1,7 @@
+Tue Sep  8 22:10:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/st.h (st_hash_func): use st_index_t.
+
 Tue Sep  8 21:48:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (rb_thread_mark): mark callers iseqs.  [ruby-core:25474]

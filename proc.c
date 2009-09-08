@@ -771,12 +771,13 @@ proc_eq(VALUE self, VALUE other)
 static VALUE
 proc_hash(VALUE self)
 {
-    long hash;
+    st_index_t hash;
     rb_proc_t *proc;
     GetProcPtr(self, proc);
-    hash = (long)proc->block.iseq;
-    hash ^= (long)proc->envval;
-    hash ^= (long)proc->block.lfp >> 16;
+    hash = rb_hash_start((st_index_t)proc->block.iseq);
+    hash = rb_hash_uint(hash, (st_index_t)proc->envval);
+    hash = rb_hash_uint(hash, (st_index_t)proc->block.lfp >> 16);
+    hash = rb_hash_end(hash);
     return LONG2FIX(hash);
 }
 
@@ -993,12 +994,13 @@ static VALUE
 method_hash(VALUE method)
 {
     struct METHOD *m;
-    long hash;
+    st_index_t hash;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, m);
-    hash =  (long)m->rclass;
-    hash ^= (long)m->recv;
-    hash ^= (long)m->me.def;
+    hash = rb_hash_start((st_index_t)m->rclass);
+    hash = rb_hash_uint(hash, (st_index_t)m->recv);
+    hash = rb_hash_uint(hash, (st_index_t)m->me.def);
+    hash = rb_hash_end(hash);
 
     return INT2FIX(hash);
 }

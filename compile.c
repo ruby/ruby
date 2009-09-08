@@ -1233,14 +1233,14 @@ cdhash_cmp(VALUE val, VALUE lit)
     return !rb_eql(lit, val);
 }
 
-static int
+static st_index_t
 cdhash_hash(VALUE a)
 {
-    if (SPECIAL_CONST_P(a)) return (int)a;
+    if (SPECIAL_CONST_P(a)) return (st_index_t)a;
     if (TYPE(a) == T_STRING) return rb_str_hash(a);
     {
 	VALUE hval = rb_hash(a);
-	return (int)FIX2LONG(hval);
+	return (st_index_t)FIX2LONG(hval);
     }
 }
 

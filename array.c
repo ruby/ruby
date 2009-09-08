@@ -2880,7 +2880,8 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
 static VALUE
 recursive_hash(VALUE ary, VALUE dummy, int recur)
 {
-    long i, h;
+    long i;
+    st_index_t h;
     VALUE n;
 
     if (recur) {

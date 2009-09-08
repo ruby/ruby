@@ -44,13 +44,13 @@ static const struct st_hash_type type_numhash = {
 };
 
 /* extern int strcmp(const char *, const char *); */
-static int strhash(const char *);
+static st_index_t strhash(const char *);
 static const struct st_hash_type type_strhash = {
     strcmp,
     strhash,
 };
 
-static int strcasehash(const char *);
+static st_index_t strcasehash(const char *);
 static const struct st_hash_type type_strcasehash = {
     st_strcasecmp,
     strcasehash,
@@ -69,7 +69,7 @@ static void rehash(st_table *);
 
 #define EQUAL(table,x,y) ((x)==(y) || (*table->type->compare)((x),(y)) == 0)
 
-#define do_hash(key,table) (unsigned int)(*(table)->type->hash)((key))
+#define do_hash(key,table) (unsigned int)(st_index_t)(*(table)->type->hash)((key))
 #define do_hash_bin(key,table) (do_hash(key, table)%(table)->num_bins)
 
 /*
@@ -927,10 +927,10 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
  */
 #define FNV_32_PRIME 0x01000193
 
-static int
+static st_index_t
 strhash(register const char *string)
 {
-    register unsigned int hval = FNV1_32A_INIT;
+    register st_index_t hval = FNV1_32A_INIT;
 
     /*
      * FNV-1a hash each octet in the buffer
@@ -994,10 +994,10 @@ st_strncasecmp(const char *s1, const char *s2, size_t n)
     return 0;
 }
 
-static int
+static st_index_t
 strcasehash(register const char *string)
 {
-    register unsigned int hval = FNV1_32A_INIT;
+    register st_index_t hval = FNV1_32A_INIT;
 
     /*
      * FNV-1a hash each octet in the buffer
@@ -1019,8 +1019,8 @@ st_numcmp(st_data_t x, st_data_t y)
     return x != y;
 }
 
-int
+st_index_t
 st_numhash(st_data_t n)
 {
-    return (int)n;
+    return (st_index_t)n;
 }

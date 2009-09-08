@@ -936,7 +936,7 @@ static VALUE
 flo_hash(VALUE num)
 {
     double d;
-    int hash;
+    st_index_t hash;
 
     d = RFLOAT_VALUE(num);
     /* normalize -0.0 to 0.0 */

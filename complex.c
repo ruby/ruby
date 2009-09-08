@@ -1156,7 +1156,7 @@ nucomp_numerator(VALUE self)
 static VALUE
 nucomp_hash(VALUE self)
 {
-    long v, h[2];
+    st_index_t v, h[2];
     VALUE n;
 
     get_dat1(self);

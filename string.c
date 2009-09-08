@@ -2026,8 +2026,8 @@ murmur_finish(unsigned long h)
 
 #define murmur_step(h, k) murmur(h, k, 16)
 
-static VALUE
-hash(const unsigned char * data, size_t len, VALUE h)
+static st_index_t
+hash(const unsigned char * data, size_t len, st_index_t h)
 {
     uint32_t t = 0;
 
@@ -2150,14 +2150,14 @@ hash(const unsigned char * data, size_t len, VALUE h)
     return murmur_finish(h);
 }
 
-VALUE
-rb_hash_uint32(VALUE h, unsigned int i)
+st_index_t
+rb_hash_uint32(st_index_t h, unsigned int i)
 {
     return murmur_step(h + i, 16);
 }
 
-VALUE
-rb_hash_uint(VALUE h, VALUE i)
+st_index_t
+rb_hash_uint(st_index_t h, st_index_t i)
 {
     unsigned long v = 0;
     h += i;
@@ -2187,16 +2187,16 @@ rb_hash_uint(VALUE h, VALUE i)
     return v;
 }
 
-VALUE
-rb_hash_end(VALUE h)
+st_index_t
+rb_hash_end(st_index_t h)
 {
     h = murmur_step(h, 10);
     h = murmur_step(h, 17);
     return h;
 }
 
-VALUE
-rb_hash_start(VALUE h)
+st_index_t
+rb_hash_start(st_index_t h)
 {
     static int hashseed_init = 0;
     static VALUE hashseed;
@@ -2221,20 +2221,20 @@ rb_hash_start(VALUE h)
     return hashseed + h;
 }
 
-int
+st_index_t
 rb_memhash(const void *ptr, long len)
 {
-    return (int)hash(ptr, len, rb_hash_start(0));
+    return hash(ptr, len, rb_hash_start(0));
 }
 
-int
+st_index_t
 rb_str_hash(VALUE str)
 {
     int e = ENCODING_GET(str);
     if (e && rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
 	e = 0;
     }
-    return (int)rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str)) ^ e;
+    return rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str)) ^ e;
 }
 
 int
@@ -2260,7 +2260,7 @@ rb_str_hash_cmp(VALUE str1, VALUE str2)
 static VALUE
 rb_str_hash_m(VALUE str)
 {
-    int hval = rb_str_hash(str);
+    st_index_t hval = rb_str_hash(str);
     return INT2FIX(hval);
 }
 

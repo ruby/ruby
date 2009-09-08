@@ -99,7 +99,7 @@ VALUE
 rb_obj_hash(VALUE obj)
 {
     VALUE oid = rb_obj_id(obj);
-    unsigned long h = rb_hash_end(rb_hash_start(NUM2LONG(oid)));
+    st_index_t h = rb_hash_end(rb_hash_start(NUM2LONG(oid)));
     return LONG2NUM(h);
 }
 

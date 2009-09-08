@@ -807,7 +807,7 @@ static VALUE
 recursive_hash(VALUE s, VALUE dummy, int recur)
 {
     long i;
-    unsigned long h;
+    st_index_t h;
     VALUE n;
 
     if (recur) {

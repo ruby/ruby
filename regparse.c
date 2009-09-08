@@ -335,7 +335,7 @@ str_end_cmp(st_str_end_key* x, st_str_end_key* y)
   return 0;
 }
 
-static int
+static st_index_t
 str_end_hash(st_str_end_key* x)
 {
   UChar *p;
@@ -4937,7 +4937,7 @@ static int type_cclass_cmp(type_cclass_key* x, type_cclass_key* y)
   return 0;
 }
 
-static int type_cclass_hash(type_cclass_key* key)
+static st_index_t type_cclass_hash(type_cclass_key* key)
 {
   int i, val;
   UChar *p;

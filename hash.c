@@ -72,11 +72,11 @@ rb_hash(VALUE obj)
     }
 }
 
-static int
+static st_index_t
 rb_any_hash(VALUE a)
 {
     VALUE hval;
-    VALUE hnum;
+    st_index_t hnum;
 
     switch (TYPE(a)) {
       case T_FIXNUM:
@@ -96,7 +96,7 @@ rb_any_hash(VALUE a)
 	hnum = FIX2LONG(hval);
     }
     hnum <<= 1;
-    return (int)RSHIFT(hnum, 1);
+    return (st_index_t)RSHIFT(hnum, 1);
 }
 
 static const struct st_hash_type objhash = {
@@ -1544,7 +1544,7 @@ rb_hash_eql(VALUE hash1, VALUE hash2)
 static int
 hash_i(VALUE key, VALUE val, VALUE arg)
 {
-    VALUE *hval = (VALUE *)arg;
+    st_index_t *hval = (st_index_t *)arg;
 
     if (key == Qundef) return ST_CONTINUE;
     *hval ^= rb_hash_end(rb_hash_uint(rb_hash_start(rb_hash(key)), rb_hash(val)));
@@ -1554,7 +1554,7 @@ hash_i(VALUE key, VALUE val, VALUE arg)
 static VALUE
 recursive_hash(VALUE hash, VALUE dummy, int recur)
 {
-    VALUE hval;
+    st_index_t hval;
 
     if (recur) {
 	rb_raise(rb_eArgError, "recursive key for hash");

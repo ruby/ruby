@@ -1495,7 +1495,7 @@ nurat_rationalize(int argc, VALUE *argv, VALUE self)
 static VALUE
 nurat_hash(VALUE self)
 {
-    long v, h[2];
+    st_index_t v, h[2];
     VALUE n;
 
     get_dat1(self);

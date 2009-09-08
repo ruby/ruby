@@ -3143,7 +3143,7 @@ rb_big_aref(VALUE x, VALUE y)
 static VALUE
 rb_big_hash(VALUE x)
 {
-    int hash;
+    st_index_t hash;
 
     hash = rb_memhash(BDIGITS(x), sizeof(BDIGIT)*RBIGNUM_LEN(x)) ^ RBIGNUM_SIGN(x);
     return INT2FIX(hash);

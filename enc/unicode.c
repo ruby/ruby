@@ -2122,10 +2122,10 @@ code2_cmp(OnigCodePoint* x, OnigCodePoint* y)
   return 1;
 }
 
-static int
+static st_index_t
 code2_hash(OnigCodePoint* x)
 {
-  return (int )(x[0] + x[1]);
+  return (st_index_t )(x[0] + x[1]);
 }
 
 static const struct st_hash_type type_code2_hash = {
@@ -2140,10 +2140,10 @@ code3_cmp(OnigCodePoint* x, OnigCodePoint* y)
   return 1;
 }
 
-static int
+static st_index_t
 code3_hash(OnigCodePoint* x)
 {
-  return (int )(x[0] + x[1] + x[2]);
+  return (st_index_t )(x[0] + x[1] + x[2]);
 }
 
 static const struct st_hash_type type_code3_hash = {

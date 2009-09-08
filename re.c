@@ -2485,6 +2485,7 @@ rb_reg_regcomp(VALUE str)
     return reg_cache = rb_reg_new_str(save_str, 0);
 }
 
+static st_index_t reg_hash(VALUE re);
 /*
  * call-seq:
  *   rxp.hash   => fixnum
@@ -2495,20 +2496,19 @@ rb_reg_regcomp(VALUE str)
 static VALUE
 rb_reg_hash(VALUE re)
 {
-    unsigned long hashval;
-    long len;
-    char *p;
+    st_index_t hashval;
+    return LONG2FIX(hashval);
+}
+
+static st_index_t
+reg_hash(VALUE re)
+{
+    st_index_t hashval;
 
     rb_reg_check(re);
     hashval = RREGEXP(re)->ptr->options;
-    len = RREGEXP_SRC_LEN(re);
-    p  = RREGEXP_SRC_PTR(re);
-    while (len--) {
-	hashval = hashval * 33 + *p++;
-    }
-    hashval = hashval + (hashval>>5);
-
-    return LONG2FIX(hashval);
+    hashval = rb_hash_uint(hashval, rb_memhash(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re)));
+    return rb_hash_end(hashval);
 }
 
 
@@ -2555,11 +2555,9 @@ static VALUE
 match_hash(VALUE match)
 {
     const struct re_registers *regs;
-    VALUE h;
-    unsigned long hashval = rb_hash_start(rb_str_hash(RMATCH(match)->str));
+    st_index_t hashval = rb_hash_start(rb_str_hash(RMATCH(match)->str));
 
-    h = rb_reg_hash(RMATCH(match)->regexp);
-    rb_hash_uint(hashval, FIX2LONG(h));
+    rb_hash_uint(hashval, reg_hash(RMATCH(match)->regexp));
     regs = RMATCH_REGS(match);
     hashval = rb_hash_uint(hashval, regs->num_regs);
     hashval = rb_hash_uint(hashval, rb_memhash(regs->beg, regs->num_regs * sizeof(*regs->beg)));

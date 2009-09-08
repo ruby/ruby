@@ -55,15 +55,15 @@ typedef unsigned LONG_LONG st_data_t;
 
 typedef struct st_table st_table;
 
+typedef st_data_t st_index_t;
 typedef int st_compare_func(st_data_t, st_data_t);
-typedef int st_hash_func(st_data_t);
+typedef st_index_t st_hash_func(st_data_t);
 
 struct st_hash_type {
     int (*compare)(ANYARGS /*st_data_t, st_data_t*/); /* st_compare_func* */
-    int (*hash)(ANYARGS /*st_data_t*/);               /* st_hash_func* */
+    st_index_t (*hash)(ANYARGS /*st_data_t*/);        /* st_hash_func* */
 };
 
-typedef st_data_t st_index_t;
 #define ST_INDEX_BITS (sizeof(st_index_t) * CHAR_BIT)
 
 struct st_table {
@@ -104,7 +104,7 @@ void st_cleanup_safe(st_table *, st_data_t);
 void st_clear(st_table *);
 st_table *st_copy(st_table *);
 int st_numcmp(st_data_t, st_data_t);
-int st_numhash(st_data_t);
+st_index_t st_numhash(st_data_t);
 int st_strcasecmp(const char *s1, const char *s2);
 int st_strncasecmp(const char *s1, const char *s2, size_t n);
 size_t st_memsize(st_table *);

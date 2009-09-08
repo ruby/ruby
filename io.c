@@ -6750,6 +6750,7 @@ static VALUE
 argf_getline(int argc, VALUE *argv, VALUE argf)
 {
     VALUE line;
+    int lineno = ARGF.lineno;
 
   retry:
     if (!next_argv()) return Qnil;
@@ -6770,7 +6771,7 @@ argf_getline(int argc, VALUE *argv, VALUE argf)
 	}
     }
     if (!NIL_P(line)) {
-	ARGF.lineno++;
+	ARGF.lineno = ++lineno;
 	ARGF.last_lineno = ARGF.lineno;
     }
     return line;
