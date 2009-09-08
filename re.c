@@ -2496,7 +2496,7 @@ static st_index_t reg_hash(VALUE re);
 static VALUE
 rb_reg_hash(VALUE re)
 {
-    st_index_t hashval;
+    st_index_t hashval = reg_hash(re);
     return LONG2FIX(hashval);
 }
 
