@@ -58,16 +58,17 @@ typedef struct rb_fiber_struct {
     struct rb_fiber_struct *next_fiber;
 } rb_fiber_t;
 
+static const rb_data_type_t cont_data_type, fiber_data_type;
 static VALUE rb_cContinuation;
 static VALUE rb_cFiber;
 static VALUE rb_eFiberError;
 
 #define GetContPtr(obj, ptr)  \
-  Data_Get_Struct(obj, rb_context_t, ptr)
+    TypedData_Get_Struct(obj, rb_context_t, &cont_data_type, ptr)
 
 #define GetFiberPtr(obj, ptr)  do {\
-  ptr = (rb_fiber_t*)DATA_PTR(obj);\
-  if (!ptr) rb_raise(rb_eFiberError, "uninitialized fiber");\
+    TypedData_Get_Struct(obj, rb_fiber_t, &fiber_data_type, ptr); \
+    if (!ptr) rb_raise(rb_eFiberError, "uninitialized fiber"); \
 } while(0)
 
 NOINLINE(static VALUE cont_capture(volatile int *stat));
@@ -126,6 +127,35 @@ cont_free(void *ptr)
     RUBY_FREE_LEAVE("cont");
 }
 
+static size_t
+cont_memsize(void *ptr)
+{
+    rb_context_t *cont = ptr;
+    size_t size = 0;
+    if (cont) {
+	size = sizeof(*cont);
+	if (cont->vm_stack) {
+#ifdef CAPTURE_JUST_VALID_VM_STACK
+	    size_t n = (cont->vm_stack_slen + cont->vm_stack_clen);
+#else
+	    size_t n = cont->saved_thread.stack_size;
+#endif
+	    size += n * sizeof(*cont->vm_stack);
+	}
+
+	if (cont->machine_stack) {
+	    size += cont->machine_stack_size * sizeof(*cont->machine_stack);
+	}
+#ifdef __ia64
+	if (cont->machine_register_stack) {
+	    size += (cont->machine_register_stack + cont->machine_register_stack_size) *
+		sizeof(*cont->machine_register_stack);
+	}
+#endif
+    }
+    return size;
+}
+
 static void
 fiber_mark(void *ptr)
 {
@@ -174,6 +204,21 @@ fiber_free(void *ptr)
 	cont_free(&fib->cont);
     }
     RUBY_FREE_LEAVE("fiber");
+}
+
+static size_t
+fiber_memsize(void *ptr)
+{
+    rb_fiber_t *fib = ptr;
+    size_t size = 0;
+    if (ptr) {
+	size = sizeof(*fib);
+	if (fib->cont.type != ROOT_FIBER_CONTEXT) {
+	    size += st_memsize(fib->cont.saved_thread.local_storage);
+	}
+	size += cont_memsize(&fib->cont);
+    }
+    return 0;
 }
 
 static void
@@ -226,6 +271,11 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 #endif
 }
 
+static const rb_data_type_t cont_data_type = {
+    "continuation",
+    cont_mark, cont_free, cont_memsize,
+};
+
 static void
 cont_init(rb_context_t *cont)
 {
@@ -241,7 +291,7 @@ cont_new(VALUE klass)
     rb_context_t *cont;
     volatile VALUE contval;
 
-    contval = Data_Make_Struct(klass, rb_context_t, cont_mark, cont_free, cont);
+    contval = TypedData_Make_Struct(klass, rb_context_t, &cont_data_type, cont);
     cont->self = contval;
     cont_init(cont);
     return cont;
@@ -653,10 +703,15 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 
 #define FIBER_VM_STACK_SIZE (4 * 1024)
 
+static const rb_data_type_t fiber_data_type = {
+    "fiber",
+    fiber_mark, fiber_free, fiber_memsize,
+};
+
 static VALUE
 fiber_alloc(VALUE klass)
 {
-    return Data_Wrap_Struct(klass, fiber_mark, fiber_free, 0);
+    return TypedData_Wrap_Struct(klass, &fiber_data_type, 0);
 }
 
 static rb_fiber_t*
