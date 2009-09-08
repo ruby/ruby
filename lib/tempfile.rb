@@ -80,8 +80,7 @@ require 'thread'
 # mutex.
 class Tempfile < DelegateClass(File)
   MAX_TRY = 10  # :nodoc:
-  @@cleanlist = []
-  @@lock = Mutex.new
+  include Dir::Tmpname
 
   # call-seq:
   #    new(basename, [tmpdir = Dir.tmpdir], [options])
@@ -128,69 +127,23 @@ class Tempfile < DelegateClass(File)
   # If Tempfile.new cannot find a unique filename within a limited
   # number of tries, then it will raise an exception.
   def initialize(basename, *rest)
-    # I wish keyword argument settled soon.
-    if opts = Hash.try_convert(rest[-1])
-      rest.pop
-    end
-    tmpdir = rest[0] || Dir::tmpdir
-    if $SAFE > 0 and tmpdir.tainted?
-      tmpdir = '/tmp'
-    end
-
-    lock = tmpname = nil
-    n = failure = 0
-    @@lock.synchronize {
-      begin
-        begin
-          tmpname = File.join(tmpdir, make_tmpname(basename, n))
-          lock = tmpname + '.lock'
-          n += 1
-        end while @@cleanlist.include?(tmpname) or
-            File.exist?(lock) or File.exist?(tmpname)
-        Dir.mkdir(lock)
-      rescue
-        failure += 1
-        retry if failure < MAX_TRY
-        raise "cannot generate tempfile `#{tmpname}'"
-      end
-    }
-
-    @data = [tmpname]
-    @clean_proc = Tempfile.callback(@data)
+    @data = []
+    @clean_proc = self.class.callback(@data)
     ObjectSpace.define_finalizer(self, @clean_proc)
 
-    if opts.nil?
-      opts = []
-    else
-      opts = [opts]
+    create(basename, *rest) do |tmpname, n, opts|
+      lock = tmpname + '.lock'
+      self.class.mkdir(lock)
+      begin
+        @data[1] = @tmpfile = File.open(tmpname, File::RDWR|File::CREAT|File::EXCL, 0600, *opts)
+        @data[0] = @tmpname = tmpname
+      ensure
+        self.class.rmdir(lock)
+      end
     end
-    @tmpfile = File.open(tmpname, File::RDWR|File::CREAT|File::EXCL, 0600, *opts)
-    @tmpname = tmpname
-    @@cleanlist << @tmpname
-    @data[1] = @tmpfile
-    @data[2] = @@cleanlist
 
     super(@tmpfile)
-
-    # Now we have all the File/IO methods defined, you must not
-    # carelessly put bare puts(), etc. after this.
-
-    Dir.rmdir(lock)
   end
-
-  def make_tmpname(basename, n)
-    case basename
-    when Array
-      prefix, suffix = *basename
-    else
-      prefix, suffix = basename, ''
-    end
-
-    t = Time.now.strftime("%Y%m%d")
-    th = Thread.current.object_id
-    path = "#{prefix}#{t}-#{$$}-#{th.to_s(36)}-#{rand(0x100000000).to_s(36)}-#{n}#{suffix}"
-  end
-  private :make_tmpname
 
   # Opens or reopens the file with mode "r+".
   def open
@@ -269,8 +222,7 @@ class Tempfile < DelegateClass(File)
       if File.exist?(@tmpname)
         File.unlink(@tmpname)
       end
-      @@cleanlist.delete(@tmpname)
-      # remove tmpname and cleanlist from callback
+      # remove tmpname from callback
       @data[0] = @data[2] = nil
       @data = @tmpname = nil
     rescue Errno::EACCES
@@ -302,7 +254,7 @@ class Tempfile < DelegateClass(File)
       pid = $$
       Proc.new {
 	if pid == $$
-	  path, tmpfile, cleanlist = *data
+	  path, tmpfile = *data
 
 	  STDERR.print "removing ", path, "..." if $DEBUG
 
@@ -311,7 +263,6 @@ class Tempfile < DelegateClass(File)
 	  # keep this order for thread safeness
 	  if path
 	    File.unlink(path) if File.exist?(path)
-	    cleanlist.delete(path) if cleanlist
 	  end
 
 	  STDERR.print "done\n" if $DEBUG
@@ -353,6 +304,13 @@ class Tempfile < DelegateClass(File)
       else
 	tempfile
       end
+    end
+
+    def mkdir(*args)
+      Dir.mkdir(*args)
+    end
+    def rmdir(*args)
+      Dir.rmdir(*args)
     end
   end
 end
