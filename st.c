@@ -44,13 +44,13 @@ static const struct st_hash_type type_numhash = {
 };
 
 /* extern int strcmp(const char *, const char *); */
-static st_index_t strhash(const char *);
+static st_index_t strhash(st_data_t);
 static const struct st_hash_type type_strhash = {
     strcmp,
     strhash,
 };
 
-static st_index_t strcasehash(const char *);
+static st_index_t strcasehash(st_data_t);
 static const struct st_hash_type type_strcasehash = {
     st_strcasecmp,
     strcasehash,
@@ -63,6 +63,8 @@ static void rehash(st_table *);
 #define calloc xcalloc
 #define free(x) xfree(x)
 #endif
+
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 
 #define alloc(type) (type*)malloc((size_t)sizeof(type))
 #define Calloc(n,s) (char*)calloc((n),(s))
@@ -81,7 +83,7 @@ static void rehash(st_table *);
 /*
 Table of prime numbers 2^n+a, 2<=n<=30.
 */
-static const long primes[] = {
+static const unsigned int primes[] = {
 	8 + 3,
 	16 + 3,
 	32 + 5,
@@ -113,8 +115,8 @@ static const long primes[] = {
 	0
 };
 
-static int
-new_size(int size)
+static st_index_t
+new_size(st_index_t size)
 {
     int i;
 
@@ -124,12 +126,9 @@ new_size(int size)
     }
     return -1;
 #else
-    int newsize;
+    st_index_t newsize;
 
-    for (i = 0, newsize = MINSIZE;
-	 i < (int )(sizeof(primes)/sizeof(primes[0]));
-	 i++, newsize <<= 1)
-    {
+    for (i = 0, newsize = MINSIZE; i < numberof(primes); i++, newsize <<= 1) {
 	if (newsize > size) return primes[i];
     }
     /* Ran out of polynomials */
@@ -153,10 +152,10 @@ stat_col(void)
 }
 #endif
 
-#define MAX_PACKED_NUMHASH 5
+#define MAX_PACKED_NUMHASH ((st_index_t)5)
 
 st_table*
-st_init_table_with_size(const struct st_hash_type *type, int size)
+st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
 {
     st_table *tbl;
 
@@ -194,7 +193,7 @@ st_init_numtable(void)
 }
 
 st_table*
-st_init_numtable_with_size(int size)
+st_init_numtable_with_size(st_index_t size)
 {
     return st_init_table_with_size(&type_numhash, size);
 }
@@ -206,7 +205,7 @@ st_init_strtable(void)
 }
 
 st_table*
-st_init_strtable_with_size(int size)
+st_init_strtable_with_size(st_index_t size)
 {
     return st_init_table_with_size(&type_strhash, size);
 }
@@ -218,7 +217,7 @@ st_init_strcasetable(void)
 }
 
 st_table*
-st_init_strcasetable_with_size(int size)
+st_init_strcasetable_with_size(st_index_t size)
 {
     return st_init_table_with_size(&type_strcasehash, size);
 }
@@ -291,7 +290,7 @@ st_memsize(st_table *table)
 int
 st_lookup(st_table *table, register st_data_t key, st_data_t *value)
 {
-    unsigned int hash_val, bin_pos;
+    st_index_t hash_val, bin_pos;
     register st_table_entry *ptr;
 
     if (table->entries_packed) {
@@ -392,7 +391,7 @@ unpack_entries(register st_table *table)
 int
 st_insert(register st_table *table, register st_data_t key, st_data_t value)
 {
-    unsigned int hash_val, bin_pos;
+    st_index_t hash_val, bin_pos;
     register st_table_entry *ptr;
 
     if (table->entries_packed) {
@@ -431,7 +430,7 @@ int
 st_insert2(register st_table *table, register st_data_t key, st_data_t value,
 	   st_data_t (*func)(st_data_t))
 {
-    unsigned int hash_val, bin_pos;
+    st_index_t hash_val, bin_pos;
     register st_table_entry *ptr;
 
     if (table->entries_packed) {
@@ -470,7 +469,7 @@ st_insert2(register st_table *table, register st_data_t key, st_data_t value,
 void
 st_add_direct(st_table *table, st_data_t key, st_data_t value)
 {
-    unsigned int hash_val, bin_pos;
+    st_index_t hash_val, bin_pos;
 
     if (table->entries_packed) {
         int i;
@@ -494,8 +493,7 @@ static void
 rehash(register st_table *table)
 {
     register st_table_entry *ptr, **new_bins;
-    int i, new_num_bins;
-    unsigned int hash_val;
+    st_index_t i, new_num_bins, hash_val;
 
     new_num_bins = new_size(table->num_bins+1);
     new_bins = (st_table_entry**)
@@ -518,8 +516,8 @@ st_copy(st_table *old_table)
 {
     st_table *new_table;
     st_table_entry *ptr, *entry, *prev, **tail;
-    int num_bins = old_table->num_bins;
-    unsigned int hash_val;
+    st_index_t num_bins = old_table->num_bins;
+    st_index_t hash_val;
 
     new_table = alloc(st_table);
     if (new_table == 0) {
@@ -582,7 +580,7 @@ st_copy(st_table *old_table)
 int
 st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
 {
-    unsigned int hash_val;
+    st_index_t hash_val;
     st_table_entry **prev;
     register st_table_entry *ptr;
 
@@ -621,7 +619,7 @@ st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
 int
 st_delete_safe(register st_table *table, register st_data_t *key, st_data_t *value, st_data_t never)
 {
-    unsigned int hash_val;
+    st_index_t hash_val;
     register st_table_entry *ptr;
 
     if (table->entries_packed) {
@@ -928,8 +926,9 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 #define FNV_32_PRIME 0x01000193
 
 static st_index_t
-strhash(register const char *string)
+strhash(st_data_t arg)
 {
+    register const char *string = (const char *)arg;
     register st_index_t hval = FNV1_32A_INIT;
 
     /*
@@ -995,8 +994,9 @@ st_strncasecmp(const char *s1, const char *s2, size_t n)
 }
 
 static st_index_t
-strcasehash(register const char *string)
+strcasehash(st_data_t arg)
 {
+    register const char *string = (const char *)arg;
     register st_index_t hval = FNV1_32A_INIT;
 
     /*

@@ -83,13 +83,13 @@ struct st_table {
 enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK};
 
 st_table *st_init_table(const struct st_hash_type *);
-st_table *st_init_table_with_size(const struct st_hash_type *, int);
+st_table *st_init_table_with_size(const struct st_hash_type *, st_index_t);
 st_table *st_init_numtable(void);
-st_table *st_init_numtable_with_size(int);
+st_table *st_init_numtable_with_size(st_index_t);
 st_table *st_init_strtable(void);
-st_table *st_init_strtable_with_size(int);
+st_table *st_init_strtable_with_size(st_index_t);
 st_table *st_init_strcasetable(void);
-st_table *st_init_strcasetable_with_size(int);
+st_table *st_init_strcasetable_with_size(st_index_t);
 int st_delete(st_table *, st_data_t *, st_data_t *); /* returns 0:notfound 1:deleted */
 int st_delete_safe(st_table *, st_data_t *, st_data_t *, st_data_t);
 int st_insert(st_table *, st_data_t, st_data_t);

@@ -1,4 +1,6 @@
-Tue Sep  8 22:10:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Sep  8 22:18:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c (st_init_*table_with_size): use st_index_t.
 
 	* include/ruby/st.h (st_hash_func): use st_index_t.
 
