@@ -107,7 +107,7 @@ int st_numcmp(st_data_t, st_data_t);
 st_index_t st_numhash(st_data_t);
 int st_strcasecmp(const char *s1, const char *s2);
 int st_strncasecmp(const char *s1, const char *s2, size_t n);
-size_t st_memsize(st_table *);
+size_t st_memsize(const st_table *);
 
 #if defined(__cplusplus)
 #if 0

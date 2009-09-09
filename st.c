@@ -256,7 +256,7 @@ st_free_table(st_table *table)
 }
 
 size_t
-st_memsize(st_table *table)
+st_memsize(const st_table *table)
 {
     if (table->entries_packed) {
 	return table->num_bins * sizeof (void *) + sizeof(st_table);
