@@ -31,20 +31,32 @@ w32_dlclose(void *ptr)
 #define dlclose(ptr) w32_dlclose(ptr)
 #endif
 
-void
-dlhandle_free(struct dl_handle *dlhandle)
+static void
+dlhandle_free(void *ptr)
 {
+    struct dl_handle *dlhandle = ptr;
     if( dlhandle->ptr && dlhandle->open && dlhandle->enable_close ){
 	dlclose(dlhandle->ptr);
     }
 }
+
+static size_t
+dlhandle_memsize(const void *ptr)
+{
+    return ptr ? sizeof(struct dl_handle) : 0;
+}
+
+static const rb_data_type_t dlhandle_data_type = {
+    "dl/handle",
+    0, dlhandle_free, dlhandle_memsize,
+};
 
 VALUE
 rb_dlhandle_close(VALUE self)
 {
     struct dl_handle *dlhandle;
 
-    Data_Get_Struct(self, struct dl_handle, dlhandle);
+    TypedData_Get_Struct(self, struct dl_handle, &dlhandle_data_type, dlhandle);
     dlhandle->open = 0;
     return INT2NUM(dlclose(dlhandle->ptr));
 }
@@ -55,8 +67,7 @@ rb_dlhandle_s_allocate(VALUE klass)
     VALUE obj;
     struct dl_handle *dlhandle;
 
-    obj = Data_Make_Struct(rb_cDLHandle, struct dl_handle, 0,
-			   dlhandle_free, dlhandle);
+    obj = TypedData_Make_Struct(rb_cDLHandle, struct dl_handle, &dlhandle_data_type, dlhandle);
     dlhandle->ptr  = 0;
     dlhandle->open = 0;
     dlhandle->enable_close = 0;
@@ -133,7 +144,7 @@ rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
 	rb_raise(rb_eDLError, "%s", err);
     }
 #endif
-    Data_Get_Struct(self, struct dl_handle, dlhandle);
+    TypedData_Get_Struct(self, struct dl_handle, &dlhandle_data_type, dlhandle);
     if( dlhandle->ptr && dlhandle->open && dlhandle->enable_close ){
 	dlclose(dlhandle->ptr);
     }
@@ -153,7 +164,7 @@ rb_dlhandle_enable_close(VALUE self)
 {
     struct dl_handle *dlhandle;
 
-    Data_Get_Struct(self, struct dl_handle, dlhandle);
+    TypedData_Get_Struct(self, struct dl_handle, &dlhandle_data_type, dlhandle);
     dlhandle->enable_close = 1;
     return Qnil;
 }
@@ -163,7 +174,7 @@ rb_dlhandle_disable_close(VALUE self)
 {
     struct dl_handle *dlhandle;
 
-    Data_Get_Struct(self, struct dl_handle, dlhandle);
+    TypedData_Get_Struct(self, struct dl_handle, &dlhandle_data_type, dlhandle);
     dlhandle->enable_close = 0;
     return Qnil;
 }
@@ -173,7 +184,7 @@ rb_dlhandle_to_i(VALUE self)
 {
     struct dl_handle *dlhandle;
 
-    Data_Get_Struct(self, struct dl_handle, dlhandle);
+    TypedData_Get_Struct(self, struct dl_handle, &dlhandle_data_type, dlhandle);
     return PTR2NUM(dlhandle);
 }
 
@@ -189,7 +200,7 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
 
     name = StringValuePtr(sym);
 
-    Data_Get_Struct(self, struct dl_handle, dlhandle);
+    TypedData_Get_Struct(self, struct dl_handle, &dlhandle_data_type, dlhandle);
     if( ! dlhandle->open ){
 	rb_raise(rb_eDLError, "closed handle");
     }

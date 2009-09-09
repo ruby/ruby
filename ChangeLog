@@ -1,3 +1,11 @@
+Wed Sep  9 21:19:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/cfunc.c (dlcfunc_data_type): typed.
+
+	* ext/dl/cptr.c (dlptr_data_type): ditto.
+
+	* ext/dl/handle.c (dlhandle_data_type): ditto.
+
 Wed Sep  9 17:17:31 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (parser_regx_options): only one kcode should effect

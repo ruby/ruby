@@ -42,7 +42,7 @@ rb_dl_set_win32_last_error(VALUE self, VALUE val)
 #endif
 
 
-void
+static void
 dlcfunc_free(void *ptr)
 {
     struct cfunc_data *data = ptr;
@@ -52,6 +52,25 @@ dlcfunc_free(void *ptr)
     xfree(data);
 }
 
+static size_t
+dlcfunc_memsize(const void *ptr)
+{
+    const struct cfunc_data *data = ptr;
+    size_t size = 0;
+    if( data ){
+	size += sizeof(*data);
+	if( data->name ){
+	    size += strlen(data->name) + 1;
+	}
+    }
+    return size;
+}
+
+const rb_data_type_t dlcfunc_data_type = {
+    "dl/cfunc",
+    0, dlcfunc_free, dlcfunc_memsize,
+};
+
 VALUE
 rb_dlcfunc_new(void (*func)(), int type, const char *name, ID calltype)
 {
@@ -60,7 +79,7 @@ rb_dlcfunc_new(void (*func)(), int type, const char *name, ID calltype)
 
     rb_secure(4);
     if( func ){
-	val = Data_Make_Struct(rb_cDLCFunc, struct cfunc_data, 0, dlcfunc_free, data);
+	val = TypedData_Make_Struct(rb_cDLCFunc, struct cfunc_data, &dlcfunc_data_type, data);
 	data->ptr  = func;
 	data->name = name ? strdup(name) : NULL;
 	data->type = type;
@@ -79,8 +98,8 @@ rb_dlcfunc2ptr(VALUE val)
     struct cfunc_data *data;
     void * func;
 
-    if( rb_obj_is_kind_of(val, rb_cDLCFunc) ){
-	Data_Get_Struct(val, struct cfunc_data, data);
+    if( rb_typeddata_is_kind_of(val, &dlcfunc_data_type) ){
+	data = DATA_PTR(val);
 	func = data->ptr;
     }
     else if( val == Qnil ){
@@ -99,7 +118,7 @@ rb_dlcfunc_s_allocate(VALUE klass)
     VALUE obj;
     struct cfunc_data *data;
 
-    obj = Data_Make_Struct(klass, struct cfunc_data, 0, dlcfunc_free, data);
+    obj = TypedData_Make_Struct(klass, struct cfunc_data, &dlcfunc_data_type, data);
     data->ptr  = 0;
     data->name = 0;
     data->type = 0;
@@ -111,8 +130,7 @@ rb_dlcfunc_s_allocate(VALUE klass)
 int
 rb_dlcfunc_kind_p(VALUE func)
 {
-    if (TYPE(func) == T_DATA) return 0;
-    return RDATA(func)->dfree == dlcfunc_free;
+    return rb_typeddata_is_kind_of(func, &dlcfunc_data_type);
 }
 
 VALUE
@@ -128,7 +146,7 @@ rb_dlcfunc_initialize(int argc, VALUE argv[], VALUE self)
     saddr = (void*)(NUM2PTR(rb_Integer(addr)));
     sname = NIL_P(name) ? NULL : StringValuePtr(name);
     
-    Data_Get_Struct(self, struct cfunc_data, data);
+    TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, data);
     if( data->name ) xfree(data->name);
     data->ptr  = saddr;
     data->name = sname ? strdup(sname) : 0;
@@ -143,7 +161,7 @@ rb_dlcfunc_name(VALUE self)
 {
     struct cfunc_data *cfunc;
 
-    Data_Get_Struct(self, struct cfunc_data, cfunc);
+    TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
     return cfunc->name ? rb_tainted_str_new2(cfunc->name) : Qnil;
 }
 
@@ -152,7 +170,7 @@ rb_dlcfunc_ctype(VALUE self)
 {
     struct cfunc_data *cfunc;
 
-    Data_Get_Struct(self, struct cfunc_data, cfunc);
+    TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
     return INT2NUM(cfunc->type);
 }
 
@@ -161,7 +179,7 @@ rb_dlcfunc_set_ctype(VALUE self, VALUE ctype)
 {
     struct cfunc_data *cfunc;
 
-    Data_Get_Struct(self, struct cfunc_data, cfunc);
+    TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
     cfunc->type = NUM2INT(ctype);
     return ctype;
 }
@@ -171,7 +189,7 @@ rb_dlcfunc_calltype(VALUE self)
 {
     struct cfunc_data *cfunc;
 
-    Data_Get_Struct(self, struct cfunc_data, cfunc);
+    TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
     return ID2SYM(cfunc->calltype);
 }
 
@@ -180,7 +198,7 @@ rb_dlcfunc_set_calltype(VALUE self, VALUE sym)
 {
     struct cfunc_data *cfunc;
 
-    Data_Get_Struct(self, struct cfunc_data, cfunc);
+    TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
     cfunc->calltype = SYM2ID(sym);
     return sym;
 }
@@ -191,7 +209,7 @@ rb_dlcfunc_ptr(VALUE self)
 {
     struct cfunc_data *cfunc;
 
-    Data_Get_Struct(self, struct cfunc_data, cfunc);
+    TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
     return PTR2NUM(cfunc->ptr);
 }
 
@@ -200,7 +218,7 @@ rb_dlcfunc_set_ptr(VALUE self, VALUE addr)
 {
     struct cfunc_data *cfunc;
 
-    Data_Get_Struct(self, struct cfunc_data, cfunc);
+    TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
     cfunc->ptr = NUM2PTR(addr);
 
     return Qnil;
@@ -214,7 +232,7 @@ rb_dlcfunc_inspect(VALUE self)
     int str_size;
     struct cfunc_data *cfunc;
     
-    Data_Get_Struct(self, struct cfunc_data, cfunc);
+    TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
     
     str_size = (cfunc->name ? strlen(cfunc->name) : 0) + 100;
     str = ruby_xmalloc(str_size);
@@ -259,7 +277,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
     memset(stack, 0, sizeof(DLSTACK_TYPE) * DLSTACK_SIZE);
     Check_Type(ary, T_ARRAY);
     
-    Data_Get_Struct(self, struct cfunc_data, cfunc);
+    TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
 
     if( cfunc->ptr == 0 ){
 	rb_raise(rb_eDLError, "can't call null-function");
@@ -499,7 +517,7 @@ rb_dlcfunc_to_i(VALUE self)
 {
   struct cfunc_data *cfunc;
 
-  Data_Get_Struct(self, struct cfunc_data, cfunc);
+  TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
   return PTR2NUM(cfunc->ptr);
 }
 

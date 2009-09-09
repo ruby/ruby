@@ -24,8 +24,9 @@ get_freefunc(VALUE func)
 static ID id_to_ptr;
 
 static void
-dlptr_free(struct ptr_data *data)
+dlptr_free(void *ptr)
 {
+    struct ptr_data *data = ptr;
     if (data->ptr) {
 	if (data->free) {
 	    (*(data->free))(data->ptr);
@@ -33,17 +34,24 @@ dlptr_free(struct ptr_data *data)
     }
 }
 
-static void
-dlptr_mark(struct ptr_data *data)
+static size_t
+dlptr_memsize(const void *ptr)
 {
+    const struct ptr_data *data = ptr;
+    return data ? sizeof(*data) + data->size : 0;
 }
+
+static const rb_data_type_t dlptr_data_type = {
+    "dl/ptr",
+    0, dlptr_free, dlptr_memsize,
+};
 
 void
 dlptr_init(VALUE val)
 {
     struct ptr_data *data;
 
-    Data_Get_Struct(val, struct ptr_data, data);
+    TypedData_Get_Struct(val, struct ptr_data, &dlptr_data_type, data);
     OBJ_TAINT(val);
 }
 
@@ -54,8 +62,7 @@ rb_dlptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
     VALUE val;
 
     rb_secure(4);
-    val = Data_Make_Struct(klass, struct ptr_data,
-			   0, dlptr_free, data);
+    val = TypedData_Make_Struct(klass, struct ptr_data, &dlptr_data_type, data);
     data->ptr = ptr;
     data->free = func;
     data->size = size;
@@ -88,7 +95,7 @@ rb_dlptr2cptr(VALUE val)
     void *ptr;
 
     if (rb_obj_is_kind_of(val, rb_cDLCPtr)) {
-	Data_Get_Struct(val, struct ptr_data, data);
+	TypedData_Get_Struct(val, struct ptr_data, &dlptr_data_type, data);
 	ptr = data->ptr;
     }
     else if (val == Qnil) {
@@ -108,7 +115,7 @@ rb_dlptr_s_allocate(VALUE klass)
     struct ptr_data *data;
 
     rb_secure(4);
-    obj = Data_Make_Struct(klass, struct ptr_data, dlptr_mark, dlptr_free, data);
+    obj = TypedData_Make_Struct(klass, struct ptr_data, &dlptr_data_type, data);
     data->ptr = 0;
     data->size = 0;
     data->free = 0;
@@ -143,7 +150,7 @@ rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
     }
 
     if (p) {
-	Data_Get_Struct(self, struct ptr_data, data);
+	TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, data);
 	if (data->ptr && data->free) {
 	    /* Free previous memory. Use of inappropriate initialize may cause SEGV. */
 	    (*(data->free))(data->ptr);
@@ -186,7 +193,7 @@ rb_dlptr_to_i(VALUE self)
 {
     struct ptr_data *data;
 
-    Data_Get_Struct(self, struct ptr_data, data);
+    TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, data);
     return PTR2NUM(data->ptr);
 }
 
@@ -194,7 +201,7 @@ VALUE
 rb_dlptr_to_value(VALUE self)
 {
     struct ptr_data *data;
-    Data_Get_Struct(self, struct ptr_data, data);
+    TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, data);
     return (VALUE)(data->ptr);
 }
 
@@ -203,7 +210,7 @@ rb_dlptr_ptr(VALUE self)
 {
     struct ptr_data *data;
 
-    Data_Get_Struct(self, struct ptr_data, data);
+    TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, data);
     return rb_dlptr_new(*((void**)(data->ptr)),0,0);
 }
 
@@ -212,7 +219,7 @@ rb_dlptr_ref(VALUE self)
 {
     struct ptr_data *data;
 
-    Data_Get_Struct(self, struct ptr_data, data);
+    TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, data);
     return rb_dlptr_new(&(data->ptr),0,0);
 }
 
@@ -221,7 +228,7 @@ rb_dlptr_null_p(VALUE self)
 {
     struct ptr_data *data;
 
-    Data_Get_Struct(self, struct ptr_data, data);
+    TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, data);
     return data->ptr ? Qfalse : Qtrue;
 }
 
@@ -230,7 +237,7 @@ rb_dlptr_free_set(VALUE self, VALUE val)
 {
     struct ptr_data *data;
 
-    Data_Get_Struct(self, struct ptr_data, data);
+    TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, data);
     data->free = get_freefunc(val);
 
     return Qnil;
@@ -241,7 +248,7 @@ rb_dlptr_free_get(VALUE self)
 {
     struct ptr_data *pdata;
 
-    Data_Get_Struct(self, struct ptr_data, pdata);
+    TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, pdata);
 
     return rb_dlcfunc_new(pdata->free, DLTYPE_VOID, "free<anonymous>", CFUNC_CDECL);
 }
@@ -253,7 +260,7 @@ rb_dlptr_to_s(int argc, VALUE argv[], VALUE self)
     VALUE arg1, val;
     int len;
 
-    Data_Get_Struct(self, struct ptr_data, data);
+    TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, data);
     switch (rb_scan_args(argc, argv, "01", &arg1)) {
       case 0:
 	val = rb_tainted_str_new2((char*)(data->ptr));
@@ -276,7 +283,7 @@ rb_dlptr_to_str(int argc, VALUE argv[], VALUE self)
     VALUE arg1, val;
     int len;
 
-    Data_Get_Struct(self, struct ptr_data, data);
+    TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, data);
     switch (rb_scan_args(argc, argv, "01", &arg1)) {
       case 0:
 	val = rb_tainted_str_new((char*)(data->ptr),data->size);
@@ -298,7 +305,7 @@ rb_dlptr_inspect(VALUE self)
     struct ptr_data *data;
     char str[1024];
 
-    Data_Get_Struct(self, struct ptr_data, data);
+    TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, data);
     snprintf(str, 1023, "#<%s:%p ptr=%p size=%ld free=%p>",
 	     rb_class2name(CLASS_OF(self)), data, data->ptr, data->size, data->free);
     return rb_str_new2(str);
