@@ -5588,6 +5588,7 @@ static int
 parser_regx_options(struct parser_params *parser)
 {
     int kcode = 0;
+    int kopt = 0;
     int options = 0;
     int c, opt, kc;
 
@@ -5597,13 +5598,14 @@ parser_regx_options(struct parser_params *parser)
             options |= RE_OPTION_ONCE;
         }
         else if (rb_char_to_option_kcode(c, &opt, &kc)) {
-            options |= opt;
+            kopt = opt;
 	    if (kc >= 0) kcode = c;
         }
         else {
 	    tokadd(c);
         }
     }
+    options |= kopt;
     pushback(c);
     if (toklen()) {
 	tokfix();
