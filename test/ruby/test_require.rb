@@ -198,7 +198,7 @@ class TestRequire < Test::Unit::TestCase
 
   def test_tainted_loadpath
     t = Tempfile.new(["test_ruby_test_require", ".rb"])
-    abs_dir, file = File.dirname(t.path), File.basename(t.path)
+    abs_dir, file = File.split(t.path)
     abs_dir = File.expand_path(abs_dir).untaint
 
     assert_in_out_err([], <<-INPUT, %w(:ok), [])
@@ -243,5 +243,23 @@ class TestRequire < Test::Unit::TestCase
       require "#{ file }"
       p :ok
     INPUT
+  end
+
+  def test_relative
+    require 'tmpdir'
+    Dir.mktmpdir do |tmp|
+      Dir.chdir(tmp) do
+        Dir.mkdir('x')
+        File.open('x/t.rb', 'wb') {}
+        File.open('x/a.rb', 'wb') {|f| f.puts("require_relative('t.rb')")}
+        assert require('./x/t.rb')
+        assert !require(File.expand_path('x/t.rb'))
+        assert_nothing_raised(LoadError) {require('./x/a.rb')}
+        assert_raise(LoadError) {require('x/t.rb')}
+        File.unlink(*Dir.glob('x/*'))
+        Dir.rmdir("#{tmp}/x")
+        assert(!require('tmpdir'))
+      end
+    end
   end
 end
