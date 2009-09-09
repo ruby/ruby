@@ -1,4 +1,4 @@
-Wed Sep  9 11:55:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Sep  9 12:01:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_data_type): typed.
 
@@ -6,6 +6,8 @@ Wed Sep  9 11:55:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  (yielder_data_type, generator_data_type): ditto.
 
 	* error.c (name_err_mesg_data_type): typed.
+
+	* file.c (stat_data_type): typed.
 
 Wed Sep  9 11:11:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

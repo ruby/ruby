@@ -180,6 +180,17 @@ rb_file_path(VALUE obj)
     return rb_obj_taint(rb_str_dup(fptr->pathv));
 }
 
+static size_t
+stat_memsize(const void *p)
+{
+    return p ? sizeof(struct stat) : 0;
+}
+
+static const rb_data_type_t stat_data_type = {
+    "stat",
+    NULL, RUBY_TYPED_DEFAULT_FREE, stat_memsize,
+};
+
 static VALUE
 stat_new_0(VALUE klass, struct stat *st)
 {
@@ -189,7 +200,7 @@ stat_new_0(VALUE klass, struct stat *st)
 	nst = ALLOC(struct stat);
 	*nst = *st;
     }
-    return Data_Wrap_Struct(klass, NULL, -1, nst);
+    return TypedData_Wrap_Struct(klass, &stat_data_type, nst);
 }
 
 static VALUE
@@ -202,7 +213,7 @@ static struct stat*
 get_stat(VALUE self)
 {
     struct stat* st;
-    Data_Get_Struct(self, struct stat, st);
+    TypedData_Get_Struct(self, struct stat, &stat_data_type, st);
     if (!st) rb_raise(rb_eTypeError, "uninitialized File::Stat");
     return st;
 }
@@ -679,7 +690,7 @@ rb_stat_inspect(VALUE self)
     };
 
     struct stat* st;
-    Data_Get_Struct(self, struct stat, st);
+    TypedData_Get_Struct(self, struct stat, &stat_data_type, st);
     if (!st) {
         return rb_sprintf("#<%s: uninitialized>", rb_obj_classname(self));
     }
