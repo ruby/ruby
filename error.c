@@ -769,22 +769,40 @@ nometh_err_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 /* :nodoc: */
+#define NAME_ERR_MESG_COUNT 3
+
 static void
-name_err_mesg_mark(VALUE *ptr)
+name_err_mesg_mark(void *p)
 {
-    rb_gc_mark_locations(ptr, ptr+3);
+    VALUE *ptr = p;
+    rb_gc_mark_locations(ptr, ptr+NAME_ERR_MESG_COUNT);
 }
+
+#define name_err_mesg_free RUBY_TYPED_DEFAULT_FREE
+
+static size_t
+name_err_mesg_memsize(const void *p)
+{
+    return p ? (NAME_ERR_MESG_COUNT * sizeof(VALUE)) : 0;
+}
+
+static const rb_data_type_t name_err_mesg_data_type = {
+    "name_err_mesg",
+    name_err_mesg_mark,
+    name_err_mesg_free,
+    name_err_mesg_memsize,
+};
 
 /* :nodoc: */
 static VALUE
 name_err_mesg_new(VALUE obj, VALUE mesg, VALUE recv, VALUE method)
 {
-    VALUE *ptr = ALLOC_N(VALUE, 3);
+    VALUE *ptr = ALLOC_N(VALUE, NAME_ERR_MESG_COUNT);
 
     ptr[0] = mesg;
     ptr[1] = recv;
     ptr[2] = method;
-    return Data_Wrap_Struct(rb_cNameErrorMesg, name_err_mesg_mark, -1, ptr);
+    return TypedData_Wrap_Struct(rb_cNameErrorMesg, &name_err_mesg_data_type, ptr);
 }
 
 /* :nodoc: */
@@ -798,9 +816,9 @@ name_err_mesg_equal(VALUE obj1, VALUE obj2)
     if (rb_obj_class(obj2) != rb_cNameErrorMesg)
 	return Qfalse;
 
-    Data_Get_Struct(obj1, VALUE, ptr1);
-    Data_Get_Struct(obj2, VALUE, ptr2);
-    for (i=0; i<3; i++) {
+    TypedData_Get_Struct(obj1, VALUE, &name_err_mesg_data_type, ptr1);
+    TypedData_Get_Struct(obj2, VALUE, &name_err_mesg_data_type, ptr2);
+    for (i=0; i<NAME_ERR_MESG_COUNT; i++) {
 	if (!rb_equal(ptr1[i], ptr2[i]))
 	    return Qfalse;
     }
@@ -812,13 +830,13 @@ static VALUE
 name_err_mesg_to_str(VALUE obj)
 {
     VALUE *ptr, mesg;
-    Data_Get_Struct(obj, VALUE, ptr);
+    TypedData_Get_Struct(obj, VALUE, &name_err_mesg_data_type, ptr);
 
     mesg = ptr[0];
     if (NIL_P(mesg)) return Qnil;
     else {
 	const char *desc = 0;
-	VALUE d = 0, args[3];
+	VALUE d = 0, args[NAME_ERR_MESG_COUNT];
 
 	obj = ptr[1];
 	switch (TYPE(obj)) {
@@ -847,7 +865,7 @@ name_err_mesg_to_str(VALUE obj)
 	args[0] = mesg;
 	args[1] = ptr[2];
 	args[2] = d;
-	mesg = rb_f_sprintf(3, args);
+	mesg = rb_f_sprintf(NAME_ERR_MESG_COUNT, args);
     }
     if (OBJ_TAINTED(obj)) OBJ_TAINT(mesg);
     return mesg;
@@ -1094,7 +1112,7 @@ Init_Exception(void)
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "to_s", name_err_to_s, 0);
     rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cData);
-    rb_define_singleton_method(rb_cNameErrorMesg, "!", name_err_mesg_new, 3);
+    rb_define_singleton_method(rb_cNameErrorMesg, "!", name_err_mesg_new, NAME_ERR_MESG_COUNT);
     rb_define_method(rb_cNameErrorMesg, "==", name_err_mesg_equal, 1);
     rb_define_method(rb_cNameErrorMesg, "to_str", name_err_mesg_to_str, 0);
     rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_to_str, 1);
