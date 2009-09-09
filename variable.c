@@ -292,7 +292,7 @@ rb_path_to_class(VALUE pathname)
 VALUE
 rb_path2class(const char *path)
 {
-    return rb_path_to_class(rb_usascii_str_new_cstr(path));
+    return rb_path_to_class(rb_str_new_cstr(path));
 }
 
 void
@@ -1357,17 +1357,32 @@ rb_mod_const_missing(VALUE klass, VALUE name)
     return Qnil;		/* not reached */
 }
 
-static struct st_table *
-check_autoload_table(VALUE av)
+static void
+autoload_mark(void *ptr)
 {
-    Check_Type(av, T_DATA);
-    if (RDATA(av)->dmark != (RUBY_DATA_FUNC)rb_mark_tbl ||
-	RDATA(av)->dfree != (RUBY_DATA_FUNC)st_free_table) {
-	VALUE desc = rb_inspect(av);
-	rb_raise(rb_eTypeError, "wrong autoload table: %s", RSTRING_PTR(desc));
-    }
-    return (struct st_table *)DATA_PTR(av);
+    rb_mark_tbl((st_table *)ptr);
 }
+
+static void
+autoload_free(void *ptr)
+{
+    st_free_table((st_table *)ptr);
+}
+
+static size_t
+autoload_memsize(const void *ptr)
+{
+    const st_table *tbl = ptr;
+    return st_memsize(tbl);
+}
+
+static const rb_data_type_t autoload_data_type = {
+    "autoload",
+    autoload_mark, autoload_free, autoload_memsize,
+};
+
+#define check_autoload_table(av) \
+    (struct st_table *)rb_check_typeddata(av, &autoload_data_type)
 
 void
 rb_autoload(VALUE mod, ID id, const char *file)
