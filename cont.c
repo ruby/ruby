@@ -128,7 +128,7 @@ cont_free(void *ptr)
 }
 
 static size_t
-cont_memsize(void *ptr)
+cont_memsize(const void *ptr)
 {
     rb_context_t *cont = ptr;
     size_t size = 0;
@@ -206,7 +206,7 @@ fiber_free(void *ptr)
 }
 
 static size_t
-fiber_memsize(void *ptr)
+fiber_memsize(const void *ptr)
 {
     rb_fiber_t *fib = ptr;
     size_t size = 0;
