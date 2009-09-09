@@ -116,10 +116,10 @@ iseq_mark(void *ptr)
 }
 
 static size_t
-iseq_memsize(void *ptr)
+iseq_memsize(const void *ptr)
 {
     size_t size = sizeof(rb_iseq_t);
-    rb_iseq_t *iseq;
+    const rb_iseq_t *iseq;
 
     if (ptr) {
 	iseq = ptr;

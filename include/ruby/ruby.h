@@ -740,7 +740,7 @@ typedef struct rb_data_type_struct {
     const char *wrap_struct_name;
     void (*dmark)(void*);
     void (*dfree)(void*);
-    size_t (*dsize)(void *);
+    size_t (*dsize)(const void *);
     void *ary[4]; /* for extension */
 } rb_data_type_t;
 

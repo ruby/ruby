@@ -9745,7 +9745,7 @@ parser_free(void *ptr)
 }
 
 static size_t
-parser_memsize(void *ptr)
+parser_memsize(const void *ptr)
 {
     struct parser_params *p = (struct parser_params*)ptr;
     struct local_vars *local;

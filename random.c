@@ -315,7 +315,7 @@ random_mark(void *ptr)
 #define random_free RUBY_TYPED_DEFAULT_FREE
 
 static size_t
-random_memsize(void *ptr)
+random_memsize(const void *ptr)
 {
     return ptr ? sizeof(rb_random_t) : 0;
 }

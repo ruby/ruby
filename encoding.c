@@ -53,7 +53,7 @@ void rb_enc_init(void);
 static int load_encoding(const char *name);
 
 static size_t
-enc_memsize(void *p)
+enc_memsize(const void *p)
 {
     return 0;
 }

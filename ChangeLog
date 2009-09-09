@@ -1,3 +1,7 @@
+Wed Sep  9 11:11:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_data_type_struct): constified dsize.
+
 Wed Sep  9 11:07:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (cont_memsize): fixed wrong expression on IA64.

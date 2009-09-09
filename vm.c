@@ -225,7 +225,7 @@ env_free(void * const ptr)
 }
 
 static size_t
-env_memsize(void *ptr)
+env_memsize(const void *ptr)
 {
     if (ptr) {
 	const rb_env_t * const env = ptr;
@@ -1482,10 +1482,10 @@ vm_free(void *ptr)
 }
 
 static size_t
-vm_memsize(void *ptr)
+vm_memsize(const void *ptr)
 {
     if (ptr) {
-	rb_vm_t *vmobj = ptr;
+	const rb_vm_t *vmobj = ptr;
 	return sizeof(rb_vm_t) + st_memsize(vmobj->living_threads);
     }
     else {
@@ -1658,12 +1658,12 @@ thread_free(void *ptr)
 }
 
 static size_t
-thread_memsize(void *ptr)
+thread_memsize(const void *ptr)
 {
     RUBY_FREE_ENTER("thread");
 
     if (ptr) {
-	rb_thread_t *th = ptr;
+	const rb_thread_t *th = ptr;
 	size_t size = sizeof(rb_thread_t);
 
 	if (!th->root_fiber) {

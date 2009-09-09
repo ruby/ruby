@@ -62,7 +62,7 @@ proc_mark(void *ptr)
 }
 
 static size_t
-proc_memsize(void *ptr)
+proc_memsize(const void *ptr)
 {
     return ptr ? sizeof(rb_proc_t) : 0;
 }
@@ -255,7 +255,7 @@ binding_mark(void *ptr)
 }
 
 static size_t
-binding_memsize(void *ptr)
+binding_memsize(const void *ptr)
 {
     return ptr ? sizeof(rb_binding_t) : 0;
 }
@@ -859,7 +859,7 @@ bm_free(void *ptr)
 }
 
 static size_t
-bm_memsize(void *ptr)
+bm_memsize(const void *ptr)
 {
     return ptr ? sizeof(struct METHOD) : 0;
 }
