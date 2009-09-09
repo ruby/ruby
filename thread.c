@@ -2724,6 +2724,17 @@ struct thgroup {
     VALUE group;
 };
 
+static size_t
+thgroup_memsize(const void *ptr)
+{
+    return ptr ? sizeof(struct thgroup) : 0;
+}
+
+static const rb_data_type_t thgroup_data_type = {
+    "thgroup",
+    NULL, RUBY_TYPED_DEFAULT_FREE, thgroup_memsize,
+};
+
 /*
  * Document-class: ThreadGroup
  *
@@ -2736,14 +2747,13 @@ struct thgroup {
  *  were created.
  */
 
-static VALUE thgroup_s_alloc(VALUE);
 static VALUE
 thgroup_s_alloc(VALUE klass)
 {
     VALUE group;
     struct thgroup *data;
 
-    group = Data_Make_Struct(klass, struct thgroup, 0, -1, data);
+    group = TypedData_Make_Struct(klass, struct thgroup, &thgroup_data_type, data);
     data->enclosed = 0;
     data->group = group;
 
@@ -2816,7 +2826,7 @@ thgroup_enclose(VALUE group)
 {
     struct thgroup *data;
 
-    Data_Get_Struct(group, struct thgroup, data);
+    TypedData_Get_Struct(group, struct thgroup, &thgroup_data_type, data);
     data->enclosed = 1;
 
     return group;
@@ -2836,7 +2846,7 @@ thgroup_enclosed_p(VALUE group)
 {
     struct thgroup *data;
 
-    Data_Get_Struct(group, struct thgroup, data);
+    TypedData_Get_Struct(group, struct thgroup, &thgroup_data_type, data);
     if (data->enclosed)
 	return Qtrue;
     return Qfalse;
@@ -2881,7 +2891,7 @@ thgroup_add(VALUE group, VALUE thread)
     if (OBJ_FROZEN(group)) {
 	rb_raise(rb_eThreadError, "can't move to the frozen thread group");
     }
-    Data_Get_Struct(group, struct thgroup, data);
+    TypedData_Get_Struct(group, struct thgroup, &thgroup_data_type, data);
     if (data->enclosed) {
 	rb_raise(rb_eThreadError, "can't move to the enclosed thread group");
     }
@@ -2893,7 +2903,7 @@ thgroup_add(VALUE group, VALUE thread)
     if (OBJ_FROZEN(th->thgroup)) {
 	rb_raise(rb_eThreadError, "can't move from the frozen thread group");
     }
-    Data_Get_Struct(th->thgroup, struct thgroup, data);
+    TypedData_Get_Struct(th->thgroup, struct thgroup, &thgroup_data_type, data);
     if (data->enclosed) {
 	rb_raise(rb_eThreadError,
 		 "can't move from the enclosed thread group");
@@ -2930,9 +2940,11 @@ thgroup_add(VALUE group, VALUE thread)
  */
 
 #define GetMutexPtr(obj, tobj) \
-  Data_Get_Struct(obj, mutex_t, tobj)
+    TypedData_Get_Struct(obj, mutex_t, &mutex_data_type, tobj)
 
 static const char *mutex_unlock(mutex_t *mutex, rb_thread_t volatile *th);
+
+#define mutex_mark NULL
 
 static void
 mutex_free(void *ptr)
@@ -2950,13 +2962,24 @@ mutex_free(void *ptr)
     ruby_xfree(ptr);
 }
 
+static size_t
+mutex_memsize(const void *ptr)
+{
+    return ptr ? sizeof(mutex_t) : 0;
+}
+
+static const rb_data_type_t mutex_data_type = {
+    "mutex",
+    mutex_mark, mutex_free, mutex_memsize,
+};
+
 static VALUE
 mutex_alloc(VALUE klass)
 {
     VALUE volatile obj;
     mutex_t *mutex;
 
-    obj = Data_Make_Struct(klass, mutex_t, NULL, mutex_free, mutex);
+    obj = TypedData_Make_Struct(klass, mutex_t, &mutex_data_type, mutex);
     native_mutex_initialize(&mutex->lock);
     native_cond_initialize(&mutex->cond);
     return obj;
@@ -3297,11 +3320,24 @@ rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg)
 /*
  * Document-class: Barrier
  */
+static void
+barrier_mark(void *ptr)
+{
+    rb_gc_mark((VALUE)ptr);
+}
+
+static const rb_data_type_t barrier_data_type = {
+    "barrier",
+    barrier_mark, 0, 0,
+};
+
 static VALUE
 barrier_alloc(VALUE klass)
 {
-    return Data_Wrap_Struct(klass, rb_gc_mark, 0, (void *)mutex_alloc(0));
+    return TypedData_Wrap_Struct(klass, &barrier_data_type, (void *)mutex_alloc(0));
 }
+
+#define GetBarrierPtr(obj) (VALUE)rb_check_typeddata(obj, &barrier_data_type)
 
 VALUE
 rb_barrier_new(void)
@@ -3314,7 +3350,7 @@ rb_barrier_new(void)
 VALUE
 rb_barrier_wait(VALUE self)
 {
-    VALUE mutex = (VALUE)DATA_PTR(self);
+    VALUE mutex = GetBarrierPtr(self);
     mutex_t *m;
 
     if (!mutex) return Qfalse;
@@ -3329,13 +3365,13 @@ rb_barrier_wait(VALUE self)
 VALUE
 rb_barrier_release(VALUE self)
 {
-    return rb_mutex_unlock((VALUE)DATA_PTR(self));
+    return rb_mutex_unlock(GetBarrierPtr(self));
 }
 
 VALUE
 rb_barrier_destroy(VALUE self)
 {
-    VALUE mutex = (VALUE)DATA_PTR(self);
+    VALUE mutex = GetBarrierPtr(self);
     DATA_PTR(self) = 0;
     return rb_mutex_unlock(mutex);
 }
