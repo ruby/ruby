@@ -25,21 +25,22 @@ class TestDL < TestBase
   def test_call_double()
     cfunc = CFunc.new(@libc['atof'], TYPE_DOUBLE, 'atof')
     x = cfunc.call(["0.1"].pack("p").unpack("l!*"))
-    assert_match(0.09..0.11, x)
+    assert_in_delta(0.1, x)
 
     cfunc = CFunc.new(@libc['atof'], TYPE_DOUBLE, 'atof')
     x = cfunc.call(["-0.1"].pack("p").unpack("l!*"))
-    assert_match(-0.11 .. -0.09, x)
+    assert_in_delta(-0.1, x)
   end
 
   def test_sin()
+    pi_2 = Math::PI/2
     cfunc = CFunc.new(@libm['sin'], TYPE_DOUBLE, 'sin')
-    x = cfunc.call([3.14/2].pack("d").unpack("l!*"))
-    assert_equal(x, Math.sin(3.14/2))
+    x = cfunc.call([pi_2].pack("d").unpack("l!*"))
+    assert_equal(Math.sin(pi_2), x)
 
     cfunc = CFunc.new(@libm['sin'], TYPE_DOUBLE, 'sin')
-    x = cfunc.call([-3.14/2].pack("d").unpack("l!*"))
-    assert_equal(Math.sin(-3.14/2), x)
+    x = cfunc.call([-pi_2].pack("d").unpack("l!*"))
+    assert_equal(Math.sin(-pi_2), x)
   end
 
   def test_strlen()
