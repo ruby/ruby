@@ -148,8 +148,7 @@ cont_memsize(void *ptr)
 	}
 #ifdef __ia64
 	if (cont->machine_register_stack) {
-	    size += (cont->machine_register_stack + cont->machine_register_stack_size) *
-		sizeof(*cont->machine_register_stack);
+	    size += cont->machine_register_stack_size * sizeof(*cont->machine_register_stack);
 	}
 #endif
     }
