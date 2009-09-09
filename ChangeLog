@@ -1,3 +1,8 @@
+Wed Sep  9 22:02:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::Entry_#copy_file): open the source
+	  file first to ensure it can be copied.  [ruby-core:25498]
+
 Wed Sep  9 21:20:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_data_type): typed.

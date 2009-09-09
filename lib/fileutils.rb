@@ -1261,8 +1261,10 @@ module FileUtils
     end
 
     def copy_file(dest)
-      File.open(dest, 'wb') do |f|
-        IO.copy_stream(path(), f)
+      File.open(path()) do |s|
+        File.open(dest, 'wb') do |f|
+          IO.copy_stream(s, f)
+        end
       end
     end
 

@@ -223,6 +223,11 @@ end
       assert_same_entry srcpath, destpath
     end
 
+    assert_raise(Errno::ENOENT) {
+      cp 'tmp/cptmp', 'tmp/cptmp_new'
+    }
+    assert_file_not_exist('tmp/cptmp_new')
+
     # src==dest (1) same path
     touch 'tmp/cptmp'
     assert_raise(ArgumentError) {
