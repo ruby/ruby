@@ -1043,7 +1043,9 @@ struct time_object {
 };
 
 #define GetTimeval(obj, tobj) \
-    Data_Get_Struct(obj, struct time_object, tobj)
+    TypedData_Get_Struct(obj, struct time_object, &time_data_type, tobj)
+
+#define IsTimeval(obj) rb_typeddata_is_kind_of(obj, &time_data_type)
 
 #define TIME_UTC_P(tobj) ((tobj)->gmt == 1)
 #define TIME_SET_UTC(tobj) ((tobj)->gmt = 1)
@@ -1084,13 +1086,24 @@ time_free(void *tobj)
     if (tobj) xfree(tobj);
 }
 
+static size_t
+time_memsize(const void *tobj)
+{
+    return tobj ? sizeof(struct time_object) : 0;
+}
+
+static const rb_data_type_t time_data_type = {
+    "time",
+    time_mark, time_free, time_memsize,
+};
+
 static VALUE
 time_s_alloc(VALUE klass)
 {
     VALUE obj;
     struct time_object *tobj;
 
-    obj = Data_Make_Struct(klass, struct time_object, time_mark, time_free, tobj);
+    obj = TypedData_Make_Struct(klass, struct time_object, &time_data_type, tobj);
     tobj->tm_got=0;
     tobj->timexv = INT2FIX(0);
 
@@ -1705,7 +1718,7 @@ time_s_at(int argc, VALUE *argv, VALUE klass)
         timexv = add(rb_time_magnify(time), mulquo(t, INT2FIX(TIME_SCALE), INT2FIX(1000000)));
         t = time_new_timexv(klass, timexv);
     }
-    else if (TYPE(time) == T_DATA && RDATA(time)->dfree == time_free) {
+    else if (IsTimeval(time)) {
 	struct time_object *tobj, *tobj2;
         GetTimeval(time, tobj);
         t = time_new_timexv(klass, tobj->timexv);
@@ -2500,7 +2513,7 @@ time_cmp(VALUE time1, VALUE time2)
     int n;
 
     GetTimeval(time1, tobj1);
-    if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {
+    if (IsTimeval(time2)) {
 	GetTimeval(time2, tobj2);
 	n = rb_cmpint(cmp(tobj1->timexv, tobj2->timexv), tobj1->timexv, tobj2->timexv);
     }
@@ -2532,7 +2545,7 @@ time_eql(VALUE time1, VALUE time2)
     struct time_object *tobj1, *tobj2;
 
     GetTimeval(time1, tobj1);
-    if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {
+    if (IsTimeval(time2)) {
 	GetTimeval(time2, tobj2);
         return rb_equal(tobj1->timexv, tobj2->timexv);
     }
@@ -2592,9 +2605,6 @@ time_init_copy(VALUE copy, VALUE time)
 
     if (copy == time) return copy;
     time_modify(copy);
-    if (TYPE(time) != T_DATA || RDATA(time)->dfree != time_free) {
-	rb_raise(rb_eTypeError, "wrong argument type");
-    }
     GetTimeval(time, tobj);
     GetTimeval(copy, tcopy);
     MEMCPY(tcopy, tobj, struct time_object, 1);
@@ -2896,7 +2906,7 @@ time_plus(VALUE time1, VALUE time2)
     struct time_object *tobj;
     GetTimeval(time1, tobj);
 
-    if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {
+    if (IsTimeval(time2)) {
 	rb_raise(rb_eTypeError, "time + time?");
     }
     return time_add(tobj, time2, 1);
@@ -2923,7 +2933,7 @@ time_minus(VALUE time1, VALUE time2)
     struct time_object *tobj;
 
     GetTimeval(time1, tobj);
-    if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {
+    if (IsTimeval(time2)) {
 	struct time_object *tobj2;
 
 	GetTimeval(time2, tobj2);

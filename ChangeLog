@@ -1,4 +1,4 @@
-Wed Sep  9 12:21:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Sep  9 12:43:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_data_type): typed.
 
@@ -11,6 +11,8 @@ Wed Sep  9 12:21:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thgroup_data_type, mutex_data_type, barrier_data_type):
 	  typed.
+
+	* time.c (time_data_type): typed.
 
 Wed Sep  9 11:11:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
