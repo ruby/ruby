@@ -1647,7 +1647,7 @@ rb_time_timeval(VALUE time)
     struct timeval t;
     struct timespec ts;
 
-    if (TYPE(time) == T_DATA && RDATA(time)->dfree == time_free) {
+    if (IsTimeval(time)) {
 	GetTimeval(time, tobj);
         ts = timexv2timespec(tobj->timexv);
         t.tv_sec = (TYPEOF_TIMEVAL_TV_SEC)ts.tv_sec;
@@ -1663,7 +1663,7 @@ rb_time_timespec(VALUE time)
     struct time_object *tobj;
     struct timespec t;
 
-    if (TYPE(time) == T_DATA && RDATA(time)->dfree == time_free) {
+    if (IsTimeval(time)) {
 	GetTimeval(time, tobj);
         t = timexv2timespec(tobj->timexv);
 	return t;
