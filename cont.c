@@ -356,10 +356,10 @@ cont_restore_1(rb_context_t *cont)
 	fib = th->fiber ? th->fiber : th->root_fiber;
 
 	if (fib) {
-	    rb_context_t *fcont;
-	    GetContPtr(fib, fcont);
-	    th->stack_size = fcont->saved_thread.stack_size;
-	    th->stack = fcont->saved_thread.stack;
+	    rb_fiber_t *fcont;
+	    GetFiberPtr(fib, fcont);
+	    th->stack_size = fcont->cont.saved_thread.stack_size;
+	    th->stack = fcont->cont.saved_thread.stack;
 	}
 #ifdef CAPTURE_JUST_VALID_VM_STACK
 	MEMCPY(th->stack, cont->vm_stack, VALUE, cont->vm_stack_slen);
@@ -620,8 +620,8 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 	rb_raise(rb_eRuntimeError, "continuation called across trap");
     }
     if (cont->saved_thread.fiber) {
-	rb_context_t *fcont;
-	GetContPtr(cont->saved_thread.fiber, fcont);
+	rb_fiber_t *fcont;
+	GetFiberPtr(cont->saved_thread.fiber, fcont);
 
 	if (th->fiber != cont->saved_thread.fiber) {
 	    rb_raise(rb_eRuntimeError, "continuation called across fiber");
