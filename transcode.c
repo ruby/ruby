@@ -2738,15 +2738,27 @@ rb_str_encode(VALUE str, VALUE to, int ecflags, VALUE ecopts)
 }
 
 static void
-econv_free(rb_econv_t *ec)
+econv_free(void *ptr)
 {
+    rb_econv_t *ec = ptr;
     rb_econv_close(ec);
 }
+
+static size_t
+econv_memsize(const void *ptr)
+{
+    return ptr ? sizeof(rb_econv_t) : 0;
+}
+
+static const rb_data_type_t econv_data_type = {
+    "econv",
+    NULL, econv_free, econv_memsize,
+};
 
 static VALUE
 econv_s_allocate(VALUE klass)
 {
-    return Data_Wrap_Struct(klass, NULL, econv_free, NULL);
+    return TypedData_Wrap_Struct(klass, &econv_data_type, NULL);
 }
 
 static rb_encoding *
@@ -3189,7 +3201,7 @@ econv_init(int argc, VALUE *argv, VALUE self)
     int ecflags;
     VALUE convpath;
 
-    if (DATA_PTR(self)) {
+    if (rb_check_typeddata(self, &econv_data_type)) {
         rb_raise(rb_eTypeError, "already initialized");
     }
 
@@ -3236,8 +3248,9 @@ static VALUE
 econv_inspect(VALUE self)
 {
     const char *cname = rb_obj_classname(self);
-    rb_econv_t *ec = DATA_PTR(self);
+    rb_econv_t *ec;
 
+    TypedData_Get_Struct(self, rb_econv_t, &econv_data_type, ec);
     if (!ec)
         return rb_sprintf("#<%s: uninitialized>", cname);
     else {
@@ -3251,20 +3264,16 @@ econv_inspect(VALUE self)
     }
 }
 
-#define IS_ECONV(obj) (RDATA(obj)->dfree == (RUBY_DATA_FUNC)econv_free)
-
 static rb_econv_t *
 check_econv(VALUE self)
 {
-    Check_Type(self, T_DATA);
-    if (!IS_ECONV(self)) {
-        rb_raise(rb_eTypeError, "wrong argument type %s (expected Encoding::Converter)",
-                 rb_class2name(CLASS_OF(self)));
-    }
-    if (!DATA_PTR(self)) {
+    rb_econv_t *ec;
+
+    TypedData_Get_Struct(self, rb_econv_t, &econv_data_type, ec);
+    if (!ec) {
         rb_raise(rb_eTypeError, "uninitialized encoding converter");
     }
-    return DATA_PTR(self);
+    return ec;
 }
 
 /*

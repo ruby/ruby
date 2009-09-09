@@ -1,4 +1,4 @@
-Wed Sep  9 12:43:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Sep  9 12:56:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_data_type): typed.
 
@@ -13,6 +13,8 @@ Wed Sep  9 12:43:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  typed.
 
 	* time.c (time_data_type): typed.
+
+	* transcode.c (econv_data_type): typed.
 
 Wed Sep  9 11:11:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
