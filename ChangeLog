@@ -1,6 +1,12 @@
+Wed Sep  9 15:46:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_feature_provided): fixed for autoloading extension
+	  library without suffix.
+
 Wed Sep  9 15:24:32 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* include/ruby/st.h : revert previous commit.
+
 	* ext/objspace/objspace.c : remove st_memsize declare.
 
 Wed Sep  9 14:07:19 2009  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
