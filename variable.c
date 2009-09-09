@@ -1407,7 +1407,7 @@ rb_autoload(VALUE mod, ID id, const char *file)
 	tbl = check_autoload_table((VALUE)av);
     }
     else {
-	av = (st_data_t)Data_Wrap_Struct(0, rb_mark_tbl, st_free_table, 0);
+	av = (st_data_t)TypedData_Wrap_Struct(0, &autoload_data_type, 0);
 	st_add_direct(tbl, (st_data_t)autoload, av);
 	DATA_PTR(av) = tbl = st_init_numtable();
     }
