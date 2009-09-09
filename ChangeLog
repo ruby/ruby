@@ -1,4 +1,6 @@
-Wed Sep  9 21:19:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Sep  9 21:20:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_data_type): typed.
 
 	* ext/dl/cfunc.c (dlcfunc_data_type): typed.
 

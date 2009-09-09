@@ -203,10 +203,22 @@ static int   VpLimitRound(Real *c,U_LONG ixDigit);
  */
 
 static void
-BigDecimal_delete(Real *pv)
+BigDecimal_delete(void *pv)
 {
     VpFree(pv);
 }
+
+static size_t
+BigDecimal_memsize(const void *ptr)
+{
+    const Real *pv = ptr;
+    return pv ? (sizeof(*pv) + pv->MaxPrec * sizeof(U_LONG)) : 0;
+}
+
+static const rb_data_type_t BigDecimal_data_type = {
+    "BigDecimal",
+    0, BigDecimal_delete, BigDecimal_memsize,
+};
 
 static VALUE
 ToValue(Real *p)
@@ -231,8 +243,8 @@ GetVpValue(VALUE v, int must)
     switch(TYPE(v))
     {
     case T_DATA:
-        if(RDATA(v)->dfree ==(void *) BigDecimal_delete) {
-            Data_Get_Struct(v, Real, pv);
+        if(rb_typeddata_is_kind_of(v, &BigDecimal_data_type)) {
+            pv = DATA_PTR(v);
             return pv;
         } else {
             goto SomeOneMayDoIt;
@@ -503,7 +515,7 @@ VP_EXPORT Real *
 VpNewRbClass(U_LONG mx, char *str, VALUE klass)
 {
     Real *pv = VpAlloc(mx,str);
-    pv->obj = (VALUE)Data_Wrap_Struct(klass, 0, BigDecimal_delete, pv);
+    pv->obj = TypedData_Wrap_Struct(klass, &BigDecimal_data_type, pv);
     return pv;
 }
 
@@ -511,7 +523,7 @@ VP_EXPORT Real *
 VpCreateRbObject(U_LONG mx, const char *str)
 {
     Real *pv = VpAlloc(mx,str);
-    pv->obj = (VALUE)Data_Wrap_Struct(rb_cBigDecimal, 0, BigDecimal_delete, pv);
+    pv->obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, pv);
     return pv;
 }
 
