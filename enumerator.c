@@ -121,17 +121,27 @@ enumerator_mark(void *p)
     rb_gc_mark(ptr->stop_exc);
 }
 
+#define enumerator_free RUBY_TYPED_DEFAULT_FREE
+
+static size_t
+enumerator_memsize(const void *p)
+{
+    return p ? sizeof(struct enumerator) : 0;
+}
+
+static const rb_data_type_t enumerator_data_type = {
+    "enumerator",
+    enumerator_mark,
+    enumerator_free,
+    enumerator_memsize,
+};
+
 static struct enumerator *
 enumerator_ptr(VALUE obj)
 {
     struct enumerator *ptr;
 
-    Data_Get_Struct(obj, struct enumerator, ptr);
-    if (RDATA(obj)->dmark != enumerator_mark) {
-	rb_raise(rb_eTypeError,
-		 "wrong argument type %s (expected %s)",
-		 rb_obj_classname(obj), rb_class2name(rb_cEnumerator));
-    }
+    TypedData_Get_Struct(obj, struct enumerator, &enumerator_data_type, ptr);
     if (!ptr || ptr->obj == Qundef) {
 	rb_raise(rb_eArgError, "uninitialized enumerator");
     }
@@ -313,7 +323,7 @@ enumerator_allocate(VALUE klass)
     struct enumerator *ptr;
     VALUE enum_obj;
 
-    enum_obj = Data_Make_Struct(klass, struct enumerator, enumerator_mark, -1, ptr);
+    enum_obj = TypedData_Make_Struct(klass, struct enumerator, &enumerator_data_type, ptr);
     ptr->obj = Qundef;
 
     return enum_obj;
@@ -330,7 +340,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
 {
     struct enumerator *ptr;
 
-    Data_Get_Struct(enum_obj, struct enumerator, ptr);
+    TypedData_Get_Struct(enum_obj, struct enumerator, &enumerator_data_type, ptr);
 
     if (!ptr) {
 	rb_raise(rb_eArgError, "unallocated enumerator");
@@ -413,7 +423,7 @@ enumerator_init_copy(VALUE obj, VALUE orig)
 	rb_raise(rb_eTypeError, "can't copy execution context");
     }
 
-    Data_Get_Struct(obj, struct enumerator, ptr1);
+    TypedData_Get_Struct(obj, struct enumerator, &enumerator_data_type, ptr1);
 
     if (!ptr1) {
 	rb_raise(rb_eArgError, "unallocated enumerator");
@@ -943,17 +953,27 @@ yielder_mark(void *p)
     rb_gc_mark(ptr->proc);
 }
 
+#define yielder_free RUBY_TYPED_DEFAULT_FREE
+
+static size_t
+yielder_memsize(const void *p)
+{
+    return p ? sizeof(struct yielder) : 0;
+}
+
+static const rb_data_type_t yielder_data_type = {
+    "yielder",
+    yielder_mark,
+    yielder_free,
+    yielder_memsize,
+};
+
 static struct yielder *
 yielder_ptr(VALUE obj)
 {
     struct yielder *ptr;
 
-    Data_Get_Struct(obj, struct yielder, ptr);
-    if (RDATA(obj)->dmark != yielder_mark) {
-	rb_raise(rb_eTypeError,
-		 "wrong argument type %s (expected %s)",
-		 rb_obj_classname(obj), rb_class2name(rb_cYielder));
-    }
+    TypedData_Get_Struct(obj, struct yielder, &yielder_data_type, ptr);
     if (!ptr || ptr->proc == Qundef) {
 	rb_raise(rb_eArgError, "uninitialized yielder");
     }
@@ -967,7 +987,7 @@ yielder_allocate(VALUE klass)
     struct yielder *ptr;
     VALUE obj;
 
-    obj = Data_Make_Struct(klass, struct yielder, yielder_mark, -1, ptr);
+    obj = TypedData_Make_Struct(klass, struct yielder, &yielder_data_type, ptr);
     ptr->proc = Qundef;
 
     return obj;
@@ -978,7 +998,7 @@ yielder_init(VALUE obj, VALUE proc)
 {
     struct yielder *ptr;
 
-    Data_Get_Struct(obj, struct yielder, ptr);
+    TypedData_Get_Struct(obj, struct yielder, &yielder_data_type, ptr);
 
     if (!ptr) {
 	rb_raise(rb_eArgError, "unallocated yielder");
@@ -1029,17 +1049,27 @@ generator_mark(void *p)
     rb_gc_mark(ptr->proc);
 }
 
+#define generator_free RUBY_TYPED_DEFAULT_FREE
+
+static size_t
+generator_memsize(const void *p)
+{
+    return p ? sizeof(struct generator) : 0;
+}
+
+static const rb_data_type_t generator_data_type = {
+    "generator",
+    generator_mark,
+    generator_free,
+    generator_memsize,
+};
+
 static struct generator *
 generator_ptr(VALUE obj)
 {
     struct generator *ptr;
 
-    Data_Get_Struct(obj, struct generator, ptr);
-    if (RDATA(obj)->dmark != generator_mark) {
-	rb_raise(rb_eTypeError,
-		 "wrong argument type %s (expected %s)",
-		 rb_obj_classname(obj), rb_class2name(rb_cGenerator));
-    }
+    TypedData_Get_Struct(obj, struct generator, &generator_data_type, ptr);
     if (!ptr || ptr->proc == Qundef) {
 	rb_raise(rb_eArgError, "uninitialized generator");
     }
@@ -1053,7 +1083,7 @@ generator_allocate(VALUE klass)
     struct generator *ptr;
     VALUE obj;
 
-    obj = Data_Make_Struct(klass, struct generator, generator_mark, -1, ptr);
+    obj = TypedData_Make_Struct(klass, struct generator, &generator_data_type, ptr);
     ptr->proc = Qundef;
 
     return obj;
@@ -1064,7 +1094,7 @@ generator_init(VALUE obj, VALUE proc)
 {
     struct generator *ptr;
 
-    Data_Get_Struct(obj, struct generator, ptr);
+    TypedData_Get_Struct(obj, struct generator, &generator_data_type, ptr);
 
     if (!ptr) {
 	rb_raise(rb_eArgError, "unallocated generator");
@@ -1111,7 +1141,7 @@ generator_init_copy(VALUE obj, VALUE orig)
 
     ptr0 = generator_ptr(orig);
 
-    Data_Get_Struct(obj, struct generator, ptr1);
+    TypedData_Get_Struct(obj, struct generator, &generator_data_type, ptr1);
 
     if (!ptr1) {
 	rb_raise(rb_eArgError, "unallocated generator");
