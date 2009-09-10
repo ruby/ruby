@@ -1,3 +1,8 @@
+Fri Sep 11 01:14:00 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/net/http.rb (fetch): rdoc fix, patch by Arthur Schreiber.
+	  [ruby-core:18309].
+
 Thu Sep 10 23:00:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): fix for parallel execution.

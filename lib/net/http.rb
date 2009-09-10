@@ -1292,8 +1292,9 @@ module Net   #:nodoc:
     end
 
     # Returns the header field corresponding to the case-insensitive key.
-    # Returns the default value +args+, or the result of the block, or nil,
-    # if there's no header field named key.  See Hash#fetch
+    # Returns the default value +args+, or the result of the block, or
+    # raises an IndexErrror if there's no header field named +key+
+    # See Hash#fetch
     def fetch(key, *args, &block)   #:yield: +key+
       a = @header.fetch(key.downcase, *args, &block)
       a.join(', ')
