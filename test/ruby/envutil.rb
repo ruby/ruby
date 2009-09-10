@@ -94,16 +94,15 @@ module Test
           if status.coredump?
             sigdesc << " (core dumped)"
           end
+          full_message = ''
+          if !message.empty?
+            full_message << message << "\n"
+          end
           if msg.empty?
-            full_message = build_message(message, "pid ? killed by ?",
-                                         pid,
-                                         AssertionMessage::Literal.new(sigdesc))
+            full_message << "pid #{pid} killed by #{sigdesc}"
           else
             msg << "\n" if /\n\z/ !~ msg
-            full_message = build_message(message, "pid ? killed by ?\n?",
-                                         pid,
-                                         AssertionMessage::Literal.new(sigdesc),
-                                         AssertionMessage::Literal.new(msg.gsub(/^/, '| ')))
+            full_message << "pid #{pid} killed by #{sigdesc}\n#{msg.gsub(/^/, '| ')}"
           end
         end
         assert_block(full_message) { !status.signaled? }
