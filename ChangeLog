@@ -1,3 +1,8 @@
+Thu Sep 10 23:00:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): fix for parallel execution.
+	  [ruby-core:25509]
+
 Sat Sep  5 06:29:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_binmode): check if closed regardless platforms.
