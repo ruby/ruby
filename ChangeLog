@@ -1,3 +1,8 @@
+Thu Sep 10 10:53:03 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_sysopen): workaround for MSVCRT's bug.
+	  [ruby-core:24838]
+
 Mon Sep  7 19:52:44 2009  Tanaka Akira  <akr@fsij.org>
 
 	* eval.c (rb_thread_schedule): need select for WAIT_SELECT, even if
