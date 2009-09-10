@@ -5598,8 +5598,13 @@ parser_regx_options(struct parser_params *parser)
             options |= RE_OPTION_ONCE;
         }
         else if (rb_char_to_option_kcode(c, &opt, &kc)) {
-            kopt = opt;
-	    if (kc >= 0) kcode = c;
+	    if (kc >= 0) {
+		if (kc != rb_ascii8bit_encindex()) kcode = c;
+		kopt = opt;
+	    }
+	    else {
+		options |= opt;
+	    }
         }
         else {
 	    tokadd(c);

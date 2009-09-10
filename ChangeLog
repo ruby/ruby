@@ -1,3 +1,11 @@
+Fri Sep 11 02:06:44 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* parse.y (rb_char_to_option_kcode): ASCII-8BIT should
+	  also delay.
+
+	* re.c (parser_regx_options): return rb_ascii8bit_encindex on
+	  ASCII-8BIT. [ruby-dev:39300]
+
 Fri Sep 11 01:14:00 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/net/http.rb (fetch): rdoc fix, patch by Arthur Schreiber.
