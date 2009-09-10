@@ -1,4 +1,4 @@
-require 'test_base'
+require_relative 'test_base'
 require 'dl/import'
 
 module DL

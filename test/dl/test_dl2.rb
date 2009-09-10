@@ -1,4 +1,4 @@
-require 'test_base.rb'
+require_relative 'test_base.rb'
 require 'dl/callback'
 
 module DL
