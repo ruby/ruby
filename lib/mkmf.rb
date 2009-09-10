@@ -1,3 +1,4 @@
+# -*- indent-tabs-mode: t -*-
 # module to create Makefile for extension modules
 # invoke like: ruby -r mkmf extconf.rb
 
@@ -1759,8 +1760,8 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       mfile.print "\t@-$(RM) #{fseprepl[dest]}\n"
       mfile.print "\t@-$(RMDIRS) #{fseprepl[dir]}\n"
     else
-      mfile.print "#{dest}: #{dir} #{f}\n"
-      mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} #{fseprepl[dir]}\n"
+      mfile.print "#{dest}: #{f}\n\t@-$(MAKEDIRS) $(@D#{sep})\n"
+      mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} $(@D#{sep})\n"
       if defined?($installed_list)
 	mfile.print "\t@echo #{dir}/#{File.basename(f)}>>$(INSTALLED_LIST)\n"
       end
@@ -1782,8 +1783,8 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       for f in files
 	dest = "#{dir}/#{File.basename(f)}"
 	mfile.print("install-rb#{sfx}: #{dest}\n")
-	mfile.print("#{dest}: #{f} #{dir}\n\t$(#{$extout ? 'COPY' : 'INSTALL_DATA'}) ")
-	mfile.print("#{f} $(@D)\n")
+	mfile.print("#{dest}: #{f}\n\t@-$(MAKEDIRS) $(@D#{sep})\n")
+	mfile.print("\t$(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} $(@D#{sep})\n")
 	if defined?($installed_list) and !$extout
 	  mfile.print("\t@echo #{dest}>>$(INSTALLED_LIST)\n")
 	end
