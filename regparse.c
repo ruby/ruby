@@ -2115,6 +2115,8 @@ or_cclass(CClassNode* dest, CClassNode* cc, ScanEnv* env)
     return 0;
 }
 
+static void UNKNOWN_ESC_WARN(ScanEnv *env, int c);
+
 static int
 conv_backslash_value(int c, ScanEnv* env)
 {
@@ -2133,6 +2135,8 @@ conv_backslash_value(int c, ScanEnv* env)
       break;
 
     default:
+      if (('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z'))
+	  UNKNOWN_ESC_WARN(env, c);
       break;
     }
   }
@@ -2883,6 +2887,22 @@ CC_DUP_WARN(ScanEnv *env)
     else
 	rb_compile_warn(env->sourcefile, env->sourceline, (char* )buf);
   }
+}
+
+static void
+UNKNOWN_ESC_WARN(ScanEnv *env, int c)
+{
+  UChar buf[WARN_BUFSIZE];
+  if (onig_warn == onig_null_warn || !RTEST(ruby_verbose)) return ;
+
+  onig_snprintf_with_pattern(buf, WARN_BUFSIZE, env->enc,
+	  env->pattern, env->pattern_end,
+	  (UChar* )"Unknown escape \\%c is ignored", c);
+
+  if (env->sourcefile == NULL)
+      (*onig_warn)((char* )buf);
+  else
+      rb_compile_warn(env->sourcefile, env->sourceline, (char* )buf);
 }
 
 static UChar*
