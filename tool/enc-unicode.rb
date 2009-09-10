@@ -176,6 +176,12 @@ def make_const(prop, pairs, name)
   puts "}; /* CR_#{prop} */"
 end
 
+def normalize_propname(name)
+  name = name.downcase
+  name.gsub!(/[- _]/, '')
+  name
+end
+
 puts '%{'
 gcps, data = parse_unicode_data(ARGV[0])
 POSIX_NAMES.each do |name|
@@ -213,10 +219,10 @@ struct uniname2ctype_struct;
 %%
 __HEREDOC
 i = -1
-POSIX_NAMES.each  {|name|puts"%-21s %3d"%[name+',', i+=1]}
+POSIX_NAMES.each  {|name|puts"%-21s %3d" % [normalize_propname(name)+',', i+=1]}
 puts "#ifdef USE_UNICODE_PROPERTIES"
-gcps.each{|name|puts"%-21s %3d"%[name+',', i+=1]}
-scripts.each{|name|puts"%-21s %3d"%[name+',', i+=1]}
+gcps.each{|name|puts"%-21s %3d" % [normalize_propname(name)+',', i+=1]}
+scripts.each{|name|puts"%-21s %3d" % [normalize_propname(name)+',', i+=1]}
 puts "#endif /* USE_UNICODE_PROPERTIES */\n"
 puts(<<'__HEREDOC')
 %%

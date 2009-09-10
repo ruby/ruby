@@ -2093,16 +2093,16 @@ onigenc_unicode_property_name_to_ctype(OnigEncoding enc, UChar* name, UChar* end
 
   p = name;
   len = 0;
-  while (p < end) {
+  for (p = name; p < end; p += enclen(enc, p, end)) {
     code = ONIGENC_MBC_TO_CODE(enc, p, end);
+    if (code == ' ' || code == '-' || code == '_')
+      continue;
     if (code >= 0x80)
       return ONIGERR_INVALID_CHAR_PROPERTY_NAME;
 
-    buf[len++] = (UChar )code;
+    buf[len++] = (UChar )TOLOWER((unsigned char)code);
     if (len >= PROPERTY_NAME_MAX_SIZE)
       return ONIGERR_INVALID_CHAR_PROPERTY_NAME;
-
-    p += enclen(enc, p, end);
   }
 
   buf[len] = 0;

@@ -9371,16 +9371,16 @@ static const struct uniname2ctype_struct *uniname2ctype_p(const char *, unsigned
 #define TOTAL_KEYWORDS 15
 #define MIN_WORD_LENGTH 4
 #define MAX_WORD_LENGTH 7
-#define MIN_HASH_VALUE 6
-#define MAX_HASH_VALUE 20
+#define MIN_HASH_VALUE 7
+#define MAX_HASH_VALUE 21
 /* maximum key range = 15, duplicates = 0 */
 #else /* USE_UNICODE_PROPERTIES */
 #define TOTAL_KEYWORDS 131
 #define MIN_WORD_LENGTH 1
-#define MAX_WORD_LENGTH 19
+#define MAX_WORD_LENGTH 18
 #define MIN_HASH_VALUE 2
-#define MAX_HASH_VALUE 167
-/* maximum key range = 166, duplicates = 0 */
+#define MAX_HASH_VALUE 266
+/* maximum key range = 265, duplicates = 0 */
 #endif /* USE_UNICODE_PROPERTIES */
 
 #ifdef __GNUC__
@@ -9395,36 +9395,40 @@ uniname2ctype_hash (str, len)
      register const char *str;
      register unsigned int len;
 {
+#ifndef USE_UNICODE_PROPERTIES
   static const unsigned char asso_values[] =
+#else /* USE_UNICODE_PROPERTIES */
+  static const unsigned short asso_values[] =
+#endif /* USE_UNICODE_PROPERTIES */
     {
 #ifndef USE_UNICODE_PROPERTIES
-      21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
-      21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
-      21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
-      21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
-      21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
-      21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
-      21, 21, 21, 21, 21,  1, 10,  3,  7, 21,
-      21,  8, 21, 21, 21, 21,  6, 21,  8, 21,
-       4, 21, 21,  5, 21,  8, 21,  1,  4, 21,
-      21, 21, 21, 21, 21, 21, 21,  5, 21, 21,
-      21, 21, 21,  7, 21,  3, 21, 21, 21, 21,
-       2, 21,  1, 21,  1, 21,  2, 21, 21,  6,
-      21, 21, 21, 21, 21, 21, 21, 21
+      22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+      22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+      22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+      22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+      22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+      22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+      22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+      22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+      22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+      22, 22, 22, 22, 22, 22, 22,  3, 13,  6,
+       4, 22, 22, 11, 22,  1, 22, 22, 10, 22,
+       2, 22,  1, 22, 10,  8,  4,  7, 22,  3,
+       4, 22, 22, 22, 22, 22, 22, 22
 #else /* USE_UNICODE_PROPERTIES */
-      168, 168, 168, 168, 168, 168, 168, 168, 168, 168,
-      168, 168, 168, 168, 168, 168, 168, 168, 168, 168,
-      168, 168, 168, 168, 168, 168, 168, 168, 168, 168,
-      168, 168, 168, 168, 168, 168, 168, 168, 168, 168,
-      168, 168, 168, 168, 168, 168, 168, 168, 168, 168,
-      168, 168, 168, 168, 168, 168, 168, 168, 168, 168,
-      168, 168, 168, 168, 168,  33,  14,   2,  56,  13,
-      168,  38,  89,  98, 168,  58,  11,  12,  85,  22,
-        1, 168,  78,   3,  38,  24,  62,  12,   7,  64,
-      108, 168, 168, 168, 168,  70, 168,   5,   5,  73,
-       57,  22,  31,  57,   9,  49,  36,  39,  13,  49,
-        4,   2,  18, 168,  20,   6,  60,   1,  24,  14,
-      168,  21, 168, 168, 168, 168, 168, 168
+      267, 267, 267, 267, 267, 267, 267, 267, 267, 267,
+      267, 267, 267, 267, 267, 267, 267, 267, 267, 267,
+      267, 267, 267, 267, 267, 267, 267, 267, 267, 267,
+      267, 267, 267, 267, 267, 267, 267, 267, 267, 267,
+      267, 267, 267, 267, 267, 267, 267, 267, 267, 267,
+      267, 267, 267, 267, 267, 267, 267, 267, 267, 267,
+      267, 267, 267, 267, 267, 267, 267, 267, 267, 267,
+      267, 267, 267, 267, 267, 267, 267, 267, 267, 267,
+      267, 267, 267, 267, 267, 267, 267, 267, 267, 267,
+      267, 267, 267, 267, 267, 267, 267,   9,  11,  29,
+       82,  48,  86,  43,   3,  25,  92,  97,   4,   2,
+        8,  45,   1,  79,  53,  12,  30,  98,  88,  62,
+       22,  20,  61, 267, 267, 267, 267, 267, 267
 #endif /* USE_UNICODE_PROPERTIES */
     };
 #ifndef USE_UNICODE_PROPERTIES
@@ -9438,7 +9442,7 @@ uniname2ctype_hash (str, len)
         hval += asso_values[(unsigned char)str[2]];
       /*FALLTHROUGH*/
       case 2:
-        hval += asso_values[(unsigned char)str[1]];
+        hval += asso_values[(unsigned char)str[1]+1];
       /*FALLTHROUGH*/
       case 1:
         hval += asso_values[(unsigned char)str[0]];
@@ -9451,315 +9455,315 @@ uniname2ctype_hash (str, len)
 struct uniname2ctype_pool_t
   {
 #ifndef USE_UNICODE_PROPERTIES
-    char uniname2ctype_pool_str6[sizeof("Word")];
-    char uniname2ctype_pool_str7[sizeof("Alpha")];
-    char uniname2ctype_pool_str8[sizeof("Alnum")];
-    char uniname2ctype_pool_str9[sizeof("ASCII")];
-    char uniname2ctype_pool_str10[sizeof("Cntrl")];
+    char uniname2ctype_pool_str7[sizeof("print")];
+    char uniname2ctype_pool_str8[sizeof("punct")];
+    char uniname2ctype_pool_str9[sizeof("alpha")];
+    char uniname2ctype_pool_str10[sizeof("alnum")];
+    char uniname2ctype_pool_str11[sizeof("xdigit")];
+    char uniname2ctype_pool_str12[sizeof("newline")];
+    char uniname2ctype_pool_str13[sizeof("upper")];
+    char uniname2ctype_pool_str14[sizeof("ascii")];
+    char uniname2ctype_pool_str15[sizeof("cntrl")];
+    char uniname2ctype_pool_str16[sizeof("space")];
+    char uniname2ctype_pool_str17[sizeof("word")];
+    char uniname2ctype_pool_str18[sizeof("lower")];
+    char uniname2ctype_pool_str19[sizeof("graph")];
+    char uniname2ctype_pool_str20[sizeof("digit")];
+    char uniname2ctype_pool_str21[sizeof("blank")];
 #else /* USE_UNICODE_PROPERTIES */
-    char uniname2ctype_pool_str2[sizeof("P")];
-    char uniname2ctype_pool_str3[sizeof("C")];
-    char uniname2ctype_pool_str4[sizeof("S")];
-    char uniname2ctype_pool_str5[sizeof("Po")];
-    char uniname2ctype_pool_str6[sizeof("Co")];
-    char uniname2ctype_pool_str7[sizeof("So")];
-    char uniname2ctype_pool_str8[sizeof("Cn")];
-    char uniname2ctype_pool_str9[sizeof("Ps")];
-    char uniname2ctype_pool_str10[sizeof("Cs")];
-#endif /* USE_UNICODE_PROPERTIES */
-    char uniname2ctype_pool_str11[sizeof("Punct")];
-#ifndef USE_UNICODE_PROPERTIES
-    char uniname2ctype_pool_str12[sizeof("Print")];
-    char uniname2ctype_pool_str13[sizeof("XDigit")];
-    char uniname2ctype_pool_str14[sizeof("Upper")];
-    char uniname2ctype_pool_str15[sizeof("Space")];
-    char uniname2ctype_pool_str16[sizeof("NEWLINE")];
-    char uniname2ctype_pool_str17[sizeof("Lower")];
-    char uniname2ctype_pool_str18[sizeof("Graph")];
-    char uniname2ctype_pool_str19[sizeof("Digit")];
-    char uniname2ctype_pool_str20[sizeof("Blank")];
-#else /* USE_UNICODE_PROPERTIES */
-    char uniname2ctype_pool_str12[sizeof("L")];
-    char uniname2ctype_pool_str13[sizeof("M")];
-    char uniname2ctype_pool_str14[sizeof("Lu")];
-    char uniname2ctype_pool_str15[sizeof("Lo")];
-    char uniname2ctype_pool_str16[sizeof("Cuneiform")];
-    char uniname2ctype_pool_str17[sizeof("Sundanese")];
-    char uniname2ctype_pool_str18[sizeof("Mn")];
-    char uniname2ctype_pool_str19[sizeof("Saurashtra")];
-    char uniname2ctype_pool_str20[sizeof("Cham")];
-    char uniname2ctype_pool_str21[sizeof("Lao")];
-    char uniname2ctype_pool_str22[sizeof("Phoenician")];
-    char uniname2ctype_pool_str23[sizeof("Phags_Pa")];
-    char uniname2ctype_pool_str24[sizeof("Shavian")];
-    char uniname2ctype_pool_str25[sizeof("Pe")];
-    char uniname2ctype_pool_str26[sizeof("Ll")];
-    char uniname2ctype_pool_str27[sizeof("Mongolian")];
-    char uniname2ctype_pool_str28[sizeof("Coptic")];
-    char uniname2ctype_pool_str29[sizeof("Buhid")];
-    char uniname2ctype_pool_str30[sizeof("Canadian_Aboriginal")];
-    char uniname2ctype_pool_str31[sizeof("Space")];
-    char uniname2ctype_pool_str32[sizeof("Lower")];
-    char uniname2ctype_pool_str33[sizeof("Carian")];
-    char uniname2ctype_pool_str34[sizeof("Pf")];
-    char uniname2ctype_pool_str35[sizeof("Cf")];
-    char uniname2ctype_pool_str36[sizeof("Me")];
-    char uniname2ctype_pool_str37[sizeof("Blank")];
-    char uniname2ctype_pool_str38[sizeof("Word")];
-    char uniname2ctype_pool_str39[sizeof("Malayalam")];
-    char uniname2ctype_pool_str40[sizeof("Balinese")];
-    char uniname2ctype_pool_str41[sizeof("Cherokee")];
-    char uniname2ctype_pool_str42[sizeof("Bopomofo")];
-    char uniname2ctype_pool_str43[sizeof("ASCII")];
-    char uniname2ctype_pool_str44[sizeof("Sk")];
-    char uniname2ctype_pool_str45[sizeof("Myanmar")];
-    char uniname2ctype_pool_str46[sizeof("Braille")];
-    char uniname2ctype_pool_str47[sizeof("Bengali")];
-    char uniname2ctype_pool_str48[sizeof("Cypriot")];
-    char uniname2ctype_pool_str49[sizeof("Syloti_Nagri")];
-    char uniname2ctype_pool_str50[sizeof("Syriac")];
-    char uniname2ctype_pool_str51[sizeof("Cyrillic")];
-    char uniname2ctype_pool_str52[sizeof("Pi")];
-    char uniname2ctype_pool_str53[sizeof("Assigned")];
-    char uniname2ctype_pool_str54[sizeof("Sm")];
-    char uniname2ctype_pool_str55[sizeof("Alnum")];
-    char uniname2ctype_pool_str56[sizeof("Thai")];
-    char uniname2ctype_pool_str57[sizeof("Lepcha")];
-    char uniname2ctype_pool_str58[sizeof("Thaana")];
-    char uniname2ctype_pool_str59[sizeof("Common")];
-    char uniname2ctype_pool_str60[sizeof("Pd")];
-    char uniname2ctype_pool_str61[sizeof("Any")];
-    char uniname2ctype_pool_str62[sizeof("Lm")];
-    char uniname2ctype_pool_str63[sizeof("Sinhala")];
-    char uniname2ctype_pool_str64[sizeof("Arabic")];
-    char uniname2ctype_pool_str65[sizeof("Upper")];
-    char uniname2ctype_pool_str66[sizeof("Glagolitic")];
-    char uniname2ctype_pool_str67[sizeof("Gurmukhi")];
-    char uniname2ctype_pool_str68[sizeof("Graph")];
-    char uniname2ctype_pool_str69[sizeof("Alpha")];
-    char uniname2ctype_pool_str70[sizeof("Georgian")];
-    char uniname2ctype_pool_str71[sizeof("Cntrl")];
-    char uniname2ctype_pool_str72[sizeof("Linear_B")];
-    char uniname2ctype_pool_str73[sizeof("Lt")];
-    char uniname2ctype_pool_str74[sizeof("Kannada")];
-    char uniname2ctype_pool_str75[sizeof("Print")];
-    char uniname2ctype_pool_str76[sizeof("Pc")];
-    char uniname2ctype_pool_str77[sizeof("Cc")];
-    char uniname2ctype_pool_str78[sizeof("Sc")];
-    char uniname2ctype_pool_str79[sizeof("Telugu")];
-    char uniname2ctype_pool_str80[sizeof("Buginese")];
-    char uniname2ctype_pool_str81[sizeof("Latin")];
-    char uniname2ctype_pool_str82[sizeof("Kharoshthi")];
-    char uniname2ctype_pool_str83[sizeof("Gujarati")];
-    char uniname2ctype_pool_str84[sizeof("Osmanya")];
-    char uniname2ctype_pool_str85[sizeof("Greek")];
-    char uniname2ctype_pool_str86[sizeof("N")];
-    char uniname2ctype_pool_str87[sizeof("Mc")];
-    char uniname2ctype_pool_str88[sizeof("Runic")];
-    char uniname2ctype_pool_str89[sizeof("No")];
-    char uniname2ctype_pool_str90[sizeof("Ethiopic")];
-    char uniname2ctype_pool_str91[sizeof("Deseret")];
-    char uniname2ctype_pool_str92[sizeof("Kayah_Li")];
-    char uniname2ctype_pool_str93[sizeof("Ogham")];
-    char uniname2ctype_pool_str94[sizeof("Ugaritic")];
-    char uniname2ctype_pool_str95[sizeof("Lydian")];
-    char uniname2ctype_pool_str96[sizeof("Oriya")];
-    char uniname2ctype_pool_str97[sizeof("Tamil")];
-    char uniname2ctype_pool_str98[sizeof("Tai_Le")];
-    char uniname2ctype_pool_str99[sizeof("Tibetan")];
-    char uniname2ctype_pool_str100[sizeof("Nl")];
-    char uniname2ctype_pool_str101[sizeof("Han")];
-    char uniname2ctype_pool_str102[sizeof("Old_Italic")];
-    char uniname2ctype_pool_str103[sizeof("Old_Persian")];
-    char uniname2ctype_pool_str104[sizeof("Hangul")];
-    char uniname2ctype_pool_str105[sizeof("Hanunoo")];
-    char uniname2ctype_pool_str106[sizeof("Gothic")];
-    char uniname2ctype_pool_str107[sizeof("Tagalog")];
-    char uniname2ctype_pool_str108[sizeof("Tagbanwa")];
-    char uniname2ctype_pool_str109[sizeof("Z")];
-    char uniname2ctype_pool_str110[sizeof("Armenian")];
-    char uniname2ctype_pool_str111[sizeof("Lycian")];
-    char uniname2ctype_pool_str112[sizeof("Devanagari")];
-    char uniname2ctype_pool_str113[sizeof("Ol_Chiki")];
-    char uniname2ctype_pool_str114[sizeof("Limbu")];
-    char uniname2ctype_pool_str115[sizeof("Yi")];
-    char uniname2ctype_pool_str116[sizeof("Zs")];
-    char uniname2ctype_pool_str117[sizeof("NEWLINE")];
-    char uniname2ctype_pool_str118[sizeof("XDigit")];
-    char uniname2ctype_pool_str119[sizeof("Vai")];
-    char uniname2ctype_pool_str120[sizeof("Inherited")];
-    char uniname2ctype_pool_str121[sizeof("Khmer")];
-    char uniname2ctype_pool_str122[sizeof("Hebrew")];
-    char uniname2ctype_pool_str123[sizeof("Zl")];
-    char uniname2ctype_pool_str126[sizeof("Tifinagh")];
-    char uniname2ctype_pool_str128[sizeof("Zp")];
-    char uniname2ctype_pool_str129[sizeof("Nko")];
-    char uniname2ctype_pool_str131[sizeof("Katakana")];
-    char uniname2ctype_pool_str132[sizeof("New_Tai_Lue")];
-    char uniname2ctype_pool_str142[sizeof("Rejang")];
-    char uniname2ctype_pool_str144[sizeof("Nd")];
-    char uniname2ctype_pool_str166[sizeof("Hiragana")];
-    char uniname2ctype_pool_str167[sizeof("Digit")];
+    char uniname2ctype_pool_str2[sizeof("p")];
+    char uniname2ctype_pool_str3[sizeof("m")];
+    char uniname2ctype_pool_str4[sizeof("po")];
+    char uniname2ctype_pool_str5[sizeof("l")];
+    char uniname2ctype_pool_str7[sizeof("lo")];
+    char uniname2ctype_pool_str8[sizeof("ll")];
+    char uniname2ctype_pool_str9[sizeof("n")];
+    char uniname2ctype_pool_str11[sizeof("no")];
+    char uniname2ctype_pool_str12[sizeof("nl")];
+    char uniname2ctype_pool_str13[sizeof("s")];
+    char uniname2ctype_pool_str14[sizeof("lm")];
+    char uniname2ctype_pool_str15[sizeof("so")];
+    char uniname2ctype_pool_str17[sizeof("alpha")];
+    char uniname2ctype_pool_str18[sizeof("sk")];
+    char uniname2ctype_pool_str20[sizeof("mongolian")];
+    char uniname2ctype_pool_str21[sizeof("bopomofo")];
+    char uniname2ctype_pool_str22[sizeof("sm")];
+    char uniname2ctype_pool_str24[sizeof("alnum")];
+    char uniname2ctype_pool_str25[sizeof("han")];
+    char uniname2ctype_pool_str26[sizeof("malayalam")];
+    char uniname2ctype_pool_str27[sizeof("blank")];
+    char uniname2ctype_pool_str28[sizeof("hangul")];
+    char uniname2ctype_pool_str29[sizeof("hanunoo")];
+    char uniname2ctype_pool_str30[sizeof("c")];
+    char uniname2ctype_pool_str31[sizeof("armenian")];
+    char uniname2ctype_pool_str32[sizeof("co")];
+    char uniname2ctype_pool_str33[sizeof("ps")];
+    char uniname2ctype_pool_str34[sizeof("balinese")];
+    char uniname2ctype_pool_str36[sizeof("arabic")];
+    char uniname2ctype_pool_str37[sizeof("coptic")];
+    char uniname2ctype_pool_str38[sizeof("common")];
+    char uniname2ctype_pool_str39[sizeof("braille")];
+    char uniname2ctype_pool_str42[sizeof("phagspa")];
+    char uniname2ctype_pool_str43[sizeof("print")];
+    char uniname2ctype_pool_str46[sizeof("pf")];
+    char uniname2ctype_pool_str48[sizeof("tamil")];
+    char uniname2ctype_pool_str49[sizeof("mn")];
+    char uniname2ctype_pool_str50[sizeof("latin")];
+    char uniname2ctype_pool_str51[sizeof("pd")];
+    char uniname2ctype_pool_str53[sizeof("shavian")];
+    char uniname2ctype_pool_str56[sizeof("ogham")];
+    char uniname2ctype_pool_str58[sizeof("nd")];
+    char uniname2ctype_pool_str59[sizeof("assigned")];
+    char uniname2ctype_pool_str60[sizeof("nko")];
+    char uniname2ctype_pool_str61[sizeof("cs")];
+    char uniname2ctype_pool_str62[sizeof("z")];
+    char uniname2ctype_pool_str63[sizeof("lao")];
+    char uniname2ctype_pool_str64[sizeof("glagolitic")];
+    char uniname2ctype_pool_str65[sizeof("zl")];
+    char uniname2ctype_pool_str66[sizeof("canadianaboriginal")];
+    char uniname2ctype_pool_str67[sizeof("cham")];
+    char uniname2ctype_pool_str68[sizeof("thai")];
+    char uniname2ctype_pool_str69[sizeof("graph")];
+    char uniname2ctype_pool_str70[sizeof("thaana")];
+    char uniname2ctype_pool_str71[sizeof("taile")];
+    char uniname2ctype_pool_str72[sizeof("lower")];
+    char uniname2ctype_pool_str73[sizeof("ascii")];
+    char uniname2ctype_pool_str74[sizeof("cf")];
+    char uniname2ctype_pool_str76[sizeof("cn")];
+    char uniname2ctype_pool_str77[sizeof("any")];
+    char uniname2ctype_pool_str79[sizeof("myanmar")];
+    char uniname2ctype_pool_str80[sizeof("gothic")];
+    char uniname2ctype_pool_str81[sizeof("phoenician")];
+    char uniname2ctype_pool_str82[sizeof("inherited")];
+    char uniname2ctype_pool_str83[sizeof("olchiki")];
+    char uniname2ctype_pool_str84[sizeof("osmanya")];
+    char uniname2ctype_pool_str85[sizeof("pc")];
+    char uniname2ctype_pool_str86[sizeof("mc")];
+    char uniname2ctype_pool_str87[sizeof("oriya")];
+    char uniname2ctype_pool_str88[sizeof("sylotinagri")];
+    char uniname2ctype_pool_str89[sizeof("pe")];
+    char uniname2ctype_pool_str90[sizeof("me")];
+    char uniname2ctype_pool_str91[sizeof("tagalog")];
+    char uniname2ctype_pool_str92[sizeof("tagbanwa")];
+    char uniname2ctype_pool_str93[sizeof("zs")];
+    char uniname2ctype_pool_str94[sizeof("lu")];
+    char uniname2ctype_pool_str95[sizeof("pi")];
+    char uniname2ctype_pool_str96[sizeof("sc")];
+    char uniname2ctype_pool_str97[sizeof("lepcha")];
+    char uniname2ctype_pool_str98[sizeof("cypriot")];
+    char uniname2ctype_pool_str99[sizeof("carian")];
+    char uniname2ctype_pool_str100[sizeof("lycian")];
+    char uniname2ctype_pool_str101[sizeof("xdigit")];
+    char uniname2ctype_pool_str102[sizeof("punct")];
+    char uniname2ctype_pool_str103[sizeof("limbu")];
+    char uniname2ctype_pool_str104[sizeof("lt")];
+    char uniname2ctype_pool_str105[sizeof("space")];
+    char uniname2ctype_pool_str106[sizeof("hebrew")];
+    char uniname2ctype_pool_str107[sizeof("buhid")];
+    char uniname2ctype_pool_str108[sizeof("greek")];
+    char uniname2ctype_pool_str109[sizeof("cntrl")];
+    char uniname2ctype_pool_str110[sizeof("cherokee")];
+    char uniname2ctype_pool_str111[sizeof("linearb")];
+    char uniname2ctype_pool_str112[sizeof("bengali")];
+    char uniname2ctype_pool_str113[sizeof("cc")];
+    char uniname2ctype_pool_str114[sizeof("yi")];
+    char uniname2ctype_pool_str117[sizeof("sundanese")];
+    char uniname2ctype_pool_str118[sizeof("ugaritic")];
+    char uniname2ctype_pool_str119[sizeof("sinhala")];
+    char uniname2ctype_pool_str120[sizeof("word")];
+    char uniname2ctype_pool_str123[sizeof("kannada")];
+    char uniname2ctype_pool_str126[sizeof("telugu")];
+    char uniname2ctype_pool_str127[sizeof("vai")];
+    char uniname2ctype_pool_str129[sizeof("khmer")];
+    char uniname2ctype_pool_str131[sizeof("saurashtra")];
+    char uniname2ctype_pool_str132[sizeof("syriac")];
+    char uniname2ctype_pool_str134[sizeof("cuneiform")];
+    char uniname2ctype_pool_str135[sizeof("kayahli")];
+    char uniname2ctype_pool_str138[sizeof("olditalic")];
+    char uniname2ctype_pool_str139[sizeof("oldpersian")];
+    char uniname2ctype_pool_str140[sizeof("tibetan")];
+    char uniname2ctype_pool_str141[sizeof("kharoshthi")];
+    char uniname2ctype_pool_str142[sizeof("zp")];
+    char uniname2ctype_pool_str146[sizeof("katakana")];
+    char uniname2ctype_pool_str150[sizeof("buginese")];
+    char uniname2ctype_pool_str151[sizeof("cyrillic")];
+    char uniname2ctype_pool_str153[sizeof("lydian")];
+    char uniname2ctype_pool_str154[sizeof("runic")];
+    char uniname2ctype_pool_str156[sizeof("hiragana")];
+    char uniname2ctype_pool_str157[sizeof("ethiopic")];
+    char uniname2ctype_pool_str163[sizeof("newline")];
+    char uniname2ctype_pool_str165[sizeof("newtailue")];
+    char uniname2ctype_pool_str182[sizeof("georgian")];
+    char uniname2ctype_pool_str183[sizeof("upper")];
+    char uniname2ctype_pool_str187[sizeof("deseret")];
+    char uniname2ctype_pool_str192[sizeof("gurmukhi")];
+    char uniname2ctype_pool_str216[sizeof("tifinagh")];
+    char uniname2ctype_pool_str222[sizeof("digit")];
+    char uniname2ctype_pool_str231[sizeof("gujarati")];
+    char uniname2ctype_pool_str237[sizeof("rejang")];
+    char uniname2ctype_pool_str266[sizeof("devanagari")];
 #endif /* USE_UNICODE_PROPERTIES */
   };
 static const struct uniname2ctype_pool_t uniname2ctype_pool_contents =
   {
+#ifndef USE_UNICODE_PROPERTIES
+    "print",
+    "punct",
+#else /* USE_UNICODE_PROPERTIES */
+    "p",
+    "m",
+    "po",
+    "l",
+    "lo",
+    "ll",
+    "n",
+    "no",
+    "nl",
+    "s",
+    "lm",
+    "so",
+#endif /* USE_UNICODE_PROPERTIES */
+    "alpha",
 #ifdef USE_UNICODE_PROPERTIES
-    "P",
-    "C",
-    "S",
-    "Po",
-    "Co",
-    "So",
-    "Cn",
-    "Ps",
-    "Cs",
-    "Punct",
-    "L",
-    "M",
-    "Lu",
-    "Lo",
-    "Cuneiform",
-    "Sundanese",
-    "Mn",
-    "Saurashtra",
-    "Cham",
-    "Lao",
-    "Phoenician",
-    "Phags_Pa",
-    "Shavian",
-    "Pe",
-    "Ll",
-    "Mongolian",
-    "Coptic",
-    "Buhid",
-    "Canadian_Aboriginal",
-    "Space",
-    "Lower",
-    "Carian",
-    "Pf",
-    "Cf",
-    "Me",
-    "Blank",
+    "sk",
+    "mongolian",
+    "bopomofo",
+    "sm",
 #endif /* USE_UNICODE_PROPERTIES */
-    "Word",
+    "alnum",
 #ifndef USE_UNICODE_PROPERTIES
-    "Alpha",
-    "Alnum",
+    "xdigit",
+    "newline",
+    "upper",
 #else /* USE_UNICODE_PROPERTIES */
-    "Malayalam",
-    "Balinese",
-    "Cherokee",
-    "Bopomofo",
+    "han",
+    "malayalam",
+    "blank",
+    "hangul",
+    "hanunoo",
+    "c",
+    "armenian",
+    "co",
+    "ps",
+    "balinese",
+    "arabic",
+    "coptic",
+    "common",
+    "braille",
+    "phagspa",
+    "print",
+    "pf",
+    "tamil",
+    "mn",
+    "latin",
+    "pd",
+    "shavian",
+    "ogham",
+    "nd",
+    "assigned",
+    "nko",
+    "cs",
+    "z",
+    "lao",
+    "glagolitic",
+    "zl",
+    "canadianaboriginal",
+    "cham",
+    "thai",
+    "graph",
+    "thaana",
+    "taile",
+    "lower",
 #endif /* USE_UNICODE_PROPERTIES */
-    "ASCII",
+    "ascii",
+#ifndef USE_UNICODE_PROPERTIES
+    "cntrl",
+#else /* USE_UNICODE_PROPERTIES */
+    "cf",
+    "cn",
+    "any",
+    "myanmar",
+    "gothic",
+    "phoenician",
+    "inherited",
+    "olchiki",
+    "osmanya",
+    "pc",
+    "mc",
+    "oriya",
+    "sylotinagri",
+    "pe",
+    "me",
+    "tagalog",
+    "tagbanwa",
+    "zs",
+    "lu",
+    "pi",
+    "sc",
+    "lepcha",
+    "cypriot",
+    "carian",
+    "lycian",
+    "xdigit",
+    "punct",
+    "limbu",
+    "lt",
+#endif /* USE_UNICODE_PROPERTIES */
+    "space",
 #ifdef USE_UNICODE_PROPERTIES
-    "Sk",
-    "Myanmar",
-    "Braille",
-    "Bengali",
-    "Cypriot",
-    "Syloti_Nagri",
-    "Syriac",
-    "Cyrillic",
-    "Pi",
-    "Assigned",
-    "Sm",
-    "Alnum",
-    "Thai",
-    "Lepcha",
-    "Thaana",
-    "Common",
-    "Pd",
-    "Any",
-    "Lm",
-    "Sinhala",
-    "Arabic",
-    "Upper",
-    "Glagolitic",
-    "Gurmukhi",
-    "Graph",
-    "Alpha",
-    "Georgian",
+    "hebrew",
+    "buhid",
+    "greek",
+    "cntrl",
+    "cherokee",
+    "linearb",
+    "bengali",
+    "cc",
+    "yi",
+    "sundanese",
+    "ugaritic",
+    "sinhala",
 #endif /* USE_UNICODE_PROPERTIES */
-    "Cntrl",
+    "word",
 #ifndef USE_UNICODE_PROPERTIES
-    "Punct",
+    "lower",
+    "graph",
 #else /* USE_UNICODE_PROPERTIES */
-    "Linear_B",
-    "Lt",
-    "Kannada",
+    "kannada",
+    "telugu",
+    "vai",
+    "khmer",
+    "saurashtra",
+    "syriac",
+    "cuneiform",
+    "kayahli",
+    "olditalic",
+    "oldpersian",
+    "tibetan",
+    "kharoshthi",
+    "zp",
+    "katakana",
+    "buginese",
+    "cyrillic",
+    "lydian",
+    "runic",
+    "hiragana",
+    "ethiopic",
+    "newline",
+    "newtailue",
+    "georgian",
+    "upper",
+    "deseret",
+    "gurmukhi",
+    "tifinagh",
 #endif /* USE_UNICODE_PROPERTIES */
-    "Print",
+    "digit",
 #ifndef USE_UNICODE_PROPERTIES
-    "XDigit",
-    "Upper",
-    "Space",
+    "blank"
 #else /* USE_UNICODE_PROPERTIES */
-    "Pc",
-    "Cc",
-    "Sc",
-    "Telugu",
-    "Buginese",
-    "Latin",
-    "Kharoshthi",
-    "Gujarati",
-    "Osmanya",
-    "Greek",
-    "N",
-    "Mc",
-    "Runic",
-    "No",
-    "Ethiopic",
-    "Deseret",
-    "Kayah_Li",
-    "Ogham",
-    "Ugaritic",
-    "Lydian",
-    "Oriya",
-    "Tamil",
-    "Tai_Le",
-    "Tibetan",
-    "Nl",
-    "Han",
-    "Old_Italic",
-    "Old_Persian",
-    "Hangul",
-    "Hanunoo",
-    "Gothic",
-    "Tagalog",
-    "Tagbanwa",
-    "Z",
-    "Armenian",
-    "Lycian",
-    "Devanagari",
-    "Ol_Chiki",
-    "Limbu",
-    "Yi",
-    "Zs",
-#endif /* USE_UNICODE_PROPERTIES */
-    "NEWLINE",
-#ifndef USE_UNICODE_PROPERTIES
-    "Lower",
-    "Graph",
-    "Digit",
-    "Blank"
-#else /* USE_UNICODE_PROPERTIES */
-    "XDigit",
-    "Vai",
-    "Inherited",
-    "Khmer",
-    "Hebrew",
-    "Zl",
-    "Tifinagh",
-    "Zp",
-    "Nko",
-    "Katakana",
-    "New_Tai_Lue",
-    "Rejang",
-    "Nd",
-    "Hiragana",
-    "Digit"
+    "gujarati",
+    "rejang",
+    "devanagari"
 #endif /* USE_UNICODE_PROPERTIES */
   };
 #define uniname2ctype_pool ((const char *) &uniname2ctype_pool_contents)
@@ -9776,166 +9780,198 @@ uniname2ctype_p (str, len)
 {
   static const struct uniname2ctype_struct wordlist[] =
     {
-#ifndef USE_UNICODE_PROPERTIES
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str6,                  12},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str7,                  1},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str8,                 13},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str9,                 14},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str10,                  3},
-#else /* USE_UNICODE_PROPERTIES */
+#ifdef USE_UNICODE_PROPERTIES
       {-1}, {-1},
       {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str2,                     37},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str3,                     17},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str4,                     45},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str5,                    43},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str6,                    21},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str7,                    49},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str8,                    20},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str9,                    44},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str10,                    22},
-#endif /* USE_UNICODE_PROPERTIES */
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str11,                  8},
-#ifndef USE_UNICODE_PROPERTIES
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str12,                  7},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str13,                11},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str14,                 10},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str15,                  9},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str16,                0},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str17,                  6},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str18,                  5},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str19,                  4},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str20,                  2}
-#else /* USE_UNICODE_PROPERTIES */
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str12,                     23},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str13,                     29},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str14,                    28},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str15,                    26},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str16,            116},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str17,            120},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str18,                    32},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str19,           124},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str20,                 130},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str21,                   74},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str22,           117},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str23,             118},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str24,              103},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str25,                    40},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str26,                    24},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str27,             85},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str28,               108},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str29,                 97},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str30,   81},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str31,                  9},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str32,                  6},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str33,               128},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str34,                    41},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str35,                    19},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str36,                    31},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str37,                  2},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str38,                  12},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str39,             71},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str40,             115},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str41,              80},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str42,              88},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str43,                 14},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str44,                    47},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str45,               76},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str46,              106},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str47,               64},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str48,              105},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str49,         112},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str50,                61},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str51,              57},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str52,                    42},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str53,              16},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str54,                    48},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str55,                 13},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str56,                  73},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str57,               121},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str58,                62},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str59,                54},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str60,                    39},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str61,                   15},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str62,                    25},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str63,               72},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str64,                60},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str65,                 10},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str66,           110},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str67,              65},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str68,                  5},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str69,                  1},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str70,              77},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str71,                  3},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str72,             101},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str73,                    27},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str74,               70},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str75,                  7},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str76,                    38},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str77,                    18},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str78,                    46},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str79,                69},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str80,             107},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str81,                 55},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str82,           114},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str83,              66},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str84,              104},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str85,                 56},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str86,                     33},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str87,                    30},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str88,                 83},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str89,                    36},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str90,              79},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str91,               93},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str92,             125},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str93,                 82},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str94,             102},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str95,               129},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str96,                 67},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str97,                 68},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str98,               100},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str99,               75},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str100,                    35},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str101,                   89},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str102,            91},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str103,          113},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str104,                78},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str105,               96},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str106,                92},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str107,               95},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str108,              98},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str109,                     50},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str110,              58},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str111,               127},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str112,            63},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str113,             122},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str114,                 99},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str115,                    90},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str116,                    53},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str117,                0},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str118,                11},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str119,                  123},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str120,             94},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str121,                 84},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str122,                59},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str123,                    51},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str3,                     29},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str4,                    43},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str5,                     23},
+      {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str7,                    26},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str8,                    24},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str9,                     33},
+      {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str11,                    36},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str12,                    35},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str13,                     45},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str14,                    25},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str15,                    49},
+      {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str17,                  1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str18,                    47},
+      {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str20,             85},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str21,              88},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str22,                    48},
+      {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str24,                 13},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str25,                   89},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str26,             71},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str27,                  2},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str28,                78},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str29,               96},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str30,                     17},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str31,              58},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str32,                    21},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str33,                    44},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str34,             115},
+      {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str36,                60},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str37,               108},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str38,                54},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str39,              106},
       {-1}, {-1},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str126,             111},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str42,              118},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str43,                  7},
+      {-1}, {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str46,                    41},
       {-1},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str128,                    52},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str129,                  119},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str48,                 68},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str49,                    32},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str50,                 55},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str51,                    39},
       {-1},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str131,              87},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str132,          109},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str142,               126},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str53,              103},
+      {-1}, {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str56,                 82},
       {-1},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str144,                    34},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str58,                    34},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str59,              16},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str60,                  119},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str61,                    22},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str62,                     50},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str63,                   74},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str64,           110},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str65,                    51},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str66,    81},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str67,                 130},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str68,                  73},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str69,                  5},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str70,                62},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str71,                100},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str72,                  6},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str73,                 14},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str74,                    19},
+      {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str76,                    20},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str77,                   15},
+      {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str79,               76},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str80,                92},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str81,           117},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str82,             94},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str83,              122},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str84,              104},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str85,                    38},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str86,                    30},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str87,                 67},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str88,          112},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str89,                    40},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str90,                    31},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str91,               95},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str92,              98},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str93,                    53},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str94,                    28},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str95,                    42},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str96,                    46},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str97,               121},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str98,              105},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str99,               128},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str100,               127},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str101,                11},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str102,                  8},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str103,                 99},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str104,                    27},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str105,                  9},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str106,                59},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str107,                 97},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str108,                 56},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str109,                  3},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str110,              80},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str111,              101},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str112,               64},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str113,                    18},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str114,                    90},
+      {-1}, {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str117,            120},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str118,             102},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str119,               72},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str120,                  12},
+      {-1}, {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str123,               70},
+      {-1}, {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str126,                69},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str127,                  123},
+      {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str129,                 84},
+      {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str131,           124},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str132,                61},
+      {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str134,            116},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str135,              125},
+      {-1}, {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str138,             91},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str139,           113},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str140,               75},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str141,           114},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str142,                    52},
       {-1}, {-1}, {-1},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str166,              86},
-      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str167,                  4}
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str146,              87},
+      {-1}, {-1}, {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str150,             107},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str151,              57},
+      {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str153,               129},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str154,                 83},
+      {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str156,              86},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str157,              79},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str163,                0},
+      {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str165,            109},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+#endif /* USE_UNICODE_PROPERTIES */
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+#ifndef USE_UNICODE_PROPERTIES
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str7,                  7},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str8,                  8},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str9,                  1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str10,                 13},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str11,                11},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str12,                0},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str13,                 10},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str14,                 14},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str15,                  3},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str16,                  9},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str17,                  12},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str18,                  6},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str19,                  5},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str20,                  4},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str21,                  2}
+#else /* USE_UNICODE_PROPERTIES */
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str182,              77},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str183,                 10},
+      {-1}, {-1}, {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str187,               93},
+      {-1}, {-1}, {-1}, {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str192,              65},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str216,             111},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str222,                  4},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str231,              66},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str237,               126},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {(int)(long)&((struct uniname2ctype_pool_t *)0)->uniname2ctype_pool_str266,            63}
 #endif /* USE_UNICODE_PROPERTIES */
     };
 
