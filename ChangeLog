@@ -1,3 +1,8 @@
+Thu Sep 10 21:22:01 2009  Tanaka Akira  <akr@fsij.org>
+
+	* test/dl/test_cptr.rb (test_free=): test SEGV at first.
+	  [ruby-dev:39269]
+
 Thu Sep 10 21:20:59 2009  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (assert_normal_exit): Don't use
