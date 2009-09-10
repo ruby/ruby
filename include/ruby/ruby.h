@@ -741,7 +741,10 @@ typedef struct rb_data_type_struct {
     void (*dmark)(void*);
     void (*dfree)(void*);
     size_t (*dsize)(const void *);
-    void *ary[4]; /* for extension */
+    void *reserved[3]; /* For future extension.
+                          This array *must* be filled with ZERO. */
+    void *data;        /* This area can be used for any purpose
+                          by a programmer who define the type. */
 } rb_data_type_t;
 
 struct RTypedData {
