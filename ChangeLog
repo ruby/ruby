@@ -1,3 +1,8 @@
+Fri Sep 11 14:17:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_REPLACE_TYPE): define typename to defaul
+	  type if the latter is found.
+
 Fri Sep 11 13:57:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/win32.h (fstat): override if large file support is
