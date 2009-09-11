@@ -1149,10 +1149,10 @@ dln_strerror(void)
 static void
 aix_loaderror(const char *pathname)
 {
-    char *message[8], errbuf[1024];
+    char *message[1024], errbuf[1024];
     int i,j;
 
-    struct errtab {
+    static const struct errtab {
 	int errnum;
 	char *errstr;
     } load_errtab[] = {
@@ -1173,15 +1173,16 @@ aix_loaderror(const char *pathname)
 #define LOAD_ERRTAB_LEN	(sizeof(load_errtab)/sizeof(load_errtab[0]))
 #define ERRBUF_APPEND(s) strncat(errbuf, s, sizeof(errbuf)-strlen(errbuf)-1)
 
-    snprintf(errbuf, 1024, "load failed - %s ", pathname);
+    snprintf(errbuf, sizeof(errbuf), "load failed - %s ", pathname);
 
-    if (!loadquery(1, &message[0], sizeof(message)))
+    message[0] = NULL;
+    if (!loadquery(L_GETMESSAGE, &message[0], sizeof(message)))
 	ERRBUF_APPEND(strerror(errno));
     for(i = 0; message[i] && *message[i]; i++) {
 	int nerr = atoi(message[i]);
 	for (j=0; j<LOAD_ERRTAB_LEN; j++) {
-           if (nerr == load_errtab[i].errnum && load_errtab[i].errstr)
-		ERRBUF_APPEND(load_errtab[i].errstr);
+           if (nerr == load_errtab[j].errnum && load_errtab[j].errstr)
+		ERRBUF_APPEND(load_errtab[j].errstr);
 	}
 	while (isdigit(*message[i])) message[i]++;
 	ERRBUF_APPEND(message[i]);

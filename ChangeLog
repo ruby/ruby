@@ -1,3 +1,9 @@
+Fri Sep 11 09:45:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (aix_loaderror): get rid of using uninitialized value in the
+	  case loadquery fails.  fixed wrong index variable usage.  see
+	  [ruby-core:25479].
+
 Fri Sep 11 07:52:43 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* unicode.c (onigenc_unicode_property_name_to_ctype):
