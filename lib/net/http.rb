@@ -1525,7 +1525,7 @@ module Net   #:nodoc:
     alias form_data= set_form_data
 
     def encode_kvpair(k, vs)
-      Array(vs).map {|v| "#{urlencode(k)}=#{urlencode(v.to_s)}" }
+      Array(vs).map {|v| "#{urlencode(k.to_s)}=#{urlencode(v.to_s)}" }
     end
     private :encode_kvpair
 
