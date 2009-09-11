@@ -153,7 +153,7 @@ rb_singleton_class_clone(obj)
 		data.klass = obj;
 		break;
 	      default:
-		data.klass = 0;
+		data.klass = Qnil;
 		break;
 	    }
 
