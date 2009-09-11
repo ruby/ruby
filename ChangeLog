@@ -1,4 +1,6 @@
-Fri Sep 11 14:17:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Sep 11 14:19:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (XLDFLAGS): keep ARCHFILE macro on AIX.
 
 	* configure.in (RUBY_REPLACE_TYPE): define typename to defaul
 	  type if the latter is found.
