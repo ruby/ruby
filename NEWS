@@ -20,6 +20,10 @@ with all sufficient information, see the ChangeLog file.
     * new method:
       * Dir.home
 
+  * Enumerable
+    * New method:
+      * Enumerable#join
+
   * Enumerator
     * new methods:
       * Enumerator#peek
@@ -37,6 +41,9 @@ with all sufficient information, see the ChangeLog file.
         if defined.
       * #next doesn't clear the position at end.
 
+  * ENV
+    * Uses locale's encoding
+
   * IO
     * new method:
       * IO#fdatasync
@@ -49,9 +56,15 @@ with all sufficient information, see the ChangeLog file.
       * IO::WaitWritable
         They are used to extend non-blocking exceptions.
 
+  * MatchData
+    * New method:
+      * MatchData#==
+
   * Process
     * extended methods:
       * Process.spawn accepts [:child, FD] for a redirect target.
+
+  * Random (new library for generating pseudo-random numbers)
 
   * String
     * extended methods:
@@ -73,6 +86,9 @@ with all sufficient information, see the ChangeLog file.
         not 1999 AD.
 
   * Kernel
+    * new method:
+      * Kernel#require_relative
+
     * extended methods:
       * respond_to? can be used to detect methods not implemented.
         For example, Process.respond_to?(:fork) returns false on Windows.
@@ -95,6 +111,9 @@ with all sufficient information, see the ChangeLog file.
     * new alias of item.guid.isPermaLink
   * RSS::Maker: item.guid.permanent_link=
     * new alias of item.guid.isPermaLink=
+
+* JSON
+  * Update to JSON 1.1.9
 
 * REXML
 
@@ -181,9 +200,9 @@ with all sufficient information, see the ChangeLog file.
     * BasicSocket#getsockopt accepts a Socket::Option object.
 
     * constant names can be accepted as well as constant values.
-      i.e. Socket.new(:PF_INET, :SOCK_STREAM, 0) 
+      i.e. Socket.new(:PF_INET, :SOCK_STREAM, 0)
       The constant names can be specified without the prefix.
-      i.e. Socket.new(:INET, :STREAM, 0) 
+      i.e. Socket.new(:INET, :STREAM, 0)
       * protocol/address family
       * socket type
       * socket option protocol level
@@ -212,6 +231,10 @@ with all sufficient information, see the ChangeLog file.
 * securerandom
   * new methods:
     * SecureRandom.urlsafe_base64
+* URI
+  * Obsoleted methods:
+    * URI#escape
+    * URI#unescape
 
 * etc
   * new methods:
@@ -222,13 +245,25 @@ with all sufficient information, see the ChangeLog file.
   * new methods:
     * Zlib::GzipFile#path
 
+=== Language changes
+
+* Regexp properties (\p{}) names now ignore underscores, spaces, and case, so
+  \p{ol chiki} is the same as \p{Ol_Chiki}
+* Regexps now support Unicode 5.1 (new characters and scripts)
+* \d, \s, and \w are now ASCII only; use POSIX bracket classes and \p{} for
+  Unicode semantics
+* $: no longer includes the current directory, use require_relative
+
 === Compilation options
 
-* --program-prefix and --program-suffix no longer act on the shared object 
+* --program-prefix and --program-suffix no longer act on the shared object
   names nor paths to libraries.
 
-  use --with-rubylibprefix='${libruby}/${RUBY_INSTALL_NAME}' and 
+  use --with-rubylibprefix='${libruby}/${RUBY_INSTALL_NAME}' and
   --with-soname='${RUBY_INSTALL_NAME}' for the same result as Ruby 1.9.1.
+
+* --with-arch is added for universal binary, instead of
+  --enable-fat-binary option.
 
 === Compatibility issues (excluding feature bug fixes)
 
@@ -245,5 +280,7 @@ with all sufficient information, see the ChangeLog file.
   * Time.mktime
   * Time.parse
   * --program-prefix and --program-suffix
+  * --enable-fat-binary
+  * $:
 
     See above.
