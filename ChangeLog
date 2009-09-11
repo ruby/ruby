@@ -1,6 +1,6 @@
 Fri Sep 11 21:38:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* tool/config.{guess,sub}: better guess on darwin 10 .
+	* configure.in: check for real target cpu on darwin 10.
 
 Fri Sep 11 18:51:57 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
