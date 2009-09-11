@@ -188,18 +188,18 @@ assert_equal %q{11}, %q{
     Thread.current[:a]
   }.value + Thread.current[:a]
 }
-assert_equal %q{100}, %q{
+assert_normal_exit %q{
 begin
   100.times do |i|
     begin
-      Thread.start(Thread.current) {|u| u.raise }
+      th = Thread.start(Thread.current) {|u| u.raise }
       raise
     rescue
     ensure
+      th.join
     end
   end
 rescue
-  100
 end
 }, '[ruby-dev:31371]'
 
