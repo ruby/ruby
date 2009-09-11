@@ -139,7 +139,6 @@ extern DWORD rb_w32_osid(void);
 #define getppid()		rb_w32_getppid()
 #define sleep(x)		rb_w32_Sleep((x)*1000)
 #define Sleep(msec)		(void)rb_w32_Sleep(msec)
-#define fstat(fd,st)		_fstati64(fd,st)
 #ifdef __BORLANDC__
 #define creat(p, m)		_creat(p, m)
 #define eof()			_eof()
@@ -175,6 +174,7 @@ extern DWORD rb_w32_osid(void);
 #if SIZEOF_OFF_T == 8
 #define off_t __int64
 #define stat stati64
+#define fstat(fd,st)		_fstati64(fd,st)
 #if defined(__BORLANDC__)
 #define stati64(path, st) rb_w32_stati64(path, st)
 #elif !defined(_MSC_VER) || _MSC_VER < 1400
@@ -183,6 +183,7 @@ extern DWORD rb_w32_osid(void);
 #else
 #define stati64 _stat64
 #define _stat64(path, st) rb_w32_stati64(path, st)
+#define _fstati64 _fstat64
 #endif
 #else
 #define stat(path,st)		rb_w32_stat(path,st)
