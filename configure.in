@@ -202,6 +202,29 @@ if test ${target_archs+set}; then
     CFLAGS="$CFLAGS ${ARCH_FLAG}"
     LDFLAGS="${LDFLAGS+$LDFLAGS }${ARCH_FLAG}"
 else
+    if test x"$target_alias" = x; then
+	case "$target_os" in
+	  when(darwin*)
+	    AC_MSG_CHECKING([for real target cpu])
+	    target_cpu=`$CC -E - 2>/dev/null <<EOF |
+#ifdef __x86_64__
+"processor-name=x86_64"
+#endif
+#ifdef __i386__
+"processor-name=i386"
+#endif
+#ifdef __ppc__
+"processor-name=powerpc"
+#endif
+#ifdef __ppc64__
+"processor-name=powerpc64"
+#endif
+EOF
+	    sed -n 's/^"processor-name=\(.*\)"/\1/p'`
+	    AC_MSG_RESULT([$target_cpu])
+	    ;;
+	esac
+    fi
     target_archs="$target_cpu"
 fi
 
