@@ -1746,7 +1746,7 @@ if test "$with_dln_a_out" != yes; then
 			fi
 			LDSHARED="$LDSHARED ${linker_flag}-G"
 			DLDFLAGS='-eInit_$(TARGET)'
-			XLDFLAGS="${linker_flag}-bE:ruby.imp ${linker_flag}-brtl"
+			XLDFLAGS="${linker_flag}"'-bE:$(ARCHFILE)'" ${linker_flag}-brtl"
 			XLDFLAGS="$XLDFLAGS ${linker_flag}-blibpath:${prefix}/lib:${LIBPATH:-/usr/lib:/lib}"
 			: ${ARCHFILE="ruby.imp"}
                         TRY_LINK='$(CC) $(LDFLAGS) -oconftest $(INCFLAGS) -I$(hdrdir) $(CPPFLAGS)'
