@@ -1,3 +1,8 @@
+Sat Sep 12 07:52:59 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (EVENTSINK_Invoke): initialize result
+	  variant value.
+
 Fri Sep 11 21:52:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* NEWS: update for 1.9.2.  based on a patch from Run Paint Run Run
