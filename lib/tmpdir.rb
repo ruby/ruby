@@ -111,7 +111,7 @@ class Dir
     end
   end
 
-  module Tmpname
+  module Tmpname # :nodoc:
     module_function
 
     def tmpdir
