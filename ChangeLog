@@ -1,4 +1,7 @@
-Fri Sep 11 14:19:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Sep 11 14:22:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (debugflags): use gdb by default on linux and
+	  darwin.
 
 	* configure.in (XLDFLAGS): keep ARCHFILE macro on AIX.
 

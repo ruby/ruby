@@ -239,13 +239,17 @@ fi
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_GCC_TRADITIONAL
-test $ac_cv_prog_cc_g = yes && : ${debugflags=-g}
 if test "$GCC" = yes; then
     linker_flag=-Wl,
     : ${optflags=-O3}
+    case "$target_os" in
+      when(linux*|darwin*)
+	: ${debugflags=-ggdb};;
+    esac
 else
     linker_flag=
 fi
+test $ac_cv_prog_cc_g = yes && : ${debugflags=-g}
 
 RUBY_PROG_GNU_LD
 RUBY_CPPOUTFILE
