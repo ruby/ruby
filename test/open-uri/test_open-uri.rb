@@ -328,7 +328,7 @@ class TestOpenURI < Test::Unit::TestCase
       progress = []
       open("#{url}/data/",
            :content_length_proc => lambda {|n| length << n },
-           :progress_proc => lambda {|n| progress << n },
+           :progress_proc => lambda {|n| progress << n }
           ) {|f|
         assert_equal(1, length.length)
         assert_equal(content.length, length[0])
@@ -346,7 +346,7 @@ class TestOpenURI < Test::Unit::TestCase
       progress = []
       open("#{url}/data/",
            :content_length_proc => lambda {|n| length << n },
-           :progress_proc => lambda {|n| progress << n },
+           :progress_proc => lambda {|n| progress << n }
           ) {|f|
         assert_equal(1, length.length)
         assert_equal(nil, length[0])
