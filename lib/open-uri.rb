@@ -748,8 +748,9 @@ module URI
       end
       require 'net/ftp'
 
-      directories = self.path.split(%r{/}, -1)
-      directories.shift if directories[0] == '' # strip a field before leading slash
+      path = self.path
+      path = path.sub(%r{\A/}, '%2F') # re-encode the beginning slash because uri library decodes it.
+      directories = path.split(%r{/}, -1)
       directories.each {|d|
         d.gsub!(/%([0-9A-Fa-f][0-9A-Fa-f])/) { [$1].pack("H2") }
       }
@@ -770,7 +771,8 @@ module URI
       end
 
       # The access sequence is defined by RFC 1738
-      ftp = Net::FTP.open(self.host)
+      ftp = Net::FTP.new
+      ftp.connect(self.host, self.port)
       ftp.passive = true if !options[:ftp_active_mode]
       # todo: extract user/passwd from .netrc.
       user = 'anonymous'

@@ -1,3 +1,10 @@
+Sun Sep 13 01:55:32 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb (URI::FTP#buffer_open): fix the %2F handling.
+
+	* lib/open-uri.rb (URI::FTP#buffer_open): use the port specified in
+	  the URI.
+
 Sat Sep 12 13:29:58 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (EVENTSINK_Invoke): initialize result
