@@ -240,6 +240,32 @@ class TestOpenURI < Test::Unit::TestCase
         assert_equal("ab\r\n", content)
       ensure
         Thread.kill(th)
+        th.join
+      end
+    }
+  end
+
+  def test_redirect_invalid
+    TCPServer.open("127.0.0.1", 0) {|serv|
+      port = serv.addr[1]
+      th = Thread.new {
+        sock = serv.accept
+        begin
+          req = sock.gets("\r\n\r\n")
+          assert_match(%r{\AGET /foo/bar }, req)
+          sock.print "HTTP/1.0 302 Found\r\n"
+          sock.print "Location: ::\r\n\r\n"
+        ensure
+          sock.close
+        end
+      }
+      begin
+        assert_raise(OpenURI::HTTPError) {
+          URI("http://127.0.0.1:#{port}/foo/bar").read
+        }
+      ensure
+        Thread.kill(th)
+        th.join
       end
     }
   end
@@ -456,6 +482,7 @@ class TestOpenURI < Test::Unit::TestCase
         assert_equal("content", content)
       ensure
         Thread.kill(th)
+        th.join
       end
     }
   end
@@ -482,6 +509,7 @@ class TestOpenURI < Test::Unit::TestCase
         }
       ensure
         Thread.kill(th)
+        th.join
       end
     }
   end
@@ -508,6 +536,7 @@ class TestOpenURI < Test::Unit::TestCase
         assert_equal("ab\r\n", content)
       ensure
         Thread.kill(th)
+        th.join
       end
     }
   end
