@@ -10,7 +10,7 @@ static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me);
 
 static ID object_id;
 static ID removed, singleton_removed, undefined, singleton_undefined;
-static ID added, singleton_added;
+static ID added, singleton_added, attached;
 
 struct cache_entry {		/* method hash table. */
     ID mid;			/* method's id */
@@ -165,7 +165,7 @@ rb_add_method_def(VALUE klass, ID mid, rb_method_type_t type, rb_method_definiti
 	     type == VM_METHOD_TYPE_CFUNC &&
 	     mid == rb_intern("allocate")) {
 	rb_warn("defining %s.allocate is deprecated; use rb_define_alloc_func()",
-		rb_class2name(rb_iv_get(klass, "__attached__")));
+		rb_class2name(rb_ivar_get(klass, attached)));
 	mid = ID_ALLOCATOR;
     }
     if (OBJ_FROZEN(klass)) {
@@ -215,16 +215,22 @@ rb_add_method_def(VALUE klass, ID mid, rb_method_type_t type, rb_method_definiti
     return me;
 }
 
+#define CALL_METHOD_HOOK(klass, hook, mid) do {		\
+	const VALUE arg = ID2SYM(mid);			\
+	VALUE recv_class = klass;			\
+	ID hook_id = hook;				\
+	if (FL_TEST(klass, FL_SINGLETON)) {		\
+	    recv_class = rb_ivar_get(klass, attached);	\
+	    hook_id = singleton_##hook;			\
+	}						\
+	rb_funcall2(recv_class, hook_id, 1, &arg);	\
+    } while (0)
+
 static void
 method_added(VALUE klass, ID mid)
 {
     if (mid != ID_ALLOCATOR && ruby_running) {
-	if (FL_TEST(klass, FL_SINGLETON)) {
-	    rb_funcall(rb_iv_get(klass, "__attached__"), singleton_added, 1, ID2SYM(mid));
-	}
-	else {
-	    rb_funcall(klass, added, 1, ID2SYM(mid));
-	}
+	CALL_METHOD_HOOK(klass, added, mid);
     }
 }
 
@@ -398,12 +404,7 @@ remove_method(VALUE klass, ID mid)
     rb_clear_cache_for_undef(klass, mid);
     rb_free_method_entry(me);
 
-    if (FL_TEST(klass, FL_SINGLETON)) {
-	rb_funcall(rb_iv_get(klass, "__attached__"), singleton_removed, 1, ID2SYM(mid));
-    }
-    else {
-	rb_funcall(klass, removed, 1, ID2SYM(mid));
-    }
+    CALL_METHOD_HOOK(klass, removed, mid);
 }
 
 void
@@ -566,7 +567,7 @@ rb_undef(VALUE klass, ID id)
 	VALUE c = klass;
 
 	if (FL_TEST(c, FL_SINGLETON)) {
-	    VALUE obj = rb_iv_get(klass, "__attached__");
+	    VALUE obj = rb_ivar_get(klass, attached);
 
 	    switch (TYPE(obj)) {
 	      case T_MODULE:
@@ -584,12 +585,7 @@ rb_undef(VALUE klass, ID id)
 
     rb_add_method(klass, id, VM_METHOD_TYPE_UNDEF, 0, NOEX_PUBLIC);
 
-    if (FL_TEST(klass, FL_SINGLETON)) {
-	rb_funcall(rb_iv_get(klass, "__attached__"), singleton_undefined, 1, ID2SYM(id));
-    }
-    else {
-	rb_funcall(klass, undefined, 1, ID2SYM(id));
-    }
+    CALL_METHOD_HOOK(klass, undefined, id);
 }
 
 /*
@@ -1201,5 +1197,6 @@ Init_eval_method(void)
     singleton_removed = rb_intern("singleton_method_removed");
     undefined = rb_intern("method_undefined");
     singleton_undefined = rb_intern("singleton_method_undefined");
+    attached = rb_intern("__attached__");
 }
 
