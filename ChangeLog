@@ -1,3 +1,8 @@
+Sat Sep 12 13:29:58 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (EVENTSINK_Invoke): initialize result
+	  variant value.
+
 Thu Sep 10 23:00:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): fix for parallel execution.
