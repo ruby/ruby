@@ -118,79 +118,81 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_proxy
     with_http {|srv, dr, url|
-      prxy = WEBrick::HTTPProxyServer.new({
+      log = ''
+      proxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
         :Logger => WEBrick::Log.new(NullLog),
-        :AccessLog => [[sio=StringIO.new, WEBrick::AccessLog::COMMON_LOG_FORMAT]],
+        :AccessLog => [[NullLog, ""]],
+        :ProxyAuthProc => lambda {|req, res|
+          log << req.request_line
+        },
         :BindAddress => '127.0.0.1',
         :Port => 0})
-      _, p_port, _, p_host = prxy.listeners[0].addr
+      _, proxy_port, _, proxy_host = proxy.listeners[0].addr
       begin
-        th = prxy.start
+        th = proxy.start
         open("#{dr}/proxy", "w") {|f| f << "proxy" }
-        open("#{url}/proxy", :proxy=>"http://#{p_host}:#{p_port}/") {|f|
+        open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/") {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
-        assert_match(/#{Regexp.quote url}/, sio.string)
-        sio.truncate(0); sio.rewind
-        open("#{url}/proxy", :proxy=>URI("http://#{p_host}:#{p_port}/")) {|f|
+        assert_match(/#{Regexp.quote url}/, log); log.clear
+        open("#{url}/proxy", :proxy=>URI("http://#{proxy_host}:#{proxy_port}/")) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
-        assert_match(/#{Regexp.quote url}/, sio.string)
-        sio.truncate(0); sio.rewind
+        assert_match(/#{Regexp.quote url}/, log); log.clear
         open("#{url}/proxy", :proxy=>nil) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
-        assert_equal("", sio.string)
+        assert_equal("", log); log.clear
         assert_raise(ArgumentError) {
           open("#{url}/proxy", :proxy=>:invalid) {}
         }
-        assert_equal("", sio.string)
+        assert_equal("", log); log.clear
       ensure
-        prxy.shutdown
+        proxy.shutdown
       end
     }
   end
 
   def test_proxy_http_basic_authentication
     with_http {|srv, dr, url|
-      prxy = WEBrick::HTTPProxyServer.new({
+      log = ''
+      proxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
         :Logger => WEBrick::Log.new(NullLog),
-        :AccessLog => [[sio=StringIO.new, WEBrick::AccessLog::COMMON_LOG_FORMAT]],
+        :AccessLog => [[NullLog, ""]],
         :ProxyAuthProc => lambda {|req, res|
+          log << req.request_line
           if req["Proxy-Authorization"] != "Basic #{['user:pass'].pack('m').chomp}"
             raise WEBrick::HTTPStatus::ProxyAuthenticationRequired
           end
         },
         :BindAddress => '127.0.0.1',
         :Port => 0})
-      _, p_port, _, p_host = prxy.listeners[0].addr
-      p_url = "http://#{p_host}:#{p_port}/"
+      _, proxy_port, _, proxy_host = proxy.listeners[0].addr
+      proxy_url = "http://#{proxy_host}:#{proxy_port}/"
       begin
-        th = prxy.start
+        th = proxy.start
         open("#{dr}/proxy", "w") {|f| f << "proxy" }
-        exc = assert_raise(OpenURI::HTTPError) { open("#{url}/proxy", :proxy=>p_url) {} }
+        exc = assert_raise(OpenURI::HTTPError) { open("#{url}/proxy", :proxy=>proxy_url) {} }
         assert_equal("407", exc.io.status[0])
-        assert_match(/#{Regexp.quote url}/, sio.string)
-        sio.truncate(0); sio.rewind
+        assert_match(/#{Regexp.quote url}/, log); log.clear
         open("#{url}/proxy",
-            :proxy_http_basic_authentication=>[p_url, "user", "pass"]) {|f|
+            :proxy_http_basic_authentication=>[proxy_url, "user", "pass"]) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
-        assert_match(/#{Regexp.quote url}/, sio.string)
-        sio.truncate(0); sio.rewind
+        assert_match(/#{Regexp.quote url}/, log); log.clear
         assert_raise(ArgumentError) {
           open("#{url}/proxy",
               :proxy_http_basic_authentication=>[true, "user", "pass"]) {}
         }
-        assert_equal("", sio.string)
+        assert_equal("", log); log.clear
       ensure
-        prxy.shutdown
+        proxy.shutdown
       end
     }
   end
@@ -206,6 +208,39 @@ class TestOpenURI < Test::Unit::TestCase
       }
       assert_raise(OpenURI::HTTPRedirect) { open("#{url}/r1/", :redirect=>false) {} }
       assert_raise(RuntimeError) { open("#{url}/to-file/") {} }
+    }
+  end
+
+  def test_redirect_relative
+    TCPServer.open("127.0.0.1", 0) {|serv|
+      port = serv.addr[1]
+      th = Thread.new {
+        sock = serv.accept
+        begin
+          req = sock.gets("\r\n\r\n")
+          assert_match(%r{\AGET /foo/bar }, req)
+          sock.print "HTTP/1.0 302 Found\r\n"
+          sock.print "Location: ../baz\r\n\r\n"
+        ensure
+          sock.close
+        end
+        sock = serv.accept
+        begin
+          req = sock.gets("\r\n\r\n")
+          assert_match(%r{\AGET /baz }, req)
+          sock.print "HTTP/1.0 200 OK\r\n"
+          sock.print "Content-Length: 4\r\n\r\n"
+          sock.print "ab\r\n"
+        ensure
+          sock.close
+        end
+      }
+      begin
+        content = URI("http://127.0.0.1:#{port}/foo/bar").read
+        assert_equal("ab\r\n", content)
+      ensure
+        Thread.kill(th)
+      end
     }
   end
 
@@ -436,7 +471,6 @@ class TestOpenURI < Test::Unit::TestCase
           proxy_sock.print "HTTP/1.0 200 OK\r\n"
           proxy_sock.print "Content-Length: 4\r\n\r\n"
           proxy_sock.print "ab\r\n"
-          proxy_sock.close
         ensure
           proxy_sock.close
         end
@@ -464,7 +498,6 @@ class TestOpenURI < Test::Unit::TestCase
           proxy_sock.print "HTTP/1.0 200 OK\r\n"
           proxy_sock.print "Content-Length: 4\r\n\r\n"
           proxy_sock.print "ab\r\n"
-          proxy_sock.close
         ensure
           proxy_sock.close
         end
