@@ -368,8 +368,8 @@ rb_method_entry(VALUE klass, ID id)
     return rb_get_method_entry(klass, id);
 }
 
-void
-rb_remove_method_id(VALUE klass, ID mid)
+static void
+remove_method_id(VALUE klass, ID mid)
 {
     st_data_t data;
     rb_method_entry_t *me = 0;
@@ -386,19 +386,13 @@ rb_remove_method_id(VALUE klass, ID mid)
 	rb_warn("removing `%s' may cause serious problems", rb_id2name(mid));
     }
 
-    if (st_lookup(RCLASS_M_TBL(klass), mid, &data)) {
-	me = (rb_method_entry_t *)data;
-	if (!me || (me->def && me->def->type == VM_METHOD_TYPE_UNDEF)) {
-	    me = 0;
-	}
-	else {
-	    st_delete(RCLASS_M_TBL(klass), &mid, &data);
-	}
-    }
-    if (!me) {
+    if (!st_lookup(RCLASS_M_TBL(klass), mid, &data) ||
+	!(me = (rb_method_entry_t *)data) ||
+	(!me->def || me->def->type == VM_METHOD_TYPE_UNDEF)) {
 	rb_name_error(mid, "method `%s' not defined in %s",
 		      rb_id2name(mid), rb_class2name(klass));
     }
+    st_delete(RCLASS_M_TBL(klass), &mid, &data);
 
     rb_vm_check_redefinition_opt_method(me);
     rb_clear_cache_for_undef(klass, mid);
@@ -412,7 +406,11 @@ rb_remove_method_id(VALUE klass, ID mid)
     }
 }
 
-#define remove_method(klass, mid) rb_remove_method_id(klass, mid)
+void
+rb_remove_method_id(VALUE klass, ID mid)
+{
+    remove_method(klass, mid);
+}
 
 void
 rb_remove_method(VALUE klass, const char *name)
