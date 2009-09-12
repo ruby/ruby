@@ -369,7 +369,7 @@ rb_method_entry(VALUE klass, ID id)
 }
 
 static void
-remove_method_id(VALUE klass, ID mid)
+remove_method(VALUE klass, ID mid)
 {
     st_data_t data;
     rb_method_entry_t *me = 0;
