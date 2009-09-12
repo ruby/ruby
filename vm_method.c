@@ -212,6 +212,12 @@ rb_add_method_def(VALUE klass, ID mid, rb_method_type_t type, rb_method_definiti
 
     st_insert(mtbl, mid, (st_data_t) me);
 
+    return me;
+}
+
+static void
+method_added(VALUE klass, ID mid)
+{
     if (mid != ID_ALLOCATOR && ruby_running) {
 	if (FL_TEST(klass, FL_SINGLETON)) {
 	    rb_funcall(rb_iv_get(klass, "__attached__"), singleton_added, 1, ID2SYM(mid));
@@ -220,8 +226,6 @@ rb_add_method_def(VALUE klass, ID mid, rb_method_type_t type, rb_method_definiti
 	    rb_funcall(klass, added, 1, ID2SYM(mid));
 	}
     }
-
-    return me;
 }
 
 rb_method_entry_t *
@@ -260,6 +264,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
       default:
 	rb_bug("rb_add_method: unsupported method type (%d)\n", type);
     }
+    method_added(klass, mid);
     return me;
 }
 
@@ -267,7 +272,9 @@ rb_method_entry_t *
 rb_add_method_me(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_flag_t noex)
 {
     rb_method_type_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
-    return rb_add_method_def(klass, mid, type, me->def, noex);
+    rb_method_entry_t *newme = rb_add_method_def(klass, mid, type, me->def, noex);
+    method_added(klass, mid);
+    return newme;
 }
 
 void
