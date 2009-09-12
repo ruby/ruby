@@ -1,6 +1,6 @@
 require 'mkmf'
 
-if( RbConfig::CONFIG['CC'] =~ /gcc/ )
+if RbConfig::CONFIG['GCC'] == 'yes'
   $CFLAGS << " -fno-defer-pop -fno-omit-frame-pointer"
 end
 

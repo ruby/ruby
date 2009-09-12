@@ -28,7 +28,7 @@ message "=== OpenSSL for Ruby configurator ===\n"
 if with_config("debug") or enable_config("debug")
   $defs.push("-DOSSL_DEBUG") unless $defs.include? "-DOSSL_DEBUG"
 
-  if /gcc/ =~ CONFIG["CC"]
+  if CONFIG['GCC'] == 'yes'
     $CPPFLAGS += " -Wall" unless $CPPFLAGS.split.include? "-Wall"
   end
 end
