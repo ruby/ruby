@@ -262,6 +262,7 @@ fi
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_GCC_TRADITIONAL
+AC_SUBST(GCC)
 if test "$GCC" = yes; then
     linker_flag=-Wl,
     : ${optflags=-O3}

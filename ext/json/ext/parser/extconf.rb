@@ -1,7 +1,7 @@
 require 'mkmf'
 require 'rbconfig'
 
-if CONFIG['CC'] =~ /gcc/
+if CONFIG['GCC'] == 'yes'
   $CFLAGS += ' -Wall'
   #$CFLAGS += ' -O0 -ggdb'
 end
