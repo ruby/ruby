@@ -247,6 +247,8 @@ class TestRequire < Test::Unit::TestCase
 
   def test_relative
     require 'tmpdir'
+    load_path = $:.dup
+    $:.delete(".")
     Dir.mktmpdir do |tmp|
       Dir.chdir(tmp) do
         Dir.mkdir('x')
@@ -258,8 +260,12 @@ class TestRequire < Test::Unit::TestCase
         assert_raise(LoadError) {require('x/t.rb')}
         File.unlink(*Dir.glob('x/*'))
         Dir.rmdir("#{tmp}/x")
+        $:.replace(load_path)
+        load_path = nil
         assert(!require('tmpdir'))
       end
     end
+  ensure
+    $:.replace(load_path) if load_path
   end
 end
