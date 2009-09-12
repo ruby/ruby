@@ -25,6 +25,16 @@ class TestOpenURI < Test::Unit::TestCase
     }
   end
 
+  def setup
+    @proxies = %w[http_proxy ftp_proxy no_proxy]
+    @old_proxies = @proxies.map {|k| ENV[k] }
+    @proxies.each {|k| ENV[k] = nil }
+  end
+
+  def teardown
+    @proxies.each_with_index {|k, i| ENV[k] = @old_proxies[i] }
+  end
+
   def test_200
     with_http {|srv, dr, url|
       open("#{dr}/foo200", "w") {|f| f << "foo200" }
@@ -309,6 +319,50 @@ class TestOpenURI < Test::Unit::TestCase
         assert_equal [], f.content_encoding
         assert_equal(content_gz, f.read.force_encoding("ascii-8bit"))
       }
+    }
+  end
+
+  def with_env(h)
+    begin
+      old = {}
+      h.each_key {|k| old[k] = ENV[k] }
+      h.each {|k, v| ENV[k] = v }
+      yield
+    ensure
+      h.each_key {|k| ENV[k] = old[k] }
+    end
+  end
+
+  def test_find_proxy
+    # 192.0.2.0/24 is TEST-NET.  RFC3330
+    assert_nil(URI("http://192.0.2.1/").find_proxy)
+    assert_nil(URI("ftp://192.0.2.1/").find_proxy)
+    with_env('http_proxy'=>'http://127.0.0.1:8080') {
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
+      assert_nil(URI("ftp://192.0.2.1/").find_proxy)
+    }
+    with_env('ftp_proxy'=>'http://127.0.0.1:8080') {
+      assert_nil(URI("http://192.0.2.1/").find_proxy)
+      assert_equal(URI('http://127.0.0.1:8080'), URI("ftp://192.0.2.1/").find_proxy)
+    }
+    with_env('REQUEST_METHOD'=>'GET') {
+      assert_nil(URI("http://192.0.2.1/").find_proxy)
+    }
+    with_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'192.0.2.2') {
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
+      assert_nil(URI("http://192.0.2.2/").find_proxy)
+    }
+  end
+
+  def test_find_proxy_case_sensitive_env
+    with_env('http_proxy'=>'http://127.0.0.1:8080', 'REQUEST_METHOD'=>'GET') {
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
+    }
+    with_env('HTTP_PROXY'=>'http://127.0.0.1:8081', 'REQUEST_METHOD'=>'GET') {
+      assert_nil(nil, URI("http://192.0.2.1/").find_proxy)
+    }
+    with_env('http_proxy'=>'http://127.0.0.1:8080', 'HTTP_PROXY'=>'http://127.0.0.1:8081', 'REQUEST_METHOD'=>'GET') {
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
     }
   end
 
