@@ -119,11 +119,11 @@ class TestOpenURI < Test::Unit::TestCase
   def test_proxy
     with_http {|srv, dr, url|
       prxy = WEBrick::HTTPProxyServer.new({
-                                     :ServerType => Thread,
-                                     :Logger => WEBrick::Log.new(NullLog),
-                                     :AccessLog => [[NullLog, ""]],
-                                     :BindAddress => '127.0.0.1',
-                                     :Port => 0})
+        :ServerType => Thread,
+        :Logger => WEBrick::Log.new(NullLog),
+        :AccessLog => [[sio=StringIO.new, WEBrick::AccessLog::COMMON_LOG_FORMAT]],
+        :BindAddress => '127.0.0.1',
+        :Port => 0})
       _, p_port, _, p_host = prxy.listeners[0].addr
       begin
         th = prxy.start
@@ -132,17 +132,23 @@ class TestOpenURI < Test::Unit::TestCase
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
+        assert_match(/#{Regexp.quote url}/, sio.string)
+        sio.truncate(0); sio.rewind
         open("#{url}/proxy", :proxy=>URI("http://#{p_host}:#{p_port}/")) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
+        assert_match(/#{Regexp.quote url}/, sio.string)
+        sio.truncate(0); sio.rewind
         open("#{url}/proxy", :proxy=>nil) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
+        assert_equal("", sio.string)
         assert_raise(ArgumentError) {
           open("#{url}/proxy", :proxy=>:invalid) {}
         }
+        assert_equal("", sio.string)
       ensure
         prxy.shutdown
       end
@@ -154,7 +160,7 @@ class TestOpenURI < Test::Unit::TestCase
       prxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
         :Logger => WEBrick::Log.new(NullLog),
-        :AccessLog => [[NullLog, ""]],
+        :AccessLog => [[sio=StringIO.new, WEBrick::AccessLog::COMMON_LOG_FORMAT]],
         :ProxyAuthProc => lambda {|req, res|
           if req["Proxy-Authorization"] != "Basic #{['user:pass'].pack('m').chomp}"
             raise WEBrick::HTTPStatus::ProxyAuthenticationRequired
@@ -169,15 +175,20 @@ class TestOpenURI < Test::Unit::TestCase
         open("#{dr}/proxy", "w") {|f| f << "proxy" }
         exc = assert_raise(OpenURI::HTTPError) { open("#{url}/proxy", :proxy=>p_url) {} }
         assert_equal("407", exc.io.status[0])
+        assert_match(/#{Regexp.quote url}/, sio.string)
+        sio.truncate(0); sio.rewind
         open("#{url}/proxy",
             :proxy_http_basic_authentication=>[p_url, "user", "pass"]) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
+        assert_match(/#{Regexp.quote url}/, sio.string)
+        sio.truncate(0); sio.rewind
         assert_raise(ArgumentError) {
           open("#{url}/proxy",
               :proxy_http_basic_authentication=>[true, "user", "pass"]) {}
         }
+        assert_equal("", sio.string)
       ensure
         prxy.shutdown
       end
