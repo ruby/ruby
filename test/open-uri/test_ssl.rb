@@ -65,6 +65,10 @@ class TestOpenURISSL < Test::Unit::TestCase
     with_https {|srv, dr, url|
       cacert_filename = "#{dr}/cacert.pem"
       open(cacert_filename, "w") {|f| f << CA_CERT }
+      cacert_directory = "#{dr}/certs"
+      Dir.mkdir cacert_directory
+      hashed_name = "%08x.0" % OpenSSL::X509::Certificate.new(CA_CERT).subject.hash
+      open("#{cacert_directory}/#{hashed_name}", "w") {|f| f << CA_CERT }
       prxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
         :Logger => WEBrick::Log.new(NullLog),
@@ -80,6 +84,13 @@ class TestOpenURISSL < Test::Unit::TestCase
           assert_equal("proxy", f.read)
         }
         assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], sio.string)
+        sio.truncate(0); sio.rewind
+        open("#{url}/proxy", :proxy=>"http://#{p_host}:#{p_port}/", :ssl_ca_cert => cacert_directory) {|f|
+          assert_equal("200", f.status[0])
+          assert_equal("proxy", f.read)
+        }
+        assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], sio.string)
+        sio.truncate(0); sio.rewind
       ensure
         prxy.shutdown
       end
