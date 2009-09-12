@@ -827,7 +827,6 @@ void
 rb_alias(VALUE klass, ID name, ID def)
 {
     rb_method_entry_t *orig_me;
-    VALUE singleton = 0;
 
     rb_frozen_class_p(klass);
     if (klass == rb_cObject) {
@@ -842,22 +841,8 @@ rb_alias(VALUE klass, ID name, ID def)
 	    rb_print_undef(klass, def, 0);
 	}
     }
-    if (FL_TEST(klass, FL_SINGLETON)) {
-	singleton = rb_iv_get(klass, "__attached__");
-    }
 
     rb_add_method_me(klass, name, orig_me, orig_me->flag);
-
-    if (!ruby_running) return;
-
-    rb_clear_cache_by_id(name);
-
-    if (singleton) {
-	rb_funcall(singleton, singleton_added, 1, ID2SYM(name));
-    }
-    else {
-	rb_funcall(klass, added, 1, ID2SYM(name));
-    }
 }
 
 /*

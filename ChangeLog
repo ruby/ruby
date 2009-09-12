@@ -1,7 +1,9 @@
-Sun Sep 13 00:03:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Sep 13 00:21:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (rb_add_method, rb_add_method_me): call method added
 	  hook after definition.  [ruby-core:25536]
+
+	* vm_method.c (rb_alias): hooks are called from rb_add_method_def.
 
 Sat Sep 12 22:47:24 2009  Tanaka Akira  <akr@fsij.org>
 
