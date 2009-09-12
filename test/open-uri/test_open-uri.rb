@@ -424,5 +424,60 @@ class TestOpenURI < Test::Unit::TestCase
       end
     }
   end
+
+  def test_ftp_over_http_proxy
+    TCPServer.open("127.0.0.1", 0) {|proxy_serv|
+      proxy_port = proxy_serv.addr[1]
+      th = Thread.new {
+        proxy_sock = proxy_serv.accept
+        begin
+          req = proxy_sock.gets("\r\n\r\n")
+          assert_match(%r{\AGET ftp://192.0.2.1/foo/bar }, req)
+          proxy_sock.print "HTTP/1.0 200 OK\r\n"
+          proxy_sock.print "Content-Length: 4\r\n\r\n"
+          proxy_sock.print "ab\r\n"
+          proxy_sock.close
+        ensure
+          proxy_sock.close
+        end
+      }
+      begin
+        with_env('ftp_proxy'=>"http://127.0.0.1:#{proxy_port}") {
+          content = URI("ftp://192.0.2.1/foo/bar").read
+          assert_equal("ab\r\n", content)
+        }
+      ensure
+        Thread.kill(th)
+      end
+    }
+  end
+
+  def test_ftp_over_http_proxy_auth
+    TCPServer.open("127.0.0.1", 0) {|proxy_serv|
+      proxy_port = proxy_serv.addr[1]
+      th = Thread.new {
+        proxy_sock = proxy_serv.accept
+        begin
+          req = proxy_sock.gets("\r\n\r\n")
+          assert_match(%r{\AGET ftp://192.0.2.1/foo/bar }, req)
+          assert_match(%r{Proxy-Authorization: Basic #{['proxy-user:proxy-password'].pack('m').chomp}\r\n}, req)
+          proxy_sock.print "HTTP/1.0 200 OK\r\n"
+          proxy_sock.print "Content-Length: 4\r\n\r\n"
+          proxy_sock.print "ab\r\n"
+          proxy_sock.close
+        ensure
+          proxy_sock.close
+        end
+      }
+      begin
+        content = URI("ftp://192.0.2.1/foo/bar").read(
+          :proxy_http_basic_authentication => ["http://127.0.0.1:#{proxy_port}", "proxy-user", "proxy-password"])
+        assert_equal("ab\r\n", content)
+      ensure
+        Thread.kill(th)
+      end
+    }
+  end
+
 end
 
