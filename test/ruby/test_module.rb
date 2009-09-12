@@ -769,9 +769,21 @@ class TestModule < Test::Unit::TestCase
       end
       def f
       end
+      alias g f
+      attr_reader :a
+      attr_writer :a
     end
     assert_equal :f, memo.shift
-    assert_equal mod.instance_methods(false), memo.shift
+    assert_equal [:f], memo.shift, '[ruby-core:25536]'
     assert_equal mod.instance_method(:f), memo.shift
+    assert_equal :g, memo.shift
+    assert_equal [:f, :g], memo.shift
+    assert_equal mod.instance_method(:f), memo.shift
+    assert_equal :a, memo.shift
+    assert_equal [:f, :g, :a], memo.shift
+    assert_equal mod.instance_method(:a), memo.shift
+    assert_equal :a=, memo.shift
+    assert_equal [:f, :g, :a, :a=], memo.shift
+    assert_equal mod.instance_method(:a=), memo.shift
   end
 end
