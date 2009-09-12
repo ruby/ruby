@@ -1,10 +1,4 @@
-begin
-  loadpath = $:.dup
-  $:.replace($: | [File.expand_path("../ruby", File.dirname(__FILE__))])
-  require 'envutil'
-ensure
-  $:.replace(loadpath)
-end
+require_relative '../ruby/envutil'
 require "webrick"
 begin
   require "webrick/https"

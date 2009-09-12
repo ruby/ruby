@@ -6,10 +6,6 @@
 # If in doubt, ask your admin.
 
 require 'test/unit'
-
-# Prepend current directory to load path for testing.
-$:.unshift('.')
-
 require 'syslog'
 
 class TestSyslog < Test::Unit::TestCase
