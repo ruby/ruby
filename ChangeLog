@@ -1,3 +1,8 @@
+Sun Sep 13 08:30:30 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: fix WIN32OLE_TYPELIB.new when the 1st 
+	  argument is the non-registered file.
+
 Sun Sep 13 02:08:43 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: change members of iseq_inline_cache_entry.
