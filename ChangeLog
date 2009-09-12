@@ -1,4 +1,6 @@
-Sun Sep 13 00:27:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Sep 13 00:46:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (CALL_METHOD_HOOK): refined with macro.
 
 	* vm_method.c (rb_remove_method_id): no definition body is
 	  undefined.
