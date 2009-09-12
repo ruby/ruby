@@ -800,7 +800,8 @@ module URI
       end
 
       # The access sequence is defined by RFC 1738
-      ftp = Net::FTP.open(self.host)
+      ftp = Net::FTP.new
+      ftp.connect(self.host, self.port)
       ftp.passive = true if !options[:ftp_active_mode]
       # todo: extract user/passwd from .netrc.
       user = 'anonymous'
