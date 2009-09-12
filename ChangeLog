@@ -1,3 +1,8 @@
+Sun Sep 13 00:03:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_add_method, rb_add_method_me): call method added
+	  hook after definition.  [ruby-core:25536]
+
 Sat Sep 12 22:47:24 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb (URI::FTP#buffer_open): use the port specified in

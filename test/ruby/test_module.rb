@@ -755,4 +755,23 @@ class TestModule < Test::Unit::TestCase
     c = eval("class C\u{df}; self; end")
     assert_equal("TestModule::C\u{df}", c.name, '[ruby-core:24600]')
   end
+
+  def test_method_added
+    memo = []
+    mod = Module.new do
+      mod = self
+      (class << self ; self ; end).class_eval do
+        define_method :method_added do |sym|
+          memo << sym
+          memo << mod.instance_methods(false)
+          memo << (mod.instance_method(sym) rescue nil)
+        end
+      end
+      def f
+      end
+    end
+    assert_equal :f, memo.shift
+    assert_equal mod.instance_methods(false), memo.shift
+    assert_equal mod.instance_method(:f), memo.shift
+  end
 end
