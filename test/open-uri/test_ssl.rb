@@ -1,8 +1,10 @@
 require 'test/unit'
 require 'open-uri'
 require 'openssl'
+require 'stringio'
 require 'webrick'
 require 'webrick/https'
+require 'webrick/httpproxy'
 
 class TestOpenURISSL < Test::Unit::TestCase
 
@@ -56,6 +58,31 @@ class TestOpenURISSL < Test::Unit::TestCase
         assert_equal("ddd", f.read)
       }
       assert_raise(OpenSSL::SSL::SSLError) { open("#{url}/data") {} }
+    }
+  end
+
+  def test_proxy
+    with_https {|srv, dr, url|
+      cacert_filename = "#{dr}/cacert.pem"
+      open(cacert_filename, "w") {|f| f << CA_CERT }
+      prxy = WEBrick::HTTPProxyServer.new({
+        :ServerType => Thread,
+        :Logger => WEBrick::Log.new(NullLog),
+        :AccessLog => [[sio=StringIO.new, WEBrick::AccessLog::COMMON_LOG_FORMAT]],
+        :BindAddress => '127.0.0.1',
+        :Port => 0})
+      _, p_port, _, p_host = prxy.listeners[0].addr
+      begin
+        th = prxy.start
+        open("#{dr}/proxy", "w") {|f| f << "proxy" }
+        open("#{url}/proxy", :proxy=>"http://#{p_host}:#{p_port}/", :ssl_ca_cert => cacert_filename) {|f|
+          assert_equal("200", f.status[0])
+          assert_equal("proxy", f.read)
+        }
+        assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], sio.string)
+      ensure
+        prxy.shutdown
+      end
     }
   end
 
