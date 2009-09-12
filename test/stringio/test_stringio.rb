@@ -1,9 +1,6 @@
 require 'test/unit'
 require 'stringio'
-dir = File.expand_path(__FILE__)
-2.times {dir = File.dirname(dir)}
-$:.replace([File.join(dir, "ruby")] | $:)
-require 'ut_eof'
+require_relative '../ruby/ut_eof'
 
 class TestStringIO < Test::Unit::TestCase
   include TestEOF

@@ -1,18 +1,12 @@
 begin
   require "openssl"
-  require File.join(File.dirname(__FILE__), "utils.rb")
+  require_relative "utils.rb"
 rescue LoadError
 end
 require "rbconfig"
 require "socket"
 require "test/unit"
-begin
-  loadpath = $:.dup
-  $:.replace($: | [File.expand_path("../ruby", File.dirname(__FILE__))])
-  require 'envutil'
-ensure
-  $:.replace(loadpath)
-end
+require_relative '../ruby/envutil'
 
 if defined?(OpenSSL)
 

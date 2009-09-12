@@ -2,13 +2,7 @@ require 'test/unit'
 require 'drb/drb'
 require 'drb/extservm'
 require 'timeout'
-begin
-  loadpath = $:.dup
-  $:.replace($: | [File.expand_path("../ruby", File.dirname(__FILE__))])
-  require 'envutil'
-ensure
-  $:.replace(loadpath)
-end
+require_relative '../ruby/envutil'
 
 class DRbService
   @@manager = DRb::ExtServManager.new
