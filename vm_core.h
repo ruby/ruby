@@ -112,9 +112,11 @@ typedef struct rb_compile_option_struct {
 struct iseq_inline_cache_entry {
     long  ic_vmstat;
     VALUE ic_class;
-    VALUE ic_value;
-    rb_method_entry_t *ic_method;
-#define ic_index ic_vmstat
+    union {
+	VALUE value;
+	rb_method_entry_t *method;
+	long index;
+    } ic_value;
 };
 
 #if 1

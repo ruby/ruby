@@ -1196,7 +1196,7 @@ vm_getivar(VALUE obj, ID id, IC ic)
 	VALUE klass = RBASIC(obj)->klass;
 
 	if (ic->ic_class == klass) {
-	    long index = ic->ic_index;
+	    long index = ic->ic_value.index;
 	    long len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
 
@@ -1216,7 +1216,7 @@ vm_getivar(VALUE obj, ID id, IC ic)
 			val = ptr[index];
 		    }
 		    ic->ic_class = klass;
-		    ic->ic_index = index;
+		    ic->ic_value.index = index;
 		}
 	    }
 	}
@@ -1250,7 +1250,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
 	st_data_t index;
 
 	if (ic->ic_class == klass) {
-	    long index = ic->ic_index;
+	    long index = ic->ic_value.index;
 	    long len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
 
@@ -1264,7 +1264,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
 
 	    if (iv_index_tbl && st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
 		ic->ic_class = klass;
-		ic->ic_index = index;
+		ic->ic_value.index = index;
 	    }
 	    /* fall through */
 	}
@@ -1282,12 +1282,12 @@ vm_method_search(VALUE id, VALUE klass, IC ic)
 #if OPT_INLINE_METHOD_CACHE
     if (LIKELY(klass == ic->ic_class) &&
 	LIKELY(GET_VM_STATE_VERSION() == ic->ic_vmstat)) {
-	me = ic->ic_method;
+	me = ic->ic_value.method;
     }
     else {
 	me = rb_method_entry(klass, id);
 	ic->ic_class = klass;
-	ic->ic_method = me;
+	ic->ic_value.method = me;
 	ic->ic_vmstat = GET_VM_STATE_VERSION();
     }
 #else
