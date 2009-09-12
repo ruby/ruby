@@ -1,3 +1,8 @@
+Sat Sep 12 22:47:24 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb (URI::FTP#buffer_open): use the port specified in
+	  the URI.
+
 Sat Sep 12 17:31:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (GCC): subst for GCC depending extension libraries.
