@@ -6,13 +6,17 @@ require 'zlib'
 
 class TestOpenURI < Test::Unit::TestCase
 
+  NullLog = Object.new
+  def NullLog.<<(arg)
+  end
+
   def with_http
     Dir.mktmpdir {|dr|
       srv = WEBrick::HTTPServer.new({
         :DocumentRoot => dr,
         :ServerType => Thread,
-        :Logger => WEBrick::Log.new(StringIO.new("")),
-        :AccessLog => [[StringIO.new(""), ""]],
+        :Logger => WEBrick::Log.new(NullLog),
+        :AccessLog => [[NullLog, ""]],
         :BindAddress => '127.0.0.1',
         :Port => 0})
       _, port, _, host = srv.listeners[0].addr
@@ -116,8 +120,8 @@ class TestOpenURI < Test::Unit::TestCase
     with_http {|srv, dr, url|
       prxy = WEBrick::HTTPProxyServer.new({
                                      :ServerType => Thread,
-                                     :Logger => WEBrick::Log.new(StringIO.new("")),
-                                     :AccessLog => [[StringIO.new(""), ""]],
+                                     :Logger => WEBrick::Log.new(NullLog),
+                                     :AccessLog => [[NullLog, ""]],
                                      :BindAddress => '127.0.0.1',
                                      :Port => 0})
       _, p_port, _, p_host = prxy.listeners[0].addr
@@ -149,8 +153,8 @@ class TestOpenURI < Test::Unit::TestCase
     with_http {|srv, dr, url|
       prxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
-        :Logger => WEBrick::Log.new(StringIO.new("")),
-        :AccessLog => [[StringIO.new(""), ""]],
+        :Logger => WEBrick::Log.new(NullLog),
+        :AccessLog => [[NullLog, ""]],
         :ProxyAuthProc => lambda {|req, res|
           if req["Proxy-Authorization"] != "Basic #{['user:pass'].pack('m').chomp}"
             raise WEBrick::HTTPStatus::ProxyAuthenticationRequired
@@ -333,8 +337,9 @@ class TestOpenURI < Test::Unit::TestCase
     end
   end
 
+  # 192.0.2.0/24 is TEST-NET.  [RFC3330]
+
   def test_find_proxy
-    # 192.0.2.0/24 is TEST-NET.  RFC3330
     assert_nil(URI("http://192.0.2.1/").find_proxy)
     assert_nil(URI("ftp://192.0.2.1/").find_proxy)
     with_env('http_proxy'=>'http://127.0.0.1:8080') {
@@ -347,6 +352,9 @@ class TestOpenURI < Test::Unit::TestCase
     }
     with_env('REQUEST_METHOD'=>'GET') {
       assert_nil(URI("http://192.0.2.1/").find_proxy)
+    }
+    with_env('CGI_HTTP_PROXY'=>'http://127.0.0.1:8080', 'REQUEST_METHOD'=>'GET') {
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
     }
     with_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'192.0.2.2') {
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
