@@ -1,3 +1,8 @@
+Sun Sep 13 21:25:01 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (oletypelib_get_libattr): some refactoring
+	  by adding oletypelib_get_libattr.
+
 Sun Sep 13 20:55:19 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (oletypelib_get_typelib): some refactoring

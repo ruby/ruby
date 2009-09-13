@@ -130,7 +130,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.4.5"
+#define WIN32OLE_VERSION "1.4.6"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -405,6 +405,7 @@ static VALUE oletype_set_member(VALUE self, ITypeInfo *pTypeInfo, VALUE name);
 static VALUE oleclass_from_typelib(VALUE self, ITypeLib *pTypeLib, VALUE oleclass);
 static VALUE oletypelib_set_member(VALUE self, ITypeLib *pTypeLib);
 static ITypeLib * oletypelib_get_typelib(VALUE self);
+static void oletypelib_get_libattr(ITypeLib *pTypeLib, TLIBATTR **ppTLibAttr);
 static VALUE foletypelib_s_typelibs(VALUE self);
 static VALUE make_version_str(VALUE major, VALUE minor);
 static VALUE oletypelib_search_registry2(VALUE self, VALUE args);
@@ -4867,6 +4868,17 @@ oletypelib_get_typelib(VALUE self)
     return ptlib->pTypeLib;
 }
 
+static void
+oletypelib_get_libattr(ITypeLib *pTypeLib, TLIBATTR **ppTLibAttr)
+{
+    HRESULT hr;
+    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, ppTLibAttr);
+    if (FAILED(hr)) {
+        ole_raise(hr, eWIN32OLERuntimeError, 
+		  "failed to get library attribute(TLIBATTR) from ITypeLib");
+    }
+}
+
 /*
  *  call-seq:
  *
@@ -5151,17 +5163,13 @@ static VALUE
 foletypelib_guid(VALUE self)
 {
     ITypeLib *pTypeLib;
-    HRESULT hr;
     OLECHAR bstr[80];
     VALUE guid = Qnil;
     int len;
     TLIBATTR *pTLibAttr;
 
     pTypeLib = oletypelib_get_typelib(self);
-    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
-    if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetLibAttr from ITypeLib");
-    }
+    oletypelib_get_libattr(pTypeLib, &pTLibAttr);
     len = StringFromGUID2(&pTLibAttr->guid, bstr, sizeof(bstr)/sizeof(OLECHAR));
     if (len > 3) {
         guid = ole_wc2vstr(bstr, FALSE);
@@ -5212,14 +5220,10 @@ foletypelib_version(VALUE self)
     TLIBATTR *pTLibAttr;
     VALUE major;
     VALUE minor;
-    HRESULT hr = S_OK; 
     ITypeLib *pTypeLib;
 
     pTypeLib = oletypelib_get_typelib(self);
-    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
-    if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetLibAttr from ITypeLib");
-    }
+    oletypelib_get_libattr(pTypeLib, &pTLibAttr);
     major = INT2NUM(pTLibAttr->wMajorVerNum);
     minor = INT2NUM(pTLibAttr->wMinorVerNum);
     pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
@@ -5240,14 +5244,10 @@ foletypelib_major_version(VALUE self)
 {
     TLIBATTR *pTLibAttr;
     VALUE major;
-    HRESULT hr = S_OK; 
     ITypeLib *pTypeLib;
     pTypeLib = oletypelib_get_typelib(self);
+    oletypelib_get_libattr(pTypeLib, &pTLibAttr);
 
-    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
-    if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetLibAttr from ITypeLib");
-    }
     major =  INT2NUM(pTLibAttr->wMajorVerNum);
     pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
     return major;
@@ -5267,14 +5267,9 @@ foletypelib_minor_version(VALUE self)
 {
     TLIBATTR *pTLibAttr;
     VALUE minor;
-    HRESULT hr = S_OK; 
     ITypeLib *pTypeLib;
     pTypeLib = oletypelib_get_typelib(self);
-
-    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
-    if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetLibAttr from ITypeLib");
-    }
+    oletypelib_get_libattr(pTypeLib, &pTLibAttr);
     minor =  INT2NUM(pTLibAttr->wMinorVerNum);
     pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
     return minor;
@@ -5349,10 +5344,7 @@ foletypelib_path(VALUE self)
     ITypeLib *pTypeLib;
 
     pTypeLib = oletypelib_get_typelib(self);
-    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
-    if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to get TLIBATTR information");
-    }
+    oletypelib_get_libattr(pTypeLib, &pTLibAttr);
     hr = QueryPathOfRegTypeLib(&pTLibAttr->guid, 
 	                       pTLibAttr->wMajorVerNum,
 			       pTLibAttr->wMinorVerNum,
@@ -5384,17 +5376,13 @@ foletypelib_path(VALUE self)
 static VALUE
 foletypelib_visible(VALUE self)
 {
-    HRESULT hr;
     ITypeLib *pTypeLib = NULL;
     VALUE visible = Qtrue;
     TLIBATTR *pTLibAttr;
 
     pTypeLib = oletypelib_get_typelib(self);
+    oletypelib_get_libattr(pTypeLib, &pTLibAttr);
 
-    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
-    if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to get TLIBATTR information");
-    }
     if ((pTLibAttr->wLibFlags == 0) ||
         (pTLibAttr->wLibFlags & LIBFLAG_FRESTRICTED) ||
         (pTLibAttr->wLibFlags & LIBFLAG_FHIDDEN)) {
