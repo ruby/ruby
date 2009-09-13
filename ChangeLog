@@ -1,3 +1,9 @@
+Sun Sep 13 13:38:00 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+  * thread.c (recursive_*): refactored the access to the inspect table used by
+    rb_exec_recursive_*. The functions recursive_push, pop and check now assume
+    a valid hash table as their first argument. Added documentation.
+
 Sun Sep 13 12:07:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (SYM2ID): needs parens.
