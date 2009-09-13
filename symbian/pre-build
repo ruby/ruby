@@ -36,6 +36,9 @@ vmtc.inc: $(srcdir)/template/vmtc.inc.tmpl
 
 vm.inc: $(srcdir)/template/vm.inc.tmpl
 
+$(srcdir)/id.h: parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
+	$(BASERUBY) $(srcdir)/tool/generic_erb.rb --output=$@ $(srcdir)/template/id.h.tmpl parse.h
+
 node_name.inc: $(srcdir)/node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
@@ -61,6 +64,8 @@ $(srcdir)/revision.h: $(srcdir)/version.h $(srcdir)/ChangeLog
 
 incs: $(srcdir)/revision.h $(INSNS) node_name.inc known_errors.inc
 
+ids: $(srcdir)/id.h
+
 srcs: parse.c newline.c lex.c miniprelude.c
 
 lex.c: $(srcdir)\lex.c.blt
@@ -68,11 +73,11 @@ lex.c: $(srcdir)\lex.c.blt
 
 socket_const: $(srcdir)/ext/socket/constants.h
 
-MAKMAKE: incs srcs socket_const
+MAKMAKE: incs srcs ids socket_const
 
 CLEAN :
 	del $(INSNS) node_name.inc known_errors.inc
-	$(RM) parse.c parse.h newline.c lex.c miniprelude.c
+	$(RM) parse.c parse.h newline.c lex.c miniprelude.c $(srcdir)\revision.h $(srcdir)\id.h
 
 BLD LIB CLEANLIB RESOURCE FREEZE SAVESPACE RELEASABLES FINAL :
 
