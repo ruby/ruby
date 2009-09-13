@@ -1,3 +1,8 @@
+Mon Sep 14 05:21:12 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/net/http.rb (fetch): Handle properly default values; a patch by
+	  Arthur Schreiber [ruby-core:18308]
+
 Mon Sep 14 04:07:09 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/set.rb (==): Optimization; patch by Arthur Schreiber [ruby-core:17203]
