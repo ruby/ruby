@@ -110,21 +110,21 @@ class TestProcess < Test::Unit::TestCase
     with_tmpchdir do
       s = run_in_child(<<-'End')
         cur, max = Process.getrlimit(:NOFILE)
-        Process.setrlimit(:NOFILE, max-10)
+        Process.setrlimit(:NOFILE, [max-10, cur].min)
         begin
           Process.setrlimit(:NOFILE, :INFINITY)
         rescue Errno::EPERM
-          exit 1
+          exit false
         end
       End
       assert_not_equal(0, s.exitstatus)
       s = run_in_child(<<-'End')
         cur, max = Process.getrlimit(:NOFILE)
-        Process.setrlimit(:NOFILE, max-10)
+        Process.setrlimit(:NOFILE, [max-10, cur].min)
         begin
           Process.setrlimit(:NOFILE, "INFINITY")
         rescue Errno::EPERM
-          exit 1
+          exit false
         end
       End
       assert_not_equal(0, s.exitstatus)
