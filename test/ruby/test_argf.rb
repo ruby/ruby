@@ -27,11 +27,12 @@ class TestArgf < Test::Unit::TestCase
     @tmps.each {|t|
       bak = t.path + ".bak"
       File.unlink bak if File.file? bak
+      t.close(true)
     }
   end
 
   def make_tempfile
-    t = Tempfile.new("argf-foo")
+    t = Tempfile.new("argf-qux")
     t.puts "foo"
     t.puts "bar"
     t.puts "baz"
