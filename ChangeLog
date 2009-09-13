@@ -1,3 +1,8 @@
+Mon Sep 14 08:33:11 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/net/http.rb (each_*): return enumerator if no block present.
+	  Patch by Arthur Schreiber [ruby-core:18310]
+
 Mon Sep 14 06:42:21 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/cgi/cookie.rb (value): Keep CGI::Cookie#value in sync with the
