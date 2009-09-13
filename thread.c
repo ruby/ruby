@@ -3386,7 +3386,8 @@ static ID recursive_key;
  */
 
 static VALUE
-recursive_list_access() {
+recursive_list_access(void)
+{
     volatile VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
     VALUE sym = ID2SYM(rb_frame_this_func());
     VALUE list;
