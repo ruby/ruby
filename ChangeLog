@@ -1,3 +1,10 @@
+Mon Sep 14 03:30:23 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
+
+	* symbian/pre-build: added rule to generate id.h for Symbian build.
+
+	* symbian/configure.bat: fixed harmless error message.
+
+
 Sun Sep 13 22:18:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_mod_remove_const): do not change VM state when an
