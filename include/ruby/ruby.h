@@ -1289,8 +1289,7 @@ static char *dln_libs_to_be_linked[] = { EXTLIB, 0 };
 #endif
 
 #if (defined(__APPLE__) || defined(__NeXT__)) && defined(__MACH__)
-/* to link startup code with ObjC support */
-#define RUBY_GLOBAL_SETUP static void objcdummyfunction(void) {objc_msgSend();}
+#define RUBY_GLOBAL_SETUP /* use linker option to link startup code with ObjC support */
 #else
 #define RUBY_GLOBAL_SETUP
 #endif
