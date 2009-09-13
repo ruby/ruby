@@ -184,7 +184,8 @@ rb_add_method_def(VALUE klass, ID mid, rb_method_type_t type, rb_method_definiti
 
 	if (RTEST(ruby_verbose) &&
 	    old_def->alias_count == 0 &&
-	    old_def->type != VM_METHOD_TYPE_UNDEF) {
+	    old_def->type != VM_METHOD_TYPE_UNDEF &&
+	    old_def->type != VM_METHOD_TYPE_ZSUPER) {
 	    rb_warning("method redefined; discarding old %s", rb_id2name(mid));
 	}
 	rb_free_method_entry(old_me);
