@@ -291,7 +291,7 @@ VALUE rb_ull2inum(unsigned LONG_LONG);
 
 #define SYMBOL_P(x) (((VALUE)(x)&~(~(VALUE)0<<RUBY_SPECIAL_SHIFT))==SYMBOL_FLAG)
 #define ID2SYM(x) (((VALUE)(x)<<RUBY_SPECIAL_SHIFT)|SYMBOL_FLAG)
-#define SYM2ID(x) RSHIFT((unsigned long)x,RUBY_SPECIAL_SHIFT)
+#define SYM2ID(x) RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT)
 
 /* Module#methods, #singleton_methods and so on return Symbols */
 #define USE_SYMBOL_AS_METHOD_NAME 1
