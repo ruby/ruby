@@ -1,3 +1,9 @@
+Sun Sep 13 22:13:35 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tempfile.rb (Tempfile::Remover): new class to replace
+	  Tempfile.callback.  [ruby-core:17824] [ruby-dev:39271]
+	  See [ruby-dev:39317] for the reason.
+
 Sun Sep 13 11:06:12 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb (OpenURI::Meta#content_type_parse): strip quotes.

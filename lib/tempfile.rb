@@ -55,7 +55,7 @@ class Tempfile < DelegateClass(File)
     end
 
     @data = [tmpname]
-    @clean_proc = Tempfile.callback(@data)
+    @clean_proc = Tempfile::Remover.new(@data)
     ObjectSpace.define_finalizer(self, @clean_proc)
 
     @tmpfile = File.open(tmpname, File::RDWR|File::CREAT|File::EXCL, 0600)
@@ -155,26 +155,30 @@ class Tempfile < DelegateClass(File)
   end
   alias length size
 
-  class << self
-    def callback(data)	# :nodoc:
-      pid = $$
-      lambda{
-	if pid == $$ 
-	  path, tmpfile, cleanlist = *data
-
-	  print "removing ", path, "..." if $DEBUG
-
-	  tmpfile.close if tmpfile
-
-	  # keep this order for thread safeness
-	  File.unlink(path) if File.exist?(path)
-	  cleanlist.delete(path) if cleanlist
-
-	  print "done\n" if $DEBUG
-	end
-      }
+  class Remover # :nodoc:
+    def initialize(data)
+      @pid = $$
+      @data = data
     end
 
+    def call(arg=nil)
+      if @pid == $$ 
+        path, tmpfile, cleanlist = *@data
+
+        print "removing ", path, "..." if $DEBUG
+
+        tmpfile.close if tmpfile
+
+        # keep this order for thread safeness
+        File.unlink(path) if File.exist?(path)
+        cleanlist.delete(path) if cleanlist
+
+        print "done\n" if $DEBUG
+      end
+    end
+  end
+
+  class << self
     # If no block is given, this is a synonym for new().
     #
     # If a block is given, it will be passed tempfile as an argument,
