@@ -1,3 +1,8 @@
+Mon Sep 14 04:57:27 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/irb/ext/multi-irb.rb: Fix arguments handling for shell commands
+	  in irb; a patch by Yusuke Endoh [ruby-dev:35075]
+
 Sun Sep 13 22:13:35 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tempfile.rb (Tempfile::Remover): new class to replace
