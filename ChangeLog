@@ -1,4 +1,6 @@
-Sun Sep 13 12:04:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Sep 13 12:07:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (SYM2ID): needs parens.
 
 	* include/ruby/ruby.h (NUM2INT, NUM2LL, INT2NUM, UINT2NUM),
 	  (LONG2NUM, ULONG2NUM, NUM2CHR, rb_type_p, rb_special_const_p):
