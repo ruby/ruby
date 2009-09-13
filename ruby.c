@@ -1584,7 +1584,7 @@ load_file_internal(VALUE arg)
     rb_funcall(f, set_encoding, 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
     tree = rb_parser_compile_file(parser, fname, f, line_start);
     rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
-    if (script && rb_parser_end_seen_p(parser)) {
+    if (script && tree && rb_parser_end_seen_p(parser)) {
 	rb_define_global_const("DATA", f);
     }
     else if (f != rb_stdin) {
