@@ -91,14 +91,14 @@ class Prime
     warn "Prime::new is obsolete. use Prime::instance or class methods of Prime."
   end
 
-  class<<self
+  class << self
     extend Forwardable
     include Enumerable
     # Returns the default instance of Prime.
     def instance; @the_instance end
 
     def method_added(method) # :nodoc:
-      (class<<self;self;end).def_delegator :instance, method
+      (class<< self;self;end).def_delegator :instance, method
     end
   end
 
@@ -290,6 +290,7 @@ class Prime
   class EratosthenesGenerator < PseudoPrimeGenerator
     def initialize
       @last_prime = nil
+      super
     end
 
     def succ
@@ -306,6 +307,7 @@ class Prime
   class TrialDivisionGenerator<PseudoPrimeGenerator
     def initialize
       @index = -1
+      super
     end
 
     def succ
@@ -327,6 +329,7 @@ class Prime
     def initialize
       @prime = 1
       @step = nil
+      super
     end
 
     def succ
