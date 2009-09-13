@@ -3379,42 +3379,17 @@ rb_barrier_destroy(VALUE self)
 /* variables for recursive traversals */
 static ID recursive_key;
 
-static VALUE
-recursive_check(VALUE hash, VALUE obj, VALUE paired_obj)
-{
-    if (NIL_P(hash) || TYPE(hash) != T_HASH) {
-	return Qfalse;
-    }
-    else {
-	VALUE sym = ID2SYM(rb_frame_this_func());
-	VALUE list = rb_hash_aref(hash, sym);
-	VALUE pair_list;
-
-	if (NIL_P(list) || TYPE(list) != T_HASH)
-	    return Qfalse;
-	pair_list = rb_hash_lookup2(list, obj, Qundef);
-	if (pair_list == Qundef)
-	    return Qfalse;
-	if (paired_obj) {
-	    if (TYPE(pair_list) != T_HASH) {
-		if (pair_list != paired_obj)
-		    return Qfalse;
-	    }
-	    else {
-		if (NIL_P(rb_hash_lookup(pair_list, paired_obj)))
-		    return Qfalse;
-	    }
-	}
-	return Qtrue;
-    }
-}
+/*
+ * Returns the current "recursive list" used to detect recursion.
+ * This list is a hash table, unique for the current thread and for
+ * the current __callee__.
+ */
 
 static VALUE
-recursive_push(VALUE hash, VALUE obj, VALUE paired_obj)
-{
-    VALUE list, sym, pair_list;
-
-    sym = ID2SYM(rb_frame_this_func());
+recursive_list_access() {
+    volatile VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
+    VALUE sym = ID2SYM(rb_frame_this_func());
+    VALUE list;
     if (NIL_P(hash) || TYPE(hash) != T_HASH) {
 	hash = rb_hash_new();
 	OBJ_UNTRUST(hash);
@@ -3429,6 +3404,48 @@ recursive_push(VALUE hash, VALUE obj, VALUE paired_obj)
 	OBJ_UNTRUST(list);
 	rb_hash_aset(hash, sym, list);
     }
+    return list;
+}
+
+/*
+ * Returns Qtrue iff obj_id (or the pair <obj, paired_obj>) is already
+ * in the recursion list.
+ * Assumes the recursion list is valid.
+ */
+
+static VALUE
+recursive_check(VALUE list, VALUE obj_id, VALUE paired_obj_id)
+{
+    VALUE pair_list = rb_hash_lookup2(list, obj_id, Qundef);
+    if (pair_list == Qundef)
+	return Qfalse;
+    if (paired_obj_id) {
+	if (TYPE(pair_list) != T_HASH) {
+	if (pair_list != paired_obj_id)
+	    return Qfalse;
+	}
+	else {
+	if (NIL_P(rb_hash_lookup(pair_list, paired_obj_id)))
+	    return Qfalse;
+	}
+    }
+    return Qtrue;
+}
+
+/*
+ * Pushes obj_id (or the pair <obj_id, paired_obj_id>) in the recursion list.
+ * For a single obj_id, it sets list[obj_id] to Qtrue.
+ * For a pair, it sets list[obj_id] to paired_obj_id if possible,
+ * otherwise list[obj_id] becomes a hash like:
+ *   {paired_obj_id_1 => true, paired_obj_id_2 => true, ... }
+ * Assumes the recursion list is valid.
+ */
+
+static void
+recursive_push(VALUE list, VALUE obj, VALUE paired_obj)
+{
+    VALUE pair_list;
+
     if (!paired_obj) {
 	rb_hash_aset(list, obj, Qtrue);
     }
@@ -3445,33 +3462,24 @@ recursive_push(VALUE hash, VALUE obj, VALUE paired_obj)
 	}
 	rb_hash_aset(pair_list, paired_obj, Qtrue);
     }
-    return hash;
 }
 
-static void
-recursive_pop(VALUE hash, VALUE obj, VALUE paired_obj)
-{
-    VALUE list, sym, pair_list, symname, thrname;
+/*
+ * Pops obj_id (or the pair <obj_id, paired_obj_id>) from the recursion list.
+ * For a pair, if list[obj_id] is a hash, then paired_obj_id is
+ * removed from the hash and no attempt is made to simplify
+ * list[obj_id] from {only_one_paired_id => true} to only_one_paired_id
+ * Assumes the recursion list is valid.
+ */
 
-    sym = ID2SYM(rb_frame_this_func());
-    if (NIL_P(hash) || TYPE(hash) != T_HASH) {
-	symname = rb_inspect(sym);
-	thrname = rb_inspect(rb_thread_current());
-	rb_raise(rb_eTypeError, "invalid inspect_tbl hash for %s in %s",
-		 StringValuePtr(symname), StringValuePtr(thrname));
-    }
-    list = rb_hash_aref(hash, sym);
-    if (NIL_P(list) || TYPE(list) != T_HASH) {
-	symname = rb_inspect(sym);
-	thrname = rb_inspect(rb_thread_current());
-	rb_raise(rb_eTypeError, "invalid inspect_tbl list for %s in %s",
-		 StringValuePtr(symname), StringValuePtr(thrname));
-    }
+static void
+recursive_pop(VALUE list, VALUE obj, VALUE paired_obj)
+{
     if (paired_obj) {
-	pair_list = rb_hash_lookup2(list, obj, Qundef);
+	VALUE pair_list = rb_hash_lookup2(list, obj, Qundef);
 	if (pair_list == Qundef) {
-	    symname = rb_inspect(sym);
-	    thrname = rb_inspect(rb_thread_current());
+	    VALUE symname = rb_inspect(ID2SYM(rb_frame_this_func()));
+	    VALUE thrname = rb_inspect(rb_thread_current());
 	    rb_raise(rb_eTypeError, "invalid inspect_tbl pair_list for %s in %s",
 		     StringValuePtr(symname), StringValuePtr(thrname));
 	}
@@ -3485,37 +3493,53 @@ recursive_pop(VALUE hash, VALUE obj, VALUE paired_obj)
     rb_hash_delete(list, obj);
 }
 
+/*
+ * Calls func(obj, arg, recursive), where recursive is non-zero if the
+ * current method is called recursively on obj, or on the pair <obj, pairid>
+ */
+
 static VALUE
 exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE arg)
 {
-    volatile VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
+    VALUE list = recursive_list_access();
     VALUE objid = rb_obj_id(obj);
 
-    if (recursive_check(hash, objid, pairid)) {
+    if (recursive_check(list, objid, pairid)) {
 	return (*func) (obj, arg, Qtrue);
     }
     else {
 	VALUE result = Qundef;
 	int state;
 
-	hash = recursive_push(hash, objid, pairid);
+	recursive_push(list, objid, pairid);
 	PUSH_TAG();
 	if ((state = EXEC_TAG()) == 0) {
 	    result = (*func) (obj, arg, Qfalse);
 	}
 	POP_TAG();
-	recursive_pop(hash, objid, pairid);
+	recursive_pop(list, objid, pairid);
 	if (state)
 	    JUMP_TAG(state);
 	return result;
     }
 }
 
+/*
+ * Calls func(obj, arg, recursive), where recursive is non-zero if the
+ * current method is called recursively on obj
+ */
+
 VALUE
 rb_exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 {
     return exec_recursive(func, obj, 0, arg);
 }
+
+/*
+ * Calls func(obj, arg, recursive), where recursive is non-zero if the
+ * current method is called recursively on the pair <obj, paired_obj>
+ * (in that order)
+ */
 
 VALUE
 rb_exec_recursive_paired(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE paired_obj, VALUE arg)
