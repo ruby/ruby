@@ -1758,7 +1758,7 @@ bigmul1_single(VALUE x, VALUE y)
 
     n = (BDIGIT_DBL)xds[0] * yds[0];
     zds[0] = BIGLO(n);
-    zds[1] = BIGDN(n);
+    zds[1] = (BDIGIT)BIGDN(n);
 
     return z;
 }
