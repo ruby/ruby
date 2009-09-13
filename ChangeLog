@@ -1,3 +1,8 @@
+Sun Sep 13 22:18:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_mod_remove_const): do not change VM state when an
+	  exception will occur.
+
 Sun Sep 13 21:25:01 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (oletypelib_get_libattr): some refactoring
