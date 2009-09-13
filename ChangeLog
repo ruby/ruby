@@ -1,3 +1,7 @@
+Sun Sep 13 11:06:12 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb (OpenURI::Meta#content_type_parse): strip quotes.
+
 Sun Sep 13 01:55:32 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb (URI::FTP#buffer_open): fix the %2F handling.
