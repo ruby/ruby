@@ -1596,8 +1596,6 @@ rb_mod_remove_const(VALUE mod, VALUE name)
     VALUE val;
     st_data_t v, n = id;
 
-    rb_vm_change_state();
-
     if (!rb_is_const_id(id)) {
 	rb_name_error(id, "`%s' is not allowed as a constant name", rb_id2name(id));
     }
@@ -1605,21 +1603,23 @@ rb_mod_remove_const(VALUE mod, VALUE name)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove constant");
     if (OBJ_FROZEN(mod)) rb_error_frozen("class/module");
 
-    if (RCLASS_IV_TBL(mod) && st_delete(RCLASS_IV_TBL(mod), &n, &v)) {
-	val = (VALUE)v;
-	if (val == Qundef) {
-	    autoload_delete(mod, id);
-	    val = Qnil;
+    if (!RCLASS_IV_TBL(mod) || !st_delete(RCLASS_IV_TBL(mod), &n, &v)) {
+	if (rb_const_defined_at(mod, id)) {
+	    rb_name_error(id, "cannot remove %s::%s",
+			  rb_class2name(mod), rb_id2name(id));
 	}
-	return val;
+	rb_name_error(id, "constant %s::%s not defined",
+		      rb_class2name(mod), rb_id2name(id));
     }
-    if (rb_const_defined_at(mod, id)) {
-	rb_name_error(id, "cannot remove %s::%s",
-		 rb_class2name(mod), rb_id2name(id));
+
+    rb_vm_change_state();
+
+    val = (VALUE)v;
+    if (val == Qundef) {
+	autoload_delete(mod, id);
+	val = Qnil;
     }
-    rb_name_error(id, "constant %s::%s not defined",
-		  rb_class2name(mod), rb_id2name(id));
-    return Qnil;		/* not reached */
+    return val;
 }
 
 static int
