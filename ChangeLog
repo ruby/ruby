@@ -1,3 +1,7 @@
+Sun Sep 13 19:38:34 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file_internal): no need to define DATA when error.
+
 Sun Sep 13 18:48:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (XLDFLAGS): link startup code with ObjC support.
