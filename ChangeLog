@@ -1,3 +1,9 @@
+Sun Sep 13 12:04:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (NUM2INT, NUM2LL, INT2NUM, UINT2NUM),
+	  (LONG2NUM, ULONG2NUM, NUM2CHR, rb_type_p, rb_special_const_p):
+	  GCC specific optimization.
+
 Sun Sep 13 11:06:12 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb (OpenURI::Meta#content_type_parse): strip quotes.

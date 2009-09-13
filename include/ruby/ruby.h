@@ -450,11 +450,17 @@ NUM2LONG(VALUE x)
 long rb_num2int(VALUE);
 long rb_fix2int(VALUE);
 #define FIX2INT(x) ((int)rb_fix2int((VALUE)x))
+#define NUM2INT_internal(x) (FIXNUM_P(x) ? FIX2INT(x) : (int)rb_num2int(x))
+#ifdef __GNUC__
+#define NUM2INT(x) \
+    __extension__ ({VALUE num2int_x = (x); NUM2INT_internal(num2int_x);})
+#else
 static inline int
 NUM2INT(VALUE x)
 {
-    return FIXNUM_P(x) ? FIX2INT(x) : (int)rb_num2int(x);
+    return NUM2INT_internal(x);
 }
+#endif
 unsigned long rb_num2uint(VALUE);
 #define NUM2UINT(x) ((unsigned int)rb_num2uint(x))
 unsigned long rb_fix2uint(VALUE);
@@ -469,11 +475,17 @@ unsigned long rb_fix2uint(VALUE);
 #ifdef HAVE_LONG_LONG
 LONG_LONG rb_num2ll(VALUE);
 unsigned LONG_LONG rb_num2ull(VALUE);
+# define NUM2LL_internal(x) (FIXNUM_P(x) ? FIX2LONG(x) : rb_num2ll(x))
+# ifdef __GNUC__
+#   define NUM2LL(x) \
+    __extension__ ({VALUE num2ll_x = (x); NUM2LL_internal(num2ll_x);})
+# else
 static inline LONG_LONG
 NUM2LL(VALUE x)
 {
-    return FIXNUM_P(x) ? FIX2LONG(x) : rb_num2ll(x);
+    return NUM2LL_internal(x);
 }
+# endif
 # define NUM2ULL(x) rb_num2ull((VALUE)x)
 #endif
 
@@ -501,39 +513,62 @@ VALUE rb_int2big(SIGNED_VALUE);
 # define INT2NUM(v) INT2FIX((int)(v))
 # define UINT2NUM(v) LONG2FIX((unsigned int)(v))
 #else
+# define INT2NUM_internal(v) (FIXABLE(v) ? INT2FIX(v) : rb_int2big(v))
+# ifdef __GNUC__
+#   define INT2NUM(v) __extension__ ({int int2num_v = (v); INT2NUM_internal(int2num_v);})
+# else
 static inline VALUE
 INT2NUM(int v)
 {
-    if (!FIXABLE(v))
-	return rb_int2big(v);
-    return INT2FIX(v);
+    return INT2NUM_internal(v);
 }
+# endif
 
+# define UINT2NUM_internal(v) (POSFIXABLE(v) ? LONG2FIX(v) : rb_uint2big(v))
+# ifdef __GNUC__
+#   define UINT2NUM(v) __extension__ ({unsigned int uint2num_v = (v); UINT2NUM_internal(uint2num_v);})
+# else
 static inline VALUE
 UINT2NUM(unsigned int v)
 {
-    if (!POSFIXABLE(v))
-	return rb_uint2big(v);
-    return LONG2FIX(v);
+    return UINT2NUM_internal(v);
 }
+# endif
 #endif
 
+#define LONG2NUM_internal(v) (FIXABLE(v) ? LONG2FIX(v) : rb_int2big(v))
+#ifdef __GNUC__
+# define LONG2NUM(v) __extension__ ({long long2num_v = (v); LONG2NUM_internal(long2num_v);})
+#else
 static inline VALUE
 LONG2NUM(long v)
 {
-    if (FIXABLE(v)) return LONG2FIX(v);
-    return rb_int2big(v);
+    return LONG2NUM_internal(v);
 }
+#endif
 
+#define ULONG2NUM_internal(v) (POSFIXABLE(v) ? LONG2FIX(v) : rb_uint2big(v))
+#ifdef __GNUC__
+# define ULONG2NUM(v) __extension__ ({unsigned long ulong2num_v = (v); ULONG2NUM_internal(ulong2num_v);})
+#else
 static inline VALUE
 ULONG2NUM(unsigned long v)
 {
-    if (POSFIXABLE(v)) return LONG2FIX(v);
-    return rb_uint2big(v);
+    return ULONG2NUM_internal(v);
 }
+#endif
 
-#define NUM2CHR(x) (((TYPE(x) == T_STRING)&&(RSTRING_LEN(x)>=1))?\
+#define NUM2CHR_internal(x) (((TYPE(x) == T_STRING)&&(RSTRING_LEN(x)>=1))?\
                      RSTRING_PTR(x)[0]:(char)(NUM2INT(x)&0xff))
+#ifdef __GNUC__
+# define NUM2CHR(x) ({VALUE num2chr_x = (x); NUM2CHR_internal(num2chr_x);})
+#else
+static inline char
+NUM2CHR(VALUE x)
+{
+    return NUM2CHR_internal(x);
+}
+#endif
 #define CHR2FIX(x) INT2FIX((long)((x)&0xff))
 
 VALUE rb_newobj(void);
@@ -1216,12 +1251,34 @@ rb_type(VALUE obj)
     return BUILTIN_TYPE(obj);
 }
 
+#define RB_TYPE_P(obj, type) ( \
+	((type) == T_FIXNUM) ? FIXNUM_P(obj) : \
+	((type) == T_TRUE) ? ((obj) == Qtrue) : \
+	((type) == T_FALSE) ? ((obj) == Qfalse) : \
+	((type) == T_NIL) ? ((obj) == Qnil) : \
+	((type) == T_UNDEF) ? ((obj) == Qundef) : \
+	((type) == T_SYMBOL) ? SYMBOL_P(obj) : \
+	(BUILTIN_TYPE(obj) == (type)))
+
+#ifdef __GNUC__
+#define rb_type_p(obj, type) \
+    __extension__ (__builtin_constant_p(type) ? RB_TYPE_P(obj, type) : \
+		   rb_type(obj) == (type))
+#else
+#define rb_type_p(obj, type) (rb_type(obj) == (type))
+#endif
+
+#ifdef __GNUC__
+#define rb_special_const_p(obj) \
+    __extension__ ({VALUE special_const_obj = (obj); (int)(SPECIAL_CONST_P(obj) ? Qtrue : Qfalse);})
+#else
 static inline int
 rb_special_const_p(VALUE obj)
 {
     if (SPECIAL_CONST_P(obj)) return (int)Qtrue;
     return (int)Qfalse;
 }
+#endif
 
 #include "ruby/missing.h"
 #include "ruby/intern.h"
