@@ -1270,7 +1270,7 @@ rb_type(VALUE obj)
 
 #ifdef __GNUC__
 #define rb_special_const_p(obj) \
-    __extension__ ({VALUE special_const_obj = (obj); (int)(SPECIAL_CONST_P(obj) ? Qtrue : Qfalse);})
+    __extension__ ({VALUE special_const_obj = (obj); (int)(SPECIAL_CONST_P(special_const_obj) ? Qtrue : Qfalse);})
 #else
 static inline int
 rb_special_const_p(VALUE obj)
