@@ -497,7 +497,7 @@ process_sflag(int *sflag)
 	    VALUE v = *args++;
 	    char *s = StringValuePtr(v);
 	    char *p;
-	    int hyphen = Qfalse;
+	    int hyphen = FALSE;
 
 	    if (s[0] != '-')
 		break;
@@ -514,7 +514,7 @@ process_sflag(int *sflag)
 		    break;
 		}
 		if (*p == '-') {
-		    hyphen = Qtrue;
+		    hyphen = TRUE;
 		}
 		else if (*p != '_' && !ISALNUM(*p)) {
 		    VALUE name_error[2];
@@ -695,17 +695,17 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	switch (*s) {
 	  case 'a':
 	    if (envopt) goto noenvopt;
-	    opt->do_split = Qtrue;
+	    opt->do_split = TRUE;
 	    s++;
 	    goto reswitch;
 
 	  case 'p':
 	    if (envopt) goto noenvopt;
-	    opt->do_print = Qtrue;
+	    opt->do_print = TRUE;
 	    /* through */
 	  case 'n':
 	    if (envopt) goto noenvopt;
-	    opt->do_loop = Qtrue;
+	    opt->do_loop = TRUE;
 	    s++;
 	    goto reswitch;
 
@@ -778,7 +778,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 
 	  case 'l':
 	    if (envopt) goto noenvopt;
-	    opt->do_line = Qtrue;
+	    opt->do_line = TRUE;
 	    rb_output_rs = rb_rs;
 	    s++;
 	    goto reswitch;
@@ -786,7 +786,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	  case 'S':
 	    if (envopt) goto noenvopt;
 	    forbid_setid("-S");
-	    opt->do_search = Qtrue;
+	    opt->do_search = TRUE;
 	    s++;
 	    goto reswitch;
 
@@ -828,7 +828,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 
 	  case 'x':
 	    if (envopt) goto noenvopt;
-	    opt->xflag = Qtrue;
+	    opt->xflag = TRUE;
 	    s++;
 	    if (*s && chdir(s) < 0) {
 		rb_fatal("Can't chdir to %s", s);
@@ -1513,7 +1513,7 @@ load_file_internal(VALUE arg)
 	if (opt->xflag) {
 	  search_shebang:
 	    forbid_setid("-x");
-	    opt->xflag = Qfalse;
+	    opt->xflag = FALSE;
 	    while (!NIL_P(line = rb_io_gets(f))) {
 		line_start++;
 		if (RSTRING_LEN(line) > 2

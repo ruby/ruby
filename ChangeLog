@@ -1,3 +1,8 @@
+Sun Sep 13 20:18:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_sflag, proc_options, load_file_internal): fixed
+	  types.
+
 Sun Sep 13 19:39:59 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: some refactoring. 
