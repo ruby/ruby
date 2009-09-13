@@ -130,7 +130,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.4.4"
+#define WIN32OLE_VERSION "1.4.5"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -404,6 +404,7 @@ static VALUE foletype_s_allocate(VALUE klass);
 static VALUE oletype_set_member(VALUE self, ITypeInfo *pTypeInfo, VALUE name);
 static VALUE oleclass_from_typelib(VALUE self, ITypeLib *pTypeLib, VALUE oleclass);
 static VALUE oletypelib_set_member(VALUE self, ITypeLib *pTypeLib);
+static ITypeLib * oletypelib_get_typelib(VALUE self);
 static VALUE foletypelib_s_typelibs(VALUE self);
 static VALUE make_version_str(VALUE major, VALUE minor);
 static VALUE oletypelib_search_registry2(VALUE self, VALUE args);
@@ -4858,6 +4859,14 @@ oletypelib_set_member(VALUE self, ITypeLib *pTypeLib)
     return self;
 }
 
+static ITypeLib *
+oletypelib_get_typelib(VALUE self)
+{
+    struct oletypelibdata *ptlib;
+    Data_Get_Struct(self, struct oletypelibdata, ptlib);
+    return ptlib->pTypeLib;
+}
+
 /*
  *  call-seq:
  *
@@ -5141,15 +5150,14 @@ foletypelib_initialize(VALUE self, VALUE args)
 static VALUE
 foletypelib_guid(VALUE self)
 {
-    struct oletypelibdata *ptlib;
     ITypeLib *pTypeLib;
     HRESULT hr;
     OLECHAR bstr[80];
     VALUE guid = Qnil;
     int len;
     TLIBATTR *pTLibAttr;
-    Data_Get_Struct(self, struct oletypelibdata, ptlib);
-    pTypeLib = ptlib->pTypeLib;
+
+    pTypeLib = oletypelib_get_typelib(self);
     hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
     if (FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError, "failed to GetLibAttr from ITypeLib");
@@ -5174,21 +5182,18 @@ foletypelib_guid(VALUE self)
 static VALUE
 foletypelib_name(VALUE self)
 {
-    struct oletypelibdata *ptlib;
     ITypeLib *pTypeLib;
     HRESULT hr;
     BSTR bstr;
-    BSTR bstr2;
     VALUE name;
-    Data_Get_Struct(self, struct oletypelibdata, ptlib);
-    pTypeLib = ptlib->pTypeLib;
+    pTypeLib = oletypelib_get_typelib(self);
     hr = pTypeLib->lpVtbl->GetDocumentation(pTypeLib, -1,
-                                            &bstr, &bstr2, NULL, NULL);
+                                            NULL, &bstr, NULL, NULL);
     
     if (FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError, "failed to get name from ITypeLib");
     }
-    name = WC2VSTR(bstr2);
+    name = WC2VSTR(bstr);
     return rb_enc_str_new(StringValuePtr(name), strlen(StringValuePtr(name)), cWIN32OLE_enc);
 }
 
@@ -5208,11 +5213,9 @@ foletypelib_version(VALUE self)
     VALUE major;
     VALUE minor;
     HRESULT hr = S_OK; 
-    struct oletypelibdata *ptlib;
     ITypeLib *pTypeLib;
-    Data_Get_Struct(self, struct oletypelibdata, ptlib);
-    pTypeLib = ptlib->pTypeLib;
 
+    pTypeLib = oletypelib_get_typelib(self);
     hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
     if (FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError, "failed to GetLibAttr from ITypeLib");
@@ -5238,10 +5241,8 @@ foletypelib_major_version(VALUE self)
     TLIBATTR *pTLibAttr;
     VALUE major;
     HRESULT hr = S_OK; 
-    struct oletypelibdata *ptlib;
     ITypeLib *pTypeLib;
-    Data_Get_Struct(self, struct oletypelibdata, ptlib);
-    pTypeLib = ptlib->pTypeLib;
+    pTypeLib = oletypelib_get_typelib(self);
 
     hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
     if (FAILED(hr)) {
@@ -5267,10 +5268,8 @@ foletypelib_minor_version(VALUE self)
     TLIBATTR *pTLibAttr;
     VALUE minor;
     HRESULT hr = S_OK; 
-    struct oletypelibdata *ptlib;
     ITypeLib *pTypeLib;
-    Data_Get_Struct(self, struct oletypelibdata, ptlib);
-    pTypeLib = ptlib->pTypeLib;
+    pTypeLib = oletypelib_get_typelib(self);
 
     hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
     if (FAILED(hr)) {
@@ -5347,11 +5346,9 @@ foletypelib_path(VALUE self)
     BSTR bstr;
     LCID lcid = cWIN32OLE_lcid;
     VALUE path;
-    struct oletypelibdata *ptlib;
     ITypeLib *pTypeLib;
 
-    Data_Get_Struct(self, struct oletypelibdata, ptlib);
-    pTypeLib = ptlib->pTypeLib;
+    pTypeLib = oletypelib_get_typelib(self);
     hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
     if (FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError, "failed to get TLIBATTR information");
@@ -5392,9 +5389,7 @@ foletypelib_visible(VALUE self)
     VALUE visible = Qtrue;
     TLIBATTR *pTLibAttr;
 
-    struct oletypelibdata *ptlib;
-    Data_Get_Struct(self, struct oletypelibdata, ptlib);
-    pTypeLib = ptlib->pTypeLib;
+    pTypeLib = oletypelib_get_typelib(self);
 
     hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
     if (FAILED(hr)) {
@@ -5427,9 +5422,7 @@ foletypelib_library_name(VALUE self)
     VALUE libname = Qnil;
     BSTR bstr;
 
-    struct oletypelibdata *ptlib;
-    Data_Get_Struct(self, struct oletypelibdata, ptlib);
-    pTypeLib = ptlib->pTypeLib;
+    pTypeLib = oletypelib_get_typelib(self);
     hr = pTypeLib->lpVtbl->GetDocumentation(pTypeLib, -1,
                                             &bstr, NULL, NULL, NULL);
     if (FAILED(hr)) {
@@ -5454,9 +5447,7 @@ foletypelib_ole_types(VALUE self)
 {
     ITypeLib *pTypeLib = NULL;
     VALUE classes = rb_ary_new();
-    struct oletypelibdata *ptlib;
-    Data_Get_Struct(self, struct oletypelibdata, ptlib);
-    pTypeLib = ptlib->pTypeLib;
+    pTypeLib = oletypelib_get_typelib(self);
     ole_types_from_typelib(pTypeLib, classes);
     return classes;
 }
