@@ -130,7 +130,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.4.3"
+#define WIN32OLE_VERSION "1.4.4"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -387,8 +387,6 @@ static VALUE fole_put_methods(VALUE self);
 static VALUE fole_func_methods(VALUE self);
 static VALUE ole_type_from_itypeinfo(ITypeInfo *pTypeInfo);
 static VALUE fole_type(VALUE self);
-static VALUE make_oletypelib_obj(VALUE guid, VALUE major_version, VALUE minor_version);
-static VALUE ole_typelib_from_itypelib(ITypeLib *pTypeLib);
 static VALUE ole_typelib_from_itypeinfo(ITypeInfo *pTypeInfo);
 static VALUE fole_typelib(VALUE self);
 static VALUE fole_query_interface(VALUE self, VALUE str_iid);
@@ -4330,44 +4328,6 @@ fole_type(VALUE self)
 }
 
 static VALUE
-make_oletypelib_obj(VALUE guid, VALUE major_version, VALUE minor_version)
-{
-    VALUE args = rb_ary_new();
-    rb_ary_push(args, guid);
-    rb_ary_push(args, major_version);
-    rb_ary_push(args, minor_version);
-    return rb_apply(cWIN32OLE_TYPELIB, rb_intern("new"), args);
-}
-
-static VALUE
-ole_typelib_from_itypelib(ITypeLib *pTypeLib)
-{
-    TLIBATTR *pTLibAttr;
-    OLECHAR bstr[80];
-    VALUE guid = Qnil;
-    VALUE major;
-    VALUE minor;
-    int len = 0;
-    HRESULT hr = S_OK; 
-    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
-    if (FAILED(hr)) {
-        return Qnil;
-    }
-    len = StringFromGUID2(&pTLibAttr->guid, bstr, sizeof(bstr)/sizeof(OLECHAR));
-    if (len > 3) {
-        guid = ole_wc2vstr(bstr, FALSE);
-    }
-    major = INT2NUM(pTLibAttr->wMajorVerNum);
-    minor = INT2NUM(pTLibAttr->wMinorVerNum);
-    pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
-    if (guid == Qnil) {
-        return Qnil;
-    }
-    return make_oletypelib_obj(guid, major, minor);
-}
-
-
-static VALUE
 ole_typelib_from_itypeinfo(ITypeInfo *pTypeInfo)
 {
     HRESULT hr;
@@ -4379,8 +4339,8 @@ ole_typelib_from_itypeinfo(ITypeInfo *pTypeInfo)
     if(FAILED(hr)) {
         return Qnil;
     }
-    retval = ole_typelib_from_itypelib(pTypeLib);
-    OLE_RELEASE(pTypeLib);
+    retval = rb_funcall(cWIN32OLE_TYPELIB, rb_intern("allocate"), 0);
+    oletypelib_set_member(retval, pTypeLib);
     return retval;
 }
 
@@ -5225,12 +5185,11 @@ foletypelib_name(VALUE self)
     hr = pTypeLib->lpVtbl->GetDocumentation(pTypeLib, -1,
                                             &bstr, &bstr2, NULL, NULL);
     
-    if (SUCCEEDED(hr)) {
-	name = WC2VSTR(bstr2);
-	return rb_enc_str_new(StringValuePtr(name), strlen(StringValuePtr(name)), cWIN32OLE_enc);
-    } else {
+    if (FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError, "failed to get name from ITypeLib");
     }
+    name = WC2VSTR(bstr2);
+    return rb_enc_str_new(StringValuePtr(name), strlen(StringValuePtr(name)), cWIN32OLE_enc);
 }
 
 /*
@@ -5384,7 +5343,6 @@ static VALUE
 foletypelib_path(VALUE self)
 {
     TLIBATTR *pTLibAttr;
-    int len = 0;
     HRESULT hr = S_OK; 
     BSTR bstr;
     LCID lcid = cWIN32OLE_lcid;
