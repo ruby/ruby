@@ -6,17 +6,17 @@ require_relative 'envutil'
 
 class TestArgf < Test::Unit::TestCase
   def setup
-    @t1 = Tempfile.new("foo")
+    @t1 = Tempfile.new("argf-foo")
     @t1.binmode
     @t1.puts "1"
     @t1.puts "2"
     @t1.close
-    @t2 = Tempfile.new("bar")
+    @t2 = Tempfile.new("argf-bar")
     @t2.binmode
     @t2.puts "3"
     @t2.puts "4"
     @t2.close
-    @t3 = Tempfile.new("baz")
+    @t3 = Tempfile.new("argf-baz")
     @t3.binmode
     @t3.puts "5"
     @t3.puts "6"
@@ -32,7 +32,7 @@ class TestArgf < Test::Unit::TestCase
   end
 
   def make_tempfile
-    t = Tempfile.new("foo")
+    t = Tempfile.new("argf-foo")
     t.puts "foo"
     t.puts "bar"
     t.puts "baz"
@@ -414,11 +414,11 @@ class TestArgf < Test::Unit::TestCase
       end
     end
 
-    t1 = Tempfile.new("foo")
+    t1 = Tempfile.new("argf-foo")
     t1.binmode
     t1.puts "foo"
     t1.close
-    t2 = Tempfile.new("bar")
+    t2 = Tempfile.new("argf-bar")
     t2.binmode
     t2.puts "bar"
     t2.close
