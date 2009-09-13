@@ -29,6 +29,17 @@ class TestOpenURI < Test::Unit::TestCase
     }
   end
 
+  def with_env(h)
+    begin
+      old = {}
+      h.each_key {|k| old[k] = ENV[k] }
+      h.each {|k, v| ENV[k] = v }
+      yield
+    ensure
+      h.each_key {|k| ENV[k] = old[k] }
+    end
+  end
+
   def setup
     @proxies = %w[http_proxy ftp_proxy no_proxy]
     @old_proxies = @proxies.map {|k| ENV[k] }
@@ -78,6 +89,10 @@ class TestOpenURI < Test::Unit::TestCase
     }
   end
 
+  def test_open_too_many_arg
+    assert_raise(ArgumentError) { open("http://192.0.2.1/tma", "r", 0666, :extra) {} }
+  end
+
   def test_read_timeout
     TCPServer.open("127.0.0.1", 0) {|serv|
       port = serv.addr[1]
@@ -119,6 +134,13 @@ class TestOpenURI < Test::Unit::TestCase
         assert_equal("mode", f.read)
       }
       assert_raise(ArgumentError) { open("#{url}/mode", "a") {} }
+      open("#{url}/mode", "r:us-ascii") {|f|
+        assert_equal(Encoding::US_ASCII, f.read.encoding)
+      }
+      open("#{url}/mode", "r:utf-8") {|f|
+        assert_equal(Encoding::UTF_8, f.read.encoding)
+      }
+      assert_raise(ArgumentError) { open("#{url}/mode", "r:invalid-encoding") {} }
     }
   end
 
@@ -135,9 +157,27 @@ class TestOpenURI < Test::Unit::TestCase
     }
   end
 
+  def test_header
+    myheader1 = 'barrrr'
+    myheader2 = nil
+    with_http {|srv, dr, url|
+      srv.mount_proc("/h/") {|req, res| myheader2 = req['myheader']; res.body = "foo" }
+      open("#{url}/h/", 'MyHeader'=>myheader1) {|f|
+        assert_equal("foo", f.read)
+        assert_equal(myheader1, myheader2)
+      }
+    }
+  end
+
   def test_multi_proxy_opt
     assert_raise(ArgumentError) {
       open("http://127.0.0.1/", :proxy_http_basic_authentication=>true, :proxy=>true) {}
+    }
+  end
+
+  def test_non_http_proxy
+    assert_raise(RuntimeError) {
+      open("http://127.0.0.1/", :proxy=>URI("ftp://127.0.0.1/")) {}
     }
   end
 
@@ -154,15 +194,16 @@ class TestOpenURI < Test::Unit::TestCase
         :BindAddress => '127.0.0.1',
         :Port => 0})
       _, proxy_port, _, proxy_host = proxy.listeners[0].addr
+      proxy_url = "http://#{proxy_host}:#{proxy_port}/"
       begin
         th = proxy.start
         open("#{dr}/proxy", "w") {|f| f << "proxy" }
-        open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/") {|f|
+        open("#{url}/proxy", :proxy=>proxy_url) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
         assert_match(/#{Regexp.quote url}/, log); log.clear
-        open("#{url}/proxy", :proxy=>URI("http://#{proxy_host}:#{proxy_port}/")) {|f|
+        open("#{url}/proxy", :proxy=>URI(proxy_url)) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
@@ -174,6 +215,14 @@ class TestOpenURI < Test::Unit::TestCase
         assert_equal("", log); log.clear
         assert_raise(ArgumentError) {
           open("#{url}/proxy", :proxy=>:invalid) {}
+        }
+        assert_equal("", log); log.clear
+        with_env("http_proxy"=>proxy_url) {
+          # should not use proxy for 127.0.0.0/8.
+          open("#{url}/proxy") {|f|
+            assert_equal("200", f.status[0])
+            assert_equal("proxy", f.read)
+          }
         }
         assert_equal("", log); log.clear
       ensure
@@ -233,6 +282,14 @@ class TestOpenURI < Test::Unit::TestCase
       }
       assert_raise(OpenURI::HTTPRedirect) { open("#{url}/r1/", :redirect=>false) {} }
       assert_raise(RuntimeError) { open("#{url}/to-file/") {} }
+    }
+  end
+
+  def test_redirect_loop
+    with_http {|srv, dr, url|
+      srv.mount_proc("/r1/") {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" }
+      srv.mount_proc("/r2/") {|req, res| res.status = 301; res["location"] = "#{url}/r1"; res.body = "r2" }
+      assert_raise(RuntimeError) { open("#{url}/r1/") {} }
     }
   end
 
@@ -391,6 +448,18 @@ class TestOpenURI < Test::Unit::TestCase
     }
   end
 
+  def test_quoted_attvalue
+    with_http {|srv, dr, url|
+      content_u8 = "\u3042"
+      srv.mount_proc("/qu8/") {|req, res| res.body = content_u8; res['content-type'] = 'text/plain; charset="utf\-8"' }
+      open("#{url}/qu8/") {|f|
+        assert_equal(content_u8, f.read)
+        assert_equal("text/plain", f.content_type)
+        assert_equal("utf-8", f.charset)
+      }
+    }
+  end
+
   def test_last_modified
     with_http {|srv, dr, url|
       srv.mount_proc("/data/") {|req, res| res.body = "foo"; res['last-modified'] = 'Fri, 07 Aug 2009 06:05:04 GMT' }
@@ -421,17 +490,6 @@ class TestOpenURI < Test::Unit::TestCase
         assert_equal(content_gz, f.read.force_encoding("ascii-8bit"))
       }
     }
-  end
-
-  def with_env(h)
-    begin
-      old = {}
-      h.each_key {|k| old[k] = ENV[k] }
-      h.each {|k, v| ENV[k] = v }
-      yield
-    ensure
-      h.each_key {|k| ENV[k] = old[k] }
-    end
   end
 
   # 192.0.2.0/24 is TEST-NET.  [RFC3330]
@@ -488,7 +546,7 @@ class TestOpenURI < Test::Unit::TestCase
         begin
           s.print "220 Test FTP Server\r\n"
           assert_equal("USER anonymous\r\n", s.gets); s.print "331 name ok\r\n"
-          assert_match(/\APASS .*\r\n/, s.gets); s.print "230 logged in\r\n"
+          assert_match(/\APASS .*\r\n\z/, s.gets); s.print "230 logged in\r\n"
           assert_equal("TYPE I\r\n", s.gets); s.print "200 type set to I\r\n"
           assert_equal("CWD foo\r\n", s.gets); s.print "250 CWD successful\r\n"
           assert_equal("PASV\r\n", s.gets)
@@ -521,6 +579,45 @@ class TestOpenURI < Test::Unit::TestCase
     }
   end
 
+  def test_ftp_active
+    TCPServer.open("127.0.0.1", 0) {|serv|
+      _, port, _, host = serv.addr
+      th = Thread.new {
+        s = serv.accept
+        begin
+          content = "content"
+          s.print "220 Test FTP Server\r\n"
+          assert_equal("USER anonymous\r\n", s.gets); s.print "331 name ok\r\n"
+          assert_match(/\APASS .*\r\n\z/, s.gets); s.print "230 logged in\r\n"
+          assert_equal("TYPE I\r\n", s.gets); s.print "200 type set to I\r\n"
+          assert_equal("CWD foo\r\n", s.gets); s.print "250 CWD successful\r\n"
+          assert(m = /\APORT 127,0,0,1,(\d+),(\d+)\r\n\z/.match(s.gets))
+          active_port = m[1].to_i << 8 | m[2].to_i
+          TCPSocket.open("127.0.0.1", active_port) {|data_sock|
+            s.print "200 data connection opened\r\n"
+            assert_equal("RETR bar\r\n", s.gets); s.print "150 file okay\r\n"
+            begin
+              data_sock << content
+            ensure
+              data_sock.close
+            end
+            s.print "226 transfer complete\r\n"
+            assert_nil(s.gets)
+          }
+        ensure
+          s.close if s
+        end
+      }
+      begin
+        content = URI("ftp://#{host}:#{port}/foo/bar").read(:ftp_active_mode=>true)
+        assert_equal("content", content)
+      ensure
+        Thread.kill(th)
+        th.join
+      end
+    }
+  end
+
   def test_ftp_ascii
     TCPServer.open("127.0.0.1", 0) {|serv|
       _, port, _, host = serv.addr
@@ -530,7 +627,7 @@ class TestOpenURI < Test::Unit::TestCase
           content = "content"
           s.print "220 Test FTP Server\r\n"
           assert_equal("USER anonymous\r\n", s.gets); s.print "331 name ok\r\n"
-          assert_match(/\APASS .*\r\n/, s.gets); s.print "230 logged in\r\n"
+          assert_match(/\APASS .*\r\n\z/, s.gets); s.print "230 logged in\r\n"
           assert_equal("TYPE I\r\n", s.gets); s.print "200 type set to I\r\n"
           assert_equal("CWD /foo\r\n", s.gets); s.print "250 CWD successful\r\n"
           assert_equal("TYPE A\r\n", s.gets); s.print "200 type set to A\r\n"
