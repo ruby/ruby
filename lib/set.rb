@@ -327,13 +327,16 @@ class Set
 
   # Returns true if two sets are equal.  The equality of each couple
   # of elements is defined according to Object#eql?.
-  def ==(set)
-    equal?(set) and return true
-
-    set.is_a?(Set) && size == set.size or return false
-
-    hash = @hash.dup
-    set.all? { |o| hash.include?(o) }
+  def ==(other)
+    if self.equal?(other)
+      true
+    elsif other.instance_of?(self.class)
+      @hash == other.instance_variable_get(:@hash)
+    elsif other.is_a?(Set) && self.size == other.size
+      other.all? { |o| @hash.include?(o) }
+    else
+      false
+    end
   end
 
   def hash	# :nodoc:
