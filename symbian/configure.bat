@@ -69,7 +69,7 @@ echo>> ~ver~.mak ^	@echo^>^> ~tmp~.c #include "version.h"
 echo>> ~ver~.mak ^	@echo^>^> ~tmp~.c MAJOR = RUBY_VERSION_MAJOR
 echo>> ~ver~.mak ^	@echo^>^> ~tmp~.c MINOR = RUBY_VERSION_MINOR
 echo>> ~ver~.mak ^	@echo^>^> ~tmp~.c TEENY = RUBY_VERSION_TEENY
-echo>> ~ver~.mak ^	@$(CPP) -I$(srcdir) ~tmp~.c ^| find "=" ^>^>~tmp~.mak
+echo>> ~ver~.mak ^	@$(CPP) -I$(srcdir) -I$(srcdir)\include ~tmp~.c ^| find "=" ^>^>~tmp~.mak
 echo>> ~ver~.mak ^	@del /Q ~tmp~.c
 
 make -f ~ver~.mak
