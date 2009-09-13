@@ -286,6 +286,7 @@ esignal_signo(VALUE self)
     return rb_iv_get(self, "signo");
 }
 
+/* :nodoc: */
 static VALUE
 interrupt_init(int argc, VALUE *argv, VALUE self)
 {
