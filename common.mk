@@ -124,7 +124,7 @@ BOOTSTRAPRUBY = $(BASERUBY)
 
 COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) -I. -rrbconfig $(srcdir)/tool/compile_prelude.rb
 
-all: encs exts main
+all: encs exts main $(RDOCTARGET)
 
 main: exts
 	@$(RUNCMD) $(MKMAIN_CMD) $(MAKE)
@@ -172,7 +172,7 @@ $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 ruby.imp: $(EXPORTOBJS)
 	@$(NM) -Pgp $(EXPORTOBJS) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
 
-install: install-nodoc $(RDOCTARGET)
+install: install-nodoc install-$(RDOCTARGET)
 install-all: install-nodoc install-doc install-capi
 
 install-nodoc: pre-install-nodoc do-install-nodoc post-install-nodoc
@@ -337,6 +337,7 @@ post-install-doc::
 rdoc: $(PROGRAM) PHONY
 	@echo Generating RDoc documentation
 	$(RUNRUBY) "$(srcdir)/bin/rdoc" --all --ri --op "$(RDOCOUT)" "$(srcdir)"
+nodoc: PHONY
 
 what-where-doc: no-install-doc
 no-install-doc: pre-no-install-doc dont-install-doc post-no-install-doc
