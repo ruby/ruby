@@ -4278,8 +4278,7 @@ rb_str_inspect(VALUE str)
             goto escape_codepoint;
         }
         n = MBCLEN_CHARFOUND_LEN(n);
-
-	c = rb_enc_codepoint_len(p, pend, &n, enc);
+	c = rb_enc_mbc_to_codepoint(p, pend, enc);
 	p += n;
 	if (c == '"'|| c == '\\' ||
 	    (c == '#' &&

@@ -1,3 +1,8 @@
+Mon Sep 14 10:08:19 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_inspect): use rb_enc_mbc_to_codepoint
+	  because we already knew char is found and got length.
+
 Mon Sep 14 09:59:03 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/ruby.h (NUM2INT, NUM2LL, INT2NUM, UINT2NUM),
