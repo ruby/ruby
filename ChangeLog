@@ -1,8 +1,11 @@
-Tue Sep 15 06:24:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Sep 15 06:42:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (install-all): target to install all.
 
 	* tool/rbinstall.rb (parse_args): accept all install targets.
+
+	* tool/rbinstall.rb (parse_args): show help message and exit if
+	  rbconfig could not load.
 
 Tue Sep 15 04:25:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

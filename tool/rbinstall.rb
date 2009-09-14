@@ -1,8 +1,13 @@
 #!./miniruby
 
-load "./rbconfig.rb"
-include RbConfig
-$".unshift File.expand_path("./rbconfig.rb")
+begin
+  load "./rbconfig.rb"
+rescue LoadError
+  CONFIG = Hash.new {""}
+else
+  include RbConfig
+  $".unshift File.expand_path("./rbconfig.rb")
+end
 
 srcdir = File.expand_path('../..', __FILE__)
 unless defined?(CROSS_COMPILING) and CROSS_COMPILING
@@ -35,7 +40,7 @@ def parse_args(argv = ARGV)
   $cmdtype = ('bat' if File::ALT_SEPARATOR == '\\')
   mflags = []
   opt = OptionParser.new
-  opt.on('-n') {$dryrun = true}
+  opt.on('-n', '--dry-run') {$dryrun = true}
   opt.on('--dest-dir=DIR') {|dir| $destdir = dir}
   opt.on('--extout=DIR') {|dir| $extout = (dir unless dir.empty?)}
   opt.on('--make=COMMAND') {|make| $make = make}
@@ -78,6 +83,11 @@ def parse_args(argv = ARGV)
       raise OptionParser::InvalidArgument, v
     end
   end rescue abort "#{$!.message}\n#{opt.help}"
+
+  unless defined?(RbConfig)
+    puts opt.help
+    exit
+  end
 
   $make, *rest = Shellwords.shellwords($make)
   $mflags.unshift(*rest) unless rest.empty?
