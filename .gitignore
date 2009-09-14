@@ -45,6 +45,8 @@
 /enc/trans/*.c
 /encdb.h
 /ext/win32ole/.document
+/goruby
+/id.h
 /largefile.h
 /lex.c
 /libruby*.*
