@@ -1,3 +1,7 @@
+Mon Sep 14 11:10:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (check-ruby): run all test of ruby itself.
+
 Mon Sep 14 07:30:56 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/cgi/cookie.rb (value): Keep CGI::Cookie#value in sync with the

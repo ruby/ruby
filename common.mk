@@ -308,6 +308,7 @@ realclean-local:: distclean-local
 realclean-ext::
 
 check: test test-all
+check-ruby: test test-ruby
 
 test-knownbug: $(PROGRAM) PHONY
 	        $(RUNRUBY) $(srcdir)/KNOWNBUGS.rb
@@ -317,6 +318,9 @@ test: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 
 test-all:
 	$(RUNRUBY) "$(srcdir)/test/runner.rb" --basedir="$(TESTSDIR)" --runner=$(TESTUI) $(TESTS)
+
+test-ruby:
+	$(RUNRUBY) "$(srcdir)/test/runner.rb" --basedir="$(TESTSDIR)" --runner=$(TESTUI) ruby
 
 extconf:
 	$(MAKEDIRS) "$(EXTCONFDIR)"
