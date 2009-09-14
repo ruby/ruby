@@ -1,3 +1,9 @@
+Mon Sep 14 09:59:03 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/ruby.h (NUM2INT, NUM2LL, INT2NUM, UINT2NUM),
+	  (LONG2NUM, ULONG2NUM, NUM2CHR): get rid of backward references of
+	  macros.  the code couldn't compile by VC.
+
 Mon Sep 14 08:33:11 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/net/http.rb (each_*): return enumerator if no block present.
