@@ -1,3 +1,7 @@
+Mon Sep 14 10:56:40 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (check-ruby): run all test of ruby itself.
+
 Mon Sep 14 10:44:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (RB_TYPE_P): should not use BUILTIN_TYPE for
