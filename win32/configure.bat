@@ -161,5 +161,8 @@ if exist pathlist.tmp echo>>~setup~.mak LIB = $(pathlist:;=/lib;)
 type>>~setup~.mak ~tmp~.mak
 del *.tmp > nul
 del ~tmp~.mak > nul
-nmake -alf ~setup~.mak
+echo>>~setup~.mak	@if exist Makefile.old del Makefile.old
+echo>>~setup~.mak	@if exist Makefile ren Makefile Makefile.old
+echo>>~setup~.mak	@ren Makefile.new Makefile
+nmake -alf ~setup~.mak MAKEFILE=Makefile.new
 :exit
