@@ -389,6 +389,7 @@ clean-enc distclean-enc realclean-enc:
 	@-$(MAKE) -f $(ENC_MK) $(MFLAGS) $(@:-enc=)
 
 check: test test-all
+check-ruby: test test-ruby
 
 btest: miniruby$(EXEEXT) $(TEST_RUNNABLE)-btest
 no-btest: PHONY
@@ -416,6 +417,11 @@ test-all: $(TEST_RUNNABLE)-test-all
 no-test-all: PHONY
 yes-test-all: PHONY
 	$(RUNRUBY) "$(srcdir)/test/runner.rb" $(TESTS)
+
+test-ruby: $(TEST_RUNNABLE)-test-ruby
+no-test-ruby: PHONY
+yes-test-ruby: PHONY
+	$(RUNRUBY) "$(srcdir)/test/runner.rb" ruby
 
 extconf: $(PREP)
 	$(MAKEDIRS) "$(EXTCONFDIR)"
