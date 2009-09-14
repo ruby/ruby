@@ -1,3 +1,7 @@
+Tue Sep 15 04:25:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RDOCTARGET): use install-all.  [ruby-dev:39334]
+
 Tue Sep 15 03:00:35 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_lstrip_bang): use ascii_isspace().  [ruby-dev:39322]
