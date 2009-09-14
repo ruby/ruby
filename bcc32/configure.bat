@@ -87,14 +87,14 @@ goto :loop
 goto :loop
 :enable-rdoc
   echo>>confargs.mk !ifndef RDOCTARGET
-  echo>>confargs.mk RDOCTARGET = install-doc
+  echo>>confargs.mk RDOCTARGET = rdoc
   echo>>confargs.mk !endif
   echo>>confargs.tmp 	%1 \
   shift
 goto :loop
 :disable-rdoc
   echo>>confargs.mk !ifndef RDOCTARGET
-  echo>>confargs.mk RDOCTARGET = install-nodoc
+  echo>>confargs.mk RDOCTARGET = nodoc
   echo>>confargs.mk !endif
   echo>>confargs.tmp 	%1 \
   shift

@@ -68,11 +68,11 @@ goto :loop
   shift
 goto :loop
 :enable-rdoc
-  echo>> ~tmp~.mak 	"RDOCTARGET=install-doc" \
+  echo>> ~tmp~.mak 	"RDOCTARGET=rdoc" \
   shift
 goto :loop
 :disable-rdoc
-  echo>> ~tmp~.mak 	"RDOCTARGET=install-nodoc" \
+  echo>> ~tmp~.mak 	"RDOCTARGET=nodoc" \
   shift
 goto :loop
 :extout
