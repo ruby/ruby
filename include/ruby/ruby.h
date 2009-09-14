@@ -1258,7 +1258,7 @@ rb_type(VALUE obj)
 	((type) == T_NIL) ? ((obj) == Qnil) : \
 	((type) == T_UNDEF) ? ((obj) == Qundef) : \
 	((type) == T_SYMBOL) ? SYMBOL_P(obj) : \
-	(BUILTIN_TYPE(obj) == (type)))
+	(!SPECIAL_CONST_P(obj) && BUILTIN_TYPE(obj) == (type)))
 
 #ifdef __GNUC__
 #define rb_type_p(obj, type) \
