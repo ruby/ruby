@@ -1,3 +1,11 @@
+Tue Sep 15 03:00:35 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_lstrip_bang): use ascii_isspace().  [ruby-dev:39322]
+
+	* string.c (rb_str_rstrip_bang): ditto.
+
+	* string.c (rb_str_split_m): ditto.
+
 Mon Sep 14 16:39:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* debug.c, parse.y: fixed types.
