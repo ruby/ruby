@@ -1,3 +1,9 @@
+Mon Sep 14 16:39:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* debug.c, parse.y: fixed types.
+
+	* node.h (nd_line): limit to int.
+
 Mon Sep 14 11:23:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, common.mk, */configure.bat (rdoc): make before

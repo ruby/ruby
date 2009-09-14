@@ -77,9 +77,9 @@ ruby_debug_print_indent(int level, int debug_level, int indent_level)
     if (level < debug_level) {
 	fprintf(stderr, "%*s", indent_level, "");
 	fflush(stderr);
-	return Qtrue;
+	return TRUE;
     }
-    return Qfalse;
+    return FALSE;
 }
 
 void
@@ -124,7 +124,7 @@ NODE *
 ruby_debug_print_node(int level, int debug_level, const char *header, const NODE *node)
 {
     if (level < debug_level) {
-	fprintf(stderr, "DBG> %s: %s (%lu)\n", header,
+	fprintf(stderr, "DBG> %s: %s (%u)\n", header,
 		ruby_node_name(nd_type(node)), nd_line(node));
     }
     return (NODE *)node;
