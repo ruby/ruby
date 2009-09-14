@@ -1,3 +1,7 @@
+Tue Sep 15 04:25:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RDOCTARGET): use install-all.  [ruby-dev:39334]
+
 Mon Sep 14 11:23:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, common.mk, */configure.bat (rdoc): make before

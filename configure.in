@@ -1608,7 +1608,7 @@ AC_ARG_ENABLE(install-doc,
        AS_HELP_STRING([--enable-install-doc], [build and install rdoc indexes during install ]),
        [install_doc=$enableval], [install_doc=no])
 if test "$install_doc" != no; then
-    RDOCTARGET="rdoc"
+    RDOCTARGET="all"
 else
     RDOCTARGET="nodoc"
 fi
