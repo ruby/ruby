@@ -155,7 +155,8 @@ class Tempfile < DelegateClass(File)
   end
   alias length size
 
-  class Remover # :nodoc:
+  # :stopdoc:
+  class Remover
     def initialize(data)
       @pid = $$
       @data = data
@@ -177,6 +178,7 @@ class Tempfile < DelegateClass(File)
       end
     end
   end
+  # :startdoc:
 
   class << self
     # If no block is given, this is a synonym for new().
