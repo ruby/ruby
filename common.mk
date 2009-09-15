@@ -111,8 +111,15 @@ $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 ruby.imp: $(OBJS)
 	@$(NM) -Pgp $(OBJS) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
 
-install: install-nodoc install-$(RDOCTARGET)
-install-all: install-nodoc install-doc
+install: install-$(RDOCTARGET)
+doc-all: rdoc
+
+install-all: doc-all pre-install-all do-install-all post-install-all
+pre-install-all:: install-prereq
+do-install-all: $(PROGRAM)
+	$(MINIRUBY) $(srcdir)/instruby.rb --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all --rdoc-output="$(RDOCOUT)"
+post-install-all::
+	@$(NULLCMD)
 
 install-nodoc: pre-install-nodoc do-install-nodoc post-install-nodoc
 pre-install-nodoc:: pre-install-local pre-install-ext
