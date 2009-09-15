@@ -151,7 +151,7 @@ TESTUI = console
 TESTS =
 !endif
 !ifndef RDOCTARGET
-RDOCTARGET = install-doc
+RDOCTARGET = rdoc
 !endif
 
 OUTFLAG       = -Fe
