@@ -1556,13 +1556,13 @@ recursive_hash(VALUE hash, VALUE dummy, int recur)
 {
     st_index_t hval;
 
-    if (recur) {
-	rb_raise(rb_eArgError, "recursive key for hash");
-    }
     if (!RHASH(hash)->ntbl)
         return LONG2FIX(0);
     hval = RHASH(hash)->ntbl->num_entries;
-    rb_hash_foreach(hash, hash_i, (VALUE)&hval);
+    if (recur)
+	hval = rb_hash_end(rb_hash_uint(rb_hash_start(rb_hash(rb_cHash)), hval));
+    else
+	rb_hash_foreach(hash, hash_i, (VALUE)&hval);
     return INT2FIX(hval);
 }
 
@@ -1577,7 +1577,7 @@ recursive_hash(VALUE hash, VALUE dummy, int recur)
 static VALUE
 rb_hash_hash(VALUE hash)
 {
-    return rb_exec_recursive(recursive_hash, hash, 0);
+    return rb_exec_recursive_outer(recursive_hash, hash, 0);
 }
 
 static int

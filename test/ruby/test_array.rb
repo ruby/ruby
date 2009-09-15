@@ -1572,7 +1572,8 @@ class TestArray < Test::Unit::TestCase
   def test_hash2
     a = []
     a << a
-    assert_raise(ArgumentError) { a.hash }
+    assert_equal([[a]].hash, a.hash)
+    assert_not_equal([a, a].hash, a.hash) # Implementation dependent
   end
 
   def test_flatten2

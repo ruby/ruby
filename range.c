@@ -207,14 +207,13 @@ recursive_hash(VALUE range, VALUE dummy, int recur)
     st_index_t hash = EXCL(range);
     VALUE v;
 
-    if (recur) {
-        rb_raise(rb_eArgError, "recursive key for hash");
-    }
     hash = rb_hash_start(hash);
-    v = rb_hash(RANGE_BEG(range));
-    hash = rb_hash_uint(hash, NUM2LONG(v));
-    v = rb_hash(RANGE_END(range));
-    hash = rb_hash_uint(hash, NUM2LONG(v));
+    if (!recur) {
+	v = rb_hash(RANGE_BEG(range));
+	hash = rb_hash_uint(hash, NUM2LONG(v));
+	v = rb_hash(RANGE_END(range));
+	hash = rb_hash_uint(hash, NUM2LONG(v));
+    }
     hash = rb_hash_uint(hash, EXCL(range) << 24);
     hash = rb_hash_end(hash);
 
@@ -233,7 +232,7 @@ recursive_hash(VALUE range, VALUE dummy, int recur)
 static VALUE
 range_hash(VALUE range)
 {
-    return rb_exec_recursive(recursive_hash, range, 0);
+    return rb_exec_recursive_outer(recursive_hash, range, 0);
 }
 
 static void
