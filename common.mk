@@ -173,6 +173,7 @@ ruby.imp: $(EXPORTOBJS)
 	@$(NM) -Pgp $(EXPORTOBJS) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
 
 install: install-$(RDOCTARGET)
+install-rdoc: install-all
 doc-all: rdoc capi
 
 install-all: doc-all pre-install-all do-install-all post-install-all
