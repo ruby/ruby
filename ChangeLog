@@ -1,3 +1,7 @@
+Tue Sep 15 21:48:12 2009  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in (--enable-frame-address): removed.
+
 Tue Sep 15 15:21:01 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/{configure.bat,Makefile.sub} (RDOCTARGET): the meaning of this

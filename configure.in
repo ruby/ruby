@@ -231,19 +231,6 @@ EOF
 fi
 ])
 
-AC_DEFUN([RUBY_USE_BUILTIN_FRAME_ADDRESS], [
-case $target_cpu in
-  when(i?86) frame_address=yes;;
-  when(*)    frame_address=no;;
-esac
-AC_ARG_ENABLE(frame-address,
-       AS_HELP_STRING([--enable-frame-address], [use GCC __builtin_frame_address()]),
-       [frame_address=$enableval])
-if test $frame_address = yes; then
-    AC_DEFINE(USE_BUILTIN_FRAME_ADDRESS)
-fi
-])
-
 AC_ARG_ENABLE(load-relative,
        AS_HELP_STRING([--enable-load-relative], [resolve load paths at run time]),
        [load_relative=$enableval])
@@ -290,7 +277,6 @@ AC_SUBST(COUTFLAG)
 
 RUBY_MINGW32
 RUBY_UNIVERSAL_ARCH
-RUBY_USE_BUILTIN_FRAME_ADDRESS
 
 AC_CHECK_TOOL(RANLIB, ranlib, :)
 AC_CHECK_TOOL(AR, ar)
