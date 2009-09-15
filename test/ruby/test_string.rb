@@ -1139,6 +1139,11 @@ class TestString < Test::Unit::TestCase
   def test_strip
     assert_equal(S("x"), S("      x        ").strip)
     assert_equal(S("x"), S(" \n\r\t     x  \t\r\n\n      ").strip)
+
+    assert_equal("0b0 ".force_encoding("UTF-16BE"),
+                 "\x00 0b0 ".force_encoding("UTF-16BE").strip)
+    assert_equal("0\x000b0 ".force_encoding("UTF-16BE"),
+                 "0\x000b0 ".force_encoding("UTF-16BE").strip)
   end
 
   def test_strip!

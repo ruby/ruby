@@ -1,3 +1,12 @@
+Tue Sep 15 14:24:52 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_split_m): use rb_isspace when the
+	  string may be ASCII-incompatible.
+
+	* string.c (rb_str_lstrip_bang): ditto.
+
+	* string.c (rb_str_rstrip_bang): ditto.
+
 Tue Sep 15 12:12:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_USE_BUILTIN_FRAME_ADDRESS): check after real

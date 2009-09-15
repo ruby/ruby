@@ -5669,7 +5669,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		c = rb_enc_codepoint_len(ptr, eptr, &n, enc);
 		ptr += n;
 		if (skip) {
-		    if (ascii_isspace(c)) {
+		    if (rb_isspace(c)) {
 			beg = ptr - bptr;
 		    }
 		    else {
@@ -5678,7 +5678,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 			if (!NIL_P(limit) && lim <= i) break;
 		    }
 		}
-		else if (ascii_isspace(c)) {
+		else if (rb_isspace(c)) {
 		    rb_ary_push(result, rb_str_subseq(str, beg, end-beg));
 		    skip = 1;
 		    beg = ptr - bptr;
@@ -6320,7 +6320,7 @@ rb_str_lstrip_bang(VALUE str)
 	int n;
 	unsigned int cc = rb_enc_codepoint_len(s, e, &n, enc);
 
-	if (!ascii_isspace(cc)) break;
+	if (!rb_isspace(cc)) break;
 	s += n;
     }
 
@@ -6389,7 +6389,7 @@ rb_str_rstrip_bang(VALUE str)
 
         while ((tp = rb_enc_prev_char(s, t, e, enc)) != NULL) {
 	    unsigned int c = rb_enc_codepoint(tp, e, enc);
-	    if (c && !ascii_isspace(c)) break;
+	    if (c && !rb_isspace(c)) break;
 	    t = tp;
 	}
     }
