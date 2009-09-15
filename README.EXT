@@ -89,8 +89,10 @@ There are also faster check macros for fixnums and nil.
 
 1.3 Convert VALUE into C data
 
-The data for type T_NIL, T_FALSE, T_TRUE are nil, true, false
+The data for type T_NIL, T_FALSE, T_TRUE are nil, false, true
 respectively.  They are singletons for the data type.
+The equivalent C constants are: Qnil, Qfalse, Qtrue.
+Note that Qfalse is false in C also (i.e. 0), but not Qnil.
 
 The T_FIXNUM data is a 31bit length fixed integer (63bit length on
 some machines), which can be converted to a C integer by using the
@@ -115,8 +117,8 @@ You can also use the macro named StringValueCStr(). This is just
 like StringValuePtr(), but always add nul character at the end of
 the result. If the result contains nul character, this macro causes
 the ArgumentError exception.
-StringValuePtr() doesn't gurantee to exist nul at the end of the
-result, and the result may contain nul.
+StringValuePtr() doesn't guarantee the existence of a nul at the end
+of the result, and the result may contain nul.
 
 Other data types have corresponding C structures, e.g. struct RArray
 for T_ARRAY etc. The VALUE of the type which has the corresponding
@@ -334,7 +336,7 @@ There are two functions to define private/protected methods:
   void rb_define_protected_method(VALUE klass, const char *name, 
 			          VALUE (*func)(), int argc)
 
-At last, rb_define_module_funcion defines a module functions, 
+At last, rb_define_module_function defines a module functions,
 which are private AND singleton methods of the module.
 For example, sqrt is the module function defined in Math module.
 It can be called in the following way:
@@ -351,7 +353,7 @@ To define module functions, use:
   void rb_define_module_function(VALUE module, const char *name, 
 				 VALUE (*func)(), int argc)
 
-Oh, in addition, function-like methods, which are private methods defined
+In addition, function-like methods, which are private methods defined
 in the Kernel module, can be defined using:
 
   void rb_define_global_function(const char *name, VALUE (*func)(), int argc)
@@ -360,7 +362,7 @@ To define an alias for the method,
 
   void rb_define_alias(VALUE module, const char* new, const char* old);
 
-To define an reader/writer to an attribute,
+To define a reader/writer for an attribute,
 
   void rb_define_attr(VALUE klass, const char *name, int read, int write)
 
@@ -369,8 +371,8 @@ To define and undefine the `allocate' class method,
   void rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE klass));
   void rb_undef_alloc_func(VALUE klass);
 
-func have to take the klass as the argument and return a newly
-allocated instance.  This instance should be empty as possible,
+func has to take the klass as the argument and return a newly
+allocated instance.  This instance should be as empty as possible,
 without any expensive (including external) resources.
 
 2.1.3 Constant definition
@@ -402,7 +404,7 @@ function:
 
   VALUE rb_eval_string_protect(const char *str, int *state)
 
-It returns nil when an error occur. And *state is zero if str was 
+It returns nil when an error occur. Moreover, *state is zero if str was
 successfully evaluated, or nonzero otherwise.
 
 
@@ -467,7 +469,8 @@ See 2.1.3 for defining new constant.
 
 3.1 Ruby constants that C can be accessed from C
 
-The following Ruby constants can be referred from C.
+As stated in section 1.3,
+the following Ruby constants can be referred from C.
 
   Qtrue
   Qfalse
