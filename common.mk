@@ -112,6 +112,7 @@ ruby.imp: $(OBJS)
 	@$(NM) -Pgp $(OBJS) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
 
 install: install-$(RDOCTARGET)
+install-rdoc: install-all
 doc-all: rdoc
 
 install-all: doc-all pre-install-all do-install-all post-install-all
