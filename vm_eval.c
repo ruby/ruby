@@ -1264,6 +1264,10 @@ rb_throw(const char *tag, VALUE val)
     rb_throw_obj(ID2SYM(rb_intern(tag)), val);
 }
 
+static VALUE
+catch_i(VALUE tag, VALUE data) {
+    return rb_yield_0(1, &tag);
+}
 /*
  *  call-seq:
  *     catch([arg]) {|tag| block }  => obj
@@ -1305,10 +1309,6 @@ static VALUE
 rb_f_catch(int argc, VALUE *argv)
 {
     VALUE tag;
-    int state;
-    volatile VALUE val = Qnil;		/* OK */
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *saved_cfp = th->cfp;
 
     if (argc == 0) {
 	tag = rb_obj_alloc(rb_cObject);
@@ -1316,12 +1316,31 @@ rb_f_catch(int argc, VALUE *argv)
     else {
 	rb_scan_args(argc, argv, "01", &tag);
     }
+    return rb_catch_obj(tag, catch_i, 0);
+}
+
+VALUE
+rb_catch(const char *tag, VALUE (*func)(), VALUE data)
+{
+    VALUE vtag = tag ? ID2SYM(rb_intern(tag)) : rb_obj_alloc(rb_cObject);
+    return rb_catch_obj(vtag, func, data);
+}
+
+VALUE
+rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
+{
+    int state;
+    volatile VALUE val = Qnil;		/* OK */
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *saved_cfp = th->cfp;
+
     PUSH_TAG();
 
     th->tag->tag = tag;
 
     if ((state = EXEC_TAG()) == 0) {
-	val = rb_yield_0(1, &tag);
+	/* call with argc=1, argv = [tag], block = Qnil to insure compatibility */
+	val = (*func)(tag, data, 1, &tag, Qnil);
     }
     else if (state == TAG_THROW && RNODE(th->errinfo)->u1.value == tag) {
 	th->cfp = saved_cfp;
@@ -1334,33 +1353,6 @@ rb_f_catch(int argc, VALUE *argv)
 	JUMP_TAG(state);
 
     return val;
-}
-
-static VALUE
-catch_null_i(VALUE dmy)
-{
-    return rb_funcall(Qnil, rb_intern("catch"), 0, 0);
-}
-
-static VALUE
-catch_i(VALUE tag)
-{
-    return rb_funcall(Qnil, rb_intern("catch"), 1, tag);
-}
-
-VALUE
-rb_catch(const char *tag, VALUE (*func)(), VALUE data)
-{
-    if (!tag) {
-	return rb_iterate(catch_null_i, 0, func, data);
-    }
-    return rb_iterate(catch_i, ID2SYM(rb_intern(tag)), func, data);
-}
-
-VALUE
-rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
-{
-    return rb_iterate((VALUE (*)_((VALUE)))catch_i, tag, func, data);
 }
 
 /*
