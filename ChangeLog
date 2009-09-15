@@ -1,3 +1,8 @@
+Wed Sep 16 06:17:33 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* vm_eval.c (rb_catch_obj, rb_catch, rb_f_catch): No longer use the
+	  obsolete function rb_iterate.
+
 Tue Sep 15 21:48:12 2009  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (--enable-frame-address): removed.
