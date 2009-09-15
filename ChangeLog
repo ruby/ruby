@@ -1,4 +1,7 @@
-Tue Sep 15 12:01:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Sep 15 12:12:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_USE_BUILTIN_FRAME_ADDRESS): check after real
+	  target CPU is set.
 
 	* configure.in (RUBY_UNIVERSAL_ARCH): check real target CPU after
 	  AC_PROG_CC.
