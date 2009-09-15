@@ -3494,33 +3494,77 @@ recursive_pop(VALUE list, VALUE obj, VALUE paired_obj)
     rb_hash_delete(list, obj);
 }
 
+struct exec_recursive_params {
+    VALUE (*func) (VALUE, VALUE, int);
+    VALUE list;
+    VALUE obj;
+    VALUE objid;
+    VALUE pairid;
+    VALUE arg;
+};
+
+static VALUE
+exec_recursive_i(VALUE tag, struct exec_recursive_params *p)
+{
+    VALUE result = Qundef;
+    int state;
+
+    recursive_push(p->list, p->objid, p->pairid);
+    PUSH_TAG();
+    if ((state = EXEC_TAG()) == 0) {
+	result = (*p->func) (p->obj, p->arg, Qfalse);
+    }
+    POP_TAG();
+    recursive_pop(p->list, p->objid, p->pairid);
+    if (state)
+	JUMP_TAG(state);
+    return result;
+}
+
 /*
  * Calls func(obj, arg, recursive), where recursive is non-zero if the
  * current method is called recursively on obj, or on the pair <obj, pairid>
+ * If outer is 0, then the innermost func will be called with recursive set
+ * to Qtrue, otherwise the outermost func will be called. In the latter case,
+ * all inner func are short-circuited by throw.
+ * Implementation details: the value thrown is the recursive list which is
+ * proper to the current method and unlikely to be catched anywhere else.
+ * list[recursive_key] is used as a flag for the outermost call.
  */
 
 static VALUE
-exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE arg)
+exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE arg, int outer)
 {
-    VALUE list = recursive_list_access();
-    VALUE objid = rb_obj_id(obj);
+    struct exec_recursive_params p;
+    int outermost;
+    p.list = recursive_list_access();
+    p.objid = rb_obj_id(obj);
+    outermost = outer && !recursive_check(p.list, ID2SYM(recursive_key), 0);
 
-    if (recursive_check(list, objid, pairid)) {
+    if (recursive_check(p.list, p.objid, pairid)) {
+	if (outer && !outermost) {
+	    rb_throw_obj(p.list, p.list);
+	}
 	return (*func) (obj, arg, Qtrue);
     }
     else {
 	VALUE result = Qundef;
-	int state;
+	p.func = func;
+	p.obj = obj;
+	p.pairid = pairid;
+	p.arg = arg;
 
-	recursive_push(list, objid, pairid);
-	PUSH_TAG();
-	if ((state = EXEC_TAG()) == 0) {
-	    result = (*func) (obj, arg, Qfalse);
+	if (outermost) {
+	    recursive_push(p.list, ID2SYM(recursive_key), 0);
+	    result = rb_catch_obj(p.list, exec_recursive_i, (VALUE)&p);
+	    recursive_pop(p.list, ID2SYM(recursive_key), 0);
+	    if (result == p.list) {
+		result = (*func) (obj, arg, Qtrue);
+	    }
 	}
-	POP_TAG();
-	recursive_pop(list, objid, pairid);
-	if (state)
-	    JUMP_TAG(state);
+	else {
+	    result = exec_recursive_i(0, &p);
+	}
 	return result;
     }
 }
@@ -3533,19 +3577,30 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 VALUE
 rb_exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 {
-    return exec_recursive(func, obj, 0, arg);
+    return exec_recursive(func, obj, 0, arg, 0);
 }
 
 /*
  * Calls func(obj, arg, recursive), where recursive is non-zero if the
- * current method is called recursively on the pair <obj, paired_obj>
- * (in that order)
+ * current method is called recursively on the ordered pair <obj, paired_obj>
  */
 
 VALUE
 rb_exec_recursive_paired(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE paired_obj, VALUE arg)
 {
-    return exec_recursive(func, obj, rb_obj_id(paired_obj), arg);
+    return exec_recursive(func, obj, rb_obj_id(paired_obj), arg, 0);
+}
+
+/*
+ * If recursion is detected on the current method and obj, the outermost
+ * func will be called with (obj, arg, Qtrue). All inner func will be
+ * short-circuited using throw.
+ */
+
+VALUE
+rb_exec_recursive_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
+{
+    return exec_recursive(func, obj, 0, arg, 1);
 }
 
 /* tracer */

@@ -1,3 +1,21 @@
+Wed Sep 16 06:30:07 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* thread.c (rb_exec_recursive_outer, rb_exec_recursive): Added method
+	  to short-circuit to the outermost level in case of recursion
+	
+	* test/ruby/test_thread.rb (test_recursive_outer): Test for above
+	
+	* hash.c (rb_hash_hash): Return a sensible hash for in case of
+	  recursion [ruby-core:24648]
+	
+	* range.c (rb_range_hash): ditto
+	
+	* struct.c (rb_struct_hash): ditto
+	
+	* array.c (rb_array_hash): ditto
+	
+	* test/ruby/test_array.rb (test_hash2): test for above
+
 Wed Sep 16 06:17:33 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* vm_eval.c (rb_catch_obj, rb_catch, rb_f_catch): No longer use the

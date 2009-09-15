@@ -810,13 +810,12 @@ recursive_hash(VALUE s, VALUE dummy, int recur)
     st_index_t h;
     VALUE n;
 
-    if (recur) {
-        rb_raise(rb_eArgError, "recursive key for hash");
-    }
     h = rb_hash_start(rb_hash(rb_obj_class(s)));
-    for (i = 0; i < RSTRUCT_LEN(s); i++) {
-	n = rb_hash(RSTRUCT_PTR(s)[i]);
-	h = rb_hash_uint(h, NUM2LONG(n));
+    if (!recur) {
+	for (i = 0; i < RSTRUCT_LEN(s); i++) {
+	    n = rb_hash(RSTRUCT_PTR(s)[i]);
+	    h = rb_hash_uint(h, NUM2LONG(n));
+	}
     }
     h = rb_hash_end(h);
     return INT2FIX(h);
@@ -832,7 +831,7 @@ recursive_hash(VALUE s, VALUE dummy, int recur)
 static VALUE
 rb_struct_hash(VALUE s)
 {
-    return rb_exec_recursive(recursive_hash, s, 0);
+    return rb_exec_recursive_outer(recursive_hash, s, 0);
 }
 
 /*

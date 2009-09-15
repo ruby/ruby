@@ -2884,13 +2884,15 @@ recursive_hash(VALUE ary, VALUE dummy, int recur)
     st_index_t h;
     VALUE n;
 
-    if (recur) {
-        rb_raise(rb_eArgError, "recursive key for hash");
-    }
     h = rb_hash_start(RARRAY_LEN(ary));
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-	n = rb_hash(RARRAY_PTR(ary)[i]);
-	h = rb_hash_uint(h, NUM2LONG(n));
+    if (recur) {
+	h = rb_hash_uint(h, NUM2LONG(rb_hash(rb_cArray)));
+    }
+    else {
+	for (i=0; i<RARRAY_LEN(ary); i++) {
+	    n = rb_hash(RARRAY_PTR(ary)[i]);
+	    h = rb_hash_uint(h, NUM2LONG(n));
+	}
     }
     h = rb_hash_end(h);
     return LONG2FIX(h);
@@ -2907,7 +2909,7 @@ recursive_hash(VALUE ary, VALUE dummy, int recur)
 static VALUE
 rb_ary_hash(VALUE ary)
 {
-    return rb_exec_recursive(recursive_hash, ary, 0);
+    return rb_exec_recursive_outer(recursive_hash, ary, 0);
 }
 
 /*
