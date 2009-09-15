@@ -155,6 +155,8 @@ AC_ARG_WITH(arch,
 			  entirely, then the package will be built only for the
 			  target platform]),
        [target_archs="$withval"], [unset target_archs])
+
+AC_DEFUN([RUBY_UNIVERSAL_ARCH], [
 test ${CFLAGS+set} && CFLAGS=`echo "$CFLAGS" | sed 's/ *-arch  *[^ ]*//g'`
 test ${LDFLAGS+set} && LDFLAGS=`echo "$LDFLAGS" | sed 's/ *-arch  *[^ ]*//g'`
 unset ARCH_FLAG universal_binary universal_archnames
@@ -227,6 +229,7 @@ EOF
     fi
     target_archs="$target_cpu"
 fi
+])
 
 case $target_cpu in
   when(i?86) frame_address=yes;;
@@ -284,6 +287,7 @@ AC_SUBST(OUTFLAG)
 AC_SUBST(COUTFLAG)
 
 RUBY_MINGW32
+RUBY_UNIVERSAL_ARCH
 
 AC_CHECK_TOOL(RANLIB, ranlib, :)
 AC_CHECK_TOOL(AR, ar)
