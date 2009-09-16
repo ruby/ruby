@@ -1,3 +1,8 @@
+Wed Sep 16 15:00:21 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb (Scalar#/): fix bug whereby (any numeric)/(any
+	  Matrix) would raise an error
+
 Wed Sep 16 13:30:20 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb:  trivial optimizations

@@ -894,7 +894,7 @@ class Matrix
       when Vector
         Scalar.Raise WrongArgType, other.class, "Numeric or Scalar or Matrix"
       when Matrix
-        self * _M.inverse
+        self * other.inverse
       else
         x, y = other.coerce(self)
         x / y
