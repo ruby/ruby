@@ -1,3 +1,10 @@
+Wed Sep 16 16:51:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_start_timer): start to catch SIGVTALRM together
+	  with timer thread.   [ruby-core:25606]
+
+	* eval.c (rb_thread_atfork): stop timer thread.
+
 Wed Sep 16 15:00:21 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb (Scalar#/): fix bug whereby (any numeric)/(any

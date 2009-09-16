@@ -12415,6 +12415,12 @@ rb_thread_alloc(klass)
 
 static int thread_init;
 
+#if defined(POSIX_SIGNAL)
+#define CATCH_VTALRM() posix_signal(SIGVTALRM, catch_timer)
+#else
+#define CATCH_VTALRM() signal(SIGVTALRM, catch_timer)
+#endif
+
 #if defined(_THREAD_SAFE)
 static void
 catch_timer(sig)
@@ -12498,6 +12504,8 @@ rb_thread_start_timer()
     static pthread_cond_t start = PTHREAD_COND_INITIALIZER;
 
     if (thread_init) return;
+    if (rb_thread_alone()) return;
+    CATCH_VTALRM();
     args[0] = &time_thread;
     args[1] = &start;
     safe_mutex_lock(&time_thread.lock);
@@ -12539,6 +12547,8 @@ rb_thread_start_timer()
     struct itimerval tval;
 
     if (thread_init) return;
+    if (rb_thread_alone()) return;
+    CATCH_VTALRM();
     tval.it_interval.tv_sec = 0;
     tval.it_interval.tv_usec = 10000;
     tval.it_value = tval.it_interval;
@@ -12618,17 +12628,11 @@ rb_thread_start_0(fn, arg, th)
 		 "can't start a new thread (frozen ThreadGroup)");
     }
 
-    if (!thread_init) {
 #if defined(HAVE_SETITIMER) || defined(_THREAD_SAFE)
-#if defined(POSIX_SIGNAL)
-	posix_signal(SIGVTALRM, catch_timer);
-#else
-	signal(SIGVTALRM, catch_timer);
-#endif
-
+    if (!thread_init) {
 	rb_thread_start_timer();
-#endif
     }
+#endif
 
     if (THREAD_SAVE_CONTEXT(curr_thread)) {
 	return thread;
@@ -13439,6 +13443,9 @@ rb_thread_atfork()
     main_thread = curr_thread;
     curr_thread->next = curr_thread;
     curr_thread->prev = curr_thread;
+#if defined(HAVE_SETITIMER) || defined(_THREAD_SAFE)
+    rb_thread_stop_timer();
+#endif
 }
 
 
