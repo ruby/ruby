@@ -615,9 +615,10 @@ s,@localstatedir@,/var,;t t
 s,@libdir@,$${exec_prefix}/lib,;t t
 s,@includedir@,$${prefix}/include,;t t
 s,@oldincludedir@,/usr/include,;t t
-s,@infodir@,$${prefix}/info,;t t
-s,@mandir@,$${prefix}/man,;t t
-s,@ridir@,$${prefix}/share/ri,;t t
+s,@infodir@,$${datadir}/info,;t t
+s,@mandir@,$${datadir}/man,;t t
+s,@ridir@,$${datadir}/ri,;t t
+s,@docdir@,$${datadir}/doc/$${RUBY_BASE_NAME},;t t
 s,@build@,$(CPU)-pc-$(PLATFORM),;t t
 s,@build_alias@,$(CPU)-$(PLATFORM),;t t
 s,@build_cpu@,$(CPU),;t t
