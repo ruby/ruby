@@ -164,6 +164,7 @@ DOCTARGETS = $(DOCTARGETS) rdoc
 ! if "$(CAPITARGET)" == "capi"
 DOCTARGETS = $(DOCTARGETS) capi
 ! endif
+!endif
 !ifndef INSTALLDOC
 ! if "$(DOCTARGETS)" != ""
 INSTALLDOC = all
