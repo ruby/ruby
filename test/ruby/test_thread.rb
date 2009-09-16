@@ -450,15 +450,6 @@ class TestThread < Test::Unit::TestCase
     m.unlock
   end
 
-  def test_recursive_error
-    o = Object.new
-    def o.inspect
-      Thread.current[:__recursive_key__][:inspect] = nil
-      super
-    end
-    assert_raise(TypeError) { [o].inspect }
-  end
-
   def test_recursive_outer
     arr = []
     obj = Struct.new(:foo, :visited).new(arr, false)
