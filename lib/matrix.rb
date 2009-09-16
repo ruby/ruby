@@ -664,7 +664,7 @@ class Matrix
       if (akk = a[k][k]) == 0
         i = k
         begin
-          return 0 if (i += 1) > size
+          return 0 if (i += 1) >= size
         end while a[i][k] == 0
         a[i], a[k] = a[k], a[i]
         akk = a[k][k]
@@ -719,7 +719,7 @@ class Matrix
           i = k
           exists = true
           begin
-            if (i += 1) > a_row_size - 1
+            if (i += 1) >= a_row_size
               exists = false
               break
             end
