@@ -343,6 +343,12 @@ AC_SUBST(MAKEDIRS)
 
 AC_CHECK_TOOL(DOT, dot)
 AC_CHECK_TOOL(DOXYGEN, doxygen)
+if test x"$DOXYGEN" = x; then
+    CAPITARGET=nodoc
+else
+    CAPITARGET=capi
+fi
+AC_SUBST(CAPITARGET)
 
 # checks for UNIX variants that set C preprocessor variables
 AC_USE_SYSTEM_EXTENSIONS
@@ -2118,6 +2124,12 @@ else
     RDOCTARGET="nodoc"
 fi
 AC_SUBST(RDOCTARGET)
+
+case "$RDOCTARGET:$CAPITARGET" in
+  when(nodoc:nodoc) INSTALLDOC=nodoc;;
+  when(*) INSTALLDOC=all;;
+esac
+AC_SUBST(INSTALLDOC)
 
 if test "$rb_with_pthread" = "yes"; then
     THREAD_MODEL=pthread
