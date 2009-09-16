@@ -166,7 +166,7 @@ DOCTARGETS = $(DOCTARGETS) capi
 ! endif
 !endif
 !ifndef INSTALLDOC
-! if "$(DOCTARGETS)" == ""
+! if "$(DOCTARGETS)" != ""
 INSTALLDOC = all
 ! else
 INSTALLDOC = nodoc
