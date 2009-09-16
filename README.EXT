@@ -1194,7 +1194,20 @@ exception occurs, from func2 otherwise.
 
 Calls the function func1 with arg1 as the argument, then calls func2
 with arg2 if execution terminated.  The return value from
-rb_ensure() is that of func1.
+rb_ensure() is that of func1 when no exception occured.
+
+ VALUE rb_protect(VALUE (*func) (VALUE), VALUE arg, int *state)
+
+Calls the function func with arg as the argument.  If no exception
+occured during func, it returns the result of func and *state is zero.
+Otherwise, it returns Qnil and sets *state to nonzero.  If state is
+NULL, it is not set in both cases.
+
+ void rb_jump_tag(int state)
+
+Continues the exception caught by rb_protect() and rb_eval_string_protect().
+state must be the returned value from those functions.  This function
+never return to the caller.
 
 ** Exceptions and Errors
 

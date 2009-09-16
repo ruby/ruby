@@ -1,3 +1,7 @@
+Wed Sep 16 10:14:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README.EXT, README.EXT.ja (rb_protect, rb_jump_tag): added.
+
 Wed Sep 16 10:12:56 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (main): makes also encs.
