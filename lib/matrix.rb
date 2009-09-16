@@ -50,7 +50,6 @@ end
 # * <tt> Matrix.columns(columns)        </tt>
 # * <tt> Matrix.diagonal(*values)       </tt>
 # * <tt> Matrix.scalar(n, value)        </tt>
-# * <tt> Matrix.scalar(n, value)        </tt>
 # * <tt> Matrix.identity(n)             </tt>
 # * <tt> Matrix.unit(n)                 </tt>
 # * <tt> Matrix.I(n)                    </tt>
@@ -122,11 +121,12 @@ class Matrix
 
   #
   # Creates a matrix where +rows+ is an array of arrays, each of which is a row
-  # to the matrix.  If the optional argument +copy+ is false, use the given
+  # of the matrix.  If the optional argument +copy+ is false, use the given
   # arrays as the internal structure of the matrix without copying.
   #   Matrix.rows([[25, 93], [-1, 66]])
   #      =>  25 93
   #          -1 66
+  #
   def Matrix.rows(rows, copy = true)
     new(:init_rows, rows, copy)
   end
@@ -136,7 +136,6 @@ class Matrix
   #   Matrix.columns([[25, 93], [-1, 66]])
   #      =>  25 -1
   #          93 66
-  #
   #
   def Matrix.columns(columns)
     rows = (0 ... columns[0].size).collect {|i|
@@ -651,13 +650,13 @@ class Matrix
 
   #
   # Returns the determinant of the matrix.  If the matrix is not square, the
-  # result is 0. This method's algorism is Gaussian elimination method
+  # result is 0. This method's algorithm is Gaussian elimination method
   # and using Numeric#quo(). Beware that using Float values, with their
   # usual lack of precision, can affect the value returned by this method.  Use
   # Rational values or Matrix#det_e instead if this is important to you.
   #
   #   Matrix[[7,6], [3,9]].determinant
-  #     => 63.0
+  #     => 45.0
   #
   def determinant
     return 0 unless square?
@@ -692,8 +691,8 @@ class Matrix
 
   #
   # Returns the determinant of the matrix.  If the matrix is not square, the
-  # result is 0. This method's algorism is Gaussian elimination method.
-  # This method uses Euclidean algorism. If all elements are integer,
+  # result is 0. This method's algorithm is Gaussian elimination method.
+  # This method uses Euclidean algorithm. If all elements are integer,
   # really exact value. But, if an element is a float, can't return
   # exact value.
   #
@@ -802,7 +801,7 @@ class Matrix
 
   #
   # Returns the rank of the matrix. This method uses Euclidean
-  # algorism. If all elements are integer, really exact value. But, if
+  # algorithm. If all elements are integer, really exact value. But, if
   # an element is a float, can't return exact value.
   #
   #   Matrix[[7,6], [3,9]].rank
@@ -994,7 +993,7 @@ class Matrix
       when Vector
         Scalar.Raise WrongArgType, other.class, "Numeric or Scalar or Matrix"
       when Matrix
-	self * other.inverse
+        self * other.inverse
       else
         x, y = other.coerce(self)
         x.quo(y)
@@ -1348,7 +1347,6 @@ class Vector
     str = "Vector"+@elements.inspect
   end
 end
-
 
 # Documentation comments:
 #  - Matrix#coerce and Vector#coerce need to be documented
