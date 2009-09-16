@@ -701,14 +701,14 @@ class Matrix
     rank = 0
     a_column_size.times do |k|
       if (akk = a[k][k]) == 0
-        i = (k+1 ... a_column_size).find {|i|
+        i = (k+1 ... a_row_size).find {|i|
           a[i][k] != 0
         }
         if i
           a[i], a[k] = a[k], a[i]
           akk = a[k][k]
         else
-          i = (k+1 ... a_row_size).find {|i|
+          i = (k+1 ... a_column_size).find {|i|
             a[k][i] != 0
           }
           next if i.nil?

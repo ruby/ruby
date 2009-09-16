@@ -1,3 +1,9 @@
+Thu Sep 17 06:25:32 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb (Matrix#rank): Two bug fixes. One made
+	  Matrix[[0,0],[0,0],[1,0]].rank raise a NoMethodError while the other
+	  one had Matrix[[0,1],[0,0],[1,0]].rank raise a TypeError.
+
 Thu Sep 17 06:19:27 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Optimizations
