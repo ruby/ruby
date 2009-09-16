@@ -1,3 +1,7 @@
+Wed Sep 16 13:30:20 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb:  trivial optimizations
+
 Tue Sep 15 15:32:16 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (RDOCTARGET): the meaning of this macro was changed
