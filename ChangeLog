@@ -1,3 +1,8 @@
+Wed Sep 16 13:39:10 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb (determinant): Bug fix where determinant failed on
+	  some matrices [ruby-core:23597]
+
 Wed Sep 16 13:30:20 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb:  trivial optimizations
