@@ -669,7 +669,7 @@ class Matrix
       if (akk = a[k][k]) == 0
         i = k
         loop do
-          return 0 if (i += 1) > size
+          return 0 if (i += 1) >= size
           break unless a[i][k] == 0
         end
         a[i], a[k] = a[k], a[i]
@@ -710,7 +710,7 @@ class Matrix
       if a[k][k].zero?
         i = k
         loop do
-          return 0 if (i += 1) > size
+          return 0 if (i += 1) >= size
           break unless a[i][k].zero?
         end
         a[i], a[k] = a[k], a[i]
@@ -771,7 +771,7 @@ class Matrix
           i = k
           exists = true
           loop do
-            if (i += 1) > a_row_size - 1
+            if (i += 1) >= a_row_size
               exists = false
               break
             end
