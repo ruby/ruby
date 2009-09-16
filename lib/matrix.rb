@@ -316,8 +316,8 @@ class Matrix
   #     => 1  4
   #        9 16
   #
-  def collect # :yield: e
-    rows = @rows.collect{|row| row.collect{|e| yield e}}
+  def collect(&block) # :yield: e
+    rows = @rows.collect{|row| row.collect(&block)}
     Matrix.rows(rows, false)
   end
   alias map collect
@@ -454,11 +454,9 @@ class Matrix
 
       rows = (0 ... row_size).collect {|i|
         (0 ... m.column_size).collect {|j|
-          vij = 0
-          column_size.times do |k|
-            vij += self[i, k] * m[k, j]
+          (0 ... column_size).inject(0) do |vij, k|
+            vij + self[i, k] * m[k, j]
           end
-          vij
         }
       }
       return Matrix.rows(rows, false)
@@ -662,10 +660,10 @@ class Matrix
     det = 1
     size.times do |k|
       if (akk = a[k][k]) == 0
-        i = k
-        begin
-          return 0 if (i += 1) >= size
-        end while a[i][k] == 0
+        i = (k+1 ... size).find {|i|
+          a[i][k] != 0
+        }
+        return 0 if i.nil?
         a[i], a[k] = a[k], a[i]
         akk = a[k][k]
         det *= -1
@@ -703,35 +701,21 @@ class Matrix
     rank = 0
     a_column_size.times do |k|
       if (akk = a[k][k]) == 0
-        i = k
-        exists = true
-        loop do
-          if (i += 1) >= a_column_size
-            exists = false
-            break
-          end
-          break unless a[i][k] == 0
-        end
-        if exists
+        i = (k+1 ... a_column_size).find {|i|
+          a[i][k] != 0
+        }
+        if i
           a[i], a[k] = a[k], a[i]
           akk = a[k][k]
         else
-          i = k
-          exists = true
-          begin
-            if (i += 1) >= a_row_size
-              exists = false
-              break
-            end
-          end while a[k][i] == 0
-          if exists
-            (k ... a_column_size).each do |j|
-              a[j][k], a[j][i] = a[j][i], a[j][k]
-            end
-            akk = a[k][k]
-          else
-            next
+          i = (k+1 ... a_row_size).find {|i|
+            a[k][i] != 0
+          }
+          next if i.nil?
+          (k ... a_column_size).each do |j|
+            a[j][k], a[j][i] = a[j][i], a[j][k]
           end
+          akk = a[k][k]
         end
       end
 
@@ -752,11 +736,9 @@ class Matrix
   #     => 16
   #
   def trace
-    tr = 0
-    column_size.times do |i|
-      tr += @rows[i][i]
+    (0...column_size).inject(0) do |tr, i|
+      tr + @rows[i][i]
     end
-    tr
   end
   alias tr trace
   

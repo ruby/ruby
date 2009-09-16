@@ -1,3 +1,7 @@
+Thu Sep 17 06:19:27 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Optimizations
+
 Wed Sep 16 17:25:43 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb (Matrix#/): Fix was is obviously a bug
