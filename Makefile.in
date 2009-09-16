@@ -34,7 +34,8 @@ ruby_version = @ruby_version@
 
 TESTUI = console
 TESTS =
-RDOCTARGET = @RDOCTARGET@
+INSTALLDOC = @INSTALLDOC@
+DOCTARGETS = @RDOCTARGET@ @CAPITARGET@
 
 EXTOUT = @EXTOUT@
 arch_hdrdir = $(EXTOUT)/include/$(arch)

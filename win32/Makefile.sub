@@ -150,8 +150,27 @@ TESTUI = console
 !ifndef TESTS
 TESTS =
 !endif
-!ifndef RDOCTARGET
-RDOCTARGET = rdoc
+!ifndef CAPITARGET
+! ifdef DOXYGEN
+CAPITARGET = capi
+! else
+CAPITARGET = nodoc
+! endif
+!endif
+!ifndef DOCTARGETS
+! if "$(RDOCTARGET)" == "rdoc"
+DOCTARGETS = $(DOCTARGETS) rdoc
+! endif
+! if "$(CAPITARGET)" == "capi"
+DOCTARGETS = $(DOCTARGETS) capi
+! endif
+!ifndef INSTALLDOC
+! if "$(DOCTARGETS)" != ""
+INSTALLDOC = all
+! else
+INSTALLDOC = nodoc
+DOCTARGETS = nodoc
+! endif
 !endif
 
 OUTFLAG       = -Fe

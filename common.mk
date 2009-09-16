@@ -124,7 +124,7 @@ BOOTSTRAPRUBY = $(BASERUBY)
 
 COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) -I. -rrbconfig $(srcdir)/tool/compile_prelude.rb
 
-all: encs exts main $(RDOCTARGET)
+all: encs exts main docs
 
 main: encs exts
 	@$(RUNCMD) $(MKMAIN_CMD) $(MAKE)
@@ -172,15 +172,14 @@ $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 ruby.imp: $(EXPORTOBJS)
 	@$(NM) -Pgp $(EXPORTOBJS) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
 
-install: install-$(RDOCTARGET)
-install-rdoc: install-all
-doc-all: rdoc capi
+install: install-$(INSTALLDOC)
+docs: $(DOCTARGETS)
 
-install-all: doc-all pre-install-all do-install-all post-install-all
-pre-install-all:: install-prereq
+install-all: doc pre-install-all do-install-all post-install-all
+pre-install-all:: pre-install-local pre-install-ext pre-install-doc
 do-install-all: $(PROGRAM)
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all --rdoc-output="$(RDOCOUT)"
-post-install-all::
+post-install-all:: post-install-local post-install-ext post-install-doc
 	@$(NULLCMD)
 
 install-nodoc: pre-install-nodoc do-install-nodoc post-install-nodoc
@@ -256,9 +255,14 @@ post-install-capi::
 	@$(NULLCMD)
 
 what-where: no-install
-no-install: no-install-nodoc no-install-doc
+no-install: no-install-$(INSTALLDOC)
 what-where-all: no-install-all
-no-install-all: no-install-nodoc
+no-install-all: pre-no-install-all dont-install-all post-no-install-all
+pre-no-install-all:: pre-no-install-local pre-no-install-ext pre-no-install-doc
+dont-install-all: $(PROGRAM)
+	$(INSTRUBY) -n --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all --rdoc-output="$(RDOCOUT)"
+post-no-install-all:: post-no-install-local post-no-install-ext post-no-install-doc
+	@$(NULLCMD)
 
 what-where-nodoc: no-install-nodoc
 no-install-nodoc: pre-no-install-nodoc dont-install-nodoc post-no-install-nodoc
@@ -360,7 +364,7 @@ CLEAR_INSTALLED_LIST = clear-installed-list
 install-prereq: $(CLEAR_INSTALLED_LIST) PHONY
 
 clear-installed-list: PHONY
-	@exit > $(INSTALLED_LIST)
+	@set MAKE="$(MAKE)" > $(INSTALLED_LIST)
 
 clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-extout
 clean-local:: PHONY
