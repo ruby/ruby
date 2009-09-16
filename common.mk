@@ -126,7 +126,7 @@ COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) -I. -rrbconfig $(srcdir)/tool/compile_
 
 all: encs exts main $(RDOCTARGET)
 
-main: exts
+main: encs exts
 	@$(RUNCMD) $(MKMAIN_CMD) $(MAKE)
 
 exts: $(MKMAIN_CMD)
