@@ -1,3 +1,7 @@
+Wed Sep 16 16:59:34 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (DOCTARGETS): rdoc is default.
+
 Wed Sep 16 16:27:40 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub: typo.
