@@ -12,7 +12,7 @@ unless miniruby
   miniruby = './miniruby$(EXEEXT) -I$(srcdir)/lib -I$(EXTOUT)/common -I./- -r$(srcdir)/ext/purelib.rb'
   RbConfig.expand(miniruby, RbConfig::CONFIG.merge("srcdir"=>srcdir))
 end
-dot = RbConfig::CONFIG['DOT']
+dot = RbConfig::CONFIG['DOT'] || ""
 have_dot = dot.empty? ? "NO" : "YES"
 %>
 #---------------------------------------------------------------------------
