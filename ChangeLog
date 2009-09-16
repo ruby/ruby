@@ -1,3 +1,7 @@
+Wed Sep 16 17:20:49 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb (Matrix#/): Fix obvious bug
+
 Wed Sep 16 16:59:34 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (DOCTARGETS): rdoc is default.
