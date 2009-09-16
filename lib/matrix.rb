@@ -53,7 +53,6 @@ end
 # * <tt> Matrix.columns(columns)        </tt>
 # * <tt> Matrix.diagonal(*values)       </tt>
 # * <tt> Matrix.scalar(n, value)        </tt>
-# * <tt> Matrix.scalar(n, value)        </tt>
 # * <tt> Matrix.identity(n)             </tt>
 # * <tt> Matrix.unit(n)                 </tt>
 # * <tt> Matrix.I(n)                    </tt>
@@ -125,11 +124,12 @@ class Matrix
   
   #
   # Creates a matrix where +rows+ is an array of arrays, each of which is a row
-  # to the matrix.  If the optional argument +copy+ is false, use the given
+  # of the matrix.  If the optional argument +copy+ is false, use the given
   # arrays as the internal structure of the matrix without copying.
   #   Matrix.rows([[25, 93], [-1, 66]])
   #      =>  25 93
   #          -1 66
+  #
   def Matrix.rows(rows, copy = true)
     new(:init_rows, rows, copy)
   end
@@ -139,7 +139,6 @@ class Matrix
   #   Matrix.columns([[25, 93], [-1, 66]])
   #      =>  25 -1
   #          93 66
-  #
   #
   def Matrix.columns(columns)
     rows = (0 ... columns[0].size).collect {|i|
@@ -1231,7 +1230,6 @@ class Vector
     str = "Vector"+@elements.inspect
   end
 end
-
 
 # Documentation comments:
 #  - Matrix#coerce and Vector#coerce need to be documented
