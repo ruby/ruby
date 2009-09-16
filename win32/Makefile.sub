@@ -158,7 +158,7 @@ CAPITARGET = nodoc
 ! endif
 !endif
 !ifndef DOCTARGETS
-! if "$(RDOCTARGET)" == "rdoc"
+! if "$(RDOCTARGET)" == "rdoc" || "$(RDOCTARGET)" == ""
 DOCTARGETS = $(DOCTARGETS) rdoc
 ! endif
 ! if "$(CAPITARGET)" == "capi"
@@ -166,7 +166,7 @@ DOCTARGETS = $(DOCTARGETS) capi
 ! endif
 !endif
 !ifndef INSTALLDOC
-! if "$(DOCTARGETS)" != ""
+! if "$(DOCTARGETS)" == ""
 INSTALLDOC = all
 ! else
 INSTALLDOC = nodoc
