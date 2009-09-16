@@ -3587,7 +3587,7 @@ time_mdump(VALUE time)
     if (FIXNUM_P(vtm.year)) {
         year = FIX2LONG(vtm.year);
         if (year < 1900 || 1900+0xffff < year)
-            rb_raise(rb_eArgError, "year too big to marshal: %ld", year);
+            rb_raise(rb_eArgError, "year too big to marshal: %ld UTC", year);
     }
     else {
         rb_raise(rb_eArgError, "year too big to marshal");
