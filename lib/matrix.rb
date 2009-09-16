@@ -546,7 +546,7 @@ class Matrix
       return self * other.inverse
     else
       x, y = other.coerce(self)
-      rerurn x / y
+      return x / y
     end
   end
 
