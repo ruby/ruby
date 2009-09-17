@@ -440,6 +440,11 @@ end
     assert_file_not_exist 'tmp/rmtmp2'
     assert_file_not_exist 'tmp/rmtmp3'
     assert_file_exist 'tmp/rmtmp4'
+
+    # [ruby-dev:39345]
+    touch 'tmp/[rmtmp]'
+    rm_f 'tmp/[rmtmp]'
+    assert_file_not_exist 'tmp/[rmtmp]'
   end
 
   def test_rm_r
