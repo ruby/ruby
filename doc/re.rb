@@ -1,4 +1,4 @@
-module Doc
+# -*- coding: utf-8 -*-
 #  Regular expressions (<i>regexp</i>s) are patterns which describe the
 #  contents of a string. They're used for testing whether a string contains a
 #  given pattern, or extracting the portions that match. They are created
@@ -580,5 +580,4 @@ module Doc
 #          #=> #<MatchData "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa">
 #
 #
-  class Regexp; end
-end
+class Regexp; end
