@@ -143,11 +143,27 @@ void rb_thread_debug(const char *fmt, ...);
 # if THREAD_DEBUG < 0
 static int rb_thread_debug_enabled;
 
+/*
+ *  call-seq:
+ *     Thread.DEBUG     => num
+ *
+ *  Returns the thread debug level.  Available only if compiled with
+ *  THREAD_DEBUG=-1.
+ */
+
 static VALUE
 rb_thread_s_debug(void)
 {
     return INT2NUM(rb_thread_debug_enabled);
 }
+
+/*
+ *  call-seq:
+ *     Thread.DEBUG = num
+ *
+ *  Sets the thread debug level.  Available only if compiled with
+ *  THREAD_DEBUG=-1.
+ */
 
 static VALUE
 rb_thread_s_debug_set(VALUE self, VALUE val)
@@ -503,6 +519,7 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     return thval;
 }
 
+/* :nodoc: */
 static VALUE
 thread_s_new(int argc, VALUE *argv, VALUE klass)
 {
@@ -533,6 +550,7 @@ thread_start(VALUE klass, VALUE args)
     return thread_create_core(rb_thread_alloc(klass), args, 0);
 }
 
+/* :nodoc: */
 static VALUE
 thread_initialize(VALUE thread, VALUE args)
 {
@@ -1633,6 +1651,13 @@ rb_thread_main(void)
 {
     return GET_THREAD()->vm->main_thread->self;
 }
+
+/*
+ *  call-seq:
+ *     Thread.main   => thread
+ *
+ *  Returns the main thread.
+ */
 
 static VALUE
 rb_thread_s_main(VALUE klass)
@@ -3852,6 +3877,14 @@ thread_add_trace_func(rb_thread_t *th, VALUE trace)
     rb_threadptr_add_event_hook(th, call_trace_func, RUBY_EVENT_ALL, trace);
 }
 
+/*
+ *  call-seq:
+ *     thr.add_trace_func(proc)    => proc
+ *
+ *  Adds _proc_ as a handler for tracing.
+ *  See <code>Thread#set_trace_func</code> and +set_trace_func+.
+ */
+
 static VALUE
 thread_add_trace_func_m(VALUE obj, VALUE trace)
 {
@@ -3860,6 +3893,16 @@ thread_add_trace_func_m(VALUE obj, VALUE trace)
     thread_add_trace_func(th, trace);
     return trace;
 }
+
+/*
+ *  call-seq:
+ *     thr.set_trace_func(proc)    => proc
+ *     thr.set_trace_func(nil)     => nil
+ *
+ *  Establishes _proc_ on _thr_ as the handler for tracing, or
+ *  disables tracing if the parameter is +nil+.
+ *  See +set_trace_func+.
+ */
 
 static VALUE
 thread_set_trace_func_m(VALUE obj, VALUE trace)
@@ -3999,6 +4042,13 @@ ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
 }
 
 VALUE rb_thread_backtrace(VALUE thval);
+
+/*
+ *  call-seq:
+ *     thr.backtrace    => array
+ *
+ *  Returns the current back trace of the _thr_.
+ */
 
 static VALUE
 rb_thread_backtrace_m(VALUE thval)
