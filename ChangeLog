@@ -1,3 +1,12 @@
+Thu Sep 17 09:37:28 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* doc/re.rb: New document for Ruby's fork of Oniguruma.
+	  written by Run Paint Run Run [ruby-core:25420]
+
+	* re.c: import document in doc/re.rb.
+
+	* .document: add doc/re.rb.
+
 Thu Sep 17 06:03:40 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb (Matrix#rank): Two bug fixes. One made
