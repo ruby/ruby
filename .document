@@ -15,4 +15,5 @@ lib
 
 ext
 
-doc/re.rb
+# rdoc files
+doc/*.rdoc
