@@ -1,3 +1,11 @@
+Thu Sep 17 15:01:32 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* blockinlining.c: removed.
+
+	* README.EXT: ditto.
+
+	* README.EXT.ja: ditto.
+
 Thu Sep 17 13:50:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_s_debug_set): set level, not only boolean.
