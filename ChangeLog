@@ -1,3 +1,8 @@
+Thu Sep 17 14:33:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_start_0, rb_thread_start_1): should call star
+	  timer after added new thread to thread list.  [ruby-core:25613]
+
 Thu Sep 17 06:25:32 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb (Matrix#rank): Two bug fixes. One made

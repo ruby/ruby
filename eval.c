@@ -12572,6 +12572,14 @@ rb_thread_stop_timer()
 int rb_thread_tick = THREAD_TICK;
 #endif
 
+#if defined(HAVE_SETITIMER) || defined(_THREAD_SAFE)
+#define START_TIMER() (thread_init ? (void)0 : rb_thread_start_timer())
+#define STOP_TIMER() (rb_thread_stop_timer())
+#else
+#define START_TIMER() ((void)0)
+#define STOP_TIMER() ((void)0)
+#endif
+
 NORETURN(static void rb_thread_terminated _((rb_thread_t, int, enum rb_thread_status)));
 static VALUE rb_thread_yield _((VALUE, rb_thread_t));
 
@@ -12628,12 +12636,6 @@ rb_thread_start_0(fn, arg, th)
 		 "can't start a new thread (frozen ThreadGroup)");
     }
 
-#if defined(HAVE_SETITIMER) || defined(_THREAD_SAFE)
-    if (!thread_init) {
-	rb_thread_start_timer();
-    }
-#endif
-
     if (THREAD_SAVE_CONTEXT(curr_thread)) {
 	return thread;
     }
@@ -12659,6 +12661,7 @@ rb_thread_start_0(fn, arg, th)
     scope_dup(ruby_scope);
 
     thread_insert(th);
+    START_TIMER();
 
     PUSH_TAG(PROT_THREAD);
     if ((state = EXEC_TAG()) == 0) {
@@ -12752,6 +12755,7 @@ rb_thread_start_1()
     *ruby_frame = *ip->frame;
     ruby_frame->prev = ip->frame;
     ruby_frame->iter = ITER_CUR;
+    START_TIMER();
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	if (THREAD_SAVE_CONTEXT(th) == 0) {
@@ -13443,9 +13447,7 @@ rb_thread_atfork()
     main_thread = curr_thread;
     curr_thread->next = curr_thread;
     curr_thread->prev = curr_thread;
-#if defined(HAVE_SETITIMER) || defined(_THREAD_SAFE)
-    rb_thread_stop_timer();
-#endif
+    STOP_TIMER();
 }
 
 
