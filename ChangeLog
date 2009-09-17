@@ -378,7 +378,7 @@ Fri Sep 11 14:22:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (XLDFLAGS): keep ARCHFILE macro on AIX.
 
-	* configure.in (RUBY_REPLACE_TYPE): define typename to defaul
+	* configure.in (RUBY_REPLACE_TYPE): define typename to default
 	  type if the latter is found.
 
 Fri Sep 11 13:57:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -585,7 +585,7 @@ Mon Sep  7 05:38:34 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.h (CALL_SIMPLE_METHOD): add a version which
 	  use an inline cache.  USE_IC_FOR_SPECIALIZED_METHOD macro
-	  switchs the behaviour.  This change also removes
+	  switches the behaviour.  This change also removes
 	  CALL_SIMPLE_METHOD_IC() macro.
 
 	* tool/instruction.rb: fix elimination process to ignore
@@ -608,7 +608,7 @@ Mon Sep  7 03:21:40 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb (URI.escape): obsoleted.
 
-	* lib/uri/common.rb (URI,unescape): ditto.
+	* lib/uri/common.rb (URI.unescape): ditto.
 
 Sun Sep  6 18:13:54 2009  Koichi Sasada  <ko1@atdot.net>
 
