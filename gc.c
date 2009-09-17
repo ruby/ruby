@@ -604,6 +604,8 @@ garbage_collect_with_gvl(rb_objspace_t *objspace)
     }
 }
 
+static void vm_xfree(rb_objspace_t *objspace, void *ptr);
+
 static void *
 vm_xmalloc(rb_objspace_t *objspace, size_t size)
 {
@@ -652,7 +654,10 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
 	negative_size_allocation_error("negative re-allocation size");
     }
     if (!ptr) return ruby_xmalloc(size);
-    if (size == 0) size = 1;
+    if (size == 0) {
+	vm_xfree(objspace, ptr);
+	return 0;
+    }
     if (ruby_gc_stress && !ruby_disable_gc_stress)
 	garbage_collect_with_gvl(objspace);
 

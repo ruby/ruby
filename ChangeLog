@@ -1,3 +1,7 @@
+Thu Sep 17 18:34:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (vm_xrealloc): free as like standard free if size is zero.
+
 Thu Sep 17 15:41:02 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_intern.h: use rb_node_newnode() directly.
