@@ -1613,7 +1613,7 @@ push_glob(VALUE ary, VALUE str, int flags)
     args.value = ary;
     args.enc = enc;
 
-    return ruby_brace_glob0(StringValuePtr(str), flags | GLOB_VERBOSE,
+    return ruby_brace_glob0(RSTRING_PTR(str), flags | GLOB_VERBOSE,
 			    rb_glob_caller, (VALUE)&args, enc);
 }
 
@@ -1623,7 +1623,7 @@ rb_push_glob(VALUE str, int flags) /* '\0' is delimiter */
     long offset = 0;
     VALUE ary;
 
-    StringValue(str);
+    FilePathValue(str);
     ary = rb_ary_new();
 
     while (offset < RSTRING_LEN(str)) {
@@ -1653,7 +1653,7 @@ dir_globs(long argc, VALUE *argv, int flags)
     for (i = 0; i < argc; ++i) {
 	int status;
 	VALUE str = argv[i];
-	SafeStringValue(str);
+	FilePathValue(str);
 	status = push_glob(ary, str, flags);
 	if (status) GLOB_JUMP_TAG(status);
     }
