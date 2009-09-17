@@ -1272,7 +1272,7 @@ def create_header(header = "extconf.h")
   hdr << "#endif\n"
   hdr = hdr.join
   unless (IO.read(header) == hdr rescue false)
-    open(header, "w") do |hfile|
+    open(header, "wb") do |hfile|
       hfile.write(hdr)
     end
   end
