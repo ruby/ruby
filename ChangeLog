@@ -1,3 +1,10 @@
+Fri Sep 18 06:47:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (push_glob): str should be a string always.
+
+	* dir.c (rb_push_glob, dir_globs): use #to_path to convert non-
+	  string values.  cf. [ruby-dev:39345]
+
 Fri Sep 18 06:36:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (rm_f, rm_rf): FileUtils.rm can take an array.
