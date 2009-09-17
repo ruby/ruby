@@ -1,4 +1,7 @@
-Fri Sep 18 06:34:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Sep 18 06:36:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (rm_f, rm_rf): FileUtils.rm can take an array.
+	  [ruby-dev:39345]
 
 	* lib/mkmf.rb (create_header): open in binmode.
 
