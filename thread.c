@@ -152,7 +152,7 @@ rb_thread_s_debug(void)
 static VALUE
 rb_thread_s_debug_set(VALUE self, VALUE val)
 {
-    rb_thread_debug_enabled = RTEST(val);
+    rb_thread_debug_enabled = RTEST(val) ? NUM2INT(val) : 0;
     return val;
 }
 # else

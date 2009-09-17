@@ -1,3 +1,14 @@
+Thu Sep 17 13:50:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_s_debug_set): set level, not only boolean.
+
+Thu Sep 17 13:12:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/parser/ruby.rb (RDoc::Parser::Ruby): parse also rdoc
+	  files.
+
+	* doc/re.rdoc: renamed from re.rb.
+
 Thu Sep 17 09:37:28 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* doc/re.rb: New document for Ruby's fork of Oniguruma.
