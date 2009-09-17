@@ -906,8 +906,7 @@ Rubyの構文解析器
   keywords        : 予約語
     -> lex.c      : 自動生成
 
-Rubyの評価器(通称YARV)
-  blockinlining.c
+Rubyの評価器 (通称YARV)
   compile.c
   eval.c
   eval_error.c

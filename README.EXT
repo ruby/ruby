@@ -803,7 +803,6 @@ ruby syntax parser
     -> lex.c      : automatically generated
 
 ruby evaluator (a.k.a. YARV)
-  blockinlining.c
   compile.c
   eval.c
   eval_error.c
