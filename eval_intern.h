@@ -157,7 +157,7 @@ enum ruby_tag_type {
 #define TAG_MASK	RUBY_TAG_MASK
 
 #define NEW_THROW_OBJECT(val, pt, st) \
-  ((VALUE)NEW_NODE(NODE_LIT, (val), (pt), (st)))
+  ((VALUE)rb_node_newnode(NODE_LIT, (VALUE)(val), (VALUE)(pt), (VALUE)(st)))
 #define SET_THROWOBJ_CATCH_POINT(obj, val) \
   (RNODE((obj))->u2.value = (val))
 #define SET_THROWOBJ_STATE(obj, val) \
