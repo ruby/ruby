@@ -1,3 +1,7 @@
+Fri Sep 18 07:06:41 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/fileutils/test_fileutils.rb: add a test for [ruby-dev:39345]
+
 Fri Sep 18 06:47:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (push_glob): str should be a string always.
