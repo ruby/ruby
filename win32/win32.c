@@ -2339,11 +2339,12 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		break;
 	    }
 	    else {
-		struct timeval *dowait = &wait;
-
 		fd_set orig_rd;
 		fd_set orig_wr;
 		fd_set orig_ex;
+		struct timeval *dowait = &wait;
+		if (timeout && compare(&rest, &wait) < 0) dowait = &rest;
+
 		if (rd) orig_rd = *rd;
 		if (wr) orig_wr = *wr;
 		if (ex) orig_ex = *ex;
@@ -2358,7 +2359,6 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		    gettimeofday(&now, NULL);
 		    rest = limit;
 		    if (!subtract(&rest, &now)) break;
-		    if (compare(&rest, &wait) < 0) dowait = &rest;
 		}
 	    }
 	}
