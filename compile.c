@@ -3760,9 +3760,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_INSN(ret, nd_line(node), putnil);
 	}
 	COMPILE(ret, "NODE_OP_ASGN1 recv", node->nd_recv);
-	if (nd_type(node->nd_args->nd_body) != NODE_ZARRAY) {
+	if (nd_type(node->nd_args->nd_head) != NODE_ZARRAY) {
 	    INIT_ANCHOR(args);
-	    argc = setup_args(iseq, args, node->nd_args->nd_body, &flag);
+	    argc = setup_args(iseq, args, node->nd_args->nd_head, &flag);
 	    ADD_SEQ(ret, args);
 	}
 	else {
@@ -3795,7 +3795,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	    ADD_INSN(ret, nd_line(node), pop);
 
-	    COMPILE(ret, "NODE_OP_ASGN1 args->head: ", node->nd_args->nd_head);
+	    COMPILE(ret, "NODE_OP_ASGN1 args->body: ", node->nd_args->nd_body);
 	    if (!poped) {
 		ADD_INSN1(ret, nd_line(node), setn, FIXNUM_INC(argc, 2));
 	    }
@@ -3819,7 +3819,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_LABEL(ret, lfin);
 	}
 	else {
-	    COMPILE(ret, "NODE_OP_ASGN1 args->head: ", node->nd_args->nd_head);
+	    COMPILE(ret, "NODE_OP_ASGN1 args->body: ", node->nd_args->nd_body);
 	    ADD_SEND(ret, nd_line(node), ID2SYM(id), INT2FIX(1));
 	    if (!poped) {
 		ADD_INSN1(ret, nd_line(node), setn, FIXNUM_INC(argc, 2));

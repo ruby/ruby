@@ -1,3 +1,8 @@
+Fri Sep 18 16:15:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each), parse.y (stmt, arg): arg_concat()
+	  on op_asgn was inversed.  [ruby-core:25629] [Bug #2050]
+
 Fri Sep 18 16:06:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (GlobPathValue): glob allows null bytes as separators.
