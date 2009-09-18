@@ -536,7 +536,7 @@ enum.$(OBJEXT): {$(VPATH)}enum.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h \
 enumerator.$(OBJEXT): {$(VPATH)}enumerator.c $(RUBY_H_INCLUDES)
 error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}known_errors.inc \
   $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h
-eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}eval_intern.h \
+eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}eval_intern.h {$(VPATH)}vm.h \
   $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) {$(VPATH)}eval_error.c \
   {$(VPATH)}eval_jump.c {$(VPATH)}debug.h {$(VPATH)}gc.h {$(VPATH)}iseq.h
 load.$(OBJEXT): {$(VPATH)}load.c {$(VPATH)}eval_intern.h \

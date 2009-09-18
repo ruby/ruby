@@ -1,3 +1,13 @@
+Fri Sep 18 16:29:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (eval.o): needs vm.h.
+
+	* eval.c (ruby_cleanup): destruct current VM before exit.
+
+	* gc.c (rb_objspace_free): free object space.
+
+	* vm.c (ruby_vm_destruct): destruct and free VM struct.
+
 Fri Sep 18 16:15:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each), parse.y (stmt, arg): arg_concat()

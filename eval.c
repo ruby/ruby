@@ -14,6 +14,7 @@
 #include "eval_intern.h"
 #include "iseq.h"
 #include "gc.h"
+#include "ruby/vm.h"
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 
@@ -159,6 +160,7 @@ ruby_cleanup(volatile int ex)
     POP_TAG();
     rb_thread_stop_timer_thread();
 
+    state = 0;
     for (nerr = 0; nerr < numberof(errs); ++nerr) {
 	VALUE err = errs[nerr];
 
@@ -172,12 +174,15 @@ ruby_cleanup(volatile int ex)
 	}
 	else if (rb_obj_is_kind_of(err, rb_eSignal)) {
 	    VALUE sig = rb_iv_get(err, "signo");
-	    ruby_default_signal(NUM2INT(sig));
+	    state = NUM2INT(sig);
+	    break;
 	}
 	else if (ex == 0) {
 	    ex = 1;
 	}
     }
+    ruby_vm_destruct(GET_VM());
+    if (state) ruby_default_signal(state);
 
 #if EXIT_SUCCESS != 0 || EXIT_FAILURE != 1
     switch (ex) {

@@ -25,6 +25,8 @@
 #include "vm_method.c"
 #include "vm_eval.c"
 
+#include <assert.h>
+
 #define BUFSIZE 0x100
 #define PROCDEBUG 0
 
@@ -40,6 +42,8 @@ char ruby_vm_redefined_flag[BOP_LAST_];
 
 rb_thread_t *ruby_current_thread = 0;
 rb_vm_t *ruby_current_vm = 0;
+
+static void thread_free(void *ptr);
 
 VALUE rb_insns_name_array(void);
 
@@ -1464,21 +1468,36 @@ rb_vm_mark(void *ptr)
     RUBY_MARK_LEAVE("vm");
 }
 
-static void
-vm_free(void *ptr)
+#define vm_free 0
+
+int
+ruby_vm_destruct(rb_vm_t *vm)
 {
     RUBY_FREE_ENTER("vm");
-    if (ptr) {
-	rb_vm_t *vmobj = ptr;
-
-	st_free_table(vmobj->living_threads);
-	vmobj->living_threads = 0;
-	/* TODO: MultiVM Instance */
-	/* VM object should not be cleaned by GC */
-	/* ruby_xfree(ptr); */
-	/* ruby_current_vm = 0; */
+    if (vm) {
+	rb_thread_t *th = vm->main_thread;
+#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
+	struct rb_objspace *objspace = vm->objspace;
+#endif
+	rb_gc_force_recycle(vm->self);
+	vm->main_thread = 0;
+	if (th) {
+	    thread_free(th);
+	}
+	if (vm->living_threads) {
+	    st_free_table(vm->living_threads);
+	    vm->living_threads = 0;
+	}
+	ruby_xfree(vm);
+	ruby_current_vm = 0;
+#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
+	if (objspace) {
+	    rb_objspace_free(objspace);
+	}
+#endif
     }
     RUBY_FREE_LEAVE("vm");
+    return 0;
 }
 
 static size_t
