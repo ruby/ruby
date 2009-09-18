@@ -366,6 +366,8 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 
 #define need_call_final 	(finalizer_table && finalizer_table->num_entries)
 
+static void rb_objspace_call_finalizer(rb_objspace_t *objspace);
+
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 rb_objspace_t *
 rb_objspace_alloc(void)
@@ -376,6 +378,33 @@ rb_objspace_alloc(void)
     ruby_gc_stress = ruby_initial_gc_stress;
 
     return objspace;
+}
+
+void
+rb_objspace_free(rb_objspace_t *objspace)
+{
+    rb_objspace_call_finalizer(objspace);
+    if (objspace->profile.record) {
+	free(objspace->profile.record);
+	objspace->profile.record = 0;
+    }
+    if (global_List) {
+	struct gc_list *list, *next;
+	for (list = global_List; list; list = next) {
+	    next = list->next;
+	    free(list);
+	}
+    }
+    if (heaps) {
+	int i;
+	for (i = 0; i < heaps_used; ++i) {
+	    free(heaps[i].membase);
+	}
+	free(heaps);
+	heaps_used = 0;
+	heaps = 0;
+    }
+    free(objspace);
 }
 #endif
 
@@ -2613,7 +2642,12 @@ chain_finalized_object(st_data_t key, st_data_t val, st_data_t arg)
 void
 rb_gc_call_finalizer_at_exit(void)
 {
-    rb_objspace_t *objspace = &rb_objspace;
+    rb_objspace_call_finalizer(&rb_objspace);
+}
+
+void
+rb_objspace_call_finalizer(rb_objspace_t *objspace)
+{
     RVALUE *p, *pend;
     RVALUE *final_list = 0;
     size_t i;

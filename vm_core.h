@@ -31,6 +31,10 @@
 #error "unsupported thread type"
 #endif
 
+#ifndef ENABLE_VM_OBJSPACE
+#define ENABLE_VM_OBJSPACE 1
+#endif
+
 #include <setjmp.h>
 #include <signal.h>
 
@@ -238,6 +242,11 @@ enum ruby_special_exceptions {
 
 #define GetVMPtr(obj, ptr) \
   GetCoreDataFromValue(obj, rb_vm_t, ptr)
+
+#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
+struct rb_objspace;
+void rb_objspace_free(struct rb_objspace *);
+#endif
 
 typedef struct rb_vm_struct {
     VALUE self;
