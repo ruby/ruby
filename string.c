@@ -334,10 +334,10 @@ rb_enc_str_asciionly_p(VALUE str)
     rb_encoding *enc = STR_ENC_GET(str);
 
     if (!rb_enc_asciicompat(enc))
-        return Qfalse;
+        return FALSE;
     else if (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)
-        return Qtrue;
-    return Qfalse;
+        return TRUE;
+    return FALSE;
 }
 
 static inline void
@@ -1205,7 +1205,7 @@ rb_str_format_m(VALUE str, VALUE arg)
     volatile VALUE tmp = rb_check_array_type(arg);
 
     if (!NIL_P(tmp)) {
-	return rb_str_format(RARRAY_LEN(tmp), RARRAY_PTR(tmp), str);
+	return rb_str_format(RARRAY_LENINT(tmp), RARRAY_PTR(tmp), str);
     }
     return rb_str_format(1, &arg, str);
 }
@@ -2272,23 +2272,23 @@ rb_str_comparable(VALUE str1, VALUE str2)
     int idx1, idx2;
     int rc1, rc2;
 
-    if (RSTRING_LEN(str1) == 0) return Qtrue;
-    if (RSTRING_LEN(str2) == 0) return Qtrue;
+    if (RSTRING_LEN(str1) == 0) return TRUE;
+    if (RSTRING_LEN(str2) == 0) return TRUE;
     idx1 = ENCODING_GET(str1);
     idx2 = ENCODING_GET(str2);
-    if (idx1 == idx2) return Qtrue;
+    if (idx1 == idx2) return TRUE;
     rc1 = rb_enc_str_coderange(str1);
     rc2 = rb_enc_str_coderange(str2);
     if (rc1 == ENC_CODERANGE_7BIT) {
-	if (rc2 == ENC_CODERANGE_7BIT) return Qtrue;
+	if (rc2 == ENC_CODERANGE_7BIT) return TRUE;
 	if (rb_enc_asciicompat(rb_enc_from_index(idx2)))
-	    return Qtrue;
+	    return TRUE;
     }
     if (rc2 == ENC_CODERANGE_7BIT) {
 	if (rb_enc_asciicompat(rb_enc_from_index(idx1)))
-	    return Qtrue;
+	    return TRUE;
     }
-    return Qfalse;
+    return FALSE;
 }
 
 int
@@ -2797,9 +2797,10 @@ enum neighbor_char {
 };
 
 static enum neighbor_char
-enc_succ_char(char *p, int len, rb_encoding *enc)
+enc_succ_char(char *p, long len, rb_encoding *enc)
 {
-    int i, l;
+    long i;
+    int l;
     while (1) {
         for (i = len-1; 0 <= i && (unsigned char)p[i] == 0xff; i--)
             p[i] = '\0';
@@ -2817,7 +2818,8 @@ enc_succ_char(char *p, int len, rb_encoding *enc)
             }
         }
         if (MBCLEN_INVALID_P(l) && i < len-1) {
-            int len2, l2;
+            long len2;
+            int l2;
             for (len2 = len-1; 0 < len2; len2--) {
                 l2 = rb_enc_precise_mbclen(p, p+len2, enc);
                 if (!MBCLEN_INVALID_P(l2))
@@ -2829,9 +2831,10 @@ enc_succ_char(char *p, int len, rb_encoding *enc)
 }
 
 static enum neighbor_char
-enc_pred_char(char *p, int len, rb_encoding *enc)
+enc_pred_char(char *p, long len, rb_encoding *enc)
 {
-    int i, l;
+    long i;
+    int l;
     while (1) {
         for (i = len-1; 0 <= i && (unsigned char)p[i] == 0; i--)
             p[i] = '\xff';
@@ -2849,7 +2852,8 @@ enc_pred_char(char *p, int len, rb_encoding *enc)
             }
         }
         if (MBCLEN_INVALID_P(l) && i < len-1) {
-            int len2, l2;
+            long len2;
+            int l2;
             for (len2 = len-1; 0 < len2; len2--) {
                 l2 = rb_enc_precise_mbclen(p, p+len2, enc);
                 if (!MBCLEN_INVALID_P(l2))
@@ -2870,7 +2874,7 @@ enc_pred_char(char *p, int len, rb_encoding *enc)
   character.
  */
 static enum neighbor_char
-enc_succ_alnum_char(char *p, int len, rb_encoding *enc, char *carry)
+enc_succ_alnum_char(char *p, long len, rb_encoding *enc, char *carry)
 {
     enum neighbor_char ret;
     unsigned int c;
@@ -2960,7 +2964,7 @@ rb_str_succ(VALUE orig)
     int c = -1;
     long l;
     char carry[ONIGENC_CODE_TO_MBC_MAXLEN] = "\1";
-    int carry_pos = 0, carry_len = 1;
+    long carry_pos = 0, carry_len = 1;
     enum neighbor_char neighbor = NEIGHBOR_FOUND;
 
     str = rb_str_new5(orig, RSTRING_PTR(orig), RSTRING_LEN(orig));
@@ -3109,8 +3113,8 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
 	    if (!ISDIGIT(*s)) goto no_digits;
 	    s++;
 	}
-	b = rb_str_to_inum(beg, 10, Qfalse);
-	e = rb_str_to_inum(end, 10, Qfalse);
+	b = rb_str_to_inum(beg, 10, FALSE);
+	e = rb_str_to_inum(end, 10, FALSE);
 	if (FIXNUM_P(b) && FIXNUM_P(e)) {
 	    long bi = FIX2LONG(b);
 	    long ei = FIX2LONG(e);
@@ -3284,7 +3288,7 @@ rb_str_drop_bytes(VALUE str, long len)
     nlen = olen - len;
     if (nlen <= RSTRING_EMBED_LEN_MAX) {
 	char *oldptr = ptr;
-	int fl = (RBASIC(str)->flags & (STR_NOEMBED|ELTS_SHARED));
+	int fl = (int)(RBASIC(str)->flags & (STR_NOEMBED|ELTS_SHARED));
 	STR_SET_EMBED(str);
 	STR_SET_EMBED_LEN(str, nlen);
 	ptr = RSTRING(str)->as.ary;
@@ -4185,7 +4189,7 @@ rb_str_to_i(int argc, VALUE *argv, VALUE str)
     if (base < 0) {
 	rb_raise(rb_eArgError, "invalid radix %d", base);
     }
-    return rb_str_to_inum(str, base, Qfalse);
+    return rb_str_to_inum(str, base, FALSE);
 }
 
 
@@ -4206,7 +4210,7 @@ rb_str_to_i(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_to_f(VALUE str)
 {
-    return DBL2NUM(rb_str_to_dbl(str, Qfalse));
+    return DBL2NUM(rb_str_to_dbl(str, FALSE));
 }
 
 
@@ -4927,7 +4931,8 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     str_modify_keep_cr(str);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
     if (sflag) {
-	int offset, clen, tlen, max = RSTRING_LEN(str);
+	int clen, tlen;
+	long offset, max = RSTRING_LEN(str);
 	unsigned int save = -1;
 	char *buf = ALLOC_N(char, max), *t = buf;
 
@@ -5006,7 +5011,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     }
     else {
 	int clen, tlen, max = (int)(RSTRING_LEN(str) * 1.2);
-	int offset;
+	long offset;
 	char *buf = ALLOC_N(char, max), *t = buf;
 
 	while (s < send) {
@@ -5174,17 +5179,17 @@ static int
 tr_find(unsigned int c, char table[256], VALUE del, VALUE nodel)
 {
     if (c < 256) {
-	return table[c] ? Qtrue : Qfalse;
+	return table[c] != 0;
     }
     else {
 	VALUE v = UINT2NUM(c);
 
 	if (del && !NIL_P(rb_hash_lookup(del, v))) {
 	    if (!nodel || NIL_P(rb_hash_lookup(nodel, v))) {
-		return Qtrue;
+		return TRUE;
 	    }
 	}
-	return Qfalse;
+	return FALSE;
     }
 }
 
@@ -5694,7 +5699,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	char *ptr = RSTRING_PTR(str);
 	char *eptr = RSTRING_END(str);
 	char *sptr = RSTRING_PTR(spat);
-	int slen = RSTRING_LEN(spat);
+	long slen = RSTRING_LEN(spat);
 
 	if (is_broken_string(str)) {
 	    rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(STR_ENC_GET(str)));
@@ -6394,7 +6399,7 @@ rb_str_rstrip_bang(VALUE str)
 	}
     }
     if (t < e) {
-	int len = t-RSTRING_PTR(str);
+	long len = t-RSTRING_PTR(str);
 
 	STR_SET_LEN(str, len);
 	RSTRING_PTR(str)[len] = '\0';
@@ -6466,7 +6471,7 @@ scan_once(VALUE str, VALUE pat, long *start)
 {
     VALUE result, match;
     struct re_registers *regs;
-    long i;
+    int i;
 
     if (rb_reg_search(pat, str, *start, 0) >= 0) {
 	match = rb_backref_get();
@@ -6584,7 +6589,7 @@ rb_str_hex(VALUE str)
     if (!rb_enc_asciicompat(enc)) {
 	rb_raise(rb_eEncCompatError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
     }
-    return rb_str_to_inum(str, 16, Qfalse);
+    return rb_str_to_inum(str, 16, FALSE);
 }
 
 
@@ -6610,7 +6615,7 @@ rb_str_oct(VALUE str)
     if (!rb_enc_asciicompat(enc)) {
 	rb_raise(rb_eEncCompatError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
     }
-    return rb_str_to_inum(str, -8, Qfalse);
+    return rb_str_to_inum(str, -8, FALSE);
 }
 
 
@@ -6944,11 +6949,11 @@ static VALUE
 rb_str_partition(VALUE str, VALUE sep)
 {
     long pos;
-    int regex = Qfalse;
+    int regex = FALSE;
 
     if (TYPE(sep) == T_REGEXP) {
 	pos = rb_reg_search(sep, str, 0, 0);
-	regex = Qtrue;
+	regex = TRUE;
     }
     else {
 	VALUE tmp;
@@ -6994,11 +6999,11 @@ static VALUE
 rb_str_rpartition(VALUE str, VALUE sep)
 {
     long pos = RSTRING_LEN(str);
-    int regex = Qfalse;
+    int regex = FALSE;
 
     if (TYPE(sep) == T_REGEXP) {
 	pos = rb_reg_search(sep, str, pos, 1);
-	regex = Qtrue;
+	regex = TRUE;
     }
     else {
 	VALUE tmp;
@@ -7205,10 +7210,10 @@ sym_printable(const char *s, const char *send, rb_encoding *enc)
 	int n;
 	int c = rb_enc_codepoint_len(s, send, &n, enc);
 
-	if (!rb_enc_isprint(c, enc)) return Qfalse;
+	if (!rb_enc_isprint(c, enc)) return FALSE;
 	s += n;
     }
-    return Qtrue;
+    return TRUE;
 }
 
 /*
