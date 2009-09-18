@@ -1,3 +1,7 @@
+Fri Sep 18 16:06:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (GlobPathValue): glob allows null bytes as separators.
+
 Fri Sep 18 10:11:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* doc/re.rdoc: use rdoc mode.
