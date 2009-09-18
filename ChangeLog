@@ -1,3 +1,7 @@
+Fri Sep 18 10:11:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/rdoc-mode.el: added.
+
 Fri Sep 18 09:02:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/rdoc.rb (RDoc::RDoc#parse_files): don't branch by
