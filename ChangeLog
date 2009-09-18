@@ -1,3 +1,8 @@
+Fri Sep 18 23:51:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (r_object0): entry regexp object before its encoding
+	  name.  [ruby-core:25625]
+
 Fri Sep 18 16:29:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (eval.o): needs vm.h.
