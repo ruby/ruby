@@ -343,7 +343,7 @@ static VALUE dir_close(VALUE);
     /* can contain null bytes as separators */	\
     (!RB_TYPE_P(str, T_STRING) ?		\
      FilePathValue(str) :			\
-     (safe) ? rb_check_safe_obj(str) : (str))
+     (safe) ? (rb_check_safe_obj(str), (str)) : (str))
 
 static VALUE
 dir_s_alloc(VALUE klass)
