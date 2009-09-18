@@ -7334,11 +7334,27 @@ sym_to_proc(VALUE sym)
     }
 }
 
+/*
+ * call-seq:
+ *
+ *   sym.succ
+ *
+ * Same as <code>sym.to_s.succ.intern</code>.
+ */
+
 static VALUE
 sym_succ(VALUE sym)
 {
     return rb_str_intern(rb_str_succ(rb_sym_to_s(sym)));
 }
+
+/*
+ * call-seq:
+ *
+ *   str <=> other       => -1, 0, +1
+ *
+ * Compares _sym_ with _other_ in string form.
+ */
 
 static VALUE
 sym_cmp(VALUE sym, VALUE other)
@@ -7349,6 +7365,14 @@ sym_cmp(VALUE sym, VALUE other)
     return rb_str_cmp_m(rb_sym_to_s(sym), rb_sym_to_s(other));
 }
 
+/*
+ * call-seq:
+ *
+ *   sym.casecmp(other)  => -1, 0, +1
+ *
+ * Case-insensitive version of <code>Symbol#<=></code>.
+ */
+
 static VALUE
 sym_casecmp(VALUE sym, VALUE other)
 {
@@ -7358,11 +7382,26 @@ sym_casecmp(VALUE sym, VALUE other)
     return rb_str_casecmp(rb_sym_to_s(sym), rb_sym_to_s(other));
 }
 
+/*
+ * call-seq:
+ *   sym =~ obj   => fixnum or nil
+ *
+ * Returns <code>sym.to_s =~ obj</code>.
+ */
+
 static VALUE
 sym_match(VALUE sym, VALUE other)
 {
     return rb_str_match(rb_sym_to_s(sym), other);
 }
+
+/*
+ * call-seq:
+ *   sym[idx]      => char
+ *   sym[b, n]     => char
+ *
+ * Returns <code>sym.to_s[]</code>.
+ */
 
 static VALUE
 sym_aref(int argc, VALUE *argv, VALUE sym)
@@ -7370,11 +7409,25 @@ sym_aref(int argc, VALUE *argv, VALUE sym)
     return rb_str_aref_m(argc, argv, rb_sym_to_s(sym));
 }
 
+/*
+ * call-seq:
+ *   sym.length    => integer
+ *
+ * Same as <code>sym.to_s.length</code>.
+ */
+
 static VALUE
 sym_length(VALUE sym)
 {
     return rb_str_length(rb_id2str(SYM2ID(sym)));
 }
+
+/*
+ * call-seq:
+ *   sym.empty?   => true or false
+ *
+ * Returns that _sym_ is :"" or not.
+ */
 
 static VALUE
 sym_empty(VALUE sym)
@@ -7382,11 +7435,25 @@ sym_empty(VALUE sym)
     return rb_str_empty(rb_id2str(SYM2ID(sym)));
 }
 
+/*
+ * call-seq:
+ *   sym.upcase    => symbol
+ *
+ * Same as <code>sym.to_s.upcase.intern</code>.
+ */
+
 static VALUE
 sym_upcase(VALUE sym)
 {
     return rb_str_intern(rb_str_upcase(rb_id2str(SYM2ID(sym))));
 }
+
+/*
+ * call-seq:
+ *   sym.downcase  => symbol
+ *
+ * Same as <code>sym.to_s.downcase.intern</code>.
+ */
 
 static VALUE
 sym_downcase(VALUE sym)
@@ -7394,17 +7461,38 @@ sym_downcase(VALUE sym)
     return rb_str_intern(rb_str_downcase(rb_id2str(SYM2ID(sym))));
 }
 
+/*
+ * call-seq:
+ *   sym.capitalize  => symbol
+ *
+ * Same as <code>sym.to_s.capitalize.intern</code>.
+ */
+
 static VALUE
 sym_capitalize(VALUE sym)
 {
     return rb_str_intern(rb_str_capitalize(rb_id2str(SYM2ID(sym))));
 }
 
+/*
+ * call-seq:
+ *   sym.swapcase  => symbol
+ *
+ * Same as <code>sym.to_s.swapcase.intern</code>.
+ */
+
 static VALUE
 sym_swapcase(VALUE sym)
 {
     return rb_str_intern(rb_str_swapcase(rb_id2str(SYM2ID(sym))));
 }
+
+/*
+ * call-seq:
+ *   sym.encoding   => encoding
+ *
+ * Returns the Encoding object that represents the encoding of _sym_.
+ */
 
 static VALUE
 sym_encoding(VALUE sym)
