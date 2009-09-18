@@ -339,6 +339,12 @@ static const rb_data_type_t dir_data_type = {
 
 static VALUE dir_close(VALUE);
 
+#define GlobPathValue(str, safe) \
+    /* can contain null bytes as separators */	\
+    (!RB_TYPE_P(str, T_STRING) ?		\
+     FilePathValue(str) :			\
+     (safe) ? rb_check_safe_obj(str) : (str))
+
 static VALUE
 dir_s_alloc(VALUE klass)
 {
@@ -385,7 +391,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 	}
     }
 
-    FilePathValue(dirname);
+    GlobPathValue(dirname, FALSE);
 
     TypedData_Get_Struct(dir, struct dir_data, &dir_data_type, dp);
     if (dp->dir) closedir(dp->dir);
@@ -1623,7 +1629,7 @@ rb_push_glob(VALUE str, int flags) /* '\0' is delimiter */
     long offset = 0;
     VALUE ary;
 
-    FilePathValue(str);
+    GlobPathValue(str, TRUE);
     ary = rb_ary_new();
 
     while (offset < RSTRING_LEN(str)) {
@@ -1653,7 +1659,7 @@ dir_globs(long argc, VALUE *argv, int flags)
     for (i = 0; i < argc; ++i) {
 	int status;
 	VALUE str = argv[i];
-	FilePathValue(str);
+	GlobPathValue(str, TRUE);
 	status = push_glob(ary, str, flags);
 	if (status) GLOB_JUMP_TAG(status);
     }
