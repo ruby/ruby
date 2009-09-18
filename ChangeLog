@@ -1,3 +1,7 @@
+Fri Sep 18 14:44:13 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_select): wait specified time on select.
+
 Fri Sep 18 14:30:40 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_select): on 1.8, we don't need to poll sockets,
