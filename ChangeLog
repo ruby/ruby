@@ -1,4 +1,7 @@
-Fri Sep 18 09:02:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Sep 18 09:02:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/rdoc.rb (RDoc::RDoc#parse_files): don't branch by
+	  RUBY_VERSION.
 
 	* lib/rdoc/rdoc.rb (RDoc::RDoc#parse_files): emacs local variables
 	  are delimited by a semicolon.  supported Vim style.
