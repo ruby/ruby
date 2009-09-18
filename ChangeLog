@@ -1,4 +1,6 @@
-Fri Sep 18 10:11:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Sep 18 10:11:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* doc/re.rdoc: use rdoc mode.
 
 	* misc/rdoc-mode.el: added.
 
