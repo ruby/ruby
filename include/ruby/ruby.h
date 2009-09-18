@@ -384,6 +384,7 @@ enum ruby_value_type {
 
 #define BUILTIN_TYPE(x) (int)(((struct RBasic*)(x))->flags & T_MASK)
 
+static inline int rb_type(VALUE obj);
 #define TYPE(x) rb_type((VALUE)(x))
 
 #define RB_GC_GUARD(v) (*(volatile VALUE *)&(v))

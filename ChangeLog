@@ -1,3 +1,8 @@
+Sat Sep 19 00:02:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_type): forward declaration to suppress a
+	  warning.  a patch from Naohisa Goto at [ruby-dev:39350]
+
 Fri Sep 18 23:59:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (GlobPathValue): adjust return types.  based on a patch
