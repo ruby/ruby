@@ -2347,7 +2347,7 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		if (rd) orig_rd = *rd;
 		if (wr) orig_wr = *wr;
 		if (ex) orig_ex = *ex;
-		r = do_select(nfds, rd, wr, ex, &zero);	// polling
+		r = do_select(nfds, rd, wr, ex, dowait);
 		if (r != 0) break; // signaled or error
 		if (rd) *rd = orig_rd;
 		if (wr) *wr = orig_wr;
@@ -2360,7 +2360,6 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		    if (!subtract(&rest, &now)) break;
 		    if (compare(&rest, &wait) < 0) dowait = &rest;
 		}
-		Sleep(dowait->tv_sec * 1000 + dowait->tv_usec / 1000);
 	    }
 	}
     }
