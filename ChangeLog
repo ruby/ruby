@@ -1,3 +1,8 @@
+Sat Sep 19 17:46:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (ENABLE_VM_OBJSPACE): socklist needs st_table in
+	  rb_w32_sysinit(), before object space initialization.
+
 Sat Sep 19 17:32:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (GlobPathValue), file.c (rb_get_path_check): path names
