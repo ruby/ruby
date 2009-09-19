@@ -161,6 +161,11 @@ class TestDir < Test::Unit::TestCase
                  Dir.glob(File.join(@root, '{\{\},a}')))
     assert_equal([], Dir.glob(File.join(@root, '[')))
     assert_equal([], Dir.glob(File.join(@root, '[a-\\')))
+
+    d = "\u{3042}\u{3044}".encode("utf-16le")
+    assert_raise(Encoding::CompatibilityError) {Dir.glob(d)}
+    m = Class.new {define_method(:to_path) {d}}
+    assert_raise(Encoding::CompatibilityError) {Dir.glob(m.new)}
   end
 
   def test_foreach

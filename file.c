@@ -127,6 +127,7 @@ rb_get_path_check(VALUE obj, int level)
     if (obj != tmp && insecure_obj_p(tmp, level)) {
 	rb_insecure_operation();
     }
+    rb_enc_check(tmp, rb_enc_from_encoding(rb_usascii_encoding()));
     return rb_str_new4(tmp);
 }
 
