@@ -3,6 +3,13 @@ require "fileutils"
 require "tmpdir"
 
 class TestFileExhaustive < Test::Unit::TestCase
+  def assert_incompatible_encoding
+    d = "\u{3042}\u{3044}".encode("utf-16le")
+    assert_raise(Encoding::CompatibilityError) {yield d}
+    m = Class.new {define_method(:to_path) {d}}
+    assert_raise(Encoding::CompatibilityError) {yield m.new}
+  end
+
   def setup
     @dir = Dir.mktmpdir("rubytest-file")
     File.chown(-1, Process.gid, @dir)
@@ -388,6 +395,8 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_kind_of(String, File.expand_path("~"))
     assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha") }
     assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha", "/") }
+
+    assert_incompatible_encoding {|d| File.expand_path(d)}
   end
 
   def test_basename
@@ -412,11 +421,14 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(basename, File.basename(@file + ".", ".*"))
       assert_equal(basename, File.basename(@file + "::$DATA", ".*"))
     end
+
+    assert_incompatible_encoding {|d| File.basename(d)}
   end
 
   def test_dirname
     assert(@file.start_with?(File.dirname(@file)))
     assert_equal(".", File.dirname(""))
+    assert_incompatible_encoding {|d| File.dirname(d)}
   end
 
   def test_extname
@@ -440,6 +452,8 @@ class TestFileExhaustive < Test::Unit::TestCase
         end
       end
     end
+
+    assert_incompatible_encoding {|d| File.extname(d)}
   end
 
   def test_split
