@@ -49,6 +49,14 @@ module BigMath
     n    = prec + BigDecimal.double_fig
     one  = BigDecimal("1")
     two  = BigDecimal("2")
+    x = -x if neg = x < 0
+    if x > (twopi = two * BigMath.PI(prec))
+      if x > 30
+        x %= twopi
+      else
+        x -= twopi while x > twopi
+      end
+    end
     x1   = x
     x2   = x.mult(x,n)
     sign = 1
@@ -65,7 +73,7 @@ module BigMath
       d   = sign * x1.div(z,m)
       y  += d
     end
-    y
+    neg ? -y : y
   end
 
   # Computes the cosine of x to the specified number of digits of precision.
@@ -77,6 +85,14 @@ module BigMath
     n    = prec + BigDecimal.double_fig
     one  = BigDecimal("1")
     two  = BigDecimal("2")
+    x = -x if x < 0
+    if x > (twopi = two * BigMath.PI(prec))
+      if x > 30
+        x %= twopi
+      else
+        x -= twopi while x > twopi
+      end
+    end
     x1 = one
     x2 = x.mult(x,n)
     sign = 1
@@ -99,11 +115,9 @@ module BigMath
   # Computes the arctangent of x to the specified number of digits of precision.
   #
   # If x is infinite or NaN, returns NaN.
-  # Raises an argument error if x > 1.
   def atan(x, prec)
     raise ArgumentError, "Zero or negative precision for atan" if prec <= 0
     return BigDecimal("NaN") if x.infinite? || x.nan?
-    raise ArgumentError, "x.abs must be less than 1.0" if x.abs>=1
     n    = prec + BigDecimal.double_fig
     y = x
     d = y
@@ -132,6 +146,7 @@ module BigMath
     return BigDecimal("NaN") if x.infinite? || x.nan?
     n    = prec + BigDecimal.double_fig
     one  = BigDecimal("1")
+    x = -x if neg = x < 0
     x1 = one
     y  = one
     d  = y
@@ -145,7 +160,11 @@ module BigMath
       d  = x1.div(z,m)
       y += d
     end
-    y
+    if neg
+      one.div(y, prec)
+    else
+      y.round(prec - y.exponent)
+    end
   end
 
   # Computes the natural logarithm of x to the specified number of digits
@@ -159,6 +178,9 @@ module BigMath
     one = BigDecimal("1")
     two = BigDecimal("2")
     n  = prec + BigDecimal.double_fig
+    if (expo = x.exponent) < 0
+      x = x.mult(BigDecimal("1E#{-expo}"), n)
+    end
     x  = (x - one).div(x + one,n)
     x2 = x.mult(x,n)
     y  = x
@@ -171,7 +193,11 @@ module BigMath
       d  = x.div(i,m)
       y += d
     end
-    y*two
+    y *= two
+    if expo < 0
+      y += log(BigDecimal("10"),prec) * BigDecimal(expo.to_s)
+    end
+    y
   end
 
   # Computes the value of pi to the specified number of digits of precision.
