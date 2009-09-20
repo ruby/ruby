@@ -33,7 +33,7 @@ module Open3
   #   
   #   require 'open3'
   #
-  #   [stdin, stdout, stderr] = Open3.popen3(cmd)
+  #   stdin, stdout, stderr = Open3.popen3(cmd)
   #
   # Block form:
   #
@@ -42,6 +42,12 @@ module Open3
   #   Open3.popen3(cmd) { |stdin, stdout, stderr| ... }
   #
   # The parameter +cmd+ is passed directly to Kernel#exec.
+  #
+  # _popen3_ is like _system_ in that you can pass extra parameters, and the
+  # strings won't be mangled by shell expansion.
+  #
+  #   stdin, stdout, stderr = Open3.popen3('identify', '/weird path/with spaces/and "strange" characters.jpg')
+  #   result = stdout.read
   #
   def popen3(*cmd)
     pw = IO::pipe   # pipe[0] for read, pipe[1] for write
