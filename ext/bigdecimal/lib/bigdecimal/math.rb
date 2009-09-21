@@ -29,6 +29,7 @@
 #   puts sin(a,100) # -> 0.10000000000000000000......E1
 #
 module BigMath
+  module_function
 
   # Computes the square root of x to the specified number of digits of
   # precision.

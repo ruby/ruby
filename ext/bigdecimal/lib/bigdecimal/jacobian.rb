@@ -21,6 +21,8 @@
 # fx is f.values(x).
 #
 module Jacobian
+  module_function
+
   #--
   def isEqual(a,b,zero=0.0,e=1.0e-8)
     aa = a.abs

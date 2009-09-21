@@ -28,6 +28,7 @@ require "bigdecimal/jacobian"
 module Newton
   include LUSolve
   include Jacobian
+  module_function
 
   def norm(fv,zero=0.0)
     s = zero

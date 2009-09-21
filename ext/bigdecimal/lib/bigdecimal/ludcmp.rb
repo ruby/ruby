@@ -2,6 +2,8 @@
 # Solves a*x = b for x, using LU decomposition.
 #
 module LUSolve
+  module_function
+
   # Performs LU decomposition of the n by n matrix a.
   def ludecomp(a,n,zero=0,one=1)
     prec = BigDecimal.limit(nil)
