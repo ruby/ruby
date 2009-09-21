@@ -74,6 +74,9 @@ static VALUE rb_eFiberError;
 NOINLINE(static VALUE cont_capture(volatile int *stat));
 
 void rb_thread_mark(rb_thread_t *th);
+#define THREAD_MUST_BE_RUNNING(th) do { \
+	if (!th->tag) rb_raise(rb_eThreadError, "not running thread");	\
+    } while (0)
 
 static void
 cont_mark(void *ptr)
@@ -276,10 +279,8 @@ static const rb_data_type_t cont_data_type = {
 };
 
 static void
-cont_init(rb_context_t *cont)
+cont_init(rb_context_t *cont, rb_thread_t *th)
 {
-    rb_thread_t *th = GET_THREAD();
-
     /* save thread context */
     cont->saved_thread = *th;
 }
@@ -289,10 +290,12 @@ cont_new(VALUE klass)
 {
     rb_context_t *cont;
     volatile VALUE contval;
+    rb_thread_t *th = GET_THREAD();
 
+    THREAD_MUST_BE_RUNNING(th);
     contval = TypedData_Make_Struct(klass, rb_context_t, &cont_data_type, cont);
     cont->self = contval;
-    cont_init(cont);
+    cont_init(cont, th);
     return cont;
 }
 
@@ -305,6 +308,7 @@ cont_capture(volatile int *stat)
     rb_thread_t *th = GET_THREAD(), *sth;
     volatile VALUE contval;
 
+    THREAD_MUST_BE_RUNNING(th);
     rb_vm_stack_to_heap(th);
     cont = cont_new(rb_cContinuation);
     contval = cont->self;
@@ -716,12 +720,15 @@ fiber_alloc(VALUE klass)
 static rb_fiber_t*
 fiber_t_alloc(VALUE fibval)
 {
-    rb_fiber_t *fib = ALLOC(rb_fiber_t);
+    rb_fiber_t *fib;
+    rb_thread_t *th = GET_THREAD();
 
+    THREAD_MUST_BE_RUNNING(th);
+    fib = ALLOC(rb_fiber_t);
     memset(fib, 0, sizeof(rb_fiber_t));
     fib->cont.self = fibval;
     fib->cont.type = FIBER_CONTEXT;
-    cont_init(&fib->cont);
+    cont_init(&fib->cont, th);
     fib->prev = Qnil;
     fib->status = CREATED;
 
