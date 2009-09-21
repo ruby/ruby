@@ -1,3 +1,8 @@
+Tue Sep 22 04:47:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (GetVpValue): support conversion from
+	  Rational.  [ruby-core:25697]
+
 Tue Sep 22 04:43:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, win32/Makefile.sub (INSNS): depend on tools.

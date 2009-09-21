@@ -239,9 +239,24 @@ GetVpValue(VALUE v, int must)
     Real *pv;
     VALUE bg;
     char szD[128];
+    VALUE orig = Qundef;
+    int util_loaded = 0;
 
+again:
     switch(TYPE(v))
     {
+    case T_RATIONAL:
+        if(orig == Qundef ? (orig = v, 1) : orig != v) {
+            if(!util_loaded) {
+                rb_require("bigdecimal/util");
+                util_loaded = 1;
+            }
+            v = rb_funcall2(v, rb_intern("to_d"), 0, 0);
+            goto again;
+        }
+        v = orig;
+        goto SomeOneMayDoIt;
+
     case T_DATA:
         if(rb_typeddata_is_kind_of(v, &BigDecimal_data_type)) {
             pv = DATA_PTR(v);
