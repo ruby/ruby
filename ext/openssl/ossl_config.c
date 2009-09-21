@@ -192,10 +192,19 @@ ossl_config_add_value(VALUE self, VALUE section, VALUE name, VALUE value)
 #endif
 }
 
+static void
+rb_ossl_config_modify_check(VALUE config)
+{
+    if (OBJ_FROZEN(config)) rb_error_frozen("OpenSSL::Config");
+    if (!OBJ_UNTRUSTED(config) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify OpenSSL config");
+}
+
 #if !defined(OSSL_NO_CONF_API)
 static VALUE
 ossl_config_add_value_m(VALUE self, VALUE section, VALUE name, VALUE value)
 {
+    rb_ossl_config_modify_check(self);
     return ossl_config_add_value(self, section, name, value);
 }
 #else
@@ -257,6 +266,7 @@ ossl_config_set_section(VALUE self, VALUE section, VALUE hash)
 {
     VALUE arg[2];
 
+    rb_ossl_config_modify_check(self);
     arg[0] = self;
     arg[1] = section;
     rb_block_call(hash, rb_intern("each"), 0, 0, set_conf_section_i, (VALUE)arg);
