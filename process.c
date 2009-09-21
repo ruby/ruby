@@ -1925,7 +1925,7 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
         int oldfd;
         int newfd;
         long older_index;
-        int num_newer;
+        long num_newer;
     } *pairs = 0;
 
     n = RARRAY_LEN(ary);
