@@ -366,11 +366,9 @@ num_modulo(x, y)
  *  call-seq:
  *     num.remainder(numeric)    => result
  *
- *  If <i>num</i> and <i>numeric</i> have different signs, returns
- *  <em>mod</em>-<i>numeric</i>; otherwise, returns <em>mod</em>. In
- *  both cases <em>mod</em> is the value
- *  <i>num</i>.<code>modulo(</code><i>numeric</i><code>)</code>. The
- *  differences between <code>remainder</code> and modulo
+ *  <code>x.remainder(y)</code> means <code>x-y*(x/y).truncate.</code>
+ *
+ *  The differences between <code>remainder</code> and modulo
  *  (<code>%</code>) are shown in the table under <code>Numeric#divmod</code>.
  */
 

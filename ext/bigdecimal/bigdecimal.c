@@ -1069,10 +1069,7 @@ BigDecimal_divremain(VALUE self, VALUE r, Real **dv, Real **rv)
 
 /* Returns the remainder from dividing by the value.
  *
- * If the values divided are of the same sign, the remainder is the same as
- * the modulus (see divmod).
- *
- * Otherwise, the remainder is the modulus minus the value divided by.
+ * <code>x.remainder(y)</code> means <code>x-y*(x/y).truncate.</code>
  */
 static VALUE
 BigDecimal_remainder(VALUE self, VALUE r) /* remainder */
