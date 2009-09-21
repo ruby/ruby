@@ -144,6 +144,7 @@ class TestProc < Test::Unit::TestCase
   def test_method_to_proc
     b = block()
     assert_equal "OK", b.call
+    assert_instance_of(Binding, b.binding, '[ruby-core:25589]')
   end
 
   def test_curry
