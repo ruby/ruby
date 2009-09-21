@@ -455,7 +455,7 @@ rb_enable_super(VALUE klass, const char *name)
 }
 
 static void
-rb_export_method(VALUE klass, ID name, ID noex)
+rb_export_method(VALUE klass, ID name, rb_method_flag_t noex)
 {
     rb_method_entry_t *me;
 
@@ -491,14 +491,14 @@ rb_method_boundp(VALUE klass, ID id, int ex)
 
     if (me != 0) {
 	if (ex && (me->flag & NOEX_PRIVATE)) {
-	    return Qfalse;
+	    return FALSE;
 	}
 	if (!me->def || me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
-	    return Qfalse;
+	    return FALSE;
 	}
-	return Qtrue;
+	return TRUE;
     }
-    return Qfalse;
+    return FALSE;
 }
 
 void
@@ -879,7 +879,7 @@ secure_visibility(VALUE self)
 }
 
 static void
-set_method_visibility(VALUE self, int argc, VALUE *argv, ID ex)
+set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
 {
     int i;
     secure_visibility(self);
@@ -1135,7 +1135,7 @@ rb_obj_respond_to(VALUE obj, ID id, int priv)
 int
 rb_respond_to(VALUE obj, ID id)
 {
-    return rb_obj_respond_to(obj, id, Qfalse);
+    return rb_obj_respond_to(obj, id, FALSE);
 }
 
 /*

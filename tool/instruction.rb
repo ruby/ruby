@@ -63,12 +63,12 @@ class RubyVM
          rets.any?{|t, v| v == '...'})
         # user definision
         raise "no sp increase definition" if @sp_inc.nil?
-        ret = "rb_num_t inc = 0;\n"
+        ret = "int inc = 0;\n"
 
         @opes.each_with_index{|(t, v), i|
           if t == 'rb_num_t' && ((re = /\b#{v}\b/n) =~ @sp_inc ||
                                  @defopes.any?{|t, val| re =~ val})
-            ret << "        #{t} #{v} = FIX2INT(opes[#{i}]);\n"
+            ret << "        int #{v} = FIX2INT(opes[#{i}]);\n"
           end
         }
         @defopes.each_with_index{|((t, var), val), i|

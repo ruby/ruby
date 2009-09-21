@@ -41,7 +41,7 @@ typedef struct rb_context_struct {
 #endif
     rb_thread_t saved_thread;
     rb_jmpbuf_t jmpbuf;
-    int machine_stack_size;
+    size_t machine_stack_size;
 } rb_context_t;
 
 enum fiber_status {

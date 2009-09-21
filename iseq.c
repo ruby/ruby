@@ -710,8 +710,8 @@ find_prev_line_no(rb_iseq_t *iseqdat, unsigned long pos)
 
 static VALUE
 insn_operand_intern(rb_iseq_t *iseq,
-		    int insn, int op_no, VALUE op,
-		    int len, int pos, VALUE *pnop, VALUE child)
+		    VALUE insn, int op_no, VALUE op,
+		    int len, size_t pos, VALUE *pnop, VALUE child)
 {
     const char *types = insn_op_types(insn);
     char type = types[op_no];
@@ -729,7 +729,7 @@ insn_operand_intern(rb_iseq_t *iseq,
       case TS_LINDEX:
 	{
 	    rb_iseq_t *ip = iseq->local_iseq;
-	    int lidx = ip->local_size - op;
+	    int lidx = ip->local_size - (int)op;
 	    const char *name = rb_id2name(ip->local_table[lidx]);
 
 	    if (name) {
@@ -743,7 +743,7 @@ insn_operand_intern(rb_iseq_t *iseq,
       case TS_DINDEX:{
 	if (insn == BIN(getdynamic) || insn == BIN(setdynamic)) {
 	    rb_iseq_t *ip = iseq;
-	    int level = *pnop, i;
+	    VALUE level = *pnop, i;
 	    const char *name;
 	    for (i = 0; i < level; i++) {
 		ip = ip->parent_iseq;
@@ -814,11 +814,11 @@ insn_operand_intern(rb_iseq_t *iseq,
  * Disassemble a instruction
  * Iseq -> Iseq inspect object
  */
-VALUE
-rb_iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
+int
+rb_iseq_disasm_insn(VALUE ret, VALUE *iseq, size_t pos,
 		    rb_iseq_t *iseqdat, VALUE child)
 {
-    int insn = iseq[pos];
+    VALUE insn = iseq[pos];
     int len = insn_len(insn);
     int j;
     const char *types = insn_op_types(insn);
@@ -827,10 +827,10 @@ rb_iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
 
     insn_name_buff = insn_name(insn);
     if (1) {
-	rb_str_catf(str, "%04d %-16s ", pos, insn_name_buff);
+	rb_str_catf(str, "%04"PRIdSIZE" %-16s ", pos, insn_name_buff);
     }
     else {
-	rb_str_catf(str, "%04d %-16.*s ", pos,
+	rb_str_catf(str, "%04"PRIdSIZE" %-16.*s ", pos,
 		    (int)strcspn(insn_name_buff, "_"), insn_name_buff);
     }
 
@@ -907,6 +907,7 @@ rb_iseq_disasm(VALUE self)
     int i;
     long l;
     ID *tbl;
+    size_t n;
     enum {header_minlen = 72};
 
     rb_secure(1);
@@ -986,8 +987,8 @@ rb_iseq_disasm(VALUE self)
     }
 
     /* show each line */
-    for (i = 0; (size_t)i < size;) {
-	i += rb_iseq_disasm_insn(str, iseq, i, iseqdat, child);
+    for (n = 0; n < size;) {
+	n += rb_iseq_disasm_insn(str, iseq, n, iseqdat, child);
     }
 
     for (i = 0; i < RARRAY_LEN(child); i++) {
@@ -1032,12 +1033,12 @@ ruby_node_name(int node)
   sym_##name = ID2SYM(rb_intern(#name))
 
 static VALUE
-register_label(struct st_table *table, int idx)
+register_label(struct st_table *table, unsigned long idx)
 {
     VALUE sym;
     char buff[8 + (sizeof(idx) * CHAR_BIT * 32 / 100)];
 
-    snprintf(buff, sizeof(buff), "label_%u", idx);
+    snprintf(buff, sizeof(buff), "label_%lu", idx);
     sym = ID2SYM(rb_intern(buff));
     st_insert(table, idx, sym);
     return sym;
@@ -1071,7 +1072,8 @@ cdhash_each(VALUE key, VALUE value, VALUE ary)
 static VALUE
 iseq_data_to_ary(rb_iseq_t *iseq)
 {
-    int i, pos, line = 0;
+    long i, pos;
+    int line = 0;
     VALUE *seq;
 
     VALUE val = rb_ary_new();
@@ -1183,7 +1185,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 	for (j=0; j<len-1; j++, seq++) {
 	    switch (insn_op_type(insn, j)) {
 	      case TS_OFFSET: {
-		unsigned int idx = nseq - iseq->iseq + *seq;
+		unsigned long idx = nseq - iseq->iseq + *seq;
 		rb_ary_push(ary, register_label(labels_table, idx));
 		break;
 	      }
@@ -1229,7 +1231,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 
 		    for (i=0; i<RARRAY_LEN(val); i+=2) {
 			VALUE pos = FIX2INT(rb_ary_entry(val, i+1));
-			unsigned int idx = nseq - iseq->iseq + pos;
+			unsigned long idx = nseq - iseq->iseq + pos;
 
 			rb_ary_store(val, i+1,
 				     register_label(labels_table, idx));

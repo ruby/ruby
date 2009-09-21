@@ -778,7 +778,7 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
     int argc = orig_argc;
     const int m = iseq->argc;
     VALUE ary, arg0;
-    rb_num_t opt_pc = 0;
+    int opt_pc = 0;
 
     th->mark_stack_len = argc;
 
@@ -1024,7 +1024,7 @@ vm_getspecial(rb_thread_t *th, VALUE *lfp, VALUE key, rb_num_t type)
 	    }
 	}
 	else {
-	    val = rb_reg_nth_match(type >> 1, backref);
+	    val = rb_reg_nth_match((int)(type >> 1), backref);
 	}
     }
     return val;
@@ -1212,7 +1212,7 @@ vm_getivar(VALUE obj, ID id, IC ic)
 
 	    if (iv_index_tbl) {
 		if (st_lookup(iv_index_tbl, id, &index)) {
-		    if (index < len) {
+		    if ((long)index < len) {
 			val = ptr[index];
 		    }
 		    ic->ic_class = klass;
@@ -1519,7 +1519,7 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, rb_num_t num, int flag)
     rb_num_t space_size = num + is_splat;
     VALUE *base = cfp->sp, *ptr;
     volatile VALUE tmp_ary;
-    long len;
+    rb_num_t len;
 
     if (TYPE(ary) != T_ARRAY) {
 	ary = rb_ary_to_ary(ary);
@@ -1529,11 +1529,11 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, rb_num_t num, int flag)
 
     tmp_ary = ary;
     ptr = RARRAY_PTR(ary);
-    len = RARRAY_LEN(ary);
+    len = (rb_num_t)RARRAY_LEN(ary);
 
     if (flag & 0x02) {
 	/* post: ..., nil ,ary[-1], ..., ary[0..-num] # top */
-	long i = 0, j;
+	rb_num_t i = 0, j;
 
 	if (len < num) {
 	    for (i=0; i<num-len; i++) {
@@ -1550,7 +1550,7 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, rb_num_t num, int flag)
     }
     else {
 	/* normal: ary[num..-1], ary[num-2], ary[num-3], ..., ary[0] # top */
-	int i;
+	rb_num_t i;
 	VALUE *bptr = &base[space_size - 1];
 
 	for (i=0; i<num; i++) {

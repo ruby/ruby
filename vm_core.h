@@ -125,7 +125,7 @@ typedef struct rb_compile_option_struct {
 } rb_compile_option_t;
 
 struct iseq_inline_cache_entry {
-    long  ic_vmstat;
+    VALUE ic_vmstat;
     VALUE ic_class;
     union {
 	VALUE value;
@@ -471,7 +471,7 @@ VALUE rb_iseq_new_with_bopt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
 VALUE rb_iseq_new_with_opt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE, const rb_compile_option_t*);
 VALUE rb_iseq_compile(VALUE src, VALUE file, VALUE line);
 VALUE rb_iseq_disasm(VALUE self);
-VALUE rb_iseq_disasm_insn(VALUE str, VALUE *iseqval, int pos, rb_iseq_t *iseq, VALUE child);
+int rb_iseq_disasm_insn(VALUE str, VALUE *iseqval, size_t pos, rb_iseq_t *iseq, VALUE child);
 const char *ruby_node_name(int node);
 int rb_iseq_first_lineno(rb_iseq_t *iseq);
 
@@ -616,7 +616,7 @@ void *rb_thread_call_with_gvl(void *(*func)(void *), void *data1);
 int ruby_thread_has_gvl_p(void);
 VALUE rb_make_backtrace(void);
 typedef int rb_backtrace_iter_func(void *, VALUE, int, VALUE);
-VALUE rb_backtrace_each(rb_backtrace_iter_func *iter, void *arg);
+int rb_backtrace_each(rb_backtrace_iter_func *iter, void *arg);
 rb_control_frame_t *rb_vm_get_ruby_level_next_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 
 NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));

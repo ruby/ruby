@@ -1265,9 +1265,11 @@ rb_throw(const char *tag, VALUE val)
 }
 
 static VALUE
-catch_i(VALUE tag, VALUE data) {
+catch_i(VALUE tag, VALUE data)
+{
     return rb_yield_0(1, &tag);
 }
+
 /*
  *  call-seq:
  *     catch([arg]) {|tag| block }  => obj
@@ -1403,7 +1405,7 @@ print_backtrace(void *arg, VALUE file, int line, VALUE method)
 {
     fprintf((FILE *)arg, "\tfrom %s:%d:in `%s'\n",
 	    RSTRING_PTR(file), line, RSTRING_PTR(method));
-    return Qfalse;
+    return FALSE;
 }
 
 void
@@ -1437,7 +1439,7 @@ rb_thread_backtrace(VALUE thval)
     return vm_backtrace(th, 0);
 }
 
-VALUE
+int
 rb_backtrace_each(rb_backtrace_iter_func *iter, void *arg)
 {
     return vm_backtrace_each(GET_THREAD(), -1, iter, arg);
