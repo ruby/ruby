@@ -1,3 +1,8 @@
+Tue Sep 22 01:10:22 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* ossl_ocsp.c (ossl_ocspres_to_der): Bug fix in Response#to_def.
+	  Patch by Chris Chandler [ruby-core:18411]
+
 Tue Sep 22 01:10:02 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* ossl_config.c (ossl_config_add_value_m, ossl_config_set_section):
