@@ -33,6 +33,8 @@ rb_iseq_t *rb_method_get_iseq(VALUE method);
 
 /* Proc */
 
+#define IS_METHOD_PROC_NODE(node) (nd_type(node) == NODE_IFUNC && (node)->nd_cfnc == bmcall)
+
 static void
 proc_free(void *ptr)
 {
@@ -633,7 +635,7 @@ rb_proc_arity(VALUE self)
 	}
 	else {
 	    NODE *node = (NODE *)iseq;
-	    if (nd_type(node) == NODE_IFUNC && node->nd_cfnc == bmcall) {
+	    if (IS_METHOD_PROC_NODE(node)) {
 		/* method(:foo).to_proc.arity */
 		return method_arity(node->nd_tval);
 	    }
@@ -654,7 +656,7 @@ get_proc_iseq(VALUE self, int *is_proc)
     if (!RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	NODE *node = (NODE *)iseq;
 	iseq = 0;
-	if (nd_type(node) == NODE_IFUNC && node->nd_cfnc == bmcall) {
+	if (IS_METHOD_PROC_NODE(node)) {
 	    /* method(:foo).to_proc */
 	    iseq = rb_method_get_iseq(node->nd_tval);
 	    if (is_proc) *is_proc = 0;
@@ -1807,16 +1809,18 @@ static VALUE
 proc_binding(VALUE self)
 {
     rb_proc_t *proc;
-    VALUE bindval = binding_alloc(rb_cBinding);
+    VALUE bindval;
     rb_binding_t *bind;
 
     GetProcPtr(self, proc);
-    GetBindingPtr(bindval, bind);
-
     if (TYPE(proc->block.iseq) == T_NODE) {
-	rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
+	if (!IS_METHOD_PROC_NODE((NODE *)proc->block.iseq)) {
+	    rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
+	}
     }
 
+    bindval = binding_alloc(rb_cBinding);
+    GetBindingPtr(bindval, bind);
     bind->env = proc->envval;
     return bindval;
 }

@@ -381,19 +381,26 @@ vm_make_env_each(rb_thread_t * const th, rb_control_frame_t * const cfp,
 }
 
 static int
-collect_local_variables_in_env(rb_env_t * const env, const VALUE ary)
+collect_local_variables_in_iseq(rb_iseq_t *iseq, const VALUE ary)
 {
     int i;
-    for (i = 0; i < env->block.iseq->local_table_size; i++) {
-	ID lid = env->block.iseq->local_table[i];
+    if (!iseq) return 0;
+    for (i = 0; i < iseq->local_table_size; i++) {
+	ID lid = iseq->local_table[i];
 	if (rb_is_local_id(lid)) {
 	    rb_ary_push(ary, ID2SYM(lid));
 	}
     }
-    if (env->prev_envval) {
-	rb_env_t *prevenv;
-	GetEnvPtr(env->prev_envval, prevenv);
-	collect_local_variables_in_env(prevenv, ary);
+    return 1;
+}
+
+static int
+collect_local_variables_in_env(rb_env_t * env, const VALUE ary)
+{
+    
+    while (collect_local_variables_in_iseq(env->block.iseq, ary),
+	   env->prev_envval) {
+	GetEnvPtr(env->prev_envval, env);
     }
     return 0;
 }
