@@ -1,3 +1,6 @@
+require "bigdecimal/ludcmp"
+require "bigdecimal/jacobian"
+
 #
 # newton.rb
 #
@@ -22,9 +25,6 @@
 #
 # On exit, x is the solution vector.
 #
-require "bigdecimal/ludcmp"
-require "bigdecimal/jacobian"
-
 module Newton
   include LUSolve
   include Jacobian
