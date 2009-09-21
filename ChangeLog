@@ -1,4 +1,7 @@
-Tue Sep 22 04:56:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Sep 22 05:04:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/lib/bigdecimal/{ludcmp,math}.rb: depend on
+	  bigdecimal.
 
 	* ext/bigdecimal/lib/bigdecimal/*.rb: made module functions.
 
