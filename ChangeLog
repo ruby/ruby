@@ -1,3 +1,8 @@
+Mon Sep 21 10:13:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (cont_new, cont_capture, fiber_t_alloc): needs already
+	  running thread.  cf. [ruby-core:25681]
+
 Mon Sep 21 00:07:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/lib/bigdecimal/math.rb (sin, cos, atan, exp, log):
