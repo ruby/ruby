@@ -31,23 +31,23 @@ class BigDecimal < Numeric
   # Converts a BigDecimal to a String of the form "nnnnnn.mmm".
   # This method is deprecated; use BigDecimal#to_s("F") instead.
   def to_digits
-     if self.nan? || self.infinite? || self.zero?
-        self.to_s
-     else
-       i       = self.to_i.to_s
-       s,f,y,z = self.frac.split
-       i + "." + ("0"*(-z)) + f
-     end
+    if self.nan? || self.infinite? || self.zero?
+      self.to_s
+    else
+      i       = self.to_i.to_s
+      s,f,y,z = self.frac.split
+      i + "." + ("0"*(-z)) + f
+    end
   end
 end
 
 class Rational < Numeric
   # Converts a Rational to a BigDecimal
   def to_d(nFig=0)
-     num = self.numerator.to_s
-     if nFig<=0
-        nFig = BigDecimal.double_fig*2+1
-     end
-     BigDecimal.new(num).div(self.denominator,nFig)
+    num = self.numerator.to_s
+    if nFig<=0
+      nFig = BigDecimal.double_fig*2+1
+    end
+    BigDecimal.new(num).div(self.denominator,nFig)
   end
 end
