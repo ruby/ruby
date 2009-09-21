@@ -50,7 +50,7 @@ typedef struct iseq_label_data {
 typedef struct iseq_insn_data {
     LINK_ELEMENT link;
     enum ruby_vminsn_type insn_id;
-    long line_no;
+    int line_no;
     int operand_size;
     int sc_state;
     VALUE *operands;
@@ -59,7 +59,7 @@ typedef struct iseq_insn_data {
 typedef struct iseq_adjust_data {
     LINK_ELEMENT link;
     LABEL *label;
-    long line_no;
+    int line_no;
 } ADJUST;
 
 struct ensure_range {
@@ -327,9 +327,9 @@ static int calc_sp_depth(int depth, INSN *iobj);
 
 static void ADD_ELEM(ISEQ_ARG_DECLARE LINK_ANCHOR *anchor, LINK_ELEMENT *elem);
 
-static INSN *new_insn_body(rb_iseq_t *iseq, long line_no, int insn_id, int argc, ...);
+static INSN *new_insn_body(rb_iseq_t *iseq, int line_no, int insn_id, int argc, ...);
 static LABEL *new_label_body(rb_iseq_t *iseq, long line);
-static ADJUST *new_adjust_body(rb_iseq_t *iseq, LABEL *label, long line);
+static ADJUST *new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line);
 
 static int iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *anchor, NODE * n, int);
 static int iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
@@ -849,7 +849,7 @@ new_label_body(rb_iseq_t *iseq, long line)
 }
 
 static ADJUST *
-new_adjust_body(rb_iseq_t *iseq, LABEL *label, long line)
+new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line)
 {
     ADJUST *adjust = compile_data_alloc_adjust(iseq);
     adjust->link.type = ISEQ_ELEMENT_ADJUST;
@@ -860,7 +860,7 @@ new_adjust_body(rb_iseq_t *iseq, LABEL *label, long line)
 }
 
 static INSN *
-new_insn_core(rb_iseq_t *iseq, long line_no,
+new_insn_core(rb_iseq_t *iseq, int line_no,
 	      int insn_id, int argc, VALUE *argv)
 {
     INSN *iobj = compile_data_alloc_insn(iseq);
@@ -876,7 +876,7 @@ new_insn_core(rb_iseq_t *iseq, long line_no,
 }
 
 static INSN *
-new_insn_body(rb_iseq_t *iseq, long line_no, int insn_id, int argc, ...)
+new_insn_body(rb_iseq_t *iseq, int line_no, int insn_id, int argc, ...)
 {
     VALUE *operands = 0;
     va_list argv;
@@ -1283,7 +1283,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	    {
 		lobj = (LABEL *)list;
 		lobj->position = pos;
-		lobj->set = Qtrue;
+		lobj->set = TRUE;
 		break;
 	    }
 	  case ISEQ_ELEMENT_NONE:
@@ -1365,7 +1365,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			{
 			    /* label(destination position) */
 			    lobj = (LABEL *)operands[j];
-			    if (lobj->set != Qtrue) {
+			    if (!lobj->set) {
 				rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
 						 "unknown label");
 			    }
@@ -1391,7 +1391,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 				VALUE lv  = rb_ary_entry(lits, i+1);
 				lobj = (LABEL *)(lv & ~1);
 
-				if (lobj->set != Qtrue) {
+				if (!lobj->set) {
 				    rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
 						     "unknown label");
 				}
@@ -2655,13 +2655,13 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
       case NODE_VCALL:
       case NODE_FCALL:
       case NODE_ATTRASGN:{
-	int self = Qtrue;
+	int self = TRUE;
 
 	switch (type) {
 	  case NODE_ATTRASGN:
 	    if (node->nd_recv == (NODE *)1) break;
 	  case NODE_CALL:
-	    self = Qfalse;
+	    self = FALSE;
 	    break;
 	  default:
 	    /* through */;
@@ -3167,7 +3167,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	LABEL *prev_start_label = iseq->compile_data->start_label;
 	LABEL *prev_end_label = iseq->compile_data->end_label;
 	LABEL *prev_redo_label = iseq->compile_data->redo_label;
-	VALUE prev_loopval_popped = iseq->compile_data->loopval_popped;
+	int prev_loopval_popped = iseq->compile_data->loopval_popped;
 
 	struct iseq_compile_data_ensure_node_stack enl;
 
@@ -4700,7 +4700,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_DOT2:
       case NODE_DOT3:{
-	int flag = type == NODE_DOT2 ? INT2FIX(0) : INT2FIX(1);
+	VALUE flag = type == NODE_DOT2 ? INT2FIX(0) : INT2FIX(1);
 	COMPILE(ret, "min", (NODE *) node->nd_beg);
 	COMPILE(ret, "max", (NODE *) node->nd_end);
 	if (poped) {
@@ -4924,7 +4924,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       default:
 	rb_bug("iseq_compile_each: unknown node: %s", ruby_node_name(type));
-	return Qnil;
+	return COMPILE_NG;
     }
 
     debug_node_end();
@@ -5175,8 +5175,8 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 {
     /* TODO: body should be freezed */
     VALUE *ptr = RARRAY_PTR(body);
-    int len = RARRAY_LEN(body);
-    int i, j;
+    long i, len = RARRAY_LEN(body);
+    int j;
     int line_no = 0;
     /*
      * index -> LABEL *label
@@ -5199,7 +5199,7 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 	}
 	else if (TYPE(obj) == T_ARRAY) {
 	    VALUE *argv = 0;
-	    int argc = (int)RARRAY_LEN(obj) - 1;
+	    int argc = RARRAY_LENINT(obj) - 1;
 	    VALUE insn_id;
 	    VALUE insn;
 
@@ -5286,7 +5286,7 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 	    }
 	    ADD_ELEM(anchor,
 		     (LINK_ELEMENT*)new_insn_core(iseq, line_no,
-						  insn_id, argc, argv));
+						  (enum ruby_vminsn_type)insn_id, argc, argv));
 	}
 	else {
 	    rb_raise(rb_eTypeError, "unexpected object for instruction");
@@ -5314,7 +5314,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 
     INIT_ANCHOR(anchor);
 
-    iseq->local_table_size = RARRAY_LEN(locals);
+    iseq->local_table_size = RARRAY_LENINT(locals);
     iseq->local_table = tbl = (ID *)ALLOC_N(ID *, iseq->local_table_size);
     iseq->local_size = iseq->local_table_size + 1;
 
@@ -5343,7 +5343,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 	iseq->arg_post_len = FIX2INT(arg_post_len);
 	iseq->arg_post_start = FIX2INT(arg_post_start);
 	iseq->arg_block = FIX2INT(arg_block);
-	iseq->arg_opts = RARRAY_LEN(arg_opt_labels);
+	iseq->arg_opts = RARRAY_LENINT(arg_opt_labels);
 	iseq->arg_opt_table = (VALUE *)ALLOC_N(VALUE, iseq->arg_opts);
 
 	if (iseq->arg_block != -1) {

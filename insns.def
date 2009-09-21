@@ -583,7 +583,7 @@ newhash
 (...)
 (VALUE val) // inc += 1 - num;
 {
-    int i;
+    rb_num_t i;
     val = rb_hash_new();
 
     for (i = num; i > 0; i -= 2) {
@@ -982,8 +982,8 @@ send
     const rb_method_entry_t *me;
     VALUE recv, klass;
     rb_block_t *blockptr = 0;
-    rb_num_t num = caller_setup_args(th, GET_CFP(), op_flag, (int)op_argc,
-				     (rb_iseq_t *)blockiseq, &blockptr);
+    int num = caller_setup_args(th, GET_CFP(), op_flag, (int)op_argc,
+				(rb_iseq_t *)blockiseq, &blockptr);
     rb_num_t flag = op_flag;
     ID id = op_id;
 
@@ -1008,8 +1008,8 @@ invokesuper
 (VALUE val) // inc += - (int)(op_argc + ((op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? 1 : 0));
 {
     rb_block_t *blockptr = !(op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? GET_BLOCK_PTR() : 0;
-    rb_num_t num = caller_setup_args(th, GET_CFP(), op_flag,
-				     (int)op_argc, blockiseq, &blockptr);
+    int num = caller_setup_args(th, GET_CFP(), op_flag,
+				(int)op_argc, blockiseq, &blockptr);
     VALUE recv, klass;
     ID id;
     VALUE flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;

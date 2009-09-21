@@ -396,7 +396,7 @@ rb_objspace_free(rb_objspace_t *objspace)
 	}
     }
     if (heaps) {
-	int i;
+	size_t i;
 	for (i = 0; i < heaps_used; ++i) {
 	    free(heaps[i].membase);
 	}

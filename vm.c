@@ -729,7 +729,7 @@ vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *
     cfp -= 2;
     while (lev-- >= 0) {
 	if (++limit_cfp >= cfp) {
-	    return Qfalse;
+	    return FALSE;
 	}
     }
     limit_cfp = RUBY_VM_NEXT_CONTROL_FRAME(limit_cfp);
@@ -750,7 +750,7 @@ vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *
 	}
 	cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp);
     }
-    return Qtrue;
+    return TRUE;
 }
 
 static int

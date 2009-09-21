@@ -1769,7 +1769,7 @@ rb_f_exec(int argc, VALUE *argv)
 #define CHILD_ERRMSG_BUFLEN 80
     char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
 
-    rb_exec_arg_init(argc, argv, Qtrue, &earg);
+    rb_exec_arg_init(argc, argv, TRUE, &earg);
     if (NIL_P(rb_ary_entry(earg.options, EXEC_OPTION_CLOSE_OTHERS)))
         rb_exec_arg_addopt(&earg, ID2SYM(rb_intern("close_others")), Qfalse);
     rb_exec_arg_fixup(&earg);
@@ -1924,7 +1924,7 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
     struct fd_pair {
         int oldfd;
         int newfd;
-        int older_index;
+        long older_index;
         int num_newer;
     } *pairs = 0;
 
@@ -1969,7 +1969,7 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 
     /* non-cyclic redirection: O(n) */
     for (i = 0; i < n; i++) {
-        int j = i;
+        long j = i;
         while (j != -1 && pairs[j].oldfd != -1 && pairs[j].num_newer == 0) {
             if (save_redirect_fd(pairs[j].newfd, save, errmsg, errmsg_buflen) < 0)
                 goto fail;
@@ -1987,7 +1987,7 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 
     /* cyclic redirection: O(n) */
     for (i = 0; i < n; i++) {
-        int j;
+        long j;
         if (pairs[i].oldfd == -1)
             continue;
         if (pairs[i].oldfd == pairs[i].newfd) { /* self cycle */
@@ -2812,7 +2812,7 @@ rb_syswait(rb_pid_t pid)
 #endif
     RETSIGTYPE (*ifunc)(int) = 0;
     int status;
-    int i, hooked = Qfalse;
+    int i, hooked = FALSE;
 
     if (!overriding) {
 #ifdef SIGHUP
@@ -2822,8 +2822,8 @@ rb_syswait(rb_pid_t pid)
 	qfunc = signal(SIGQUIT, SIG_IGN);
 #endif
 	ifunc = signal(SIGINT, SIG_IGN);
-	overriding = Qtrue;
-	hooked = Qtrue;
+	overriding = TRUE;
+	hooked = TRUE;
     }
 
     do {
@@ -2838,7 +2838,7 @@ rb_syswait(rb_pid_t pid)
 	signal(SIGQUIT, qfunc);
 #endif
 	signal(SIGINT, ifunc);
-	overriding = Qfalse;
+	overriding = FALSE;
     }
 }
 
@@ -2856,7 +2856,7 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
     struct rb_exec_arg sarg;
 #endif
 
-    prog = rb_exec_arg_init(argc, argv, Qtrue, &earg);
+    prog = rb_exec_arg_init(argc, argv, TRUE, &earg);
     if (NIL_P(rb_ary_entry(earg.options, EXEC_OPTION_CLOSE_OTHERS))) {
         VALUE v = default_close_others ? Qtrue : Qfalse;
         rb_exec_arg_addopt(&earg, ID2SYM(rb_intern("close_others")), v);
@@ -2899,13 +2899,13 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
 rb_pid_t
 rb_spawn_err(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
 {
-    return rb_spawn_internal(argc, argv, Qtrue, errmsg, errmsg_buflen);
+    return rb_spawn_internal(argc, argv, TRUE, errmsg, errmsg_buflen);
 }
 
 rb_pid_t
 rb_spawn(int argc, VALUE *argv)
 {
-    return rb_spawn_internal(argc, argv, Qtrue, NULL, 0);
+    return rb_spawn_internal(argc, argv, TRUE, NULL, 0);
 }
 
 /*
@@ -2954,7 +2954,7 @@ rb_f_system(int argc, VALUE *argv)
 
     chfunc = signal(SIGCHLD, SIG_DFL);
 #endif
-    pid = rb_spawn_internal(argc, argv, Qfalse, NULL, 0);
+    pid = rb_spawn_internal(argc, argv, FALSE, NULL, 0);
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
     if (pid > 0) {
 	rb_syswait(pid);
@@ -4348,7 +4348,7 @@ proc_setgid(VALUE obj, VALUE id)
 #endif
 
 
-static size_t maxgroups = 32;
+static int maxgroups = 32;
 
 
 #ifdef HAVE_GETGROUPS
@@ -4367,13 +4367,13 @@ static VALUE
 proc_getgroups(VALUE obj)
 {
     VALUE ary;
-    size_t i, ngroups;
+    int i, ngroups;
     rb_gid_t *groups;
 
     groups = ALLOCA_N(rb_gid_t, maxgroups);
 
     ngroups = getgroups(maxgroups, groups);
-    if (ngroups == (size_t)-1)
+    if (ngroups == -1)
 	rb_sys_fail(0);
 
     ary = rb_ary_new();
@@ -4438,7 +4438,7 @@ proc_setgroups(VALUE obj, VALUE ary)
 	}
     }
 
-    if (setgroups(ngroups, groups) == -1)
+    if (setgroups((int)ngroups, groups) == -1) /* ngroups <= maxgroups */
 	rb_sys_fail(0);
 
     return proc_getgroups(obj);
@@ -4507,7 +4507,7 @@ proc_getmaxgroups(VALUE obj)
 static VALUE
 proc_setmaxgroups(VALUE obj, VALUE val)
 {
-    size_t  ngroups = FIX2INT(val);
+    int ngroups = FIX2UINT(val);
 
     if (ngroups > 4096)
 	ngroups = 4096;

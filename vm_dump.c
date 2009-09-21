@@ -20,11 +20,12 @@
 static void
 control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 {
-    int pc = -1, bp = -1, line = 0;
+    ptrdiff_t pc = -1, bp = -1;
     ptrdiff_t lfp = cfp->lfp - th->stack;
     ptrdiff_t dfp = cfp->dfp - th->stack;
     char lfp_in_heap = ' ', dfp_in_heap = ' ';
     char posbuf[MAX_POSBUF+1];
+    int line = 0;
     int nopos = 0;
 
     const char *magic, *iseq_name = "-", *selfstr = "-", *biseq_name = "-";
@@ -124,9 +125,9 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	fprintf(stderr, "p:---- ");
     }
     else {
-	fprintf(stderr, "p:%04d ", pc);
+	fprintf(stderr, "p:%04"PRIdPTRDIFF" ", pc);
     }
-    fprintf(stderr, "s:%04"PRIdPTRDIFF" b:%04d ", (cfp->sp - th->stack), bp);
+    fprintf(stderr, "s:%04"PRIdPTRDIFF" b:%04"PRIdPTRDIFF" ", (cfp->sp - th->stack), bp);
     fprintf(stderr, lfp_in_heap == ' ' ? "l:%06"PRIdPTRDIFF" " : "l:%06"PRIxPTRDIFF" ", lfp % 10000);
     fprintf(stderr, dfp_in_heap == ' ' ? "d:%06"PRIdPTRDIFF" " : "d:%06"PRIxPTRDIFF" ", dfp % 10000);
     fprintf(stderr, "%-6s", magic);
@@ -329,10 +330,10 @@ void
 rb_vmdebug_debug_print_register(rb_thread_t *th)
 {
     rb_control_frame_t *cfp = th->cfp;
-    int pc = -1;
-    int lfp = cfp->lfp - th->stack;
-    int dfp = cfp->dfp - th->stack;
-    int cfpi;
+    ptrdiff_t pc = -1;
+    ptrdiff_t lfp = cfp->lfp - th->stack;
+    ptrdiff_t dfp = cfp->dfp - th->stack;
+    ptrdiff_t cfpi;
 
     if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	pc = cfp->pc - cfp->iseq->iseq_encoded;
@@ -344,7 +345,7 @@ rb_vmdebug_debug_print_register(rb_thread_t *th)
 	dfp = -1;
 
     cfpi = ((rb_control_frame_t *)(th->stack + th->stack_size)) - cfp;
-    fprintf(stderr, "  [PC] %04d, [SP] %04"PRIdPTRDIFF", [LFP] %04d, [DFP] %04d, [CFP] %04d\n",
+    fprintf(stderr, "  [PC] %04"PRIdPTRDIFF", [SP] %04"PRIdPTRDIFF", [LFP] %04"PRIdPTRDIFF", [DFP] %04"PRIdPTRDIFF", [CFP] %04"PRIdPTRDIFF"\n",
 	    pc, (cfp->sp - th->stack), lfp, dfp, cfpi);
 }
 
@@ -363,10 +364,12 @@ rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp)
 
     if (iseq != 0 && VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_FINISH) {
 	VALUE *seq = iseq->iseq;
-	int pc = cfp->pc - iseq->iseq_encoded;
+	ptrdiff_t pc = cfp->pc - iseq->iseq_encoded;
 
 	printf("%3"PRIdPTRDIFF" ", VM_CFP_CNT(th, cfp));
-	rb_iseq_disasm_insn(0, seq, pc, iseq, 0);
+	if (pc >= 0) {
+	    rb_iseq_disasm_insn(0, seq, (size_t)pc, iseq, 0);
+	}
     }
 
 #if VMDEBUG > 3

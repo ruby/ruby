@@ -2528,7 +2528,7 @@ int
 rb_thread_fd_writable(int fd)
 {
     rb_thread_wait_fd_rw(fd, 0);
-    return Qtrue;
+    return TRUE;
 }
 
 int
@@ -3537,7 +3537,7 @@ exec_recursive_i(VALUE tag, struct exec_recursive_params *p)
     recursive_push(p->list, p->objid, p->pairid);
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
-	result = (*p->func) (p->obj, p->arg, Qfalse);
+	result = (*p->func)(p->obj, p->arg, FALSE);
     }
     POP_TAG();
     recursive_pop(p->list, p->objid, p->pairid);
@@ -3570,7 +3570,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	if (outer && !outermost) {
 	    rb_throw_obj(p.list, p.list);
 	}
-	return (*func) (obj, arg, Qtrue);
+	return (*func)(obj, arg, TRUE);
     }
     else {
 	VALUE result = Qundef;
@@ -3584,7 +3584,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	    result = rb_catch_obj(p.list, exec_recursive_i, (VALUE)&p);
 	    recursive_pop(p.list, ID2SYM(recursive_key), 0);
 	    if (result == p.list) {
-		result = (*func) (obj, arg, Qtrue);
+		result = (*func)(obj, arg, TRUE);
 	    }
 	}
 	else {
@@ -4004,7 +4004,7 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     args.self = self;
     args.id = id;
     args.klass = klass;
-    ruby_suppress_tracing(call_trace_proc, (VALUE)&args, Qfalse);
+    ruby_suppress_tracing(call_trace_proc, (VALUE)&args, FALSE);
 }
 
 VALUE
@@ -4170,7 +4170,7 @@ ruby_native_thread_p(void)
 {
     rb_thread_t *th = ruby_thread_from_native();
 
-    return th ? Qtrue : Qfalse;
+    return th != 0;
 }
 
 static int
