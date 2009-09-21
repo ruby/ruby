@@ -94,6 +94,7 @@ rb_obj_is_proc(VALUE proc)
     }
 }
 
+/* :nodoc: */
 static VALUE
 proc_dup(VALUE self)
 {
@@ -111,6 +112,7 @@ proc_dup(VALUE self)
     return procval;
 }
 
+/* :nodoc: */
 static VALUE
 proc_clone(VALUE self)
 {
@@ -278,6 +280,7 @@ binding_alloc(VALUE klass)
     return obj;
 }
 
+/* :nodoc: */
 static VALUE
 binding_dup(VALUE self)
 {
@@ -289,6 +292,7 @@ binding_dup(VALUE self)
     return bindval;
 }
 
+/* :nodoc: */
 static VALUE
 binding_clone(VALUE self)
 {
@@ -1117,6 +1121,13 @@ rb_obj_method(VALUE obj, VALUE vid)
     return mnew(CLASS_OF(obj), obj, rb_to_id(vid), rb_cMethod, FALSE);
 }
 
+/*
+ *  call-seq:
+ *     obj.public_method(sym)    => method
+ *
+ *  Similar to _methd_, searches public method only.
+ */
+
 VALUE
 rb_obj_public_method(VALUE obj, VALUE vid)
 {
@@ -1160,6 +1171,13 @@ rb_mod_instance_method(VALUE mod, VALUE vid)
 {
     return mnew(mod, Qundef, rb_to_id(vid), rb_cUnboundMethod, FALSE);
 }
+
+/*
+ *  call-seq:
+ *     mod.public_instance_method(symbol)   => unbound_method
+ *
+ *  Similar to _instance_methd_, searches public method only.
+ */
 
 static VALUE
 rb_mod_public_instance_method(VALUE mod, VALUE vid)

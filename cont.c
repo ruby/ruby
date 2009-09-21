@@ -776,6 +776,7 @@ fiber_init(VALUE fibval, VALUE proc)
     return fibval;
 }
 
+/* :nodoc: */
 static VALUE
 rb_fiber_init(VALUE fibval)
 {
