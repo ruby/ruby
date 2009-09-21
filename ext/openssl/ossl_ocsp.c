@@ -382,7 +382,7 @@ ossl_ocspres_to_der(VALUE self)
 	ossl_raise(eOCSPError, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
-    if(i2d_OCSP_RESPONSE(res, NULL) <= 0)
+    if(i2d_OCSP_RESPONSE(res, &p) <= 0)
 	ossl_raise(eOCSPError, NULL);
     ossl_str_adjust(str, p);
 
