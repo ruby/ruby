@@ -315,4 +315,74 @@ class TestEnumerable < Test::Unit::TestCase
   ensure
     $, = ofs
   end
+
+  def test_chunk
+    e = [].chunk {|elt| true }
+    assert_equal([], e.to_a)
+
+    e = @obj.chunk {|elt| elt & 2 == 0 ? false : true }
+    assert_equal([[false, [1]], [true, [2, 3]], [false, [1]], [true, [2]]], e.to_a)
+
+    e = @obj.chunk(acc: 0) {|elt, h| h[:acc] += elt; h[:acc].even? }
+    assert_equal([[false, [1,2]], [true, [3]], [false, [1,2]]], e.to_a)
+    assert_equal([[false, [1,2]], [true, [3]], [false, [1,2]]], e.to_a) # this tests h is duplicated.
+
+    hs = [{}]
+    e = [:foo].chunk(hs[0]) {|elt, h|
+      hs << h
+      true
+    }
+    assert_equal([[true, [:foo]]], e.to_a)
+    assert_equal([[true, [:foo]]], e.to_a)
+    assert_equal([{}, {}, {}], hs)
+    assert_not_same(hs[0], hs[1])
+    assert_not_same(hs[0], hs[2])
+    assert_not_same(hs[1], hs[2])
+
+    e = @obj.chunk {|elt| elt < 3 ? :_alone : true }
+    assert_equal([[:_alone, [1]],
+                  [:_alone, [2]],
+                  [true, [3]],
+                  [:_alone, [1]],
+                  [:_alone, [2]]], e.to_a)
+
+    e = @obj.chunk {|elt| elt == 3 ? :_separator : true }
+    assert_equal([[true, [1, 2]],
+                  [true, [1, 2]]], e.to_a)
+
+    e = @obj.chunk {|elt| elt == 3 ? nil : true }
+    assert_equal([[true, [1, 2]],
+                  [true, [1, 2]]], e.to_a)
+
+    e = @obj.chunk {|elt| :_foo }
+    assert_raise(RuntimeError) { e.to_a }
+  end
+
+  def test_slice_before
+    e = [].slice_before {|elt| true }
+    assert_equal([], e.to_a)
+
+    e = @obj.slice_before {|elt| elt.even? }
+    assert_equal([[1], [2,3,1], [2]], e.to_a)
+
+    e = @obj.slice_before {|elt| elt.odd? }
+    assert_equal([[1,2], [3], [1,2]], e.to_a)
+
+    e = @obj.slice_before(acc: 0) {|elt, h| h[:acc] += elt; h[:acc].even? }
+    assert_equal([[1,2], [3,1,2]], e.to_a)
+    assert_equal([[1,2], [3,1,2]], e.to_a) # this tests h is duplicated.
+
+    hs = [{}]
+    e = [:foo].slice_before(hs[0]) {|elt, h|
+      hs << h
+      true
+    }
+    assert_equal([[:foo]], e.to_a)
+    assert_equal([[:foo]], e.to_a)
+    assert_equal([{}, {}, {}], hs)
+    assert_not_same(hs[0], hs[1])
+    assert_not_same(hs[0], hs[2])
+    assert_not_same(hs[1], hs[2])
+  end
+
 end

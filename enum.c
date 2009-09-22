@@ -1802,6 +1802,329 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
     return Qnil;		/* not reached */
 }
 
+struct chunk_arg {
+    VALUE categorize;
+    VALUE state;
+    VALUE prev_value;
+    VALUE prev_elts;
+    VALUE yielder;
+};
+
+static VALUE
+chunk_ii(VALUE i, VALUE _argp, int argc, VALUE *argv)
+{
+    struct chunk_arg *argp = (struct chunk_arg *)_argp;
+    VALUE v;
+    VALUE alone = ID2SYM(rb_intern("_alone"));
+    VALUE separator = ID2SYM(rb_intern("_separator"));
+
+    ENUM_WANT_SVALUE();
+
+    if (NIL_P(argp->state))
+        v = rb_funcall(argp->categorize, rb_intern("call"), 1, i);
+    else
+        v = rb_funcall(argp->categorize, rb_intern("call"), 2, i, argp->state);
+
+    if (v == alone) {
+        if (!NIL_P(argp->prev_value)) {
+            rb_funcall(argp->yielder, rb_intern("<<"), 1, rb_assoc_new(argp->prev_value, argp->prev_elts));
+            argp->prev_value = argp->prev_elts = Qnil;
+        }
+        rb_funcall(argp->yielder, rb_intern("<<"), 1, rb_assoc_new(v, rb_ary_new3(1, i)));
+    }
+    else if (NIL_P(v) || v == separator) {
+        if (!NIL_P(argp->prev_value)) {
+            rb_funcall(argp->yielder, rb_intern("<<"), 1, rb_assoc_new(argp->prev_value, argp->prev_elts));
+            argp->prev_value = argp->prev_elts = Qnil;
+        }
+    }
+    else if (SYMBOL_P(v) && rb_id2name(SYM2ID(v))[0] == '_') {
+	rb_raise(rb_eRuntimeError, "symbol begins with an underscore is reserved");
+    }
+    else {
+        if (NIL_P(argp->prev_value)) {
+            argp->prev_value = v;
+            argp->prev_elts = rb_ary_new3(1, i);
+        }
+        else {
+            if (rb_equal(argp->prev_value, v)) {
+                rb_ary_push(argp->prev_elts, i);
+            }
+            else {
+                rb_funcall(argp->yielder, rb_intern("<<"), 1, rb_assoc_new(argp->prev_value, argp->prev_elts));
+                argp->prev_value = v;
+                argp->prev_elts = rb_ary_new3(1, i);
+            }
+        }
+    }
+    return Qnil;
+}
+
+static VALUE
+chunk_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
+{
+    VALUE enumerable;
+    struct chunk_arg arg;
+
+    enumerable = rb_ivar_get(enumerator, rb_intern("chunk_enumerable"));
+    arg.categorize = rb_ivar_get(enumerator, rb_intern("chunk_categorize"));
+    arg.state = rb_ivar_get(enumerator, rb_intern("chunk_initial_state"));
+    arg.prev_value = Qnil;
+    arg.prev_elts = Qnil;
+    arg.yielder = yielder;
+
+    if (!NIL_P(arg.state))
+        arg.state = rb_obj_dup(arg.state);
+
+    rb_block_call(enumerable, id_each, 0, 0, chunk_ii, (VALUE)&arg);
+    if (!NIL_P(arg.prev_elts))
+        rb_funcall(arg.yielder, rb_intern("<<"), 1, rb_assoc_new(arg.prev_value, arg.prev_elts));
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.chunk {|elt| ... } => enumerator
+ *     enum.chunk(initial_state) {|elt, state| ... } => enumerator
+ *
+ *  Creates an enumerator for each chunked elements.
+ *  The elements which have same block value are chunked.
+ *
+ *  The result enumerator yields the block value and an array of chunked elements.
+ *  So "each" method can be called as follows.
+ *
+ *    enum.chunk {|elt| key }.each {|key, ary| ... }
+ *
+ *  For example, consecutive even numbers and odd numbers can be
+ *  splitted as follows.
+ *
+ *    [5, 3, 3, 5, 2, 8, 0, 6, 0, 3].chunk {|n|
+ *      n.even?
+ *    }.each {|even, ary|
+ *      p [even, ary]
+ *    }
+ *    #=> [false, [5, 3, 3, 5]]
+ *    #   [true, [2, 8, 0, 6, 0]]
+ *    #   [false, [3]]
+ *
+ *  This method is useful for sorted series of elements.
+ *  The following example counts words for each initial letter.
+ *
+ *    open("/usr/share/dict/words", "r:iso-8859-1") {|f|
+ *      f.chunk {|line| line.ord }.each {|ch, lines| p [ch.chr, lines.length] }
+ *    }
+ *    #=> ["\n", 1]
+ *    #   ["A", 1327]
+ *    #   ["B", 1372]
+ *    #   ["C", 1507]
+ *    #   ["D", 791]
+ *    #   ...
+ *
+ *  The following key values has special meaning:
+ *  - nil and :_separator specifies that the elements are dropped.
+ *  - :_alone specifies that the element should be chunked as a singleton.
+ *  Other symbols which begins an underscore are reserved.
+ *
+ *  nil and :_separator can be used to ignore some elements.
+ *  For example, the sequence of hyphens in svn log can be eliminated as follows.
+ *
+ *    sep = "-"*72 + "\n"
+ *    IO.popen("svn log README") {|f|                 
+ *      f.chunk {|line|
+ *        line != sep || nil
+ *      }.each {|_, lines|
+ *        pp lines
+ *      }      
+ *    }
+ *    #=> ["r20018 | knu | 2008-10-29 13:20:42 +0900 (Wed, 29 Oct 2008) | 2 lines\n",
+ *    #    "\n",
+ *    #    "* README, README.ja: Update the portability section.\n",
+ *    #    "\n"]
+ *    #   ["r16725 | knu | 2008-05-31 23:34:23 +0900 (Sat, 31 May 2008) | 2 lines\n",
+ *    #    "\n",
+ *    #    "* README, README.ja: Add a note about default C flags.\n",
+ *    #    "\n"]
+ *    #   ...
+ *
+ *  :_alone can be used to pass through bunch of elements.
+ *  For example, sort consective lines formed as Foo#bar and
+ *  pass other lines, chunk can be used as follows.
+ *
+ *    pat = /\A[A-Z][A-Za-z0-9_]+\#/
+ *    open(filename) {|f|
+ *      f.chunk {|line| pat =~ line ? $& : :_alone }.each {|key, lines|
+ *        if key != :_alone
+ *          print lines.sort.join('')
+ *        else
+ *          print lines.join('')
+ *        end
+ *      }
+ *    }
+ *
+ *  If the block needs to maintain state over multiple elements,
+ *  _initial_state_ argument can be used.
+ *  If non-nil value is given,
+ *  it is duplicated for each "each" method invocation of the enumerator.
+ *  The duplicated object is passed to 2nd argument of the block for "chunk" method..
+ *
+ */
+static VALUE
+enum_chunk(int argc, VALUE *argv, VALUE enumerable)
+{
+    VALUE initial_state;
+    VALUE enumerator;
+
+    rb_scan_args(argc, argv, "01", &initial_state);
+
+    enumerator = rb_obj_alloc(rb_cEnumerator);
+    rb_ivar_set(enumerator, rb_intern("chunk_enumerable"), enumerable);
+    rb_ivar_set(enumerator, rb_intern("chunk_categorize"), rb_block_proc());
+    rb_ivar_set(enumerator, rb_intern("chunk_initial_state"), initial_state);
+    rb_block_call(enumerator, rb_intern("initialize"), 0, 0, chunk_i, enumerator);
+    return enumerator;
+}
+
+
+struct slicebefore_arg {
+    VALUE separator_p;
+    VALUE state;
+    VALUE prev_elts;
+    VALUE yielder;
+};
+
+static VALUE
+slicebefore_ii(VALUE i, VALUE _argp, int argc, VALUE *argv)
+{
+    struct slicebefore_arg *argp = (struct slicebefore_arg *)_argp;
+    VALUE header_p;
+
+    ENUM_WANT_SVALUE();
+
+    if (NIL_P(argp->state))
+        header_p = rb_funcall(argp->separator_p, rb_intern("call"), 1, i);
+    else
+        header_p = rb_funcall(argp->separator_p, rb_intern("call"), 2, i, argp->state);
+    if (RTEST(header_p)) {
+        if (!NIL_P(argp->prev_elts))
+            rb_funcall(argp->yielder, rb_intern("<<"), 1, argp->prev_elts);
+        argp->prev_elts = rb_ary_new3(1, i);
+    }
+    else {
+        if (NIL_P(argp->prev_elts))
+            argp->prev_elts = rb_ary_new3(1, i);
+        else
+            rb_ary_push(argp->prev_elts, i);
+    }
+
+    return Qnil;
+}
+
+static VALUE
+slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
+{
+    VALUE enumerable;
+    struct slicebefore_arg arg;
+
+    enumerable = rb_ivar_get(enumerator, rb_intern("slicebefore_enumerable"));
+    arg.separator_p = rb_ivar_get(enumerator, rb_intern("slicebefore_separator_p"));
+    arg.state = rb_ivar_get(enumerator, rb_intern("slicebefore_initial_state"));
+    arg.prev_elts = Qnil;
+    arg.yielder = yielder;
+
+    if (!NIL_P(arg.state))
+        arg.state = rb_obj_dup(arg.state);
+
+    rb_block_call(enumerable, id_each, 0, 0, slicebefore_ii, (VALUE)&arg);
+    if (!NIL_P(arg.prev_elts))
+        rb_funcall(arg.yielder, rb_intern("<<"), 1, arg.prev_elts);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.slice_before {|elt| ... } => enumerator
+ *     enum.slice_before(initial_state) {|elt, state| ... } => enumerator
+ *
+ *  Creates an enumerator for each chunked elements.
+ *  The chunked elements begins an element which the block returns true value.
+ *
+ *  The result enumerator yields the chunked elements as an array.
+ *  So "each" method can be called as follows.
+ *
+ *    enum.slice_before {|elt| bool }.each {|ary| ... }
+ *
+ *  For example, iteration over ChangeLog entries can be implemented as follows.
+ *
+ *    # iterate over ChangeLog entries.
+ *    open("ChangeLog") {|f|
+ *      f.slice_before {|line| /\A\S/ =~ line }.each {|e| pp e}
+ *    }
+ *
+ *  If the block needs to maintain state over multiple elements,
+ *  _initial_state_ argument can be used.
+ *  If non-nil value is given,
+ *  it is duplicated for each "each" method invocation of the enumerator.
+ *  The duplicated object is passed to 2nd argument of the block for "slice_before" method..
+ *
+ *  For example, monotonically increasing elements can be chunked as follows.
+ *
+ *    a = [2, 5, 2, 1, 4, 3, 1, 2, 8, 0]
+ *    enum = a.slice_before(n: 0) {|elt, h|
+ *      prev = h[:n]
+ *      h[:n] = elt
+ *      prev > elt
+ *    }
+ *    enum.each {|ary| p ary }
+ *    #=> [2, 5]
+ *    #   [2]
+ *    #   [1, 4]
+ *    #   [3]
+ *    #   [1, 2, 8]
+ *    #   [0]
+ *
+ *
+ *    # parse mbox
+ *    open("mbox") {|f|
+ *      f.slice_before {|line|
+ *        line.start_with? "From "
+ *      }.each {|mail|
+ *        unix_from = mail.shift
+ *        i = mail.index("\n")
+ *        header = mail[0...i]
+ *        body = mail[(i+1)..-1]
+ *        fields = header.slice_before {|line| !" \t".include?(line[0]) }.to_a
+ *        p unix_from
+ *        pp fields
+ *        pp body
+ *      }
+ *    }
+ *
+ *    # split mails in mbox (slice before Unix From line after an empty line)
+ *    open("mbox") {|f|
+ *      f.slice_before(emp: true) {|line,h|
+ *      prevemp = h[:emp]
+ *      h[:emp] = line == "\n"
+ *      prevemp && line.start_with?("From ")
+ *    }.each {|mail|
+ *      pp mail
+ *    }
+ *
+ */
+static VALUE
+enum_slice_before(int argc, VALUE *argv, VALUE enumerable)
+{
+    VALUE initial_state, enumerator;
+
+    rb_scan_args(argc, argv, "01", &initial_state);
+
+    enumerator = rb_obj_alloc(rb_cEnumerator);
+    rb_ivar_set(enumerator, rb_intern("slicebefore_enumerable"), enumerable);
+    rb_ivar_set(enumerator, rb_intern("slicebefore_separator_p"), rb_block_proc());
+    rb_ivar_set(enumerator, rb_intern("slicebefore_initial_state"), initial_state);
+    rb_block_call(enumerator, rb_intern("initialize"), 0, 0, slicebefore_i, enumerator);
+    return enumerator;
+}
+
 /*
  *  call-seq:
  *     enum.join(sep=$,)    -> str
@@ -1881,6 +2204,8 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "drop_while", enum_drop_while, 0);
     rb_define_method(rb_mEnumerable, "cycle", enum_cycle, -1);
     rb_define_method(rb_mEnumerable, "join", enum_join, -1);
+    rb_define_method(rb_mEnumerable, "chunk", enum_chunk, -1);
+    rb_define_method(rb_mEnumerable, "slice_before", enum_slice_before, -1);
 
     id_eqq  = rb_intern("===");
     id_each = rb_intern("each");
