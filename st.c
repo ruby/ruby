@@ -18,7 +18,7 @@
 typedef struct st_table_entry st_table_entry;
 
 struct st_table_entry {
-    unsigned int hash;
+    st_index_t hash;
     st_data_t key;
     st_data_t record;
     st_table_entry *next;
@@ -319,7 +319,7 @@ st_lookup(st_table *table, register st_data_t key, st_data_t *value)
 int
 st_get_key(st_table *table, register st_data_t key, st_data_t *result)
 {
-    unsigned int hash_val, bin_pos;
+    st_index_t hash_val, bin_pos;
     register st_table_entry *ptr;
 
     if (table->entries_packed) {
