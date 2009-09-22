@@ -310,16 +310,19 @@ strcat_capa_from_static(UChar* dest, UChar* dest_end,
 #include "ruby/st.h"
 
 typedef struct {
-  UChar* s;
-  UChar* end;
+  const UChar* s;
+  const UChar* end;
 } st_str_end_key;
 
 static int
-str_end_cmp(st_str_end_key* x, st_str_end_key* y)
+str_end_cmp(st_data_t xp, st_data_t yp)
 {
-  UChar *p, *q;
+  const st_str_end_key *x, *y;
+  const UChar *p, *q;
   int c;
 
+  x = (const st_str_end_key *)xp;
+  y = (const st_str_end_key *)yp;
   if ((x->end - x->s) != (y->end - y->s))
     return 1;
 
@@ -336,10 +339,11 @@ str_end_cmp(st_str_end_key* x, st_str_end_key* y)
 }
 
 static st_index_t
-str_end_hash(st_str_end_key* x)
+str_end_hash(st_data_t xp)
 {
-  UChar *p;
-  int val = 0;
+  const st_str_end_key *x = (const st_str_end_key *)xp;
+  const UChar *p;
+  st_index_t val = 0;
 
   p = x->s;
   while (p < x->end) {
@@ -350,7 +354,7 @@ str_end_hash(st_str_end_key* x)
 }
 
 extern hash_table_type*
-onig_st_init_strend_table_with_size(int size)
+onig_st_init_strend_table_with_size(st_index_t size)
 {
   static const struct st_hash_type hashType = {
     str_end_cmp,
@@ -1430,7 +1434,7 @@ onig_node_str_cat(Node* node, const UChar* s, const UChar* end)
 
     if (NSTR(node)->capa > 0 || (len + addlen > NODE_STR_BUF_SIZE - 1)) {
       UChar* p;
-      int capa = len + addlen + NODE_STR_MARGIN;
+      ptrdiff_t capa = len + addlen + NODE_STR_MARGIN;
 
       if (capa <= NSTR(node)->capa) {
 	onig_strcpy(NSTR(node)->s + len, s, end);
