@@ -1,4 +1,7 @@
-Tue Sep 22 16:26:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Sep 22 16:27:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regerror.c (onig_error_code_to_str, onig_snprintf_with_pattern):
+	  fixed type.
 
 	* regparse.c (st_str_end_key, str_end_cmp, str_end_hash):
 	  constified.
