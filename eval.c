@@ -9809,9 +9809,6 @@ umethod_bind(method, recv)
 
     Data_Get_Struct(method, struct METHOD, data);
     if (data->rklass != rklass) {
-	if (FL_TEST(data->rklass, FL_SINGLETON)) {
-	    rb_raise(rb_eTypeError, "singleton method bound for a different object");
-	}
 	if (TYPE(data->rklass) == T_MODULE) {
 	    st_table *m_tbl = RCLASS(data->rklass)->m_tbl;
 	    while (RCLASS(rklass)->m_tbl != m_tbl) {
@@ -9820,9 +9817,13 @@ umethod_bind(method, recv)
 	    }
 	}
 	else if (!rb_obj_is_kind_of(recv, data->rklass)) {
-	  not_instace:
-	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
-		     rb_class2name(data->rklass));
+	    if (FL_TEST(data->rklass, FL_SINGLETON)) {
+		rb_raise(rb_eTypeError, "singleton method bound for a different object");
+	    } else {
+	      not_instace:
+		rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
+			 rb_class2name(data->rklass));
+	    }
 	}
     }
 

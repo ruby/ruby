@@ -1,3 +1,10 @@
+Wed Sep 23 05:36:55 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* eval.c (umethod_bind): Fix bug that disallowed methods from
+	  singleton classes to be used for UnboundMethod#bind and
+	  Module#define_method, even when that singleton class was of the right
+	  kind_of [ruby-core:25632]
+
 Sun Sep 20 09:53:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/open3.rb (Open3#popen3): fixed and improved rdoc.  [ruby-core:25658]
