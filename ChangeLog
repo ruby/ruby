@@ -1,3 +1,11 @@
+Wed Sep 23 05:03:36 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* proc.c (umethod_bind, rb_mod_define_method): Fix bug that
+	  disallowed methods from singleton classes to be used for
+	  UnboundMethod#bind, Kernel#define_singleton_method and
+	  Module#define_method, even when that singleton class was of the right
+	  kind_of. A patch by Shane O'Brien [ruby-core:25632]
+
 Tue Sep 22 16:34:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c (st_table_entry, st_get_key): use st_index_t.

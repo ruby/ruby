@@ -1249,12 +1249,12 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
     if (rb_obj_is_method(body)) {
 	struct METHOD *method = (struct METHOD *)DATA_PTR(body);
 	VALUE rclass = method->rclass;
-	if (rclass != mod) {
+	if (rclass != mod && !RTEST(rb_class_inherited_p(mod, rclass))) {
 	    if (FL_TEST(rclass, FL_SINGLETON)) {
 		rb_raise(rb_eTypeError,
 			 "can't bind singleton method to a different class");
 	    }
-	    if (!RTEST(rb_class_inherited_p(mod, rclass))) {
+	    else {
 		rb_raise(rb_eTypeError,
 			 "bind argument must be a subclass of %s",
 			 rb_class2name(rclass));
@@ -1481,12 +1481,13 @@ umethod_bind(VALUE method, VALUE recv)
     struct METHOD *data, *bound;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    if (data->rclass != CLASS_OF(recv)) {
+
+    if (data->rclass != CLASS_OF(recv) && !rb_obj_is_kind_of(recv, data->rclass)) {
 	if (FL_TEST(data->rclass, FL_SINGLETON)) {
 	    rb_raise(rb_eTypeError,
 		     "singleton method called for a different object");
 	}
-	if (!rb_obj_is_kind_of(recv, data->rclass)) {
+	else {
 	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
 		     rb_class2name(data->rclass));
 	}
