@@ -309,7 +309,7 @@ onig_error_code_to_str(s, code, va_alist)
   }
 
   va_end(vargs);
-  return len;
+  return (int)len;
 }
 
 
@@ -340,7 +340,7 @@ onig_snprintf_with_pattern(buf, bufsize, enc, pat, pat_end, fmt, va_alist)
 
   need = (pat_end - pat) * 4 + 4;
 
-  if (n + need < bufsize) {
+  if (n + need < (size_t)bufsize) {
     strcat((char* )buf, ": /");
     s = buf + onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, buf);
 
