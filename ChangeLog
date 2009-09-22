@@ -1,4 +1,8 @@
-Tue Sep 22 16:27:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Sep 22 16:28:41 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regenc.h (PosixBracketEntryType): constified.
+
+	* regenc.h (PosixBracketEntryInit): suppress warnings.
 
 	* regerror.c (onig_error_code_to_str, onig_snprintf_with_pattern):
 	  fixed type.
