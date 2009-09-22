@@ -789,28 +789,27 @@ extern int
 onigenc_minimum_property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
 {
   static const PosixBracketEntryType PBS[] = {
-    { (UChar* )"Alnum",  ONIGENC_CTYPE_ALNUM,  5 },
-    { (UChar* )"Alpha",  ONIGENC_CTYPE_ALPHA,  5 },
-    { (UChar* )"Blank",  ONIGENC_CTYPE_BLANK,  5 },
-    { (UChar* )"Cntrl",  ONIGENC_CTYPE_CNTRL,  5 },
-    { (UChar* )"Digit",  ONIGENC_CTYPE_DIGIT,  5 },
-    { (UChar* )"Graph",  ONIGENC_CTYPE_GRAPH,  5 },
-    { (UChar* )"Lower",  ONIGENC_CTYPE_LOWER,  5 },
-    { (UChar* )"Print",  ONIGENC_CTYPE_PRINT,  5 },
-    { (UChar* )"Punct",  ONIGENC_CTYPE_PUNCT,  5 },
-    { (UChar* )"Space",  ONIGENC_CTYPE_SPACE,  5 },
-    { (UChar* )"Upper",  ONIGENC_CTYPE_UPPER,  5 },
-    { (UChar* )"XDigit", ONIGENC_CTYPE_XDIGIT, 6 },
-    { (UChar* )"ASCII",  ONIGENC_CTYPE_ASCII,  5 },
-    { (UChar* )"Word",   ONIGENC_CTYPE_WORD,   4 },
-    { (UChar* )NULL, -1, 0 }
+    PosixBracketEntryInit("Alnum",  ONIGENC_CTYPE_ALNUM),
+    PosixBracketEntryInit("Alpha",  ONIGENC_CTYPE_ALPHA),
+    PosixBracketEntryInit("Blank",  ONIGENC_CTYPE_BLANK),
+    PosixBracketEntryInit("Cntrl",  ONIGENC_CTYPE_CNTRL),
+    PosixBracketEntryInit("Digit",  ONIGENC_CTYPE_DIGIT),
+    PosixBracketEntryInit("Graph",  ONIGENC_CTYPE_GRAPH),
+    PosixBracketEntryInit("Lower",  ONIGENC_CTYPE_LOWER),
+    PosixBracketEntryInit("Print",  ONIGENC_CTYPE_PRINT),
+    PosixBracketEntryInit("Punct",  ONIGENC_CTYPE_PUNCT),
+    PosixBracketEntryInit("Space",  ONIGENC_CTYPE_SPACE),
+    PosixBracketEntryInit("Upper",  ONIGENC_CTYPE_UPPER),
+    PosixBracketEntryInit("XDigit", ONIGENC_CTYPE_XDIGIT),
+    PosixBracketEntryInit("ASCII",  ONIGENC_CTYPE_ASCII),
+    PosixBracketEntryInit("Word",   ONIGENC_CTYPE_WORD),
   };
 
-  const PosixBracketEntryType *pb;
+  const PosixBracketEntryType *pb, *pbe;
   int len;
 
   len = onigenc_strlen(enc, p, end);
-  for (pb = PBS; IS_NOT_NULL(pb->name); pb++) {
+  for (pbe = (pb = PBS) + sizeof(PBS)/sizeof(PBS[0]); pb < pbe; ++pb) {
     if (len == pb->len &&
         onigenc_with_ascii_strncmp(enc, p, end, pb->name, pb->len) == 0)
       return pb->ctype;

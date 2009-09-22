@@ -96,11 +96,12 @@ typedef struct {
 
 
 typedef struct {
-  UChar    *name;
+  const UChar *name;
   int       ctype;
   short int len;
 } PosixBracketEntryType;
 
+#define PosixBracketEntryInit(name, ctype) {(const UChar *)name, ctype, (short int)(sizeof(name) - 1)}
 
 /* #define USE_CRNL_AS_LINE_TERMINATOR */
 #define USE_UNICODE_PROPERTIES
