@@ -1023,13 +1023,13 @@ ivar_get(VALUE obj, ID id, int warn)
 VALUE
 rb_ivar_get(VALUE obj, ID id)
 {
-    return ivar_get(obj, id, Qtrue);
+    return ivar_get(obj, id, TRUE);
 }
 
 VALUE
 rb_attr_get(VALUE obj, ID id)
 {
-    return ivar_get(obj, id, Qfalse);
+    return ivar_get(obj, id, FALSE);
 }
 
 VALUE
@@ -1565,19 +1565,19 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
 VALUE
 rb_const_get_from(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, Qtrue, Qtrue);
+    return rb_const_get_0(klass, id, TRUE, TRUE);
 }
 
 VALUE
 rb_const_get(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, Qfalse, Qtrue);
+    return rb_const_get_0(klass, id, FALSE, TRUE);
 }
 
 VALUE
 rb_const_get_at(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, Qtrue, Qfalse);
+    return rb_const_get_0(klass, id, TRUE, FALSE);
 }
 
 /*
@@ -1728,8 +1728,8 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse)
     while (tmp) {
 	if (RCLASS_IV_TBL(tmp) && st_lookup(RCLASS_IV_TBL(tmp), (st_data_t)id, &value)) {
 	    if ((VALUE)value == Qundef && !autoload_node((VALUE)klass, id, 0))
-		return Qfalse;
-	    return Qtrue;
+		return (int)Qfalse;
+	    return (int)Qtrue;
 	}
 	if (!recurse && klass != rb_cObject) break;
 	tmp = RCLASS_SUPER(tmp);
@@ -1739,25 +1739,25 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse)
 	tmp = rb_cObject;
 	goto retry;
     }
-    return Qfalse;
+    return (int)Qfalse;
 }
 
 int
 rb_const_defined_from(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, Qtrue, Qtrue);
+    return rb_const_defined_0(klass, id, TRUE, TRUE);
 }
 
 int
 rb_const_defined(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, Qfalse, Qtrue);
+    return rb_const_defined_0(klass, id, FALSE, TRUE);
 }
 
 int
 rb_const_defined_at(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, Qtrue, Qfalse);
+    return rb_const_defined_0(klass, id, TRUE, FALSE);
 }
 
 static void
@@ -1802,7 +1802,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 	rb_raise(rb_eTypeError, "no class/module to define constant %s",
 		 rb_id2name(id));
     }
-    mod_av_set(klass, id, val, Qtrue);
+    mod_av_set(klass, id, val, TRUE);
 }
 
 void
@@ -1884,7 +1884,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     else {
 	target = tmp;
     }
-    mod_av_set(target, id, val, Qfalse);
+    mod_av_set(target, id, val, FALSE);
 }
 
 VALUE
