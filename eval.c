@@ -10048,7 +10048,7 @@ rb_obj_is_method(m)
  *     define_method(symbol) { block }   => proc
  *  
  *  Defines an instance method in the receiver. The _method_
- *  parameter can be a +Proc+ or +Method+ object.
+ *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
  *  If a block is specified, it is used as the method body. This block
  *  is evaluated using <code>instance_eval</code>, a point that is
  *  tricky to demonstrate because <code>define_method</code> is private.
