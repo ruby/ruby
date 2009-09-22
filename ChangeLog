@@ -1,3 +1,7 @@
+Tue Sep 22 16:11:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/transcode-tblgen.rb (transcode_generated_code): fixed type.
+
 Tue Sep 22 10:29:06 2009  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (enum_chunk): new method Enumerable#chunk.
