@@ -121,6 +121,15 @@ module BigMath
   def atan(x, prec)
     raise ArgumentError, "Zero or negative precision for atan" if prec <= 0
     return BigDecimal("NaN") if x.infinite? || x.nan?
+    pi = PI(prec)
+    if neg = x < 0
+      x = -x
+    end
+    if x == 1
+      return pi / (neg ? -4 : 4)
+    elsif inv = x > 1
+      x = 1 / x
+    end
     n    = prec + BigDecimal.double_fig
     y = x
     d = y
@@ -134,6 +143,8 @@ module BigMath
       y += d
       r += 2
     end
+    y = pi / 2 - y if inv
+    y = -y if neg
     y
   end
 
