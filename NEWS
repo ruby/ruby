@@ -230,6 +230,10 @@ with all sufficient information, see the ChangeLog file.
   * incompatible changes:
     * Time.parse raises ArgumentError when no date information.
 
+* thread
+  * extended method:
+    * ConditionVariable#wait takes timeout argument.
+
 * securerandom
   * new methods:
     * SecureRandom.urlsafe_base64
