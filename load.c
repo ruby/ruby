@@ -662,7 +662,16 @@ rb_mod_autoload(VALUE mod, VALUE sym, VALUE file)
 }
 
 /*
- * MISSING: documentation
+ *  call-seq:
+ *     mod.autoload?(name)   => String or nil
+ *
+ *  Returns _filename_ to be loaded if _name_ is registered as
+ *  +autoload+ in the namespace of _mod_.
+ *
+ *     module A
+ *     end
+ *     A.autoload(:B, "b")
+ *     A.autoload?(:B)            # => "b"
  */
 
 static VALUE
@@ -693,7 +702,14 @@ rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
 }
 
 /*
- * MISSING: documentation
+ *  call-seq:
+ *     autoload?(name)   => String or nil
+ *
+ *  Returns _filename_ to be loaded if _name_ is registered as
+ *  +autoload+.
+ *
+ *     autoload(:B, "b")
+ *     autoload?(:B)            # => "b"
  */
 
 static VALUE
