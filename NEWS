@@ -21,7 +21,7 @@ with all sufficient information, see the ChangeLog file.
       * Dir.home
 
   * Enumerable
-    * New method:
+    * New methods:
       * Enumerable#join
       * Enumerable#chunk
       * Enumerable#slice_before
@@ -233,6 +233,7 @@ with all sufficient information, see the ChangeLog file.
 * securerandom
   * new methods:
     * SecureRandom.urlsafe_base64
+
 * URI
   * Obsoleted methods:
     * URI#escape
