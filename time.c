@@ -51,7 +51,7 @@ typedef unsigned LONG_LONG unsigned_time_t;
 VALUE rb_cTime;
 static VALUE time_utc_offset _((VALUE));
 
-static long obj2long(VALUE obj);
+static int obj2int(VALUE obj);
 static VALUE obj2vint(VALUE obj);
 static int month_arg(VALUE arg);
 static void validate_utc_offset(VALUE utc_offset);
@@ -456,7 +456,8 @@ gmtime_with_leapsecond(const time_t *timep, struct tm *result)
     /* 4.4BSD counts leap seconds only with localtime, not with gmtime. */
     struct tm *t;
     int sign;
-    long gmtoff, gmtoff_sec, gmtoff_min, gmtoff_hour, gmtoff_day;
+    int gmtoff_sec, gmtoff_min, gmtoff_hour, gmtoff_day;
+    long gmtoff;
     t = localtime_r(timep, result);
     if (t == NULL)
         return NULL;
@@ -470,11 +471,11 @@ gmtime_with_leapsecond(const time_t *timep, struct tm *result)
         sign = -1;
         gmtoff = t->tm_gmtoff;
     }
-    gmtoff_sec = gmtoff % 60;
+    gmtoff_sec = (int)(gmtoff % 60);
     gmtoff = gmtoff / 60;
-    gmtoff_min = gmtoff % 60;
+    gmtoff_min = (int)(gmtoff % 60);
     gmtoff = gmtoff / 60;
-    gmtoff_hour = gmtoff;
+    gmtoff_hour = (int)gmtoff;	/* <= 12 */
 
     gmtoff_sec *= sign;
     gmtoff_min *= sign;
@@ -638,7 +639,7 @@ timegmxv(struct vtm *vtm)
         return add(timexv, rb_time_magnify(INT2NUM(number_of_leap_seconds_known)));
     }
 
-    tm.tm_year = NUM2LONG(vtm->year) - 1900;
+    tm.tm_year = rb_long2int(NUM2LONG(vtm->year) - 1900);
     tm.tm_mon = vtm->mon - 1;
     tm.tm_mday = vtm->mday;
     tm.tm_hour = vtm->hour;
@@ -877,7 +878,7 @@ timelocalxv(struct vtm *vtm)
         long l = FIX2LONG(vtm->year) - 1900;
         if (l < INT_MIN || INT_MAX < l)
             goto no_localtime;
-        tm.tm_year = l;
+        tm.tm_year = (int)l;
     }
     else {
         v = sub(vtm->year, INT2FIX(1900));
@@ -1338,8 +1339,8 @@ utc_offset_arg(VALUE arg)
             !ISDIGIT(s[4]) ||
             !ISDIGIT(s[5]))
             rb_raise(rb_eArgError, "\"+HH:MM\" or \"-HH:MM\" expected for utc_offset");
-        n = strtol(s+1, NULL, 10) * 3600;
-        n += strtol(s+4, NULL, 10) * 60;
+        n = (s[1] * 10 + s[2] - '0' * 11) * 3600;
+        n += (s[4] * 10 + s[5] - '0' * 11) * 60;
         if (s[0] == '-')
             n = -n;
         return INT2FIX(n);
@@ -1367,11 +1368,11 @@ time_init_1(int argc, VALUE *argv, VALUE time)
 
     vtm.mon = NIL_P(v[1]) ? 1 : month_arg(v[1]);
 
-    vtm.mday = NIL_P(v[2]) ? 1 : obj2long(v[2]);
+    vtm.mday = NIL_P(v[2]) ? 1 : obj2int(v[2]);
 
-    vtm.hour = NIL_P(v[3]) ? 0 : obj2long(v[3]);
+    vtm.hour = NIL_P(v[3]) ? 0 : obj2int(v[3]);
 
-    vtm.min  = NIL_P(v[4]) ? 0 : obj2long(v[4]);
+    vtm.min  = NIL_P(v[4]) ? 0 : obj2int(v[4]);
 
     vtm.sec = 0;
     vtm.subsecx = INT2FIX(0);
@@ -1637,7 +1638,7 @@ time_timeval(VALUE num, int interval)
 struct timeval
 rb_time_interval(VALUE num)
 {
-    return time_timeval(num, Qtrue);
+    return time_timeval(num, TRUE);
 }
 
 struct timeval
@@ -1654,7 +1655,7 @@ rb_time_timeval(VALUE time)
         t.tv_usec = (TYPEOF_TIMEVAL_TV_USEC)(ts.tv_nsec / 1000);
 	return t;
     }
-    return time_timeval(time, Qfalse);
+    return time_timeval(time, FALSE);
 }
 
 struct timespec
@@ -1668,7 +1669,7 @@ rb_time_timespec(VALUE time)
         t = timexv2timespec(tobj->timexv);
 	return t;
     }
-    return time_timespec(time, Qfalse);
+    return time_timespec(time, FALSE);
 }
 
 /*
@@ -1738,21 +1739,21 @@ static const char months[][4] = {
     "jul", "aug", "sep", "oct", "nov", "dec",
 };
 
-static long
-obj2long(VALUE obj)
+static int
+obj2int(VALUE obj)
 {
     if (TYPE(obj) == T_STRING) {
-	obj = rb_str_to_inum(obj, 10, Qfalse);
+	obj = rb_str_to_inum(obj, 10, FALSE);
     }
 
-    return NUM2LONG(obj);
+    return NUM2INT(obj);
 }
 
 static VALUE
 obj2vint(VALUE obj)
 {
     if (TYPE(obj) == T_STRING) {
-	obj = rb_str_to_inum(obj, 10, Qfalse);
+	obj = rb_str_to_inum(obj, 10, FALSE);
     }
     else {
         obj = rb_to_int(obj);
@@ -1761,27 +1762,27 @@ obj2vint(VALUE obj)
     return obj;
 }
 
-static long
+static int
 obj2subsecx(VALUE obj, VALUE *subsecx)
 {
     VALUE subsec;
 
     if (TYPE(obj) == T_STRING) {
-	obj = rb_str_to_inum(obj, 10, Qfalse);
+	obj = rb_str_to_inum(obj, 10, FALSE);
         *subsecx = INT2FIX(0);
-        return NUM2LONG(obj);
+        return NUM2INT(obj);
     }
 
     divmodv(num_exact(obj), INT2FIX(1), &obj, &subsec);
     *subsecx = rb_time_magnify(subsec);
-    return NUM2LONG(obj);
+    return NUM2INT(obj);
 }
 
 static long
 usec2subsecx(VALUE obj)
 {
     if (TYPE(obj) == T_STRING) {
-	obj = rb_str_to_inum(obj, 10, Qfalse);
+	obj = rb_str_to_inum(obj, 10, FALSE);
     }
 
     return mulquo(num_exact(obj), INT2FIX(TIME_SCALE), INT2FIX(1000000));
@@ -1806,12 +1807,12 @@ month_arg(VALUE arg)
             char c = RSTRING_PTR(s)[0];
 
             if ('0' <= c && c <= '9') {
-                mon = obj2long(s);
+                mon = obj2int(s);
             }
         }
     }
     else {
-        mon = obj2long(arg);
+        mon = obj2int(arg);
     }
     return mon;
 }
@@ -1886,15 +1887,15 @@ time_arg(int argc, VALUE *argv, struct vtm *vtm)
 	vtm->mday = 1;
     }
     else {
-	vtm->mday = obj2long(v[2]);
+	vtm->mday = obj2int(v[2]);
     }
 
-    vtm->hour = NIL_P(v[3])?0:obj2long(v[3]);
+    vtm->hour = NIL_P(v[3])?0:obj2int(v[3]);
 
-    vtm->min  = NIL_P(v[4])?0:obj2long(v[4]);
+    vtm->min  = NIL_P(v[4])?0:obj2int(v[4]);
 
     if (!NIL_P(v[6]) && argc == 7) {
-        vtm->sec  = NIL_P(v[5])?0:obj2long(v[5]);
+        vtm->sec  = NIL_P(v[5])?0:obj2int(v[5]);
         vtm->subsecx  = usec2subsecx(v[6]);
     }
     else {
@@ -2308,7 +2309,7 @@ time_utc_or_local(int argc, VALUE *argv, int utc_p, VALUE klass)
 static VALUE
 time_s_mkutc(int argc, VALUE *argv, VALUE klass)
 {
-    return time_utc_or_local(argc, argv, Qtrue, klass);
+    return time_utc_or_local(argc, argv, TRUE, klass);
 }
 
 /*
@@ -2339,7 +2340,7 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
 static VALUE
 time_s_mktime(int argc, VALUE *argv, VALUE klass)
 {
-    return time_utc_or_local(argc, argv, Qfalse, klass);
+    return time_utc_or_local(argc, argv, FALSE, klass);
 }
 
 /*
@@ -3401,11 +3402,11 @@ rb_strftime(char *s, size_t maxsize, const char *format,
             int gmt);
 
 #define SMALLBUF 100
-static int
+static size_t
 rb_strftime_alloc(char **buf, const char *format,
                   struct vtm *vtm, VALUE timev, int gmt)
 {
-    int size, len, flen;
+    size_t size, len, flen;
 
     (*buf)[0] = '\0';
     flen = strlen(format);
@@ -3426,10 +3427,10 @@ rb_strftime_alloc(char **buf, const char *format,
 	 * if the buffer is 1024 times bigger than the length of the
 	 * format string, it's not failing for lack of room.
 	 */
-	if (len > 0 || size >= 1024 * flen) return len;
+	if (len > 0 || size >= 1024 * flen) break;
 	xfree(*buf);
     }
-    /* not reached */
+    return len;
 }
 
 static VALUE
@@ -3630,16 +3631,16 @@ time_mdump(VALUE time)
          * However it can be longer.
          * Extra digits are ignored for loading.
          */
-        unsigned char buf[2];
-        int len = sizeof(buf);
-        buf[1] = (nsec % 10) << 4;
+        char buf[2];
+        int len = (int)sizeof(buf);
+        buf[1] = (char)((nsec % 10) << 4);
         nsec /= 10;
-        buf[0] = nsec % 10;
+        buf[0] = (char)(nsec % 10);
         nsec /= 10;
-        buf[0] |= (nsec % 10) << 4;
+        buf[0] |= (char)((nsec % 10) << 4);
         if (buf[1] == 0)
             len = 1;
-        rb_ivar_set(str, id_submicro, rb_str_new((char *)buf, len));
+        rb_ivar_set(str, id_submicro, rb_str_new(buf, len));
     }
     if (!rb_equal(subnano, INT2FIX(0))) {
         rb_ivar_set(str, id_subnano, subnano);
@@ -3717,14 +3718,14 @@ time_mload(VALUE time, VALUE str)
     }
     else {
 	p &= ~(1UL<<31);
-	gmt        = (p >> 30) & 0x1;
+	gmt        = (int)((p >> 30) & 0x1);
 
-	vtm.year = INT2FIX(((p >> 14) & 0xffff) + 1900);
-	vtm.mon  = ((p >> 10) & 0xf) + 1;
-	vtm.mday = (p >>  5) & 0x1f;
-	vtm.hour =  p        & 0x1f;
-	vtm.min  = (s >> 26) & 0x3f;
-	vtm.sec  = (s >> 20) & 0x3f;
+	vtm.year = INT2FIX(((int)(p >> 14) & 0xffff) + 1900);
+	vtm.mon  = ((int)(p >> 10) & 0xf) + 1;
+	vtm.mday = (int)(p >>  5) & 0x1f;
+	vtm.hour = (int) p        & 0x1f;
+	vtm.min  = (int)(s >> 26) & 0x3f;
+	vtm.sec  = (int)(s >> 20) & 0x3f;
         vtm.utc_offset = INT2FIX(0);
 	vtm.yday = vtm.wday = 0;
 	vtm.isdst = 0;
