@@ -1,3 +1,11 @@
+Wed Sep 23 11:28:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/instruction.rb (make_header_prepare_stack): check stack
+	  overflow.  [ruby-core:25714]
+
+	* tool/instruction.rb (make_footer_stack_val): ditto.
+
+
 Wed Sep 23 05:03:36 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* proc.c (umethod_bind, rb_mod_define_method): Fix bug that
