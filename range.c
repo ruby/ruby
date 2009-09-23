@@ -151,10 +151,10 @@ r_lt(VALUE a, VALUE b)
     VALUE r = rb_funcall(a, id_cmp, 1, b);
 
     if (NIL_P(r))
-	return Qfalse;
+	return (int)Qfalse;
     if (rb_cmpint(r, a, b) < 0)
-	return Qtrue;
-    return Qfalse;
+	return (int)Qtrue;
+    return (int)Qfalse;
 }
 
 static int
@@ -164,13 +164,13 @@ r_le(VALUE a, VALUE b)
     VALUE r = rb_funcall(a, id_cmp, 1, b);
 
     if (NIL_P(r))
-	return Qfalse;
+	return (int)Qfalse;
     c = rb_cmpint(r, a, b);
     if (c == 0)
 	return (int)INT2FIX(0);
     if (c < 0)
-	return Qtrue;
-    return Qfalse;
+	return (int)Qtrue;
+    return (int)Qfalse;
 }
 
 
@@ -677,8 +677,8 @@ rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
 	excl = EXCL(range);
     }
     else {
-	if (!rb_respond_to(range, id_beg)) return Qfalse;
-	if (!rb_respond_to(range, id_end)) return Qfalse;
+	if (!rb_respond_to(range, id_beg)) return (int)Qfalse;
+	if (!rb_respond_to(range, id_end)) return (int)Qfalse;
 	b = rb_funcall(range, id_beg, 0);
 	e = rb_funcall(range, id_end, 0);
 	excl = RTEST(rb_funcall(range, rb_intern("exclude_end?"), 0));
@@ -686,7 +686,7 @@ rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
     *begp = b;
     *endp = e;
     *exclp = excl;
-    return Qtrue;
+    return (int)Qtrue;
 }
 
 VALUE
