@@ -14,6 +14,7 @@ class TestRange < Test::Unit::TestCase
     assert_equal(["6", "7", "8"], ("6".."8").to_a, "[ruby-talk:343187]")
     assert_equal(["6", "7"], ("6"..."8").to_a)
     assert_equal(["9", "10"], ("9".."10").to_a)
+    assert_equal(["09", "10"], ("09".."10").to_a, "[ruby-dev:39361]")
     assert_equal(["9", "10"], (SimpleDelegator.new("9").."10").to_a)
     assert_equal(["9", "10"], ("9"..SimpleDelegator.new("10")).to_a)
   end
