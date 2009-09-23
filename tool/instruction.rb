@@ -684,6 +684,9 @@ class RubyVM
       push_ba = insn.pushsc
       raise "unsupport" if push_ba[0].size > 0 && push_ba[1].size > 0
 
+      n = 0
+      push_ba.each {|pushs| n += pushs.length}
+      commit "  CHECK_STACK_OVERFLOW(REG_CFP, #{n});" if n > 0
       push_ba.each{|pushs|
         pushs.each{|r|
           commit "  PUSH(SCREG(#{r}));"
@@ -816,13 +819,22 @@ class RubyVM
       commit  "  #define LABEL_IS_SC(lab) LABEL_##lab##_###{insn.sc.size == 0 ? 't' : 'f'}"
     end
 
+    def each_footer_stack_val insn
+      insn.rets.reverse_each{|v|
+        break if v[1] == '...'
+        yield v
+      }
+    end
+
     def make_footer_stack_val insn
       comment "  /* push stack val */"
 
-      insn.rets.reverse_each{|v|
-        if v[1] == '...'
-          break
-        end
+      n = 0
+      each_footer_stack_val(insn){|v|
+        n += 1 unless v[2]
+      }
+      commit "  CHECK_STACK_OVERFLOW(REG_CFP, #{n});" if n > 0
+      each_footer_stack_val(insn){|v|
         if v[2]
           commit "  SCREG(#{v[2]}) = #{v[1]};"
         else
