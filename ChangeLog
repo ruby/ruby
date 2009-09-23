@@ -1,3 +1,8 @@
+Wed Sep 23 17:08:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (assign_in_cond): also should warn assignment to dvar in
+	  conditional.  [ruby-dev:39363]
+
 Wed Sep 23 13:14:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_upto): keep first width.  [ruby-dev:39361]
