@@ -21,7 +21,7 @@ class TestBigMath < Test::Unit::TestCase
     assert_equal(0.0, sqrt(BigDecimal("-0"), N))
     assert_raise(FloatDomainError) {sqrt(BigDecimal("-1.0"), N)}
     assert_raise(FloatDomainError) {sqrt(NAN, N)}
-    assert_equal(PINF, sqrt(PINF, N))
+    assert_raise(FloatDomainError) {sqrt(PINF, N)}
   end
 
   def test_sin
@@ -56,6 +56,7 @@ class TestBigMath < Test::Unit::TestCase
     assert_equal(0.0, atan(BigDecimal("0.0"), N))
     assert_in_delta(Math::PI/4, atan(BigDecimal("1.0"), N))
     assert_in_delta(Math::PI/6, atan(sqrt(BigDecimal("3.0"), N) / 3, N))
+    assert_in_delta(Math::PI/2, atan(PINF, N))
   end
 
   def test_exp
