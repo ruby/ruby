@@ -23,6 +23,8 @@ with all sufficient information, see the ChangeLog file.
   * Enumerable
     * New method:
       * Enumerable#join
+      * Enumerable#chunk
+      * Enumerable#slice_before
 
   * Enumerator
     * new methods:
