@@ -1134,57 +1134,114 @@ enum_max(VALUE obj)
     return result[0];
 }
 
-static VALUE
-minmax_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
+static void
+minmax_i_update(VALUE i, VALUE j, VALUE *memo)
 {
     int n;
 
-    ENUM_WANT_SVALUE();
-
     if (memo[0] == Qundef) {
 	memo[0] = i;
-	memo[1] = i;
+	memo[1] = j;
     }
     else {
 	n = rb_cmpint(rb_funcall(i, id_cmp, 1, memo[0]), i, memo[0]);
 	if (n < 0) {
 	    memo[0] = i;
 	}
-	n = rb_cmpint(rb_funcall(i, id_cmp, 1, memo[1]), i, memo[1]);
+	n = rb_cmpint(rb_funcall(j, id_cmp, 1, memo[1]), j, memo[1]);
 	if (n > 0) {
-	    memo[1] = i;
+	    memo[1] = j;
 	}
     }
+}
+
+static VALUE
+minmax_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
+{
+    int n;
+    VALUE j;
+
+    ENUM_WANT_SVALUE();
+
+    if (memo[3] == Qundef) {
+        memo[3] = i;
+        return Qnil;
+    }
+    j = memo[3];
+    memo[3] = Qundef;
+
+    n = rb_cmpint(rb_funcall(j, id_cmp, 1, i), j, i);
+    if (n == 0)
+        i = j;
+    else if (n < 0) {
+        VALUE tmp;
+        tmp = i;
+        i = j;
+        j = tmp;
+    }
+
+    minmax_i_update(i, j, memo);
+
     return Qnil;
+}
+
+static void
+minmax_ii_update(VALUE i, VALUE j, VALUE *memo)
+{
+    int n;
+
+    if (memo[0] == Qundef) {
+	memo[0] = i;
+	memo[1] = j;
+    }
+    else {
+	VALUE ary = memo[2];
+
+        rb_ary_store(ary, 0, i);
+        rb_ary_store(ary, 1, memo[0]);
+	n = rb_cmpint(rb_yield(ary), i, memo[0]);
+	if (n < 0) {
+	    memo[0] = i;
+	}
+        rb_ary_store(ary, 0, j);
+        rb_ary_store(ary, 1, memo[1]);
+	n = rb_cmpint(rb_yield(ary), j, memo[1]);
+	if (n > 0) {
+	    memo[1] = j;
+	}
+    }
 }
 
 static VALUE
 minmax_ii(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
     int n;
+    VALUE ary, j;
 
     ENUM_WANT_SVALUE();
 
-    if (memo[0] == Qundef) {
-	memo[0] = i;
-	memo[1] = i;
+    if (memo[3] == Qundef) {
+        memo[3] = i;
+        return Qnil;
     }
-    else {
-	VALUE ary = memo[2];
+    j = memo[3];
+    memo[3] = Qundef;
 
-	RARRAY_PTR(ary)[0] = i;
-	RARRAY_PTR(ary)[1] = memo[0];
-	n = rb_cmpint(rb_yield(ary), i, memo[0]);
-	if (n < 0) {
-	    memo[0] = i;
-	}
-	RARRAY_PTR(ary)[0] = i;
-	RARRAY_PTR(ary)[1] = memo[1];
-	n = rb_cmpint(rb_yield(ary), i, memo[1]);
-	if (n > 0) {
-	    memo[1] = i;
-	}
+    ary = memo[2];
+    rb_ary_store(ary, 0, j);
+    rb_ary_store(ary, 1, i);
+    n = rb_cmpint(rb_yield(ary), j, i);
+    if (n == 0)
+        i = j;
+    else if (n < 0) {
+        VALUE tmp;
+        tmp = i;
+        i = j;
+        j = tmp;
     }
+
+    minmax_ii_update(i, j, memo);
+
     return Qnil;
 }
 
@@ -1206,20 +1263,25 @@ minmax_ii(VALUE i, VALUE *memo, int argc, VALUE *argv)
 static VALUE
 enum_minmax(VALUE obj)
 {
-    VALUE result[3];
+    VALUE result[4];
     VALUE ary = rb_ary_new3(2, Qnil, Qnil);
 
     result[0] = Qundef;
+    result[3] = Qundef;
     if (rb_block_given_p()) {
 	result[2] = ary;
 	rb_block_call(obj, id_each, 0, 0, minmax_ii, (VALUE)result);
+        if (result[3] != Qundef)
+            minmax_ii_update(result[3], result[3], result);
     }
     else {
 	rb_block_call(obj, id_each, 0, 0, minmax_i, (VALUE)result);
+        if (result[3] != Qundef)
+            minmax_i_update(result[3], result[3], result);
     }
     if (result[0] != Qundef) {
-        RARRAY_PTR(ary)[0] = result[0];
-        RARRAY_PTR(ary)[1] = result[1];
+        rb_ary_store(ary, 0, result[0]);
+        rb_ary_store(ary, 1, result[1]);
     }
     return ary;
 }
@@ -1310,30 +1372,63 @@ enum_max_by(VALUE obj)
     return memo[1];
 }
 
+static void
+minmax_by_i_update(VALUE v1, VALUE v2, VALUE i1, VALUE i2, VALUE *memo)
+{
+    if (memo[0] == Qundef) {
+	memo[0] = v1;
+	memo[1] = v2;
+	memo[2] = i1;
+	memo[3] = i2;
+    }
+    else {
+	if (rb_cmpint(rb_funcall(v1, id_cmp, 1, memo[0]), v1, memo[0]) < 0) {
+	    memo[0] = v1;
+	    memo[2] = i1;
+	}
+	if (rb_cmpint(rb_funcall(v2, id_cmp, 1, memo[1]), v2, memo[1]) > 0) {
+	    memo[1] = v2;
+	    memo[3] = i2;
+	}
+    }
+}
+
 static VALUE
 minmax_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
-    VALUE v;
+    VALUE vi, vj, j;
+    int n;
 
     ENUM_WANT_SVALUE();
 
-    v = rb_yield(i);
-    if (memo[0] == Qundef) {
-	memo[0] = v;
-	memo[1] = v;
-	memo[2] = i;
-	memo[3] = i;
+    vi = rb_yield(i);
+
+    if (memo[4] == Qundef) {
+        memo[4] = vi;
+        memo[5] = i;
+        return Qnil;
     }
-    else {
-	if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo[0]), v, memo[0]) < 0) {
-	    memo[0] = v;
-	    memo[2] = i;
-	}
-	if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo[1]), v, memo[1]) > 0) {
-	    memo[1] = v;
-	    memo[3] = i;
-	}
+    vj = memo[4];
+    j = memo[5];
+    memo[4] = Qundef;
+
+    n = rb_cmpint(rb_funcall(vj, id_cmp, 1, vi), vj, vi);
+    if (n == 0) {
+        i = j;
+        vi = vj;
     }
+    else if (n < 0) {
+        VALUE tmp;
+        tmp = i;
+        i = j;
+        j = tmp;
+        tmp = vi;
+        vi = vj;
+        vj = tmp;
+    }
+
+    minmax_by_i_update(vi, vj, i, j, memo);
+
     return Qnil;
 }
 
@@ -1352,7 +1447,7 @@ minmax_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 static VALUE
 enum_minmax_by(VALUE obj)
 {
-    VALUE memo[4];
+    VALUE memo[6];
 
     RETURN_ENUMERATOR(obj, 0, 0);
 
@@ -1360,7 +1455,11 @@ enum_minmax_by(VALUE obj)
     memo[1] = Qundef;
     memo[2] = Qnil;
     memo[3] = Qnil;
+    memo[4] = Qundef;
+    memo[5] = Qundef;
     rb_block_call(obj, id_each, 0, 0, minmax_by_i, (VALUE)memo);
+    if (memo[4] != Qundef)
+        minmax_by_i_update(memo[4], memo[4], memo[5], memo[5], memo);
     return rb_assoc_new(memo[2], memo[3]);
 }
 
