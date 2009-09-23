@@ -1,3 +1,7 @@
+Wed Sep 23 13:14:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_upto): keep first width.  [ruby-dev:39361]
+
 Wed Sep 23 11:28:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/instruction.rb (make_header_prepare_stack): check stack

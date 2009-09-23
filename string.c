@@ -26,6 +26,8 @@
 #include <unistd.h>
 #endif
 
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+
 #undef rb_str_new_cstr
 #undef rb_tainted_str_new_cstr
 #undef rb_usascii_str_new_cstr
@@ -3102,8 +3104,10 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
     if (ascii && ISDIGIT(RSTRING_PTR(beg)[0]) && ISDIGIT(RSTRING_PTR(end)[0])) {
 	char *s, *send;
 	VALUE b, e;
+	int width;
 
 	s = RSTRING_PTR(beg); send = RSTRING_END(beg);
+	width = rb_long2int(send - s);
 	while (s < send) {
 	    if (!ISDIGIT(*s)) goto no_digits;
 	    s++;
@@ -3118,20 +3122,22 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
 	if (FIXNUM_P(b) && FIXNUM_P(e)) {
 	    long bi = FIX2LONG(b);
 	    long ei = FIX2LONG(e);
-	    char buf[sizeof(long)*3+1];
+	    rb_encoding *usascii = rb_usascii_encoding();
 
 	    while (bi <= ei) {
 		if (excl && bi == ei) break;
-		sprintf(buf, "%ld", bi);
-		rb_yield(rb_usascii_str_new_cstr(buf));
+		rb_yield(rb_enc_sprintf(usascii, "%.*ld", width, bi));
 		bi++;
 	    }
 	}
 	else {
 	    ID op = excl ? '<' : rb_intern("<=");
+	    VALUE args[2], fmt = rb_obj_freeze(rb_usascii_str_new_cstr("%.*d"));
 
+	    args[0] = INT2FIX(width);
 	    while (rb_funcall(b, op, 1, e)) {
-		rb_yield(rb_obj_as_string(b));
+		args[1] = b;
+		rb_yield(rb_str_format(numberof(args), args, fmt));
 		b = rb_funcall(b, succ, 0, 0);
 	    }
 	}

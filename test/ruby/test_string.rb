@@ -1577,6 +1577,19 @@ class TestString < Test::Unit::TestCase
     assert_equal(676, count)
   end
 
+  def test_upto_numeric
+    a     = S("00")
+    start = S("00")
+    count = 0
+    assert_equal(S("00"), a.upto(S("23")) {|s|
+                   assert_equal(start, s, "[ruby-dev:39361]")
+                   assert_equal(Encoding::US_ASCII, s.encoding)
+                   start.succ!
+                   count += 1
+                   })
+    assert_equal(24, count, "[ruby-dev:39361]")
+  end
+
   def test_mod_check
     assert_raise(RuntimeError) {
       s = ""
