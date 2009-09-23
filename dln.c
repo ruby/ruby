@@ -1094,6 +1094,7 @@ dln_sym(const char *name)
 #include <windows.h>
 #endif
 
+#if ! defined _AIX
 static const char *
 dln_strerror(void)
 {
@@ -1143,7 +1144,7 @@ dln_strerror(void)
     return message;
 #endif
 }
-
+#endif
 
 #if defined(_AIX) && ! defined(_IA64)
 static void
@@ -1154,7 +1155,7 @@ aix_loaderror(const char *pathname)
 
     static const struct errtab {
 	int errnum;
-	char *errstr;
+	const char * errstr;
     } load_errtab[] = {
 	{L_ERROR_TOOMANY,	"too many errors, rest skipped."},
 	{L_ERROR_NOLIB,		"can't load library:"},
@@ -1176,7 +1177,7 @@ aix_loaderror(const char *pathname)
     snprintf(errbuf, sizeof(errbuf), "load failed - %s ", pathname);
 
     message[0] = NULL;
-    if (!loadquery(L_GETMESSAGE, &message[0], sizeof(message)))
+    if (!loadquery(L_GETMESSAGES, &message[0], sizeof(message)))
 	ERRBUF_APPEND(strerror(errno));
     for(i = 0; message[i] && *message[i]; i++) {
 	int nerr = atoi(message[i]);
