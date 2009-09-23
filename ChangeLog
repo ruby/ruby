@@ -1,3 +1,8 @@
+Wed Sep 23 22:58:57 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/thread.rb (ConditionVariable#wait): add timeout argument.
+	  [ruby-talk:346154]
+
 Wed Sep 23 21:25:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/lib/bigdecimal/math.rb (atan): refined.
