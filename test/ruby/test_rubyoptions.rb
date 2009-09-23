@@ -281,13 +281,33 @@ class TestRubyOptions < Test::Unit::TestCase
                       /invalid name for global variable - -# \(NameError\)/)
   end
 
+  def test_assignment_in_conditional
+    t = Tempfile.new(["test_ruby_test_rubyoption", ".rb"])
+    t.puts "if a = 1"
+    t.puts "end"
+    t.puts "0.times do"
+    t.puts "  if b = 2"
+    t.puts "  end"
+    t.puts "end"
+    t.close
+    err = ["#{t.path}:1: warning: found = in conditional, should be ==",
+           "#{t.path}:4: warning: found = in conditional, should be =="]
+    err = /\A(#{Regexp.quote(t.path)}):1(: warning: found = in conditional, should be ==)\n\1:4\2\Z/
+    bug2136 = '[ruby-dev:39363]'
+    assert_in_out_err(["-w", t.path], "", [], err, bug2136)
+    assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err, bug2136)
+  ensure
+    t.close(true) if t
+  end
+
   def test_indentation_check
     t = Tempfile.new(["test_ruby_test_rubyoption", ".rb"])
     t.puts "begin"
     t.puts " end"
     t.close
-    assert_in_out_err(["-w", t.path], "", [], /:2: warning: mismatched indentations at 'end' with 'begin' at 1/)
-    assert_in_out_err(["-wr", t.path, "-e", ""], "", [], /:2: warning: mismatched indentations at 'end' with 'begin' at 1/)
+    err = ["#{t.path}:2: warning: mismatched indentations at 'end' with 'begin' at 1"]
+    assert_in_out_err(["-w", t.path], "", [], err)
+    assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err)
   ensure
     t.close(true) if t
   end
