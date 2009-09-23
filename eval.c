@@ -8455,13 +8455,13 @@ rb_f_autoload(obj, sym, file)
 
 /*
  *  call-seq:
- *     autoload(module, filename)   => nil
+ *     autoload?(name)   => String or nil
  *
- *  Registers _filename_ to be loaded (using <code>Kernel::require</code>)
- *  the first time that _module_ (which may be a <code>String</code> or
- *  a symbol) is accessed.
+ *  Returns _filename_ to be loaded if _name_ is registered as
+ *  +autoload+.
  *
- *     autoload(:MyModule, "/usr/local/lib/modules/my_module.rb")
+ *     autoload(:B, "b")
+ *     autoload?(:B)            # => "b"
  */
 
 static VALUE
