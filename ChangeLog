@@ -1,4 +1,7 @@
-Thu Sep 24 02:08:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Sep 24 02:21:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/lib/bigdecimal/math.rb (atan): atan(Infinity) is
+	  PI/2.
 
 	* ext/bigdecimal/lib/bigdecimal/math.rb (atan): reduce loop with
 	  the formula of the double corner.  based on a patch from

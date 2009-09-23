@@ -117,22 +117,16 @@ module BigMath
 
   # Computes the arctangent of x to the specified number of digits of precision.
   #
-  # If x is infinite or NaN, returns NaN.
+  # If x is NaN, returns NaN.
   def atan(x, prec)
     raise ArgumentError, "Zero or negative precision for atan" if prec <= 0
-    return BigDecimal("NaN") if x.infinite? || x.nan?
+    return BigDecimal("NaN") if x.nan?
     pi = PI(prec)
-    if neg = x < 0
-      x = -x
-    end
-    if x.round(prec) == 1
-      return pi / (neg ? -4 : 4)
-    elsif inv = x > 1
-      x = 1 / x
-    end
-    if dbl = x > 0.5
-      x = (-1 + sqrt(1 + x**2, prec))/x
-    end
+    x = -x if neg = x < 0
+    return pi.div(neg ? -2 : 2, prec) if x.infinite?
+    return pi / (neg ? -4 : 4) if x.round(prec) == 1
+    x = 1 / x if inv = x > 1
+    x = (-1 + sqrt(1 + x**2, prec))/x if dbl = x > 0.5
     n    = prec + BigDecimal.double_fig
     y = x
     d = y
