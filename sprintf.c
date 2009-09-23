@@ -430,7 +430,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     rb_encoding *enc;
     const char *p, *end;
     char *buf;
-    int blen, bsiz;
+    long blen, bsiz;
     VALUE result;
 
     long scanned = 0;
@@ -691,7 +691,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    }
 		    /* need to adjust multi-byte string pos */
 		    if ((flags&FWIDTH) && (width > slen)) {
-			width -= slen;
+			width -= (int)slen;
 			if (!(flags&FMINUS)) {
 			    CHECK(width);
 			    while (width--) {
@@ -775,7 +775,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    bignum = 1;
 		    break;
 		  case T_STRING:
-		    val = rb_str_to_inum(val, 0, Qtrue);
+		    val = rb_str_to_inum(val, 0, TRUE);
 		    goto bin_retry;
 		  case T_BIGNUM:
 		    bignum = 1;
@@ -851,6 +851,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			    }
 			}
 		    }
+		    len = (int)strlen(s);
 		}
 		else {
 		    if (sign) {
@@ -893,10 +894,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			    }
 			}
 		    }
+		    len = rb_long2int(RSTRING_END(tmp) - s);
 		}
 
 		pos = -1;
-		len = strlen(s);
 		if (dots) {
 		    prec -= 2;
 		    width -= 2;
@@ -926,7 +927,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    prefix = 0;
 		}
 		if (prefix) {
-		    width -= strlen(prefix);
+		    width -= (int)strlen(prefix);
 		}
 		if ((flags & (FZERO|FMINUS|FPREC)) == FZERO) {
 		    prec = width;
@@ -947,7 +948,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		}
 		if (sc) PUSH(&sc, 1);
 		if (prefix) {
-		    int plen = strlen(prefix);
+		    int plen = (int)strlen(prefix);
 		    PUSH(prefix, plen);
 		}
 		CHECK(prec - len);
@@ -998,7 +999,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    else {
 			expr = "Inf";
 		    }
-		    need = strlen(expr);
+		    need = (int)strlen(expr);
 		    if ((!isnan(fval) && fval < 0.0) || (flags & FPLUS))
 			need++;
 		    if ((flags & FWIDTH) && need < width)
