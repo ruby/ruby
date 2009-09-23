@@ -125,10 +125,13 @@ module BigMath
     if neg = x < 0
       x = -x
     end
-    if x == 1
+    if x.round(prec) == 1
       return pi / (neg ? -4 : 4)
     elsif inv = x > 1
       x = 1 / x
+    end
+    if dbl = x > 0.5
+      x = (-1 + sqrt(1 + x**2, prec))/x
     end
     n    = prec + BigDecimal.double_fig
     y = x
@@ -143,6 +146,7 @@ module BigMath
       y += d
       r += 2
     end
+    y *= 2 if dbl
     y = pi / 2 - y if inv
     y = -y if neg
     y
