@@ -1,3 +1,8 @@
+Thu Sep 24 00:17:06 2009  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (enum_minmax): reduce comparison.
+	  (enum_minmax_by): ditto.
+
 Wed Sep 23 22:58:57 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/thread.rb (ConditionVariable#wait): add timeout argument.
