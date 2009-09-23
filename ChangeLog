@@ -23,6 +23,15 @@ Wed Sep 23 05:03:36 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 	  Module#define_method, even when that singleton class was of the right
 	  kind_of. A patch by Shane O'Brien [ruby-core:25632]
 
+Tue Sep 22 22:56:48 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* vm_method.c (basic_obj_respond_to): new function to fundamental
+	  behavior for #respond_to?
+
+	* vm_method.c (basic_obj_respond_to): calls #respond_to_missing
+	  method if overridden, to check responsiveness of methods
+	  implemented by #method_missing.
+
 Tue Sep 22 16:34:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c (st_table_entry, st_get_key): use st_index_t.

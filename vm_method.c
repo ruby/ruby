@@ -8,7 +8,7 @@
 
 static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me);
 
-static ID object_id;
+static ID object_id, respond_to_missing;
 static ID removed, singleton_removed, undefined, singleton_undefined;
 static ID added, singleton_added, attached;
 
@@ -1114,21 +1114,30 @@ rb_method_basic_definition_p(VALUE klass, ID id)
     return 0;
 }
 
+static inline int
+basic_obj_respond_to(VALUE obj, ID id, int pub)
+{
+    VALUE klass = CLASS_OF(obj);
+
+    if (!rb_method_boundp(klass, id, pub)) {
+	if (!rb_method_basic_definition_p(klass, respond_to_missing)) {
+	    return RTEST(rb_funcall(obj, respond_to_missing, pub ? 1 : 2, ID2SYM(id), Qtrue));
+	}
+	return Qfalse;
+    }
+    return Qtrue;
+}
+
 int
 rb_obj_respond_to(VALUE obj, ID id, int priv)
 {
     VALUE klass = CLASS_OF(obj);
 
     if (rb_method_basic_definition_p(klass, idRespond_to)) {
-	return rb_method_boundp(klass, id, !priv);
+	return basic_obj_respond_to(obj, id, !RTEST(priv));
     }
     else {
-	VALUE args[2];
-	int n = 0;
-	args[n++] = ID2SYM(id);
-	if (priv)
-	    args[n++] = Qtrue;
-	return RTEST(rb_funcall2(obj, idRespond_to, n, args));
+	return RTEST(rb_funcall(obj, idRespond_to, priv ? 2 : 1, ID2SYM(id), Qtrue));
     }
 }
 
@@ -1137,6 +1146,7 @@ rb_respond_to(VALUE obj, ID id)
 {
     return rb_obj_respond_to(obj, id, FALSE);
 }
+
 
 /*
  *  call-seq:
@@ -1159,9 +1169,14 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 
     rb_scan_args(argc, argv, "11", &mid, &priv);
     id = rb_to_id(mid);
-    if (rb_method_boundp(CLASS_OF(obj), id, !RTEST(priv))) {
+    if (basic_obj_respond_to(obj, id, !RTEST(priv)))
 	return Qtrue;
-    }
+    return Qfalse;
+}
+
+static VALUE
+obj_respond_to_missing(int argc, VALUE *argv, VALUE obj)
+{
     return Qfalse;
 }
 
@@ -1172,6 +1187,7 @@ Init_eval_method(void)
 #define rb_intern(str) rb_intern_const(str)
 
     rb_define_method(rb_mKernel, "respond_to?", obj_respond_to, -1);
+    rb_define_method(rb_mKernel, "respond_to_missing?", obj_respond_to_missing, -1);
 
     rb_define_private_method(rb_cModule, "remove_method", rb_mod_remove_method, -1);
     rb_define_private_method(rb_cModule, "undef_method", rb_mod_undef_method, -1);
@@ -1199,5 +1215,6 @@ Init_eval_method(void)
     undefined = rb_intern("method_undefined");
     singleton_undefined = rb_intern("singleton_method_undefined");
     attached = rb_intern("__attached__");
+    respond_to_missing = rb_intern("respond_to_missing?");
 }
 
