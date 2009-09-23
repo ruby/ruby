@@ -1,3 +1,7 @@
+Thu Sep 24 01:14:18 2009  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* dln.c (aix_loaderror): fixed typo. suppress warnings.
+
 Thu Sep 24 00:17:06 2009  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (enum_minmax): reduce comparison.
