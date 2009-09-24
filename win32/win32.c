@@ -2323,6 +2323,7 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	struct timeval zero;
 	wait.tv_sec = 0; wait.tv_usec = 10 * 1000; // 10ms
 	zero.tv_sec = 0; zero.tv_usec = 0;         //  0ms
+	if (timeout) rest = *timeout;
 	for (;;) {
 	    if (nonsock) {
 		// modifying {else,pipe,cons}_rd is safe because
