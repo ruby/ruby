@@ -1,3 +1,8 @@
+Thu Sep 24 10:06:19 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/mathn.rb (Fixnum#**, Float#**, Bignum#**): Allow fractional
+	  power for negative numbers when 'mathn' is required [redmine:783]
+
 Wed Sep 23 05:36:55 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* eval.c (umethod_bind): Fix bug that disallowed methods from

@@ -108,10 +108,30 @@ end
 
 class Fixnum
   alias / quo
+
+  alias power! ** unless method_defined? :power!
+
+  def ** (other)
+    if self < 0 && other.round != other
+      Complex.new(self, 0.0) ** other
+    else
+      power!(other)
+    end
+  end
 end
 
 class Bignum
   alias / quo
+
+  alias power! ** unless method_defined? :power!
+
+  def ** (other)
+    if self < 0 && other.round != other
+      Complex.new(self, 0.0) ** other
+    else
+      power!(other)
+    end
+  end
 end
 
 class Rational
@@ -306,3 +326,15 @@ class Complex
   Unify = true
 end
 
+class Float
+  alias power! **
+
+  def ** (other)
+    if self < 0 && other.round != other
+      Complex.new(self, 0.0) ** other
+    else
+      power!(other)
+    end
+  end
+
+end
