@@ -304,6 +304,39 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  def test_respond_to_missing
+    c = Class.new
+    c.class_eval do
+      def respond_to_missing?(id)
+        if id == :foobar
+          true
+        else
+          false
+        end
+      end
+      def method_missing(id,*args)
+        if id == :foobar
+          return [:foo, *args]
+        else
+          super
+        end
+      end
+    end
+
+    foo = c.new
+    assert_equal([:foo], foo.foobar);
+    assert_equal([:foo, 1], foo.foobar(1));
+    assert(foo.respond_to?(:foobar))
+    assert_equal(false, foo.respond_to?(:foobarbaz))
+    assert_raise(NoMethodError) do
+      foo.foobarbaz
+    end
+
+    foobar = foo.method(:foobar)
+    assert_equal([:foo], foobar.call);
+    assert_equal([:foo, 1], foobar.call(1));
+  end
+
   def test_send_with_no_arguments
     assert_raise(ArgumentError) { 1.send }
   end

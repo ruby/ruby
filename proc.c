@@ -884,6 +884,19 @@ rb_obj_is_method(VALUE m)
 }
 
 static VALUE
+missing_wrap(VALUE dummy, VALUE args, int argc, VALUE *argv)
+{
+    VALUE new_args = rb_ary_new4(argc, argv);
+    VALUE obj = RARRAY_PTR(args)[0];
+    VALUE sym = RARRAY_PTR(args)[1];
+    
+
+    rb_ary_unshift(new_args, sym);
+    return rb_funcall2(obj, rb_intern("method_missing"), 
+		       check_argc(RARRAY_LEN(new_args)), RARRAY_PTR(new_args));
+}
+
+static VALUE
 mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 {
     VALUE method;
@@ -896,6 +909,14 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
   again:
     me = rb_method_entry(klass, id);
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
+	ID rmiss = rb_intern("respond_to_missing?");
+	VALUE sym = ID2SYM(id);
+
+	if (!rb_method_basic_definition_p(klass, rmiss)) {
+	    if (RTEST(rb_funcall(obj, rmiss, 1, sym))) {
+		return rb_proc_new(missing_wrap, rb_assoc_new(obj, sym));
+	    }
+	}
 	rb_print_undef(klass, id, 0);
     }
     def = me->def;

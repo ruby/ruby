@@ -1,3 +1,11 @@
+Thu Sep 24 13:32:53 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* proc.c (mnew): generate method object that wraps method_missing,
+	  when #respond_to_missing? is defined.
+
+	* test/ruby/test_object.rb (test_respond_to_missing): add test
+	  suites for #respond_to_missing? changes.
+
 Thu Sep 24 09:41:42 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/mathn.rb (Bignum#**): Fixed bignum**fixnum that was broken when
