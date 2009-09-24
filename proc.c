@@ -982,8 +982,8 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
  * call-seq:
  *   meth == other_meth  => true or false
  *
- * Two method objects are equal if that are bound to the same
- * object and contain the same body.
+ * Two method objects are equal if they are bound to the same
+ * object and refer to the same method definition.
  */
 
 static VALUE
