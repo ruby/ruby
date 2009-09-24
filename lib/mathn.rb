@@ -25,7 +25,7 @@ class Fixnum
   remove_method :/
   alias / quo
 
-  alias power! ** unless defined?(0.power!)
+  alias power! ** unless method_defined? :power!
 
   def ** (other)
     if self < 0 && other.round != other
@@ -41,7 +41,7 @@ class Bignum
   remove_method :/
   alias / quo
 
-  alias power! ** unless defined?(0.power!)
+  alias power! ** unless method_defined? :power!
 
   def ** (other)
     if self < 0 && other.round != other
