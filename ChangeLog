@@ -1,3 +1,9 @@
+Fri Sep 25 04:34:08 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/rational.rb (#+, #-, #/, #**, #<=>): Return correct error
+	  message in case coercion fails. Based on a patch by Run Paint Run Run
+	  [ruby-core:23903]
+
 Thu Sep 24 15:52:34 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* instruby.rb: win32/win32.h exists in srcdir.

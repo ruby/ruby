@@ -131,7 +131,7 @@ class Rational < Numeric
     elsif a.kind_of?(Float)
       Float(self) + a
     else
-      x, y = a.coerce(self)
+      x, y = a.coerce(self) rescue raise TypeError, "#{a.class} can't be coerced into #{self.class}"
       x + y
     end
   end
@@ -155,7 +155,7 @@ class Rational < Numeric
     elsif a.kind_of?(Float)
       Float(self) - a
     else
-      x, y = a.coerce(self)
+      x, y = a.coerce(self) rescue raise TypeError, "#{a.class} can't be coerced into #{self.class}"
       x - y
     end
   end
@@ -180,7 +180,7 @@ class Rational < Numeric
     elsif a.kind_of?(Float)
       Float(self) * a
     else
-      x, y = a.coerce(self)
+      x, y = a.coerce(self) rescue raise TypeError, "#{a.class} can't be coerced into #{self.class}"
       x * y
     end
   end
@@ -203,7 +203,7 @@ class Rational < Numeric
     elsif a.kind_of?(Float)
       Float(self) / a
     else
-      x, y = a.coerce(self)
+      x, y = a.coerce(self) rescue raise TypeError, "#{a.class} can't be coerced into #{self.class}"
       x / y
     end
   end
@@ -235,7 +235,7 @@ class Rational < Numeric
     elsif other.kind_of?(Float)
       Float(self) ** other
     else
-      x, y = other.coerce(self)
+      x, y = other.coerce(self) rescue raise TypeError, "#{a.class} can't be coerced into #{self.class}"
       x ** y
     end
   end
@@ -322,11 +322,9 @@ class Rational < Numeric
       return self <=> Rational.new!(other, 1)
     elsif other.kind_of?(Float)
       return Float(self) <=> other
-    elsif defined? other.coerce
-      x, y = other.coerce(self)
-      return x <=> y
     else
-      return nil
+      x, y = other.coerce(self) rescue return nil
+      return x <=> y
     end
   end
 
