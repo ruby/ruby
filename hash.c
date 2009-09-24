@@ -466,7 +466,7 @@ rb_hash_rehash(VALUE hash)
  *     hsh[key]    =>  value
  *
  *  Element Reference---Retrieves the <i>value</i> object corresponding
- *  to the <i>key</i> object. If not found, returns the a default value (see
+ *  to the <i>key</i> object. If not found, returns the default value (see
  *  <code>Hash::new</code> for details).
  *
  *     h = { "a" => 100, "b" => 200 }
@@ -600,7 +600,7 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
  *     hsh.default = obj     => obj
  *
  *  Sets the default value, the value returned for a key that does not
- *  exist in the hash. It is not possible to set the a default to a
+ *  exist in the hash. It is not possible to set the default to a
  *  <code>Proc</code> that will be executed on each key lookup.
  *
  *     h = { "a" => 100, "b" => 200 }
@@ -947,7 +947,7 @@ select_i(VALUE key, VALUE value, VALUE result)
  *  call-seq:
  *     hsh.select {|key, value| block}   => a_hash
  *
- *  Returns a new hash consisting of entries which the block returns true.
+ *  Returns a new hash consisting of entries for which the block returns true.
  *
  *     h = { "a" => 100, "b" => 200, "c" => 300 }
  *     h.select {|k,v| k > "a"}  #=> {"b" => 200, "c" => 300}
@@ -1743,7 +1743,7 @@ rassoc_i(VALUE key, VALUE val, VALUE arg)
  *     hash.rassoc(key) -> an_array or nil
  *
  *  Searches through the hash comparing _obj_ with the value using <code>==</code>.
- *  Returns the first key-value pair (two elements array) that matches. See
+ *  Returns the first key-value pair (two-element array) that matches. See
  *  also <code>Array#rassoc</code>.
  *
  *     a = {1=> "one", 2 => "two", 3 => "three", "ii" => "two"}
@@ -1770,7 +1770,7 @@ rb_hash_rassoc(VALUE hash, VALUE obj)
  *  Returns a new array that is a one-dimensional flattening of this
  *  hash. That is, for every key or value that is an array, extract
  *  its elements into the new array.  Unlike Array#flatten, this
- *  method does not flatten recursively by default.  If the optional
+ *  method does not flatten recursively by default.  The optional
  *  <i>level</i> argument determines the level of recursion to flatten.
  *
  *     a =  {1=> "one", 2 => [2,"two"], 3 => "three"}
@@ -1797,7 +1797,7 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
  *  call-seq:
  *     hsh.compare_by_identity => hsh
  *
- *  Makes <i>hsh</i> to compare its keys by their identity, i.e. it
+ *  Makes <i>hsh</i> compare its keys by their identity, i.e. it
  *  will consider exact same objects as same keys.
  *
  *     h1 = { "a" => 100, "b" => 200, :c => "c" }
