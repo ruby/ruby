@@ -2160,27 +2160,57 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *    }
  *
  *  If the block needs to maintain state over multiple elements,
- *  _initial_state_ argument can be used.
- *  If non-nil value is given,
- *  it is duplicated for each "each" method invocation of the enumerator.
- *  The duplicated object is passed to 2nd argument of the block for "slice_before" method..
- *
+ *  local variables can be used.
  *  For example, monotonically increasing elements can be chunked as follows.
  *
- *    a = [2, 5, 2, 1, 4, 3, 1, 2, 8, 0]
- *    enum = a.slice_before(n: 0) {|elt, h|
- *      prev = h[:n]
- *      h[:n] = elt
+ *    a = [2, 5, 2, 1, 4, 3, 1, 2, 8, 1]
+ *    n = 0
+ *    p a.slice_before {|elt, h|
+ *      prev = n
+ *      n = elt
  *      prev > elt
- *    }
- *    enum.each {|ary| p ary }
- *    #=> [2, 5]
- *    #   [2]
- *    #   [1, 4]
- *    #   [3]
- *    #   [1, 2, 8]
- *    #   [0]
+ *    }.to_a
+ *    #=> [[2, 5], [2], [1, 4], [3], [1, 2, 8], [1]]
  *
+ *  However local variables are not appropriate to maintain state
+ *  if the result enumerator is used twice or more.
+ *  In such case, the last state of the 1st +each+ is used in 2nd +each+.
+ *  _initial_state_ argument can be used to avoid this problem.
+ *  If non-nil value is given as _initial_state_,
+ *  it is duplicated for each "each" method invocation of the enumerator.
+ *  The duplicated object is passed to 2nd argument of the block for
+ *  +slice_before+ method.
+ *
+ *    # word wrapping
+ *    def wordwrap(words, width)
+ *      # if cols is local variable, 2nd "each" may start with non-zero cols.
+ *      words.slice_before(cols: 0) {|w, h|
+ *        h[:cols] += 1 if h[:cols] != 0
+ *        h[:cols] += w.length
+ *        if width < h[:cols]
+ *          h[:cols] = w.length
+ *          true
+ *        else
+ *          false
+ *        end
+ *      }
+ *    end
+ *    text = (1..20).to_a.join(" ")
+ *    enum = wordwrap(text.split(/\s+/), 10)
+ *    puts "-"*10
+ *    enum.each {|ws| puts ws.join(" ") }
+ *    puts "-"*10
+ *    #=> ----------
+ *    #   1 2 3 4 5
+ *    #   6 7 8 9 10
+ *    #   11 12 13
+ *    #   14 15 16
+ *    #   17 18 19
+ *    #   20
+ *    #   ----------
+ *
+ * mbox contains series of mails which start with Unix From.
+ * So each mail can be extracted by slice before Unix From.
  *
  *    # parse mbox
  *    open("mbox") {|f|
