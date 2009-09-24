@@ -1,3 +1,8 @@
+Thu Sep 24 12:30:50 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (subtract): if the parameters are same value, should
+	  return zero.
+
 Thu Sep 24 12:01:11 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_select): of course, need to initialize rest.
