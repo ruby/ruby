@@ -427,7 +427,7 @@ rb_hash_rehash_i(key, value, tbl)
  *  values of key objects have changed since they were inserted, this
  *  method will reindex <i>hsh</i>. If <code>Hash#rehash</code> is
  *  called while an iterator is traversing the hash, an
- *  <code>IndexError</code> will be raised in the iterator.
+ *  <code>RuntimeError</code> will be raised in the iterator.
  *
  *     a = [ "a", "b" ]
  *     c = [ "c", "d" ]
