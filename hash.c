@@ -459,7 +459,7 @@ rb_hash_rehash(hash)
  *     hsh[key]    =>  value
  *
  *  Element Reference---Retrieves the <i>value</i> object corresponding
- *  to the <i>key</i> object. If not found, returns the a default value (see
+ *  to the <i>key</i> object. If not found, returns the default value (see
  *  <code>Hash::new</code> for details).
  *
  *     h = { "a" => 100, "b" => 200 }
@@ -589,7 +589,7 @@ rb_hash_default(argc, argv, hash)
  *     hsh.default = obj     => hsh
  *
  *  Sets the default value, the value returned for a key that does not
- *  exist in the hash. It is not possible to set the a default to a
+ *  exist in the hash. It is not possible to set the default to a
  *  <code>Proc</code> that will be executed on each key lookup.
  *
  *     h = { "a" => 100, "b" => 200 }
