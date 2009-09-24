@@ -1,3 +1,7 @@
+Thu Sep 24 12:01:11 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_select): of course, need to initialize rest.
+
 Thu Sep 24 10:26:16 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* ext/openssl/ossl_config.c (ossl_config_add_value_m,
