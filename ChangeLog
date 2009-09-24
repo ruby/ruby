@@ -1,3 +1,9 @@
+Thu Sep 24 10:26:16 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* ext/openssl/ossl_config.c (ossl_config_add_value_m,
+	  ossl_config_set_section): Check if frozen (or untainted for $SECURE >=
+	  4) [ruby-core:18377]
+
 Thu Sep 24 10:06:19 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/mathn.rb (Fixnum#**, Float#**, Bignum#**): Allow fractional
