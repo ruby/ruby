@@ -964,9 +964,6 @@ eaccess(const char *path, int mode)
 
     return -1;
 #else
-# if defined(_MSC_VER) || defined(__MINGW32__)
-    mode &= ~1;
-# endif
     return access(path, mode);
 #endif
 }

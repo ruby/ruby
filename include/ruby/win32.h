@@ -191,6 +191,7 @@ extern DWORD rb_w32_osid(void);
 extern int rb_w32_stat(const char *, struct stat *);
 extern int rb_w32_fstat(int, struct stat *);
 #endif
+#define access(path,mode)	rb_w32_access(path,mode)
 
 #define strcasecmp		_stricmp
 #define strncasecmp		_strnicmp
@@ -278,6 +279,7 @@ extern int rb_w32_mkdir(const char *, int);
 extern int rb_w32_rmdir(const char *);
 extern int rb_w32_unlink(const char *);
 extern int rb_w32_stati64(const char *, struct stati64 *);
+extern int rb_w32_access(const char *, int);
 
 #ifdef __BORLANDC__
 extern int rb_w32_fstati64(int, struct stati64 *);
