@@ -1987,26 +1987,29 @@ chunk_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *     enum.chunk(initial_state) {|elt, state| ... } => enumerator
  *
  *  Creates an enumerator for each chunked elements.
- *  The elements which have same block value are chunked.
+ *  The consecutive elements which have same block value are chunked.
  *
  *  The result enumerator yields the block value and an array of chunked elements.
  *  So "each" method can be called as follows.
  *
  *    enum.chunk {|elt| key }.each {|key, ary| ... }
+ *    enum.chunk(initial_state) {|elt, state| key }.each {|key, ary| ... }
  *
  *  For example, consecutive even numbers and odd numbers can be
  *  splitted as follows.
  *
- *    [5, 3, 3, 5, 2, 8, 0, 6, 0, 3].chunk {|n|
- *      n.even?
+ *    [3,1,4,1,5,9,2,6,5,3,5].chunk {|n|
+ *      n.even?          
  *    }.each {|even, ary|
  *      p [even, ary]
  *    }
- *    #=> [false, [5, 3, 3, 5]]
- *    #   [true, [2, 8, 0, 6, 0]]
- *    #   [false, [3]]
+ *    #=> [false, [3, 1]]
+ *    #   [true, [4]]
+ *    #   [false, [1, 5, 9]]
+ *    #   [true, [2, 6]]
+ *    #   [false, [5, 3, 5]]
  *
- *  This method is useful for sorted series of elements.
+ *  This method is especially useful for sorted series of elements.
  *  The following example counts words for each initial letter.
  *
  *    open("/usr/share/dict/words", "r:iso-8859-1") {|f|
@@ -2151,6 +2154,7 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *  So "each" method can be called as follows.
  *
  *    enum.slice_before {|elt| bool }.each {|ary| ... }
+ *    enum.slice_before(initial_state) {|elt, state| bool }.each {|ary| ... }
  *
  *  For example, iteration over ChangeLog entries can be implemented as follows.
  *
@@ -2163,14 +2167,13 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *  local variables can be used.
  *  For example, monotonically increasing elements can be chunked as follows.
  *
- *    a = [2, 5, 2, 1, 4, 3, 1, 2, 8, 1]
+ *    a = [3,1,4,1,5,9,2,6,5,3,5]
  *    n = 0
- *    p a.slice_before {|elt, h|
- *      prev = n
- *      n = elt
+ *    p a.slice_before {|elt|
+ *      prev, n = n, elt
  *      prev > elt
  *    }.to_a
- *    #=> [[2, 5], [2], [1, 4], [3], [1, 2, 8], [1]]
+ *    #=> [[3], [1, 4], [1, 5, 9], [2, 6], [5], [3, 5]]
  *
  *  However local variables are not appropriate to maintain state
  *  if the result enumerator is used twice or more.
@@ -2183,7 +2186,7 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *
  *    # word wrapping
  *    def wordwrap(words, width)
- *      # if cols is local variable, 2nd "each" may start with non-zero cols.
+ *      # if cols is a local variable, 2nd "each" may start with non-zero cols.
  *      words.slice_before(cols: 0) {|w, h|
  *        h[:cols] += 1 if h[:cols] != 0
  *        h[:cols] += w.length
@@ -2209,8 +2212,8 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *    #   20
  *    #   ----------
  *
- * mbox contains series of mails which start with Unix From.
- * So each mail can be extracted by slice before Unix From.
+ * mbox contains series of mails which start with Unix From line.
+ * So each mail can be extracted by slice before Unix From line.
  *
  *    # parse mbox
  *    open("mbox") {|f|
