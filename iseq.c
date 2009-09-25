@@ -517,7 +517,7 @@ rb_iseq_load(VALUE data, VALUE parent, VALUE opt)
 }
 
 static NODE *
-compile_string(VALUE str, const char *file, int line)
+parse_string(VALUE str, const char *file, int line)
 {
     VALUE parser = rb_parser_new();
     NODE *node = rb_parser_compile_string(parser, file, str, line);
@@ -534,7 +534,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE line, VALUE opt)
     rb_compile_option_t option;
     const char *fn = StringValueCStr(file);
     int ln = NUM2INT(line);
-    NODE *node = compile_string(StringValue(src), fn, ln);
+    NODE *node = parse_string(StringValue(src), fn, ln);
     rb_thread_t *th = GET_THREAD();
     make_compile_option(&option, opt);
 
