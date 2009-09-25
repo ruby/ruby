@@ -1,6 +1,4 @@
-Fri Sep 25 13:05:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* proc.c (missing_wrap): new_arg is already given if argc > 1.
+Fri Sep 25 13:04:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (mnew): fix for instance method of Module, BasicObjec
 	  and subclass of a class which overrides respond_to_missing?.

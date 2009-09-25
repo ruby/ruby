@@ -884,12 +884,12 @@ rb_obj_is_method(VALUE m)
 }
 
 static VALUE
-missing_wrap(VALUE new_args, VALUE args, int argc, VALUE *argv)
+missing_wrap(VALUE dummy, VALUE args, int argc, VALUE *argv)
 {
+    VALUE new_args = rb_ary_new4(argc, argv);
     VALUE obj = RARRAY_PTR(args)[0];
     VALUE sym = RARRAY_PTR(args)[1];
 
-    if (argc <= 1) new_args = rb_ary_new4(argc, argv);
     rb_ary_unshift(new_args, sym);
     return rb_funcall2(obj, rb_intern("method_missing"), 
 		       check_argc(RARRAY_LEN(new_args)), RARRAY_PTR(new_args));
