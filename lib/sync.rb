@@ -42,7 +42,7 @@ unless defined? Thread
 end
 
 module Sync_m
-  RCS_ID='-$Header$-'
+  RCS_ID='-$Id$-'
 
   # lock mode
   UN = :UN
