@@ -31,10 +31,10 @@ module Racc
   class Parser
 
     Racc_Runtime_Version = '1.4.5'
-    Racc_Runtime_Revision = '$originalRevision: 1.8 $'.split[1]
+    Racc_Runtime_Revision = %w$originalRevision: 1.8 $[1]
 
     Racc_Runtime_Core_Version_R = '1.4.5'
-    Racc_Runtime_Core_Revision_R = '$originalRevision: 1.8 $'.split[1]
+    Racc_Runtime_Core_Revision_R = %w$originalRevision: 1.8 $[1]
     begin
       require 'racc/cparse'
     # Racc_Runtime_Core_Version_C  = (defined in extention)
@@ -389,7 +389,7 @@ module Racc
         toks.each {|t| out.print ' ', racc_token2str(t) }
       end
       out.puts " --> #{racc_token2str(sim)}"
-          
+
       racc_print_stacks tstack, vstack
       @racc_debug_out.puts
     end

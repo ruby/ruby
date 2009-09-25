@@ -17,7 +17,7 @@
 
 warn "Warning:#{caller[0].sub(/:in `.*'\z/, '')+':' if caller[0]} getopts is deprecated after Ruby 1.8.1; use optparse instead" if caller[0] and $VERBOSE
 
-$RCS_ID=%q$Header$
+$RCS_ID=%q$Id$
 
 # getopts is obsolete. Use GetoptLong.
 
