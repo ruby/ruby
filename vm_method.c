@@ -1163,6 +1163,9 @@ rb_respond_to(VALUE obj, ID id)
  *  If the method is not implemented,
  *  as Process.fork on Windows, File.lchmod on GNU/Linux, etc.,
  *  false is returned.
+ *
+ *  If the method is not defined, <code>respond_to_missing?</code>
+ *  method is called and the result is returned.
  */
 
 static VALUE
@@ -1178,6 +1181,15 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     obj.respond_to_missing?(symbol, include_private=false) => true or false
+ *
+ *  Hook method to return whether the _obj_ can respond to _id_ method
+ *  or not.
+ *
+ *  See #respond_to?.
+ */
 static VALUE
 obj_respond_to_missing(int argc, VALUE *argv, VALUE obj)
 {
