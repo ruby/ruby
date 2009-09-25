@@ -1,3 +1,10 @@
+Fri Sep 25 13:04:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (mnew): fix for instance method of Module, BasicObjec
+	  and subclass of a class which overrides respond_to_missing?.
+	  based on a patch from Nikolai Lugovoi <nlugovoi AT gmail.com> in
+	  [ruby-core:25748].
+
 Fri Sep 25 11:56:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (rb_mod_method_defined): should return true or false.
