@@ -1,3 +1,7 @@
+Fri Sep 25 11:51:34 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_mod_method_defined): should return true or false.
+
 Thu Sep 24 13:32:53 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* proc.c (mnew): generate method object that wraps method_missing,
