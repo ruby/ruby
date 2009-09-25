@@ -1,3 +1,8 @@
+Sat Sep 26 08:35:12 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (compile_string): rename to parse_string(), because
+	  this function only parse String to NODE.
+
 Fri Sep 25 16:01:45 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c, include/ruby/win32.h (rb_w32_access): new function to
