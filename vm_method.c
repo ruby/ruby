@@ -671,7 +671,11 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
 static VALUE
 rb_mod_method_defined(VALUE mod, VALUE mid)
 {
-    return rb_method_boundp(mod, rb_to_id(mid), 1);
+    if (!rb_method_boundp(mod, rb_to_id(mid), 1)) {
+	return FALSE;
+    }
+    return TRUE;
+    
 }
 
 #define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
@@ -1123,9 +1127,9 @@ basic_obj_respond_to(VALUE obj, ID id, int pub)
 	if (!rb_method_basic_definition_p(klass, respond_to_missing)) {
 	    return RTEST(rb_funcall(obj, respond_to_missing, pub ? 1 : 2, ID2SYM(id), Qtrue));
 	}
-	return Qfalse;
+	return FALSE;
     }
-    return Qtrue;
+    return TRUE;
 }
 
 int
