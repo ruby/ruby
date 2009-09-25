@@ -672,9 +672,9 @@ static VALUE
 rb_mod_method_defined(VALUE mod, VALUE mid)
 {
     if (!rb_method_boundp(mod, rb_to_id(mid), 1)) {
-	return FALSE;
+	return Qfalse;
     }
-    return TRUE;
+    return Qtrue;
     
 }
 
