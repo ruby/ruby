@@ -305,8 +305,7 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_respond_to_missing
-    c = Class.new
-    c.class_eval do
+    c = Class.new do
       def respond_to_missing?(id)
         if id == :foobar
           true
@@ -335,6 +334,18 @@ class TestObject < Test::Unit::TestCase
     foobar = foo.method(:foobar)
     assert_equal([:foo], foobar.call);
     assert_equal([:foo, 1], foobar.call(1));
+
+    c = Class.new(c)
+    assert_equal(false, c.method_defined?(:foobar))
+    assert_raise(NameError, '[ruby-core:25748]') do
+      c.instance_method(:foobar)
+    end
+
+    m = Module.new
+    assert_equal(false, m.method_defined?(:foobar))
+    assert_raise(NameError, '[ruby-core:25748]') do
+      m.instance_method(:foobar)
+    end
   end
 
   def test_send_with_no_arguments

@@ -912,7 +912,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 	ID rmiss = rb_intern("respond_to_missing?");
 	VALUE sym = ID2SYM(id);
 
-	if (!rb_method_basic_definition_p(klass, rmiss)) {
+	if (obj != Qundef && !rb_method_basic_definition_p(klass, rmiss)) {
 	    if (RTEST(rb_funcall(obj, rmiss, 1, sym))) {
 		return rb_proc_new(missing_wrap, rb_assoc_new(obj, sym));
 	    }
