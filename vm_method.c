@@ -681,7 +681,7 @@ rb_mod_method_defined(VALUE mod, VALUE mid)
 #define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
 
 static VALUE
-check_definition(VALUE mod, VALUE mid, rb_method_flag_t noex)
+check_definition(VALUE mod, ID mid, rb_method_flag_t noex)
 {
     const rb_method_entry_t *me;
     me = rb_method_entry(mod, mid);
