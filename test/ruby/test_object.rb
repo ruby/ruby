@@ -325,6 +325,7 @@ class TestObject < Test::Unit::TestCase
     foo = c.new
     assert_equal([:foo], foo.foobar);
     assert_equal([:foo, 1], foo.foobar(1));
+    assert_equal([:foo, 1, 2, 3, 4, 5], foo.foobar(1, 2, 3, 4, 5));
     assert(foo.respond_to?(:foobar))
     assert_equal(false, foo.respond_to?(:foobarbaz))
     assert_raise(NoMethodError) do
@@ -334,6 +335,7 @@ class TestObject < Test::Unit::TestCase
     foobar = foo.method(:foobar)
     assert_equal([:foo], foobar.call);
     assert_equal([:foo, 1], foobar.call(1));
+    assert_equal([:foo, 1, 2, 3, 4, 5], foobar.call(1, 2, 3, 4, 5));
 
     c = Class.new(c)
     assert_equal(false, c.method_defined?(:foobar))
