@@ -409,7 +409,7 @@ static VALUE mString_Extend_json_create(VALUE self, VALUE o) {
 }
 
 /*
- * call-seq: to_json(state = nil, depth = 0)
+ * call-seq: to_json(*)
  *
  * Returns a JSON string for true: 'true'.
  */
@@ -421,7 +421,7 @@ static VALUE mTrueClass_to_json(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * call-seq: to_json(state = nil, depth = 0)
+ * call-seq: to_json(*)
  *
  * Returns a JSON string for false: 'false'.
  */
@@ -433,7 +433,7 @@ static VALUE mFalseClass_to_json(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * call-seq: to_json(state = nil, depth = 0)
+ * call-seq: to_json(*)
  *
  */
 static VALUE mNilClass_to_json(int argc, VALUE *argv, VALUE self)
