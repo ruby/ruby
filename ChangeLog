@@ -1,3 +1,10 @@
+Sat Sep 26 22:39:24 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* Makefile.in(test-rubyspec): explicitly executes run subcommand of
+	  mspec.
+
+	* spec/README: typo fix
+
 Sat Sep 26 17:53:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c (COLLISION): improved collision log feature.

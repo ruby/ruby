@@ -298,7 +298,7 @@ update-rubyspec: update-mspec
 
 test-rubyspec:
 	@if [ ! -d $(srcdir)/spec/rubyspec ]; then echo No rubyspec here.  make update-rubyspec first.; exit 1; fi
-	$(RUNRUBY) $(srcdir)/spec/mspec/bin/mspec -B $(srcdir)/spec/default.mspec $(MSPECOPT)
+	$(RUNRUBY) $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec $(MSPECOPT)
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc

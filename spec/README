@@ -25,6 +25,6 @@ and put it into this directory.
    $ make test-rubyspec
 :mspec command
   verifies the specified spec.
-   $ mspec {language|core|language}
+   $ mspec {language|core|library}
    or
    $ mspec spec/path/to/some_spec.rb
