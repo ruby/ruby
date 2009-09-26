@@ -1990,12 +1990,23 @@ rb_str_concat(VALUE str1, VALUE str2)
 #define MURMUR 2
 #endif
 
-#define MurmurMagic 0x7fd652ad
+typedef char check_murmur_voidp[SIZEOF_VOIDP == (int)sizeof(st_index_t) ? 1 : -1];
+#define SIZEOF_ST_INDEX_T SIZEOF_VOIDP
 
-static inline unsigned long
-murmur(unsigned long h, unsigned long k, int r)
+#if MURMUR == 1
+#define MurmurMagic 0xc6a4a793
+#elif MURMUR == 2
+#if SIZEOF_ST_INDEX_T > 4
+#define MurmurMagic 0xc6a4a7935bd1e995
+#else
+#define MurmurMagic 0x5bd1e995
+#endif
+#endif
+
+static inline st_index_t
+murmur(st_index_t h, st_index_t k, int r)
 {
-    const unsigned int m = MurmurMagic;
+    const st_index_t m = MurmurMagic;
 #if MURMUR == 1
     h += k;
     h *= m;
@@ -2010,10 +2021,9 @@ murmur(unsigned long h, unsigned long k, int r)
 #endif
     return h;
 }
-#define murmur16(h) murmur_step(h, 16)
 
-static inline unsigned long
-murmur_finish(unsigned long h)
+static inline st_index_t
+murmur_finish(st_index_t h)
 {
 #if MURMUR == 1
     h = murmur(h, 0, 10);
@@ -2028,35 +2038,50 @@ murmur_finish(unsigned long h)
 
 #define murmur_step(h, k) murmur(h, k, 16)
 
+#if MURMUR == 1
+#define murmur1(h) murmur_step(h, 16)
+#else
+#define murmur1(h) murmur_step(h, 24)
+#endif
+
 static st_index_t
-hash(const unsigned char * data, size_t len, st_index_t h)
+hash(const void *ptr, size_t len, st_index_t h)
 {
-    uint32_t t = 0;
+    const char *data = ptr;
+    st_index_t t = 0;
 
     h += 0xdeadbeef;
 
-#ifdef WORDS_BIGENDIAN
-# define SHIFT_OFFSET(i) ((i)*CHAR_BIT)
-#else
-# define SHIFT_OFFSET(i) (32-(i)*CHAR_BIT)
+#define data_at(n) (st_index_t)((unsigned char)data[n])
+#define UNALIGNED_ADD_4 UNALIGNED_ADD(2); UNALIGNED_ADD(1); UNALIGNED_ADD(0)
+#if SIZEOF_ST_INDEX_T > 4
+#define UNALIGNED_ADD_8 UNALIGNED_ADD(6); UNALIGNED_ADD(5); UNALIGNED_ADD(4); UNALIGNED_ADD(3); UNALIGNED_ADD_4
+#if SIZEOF_ST_INDEX_T > 8
+#define UNALIGNED_ADD_16 UNALIGNED_ADD(14); UNALIGNED_ADD(13); UNALIGNED_ADD(12); UNALIGNED_ADD(11); \
+    UNALIGNED_ADD(10); UNALIGNED_ADD(9); UNALIGNED_ADD(8); UNALIGNED_ADD(7); UNALIGNED_ADD_8
+#define UNALIGNED_ADD_ALL UNALIGNED_ADD_16
 #endif
-    if (len >= sizeof(uint32_t)) {
+#define UNALIGNED_ADD_ALL UNALIGNED_ADD_8
+#else
+#define UNALIGNED_ADD_ALL UNALIGNED_ADD_4
+#endif
+    if (len >= sizeof(st_index_t)) {
 #if !UNALIGNED_WORD_ACCESS
-	int align = (int)((VALUE)data % sizeof(uint32_t));
+	int align = (int)((st_data_t)data % sizeof(st_index_t));
 	if (align) {
-	    uint32_t d = 0;
+	    st_index_t d = 0;
 	    int sl, sr, pack;
 
 	    switch (align) {
 #ifdef WORDS_BIGENDIAN
-	      case 1: t |= data[2];
-	      case 2: t |= data[1] << CHAR_BIT;
-	      case 3: t |= data[0] << CHAR_BIT*2;
+# define UNALIGNED_ADD(n) case SIZEOF_ST_INDEX_T - (n) - 1: \
+		t |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 2)
 #else
-	      case 1: t |= data[2] << CHAR_BIT*2;
-	      case 2: t |= data[1] << CHAR_BIT;
-	      case 3: t |= data[0];
+# define UNALIGNED_ADD(n) case SIZEOF_ST_INDEX_T - (n) - 1:	\
+		t |= data_at(n) << CHAR_BIT*(n)
 #endif
+		UNALIGNED_ADD_ALL;
+#undef UNALIGNED_ADD
 	    }
 
 #ifdef WORDS_BIGENDIAN
@@ -2065,14 +2090,14 @@ hash(const unsigned char * data, size_t len, st_index_t h)
 	    t <<= (CHAR_BIT * align);
 #endif
 
-	    data += sizeof(uint32_t)-align;
-	    len -= sizeof(uint32_t)-align;
+	    data += sizeof(st_index_t)-align;
+	    len -= sizeof(st_index_t)-align;
 
-	    sl = CHAR_BIT * ((int)sizeof(uint32_t)-align);
+	    sl = CHAR_BIT * (SIZEOF_ST_INDEX_T-align);
 	    sr = CHAR_BIT * align;
 
-	    while (len >= sizeof(uint32_t)) {
-		d = *(uint32_t *)data;
+	    while (len >= sizeof(st_index_t)) {
+		d = *(st_index_t *)data;
 #ifdef WORDS_BIGENDIAN
 		t = (t << sr) | (d >> sl);
 #else
@@ -2080,22 +2105,22 @@ hash(const unsigned char * data, size_t len, st_index_t h)
 #endif
 		h = murmur_step(h, t);
 		t = d;
-		data += sizeof(uint32_t);
-		len -= sizeof(uint32_t);
+		data += sizeof(st_index_t);
+		len -= sizeof(st_index_t);
 	    }
 
 	    pack = len < (size_t)align ? (int)len : align;
 	    d = 0;
 	    switch (pack) {
 #ifdef WORDS_BIGENDIAN
-	      case 3: d |= data[2] << CHAR_BIT;
-	      case 2: d |= data[1] << CHAR_BIT*2;
-	      case 1: d |= data[0] << CHAR_BIT*3;
+# define UNALIGNED_ADD(n) case (n) + 1: \
+		d |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 1)
 #else
-	      case 3: d |= data[2] << CHAR_BIT*2;
-	      case 2: d |= data[1] << CHAR_BIT;
-	      case 1: d |= data[0];
+# define UNALIGNED_ADD(n) case (n) + 1: \
+		d |= data_at(n) << CHAR_BIT*(n)
 #endif
+		UNALIGNED_ADD_ALL;
+#undef UNALIGNED_ADD
 	    }
 #ifdef WORDS_BIGENDIAN
 	    t = (t << sr) | (d >> sl);
@@ -2114,30 +2139,24 @@ hash(const unsigned char * data, size_t len, st_index_t h)
 #endif
 	{
 	    do {
-		h = murmur_step(h, *(uint32_t *)data);
-		data += sizeof(uint32_t);
-		len -= sizeof(uint32_t);
-	    } while (len >= sizeof(uint32_t));
+		h = murmur_step(h, *(st_index_t *)data);
+		data += sizeof(st_index_t);
+		len -= sizeof(st_index_t);
+	    } while (len >= sizeof(st_index_t));
 	}
     }
 
     t = 0;
     switch (len) {
 #ifdef WORDS_BIGENDIAN
-      case 3:
-	t |= data[2] << CHAR_BIT;
-      case 2:
-	t |= data[1] << CHAR_BIT*2;
-      case 1:
-	t |= data[0] << CHAR_BIT*3;
+# define UNALIGNED_ADD(n) case (n) + 1: \
+	t |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 1)
 #else
-      case 3:
-	t |= data[2] << CHAR_BIT*2;
-      case 2:
-	t |= data[1] << CHAR_BIT;
-      case 1:
-	t |= data[0];
+# define UNALIGNED_ADD(n) case (n) + 1: \
+	t |= data_at(n) << CHAR_BIT*(n)
 #endif
+	UNALIGNED_ADD_ALL;
+#undef UNALIGNED_ADD
 #if MURMUR == 1
 	h = murmur_step(h, t);
 #elif MURMUR == 2
@@ -2153,7 +2172,7 @@ hash(const unsigned char * data, size_t len, st_index_t h)
 }
 
 st_index_t
-rb_hash_uint32(st_index_t h, unsigned int i)
+rb_hash_uint32(st_index_t h, uint32_t i)
 {
     return murmur_step(h + i, 16);
 }
@@ -2161,29 +2180,29 @@ rb_hash_uint32(st_index_t h, unsigned int i)
 st_index_t
 rb_hash_uint(st_index_t h, st_index_t i)
 {
-    unsigned long v = 0;
+    st_index_t v = 0;
     h += i;
 #ifdef WORDS_BIGENDIAN
-#if SIZEOF_VALUE*CHAR_BIT > 12*8
-    v = murmur16(v + (h >> 12*8));
+#if SIZEOF_ST_INDEX_T*CHAR_BIT > 12*8
+    v = murmur1(v + (h >> 12*8));
 #endif
-#if SIZEOF_VALUE*CHAR_BIT > 8*8
-    v = murmur16(v + (h >> 8*8));
+#if SIZEOF_ST_INDEX_T*CHAR_BIT > 8*8
+    v = murmur1(v + (h >> 8*8));
 #endif
-#if SIZEOF_VALUE*CHAR_BIT > 4*8
-    v = murmur16(v + (h >> 4*8));
+#if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
+    v = murmur1(v + (h >> 4*8));
 #endif
 #endif
-    v = murmur16(v + h);
+    v = murmur1(v + h);
 #ifndef WORDS_BIGENDIAN
-#if SIZEOF_VALUE*CHAR_BIT > 4*8
-    v = murmur16(v + (h >> 4*8));
+#if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
+    v = murmur1(v + (h >> 4*8));
 #endif
-#if SIZEOF_VALUE*CHAR_BIT > 8*8
-    v = murmur16(v + (h >> 8*8));
+#if SIZEOF_ST_INDEX_T*CHAR_BIT > 8*8
+    v = murmur1(v + (h >> 8*8));
 #endif
-#if SIZEOF_VALUE*CHAR_BIT > 12*8
-    v = murmur16(v + (h >> 12*8));
+#if SIZEOF_ST_INDEX_T*CHAR_BIT > 12*8
+    v = murmur1(v + (h >> 12*8));
 #endif
 #endif
     return v;
@@ -2201,19 +2220,19 @@ st_index_t
 rb_hash_start(st_index_t h)
 {
     static int hashseed_init = 0;
-    static VALUE hashseed;
+    static st_index_t hashseed;
 
     if (!hashseed_init) {
         hashseed = rb_genrand_int32();
-#if SIZEOF_VALUE*CHAR_BIT > 4*8
+#if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
 	hashseed <<= 32;
 	hashseed |= rb_genrand_int32();
 #endif
-#if SIZEOF_VALUE*CHAR_BIT > 8*8
+#if SIZEOF_ST_INDEX_T*CHAR_BIT > 8*8
 	hashseed <<= 32;
 	hashseed |= rb_genrand_int32();
 #endif
-#if SIZEOF_VALUE*CHAR_BIT > 12*8
+#if SIZEOF_ST_INDEX_T*CHAR_BIT > 12*8
 	hashseed <<= 32;
 	hashseed |= rb_genrand_int32();
 #endif
