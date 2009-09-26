@@ -1,3 +1,7 @@
+Sun Sep 26 00:24:14 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
+
+	* symbian/setup: Updated .mmp file generation due to blockinlining.c removal.
+
 Sat Sep 26 22:39:24 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* Makefile.in(test-rubyspec): explicitly executes run subcommand of
