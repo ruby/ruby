@@ -1,3 +1,8 @@
+Sat Sep 26 13:32:00 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/net/http.rb (transport_request): Handle timeout error by
+	  closing socket if exception raised. [ruby-core:20976]
+
 Fri Sep 25 04:34:08 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/rational.rb (#+, #-, #/, #**, #<=>): Return correct error
