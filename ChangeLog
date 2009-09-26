@@ -1,3 +1,8 @@
+Sat Sep 26 13:26:55 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/net/http.rb (transport_request): Handle timeout error by
+	  closing socket if exception raised. [ruby-core:20976]
+
 Sat Sep 26 08:35:12 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (compile_string): rename to parse_string(), because
