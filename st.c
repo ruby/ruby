@@ -71,6 +71,7 @@ static void rehash(st_table *);
 
 #define EQUAL(table,x,y) ((x)==(y) || (*table->type->compare)((x),(y)) == 0)
 
+/* remove cast to unsigned int in the future */
 #define do_hash(key,table) (unsigned int)(st_index_t)(*(table)->type->hash)((key))
 #define do_hash_bin(key,table) (do_hash(key, table)%(table)->num_bins)
 
@@ -140,19 +141,27 @@ new_size(st_index_t size)
 }
 
 #ifdef HASH_LOG
-static int collision = 0;
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+static struct {
+    int all, total, num, str, strcase;
+}  collision;
 static int init_st = 0;
 
 static void
 stat_col(void)
 {
-    FILE *f = fopen("/tmp/col", "w");
-    fprintf(f, "collision: %d\n", collision);
+    char fname[10+sizeof(long)*3];
+    FILE *f = fopen((snprintf(fname, sizeof(fname), "/tmp/col%ld", (long)getpid()), fname), "w");
+    fprintf(f, "collision: %d / %d (%6.2f)\n", collision.all, collision.total,
+	    ((double)collision.all / (collision.total)) * 100);
+    fprintf(f, "num: %d, str: %d, strcase: %d\n", collision.num, collision.str, collision.strcase);
     fclose(f);
 }
 #endif
 
-#define MAX_PACKED_NUMHASH ((st_index_t)5)
+#define MAX_PACKED_NUMHASH (ST_DEFAULT_INIT_TABLE_SIZE/2)
 
 st_table*
 st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
@@ -160,6 +169,12 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
     st_table *tbl;
 
 #ifdef HASH_LOG
+# if HASH_LOG+0 < 0
+    {
+	const char *e = getenv("ST_HASH_LOG");
+	if (!e || !*e) init_st = 1;
+    }
+# endif
     if (init_st == 0) {
 	init_st = 1;
 	atexit(stat_col);
@@ -270,14 +285,31 @@ st_memsize(const st_table *table)
 ((ptr) != 0 && (ptr->hash != (hash_val) || !EQUAL((table), (key), (ptr)->key)))
 
 #ifdef HASH_LOG
-#define COLLISION collision++
+static void
+count_collision(const struct st_hash_type *type)
+{
+    collision.all++;
+    if (type == &type_numhash) {
+	collision.num++;
+    }
+    else if (type == &type_strhash) {
+	collision.strcase++;
+    }
+    else if (type == &type_strcasehash) {
+	collision.str++;
+    }
+}
+#define COLLISION (collision_check ? count_collision(table->type) : (void)0)
+#define FOUND_ENTRY (collision_check ? collision.total++ : (void)0)
 #else
 #define COLLISION
+#define FOUND_ENTRY
 #endif
 
 #define FIND_ENTRY(table, ptr, hash_val, bin_pos) do {\
     bin_pos = hash_val%(table)->num_bins;\
     ptr = (table)->bins[bin_pos];\
+    FOUND_ENTRY;\
     if (PTR_NOT_EQUAL(table, ptr, hash_val, key)) {\
 	COLLISION;\
 	while (PTR_NOT_EQUAL(table, ptr->next, hash_val, key)) {\
@@ -286,6 +318,8 @@ st_memsize(const st_table *table)
 	ptr = ptr->next;\
     }\
 } while (0)
+
+#define collision_check 0
 
 int
 st_lookup(st_table *table, register st_data_t key, st_data_t *value)
@@ -345,10 +379,17 @@ st_get_key(st_table *table, register st_data_t key, st_data_t *result)
     }
 }
 
+#undef collision_check
+#define collision_check 1
+
+#define MORE_PACKABLE_P(table) \
+    ((st_index_t)((table)->num_entries+1) * 2 <= (table)->num_bins && \
+     (table)->num_entries+1 <= MAX_PACKED_NUMHASH)
+
 #define ADD_DIRECT(table, key, value, hash_val, bin_pos)\
 do {\
     st_table_entry *entry;\
-    if (table->num_entries/(table->num_bins) > ST_DEFAULT_MAX_DENSITY) {\
+    if (table->num_entries > ST_DEFAULT_MAX_DENSITY * table->num_bins) {\
 	rehash(table);\
         bin_pos = hash_val % table->num_bins;\
     }\
@@ -402,7 +443,7 @@ st_insert(register st_table *table, register st_data_t key, st_data_t value)
                 return 1;
             }
         }
-        if ((table->num_entries+1) * 2 <= table->num_bins && table->num_entries+1 <= MAX_PACKED_NUMHASH) {
+        if (MORE_PACKABLE_P(table)) {
             i = table->num_entries++;
             table->bins[i*2] = (struct st_table_entry*)key;
             table->bins[i*2+1] = (struct st_table_entry*)value;
@@ -441,7 +482,7 @@ st_insert2(register st_table *table, register st_data_t key, st_data_t value,
                 return 1;
             }
         }
-        if ((table->num_entries+1) * 2 <= table->num_bins && table->num_entries+1 <= MAX_PACKED_NUMHASH) {
+        if (MORE_PACKABLE_P(table)) {
             i = table->num_entries++;
             table->bins[i*2] = (struct st_table_entry*)key;
             table->bins[i*2+1] = (struct st_table_entry*)value;
@@ -473,7 +514,7 @@ st_add_direct(st_table *table, st_data_t key, st_data_t value)
 
     if (table->entries_packed) {
         int i;
-        if ((table->num_entries+1) * 2 <= table->num_bins && table->num_entries+1 <= MAX_PACKED_NUMHASH) {
+        if (MORE_PACKABLE_P(table)) {
             i = table->num_entries++;
             table->bins[i*2] = (struct st_table_entry*)key;
             table->bins[i*2+1] = (struct st_table_entry*)value;
