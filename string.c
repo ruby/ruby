@@ -1976,245 +1976,18 @@ rb_str_concat(VALUE str1, VALUE str2)
     return rb_str_append(str1, str2);
 }
 
-#ifndef UNALIGNED_WORD_ACCESS
-# if defined __i386__ || defined _M_IX86
-#   define UNALIGNED_WORD_ACCESS 1
-# endif
-#endif
-#ifndef UNALIGNED_WORD_ACCESS
-# define UNALIGNED_WORD_ACCESS 0
-#endif
-
-/* MurmurHash described in http://murmurhash.googlepages.com/ */
-#ifndef MURMUR
-#define MURMUR 2
-#endif
-
-typedef char check_murmur_voidp[SIZEOF_VOIDP == (int)sizeof(st_index_t) ? 1 : -1];
-#define SIZEOF_ST_INDEX_T SIZEOF_VOIDP
-
-#if MURMUR == 1
-#define MurmurMagic 0xc6a4a793
-#elif MURMUR == 2
-#if SIZEOF_ST_INDEX_T > 4
-#define MurmurMagic 0xc6a4a7935bd1e995
-#else
-#define MurmurMagic 0x5bd1e995
-#endif
-#endif
-
-static inline st_index_t
-murmur(st_index_t h, st_index_t k, int r)
-{
-    const st_index_t m = MurmurMagic;
-#if MURMUR == 1
-    h += k;
-    h *= m;
-    h ^= h >> r;
-#elif MURMUR == 2
-    k *= m;
-    k ^= k >> r;
-    k *= m;
-
-    h *= m;
-    h ^= k;
-#endif
-    return h;
-}
-
-static inline st_index_t
-murmur_finish(st_index_t h)
-{
-#if MURMUR == 1
-    h = murmur(h, 0, 10);
-    h = murmur(h, 0, 17);
-#elif MURMUR == 2
-    h ^= h >> 13;
-    h *= MurmurMagic;
-    h ^= h >> 15;
-#endif
-    return h;
-}
-
-#define murmur_step(h, k) murmur(h, k, 16)
-
-#if MURMUR == 1
-#define murmur1(h) murmur_step(h, 16)
-#else
-#define murmur1(h) murmur_step(h, 24)
-#endif
-
-static st_index_t
-hash(const void *ptr, size_t len, st_index_t h)
-{
-    const char *data = ptr;
-    st_index_t t = 0;
-
-    h += 0xdeadbeef;
-
-#define data_at(n) (st_index_t)((unsigned char)data[n])
-#define UNALIGNED_ADD_4 UNALIGNED_ADD(2); UNALIGNED_ADD(1); UNALIGNED_ADD(0)
-#if SIZEOF_ST_INDEX_T > 4
-#define UNALIGNED_ADD_8 UNALIGNED_ADD(6); UNALIGNED_ADD(5); UNALIGNED_ADD(4); UNALIGNED_ADD(3); UNALIGNED_ADD_4
-#if SIZEOF_ST_INDEX_T > 8
-#define UNALIGNED_ADD_16 UNALIGNED_ADD(14); UNALIGNED_ADD(13); UNALIGNED_ADD(12); UNALIGNED_ADD(11); \
-    UNALIGNED_ADD(10); UNALIGNED_ADD(9); UNALIGNED_ADD(8); UNALIGNED_ADD(7); UNALIGNED_ADD_8
-#define UNALIGNED_ADD_ALL UNALIGNED_ADD_16
-#endif
-#define UNALIGNED_ADD_ALL UNALIGNED_ADD_8
-#else
-#define UNALIGNED_ADD_ALL UNALIGNED_ADD_4
-#endif
-    if (len >= sizeof(st_index_t)) {
-#if !UNALIGNED_WORD_ACCESS
-	int align = (int)((st_data_t)data % sizeof(st_index_t));
-	if (align) {
-	    st_index_t d = 0;
-	    int sl, sr, pack;
-
-	    switch (align) {
-#ifdef WORDS_BIGENDIAN
-# define UNALIGNED_ADD(n) case SIZEOF_ST_INDEX_T - (n) - 1: \
-		t |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 2)
-#else
-# define UNALIGNED_ADD(n) case SIZEOF_ST_INDEX_T - (n) - 1:	\
-		t |= data_at(n) << CHAR_BIT*(n)
-#endif
-		UNALIGNED_ADD_ALL;
-#undef UNALIGNED_ADD
-	    }
-
-#ifdef WORDS_BIGENDIAN
-	    t >>= (CHAR_BIT * align) - CHAR_BIT;
-#else
-	    t <<= (CHAR_BIT * align);
-#endif
-
-	    data += sizeof(st_index_t)-align;
-	    len -= sizeof(st_index_t)-align;
-
-	    sl = CHAR_BIT * (SIZEOF_ST_INDEX_T-align);
-	    sr = CHAR_BIT * align;
-
-	    while (len >= sizeof(st_index_t)) {
-		d = *(st_index_t *)data;
-#ifdef WORDS_BIGENDIAN
-		t = (t << sr) | (d >> sl);
-#else
-		t = (t >> sr) | (d << sl);
-#endif
-		h = murmur_step(h, t);
-		t = d;
-		data += sizeof(st_index_t);
-		len -= sizeof(st_index_t);
-	    }
-
-	    pack = len < (size_t)align ? (int)len : align;
-	    d = 0;
-	    switch (pack) {
-#ifdef WORDS_BIGENDIAN
-# define UNALIGNED_ADD(n) case (n) + 1: \
-		d |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 1)
-#else
-# define UNALIGNED_ADD(n) case (n) + 1: \
-		d |= data_at(n) << CHAR_BIT*(n)
-#endif
-		UNALIGNED_ADD_ALL;
-#undef UNALIGNED_ADD
-	    }
-#ifdef WORDS_BIGENDIAN
-	    t = (t << sr) | (d >> sl);
-#else
-	    t = (t >> sr) | (d << sl);
-#endif
-
-#if MURMUR == 2
-	    if (len < (size_t)align) goto skip_tail;
-#endif
-	    h = murmur_step(h, t);
-	    data += pack;
-	    len -= pack;
-	}
-	else
-#endif
-	{
-	    do {
-		h = murmur_step(h, *(st_index_t *)data);
-		data += sizeof(st_index_t);
-		len -= sizeof(st_index_t);
-	    } while (len >= sizeof(st_index_t));
-	}
-    }
-
-    t = 0;
-    switch (len) {
-#ifdef WORDS_BIGENDIAN
-# define UNALIGNED_ADD(n) case (n) + 1: \
-	t |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 1)
-#else
-# define UNALIGNED_ADD(n) case (n) + 1: \
-	t |= data_at(n) << CHAR_BIT*(n)
-#endif
-	UNALIGNED_ADD_ALL;
-#undef UNALIGNED_ADD
-#if MURMUR == 1
-	h = murmur_step(h, t);
-#elif MURMUR == 2
-# if !UNALIGNED_WORD_ACCESS
-      skip_tail:
-# endif
-	h ^= t;
-	h *= MurmurMagic;
-#endif
-    }
-
-    return murmur_finish(h);
-}
-
-st_index_t
-rb_hash_uint32(st_index_t h, uint32_t i)
-{
-    return murmur_step(h + i, 16);
-}
-
-st_index_t
-rb_hash_uint(st_index_t h, st_index_t i)
-{
-    st_index_t v = 0;
-    h += i;
-#ifdef WORDS_BIGENDIAN
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 12*8
-    v = murmur1(v + (h >> 12*8));
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 8*8
-    v = murmur1(v + (h >> 8*8));
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
-    v = murmur1(v + (h >> 4*8));
-#endif
-#endif
-    v = murmur1(v + h);
-#ifndef WORDS_BIGENDIAN
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
-    v = murmur1(v + (h >> 4*8));
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 8*8
-    v = murmur1(v + (h >> 8*8));
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 12*8
-    v = murmur1(v + (h >> 12*8));
-#endif
-#endif
-    return v;
-}
-
-st_index_t
-rb_hash_end(st_index_t h)
-{
-    h = murmur_step(h, 10);
-    h = murmur_step(h, 17);
-    return h;
-}
+#undef rb_hash_uint32
+#undef rb_hash_uint
+#undef rb_hash_end
+RUBY_ALIAS_FUNCTION_TYPE(st_index_t,
+			 rb_hash_uint32(st_index_t h, uint32_t i),
+			 st_hash_uint32, (h, i));
+RUBY_ALIAS_FUNCTION_TYPE(st_index_t,
+			 rb_hash_uint(st_index_t h, st_index_t i),
+			 st_hash_uint, (h, i));
+RUBY_ALIAS_FUNCTION_TYPE(st_index_t,
+			 rb_hash_end(st_index_t h),
+			 st_hash_end, (h));
 
 st_index_t
 rb_hash_start(st_index_t h)
@@ -2239,13 +2012,13 @@ rb_hash_start(st_index_t h)
         hashseed_init = 1;
     }
 
-    return hashseed + h;
+    return st_hash_start(hashseed + h);
 }
 
 st_index_t
 rb_memhash(const void *ptr, long len)
 {
-    return hash(ptr, len, rb_hash_start(0));
+    return st_hash(ptr, len, rb_hash_start(0));
 }
 
 st_index_t

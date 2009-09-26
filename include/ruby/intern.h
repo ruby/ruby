@@ -639,6 +639,9 @@ st_index_t rb_hash_start(st_index_t);
 st_index_t rb_hash_uint32(st_index_t, uint32_t);
 st_index_t rb_hash_uint(st_index_t, st_index_t);
 st_index_t rb_hash_end(st_index_t);
+#define rb_hash_uint32(h, i) st_hash_uint32(h, i)
+#define rb_hash_uint(h, i) st_hash_uint(h, i)
+#define rb_hash_end(h) st_hash_end(h)
 st_index_t rb_str_hash(VALUE);
 int rb_str_hash_cmp(VALUE,VALUE);
 int rb_str_comparable(VALUE, VALUE);
