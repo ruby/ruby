@@ -1,3 +1,17 @@
+Sun Sep 27 04:20:55 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_inspect): result's encoding should be fixed.
+	  If default_internal is not nil, the encoding is default_internal.
+	  Else if default_external is not nil, the encoding is default_external.
+	  But the encoding is not ASCII-compatible, the encoding is replaced by
+	  US-ASCII.
+	  Characters in ASCII-incompatible encoding or non ASCII characters
+	  in other than the encoding will be \xXX escaped.
+
+	* string.c (str_buf_cat2): defined.
+
+	* string.c (prefix_escape): removed.
+
 Sun Sep 27 05:37:45 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 
 	* symbian/missing-pips.c: Updated to work with the latest PIPS 1.6.

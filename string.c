@@ -1741,6 +1741,12 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     return str;
 }
 
+static VALUE
+str_buf_cat2(VALUE str, const char *ptr)
+{
+    return str_buf_cat(str, ptr, strlen(ptr));
+}
+
 VALUE
 rb_str_buf_cat(VALUE str, const char *ptr, long len)
 {
@@ -4034,13 +4040,6 @@ str_cat_char(VALUE str, unsigned int c, rb_encoding *enc)
     rb_enc_str_buf_cat(str, s, n, enc);
 }
 
-static void
-prefix_escape(VALUE str, unsigned int c, rb_encoding *enc)
-{
-    str_cat_char(str, '\\', enc);
-    str_cat_char(str, c, enc);
-}
-
 /*
  * call-seq:
  *   str.inspect   => string
@@ -4059,10 +4058,13 @@ rb_str_inspect(VALUE str)
     rb_encoding *enc = STR_ENC_GET(str);
     char *p, *pend;
     VALUE result = rb_str_buf_new(0);
+    rb_encoding *resenc = rb_default_internal_encoding();
 
-    if (!rb_enc_asciicompat(enc)) enc = rb_usascii_encoding();
-    rb_enc_associate(result, enc);
-    str_cat_char(result, '"', enc);
+    if (resenc == NULL) resenc = rb_default_external_encoding();
+    if (!rb_enc_asciicompat(resenc)) resenc = rb_usascii_encoding();
+    rb_enc_associate(result, resenc);
+    str_buf_cat2(result, "\"");
+
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
     while (p < pend) {
 	unsigned int c, cc;
@@ -4083,51 +4085,49 @@ rb_str_inspect(VALUE str)
              MBCLEN_CHARFOUND_P(rb_enc_precise_mbclen(p,pend,enc)) &&
              (cc = rb_enc_codepoint(p,pend,enc),
               (cc == '$' || cc == '@' || cc == '{')))) {
-	    prefix_escape(result, c, enc);
+	    str_buf_cat2(result, "\\");
+	    str_buf_cat(result, p - n, n);
 	}
 	else if (c == '\n') {
-	    prefix_escape(result, 'n', enc);
+	    str_buf_cat2(result, "\\n");
 	}
 	else if (c == '\r') {
-	    prefix_escape(result, 'r', enc);
+	    str_buf_cat2(result, "\\r");
 	}
 	else if (c == '\t') {
-	    prefix_escape(result, 't', enc);
+	    str_buf_cat2(result, "\\t");
 	}
 	else if (c == '\f') {
-	    prefix_escape(result, 'f', enc);
+	    str_buf_cat2(result, "\\f");
 	}
 	else if (c == '\013') {
-	    prefix_escape(result, 'v', enc);
+	    str_buf_cat2(result, "\\v");
 	}
 	else if (c == '\010') {
-	    prefix_escape(result, 'b', enc);
+	    str_buf_cat2(result, "\\b");
 	}
 	else if (c == '\007') {
-	    prefix_escape(result, 'a', enc);
+	    str_buf_cat2(result, "\\a");
 	}
 	else if (c == 033) {
-	    prefix_escape(result, 'e', enc);
+	    str_buf_cat2(result, "\\e");
 	}
-	else if (rb_enc_isprint(c, enc)) {
-	    rb_enc_str_buf_cat(result, p-n, n, enc);
+	else if ((enc == resenc && rb_enc_isprint(c, enc)) || rb_enc_isascii(c, enc)) {
+	    str_buf_cat(result, p-n, n);
 	}
 	else {
-	    char buf[5];
-	    char *s;
             char *q;
-
 	  escape_codepoint:
             for (q = p-n; q < p; q++) {
-                s = buf;
-                sprintf(buf, "\\x%02X", *q & 0377);
-                while (*s) {
-                    str_cat_char(result, *s++, enc);
-                }
-            }
+#define BACKESC_BUFSIZE 5
+		char buf[BACKESC_BUFSIZE];
+		sprintf(buf, "\\x%02X", *q & 0377);
+		str_buf_cat(result, buf, BACKESC_BUFSIZE - 1);
+#undef BACKESC_BUFSIZE
+	    }
 	}
     }
-    str_cat_char(result, '"', enc);
+    str_buf_cat2(result, "\"");
 
     OBJ_INFECT(result, str);
     return result;
