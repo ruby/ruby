@@ -1,3 +1,11 @@
+Sun Sep 27 05:37:45 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
+
+	* symbian/missing-pips.c: Updated to work with the latest PIPS 1.6.
+
+	* symbian/setup: ditto.
+
+	* symbian/README.SYMBIAN: ditto.
+
 Sun Sep 27 02:00:46 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c: use rename-macro instead of RUBY_ALIAS_FUNCTION_TYPE.
