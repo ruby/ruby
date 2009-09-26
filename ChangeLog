@@ -1,3 +1,8 @@
+Sat Sep 26 16:26:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_hash_{start,uint32,uint,end}): fixed
+	  prototypes.
+
 Sat Sep 26 13:26:55 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/net/http.rb (transport_request): Handle timeout error by
