@@ -232,7 +232,6 @@ define ruby_mmp
 @echo>>$(1) SOURCEPATH ..\$(subst /,\,$(srcdir))
 @echo>>$(1) SOURCE array.c
 @echo>>$(1) SOURCE bignum.c
-@echo>>$(1) SOURCE blockinlining.c
 @echo>>$(1) SOURCE class.c
 @echo>>$(1) SOURCE compar.c
 @echo>>$(1) SOURCE compile.c
