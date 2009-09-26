@@ -1,4 +1,6 @@
-Sat Sep 26 16:48:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Sep 26 17:53:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c (COLLISION): improved collision log feature.
 
 	* string.c (hash): updated to MurmurHash 2.0 2009-09-19.
 
