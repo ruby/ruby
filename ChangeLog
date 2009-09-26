@@ -1,4 +1,6 @@
-Sat Sep 26 16:32:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Sep 26 16:48:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (hash): updated to MurmurHash 2.0 2009-09-19.
 
 	* string.c (rb_hash_start): fixed shift width on 128bit platform.
 
