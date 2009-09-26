@@ -343,6 +343,7 @@ define ext_mmp
 @echo>>$(1)$(2).mmp SYSTEMINCLUDE ..\$(subst /,\,$(srcdir))\missing
 
 @echo>>$(1)$(2).mmp SYSTEMINCLUDE \epoc32\include\stdapis
+@echo>>$(1)$(2).mmp SYSTEMINCLUDE \epoc32\include
 
 @echo>>$(1)$(2).mmp SOURCEPATH ..\$(subst /,\,$(srcdir))\ext\$(2)
 @echo>>$(1)$(2).mmp SOURCE $(2).c $(4)
@@ -368,7 +369,7 @@ define ruby_pkg
 
 @echo>>$(1) :"Symbian Research"
 
-@echo>>$(1) (0x20013851), 1, 3, 0, {"Symbian OS PIPS"}
+@echo>>$(1) (0x20013851), 1, 6, 0, {"Symbian OS PIPS"}
 
 @echo>>$(1) [0x101F7961], 0, 0, 0, {"S60ProductID"}
 
