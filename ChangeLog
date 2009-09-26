@@ -1,3 +1,8 @@
+Sun Sep 27 02:00:46 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c: use rename-macro instead of RUBY_ALIAS_FUNCTION_TYPE.
+	  Because build causes failure.
+
 Sat Sep 26 23:29:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c: moved murmur hash from string.c.  [ruby-dev:39376]
