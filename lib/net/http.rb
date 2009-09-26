@@ -1124,6 +1124,10 @@ module Net   #:nodoc:
       }
       end_transport req, res
       res
+    rescue => exception
+      D "Conn close because of error #{exception}"
+      @socket.close unless @socket.closed?
+      raise exception
     end
 
     def begin_transport(req)
