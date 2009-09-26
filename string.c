@@ -2206,15 +2206,15 @@ rb_hash_start(st_index_t h)
     if (!hashseed_init) {
         hashseed = rb_genrand_int32();
 #if SIZEOF_VALUE*CHAR_BIT > 4*8
-	hashseed <<= 4*8;
+	hashseed <<= 32;
 	hashseed |= rb_genrand_int32();
 #endif
 #if SIZEOF_VALUE*CHAR_BIT > 8*8
-	hashseed <<= 8*8;
+	hashseed <<= 32;
 	hashseed |= rb_genrand_int32();
 #endif
 #if SIZEOF_VALUE*CHAR_BIT > 12*8
-	hashseed <<= 12*8;
+	hashseed <<= 32;
 	hashseed |= rb_genrand_int32();
 #endif
         hashseed_init = 1;
