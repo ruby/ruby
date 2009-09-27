@@ -1,4 +1,9 @@
-Sun Sep 27 11:58:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Sep 27 12:01:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_buf_cat2): optimize since all second arguments are
+	  constant literals.
+
+	* string.c (str_cat_char): unused now.
 
 	* string.c (rb_hash_{uint{32,},end}): removed.
 
