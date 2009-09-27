@@ -257,7 +257,7 @@ AC_PROG_GCC_TRADITIONAL
 AC_SUBST(GCC)
 if test "$GCC" = yes; then
     linker_flag=-Wl,
-    : ${optflags=-O3}
+    : ${optflags='-O3 -fomit-frame-pointer'}
     case "$target_os" in
       when(linux*|darwin*)
 	: ${debugflags=-ggdb};;
