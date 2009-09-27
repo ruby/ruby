@@ -1,3 +1,7 @@
+Sun Sep 27 11:58:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_hash_{uint{32,},end}): removed.
+
 Sun Sep 27 11:58:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (optflags): add -fomit-frame-pointer by default.

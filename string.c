@@ -1982,14 +1982,6 @@ rb_str_concat(VALUE str1, VALUE str2)
     return rb_str_append(str1, str2);
 }
 
-#undef rb_hash_uint32
-#undef rb_hash_uint
-#undef rb_hash_end
-
-#define rb_hash_uint32 st_hash_uint32
-#define rb_hash_uint   st_hash_uint
-#define rb_hash_end    st_hash_end
-
 st_index_t
 rb_hash_start(st_index_t h)
 {
