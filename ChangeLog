@@ -1,3 +1,7 @@
+Sun Sep 27 10:21:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (warnflags): check all flags if each are available.
+
 Sun Sep 27 05:35:17 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/ext/generator/generator.c: Documention patch by okkez.
