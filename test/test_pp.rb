@@ -1,5 +1,8 @@
 require 'pp'
+require 'delegate'
 require 'test/unit'
+
+module PPTestModule
 
 class PPTest < Test::Unit::TestCase
   def test_list0123_12
@@ -177,4 +180,14 @@ class PPSingleLineTest < Test::Unit::TestCase
     assert_equal("{1=>1}", PP.singleline_pp({ 1 => 1}, '')) # [ruby-core:02699]
     assert_equal("[1#{', 1'*99}]", PP.singleline_pp([1]*100, ''))
   end
+end
+
+class PPDelegateTest < Test::Unit::TestCase
+  class A < DelegateClass(Array); end
+
+  def test_delegate
+    assert_equal("[]\n", A.new([]).pretty_inspect, "[ruby-core:25804]")
+  end
+end
+
 end

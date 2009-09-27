@@ -1,3 +1,8 @@
+Sun Sep 27 13:06:43 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pp.rb (PP:ObjectMixin#pretty_print): delegates has no inspect
+	  method.  [ruby-core:25804]
+
 Sun Sep 27 12:01:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_buf_cat2): optimize since all second arguments are
