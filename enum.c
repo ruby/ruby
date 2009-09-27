@@ -2067,6 +2067,14 @@ chunk_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *    #    "\n"]
  *    #   ...
  *
+ *  paragraphs separated by empty lines can be parsed as follows. 
+ *
+ *    File.foreach("README").chunk {|line|
+ *      /\A\s*\z/ !~ line || nil
+ *    }.each {|_, lines|
+ *      pp lines
+ *    }
+ *
  *  :_alone can be used to pass through bunch of elements.
  *  For example, sort consective lines formed as Foo#bar and
  *  pass other lines, chunk can be used as follows.
