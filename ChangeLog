@@ -1,3 +1,7 @@
+Mon Sep 28 01:28:17 2009  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* Makefile.in (miniruby): suppress duplication warning on AIX.
+
 Mon Sep 28 01:13:25 2009  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* common.mk (ruby.imp): add text section [Bug #2064].
