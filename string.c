@@ -1741,11 +1741,7 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     return str;
 }
 
-static VALUE
-str_buf_cat2(VALUE str, const char *ptr)
-{
-    return str_buf_cat(str, ptr, strlen(ptr));
-}
+#define str_buf_cat2(str, ptr) str_buf_cat(str, (ptr), strlen(ptr))
 
 VALUE
 rb_str_buf_cat(VALUE str, const char *ptr, long len)
@@ -4022,6 +4018,7 @@ rb_str_to_s(VALUE str)
     return str;
 }
 
+#if 0
 static void
 str_cat_char(VALUE str, unsigned int c, rb_encoding *enc)
 {
@@ -4031,6 +4028,7 @@ str_cat_char(VALUE str, unsigned int c, rb_encoding *enc)
     rb_enc_mbcput(c, s, enc);
     rb_enc_str_buf_cat(str, s, n, enc);
 }
+#endif
 
 /*
  * call-seq:
