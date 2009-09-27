@@ -681,7 +681,7 @@ enum_first(int argc, VALUE *argv, VALUE obj)
  *  +1 depending on the comparison between <i>a</i> and <i>b</i>. As of
  *  Ruby 1.8, the method <code>Enumerable#sort_by</code> implements a
  *  built-in Schwartzian Transform, useful when key computation or
- *  comparison is expensive..
+ *  comparison is expensive.
  *
  *     %w(rhea kea flea).sort         #=> ["flea", "kea", "rhea"]
  *     (1..10).sort {|a,b| b <=> a}   #=> [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
@@ -2067,7 +2067,7 @@ chunk_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *  _initial_state_ argument can be used.
  *  If non-nil value is given,
  *  it is duplicated for each "each" method invocation of the enumerator.
- *  The duplicated object is passed to 2nd argument of the block for "chunk" method..
+ *  The duplicated object is passed to 2nd argument of the block for "chunk" method.
  *
  */
 static VALUE
