@@ -1,3 +1,8 @@
+Sun Sep 27 11:28:15 2009  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (enum_minmax): use struct for memo.
+	  (enum_minmax_by): ditto.
+
 Sun Sep 27 10:21:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (warnflags): check all flags if each are available.

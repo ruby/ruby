@@ -1134,41 +1134,49 @@ enum_max(VALUE obj)
     return result[0];
 }
 
+struct minmax_t {
+    VALUE min;
+    VALUE max;
+    VALUE ary;
+    VALUE last;
+};
+
 static void
-minmax_i_update(VALUE i, VALUE j, VALUE *memo)
+minmax_i_update(VALUE i, VALUE j, struct minmax_t *memo)
 {
     int n;
 
-    if (memo[0] == Qundef) {
-	memo[0] = i;
-	memo[1] = j;
+    if (memo->min == Qundef) {
+	memo->min = i;
+	memo->max = j;
     }
     else {
-	n = rb_cmpint(rb_funcall(i, id_cmp, 1, memo[0]), i, memo[0]);
+	n = rb_cmpint(rb_funcall(i, id_cmp, 1, memo->min), i, memo->min);
 	if (n < 0) {
-	    memo[0] = i;
+	    memo->min = i;
 	}
-	n = rb_cmpint(rb_funcall(j, id_cmp, 1, memo[1]), j, memo[1]);
+	n = rb_cmpint(rb_funcall(j, id_cmp, 1, memo->max), j, memo->max);
 	if (n > 0) {
-	    memo[1] = j;
+	    memo->max = j;
 	}
     }
 }
 
 static VALUE
-minmax_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
+minmax_i(VALUE i, VALUE _memo, int argc, VALUE *argv)
 {
+    struct minmax_t *memo = (struct minmax_t *)_memo;
     int n;
     VALUE j;
 
     ENUM_WANT_SVALUE();
 
-    if (memo[3] == Qundef) {
-        memo[3] = i;
+    if (memo->last == Qundef) {
+        memo->last = i;
         return Qnil;
     }
-    j = memo[3];
-    memo[3] = Qundef;
+    j = memo->last;
+    memo->last = Qundef;
 
     n = rb_cmpint(rb_funcall(j, id_cmp, 1, i), j, i);
     if (n == 0)
@@ -1186,48 +1194,49 @@ minmax_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 }
 
 static void
-minmax_ii_update(VALUE i, VALUE j, VALUE *memo)
+minmax_ii_update(VALUE i, VALUE j, struct minmax_t *memo)
 {
     int n;
 
-    if (memo[0] == Qundef) {
-	memo[0] = i;
-	memo[1] = j;
+    if (memo->min == Qundef) {
+	memo->min = i;
+	memo->max = j;
     }
     else {
-	VALUE ary = memo[2];
+	VALUE ary = memo->ary;
 
         rb_ary_store(ary, 0, i);
-        rb_ary_store(ary, 1, memo[0]);
-	n = rb_cmpint(rb_yield(ary), i, memo[0]);
+        rb_ary_store(ary, 1, memo->min);
+	n = rb_cmpint(rb_yield(ary), i, memo->min);
 	if (n < 0) {
-	    memo[0] = i;
+	    memo->min = i;
 	}
         rb_ary_store(ary, 0, j);
-        rb_ary_store(ary, 1, memo[1]);
-	n = rb_cmpint(rb_yield(ary), j, memo[1]);
+        rb_ary_store(ary, 1, memo->max);
+	n = rb_cmpint(rb_yield(ary), j, memo->max);
 	if (n > 0) {
-	    memo[1] = j;
+	    memo->max = j;
 	}
     }
 }
 
 static VALUE
-minmax_ii(VALUE i, VALUE *memo, int argc, VALUE *argv)
+minmax_ii(VALUE i, VALUE _memo, int argc, VALUE *argv)
 {
+    struct minmax_t *memo = (struct minmax_t *)_memo;
     int n;
     VALUE ary, j;
 
     ENUM_WANT_SVALUE();
 
-    if (memo[3] == Qundef) {
-        memo[3] = i;
+    if (memo->last == Qundef) {
+        memo->last = i;
         return Qnil;
     }
-    j = memo[3];
-    memo[3] = Qundef;
+    j = memo->last;
+    memo->last = Qundef;
 
-    ary = memo[2];
+    ary = memo->ary;
     rb_ary_store(ary, 0, j);
     rb_ary_store(ary, 1, i);
     n = rb_cmpint(rb_yield(ary), j, i);
@@ -1263,25 +1272,25 @@ minmax_ii(VALUE i, VALUE *memo, int argc, VALUE *argv)
 static VALUE
 enum_minmax(VALUE obj)
 {
-    VALUE result[4];
+    struct minmax_t memo;
     VALUE ary = rb_ary_new3(2, Qnil, Qnil);
 
-    result[0] = Qundef;
-    result[3] = Qundef;
+    memo.min = Qundef;
+    memo.last = Qundef;
     if (rb_block_given_p()) {
-	result[2] = ary;
-	rb_block_call(obj, id_each, 0, 0, minmax_ii, (VALUE)result);
-        if (result[3] != Qundef)
-            minmax_ii_update(result[3], result[3], result);
+	memo.ary = ary;
+	rb_block_call(obj, id_each, 0, 0, minmax_ii, (VALUE)&memo);
+        if (memo.last != Qundef)
+            minmax_ii_update(memo.last, memo.last, &memo);
     }
     else {
-	rb_block_call(obj, id_each, 0, 0, minmax_i, (VALUE)result);
-        if (result[3] != Qundef)
-            minmax_i_update(result[3], result[3], result);
+	rb_block_call(obj, id_each, 0, 0, minmax_i, (VALUE)&memo);
+        if (memo.last != Qundef)
+            minmax_i_update(memo.last, memo.last, &memo);
     }
-    if (result[0] != Qundef) {
-        rb_ary_store(ary, 0, result[0]);
-        rb_ary_store(ary, 1, result[1]);
+    if (memo.min != Qundef) {
+        rb_ary_store(ary, 0, memo.min);
+        rb_ary_store(ary, 1, memo.max);
     }
     return ary;
 }
@@ -1372,30 +1381,40 @@ enum_max_by(VALUE obj)
     return memo[1];
 }
 
+struct minmax_by_t {
+    VALUE min_bv;
+    VALUE max_bv;
+    VALUE min;
+    VALUE max;
+    VALUE last_bv;
+    VALUE last;
+};
+
 static void
-minmax_by_i_update(VALUE v1, VALUE v2, VALUE i1, VALUE i2, VALUE *memo)
+minmax_by_i_update(VALUE v1, VALUE v2, VALUE i1, VALUE i2, struct minmax_by_t *memo)
 {
-    if (memo[0] == Qundef) {
-	memo[0] = v1;
-	memo[1] = v2;
-	memo[2] = i1;
-	memo[3] = i2;
+    if (memo->min_bv == Qundef) {
+	memo->min_bv = v1;
+	memo->max_bv = v2;
+	memo->min = i1;
+	memo->max = i2;
     }
     else {
-	if (rb_cmpint(rb_funcall(v1, id_cmp, 1, memo[0]), v1, memo[0]) < 0) {
-	    memo[0] = v1;
-	    memo[2] = i1;
+	if (rb_cmpint(rb_funcall(v1, id_cmp, 1, memo->min_bv), v1, memo->min_bv) < 0) {
+	    memo->min_bv = v1;
+	    memo->min = i1;
 	}
-	if (rb_cmpint(rb_funcall(v2, id_cmp, 1, memo[1]), v2, memo[1]) > 0) {
-	    memo[1] = v2;
-	    memo[3] = i2;
+	if (rb_cmpint(rb_funcall(v2, id_cmp, 1, memo->max_bv), v2, memo->max_bv) > 0) {
+	    memo->max_bv = v2;
+	    memo->max = i2;
 	}
     }
 }
 
 static VALUE
-minmax_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
+minmax_by_i(VALUE i, VALUE _memo, int argc, VALUE *argv)
 {
+    struct minmax_by_t *memo = (struct minmax_by_t *)_memo;
     VALUE vi, vj, j;
     int n;
 
@@ -1403,14 +1422,14 @@ minmax_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 
     vi = rb_yield(i);
 
-    if (memo[4] == Qundef) {
-        memo[4] = vi;
-        memo[5] = i;
+    if (memo->last_bv == Qundef) {
+        memo->last_bv = vi;
+        memo->last = i;
         return Qnil;
     }
-    vj = memo[4];
-    j = memo[5];
-    memo[4] = Qundef;
+    vj = memo->last_bv;
+    j = memo->last;
+    memo->last_bv = Qundef;
 
     n = rb_cmpint(rb_funcall(vj, id_cmp, 1, vi), vj, vi);
     if (n == 0) {
@@ -1447,20 +1466,20 @@ minmax_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 static VALUE
 enum_minmax_by(VALUE obj)
 {
-    VALUE memo[6];
+    struct minmax_by_t memo;
 
     RETURN_ENUMERATOR(obj, 0, 0);
 
-    memo[0] = Qundef;
-    memo[1] = Qundef;
-    memo[2] = Qnil;
-    memo[3] = Qnil;
-    memo[4] = Qundef;
-    memo[5] = Qundef;
-    rb_block_call(obj, id_each, 0, 0, minmax_by_i, (VALUE)memo);
-    if (memo[4] != Qundef)
-        minmax_by_i_update(memo[4], memo[4], memo[5], memo[5], memo);
-    return rb_assoc_new(memo[2], memo[3]);
+    memo.min_bv = Qundef;
+    memo.max_bv = Qundef;
+    memo.min = Qnil;
+    memo.max = Qnil;
+    memo.last_bv = Qundef;
+    memo.last = Qundef;
+    rb_block_call(obj, id_each, 0, 0, minmax_by_i, (VALUE)&memo);
+    if (memo.last_bv != Qundef)
+        minmax_by_i_update(memo.last_bv, memo.last_bv, memo.last, memo.last, &memo);
+    return rb_assoc_new(memo.min, memo.max);
 }
 
 static VALUE
