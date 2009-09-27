@@ -1,3 +1,9 @@
+Mon Sep 28 01:13:25 2009  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* common.mk (ruby.imp): add text section [Bug #2064].
+
+	* common.mk (ruby.imp): do not export Init_*.
+
 Sun Sep 27 13:06:43 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pp.rb (PP:ObjectMixin#pretty_print): delegates has no inspect

@@ -170,7 +170,9 @@ $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
 
 ruby.imp: $(EXPORTOBJS)
-	@$(NM) -Pgp $(EXPORTOBJS) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
+	@$(NM) -Pgp $(EXPORTOBJS) | \
+	awk 'BEGIN{print "#!"}; $$2~/^[BDT]$$/&&$$1!~/^(Init_|\.)/{print $$1}' | \
+	sort -u -o $@
 
 install: install-$(INSTALLDOC)
 docs: $(DOCTARGETS)
