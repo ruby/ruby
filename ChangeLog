@@ -1,3 +1,8 @@
+Mon Sep 28 19:05:05 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* include/ruby/st.h: aligned prototype of st_hash_uint32 with function
+	  definition (fixing compiling problem on cygwin)
+
 Mon Sep 28 12:13:15 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* method.h (enum): new method type VM_METHOD_TYPE_MISSING.
