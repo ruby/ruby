@@ -26,6 +26,13 @@ extern "C" {
 #include <stdlib.h>
 #endif
 
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
+#ifdef HAVE_INTTYPES_H
+# include <inttypes.h>
+#endif
+
 #if SIZEOF_LONG == SIZEOF_VOIDP
 typedef unsigned long st_data_t;
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP

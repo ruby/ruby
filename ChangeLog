@@ -1,3 +1,7 @@
+Tue Sep 29 04:06:18 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/st.h: include inttypes.h and stdint.h.
+
 Tue Sep 29 00:07:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_f_getenv, env_fetch): env string may be overwritten.
