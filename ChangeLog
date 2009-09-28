@@ -1,3 +1,7 @@
+Tue Sep 29 00:07:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_f_getenv, env_fetch): env string may be overwritten.
+
 Mon Sep 28 23:30:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (load_lib, dln_find_exe_r): env string may be overwritten.
