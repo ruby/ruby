@@ -907,12 +907,13 @@ struct symdef {
     int lib_offset;
 };
 
-char *dln_librrb_ary_path = DLN_DEFAULT_LIB_PATH;
+const char *dln_librrb_ary_path = DLN_DEFAULT_LIB_PATH;
 
 static int
 load_lib(const char *lib)
 {
     char *path, *file, fbuf[MAXPATHLEN];
+    char *envpath = 0;
     char armagic[SARMAG];
     int fd, size;
     struct ar_hdr ahdr;
@@ -942,8 +943,10 @@ load_lib(const char *lib)
     /* if path is still NULL, use "." for path. */
     path = getenv("DLN_LIBRARY_PATH");
     if (path == NULL) path = dln_librrb_ary_path;
+    else path = envpath = strdup(path);
 
     file = dln_find_file_r(lib, path, fbuf, sizeof(fbuf));
+    if (envpath) free(envpath);
     fd = open(file, O_RDONLY);
     if (fd == -1) goto syserr;
     size = read(fd, armagic, SARMAG);
@@ -1498,8 +1501,11 @@ static char *dln_find_1(const char *fname, const char *path, char *buf, size_t s
 char *
 dln_find_exe_r(const char *fname, const char *path, char *buf, size_t size)
 {
+    char *envpath = 0;
+
     if (!path) {
 	path = getenv(PATH_ENV);
+	if (path) path = envpath = strdup(path);
     }
 
     if (!path) {
@@ -1509,7 +1515,9 @@ dln_find_exe_r(const char *fname, const char *path, char *buf, size_t size)
 	path = "/usr/local/bin:/usr/ucb:/usr/bin:/bin:.";
 #endif
     }
-    return dln_find_1(fname, path, buf, size, 1);
+    buf = dln_find_1(fname, path, buf, size, 1);
+    if (envpath) free(envpath);
+    return buf;
 }
 
 char *

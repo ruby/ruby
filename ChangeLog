@@ -1,4 +1,6 @@
-Mon Sep 28 22:46:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Sep 28 23:30:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (load_lib, dln_find_exe_r): env string may be overwritten.
 
 	* dln.c (dln_{exit,loaderror,memerror,notimplement}): renamed as
 	  independent names.
