@@ -176,8 +176,8 @@ Thu Sep 24 02:21:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  PI/2.
 
 	* ext/bigdecimal/lib/bigdecimal/math.rb (atan): reduce loop with
-	  the formula of the double corner.  based on a patch from
-	  Masahiro Kanai (CanI) in [ruby-dev:39367].
+	  the double-angle formula.  based on a patch from Masahiro
+	  Kanai (CanI) in [ruby-dev:39367].
 
 Thu Sep 24 01:14:18 2009  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
