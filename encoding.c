@@ -1104,7 +1104,7 @@ rb_filesystem_encoding(void)
 #elif defined __APPLE__
     enc = rb_utf8_encoding();
 #else
-    enc = rb_default_external_encoding();
+    enc = rb_locale_encoding();
 #endif
     return enc;
 }
