@@ -1,3 +1,21 @@
+Tue Sep 29 04:07:58 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* hash.c (rb_f_getenv): use rb_filesystem_str_new_cstr
+	  instead of rb_str_new2.
+	  ENV['PATH'].encoding should be Filesystem Encoding
+	  because its content is related to filesystem.
+	  see [ruby-dev:39393]
+
+	* hash.c (env_fetch): ditto.
+
+	* string.c (rb_filesystem_str_new): defined.
+
+	* string.c (rb_filesystem_str_new_cstr): ditto.
+
+	* include/ruby/intern.h (rb_filesystem_str_new): added.
+
+	* include/ruby/intern.h (rb_filesystem_str_new_cstr): ditto.
+
 Tue Sep 29 04:06:18 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/st.h: include inttypes.h and stdint.h.

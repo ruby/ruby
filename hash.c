@@ -1931,7 +1931,7 @@ rb_f_getenv(VALUE obj, VALUE name)
     env = getenv(nam);
     if (env) {
 	if (ENVMATCH(nam, PATH_ENV) && !env_path_tainted(env)) {
-	    VALUE str = rb_str_new2(env);
+	    VALUE str = rb_filesystem_str_new_cstr(env);
 
 	    rb_obj_freeze(str);
 	    return str;
@@ -1968,7 +1968,7 @@ env_fetch(int argc, VALUE *argv)
 	return if_none;
     }
     if (ENVMATCH(nam, PATH_ENV) && !env_path_tainted(env))
-	return rb_str_new2(env);
+	return rb_filesystem_str_new_cstr(env);
     return env_str_new2(env);
 }
 

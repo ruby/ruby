@@ -575,6 +575,18 @@ rb_locale_str_new_cstr(const char *ptr)
 }
 
 VALUE
+rb_filesystem_str_new(const char *ptr, long len)
+{
+    return rb_external_str_new_with_enc(ptr, len, rb_filesystem_encoding());
+}
+
+VALUE
+rb_filesystem_str_new_cstr(const char *ptr)
+{
+    return rb_external_str_new_with_enc(ptr, strlen(ptr), rb_filesystem_encoding());
+}
+
+VALUE
 rb_str_export(VALUE str)
 {
     return rb_str_conv_enc(str, STR_ENC_GET(str), rb_default_external_encoding());
