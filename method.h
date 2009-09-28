@@ -39,7 +39,8 @@ typedef enum {
     VM_METHOD_TYPE_ZSUPER,
     VM_METHOD_TYPE_UNDEF,
     VM_METHOD_TYPE_NOTIMPLEMENTED,
-    VM_METHOD_TYPE_OPTIMIZED /* Kernel#send, Proc#call, etc */
+    VM_METHOD_TYPE_OPTIMIZED, /* Kernel#send, Proc#call, etc */
+    VM_METHOD_TYPE_MISSING,   /* wrapper for method_missing(id) */
 } rb_method_type_t;
 
 typedef struct rb_method_cfunc_struct {

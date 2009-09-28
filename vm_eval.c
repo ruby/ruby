@@ -110,6 +110,14 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	if (!(def = me->def)) return Qnil;
 	goto again;
       }
+      case VM_METHOD_TYPE_MISSING: {
+	VALUE new_args = rb_ary_new4(argc, argv);
+
+	RB_GC_GUARD(new_args);
+	rb_ary_unshift(new_args, ID2SYM(id));
+	return rb_funcall2(recv, rb_intern("method_missing"),
+			   argc+1, RARRAY_PTR(new_args));
+      }
       case VM_METHOD_TYPE_OPTIMIZED: {
 	switch (def->body.optimize_type) {
 	  case OPTIMIZED_METHOD_TYPE_SEND:

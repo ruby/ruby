@@ -527,6 +527,14 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		cfp->sp -= 1;
 		break;
 	      }
+	      case VM_METHOD_TYPE_MISSING:{
+		VALUE *argv = ALLOCA_N(VALUE, num+1);
+		argv[0] = ID2SYM(me->def->original_id);
+		MEMCPY(argv+1, cfp->sp - num, VALUE, num);
+		cfp->sp += - num - 1;
+		val = rb_funcall2(recv, rb_intern("method_missing"), num+1, argv);
+		break;
+	      }
 	      case VM_METHOD_TYPE_BMETHOD:{
 		VALUE *argv = ALLOCA_N(VALUE, num);
 		MEMCPY(argv, cfp->sp - num, VALUE, num);
