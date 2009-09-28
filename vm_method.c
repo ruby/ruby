@@ -810,6 +810,8 @@ rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2)
 	return d1->body.attr_id == d2->body.attr_id;
       case VM_METHOD_TYPE_BMETHOD:
 	return RTEST(rb_equal(d1->body.proc, d2->body.proc));
+      case VM_METHOD_TYPE_MISSING:
+	return d1->original_id == d2->original_id;
       case VM_METHOD_TYPE_ZSUPER:
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_UNDEF:

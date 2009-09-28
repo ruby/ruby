@@ -333,9 +333,12 @@ class TestObject < Test::Unit::TestCase
     end
 
     foobar = foo.method(:foobar)
+    assert_equal(-1, foobar.arity);
     assert_equal([:foo], foobar.call);
     assert_equal([:foo, 1], foobar.call(1));
     assert_equal([:foo, 1, 2, 3, 4, 5], foobar.call(1, 2, 3, 4, 5));
+    assert_equal(foobar, foo.method(:foobar))
+    assert_not_equal(foobar, c.new.method(:foobar))
 
     c = Class.new(c)
     assert_equal(false, c.method_defined?(:foobar))

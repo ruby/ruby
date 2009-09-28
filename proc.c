@@ -884,36 +884,36 @@ rb_obj_is_method(VALUE m)
 }
 
 static VALUE
-missing_wrap(VALUE dummy, VALUE args, int argc, VALUE *argv)
-{
-    VALUE new_args = rb_ary_new4(argc, argv);
-    VALUE obj = RARRAY_PTR(args)[0];
-    VALUE sym = RARRAY_PTR(args)[1];
-
-    rb_ary_unshift(new_args, sym);
-    return rb_funcall2(obj, rb_intern("method_missing"), 
-		       check_argc(RARRAY_LEN(new_args)), RARRAY_PTR(new_args));
-}
-
-static VALUE
 mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 {
     VALUE method;
     VALUE rclass = klass;
     ID rid = id;
     struct METHOD *data;
-    rb_method_entry_t *me;
-    rb_method_definition_t *def;
+    rb_method_entry_t *me, meb;
+    rb_method_definition_t *def = 0;
 
   again:
-    me = rb_method_entry(klass, id);
+     me = rb_method_entry(klass, id);
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	ID rmiss = rb_intern("respond_to_missing?");
 	VALUE sym = ID2SYM(id);
 
 	if (obj != Qundef && !rb_method_basic_definition_p(klass, rmiss)) {
 	    if (RTEST(rb_funcall(obj, rmiss, 1, sym))) {
-		return rb_proc_new(missing_wrap, rb_assoc_new(obj, sym));
+		def = ALLOC(rb_method_definition_t);
+		def->type = VM_METHOD_TYPE_MISSING;
+		def->original_id = id;
+		def->alias_count = 0;
+
+		meb.flag = 0;
+		meb.called_id = id;
+		meb.klass = klass;
+		meb.def = def;
+		me = &meb;
+		def = 0;
+
+		goto gen_method;
 	    }
 	}
 	rb_print_undef(klass, id, 0);
@@ -922,7 +922,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     if (scope && (me->flag & NOEX_MASK) != NOEX_PUBLIC) {
 	rb_print_undef(rclass, def->original_id, (int)(me->flag & NOEX_MASK));
     }
-    if (def->type == VM_METHOD_TYPE_ZSUPER) {
+    if (def && def->type == VM_METHOD_TYPE_ZSUPER) {
 	klass = RCLASS_SUPER(me->klass);
 	id = def->original_id;
 	goto again;
@@ -939,6 +939,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 	klass = RBASIC(klass)->klass;
     }
 
+  gen_method:
     method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
 
     data->recv = obj;
@@ -1552,6 +1553,8 @@ rb_method_entry_arity(const rb_method_entry_t *me)
       case VM_METHOD_TYPE_UNDEF:
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
 	return 0;
+      case VM_METHOD_TYPE_MISSING:
+	return -1;
       case VM_METHOD_TYPE_OPTIMIZED: {
 	switch (def->body.optimize_type) {
 	  case OPTIMIZED_METHOD_TYPE_SEND:
