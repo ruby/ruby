@@ -382,9 +382,12 @@ class TestStringIO < Test::Unit::TestCase
   end
 
   def test_read
-    f = StringIO.new("1234")
+    f = StringIO.new("\u3042\u3044")
     assert_raise(ArgumentError) { f.read(-1) }
     assert_raise(ArgumentError) { f.read(1, 2, 3) }
+    assert_equal("\u3042\u3044", f.read)
+    f.rewind
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read(f.size))
   end
 
   def test_size
