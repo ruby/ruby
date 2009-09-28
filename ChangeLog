@@ -1,3 +1,8 @@
+Mon Sep 28 19:36:20 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/wini32.c (LK_ERR): with overlapped I/O, LockFileEx() returns
+	  ERROR_IO_PENDING if the file is locked.
+
 Mon Sep 28 19:05:05 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* include/ruby/st.h: aligned prototype of st_hash_uint32 with function
