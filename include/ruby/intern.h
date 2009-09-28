@@ -601,6 +601,8 @@ VALUE rb_external_str_new(const char*, long);
 VALUE rb_external_str_new_cstr(const char*);
 VALUE rb_locale_str_new(const char*, long);
 VALUE rb_locale_str_new_cstr(const char*);
+VALUE rb_filesystem_str_new(const char*, long);
+VALUE rb_filesystem_str_new_cstr(const char*);
 VALUE rb_str_buf_new(long);
 VALUE rb_str_buf_new_cstr(const char*);
 VALUE rb_str_buf_new2(const char*);
