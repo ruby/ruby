@@ -5737,6 +5737,8 @@ parser_tokadd_string(struct parser_params *parser,
 		}
 		else if (c != term && !(paren && c == paren)) {
 		    tokadd('\\');
+		    pushback(c);
+		    continue;
 		}
 	    }
 	}
