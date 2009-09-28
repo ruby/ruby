@@ -1915,6 +1915,8 @@ env_delete_m(VALUE obj, VALUE name)
     return val;
 }
 
+static int env_path_tainted(const char *);
+
 static VALUE
 rb_f_getenv(VALUE obj, VALUE name)
 {
@@ -1928,7 +1930,7 @@ rb_f_getenv(VALUE obj, VALUE name)
     }
     env = getenv(nam);
     if (env) {
-	if (ENVMATCH(nam, PATH_ENV) && !rb_env_path_tainted()) {
+	if (ENVMATCH(nam, PATH_ENV) && !env_path_tainted(env)) {
 	    VALUE str = rb_str_new2(env);
 
 	    rb_obj_freeze(str);
@@ -1965,15 +1967,24 @@ env_fetch(int argc, VALUE *argv)
 	}
 	return if_none;
     }
-    if (ENVMATCH(nam, PATH_ENV) && !rb_env_path_tainted())
+    if (ENVMATCH(nam, PATH_ENV) && !env_path_tainted(env))
 	return rb_str_new2(env);
     return env_str_new2(env);
 }
 
 static void
-path_tainted_p(char *path)
+path_tainted_p(const char *path)
 {
     path_tainted = rb_path_check(path)?0:1;
+}
+
+static int
+env_path_tainted(const char *path)
+{
+    if (path_tainted < 0) {
+	path_tainted_p(path);
+    }
+    return path_tainted;
 }
 
 int
