@@ -176,6 +176,7 @@ long rb_str_coderange_scan_restartable(const char*, const char*, rb_encoding*, i
 int rb_enc_str_asciionly_p(VALUE);
 #define rb_enc_str_asciicompat_p(str) rb_enc_asciicompat(rb_enc_get(str))
 VALUE rb_enc_from_encoding(rb_encoding *enc);
+int rb_enc_unicode_p(rb_encoding *enc);
 rb_encoding *rb_ascii8bit_encoding(void);
 rb_encoding *rb_utf8_encoding(void);
 rb_encoding *rb_usascii_encoding(void);
