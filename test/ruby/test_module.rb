@@ -788,19 +788,47 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_method_redefinition
+    line = __LINE__+4
     stderr = EnvUtil.verbose_warning do
       Module.new do
         def foo; end
         def foo; end
       end
     end
-    assert_match(/method redefined; discarding old foo/, stderr)
+    assert_match(/:#{line}: warning: method redefined; discarding old foo/, stderr)
+
+    stderr = EnvUtil.verbose_warning do
+      Module.new do
+        def foo; end
+        alias bar foo
+        def foo; end
+      end
+    end
+    assert_equal("", stderr)
 
     stderr = EnvUtil.verbose_warning do
       Module.new do
         def foo; end
         alias bar foo
         alias bar foo
+      end
+    end
+    assert_equal("", stderr)
+
+    line = __LINE__+4
+    stderr = EnvUtil.verbose_warning do
+      Module.new do
+        define_method(:foo) do end
+        def foo; end
+      end
+    end
+    assert_match(/:#{line}: warning: method redefined; discarding old foo/, stderr)
+
+    stderr = EnvUtil.verbose_warning do
+      Module.new do
+        define_method(:foo) do end
+        alias bar foo
+        alias barf oo
       end
     end
     assert_equal("", stderr)
