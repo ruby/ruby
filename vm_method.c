@@ -799,9 +799,8 @@ rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2)
 static int
 rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2)
 {
-    if (!d1) {
-	return !d2;
-    }
+    if (d1 == d2) return 1;
+    if (!d1 || !d2) return 0;
     if (d1->type != d2->type) {
 	return 0;
     }
