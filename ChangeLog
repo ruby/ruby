@@ -1,3 +1,8 @@
+Tue Sep 29 13:37:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_add_method_def): nothing to do if old method had
+	  same definition.  [ruby-dev:39397]
+
 Tue Sep 29 06:50:32 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_inspect): dump as \uXXXX when the

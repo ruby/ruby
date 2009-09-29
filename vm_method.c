@@ -141,6 +141,8 @@ rb_free_method_entry(rb_method_entry_t *me)
     xfree(me);
 }
 
+static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
+
 static rb_method_entry_t *
 rb_add_method_def(VALUE klass, ID mid, rb_method_type_t type, rb_method_definition_t *def, rb_method_flag_t noex)
 {
@@ -179,7 +181,7 @@ rb_add_method_def(VALUE klass, ID mid, rb_method_type_t type, rb_method_definiti
 	rb_method_entry_t *old_me = (rb_method_entry_t *)data;
 	rb_method_definition_t *old_def = old_me->def;
 
-	if (old_def == def) return old_me;
+	if (rb_method_definition_eq(old_def, def)) return old_me;
 	rb_vm_check_redefinition_opt_method(old_me);
 
 	if (RTEST(ruby_verbose) &&
@@ -791,7 +793,12 @@ rb_mod_protected_method_defined(VALUE mod, VALUE mid)
 int
 rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2)
 {
-    const rb_method_definition_t *d1 = m1->def, *d2 = m2->def;
+    return rb_method_definition_eq(m1->def, m2->def);
+}
+
+static int
+rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2)
+{
     if (!d1) {
 	return !d2;
     }

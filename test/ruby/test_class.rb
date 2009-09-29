@@ -130,6 +130,14 @@ class TestClass < Test::Unit::TestCase
       end
     end
     assert_equal("", stderr)
+    stderr = verbose_warning do
+      Module.new do
+        module_function
+        def foo; end
+        module_function :foo
+      end
+    end
+    assert_equal("", stderr, '[ruby-dev:39397]')
   end
 
   def test_check_inheritable
