@@ -1,3 +1,7 @@
+Tue Sep 29 23:17:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_scan_open_args): rb_utf8mac_encoding is undefined.
+
 Tue Sep 29 22:25:41 2009  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_struct_iv_get): deprecated because it is
