@@ -5319,7 +5319,7 @@ rb_scan_open_args(int argc, VALUE *argv,
 	if (rb_usascii_encoding() != fname_encoding
 	    && rb_ascii8bit_encoding() != fname_encoding
 	    && rb_utf8_encoding() != fname_encoding
-	    && rb_utf8mac_encoding() != fname_encoding
+	    && utf8mac_encoding != fname_encoding
 	    && fs_encoding != fname_encoding) {
 	    static VALUE fs_enc;
 	    if (!fs_enc)
