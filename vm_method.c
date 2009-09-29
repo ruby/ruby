@@ -819,7 +819,7 @@ rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2)
       case VM_METHOD_TYPE_OPTIMIZED:
 	return d1->body.optimize_type == d2->body.optimize_type;
       default:
-	rb_bug("rb_add_method: unsupported method type (%d)\n", d1->type);
+	rb_bug("rb_method_entry_eq: unsupported method type (%d)\n", d1->type);
 	return 0;
     }
 }
