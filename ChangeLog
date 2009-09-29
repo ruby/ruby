@@ -1,3 +1,8 @@
+Wed Sep 30 00:00:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (THREAD_MODEL): modified message when no thread
+	  model is available.
+
 Tue Sep 29 23:17:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_scan_open_args): rb_utf8mac_encoding is undefined.

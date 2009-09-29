@@ -2246,6 +2246,9 @@ when(pthread)
     ;;
 when(win32)
     ;;
+when("")
+    AC_MSG_ERROR(thread model is missing)
+    ;;
 when(*)
     AC_MSG_ERROR(unknown thread model $THREAD_MODEL)
     ;;
