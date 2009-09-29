@@ -735,7 +735,7 @@ VALUE rb_struct_initialize(VALUE, VALUE);
 VALUE rb_struct_aref(VALUE, VALUE);
 VALUE rb_struct_aset(VALUE, VALUE, VALUE);
 VALUE rb_struct_getmember(VALUE, ID);
-VALUE rb_struct_iv_get(VALUE, const char*);
+DEPRECATED(VALUE rb_struct_iv_get(VALUE, const char*));
 VALUE rb_struct_s_members(VALUE);
 VALUE rb_struct_members(VALUE);
 VALUE rb_struct_alloc_noinit(VALUE);
