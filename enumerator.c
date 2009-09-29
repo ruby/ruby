@@ -400,7 +400,8 @@ enumerator_initialize(int argc, VALUE *argv, VALUE obj)
 	    rb_raise(rb_eArgError, "wrong number of argument (0 for 1+)");
 
 	recv = generator_init(generator_allocate(rb_cGenerator), rb_block_proc());
-    } else {
+    }
+    else {
 	recv = *argv++;
 	if (--argc) {
 	    meth = *argv++;
@@ -445,6 +446,21 @@ rb_enumeratorize(VALUE obj, VALUE meth, int argc, VALUE *argv)
     return enumerator_init(enumerator_allocate(rb_cEnumerator), obj, meth, argc, argv);
 }
 
+static VALUE
+enumerator_block_call(VALUE obj, rb_block_call_func *func, VALUE arg)
+{
+    int argc = 0;
+    VALUE *argv = 0;
+    const struct enumerator *e = enumerator_ptr(obj);
+    ID meth = e->meth;
+
+    if (e->args) {
+	argc = RARRAY_LENINT(e->args);
+	argv = RARRAY_PTR(e->args);
+    }
+    return rb_block_call(e->obj, meth, argc, argv, func, arg);
+}
+
 /*
  *  call-seq:
  *    enum.each {...}
@@ -456,24 +472,15 @@ rb_enumeratorize(VALUE obj, VALUE meth, int argc, VALUE *argv)
 static VALUE
 enumerator_each(VALUE obj)
 {
-    struct enumerator *e;
-    int argc = 0;
-    VALUE *argv = 0;
-
     if (!rb_block_given_p()) return obj;
-    e = enumerator_ptr(obj);
-    if (e->args) {
-	argc = RARRAY_LENINT(e->args);
-	argv = RARRAY_PTR(e->args);
-    }
-    return rb_block_call(e->obj, e->meth, argc, argv,
-			 enumerator_each_i, (VALUE)e);
+    return enumerator_block_call(obj, enumerator_each_i, obj);
 }
 
 static VALUE
-enumerator_with_index_i(VALUE val, VALUE *memo, int argc, VALUE *argv)
+enumerator_with_index_i(VALUE val, VALUE m, int argc, VALUE *argv)
 {
     VALUE idx;
+    VALUE *memo = (VALUE *)m;
 
     idx = INT2FIX(*memo);
     ++*memo;
@@ -496,23 +503,12 @@ enumerator_with_index_i(VALUE val, VALUE *memo, int argc, VALUE *argv)
 static VALUE
 enumerator_with_index(int argc, VALUE *argv, VALUE obj)
 {
-    struct enumerator *e;
     VALUE memo;
 
     rb_scan_args(argc, argv, "01", &memo);
     RETURN_ENUMERATOR(obj, argc, argv);
     memo = NIL_P(memo) ? 0 : (VALUE)NUM2LONG(memo);
-    e = enumerator_ptr(obj);
-    if (e->args) {
-	argc = RARRAY_LENINT(e->args);
-	argv = RARRAY_PTR(e->args);
-    }
-    else {
-	argc = 0;
-	argv = NULL;
-    }
-    return rb_block_call(e->obj, e->meth, argc, argv,
-			 enumerator_with_index_i, (VALUE)&memo);
+    return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)&memo);
 }
 
 /*
@@ -553,18 +549,8 @@ enumerator_with_object_i(VALUE val, VALUE memo, int argc, VALUE *argv)
 static VALUE
 enumerator_with_object(VALUE obj, VALUE memo)
 {
-    struct enumerator *e;
-    int argc = 0;
-    VALUE *argv = 0;
-
     RETURN_ENUMERATOR(obj, 1, &memo);
-    e = enumerator_ptr(obj);
-    if (e->args) {
-	argc = RARRAY_LENINT(e->args);
-	argv = RARRAY_PTR(e->args);
-    }
-    rb_block_call(e->obj, e->meth, argc, argv,
-		  enumerator_with_object_i, memo);
+    enumerator_block_call(obj, enumerator_with_object_i, memo);
 
     return memo;
 }
