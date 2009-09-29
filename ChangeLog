@@ -1,3 +1,8 @@
+Tue Sep 29 17:02:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/json/lib/json/common.rb (recurse_proc): removed needless
+	  module_function, since visibility is already module_function.
+
 Tue Sep 29 13:48:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (rb_method_definition_eq): non-null definition is
