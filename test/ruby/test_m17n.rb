@@ -201,10 +201,10 @@ class TestM17N < Test::Unit::TestCase
     assert_equal('"\xFC\x80\x80\x80\x80 "', u("\xfc\x80\x80\x80\x80 ").inspect)
 
 
-    assert_equal("\"\\xA1\\x8F\\xA1\\xA1\"", e("\xa1\x8f\xa1\xa1").inspect)
+    assert_equal("\"\\xA1\\x{8FA1A1}\"", e("\xa1\x8f\xa1\xa1").inspect)
 
     assert_equal('"\x81."', s("\x81.").inspect)
-    assert_equal(s('"\x81\x40"'), s("\x81@").inspect)
+    assert_equal(s('"\x{8140}"'), s("\x81@").inspect)
 
     assert_equal('"\xFC"', u("\xfc").inspect)
   end
