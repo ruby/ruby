@@ -1,3 +1,8 @@
+Tue Sep 29 22:19:36 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/test/unit/assertions.rb (assert_equal): use Time#subsec if nsec
+	  is not enough to distinguish arguments.
+
 Tue Sep 29 21:16:35 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_scan_open_args): add UTF8-MAC to no-convertion encoding.

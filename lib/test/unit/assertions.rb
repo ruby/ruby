@@ -67,8 +67,16 @@ module Test
               exp_str = "%\#.#{Float::DIG+2}g" % exp
               act_str = "%\#.#{Float::DIG+2}g" % act
             elsif exp.is_a?(Time) && act.is_a?(Time)
-              exp_comment = " (nsec=#{exp.nsec})"
-              act_comment = " (nsec=#{act.nsec})"
+              if exp.subsec * 1000_000_000 == exp.nsec
+                exp_comment = " (#{exp.nsec}[ns])"
+              else
+                exp_comment = " (subsec=#{exp.subsec})"
+              end
+              if act.subsec * 1000_000_000 == act.nsec
+                act_comment = " (#{act.nsec}[ns])"
+              else
+                act_comment = " (subsec=#{act.subsec})"
+              end
             elsif exp.class != act.class
               # a subclass of Range, for example.
               exp_comment = " (#{exp.class})"
