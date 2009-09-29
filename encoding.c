@@ -393,6 +393,15 @@ enc_ascii_compatible_p(VALUE enc)
     return rb_enc_asciicompat(enc_table.list[must_encoding(enc)].enc) ? Qtrue : Qfalse;
 }
 
+/*
+ * Returns 1 when the encoding is Unicode series other than UTF-7 else 0.
+ */
+int
+rb_enc_unicode_p(rb_encoding *enc)
+{
+    return rb_utf8_encoding()->is_code_ctype == enc->is_code_ctype;
+}
+
 static const char *
 enc_alias_internal(const char *alias, int idx)
 {
