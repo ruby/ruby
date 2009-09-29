@@ -55,7 +55,7 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_CMP_0
-    assert_equal -1, (String <=> Object)
+    assert_equal(-1, (String <=> Object))
     assert_equal 1, (Object <=> String)
     assert_nil(Array <=> String)
   end
@@ -528,10 +528,10 @@ class TestModule < Test::Unit::TestCase
       class << o; self; end.instance_eval { undef_method(:foo) }
     end
 
-    %w(object_id __send__ initialize).each do |m|
-      assert_in_out_err([], <<-INPUT, [], /warning: undefining `#{m}' may cause serious problems$/)
+    %w(object_id __send__ initialize).each do |n|
+      assert_in_out_err([], <<-INPUT, [], /warning: undefining `#{n}' may cause serious problems$/)
         $VERBOSE = false
-        Class.new.instance_eval { undef_method(:#{m}) }
+        Class.new.instance_eval { undef_method(:#{n}) }
       INPUT
     end
   end
