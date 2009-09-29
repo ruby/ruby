@@ -1,3 +1,8 @@
+Tue Sep 29 06:50:32 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_inspect): dump as \uXXXX when the
+	  string is in Unicode. [ruby-dev:39388]
+
 Tue Sep 29 06:49:16 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_enc_unicode_p): defined.

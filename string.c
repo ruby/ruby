@@ -4061,6 +4061,7 @@ rb_str_inspect(VALUE str)
     char *p, *pend;
     VALUE result = rb_str_buf_new(0);
     rb_encoding *resenc = rb_default_internal_encoding();
+    int unicode_p = rb_enc_unicode_p(enc);
 
     if (resenc == NULL) resenc = rb_default_external_encoding();
     if (!rb_enc_asciicompat(resenc)) resenc = rb_usascii_encoding();
@@ -4069,7 +4070,7 @@ rb_str_inspect(VALUE str)
 
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
     while (p < pend) {
-	unsigned int c, cc;
+	unsigned int c = -1, cc;
 	int n;
 
         n = rb_enc_precise_mbclen(p, pend, enc);
@@ -4114,18 +4115,29 @@ rb_str_inspect(VALUE str)
 	else if (c == 033) {
 	    str_buf_cat2(result, "\\e");
 	}
-	else if ((enc == resenc && rb_enc_isprint(c, enc)) || rb_enc_isascii(c, enc)) {
+	else if ((enc == resenc && rb_enc_isprint(c, enc)) ||
+		(rb_enc_isascii(c, enc) && ISPRINT(c))) {
 	    str_buf_cat(result, p-n, n);
 	}
 	else {
-            char *q;
+	    char buf[11];
 	  escape_codepoint:
-            for (q = p-n; q < p; q++) {
-#define BACKESC_BUFSIZE 5
-		char buf[BACKESC_BUFSIZE];
-		sprintf(buf, "\\x%02X", *q & 0377);
-		str_buf_cat(result, buf, BACKESC_BUFSIZE - 1);
-#undef BACKESC_BUFSIZE
+
+	    if (unicode_p && c != -1) {
+		if (c > 0xFFFF) {
+		    sprintf(buf, "\\u{%X}", c);
+		}
+		else {
+		    sprintf(buf, "\\u%04X", c);
+		}
+		str_buf_cat(result, buf, strlen(buf));
+	    }
+	    else {
+		char *q;
+		for (q = p-n; q < p; q++) {
+		    sprintf(buf, "\\x%02X", *q & 0377);
+		    str_buf_cat(result, buf, strlen(buf));
+		}
 	    }
 	}
     }
