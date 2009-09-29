@@ -5307,17 +5307,19 @@ rb_scan_open_args(int argc, VALUE *argv,
     opt = pop_last_hash(&argc, argv);
     rb_scan_args(argc, argv, "12", &fname, &vmode, &vperm);
     FilePathValue(fname);
-#if defined __APPLE__
+#ifdef __APPLE__
     {
 	static rb_encoding *fs_encoding;
+	static rb_encoding *utf8mac_encoding;
 	rb_encoding *fname_encoding = rb_enc_get(fname);
 	if (!fs_encoding)
 	    fs_encoding = rb_filesystem_encoding();
+	if (!utf8mac_encoding)
+	    utf8mac_encoding = rb_enc_find("UTF8-MAC");
 	if (rb_usascii_encoding() != fname_encoding
 	    && rb_ascii8bit_encoding() != fname_encoding
-#if defined __APPLE__
 	    && rb_utf8_encoding() != fname_encoding
-#endif
+	    && rb_utf8mac_encoding() != fname_encoding
 	    && fs_encoding != fname_encoding) {
 	    static VALUE fs_enc;
 	    if (!fs_enc)
