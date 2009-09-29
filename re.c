@@ -3392,6 +3392,9 @@ match_setter(VALUE val)
  *  <code>MatchData</code> object.
  *  <em>n</em> can be a string or symbol to reference a named capture.
  *
+ *  Note that the <code>last_match</code> is local to the scope
+ *  of the method that did the pattern match.
+ *
  *     /c(.)t/ =~ 'cat'        #=> 0
  *     Regexp.last_match       #=> #<MatchData "cat" 1:"a">
  *     Regexp.last_match(0)    #=> "cat"
