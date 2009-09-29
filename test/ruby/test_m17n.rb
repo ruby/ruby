@@ -2,15 +2,6 @@ require 'test/unit'
 require 'stringio'
 
 class TestM17N < Test::Unit::TestCase
-  def inspect_encoding
-    Encoding.default_internal || Encoding.default_external
-  end
-
-  def setup
-    Encoding.default_internal = nil
-    Encoding.default_external = Encoding::UTF_8
-  end
-
   def assert_encoding(encname, actual, message=nil)
     assert_equal(Encoding.find(encname), actual, message)
   end
@@ -765,30 +756,16 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_sprintf_p
-    assert_strenc('""', inspect_encoding, a("%p") % a(""))
-    assert_strenc('""', inspect_encoding, e("%p") % e(""))
-    assert_strenc('""', inspect_encoding, s("%p") % s(""))
-    assert_strenc('""', inspect_encoding, u("%p") % u(""))
-
-    assert_strenc('"a"', inspect_encoding, a("%p") % a("a"))
-    assert_strenc('"a"', inspect_encoding, e("%p") % e("a"))
-    assert_strenc('"a"', inspect_encoding, s("%p") % s("a"))
-    assert_strenc('"a"', inspect_encoding, u("%p") % u("a"))
-
-    assert_strenc('"\xC2\xA1"', inspect_encoding, a("%p") % a("\xc2\xa1"))
-    assert_strenc('"\xC2\xA1"', inspect_encoding, e("%p") % e("\xc2\xa1"))
-    #assert_strenc("\"\xC2\xA1\"", inspect_encoding, s("%p") % s("\xc2\xa1"))
-    assert_strenc("\"\xC2\xA1\"", inspect_encoding, u("%p") % u("\xc2\xa1"))
-
-    assert_strenc('"\xC2\xA1"', inspect_encoding, "%10p" % a("\xc2\xa1"))
-    assert_strenc('"\xC2\xA1"', inspect_encoding, "%10p" % e("\xc2\xa1"))
-    #assert_strenc("       \"\xC2\xA1\"", inspect_encoding, "%10p" % s("\xc2\xa1"))
-    assert_strenc("       \"\xC2\xA1\"", inspect_encoding, "%10p" % u("\xc2\xa1"))
-
-    assert_strenc('"\x00"', inspect_encoding, a("%p") % a("\x00"))
-    assert_strenc('"\x00"', inspect_encoding, e("%p") % e("\x00"))
-    assert_strenc('"\x00"', inspect_encoding, s("%p") % s("\x00"))
-    assert_strenc('"\u0000"', inspect_encoding, u("%p") % u("\x00"))
+    enc = "".inspect.encoding
+    Encoding.list.each do |e|
+      format = "%p".force_encoding(e)
+      ['', 'a', "\xC2\xA1", "\x00"].each do |s|
+        s.force_encoding(e)
+        assert_strenc(s.inspect, enc, format % s)
+      end
+      s = "\xC2\xA1".force_encoding(e)
+      assert_strenc('%10s' % s.inspect, enc, "%10p" % s)
+    end
   end
 
   def test_sprintf_s
@@ -1185,8 +1162,8 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(Encoding::US_ASCII, [].to_s.encoding)
     assert_equal(Encoding::US_ASCII, [nil].to_s.encoding)
     assert_equal(Encoding::US_ASCII, [1].to_s.encoding)
-    assert_equal(inspect_encoding, [""].to_s.encoding)
-    assert_equal(inspect_encoding, ["a"].to_s.encoding)
+    assert_equal("".inspect.encoding, [""].to_s.encoding)
+    assert_equal("a".inspect.encoding, ["a"].to_s.encoding)
     assert_equal(Encoding::US_ASCII, [nil,1,"","a","\x20",[]].to_s.encoding)
   end
 
