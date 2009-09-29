@@ -4123,21 +4123,30 @@ rb_str_inspect(VALUE str)
 	    char buf[11];
 	  escape_codepoint:
 
-	    if (unicode_p && c != -1) {
-		if (c > 0xFFFF) {
-		    sprintf(buf, "\\u{%X}", c);
-		}
-		else {
-		    sprintf(buf, "\\u%04X", c);
-		}
-		str_buf_cat(result, buf, strlen(buf));
-	    }
-	    else {
+	    if (c == -1) {
 		char *q;
 		for (q = p-n; q < p; q++) {
 		    sprintf(buf, "\\x%02X", *q & 0377);
 		    str_buf_cat(result, buf, strlen(buf));
 		}
+	    }
+	    else if (unicode_p) {
+		if (c < 0x10000) {
+		    sprintf(buf, "\\u%04X", c);
+		}
+		else {
+		    sprintf(buf, "\\u{%X}", c);
+		}
+		str_buf_cat(result, buf, strlen(buf));
+	    }
+	    else {
+		if (c < 0x100) {
+		    sprintf(buf, "\\x%02X", c);
+		}
+		else {
+		    sprintf(buf, "\\x{%X}", c);
+		}
+		str_buf_cat(result, buf, strlen(buf));
 	    }
 	}
     }
