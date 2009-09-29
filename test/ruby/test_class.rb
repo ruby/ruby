@@ -140,7 +140,7 @@ class TestClass < Test::Unit::TestCase
         def foo; end
       end
     end
-    assert_match(/method redefined; discarding old foo/, stderr)
+    assert_match(/:#{line}: warning: method redefined; discarding old foo/, stderr)
 
     stderr = EnvUtil.verbose_warning do
       Class.new do
