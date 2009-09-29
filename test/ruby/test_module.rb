@@ -786,4 +786,32 @@ class TestModule < Test::Unit::TestCase
     assert_equal [:f, :g, :a, :a=], memo.shift
     assert_equal mod.instance_method(:a=), memo.shift
   end
+
+  def test_method_redefinition
+    stderr = EnvUtil.verbose_warning do
+      Module.new do
+        def foo; end
+        def foo; end
+      end
+    end
+    assert_match(/method redefined; discarding old foo/, stderr)
+
+    stderr = EnvUtil.verbose_warning do
+      Module.new do
+        def foo; end
+        alias bar foo
+        alias bar foo
+      end
+    end
+    assert_equal("", stderr)
+
+    stderr = EnvUtil.verbose_warning do
+      Module.new do
+        module_function
+        def foo; end
+        module_function :foo
+      end
+    end
+    assert_equal("", stderr, '[ruby-dev:39397]')
+  end
 end

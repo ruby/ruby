@@ -65,6 +65,19 @@ module EnvUtil
     stderr.close unless !stderr || stderr.closed?
   end
   module_function :rubyexec
+
+
+  def verbose_warning
+    class << (stderr = "")
+      alias write <<
+    end
+    stderr, $stderr, verbose, $VERBOSE = $stderr, stderr, $VERBOSE, true
+    yield stderr
+  ensure
+    stderr, $stderr, $VERBOSE = $stderr, stderr, verbose
+    return stderr
+  end
+  module_function :verbose_warning
 end
 
 module Test

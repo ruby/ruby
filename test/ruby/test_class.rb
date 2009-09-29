@@ -98,46 +98,56 @@ class TestClass < Test::Unit::TestCase
     assert_equal(nil, BasicObject.superclass)
   end
 
-  def verbose_warning
-    class << (stderr = "")
-      alias write <<
-    end
-    stderr, $stderr, verbose, $VERBOSE = $stderr, stderr, $VERBOSE, true
-    yield
-  ensure
-    stderr, $stderr, $VERBOSE = $stderr, stderr, verbose
-    return stderr
-  end
-
   def test_module_function
     c = Class.new
     assert_raise(TypeError) do
       Module.instance_method(:module_function).bind(c).call(:foo)
     end
+  end
 
-    stderr = verbose_warning do
-      Module.new do
+  def test_method_redefinition
+    stderr = EnvUtil.verbose_warning do
+      Class.new do
         def foo; end
         def foo; end
       end
     end
     assert_match(/method redefined; discarding old foo/, stderr)
-    stderr = verbose_warning do
-      Module.new do
+
+    stderr = EnvUtil.verbose_warning do
+      Class.new do
+        def foo; end
+        alias bar foo
+        def foo; end
+      end
+    end
+    assert_equal("", stderr)
+
+    stderr = EnvUtil.verbose_warning do
+      Class.new do
         def foo; end
         alias bar foo
         alias bar foo
       end
     end
     assert_equal("", stderr)
-    stderr = verbose_warning do
-      Module.new do
-        module_function
+
+    stderr = EnvUtil.verbose_warning do
+      Class.new do
+        define_method(:foo) do end
         def foo; end
-        module_function :foo
       end
     end
-    assert_equal("", stderr, '[ruby-dev:39397]')
+    assert_match(/method redefined; discarding old foo/, stderr)
+
+    stderr = EnvUtil.verbose_warning do
+      Class.new do
+        define_method(:foo) do end
+        alias bar foo
+        alias barf oo
+      end
+    end
+    assert_equal("", stderr)
   end
 
   def test_check_inheritable
