@@ -1,4 +1,7 @@
-Tue Sep 29 13:37:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Sep 29 13:48:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_method_definition_eq): non-null definition is
+	  not equal to null definition.
 
 	* vm_method.c (rb_add_method_def): nothing to do if old method had
 	  same definition.  [ruby-dev:39397]
