@@ -2325,6 +2325,9 @@ match_setter(val)
  *  last successful pattern match. Equivalent to reading the global variable
  *  <code>$~</code>. The second form returns the nth field in this
  *  <code>MatchData</code> object.
+ *
+ *  Note that the <code>last_match</code> is local to the scope
+ *  of the method that did the pattern match.
  *     
  *     /c(.)t/ =~ 'cat'       #=> 0
  *     Regexp.last_match      #=> #<MatchData:0x401b3d30>
