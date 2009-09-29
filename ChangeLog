@@ -88,7 +88,7 @@ Mon Sep 28 23:30:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Sep 28 19:36:20 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* win32/wini32.c (LK_ERR): with overlapped I/O, LockFileEx() returns
+	* win32/win32.c (LK_ERR): with overlapped I/O, LockFileEx() returns
 	  ERROR_IO_PENDING if the file is locked.
 
 Mon Sep 28 19:05:05 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
@@ -163,7 +163,7 @@ Sun Sep 27 10:21:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Sep 27 05:35:17 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* ext/json/ext/generator/generator.c: Documention patch by okkez.
+	* ext/json/ext/generator/generator.c: Documentation patch by okkez.
 	  [Bug #2075]
 
 Sun Sep 27 04:20:55 2009  NARUSE, Yui  <naruse@ruby-lang.org>
@@ -245,7 +245,7 @@ Fri Sep 25 16:01:45 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Fri Sep 25 13:04:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* proc.c (mnew): fix for instance method of Module, BasicObjec
+	* proc.c (mnew): fix for instance method of Module, BasicObject
 	  and subclass of a class which overrides respond_to_missing?.
 	  based on a patch from Nikolai Lugovoi <nlugovoi AT gmail.com> in
 	  [ruby-core:25748].
