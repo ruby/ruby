@@ -54,12 +54,12 @@ module Kernel
   private
   # prints arguments in pretty form.
   #
-  # pp returns nil.
+  # pp returns argument(s).
   def pp(*objs) # :doc:
     objs.each {|obj|
       PP.pp(obj)
     }
-    nil
+    objs.size <= 1 ? objs.first : objs
   end
   module_function :pp
 end
