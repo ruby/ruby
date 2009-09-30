@@ -106,6 +106,8 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_method_redefinition
+    feature2155 = '[ruby-dev:39400]'
+
     line = __LINE__+4
     stderr = EnvUtil.verbose_warning do
       Class.new do
@@ -114,6 +116,7 @@ class TestClass < Test::Unit::TestCase
       end
     end
     assert_match(/:#{line}: warning: method redefined; discarding old foo/, stderr)
+    assert_match(/:#{line-1}: warning: previous definition of foo/, stderr, feature2155)
 
     stderr = EnvUtil.verbose_warning do
       Class.new do
@@ -141,6 +144,7 @@ class TestClass < Test::Unit::TestCase
       end
     end
     assert_match(/:#{line}: warning: method redefined; discarding old foo/, stderr)
+    assert_match(/:#{line-1}: warning: previous definition of foo/, stderr, feature2155)
 
     stderr = EnvUtil.verbose_warning do
       Class.new do

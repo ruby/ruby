@@ -648,8 +648,10 @@ rb_proc_arity(VALUE self)
     return -1;
 }
 
-static rb_iseq_t *
-get_proc_iseq(VALUE self, int *is_proc)
+#define get_proc_iseq rb_proc_get_iseq
+
+rb_iseq_t *
+rb_proc_get_iseq(VALUE self, int *is_proc)
 {
     rb_proc_t *proc;
     rb_iseq_t *iseq;
@@ -894,7 +896,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     rb_method_definition_t *def = 0;
 
   again:
-     me = rb_method_entry(klass, id);
+    me = rb_method_entry(klass, id);
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	ID rmiss = rb_intern("respond_to_missing?");
 	VALUE sym = ID2SYM(id);

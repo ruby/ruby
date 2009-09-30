@@ -1,3 +1,8 @@
+Wed Sep 30 13:15:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_add_method_def): show the location where
+	  overwritten method was defined.  [ruby-dev:39400]
+
 Wed Sep 30 00:37:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (enumerator_block_call): extracted.
