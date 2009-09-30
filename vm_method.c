@@ -188,7 +188,26 @@ rb_add_method_def(VALUE klass, ID mid, rb_method_type_t type, rb_method_definiti
 	    old_def->alias_count == 0 &&
 	    old_def->type != VM_METHOD_TYPE_UNDEF &&
 	    old_def->type != VM_METHOD_TYPE_ZSUPER) {
+	    extern rb_iseq_t *rb_proc_get_iseq(VALUE proc, int *is_proc);
+	    rb_iseq_t *iseq = 0;
+
 	    rb_warning("method redefined; discarding old %s", rb_id2name(mid));
+	    switch (old_def->type) {
+	      case VM_METHOD_TYPE_ISEQ:
+		iseq = old_def->body.iseq;
+		break;
+	      case VM_METHOD_TYPE_BMETHOD:
+		iseq = rb_proc_get_iseq(old_def->body.proc, 0);
+		break;
+	      default:
+		break;
+	    }
+	    if (iseq && !NIL_P(iseq->filename)) {
+		int line = iseq->insn_info_table ? rb_iseq_first_lineno(iseq) : 0;
+		rb_compile_warning(RSTRING_PTR(iseq->filename), line,
+				   "previous definition of %s was here",
+				   rb_id2name(old_def->original_id));
+	    }
 	}
 	rb_free_method_entry(old_me);
     }
