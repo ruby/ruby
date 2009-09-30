@@ -415,6 +415,15 @@ Mon Sep 21 17:12:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (collect_local_variables_in_env): block iseq can be NULL.
 
+Mon Sep 21 10:50:37 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (rb_time_succ): make Time#succ obsolete since time is not
+	  a discrete value.
+
+	* range.c (discrete_object_p): treat time objects specially to
+	  determine discrete values, since time objects have #succ yet are
+	  discrete (for now at least).
+
 Mon Sep 21 10:13:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (cont_new, cont_capture, fiber_t_alloc): needs already

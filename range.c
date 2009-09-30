@@ -308,6 +308,15 @@ step_i(VALUE i, void *arg)
 
 extern int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl);
 
+static int
+discrete_object_p(obj)
+{
+    if (rb_obj_is_kind_of(obj, rb_cTime)) return Qfalse; /* until Time#succ removed */
+    if (rb_respond_to(obj, id_succ)) return Qtrue;
+    return Qfalse;
+}
+
+
 /*
  *  call-seq:
  *     rng.step(n=1) {| obj | block }    => rng
@@ -416,7 +425,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 	else {
 	    VALUE args[2];
 
-	    if (!rb_respond_to(b, id_succ)) {
+	    if (!discrete_object_p(b)) {
 		rb_raise(rb_eTypeError, "can't iterate from %s",
 			 rb_obj_classname(b));
 	    }
@@ -498,7 +507,7 @@ range_each(VALUE range)
 	    rb_block_call(tmp, rb_intern("upto"), 2, args, rb_yield, 0);
 	}
 	else {
-	    if (!rb_respond_to(beg, id_succ)) {
+	    if (!discrete_object_p(beg)) {
 		rb_raise(rb_eTypeError, "can't iterate from %s",
 			 rb_obj_classname(beg));
 	    }
