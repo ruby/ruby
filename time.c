@@ -2948,17 +2948,19 @@ time_minus(VALUE time1, VALUE time2)
  *   time.succ   => new_time
  *
  * Return a new time object, one second later than <code>time</code>.
+ * Time#succ is obsolete since 1.9.2 for time is not a discrete value.
  *
  *     t = Time.now       #=> 2007-11-19 08:23:57 -0600
  *     t.succ             #=> 2007-11-19 08:23:58 -0600
  */
 
-static VALUE
-time_succ(VALUE time)
+VALUE
+rb_time_succ(VALUE time)
 {
     struct time_object *tobj;
     struct time_object *tobj2;
 
+    rb_warn("Time#succ is obsolete; use time + 1");
     GetTimeval(time, tobj);
     time = time_new_timexv(rb_cTime, add(tobj->timexv, INT2FIX(TIME_SCALE)));
     GetTimeval(time, tobj2);
@@ -2966,11 +2968,8 @@ time_succ(VALUE time)
     return time;
 }
 
-VALUE
-rb_time_succ(VALUE time)
-{
-    return time_succ(time);
-}
+#define time_succ rb_time_succ
+
 
 /*
  *  call-seq:
