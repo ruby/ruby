@@ -3392,7 +3392,7 @@ match_setter(VALUE val)
  *  <code>MatchData</code> object.
  *  <em>n</em> can be a string or symbol to reference a named capture.
  *
- *  Note that the <code>last_match</code> is local to the scope
+ *  Note that the <code>last_match</code> is local to the thread and method scope
  *  of the method that did the pattern match.
  *
  *     /c(.)t/ =~ 'cat'        #=> 0
