@@ -1,3 +1,8 @@
+Thu Oct  1 13:23:14 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_getpid): simply call GetCurrentProcessId()
+	  instead of calling MSVCRT's getpid().
+
 Wed Sep 30 13:15:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (rb_add_method_def): show the location where
