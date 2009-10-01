@@ -1,3 +1,11 @@
+Thu Oct  1 14:16:39 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/{setup.mak,Makefile.sub,win32.c},include/ruby/win32.h (RT_VER):
+	  split compiler specification and runtime library specification.
+
+	* win32/Makefile.sub (LD_SHARED*, config.status): no need to embbed
+	  manifest if not exist.
+
 Thu Oct  1 13:23:14 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_getpid): simply call GetCurrentProcessId()

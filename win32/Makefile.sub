@@ -225,9 +225,9 @@ XCFLAGS = -DRUBY_EXPORT -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(srcdir)
 !if $(MSC_VER) >= 1400
 # Prevents VC++ 2005 (cl ver 14) warnings
 MANIFESTTOOL = mt -nologo
-LDSHARED_0 = @$(MINIRUBY) -run -e wait_writable -- -n 10 $@
-LDSHARED_1 = $(MANIFESTTOOL) -manifest $(@).manifest -outputresource:$(@);2
-LDSHARED_2 = @$(RM) $(@:/=\).manifest
+LDSHARED_0 = @if exist $(@).manifest $(MINIRUBY) -run -e wait_writable -- -n 10 $@
+LDSHARED_1 = @if exist $(@).manifest $(MANIFESTTOOL) -manifest $(@).manifest -outputresource:$(@);2
+LDSHARED_2 = @if exist $(@).manifest @$(RM) $(@:/=\).manifest
 !endif
 CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 
@@ -390,6 +390,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if "$(ENABLE_WIN95)" == "yes" && "$(MACHINE)" == "x86"
 #define WIN95 1
 !endif
+#define RT_VER $(RT_VER)
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
@@ -422,7 +423,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define SIZEOF_FLOAT 4
 #define SIZEOF_DOUBLE 8
-!if $(MSC_VER) >= 1400
+!if $(RT_VER) >= 80
 #define SIZEOF_TIME_T 8
 #define TIMET2NUM(v) LL2NUM(v)
 #define NUM2TIMET(v) NUM2LL(v)
@@ -696,9 +697,9 @@ s,@RPATHFLAG@,,;t t
 s,@LIBARG@,%s.lib,;t t
 s,@LINK_SO@,$$(LDSHARED) -Fe$$(@) $$(OBJS) $$(LIBS) $$(LOCAL_LIBS) -link $$(DLDFLAGS) -implib:$$(*F:.so=)-$$(arch).lib -pdb:$$(*F:.so=)-$$(arch).pdb -def:$$(DEFFILE),;t t
 !if $(MSC_VER) >= 1400
-s,@LINK_SO@,@$$(RUBY) -run -e wait_writable -- -n 10 $$(@),;t t
-s,@LINK_SO@,$(MANIFESTTOOL) -manifest $$(@).manifest -outputresource:$$(@);2,;t t
-s,@LINK_SO@,@$$(RM) $$(@:/=\).manifest,;t t
+s,@LINK_SO@,@if exist $$(@).manifest $$(RUBY) -run -e wait_writable -- -n 10 $$(@),;t t
+s,@LINK_SO@,@if exist $$(@).manifest $(MANIFESTTOOL) -manifest $$(@).manifest -outputresource:$$(@);2,;t t
+s,@LINK_SO@,@if exist $$(@).manifest $$(RM) $$(@:/=\).manifest,;t t
 !endif
 s,@COMPILE_C@,$$(CC) $$(INCFLAGS) $$(CFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$(@) -c -Tc$$(<:\=/),;t t
 s,@COMPILE_CXX@,$$(CXX) $$(INCFLAGS) $$(CXXFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$(@) -c -Tp$$(<:\=/),;t t

@@ -177,7 +177,7 @@ extern DWORD rb_w32_osid(void);
 #define fstat(fd,st)		_fstati64(fd,st)
 #if defined(__BORLANDC__)
 #define stati64(path, st) rb_w32_stati64(path, st)
-#elif !defined(_MSC_VER) || _MSC_VER < 1400
+#elif !defined(_MSC_VER) || RT_VER < 80
 #define stati64 _stati64
 #define _stati64(path, st) rb_w32_stati64(path, st)
 #else
