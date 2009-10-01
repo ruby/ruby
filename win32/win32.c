@@ -4426,13 +4426,12 @@ rb_w32_free_environ(char **env)
     free(env);
 }
 
-#undef getpid
 rb_pid_t
 rb_w32_getpid(void)
 {
     rb_pid_t pid;
 
-    pid = getpid();
+    pid = GetCurrentProcessId();
 
     (void)IfWin95(pid = -pid, 0);
 
