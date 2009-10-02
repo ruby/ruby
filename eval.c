@@ -33,13 +33,6 @@ VALUE rb_eSysStackError;
 
 /* initialize ruby */
 
-#if defined(__APPLE__)
-#define environ (*_NSGetEnviron())
-#elif !defined(_WIN32)
-extern char **environ;
-#endif
-char **rb_origenviron;
-
 void rb_clear_trace_func(void);
 void rb_thread_stop_timer_thread(void);
 
@@ -56,8 +49,6 @@ ruby_init(void)
     if (initialized)
 	return;
     initialized = 1;
-
-    rb_origenviron = environ;
 
     ruby_init_stack((void *)&state);
     Init_BareVM();

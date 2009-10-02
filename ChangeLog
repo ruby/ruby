@@ -1,3 +1,8 @@
+Fri Oct  2 09:20:35 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval.c (rb_origenviron): remove unused old variable.
+	  [ruby-dev:39412]
+
 Thu Oct  1 14:16:39 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/{setup.mak,Makefile.sub,win32.c},include/ruby/win32.h (RT_VER):
