@@ -2176,8 +2176,8 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
 /*
  *  call-seq:
  *     enum.slice_before(pattern) => enumerator
- *     enum.slice_before {|elt| ... } => enumerator
- *     enum.slice_before(initial_state) {|elt, state| ... } => enumerator
+ *     enum.slice_before {|elt| bool } => enumerator
+ *     enum.slice_before(initial_state) {|elt, state| bool } => enumerator
  *
  *  Creates an enumerator for each chunked elements.
  *  The beginnings of chunks are defined by _pattern_ and the block.
@@ -2204,6 +2204,18 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *    open("ChangeLog") {|f|
  *      f.slice_before {|line| /\A\S/ === line }.each {|e| pp e}
  *    }
+ *
+ * "svn proplist -R" produces multiline output for each file.
+ * They can be chunked as follows: 
+ *
+ *    IO.popen([{"LC_ALL"=>"C"}, "svn", "proplist", "-R"]) {|f|
+ *      f.lines.slice_before(/\AProp/).each {|lines| p lines }
+ *    }
+ *    #=> ["Properties on '.':\n", "  svn:ignore\n", "  svk:merge\n"]
+ *    #   ["Properties on 'goruby.c':\n", "  svn:eol-style\n"]
+ *    #   ["Properties on 'complex.c':\n", "  svn:mime-type\n", "  svn:eol-style\n"]
+ *    #   ["Properties on 'regparse.c':\n", "  svn:eol-style\n"]
+ *    #   ...
  *
  *  If the block needs to maintain state over multiple elements,
  *  local variables can be used.
@@ -2253,17 +2265,6 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *    #   17 18 19
  *    #   20
  *    #   ----------
- *
- * "svn proplist -R" produces multiline output for each file.
- * They can be chunked as follows: 
- *
- *    IO.popen([{"LC_ALL"=>"C"}, "svn", "proplist", "-R"]) {|f|
- *      f.lines.slice_before(/^Prop/).each {|lines| p lines }
- *    }
- *    #=> ["Properties on '.':\n", "  svn:ignore\n", "  svk:merge\n"]
- *    #   ["Properties on 'goruby.c':\n", "  svn:eol-style\n"]
- *    #   ["Properties on 'complex.c':\n", "  svn:mime-type\n", "  svn:eol-style\n"]
- *    #   ["Properties on 'regparse.c':\n", "  svn:eol-style\n"]
  *
  * mbox contains series of mails which start with Unix From line.
  * So each mail can be extracted by slice before Unix From line.
