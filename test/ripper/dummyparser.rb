@@ -13,7 +13,15 @@ class Node
   attr_reader :children
 
   def to_s
-    "#{@name}(#{@children.map {|n| n.to_s }.join(',')})"
+    "#{@name}(#{Node.trim_nil(@children).map {|n| n.to_s }.join(',')})"
+  end
+
+  def self.trim_nil(list)
+    if !list.empty? and list.last.nil?
+      list = list[0...-1]
+      list.pop while !list.empty? and list.last.nil?
+    end
+    list
   end
 end
 
@@ -34,14 +42,23 @@ class NodeList
   end
 
   def to_s
-    '[' + @list.join(',') + ']'
+    "[#{@list.join(',')}]"
   end
 end
 
 class DummyParser < Ripper
+  def hook(name)
+    class << self; self; end.class_eval do
+      define_method(name) do |*a, &b|
+        result = super(*a, &b)
+        yield
+        result
+      end
+    end
+    self
+  end
 
   def on_program(stmts)
-    $thru_program = true
     stmts
   end
 
@@ -170,8 +187,8 @@ class DummyParser < Ripper
     Node.new('binary', a, b, c)
   end
 
-  def on_block_var(a)
-    Node.new('block_var', a)
+  def on_block_var(a, b)
+    Node.new('block_var', a, b)
   end
 
   def on_bodystmt(a, b, c, d)
@@ -346,8 +363,8 @@ class DummyParser < Ripper
     Node.new('param_error', a)
   end
 
-  def on_params(a, b, c, d)
-    Node.new('params', a, b, c, d)
+  def on_params(a, b, c, d, e)
+    Node.new('params', a, b, c, d, e)
   end
 
   def on_paren(a)
@@ -370,8 +387,8 @@ class DummyParser < Ripper
     Node.new('redo')
   end
 
-  def on_regexp_literal(a)
-    Node.new('regexp_literal', a)
+  def on_regexp_literal(a, b)
+    Node.new('regexp_literal', a, b)
   end
 
   def on_rescue(a, b, c, d)

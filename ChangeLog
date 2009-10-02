@@ -1,3 +1,16 @@
+Fri Oct  2 20:37:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (ripper_yylval_id, ripper_get_{id,value}): wrap ID by
+	  NODE to track local variable assignment.
+
+	* parse.y (lvar_defined_gen, assignable_gen): enable local
+	  variable check.  [ruby-core:24923]
+
+	* parse.y (validate): use value only.
+
+	* test/ripper/test_parser_events.rb (test_local_variables): tests
+	  based on a patch from Magnus Holm in [ruby-core:25885].
+
 Fri Oct  2 15:34:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (ruby_suppress_tracing): get rid of clobbering by
