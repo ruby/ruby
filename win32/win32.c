@@ -368,7 +368,7 @@ flock(int fd, int oper)
 
 static void init_stdhandle(void);
 
-#if _MSC_VER >= 1400
+#if RT_VER >= 80
 static void
 invalid_parameter(const wchar_t *expr, const wchar_t *func, const wchar_t *file, unsigned int line, uintptr_t dummy)
 {
@@ -476,7 +476,7 @@ init_env(void)
 void
 NtInitialize(int *argc, char ***argv)
 {
-#if _MSC_VER >= 1400
+#if RT_VER >= 80
     static void set_pioinfo_extra(void);
 
     _CrtSetReportMode(_CRT_ASSERT, 0);
@@ -1754,7 +1754,7 @@ typedef struct	{
 #ifdef MSVCRT_THREADS
     int lockinitflag;
     CRITICAL_SECTION lock;
-#if _MSC_VER >= 1400
+#if RT_VER >= 80
     char textmode;
     char pipech2[2];
 #endif
@@ -1776,7 +1776,7 @@ EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 #define _osfile(i)  (_pioinfo(i)->osfile)
 #define _pipech(i)  (_pioinfo(i)->pipech)
 
-#if _MSC_VER >= 1400
+#if RT_VER >= 80
 static size_t pioinfo_extra = 0;	/* workaround for VC++8 SP1 */
 
 static void
@@ -1929,9 +1929,6 @@ char *
 rb_w32_strerror(int e)
 {
     static char buffer[512];
-#if !defined __MINGW32__
-    extern int sys_nerr;
-#endif
     DWORD source = 0;
     char *p;
 

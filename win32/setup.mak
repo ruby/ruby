@@ -58,12 +58,13 @@ EXTOUT = $(EXTOUT)
 	@echo OS = mswin32 >>$(MAKEFILE)
 
 -runtime-: nul
-	@$(CC) -MD <<rtname.c user32.lib > nul
+	@$(CC) -MD <<rtname.c user32.lib -link > nul
 #include <windows.h>
 #include <memory.h>
 #include <string.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
 #endif
@@ -101,7 +102,9 @@ runtime_name()
 	}
     }
     if (ver) printf("OS = $$(OS)_%s\n", ver);
+    else ver = "60";
     printf("RT = %s\n", base);
+    printf("RT_VER = %s\n", ver);
     return 1;
 }
 
