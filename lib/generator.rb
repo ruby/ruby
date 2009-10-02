@@ -178,16 +178,12 @@ class Enumerator
   #   e.next   => object
   #
   # Returns the next object in the enumerator, and move the internal
-  # position forward.  When the position reached at the end, internal
+  # position forward.  When the position reaches at the end, internal
   # position is rewound then StopIteration is raised.
   #
-  # Note that enumeration sequence by next method does not affect other
-  # non-external enumeration methods, unless underlying iteration
-  # methods itself has side-effect, e.g. IO#each_line.
-  #
-  # Caution: This feature internally uses Generator, which uses callcc
-  # to stop and resume enumeration to fetch each value.  Use with care
-  # and be aware of the performance loss.
+  # Caution: This method is slow.  It is implemented using the
+  # Generator library which uses callcc to stop and resume an "each"
+  # method to fetch values one by one.
   def next
     g = __generator
     return g.next unless g.end?
