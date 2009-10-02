@@ -2239,6 +2239,18 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *    #   20
  *    #   ----------
  *
+ * "svn proplist -R" produces multiline output for each file.
+ * They can be chunked as follows: 
+ *
+ *    IO.popen([{"LANG"=>"C"}, "svn", "proplist", "-R"]) {|f|
+ *      f.lines.slice_before {|line| /^Prop/ =~ line }.each {|lines| p lines }
+ *    }
+ *    #=> ["Properties on '.':\n", "  svn:ignore\n", "  svk:merge\n"]
+ *    #   ["Properties on 'goruby.c':\n", "  svn:keywords\n", "  svn:eol-style\n"]
+ *    #   ["Properties on 'complex.c':\n", "  svn:mime-type\n", "  svn:eol-style\n"]
+ *    #   ["Properties on 'regparse.c':\n", "  svn:keywords\n", "  svn:eol-style\n"]
+ *    #   ...
+ *
  * mbox contains series of mails which start with Unix From line.
  * So each mail can be extracted by slice before Unix From line.
  *
