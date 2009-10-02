@@ -1,3 +1,7 @@
+Sat Oct  3 04:34:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (assignable_gen): parser_yyerror takes two arguments.
+
 Sat Oct  3 04:07:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rake: updated to rake code to rake-0.8.7 source code base.
