@@ -1382,13 +1382,6 @@ error_print()
     POP_TAG();
 }
 
-#if defined(__APPLE__)
-#define environ (*_NSGetEnviron())
-#elif !defined(_WIN32) && !defined(__MACOS__) || defined(_WIN32_WCE)
-extern char **environ;
-#endif
-char **rb_origenviron;
-
 void rb_call_inits _((void));
 void Init_heap _((void));
 void Init_ext _((void));
@@ -1429,12 +1422,6 @@ ruby_init()
 
     ruby_frame = top_frame = &frame;
     ruby_iter = &iter;
-
-#ifdef __MACOS__
-    rb_origenviron = 0;
-#else
-    rb_origenviron = environ;
-#endif
 
     ruby_init_stack((void*)&state);
     Init_heap();

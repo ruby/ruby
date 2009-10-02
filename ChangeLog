@@ -1,3 +1,8 @@
+Fri Oct  2 13:54:46 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval.c (rb_origenviron): remove unused old variable.
+	  [ruby-dev:39412]
+
 Fri Oct  2 13:53:48 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/{setup.mak,Makefile.sub,win32.c} (RT_VER): split compiler
