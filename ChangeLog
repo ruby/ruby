@@ -1,3 +1,7 @@
+Fri Oct  2 17:26:35 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (LD_SHARED1): typo.
+
 Fri Oct  2 17:09:38 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_fptr_finalize): free fptr to avoid memory leaks.
