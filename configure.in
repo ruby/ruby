@@ -2450,7 +2450,7 @@ else
     RUBY_VENDOR_LIB_PATH="`eval echo \\"$VENDOR_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
 fi
 
-pat="$RUBY_LIB_PREFIX/"'\(.*\)'
+pat=`echo "$RUBY_LIB_PREFIX/" | tr -c '\012' .`'\(.*\)'
 RUBY_LIB_PATH='RUBY_LIB_PREFIX"/"RUBY_LIB_VERSION'
 case "$RUBY_SITE_LIB_PATH" in
   when("$RUBY_LIB_PREFIX/"*)
