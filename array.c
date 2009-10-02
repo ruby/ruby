@@ -418,7 +418,7 @@ ary_make_shared(VALUE ary)
     else if (OBJ_FROZEN(ary)) {
 	ary_resize_capa(ary, ARY_HEAP_LEN(ary));
 	FL_SET_SHARED_ROOT(ary);
-	ARY_SET_SHARED_NUM(ary, 0);
+	ARY_SET_SHARED_NUM(ary, 1);
 	return ary;
     }
     else {
