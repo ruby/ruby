@@ -1,3 +1,8 @@
+Fri Oct  2 15:34:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (ruby_suppress_tracing): get rid of clobbering by
+	  longjmp.
+
 Fri Oct  2 09:20:35 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (rb_origenviron): remove unused old variable.
