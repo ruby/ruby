@@ -4011,7 +4011,8 @@ VALUE
 ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
 {
     rb_thread_t *th = GET_THREAD();
-    int state, raised, tracing;
+    int state, tracing;
+    volatile int raised;
     VALUE result = Qnil;
 
     if ((tracing = th->tracing) != 0 && !always) {
