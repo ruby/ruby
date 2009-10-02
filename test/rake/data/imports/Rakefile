@@ -1,0 +1,19 @@
+# -*- ruby -*-
+
+require 'rake/loaders/makefile'
+
+task :default
+
+task :other do
+  puts "OTHER"
+end
+
+file "dynamic_deps" do |t|
+  open(t.name, "w") do |f| f.puts "puts 'DYNAMIC'" end
+end
+
+import "dynamic_deps"
+import "static_deps"
+import "static_deps"
+import "deps.mf"
+puts "FIRST"

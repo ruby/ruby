@@ -21,7 +21,7 @@ module Rake
     def process_line(line)
       file_tasks, args = line.split(':', 2)
       return if args.nil?
-      dependents = args.split
+      dependents = args.split.map {|arg| respace(arg)}
       file_tasks.scan(/\S+/) do |file_task|
         file_task = respace(file_task)
         file file_task => dependents

@@ -93,7 +93,7 @@ module Rake
 
     # Create the tasks defined by this task lib.
     def define
-      lib_path = @libs.collect {|path| "-I#{File.expand_path(path)}"}
+      lib_path = @libs.join(File::PATH_SEPARATOR)
       desc "Run tests" + (@name==:test ? "" : " for #{@name}")
       task @name do
         run_code = ''
@@ -103,11 +103,11 @@ module Rake
             when :direct
               "-e 'ARGV.each{|f| load f}'"
             when :testrb
-              "-S testrb #{fix}"
+              "-S testrb"
             when :rake
               rake_loader
             end
-          @ruby_opts.unshift( *lib_path )
+          @ruby_opts.unshift( "-I\"#{lib_path}\"" )
           @ruby_opts.unshift( "-w" ) if @warning
           ruby @ruby_opts.join(" ") +
             " \"#{run_code}\" " +
@@ -131,15 +131,6 @@ module Rake
         result += FileList[ @pattern ].to_a if @pattern
         FileList[result]
       end
-    end
-
-    def fix # :nodoc:
-      case RUBY_VERSION
-      when '1.8.2'
-        find_file 'rake/ruby182_test_unit_fix'
-      else
-        nil
-      end || ''
     end
 
     def rake_loader # :nodoc:

@@ -27,7 +27,7 @@
 # as a library via a require statement, but it can be distributed
 # independently as an application.
 
-RAKEVERSION = '0.8.4'
+RAKEVERSION = '0.8.7'
 
 require 'rbconfig'
 require 'fileutils'
@@ -37,6 +37,8 @@ require 'optparse'
 require 'ostruct'
 
 require 'rake/win32'
+
+$trace = false
 
 ######################################################################
 # Rake extensions to Module.
@@ -201,7 +203,7 @@ class String
         when '%f'
           result << File.basename(self)
         when '%n'
-          result << File.basename(self, '.*')
+          result << File.basename(self).ext
         when '%d'
           result << File.dirname(self)
         when '%x'
@@ -278,7 +280,7 @@ module Rake
 
   end
 
-  # ##########################################################################
+  ####################################################################
   # Mixin for creating easily cloned objects.
   #
   module Cloneable
@@ -299,6 +301,27 @@ module Rake
       sibling = dup
       sibling.freeze if frozen?
       sibling
+    end
+  end
+
+  ####################################################################
+  # Exit status class for times the system just gives us a nil.
+  class PseudoStatus
+    attr_reader :exitstatus
+    def initialize(code=0)
+      @exitstatus = code
+    end
+    def to_i
+      @exitstatus << 8
+    end
+    def >>(n)
+      to_i >> n
+    end
+    def stopped?
+      false
+    end
+    def exited?
+      true
     end
   end
 
@@ -432,7 +455,7 @@ end # module Rake
 
 module Rake
 
-  # #########################################################################
+  ###########################################################################
   # A Task is the basic unit of work in a Rakefile.  Tasks have associated
   # actions (possibly more than one) and a list of prerequisites.  When
   # invoked, a task will first ensure that all of its prerequisites have an
@@ -732,7 +755,7 @@ module Rake
   end # class Rake::Task
 
 
-  # #########################################################################
+  ###########################################################################
   # A FileTask is a task that includes time based dependencies.  If any of a
   # FileTask's prerequisites have a timestamp that is later than the file
   # represented by this task, then the file must be rebuilt (using the
@@ -774,7 +797,7 @@ module Rake
     end
   end # class Rake::FileTask
 
-  # #########################################################################
+  ###########################################################################
   # A FileCreationTask is a file task that when used as a dependency will be
   # needed if and only if the file has not been created.  Once created, it is
   # not re-triggered if any of its dependencies are newer, nor does trigger
@@ -793,7 +816,7 @@ module Rake
     end
   end
 
-  # #########################################################################
+  ###########################################################################
   # Same as a regular task, but the immediate prerequisites are done in
   # parallel using Ruby threads.
   #
@@ -808,7 +831,7 @@ module Rake
   end
 end # module Rake
 
-# ###########################################################################
+## ###########################################################################
 # Task Definition Functions ...
 
 # Declare a basic task.
@@ -927,12 +950,18 @@ def import(*fns)
   end
 end
 
-# ###########################################################################
+#############################################################################
 # This a FileUtils extension that defines several additional commands to be
 # added to the FileUtils utility functions.
 #
 module FileUtils
-  RUBY = File.join(RbConfig::CONFIG['bindir'], RbConfig::CONFIG['ruby_install_name']).
+  RUBY_EXT = ((RbConfig::CONFIG['ruby_install_name'] =~ /\.(com|cmd|exe|bat|rb|sh)$/) ?
+    "" :
+    RbConfig::CONFIG['EXEEXT'])
+
+  RUBY = File.join(
+    RbConfig::CONFIG['bindir'],
+    RbConfig::CONFIG['ruby_install_name'] + RUBY_EXT).
     sub(/.*\s.*/m, '"\&"')
 
   OPT_TABLE['sh']  = %w(noop verbose)
@@ -958,7 +987,7 @@ module FileUtils
     options = (Hash === cmd.last) ? cmd.pop : {}
     unless block_given?
       show_command = cmd.join(" ")
-      show_command = show_command[0,42] + "..."
+      show_command = show_command[0,42] + "..." unless $trace
       # TODO code application logic heref show_command.length > 45
       block = lambda { |ok, status|
         ok or fail "Command failed with status (#{status.exitstatus}): [#{show_command}]"
@@ -974,7 +1003,9 @@ module FileUtils
     rake_output_message cmd.join(" ") if options[:verbose]
     unless options[:noop]
       res = rake_system(*cmd)
-      block.call(res, $?)
+      status = $?
+      status = PseudoStatus.new(1) if !res && status.nil?
+      block.call(res, status)
     end
   end
 
@@ -1027,7 +1058,7 @@ module FileUtils
   end
 end
 
-# ###########################################################################
+#############################################################################
 # RakeFileUtils provides a custom version of the FileUtils methods that
 # respond to the <tt>verbose</tt> and <tt>nowrite</tt> commands.
 #
@@ -1158,7 +1189,7 @@ module RakeFileUtils
   extend self
 end
 
-# ###########################################################################
+#############################################################################
 # Include the FileUtils file manipulation functions in the top level module,
 # but mark them private so that they don't unintentionally define methods on
 # other objects.
@@ -1170,7 +1201,7 @@ private(*RakeFileUtils.instance_methods(false))
 ######################################################################
 module Rake
 
-  # #########################################################################
+  ###########################################################################
   # A FileList is essentially an array with a few helper methods defined to
   # make file manipulation a bit easier.
   #
@@ -1228,21 +1259,17 @@ module Rake
     # Now do the delegation.
     DELEGATING_METHODS.each_with_index do |sym, i|
       if SPECIAL_RETURN.include?(sym)
-        class_eval <<-END, __FILE__, __LINE__+1
-          def #{sym}(*args, &block)
-            resolve
-            result = @items.send(:#{sym}, *args, &block)
-            FileList.new.import(result)
-          end
-        END
+        define_method(sym) do |*args, &block|
+          resolve
+          result = @items.send(sym, *args, &block)
+          FileList.new.import(result)
+        end
       else
-        class_eval <<-END, __FILE__, __LINE__+1
-          def #{sym}(*args, &block)
-            resolve
-            result = @items.send(:#{sym}, *args, &block)
-            result.object_id == @items.object_id ? self : result
-          end
-        END
+        define_method(sym) do |*args, &block|
+          resolve
+          result = @items.send(sym, *args, &block)
+          result.object_id == @items.object_id ? self : result
+        end
       end
     end
 
@@ -1450,7 +1477,7 @@ module Rake
       collect { |fn| fn.pathmap(spec) }
     end
 
-    # Return a new file list with <tt>String#ext</tt> method applied
+    # Return a new FileList with <tt>String#ext</tt> method applied
     # to each member of the array.
     #
     # This method is a shortcut for:
@@ -1468,9 +1495,9 @@ module Rake
     # name, line number, and the matching line of text.  If no block is given,
     # a standard emac style file:linenumber:line message will be printed to
     # standard out.
-    def egrep(pattern, *opt)
+    def egrep(pattern, *options)
       each do |fn|
-        open(fn, "rb", *opt) do |inf|
+        open(fn, "rb", *options) do |inf|
           count = 0
           inf.each do |line|
             count += 1
@@ -1576,7 +1603,7 @@ end # module Rake
 # Alias FileList to be available at the top level.
 FileList = Rake::FileList
 
-# ###########################################################################
+#############################################################################
 module Rake
 
   # Default Rakefile loader used by +import+.
@@ -1603,7 +1630,7 @@ module Rake
   EARLY = EarlyTime.instance
 end # module Rake
 
-# ###########################################################################
+#############################################################################
 # Extensions to time to allow comparisons with an early time class.
 #
 class Time
@@ -1960,11 +1987,9 @@ module Rake
     # application.  The define any tasks.  Finally, call +top_level+ to run your top
     # level tasks.
     def run
-      standard_exception_handling do
-        init
-        load_rakefile
-        top_level
-      end
+      init
+      load_rakefile
+      top_level
     end
 
     # Initialize the command line parameters and app name.
@@ -2041,7 +2066,7 @@ module Rake
         # Exit with error message
         $stderr.puts "#{name} aborted!"
         $stderr.puts ex.message
-        if options.trace
+        if options.trace or true
           $stderr.puts ex.backtrace.join("\n")
         else
           $stderr.puts ex.backtrace.find {|str| str =~ /#{@rakefile}/ } || ""
@@ -2362,24 +2387,13 @@ module Rake
 
     # The directory path containing the system wide rakefiles.
     def system_dir
-      @system_dir ||=
-        begin
-          if ENV['RAKE_SYSTEM']
-            ENV['RAKE_SYSTEM']
-          else
-            standard_system_dir
-          end
-        end
+      @system_dir ||= ENV['RAKE_SYSTEM'] || standard_system_dir
     end
 
     # The standard directory containing system wide rake files.
-    if Win32.windows?
+    unless method_defined?(:standard_system_dir)
       def standard_system_dir #:nodoc:
-        Win32.win32_system_dir
-      end
-    else
-      def standard_system_dir #:nodoc:
-        File.expand_path('.rake', '~')
+        File.expand_path('~/.rake')
       end
     end
     private :standard_system_dir

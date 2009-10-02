@@ -1,0 +1,22 @@
+# 
+
+task :default => ["temp_main"]
+
+file "temp_main" => [:all_apps]  do touch "temp_main" end
+
+task :all_apps => [:one, :two]
+task :one => ["temp_one"]
+task :two => ["temp_two"]
+
+file "temp_one" do |t|
+  touch "temp_one"
+end
+file "temp_two" do |t|
+  touch "temp_two"
+end
+
+task :clean do
+  ["temp_one", "temp_two", "temp_main"].each do |file|
+    rm_f file
+  end
+end
