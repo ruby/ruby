@@ -309,11 +309,10 @@ step_i(VALUE i, void *arg)
 extern int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl);
 
 static int
-discrete_object_p(obj)
+discrete_object_p(VALUE obj)
 {
-    if (rb_obj_is_kind_of(obj, rb_cTime)) return Qfalse; /* until Time#succ removed */
-    if (rb_respond_to(obj, id_succ)) return Qtrue;
-    return Qfalse;
+    if (rb_obj_is_kind_of(obj, rb_cTime)) return FALSE; /* until Time#succ removed */
+    return rb_respond_to(obj, id_succ);
 }
 
 
