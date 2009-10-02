@@ -1,3 +1,8 @@
+Sat Oct  3 00:43:52 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* method.h (rb_method_type_t): remove a comma at end of
+	  enumerator list.
+
 Sat Oct  3 00:31:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* range.c (discrete_object_p): needs the argument type to get rid
