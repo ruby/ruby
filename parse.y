@@ -8013,77 +8013,76 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 {
 #ifdef RIPPER
     ID id = get_id(lhs);
-# define RETURN(x) return get_value(lhs)
-# define ERROR(x) dispatch1(assign_error, lhs)
+# define assignable_result(x) get_value(lhs)
+# define parser_yyerror(x) dispatch1(assign_error, lhs)
 #else
-# define RETURN(x) return x
-# define ERROR(x) yyerror(x)
+# define assignable_result(x) x
 #endif
-    if (!id) RETURN(0);
+    if (!id) return assignable_result(0);
     if (id == keyword_self) {
-	ERROR("Can't change the value of self");
+	yyerror("Can't change the value of self");
     }
     else if (id == keyword_nil) {
-	ERROR("Can't assign to nil");
+	yyerror("Can't assign to nil");
     }
     else if (id == keyword_true) {
-	ERROR("Can't assign to true");
+	yyerror("Can't assign to true");
     }
     else if (id == keyword_false) {
-	ERROR("Can't assign to false");
+	yyerror("Can't assign to false");
     }
     else if (id == keyword__FILE__) {
-	ERROR("Can't assign to __FILE__");
+	yyerror("Can't assign to __FILE__");
     }
     else if (id == keyword__LINE__) {
-	ERROR("Can't assign to __LINE__");
+	yyerror("Can't assign to __LINE__");
     }
     else if (id == keyword__ENCODING__) {
-	ERROR("Can't assign to __ENCODING__");
+	yyerror("Can't assign to __ENCODING__");
     }
     else if (is_local_id(id)) {
 	if (dyna_in_block()) {
 	    if (dvar_curr(id)) {
-		RETURN(NEW_DASGN_CURR(id, val));
+		return assignable_result(NEW_DASGN_CURR(id, val));
 	    }
 	    else if (dvar_defined(id)) {
-		RETURN(NEW_DASGN(id, val));
+		return assignable_result(NEW_DASGN(id, val));
 	    }
 	    else if (local_id(id)) {
-		RETURN(NEW_LASGN(id, val));
+		return assignable_result(NEW_LASGN(id, val));
 	    }
 	    else {
 		dyna_var(id);
-		RETURN(NEW_DASGN_CURR(id, val));
+		return assignable_result(NEW_DASGN_CURR(id, val));
 	    }
 	}
 	else {
 	    if (!local_id(id)) {
 		local_var(id);
 	    }
-	    RETURN(NEW_LASGN(id, val));
+	    return assignable_result(NEW_LASGN(id, val));
 	}
     }
     else if (is_global_id(id)) {
-	RETURN(NEW_GASGN(id, val));
+	return assignable_result(NEW_GASGN(id, val));
     }
     else if (is_instance_id(id)) {
-	RETURN(NEW_IASGN(id, val));
+	return assignable_result(NEW_IASGN(id, val));
     }
     else if (is_const_id(id)) {
 	if (!in_def && !in_single)
-	    RETURN(NEW_CDECL(id, val, 0));
-	ERROR("dynamic constant assignment");
+	    return assignable_result(NEW_CDECL(id, val, 0));
+	yyerror("dynamic constant assignment");
     }
     else if (is_class_id(id)) {
-	RETURN(NEW_CVASGN(id, val));
+	return assignable_result(NEW_CVASGN(id, val));
     }
     else {
 	compile_error(PARSER_ARG "identifier %s is not valid to set", rb_id2name(id));
     }
-    RETURN(0);
-#undef RETURN
-#undef ERROR
+    return assignable_result(0);
+#undef assignable_result
+#undef parser_yyerror
 }
 
 static ID
