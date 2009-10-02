@@ -105,7 +105,6 @@ struct local_vars {
 #define DVARS_SPECIAL_P(tbl) (!POINTER_P(tbl))
 #define POINTER_P(val) ((VALUE)(val) & ~(VALUE)3)
 
-#ifndef RIPPER
 static int
 vtable_size(const struct vtable *tbl)
 {
@@ -174,6 +173,7 @@ vtable_included(const struct vtable * tbl, ID id)
 }
 
 
+#ifndef RIPPER
 typedef struct token_info {
     const char *token;
     int linenum;
@@ -374,8 +374,6 @@ static NODE *call_uni_op_gen(struct parser_params*,NODE*,ID);
 
 static NODE *new_args_gen(struct parser_params*,NODE*,NODE*,ID,NODE*,ID);
 #define new_args(f,o,r,p,b) new_args_gen(parser, f,o,r,p,b)
-static void shadowing_lvar_gen(struct parser_params*,ID);
-#define shadowing_lvar(name) shadowing_lvar_gen(parser, name)
 
 static NODE *negate_lit(NODE*);
 static NODE *ret_args_gen(struct parser_params*,NODE*);
@@ -388,8 +386,7 @@ static NODE *gettable_gen(struct parser_params*,ID);
 #define gettable(id) gettable_gen(parser,id)
 static NODE *assignable_gen(struct parser_params*,ID,NODE*);
 #define assignable(id,node) assignable_gen(parser, id, node)
-static void new_bv_gen(struct parser_params*,ID);
-#define new_bv(id) new_bv_gen(parser, id)
+
 static NODE *aryset_gen(struct parser_params*,NODE*,NODE*);
 #define aryset(node1,node2) aryset_gen(parser, node1, node2)
 static NODE *attrset_gen(struct parser_params*,NODE*,ID);
@@ -403,32 +400,8 @@ static NODE *node_assign_gen(struct parser_params*,NODE*,NODE*);
 static NODE *match_op_gen(struct parser_params*,NODE*,NODE*);
 #define match_op(node1,node2) match_op_gen(parser, node1, node2)
 
-static void local_push_gen(struct parser_params*,int);
-#define local_push(top) local_push_gen(parser,top)
-static void local_pop_gen(struct parser_params*);
-#define local_pop() local_pop_gen(parser)
-static int local_var_gen(struct parser_params*, ID);
-#define local_var(id) local_var_gen(parser, id);
-static int arg_var_gen(struct parser_params*, ID);
-#define arg_var(id) arg_var_gen(parser, id)
-static int  local_id_gen(struct parser_params*, ID);
-#define local_id(id) local_id_gen(parser, id)
 static ID  *local_tbl_gen(struct parser_params*);
 #define local_tbl() local_tbl_gen(parser)
-static ID   internal_id_gen(struct parser_params*);
-#define internal_id() internal_id_gen(parser)
-
-static void dyna_push_gen(struct parser_params*);
-#define dyna_push() dyna_push_gen(parser)
-static void dyna_pop_gen(struct parser_params*);
-#define dyna_pop() dyna_pop_gen(parser)
-static int dyna_in_block_gen(struct parser_params*);
-#define dyna_in_block() dyna_in_block_gen(parser)
-#define dyna_var(id) local_var(id)
-static int dvar_defined_gen(struct parser_params*,ID);
-#define dvar_defined(id) dvar_defined_gen(parser, id)
-static int dvar_curr_gen(struct parser_params*,ID);
-#define dvar_curr(id) dvar_curr_gen(parser, id)
 
 static void fixup_nodes(NODE **);
 
@@ -445,9 +418,53 @@ static void reg_fragment_check_gen(struct parser_params*, VALUE, int);
 #define reg_fragment_check(str,options) reg_fragment_check_gen(parser, str, options)
 static NODE *reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp, NODE *match);
 #define reg_named_capture_assign(regexp,match) reg_named_capture_assign_gen(parser,regexp,match)
+
+#define get_id(id) (id)
+#define get_value(val) (val)
 #else
 #define remove_begin(node) (node)
+#define rb_dvar_defined(id) 0
+#define rb_local_defined(id) 0
+static ID ripper_get_id(VALUE);
+#define get_id(id) ripper_get_id(id)
+static VALUE ripper_get_value(VALUE);
+#define get_value(val) ripper_get_value(val)
+static VALUE assignable_gen(struct parser_params*,VALUE);
+#define assignable(lhs,node) assignable_gen(parser, lhs)
 #endif /* !RIPPER */
+
+static ID formal_argument_gen(struct parser_params*, ID);
+#define formal_argument(id) formal_argument_gen(parser, id)
+static ID shadowing_lvar_gen(struct parser_params*,ID);
+#define shadowing_lvar(name) shadowing_lvar_gen(parser, name)
+static void new_bv_gen(struct parser_params*,ID);
+#define new_bv(id) new_bv_gen(parser, id)
+
+static void local_push_gen(struct parser_params*,int);
+#define local_push(top) local_push_gen(parser,top)
+static void local_pop_gen(struct parser_params*);
+#define local_pop() local_pop_gen(parser)
+static int local_var_gen(struct parser_params*, ID);
+#define local_var(id) local_var_gen(parser, id);
+static int arg_var_gen(struct parser_params*, ID);
+#define arg_var(id) arg_var_gen(parser, id)
+static int  local_id_gen(struct parser_params*, ID);
+#define local_id(id) local_id_gen(parser, id)
+static ID   internal_id_gen(struct parser_params*);
+#define internal_id() internal_id_gen(parser)
+
+static void dyna_push_gen(struct parser_params*);
+#define dyna_push() dyna_push_gen(parser)
+static void dyna_pop_gen(struct parser_params*);
+#define dyna_pop() dyna_pop_gen(parser)
+static int dyna_in_block_gen(struct parser_params*);
+#define dyna_in_block() dyna_in_block_gen(parser)
+#define dyna_var(id) local_var(id)
+static int dvar_defined_gen(struct parser_params*,ID);
+#define dvar_defined(id) dvar_defined_gen(parser, id)
+static int dvar_curr_gen(struct parser_params*,ID);
+#define dvar_curr(id) dvar_curr_gen(parser, id)
+
 static int lvar_defined_gen(struct parser_params*, ID);
 #define lvar_defined(id) lvar_defined_gen(parser, id)
 
@@ -763,6 +780,7 @@ program		:  {
 			$<num>$ = compile_for_eval || rb_parse_in_main();
 			local_push($<num>$);
 		    /*%
+			local_push(0);
 		    %*/
 		    }
 		  compstmt
@@ -780,11 +798,11 @@ program		:  {
 			    }
 			}
 			ruby_eval_tree = NEW_SCOPE(0, block_append(ruby_eval_tree, $2));
-			local_pop();
 		    /*%
 			$$ = $2;
 			parser->result = dispatch1(program, $$);
 		    %*/
+			local_pop();
 		    }
 		;
 
@@ -812,7 +830,7 @@ bodystmt	: compstmt
 			}
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch4(body_stmt,
+			$$ = dispatch4(bodystmt,
 				       escape_Qundef($1),
 				       escape_Qundef($2),
 				       escape_Qundef($3),
@@ -1235,8 +1253,8 @@ block_command	: block_call
 
 cmd_brace_block	: tLBRACE_ARG
 		    {
-		    /*%%%*/
 			dyna_push();
+		    /*%%%*/
 			$<num>$ = ruby_sourceline;
 		    /*%
 		    %*/
@@ -1248,10 +1266,10 @@ cmd_brace_block	: tLBRACE_ARG
 		    /*%%%*/
 			$$ = NEW_ITER($3,$4);
 			nd_set_line($$, $<num>2);
-			dyna_pop();
 		    /*%
 			$$ = dispatch2(brace_block, escape_Qundef($3), $4);
 		    %*/
+			dyna_pop();
 		    }
 		;
 
@@ -1515,11 +1533,7 @@ mlhs_post	: mlhs_item
 
 mlhs_node	: variable
 		    {
-		    /*%%%*/
 			$$ = assignable($1, 0);
-		    /*%
-			$$ = $1;
-		    %*/
 		    }
 		| primary_value '[' opt_call_args rbracket
 		    {
@@ -1589,10 +1603,11 @@ mlhs_node	: variable
 
 lhs		: variable
 		    {
+			$$ = assignable($1, 0);
 		    /*%%%*/
-			if (!($$ = assignable($1, 0))) $$ = NEW_BEGIN(0);
+			if (!$$) $$ = NEW_BEGIN(0);
 		    /*%
-			$$ = dispatch1(var_field, $1);
+			$$ = dispatch1(var_field, $$);
 		    %*/
 		    }
 		| primary_value '[' opt_call_args rbracket
@@ -2807,8 +2822,8 @@ primary		: literal
 		    {
 			if (in_def || in_single)
 			    yyerror("class definition in method body");
-		    /*%%%*/
 			local_push(0);
+		    /*%%%*/
 			$<num>$ = ruby_sourceline;
 		    /*%
 		    %*/
@@ -2819,10 +2834,10 @@ primary		: literal
 		    /*%%%*/
 			$$ = NEW_CLASS($2, $5, $3);
 			nd_set_line($$, $<num>4);
-			local_pop();
 		    /*%
 			$$ = dispatch3(class, $2, $3, $5);
 		    %*/
+			local_pop();
 		    }
 		| k_class tLSHFT expr
 		    {
@@ -2833,10 +2848,7 @@ primary		: literal
 		    {
 			$<num>$ = in_single;
 			in_single = 0;
-		    /*%%%*/
 			local_push(0);
-		    /*%
-		    %*/
 		    }
 		  bodystmt
 		  k_end
@@ -2844,10 +2856,10 @@ primary		: literal
 		    /*%%%*/
 			$$ = NEW_SCLASS($3, $7);
 			fixpos($$, $3);
-			local_pop();
 		    /*%
 			$$ = dispatch2(sclass, $3, $7);
 		    %*/
+			local_pop();
 			in_def = $<num>4;
 			in_single = $<num>6;
 		    }
@@ -2855,8 +2867,8 @@ primary		: literal
 		    {
 			if (in_def || in_single)
 			    yyerror("module definition in method body");
-		    /*%%%*/
 			local_push(0);
+		    /*%%%*/
 			$<num>$ = ruby_sourceline;
 		    /*%
 		    %*/
@@ -2867,20 +2879,17 @@ primary		: literal
 		    /*%%%*/
 			$$ = NEW_MODULE($2, $4);
 			nd_set_line($$, $<num>3);
-			local_pop();
 		    /*%
 			$$ = dispatch2(module, $2, $4);
 		    %*/
+			local_pop();
 		    }
 		| k_def fname
 		    {
 			$<id>$ = cur_mid;
 			cur_mid = $2;
 			in_def++;
-		    /*%%%*/
 			local_push(0);
-		    /*%
-		    %*/
 		    }
 		  f_arglist
 		  bodystmt
@@ -2891,10 +2900,10 @@ primary		: literal
 			reduce_nodes(&body);
 			$$ = NEW_DEFN($2, $4, body, NOEX_PRIVATE);
 			fixpos($$, $4);
-			local_pop();
 		    /*%
 			$$ = dispatch3(def, $2, $4, $5);
 		    %*/
+			local_pop();
 			in_def--;
 			cur_mid = $<id>3;
 		    }
@@ -2902,10 +2911,7 @@ primary		: literal
 		    {
 			in_single++;
 			lex_state = EXPR_END; /* force for args */
-		    /*%%%*/
 			local_push(0);
-		    /*%
-		    %*/
 		    }
 		  f_arglist
 		  bodystmt
@@ -2916,10 +2922,10 @@ primary		: literal
 			reduce_nodes(&body);
 			$$ = NEW_DEFS($2, $5, $7, body);
 			fixpos($$, $2);
-			local_pop();
 		    /*%
 			$$ = dispatch5(defs, $2, $3, $5, $7, $8);
 		    %*/
+			local_pop();
 			in_single--;
 		    }
 		| keyword_break
@@ -3108,10 +3114,10 @@ for_var		: lhs
 
 f_marg		: f_norm_arg
 		    {
-		    /*%%%*/
 			$$ = assignable($1, 0);
+		    /*%%%*/
 		    /*%
-			$$ = dispatch1(mlhs_paren, $1);
+			$$ = dispatch1(mlhs_paren, $$);
 		    %*/
 		    }
 		| tLPAREN f_margs rparen
@@ -3152,18 +3158,20 @@ f_margs		: f_marg_list
 		    }
 		| f_marg_list ',' tSTAR f_norm_arg
 		    {
+			$$ = assignable($4, 0);
 		    /*%%%*/
-			$$ = NEW_MASGN($1, assignable($4, 0));
+			$$ = NEW_MASGN($1, $$);
 		    /*%
-			$$ = mlhs_add_star($1, $4);
+			$$ = mlhs_add_star($1, $$);
 		    %*/
 		    }
 		| f_marg_list ',' tSTAR f_norm_arg ',' f_marg_list
 		    {
+			$$ = assignable($4, 0);
 		    /*%%%*/
-			$$ = NEW_MASGN($1, NEW_POSTARG(assignable($4, 0), $6));
+			$$ = NEW_MASGN($1, NEW_POSTARG($$, $6));
 		    /*%
-			$$ = mlhs_add_star($1, $4);
+			$$ = mlhs_add_star($1, $$);
 		    %*/
 		    }
 		| f_marg_list ',' tSTAR
@@ -3184,21 +3192,23 @@ f_margs		: f_marg_list
 		    }
 		| tSTAR f_norm_arg
 		    {
+			$$ = assignable($2, 0);
 		    /*%%%*/
-			$$ = NEW_MASGN(0, assignable($2, 0));
+			$$ = NEW_MASGN(0, $$);
 		    /*%
-			$$ = mlhs_add_star(mlhs_new(), $2);
+			$$ = mlhs_add_star(mlhs_new(), $$);
 		    %*/
 		    }
 		| tSTAR f_norm_arg ',' f_marg_list
 		    {
+			$$ = assignable($2, 0);
 		    /*%%%*/
-			$$ = NEW_MASGN(0, NEW_POSTARG(assignable($2, 0), $4));
+			$$ = NEW_MASGN(0, NEW_POSTARG($$, $4));
 		    /*%
 		      #if 0
 		      TODO: Check me
 		      #endif
-			$$ = mlhs_add_star($2, $4);
+			$$ = mlhs_add_star($$, $4);
 		    %*/
 		    }
 		| tSTAR
@@ -3407,8 +3417,8 @@ bv_decls	: bvar
 
 bvar		: tIDENTIFIER
 		    {
-		    /*%%%*/
 			new_bv($1);
+		    /*%%%*/
 		    /*%
 			$$ = $1;
 		    %*/
@@ -3420,10 +3430,7 @@ bvar		: tIDENTIFIER
 		;
 
 lambda		:   {
-		    /*%%%*/
 			dyna_push();
-		    /*%
-		    %*/
 			$<num>$ = lpar_beg;
 			lpar_beg = ++paren_nest;
 		    }
@@ -3434,10 +3441,10 @@ lambda		:   {
 		    /*%%%*/
 			$$ = $2;
 			$$->nd_body = NEW_SCOPE($2->nd_head, $3);
-			dyna_pop();
 		    /*%
 			$$ = dispatch2(lambda, $2, $3);
 		    %*/
+			dyna_pop();
 		    }
 		;
 
@@ -3471,8 +3478,8 @@ lambda_body	: tLAMBEG compstmt '}'
 
 do_block	: keyword_do_block
 		    {
-		    /*%%%*/
 			dyna_push();
+		    /*%%%*/
 			$<num>$ = ruby_sourceline;
 		    /*% %*/
 		    }
@@ -3483,10 +3490,10 @@ do_block	: keyword_do_block
 		    /*%%%*/
 			$$ = NEW_ITER($3,$4);
 			nd_set_line($$, $<num>2);
-			dyna_pop();
 		    /*%
 			$$ = dispatch2(do_block, escape_Qundef($3), $4);
 		    %*/
+			dyna_pop();
 		    }
 		;
 
@@ -3617,8 +3624,8 @@ method_call	: operation paren_args
 
 brace_block	: '{'
 		    {
-		    /*%%%*/
 			dyna_push();
+		    /*%%%*/
 			$<num>$ = ruby_sourceline;
 		    /*%
                     %*/
@@ -3629,15 +3636,15 @@ brace_block	: '{'
 		    /*%%%*/
 			$$ = NEW_ITER($3,$4);
 			nd_set_line($$, $<num>2);
-			dyna_pop();
 		    /*%
 			$$ = dispatch2(brace_block, escape_Qundef($3), $4);
 		    %*/
+			dyna_pop();
 		    }
 		| keyword_do
 		    {
-		    /*%%%*/
 			dyna_push();
+		    /*%%%*/
 			$<num>$ = ruby_sourceline;
 		    /*%
                     %*/
@@ -3648,10 +3655,10 @@ brace_block	: '{'
 		    /*%%%*/
 			$$ = NEW_ITER($3,$4);
 			nd_set_line($$, $<num>2);
-			dyna_pop();
 		    /*%
 			$$ = dispatch2(do_block, escape_Qundef($3), $4);
 		    %*/
+			dyna_pop();
 		    }
 		;
 
@@ -4127,10 +4134,10 @@ var_ref		: variable
 
 var_lhs		: variable
 		    {
-		    /*%%%*/
 			$$ = assignable($1, 0);
+		    /*%%%*/
 		    /*%
-			$$ = dispatch1(var_field, $1);
+			$$ = dispatch1(var_field, $$);
 		    %*/
 		    }
 		;
@@ -4346,29 +4353,25 @@ f_bad_arg	: tCONSTANT
 f_norm_arg	: f_bad_arg
 		| tIDENTIFIER
 		    {
-		    /*%%%*/
-			if (!is_local_id($1))
-			    yyerror("formal argument must be local variable");
-			shadowing_lvar($1);
-		    /*%
-		    %*/
+			formal_argument(get_id($1));
 			$$ = $1;
 		    }
 		;
 
 f_arg_item	: f_norm_arg
 		    {
+			arg_var(get_id($1));
 		    /*%%%*/
-			arg_var($1);
 			$$ = NEW_ARGS_AUX($1, 1);
 		    /*%
+			$$ = get_value($1);
 		    %*/
 		    }
 		| tLPAREN f_margs rparen
 		    {
-		    /*%%%*/
 			ID tid = internal_id();
 			arg_var(tid);
+		    /*%%%*/
 			if (dyna_in_block()) {
 			    $2->nd_value = NEW_DVAR(tid);
 			}
@@ -4405,28 +4408,24 @@ f_arg		: f_arg_item
 
 f_opt		: tIDENTIFIER '=' arg_value
 		    {
+			arg_var(formal_argument(get_id($1)));
+			$$ = assignable($1, $3);
 		    /*%%%*/
-			if (!is_local_id($1))
-			    yyerror("formal argument must be local variable");
-			shadowing_lvar($1);
-			arg_var($1);
-			$$ = NEW_OPT_ARG(0, assignable($1, $3));
+			$$ = NEW_OPT_ARG(0, $$);
 		    /*%
-			$$ = rb_assoc_new($1, $3);
+			$$ = rb_assoc_new($$, $3);
 		    %*/
 		    }
 		;
 
 f_block_opt	: tIDENTIFIER '=' primary_value
 		    {
+			arg_var(formal_argument(get_id($1)));
+			$$ = assignable($1, $3);
 		    /*%%%*/
-			if (!is_local_id($1))
-			    yyerror("formal argument must be local variable");
-			shadowing_lvar($1);
-			arg_var($1);
-			$$ = NEW_OPT_ARG(0, assignable($1, $3));
+			$$ = NEW_OPT_ARG(0, $$);
 		    /*%
-			$$ = rb_assoc_new($1, $3);
+			$$ = rb_assoc_new($$, $3);
 		    %*/
 		    }
 		;
@@ -4488,8 +4487,9 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		    /*%%%*/
 			if (!is_local_id($2))
 			    yyerror("rest argument must be local variable");
-			shadowing_lvar($2);
-			arg_var($2);
+		    /*% %*/
+			arg_var(shadowing_lvar(get_id($2)));
+		    /*%%%*/
 			$$ = $2;
 		    /*%
 			$$ = dispatch1(rest_param, $2);
@@ -4517,8 +4517,9 @@ f_block_arg	: blkarg_mark tIDENTIFIER
 			    yyerror("block argument must be local variable");
 			else if (!dyna_in_block() && local_id($2))
 			    yyerror("duplicated block argument name");
-			shadowing_lvar($2);
-			arg_var($2);
+		    /*% %*/
+			arg_var(shadowing_lvar(get_id($2)));
+		    /*%%%*/
 			$$ = $2;
 		    /*%
 			$$ = dispatch1(blockarg, $2);
@@ -4719,30 +4720,33 @@ static int parser_here_document(struct parser_params*,NODE*);
 # define heredoc_restore(n)        parser_heredoc_restore(parser,n)
 # define whole_match_p(e,l,i)      parser_whole_match_p(parser,e,l,i)
 
-#ifdef RIPPER
-/* FIXME */
-# define local_id(x)       1
-# define dyna_in_block()   1
-#endif /* RIPPER */
-
 #ifndef RIPPER
 # define set_yylval_str(x) yylval.node = NEW_STR(x)
 # define set_yylval_num(x) yylval.num = x
 # define set_yylval_id(x)  yylval.id = x
+# define set_yylval_name(x)  yylval.id = x
 # define set_yylval_literal(x) yylval.node = NEW_LIT(x)
 # define set_yylval_node(x) yylval.node = x
 # define yylval_id() yylval.id
 #else
+static inline VALUE
+ripper_yylval_id(ID x)
+{
+    return (VALUE)NEW_LASGN(x, ID2SYM(x));
+}
 # define set_yylval_str(x) (void)(x)
 # define set_yylval_num(x) (void)(x)
-# define set_yylval_id(x) (void)(x)
+# define set_yylval_id(x)  (void)(x)
+# define set_yylval_name(x) (void)(yylval.val = ripper_yylval_id(x))
 # define set_yylval_literal(x) (void)(x)
 # define set_yylval_node(x) (void)(x)
-# define yylval_id() SYM2ID(yylval.val)
+# define yylval_id() yylval.id
 #endif
 
 #ifdef RIPPER
 #define ripper_flush(p) (p->tokp = p->parser_lex_p)
+
+#define yylval_rval *(RB_TYPE_P(yylval.val, T_NODE) ? &yylval.node->nd_rval : &yylval.val)
 
 static void
 ripper_dispatch_scan_event(struct parser_params *parser, int t)
@@ -4752,7 +4756,7 @@ ripper_dispatch_scan_event(struct parser_params *parser, int t)
     if (lex_p < parser->tokp) rb_raise(rb_eRuntimeError, "lex_p < tokp");
     if (lex_p == parser->tokp) return;
     str = STR_NEW(parser->tokp, lex_p - parser->tokp);
-    yylval.val = ripper_dispatch1(parser, ripper_token2eventid(t), str);
+    yylval_rval = ripper_dispatch1(parser, ripper_token2eventid(t), str);
     ripper_flush(parser);
 }
 
@@ -4764,7 +4768,7 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 
     ruby_sourceline = parser->delayed_line;
     parser->tokp = lex_pbeg + parser->delayed_col;
-    yylval.val = ripper_dispatch1(parser, ripper_token2eventid(t), parser->delayed);
+    yylval_rval = ripper_dispatch1(parser, ripper_token2eventid(t), parser->delayed);
     parser->delayed = Qnil;
     ruby_sourceline = saved_line;
     parser->tokp = saved_tokp;
@@ -6033,29 +6037,32 @@ parser_here_document(struct parser_params *parser, NODE *here)
 
 #include "lex.c"
 
+static void
+arg_ambiguous_gen(struct parser_params *parser)
+{
 #ifndef RIPPER
-static void
-arg_ambiguous_gen(struct parser_params *parser)
-{
     rb_warning0("ambiguous first argument; put parentheses or even spaces");
-}
 #else
-static void
-arg_ambiguous_gen(struct parser_params *parser)
-{
     dispatch0(arg_ambiguous);
-}
 #endif
+}
 #define arg_ambiguous() arg_ambiguous_gen(parser)
+
+static ID
+formal_argument_gen(struct parser_params *parser, ID lhs)
+{
+#ifndef RIPPER
+    if (!is_local_id(lhs))
+	yyerror("formal argument must be local variable");
+#endif
+    shadowing_lvar(lhs);
+    return lhs;
+}
 
 static int
 lvar_defined_gen(struct parser_params *parser, ID id)
 {
-#ifndef RIPPER
     return (dyna_in_block() && dvar_defined(id)) || local_id(id);
-#else
-    return 0;
-#endif
 }
 
 /* emacsen -*- hack */
@@ -7385,7 +7392,7 @@ parser_yylex(struct parser_params *parser)
 	    tokadd('$');
 	    tokadd(c);
 	    tokfix();
-            set_yylval_id(rb_intern(tok()));
+	    set_yylval_name(rb_intern(tok()));
 	    return tGVAR;
 
 	  case '-':
@@ -7400,7 +7407,7 @@ parser_yylex(struct parser_params *parser)
 	    }
 	  gvar:
 	    tokfix();
-            set_yylval_id(rb_intern(tok()));
+	    set_yylval_name(rb_intern(tok()));
 	    return tGVAR;
 
 	  case '&':		/* $&: last match */
@@ -7554,7 +7561,7 @@ parser_yylex(struct parser_params *parser)
 		if (peek(':') && !(lex_p + 1 < lex_pend && lex_p[1] == ':')) {
 		    lex_state = EXPR_BEG;
 		    nextc();
-		    set_yylval_id(TOK_INTERN(!ENC_SINGLE(mb)));
+		    set_yylval_name(TOK_INTERN(!ENC_SINGLE(mb)));
 		    return tLABEL;
 		}
 	    }
@@ -7567,7 +7574,7 @@ parser_yylex(struct parser_params *parser)
 		    enum lex_state_e state = lex_state;
 		    lex_state = kw->state;
 		    if (state == EXPR_FNAME) {
-                        set_yylval_id(rb_intern(kw->name));
+			set_yylval_name(rb_intern(kw->name));
 			return kw->id[0];
 		    }
 		    if (kw->id[0] == keyword_do) {
@@ -7611,7 +7618,7 @@ parser_yylex(struct parser_params *parser)
         {
             ID ident = TOK_INTERN(!ENC_SINGLE(mb));
 
-            set_yylval_id(ident);
+            set_yylval_name(ident);
             if (last_state != EXPR_DOT && is_local_id(ident) && lvar_defined(ident)) {
                 lex_state = EXPR_END;
             }
@@ -7994,82 +8001,98 @@ gettable_gen(struct parser_params *parser, ID id)
     compile_error(PARSER_ARG "identifier %s is not valid to get", rb_id2name(id));
     return 0;
 }
+#endif /* !RIPPER */
 
+#ifdef RIPPER
+static VALUE
+assignable_gen(struct parser_params *parser, VALUE lhs)
+#else
 static NODE*
 assignable_gen(struct parser_params *parser, ID id, NODE *val)
+#endif
 {
-    if (!id) return 0;
+#ifdef RIPPER
+    ID id = get_id(lhs);
+# define RETURN(x) return get_value(lhs)
+# define ERROR(x) dispatch1(assign_error, lhs)
+#else
+# define RETURN(x) return x
+# define ERROR(x) yyerror(x)
+#endif
+    if (!id) RETURN(0);
     if (id == keyword_self) {
-	yyerror("Can't change the value of self");
+	ERROR("Can't change the value of self");
     }
     else if (id == keyword_nil) {
-	yyerror("Can't assign to nil");
+	ERROR("Can't assign to nil");
     }
     else if (id == keyword_true) {
-	yyerror("Can't assign to true");
+	ERROR("Can't assign to true");
     }
     else if (id == keyword_false) {
-	yyerror("Can't assign to false");
+	ERROR("Can't assign to false");
     }
     else if (id == keyword__FILE__) {
-	yyerror("Can't assign to __FILE__");
+	ERROR("Can't assign to __FILE__");
     }
     else if (id == keyword__LINE__) {
-	yyerror("Can't assign to __LINE__");
+	ERROR("Can't assign to __LINE__");
     }
     else if (id == keyword__ENCODING__) {
-	yyerror("Can't assign to __ENCODING__");
+	ERROR("Can't assign to __ENCODING__");
     }
     else if (is_local_id(id)) {
 	if (dyna_in_block()) {
 	    if (dvar_curr(id)) {
-		return NEW_DASGN_CURR(id, val);
+		RETURN(NEW_DASGN_CURR(id, val));
 	    }
 	    else if (dvar_defined(id)) {
-		return NEW_DASGN(id, val);
+		RETURN(NEW_DASGN(id, val));
 	    }
 	    else if (local_id(id)) {
-		return NEW_LASGN(id, val);
+		RETURN(NEW_LASGN(id, val));
 	    }
-	    else{
+	    else {
 		dyna_var(id);
-		return NEW_DASGN_CURR(id, val);
+		RETURN(NEW_DASGN_CURR(id, val));
 	    }
 	}
 	else {
 	    if (!local_id(id)) {
 		local_var(id);
 	    }
-	    return NEW_LASGN(id, val);
+	    RETURN(NEW_LASGN(id, val));
 	}
     }
     else if (is_global_id(id)) {
-	return NEW_GASGN(id, val);
+	RETURN(NEW_GASGN(id, val));
     }
     else if (is_instance_id(id)) {
-	return NEW_IASGN(id, val);
+	RETURN(NEW_IASGN(id, val));
     }
     else if (is_const_id(id)) {
-	if (in_def || in_single)
-	    yyerror("dynamic constant assignment");
-	return NEW_CDECL(id, val, 0);
+	if (!in_def && !in_single)
+	    RETURN(NEW_CDECL(id, val, 0));
+	ERROR("dynamic constant assignment");
     }
     else if (is_class_id(id)) {
-	return NEW_CVASGN(id, val);
+	RETURN(NEW_CVASGN(id, val));
     }
     else {
 	compile_error(PARSER_ARG "identifier %s is not valid to set", rb_id2name(id));
     }
-    return 0;
+    RETURN(0);
+#undef RETURN
+#undef ERROR
 }
 
-static void
+static ID
 shadowing_lvar_gen(struct parser_params *parser, ID name)
 {
     ID uscore;
 
     CONST_ID(uscore, "_");
-    if (uscore == name) return;
+    if (uscore == name) return name;
     if (dyna_in_block()) {
 	if (dvar_curr(name)) {
 	    yyerror("duplicated argument name");
@@ -8084,6 +8107,7 @@ shadowing_lvar_gen(struct parser_params *parser, ID name)
 	    yyerror("duplicated argument name");
 	}
     }
+    return name;
 }
 
 static void
@@ -8099,6 +8123,7 @@ new_bv_gen(struct parser_params *parser, ID name)
     dyna_var(name);
 }
 
+#ifndef RIPPER
 static NODE *
 aryset_gen(struct parser_params *parser, NODE *recv, NODE *idx)
 {
@@ -8749,6 +8774,7 @@ new_args_gen(struct parser_params *parser, NODE *m, NODE *o, ID r, NODE *p, ID b
     ruby_sourceline = saved_line;
     return node;
 }
+#endif /* !RIPPER */
 
 static void
 local_push_gen(struct parser_params *parser, int inherit_dvars)
@@ -8772,6 +8798,7 @@ local_pop_gen(struct parser_params *parser)
     lvtbl = local;
 }
 
+#ifndef RIPPER
 static ID*
 vtable_tblcpy(ID *buf, const struct vtable *src)
 {
@@ -8800,6 +8827,7 @@ local_tbl_gen(struct parser_params *parser)
     buf[0] = cnt;
     return buf;
 }
+#endif
 
 static int
 arg_var_gen(struct parser_params *parser, ID id)
@@ -8896,6 +8924,7 @@ dvar_curr_gen(struct parser_params *parser, ID id)
 	    vtable_included(lvtbl->vars, id));
 }
 
+#ifndef RIPPER
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
 VALUE rb_reg_check_preprocess(VALUE);
 
@@ -9228,6 +9257,7 @@ rb_gc_mark_symbols(void)
     rb_gc_mark_locations(global_symbols.op_sym,
 			 global_symbols.op_sym + tLAST_TOKEN);
 }
+#endif /* !RIPPER */
 
 static ID
 internal_id_gen(struct parser_params *parser)
@@ -9237,6 +9267,7 @@ internal_id_gen(struct parser_params *parser)
     return ID_INTERNAL | (id << ID_SCOPE_SHIFT);
 }
 
+#ifndef RIPPER
 static int
 is_special_global_name(const char *m, const char *e, rb_encoding *enc)
 {
@@ -9960,7 +9991,10 @@ ripper_validate_object(VALUE self, VALUE x)
       case T_FLOAT:
         return x;
       case T_NODE:
-        rb_raise(rb_eArgError, "NODE given: %p", x);
+	if (nd_type(x) != NODE_LASGN) {
+	    rb_raise(rb_eArgError, "NODE given: %p", x);
+	}
+	return ((NODE *)x)->nd_rval;
       default:
         rb_raise(rb_eArgError, "wrong type of ruby object: %p (%s)",
                  x, rb_obj_classname(x));
@@ -9969,7 +10003,7 @@ ripper_validate_object(VALUE self, VALUE x)
 }
 #endif
 
-#define validate(x)
+#define validate(x) (x = get_value(x))
 
 static VALUE
 ripper_dispatch0(struct parser_params *parser, ID mid)
@@ -10125,6 +10159,26 @@ static VALUE
 ripper_intern(const char *s)
 {
     return ID2SYM(rb_intern(s));
+}
+
+static ID
+ripper_get_id(VALUE v)
+{
+    NODE *nd;
+    if (!RB_TYPE_P(v, T_NODE)) return 0;
+    nd = (NODE *)v;
+    if (nd_type(nd) != NODE_LASGN) return 0;
+    return nd->nd_vid;
+}
+
+static VALUE
+ripper_get_value(VALUE v)
+{
+    NODE *nd;
+    if (!RB_TYPE_P(v, T_NODE)) return v;
+    nd = (NODE *)v;
+    if (nd_type(nd) != NODE_LASGN) return Qnil;
+    return nd->nd_rval;
 }
 
 static void
