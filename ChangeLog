@@ -1,3 +1,8 @@
+Sat Oct  3 00:31:04 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (discrete_object_p): needs the argument type to get rid
+	  of truncation on platforms where VALUE is larger than int.
+
 Fri Oct  2 22:30:15 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/unicode/name2ctype.h.blt, enc/unicode/name2ctype.kwd,
