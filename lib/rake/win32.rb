@@ -5,9 +5,10 @@ module Rake
   module Win32
     class << self
       # True if running on a windows system.
-      def windows?
-        # assume other DOSish systems are extinct.
-        File::ALT_SEPARATOR == '\\'
+      if File::ALT_SEPARATOR == '\\' # assume other DOSish systems are extinct.
+        def windows?; true end
+      else
+        def windows?; false end
       end
     end
 
@@ -29,6 +30,17 @@ module Rake
         end
         File.expand_path('Rake', win32_shared_path)
       end
+
+      # Normalize a win32 path so that the slashes are all forward slashes.
+      def normalize(path)
+        path.tr('\\', '/')
+      end
     end if windows?
+  end
+
+  if Win32.windows?
+    def standard_system_dir
+      Win32.win32_system_dir
+    end
   end
 end
