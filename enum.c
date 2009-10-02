@@ -2257,7 +2257,7 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  * "svn proplist -R" produces multiline output for each file.
  * They can be chunked as follows: 
  *
- *    IO.popen([{"LANG"=>"C"}, "svn", "proplist", "-R"]) {|f|
+ *    IO.popen([{"LC_ALL"=>"C"}, "svn", "proplist", "-R"]) {|f|
  *      f.lines.slice_before(/^Prop/).each {|lines| p lines }
  *    }
  *    #=> ["Properties on '.':\n", "  svn:ignore\n", "  svk:merge\n"]
