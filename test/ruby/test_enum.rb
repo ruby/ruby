@@ -383,6 +383,10 @@ class TestEnumerable < Test::Unit::TestCase
     assert_not_same(hs[0], hs[1])
     assert_not_same(hs[0], hs[2])
     assert_not_same(hs[1], hs[2])
+
+    ss = %w[abc defg h ijk l mno pqr st u vw xy z]
+    assert_equal([%w[abc defg h], %w[ijk l], %w[mno], %w[pqr st u vw xy z]],
+                 ss.slice_before(/\A...\z/).to_a)
   end
 
 end

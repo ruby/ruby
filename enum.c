@@ -2115,7 +2115,8 @@ enum_chunk(int argc, VALUE *argv, VALUE enumerable)
 
 
 struct slicebefore_arg {
-    VALUE separator_p;
+    VALUE sep_pred;
+    VALUE sep_pat;
     VALUE state;
     VALUE prev_elts;
     VALUE yielder;
@@ -2129,10 +2130,12 @@ slicebefore_ii(VALUE i, VALUE _argp, int argc, VALUE *argv)
 
     ENUM_WANT_SVALUE();
 
-    if (NIL_P(argp->state))
-        header_p = rb_funcall(argp->separator_p, rb_intern("call"), 1, i);
+    if (!NIL_P(argp->sep_pat))
+        header_p = rb_funcall(argp->sep_pat, rb_intern("==="), 1, i);
+    else if (NIL_P(argp->state))
+        header_p = rb_funcall(argp->sep_pred, rb_intern("call"), 1, i);
     else
-        header_p = rb_funcall(argp->separator_p, rb_intern("call"), 2, i, argp->state);
+        header_p = rb_funcall(argp->sep_pred, rb_intern("call"), 2, i, argp->state);
     if (RTEST(header_p)) {
         if (!NIL_P(argp->prev_elts))
             rb_funcall(argp->yielder, rb_intern("<<"), 1, argp->prev_elts);
@@ -2155,7 +2158,8 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
     struct slicebefore_arg arg;
 
     enumerable = rb_ivar_get(enumerator, rb_intern("slicebefore_enumerable"));
-    arg.separator_p = rb_ivar_get(enumerator, rb_intern("slicebefore_separator_p"));
+    arg.sep_pred = rb_attr_get(enumerator, rb_intern("slicebefore_sep_pred"));
+    arg.sep_pat = NIL_P(arg.sep_pred) ? rb_ivar_get(enumerator, rb_intern("slicebefore_sep_pat")) : Qnil;
     arg.state = rb_ivar_get(enumerator, rb_intern("slicebefore_initial_state"));
     arg.prev_elts = Qnil;
     arg.yielder = yielder;
@@ -2171,23 +2175,34 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
 
 /*
  *  call-seq:
+ *     enum.slice_before(pattern) => enumerator
  *     enum.slice_before {|elt| ... } => enumerator
  *     enum.slice_before(initial_state) {|elt, state| ... } => enumerator
  *
  *  Creates an enumerator for each chunked elements.
- *  The chunked elements begins an element which the block returns true value.
+ *  The beginnings of chunks are defined by _pattern_ and the block.
+ *  If _pattern_ === _elt_ returns true or 
+ *  the block returns true for the element,
+ *  the element is beginning of a chunk.
  *
  *  The result enumerator yields the chunked elements as an array.
  *  So "each" method can be called as follows.
  *
+ *    enum.slice_before(pattern).each {|ary| ... }
  *    enum.slice_before {|elt| bool }.each {|ary| ... }
  *    enum.slice_before(initial_state) {|elt, state| bool }.each {|ary| ... }
  *
- *  For example, iteration over ChangeLog entries can be implemented as follows.
+ *  For example, iteration over ChangeLog entries can be implemented as
+ *  follows.
  *
  *    # iterate over ChangeLog entries.
  *    open("ChangeLog") {|f|
- *      f.slice_before {|line| /\A\S/ =~ line }.each {|e| pp e}
+ *      f.slice_before(/\A\S/).each {|e| pp e}
+ *    }
+ *
+ *    # same as above.  block is used instead of pattern argument.
+ *    open("ChangeLog") {|f|
+ *      f.slice_before {|line| /\A\S/ === line }.each {|e| pp e}
  *    }
  *
  *  If the block needs to maintain state over multiple elements,
@@ -2243,13 +2258,12 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  * They can be chunked as follows: 
  *
  *    IO.popen([{"LANG"=>"C"}, "svn", "proplist", "-R"]) {|f|
- *      f.lines.slice_before {|line| /^Prop/ =~ line }.each {|lines| p lines }
+ *      f.lines.slice_before(/^Prop/).each {|lines| p lines }
  *    }
  *    #=> ["Properties on '.':\n", "  svn:ignore\n", "  svk:merge\n"]
- *    #   ["Properties on 'goruby.c':\n", "  svn:keywords\n", "  svn:eol-style\n"]
+ *    #   ["Properties on 'goruby.c':\n", "  svn:eol-style\n"]
  *    #   ["Properties on 'complex.c':\n", "  svn:mime-type\n", "  svn:eol-style\n"]
- *    #   ["Properties on 'regparse.c':\n", "  svn:keywords\n", "  svn:eol-style\n"]
- *    #   ...
+ *    #   ["Properties on 'regparse.c':\n", "  svn:eol-style\n"]
  *
  * mbox contains series of mails which start with Unix From line.
  * So each mail can be extracted by slice before Unix From line.
@@ -2284,14 +2298,22 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
 static VALUE
 enum_slice_before(int argc, VALUE *argv, VALUE enumerable)
 {
-    VALUE initial_state, enumerator;
+    VALUE enumerator;
 
-    rb_scan_args(argc, argv, "01", &initial_state);
-
-    enumerator = rb_obj_alloc(rb_cEnumerator);
+    if (rb_block_given_p()) {
+        VALUE initial_state;
+        rb_scan_args(argc, argv, "01", &initial_state);
+        enumerator = rb_obj_alloc(rb_cEnumerator);
+        rb_ivar_set(enumerator, rb_intern("slicebefore_sep_pred"), rb_block_proc());
+        rb_ivar_set(enumerator, rb_intern("slicebefore_initial_state"), initial_state);
+    }
+    else {
+        VALUE sep_pat;
+        rb_scan_args(argc, argv, "1", &sep_pat);
+        enumerator = rb_obj_alloc(rb_cEnumerator);
+        rb_ivar_set(enumerator, rb_intern("slicebefore_sep_pat"), sep_pat);
+    }
     rb_ivar_set(enumerator, rb_intern("slicebefore_enumerable"), enumerable);
-    rb_ivar_set(enumerator, rb_intern("slicebefore_separator_p"), rb_block_proc());
-    rb_ivar_set(enumerator, rb_intern("slicebefore_initial_state"), initial_state);
     rb_block_call(enumerator, rb_intern("initialize"), 0, 0, slicebefore_i, enumerator);
     return enumerator;
 }
