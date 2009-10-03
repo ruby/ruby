@@ -211,6 +211,8 @@ define ruby_mmp
 @echo>>$(1) SECUREID $(RUBY_UID)
 @echo>>$(1) CAPABILITY LocalServices NetworkServices ReadUserData UserEnvironment WriteUserData
 
+@echo>>$(1) MACRO RUBY_EXPORT
+
 
 @echo>>$(1) USERINCLUDE ..\$(subst /,\,$(arch_hdrdir))
 @echo>>$(1) USERINCLUDE ..
