@@ -2133,7 +2133,7 @@ slicebefore_ii(VALUE i, VALUE _argp, int argc, VALUE *argv)
     ENUM_WANT_SVALUE();
 
     if (!NIL_P(argp->sep_pat))
-        header_p = rb_funcall(argp->sep_pat, rb_intern("==="), 1, i);
+        header_p = rb_funcall(argp->sep_pat, id_eqq, 1, i);
     else if (NIL_P(argp->state))
         header_p = rb_funcall(argp->sep_pred, rb_intern("call"), 1, i);
     else

@@ -1,3 +1,7 @@
+Sun Oct  4 08:27:10 2009  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (slicebefore_ii): use id_eqq.
+
 Sun Oct  4 06:40:09 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 
     * symbian/setup (ruby.mmp): added macro RUBY_EXPORT to match the change in dln.c
