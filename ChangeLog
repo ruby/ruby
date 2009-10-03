@@ -1,3 +1,8 @@
+Sun Oct  4 00:59:52 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/core.rb: fix command-line option of
+	  non-interactive terminal. [ruby-core:23016]
+
 Sun Oct  4 00:40:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rake/contrib: added.  [ruby-core:25918]
