@@ -1,3 +1,8 @@
+Sun Oct  4 05:34:34 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/variable.rb: add TkVariable#to_hash,to_proc,to_int,
+	  to_str,to_ary
+
 Sun Oct  4 00:59:52 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb: fix command-line option of

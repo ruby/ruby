@@ -694,6 +694,14 @@ end
     self
   end
 
+  def to_hash
+    hash = {}
+    self.keys.each{|k|
+      hash[k] = self[k]
+    }
+    hash
+  end
+
   def set_element_value(idxs, val)
     if idxs.kind_of?(Array)
       self[*idxs]=val
@@ -921,9 +929,20 @@ end
     self.set_proceure_element(idxs, cmd)
   end
 
+  def to_proc
+    cmd = self.procedure
+    if cmd.respond_to?(:call)
+      cmd
+    else
+      # cmd is a String
+      cmd.to_sym.to_proc
+    end
+  end
+
   def to_i
     number(_value).to_i
   end
+  alias to_int to_i
   def element_to_i(*idxs)
     number(_element_value(*idxs)).to_i
   end
@@ -940,6 +959,7 @@ end
     _value
   end
   alias string to_s
+  alias to_str to_s
   def element_to_s(*idxs)
     _element_value(*idxs)
   end
@@ -1011,6 +1031,7 @@ end
     tk_split_simplelist(_value)
   end
   alias to_a list
+  alias to_ary list
   def list_element(*idxs)
     tk_split_simplelist(_element_value(*idxs))
   end
