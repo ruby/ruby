@@ -1,11 +1,10 @@
 require 'test/unit'
 require 'rake'
 
-class TaskManager
-  include Rake::TaskManager
-end
-
 class Rake::TestTaskManager < Test::Unit::TestCase
+  class TaskManager
+    include Rake::TaskManager
+  end
 
   def setup
     @tm = TaskManager.new
@@ -147,6 +146,8 @@ class Rake::TestTaskManager < Test::Unit::TestCase
 end
 
 class Rake::TestTaskManagerArgumentResolution < Test::Unit::TestCase
+  TaskManager = Rake::TestTaskManager::TaskManager
+
   def test_good_arg_patterns
     assert_equal [:t, [], []],       task(:t)
     assert_equal [:t, [], [:x]],     task(:t => :x)

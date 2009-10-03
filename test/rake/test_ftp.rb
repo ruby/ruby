@@ -3,17 +3,15 @@ require 'time'
 require 'test/unit'
 require 'rake/contrib/ftptools'
 
-class FakeDate
-  def self.today
-    Date.new(2003,10,3)
-  end
-  def self.now
-    Time.local(2003,10,3,12,00,00)
-  end
-end
-
-
 class Rake::TestFtpFile < Test::Unit::TestCase
+  class FakeDate
+    def self.today
+      Date.new(2003,10,3)
+    end
+    def self.now
+      Time.local(2003,10,3,12,00,00)
+    end
+  end
 
   def setup
     Rake::FtpFile.class_eval { @date_class = FakeDate; @time_class = FakeDate }
