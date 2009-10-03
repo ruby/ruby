@@ -185,6 +185,7 @@ rb_add_method_def(VALUE klass, ID mid, rb_method_type_t type, rb_method_definiti
 	rb_vm_check_redefinition_opt_method(old_me);
 
 	if (RTEST(ruby_verbose) &&
+	    type != VM_METHOD_TYPE_UNDEF &&
 	    old_def->alias_count == 0 &&
 	    old_def->type != VM_METHOD_TYPE_UNDEF &&
 	    old_def->type != VM_METHOD_TYPE_ZSUPER) {

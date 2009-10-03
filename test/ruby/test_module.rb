@@ -845,5 +845,13 @@ class TestModule < Test::Unit::TestCase
       end
     end
     assert_equal("", stderr, '[ruby-dev:39397]')
+
+    stderr = EnvUtil.verbose_warning do
+      Module.new do
+        def foo; end
+        undef foo
+      end
+    end
+    assert_equal("", stderr)
   end
 end

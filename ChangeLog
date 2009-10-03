@@ -1,3 +1,8 @@
+Sat Oct  3 21:19:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_add_method_def): no redefinition warning on
+	  undef.
+
 Sat Oct  3 18:51:11 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_f_integer): now Integer() takes optional base
