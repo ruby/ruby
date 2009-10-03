@@ -89,7 +89,7 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
     validate_location "%w(a b\nc\r\nd \ne )"
     validate_location %Q["a\nb\r\nc"]
     validate_location "print(<<EOS)\nheredoc\nEOS\n"
-    validate_location %Q[print(<<-"EOS")\nheredoc\n     EOS\n]
+    validate_location "print(<<-\"EOS\")\nheredoc\n     EOS\n"
   end
 
   def validate_location(src)
@@ -121,7 +121,7 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
     assert_equal [],
                  scan('comma', %q[".,.,.,.,.,.,.."])
     assert_equal [],
-                 scan('comma', %Q[<<EOS\n,,,,,,,,,,\nEOS])
+                 scan('comma', "<<EOS\n,,,,,,,,,,\nEOS")
   end
 
   def test_period
@@ -612,13 +612,13 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
     assert_equal ['<<-EOS'],
                  scan('heredoc_beg', "<<-EOS\nheredoc\n\tEOS \n")
     assert_equal ['<<"EOS"'],
-                 scan('heredoc_beg', %Q[<<"EOS"\nheredoc\nEOS])
-    assert_equal [%q(<<'EOS')],
+                 scan('heredoc_beg', '<<"EOS"'"\nheredoc\nEOS")
+    assert_equal ["<<'EOS'"],
                  scan('heredoc_beg', "<<'EOS'\nheredoc\nEOS")
-    assert_equal [%q(<<`EOS`)],
+    assert_equal ['<<`EOS`'],
                  scan('heredoc_beg', "<<`EOS`\nheredoc\nEOS")
-    assert_equal [%q(<<" ")],
-                 scan('heredoc_beg', %Q[<<" "\nheredoc\nEOS])
+    assert_equal ['<<" "'],
+                 scan('heredoc_beg', '<<" "'"\nheredoc\nEOS")
   end
 
   def test_tstring_content_HEREDOC
