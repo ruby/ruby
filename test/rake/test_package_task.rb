@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'rake/packagetask'
 
-class TestPackageTask < Test::Unit::TestCase
+class Rake::TestPackageTask < Test::Unit::TestCase
   include Rake
 
   def test_create
@@ -61,7 +61,7 @@ end
 
 require 'rake/gempackagetask'
 
-class TestGemPackageTask < Test::Unit::TestCase
+class Rake::TestGemPackageTask < Test::Unit::TestCase
   def test_gem_package
     gem = Gem::Specification.new do |g|
       g.name = "pkgr"
