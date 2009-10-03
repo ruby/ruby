@@ -1,3 +1,8 @@
+Sun Oct  4 05:34:34 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/variable.rb: add TkVariable#to_hash,to_proc,to_int,
+	  to_str,to_ary
+
 Fri Oct  2 17:26:35 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (LD_SHARED1): typo.
