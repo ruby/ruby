@@ -2,7 +2,7 @@ require 'test/unit'
 require 'rake'
 
 ######################################################################
-class TestAnEmptyInvocationChain < Test::Unit::TestCase
+class Rake::TestAnEmptyInvocationChain < Test::Unit::TestCase
 
   def setup
     @empty = Rake::InvocationChain::EMPTY
@@ -20,7 +20,7 @@ class TestAnEmptyInvocationChain < Test::Unit::TestCase
 end
 
 ######################################################################
-class TestAnInvocationChainWithOneMember < Test::Unit::TestCase
+class Rake::TestAnInvocationChainWithOneMember < Test::Unit::TestCase
 
   def setup
     @empty = Rake::InvocationChain::EMPTY
@@ -47,7 +47,7 @@ class TestAnInvocationChainWithOneMember < Test::Unit::TestCase
 end
 
 ######################################################################
-class TestAnInvocationChainWithMultipleMember < Test::Unit::TestCase
+class Rake::TestAnInvocationChainWithMultipleMember < Test::Unit::TestCase
 
   def setup
     @first_member = "A"

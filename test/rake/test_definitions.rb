@@ -4,7 +4,7 @@ require 'rake'
 require_relative 'filecreation'
 
 ######################################################################
-class TestDefinitions < Test::Unit::TestCase
+class Rake::TestDefinitions < Test::Unit::TestCase
   include Rake
   
   EXISTINGFILE = "testdata/existing"

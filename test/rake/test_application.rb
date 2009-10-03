@@ -6,7 +6,7 @@ require_relative 'in_environment'
 TESTING_REQUIRE = [ ]
 
 ######################################################################
-class TestApplication < Test::Unit::TestCase
+class Rake::TestApplication < Test::Unit::TestCase
   include CaptureStdout
   include InEnvironment
   BASEDIR = File.dirname(__FILE__)
@@ -298,7 +298,7 @@ end
 
 
 ######################################################################
-class TestApplicationOptions < Test::Unit::TestCase
+class Rake::TestApplicationOptions < Test::Unit::TestCase
   include CaptureStdout
 
   def setup
@@ -589,7 +589,7 @@ class TestApplicationOptions < Test::Unit::TestCase
   end
 end
 
-class TestTaskArgumentParsing < Test::Unit::TestCase
+class Rake::TestTaskArgumentParsing < Test::Unit::TestCase
   def setup
     @app = Rake::Application.new
   end
@@ -632,7 +632,7 @@ class TestTaskArgumentParsing < Test::Unit::TestCase
 
 end
 
-class TestTaskArgumentParsing < Test::Unit::TestCase
+class Rake::TestTaskArgumentParsing < Test::Unit::TestCase
   include InEnvironment
 
   def test_terminal_width_using_env

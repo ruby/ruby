@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'rake'
 
-class TestNameSpace < Test::Unit::TestCase
+class Rake::TestNameSpace < Test::Unit::TestCase
 
   class TM
     include Rake::TaskManager

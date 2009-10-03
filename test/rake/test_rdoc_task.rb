@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'rake/rdoctask'
 
-class TestRDocTask < Test::Unit::TestCase
+class Rake::TestRDocTask < Test::Unit::TestCase
   include Rake
   
   def setup

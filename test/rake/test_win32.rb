@@ -3,7 +3,7 @@ require_relative 'in_environment'
 
 require 'rake'
 
-class TestWin32 < Test::Unit::TestCase
+class Rake::TestWin32 < Test::Unit::TestCase
   include InEnvironment
 
   Win32 = Rake::Win32

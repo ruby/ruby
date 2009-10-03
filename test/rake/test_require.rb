@@ -2,7 +2,7 @@ require 'test/unit'
 require 'rake'
 
 # ====================================================================
-class TestRequire < Test::Unit::TestCase
+class Rake::TestRequire < Test::Unit::TestCase
   RakeLibDir = File.dirname(__FILE__) + '/data/rakelib'
 
   def test_can_load_rake_library

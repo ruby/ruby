@@ -3,7 +3,7 @@ require 'rake'
 require 'stringio'
 
 ######################################################################
-class TestExtension < Test::Unit::TestCase
+class Rake::TestExtension < Test::Unit::TestCase
 
   module Redirect
     def error_redirect

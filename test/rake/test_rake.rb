@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'rake'
 
-class TestRake < Test::Unit::TestCase
+class Rake::TestRake < Test::Unit::TestCase
   def test_each_dir_parent
     assert_equal ['a'], alldirs('a')
     assert_equal ['a/b', 'a'], alldirs('a/b')

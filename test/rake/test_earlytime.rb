@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'rake'
 
-class TestEarlyTime < Test::Unit::TestCase
+class Rake::TestEarlyTime < Test::Unit::TestCase
   def test_create
     early = Rake::EarlyTime.instance
     time = Time.mktime(1970, 1, 1, 0, 0, 0)
