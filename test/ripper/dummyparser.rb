@@ -47,13 +47,6 @@ class NodeList
 end
 
 class DummyParser < Ripper
-  Ripper::PARSER_EVENTS.each do |event|
-    event = event.to_s
-    define_method(:"on_#{event}") do |*args|
-      Node.new(event, *args)
-    end
-  end
-
   def hook(name)
     class << self; self; end.class_eval do
       define_method(name) do |*a, &b|
@@ -187,5 +180,11 @@ class DummyParser < Ripper
 
   def on_assoclist_from_args(a)
     Node.new('assocs', *a.list)
+  end
+
+  (Ripper::PARSER_EVENTS.map(&:to_s) - instance_methods(false).map {|n|n.to_s.sub(/^on_/, '')}).each do |event|
+    define_method(:"on_#{event}") do |*args|
+      Node.new(event, *args)
+    end
   end
 end
