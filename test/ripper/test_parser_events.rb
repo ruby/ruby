@@ -1,6 +1,7 @@
 begin
 
 require_relative 'dummyparser'
+require_relative '../ruby/envutil'
 require 'test/unit'
 
 class TestRipper_ParserEvents < Test::Unit::TestCase
@@ -565,6 +566,15 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
     assert_equal("[assign(var_field(w),1),#{div}]", parse("w = 1; w /25 # /"), bug1939)
     assert_equal("[fcall(p,[],&block([w],[#{div}]))]", parse("p{|w|w /25 # /\n}"), bug1939)
     assert_equal("[def(p,[w],bodystmt([#{div}]))]", parse("def p(w)\nw /25 # /\nend"), bug1939)
+  end
+
+  def test_block_variables
+    assert_equal("[fcall(proc,[],&block([],[void()]))]", parse("proc{|;y|}"))
+    if defined?(Process::RLIMIT_AS)
+      assert_in_out_err(["-I#{File.dirname(__FILE__)}", "-rdummyparser"],
+                        'Process.setrlimit(Process::RLIMIT_AS,102400); puts DummyParser.new("proc{|;y|}").parse',
+                        ["[fcall(proc,[],&block([],[void()]))]"], [], '[ruby-dev:39423]')
+    end
   end
 end
 
