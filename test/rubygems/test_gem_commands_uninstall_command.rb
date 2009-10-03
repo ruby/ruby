@@ -1,6 +1,5 @@
-require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
-require File.join(File.expand_path(File.dirname(__FILE__)),
-                  'gem_installer_test_case')
+require_relative 'gemutilities'
+require_relative 'gem_installer_test_case'
 require 'rubygems/commands/uninstall_command'
 
 class TestGemCommandsUninstallCommand < GemInstallerTestCase

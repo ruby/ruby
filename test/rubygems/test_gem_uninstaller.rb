@@ -1,5 +1,4 @@
-require File.join(File.expand_path(File.dirname(__FILE__)),
-                  'gem_installer_test_case')
+require_relative 'gem_installer_test_case'
 require 'rubygems/uninstaller'
 
 class TestGemUninstaller < GemInstallerTestCase

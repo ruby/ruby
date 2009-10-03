@@ -4,8 +4,8 @@
 # See LICENSE.txt for permissions.
 #++
 
-require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
-require File.join(File.expand_path(File.dirname(__FILE__)), 'simple_gem')
+require_relative 'gemutilities'
+require_relative 'simple_gem'
 require 'rubygems/validator'
 
 class TestGemValidator < RubyGemTestCase

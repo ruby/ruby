@@ -4,7 +4,7 @@
 # See LICENSE.txt for permissions.
 #++
 
-require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
+require_relative 'gemutilities'
 require "rubygems/digest/md5"
 require "rubygems/digest/sha1"
 require "rubygems/digest/sha2"

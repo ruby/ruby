@@ -34,7 +34,7 @@ end
 
 require 'rdoc/rdoc'
 
-require File.join(File.expand_path(File.dirname(__FILE__)), 'mockgemui')
+require_relative 'mockgemui'
 
 module Gem
   def self.searcher=(searcher)

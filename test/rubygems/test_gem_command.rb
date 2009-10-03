@@ -5,7 +5,7 @@
 # See LICENSE.txt for permissions.
 #++
 
-require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
+require_relative 'gemutilities'
 require 'rubygems/command'
 
 class Gem::Command

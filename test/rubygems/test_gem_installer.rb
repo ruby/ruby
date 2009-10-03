@@ -4,8 +4,7 @@
 # See LICENSE.txt for permissions.
 #++
 
-require File.join(File.expand_path(File.dirname(__FILE__)),
-                  'gem_installer_test_case')
+require_relative 'gem_installer_test_case'
 
 class TestGemInstaller < GemInstallerTestCase
 
