@@ -555,12 +555,21 @@ class CGI
             %|(offline mode: enter name=value pairs on standard input)\n|
           )
         end
-        readlines.join(' ').gsub(/\n/, '')
-      end.gsub(/\\=/, '%3D').gsub(/\\&/, '%26')
+        array = nil
+        begin
+            readlines
+        rescue
+        end
+        if not array.nil?
+            array.join(' ').gsub(/\n/n, '')
+        else
+            ""
+        end
+      end.gsub(/\\=/n, '%3D').gsub(/\\&/n, '%26')
 
       words = Shellwords.shellwords(string)
 
-      if words.find{|x| /=/.match(x) }
+      if words.find{|x| /=/n.match(x) }
         words.join('&')
       else
         words.join('+')
