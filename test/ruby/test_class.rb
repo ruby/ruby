@@ -150,7 +150,15 @@ class TestClass < Test::Unit::TestCase
       Class.new do
         define_method(:foo) do end
         alias bar foo
-        alias barf oo
+        alias bar foo
+      end
+    end
+    assert_equal("", stderr)
+
+    stderr = EnvUtil.verbose_warning do
+      Class.new do
+        def foo; end
+        undef foo
       end
     end
     assert_equal("", stderr)
