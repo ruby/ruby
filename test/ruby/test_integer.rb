@@ -71,6 +71,19 @@ class TestInteger < Test::Unit::TestCase
       assert_equal(0377, Integer("0_3_7_7"))
     }
     assert_raise(ArgumentError, "[ruby-core:14139]") {Integer("0__3_7_7")}
+    assert_equal(1234, Integer(1234))
+    assert_equal(1, Integer(1.234))
+
+    # base argument
+    assert_equal(1234, Integer("1234", 10))
+    assert_equal(668, Integer("1234", 8))
+    assert_equal(4660, Integer("1234", 16))
+    assert_equal(49360, Integer("1234", 36))
+    # decimal, not octal
+    assert_equal(1234, Integer("01234", 10))
+    assert_raise(ArgumentError) { Integer("0x123", 10) }
+    assert_raise(ArgumentError) { Integer(1234, 10) }
+    assert_raise(ArgumentError) { Integer(12.34, 10) }
   end
 
   def test_int_p
