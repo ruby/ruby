@@ -2087,13 +2087,14 @@ rb_to_int(VALUE val)
     return rb_to_integer(val, "to_int");
 }
 
-VALUE
-rb_Integer(VALUE val)
+static VALUE
+rb_convert_to_integer(VALUE val, int base)
 {
     VALUE tmp;
 
     switch (TYPE(val)) {
       case T_FLOAT:
+	if (base != 0) goto arg_error;
 	if (RFLOAT_VALUE(val) <= (double)FIXNUM_MAX
 	    && RFLOAT_VALUE(val) >= (double)FIXNUM_MIN) {
 	    break;
@@ -2102,36 +2103,55 @@ rb_Integer(VALUE val)
 
       case T_FIXNUM:
       case T_BIGNUM:
+	if (base != 0) goto arg_error;
 	return val;
 
       case T_STRING:
-	return rb_str_to_inum(val, 0, TRUE);
+      string_conv:
+	return rb_str_to_inum(val, base, TRUE);
 
       case T_NIL:
+	if (base != 0) goto arg_error;
 	rb_raise(rb_eTypeError, "can't convert nil into Integer");
 	break;
 
       default:
 	break;
     }
+    if (base != 0) {
+	tmp = rb_check_string_type(val);
+	if (!NIL_P(tmp)) goto string_conv;
+      arg_error:
+	rb_raise(rb_eArgError, "base specified for non string value");
+    }
     tmp = convert_type(val, "Integer", "to_int", FALSE);
     if (NIL_P(tmp)) {
 	return rb_to_integer(val, "to_i");
     }
     return tmp;
+
+}
+
+VALUE
+rb_Integer(VALUE val)
+{
+    return rb_convert_to_integer(val, 0);
 }
 
 /*
  *  call-seq:
- *     Integer(arg)    => integer
+ *     Integer(arg,base=0)    => integer
  *
  *  Converts <i>arg</i> to a <code>Fixnum</code> or <code>Bignum</code>.
  *  Numeric types are converted directly (with floating point numbers
- *  being truncated). If <i>arg</i> is a <code>String</code>, leading
- *  radix indicators (<code>0</code>, <code>0b</code>, and
- *  <code>0x</code>) are honored. Others are converted using
- *  <code>to_int</code> and <code>to_i</code>. This behavior is
- *  different from that of <code>String#to_i</code>.
+ *  being truncated).    <i>base</i> (0, or between 2 and 36) is a base for
+ *  integer string representation.  If <i>arg</i> is a <code>String</code>,
+ *  when <i>base</i> is omitted or equals to zero, radix indicators
+ *  (<code>0</code>, <code>0b</code>, and <code>0x</code>) are honored.
+ *  In any case, strings should be strictly conformed to numeric
+ *  representation. This behavior is different from that of 
+ *  <code>String#to_i</code>.  Non string valueswill be converted using
+ *  <code>to_int</code>, and <code>to_i</code>.
  *
  *     Integer(123.999)    #=> 123
  *     Integer("0x1a")     #=> 26
@@ -2139,9 +2159,22 @@ rb_Integer(VALUE val)
  */
 
 static VALUE
-rb_f_integer(VALUE obj, VALUE arg)
+rb_f_integer(int argc, VALUE *argv, VALUE obj)
 {
-    return rb_Integer(arg);
+    VALUE arg = Qnil;
+    int base = 0;
+
+    switch (argc) {
+      case 2:
+	base = NUM2INT(argv[1]);
+      case 1:
+	arg = argv[0];
+	break;
+      default:
+	/* should cause ArgumentError */
+	rb_scan_args(argc, argv, "11", NULL, NULL);
+    }
+    return rb_convert_to_integer(arg, base);
 }
 
 double
@@ -2556,7 +2589,7 @@ Init_Object(void)
     rb_define_global_function("sprintf", rb_f_sprintf, -1); /* in sprintf.c */
     rb_define_global_function("format", rb_f_sprintf, -1);  /* in sprintf.c */
 
-    rb_define_global_function("Integer", rb_f_integer, 1);
+    rb_define_global_function("Integer", rb_f_integer, -1);
     rb_define_global_function("Float", rb_f_float, 1);
 
     rb_define_global_function("String", rb_f_string, 1);
