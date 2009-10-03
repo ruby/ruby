@@ -5,7 +5,7 @@ class TaskManager
   include Rake::TaskManager
 end
 
-class TestTaskManager < Test::Unit::TestCase
+class Rake::TestTaskManager < Test::Unit::TestCase
 
   def setup
     @tm = TaskManager.new
@@ -146,7 +146,7 @@ class TestTaskManager < Test::Unit::TestCase
   
 end
 
-class TestTaskManagerArgumentResolution < Test::Unit::TestCase
+class Rake::TestTaskManagerArgumentResolution < Test::Unit::TestCase
   def test_good_arg_patterns
     assert_equal [:t, [], []],       task(:t)
     assert_equal [:t, [], [:x]],     task(:t => :x)

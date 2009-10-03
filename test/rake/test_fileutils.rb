@@ -4,7 +4,7 @@ require_relative 'filecreation'
 require 'fileutils'
 require 'stringio'
 
-class TestFileUtils < Test::Unit::TestCase
+class Rake::TestFileUtils < Test::Unit::TestCase
   include FileCreation
   BASEDIR = File.dirname(__FILE__)
   ShellCommand =  "#{BASEDIR}/shellcommand.rb"

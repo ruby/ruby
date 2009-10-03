@@ -4,7 +4,7 @@ require 'rake'
 
 require_relative 'capture_stdout'
 
-class TestFileList < Test::Unit::TestCase
+class Rake::TestFileList < Test::Unit::TestCase
   FileList = Rake::FileList
   include CaptureStdout
 

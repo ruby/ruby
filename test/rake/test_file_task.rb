@@ -4,7 +4,7 @@ require 'rake'
 require_relative 'filecreation'
 
 ######################################################################
-class TestFileTask < Test::Unit::TestCase
+class Rake::TestFileTask < Test::Unit::TestCase
   include Rake
   include FileCreation
 
@@ -89,7 +89,7 @@ class TestFileTask < Test::Unit::TestCase
 end
 
 ######################################################################
-class TestDirectoryTask < Test::Unit::TestCase
+class Rake::TestDirectoryTask < Test::Unit::TestCase
   include Rake
 
   def setup

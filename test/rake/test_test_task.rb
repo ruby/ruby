@@ -2,7 +2,7 @@ require 'tmpdir'
 require 'test/unit'
 require 'rake/testtask'
 
-class TestTestTask < Test::Unit::TestCase
+class Rake::TestTestTask < Test::Unit::TestCase
   include Rake
   
   def setup

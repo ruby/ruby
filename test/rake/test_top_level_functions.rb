@@ -2,7 +2,7 @@ require 'test/unit'
 require_relative 'capture_stdout'
 require 'rake'
 
-class TestTopLevelFunctions < Test::Unit::TestCase
+class Rake::TestTopLevelFunctions < Test::Unit::TestCase
   include CaptureStdout
 
   def setup
