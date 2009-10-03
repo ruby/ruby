@@ -5,7 +5,7 @@ require_relative 'filecreation'
 require_relative 'capture_stdout'
 
 ######################################################################
-class Rake::TestTask < Test::Unit::TestCase
+class Rake::TestTasks < Test::Unit::TestCase
   include CaptureStdout
   include Rake
 
