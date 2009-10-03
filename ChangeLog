@@ -1,3 +1,7 @@
+Sun Oct  4 06:40:09 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
+
+    * symbian/setup (ruby.mmp): added macro RUBY_EXPORT to match the change in dln.c
+
 Sun Oct  4 05:34:34 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/variable.rb: add TkVariable#to_hash,to_proc,to_int,
