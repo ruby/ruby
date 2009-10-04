@@ -1,3 +1,9 @@
+Sun Oct  4 19:30:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (struct {dump,load}_arg): manage with dfree, instead
+	  of using local variable which may be moved by context switch.
+	  [ruby-dev:39425]
+
 Sun Oct  4 05:34:34 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/variable.rb: add TkVariable#to_hash,to_proc,to_int,
