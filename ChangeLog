@@ -1,3 +1,8 @@
+Sun Oct  4 22:44:03 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi.rb (CGI.unescapeHTML): fix for hex values 80-FF,
+	  single-byte hex entity encodings from 80-FF are valid HTML.
+
 Sun Oct  4 19:30:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (struct {dump,load}_arg): manage with dfree, instead
