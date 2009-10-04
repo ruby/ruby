@@ -212,4 +212,45 @@ class TestMarshal < Test::Unit::TestCase
     c = [/#{a}/, /#{b}/]
     assert_equal(c, Marshal.load(Marshal.dump(c)))
   end
+
+  class DumpTest
+    def marshal_dump
+      @@block.call(:marshal_dump)
+    end
+
+    def dump_each(&block)
+      @@block = block
+      Marshal.dump(self)
+    end
+  end
+
+  class LoadTest
+    def marshal_dump
+      nil
+    end
+    def marshal_load(obj)
+      @@block.call(:marshal_load)
+    end
+    def self.load_each(m, &block)
+      @@block = block
+      Marshal.load(m)
+    end
+  end
+
+  def test_context_switch
+    o = DumpTest.new
+    e = o.enum_for(:dump_each)
+    assert_equal(:marshal_dump, e.next)
+    GC.start
+    assert(true, '[ruby-dev:39425]')
+    assert_raise(StopIteration) {e.next}
+
+    o = LoadTest.new
+    m = Marshal.dump(o)
+    e = LoadTest.enum_for(:load_each, m)
+    assert_equal(:marshal_load, e.next)
+    GC.start
+    assert(true, '[ruby-dev:39425]')
+    assert_raise(StopIteration) {e.next}
+  end
 end

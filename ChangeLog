@@ -1,3 +1,9 @@
+Sun Oct  4 19:30:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (struct {dump,load}_arg): manage with dfree, instead
+	  of using local variable which may be moved by context switch.
+	  [ruby-dev:39425]
+
 Sun Oct  4 15:00:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (NATINT_LEN, pack_pack): suppressed warnings.
