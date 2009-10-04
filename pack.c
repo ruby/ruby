@@ -25,7 +25,7 @@
 #ifdef NATINT_PACK
 # define OFF16B(p) ((char*)(p) + (natint?0:(sizeof(short) - SIZE16)))
 # define OFF32B(p) ((char*)(p) + (natint?0:(sizeof(long) - SIZE32)))
-# define NATINT_LEN(type,len) (natint?sizeof(type):(len))
+# define NATINT_LEN(type,len) (natint?(int)sizeof(type):(int)(len))
 # ifdef WORDS_BIGENDIAN
 #   define OFF16(p) OFF16B(p)
 #   define OFF32(p) OFF32B(p)
@@ -35,7 +35,7 @@
 # define NATINT_HTONS(x) (natint?htons(x):hton16(x))
 # define NATINT_HTONL(x) (natint?htonl(x):hton32(x))
 #else
-# define NATINT_LEN(type,len) sizeof(type)
+# define NATINT_LEN(type,len) ((int)sizeof(type))
 # define NATINT_HTOVS(x) htovs(x)
 # define NATINT_HTOVL(x) htovl(x)
 # define NATINT_HTONS(x) htons(x)
@@ -712,7 +712,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		int i;
 
 		from = NEXTFROM;
-		i = num2i32(from);
+		i = (int)num2i32(from);
 		rb_str_buf_cat(res, (char*)&i, sizeof(int));
 	    }
 	    break;
