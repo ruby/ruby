@@ -1,6 +1,8 @@
 require 'prettyprint'
 require 'test/unit'
 
+module PrettyPrintTest
+
 class WadlerExample < Test::Unit::TestCase # :nodoc:
   def setup
     @tree = Tree.new("aaaa", Tree.new("bbbbb", Tree.new("ccc"),
@@ -511,5 +513,7 @@ abc def ghi jkl mno pqr stu
 End
     assert_equal(expected, format(27))
   end
+
+end
 
 end
