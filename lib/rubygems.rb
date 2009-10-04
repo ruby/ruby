@@ -388,7 +388,7 @@ module Gem
   # The mode needed to read a file as straight binary.
 
   def self.binary_mode
-    @binary_mode ||= RUBY_VERSION > '1.9' ? 'rb:ascii-8bit' : 'rb'
+    'rb'
   end
 
   ##
