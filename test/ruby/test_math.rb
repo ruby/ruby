@@ -2,6 +2,7 @@ require 'test/unit'
 
 class TestMath < Test::Unit::TestCase
   def assert_infinity(a, *rest)
+    rest = ["not infinity"] if rest.empty?
     assert(!a.finite?, *rest)
   end
 
@@ -197,8 +198,8 @@ class TestMath < Test::Unit::TestCase
     # no SEGV [ruby-core:25257]
     31.upto(65) do |i|
       i = 1 << i
-      assert_infinity(Math.gamma(i))
-      assert_infinity(Math.gamma(i-1))
+      assert_infinity(Math.gamma(i), "Math.gamma(#{i}) should be INF")
+      assert_infinity(Math.gamma(i-1), "Math.gamma(#{i-1}) should be INF")
     end
   end
 
