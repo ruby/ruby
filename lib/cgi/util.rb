@@ -1,4 +1,5 @@
 class CGI
+  @@accept_charset="UTF-8" unless defined?(@@accept_charset)
   # URL-encode a string.
   #   url_encoded_string = CGI::escape("'Stop!' said Fred")
   #      # => "%27Stop%21%27+said+Fred"

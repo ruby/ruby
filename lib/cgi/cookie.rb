@@ -32,6 +32,7 @@
 #   cookie1.expires = Time.now + 30
 #   cookie1.secure  = true
 class CGI
+  @@accept_charset="UTF-8" unless defined?(@@accept_charset)
   class Cookie < Array
 
     # Create a new CGI::Cookie object.
