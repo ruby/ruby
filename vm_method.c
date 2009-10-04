@@ -515,12 +515,14 @@ rb_method_boundp(VALUE klass, ID id, int ex)
 	if (ex && (me->flag & NOEX_PRIVATE)) {
 	    return FALSE;
 	}
-	if (!me->def || me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
-	    return FALSE;
+	if (!me->def) return 0;
+	if (me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
+	    if (ex & NOEX_RESPONDS) return 2;
+	    return 0;
 	}
-	return TRUE;
+	return 1;
     }
-    return FALSE;
+    return 0;
 }
 
 void
@@ -1151,13 +1153,14 @@ basic_obj_respond_to(VALUE obj, ID id, int pub)
 {
     VALUE klass = CLASS_OF(obj);
 
-    if (!rb_method_boundp(klass, id, pub)) {
-	if (!rb_method_basic_definition_p(klass, respond_to_missing)) {
-	    return RTEST(rb_funcall(obj, respond_to_missing, pub ? 1 : 2, ID2SYM(id), Qtrue));
-	}
+    switch (rb_method_boundp(klass, id, pub|NOEX_RESPONDS)) {
+      case 2:
 	return FALSE;
+      case 0:
+	return RTEST(rb_funcall(obj, respond_to_missing, pub ? 1 : 2, ID2SYM(id), Qtrue));
+      default:
+	return TRUE;
     }
-    return TRUE;
 }
 
 int
