@@ -132,14 +132,12 @@ rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE),
 }
 
 struct dump_arg {
-    VALUE obj;
     VALUE str, dest;
     st_table *symbols;
     st_table *data;
     int taint;
     int untrust;
     st_table *compat_tbl;
-    VALUE wrapper;
     st_table *encodings;
 };
 
@@ -152,11 +150,13 @@ struct dump_call_arg {
 static void
 check_dump_arg(struct dump_arg *arg, ID sym)
 {
-    if (!DATA_PTR(arg->wrapper)) {
+    if (!arg->symbols) {
         rb_raise(rb_eRuntimeError, "Marshal.dump reentered at %s",
 		 rb_id2name(sym));
     }
 }
+
+static void clear_dump_arg(struct dump_arg *arg);
 
 static void
 mark_dump_arg(void *ptr)
@@ -167,6 +167,24 @@ mark_dump_arg(void *ptr)
     rb_mark_set(p->data);
     rb_mark_hash(p->compat_tbl);
 }
+
+static void
+free_dump_arg(void *ptr)
+{
+    clear_dump_arg(ptr);
+    xfree(ptr);
+}
+
+static size_t
+memsize_dump_arg(const void *ptr)
+{
+    return ptr ? sizeof(struct dump_arg) : 0;
+}
+
+static const rb_data_type_t dump_arg_data = {
+    "dump_arg",
+    mark_dump_arg, free_dump_arg, memsize_dump_arg
+};
 
 static const char *
 must_not_be_anonymous(const char *type, VALUE path)
@@ -825,34 +843,24 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     }
 }
 
-static VALUE
-dump(struct dump_call_arg *arg)
+static void
+clear_dump_arg(struct dump_arg *arg)
 {
-    w_object(arg->obj, arg->arg, arg->limit);
-    if (arg->arg->dest) {
-	rb_io_write(arg->arg->dest, arg->arg->str);
-	rb_str_resize(arg->arg->str, 0);
-    }
-    return 0;
-}
-
-static VALUE
-dump_ensure(struct dump_arg *arg)
-{
-    if (!DATA_PTR(arg->wrapper)) return 0;
+    if (!arg->symbols) return;
     st_free_table(arg->symbols);
+    arg->symbols = 0;
     st_free_table(arg->data);
     st_free_table(arg->compat_tbl);
-    if (arg->encodings) st_free_table(arg->encodings);
-    DATA_PTR(arg->wrapper) = 0;
-    arg->wrapper = 0;
+    if (arg->encodings) {
+	st_free_table(arg->encodings);
+	arg->encodings = 0;
+    }
     if (arg->taint) {
 	OBJ_TAINT(arg->str);
     }
     if (arg->untrust) {
 	OBJ_UNTRUST(arg->str);
     }
-    return 0;
 }
 
 /*
@@ -886,8 +894,8 @@ marshal_dump(int argc, VALUE *argv)
 {
     VALUE obj, port, a1, a2;
     int limit = -1;
-    struct dump_arg arg;
-    struct dump_call_arg c_arg;
+    struct dump_arg *arg;
+    VALUE wrapper;
 
     port = Qnil;
     rb_scan_args(argc, argv, "12", &obj, &a1, &a2);
@@ -901,40 +909,41 @@ marshal_dump(int argc, VALUE *argv)
 	else if (NIL_P(a1)) goto type_error;
 	else port = a1;
     }
-    arg.dest = 0;
-    arg.symbols = st_init_numtable();
-    arg.data    = st_init_numtable();
-    arg.taint   = FALSE;
-    arg.untrust = FALSE;
-    arg.compat_tbl = st_init_numtable();
-    arg.encodings = 0;
-    arg.str = rb_str_buf_new(0);
-    RBASIC(arg.str)->klass = 0;
-    arg.wrapper = Data_Wrap_Struct(rb_cData, mark_dump_arg, 0, &arg);
+    wrapper = TypedData_Make_Struct(rb_cData, struct dump_arg, &dump_arg_data, arg);
+    arg->dest = 0;
+    arg->symbols = st_init_numtable();
+    arg->data    = st_init_numtable();
+    arg->taint   = FALSE;
+    arg->untrust = FALSE;
+    arg->compat_tbl = st_init_numtable();
+    arg->encodings = 0;
+    arg->str = rb_str_tmp_new(0);
     if (!NIL_P(port)) {
 	if (!rb_respond_to(port, s_write)) {
 	  type_error:
 	    rb_raise(rb_eTypeError, "instance of IO needed");
 	}
-	arg.dest = port;
+	arg->dest = port;
 	if (rb_respond_to(port, s_binmode)) {
 	    rb_funcall2(port, s_binmode, 0, 0);
-	    check_dump_arg(&arg, s_binmode);
+	    check_dump_arg(arg, s_binmode);
 	}
     }
     else {
-	port = arg.str;
+	port = arg->str;
     }
 
-    c_arg.obj   = obj;
-    c_arg.arg   = &arg;
-    c_arg.limit = limit;
+    w_byte(MARSHAL_MAJOR, arg);
+    w_byte(MARSHAL_MINOR, arg);
 
-    w_byte(MARSHAL_MAJOR, &arg);
-    w_byte(MARSHAL_MINOR, &arg);
-
-    rb_ensure(dump, (VALUE)&c_arg, dump_ensure, (VALUE)&arg);
-    RBASIC(arg.str)->klass = rb_cString;
+    w_object(obj, arg, limit);
+    if (arg->dest) {
+	rb_io_write(arg->dest, arg->str);
+	rb_str_resize(arg->str, 0);
+    }
+    RBASIC(arg->str)->klass = rb_cString;
+    clear_dump_arg(arg);
+    RB_GC_GUARD(wrapper);
 
     return port;
 }
@@ -948,17 +957,18 @@ struct load_arg {
     int taint;
     int untrust;
     st_table *compat_tbl;
-    VALUE wrapper;
 };
 
 static void
 check_load_arg(struct load_arg *arg, ID sym)
 {
-    if (!DATA_PTR(arg->wrapper)) {
+    if (!arg->symbols) {
         rb_raise(rb_eRuntimeError, "Marshal.load reentered at %s",
 		 rb_id2name(sym));
     }
 }
+
+static void clear_load_arg(struct load_arg *arg);
 
 static void
 mark_load_arg(void *ptr)
@@ -969,6 +979,24 @@ mark_load_arg(void *ptr)
     rb_mark_tbl(p->data);
     rb_mark_hash(p->compat_tbl);
 }
+
+static void
+free_load_arg(void *ptr)
+{
+    clear_load_arg(ptr);
+    xfree(ptr);
+}
+
+static size_t
+memsize_load_arg(const void *ptr)
+{
+    return ptr ? sizeof(struct load_arg) : 0;
+}
+
+static const rb_data_type_t load_arg_data = {
+    "load_arg",
+    mark_load_arg, free_load_arg, memsize_load_arg
+};
 
 static VALUE r_entry(VALUE v, struct load_arg *arg);
 static VALUE r_object(struct load_arg *arg);
@@ -1679,22 +1707,14 @@ r_object(struct load_arg *arg)
     return r_object0(arg, 0, Qnil);
 }
 
-static VALUE
-load(struct load_arg *arg)
+static void
+clear_load_arg(struct load_arg *arg)
 {
-    return r_object(arg);
-}
-
-static VALUE
-load_ensure(struct load_arg *arg)
-{
-    if (!DATA_PTR(arg->wrapper)) return 0;
+    if (!arg->symbols) return;
     st_free_table(arg->symbols);
+    arg->symbols = 0;
     st_free_table(arg->data);
     st_free_table(arg->compat_tbl);
-    DATA_PTR(arg->wrapper) = 0;
-    arg->wrapper = 0;
-    return 0;
 }
 
 /*
@@ -1712,37 +1732,39 @@ static VALUE
 marshal_load(int argc, VALUE *argv)
 {
     VALUE port, proc;
-    int major, minor;
-    VALUE v;
-    struct load_arg arg;
+    int major, minor, taint = FALSE;
+    VALUE v, wrapper;
+    struct load_arg *arg;
 
     rb_scan_args(argc, argv, "11", &port, &proc);
     v = rb_check_string_type(port);
     if (!NIL_P(v)) {
-	arg.taint = OBJ_TAINTED(port); /* original taintedness */
+	taint = OBJ_TAINTED(port); /* original taintedness */
 	port = v;
     }
     else if (rb_respond_to(port, s_getbyte) && rb_respond_to(port, s_read)) {
 	if (rb_respond_to(port, s_binmode)) {
 	    rb_funcall2(port, s_binmode, 0, 0);
 	}
-	arg.taint = TRUE;
+	taint = TRUE;
     }
     else {
 	rb_raise(rb_eTypeError, "instance of IO needed");
     }
-    arg.untrust = OBJ_UNTRUSTED(port);
-    arg.src = port;
-    arg.offset = 0;
-    arg.symbols = st_init_numtable();
-    arg.data    = st_init_numtable();
-    arg.compat_tbl = st_init_numtable();
-    arg.proc = 0;
-    arg.wrapper = Data_Wrap_Struct(rb_cData, mark_load_arg, 0, &arg);
+    wrapper = TypedData_Make_Struct(rb_cData, struct load_arg, &load_arg_data, arg);
+    arg->taint = taint;
+    arg->untrust = OBJ_UNTRUSTED(port);
+    arg->src = port;
+    arg->offset = 0;
+    arg->symbols = st_init_numtable();
+    arg->data    = st_init_numtable();
+    arg->compat_tbl = st_init_numtable();
+    arg->proc = 0;
 
-    major = r_byte(&arg);
-    minor = r_byte(&arg);
+    major = r_byte(arg);
+    minor = r_byte(arg);
     if (major != MARSHAL_MAJOR || minor > MARSHAL_MINOR) {
+	clear_load_arg(arg);
 	rb_raise(rb_eTypeError, "incompatible marshal file format (can't be read)\n\
 \tformat version %d.%d required; %d.%d given",
 		 MARSHAL_MAJOR, MARSHAL_MINOR, major, minor);
@@ -1753,8 +1775,10 @@ marshal_load(int argc, VALUE *argv)
 		MARSHAL_MAJOR, MARSHAL_MINOR, major, minor);
     }
 
-    if (!NIL_P(proc)) arg.proc = proc;
-    v = rb_ensure(load, (VALUE)&arg, load_ensure, (VALUE)&arg);
+    if (!NIL_P(proc)) arg->proc = proc;
+    v = r_object(arg);
+    clear_load_arg(arg);
+    RB_GC_GUARD(wrapper);
 
     return v;
 }
