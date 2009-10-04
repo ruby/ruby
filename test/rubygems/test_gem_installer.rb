@@ -69,7 +69,7 @@ load Gem.bin_path('a', 'my_exec', version)
 #{Gem.ruby}: No such file or directory -- extconf.rb (LoadError)
     EOF
 
-    assert_match %r%#{Regexp.escape Gem.ruby} extconf.rb%,
+    assert_match %r%#{Regexp.escape Gem.ruby} extconf\.rb%,
                  File.read(gem_make_out)
     assert_match %r%#{Regexp.escape Gem.ruby}: No such file%,
                  File.read(gem_make_out)
