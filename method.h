@@ -21,7 +21,8 @@ typedef enum {
     NOEX_UNDEF     = NOEX_NOSUPER,
     NOEX_MODFUNC   = 0x12,
     NOEX_SUPER     = 0x20,
-    NOEX_VCALL     = 0x40
+    NOEX_VCALL     = 0x40,
+    NOEX_RESPONDS  = 0x80
 } rb_method_flag_t;
 
 #define NOEX_SAFE(n) ((int)((n) >> 8) & 0x0F)

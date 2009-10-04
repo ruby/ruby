@@ -1,3 +1,15 @@
+Mon Oct  5 00:09:57 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* vm_method.c (basic_obj_respond_to): should not call
+	  #respond_to_missing? for not implemented methods.
+	  [ruby-core:25909]
+
+	* vm_method.c (rb_method_boundp): returns exceptional value 2 for
+	  not-implemented methods when called from #respond_to? (specifies
+	  by new contant NOEX_RESPONDS).
+
+	* method.h (enum): new constant NOEX_RESPONDS added.
+
 Sun Oct  4 22:16:29 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/cookie.rb: add default value to @@accept_charset
