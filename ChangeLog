@@ -1,3 +1,10 @@
+Sun Oct  4 22:16:29 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/cookie.rb: add default value to @@accept_charset
+	  if have not defined. [ruby-dev:38987]
+
+	* lib/cgi/util.rb: ditto.
+
 Sun Oct  4 19:30:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (struct {dump,load}_arg): manage with dfree, instead
