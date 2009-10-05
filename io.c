@@ -6289,7 +6289,7 @@ rb_io_stdio_file(rb_io_t *fptr)
  *
  *  Returns a new <code>IO</code> object (a stream) for the given
  *  <code>IO</code> object or integer file descriptor and mode
- *  string. See also <code>IO#fileno</code> and
+ *  string. See also <code>IO.sysopen</code> and
  *  <code>IO.for_fd</code>.
  *
  *  === Parameters
@@ -6334,7 +6334,8 @@ rb_io_stdio_file(rb_io_t *fptr)
  *
  *  === Example1
  *
- *     a = IO.new(2,"w")      # '2' is standard error
+ *     fd = IO.sysopen("/dev/tty", "w")
+ *     a = IO.new(fd,"w")
  *     $stderr.puts "Hello"
  *     a.puts "World"
  *
@@ -6344,10 +6345,15 @@ rb_io_stdio_file(rb_io_t *fptr)
  *     World
  *
  *  === Example2
- *     io = IO.new(2, mode: 'w:UTF-16LE', cr_newline: true)
+ *
+ *     require 'fcntl'
+ *
+ *     fd = STDERR.fcntl(Fcntl::F_DUPFD)
+ *     io = IO.new(fd, mode: 'w:UTF-16LE', cr_newline: true)
  *     io.puts "Hello, World!"
  *
- *     io = IO.new(2, mode: 'w', cr_newline: true, external_encoding: Encoding::UTF_16LE)
+ *     fd = STDERR.fcntl(Fcntl::F_DUPFD)
+ *     io = IO.new(fd, mode: 'w', cr_newline: true, external_encoding: Encoding::UTF_16LE)
  *     io.puts "Hello, World!"
  *
  *  both of aboves print "Hello, World!" in UTF-16LE to standard error output with
