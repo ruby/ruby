@@ -1268,7 +1268,7 @@ module Tk::BLT
           args = []
         end
 
-        [args, fontkeys]
+        [args, fontkeys, methodkeys]
       end
       private_class_method :_parse_create_args
 
@@ -1276,18 +1276,20 @@ module Tk::BLT
         unless self::MarkerTypeName
           fail RuntimeError, "#{self} is an abstract class"
         end
-        args, fontkeys = _parse_create_args(keys)
+        args, fontkeys, methodkeys = _parse_create_args(keys)
         idnum = tk_call_without_enc(chart.path, 'marker', 'create',
                                     self::MarkerTypeName, *args)
         chart.marker_configure(idnum, fontkeys) unless fontkeys.empty?
+        chart.marker_configure(idnum, methodkeys) unless methodkeys.empty?
         idnum.to_i  # 'item id' is an integer number
       end
 
       def self.create_type(chart, type, keys={})
-        args, fontkeys = _parse_create_args(keys)
+        args, fontkeys, methodkeys = _parse_create_args(keys)
         idnum = tk_call_without_enc(chart.path, 'marker', 'create',
                                     type, *args)
         chart.marker_configure(idnum, fontkeys) unless fontkeys.empty?
+        chart.marker_configure(idnum, methodkeys) unless methodkeys.empty?
         id = idnum.to_i  # 'item id' is an integer number
         obj = self.allocate
         obj.instance_eval{

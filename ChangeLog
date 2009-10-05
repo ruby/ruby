@@ -1,3 +1,13 @@
+Tue Oct  6 06:26:00 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* * ext/tk/lib/tk/canvas.rb: *** POTENTIALLY INCOMPATIBLE ***
+	  'tags' option of a TkcItem object should give a list of TkcTag objs.
+
+	* ext/tk/lib/tkextlib/vu/dial.rb: fix logical bug.
+
+	* ext/tk/lib/tk/canvas.rb, ext/tk/lib/tkextlib/blt/component.rb: 
+	  lack of support for methodcall_optkeys.
+
 Sun Oct  4 22:44:03 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi.rb (CGI.unescapeHTML): fix for hex values 80-FF,

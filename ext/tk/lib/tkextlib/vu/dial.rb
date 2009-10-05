@@ -32,10 +32,10 @@ class Tk::Vu::Dial < TkWindow
 
   def coords(val = nil)
     if val
-      tk_split_list(tk_send_without_enc('coords'))
-    else
       tk_send_without_enc('coords', val)
       self
+    else
+      tk_split_list(tk_send_without_enc('coords'))
     end
   end
 

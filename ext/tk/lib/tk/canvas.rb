@@ -25,7 +25,10 @@ module TkCanvasItemConfig
   private :__item_methodcall_optkeys
 
   def __item_val2ruby_optkeys(id)  # { key=>proc, ... }
-    super(id).update('window'=>proc{|i, v| window(v)})
+    super(id).update('window'=>proc{|i, v| window(v)},
+                     'tags'=>proc{|i, v|
+                       simplelist(v).collect{|tag| TkcTag.id2obj(self, tag)}
+                     })
   end
   private :__item_val2ruby_optkeys
 
@@ -690,7 +693,7 @@ class TkcItem<TkObject
       args = args.flatten
     end
 
-    [args, fontkeys]
+    [args, fontkeys, methodkeys]
   end
   private_class_method :_parse_create_args
 
@@ -698,10 +701,11 @@ class TkcItem<TkObject
     unless self::CItemTypeName
       fail RuntimeError, "#{self} is an abstract class"
     end
-    args, fontkeys = _parse_create_args(args)
+    args, fontkeys, methodkeys = _parse_create_args(args)
     idnum = tk_call_without_enc(canvas.path, 'create',
                                 self::CItemTypeName, *args)
     canvas.itemconfigure(idnum, fontkeys) unless fontkeys.empty?
+    canvas.itemconfigure(idnum, methodkeys) unless methodkeys.empty?
     idnum.to_i  # 'canvas item id' is an integer number
   end
   ########################################
