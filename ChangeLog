@@ -1,3 +1,15 @@
+Mon Oct  5 12:22:12 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_{times, shuffle_bang, sample}): reducing macro
+	  calls inside of the loop by keeping pointers in local
+	  variables. a patch from Masahiro Kanai (CanI) in [ruby-dev:39406].
+	  It was found and fixed at Security and Programming camp 2009.
+
+	* string.c (rb_str_{times, split_m}): ditto.
+
+	* struct.c (rb_struct_{getmember, set, aref_id, aset_id}, {make,
+	  inspect}_struct, recursive_{equal, hash, eql}): ditto.
+
 Mon Oct  5 00:09:57 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* vm_method.c (basic_obj_respond_to): should not call

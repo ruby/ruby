@@ -1173,6 +1173,7 @@ rb_str_times(VALUE str, VALUE times)
 {
     VALUE str2;
     long n, len;
+    char *ptr2;
 
     len = NUM2LONG(times);
     if (len < 0) {
@@ -1183,16 +1184,17 @@ rb_str_times(VALUE str, VALUE times)
     }
 
     str2 = rb_str_new5(str, 0, len *= RSTRING_LEN(str));
+    ptr2 = RSTRING_PTR(str2);
     if (len) {
         n = RSTRING_LEN(str);
-        memcpy(RSTRING_PTR(str2), RSTRING_PTR(str), n);
+        memcpy(ptr2, RSTRING_PTR(str), n);
         while (n <= len/2) {
-            memcpy(RSTRING_PTR(str2) + n, RSTRING_PTR(str2), n);
+            memcpy(ptr2 + n, ptr2, n);
             n *= 2;
         }
-        memcpy(RSTRING_PTR(str2) + n, RSTRING_PTR(str2), len-n);
+        memcpy(ptr2 + n, ptr2, len-n);
     }
-    RSTRING_PTR(str2)[RSTRING_LEN(str2)] = '\0';
+    ptr2[RSTRING_LEN(str2)] = '\0';
     OBJ_INFECT(str2, str);
     rb_enc_cr_str_copy_for_substr(str2, str);
 
@@ -5513,6 +5515,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     }
     else if (split_type == string) {
 	char *ptr = RSTRING_PTR(str);
+	char *temp = ptr;
 	char *eptr = RSTRING_END(str);
 	char *sptr = RSTRING_PTR(spat);
 	long slen = RSTRING_LEN(spat);
@@ -5532,13 +5535,15 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		ptr = t;
 		continue;
 	    }
-	    rb_ary_push(result, rb_str_subseq(str, ptr - RSTRING_PTR(str), end));
+	    rb_ary_push(result, rb_str_subseq(str, ptr - temp, end));
 	    ptr += end + slen;
 	    if (!NIL_P(limit) && lim <= ++i) break;
 	}
-	beg = ptr - RSTRING_PTR(str);
+	beg = ptr - temp;
     }
     else {
+	char *ptr = RSTRING_PTR(str);
+	long len = RSTRING_LEN(str);
 	long start = beg;
 	long idx;
 	int last_null = 0;
@@ -5547,22 +5552,22 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	while ((end = rb_reg_search(spat, str, start, 0)) >= 0) {
 	    regs = RMATCH_REGS(rb_backref_get());
 	    if (start == end && BEG(0) == END(0)) {
-		if (!RSTRING_PTR(str)) {
+		if (!ptr) {
 		    rb_ary_push(result, rb_str_new("", 0));
 		    break;
 		}
 		else if (last_null == 1) {
 		    rb_ary_push(result, rb_str_subseq(str, beg,
-						      rb_enc_fast_mbclen(RSTRING_PTR(str)+beg,
-									 RSTRING_END(str),
+						      rb_enc_fast_mbclen(ptr+beg,
+									 ptr+len,
 									 enc)));
 		    beg = start;
 		}
 		else {
-                    if (RSTRING_PTR(str)+start == RSTRING_END(str))
+                    if (ptr+start == ptr+len)
                         start++;
                     else
-                        start += rb_enc_fast_mbclen(RSTRING_PTR(str)+start,RSTRING_END(str),enc);
+                        start += rb_enc_fast_mbclen(ptr+start,ptr+len,enc);
 		    last_null = 1;
 		    continue;
 		}

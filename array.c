@@ -2708,8 +2708,8 @@ rb_ary_concat(VALUE x, VALUE y)
 static VALUE
 rb_ary_times(VALUE ary, VALUE times)
 {
-    VALUE ary2, tmp;
-    long i, len;
+    VALUE ary2, tmp, *ptr, *ptr2;
+    long i, t, len;
 
     tmp = rb_check_string_type(times);
     if (!NIL_P(tmp)) {
@@ -2732,8 +2732,11 @@ rb_ary_times(VALUE ary, VALUE times)
     ary2 = ary_new(rb_obj_class(ary), len);
     ARY_SET_LEN(ary2, len);
 
-    for (i=0; i<len; i+=RARRAY_LEN(ary)) {
-	MEMCPY(RARRAY_PTR(ary2)+i, RARRAY_PTR(ary), VALUE, RARRAY_LEN(ary));
+    ptr = RARRAY_PTR(ary);
+    ptr2 = RARRAY_PTR(ary2);
+    t = RARRAY_LEN(ary);
+    for (i=0; i<len; i+=t) {
+	MEMCPY(ptr2+i, ptr, VALUE, t);
     }
   out:
     OBJ_INFECT(ary2, ary);
@@ -3491,14 +3494,16 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_shuffle_bang(VALUE ary)
 {
+    VALUE *ptr;
     long i = RARRAY_LEN(ary);
 
     rb_ary_modify(ary);
+    ptr = RARRAY_PTR(ary);
     while (i) {
 	long j = (long)(rb_genrand_real()*i);
-	VALUE tmp = RARRAY_PTR(ary)[--i];
-	RARRAY_PTR(ary)[i] = RARRAY_PTR(ary)[j];
-	RARRAY_PTR(ary)[j] = tmp;
+	VALUE tmp = ptr[--i];
+	ptr[i] = ptr[j];
+	ptr[j] = tmp;
     }
     return ary;
 }
@@ -3576,6 +3581,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	return rb_ary_new3(3, ptr[i], ptr[j], ptr[k]);
     }
     if ((size_t)n < sizeof(idx)/sizeof(idx[0])) {
+	VALUE *ptr_result;
 	long sorted[sizeof(idx)/sizeof(idx[0])];
 	sorted[0] = idx[0] = (long)(rb_genrand_real()*len);
 	for (i=1; i<n; i++) {
@@ -3588,18 +3594,21 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	    sorted[j] = idx[i] = k;
 	}
 	result = rb_ary_new2(n);
+	ptr_result = RARRAY_PTR(result);
 	for (i=0; i<n; i++) {
-	    RARRAY_PTR(result)[i] = RARRAY_PTR(ary)[idx[i]];
+	    ptr_result[i] = ptr[idx[i]];
 	}
     }
     else {
+	VALUE *ptr_result;
 	result = rb_ary_new4(len, ptr);
+	ptr_result = RARRAY_PTR(result);
 	RB_GC_GUARD(ary);
 	for (i=0; i<n; i++) {
 	    j = (long)(rb_genrand_real()*(len-i)) + i;
-	    nv = RARRAY_PTR(result)[j];
-	    RARRAY_PTR(result)[j] = RARRAY_PTR(result)[i];
-	    RARRAY_PTR(result)[i] = nv;
+	    nv = ptr_result[j];
+	    ptr_result[j] = ptr_result[i];
+	    ptr_result[i] = nv;
 	}
     }
     ARY_SET_LEN(result, n);
