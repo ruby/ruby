@@ -1,3 +1,13 @@
+Tue Oct  6 06:26:00 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* * ext/tk/lib/tk/canvas.rb: *** POTENTIALLY INCOMPATIBLE ***
+	  'tags' option of a TkcItem object should give a list of TkcTag objs.
+
+	* ext/tk/lib/tkextlib/vu/dial.rb: fix logical bug.
+
+	* ext/tk/lib/tk/canvas.rb, ext/tk/lib/tkextlib/blt/component.rb: 
+	  lack of support for methodcall_optkeys.
+
 Mon Oct  5 12:22:12 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_{times, shuffle_bang, sample}): reducing macro
