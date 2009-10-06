@@ -1,3 +1,7 @@
+Tue Oct  6 21:30:58 2009  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_reopen): avoid close if possible.
+
 Tue Oct  6 18:56:09 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (rb_struct_select): Struct#select should return
