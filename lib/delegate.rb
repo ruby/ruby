@@ -196,6 +196,11 @@ class Delegator
     new.__setobj__(__getobj__.dup)
     new
   end
+
+  @delegator_api = self.public_instance_methods
+  def self.public_api   # :nodoc:
+    @delegator_api
+  end
 end
 
 #
@@ -228,6 +233,17 @@ class SimpleDelegator<Delegator
     raise ArgumentError, "cannot delegate to self" if self.equal?(obj)
     @delegate_sd_obj = obj
   end
+
+  def initialize(obj)   # :nodoc:
+    (self.public_methods - Delegator.public_api).each do |m|
+      class << self
+        self
+      end.class_eval do
+        undef_method m
+      end
+    end
+    super
+  end
 end
 
 # :stopdoc:
@@ -257,7 +273,7 @@ end
 def DelegateClass(superclass)
   klass = Class.new(Delegator)
   methods = superclass.public_instance_methods(true)
-  methods -= ::Delegator.public_instance_methods
+  methods -= ::Delegator.public_api
   methods -= [:to_s,:inspect,:=~,:!~,:===]
   klass.module_eval {
     def __getobj__  # :nodoc:

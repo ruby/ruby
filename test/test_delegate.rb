@@ -29,4 +29,26 @@ class TestDelegateClass < Test::Unit::TestCase
     simple=SimpleDelegator.new([])
     assert_equal(SimpleDelegator,simple.class)
   end
+
+  class Object
+    def m
+      :o
+    end
+  end
+
+  class Foo
+    def m
+      :m
+    end
+  end
+
+  class Bar < DelegateClass(Foo)
+  end
+
+  def test_override
+    assert_equal(:o, Object.new.m)
+    assert_equal(:m, Foo.new.m)
+    assert_equal(:m, SimpleDelegator.new(Foo.new).m)
+    assert_equal(:m, Bar.new(Foo.new).m)
+  end
 end

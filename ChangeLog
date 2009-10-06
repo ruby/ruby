@@ -17,6 +17,17 @@ Tue Oct  6 06:26:00 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk/canvas.rb, ext/tk/lib/tkextlib/blt/component.rb: 
 	  lack of support for methodcall_optkeys.
 
+Mon Oct  5 17:19:33 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator::public_api): take snapshot of
+	  public method at the beginning time.
+
+	* lib/delegate.rb (SimpleDelegator#initialize): use
+	  Delegator.public_api since public_method might be added after
+	  initialization.  [ruby-dev:39383]
+
+	* lib/delegate.rb (DelegateClass): ditto.
+
 Mon Oct  5 12:22:12 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_{times, shuffle_bang, sample}): reducing macro
