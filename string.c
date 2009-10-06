@@ -2863,6 +2863,14 @@ rb_str_succ_bang(VALUE str)
  *
  *     a8 a9 b0 b1 b2 b3 b4 b5 b6
  *     a8 a9 b0 b1 b2 b3 b4 b5 b6
+ *
+ *  If <i>str</i> and <i>other_str</i> contains only ascii numeric characters,
+ *  both are recognized as decimal numbers. In addition, the width of
+ *  string (e.g. leading zeros) is handled appropriately.
+ *
+ *     "9".upto("11").to_a   => ["9", "10", "11"]
+ *     "25".upto("5").to_a   => []
+ *     "07".upto("11").to_a  => ["07", "08", "09", "10", "11"]
  */
 
 static VALUE

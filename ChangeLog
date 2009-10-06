@@ -5,6 +5,11 @@ Wed Oct  7 00:27:01 2009  Tanaka Akira  <akr@fsij.org>
 	  bind_random_port.
 	  [ruby-core:25970]
 
+Tue Oct  6 23:32:38 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_upto): RDoc updated.  a patch from Nobuhiro
+	  IMAI <nov at yo.rim.or.jp> in [ruby-dev:39440]. [ruby-dev:39439]
+
 Tue Oct  6 21:30:58 2009  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_reopen): avoid close if possible.
