@@ -5684,20 +5684,17 @@ io_reopen(VALUE io, VALUE nfile)
     fd = fptr->fd;
     fd2 = orig->fd;
     if (fd != fd2) {
-	if (IS_PREP_STDIO(fptr)) {
-	    /* need to keep stdio objects */
+	if (IS_PREP_STDIO(fptr) || fd <= 2 || !fptr->stdio_file) {
+	    /* need to keep FILE objects of stdin, stdout and stderr */
 	    if (dup2(fd2, fd) < 0)
 		rb_sys_fail_path(orig->pathv);
 	}
 	else {
-            if (fptr->stdio_file)
-                fclose(fptr->stdio_file);
-            else
-                close(fptr->fd);
+            fclose(fptr->stdio_file);
             fptr->stdio_file = 0;
             fptr->fd = -1;
-	    if (dup2(fd2, fd) < 0)
-		rb_sys_fail_path(orig->pathv);
+            if (dup2(fd2, fd) < 0)
+                rb_sys_fail_path(orig->pathv);
             fptr->fd = fd;
 	}
 	rb_thread_fd_close(fd);
