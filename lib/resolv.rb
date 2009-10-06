@@ -592,10 +592,10 @@ class Resolv
       }
     end
 
-    def self.bind_random_port(udpsock) # :nodoc:
+    def self.bind_random_port(udpsock, is_ipv6=false) # :nodoc:
       begin
         port = rangerand(1024..65535)
-        udpsock.bind("", port)
+        udpsock.bind(is_ipv6 ? "::" : "", port)
       rescue Errno::EADDRINUSE
         retry
       end
@@ -692,8 +692,9 @@ class Resolv
           super()
           @host = host
           @port = port
-          @sock = UDPSocket.new(host.index(':') ? Socket::AF_INET6 : Socket::AF_INET)
-          DNS.bind_random_port(@sock)
+          is_ipv6 = host.index(':')
+          @sock = UDPSocket.new(is_ipv6 ? Socket::AF_INET6 : Socket::AF_INET)
+          DNS.bind_random_port(@sock, is_ipv6)
           @sock.connect(host, port)
           @sock.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) if defined? Fcntl::F_SETFD
         end
