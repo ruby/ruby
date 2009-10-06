@@ -1,3 +1,15 @@
+Wed Oct  7 08:07:45 2009  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (NUM2TIMET): defined because some platforms, such as
+	  NetBSD5/amd64 and NetBSD6/i386, has time_t which size is different
+	  from long.  (NetBSD 5 uses 32bit time_t for all, including 64bit,
+	  platforms.  NetBSD 6 uses 64bit time_t for all, including 32bit,
+	  platforms.)
+	  (TIMET2NUM): defined.
+	  (time_timeval): use NUM2TIMET.
+	  (time_s_at): ditto.
+	  (time_to_i): use TIMET2NUM.
+
 Wed Oct  7 00:27:01 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS.bind_random_port): bind to "::" for IPv6.

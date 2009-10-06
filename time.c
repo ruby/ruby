@@ -21,6 +21,22 @@
 
 #include <math.h>
 
+#if SIZEOF_TIME_T == SIZEOF_LONG
+typedef unsigned long unsigned_time_t;
+#define NUM2TIMET(v) NUM2LONG(v)
+#define TIMET2NUM(v) LONG2NUM(v)
+#elif SIZEOF_TIME_T == SIZEOF_INT
+typedef unsigned int unsigned_time_t;
+#define NUM2TIMET(v) NUM2INT(v)
+#define TIMET2NUM(v) INT2NUM(v)
+#elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
+typedef unsigned LONG_LONG unsigned_time_t;
+#define NUM2TIMET(v) NUM2LL(v)
+#define TIMET2NUM(v) LL2NUM(v)
+#else
+# error cannot find integer type which size is same as time_t.
+#endif
+
 VALUE rb_cTime;
 
 struct time_object {
@@ -179,7 +195,7 @@ time_timeval(time, interval)
 
     switch (TYPE(time)) {
       case T_FIXNUM:
-	t.tv_sec = FIX2LONG(time);
+	t.tv_sec = NUM2TIMET(time);
 	if (interval && t.tv_sec < 0)
 	    rb_raise(rb_eArgError, "%s must be positive", tstr);
 	t.tv_usec = 0;
@@ -207,7 +223,7 @@ time_timeval(time, interval)
 	break;
 
       case T_BIGNUM:
-	t.tv_sec = NUM2LONG(time);
+	t.tv_sec = NUM2TIMET(time);
 	if (interval && t.tv_sec < 0)
 	    rb_raise(rb_eArgError, "%s must be positive", tstr);
 	t.tv_usec = 0;
@@ -268,7 +284,7 @@ time_s_at(argc, argv, klass)
     VALUE time, t;
 
     if (rb_scan_args(argc, argv, "11", &time, &t) == 2) {
-	tv.tv_sec = NUM2LONG(time);
+	tv.tv_sec = NUM2TIMET(time);
 	tv.tv_usec = NUM2LONG(t);
     }
     else {
@@ -494,16 +510,6 @@ tmcmp(a, b)
     else
         return 0;
 }
-
-#if SIZEOF_TIME_T == SIZEOF_LONG
-typedef unsigned long unsigned_time_t;
-#elif SIZEOF_TIME_T == SIZEOF_INT
-typedef unsigned int unsigned_time_t;
-#elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
-typedef unsigned LONG_LONG unsigned_time_t;
-#else
-# error cannot find integer type which size is same as time_t.
-#endif
 
 static time_t
 search_time_t(tptr, utc_p)
@@ -895,7 +901,7 @@ time_to_i(time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return LONG2NUM(tobj->tv.tv_sec);
+    return TIMET2NUM(tobj->tv.tv_sec);
 }
 
 /*
