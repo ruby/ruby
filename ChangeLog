@@ -1,3 +1,7 @@
+Thu Oct  8 01:23:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (iseq_s_disasm): accept proc objects.  [ruby-core:18762]
+
 Wed Oct  7 16:42:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (mark_dump_arg, mark_load_arg): ignore already cleaned
