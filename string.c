@@ -4068,7 +4068,7 @@ VALUE
 rb_str_inspect(VALUE str)
 {
     rb_encoding *enc = STR_ENC_GET(str);
-    char *p, *pend;
+    const char *p, *pend, *prev;
 #define CHAR_ESC_LEN 12 /* sizeof(\x{ hex of 32bit unsigned int }) */
     char buf[CHAR_ESC_LEN + 1];
     VALUE result = rb_str_buf_new(0);
@@ -4081,15 +4081,17 @@ rb_str_inspect(VALUE str)
     str_buf_cat2(result, "\"");
 
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
+    prev = p;
     while (p < pend) {
 	unsigned int c, cc;
 	int n;
 
         n = rb_enc_precise_mbclen(p, pend, enc);
         if (!MBCLEN_CHARFOUND_P(n)) {
+	    if (p > prev) str_buf_cat(result, prev, p - prev);
 	    snprintf(buf, CHAR_ESC_LEN, "\\x%02X", *p & 0377);
 	    str_buf_cat(result, buf, strlen(buf));
-            p++;
+            prev = ++p;
 	    continue;
 	}
         n = MBCLEN_CHARFOUND_LEN(n);
@@ -4101,38 +4103,36 @@ rb_str_inspect(VALUE str)
              MBCLEN_CHARFOUND_P(rb_enc_precise_mbclen(p,pend,enc)) &&
              (cc = rb_enc_codepoint(p,pend,enc),
               (cc == '$' || cc == '@' || cc == '{')))) {
+	    if (p - n > prev) str_buf_cat(result, prev, p - n - prev);
 	    str_buf_cat2(result, "\\");
-	    str_buf_cat(result, p - n, n);
+	    prev = p - n;
+	    continue;
 	}
-	else if (c == '\n') {
-	    str_buf_cat2(result, "\\n");
+	switch (c) {
+	  case '\n': cc = 'n'; break;
+	  case '\r': cc = 'r'; break;
+	  case '\t': cc = 't'; break;
+	  case '\f': cc = 'f'; break;
+	  case '\013': cc = 'v'; break;
+	  case '\010': cc = 'b'; break;
+	  case '\007': cc = 'a'; break;
+	  case 033: cc = 'e'; break;
+	  default: cc = 0; break;
 	}
-	else if (c == '\r') {
-	    str_buf_cat2(result, "\\r");
+	if (cc) {
+	    if (p - n > prev) str_buf_cat(result, prev, p - n - prev);
+	    buf[0] = '\\';
+	    buf[1] = (char)cc;
+	    str_buf_cat(result, buf, 2);
+	    prev = p;
+	    continue;
 	}
-	else if (c == '\t') {
-	    str_buf_cat2(result, "\\t");
-	}
-	else if (c == '\f') {
-	    str_buf_cat2(result, "\\f");
-	}
-	else if (c == '\013') {
-	    str_buf_cat2(result, "\\v");
-	}
-	else if (c == '\010') {
-	    str_buf_cat2(result, "\\b");
-	}
-	else if (c == '\007') {
-	    str_buf_cat2(result, "\\a");
-	}
-	else if (c == 033) {
-	    str_buf_cat2(result, "\\e");
-	}
-	else if ((enc == resenc && rb_enc_isprint(c, enc)) ||
-		(rb_enc_isascii(c, enc) && ISPRINT(c))) {
-	    str_buf_cat(result, p-n, n);
+	if ((enc == resenc && rb_enc_isprint(c, enc)) ||
+	    (rb_enc_isascii(c, enc) && ISPRINT(c))) {
+	    continue;
 	}
 	else {
+	    if (p - n > prev) str_buf_cat(result, prev, p - n - prev);
 	    if (unicode_p) {
 		if (c < 0x10000) {
 		    snprintf(buf, CHAR_ESC_LEN, "\\u%04X", c);
@@ -4151,8 +4151,11 @@ rb_str_inspect(VALUE str)
 		}
 		str_buf_cat(result, buf, strlen(buf));
 	    }
+	    prev = p;
+	    continue;
 	}
     }
+    if (p > prev) str_buf_cat(result, prev, p - prev);
     str_buf_cat2(result, "\"");
 
     OBJ_INFECT(result, str);
