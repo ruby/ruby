@@ -415,7 +415,7 @@ struct_alloc(VALUE klass)
 VALUE
 rb_struct_alloc(VALUE klass, VALUE values)
 {
-    return rb_class_new_instance(RARRAY_LEN(values), RARRAY_PTR(values), klass);
+    return rb_class_new_instance(RARRAY_LENINT(values), RARRAY_PTR(values), klass);
 }
 
 VALUE

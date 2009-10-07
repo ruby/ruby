@@ -653,7 +653,7 @@ NORETURN(void rb_out_of_int(SIGNED_VALUE num));
     int i = (int)(n); \
     if ((long)i != (n)) rb_out_of_int(n)
 #ifdef __GNUC__
-#define rb_long2int(i2l_n) __extension__ ({rb_long2int_internal(i2l_n, i2l_i); i2l_i;})
+#define rb_long2int(n) __extension__ ({long i2l_n = (n); rb_long2int_internal(i2l_n, i2l_i); i2l_i;})
 #else
 static inline int
 rb_long2int(long n) {rb_long2int_internal(n, i); return i;}
