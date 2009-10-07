@@ -162,7 +162,7 @@ static void
 mark_dump_arg(void *ptr)
 {
     struct dump_arg *p = ptr;
-    if (!ptr)
+    if (!p->symbols)
         return;
     rb_mark_set(p->data);
     rb_mark_hash(p->compat_tbl);
@@ -850,7 +850,9 @@ clear_dump_arg(struct dump_arg *arg)
     st_free_table(arg->symbols);
     arg->symbols = 0;
     st_free_table(arg->data);
+    arg->data = 0;
     st_free_table(arg->compat_tbl);
+    arg->compat_tbl = 0;
     if (arg->encodings) {
 	st_free_table(arg->encodings);
 	arg->encodings = 0;
@@ -974,7 +976,7 @@ static void
 mark_load_arg(void *ptr)
 {
     struct load_arg *p = ptr;
-    if (!ptr)
+    if (!p->symbols)
         return;
     rb_mark_tbl(p->data);
     rb_mark_hash(p->compat_tbl);
@@ -1714,7 +1716,9 @@ clear_load_arg(struct load_arg *arg)
     st_free_table(arg->symbols);
     arg->symbols = 0;
     st_free_table(arg->data);
+    arg->data = 0;
     st_free_table(arg->compat_tbl);
+    arg->compat_tbl = 0;
 }
 
 /*
