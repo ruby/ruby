@@ -1221,6 +1221,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
              * - NetBSD 4.0.1
              *   SCM_RIGHTS with padding causes EINVAL
              *   IPV6_PKTINFO without padding causes "page fault trap"
+             *     http://www.netbsd.org/cgi-bin/query-pr-single.pl?number=40661
              *  
              * - OpenBSD 4.4
              *   IPV6_PKTINFO without padding causes EINVAL
