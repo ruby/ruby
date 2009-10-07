@@ -1,3 +1,7 @@
+Wed Oct  7 09:23:49 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_inspect): don't assign -1 to unsigned int.
+
 Wed Oct  7 00:27:01 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS.bind_random_port): bind to "::" for IPv6.
