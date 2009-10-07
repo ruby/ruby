@@ -4069,6 +4069,8 @@ rb_str_inspect(VALUE str)
 {
     rb_encoding *enc = STR_ENC_GET(str);
     char *p, *pend;
+#define CHAR_ESC_LEN 12 /* sizeof(\x{ hex of 32bit unsigned int }) */
+    char buf[CHAR_ESC_LEN + 1];
     VALUE result = rb_str_buf_new(0);
     rb_encoding *resenc = rb_default_internal_encoding();
     int unicode_p = rb_enc_unicode_p(enc);
@@ -4080,15 +4082,16 @@ rb_str_inspect(VALUE str)
 
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
     while (p < pend) {
-	unsigned int c = -1, cc;
+	unsigned int c, cc;
 	int n;
 
         n = rb_enc_precise_mbclen(p, pend, enc);
         if (!MBCLEN_CHARFOUND_P(n)) {
+	    snprintf(buf, CHAR_ESC_LEN, "\\x%02X", *p & 0377);
+	    str_buf_cat(result, buf, strlen(buf));
             p++;
-            n = 1;
-            goto escape_codepoint;
-        }
+	    continue;
+	}
         n = MBCLEN_CHARFOUND_LEN(n);
 	c = rb_enc_mbc_to_codepoint(p, pend, enc);
 	p += n;
@@ -4130,31 +4133,21 @@ rb_str_inspect(VALUE str)
 	    str_buf_cat(result, p-n, n);
 	}
 	else {
-	    char buf[11];
-	  escape_codepoint:
-
-	    if (c == -1) {
-		char *q;
-		for (q = p-n; q < p; q++) {
-		    sprintf(buf, "\\x%02X", *q & 0377);
-		    str_buf_cat(result, buf, strlen(buf));
-		}
-	    }
-	    else if (unicode_p) {
+	    if (unicode_p) {
 		if (c < 0x10000) {
-		    sprintf(buf, "\\u%04X", c);
+		    snprintf(buf, CHAR_ESC_LEN, "\\u%04X", c);
 		}
 		else {
-		    sprintf(buf, "\\u{%X}", c);
+		    snprintf(buf, CHAR_ESC_LEN, "\\u{%X}", c);
 		}
 		str_buf_cat(result, buf, strlen(buf));
 	    }
 	    else {
 		if (c < 0x100) {
-		    sprintf(buf, "\\x%02X", c);
+		    snprintf(buf, CHAR_ESC_LEN, "\\x%02X", c);
 		}
 		else {
-		    sprintf(buf, "\\x{%X}", c);
+		    snprintf(buf, CHAR_ESC_LEN, "\\x{%X}", c);
 		}
 		str_buf_cat(result, buf, strlen(buf));
 	    }
