@@ -1011,6 +1011,15 @@ iseq_s_disasm(VALUE klass, VALUE body)
     if ((iseq = rb_method_get_iseq(body)) != 0) {
 	ret = rb_iseq_disasm(iseq->self);
     }
+    else {
+	rb_proc_t *proc;
+	VALUE iseqval;
+	GetProcPtr(body, proc);
+	iseqval = proc->block.iseq->self;
+	if (RUBY_VM_NORMAL_ISEQ_P(iseqval)) {
+	    ret = rb_iseq_disasm(iseqval);
+	}
+    }
 
     return ret;
 }
