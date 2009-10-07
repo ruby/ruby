@@ -1,3 +1,10 @@
+Wed Oct  7 16:42:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (mark_dump_arg, mark_load_arg): ignore already cleaned
+	  data.  [ruby-core:25969]
+
+	* marshal.c (clear_dump_arg, clear_load_arg): clear freed fields.
+
 Wed Oct  7 16:06:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_long2int): evalates the argument only
