@@ -678,20 +678,22 @@ module Net
     def cmd(options) # :yield: recvdata
       match    = @options["Prompt"]
       time_out = @options["Timeout"]
+      fail_eof = @options["FailEOF"]
 
       if options.kind_of?(Hash)
         string   = options["String"]
         match    = options["Match"]   if options.has_key?("Match")
         time_out = options["Timeout"] if options.has_key?("Timeout")
+        fail_eof = options["FailEOF"] if options.has_key?("FailEOF")
       else
         string = options
       end
 
       self.puts(string)
       if block_given?
-        waitfor({"Prompt" => match, "Timeout" => time_out}){|c| yield c }
+        waitfor({"Prompt" => match, "Timeout" => time_out, "FailEOF" => fail_eof}){|c| yield c }
       else
-        waitfor({"Prompt" => match, "Timeout" => time_out})
+        waitfor({"Prompt" => match, "Timeout" => time_out, "FailEOF" => fail_eof})
       end
     end
 

@@ -1,3 +1,8 @@
+Fri Oct  9 00:34:20 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/net/telnet.rb (cmd): Pass FailEOF options: patch by Brian
+	  Candler [ruby-core:22723]
+
 Wed Oct  7 08:07:45 2009  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (NUM2TIMET): defined because some platforms, such as
