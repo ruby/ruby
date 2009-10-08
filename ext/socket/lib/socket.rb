@@ -553,6 +553,46 @@ class Socket
   end
 
   # :call-seq:
+  #   Socket.udp_server_recv(sockets) {|msg, msg_src| ... }
+  #
+  # Receive UDP/IP packets from the given _sockets_.
+  # For each packet received, the block is called.
+  #
+  # The block receives _msg_ and _msg_src_.
+  # _msg_ is a string which is the payload of the received packet.
+  # _msg_src_ is a Socket::UDPSource object which is used for reply.
+  #
+  # Socket.udp_server_loop can be implemented using this method as follows.
+  #
+  #   udp_server_sockets(host, port) {|sockets|
+  #     loop {
+  #       readable, _, _ = IO.select(sockets)
+  #       udp_server_recv(readable) {|msg, msg_src| ... }
+  #     }
+  #   }
+  #
+  def self.udp_server_recv(sockets)
+    sockets.each {|r|
+      begin
+        msg, sender_addrinfo, rflags, *controls = r.recvmsg_nonblock
+      rescue IO::WaitReadable
+        next
+      end
+      ai = r.local_address
+      if ai.ipv6? and pktinfo = controls.find {|c| c.cmsg_is?(:IPV6, :PKTINFO) }
+        ai = Addrinfo.udp(pktinfo.ipv6_pktinfo_addr.ip_address, ai.ip_port)
+        yield msg, UDPSource.new(sender_addrinfo, ai) {|reply_msg|
+          r.sendmsg reply_msg, 0, sender_addrinfo, pktinfo
+        }
+      else
+        yield msg, UDPSource.new(sender_addrinfo, ai) {|reply_msg|
+          r.send reply_msg, 0, sender_addrinfo
+        }
+      end
+    }
+  end
+
+  # :call-seq:
   #   Socket.udp_server_loop_on(sockets) {|msg, msg_src| ... }
   #
   # Run UDP/IP server loop on the given sockets.
@@ -561,27 +601,10 @@ class Socket
   #
   # It calls the block for each message received.
   #
-  def self.udp_server_loop_on(sockets) # :yield: msg, msg_src
+  def self.udp_server_loop_on(sockets, &b) # :yield: msg, msg_src
     loop {
       readable, _, _ = IO.select(sockets)
-      readable.each {|r|
-        begin
-          msg, sender_addrinfo, rflags, *controls = r.recvmsg_nonblock
-        rescue IO::WaitReadable
-          next
-        end
-        ai = r.local_address
-        if ai.ipv6? and pktinfo = controls.find {|c| c.cmsg_is?(:IPV6, :PKTINFO) }
-          ai = Addrinfo.udp(pktinfo.ipv6_pktinfo_addr.ip_address, ai.ip_port)
-          yield msg, UDPSource.new(sender_addrinfo, ai) {|reply_msg|
-            r.sendmsg reply_msg, 0, sender_addrinfo, pktinfo
-          }
-        else
-          yield msg, UDPSource.new(sender_addrinfo, ai) {|reply_msg|
-            r.send reply_msg, 0, sender_addrinfo
-          }
-        end
-      }
+      udp_server_recv(sockets, &b)
     }
   end
 

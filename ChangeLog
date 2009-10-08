@@ -1,3 +1,8 @@
+Fri Oct  9 00:01:17 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (Socket.udp_server_recv): extracted from
+	  Socket.udp_server_loop_on.
+
 Thu Oct  8 05:45:14 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/enc-unicode.rb: parse range notation of UnicodeData.txt.
