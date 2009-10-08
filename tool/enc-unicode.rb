@@ -2,6 +2,13 @@
 
 # Creates the data structures needed by Onigurma to map Unicode codepoints to
 # property names and POSIX character classes
+#
+# To use this, get UnicodeData.txt and Scripts.txt from unicode.org.
+# (http://unicode.org/Public/UNIDATA/)
+# And run following command.
+#   ruby1.9 tool/enc-unicode.rb UnicodeData.txt Scripts.txt > enc/unicode/name2ctype.kwd
+# You can get source file for gperf.
+# After this, simply make ruby.
 
 unless ARGV.size == 2
   $stderr.puts "Usage: #{$0} UnicodeData.txt Scripts.txt"
@@ -17,10 +24,11 @@ def pair_codepoints(codepoints)
   # codepoints with property _property_. Note: It is intended that some ranges
   # will begin with the value with  which they end, e.g. 0x0020 -> 0x0020
 
-  codepoints = codepoints.uniq.sort
+  codepoints.sort!
   last_cp = codepoints.first
   pairs = [[last_cp, nil]]
   codepoints[1..-1].each do |codepoint|
+    next if last_cp == codepoint
 
     # If the current codepoint does not follow directly on from the last
     # codepoint, the last codepoint represents the end of the current range,
@@ -39,7 +47,7 @@ end
 
 def parse_unicode_data(file)
   last_cp = 0
-  data = {'Cn' => []}
+  data = {'Any' => [], 'Assigned' => [], 'Cn' => []}
   beg_cp = nil
   IO.foreach(file) do |line|
     fields = line.split(';')
@@ -64,6 +72,10 @@ def parse_unicode_data(file)
     # Cn category.
     data['Cn'].concat((last_cp.next...beg_cp).to_a)
 
+    # Assigned - Defined in unicode.c; interpreted as every character in the
+    # Unicode range minus the unassigned characters
+    data['Assigned'].concat(cps)
+
     # The third field denotes the 'General' category, e.g. Lu
     (data[fields[2]] ||= []).concat(cps)
 
@@ -73,15 +85,14 @@ def parse_unicode_data(file)
     last_cp = cp
   end
 
-  # General Category property
-  gcps = %w[Any Assigned]
-  gcps.concat data.keys.sort
-
   # The last Cn codepoint should be 0x10ffff. If it's not, append the missing
   # codepoints to Cn and C
-  cn_remainder = (data['Cn'].last.next..0x10ffff).to_a
+  cn_remainder = (last_cp.next..0x10ffff).to_a
   data['Cn'] += cn_remainder
   data['C'] += cn_remainder
+
+  # Define General Category properties
+  gcps = data.keys.sort
 
   # We now derive the character classes (POSIX brackets), e.g. [[:alpha:]]
   #
@@ -144,10 +155,6 @@ def parse_unicode_data(file)
 
   # Any - Defined in unicode.c
   data['Any'] = (0x0000..0x10ffff).to_a
-
-  # Assigned - Defined in unicode.c; interpreted as every character in the
-  # Unicode range minus the unassigned characters
-  data['Assigned'] = data['Any'] - data['Cn']
 
   # Returns General Category Property names and the data
   [gcps, data]
