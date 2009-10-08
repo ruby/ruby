@@ -1,3 +1,8 @@
+Fri Oct  9 00:33:29 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/net/telnet.rb (cmd): Pass FailEOF options: patch by Brian
+	  Candler [ruby-core:22723]
+
 Fri Oct  9 00:01:17 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (Socket.udp_server_recv): extracted from
