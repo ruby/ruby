@@ -40,9 +40,21 @@ end
 def parse_unicode_data(file)
   last_cp = 0
   data = {'Cn' => []}
+  beg_cp = nil
   IO.foreach(file) do |line|
     fields = line.split(';')
     cp = fields[0].to_i(16)
+
+    case fields[1]
+    when /\A<(.*),\s*First>\z/
+      beg_cp = cp
+      next
+    when /\A<(.*),\s*Last>\z/
+      cps = (beg_cp..cp).to_a
+    else
+      beg_cp = cp
+      cps = [cp]
+    end
 
     # The Cn category represents unassigned characters. These are not listed in
     # UnicodeData.txt so we must derive them by looking for 'holes' in the range
@@ -50,16 +62,14 @@ def parse_unicode_data(file)
     # with the current codepoint. If the current codepoint is less than
     # last_cp.next we have found a hole, so we add the missing codepoint to the
     # Cn category.
-    while ((last_cp = last_cp.next) < cp)
-      data['Cn'] << last_cp
-    end
+    data['Cn'].concat((last_cp.next...beg_cp).to_a)
 
     # The third field denotes the 'General' category, e.g. Lu
-    (data[fields[2]] ||= []) << cp
+    (data[fields[2]] ||= []).concat(cps)
 
     # The 'Major' category is the first letter of the 'General' category, e.g.
     # 'Lu' -> 'L'
-    (data[fields[2][0,1]] ||= []) << cp
+    (data[fields[2][0,1]] ||= []).concat(cps)
     last_cp = cp
   end
 

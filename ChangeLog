@@ -1,3 +1,11 @@
+Thu Oct  8 05:45:14 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/enc-unicode.rb: parse range notation of UnicodeData.txt.
+
+	* enc/unicode/name2ctype.h, enc/unicode/name2ctype.h.blt,
+	  enc/unicode/name2ctype.kwd, enc/unicode/name2ctype.src:
+	  follow above change. [ruby-dev:39444]
+
 Thu Oct  8 02:46:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_inspect): copy by chunks.

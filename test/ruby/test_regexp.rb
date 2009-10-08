@@ -745,6 +745,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_match(/^\u3042{0}\p{Any}$/, "a")
     assert_match(/^\u3042{0}\p{Any}$/, "\u3041")
     assert_match(/^\u3042{0}\p{Any}$/, "\0")
+    assert_match(/^\p{Lo}{4}$/u, "\u3401\u4E01\u{20001}\u{2A701}")
     assert_no_match(/^\u3042{0}\p{Any}$/, "\0\0")
     assert_no_match(/^\u3042{0}\p{Any}$/, "")
     assert_raise(SyntaxError) { eval('/^\u3042{0}\p{' + "\u3042" + '}$/') }
