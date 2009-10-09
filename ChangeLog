@@ -1,3 +1,8 @@
+Fri Oct  9 23:10:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* vm_method.c (rb_method_boundp): should exclude NOEX_RESPONDS.
+	  based on the patch from Nikolai Lugovoi.  [ruby-core:25949]
+
 Fri Oct  9 21:14:40 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS::Requester::ConnectedUDP): disable
