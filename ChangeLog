@@ -1,3 +1,9 @@
+Fri Oct  9 21:14:40 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS::Requester::ConnectedUDP): disable
+	  reverse lookup.
+	  (Resolv::DNS::Requester::UnconnectedUDP): ditto.
+
 Fri Oct  9 10:12:13 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/irb/context.rb (IRB::Context#initialize):
