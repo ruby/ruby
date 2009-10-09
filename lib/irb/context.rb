@@ -35,6 +35,8 @@ module IRB
       @load_modules = IRB.conf[:LOAD_MODULES]
 
       @use_readline = IRB.conf[:USE_READLINE]
+      @verbose = IRB.conf[:VERBOSE]
+      @io = nil
 
       self.inspect_mode = IRB.conf[:INSPECT_MODE]
       self.math_mode = IRB.conf[:MATH_MODE] if IRB.conf[:MATH_MODE]
@@ -91,7 +93,6 @@ module IRB
 	@output_method = StdioOutputMethod.new
       end
 
-      @verbose = IRB.conf[:VERBOSE]
       @echo = IRB.conf[:ECHO]
       if @echo.nil?
 	@echo = true
