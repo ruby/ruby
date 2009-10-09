@@ -512,7 +512,7 @@ rb_method_boundp(VALUE klass, ID id, int ex)
     rb_method_entry_t *me = rb_method_entry(klass, id);
 
     if (me != 0) {
-	if (ex && (me->flag & NOEX_PRIVATE)) {
+	if ((ex & ~NOEX_RESPONDS) && (me->flag & NOEX_PRIVATE)) {
 	    return FALSE;
 	}
 	if (!me->def) return 0;
