@@ -1,3 +1,8 @@
+Fri Oct  9 10:12:13 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/irb/context.rb (IRB::Context#initialize):
+	  remove warnings when $VERBOSE is set as true in .irbrc.
+
 Fri Oct  9 02:58:18 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/enc-unicode.rb: optimized.
