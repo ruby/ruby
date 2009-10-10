@@ -1,3 +1,8 @@
+Sat Oct 10 14:55:55 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* math.c (math_atanh): Fix bug for Math.atanh(+/-1). It now returns
+	  +-Infinity. [ruby-core:26028]
+
 Sat Oct 10 14:09:40 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* thread.c (rb_threadptr_execute_interrupts_rec, rb_threadptr_raise):
