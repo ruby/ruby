@@ -3959,7 +3959,7 @@ static const OnigCodePoint CR_Any[] = {
 
 /* 'Assigned': - */
 static const OnigCodePoint CR_Assigned[] = {
-	484,
+	485,
 	0x0000, 0x0377,
 	0x037a, 0x037e,
 	0x0384, 0x038a,
@@ -4444,6 +4444,7 @@ static const OnigCodePoint CR_Assigned[] = {
 	0xe0020, 0xe007f,
 	0xe0100, 0xe01ef,
 	0xf0000, 0xffffd,
+	0x100000, 0x10fffd,
 }; /* CR_Assigned */
 
 /* 'C': Major Category */
@@ -4500,7 +4501,7 @@ static const OnigCodePoint CR_Cf[] = {
 
 /* 'Cn': General Category */
 static const OnigCodePoint CR_Cn[] = {
-	484,
+	485,
 	0x0378, 0x0379,
 	0x037f, 0x0383,
 	0x038b, 0x038b,
@@ -4984,7 +4985,8 @@ static const OnigCodePoint CR_Cn[] = {
 	0xe0002, 0xe001f,
 	0xe0080, 0xe00ff,
 	0xe01f0, 0xeffff,
-	0xffffe, 0x10ffff,
+	0xffffe, 0xfffff,
+	0x10fffe, 0x10ffff,
 }; /* CR_Cn */
 
 /* 'Co': General Category */
