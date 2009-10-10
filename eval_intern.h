@@ -212,6 +212,7 @@ void rb_thread_terminate_all(void);
 VALUE rb_vm_top_self();
 VALUE rb_vm_cbase(void);
 void rb_trap_restore_mask(void);
+VALUE rb_rubylevel_thread_errinfo(rb_thread_t *);
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 #define CharNext(p) ((p) + mblen(p, RUBY_MBCHAR_MAXSIZE))
