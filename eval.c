@@ -189,8 +189,8 @@ ruby_cleanup(volatile int ex)
     return ex;
 }
 
-int
-ruby_exec_node(void *n, const char *file)
+static int
+ruby_exec_internal(void *n)
 {
     volatile int state;
     VALUE iseq = (VALUE)n;
@@ -218,6 +218,12 @@ ruby_stop(int ex)
 int
 ruby_run_node(void *n)
 {
+    return ruby_cleanup(ruby_exec_node(n));
+}
+
+int
+ruby_exec_node(void *n)
+{
     VALUE v = (VALUE)n;
 
     switch (v) {
@@ -228,7 +234,7 @@ ruby_run_node(void *n)
 	return FIX2INT(v);
     }
     ruby_init_stack((void *)&n);
-    return ruby_cleanup(ruby_exec_node(n, 0));
+    return ruby_exec_internal(n);
 }
 
 /*
