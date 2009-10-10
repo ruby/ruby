@@ -902,9 +902,8 @@ VALUE rb_f_trace_var();
 VALUE rb_f_untrace_var();
 
 static VALUE *
-errinfo_place(void)
+errinfo_place(rb_thread_t *th)
 {
-    rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
 
@@ -925,16 +924,21 @@ errinfo_place(void)
 }
 
 static VALUE
-get_errinfo(void)
+get_thread_errinfo(rb_thread_t *th)
 {
-    VALUE *ptr = errinfo_place();
+    VALUE *ptr = errinfo_place(th);
     if (ptr) {
 	return *ptr;
     }
     else {
-	rb_thread_t *th = GET_THREAD();
 	return th->errinfo;
     }
+}
+
+static VALUE
+get_errinfo(void)
+{
+    return get_thread_errinfo(GET_THREAD());
 }
 
 static VALUE
@@ -951,7 +955,7 @@ errinfo_setter(VALUE val, ID id, VALUE *var)
 	rb_raise(rb_eTypeError, "assigning non-exception to $!");
     }
     else {
-	VALUE *ptr = errinfo_place();
+	VALUE *ptr = errinfo_place(GET_THREAD());
 	if (ptr) {
 	    *ptr = val;
 	}
@@ -982,6 +986,12 @@ VALUE
 rb_rubylevel_errinfo(void)
 {
     return get_errinfo();
+}
+
+VALUE
+rb_rubylevel_thread_errinfo(rb_thread_t *th)
+{
+    return get_thread_errinfo(th);
 }
 
 static VALUE

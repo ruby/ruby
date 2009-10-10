@@ -76,6 +76,7 @@ void rb_thread_stop_timer_thread(void);
 
 static const VALUE eKillSignal = INT2FIX(0);
 static const VALUE eTerminateSignal = INT2FIX(1);
+static const VALUE eReRaiseSignal = INT2FIX(2);
 static volatile int system_working = 1;
 
 inline static void
@@ -1246,6 +1247,10 @@ rb_threadptr_execute_interrupts_rec(rb_thread_t *th, int sched_depth)
 		TH_JUMP_TAG(th, TAG_FATAL);
 	    }
 	    else {
+		if (err == eReRaiseSignal) {
+		    err = rb_rubylevel_thread_errinfo(th);
+		    err = rb_make_exception(NIL_P(err) ? 0 : 1, &err);
+		}
 		rb_exc_raise(err);
 	    }
 	}
@@ -1312,7 +1317,12 @@ rb_threadptr_raise(rb_thread_t *th, int argc, VALUE *argv)
 	goto again;
     }
 
-    exc = rb_make_exception(argc, argv);
+    if (argc == 0) {
+	exc = eReRaiseSignal;
+    }
+    else {
+	exc = rb_make_exception(argc, argv);
+    }
     th->thrown_errinfo = exc;
     rb_threadptr_ready(th);
     return Qnil;

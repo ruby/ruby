@@ -1,3 +1,12 @@
+Sat Oct 10 14:09:40 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* thread.c (rb_threadptr_execute_interrupts_rec, rb_threadptr_raise):
+	  Thread#raise with no argument will now re-raise the current exception
+	  if there is one [ruby-core:25367]
+
+	* eval.c (get_errinfo, rb_rubylevel_thread_errinfo): Getter for
+	  current exception for a given thread
+
 Sat Oct 10 12:21:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (rb_transcoding, str_transcoding_resize): fixed
