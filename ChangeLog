@@ -1,3 +1,8 @@
+Sat Oct 10 12:21:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (rb_transcoding, str_transcoding_resize): fixed
+	  types.
+
 Fri Oct  9 23:10:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* vm_method.c (rb_method_boundp): should exclude NOEX_RESPONDS.
