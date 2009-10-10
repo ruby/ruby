@@ -239,11 +239,20 @@ AC_ARG_PROGRAM
 
 dnl Checks for programs.
 
+cflagspat=
+test -z "$optflags" ||
+    cflagspat="$cflagspat;s|"`eval echo '"'"${optflags}"'"' | sed 's/[[][|.*]]/\\&/g;s/^ */ /;s/ *$/ /'`'| |g'
+test -z "$debugflags" ||
+    cflagspat="$cflagspat;s|"`eval echo '"'"${debugflags}"'"' | sed 's/[[][|.*]]/\\&/g;s/^ */ /;s/ *$/ /'`'| |g'
+test -z "warnflags" ||
+    cflagspat="$cflagspat;s|"`eval echo '"'"${warnflags}"'"' | sed 's/[[][|.*]]/\\&/g;s/^ */ /;s/ *$/ /'`'| |g'
 if test -z "${CFLAGS+set}"; then
+    cflags=`echo " $cflags " | sed "$cflagspat;s/^ *//;s/ *$//"`
     orig_cflags="$cflags"
     cflags="$cflags "'${optflags} ${debugflags} ${warnflags}'
 fi
 if test -z "${CXXFLAGS+set}"; then
+    cxxflags=`echo " $cxxflags " | sed "$cflagspat;s/^ *//;s/ *$//"`
     orig_cxxflags="$cxxflags"
     cxxflags="$cxxflags "'${optflags} ${debugflags} ${warnflags}'
 fi
