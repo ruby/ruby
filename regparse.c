@@ -2845,17 +2845,29 @@ fetch_name(OnigCodePoint start_code, UChar** src, UChar* end,
 #endif /* USE_NAMED_GROUP */
 
 static void
-CC_ESC_WARN(ScanEnv* env, UChar *c)
+onig_syntax_warn(ScanEnv *env, const char *fmt, ...)
+{
+    va_list args;
+    UChar buf[WARN_BUFSIZE];
+    va_start(args, fmt);
+    onig_snprintf_with_pattern(buf, WARN_BUFSIZE, env->enc,
+		env->pattern, env->pattern_end,
+		(const UChar *)fmt, args);
+    va_end(args);
+    if (env->sourcefile == NULL)
+	rb_warn(fmt, buf);
+    else
+	rb_compile_warn(env->sourcefile, env->sourceline, fmt, buf);
+}
+
+static void
+CC_ESC_WARN(ScanEnv *env, UChar *c)
 {
   if (onig_warn == onig_null_warn) return ;
 
   if (IS_SYNTAX_BV(env->syntax, ONIG_SYN_WARN_CC_OP_NOT_ESCAPED) &&
       IS_SYNTAX_BV(env->syntax, ONIG_SYN_BACKSLASH_ESCAPE_IN_CC)) {
-    UChar buf[WARN_BUFSIZE];
-    onig_snprintf_with_pattern(buf, WARN_BUFSIZE, env->enc,
-		env->pattern, env->pattern_end,
-                (UChar* )"character class has '%s' without escape", c);
-    (*onig_warn)((char* )buf);
+    onig_syntax_warn(env, "character class has '%s' without escape", c);
   }
 }
 
@@ -2865,48 +2877,27 @@ CLOSE_BRACKET_WITHOUT_ESC_WARN(ScanEnv* env, UChar* c)
   if (onig_warn == onig_null_warn) return ;
 
   if (IS_SYNTAX_BV((env)->syntax, ONIG_SYN_WARN_CC_OP_NOT_ESCAPED)) {
-    UChar buf[WARN_BUFSIZE];
-    onig_snprintf_with_pattern(buf, WARN_BUFSIZE, (env)->enc,
-		(env)->pattern, (env)->pattern_end,
-		(UChar* )"regular expression has '%s' without escape", c);
-    (*onig_warn)((char* )buf);
+      onig_syntax_warn(env, "regular expression has '%s' without escape", c);
   }
 }
 
 static void
 CC_DUP_WARN(ScanEnv *env)
 {
-  UChar buf[WARN_BUFSIZE];
   if (onig_warn == onig_null_warn || !RTEST(ruby_verbose)) return ;
 
   if (IS_SYNTAX_BV((env)->syntax, ONIG_SYN_WARN_CC_DUP) &&
     !((env)->warnings_flag & ONIG_SYN_WARN_CC_DUP)) {
     (env)->warnings_flag |= ONIG_SYN_WARN_CC_DUP;
-    onig_snprintf_with_pattern(buf, WARN_BUFSIZE, env->enc,
-	    env->pattern, env->pattern_end,
-	    (UChar* )"character class has duplicated range");
-
-    if (env->sourcefile == NULL)
-	(*onig_warn)((char* )buf);
-    else
-	rb_compile_warn(env->sourcefile, env->sourceline, (char* )buf);
+    onig_syntax_warn(env, "character class has duplicated range");
   }
 }
 
 static void
 UNKNOWN_ESC_WARN(ScanEnv *env, int c)
 {
-  UChar buf[WARN_BUFSIZE];
   if (onig_warn == onig_null_warn || !RTEST(ruby_verbose)) return ;
-
-  onig_snprintf_with_pattern(buf, WARN_BUFSIZE, env->enc,
-	  env->pattern, env->pattern_end,
-	  (UChar* )"Unknown escape \\%c is ignored", c);
-
-  if (env->sourcefile == NULL)
-      (*onig_warn)((char* )buf);
-  else
-      rb_compile_warn(env->sourcefile, env->sourceline, (char* )buf);
+  onig_syntax_warn(env, "Unknown escape \\%c is ignored", c);
 }
 
 static UChar*
