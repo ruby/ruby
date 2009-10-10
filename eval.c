@@ -995,7 +995,7 @@ rb_rubylevel_errinfo(void)
 }
 
 VALUE
-rb_rubylevel_thread_errinfo(rb_thread_t *th)
+rb_threadptr_errinfo(rb_thread_t *th)
 {
     return get_thread_errinfo(th);
 }
