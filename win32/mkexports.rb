@@ -144,7 +144,7 @@ class Exports::Cygwin < Exports
   def each_export(objs)
     objdump(objs) do |l|
       next if /@.*@/ =~ l
-      yield $2, !$1 if /\s(?:(T)|[[:upper:]])\s_((?!Init_|DllMain@).*)$/ =~ l
+      yield $2, !$1 if /\s(?:(T)|[[:upper:]])\s_((?!Init_|.*_threadptr_|DllMain@).*)$/ =~ l
     end
   end
 end

@@ -1,3 +1,8 @@
+Sat Oct 10 18:19:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, Makefile.in (LIBRUBY_SO), common.mk (ruby.imp),
+	  win32/mkexports.rb (each_export): exclude _threadptr_ functions.
+
 Sat Oct 10 17:55:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_threadptr_errinfo): renamed.
