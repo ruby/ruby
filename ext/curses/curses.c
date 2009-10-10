@@ -410,15 +410,22 @@ curses_addstr(VALUE obj, VALUE str)
     return Qnil;
 }
 
+static VALUE
+getch_func(void *arg)
+{
+    int *ip = (int *)arg;
+    *ip = getch();
+    return Qnil;
+}
+
 /* def getch */
 static VALUE
 curses_getch(VALUE obj)
 {
     int c;
 
-    rb_read_check(stdin);
     curses_stdscr();
-    c = getch();
+    rb_thread_blocking_region(getch_func, (void *)&c, RUBY_UBF_IO, 0);
     if (c == EOF) return Qnil;
     if (rb_isprint(c)) {
 	char ch = (char)c;
@@ -428,19 +435,29 @@ curses_getch(VALUE obj)
     return UINT2NUM(c);
 }
 
+/* This should be big enough.. I hope */
+#define GETSTR_BUF_SIZE 1024
+
+static VALUE
+getstr_func(void *arg)
+{
+    char *rtn = (char *)arg;
+#if defined(HAVE_GETNSTR)
+    getnstr(rtn,GETSTR_BUF_SIZE-1);
+#else
+    getstr(rtn);
+#endif
+    return Qnil;
+}
+
 /* def getstr */
 static VALUE
 curses_getstr(VALUE obj)
 {
-    char rtn[1024]; /* This should be big enough.. I hope */
+    char rtn[GETSTR_BUF_SIZE];
 
     curses_stdscr();
-    rb_read_check(stdin);
-#if defined(HAVE_GETNSTR)
-    getnstr(rtn,1023);
-#else
-    getstr(rtn);
-#endif
+    rb_thread_blocking_region(getstr_func, (void *)rtn, RUBY_UBF_IO, 0);
     return rb_locale_str_new_cstr(rtn);
 }
 
@@ -1213,16 +1230,31 @@ window_addstr2(VALUE obj, VALUE str)
     return obj;
 }
 
+struct wgetch_arg {
+    WINDOW *win;
+    int c;
+};
+
+static VALUE
+wgetch_func(void *_arg)
+{
+    struct wgetch_arg *arg = (struct wgetch_arg *)_arg;
+    arg->c = wgetch(arg->win);
+    return Qnil;
+}
+
 /* def getch */
 static VALUE
 window_getch(VALUE obj)
 {
     struct windata *winp;
+    struct wgetch_arg arg;
     int c;
 
-    rb_read_check(stdin);
     GetWINDOW(obj, winp);
-    c = wgetch(winp->window);
+    arg.win = winp->window;
+    rb_thread_blocking_region(wgetch_func, (void *)&arg, RUBY_UBF_IO, 0);
+    c = arg.c;
     if (c == EOF) return Qnil;
     if (rb_isprint(c)) {
 	char ch = (char)c;
@@ -1232,21 +1264,34 @@ window_getch(VALUE obj)
     return UINT2NUM(c);
 }
 
+struct wgetstr_arg {
+    WINDOW *win;
+    char rtn[GETSTR_BUF_SIZE];
+};
+
+static VALUE
+wgetstr_func(void *_arg)
+{
+    struct wgetstr_arg *arg = (struct wgetstr_arg *)_arg;
+#if defined(HAVE_WGETNSTR)
+    wgetnstr(arg->win, arg->rtn, GETSTR_BUF_SIZE-1);
+#else
+    wgetstr(arg->win, arg->rtn);
+#endif
+    return Qnil;
+}
+
 /* def getstr */
 static VALUE
 window_getstr(VALUE obj)
 {
     struct windata *winp;
-    char rtn[1024]; /* This should be big enough.. I hope */
+    struct wgetstr_arg arg;
 
     GetWINDOW(obj, winp);
-    rb_read_check(stdin);
-#if defined(HAVE_WGETNSTR)
-    wgetnstr(winp->window, rtn, 1023);
-#else
-    wgetstr(winp->window, rtn);
-#endif
-    return rb_locale_str_new_cstr(rtn);
+    arg.win = winp->window;
+    rb_thread_blocking_region(wgetstr_func, (void *)&arg, RUBY_UBF_IO, 0);
+    return rb_locale_str_new_cstr(arg.rtn);
 }
 
 /* def delch */

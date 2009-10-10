@@ -164,7 +164,7 @@ NORETURN(void rb_eof_error(void));
 
 void rb_io_read_check(rb_io_t*);
 int rb_io_read_pending(rb_io_t*);
-void rb_read_check(FILE*);
+DEPRECATED(void rb_read_check(FILE*));
 
 #if defined(__cplusplus)
 #if 0

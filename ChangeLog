@@ -1,3 +1,20 @@
+Sat Oct 10 19:03:29 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/curses/curses.c: use rb_thread_blocking_region to avoid
+	  rb_read_check.  This makes other threads runnable in getstr and
+	  wgetstr.
+	  (getch_func): extracted from curses_getch.
+	  (curses_getch): use rb_thread_blocking_region with getch_func.
+	  (getstr_func): extracted from curses_getstr.
+	  (curses_getstr): use rb_thread_blocking_region with getstr_func.
+	  (wgetch_func): extracted from window_getch.
+	  (window_getch): use rb_thread_blocking_region with wgetch_func.
+	  (wgetstr_func): extracted from window_getstr.
+	  (window_getstr): use rb_thread_blocking_region with wgetstr_func.
+
+	* include/ruby/io.h (rb_read_check): deprecated because it access
+	  internal of stdio.
+
 Sat Oct 10 18:59:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (cflags, cxxflags): remove duplicating options.
