@@ -55,15 +55,15 @@ typedef struct rb_transcoding {
     unsigned char next_byte;
     unsigned int output_index;
 
-    ssize_t recognized_len; /* already interpreted */
-    ssize_t readagain_len; /* not yet interpreted */
+    int recognized_len; /* already interpreted */
+    int readagain_len; /* not yet interpreted */
     union {
         unsigned char ary[8]; /* max_input <= sizeof(ary) */
         unsigned char *ptr; /* length: max_input */
     } readbuf; /* recognized_len + readagain_len used */
 
-    ssize_t writebuf_off;
-    ssize_t writebuf_len;
+    int writebuf_off;
+    int writebuf_len;
     union {
         unsigned char ary[8]; /* max_output <= sizeof(ary) */
         unsigned char *ptr; /* length: max_output */
@@ -76,20 +76,20 @@ typedef struct rb_transcoding {
     } state;
 } rb_transcoding;
 #define TRANSCODING_READBUF(tc) \
-    ((tc)->transcoder->max_input <= (int)sizeof((tc)->readbuf.ary) ? \
+    ((tc)->transcoder->max_input <= sizeof((tc)->readbuf.ary) ? \
      (tc)->readbuf.ary : \
      (tc)->readbuf.ptr)
 #define TRANSCODING_WRITEBUF(tc) \
-    ((tc)->transcoder->max_output <= (int)sizeof((tc)->writebuf.ary) ? \
+    ((tc)->transcoder->max_output <= sizeof((tc)->writebuf.ary) ? \
      (tc)->writebuf.ary : \
      (tc)->writebuf.ptr)
 #define TRANSCODING_WRITEBUF_SIZE(tc) \
-    ((tc)->transcoder->max_output <= (int)sizeof((tc)->writebuf.ary) ? \
+    ((tc)->transcoder->max_output <= sizeof((tc)->writebuf.ary) ? \
      sizeof((tc)->writebuf.ary) : \
      (size_t)(tc)->transcoder->max_output)
-#define TRANSCODING_STATE_EMBED_MAX ((int)sizeof(union rb_transcoding_state_t))
+#define TRANSCODING_STATE_EMBED_MAX sizeof(union rb_transcoding_state_t)
 #define TRANSCODING_STATE(tc) \
-    ((tc)->transcoder->state_size <= (int)sizeof((tc)->state) ? \
+    ((tc)->transcoder->state_size <= sizeof((tc)->state) ? \
      (tc)->state.ary : \
      (tc)->state.ptr)
 
@@ -362,7 +362,7 @@ load_transcoder_entry(transcoder_entry_t *entry)
 
     if (entry->lib) {
         const char *lib = entry->lib;
-        size_t len = strlen(lib);
+        int len = strlen(lib);
         char path[sizeof(transcoder_lib_prefix) + MAX_TRANSCODER_LIBNAME_LEN];
 
         entry->lib = NULL;
@@ -428,7 +428,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 {
     const rb_transcoder *tr = tc->transcoder;
     int unitlen = tr->input_unit_length;
-    ssize_t readagain_len = 0;
+    int readagain_len = 0;
 
     const unsigned char *inchar_start;
     const unsigned char *in_p;
@@ -563,7 +563,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                 SUSPEND(econv_source_buffer_empty, 5);
 	    }
 	    next_byte = (unsigned char)*in_p++;
-	    next_table = (unsigned int)next_info;
+	    next_table = next_info;
 	    goto follow_byte;
 	  case ZERObt: /* drop input */
 	    continue;
@@ -665,8 +665,8 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                 }
             }
             else {
-                ssize_t invalid_len; /* including the last byte which causes invalid */
-                ssize_t discard_len;
+                int invalid_len; /* including the last byte which causes invalid */
+                int discard_len;
                 invalid_len = tc->recognized_len + (in_p - inchar_start);
                 discard_len = ((invalid_len - 1) / unitlen) * unitlen;
                 readagain_len = invalid_len - discard_len;
@@ -761,10 +761,10 @@ rb_transcoding_open_by_transcoder(const rb_transcoder *tr, int flags)
     tc->readagain_len = 0;
     tc->writebuf_len = 0;
     tc->writebuf_off = 0;
-    if ((int)sizeof(tc->readbuf.ary) < tr->max_input) {
+    if (sizeof(tc->readbuf.ary) < tr->max_input) {
         tc->readbuf.ptr = xmalloc(tr->max_input);
     }
-    if ((int)sizeof(tc->writebuf.ary) < tr->max_output) {
+    if (sizeof(tc->writebuf.ary) < tr->max_output) {
         tc->writebuf.ptr = xmalloc(tr->max_output);
     }
     return tc;
@@ -791,9 +791,9 @@ rb_transcoding_close(rb_transcoding *tc)
     }
     if (TRANSCODING_STATE_EMBED_MAX < tr->state_size)
         xfree(tc->state.ptr);
-    if ((int)sizeof(tc->readbuf.ary) < tr->max_input)
+    if (sizeof(tc->readbuf.ary) < tr->max_input)
         xfree(tc->readbuf.ptr);
-    if ((int)sizeof(tc->writebuf.ary) < tr->max_output)
+    if (sizeof(tc->writebuf.ary) < tr->max_output)
         xfree(tc->writebuf.ptr);
     xfree(tc);
 }
@@ -807,10 +807,10 @@ rb_transcoding_memsize(rb_transcoding *tc)
     if (TRANSCODING_STATE_EMBED_MAX < tr->state_size) {
 	size += tr->state_size;
     }
-    if ((int)sizeof(tc->readbuf.ary) < tr->max_input) {
+    if (sizeof(tc->readbuf.ary) < tr->max_input) {
 	size += tr->max_input;
     }
-    if ((int)sizeof(tc->writebuf.ary) < tr->max_output) {
+    if (sizeof(tc->writebuf.ary) < tr->max_output) {
 	size += tr->max_output;
     }
     return size;
@@ -1091,8 +1091,8 @@ trans_sweep(rb_econv_t *ec,
             }
             else {
                 if (te->out_buf_start != te->out_data_start) {
-                    ssize_t len = te->out_data_end - te->out_data_start;
-                    ssize_t off = te->out_data_start - te->out_buf_start;
+                    int len = te->out_data_end - te->out_data_start;
+                    int off = te->out_data_start - te->out_buf_start;
                     MEMMOVE(te->out_buf_start, te->out_data_start, unsigned char, len);
                     te->out_data_start = te->out_buf_start;
                     te->out_data_end -= off;
@@ -1708,10 +1708,7 @@ rb_econv_putbackable(rb_econv_t *ec)
 {
     if (ec->num_trans == 0)
         return 0;
-#if SIZEOF_SIZE_T > SIZEOF_INT
-    if (ec->elems[0].tc->readagain_len > INT_MAX) return INT_MAX;
-#endif
-    return (int)ec->elems[0].tc->readagain_len;
+    return ec->elems[0].tc->readagain_len;
 }
 
 void
@@ -2116,7 +2113,7 @@ make_econv_exception(rb_econv_t *ec)
 static void
 more_output_buffer(
         VALUE destination,
-        unsigned char *(*resize_destination)(VALUE, size_t, size_t),
+        unsigned char *(*resize_destination)(VALUE, int, int),
         int max_output,
         unsigned char **out_start_ptr,
         unsigned char **out_pos,
@@ -2216,7 +2213,7 @@ static void
 transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	       const unsigned char *in_stop, unsigned char *out_stop,
                VALUE destination,
-               unsigned char *(*resize_destination)(VALUE, size_t, size_t),
+               unsigned char *(*resize_destination)(VALUE, int, int),
                const char *src_encoding,
                const char *dst_encoding,
                int ecflags,
@@ -2261,7 +2258,7 @@ static void
 transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	       const unsigned char *in_stop, unsigned char *out_stop,
                VALUE destination,
-               unsigned char *(*resize_destination)(VALUE, size_t, size_t),
+               unsigned char *(*resize_destination)(VALUE, int, int),
                const char *src_encoding,
                const char *dst_encoding,
                int ecflags,
@@ -2334,7 +2331,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
  */
 
 static unsigned char *
-str_transcoding_resize(VALUE destination, size_t len, size_t new_len)
+str_transcoding_resize(VALUE destination, int len, int new_len)
 {
     rb_str_resize(destination, new_len);
     return (unsigned char *)RSTRING_PTR(destination);
@@ -2896,7 +2893,7 @@ decorate_convpath(VALUE convpath, int ecflags)
     if (num_decorators == -1)
         return -1;
 
-    len = n = RARRAY_LENINT(convpath);
+    len = n = RARRAY_LEN(convpath);
     if (n != 0) {
         VALUE pair = RARRAY_PTR(convpath)[n-1];
 	if (TYPE(pair) == T_ARRAY) {
@@ -3034,7 +3031,7 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
     rb_encoding *senc = 0, *denc = 0;
     const char *sname, *dname;
 
-    ec = rb_econv_alloc(RARRAY_LENINT(convpath));
+    ec = rb_econv_alloc(RARRAY_LEN(convpath));
     DATA_PTR(self) = ec;
 
     for (i = 0; i < RARRAY_LEN(convpath); i++) {
