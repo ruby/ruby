@@ -1,3 +1,7 @@
+Sat Oct 10 17:03:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_exec_node): removed unused argument.
+
 Sat Oct 10 14:55:55 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* math.c (math_atanh): Fix bug for Math.atanh(+/-1). It now returns
