@@ -1,3 +1,7 @@
+Sat Oct 10 20:35:27 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* math.c (math_atanh): reverted r25279.
+
 Sat Oct 10 19:03:29 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/curses/curses.c: use rb_thread_blocking_region to avoid

@@ -298,6 +298,7 @@ math_atanh(VALUE obj, VALUE x)
     d0 = RFLOAT_VALUE(x);
     d = atanh(d0);
     domain_check(d0, d, "atanh");
+    infinity_check(x, d, "atanh");
     return DBL2NUM(d);
 }
 
