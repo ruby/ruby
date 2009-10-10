@@ -1248,7 +1248,7 @@ rb_threadptr_execute_interrupts_rec(rb_thread_t *th, int sched_depth)
 	    }
 	    else {
 		if (err == eReRaiseSignal) {
-		    err = rb_rubylevel_thread_errinfo(th);
+		    err = rb_threadptr_errinfo(th);
 		    err = rb_make_exception(NIL_P(err) ? 0 : 1, &err);
 		}
 		rb_exc_raise(err);
