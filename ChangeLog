@@ -1,3 +1,8 @@
+Sat Oct 10 23:51:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (rb_transcoding, str_transcoding_resize): fixed
+	  types.
+
 Sat Oct 10 20:35:27 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* math.c (math_atanh): reverted r25279.
@@ -49,11 +54,6 @@ Sat Oct 10 14:09:40 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* eval.c (get_errinfo, rb_rubylevel_thread_errinfo): Getter for
 	  current exception for a given thread
-
-Sat Oct 10 12:21:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* transcode.c (rb_transcoding, str_transcoding_resize): fixed
-	  types.
 
 Fri Oct  9 23:10:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
