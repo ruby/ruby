@@ -4523,7 +4523,8 @@ path_check_0(VALUE path, int execpath)
 
 	rb_str_cat2(newpath, "/");
 	rb_str_cat2(newpath, p0);
-	p0 = RSTRING_PTR(path = newpath);
+	path = newpath;
+	p0 = RSTRING_PTR(path);
     }
     for (;;) {
 #ifndef S_IWOTH
@@ -4537,6 +4538,7 @@ path_check_0(VALUE path, int execpath)
 	    rb_warn("Insecure world writable dir %s in %sPATH, mode 0%o",
 		    p0, (execpath ? "" : "LOAD_"), st.st_mode);
 	    if (p) *p = '/';
+	    RB_GC_GUARD(path);
 	    return 0;
 	}
 	s = strrdirsep(p0);
@@ -4548,15 +4550,11 @@ path_check_0(VALUE path, int execpath)
 }
 #endif
 
-static int
-fpath_check(const char *path)
-{
 #if ENABLE_PATH_CHECK
-    return path_check_0(rb_str_new2(path), FALSE);
+#define fpath_check(path) path_check_0(path, FALSE)
 #else
-    return 1;
+#define fpath_check(path) 1
 #endif
-}
 
 int
 rb_path_check(const char *path)
@@ -4654,7 +4652,7 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
     }
 
     if (expanded || is_absolute_path(f) || is_explicit_relative(f)) {
-	if (safe_level >= 1 && !fpath_check(f)) {
+	if (safe_level >= 1 && !fpath_check(fname)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
 	}
 	if (!expanded) fname = rb_file_expand_path(fname, Qnil);
@@ -4725,7 +4723,7 @@ rb_find_file_safe(VALUE path, int safe_level)
     }
 
     if (expanded || is_absolute_path(f) || is_explicit_relative(f)) {
-	if (safe_level >= 1 && !fpath_check(f)) {
+	if (safe_level >= 1 && !fpath_check(path)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
 	}
 	if (!file_load_ok(f)) return 0;
@@ -4759,7 +4757,7 @@ rb_find_file_safe(VALUE path, int safe_level)
     }
 
   found:
-    if (safe_level >= 1 && !fpath_check(f)) {
+    if (safe_level >= 1 && !fpath_check(tmp)) {
 	rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
     }
 
