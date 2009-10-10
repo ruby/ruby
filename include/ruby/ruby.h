@@ -1135,6 +1135,7 @@ void ruby_init_stack(volatile VALUE*);
 void ruby_init(void);
 void *ruby_options(int, char**);
 int ruby_run_node(void *);
+int ruby_exec_node(void *);
 
 RUBY_EXTERN VALUE rb_mKernel;
 RUBY_EXTERN VALUE rb_mComparable;
