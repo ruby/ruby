@@ -1,3 +1,7 @@
+Sun Oct 11 00:14:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (marshal_dump, marshal_load): prevent from GC.
+
 Sat Oct 10 23:57:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (path_check_0): prevent from GC.
