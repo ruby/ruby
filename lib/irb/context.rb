@@ -165,8 +165,6 @@ module IRB
       @workspace.evaluate self, "_ = IRB.CurrentContext.last_value"
     end
 
-    attr_reader :irb_name
-
     def prompt_mode=(mode)
       @prompt_mode = mode
       pconf = IRB.conf[:PROMPT][mode]
