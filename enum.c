@@ -2240,13 +2240,14 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *  The duplicated object is passed to 2nd argument of the block for
  *  +slice_before+ method.
  *
- *    # word wrapping
- *    def wordwrap(words, width)
+ *    # word wrapping.
+ *    # this assumes all characters have same width.
+ *    def wordwrap(words, maxwidth)
  *      # if cols is a local variable, 2nd "each" may start with non-zero cols.
  *      words.slice_before(cols: 0) {|w, h|
  *        h[:cols] += 1 if h[:cols] != 0
  *        h[:cols] += w.length
- *        if width < h[:cols]
+ *        if maxwidth < h[:cols]
  *          h[:cols] = w.length
  *          true
  *        else
