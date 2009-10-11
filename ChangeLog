@@ -1,3 +1,9 @@
+Sun Oct 11 09:44:46 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regerror.c (onig_vsnprintf_with_pattern): added.
+
+	* regparse.c (onig_syntax_warn): use above.
+
 Sun Oct 11 09:04:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (RB_GC_GUARD_PTR): workaround for gcc

@@ -312,31 +312,16 @@ onig_error_code_to_str(s, code, va_alist)
   return (int)len;
 }
 
-
 void
-#ifdef HAVE_STDARG_PROTOTYPES
-onig_snprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
-                           UChar* pat, UChar* pat_end, const UChar *fmt, ...)
-#else
-onig_snprintf_with_pattern(buf, bufsize, enc, pat, pat_end, fmt, va_alist)
-    UChar buf[];
-    int bufsize;
-    OnigEncoding enc;
-    UChar* pat;
-    UChar* pat_end;
-    const UChar *fmt;
-    va_dcl
-#endif
+onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
+                           UChar* pat, UChar* pat_end, const UChar *fmt, va_list args)
 {
   size_t need;
   int n, len;
   UChar *p, *s, *bp;
   UChar bs[6];
-  va_list args;
 
-  va_init_list(args, fmt);
   n = xvsnprintf((char* )buf, bufsize, (const char* )fmt, args);
-  va_end(args);
 
   need = (pat_end - pat) * 4 + 4;
 
@@ -387,3 +372,26 @@ onig_snprintf_with_pattern(buf, bufsize, enc, pat, pat_end, fmt, va_alist)
     *s   = '\0';
   }
 }
+
+void
+#ifdef HAVE_STDARG_PROTOTYPES
+onig_snprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
+                           UChar* pat, UChar* pat_end, const UChar *fmt, ...)
+#else
+onig_snprintf_with_pattern(buf, bufsize, enc, pat, pat_end, fmt, va_alist)
+    UChar buf[];
+    int bufsize;
+    OnigEncoding enc;
+    UChar* pat;
+    UChar* pat_end;
+    const UChar *fmt;
+    va_dcl
+#endif
+{
+  va_list args;
+  va_init_list(args, fmt);
+  onig_vsnprintf_with_pattern(buf, bufsize, enc,
+	  pat, pat_end, fmt, args);
+  va_end(args);
+}
+

@@ -2844,20 +2844,23 @@ fetch_name(OnigCodePoint start_code, UChar** src, UChar* end,
 }
 #endif /* USE_NAMED_GROUP */
 
+void onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
+                           UChar* pat, UChar* pat_end, const UChar *fmt, va_list args);
+
 static void
 onig_syntax_warn(ScanEnv *env, const char *fmt, ...)
 {
     va_list args;
     UChar buf[WARN_BUFSIZE];
     va_start(args, fmt);
-    onig_snprintf_with_pattern(buf, WARN_BUFSIZE, env->enc,
+    onig_vsnprintf_with_pattern(buf, WARN_BUFSIZE, env->enc,
 		env->pattern, env->pattern_end,
 		(const UChar *)fmt, args);
     va_end(args);
     if (env->sourcefile == NULL)
-	rb_warn(fmt, buf);
+	rb_warn((char *)buf);
     else
-	rb_compile_warn(env->sourcefile, env->sourceline, fmt, buf);
+	rb_compile_warn(env->sourcefile, env->sourceline, (char *)buf);
 }
 
 static void
