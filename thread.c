@@ -1393,7 +1393,9 @@ rb_thread_fd_close(int fd)
 
 /*
  *  call-seq:
- *     thr.raise(exception)
+ *     thr.raise
+ *     thr.raise(string)
+ *     thr.raise(exception [, string [, array]])
  *
  *  Raises an exception (see <code>Kernel::raise</code>) from <i>thr</i>. The
  *  caller does not have to be <i>thr</i>.
