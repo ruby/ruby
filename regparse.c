@@ -3585,8 +3585,10 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 	    }
 	  }
 	}
-	else
-	  PUNFETCH;
+	else {
+	    PUNFETCH;
+	    onig_syntax_warn(env, "invalid back reference");
+	}
       }
       break;
 #endif
@@ -3608,8 +3610,10 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 	  tok->u.call.name_end = name_end;
 	  tok->u.call.gnum     = gnum;
 	}
-	else
-	  PUNFETCH;
+	else {
+	    onig_syntax_warn(env, "invalid subexp call");
+	    PUNFETCH;
+	}
       }
       break;
 #endif
