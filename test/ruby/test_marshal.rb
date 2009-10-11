@@ -206,11 +206,15 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_regexp
+    assert_equal(/\\u/, Marshal.load("\004\b/\b\\\\u\000"))
+    assert_equal(/u/, Marshal.load("\004\b/\a\\u\000"))
+    assert_equal(/u/, Marshal.load("\004\bI/\a\\u\000\006:\016@encoding\"\vEUC-JP"))
+
     bug2109 = '[ruby-core:25625]'
     a = "\x82\xa0".force_encoding(Encoding::Windows_31J)
     b = "\x82\xa2".force_encoding(Encoding::Windows_31J)
     c = [/#{a}/, /#{b}/]
-    assert_equal(c, Marshal.load(Marshal.dump(c)))
+    assert_equal(c, Marshal.load(Marshal.dump(c)), bug2109)
   end
 
   class DumpTest

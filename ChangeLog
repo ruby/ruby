@@ -1,3 +1,10 @@
+Mon Oct 12 03:47:42 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* marshal.c (has_encoding): added for check the regexp
+	  is dumped by 1.8 or 1.9.
+
+	* marshal.c (r_object0): use has_encoding.
+
 Sun Oct 11 15:54:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/gdbm/gdbm.c (fgdbm_select): fixed rdoc.  a patch from Justin
