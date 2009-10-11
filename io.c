@@ -1062,7 +1062,7 @@ rb_io_seek(VALUE io, VALUE offset, int whence)
 
 /*
  *  call-seq:
- *     ios.seek(amount, whence=SEEK_SET) -> 0
+ *     ios.seek(amount, whence=IO::SEEK_SET) -> 0
  *
  *  Seeks to a given offset <i>anInteger</i> in the stream according to
  *  the value of <i>whence</i>:
@@ -3686,7 +3686,7 @@ rb_io_close_write(VALUE io)
 
 /*
  *  call-seq:
- *     ios.sysseek(offset, whence=SEEK_SET)   => integer
+ *     ios.sysseek(offset, whence=IO::SEEK_SET)   => integer
  *
  *  Seeks to a given <i>offset</i> in the stream according to the value
  *  of <i>whence</i> (see <code>IO#seek</code> for values of
@@ -8633,7 +8633,7 @@ argf_tell(VALUE argf)
 
 /*
  *  call-seq:
- *     ARGF.seek(amount, whence=SEEK_SET) -> 0
+ *     ARGF.seek(amount, whence=IO::SEEK_SET) -> 0
  *
  *  Seeks to offset _amount_ (an +Integer+) in the +ARGF+ stream according to
  *  the value of _whence_. See +IO#seek+ for further details.
