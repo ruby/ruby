@@ -1,3 +1,8 @@
+Mon Oct 12 05:51:11 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regparse.c (fetch_token): warn invalid back reference
+	  and subexp call. (\k and \g).
+
 Mon Oct 12 03:47:42 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* marshal.c (has_encoding): added for check the regexp
