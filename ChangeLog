@@ -1,3 +1,10 @@
+Sun Oct 11 10:04:35 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regparse.c (fetch_token_in_cc): warn when \p is not
+	  followed by property name.
+
+	* regparse.c (fetch_token): ditto.
+
 Sun Oct 11 09:44:46 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regerror.c (onig_vsnprintf_with_pattern): added.
