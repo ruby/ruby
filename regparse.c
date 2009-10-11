@@ -3069,6 +3069,9 @@ fetch_token_in_cc(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 	    PUNFETCH;
 	}
       }
+      else {
+	  onig_syntax_warn(env, "invalid Unicode Property \\%c", c);
+      }
       break;
 
     case 'x':
@@ -3633,6 +3636,9 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 	  else
 	    PUNFETCH;
 	}
+      }
+      else {
+	  onig_syntax_warn(env, "invalid Unicode Property \\%c", c);
       }
       break;
 
