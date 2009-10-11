@@ -1304,6 +1304,35 @@ obj_alloc_by_path(VALUE path, struct load_arg *arg)
 
 #define div0(x) ruby_div0(x)
 
+static int
+has_encoding(struct load_arg *arg)
+{
+    int res = FALSE;
+    long offset = arg->offset;
+    r_long(arg);
+    switch (r_byte(arg)) {
+      case ':':
+	switch (r_byte(arg)) {
+	  case 6:
+	    if (r_byte(arg) == 'E') res = TRUE;
+	    break;
+	  case 13:
+	    if (r_byte(arg) == 'e') res = TRUE;
+	    break;
+	}
+	break;
+      case ';':
+	{
+	    ID id = r_symlink(arg);
+	    if (id == rb_intern("E") || id == rb_id_encoding())
+		res = TRUE;
+	}
+	break;
+    }
+    arg->offset = offset;
+    return res;
+}
+
 static VALUE
 r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 {
@@ -1474,21 +1503,17 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	{
 	    volatile VALUE str = r_bytes(arg);
 	    int options = r_byte(arg);
-	    VALUE args[2];
-	    args[0] = str;
-	    args[1] = INT2FIX(options);
-	    v = r_entry(rb_obj_alloc(rb_cRegexp), arg);
-	    if (ivp) {
-		r_ivar(v, arg);
-		*ivp = FALSE;
+
+	    if (!ivp || !has_encoding(arg)) {
+		VALUE pat;
+		VALUE dst;
+		char *rsrc =
+		    "(?<!\\\\)((?:\\\\\\\\)*)\\\\([ghijklmopquyEFHIJKLNOPQRSTUVXY])";
+		pat = rb_reg_new(rsrc, strlen(rsrc), 0);
+		dst = rb_usascii_str_new_cstr("\\1\\2");
+		rb_funcall(str, rb_intern("gsub!"), 2, pat, dst);
 	    }
-	    if (rb_enc_get_index(v) != rb_usascii_encindex())
-		rb_enc_copy(str, v);
-	    if (rb_enc_get_index(str) != rb_utf8_encindex()) {
-#define f_gsub_bang(x,y,z) rb_funcall(x, rb_intern("gsub!"), 2, y, z)
-		f_gsub_bang(str, rb_reg_new("\\\\u", 3, 0), rb_usascii_str_new_cstr("u"));
-	    }
-	    rb_obj_call_init(v, 2, args);
+	    v = r_entry(rb_reg_new_str(str, options), arg);
 	    v = r_leave(v, arg);
 	}
 	break;
