@@ -483,9 +483,9 @@ fgdbm_indexes(argc, argv, obj)
 
 /*
  * call-seq:
- *      gdbm.select { |value| block } -> array
+ *      gdbm.select { |key, value| block } -> array
  *
- * Returns a new array of all values of the database for which _block_
+ * Returns a new array of all key-value pairs of the database for which _block_
  * evaluates to true.
  */
 static VALUE

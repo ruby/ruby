@@ -1,3 +1,8 @@
+Sun Oct 11 15:54:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/gdbm/gdbm.c (fgdbm_select): fixed rdoc.  a patch from Justin
+	  Collins in [ruby-core:26050].
+
 Fri Oct  9 02:39:47 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* ext/curses/curses.c: Many functions of module Curses could cause a
