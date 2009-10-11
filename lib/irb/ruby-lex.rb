@@ -705,7 +705,7 @@ class RubyLex
 
     @OP.def_rule('@') do
       |op, io|
-      if peek(0) =~ /[\w_@]/
+      if peek(0) =~ /[\w@]/
 	ungetc
 	identify_identifier
       else
