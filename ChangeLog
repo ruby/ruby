@@ -1,3 +1,7 @@
+Mon Oct 12 23:24:58 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (getaddress): rescue exceptions.  [ruby-dev:39451]
+
 Sun Oct 11 15:54:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/gdbm/gdbm.c (fgdbm_select): fixed rdoc.  a patch from Justin

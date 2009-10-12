@@ -346,9 +346,9 @@ module Net
     private :transfercmd
     
     def getaddress
-      thishost = Socket.gethostname
+      thishost = Socket.gethostname rescue ""
       if not thishost.index(".")
-	thishost = Socket.gethostbyname(thishost)[0]
+        thishost = Socket.gethostbyname(thishost)[0] rescue ""
       end
       if ENV.has_key?("LOGNAME")
 	realuser = ENV["LOGNAME"]
