@@ -445,12 +445,7 @@ module Net
           loop do
             line = conn.gets
             break if line == nil
-            if line[-2, 2] == CRLF
-              line = line[0 .. -3]
-            elsif line[-1] == ?\n
-              line = line[0 .. -2]
-            end
-            yield(line)
+            yield(line.sub(/\r?\n\z/, ""), !line.match(/\n\z/).nil?)
           end
           conn.close
           voidresp
@@ -570,10 +565,11 @@ module Net
         result = ""
       end
       begin
-	retrlines("RETR " + remotefile) do |line|
-	  f.puts(line) if localfile
-	  yield(line) if block_given?
-          result.concat(line + "\n") if result
+	retrlines("RETR " + remotefile) do |line, newline|
+          l = newline ? line + "\n" : line
+	  f.print(l) if localfile
+	  yield(line, newline) if block_given?
+          result.concat(l) if result
 	end
         return result
       ensure
