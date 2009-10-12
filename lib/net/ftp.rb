@@ -363,22 +363,6 @@ module Net
     end
     private :transfercmd
 
-    def getaddress
-      thishost = Socket.gethostname
-      if not thishost.index(".")
-	thishost = Socket.gethostbyname(thishost)[0]
-      end
-      if ENV.has_key?("LOGNAME")
-	realuser = ENV["LOGNAME"]
-      elsif ENV.has_key?("USER")
-	realuser = ENV["USER"]
-      else
-	realuser = "anonymous"
-      end
-      return realuser + "@" + thishost
-    end
-    private :getaddress
-
     #
     # Logs in to the remote host. The session must have been previously
     # connected.  If +user+ is the string "anonymous" and the +password+ is
@@ -389,7 +373,7 @@ module Net
     #
     def login(user = "anonymous", passwd = nil, acct = nil)
       if user == "anonymous" and passwd == nil
-	passwd = getaddress
+	passwd = "anonymous@"
       end
 
       resp = ""

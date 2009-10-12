@@ -1,3 +1,8 @@
+Mon Oct 12 23:27:57 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (login): use "anonymous@" as a default password.
+	  [ruby-dev:39451]
+
 Mon Oct 12 22:48:25 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (retrlines): added a new block parameter.
