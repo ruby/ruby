@@ -1388,9 +1388,9 @@ rb_big_eql(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *    -big   =>  other_big
+ *    -big   =>  integer
  *
- * Unary minus (returns a new Bignum whose value is 0-big)
+ * Unary minus (returns an integer whose value is 0-big)
  */
 
 static VALUE
