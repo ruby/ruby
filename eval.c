@@ -216,23 +216,33 @@ ruby_stop(int ex)
 }
 
 int
+ruby_executable_node(void *n, int *status)
+{
+    VALUE v = (VALUE)n;
+    int s;
+
+    switch (v) {
+      case Qtrue:  s = EXIT_SUCCESS; break;
+      case Qfalse: s = EXIT_FAILURE; break;
+      default:
+	if (!FIXNUM_P(v)) return TRUE;
+	s = FIX2INT(v);
+    }
+    if (status) *status = s;
+    return FALSE;
+}
+
+int
 ruby_run_node(void *n)
 {
+    int status;
+    if (!ruby_executable_node(n, &status)) return status;
     return ruby_cleanup(ruby_exec_node(n));
 }
 
 int
 ruby_exec_node(void *n)
 {
-    VALUE v = (VALUE)n;
-
-    switch (v) {
-      case Qtrue:  return EXIT_SUCCESS;
-      case Qfalse: return EXIT_FAILURE;
-    }
-    if (FIXNUM_P(v)) {
-	return FIX2INT(v);
-    }
     ruby_init_stack((void *)&n);
     return ruby_exec_internal(n);
 }
