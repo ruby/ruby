@@ -1004,7 +1004,7 @@ rb_rubylevel_errinfo(void)
     return get_errinfo();
 }
 
-VALUE
+static VALUE
 rb_threadptr_errinfo(rb_thread_t *th)
 {
     return get_thread_errinfo(th);
