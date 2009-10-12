@@ -586,7 +586,7 @@ class TestRegexp < Test::Unit::TestCase
     failcheck('()\g<-2>')
     check(/\A(?<x>.)(?<x>.)\k<x>\z/, %w(aba abb), %w(abc .. ....))
     check(/\A(?<x>.)(?<x>.)\k<x>\z/i, %w(aba ABa abb ABb), %w(abc .. ....))
-    check(/\k\g/, "kg")
+    check('\k\g', "kg")
     failcheck('(.\g<1>)')
     failcheck('(.\g<2>)')
     failcheck('(?=\g<1>)')
