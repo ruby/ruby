@@ -1507,9 +1507,9 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    if (!ivp || !has_encoding(arg)) {
 		VALUE pat;
 		VALUE dst;
-		char *rsrc =
+		static const char rsrc[] =
 		    "(?<!\\\\)((?:\\\\\\\\)*)\\\\([ghijklmopquyEFHIJKLNOPQRSTUVXY])";
-		pat = rb_reg_new(rsrc, strlen(rsrc), 0);
+		pat = rb_reg_new(rsrc, sizeof(rsrc)-1, 0);
 		dst = rb_usascii_str_new_cstr("\\1\\2");
 		rb_funcall(str, rb_intern("gsub!"), 2, pat, dst);
 	    }
