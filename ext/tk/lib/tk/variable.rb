@@ -1375,7 +1375,7 @@ end
 
     if @trace_opts == nil
       TkVar_CB_TBL[@id] = self
-      @trace_opts = opts
+      @trace_opts = opts.dup
       if USE_OLD_TRACE_OPTION_STYLE
         Tk.tk_call_without_enc('trace', 'variable',
                                @id, @trace_opts, 'rb_var ' << @id)
@@ -1421,7 +1421,7 @@ end
 
     if @trace_opts == nil
       TkVar_CB_TBL[@id] = self
-      @trace_opts = opts
+      @trace_opts = opts.dup
       if USE_OLD_TRACE_OPTION_STYLE
         Tk.tk_call_without_enc('trace', 'add', 'variable',
                                @id, @trace_opts, 'rb_var ' << @id)
