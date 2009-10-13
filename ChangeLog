@@ -1,3 +1,10 @@
+Tue Oct 13 09:04:14 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* thread.c: Revert changes to Thread#raise made in r25278
+	  [ruby-core:25367]
+
+	* eval_intern.h: ditto
+
 Mon Oct 12 23:27:57 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (login): use "anonymous@" as a default password.
