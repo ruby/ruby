@@ -3,15 +3,15 @@
 # Creates the data structures needed by Onigurma to map Unicode codepoints to
 # property names and POSIX character classes
 #
-# To use this, get UnicodeData.txt and Scripts.txt from unicode.org.
+# To use this, get UnicodeData.txt, Scripts.txt, PropList.txt from unicode.org.
 # (http://unicode.org/Public/UNIDATA/)
 # And run following command.
-#   ruby1.9 tool/enc-unicode.rb UnicodeData.txt Scripts.txt > enc/unicode/name2ctype.kwd
+#   ruby1.9 tool/enc-unicode.rb data_dir > enc/unicode/name2ctype.kwd
 # You can get source file for gperf.
 # After this, simply make ruby.
 
-unless ARGV.size == 2
-  $stderr.puts "Usage: #{$0} UnicodeData.txt Scripts.txt"
+unless ARGV.size == 1
+  $stderr.puts "Usage: #{$0} data_directory"
   exit(1)
 end
 
@@ -161,21 +161,47 @@ def parse_unicode_data(file)
 end
 
 
-def parse_scripts(file)
-  script = nil
+def parse_scripts
+  files = [
+    {fn: 'DerivedCoreProperties.txt', title: 'Derived Property'},
+    {fn: 'Scripts.txt', title: 'Script'},
+    {fn: 'PropList.txt', title: 'Binary Property'}
+  ]
+  current = nil
   data = []
   names = []
-  IO.foreach(file) do |line|
-    if /^# Total code points: / =~ line
-      make_const(script, pair_codepoints(data), 'Script')
-      names << script
-      data = []
-    elsif /^([[:xdigit:]]+)(?:..([[:xdigit:]]+))?\s*;\s*(\w+)/ =~ line
-      script = $3
-      $2 ? data.concat(($1.to_i(16)..$2.to_i(16)).to_a) : data.push($1.to_i(16))
+  files.each do |file|
+    IO.foreach(get_file(file[:fn])) do |line|
+      if /^# Total code points: / =~ line
+        make_const(current, pair_codepoints(data), file[:title])
+        names << current
+        data = []
+      elsif /^(\h+)(?:..(\h+))?\s*;\s*(\w+)/ =~ line
+        current = $3
+        $2 ? data.concat(($1.to_i(16)..$2.to_i(16)).to_a) : data.push($1.to_i(16))
+      end
     end
   end
   names
+end
+
+def parse_aliases
+  kv = {}
+  IO.foreach(get_file('PropertyAliases.txt')) do |line|
+    next unless /^(\w+)\s*; (\w+)/ =~ line
+    kv[normalize_propname($1)] = normalize_propname($2)
+  end
+  IO.foreach(get_file('PropertyValueAliases.txt')) do |line|
+    next unless /^(sc|gc)\s*; (\w+)\s*; (\w+)(?:\s*; (\w+))?/ =~ line
+    if $1 == 'gc'
+      kv[normalize_propname($3)] = normalize_propname($2)
+      kv[normalize_propname($4)] = normalize_propname($2) if $4
+    else
+      kv[normalize_propname($2)] = normalize_propname($3)
+      kv[normalize_propname($4)] = normalize_propname($3) if $4
+    end
+  end
+  kv
 end
 
 # make_const(property, pairs, name): Prints a 'static const' structure for a
@@ -195,17 +221,23 @@ end
 
 def normalize_propname(name)
   name = name.downcase
-  name.gsub!(/[- _]/, '')
+  name.delete!('- _')
   name
 end
 
+def get_file(name)
+  File.join(ARGV[0], name)
+end
+
+
+# Write Data
 puts '%{'
-gcps, data = parse_unicode_data(ARGV[0])
+props, data = parse_unicode_data(get_file('UnicodeData.txt'))
 POSIX_NAMES.each do |name|
   make_const(name, pair_codepoints(data[name]), "[[:#{name}:]]")
 end
 print "\n#ifdef USE_UNICODE_PROPERTIES"
-gcps.each do |name|
+props.each do |name|
   category =
     case name.size
     when 1 then 'Major Category'
@@ -214,18 +246,19 @@ gcps.each do |name|
     end
   make_const(name, pair_codepoints(data[name]), category)
 end
-scripts = parse_scripts(ARGV[1])
-puts "#endif /* USE_UNICODE_PROPERTIES */"
+props.concat parse_scripts
+puts(<<'__HEREDOC')
+#endif /* USE_UNICODE_PROPERTIES */
 
-puts "\n\nstatic const OnigCodePoint* const CodeRanges[] = {"
+static const OnigCodePoint* const CodeRanges[] = {
+__HEREDOC
 POSIX_NAMES.each{|name|puts"  CR_#{name},"}
 puts "#ifdef USE_UNICODE_PROPERTIES"
-gcps.each{|name|puts"  CR_#{name},"}
-scripts.each{|name|puts"  CR_#{name},"}
-puts "#endif /* USE_UNICODE_PROPERTIES */"
-puts "};"
+props.each{|name|puts"  CR_#{name},"}
 
 puts(<<'__HEREDOC')
+#endif /* USE_UNICODE_PROPERTIES */
+};
 struct uniname2ctype_struct {
   int name, ctype;
 };
@@ -236,12 +269,27 @@ struct uniname2ctype_struct;
 %%
 __HEREDOC
 i = -1
-POSIX_NAMES.each  {|name|puts"%-21s %3d" % [normalize_propname(name)+',', i+=1]}
+name_to_index = {}
+POSIX_NAMES.each do |name|
+  i += 1
+  name = normalize_propname(name)
+  name_to_index[name] = i
+  puts"%-40s %3d" % [name + ',', i]
+end
 puts "#ifdef USE_UNICODE_PROPERTIES"
-gcps.each{|name|puts"%-21s %3d" % [normalize_propname(name)+',', i+=1]}
-scripts.each{|name|puts"%-21s %3d" % [normalize_propname(name)+',', i+=1]}
-puts "#endif /* USE_UNICODE_PROPERTIES */\n"
+props.each do |name|
+  i += 1
+  name = normalize_propname(name)
+  name_to_index[name] = i
+  puts "%-40s %3d" % [name + ',', i]
+end
+parse_aliases.each_pair do |k, v|
+  next if name_to_index[k]
+  next unless v = name_to_index[v]
+  puts "%-40s %3d" % [k + ',', v]
+end
 puts(<<'__HEREDOC')
+#endif /* USE_UNICODE_PROPERTIES */
 %%
 static int
 uniname2ctype(const UChar *name, unsigned int len)
