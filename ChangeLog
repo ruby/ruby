@@ -1,3 +1,9 @@
+Wed Oct 14 08:08:12 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* proc.c (mnew): Method#new checks for respond_to_missing? with
+	  private set to true
+	  [ruby-core:26069]
+
 Tue Oct 13 21:05:01 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/enc-unicode.rb,
