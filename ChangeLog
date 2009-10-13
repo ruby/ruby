@@ -1,3 +1,8 @@
+Tue Oct 13 18:54:25 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/variable.rb: bug fix. additional trace definition changes the
+	  option of first trace definition.
+
 Mon Oct 12 23:24:58 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (getaddress): rescue exceptions.  [ruby-dev:39451]
