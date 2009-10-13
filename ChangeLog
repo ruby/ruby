@@ -1,3 +1,7 @@
+Tue Oct 13 18:20:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_magic_comment): fixed normalization.
+
 Tue Oct 13 09:04:14 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* thread.c: Revert changes to Thread#raise made in r25278
