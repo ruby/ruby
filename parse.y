@@ -604,6 +604,11 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 #ifndef RIPPER
 static void token_info_push(struct parser_params*, const char *token);
 static void token_info_pop(struct parser_params*, const char *token);
+#define token_info_push(token) (RTEST(ruby_verbose) ? token_info_push(parser, token) : (void)0)
+#define token_info_pop(token) (RTEST(ruby_verbose) ? token_info_pop(parser, token) : (void)0)
+#else
+#define token_info_push(token) /* nothing */
+#define token_info_pop(token) /* nothing */
 #endif
 %}
 
@@ -2976,89 +2981,67 @@ primary_value	: primary
 
 k_begin		: keyword_begin
 		    {
-#ifndef RIPPER
-			if (RTEST(ruby_verbose)) token_info_push(parser, "begin");
-#endif
+			token_info_push("begin");
 		    }
 		;
 
 k_if		: keyword_if
 		    {
-#ifndef RIPPER
-			if (RTEST(ruby_verbose)) token_info_push(parser, "if");
-#endif
+			token_info_push("if");
 		    }
 		;
 
 k_unless	: keyword_unless
 		    {
-#ifndef RIPPER
-			if (RTEST(ruby_verbose)) token_info_push(parser, "unless");
-#endif
+			token_info_push("unless");
 		    }
 		;
 
 k_while		: keyword_while
 		    {
-#ifndef RIPPER
-			if (RTEST(ruby_verbose)) token_info_push(parser, "while");
-#endif
+			token_info_push("while");
 		    }
 		;
 
 k_until		: keyword_until
 		    {
-#ifndef RIPPER
-			if (RTEST(ruby_verbose)) token_info_push(parser, "until");
-#endif
+			token_info_push("until");
 		    }
 		;
 
 k_case		: keyword_case
 		    {
-#ifndef RIPPER
-			if (RTEST(ruby_verbose)) token_info_push(parser, "case");
-#endif
+			token_info_push("case");
 		    }
 		;
 
 k_for		: keyword_for
 		    {
-#ifndef RIPPER
-			if (RTEST(ruby_verbose)) token_info_push(parser, "for");
-#endif
+			token_info_push("for");
 		    }
 		;
 
 k_class		: keyword_class
 		    {
-#ifndef RIPPER
-			if (RTEST(ruby_verbose)) token_info_push(parser, "class");
-#endif
+			token_info_push("class");
 		    }
 		;
 
 k_module	: keyword_module
 		    {
-#ifndef RIPPER
-			if (RTEST(ruby_verbose)) token_info_push(parser, "module");
-#endif
+			token_info_push("module");
 		    }
 		;
 
 k_def		: keyword_def
 		    {
-#ifndef RIPPER
-			if (RTEST(ruby_verbose)) token_info_push(parser, "def");
-#endif
+			token_info_push("def");
 		    }
 		;
 
 k_end		: keyword_end
 		    {
-#ifndef RIPPER
-			if (RTEST(ruby_verbose)) token_info_pop(parser, "end");  /* POP */
-#endif
+			token_info_pop("end");
 		    }
 		;
 
@@ -4825,6 +4808,7 @@ token_info_has_nonspaces(struct parser_params *parser, const char *token)
     return 0;
 }
 
+#undef token_info_push
 static void
 token_info_push(struct parser_params *parser, const char *token)
 {
@@ -4841,6 +4825,7 @@ token_info_push(struct parser_params *parser, const char *token)
     parser->parser_token_info = ptinfo;
 }
 
+#undef token_info_pop
 static void
 token_info_pop(struct parser_params *parser, const char *token)
 {
