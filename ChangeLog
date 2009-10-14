@@ -1,3 +1,11 @@
+Thu Oct 15 00:47:42 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/enc-unicode.rb,
+	  enc/unicode/name2ctype.h, enc/unicode/name2ctype.h.blt,
+	  enc/unicode/name2ctype.kwd, enc/unicode/name2ctype.src:
+	  use UTS#18 for POSIX character class.
+	  http://rubyspec.org/issues/show/161
+
 Thu Oct 15 00:26:07 2009  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/init.c (rsock_init_sock): validate file descriptor.
