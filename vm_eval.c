@@ -897,11 +897,10 @@ eval_string(VALUE self, VALUE src, VALUE scope, const char *file, int line)
  *     eval(string [, binding [, filename [,lineno]]])  => obj
  *
  *  Evaluates the Ruby expression(s) in <em>string</em>. If
- *  <em>binding</em> is given, the evaluation is performed in its
- *  context. The binding may be a <code>Binding</code> object or a
- *  <code>Proc</code> object. If the optional <em>filename</em> and
- *  <em>lineno</em> parameters are present, they will be used when
- *  reporting syntax errors.
+ *  <em>binding</em> is given, which must be a <code>Binding</code>
+ *  object, the evaluation is performed in its context. If the
+ *  optional <em>filename</em> and <em>lineno</em> parameters are
+ *  present, they will be used when reporting syntax errors.
  *
  *     def getBinding(str)
  *       return binding
