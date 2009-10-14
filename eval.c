@@ -1008,12 +1008,6 @@ rb_rubylevel_errinfo(void)
 }
 
 static VALUE
-rb_threadptr_errinfo(rb_thread_t *th)
-{
-    return get_thread_errinfo(th);
-}
-
-static VALUE
 errat_getter(ID id)
 {
     VALUE err = get_errinfo();
