@@ -1,3 +1,7 @@
+Thu Oct 15 00:26:07 2009  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/init.c (rsock_init_sock): validate file descriptor.
+
 Wed Oct 14 13:24:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): script name should not be shown in an
