@@ -236,7 +236,10 @@ int
 ruby_run_node(void *n)
 {
     int status;
-    if (!ruby_executable_node(n, &status)) return status;
+    if (!ruby_executable_node(n, &status)) {
+	ruby_cleanup(0);
+	return status;
+    }
     return ruby_cleanup(ruby_exec_node(n));
 }
 

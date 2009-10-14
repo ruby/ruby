@@ -1,3 +1,8 @@
+Wed Oct 14 09:06:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_run_node): need to call ruby_cleaup() always even
+	  if any error occurred so far.
+
 Wed Oct 14 08:08:12 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* proc.c (mnew): Method#new checks for respond_to_missing? with
