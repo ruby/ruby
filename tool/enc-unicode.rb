@@ -47,7 +47,8 @@ end
 
 def parse_unicode_data(file)
   last_cp = 0
-  data = {'Any' => [], 'Assigned' => [], 'Cn' => []}
+  data = {'Any' => (0x0000..0x10ffff).to_a, 'Assigned' => [],
+    'ASCII' => (0..0x007F).to_a, 'NEWLINE' => [0x0a], 'Cn' => []}
   beg_cp = nil
   IO.foreach(file) do |line|
     fields = line.split(';')
@@ -92,111 +93,76 @@ def parse_unicode_data(file)
   data['C'] += cn_remainder
 
   # Define General Category properties
-  gcps = data.keys.sort
-
-  # We now derive the character classes (POSIX brackets), e.g. [[:alpha:]]
-  #
-
-  # alnum    Letter | Mark | Decimal_Number
-  data['Alnum'] = data['L'] + data['M'] + data['Nd']
-
-  # alpha    Letter | Mark
-  data['Alpha'] = data['L'] + data['M']
-
-  # ascii    0000 - 007F
-  data['ASCII'] = (0..0x007F).to_a
-
-  # blank    Space_Separator | 0009
-  data['Blank'] = data['Zs'] + [0x0009]
-
-  # cntrl    Control
-  data['Cntrl'] = data['Cc']
-
-  # digit    Decimal_Number
-  data['Digit'] = data['Nd']
-
-  # lower    Lowercase_Letter
-  data['Lower'] = data['Ll']
-
-  # punct    Connector_Punctuation | Dash_Punctuation | Close_Punctuation |
-  #          Final_Punctuation | Initial_Punctuation | Other_Punctuation |
-  #          Open_Punctuation
-  # NOTE: This definition encompasses the entire P category, and the current
-  # mappings agree, but we explcitly declare this way to marry it with the above
-  # definition.
-  data['Punct'] = data['Pc'] + data['Pd'] + data['Pe'] + data['Pf'] +
-                  data['Pi'] + data['Po'] + data['Ps']
-
-  # space    Space_Separator | Line_Separator | Paragraph_Separator |
-  #               0009 | 000A | 000B | 000C | 000D | 0085
-  data['Space'] = data['Zs'] + data['Zl'] + data['Zp'] +
-                  [0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x0085]
-
-  # upper    Uppercase_Letter
-  data['Upper'] = data['Lu']
-
-  # xdigit   0030 - 0039 | 0041 - 0046 | 0061 - 0066
-  #          (0-9, a-f, A-F)
-  data['XDigit'] = (0x0030..0x0039).to_a + (0x0041..0x0046).to_a +
-                   (0x0061..0x0066).to_a
-
-  # word     Letter | Mark | Decimal_Number | Connector_Punctuation
-  data['Word'] = data['L'] + data['M'] + data['Nd'] + data['Pc']
-
-  # graph    [[:^space:]] && ^Control && ^Unassigned && ^Surrogate
-  data['Graph'] = data['L'] + data['M'] + data['N'] + data['P'] + data['S']
-  data['Graph'] -= data['Space'] - data['C']
-
-  # print    [[:graph:]] | [[:space:]]
-  data['Print'] = data['Graph'] + data['Space']
-
-  # NEWLINE - This was defined in unicode.c
-  data['NEWLINE'] = [0x000a]
-
-  # Any - Defined in unicode.c
-  data['Any'] = (0x0000..0x10ffff).to_a
+  gcps = data.keys.sort - POSIX_NAMES
 
   # Returns General Category Property names and the data
   [gcps, data]
 end
 
+def define_posix_props(data)
+  # We now derive the character classes (POSIX brackets), e.g. [[:alpha:]]
+  #
 
-def parse_scripts
+  data['Alpha'] = data['Alphabetic']
+  data['Upper'] = data['Uppercase']
+  data['Lower'] = data['Lowercase']
+  data['Punct'] = data['Punctuation']
+  data['Digit'] = data['Decimal_Number']
+  data['XDigit'] = (0x0030..0x0039).to_a + (0x0041..0x0046).to_a +
+                   (0x0061..0x0066).to_a
+  data['Alnum'] = data['Alpha'] + data['Digit']
+  data['Space'] = data['White_Space']
+  data['Blank'] = data['White_Space'] - [0x0A, 0x0B, 0x0C, 0x0D, 0x85] -
+    data['Line_Separator'] - data['Paragraph_Separator']
+  data['Cntrl'] = data['Cc']
+  data['Word'] = data['Alpha'] + data['Mark'] + data['Digit'] + data['Connector_Punctuation']
+  data['Graph'] = data['Any'] - data['Space'] - data['Cntrl'] -
+    data['Surrogate'] - data['Unassigned']
+  data['Print'] = data['Graph'] + data['Blank'] - data['Cntrl']
+end
+
+def parse_scripts(data)
   files = [
     {fn: 'DerivedCoreProperties.txt', title: 'Derived Property'},
     {fn: 'Scripts.txt', title: 'Script'},
     {fn: 'PropList.txt', title: 'Binary Property'}
   ]
   current = nil
-  data = []
+  cps = []
   names = []
   files.each do |file|
     IO.foreach(get_file(file[:fn])) do |line|
       if /^# Total code points: / =~ line
-        make_const(current, pair_codepoints(data), file[:title])
+        data[current] = cps
+        make_const(current, cps, file[:title])
         names << current
-        data = []
+        cps = []
       elsif /^(\h+)(?:..(\h+))?\s*;\s*(\w+)/ =~ line
         current = $3
-        $2 ? data.concat(($1.to_i(16)..$2.to_i(16)).to_a) : data.push($1.to_i(16))
+        $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
       end
     end
   end
   names
 end
 
-def parse_aliases
+def parse_aliases(data)
   kv = {}
   IO.foreach(get_file('PropertyAliases.txt')) do |line|
     next unless /^(\w+)\s*; (\w+)/ =~ line
+    data[$1] = data[$2]
     kv[normalize_propname($1)] = normalize_propname($2)
   end
   IO.foreach(get_file('PropertyValueAliases.txt')) do |line|
     next unless /^(sc|gc)\s*; (\w+)\s*; (\w+)(?:\s*; (\w+))?/ =~ line
     if $1 == 'gc'
+      data[$3] = data[$2]
+      data[$4] = data[$2]
       kv[normalize_propname($3)] = normalize_propname($2)
       kv[normalize_propname($4)] = normalize_propname($2) if $4
     else
+      data[$2] = data[$3]
+      data[$4] = data[$3]
       kv[normalize_propname($2)] = normalize_propname($3)
       kv[normalize_propname($4)] = normalize_propname($3) if $4
     end
@@ -204,19 +170,26 @@ def parse_aliases
   kv
 end
 
+$const_cache = {}
 # make_const(property, pairs, name): Prints a 'static const' structure for a
 # given property, group of paired codepoints, and a human-friendly name for
 # the group
-def make_const(prop, pairs, name)
+def make_const(prop, data, name)
   puts "\n/* '#{prop}': #{name} */"
-  puts "static const OnigCodePoint CR_#{prop}[] = {"
-  # The first element of the constant is the number of pairs of codepoints
-  puts "\t#{pairs.size},"
-  pairs.each do |pair|
-    pair.map! { |c|  c == 0 ? '0x0000' : sprintf("%0#6x", c) }
-    puts "\t#{pair.first}, #{pair.last},"
+  if origprop = $const_cache.key(data)
+    puts "#define CR_#{prop} CR_#{origprop}"
+  else
+    $const_cache[prop] = data
+    pairs = pair_codepoints(data)
+    puts "static const OnigCodePoint CR_#{prop}[] = {"
+    # The first element of the constant is the number of pairs of codepoints
+    puts "\t#{pairs.size},"
+    pairs.each do |pair|
+      pair.map! { |c|  c == 0 ? '0x0000' : sprintf("%0#6x", c) }
+      puts "\t#{pair.first}, #{pair.last},"
+    end
+    puts "}; /* CR_#{prop} */"
   end
-  puts "}; /* CR_#{prop} */"
 end
 
 def normalize_propname(name)
@@ -233,9 +206,6 @@ end
 # Write Data
 puts '%{'
 props, data = parse_unicode_data(get_file('UnicodeData.txt'))
-POSIX_NAMES.each do |name|
-  make_const(name, pair_codepoints(data[name]), "[[:#{name}:]]")
-end
 print "\n#ifdef USE_UNICODE_PROPERTIES"
 props.each do |name|
   category =
@@ -244,11 +214,16 @@ props.each do |name|
     when 2 then 'General Category'
     else        '-'
     end
-  make_const(name, pair_codepoints(data[name]), category)
+  make_const(name, data[name], category)
 end
-props.concat parse_scripts
+props.concat parse_scripts(data)
+puts '#endif /* USE_UNICODE_PROPERTIES */'
+aliases = parse_aliases(data)
+define_posix_props(data)
+POSIX_NAMES.each do |name|
+  make_const(name, data[name], "[[:#{name}:]]")
+end
 puts(<<'__HEREDOC')
-#endif /* USE_UNICODE_PROPERTIES */
 
 static const OnigCodePoint* const CodeRanges[] = {
 __HEREDOC
@@ -283,7 +258,7 @@ props.each do |name|
   name_to_index[name] = i
   puts "%-40s %3d" % [name + ',', i]
 end
-parse_aliases.each_pair do |k, v|
+aliases.each_pair do |k, v|
   next if name_to_index[k]
   next unless v = name_to_index[v]
   puts "%-40s %3d" % [k + ',', v]
