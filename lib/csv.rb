@@ -1550,12 +1550,7 @@ class CSV
     # create the IO object we will read from
     @io       =   if data.is_a? String then StringIO.new(data) else data end
     # honor the IO encoding if we can, otherwise default to ASCII-8BIT
-    @encoding =   if @io.respond_to? :internal_encoding
-                    @io.internal_encoding || @io.external_encoding
-                  elsif @io.is_a? StringIO
-                    @io.string.encoding
-                  end
-    @encoding ||= Encoding.default_internal || Encoding.default_external
+    @encoding = raw_encoding || Encoding.default_internal || Encoding.default_external
     #
     # prepare for building safe regular expressions in the target encoding,
     # if we can transcode the needed characters
@@ -1989,7 +1984,6 @@ class CSV
             sample =  read_to_char(1024)
             sample += read_to_char(1) if sample[-1..-1] == encode_str("\r") and
                                          not @io.eof?
-
             # try to find a standard separator
             if sample =~ encode_re("\r\n?|\n")
               @row_sep = $&
@@ -2272,8 +2266,9 @@ class CSV
   #
   def read_to_char(bytes)
     return "" if @io.eof?
-    data = @io.read(bytes)
+    data = read_io(bytes)
     begin
+      raise unless data.valid_encoding?
       encoded = encode_str(data)
       raise unless encoded.valid_encoding?
       return encoded
@@ -2281,10 +2276,25 @@ class CSV
       if @io.eof? or data.size >= bytes + 10
         return data
       else
-        data += @io.read(1)
+        data += read_io(1)
         retry
       end
     end
+  end
+
+  private
+  def raw_encoding
+    if @io.respond_to? :internal_encoding
+      @io.internal_encoding || @io.external_encoding
+    elsif @io.is_a? StringIO
+      @io.string.encoding
+    else
+      @io.encoding
+    end
+  end
+
+  def read_io(bytes)
+    @io.read(bytes).force_encoding(raw_encoding)
   end
 end
 
