@@ -7500,8 +7500,7 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 	enc2 = rb_to_encoding(v1);
 	tmp = rb_check_string_type(v2);
 	if (!NIL_P(tmp)) {
-	    char *p = StringValueCStr(tmp);
-	    if (*p == '-' && *(p+1) == '\0') {
+	    if (RSTRING_LEN(tmp) == 1 && RSTRING_PTR(tmp)[0] == '-') {
 		/* Special case - "-" => no transcoding */
 		enc = enc2;
 		enc2 = NULL;
@@ -7526,8 +7525,8 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 	}
 	else {
 	    tmp = rb_check_string_type(v1);
-	    if (!NIL_P(tmp)) {
-                parse_mode_enc(StringValueCStr(tmp), &enc, &enc2);
+	    if (!NIL_P(tmp) && rb_enc_asciicompat(rb_enc_get(tmp))) {
+                parse_mode_enc(RSTRING_PTR(tmp), &enc, &enc2);
                 ecflags = rb_econv_prepare_opts(opt, &ecopts);
 	    }
 	    else {
