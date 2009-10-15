@@ -1,3 +1,8 @@
+Thu Oct 15 12:01:11 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (resp_text_code): accepts response codes without
+	  text.  backported from trunk.  [ruby-core:24194]
+
 Tue Oct 13 18:54:25 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/variable.rb: bug fix. additional trace definition changes the
