@@ -1,3 +1,8 @@
+Thu Oct 15 14:57:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_reopen): unread current buffer before telling the
+	  position, for the case of reopening same file.  [ruby-dev:39479]
+
 Thu Oct 15 14:20:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_create): cannot retry with given block.

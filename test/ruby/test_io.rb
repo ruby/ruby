@@ -1286,6 +1286,15 @@ class TestIO < Test::Unit::TestCase
         assert_equal("bar\n", f.gets, '[ruby-core:24240]')
       }
     end
+
+    open(__FILE__) do |f|
+      f2 = open(t.path)
+      f.reopen(f2)
+      assert_equal("foo\n", f.gets)
+      assert_equal("bar\n", f.gets)
+      f.reopen(f2)
+      assert_equal("baz\n", f.gets, '[ruby-dev:39479]')
+    end
   end
 
   def test_foreach
