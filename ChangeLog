@@ -1,4 +1,7 @@
-Thu Oct 15 14:57:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Oct 15 15:14:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_encoding_set): get rid of parsing non-ascii string, and
+	  refine messages for invalid name encoding.
 
 	* io.c (io_reopen): unread current buffer before telling the
 	  position, for the case of reopening same file.  [ruby-dev:39479]
