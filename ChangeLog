@@ -1,7 +1,7 @@
-Thu Oct 15 16:57:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Oct 15 18:26:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* parse.y (rb_intern3): check symbol table overflow.
-	  [ruby-core:26092]
+	* parse.y (rb_intern3): check symbol table overflow before generate
+	  next id.  [ruby-core:26092]
 
 Thu Oct 15 15:14:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
