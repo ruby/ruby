@@ -5654,19 +5654,19 @@ io_reopen(VALUE io, VALUE nfile)
 		     rb_io_fmode_modestr(orig->mode));
 	}
     }
-    if (orig->mode & FMODE_READABLE) {
-	pos = io_tell(orig);
-    }
-    if (orig->mode & FMODE_WRITABLE) {
-        if (io_fflush(orig) < 0)
-            rb_sys_fail(0);
-    }
     if (fptr->mode & FMODE_WRITABLE) {
         if (io_fflush(fptr) < 0)
             rb_sys_fail(0);
     }
     else {
 	io_tell(fptr);
+    }
+    if (orig->mode & FMODE_READABLE) {
+	pos = io_tell(orig);
+    }
+    if (orig->mode & FMODE_WRITABLE) {
+        if (io_fflush(orig) < 0)
+            rb_sys_fail(0);
     }
 
     /* copy rb_io_t structure */
