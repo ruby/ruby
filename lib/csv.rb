@@ -2288,8 +2288,10 @@ class CSV
       @io.internal_encoding || @io.external_encoding
     elsif @io.is_a? StringIO
       @io.string.encoding
-    else
+    elsif @io.respond_to? :encoding
       @io.encoding
+    else
+      Encoding::ASCII_8BIT
     end
   end
 
