@@ -5,7 +5,7 @@ Fri Oct 16 19:39:28 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  should) not forward private methods.  [ruby-core:26080]
 
 	* lib/delegate.rb (Delegator#respond_to_missing): instead of
-	  redefining #respond_to?, use #respond_to_missing?.
+	  redefining #respond_to?, use #respond_to_missing?.  [ruby-core:26081]
 
 Fri Oct 16 18:42:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
