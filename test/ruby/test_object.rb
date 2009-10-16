@@ -230,6 +230,26 @@ class TestObject < Test::Unit::TestCase
     assert_raise(TypeError) do
       c.instance_eval { remove_method(:foo) }
     end
+
+    c = Class.new do
+      def meth1; "meth" end
+    end
+    d = Class.new(c) do
+      alias meth2 meth1
+    end
+    o1 = c.new
+    assert_respond_to(o1, :meth1)
+    assert_equal("meth", o1.meth1)
+    o2 = d.new
+    assert_respond_to(o2, :meth1)
+    assert_equal("meth", o2.meth1)
+    assert_respond_to(o2, :meth2)
+    assert_equal("meth", o2.meth2)
+    d.class_eval do
+      remove_method :meth2
+    end
+    bug2202 = '[ruby-core:26074]'
+    assert_raise(NoMethodError, bug2202) {o2.meth2}
   end
 
   def test_method_missing
