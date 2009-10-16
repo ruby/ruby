@@ -1,3 +1,4 @@
+$".replace($" | [File.basename(__FILE__), __FILE__])
 module EnvUtil
   def rubybin
     if ruby = ENV["RUBY"]

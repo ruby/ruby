@@ -1,3 +1,7 @@
+Fri Oct 16 09:20:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb: get rid of double loading.
+
 Thu Oct 15 14:20:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_create): cannot retry with given block.
