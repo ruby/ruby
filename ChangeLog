@@ -1,3 +1,7 @@
+Fri Oct 16 13:40:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.h (rb_gc_debug_body): constified.
+
 Fri Oct 16 13:20:39 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (VpMidRound): remove warnings.
