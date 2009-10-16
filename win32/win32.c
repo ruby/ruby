@@ -1054,7 +1054,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 	    cmd = tmp;
 	}
 	else {
-	    int len = 0, quote = (*cmd == '"') ? '"' : 0;
+	    int len = 0, quote = (*cmd == '"') ? '"' : (*cmd == '\'') ? '\'' : 0;
 	    for (prog = cmd + !!quote;; prog = CharNext(prog)) {
 		if (!*prog) {
 		    len = prog - cmd;
