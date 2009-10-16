@@ -326,7 +326,7 @@ class TestObject < Test::Unit::TestCase
 
   def test_respond_to_missing
     c = Class.new do
-      def respond_to_missing?(id)
+      def respond_to_missing?(id, priv=false)
         if id == :foobar
           true
         else
