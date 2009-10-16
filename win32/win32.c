@@ -1054,13 +1054,22 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
 	    cmd = tmp;
 	}
 	else {
+	    char quote = (*cmd == '"') ? '"' : (*cmd == '\'') ? '\'' : 0;
 	    shell = NULL;
-	    prog = cmd;
-	    for (;;) {
+	    for (prog = cmd + !!quote;; prog = CharNext(prog)) {
 		if (!*prog) {
 		    p = dln_find_exe(cmd, NULL);
 		    break;
 		}
+		if (*prog == quote) {
+		    len = prog++ - cmd - 1;
+		    p = ALLOCA_N(char, len + 1);
+		    memcpy(p, cmd + 1, len);
+		    p[len] = 0;
+		    p = dln_find_exe(p, NULL);
+		    break;
+		}
+		if (quote) continue;
 		if (strchr(".:*?\"/\\", *prog)) {
 		    if (cmd[len]) {
 			char *tmp = ALLOCA_N(char, len + 1);
@@ -1078,7 +1087,6 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
 		    p = dln_find_exe(p, NULL);
 		    break;
 		}
-		prog++;
 	    }
 	}
     }
