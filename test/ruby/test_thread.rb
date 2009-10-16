@@ -311,11 +311,9 @@ class TestThread < Test::Unit::TestCase
     assert(c.stop?)
 
     d.kill
-    assert_equal("aborting", d.status)
-    assert(!d.stop?)
+    assert_equal(["aborting", false], [d.status, d.stop?])
 
-    assert_equal("run", e.status)
-    assert(!e.stop?)
+    assert_equal(["run", false], [e.status, e.stop?])
 
   ensure
     a.kill if a
