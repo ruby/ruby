@@ -1,3 +1,12 @@
+Fri Oct 16 19:39:28 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator#respond_to_missing): warn if optional
+	  include_private argument is not false.  Delegator does (and
+	  should) not forward private methods.  [ruby-core:26080]
+
+	* lib/delegate.rb (Delegator#respond_to_missing): instead of
+	  redefining #respond_to?, use #respond_to_missing?.
+
 Fri Oct 16 18:42:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bootstraptest/test_gc.rb: added tests based on [ruby-dev:39484]

@@ -146,9 +146,11 @@ class Delegator
   # Checks for a method provided by this the delegate object by fowarding the
   # call through \_\_getobj\_\_.
   #
-  def respond_to?(m, include_private = false)
-    return true if super
-    return self.__getobj__.respond_to?(m, include_private)
+  def respond_to_missing?(m, include_private = false)
+    if include_private
+      warn "#{caller(3)[0]}: delegator does not forward private methods"
+    end
+    self.__getobj__.respond_to?(m)
   end
 
   #
