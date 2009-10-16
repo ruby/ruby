@@ -1,6 +1,13 @@
 require 'test/unit'
 
 class TestArray < Test::Unit::TestCase
+  def setup
+    @verbose, $VERBOSE = $VERBOSE, nil
+  end
+  def teardown
+    $VERBOSE = @verbose
+  end
+
   def test_0_literal
     assert_equal([1, 2, 3, 4], [1, 2] + [3, 4])
     assert_equal([1, 2, 1, 2], [1, 2] * 2)
