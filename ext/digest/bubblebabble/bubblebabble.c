@@ -23,7 +23,7 @@ bubblebabble_str_new(VALUE str_digest)
     size_t digest_len;
     VALUE str;
     char *p;
-    int i, j, seed = 1;
+    size_t i, j, seed = 1;
     static const char vowels[] = {
         'a', 'e', 'i', 'o', 'u', 'y'
     };

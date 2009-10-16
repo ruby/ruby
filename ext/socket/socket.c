@@ -1458,7 +1458,7 @@ sockaddr_obj(struct sockaddr *addr)
         break;
     }
 #ifdef SA_LEN
-    if (len < SA_LEN(addr))
+    if (len < (socklen_t)SA_LEN(addr))
 	len = SA_LEN(addr);
 #endif
 

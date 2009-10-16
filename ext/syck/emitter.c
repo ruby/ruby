@@ -294,7 +294,7 @@ syck_emitter_write( SyckEmitter *e, const char *str, long len )
      * Flush if at end of buffer
      */
     at = e->marker - e->buffer;
-    if ( len + at >= e->bufsize )
+    if ( len + at >= (long)e->bufsize )
     {
         syck_emitter_flush( e, 0 );
 	for (;;) {
@@ -326,7 +326,7 @@ syck_emitter_flush( SyckEmitter *e, long check_room )
      */
     if ( check_room > 0 )
     {
-        if ( e->bufsize > ( e->marker - e->buffer ) + check_room )
+        if ( (long)e->bufsize > ( e->marker - e->buffer ) + check_room )
         {
             return;
         }
@@ -459,7 +459,7 @@ void syck_emit_tag( SyckEmitter *e, const char *tag, const char *ignore )
             const char *subd = tag + 4;
             while ( *subd != ':' && *subd != '\0' ) subd++;
             if ( *subd == ':' ) {
-                if ( subd - tag > ( strlen( YAML_DOMAIN ) + 5 ) &&
+                if ( subd - tag > ( (long)( strlen( YAML_DOMAIN ) + 5 )) &&
                      strncmp( subd - strlen( YAML_DOMAIN ), YAML_DOMAIN, strlen( YAML_DOMAIN ) ) == 0 ) {
                     syck_emitter_write( e, tag + 4, subd - strlen( YAML_DOMAIN ) - ( tag + 4 ) - 1 );
                     syck_emitter_write( e, "/", 1 );

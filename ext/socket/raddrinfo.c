@@ -887,7 +887,7 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
     if (rai->sockaddr_len == 0) {
         rb_str_cat2(ret, "empty-sockaddr");
     }
-    else if (rai->sockaddr_len < ((char*)&rai->addr.ss_family + sizeof(rai->addr.ss_family)) - (char*)&rai->addr)
+    else if ((long)rai->sockaddr_len < ((char*)&rai->addr.ss_family + sizeof(rai->addr.ss_family)) - (char*)&rai->addr)
         rb_str_cat2(ret, "too-short-sockaddr");
     else {
         switch (rai->addr.ss_family) {

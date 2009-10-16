@@ -467,8 +467,8 @@ iconv_convert(iconv_t cd, VALUE str, long start, long length, int toidx, struct 
 	if (0 <= outlen && outlen <= sizeof(buffer)) {
 	    outlen = sizeof(buffer) - outlen;
 	    if (NIL_P(error) ||	/* something converted */
-		outlen > inptr - tmpstart || /* input can't contain output */
-		(outlen < inptr - tmpstart && inlen > 0) || /* something skipped */
+		outlen > (size_t)(inptr - tmpstart) || /* input can't contain output */
+		(outlen < (size_t)(inptr - tmpstart) && inlen > 0) || /* something skipped */
 		memcmp(buffer, tmpstart, outlen)) /* something differs */
 	    {
 		if (NIL_P(str)) {
