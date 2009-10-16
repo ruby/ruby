@@ -1,3 +1,8 @@
+Fri Oct 16 20:09:55 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator#freeze): #freeze should freeze self
+	  and the target at once.   [ruby-core:26118]
+
 Fri Oct 16 19:39:28 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator#respond_to_missing): warn if optional
