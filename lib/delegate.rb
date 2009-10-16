@@ -199,6 +199,12 @@ class Delegator
     new
   end
 
+  # Freeze self and target at once.
+  def freeze
+    __getobj__.freeze
+    super
+  end
+
   @delegator_api = self.public_instance_methods
   def self.public_api   # :nodoc:
     @delegator_api
