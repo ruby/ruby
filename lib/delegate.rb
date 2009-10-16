@@ -137,7 +137,9 @@ class Delegator
         target.__send__(m, *args, &block)
       end
     rescue Exception
-      $@.delete_if{|s| %r"\A#{Regexp.quote(__FILE__)}:\d+:in `method_missing'\z"o =~ s}
+      if i = $@.index{|s| %r"\A#{Regexp.quote(__FILE__)}:\d+:in `method_missing'\z"o =~ s}
+        $@[0..i] = []
+      end
       ::Kernel::raise
     end
   end
