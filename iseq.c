@@ -11,7 +11,7 @@
 
 #include "ruby/ruby.h"
 
-/* #define MARK_FREE_DEBUG 1 */
+/* #define RUBY_MARK_FREE_DEBUG 1 */
 #include "gc.h"
 #include "vm_core.h"
 #include "iseq.h"
@@ -63,10 +63,12 @@ iseq_free(void *ptr)
     if (ptr) {
 	iseq = ptr;
 	if (!iseq->orig) {
-	    /* It's possible that strings are freed
-	     * GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->name),
-	     *                      RSTRING_PTR(iseq->filename));
-	     */
+	    /* It's possible that strings are freed */
+	    if (0) {
+		RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->name),
+					  RSTRING_PTR(iseq->filename));
+	    }
+
 	    if (iseq->iseq != iseq->iseq_encoded) {
 		RUBY_FREE_UNLESS_NULL(iseq->iseq_encoded);
 	    }

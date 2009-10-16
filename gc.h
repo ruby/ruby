@@ -26,7 +26,7 @@ rb_gc_debug_indent(void)
 }
 
 static void
-rb_gc_debug_body(char *mode, char *msg, int st, void *ptr)
+rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 {
     if (st == 0) {
 	ruby_gc_debug_indent--;
