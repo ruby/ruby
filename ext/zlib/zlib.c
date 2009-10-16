@@ -497,7 +497,7 @@ zstream_append_buffer(struct zstream *z, const Bytef *src, int len)
 	z->stream.avail_out = 0;
     }
     else {
-	if (z->stream.avail_out >= len) {
+	if (z->stream.avail_out >= (uInt)len) {
 	    z->stream.avail_out -= len;
 	}
 	else {
@@ -609,7 +609,7 @@ zstream_append_input(struct zstream *z, const Bytef *src, unsigned int len)
 static void
 zstream_discard_input(struct zstream *z, unsigned int len)
 {
-    if (NIL_P(z->input) || RSTRING_LEN(z->input) <= len) {
+    if (NIL_P(z->input) || (unsigned int)RSTRING_LEN(z->input) <= len) {
 	z->input = Qnil;
     }
     else {
@@ -1921,7 +1921,7 @@ gzfile_make_header(struct gzfile *gz)
     buf[1] = GZ_MAGIC2;
     buf[2] = GZ_METHOD_DEFLATE;
     buf[3] = flags;
-    gzfile_set32(gz->mtime, &buf[4]);
+    gzfile_set32((unsigned long)gz->mtime, &buf[4]);
     buf[8] = extraflags;
     buf[9] = gz->os_code;
     zstream_append_buffer(&gz->z, buf, sizeof(buf));

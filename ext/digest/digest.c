@@ -36,7 +36,7 @@ hexencode_str_new(VALUE str_digest)
 {
     char *digest;
     size_t digest_len;
-    int i;
+    size_t i;
     VALUE str;
     char *p;
     static const char hex[] = {

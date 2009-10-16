@@ -4497,7 +4497,7 @@ VpMidRound(Real *y, int f, int nf)
     div = v/10;
     v = v - div*10;
     if (fracf == 0) {
-        for(i=ix+1;i<y->Prec;i++) {
+        for(i=ix+1;(U_LONG)i<y->Prec;i++) {
             if (y->frac[i]%BASE) {
                 fracf = 1;
                 break;
