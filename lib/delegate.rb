@@ -145,7 +145,7 @@ class Delegator
   end
 
   #
-  # Checks for a method provided by this the delegate object by fowarding the
+  # Checks for a method provided by this the delegate object by forwarding the
   # call through \_\_getobj\_\_.
   #
   def respond_to_missing?(m, include_private = false)
