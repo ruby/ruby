@@ -1,3 +1,9 @@
+Sat Oct 17 22:11:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (id2encidx): register encoding name.
+	  (r_object0): register object before encoding name.
+	  [ruby-core:24882]
+
 Sat Oct 17 17:56:58 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/rake/test_fileutils.rb (Rake::TestFileUtils#test_sh): uses

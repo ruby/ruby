@@ -1000,10 +1000,20 @@ static const rb_data_type_t load_arg_data = {
     mark_load_arg, free_load_arg, memsize_load_arg
 };
 
-static VALUE r_entry(VALUE v, struct load_arg *arg);
+#define r_entry(v, arg) r_entry0(v, (arg)->data->num_entries, arg)
+static VALUE r_entry0(VALUE v, st_index_t num, struct load_arg *arg);
 static VALUE r_object(struct load_arg *arg);
 static ID r_symbol(struct load_arg *arg);
 static VALUE path2class(VALUE path);
+
+static st_index_t
+r_prepare(struct load_arg *arg)
+{
+    st_index_t idx = arg->data->num_entries;
+
+    st_insert(arg->data, (st_data_t)idx, (st_data_t)Qundef);
+    return idx;
+}
 
 static int
 r_byte(struct load_arg *arg)
@@ -1109,10 +1119,12 @@ r_bytes0(long len, struct load_arg *arg)
 }
 
 static int
-id2encidx(ID id, VALUE val)
+id2encidx(ID id, VALUE val, struct load_arg *arg)
 {
     if (id == rb_id_encoding()) {
-	return rb_enc_find_index(StringValueCStr(val));
+	int idx = rb_enc_find_index(StringValueCStr(val));
+	r_entry(val, arg);
+	return idx;
     }
     else if (id == rb_intern("E")) {
 	if (val == Qfalse) return rb_usascii_encindex();
@@ -1145,7 +1157,7 @@ r_symreal(struct load_arg *arg, int ivar)
 	long num = r_long(arg);
 	while (num-- > 0) {
 	    id = r_symbol(arg);
-	    idx = id2encidx(id, r_object(arg));
+	    idx = id2encidx(id, r_object(arg), arg);
 	}
     }
     if (idx < 0) idx = rb_usascii_encindex();
@@ -1192,14 +1204,14 @@ r_string(struct load_arg *arg)
 }
 
 static VALUE
-r_entry(VALUE v, struct load_arg *arg)
+r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
 {
     st_data_t real_obj = (VALUE)Qundef;
     if (st_lookup(arg->compat_tbl, v, &real_obj)) {
-        st_insert(arg->data, arg->data->num_entries, (st_data_t)real_obj);
+        st_insert(arg->data, num, (st_data_t)real_obj);
     }
     else {
-        st_insert(arg->data, arg->data->num_entries, (st_data_t)v);
+        st_insert(arg->data, num, (st_data_t)v);
     }
     if (arg->taint) {
         OBJ_TAINT(v);
@@ -1246,7 +1258,7 @@ r_ivar(VALUE obj, struct load_arg *arg)
 	do {
 	    ID id = r_symbol(arg);
 	    VALUE val = r_object(arg);
-	    int idx = id2encidx(id, val);
+	    int idx = id2encidx(id, val, arg);
 	    if (idx >= 0) {
 		rb_enc_associate_index(obj, idx);
 	    }
@@ -1311,7 +1323,7 @@ has_encoding(struct load_arg *arg)
     long offset = arg->offset;
     r_long(arg);
     switch (r_byte(arg)) {
-      case ':':
+      case TYPE_SYMBOL:
 	switch (r_byte(arg)) {
 	  case 6:
 	    if (r_byte(arg) == 'E') res = TRUE;
@@ -1321,7 +1333,7 @@ has_encoding(struct load_arg *arg)
 	    break;
 	}
 	break;
-      case ';':
+      case TYPE_SYMLINK:
 	{
 	    ID id = r_symlink(arg);
 	    if (id == rb_intern("E") || id == rb_id_encoding())
@@ -1552,14 +1564,12 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_STRUCT:
 	{
-	    VALUE klass, mem;
-            VALUE values;
+	    VALUE mem, values;
 	    volatile long i;	/* gcc 2.7.2.3 -O2 bug?? */
-	    long len;
 	    ID slot;
-
-	    klass = path2class(r_unique(arg));
-	    len = r_long(arg);
+	    st_index_t idx = r_prepare(arg);
+	    VALUE klass = path2class(r_unique(arg));
+	    long len = r_long(arg);
 
             v = rb_obj_alloc(klass);
 	    if (TYPE(v) != T_STRUCT) {
@@ -1571,7 +1581,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
                          rb_class2name(klass));
             }
 
-	    v = r_entry(v, arg);
+	    v = r_entry0(v, idx, arg);
 	    values = rb_ary_new2(len);
 	    for (i=0; i<len; i++) {
 		slot = r_symbol(arg);
@@ -1636,11 +1646,12 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_OBJECT:
 	{
+	    st_index_t idx = r_prepare(arg);
             v = obj_alloc_by_path(r_unique(arg), arg);
 	    if (TYPE(v) != T_OBJECT) {
 		rb_raise(rb_eArgError, "dump format error");
 	    }
-	    v = r_entry(v, arg);
+	    v = r_entry0(v, idx, arg);
 	    r_ivar(v, arg);
 	    v = r_leave(v, arg);
 	}
