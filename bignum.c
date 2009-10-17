@@ -1848,13 +1848,13 @@ big_split(VALUE v, long n, volatile VALUE *ph, volatile VALUE *pl)
 
     while (--hn && !vds[hn + ln]);
     h = bignew(hn += 2, 1);
-    MEMCPY(BDIGITS(h), vds + ln, BDIGIT, hn);
-    BDIGITS(h)[hn - 1] = 0;
+    MEMCPY(BDIGITS(h), vds + ln, BDIGIT, hn - 1);
+    BDIGITS(h)[hn - 1] = 0; /* margin for carry */
 
     while (--ln && !vds[ln]);
     l = bignew(ln += 2, 1);
-    MEMCPY(BDIGITS(l), vds, BDIGIT, ln);
-    BDIGITS(l)[ln - 1] = 0;
+    MEMCPY(BDIGITS(l), vds, BDIGIT, ln - 1);
+    BDIGITS(l)[ln - 1] = 0; /* margin for carry */
 
     *pl = l;
     *ph = h;

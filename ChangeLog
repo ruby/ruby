@@ -1,3 +1,7 @@
+Sat Oct 17 17:30:06 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bignum.c (big_split): fix off-by-one error.  [ruby-dev:39501]
+
 Sat Oct 17 16:34:27 2009  Tanaka Akira  <akr@fsij.org>
 
 	* parse.y (parser_yylex): fix token even after trailing under score.
