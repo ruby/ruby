@@ -1,3 +1,13 @@
+Sat Oct 17 17:56:58 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/rake/test_fileutils.rb (Rake::TestFileUtils#test_sh): uses
+	  FileUtils::RUBY instead of fixed "ruby" so that the ruby command
+	  works fine in Ruby's "make test-all".
+	  (test_sh_with_a_single_string_argument): ditto.
+	  (test_sh_with_multiple_arguments): ditto.
+	  (test_sh_failure): ditto
+	  (test_sh_special_handling): ditto.
+
 Sat Oct 17 17:30:06 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bignum.c (big_split): fix off-by-one error.  [ruby-dev:39501]

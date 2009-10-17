@@ -132,7 +132,7 @@ class Rake::TestFileUtils < Test::Unit::TestCase
   end
 
   def test_sh
-    verbose(false) { sh %{ruby #{ShellCommand}} }
+    verbose(false) { sh %{#{RUBY} #{ShellCommand}} }
     assert true, "should not fail"
   end
 
@@ -153,32 +153,32 @@ class Rake::TestFileUtils < Test::Unit::TestCase
   def test_sh_with_a_single_string_argument
     ENV['RAKE_TEST_SH'] = 'someval'
     verbose(false) {
-      sh %{ruby #{BASEDIR}/check_expansion.rb #{env_var} someval}
+      sh %{#{RUBY} #{BASEDIR}/check_expansion.rb #{env_var} someval}
     }
   end
 
   def test_sh_with_multiple_arguments
     ENV['RAKE_TEST_SH'] = 'someval'
     verbose(false) {
-      Sh.run 'ruby', File.expand_path('../check_no_expansion.rb', __FILE__), env_var, 'someval'
+      Sh.run RUBY, File.expand_path('../check_no_expansion.rb', __FILE__), env_var, 'someval'
     }
   end
 
   def test_sh_failure
     assert_raise(RuntimeError) { 
-      verbose(false) { Sh.run "ruby #{File.expand_path('../shellcommand.rb', __FILE__)} 1" }
+      verbose(false) { Sh.run "#{RUBY} #{File.expand_path('../shellcommand.rb', __FILE__)} 1" }
     }
   end
 
   def test_sh_special_handling
     count = 0
     verbose(false) {
-      sh(%{ruby #{ShellCommand}}) do |ok, res|
+      sh(%{#{RUBY} #{ShellCommand}}) do |ok, res|
         assert(ok)
         assert_equal 0, res.exitstatus
         count += 1
       end
-      sh(%{ruby #{ShellCommand} 1}) do |ok, res|
+      sh(%{#{RUBY} #{ShellCommand} 1}) do |ok, res|
         assert(!ok)
         assert_equal 1, res.exitstatus
         count += 1
