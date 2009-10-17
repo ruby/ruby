@@ -7062,13 +7062,13 @@ parser_yylex(struct parser_params *parser)
 
 	  decode_num:
 	    pushback(c);
-	    tokfix();
 	    if (nondigit) {
 		char tmp[30];
 	      trailing_uc:
 		snprintf(tmp, sizeof(tmp), "trailing `%c' in number", nondigit);
 		yyerror(tmp);
 	    }
+	    tokfix();
 	    if (is_float) {
 		double d = strtod(tok(), 0);
 		if (errno == ERANGE) {
