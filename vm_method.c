@@ -1157,7 +1157,7 @@ basic_obj_respond_to(VALUE obj, ID id, int pub)
       case 2:
 	return FALSE;
       case 0:
-	return RTEST(rb_funcall(obj, respond_to_missing, pub ? 1 : 2, ID2SYM(id), Qtrue));
+	return RTEST(rb_funcall(obj, respond_to_missing, 2, ID2SYM(id), pub ? Qfalse : Qtrue));
       default:
 	return TRUE;
     }
@@ -1214,7 +1214,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 
 /*
  *  call-seq:
- *     obj.respond_to_missing?(symbol, include_private=false) => true or false
+ *     obj.respond_to_missing?(symbol, include_private) => true or false
  *
  *  Hook method to return whether the _obj_ can respond to _id_ method
  *  or not.
@@ -1222,7 +1222,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
  *  See #respond_to?.
  */
 static VALUE
-obj_respond_to_missing(int argc, VALUE *argv, VALUE obj)
+obj_respond_to_missing(VALUE obj, VALUE priv)
 {
     return Qfalse;
 }
@@ -1234,7 +1234,7 @@ Init_eval_method(void)
 #define rb_intern(str) rb_intern_const(str)
 
     rb_define_method(rb_mKernel, "respond_to?", obj_respond_to, -1);
-    rb_define_method(rb_mKernel, "respond_to_missing?", obj_respond_to_missing, -1);
+    rb_define_method(rb_mKernel, "respond_to_missing?", obj_respond_to_missing, 2);
 
     rb_define_private_method(rb_cModule, "remove_method", rb_mod_remove_method, -1);
     rb_define_private_method(rb_cModule, "undef_method", rb_mod_undef_method, -1);
