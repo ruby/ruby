@@ -2150,7 +2150,7 @@ rb_str_equal(VALUE str1, VALUE str2)
  * call-seq:
  *   str.eql?(other)   => true or false
  *
- * Two strings are equal if the have the same length and content.
+ * Two strings are equal if they have the same length and content.
  */
 
 static VALUE
