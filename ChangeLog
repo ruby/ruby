@@ -1,3 +1,8 @@
+Sat Oct 17 08:51:44 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator#respond_to_missing): warn only when
+	  specified method is a private.  [ruby-dev:39498]
+
 Fri Oct 17 00:05:53 2009  wanabe  <s.wanabe@gmail.com>
 
 	* st.c (unpack_entries): save table->bins and never change the table
