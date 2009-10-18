@@ -492,7 +492,7 @@ module REXML
     def text=( text )
       if text.kind_of? String
         text = Text.new( text, whitespace(), nil, raw() )
-      elsif text and !text.kind_of? Text
+      elsif !text.nil? and !text.kind_of? Text
         text = Text.new( text.to_s, whitespace(), nil, raw() )
       end
       old_text = get_text

@@ -1,3 +1,8 @@
+Mon Oct 19 05:49:53 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/rexml/element.rb (text=): false should be converted to string.
+	  A patch by Teruo Oshida [ruby-dev:38351]
+
 Sun Oct 18 22:33:25 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb: do not require lib/delta.rb.
