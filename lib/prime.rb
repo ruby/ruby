@@ -408,44 +408,68 @@ class Prime
   class EratosthenesSieve
     include Singleton
 
+    BITS_PER_ENTRY = 16  # each entry is a set of 16-bits in a Fixnum
+    NUMS_PER_ENTRY = BITS_PER_ENTRY * 2 # twiced because even numbers are omitted
+    ENTRIES_PER_TABLE = 8
+    NUMS_PER_TABLE = NUMS_PER_ENTRY * ENTRIES_PER_TABLE
+    FILLED_ENTRY = (1 << NUMS_PER_ENTRY) - 1
+
     def initialize # :nodoc:
       # bitmap for odd prime numbers less than 256.
-      # For an arbitrary odd number n, @table[i][j] is 1 when n is prime where i,j = n.divmod(32) .
-      @table = [0xcb6e, 0x64b4, 0x129a, 0x816d, 0x4c32, 0x864a, 0x820d, 0x2196]
+      # For an arbitrary odd number n, @tables[i][j][k] is
+      # * 1 if n is prime,
+      # * 0 if n is composite,
+      # where i,j,k = indices(n)
+      @tables = [[0xcb6e, 0x64b4, 0x129a, 0x816d, 0x4c32, 0x864a, 0x820d, 0x2196].freeze]
     end
 
     # returns the least odd prime number which is greater than +n+.
     def next_to(n)
-      n = (n-1).div(2)*2+3 # the next odd number of given n
-      i,j = n.divmod(32)
+      n = (n-1).div(2)*2+3 # the next odd number to given n
+      table_index, integer_index, bit_index = indices(n)
       loop do
-	extend_table until @table.length > i
-	if !@table[i].zero?
-	  (j...32).step(2) do |k|
-	    return 32*i+k if !@table[i][k.div(2)].zero?
+	extend_table until @tables.length > table_index
+	for j in integer_index...ENTRIES_PER_TABLE
+	  if !@tables[table_index][j].zero?
+	    for k in bit_index...BITS_PER_ENTRY
+	      return NUMS_PER_TABLE*table_index + NUMS_PER_ENTRY*j + 2*k+1 if !@tables[table_index][j][k].zero?
+	    end
 	  end
+	  bit_index = 0
 	end
-	i += 1; j = 1
+	table_index += 1; integer_index = 0
       end
     end
 
     private
-    def extend_table
-      orig_len = @table.length
-      new_len = [orig_len**2, orig_len+256].min
-      lbound = orig_len*32
-      ubound = new_len*32
-      @table.fill(0xFFFF, orig_len...new_len)
-      (3..Integer(Math.sqrt(ubound))).step(2) do |p|
-	i, j = p.divmod(32)
-	next if @table[i][j.div(2)].zero?
+    # for an odd number +n+, returns (i, j, k) such that @tables[i][j][k] represents primarity of the number
+    def indices(n)
+      #   binary digits of n: |0|1|2|3|4|5|6|7|8|9|10|11|....
+      #   indices:            |-|    k  |  j  |     i
+      # because of NUMS_PER_ENTRY, NUMS_PER_TABLE
 
-	start = (lbound.div(2*p)*2+1)*p    # odd multiple of p which is greater than or equal to lbound
+      k = (n & 0b00011111) >> 1
+      j = (n & 0b11100000) >> 5
+      i = n >> 8
+      return i, j, k
+    end
+
+    def extend_table
+      lbound = NUMS_PER_TABLE * @tables.length
+      ubound = lbound + NUMS_PER_TABLE
+      new_table = [FILLED_ENTRY] * ENTRIES_PER_TABLE # which represents primarity in lbound...ubound
+      (3..Integer(Math.sqrt(ubound))).step(2) do |p|
+	i, j, k = indices(p)
+	next if @tables[i][j][k].zero?
+
+	start = (lbound.div(p)+1)*p  # least multiple of p which is >= lbound
+	start += p if start.even?
 	(start...ubound).step(2*p) do |n|
-	  i, j = n.divmod(32)
-	  @table[i] &= 0xFFFF ^ (1<<(j.div(2)))
+	  _, j, k = indices(n)
+	  new_table[j] &= FILLED_ENTRY^(1<<k)
 	end
       end
+      @tables << new_table.freeze
     end
   end
 
