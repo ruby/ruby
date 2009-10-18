@@ -1,5 +1,6 @@
 # delta.rb: Written by Tadayoshi Funaba 2004-2009
 
+require 'date'
 require 'date/delta/parser'
 
 class Date
@@ -398,3 +399,33 @@ class Date
   end
 
 end
+
+vsave = $VERBOSE
+$VERBOSE = false
+
+class Date
+
+  def + (n)
+    case n
+    when Numeric; return self.class.new!(@ajd + n, @of, @sg)
+    when Delta
+      d = n.__send__(:delta)
+      return (self >> d.imag) + d.real
+    end
+    raise TypeError, 'expected numeric'
+  end
+
+  def - (x)
+    case x
+    when Numeric; return self.class.new!(@ajd - x, @of, @sg)
+    when Date;    return @ajd - x.ajd
+    when Delta
+      d = x.__send__(:delta)
+      return (self << d.imag) - d.real
+    end
+    raise TypeError, 'expected numeric'
+  end
+
+end
+
+$VERBOSE = vsave
