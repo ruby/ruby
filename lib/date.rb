@@ -194,7 +194,6 @@
 #     puts secs_to_new_year()
 
 require 'date/format'
-require 'date/delta'
 
 # Class representing a date.
 #
@@ -1337,9 +1336,6 @@ class Date
   def + (n)
     case n
     when Numeric; return self.class.new!(@ajd + n, @of, @sg)
-    when Delta
-      d = n.__send__(:delta)
-      return (self >> d.imag) + d.real
     end
     raise TypeError, 'expected numeric'
   end
@@ -1356,11 +1352,8 @@ class Date
     case x
     when Numeric; return self.class.new!(@ajd - x, @of, @sg)
     when Date;    return @ajd - x.ajd
-    when Delta
-      d = x.__send__(:delta)
-      return (self << d.imag) - d.real
     end
-    raise TypeError, 'expected numeric'
+    raise TypeError, 'expected numeric or date'
   end
 
   # Compare this date with another date.
