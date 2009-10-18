@@ -1,3 +1,8 @@
+Mon Oct 19 05:54:11 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/rexml/element.rb (text=): false should be converted to string.
+	  A patch by Teruo Oshida [ruby-dev:38351]
+
 Fri Oct 16 16:42:57 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (CreateChild): recognize escape characters.
