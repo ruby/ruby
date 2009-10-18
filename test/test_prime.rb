@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'prime'
 require 'stringio'
+require 'timeout'
 
 class TestPrime < Test::Unit::TestCase
   # The first 100 prime numbers
@@ -142,5 +143,30 @@ class TestPrime < Test::Unit::TestCase
       assert -3.prime?
       assert !-4.prime?
     end
+  end
+
+  def test_eratosthenes_works_fine_after_timeout
+    sieve = Prime::EratosthenesSieve.instance
+    sieve.send(:initialize)
+    begin
+      # simulates that Timeout.timeout interrupts Prime::EratosthenesSieve#extend_table
+      def sieve.Integer(n)
+        n = super(n)
+        sleep 10 if /extend_table/ =~ caller.first
+        return n
+      end
+
+      begin
+	Timeout.timeout(0.5) { Prime.each(7*37){} }
+	flunk("timeout expected")
+      rescue Timeout::Error
+      end
+    ensure
+      class << sieve
+        remove_method :Integer
+      end
+    end
+
+    refute_includes Prime.each(7*37).to_a, 7*37, "[ruby-dev:39465]"
   end
 end
