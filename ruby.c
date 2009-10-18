@@ -350,8 +350,8 @@ ruby_init_loadpath_safe(int safe_level)
     VALUE sopath;
 # else
     char libpath[MAXPATHLEN + 1];
-    size_t baselen;
 # endif
+    size_t baselen;
     char *p;
 
 #if defined _WIN32 || defined __CYGWIN__
@@ -416,15 +416,12 @@ ruby_init_loadpath_safe(int safe_level)
 	strlcpy(libpath, ".", sizeof(libpath));
 	p = libpath + 1;
     }
-
-    baselen = p - libpath;
-
-#define BASEPATH() rb_str_buf_cat(rb_str_buf_new(baselen+len), libpath, baselen)
 #else
     rb_str_set_len(sopath, p - libpath);
-
-#define BASEPATH() rb_str_dup(sopath)
 #endif
+
+    baselen = p - libpath;
+#define BASEPATH() rb_str_buf_cat(rb_str_buf_new(baselen+len), libpath, baselen)
 
 #define RUBY_RELATIVE(path, len) rb_str_buf_cat(BASEPATH(), path, len)
 #else
