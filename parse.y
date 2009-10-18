@@ -9278,7 +9278,7 @@ is_special_global_name(const char *m, const char *e, rb_encoding *enc)
 	do {
 	    if (!ISASCII(*m)) mb = 1;
 	    ++m;
-	} while (rb_enc_isdigit(*m, enc));
+	} while (m < e && rb_enc_isdigit(*m, enc));
     }
     return m == e ? mb + 1 : 0;
 }
