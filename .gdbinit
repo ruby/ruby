@@ -652,3 +652,41 @@ define iseq
     print *(ADJUST*)($arg0)
   end
 end
+
+define rb_ps
+  rb_ps_vm ruby_current_vm
+end
+document rb_ps
+Dump all threads and their callstacks
+end
+
+define rb_ps_vm
+  print $ps_vm = (rb_vm_t*)$arg0
+  set $ps_threads = (st_table*)$ps_vm->living_threads
+  if $ps_threads->entries_packed
+    set $ps_threads_i = 0
+    while $ps_threads_i < $ps_threads->num_entries
+      set $ps_threads_key = (st_data_t)$ps_threads->bins[$ps_threads_i * 2]
+      set $ps_threads_val = (st_data_t)$ps_threads->bins[$ps_threads_i * 2 + 1]
+      rb_ps_thread $ps_threads_key $ps_threads_val
+      set $ps_threads_i = $ps_threads_i + 1
+    end
+  else
+    set $ps_threads_ptr = (st_table_entry*)$ps_threads->head
+    while $ps_threads_ptr
+      set $ps_threads_key = (st_data_t)$ps_threads_ptr->key
+      set $ps_threads_val = (st_data_t)$ps_threads_ptr->record
+      rb_ps_thread $ps_threads_key $ps_threads_val
+      set $ps_threads_ptr = (st_table_entry*)$ps_threads_ptr->fore
+    end
+  end
+end
+document rb_ps_vm
+Dump all threads in a (rb_vm_t*) and their callstacks
+end
+
+define rb_ps_thread
+  set $ps_thread = (struct RTypedData*)$arg0
+  set $ps_thread_id = $arg1
+  print $ps_thread_th = (rb_thread_t*)$ps_thread->data
+end
