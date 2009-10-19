@@ -1,3 +1,7 @@
+Mon Oct 19 15:17:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* .gdbinit (rb_method_entry): search method entry by class and id.
+
 Mon Oct 19 15:03:31 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (enc/unicode/name2ctype.h): no need to create
