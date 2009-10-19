@@ -1,3 +1,8 @@
+Mon Oct 19 10:59:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (prepare_iseq_build, rb_iseq_build_for_ruby2cext):
+	  untrust mark array.  [ruby-core:26137]
+
 Mon Oct 19 05:49:53 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/rexml/element.rb (text=): false should be converted to string.
