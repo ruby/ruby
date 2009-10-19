@@ -1,3 +1,8 @@
+Mon Oct 19 15:03:31 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (enc/unicode/name2ctype.h): no need to create
+	  directory if it already exists.
+
 Mon Oct 19 11:34:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* .gdbinit (rb_ps): dump all threads and their callstacks.  based

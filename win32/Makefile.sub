@@ -877,7 +877,7 @@ lex.c: {$(srcdir)}lex.c.blt
 	copy $(?:/=\) $@
 
 enc/unicode/name2ctype.h: {$(srcdir)}enc/unicode/name2ctype.h.blt
-	@md $(@D:/=\)
+	@if not exist $(@D:/=\) md $(@D:/=\)
 	copy $(?:/=\) $(@:/=\)
 
 $(OBJS): {$(hdrdir)/ruby}win32.h
