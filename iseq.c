@@ -220,7 +220,8 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->filename = filename;
     iseq->line_no = line_no;
     iseq->defined_method_id = 0;
-    iseq->mark_ary = rb_ary_new();
+    iseq->mark_ary = rb_ary_tmp_new(3);
+    OBJ_UNTRUST(iseq->mark_ary);
     RBASIC(iseq->mark_ary)->klass = 0;
 
     iseq->type = type;
@@ -1439,6 +1440,7 @@ rb_iseq_build_for_ruby2cext(
     iseq->filename = rb_str_new2(filename);
     iseq->line_no = line_no;
     iseq->mark_ary = rb_ary_tmp_new(3);
+    OBJ_UNTRUST(iseq->mark_ary);
     iseq->self = iseqval;
 
     iseq->iseq = ALLOC_N(VALUE, iseq->iseq_size);

@@ -472,6 +472,10 @@ class TestRegexp < Test::Unit::TestCase
       /foo/.match("foo")
     end.value
     assert(m.tainted?)
+    assert_nothing_raised('[ruby-core:26137]') {
+      m = proc {$SAFE = 4; /#{}/o}.call
+    }
+    assert(m.tainted?)
   end
 
   def check(re, ss, fs = [])
