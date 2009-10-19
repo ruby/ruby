@@ -614,8 +614,68 @@ define rb_p
   call rb_p($arg0)
 end
 
+define rb_numtable_entry
+  set $rb_numtable_tbl = $arg0
+  set $rb_numtable_id = (st_data_t)$arg1
+  set $rb_numtable_key = 0
+  set $rb_numtable_rec = 0
+  if $rb_numtable_tbl->entries_packed
+    set $rb_numtable_p = $rb_numtable_tbl->bins
+    while $rb_numtable_p && $rb_numtable_p < $rb_numtable_tbl->bins+$rb_numtable_tbl->num_entries
+      if (st_data_t)$rb_numtable_p[0] == $rb_numtable_id
+	set $rb_numtable_key = (st_data_t)$rb_numtable_p[0]
+	set $rb_numtable_rec = (st_data_t)$rb_numtable_p[1]
+	set $rb_numtable_p = 0
+      else
+	set $rb_numtable_p = $rb_numtable_p + 2
+      end
+    end
+  else
+    set $rb_numtable_p = $rb_numtable_tbl->bins[$rb_numtable_id % $rb_numtable_tbl->num_bins]
+    while $rb_numtable_p
+      if $rb_numtable_p->key == $rb_numtable_id
+	set $rb_numtable_key = $rb_numtable_p->key
+	set $rb_numtable_rec = $rb_numtable_p->record
+	set $rb_numtable_p = 0
+      else
+	set $rb_numtable_p = $rb_numtable_p->next
+      end
+    end
+  end
+end
+
 define rb_id2name
-  call rb_id2name($arg0)
+  rb_numtable_entry global_symbols.id_str (ID)$arg0
+  if $rb_numtable_rec
+    rp $rb_numtable_rec
+  else
+    echo undef\n
+  end
+end
+document rb_id2name
+  Print the name of id
+end
+
+define rb_method_entry
+  set $rb_method_entry_klass = (struct RClass *)$arg0
+  set $rb_method_entry_id = (ID)$arg1
+  set $rb_method_entry_me = (rb_method_entry_t *)0
+  while !$rb_method_entry_me && $rb_method_entry_klass
+    rb_numtable_entry $rb_method_entry_klass->m_tbl $rb_method_entry_id
+    set $rb_method_entry_me = (rb_method_entry_t *)$rb_numtable_rec
+    if !$rb_method_entry_me
+      set $rb_method_entry_klass = (struct RClass *)$rb_method_entry_klass->ptr->super
+    end
+  end
+  if $rb_method_entry_me
+    print *$rb_method_entry_klass
+    print *$rb_method_entry_me
+  else
+    echo method not found\n
+  end
+end
+document rb_method_entry
+  Search method entry by class and id
 end
 
 define rb_classname
