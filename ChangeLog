@@ -1,4 +1,8 @@
-水 10月 21 00:17:28 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Wed Oct 21 00:27:15 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/webrick/httpauth/digestauth.rb: typo in exception message fixed.
+
+Wed Oct 21 00:17:28 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/logger.rb: imported upstream version (logger/1.2.7) see #2238.
 	  * do not raise an exception even if log writing failed.
