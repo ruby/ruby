@@ -1,3 +1,8 @@
+Wed Oct 21 01:19:56 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/monitor.rb (MonitorMixin.mon_release): ensure the scheduled
+	  thread to be alive when a thread is releasing a monitor. #2240
+
 Wed Oct 21 00:28:52 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/webrick/httpauth/digestauth.rb: typo in exception message fixed.
