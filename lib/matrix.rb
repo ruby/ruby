@@ -35,10 +35,9 @@ end
 # arithmetically and algebraically, and determining their mathematical properties (trace, rank,
 # inverse, determinant).
 #
-# Note that although matrices should theoretically be rectangular, this is not
-# enforced by the class.
+# Note that matrices must be rectangular, otherwise an ErrDimensionMismatch is raised.
 #
-# Also note that the determinant of integer matrices may be incorrectly calculated unless you
+# Also note that the determinant of integer matrices may be approximated unless you
 # also <tt>require 'mathn'</tt>.  This may be fixed in the future.
 #
 # == Method Catalogue
@@ -108,6 +107,8 @@ class Matrix
 
   # instance creations
   private_class_method :new
+  attr_reader :rows
+  protected :rows
 
   #
   # Creates a matrix where each argument is a row.
@@ -116,7 +117,7 @@ class Matrix
   #          -1 66
   #
   def Matrix.[](*rows)
-    new(:init_rows, rows, false)
+    Matrix.rows(rows, false)
   end
 
   #
@@ -128,7 +129,15 @@ class Matrix
   #          -1 66
   #
   def Matrix.rows(rows, copy = true)
-    new(:init_rows, rows, copy)
+    rows = Matrix.convert_to_array(rows)
+    rows.map! do |row|
+      Matrix.convert_to_array(row, copy)
+    end
+    size = (rows[0] || []).size
+    rows.each do |row|
+      Matrix.Raise ErrDimensionMismatch, "element size differs (#{row.size} should be #{size})" unless row.size == size
+    end
+    new rows, size
   end
 
   #
@@ -138,12 +147,7 @@ class Matrix
   #          93 66
   #
   def Matrix.columns(columns)
-    rows = (0 ... columns[0].size).collect {|i|
-      (0 ... columns.size).collect {|j|
-        columns[j][i]
-      }
-    }
-    Matrix.rows(rows, false)
+    Matrix.rows(columns.transpose, false)
   end
 
   #
@@ -160,7 +164,7 @@ class Matrix
       row[j] = values[j]
       row
     }
-    rows(rows, false)
+    new rows
   end
 
   #
@@ -205,14 +209,8 @@ class Matrix
   #     => 4 5 6
   #
   def Matrix.row_vector(row)
-    case row
-    when Vector
-      Matrix.rows([row.to_a], false)
-    when Array
-      Matrix.rows([row.dup], false)
-    else
-      Matrix.rows([[row]], false)
-    end
+    row = Matrix.convert_to_array(row)
+    new [row]
   end
 
   #
@@ -224,39 +222,43 @@ class Matrix
   #        6
   #
   def Matrix.column_vector(column)
-    case column
-    when Vector
-      Matrix.columns([column.to_a])
-    when Array
-      Matrix.columns([column])
-    else
-      Matrix.columns([[column]])
-    end
+    column = Matrix.convert_to_array(column)
+    new [column].transpose, 1
   end
 
   #
-  # This method is used by the other methods that create matrices, and is of no
-  # use to general users.
+  # Creates a empty matrix of +row_size+ x +column_size+.
+  # +row_size+ or +column_size+ must be 0.
+  #   Matrix.empty(4,0).inspect_org
+  #     => "#<Matrix:*** @column_size=0, @rows=[[], [], [], []]>"
   #
-  def initialize(init_method, *argv)
-    self.send(init_method, *argv)
+  def Matrix.empty(row_size = 0, column_size = 0)
+    Matrix.Raise ErrDimensionMismatch if column_size != 0 && row_size != 0
+
+    new([[]]*row_size, column_size)
   end
 
-  def init_rows(rows, copy)
-    if copy
-      @rows = rows.collect{|row| row.dup}
-    else
-      @rows = rows
-    end
-    self
+  #
+  # Matrix.new is private; use Matrix.rows, columns, [], etc... to create.
+  #
+  def initialize(rows, column_size = rows[0].size)
+    # No checking is done at this point. rows must be an Array of Arrays.
+    # column_size must be the size of the first row, if there is one,
+    # otherwise it *must* be specified and can be any integer >= 0
+    @rows = rows
+    @column_size = column_size
   end
-  private :init_rows
+
+  def new_matrix(rows, column_size = rows[0].size) # :nodoc:
+    Matrix.send(:new, rows, column_size) # bypass privacy of Matrix.new
+  end
+  private :new_matrix
 
   #
   # Returns element (+i+,+j+) of the matrix.  That is: row +i+, column +j+.
   #
   def [](i, j)
-    @rows[i][j]
+    @rows.fetch(i){return nil}[j]
   end
   alias element []
   alias component []
@@ -276,14 +278,9 @@ class Matrix
   end
 
   #
-  # Returns the number of columns.  Note that it is possible to construct a
-  # matrix with uneven columns (e.g. Matrix[ [1,2,3], [4,5] ]), but this is
-  # mathematically unsound.  This method uses the first row to determine the
-  # result.
+  # Returns the number of columns.
   #
-  def column_size
-    @rows[0].size
-  end
+  attr_reader :column_size
 
   #
   # Returns row vector number +i+ of the matrix as a Vector (starting at 0 like
@@ -291,9 +288,10 @@ class Matrix
   #
   def row(i, &block) # :yield: e
     if block_given?
-      @rows[i].each(&block)
+      @rows.fetch(i){return self}.each(&block)
+      self
     else
-      Vector.elements(@rows[i])
+      Vector.elements(@rows.fetch(i){return nil})
     end
   end
 
@@ -304,10 +302,13 @@ class Matrix
   #
   def column(j) # :yield: e
     if block_given?
+      return self if j >= column_size
       row_size.times do |i|
         yield @rows[i][j]
       end
+      self
     else
+      return nil if j >= column_size
       col = (0 ... row_size).collect {|i|
         @rows[i][j]
       }
@@ -323,8 +324,9 @@ class Matrix
   #        9 16
   #
   def collect(&block) # :yield: e
+    return to_enum(:collect) unless block_given?
     rows = @rows.collect{|row| row.collect(&block)}
-    Matrix.rows(rows, false)
+    new_matrix rows, column_size
   end
   alias map collect
 
@@ -352,10 +354,11 @@ class Matrix
       Matrix.Raise ArgumentError, param.inspect
     end
 
+    return nil if from_row > row_size || from_col > column_size
     rows = @rows[from_row, size_row].collect{|row|
       row[from_col, size_col]
     }
-    Matrix.rows(rows, false)
+    new_matrix rows, column_size - from_col
   end
 
   #--
@@ -377,8 +380,7 @@ class Matrix
   end
 
   #
-  # Returns +true+ is this is a square matrix.  See note in column_size about this
-  # being unreliable, though.
+  # Returns +true+ is this is a square matrix.
   #
   def square?
     column_size == row_size
@@ -393,18 +395,14 @@ class Matrix
   #
   def ==(other)
     return false unless Matrix === other
-
-    other.compare_by_row_vectors(@rows)
+    rows == other.rows
   end
+
   def eql?(other)
     return false unless Matrix === other
-
-    other.compare_by_row_vectors(@rows, :eql?)
+    rows.eql? other.rows
   end
 
-  #
-  # Not really intended for general consumption.
-  #
   def compare_by_row_vectors(rows, comparison = :==)
     return false unless @rows.size == rows.size
 
@@ -417,9 +415,10 @@ class Matrix
   #
   # Returns a clone of the matrix, so that the contents of each do not reference
   # identical objects.
+  # There should be no good reason to do this since Matrices are immutable.
   #
   def clone
-    Matrix.rows(@rows)
+    new_matrix @rows.map{|row| row.dup}, column_size
   end
 
   #
@@ -447,7 +446,7 @@ class Matrix
           e * m
         }
       }
-      return Matrix.rows(rows, false)
+      return new_matrix rows, column_size
     when Vector
       m = Matrix.column_vector(m)
       r = self * m
@@ -462,7 +461,7 @@ class Matrix
           end
         }
       }
-      return Matrix.rows(rows, false)
+      return new_matrix rows, m.column_size
     else
       x, y = m.coerce(self)
       return x * y
@@ -494,7 +493,7 @@ class Matrix
         self[i, j] + m[i, j]
       }
     }
-    Matrix.rows(rows, false)
+    new_matrix rows, column_size
   end
 
   #
@@ -522,7 +521,7 @@ class Matrix
         self[i, j] - m[i, j]
       }
     }
-    Matrix.rows(rows, false)
+    new_matrix rows, column_size
   end
 
   #
@@ -539,7 +538,7 @@ class Matrix
           e / other
         }
       }
-      return Matrix.rows(rows, false)
+      return new_matrix rows, column_size
     when Matrix
       return self * other.inverse
     else
@@ -821,6 +820,7 @@ class Matrix
   #     => 16
   #
   def trace
+    Matrix.Raise ErrDimensionMismatch unless square?
     (0...column_size).inject(0) do |tr, i|
       tr + @rows[i][i]
     end
@@ -838,7 +838,7 @@ class Matrix
   #        2 4 6
   #
   def transpose
-    Matrix.columns(@rows)
+    new_matrix @rows.transpose, row_size
   end
   alias t transpose
 
@@ -903,16 +903,48 @@ class Matrix
   # Overrides Object#to_s
   #
   def to_s
-    "Matrix[" + @rows.collect{|row|
-      "[" + row.collect{|e| e.to_s}.join(", ") + "]"
-    }.join(", ")+"]"
+    if row_size == 0 || column_size == 0
+      "Matrix.empty(#{row_size}, #{column_size})"
+    else
+      "Matrix[" + @rows.collect{|row|
+	"[" + row.collect{|e| e.to_s}.join(", ") + "]"
+      }.join(", ")+"]"
+    end
   end
+
+  alias_method :inspect_org, :inspect
 
   #
   # Overrides Object#inspect
   #
   def inspect
-    "Matrix"+@rows.inspect
+    if row_size == 0 || column_size == 0
+      "Matrix.empty(#{row_size}, #{column_size})"
+    else
+      "Matrix#{@rows.inspect}"
+    end
+  end
+  alias_method :inspect, :to_s
+
+  #
+  # Converts the obj to an Array. If copy is set to true
+  # a copy of obj will be made if necessary.
+  #
+  def Matrix.convert_to_array(obj, copy = false)
+    case obj
+    when Array
+      copy ? obj.dup : obj
+    when Vector
+      obj.to_a
+    else
+      begin
+        converted = obj.to_ary
+      rescue Exception => e
+        raise TypeError, "can't convert #{obj.class} into an Array (#{e.message})"
+      end
+      raise TypeError, "#{obj.class}#to_ary should return an Array" unless converted.is_a? Array
+      converted
+    end
   end
 
   # Private CLASS
@@ -1041,13 +1073,14 @@ class Vector
   #INSTANCE CREATION
 
   private_class_method :new
-
+  attr_reader :elements
+  protected :elements
   #
   # Creates a Vector from a list of elements.
   #   Vector[7, 4, ...]
   #
   def Vector.[](*array)
-    new(:init_elements, array, copy = false)
+    new Matrix.convert_to_array(array, copy = false)
   end
 
   #
@@ -1055,25 +1088,15 @@ class Vector
   # whether the array itself or a copy is used internally.
   #
   def Vector.elements(array, copy = true)
-    new(:init_elements, array, copy)
+    new Matrix.convert_to_array(array, copy)
   end
 
   #
-  # For internal use.
+  # Vector.new is private; use Vector[] or Vector.elements to create.
   #
-  def initialize(method, array, copy)
-    self.send(method, array, copy)
-  end
-
-  #
-  # For internal use.
-  #
-  def init_elements(array, copy)
-    if copy
-      @elements = array.dup
-    else
-      @elements = array
-    end
+  def initialize(array)
+    # No checking is done at this point.
+    @elements = array
   end
 
   # ACCESSING
@@ -1110,6 +1133,7 @@ class Vector
   #
   def each2(v) # :yield: e1, e2
     Vector.Raise ErrDimensionMismatch if size != v.size
+    return to_enum(:each2) unless block_given?
     size.times do |i|
       yield @elements[i], v[i]
     end
@@ -1121,6 +1145,7 @@ class Vector
   #
   def collect2(v) # :yield: e1, e2
     Vector.Raise ErrDimensionMismatch if size != v.size
+    return to_enum(:collect2) unless block_given?
     (0 ... size).collect do |i|
       yield @elements[i], v[i]
     end
@@ -1135,18 +1160,14 @@ class Vector
   #
   def ==(other)
     return false unless Vector === other
-
-    other.compare_by(@elements)
+    @elements == other.elements
   end
+
   def eql?(other)
     return false unless Vector === other
-
-    other.compare_by(@elements, :eql?)
+    @elements.eql? other.elements
   end
 
-  #
-  # For internal use.
-  #
   def compare_by(elements, comparison = :==)
     @elements.send(comparison, elements)
   end
@@ -1245,6 +1266,7 @@ class Vector
   # Like Array#collect.
   #
   def collect(&block) # :yield: e
+    return to_enum(:collect) unless block_given?
     els = @elements.collect(&block)
     Vector.elements(els, false)
   end
@@ -1254,6 +1276,7 @@ class Vector
   # Like Vector#collect2, but returns a Vector instead of an Array.
   #
   def map2(v, &block) # :yield: e1, e2
+    return to_enum(:map2) unless block_given?
     els = collect2(v, &block)
     Vector.elements(els, false)
   end
