@@ -1436,7 +1436,8 @@ mlhs_basic	: mlhs_head
 		    /*%%%*/
 			$$ = NEW_MASGN($1, NEW_POSTARG($3,$5));
 		    /*%
-			$$ = mlhs_add_star($1, $3);
+			$1 = mlhs_add_star($1, $3);
+			$$ = mlhs_add($1, $5);
 		    %*/
 		    }
 		| mlhs_head tSTAR
