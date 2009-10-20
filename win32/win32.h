@@ -230,15 +230,19 @@ extern FILE *rb_w32_fsopen(const char *, const char *, int);
 #ifndef isnan
 #define isnan(x) _isnan(x)
 #endif
-#ifndef finite
-#define finite(x) _finite(x)
-#endif
+static inline int
+finite(double x)
+{
+    return _finite(x);
+}
 #ifndef copysign
 #define copysign(a, b) _copysign(a, b)
 #endif
-#ifndef scalb
-#define scalb(a, b) _scalb(a, b)
-#endif
+static inline double
+scalb(double a, long b)
+{
+    return _scalb(a, b);
+}
 #endif
 
 #if !defined S_IFIFO && defined _S_IFIFO
