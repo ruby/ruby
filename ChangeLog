@@ -1,4 +1,7 @@
-Tue Oct 20 14:50:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 20 15:07:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (mlhs_basic): fixed handling splat in middle of mlhs.  a
+	  patch from Andy Keep in [ruby-core:26163]
 
 	* parse.y (parser_here_document): dispatch delayed heredoc
 	  contents.  based on a patch from Andy Keep in [ruby-core:24855].
