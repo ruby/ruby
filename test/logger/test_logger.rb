@@ -328,13 +328,19 @@ class TestLogDevice < Test::Unit::TestCase
     assert_equal("msg2\n\n", msg)
     #
     logdev = d(LogExcnRaiser.new)
+    class << (stderr = '')
+      alias write <<
+    end
+    $stderr, stderr = stderr, $stderr
     begin
       assert_nothing_raised do
         logdev.write('hello')
       end
     ensure
       logdev.close
+      $stderr, stderr = stderr, $stderr
     end
+    assert_equal "log writing failed. disk is full\n", stderr
   end
 
   def test_close
