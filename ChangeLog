@@ -1,3 +1,13 @@
+Wed Oct 21 03:54:41 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb:  
+	  Creator functions now strict with their arguments
+	  Support for empty matrices (see new method Matrix.empty)
+	  Matrix#trace raises an ErrDimensionMismatch if the matrix is not square
+	  Enumerators are returned when no block given
+	  Consistent results when accessing elements with out of bounds indices
+	  Details in [ruby-core:23598].
+
 Wed Oct 21 00:27:15 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/webrick/httpauth/digestauth.rb: typo in exception message fixed.
