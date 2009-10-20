@@ -1,3 +1,8 @@
+Wed Oct 21 08:17:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/logger/test_logger.rb (TestLogDevice#test_write): check
+	  also error message.
+
 Wed Oct 21 03:54:41 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb:  
