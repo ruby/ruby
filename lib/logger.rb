@@ -1,11 +1,5 @@
 # logger.rb - simple logging utility
-# Copyright (C) 2000-2003, 2005  NAKAMURA, Hiroshi <nakahiro@sarion.co.jp>.
-
-require 'monitor'
-
-# = logger.rb
-#
-# Simple logging utility.
+# Copyright (C) 2000-2003, 2005, 2008  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 #
 # Author:: NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 # Documentation:: NAKAMURA, Hiroshi and Gavin Sinclair
@@ -15,10 +9,11 @@ require 'monitor'
 # Revision:: $Id$
 #
 # See Logger for documentation.
-#
 
 
-#
+require 'monitor'
+
+
 # == Description
 #
 # The Logger class provides a simple but sophisticated logging utility that
@@ -180,7 +175,7 @@ require 'monitor'
 
 
 class Logger
-  VERSION = "1.2.6"
+  VERSION = "1.2.7"
   id, name, rev = %w$Id$
   if name
     name = name.chomp(",v")
@@ -191,7 +186,7 @@ class Logger
   ProgName = "#{name}/#{rev}"
 
   class Error < RuntimeError; end
-  class ShiftingError < Error; end
+  class ShiftingError < Error; end # not used after 1.2.7. just for compat.
 
   # Logging severity.
   module Severity
@@ -334,10 +329,10 @@ class Logger
     progname ||= @progname
     if message.nil?
       if block_given?
-	message = yield
+        message = yield
       else
-	message = progname
-	progname = @progname
+        message = progname
+        progname = @progname
       end
     end
     @logdev.write(
@@ -499,32 +494,44 @@ private
       @dev = @filename = @shift_age = @shift_size = nil
       @mutex = LogDeviceMutex.new
       if log.respond_to?(:write) and log.respond_to?(:close)
-	@dev = log
+        @dev = log
       else
-	@dev = open_logfile(log)
-	@dev.sync = true
-	@filename = log
-	@shift_age = opt[:shift_age] || 7
-	@shift_size = opt[:shift_size] || 1048576
+        @dev = open_logfile(log)
+        @dev.sync = true
+        @filename = log
+        @shift_age = opt[:shift_age] || 7
+        @shift_size = opt[:shift_size] || 1048576
       end
     end
 
     def write(message)
-      @mutex.synchronize do
-        if @shift_age and @dev.respond_to?(:stat)
+      begin
+        @mutex.synchronize do
+          if @shift_age and @dev.respond_to?(:stat)
+            begin
+              check_shift_log
+            rescue
+              warn("log shifting failed. #{$!}")
+            end
+          end
           begin
-            check_shift_log
+            @dev.write(message)
           rescue
-            raise Logger::ShiftingError.new("Shifting failed. #{$!}")
+            warn("log writing failed. #{$!}")
           end
         end
-        @dev.write(message)
+      rescue Exception => ignored
+        warn("log writing failed. #{ignored}")
       end
     end
 
     def close
-      @mutex.synchronize do
-        @dev.close
+      begin
+        @mutex.synchronize do
+          @dev.close rescue nil
+        end
+      rescue Exception => ignored
+        @dev.close rescue nil
       end
     end
 
@@ -532,9 +539,9 @@ private
 
     def open_logfile(filename)
       if (FileTest.exist?(filename))
-     	open(filename, (File::WRONLY | File::APPEND))
+        open(filename, (File::WRONLY | File::APPEND))
       else
-       	create_logfile(filename)
+        create_logfile(filename)
       end
     end
 
@@ -547,8 +554,8 @@ private
 
     def add_log_header(file)
       file.write(
-     	"# Logfile created on %s by %s\n" % [Time.now.to_s, Logger::ProgName]
-    )
+        "# Logfile created on %s by %s\n" % [Time.now.to_s, Logger::ProgName]
+      )
     end
 
     SiD = 24 * 60 * 60
@@ -561,8 +568,9 @@ private
         end
       else
         now = Time.now
-        if @dev.stat.mtime <= previous_period_end(now)
-          shift_log_period(now)
+        period_end = previous_period_end(now)
+        if @dev.stat.mtime <= period_end
+          shift_log_period(period_end)
         end
       end
     end
@@ -573,19 +581,26 @@ private
           File.rename("#{@filename}.#{i}", "#{@filename}.#{i+1}")
         end
       end
-      @dev.close
+      @dev.close rescue nil
       File.rename("#{@filename}", "#{@filename}.0")
       @dev = create_logfile(@filename)
       return true
     end
 
-    def shift_log_period(now)
-      postfix = previous_period_end(now).strftime("%Y%m%d")	# YYYYMMDD
+    def shift_log_period(period_end)
+      postfix = period_end.strftime("%Y%m%d") # YYYYMMDD
       age_file = "#{@filename}.#{postfix}"
       if FileTest.exist?(age_file)
-        raise RuntimeError.new("'#{ age_file }' already exists.")
+        # try to avoid filename crash caused by Timestamp change.
+        idx = 0
+        # .99 can be overriden; avoid too much file search with 'loop do'
+        while idx < 100
+          idx += 1
+          age_file = "#{@filename}.#{postfix}.#{idx}"
+          break unless FileTest.exist?(age_file)
+        end
       end
-      @dev.close
+      @dev.close rescue nil
       File.rename("#{@filename}", age_file)
       @dev = create_logfile(@filename)
       return true
@@ -672,12 +687,12 @@ private
     def start
       status = -1
       begin
-	log(INFO, "Start of #{ @appname }.")
-	status = run
+        log(INFO, "Start of #{ @appname }.")
+        status = run
       rescue
-	log(FATAL, "Detected an exception. Stopping ... #{$!} (#{$!.class})\n" << $@.join("\n"))
+        log(FATAL, "Detected an exception. Stopping ... #{$!} (#{$!.class})\n" << $@.join("\n"))
       ensure
-	log(INFO, "End of #{ @appname }. (status: #{ status.to_s })")
+        log(INFO, "End of #{ @appname }. (status: #{ status.to_s })")
       end
       status
     end
@@ -692,6 +707,8 @@ private
     #
     def logger=(logger)
       @log = logger
+      @log.progname = @appname
+      @log.level = @level
     end
 
     #
@@ -726,6 +743,7 @@ private
   private
 
     def run
+      # TODO: should be an NotImplementedError
       raise RuntimeError.new('Method run must be defined in the derived class.')
     end
   end
