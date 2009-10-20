@@ -3560,8 +3560,8 @@ method_call	: operation paren_args
 			$$ = NEW_CALL($1, rb_intern("call"), $3);
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch3(call, dispatch1(paren, $1),
-				       ripper_id2sym('.'), rb_intern("call"));
+			$$ = dispatch3(call, $1, ripper_id2sym('.'),
+				       ripper_intern("call"));
 			$$ = method_optarg($$, $3);
 		    %*/
 		    }
@@ -3571,8 +3571,8 @@ method_call	: operation paren_args
 			$$ = NEW_CALL($1, rb_intern("call"), $3);
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch3(call, dispatch1(paren, $1),
-				       ripper_id2sym('.'), rb_intern("call"));
+			$$ = dispatch3(call, $1, ripper_intern("::"),
+				       ripper_intern("call"));
 			$$ = method_optarg($$, $3);
 		    %*/
 		    }
