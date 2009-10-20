@@ -2,9 +2,11 @@
 # test_scanner_events.rb
 #
 begin
-
-require 'ripper'
-require 'test/unit'
+  require 'ripper'
+  require 'test/unit'
+  ripper_test = true
+rescue LoadError
+end
 
 class TestRipper_ScannerEvents < Test::Unit::TestCase
 
@@ -806,7 +808,4 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
   def test_tlambda_arg
   end
 
-end
-
-rescue LoadError
-end
+end if ripper_test
