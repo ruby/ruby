@@ -628,9 +628,9 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
                  scan('tstring_content', "<<EOS\nheredoc\nEOS")
     assert_equal ["heredoc\n"],
                  scan('tstring_content', "<<EOS\nheredoc\nEOS\n")
-    assert_equal ["heredoc \n"],
-                 scan('tstring_content', "<<EOS\nheredoc \nEOS \n")
-    assert_equal ["heredoc\n"],
+    assert_equal ["here\ndoc \nEOS \n"],
+                 scan('tstring_content', "<<EOS\nhere\ndoc \nEOS \n")
+    assert_equal ["heredoc\n\tEOS \n"],
                  scan('tstring_content', "<<-EOS\nheredoc\n\tEOS \n")
   end
 
@@ -641,9 +641,9 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
                  scan('heredoc_end', "<<EOS\nheredoc\nEOS")
     assert_equal ["EOS\n"],
                  scan('heredoc_end', "<<EOS\nheredoc\nEOS\n")
-    assert_equal ["EOS \n"],
+    assert_equal [],
                  scan('heredoc_end', "<<EOS\nheredoc\nEOS \n")
-    assert_equal ["\tEOS \n"],
+    assert_equal [],
                  scan('heredoc_end', "<<-EOS\nheredoc\n\tEOS \n")
   end
 
