@@ -513,7 +513,7 @@ static VALUE ripper_dispatch5(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE,V
 
 #define yyparse ripper_yyparse
 
-static VALUE ripper_intern(const char*);
+#define ripper_intern(s) ID2SYM(rb_intern(s))
 static VALUE ripper_id2sym(ID);
 #ifdef __GNUC__
 #define ripper_id2sym(id) ((id) < 256 && rb_ispunct(id) ? \
@@ -10177,12 +10177,6 @@ ripper_id2sym(ID id)
         return ID2SYM(id);
     }
     return ID2SYM(rb_intern(name));
-}
-
-static VALUE
-ripper_intern(const char *s)
-{
-    return ID2SYM(rb_intern(s));
 }
 
 static ID
