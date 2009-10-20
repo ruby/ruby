@@ -431,13 +431,13 @@ w_symbol(ID id, struct dump_arg *arg)
 	}
 	w_byte(TYPE_SYMBOL, arg);
 	w_bytes(RSTRING_PTR(sym), RSTRING_LEN(sym), arg);
+	st_add_direct(arg->symbols, id, arg->symbols->num_entries);
 	if (encidx != -1) {
 	    struct dump_call_arg c_arg;
 	    c_arg.limit = 1;
 	    c_arg.arg = arg;
 	    w_encoding(sym, 0, &c_arg);
 	}
-	st_add_direct(arg->symbols, id, arg->symbols->num_entries);
     }
 }
 
@@ -1152,7 +1152,9 @@ r_symreal(struct load_arg *arg, int ivar)
     volatile VALUE s = r_bytes(arg);
     ID id;
     int idx = -1;
+    st_index_t n = arg->symbols->num_entries;
 
+    st_insert(arg->symbols, (st_data_t)n, (st_data_t)0);
     if (ivar) {
 	long num = r_long(arg);
 	while (num-- > 0) {
@@ -1163,7 +1165,7 @@ r_symreal(struct load_arg *arg, int ivar)
     if (idx < 0) idx = rb_usascii_encindex();
     rb_enc_associate_index(s, idx);
     id = rb_intern_str(s);
-    st_insert(arg->symbols, arg->symbols->num_entries, id);
+    st_insert(arg->symbols, (st_data_t)n, (st_data_t)id);
 
     return id;
 }
