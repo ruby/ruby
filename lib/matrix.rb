@@ -147,7 +147,7 @@ class Matrix
   #          93 66
   #
   def Matrix.columns(columns)
-    Matrix.rows(columns.transpose, false)
+    Matrix.rows(columns, false).transpose
   end
 
   #
@@ -931,7 +931,6 @@ class Matrix
       "Matrix#{@rows.inspect}"
     end
   end
-  alias_method :inspect, :to_s
 
   #
   # Converts the obj to an Array. If copy is set to true
