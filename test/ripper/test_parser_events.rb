@@ -202,6 +202,24 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_bodystmt
   end
 
+  def test_call
+    bug2233 = '[ruby-core:26165]'
+    tree = nil
+
+    thru_call = false
+    assert_nothing_raised {
+      tree = parse("self.foo", :on_call) {thru_call = true}
+    }
+    assert_equal true, thru_call
+    assert_equal "[call(ref(self),.,foo)]", tree
+    thru_call = false
+    assert_nothing_raised(bug2233) {
+      tree = parse("foo.()", :on_call) {thru_call = true}
+    }
+    assert_equal true, thru_call
+    assert_equal "[call(ref(foo),.,call,[])]", tree
+  end
+
   def test_heredoc
     bug1921 = '[ruby-core:24855]'
     thru_heredoc_beg = false
@@ -263,10 +281,6 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
 
   def test_break
     assert_equal true, $thru__break
-  end
-
-  def test_call
-    assert_equal true, $thru__call
   end
 
   def test_case
