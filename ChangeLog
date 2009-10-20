@@ -1,3 +1,7 @@
+Wed Oct 21 00:28:52 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/webrick/httpauth/digestauth.rb: typo in exception message fixed.
+
 Tue Oct 20 16:46:27 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/win32.h (finite, scalb): inline'ed non-standard

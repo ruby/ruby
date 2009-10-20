@@ -222,7 +222,7 @@ module WEBrick
             end
           }.join(', ')
         end
-        info('%s: authentication scceeded.', auth_req['username'])
+        info('%s: authentication succeeded.', auth_req['username'])
         req.user = auth_req['username']
         return true
       end
