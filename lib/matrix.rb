@@ -229,8 +229,15 @@ class Matrix
   #
   # Creates a empty matrix of +row_size+ x +column_size+.
   # +row_size+ or +column_size+ must be 0.
-  #   Matrix.empty(4,0).inspect_org
-  #     => "#<Matrix:*** @column_size=0, @rows=[[], [], [], []]>"
+  #
+  #   m = Matrix.empty(2, 0)
+  #   m == Matrix[ [], [] ]
+  #     => true
+  #   n = Matrix.empty(0, 3)
+  #   n == Matrix.columns([ [], [], [] ])
+  #     => true
+  #   m * n
+  #     => Matrix[[0, 0, 0], [0, 0, 0]]
   #
   def Matrix.empty(row_size = 0, column_size = 0)
     Matrix.Raise ErrDimensionMismatch if column_size != 0 && row_size != 0
