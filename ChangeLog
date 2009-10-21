@@ -1,3 +1,8 @@
+Wed Oct 21 19:32:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_obj_inspect): fixed rdoc about the case that to_s
+	  is called.  [ruby-core:24425]
+
 Wed Oct 21 08:17:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/logger/test_logger.rb (TestLogDevice#test_write): check

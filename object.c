@@ -367,13 +367,12 @@ inspect_obj(VALUE obj, VALUE str, int recur)
  *     obj.inspect   => string
  *
  *  Returns a string containing a human-readable representation of
- *  <i>obj</i>. If not overridden, uses the <code>to_s</code> method to
- *  generate the string.
+ *  <i>obj</i>. If not overridden and no instance variables, uses the
+ *  <code>to_s</code> method to generate the string.
  *
  *     [ 1, 2, 3..4, 'five' ].inspect   #=> "[1, 2, 3..4, \"five\"]"
  *     Time.new.inspect                 #=> "2008-03-08 19:43:39 +0900"
  */
-
 
 static VALUE
 rb_obj_inspect(VALUE obj)
