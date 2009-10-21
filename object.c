@@ -369,16 +369,19 @@ inspect_obj(VALUE obj, VALUE str, int recur)
  *  Returns a string containing a human-readable representation of
  *  <i>obj</i>. If not overridden and no instance variables, uses the
  *  <code>to_s</code> method to generate the string.
+ *  <i>obj</i>.  If not overridden, uses the <code>to_s</code> method to
+ *  generate the string.
  *
  *     [ 1, 2, 3..4, 'five' ].inspect   #=> "[1, 2, 3..4, \"five\"]"
  *     Time.new.inspect                 #=> "2008-03-08 19:43:39 +0900"
  */
 
+extern int rb_obj_basic_to_s_p(VALUE);
+
 static VALUE
 rb_obj_inspect(VALUE obj)
 {
-
-    if (TYPE(obj) == T_OBJECT) {
+    if (TYPE(obj) == T_OBJECT && rb_obj_basic_to_s_p(obj)) {
         int has_ivar = 0;
         VALUE *ptr = ROBJECT_IVPTR(obj);
         long len = ROBJECT_NUMIV(obj);
@@ -398,6 +401,7 @@ rb_obj_inspect(VALUE obj)
             str = rb_sprintf("-<%s:%p", c, (void*)obj);
             return rb_exec_recursive(inspect_obj, obj, str);
         }
+	return rb_any_to_s(obj);
     }
     return rb_funcall(obj, rb_intern("to_s"), 0, 0);
 }
