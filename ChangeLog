@@ -1,3 +1,8 @@
+Thu Oct 22 17:57:53 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/fileutils.rb (FileUtils#fu_get_uid, fu_get_gid): Do not
+	  convert an integer back and forth.
+
 Thu Oct 22 17:29:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (arg_prepend): removed.  a patch from Mikhail T. in

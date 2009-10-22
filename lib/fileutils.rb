@@ -975,20 +975,26 @@ module FileUtils
 
     def fu_get_uid(user)   #:nodoc:
       return nil unless user
-      user = user.to_s
-      if /\A\d+\z/ =~ user
-      then user.to_i
-      else Etc.getpwnam(user).uid
+      case user
+      when Integer
+        user
+      when /\A\d+\z/
+        user.to_i
+      else
+        Etc.getpwnam(user).uid
       end
     end
     private_module_function :fu_get_uid
 
     def fu_get_gid(group)   #:nodoc:
       return nil unless group
-      group = group.to_s
-      if /\A\d+\z/ =~ group
-      then group.to_i
-      else Etc.getgrnam(group).gid
+      case group
+      when Integer
+        group
+      when /\A\d+\z/
+        group.to_i
+      else
+        Etc.getgrnam(group).gid
       end
     end
     private_module_function :fu_get_gid
