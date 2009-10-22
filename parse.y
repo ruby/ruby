@@ -522,7 +522,6 @@ static VALUE ripper_id2sym(ID);
 
 #define arg_new() dispatch0(args_new)
 #define arg_add(l,a) dispatch2(args_add, l, a)
-#define arg_prepend(l,a) dispatch2(args_prepend, l, a)
 #define arg_add_star(l,a) dispatch2(args_add_star, l, a)
 #define arg_add_block(l,b) dispatch2(args_add_block, l, b)
 #define arg_add_optblock(l,b) ((b)==Qundef? l : dispatch2(args_add_block, l, b))
