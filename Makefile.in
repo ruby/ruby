@@ -75,6 +75,7 @@ PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
 RUBY = $(RUBY_INSTALL_NAME)
 MINIRUBY = @MINIRUBY@ $(MINIRUBYOPT)
 RUNRUBY = @RUNRUBY@ $(RUNRUBYOPT) --
+XRUBY = @XRUBY@
 
 #### End of system configuration section. ####
 

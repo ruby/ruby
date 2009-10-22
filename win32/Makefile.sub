@@ -254,6 +254,11 @@ RUNRUBY = .\$(PROGRAM) -I$(srcdir)/lib -I"$(EXTOUT)/$(arch)"
 !endif
 MINIRUBY = $(MINIRUBY) $(MINIRUBYOPT)
 RUNRUBY = $(RUNRUBY) "$(srcdir)/tool/runruby.rb" --extout="$(EXTOUT)" $(RUNRUBYOPT) --
+!if $(CROSS_COMPILING)
+XRUBY = $(MINIRUBY)
+!else
+XRUBY = $(RUNRUBY)
+!endif
 !ifndef RUBY
 RUBY = ruby
 !endif

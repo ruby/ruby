@@ -1,3 +1,10 @@
+Fri Oct 23 07:32:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, Makefile.in, win32/Makefile.sub (XRUBY): runnable
+	  ruby without current libraries.
+
+	* common.mk (rdoc): use XRUBY.
+
 Fri Oct 23 07:28:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (warnflags): use -Wextra instead of -Wall.
