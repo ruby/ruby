@@ -53,7 +53,8 @@ const char ruby_initial_load_paths[] =
 #ifdef RUBY_THIN_ARCHLIB
     RUBY_THIN_ARCHLIB "\0"
 #endif
-    RUBY_ARCHLIB "\0";
+    RUBY_ARCHLIB "\0"
+    "";
 
 void
 Init_version(void)
