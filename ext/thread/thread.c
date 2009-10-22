@@ -252,7 +252,6 @@ wake_all(List *list)
     return Qnil;
 }
 
-extern int rb_thread_join _((VALUE thread, double limit));
 #define DELAY_INFTY 1E30
 
 static VALUE

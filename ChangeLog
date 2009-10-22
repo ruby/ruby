@@ -1,3 +1,8 @@
+Thu Oct 22 17:27:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* intern.h (rb_thread_join): added prototype.  a patch from
+	  Mikhail T. in [ruby-core:26217].
+
 Wed Oct 21 01:19:56 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/monitor.rb (MonitorMixin.mon_release): ensure the scheduled

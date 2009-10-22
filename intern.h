@@ -226,6 +226,7 @@ VALUE rb_thread_kill _((VALUE));
 VALUE rb_thread_alive_p _((VALUE));
 VALUE rb_thread_create _((VALUE (*)(ANYARGS), void*));
 void rb_thread_interrupt _((void));
+int rb_thread_join _((VALUE thread, double limit));
 void rb_thread_trap_eval _((VALUE, int, int));
 void rb_thread_signal_raise _((int));
 void rb_thread_signal_exit _((void));
