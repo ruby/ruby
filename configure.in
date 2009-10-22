@@ -389,7 +389,7 @@ dnl compiler section {
 
 if test "$GCC:${warnflags+set}:no" = yes::no; then
     save_CFLAGS="$CFLAGS"
-    for wflag in -Wall -Wno-unused-parameter -Wno-parentheses -Wpointer-arith -Wwrite-strings \
+    for wflag in -Wextra -Wno-unused-parameter -Wno-parentheses -Wpointer-arith -Wwrite-strings \
 		 -Wno-missing-field-initializers -Wshorten-64-to-32; do
         CFLAGS="$CFLAGS $wflag"
         AC_MSG_CHECKING([whether $wflag is accepted])

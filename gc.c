@@ -2094,6 +2094,10 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
     rb_jmp_buf save_regs_gc_mark;
     VALUE *stack_start, *stack_end;
 
+    FLUSH_REGISTER_WINDOWS;
+    /* This assumes that all registers are saved into the jmp_buf (and stack) */
+    rb_setjmp(save_regs_gc_mark);
+
     SET_STACK_END;
 #if STACK_GROW_DIRECTION < 0
     stack_start = th->machine_stack_end;
@@ -2112,9 +2116,6 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
     }
 #endif
 
-    FLUSH_REGISTER_WINDOWS;
-    /* This assumes that all registers are saved into the jmp_buf (and stack) */
-    rb_setjmp(save_regs_gc_mark);
     mark_locations_array(objspace,
 			 (VALUE*)save_regs_gc_mark,
 			 sizeof(save_regs_gc_mark) / sizeof(VALUE));
