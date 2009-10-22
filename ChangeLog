@@ -1,3 +1,8 @@
+Thu Oct 22 21:10:39 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* class.c (rb_obj_basic_to_s_p): typo.  Please become familiar with
+	  the ANSI style. 
+
 Thu Oct 22 20:20:27 2009  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (assert_in_out_err): test_stdout and
