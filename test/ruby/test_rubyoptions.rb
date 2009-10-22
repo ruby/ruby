@@ -317,7 +317,7 @@ class TestRubyOptions < Test::Unit::TestCase
     rubybin = Regexp.quote(EnvUtil.rubybin)
     pat = /\A#{rubybin}:.* -- #{Regexp.quote(notexist)} \(LoadError\)\Z/
     assert_equal(false, File.exist?(notexist))
-    assert_in_out_err(["-r", notexist, "-ep"], [], [], pat)
-    assert_in_out_err([notexist], [], [], pat)
+    assert_in_out_err(["-r", notexist, "-ep"], "", [], pat)
+    assert_in_out_err([notexist], "", [], pat)
   end
 end
