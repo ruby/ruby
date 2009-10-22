@@ -149,7 +149,6 @@ static NODE *list_append();
 static NODE *list_concat();
 static NODE *arg_append();
 static NODE *arg_concat();
-static NODE *arg_prepend();
 static NODE *literal_concat();
 static NODE *new_evstr();
 static NODE *evstr2dstr();
@@ -5872,27 +5871,6 @@ arg_blk_pass(node1, node2)
 	return node2;
     }
     return node1;
-}
-
-static NODE*
-arg_prepend(node1, node2)
-    NODE *node1, *node2;
-{
-    switch (nd_type(node2)) {
-      case NODE_ARRAY:
-	return list_concat(NEW_LIST(node1), node2);
-
-      case NODE_SPLAT:
-	return arg_concat(node1, node2->nd_head);
-
-      case NODE_BLOCK_PASS:
-	node2->nd_body = arg_prepend(node1, node2->nd_body);
-	return node2;
-
-      default:
-	rb_bug("unknown nodetype(%d) for arg_prepend", nd_type(node2));
-    }
-    return 0;			/* not reached */
 }
 
 static NODE*
