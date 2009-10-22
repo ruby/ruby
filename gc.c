@@ -436,7 +436,7 @@ add_heap()
 }
 #define RANY(o) ((RVALUE*)(o))
 
-int 
+int
 rb_during_gc()
 {
     return during_gc;

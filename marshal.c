@@ -1434,7 +1434,7 @@ clear_load_arg(arg)
  * call-seq:
  *     load( source [, proc] ) => obj
  *     restore( source [, proc] ) => obj
- * 
+ *
  * Returns the result of converting the serialized data in source into a
  * Ruby object (possibly with associated subordinate objects). source
  * may be either an instance of IO or an object that responds to

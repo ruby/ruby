@@ -10,7 +10,7 @@
 
 **********************************************************************/
 
-/* 
+/*
 This is based on trimmed version of MT19937.  To get the original version,
 contact <http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html>.
 
@@ -21,11 +21,11 @@ The original copyright notice follows.
    This is a faster version by taking Shawn Cokus's optimization,
    Matthe Bellew's simplification, Isaku Wada's real version.
 
-   Before using, initialize the state by using init_genrand(seed) 
+   Before using, initialize the state by using init_genrand(seed)
    or init_by_array(init_key, key_length).
 
    Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
-   All rights reserved.                          
+   All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -38,8 +38,8 @@ The original copyright notice follows.
         notice, this list of conditions and the following disclaimer in the
         documentation and/or other materials provided with the distribution.
 
-     3. The names of its contributors may not be used to endorse or promote 
-        products derived from this software without specific prior written 
+     3. The names of its contributors may not be used to endorse or promote
+        products derived from this software without specific prior written
         permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
@@ -60,7 +60,7 @@ The original copyright notice follows.
    email: matumoto@math.keio.ac.jp
 */
 
-/* Period parameters */  
+/* Period parameters */
 #define N 624
 #define M 397
 #define MATRIX_A 0x9908b0dfUL   /* constant vector a */
@@ -82,7 +82,7 @@ init_genrand(s)
     int j;
     state[0]= s & 0xffffffffUL;
     for (j=1; j<N; j++) {
-        state[j] = (1812433253UL * (state[j-1] ^ (state[j-1] >> 30)) + j); 
+        state[j] = (1812433253UL * (state[j-1] ^ (state[j-1] >> 30)) + j);
         /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
         /* In the previous versions, MSBs of the seed affect   */
         /* only MSBs of the array state[].                        */
@@ -119,7 +119,7 @@ init_by_array(unsigned long init_key[], int key_length)
         if (i>=N) { state[0] = state[N-1]; i=1; }
     }
 
-    state[0] = 0x80000000UL; /* MSB is 1; assuring non-zero initial array */ 
+    state[0] = 0x80000000UL; /* MSB is 1; assuring non-zero initial array */
     left = 1; initf = 1;
 }
 
@@ -135,11 +135,11 @@ next_state()
 
     left = N;
     next = state;
-    
-    for (j=N-M+1; --j; p++) 
+
+    for (j=N-M+1; --j; p++)
         *p = p[M] ^ TWIST(p[0], p[1]);
 
-    for (j=M; --j; p++) 
+    for (j=M; --j; p++)
         *p = p[M-N] ^ TWIST(p[0], p[1]);
 
     *p = p[M-N] ^ TWIST(p[0], state[0]);
@@ -165,11 +165,11 @@ rb_genrand_int32(void)
 
 /* generates a random number on [0,1) with 53-bit resolution*/
 double
-rb_genrand_real(void) 
-{ 
-    unsigned long a=rb_genrand_int32()>>5, b=rb_genrand_int32()>>6; 
-    return(a*67108864.0+b)*(1.0/9007199254740992.0); 
-} 
+rb_genrand_real(void)
+{
+    unsigned long a=rb_genrand_int32()>>5, b=rb_genrand_int32()>>6;
+    return(a*67108864.0+b)*(1.0/9007199254740992.0);
+}
 /* These real versions are due to Isaku Wada, 2002/01/09 added */
 
 #undef N
@@ -306,7 +306,7 @@ random_seed()
 /*
  *  call-seq:
  *     srand(number=0)    => old_seed
- *  
+ *
  *  Seeds the pseudorandom number generator to the value of
  *  <i>number</i>.<code>to_i.abs</code>. If <i>number</i> is omitted,
  *  seeds the generator using a combination of the time, the
@@ -334,7 +334,7 @@ rb_f_srand(argc, argv, obj)
     return old;
 }
 
-static unsigned long 
+static unsigned long
 make_mask(unsigned long x)
 {
     x = x | x >> 1;
@@ -416,7 +416,7 @@ limited_big_rand(struct RBignum *limit)
 /*
  *  call-seq:
  *     rand(max=0)    => number
- *  
+ *
  *  Converts <i>max</i> to an integer using max1 =
  *  max<code>.to_i.abs</code>. If the result is zero, returns a
  *  pseudorandom floating point number greater than or equal to 0.0 and
@@ -425,7 +425,7 @@ limited_big_rand(struct RBignum *limit)
  *  may be used to ensure repeatable sequences of random numbers between
  *  different runs of the program. Ruby currently uses a modified
  *  Mersenne Twister with a period of 2**19937-1.
- *     
+ *
  *     srand 1234                 #=> 0
  *     [ rand,  rand ]            #=> [0.191519450163469, 0.49766366626136]
  *     [ rand(10), rand(1000) ]   #=> [6, 817]

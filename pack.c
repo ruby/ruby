@@ -348,13 +348,13 @@ num2i32(x)
 }
 
 #if SIZEOF_LONG == SIZE32
-# define EXTEND32(x) 
+# define EXTEND32(x)
 #else
 /* invariant in modulo 1<<31 */
 # define EXTEND32(x) do { if (!natint) {(x) = (((1L<<31)-1-(x))^~(~0L<<31));}} while(0)
 #endif
 #if SIZEOF_SHORT == SIZE16
-# define EXTEND16(x) 
+# define EXTEND16(x)
 #else
 # define EXTEND16(x) do { if (!natint) {(x) = (short)(((1<<15)-1-(x))^~(~0<<15));}} while(0)
 #endif
@@ -374,7 +374,7 @@ static int uv_to_utf8 _((char*,unsigned long));
 /*
  *  call-seq:
  *     arr.pack ( aTemplateString ) -> aBinaryString
- *  
+ *
  *  Packs the contents of <i>arr</i> into a binary sequence according to
  *  the directives in <i>aTemplateString</i> (see the table below)
  *  Directives ``A,'' ``a,'' and ``Z'' may be followed by a count,
@@ -387,13 +387,13 @@ static int uv_to_utf8 _((char*,unsigned long));
  *  platform's native size for the specified type; otherwise, they use a
  *  platform-independent size. Spaces are ignored in the template
  *  string. See also <code>String#unpack</code>.
- *     
+ *
  *     a = [ "a", "b", "c" ]
  *     n = [ 65, 66, 67 ]
  *     a.pack("A3A3A3")   #=> "a  b  c  "
  *     a.pack("a3a3a3")   #=> "a\000\000b\000\000c\000\000"
  *     n.pack("ccc")      #=> "ABC"
- *     
+ *
  *  Directives for +pack+.
  *
  *   Directive    Meaning
@@ -1163,11 +1163,11 @@ infected_str_new(ptr, len, str)
     OBJ_INFECT(s, str);
     return s;
 }
-    
+
 /*
  *  call-seq:
  *     str.unpack(format)   => anArray
- *  
+ *
  *  Decodes <i>str</i> (which may contain binary data) according to the
  *  format string, returning an array of each value extracted. The
  *  format string consists of a sequence of single-character directives,
@@ -1180,7 +1180,7 @@ infected_str_new(ptr, len, str)
  *  platform's native size for the specified type; otherwise, it uses a
  *  platform-independent consistent size. Spaces are ignored in the
  *  format string. See also <code>Array#pack</code>.
- *     
+ *
  *     "abc \0\0abc \0\0".unpack('A6Z6')   #=> ["abc", "abc "]
  *     "abc \0\0".unpack('a3a3')           #=> ["abc", " \000\000"]
  *     "abc \0abc \0".unpack('Z*Z*')       #=> ["abc ", "abc "]
@@ -1192,7 +1192,7 @@ infected_str_new(ptr, len, str)
  *
  *  This table summarizes the various formats and the Ruby classes
  *  returned by each.
- *     
+ *
  *     Format | Returns | Function
  *     -------+---------+-----------------------------------------
  *       A    | String  | with trailing nulls and spaces removed
@@ -1264,17 +1264,17 @@ infected_str_new(ptr, len, str)
  *       p    | String  | treat sizeof(char *) characters as a
  *            |         | pointer to a  null-terminated string
  *     -------+---------+-----------------------------------------
- *       Q    | Integer | treat 8 characters as an unsigned 
+ *       Q    | Integer | treat 8 characters as an unsigned
  *            |         | quad word (64 bits)
  *     -------+---------+-----------------------------------------
- *       q    | Integer | treat 8 characters as a signed 
+ *       q    | Integer | treat 8 characters as a signed
  *            |         | quad word (64 bits)
  *     -------+---------+-----------------------------------------
  *       S    | Fixnum  | treat two (different if _ used)
  *            |         | successive characters as an unsigned
  *            |         | short in native byte order
  *     -------+---------+-----------------------------------------
- *       s    | Fixnum  | Treat two (different if _ used) 
+ *       s    | Fixnum  | Treat two (different if _ used)
  *            |         | successive characters as a signed short
  *            |         | in native byte order
  *     -------+---------+-----------------------------------------
@@ -1297,7 +1297,7 @@ infected_str_new(ptr, len, str)
  *       Z    | String  | with trailing nulls removed
  *            |         | upto first null with *
  *     -------+---------+-----------------------------------------
- *       @    | ---     | skip to the offset given by the 
+ *       @    | ---     | skip to the offset given by the
  *            |         | length argument
  *     -------+---------+-----------------------------------------
  */
@@ -1663,7 +1663,7 @@ pack_unpack(str, fmt)
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
-	    
+
 	  case 'E':
 	    PACK_LENGTH_ADJUST(double,sizeof(double));
 	    while (len-- > 0) {
@@ -1677,7 +1677,7 @@ pack_unpack(str, fmt)
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
-	    
+
 	  case 'D':
 	  case 'd':
 	    PACK_LENGTH_ADJUST(double,sizeof(double));
@@ -1703,7 +1703,7 @@ pack_unpack(str, fmt)
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
-	    
+
 	  case 'G':
 	    PACK_LENGTH_ADJUST(double,sizeof(double));
 	    while (len-- > 0) {
@@ -1717,7 +1717,7 @@ pack_unpack(str, fmt)
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
-	    
+
 	  case 'U':
 	    if (len > send - s) len = send - s;
 	    while (len > 0 && s < send) {
@@ -1779,7 +1779,7 @@ pack_unpack(str, fmt)
 		    else if (s < send && (s+1 == send || s[1] == '\n'))
 			s += 2;	/* possible checksum byte */
 		}
-		
+
 		RSTRING(buf)->ptr[total] = '\0';
 		RSTRING(buf)->len = total;
 		rb_ary_push(ary, buf);

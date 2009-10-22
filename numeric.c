@@ -2371,7 +2371,7 @@ fix_pow(x, y)
 	if (a == -1) {
 	    if (b % 2 == 0)
 		return INT2FIX(1);
-	    else 
+	    else
 		return INT2FIX(-1);
 	}
 	if (b > 0) {

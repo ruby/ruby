@@ -814,7 +814,7 @@ load_1(fd, disp, need_init)
 		}
 	    } /* end.. look it up */
 	    else { /* is static */
-		switch (R_SYMBOL(rel)) { 
+		switch (R_SYMBOL(rel)) {
 		  case N_TEXT:
 		  case N_DATA:
 		    datum = block;
@@ -1226,7 +1226,7 @@ aix_loaderror(const char *pathname)
     char *message[8], errbuf[1024];
     int i,j;
 
-    struct errtab { 
+    struct errtab {
 	int errnum;
 	char *errstr;
     } load_errtab[] = {
@@ -1249,7 +1249,7 @@ aix_loaderror(const char *pathname)
 
     snprintf(errbuf, 1024, "load failed - %s ", pathname);
 
-    if (!loadquery(1, &message[0], sizeof(message))) 
+    if (!loadquery(1, &message[0], sizeof(message)))
 	ERRBUF_APPEND(strerror(errno));
     for(i = 0; message[i] && *message[i]; i++) {
 	int nerr = atoi(message[i]);
@@ -1257,7 +1257,7 @@ aix_loaderror(const char *pathname)
            if (nerr == load_errtab[i].errnum && load_errtab[i].errstr)
 		ERRBUF_APPEND(load_errtab[i].errstr);
 	}
-	while (isdigit(*message[i])) message[i]++; 
+	while (isdigit(*message[i])) message[i]++;
 	ERRBUF_APPEND(message[i]);
 	ERRBUF_APPEND("\n");
     }
@@ -1416,7 +1416,7 @@ dln_load(file)
 #define DLN_DEFINED
 /*----------------------------------------------------
    By SHIROYAMA Takayuki Psi@fortune.nest.or.jp
- 
+
    Special Thanks...
     Yu tomoak-i@is.aist-nara.ac.jp,
     Mi hisho@tasihara.nest.or.jp,
@@ -1431,9 +1431,9 @@ dln_load(file)
 	char *object_files[2] = {NULL, NULL};
 
 	void (*init_fct)();
-	
+
 	object_files[0] = (char*)file;
-	
+
 	s = NXOpenFile(2,NX_WRITEONLY);
 
 	/* Load object file, if return value ==0 ,  load failed*/
@@ -1480,7 +1480,7 @@ dln_load(file)
 	/* lookup the initial function */
 	if(!NSIsSymbolNameDefined(buf)) {
 	    rb_loaderror("Failed to lookup Init function %.200s",file);
-	}	
+	}
 	init_fct = NSAddressOfSymbol(NSLookupAndBindSymbol(buf));
 	(*init_fct)();
 
@@ -1502,7 +1502,7 @@ dln_load(file)
 	rb_loaderror("Failed to load add_on %.200s error_code=%x",
 	  file, img_id);
       }
-      
+
       /* find symbol for module initialize function. */
       /* The Be Book KernelKit Images section described to use
 	 B_SYMBOL_TYPE_TEXT for symbol of function, not
@@ -1564,7 +1564,7 @@ dln_load(file)
 
       /* Load the fragment (or return the connID if it is already loaded */
       fragname[0] = 0;
-      err = GetDiskFragment(&libspec, 0, 0, fragname, 
+      err = GetDiskFragment(&libspec, 0, 0, fragname,
 			    kLoadCFrag, &connID, &mainAddr,
 			    errMessage);
       if (err) {
@@ -1615,8 +1615,8 @@ dln_load(file)
 
 	status = lib$find_image_symbol (
 		     &fname_d,
-		     &buf_d, 
-		     &init_fct, 
+		     &buf_d,
+		     &init_fct,
 		     &image_d);
 
 	lib$establish(0);

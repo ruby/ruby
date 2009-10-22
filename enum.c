@@ -1517,8 +1517,8 @@ enum_each_with_index(obj)
 
 /*
  *  call-seq:
- *     enum.reverse_each {|item| block } 
- *  
+ *     enum.reverse_each {|item| block }
+ *
  *  Traverses <i>enum</i> in reverse order.
  */
 

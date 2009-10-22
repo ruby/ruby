@@ -29,7 +29,7 @@ remove_sign_bits(str, base)
     int base;
 {
     char *s, *t;
-    
+
     s = t = str;
 
     if (base == 16) {
@@ -144,7 +144,7 @@ sign_bits(base, p)
  *  call-seq:
  *     format(format_string [, arguments...] )   => string
  *     sprintf(format_string [, arguments...] )  => string
- *  
+ *
  *  Returns the string resulting from applying <i>format_string</i> to
  *  any additional arguments. Within the format string, any characters
  *  other than format sequences are copied to the result. A format
@@ -157,7 +157,7 @@ sign_bits(base, p)
  *
  *    Flag     | Applies to   | Meaning
  *    ---------+--------------+-----------------------------------------
- *    space    | bdeEfgGiouxX | Leave a space at the start of 
+ *    space    | bdeEfgGiouxX | Leave a space at the start of
  *             |              | positive numbers.
  *    ---------+--------------+-----------------------------------------
  *    (digit)$ | all          | Specifies the absolute argument number
@@ -166,7 +166,7 @@ sign_bits(base, p)
  *             |              | sprintf string.
  *    ---------+--------------+-----------------------------------------
  *     #       | beEfgGoxX    | Use an alternative format. For the
- *             |              | conversions `o', `x', `X', and `b', 
+ *             |              | conversions `o', `x', `X', and `b',
  *             |              | prefix the result with ``0'', ``0x'', ``0X'',
  *             |              |  and ``0b'', respectively. For `e',
  *             |              | `E', `f', `g', and 'G', force a decimal
@@ -179,12 +179,12 @@ sign_bits(base, p)
  *    ---------+--------------+-----------------------------------------
  *    0 (zero) | bdeEfgGiouxX | Pad with zeros, not spaces.
  *    ---------+--------------+-----------------------------------------
- *    *        | all          | Use the next argument as the field width. 
+ *    *        | all          | Use the next argument as the field width.
  *             |              | If negative, left-justify the result. If the
- *             |              | asterisk is followed by a number and a dollar 
+ *             |              | asterisk is followed by a number and a dollar
  *             |              | sign, use the indicated argument as the width.
  *
- *     
+ *
  *  The field width is an optional integer, followed optionally by a
  *  period and a precision. The width specifies the minimum number of
  *  characters that will be written to the result for this field. For
@@ -203,10 +203,10 @@ sign_bits(base, p)
  *        d   | Convert argument as a decimal number.
  *        E   | Equivalent to `e', but uses an uppercase E to indicate
  *            | the exponent.
- *        e   | Convert floating point argument into exponential notation 
+ *        e   | Convert floating point argument into exponential notation
  *            | with one digit before the decimal point. The precision
  *            | determines the number of fractional digits (defaulting to six).
- *        f   | Convert floating point argument as [-]ddd.ddd, 
+ *        f   | Convert floating point argument as [-]ddd.ddd,
  *            |  where the precision determines the number of digits after
  *            | the decimal point.
  *        G   | Equivalent to `g', but use an uppercase `E' in exponent form.
@@ -233,7 +233,7 @@ sign_bits(base, p)
  *            | Negative numbers will be displayed with two
  *            | leading periods (representing an infinite string of
  *            | leading 'ff's.
- *     
+ *
  *  Examples:
  *
  *     sprintf("%d %04x", 123, 123)               #=> "123 007b"

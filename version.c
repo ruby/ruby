@@ -60,7 +60,7 @@ Init_version()
 	     RUBY_BIRTH_YEAR, RUBY_RELEASE_YEAR,
 	     RUBY_AUTHOR);
 #endif
-	     
+
     rb_define_global_const("RUBY_VERSION", v);
     rb_define_global_const("RUBY_RELEASE_DATE", d);
     rb_define_global_const("RUBY_PLATFORM", p);

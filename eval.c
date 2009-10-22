@@ -121,7 +121,7 @@ rb_jump_context(env, val)
  * IA64 register stack and SPARC register window combination problem.
  *
  * Assume following code sequence.
- * 
+ *
  * 1. set a register in the register stack/window such as r32/l0.
  * 2. call getcontext.
  * 3. use the register.
@@ -626,7 +626,7 @@ rb_remove_method(klass, name)
 /*
  *  call-seq:
  *     remove_method(symbol)   => self
- *  
+ *
  *  Removes the method identified by _symbol_ from the current
  *  class. For an example, see <code>Module.undef_method</code>.
  */
@@ -1389,7 +1389,7 @@ void Init_ext _((void));
 
 #ifdef HAVE_NATIVETHREAD
 static rb_nativethread_t ruby_thid;
-int 
+int
 is_ruby_native_thread() {
     return NATIVETHREAD_EQUAL(ruby_thid, NATIVETHREAD_CURRENT());
 }
@@ -2017,9 +2017,9 @@ cvar_cbase()
 /*
  *  call-seq:
  *     Module.nesting    => array
- *  
+ *
  *  Returns the list of +Modules+ nested at the point of call.
- *     
+ *
  *     module M1
  *       module M2
  *         $a = Module.nesting
@@ -2048,14 +2048,14 @@ rb_mod_nesting()
 /*
  *  call-seq:
  *     Module.constants   => array
- *  
+ *
  *  Returns an array of the names of all constants defined in the
  *  system. This list includes the names of all modules and classes.
- *     
+ *
  *     p Module.constants.sort[1..5]
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     ["ARGV", "ArgumentError", "Array", "Bignum", "Binding"]
  */
 
@@ -2152,12 +2152,12 @@ rb_undef(klass, id)
 /*
  *  call-seq:
  *     undef_method(symbol)    => self
- *  
+ *
  *  Prevents the current class from responding to calls to the named
  *  method. Contrast this with <code>remove_method</code>, which deletes
  *  the method from the particular class; Ruby will still search
  *  superclasses and mixed-in modules for a possible receiver.
- *     
+ *
  *     class Parent
  *       def hello
  *         puts "In parent"
@@ -2168,25 +2168,25 @@ rb_undef(klass, id)
  *         puts "In child"
  *       end
  *     end
- *     
- *     
+ *
+ *
  *     c = Child.new
  *     c.hello
- *     
- *     
+ *
+ *
  *     class Child
  *       remove_method :hello  # remove from child, still in parent
  *     end
  *     c.hello
- *     
- *     
+ *
+ *
  *     class Child
  *       undef_method :hello   # prevent any calls to 'hello'
  *     end
  *     c.hello
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     In child
  *     In parent
  *     prog.rb:23: undefined method `hello' for #<Child:0x401b3bb4> (NoMethodError)
@@ -2265,10 +2265,10 @@ rb_alias(klass, name, def)
 /*
  *  call-seq:
  *     alias_method(new_name, old_name)   => self
- *  
+ *
  *  Makes <i>new_name</i> a new copy of the method <i>old_name</i>. This can
  *  be used to retain access to methods that are overridden.
- *     
+ *
  *     module Mod
  *       alias_method :orig_exit, :exit
  *       def exit(code=0)
@@ -2278,9 +2278,9 @@ rb_alias(klass, name, def)
  *     end
  *     include Mod
  *     exit(99)
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     Exiting with code 99
  */
 
@@ -2667,7 +2667,7 @@ rb_remove_event_hook(func)
  *  call-seq:
  *     set_trace_func(proc)    => proc
  *     set_trace_func(nil)     => nil
- *  
+ *
  *  Establishes _proc_ as the handler for tracing, or disables
  *  tracing if the parameter is +nil+. _proc_ takes up
  *  to six parameters: an event name, a filename, a line number, an
@@ -3454,7 +3454,7 @@ rb_eval(self, n)
 	    VALUE beg = rb_eval(self, node->nd_beg);
 	    VALUE end = rb_eval(self, node->nd_end);
 	    result = rb_range_new(beg, end, nd_type(node) == NODE_DOT3);
-	}	
+	}
 	break;
 
       case NODE_FLIP2:		/* like AWK */
@@ -3598,7 +3598,7 @@ rb_eval(self, n)
 		if (argc && DMETHOD_P()) {
 		    if (TYPE(RBASIC(ruby_scope)->klass) != T_ARRAY ||
 			RARRAY(RBASIC(ruby_scope)->klass)->len != argc) {
-			rb_raise(rb_eRuntimeError, 
+			rb_raise(rb_eRuntimeError,
 				 "super: specify arguments explicitly");
 		    }
 		    argv = RARRAY(RBASIC(ruby_scope)->klass)->ptr;
@@ -4219,7 +4219,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_NEWLINE:
-	EXEC_EVENT_HOOK(RUBY_EVENT_LINE, node, self, 
+	EXEC_EVENT_HOOK(RUBY_EVENT_LINE, node, self,
 			ruby_frame->last_func,
 			ruby_frame->last_class);
 	node = node->nd_next;
@@ -4323,7 +4323,7 @@ rb_respond_to(obj, id)
 /*
  *  call-seq:
  *     obj.respond_to?(symbol, include_private=false) => true or false
- *  
+ *
  *  Returns +true+> if _obj_ responds to the given
  *  method. Private methods are included in the search only if the
  *  optional second parameter evaluates to +true+.
@@ -4349,11 +4349,11 @@ obj_respond_to(argc, argv, obj)
 /*
  *  call-seq:
  *     mod.method_defined?(symbol)    => true or false
- *  
+ *
  *  Returns +true+ if the named method is defined by
  *  _mod_ (or its included modules and, if _mod_ is a class,
  *  its ancestors). Public and protected methods are matched.
- *     
+ *
  *     module A
  *       def method1()  end
  *     end
@@ -4364,7 +4364,7 @@ obj_respond_to(argc, argv, obj)
  *       include A
  *       def method3()  end
  *     end
- *     
+ *
  *     A.method_defined? :method1    #=> true
  *     C.method_defined? "method1"   #=> true
  *     C.method_defined? "method2"   #=> true
@@ -4384,11 +4384,11 @@ rb_mod_method_defined(mod, mid)
 /*
  *  call-seq:
  *     mod.public_method_defined?(symbol)   => true or false
- *  
+ *
  *  Returns +true+ if the named public method is defined by
  *  _mod_ (or its included modules and, if _mod_ is a class,
  *  its ancestors).
- *     
+ *
  *     module A
  *       def method1()  end
  *     end
@@ -4400,7 +4400,7 @@ rb_mod_method_defined(mod, mid)
  *       include A
  *       def method3()  end
  *     end
- *     
+ *
  *     A.method_defined? :method1           #=> true
  *     C.public_method_defined? "method1"   #=> true
  *     C.public_method_defined? "method2"   #=> false
@@ -4424,11 +4424,11 @@ rb_mod_public_method_defined(mod, mid)
 /*
  *  call-seq:
  *     mod.private_method_defined?(symbol)    => true or false
- *  
+ *
  *  Returns +true+ if the named private method is defined by
  *  _ mod_ (or its included modules and, if _mod_ is a class,
  *  its ancestors).
- *     
+ *
  *     module A
  *       def method1()  end
  *     end
@@ -4440,7 +4440,7 @@ rb_mod_public_method_defined(mod, mid)
  *       include A
  *       def method3()  end
  *     end
- *     
+ *
  *     A.method_defined? :method1            #=> true
  *     C.private_method_defined? "method1"   #=> false
  *     C.private_method_defined? "method2"   #=> true
@@ -4464,11 +4464,11 @@ rb_mod_private_method_defined(mod, mid)
 /*
  *  call-seq:
  *     mod.protected_method_defined?(symbol)   => true or false
- *  
+ *
  *  Returns +true+ if the named protected method is defined
  *  by _mod_ (or its included modules and, if _mod_ is a
  *  class, its ancestors).
- *     
+ *
  *     module A
  *       def method1()  end
  *     end
@@ -4480,7 +4480,7 @@ rb_mod_private_method_defined(mod, mid)
  *       include A
  *       def method3()  end
  *     end
- *     
+ *
  *     A.method_defined? :method1              #=> true
  *     C.protected_method_defined? "method1"   #=> false
  *     C.protected_method_defined? "method2"   #=> true
@@ -4531,12 +4531,12 @@ rb_exit(status)
  *     exit(integer=0)
  *     Kernel::exit(integer=0)
  *     Process::exit(integer=0)
- *  
+ *
  *  Initiates the termination of the Ruby script by raising the
  *  <code>SystemExit</code> exception. This exception may be caught. The
  *  optional parameter is used to return a status code to the invoking
  *  environment.
- *     
+ *
  *     begin
  *       exit
  *       puts "never get here"
@@ -4544,22 +4544,22 @@ rb_exit(status)
  *       puts "rescued a SystemExit exception"
  *     end
  *     puts "after begin block"
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     rescued a SystemExit exception
  *     after begin block
- *     
+ *
  *  Just prior to termination, Ruby executes any <code>at_exit</code> functions
  *  (see Kernel::at_exit) and runs any object finalizers (see
  *  ObjectSpace::define_finalizer).
- *     
+ *
  *     at_exit { puts "at_exit function" }
  *     ObjectSpace.define_finalizer("string",  proc { puts "in finalizer" })
  *     exit
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     at_exit function
  *     in finalizer
  */
@@ -4602,7 +4602,7 @@ rb_f_exit(argc, argv)
  *     abort
  *     Kernel::abort
  *     Process::abort
- *  
+ *
  *  Terminate execution immediately, effectively by calling
  *  <code>Kernel.exit(1)</code>. If _msg_ is given, it is written
  *  to STDERR prior to terminating.
@@ -4750,7 +4750,7 @@ rb_interrupt()
  *     fail
  *     fail(string)
  *     fail(exception [, string [, array]])
- *  
+ *
  *  With no arguments, raises the exception in <code>$!</code> or raises
  *  a <code>RuntimeError</code> if <code>$!</code> is +nil+.
  *  With a single +String+ argument, raises a
@@ -4761,7 +4761,7 @@ rb_interrupt()
  *  message associated with the exception, and the third parameter is an
  *  array of callback information. Exceptions are caught by the
  *  +rescue+ clause of <code>begin...end</code> blocks.
- *     
+ *
  *     raise "Failed to create socket"
  *     raise ArgumentError, "No parameters", caller
  */
@@ -4860,11 +4860,11 @@ rb_iterator_p()
  *  call-seq:
  *     block_given?   => true or false
  *     iterator?      => true or false
- *  
+ *
  *  Returns <code>true</code> if <code>yield</code> would execute a
  *  block in the current context. The <code>iterator?</code> form
  *  is mildly deprecated.
- *     
+ *
  *     def try
  *       if block_given?
  *         yield
@@ -5292,10 +5292,10 @@ loop_i()
 
 /*
  *  call-seq:
- *     loop {|| block } 
- *  
+ *     loop {|| block }
+ *
  *  Repeatedly executes the block.
- *     
+ *
  *     loop do
  *       print "Input: "
  *       line = gets
@@ -5701,7 +5701,7 @@ static int last_call_status;
 /*
  *  call-seq:
  *     obj.method_missing(symbol [, *args] )   => result
- *  
+ *
  *  Invoked by Ruby when <i>obj</i> is sent a message it cannot handle.
  *  <i>symbol</i> is the symbol for the method called, and <i>args</i>
  *  are any arguments that were passed to it. By default, the interpreter
@@ -5711,7 +5711,7 @@ static int last_call_status;
  *  a class <code>Roman</code>, which responds to methods with names
  *  consisting of roman numerals, returning the corresponding integer
  *  values.
- *     
+ *
  *     class Roman
  *       def romanToInt(str)
  *         # ...
@@ -5721,7 +5721,7 @@ static int last_call_status;
  *         romanToInt(str)
  *       end
  *     end
- *     
+ *
  *     r = Roman.new
  *     r.iv      #=> 4
  *     r.xxiii   #=> 23
@@ -6127,7 +6127,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 		    }
 		    else {
 			VALUE v;
-			
+
 			if (argc > 0) {
 			    v = rb_ary_new4(argc,argv);
 			    i = -i - 1;
@@ -6261,11 +6261,11 @@ rb_apply(recv, mid, args)
  *  call-seq:
  *     obj.send(symbol [, args...])        => obj
  *     obj.__send__(symbol [, args...])    => obj
- *  
+ *
  *  Invokes the method identified by _symbol_, passing it any
  *  arguments specified. You can use <code>\_\_send__</code> if the name
  *  +send+ clashes with an existing method in _obj_.
- *     
+ *
  *     class Klass
  *       def hello(*args)
  *         "Hello " + args.join(' ')
@@ -6472,13 +6472,13 @@ backtrace(lev)
 /*
  *  call-seq:
  *     caller(start=1)    => array
- *  
+ *
  *  Returns the current execution stack---an array containing strings in
  *  the form ``<em>file:line</em>'' or ``<em>file:line: in
  *  `method'</em>''. The optional _start_ parameter
  *  determines the number of initial stack entries to omit from the
  *  result.
- *     
+ *
  *     def a(skip)
  *       caller(skip)
  *     end
@@ -6710,14 +6710,14 @@ eval(self, src, scope, file, line)
 /*
  *  call-seq:
  *     eval(string [, binding [, filename [,lineno]]])  => obj
- *  
+ *
  *  Evaluates the Ruby expression(s) in <em>string</em>. If
  *  <em>binding</em> is given, the evaluation is performed in its
  *  context. The binding may be a <code>Binding</code> object or a
  *  <code>Proc</code> object. If the optional <em>filename</em> and
  *  <em>lineno</em> parameters are present, they will be used when
  *  reporting syntax errors.
- *     
+ *
  *     def getBinding(str)
  *       return binding
  *     end
@@ -6920,7 +6920,7 @@ specific_eval(argc, argv, klass, self)
  *  call-seq:
  *     obj.instance_eval(string [, filename [, lineno]] )   => obj
  *     obj.instance_eval {| | block }                       => obj
- *  
+ *
  *  Evaluates a string containing Ruby source code, or the given block,
  *  within the context of the receiver (_obj_). In order to set the
  *  context, the variable +self+ is set to _obj_ while
@@ -6929,7 +6929,7 @@ specific_eval(argc, argv, klass, self)
  *  that takes a +String+, the optional second and third
  *  parameters supply a filename and starting line number that are used
  *  when reporting compilation errors.
- *     
+ *
  *     class Klass
  *       def initialize
  *         @secret = 99
@@ -6995,21 +6995,21 @@ rb_obj_instance_exec(argc, argv, self)
  *  call-seq:
  *     mod.class_eval(string [, filename [, lineno]])  => obj
  *     mod.module_eval {|| block }                     => obj
- *  
+ *
  *  Evaluates the string or block in the context of _mod_. This can
  *  be used to add methods to a class. <code>module_eval</code> returns
  *  the result of evaluating its argument. The optional _filename_
  *  and _lineno_ parameters set the text for error messages.
- *     
+ *
  *     class Thing
  *     end
  *     a = %q{def hello() "Hello there!" end}
  *     Thing.module_eval(a)
  *     puts Thing.new.hello()
  *     Thing.module_eval("invalid code", "dummy", 123)
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     Hello there!
  *     dummy:123:in `module_eval': undefined local variable
  *         or method `code' for Thing:Class
@@ -7181,7 +7181,7 @@ rb_load_protect(fname, wrap, state)
 /*
  *  call-seq:
  *     load(filename, wrap=false)   => true
- *  
+ *
  *  Loads and executes the Ruby
  *  program in the file _filename_. If the filename does not
  *  resolve to an absolute path, the file is searched for in the library
@@ -7355,7 +7355,7 @@ load_unlock(const char *ftptr)
 {
     if (ftptr) {
 	st_data_t key = (st_data_t)ftptr;
-	
+
 	if (st_delete(loading_tbl, &key, 0)) {
 	    free((char *)key);
 	}
@@ -7365,7 +7365,7 @@ load_unlock(const char *ftptr)
 /*
  *  call-seq:
  *     require(string)    => true or false
- *  
+ *
  *  Ruby tries to load the library named _string_, returning
  *  +true+ if successful. If the filename does not resolve to
  *  an absolute path, it will be searched for in the directories listed
@@ -7379,7 +7379,7 @@ load_unlock(const char *ftptr)
  *  appears in <code>$"</code>. However, the file name is not converted
  *  to an absolute path, so that ``<code>require 'a';require
  *  './a'</code>'' will load <code>a.rb</code> twice.
- *     
+ *
  *     require "my-library.rb"
  *     require "db-driver"
  */
@@ -7597,7 +7597,7 @@ set_method_visibility(self, argc, argv, ex)
  *  call-seq:
  *     public                 => self
  *     public(symbol, ...)    => self
- *  
+ *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to public. With arguments, sets the named methods to
  *  have public visibility.
@@ -7623,7 +7623,7 @@ rb_mod_public(argc, argv, module)
  *  call-seq:
  *     protected                => self
  *     protected(symbol, ...)   => self
- *  
+ *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to protected. With arguments, sets the named methods
  *  to have protected visibility.
@@ -7649,11 +7649,11 @@ rb_mod_protected(argc, argv, module)
  *  call-seq:
  *     private                 => self
  *     private(symbol, ...)    => self
- *  
+ *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to private. With arguments, sets the named methods
  *  to have private visibility.
- *     
+ *
  *     module Mod
  *       def a()  end
  *       def b()  end
@@ -7683,7 +7683,7 @@ rb_mod_private(argc, argv, module)
 /*
  *  call-seq:
  *     mod.public_class_method(symbol, ...)    => mod
- *  
+ *
  *  Makes a list of existing class methods public.
  */
 
@@ -7700,10 +7700,10 @@ rb_mod_public_method(argc, argv, obj)
 /*
  *  call-seq:
  *     mod.private_class_method(symbol, ...)   => mod
- *  
+ *
  *  Makes existing class methods private. Often used to hide the default
  *  constructor <code>new</code>.
- *     
+ *
  *     class SimpleSingleton  # Not thread safe
  *       private_class_method :new
  *       def SimpleSingleton.create(*args, &block)
@@ -7727,7 +7727,7 @@ rb_mod_private_method(argc, argv, obj)
  *  call-seq:
  *     public
  *     public(symbol, ...)
- *  
+ *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to public. With arguments, sets the named methods to
  *  have public visibility.
@@ -7752,7 +7752,7 @@ top_private(argc, argv)
 /*
  *  call-seq:
  *     module_function(symbol, ...)    => self
- *  
+ *
  *  Creates module functions for the named methods. These functions may
  *  be called with the module as a receiver, and also become available
  *  as instance methods to classes that mix in the module. Module
@@ -7760,7 +7760,7 @@ top_private(argc, argv)
  *  independently. The instance-method versions are made private. If
  *  used with no arguments, subsequently defined methods become module
  *  functions.
- *     
+ *
  *     module Mod
  *       def one
  *         "This is one"
@@ -7832,7 +7832,7 @@ rb_mod_modfunc(argc, argv, module)
 /*
  *  call-seq:
  *     append_features(mod)   => mod
- *  
+ *
  *  When this module is included in another, Ruby calls
  *  <code>append_features</code> in this module, passing it the
  *  receiving module in _mod_. Ruby's default implementation is
@@ -7861,7 +7861,7 @@ rb_mod_append_features(module, include)
 /*
  *  call-seq:
  *     include(module, ...)    => self
- *  
+ *
  *  Invokes <code>Module.append_features</code> on each parameter in turn.
  */
 
@@ -7902,11 +7902,11 @@ rb_extend_object(obj, module)
 /*
  *  call-seq:
  *     extend_object(obj)    => obj
- *  
+ *
  *  Extends the specified object by adding this module's constants and
  *  methods (which are added as singleton methods). This is the callback
  *  method used by <code>Object#extend</code>.
- *     
+ *
  *     module Picky
  *       def Picky.extend_object(o)
  *         if String === o
@@ -7919,9 +7919,9 @@ rb_extend_object(obj, module)
  *     end
  *     (s = Array.new).extend Picky  # Call Object.extend
  *     (s = "quick brown fox").extend Picky
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     Picky added to Array
  *     Can't add Picky to a String
  */
@@ -7937,22 +7937,22 @@ rb_mod_extend_object(mod, obj)
 /*
  *  call-seq:
  *     obj.extend(module, ...)    => obj
- *  
+ *
  *  Adds to _obj_ the instance methods from each module given as a
  *  parameter.
- *     
+ *
  *     module Mod
  *       def hello
  *         "Hello from Mod.\n"
  *       end
  *     end
- *     
+ *
  *     class Klass
  *       def hello
  *         "Hello from Klass.\n"
  *       end
  *     end
- *     
+ *
  *     k = Klass.new
  *     k.hello         #=> "Hello from Klass.\n"
  *     k.extend(Mod)   #=> #<Klass:0x401b3bc8>
@@ -7981,7 +7981,7 @@ rb_obj_extend(argc, argv, obj)
 /*
  *  call-seq:
  *     include(module, ...)   => self
- *  
+ *
  *  Invokes <code>Module.append_features</code>
  *  on each parameter in turn. Effectively adds the methods and constants
  *  in each module to the receiver.
@@ -8038,9 +8038,9 @@ errat_setter(val, id, var)
 /*
  *  call-seq:
  *     local_variables    => array
- *  
+ *
  *  Returns the names of the current local variables.
- *     
+ *
  *     fred = 1
  *     for i in 1..10
  *        # ...
@@ -8157,21 +8157,21 @@ rb_f_END()
 /*
  *  call-seq:
  *     at_exit { block } -> proc
- *  
+ *
  *  Converts _block_ to a +Proc+ object (and therefore
  *  binds it at the point of call) and registers it for execution when
  *  the program exits. If multiple handlers are registered, they are
  *  executed in reverse order of registration.
- *     
+ *
  *     def do_at_exit(str1)
  *       at_exit { print str1 }
  *     end
  *     at_exit { puts "cruel world" }
  *     do_at_exit("goodbye ")
  *     exit
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     goodbye cruel world
  */
 
@@ -8237,17 +8237,17 @@ rb_exec_end_proc()
 /*
  *  call-seq:
  *     __method__         => symbol
- *  
+ *
  *  Returns the name of the current method as a Symbol.
  *  If called from inside of an aliased method it will return the original
  *  nonaliased name.
  *  If called outside of a method, it returns <code>nil</code>.
- *  
+ *
  *    def foo
  *      __method__
  *    end
  *    alias bar foo
- *    
+ *
  *    foo                # => :foo
  *    bar                # => :foo
  *
@@ -8305,7 +8305,7 @@ Init_eval()
     respond_to   = rb_intern("respond_to?");
     rb_global_variable((void *)&basic_respond_to);
     basic_respond_to = rb_method_node(rb_cObject, respond_to);
-    
+
     rb_define_global_function("raise", rb_f_raise, -1);
     rb_define_global_function("fail", rb_f_raise, -1);
 
@@ -8375,7 +8375,7 @@ Init_eval()
  *  call-seq:
  *     mod.autoload(name, filename)   => nil
  *
- *  Registers _filename_ to be loaded (using <code>Kernel::require</code>) 
+ *  Registers _filename_ to be loaded (using <code>Kernel::require</code>)
  *  the first time that _name_ (which may be a <code>String</code> or
  *  a symbol) is accessed in the namespace of _mod_.
  *
@@ -8421,11 +8421,11 @@ rb_mod_autoload_p(mod, sym)
 /*
  *  call-seq:
  *     autoload(module, filename)   => nil
- *  
- *  Registers _filename_ to be loaded (using <code>Kernel::require</code>) 
+ *
+ *  Registers _filename_ to be loaded (using <code>Kernel::require</code>)
  *  the first time that _module_ (which may be a <code>String</code> or
  *  a symbol) is accessed.
- *     
+ *
  *     autoload(:MyModule, "/usr/local/lib/modules/my_module.rb")
  */
 
@@ -8672,12 +8672,12 @@ rb_block_dup(self, klass, cref)
 /*
  *  call-seq:
  *     binding -> a_binding
- *  
+ *
  *  Returns a +Binding+ object, describing the variable and
  *  method bindings at the point of call. This object can be used when
  *  calling +eval+ to execute the evaluated command in this
  *  environment. Also see the description of class +Binding+.
- *     
+ *
  *     def getBinding(param)
  *       return binding
  *     end
@@ -8839,14 +8839,14 @@ proc_alloc(klass, proc)
 
 /*
  *  call-seq:
- *     Proc.new {|...| block } => a_proc 
- *     Proc.new                => a_proc 
- *  
+ *     Proc.new {|...| block } => a_proc
+ *     Proc.new                => a_proc
+ *
  *  Creates a new <code>Proc</code> object, bound to the current
  *  context. <code>Proc::new</code> may be called without a block only
  *  within a method with an attached block, in which case that block is
  *  converted to the <code>Proc</code> object.
- *     
+ *
  *     def proc_from
  *       Proc.new
  *     end
@@ -9005,29 +9005,29 @@ proc_invoke(proc, args, self, klass)
  *  call-seq:
  *     prc.call(params,...)   => obj
  *     prc[params,...]        => obj
- *  
+ *
  *  Invokes the block, setting the block's parameters to the values in
  *  <i>params</i> using something close to method calling semantics.
  *  Generates a warning if multiple values are passed to a proc that
  *  expects just one (previously this silently converted the parameters
- *  to an array). 
+ *  to an array).
  *
- *  For procs created using <code>Kernel.proc</code>, generates an 
+ *  For procs created using <code>Kernel.proc</code>, generates an
  *  error if the wrong number of parameters
  *  are passed to a proc with multiple parameters. For procs created using
  *  <code>Proc.new</code>, extra parameters are silently discarded.
  *
  *  Returns the value of the last expression evaluated in the block. See
  *  also <code>Proc#yield</code>.
- *     
+ *
  *     a_proc = Proc.new {|a, *b| b.collect {|i| i*a }}
  *     a_proc.call(9, 1, 2, 3)   #=> [9, 18, 27]
  *     a_proc[9, 1, 2, 3]        #=> [9, 18, 27]
  *     a_proc = Proc.new {|a,b| a}
  *     a_proc.call(1,2,3)
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     prog.rb:5: wrong number of arguments (3 for 2) (ArgumentError)
  *     	from prog.rb:4:in `call'
  *     	from prog.rb:5
@@ -9036,7 +9036,7 @@ proc_invoke(proc, args, self, klass)
 /*
  *  call-seq:
  *     prc === obj   => obj
- *  
+ *
  *  Invokes the block, with <i>obj</i> as the block's parameter.  It is
  *  to allow a proc object to be a target of when clause in the case statement.
  */
@@ -9054,14 +9054,14 @@ static VALUE method_arity _((VALUE));
 /*
  *  call-seq:
  *     prc.arity -> fixnum
- *  
+ *
  *  Returns the number of arguments that would not be ignored. If the block
  *  is declared to take no arguments, returns 0. If the block is known
  *  to take exactly n arguments, returns n. If the block has optional
  *  arguments, return -n-1, where n is the number of mandatory
  *  arguments. A <code>proc</code> with no argument declarations
  *  is the same a block declaring <code>||</code> as its arguments.
- *     
+ *
  *     Proc.new {}.arity          #=> -1
  *     Proc.new {||}.arity        #=>  0
  *     Proc.new {|a|}.arity       #=>  1
@@ -9180,7 +9180,7 @@ proc_to_s(self)
 /*
  *  call-seq:
  *     prc.to_proc -> prc
- *  
+ *
  *  Part of the protocol for converting objects to <code>Proc</code>
  *  objects. Instances of class <code>Proc</code> simply return
  *  themselves.
@@ -9196,15 +9196,15 @@ proc_to_self(self)
 /*
  *  call-seq:
  *     prc.binding    => binding
- *  
+ *
  *  Returns the binding associated with <i>prc</i>. Note that
  *  <code>Kernel#eval</code> accepts either a <code>Proc</code> or a
  *  <code>Binding</code> object as its second parameter.
- *     
+ *
  *     def fred(param)
  *       proc {}
  *     end
- *     
+ *
  *     b = fred(99)
  *     eval("param", b.binding)   #=> 99
  *     eval("param", b)           #=> 99
@@ -9416,7 +9416,7 @@ mnew(klass, obj, id, mklass)
  *  associated with an iterator. They may also be unbound from one
  *  object (creating an <code>UnboundMethod</code>) and bound to
  *  another.
- *     
+ *
  *     class Thing
  *       def square(n)
  *         n*n
@@ -9424,10 +9424,10 @@ mnew(klass, obj, id, mklass)
  *     end
  *     thing = Thing.new
  *     meth  = thing.method(:square)
- *     
+ *
  *     meth.call(9)                 #=> 81
  *     [ 1, 2, 3 ].collect(&meth)   #=> [1, 4, 9]
- *     
+ *
  */
 
 /*
@@ -9463,7 +9463,7 @@ method_eq(method, other)
 /*
  *  call-seq:
  *     meth.unbind    => unbound_method
- *  
+ *
  *  Dissociates <i>meth</i> from it's current receiver. The resulting
  *  <code>UnboundMethod</code> can subsequently be bound to a new object
  *  of the same class (see <code>UnboundMethod</code>).
@@ -9543,13 +9543,13 @@ method_owner(obj)
 /*
  *  call-seq:
  *     obj.method(sym)    => method
- *  
+ *
  *  Looks up the named method as a receiver in <i>obj</i>, returning a
  *  <code>Method</code> object (or raising <code>NameError</code>). The
  *  <code>Method</code> object acts as a closure in <i>obj</i>'s object
  *  instance, so instance variables and the value of <code>self</code>
  *  remain available.
- *     
+ *
  *     class Demo
  *       def initialize(n)
  *         @iv = n
@@ -9558,11 +9558,11 @@ method_owner(obj)
  *         "Hello, @iv = #{@iv}"
  *       end
  *     end
- *     
+ *
  *     k = Demo.new(99)
  *     m = k.method(:hello)
  *     m.call   #=> "Hello, @iv = 99"
- *     
+ *
  *     l = Demo.new('Fred')
  *     m = l.method("hello")
  *     m.call   #=> "Hello, @iv = Fred"
@@ -9579,10 +9579,10 @@ rb_obj_method(obj, vid)
 /*
  *  call-seq:
  *     mod.instance_method(symbol)   => unbound_method
- *  
+ *
  *  Returns an +UnboundMethod+ representing the given
  *  instance method in _mod_.
- *     
+ *
  *     class Interpreter
  *       def do_a() print "there, "; end
  *       def do_d() print "Hello ";  end
@@ -9598,13 +9598,13 @@ rb_obj_method(obj, vid)
  *         string.each_byte {|b| Dispatcher[b].bind(self).call }
  *       end
  *     end
- *     
- *     
+ *
+ *
  *     interpreter = Interpreter.new
  *     interpreter.interpret('dave')
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     Hello there, Dave!
  */
 
@@ -9662,10 +9662,10 @@ rb_method_dup(self, klass, cref)
  *  call-seq:
  *     meth.call(args, ...)    => obj
  *     meth[args, ...]         => obj
- *  
+ *
  *  Invokes the <i>meth</i> with the specified arguments, returning the
  *  method's return value.
- *     
+ *
  *     m = 12.method("+")
  *     m.call(3)    #=> 15
  *     m.call(20)   #=> 32
@@ -9706,17 +9706,17 @@ method_call(argc, argv, method)
  *  with a particular object: these method objects are bound to that
  *  object. Bound method objects for an object can be created using
  *  <code>Object#method</code>.
- *     
+ *
  *  Ruby also supports unbound methods; methods objects that are not
  *  associated with a particular object. These can be created either by
  *  calling <code>Module#instance_method</code> or by calling
  *  <code>unbind</code> on a bound method object. The result of both of
  *  these is an <code>UnboundMethod</code> object.
- *     
+ *
  *  Unbound methods can only be called after they are bound to an
  *  object. That object must be be a kind_of? the method's original
  *  class.
- *     
+ *
  *     class Square
  *       def area
  *         @side * @side
@@ -9725,17 +9725,17 @@ method_call(argc, argv, method)
  *         @side = side
  *       end
  *     end
- *     
+ *
  *     area_un = Square.instance_method(:area)
- *     
+ *
  *     s = Square.new(12)
  *     area = area_un.bind(s)
  *     area.call   #=> 144
- *     
+ *
  *  Unbound methods are a reference to the method at the time it was
  *  objectified: subsequent changes to the underlying class will not
  *  affect the unbound method.
- *     
+ *
  *     class Test
  *       def test
  *         :original
@@ -9750,17 +9750,17 @@ method_call(argc, argv, method)
  *     t = Test.new
  *     t.test            #=> :modified
  *     um.bind(t).call   #=> :original
- *     
+ *
  */
 
 /*
  *  call-seq:
  *     umeth.bind(obj) -> method
- *  
+ *
  *  Bind <i>umeth</i> to <i>obj</i>. If <code>Klass</code> was the class
  *  from which <i>umeth</i> was obtained,
  *  <code>obj.kind_of?(Klass)</code> must be true.
- *     
+ *
  *     class A
  *       def test
  *         puts "In test, class = #{self.class}"
@@ -9770,8 +9770,8 @@ method_call(argc, argv, method)
  *     end
  *     class C < B
  *     end
- *     
- *     
+ *
+ *
  *     um = B.instance_method(:test)
  *     bm = um.bind(C.new)
  *     bm.call
@@ -9779,9 +9779,9 @@ method_call(argc, argv, method)
  *     bm.call
  *     bm = um.bind(A.new)
  *     bm.call
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     In test, class = C
  *     In test, class = B
  *     prog.rb:16:in `bind': bind argument must be an instance of B (TypeError)
@@ -9826,14 +9826,14 @@ umethod_bind(method, recv)
 /*
  *  call-seq:
  *     meth.arity    => fixnum
- *  
+ *
  *  Returns an indication of the number of arguments accepted by a
  *  method. Returns a nonnegative integer for methods that take a fixed
  *  number of arguments. For Ruby methods that take a variable number of
  *  arguments, returns -n-1, where n is the number of required
  *  arguments. For methods written in C, returns -1 if the call takes a
  *  variable number of arguments.
- *     
+ *
  *     class C
  *       def one;    end
  *       def two(a); end
@@ -9849,7 +9849,7 @@ umethod_bind(method, recv)
  *     c.method(:four).arity    #=> 2
  *     c.method(:five).arity    #=> -3
  *     c.method(:six).arity     #=> -3
- *     
+ *
  *     "cat".method(:size).arity      #=> 0
  *     "cat".method(:replace).arity   #=> 1
  *     "cat".method(:squeeze).arity   #=> -1
@@ -9999,7 +9999,7 @@ rb_proc_new(func, val)
 /*
  *  call-seq:
  *     meth.to_proc    => prc
- *  
+ *
  *  Returns a <code>Proc</code> object corresponding to this method.
  */
 
@@ -10035,14 +10035,14 @@ rb_obj_is_method(m)
  *  call-seq:
  *     define_method(symbol, method)     => new_method
  *     define_method(symbol) { block }   => proc
- *  
+ *
  *  Defines an instance method in the receiver. The _method_
  *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
  *  If a block is specified, it is used as the method body. This block
  *  is evaluated using <code>instance_eval</code>, a point that is
  *  tricky to demonstrate because <code>define_method</code> is private.
  *  (This is why we resort to the +send+ hack in this example.)
- *     
+ *
  *     class A
  *       def fred
  *         puts "In Fred"
@@ -10060,9 +10060,9 @@ rb_obj_is_method(m)
  *     a.wilma
  *     a.create_method(:betty) { p self }
  *     a.betty
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     In Fred
  *     Charge it!
  *     #<B:0x401b39e8>
@@ -10129,18 +10129,18 @@ rb_mod_define_method(argc, argv, mod)
  *  <code>Proc</code> objects are blocks of code that have been bound to
  *  a set of local variables. Once bound, the code may be called in
  *  different contexts and still access those variables.
- *     
+ *
  *     def gen_times(factor)
  *       return Proc.new {|n| n*factor }
  *     end
- *     
+ *
  *     times3 = gen_times(3)
  *     times5 = gen_times(5)
- *     
+ *
  *     times3.call(12)               #=> 36
  *     times5.call(5)                #=> 25
  *     times3.call(times5.call(4))   #=> 60
- *     
+ *
  */
 
 void
@@ -10214,17 +10214,17 @@ Init_Proc()
 
 /*
  *  Objects of class <code>Binding</code> encapsulate the execution
- *  context at some particular place in the code and retain this context 
+ *  context at some particular place in the code and retain this context
  *  for future use. The variables, methods, value of <code>self</code>,
  *  and possibly an iterator block that can be accessed in this context
  *  are all retained. Binding objects can be created using
  *  <code>Kernel#binding</code>, and are made available to the callback
  *  of <code>Kernel#set_trace_func</code>.
- *     
+ *
  *  These binding objects can be passed as the second argument of the
  *  <code>Kernel#eval</code> method, establishing an environment for the
  *  evaluation.
- *     
+ *
  *     class Demo
  *       def initialize(n)
  *         @secret = n
@@ -10233,22 +10233,22 @@ Init_Proc()
  *         return binding()
  *       end
  *     end
- *     
+ *
  *     k1 = Demo.new(99)
  *     b1 = k1.getBinding
  *     k2 = Demo.new(-3)
  *     b2 = k2.getBinding
- *     
+ *
  *     eval("@secret", b1)   #=> 99
  *     eval("@secret", b2)   #=> -3
  *     eval("@secret")       #=> nil
- *     
+ *
  *  Binding objects have no class-specific methods.
- *     
+ *
  */
 
-void 
-Init_Binding() 
+void
+Init_Binding()
 {
     rb_cBinding = rb_define_class("Binding", rb_cObject);
     rb_undef_alloc_func(rb_cBinding);
@@ -10741,7 +10741,7 @@ rb_thread_save_context(th)
     VALUE *pos;
     size_t len;
     static VALUE tval;
-    
+
     EXEC_EVENT_HOOK(RUBY_EVENT_THREAD_SAVE, th->node,
 		    th->thread, 0, RBASIC(th->thread)->klass);
 
@@ -11719,39 +11719,39 @@ rb_thread_set_join(thread, join)
  *  call-seq:
  *     thr.join          => thr
  *     thr.join(limit)   => thr
- *  
+ *
  *  The calling thread will suspend execution and run <i>thr</i>. Does not
  *  return until <i>thr</i> exits or until <i>limit</i> seconds have passed. If
  *  the time limit expires, <code>nil</code> will be returned, otherwise
  *  <i>thr</i> is returned.
- *     
+ *
  *  Any threads not joined will be killed when the main program exits.  If
  *  <i>thr</i> had previously raised an exception and the
  *  <code>abort_on_exception</code> and <code>$DEBUG</code> flags are not set
  *  (so the exception has not yet been processed) it will be processed at this
  *  time.
- *     
+ *
  *     a = Thread.new { print "a"; sleep(10); print "b"; print "c" }
  *     x = Thread.new { print "x"; Thread.pass; print "y"; print "z" }
  *     x.join # Let x thread finish, a will be killed on exit.
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     axyz
- *     
+ *
  *  The following example illustrates the <i>limit</i> parameter.
- *     
+ *
  *     y = Thread.new { 4.times { sleep 0.1; puts 'tick... ' }}
  *     puts "Waiting" until y.join(0.15)
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     tick...
  *     Waiting
  *     tick...
  *     Waitingtick...
- *     
- *     
+ *
+ *
  *     tick...
  */
 
@@ -11775,9 +11775,9 @@ rb_thread_join_m(argc, argv, thread)
 /*
  *  call-seq:
  *     Thread.current   => thread
- *  
+ *
  *  Returns the currently executing thread.
- *     
+ *
  *     Thread.current   #=> #<Thread:0x401bdf4c run>
  */
 
@@ -11791,9 +11791,9 @@ rb_thread_current()
 /*
  *  call-seq:
  *     Thread.main   => thread
- *  
+ *
  *  Returns the main thread for the process.
- *     
+ *
  *     Thread.main   #=> #<Thread:0x401bdf4c run>
  */
 
@@ -11807,17 +11807,17 @@ rb_thread_main()
 /*
  *  call-seq:
  *     Thread.list   => array
- *  
+ *
  *  Returns an array of <code>Thread</code> objects for all threads that are
  *  either runnable or stopped.
- *     
+ *
  *     Thread.new { sleep(200) }
  *     Thread.new { 1000000.times {|i| i*i } }
  *     Thread.new { Thread.stop }
  *     Thread.list.each {|t| p t}
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     #<Thread:0x401b3e84 sleep>
  *     #<Thread:0x401b3f38 run>
  *     #<Thread:0x401b3fb0 sleep>
@@ -11849,15 +11849,15 @@ rb_thread_list()
 /*
  *  call-seq:
  *     thr.wakeup   => thr
- *  
+ *
  *  Marks <i>thr</i> as eligible for scheduling (it may still remain blocked on
  *  I/O, however). Does not invoke the scheduler (see <code>Thread#run</code>).
- *     
+ *
  *     c = Thread.new { Thread.stop; puts "hey!" }
  *     c.wakeup
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     hey!
  */
 
@@ -11887,18 +11887,18 @@ rb_thread_wakeup_alive(thread)
 /*
  *  call-seq:
  *     thr.run   => thr
- *  
+ *
  *  Wakes up <i>thr</i>, making it eligible for scheduling. If not in a critical
  *  section, then invokes the scheduler.
- *     
+ *
  *     a = Thread.new { puts "a"; Thread.stop; puts "c" }
  *     Thread.pass
  *     puts "Got here"
  *     a.run
  *     a.join
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     a
  *     Got here
  *     c
@@ -11939,7 +11939,7 @@ rb_kill_thread(th, flags)
  *     thr.exit        => thr
  *     thr.kill        => thr
  *     thr.terminate   => thr
- *  
+ *
  *  Terminates <i>thr</i> and schedules another thread to be run, returning
  *  the terminated <code>Thread</code>.  If this is the main thread, or the
  *  last thread, exits the process.
@@ -11961,7 +11961,7 @@ rb_thread_kill(thread)
  *     thr.exit!        => thr
  *     thr.kill!        => thr
  *     thr.terminate!   => thr
- *  
+ *
  *  Terminates <i>thr</i> without calling ensure clauses and schedules
  *  another thread to be run, returning the terminated <code>Thread</code>.
  *  If this is the main thread, or the last thread, exits the process.
@@ -11981,9 +11981,9 @@ rb_thread_kill_bang(thread)
 /*
  *  call-seq:
  *     Thread.kill(thread)   => thread
- *  
+ *
  *  Causes the given <em>thread</em> to exit (see <code>Thread::exit</code>).
- *     
+ *
  *     count = 0
  *     a = Thread.new { loop { count += 1 } }
  *     sleep(0.1)       #=> 0
@@ -12003,7 +12003,7 @@ rb_thread_s_kill(obj, th)
 /*
  *  call-seq:
  *     Thread.exit   => thread
- *  
+ *
  *  Terminates the currently running thread and schedules another thread to be
  *  run. If this thread is already marked to be killed, <code>exit</code>
  *  returns the <code>Thread</code>. If this is the main thread, or the last
@@ -12020,9 +12020,9 @@ rb_thread_exit()
 /*
  *  call-seq:
  *     Thread.pass   => nil
- *  
+ *
  *  Invokes the thread scheduler to pass execution to another thread.
- *     
+ *
  *     a = Thread.new { print "a"; Thread.pass;
  *                      print "b"; Thread.pass;
  *                      print "c" }
@@ -12031,9 +12031,9 @@ rb_thread_exit()
  *                      print "z" }
  *     a.join
  *     b.join
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     axbycz
  */
 
@@ -12048,19 +12048,19 @@ rb_thread_pass()
 /*
  *  call-seq:
  *     Thread.stop   => nil
- *  
+ *
  *  Stops execution of the current thread, putting it into a ``sleep'' state,
  *  and schedules execution of another thread. Resets the ``critical'' condition
  *  to <code>false</code>.
- *     
+ *
  *     a = Thread.new { print "a"; Thread.stop; print "c" }
  *     Thread.pass
  *     print "b"
  *     a.run
  *     a.join
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     abc
  */
 
@@ -12161,7 +12161,7 @@ rb_thread_priority(thread)
  *           loop { count1 += 1 }
  *         end
  *     a.priority = -1
- *     
+ *
  *     b = Thread.new do
  *           loop { count2 += 1 }
  *         end
@@ -12190,10 +12190,10 @@ rb_thread_priority_set(thread, prio)
 /*
  *  call-seq:
  *     thr.safe_level   => integer
- *  
+ *
  *  Returns the safe level in effect for <i>thr</i>. Setting thread-local safe
  *  levels can help when implementing sandboxes which run insecure code.
- *     
+ *
  *     thr = Thread.new { $SAFE = 3; sleep }
  *     Thread.current.safe_level   #=> 0
  *     thr.safe_level              #=> 3
@@ -12219,7 +12219,7 @@ static VALUE thgroup_default;
 /*
  *  call-seq:
  *     Thread.abort_on_exception   => true or false
- *  
+ *
  *  Returns the status of the global ``abort on exception'' condition.  The
  *  default is <code>false</code>. When set to <code>true</code>, or if the
  *  global <code>$DEBUG</code> flag is <code>true</code> (perhaps because the
@@ -12238,10 +12238,10 @@ rb_thread_s_abort_exc()
 /*
  *  call-seq:
  *     Thread.abort_on_exception= boolean   => true or false
- *  
+ *
  *  When set to <code>true</code>, all threads will abort if an exception is
  *  raised. Returns the new state.
- *     
+ *
  *     Thread.abort_on_exception = true
  *     t1 = Thread.new do
  *       puts  "In new thread"
@@ -12249,9 +12249,9 @@ rb_thread_s_abort_exc()
  *     end
  *     sleep(1)
  *     puts "not reached"
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     In new thread
  *     prog.rb:4: Exception from thread (RuntimeError)
  *     	from prog.rb:2:in `initialize'
@@ -12272,7 +12272,7 @@ rb_thread_s_abort_exc_set(self, val)
 /*
  *  call-seq:
  *     thr.abort_on_exception   => true or false
- *  
+ *
  *  Returns the status of the thread-local ``abort on exception'' condition for
  *  <i>thr</i>. The default is <code>false</code>. See also
  *  <code>Thread::abort_on_exception=</code>.
@@ -12289,7 +12289,7 @@ rb_thread_abort_exc(thread)
 /*
  *  call-seq:
  *     thr.abort_on_exception= boolean   => true or false
- *  
+ *
  *  When set to <code>true</code>, causes all threads (including the main
  *  program) to abort if an exception is raised in <i>thr</i>. The process will
  *  effectively <code>exit(0)</code>.
@@ -12308,10 +12308,10 @@ rb_thread_abort_exc_set(thread, val)
 /*
  *  call-seq:
  *     thr.group   => thgrp or nil
- *  
+ *
  *  Returns the <code>ThreadGroup</code> which contains <i>thr</i>, or nil if
  *  the thread is not a member of any group.
- *     
+ *
  *     Thread.main.group   #=> #<ThreadGroup:0x4029d914>
  */
 
@@ -12804,18 +12804,18 @@ rb_thread_yield(arg, th)
 /*
  *  call-seq:
  *     Thread.new([arg]*) {|args| block }   => thread
- *  
+ *
  *  Creates and runs a new thread to execute the instructions given in
  *  <i>block</i>. Any arguments passed to <code>Thread::new</code> are passed
  *  into the block.
- *     
+ *
  *     x = Thread.new { sleep 0.1; print "x"; print "y"; print "z" }
  *     a = Thread.new { print "a"; print "b"; sleep 0.2; print "c" }
  *     x.join # Let the threads finish before
  *     a.join # main thread exits...
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     abxyzc
  */
 
@@ -12842,18 +12842,18 @@ rb_thread_s_new(argc, argv, klass)
 /*
  *  call-seq:
  *     Thread.new([arg]*) {|args| block }   => thread
- *  
+ *
  *  Creates and runs a new thread to execute the instructions given in
  *  <i>block</i>. Any arguments passed to <code>Thread::new</code> are passed
  *  into the block.
- *     
+ *
  *     x = Thread.new { sleep 0.1; print "x"; print "y"; print "z" }
  *     a = Thread.new { print "a"; print "b"; sleep 0.2; print "c" }
  *     x.join # Let the threads finish before
  *     a.join # main thread exits...
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     abxyzc
  */
 
@@ -12883,7 +12883,7 @@ rb_thread_initialize(thread, args)
  *  call-seq:
  *     Thread.start([args]*) {|args| block }   => thread
  *     Thread.fork([args]*) {|args| block }    => thread
- *  
+ *
  *  Basically the same as <code>Thread::new</code>. However, if class
  *  <code>Thread</code> is subclassed, then calling <code>start</code> in that
  *  subclass will not invoke the subclass's <code>initialize</code> method.
@@ -12903,10 +12903,10 @@ rb_thread_start(klass, args)
 /*
  *  call-seq:
  *     thr.value   => obj
- *  
+ *
  *  Waits for <i>thr</i> to complete (via <code>Thread#join</code>) and returns
  *  its value.
- *     
+ *
  *     a = Thread.new { 2 + 2 }
  *     a.value   #=> 4
  */
@@ -12926,13 +12926,13 @@ rb_thread_value(thread)
 /*
  *  call-seq:
  *     thr.status   => string, false or nil
- *  
+ *
  *  Returns the status of <i>thr</i>: ``<code>sleep</code>'' if <i>thr</i> is
  *  sleeping or waiting on I/O, ``<code>run</code>'' if <i>thr</i> is executing,
  *  ``<code>aborting</code>'' if <i>thr</i> is aborting, <code>false</code> if
  *  <i>thr</i> terminated normally, and <code>nil</code> if <i>thr</i>
  *  terminated with an exception.
- *     
+ *
  *     a = Thread.new { raise("die now") }
  *     b = Thread.new { Thread.stop }
  *     c = Thread.new { Thread.exit }
@@ -12965,9 +12965,9 @@ rb_thread_status(thread)
 /*
  *  call-seq:
  *     thr.alive?   => true or false
- *  
+ *
  *  Returns <code>true</code> if <i>thr</i> is running or sleeping.
- *     
+ *
  *     thr = Thread.new { }
  *     thr.join                #=> #<Thread:0x401b3fb0 dead>
  *     Thread.current.alive?   #=> true
@@ -12988,9 +12988,9 @@ rb_thread_alive_p(thread)
 /*
  *  call-seq:
  *     thr.stop?   => true or false
- *  
+ *
  *  Returns <code>true</code> if <i>thr</i> is dead or sleeping.
- *     
+ *
  *     a = Thread.new { Thread.stop }
  *     b = Thread.current
  *     a.stop?   #=> true
@@ -13059,7 +13059,7 @@ int rb_thread_critical;
 /*
  *  call-seq:
  *     Thread.critical   => true or false
- *  
+ *
  *  Returns the status of the global ``thread critical'' condition.
  */
 
@@ -13073,7 +13073,7 @@ rb_thread_critical_get()
 /*
  *  call-seq:
  *     Thread.critical= boolean   => true or false
- *  
+ *
  *  Sets the status of the global ``thread critical'' condition and returns
  *  it. When set to <code>true</code>, prohibits scheduling of any existing
  *  thread. Does not block new threads from being created and run. Certain
@@ -13172,7 +13172,7 @@ rb_thread_signal_exit()
 	    return;
 	}
     }
-    rb_thread_main_jump(rb_class_new_instance(2, args, rb_eSystemExit), 
+    rb_thread_main_jump(rb_class_new_instance(2, args, rb_eSystemExit),
 			RESTORE_EXIT);
 }
 
@@ -13213,16 +13213,16 @@ rb_thread_raise(argc, argv, th)
 /*
  *  call-seq:
  *     thr.raise(exception)
- *  
+ *
  *  Raises an exception (see <code>Kernel::raise</code>) from <i>thr</i>. The
  *  caller does not have to be <i>thr</i>.
- *     
+ *
  *     Thread.abort_on_exception = true
  *     a = Thread.new { sleep(200) }
  *     a.raise("Gotcha")
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     prog.rb:3: Gotcha (RuntimeError)
  *     	from prog.rb:2:in `initialize'
  *     	from prog.rb:2:in `new'
@@ -13267,18 +13267,18 @@ rb_thread_local_aref(thread, id)
 /*
  *  call-seq:
  *      thr[sym]   => obj or nil
- *  
+ *
  *  Attribute Reference---Returns the value of a thread-local variable, using
  *  either a symbol or a string name. If the specified variable does not exist,
  *  returns <code>nil</code>.
- *     
+ *
  *     a = Thread.new { Thread.current["name"] = "A"; Thread.stop }
  *     b = Thread.new { Thread.current[:name]  = "B"; Thread.stop }
  *     c = Thread.new { Thread.current["name"] = "C"; Thread.stop }
  *     Thread.list.each {|x| puts "#{x.inspect}: #{x[:name]}" }
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     #<Thread:0x401b3b3c sleep>: C
  *     #<Thread:0x401b3bc8 sleep>: B
  *     #<Thread:0x401b3c68 sleep>: A
@@ -13321,7 +13321,7 @@ rb_thread_local_aset(thread, id, val)
 /*
  *  call-seq:
  *      thr[sym] = obj   => obj
- *  
+ *
  *  Attribute Assignment---Sets or creates the value of a thread-local variable,
  *  using either a symbol or a string. See also <code>Thread#[]</code>.
  */
@@ -13337,10 +13337,10 @@ rb_thread_aset(thread, id, val)
 /*
  *  call-seq:
  *     thr.key?(sym)   => true or false
- *  
+ *
  *  Returns <code>true</code> if the given string (or symbol) exists as a
  *  thread-local variable.
- *     
+ *
  *     me = Thread.current
  *     me[:oliver] = "a"
  *     me.key?(:oliver)    #=> true
@@ -13372,9 +13372,9 @@ thread_keys_i(key, value, ary)
 /*
  *  call-seq:
  *     thr.keys   => array
- *  
+ *
  *  Returns an an array of the names of the thread-local variables (as Symbols).
- *     
+ *
  *     thr = Thread.new do
  *       Thread.current[:cat] = 'meow'
  *       Thread.current["dog"] = 'woof'
@@ -13482,24 +13482,24 @@ rb_cont_check(data)
  *  Continuations are somewhat analogous to a structured version of C's
  *  <code>setjmp/longjmp</code> (although they contain more state, so
  *  you might consider them closer to threads).
- *     
+ *
  *  For instance:
- *     
+ *
  *     arr = [ "Freddie", "Herbie", "Ron", "Max", "Ringo" ]
  *     callcc{|$cc|}
  *     puts(message = arr.shift)
  *     $cc.call unless message =~ /Max/
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     Freddie
  *     Herbie
  *     Ron
  *     Max
- *     
+ *
  *  This (somewhat contrived) example allows the inner loop to abandon
  *  processing early:
- *     
+ *
  *     callcc {|cont|
  *       for i in 0..4
  *         print "\n#{i}: "
@@ -13510,9 +13510,9 @@ rb_cont_check(data)
  *       end
  *     }
  *     print "\n"
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     0:   0  1  2  3  4
  *     1:   5  6  7  8  9
  *     2:  10 11 12 13 14
@@ -13524,13 +13524,13 @@ VALUE rb_cCont;
 /*
  *  call-seq:
  *     callcc {|cont| block }   =>  obj
- *  
+ *
  *  Generates a <code>Continuation</code> object, which it passes to the
  *  associated block. Performing a <em>cont</em><code>.call</code> will
  *  cause the <code>callcc</code> to return (as will falling through the
  *  end of the block). The value returned by the <code>callcc</code> is
  *  the value of the block, or the value passed to
- *  <em>cont</em><code>.call</code>. See class <code>Continuation</code> 
+ *  <em>cont</em><code>.call</code>. See class <code>Continuation</code>
  *  for more details. Also see <code>Kernel::throw</code> for
  *  an alternative mechanism for unwinding a call stack.
  */
@@ -13572,15 +13572,15 @@ rb_callcc(self)
 
 /*
  *  call-seq:
- *     cont.call(args, ...) 
+ *     cont.call(args, ...)
  *     cont[args, ...]
- *  
+ *
  *  Invokes the continuation. The program continues from the end of the
  *  <code>callcc</code> block. If no arguments are given, the original
  *  <code>callcc</code> returns <code>nil</code>. If one argument is
  *  given, <code>callcc</code> returns it. Otherwise, an array
  *  containing <i>args</i> is returned.
- *     
+ *
  *     callcc {|cont|  cont.call }           #=> nil
  *     callcc {|cont|  cont.call 1 }         #=> 1
  *     callcc {|cont|  cont.call 1, 2, 3 }   #=> [1, 2, 3]
@@ -13642,7 +13642,7 @@ struct thgroup {
  *  threads as a group. A <code>Thread</code> can belong to only one
  *  <code>ThreadGroup</code> at a time; adding a thread to a new group will
  *  remove it from any previous group.
- *     
+ *
  *  Newly created threads belong to the same group as the thread from which they
  *  were created.
  */
@@ -13666,10 +13666,10 @@ thgroup_s_alloc(klass)
 /*
  *  call-seq:
  *     thgrp.list   => array
- *  
+ *
  *  Returns an array of all existing <code>Thread</code> objects that belong to
  *  this group.
- *     
+ *
  *     ThreadGroup::Default.list   #=> [#<Thread:0x401bdf4c run>]
  */
 
@@ -13698,11 +13698,11 @@ thgroup_list(group)
 /*
  *  call-seq:
  *     thgrp.enclose   => thgrp
- *  
+ *
  *  Prevents threads from being added to or removed from the receiving
  *  <code>ThreadGroup</code>. New threads can still be started in an enclosed
  *  <code>ThreadGroup</code>.
- *     
+ *
  *     ThreadGroup::Default.enclose        #=> #<ThreadGroup:0x4029d914>
  *     thr = Thread::new { Thread.stop }   #=> #<Thread:0x402a7210 sleep>
  *     tg = ThreadGroup::new               #=> #<ThreadGroup:0x402752d4>
@@ -13729,7 +13729,7 @@ thgroup_enclose(group)
 /*
  *  call-seq:
  *     thgrp.enclosed?   => true or false
- *  
+ *
  *  Returns <code>true</code> if <em>thgrp</em> is enclosed. See also
  *  ThreadGroup#enclose.
  */
@@ -13749,10 +13749,10 @@ thgroup_enclosed_p(group)
 /*
  *  call-seq:
  *     thgrp.add(thread)   => thgrp
- *  
+ *
  *  Adds the given <em>thread</em> to this group, removing it from any other
  *  group to which it may have previously belonged.
- *     
+ *
  *     puts "Initial group is #{ThreadGroup::Default.list}"
  *     tg = ThreadGroup.new
  *     t1 = Thread.new { sleep }
@@ -13762,9 +13762,9 @@ thgroup_enclosed_p(group)
  *     tg.add(t1)
  *     puts "Initial group now #{ThreadGroup::Default.list}"
  *     puts "tg group now #{tg.list}"
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     Initial group is #<Thread:0x401bdf4c>
  *     t1 is #<Thread:0x401b3c90>
  *     t2 is #<Thread:0x401b3c18>
@@ -13912,9 +13912,9 @@ rb_exec_recursive(func, obj, arg)
 /*
  *  +Thread+ encapsulates the behavior of a thread of
  *  execution, including the main thread of the Ruby script.
- *     
+ *
  *  In the descriptions of the methods in this class, the parameter _sym_
- *  refers to a symbol, which is either a quoted string or a 
+ *  refers to a symbol, which is either a quoted string or a
  *  +Symbol+ (such as <code>:name</code>).
  */
 
@@ -13995,7 +13995,7 @@ Init_Thread()
 /*
  *  call-seq:
  *     catch(symbol) {| | block }  > obj
- *  
+ *
  *  +catch+ executes its block. If a +throw+ is
  *  executed, Ruby searches up its stack for a +catch+ block
  *  with a tag corresponding to the +throw+'s
@@ -14005,18 +14005,18 @@ Init_Thread()
  *  the value of +catch+ is the value of the last expression
  *  evaluated. +catch+ expressions may be nested, and the
  *  +throw+ call need not be in lexical scope.
- *     
+ *
  *     def routine(n)
  *       puts n
  *       throw :done if n <= 0
  *       routine(n-1)
  *     end
- *     
- *     
+ *
+ *
  *     catch(:done) { routine(3) }
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     3
  *     2
  *     1
@@ -14064,7 +14064,7 @@ rb_catch(tag, func, data)
 /*
  *  call-seq:
  *     throw(symbol [, obj])
- *  
+ *
  *  Transfers control to the end of the active +catch+ block
  *  waiting for _symbol_. Raises +NameError+ if there
  *  is no +catch+ block for the symbol. The optional second

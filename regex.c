@@ -222,12 +222,12 @@ init_syntax_once()
    memset(re_syntax_table, 0, sizeof re_syntax_table);
 
    for (c=0; c<=0x7f; c++)
-     if (isalnum(c)) 
+     if (isalnum(c))
        re_syntax_table[c] = Sword;
    re_syntax_table['_'] = Sword;
 
    for (c=0x80; c<=0xff; c++)
-     if (isalnum(c)) 
+     if (isalnum(c))
        re_syntax_table[c] = Sword2;
    done = 1;
 }
@@ -320,9 +320,9 @@ enum regexpcode
     begpos,   /* Matches where last scan//gsub left off.  */
     jump,     /* Followed by two bytes giving relative address to jump to.  */
     jump_past_alt,/* Same as jump, but marks the end of an alternative.  */
-    on_failure_jump,	 /* Followed by two bytes giving relative address of 
+    on_failure_jump,	 /* Followed by two bytes giving relative address of
 			    place to resume at in case of failure.  */
-    finalize_jump,	 /* Throw away latest failure point and then jump to 
+    finalize_jump,	 /* Throw away latest failure point and then jump to
 			    address.  */
     maybe_finalize_jump, /* Like jump but finalize if safe to do so.
 			    This is used to jump back to the beginning
@@ -332,9 +332,9 @@ enum regexpcode
 			    we can be sure that there is no use backtracking
 			    out of repetitions already completed,
 			    then we finalize.  */
-    dummy_failure_jump,  /* Jump, and push a dummy failure point. This 
-			    failure point will be thrown away if an attempt 
-                            is made to use it for a failure. A + construct 
+    dummy_failure_jump,  /* Jump, and push a dummy failure point. This
+			    failure point will be thrown away if an attempt
+                            is made to use it for a failure. A + construct
                             makes this before the first repeat.  Also
                             use it as an intermediary kind of jump when
                             compiling an or construct.  */
@@ -383,7 +383,7 @@ enum regexpcode
     pop_and_fail,  /* Fail after popping nowidth entry from stack. */
     stop_backtrack,  /* Restore backtrack stack at the point start_nowidth. */
     duplicate,   /* Match a duplicate of something remembered.
-		    Followed by one byte containing the index of the memory 
+		    Followed by one byte containing the index of the memory
                     register.  */
     wordchar,    /* Matches any word-constituent character.  */
     notwordchar, /* Matches any char that is not a word-constituent.  */
@@ -448,7 +448,7 @@ re_set_syntax(syntax)
 
 #define TRANSLATE_P() ((options&RE_OPTION_IGNORECASE) && translate)
 #define MAY_TRANSLATE() ((bufp->options&(RE_OPTION_IGNORECASE|RE_MAY_IGNORECASE)) && translate)
-/* Fetch the next character in the uncompiled pattern---translating it 
+/* Fetch the next character in the uncompiled pattern---translating it
    if necessary.  Also cast from a signed character in the constant
    string passed to us by the user to an unsigned char that we can use
    as an array index (in, e.g., `translate').  */
@@ -535,7 +535,7 @@ print_mbc(c)
     else if (c <= 0xffff)
       printf("%c%c%c", (int)utf8_firstbyte(c), (int)((c >> 6) & 0x3f),
 	     (int)(c & 0x3f));
-    else if (c <= 0x1fffff) 
+    else if (c <= 0x1fffff)
       printf("%c%c%c%c", (int)utf8_firstbyte(c), (int)((c >> 12) & 0x3f),
 	     (int)((c >> 6) & 0x3f), (int)(c & 0x3f));
     else if (c <= 0x3ffffff)
@@ -732,7 +732,7 @@ is_in_list_sbc(c, b)
   size = *b++;
   return ((int)c / BYTEWIDTH < (int)size && b[c / BYTEWIDTH] & 1 << c % BYTEWIDTH);
 }
-  
+
 static int
 is_in_list_mbc(c, b)
     unsigned long c;
@@ -934,19 +934,19 @@ print_partial_compiled_pattern(start, end)
       printf("/jump//%d", mcnt);
       break;
 
-    case succeed_n: 
+    case succeed_n:
       EXTRACT_NUMBER_AND_INCR(mcnt, p);
       EXTRACT_NUMBER_AND_INCR(mcnt2, p);
       printf("/succeed_n//%d//%d", mcnt, mcnt2);
       break;
 
-    case jump_n: 
+    case jump_n:
       EXTRACT_NUMBER_AND_INCR(mcnt, p);
       EXTRACT_NUMBER_AND_INCR(mcnt2, p);
       printf("/jump_n//%d//%d", mcnt, mcnt2);
       break;
 
-    case set_number_at: 
+    case set_number_at:
       EXTRACT_NUMBER_AND_INCR(mcnt, p);
       EXTRACT_NUMBER_AND_INCR(mcnt2, p);
       printf("/set_number_at//%d//%d", mcnt, mcnt2);
@@ -986,7 +986,7 @@ print_partial_compiled_pattern(start, end)
     case wordchar:
       printf("/wordchar");
       break;
-	  
+
     case notwordchar:
       printf("/notwordchar");
       break;
@@ -1108,7 +1108,7 @@ calculate_must_string(start, end)
       break;
 
     case dummy_failure_jump:
-    case succeed_n: 
+    case succeed_n:
     case try_next:
     case jump:
       EXTRACT_NUMBER_AND_INCR(mcnt, p);
@@ -1124,8 +1124,8 @@ calculate_must_string(start, end)
       p += 2;
       break;
 
-    case jump_n: 
-    case set_number_at: 
+    case jump_n:
+    case set_number_at:
     case finalize_push_n:
       p += 4;
       break;
@@ -1363,8 +1363,8 @@ re_compile_pattern(pattern, size, bufp)
     case '*':
       /* If there is no previous pattern, char not special. */
       if (!laststart) {
-	snprintf(error_msg, ERROR_MSG_MAX_SIZE, 
-		 "invalid regular expression; there's no previous pattern, to which '%c' would define cardinality at %ld", 
+	snprintf(error_msg, ERROR_MSG_MAX_SIZE,
+		 "invalid regular expression; there's no previous pattern, to which '%c' would define cardinality at %ld",
 		 c, (long)(p-pattern));
 	FREE_AND_RETURN(stackb, error_msg);
       }
@@ -1391,7 +1391,7 @@ re_compile_pattern(pattern, size, bufp)
     repeat:
       /* Star, etc. applied to an empty pattern is equivalent
 	 to an empty pattern.  */
-      if (!laststart)  
+      if (!laststart)
 	break;
 
       if (greedy && many_times_ok && *laststart == anychar && b - laststart <= 2) {
@@ -1455,7 +1455,7 @@ re_compile_pattern(pattern, size, bufp)
 
       laststart = b;
       if (*p == '^') {
-	BUFPUSH(charset_not); 
+	BUFPUSH(charset_not);
 	p++;
       }
       else
@@ -1494,7 +1494,7 @@ re_compile_pattern(pattern, size, bufp)
 	      FREE_AND_RETURN(stackb, "invalid regular expression; empty character class");
             re_warning("character class has `]' without escape");
 	  }
-	  else 
+	  else
 	    /* Stop if this isn't merely a ] inside a bracket
 	       expression, but rather the end of a bracket
 	       expression.  */
@@ -1626,7 +1626,7 @@ re_compile_pattern(pattern, size, bufp)
 	  c1 = 0;
 
 	  /* If pattern is `[[:'.  */
-	  if (p == pend) 
+	  if (p == pend)
 	    FREE_AND_RETURN(stackb, "invalid regular expression; re can't end '[[:'");
 
 	  for (;;) {
@@ -1657,7 +1657,7 @@ re_compile_pattern(pattern, size, bufp)
 	    char is_xdigit = STREQ(str, "xdigit");
 
 	    if (!IS_CHAR_CLASS(str)){
-	      snprintf(error_msg, ERROR_MSG_MAX_SIZE, 
+	      snprintf(error_msg, ERROR_MSG_MAX_SIZE,
 		       "invalid regular expression; [:%s:] is not a character class", str);
 	      FREE_AND_RETURN(stackb, error_msg);
 	    }
@@ -1665,7 +1665,7 @@ re_compile_pattern(pattern, size, bufp)
 	    /* Throw away the ] at the end of the character class.  */
 	    PATFETCH(c);
 
-	    if (p == pend) 
+	    if (p == pend)
 	      FREE_AND_RETURN(stackb, "invalid regular expression; range doesn't have ending ']' after a character class");
 
 	    for (ch = 0; ch < 1 << BYTEWIDTH; ch++) {
@@ -1688,7 +1688,7 @@ re_compile_pattern(pattern, size, bufp)
 	  }
 	  else {
 	    c1 += 2;
-	    while (c1--)    
+	    while (c1--)
 	      PATUNFETCH;
             re_warning("character class has `[' without escape");
             c = '[';
@@ -1703,11 +1703,11 @@ re_compile_pattern(pattern, size, bufp)
 	  range = 0;
 	  if (had_mbchar == 0) {
 	    if (TRANSLATE_P()) {
-	      for (;last<=c;last++) 
+	      for (;last<=c;last++)
 		SET_LIST_BIT(translate[last]);
 	    }
 	    else {
-	      for (;last<=c;last++) 
+	      for (;last<=c;last++)
 		SET_LIST_BIT(last);
 	    }
 	  }
@@ -1740,8 +1740,8 @@ re_compile_pattern(pattern, size, bufp)
 
       /* Discard any character set/class bitmap bytes that are all
 	 0 at the end of the map. Decrement the map-length byte too.  */
-      while ((int)b[-1] > 0 && b[b[-1] - 1] == 0) 
-	b[-1]--; 
+      while ((int)b[-1] > 0 && b[b[-1] - 1] == 0)
+	b[-1]--;
       if (b[-1] != (1 << BYTEWIDTH) / BYTEWIDTH)
 	memmove(&b[(unsigned char)b[-1]], &b[(1 << BYTEWIDTH) / BYTEWIDTH],
 		2 + EXTRACT_UNSIGNED(&b[(1 << BYTEWIDTH) / BYTEWIDTH])*8);
@@ -1857,7 +1857,7 @@ re_compile_pattern(pattern, size, bufp)
 	/* Laststart should point to the start_memory that we are about
 	   to push (unless the pattern has RE_NREGS or more ('s).  */
 	/* obsolete: now RE_NREGS is just a default register size. */
-	*stackp++ = b - bufp->buffer;    
+	*stackp++ = b - bufp->buffer;
 	*stackp++ = fixup_alt_jump ? fixup_alt_jump - bufp->buffer + 1 : 0;
 	*stackp++ = begalt - bufp->buffer;
 	switch (c) {
@@ -1911,7 +1911,7 @@ re_compile_pattern(pattern, size, bufp)
       break;
 
     case ')':
-      if (stackp == stackb) 
+      if (stackp == stackb)
 	FREE_AND_RETURN(stackb, "unmatched )");
 
       pending_exact = 0;
@@ -2000,10 +2000,10 @@ re_compile_pattern(pattern, size, bufp)
 	 jump (put in below, which in turn will jump to the next
 	 (if any) alternative's such jump, etc.).  The last such
 	 jump jumps to the correct final destination.  A picture:
-	 _____ _____ 
-	 |   | |   |   
-	 |   v |   v 
-	 a | b   | c   
+	 _____ _____
+	 |   | |   |
+	 |   v |   v
+	 a | b   | c
 
 	 If we are at `b', then fixup_alt_jump right now points to a
 	 three-byte space after `a'.  We'll put in the jump, set
@@ -2027,8 +2027,8 @@ re_compile_pattern(pattern, size, bufp)
     case '{':
       /* If there is no previous pattern, this is an invalid pattern.  */
       if (!laststart) {
-	snprintf(error_msg, ERROR_MSG_MAX_SIZE, 
-		 "invalid regular expression; there's no previous pattern, to which '{' would define cardinality at %ld", 
+	snprintf(error_msg, ERROR_MSG_MAX_SIZE,
+		 "invalid regular expression; there's no previous pattern, to which '{' would define cardinality at %ld",
 		 (long)(p-pattern));
 	FREE_AND_RETURN(stackb, error_msg);
       }
@@ -2089,7 +2089,7 @@ re_compile_pattern(pattern, size, bufp)
 	}
       }
 
-      /* If upper_bound is zero, don't want to succeed at all; 
+      /* If upper_bound is zero, don't want to succeed at all;
 	 jump from laststart to b + 3, which will be the end of
 	 the buffer after this jump is inserted.  */
 
@@ -2157,11 +2157,11 @@ re_compile_pattern(pattern, size, bufp)
 	   attendant `set_number_at' (inserted next),
 	   because `re_compile_fastmap' needs to know.
 	   Jump to the `jump_n' we might insert below.  */
-	insert_jump_n(succeed_n, laststart, b + (nbytes/2), 
+	insert_jump_n(succeed_n, laststart, b + (nbytes/2),
 		      b, lower_bound);
 	b += 5; 	/* Just increment for the succeed_n here.  */
 
-	/* Code to initialize the lower bound.  Insert 
+	/* Code to initialize the lower bound.  Insert
 	   before the `succeed_n'.  The `5' is the last two
 	   bytes of this `set_number_at', plus 3 bytes of
 	   the following `succeed_n'.  */
@@ -2209,7 +2209,7 @@ re_compile_pattern(pattern, size, bufp)
       beg_interval = 0;
 
       /* normal_char and normal_backslash need `c'.  */
-      PATFETCH(c);	
+      PATFETCH(c);
       goto normal_char;
 
     case '\\':
@@ -2254,8 +2254,8 @@ re_compile_pattern(pattern, size, bufp)
 	  }
 	}
 
-	while ((int)b[-1] > 0 && b[b[-1] - 1] == 0) 
-	  b[-1]--; 
+	while ((int)b[-1] > 0 && b[b[-1] - 1] == 0)
+	  b[-1]--;
 	if (b[-1] != (1 << BYTEWIDTH) / BYTEWIDTH)
 	  memmove(&b[(unsigned char)b[-1]], &b[(1 << BYTEWIDTH) / BYTEWIDTH],
 		  2 + EXTRACT_UNSIGNED(&b[(1 << BYTEWIDTH) / BYTEWIDTH])*8);
@@ -2537,7 +2537,7 @@ store_jump(from, opcode, to)
 
 
 /* Open up space before char FROM, and insert there a jump to TO.
-   CURRENT_END gives the end of the storage not in use, so we know 
+   CURRENT_END gives the end of the storage not in use, so we know
    how much data to copy up. OP is the opcode of the jump to insert.
 
    If you call this function, you must zero out pending_exact.  */
@@ -2550,7 +2550,7 @@ insert_jump(op, from, to, current_end)
   register char *pfrom = current_end;		/* Copy from here...  */
   register char *pto = current_end + 3;		/* ...to here.  */
 
-  while (pfrom != from)			       
+  while (pfrom != from)
     *--pto = *--pfrom;
   store_jump(from, op, to);
 }
@@ -2593,7 +2593,7 @@ insert_jump_n(op, from, to, current_end, n)
   register char *pfrom = current_end;		/* Copy from here...  */
   register char *pto = current_end + 5;		/* ...to here.  */
 
-  while (pfrom != from)			       
+  while (pfrom != from)
     *--pto = *--pfrom;
   store_jump_n(from, op, to, n);
 }
@@ -2614,7 +2614,7 @@ insert_op(op, there, current_end)
   register char *pfrom = current_end;		/* Copy from here...  */
   register char *pto = current_end + 1;		/* ...to here.  */
 
-  while (pfrom != there)			       
+  while (pfrom != there)
     *--pto = *--pfrom;
 
   there[0] = (char)op;
@@ -2637,7 +2637,7 @@ insert_op_2(op, there, current_end, num_1, num_2)
   register char *pfrom = current_end;		/* Copy from here...  */
   register char *pto = current_end + 5;		/* ...to here.  */
 
-  while (pfrom != there)			       
+  while (pfrom != there)
     *--pto = *--pfrom;
 
   there[0] = (char)op;
@@ -2787,7 +2787,7 @@ bm_search(little, llen, big, blen, skip, translate)
    that matches the pattern.  This fastmap is used by re_search to skip
    quickly over totally implausible text.
 
-   The caller must supply the address of a (1 << BYTEWIDTH)-byte data 
+   The caller must supply the address of a (1 << BYTEWIDTH)-byte data
    area as bufp->fastmap.
    The other components of bufp describe the pattern to be used.  */
 static int
@@ -2802,7 +2802,7 @@ re_compile_fastmap0(bufp)
   register int j, k;
   unsigned is_a_succeed_n;
 
-  
+
   unsigned char *stacka[NFAILURES];
   unsigned char **stackb = stacka;
   unsigned char **stackp = stackb;
@@ -2885,7 +2885,7 @@ re_compile_fastmap0(bufp)
       case finalize_push:
       case finalize_push_n:
 	EXTRACT_NUMBER_AND_INCR(j, p);
-	p += j;	
+	p += j;
 	if (j > 0)
 	  continue;
 	/* Jump backward reached implies we just went through
@@ -2901,7 +2901,7 @@ re_compile_fastmap0(bufp)
 	  continue;
 	p++;
 	EXTRACT_NUMBER_AND_INCR(j, p);
-	p += j;	
+	p += j;
 	if (stackp != stackb && *stackp == p)
 	  stackp--;		/* pop */
 	continue;
@@ -3358,7 +3358,7 @@ re_search(bufp, string, size, startpos, range, regs)
     }
 
   advance:
-    if (!range) 
+    if (!range)
       break;
     else if (range > 0) {
       const char *d = string + startpos;
@@ -3378,7 +3378,7 @@ re_search(bufp, string, size, startpos, range, regs)
 
 	s = string; d = string + startpos;
 	for (p = d; p-- > s && ismbchar(*p); )
-	  /* --p >= s would not work on 80[12]?86. 
+	  /* --p >= s would not work on 80[12]?86.
 	     (when the offset of s equals 0 other than huge model.)  */
 	  ;
 	if (!((d - p) & 1)) {
@@ -3640,7 +3640,7 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
   register_info_type *reg_info = bufp->reg_info;
 
   /* The following record the register info as found in the above
-     variables when we find a match better than any we've seen before. 
+     variables when we find a match better than any we've seen before.
      This happens as we backtrack through the failure points, which in
      turn happens only if we have not yet matched the entire string.  */
 
@@ -3726,7 +3726,7 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 	      best_regend[mcnt] = regend[mcnt];
 	    }
 	  }
-	  goto fail;	       
+	  goto fail;
 	}
 	/* If no failure points, don't restore garbage.  */
 	else if (best_regs_set) {
@@ -3741,7 +3741,7 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 	}
       }
 
-      /* If caller wants register contents data back, convert it 
+      /* If caller wants register contents data back, convert it
 	 to indices.  */
       if (regs) {
 	regs->beg[0] = pos;
@@ -3829,8 +3829,8 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 
 	    /* Compare that many; failure if mismatch, else move
 	       past them.  */
-	    if ((options & RE_OPTION_IGNORECASE) 
-		? memcmp_translate(d, d2, mcnt) 
+	    if ((options & RE_OPTION_IGNORECASE)
+		? memcmp_translate(d, d2, mcnt)
 		: memcmp((char*)d, (char*)d2, mcnt))
 	      goto fail;
 	    d += mcnt, d2 += mcnt;
@@ -3986,7 +3986,7 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 	   tensioning the jumps is a hassle.)  */
 
 	/* The start of a stupid repeat has an on_failure_jump that points
-	   past the end of the repeat text. This makes a failure point so 
+	   past the end of the repeat text. This makes a failure point so
 	   that on failure to match a repetition, matching restarts past
 	   as many repetitions have been found with no way to fail and
 	   look for another one.  */
@@ -4065,7 +4065,7 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 	}
 	p -= 2;		/* Point at relative address again.  */
 	if (p[-1] != (unsigned char)finalize_jump) {
-	  p[-1] = (unsigned char)jump;	
+	  p[-1] = (unsigned char)jump;
 	  goto nofinalize;
 	}
 	/* Note fall through.  */
@@ -4074,7 +4074,7 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 	   start, where another failure point will be made which will
 	   point to after all the repetitions found so far.  */
 
-	/* Take off failure points put on by matching on_failure_jump 
+	/* Take off failure points put on by matching on_failure_jump
 	   because didn't fail.  Also remove the register information
 	   put on by the on_failure_jump.  */
       case finalize_jump:
@@ -4083,7 +4083,7 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 	  POP_FAILURE_POINT();
 	  continue;
 	}
-	POP_FAILURE_POINT(); 
+	POP_FAILURE_POINT();
 	/* Note fall through.  */
 
       /* We need this opcode so we can detect where alternatives end
@@ -4137,7 +4137,7 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 
 	/* Have to succeed matching what follows at least n times.  Then
 	   just handle like an on_failure_jump.  */
-      case succeed_n: 
+      case succeed_n:
 	EXTRACT_NUMBER(mcnt, p + 2);
 	/* Originally, this is how many times we HAVE to succeed.  */
 	if (mcnt != 0) {
@@ -4163,8 +4163,8 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 					any failure points.  */
 	}
 	/* If don't have to jump any more, skip over the rest of command.  */
-	else      
-	  p += 4;		     
+	else
+	  p += 4;
 	continue;
 
       case set_number_at:
@@ -4193,7 +4193,7 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 	continue;
 
       case finalize_push_n:
-	EXTRACT_NUMBER(mcnt, p + 2); 
+	EXTRACT_NUMBER(mcnt, p + 2);
 	/* Originally, this is how many times we CAN jump.  */
 	if (mcnt) {
 	  int pos, i;
@@ -4210,8 +4210,8 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 	  p += 2;		/* skip n */
 	}
 	/* If don't have to push any more, skip over the rest of command.  */
-	else 
-	  p += 4;   
+	else
+	  p += 4;
 	continue;
 
 	/* Ignore these.  Used to ignore the n of succeed_n's which
@@ -4301,7 +4301,7 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 
 	    PREFETCH;
 	    if (*p == 0xff) {
-	      p++;  
+	      p++;
 	      if (!--mcnt
 		  || AT_STRINGS_END(d)
 		  || (unsigned char)*d++ != (unsigned char)*p++)

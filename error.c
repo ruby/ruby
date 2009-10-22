@@ -340,7 +340,7 @@ rb_exc_new3(etype, str)
  * call-seq:
  *    Exception.new(msg = nil)   =>  exception
  *
- *  Construct a new Exception object, optionally passing in 
+ *  Construct a new Exception object, optionally passing in
  *  a message.
  */
 
@@ -364,12 +364,12 @@ exc_initialize(argc, argv, exc)
  *
  *  call-seq:
  *     exc.exception(string) -> an_exception or exc
- *  
+ *
  *  With no argument, or if the argument is the same as the receiver,
  *  return the receiver. Otherwise, create a new
  *  exception object of the same class as the receiver, but with a
  *  message equal to <code>string.to_str</code>.
- *     
+ *
  */
 
 static VALUE
@@ -457,27 +457,27 @@ exc_inspect(exc)
 /*
  *  call-seq:
  *     exception.backtrace    => array
- *  
+ *
  *  Returns any backtrace associated with the exception. The backtrace
  *  is an array of strings, each containing either ``filename:lineNo: in
  *  `method''' or ``filename:lineNo.''
- *     
+ *
  *     def a
  *       raise "boom"
  *     end
- *     
+ *
  *     def b
  *       a()
  *     end
- *     
+ *
  *     begin
  *       b()
  *     rescue => detail
  *       print detail.backtrace.join("\n")
  *     end
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     prog.rb:2:in `a'
  *     prog.rb:6:in `b'
  *     prog.rb:10
@@ -519,11 +519,11 @@ rb_check_backtrace(bt)
 /*
  *  call-seq:
  *     exc.set_backtrace(array)   =>  array
- *  
+ *
  *  Sets the backtrace information associated with <i>exc</i>. The
  *  argument must be an array of <code>String</code> objects in the
  *  format described in <code>Exception#backtrace</code>.
- *     
+ *
  */
 
 static VALUE
@@ -795,7 +795,7 @@ rb_invalid_str(str, type)
     rb_raise(rb_eArgError, "invalid value for %s: %s", type, RSTRING(s)->ptr);
 }
 
-/* 
+/*
  *  Document-module: Errno
  *
  *  Ruby exception objects are subclasses of <code>Exception</code>.
@@ -805,21 +805,21 @@ rb_invalid_str(str, type)
  *  number generating its own subclass of <code>SystemCallError</code>.
  *  As the subclass is created in module <code>Errno</code>, its name
  *  will start <code>Errno::</code>.
- *     
+ *
  *  The names of the <code>Errno::</code> classes depend on
  *  the environment in which Ruby runs. On a typical Unix or Windows
  *  platform, there are <code>Errno</code> classes such as
  *  <code>Errno::EACCES</code>, <code>Errno::EAGAIN</code>,
  *  <code>Errno::EINTR</code>, and so on.
- *     
+ *
  *  The integer operating system error number corresponding to a
  *  particular error is available as the class constant
  *  <code>Errno::</code><em>error</em><code>::Errno</code>.
- *     
+ *
  *     Errno::EACCES::Errno   #=> 13
  *     Errno::EAGAIN::Errno   #=> 11
  *     Errno::EINTR::Errno    #=> 4
- *     
+ *
  *  The full list of operating system errors on your particular platform
  *  are available as the constants of <code>Errno</code>.
  *
@@ -974,7 +974,7 @@ syserr_eqq(self, exc)
  *  statements in <code>begin/end</code> blocks. <code>Exception</code>
  *  objects carry information about the exception---its type (the
  *  exception's class name), an optional descriptive string, and
- *  optional traceback information. Programs may subclass 
+ *  optional traceback information. Programs may subclass
  *  <code>Exception</code> to add additional information.
  */
 
@@ -1132,14 +1132,14 @@ rb_sys_warning(fmt, va_alist)
      char buf[BUFSIZ];
      va_list args;
      int errno_save;
-     
+
      errno_save = errno;
 
      if (!RTEST(ruby_verbose)) return;
 
      snprintf(buf, BUFSIZ, "warning: %s", fmt);
      snprintf(buf+strlen(buf), BUFSIZ-strlen(buf), ": %s", strerror(errno_save));
-     
+
      va_init_list(args, fmt);
      warn_print(buf, args);
      va_end(args);

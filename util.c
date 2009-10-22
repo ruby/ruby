@@ -106,11 +106,11 @@ scan_hex(start, len, retlen)
  * Style 1:  The suffix begins with a '.'.  The extension is replaced.
  *           If the name matches the original name, use the fallback method.
  *
- * Style 2:  The suffix is a single character, not a '.'.  Try to add the 
+ * Style 2:  The suffix is a single character, not a '.'.  Try to add the
  *           suffix to the following places, using the first one that works.
- *               [1] Append to extension.  
- *               [2] Append to filename, 
- *               [3] Replace end of extension, 
+ *               [1] Append to extension.
+ *               [2] Append to filename,
+ *               [3] Replace end of extension,
  *               [4] Replace end of filename.
  *           If the name matches the original name, use the fallback method.
  *
@@ -146,7 +146,7 @@ scan_hex(start, len, retlen)
  *                longname.fil => longname.fi~
  *                longname.fi~ => longnam~.fi~
  *                longnam~.fi~ => longnam~.$$$
- *                
+ *
  */
 
 
@@ -206,7 +206,7 @@ ruby_add_suffix(str, suffix)
 	strcpy(p, suffix);
     }
     else if (suffix[1] == '\0') {  /* Style 2 */
-        if (extlen < 4) { 
+        if (extlen < 4) {
 	    ext[extlen] = *suffix;
 	    ext[++extlen] = '\0';
         }
@@ -237,7 +237,7 @@ extern int _close(int);
 extern int _unlink(const char *);
 #endif
 
-static int 
+static int
 valid_filename(char *s)
 {
     int fd;

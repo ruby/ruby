@@ -5016,7 +5016,7 @@ new_args(m, o, r, p, b)
     }
     return block_append(NEW_ARGS(m, o, r), b);
 }
-                                  
+
 static NODE *
 evstr2dstr(node)
     NODE *node;

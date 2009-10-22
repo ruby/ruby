@@ -22,7 +22,7 @@ static ID prc_pr, prc_if;
  *   num.prec(klass)   => a_klass
  *
  *  Converts _self_ into an instance of _klass_. By default,
- *  +prec+ invokes 
+ *  +prec+ invokes
  *
  *     klass.induced_from(num)
  *
@@ -42,7 +42,7 @@ prec_prec(x, klass)
  *  call-seq:
  *    num.prec_i  =>  Integer
  *
- *  Returns an +Integer+ converted from _num_. It is equivalent 
+ *  Returns an +Integer+ converted from _num_. It is equivalent
  *  to <code>prec(Integer)</code>.
  */
 
@@ -59,7 +59,7 @@ prec_prec_i(x)
  *  call-seq:
  *    num.prec_f  =>  Float
  *
- *  Returns a +Float+ converted from _num_. It is equivalent 
+ *  Returns a +Float+ converted from _num_. It is equivalent
  *  to <code>prec(Float)</code>.
  */
 
@@ -75,7 +75,7 @@ prec_prec_f(x)
 /*
  * call-seq:
  *   Mod.induced_from(number)  =>  a_mod
- * 
+ *
  * Creates an instance of mod from. This method is overridden
  * by concrete +Numeric+ classes, so that (for example)
  *

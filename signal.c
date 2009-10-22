@@ -298,14 +298,14 @@ ruby_default_signal(sig)
 /*
  *  call-seq:
  *     Process.kill(signal, pid, ...)    => fixnum
- *  
+ *
  *  Sends the given signal to the specified process id(s), or to the
  *  current process if _pid_ is zero. _signal_ may be an
  *  integer signal number or a POSIX signal name (either with or without
  *  a +SIG+ prefix). If _signal_ is negative (or starts
  *  with a minus sign), kills process groups instead of
  *  processes. Not all signals are available on all platforms.
- *     
+ *
  *     pid = fork do
  *        Signal.trap("HUP") { puts "Ouch!"; exit }
  *        # ... do some work ...
@@ -313,9 +313,9 @@ ruby_default_signal(sig)
  *     # ...
  *     Process.kill("HUP", pid)
  *     Process.wait
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     Ouch!
  */
 
@@ -965,7 +965,7 @@ install_sighandler(signum, handler)
 }
 
 #if 0
-/* 
+/*
  *   If you write a handler which works on any native thread
  *   (even if the thread is NOT a ruby's one), please enable
  *   this function and use it to install the handler, instead

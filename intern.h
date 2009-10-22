@@ -12,7 +12,7 @@
 
 **********************************************************************/
 
-/* 
+/*
  * Functions and variables that are used by more than one source file of
  * the kernel.
  */

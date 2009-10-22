@@ -222,7 +222,7 @@ rb_kcode_set_option(re)
 	re_mbcinit(MBCTYPE_UTF8);
 	break;
     }
-}	  
+}
 
 void
 rb_kcode_reset_option()
@@ -291,7 +291,7 @@ rb_reg_expr_str(str, s, len)
 	rb_str_buf_cat(str, s, len);
     }
     else {
-	p = s; 
+	p = s;
 	while (p<pend) {
 	    if (*p == '\\') {
 		int n = mbclen(p[1]) + 1;
@@ -344,7 +344,7 @@ rb_reg_desc(s, len, re)
 	    rb_str_buf_cat2(str, "i");
 	if (RREGEXP(re)->ptr->options & RE_OPTION_EXTENDED)
 	    rb_str_buf_cat2(str, "x");
-	
+
 	if (FL_TEST(re, KCODE_FIXED)) {
 	    switch ((RBASIC(re)->flags & KCODE_MASK)) {
 	      case KCODE_NONE:
@@ -370,9 +370,9 @@ rb_reg_desc(s, len, re)
 /*
  *  call-seq:
  *     rxp.source   => str
- *  
+ *
  *  Returns the original string of the pattern.
- *     
+ *
  *     /ab+c/ix.source   #=> "ab+c"
  */
 
@@ -411,7 +411,7 @@ rb_reg_inspect(re)
 /*
  *  call-seq:
  *     rxp.to_s   => str
- *  
+ *
  *  Returns a string containing the regular expression and its options (using the
  *  <code>(?xxx:yyy)</code> notation. This string can be fed back in to
  *  <code>Regexp::new</code> to a regular expression with the same semantics as
@@ -419,7 +419,7 @@ rb_reg_inspect(re)
  *  comparing the two, as the source of the regular expression itself may
  *  differ, as the example shows).  <code>Regexp#inspect</code> produces a
  *  generally more readable version of <i>rxp</i>.
- *     
+ *
  *     r1 = /ab+c/ix         #=> /ab+c/ix
  *     s1 = r1.to_s          #=> "(?ix-m:ab+c)"
  *     r2 = Regexp.new(s1)   #=> /(?ix-m:ab+c)/
@@ -538,7 +538,7 @@ rb_reg_raise(s, len, err, re)
 /*
  *  call-seq:
  *     rxp.casefold?   => true or false
- *  
+ *
  *  Returns the value of the case-insensitive flag.
  */
 
@@ -555,22 +555,22 @@ rb_reg_casefold_p(re)
 /*
  *  call-seq:
  *     rxp.options   => fixnum
- *  
+ *
  *  Returns the set of bits corresponding to the options used when creating this
  *  Regexp (see <code>Regexp::new</code> for details. Note that additional bits
  *  may be set in the returned options: these are used internally by the regular
  *  expression code. These extra bits are ignored if the options are passed to
  *  <code>Regexp::new</code>.
- *     
+ *
  *     Regexp::IGNORECASE                  #=> 1
  *     Regexp::EXTENDED                    #=> 2
  *     Regexp::MULTILINE                   #=> 4
- *     
+ *
  *     /cat/.options                       #=> 128
  *     /cat/ix.options                     #=> 131
  *     Regexp.new('cat', true).options     #=> 129
  *     Regexp.new('cat', 0, 's').options   #=> 384
- *     
+ *
  *     r = /cat/ix
  *     Regexp.new(r.source, r.options)     #=> /cat/ix
  */
@@ -587,7 +587,7 @@ rb_reg_options_m(re)
 /*
  *  call-seq:
  *     rxp.kcode   => str
- *  
+ *
  *  Returns the character set code for the regexp.
  */
 
@@ -715,9 +715,9 @@ match_init_copy(obj, orig)
  *  call-seq:
  *     mtch.length   => integer
  *     mtch.size     => integer
- *  
+ *
  *  Returns the number of elements in the match array.
- *     
+ *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m.length   #=> 5
  *     m.size     #=> 5
@@ -735,10 +735,10 @@ match_size(match)
 /*
  *  call-seq:
  *     mtch.offset(n)   => array
- *  
+ *
  *  Returns a two-element array containing the beginning and ending offsets of
  *  the <em>n</em>th match.
- *     
+ *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m.offset(0)   #=> [1, 7]
  *     m.offset(4)   #=> [6, 7]
@@ -765,10 +765,10 @@ match_offset(match, n)
 /*
  *  call-seq:
  *     mtch.begin(n)   => integer
- *  
+ *
  *  Returns the offset of the start of the <em>n</em>th element of the match
  *  array in the string.
- *     
+ *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m.begin(0)   #=> 1
  *     m.begin(2)   #=> 2
@@ -794,10 +794,10 @@ match_begin(match, n)
 /*
  *  call-seq:
  *     mtch.end(n)   => integer
- *  
+ *
  *  Returns the offset of the character immediately following the end of the
  *  <em>n</em>th element of the match array in the string.
- *     
+ *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m.end(0)   #=> 7
  *     m.end(2)   #=> 3
@@ -951,7 +951,7 @@ rb_reg_search(re, str, pos, reverse)
 	match = match_alloc(rb_cMatch);
     }
     else {
-	if (rb_safe_level() >= 3) 
+	if (rb_safe_level() >= 3)
 	    OBJ_TAINT(match);
 	else
 	    FL_UNSET(match, FL_TAINT);
@@ -1022,10 +1022,10 @@ rb_reg_last_match(match)
 /*
  *  call-seq:
  *     mtch.pre_match   => str
- *  
+ *
  *  Returns the portion of the original string before the current match.
  *  Equivalent to the special variable <code>$`</code>.
- *     
+ *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m.pre_match   #=> "T"
  */
@@ -1048,10 +1048,10 @@ rb_reg_match_pre(match)
 /*
  *  call-seq:
  *     mtch.post_match   => str
- *  
+ *
  *  Returns the portion of the original string after the current match.
  *  Equivalent to the special variable <code>$'</code>.
- *     
+ *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
  *     m.post_match   #=> ": The Movie"
  */
@@ -1150,18 +1150,18 @@ match_array(match, start)
 /*
  *  call-seq:
  *     mtch.to_a   => anArray
- *  
+ *
  *  Returns the array of matches.
- *     
+ *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m.to_a   #=> ["HX1138", "H", "X", "113", "8"]
- *     
+ *
  *  Because <code>to_a</code> is called when expanding
  *  <code>*</code><em>variable</em>, there's a useful assignment
  *  shortcut for extracting matched fields. This is slightly slower than
  *  accessing the fields directly (as an intermediate array is
  *  generated).
- *     
+ *
  *     all,f1,f2,f3 = *(/(.)(.)(\d+)(\d)/.match("THX1138."))
  *     all   #=> "HX1138"
  *     f1    #=> "H"
@@ -1202,13 +1202,13 @@ match_captures(match)
  *     mtch[i]               => obj
  *     mtch[start, length]   => array
  *     mtch[range]           => array
- *  
+ *
  *  Match Reference---<code>MatchData</code> acts as an array, and may be
  *  accessed using the normal array indexing techniques.  <i>mtch</i>[0] is
  *  equivalent to the special variable <code>$&</code>, and returns the entire
  *  matched string.  <i>mtch</i>[1], <i>mtch</i>[2], and so on return the values
  *  of the matched backreferences (portions of the pattern between parentheses).
- *     
+ *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m[0]       #=> "HX1138"
  *     m[1, 2]    #=> ["H", "X"]
@@ -1245,10 +1245,10 @@ match_entry(match, n)
 /*
  *  call-seq:
  *     mtch.values_at([index]*)   => array
- *  
+ *
  *  Uses each <i>index</i> to access the matching values, returning an array of
  *  the corresponding matches.
- *     
+ *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
  *     m.to_a               #=> ["HX1138", "H", "X", "113", "8"]
  *     m.values_at(0, 2, -2)   #=> ["HX1138", "X", "113"]
@@ -1268,10 +1268,10 @@ match_values_at(argc, argv, match)
 /*
  *  call-seq:
  *     mtch.select{|obj| block}   => array
- *  
+ *
  *  Returns an array containing match strings for which <em>block</em>
  *  gives <code>true</code>.  MatchData#select will be removed from Ruby 1.9.
- *     
+ *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
  *     p m.select{|x| /X/ =~ x}   #=> ["HX1138", "X"]
  */
@@ -1312,9 +1312,9 @@ match_select(argc, argv, match)
 /*
  *  call-seq:
  *     mtch.to_s   => str
- *  
+ *
  *  Returns the entire matched string.
- *     
+ *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m.to_s   #=> "HX1138"
  */
@@ -1335,9 +1335,9 @@ match_to_s(match)
 /*
  *  call-seq:
  *     mtch.string   => str
- *  
+ *
  *  Returns a frozen copy of the string passed in to <code>match</code>.
- *     
+ *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m.string   #=> "THX1138."
  */
@@ -1545,7 +1545,7 @@ rb_reg_hash(re)
 	hashval = hashval * 33 + *p++;
     }
     hashval = hashval + (hashval>>5);
-    
+
     return INT2FIX(hashval);
 }
 
@@ -1554,11 +1554,11 @@ rb_reg_hash(re)
  *  call-seq:
  *     rxp == other_rxp      => true or false
  *     rxp.eql?(other_rxp)   => true or false
- *  
+ *
  *  Equality---Two regexps are equal if their patterns are identical, they have
  *  the same character set code, and their <code>casefold?</code> values are the
  *  same.
- *     
+ *
  *     /abc/  == /abc/x   #=> false
  *     /abc/  == /abc/i   #=> false
  *     /abc/u == /abc/n   #=> false
@@ -1584,11 +1584,11 @@ rb_reg_equal(re1, re2)
 /*
  *  call-seq:
  *     rxp.match(str)   => matchdata or nil
- *  
+ *
  *  Returns a <code>MatchData</code> object describing the match, or
  *  <code>nil</code> if there was no match. This is equivalent to retrieving the
  *  value of the special variable <code>$~</code> following a normal match.
- *     
+ *
  *     /(.)(.)(.)/.match("abc")[2]   #=> "b"
  */
 
@@ -1614,18 +1614,18 @@ rb_reg_match(re, str)
 /*
  *  call-seq:
  *     rxp === str   => true or false
- *  
+ *
  *  Case Equality---Synonym for <code>Regexp#=~</code> used in case statements.
- *     
+ *
  *     a = "HELLO"
  *     case a
  *     when /^[a-z]*$/; print "Lower case\n"
  *     when /^[A-Z]*$/; print "Upper case\n"
  *     else;            print "Mixed case\n"
  *     end
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     Upper case
  */
 
@@ -1654,10 +1654,10 @@ rb_reg_eqq(re, str)
 /*
  *  call-seq:
  *     ~ rxp   => integer or nil
- *  
+ *
  *  Match---Matches <i>rxp</i> against the contents of <code>$_</code>.
  *  Equivalent to <code><i>rxp</i> =~ $_</code>.
- *     
+ *
  *     $_ = "input data"
  *     ~ /at/   #=> 7
  */
@@ -1685,11 +1685,11 @@ rb_reg_match2(re)
 /*
  *  call-seq:
  *     rxp.match(str)   => matchdata or nil
- *  
+ *
  *  Returns a <code>MatchData</code> object describing the match, or
  *  <code>nil</code> if there was no match. This is equivalent to retrieving the
  *  value of the special variable <code>$~</code> following a normal match.
- *     
+ *
  *     /(.)(.)(.)/.match("abc")[2]   #=> "b"
  */
 
@@ -1717,7 +1717,7 @@ rb_reg_match_m(re, str)
  *     Regexp.new(regexp)                            => regexp
  *     Regexp.compile(string [, options [, lang]])   => regexp
  *     Regexp.compile(regexp)                        => regexp
- *  
+ *
  *  Constructs a new regular expression from <i>pattern</i>, which can be either
  *  a <code>String</code> or a <code>Regexp</code> (in which case that regexp's
  *  options are propagated, and new options may not be specified (a change as of
@@ -1728,7 +1728,7 @@ rb_reg_match_m(re, str)
  *  <code>nil</code>, the regexp will be case insensitive. The <i>lang</i>
  *  parameter enables multibyte support for the regexp: `n', `N' = none, `e',
  *  `E' = EUC, `s', `S' = SJIS, `u', `U' = UTF-8.
- * 
+ *
  *     r1 = Regexp.new('^a-z+:\\s+\w+')           #=> /^a-z+:\s+\w+/
  *     r2 = Regexp.new('cat', true)               #=> /cat/i
  *     r3 = Regexp.new('dog', Regexp::EXTENDED)   #=> /dog/x
@@ -1898,12 +1898,12 @@ rb_reg_quote(str)
  *  call-seq:
  *     Regexp.escape(str)   => a_str
  *     Regexp.quote(str)    => a_str
- *  
+ *
  *  Escapes any characters that would have special meaning in a regular
  *  expression. Returns a new escaped string, or self if no characters are
  *  escaped.  For any string,
  *  <code>Regexp.escape(<i>str</i>)=~<i>str</i></code> will be true.
- *     
+ *
  *     Regexp.escape('\\*?{}.')   #=> \\\\\*\?\{\}\.
  */
 
@@ -2090,12 +2090,12 @@ rb_reg_s_union(self, args0)
  *  call-seq:
  *     Regexp.union(pat1, pat2, ...)            => new_regexp
  *     Regexp.union(pats_ary)                   => new_regexp
- *  
+ *
  *  Return a <code>Regexp</code> object that is the union of the given
  *  <em>pattern</em>s, i.e., will match any of its parts. The <em>pattern</em>s
  *  can be Regexp objects, in which case their options will be preserved, or
  *  Strings. If no patterns are given, returns <code>/(?!)/</code>.
- *     
+ *
  *     Regexp.union                         #=> /(?!)/
  *     Regexp.union("penzance")             #=> /penzance/
  *     Regexp.union("a+b*c")                #=> /a\+b\*c/
@@ -2320,7 +2320,7 @@ match_setter(val)
  *  call-seq:
  *     Regexp.last_match           => matchdata
  *     Regexp.last_match(fixnum)   => str
- *  
+ *
  *  The first form returns the <code>MatchData</code> object generated by the
  *  last successful pattern match. Equivalent to reading the global variable
  *  <code>$~</code>. The second form returns the nth field in this
@@ -2328,7 +2328,7 @@ match_setter(val)
  *
  *  Note that the <code>last_match</code> is local to the scope
  *  of the method that did the pattern match.
- *     
+ *
  *     /c(.)t/ =~ 'cat'       #=> 0
  *     Regexp.last_match      #=> #<MatchData:0x401b3d30>
  *     Regexp.last_match(0)   #=> "cat"
@@ -2352,9 +2352,9 @@ rb_reg_s_last_match(argc, argv)
 /*
  *  call-seq:
  *     str.ord   => integer
- *  
+ *
  *  Return the <code>Integer</code> ordinal of a one-character string.
- *     
+ *
  *     "a".ord         #=> 97
  */
 

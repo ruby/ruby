@@ -1679,7 +1679,7 @@ dir_globs(argc, argv, flags)
  *     Dir[ string [, string ...] ] => array
  *
  *  Equivalent to calling
- *  <code>Dir.glob(</code><i>array,</i><code>0)</code> and 
+ *  <code>Dir.glob(</code><i>array,</i><code>0)</code> and
  *  <code>Dir.glob([</code><i>string,...</i><code>],0)</code>.
  *
  */

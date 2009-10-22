@@ -1192,7 +1192,7 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail)
     return tail;
 }
 
-// 
+//
 // Check a command string to determine if it has I/O redirection
 // characters that require it to be executed by a command interpreter
 //
@@ -1246,7 +1246,7 @@ skipspace(char *ptr)
     return ptr;
 }
 
-int 
+int
 rb_w32_cmdvector(const char *cmd, char ***vec)
 {
     int globbing, len;
@@ -1274,9 +1274,9 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
     //
     // Ok, parse the command line, building a list of CmdLineElements.
     // When we've finished, and it's an input command (meaning that it's
-    // the processes argv), we'll do globing and then build the argument 
+    // the processes argv), we'll do globing and then build the argument
     // vector.
-    // The outer loop does one interation for each element seen. 
+    // The outer loop does one interation for each element seen.
     // The inner loop does one interation for each character in the element.
     //
 
@@ -1313,7 +1313,7 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 	      case '?':
 	      case '[':
 	      case '{':
-		// 
+		//
 		// record the fact that this element has a wildcard character
 		// N.B. Don't glob if inside a single quoted string
 		//
@@ -1327,7 +1327,7 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 	      case '\"':
 		//
 		// if we're already in a string, see if this is the
-		// terminating close-quote. If it is, we're finished with 
+		// terminating close-quote. If it is, we're finished with
 		// the string, but not neccessarily with the element.
 		// If we're not already in a string, start one.
 		//
@@ -1363,7 +1363,7 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 	if (done) --len;
 
 	//
-	// if it's an input vector element and it's enclosed by quotes, 
+	// if it's an input vector element and it's enclosed by quotes,
 	// we can remove them.
 	//
 
@@ -1425,10 +1425,10 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
     }
 
     //
-    // Almost done! 
+    // Almost done!
     // Count up the elements, then allocate space for a vector of pointers
     // (argv) and a string table for the elements.
-    // 
+    //
 
     for (elements = 0, strsz = 0, curr = cmdhead; curr; curr = curr->next) {
 	elements++;
@@ -1448,7 +1448,7 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 	for (vptr = *vec; *vptr; ++vptr);
 	return vptr - *vec;
     }
-    
+
     //
     // make vptr point to the start of the buffer
     // and ptr point to the area we'll consider the string table.
@@ -1490,7 +1490,7 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 //
 // The idea here is to read all the directory names into a string table
 // (separated by nulls) and when one of the other dir functions is called
-// return the pointer to the current file name. 
+// return the pointer to the current file name.
 //
 
 #define GetBit(bits, i) ((bits)[(i) / CHAR_BIT] &  (1 << (i) % CHAR_BIT))
@@ -1601,7 +1601,7 @@ rb_w32_opendir(const char *filename)
 
 	//
 	// bump the string table size by enough for the
-	// new name and it's null terminator 
+	// new name and it's null terminator
 	//
 
 	newpath = (char *)realloc(p->start, idx + len);
@@ -1926,7 +1926,7 @@ is_socket(SOCKET fd)
 }
 
 //
-// Since the errors returned by the socket error function 
+// Since the errors returned by the socket error function
 // WSAGetLastError() are not known by the library routine strerror
 // we have to roll our own.
 //
@@ -2010,7 +2010,7 @@ getegid(void)
 
 int
 setuid(rb_uid_t uid)
-{ 
+{
     return (uid == ROOT_UID ? 0 : -1);
 }
 
@@ -2092,7 +2092,7 @@ rb_w32_fdisset(int fd, fd_set *set)
 
 //
 // Networking trampolines
-// These are used to avoid socket startup/shutdown overhead in case 
+// These are used to avoid socket startup/shutdown overhead in case
 // the socket routines aren't used.
 //
 
@@ -2120,7 +2120,7 @@ extract_fd(fd_set *dst, fd_set *src, int (*func)(SOCKET))
 	    }
 	    memmove(
 		&src->fd_array[s],
-		&src->fd_array[s+1], 
+		&src->fd_array[s+1],
 		sizeof(src->fd_array[0]) * (--src->fd_count - s));
 	}
 	else s++;
@@ -2261,7 +2261,7 @@ compare(const struct timeval *t1, const struct timeval *t2)
 }
 
 #undef Sleep
-long 
+long
 rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	      struct timeval *timeout)
 {
@@ -2468,7 +2468,7 @@ rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
 
 #undef bind
 
-int 
+int
 rb_w32_bind(int s, struct sockaddr *addr, int addrlen)
 {
     int r;
@@ -2486,7 +2486,7 @@ rb_w32_bind(int s, struct sockaddr *addr, int addrlen)
 
 #undef connect
 
-int 
+int
 rb_w32_connect(int s, struct sockaddr *addr, int addrlen)
 {
     int r;
@@ -2509,7 +2509,7 @@ rb_w32_connect(int s, struct sockaddr *addr, int addrlen)
 
 #undef getpeername
 
-int 
+int
 rb_w32_getpeername(int s, struct sockaddr *addr, int *addrlen)
 {
     int r;
@@ -2526,7 +2526,7 @@ rb_w32_getpeername(int s, struct sockaddr *addr, int *addrlen)
 
 #undef getsockname
 
-int 
+int
 rb_w32_getsockname(int s, struct sockaddr *addr, int *addrlen)
 {
     int r;
@@ -2541,7 +2541,7 @@ rb_w32_getsockname(int s, struct sockaddr *addr, int *addrlen)
     return r;
 }
 
-int 
+int
 rb_w32_getsockopt(int s, int level, int optname, char *optval, int *optlen)
 {
     int r;
@@ -2558,7 +2558,7 @@ rb_w32_getsockopt(int s, int level, int optname, char *optval, int *optlen)
 
 #undef ioctlsocket
 
-int 
+int
 rb_w32_ioctlsocket(int s, long cmd, u_long *argp)
 {
     int r;
@@ -2575,7 +2575,7 @@ rb_w32_ioctlsocket(int s, long cmd, u_long *argp)
 
 #undef listen
 
-int 
+int
 rb_w32_listen(int s, int backlog)
 {
     int r;
@@ -2592,7 +2592,7 @@ rb_w32_listen(int s, int backlog)
 
 #undef recv
 
-int 
+int
 rb_w32_recv(int s, char *buf, int len, int flags)
 {
     int r;
@@ -2609,8 +2609,8 @@ rb_w32_recv(int s, char *buf, int len, int flags)
 
 #undef recvfrom
 
-int 
-rb_w32_recvfrom(int s, char *buf, int len, int flags, 
+int
+rb_w32_recvfrom(int s, char *buf, int len, int flags,
 		struct sockaddr *from, int *fromlen)
 {
     int r;
@@ -2627,7 +2627,7 @@ rb_w32_recvfrom(int s, char *buf, int len, int flags,
 
 #undef send
 
-int 
+int
 rb_w32_send(int s, const char *buf, int len, int flags)
 {
     int r;
@@ -2644,8 +2644,8 @@ rb_w32_send(int s, const char *buf, int len, int flags)
 
 #undef sendto
 
-int 
-rb_w32_sendto(int s, const char *buf, int len, int flags, 
+int
+rb_w32_sendto(int s, const char *buf, int len, int flags,
 	      struct sockaddr *to, int tolen)
 {
     int r;
@@ -2662,7 +2662,7 @@ rb_w32_sendto(int s, const char *buf, int len, int flags,
 
 #undef setsockopt
 
-int 
+int
 rb_w32_setsockopt(int s, int level, int optname, char *optval, int optlen)
 {
     int r;
@@ -2676,10 +2676,10 @@ rb_w32_setsockopt(int s, int level, int optname, char *optval, int optlen)
     });
     return r;
 }
-    
+
 #undef shutdown
 
-int 
+int
 rb_w32_shutdown(int s, int how)
 {
     int r;
@@ -2749,7 +2749,7 @@ open_ifs_socket(int af, int type, int protocol)
 #define open_socket(a, t, p)	socket(a, t, p)
 #endif
 
-int 
+int
 rb_w32_socket(int af, int type, int protocol)
 {
     SOCKET s;
@@ -3761,7 +3761,7 @@ rb_w32_getc(FILE* stream)
 	c = (unsigned char)*stream->FILE_READPTR++;
 	rb_trap_immediate = trap_immediate;
     }
-    else 
+    else
 #endif
     {
 	c = _filbuf(stream);
@@ -3786,7 +3786,7 @@ rb_w32_putc(int c, FILE* stream)
 	c = (unsigned char)(*stream->FILE_READPTR++ = (char)c);
 	rb_trap_immediate = trap_immediate;
     }
-    else 
+    else
 #endif
     {
 	c = _flsbuf(c, stream);
