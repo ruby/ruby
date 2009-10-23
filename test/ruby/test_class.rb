@@ -170,8 +170,7 @@ class TestClass < Test::Unit::TestCase
     o = Object.new
     c = class << o; self; end
     assert_raise(TypeError) { Class.new(c) }
-
-    assert_nothing_raised { Class.new(Class) } # is it OK?
+    assert_raise(TypeError) { Class.new(Class) }
     assert_raise(TypeError) { eval("class Foo < Class; end") }
   end
 

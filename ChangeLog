@@ -3,6 +3,13 @@ Sat Oct 24 00:36:47 2009  Tanaka Akira  <akr@fsij.org>
 	* io.c (io_cntl): update max file descriptor by the result of
 	  fcntl(F_DUPFD).
 
+Fri Oct 23 16:31:14 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_class_new): move class check to rb_check_inheritable().
+
+	* class.c (rb_check_inheritable): should not allow subclass of
+	  class Class.  [ruby-core:26225]
+
 Fri Oct 23 14:25:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (target, target_alias): replace with real cpu.
