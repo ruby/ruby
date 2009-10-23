@@ -189,18 +189,18 @@ if test ${target_archs+set}; then
     esac
     AC_MSG_RESULT([$target_archs])
 
+    target=`echo $target | sed "s/^$target_cpu-/-/"`
+    target_alias=`echo $target_alias | sed "s/^$target_cpu-/-/"`
     if test "${universal_binary-no}" = yes; then
 	RUBY_PREREQ_AC(2.63, [ to compile universal binary])
 	AC_SUBST(try_header,try_compile)
-	target=`echo $target | sed "s/^$target_cpu-/universal-/"`
-	target_alias=`echo $target_alias | sed "s/^$target_cpu-/universal-/"`
 	target_cpu=universal
 	real_cross_compiling=$cross_compiling
     else
-	target=`echo $target | sed "s/^$target_cpu-/${target_archs}-/"`
-	target_alias=`echo $target_alias | sed "s/^$target_cpu-/${target_archs}-/"`
 	target_cpu=${target_archs}
     fi
+    case "$target" in when(-*) target="$target_cpu${target}";; esac
+    case "$target_alias" in when(-*) target_alias="$target_cpu${target_alias}";; esac
     CFLAGS="$CFLAGS ${ARCH_FLAG}"
     LDFLAGS="${LDFLAGS+$LDFLAGS }${ARCH_FLAG}"
 else
@@ -208,6 +208,7 @@ else
 	case "$target_os" in
 	  when(darwin*)
 	    AC_MSG_CHECKING([for real target cpu])
+	    target=`echo $target | sed "s/^$target_cpu-/-/"`
 	    target_cpu=`$CC -E - 2>/dev/null <<EOF |
 #ifdef __x86_64__
 "processor-name=x86_64"
@@ -223,6 +224,7 @@ else
 #endif
 EOF
 	    sed -n 's/^"processor-name=\(.*\)"/\1/p'`
+	    target="$target_cpu${target}"
 	    AC_MSG_RESULT([$target_cpu])
 	    ;;
 	esac
@@ -311,7 +313,11 @@ when(cygwin*|mingw*)
     AC_CHECK_TOOL(NM, nm)
     AC_CHECK_TOOL(WINDRES, windres)
     AC_CHECK_TOOL(DLLWRAP, dllwrap)
+    target=`echo $target | sed "s/^$target_cpu-/-/"`
+    target_alias=`echo $target_alias | sed "s/^$target_cpu-/-/"`
     target_cpu=`echo $target_cpu | sed s/i.86/i386/`
+    case "$target" in when(-*) target="$target_cpu${target}";; esac
+    case "$target_alias" in when(-*) target_alias="$target_cpu${target_alias}";; esac
     case "$target_os" in
     when(mingw*)
 	test "$rb_cv_msvcrt" = "" && unset rb_cv_msvcrt
