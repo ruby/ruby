@@ -200,7 +200,11 @@ cygwin*|mingw*)
     AC_CHECK_TOOL(NM, nm)
     AC_CHECK_TOOL(WINDRES, windres)
     AC_CHECK_TOOL(DLLWRAP, dllwrap)
+    target=`echo $target | sed "s/^$target_cpu-/-/"`
+    target_alias=`echo $target_alias | sed "s/^$target_cpu-/-/"`
     target_cpu=`echo $target_cpu | sed s/i.86/i386/`
+    case "$target" in when(-*) target="$target_cpu${target}";; esac
+    case "$target_alias" in when(-*) target_alias="$target_cpu${target_alias}";; esac
     case "$target_os" in
     mingw*)
 	test "$rb_cv_msvcrt" = "" && unset rb_cv_msvcrt

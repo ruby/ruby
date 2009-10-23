@@ -1,3 +1,9 @@
+Fri Oct 23 14:25:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (target, target_alias): replace with real cpu.
+
+	* mkconfig.rb: build* are not needed in rbconfig.rb.
+
 Thu Oct 22 17:57:53 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/fileutils.rb (FileUtils#fu_get_uid, fu_get_gid): Do not
