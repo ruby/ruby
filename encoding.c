@@ -1279,7 +1279,7 @@ set_default_internal(VALUE klass, VALUE encoding)
  *     LANG=ja
  *       Encoding.locale_charmap  => "eucJP"
  *
- * The result is higly platform dependent.
+ * The result is highly platform dependent.
  * So Encoding.find(Encoding.locale_charmap) may cause an error.
  * If you need some encoding object even for unknown locale,
  * Encoding.find("locale") can be used.
