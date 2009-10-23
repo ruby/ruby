@@ -1,3 +1,8 @@
+Sat Oct 24 00:36:47 2009  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_cntl): update max file descriptor by the result of
+	  fcntl(F_DUPFD).
+
 Fri Oct 23 14:25:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (target, target_alias): replace with real cpu.

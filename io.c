@@ -7237,6 +7237,9 @@ io_cntl(int fd, unsigned long cmd, long narg, int io_p)
 # else
     retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, (int)cmd, narg);
 # endif
+    if (!io_p && retval != -1 && cmd == F_DUPFD) {
+        UPDATE_MAXFD(retval);
+    }
 #else
     if (!io_p) {
 	rb_notimplement();
