@@ -114,6 +114,8 @@ rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
 	rb_bug("rb_dlhandle_new");
     }
 
+    rb_secure(2);
+
 #if defined(HAVE_WINDOWS_H)
     if( !clib ){
 	HANDLE rb_libruby_handle(void);
