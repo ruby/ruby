@@ -13,7 +13,6 @@ ID rbdl_id_stdcall;
 VALUE
 rb_dl_dlopen(int argc, VALUE argv[], VALUE self)
 {
-    rb_secure(2);
     return rb_class_new_instance(argc, argv, rb_cDLHandle);
 }
 
