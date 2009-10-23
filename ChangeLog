@@ -1,4 +1,8 @@
-Fri Oct 23 14:22:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Oct 23 14:25:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (target, target_alias): replace with real cpu.
+
+	* mkconfig.rb: build* are not needed in rbconfig.rb.
 
 	* configure.in (warnflags): use -Wextra only when
 	  -Wno-missing-field-initializers is available.
