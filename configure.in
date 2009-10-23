@@ -266,7 +266,7 @@ AC_PROG_GCC_TRADITIONAL
 AC_SUBST(GCC)
 if test "$GCC" = yes; then
     linker_flag=-Wl,
-    : ${optflags='-O3 -fomit-frame-pointer'}
+    : ${optflags=-O3}
     case "$target_os" in
       when(linux*|darwin*)
 	: ${debugflags=-ggdb};;
@@ -1171,7 +1171,7 @@ test x$ac_cv_func__longjmp = xno && ac_cv_func__setjmp=no
 
 AC_MSG_CHECKING(for setjmp type)
 AC_ARG_WITH(setjmp-type,
-	AS_HELP_STRING([--with-setjmp-type],[select setjmp type]),
+	AS_HELP_STRING([--with-setjmp-type], [select setjmp type]),
 	[
 	case $withval in
 	when(__builtin_setjmp) setjmp_prefix=__builtin_;;
@@ -2537,7 +2537,7 @@ fi
 
 unset sitearch
 case "$target_os" in
-  when(mingw*) sitearch="$target_cpu-$rb_cv_msvcrt" ;;
+  when(mingw*) sitearch="$target_cpu-$rb_cv_msvcrt";;
 esac
 test ${sitearch+set} && AC_DEFINE_UNQUOTED(RUBY_SITEARCH, "${sitearch}")
 
@@ -2572,7 +2572,7 @@ AC_SUBST(sitehdrdir)dnl
 AC_SUBST(vendorhdrdir)dnl
 
 AC_ARG_WITH(mantype,
-		AS_HELP_STRING([--with-mantype=TYPE], [specify man page type; TYPE is one of man and doc]),
+	AS_HELP_STRING([--with-mantype=TYPE], [specify man page type; TYPE is one of man and doc]),
 		[
 			case "$withval" in
 			when(man|doc)
