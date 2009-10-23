@@ -387,19 +387,31 @@ AC_SUBST(CHDIR)
 dnl }
 dnl compiler section {
 
-if test "$GCC:${warnflags+set}:no" = yes::no; then
+AC_DEFUN(RUBY_TRY_CFLAGS, [
     save_CFLAGS="$CFLAGS"
-    for wflag in -Wextra -Wno-unused-parameter -Wno-parentheses -Wpointer-arith -Wwrite-strings \
-		 -Wno-missing-field-initializers -Wshorten-64-to-32; do
-        CFLAGS="$CFLAGS $wflag"
-        AC_MSG_CHECKING([whether $wflag is accepted])
-        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
-	    [warnflags="${warnflags+$warnflags }$wflag"
-	    AC_MSG_RESULT(yes)],
-	    [AC_MSG_RESULT(no)])
-    done
+    CFLAGS="[$]CFLAGS $1"
+    AC_MSG_CHECKING([whether ]$1[ is accepted])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
+	[$2
+	AC_MSG_RESULT(yes)],
+	[$3
+	AC_MSG_RESULT(no)])
     CFLAGS="$save_CFLAGS"
-    unset save_CFLAGS
+    save_CFLAGS=
+])
+
+if test "$GCC:${warnflags+set}:no" = yes::no; then
+    for wflag in -Wno-unused-parameter -Wno-parentheses -Wpointer-arith -Wwrite-strings \
+		 -Wno-missing-field-initializers -Wshorten-64-to-32; do
+	RUBY_TRY_CFLAGS($wflag, [warnflags="${warnflags+$warnflags }$wflag"])
+    done
+    case " $warnflags " in
+    when(*" -Wno-missing-field-initializers "*)
+	wflag=-Wextra;;
+    when(*)
+	wflag=-Wall;;
+    esac
+    RUBY_TRY_CFLAGS($wflag, [warnflags="$wflag${warnflags+ $warnflags}"])
 fi
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""

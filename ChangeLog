@@ -1,4 +1,7 @@
-Fri Oct 23 14:06:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Oct 23 14:22:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (warnflags): use -Wextra only when
+	  -Wno-missing-field-initializers is available.
 
 	* configure.in (optflags): removed -fomit-frame-pointer by default.
 
