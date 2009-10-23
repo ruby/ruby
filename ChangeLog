@@ -1,3 +1,8 @@
+Fri Oct 23 09:12:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pathname.rb (Pathname::SAME_PATHS): FNM_SYSCASE is always
+	  non-nil.
+
 Fri Oct 23 07:32:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, Makefile.in, win32/Makefile.sub (XRUBY): runnable
