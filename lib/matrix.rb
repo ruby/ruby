@@ -346,22 +346,35 @@ class Matrix
   #     => 9 0 0
   #        0 5 0
   #
+  # Like Array#[], negative indices count backward from the end of the
+  # row or column (-1 is the last element). Returns nil if the starting
+  # row or column is greater than row_size or column_size respectively.
+  #
   def minor(*param)
     case param.size
     when 2
       from_row = param[0].first
-      size_row = param[0].end - from_row
-      size_row += 1 unless param[0].exclude_end?
+      from_row += row_size if from_row < 0
+      to_row = param[0].end
+      to_row += row_size if to_row < 0
+      to_row += 1 unless param[0].exclude_end?
+      size_row = to_row - from_row
       from_col = param[1].first
-      size_col = param[1].end - from_col
-      size_col += 1 unless param[1].exclude_end?
+      from_col += column_size if from_col < 0
+      to_col = param[1].end
+      to_col += column_size if to_col < 0
+      to_col += 1 unless param[1].exclude_end?
+      size_col = to_col - from_col
     when 4
       from_row, size_row, from_col, size_col = param
+      return nil if size_row < 0 || size_col < 0
+      from_row += row_size if from_row < 0
+      from_col += column_size if from_col < 0
     else
       Matrix.Raise ArgumentError, param.inspect
     end
 
-    return nil if from_row > row_size || from_col > column_size
+    return nil if from_row > row_size || from_col > column_size || from_row < 0 || from_col < 0
     rows = @rows[from_row, size_row].collect{|row|
       row[from_col, size_col]
     }
