@@ -667,6 +667,7 @@ static VALUE
 rb_hash_set_default_proc(VALUE hash, VALUE proc)
 {
     VALUE b;
+    int n;
 
     rb_hash_modify(hash);
     b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
@@ -676,6 +677,11 @@ rb_hash_set_default_proc(VALUE hash, VALUE proc)
 		 rb_obj_classname(proc));
     }
     proc = b;
+    n = rb_proc_arity(proc);
+    if (rb_proc_lambda_p(proc) && n != 2 && (n >= 0 || n < -3)) {
+	if (n < 0) n = -n-1;
+	rb_raise(rb_eTypeError, "default_proc takes two arguments (2 for %d)", n);
+    }
     RHASH(hash)->ifnone = proc;
     FL_SET(hash, HASH_PROC_DEFAULT);
     return proc;
