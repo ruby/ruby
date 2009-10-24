@@ -7,6 +7,11 @@ Sat Oct 24 13:38:45 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_obj_cmp): defines Object#<=>.  [ruby-core:24063]
 
+Sat Oct 24 09:51:28 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_flat_map): new method that concatenates the values
+	  from given block.  also provides alias #collect_concat.
+
 Sat Oct 24 00:36:47 2009  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_cntl): update max file descriptor by the result of
