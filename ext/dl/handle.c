@@ -57,8 +57,21 @@ rb_dlhandle_close(VALUE self)
     struct dl_handle *dlhandle;
 
     TypedData_Get_Struct(self, struct dl_handle, &dlhandle_data_type, dlhandle);
-    dlhandle->open = 0;
-    return INT2NUM(dlclose(dlhandle->ptr));
+    if(dlhandle->open) {
+	dlhandle->open = 0;
+	int ret = dlclose(dlhandle->ptr);
+
+	/* Check dlclose for successful return value */
+	if(ret) {
+#if defined(HAVE_DLERROR)
+	    rb_raise(rb_eDLError, dlerror());
+#else
+	    rb_raise(rb_eDLError, "could not close handle");
+#endif
+	}
+	return INT2NUM(ret);
+    }
+    rb_raise(rb_eDLError, "dlclose() called too many times");
 }
 
 VALUE
@@ -301,3 +314,5 @@ Init_dlhandle(void)
     rb_define_method(rb_cDLHandle, "disable_close", rb_dlhandle_disable_close, 0);
     rb_define_method(rb_cDLHandle, "enable_close", rb_dlhandle_enable_close, 0);
 }
+
+/* mode: c; tab-with=8; sw=8; ts=8; noexpandtab: */
