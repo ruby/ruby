@@ -396,6 +396,48 @@ enum_collect(VALUE obj)
     return ary;
 }
 
+static VALUE
+flat_map_i(VALUE i, VALUE ary, int argc, VALUE *argv)
+{
+    VALUE tmp;
+
+    i = enum_yield(argc, argv);
+    tmp = rb_check_array_type(i);
+
+    if (NIL_P(tmp)) {
+	rb_ary_push(ary, i);
+    }
+    else {
+	rb_ary_concat(ary, tmp);
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.flat_map       {| obj | block }  => array
+ *     enum.collect_concat {| obj | block }  => array
+ *
+ *  Returns a new array with the concatenated results of running
+ *  <em>block</em> once for every element in <i>enum</i>.
+ *
+ *     [[1,2],[3,4]].flat_map {|i| i }   #=> [1, 2, 3, 4]
+ *
+ */
+
+static VALUE
+enum_flat_map(VALUE obj)
+{
+    VALUE ary;
+
+    RETURN_ENUMERATOR(obj, 0, 0);
+
+    ary = rb_ary_new();
+    rb_block_call(obj, id_each, 0, 0, flat_map_i, ary);
+
+    return ary;
+}
+
 /*
  *  call-seq:
  *     enum.to_a      =>    array
@@ -2375,6 +2417,8 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "reject", enum_reject, 0);
     rb_define_method(rb_mEnumerable, "collect", enum_collect, 0);
     rb_define_method(rb_mEnumerable, "map", enum_collect, 0);
+    rb_define_method(rb_mEnumerable, "flat_map", enum_flat_map, 0);
+    rb_define_method(rb_mEnumerable, "collect_concat", enum_flat_map, 0);
     rb_define_method(rb_mEnumerable, "inject", enum_inject, -1);
     rb_define_method(rb_mEnumerable, "reduce", enum_inject, -1);
     rb_define_method(rb_mEnumerable, "partition", enum_partition, 0);
