@@ -1119,6 +1119,15 @@ rb_obj_not_match(VALUE obj1, VALUE obj2)
 }
 
 
+/* :nodoc: */
+static VALUE
+rb_obj_cmp(VALUE obj1, VALUE obj2)
+{
+    if (obj1 == obj2 || rb_obj_equal(obj1, obj2))
+	return INT2FIX(0);
+    return Qnil;
+}
+
 /***********************************************************************
  *
  * Document-class: Module
@@ -2555,6 +2564,7 @@ Init_Object(void)
     rb_define_method(rb_mKernel, "!~", rb_obj_not_match, 1);
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
     rb_define_method(rb_mKernel, "hash", rb_obj_hash, 0);
+    rb_define_method(rb_mKernel, "<=>", rb_obj_cmp, 1);
 
     rb_define_method(rb_mKernel, "class", rb_obj_class, 0);
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
