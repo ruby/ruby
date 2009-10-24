@@ -858,6 +858,7 @@ class Matrix
   #        2 4 6
   #
   def transpose
+    return Matrix.empty(column_size, 0) if row_size.zero?
     new_matrix @rows.transpose, row_size
   end
   alias t transpose
