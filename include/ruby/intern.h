@@ -305,6 +305,7 @@ VALUE rb_proc_new(VALUE (*)(ANYARGS/* VALUE yieldarg[, VALUE procarg] */), VALUE
 VALUE rb_proc_call(VALUE, VALUE);
 VALUE rb_proc_call_with_block(VALUE, int argc, VALUE *argv, VALUE);
 int rb_proc_arity(VALUE);
+VALUE rb_proc_lambda_p(VALUE);
 VALUE rb_binding_new(void);
 VALUE rb_obj_method(VALUE, VALUE);
 VALUE rb_method_call(int, VALUE*, VALUE);

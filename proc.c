@@ -223,8 +223,8 @@ proc_clone(VALUE self)
  *
  */
 
-static VALUE
-proc_lambda_p(VALUE procval)
+VALUE
+rb_proc_lambda_p(VALUE procval)
 {
     rb_proc_t *proc;
     GetProcPtr(procval, proc);
@@ -1971,7 +1971,7 @@ proc_curry(int argc, VALUE *argv, VALUE self)
     }
     else {
 	sarity = FIX2INT(arity);
-	if (proc_lambda_p(self) && (sarity < marity || (sarity > marity && !opt))) {
+	if (rb_proc_lambda_p(self) && (sarity < marity || (sarity > marity && !opt))) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", sarity, marity);
 	}
     }
@@ -2028,7 +2028,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "eql?", proc_eq, 1);
     rb_define_method(rb_cProc, "hash", proc_hash, 0);
     rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
-    rb_define_method(rb_cProc, "lambda?", proc_lambda_p, 0);
+    rb_define_method(rb_cProc, "lambda?", rb_proc_lambda_p, 0);
     rb_define_method(rb_cProc, "binding", proc_binding, 0);
     rb_define_method(rb_cProc, "curry", proc_curry, -1);
     rb_define_method(rb_cProc, "source_location", rb_proc_location, 0);
