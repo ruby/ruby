@@ -115,7 +115,7 @@
 # implementation, see SimpleDelegator.
 #
 class Delegator
-  [:to_s,:inspect,:=~,:!~,:===].each do |m|
+  [:to_s,:inspect,:=~,:!~,:===,:<=>].each do |m|
     undef_method m
   end
 
