@@ -309,13 +309,13 @@ class Matrix
   #
   def column(j) # :yield: e
     if block_given?
-      return self if j >= column_size
+      return self if j >= column_size || j < -column_size
       row_size.times do |i|
         yield @rows[i][j]
       end
       self
     else
-      return nil if j >= column_size
+      return nil if j >= column_size || j < -column_size
       col = (0 ... row_size).collect {|i|
         @rows[i][j]
       }
