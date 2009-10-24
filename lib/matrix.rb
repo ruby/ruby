@@ -642,18 +642,12 @@ class Matrix
         return Matrix.identity(self.column_size) if other == 0
         other = -other
       end
-      z = x
-      n = other  - 1
-      while n != 0
-        while (div, mod = n.divmod(2)
-               mod == 0)
-          x = x * x
-          n = div
-        end
-        z *= x
-        n -= 1
+      z = nil
+      loop do
+        z = z ? z * x : x if other[0] == 1
+        return z if (other >>= 1).zero?
+        x *= x
       end
-      z
     elsif other.kind_of?(Float) || defined?(Rational) && other.kind_of?(Rational)
       Matrix.Raise ErrOperationNotDefined, "**"
     else
