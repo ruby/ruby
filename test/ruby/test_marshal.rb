@@ -198,4 +198,10 @@ class TestMarshal < Test::Unit::TestCase
       assert_equal(sym, Marshal.load(Marshal.dump(sym)), '[ruby-core:24788]')
     end
   end
+
+  ClassUTF8 = eval("class R\u{e9}sum\u{e9}; self; end")
+  def test_class_nonascii
+    a = ClassUTF8.new
+    assert_instance_of(ClassUTF8, Marshal.load(Marshal.dump(a)), '[ruby-core:24790]')
+  end
 end
