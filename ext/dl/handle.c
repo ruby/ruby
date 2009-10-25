@@ -64,8 +64,8 @@ rb_dlhandle_close(VALUE self)
 
     TypedData_Get_Struct(self, struct dl_handle, &dlhandle_data_type, dlhandle);
     if(dlhandle->open) {
-	dlhandle->open = 0;
 	int ret = dlclose(dlhandle->ptr);
+	dlhandle->open = 0;
 
 	/* Check dlclose for successful return value */
 	if(ret) {
