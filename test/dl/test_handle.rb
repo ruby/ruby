@@ -2,6 +2,11 @@ require 'test_base'
 
 module DL
   class TestHandle < TestBase
+    def test_to_i
+      handle = DL::Handle.new(LIBC_SO)
+      assert handle.to_i
+    end
+
     def test_static_sym_secure
       assert_raises(SecurityError) do
         Thread.new do
@@ -89,6 +94,16 @@ module DL
           DL::Handle.new(LIBC_SO)
         end.join
       end
+    end
+
+    def test_initialize_noargs
+      handle = DL::Handle.new
+      assert handle['rb_str_new']
+    end
+
+    def test_initialize_flags
+      handle = DL::Handle.new(LIBC_SO, DL::RTLD_LAZY | DL::RTLD_GLOBAL)
+      assert handle['calloc']
     end
   end
 end
