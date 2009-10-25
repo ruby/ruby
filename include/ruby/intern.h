@@ -729,6 +729,7 @@ VALUE rb_mod_name(VALUE);
 VALUE rb_class_path(VALUE);
 void rb_set_class_path(VALUE, VALUE, const char*);
 void rb_set_class_path_string(VALUE, VALUE, VALUE);
+VALUE rb_path_to_class(VALUE);
 VALUE rb_path2class(const char*);
 void rb_name_class(VALUE, ID);
 VALUE rb_class_name(VALUE);
