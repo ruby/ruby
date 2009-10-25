@@ -1,3 +1,7 @@
+Sun Oct 25 13:33:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_cntl): F_DUPFD is platform dependent.
+
 Sun Oct 25 10:19:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/handle.c (rb_dlhandle_close): fixed an invalid local
