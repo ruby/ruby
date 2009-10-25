@@ -205,15 +205,20 @@ rb_dlhandle_to_i(VALUE self)
 
 static VALUE dlhandle_sym(void *handle, const char *symbol);
 
+/*
+ * Document-method: sym
+ * Document-method: []
+ *
+ * call-seq: sym(name)
+ *
+ * Get the address as an Integer for the function named +name+.
+ */
 VALUE
 rb_dlhandle_sym(VALUE self, VALUE sym)
 {
     struct dl_handle *dlhandle;
-    const char *name;
 
     rb_secure(2);
-
-    name = StringValuePtr(sym);
 
     TypedData_Get_Struct(self, struct dl_handle, &dlhandle_data_type, dlhandle);
     if( ! dlhandle->open ){
