@@ -1,3 +1,9 @@
+Fri Oct 23 10:51:04 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/ruby/test_m17n.rb (TestM17N#test_sprintf_s):
+	  added an assertion for [ruby-list:46274].
+	  see also r24506.
+
 Tue Oct 20 17:57:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_symbol, r_symreal): fixed the order of symbol and

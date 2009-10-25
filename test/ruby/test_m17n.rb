@@ -11,6 +11,7 @@ class TestM17N < Test::Unit::TestCase
     def e(str) str.dup.force_encoding("EUC-JP") end
     def s(str) str.dup.force_encoding("Windows-31J") end
     def u(str) str.dup.force_encoding("UTF-8") end
+    def ua(str) str.dup.force_encoding("US-ASCII") end
   end
   include AESU
   extend AESU
@@ -807,6 +808,8 @@ class TestM17N < Test::Unit::TestCase
     assert_strenc("\x00", 'Windows-31J', s("%s") % s("\x00"))
     assert_strenc("\x00", 'UTF-8', u("%s") % u("\x00"))
     assert_equal("EUC-JP", (e("\xc2\xa1 %s") % "foo").encoding.name)
+
+    assert_equal("EUC-JP", (e("%s: %s: %s") % [ua("abc"), u("a"), e("\xc2\xa1")]).encoding.name, "[ruby-list:46274]")
   end
 
   def test_str_lt
