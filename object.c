@@ -1567,8 +1567,8 @@ rb_class_initialize(argc, argv, klass)
     }
     RCLASS(klass)->super = super;
     rb_make_metaclass(klass, RBASIC(super)->klass);
-    rb_mod_initialize(klass);
     rb_class_inherited(super, klass);
+    rb_mod_initialize(klass);
 
     return klass;
 }

@@ -1,3 +1,9 @@
+Sun Oct 25 20:04:35 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* object.c (rb_class_initialize): The inherited hook should be run
+	  immediately after a new subclass is created, which is before
+	  evaluating a given block. [Backport #621]
+
 Sun Oct 25 20:02:46 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in: Fix syntax error.  when() is not defined in this
