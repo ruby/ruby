@@ -218,8 +218,6 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
 {
     struct dl_handle *dlhandle;
 
-    rb_secure(2);
-
     TypedData_Get_Struct(self, struct dl_handle, &dlhandle_data_type, dlhandle);
     if( ! dlhandle->open ){
 	rb_raise(rb_eDLError, "closed handle");
@@ -235,16 +233,26 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
 #define RTLD_DEFAULT NULL
 #endif
 
+/*
+ * Document-method: sym
+ * Document-method: []
+ *
+ * call-seq: sym(name)
+ *
+ * Get the address as an Integer for the function named +name+.  The function
+ * is searched via dlsym on RTLD_NEXT.  See man(3) dlsym() for more info.
+ */
 VALUE
 rb_dlhandle_s_sym(VALUE self, VALUE sym)
 {
-    rb_secure(2);
     return dlhandle_sym(RTLD_NEXT, StringValueCStr(sym));
 }
 
 static VALUE
 dlhandle_sym(void *handle, const char *name)
 {
+    rb_secure(2);
+
 #if defined(HAVE_DLERROR)
     const char *err;
 # define CHECK_DLERROR if( err = dlerror() ){ func = 0; }

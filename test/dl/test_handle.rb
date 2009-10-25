@@ -2,6 +2,25 @@ require 'test_base'
 
 module DL
   class TestHandle < TestBase
+    def test_static_sym_secure
+      assert_raises(SecurityError) do
+        Thread.new do
+          $SAFE = 2
+          DL::Handle.sym('calloc')
+        end.join
+      end
+    end
+
+    def test_static_sym_unknown
+      assert_raises(DL::DLError) { DL::Handle.sym('fooo') }
+      assert_raises(DL::DLError) { DL::Handle['fooo'] }
+    end
+
+    def test_static_sym
+      assert DL::Handle.sym('dlopen')
+      assert_equal DL::Handle.sym('dlopen'), DL::Handle['dlopen']
+    end
+
     def test_sym_closed_handle
       handle = DL::Handle.new(LIBC_SO)
       handle.close
@@ -19,6 +38,16 @@ module DL
       handle = DL::Handle.new(LIBC_SO)
       assert_raises(TypeError) { handle.sym(nil) }
       assert_raises(TypeError) { handle[nil] }
+    end
+
+    def test_sym_secure
+      assert_raises(SecurityError) do
+        Thread.new do
+          $SAFE = 2
+          handle = DL::Handle.new(LIBC_SO)
+          handle.sym('calloc')
+        end.join
+      end
     end
 
     def test_sym
