@@ -51,6 +51,12 @@ static const rb_data_type_t dlhandle_data_type = {
     0, dlhandle_free, dlhandle_memsize,
 };
 
+/*
+ * call-seq: close
+ *
+ * Close this DL::Handle.  Calling close more than once will raise a
+ * DL::DLError exception.
+ */
 VALUE
 rb_dlhandle_close(VALUE self)
 {

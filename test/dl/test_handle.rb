@@ -122,5 +122,15 @@ module DL
       handle.disable_close
       assert !handle.close_enabled?, 'close is enabled'
     end
+
+    def test_NEXT
+      handle = DL::Handle::NEXT
+      assert handle['malloc']
+    end
+
+    def test_DEFAULT
+      handle = DL::Handle::DEFAULT
+      assert handle['malloc']
+    end
   end
 end
