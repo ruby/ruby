@@ -10516,6 +10516,11 @@ Thu Jan 17 16:21:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (block_pass): should allow block argument relay even in
 	  the tainted mode.
 
+Thu Jan 17 09:43:05 2002  TAKAHASHI Kaoru  <kaoru@kaisei.org>
+
+	* misc/ruby-mode.el (ruby-add-log-current-method): New function
+	for `add-log-current-defun-function'.
+
 Thu Jan 17 04:51:48 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c: support subclassing by proper "initialize"

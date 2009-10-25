@@ -1,3 +1,8 @@
+Fri Aug 14 00:29:22 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* doc/ChangeLog-1.8.0: add forgotten entry contributed by
+	  TAKAHASHI Kaoru.  [ruby-dev:39065]
+
 Fri Aug 14 00:19:49 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator#method_missing): __FILE__ may contain
