@@ -100,6 +100,13 @@ predefined_dlhandle(void *handle)
     return obj;
 }
 
+/*
+ * call-seq:
+ *    initialize(lib = nil, flags = DL::RTLD_LAZY | DL::RTLD_GLOBAL)
+ *
+ * Create a new handler that opens library named +lib+ with +flags+.  If no
+ * library is specified, RTLD_DEFAULT is used.
+ */
 VALUE
 rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
 {
@@ -194,6 +201,11 @@ rb_dlhandle_disable_close(VALUE self)
     return Qnil;
 }
 
+/*
+ * call-seq: to_i
+ *
+ * Returns the memory address for this handle.
+ */
 VALUE
 rb_dlhandle_to_i(VALUE self)
 {
