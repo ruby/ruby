@@ -1,3 +1,8 @@
+Sun Oct 25 10:19:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/handle.c (rb_dlhandle_close): fixed an invalid local
+	  variable declaration.
+
 Sun Oct 25 05:44:34 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb (**): Optimization (up to 45% faster)
