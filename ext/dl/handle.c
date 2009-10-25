@@ -296,16 +296,16 @@ rb_dlhandle_s_sym(VALUE self, VALUE sym)
 static VALUE
 dlhandle_sym(void *handle, const char *name)
 {
-    rb_secure(2);
-
 #if defined(HAVE_DLERROR)
     const char *err;
 # define CHECK_DLERROR if( err = dlerror() ){ func = 0; }
 #else
 # define CHECK_DLERROR
 #endif
-    void (*func)() = dlsym(handle, name);
+    void (*func)();
 
+    rb_secure(2);
+    func = dlsym(handle, name);
     CHECK_DLERROR;
 #if defined(FUNC_STDCALL)
     if( !func ){
@@ -374,4 +374,4 @@ Init_dlhandle(void)
     rb_define_method(rb_cDLHandle, "close_enabled?", rb_dlhandle_close_enabled_p, 0);
 }
 
-/* mode: c; tab-with=8; sw=8; ts=8; noexpandtab: */
+/* mode: c; tab-with=8; sw=4; ts=8; noexpandtab: */

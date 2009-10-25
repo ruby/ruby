@@ -1,3 +1,8 @@
+Sun Oct 25 15:44:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/handle.c (dlhandle_sym): fixed an invalid local variable
+	  declaration.
+
 Sun Oct 25 13:33:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_cntl): F_DUPFD is platform dependent.
