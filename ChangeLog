@@ -1,3 +1,8 @@
+Wed Aug 12 12:59:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_new_frozen): must not change encoding of frozen
+	  shared string.  [ruby-dev:39068]
+
 Fri Oct 23 10:51:04 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_m17n.rb (TestM17N#test_sprintf_s):
