@@ -192,4 +192,10 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(true, y.tainted?)
     assert_equal(true, y.untrusted?)
   end
+
+  def test_symbol
+    [:ruby, :"\u{7d05}\u{7389}"].each do |sym|
+      assert_equal(sym, Marshal.load(Marshal.dump(sym)), '[ruby-core:24788]')
+    end
+  end
 end
