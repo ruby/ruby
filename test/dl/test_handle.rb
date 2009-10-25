@@ -2,6 +2,31 @@ require 'test_base'
 
 module DL
   class TestHandle < TestBase
+    def test_sym_closed_handle
+      handle = DL::Handle.new(LIBC_SO)
+      handle.close
+      assert_raises(DL::DLError) { handle.sym("calloc") }
+      assert_raises(DL::DLError) { handle["calloc"] }
+    end
+
+    def test_sym_unknown
+      handle = DL::Handle.new(LIBC_SO)
+      assert_raises(DL::DLError) { handle.sym('fooo') }
+      assert_raises(DL::DLError) { handle['fooo'] }
+    end
+
+    def test_sym_with_bad_args
+      handle = DL::Handle.new(LIBC_SO)
+      assert_raises(TypeError) { handle.sym(nil) }
+      assert_raises(TypeError) { handle[nil] }
+    end
+
+    def test_sym
+      handle = DL::Handle.new(LIBC_SO)
+      assert handle.sym('calloc')
+      assert handle['calloc']
+    end
+
     def test_handle_close
       handle = DL::Handle.new(LIBC_SO)
       assert_equal 0, handle.close
