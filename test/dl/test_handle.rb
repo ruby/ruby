@@ -105,5 +105,22 @@ module DL
       handle = DL::Handle.new(LIBC_SO, DL::RTLD_LAZY | DL::RTLD_GLOBAL)
       assert handle['calloc']
     end
+
+    def test_enable_close
+      handle = DL::Handle.new(LIBC_SO)
+      assert !handle.close_enabled?, 'close is enabled'
+
+      handle.enable_close
+      assert handle.close_enabled?, 'close is not enabled'
+    end
+
+    def test_disable_close
+      handle = DL::Handle.new(LIBC_SO)
+
+      handle.enable_close
+      assert handle.close_enabled?, 'close is enabled'
+      handle.disable_close
+      assert !handle.close_enabled?, 'close is enabled'
+    end
   end
 end

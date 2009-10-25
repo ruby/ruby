@@ -181,6 +181,11 @@ rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
     return Qnil;
 }
 
+/*
+ * call-seq: enable_close
+ *
+ * Enable a call to dlclose() when this DL::Handle is garbage collected.
+ */
 VALUE
 rb_dlhandle_enable_close(VALUE self)
 {
@@ -191,6 +196,11 @@ rb_dlhandle_enable_close(VALUE self)
     return Qnil;
 }
 
+/*
+ * call-seq: disable_close
+ *
+ * Disable a call to dlclose() when this DL::Handle is garbage collected.
+ */
 VALUE
 rb_dlhandle_disable_close(VALUE self)
 {
@@ -199,6 +209,23 @@ rb_dlhandle_disable_close(VALUE self)
     TypedData_Get_Struct(self, struct dl_handle, &dlhandle_data_type, dlhandle);
     dlhandle->enable_close = 0;
     return Qnil;
+}
+
+/*
+ * call-seq: close_enabled?
+ *
+ * Returns +true+ if dlclose() will be called when this DL::Handle is
+ * garbage collected.
+ */
+static VALUE
+rb_dlhandle_close_enabled_p(VALUE self)
+{
+    struct dl_handle *dlhandle;
+
+    TypedData_Get_Struct(self, struct dl_handle, &dlhandle_data_type, dlhandle);
+
+    if(dlhandle->enable_close) return Qtrue;
+    return Qfalse;
 }
 
 /*
@@ -338,6 +365,7 @@ Init_dlhandle(void)
     rb_define_method(rb_cDLHandle, "[]",  rb_dlhandle_sym,  1);
     rb_define_method(rb_cDLHandle, "disable_close", rb_dlhandle_disable_close, 0);
     rb_define_method(rb_cDLHandle, "enable_close", rb_dlhandle_enable_close, 0);
+    rb_define_method(rb_cDLHandle, "close_enabled?", rb_dlhandle_close_enabled_p, 0);
 }
 
 /* mode: c; tab-with=8; sw=8; ts=8; noexpandtab: */
