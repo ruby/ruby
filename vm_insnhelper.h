@@ -41,6 +41,7 @@ enum {
   BOP_DIV,
   BOP_MOD,
   BOP_EQ,
+  BOP_EQQ,
   BOP_LT,
   BOP_LE,
   BOP_LTLT,
