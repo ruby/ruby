@@ -77,7 +77,6 @@ File.foreach "config.status" do |line|
     when /^RUBY_SO_NAME$/; next if $so_name
     when /^arch$/; if val.empty? then val = arch else arch = val end
     when /^sitearch/; val = '$(arch)' if val.empty?
-    when /^build/; next
     end
     case val
     when /^\$\(ac_\w+\)$/; next
