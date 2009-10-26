@@ -1,3 +1,7 @@
+Mon Oct 26 13:24:17 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/remote-tk.rb: typo fixed.
+
 Mon Oct 26 12:34:08 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ruby.c (usage): -T and -W descriptions updated.  see

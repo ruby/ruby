@@ -464,7 +464,7 @@ class RemoteTkIp
   def mainloop_watchdog
     fail RuntimeError, 'not support "mainloop_watchdog" on the remote interpreter'
   end
-  def do_one_evant(flag = nil)
+  def do_one_event(flag = nil)
     fail RuntimeError, 'not support "do_one_event" on the remote interpreter'
   end
   def mainloop_abort_on_exception
@@ -500,7 +500,7 @@ class << RemoteTkIp
   def mainloop_watchdog(*args)
     fail RuntimeError, 'not support "mainloop_watchdog" on the remote interpreter'
   end
-  def do_one_evant(flag = nil)
+  def do_one_event(flag = nil)
     fail RuntimeError, 'not support "do_one_event" on the remote interpreter'
   end
   def mainloop_abort_on_exception
