@@ -1,3 +1,7 @@
+Mon Oct 26 13:24:17 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/remote-tk.rb: typo fixed.
+
 Mon Oct 26 12:06:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_fwrite): adjust stdio file position after direct write on
