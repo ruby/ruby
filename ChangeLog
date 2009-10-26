@@ -1,3 +1,8 @@
+Tue Oct 27 08:56:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb: reverted r25443 because build_os is used in mkmf.rb
+	  on some platforms.  [ruby-core:26332]
+
 Tue Oct 27 07:38:39 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c,stubs.c: remove errors or warnings when compiled
