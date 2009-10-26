@@ -118,6 +118,7 @@ PLATFORM = mswin32
 !endif
 
 arch = $(ARCH)-$(PLATFORM)
+sitearch = $(ARCH)-$(RT)
 !if !defined(ruby_version)
 ruby_version = $(MAJOR).$(MINOR).$(TEENY)
 !endif
@@ -567,6 +568,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RUBY_VENDOR_LIB RUBY_LIB_PREFIX"/vendor_ruby"
 #define RUBY_VENDOR_LIB2 RUBY_VENDOR_LIB"/"RUBY_LIB_VERSION
 #define RUBY_PLATFORM "$(arch)"
+#define RUBY_SITEARCH "$(sitearch)"
 #define RUBY_COREDLL "$(RT)"
 #define RUBY_ARCHLIB RUBY_LIB"/"RUBY_ARCH
 #define RUBY_SITE_ARCHLIB RUBY_SITE_LIB2"/"RUBY_SITEARCH
