@@ -1,3 +1,8 @@
+Tue Oct 27 07:53:25 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (garbage_collect_with_gvl): do not garbage_collect when
+	  dont_gc flag turned on.  [ruby-core:26327]
+
 Tue Oct 27 07:38:39 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c,stubs.c: remove errors or warnings when compiled
