@@ -1,3 +1,10 @@
+Mon Oct 26 18:37:57 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (default_proc_arity_check): new support function.
+
+	* hash.c (rb_hash_initialize): should do arity check as #default_proc=.
+	  [ruby-core:26281]
+
 Mon Oct 26 13:24:17 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/remote-tk.rb: typo fixed.
