@@ -24,7 +24,7 @@ int rb_thread_check_trap_pending();
 #include "rubysig.h"
 #endif
 
-a#if !defined(RSTRING_PTR)
+#if !defined(RSTRING_PTR)
 #define RSTRING_PTR(s) (RSTRING(s)->ptr)
 #define RSTRING_LEN(s) (RSTRING(s)->len)
 #endif
