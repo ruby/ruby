@@ -40,7 +40,7 @@ Prints the version of
 .It Fl -encoding Ar external Ns Op : Ns Ar internal
 Same as `ruby -E' .
 Specifies the default value(s) for external encodings and internal encoding. Values should be separated with colon (:).
-
+.Pp
 You can ommit the one for internal encodings, then the value
 .Pf ( Li "Encoding.default_internal" ) will be nil.
 .Pp
@@ -62,7 +62,7 @@ Sets
 to true.
 .Pp
 .It Fl f
-Suppresses read of 
+Suppresses read of
 .Pa ~/.irbrc .
 .Pp
 .It Fl h
@@ -93,9 +93,9 @@ Doesn't use Readline extension module.
 Switch prompt mode. Pre-defined prompt modes are
 `default', `simple', `xmp' and `inf-ruby'.
 .Pp
-.It Fl -inf-ruby-mode 
-Uses prompt appropriate for inf-ruby-mode on emacs. 
-Suppresses --readline. 
+.It Fl -inf-ruby-mode
+Uses prompt appropriate for inf-ruby-mode on emacs.
+Suppresses --readline.
 .Pp
 .It Fl -simple-prompt
 Makes prompts simple.
@@ -111,7 +111,7 @@ Displays backtrace top
 .Ar n
 and tail
 .Ar n Ns .
-The default value is 16. 
+The default value is 16.
 .Pp
 .It Fl -irb_debug Ar n
 Sets internal debug level to n (not for popular use)
@@ -152,14 +152,14 @@ Personal irb initialization.
 .Dl :ok
 .Dl => :ok
 .Dl irb(main):009:0> Ic quit
-.Dl % 
+.Dl %
 .Pp
 .Sh SEE ALSO
 .Xr ruby 1 .
 .Pp
 .Sh REPORTING BUGS
 .Bl -bullet
-.Li Security vulnerabilities should be reported via an email to 
+.Li Security vulnerabilities should be reported via an email to
 .Aq security@ruby-lang.org Ns
 .Li .
 Reported problems will be published after fixed.

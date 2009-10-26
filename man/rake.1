@@ -22,17 +22,17 @@
 .Ar target ...
 .Sh DESCRIPTION
 .Nm Rake
-is a simple 
+is a simple
 .Xr ruby 1
-build program with capabilities similar to the regular 
+build program with capabilities similar to the regular
 .Xr make 1
 command.
-
+.Pp
 .Nm Rake
 has the following features:
 .Bl -bullet
 .It
-Rakefiles (Rake's version of Makefiles) are completely defined in standard Ruby syntax. 
+Rakefiles (Rake's version of Makefiles) are completely defined in standard Ruby syntax.
 No XML files to edit. No quirky Makefile syntax to worry about (is that a tab or a space?).
 .It
 Users can specify tasks with prerequisites.
@@ -41,7 +41,7 @@ Rake supports rule patterns to sythesize implicit tasks.
 .It
 Flexible FileLists that act like arrays but know about manipulating file names and paths.
 .It
-A library of prepackaged tasks to make building rakefiles easier. 
+A library of prepackaged tasks to make building rakefiles easier.
 .El
 .Pp
 .Sh OPTIONS
@@ -56,7 +56,7 @@ Put Task and FileTask in the top level namespace
 .Pp
 .It Fl D Op Ar PATTERN
 .It Fl -describe Op Ar PATTERN
-Describe the tasks (matching optional 
+Describe the tasks (matching optional
 .Ar PATTERN Ns
 ), then exit.
 .Pp
@@ -71,7 +71,7 @@ Use standard project Rakefile search paths, ignore system wide rakefiles.
 .Pp
 .It Fl I Ar LIBDIR
 .It Fl -libdir Ar LIBDIR
-Include 
+Include
 .Ar LIBDIR
 in the search path for required modules.
 .Pp
@@ -89,7 +89,7 @@ Display the tasks and dependencies, then exit.
 .It Fl -rakelibdir Ar RAKELIBDIR
 Auto-import any .rake files in
 .Ar RAKELIBDIR .
-(default is 
+(default is
 .Pa rakelib
 )
 .Pp
@@ -113,7 +113,7 @@ Prints a summary of options.
 .Pp
 .It Fl g
 .It Fl -system
-Using system wide (global) rakefiles (usually 
+Using system wide (global) rakefiles (usually
 .Pa ~/.rake/*.rake
 ).
 .Pp
@@ -135,7 +135,7 @@ Require MODULE before executing rakefile.
 .Pp
 .It Fl s
 .It Fl -silent
-Like 
+Like
 .Fl -quiet ,
 but also suppresses the 'in directory' announcement.
 .Pp
@@ -158,12 +158,12 @@ Trace the rules resolution.
 .Pp
 http://rake.rubyforge.org/
 .Sh REPORTING BUGS
-Bugs, features requests and other issues can be logged at 
+Bugs, features requests and other issues can be logged at
 <\fBhttp://onestepback.org/redmine/projects/show/rake\fR>.
 .Pp
 You will need an account to before you can post issues. Register at <\fBhttp://onestepback.org/redmine/account/register\fR>.
 Or you can send an email to the author.
 .Sh AUTHOR
 .Nm Rake
-is written by 
+is written by
 .An Jim Weirich Aq jim@weirichhouse.org

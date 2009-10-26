@@ -18,14 +18,14 @@
 .Pp
 .Sh DESCRIPTION
 .Nm
-is a command line front-end for 
+is a command line front-end for
 .Li "ERB"
 library, which is an implementation of eRuby.
-
-eRuby provdes an easy to use but powerful templating system for Ruby. 
+.Pp
+eRuby provdes an easy to use but powerful templating system for Ruby.
 Using eRuby, actual Ruby code can be added to any plain text document for the
 purposes of generating document information details and/or flow control.
-
+.Pp
 .Nm
 is a part of
 .Nm Ruby .
@@ -34,18 +34,18 @@ is a part of
 .Bl -tag -width "1234567890123" -compact
 .Pp
 .It Fl -version
-Prints the version of 
+Prints the version of
 .Nm .
 .Pp
 .It Fl E Ar external Ns Op : Ns Ar internal
 .It Fl -encoding Ar external Ns Op : Ns Ar internal
 Specifies the default value(s) for external encodings and internal encoding. Values should be separated with colon (:).
-
+.Pp
 You can ommit the one for internal encodings, then the value
 .Pf ( Li "Encoding.default_internal" ) will be nil.
 .Pp
 .It Fl P
-Evaluates lines starting with 
+Evaluates lines starting with
 .Li "%"
 as Ruby code and removes the tailing EOLs.
 .Pp
@@ -53,7 +53,7 @@ as Ruby code and removes the tailing EOLs.
 Specifies the safe level in which eRuby script will run.
 .Pp
 .It Fl T Ar mode
-Specifies trim mode (default 0). 
+Specifies trim mode (default 0).
 .Ar mode
 can be one of
 .Bl -hang -offset indent
@@ -96,10 +96,10 @@ Prints a summry of the options.
 .It Fl n
 Used with
 .Fl x .
-Prepends the line number to each line in the output. 
+Prepends the line number to each line in the output.
 .Pp
 .It Fl v
-Enables verbose mode.  
+Enables verbose mode.
 .Li "$VERBOSE"
 will be set to true.
 .Pp
@@ -119,7 +119,7 @@ Here is an eRuby script
   <library><%= Prime.each(10).to_a.join(", ") %></library>
 </erb-example>
 .Ed
-
+.Pp
 Command
 .Dl "% erb -T - example.erb"
 prints
@@ -134,17 +134,16 @@ prints
 .Pp
 .Sh SEE ALSO
 .Xr ruby 1 .
-
-And see 
+.Pp
+And see
 .Xr ri 1
-documentation for 
+documentation for
 .Li "ERB"
 class.
-.El
 .Pp
 .Sh REPORTING BUGS
 .Bl -bullet
-.Li Security vulnerabilities should be reported via an email to 
+.Li Security vulnerabilities should be reported via an email to
 .Aq security@ruby-lang.org Ns
 .Li .
 Reported problems will be published after fixed.
