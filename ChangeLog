@@ -73,7 +73,7 @@ Sun Oct 25 05:44:34 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 Sat Oct 24 14:28:40 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* hash.c (rb_hash_set_default_proc): checks arity of defalt_proc
+	* hash.c (rb_hash_set_default_proc): checks arity of default_proc
 	  of a Hash.  [ruby-core:26087]
 
 Sat Oct 24 13:38:45 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -422,7 +422,7 @@ Wed Oct 14 13:24:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Oct 14 09:06:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* eval.c (ruby_run_node): need to call ruby_cleaup() always even
+	* eval.c (ruby_run_node): need to call ruby_cleanup() always even
 	  if any error occurred so far.
 
 Wed Oct 14 08:08:12 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
@@ -672,7 +672,7 @@ Wed Oct  7 16:42:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Oct  7 16:06:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* include/ruby/ruby.h (rb_long2int): evalates the argument only
+	* include/ruby/ruby.h (rb_long2int): evaluates the argument only
 	  once.
 
 	* struct.c (rb_struct_alloc): check array length overflow.
@@ -903,7 +903,7 @@ Thu Oct  1 14:16:39 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/{setup.mak,Makefile.sub,win32.c},include/ruby/win32.h (RT_VER):
 	  split compiler specification and runtime library specification.
 
-	* win32/Makefile.sub (LD_SHARED*, config.status): no need to embbed
+	* win32/Makefile.sub (LD_SHARED*, config.status): no need to embed
 	  manifest if not exist.
 
 Thu Oct  1 13:23:14 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -1320,7 +1320,7 @@ Tue Sep 22 01:10:22 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 Tue Sep 22 01:10:02 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* ossl_config.c (ossl_config_add_value_m, ossl_config_set_section):
-	  Check if frozen (or untrusted for $SECURE >= 4) [ruby-core:18377]
+	  Check if frozen (or untrusted for $SAFE >= 4) [ruby-core:18377]
 
 Mon Sep 21 17:12:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
