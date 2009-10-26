@@ -2963,7 +2963,7 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
 
 /*
  *  call-seq:
- *     array <=> other_array   ->  -1, 0, +1
+ *     array <=> other_array   ->  -1, 0, +1, nil
  *
  *  Comparison---Returns an integer (-1, 0,
  *  or +1) if this array is less than, equal to, or greater than
@@ -2987,7 +2987,8 @@ rb_ary_cmp(VALUE ary1, VALUE ary2)
     long len;
     VALUE v;
 
-    ary2 = to_ary(ary2);
+    ary2 = rb_check_array_type(ary2);
+    if (NIL_P(ary2)) return Qnil;
     if (ary1 == ary2) return INT2FIX(0);
     v = rb_exec_recursive_paired(recursive_cmp, ary1, ary2, ary2);
     if (v != Qundef) return v;
