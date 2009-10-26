@@ -23,31 +23,60 @@ class TestRipper_Filter < Test::Unit::TestCase
     File.expand_path(__FILE__)
   end
 
+  def test_filter_filename_unset
+    data = {}
+    filter = Filter.new(File.read(filename))
+    filter.parse(data)
+    assert_equal('-', data[:filename], "[ruby-dev:37856]")
+    assert_equal('-', filter.filename)
+  end
+
   def test_filter_filename
     data = {}
-    Filter.new(File.read(filename)).parse(data)
-    assert_equal('-', data[:filename], "[ruby-dev:37856]")
-
-    data = {}
-    Filter.new(File.read(filename), filename).parse(data)
+    filter = Filter.new(File.read(filename), filename)
+    assert_equal(filename, filter.filename)
+    filter.parse(data)
     assert_equal(filename, data[:filename])
+    assert_equal(filename, filter.filename)
   end
 
   def test_filter_lineno
     data = {}
-    Filter.new(File.read(filename)).parse(data)
+    src = File.read(filename)
+    src_lines = src.count("\n")
+    filter = Filter.new(src)
+    assert_equal(nil, filter.lineno)
+    filter.parse(data)
     assert_equal(1, data[:lineno])
+    assert_equal(src_lines, filter.lineno)
+  end
+
+  def test_filter_lineno_set
+    data = {}
+    src = File.read(filename)
+    src_lines = src.count("\n")
+    filter = Filter.new(src, '-', 100)
+    assert_equal(nil, filter.lineno)
+    filter.parse(data)
+    assert_equal(100, data[:lineno])
+    assert_equal(src_lines+100-1, filter.lineno)
   end
 
   def test_filter_column
     data = {}
-    Filter.new(File.read(filename)).parse(data)
+    src = File.read(filename)
+    last_columns = src[/(.*)\Z/].size
+    filter = Filter.new(src)
+    assert_equal(nil, filter.column)
+    filter.parse(data)
     assert_equal(0, data[:column])
+    assert_equal(last_columns, filter.column)
   end
 
   def test_filter_token
     data = {}
-    Filter.new(File.read(filename)).parse(data)
+    filter = Filter.new(File.read(filename))
+    filter.parse(data)
     assert_equal("begin", data[:token])
   end
 end if ripper_test
