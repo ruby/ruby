@@ -1,3 +1,8 @@
+Mon Oct 26 20:04:13 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* array.c (rb_ary_cmp): Array#<=> returns nil when comparison fails
+	  [ruby-core:26316]
+
 Mon Oct 26 18:37:57 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (default_proc_arity_check): new support function.
