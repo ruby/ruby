@@ -1,3 +1,8 @@
+Mon Oct 26 12:06:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_fwrite): adjust stdio file position after direct write on
+	  BSDish platforms.   [ruby-core:26300]
+
 Sun Oct 25 20:04:35 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* object.c (rb_class_initialize): The inherited hook should be run
