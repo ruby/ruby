@@ -1,3 +1,10 @@
+Mon Oct 26 12:34:08 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ruby.c (usage): -T and -W descriptions updated.  see
+	  [ruby-dev:39539]
+
+	* man/ruby.1: ditto.
+
 Mon Oct 26 12:06:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_fwrite): adjust stdio file position after direct write on

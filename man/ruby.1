@@ -205,14 +205,14 @@ on machines that don't support it, in the following manner:
   exec /usr/local/bin/ruby -S $0 $*
 .Ed
 .Pp
-.It Fl T Ns Op Ar level
+.It Fl T Ns Op Ar level=1
 Turns on taint checks at the specified level (default 1).
 .Pp
 .It Fl U
 Sets the defalut value for internal encodings
 .Pf ( Li "Encoding.default_internal" ) to UTF-8.
 .Pp
-.It Fl W Ns Op Ar level
+.It Fl W Ns Op Ar level=2
 Turns on verbose mode at the specified level, without printing version 
 message at the beginning. The level can be;
 .Bl -hang -offset indent
