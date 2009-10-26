@@ -1,3 +1,10 @@
+Tue Oct 27 07:38:39 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c,stubs.c: remove errors or warnings when compiled
+	  with old ruby 1.8.x.
+
+	* ext/tk/tkutil/tkutil.c: ditto.
+
 Mon Oct 26 13:24:17 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/remote-tk.rb: typo fixed.

@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2009-08-04"
+#define TCLTKLIB_RELEASE_DATE "2009-10-27"
 
 #include "ruby.h"
 
@@ -22,6 +22,15 @@ int rb_thread_check_trap_pending();
 #else
 /* use rb_thread_critical on Ruby 1.8.x */
 #include "rubysig.h"
+#endif
+
+a#if !defined(RSTRING_PTR)
+#define RSTRING_PTR(s) (RSTRING(s)->ptr)
+#define RSTRING_LEN(s) (RSTRING(s)->len)
+#endif
+#if !defined(RARRAY_PTR)
+#define RARRAY_PTR(s) (RARRAY(s)->ptr)
+#define RARRAY_LEN(s) (RARRAY(s)->len)
 #endif
 
 #ifdef OBJ_UNTRUST

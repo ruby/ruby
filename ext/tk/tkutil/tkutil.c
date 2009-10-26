@@ -7,7 +7,7 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2009-07-12"
+#define TKUTIL_RELEASE_DATE "2009-10-27"
 
 #include "ruby.h"
 
@@ -21,6 +21,22 @@ static VALUE rb_thread_critical; /* dummy */
 #include "ruby/st.h"
 #else
 #include "st.h"
+#endif
+
+#if !defined(RHASH_TBL)
+#define RHASH_TBL(h) (RHASH(h)->tbl)
+#endif
+#if !defined(RSTRING_PTR)
+#define RSTRING_PTR(s) (RSTRING(s)->ptr)
+#define RSTRING_LEN(s) (RSTRING(s)->len)
+#endif
+#if !defined(RARRAY_PTR)
+#define RARRAY_PTR(s) (RARRAY(s)->ptr)
+#define RARRAY_LEN(s) (RARRAY(s)->len)
+#endif
+
+#if defined(HAVE_STRNDUP) && !defined(_GNU_SOURCE)
+extern char *strndup(const char* _ptr, size_t _len);
 #endif
 
 static VALUE cMethod;
