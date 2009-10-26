@@ -1,3 +1,10 @@
+Tue Oct 27 07:38:39 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c,stubs.c: remove errors or warnings when compiled
+	  with old ruby 1.8.x.
+
+	* ext/tk/tkutil/tkutil.c: ditto.
+
 Tue Oct 27 05:56:39 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm.c (invoke_block_from_c): return Qnil when its iseq is
