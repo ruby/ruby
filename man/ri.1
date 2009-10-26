@@ -4,7 +4,7 @@
 .Os UNIX
 .Sh NAME
 .Nm ri
-.Nd Ruby API reference front end 
+.Nd Ruby API reference front end
 .Sh SYNOPSIS
 .Nm
 .Op Fl Ti
@@ -12,19 +12,19 @@
 .Op Fl f Ar format
 .Op Fl -list-doc-dirs
 .Op Fl -no-standard-docs
-.Op Fl - Ns Oo Cm no- Oc Ns Cm Bro Cm system Ns | Ns Cm site Ns | Ns Cm gems Ns | Ns Cm home Brc
+.Op Fl - Ns Oo Cm no- Oc Ns Bro Cm system Ns | Ns Cm site Ns | Ns Cm gems Ns | Ns Cm home Brc
 .Op Fl - Ns Oo Cm no- Oc Ns Cm use-cache
 .Op Fl -width Ns = Ns Ar width
 .Op Ar target ...
 .Sh DESCRIPTION
 .Nm
-is a CUI front end for the Ruby API reference. 
+is a CUI front end for the Ruby API reference.
 You can search and read API reference for classes and methods with
 .Nm .
-
+.Pp
 .Nm
 is a part of Ruby.
-
+.Pp
 .Ar target
 can be one of the following forms:
 .Bl -diag -offset indent
@@ -39,10 +39,10 @@ for both class and instance methods
 .It method
 for both class and instance methods
 .El
-
+.Pp
 All class names may be abbreviated to their minimum unambiguous form. If a name
 is ambiguous, all valid options will be listed.
-
+.Pp
 For example:
 .Bd -literal -offset indent
 ri Fil
@@ -50,7 +50,7 @@ ri File
 ri File.new
 ri zip
 .Ed
-
+.Pp
 Note that shell quoting may be required for method names containing
 punctuation:
 .Bd -literal -offset indent
@@ -61,7 +61,7 @@ ri compact\!
 .Bl -tag -width "1234567890123" -compact
 .Pp
 .It Fl -version
-Prints the version of 
+Prints the version of
 .Nm .
 .Pp
 .It Fl T
@@ -84,7 +84,7 @@ pager or tell the pager to allow control characters.
 .Pp
 .It Fl i
 .It Fl -interactive
-This makes 
+This makes
 .Nm
 go into interactive mode.
 .Pp
@@ -103,8 +103,8 @@ Do not include documentation from the Ruby standard library,
 .Pa site_lib ,
 installed gems, or
 .Pa ~/.rdoc .
-
-Equivalent to specifying the options 
+.Pp
+Equivalent to specifying the options
 .Fl -no-system , Fl -no-site , Fl -no-gems ,
 and
 .Fl -no-home .
@@ -122,7 +122,7 @@ Include documentation from RubyGems. Defaults to true.
 Include documentation stored in ~/.rdoc.  Defaults to true.
 .Pp
 .It Fl - Ns Oo Cm no- Oc Ns Cm use-cache
-Whether or not to use 
+Whether or not to use
 .Nm Ns
 .Ns 's cache. True by default.
 .Pp
@@ -165,7 +165,7 @@ Searches user-wide documents here.
 .Pp
 .Sh REPORTING BUGS
 .Bl -bullet
-.Li Security vulnerabilities should be reported via an email to 
+.Li Security vulnerabilities should be reported via an email to
 .Aq security@ruby-lang.org Ns
 .Li .
 Reported problems will be published after fixed.

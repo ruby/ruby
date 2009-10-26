@@ -95,7 +95,7 @@ Ruby has a bunch of text processing features like in Perl.
 .Pp
 .It Sy "M17N, character set independent"
 Ruby supports multilingualized programming. Easy to process texts
-written in many different natural languages and encoded in many 
+written in many different natural languages and encoded in many
 different character encodings, without dependence on Unicode.
 .Pp
 .It Sy "Bignums"
@@ -122,7 +122,7 @@ on-the-fly.
 .It Sy "Rich libraries"
 Libraries called "builtin libraries" and "standard libraries" are bundled with Ruby.
 And you can obtain more libraries via the package management system called `RubyGems'.
-
+.Pp
 Moreover there are thousands of Ruby projects in Rubyforge
 .Pf ( "http://www.rubyforge.org" ) and RAA
 .Pf ( "http://raa.ruby-lang.org" ) Ns .
@@ -160,7 +160,7 @@ Causes Ruby to switch to the directory.
 .It Fl E Ar external Ns Op : Ns Ar internal
 .It Fl -encoding Ar external Ns Op : Ns Ar internal
 Specifies the default value(s) for external encodings and internal encoding. Values should be separated with colon (:).
-
+.Pp
 You can ommit the one for internal encodings, then the value
 .Pf ( Li "Encoding.default_internal" ) will be nil.
 .Pp
@@ -177,7 +177,7 @@ will be added to the load-path variable
 Specifies KANJI (Japanese) encoding. The default value for script encodings
 .Pf ( Li "__ENCODING__" ) and external encodings ( Li "Encoding.default_external" ) will be the specified one.
 .Ar kcode
-can be one of 
+can be one of
 .Bl -hang -offset indent
 .It Sy e
 EUC-JP
@@ -213,7 +213,7 @@ Sets the defalut value for internal encodings
 .Pf ( Li "Encoding.default_internal" ) to UTF-8.
 .Pp
 .It Fl W Ns Op Ar level=2
-Turns on verbose mode at the specified level, without printing version 
+Turns on verbose mode at the specified level, without printing version
 message at the beginning. The level can be;
 .Bl -hang -offset indent
 .It Sy 0
@@ -375,7 +375,7 @@ before executing script.
 .It Fl y
 .It Fl -yydebug
 DO NOT USE.
-
+.Pp
 Turns on compiler debug mode.  Ruby will print a bunch of internal
 state messages during compiling scripts.  You don't have to specify
 this switch, unless you are going to debug the Ruby interpreter.
@@ -406,8 +406,8 @@ Disables (or enables) all features.
 .El
 .Pp
 .It Fl -dump Ns = Ns Ar target
-DO NOT USE. 
-
+DO NOT USE.
+.Pp
 Prints the specified target.
 .Ar target
 can be one of;
@@ -494,7 +494,7 @@ Ruby Application Archive.
 .Pp
 .Sh REPORTING BUGS
 .Bl -bullet
-.Li Security vulnerabilities should be reported via an email to 
+.Li Security vulnerabilities should be reported via an email to
 .Aq security@ruby-lang.org Ns
 .Li .
 Reported problems will be published after fixed.
@@ -507,5 +507,5 @@ via the system because it publishes the vulnerabilities immedately.
 .Sh AUTHORS
 Ruby is designed and implemented by
 .An Yukihiro Matsumoto Aq matz@netlab.jp .
-
+.Pp
 See <\fBhttp://redmine.ruby-lang.org/wiki/ruby/Contributors\fR> for contributors to Ruby.
