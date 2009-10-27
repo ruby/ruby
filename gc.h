@@ -2,7 +2,9 @@
 #ifndef RUBY_GC_H
 #define RUBY_GC_H 1
 
-#if defined(__i386) && defined(__GNUC__)
+#if defined(__x86_64__) && defined(__GNUC__)
+#define SET_MACHINE_STACK_END(p) __asm__("mov %%rsp, %0" : "=r" (*p))
+#elif defined(__i386) && defined(__GNUC__)
 #define SET_MACHINE_STACK_END(p) __asm__("mov %%esp, %0" : "=r" (*p))
 #else
 NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
