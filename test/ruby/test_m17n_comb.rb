@@ -727,15 +727,6 @@ class TestM17NComb < Test::Unit::TestCase
     STRINGS.each {|s|
       s = s.dup
       desc = "#{encdump s}.chop"
-      if !s.valid_encoding?
-        #assert_raise(ArgumentError, desc) { s.chop }
-        begin
-          s.chop
-        rescue ArgumentError
-          e = $!
-        end
-        next if e
-      end
       t = nil
       assert_nothing_raised(desc) { t = s.chop }
       assert(t.valid_encoding?) if s.valid_encoding?

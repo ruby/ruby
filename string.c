@@ -5925,9 +5925,9 @@ chopped_length(VALUE str)
     if (beg > end) return 0;
     p = rb_enc_prev_char(beg, end, end, enc);
     if (!p) return 0;
-    if (p > beg && rb_enc_codepoint(p, end, enc) == '\n') {
+    if (p > beg && rb_enc_ascget(p, end, 0, enc) == '\n') {
 	p2 = rb_enc_prev_char(beg, p, end, enc);
-	if (p2 && rb_enc_codepoint(p2, end, enc) == '\r') p = p2;
+	if (p2 && rb_enc_ascget(p2, end, 0, enc) == '\r') p = p2;
     }
     return p - beg;
 }
