@@ -1,3 +1,7 @@
+Tue Oct 27 09:27:59 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_exec.c (DECL_SC_REG): use __clang__.
+
 Tue Oct 27 08:56:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb: reverted r25443 because build_os is used in mkmf.rb
