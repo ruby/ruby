@@ -1,3 +1,8 @@
+Tue Oct 27 16:36:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (chopped_length): get rid of unexpected exception.
+	  see [ruby-core:26336].
+
 Tue Oct 27 15:53:10 2009  Tanaka Akira  <akr@fsij.org>
 
 	* gc.h (SET_MACHINE_STACK_END): use __i386.
