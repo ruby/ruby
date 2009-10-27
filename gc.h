@@ -4,7 +4,7 @@
 
 #if defined(__x86_64__) && defined(__GNUC__)
 #define SET_MACHINE_STACK_END(p) __asm__("movq\t%%rsp, %0" : "=r" (*p))
-#elif defined(__i386__) && defined(__GNUC__)
+#elif defined(__i386) && defined(__GNUC__)
 #define SET_MACHINE_STACK_END(p) __asm__("movl\t%%esp, %0" : "=r" (*p))
 #else
 NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
