@@ -1,3 +1,10 @@
+Tue Oct 27 22:46:44 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/ftp.rb (Net::FTP#initialize): @sock = nil.
+
+	* lib/net/ftp.rb (Net::FTP#binary=): send command only when
+	  socket is open. [ruby-dev:39548]
+
 Tue Oct 27 22:22:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (Init_stringio): added read_nonblock and

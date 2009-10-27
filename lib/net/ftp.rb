@@ -132,6 +132,7 @@ module Net
       @passive = false
       @debug_mode = false
       @resume = false
+      @sock = nil
       if host
 	connect(host)
 	if user
@@ -143,7 +144,7 @@ module Net
     def binary=(newmode)
       if newmode != @binary
         @binary = newmode
-        @binary ? voidcmd("TYPE I") : voidcmd("TYPE A")
+        @binary ? voidcmd("TYPE I") : voidcmd("TYPE A") unless closed?
       end
     end
 
