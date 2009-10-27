@@ -140,4 +140,17 @@ class TestString < Test::Unit::TestCase
   ensure
     $KCODE = original_kcode
   end
+
+  def test_inspect
+    original_kcode = $KCODE
+
+    $KCODE = 'n'
+    assert_equal('"\343\201\202"', "\xe3\x81\x82".inspect)
+
+    $KCODE = 'u'
+    assert_equal("\"\xe3\x81\x82\"", "\xe3\x81\x82".inspect)
+    assert_no_match(/\0/, "\xe3\x81".inspect, '[ruby-dev:39550]')
+  ensure
+    $KCODE = original_kcode
+  end
 end

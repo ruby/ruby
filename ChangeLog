@@ -1,3 +1,8 @@
+Tue Oct 27 22:05:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_inspect): get rid of adding garbage to shor
+	  UTF-8 string.  [ruby-dev:39550]
+
 Tue Oct 27 21:20:35 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/variable.rb: add TkVariable#+@ and -@ method.
