@@ -16,6 +16,12 @@ Tue Oct 27 08:56:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* mkconfig.rb: reverted r25443 because build_os is used in mkmf.rb
 	  on some platforms.  [ruby-core:26332]
 
+Tue Oct 27 08:01:57 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* parse.y (ripper_filename): add Ripper#filename. [ruby-dev:37856]
+
+	* test/ripper/test_filter.rb: add more tests.
+
 Tue Oct 27 07:53:25 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (garbage_collect_with_gvl): do not garbage_collect when
