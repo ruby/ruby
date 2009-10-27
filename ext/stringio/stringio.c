@@ -28,15 +28,13 @@ struct StringIO {
     int count;
 };
 
-static void strio_mark _((struct StringIO *));
-static void strio_free _((struct StringIO *));
 static void strio_init(int, VALUE *, struct StringIO *);
 
-#define IS_STRIO(obj) (RDATA(obj)->dmark == (RUBY_DATA_FUNC)strio_mark)
+#define IS_STRIO(obj) (rb_typeddata_is_kind_of(obj, &strio_data_type))
 #define error_inval(msg) (errno = EINVAL, rb_sys_fail(msg))
 
 static struct StringIO *
-strio_alloc()
+strio_alloc(void)
 {
     struct StringIO *ptr = ALLOC(struct StringIO);
     ptr->string = Qnil;
@@ -48,31 +46,39 @@ strio_alloc()
 }
 
 static void
-strio_mark(struct StringIO *ptr)
+strio_mark(void *p)
 {
+    struct StringIO *ptr = p;
     if (ptr) {
 	rb_gc_mark(ptr->string);
     }
 }
 
 static void
-strio_free(struct StringIO *ptr)
+strio_free(void *p)
 {
+    struct StringIO *ptr = p;
     if (--ptr->count <= 0) {
 	xfree(ptr);
     }
 }
 
-static struct StringIO*
-check_strio(VALUE self)
+static size_t
+strio_memsize(const void *p)
 {
-    Check_Type(self, T_DATA);
-    if (!IS_STRIO(self)) {
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected StringIO)",
-		 rb_class2name(CLASS_OF(self)));
-    }
-    return DATA_PTR(self);
+    const struct StringIO *ptr = p;
+    if (!ptr) return 0;
+    return sizeof(struct StringIO);
 }
+
+static const rb_data_type_t strio_data_type = {
+    "strio",
+    strio_mark,
+    strio_free,
+    strio_memsize,
+};
+
+#define check_strio(self) ((struct StringIO*)rb_check_typeddata(self, &strio_data_type))
 
 static struct StringIO*
 get_strio(VALUE self)
@@ -135,7 +141,7 @@ check_modifiable(struct StringIO *ptr)
 static VALUE
 strio_s_allocate(VALUE klass)
 {
-    return Data_Wrap_Struct(klass, strio_mark, strio_free, 0);
+    return TypedData_Wrap_Struct(klass, &strio_data_type, 0);
 }
 
 /*

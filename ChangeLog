@@ -1,3 +1,7 @@
+Tue Oct 27 22:14:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_data_type): typed.
+
 Tue Oct 27 21:20:35 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/variable.rb: add TkVariable#+@ and -@ method.
