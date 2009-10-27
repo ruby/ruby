@@ -1175,6 +1175,13 @@ end
     end
   end
 
+  def +@
+    self.numeric
+  end
+  def -@
+    -(self.numeric)
+  end
+
   def &(other)
     if other.kind_of?(Array)
       self.to_a & other.to_a
