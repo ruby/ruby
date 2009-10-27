@@ -210,7 +210,7 @@ Tue Oct 20 17:57:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Oct 20 16:41:18 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/win32.h (finite, scalb): inline'ed non-standard
-	  identifier macros.  [ruby-core:2234]
+	  identifier macros.  [ruby-core:26166]
 
 Tue Oct 20 15:38:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
