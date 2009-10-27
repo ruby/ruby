@@ -87,6 +87,28 @@ class TestStringIO < Test::Unit::TestCase
     f.close unless f.closed?
   end
 
+  def test_write_nonblock
+    s = ""
+    f = StringIO.new(s, "w")
+    f.write_nonblock("foo")
+    f.close
+    assert_equal("foo", s)
+
+    f = StringIO.new(s, File::WRONLY)
+    f.write_nonblock("bar")
+    f.close
+    assert_equal("bar", s)
+
+    f = StringIO.new(s, "a")
+    o = Object.new
+    def o.to_s; "baz"; end
+    f.write_nonblock(o)
+    f.close
+    assert_equal("barbaz", s)
+  ensure
+    f.close unless f.closed?
+  end
+
   def test_mode_error
     f = StringIO.new("", "r")
     assert_raise(IOError) { f.write("foo") }
@@ -388,6 +410,24 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("\u3042\u3044", f.read)
     f.rewind
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read(f.size))
+  end
+
+  def test_readpartial
+    f = StringIO.new("\u3042\u3044")
+    assert_raise(ArgumentError) { f.readpartial(-1) }
+    assert_raise(ArgumentError) { f.readpartial(1, 2, 3) }
+    assert_equal("\u3042\u3044", f.readpartial)
+    f.rewind
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.readpartial(f.size))
+  end
+
+  def test_read_nonblock
+    f = StringIO.new("\u3042\u3044")
+    assert_raise(ArgumentError) { f.read_nonblock(-1) }
+    assert_raise(ArgumentError) { f.read_nonblock(1, 2, 3) }
+    assert_equal("\u3042\u3044", f.read_nonblock)
+    f.rewind
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size))
   end
 
   def test_size

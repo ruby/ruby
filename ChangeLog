@@ -1,4 +1,7 @@
-Tue Oct 27 22:14:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 27 22:22:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (Init_stringio): added read_nonblock and
+	  write_nonblock aliases.  [ruby-dev:39551]
 
 	* ext/stringio/stringio.c (strio_data_type): typed.
 
