@@ -2162,7 +2162,7 @@ rb_str_eql(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str <=> other_str   => -1, 0, +1
+ *     str <=> other_str   => -1, 0, +1 or nil
  *
  *  Comparison---Returns -1 if <i>other_str</i> is greater than, 0 if
  *  <i>other_str</i> is equal to, and +1 if <i>other_str</i> is less than
@@ -2213,7 +2213,7 @@ rb_str_cmp_m(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str.casecmp(other_str)   => -1, 0, +1
+ *     str.casecmp(other_str)   => -1, 0, +1 or nil
  *
  *  Case-insensitive version of <code>String#<=></code>.
  *
@@ -7161,7 +7161,7 @@ sym_succ(VALUE sym)
 /*
  * call-seq:
  *
- *   str <=> other       => -1, 0, +1
+ *   str <=> other       => -1, 0, +1 or nil
  *
  * Compares _sym_ with _other_ in string form.
  */
@@ -7178,7 +7178,7 @@ sym_cmp(VALUE sym, VALUE other)
 /*
  * call-seq:
  *
- *   sym.casecmp(other)  => -1, 0, +1
+ *   sym.casecmp(other)  => -1, 0, +1 or nil
  *
  * Case-insensitive version of <code>Symbol#<=></code>.
  */
