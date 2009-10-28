@@ -8459,6 +8459,7 @@ reduce_nodes_gen(struct parser_params *parser, NODE **body)
      (reduce_nodes(&node->n1), body = &node->n2, 1))
 
     while (node) {
+	int newline = node->flags & NODE_FL_NEWLINE;
 	switch (nd_type(node)) {
 	  end:
 	  case NODE_NIL:
@@ -8466,9 +8467,11 @@ reduce_nodes_gen(struct parser_params *parser, NODE **body)
 	    return;
 	  case NODE_RETURN:
 	    *body = node = node->nd_stts;
+	    if (newline && node) node->flags |= NODE_FL_NEWLINE;
 	    continue;
 	  case NODE_BEGIN:
 	    *body = node = node->nd_body;
+	    if (newline && node) node->flags |= NODE_FL_NEWLINE;
 	    continue;
 	  case NODE_BLOCK:
 	    body = &node->nd_end->nd_head;
@@ -8492,6 +8495,7 @@ reduce_nodes_gen(struct parser_params *parser, NODE **body)
 	    return;
 	}
 	node = *body;
+	if (newline && node) node->flags |= NODE_FL_NEWLINE;
     }
 
 #undef subnodes

@@ -1,3 +1,18 @@
+Thu Aug 20 23:39:51 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* parse.y (reduce_nodes_gen): preserve NODE_FL_NEWLINE flag during
+	  node reducing.  [ruby-core:24463]
+
+Wed Aug 19 02:54:01 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_settracefunc.rb (test_return, test_return2): add two
+	  tests for [ruby-dev:38701] and [ruby-core:24463].
+
+Wed Aug 19 01:08:34 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* compile.c (NODE_RETURN): fire return event at explicit return.
+	  [ruby-dev:38701]
+
 Tue Aug 18 11:37:24 2009  wanabe  <s.wanabe@gmail.com>
 
 	* vm_insnhelper.c (vm_call_cfunc): ensure hook c-return.
