@@ -63,6 +63,11 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
                   [[2, 0], :on_tstring_content, "heredoc\n"],
                   [[3, 0], :on_heredoc_end, "EOS"]],
                  Ripper.lex("<<EOS\nheredoc\nEOS")
+    assert_equal [[[1, 0], :on_regexp_beg, "/"],
+                  [[1, 1], :on_tstring_content, "foo\n"],
+                  [[2, 0], :on_tstring_content, "bar"],
+                  [[2, 3], :on_regexp_end, "/"]],
+                 Ripper.lex("/foo\nbar/")
   end
 
   def test_location
