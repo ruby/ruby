@@ -526,6 +526,10 @@ case "$target_os" in
 esac
 
 case "$target_os" in
+solaris*)
+		AC_DEFINE(SIZEOF_STRUCT_DIRENT_TOO_SMALL, 1)
+		LIBS="-lm $LIBS"
+		;;
 nextstep*)	;;
 openstep*)	;;
 rhapsody*)	;;
