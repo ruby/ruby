@@ -1,3 +1,4 @@
+/* -*- mode:c; c-file-style:"gnu" -*- */
 /**********************************************************************
   regparse.c -  Oniguruma (regular expression library)
 **********************************************************************/
@@ -4403,12 +4404,11 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
 	CClassNode* acc;
 
 	r = parse_char_class(&anode, tok, &p, end, env);
-	if (r != 0) goto cc_open_err;
-	acc = NCCLASS(anode);
-	r = or_cclass(cc, acc, env->enc);
-
+	if (r == 0) {
+	  acc = NCCLASS(anode);
+	  r = or_cclass(cc, acc, env);
+	}
 	onig_node_free(anode);
-      cc_open_err:
 	if (r != 0) goto err;
       }
       break;
@@ -4497,7 +4497,6 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
  err:
   if (cc != NCCLASS(*np))
     bbuf_free(cc->mbuf);
-  onig_node_free(*np);
   return r;
 }
 
@@ -4731,7 +4730,10 @@ parse_enclose(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
   r = fetch_token(tok, &p, end, env);
   if (r < 0) return r;
   r = parse_subexp(&target, tok, term, &p, end, env);
-  if (r < 0) return r;
+  if (r < 0) {
+    onig_node_free(target);
+    return r;
+  }
 
   if (NTYPE(*np) == NT_ANCHOR)
     NANCHOR(*np)->target = target;
@@ -5054,9 +5056,8 @@ parse_exp(Node** np, OnigToken* tok, int term,
   case TK_ALT:
   case TK_EOT:
   end_of_token:
-  *np = node_new_empty();
-  return tok->type;
-  break;
+    *np = node_new_empty();
+    return tok->type;
 
   case TK_SUBEXP_OPEN:
     r = parse_enclose(np, tok, TK_SUBEXP_CLOSE, src, end, env);
@@ -5071,8 +5072,11 @@ parse_exp(Node** np, OnigToken* tok, int term,
       if (r < 0) return r;
       r = parse_subexp(&target, tok, term, src, end, env);
       env->option = prev;
-      if (r < 0) return r;
-      NENCLOSE(*np)->target = target;	
+      if (r < 0) {
+	onig_node_free(target);
+	return r;
+      }
+      NENCLOSE(*np)->target = target;
       return tok->type;
     }
     break;
@@ -5386,7 +5390,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
       NQTFR(qn)->greedy = tok->u.repeat.greedy;
       r = set_quantifier(qn, *targetp, group, env);
       if (r < 0) return r;
-      
+
       if (tok->u.repeat.possessive != 0) {
 	Node* en;
 	en = node_new_enclose(ENCLOSE_STOP_BACKTRACK);
@@ -5429,7 +5433,10 @@ parse_branch(Node** top, OnigToken* tok, int term,
 
   *top = NULL;
   r = parse_exp(&node, tok, term, src, end, env);
-  if (r < 0) return r;
+  if (r < 0) {
+    onig_node_free(node);
+    return r;
+  }
 
   if (r == TK_EOT || r == term || r == TK_ALT) {
     *top = node;
@@ -5439,7 +5446,10 @@ parse_branch(Node** top, OnigToken* tok, int term,
     headp = &(NCDR(*top));
     while (r != TK_EOT && r != term && r != TK_ALT) {
       r = parse_exp(&node, tok, term, src, end, env);
-      if (r < 0) return r;
+      if (r < 0) {
+	onig_node_free(node);
+	return r;
+      }
 
       if (NTYPE(node) == NT_LIST) {
 	*headp = node;
@@ -5481,7 +5491,10 @@ parse_subexp(Node** top, OnigToken* tok, int term,
       r = fetch_token(tok, src, end, env);
       if (r < 0) return r;
       r = parse_branch(&node, tok, term, src, end, env);
-      if (r < 0) return r;
+      if (r < 0) {
+	onig_node_free(node);
+	return r;
+      }
 
       *headp = onig_node_new_alt(node, NULL);
       headp = &(NCDR(*headp));
@@ -5491,6 +5504,7 @@ parse_subexp(Node** top, OnigToken* tok, int term,
       goto err;
   }
   else {
+    onig_node_free(node);
   err:
     if (term == TK_SUBEXP_CLOSE)
       return ONIGERR_END_PATTERN_WITH_UNMATCHED_PARENTHESIS;
