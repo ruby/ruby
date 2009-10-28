@@ -223,7 +223,7 @@ static struct timespec stat_mtimespec(struct stat *st);
 
 /*
  *  call-seq:
- *     stat <=> other_stat    => -1, 0, 1
+ *     stat <=> other_stat    => -1, 0, 1, nil
  *
  *  Compares <code>File::Stat</code> objects by comparing their
  *  respective modification times.

@@ -2963,7 +2963,7 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
 
 /*
  *  call-seq:
- *     array <=> other_array   ->  -1, 0, +1, nil
+ *     array <=> other_array   ->  -1, 0, +1 or nil
  *
  *  Comparison---Returns an integer (-1, 0,
  *  or +1) if this array is less than, equal to, or greater than

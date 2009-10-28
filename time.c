@@ -2489,7 +2489,7 @@ time_subsec(VALUE time)
 
 /*
  *  call-seq:
- *     time <=> other_time => -1, 0, +1
+ *     time <=> other_time => -1, 0, +1 or nil
  *
  *  Comparison---Compares <i>time</i> with <i>other_time</i>.
  *
