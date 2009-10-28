@@ -987,14 +987,15 @@ enc_list(VALUE klass)
  * Names which this method accept are encoding names and aliases
  * including following special aliases
  *
- * * external (default external encoding)
- * * internal (default internal encoding)
- * * locale   (locale encoding)
- * * filesystem (filesystem encoding)
+ * "external"::   default external encoding
+ * "internal"::   default internal encoding
+ * "locale"::     locale encoding
+ * "filesystem":: filesystem encoding
  *
  * An ArgumentError is raised when no encoding with <i>name</i>.
- * Only +Encoding.find("internal")+ however returns nil when no encoding named "internal",
- * in other words, when Ruby has no default internal encoding.
+ * Only <code>Encoding.find("internal")</code> however returns nil
+ * when no encoding named "internal", in other words, when Ruby has no
+ * default internal encoding.
  */
 static VALUE
 enc_find(VALUE klass, VALUE enc)
