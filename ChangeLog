@@ -1,3 +1,7 @@
+Wed Oct 28 14:51:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_each_group): fixed typo.
+
 Wed Oct 28 13:02:10 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (Net::FTP#initialize): sets @binary to true.
