@@ -1,3 +1,9 @@
+Thu Oct 29 01:22:01 2009  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* ext/socket/extconf.rb : Compilation failure on AIX.
+	  ss_len (a member of struct sockaddr_storage) has preceding __,
+	  but ss_family does not have it from AIX 5.2.
+
 Wed Oct 28 16:32:49 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (get_filesystem_encoding): removed.
