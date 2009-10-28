@@ -1,5 +1,4 @@
-#!/usr/bin/env ruby -w
-# encoding: UTF-8
+# encoding: US-ASCII
 # = csv.rb -- CSV Reading and Writing
 #
 #  Created by James Edward Gray II on 2005-10-31.
