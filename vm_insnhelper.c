@@ -365,7 +365,7 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
     TH_PUSH_TAG(th);
-    if (th->event_flags & RUBY_EVENT_C_RETURN) {
+    if (th->event_flags & (RUBY_EVENT_C_RETURN | RUBY_EVENT_VM)) {
 	state = TH_EXEC_TAG();
     }
     else {

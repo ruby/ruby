@@ -167,6 +167,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["raise", 5, :test_raise, TestSetTraceFunc],
                  events.shift)
+    assert_equal(["c-return", 5, :raise, Kernel],
+                 events.shift)
     assert_equal(["c-call", 6, :===, Module],
                  events.shift)
     assert_equal(["c-return", 6, :===, Module],

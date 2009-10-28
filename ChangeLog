@@ -1,3 +1,11 @@
+Tue Aug 18 11:37:24 2009  wanabe  <s.wanabe@gmail.com>
+
+	* vm_insnhelper.c (vm_call_cfunc): ensure hook c-return.
+	  [Bug #1588]
+
+	* test/ruby/test_settracefunc.rb (TestSetTraceFunc#test_raise):
+	  follow above.
+
 Mon Aug 17 14:35:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (lex_get_str, lex_io_gets, rb_parser_compile_string):
