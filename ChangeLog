@@ -1,3 +1,9 @@
+Sun Aug 23 00:56:13 2009  Tanaka Akira  <akr@fsij.org>
+
+	* thread.c (rb_thread_schedule): don't recur infinitely.
+	  (rb_threadptr_execute_interrupts): ditto.
+	  [ruby-dev:38060]
+
 Sat Aug 22 00:03:19 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (rb_check_deadlock): decrease number of sleepers before
