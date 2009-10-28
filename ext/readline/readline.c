@@ -225,6 +225,9 @@ readline_readline(int argc, VALUE *argv, VALUE self)
 
     if (!isatty(0) && errno == EBADF) rb_raise(rb_eIOError, "closed stdin");
 
+#ifdef _WIN32
+    rl_prep_terminal(1);
+#endif
     buff = (char*)rb_protect((VALUE(*)_((VALUE)))readline, (VALUE)prompt,
                               &status);
     if (status) {
