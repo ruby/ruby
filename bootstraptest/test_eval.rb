@@ -297,5 +297,14 @@ assert_equal "(eval):1:in `block in <main>': ", %q{
   rescue => e
     e.message
   end
-}, ' [ruby-dev:35392]'
+}, '[ruby-dev:35392]'
 
+assert_equal "[:x]", %q{
+  def kaboom!
+    yield.eval("local_variables")
+  end
+
+  for x in enum_for(:kaboom!)
+    binding
+  end
+}, '[ruby-core:25125]'

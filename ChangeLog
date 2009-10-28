@@ -1,3 +1,8 @@
+Wed Aug 26 12:36:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (collect_local_variables_in_env): skips internal variables.
+	  [ruby-core:25125]
+
 Mon Aug 24 16:35:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c (st_delete_safe): deals with packed entries.
