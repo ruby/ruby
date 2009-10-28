@@ -1,3 +1,7 @@
+Thu Oct 29 04:40:36 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (Init_IO): rb_default_rs should be US-ASCII.
+
 Thu Oct 29 01:22:01 2009  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* ext/socket/extconf.rb : Compilation failure on AIX.

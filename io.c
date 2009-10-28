@@ -9692,7 +9692,7 @@ Init_IO(void)
     rb_output_fs = Qnil;
     rb_define_hooked_variable("$,", &rb_output_fs, 0, rb_str_setter);
 
-    rb_rs = rb_default_rs = rb_str_new2("\n");
+    rb_rs = rb_default_rs = rb_usascii_str_new2("\n");
     rb_gc_register_mark_object(rb_default_rs);
     rb_output_rs = Qnil;
     OBJ_FREEZE(rb_default_rs);	/* avoid modifying RS_default */
