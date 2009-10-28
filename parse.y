@@ -9394,7 +9394,7 @@ rb_enc_symname2_p(const char *name, int len, rb_encoding *enc)
 	}
 	break;
     }
-    return *m ? Qfalse : Qtrue;
+    return m == e;
 }
 
 static ID
