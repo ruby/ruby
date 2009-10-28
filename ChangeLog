@@ -1,3 +1,10 @@
+Thu Aug 27 08:16:34 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/strscan/strscan.c (strscan_set_string): set string should not be
+	  dupped or frozen, because freezing it causes #concat method failure,
+	  and unnecessary to dup without freezing.  a patch from Aaron
+	  Patterson at [ruby-core:25145].
+
 Wed Aug 26 12:36:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (collect_local_variables_in_env): skips internal variables.
