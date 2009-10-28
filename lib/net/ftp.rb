@@ -128,11 +128,12 @@ module Net
     #
     def initialize(host = nil, user = nil, passwd = nil, acct = nil)
       super()
-      @binary = false
+      @binary = true
       @passive = false
       @debug_mode = false
       @resume = false
       @sock = nil
+      @logged_in = false
       if host
 	connect(host)
 	if user
@@ -144,9 +145,18 @@ module Net
     def binary=(newmode)
       if newmode != @binary
         @binary = newmode
-        @binary ? voidcmd("TYPE I") : voidcmd("TYPE A") unless closed?
+        send_type_command if @logged_in
       end
     end
+
+    def send_type_command
+      if @binary
+        voidcmd("TYPE I")
+      else
+        voidcmd("TYPE A")
+      end
+    end
+    private :send_type_command
 
     def with_binary(newmode)
       oldmode = binary
@@ -393,7 +403,8 @@ module Net
 	raise FTPReplyError, resp
       end
       @welcome = resp
-      self.binary = true
+      send_type_command
+      @logged_in = true
     end
 
     #
