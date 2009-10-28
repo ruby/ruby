@@ -1118,6 +1118,22 @@ rb_filesystem_encoding(void)
     return enc;
 }
 
+/*
+ * call-seq:
+ *   Encoding.filesystem_encoding => enc
+ *
+ * Returns filesystem encoding.
+ *
+ * It is locale encoding on Unix,
+ * the currrent ANSI (or OEM unless AreFileApisANSI) code page on Windows,
+ * UTF-8 on Mac OS X.
+ */
+static VALUE
+get_filesystem_encoding(VALUE klass)
+{
+    return rb_enc_from_encoding(rb_filesystem_encoding());
+}
+
 struct default_encoding {
     int index;			/* -2 => not yet set, -1 => nil */
     rb_encoding *enc;
@@ -1463,6 +1479,7 @@ Init_Encoding(void)
     rb_define_method(rb_cEncoding, "_dump", enc_dump, -1);
     rb_define_singleton_method(rb_cEncoding, "_load", enc_load, 1);
 
+    rb_define_singleton_method(rb_cEncoding, "filesystem_encoding", get_filesystem_encoding, 0);
     rb_define_singleton_method(rb_cEncoding, "default_external", get_default_external, 0);
     rb_define_singleton_method(rb_cEncoding, "default_external=", set_default_external, 1);
     rb_define_singleton_method(rb_cEncoding, "default_internal", get_default_internal, 0);

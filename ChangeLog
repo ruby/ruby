@@ -1,6 +1,13 @@
+Wed Oct 28 14:24:45 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (get_filesystem_encoding):
+	  add Encoding.filesystem_encoding [ruby-dev:39546]
+	  also see [ruby-core:25959]
+
 Wed Oct 28 14:51:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (etc_each_group): fixed typo.
+
 
 Wed Oct 28 13:02:10 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
