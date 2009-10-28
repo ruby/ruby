@@ -914,7 +914,7 @@ rb_dbl_cmp(a, b)
 
 /*
  *  call-seq:
- *     flt <=> numeric   => -1, 0, +1
+ *     flt <=> numeric   => -1, 0, +1 or nil
  *
  *  Returns -1, 0, or +1 depending on whether <i>flt</i> is less than,
  *  equal to, or greater than <i>numeric</i>. This is the basis for the
@@ -2423,7 +2423,7 @@ fix_equal(x, y)
 
 /*
  *  call-seq:
- *     fix <=> numeric    => -1, 0, +1
+ *     fix <=> numeric    => -1, 0, +1 or nil
  *
  *  Comparison---Returns -1, 0, or +1 depending on whether <i>fix</i> is
  *  less than, equal to, or greater than <i>numeric</i>. This is the

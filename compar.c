@@ -196,7 +196,9 @@ cmp_between(x, min, max)
  *  may be ordered. The class must define the <code><=></code> operator,
  *  which compares the receiver against another object, returning -1, 0,
  *  or +1 depending on whether the receiver is less than, equal to, or
- *  greater than the other object. <code>Comparable</code> uses
+ *  greater than the other object. If the other object is not comparable
+ *  then the <code><=></code> operator should return nil.
+ *  <code>Comparable</code> uses
  *  <code><=></code> to implement the conventional comparison operators
  *  (<code><</code>, <code><=</code>, <code>==</code>, <code>>=</code>,
  *  and <code>></code>) and the method <code>between?</code>.

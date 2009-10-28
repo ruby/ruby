@@ -187,7 +187,7 @@ get_stat(self)
 
 /*
  *  call-seq:
- *     stat <=> other_stat    => -1, 0, 1
+ *     stat <=> other_stat    => -1, 0, +1 or nil
  *
  *  Compares <code>File::Stat</code> objects by comparing their
  *  respective modification times.

@@ -950,12 +950,9 @@ time_usec(time)
 
 /*
  *  call-seq:
- *     time <=> other_time => -1, 0, +1
- *     time <=> numeric    => -1, 0, +1
+ *     time <=> other_time => -1, 0, +1 or nil
  *
- *  Comparison---Compares <i>time</i> with <i>other_time</i> or with
- *  <i>numeric</i>, which is the number of seconds (possibly
- *  fractional) since epoch.
+ *  Comparison---Compares <i>time</i> with <i>other_time</i>.
  *
  *     t = Time.now       #=> Wed Apr 09 08:56:03 CDT 2003
  *     t2 = t + 2592000   #=> Fri May 09 08:56:03 CDT 2003

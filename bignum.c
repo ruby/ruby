@@ -986,7 +986,7 @@ rb_big_to_f(x)
 
 /*
  *  call-seq:
- *     big <=> numeric   => -1, 0, +1
+ *     big <=> numeric   => -1, 0, +1 or nil
  *
  *  Comparison---Returns -1, 0, or +1 depending on whether <i>big</i> is
  *  less than, equal to, or greater than <i>numeric</i>. This is the

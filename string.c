@@ -1031,7 +1031,7 @@ rb_str_eql(str1, str2)
 
 /*
  *  call-seq:
- *     str <=> other_str   => -1, 0, +1
+ *     str <=> other_str   => -1, 0, +1 or nil
  *
  *  Comparison---Returns -1 if <i>other_str</i> is greater than, 0 if
  *  <i>other_str</i> is equal to, and +1 if <i>other_str</i> is less than
@@ -1085,7 +1085,7 @@ rb_str_cmp_m(str1, str2)
 
 /*
  *  call-seq:
- *     str.casecmp(other_str)   => -1, 0, +1
+ *     str.casecmp(other_str)   => -1, 0, +1 or nil
  *
  *  Case-insensitive version of <code>String#<=></code>.
  *
