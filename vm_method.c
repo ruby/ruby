@@ -301,8 +301,8 @@ rb_method_node(VALUE klass, ID id)
     return rb_get_method_body(klass, id, 0);
 }
 
-static void
-remove_method(VALUE klass, ID mid)
+void
+rb_remove_method_id(VALUE klass, ID mid)
 {
     st_data_t data;
     NODE *body = 0;
@@ -343,6 +343,8 @@ remove_method(VALUE klass, ID mid)
 	rb_funcall(klass, removed, 1, ID2SYM(mid));
     }
 }
+
+#define remove_method(klass, mid) rb_remove_method_id(klass, mid)
 
 void
 rb_remove_method(VALUE klass, const char *name)
