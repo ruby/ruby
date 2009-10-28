@@ -408,4 +408,11 @@ class TestEval < Test::Unit::TestCase
       assert_equal("0", f.read.chomp)
     end
   end
+
+  def test_eval_ascii_incompatible
+    assert_raise(ArgumentError) {eval("__ENCODING__".encode("utf-16be"))}
+    assert_raise(ArgumentError) {eval("__ENCODING__".encode("utf-16le"))}
+    assert_raise(ArgumentError) {eval("__ENCODING__".encode("utf-32be"))}
+    assert_raise(ArgumentError) {eval("__ENCODING__".encode("utf-32le"))}
+  end
 end

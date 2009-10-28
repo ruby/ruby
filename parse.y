@@ -5076,10 +5076,21 @@ yycompile(struct parser_params *parser, const char *f, int line)
 }
 #endif /* !RIPPER */
 
+static rb_encoding *
+must_be_ascii_compatible(VALUE s)
+{
+    rb_encoding *enc = rb_enc_get(s);
+    if (!rb_enc_asciicompat(enc)) {
+	rb_raise(rb_eArgError, "invalid source encoding");
+    }
+    return enc;
+}
+
 static VALUE
 lex_get_str(struct parser_params *parser, VALUE s)
 {
     char *beg, *end, *pend;
+    rb_encoding *enc = must_be_ascii_compatible(s);
 
     beg = RSTRING_PTR(s);
     if (lex_gets_ptr) {
@@ -5092,18 +5103,20 @@ lex_get_str(struct parser_params *parser, VALUE s)
 	if (*end++ == '\n') break;
     }
     lex_gets_ptr = end - RSTRING_PTR(s);
-    return rb_enc_str_new(beg, end - beg, rb_enc_get(s));
+    return rb_enc_str_new(beg, end - beg, enc);
 }
 
 static VALUE
 lex_getline(struct parser_params *parser)
 {
     VALUE line = (*parser->parser_lex_gets)(parser, parser->parser_lex_input);
+    if (NIL_P(line)) return line;
+    must_be_ascii_compatible(line);
 #ifndef RIPPER
-    if (ruby_debug_lines && !NIL_P(line)) {
+    if (ruby_debug_lines) {
 	rb_ary_push(ruby_debug_lines, line);
     }
-    if (ruby_coverage && !NIL_P(line)) {
+    if (ruby_coverage) {
 	rb_ary_push(ruby_coverage, Qnil);
     }
 #endif
@@ -5111,16 +5124,8 @@ lex_getline(struct parser_params *parser)
 }
 
 #ifndef RIPPER
-NODE*
-rb_compile_string(const char *f, VALUE s, int line)
-{
-    VALUE volatile vparser = rb_parser_new();
-
-    return rb_parser_compile_string(vparser, f, s, line);
-}
-
-NODE*
-rb_parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int line)
+static NODE*
+parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int line)
 {
     struct parser_params *parser;
     NODE *node;
@@ -5140,15 +5145,31 @@ rb_parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int lin
 }
 
 NODE*
+rb_compile_string(const char *f, VALUE s, int line)
+{
+    must_be_ascii_compatible(s);
+    return parser_compile_string(rb_parser_new(), f, s, line);
+}
+
+NODE*
+rb_parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int line)
+{
+    must_be_ascii_compatible(s);
+    return parser_compile_string(vparser, f, s, line);
+}
+
+NODE*
 rb_compile_cstr(const char *f, const char *s, int len, int line)
 {
-    return rb_compile_string(f, rb_str_new(s, len), line);
+    VALUE str = rb_str_new(s, len);
+    return parser_compile_string(rb_parser_new(), f, str, line);
 }
 
 NODE*
 rb_parser_compile_cstr(volatile VALUE vparser, const char *f, const char *s, int len, int line)
 {
-    return rb_parser_compile_string(vparser, f, rb_str_new(s, len), line);
+    VALUE str = rb_str_new(s, len);
+    return parser_compile_string(vparser, f, str, line);
 }
 
 static VALUE

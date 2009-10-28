@@ -1,3 +1,8 @@
+Mon Aug 17 14:35:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lex_get_str, lex_io_gets, rb_parser_compile_string):
+	  must be ascii compatible.
+
 Sun Aug 16 23:58:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (yylex): should dispatch scan-event even when follows
