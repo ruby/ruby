@@ -536,6 +536,48 @@ rb_funcall3(VALUE recv, ID mid, int argc, const VALUE *argv)
     return rb_call(recv, mid, argc, argv, CALL_PUBLIC);
 }
 
+struct rescue_funcall_args {
+    VALUE obj;
+    ID id;
+    int argc;
+    VALUE *argv;
+};
+
+static VALUE
+check_funcall(struct rescue_funcall_args *args)
+{
+    return rb_funcall2(args->obj, args->id, args->argc, args->argv);
+}
+
+static VALUE
+check_failed(VALUE data)
+{
+    return data;
+}
+
+VALUE
+rb_check_funcall(VALUE obj, ID id, int argc, VALUE *argv)
+{
+    struct rescue_funcall_args args;
+
+    args.obj = obj;
+    args.id = id;
+    args.argc = argc;
+    args.argv = argv;
+    return rb_rescue2(check_funcall, (VALUE)&args, check_failed, Qundef,
+		      rb_eNoMethodError, (VALUE)0);
+}
+
+VALUE
+rb_funcall_no_recursive(VALUE obj, ID id, int argc, VALUE *argv, VALUE (*func)())
+{
+    const rb_method_entry_t *me = rb_method_entry(CLASS_OF(obj), id);
+    if (me && me->def && me->def->type == VM_METHOD_TYPE_CFUNC &&
+	me->def->body.cfunc.func == func)
+	return Qundef;
+    return rb_check_funcall(obj, id, argc, argv);
+}
+
 static VALUE
 send_internal(int argc, const VALUE *argv, VALUE recv, int scope)
 {
