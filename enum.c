@@ -119,6 +119,8 @@ count_all_i(VALUE i, VALUE memop, int argc, VALUE *argv)
     return Qnil;
 }
 
+extern VALUE rb_funcall_no_recursive(VALUE, ID, int, VALUE*, VALUE (*)());
+
 /*
  *  call-seq:
  *     enum.count                   => int
@@ -150,8 +152,8 @@ enum_count(int argc, VALUE *argv, VALUE obj)
 	}
 	else {
 	    VALUE tmp;
-
-	    tmp = rb_check_funcall(obj, id_size, 0, 0);
+	    
+	    tmp = rb_funcall_no_recursive(obj, id_size, 0, 0, enum_count);
 	    if (tmp != Qundef) return tmp;
 	    func = count_all_i;
 	}

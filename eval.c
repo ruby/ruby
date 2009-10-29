@@ -492,38 +492,6 @@ rb_f_raise(int argc, VALUE *argv)
     return Qnil;		/* not reached */
 }
 
-struct rescue_funcall_args {
-    VALUE obj;
-    ID id;
-    int argc;
-    VALUE *argv;
-};
-
-static VALUE
-check_funcall(struct rescue_funcall_args *args)
-{
-    return rb_funcall2(args->obj, args->id, args->argc, args->argv);
-}
-
-static VALUE
-check_failed(VALUE data)
-{
-    return data;
-}
-
-VALUE
-rb_check_funcall(VALUE obj, ID id, int argc, VALUE *argv)
-{
-    struct rescue_funcall_args args;
-
-    args.obj = obj;
-    args.id = id;
-    args.argc = argc;
-    args.argv = argv;
-    return rb_rescue2(check_funcall, (VALUE)&args, check_failed, Qundef,
-		      rb_eNoMethodError, (VALUE)0);
-}
-
 static VALUE
 make_exception(int argc, VALUE *argv, int isstr)
 {
