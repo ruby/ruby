@@ -619,7 +619,12 @@ struct RString {
     (!(RBASIC(str)->flags & RSTRING_NOEMBED) ? \
      RSTRING(str)->as.ary : \
      RSTRING(str)->as.heap.ptr)
-#define RSTRING_END(str) (RSTRING_PTR(str)+RSTRING_LEN(str))
+#define RSTRING_END(str) \
+    (!(RBASIC(str)->flags & RSTRING_NOEMBED) ? \
+     (RSTRING(str)->as.ary + \
+      ((RBASIC(str)->flags >> RSTRING_EMBED_LEN_SHIFT) & \
+       (RSTRING_EMBED_LEN_MASK >> RSTRING_EMBED_LEN_SHIFT))) : \
+     (RSTRING(str)->as.heap.ptr + RSTRING(str)->as.heap.len))
 
 #define RARRAY_EMBED_LEN_MAX 3
 struct RArray {
