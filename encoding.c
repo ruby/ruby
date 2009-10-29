@@ -26,7 +26,6 @@
 static ID id_encoding;
 VALUE rb_cEncoding;
 static VALUE rb_encoding_list;
-static int locale_encindex = -1, filesystem_encindex = -1;
 
 struct rb_encoding_entry {
     const char *name;
@@ -1094,47 +1093,53 @@ rb_usascii_encindex(void)
     return ENCINDEX_US_ASCII;
 }
 
-static void
-set_locale_encindex(void)
+static int
+rb_locale_encindex(void)
 {
     VALUE charmap = rb_locale_charmap(rb_cEncoding);
+    int idx;
 
     if (NIL_P(charmap))
-        locale_encindex = rb_usascii_encindex();
-    else if ((locale_encindex = rb_enc_find_index(StringValueCStr(charmap))) < 0)
-        locale_encindex = rb_ascii8bit_encindex();
+        idx = rb_usascii_encindex();
+    else if ((idx = rb_enc_find_index(StringValueCStr(charmap))) < 0)
+        idx = rb_ascii8bit_encindex();
 
-    if (rb_enc_registered("locale") < 0) enc_alias_internal("locale", locale_encindex);
+    if (rb_enc_registered("locale") < 0) enc_alias_internal("locale", idx);
+
+    return idx;
 }
 
 rb_encoding *
 rb_locale_encoding(void)
 {
-    return rb_enc_from_index(locale_encindex);
+    return rb_enc_from_index(rb_locale_encindex());
 }
 
-static void
-set_filesystem_encindex(void)
+static int
+rb_filesystem_encindex(void)
 {
+    int idx;
 #if defined NO_LOCALE_CHARMAP
-    filesystem_encindex = rb_enc_to_index(rb_default_external_encoding());
+    idx = rb_enc_to_index(rb_default_external_encoding());
 #elif defined _WIN32 || defined __CYGWIN__
     char cp[sizeof(int) * 8 / 3 + 4];
     snprintf(cp, sizeof cp, "CP%d", AreFileApisANSI() ? GetACP() : GetOEMCP());
-    filesystem_encindex = rb_enc_find_index(cp);
+    idx = rb_enc_find_index(cp);
 #elif defined __APPLE__
-    filesystem_encindex = rb_utf8_encindex();
+    idx = rb_utf8_encindex();
 #else
-    filesystem_encindex = locale_encindex;
+    idx = rb_locale_encindex();
 #endif
 
-    if (rb_enc_registered("filesystem") < 0) enc_alias_internal("filesystem", filesystem_encindex);
+    if (rb_enc_registered("filesystem") < 0) enc_alias_internal("filesystem", idx);
+
+    return idx;
 }
 
 rb_encoding *
 rb_filesystem_encoding(void)
 {
-    return rb_enc_from_index(filesystem_encindex);
+    return rb_enc_from_index(rb_filesystem_encindex());
 }
 
 struct default_encoding {
@@ -1496,9 +1501,6 @@ Init_Encoding(void)
     for (i = 0; i < enc_table.count; ++i) {
 	rb_ary_push(list, enc_new(enc_table.list[i].enc));
     }
-    set_locale_encindex();
-    set_filesystem_encindex();
-
 }
 
 /* locale insensitive functions */

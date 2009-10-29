@@ -1302,6 +1302,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     ruby_init_loadpath_safe(opt->safe_level);
     rb_enc_find_index("encdb");
     lenc = rb_locale_encoding();
+    (void)rb_filesystem_encoding();
     rb_enc_associate(rb_progname, lenc);
     parser = rb_parser_new();
     if (opt->dump & DUMP_BIT(yydebug)) {
