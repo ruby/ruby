@@ -1,3 +1,35 @@
+Thu Oct 29 13:53:18 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_to_ary): do not use #respond_to? to detect
+	  to_ary.  Just call.  [ruby-core:23738]
+
+	* eval.c (rb_check_funcall): new function with method existence
+	  check.  returns Qundef when the method does not exist.
+
+	* enumerator.c (enumerator_rewind): just call method, using
+	  rb_check_funcall().  [ruby-core:23738]
+
+	* error.c (exc_equal): ditto.
+
+	* object.c (convert_type): ditto.
+
+	* error.c (rb_name_err_mesg_new): export function.
+
+	* eval.c (make_exception): ditto.
+
+	* io.c (pop_last_hash): return early when the last argument is nil.
+
+	* io.c (rb_io_puts): treat T_STRING specially for small
+	  optimization. 
+
+	* vm_eval.c (raise_method_missing): skip method call if possible
+	  using rb_method_basic_definition_p().
+
+	* vm_eval.c (method_missing): ditto.
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_debug): test
+	  suites changed to ignore exceptions caused by just-call policy.
+
 Thu Oct 29 04:41:44 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ruby.c (process_options): call rb_filesystem_encoding().

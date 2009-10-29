@@ -425,11 +425,13 @@ rb_longjmp(int tag, volatile VALUE mesg)
     JUMP_TAG(tag);
 }
 
+static VALUE make_exception(int argc, VALUE *argv, int isstr);
+
 void
 rb_exc_raise(VALUE mesg)
 {
     if (!NIL_P(mesg)) {
-	mesg = rb_make_exception(1, &mesg);
+	mesg = make_exception(1, &mesg, Qfalse);
     }
     rb_longjmp(TAG_RAISE, mesg);
 }
@@ -438,7 +440,7 @@ void
 rb_exc_fatal(VALUE mesg)
 {
     if (!NIL_P(mesg)) {
-	mesg = rb_make_exception(1, &mesg);
+	mesg = make_exception(1, &mesg, Qfalse);
     }
     rb_longjmp(TAG_FATAL, mesg);
 }
@@ -490,8 +492,40 @@ rb_f_raise(int argc, VALUE *argv)
     return Qnil;		/* not reached */
 }
 
+struct rescue_funcall_args {
+    VALUE obj;
+    ID id;
+    int argc;
+    VALUE *argv;
+};
+
+static VALUE
+check_funcall(struct rescue_funcall_args *args)
+{
+    return rb_funcall2(args->obj, args->id, args->argc, args->argv);
+}
+
+static VALUE
+check_failed(VALUE data)
+{
+    return data;
+}
+
 VALUE
-rb_make_exception(int argc, VALUE *argv)
+rb_check_funcall(VALUE obj, ID id, int argc, VALUE *argv)
+{
+    struct rescue_funcall_args args;
+
+    args.obj = obj;
+    args.id = id;
+    args.argc = argc;
+    args.argv = argv;
+    return rb_rescue2(check_funcall, (VALUE)&args, check_failed, Qundef,
+		      rb_eNoMethodError, (VALUE)0);
+}
+
+static VALUE
+make_exception(int argc, VALUE *argv, int isstr)
 {
     VALUE mesg;
     ID exception;
@@ -504,10 +538,12 @@ rb_make_exception(int argc, VALUE *argv)
       case 1:
 	if (NIL_P(argv[0]))
 	    break;
-	mesg = rb_check_string_type(argv[0]);
-	if (!NIL_P(mesg)) {
-	    mesg = rb_exc_new3(rb_eRuntimeError, mesg);
-	    break;
+	if (isstr) {
+	    mesg = rb_check_string_type(argv[0]);
+	    if (!NIL_P(mesg)) {
+		mesg = rb_exc_new3(rb_eRuntimeError, mesg);
+		break;
+	    }
 	}
 	n = 0;
 	goto exception_call;
@@ -517,10 +553,10 @@ rb_make_exception(int argc, VALUE *argv)
 	n = 1;
       exception_call:
 	CONST_ID(exception, "exception");
-	if (!rb_respond_to(argv[0], exception)) {
+	mesg = rb_check_funcall(argv[0], exception, n, argv+1);
+	if (mesg == Qundef) {
 	    rb_raise(rb_eTypeError, "exception class/object expected");
 	}
-	mesg = rb_funcall(argv[0], exception, n, argv[1]);
 	break;
       default:
 	rb_raise(rb_eArgError, "wrong number of arguments");
@@ -534,6 +570,12 @@ rb_make_exception(int argc, VALUE *argv)
     }
 
     return mesg;
+}
+
+VALUE
+rb_make_exception(int argc, VALUE *argv)
+{
+    return make_exception(argc, argv, Qtrue);
 }
 
 void

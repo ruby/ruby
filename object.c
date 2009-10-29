@@ -2005,6 +2005,8 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
 {
     ID m = 0;
     int i;
+    VALUE args[4];
+    VALUE r;
 
     for (i=0; conv_method_names[i].method; i++) {
 	if (conv_method_names[i].method[0] == method[0] &&
@@ -2014,7 +2016,12 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
 	}
     }
     if (!m) m = rb_intern(method);
-    if (!rb_respond_to(val, m)) {
+    args[0] = val;
+    args[1] = (VALUE)m;
+    args[2] = (VALUE)raise;
+    args[3] = (VALUE)tname;
+    r = rb_check_funcall(val, m, 0, 0);
+    if (r == Qundef) {
 	if (raise) {
 	    rb_raise(rb_eTypeError, "can't convert %s into %s",
 		     NIL_P(val) ? "nil" :
@@ -2023,11 +2030,9 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
 		     rb_obj_classname(val),
 		     tname);
 	}
-	else {
-	    return Qnil;
-	}
+	return Qnil;
     }
-    return rb_funcall(val, m, 0);
+    return r;
 }
 
 VALUE
