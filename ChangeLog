@@ -1,4 +1,6 @@
-Fri Oct 30 04:44:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Oct 30 04:47:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RSTRING_END): trivial optimization.
 
 	* string.c (rb_str_sub_bang): trivial optimization.
 
