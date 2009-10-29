@@ -203,6 +203,7 @@ void rb_check_frozen(VALUE);
 /* eval.c */
 int rb_sourceline(void);
 const char *rb_sourcefile(void);
+VALUE rb_check_funcall(VALUE, ID, int, VALUE*);
 
 #if defined(NFDBITS) && defined(HAVE_RB_FD_INIT)
 typedef struct {

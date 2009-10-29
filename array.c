@@ -1223,12 +1223,9 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 VALUE
 rb_ary_to_ary(VALUE obj)
 {
-    if (TYPE(obj) == T_ARRAY) {
-	return obj;
-    }
-    if (rb_respond_to(obj, rb_intern("to_ary"))) {
-	return to_ary(obj);
-    }
+    VALUE tmp = rb_check_array_type(obj);
+
+    if (!NIL_P(tmp)) return tmp;
     return rb_ary_new3(1, obj);
 }
 

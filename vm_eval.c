@@ -390,9 +390,16 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
 
     {
 	int n = 0;
+	VALUE mesg;
 	VALUE args[3];
-	args[n++] = rb_funcall(rb_const_get(exc, rb_intern("message")), '!',
-			       3, rb_str_new2(format), obj, argv[0]);
+
+	mesg = rb_const_get(exc, rb_intern("message"));
+	if (rb_method_basic_definition_p(CLASS_OF(mesg), '!')) {
+	    args[n++] = rb_name_err_mesg_new(mesg, rb_str_new2(format), obj, argv[0]);
+	}
+	else {
+	    args[n++] = rb_funcall(mesg, '!', 3, rb_str_new2(format), obj, argv[0]);
+	}
 	args[n++] = argv[0];
 	if (exc == rb_eNoMethodError) {
 	    args[n++] = rb_ary_new4(argc - 1, argv + 1);
@@ -433,6 +440,9 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
     nargv[0] = ID2SYM(id);
     MEMCPY(nargv + 1, argv, VALUE, argc);
 
+    if (rb_method_basic_definition_p(CLASS_OF(obj) , idMethodMissing)) {
+	raise_method_missing(th, argc+1, nargv, obj, call_status | NOEX_MISSING);
+    }
     result = rb_funcall2(obj, idMethodMissing, argc + 1, nargv);
     if (argv_ary) rb_ary_clear(argv_ary);
     return result;

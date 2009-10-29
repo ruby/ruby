@@ -608,13 +608,10 @@ exc_equal(VALUE exc, VALUE obj)
 	CONST_ID(id_message, "message");
 	CONST_ID(id_backtrace, "backtrace");
 
-	if (rb_respond_to(obj, id_message) && rb_respond_to(obj, id_backtrace)) {
-	    mesg = rb_funcall(obj, id_message, 0, 0);
-	    backtrace = rb_funcall(obj, id_backtrace, 0, 0);
-	}
-	else {
-	    return Qfalse;
-	}
+	mesg = rb_check_funcall(obj, id_message, 0, 0);
+	if (mesg == Qundef) return Qfalse;
+	backtrace = rb_check_funcall(obj, id_backtrace, 0, 0);
+	if (backtrace == Qundef) return Qfalse;
     }
     else {
 	mesg = rb_attr_get(obj, id_mesg);
@@ -794,8 +791,8 @@ static const rb_data_type_t name_err_mesg_data_type = {
 };
 
 /* :nodoc: */
-static VALUE
-name_err_mesg_new(VALUE obj, VALUE mesg, VALUE recv, VALUE method)
+VALUE
+rb_name_err_mesg_new(VALUE obj, VALUE mesg, VALUE recv, VALUE method)
 {
     VALUE *ptr = ALLOC_N(VALUE, NAME_ERR_MESG_COUNT);
 
@@ -1112,7 +1109,7 @@ Init_Exception(void)
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "to_s", name_err_to_s, 0);
     rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cData);
-    rb_define_singleton_method(rb_cNameErrorMesg, "!", name_err_mesg_new, NAME_ERR_MESG_COUNT);
+    rb_define_singleton_method(rb_cNameErrorMesg, "!", rb_name_err_mesg_new, NAME_ERR_MESG_COUNT);
     rb_define_method(rb_cNameErrorMesg, "==", name_err_mesg_equal, 1);
     rb_define_method(rb_cNameErrorMesg, "to_str", name_err_mesg_to_str, 0);
     rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_to_str, 1);

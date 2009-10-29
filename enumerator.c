@@ -856,8 +856,7 @@ enumerator_rewind(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
 
-    if (rb_respond_to(e->obj, id_rewind))
-	rb_funcall(e->obj, id_rewind, 0);
+    rb_check_funcall(e->obj, id_rewind, 0, 0);
 
     e->fib = 0;
     e->dst = Qnil;
