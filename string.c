@@ -3461,9 +3461,11 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	struct re_registers *regs = RMATCH_REGS(match);
 	long beg0 = BEG(0);
 	long end0 = END(0);
+	char *p, *rp;
+	long len, rlen;
 
 	if (iter || !NIL_P(hash)) {
-	    char *p = RSTRING_PTR(str); long len = RSTRING_LEN(str);
+	    p = RSTRING_PTR(str); len = RSTRING_LEN(str);
 
             if (iter) {
                 repl = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
@@ -3481,9 +3483,9 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
         enc = rb_enc_compatible(str, repl);
         if (!enc) {
             rb_encoding *str_enc = STR_ENC_GET(str);
-            if (coderange_scan(RSTRING_PTR(str), beg0, str_enc) != ENC_CODERANGE_7BIT ||
-                coderange_scan(RSTRING_PTR(str)+end0,
-			       RSTRING_LEN(str)-end0, str_enc) != ENC_CODERANGE_7BIT) {
+	    p = RSTRING_PTR(str); len = RSTRING_LEN(str);
+	    if (coderange_scan(p, beg0, str_enc) != ENC_CODERANGE_7BIT ||
+		coderange_scan(p+end0, len-end0, str_enc) != ENC_CODERANGE_7BIT) {
                 rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
 			 rb_enc_name(str_enc),
 			 rb_enc_name(STR_ENC_GET(repl)));
@@ -3503,18 +3505,19 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
                 cr = cr2;
 	}
 	plen = end0 - beg0;
-	if (RSTRING_LEN(repl) > plen) {
-	    RESIZE_CAPA(str, RSTRING_LEN(str) + RSTRING_LEN(repl) - plen);
+	rp = RSTRING_PTR(repl); rlen = RSTRING_LEN(repl);
+	len = RSTRING_LEN(str);
+	if (rlen > plen) {
+	    RESIZE_CAPA(str, len + rlen - plen);
 	}
-	if (RSTRING_LEN(repl) != plen) {
-	    memmove(RSTRING_PTR(str) + beg0 + RSTRING_LEN(repl),
-		    RSTRING_PTR(str) + beg0 + plen,
-		    RSTRING_LEN(str) - beg0 - plen);
+	p = RSTRING_PTR(str);
+	if (rlen != plen) {
+	    memmove(p + beg0 + rlen, p + beg0 + plen, len - beg0 - plen);
 	}
-	memcpy(RSTRING_PTR(str) + beg0,
-	       RSTRING_PTR(repl), RSTRING_LEN(repl));
-	STR_SET_LEN(str, RSTRING_LEN(str) + RSTRING_LEN(repl) - plen);
-	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
+	memcpy(p + beg0, rp, rlen);
+	len += rlen - plen;
+	STR_SET_LEN(str, len);
+	RSTRING_PTR(str)[len] = '\0';
 	ENC_CODERANGE_SET(str, cr);
 	if (tainted) OBJ_TAINT(str);
 	if (untrusted) OBJ_UNTRUST(str);
