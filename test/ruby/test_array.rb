@@ -1224,6 +1224,18 @@ class TestArray < Test::Unit::TestCase
     if (@cls == Array)
       assert_equal(a_id, a.to_ary.__id__)
     end
+
+    o = Object.new
+    def o.to_ary
+      [4, 5]
+    end
+    assert_equal([1, 2, 3, 4, 5], a.concat(o))
+
+    o = Object.new
+    def o.to_ary
+      foo_bar()
+    end
+    assert_match(/foo_bar/, assert_raise(NoMethodError) {a.concat(o)}.message)
   end
 
   def test_to_s

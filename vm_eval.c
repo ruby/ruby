@@ -199,6 +199,10 @@ stack_check(void)
     }
 }
 
+static inline rb_method_entry_t *rb_search_method_emtry(VALUE recv, ID mid);
+static inline int rb_method_call_status(rb_thread_t *th, rb_method_entry_t *me, call_type scope, VALUE self);
+#define NOEX_OK NOEX_NOSUPER
+
 /*!
  * \internal
  * calls the specified method.
@@ -217,12 +221,54 @@ static inline VALUE
 rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 	 call_type scope, VALUE self)
 {
-    VALUE klass = CLASS_OF(recv);
-    rb_method_entry_t *me;
-    struct cache_entry *ent;
+    rb_method_entry_t *me = rb_search_method_emtry(recv, mid);
     rb_thread_t *th = GET_THREAD();
-    ID oid;
-    int noex;
+    int call_status = rb_method_call_status(th, me, scope, self);
+
+    if (call_status != NOEX_OK) {
+	return method_missing(recv, mid, argc, argv, call_status);
+    }
+    stack_check();
+    return vm_call0(th, recv, mid, argc, argv, me);
+}
+
+VALUE
+rb_check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
+{
+    rb_method_entry_t *me = rb_search_method_emtry(recv, mid);
+    rb_thread_t *th = GET_THREAD();
+    int call_status = rb_method_call_status(th, me, CALL_FCALL, Qundef);
+
+    if (call_status != NOEX_OK) {
+	return Qundef;
+    }
+    stack_check();
+    return vm_call0(th, recv, mid, argc, argv, me);
+}
+
+VALUE
+rb_funcall_no_recursive(VALUE recv, ID mid, int argc, VALUE *argv, VALUE (*func)())
+{
+    rb_method_entry_t *me = rb_search_method_emtry(recv, mid);
+    rb_thread_t *th = GET_THREAD();
+    int call_status;
+
+    if (!me) return Qundef;
+    if (me->def && me->def->type == VM_METHOD_TYPE_CFUNC &&
+	me->def->body.cfunc.func == func)
+	return Qundef;
+    call_status = rb_method_call_status(th, me, CALL_FCALL, Qundef);
+    if (call_status != NOEX_OK) {
+	return Qundef;
+    }
+    stack_check();
+    return vm_call0(th, recv, mid, argc, argv, me);
+}
+
+static inline rb_method_entry_t *
+rb_search_method_emtry(VALUE recv, ID mid)
+{
+    VALUE klass = CLASS_OF(recv);
 
     if (!klass) {
         const char *adj = "terminated";
@@ -232,29 +278,20 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 		 "method `%s' called on %s object (%p)",
 		 rb_id2name(mid), adj, (void *)recv);
     }
+    return rb_method_entry(klass, mid);
+}
 
-    /* is it in the method cache? */
-    ent = cache + EXPR1(klass, mid);
+static inline int
+rb_method_call_status(rb_thread_t *th, rb_method_entry_t *me, call_type scope, VALUE self)
+{
+    VALUE klass;
+    ID oid;
+    int noex;
 
-    if (ent->mid == mid && ent->klass == klass) {
-	me = ent->me;
-	if (UNDEFINED_METHOD_ENTRY_P(me)) {
-	    return method_missing(recv, mid, argc, argv,
-				  scope == CALL_VCALL ? NOEX_VCALL : 0);
-	}
-	klass = me->klass;
+    if (UNDEFINED_METHOD_ENTRY_P(me)) {
+	return scope == CALL_VCALL ? NOEX_VCALL : 0;
     }
-    else if ((me = rb_method_entry_without_cache(klass, mid)) != 0 && me->def) {
-	klass = me->klass;
-    }
-    else {
-	if (scope == 3) {
-	    return method_missing(recv, mid, argc, argv, NOEX_SUPER);
-	}
-	return method_missing(recv, mid, argc, argv,
-			      scope == CALL_VCALL ? NOEX_VCALL : 0);
-    }
-
+    klass = me->klass;
     oid = me->def->original_id;
     noex = me->flag;
 
@@ -262,7 +299,7 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 	/* receiver specified form for private method */
 	if (UNLIKELY(noex)) {
 	    if (((noex & NOEX_MASK) & NOEX_PRIVATE) && scope == CALL_PUBLIC) {
-		return method_missing(recv, mid, argc, argv, NOEX_PRIVATE);
+		return NOEX_PRIVATE;
 	    }
 
 	    /* self must be kind of a specified form for protected method */
@@ -277,18 +314,17 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 		    self = th->cfp->self;
 		}
 		if (!rb_obj_is_kind_of(self, rb_class_real(defined_class))) {
-		    return method_missing(recv, mid, argc, argv, NOEX_PROTECTED);
+		    return NOEX_PROTECTED;
 		}
 	    }
 
 	    if (NOEX_SAFE(noex) > th->safe_level) {
-		rb_raise(rb_eSecurityError, "calling insecure method: %s", rb_id2name(mid));
+		rb_raise(rb_eSecurityError, "calling insecure method: %s",
+			 rb_id2name(me->called_id));
 	    }
 	}
     }
-
-    stack_check();
-    return vm_call0(th, recv, mid, argc, argv, me);
+    return NOEX_OK;
 }
 
 
@@ -534,48 +570,6 @@ VALUE
 rb_funcall3(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     return rb_call(recv, mid, argc, argv, CALL_PUBLIC);
-}
-
-struct rescue_funcall_args {
-    VALUE obj;
-    ID id;
-    int argc;
-    VALUE *argv;
-};
-
-static VALUE
-check_funcall(struct rescue_funcall_args *args)
-{
-    return rb_funcall2(args->obj, args->id, args->argc, args->argv);
-}
-
-static VALUE
-check_failed(VALUE data)
-{
-    return data;
-}
-
-VALUE
-rb_check_funcall(VALUE obj, ID id, int argc, VALUE *argv)
-{
-    struct rescue_funcall_args args;
-
-    args.obj = obj;
-    args.id = id;
-    args.argc = argc;
-    args.argv = argv;
-    return rb_rescue2(check_funcall, (VALUE)&args, check_failed, Qundef,
-		      rb_eNoMethodError, (VALUE)0);
-}
-
-VALUE
-rb_funcall_no_recursive(VALUE obj, ID id, int argc, VALUE *argv, VALUE (*func)())
-{
-    const rb_method_entry_t *me = rb_method_entry(CLASS_OF(obj), id);
-    if (me && me->def && me->def->type == VM_METHOD_TYPE_CFUNC &&
-	me->def->body.cfunc.func == func)
-	return Qundef;
-    return rb_check_funcall(obj, id, argc, argv);
 }
 
 static VALUE
