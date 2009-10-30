@@ -1,3 +1,8 @@
+Fri Oct 30 10:55:36 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_blocking_region): must ensure to unlock GVL.
+	  [ruby-dev:39579]
+
 Fri Oct 30 04:47:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (RSTRING_END): trivial optimization.
