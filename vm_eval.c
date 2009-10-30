@@ -26,6 +26,7 @@ typedef enum call_type {
     CALL_PUBLIC,
     CALL_FCALL,
     CALL_VCALL,
+    CALL_TYPE_MAX
 } call_type;
 
 static VALUE send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope);
