@@ -1,3 +1,13 @@
+Fri Oct 30 16:42:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_search_method_emtry, rb_method_call_status): spli
+	  from rb_call0().
+
+	* vm_eval.c (rb_check_funcall): get rid of raising exceptions and
+	  hiding further exceptions.  [ruby-dev:39584]
+
+	* vm_eval.c (rb_funcall_no_recursive): ditto.
+
 Fri Oct 30 13:36:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_blocking_region): reverted r25566, and added

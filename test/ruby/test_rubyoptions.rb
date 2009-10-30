@@ -53,9 +53,9 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_debug
-    assert_in_out_err(%w(-de) + ["p $DEBUG"], "", %w(true), //)
+    assert_in_out_err(%w(-de) + ["p $DEBUG"], "", %w(true), [])
 
-    assert_in_out_err(%w(--debug -e) + ["p $DEBUG"], "", %w(true), //)
+    assert_in_out_err(%w(--debug -e) + ["p $DEBUG"], "", %w(true), [])
   end
 
   def test_verbose

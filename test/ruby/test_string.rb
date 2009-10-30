@@ -1408,6 +1408,18 @@ class TestString < Test::Unit::TestCase
     a = S("me")
     assert_equal("me", a.to_s)
     assert_equal(a.__id__, a.to_s.__id__) if @cls == String
+
+    o = Object.new
+    def o.to_str
+      "at"
+    end
+    assert_equal("meat", a.concat(o))
+
+    o = Object.new
+    def o.to_str
+      foo_bar()
+    end
+    assert_match(/foo_bar/, assert_raise(NoMethodError) {a.concat(o)}.message)
   end
 
   def test_tr
