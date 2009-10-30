@@ -1,4 +1,7 @@
-Fri Oct 30 16:42:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Oct 30 16:57:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (vm_call0, vm_call_super, rb_f_send, rb_f_public_send):
+	  fixed call_type.  [ruby-dev:39581]
 
 	* vm_eval.c (rb_search_method_emtry, rb_method_call_status): spli
 	  from rb_call0().

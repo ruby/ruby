@@ -21,13 +21,14 @@ static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref);
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
-static VALUE send_internal(int argc, const VALUE *argv, VALUE recv, int scope);
 
 typedef enum call_type {
     CALL_PUBLIC,
     CALL_FCALL,
     CALL_VCALL,
 } call_type;
+
+static VALUE send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope);
 
 static inline VALUE
 vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
@@ -104,7 +105,7 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
       case VM_METHOD_TYPE_ZSUPER: {
 	klass = RCLASS_SUPER(klass);
 	if (!klass || !(me = rb_method_entry(klass, id))) {
-	    return method_missing(recv, id, argc, argv, 0);
+	    return method_missing(recv, id, argc, argv, NOEX_SUPER);
 	}
 	RUBY_VM_CHECK_INTS();
 	if (!(def = me->def)) return Qnil;
@@ -121,7 +122,7 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
       case VM_METHOD_TYPE_OPTIMIZED: {
 	switch (def->body.optimize_type) {
 	  case OPTIMIZED_METHOD_TYPE_SEND:
-	    val = send_internal(argc, argv, recv, NOEX_NOSUPER | NOEX_PRIVATE);
+	    val = send_internal(argc, argv, recv, CALL_FCALL);
 	    break;
 	  case OPTIMIZED_METHOD_TYPE_CALL: {
 	    rb_proc_t *proc;
@@ -175,7 +176,7 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
 
     me = rb_method_entry(klass, id);
     if (!me) {
-	return method_missing(recv, id, argc, argv, 0);
+	return method_missing(recv, id, argc, argv, NOEX_SUPER);
     }
 
     return vm_call0(th, recv, id, argc, argv, me);
@@ -573,7 +574,7 @@ rb_funcall3(VALUE recv, ID mid, int argc, const VALUE *argv)
 }
 
 static VALUE
-send_internal(int argc, const VALUE *argv, VALUE recv, int scope)
+send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 {
     VALUE vid;
     VALUE self = RUBY_VM_PREVIOUS_CONTROL_FRAME(GET_THREAD()->cfp)->self;
@@ -610,7 +611,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, int scope)
 VALUE
 rb_f_send(int argc, VALUE *argv, VALUE recv)
 {
-    return send_internal(argc, argv, recv, NOEX_NOSUPER | NOEX_PRIVATE);
+    return send_internal(argc, argv, recv, CALL_FCALL);
 }
 
 /*
@@ -627,7 +628,7 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
 VALUE
 rb_f_public_send(int argc, VALUE *argv, VALUE recv)
 {
-    return send_internal(argc, argv, recv, NOEX_PUBLIC);
+    return send_internal(argc, argv, recv, CALL_PUBLIC);
 }
 
 /* yield */
