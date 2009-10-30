@@ -2034,13 +2034,20 @@ module Net   #:nodoc:
       end
 
       def each_response_header(sock)
+        key = value = nil
         while true
           line = sock.readuntil("\n", true).sub(/\s+\z/, '')
           break if line.empty?
-          m = /\A([^:]+):\s*/.match(line) or
-              raise HTTPBadResponse, 'wrong header line format'
-          yield m[1], m.post_match
+          if line[0] == ?\  or line[0] == ?\t and value
+            value << ' ' unless value.empty?
+            value << line.strip
+          else
+            yield key, value if key
+            key, value = line.strip.split(/\s*:\s*/, 2)
+            raise HTTPBadResponse, 'wrong header line format' if value.nil?
+          end
         end
+        yield key, value if key
       end
     end
 

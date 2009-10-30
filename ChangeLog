@@ -1,3 +1,11 @@
+Fri Oct 30 22:02:15 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTPResponse#each_response_header):
+	  accept multiline message header of HTTP response.  see #1796.
+	  cf. RFC 2616 '4.2 Message Header'.
+
+	* test/net/http/test_httpresponse.rb: added.
+
 Tue Oct 27 22:05:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_inspect): get rid of adding garbage to shor
