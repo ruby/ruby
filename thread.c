@@ -1097,15 +1097,17 @@ rb_thread_blocking_region(
 	data2 = th;
     }
 
-    BLOCKING_REGION({
 #if PROHIBIT_FUNCTION_CAST
+    BLOCKING_REGION({
 	args.func = func;
 	args.data = data1;
 	val = rb_protect(call_blocking_function, (VALUE)&args, &status);
-#else
-	val = rb_protect((VALUE (*)(VALUE))func, (VALUE)data1, &status);
-#endif
     }, ubf, data2);
+#else
+    BLOCKING_REGION({
+	val = rb_protect((VALUE (*)(VALUE))func, (VALUE)data1, &status);
+    }, ubf, data2);
+#endif
     if (status) rb_jump_tag(status);
 
     return val;
