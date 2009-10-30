@@ -4642,7 +4642,17 @@ trnext(struct tr *t, rb_encoding *enc)
 		if (t->p < t->pend) {
 		    unsigned int c = rb_enc_codepoint_len(t->p, t->pend, &n, enc);
 		    t->p += n;
-		    if (t->now > c) continue;
+		    if (t->now > c) {
+			if (t->now < 0x80 && c < 0x80) {
+			    rb_raise(rb_eArgError,
+				     "invalid range \"%c-%c\" in string transliteration",
+				     t->now, c);
+			}
+			else {
+			    rb_raise(rb_eArgError, "invalid range in string transliteration");
+			}
+			continue; /* not reached */
+		    }
 		    t->gen = 1;
 		    t->max = c;
 		}

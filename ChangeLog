@@ -1,3 +1,8 @@
+Fri Oct 30 18:54:04 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (trnext): detect empty range and raise exception.
+	   [ruby-dev:39108]
+
 Fri Oct 30 17:01:46 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (enum call_type): get rid of last comma.
