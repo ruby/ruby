@@ -1,3 +1,9 @@
+Fri Oct 30 13:13:16 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32.c (recvmsg, sendmsg, link): shouldn't raise ruby's exceptions
+	  in the functions expected as system API.  see [ruby-dev:39579] and
+	  [ruby-dev:39582]
+
 Fri Oct 30 12:59:20 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread.c (rb_thread_blocking_region): standard C doesn't accept

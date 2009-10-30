@@ -2868,8 +2868,10 @@ recvmsg(int fd, struct msghdr *msg, int flags)
 	DWORD dmy;
 	WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid),
 		 &pWSARecvMsg, sizeof(pWSARecvMsg), &dmy, NULL, NULL);
-	if (!pWSARecvMsg)
-	    rb_notimplement();
+	if (!pWSARecvMsg) {
+	    errno = ENOSYS;
+	    return -1;
+	}
     }
 
     msghdr_to_wsamsg(msg, &wsamsg);
@@ -2959,8 +2961,10 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
 	DWORD dmy;
 	WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid),
 		 &pWSASendMsg, sizeof(pWSASendMsg), &dmy, NULL, NULL);
-	if (!pWSASendMsg)
-	    rb_notimplement();
+	if (!pWSASendMsg) {
+	    errno = ENOSYS;
+	    return -1;
+	}
     }
 
     msghdr_to_wsamsg(msg, &wsamsg);
@@ -3707,7 +3711,7 @@ link(const char *from, const char *to)
 	if (hKernel) {
 	    pCreateHardLink = (BOOL (WINAPI *)(LPCTSTR, LPCTSTR, LPSECURITY_ATTRIBUTES))GetProcAddress(hKernel, "CreateHardLinkA");
 	    if (!pCreateHardLink) {
-		rb_notimplement();
+		myerrno = ENOSYS;
 	    }
 	}
 	else {
@@ -5247,5 +5251,19 @@ rb_w32_fsopen(const char *path, const char *mode, int shflags)
 	    errno = EMFILE;
     }
     return f;
+}
+#endif
+
+#if defined(_MSC_VER) && RT_VER <= 60
+extern long _ftol(double);
+long
+_ftol2(double d)
+{
+    return _ftol(d);
+}
+long
+_ftol2_sse(double d)
+{
+    return _ftol(d);
 }
 #endif
