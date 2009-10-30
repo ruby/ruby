@@ -1028,23 +1028,6 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
     RUBY_VM_CHECK_INTS();
 }
 
-#ifndef PROHIBIT_FUNCTION_CAST
-#define PROHIBIT_FUNCTION_CAST 0
-#endif
-#if PROHIBIT_FUNCTION_CAST
-struct blocking_function_args {
-    rb_blocking_function_t *func;
-    void *data;
-};
-
-static VALUE
-call_blocking_function(VALUE arg)
-{
-    struct blocking_function_args *blocking = (void *)arg;
-    return (blocking->func)(blocking->data);
-}
-#endif
-
 /*
  * rb_thread_blocking_region - permit concurrent/parallel execution.
  *
@@ -1066,9 +1049,10 @@ call_blocking_function(VALUE arg)
  *     * RUBY_UBF_IO: ubf for IO operation
  *     * RUBY_UBF_PROCESS: ubf for process operation
  *
- *   NOTE: You can not execute most of Ruby C API and touch Ruby objects
- *         in `func()' and `ubf()' because current thread doesn't acquire
- *         GVL (cause synchronization problem).  If you need to do it,
+ *   NOTE: You can not execute most of Ruby C API and touch Ruby
+ *         objects in `func()' and `ubf()', including raising an
+ *         exception, because current thread doesn't acquire GVL
+ *         (cause synchronization problem).  If you need to do it,
  *         read source code of C APIs and confirm by yourself.
  *
  *   NOTE: In short, this API is difficult to use safely.  I recommend you
@@ -1087,28 +1071,15 @@ rb_thread_blocking_region(
 {
     VALUE val;
     rb_thread_t *th = GET_THREAD();
-    int status;
-#if PROHIBIT_FUNCTION_CAST
-    struct blocking_function_args args;
-#endif
 
     if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
 	ubf = ubf_select;
 	data2 = th;
     }
 
-#if PROHIBIT_FUNCTION_CAST
     BLOCKING_REGION({
-	args.func = func;
-	args.data = data1;
-	val = rb_protect(call_blocking_function, (VALUE)&args, &status);
+	val = func(data1);
     }, ubf, data2);
-#else
-    BLOCKING_REGION({
-	val = rb_protect((VALUE (*)(VALUE))func, (VALUE)data1, &status);
-    }, ubf, data2);
-#endif
-    if (status) rb_jump_tag(status);
 
     return val;
 }
