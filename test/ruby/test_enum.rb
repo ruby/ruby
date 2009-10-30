@@ -36,14 +36,16 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(2, @obj.count(1) {|x| x % 2 == 1 })
     assert_raise(ArgumentError) { @obj.count(0, 1) }
 
-    en = Class.new {
-      include Enumerable
-      alias :size :count
-      def each
-        yield 1
-      end
-    }
-    assert_equal(1, en.new.count, '[ruby-core:24794]')
+    if RUBY_ENGINE == "ruby"
+      en = Class.new {
+        include Enumerable
+        alias :size :count
+        def each
+          yield 1
+        end
+      }
+      assert_equal(1, en.new.count, '[ruby-core:24794]')
+    end
   end
 
   def test_find
