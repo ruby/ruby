@@ -1028,6 +1028,23 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
     RUBY_VM_CHECK_INTS();
 }
 
+#ifndef PROHIBIT_FUNCTION_CAST
+#define PROHIBIT_FUNCTION_CAST 0
+#endif
+#if PROHIBIT_FUNCTION_CAST
+struct blocking_function_args {
+    rb_blocking_function_t *func;
+    void *data;
+};
+
+static VALUE
+call_blocking_function(VALUE arg)
+{
+    struct blocking_function_args *blocking = (void *)arg;
+    return (blocking->func)(blocking->data);
+}
+#endif
+
 /*
  * rb_thread_blocking_region - permit concurrent/parallel execution.
  *
@@ -1070,6 +1087,10 @@ rb_thread_blocking_region(
 {
     VALUE val;
     rb_thread_t *th = GET_THREAD();
+    int status;
+#if PROHIBIT_FUNCTION_CAST
+    struct blocking_function_args args;
+#endif
 
     if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
 	ubf = ubf_select;
@@ -1077,8 +1098,15 @@ rb_thread_blocking_region(
     }
 
     BLOCKING_REGION({
-	val = func(data1);
+#if PROHIBIT_FUNCTION_CAST
+	args.func = func;
+	args.data = data1;
+	val = rb_protect(call_blocking_function, (VALUE)&args, &status);
+#else
+	val = rb_protect((VALUE (*)(VALUE))func, (VALUE)data1, &status);
+#endif
     }, ubf, data2);
+    if (status) rb_jump_tag(status);
 
     return val;
 }
