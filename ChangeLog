@@ -1,3 +1,8 @@
+Fri Sep 11 01:14:00 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/net/http.rb (fetch): rdoc fix, patch by Arthur Schreiber.
+	  [ruby-core:18309].
+
 Thu Sep 10 21:22:01 2009  Tanaka Akira  <akr@fsij.org>
 
 	* test/dl/test_cptr.rb (test_free=): test SEGV at first.
