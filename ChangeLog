@@ -1,3 +1,8 @@
+Thu Sep 10 21:22:01 2009  Tanaka Akira  <akr@fsij.org>
+
+	* test/dl/test_cptr.rb (test_free=): test SEGV at first.
+	  [ruby-dev:39269]
+
 Tue Mar  3 15:05:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/lib/dl/value.rb (DL::ValueUtil#wrap_arg): NULL for nil.
