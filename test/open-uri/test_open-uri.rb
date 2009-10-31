@@ -78,6 +78,31 @@ class TestOpenURI < Test::Unit::TestCase
     }
   end
 
+  def test_read_timeout
+    TCPServer.open("127.0.0.1", 0) {|serv|
+      port = serv.addr[1]
+      th = Thread.new {
+        sock = serv.accept
+        begin
+          req = sock.gets("\r\n\r\n")
+          assert_match(%r{\AGET /foo/bar }, req)
+          sock.print "HTTP/1.0 200 OK\r\n"
+          sock.print "Content-Length: 4\r\n\r\n"
+          sleep 1
+          sock.print "ab\r\n"
+        ensure
+          sock.close
+        end
+      }
+      begin
+        assert_raise(Timeout::Error) { URI("http://127.0.0.1:#{port}/foo/bar").read(:read_timeout=>0.01) }
+      ensure
+        Thread.kill(th)
+        th.join
+      end
+    }
+  end
+
   def test_invalid_option
     assert_raise(ArgumentError) { open("http://127.0.0.1/", :invalid_option=>true) {} }
   end
@@ -118,79 +143,81 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_proxy
     with_http {|srv, dr, url|
-      prxy = WEBrick::HTTPProxyServer.new({
+      log = ''
+      proxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
         :Logger => WEBrick::Log.new(NullLog),
-        :AccessLog => [[sio=StringIO.new, WEBrick::AccessLog::COMMON_LOG_FORMAT]],
+        :AccessLog => [[NullLog, ""]],
+        :ProxyAuthProc => lambda {|req, res|
+          log << req.request_line
+        },
         :BindAddress => '127.0.0.1',
         :Port => 0})
-      _, p_port, _, p_host = prxy.listeners[0].addr
+      _, proxy_port, _, proxy_host = proxy.listeners[0].addr
       begin
-        th = prxy.start
+        th = proxy.start
         open("#{dr}/proxy", "w") {|f| f << "proxy" }
-        open("#{url}/proxy", :proxy=>"http://#{p_host}:#{p_port}/") {|f|
+        open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/") {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
-        assert_match(/#{Regexp.quote url}/, sio.string)
-        sio.truncate(0); sio.rewind
-        open("#{url}/proxy", :proxy=>URI("http://#{p_host}:#{p_port}/")) {|f|
+        assert_match(/#{Regexp.quote url}/, log); log.clear
+        open("#{url}/proxy", :proxy=>URI("http://#{proxy_host}:#{proxy_port}/")) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
-        assert_match(/#{Regexp.quote url}/, sio.string)
-        sio.truncate(0); sio.rewind
+        assert_match(/#{Regexp.quote url}/, log); log.clear
         open("#{url}/proxy", :proxy=>nil) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
-        assert_equal("", sio.string)
+        assert_equal("", log); log.clear
         assert_raise(ArgumentError) {
           open("#{url}/proxy", :proxy=>:invalid) {}
         }
-        assert_equal("", sio.string)
+        assert_equal("", log); log.clear
       ensure
-        prxy.shutdown
+        proxy.shutdown
       end
     }
   end
 
   def test_proxy_http_basic_authentication
     with_http {|srv, dr, url|
-      prxy = WEBrick::HTTPProxyServer.new({
+      log = ''
+      proxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
         :Logger => WEBrick::Log.new(NullLog),
-        :AccessLog => [[sio=StringIO.new, WEBrick::AccessLog::COMMON_LOG_FORMAT]],
+        :AccessLog => [[NullLog, ""]],
         :ProxyAuthProc => lambda {|req, res|
+          log << req.request_line
           if req["Proxy-Authorization"] != "Basic #{['user:pass'].pack('m').chomp}"
             raise WEBrick::HTTPStatus::ProxyAuthenticationRequired
           end
         },
         :BindAddress => '127.0.0.1',
         :Port => 0})
-      _, p_port, _, p_host = prxy.listeners[0].addr
-      p_url = "http://#{p_host}:#{p_port}/"
+      _, proxy_port, _, proxy_host = proxy.listeners[0].addr
+      proxy_url = "http://#{proxy_host}:#{proxy_port}/"
       begin
-        th = prxy.start
+        th = proxy.start
         open("#{dr}/proxy", "w") {|f| f << "proxy" }
-        exc = assert_raise(OpenURI::HTTPError) { open("#{url}/proxy", :proxy=>p_url) {} }
+        exc = assert_raise(OpenURI::HTTPError) { open("#{url}/proxy", :proxy=>proxy_url) {} }
         assert_equal("407", exc.io.status[0])
-        assert_match(/#{Regexp.quote url}/, sio.string)
-        sio.truncate(0); sio.rewind
+        assert_match(/#{Regexp.quote url}/, log); log.clear
         open("#{url}/proxy",
-            :proxy_http_basic_authentication=>[p_url, "user", "pass"]) {|f|
+            :proxy_http_basic_authentication=>[proxy_url, "user", "pass"]) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
-        assert_match(/#{Regexp.quote url}/, sio.string)
-        sio.truncate(0); sio.rewind
+        assert_match(/#{Regexp.quote url}/, log); log.clear
         assert_raise(ArgumentError) {
           open("#{url}/proxy",
               :proxy_http_basic_authentication=>[true, "user", "pass"]) {}
         }
-        assert_equal("", sio.string)
+        assert_equal("", log); log.clear
       ensure
-        prxy.shutdown
+        proxy.shutdown
       end
     }
   end
@@ -206,6 +233,65 @@ class TestOpenURI < Test::Unit::TestCase
       }
       assert_raise(OpenURI::HTTPRedirect) { open("#{url}/r1/", :redirect=>false) {} }
       assert_raise(RuntimeError) { open("#{url}/to-file/") {} }
+    }
+  end
+
+  def test_redirect_relative
+    TCPServer.open("127.0.0.1", 0) {|serv|
+      port = serv.addr[1]
+      th = Thread.new {
+        sock = serv.accept
+        begin
+          req = sock.gets("\r\n\r\n")
+          assert_match(%r{\AGET /foo/bar }, req)
+          sock.print "HTTP/1.0 302 Found\r\n"
+          sock.print "Location: ../baz\r\n\r\n"
+        ensure
+          sock.close
+        end
+        sock = serv.accept
+        begin
+          req = sock.gets("\r\n\r\n")
+          assert_match(%r{\AGET /baz }, req)
+          sock.print "HTTP/1.0 200 OK\r\n"
+          sock.print "Content-Length: 4\r\n\r\n"
+          sock.print "ab\r\n"
+        ensure
+          sock.close
+        end
+      }
+      begin
+        content = URI("http://127.0.0.1:#{port}/foo/bar").read
+        assert_equal("ab\r\n", content)
+      ensure
+        Thread.kill(th)
+        th.join
+      end
+    }
+  end
+
+  def test_redirect_invalid
+    TCPServer.open("127.0.0.1", 0) {|serv|
+      port = serv.addr[1]
+      th = Thread.new {
+        sock = serv.accept
+        begin
+          req = sock.gets("\r\n\r\n")
+          assert_match(%r{\AGET /foo/bar }, req)
+          sock.print "HTTP/1.0 302 Found\r\n"
+          sock.print "Location: ::\r\n\r\n"
+        ensure
+          sock.close
+        end
+      }
+      begin
+        assert_raise(OpenURI::HTTPError) {
+          URI("http://127.0.0.1:#{port}/foo/bar").read
+        }
+      ensure
+        Thread.kill(th)
+        th.join
+      end
     }
   end
 
@@ -242,7 +328,7 @@ class TestOpenURI < Test::Unit::TestCase
       progress = []
       open("#{url}/data/",
            :content_length_proc => lambda {|n| length << n },
-           :progress_proc => lambda {|n| progress << n },
+           :progress_proc => lambda {|n| progress << n }
           ) {|f|
         assert_equal(1, length.length)
         assert_equal(content.length, length[0])
@@ -260,7 +346,7 @@ class TestOpenURI < Test::Unit::TestCase
       progress = []
       open("#{url}/data/",
            :content_length_proc => lambda {|n| length << n },
-           :progress_proc => lambda {|n| progress << n },
+           :progress_proc => lambda {|n| progress << n }
           ) {|f|
         assert_equal(1, length.length)
         assert_equal(nil, length[0])
@@ -382,6 +468,160 @@ class TestOpenURI < Test::Unit::TestCase
     }
     with_env('http_proxy'=>'http://127.0.0.1:8080', 'HTTP_PROXY'=>'http://127.0.0.1:8081', 'REQUEST_METHOD'=>'GET') {
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
+    }
+  end
+
+  def test_ftp_invalid_request
+    assert_raise(ArgumentError) { URI("ftp://127.0.0.1/").read }
+    assert_raise(ArgumentError) { URI("ftp://127.0.0.1/a%0Db").read }
+    assert_raise(ArgumentError) { URI("ftp://127.0.0.1/a%0Ab").read }
+    assert_raise(ArgumentError) { URI("ftp://127.0.0.1/a%0Db/f").read }
+    assert_raise(ArgumentError) { URI("ftp://127.0.0.1/a%0Ab/f").read }
+    assert_raise(URI::InvalidComponentError) { URI("ftp://127.0.0.1/d/f;type=x") }
+  end
+
+  def test_ftp
+    TCPServer.open("127.0.0.1", 0) {|serv|
+      _, port, _, host = serv.addr
+      th = Thread.new {
+        s = serv.accept
+        begin
+          s.print "220 Test FTP Server\r\n"
+          assert_equal("USER anonymous\r\n", s.gets); s.print "331 name ok\r\n"
+          assert_match(/\APASS .*\r\n/, s.gets); s.print "230 logged in\r\n"
+          assert_equal("TYPE I\r\n", s.gets); s.print "200 type set to I\r\n"
+          assert_equal("CWD foo\r\n", s.gets); s.print "250 CWD successful\r\n"
+          assert_equal("PASV\r\n", s.gets)
+          TCPServer.open("127.0.0.1", 0) {|data_serv|
+            _, data_serv_port, _, data_serv_host = data_serv.addr
+            hi = data_serv_port >> 8
+            lo = data_serv_port & 0xff
+            s.print "227 Entering Passive Mode (127,0,0,1,#{hi},#{lo}).\r\n"
+            assert_equal("RETR bar\r\n", s.gets); s.print "150 file okay\r\n"
+            data_sock = data_serv.accept
+            begin
+              data_sock << "content"
+            ensure
+              data_sock.close
+            end
+            s.print "226 transfer complete\r\n"
+            assert_nil(s.gets)
+          }
+        ensure
+          s.close if s
+        end
+      }
+      begin
+        content = URI("ftp://#{host}:#{port}/foo/bar").read
+        assert_equal("content", content)
+      ensure
+        Thread.kill(th)
+        th.join
+      end
+    }
+  end
+
+  def test_ftp_ascii
+    TCPServer.open("127.0.0.1", 0) {|serv|
+      _, port, _, host = serv.addr
+      th = Thread.new {
+        s = serv.accept
+        begin
+          content = "content"
+          s.print "220 Test FTP Server\r\n"
+          assert_equal("USER anonymous\r\n", s.gets); s.print "331 name ok\r\n"
+          assert_match(/\APASS .*\r\n/, s.gets); s.print "230 logged in\r\n"
+          assert_equal("TYPE I\r\n", s.gets); s.print "200 type set to I\r\n"
+          assert_equal("CWD /foo\r\n", s.gets); s.print "250 CWD successful\r\n"
+          assert_equal("TYPE A\r\n", s.gets); s.print "200 type set to A\r\n"
+          assert_equal("SIZE bar\r\n", s.gets); s.print "213 #{content.bytesize}\r\n"
+          assert_equal("PASV\r\n", s.gets)
+          TCPServer.open("127.0.0.1", 0) {|data_serv|
+            _, data_serv_port, _, data_serv_host = data_serv.addr
+            hi = data_serv_port >> 8
+            lo = data_serv_port & 0xff
+            s.print "227 Entering Passive Mode (127,0,0,1,#{hi},#{lo}).\r\n"
+            assert_equal("RETR bar\r\n", s.gets); s.print "150 file okay\r\n"
+            data_sock = data_serv.accept
+            begin
+              data_sock << content
+            ensure
+              data_sock.close
+            end
+            s.print "226 transfer complete\r\n"
+            assert_nil(s.gets)
+          }
+        ensure
+          s.close if s
+        end
+      }
+      begin
+        length = []
+        progress = []
+        content = URI("ftp://#{host}:#{port}/%2Ffoo/b%61r;type=a").read(
+         :content_length_proc => lambda {|n| length << n },
+         :progress_proc => lambda {|n| progress << n })
+        assert_equal("content", content)
+        assert_equal([7], length)
+        assert_equal(7, progress.inject(&:+))
+      ensure
+        Thread.kill(th)
+        th.join
+      end
+    }
+  end
+
+  def test_ftp_over_http_proxy
+    TCPServer.open("127.0.0.1", 0) {|proxy_serv|
+      proxy_port = proxy_serv.addr[1]
+      th = Thread.new {
+        proxy_sock = proxy_serv.accept
+        begin
+          req = proxy_sock.gets("\r\n\r\n")
+          assert_match(%r{\AGET ftp://192.0.2.1/foo/bar }, req)
+          proxy_sock.print "HTTP/1.0 200 OK\r\n"
+          proxy_sock.print "Content-Length: 4\r\n\r\n"
+          proxy_sock.print "ab\r\n"
+        ensure
+          proxy_sock.close
+        end
+      }
+      begin
+        with_env('ftp_proxy'=>"http://127.0.0.1:#{proxy_port}") {
+          content = URI("ftp://192.0.2.1/foo/bar").read
+          assert_equal("ab\r\n", content)
+        }
+      ensure
+        Thread.kill(th)
+        th.join
+      end
+    }
+  end
+
+  def test_ftp_over_http_proxy_auth
+    TCPServer.open("127.0.0.1", 0) {|proxy_serv|
+      proxy_port = proxy_serv.addr[1]
+      th = Thread.new {
+        proxy_sock = proxy_serv.accept
+        begin
+          req = proxy_sock.gets("\r\n\r\n")
+          assert_match(%r{\AGET ftp://192.0.2.1/foo/bar }, req)
+          assert_match(%r{Proxy-Authorization: Basic #{['proxy-user:proxy-password'].pack('m').chomp}\r\n}, req)
+          proxy_sock.print "HTTP/1.0 200 OK\r\n"
+          proxy_sock.print "Content-Length: 4\r\n\r\n"
+          proxy_sock.print "ab\r\n"
+        ensure
+          proxy_sock.close
+        end
+      }
+      begin
+        content = URI("ftp://192.0.2.1/foo/bar").read(
+          :proxy_http_basic_authentication => ["http://127.0.0.1:#{proxy_port}", "proxy-user", "proxy-password"])
+        assert_equal("ab\r\n", content)
+      ensure
+        Thread.kill(th)
+        th.join
+      end
     }
   end
 
