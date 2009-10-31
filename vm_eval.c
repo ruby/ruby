@@ -117,7 +117,7 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 
 	RB_GC_GUARD(new_args);
 	rb_ary_unshift(new_args, ID2SYM(id));
-	return rb_funcall2(recv, rb_intern("method_missing"),
+	return rb_funcall2(recv, idMethodMissing,
 			   argc+1, RARRAY_PTR(new_args));
       }
       case VM_METHOD_TYPE_OPTIMIZED: {
@@ -201,7 +201,7 @@ stack_check(void)
     }
 }
 
-static inline rb_method_entry_t *rb_search_method_emtry(VALUE recv, ID mid);
+static inline rb_method_entry_t *rb_search_method_entry(VALUE recv, ID mid);
 static inline int rb_method_call_status(rb_thread_t *th, rb_method_entry_t *me, call_type scope, VALUE self);
 #define NOEX_OK NOEX_NOSUPER
 
@@ -223,7 +223,7 @@ static inline VALUE
 rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 	 call_type scope, VALUE self)
 {
-    rb_method_entry_t *me = rb_search_method_emtry(recv, mid);
+    rb_method_entry_t *me = rb_search_method_entry(recv, mid);
     rb_thread_t *th = GET_THREAD();
     int call_status = rb_method_call_status(th, me, scope, self);
 
@@ -234,41 +234,81 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
     return vm_call0(th, recv, mid, argc, argv, me);
 }
 
-VALUE
-rb_check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
+struct rescue_funcall_args {
+    VALUE recv;
+    VALUE sym;
+    int argc;
+    VALUE *argv;
+};
+
+static VALUE
+check_funcall_exec(struct rescue_funcall_args *args)
 {
-    rb_method_entry_t *me = rb_search_method_emtry(recv, mid);
+    VALUE new_args = rb_ary_new4(args->argc, args->argv);
+
+    RB_GC_GUARD(new_args);
+    rb_ary_unshift(new_args, args->sym);
+    return rb_funcall2(args->recv, idMethodMissing,
+		       args->argc+1, RARRAY_PTR(new_args));
+}
+
+static VALUE
+check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
+{
+    VALUE sym = rb_funcall(e, rb_intern("name"), 0, 0);
+
+    if (args->sym != sym)
+	rb_exc_raise(e);
+    return Qundef;
+}
+
+static VALUE
+check_funcall(rb_method_entry_t *me, VALUE recv, ID mid, int argc, VALUE *argv)
+{
     rb_thread_t *th = GET_THREAD();
     int call_status = rb_method_call_status(th, me, CALL_FCALL, Qundef);
 
     if (call_status != NOEX_OK) {
-	return Qundef;
+	if (rb_method_basic_definition_p(CLASS_OF(recv), idMethodMissing)) {
+	    return Qundef;
+	}
+	else {
+	    struct rescue_funcall_args args;
+
+	    args.recv = recv;
+	    args.sym = ID2SYM(mid);
+	    args.argc = argc;
+	    args.argv = argv;
+	    return rb_rescue2(check_funcall_exec, (VALUE)&args,
+			      check_funcall_failed, (VALUE)&args,
+			      rb_eNoMethodError, (VALUE)0);
+	}
     }
     stack_check();
     return vm_call0(th, recv, mid, argc, argv, me);
 }
 
 VALUE
+rb_check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
+{
+    return check_funcall(rb_search_method_entry(recv, mid), recv, mid, argc, argv);
+}
+
+VALUE
 rb_funcall_no_recursive(VALUE recv, ID mid, int argc, VALUE *argv, VALUE (*func)())
 {
-    rb_method_entry_t *me = rb_search_method_emtry(recv, mid);
-    rb_thread_t *th = GET_THREAD();
+    rb_method_entry_t *me = rb_search_method_entry(recv, mid);
     int call_status;
 
     if (!me) return Qundef;
     if (me->def && me->def->type == VM_METHOD_TYPE_CFUNC &&
 	me->def->body.cfunc.func == func)
 	return Qundef;
-    call_status = rb_method_call_status(th, me, CALL_FCALL, Qundef);
-    if (call_status != NOEX_OK) {
-	return Qundef;
-    }
-    stack_check();
-    return vm_call0(th, recv, mid, argc, argv, me);
+    return check_funcall(me, recv, mid, argc, argv);
 }
 
 static inline rb_method_entry_t *
-rb_search_method_emtry(VALUE recv, ID mid)
+rb_search_method_entry(VALUE recv, ID mid)
 {
     VALUE klass = CLASS_OF(recv);
 

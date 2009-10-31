@@ -1,3 +1,15 @@
+Sat Oct 31 23:28:49 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* vm_eval.c (check_funcall): logic updated according to
+	  [ruby-dev:39594].  search method entry, call if it exists;
+	  otherwise check method_missing, call if it was overridden,
+	  protecting exceptions; if NoMethodError happens, check method
+	  name.
+
+	* vm_eval.c (vm_call0): use idMethodMissing.
+
+	* vm_eval.c (rb_search_method_entry): typo fixed.
+
 Sat Oct 31 17:19:28 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTPResponse#each_response_header):
