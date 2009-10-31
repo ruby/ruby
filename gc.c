@@ -2089,6 +2089,16 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
 void rb_vm_mark(void *ptr);
 
+#if STACK_GROW_DIRECTION < 0
+#define GET_STACK_BOUNDS(start, end, appendix) (start = STACK_END, end = STACK_START)
+#elif STACK_GROW_DIRECTION > 0
+#define GET_STACK_BOUNDS(start, end, appendix) (start = STACK_START, end = STACK_END+appendix)
+#else
+#define GET_STACK_BOUNDS(stack_start, stack_end, appendix) \
+    ((STACK_END < STACK_START) ? \
+     (start = STACK_END, end = STACK_START) : (start = STACK_START, end = STACK_END+appendix))
+#endif
+
 static void
 mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 {
@@ -2100,22 +2110,7 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
     rb_setjmp(save_regs_gc_mark);
 
     SET_STACK_END;
-#if STACK_GROW_DIRECTION < 0
-    stack_start = th->machine_stack_end;
-    stack_end = th->machine_stack_start;
-#elif STACK_GROW_DIRECTION > 0
-    stack_start = th->machine_stack_start;
-    stack_end = th->machine_stack_end + 1;
-#else
-    if (th->machine_stack_end < th->machine_stack_start) {
-        stack_start = th->machine_stack_end;
-        stack_end = th->machine_stack_start;
-    }
-    else {
-        stack_start = th->machine_stack_start;
-        stack_end = th->machine_stack_end + 1;
-    }
-#endif
+    GET_STACK_BOUNDS(stack_start, stack_end, 1);
 
     mark_locations_array(objspace,
 			 (VALUE*)save_regs_gc_mark,
@@ -2220,18 +2215,10 @@ void
 rb_gc_mark_machine_stack(rb_thread_t *th)
 {
     rb_objspace_t *objspace = &rb_objspace;
-#if STACK_GROW_DIRECTION < 0
-    rb_gc_mark_locations(th->machine_stack_end, th->machine_stack_start);
-#elif STACK_GROW_DIRECTION > 0
-    rb_gc_mark_locations(th->machine_stack_start, th->machine_stack_end);
-#else
-    if (th->machine_stack_start < th->machine_stack_end) {
-	rb_gc_mark_locations(th->machine_stack_start, th->machine_stack_end);
-    }
-    else {
-	rb_gc_mark_locations(th->machine_stack_end, th->machine_stack_start);
-    }
-#endif
+    VALUE *stack_start, *stack_end;
+
+    GET_STACK_BOUNDS(stack_start, stack_end, 0);
+    rb_gc_mark_locations(stack_start, stack_end);
 #ifdef __ia64
     rb_gc_mark_locations(th->machine_register_stack_start, th->machine_register_stack_end);
 #endif

@@ -1,3 +1,9 @@
+Sun Nov  1 08:17:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (GET_STACK_BOUNDS): refactored common code.  based on a
+	  patch from Suraj N. Kurapati <sunaku AT gmail.com> in
+	  [ruby-core:26443].
+
 Sat Oct 31 23:44:35 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_count): remove optimization using #size.
