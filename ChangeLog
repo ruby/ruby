@@ -1,3 +1,9 @@
+Fri Sep 11 09:45:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (aix_loaderror): get rid of using uninitialized value in the
+	  case loadquery fails.  fixed wrong index variable usage.  see
+	  [ruby-core:25479].
+
 Fri Sep 11 01:14:00 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/net/http.rb (fetch): rdoc fix, patch by Arthur Schreiber.
