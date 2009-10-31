@@ -416,7 +416,7 @@ do {\
 static void
 unpack_entries(register st_table *table)
 {
-    int i;
+    st_index_t i;
     struct st_table_entry *packed_bins[MAX_PACKED_NUMHASH*2];
     st_table tmp_table = *table;
 
