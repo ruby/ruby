@@ -1,3 +1,10 @@
+Sat Oct 31 23:44:35 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_count): remove optimization using #size.
+	  revert r25560.
+
+	* vm_eval.c (rb_funcall_no_recursive): remove method.
+
 Sat Oct 31 23:28:49 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* vm_eval.c (check_funcall): logic updated according to
