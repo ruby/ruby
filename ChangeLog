@@ -1,3 +1,8 @@
+Sat Oct 31 17:20:58 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTPResponse#each_response_header):
+	  cosmetic: '?\ ' -> '?\s'
+
 Fri Oct 30 22:02:15 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTPResponse#each_response_header):

@@ -2038,7 +2038,7 @@ module Net   #:nodoc:
         while true
           line = sock.readuntil("\n", true).sub(/\s+\z/, '')
           break if line.empty?
-          if line[0] == ?\  or line[0] == ?\t and value
+          if line[0] == ?\s or line[0] == ?\t and value
             value << ' ' unless value.empty?
             value << line.strip
           else
