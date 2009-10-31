@@ -48,8 +48,7 @@ module WEBrick
       end
 
       def do_OPTIONS(req, res)
-        m = self.methods.grep(/^do_[A-Z]+$/)
-        m.collect!{|i| i.sub(/do_/, "") }
+        m = self.methods.grep(/\Ado_([A-Z]+)\z/) {$1}
         m.sort!
         res["allow"] = m.join(",")
       end

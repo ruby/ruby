@@ -1,3 +1,8 @@
+Fri Sep  4 04:46:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/webrick/httpservlet/abstract.rb (do_OPTIONS): method names
+	  are symbols now.  [ruby-core:24580]
+
 Sun Mar 15 09:17:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (.y.c): use SRC_FILE which contains slashes instead of
