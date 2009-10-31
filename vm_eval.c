@@ -263,8 +263,9 @@ check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
 }
 
 static VALUE
-check_funcall(rb_method_entry_t *me, VALUE recv, ID mid, int argc, VALUE *argv)
+check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
 {
+    rb_method_entry_t *me = rb_search_method_entry(recv, mid);
     rb_thread_t *th = GET_THREAD();
     int call_status = rb_method_call_status(th, me, CALL_FCALL, Qundef);
 
@@ -291,20 +292,7 @@ check_funcall(rb_method_entry_t *me, VALUE recv, ID mid, int argc, VALUE *argv)
 VALUE
 rb_check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
 {
-    return check_funcall(rb_search_method_entry(recv, mid), recv, mid, argc, argv);
-}
-
-VALUE
-rb_funcall_no_recursive(VALUE recv, ID mid, int argc, VALUE *argv, VALUE (*func)())
-{
-    rb_method_entry_t *me = rb_search_method_entry(recv, mid);
-    int call_status;
-
-    if (!me) return Qundef;
-    if (me->def && me->def->type == VM_METHOD_TYPE_CFUNC &&
-	me->def->body.cfunc.func == func)
-	return Qundef;
-    return check_funcall(me, recv, mid, argc, argv);
+    return check_funcall(recv, mid, argc, argv);
 }
 
 static inline rb_method_entry_t *
