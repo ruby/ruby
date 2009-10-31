@@ -7789,6 +7789,7 @@ STDMETHODIMP EVENTSINK_Invoke(
     }
 
     if (pvarResult) {
+	VariantInit(pvarResult);
         ole_val2variant(result, pvarResult);
     }
     
