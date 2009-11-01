@@ -197,6 +197,11 @@ rb_dlptr_to_i(VALUE self)
     return PTR2NUM(data->ptr);
 }
 
+/*
+ * call-seq: to_value
+ *
+ * Cast this CPtr to a ruby object.
+ */
 VALUE
 rb_dlptr_to_value(VALUE self)
 {
