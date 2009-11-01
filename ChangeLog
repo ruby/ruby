@@ -1,3 +1,8 @@
+Sun Nov  1 13:11:27 2009  wanabe  <s.wanabe@gmail.com>
+
+	* ext/socket/socket.c (socket_s_ip_address_list): use FreeLibrary() to
+	  free HMODULE.
+
 Sun Nov  1 08:17:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (GET_STACK_BOUNDS): refactored common code.  based on a
