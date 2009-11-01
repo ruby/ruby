@@ -16,6 +16,12 @@ rb_dl_dlopen(int argc, VALUE argv[], VALUE self)
     return rb_class_new_instance(argc, argv, rb_cDLHandle);
 }
 
+/*
+ * call-seq: DL.malloc
+ *
+ * Allocate +size+ bytes of memory and return the integer memory address
+ * for the allocated memory.
+ */
 VALUE
 rb_dl_malloc(VALUE self, VALUE size)
 {
@@ -26,6 +32,13 @@ rb_dl_malloc(VALUE self, VALUE size)
     return PTR2NUM(ptr);
 }
 
+/*
+ * call-seq: DL.realloc(addr, size)
+ *
+ * Change the size of the memory allocated at the memory location +addr+ to
+ * +size+ bytes.  Returns the memory address of the reallocated memory, which
+ * may be different than the address passed in.
+ */
 VALUE
 rb_dl_realloc(VALUE self, VALUE addr, VALUE size)
 {
