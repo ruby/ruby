@@ -1,4 +1,6 @@
-Sun Nov  1 16:23:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Nov  1 16:24:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_stack_grow_dir): fix for universal binary.
 
 	* configure.in (sitehdrdir, vendorhdrdir): fixed default values.
 
