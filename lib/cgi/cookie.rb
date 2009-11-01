@@ -55,11 +55,10 @@ class CGI
     def initialize(name = "", *value)
       if name.kind_of?(String)
         @name = name
-        @value = value
         %r|^(.*/)|.match(ENV["SCRIPT_NAME"])
         @path = ($1 or "")
         @secure = false
-        return super(@value)
+        return super(value)
       end
 
       options = name
@@ -68,7 +67,7 @@ class CGI
       end
 
       @name = options["name"]
-      @value = Array(options["value"])
+      value = Array(options["value"])
       # simple support for IE
       if options["path"]
         @path = options["path"]
@@ -80,11 +79,19 @@ class CGI
       @expires = options["expires"]
       @secure = options["secure"] == true ? true : false
 
-      super(@value)
+      super(value)
     end
 
-    attr_accessor("name", "value", "path", "domain", "expires")
+    attr_accessor("name", "path", "domain", "expires")
     attr_reader("secure")
+
+    def value
+      self
+    end
+
+    def value=(val)
+      replace(Array(val))
+    end
 
     # Set whether the Cookie is a secure cookie or not.
     #
@@ -96,7 +103,7 @@ class CGI
 
     # Convert the Cookie to its string representation.
     def to_s
-      val = @value.kind_of?(String) ? CGI::escape(@value) : @value.collect{|v| CGI::escape(v) }.join("&")
+      val = collect{|v| CGI::escape(v) }.join("&")
       buf = "#{@name}=#{val}"
       buf << "; domain=#{@domain}" if @domain
       buf << "; path=#{@path}"     if @path
