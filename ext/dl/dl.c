@@ -49,6 +49,11 @@ rb_dl_realloc(VALUE self, VALUE addr, VALUE size)
     return PTR2NUM(ptr);
 }
 
+/*
+ * call-seq: DL.free(addr)
+ *
+ * Free the memory at address +addr+
+ */
 VALUE
 rb_dl_free(VALUE self, VALUE addr)
 {

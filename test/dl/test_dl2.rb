@@ -5,6 +5,15 @@ module DL
 class TestDL < TestBase
   # TODO: refactor test repetition
 
+  def test_free_secure
+    assert_raises(SecurityError) do
+      Thread.new do
+        $SAFE = 4
+        DL.free(0)
+      end.join
+    end
+  end
+
   def test_realloc
     str = "abc"
     ptr_id = DL.realloc(0, 4)
@@ -132,28 +141,6 @@ class TestDL < TestBase
     addr = dlwrap(ary)
     ary2 = dlunwrap(addr)
     assert_equal(ary, ary2)
-  end
-
-  def test_cptr()
-    check = Proc.new{|str,ptr|
-      assert_equal(str.size(), ptr.size())
-      assert_equal(str, ptr.to_s())
-      assert_equal(str[0,2], ptr.to_s(2))
-      assert_equal(str[0,2], ptr[0,2])
-      assert_equal(str[1,2], ptr[1,2])
-      assert_equal(str[1,0], ptr[1,0])
-      assert_equal(str[0].ord, ptr[0])
-      assert_equal(str[1].ord, ptr[1])
-    }
-    str = 'abc'
-    ptr = CPtr[str]
-    check.call(str, ptr)
-    str[0] = "c"
-    ptr[0] = "c".ord
-    check.call(str, ptr)
-    str[0,2] = "aa"
-    ptr[0,2] = "aa"
-    check.call(str, ptr)
   end
 end
 end # module DL
