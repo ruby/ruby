@@ -1,3 +1,7 @@
+Sun Nov  1 20:16:03 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c: fixed rdoc. [ruby-core:26457]
+
 Sun Nov  1 16:24:16 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_stack_grow_dir): fix for universal binary.
