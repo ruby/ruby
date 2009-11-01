@@ -1507,8 +1507,10 @@ int main()
     return stack_growup_p(&x, 10);
 }
 ], $2=-1, $2=+1, $2=0)
+  ;;
 esac
-eval rb_cv_stack_grow_dir_$1=\$$2])])
+eval rb_cv_stack_grow_dir_$1=\$$2])
+eval $2=\$rb_cv_stack_grow_dir_$1])
 if test "${universal_binary-no}" = yes ; then
     archflagpat=`eval echo '"'"${ARCH_FLAG}"'"' | sed 's/[[][|.*]]/\\&/g'`
     save_CFLAGS="$CFLAGS" new_cflags=`echo "$CFLAGS" | sed "s|$archflagpat"'||'`
