@@ -1,3 +1,14 @@
+Mon Nov  2 08:17:31 2009  wanabe  <s.wanabe@gmail.com>
+
+	* cont.c (fiber_free): don't free unallocated local_storage. see #1325.
+
+	* cont.c (cont_init): clear local_storage not to use current thread's.
+
+	* cont.c (fiber_t_alloc, root_fiber_alloc): link itself always for
+	  a case that fiber_link_remove() is called before fiber_link_join().
+
+	* cont.c (fiber_init): don't join half-baked fiber.
+
 Sun Nov  1 20:16:03 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c: fixed rdoc. [ruby-core:26457]

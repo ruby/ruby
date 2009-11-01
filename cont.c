@@ -198,7 +198,8 @@ fiber_free(void *ptr)
     if (ptr) {
 	rb_fiber_t *fib = ptr;
 
-	if (fib->cont.type != ROOT_FIBER_CONTEXT) {
+	if (fib->cont.type != ROOT_FIBER_CONTEXT &&
+	    fib->cont.saved_thread.local_storage) {
 	    st_free_table(fib->cont.saved_thread.local_storage);
 	}
 	fiber_link_remove(fib);
@@ -283,6 +284,7 @@ cont_init(rb_context_t *cont, rb_thread_t *th)
 {
     /* save thread context */
     cont->saved_thread = *th;
+    cont->saved_thread.local_storage = 0;
 }
 
 static rb_context_t *
@@ -731,6 +733,7 @@ fiber_t_alloc(VALUE fibval)
     cont_init(&fib->cont, th);
     fib->prev = Qnil;
     fib->status = CREATED;
+    fib->prev_fiber = fib->next_fiber = fib;
 
     DATA_PTR(fibval) = fib;
 
@@ -744,14 +747,14 @@ fiber_init(VALUE fibval, VALUE proc)
     rb_context_t *cont = &fib->cont;
     rb_thread_t *th = &cont->saved_thread;
 
-    fiber_link_join(fib);
-
     /* initialize cont */
     cont->vm_stack = 0;
 
     th->stack = 0;
     th->stack_size = FIBER_VM_STACK_SIZE;
     th->stack = ALLOC_N(VALUE, th->stack_size);
+
+    fiber_link_join(fib);
 
     th->cfp = (void *)(th->stack + th->stack_size);
     th->cfp--;
@@ -875,7 +878,6 @@ root_fiber_alloc(rb_thread_t *th)
     /* no need to allocate vm stack */
     fib = fiber_t_alloc(fiber_alloc(rb_cFiber));
     fib->cont.type = ROOT_FIBER_CONTEXT;
-    fib->prev_fiber = fib->next_fiber = fib;
 
     return fib;
 }
