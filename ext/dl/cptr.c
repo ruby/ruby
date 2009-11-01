@@ -223,6 +223,11 @@ rb_dlptr_ref(VALUE self)
     return rb_dlptr_new(&(data->ptr),0,0);
 }
 
+/*
+ * call-seq: null?
+ *
+ * Returns true if this is a null pointer.
+ */
 VALUE
 rb_dlptr_null_p(VALUE self)
 {
@@ -357,6 +362,15 @@ rb_dlptr_minus(VALUE self, VALUE other)
     return rb_dlptr_new((char *)ptr - num, size + num, 0);
 }
 
+/*
+ *  call-seq:
+ *     ptr[index]                -> an_integer
+ *     ptr[start, length]        -> a_string
+ *
+ * Returns integer stored at _index_.  If _start_ and _length_ are given,
+ * a string containing the bytes from _start_ of length _length_ will be
+ * returned.
+ */
 VALUE
 rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
 {
@@ -380,6 +394,15 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
     return retval;
 }
 
+/*
+ *  call-seq:
+ *     ptr[index]         = int                    ->  int
+ *     ptr[start, length] = string or cptr or addr ->  string or dl_cptr or addr
+ *
+ * Set the value at +index+ to +int+.  Or, set the memory at +start+ until
+ * +length+ with the contents of +string+, the memory from +dl_cptr+, or the
+ * memory pointed at by the memory address +addr+.
+ */
 VALUE
 rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 {
@@ -415,18 +438,27 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
     return retval;
 }
 
-VALUE
-rb_dlptr_size(int argc, VALUE argv[], VALUE self)
+/*
+ * call-seq: size=(size)
+ *
+ * Set the size of this pointer to +size+
+ */
+static VALUE
+rb_dlptr_size_set(VALUE self, VALUE size)
 {
-    VALUE size;
+    RPTR_DATA(self)->size = NUM2LONG(size);
+    return size;
+}
 
-    if (rb_scan_args(argc, argv, "01", &size) == 0){
-	return LONG2NUM(RPTR_DATA(self)->size);
-    }
-    else{
-	RPTR_DATA(self)->size = NUM2LONG(size);
-	return size;
-    }
+/*
+ * call-seq: size
+ *
+ * Get the size of this pointer.
+ */
+static VALUE
+rb_dlptr_size_get(VALUE self)
+{
+    return LONG2NUM(RPTR_DATA(self)->size);
 }
 
 VALUE
@@ -491,8 +523,8 @@ Init_dlptr(void)
     rb_define_method(rb_cDLCPtr, "-", rb_dlptr_minus, 1);
     rb_define_method(rb_cDLCPtr, "[]", rb_dlptr_aref, -1);
     rb_define_method(rb_cDLCPtr, "[]=", rb_dlptr_aset, -1);
-    rb_define_method(rb_cDLCPtr, "size", rb_dlptr_size, -1);
-    rb_define_method(rb_cDLCPtr, "size=", rb_dlptr_size, -1);
+    rb_define_method(rb_cDLCPtr, "size", rb_dlptr_size_get, 0);
+    rb_define_method(rb_cDLCPtr, "size=", rb_dlptr_size_set, 1);
 
     rb_define_const(rb_mDL, "NULL", rb_dlptr_new(0, 0, 0));
 }
