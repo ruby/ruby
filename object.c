@@ -2005,7 +2005,6 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
 {
     ID m = 0;
     int i;
-    VALUE args[4];
     VALUE r;
 
     for (i=0; conv_method_names[i].method; i++) {
@@ -2016,10 +2015,6 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
 	}
     }
     if (!m) m = rb_intern(method);
-    args[0] = val;
-    args[1] = (VALUE)m;
-    args[2] = (VALUE)raise;
-    args[3] = (VALUE)tname;
     r = rb_check_funcall(val, m, 0, 0);
     if (r == Qundef) {
 	if (raise) {
