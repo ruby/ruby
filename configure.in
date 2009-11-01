@@ -1483,12 +1483,13 @@ if test "$ac_cv_func_sysconf" = yes; then
   RUBY_CHECK_SYSCONF(CLK_TCK)
 fi
 
-case "$target_cpu" in
-when(m68*|i?86|ia64|sparc*|alpha*) rb_cv_stack_grow_dir=-1;;
-when(hppa*) rb_cv_stack_grow_dir=+1;;
-esac
-AC_CACHE_CHECK(stack growing direction, rb_cv_stack_grow_dir,
-  [AC_TRY_RUN([
+AC_DEFUN(RUBY_STACK_GROW_DIRECTION, [
+    AC_CACHE_CHECK(stack growing direction on $1, rb_cv_stack_grow_dir_$1, [
+case "$1" in
+when(m68*|x86*|i?86|ia64|ppc*|sparc*|alpha*) $2=-1;;
+when(hppa*) $2=+1;;
+when(*)
+  AC_TRY_RUN([
 /* recurse to get rid of inlining */
 static int
 stack_growup_p(addr, n)
@@ -1505,8 +1506,39 @@ int main()
     int x;
     return stack_growup_p(&x, 10);
 }
-], rb_cv_stack_grow_dir=-1, rb_cv_stack_grow_dir=+1, rb_cv_stack_grow_dir=0)])
-AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $rb_cv_stack_grow_dir)
+], $2=-1, $2=+1, $2=0)
+esac
+eval rb_cv_stack_grow_dir_$1=\$$2])])
+if test "${universal_binary-no}" = yes ; then
+    archflagpat=`eval echo '"'"${ARCH_FLAG}"'"' | sed 's/[[][|.*]]/\\&/g'`
+    save_CFLAGS="$CFLAGS" new_cflags=`echo "$CFLAGS" | sed "s|$archflagpat"'||'`
+    save_LDFLAGS="$LDFLAGS" new_ldflags=`echo "$LDFLAGS" | sed "s|$archflagpat"'||'`
+    stack_dir=
+    for archs in ${universal_archnames}; do
+	archs=`echo $archs | sed 's/=.*//'`
+	CFLAGS="$new_cflags -arch $archs"
+	LDFLAGS="$new_ldflags -arch $archs"
+	RUBY_STACK_GROW_DIRECTION($archs, dir)
+	if test x$stack_dir = x; then
+	    stack_dir=$dir
+	elif test x$stack_dir != x$dir; then
+	    stack_dir=no
+	fi
+    done
+    CFLAGS="$save_CFLAGS" LDFLAGS="$save_LDFLAGS"
+    if test x$stack_dir = xno; then
+	for archs in ${universal_archnames}; do
+	    archs=`echo $archs | sed 's/=.*//'`
+	    eval dir=\$rb_cv_stack_grow_dir_$archs
+	    RUBY_DEFINE_IF([defined __${archs}__], STACK_GROW_DIRECTION, $dir)
+	done
+    else
+	AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $stack_dir)
+    fi
+else
+    RUBY_STACK_GROW_DIRECTION($target_cpu, dir)
+    AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $dir)
+fi
 
 if test x"$enable_pthread" = xyes; then
     for pthread_lib in thr pthread pthreads c c_r root; do
