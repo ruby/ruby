@@ -3,6 +3,14 @@ require_relative '../ruby/envutil'
 
 module DL
   class TestCPtr < TestBase
+    def test_ref_ptr
+      ary = [0,1,2,4,5]
+      addr = CPtr.new(dlwrap(ary))
+      assert_equal addr.to_i, addr.ref.ptr.to_i
+
+      assert_equal addr.to_i, (+ (- addr)).to_i
+    end
+
     def test_to_value
       ary = [0,1,2,4,5]
       addr = CPtr.new(dlwrap(ary))

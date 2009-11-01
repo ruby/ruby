@@ -210,6 +210,12 @@ rb_dlptr_to_value(VALUE self)
     return (VALUE)(data->ptr);
 }
 
+/*
+ * call-seq: ptr
+ *
+ * Returns a DL::CPtr that is a dereferenced pointer for this DL::CPtr.
+ * Analogous to the star operator in C.
+ */
 VALUE
 rb_dlptr_ptr(VALUE self)
 {
@@ -219,6 +225,12 @@ rb_dlptr_ptr(VALUE self)
     return rb_dlptr_new(*((void**)(data->ptr)),0,0);
 }
 
+/*
+ * call-seq: ref
+ *
+ * Returns a DL::CPtr that is a reference pointer for this DL::CPtr.
+ * Analogous to the ampersand operator in C.
+ */
 VALUE
 rb_dlptr_ref(VALUE self)
 {
