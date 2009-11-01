@@ -1711,21 +1711,21 @@ socket_s_ip_address_list(VALUE self)
 	rb_notimplement();
     pGetAdaptersAddresses = (GetAdaptersAddresses_t)GetProcAddress(h, "GetAdaptersAddresses");
     if (!pGetAdaptersAddresses) {
-	CloseHandle(h);
+	FreeLibrary(h);
 	rb_notimplement();
     }
 
     ret = pGetAdaptersAddresses(AF_UNSPEC, 0, NULL, NULL, &len);
     if (ret != ERROR_SUCCESS && ret != ERROR_BUFFER_OVERFLOW) {
 	errno = rb_w32_map_errno(ret);
-	CloseHandle(h);
+	FreeLibrary(h);
 	rb_sys_fail("GetAdaptersAddresses");
     }
     adapters = (ip_adapter_addresses_t *)ALLOCA_N(BYTE, len);
     ret = pGetAdaptersAddresses(AF_UNSPEC, 0, NULL, adapters, &len);
     if (ret != ERROR_SUCCESS) {
 	errno = rb_w32_map_errno(ret);
-	CloseHandle(h);
+	FreeLibrary(h);
 	rb_sys_fail("GetAdaptersAddresses");
     }
 
@@ -1753,7 +1753,7 @@ socket_s_ip_address_list(VALUE self)
 	}
     }
 
-    CloseHandle(h);
+    FreeLibrary(h);
     return list;
 #endif
 }
