@@ -1,3 +1,8 @@
+Wed Sep 16 13:39:10 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb (determinant): Bug fix where determinant failed on
+	  some matrices [ruby-core:23597]
+
 Mon Sep 14 06:42:21 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/cgi/cookie.rb (value): Keep CGI::Cookie#value in sync with the
