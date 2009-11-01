@@ -232,6 +232,10 @@ struct oledata {
     IDispatch *pDispatch;
 };
 
+struct oletypelibdata {
+    ITypeLib *pTypeLib;
+};
+
 struct oletypedata {
     ITypeInfo *pTypeInfo;
 };
@@ -300,6 +304,7 @@ static void ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...);
 static void ole_initialize();
 static void ole_msg_loop();
 static void ole_free(struct oledata *pole);
+static void oletypelib_free(struct oletypelibdata *poletypelib);
 static void oletype_free(struct oletypedata *poletype);
 static void olemethod_free(struct olemethoddata *polemethod);
 static void olevariable_free(struct olevariabledata *polevar);
@@ -405,11 +410,12 @@ static VALUE foletype_s_progids(VALUE self);
 static VALUE foletype_s_allocate(VALUE klass);
 static VALUE oletype_set_member(VALUE self, ITypeInfo *pTypeInfo, VALUE name);
 static VALUE oleclass_from_typelib(VALUE self, ITypeLib *pTypeLib, VALUE oleclass);
-static VALUE oletypelib_set_member(VALUE self, VALUE typelib, VALUE guid, VALUE version);
+static VALUE oletypelib_set_member(VALUE self, ITypeLib *pTypeLib);
 static VALUE foletypelib_s_typelibs(VALUE self);
 static VALUE make_version_str(VALUE major, VALUE minor);
 static VALUE oletypelib_search_registry2(VALUE self, VALUE args);
 static VALUE oletypelib_search_registry(VALUE self, VALUE typelib);
+static VALUE foletypelib_s_allocate(VALUE klass);
 static VALUE foletypelib_initialize(VALUE self, VALUE args);
 static VALUE foletypelib_guid(VALUE self);
 static VALUE foletypelib_name(VALUE self);
@@ -417,8 +423,8 @@ static VALUE foletypelib_version(VALUE self);
 static VALUE foletypelib_major_version(VALUE self);
 static VALUE foletypelib_minor_version(VALUE self);
 static VALUE oletypelib_path(VALUE guid, VALUE version);
+static HRESULT oletypelib_from_guid(VALUE guid, VALUE version, ITypeLib **ppTypeLib);
 static VALUE foletypelib_path(VALUE self);
-static void  oletypelib2itypelib(VALUE self, ITypeLib **ppTypeLib);
 static VALUE foletypelib_visible(VALUE self);
 static VALUE foletypelib_library_name(VALUE self);
 static VALUE foletypelib_ole_types(VALUE self);
@@ -1302,6 +1308,13 @@ ole_free(struct oledata *pole)
 {
     OLE_FREE(pole->pDispatch);
     free(pole);
+}
+
+static void
+oletypelib_free(struct oletypelibdata *poletypelib)
+{
+    OLE_FREE(poletypelib->pTypeLib);
+    free(poletypelib);
 }
 
 static void
@@ -4966,13 +4979,12 @@ oleclass_from_typelib(VALUE self, ITypeLib *pTypeLib, VALUE oleclass)
  *   <code>WIN32OLE_TYPELIB</code> objects represent OLE tyblib information.
  */
 
-
 static VALUE
-oletypelib_set_member(VALUE self, VALUE typelib, VALUE guid, VALUE version)
+oletypelib_set_member(VALUE self, ITypeLib *pTypeLib)
 {
-    rb_ivar_set(self, rb_intern("name"), typelib);
-    rb_ivar_set(self, rb_intern("guid"), guid);
-    rb_ivar_set(self, rb_intern("version"), version);
+    struct oletypelibdata *ptlib;
+    Data_Get_Struct(self, struct oletypelibdata, ptlib);
+    ptlib->pTypeLib = pTypeLib;
     return self;
 }
 
@@ -4997,6 +5009,8 @@ foletypelib_s_typelibs(VALUE self)
     VALUE name = Qnil;
     VALUE typelibs = rb_ary_new();
     VALUE typelib = Qnil;
+    HRESULT hr;
+    ITypeLib *pTypeLib;
 
     err = reg_open_key(HKEY_CLASSES_ROOT, "TypeLib", &htypelib);
     if(err != ERROR_SUCCESS) {
@@ -5014,9 +5028,12 @@ foletypelib_s_typelibs(VALUE self)
             if (version == Qnil)
                 break;
             if ( (name = reg_get_val2(hguid, StringValuePtr(version))) != Qnil ) {
-                typelib = rb_funcall(cWIN32OLE_TYPELIB, rb_intern("allocate"), 0);
-                oletypelib_set_member(typelib, name, guid, version);
-                rb_ary_push(typelibs, typelib);
+		hr = oletypelib_from_guid(guid, version, &pTypeLib);
+		if (SUCCEEDED(hr)) {
+		    typelib = rb_funcall(cWIN32OLE_TYPELIB, rb_intern("allocate"), 0);
+		    oletypelib_set_member(typelib, pTypeLib);
+		    rb_ary_push(typelibs, typelib);
+		}
             }
         }
         RegCloseKey(hguid);
@@ -5055,6 +5072,8 @@ oletypelib_search_registry2(VALUE self, VALUE args)
     VALUE version_str;
     VALUE version = Qnil;
     VALUE typelib = Qnil;
+    HRESULT hr;
+    ITypeLib *pTypeLib;
 
     VALUE guid = rb_ary_entry(args, 0);
     version_str = make_version_str(rb_ary_entry(args, 1), rb_ary_entry(args, 2));
@@ -5103,8 +5122,11 @@ oletypelib_search_registry2(VALUE self, VALUE args)
     RegCloseKey(hguid);
     RegCloseKey(htypelib);
     if (typelib != Qnil) {
-        found = Qtrue;
-        oletypelib_set_member(self, typelib, guid, version);
+	hr = oletypelib_from_guid(guid, version, &pTypeLib);
+	if (SUCCEEDED(hr)) {
+	    found = Qtrue;
+	    oletypelib_set_member(self, pTypeLib);
+	}
     }
     return found;
 }
@@ -5119,6 +5141,8 @@ oletypelib_search_registry(VALUE self, VALUE typelib)
     VALUE tlib;
     VALUE guid;
     VALUE ver;
+    HRESULT hr;
+    ITypeLib *pTypeLib;
 
     err = reg_open_key(HKEY_CLASSES_ROOT, "TypeLib", &htypelib);
     if(err != ERROR_SUCCESS) {
@@ -5144,8 +5168,11 @@ oletypelib_search_registry(VALUE self, VALUE typelib)
                 continue;
             }
             if (rb_str_cmp(typelib, tlib) == 0) {
-                oletypelib_set_member(self, typelib, guid, ver);
-                found = Qtrue;
+		hr = oletypelib_from_guid(guid, ver, &pTypeLib);
+		if (SUCCEEDED(hr)) {
+		    oletypelib_set_member(self, pTypeLib);
+		    found = Qtrue;
+		}
             }
             RegCloseKey(hversion);
         }
@@ -5153,6 +5180,17 @@ oletypelib_search_registry(VALUE self, VALUE typelib)
     }
     RegCloseKey(htypelib);
     return  found;
+}
+
+static VALUE
+foletypelib_s_allocate(VALUE klass)
+{
+    struct oletypelibdata *poletypelib;
+    VALUE obj;
+    ole_initialize();
+    obj = Data_Make_Struct(klass, struct oletypelibdata, 0, oletypelib_free, poletypelib);
+    poletypelib->pTypeLib = NULL;
+    return obj;
 }
 
 /*
@@ -5189,7 +5227,6 @@ foletypelib_initialize(VALUE self, VALUE args)
     int len = 0;
     OLECHAR * pbuf;
     ITypeLib *pTypeLib;
-    VALUE retval;
     HRESULT hr = S_OK;
 
     len = RARRAY_LEN(args);
@@ -5210,15 +5247,8 @@ foletypelib_initialize(VALUE self, VALUE args)
         hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
         SysFreeString(pbuf);
         if (SUCCEEDED(hr)) {
-            retval = ole_typelib_from_itypelib(pTypeLib);
-            OLE_RELEASE(pTypeLib);
-            if (retval != Qnil) {
-                found = Qtrue;
-                oletypelib_set_member(self, 
-                        rb_ivar_get(retval, rb_intern("name")),
-                        rb_ivar_get(retval, rb_intern("guid")),
-                        rb_ivar_get(retval, rb_intern("version")));
-            }
+	    found = Qtrue;
+	    oletypelib_set_member(self, pTypeLib);
         }
     }
 
@@ -5241,7 +5271,25 @@ foletypelib_initialize(VALUE self, VALUE args)
 static VALUE
 foletypelib_guid(VALUE self)
 {
-    return rb_ivar_get(self, rb_intern("guid"));
+    struct oletypelibdata *ptlib;
+    ITypeLib *pTypeLib;
+    HRESULT hr;
+    OLECHAR bstr[80];
+    VALUE guid = Qnil;
+    int len;
+    TLIBATTR *pTLibAttr;
+    Data_Get_Struct(self, struct oletypelibdata, ptlib);
+    pTypeLib = ptlib->pTypeLib;
+    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
+    if (FAILED(hr)) {
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetLibAttr from ITypeLib");
+    }
+    len = StringFromGUID2(&pTLibAttr->guid, bstr, sizeof(bstr)/sizeof(OLECHAR));
+    if (len > 3) {
+        guid = ole_wc2vstr(bstr, FALSE);
+    }
+    pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
+    return guid;
 }
 
 /*
@@ -5256,8 +5304,23 @@ foletypelib_guid(VALUE self)
 static VALUE
 foletypelib_name(VALUE self)
 {
-    VALUE name = rb_ivar_get(self, rb_intern("name"));
-    return rb_enc_str_new(StringValuePtr(name), strlen(StringValuePtr(name)), cWIN32OLE_enc);
+    struct oletypelibdata *ptlib;
+    ITypeLib *pTypeLib;
+    HRESULT hr;
+    BSTR bstr;
+    BSTR bstr2;
+    VALUE name;
+    Data_Get_Struct(self, struct oletypelibdata, ptlib);
+    pTypeLib = ptlib->pTypeLib;
+    hr = pTypeLib->lpVtbl->GetDocumentation(pTypeLib, -1,
+                                            &bstr, &bstr2, NULL, NULL);
+    
+    if (SUCCEEDED(hr)) {
+	name = WC2VSTR(bstr2);
+	return rb_enc_str_new(StringValuePtr(name), strlen(StringValuePtr(name)), cWIN32OLE_enc);
+    } else {
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to get name from ITypeLib");
+    }
 }
 
 /*
@@ -5272,8 +5335,23 @@ foletypelib_name(VALUE self)
 static VALUE
 foletypelib_version(VALUE self)
 {
-    VALUE ver = rb_ivar_get(self, rb_intern("version"));
-    return rb_Float(ver);
+    TLIBATTR *pTLibAttr;
+    VALUE major;
+    VALUE minor;
+    HRESULT hr = S_OK; 
+    struct oletypelibdata *ptlib;
+    ITypeLib *pTypeLib;
+    Data_Get_Struct(self, struct oletypelibdata, ptlib);
+    pTypeLib = ptlib->pTypeLib;
+
+    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
+    if (FAILED(hr)) {
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetLibAttr from ITypeLib");
+    }
+    major = INT2NUM(pTLibAttr->wMajorVerNum);
+    minor = INT2NUM(pTLibAttr->wMinorVerNum);
+    pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
+    return rb_Float(make_version_str(major, minor));
 }
 
 /*
@@ -5288,9 +5366,21 @@ foletypelib_version(VALUE self)
 static VALUE
 foletypelib_major_version(VALUE self)
 {
-    VALUE ver = rb_ivar_get(self, rb_intern("version"));
-    VALUE ary = rb_str_split(ver, ".");
-    return rb_Integer(rb_ary_entry(ary, 0));
+    TLIBATTR *pTLibAttr;
+    VALUE major;
+    HRESULT hr = S_OK; 
+    struct oletypelibdata *ptlib;
+    ITypeLib *pTypeLib;
+    Data_Get_Struct(self, struct oletypelibdata, ptlib);
+    pTypeLib = ptlib->pTypeLib;
+
+    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
+    if (FAILED(hr)) {
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetLibAttr from ITypeLib");
+    }
+    major =  INT2NUM(pTLibAttr->wMajorVerNum);
+    pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
+    return major;
 }
 
 /*
@@ -5305,9 +5395,21 @@ foletypelib_major_version(VALUE self)
 static VALUE
 foletypelib_minor_version(VALUE self)
 {
-    VALUE ver = rb_ivar_get(self, rb_intern("version"));
-    VALUE ary = rb_str_split(ver, ".");
-    return rb_Integer(rb_ary_entry(ary, 1));
+    TLIBATTR *pTLibAttr;
+    VALUE minor;
+    HRESULT hr = S_OK; 
+    struct oletypelibdata *ptlib;
+    ITypeLib *pTypeLib;
+    Data_Get_Struct(self, struct oletypelibdata, ptlib);
+    pTypeLib = ptlib->pTypeLib;
+
+    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
+    if (FAILED(hr)) {
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetLibAttr from ITypeLib");
+    }
+    minor =  INT2NUM(pTLibAttr->wMinorVerNum);
+    pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
+    return minor;
 }
 
 static VALUE
@@ -5343,6 +5445,22 @@ oletypelib_path(VALUE guid, VALUE version)
     return path;
 }
 
+static HRESULT 
+oletypelib_from_guid(VALUE guid, VALUE version, ITypeLib **ppTypeLib)
+{
+    VALUE path;
+    OLECHAR *pBuf;
+    HRESULT hr;
+    path = oletypelib_path(guid, version);
+    if (path == Qnil) {
+	return E_UNEXPECTED;
+    }
+    pBuf = ole_vstr2wc(path);
+    hr = LoadTypeLibEx(pBuf, REGKIND_NONE, ppTypeLib);
+    SysFreeString(pBuf);
+    return hr;
+}
+
 /*
  *  call-seq:
  *     WIN32OLE_TYPELIB#path -> The type library file path. 
@@ -5355,28 +5473,34 @@ oletypelib_path(VALUE guid, VALUE version)
 static VALUE
 foletypelib_path(VALUE self)
 {
-    VALUE guid = rb_ivar_get(self, rb_intern("guid"));
-    VALUE version = rb_ivar_get(self, rb_intern("version"));
-    return oletypelib_path(guid, version);
-}
+    TLIBATTR *pTLibAttr;
+    int len = 0;
+    HRESULT hr = S_OK; 
+    BSTR bstr;
+    LCID lcid = cWIN32OLE_lcid;
+    VALUE path;
+    struct oletypelibdata *ptlib;
+    ITypeLib *pTypeLib;
 
-static void
-oletypelib2itypelib(VALUE self, ITypeLib **ppTypeLib)
-{
-    VALUE path = Qnil;
-    OLECHAR *pbuf;
-    HRESULT hr = S_OK;
-    path = rb_funcall(self, rb_intern("path"), 0);
-    if (path != Qnil) {
-        pbuf = ole_vstr2wc(path);
-        hr = LoadTypeLibEx(pbuf, REGKIND_NONE, ppTypeLib);
-        SysFreeString(pbuf);
-        if (FAILED(hr))
-            ole_raise(hr, eWIN32OLERuntimeError, "failed to LoadTypeLibEx from `%s'",
-                      StringValuePtr(path));
-    } else {
-        rb_raise(eWIN32OLERuntimeError, "failed to get type library path");
+    Data_Get_Struct(self, struct oletypelibdata, ptlib);
+    pTypeLib = ptlib->pTypeLib;
+    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
+    if (FAILED(hr)) {
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to get TLIBATTR information");
     }
+    hr = QueryPathOfRegTypeLib(&pTLibAttr->guid, 
+	                       pTLibAttr->wMajorVerNum,
+			       pTLibAttr->wMinorVerNum,
+			       lcid,
+			       &bstr);
+    if (FAILED(hr)) {
+	pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
+	ole_raise(hr, eWIN32OLERuntimeError, "failed to QueryPathOfRegTypeTypeLib");
+    }
+
+    pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
+    path = WC2VSTR(bstr);
+    return rb_enc_str_new(StringValuePtr(path), strlen(StringValuePtr(path)), cWIN32OLE_enc);
 }
 
 /*
@@ -5400,11 +5524,12 @@ foletypelib_visible(VALUE self)
     VALUE visible = Qtrue;
     TLIBATTR *pTLibAttr;
 
-    oletypelib2itypelib(self, &pTypeLib);
+    struct oletypelibdata *ptlib;
+    Data_Get_Struct(self, struct oletypelibdata, ptlib);
+    pTypeLib = ptlib->pTypeLib;
 
     hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
     if (FAILED(hr)) {
-        OLE_RELEASE(pTypeLib);
         ole_raise(hr, eWIN32OLERuntimeError, "failed to get TLIBATTR information");
     }
     if ((pTLibAttr->wLibFlags == 0) ||
@@ -5413,7 +5538,6 @@ foletypelib_visible(VALUE self)
         visible = Qfalse;
     }
     pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
-    OLE_RELEASE(pTypeLib);
     return visible;
 }
 
@@ -5435,14 +5559,14 @@ foletypelib_library_name(VALUE self)
     VALUE libname = Qnil;
     BSTR bstr;
 
-    oletypelib2itypelib(self, &pTypeLib);
+    struct oletypelibdata *ptlib;
+    Data_Get_Struct(self, struct oletypelibdata, ptlib);
+    pTypeLib = ptlib->pTypeLib;
     hr = pTypeLib->lpVtbl->GetDocumentation(pTypeLib, -1,
                                             &bstr, NULL, NULL, NULL);
     if (FAILED(hr)) {
-        OLE_RELEASE(pTypeLib);
         ole_raise(hr, eWIN32OLERuntimeError, "failed to get library name");
     }
-    OLE_RELEASE(pTypeLib);
     libname = WC2VSTR(bstr);
     return libname;
 }
@@ -5462,9 +5586,10 @@ foletypelib_ole_types(VALUE self)
 {
     ITypeLib *pTypeLib = NULL;
     VALUE classes = rb_ary_new();
-    oletypelib2itypelib(self, &pTypeLib);
+    struct oletypelibdata *ptlib;
+    Data_Get_Struct(self, struct oletypelibdata, ptlib);
+    pTypeLib = ptlib->pTypeLib;
     ole_types_from_typelib(pTypeLib, classes);
-    OLE_RELEASE(pTypeLib);
     return classes;
 }
 
@@ -9077,6 +9202,7 @@ Init_win32ole()
 
     cWIN32OLE_TYPELIB = rb_define_class("WIN32OLE_TYPELIB", rb_cObject);
     rb_define_singleton_method(cWIN32OLE_TYPELIB, "typelibs", foletypelib_s_typelibs, 0);
+    rb_define_alloc_func(cWIN32OLE_TYPELIB, foletypelib_s_allocate);
     rb_define_method(cWIN32OLE_TYPELIB, "initialize", foletypelib_initialize, -2);
     rb_define_method(cWIN32OLE_TYPELIB, "guid", foletypelib_guid, 0);
     rb_define_method(cWIN32OLE_TYPELIB, "name", foletypelib_name, 0);

@@ -1,3 +1,8 @@
+Sun Sep 13 08:30:30 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: fix WIN32OLE_TYPELIB.new when the 1st 
+	  argument is the non-registered file.
+
 Sun Nov  1 22:04:33 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_module.rb (TestModule#test_method_added): new test
