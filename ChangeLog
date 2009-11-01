@@ -1,3 +1,8 @@
+Sun Nov  1 13:31:16 2009  wanabe  <s.wanabe@gmail.com>
+
+	* win32/win32.c (overlapped_socket_io, recvmsg, sendmsg): pass handle
+	  instead of pointer to CloseHandle().
+
 Sun Nov  1 13:11:27 2009  wanabe  <s.wanabe@gmail.com>
 
 	* ext/socket/socket.c (socket_s_ip_address_list): use FreeLibrary() to

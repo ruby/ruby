@@ -2780,7 +2780,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 	    errno = map_errno(err);
 	    r = -1;
 	}
-	CloseHandle(&wol.hEvent);
+	CloseHandle(wol.hEvent);
     }
 
     return r;
@@ -2926,7 +2926,7 @@ recvmsg(int fd, struct msghdr *msg, int flags)
 	    errno = map_errno(err);
 	    len = -1;
 	}
-	CloseHandle(&wol.hEvent);
+	CloseHandle(wol.hEvent);
     }
     if (ret == SOCKET_ERROR)
 	return -1;
@@ -3018,7 +3018,7 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
 	    errno = map_errno(err);
 	    len = -1;
 	}
-	CloseHandle(&wol.hEvent);
+	CloseHandle(wol.hEvent);
     }
 
     return len;
