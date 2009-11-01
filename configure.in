@@ -16,7 +16,7 @@ dnl note that spaces after comma need to be quoted.
 dnl environment section {
 
 AC_ARG_WITH(baseruby,
-	AS_HELP_STRING([--with-baseruby=RUBY], [ use RUBY as baseruby; RUBY is the pathname of ruby]),
+	AS_HELP_STRING([--with-baseruby=RUBY], [use RUBY as baseruby; RUBY is the pathname of ruby]),
 	[
 		case "$withval" in
 		    when(*ruby*)
@@ -2576,12 +2576,12 @@ AC_ARG_WITH(rubyhdrdir,
 	    [rubyhdrdir='${includedir}/${RUBY_BASE_NAME}-${ruby_version}'])
 
 AC_ARG_WITH(sitehdrdir,
-	    AS_HELP_STRING([--with-sitehdrdir=DIR], [core site headers in DIR [RUBYHDRDIR/site_ruby]]),
+	    AS_HELP_STRING([--with-sitehdrdir=DIR], [core site headers in DIR [[RUBYHDRDIR/site_ruby]]]),
 	    [sitehdrdir=$withval],
 	    [sitehdrdir='${rubyhdrdir}/site_ruby'])
 
 AC_ARG_WITH(vendorhdrdir,
-	    AS_HELP_STRING([--with-vendorhdrdir=DIR], [ core vendor headers in DIR [RUBYHDRDIR/vendor_ruby]]),
+	    AS_HELP_STRING([--with-vendorhdrdir=DIR], [core vendor headers in DIR [[RUBYHDRDIR/vendor_ruby]]]),
 	    [vendorhdrdir=$withval],
 	    [vendorhdrdir='${rubyhdrdir}/vendor_ruby'])
 
