@@ -1,3 +1,7 @@
+Sun Nov  1 16:23:03 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (sitehdrdir, vendorhdrdir): fixed default values.
+
 Sun Nov  1 13:31:16 2009  wanabe  <s.wanabe@gmail.com>
 
 	* win32/win32.c (overlapped_socket_io, recvmsg, sendmsg): pass handle
