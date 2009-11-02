@@ -431,7 +431,7 @@ void
 rb_exc_raise(VALUE mesg)
 {
     if (!NIL_P(mesg)) {
-	mesg = make_exception(1, &mesg, Qfalse);
+	mesg = make_exception(1, &mesg, FALSE);
     }
     rb_longjmp(TAG_RAISE, mesg);
 }
@@ -440,7 +440,7 @@ void
 rb_exc_fatal(VALUE mesg)
 {
     if (!NIL_P(mesg)) {
-	mesg = make_exception(1, &mesg, Qfalse);
+	mesg = make_exception(1, &mesg, FALSE);
     }
     rb_longjmp(TAG_FATAL, mesg);
 }
@@ -543,7 +543,7 @@ make_exception(int argc, VALUE *argv, int isstr)
 VALUE
 rb_make_exception(int argc, VALUE *argv)
 {
-    return make_exception(argc, argv, Qtrue);
+    return make_exception(argc, argv, TRUE);
 }
 
 void
