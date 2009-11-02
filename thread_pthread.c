@@ -816,7 +816,14 @@ native_stop_timer_thread(void)
 	native_cond_signal(&timer_thread_cond);
     }
     native_mutex_unlock(&timer_thread_lock);
+    native_thread_join(timer_thread_id);
     return stopped;
+}
+
+static void
+native_reset_timer_thread(void)
+{
+    timer_thread_id = 0;
 }
 
 #ifdef HAVE_SIGALTSTACK

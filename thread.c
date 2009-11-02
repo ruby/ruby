@@ -2651,15 +2651,14 @@ void
 rb_thread_stop_timer_thread(void)
 {
     if (timer_thread_id && native_stop_timer_thread()) {
-	native_thread_join(timer_thread_id);
-	timer_thread_id = 0;
+	native_reset_timer_thread();
     }
 }
 
 void
 rb_thread_reset_timer_thread(void)
 {
-    timer_thread_id = 0;
+    native_reset_timer_thread();
 }
 
 void
