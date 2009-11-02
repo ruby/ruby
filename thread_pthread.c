@@ -814,9 +814,9 @@ native_stop_timer_thread(void)
     stopped = --system_working <= 0;
     if (stopped) {
 	native_cond_signal(&timer_thread_cond);
+	native_thread_join(timer_thread_id);
     }
     native_mutex_unlock(&timer_thread_lock);
-    native_thread_join(timer_thread_id);
     return stopped;
 }
 
