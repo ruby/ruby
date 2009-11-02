@@ -564,10 +564,21 @@ native_stop_timer_thread(void)
 {
     int stopped = --system_working <= 0;
     if (stopped) {
+	SetEvent(timer_thread_lock);
+	native_thread_join(timer_thread_id);
 	CloseHandle(timer_thread_lock);
 	timer_thread_lock = 0;
     }
     return stopped;
+}
+
+static void
+native_reset_timer_thread(void)
+{
+    if (timer_thread_id) {
+	CloseHandle(timer_thread_id);
+	timer_thread_id = 0;
+    }
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
