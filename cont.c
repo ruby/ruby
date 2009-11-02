@@ -198,7 +198,8 @@ fiber_free(void *ptr)
     if (ptr) {
 	rb_fiber_t *fib = ptr;
 
-	if (fib->cont.type != ROOT_FIBER_CONTEXT) {
+	if (fib->cont.type != ROOT_FIBER_CONTEXT &&
+	    fib->cont.saved_thread.local_storage) {
 	    st_free_table(fib->cont.saved_thread.local_storage);
 	}
 	fiber_link_remove(fib);
@@ -283,6 +284,7 @@ cont_init(rb_context_t *cont, rb_thread_t *th)
 {
     /* save thread context */
     cont->saved_thread = *th;
+    cont->saved_thread.local_storage = 0;
 }
 
 static rb_context_t *
@@ -744,12 +746,15 @@ fiber_init(VALUE fibval, VALUE proc)
     rb_context_t *cont = &fib->cont;
     rb_thread_t *th = &cont->saved_thread;
 
-    fiber_link_join(fib);
 
     /* initialize cont */
     cont->vm_stack = 0;
 
     th->stack = 0;
+    th->stack_size = 0;
+
+    fiber_link_join(fib);
+
     th->stack_size = FIBER_VM_STACK_SIZE;
     th->stack = ALLOC_N(VALUE, th->stack_size);
 

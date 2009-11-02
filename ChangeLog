@@ -1,3 +1,15 @@
+Mon Nov  2 18:33:21 2009  wanabe  <s.wanabe@gmail.com>
+
+	* cont.c (fiber_free): don't free unallocated local_storage. see #1325.
+
+	* cont.c (cont_init): clear local_storage not to use current thread's.
+
+	* cont.c (fiber_t_alloc, root_fiber_alloc): link itself always for
+	  a case that fiber_link_remove() is called before fiber_link_join().
+
+	* cont.c (fiber_init): clear cont->vm_stack and th->stack before
+	  root_fiber_alloc() in rb_fiber_current().
+
 Mon Nov  2 14:52:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_exc_raise, rb_exc_fatal, rb_make_exception):
