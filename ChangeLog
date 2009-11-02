@@ -1,3 +1,8 @@
+Mon Nov  2 14:43:48 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread_pthread.c (native_stop_timer_thread): delay joinning timer
+	  thread after unlocking mutex.
+
 Mon Nov  2 13:31:14 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread_pthread.c (native_stop_timer_thread): need to join timer thread
