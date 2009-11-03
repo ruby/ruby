@@ -254,7 +254,12 @@ rb_dlptr_null_p(VALUE self)
     return data->ptr ? Qfalse : Qtrue;
 }
 
-VALUE
+/*
+ * call-seq: free=(function)
+ *
+ * Set the free function for this pointer to the DL::CFunc in +function+.
+ */
+static VALUE
 rb_dlptr_free_set(VALUE self, VALUE val)
 {
     struct ptr_data *data;
@@ -265,7 +270,12 @@ rb_dlptr_free_set(VALUE self, VALUE val)
     return Qnil;
 }
 
-VALUE
+/*
+ * call-seq: free
+ *
+ * Get the free function for this pointer.  Returns  DL::CFunc or nil.
+ */
+static VALUE
 rb_dlptr_free_get(VALUE self)
 {
     struct ptr_data *pdata;
@@ -499,21 +509,29 @@ rb_dlptr_size_get(VALUE self)
     return LONG2NUM(RPTR_DATA(self)->size);
 }
 
-VALUE
+/*
+ * call-seq:
+ *    DL::CPtr.to_ptr(val)  => cptr
+ *    DL::CPtr[val]         => cptr
+ *
+ * Get the underlying pointer for ruby object +val+ and return it as a
+ * DL::CPtr object.
+ */
+static VALUE
 rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 {
     VALUE ptr;
 
-    if (rb_obj_is_kind_of(val, rb_cIO) == Qtrue){
+    if (RTEST(rb_obj_is_kind_of(val, rb_cIO))){
 	rb_io_t *fptr;
 	FILE *fp;
 	GetOpenFile(val, fptr);
 	fp = rb_io_stdio_file(fptr);
 	ptr = rb_dlptr_new(fp, 0, NULL);
     }
-    else if (rb_obj_is_kind_of(val, rb_cString) == Qtrue){
-        char *str = StringValuePtr(val);
-        ptr = rb_dlptr_new(str, RSTRING_LEN(val), NULL); 
+    else if (RTEST(rb_obj_is_kind_of(val, rb_cString))){
+	char *str = StringValuePtr(val);
+	ptr = rb_dlptr_new(str, RSTRING_LEN(val), NULL);
     }
     else if (rb_respond_to(val, id_to_ptr)){
 	VALUE vptr = rb_funcall(val, id_to_ptr, 0);
