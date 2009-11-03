@@ -333,21 +333,42 @@ rb_dlptr_inspect(VALUE self)
     return rb_str_new2(str);
 }
 
+/*
+ *  call-seq:
+ *    ptr == other    => true or false
+ *    ptr.eql?(other) => true or false
+ *
+ * Returns true if +other+ wraps the same pointer, otherwise returns
+ * false.
+ */
 VALUE
 rb_dlptr_eql(VALUE self, VALUE other)
 {
     void *ptr1, *ptr2;
+
+    if(!rb_obj_is_kind_of(other, rb_cDLCPtr)) return Qfalse;
+
     ptr1 = rb_dlptr2cptr(self);
     ptr2 = rb_dlptr2cptr(other);
 
     return ptr1 == ptr2 ? Qtrue : Qfalse;
 }
 
-VALUE
+/*
+ *  call-seq:
+ *    ptr <=> other   => -1, 0, 1, or nil
+ *
+ * Returns -1 if less than, 0 if equal to, 1 if greater than +other+.  Returns
+ * nil if +ptr+ cannot be compared to +other+.
+ */
+static VALUE
 rb_dlptr_cmp(VALUE self, VALUE other)
 {
     void *ptr1, *ptr2;
     SIGNED_VALUE diff;
+
+    if(!rb_obj_is_kind_of(other, rb_cDLCPtr)) return Qnil;
+
     ptr1 = rb_dlptr2cptr(self);
     ptr2 = rb_dlptr2cptr(other);
     diff = (SIGNED_VALUE)ptr1 - (SIGNED_VALUE)ptr2;
