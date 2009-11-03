@@ -456,7 +456,7 @@ dir_check(VALUE dir)
 }
 
 #define GetDIR(obj, dirp) do {\
-    dir_check(dir);\
+    dir_check(obj); \
     TypedData_Get_Struct(obj, struct dir_data, &dir_data_type, dirp);	\
     if (dirp->dir == NULL) dir_closed();\
 } while (0)
