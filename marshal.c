@@ -869,7 +869,7 @@ clear_dump_arg(struct dump_arg *arg)
  * call-seq:
  *      dump( obj [, anIO] , limit=--1 ) => anIO
  *
- * Serializes obj and all descendent objects. If anIO is
+ * Serializes obj and all descendant objects. If anIO is
  * specified, the serialized data will be written to it, otherwise the
  * data will be returned as a String. If limit is specified, the
  * traversal of subobjects will be limited to that depth. If limit is

@@ -38,7 +38,7 @@ static ID id_eq, id_eql, id_match, id_inspect, id_init_copy;
  *     obj === other   => true or false
  *
  *  Case Equality---For class <code>Object</code>, effectively the same
- *  as calling  <code>#==</code>, but typically overridden by descendents
+ *  as calling  <code>#==</code>, but typically overridden by descendants
  *  to provide meaningful semantics in <code>case</code> statements.
  */
 
@@ -67,7 +67,7 @@ rb_eql(VALUE obj1, VALUE obj2)
  *
  *  Equality---At the <code>Object</code> level, <code>==</code> returns
  *  <code>true</code> only if <i>obj</i> and <i>other</i> are the
- *  same object. Typically, this method is overridden in descendent
+ *  same object. Typically, this method is overridden in descendant
  *  classes to provide class-specific meaning.
  *
  *  Unlike <code>==</code>, the <code>equal?</code> method should never be
@@ -257,9 +257,9 @@ rb_obj_clone(VALUE obj)
  *  <code>dup</code> copies the tainted state of <i>obj</i>. See also
  *  the discussion under <code>Object#clone</code>. In general,
  *  <code>clone</code> and <code>dup</code> may have different semantics
- *  in descendent classes. While <code>clone</code> is used to duplicate
+ *  in descendant classes. While <code>clone</code> is used to duplicate
  *  an object, including its internal state, <code>dup</code> typically
- *  uses the class of the descendent object to create the new instance.
+ *  uses the class of the descendant object to create the new instance.
  *
  *  This method may have class-specific behavior.  If so, that
  *  behavior will be documented under the #+initialize_copy+ method of
@@ -1092,7 +1092,7 @@ rb_false(VALUE obj)
  *  call-seq:
  *     obj =~ other  => nil
  *
- *  Pattern Match---Overridden by descendents (notably
+ *  Pattern Match---Overridden by descendants (notably
  *  <code>Regexp</code> and <code>String</code>) to provide meaningful
  *  pattern-match semantics.
  */
@@ -1139,7 +1139,7 @@ rb_obj_cmp(VALUE obj1, VALUE obj2)
  *  called without creating an encapsulating object, while instance
  *  methods may not. (See <code>Module#module_function</code>)
  *
- *  In the descriptions that follow, the parameter <i>syml</i> refers
+ *  In the descriptions that follow, the parameter <i>sym</i> refers
  *  to a symbol, which is either a quoted string or a
  *  <code>Symbol</code> (such as <code>:name</code>).
  *
@@ -1209,7 +1209,7 @@ rb_mod_freeze(VALUE mod)
  *     mod === obj    => true or false
  *
  *  Case Equality---Returns <code>true</code> if <i>anObject</i> is an
- *  instance of <i>mod</i> or one of <i>mod</i>'s descendents. Of
+ *  instance of <i>mod</i> or one of <i>mod</i>'s descendants. Of
  *  limited use for modules, but can be used in <code>case</code>
  *  statements to classify objects by class.
  */
@@ -2162,7 +2162,7 @@ rb_Integer(VALUE val)
  *  (<code>0</code>, <code>0b</code>, and <code>0x</code>) are honored.
  *  In any case, strings should be strictly conformed to numeric
  *  representation. This behavior is different from that of 
- *  <code>String#to_i</code>.  Non string valueswill be converted using
+ *  <code>String#to_i</code>.  Non string values will be converted using
  *  <code>to_int</code>, and <code>to_i</code>.
  *
  *     Integer(123.999)    #=> 123

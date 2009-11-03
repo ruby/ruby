@@ -2307,7 +2307,7 @@ Init_heap(void)
  *   sample_callback(void *vstart, void *vend, int stride, void *data) {
  *     VALUE v = (VALUE)vstart;
  *     for (; v != (VALUE)vend; v += stride) {
- *       if (RBASIC(v)->flasgs) { // liveness check
+ *       if (RBASIC(v)->flags) { // liveness check
  *       // do something with live object 'v'
  *     }
  *     return 0; // continue to iteration
@@ -2936,9 +2936,9 @@ count_objects(int argc, VALUE *argv, VALUE os)
  *  call-seq:
  *     GC.count -> Integer
  *
- *  The number of times GC occured.
+ *  The number of times GC occurred.
  *
- *  It returns the number of times GC occured since the process started.
+ *  It returns the number of times GC occurred since the process started.
  *
  */
 

@@ -1035,7 +1035,7 @@ rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
  * <dd>
  *     This form takes two parameters: self and args.
  *     \a self is the receiver. \a args is an Array object which 
- *     containts the arguments.
+ *     contains the arguments.
  *
  *     \code
  *     static VALUE my_method(VALUE self, VALUE args);

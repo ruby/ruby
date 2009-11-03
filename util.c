@@ -443,7 +443,7 @@ ruby_qsort(void* base, const size_t nel, const size_t size,
 {
   register char *l, *r, *m;          	/* l,r:left,right group   m:median point */
   register int t, eq_l, eq_r;       	/* eq_l: all items in left group are equal to S */
-  char *L = base;                    	/* left end of curren region */
+  char *L = base;                    	/* left end of current region */
   char *R = (char*)base + size*(nel-1); /* right end of current region */
   size_t chklim = 63;                   /* threshold of ordering element check */
   stack_node stack[32], *top = stack;   /* 32 is enough for 32bit CPU */

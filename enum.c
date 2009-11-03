@@ -2115,7 +2115,7 @@ chunk_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *    }
  *
  *  :_alone can be used to pass through bunch of elements.
- *  For example, sort consective lines formed as Foo#bar and
+ *  For example, sort consecutive lines formed as Foo#bar and
  *  pass other lines, chunk can be used as follows.
  *
  *    pat = /\A[A-Z][A-Za-z0-9_]+\#/

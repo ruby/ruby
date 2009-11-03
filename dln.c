@@ -1398,7 +1398,7 @@ dln_load(const char *file)
 	NXClose(s);
 
 	/* Cannot call *init_address directory, so copy this value to
-	   funtion pointer */
+	   function pointer */
 	init_fct = (void(*)())init_address;
 	(*init_fct)();
 	return (void*)init_address;
@@ -1437,10 +1437,10 @@ dln_load(const char *file)
 # define DLN_DEFINED
     {
       status_t err_stat;  /* BeOS error status code */
-      image_id img_id;    /* extention module unique id */
-      void (*init_fct)(); /* initialize function for extention module */
+      image_id img_id;    /* extension module unique id */
+      void (*init_fct)(); /* initialize function for extension module */
 
-      /* load extention module */
+      /* load extension module */
       img_id = load_add_on(file);
       if (img_id <= 0) {
 	dln_loaderror("Failed to load add_on %.200s error_code=%x",

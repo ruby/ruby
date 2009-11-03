@@ -166,7 +166,7 @@ swapd(const double d)
     memcpy(&dtmp,utmp,sizeof(double));
     return dtmp;
 }
-#else	/* SIZEOF_DOUBLE == 8 but undivied by known size of int */
+#else	/* SIZEOF_DOUBLE == 8 but undivide by known size of int */
 define_swapx(d, double)
 #endif	/* #if SIZEOF_SHORT == 4 */
 #endif	/* #if SIZEOF_LONG == 4 */
@@ -428,7 +428,7 @@ static unsigned long utf8_to_uv(const char*,long*);
  *       u     |  UU-encoded string
  *       V     |  Long, little-endian byte order
  *       v     |  Short, little-endian byte order
- *       w     |  BER-compressed integer\fnm
+ *       w     |  BER-compressed integer
  *       X     |  Back up a byte
  *       x     |  Null byte
  *       Z     |  Same as ``a'', except that null is added with *
@@ -1287,7 +1287,7 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *            |         | short in network byte order
  *     -------+---------+-----------------------------------------
  *       P    | String  | treat sizeof(char *) characters as a
- *            |         | pointer, and  return \emph{len} characters
+ *            |         | pointer, and  return the length bytes
  *            |         | from the referenced location
  *     -------+---------+-----------------------------------------
  *       p    | String  | treat sizeof(char *) characters as a

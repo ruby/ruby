@@ -970,7 +970,7 @@ float_value(VALUE v)
  *     prng.rand(5.0..9.0) # => between 5.0 and 9.0, including 9.0
  *     prng.rand(5.0...9.0) # => between 5.0 and 9.0, excluding 9.0
  *
- * +begin+/+end+ of the range have to have subtruct and add methods.
+ * +begin+/+end+ of the range have to have subtract and add methods.
  *
  * Otherwise, it raises an ArgumentError.
  */

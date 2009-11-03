@@ -1148,7 +1148,7 @@ rb_obj_method(VALUE obj, VALUE vid)
  *  call-seq:
  *     obj.public_method(sym)    => method
  *
- *  Similar to _methd_, searches public method only.
+ *  Similar to _method_, searches public method only.
  */
 
 VALUE
@@ -1199,7 +1199,7 @@ rb_mod_instance_method(VALUE mod, VALUE vid)
  *  call-seq:
  *     mod.public_instance_method(symbol)   => unbound_method
  *
- *  Similar to _instance_methd_, searches public method only.
+ *  Similar to _instance_method_, searches public method only.
  */
 
 static VALUE
