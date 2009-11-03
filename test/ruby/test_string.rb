@@ -1602,6 +1602,17 @@ class TestString < Test::Unit::TestCase
     assert_equal(24, count, "[ruby-dev:39361]")
   end
 
+  def test_upto_nonalnum
+    first = S("\u3041")
+    last  = S("\u3093")
+    count = 0
+    assert_equal(first, first.upto(last) {|s|
+                   count += 1
+                   s.replace(last)
+                   })
+    assert_equal(83, count, "[ruby-dev:39626]")
+  end
+
   def test_mod_check
     assert_raise(RuntimeError) {
       s = ""

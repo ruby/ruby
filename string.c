@@ -2952,11 +2952,14 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
     if (n > 0 || (excl && n == 0)) return beg;
 
     after_end = rb_funcall(end, succ, 0, 0);
-    current = beg;
+    current = rb_str_dup(beg);
     while (!rb_str_equal(current, after_end)) {
+	VALUE next = Qnil;
+	if (excl || !rb_str_equal(current, end))
+	    next = rb_funcall(current, succ, 0, 0);
 	rb_yield(current);
-	if (!excl && rb_str_equal(current, end)) break;
-	current = rb_funcall(current, succ, 0, 0);
+	if (NIL_P(next)) break;
+	current = next;
 	StringValue(current);
 	if (excl && rb_str_equal(current, end)) break;
 	if (RSTRING_LEN(current) > RSTRING_LEN(end) || RSTRING_LEN(current) == 0)
