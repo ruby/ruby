@@ -683,7 +683,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *    2
  *    FiberError: dead fiber called
  *
- *  The <code>Fiber#resume</code> method accepts an arbitary number of
+ *  The <code>Fiber#resume</code> method accepts an arbitrary number of
  *  parameters, if it is the first call to <code>resume</code> then they
  *  will be passed as block arguments. Otherwise they will be the return
  *  value of the call to <code>Fiber.yield</code>
@@ -1042,7 +1042,7 @@ rb_fiber_m_resume(int argc, VALUE *argv, VALUE fib)
  *  stopped or starting it if it was not resumed before. The calling
  *  fiber will be suspended much like in a call to <code>Fiber.yield</code>.
  *
- *  The fiber which recieves the transfer call is treats it much like
+ *  The fiber which receives the transfer call is treats it much like
  *  a resume call. Arguments passed to transfer are treated like those
  *  passed to resume.
  *

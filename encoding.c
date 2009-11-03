@@ -1009,7 +1009,7 @@ enc_find(VALUE klass, VALUE enc)
  *
  * Checks the compatibility of two strings.
  * If they are compatible, means concatenatable,
- * returns an encoding which the concatinated string will be.
+ * returns an encoding which the concatenated string will be.
  * If they are not compatible, nil is returned.
  *
  *   Encoding.compatible?("\xa1".force_encoding("iso-8859-1"), "b")

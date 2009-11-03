@@ -254,12 +254,12 @@ PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
   (debug_compile("== " desc "\n", \
                  iseq_compile_each(iseq, anchor, node, 0)))
 
-/* compile node, this node's value will be poped */
+/* compile node, this node's value will be popped */
 #define COMPILE_POPED(anchor, desc, node)    \
   (debug_compile("== " desc "\n", \
                  iseq_compile_each(iseq, anchor, node, 1)))
 
-/* compile node, which is poped when 'poped' is true */
+/* compile node, which is popped when 'poped' is true */
 #define COMPILE_(anchor, desc, node, poped)  \
   (debug_compile("== " desc "\n", \
                  iseq_compile_each(iseq, anchor, node, poped)))
@@ -1055,7 +1055,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	}
 
 	/*
-         * new argument infromation:
+         * new argument information:
          *   NODE_ARGS     [m: int,  o: NODE_OPT_ARG, ->]
          *   NODE_ARGS_AUX [r: ID,   b: ID,           ->]
          *   NODE_ARGS_AUX [Pst: id, Plen: int,       init: NODE*]
@@ -2211,12 +2211,12 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * cond,
       case NODE_LIT:		/* NODE_LIT is always not true */
       case NODE_TRUE:
       case NODE_STR:
-	/* printf("useless conditon eliminate (%s)\n",  ruby_node_name(nd_type(cond))); */
+	/* printf("useless condition eliminate (%s)\n",  ruby_node_name(nd_type(cond))); */
 	ADD_INSNL(ret, nd_line(cond), jump, then_label);
 	break;
       case NODE_FALSE:
       case NODE_NIL:
-	/* printf("useless conditon eliminate (%s)\n", ruby_node_name(nd_type(cond))); */
+	/* printf("useless condition eliminate (%s)\n", ruby_node_name(nd_type(cond))); */
 	ADD_INSNL(ret, nd_line(cond), jump, else_label);
 	break;
       default:
@@ -2430,7 +2430,7 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 
     while (rhsn) {
 	if (llen <= rlen) {
-	    COMPILE_POPED(ret, "masgn val (poped)", rhsn->nd_head);
+	    COMPILE_POPED(ret, "masgn val (popped)", rhsn->nd_head);
 	}
 	else {
 	    COMPILE(ret, "masgn val", rhsn->nd_head);
@@ -3518,7 +3518,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_INSN(ret, nd_line(node), pop);
 	}
 
-	/* resgister catch entry */
+	/* register catch entry */
 	ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue, lcont);
 	ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, lend, lcont, 0, lstart);
 	break;
@@ -4039,7 +4039,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	}
 #endif
-	/* reciever */
+	/* receiver */
 	if (type == NODE_CALL) {
 	    COMPILE(recv, "recv", node->nd_recv);
 	}
@@ -4149,7 +4149,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	}
 
-	/* dummy reciever */
+	/* dummy receiver */
 	ADD_INSN1(ret, nd_line(node), putobject,
 		  nd_type(node) == NODE_ZSUPER ? Qfalse : Qtrue);
 	ADD_SEQ(ret, args);
@@ -4371,11 +4371,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		      INT2FIX(0));
 	    break;
 	  case NODE_MATCH2:
-	    COMPILE(recv, "reciever", node->nd_recv);
+	    COMPILE(recv, "receiver", node->nd_recv);
 	    COMPILE(val, "value", node->nd_value);
 	    break;
 	  case NODE_MATCH3:
-	    COMPILE(recv, "reciever", node->nd_value);
+	    COMPILE(recv, "receiver", node->nd_value);
 	    COMPILE(val, "value", node->nd_recv);
 	    break;
 	}
@@ -5174,7 +5174,7 @@ static int
 iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 		VALUE body, struct st_table *labels_table)
 {
-    /* TODO: body should be freezed */
+    /* TODO: body should be frozen */
     VALUE *ptr = RARRAY_PTR(body);
     long i, len = RARRAY_LEN(body);
     int j;

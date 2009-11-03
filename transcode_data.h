@@ -69,7 +69,7 @@ typedef enum {
   asciicompat_converter,        /* ASCII-compatible -> ASCII-compatible */
   asciicompat_decoder,          /* ASCII-incompatible -> ASCII-compatible */
   asciicompat_encoder           /* ASCII-compatible -> ASCII-incompatible */
-  /* ASCII-incompatible -> ASCII-incompatible is intentionally ommitted. */
+  /* ASCII-incompatible -> ASCII-incompatible is intentionally omitted. */
 } rb_transcoder_asciicompat_type_t;
 
 typedef struct rb_transcoder rb_transcoder;

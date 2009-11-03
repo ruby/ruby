@@ -1116,7 +1116,7 @@ flo_lt(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   flt <= rael  ->  true or false
+ *   flt <= real  ->  true or false
  *
  * <code>true</code> if <code>flt</code> is less than
  * or equal to <code>real</code>.
@@ -2669,7 +2669,7 @@ fix_lt(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   fix <= rael  ->  true or false
+ *   fix <= real  ->  true or false
  *
  * Returns <code>true</code> if the value of <code>fix</code> is
  * less than or equal to that of <code>real</code>.

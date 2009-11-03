@@ -1385,7 +1385,7 @@ catch_i(VALUE tag, VALUE data)
  *
  *  when _arg_ is given, +catch+ yields it as is, or when no
  *  _arg_ is given, +catch+ assigns a new unique object to
- *  +throw+.  this is usefull for nested +catch+.  _arg_ can
+ *  +throw+.  this is useful for nested +catch+.  _arg_ can
  *  be an arbitrary object, not only Symbol.
  *
  */

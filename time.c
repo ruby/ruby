@@ -381,7 +381,7 @@ gmtimexv_noleapsecond(VALUE timexv, struct vtm *vtm)
 
     /* 30 years including 7 leap days (1972, 1976, ... 1996),
      * 31 days in January 2000 and
-     * 29 days in Febrary 2000
+     * 29 days in February 2000
      * from 1970-01-01 to 2000-02-29 */
     if (30*365+7+31+29-1 <= n) {
         /* 2000-02-29 or after */

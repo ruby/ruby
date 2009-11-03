@@ -1384,7 +1384,7 @@ nurat_to_r(VALUE self)
         the choice of a. Therefore we can simply ignore this case.
       Note 2: At first, we need to consider the closed interval [a,b].
         but since a and b have the denominator 2^(|e|+1) whereas x itself
-        has a denominator <= 2^|e|, we can restrict the seach to the open
+        has a denominator <= 2^|e|, we can restrict the search to the open
         interval (a,b).
       So, for given a and b (0 < a < b) we are searching a rational number
       y with a <= y <= b.
@@ -2097,7 +2097,7 @@ string_to_r_strict(VALUE self)
  *
  * Returns a rational which denotes the string form.  The parser
  * ignores leading whitespaces and trailing garbage.  Any digit
- * sequences can be separeted by an underscore.  Returns zero for null
+ * sequences can be separated by an underscore.  Returns zero for null
  * or garbage string.
  *
  * NOTE: '0.3'.to_r isn't the same as 0.3.to_r.  The former is
@@ -2223,7 +2223,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  *    Rational(4, -6)  #=> (-2/3)
  *    3.to_r           #=> (3/1)
  *
- * You can also create ratioanl object from floating-point numbers or
+ * You can also create rational object from floating-point numbers or
  * strings.
  *
  *    Rational(0.3)    #=> (5404319552844595/18014398509481984)

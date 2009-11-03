@@ -9,7 +9,7 @@
 **********************************************************************/
 
 /*
-  YARV Thread Desgin
+  YARV Thread Design
 
   model 1: Userlevel Thread
     Same as traditional ruby thread.
@@ -465,7 +465,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    st_delete_wrap(th->vm->living_threads, th->self);
 	}
 
-	/* wake up joinning threads */
+	/* wake up joining threads */
 	join_th = th->join_list_head;
 	while (join_th) {
 	    if (join_th == main_th) errinfo = Qnil;
@@ -1035,10 +1035,10 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
  *   (1) release GVL.
  *       Other Ruby threads may run in parallel.
  *   (2) call func with data1.
- *   (3) aquire GVL.
+ *   (3) acquire GVL.
  *       Other Ruby threads can not run in parallel any more.
  *
- *   If another thread interrupts this thread (Thread#kill, signal deliverly,
+ *   If another thread interrupts this thread (Thread#kill, signal delivery,
  *   VM-shutdown request, and so on), `ubf()' is called (`ubf()' means
  *   "un-blocking function").  `ubf()' should interrupt `func()' execution.
  *
@@ -1154,7 +1154,7 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
     blocking_region_end(th, brb);
     /* enter to Ruby world: You can access Ruby values, methods and so on. */
     r = (*func)(data1);
-    /* levae from Ruby world: You can not access Ruby values, etc. */
+    /* leave from Ruby world: You can not access Ruby values, etc. */
     blocking_region_begin(th, brb, prev_unblock.func, prev_unblock.arg);
     return r;
 }

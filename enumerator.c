@@ -516,7 +516,7 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
  *    e.each_with_index {|(*args), idx| ... }
  *    e.each_with_index
  *
- *  Same as Enumeartor#with_index, except each_with_index does not
+ *  Same as Enumerator#with_index, except each_with_index does not
  *  receive an offset argument.
  *
  */

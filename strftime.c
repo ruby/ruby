@@ -577,7 +577,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct vtm *vtm, 
 			continue;
 #endif /* MAILHEADER_EXT */
 
-		case 'Z':	/* time zone name or abbrevation */
+		case 'Z':	/* time zone name or abbreviation */
 			if (flags & BIT_OF(CHCASE)) {
 				flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(LOWER);
