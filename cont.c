@@ -858,7 +858,7 @@ rb_fiber_start(void)
     TH_POP_TAG();
 
     if (state) {
-	if (TAG_RAISE) {
+	if (state == TAG_RAISE) {
 	    th->thrown_errinfo = th->errinfo;
 	}
 	else {
