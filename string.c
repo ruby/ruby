@@ -1993,32 +1993,6 @@ rb_str_concat(VALUE str1, VALUE str2)
 }
 
 st_index_t
-rb_hash_start(st_index_t h)
-{
-    static int hashseed_init = 0;
-    static st_index_t hashseed;
-
-    if (!hashseed_init) {
-        hashseed = rb_genrand_int32();
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
-	hashseed <<= 32;
-	hashseed |= rb_genrand_int32();
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 8*8
-	hashseed <<= 32;
-	hashseed |= rb_genrand_int32();
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 12*8
-	hashseed <<= 32;
-	hashseed |= rb_genrand_int32();
-#endif
-        hashseed_init = 1;
-    }
-
-    return st_hash_start(hashseed + h);
-}
-
-st_index_t
 rb_memhash(const void *ptr, long len)
 {
     return st_hash(ptr, len, rb_hash_start(0));

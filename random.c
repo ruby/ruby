@@ -729,6 +729,7 @@ static VALUE
 rb_f_srand(int argc, VALUE *argv, VALUE obj)
 {
     VALUE seed, old;
+    struct Random *r = &default_rand;
 
     rb_secure(4);
     if (argc == 0) {
@@ -737,8 +738,8 @@ rb_f_srand(int argc, VALUE *argv, VALUE obj)
     else {
 	rb_scan_args(argc, argv, "01", &seed);
     }
-    old = default_rand.rnd.seed;
-    default_rand.rnd.seed = rand_init(&default_rand.rnd.mt, seed);
+    old = r->rnd.seed;
+    r->rnd.seed = rand_init(&r->rnd.mt, seed);
 
     return old;
 }
@@ -1126,25 +1127,53 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
     return r;
 }
 
+static st_index_t hashseed;
+
 void
 Init_RandomSeed(void)
 {
-    fill_random_seed(default_rand.initial);
-    init_by_array(&default_rand.rnd.mt, default_rand.initial, DEFAULT_SEED_CNT);
+    struct Random *r = &default_rand;
+    struct MT *mt = &r->rnd.mt;
+
+    fill_random_seed(r->initial);
+    init_by_array(mt, r->initial, DEFAULT_SEED_CNT);
+
+    hashseed = genrand_int32(mt);
+#if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
+    hashseed <<= 32;
+    hashseed |= genrand_int32(mt);
+#endif
+#if SIZEOF_ST_INDEX_T*CHAR_BIT > 8*8
+    hashseed <<= 32;
+    hashseed |= genrand_int32(mt);
+#endif
+#if SIZEOF_ST_INDEX_T*CHAR_BIT > 12*8
+    hashseed <<= 32;
+    hashseed |= genrand_int32(mt);
+#endif
+}
+
+st_index_t
+rb_hash_start(st_index_t h)
+{
+    return st_hash_start(hashseed + h);
 }
 
 static void
 Init_RandomSeed2(void)
 {
-    default_rand.rnd.seed = make_seed_value(default_rand.initial);
-    memset(default_rand.initial, 0, DEFAULT_SEED_LEN);
+    struct Random *r = &default_rand;
+    rb_global_variable(&r->rnd.seed);
+    r->rnd.seed = make_seed_value(r->initial);
+    memset(r->initial, 0, DEFAULT_SEED_LEN);
 }
 
 void
 rb_reset_random_seed(void)
 {
-    uninit_genrand(&default_rand.rnd.mt);
-    default_rand.rnd.seed = INT2FIX(0);
+    struct Random *r = &default_rand;
+    uninit_genrand(&r->rnd.mt);
+    r->rnd.seed = INT2FIX(0);
 }
 
 void
@@ -1153,7 +1182,6 @@ Init_Random(void)
     Init_RandomSeed2();
     rb_define_global_function("srand", rb_f_srand, -1);
     rb_define_global_function("rand", rb_f_rand, -1);
-    rb_global_variable(&default_rand.rnd.seed);
 
     rb_cRandom = rb_define_class("Random", rb_cObject);
     rb_define_alloc_func(rb_cRandom, random_alloc);
