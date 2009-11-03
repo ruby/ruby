@@ -447,19 +447,19 @@ dir_closed(void)
     rb_raise(rb_eIOError, "closed directory");
 }
 
-static void
+static struct dir_data *
 dir_check(VALUE dir)
 {
+    struct dir_data *dirp;
     if (!OBJ_UNTRUSTED(dir) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: operation on trusted Dir");
     rb_check_frozen(dir);
+    dirp = rb_check_typeddata(dir, &dir_data_type);
+    if (!dirp->dir) dir_closed();
+    return dirp;
 }
 
-#define GetDIR(obj, dirp) do {\
-    dir_check(obj); \
-    TypedData_Get_Struct(obj, struct dir_data, &dir_data_type, dirp);	\
-    if (dirp->dir == NULL) dir_closed();\
-} while (0)
+#define GetDIR(obj, dirp) (dirp = dir_check(obj))
 
 
 /*
