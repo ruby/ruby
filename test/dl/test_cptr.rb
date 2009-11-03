@@ -3,6 +3,22 @@ require_relative '../ruby/envutil'
 
 module DL
   class TestCPtr < TestBase
+    def test_equals
+      ptr   = CPtr.new 0
+      ptr2  = CPtr.new 0
+      assert_equal ptr2, ptr
+    end
+
+    def test_not_equals
+      ptr = CPtr.new 0
+      assert_not_equal 10, ptr, '10 should not equal the pointer'
+    end
+
+    def test_cmp
+      ptr = CPtr.new 0
+      assert_nil(ptr <=> 10, '10 should not be comparable')
+    end
+
     def test_ref_ptr
       ary = [0,1,2,4,5]
       addr = CPtr.new(dlwrap(ary))
