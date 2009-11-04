@@ -890,6 +890,12 @@ clear_dump_arg(struct dump_arg *arg)
  *     data = Marshal.dump(o)
  *     obj = Marshal.load(data)
  *     obj.sayHello   #=> "hello\n"
+ *
+ * Marshal can't dump following objects:
+ * * anonymous Class/Module.
+ * * objects which related to its system (ex: Dir, File::Stat, IO, File, Socket and so on)
+ * * an instance of MatchData, Data, Method, UnboundMethod, Proc, Thread, ThreadGroup, Continuation
+ * * objects which defines singleton methods
  */
 static VALUE
 marshal_dump(int argc, VALUE *argv)
