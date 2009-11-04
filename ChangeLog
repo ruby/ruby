@@ -1,3 +1,8 @@
+Wed Nov  4 15:50:16 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* include/ruby/ruby.h (NUM2CHR): prefix __extension__ for
+	  braced-groups within expressions.
+
 Wed Nov  4 15:46:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (set_{internal,external}_encoding_once): fixed typos.
