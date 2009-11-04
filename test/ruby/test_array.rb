@@ -1612,7 +1612,7 @@ class TestArray < Test::Unit::TestCase
     srand(0)
     a = (1..18).to_a
     (0..20).each do |n|
-      10000.times do
+      100.times do
         b = a.sample(n)
         assert_equal([n, 18].min, b.uniq.size)
         assert_equal(a, (a | b).sort)
@@ -1620,7 +1620,7 @@ class TestArray < Test::Unit::TestCase
       end
 
       h = Hash.new(0)
-      10000.times do
+      1000.times do
         a.sample(n).each {|x| h[x] += 1 }
       end
       assert_operator(h.values.min * 2, :>=, h.values.max) if n != 0
