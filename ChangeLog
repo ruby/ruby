@@ -1,3 +1,7 @@
+Wed Nov  4 12:49:18 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* proc.c (mnew): Fix scope issue [ruby-core:26069]
+
 Wed Nov  4 08:26:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_check): moved other checks from GetDIR.

@@ -902,7 +902,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 	VALUE sym = ID2SYM(id);
 
 	if (obj != Qundef && !rb_method_basic_definition_p(klass, rmiss)) {
-	    if (RTEST(rb_funcall(obj, rmiss, 2, sym, Qtrue))) {
+	    if (RTEST(rb_funcall(obj, rmiss, 2, sym, scope ? Qfalse : Qtrue))) {
 		def = ALLOC(rb_method_definition_t);
 		def->type = VM_METHOD_TYPE_MISSING;
 		def->original_id = id;
