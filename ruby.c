@@ -667,9 +667,9 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
 }
 
 #define set_internal_encoding_once(opt, e, elen) \
-    set_option_encoding_once("default_intenal", &opt->intern.enc.name, e, elen)
+    set_option_encoding_once("default_internal", &opt->intern.enc.name, e, elen)
 #define set_external_encoding_once(opt, e, elen) \
-    set_option_encoding_once("default_extenal", &opt->ext.enc.name, e, elen)
+    set_option_encoding_once("default_external", &opt->ext.enc.name, e, elen)
 #define set_source_encoding_once(opt, e, elen) \
     set_option_encoding_once("source", &opt->src.enc.name, e, elen)
 
