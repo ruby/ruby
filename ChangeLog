@@ -1,3 +1,8 @@
+Wed Nov  4 21:39:10 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* .document: add some README files to default rdoc's of trunk.
+	  patched by Roger Pack [ruby-core:26459]
+
 Wed Nov  4 16:06:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/st.h (SIZEOF_ST_INDEX_T): moved from st.c for
