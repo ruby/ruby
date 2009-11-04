@@ -962,7 +962,7 @@ ULONG2NUM(unsigned long v)
 #define NUM2CHR_internal(x) (((TYPE(x) == T_STRING)&&(RSTRING_LEN(x)>=1))?\
                      RSTRING_PTR(x)[0]:(char)(NUM2INT(x)&0xff))
 #ifdef __GNUC__
-# define NUM2CHR(x) ({VALUE num2chr_x = (x); NUM2CHR_internal(num2chr_x);})
+# define NUM2CHR(x) __extension__ ({VALUE num2chr_x = (x); NUM2CHR_internal(num2chr_x);})
 #else
 static inline char
 NUM2CHR(VALUE x)
