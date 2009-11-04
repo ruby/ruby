@@ -22,7 +22,7 @@ fcntl - load the C fcntl.h defines
 
 = DESCRIPTION
 
-This module is just a translation of the C <fnctl.h> file.
+This module is just a translation of the C <fcntl.h> file.
 
 = NOTE
 

@@ -54,7 +54,7 @@ ip_cmsg_type_to_sym(int level, int cmsg_type)
  * - etc.
  *
  * _cmsg_type_ should be an integer, a string or a symbol.
- * If a string/symbol is specified, it is interepreted depend on _cmsg_level_.
+ * If a string/symbol is specified, it is interpreted depend on _cmsg_level_.
  * - Socket::SCM_RIGHTS, "SCM_RIGHTS", "RIGHTS", :SCM_RIGHTS, :RIGHTS for SOL_SOCKET
  * - Socket::IP_RECVTTL, "RECVTTL" and :RECVTTL for IPPROTO_IP
  * - Socket::IPV6_PKTINFO, "PKTINFO" and :PKTINFO for IPPROTO_IPV6
@@ -1694,7 +1694,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
  *
  * _flags_ is bitwise OR of MSG_* constants such as Socket::MSG_PEEK.
  *
- * _maxcontrolslen_ is the maximum length of controls (ancillary data) to receive.
+ * _maxcontrollen_ is the maximum length of controls (ancillary data) to receive.
  *
  * _opts_ is option hash.
  * Currently :scm_rights=>bool is the only option.
@@ -1704,7 +1704,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
  * In this case, recvmsg closes the passed file descriptors immediately.
  * This is the default behavior.
  *
- * If :scm_rights value is neigher nil nor false, application expects SCM_RIGHTS control message.
+ * If :scm_rights value is neither nil nor false, application expects SCM_RIGHTS control message.
  * In this case, recvmsg creates IO objects for each file descriptors for
  * Socket::AncillaryData#unix_rights method.
  *
@@ -1723,7 +1723,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
  *
  *   #<Socket::AncillaryData: AF_UNIX SOCKET RIGHTS 7>
  *
- * _maxmesglen_ and _maxcontrolslen_ can be nil.
+ * _maxmesglen_ and _maxcontrollen_ can be nil.
  * In that case, the buffer will be grown until the message is not truncated.
  * Internally, MSG_PEEK is used and MSG_TRUNC/MSG_CTRUNC are checked.
  *

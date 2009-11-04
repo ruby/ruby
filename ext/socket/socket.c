@@ -156,7 +156,7 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
  * On unix-based systems the following system exceptions may be raised if 
  * the call to _connect_ fails:
  * * Errno::EACCES - search permission is denied for a component of the prefix
- *   path or write access to the +socket+ is denided
+ *   path or write access to the +socket+ is denied
  * * Errno::EADDRINUSE - the _sockaddr_ is already in use
  * * Errno::EADDRNOTAVAIL - the specified _sockaddr_ is not available from the
  *   local machine
@@ -172,7 +172,7 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
  * * Errno::EHOSTUNREACH - the destination host cannot be reached (probably 
  *   because the host is down or a remote router cannot reach it)
  * * Errno::EINPROGRESS - the O_NONBLOCK is set for the +socket+ and the
- *   connection cnanot be immediately established; the connection will be
+ *   connection cannot be immediately established; the connection will be
  *   established asynchronously
  * * Errno::EINTR - the attempt to establish the connection was interrupted by
  *   delivery of a signal that was caught; the connection will be established
@@ -197,12 +197,12 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
  * On unix-based systems if the address family of the calling +socket+ is
  * AF_UNIX the follow exceptions may be raised if the call to _connect_
  * fails:
- * * Errno::EIO - an i/o error occured while reading from or writing to the 
+ * * Errno::EIO - an i/o error occurred while reading from or writing to the 
  *   file system
  * * Errno::ELOOP - too many symbolic links were encountered in translating
  *   the pathname in _sockaddr_
  * * Errno::ENAMETOOLLONG - a component of a pathname exceeded NAME_MAX 
- *   characters, or an entired pathname exceeded PATH_MAX characters
+ *   characters, or an entire pathname exceeded PATH_MAX characters
  * * Errno::ENOENT - a component of the pathname does not name an existing file
  *   or the pathname is an empty string
  * * Errno::ENOTDIR - a component of the path prefix of the pathname in _sockaddr_
@@ -347,7 +347,7 @@ sock_connect_nonblock(VALUE sock, VALUE addr)
  * * Errno::EADDRINUSE - the specified _sockaddr_ is already in use
  * * Errno::EADDRNOTAVAIL - the specified _sockaddr_ is not available from the
  *   local machine
- * * Errno::EAFNOSUPPORT - the specified _sockaddr_ isnot a valid address for
+ * * Errno::EAFNOSUPPORT - the specified _sockaddr_ is not a valid address for
  *   the family of the calling +socket+
  * * Errno::EBADF - the _sockaddr_ specified is not a valid file descriptor
  * * Errno::EFAULT - the _sockaddr_ argument cannot be accessed
@@ -369,14 +369,14 @@ sock_connect_nonblock(VALUE sock, VALUE addr)
  * Socket::AF_UNIX the follow exceptions may be raised if the call to _bind_
  * fails:
  * * Errno::EACCES - search permission is denied for a component of the prefix
- *   path or write access to the +socket+ is denided
+ *   path or write access to the +socket+ is denied
  * * Errno::EDESTADDRREQ - the _sockaddr_ argument is a null pointer
  * * Errno::EISDIR - same as Errno::EDESTADDRREQ
  * * Errno::EIO - an i/o error occurred
  * * Errno::ELOOP - too many symbolic links were encountered in translating
  *   the pathname in _sockaddr_
  * * Errno::ENAMETOOLLONG - a component of a pathname exceeded NAME_MAX 
- *   characters, or an entired pathname exceeded PATH_MAX characters
+ *   characters, or an entire pathname exceeded PATH_MAX characters
  * * Errno::ENOENT - a component of the pathname does not name an existing file
  *   or the pathname is an empty string
  * * Errno::ENOTDIR - a component of the path prefix of the pathname in _sockaddr_
@@ -434,7 +434,7 @@ sock_bind(VALUE sock, VALUE addr)
  * 	socket.bind( sockaddr )
  * 	socket.listen( 5 )
  * 
- * === Example 2 (listening on an arbitary port, unix-based systems only):
+ * === Example 2 (listening on an arbitrary port, unix-based systems only):
  * 	require 'socket'
  * 	include Socket::Constants
  * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
@@ -457,7 +457,7 @@ sock_bind(VALUE sock, VALUE addr)
  * * Errno::EINVAL - the _socket_ is already connected
  * * Errno::ENOTSOCK - the _socket_ argument does not refer to a socket
  * * Errno::EOPNOTSUPP - the _socket_ protocol does not support listen
- * * Errno::EACCES - the calling process does not have approriate privileges
+ * * Errno::EACCES - the calling process does not have appropriate privileges
  * * Errno::EINVAL - the _socket_ has been shut down
  * * Errno::ENOBUFS - insufficient resources are available in the system to 
  *   complete the call
@@ -469,7 +469,7 @@ sock_bind(VALUE sock, VALUE addr)
  * * Errno::EADDRINUSE - the socket's local address is already in use. This 
  *   usually occurs during the execution of _bind_ but could be delayed
  *   if the call to _bind_ was to a partially wildcard address (involving
- *   ADDR_ANY) and if a specific address needs to be commmitted at the 
+ *   ADDR_ANY) and if a specific address needs to be committed at the 
  *   time of the call to _listen_
  * * Errno::EINPROGRESS - a Windows Sockets 1.1 call is in progress or the
  *   service provider is still processing a callback function
@@ -550,7 +550,7 @@ sock_listen(VALUE sock, VALUE log)
  * * Errno::ECONNRESET - a connection was forcibly closed by a peer
  * * Errno::EFAULT - the socket's internal buffer, address or address length 
  *   cannot be accessed or written
- * * Errno::EINTR - a signal interupted _recvfrom_ before any data was available
+ * * Errno::EINTR - a signal interrupted _recvfrom_ before any data was available
  * * Errno::EINVAL - the MSG_OOB flag is set and no out-of-band data is available
  * * Errno::EIO - an i/o error occurred while reading from or writing to the 
  *   filesystem
@@ -572,7 +572,7 @@ sock_listen(VALUE sock, VALUE log)
  * * Errno::ENETDOWN - the network is down
  * * Errno::EFAULT - the internal buffer and from parameters on +socket+ are not
  *   part of the user address space, or the internal fromlen parameter is
- *   too small to accomodate the peer address
+ *   too small to accommodate the peer address
  * * Errno::EINTR - the (blocking) call was cancelled by an internal call to
  *   the WinSock function WSACancelBlockingCall
  * * Errno::EINPROGRESS - a blocking Windows Sockets 1.1 call is in progress or 
@@ -582,7 +582,7 @@ sock_listen(VALUE sock, VALUE log)
  *   SO_OOBINLINE enabled, or (for byte stream-style sockets only) the internal
  *   len parameter on +socket+ was zero or negative
  * * Errno::EISCONN - +socket+ is already connected. The call to _recvfrom_ is
- *   not permitted with a connected socket on a socket that is connetion 
+ *   not permitted with a connected socket on a socket that is connection 
  *   oriented or connectionless.
  * * Errno::ENETRESET - the connection has been broken due to the keep-alive 
  *   activity detecting a failure while the operation was in progress.
@@ -713,7 +713,7 @@ sock_accept(VALUE sock)
  * 
  * Accepts an incoming connection using accept(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
- * It returns an array containg the accpeted socket
+ * It returns an array containing the accepted socket
  * for the incoming connection, _client_socket_,
  * and a string that contains the +struct+ sockaddr information
  * about the caller, _client_sockaddr_.
@@ -776,7 +776,7 @@ sock_accept_nonblock(VALUE sock)
  * call-seq:
  * 	socket.sysaccept => [client_socket_fd, client_sockaddr]
  * 
- * Accepts an incoming connection returnings an array containg the (integer)
+ * Accepts an incoming connection returning an array containing the (integer)
  * file descriptor for the incoming connection, _client_socket_fd_,
  * and a string that contains the +struct+ sockaddr information
  * about the caller, _client_sockaddr_.
@@ -1127,7 +1127,7 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
  * Obtains name information for _sockaddr_.
  *
  * _sockaddr_ should be one of follows.
- * - packed sockddr string such as Socket.sockaddr_in(80, "127.0.0.1")
+ * - packed sockaddr string such as Socket.sockaddr_in(80, "127.0.0.1")
  * - 3-elements array such as ["AF_INET", 80, "127.0.0.1"]
  * - 4-elements array such as ["AF_INET", 80, ignored, "127.0.0.1"]
  *
@@ -1508,7 +1508,7 @@ socket_s_ip_address_list(VALUE self)
     return list;
 #elif defined(SIOCGLIFCONF) && defined(SIOCGLIFNUM) && !defined(__hpux)
     /* Solaris if_tcp(7P) */
-    /* HP-UX has SIOCGLIFCONF too.  But it uses differenet struct */
+    /* HP-UX has SIOCGLIFCONF too.  But it uses different struct */
     int fd = -1;
     int ret;
     struct lifnum ln;

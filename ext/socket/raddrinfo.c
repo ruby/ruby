@@ -746,7 +746,7 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
  *   Addrinfo.new(sockaddr, family, socktype, protocol) => addrinfo
  *
  * returns a new instance of Addrinfo.
- * The instnace contains sockaddr, family, socktype, protocol.
+ * The instance contains sockaddr, family, socktype, protocol.
  * sockaddr means struct sockaddr which can be used for connect(2), etc.
  * family, socktype and protocol are integers which is used for arguments of socket(2).
  *
@@ -771,16 +771,16 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
  * family is specified as an integer to specify the protocol family such as Socket::PF_INET.
  * It can be a symbol or a string which is the constant name
  * with or without PF_ prefix such as :INET, :INET6, :UNIX, "PF_INET", etc.
- * If ommitted, PF_UNSPEC is assumed.
+ * If omitted, PF_UNSPEC is assumed.
  *
  * socktype is specified as an integer to specify the socket type such as Socket::SOCK_STREAM.
  * It can be a symbol or a string which is the constant name
  * with or without SOCK_ prefix such as :STREAM, :DGRAM, :RAW, "SOCK_STREAM", etc.
- * If ommitted, 0 is assumed.
+ * If omitted, 0 is assumed.
  *
  * protocol is specified as an integer to specify the protocol such as Socket::IPPROTO_TCP.
  * It must be an integer, unlike family and socktype.
- * If ommitted, 0 is assumed.
+ * If omitted, 0 is assumed.
  * Note that 0 is reasonable value for most protocols, except raw socket.
  *
  */
@@ -1917,18 +1917,18 @@ addrinfo_unix_path(VALUE self)
  *
  * nodename or service can be nil if no conversion intended.
  *
- * family, socktype and protocol are hint for prefered protocol.
+ * family, socktype and protocol are hint for preferred protocol.
  * If the result will be used for a socket with SOCK_STREAM, 
  * SOCK_STREAM should be specified as socktype.
  * If so, Addrinfo.getaddrinfo returns addrinfo list appropriate for SOCK_STREAM.
  * If they are omitted or nil is given, the result is not restricted.
  * 
- * Similary, PF_INET6 as family restricts for IPv6.
+ * Similarly, PF_INET6 as family restricts for IPv6.
  *
  * flags should be bitwise OR of Socket::AI_??? constants.
  *
  * Note that socktype should be specified whenever application knows the usage of the address.
- * Some platform causes an error when socktype is ommitted and servname is specified as an integer
+ * Some platform causes an error when socktype is omitted and servname is specified as an integer
  * because some port numbers, 512 for example, are ambiguous without socktype.
  *
  *   Addrinfo.getaddrinfo("www.kame.net", 80, nil, :STREAM)

@@ -151,7 +151,7 @@ bsock_close_write(VALUE sock)
  * call-seq: setsockopt(level, optname, optval)
  *
  * Sets a socket option. These are protocol and system specific, see your
- * local sytem documentation for details.
+ * local system documentation for details.
  *
  * === Parameters
  * * +level+ is an integer, usually one of the SOL_ constants such as
@@ -250,7 +250,7 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
  * call-seq: getsockopt(level, optname)
  *
  * Gets a socket option. These are protocol and system specific, see your
- * local sytem documentation for details. The option is returned as
+ * local system documentation for details. The option is returned as
  * a String with the data being the binary value of the socket option.
  *
  * === Parameters
