@@ -165,7 +165,7 @@ ip_addr(VALUE sock)
  *
  * Returns the remote address as an array which contains
  * address_family, port, hostname and numeric_address. 
- * It is defined for connection oritented socket such as TCPSocket.
+ * It is defined for connection oriented socket such as TCPSocket.
  *
  *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
  *     p sock.peeraddr #=> ["AF_INET", 80, "carbon.ruby-lang.org", "221.186.184.68"]
