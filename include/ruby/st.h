@@ -66,6 +66,9 @@ typedef st_data_t st_index_t;
 typedef int st_compare_func(st_data_t, st_data_t);
 typedef st_index_t st_hash_func(st_data_t);
 
+typedef char st_check_for_sizeof_st_index_t[SIZEOF_VOIDP == (int)sizeof(st_index_t) ? 1 : -1];
+#define SIZEOF_ST_INDEX_T SIZEOF_VOIDP
+
 struct st_hash_type {
     int (*compare)(ANYARGS /*st_data_t, st_data_t*/); /* st_compare_func* */
     st_index_t (*hash)(ANYARGS /*st_data_t*/);        /* st_hash_func* */

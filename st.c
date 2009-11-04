@@ -1003,9 +1003,6 @@ strhash(st_data_t arg)
 #define MURMUR 2
 #endif
 
-typedef char check_murmur_voidp[SIZEOF_VOIDP == (int)sizeof(st_index_t) ? 1 : -1];
-#define SIZEOF_ST_INDEX_T SIZEOF_VOIDP
-
 #if MURMUR == 1
 #define MurmurMagic 0xc6a4a793
 #elif MURMUR == 2
