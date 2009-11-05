@@ -1345,7 +1345,7 @@ class TestM17NComb < Test::Unit::TestCase
     STRINGS.each {|s0|
       next if s0.empty?
       s = s0.dup
-      n = 1000
+      n = 300
       h = {}
       n.times {|i|
         if h[s]
