@@ -1,3 +1,9 @@
+Thu Nov  5 20:49:47 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c (rb_obj_id): a Fixnum which is beyond signed long
+	  was converted to a Bignum in calculating its hash.
+	  [ruby-dev:39637]
+
 Thu Nov  5 12:06:35 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* parse.y (args): use splat_array.

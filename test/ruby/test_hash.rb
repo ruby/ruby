@@ -637,5 +637,7 @@ class TestHash < Test::Unit::TestCase
 
   def test_hash_hash
     assert_equal({0=>2,11=>1}.hash, {11=>1,0=>2}.hash)
+    assert_equal({:a=>2**29}.hash, {:a=>2**29}.hash)
+    assert_equal({:a=>2**61}.hash, {:a=>2**61}.hash)
   end
 end
