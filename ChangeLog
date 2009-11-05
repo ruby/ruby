@@ -1,3 +1,8 @@
+Thu Nov  5 11:31:23 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (CreateChild): allocate temporary buffer and use it
+	  instead of directly modify the passed string.  [ruby-dev:39635]
+
 Sat Oct 31 17:20:58 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTPResponse#each_response_header):
