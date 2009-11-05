@@ -1,3 +1,7 @@
+Fri Nov  6 07:29:07 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_case.rb: merged r25658 from ruby_1_8.
+
 Thu Nov  5 12:27:07 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* gem_prelude.rb (Gem.user_home): force_encoding(
