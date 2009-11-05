@@ -605,7 +605,7 @@ module OpenURI
     #
     #  If :progress_proc option is specified, the proc is called with one
     #  argument each time when `open' gets content fragment from network.
-    #  The argument `size' `size' is a accumulated transfered size in bytes.
+    #  The argument `size' `size' is a accumulated transferred size in bytes.
     #
     #  If two or more transfer is done by HTTP redirection, the procedure
     #  is called only one for a last transfer.
