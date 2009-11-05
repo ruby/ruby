@@ -45,5 +45,12 @@ class TestCase < Test::Unit::TestCase
     else
       assert(false)
     end
+
+    case "+"
+    when *%w/. +/
+      assert(true)
+    else
+      assert(false)
+    end
   end
 end

@@ -1455,7 +1455,7 @@ args		: arg_value
 		| tSTAR arg_value
 		    {
 		    /*%%%*/
-			$$ = NEW_TO_ARY($2);
+			$$ = splat_array($2);
 		    /*%
 			$$ = arg_add_star(arg_new(), $2);
 		    %*/

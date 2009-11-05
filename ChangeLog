@@ -1,3 +1,8 @@
+Thu Nov  5 12:06:35 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* parse.y (args): use splat_array.
+	  fix: when *foo doesn't splat. [ruby-list:46517]
+
 Thu Nov  5 11:31:23 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (CreateChild): allocate temporary buffer and use it
