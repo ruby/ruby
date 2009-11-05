@@ -91,7 +91,7 @@ if defined?(Gem) then
     end
 
     def self.user_home
-      @user_home ||= File.expand_path("~")
+      @user_home ||= File.expand_path("~").force_encoding(Encoding.find('filesystem'))
     rescue
       if File::ALT_SEPARATOR then
         "C:/"
