@@ -1136,7 +1136,10 @@ class TestProcess < Test::Unit::TestCase
     pid = fork { sleep 1; exit }
     Thread.start { raise }
     Process.wait pid
-    sleep 2
+    5.times do
+      sleep 1
+      break unless signal_received.empty?
+    end
     assert_equal [true], signal_received, " [ruby-core:19744]"
   rescue NotImplementedError, ArgumentError
   ensure
