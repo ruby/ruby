@@ -1,3 +1,8 @@
+Thu Nov  5 12:27:07 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gem_prelude.rb (Gem.user_home): force_encoding(
+	  Encoding.find('filesystem')). [ruby-core:26525]
+
 Thu Nov  5 07:47:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (BEGIN): now local_push are local_pop are necessary in
