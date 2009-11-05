@@ -2142,7 +2142,7 @@ rb_obj_id(obj)
         return (SYM2ID(obj) * sizeof(RVALUE) + (4 << 2)) | FIXNUM_FLAG;
     }
     if (SPECIAL_CONST_P(obj)) {
-        return LONG2FIX((long)obj);
+        return LONG2NUM((long)obj);
     }
     return (VALUE)((long)obj|FIXNUM_FLAG);
 }

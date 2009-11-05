@@ -1,8 +1,10 @@
-Thu Nov  5 20:49:47 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+Sun Feb 15 03:50:21 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	* gc.c (rb_obj_id): a Fixnum which is beyond signed long
-	  was converted to a Bignum in calculating its hash.
-	  [ruby-dev:39637]
+	* hash.c (rb_hash): always return a fixnum value because a return
+	  value of rb_hash may be used as a hash value itself and bignums have
+	  no unique VALUE.
+
+	* test/ruby/test_hash.rb: add a test for above.
 
 Thu Nov  5 12:06:35 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
