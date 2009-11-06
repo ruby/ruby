@@ -331,7 +331,13 @@ rb_dlptr_to_str(int argc, VALUE argv[], VALUE self)
     return val;
 }
 
-VALUE
+/*
+ * call-seq: inspect
+ *
+ * Returns a string formatted with an easily readable representation of the
+ * internal state of the DL::CPtr
+ */
+static VALUE
 rb_dlptr_inspect(VALUE self)
 {
     struct ptr_data *data;
@@ -386,7 +392,13 @@ rb_dlptr_cmp(VALUE self, VALUE other)
     return diff > 0 ? INT2NUM(1) : INT2NUM(-1);
 }
 
-VALUE
+/*
+ * call-seq:
+ *    ptr + n   => new cptr
+ *
+ * Returns a new DL::CPtr that has been advanced +n+ bytes.
+ */
+static VALUE
 rb_dlptr_plus(VALUE self, VALUE other)
 {
     void *ptr;
@@ -398,7 +410,13 @@ rb_dlptr_plus(VALUE self, VALUE other)
     return rb_dlptr_new((char *)ptr + num, size - num, 0);
 }
 
-VALUE
+/*
+ * call-seq:
+ *    ptr - n   => new cptr
+ *
+ * Returns a new DL::CPtr that has been moved back +n+ bytes.
+ */
+static VALUE
 rb_dlptr_minus(VALUE self, VALUE other)
 {
     void *ptr;
