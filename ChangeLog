@@ -1,3 +1,7 @@
+Fri Nov  6 17:13:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_header): split the line by tabs.
+
 Fri Nov  6 12:02:32 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (MINIDLNOBJ): set default as dmydln.o.
