@@ -3,6 +3,22 @@ require_relative '../ruby/envutil'
 
 module DL
   class TestCPtr < TestBase
+    def test_malloc_free_func_int
+      free = CFunc.new(@libc['free'], TYPE_VOID, 'free')
+
+      ptr  = CPtr.malloc(10, free.to_i)
+      assert_equal 10, ptr.size
+      assert_equal free.to_i, ptr.free.to_i
+    end
+
+    def test_malloc_free_func
+      free = CFunc.new(@libc['free'], TYPE_VOID, 'free')
+
+      ptr  = CPtr.malloc(10, free)
+      assert_equal 10, ptr.size
+      assert_equal free.to_i, ptr.free.to_i
+    end
+
     def test_to_str
       str = "hello world"
       ptr = CPtr[str]
