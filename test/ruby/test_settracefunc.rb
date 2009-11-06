@@ -6,7 +6,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def bar
     events = []
     set_trace_func(Proc.new { |event, file, lineno, mid, bidning, klass|
-      events << [event, lineno, mid, klass]
+      events << [event, lineno, mid, klass] unless /\Athread-/ =~ event
     })
     return events
   end
@@ -14,7 +14,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_event
     events = []
     set_trace_func(Proc.new { |event, file, lineno, mid, bidning, klass|
-      events << [event, lineno, mid, klass]
+      events << [event, lineno, mid, klass] unless /\Athread-/ =~ event
     })
     a = 1
     foo
