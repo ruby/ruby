@@ -188,7 +188,12 @@ rb_dlptr_s_malloc(int argc, VALUE argv[], VALUE klass)
     return obj;
 }
 
-VALUE
+/*
+ * call-seq: to_i
+ *
+ * Returns the integer memory location of this DL::CPtr.
+ */
+static VALUE
 rb_dlptr_to_i(VALUE self)
 {
     struct ptr_data *data;
@@ -202,7 +207,7 @@ rb_dlptr_to_i(VALUE self)
  *
  * Cast this CPtr to a ruby object.
  */
-VALUE
+static VALUE
 rb_dlptr_to_value(VALUE self)
 {
     struct ptr_data *data;
@@ -285,7 +290,17 @@ rb_dlptr_free_get(VALUE self)
     return rb_dlcfunc_new(pdata->free, DLTYPE_VOID, "free<anonymous>", CFUNC_CDECL);
 }
 
-VALUE
+/*
+ * call-seq:
+ *
+ *    ptr.to_s        => string
+ *    ptr.to_s(len)   => string
+ *
+ * Returns the pointer contents as a string.  When called with no arguments,
+ * this method will return the contents until the first NULL byte.  When
+ * called with +len+, a string of +len+ bytes will be returned.
+ */
+static VALUE
 rb_dlptr_to_s(int argc, VALUE argv[], VALUE self)
 {
     struct ptr_data *data;
@@ -308,7 +323,17 @@ rb_dlptr_to_s(int argc, VALUE argv[], VALUE self)
     return val;
 }
 
-VALUE
+/*
+ * call-seq:
+ *
+ *    ptr.to_str        => string
+ *    ptr.to_str(len)   => string
+ *
+ * Returns the pointer contents as a string.  When called with no arguments,
+ * this method will return the contents with the length of this pointer's
+ * +size+. When called with +len+, a string of +len+ bytes will be returned.
+ */
+static VALUE
 rb_dlptr_to_str(int argc, VALUE argv[], VALUE self)
 {
     struct ptr_data *data;

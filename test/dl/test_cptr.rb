@@ -3,6 +3,28 @@ require_relative '../ruby/envutil'
 
 module DL
   class TestCPtr < TestBase
+    def test_to_str
+      str = "hello world"
+      ptr = CPtr[str]
+
+      assert_equal 3, ptr.to_str(3).length
+      assert_equal str, ptr.to_str
+
+      ptr[5] = 0
+      assert_equal "hello\0world", ptr.to_str
+    end
+
+    def test_to_s
+      str = "hello world"
+      ptr = CPtr[str]
+
+      assert_equal 3, ptr.to_s(3).length
+      assert_equal str, ptr.to_s
+
+      ptr[5] = 0
+      assert_equal 'hello', ptr.to_s
+    end
+
     def test_minus
       str = "hello world"
       ptr = CPtr[str]
