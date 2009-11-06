@@ -135,4 +135,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal(["c-call", 131, :set_trace_func, Kernel], events.shift)
     assert_equal([], events)
   end
+
+  def test_bad_trace
+    e = Class.new(RuntimeError)
+    assert_raise(e) {set_trace_func proc{raise e}}
+  end
 end
