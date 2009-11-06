@@ -3,6 +3,28 @@ require_relative '../ruby/envutil'
 
 module DL
   class TestCPtr < TestBase
+    def test_minus
+      str = "hello world"
+      ptr = CPtr[str]
+      assert_equal ptr.to_s, (ptr + 3 - 3).to_s
+    end
+
+    # TODO: what if the pointer size is 0?  raise an exception? do we care?
+    def test_plus
+      str = "hello world"
+      ptr = CPtr[str]
+      new_str = ptr + 3
+      assert_equal 'lo world', new_str.to_s
+    end
+
+    def test_inspect
+      ptr = CPtr.new(0)
+      inspect = ptr.inspect
+      assert_match(/size=#{ptr.size}/, inspect)
+      assert_match(/free=#{ptr.free}/, inspect)
+      assert_match(/ptr=#{ptr.to_i}/, inspect)
+    end
+
     def test_to_ptr_string
       str = "hello world"
       ptr = CPtr[str]
