@@ -123,6 +123,15 @@ rb_dlptr_s_allocate(VALUE klass)
     return obj;
 }
 
+/*
+ * call-seq:
+ *    DL::CPtr.new(address)                   => dl_cptr
+ *    DL::CPtr.new(address, size)             => dl_cptr
+ *    DL::CPtr.new(address, size, freefunc)   => dl_cptr
+ *
+ * Create a new pointer to +address+ with an optional +size+ and +freefunc+.
+ * +freefunc+ will be called when the instance is garbage collected.
+ */
 static VALUE
 rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
 {
@@ -163,6 +172,16 @@ rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *
+ *    DL::CPtr.malloc(size, freefunc = nil)  => dl cptr instance
+ *
+ * Allocate +size+ bytes of memory and associate it with an optional
+ * +freefunc+ that will be called when the pointer is garbage collected.
+ * +freefunc+ must be an address pointing to a function or an instance of
+ * DL::CFunc
+ */
 static VALUE
 rb_dlptr_s_malloc(int argc, VALUE argv[], VALUE klass)
 {
