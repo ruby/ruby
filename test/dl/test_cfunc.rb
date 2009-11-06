@@ -9,6 +9,11 @@ module DL
       @cf = CFunc.new(@libc[@name], TYPE_VOIDP, @name)
     end
 
+    def test_set_calltype
+      @cf.calltype = :foo
+      assert_equal :foo, @cf.calltype
+    end
+
     def test_new_ptr_type_name
       assert_equal @name, @cf.name
       assert @cf.name.tainted?, 'name should be tainted'
@@ -47,6 +52,7 @@ module DL
 
     def test_to_i
       assert_equal @cf.to_i, @cf.ptr
+      assert_equal @libc[@name], @cf.to_i
     end
 
     def test_last_error
