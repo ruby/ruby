@@ -133,7 +133,14 @@ rb_dlcfunc_kind_p(VALUE func)
     return rb_typeddata_is_kind_of(func, &dlcfunc_data_type);
 }
 
-VALUE
+/*
+ * call-seq:
+ *    DL::CFunc.new(address, type=DL::TYPE_VOID, name=nil, calltype=:cdecl)
+ *
+ * Create a new function that points to +address+ with an optional return type
+ * of +type+, a name of +name+ and a calltype of +calltype+.
+ */
+static VALUE
 rb_dlcfunc_initialize(int argc, VALUE argv[], VALUE self)
 {
     VALUE addr, name, type, calltype;
@@ -150,13 +157,19 @@ rb_dlcfunc_initialize(int argc, VALUE argv[], VALUE self)
     if( data->name ) xfree(data->name);
     data->ptr  = saddr;
     data->name = sname ? strdup(sname) : 0;
-    data->type = (type == Qnil) ? DLTYPE_VOID : NUM2INT(type);
-    data->calltype = (calltype == Qnil) ? CFUNC_CDECL : SYM2ID(calltype);
+    data->type = NIL_P(type) ? DLTYPE_VOID : NUM2INT(type);
+    data->calltype = NIL_P(calltype) ? CFUNC_CDECL : SYM2ID(calltype);
 
     return Qnil;
 }
 
-VALUE
+/*
+ * call-seq:
+ *    name  => str
+ *
+ * Get the name of this function
+ */
+static VALUE
 rb_dlcfunc_name(VALUE self)
 {
     struct cfunc_data *cfunc;
@@ -165,7 +178,14 @@ rb_dlcfunc_name(VALUE self)
     return cfunc->name ? rb_tainted_str_new2(cfunc->name) : Qnil;
 }
 
-VALUE
+/*
+ * call-seq:
+ *    cfunc.ctype   => num
+ *
+ * Get the C function return value type.  See DL for a list of constants
+ * corresponding to this method's return value.
+ */
+static VALUE
 rb_dlcfunc_ctype(VALUE self)
 {
     struct cfunc_data *cfunc;
@@ -174,7 +194,13 @@ rb_dlcfunc_ctype(VALUE self)
     return INT2NUM(cfunc->type);
 }
 
-VALUE
+/*
+ * call-seq:
+ *    cfunc.ctype = type
+ *
+ * Set the C function return value type to +type+.
+ */
+static VALUE
 rb_dlcfunc_set_ctype(VALUE self, VALUE ctype)
 {
     struct cfunc_data *cfunc;
@@ -184,7 +210,13 @@ rb_dlcfunc_set_ctype(VALUE self, VALUE ctype)
     return ctype;
 }
 
-VALUE
+/*
+ * call-seq:
+ *    cfunc.calltype    => symbol
+ *
+ * Get the call type of this function.
+ */
+static VALUE
 rb_dlcfunc_calltype(VALUE self)
 {
     struct cfunc_data *cfunc;
@@ -193,7 +225,13 @@ rb_dlcfunc_calltype(VALUE self)
     return ID2SYM(cfunc->calltype);
 }
 
-VALUE
+/*
+ * call-seq:
+ *    cfunc.calltype = symbol
+ *
+ * Set the call type for this function.
+ */
+static VALUE
 rb_dlcfunc_set_calltype(VALUE self, VALUE sym)
 {
     struct cfunc_data *cfunc;
@@ -264,7 +302,7 @@ rb_dlcfunc_inspect(VALUE self)
 }
 
 
-VALUE
+static VALUE
 rb_dlcfunc_call(VALUE self, VALUE ary)
 {
     struct cfunc_data *cfunc;
