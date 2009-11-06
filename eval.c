@@ -2751,6 +2751,14 @@ get_event_name(rb_event_t event)
 	return "c-return";
       case RUBY_EVENT_RAISE:
 	return "raise";
+      case RUBY_EVENT_THREAD_INIT:
+	return "thread-init";
+      case RUBY_EVENT_THREAD_FREE:
+	return "thread-free";
+      case RUBY_EVENT_THREAD_SAVE:
+	return "thread-save";
+      case RUBY_EVENT_THREAD_RESTORE:
+	return "thread-restore";
       default:
 	return "unknown";
     }

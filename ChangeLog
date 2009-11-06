@@ -1,3 +1,7 @@
+Fri Nov  6 10:56:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (get_event_name): added thread events.
+
 Sun Feb 15 03:50:21 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* hash.c (rb_hash): always return a fixnum value because a return
