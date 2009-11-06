@@ -1264,7 +1264,7 @@ def create_header(header = "extconf.h")
   for line in $defs
     case line
     when /^-D([^=]+)(?:=(.*))?/
-      hdr << "#define #$1 #{$2 ? Shellwords.shellwords($2)[0] : 1}\n"
+      hdr << "#define #$1 #{$2 ? Shellwords.shellwords($2)[0].gsub(/(?=\t+)/, "\\\n") : 1}\n"
     when /^-U(.*)/
       hdr << "#undef #$1\n"
     end
