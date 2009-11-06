@@ -1125,6 +1125,7 @@ rb_filesystem_encindex(void)
     char cp[sizeof(int) * 8 / 3 + 4];
     snprintf(cp, sizeof cp, "CP%d", AreFileApisANSI() ? GetACP() : GetOEMCP());
     idx = rb_enc_find_index(cp);
+    if (idx < 0) idx = rb_ascii8bit_encindex();
 #elif defined __APPLE__
     idx = rb_utf8_encindex();
 #else
