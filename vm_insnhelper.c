@@ -29,7 +29,9 @@ vm_push_frame(rb_thread_t * th, const rb_iseq_t * iseq,
     rb_control_frame_t * const cfp = th->cfp - 1;
     int i;
 
-    CHECK_STACK_OVERFLOW(th->cfp, local_size);
+    if ((void *)(sp + local_size) >= (void *)cfp) {
+	rb_exc_raise(sysstack_error);
+    }
     th->cfp = cfp;
     /* setup vm value stack */
 

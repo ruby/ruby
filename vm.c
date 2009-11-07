@@ -92,7 +92,7 @@ vm_set_top_stack(rb_thread_t * th, VALUE iseqval)
 		  th->top_self, 0, iseq->iseq_encoded,
 		  th->cfp->sp, 0, iseq->local_size);
 
-        CHECK_STACK_OVERFLOW(th->cfp, iseq->stack_max);
+    CHECK_STACK_OVERFLOW(th->cfp, iseq->stack_max);
 }
 
 static void
