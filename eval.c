@@ -15,6 +15,7 @@
 #include "iseq.h"
 #include "gc.h"
 #include "ruby/vm.h"
+#include "ruby/encoding.h"
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 

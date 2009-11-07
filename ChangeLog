@@ -1,3 +1,8 @@
+Sat Nov  7 20:59:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_push_frame): get rid of out-of-bounds
+	  access.
+
 Sat Nov  7 12:41:19 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* vm_insnhelper.c (VM_CALLEE_SETUP_ARG): revert r25521.
