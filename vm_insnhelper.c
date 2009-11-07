@@ -100,23 +100,22 @@ vm_pop_frame(rb_thread_t *th)
 
 /* method dispatch */
 
-#define VM_CALLEE_SETUP_ARG(ret, th, iseq, orig_argc, orig_argv, block, e) \
+#define VM_CALLEE_SETUP_ARG(ret, th, iseq, orig_argc, orig_argv, block) \
     if (LIKELY(iseq->arg_simple & 0x01)) { \
 	/* simple check */ \
-        e = -1; \
-	ret = 0; \
 	if (orig_argc != iseq->argc) { \
-            e = iseq->argc; \
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", orig_argc, iseq->argc); \
 	} \
+	ret = 0; \
     } \
     else { \
-	ret = vm_callee_setup_arg_complex(th, iseq, orig_argc, orig_argv, block, &e); \
+	ret = vm_callee_setup_arg_complex(th, iseq, orig_argc, orig_argv, block); \
     }
 
 static inline int
 vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
 			    int orig_argc, VALUE * orig_argv,
-			    const rb_block_t **block, int *argerr)
+			    const rb_block_t **block)
 {
     const int m = iseq->argc;
     int argc = orig_argc;
@@ -127,11 +126,8 @@ vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
 
     /* mandatory */
     if (argc < (m + iseq->arg_post_len)) { /* check with post arg */
-	*argerr = m + iseq->arg_post_len;
-	return 0;
-    }
-    else {
-	*argerr = -1;
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+		 argc, m + iseq->arg_post_len);
     }
 
     argv += m;
@@ -449,9 +445,8 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
     int opt_pc, i;
     VALUE *sp, *rsp = cfp->sp - argc;
     rb_iseq_t *iseq = me->def->body.iseq;
-    int eargc = 0;
 
-    VM_CALLEE_SETUP_ARG(opt_pc, th, iseq, argc, rsp, &blockptr, eargc);
+    VM_CALLEE_SETUP_ARG(opt_pc, th, iseq, argc, rsp, &blockptr);
 
     /* stack overflow check */
     CHECK_STACK_OVERFLOW(cfp, iseq->stack_max);
@@ -493,9 +488,6 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	vm_push_frame(th, iseq,
 		      VM_FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
 		      iseq->iseq_encoded + opt_pc, sp, 0, 0);
-    }
-    if (eargc >= 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", argc, eargc);
     }
 }
 
@@ -896,11 +888,8 @@ vm_yield_setup_args(rb_thread_t * const th, const rb_iseq_t *iseq,
 
     if (lambda) {
 	/* call as method */
-	int opt_pc, e;
-	VM_CALLEE_SETUP_ARG(opt_pc, th, iseq, argc, argv, &blockptr, e);
-	if (e >= 0) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", argc, e);
-	}
+	int opt_pc;
+	VM_CALLEE_SETUP_ARG(opt_pc, th, iseq, argc, argv, &blockptr);
 	return opt_pc;
     }
     else {

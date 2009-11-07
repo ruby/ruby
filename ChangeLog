@@ -1,3 +1,8 @@
+Sat Nov  7 12:41:19 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* vm_insnhelper.c (VM_CALLEE_SETUP_ARG): revert r25521.
+	   [ruby-core:26427] [ruby-core:26447]
+
 Fri Nov  6 18:33:47 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_push_frame): add CHECK_STACK_OVERFLOW.
