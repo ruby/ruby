@@ -1,3 +1,19 @@
+Fri Nov  6 18:33:47 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_push_frame): add CHECK_STACK_OVERFLOW.
+	  [ruby-dev:39592]
+
+	* eval.c (rb_longjmp): add 1 level backtrace for sysstack_error
+	  without calling any method to prevent further stack overflow.
+
+	* eval.c (make_exception): don't call #exception for
+	  sysstack_error to prevent stack overflow.
+
+	* proc.c (Init_Proc): don't freeze sysstack_error.
+
+	* eval.c (rb_longjmp): move reentrant check after exception
+	  preparation.
+
 Fri Nov  6 17:13:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_header): split the line by tabs.

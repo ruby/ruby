@@ -26,9 +26,11 @@ vm_push_frame(rb_thread_t * th, const rb_iseq_t * iseq,
 	      const VALUE *pc, VALUE *sp, VALUE *lfp,
 	      int local_size)
 {
-    rb_control_frame_t * const cfp = th->cfp = th->cfp - 1;
+    rb_control_frame_t * const cfp = th->cfp - 1;
     int i;
 
+    CHECK_STACK_OVERFLOW(th->cfp, local_size);
+    th->cfp = cfp;
     /* setup vm value stack */
 
     /* nil initialize */

@@ -358,12 +358,6 @@ rb_longjmp(int tag, volatile VALUE mesg)
     const char *file;
     volatile int line = 0;
 
-    if (rb_threadptr_set_raised(th)) {
-	th->errinfo = exception_error;
-	rb_threadptr_reset_raised(th);
-	JUMP_TAG(TAG_FATAL);
-    }
-
     if (NIL_P(mesg))
 	mesg = th->errinfo;
     if (NIL_P(mesg)) {
@@ -373,13 +367,19 @@ rb_longjmp(int tag, volatile VALUE mesg)
     file = rb_sourcefile();
     if (file) line = rb_sourceline();
     if (file && !NIL_P(mesg)) {
-	at = get_backtrace(mesg);
-	if (NIL_P(at)) {
-	    at = rb_make_backtrace();
-	    if (OBJ_FROZEN(mesg)) {
-		mesg = rb_obj_dup(mesg);
+	if (mesg == sysstack_error) {
+	    at = rb_enc_sprintf(rb_usascii_encoding(), "%s:%d", file, line);
+	    rb_iv_set(mesg, "bt", at);
+	}
+	else {
+	    at = get_backtrace(mesg);
+	    if (NIL_P(at)) {
+		at = rb_make_backtrace();
+		if (OBJ_FROZEN(mesg)) {
+		    mesg = rb_obj_dup(mesg);
+		}
+		set_backtrace(mesg, at);
 	    }
-	    set_backtrace(mesg, at);
 	}
     }
     if (!NIL_P(mesg)) {
@@ -412,6 +412,12 @@ rb_longjmp(int tag, volatile VALUE mesg)
 	    rb_threadptr_reset_raised(th);
 	    JUMP_TAG(status);
 	}
+    }
+
+    if (rb_threadptr_set_raised(th)) {
+	th->errinfo = exception_error;
+	rb_threadptr_reset_raised(th);
+	JUMP_TAG(TAG_FATAL);
     }
 
     rb_trap_restore_mask();
@@ -520,6 +526,7 @@ make_exception(int argc, VALUE *argv, int isstr)
       case 3:
 	n = 1;
       exception_call:
+	if (argv[0] == sysstack_error) return argv[0];
 	CONST_ID(exception, "exception");
 	mesg = rb_check_funcall(argv[0], exception, n, argv+1);
 	if (mesg == Qundef) {

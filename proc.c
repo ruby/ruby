@@ -2043,7 +2043,6 @@ Init_Proc(void)
     sysstack_error = rb_exc_new3(rb_eSysStackError,
 				 rb_obj_freeze(rb_str_new2("stack level too deep")));
     OBJ_TAINT(sysstack_error);
-    OBJ_FREEZE(sysstack_error);
 
     /* utility functions */
     rb_define_global_function("proc", rb_block_proc, 0);
