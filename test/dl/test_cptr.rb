@@ -59,8 +59,8 @@ module DL
       ptr = CPtr.new(0)
       inspect = ptr.inspect
       assert_match(/size=#{ptr.size}/, inspect)
-      assert_match(/free=#{ptr.free}/, inspect)
-      assert_match(/ptr=#{ptr.to_i}/, inspect)
+      assert_match(/free=#{sprintf("%#x", ptr.free.to_i)}/, inspect)
+      assert_match(/ptr=#{sprintf("%#x", ptr.to_i)}/, inspect)
     end
 
     def test_to_ptr_string
