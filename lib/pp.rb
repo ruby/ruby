@@ -270,7 +270,7 @@ class PP < PrettyPrint
   module ObjectMixin
     # 1. specific pretty_print
     # 2. specific inspect
-    # 3. specific to_s if instance variable is empty
+    # 3. specific to_s
     # 4. generic pretty_print
 
     # A default pretty printing method for general objects.
@@ -296,8 +296,7 @@ class PP < PrettyPrint
         q.text self.inspect
       elsif !inspect_method && self.respond_to?(:inspect)
         q.text self.inspect
-      elsif to_s_method && /\(Kernel\)#/ !~ to_s_method.inspect &&
-            instance_variables.empty?
+      elsif to_s_method && /\(Kernel\)#/ !~ to_s_method.inspect
         q.text self.to_s
       elsif !to_s_method && self.respond_to?(:to_s)
         q.text self.to_s
