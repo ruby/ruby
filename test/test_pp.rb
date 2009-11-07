@@ -107,7 +107,6 @@ class PPInspectTest < Test::Unit::TestCase
     a.instance_eval { @a = nil }
     result = PP.pp(a, '')
     assert_equal("#{a.inspect}\n", result)
-    assert_match(/\A#<Object.*>\n\z/m, result)
     a = 1.0
     a.instance_eval { @a = nil }
     result = PP.pp(a, '')
