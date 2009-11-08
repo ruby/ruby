@@ -162,6 +162,10 @@ with all sufficient information, see the ChangeLog file.
 
     New alias to #inject.
 
+  * Enumerable#to_a
+
+    Can take optional arguments and pass them to #each.
+
   * Hash#eql?
   * Hash#hash
   * Hash#==
@@ -262,6 +266,10 @@ with all sufficient information, see the ChangeLog file.
     Return an enumerator if no block is given.
 
   * Regexp.union accepts an array of patterns.
+
+  * String#bytes
+
+    New method
 
   * String#bytesize
 
