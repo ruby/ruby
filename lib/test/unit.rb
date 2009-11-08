@@ -261,13 +261,13 @@ module Test # :nodoc:
   #
 
   module Unit
-    # Set true when Test::Unit has run.  If set to true Test::Unit
-    # will not automatically run at exit.
+    # Set +true+ to indicate that Test::Unit has been run.
+    # If set to +true+, Test::Unit will not automatically run at exit.
     def self.run=(flag)
       @run = flag
     end
 
-    # Already tests have run?
+    # Tests have already been run?
     def self.run?
       @run ||= false
     end
