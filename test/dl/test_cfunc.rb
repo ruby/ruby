@@ -9,6 +9,15 @@ module DL
       @cf = CFunc.new(@libc[@name], TYPE_VOIDP, @name)
     end
 
+    def test_ptr=
+      @cf.ptr = @libc['malloc']
+      assert_equal @cf.ptr, @libc['malloc']
+    end
+
+    def test_ptr
+      assert_equal @cf.ptr, @libc[@name]
+    end
+
     def test_set_calltype
       @cf.calltype = :foo
       assert_equal :foo, @cf.calltype
