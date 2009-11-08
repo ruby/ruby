@@ -5,54 +5,60 @@ class TestComparable < Test::Unit::TestCase
     @o = Object.new
     @o.extend(Comparable)
   end
+  def cmp(b)
+    class << @o; self; end.class_eval {
+      undef :<=>
+      define_method(:<=>, b)
+    }
+  end
 
   def test_equal
-    def @o.<=>(x); 0; end
+    cmp->(x) do 0; end
     assert_equal(true, @o == nil)
-    def @o.<=>(x); 1; end
+    cmp->(x) do 1; end
     assert_equal(false, @o == nil)
-    def @o.<=>(x); raise; end
+    cmp->(x) do raise; end
     assert_equal(false, @o == nil)
   end
 
   def test_gt
-    def @o.<=>(x); 1; end
+    cmp->(x) do 1; end
     assert_equal(true, @o > nil)
-    def @o.<=>(x); 0; end
+    cmp->(x) do 0; end
     assert_equal(false, @o > nil)
-    def @o.<=>(x); -1; end
+    cmp->(x) do -1; end
     assert_equal(false, @o > nil)
   end
 
   def test_ge
-    def @o.<=>(x); 1; end
+    cmp->(x) do 1; end
     assert_equal(true, @o >= nil)
-    def @o.<=>(x); 0; end
+    cmp->(x) do 0; end
     assert_equal(true, @o >= nil)
-    def @o.<=>(x); -1; end
+    cmp->(x) do -1; end
     assert_equal(false, @o >= nil)
   end
 
   def test_lt
-    def @o.<=>(x); 1; end
+    cmp->(x) do 1; end
     assert_equal(false, @o < nil)
-    def @o.<=>(x); 0; end
+    cmp->(x) do 0; end
     assert_equal(false, @o < nil)
-    def @o.<=>(x); -1; end
+    cmp->(x) do -1; end
     assert_equal(true, @o < nil)
   end
 
   def test_le
-    def @o.<=>(x); 1; end
+    cmp->(x) do 1; end
     assert_equal(false, @o <= nil)
-    def @o.<=>(x); 0; end
+    cmp->(x) do 0; end
     assert_equal(true, @o <= nil)
-    def @o.<=>(x); -1; end
+    cmp->(x) do -1; end
     assert_equal(true, @o <= nil)
   end
 
   def test_between
-    def @o.<=>(x); 0 <=> x end
+    cmp->(x) do 0 <=> x end
     assert_equal(false, @o.between?(1, 2))
     assert_equal(false, @o.between?(-2, -1))
     assert_equal(true, @o.between?(-1, 1))
