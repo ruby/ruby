@@ -277,6 +277,7 @@ with all sufficient information, see the ChangeLog file.
 
   * String#chars
   * String#each_char
+  * String#lines
   * String#partition
   * String#rpartition
   * String#start_with?
