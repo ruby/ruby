@@ -9390,8 +9390,8 @@ mnew(klass, obj, id, mklass)
     ID oid = id;
 
   again:
-    if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
-	print_undef(rklass, oid);
+    if ((body = rb_get_method_body(&klass, &oid, &noex)) == 0) {
+	print_undef(rklass, id);
     }
 
     if (nd_type(body) == NODE_ZSUPER) {
@@ -9532,7 +9532,7 @@ method_name(obj)
     struct METHOD *data;
 
     Data_Get_Struct(obj, struct METHOD, data);
-    return rb_str_new2(rb_id2name(data->oid));
+    return rb_str_new2(rb_id2name(data->id));
 }
 
 /*
@@ -9959,7 +9959,7 @@ method_inspect(method)
 	}
     }
     rb_str_buf_cat2(str, sharp);
-    rb_str_buf_cat2(str, rb_id2name(data->oid));
+    rb_str_buf_cat2(str, rb_id2name(data->id));
     rb_str_buf_cat2(str, ">");
 
     return str;
