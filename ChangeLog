@@ -1,3 +1,7 @@
+Sun Nov  8 18:13:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c: use RHASH_IFNONE but not ifnone directly.
+
 Sat Nov  7 21:02:57 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pp.rb (PP::ObjectMixin#pretty_print): use to_s regardless of

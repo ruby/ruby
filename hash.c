@@ -218,7 +218,7 @@ hash_alloc(VALUE klass)
     NEWOBJ(hash, struct RHash);
     OBJSETUP(hash, klass, T_HASH);
 
-    hash->ifnone = Qnil;
+    RHASH_IFNONE(hash) = Qnil;
 
     return (VALUE)hash;
 }
@@ -240,7 +240,7 @@ rb_hash_dup(VALUE hash)
     if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
         FL_SET(ret, HASH_PROC_DEFAULT);
     }
-    ret->ifnone = RHASH(hash)->ifnone;
+    RHASH_IFNONE(ret) = RHASH_IFNONE(hash);
     return (VALUE)ret;
 }
 
@@ -326,12 +326,12 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
 	}
 	ifnone = rb_block_proc();
 	default_proc_arity_check(ifnone);
-	RHASH(hash)->ifnone = ifnone;
+	RHASH_IFNONE(hash) = ifnone;
 	FL_SET(hash, HASH_PROC_DEFAULT);
     }
     else {
 	rb_scan_args(argc, argv, "01", &ifnone);
-	RHASH(hash)->ifnone = ifnone;
+	RHASH_IFNONE(hash) = ifnone;
     }
 
     return hash;
@@ -598,14 +598,15 @@ rb_hash_fetch(VALUE hash, VALUE key)
 static VALUE
 rb_hash_default(int argc, VALUE *argv, VALUE hash)
 {
-    VALUE key;
+    VALUE key, ifnone;
 
     rb_scan_args(argc, argv, "01", &key);
+    ifnone = RHASH_IFNONE(hash);
     if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
 	if (argc == 0) return Qnil;
-	return rb_funcall(RHASH(hash)->ifnone, id_yield, 2, hash, key);
+	return rb_funcall(ifnone, id_yield, 2, hash, key);
     }
-    return RHASH(hash)->ifnone;
+    return ifnone;
 }
 
 /*
@@ -632,7 +633,7 @@ static VALUE
 rb_hash_set_default(VALUE hash, VALUE ifnone)
 {
     rb_hash_modify(hash);
-    RHASH(hash)->ifnone = ifnone;
+    RHASH_IFNONE(hash) = ifnone;
     FL_UNSET(hash, HASH_PROC_DEFAULT);
     return ifnone;
 }
@@ -656,7 +657,7 @@ static VALUE
 rb_hash_default_proc(VALUE hash)
 {
     if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
-	return RHASH(hash)->ifnone;
+	return RHASH_IFNONE(hash);
     }
     return Qnil;
 }
@@ -690,7 +691,7 @@ rb_hash_set_default_proc(VALUE hash, VALUE proc)
     }
     proc = b;
     default_proc_arity_check(proc);
-    RHASH(hash)->ifnone = proc;
+    RHASH_IFNONE(hash) = proc;
     FL_SET(hash, HASH_PROC_DEFAULT);
     return proc;
 }
@@ -848,10 +849,10 @@ rb_hash_shift(VALUE hash)
 	return rb_assoc_new(var.key, var.val);
     }
     else if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
-	return rb_funcall(RHASH(hash)->ifnone, id_yield, 2, hash, Qnil);
+	return rb_funcall(RHASH_IFNONE(hash), id_yield, 2, hash, Qnil);
     }
     else {
-	return RHASH(hash)->ifnone;
+	return RHASH_IFNONE(hash);
     }
 }
 
@@ -1079,7 +1080,7 @@ rb_hash_replace(VALUE hash, VALUE hash2)
 	RHASH(hash)->ntbl->type = RHASH(hash2)->ntbl->type;
     }
     rb_hash_foreach(hash2, replace_i, hash);
-    RHASH(hash)->ifnone = RHASH(hash2)->ifnone;
+    RHASH_IFNONE(hash) = RHASH_IFNONE(hash2);
     if (FL_TEST(hash2, HASH_PROC_DEFAULT)) {
 	FL_SET(hash, HASH_PROC_DEFAULT);
     }
@@ -1506,7 +1507,7 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
     if (RHASH(hash1)->ntbl->type != RHASH(hash2)->ntbl->type)
 	return Qfalse;
 #if 0
-    if (!(rb_equal(RHASH(hash1)->ifnone, RHASH(hash2)->ifnone) &&
+    if (!(rb_equal(RHASH_IFNONE(hash1), RHASH_IFNONE(hash2)) &&
 	  FL_TEST(hash1, HASH_PROC_DEFAULT) == FL_TEST(hash2, HASH_PROC_DEFAULT)))
 	return Qfalse;
 #endif
