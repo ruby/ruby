@@ -112,7 +112,7 @@ rb_dlcfunc2ptr(VALUE val)
     return func;
 }
 
-VALUE
+static VALUE
 rb_dlcfunc_s_allocate(VALUE klass)
 {
     VALUE obj;
@@ -241,8 +241,13 @@ rb_dlcfunc_set_calltype(VALUE self, VALUE sym)
     return sym;
 }
 
-
-VALUE
+/*
+ * call-seq:
+ *    cfunc.ptr
+ *
+ * Get the underlying function pointer as a DL::CPtr object.
+ */
+static VALUE
 rb_dlcfunc_ptr(VALUE self)
 {
     struct cfunc_data *cfunc;
@@ -251,7 +256,13 @@ rb_dlcfunc_ptr(VALUE self)
     return PTR2NUM(cfunc->ptr);
 }
 
-VALUE
+/*
+ * call-seq:
+ *    cfunc.ptr = pointer
+ *
+ * Set the underlying function pointer to a DL::CPtr named +pointer+.
+ */
+static VALUE
 rb_dlcfunc_set_ptr(VALUE self, VALUE addr)
 {
     struct cfunc_data *cfunc;
@@ -262,7 +273,13 @@ rb_dlcfunc_set_ptr(VALUE self, VALUE addr)
     return Qnil;
 }
 
-VALUE
+/*
+ * call-seq: inspect
+ *
+ * Returns a string formatted with an easily readable representation of the
+ * internal state of the DL::CFunc
+ */
+static VALUE
 rb_dlcfunc_inspect(VALUE self)
 {
     VALUE val;
@@ -302,6 +319,14 @@ rb_dlcfunc_inspect(VALUE self)
 }
 
 
+/*
+ * call-seq:
+ *    dlcfunc.call(ary)   => some_value
+ *    dlcfunc[ary]        => some_value
+ *
+ * Calls the function pointer passing in +ary+ as values to the underlying
+ * C function.  The return value depends on the ctype.
+ */
 static VALUE
 rb_dlcfunc_call(VALUE self, VALUE ary)
 {
@@ -550,7 +575,13 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
     return result;
 }
 
-VALUE
+/*
+ * call-seq:
+ *    dlfunc.to_i   => integer
+ *
+ * Returns the memory location of this function pointer as an integer.
+ */
+static VALUE
 rb_dlcfunc_to_i(VALUE self)
 {
   struct cfunc_data *cfunc;
