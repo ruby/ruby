@@ -1,3 +1,9 @@
+Tue Nov 10 08:23:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_f_exec, rb_f_system, rb_f_spawn): mentioned abou
+	  the shell to be used when the command line is single string.
+	  See [ruby-core:26652]
+
 Mon Nov  9 20:15:16 2009  Tanaka Akira  <akr@fsij.org>
 
 	* thread.c (rb_gc_save_machine_context): don't save the stack pointer
