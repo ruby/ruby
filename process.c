@@ -1729,12 +1729,16 @@ rb_exec_arg_fixup(struct rb_exec_arg *e)
  *  Replaces the current process by running the given external _command_.
  *  _command..._ is one of following forms.
  *
- *    commandline                 : command line string which is passed to a shell
+ *    commandline                 : command line string which is passed to the standard shell
  *    cmdname, arg1, ...          : command name and one or more arguments (no shell)
  *    [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
  *
  *  If single string is given as the command,
  *  it is taken as a command line that is subject to shell expansion before being executed.
+ *
+ *  The standard shell means always <code>"/bin/sh"</code> on Unix-like systems,
+ *  <code>ENV["RUBYSHELL"]</code> or <code>"cmd.exe"</code> on Windows NT series, and
+ *  similar.
  *
  *  If two or more +string+ given,
  *  the first is taken as a command name and
@@ -2915,7 +2919,7 @@ rb_spawn(int argc, VALUE *argv)
  *  Executes _command..._ in a subshell.
  *  _command..._ is one of following forms.
  *
- *    commandline                 : command line string which is passed to a shell
+ *    commandline                 : command line string which is passed to the standard shell
  *    cmdname, arg1, ...          : command name and one or more arguments (no shell)
  *    [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
  *
@@ -2937,6 +2941,8 @@ rb_spawn(int argc, VALUE *argv)
  *
  *     config.h main.rb
  *     *
+ *
+ *  See <code>Kernel.exec</code> for the standard shell.
  */
 
 static VALUE
@@ -2992,7 +2998,7 @@ rb_f_system(int argc, VALUE *argv)
  *      name => val : set the environment variable
  *      name => nil : unset the environment variable
  *    command...:
- *      commandline                 : command line string which is passed to a shell
+ *      commandline                 : command line string which is passed to the standard shell
  *      cmdname, arg1, ...          : command name and one or more arguments (no shell)
  *      [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
  *    options: hash
@@ -3200,6 +3206,7 @@ rb_f_system(int argc, VALUE *argv)
  *  Internally, +spawn+ uses an extra file descriptor to resolve such cyclic
  *  file descriptor mapping.
  *
+ *  See <code>Kernel.exec</code> for the standard shell.
  */
 
 static VALUE
