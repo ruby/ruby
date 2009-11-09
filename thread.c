@@ -97,13 +97,17 @@ static void set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func, v
 				 struct rb_unblock_callback *old);
 static void reset_unblock_function(rb_thread_t *th, const struct rb_unblock_callback *old);
 
-static inline void blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
-					 rb_unblock_function_t *func, void *arg);
 static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region);
+
+#define RB_GC_SAVE_MACHINE_CONTEXT(th) \
+  do { \
+    rb_gc_save_machine_context(th); \
+    SET_MACHINE_STACK_END(&(th)->machine_stack_end); \
+  } while (0)
 
 #define GVL_UNLOCK_BEGIN() do { \
   rb_thread_t *_th_stored = GET_THREAD(); \
-  rb_gc_save_machine_context(_th_stored); \
+  RB_GC_SAVE_MACHINE_CONTEXT(_th_stored); \
   native_mutex_unlock(&_th_stored->vm->global_vm_lock)
 
 #define GVL_UNLOCK_END() \
@@ -960,7 +964,7 @@ rb_thread_schedule_rec(int sched_depth)
 
 	thread_debug("rb_thread_schedule/switch start\n");
 
-	rb_gc_save_machine_context(th);
+	RB_GC_SAVE_MACHINE_CONTEXT(th);
 	native_mutex_unlock(&th->vm->global_vm_lock);
 	{
 	    native_thread_yield();
@@ -983,18 +987,16 @@ rb_thread_schedule(void)
 }
 
 /* blocking region */
-static inline void
-blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
-		      rb_unblock_function_t *func, void *arg)
-{
-    region->prev_status = th->status;
-    th->blocking_region_buffer = region;
-    set_unblock_function(th, func, arg, &region->oldubf);
-    th->status = THREAD_STOPPED;
-    thread_debug("enter blocking region (%p)\n", (void *)th);
-    rb_gc_save_machine_context(th);
-    native_mutex_unlock(&th->vm->global_vm_lock);
-}
+#define blocking_region_begin(th, region, func, arg) \
+  do { \
+    (region)->prev_status = (th)->status; \
+    (th)->blocking_region_buffer = (region); \
+    set_unblock_function((th), (func), (arg), &(region)->oldubf); \
+    (th)->status = THREAD_STOPPED; \
+    thread_debug("enter blocking region (%p)\n", (void *)(th)); \
+    RB_GC_SAVE_MACHINE_CONTEXT(th); \
+    native_mutex_unlock(&(th)->vm->global_vm_lock); \
+  } while (0)
 
 static inline void
 blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
@@ -2599,7 +2601,6 @@ rb_gc_set_stack_end(VALUE **stack_end_p)
 void
 rb_gc_save_machine_context(rb_thread_t *th)
 {
-    SET_MACHINE_STACK_END(&th->machine_stack_end);
     FLUSH_REGISTER_WINDOWS;
 #ifdef __ia64
     th->machine_register_stack_end = rb_ia64_bsp();

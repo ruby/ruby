@@ -1,3 +1,15 @@
+Mon Nov  9 20:15:16 2009  Tanaka Akira  <akr@fsij.org>
+
+	* thread.c (rb_gc_save_machine_context): don't save the stack pointer
+	  in this function.
+	  (RB_GC_SAVE_MACHINE_CONTEXT): call rb_gc_save_machine_context and
+	  save the stack pointer at caller side.
+	  (rb_thread_schedule_rec): use RB_GC_SAVE_MACHINE_CONTEXT instead of
+	  rb_gc_save_machine_context.
+	  (blocking_region_begin): changed to a macro.  use
+	  RB_GC_SAVE_MACHINE_CONTEXT instead of rb_gc_save_machine_context.
+	  [ruby-dev:39659]
+
 Mon Nov  9 11:28:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (warnflags): add -Wno-long-long.
