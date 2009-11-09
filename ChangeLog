@@ -1,3 +1,7 @@
+Mon Nov  9 11:28:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (warnflags): add -Wno-long-long.
+
 Sun Nov  8 18:13:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c: use RHASH_IFNONE but not ifnone directly.
