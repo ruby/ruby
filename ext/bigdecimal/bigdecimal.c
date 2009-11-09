@@ -439,7 +439,9 @@ BigDecimal_IsNaN(VALUE self)
     return Qfalse;
 }
 
-/* Returns True if the value is infinite */
+/* Returns nil, −1, or +1 depending on whether the value is finite,
+ * -infinity, or +infinity.
+ */
 static VALUE
 BigDecimal_IsInfinite(VALUE self)
 {
@@ -755,7 +757,7 @@ BigDecimal_zero(VALUE self)
     return VpIsZero(a) ? Qtrue : Qfalse;
 }
 
-/* Returns True if the value is non-zero. */
+/* Returns self if the value is non-zero, nil otherwise. */
 static VALUE
 BigDecimal_nonzero(VALUE self)
 {
