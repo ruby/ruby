@@ -1,3 +1,7 @@
+Mon Nov  9 11:28:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (warnflags): add -Wno-long-long.
+
 Mon Nov  9 01:55:10 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* eval.c (method_inspect, method_name, mnew): Bug fix when
