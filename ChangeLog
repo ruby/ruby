@@ -1,4 +1,6 @@
-Mon Nov  9 11:28:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Nov  9 11:38:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (clean-ext): get rid of failure.
 
 	* configure.in (warnflags): add -Wno-long-long.
 
