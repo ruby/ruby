@@ -5635,11 +5635,11 @@ rb_str_split(VALUE str, const char *sep0)
  *  into paragraphs delimited by multiple successive newlines.
  *
  *     print "Example one\n"
- *     "hello\nworld".each {|s| p s}
+ *     "hello\nworld".each_line {|s| p s}
  *     print "Example two\n"
- *     "hello\nworld".each('l') {|s| p s}
+ *     "hello\nworld".each_line('l') {|s| p s}
  *     print "Example three\n"
- *     "hello\n\n\nworld".each('') {|s| p s}
+ *     "hello\n\n\nworld".each_line('') {|s| p s}
  *
  *  <em>produces:</em>
  *
