@@ -1,3 +1,8 @@
+Wed Nov 11 08:32:45 2009  Tanaka Akira  <akr@fsij.org>
+
+	* thread.c (blocking_region_begin): define before BLOCKING_REGION.
+	  reported by Luis Lavena.  [ruby-core:26670]
+
 Wed Nov 11 08:22:19 2009  Tanaka Akira  <akr@fsij.org>
 
 	* util.c (ruby_strtod): use dval() consistently.

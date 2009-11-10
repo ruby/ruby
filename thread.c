@@ -122,6 +122,17 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
     GVL_UNLOCK_END(); \
 } while(0);
 
+#define blocking_region_begin(th, region, func, arg) \
+  do { \
+    (region)->prev_status = (th)->status; \
+    (th)->blocking_region_buffer = (region); \
+    set_unblock_function((th), (func), (arg), &(region)->oldubf); \
+    (th)->status = THREAD_STOPPED; \
+    thread_debug("enter blocking region (%p)\n", (void *)(th)); \
+    RB_GC_SAVE_MACHINE_CONTEXT(th); \
+    native_mutex_unlock(&(th)->vm->global_vm_lock); \
+  } while (0)
+
 #define BLOCKING_REGION(exec, ubf, ubfarg) do { \
     rb_thread_t *__th = GET_THREAD(); \
     struct rb_blocking_region_buffer __region; \
@@ -987,16 +998,6 @@ rb_thread_schedule(void)
 }
 
 /* blocking region */
-#define blocking_region_begin(th, region, func, arg) \
-  do { \
-    (region)->prev_status = (th)->status; \
-    (th)->blocking_region_buffer = (region); \
-    set_unblock_function((th), (func), (arg), &(region)->oldubf); \
-    (th)->status = THREAD_STOPPED; \
-    thread_debug("enter blocking region (%p)\n", (void *)(th)); \
-    RB_GC_SAVE_MACHINE_CONTEXT(th); \
-    native_mutex_unlock(&(th)->vm->global_vm_lock); \
-  } while (0)
 
 static inline void
 blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
