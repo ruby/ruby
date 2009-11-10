@@ -1737,7 +1737,7 @@ rb_exec_arg_fixup(struct rb_exec_arg *e)
  *  it is taken as a command line that is subject to shell expansion before being executed.
  *
  *  The standard shell means always <code>"/bin/sh"</code> on Unix-like systems,
- *  <code>ENV["RUBYSHELL"]</code> or <code>"cmd.exe"</code> on Windows NT series, and
+ *  <code>ENV["RUBYSHELL"]</code> or <code>ENV["COMSPEC"]</code> on Windows NT series, and
  *  similar.
  *
  *  If two or more +string+ given,
