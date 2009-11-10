@@ -776,7 +776,7 @@ class Matrix
         i = k
         exists = true
         loop do
-          if (i += 1) > a_column_size - 1
+          if (i += 1) > a_row_size - 1
             exists = false
             break
           end
@@ -789,14 +789,14 @@ class Matrix
           i = k
           exists = true
           loop do
-            if (i += 1) > a_row_size - 1
+            if (i += 1) > a_column_size - 1
               exists = false
               break
             end
             break unless a[k][i] == 0
           end
           if exists
-            k.upto(a_column_size - 1) do |j|
+            k.upto(a_row_size - 1) do |j|
               a[j][k], a[j][i] = a[j][i], a[j][k]
             end
             akk = a[k][k]
