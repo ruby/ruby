@@ -1,3 +1,8 @@
+Wed Nov 11 02:14:48 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/matrix/test_matrix.rb (TestMatrix#test_rank):
+	  added a test method for r24969.
+
 Tue Nov 10 08:23:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_f_exec, rb_f_system, rb_f_spawn): mentioned abou
