@@ -2280,7 +2280,7 @@ ret0:
 #ifdef Honor_FLT_ROUNDS
                 /* round correctly FLT_ROUNDS = 2 or 3 */
                 if (sign) {
-                    rv = -rv;
+                    dval(rv) = -dval(rv);
                     sign = 0;
                 }
 #endif
@@ -2296,7 +2296,7 @@ ret0:
 #ifdef Honor_FLT_ROUNDS
                 /* round correctly FLT_ROUNDS = 2 or 3 */
                 if (sign) {
-                    rv = -rv;
+                    dval(rv) = -dval(rv);
                     sign = 0;
                 }
 #endif
@@ -2324,7 +2324,7 @@ vax_ovfl_check:
 #ifdef Honor_FLT_ROUNDS
             /* round correctly FLT_ROUNDS = 2 or 3 */
             if (sign) {
-                rv = -rv;
+                dval(rv) = -dval(rv);
                 sign = 0;
             }
 #endif
@@ -2791,11 +2791,11 @@ drop_down:
 #ifdef Check_FLT_ROUNDS
             switch (Rounding) {
               case 2: /* towards +infinity */
-                aadj1 -= 0.5;
+                dval(aadj1) -= 0.5;
                 break;
               case 0: /* towards 0 */
               case 3: /* towards -infinity */
-                aadj1 += 0.5;
+                dval(aadj1) += 0.5;
             }
 #else
             if (Flt_Rounds == 0)
@@ -2840,7 +2840,7 @@ drop_down:
             if ((word0(rv) & Exp_mask) <= P*Exp_msk1) {
                 dval(rv0) = dval(rv);
                 word0(rv) += P*Exp_msk1;
-                adj = aadj1 * ulp(dval(rv));
+                adj = dval(aadj1) * ulp(dval(rv));
                 dval(rv) += adj;
 #ifdef IBM
                 if ((word0(rv) & Exp_mask) <  P*Exp_msk1)
@@ -2858,7 +2858,7 @@ drop_down:
                     word0(rv) -= P*Exp_msk1;
             }
             else {
-                adj = aadj1 * ulp(dval(rv));
+                adj = dval(aadj1) * ulp(dval(rv));
                 dval(rv) += adj;
             }
 #else /*Sudden_Underflow*/
@@ -2870,11 +2870,11 @@ drop_down:
              * example: 1.2e-307 .
              */
             if (y <= (P-1)*Exp_msk1 && aadj > 1.) {
-                aadj1 = (double)(int)(aadj + 0.5);
+                dval(aadj1) = (double)(int)(aadj + 0.5);
                 if (!dsign)
-                    aadj1 = -aadj1;
+                    dval(aadj1) = -dval(aadj1);
             }
-            adj = aadj1 * ulp(dval(rv));
+            adj = dval(aadj1) * ulp(dval(rv));
             dval(rv) += adj;
 #endif /*Sudden_Underflow*/
 #endif /*Avoid_Underflow*/
