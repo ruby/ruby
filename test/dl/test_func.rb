@@ -33,8 +33,8 @@ module DL
     def test_strtod()
       f = Function.new(CFunc.new(@libc['strtod'], TYPE_DOUBLE, 'strtod'),
                        [TYPE_VOIDP, TYPE_VOIDP])
-      buff1 = "12.34"
-      buff2 = "     "
+      buff1 = CPtr["12.34"]
+      buff2 = buff1 + 4
       r = f.call(buff1, buff2)
       assert_match(12.00..13.00, r)
     end
