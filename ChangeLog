@@ -1,3 +1,9 @@
+Wed Nov 11 19:17:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile#initialize): merge mode option.
+
+	* lib/tmpdir.rb (Dir::Tmpname#create): splat options.
+
 Wed Nov 11 12:54:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (ruby_setenv): use ruby_strdup().
