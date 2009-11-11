@@ -3,6 +3,11 @@ require 'tempfile'
 require_relative 'ruby/envutil'
 
 class TestTempfile < Test::Unit::TestCase
+  def initialize(*)
+    super
+    @tempfile = nil
+  end
+
   def tempfile(*args, &block)
     t = Tempfile.new(*args, &block)
     @tempfile = (t unless block)
@@ -45,13 +50,13 @@ class TestTempfile < Test::Unit::TestCase
 
   def test_basename
     t = tempfile("foo")
-    assert_match /^foo/, File.basename(t.path)
+    assert_match(/^foo/, File.basename(t.path))
   end
 
   def test_basename_with_suffix
     t = tempfile(["foo", ".txt"])
-    assert_match /^foo/, File.basename(t.path)
-    assert_match /\.txt$/, File.basename(t.path)
+    assert_match(/^foo/, File.basename(t.path))
+    assert_match(/\.txt$/, File.basename(t.path))
   end
 
   def test_unlink
@@ -283,6 +288,15 @@ puts Tempfile.new('foo').path
     t.write("\xE6\x9D\xBE\xE6\xB1\x9F")
     t.rewind
     assert_equal(Encoding::ASCII_8BIT,t.read.encoding)
+  end
+
+  def test_binmode
+    t = tempfile("TEST", mode: IO::BINARY)
+    if IO::BINARY.nonzero?
+      assert(t.binmode?)
+    else
+      assert_equal(0600, t.stat.mode & 0777)
+    end
   end
 end
 
