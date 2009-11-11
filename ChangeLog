@@ -1,3 +1,8 @@
+Thu Nov 12 01:29:15 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* enumerator.c (yielder_yield_push): Yielder#<< should return self.
+	  [ruby-dev:39660] 
+
 Wed Nov 11 19:17:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile#initialize): merge mode option.
