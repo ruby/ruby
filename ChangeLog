@@ -1,3 +1,8 @@
+Wed Nov 11 09:36:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object, r_object0): use RHASH_IFNONE but not ifnone
+	  directly.
+
 Wed Nov 11 08:32:45 2009  Tanaka Akira  <akr@fsij.org>
 
 	* thread.c (blocking_region_begin): define before BLOCKING_REGION.
