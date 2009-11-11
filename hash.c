@@ -2032,24 +2032,24 @@ void
 ruby_setenv(const char *name, const char *value)
 {
 #if defined(_WIN32)
-    /* The sane way to deal with the environment.
-     * Has these advantages over putenv() & co.:
-     *  * enables us to store a truly empty value in the
-     *    environment (like in UNIX).
-     *  * we don't have to deal with RTL globals, bugs and leaks.
-     *  * Much faster.
-     * Why you may want to enable USE_WIN32_RTL_ENV:
-     *  * environ[] and RTL functions will not reflect changes,
-     *    which might be an issue if extensions want to access
-     *    the env. via RTL.  This cuts both ways, since RTL will
-     *    not see changes made by extensions that call the Win32
-     *    functions directly, either.
-     * GSAR 97-06-07
-     *
-     * REMARK: USE_WIN32_RTL_ENV is already obsoleted since we don't use
-     *         RTL's environ global variable directly yet.
-     */
-    SetEnvironmentVariable(name,value);
+    int len;
+    char *buf;
+    if (value) {
+	len = strlen(name) + 1 + strlen(value) + 1;
+	buf = ALLOCA_N(char, len);
+	snprintf(buf, len, "%s=%s", name, value);
+	putenv(buf);
+
+	/* putenv() doesn't handle empty value */
+	if (*value)
+	    SetEnvironmentVariable(name,value);
+    }
+    else {
+	len = strlen(name) + 1 + 1;
+	buf = ALLOCA_N(char, len);
+	snprintf(buf, len, "%s=", name);
+	putenv(buf);
+    }
 #elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
 #undef setenv
 #undef unsetenv
