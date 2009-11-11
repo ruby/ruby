@@ -2069,7 +2069,7 @@ ruby_setenv(const char *name, const char *value)
 	for (max = i; environ[max]; max++) ;
 	tmpenv = ALLOC_N(char*, max+2);
 	for (j=0; j<max; j++)		/* copy environment */
-	    tmpenv[j] = strdup(environ[j]);
+	    tmpenv[j] = ruby_strdup(environ[j]);
 	tmpenv[max] = 0;
 	environ = tmpenv;		/* tell exec where it is now */
     }

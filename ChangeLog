@@ -1,4 +1,4 @@
-Wed Nov 11 12:53:25 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Nov 11 12:54:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (ruby_setenv): use ruby_strdup().
 
