@@ -778,7 +778,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 	  case T_HASH:
 	    w_uclass(obj, rb_cHash, arg);
-	    if (NIL_P(RHASH(obj)->ifnone)) {
+	    if (NIL_P(RHASH_IFNONE(obj))) {
 		w_byte(TYPE_HASH, arg);
 	    }
 	    else if (FL_TEST(obj, FL_USER2)) {
@@ -790,8 +790,8 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    }
 	    w_long(RHASH_SIZE(obj), arg);
 	    rb_hash_foreach(obj, hash_each, (st_data_t)&c_arg);
-	    if (!NIL_P(RHASH(obj)->ifnone)) {
-		w_object(RHASH(obj)->ifnone, arg, limit);
+	    if (!NIL_P(RHASH_IFNONE(obj))) {
+		w_object(RHASH_IFNONE(obj), arg, limit);
 	    }
 	    break;
 
@@ -1564,7 +1564,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		rb_hash_aset(v, key, value);
 	    }
 	    if (type == TYPE_HASH_DEF) {
-		RHASH(v)->ifnone = r_object(arg);
+		RHASH_IFNONE(v) = r_object(arg);
 	    }
             v = r_leave(v, arg);
 	}
