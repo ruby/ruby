@@ -133,9 +133,11 @@ class Tempfile < DelegateClass(File)
 
     create(basename, *rest) do |tmpname, n, opts|
       lock = tmpname + '.lock'
+      mode = opts.delete(:mode) || 0
+      mode = File::RDWR|File::CREAT|File::EXCL|mode
       self.class.mkdir(lock)
       begin
-        @data[1] = @tmpfile = File.open(tmpname, File::RDWR|File::CREAT|File::EXCL, 0600, *opts)
+        @data[1] = @tmpfile = File.open(tmpname, mode, 0600, *opts)
         @data[0] = @tmpname = tmpname
       ensure
         self.class.rmdir(lock)

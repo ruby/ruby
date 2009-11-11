@@ -152,7 +152,7 @@ class Dir
       n = nil
       begin
         path = File.expand_path(make_tmpname(basename, n), tmpdir)
-        yield(path, n, opts)
+        yield(path, n, *opts)
       rescue Errno::EEXIST
         n ||= 0
         n += 1
