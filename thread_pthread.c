@@ -509,11 +509,6 @@ native_thread_create(rb_thread_t *th)
 	if (!err) {
 	    pthread_cond_init(&th->native_thread_data.sleep_cond, 0);
 	}
-	else {
-	    st_delete_wrap(th->vm->living_threads, th->self);
-	    th->status = THREAD_KILLED;
-	    rb_raise(rb_eThreadError, "can't create Thread (%d)", err);
-	}
     }
     return err;
 }

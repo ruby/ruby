@@ -479,8 +479,7 @@ native_thread_create(rb_thread_t *th)
     th->thread_id = w32_create_thread(stack_size, thread_start_func_1, th);
 
     if ((th->thread_id) == 0) {
-	st_delete_wrap(th->vm->living_threads, th->self);
-	rb_raise(rb_eThreadError, "can't create Thread (%d)", errno);
+	return errno ? errno : -1;
     }
 
     w32_resume_thread(th->thread_id);
