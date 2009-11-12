@@ -455,6 +455,22 @@ use_cached_thread(rb_thread_t *th)
     return result;
 }
 
+enum {
+#ifdef __SYMBIAN32__
+    RUBY_STACK_MIN_LIMIT = 64 * 1024,  /* 64KB: Let's be slightly more frugal on mobile platform */
+#else
+    RUBY_STACK_MIN_LIMIT = 512 * 1024, /* 512KB */
+#endif
+    RUBY_STACK_MIN = (
+#ifdef PTHREAD_STACK_MIN
+	(RUBY_STACK_MIN_LIMIT < PTHREAD_STACK_MIN) ? PTHREAD_STACK_MIN * 2 :
+#endif
+	RUBY_STACK_MIN_LIMIT),
+    RUBY_STACK_SPACE_LIMIT = 1024 * 1024,
+    RUBY_STACK_SPACE = (RUBY_STACK_MIN/5 > RUBY_STACK_SPACE_LIMIT ?
+			RUBY_STACK_SPACE_LIMIT : RUBY_STACK_MIN/5),
+};
+
 static int
 native_thread_create(rb_thread_t *th)
 {
@@ -465,20 +481,9 @@ native_thread_create(rb_thread_t *th)
     }
     else {
 	pthread_attr_t attr;
-#ifdef __SYMBIAN32__
-	size_t stack_size = 64 * 1024;	/* 64KB: Let's be slightly more frugal on mobile platform */
-#else
-	size_t stack_size = 512 * 1024; /* 512KB */
-#endif
-        size_t space;
+	const size_t stack_size = RUBY_STACK_MIN;
+	const size_t space = RUBY_STACK_SPACE;
 
-#ifdef PTHREAD_STACK_MIN
-	if (stack_size < PTHREAD_STACK_MIN) {
-	    stack_size = PTHREAD_STACK_MIN * 2;
-	}
-#endif
-        space = stack_size/5;
-        if (space > 1024*1024) space = 1024*1024;
         th->machine_stack_maxsize = stack_size - space;
 #ifdef __ia64
         th->machine_stack_maxsize /= 2;
