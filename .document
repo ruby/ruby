@@ -16,17 +16,4 @@ lib
 ext
 
 # rdoc files
-doc/*
-
-NEWS
-
-README.ja
-README
-README.EXT
-README.EXT.ja
-COPYING
-COPYING.ja
-GPL
-LGPL
-LEGAL
-ChangeLog
+doc/*.rdoc
