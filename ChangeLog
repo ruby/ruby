@@ -1,3 +1,8 @@
+Thu Nov 12 10:08:56 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* .document: remove documents not in rdoc format until
+	  rdoc supports non rdoc files. [ruby-core:26459]
+
 Thu Nov 12 06:42:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile#initialize): option hash may not be
