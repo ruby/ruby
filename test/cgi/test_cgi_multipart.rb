@@ -179,11 +179,7 @@ class CGIMultipartTest < Test::Unit::TestCase
 
   def _read(basename)
     filename = File.join(File.dirname(__FILE__), 'testdata', basename)
-    if RUBY_VERSION>="1.9"
-      s = File.open(filename, 'r:ascii-8bit') {|f| f.read() }
-    else
-      s = File.open(filename, 'rb') {|f| f.read() }
-    end
+    s = File.open(filename, 'rb') {|f| f.read() }
 
     return s
   end
