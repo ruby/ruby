@@ -1,3 +1,28 @@
+Thu Oct 29 01:22:01 2009  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* ext/socket/extconf.rb : Compilation failure on AIX.
+	  ss_len (a member of struct sockaddr_storage) has preceding __,
+	  but ss_family does not have it from AIX 5.2.
+
+Mon Sep 28 01:28:17 2009  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* Makefile.in (miniruby): suppress duplication warning on AIX.
+
+Mon Sep 28 01:13:25 2009  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* common.mk (ruby.imp): add text section [Bug #2064].
+
+	* common.mk (ruby.imp): do not export Init_*.
+
+Thu Sep 24 01:14:18 2009  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* dln.c (aix_loaderror): fixed typo. suppress warnings.
+
+Sun Aug  9 16:36:51 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (ruby.imp): excluded prelude.o to get rid of circular
+	  dependency.  [ruby-dev:39052]
+
 Thu Sep 17 06:03:40 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb (Matrix#rank): Two bug fixes. One made
