@@ -608,6 +608,7 @@ rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 	ptr = rb_dlptr_new(NUM2PTR(rb_Integer(val)), 0, NULL);
     }
     OBJ_INFECT(ptr, val);
+    rb_iv_set(ptr, "wrapping", val);
     return ptr;
 }
 
