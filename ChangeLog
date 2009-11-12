@@ -1,3 +1,8 @@
+Fri Nov 13 00:46:24 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/util.rb (CGI::pretty): fix the overflow bug
+	  if stripped string.[ruby-dev:37975]
+
 Thu Nov 12 23:08:11 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb (read_from_cmdline): this code is better.
