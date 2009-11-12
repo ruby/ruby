@@ -10,7 +10,6 @@
 #
 
 require "socket"
-require "delegate"
 require "timeout"
 require "English"
 
@@ -93,7 +92,7 @@ module Net
   # of relevant RFCs, see
   # http://www.omnifarious.org/~hopper/technical/telnet-rfc.html
   #
-  class Telnet < SimpleDelegator
+  class Telnet
 
     # :stopdoc:
     IAC   = 255.chr # "\377" # "\xff" # interpret as command
@@ -368,7 +367,6 @@ module Net
         @dumplog.log_dump('#', message) if @options.has_key?("Dump_log")
       end
 
-      super(@sock)
     end # initialize
 
     # The socket the Telnet object is using.  Note that this object becomes
