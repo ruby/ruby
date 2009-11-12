@@ -170,7 +170,7 @@ class CGI
   #     # </HTML>
   #
   def CGI::pretty(string, shift = "  ")
-    lines = string.gsub(/(?!\A)<(?:.|\n)*?>/, "\n\\0").gsub(/<(?:.|\n)*?>(?!\n)/, "\\0\n")
+    lines = string.gsub(/(?!\A)<.*?>/m, "\n\\0").gsub(/<.*?>(?!\n)/m, "\\0\n")
     end_pos = 0
     while end_pos = lines.index(/^<\/(\w+)/, end_pos)
       element = $1.dup
