@@ -176,9 +176,11 @@ w32_resume_thread(HANDLE handle)
 
 #ifdef HAVE__BEGINTHREADEX
 #define start_thread (HANDLE)_beginthreadex
+#define thread_errno errno
 typedef unsigned long (_stdcall *w32_thread_start_func)(void*);
 #else
 #define start_thread CreateThread
+#define thread_errno rb_w32_map_errno(GetLastError())
 typedef LPTHREAD_START_ROUTINE w32_thread_start_func;
 #endif
 
@@ -479,7 +481,7 @@ native_thread_create(rb_thread_t *th)
     th->thread_id = w32_create_thread(stack_size, thread_start_func_1, th);
 
     if ((th->thread_id) == 0) {
-	return errno ? errno : -1;
+	return thread_errno;
     }
 
     w32_resume_thread(th->thread_id);

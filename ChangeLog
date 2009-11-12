@@ -1,4 +1,6 @@
-Thu Nov 12 13:57:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Nov 12 14:33:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_win32.c (thread_errno): CreateThread does not set errno.
 
 	* thread.c (thread_create_core): moved failure handling from
 	  native_thread_core().
