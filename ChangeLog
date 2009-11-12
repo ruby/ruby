@@ -1,3 +1,8 @@
+Thu Nov 12 23:08:11 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/core.rb (read_from_cmdline): this code is better.
+	  [ruby-core:25991]
+
 Thu Nov 12 22:55:42 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/net/telnet.rb: don't use simple delegate.
