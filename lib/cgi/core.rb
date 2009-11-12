@@ -555,11 +555,7 @@ class CGI
             %|(offline mode: enter name=value pairs on standard input)\n|
           )
         end
-        array = nil
-        begin
-            readlines
-        rescue
-        end
+        array = readlines rescue nil
         if not array.nil?
             array.join(' ').gsub(/\n/n, '')
         else
