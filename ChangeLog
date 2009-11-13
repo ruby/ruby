@@ -1,3 +1,8 @@
+Sat Nov 14 03:35:29 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/variable.rb: TkVariable#*(other) and /(other) have a
+	  bug on handling of the "other" value.
+
 Thu Nov 12 23:38:47 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi.rb: fix command-line option of
