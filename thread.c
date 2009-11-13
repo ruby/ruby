@@ -420,7 +420,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	TH_PUSH_TAG(th);
 	if ((state = EXEC_TAG()) == 0) {
 	    SAVE_ROOT_JMPBUF(th, {
-		if (th->first_proc) {
+		if (!th->first_func) {
 		    GetProcPtr(th->first_proc, proc);
 		    th->errinfo = Qnil;
 		    th->local_lfp = proc->block.lfp;
@@ -429,7 +429,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 						  (int)RARRAY_LEN(args), RARRAY_PTR(args), 0);
 		}
 		else {
-		    th->value = (*th->first_func)((void *)th->first_args);
+		    th->value = (*th->first_func)((void *)args);
 		}
 	    });
 	}
