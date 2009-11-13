@@ -1,4 +1,7 @@
-Fri Nov 13 11:09:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov 13 16:22:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_start_func_2): see first_func, not first_proc,
+	  to decide which to use.
 
 	* gc.c (vm_xrealloc): use the given object space.
 
