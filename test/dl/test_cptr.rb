@@ -4,7 +4,7 @@ require_relative '../ruby/envutil'
 module DL
   class TestCPtr < TestBase
     def test_malloc_free_func_int
-      free = CFunc.new(@libc['free'], TYPE_VOID, 'free')
+      free = CFunc.new(DL::RUBY_FREE, TYPE_VOID, 'free')
 
       ptr  = CPtr.malloc(10, free.to_i)
       assert_equal 10, ptr.size
@@ -12,7 +12,7 @@ module DL
     end
 
     def test_malloc_free_func
-      free = CFunc.new(@libc['free'], TYPE_VOID, 'free')
+      free = CFunc.new(DL::RUBY_FREE, TYPE_VOID, 'free')
 
       ptr  = CPtr.malloc(10, free)
       assert_equal 10, ptr.size
@@ -142,14 +142,14 @@ module DL
         include DL
         @libc = dlopen(LIBC_SO)
         @libm = dlopen(LIBM_SO)
-        free = CFunc.new(@libc['free'], TYPE_VOID, 'free')
+        free = CFunc.new(DL::RUBY_FREE, TYPE_VOID, 'free')
         ptr = CPtr.malloc(4)
         ptr.free = free
         free.ptr
         ptr.free.ptr
       End
 
-      free = CFunc.new(@libc['free'], TYPE_VOID, 'free')
+      free = CFunc.new(DL::RUBY_FREE, TYPE_VOID, 'free')
       ptr = CPtr.malloc(4)
       ptr.free = free
 
