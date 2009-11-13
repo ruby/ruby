@@ -1218,7 +1218,7 @@ end
     end
   end
   def *(other)
-    num_or_str(self._value) * other.to_i
+    num_or_str(self._value) * other
     #begin
     #  number(self._value) * other
     #rescue
@@ -1229,7 +1229,7 @@ end
     number(self._value) / other
   end
   def %(other)
-    num_or_str(self._value) % other.to_i
+    num_or_str(self._value) % other
     #begin
     #  number(self._value) % other
     #rescue

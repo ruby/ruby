@@ -1,3 +1,8 @@
+Sat Nov 14 03:35:29 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/variable.rb: TkVariable#*(other) and /(other) have a
+	  bug on handling of the "other" value.
+
 Fri Nov 13 21:18:15 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/zlib/zlib.c (rb_zlib_adler32): fix typo.
