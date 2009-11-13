@@ -306,7 +306,7 @@ do_checksum(argc, argv, func)
 /*
  * call-seq: Zlib.adler32(string, adler)
  *
- * Calculates Alder-32 checksum for +string+, and returns updated value of
+ * Calculates Adler-32 checksum for +string+, and returns updated value of
  * +adler+. If +string+ is omitted, it returns the Adler-32 initial value. If
  * +adler+ is omitted, it assumes that the initial value is given to +adler+.
  *
