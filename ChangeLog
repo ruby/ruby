@@ -1,3 +1,8 @@
+Sat Nov 14 21:54:46 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* class.c (rb_mod_init_copy): fix memory leak of Class#dup.
+	  [ruby-dev:39687]
+
 Sat Nov 14 17:09:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (--with-opt-dir): ignore and suppress a warning.

@@ -151,6 +151,9 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     if (RCLASS_IV_TBL(orig)) {
 	ID id;
 
+	if (RCLASS_IV_TBL(clone)) {
+	    st_free_table(RCLASS_IV_TBL(clone));
+	}
 	RCLASS_IV_TBL(clone) = st_copy(RCLASS_IV_TBL(orig));
 	CONST_ID(id, "__classpath__");
 	st_delete(RCLASS_IV_TBL(clone), (st_data_t*)&id, 0);
@@ -159,6 +162,11 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     }
     if (RCLASS_M_TBL(orig)) {
 	struct clone_method_data data;
+
+	if (RCLASS_M_TBL(clone)) {
+	    extern void rb_free_m_table(st_table *tbl);
+	    rb_free_m_table(RCLASS_M_TBL(clone));
+	}
 	data.tbl = RCLASS_M_TBL(clone) = st_init_numtable();
 	data.klass = clone;
 	st_foreach(RCLASS_M_TBL(orig), clone_method,
