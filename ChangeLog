@@ -1,3 +1,8 @@
+Sat Nov 14 16:43:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (ruby_setenv): get rid of crash in Solaris 8 and 10.
+	  [ruby-core:26668]
+
 Sat Nov 14 04:07:06 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/variable.rb (TkVariable::coerce): fix bug on a
