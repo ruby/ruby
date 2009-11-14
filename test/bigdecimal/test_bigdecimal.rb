@@ -61,7 +61,6 @@ class TestBigDecimal < Test::Unit::TestCase
       x = BigDecimal.new("0.1")
       100.times do
         x *= x
-        break if x == false
       end
     end
   end
@@ -71,7 +70,6 @@ class TestBigDecimal < Test::Unit::TestCase
       x = BigDecimal.new("10")
       100.times do
         x *= x
-        break if x == false
       end
     end
   end
@@ -219,7 +217,20 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_operator(1, :<, inf)
   end
 
-  def test_cmp_corece
+  def test_cmp_nan
+    n1 = BigDecimal.new("1")
+    BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+    assert_equal(nil, BigDecimal.new("NaN") <=> n1)
+    assert_equal(false, BigDecimal.new("NaN") > n1)
+  end
+
+  def test_cmp_failing_coercion
+    n1 = BigDecimal.new("1")
+    assert_equal(nil, n1 <=> nil)
+    assert_raise(ArgumentError){n1 > nil}
+  end
+
+  def test_cmp_coerce
     n1 = BigDecimal.new("1")
     n2 = BigDecimal.new("2")
     o1 = Object.new; def o1.coerce(x); [x, BigDecimal.new("1")]; end

@@ -1,3 +1,10 @@
+Sat Nov 14 09:16:54 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimalCmp): Fix comparisons
+	  [ruby-core:26646]
+	
+	* test/bigdecimal/test_bigdecimal.rb (class): Fix and improve tests.
+
 Sat Nov 14 04:07:06 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/variable.rb (TkVariable::coerce): fix bug on a
