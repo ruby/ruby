@@ -724,23 +724,21 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
 
 	switch(op)
 	{
-	  case '*': f = rb_intern("<=>");break;
-	  case '=': f = rb_intern("=="); break;
-	  case '!': f = rb_intern("!="); break;
+	  case '*': return rb_num_coerce_cmp(self,r,rb_intern("<=>"));
+	  case '=': return RTEST(rb_num_coerce_cmp(self,r,rb_intern("=="))) ? Qtrue : Qfalse;
 	  case 'G': f = rb_intern(">="); break;
 	  case 'L': f = rb_intern("<="); break;
 	  case '>': case '<': f = (ID)op; break;
 	}
-	return rb_num_coerce_cmp(self,r,f);
+	return rb_num_coerce_relop(self,r,f);
     }
     SAVE(b);
     e = VpComp(a, b);
-    if(e==999) return Qnil;
+    if(e==999) return (op == '*') ? Qnil : Qfalse;
     switch(op)
     {
     case '*': return   INT2FIX(e); /* any op */
     case '=': if(e==0) return Qtrue ; return Qfalse;
-    case '!': if(e!=0) return Qtrue ; return Qfalse;
     case 'G': if(e>=0) return Qtrue ; return Qfalse;
     case '>': if(e> 0) return Qtrue ; return Qfalse;
     case 'L': if(e<=0) return Qtrue ; return Qfalse;
