@@ -2620,6 +2620,9 @@ AC_SUBST(rubyhdrdir)dnl
 AC_SUBST(sitehdrdir)dnl
 AC_SUBST(vendorhdrdir)dnl
 
+AC_ARG_WITH(opt-dir,
+	AS_HELP_STRING([--with-opt-dir=DIR], [add optional headers and libraries DIR]))
+
 AC_ARG_WITH(mantype,
 	AS_HELP_STRING([--with-mantype=TYPE], [specify man page type; TYPE is one of man and doc]),
 		[

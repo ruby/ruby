@@ -1,3 +1,8 @@
+Sat Nov 14 17:09:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (--with-opt-dir): ignore and suppress a warning.
+	  [ruby-dev:39684]
+
 Sat Nov 14 16:43:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (ruby_setenv): get rid of crash in Solaris 8 and 10.
