@@ -1,3 +1,11 @@
+Mon Nov 16 00:06:26 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (thread_cleanup_func): delete locking_mutex when thread
+	  object become dummy because of fork.  [ruby-core:26744]
+	  [ruby-core:26745]
+
+	* bootstraptest/test_thread.rb: add a test for above.
+
 Sat Nov 14 21:54:46 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* class.c (rb_mod_init_copy): fix memory leak of Class#dup.

@@ -380,6 +380,7 @@ thread_cleanup_func(void *th_ptr)
 	rb_mutex_unlock_all(th->keeping_mutexes, th);
 	th->keeping_mutexes = NULL;
     }
+    th->locking_mutex = Qfalse;
     thread_cleanup_func_before_exec(th_ptr);
     native_thread_destroy(th);
 }

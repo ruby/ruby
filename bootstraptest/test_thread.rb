@@ -385,3 +385,26 @@ assert_equal 'ok', %q{
   end
   :ok
 }
+
+assert_equal 'ok', %{
+  open("zzz.rb", "w") do |f|
+    f.puts <<-END
+      begin
+        m = Mutex.new
+        Thread.new { m.lock; sleep 1 }
+        sleep 0.3
+        Thread.new do
+          sleep 0.3
+          fork { GC.start }
+        end
+        m.lock
+        pid, status = Process.wait2
+        $result = status.success? ? :ok : :ng
+      rescue NotImplementedError
+        $result = :ok
+      end
+    END
+  end
+  require "./zzz.rb"
+  $result
+}
