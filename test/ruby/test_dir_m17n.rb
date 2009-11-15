@@ -31,6 +31,11 @@ class TestDir_M17N < Test::Unit::TestCase
         ents = Dir.entries(".")
         exit ents.include?(filename)
       EOS
+      assert_ruby_status(%w[-EASCII-8BIT], <<-'EOS', nil, :chdir=>d)
+        filename = "\xA4\xA2"
+        ents = Dir.entries(".")
+        exit ents.include?(filename)
+      EOS
     }
   end
 
@@ -39,6 +44,11 @@ class TestDir_M17N < Test::Unit::TestCase
       assert_ruby_status(%w[-EUTF-8], <<-'EOS', nil, :chdir=>d)
         filename = "\u3042".force_encoding("utf-8")
         File.open(filename, "w") {}
+        ents = Dir.entries(".")
+        exit ents.include?(filename)
+      EOS
+      assert_ruby_status(%w[-EASCII-8BIT], <<-'EOS', nil, :chdir=>d)
+        filename = "\u3042".force_encoding("ASCII-8BIT")
         ents = Dir.entries(".")
         exit ents.include?(filename)
       EOS
