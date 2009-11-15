@@ -1129,7 +1129,7 @@ rb_filesystem_encindex(void)
 #elif defined __APPLE__
     idx = rb_utf8_encindex();
 #else
-    idx = rb_locale_encindex();
+    idx = rb_enc_to_index(rb_default_external_encoding());
 #endif
 
     if (rb_enc_registered("filesystem") < 0) enc_alias_internal("filesystem", idx);
