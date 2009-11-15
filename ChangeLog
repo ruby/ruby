@@ -7,8 +7,8 @@ Mon Nov 16 01:35:34 2009  Tanaka Akira  <akr@fsij.org>
 	* encoding.c (rb_filesystem_encindex): use default external encoding
 	  instead of locale encoding in Unix.
 
-	* ruby.c (process_options): delay inifilesystem encoding
-	  initialization after default external encoding initialization.
+	* ruby.c (process_options): delay filesystem encoding
+	  initialization until default external encoding initialization.
 
 Mon Nov 16 00:06:26 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
