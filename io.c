@@ -1625,7 +1625,6 @@ more_char(rb_io_t *fptr)
             return 0;
 
         if (res == econv_finished) {
-	    clear_readconv(fptr);
             return -1;
 	}
 
@@ -1687,10 +1686,14 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
         else rb_str_set_len(str, 0);
         make_readconv(fptr, 0);
         while (1) {
-            if (fptr->cbuf_len) {
+            if (fptr->cbuf_len > fptr->cbuf_capa / 2) {
                 io_shift_cbuf(fptr, fptr->cbuf_len, &str);
             }
             if (more_char(fptr) == -1) {
+		if (fptr->cbuf_len) {
+		    io_shift_cbuf(fptr, fptr->cbuf_len, &str);
+		}
+		clear_readconv(fptr);
                 return io_enc_str(str, fptr);
             }
         }
@@ -2172,6 +2175,7 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
                 }
             }
         } while (more_char(fptr) != -1);
+        clear_readconv(fptr);
         *lp = limit;
         return EOF;
     }
@@ -2820,6 +2824,7 @@ rb_io_each_codepoint(VALUE io)
 		    }
 		}
 		if (more_char(fptr) == -1) {
+		    clear_readconv(fptr);
 		    /* ignore an incomplete character before EOF */
 		    return io;
 		}
