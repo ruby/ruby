@@ -197,12 +197,12 @@ module Test
         (th_stderr.kill; th_stderr.join) if th_stderr
       end
 
-      def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, opt={})
-        invoke_ruby_assertion(args, test_stdin, test_stdout, test_stderr, false, message, opt)
+      def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, opt={}, &b)
+        invoke_ruby_assertion(args, test_stdin, test_stdout, test_stderr, false, message, opt, &b)
       end
 
-      def assert_ruby_status(args, test_stdin = "", message = nil, opt={})
-        invoke_ruby_assertion(args, test_stdin, nil, nil, true, message, opt)
+      def assert_ruby_status(args, test_stdin = "", message = nil, opt={}, &b)
+        invoke_ruby_assertion(args, test_stdin, nil, nil, true, message, opt, &b)
       end
 
     end
