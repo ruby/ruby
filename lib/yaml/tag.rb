@@ -58,7 +58,7 @@ class Module
     # taguris.
     def yaml_as( tag, sc = true )
         verbose, $VERBOSE = $VERBOSE, nil
-        class_eval <<-"end;", __FILE__, __LINE__+1
+        class_eval <<-"END", __FILE__, __LINE__+1
             attr_writer :taguri
             def taguri
                 if respond_to? :to_yaml_type
@@ -73,7 +73,7 @@ class Module
                 end
             end
             def self.yaml_tag_subclasses?; #{ sc ? 'true' : 'false' }; end
-        end;
+        END
         YAML::tag_class tag, self
     ensure
         $VERBOSE = verbose
@@ -88,4 +88,5 @@ class Module
     def yaml_tag_read_class( name )
         name
     end
+    # :startdoc:
 end
