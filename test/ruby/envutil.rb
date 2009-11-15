@@ -127,7 +127,8 @@ module Test
       end
 
       LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
-      def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, opt={})
+
+      def invoke_ruby_assertion(args, test_stdin="", test_stdout=nil, test_stderr=nil, test_status=true, message = nil, opt={})
         in_c, in_p = IO.pipe
         out_p, out_c = IO.pipe if test_stdout
         err_p, err_c = IO.pipe if test_stderr
@@ -155,6 +156,7 @@ module Test
         out_p.close if test_stdout
         err_p.close if test_stderr
         Process.wait pid
+        status = $?
         if block_given?
           yield(test_stdout ? stdout.lines.map {|l| l.chomp } : nil, test_stderr ? stderr.lines.map {|l| l.chomp } : nil)
         else
@@ -173,6 +175,10 @@ module Test
             end
           end
         end
+        if test_status
+          assert(status.success?, "ruby exit stauts is not success: #{status.inspect}")
+        end
+        status
       ensure
         env.each_pair {|lc, v|
           if v
@@ -191,9 +197,14 @@ module Test
         (th_stderr.kill; th_stderr.join) if th_stderr
       end
 
-      def assert_in_out(args, test_stdin = "", test_stdout = [], message = nil, opt={})
-        assert_in_out_err(args, test_stdin, test_stdout, nil, message, opt)
+      def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, opt={})
+        invoke_ruby_assertion(args, test_stdin, test_stdout, test_stderr, false, message, opt)
       end
+
+      def assert_ruby_status(args, test_stdin = "", message = nil, opt={})
+        invoke_ruby_assertion(args, test_stdin, nil, nil, true, message, opt)
+      end
+
     end
   end
 end
