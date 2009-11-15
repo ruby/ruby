@@ -1,3 +1,7 @@
+Mon Nov 16 01:58:08 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* include/ruby/ruby.h (rb_classext_t): annotate @internal.
+
 Mon Nov 16 01:35:34 2009  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (rb_filesystem_encindex): use default external encoding

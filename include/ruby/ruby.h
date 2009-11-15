@@ -564,6 +564,7 @@ struct RObject {
      RCLASS_IV_INDEX_TBL(rb_obj_class(o)) : \
      ROBJECT(o)->as.heap.iv_index_tbl)
 
+/** @internal */
 typedef struct {
     VALUE super;
     struct st_table *iv_tbl;
