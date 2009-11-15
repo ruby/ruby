@@ -1,3 +1,13 @@
+Mon Nov 16 07:59:38 2009  wanabe  <s.wanabe@gmail.com>
+
+	* io.c (read_all): don't call io_shift_cbuf until bufffering enough or
+	  econv_finished.   [ruby-dev:39696]
+
+	* io.c (more_char): don't call clear_readconv to read buffer after
+	  econv_finished.
+
+	* io.c (appendline, rb_io_each_codepoint): clear readconv when done.
+
 Mon Nov 16 01:58:08 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* include/ruby/ruby.h (rb_classext_t): annotate @internal.
