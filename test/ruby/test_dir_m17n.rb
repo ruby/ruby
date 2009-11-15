@@ -64,7 +64,23 @@ class TestDir_M17N < Test::Unit::TestCase
         exit ents.include?(filename)
       EOS
       assert_ruby_status(%w[-EEUC-JP:UTF-8], <<-'EOS', nil, :chdir=>d)
-        filename = "\u3042".force_encoding("utf-8")
+        filename = "\u3042"
+        ents = Dir.entries(".")
+        exit ents.include?(filename)
+      EOS
+    }
+  end
+
+  def test_filename_ext_utf_8_and_int_euc_jp
+    with_tmpdir {|d|
+      assert_ruby_status(%w[-EUTF-8], <<-'EOS', nil, :chdir=>d)
+        filename = "\u3042"
+        File.open(filename, "w") {}
+        ents = Dir.entries(".")
+        exit ents.include?(filename)
+      EOS
+      assert_ruby_status(%w[-EUTF-8:EUC-JP], <<-'EOS', nil, :chdir=>d)
+        filename = "\xA4\xA2".force_encoding("euc-jp")
         ents = Dir.entries(".")
         exit ents.include?(filename)
       EOS
