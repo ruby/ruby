@@ -1,3 +1,8 @@
+Mon Nov 16 14:03:53 2009  wanabe  <s.wanabe@gmail.com>
+
+	* io.c (read_all): shift read buffer if exception occured.
+	  pointed out in [ruby-dev:39702].
+
 Mon Nov 16 07:59:38 2009  wanabe  <s.wanabe@gmail.com>
 
 	* io.c (read_all): don't call io_shift_cbuf until bufffering enough or
