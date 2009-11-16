@@ -854,4 +854,28 @@ class TestModule < Test::Unit::TestCase
     end
     assert_equal("", stderr)
   end
+
+  def test_protected_singleton_method
+    klass = Class.new
+    x = klass.new
+    class << x
+      protected
+
+      def foo
+      end
+    end
+    assert_raise(NoMethodError) do
+      x.foo
+    end
+    klass.send(:define_method, :bar) do
+      x.foo
+    end
+    assert_nothing_raised do
+      x.bar
+    end
+    y = klass.new
+    assert_raise(NoMethodError) do
+      y.bar
+    end
+  end
 end
