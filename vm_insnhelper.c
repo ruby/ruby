@@ -623,7 +623,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		    defined_class = RBASIC(defined_class)->klass;
 		}
 
-		if (!rb_obj_is_kind_of(cfp->self, rb_class_real(defined_class))) {
+		if (!rb_obj_is_kind_of(cfp->self, defined_class)) {
 		    val = vm_method_missing(th, id, recv, num, blockptr, NOEX_PROTECTED);
 		}
 		else {

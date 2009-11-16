@@ -343,7 +343,7 @@ rb_method_call_status(rb_thread_t *th, rb_method_entry_t *me, call_type scope, V
 		if (self == Qundef) {
 		    self = th->cfp->self;
 		}
-		if (!rb_obj_is_kind_of(self, rb_class_real(defined_class))) {
+		if (!rb_obj_is_kind_of(self, defined_class)) {
 		    return NOEX_PROTECTED;
 		}
 	    }
