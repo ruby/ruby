@@ -971,7 +971,7 @@ class CGI
     end
 
     def read_multipart(boundary, content_length)
-      params = Hash.new { |h,k| h[k] = [] }
+      params = Hash.new([])
       boundary = "--" + boundary
       quoted_boundary = Regexp.quote(boundary, "n")
       buf = ""
@@ -1063,8 +1063,11 @@ class CGI
         /Content-Disposition:.* name="?([^\";\s]*)"?/ni.match(head)
         name = $1.dup
 
-        params[name].push(body)
-
+        if params.has_key?(name)
+          params[name].push(body)
+        else
+          params[name] = [body]
+        end
         break if buf.size == 0
         break if content_length == -1
       end
