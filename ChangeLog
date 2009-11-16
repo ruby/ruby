@@ -1,3 +1,8 @@
+Mon Nov 16 19:28:23 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_i): revert a part of
+	  r23645, which was not a bug fix. [ruby-dev:39474]
+
 Fri Sep 11 11:56:53 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* class.c (rb_singleton_class_clone): Qnil must be used for a null

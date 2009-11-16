@@ -530,14 +530,14 @@ BigDecimal_to_i(VALUE self)
 
     /* Infinity or NaN not converted. */
     if(VpIsNaN(p)) {
-       VpException(VP_EXCEPTION_NaN,"Computation results to 'NaN'(Not a Number)",1);
-       return Qnil;		/* not reached */
+       VpException(VP_EXCEPTION_NaN,"Computation results to 'NaN'(Not a Number)",0);
+       return Qnil;
     } else if(VpIsPosInf(p)) {
-       VpException(VP_EXCEPTION_INFINITY,"Computation results to 'Infinity'",1);
-       return Qnil;		/* not reached */
+       VpException(VP_EXCEPTION_INFINITY,"Computation results to 'Infinity'",0);
+       return Qnil;
     } else if(VpIsNegInf(p)) {
-       VpException(VP_EXCEPTION_INFINITY,"Computation results to '-Infinity'",1);
-       return Qnil;		/* not reached */
+       VpException(VP_EXCEPTION_INFINITY,"Computation results to '-Infinity'",0);
+       return Qnil;
     }
 
     e = VpExponent10(p);
