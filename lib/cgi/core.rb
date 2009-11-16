@@ -426,7 +426,7 @@ class CGI
       raise EOFError.new("no content body")  unless status
       raise EOFError.new("bad content body") unless first_line == status
       ## parse and set params
-      params = {}
+      params = Hash.new { |h,k| h[k] = [] }
       @files = {}
       boundary_rexp = /--#{Regexp.quote(boundary)}(#{EOL}|--)/
       boundary_size = "#{EOL}--#{boundary}#{EOL}".bytesize
@@ -496,7 +496,7 @@ class CGI
         name = $1 || $2 || ''
         if body.original_filename.empty?
           value=body.read.dup.force_encoding(@accept_charset)
-          (params[name] ||= []) << value
+          params[name] << value
           unless value.valid_encoding?
             if @accept_charset_error_block
               @accept_charset_error_block.call(name,value)
@@ -510,7 +510,7 @@ class CGI
             define_method(:content_type){""}
           end
         else
-          (params[name] ||= []) << body
+          params[name] << body
           @files[name]=body
         end
         ## break loop
@@ -518,7 +518,6 @@ class CGI
         break if content_length == -1
       end
       raise EOFError, "bad boundary end of body part" unless boundary_end =~ /--/
-      params.default = []
       params
     end # read_multipart
     private :read_multipart
