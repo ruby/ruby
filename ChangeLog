@@ -1,3 +1,8 @@
+Mon Nov 16 19:45:27 2009  Tanaka Akira  <akr@fsij.org>
+
+	* util.c: suppress strict-aliasing warning with gcc-4.4.0 -O2 to fix
+	  infinite loop by ruby -e "1.402e-45" .
+
 Mon Nov 16 19:28:23 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_i): revert a part of
