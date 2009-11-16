@@ -128,81 +128,78 @@ module Test
 
       LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
 
-      def invoke_ruby_assertion(args, test_stdin="", test_stdout=nil, test_stderr=nil, test_status=true, message = nil, opt={})
-        in_c, in_p = IO.pipe
-        out_p, out_c = IO.pipe if test_stdout
-        err_p, err_c = IO.pipe if test_stderr
-        c = "C"
-        env = {}
-        LANG_ENVS.each {|lc| env[lc], ENV[lc] = ENV[lc], c}
-        opt = opt.dup
-        opt[:in] = in_c
-        opt[:out] = out_c if test_stdout
-        opt[:err] = err_c if test_stderr
-        pid = spawn(EnvUtil.rubybin, *args, opt)
-        in_c.close
-        out_c.close if test_stdout
-        err_c.close if test_stderr
-        in_p.write test_stdin
-        in_p.close
-        th_stdout = Thread.new { out_p.read } if test_stdout
-        th_stderr = Thread.new { err_p.read } if test_stderr
-        if (!test_stdout || th_stdout.join(10)) && (!test_stderr || th_stderr.join(10))
-          stdout = th_stdout.value if test_stdout
-          stderr = th_stderr.value if test_stderr
-        else
-          flunk("timeout")
-        end
-        out_p.close if test_stdout
-        err_p.close if test_stderr
-        Process.wait pid
-        status = $?
-        if block_given?
-          yield(test_stdout ? stdout.lines.map {|l| l.chomp } : nil, test_stderr ? stderr.lines.map {|l| l.chomp } : nil)
-        else
-          if test_stdout
-            if test_stdout.is_a?(Regexp)
-              assert_match(test_stdout, stdout, message)
-            else
-              assert_equal(test_stdout, stdout.lines.map {|l| l.chomp }, message)
-            end
-          end
-          if test_stderr
-            if test_stderr.is_a?(Regexp)
-              assert_match(test_stderr, stderr, message)
-            else
-              assert_equal(test_stderr, stderr.lines.map {|l| l.chomp }, message)
-            end
-          end
-        end
-        if test_status
-          assert(status.success?, "ruby exit stauts is not success: #{status.inspect}")
-        end
-        status
-      ensure
-        env.each_pair {|lc, v|
-          if v
-            ENV[lc] = v
+      def invoke_ruby(args, stdin_data="", capture_stdout=false, capture_stderr=false, opt={})
+        begin
+          in_c, in_p = IO.pipe
+          out_p, out_c = IO.pipe if capture_stdout
+          err_p, err_c = IO.pipe if capture_stderr
+          c = "C"
+          env = {}
+          LANG_ENVS.each {|lc| env[lc], ENV[lc] = ENV[lc], c}
+          opt = opt.dup
+          opt[:in] = in_c
+          opt[:out] = out_c if capture_stdout
+          opt[:err] = err_c if capture_stderr
+          pid = spawn(EnvUtil.rubybin, *args, opt)
+          in_c.close
+          out_c.close if capture_stdout
+          err_c.close if capture_stderr
+          in_p.write stdin_data
+          in_p.close
+          th_stdout = Thread.new { out_p.read } if capture_stdout
+          th_stderr = Thread.new { err_p.read } if capture_stderr
+          if (!capture_stdout || th_stdout.join(10)) && (!capture_stderr || th_stderr.join(10))
+            stdout = th_stdout.value if capture_stdout
+            stderr = th_stderr.value if capture_stderr
           else
-            ENV.delete(lc)
+            flunk("timeout")
           end
-        } if env
-        in_c.close if in_c && !in_c.closed?
-        in_p.close if in_p && !in_p.closed?
-        out_c.close if out_c && !out_c.closed?
-        out_p.close if out_p && !out_p.closed?
-        err_c.close if err_c && !err_c.closed?
-        err_p.close if err_p && !err_p.closed?
-        (th_stdout.kill; th_stdout.join) if th_stdout
-        (th_stderr.kill; th_stderr.join) if th_stderr
+          out_p.close if capture_stdout
+          err_p.close if capture_stderr
+          Process.wait pid
+          status = $?
+        ensure
+          env.each_pair {|lc, v|
+            if v
+              ENV[lc] = v
+            else
+              ENV.delete(lc)
+            end
+          } if env
+          in_c.close if in_c && !in_c.closed?
+          in_p.close if in_p && !in_p.closed?
+          out_c.close if out_c && !out_c.closed?
+          out_p.close if out_p && !out_p.closed?
+          err_c.close if err_c && !err_c.closed?
+          err_p.close if err_p && !err_p.closed?
+          (th_stdout.kill; th_stdout.join) if th_stdout
+          (th_stderr.kill; th_stderr.join) if th_stderr
+        end
+        return stdout, stderr, status
       end
 
-      def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, opt={}, &b)
-        invoke_ruby_assertion(args, test_stdin, test_stdout, test_stderr, false, message, opt, &b)
+      def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, opt={})
+        stdout, stderr, status = invoke_ruby(args, test_stdin, true, true, opt)
+        if block_given?
+          yield(stdout.lines.map {|l| l.chomp }, stderr.lines.map {|l| l.chomp })
+        else
+          if test_stdout.is_a?(Regexp)
+            assert_match(test_stdout, stdout, message)
+          else
+            assert_equal(test_stdout, stdout.lines.map {|l| l.chomp }, message)
+          end
+          if test_stderr.is_a?(Regexp)
+            assert_match(test_stderr, stderr, message)
+          else
+            assert_equal(test_stderr, stderr.lines.map {|l| l.chomp }, message)
+          end
+        end
       end
 
-      def assert_ruby_status(args, test_stdin = "", message = nil, opt={}, &b)
-        invoke_ruby_assertion(args, test_stdin, nil, nil, true, message, opt, &b)
+      def assert_ruby_status(args, test_stdin="", message=nil, opt={}, &b)
+        stdout, stderr, status = invoke_ruby(args, test_stdin, false, false, opt)
+        m = message ? "#{message} (#{status.inspect})" : "ruby exit stauts is not success: #{status.inspect}"
+        assert(status.success?, m)
       end
 
     end
