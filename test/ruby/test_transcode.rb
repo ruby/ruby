@@ -1867,7 +1867,12 @@ class TestTranscode < Test::Unit::TestCase
     #assert_raise(Encoding::UndefinedConversionError) { "\xF9\xD6".encode("utf-8", 'Big5-HKSCS') }
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\xAF\xAB\xAA\x4C\xB8\x71\xB3\xD5", 'Big5-HKSCS') # 神林義博
   end
-
+  
+  def
+	test_Big5_UAO
+    check_both_ways("\u4e17", "\x81\x40", 'Big5-UAO') # 丗
+  end
+  
   def test_nothing_changed
     a = "James".force_encoding("US-ASCII")
     b = a.encode("Shift_JIS")
