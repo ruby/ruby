@@ -4406,7 +4406,7 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
 	r = parse_char_class(&anode, tok, &p, end, env);
 	if (r == 0) {
 	  acc = NCCLASS(anode);
-	  r = or_cclass(cc, acc, env);
+	  r = or_cclass(cc, acc, env->enc);
 	}
 	onig_node_free(anode);
 	if (r != 0) goto err;

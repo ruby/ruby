@@ -1,3 +1,7 @@
+Tue Nov 17 16:04:13 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* regparse.c (parse_char_class): fixes a wrong merge r25531.
+
 Tue Nov 17 16:01:02 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* insns.def (opt_case_dispatch): need cast.
