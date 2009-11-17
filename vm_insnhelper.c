@@ -1645,9 +1645,9 @@ struct opt_case_dispatch_i_arg {
 };
 
 static int
-opt_case_dispatch_i(st_data_t key, st_data_t data, void *p)
+opt_case_dispatch_i(st_data_t key, st_data_t data, st_data_t p)
 {
-    struct opt_case_dispatch_i_arg *arg = p;
+    struct opt_case_dispatch_i_arg *arg = (void *)p;
 
     if (RTEST(rb_funcall((VALUE)key, idEqq, 1, arg->obj))) {
 	arg->label = FIX2INT((VALUE)data);
