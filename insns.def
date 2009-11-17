@@ -1247,10 +1247,10 @@ opt_case_dispatch
 	}
     }
     else {
-	struct opt_case_dispatch_i_arg arg = {
-	    key, -1
-	};
+	struct opt_case_dispatch_i_arg arg;
 
+	arg.obj = key;
+	arg.label = -1;
 	st_foreach(RHASH_TBL(hash), opt_case_dispatch_i, (st_data_t)&arg);
 
 	if (arg.label != -1) {
