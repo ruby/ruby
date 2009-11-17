@@ -1,3 +1,9 @@
+Tue Nov 17 17:53:53 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+        * enc/big5.c, enc/trans/big5.trans, enc/trans/big5-uao-tbl.rb,
+	  test/ruby/test-transcode.rb: Added Encoding 'Big5-UAO' and transcoding
+	  for it (from Tatsuya Mizuno) (see Bug #1784)
+
 Tue Nov 17 16:26:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (opt_case_dispatch): runtime value cannot be used as

@@ -67,6 +67,26 @@ static const int EncLen_BIG5_HKSCS[] = {
  /* F */ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1,
 };
 
+static const int EncLen_BIG5_UAO[] = {
+ /* LEN  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
+ /* 0 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ /* 1 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ /* 2 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ /* 3 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ /* 4 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ /* 5 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ /* 6 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ /* 7 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ /* 8 */ 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ /* 9 */ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ /* A */ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ /* B */ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ /* C */ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ /* D */ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ /* E */ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ /* F */ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1,
+};
+
 typedef enum { FAILURE = -2, ACCEPT = -1, S0 = 0, S1 } state_t;
 #define A ACCEPT
 #define F FAILURE
@@ -156,6 +176,12 @@ big5_hkscs_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUS
     return big5_mbc_enc_len0(p, e, 2, EncLen_BIG5_HKSCS);
 }
 
+static int
+big5_uao_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
+{
+    return big5_mbc_enc_len0(p, e, 2, EncLen_BIG5_UAO);
+}
+
 static OnigCodePoint
 big5_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
 {
@@ -211,6 +237,8 @@ static const char BIG5_CAN_BE_TRAIL_TABLE[256] = {
 };
 
 #define BIG5_HKSCS_P(enc) ((enc)->precise_mbc_enc_len == big5_hkscs_mbc_enc_len)
+#define BIG5_UAO_P(enc) ((enc)->precise_mbc_enc_len == big5_uao_mbc_enc_len)
+
 #define BIG5_ISMB_FIRST(byte)  ( \
 	BIG5_HKSCS_P(enc) ? EncLen_BIG5_HKSCS[byte] > 1 : \
 	EncLen_BIG5[byte] > 1 \
@@ -300,3 +328,26 @@ OnigEncodingDefine(big5_hkscs, BIG5_HKSCS) = {
   big5_is_allowed_reverse_match
 };
 ENC_ALIAS("CP951", "Big5-HKSCS")
+
+/*
+ * Name: Big5-UAO [NOT registered by IANA!]
+ * Source: http://moztw.org/docs/big5/table/big5_2003-b2u.txt
+ */
+OnigEncodingDefine(big5_uao, BIG5_UAO) = {
+  big5_uao_mbc_enc_len,
+  "Big5-UAO",     /* name */
+  2,          /* max enc length */
+  1,          /* min enc length */
+  onigenc_is_mbc_newline_0x0a,
+  big5_mbc_to_code,
+  onigenc_mb2_code_to_mbclen,
+  big5_code_to_mbc,
+  big5_mbc_case_fold,
+  onigenc_ascii_apply_all_case_fold,
+  onigenc_ascii_get_case_fold_codes_by_str,
+  onigenc_minimum_property_name_to_ctype,
+  big5_is_code_ctype,
+  onigenc_not_support_get_ctype_code_range,
+  big5_left_adjust_char_head,
+  big5_is_allowed_reverse_match
+};
