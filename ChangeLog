@@ -1,3 +1,8 @@
+Tue Nov 17 16:04:02 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/cgi/cookie.rb (value): Keep CGI::Cookie#value in sync with the
+	  cookie itself. A patch by Arthur Schreiber [ruby-core:17634]
+
 Tue Nov 17 15:49:00 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/irb/ext/multi-irb.rb: Fix arguments handling for shell commands
