@@ -600,7 +600,7 @@ math_erfc(VALUE obj, VALUE x)
  *  Calculates the gamma function of x.
  *
  *  Note that gamma(n) is same as fact(n-1) for integer n > 0.
- *  However gamma(n) returns float and possibly has error in calculation.
+ *  However gamma(n) returns float and can be an approximation.
  *
  *   def fact(n) (1..n).inject(1) {|r,i| r*i } end
  *   1.upto(26) {|i| p [i, Math.gamma(i), fact(i-1)] }
