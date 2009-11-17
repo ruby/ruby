@@ -1,3 +1,7 @@
+Tue Nov 17 15:46:23 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* dir.c (READDIR): this branch doesn't have rb_w32_readdir_with_enc().
+
 Fri Sep 18 07:06:41 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/fileutils/test_fileutils.rb: add a test for [ruby-dev:39345]
