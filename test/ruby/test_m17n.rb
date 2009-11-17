@@ -867,6 +867,11 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(nil, u("\xc2\xa1\xc2\xa2\xc2\xa3")[u("\xa1\xc2")])
     assert_raise(Encoding::CompatibilityError) { u("\xc2\xa1\xc2\xa2\xc2\xa3")[a("\xa1\xc2")] }
     assert_nil(e("\xa1\xa2\xa3\xa4")[e("\xa2\xa3")])
+
+    bug2379 = '[ruby-core:26787]'
+    assert_equal("\u{439}", "\u{439}"[0, 30], bug2379)
+    assert_equal("\u{439}", "a\u{439}"[1, 30], bug2379)
+    assert_equal("\u{439}", "a\u{439}bcdefghijklmnop"[1, 1][0, 1], bug2379)
   end
 
   def test_aset
