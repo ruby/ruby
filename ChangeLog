@@ -1,3 +1,15 @@
+Tue Nov 17 16:22:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_start_0, rb_thread_start_1): should call star
+	  timer after added new thread to thread list.  [ruby-core:25613]
+
+Tue Nov 17 16:22:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_start_timer): start to catch SIGVTALRM together
+	  with timer thread.   [ruby-core:25606]
+
+	* eval.c (rb_thread_atfork): stop timer thread.
+
 Tue Nov 17 16:04:02 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/cgi/cookie.rb (value): Keep CGI::Cookie#value in sync with the

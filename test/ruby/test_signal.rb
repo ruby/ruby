@@ -65,4 +65,11 @@ class TestSignal < Test::Unit::TestCase
       w0.close
     end
   end
+
+  def test_child_vtalrm
+    return unless have_fork?	# snip this test
+    pid = fork {100_000.times{ 1+1 }}
+    pid, status = Process.wait2(pid)
+    assert_equal(false, status.signaled?, '[ruby-core:25606]')
+  end
 end
