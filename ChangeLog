@@ -1,3 +1,8 @@
+Tue Nov 17 15:32:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_binmode): check if closed regardless platforms.
+	  [ruby-core:25363]
+
 Tue Nov 17 15:31:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (round): added declaration.  [ruby-dev:39222]
