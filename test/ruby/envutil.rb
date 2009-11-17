@@ -196,7 +196,7 @@ module Test
         end
       end
 
-      def assert_ruby_status(args, test_stdin="", message=nil, opt={}, &b)
+      def assert_ruby_status(args, test_stdin="", message=nil, opt={})
         stdout, stderr, status = invoke_ruby(args, test_stdin, false, false, opt)
         m = message ? "#{message} (#{status.inspect})" : "ruby exit stauts is not success: #{status.inspect}"
         assert(status.success?, m)
