@@ -1,3 +1,7 @@
+Wed Nov 18 07:51:01 2009  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (parse_mode_enc): fix invalid access.
+
 Tue Nov 17 23:50:06 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_method.c (rb_alias): should raise TypeError if klass is nil.
