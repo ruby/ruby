@@ -63,6 +63,8 @@
 #define DBL_EPSILON 2.2204460492503131e-16
 #endif
 
+extern double round _((double));
+
 #ifndef HAVE_ROUND
 double
 round(x)
