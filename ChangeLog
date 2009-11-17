@@ -1,3 +1,7 @@
+Wed Nov 18 08:41:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_utf8_nth): fixed overrun.  [ruby-core:26787]
+
 Wed Nov 18 07:51:01 2009  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (parse_mode_enc): fix invalid access.
