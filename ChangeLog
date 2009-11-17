@@ -1,3 +1,8 @@
+Tue Nov 17 15:49:00 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/irb/ext/multi-irb.rb: Fix arguments handling for shell commands
+	  in irb; a patch by Yusuke Endoh [ruby-dev:35075]
+
 Tue Nov 17 15:32:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_binmode): check if closed regardless platforms.
