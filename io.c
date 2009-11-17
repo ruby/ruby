@@ -4155,8 +4155,10 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p)
 	if (len == 0 || len > ENCODING_MAXNAMELEN)
 	    idx = -1;
 	else {
-	    if (io_encname_bom_p(estr, len))
+	    if (io_encname_bom_p(estr, len)) {
 		estr += 4;
+                len -= 4;
+            }
 	    memcpy(encname, estr, len);
 	    encname[len] = '\0';
 	    estr = encname;
@@ -4167,6 +4169,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p)
 	long len = strlen(estr);
 	if (io_encname_bom_p(estr, len)) {
 	    estr += 4;
+            len -= 4;
 	    memcpy(encname, estr, len);
 	    encname[len] = '\0';
 	    estr = encname;
