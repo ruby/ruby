@@ -857,6 +857,10 @@ rb_alias(VALUE klass, ID name, ID def)
 {
     rb_method_entry_t *orig_me;
 
+    if (NIL_P(klass)) {
+	rb_raise(rb_eTypeError, "no class to make alias");
+    }
+
     rb_frozen_class_p(klass);
     if (klass == rb_cObject) {
 	rb_secure(4);

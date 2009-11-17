@@ -77,4 +77,12 @@ class TestAlias < Test::Unit::TestCase
     end
     assert_equal("ABC", x.try(:upcase), '[ruby-dev:38824]')
   end
+
+  def test_special_const_alias
+    assert_raise(TypeError) do
+      1.instance_eval do
+        alias to_string to_s
+      end
+    end
+  end
 end

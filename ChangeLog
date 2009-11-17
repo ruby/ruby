@@ -1,6 +1,14 @@
+Tue Nov 17 23:50:06 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_method.c (rb_alias): should raise TypeError if klass is nil.
+	  1.instance_eval { alias to_string to_s } causes SEGV before this
+	  fix.
+
+	* test/ruby/test_alias.rb (test_special_const_alias): ditto.
+
 Tue Nov 17 17:53:53 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-        * enc/big5.c, enc/trans/big5.trans, enc/trans/big5-uao-tbl.rb,
+	* enc/big5.c, enc/trans/big5.trans, enc/trans/big5-uao-tbl.rb,
 	  test/ruby/test-transcode.rb: Added Encoding 'Big5-UAO' and transcoding
 	  for it (from Tatsuya Mizuno) (see Bug #1784)
 
@@ -11,6 +19,7 @@ Tue Nov 17 16:26:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (opt_case_dispatch_i): gets rid of type-punning
 	  calls.
+
 Mon Nov 16 15:51:53 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_call_method): protected singleton methods of
