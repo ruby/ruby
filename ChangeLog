@@ -1,3 +1,7 @@
+Tue Nov 17 16:01:02 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* insns.def (opt_case_dispatch): need cast.
+
 Tue Nov 17 15:46:23 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* dir.c (READDIR): this branch doesn't have rb_w32_readdir_with_enc().
