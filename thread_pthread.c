@@ -71,6 +71,8 @@ native_mutex_initialize(pthread_mutex_t *lock)
     }
 }
 
+#define native_mutex_reinitialize_atfork(lock) native_mutex_initialize(lock)
+
 static void
 native_mutex_destroy(pthread_mutex_t *lock)
 {
