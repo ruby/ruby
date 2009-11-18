@@ -1,3 +1,10 @@
+Wed Nov 18 10:12:34 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_method.c (rb_undef): should raise TypeError if klass is nil.
+	  1.instance_eval { undef to_s } causes SEGV before this fix.
+
+	* test/ruby/test_undef.rb: new tests for undef.
+
 Wed Nov 18 08:41:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_utf8_nth): fixed overrun.  [ruby-core:26787]
