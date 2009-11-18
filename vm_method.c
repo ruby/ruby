@@ -574,6 +574,9 @@ rb_undef(VALUE klass, ID id)
 {
     rb_method_entry_t *me;
 
+    if (NIL_P(klass)) {
+	rb_raise(rb_eTypeError, "no class to undef method");
+    }
     if (rb_vm_cbase() == rb_cObject && klass == rb_cObject) {
 	rb_secure(4);
     }
