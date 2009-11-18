@@ -1,3 +1,10 @@
+Wed Nov 18 10:17:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_utf8_nth): no count_utf8_lead_bytes_with_word
+	  optimization for short string.  [ruby-core:26787]
+
+	* string.c (str_utf8_offset): str_utf8_nth never return NULL.
+
 Wed Nov 18 10:12:34 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_method.c (rb_undef): should raise TypeError if klass is nil.
