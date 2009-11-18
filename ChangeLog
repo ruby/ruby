@@ -1,3 +1,8 @@
+Wed Nov 18 15:27:20 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (file_path_convert): delay getting filesystem encoding
+	  while really needed.
+
 Wed Nov 18 12:33:42 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (enc_set_default_encoding): reset filesytem

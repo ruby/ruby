@@ -107,7 +107,7 @@ VALUE
 file_path_convert(VALUE name)
 {
     rb_encoding *fname_encoding = rb_enc_from_index(ENCODING_GET(name));
-    rb_encoding *fs_encoding = rb_filesystem_encoding();
+    rb_encoding *fs_encoding;
 #ifdef __APPLE__
     static rb_encoding *utf8mac_encoding;
     if (!utf8mac_encoding)
@@ -116,14 +116,14 @@ file_path_convert(VALUE name)
 	    && rb_ascii8bit_encoding() != fname_encoding
 	    && rb_utf8_encoding() != fname_encoding
 	    && utf8mac_encoding != fname_encoding
-	    && fs_encoding != fname_encoding) {
+	    && (fs_encoding = rb_filesystem_encoding()) != fname_encoding) {
 	name = rb_str_conv_enc(name, fname_encoding, fs_encoding);
     }
 #elif !defined(_WIN32)
     if (rb_default_internal_encoding() != NULL
 	    && rb_usascii_encoding() != fname_encoding
 	    && rb_ascii8bit_encoding() != fname_encoding
-	    && fs_encoding != fname_encoding) {
+	    && (fs_encoding = rb_filesystem_encoding()) != fname_encoding) {
 	name = rb_str_conv_enc(name, fname_encoding, fs_encoding);
     }
 #endif
