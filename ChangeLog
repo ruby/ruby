@@ -1,3 +1,13 @@
+Wed Nov 18 11:37:05 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (rb_scan_open_args): move path encoding conversion
+	  for filesystem encoding of Mac OS X.
+
+	* file.c (file_path_convert): added for convert encoding
+	  of file path.
+
+	* file.c (rb_get_path_check): add file_path_convert.
+
 Wed Nov 18 10:17:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_utf8_nth): no count_utf8_lead_bytes_with_word
