@@ -103,6 +103,33 @@ VALUE rb_cStat;
 
 #define insecure_obj_p(obj, level) (level >= 4 || (level > 0 && OBJ_TAINTED(obj)))
 
+VALUE
+file_path_convert(VALUE name)
+{
+    rb_encoding *fname_encoding = rb_enc_from_index(ENCODING_GET(name));
+    rb_encoding *fs_encoding = rb_filesystem_encoding();
+#ifdef __APPLE__
+    static rb_encoding *utf8mac_encoding;
+    if (!utf8mac_encoding)
+	utf8mac_encoding = rb_enc_find("UTF8-MAC");
+    if (rb_usascii_encoding() != fname_encoding
+	    && rb_ascii8bit_encoding() != fname_encoding
+	    && rb_utf8_encoding() != fname_encoding
+	    && utf8mac_encoding != fname_encoding
+	    && fs_encoding != fname_encoding) {
+	name = rb_str_conv_enc(name, fname_encoding, fs_encoding);
+    }
+#elif !defined(_WIN32)
+    if (rb_default_internal_encoding() != NULL
+	    && rb_usascii_encoding() != fname_encoding
+	    && rb_ascii8bit_encoding() != fname_encoding
+	    && fs_encoding != fname_encoding) {
+	name = rb_str_conv_enc(name, fname_encoding, fs_encoding);
+    }
+#endif
+    return name;
+}
+
 static VALUE
 rb_get_path_check(VALUE obj, int level)
 {
@@ -122,7 +149,9 @@ rb_get_path_check(VALUE obj, int level)
     else {
 	tmp = obj;
     }
+    StringValue(tmp);
   exit:
+    tmp = file_path_convert(tmp);
     StringValueCStr(tmp);
     if (obj != tmp && insecure_obj_p(tmp, level)) {
 	rb_insecure_operation();

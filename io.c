@@ -5323,27 +5323,6 @@ rb_scan_open_args(int argc, VALUE *argv,
     opt = pop_last_hash(&argc, argv);
     rb_scan_args(argc, argv, "12", &fname, &vmode, &vperm);
     FilePathValue(fname);
-#ifdef __APPLE__
-    {
-	static rb_encoding *fs_encoding;
-	static rb_encoding *utf8mac_encoding;
-	rb_encoding *fname_encoding = rb_enc_get(fname);
-	if (!fs_encoding)
-	    fs_encoding = rb_filesystem_encoding();
-	if (!utf8mac_encoding)
-	    utf8mac_encoding = rb_enc_find("UTF8-MAC");
-	if (rb_usascii_encoding() != fname_encoding
-	    && rb_ascii8bit_encoding() != fname_encoding
-	    && rb_utf8_encoding() != fname_encoding
-	    && utf8mac_encoding != fname_encoding
-	    && fs_encoding != fname_encoding) {
-	    static VALUE fs_enc;
-	    if (!fs_enc)
-		fs_enc = rb_enc_from_encoding(fs_encoding);
-	    fname = rb_str_encode(fname, fs_enc, 0, Qnil);
-	}
-    }
-#endif
 
     rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, convconfig_p);
 
