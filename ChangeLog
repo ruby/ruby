@@ -1,3 +1,8 @@
+Wed Nov 18 17:48:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (terminate_atfork_i): all mutex locks by other threads
+	  have been abandoned at fork.
+
 Wed Nov 18 15:27:20 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (file_path_convert): delay getting filesystem encoding

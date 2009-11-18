@@ -323,6 +323,7 @@ typedef struct rb_mutex_struct
 } mutex_t;
 
 static void rb_mutex_unlock_all(mutex_t *mutex, rb_thread_t *th);
+static void rb_mutex_abandon_all(mutex_t *mutexes);
 
 void
 rb_thread_terminate_all(void)
@@ -2724,6 +2725,10 @@ terminate_atfork_i(st_data_t key, st_data_t val, st_data_t current_th)
     GetThreadPtr(thval, th);
 
     if (th != (rb_thread_t *)current_th) {
+	if (th->keeping_mutexes) {
+	    rb_mutex_abandon_all(th->keeping_mutexes);
+	}
+	th->keeping_mutexes = NULL;
 	thread_cleanup_func(th);
     }
     return ST_CONTINUE;
@@ -3282,6 +3287,19 @@ rb_mutex_unlock_all(mutex_t *mutexes, rb_thread_t *th)
 	mutexes = mutex->next_mutex;
 	err = mutex_unlock(mutex, th);
 	if (err) rb_bug("invalid keeping_mutexes: %s", err);
+    }
+}
+
+static void
+rb_mutex_abandon_all(mutex_t *mutexes)
+{
+    mutex_t *mutex;
+
+    while (mutexes) {
+	mutex = mutexes;
+	mutexes = mutex->next_mutex;
+	mutex->th = 0;
+	mutex->next_mutex = 0;
     }
 }
 
