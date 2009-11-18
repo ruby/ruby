@@ -1468,7 +1468,7 @@ rb_str_offset(VALUE str, long pos)
 static char *
 str_utf8_nth(const char *p, const char *e, long nth)
 {
-    if ((int)SIZEOF_VALUE * 2 < nth) {
+    if ((int)SIZEOF_VALUE < e - p && (int)SIZEOF_VALUE * 2 < nth) {
 	const VALUE *s, *t;
 	const VALUE lowbits = sizeof(VALUE) - 1;
 	s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
@@ -1483,7 +1483,6 @@ str_utf8_nth(const char *p, const char *e, long nth)
 	} while (s < t && (int)sizeof(VALUE) <= nth);
 	p = (char *)s;
     }
-    if (p > e) return 0;
     while (p < e) {
 	if (is_utf8_lead_byte(*p)) {
 	    if (nth == 0) break;
@@ -1498,7 +1497,6 @@ static long
 str_utf8_offset(const char *p, const char *e, long nth)
 {
     const char *pp = str_utf8_nth(p, e, nth);
-    if (!pp) return e - p;
     return pp - p;
 }
 #endif
