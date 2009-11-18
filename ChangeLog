@@ -2,7 +2,7 @@ Wed Nov 18 18:25:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_atfork_internal): reinitialize global lock
 	  at fork to get rid of deadlock.  based on the patch from Hongli
-	  Lai in [ruby-core:26783].  [ruby-core:26361]
+	  Lai in [ruby-core:26783].  [ruby-core:23572]
 
 Wed Nov 18 17:48:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
