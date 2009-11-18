@@ -408,3 +408,22 @@ assert_equal 'ok', %{
   require "./zzz.rb"
   $result
 }
+
+assert_finish 3, %q{
+  require 'thread'
+
+  lock = Mutex.new
+  cond = ConditionVariable.new
+  t = Thread.new do
+    lock.synchronize do
+      cond.wait(lock)
+    end
+  end
+
+  pid = fork do
+    # Child
+    STDOUT.write "This is the child process.\n"
+    STDOUT.write "Child process exiting.\n"
+  end
+  Process.waitpid(pid)
+}, '[ruby-core:26361]'

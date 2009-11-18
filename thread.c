@@ -2710,6 +2710,7 @@ rb_thread_atfork_internal(int (*atfork)(st_data_t, st_data_t, st_data_t))
     VALUE thval = th->self;
     vm->main_thread = th;
 
+    native_mutex_reinitialize_atfork(&th->vm->global_vm_lock);
     st_foreach(vm->living_threads, atfork, (st_data_t)th);
     st_clear(vm->living_threads);
     st_insert(vm->living_threads, thval, (st_data_t)th->thread_id);
