@@ -1582,7 +1582,7 @@ make_readconv(rb_io_t *fptr, int size)
     }
 }
 
-#define MORE_CHAR_CBUF_FULL Qtrue
+#define MORE_CHAR_SUSPENDED Qtrue
 #define MORE_CHAR_FINISHED Qnil
 static VALUE
 fill_cbuf(rb_io_t *fptr, int ec_flags)
@@ -1597,7 +1597,7 @@ fill_cbuf(rb_io_t *fptr, int ec_flags)
     ec_flags |= ECONV_PARTIAL_INPUT;
 
     if (fptr->cbuf_len == fptr->cbuf_capa)
-        return MORE_CHAR_CBUF_FULL; /* cbuf full */
+        return MORE_CHAR_SUSPENDED; /* cbuf full */
     if (fptr->cbuf_len == 0)
         fptr->cbuf_off = 0;
     else if (fptr->cbuf_off + fptr->cbuf_len == fptr->cbuf_capa) {
@@ -1629,7 +1629,7 @@ fill_cbuf(rb_io_t *fptr, int ec_flags)
             return exc;
 
         if (cbuf_len0 != fptr->cbuf_len)
-            return MORE_CHAR_CBUF_FULL;
+            return MORE_CHAR_SUSPENDED;
 
         if (res == econv_finished) {
             return MORE_CHAR_FINISHED;
@@ -1656,7 +1656,7 @@ more_char(rb_io_t *fptr)
 {
     VALUE v;
     v = fill_cbuf(fptr, ECONV_AFTER_OUTPUT);
-    if (v != MORE_CHAR_CBUF_FULL && v != MORE_CHAR_FINISHED)
+    if (v != MORE_CHAR_SUSPENDED && v != MORE_CHAR_FINISHED)
         rb_exc_raise(v);
     return v;
 }
@@ -1708,7 +1708,7 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
                 io_shift_cbuf(fptr, fptr->cbuf_len, &str);
             }
             v = fill_cbuf(fptr, 0);
-            if (v != MORE_CHAR_CBUF_FULL && v != MORE_CHAR_FINISHED) {
+            if (v != MORE_CHAR_SUSPENDED && v != MORE_CHAR_FINISHED) {
                 if (fptr->cbuf_len) {
                     io_shift_cbuf(fptr, fptr->cbuf_len, &str);
                 }
