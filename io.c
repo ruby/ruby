@@ -1582,17 +1582,22 @@ make_readconv(rb_io_t *fptr, int size)
     }
 }
 
-static int
-more_char(rb_io_t *fptr)
+#define MORE_CHAR_CBUF_FULL Qtrue
+#define MORE_CHAR_FINISHED Qnil
+static VALUE
+fill_cbuf(rb_io_t *fptr, int ec_flags)
 {
     const unsigned char *ss, *sp, *se;
     unsigned char *ds, *dp, *de;
     rb_econv_result_t res;
     int putbackable;
     int cbuf_len0;
+    VALUE exc;
+
+    ec_flags |= ECONV_PARTIAL_INPUT;
 
     if (fptr->cbuf_len == fptr->cbuf_capa)
-        return 0; /* cbuf full */
+        return MORE_CHAR_CBUF_FULL; /* cbuf full */
     if (fptr->cbuf_len == 0)
         fptr->cbuf_off = 0;
     else if (fptr->cbuf_off + fptr->cbuf_len == fptr->cbuf_capa) {
@@ -1607,7 +1612,7 @@ more_char(rb_io_t *fptr)
         se = sp + fptr->rbuf_len;
         ds = dp = (unsigned char *)fptr->cbuf + fptr->cbuf_off + fptr->cbuf_len;
         de = (unsigned char *)fptr->cbuf + fptr->cbuf_capa;
-        res = rb_econv_convert(fptr->readconv, &sp, se, &dp, de, ECONV_PARTIAL_INPUT|ECONV_AFTER_OUTPUT);
+        res = rb_econv_convert(fptr->readconv, &sp, se, &dp, de, ec_flags);
         fptr->rbuf_off += (int)(sp - ss);
         fptr->rbuf_len -= (int)(sp - ss);
         fptr->cbuf_len += (int)(dp - ds);
@@ -1619,13 +1624,15 @@ more_char(rb_io_t *fptr)
             fptr->rbuf_len += putbackable;
         }
 
-        rb_econv_check_error(fptr->readconv);
+        exc = rb_econv_make_exception(fptr->readconv);
+        if (!NIL_P(exc))
+            return exc;
 
         if (cbuf_len0 != fptr->cbuf_len)
-            return 0;
+            return MORE_CHAR_CBUF_FULL;
 
         if (res == econv_finished) {
-            return -1;
+            return MORE_CHAR_FINISHED;
 	}
 
         if (res == econv_source_buffer_empty) {
@@ -1642,6 +1649,16 @@ more_char(rb_io_t *fptr)
             }
         }
     }
+}
+
+static VALUE
+more_char(rb_io_t *fptr)
+{
+    VALUE v;
+    v = fill_cbuf(fptr, ECONV_AFTER_OUTPUT);
+    if (v != MORE_CHAR_CBUF_FULL && v != MORE_CHAR_FINISHED)
+        rb_exc_raise(v);
+    return v;
 }
 
 static VALUE
@@ -1665,7 +1682,7 @@ io_shift_cbuf(rb_io_t *fptr, int len, VALUE *strp)
     /* xxx: set coderange */
     if (fptr->cbuf_len == 0)
         fptr->cbuf_off = 0;
-    if (fptr->cbuf_off < fptr->cbuf_capa/2) {
+    else if (fptr->cbuf_capa/2 < fptr->cbuf_off) {
         memmove(fptr->cbuf, fptr->cbuf+fptr->cbuf_off, fptr->cbuf_len);
         fptr->cbuf_off = 0;
     }
@@ -1686,21 +1703,19 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
         else rb_str_set_len(str, 0);
         make_readconv(fptr, 0);
         while (1) {
-	    int fin, state = 0;
-
-            if (fptr->cbuf_len > fptr->cbuf_capa / 2) {
+            VALUE v;
+            if (fptr->cbuf_len) {
                 io_shift_cbuf(fptr, fptr->cbuf_len, &str);
             }
-
-	    fin = rb_protect((VALUE (*)(VALUE))more_char, (VALUE)fptr, &state);
-	    if (fin == -1 || state != 0) {
-		if (fptr->cbuf_len) {
-		    io_shift_cbuf(fptr, fptr->cbuf_len, &str);
-		}
-		if (state != 0) {
-		    rb_jump_tag(state);
-		}
-		clear_readconv(fptr);
+            v = fill_cbuf(fptr, 0);
+            if (v != MORE_CHAR_CBUF_FULL && v != MORE_CHAR_FINISHED) {
+                if (fptr->cbuf_len) {
+                    io_shift_cbuf(fptr, fptr->cbuf_len, &str);
+                }
+                rb_exc_raise(v);
+            }
+            if (v == MORE_CHAR_FINISHED) {
+                clear_readconv(fptr);
                 return io_enc_str(str, fptr);
             }
         }
@@ -2181,7 +2196,7 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
                     return (unsigned char)RSTRING_PTR(str)[RSTRING_LEN(str)-1];
                 }
             }
-        } while (more_char(fptr) != -1);
+        } while (more_char(fptr) != MORE_CHAR_FINISHED);
         clear_readconv(fptr);
         *lp = limit;
         return EOF;
@@ -2695,7 +2710,8 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
                 }
             }
 
-            if (more_char(fptr) == -1) {
+            if (more_char(fptr) == MORE_CHAR_FINISHED) {
+                clear_readconv(fptr);
                 if (fptr->cbuf_len == 0)
                     return Qnil;
                 /* return an incomplete character just before EOF */
@@ -2830,8 +2846,8 @@ rb_io_each_codepoint(VALUE io)
 			rb_raise(rb_eIOError, "too long character");
 		    }
 		}
-		if (more_char(fptr) == -1) {
-		    clear_readconv(fptr);
+		if (more_char(fptr) == MORE_CHAR_FINISHED) {
+                    clear_readconv(fptr);
 		    /* ignore an incomplete character before EOF */
 		    return io;
 		}

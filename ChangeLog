@@ -1,3 +1,10 @@
+Wed Nov 18 22:00:13 2009  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (fill_cbuf): extracted from more_char.
+	  (io_shift_cbuf): fix memmove condition.
+	  (read_all): use fill_cbuf directly to avoid ECONV_AFTER_OUTPUT.
+	  [ruby-dev:39708]
+
 Wed Nov 18 18:25:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_atfork_internal): reinitialize global lock
