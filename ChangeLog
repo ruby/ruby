@@ -1,3 +1,9 @@
+Wed Nov 18 14:14:38 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* ext/openssl/ossl_config.c (ossl_config_add_value_m,
+	  ossl_config_set_section): Check if frozen (or untainted for $SECURE >=
+	  4) [ruby-core:18377]
+
 Wed Nov 18 14:13:14 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* instruby.rb: win32/win32.h exists in srcdir.
