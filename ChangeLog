@@ -1,3 +1,9 @@
+Thu Nov 19 02:50:47 2009  Tanaka Akira  <akr@fsij.org>
+
+	* vm_eval.c (rb_search_method_entry): show the type of the hidden
+	  object.
+	  (rb_type_str): new function for above.
+	  
 Thu Nov 19 00:47:09 2009  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (MORE_CHAR_SUSPENDED): renamed from MORE_CHAR_CBUF_FULL.

@@ -295,18 +295,64 @@ rb_check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
     return check_funcall(recv, mid, argc, argv);
 }
 
+static const char *
+rb_type_str(enum ruby_value_type type)
+{
+#define type_case(t) case t: return #t;
+    switch (type) {
+      type_case(T_NONE)
+      type_case(T_OBJECT)
+      type_case(T_CLASS)
+      type_case(T_MODULE)
+      type_case(T_FLOAT)
+      type_case(T_STRING)
+      type_case(T_REGEXP)
+      type_case(T_ARRAY)
+      type_case(T_HASH)
+      type_case(T_STRUCT)
+      type_case(T_BIGNUM)
+      type_case(T_FILE)
+      type_case(T_DATA)
+      type_case(T_MATCH)
+      type_case(T_COMPLEX)
+      type_case(T_RATIONAL)
+      type_case(T_NIL)
+      type_case(T_TRUE)
+      type_case(T_FALSE)
+      type_case(T_SYMBOL)
+      type_case(T_FIXNUM)
+      type_case(T_UNDEF)
+      type_case(T_NODE)
+      type_case(T_ICLASS)
+      type_case(T_ZOMBIE)
+      default: return NULL;
+    }
+#undef type_case
+}
+
 static inline rb_method_entry_t *
 rb_search_method_entry(VALUE recv, ID mid)
 {
     VALUE klass = CLASS_OF(recv);
 
     if (!klass) {
-        const char *adj = "terminated";
-        if (!IMMEDIATE_P(recv) && RBASIC(recv)->flags != 0)
-            adj = "hidden";
-	rb_raise(rb_eNotImpError,
-		 "method `%s' called on %s object (%p)",
-		 rb_id2name(mid), adj, (void *)recv);
+        if (!IMMEDIATE_P(recv) && RBASIC(recv)->flags != 0) {
+            int type = BUILTIN_TYPE(recv);
+            const char *typestr = rb_type_str(type);
+            if (typestr)
+                rb_raise(rb_eNotImpError,
+                         "method `%s' called on hidden %s object (%p)",
+                         rb_id2name(mid), typestr, (void *)recv);
+            else
+                rb_raise(rb_eNotImpError,
+                         "method `%s' called on hidden T_???(0x%02x) object (%p)",
+                         rb_id2name(mid), type, (void *)recv);
+        }
+        else {
+            rb_raise(rb_eNotImpError,
+                     "method `%s' called on terminated object (%p)",
+                     rb_id2name(mid), (void *)recv);
+        }
     }
     return rb_method_entry(klass, mid);
 }
