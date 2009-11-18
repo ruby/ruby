@@ -1324,7 +1324,6 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	enc = lenc;
     }
     rb_enc_set_default_external(rb_enc_from_encoding(enc));
-    (void)rb_filesystem_encoding();
     if (opt->intern.enc.index >= 0) {
 	enc = rb_enc_from_index(opt->intern.enc.index);
 	rb_enc_set_default_internal(rb_enc_from_encoding(enc));

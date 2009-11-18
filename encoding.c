@@ -1116,7 +1116,7 @@ rb_locale_encoding(void)
 }
 
 static int
-rb_filesystem_encindex(void)
+enc_set_filesystem_encoding(void)
 {
     int idx;
 #if defined NO_LOCALE_CHARMAP
@@ -1132,8 +1132,16 @@ rb_filesystem_encindex(void)
     idx = rb_enc_to_index(rb_default_external_encoding());
 #endif
 
-    if (rb_enc_registered("filesystem") < 0) enc_alias_internal("filesystem", idx);
+    enc_alias_internal("filesystem", idx);
+    return idx;
+}
 
+static int
+rb_filesystem_encindex(void)
+{
+    int idx = rb_enc_registered("filesystem");
+    if (idx < 0)
+	idx = enc_set_filesystem_encoding();
     return idx;
 }
 
@@ -1147,6 +1155,8 @@ struct default_encoding {
     int index;			/* -2 => not yet set, -1 => nil */
     rb_encoding *enc;
 };
+
+static struct default_encoding default_external = {0};
 
 static int
 enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const char *name)
@@ -1169,10 +1179,11 @@ enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const cha
 	enc_alias_internal(name, def->index);
     }
 
+    if (def == &default_external)
+	enc_set_filesystem_encoding();
+
     return overridden;
 }
-
-static struct default_encoding default_external = {0};
 
 rb_encoding *
 rb_default_external_encoding(void)
