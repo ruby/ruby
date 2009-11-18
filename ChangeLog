@@ -1,3 +1,7 @@
+Thu Nov 19 00:47:09 2009  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (MORE_CHAR_SUSPENDED): renamed from MORE_CHAR_CBUF_FULL.
+
 Wed Nov 18 22:00:13 2009  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (fill_cbuf): extracted from more_char.
