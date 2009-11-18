@@ -2211,7 +2211,7 @@ subtract(struct timeval *rest, const struct timeval *wait)
     if (rest->tv_sec < wait->tv_sec) {
 	return 0;
     }
-    while (rest->tv_usec < wait->tv_usec) {
+    while (rest->tv_usec <= wait->tv_usec) {
 	if (rest->tv_sec <= wait->tv_sec) {
 	    return 0;
 	}
@@ -2305,6 +2305,7 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	struct timeval zero;
 	wait.tv_sec = 0; wait.tv_usec = 10 * 1000; // 10ms
 	zero.tv_sec = 0; zero.tv_usec = 0;         //  0ms
+	if (timeout) rest = *timeout;
 	for (;;) {
 	    if (nonsock) {
 		// modifying {else,pipe,cons}_rd is safe because
@@ -2321,15 +2322,16 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		break;
 	    }
 	    else {
-		struct timeval *dowait = &wait;
-
 		fd_set orig_rd;
 		fd_set orig_wr;
 		fd_set orig_ex;
+		struct timeval *dowait = &wait;
+		if (timeout && compare(&rest, &wait) < 0) dowait = &rest;
+
 		if (rd) orig_rd = *rd;
 		if (wr) orig_wr = *wr;
 		if (ex) orig_ex = *ex;
-		r = do_select(nfds, rd, wr, ex, &zero);	// polling
+		r = do_select(nfds, rd, wr, ex, dowait);
 		if (r != 0) break; // signaled or error
 		if (rd) *rd = orig_rd;
 		if (wr) *wr = orig_wr;
@@ -2340,9 +2342,7 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		    gettimeofday(&now, NULL);
 		    rest = limit;
 		    if (!subtract(&rest, &now)) break;
-		    if (compare(&rest, &wait) < 0) dowait = &rest;
 		}
-		Sleep(dowait->tv_sec * 1000 + dowait->tv_usec / 1000);
 	    }
 	}
     }

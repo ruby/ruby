@@ -1,3 +1,26 @@
+Wed Nov 18 14:13:14 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* instruby.rb: win32/win32.h exists in srcdir.
+	  reported by arton ( http://www.artonx.org/diary/20090919.html#p01 )
+
+Wed Nov 18 14:13:14 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (subtract): if the parameters are same value, should
+	  return zero.
+
+Wed Nov 18 14:13:14 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_select): of course, need to initialize rest.
+
+Wed Nov 18 14:13:14 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_select): wait specified time on select.
+
+Wed Nov 18 14:13:14 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_select): on 1.8, we don't need to poll sockets,
+	  because our select is never called from multiple threads.
+
 Tue Nov 17 16:22:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_start_0, rb_thread_start_1): should call star
