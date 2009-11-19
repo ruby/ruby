@@ -449,7 +449,7 @@ module Net
       end
       synchronize do
 	voidcmd("TYPE I")
-	conn = transfercmd(cmd, rest_offset)
+	conn = transfercmd(cmd)
 	loop do
 	  buf = file.read(blocksize)
 	  break if buf == nil
@@ -559,7 +559,11 @@ module Net
       f = open(localfile)
       begin
 	f.binmode
-	storbinary("STOR " + remotefile, f, blocksize, rest_offset, &block)
+        if rest_offset
+          storbinary("APPE " + remotefile, f, blocksize, rest_offset, &block)
+        else
+          storbinary("STOR " + remotefile, f, blocksize, rest_offset, &block)
+        end
       ensure
 	f.close
       end
