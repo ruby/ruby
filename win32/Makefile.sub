@@ -738,7 +738,7 @@ s,@try_header@,try_compile,;t t
 miniruby: miniruby$(EXEEXT)
 
 miniruby$(EXEEXT):
-		@echo. $(LIBS)
+		@echo $(LIBS)
 		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) -Fe$@ -link $(LDFLAGS)
 		@$(RM) miniruby.lib miniruby.exp
 		miniruby.exe -v
@@ -774,7 +774,7 @@ $(LIBRUBY):	$(RUBYDEF)
 		$(AR) $(ARFLAGS)$@ -def:$(RUBYDEF)
 
 $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
-		@echo. $(DLDOBJS)
+		@echo $(DLDOBJS)
 		@-$(PRE_LIBRUBY_UPDATE)
 		$(LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) \
 			$(RUBY_SO_NAME).res $(LIBS) -Fe$@ -link $(LDFLAGS) \
