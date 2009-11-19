@@ -576,7 +576,7 @@ s,@top_srcdir@,$(srcdir),;t t
 <<KEEP
 
 miniruby$(EXEEXT):
-		@echo. $(LIBS)
+		@echo $(LIBS)
 		@$(RM) $@
 		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(LIBRUBY_A) $(LIBS) -Fe$@ $(LDFLAGS)
 		$(LDSHARED_1)
@@ -606,7 +606,7 @@ $(LIBRUBY):	$(RUBYDEF)
 		$(AR) $(ARFLAGS)$@ -def:$(RUBYDEF)
 
 $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
-		@echo. $(DLDOBJS)
+		@echo $(DLDOBJS)
 		@-$(PRE_LIBRUBY_UPDATE)
 		$(LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) \
 			$(RUBY_SO_NAME).res $(LIBS) -Fe$@ $(LDFLAGS) \
