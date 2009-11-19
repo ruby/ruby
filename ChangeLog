@@ -1,3 +1,8 @@
+Thu Nov 19 15:34:40 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_fptr_finalize): free fptr to avoid memory leaks.
+	  fixed: #2009   [ruby-core:25173] [ruby-dev:39410]
+
 Thu Nov 19 15:27:17 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/net/http.rb (transport_request): Handle timeout error by

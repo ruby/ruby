@@ -2334,10 +2334,10 @@ rb_io_fptr_finalize(fptr)
     if (fptr->path) {
 	free(fptr->path);
     }
-    if (!fptr->f && !fptr->f2) return;
-    if (fileno(fptr->f) < 3) return;
-
-    rb_io_fptr_cleanup(fptr, Qtrue);
+    if ((fptr->f && fileno(fptr->f) > 2) || fptr->f2) {
+	rb_io_fptr_cleanup(fptr, Qtrue);
+    }
+    xfree(fptr);
 }
 
 VALUE
