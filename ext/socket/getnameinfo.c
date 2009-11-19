@@ -35,6 +35,9 @@
  */
 
 #include "ruby/config.h"
+#ifdef RUBY_EXTCONF_H
+#include RUBY_EXTCONF_H
+#endif
 #include <stdio.h>
 #include <sys/types.h>
 #ifndef _WIN32

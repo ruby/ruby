@@ -1,3 +1,8 @@
+Thu Nov 19 20:43:39 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/getnameinfo.c: need to include extconf.h for HAVE_* macros.
+	  reported by Kenta Murata <mrkn AT mrkn.jp> via IRC.
+
 Thu Nov 19 17:00:59 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub: nmake execute the file named echo if it exists
