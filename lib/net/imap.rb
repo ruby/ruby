@@ -269,6 +269,16 @@ module Net
       return @@debug = val
     end
 
+    # Returns the max number of flags interned to symbols.
+    def self.max_flag_count
+      return @@max_flag_count
+    end
+
+    # Sets the max number of flags interned to symbols.
+    def self.max_flag_count=(count)
+      @@max_flag_count = count
+    end
+
     # Adds an authenticator for Net::IMAP#authenticate.  +auth_type+
     # is the type of authentication this authenticator supports
     # (for instance, "LOGIN").  The +authenticator+ is an object
@@ -858,6 +868,7 @@ module Net
 
     @@debug = false
     @@authenticators = {}
+    @@max_flag_count = 10000
 
     # Creates a new Net::IMAP object and connects it to the specified
     # +port+ (143 by default) on the named +host+.  If +usessl+ is true, 
@@ -1868,6 +1879,14 @@ module Net
     end
 
     class ResponseParser # :nodoc:
+      def initialize
+        @str = nil
+        @pos = nil
+        @lex_state = nil
+        @token = nil
+        @flag_symbols = {}
+      end
+
       def parse(str)
         @str = str
         @pos = 0
@@ -2878,7 +2897,16 @@ module Net
         if @str.index(/\(([^)]*)\)/ni, @pos)
           @pos = $~.end(0)
           return $1.scan(FLAG_REGEXP).collect { |flag, atom|
-            atom || flag.capitalize.intern
+            if atom
+              atom
+            else
+              symbol = flag.capitalize.untaint.intern
+              @flag_symbols[symbol] = true
+              if @flag_symbols.length > IMAP.max_flag_count
+                raise FlagCountError, "number of flag symbols exceeded"
+              end
+              symbol
+            end
           }
         else
           parse_error("invalid flag list")
@@ -3222,6 +3250,10 @@ module Net
     # that the client is not being allowed to login, or has been timed
     # out due to inactivity.
     class ByeResponseError < ResponseError
+    end
+
+    # Error raised when too many flags are interned to symbols.
+    class FlagCountError < Error
     end
   end
 end
