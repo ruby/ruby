@@ -1,3 +1,8 @@
+Thu Nov 19 23:17:06 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (putbinaryfile): use APPE for resume.
+	  Thanks, Tomoyuki Chikanaga.
+
 Thu Nov 19 22:50:05 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (flag_list): untaint strings to intern in the safe
