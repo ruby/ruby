@@ -385,7 +385,7 @@ class CGI
           end
         end
       when /\A#x([0-9a-f]+)\z/ni then
-        if $1.hex < 256
+        if $1.hex < 128
           $1.hex.chr
         else
           if $1.hex < 65536 and ($KCODE[0] == ?u or $KCODE[0] == ?U)
