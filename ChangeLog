@@ -1,3 +1,11 @@
+Thu Nov 19 22:34:49 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (flag_list): untaint strings to intern in the safe
+	  level 1.
+
+	* lib/net/imap.rb (max_flag_count=): new methods to set the max
+	  number of flags interned to symbols.
+
 Thu Nov 19 17:14:04 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub: nmake executes the file named echo if it exists
