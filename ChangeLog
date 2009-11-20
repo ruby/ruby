@@ -1,3 +1,10 @@
+Fri Nov 20 15:49:59 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS.bind_random_port): bind to "::" for IPv6.
+	  (Resolv::DNS::ConnectedUDP#initialize): specify is_ipv6 argument of
+	  bind_random_port.
+	  [ruby-core:25970]
+
 Thu Nov 19 18:03:31 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi.rb (CGI.unescapeHTML): fix for hex values 80-FF,
