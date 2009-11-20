@@ -345,7 +345,7 @@ rb_search_method_entry(VALUE recv, ID mid)
                          rb_id2name(mid), typestr, (void *)recv);
             else
                 rb_raise(rb_eNotImpError,
-                         "method `%s' called on hidden T_???(0x%02x) object (%p)",
+                         "method `%s' called on hidden T_???" "(0x%02x) object (%p)",
                          rb_id2name(mid), type, (void *)recv);
         }
         else {
