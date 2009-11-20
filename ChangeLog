@@ -1,3 +1,7 @@
+Thu Nov 19 2:44:00 2009 Kirk Haines <khaines@ruby-lang.org>
+
+	* gc.c: backport r24713 which adds a check for freelist exhaustion in gc_sweep; this prevents segfaults from certain tight loops. An example test case: Time.now while true
+
 Fri Aug 28 12:54:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
 	* Backport #1524 [ruby-core:23567]; lib/ostrct.rb (OpenStruct@new_ostruct_member): check if it's; also a little code cleanup to do a few things more efficiently. Tests adjusted accordingly.
