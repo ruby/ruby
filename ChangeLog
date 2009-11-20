@@ -1,3 +1,7 @@
+Fri Nov 20 21:16:54 2009  Tanaka Akira  <akr@fsij.org>
+
+	* vm_eval.c (rb_search_method_entry): avoid trigraph.
+
 Thu Nov 19 23:17:06 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (putbinaryfile): use APPE for resume.
