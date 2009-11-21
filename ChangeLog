@@ -1,3 +1,8 @@
+Sat Nov 21 16:38:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (marshal_dump): use normal object as the buffer so
+	  that no hidden object is exposed to ruby-level.  [ruby-dev:39744]
+
 Sat Nov 21 15:58:43 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (read_all): fix: false negative invalid byte seequence

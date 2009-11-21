@@ -300,4 +300,14 @@ class TestMarshal < Test::Unit::TestCase
     assert(true, '[ruby-dev:39425]')
     assert_raise(StopIteration) {e.next}
   end
+
+  def test_dump_buffer
+    bug2390 = '[ruby-dev:39744]'
+    w = ""
+    def w.write(str)
+      self << str.to_s
+    end
+    Marshal.dump(Object.new, w)
+    assert_not_empty(w, bug2390)
+  end
 end
