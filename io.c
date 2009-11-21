@@ -1742,7 +1742,7 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
 	}
 	bytes += n;
 	if (cr != ENC_CODERANGE_BROKEN)
-	    pos = rb_str_coderange_scan_restartable(RSTRING_PTR(str) + pos, RSTRING_PTR(str) + bytes, enc, &cr);
+	    pos += rb_str_coderange_scan_restartable(RSTRING_PTR(str) + pos, RSTRING_PTR(str) + bytes, enc, &cr);
 	if (bytes < siz) break;
 	siz += BUFSIZ;
 	rb_str_resize(str, siz);
