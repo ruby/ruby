@@ -925,7 +925,7 @@ marshal_dump(int argc, VALUE *argv)
     arg->untrust = FALSE;
     arg->compat_tbl = st_init_numtable();
     arg->encodings = 0;
-    arg->str = rb_str_tmp_new(0);
+    arg->str = rb_str_buf_new(0);
     if (!NIL_P(port)) {
 	if (!rb_respond_to(port, s_write)) {
 	  type_error:
@@ -949,7 +949,6 @@ marshal_dump(int argc, VALUE *argv)
 	rb_io_write(arg->dest, arg->str);
 	rb_str_resize(arg->str, 0);
     }
-    RBASIC(arg->str)->klass = rb_cString;
     clear_dump_arg(arg);
     RB_GC_GUARD(wrapper);
 
