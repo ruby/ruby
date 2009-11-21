@@ -106,26 +106,27 @@ VALUE rb_cStat;
 VALUE
 file_path_convert(VALUE name)
 {
+#ifndef _WIN32 /* non Windows == Unix */
     rb_encoding *fname_encoding = rb_enc_from_index(ENCODING_GET(name));
     rb_encoding *fs_encoding;
-#ifdef __APPLE__
-    static rb_encoding *utf8mac_encoding;
-    if (!utf8mac_encoding)
-	utf8mac_encoding = rb_enc_find("UTF8-MAC");
+#  ifdef __APPLE__
+    /* Mac OS X's file system encoding is UTF-8 */
     if (rb_usascii_encoding() != fname_encoding
 	    && rb_ascii8bit_encoding() != fname_encoding
 	    && rb_utf8_encoding() != fname_encoding
-	    && utf8mac_encoding != fname_encoding
-	    && (fs_encoding = rb_filesystem_encoding()) != fname_encoding) {
+	    && rb_enc_find("UTF8-MAC") != fname_encoding) {
+	/* Don't call rb_enc_find() before UTF-8 */
 	name = rb_str_conv_enc(name, fname_encoding, fs_encoding);
     }
-#elif !defined(_WIN32)
+#  else /* Unix other than Mac OS X */
     if (rb_default_internal_encoding() != NULL
 	    && rb_usascii_encoding() != fname_encoding
 	    && rb_ascii8bit_encoding() != fname_encoding
 	    && (fs_encoding = rb_filesystem_encoding()) != fname_encoding) {
+	/* Don't call rb_filesystem_encoding() before US-ASCII and ASCII-8BIT */
 	name = rb_str_conv_enc(name, fname_encoding, fs_encoding);
     }
+#  endif
 #endif
     return name;
 }

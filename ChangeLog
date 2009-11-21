@@ -1,3 +1,8 @@
+Sat Nov 21 14:44:16 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (file_path_convert): delay getting UTF8-MAC encoding
+	  while really needed. [ruby-core:26807]
+
 Fri Nov 20 21:16:54 2009  Tanaka Akira  <akr@fsij.org>
 
 	* vm_eval.c (rb_search_method_entry): avoid trigraph.
