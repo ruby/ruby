@@ -1,3 +1,8 @@
+Sat Nov 21 18:48:35 2009  Tanaka Akira  <akr@fsij.org>
+
+	* vm_eval.c (rb_search_method_entry): show flags and klass value in
+	  not implemented error message.
+
 Sat Nov 21 16:38:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (marshal_dump): use normal object as the buffer so
