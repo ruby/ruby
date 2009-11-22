@@ -1,3 +1,9 @@
+Mon Nov 23 04:12:00 2009  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/newline.trans (fun_so_universal_newline): generate \n
+	  after \r\n detection instead of just after \r.
+	  [ruby-list:45988] [ruby-core:25881] [ruby-core:26788]
+
 Sat Nov 21 18:48:35 2009  Tanaka Akira  <akr@fsij.org>
 
 	* vm_eval.c (rb_search_method_entry): show flags and klass value in
