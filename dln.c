@@ -1561,7 +1561,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 #endif
 
     static const char pathname_too_long[] = "openpath: pathname too long (ignored)\n\
-\tDirectory \"%.*s\"\n\tFile \"%s\"\n"
+\tDirectory \"%.*s\"\n\tFile \"%s\"\n";
 #define PATHNAME_TOO_LONG() fprintf(stderr, pathname_too_long, (int)(bp - fbuf), fbuf, fname)
 
 #define RETURN_IF(expr) if (expr) return (char *)fname;
