@@ -1708,8 +1708,8 @@ dln_find_1(fname, path, fbuf, size, exe_flag)
     size_t j;
     int is_abs = 0, has_path = 0;
     const char *ext = 0;
-    const char *p = fname;
 #endif
+    const char *p = fname;
 
     static const char pathname_too_long[] = "openpath: pathname too long (ignored)\n\
 \tDirectory \"%.*s\"\n\tFile \"%s\"\n";
@@ -1771,10 +1771,11 @@ dln_find_1(fname, path, fbuf, size, exe_flag)
 	memcpy(fbuf, fname, i + 1);
 	goto needs_extension;
     }
+    p = fname;
 #endif
 
-    RETURN_IF(fname[0] == '/');
-    RETURN_IF(strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0);
+    if (*p == '.' && *++p == '.') ++p;
+    RETURN_IF(*p == '/');
     RETURN_IF(exe_flag && strchr(fname, '/'));
 
 #undef RETURN_IF
