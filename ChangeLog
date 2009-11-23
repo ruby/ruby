@@ -1,4 +1,4 @@
-Mon Nov 23 10:52:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Nov 23 11:26:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (dln_find_1): removed duplication.
 
