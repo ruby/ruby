@@ -1,3 +1,11 @@
+Mon Nov 23 23:59:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_method_missing): adjusted format and argument number.
+
+	* eval.c (rb_call): fixed for super in cached method.
+	  [ruby-dev:39757]
+n
+
 Mon Nov 23 11:26:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (dln_find_1): removed duplication.

@@ -283,6 +283,33 @@ class TestObject < Test::Unit::TestCase
     assert_raise(ArgumentError) { 1.send }
   end
 
+  def test_no_superclass_method
+    o = Object.new
+    e = assert_raise(NoMethodError) {
+      o.method(:__send__).call(:never_defined_test_no_superclass_method)
+    }
+    m1 = e.message
+    assert_no_match(/no superclass method/, m1)
+    e = assert_raise(NoMethodError) {
+      o.method(:__send__).call(:never_defined_test_no_superclass_method)
+    }
+    assert_equal(m1, e.message)
+    e = assert_raise(NoMethodError) {
+      o.never_defined_test_no_superclass_method
+    }
+    assert_equal(m1, e.message)
+  end
+
+  def test_superclass_method
+    o = Object.new
+    def o.foo; super; end
+    e = assert_raise(NoMethodError) {o.foo}
+    m1 = e.message
+    assert_match(/no superclass method/, m1)
+    e = assert_raise(NoMethodError) {o.foo}
+    assert_equal(m1, e.message)
+  end
+
   def test_specific_eval_with_wrong_arguments
     assert_raise(ArgumentError) do
       1.instance_eval("foo") { foo }
