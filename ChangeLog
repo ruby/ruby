@@ -1,3 +1,7 @@
+Mon Nov 23 10:39:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (dln_find_1): not use prototype definition.
+
 Thu Nov 19 23:22:40 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (putbinaryfile): use APPE for resume.
