@@ -1,3 +1,9 @@
+Mon Nov 23 16:06:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (RUBY_STACK_MIN, RUBY_STACK_SPACE): delay for
+	  platforms where PTHREAD_STACK_MIN is not compile time constant.
+	  [ruby-dev:39751]
+
 Mon Nov 23 11:26:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (dln_find_1): removed duplication.
