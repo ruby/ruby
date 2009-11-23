@@ -1711,6 +1711,10 @@ dln_find_1(fname, path, fbuf, size, exe_flag)
     const char *p = fname;
 #endif
 
+    static const char pathname_too_long[] = "openpath: pathname too long (ignored)\n\
+\tDirectory \"%.*s\"\n\tFile \"%s\"\n"
+#define PATHNAME_TOO_LONG() fprintf(stderr, pathname_too_long, (int)(bp - fbuf), fbuf, fname)
+
 #define RETURN_IF(expr) if (expr) return (char *)fname;
 
     RETURN_IF(!fname);
@@ -1832,10 +1836,7 @@ dln_find_1(fname, path, fbuf, size, exe_flag)
 	i = strlen(fname);
 	if (fspace < i) {
 	  toolong:
-	    fprintf(stderr, "openpath: pathname too long (ignored)\n");
-	    *bp = '\0';
-	    fprintf(stderr, "\tDirectory \"%s\"\n", fbuf);
-	    fprintf(stderr, "\tFile \"%s\"\n", fname);
+	    PATHNAME_TOO_LONG();
 	    goto next;
 	}
 	fspace -= i;
@@ -1846,9 +1847,7 @@ dln_find_1(fname, path, fbuf, size, exe_flag)
 	  needs_extension:
 	    for (j = 0; j < sizeof(extension) / sizeof(extension[0]); j++) {
 		if (fspace < strlen(extension[j])) {
-		    fprintf(stderr, "openpath: pathname too long (ignored)\n");
-		    fprintf(stderr, "\tDirectory \"%.*s\"\n", (int) (bp - fbuf), fbuf);
-		    fprintf(stderr, "\tFile \"%s%s\"\n", fname, extension[j]);
+		    PATHNAME_TOO_LONG();
 		    continue;
 		}
 		strcpy(bp + i, extension[j]);
