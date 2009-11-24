@@ -1,3 +1,7 @@
+Tue Nov 24 16:09:41 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (getaddress): rescue exceptions.  [ruby-dev:39451]
+
 Tue Nov 24 15:51:07 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* ext/curses/curses.c: Many functions of module Curses could cause a
