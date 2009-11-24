@@ -1,3 +1,7 @@
+Tue Nov 24 21:25:21 2009  Tanaka Akira  <akr@fsij.org>
+
+	* error.c: include errno.h at beginning.
+
 Tue Nov 24 20:11:37 2009  Tanaka Akira  <akr@fsij.org>
 
 	* strftime.c: %Y format a year with 4 digits at least.

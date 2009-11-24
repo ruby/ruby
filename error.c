@@ -18,6 +18,8 @@
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
+#include <errno.h>
+
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS 0
 #endif
@@ -374,8 +376,6 @@ rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
 }
 
 /* exception classes */
-#include <errno.h>
-
 VALUE rb_eException;
 VALUE rb_eSystemExit;
 VALUE rb_eInterrupt;
