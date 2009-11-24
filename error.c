@@ -1258,7 +1258,7 @@ Init_syserr(void)
 #undef undefined_error
 }
 
-char *
+const char *
 rb_strerrno(int err)
 {
     if (err == 0) return "NOERROR";

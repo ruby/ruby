@@ -1,3 +1,7 @@
+Tue Nov 24 10:00:00 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_strerrno): constified.
+
 Tue Nov 24 09:49:31 2009  Tanaka Akira  <akr@fsij.org>
 
 	* error.c (rb_strerrno): return "UNKNOWNERROR" for non-zero unknown
