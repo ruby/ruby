@@ -496,7 +496,13 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct vtm *vtm, 
 			continue;
 
 		case 'Y':	/* year with century */
-                        FMTV('0', 1, "d", vtm->year);
+                        if (FIXNUM_P(vtm->year)) {
+                            long y = FIX2LONG(vtm->year);
+                            FMT('0', 0 <= y ? 4 : 5, "ld", y);
+                        }
+                        else {
+                            FMTV('0', 4, "d", vtm->year);
+                        }
 			continue;
 
 #ifdef MAILHEADER_EXT
