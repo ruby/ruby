@@ -393,9 +393,14 @@ assert_equal 'ok', %{
         m = Mutex.new
         Thread.new { m.lock; sleep 1 }
         sleep 0.3
+        parent = Thread.current
         Thread.new do
           sleep 0.3
-          fork { GC.start }
+          begin
+            fork { GC.start }
+          rescue Exception
+            parent.raise $!
+          end
         end
         m.lock
         pid, status = Process.wait2
