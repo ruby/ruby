@@ -1,3 +1,9 @@
+Tue Nov 24 20:11:37 2009  Tanaka Akira  <akr@fsij.org>
+
+	* strftime.c: %Y format a year with 4 digits at least.
+
+	* lib/time.rb: format a year with 4 digits at least.
+
 Tue Nov 24 20:05:27 2009  Tanaka Akira  <akr@fsij.org>
 
 	* defs/known_errors.def: more errors.
