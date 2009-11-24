@@ -1,3 +1,8 @@
+Tue Nov 24 16:15:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_create): cannot retry with given block.
+	  [ruby-dev:39487]
+
 Tue Nov 24 16:12:33 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (resp_text_code): accepts response codes without

@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), "utils.rb")
+require File.expand_path("../utils.rb", __FILE__)
 
 class TestIconv::Basic < TestIconv
   def test_euc2sjis
@@ -45,5 +45,8 @@ class TestIconv::Basic < TestIconv
 
   def test_unknown_encoding
     assert_raise(Iconv::InvalidEncoding) { Iconv.iconv("utf-8", "X-UKNOWN", "heh") }
+    assert_raise(Iconv::InvalidEncoding, '[ruby-dev:39487]') {
+      Iconv.iconv("X-UNKNOWN-1", "X-UNKNOWN-2") {break}
+    }
   end
 end if defined?(TestIconv)

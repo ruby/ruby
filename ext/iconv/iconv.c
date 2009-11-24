@@ -92,6 +92,7 @@ static VALUE rb_eIconvBrokenLibrary;
 
 static ID rb_success, rb_failed;
 static VALUE iconv_fail _((VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env, const char *mesg));
+static VALUE iconv_fail_retry _((VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env, const char *mesg));
 static VALUE iconv_failure_initialize _((VALUE error, VALUE mesg, VALUE success, VALUE failed));
 static VALUE iconv_failure_success _((VALUE self));
 static VALUE iconv_failure_failed _((VALUE self));
@@ -179,8 +180,8 @@ iconv_create
 	    s = RSTRING(msg)->ptr;
 	    RSTRING(msg)->len = strlen(s);
 	    if (!inval) rb_sys_fail(s);
-	    iconv_fail(rb_eIconvInvalidEncoding,
-		       Qnil, rb_ary_new3(2, to, from), NULL, s);
+	    rb_exc_raise(iconv_fail(rb_eIconvInvalidEncoding, Qnil,
+				    rb_ary_new3(2, to, from), NULL, s));
 	}
     }
 
@@ -328,7 +329,13 @@ iconv_fail
 	    args[2] = rb_ary_new4(env->argc, env->argv);
 	}
     }
-    error = rb_class_new_instance(3, args, error);
+    return rb_class_new_instance(3, args, error);
+}
+
+static VALUE
+iconv_fail_retry(VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env, const char *mesg)
+{
+    error = iconv_fail(error, success, failed, env, mesg);
     if (!rb_block_given_p()) rb_exc_raise(error);
     ruby_errinfo = error;
     return rb_yield(failed);
@@ -394,7 +401,7 @@ iconv_convert
 	error = iconv_try(cd, &inptr, &inlen, &outptr, &outlen);
 	if (RTEST(error)) {
 	    unsigned int i;
-	    rescue = iconv_fail(error, Qnil, Qnil, env, 0);
+	    rescue = iconv_fail_retry(error, Qnil, Qnil, env, 0);
 	    if (TYPE(rescue) == T_ARRAY) {
 		str = RARRAY(rescue)->len > 0 ? RARRAY(rescue)->ptr[0] : Qnil;
 	    }
@@ -473,7 +480,7 @@ iconv_convert
 	    else if (inptr > instart)
 		rb_str_cat(ret, instart, inptr - instart);
 	    str = rb_str_derive(str, inptr, inlen);
-	    rescue = iconv_fail(error, ret, str, env, errmsg);
+	    rescue = iconv_fail_retry(error, ret, str, env, errmsg);
 	    if (TYPE(rescue) == T_ARRAY) {
 		if ((len = RARRAY(rescue)->len) > 0)
 		    rb_str_concat(ret, RARRAY(rescue)->ptr[0]);
