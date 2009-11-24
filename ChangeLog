@@ -1,3 +1,8 @@
+Tue Nov 24 16:18:35 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/md5.rb, ext/digest/lib/sha1.rb: Add an
+	  obsoleteness warning under -w/-v.
+
 Mon Nov 23 23:59:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_method_missing): adjusted format and argument number.
