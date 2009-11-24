@@ -1,3 +1,8 @@
+Tue Nov 24 09:49:31 2009  Tanaka Akira  <akr@fsij.org>
+
+	* error.c (rb_strerrno): return "UNKNOWNERROR" for non-zero unknown
+	  error.
+
 Tue Nov 24 09:18:33 2009  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_strerrno): declared.
