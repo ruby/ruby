@@ -141,6 +141,7 @@ curses_init_screen()
 static VALUE
 curses_close_screen()
 {
+    curses_stdscr();
 #ifdef HAVE_ISENDWIN
     if (!isendwin())
 #endif
@@ -167,6 +168,7 @@ static VALUE
 curses_closed()
 {
 #ifdef HAVE_ISENDWIN
+    curses_stdscr();
     if (isendwin()) {
 	return Qtrue;
     }
@@ -355,6 +357,7 @@ static VALUE
 curses_standout(obj)
     VALUE obj;
 {
+    curses_stdscr();
     standout();
     return Qnil;
 }
@@ -364,6 +367,7 @@ static VALUE
 curses_standend(obj)
     VALUE obj;
 {
+    curses_stdscr();
     standend();
     return Qnil;
 }
@@ -429,6 +433,7 @@ curses_getstr(obj)
 {
     char rtn[1024]; /* This should be big enough.. I hope */
 
+    curses_stdscr();
     rb_read_check(stdin);
 #if defined(HAVE_GETNSTR)
     getnstr(rtn,1023);
@@ -443,6 +448,7 @@ static VALUE
 curses_delch(obj)
     VALUE obj;
 {
+    curses_stdscr();
     delch();
     return Qnil;
 }
@@ -452,6 +458,7 @@ static VALUE
 curses_deleteln(obj)
     VALUE obj;
 {
+    curses_stdscr();
 #if defined(HAVE_DELETELN) || defined(deleteln)
     deleteln();
 #endif
@@ -463,6 +470,7 @@ static VALUE
 curses_insertln(obj)
     VALUE obj;
 {
+    curses_stdscr();
 #if defined(HAVE_INSERTLN) || defined(insertln)
     insertln();
 #endif
@@ -478,6 +486,7 @@ curses_keyname(obj, c)
 #ifdef HAVE_KEYNAME
   const char *name;
 
+  curses_stdscr();
   name = keyname(NUM2INT(c));
   if (name) {
     return rb_str_new2(name);
@@ -506,6 +515,7 @@ curses_curs_set(VALUE obj, VALUE visibility)
 {
 #ifdef HAVE_CURS_SET
   int n;
+  curses_stdscr();
   return (n = curs_set(NUM2INT(visibility)) != ERR) ? INT2FIX(n) : Qnil;
 #else
   return Qnil;
@@ -517,6 +527,7 @@ curses_scrl(VALUE obj, VALUE n)
 {
   /* may have to raise exception on ERR */
 #ifdef HAVE_SCRL
+  curses_stdscr();
   return (scrl(NUM2INT(n)) == OK) ? Qtrue : Qfalse;
 #else
   return Qfalse;
@@ -528,6 +539,7 @@ curses_setscrreg(VALUE obj, VALUE top, VALUE bottom)
 {
   /* may have to raise exception on ERR */
 #ifdef HAVE_SETSCRREG
+  curses_stdscr();
   return (setscrreg(NUM2INT(top), NUM2INT(bottom)) == OK) ? Qtrue : Qfalse;
 #else
   return Qfalse;
@@ -537,6 +549,7 @@ curses_setscrreg(VALUE obj, VALUE top, VALUE bottom)
 static VALUE
 curses_attroff(VALUE obj, VALUE attrs)
 {
+  curses_stdscr();
   return window_attroff(rb_stdscr,attrs);  
   /* return INT2FIX(attroff(NUM2INT(attrs))); */
 }
@@ -544,6 +557,7 @@ curses_attroff(VALUE obj, VALUE attrs)
 static VALUE
 curses_attron(VALUE obj, VALUE attrs)
 {
+  curses_stdscr();
   return window_attron(rb_stdscr,attrs);
   /* return INT2FIX(attroff(NUM2INT(attrs))); */
 }
@@ -551,6 +565,7 @@ curses_attron(VALUE obj, VALUE attrs)
 static VALUE
 curses_attrset(VALUE obj, VALUE attrs)
 {
+  curses_stdscr();
   return window_attrset(rb_stdscr,attrs);
   /* return INT2FIX(attroff(NUM2INT(attrs))); */
 }
@@ -559,6 +574,7 @@ static VALUE
 curses_bkgdset(VALUE obj, VALUE ch)
 {
 #ifdef HAVE_BKGDSET
+  curses_stdscr();
   bkgdset(NUM2CH(ch));
 #endif
   return Qnil;
@@ -568,6 +584,7 @@ static VALUE
 curses_bkgd(VALUE obj, VALUE ch)
 {
 #ifdef HAVE_BKGD
+  curses_stdscr();
   return (bkgd(NUM2CH(ch)) == OK) ? Qtrue : Qfalse;
 #else
   return Qfalse;
@@ -578,6 +595,7 @@ static VALUE
 curses_resizeterm(VALUE obj, VALUE lin, VALUE col)
 {
 #if defined(HAVE_RESIZETERM)
+  curses_stdscr();
   return (resizeterm(NUM2INT(lin),NUM2INT(col)) == OK) ? Qtrue : Qfalse;
 #else
   return Qnil;
@@ -589,6 +607,7 @@ static VALUE
 curses_start_color(VALUE obj)
 {
   /* may have to raise exception on ERR */
+  curses_stdscr();
   return (start_color() == OK) ? Qtrue : Qfalse;
 }
 
@@ -596,6 +615,7 @@ static VALUE
 curses_init_pair(VALUE obj, VALUE pair, VALUE f, VALUE b)
 {
   /* may have to raise exception on ERR */
+  curses_stdscr();
   return (init_pair(NUM2INT(pair),NUM2INT(f),NUM2INT(b)) == OK) ? Qtrue : Qfalse;
 }
 
@@ -603,6 +623,7 @@ static VALUE
 curses_init_color(VALUE obj, VALUE color, VALUE r, VALUE g, VALUE b)
 {
   /* may have to raise exception on ERR */
+  curses_stdscr();
   return (init_color(NUM2INT(color),NUM2INT(r),
 		     NUM2INT(g),NUM2INT(b)) == OK) ? Qtrue : Qfalse;
 }
@@ -610,12 +631,14 @@ curses_init_color(VALUE obj, VALUE color, VALUE r, VALUE g, VALUE b)
 static VALUE
 curses_has_colors(VALUE obj)
 {
+  curses_stdscr();
   return has_colors() ? Qtrue : Qfalse;
 }
 
 static VALUE
 curses_can_change_color(VALUE obj)
 {
+  curses_stdscr();
   return can_change_color() ? Qtrue : Qfalse;
 }
 
@@ -624,6 +647,7 @@ curses_color_content(VALUE obj, VALUE color)
 {
   short r,g,b;
 
+  curses_stdscr();
   color_content(NUM2INT(color),&r,&g,&b);
   return rb_ary_new3(3,INT2FIX(r),INT2FIX(g),INT2FIX(b));
 }
@@ -633,6 +657,7 @@ curses_pair_content(VALUE obj, VALUE pair)
 {
   short f,b;
 
+  curses_stdscr();
   pair_content(NUM2INT(pair),&f,&b);
   return rb_ary_new3(2,INT2FIX(f),INT2FIX(b));
 }
@@ -646,6 +671,7 @@ curses_color_pair(VALUE obj, VALUE attrs)
 static VALUE
 curses_pair_number(VALUE obj, VALUE attrs)
 {
+  curses_stdscr();
   return INT2FIX(PAIR_NUMBER(NUM2INT(attrs)));
 }
 #endif /* USE_COLOR */
@@ -681,6 +707,7 @@ curses_getmouse(VALUE obj)
   struct mousedata *mdata;
   VALUE val;
 
+  curses_stdscr();
   val = Data_Make_Struct(cMouseEvent,struct mousedata,
 			 0,curses_mousedata_free,mdata);
   mdata->mevent = (MEVENT*)xmalloc(sizeof(MEVENT));
@@ -692,6 +719,7 @@ curses_ungetmouse(VALUE obj, VALUE mevent)
 {
   struct mousedata *mdata;
 
+  curses_stdscr();
   GetMOUSE(mevent,mdata);
   return (ungetmouse(mdata->mevent) == OK) ? Qtrue : Qfalse;
 }
@@ -699,12 +727,14 @@ curses_ungetmouse(VALUE obj, VALUE mevent)
 static VALUE
 curses_mouseinterval(VALUE obj, VALUE interval)
 {
+  curses_stdscr();
   return mouseinterval(NUM2INT(interval)) ? Qtrue : Qfalse;
 }
 
 static VALUE
 curses_mousemask(VALUE obj, VALUE mask)
 {
+  curses_stdscr();
   return INT2NUM(mousemask(NUM2UINT(mask),NULL));
 }
 
@@ -728,6 +758,7 @@ static VALUE
 curses_timeout(VALUE obj, VALUE delay)
 {
 #ifdef HAVE_TIMEOUT
+  curses_stdscr();
   timeout(NUM2INT(delay));
   return Qnil;
 #else
@@ -739,6 +770,7 @@ static VALUE
 curses_def_prog_mode(VALUE obj)
 {
 #ifdef HAVE_DEF_PROG_MODE
+  curses_stdscr();
   return def_prog_mode() == OK ? Qtrue : Qfalse;
 #else
     rb_notimplement();
@@ -749,6 +781,7 @@ static VALUE
 curses_reset_prog_mode(VALUE obj)
 {
 #ifdef HAVE_RESET_PROG_MODE
+  curses_stdscr();
   return reset_prog_mode() == OK ? Qtrue : Qfalse;
 #else
     rb_notimplement();
