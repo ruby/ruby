@@ -103,7 +103,7 @@ VALUE rb_cStat;
 
 #define insecure_obj_p(obj, level) (level >= 4 || (level > 0 && OBJ_TAINTED(obj)))
 
-VALUE
+static VALUE
 file_path_convert(VALUE name)
 {
 #ifndef _WIN32 /* non Windows == Unix */
@@ -113,7 +113,7 @@ file_path_convert(VALUE name)
     /* Mac OS X's file system encoding is UTF-8 */
     if (rb_usascii_encoding() != fname_encoding
 	    && rb_ascii8bit_encoding() != fname_encoding
-	    && rb_utf8_encoding() != fname_encoding
+	    && (fs_encoding = rb_filesystem_encoding()) != fname_encoding
 	    && rb_enc_find("UTF8-MAC") != fname_encoding) {
 	/* Don't call rb_enc_find() before UTF-8 */
 	name = rb_str_conv_enc(name, fname_encoding, fs_encoding);
