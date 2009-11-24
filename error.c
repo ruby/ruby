@@ -1247,10 +1247,26 @@ rb_check_frozen(VALUE obj)
     if (OBJ_FROZEN(obj)) rb_error_frozen(rb_obj_classname(obj));
 }
 
-void Init_syserr(void)
+void
+Init_syserr(void)
 {
     rb_eNOERROR = set_syserr(0, "NOERROR");
+#define defined_error(name, num) set_syserr(num, name);
+#define undefined_error(name) set_syserr(0, name);
 #include "known_errors.inc"
+#undef defined_error
+#undef undefined_error
+}
+
+char *
+rb_strerrno(int err)
+{
+#define defined_error(name, num) if (err == num) return name;
+#define undefined_error(name) 
+#include "known_errors.inc"
+#undef defined_error
+#undef undefined_error
+    return "NOERROR";
 }
 
 static void

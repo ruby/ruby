@@ -7,8 +7,8 @@
 % error_names = ARGF.read.split(/\s+/)
 % error_names.each do |name|
 #ifdef <%=name%>
-        set_syserr(<%=name%>, "<%=name%>");
+        defined_error("<%=name%>", <%=name%>)
 #else
-        set_syserr(0, "<%=name%>");
+        undefined_error("<%=name%>")
 #endif
 % end

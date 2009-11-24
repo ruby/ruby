@@ -1,3 +1,17 @@
+Tue Nov 24 09:18:33 2009  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_strerrno): declared.
+
+	* template/known_errors.inc.tmpl: generate defined_error() and
+	  undefined_error() instead of set_syserr.
+
+	* error.c (Init_syserr): define defined_error() and undefined_error()
+	  to follow the above change.
+	  (rb_strerrno): defined.
+
+	* thread_pthread.c: show error message and errno macro name with
+	  rb_bug.
+
 Mon Nov 23 16:06:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (RUBY_STACK_MIN, RUBY_STACK_SPACE): delay for
