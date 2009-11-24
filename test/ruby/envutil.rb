@@ -91,7 +91,7 @@ module EnvUtil
         stdout = th_stdout.value if capture_stdout
         stderr = th_stderr.value if capture_stderr
       else
-        flunk("timeout")
+        raise Timeout::Error
       end
       out_p.close if capture_stdout
       err_p.close if capture_stderr
