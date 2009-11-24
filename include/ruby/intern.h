@@ -200,7 +200,6 @@ PRINTF_ARGS(void rb_compile_error_append(const char*, ...), 1, 2);
 NORETURN(void rb_load_fail(const char*));
 NORETURN(void rb_error_frozen(const char*));
 void rb_check_frozen(VALUE);
-const char *rb_strerrno(int);
 /* eval.c */
 int rb_sourceline(void);
 const char *rb_sourcefile(void);

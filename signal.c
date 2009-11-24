@@ -487,7 +487,7 @@ ruby_signal(int signum, sighandler_t handler)
 #endif
     if (sigaction(signum, &sigact, &old) < 0) {
 	if (errno != 0 && errno != EINVAL) {
-	    rb_bug("sigaction error.\n");
+	    rb_bug_errno("sigaction", errno);
 	}
     }
     return old.sa_handler;

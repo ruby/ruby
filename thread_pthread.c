@@ -34,7 +34,7 @@ native_mutex_lock(pthread_mutex_t *lock)
 {
     int r;
     if ((r = pthread_mutex_lock(lock)) != 0) {
-	rb_bug("pthread_mutex_lock: %s (%s)", strerror(r), rb_strerrno(r));
+	rb_bug_errno("pthread_mutex_lock", r);
     }
 }
 
@@ -43,7 +43,7 @@ native_mutex_unlock(pthread_mutex_t *lock)
 {
     int r;
     if ((r = pthread_mutex_unlock(lock)) != 0) {
-	rb_bug("pthread_mutex_unlock: %s (%s)", strerror(r), rb_strerrno(r));
+	rb_bug_errno("pthread_mutex_unlock", r);
     }
 }
 
@@ -56,7 +56,7 @@ native_mutex_trylock(pthread_mutex_t *lock)
 	    return EBUSY;
 	}
 	else {
-	    rb_bug("pthread_mutex_trylock: %s (%s)", strerror(r), rb_strerrno(r));
+	    rb_bug_errno("pthread_mutex_trylock", r);
 	}
     }
     return 0;
@@ -67,7 +67,7 @@ native_mutex_initialize(pthread_mutex_t *lock)
 {
     int r = pthread_mutex_init(lock, 0);
     if (r != 0) {
-	rb_bug("pthread_mutex_init: %s (%s)", strerror(r), rb_strerrno(r));
+	rb_bug_errno("pthread_mutex_init", r);
     }
 }
 
@@ -78,7 +78,7 @@ native_mutex_destroy(pthread_mutex_t *lock)
 {
     int r = pthread_mutex_destroy(lock);
     if (r != 0) {
-	rb_bug("pthread_mutex_destroy: %s (%s)", strerror(r), rb_strerrno(r));
+	rb_bug_errno("pthread_mutex_destroy", r);
     }
 }
 
@@ -87,7 +87,7 @@ native_cond_initialize(pthread_cond_t *cond)
 {
     int r = pthread_cond_init(cond, 0);
     if (r != 0) {
-	rb_bug("pthread_cond_init: %s (%s)", strerror(r), rb_strerrno(r));
+	rb_bug_errno("pthread_cond_init", r);
     }
 }
 
@@ -96,7 +96,7 @@ native_cond_destroy(pthread_cond_t *cond)
 {
     int r = pthread_cond_destroy(cond);
     if (r != 0) {
-	rb_bug("pthread_cond_destroy: %s (%s)", strerror(r), rb_strerrno(r));
+	rb_bug_errno("pthread_cond_destroy", r);
     }
 }
 
@@ -304,7 +304,7 @@ ruby_init_stack(volatile VALUE *addr
 }
 
 #define CHECK_ERR(expr) \
-    {int err = (expr); if (err) {rb_bug("%s: %s (%s)", #expr, strerror(err), rb_strerrno(err));}}
+    {int err = (expr); if (err) {rb_bug_errno(#expr, err);}}
 
 static int
 native_thread_init_stack(rb_thread_t *th)
@@ -621,7 +621,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 		thread_debug("native_sleep: pthread_cond_wait start\n");
 		r = pthread_cond_wait(&th->native_thread_data.sleep_cond,
 				      &th->interrupt_lock);
-                if (r) rb_bug("pthread_cond_wait: %s (%s)", strerror(r), rb_strerrno(r));
+                if (r) rb_bug_errno("pthread_cond_wait", r);
 		thread_debug("native_sleep: pthread_cond_wait end\n");
 	    }
 	    else {
@@ -630,7 +630,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 			     (unsigned long)ts.tv_sec, ts.tv_nsec);
 		r = pthread_cond_timedwait(&th->native_thread_data.sleep_cond,
 					   &th->interrupt_lock, &ts);
-		if (r && r != ETIMEDOUT) rb_bug("pthread_cond_timedwait: %s (%s)", strerror(r), rb_strerrno(r));
+		if (r && r != ETIMEDOUT) rb_bug_errno("pthread_cond_timedwait", r);
 
 		thread_debug("native_sleep: pthread_cond_timedwait end (%d)\n", r);
 	    }
@@ -763,7 +763,7 @@ thread_timer(void *dummy)
 	else if (err == 0 || err == EINTR) {
 	    if (rb_signal_buff_size() == 0) break;
 	}
-	else rb_bug("thread_timer/timedwait: %s (%s)", strerror(err), rb_strerrno(err));
+	else rb_bug_errno("thread_timer/timedwait", err);
 
 #if !defined(__CYGWIN__) && !defined(__SYMBIAN32__)
 	if (signal_thread_list_anchor.next) {
