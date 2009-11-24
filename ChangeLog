@@ -1,3 +1,7 @@
+Tue Nov 24 20:05:27 2009  Tanaka Akira  <akr@fsij.org>
+
+	* defs/known_errors.def: more errors.
+
 Tue Nov 24 20:01:49 2009  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (rb_bug_errno): declared.
