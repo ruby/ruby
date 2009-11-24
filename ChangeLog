@@ -1,3 +1,8 @@
+Tue Nov 24 22:31:44 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm.c (ruby_vm_destruct, thread_memsize): fix argument type to make
+	  RUBY_MARK_FREE_DEBUG available.
+
 Tue Nov 24 21:25:21 2009  Tanaka Akira  <akr@fsij.org>
 
 	* error.c: include errno.h at beginning.

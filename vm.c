@@ -1480,10 +1480,11 @@ rb_vm_mark(void *ptr)
 #define vm_free 0
 
 int
-ruby_vm_destruct(rb_vm_t *vm)
+ruby_vm_destruct(void *ptr)
 {
     RUBY_FREE_ENTER("vm");
-    if (vm) {
+    if (ptr) {
+	rb_vm_t *vm = ptr;
 	rb_thread_t *th = vm->main_thread;
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 	struct rb_objspace *objspace = vm->objspace;
@@ -1688,8 +1689,6 @@ thread_free(void *ptr)
 static size_t
 thread_memsize(const void *ptr)
 {
-    RUBY_FREE_ENTER("thread");
-
     if (ptr) {
 	const rb_thread_t *th = ptr;
 	size_t size = sizeof(rb_thread_t);
