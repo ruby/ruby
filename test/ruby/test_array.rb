@@ -1276,4 +1276,11 @@ class TestArray < Test::Unit::TestCase
   def test_drop_while
     assert_equal([3,4,5,0], [1,2,3,4,5,0].drop_while {|i| i < 3 })
   end
+
+  def test_splat
+    a = [2,3]
+    assert_equal([1,2,3], [1, *a])
+    a = [2,3]
+    assert_equal([2,3], [*a])
+  end
 end
