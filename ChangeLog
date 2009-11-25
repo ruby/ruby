@@ -1,3 +1,8 @@
+Wed Nov 25 19:30:30 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode.c: Added a check for an internal error
+	  (with Tatsuya Mizuno)
+
 Tue Nov 24 22:57:46 2009  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (EnvUtil.invoke_ruby): raise Timeout::Error
