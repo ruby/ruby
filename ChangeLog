@@ -1,3 +1,8 @@
+Wed Nov 25 17:42:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_fwrite): adjust stdio file position after direct write on
+	  BSDish platforms.   [ruby-core:26300]
+
 Wed Nov 25 17:39:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ostruct/test_ostruct.rb (test_frozen): added assertions.

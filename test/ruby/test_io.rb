@@ -45,4 +45,19 @@ class TestIO < Test::Unit::TestCase
     t.close
     assert_raise(IOError) {t.binmode}
   end
+
+  def test_pos
+    t = make_tempfile
+
+    open(t.path, IO::RDWR|IO::CREAT|IO::TRUNC, 0600) do |f|
+      f.write "Hello"
+      assert_equal(5, f.pos)
+    end
+    open(t.path, IO::RDWR|IO::CREAT|IO::TRUNC, 0600) do |f|
+      f.sync = true
+      f.read
+      f.write "Hello"
+      assert_equal(5, f.pos)
+    end
+  end
 end
