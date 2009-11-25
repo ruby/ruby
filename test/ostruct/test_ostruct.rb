@@ -41,7 +41,11 @@ EOT
     assert_equal("#<OpenStruct>", foo.inspect)
     foo.bar = 1
     foo.baz = 2
-    assert_equal("#<OpenStruct bar=1, baz=2>", foo.inspect)
+    foo.foo = 0
+    assert_match(/\A#<OpenStruct (?:(?:foo=0|bar=1|baz=2)(?:, (?!>))?)+>\z/, foo.inspect)
+    assert_match(/ foo=0(?:, |>\z)/, foo.inspect)
+    assert_match(/ bar=1(?:, |>\z)/, foo.inspect)
+    assert_match(/ baz=2(?:, |>\z)/, foo.inspect)
 
     foo = OpenStruct.new
     foo.bar = OpenStruct.new
@@ -56,5 +60,7 @@ EOT
     o.freeze
     assert_raise(TypeError) {o.b = 'b'}
     assert_not_respond_to(o, :b)
+    assert_raise(TypeError) {o.a = 'z'}
+    assert_equal('a', o.a)
   end
 end

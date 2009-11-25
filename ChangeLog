@@ -1,3 +1,7 @@
+Wed Nov 25 17:39:28 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ostruct/test_ostruct.rb (test_frozen): added assertions.
+
 Wed Nov 25 16:43:24 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/monitor.rb (MonitorMixin.mon_release): ensure the scheduled
