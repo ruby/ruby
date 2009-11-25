@@ -336,33 +336,38 @@ rb_search_method_entry(VALUE recv, ID mid)
     VALUE klass = CLASS_OF(recv);
 
     if (!klass) {
+        VALUE flags, klass;
         if (IMMEDIATE_P(recv)) {
             rb_raise(rb_eNotImpError,
                      "method `%s' called on unexpected immediate object (%p)",
                      rb_id2name(mid), (void *)recv);
         }
-        if (RBASIC(recv)->flags == 0) {
+        flags = RBASIC(recv)->flags;
+        klass = RBASIC(recv)->klass;
+        if (flags == 0) {
             rb_raise(rb_eNotImpError,
                      "method `%s' called on terminated object"
                      " (%p flags=0x%"PRIxVALUE" klass=0x%"PRIxVALUE")",
-                     rb_id2name(mid), (void *)recv,
-                     RBASIC(recv)->flags, RBASIC(recv)->klass);
+                     rb_id2name(mid), (void *)recv, flags, klass);
         }
         else {
             int type = BUILTIN_TYPE(recv);
             const char *typestr = rb_type_str(type);
-            if (typestr)
+            if (typestr && T_OBJECT <= type && type < T_NIL)
                 rb_raise(rb_eNotImpError,
                          "method `%s' called on hidden %s object"
                          " (%p flags=0x%"PRIxVALUE" klass=0x%"PRIxVALUE")",
-                         rb_id2name(mid), typestr, (void *)recv,
-                         RBASIC(recv)->flags, RBASIC(recv)->klass);
+                         rb_id2name(mid), typestr, (void *)recv, flags, klass);
+            if (typestr)
+                rb_raise(rb_eNotImpError,
+                         "method `%s' called on unexpected %s object"
+                         " (%p flags=0x%"PRIxVALUE" klass=0x%"PRIxVALUE")",
+                         rb_id2name(mid), typestr, (void *)recv, flags, klass);
             else
                 rb_raise(rb_eNotImpError,
-                         "method `%s' called on hidden T_???" "(0x%02x) object"
+                         "method `%s' called on broken T_???" "(0x%02x) object"
                          " (%p flags=0x%"PRIxVALUE" klass=0x%"PRIxVALUE")",
-                         rb_id2name(mid), type, (void *)recv,
-                         RBASIC(recv)->flags, RBASIC(recv)->klass);
+                         rb_id2name(mid), type, (void *)recv, flags, klass);
         }
     }
     return rb_method_entry(klass, mid);
