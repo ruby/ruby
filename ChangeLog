@@ -1,3 +1,9 @@
+Wed Nov 25 19:32:25 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (rb_digest_instance_method_unimpl): Do not
+	  call rb_inspect() on an object that does not implement necessary
+	  methods; reported by NaHi.
+
 Wed Nov 25 15:06:42 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/ruby/test_array.rb (TestArray#test_splat): Add tests for a
