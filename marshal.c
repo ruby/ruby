@@ -166,6 +166,7 @@ mark_dump_arg(void *ptr)
         return;
     rb_mark_set(p->data);
     rb_mark_hash(p->compat_tbl);
+    rb_gc_mark(p->str);
 }
 
 static void
