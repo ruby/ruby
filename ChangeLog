@@ -1,3 +1,8 @@
+Wed Nov 25 16:28:11 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/rexml/element.rb (text=): false should be converted to string.
+	  A patch by Teruo Oshida [ruby-dev:38351]
+
 Wed Nov 25 16:18:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_clear_cache_for_undef): clear entries for inherited
