@@ -14,6 +14,7 @@ assert_finish 10, %q{
     require "timeout"
     timeout(3) do
       r, w = IO.pipe
+      w.nonblock?
       w.nonblock = true
       w.write_nonblock("a" * 100000)
       w.nonblock = false
@@ -26,7 +27,7 @@ assert_finish 10, %q{
       t1.join
       t2.join
     end
-  rescue LoadError, TimeoutError
+  rescue LoadError, TimeoutError, NotImplementedError
   end
 }, '[ruby-dev:32566]'
 
