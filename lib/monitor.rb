@@ -288,11 +288,15 @@ module MonitorMixin
     @mon_owner = Thread.current
   end
 
+  # mon_release requires Thread.critical == true
   def mon_release
     @mon_owner = nil
-    t = @mon_waiting_queue.shift
-    t = @mon_entering_queue.shift unless t
-    t.wakeup if t
+    while t = @mon_waiting_queue.shift || @mon_entering_queue.shift
+      if t.alive?
+        t.wakeup
+        return
+      end
+    end
   end
 
   def mon_enter_for_cond(count)

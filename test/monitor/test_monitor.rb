@@ -54,6 +54,32 @@ class TestMonitor < Test::Unit::TestCase
     assert_equal((1..10).to_a, ary)
   end
 
+  def test_killed_thread_in_synchronize
+    ary = []
+    queue = Queue.new
+    t1 = Thread.start {
+      queue.pop
+      @monitor.synchronize {
+        ary << :t1
+      }
+    }
+    t2 = Thread.start {
+      queue.pop
+      @monitor.synchronize {
+        ary << :t2
+      }
+    }
+    @monitor.synchronize do
+      queue.enq(nil)
+      queue.enq(nil)
+      assert_equal([], ary)
+      t1.kill
+      t2.kill
+      ary << :main
+    end
+    assert_equal([:main], ary)
+  end
+
   def test_try_enter
     queue1 = Queue.new
     queue2 = Queue.new
@@ -94,7 +120,10 @@ class TestMonitor < Test::Unit::TestCase
       assert_equal(true, result1)
       assert_equal("bar", a)
     end
+  end
 
+  def test_timedwait
+    cond = @monitor.new_cond
     b = "foo"
     queue2 = Queue.new
     Thread.start do

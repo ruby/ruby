@@ -1,3 +1,8 @@
+Wed Nov 25 16:43:24 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/monitor.rb (MonitorMixin.mon_release): ensure the scheduled
+	  thread to be alive when a thread is releasing a monitor. #2240
+
 Wed Nov 25 16:28:11 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/rexml/element.rb (text=): false should be converted to string.
