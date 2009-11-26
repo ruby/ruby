@@ -3554,7 +3554,7 @@ time_strftime(VALUE time, VALUE format)
     }
     else {
 	len = rb_strftime_alloc(&buf, RSTRING_PTR(format),
-			       	&tobj->vtm, rb_time_unmagnify(tobj->timexv), TIME_UTC_P(tobj));
+				&tobj->vtm, rb_time_unmagnify(tobj->timexv), TIME_UTC_P(tobj));
     }
     str = rb_str_new(buf, len);
     if (buf != buffer) xfree(buf);

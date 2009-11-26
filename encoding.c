@@ -664,7 +664,7 @@ rb_enc_associate_index(VALUE obj, int idx)
 {
 /*    enc_check_capable(obj);*/
     if (rb_enc_get_index(obj) == idx)
-    	return obj;
+	return obj;
     if (SPECIAL_CONST_P(obj)) {
 	rb_raise(rb_eArgError, "cannot set encoding");
     }

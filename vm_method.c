@@ -154,7 +154,7 @@ rb_add_method_def(VALUE klass, ID mid, rb_method_type_t type, rb_method_definiti
 	klass = rb_cObject;
     }
     if (rb_safe_level() >= 4 &&
-       	(klass == rb_cObject || !OBJ_UNTRUSTED(klass))) {
+	(klass == rb_cObject || !OBJ_UNTRUSTED(klass))) {
 	rb_raise(rb_eSecurityError, "Insecure: can't define method");
     }
     if (!FL_TEST(klass, FL_SINGLETON) &&

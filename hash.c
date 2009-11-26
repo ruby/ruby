@@ -193,7 +193,7 @@ static VALUE
 hash_foreach_call(struct hash_foreach_arg *arg)
 {
     if (st_foreach(RHASH(arg->hash)->ntbl, hash_foreach_iter, (st_data_t)arg)) {
- 	rb_raise(rb_eRuntimeError, "hash modified during iteration");
+	rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
     return Qnil;
 }

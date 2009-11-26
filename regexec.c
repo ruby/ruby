@@ -879,7 +879,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
             }\
             k++;\
           }\
-  	  break;\
+	  break;\
         }\
       }\
     }\
@@ -920,7 +920,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
               }\
               k++;\
             }\
-  	    break;\
+	    break;\
           }\
         }\
         else {\

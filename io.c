@@ -5648,7 +5648,7 @@ io_reopen(VALUE io, VALUE nfile)
 
     nfile = rb_io_get_io(nfile);
     if (rb_safe_level() >= 4 &&
-       	(!OBJ_UNTRUSTED(io) || !OBJ_UNTRUSTED(nfile))) {
+	(!OBJ_UNTRUSTED(io) || !OBJ_UNTRUSTED(nfile))) {
 	rb_raise(rb_eSecurityError, "Insecure: can't reopen");
     }
     GetOpenFile(io, fptr);

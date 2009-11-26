@@ -1904,8 +1904,8 @@ bigmul1_karatsuba(VALUE x, VALUE y)
 
     if (!BIGZEROP(xl) && !BIGZEROP(yl)) {
 	/* t2 <- xl * yl */
-    	t2 = bigmul0(xl, yl);
-    	t2n = big_real_len(t2);
+	t2 = bigmul0(xl, yl);
+	t2n = big_real_len(t2);
 
 	/* copy t2 into low bytes of the result (z0) */
 	MEMCPY(zds, BDIGITS(t2), BDIGIT, t2n);
@@ -2013,7 +2013,7 @@ dump_bignum(VALUE x)
     long i;
     printf("0x0");
     for (i = RBIGNUM_LEN(x); i--; ) {
-    	printf("_%08x", BDIGITS(x)[i]);
+	printf("_%08x", BDIGITS(x)[i]);
     }
     puts("");
 }
@@ -2041,7 +2041,7 @@ bigmul0(VALUE x, VALUE y)
       normal:
 	if (x == y) return bigsqr_fast(x);
 	if (xn == 1 && yn == 1) return bigmul1_single(x, y);
-    	return bigmul1_normal(x, y);
+	return bigmul1_normal(x, y);
     }
 
     /* normal multiplication when x or y is a sparse bignum */

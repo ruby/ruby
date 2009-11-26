@@ -1009,7 +1009,7 @@ rb_newobj_from_heap(rb_objspace_t *objspace)
     VALUE obj;
 
     if ((ruby_gc_stress && !ruby_disable_gc_stress) || !freelist) {
-    	if (!heaps_increment(objspace) && !garbage_collect(objspace)) {
+	if (!heaps_increment(objspace) && !garbage_collect(objspace)) {
 	    during_gc = 0;
 	    rb_memerror();
 	}

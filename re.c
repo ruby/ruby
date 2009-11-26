@@ -113,7 +113,7 @@ rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n
     if (m > SIZEOF_VALUE)
 	rb_bug("!!too long pattern string!!");
 
-    	/* Prepare hash value */
+    /* Prepare hash value */
     for (hx = *x++, hy = *y++; x < xe; ++x, ++y) {
 	hx <<= CHAR_BIT;
 	hy <<= CHAR_BIT;
@@ -356,7 +356,7 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
 	    }
 	    else if (c == -1) {
                 int l = mbclen(p, pend, enc);
-	    	rb_str_buf_cat(str, p, l);
+		rb_str_buf_cat(str, p, l);
 		p += l;
 		continue;
 	    }
@@ -526,9 +526,9 @@ rb_reg_to_s(VALUE re)
                                 rb_enc_get(re),
                                 OnigDefaultSyntax);
 	    if (r == 0) {
-		 ++ptr;
- 		 len -= 2;
-		 err = (onig_compile(rp, ptr, ptr + len, NULL, NULL, 0) != 0);
+		++ptr;
+		len -= 2;
+		err = (onig_compile(rp, ptr, ptr + len, NULL, NULL, 0) != 0);
 	    }
 	    onig_free(rp);
 	}
