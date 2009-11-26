@@ -1,3 +1,8 @@
+Thu Nov 26 21:11:23 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/openssl/test_config.rb (OpenSSL::TestConfig): new test case.
+	  test for r25017.
+
 Thu Nov 26 21:08:54 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_range.rb (TestRange#test_comparison_when_recursive):
