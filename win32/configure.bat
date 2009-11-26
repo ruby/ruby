@@ -32,6 +32,7 @@ if "%1" == "--path" goto :path
 if "%1" == "--with-baseruby" goto :baseruby
 if "%1" == "-h" goto :help
 if "%1" == "--help" goto :help
+if "%1" == "--with-ntver" goto :ntver
   echo>>confargs.tmp %1 \
   shift
 goto :loop
@@ -107,6 +108,12 @@ goto :loop
   echo>>confargs.tmp %1 \
   shift
 goto :loop
+:ntver
+  echo>> ~tmp~.mak 	"NTVER=%2" \
+  echo>>confargs.tmp %1=%2 \
+  shift
+  shift
+goto :loop
 :extout
   echo>> ~tmp~.mak 	"EXTOUT=%2" \
   echo>>confargs.tmp %1=%2 \
@@ -137,7 +144,8 @@ goto :loop
   echo   --with-baseruby=RUBY    use RUBY as baseruby [ruby]
   echo   --with-static-linked-ext link external modules statically
   echo   --disable-install-doc   do not install rdoc indexes during install
-  echo   --enable-win95          enable win95 support
+  echo   --disable-win95         disable win95 support
+  echo   --with-ntver=0xXXXX     target NT version (shouldn't use with old SDK)
   del *.tmp
   del ~tmp~.mak
 goto :exit

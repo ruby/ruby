@@ -55,6 +55,9 @@ EXTOUT = $(EXTOUT)
 !if defined(BASERUBY)
 BASERUBY = $(BASERUBY)
 !endif
+!if defined(NTVER)
+NTVER = $(NTVER)
+!endif
 <<
 !if !defined(BASERUBY)
 	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I >> $(MAKEFILE)
