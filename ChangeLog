@@ -1,3 +1,8 @@
+Thu Nov 26 21:13:36 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/test_mathn.rb (TestMathn): new test case.
+	  test for r25067.
+
 Thu Nov 26 21:11:23 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/openssl/test_config.rb (OpenSSL::TestConfig): new test case.
