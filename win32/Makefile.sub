@@ -116,6 +116,9 @@ PLATFORM = mswin32
 !if !defined(RT)
 !error RT not defined.  Retry from configure pass.
 !endif
+!ifdef NTVER
+ARCHDEFS = -D_WIN32_WINNT=$(NTVER) $(ARCHDEFS)
+!endif
 
 arch = $(ARCH)-$(PLATFORM)
 sitearch = $(ARCH)-$(RT)
