@@ -66,8 +66,9 @@ if defined?(Gem) then
     end
 
     def self.set_home(home)
-      home = home.gsub File::ALT_SEPARATOR, File::SEPARATOR if File::ALT_SEPARATOR
-      @gem_home = home.force_encoding(Encoding.find('filesystem'))
+      home = home.dup.force_encoding(Encoding.find('filesystem'))
+      home.gsub!(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
+      @gem_home = home
     end
 
     def self.set_paths(gpaths)
