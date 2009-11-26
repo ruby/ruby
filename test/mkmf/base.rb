@@ -5,8 +5,7 @@ require 'tmpdir'
 $extout = '$(topdir)/'+RbConfig::CONFIG["EXTOUT"]
 RbConfig::CONFIG['topdir'] = CONFIG['topdir'] = File.expand_path(CONFIG['topdir'])
 RbConfig::CONFIG["extout"] = CONFIG["extout"] = $extout
-RbConfig::CONFIG["cppflags"] << " -I."
-CONFIG["cppflags"] << " -I."
+$INCFLAGS << " -I."
 $extout_prefix = "$(extout)$(target_prefix)/"
 
 class TestMkmf < Test::Unit::TestCase
