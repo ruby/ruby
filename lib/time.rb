@@ -252,6 +252,10 @@ class Time
     #
     # A failure for Time.parse should be checked, though.
     #
+    # time library should be required to use this method as follows.
+    #
+    #     require 'time'
+    #
     def parse(date, now=self.now)
       comp = !block_given?
       d = Date._parse(date, comp)
@@ -292,6 +296,10 @@ class Time
     # or Time class cannot represent specified date.
     #
     # See #rfc2822 for more information on this format.
+    #
+    # time library should be required to use this method as follows.
+    #
+    #     require 'time'
     #
     def rfc2822(date)
       if /\A\s*
@@ -342,6 +350,10 @@ class Time
     #
     # See #httpdate for more information on this format.
     #
+    # time library should be required to use this method as follows.
+    #
+    #     require 'time'
+    #
     def httpdate(date)
       if /\A\s*
           (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\x20
@@ -389,6 +401,10 @@ class Time
     #
     # See #xmlschema for more information on this format.
     #
+    # time library should be required to use this method as follows.
+    #
+    #     require 'time'
+    #
     def xmlschema(date)
       if /\A\s*
           (-?\d+)-(\d\d)-(\d\d)
@@ -431,6 +447,10 @@ class Time
   #
   # If +self+ is a UTC time, -0000 is used as zone.
   #
+  # time library should be required to use this method as follows.
+  #
+  #     require 'time'
+  #
   def rfc2822
     sprintf('%s, %02d %s %0*d %02d:%02d:%02d ',
       RFC2822_DAY_NAME[wday],
@@ -462,6 +482,10 @@ class Time
   #
   # Note that the result is always UTC (GMT).
   #
+  # time library should be required to use this method as follows.
+  #
+  #     require 'time'
+  #
   def httpdate
     t = dup.utc
     sprintf('%s, %02d %s %0*d %02d:%02d:%02d GMT',
@@ -483,6 +507,10 @@ class Time
   #
   # +fractional_seconds+ specifies a number of digits of fractional seconds.
   # Its default value is 0.
+  #
+  # time library should be required to use this method as follows.
+  #
+  #     require 'time'
   #
   def xmlschema(fraction_digits=0)
     sprintf('%0*d-%02d-%02dT%02d:%02d:%02d',
