@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'delegate'
+require 'timeout'
 
 class TestRange < Test::Unit::TestCase
   def test_range_string
@@ -293,5 +294,38 @@ class TestRange < Test::Unit::TestCase
     o = CyclicRange.allocate
     o.instance_eval { initialize(o, 1) }
     assert_equal("(... .. ...)..1", o.inspect)
+  end
+
+  def test_comparison_when_recursive
+    x = CyclicRange.allocate; x.send(:initialize, x, 1)
+    y = CyclicRange.allocate; y.send(:initialize, y, 1)
+    Timeout.timeout(1) {
+      assert x == y
+      assert x.eql? y
+    }
+
+    z = CyclicRange.allocate; z.send(:initialize, z, :another)
+    Timeout.timeout(1) {
+      assert x != z
+      assert !x.eql?(z)
+    }
+
+    x = CyclicRange.allocate
+    y = CyclicRange.allocate
+    x.send(:initialize, y, 1)
+    y.send(:initialize, x, 1)
+    Timeout.timeout(1) {
+      assert x == y
+      assert x.eql?(y)
+    }
+
+    x = CyclicRange.allocate
+    z = CyclicRange.allocate
+    x.send(:initialize, z, 1)
+    z.send(:initialize, x, :other)
+    Timeout.timeout(1) {
+      assert x != z
+      assert !x.eql?(z)
+    }
   end
 end
