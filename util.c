@@ -291,7 +291,7 @@ ruby_add_suffix(VALUE str, const char *suffix)
     while ((*t = *s) && *s != '.') {
 	baselen++;
 	if (*s == '\\' || *s == '/') baselen = 0;
- 	s++; t++;
+	s++; t++;
     }
     p = t;
 
@@ -309,7 +309,7 @@ ruby_add_suffix(VALUE str, const char *suffix)
 	    ext[++extlen] = '\0';
         }
 	else if (baselen < 8) {
-   	    *p++ = *suffix;
+	    *p++ = *suffix;
 	}
 	else if (ext[3] != *suffix) {
 	    ext[3] = *suffix;

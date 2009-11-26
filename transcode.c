@@ -675,7 +675,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 	  case UNDEF:
 	    goto undef;
 	  default:
-	  	rb_raise(rb_eRuntimeError, "unknown transcoding instruction");
+	    rb_raise(rb_eRuntimeError, "unknown transcoding instruction");
 	}
 	continue;
 
