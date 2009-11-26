@@ -9,7 +9,8 @@ class Complex_Test < Test::Unit::TestCase
     if @rational
       @keiju = Rational.instance_variable_get('@RCS_ID')
     end
-    @unify = $".grep(/mathn/).size != 0
+    seps = [File::SEPARATOR, File::ALT_SEPARATOR].compact.map{|x| Regexp.escape(x)}.join("|")
+    @unify = $".grep(/(?:^|#{seps})mathn(?:\.(?:rb|so))?/).size != 0
   end
 
   def test_compsub

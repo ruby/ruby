@@ -1,3 +1,11 @@
+Thu Nov 26 21:14:30 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/ruby/test_complex.rb (@unify): fix the detection if math
+	  loaded. This makes test_complex.rb work fine with the previous
+	  commit.
+
+	* test/ruby/test_rational.rb (@unify): ditto.
+
 Thu Nov 26 21:13:36 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/test_mathn.rb (TestMathn): new test case.
