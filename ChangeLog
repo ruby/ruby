@@ -1,3 +1,9 @@
+Thu Nov 26 20:18:02 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gem_prelude.rb (Gem.set_home): must dup before force_encoding
+	  and must force_encoding before gsub.
+	  cf. Yen Sign problem of SJIS [ruby-core:26910]
+
 Thu Nov 26 17:54:37 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/{configure.bat, setup.mak, Makefile.sub}: add new configure
@@ -165,7 +171,7 @@ Thu Nov 19 02:50:47 2009  Tanaka Akira  <akr@fsij.org>
 	* vm_eval.c (rb_search_method_entry): show the type of the hidden
 	  object.
 	  (rb_type_str): new function for above.
-	  
+
 Thu Nov 19 00:47:09 2009  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (MORE_CHAR_SUSPENDED): renamed from MORE_CHAR_CBUF_FULL.
@@ -269,7 +275,7 @@ Mon Nov 16 15:51:53 2009  Shugo Maeda  <shugo@ruby-lang.org>
 	* vm_insnhelper.c (vm_call_method): protected singleton methods of
 	  an object should not be able to called from other instances of the
 	  class of the object.  [ruby-core:26761]
-	
+
 	* vm_eval.c (rb_method_call_status): ditto.
 
 	* test/ruby/test_module.rb (test_protected_singleton_method): ditto.
@@ -328,7 +334,7 @@ Sat Nov 14 09:16:54 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimalCmp): Fix comparisons
 	  [ruby-core:26646]
-	
+
 	* test/bigdecimal/test_bigdecimal.rb (class): Fix and improve tests.
 
 Sat Nov 14 04:07:06 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
@@ -389,7 +395,7 @@ Thu Nov 12 06:42:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Nov 12 01:29:15 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* enumerator.c (yielder_yield_push): Yielder#<< should return self.
-	  [ruby-dev:39660] 
+	  [ruby-dev:39660]
 
 Wed Nov 11 19:17:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -656,7 +662,7 @@ Fri Oct 30 22:09:47 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTPResponse#each_response_header):
 	  accept multiline message header of HTTP response.  see #1796.
-	  cf. RFC 2616 '4.2 Message Header'.  
+	  cf. RFC 2616 '4.2 Message Header'.
 
 	* test/net/http/test_httpresponse.rb: added.
 
@@ -757,7 +763,7 @@ Thu Oct 29 13:53:18 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* io.c (pop_last_hash): return early when the last argument is nil.
 
 	* io.c (rb_io_puts): treat T_STRING specially for small
-	  optimization. 
+	  optimization.
 
 	* vm_eval.c (raise_method_missing): skip method call if possible
 	  using rb_method_basic_definition_p().
@@ -1032,7 +1038,7 @@ Fri Oct 23 07:28:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Oct 22 21:10:39 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* class.c (rb_obj_basic_to_s_p): typo.  Please become familiar with
-	  the ANSI style. 
+	  the ANSI style.
 
 Thu Oct 22 20:20:27 2009  Tanaka Akira  <akr@fsij.org>
 
@@ -1071,7 +1077,7 @@ Wed Oct 21 08:17:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Oct 21 03:54:41 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
-	* lib/matrix.rb:  
+	* lib/matrix.rb:
 	  Creator functions now strict with their arguments
 	  Support for empty matrices (see new method Matrix.empty)
 	  Matrix#trace raises an ErrDimensionMismatch if the matrix is not square
@@ -1612,7 +1618,7 @@ Tue Oct  6 06:26:00 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/vu/dial.rb: fix logical bug.
 
-	* ext/tk/lib/tk/canvas.rb, ext/tk/lib/tkextlib/blt/component.rb: 
+	* ext/tk/lib/tk/canvas.rb, ext/tk/lib/tkextlib/blt/component.rb:
 	  lack of support for methodcall_optkeys.
 
 Mon Oct  5 17:19:33 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1951,7 +1957,7 @@ Mon Sep 28 12:13:15 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  method_missing with same symbol should be equal.
 	  [ruby-core:25755]
 
-	* proc.c (mnew): should always return method object.  
+	* proc.c (mnew): should always return method object.
 
 Mon Sep 28 11:38:07 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -2442,18 +2448,18 @@ Wed Sep 16 06:30:07 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* thread.c (rb_exec_recursive_outer, rb_exec_recursive): Added method
 	  to short-circuit to the outermost level in case of recursion
-	
+
 	* test/ruby/test_thread.rb (test_recursive_outer): Test for above
-	
+
 	* hash.c (rb_hash_hash): Return a sensible hash for in case of
 	  recursion [ruby-core:24648]
-	
+
 	* range.c (rb_range_hash): ditto
-	
+
 	* struct.c (rb_struct_hash): ditto
-	
+
 	* array.c (rb_array_hash): ditto
-	
+
 	* test/ruby/test_array.rb (test_hash2): test for above
 
 Wed Sep 16 06:17:33 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
@@ -2597,7 +2603,7 @@ Sun Sep 13 20:18:49 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Sep 13 19:39:59 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c: some refactoring. 
+	* ext/win32ole/win32ole.c: some refactoring.
 
 Sun Sep 13 19:38:34 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -2638,7 +2644,7 @@ Sun Sep 13 09:34:10 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Sep 13 08:30:30 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c: fix WIN32OLE_TYPELIB.new when the 1st 
+	* ext/win32ole/win32ole.c: fix WIN32OLE_TYPELIB.new when the 1st
 	  argument is the non-registered file.
 
 Sun Sep 13 02:08:43 2009  Koichi Sasada  <ko1@atdot.net>
@@ -2954,7 +2960,7 @@ Sun Sep  6 17:31:28 2009  Koichi Sasada  <ko1@atdot.net>
 
 Sun Sep  6 16:13:06 2009  Koichi Sasada  <ko1@atdot.net>
 
-	* insns.def (setinstancevariable), vm_insnhelper.c (vm_setivar): 
+	* insns.def (setinstancevariable), vm_insnhelper.c (vm_setivar):
 	  fix to use inline cache (trivial optimization).
 
 Sun Sep  6 10:34:19 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -3061,11 +3067,11 @@ Mon Aug 31 14:17:09 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	  (rb_singleton_class): refactored.
 	  (rb_define_singleton_method): it needs a metaclass only
 	  but not its metametaclass.
-	  
+
 	* object.c: booting class hierarchy was moved to class.c
 	  for keeping dependency between compilation units least.
-	  (Init_Object): extracting the booting into 
-	  Init_class_hierarchy. 
+	  (Init_Object): extracting the booting into
+	  Init_class_hierarchy.
 	  (boot_defclass): moved to class.c.
 
 Sun Aug 30 23:44:09 2009  Tanaka Akira  <akr@fsij.org>
@@ -3106,7 +3112,7 @@ Sun Aug 30 03:59:43 2009  Tanaka Akira  <akr@fsij.org>
 	* timev.h (TIME_SCALE): defined as 1000000000.
 	  (struct vtm): subsec is replaced by subsecx.
 	  subsec * TIME_SCALE == subsecx.
-	
+
 	* time.c: avoid rational in most cases.
 	  (struct time_object): timev is replaced by timexv.
 	  timev * TIME_SCALE == timexv.
@@ -3346,7 +3352,7 @@ Sun Aug 23 15:12:22 2009  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (Dir.mktmpdir): updated to latest.
 	  (in_temporary_working_directory): temporary directory name changed.
-	  
+
 Sun Aug 23 00:56:13 2009  Tanaka Akira  <akr@fsij.org>
 
 	* thread.c (rb_thread_schedule): don't recur infinitely.
