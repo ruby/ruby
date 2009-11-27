@@ -760,6 +760,18 @@ rb_struct_select(int argc, VALUE *argv, VALUE s)
     return result;
 }
 
+static VALUE
+recursive_equal(VALUE s, VALUE s2, int recur)
+{
+    long i;
+
+    if (recur) return Qtrue; /* Subtle! */
+    for (i=0; i<RSTRUCT_LEN(s); i++) {
+	if (!rb_equal(RSTRUCT_PTR(s)[i], RSTRUCT_PTR(s2)[i])) return Qfalse;
+    }
+    return Qtrue;
+}
+
 /*
  *  call-seq:
  *     struct == other_struct     => true or false
@@ -780,8 +792,6 @@ rb_struct_select(int argc, VALUE *argv, VALUE s)
 static VALUE
 rb_struct_equal(VALUE s, VALUE s2)
 {
-    long i;
-
     if (s == s2) return Qtrue;
     if (TYPE(s2) != T_STRUCT) return Qfalse;
     if (rb_obj_class(s) != rb_obj_class(s2)) return Qfalse;
@@ -789,10 +799,7 @@ rb_struct_equal(VALUE s, VALUE s2)
 	rb_bug("inconsistent struct"); /* should never happen */
     }
 
-    for (i=0; i<RSTRUCT_LEN(s); i++) {
-	if (!rb_equal(RSTRUCT_PTR(s)[i], RSTRUCT_PTR(s2)[i])) return Qfalse;
-    }
-    return Qtrue;
+    return rb_exec_recursive_paired(recursive_equal, s, s2, s2);
 }
 
 /*
@@ -817,6 +824,18 @@ rb_struct_hash(VALUE s)
     return LONG2FIX(h);
 }
 
+static VALUE
+recursive_eql(VALUE s, VALUE s2, int recur)
+{
+    long i;
+
+    if (recur) return Qtrue; /* Subtle! */
+    for (i=0; i<RSTRUCT_LEN(s); i++) {
+	if (!rb_eql(RSTRUCT_PTR(s)[i], RSTRUCT_PTR(s2)[i])) return Qfalse;
+    }
+    return Qtrue;
+}
+
 /*
  * code-seq:
  *   struct.eql?(other)   => true or false
@@ -828,8 +847,6 @@ rb_struct_hash(VALUE s)
 static VALUE
 rb_struct_eql(VALUE s, VALUE s2)
 {
-    long i;
-
     if (s == s2) return Qtrue;
     if (TYPE(s2) != T_STRUCT) return Qfalse;
     if (rb_obj_class(s) != rb_obj_class(s2)) return Qfalse;
@@ -837,10 +854,7 @@ rb_struct_eql(VALUE s, VALUE s2)
 	rb_bug("inconsistent struct"); /* should never happen */
     }
 
-    for (i=0; i<RSTRUCT_LEN(s); i++) {
-	if (!rb_eql(RSTRUCT_PTR(s)[i], RSTRUCT_PTR(s2)[i])) return Qfalse;
-    }
-    return Qtrue;
+    return rb_exec_recursive_paired(recursive_eql, s, s2, s2);
 }
 
 /*

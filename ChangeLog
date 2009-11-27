@@ -1,3 +1,10 @@
+Sun Sep 20 11:11:34 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* struct.c (rb_struct_equal, rb_struct_eql): Handle comparison of
+	  recursive structures [ruby-core:24759]
+
+	* range.c (range_eq, range_eql):  ditto for ranges
+
 Fri Sep 18 23:51:17 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_object0): entry regexp object before its encoding

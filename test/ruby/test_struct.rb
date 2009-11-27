@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'timeout'
 
 class TestStruct < Test::Unit::TestCase
   def test_struct
@@ -218,5 +219,34 @@ class TestStruct < Test::Unit::TestCase
     assert_equal(Struct.const_get("R\u{e9}sum\u{e9}"), struct_test, '[ruby-core:24849]')
     a = struct_test.new(42)
     assert_equal("#<struct Struct::R\u{e9}sum\u{e9} r\u{e9}sum\u{e9}=42>", a.inspect, '[ruby-core:24849]')
+  end
+
+  def test_comparison_when_recursive
+    klass1 = Struct.new(:a, :b, :c)
+
+    x = klass1.new(1, 2, nil); x.c = x
+    y = klass1.new(1, 2, nil); y.c = y
+    Timeout.timeout(1) {
+      assert x == y
+      assert x.eql? y
+    }
+
+    z = klass1.new(:something, :other, nil); z.c = z
+    Timeout.timeout(1) {
+      assert x != z
+      assert !x.eql?(z)
+    }
+
+    x.c = y; y.c = x
+    Timeout.timeout(1) {
+      assert x == y
+      assert x.eql?(y)
+    }
+
+    x.c = z; z.c = x
+    Timeout.timeout(1) {
+      assert x != z
+      assert !x.eql?(z)
+    }
   end
 end
