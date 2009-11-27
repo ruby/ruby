@@ -1,3 +1,11 @@
+Sun Feb 15 03:50:21 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* hash.c (rb_hash): always return a fixnum value because a return
+	  value of rb_hash may be used as a hash value itself and bignums have
+	  no unique VALUE.
+
+	* test/ruby/test_hash.rb: add a test for above.
+
 Tue Nov 17 16:04:13 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* regparse.c (parse_char_class): fixes a wrong merge r25531.
