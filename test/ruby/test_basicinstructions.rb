@@ -505,6 +505,14 @@ class TestBasicInstructions < Test::Unit::TestCase
       :Bug1996
     end
     Bug1996 = '[ruby-dev:39163], [ruby-core:25143]'
+    def [](i)
+      @x
+    end
+    def []=(i, x)
+      @x = x
+      :Bug2050
+    end
+    Bug2050 = '[ruby-core:25387]'
   end
 
   def test_opassign2_1
@@ -573,6 +581,23 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal 5, a[0]
     assert_equal 4, a[0] -= 1
     assert_equal 4, a[0]
+  end
+
+  def test_opassign1_2
+    x = OP.new
+    x[0] = nil
+    assert_equal 1, x[0] ||= 1, OP::Bug2050
+    assert_equal 1, x[0]
+    assert_equal 2, x[0] &&= 2, OP::Bug2050
+    assert_equal 2, x[0]
+    assert_equal 2, x[0] ||= 3, OP::Bug2050
+    assert_equal 2, x[0]
+    assert_equal 4, x[0] &&= 4, OP::Bug2050
+    assert_equal 4, x[0]
+    assert_equal 5, x[0] += 1, OP::Bug2050
+    assert_equal 5, x[0]
+    assert_equal 4, x[0] -= 1, OP::Bug2050
+    assert_equal 4, x[0]
   end
 
   def test_backref

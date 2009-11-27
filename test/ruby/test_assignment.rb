@@ -77,6 +77,14 @@ class TestAssignment < Test::Unit::TestCase
     a,b,*c = *[*[]]; assert_equal([nil,nil,[]], [a,b,c])
     a,b,*c = *[*[1]]; assert_equal([1,nil,[]], [a,b,c])
     a,b,*c = *[*[1,2]]; assert_equal([1,2,[]], [a,b,c])
+
+    bug2050 = '[ruby-core:25629]'
+    a = Hash.new {[]}
+    b = [1, 2]
+    assert_equal([1, 2, 3], a[:x] += [*b, 3], bug2050)
+    assert_equal([1, 2, 3], a[:x], bug2050)
+    assert_equal([1, 2, 3, [1, 2, 3]], a[:x] <<= [*b, 3], bug2050)
+    assert_equal([1, 2, 3, [1, 2, 3]], a[:x], bug2050)
   end
 
   def test_yield

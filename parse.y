@@ -1100,7 +1100,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 
 			value_expr($6);
 			if (!$3) $3 = NEW_ZARRAY();
-			args = arg_concat($6, $3);
+			args = arg_concat($3, $6);
 			if ($5 == tOROP) {
 			    $5 = 0;
 			}
@@ -1935,7 +1935,7 @@ arg		: lhs '=' arg
 
 			value_expr($6);
 			if (!$3) $3 = NEW_ZARRAY();
-			args = arg_concat($6, $3);
+			args = arg_concat($3, $6);
 			if ($5 == tOROP) {
 			    $5 = 0;
 			}
