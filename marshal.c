@@ -1429,7 +1429,10 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	{
 	    volatile VALUE str = r_bytes(arg);
 	    int options = r_byte(arg);
-	    v = rb_reg_new("", 0, options);
+	    VALUE args[2];
+	    args[0] = str;
+	    args[1] = INT2FIX(options);
+	    v = r_entry(rb_obj_alloc(rb_cRegexp), arg);
 	    if (ivp) {
 		r_ivar(v, arg);
 		*ivp = Qfalse;
@@ -1440,9 +1443,8 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 #define f_gsub_bang(x,y,z) rb_funcall(x, rb_intern("gsub!"), 2, y, z)
 		f_gsub_bang(str, rb_reg_new("\\\\u", 3, 0), rb_usascii_str_new_cstr("u"));
 	    }
-	    str = r_entry(rb_reg_new_str(str, options), arg);
-	    rb_copy_generic_ivar(str, v);
-	    v = r_leave(str, arg);
+	    rb_obj_call_init(v, 2, args);
+	    v = r_leave(v, arg);
 	}
 	break;
 

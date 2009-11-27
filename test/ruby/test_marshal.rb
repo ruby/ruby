@@ -204,4 +204,12 @@ class TestMarshal < Test::Unit::TestCase
     a = ClassUTF8.new
     assert_instance_of(ClassUTF8, Marshal.load(Marshal.dump(a)), '[ruby-core:24790]')
   end
+
+  def test_regexp
+    bug2109 = '[ruby-core:25625]'
+    a = "\x82\xa0".force_encoding(Encoding::Windows_31J)
+    b = "\x82\xa2".force_encoding(Encoding::Windows_31J)
+    c = [/#{a}/, /#{b}/]
+    assert_equal(c, Marshal.load(Marshal.dump(c)))
+  end
 end
