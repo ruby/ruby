@@ -317,10 +317,10 @@ class RubyVM
         defv  << [opes[i], e]
       }
 
-      make_insn_operand_optimiized(insn, ninsn, nopes, defv)
+      make_insn_operand_optimized(insn, ninsn, nopes, defv)
     end
 
-    def make_insn_operand_optimiized orig_insn, name, opes, defopes
+    def make_insn_operand_optimized orig_insn, name, opes, defopes
       comm = orig_insn.comm.dup
       comm[:c] = 'optimize'
       add_insn insn = Instruction.new(
