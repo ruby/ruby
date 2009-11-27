@@ -1,3 +1,8 @@
+Sun Sep 27 13:06:43 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pp.rb (PP:ObjectMixin#pretty_print): delegates has no inspect
+	  method.  [ruby-core:25804]
+
 Sat Sep 26 08:35:12 2009  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (compile_string): rename to parse_string(), because
