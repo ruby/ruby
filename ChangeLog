@@ -1,3 +1,8 @@
+Sat Sep 26 08:35:12 2009  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (compile_string): rename to parse_string(), because
+	  this function only parse String to NODE.
+
 Thu Sep 24 09:41:42 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/mathn.rb (Bignum#**): Fixed bignum**fixnum that was broken when

@@ -457,7 +457,7 @@ ruby_iseq_load(VALUE data, VALUE parent, VALUE opt)
 }
 
 static NODE *
-compile_string(VALUE str, VALUE file, VALUE line)
+parse_string(VALUE str, VALUE file, VALUE line)
 {
     VALUE parser = rb_parser_new();
     NODE *node = rb_parser_compile_string(parser, StringValueCStr(file),
@@ -473,7 +473,7 @@ VALUE
 rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE line, VALUE opt)
 {
     rb_compile_option_t option;
-    NODE *node = compile_string(StringValue(src), file, line);
+    NODE *node = parse_string(StringValue(src), file, line);
     rb_thread_t *th = GET_THREAD();
     make_compile_option(&option, opt);
 
