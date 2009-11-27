@@ -1,3 +1,8 @@
+Tue Sep 22 01:10:02 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* ossl_config.c (ossl_config_add_value_m, ossl_config_set_section):
+	  Check if frozen (or untrusted for $SECURE >= 4) [ruby-core:18377]
+
 Sun Sep 20 11:11:34 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* struct.c (rb_struct_equal, rb_struct_eql): Handle comparison of
