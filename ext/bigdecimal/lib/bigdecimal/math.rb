@@ -1,3 +1,5 @@
+require 'bigdecimal'
+
 #
 #--
 # Contents:

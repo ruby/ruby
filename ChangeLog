@@ -1,3 +1,10 @@
+Tue Sep 22 05:04:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/lib/bigdecimal/{ludcmp,math}.rb: depend on
+	  bigdecimal.
+
+	* ext/bigdecimal/lib/bigdecimal/*.rb: made module functions.
+
 Tue Sep 22 01:10:02 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* ossl_config.c (ossl_config_add_value_m, ossl_config_set_section):
