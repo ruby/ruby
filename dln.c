@@ -1196,7 +1196,7 @@ aix_loaderror(const char *pathname)
 	ERRBUF_APPEND("\n");
     }
     errbuf[strlen(errbuf)-1] = '\0';	/* trim off last newline */
-    rb_loaderror(errbuf);
+    rb_loaderror("%s", errbuf);
     return;
 }
 #endif
