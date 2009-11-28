@@ -1,3 +1,9 @@
+Sun Nov 29 06:37:53 2009  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* lib/rexml/formatters/default.rb (write_attribute): fix an
+	  exception when printing a document when duplicate namespaced
+	  attributes exist. Thanks, Alexey Froloff [ruby-core:2389]
+
 Sat Nov 28 09:05:53 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* vm_eval.c (check_funcall_failed): should rescue user raised
