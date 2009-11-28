@@ -1,3 +1,9 @@
+Sat Nov 28 09:05:53 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* vm_eval.c (check_funcall_failed): should rescue user raised
+	  NoMethodError.  rescue all NoMethodError if receiver does not
+	  respond to the method name.  [ruby-dev:39796]
+
 Thu Nov 26 21:14:30 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_complex.rb (@unify): fix the detection if math
