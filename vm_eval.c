@@ -255,7 +255,7 @@ check_funcall_exec(struct rescue_funcall_args *args)
 static VALUE
 check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
 {
-    if (rb_respond_to(args->recv, args->sym)) {
+    if (rb_respond_to(args->recv, SYM2ID(args->sym))) {
 	rb_exc_raise(e);
     }
     return Qundef;
