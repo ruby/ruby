@@ -1,3 +1,9 @@
+Tue Dec  1 06:16:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (dyna_push_gen, dyna_pop_gen): adjust local vtable level
+	  for the case of syntax errors in method name or argument inside
+	  do block.   [ruby-core:26961]
+
 Mon Nov 30 16:57:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (command_output): $makeflags are already quoted.
