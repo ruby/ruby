@@ -1,4 +1,7 @@
-Tue Dec  1 06:16:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Dec  1 06:51:07 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (dyna_push_gen): use rb_node_newnode() for ripper.
+	  [ruby-core:26961]
 
 	* parse.y (dyna_push_gen, dyna_pop_gen): adjust local vtable level
 	  for the case of syntax errors in method name or argument inside
