@@ -1123,10 +1123,12 @@ end
 # Internal use only.
 #
 def find_executable0(bin, path = nil)
-  ext = config_string('EXEEXT')
+  exts = config_string('EXECUTABLE_EXTS') {|s| s.split} || config_string('EXEEXT') {|s| [s]}
   if File.expand_path(bin) == bin
     return bin if File.executable?(bin)
-    ext and File.executable?(file = bin + ext) and return file
+    if exts
+      exts.each {|ext| File.executable?(file = bin + ext) and return file}
+    end
     return nil
   end
   if path ||= ENV['PATH']
@@ -1137,7 +1139,9 @@ def find_executable0(bin, path = nil)
   file = nil
   path.each do |dir|
     return file if File.executable?(file = File.join(dir, bin))
-    return file if ext and File.executable?(file << ext)
+    if exts
+      exts.each {|ext| File.executable?(ext = file + ext) and return ext}
+    end
   end
   nil
 end

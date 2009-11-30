@@ -1,3 +1,11 @@
+Mon Nov 30 16:54:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, win32/Makefile.sub (EXECUTABLE_EXTS): moved from
+	  dln.c:dln_find_1().
+
+	* lib/mkmf.rb (def find_executable0): use EXECUTABLE_EXTS, not
+	  only EXEEXT.  [ruby-core:26821]
+
 Mon Nov 30 11:00:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): suppress an extra error message after
