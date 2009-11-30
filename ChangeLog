@@ -1,3 +1,9 @@
+Mon Nov 30 11:00:12 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): suppress an extra error message after
+	  numeric literal without digits.  based on a patch from ujihisa .
+	  in [ruby-dev:39811].  [ruby-dev:39798]
+
 Sun Nov 29 16:56:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (check_funcall_failed): pass ID.  [ruby-core:26934]
