@@ -6902,6 +6902,7 @@ parser_yylex(struct parser_params *parser)
 		c = nextc();
 	    }
 	    if (c == '0') {
+#define no_digits() do {yyerror("numeric literal without digits"); return 0;} while (0)
 		int start = toklen();
 		c = nextc();
 		if (c == 'x' || c == 'X') {
@@ -6922,7 +6923,7 @@ parser_yylex(struct parser_params *parser)
 		    pushback(c);
 		    tokfix();
 		    if (toklen() == start) {
-			yyerror("numeric literal without digits");
+			no_digits();
 		    }
 		    else if (nondigit) goto trailing_uc;
 		    set_yylval_literal(rb_cstr_to_inum(tok(), 16, FALSE));
@@ -6946,7 +6947,7 @@ parser_yylex(struct parser_params *parser)
 		    pushback(c);
 		    tokfix();
 		    if (toklen() == start) {
-			yyerror("numeric literal without digits");
+			no_digits();
 		    }
 		    else if (nondigit) goto trailing_uc;
 		    set_yylval_literal(rb_cstr_to_inum(tok(), 2, FALSE));
@@ -6970,7 +6971,7 @@ parser_yylex(struct parser_params *parser)
 		    pushback(c);
 		    tokfix();
 		    if (toklen() == start) {
-			yyerror("numeric literal without digits");
+			no_digits();
 		    }
 		    else if (nondigit) goto trailing_uc;
 		    set_yylval_literal(rb_cstr_to_inum(tok(), 10, FALSE));
@@ -6984,7 +6985,7 @@ parser_yylex(struct parser_params *parser)
 		    /* prefixed octal */
 		    c = nextc();
 		    if (c == -1 || c == '_' || !ISDIGIT(c)) {
-			yyerror("numeric literal without digits");
+			no_digits();
 		    }
 		}
 		if (c >= '0' && c <= '7') {
