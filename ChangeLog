@@ -1,3 +1,7 @@
+Mon Nov 30 16:57:45 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (command_output): $makeflags are already quoted.
+
 Mon Nov 30 16:54:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, win32/Makefile.sub (EXECUTABLE_EXTS): moved from
