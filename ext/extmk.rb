@@ -575,7 +575,7 @@ if $nmake == ?b
 end
 if $command_output
   message = "echo #{message}"
-  cmd = $makeflags.quote.join(' ')
+  cmd = $makeflags.join(' ')
   open($command_output, 'wb') do |f|
     case $command_output
     when /\.sh\z/
