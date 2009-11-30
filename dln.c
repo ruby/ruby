@@ -1703,7 +1703,7 @@ dln_find_1(fname, path, fbuf, size, exe_flag)
     size_t i, fspace;
 #ifdef DOSISH
     static const char extension[][5] = {
-	".exe", ".com", ".cmd", ".bat",
+	EXECUTABLE_EXTS,
     };
     size_t j;
     int is_abs = 0, has_path = 0;

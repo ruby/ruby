@@ -191,6 +191,7 @@ LIBRUBY_LDSHARED = $(LDSHARED)
 LIBRUBY_DLDFLAGS = $(EXTLDFLAGS) -def:$(RUBYDEF)
 
 EXEEXT = .exe
+EXECUTABLE_EXTS = ".exe",".com",".cmd",".bat"
 !if !defined(PROGRAM)
 PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
 !endif
@@ -408,6 +409,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define DEFAULT_KCODE KCODE_NONE
 #define DLEXT ".so"
 #define DLEXT2 ".dll"
+#define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
 #define RUBY_LIB "/lib/ruby/$(ruby_version)"
 #define RUBY_SITE_LIB "/lib/ruby/site_ruby"
 #define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/$(ruby_version)"
@@ -512,6 +514,7 @@ s,@XCFLAGS@,$(XCFLAGS),;t t
 s,@XLDFLAGS@,$(XLDFLAGS),;t t
 s,@DLDFLAGS@,$(DLDFLAGS) $$(LIBPATH),;t t
 s,@ARCH_FLAG@,$(ARCH_FLAG),;t t
+s,@EXECUTABLE_EXTS@,$(EXECUTABLE_EXTS),;t t
 s,@STATIC@,$(STATIC),;t t
 s,@CCDLFLAGS@,,;t t
 s,@LDSHARED@,$(LDSHARED),;t t

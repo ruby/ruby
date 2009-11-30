@@ -1606,6 +1606,12 @@ fi
 LDFLAGS="-L. $LDFLAGS"
 AC_SUBST(ARCHFILE)
 
+if test "$EXEEXT" = .exe; then
+    EXECUTABLE_EXTS='".exe",".com",".cmd",".bat"'
+    AC_DEFINE_UNQUOTED(EXECUTABLE_EXTS, $EXECUTABLE_EXTS)
+    AC_SUBST(EXECUTABLE_EXTS)
+fi
+
 dnl build rdoc index if requested
 RDOCTARGET=""
 AC_ARG_ENABLE(install-doc,

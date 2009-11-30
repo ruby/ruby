@@ -1,3 +1,11 @@
+Mon Nov 30 16:54:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, win32/Makefile.sub (EXECUTABLE_EXTS): moved from
+	  dln.c:dln_find_1().
+
+	* lib/mkmf.rb (def find_executable0): use EXECUTABLE_EXTS, not
+	  only EXEEXT.  [ruby-core:26821]
+
 Thu Nov 26 00:01:58 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/digest/test_digest_extend.rb: Added tests for current digest
