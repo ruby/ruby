@@ -836,3 +836,44 @@ assert_equal 'ok', %q{
 assert_equal 'ok', %q{
   "o" "#{}k"
 }, '[ruby-dev:38980]'
+
+bug2415 = '[ruby-core:26961]'
+assert_normal_exit %q{
+  0.times do
+    0.times do
+      def x(a=1, b, *rest); nil end
+    end
+  end
+}, bug2415
+
+assert_normal_exit %q{
+  0.times do
+    0.times do
+      def x@; nil end
+    end
+  end
+}, bug2415
+
+assert_normal_exit %q{
+  0.times do
+    0.times do
+      def x(a = 0.times do
+              def y(a=1, b, *rest); nil; end
+            end)
+        nil
+      end
+    end
+  end
+}, bug2415
+
+assert_normal_exit %q{
+  0.times do
+    0.times do
+      def x(a = 0.times do
+              def x@; nil; end
+            end)
+        nil
+      end
+    end
+  end
+}, bug2415

@@ -453,10 +453,10 @@ static int  local_id_gen(struct parser_params*, ID);
 static ID   internal_id_gen(struct parser_params*);
 #define internal_id() internal_id_gen(parser)
 
-static void dyna_push_gen(struct parser_params*);
-#define dyna_push() dyna_push_gen(parser)
-static void dyna_pop_gen(struct parser_params*);
-#define dyna_pop() dyna_pop_gen(parser)
+static NODE *dyna_push_gen(struct parser_params*, VALUE);
+#define dyna_push(x) dyna_push_gen(parser, x)
+static void dyna_pop_gen(struct parser_params*, NODE *);
+#define dyna_pop(node) dyna_pop_gen(parser, node)
 static int dyna_in_block_gen(struct parser_params*);
 #define dyna_in_block() dyna_in_block_gen(parser)
 #define dyna_var(id) local_var(id)
@@ -1254,11 +1254,7 @@ block_command	: block_call
 
 cmd_brace_block	: tLBRACE_ARG
 		    {
-			dyna_push();
-		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*%
-		    %*/
+			$<node>$ = dyna_push(0);
 		    }
 		  opt_block_param
 		  compstmt
@@ -1266,11 +1262,11 @@ cmd_brace_block	: tLBRACE_ARG
 		    {
 		    /*%%%*/
 			$$ = NEW_ITER($3,$4);
-			nd_set_line($$, $<num>2);
+			nd_set_line($$, nd_line($<node>2));
 		    /*%
 			$$ = dispatch2(brace_block, escape_Qundef($3), $4);
 		    %*/
-			dyna_pop();
+			dyna_pop($<node>2);
 		    }
 		;
 
@@ -3410,21 +3406,20 @@ bvar		: tIDENTIFIER
 		;
 
 lambda		:   {
-			dyna_push();
-			$<num>$ = lpar_beg;
+			$<node>$ = dyna_push((VALUE)lpar_beg);
 			lpar_beg = ++paren_nest;
 		    }
 		  f_larglist
 		  lambda_body
 		    {
-			lpar_beg = $<num>1;
+			lpar_beg = (int)$<node>1->u1.value;
 		    /*%%%*/
 			$$ = $2;
 			$$->nd_body = NEW_SCOPE($2->nd_head, $3);
 		    /*%
 			$$ = dispatch2(lambda, $2, $3);
 		    %*/
-			dyna_pop();
+			dyna_pop($<node>1);
 		    }
 		;
 
@@ -3458,10 +3453,7 @@ lambda_body	: tLAMBEG compstmt '}'
 
 do_block	: keyword_do_block
 		    {
-			dyna_push();
-		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*% %*/
+			$<node>$ = dyna_push(0);
 		    }
 		  opt_block_param
 		  compstmt
@@ -3469,11 +3461,11 @@ do_block	: keyword_do_block
 		    {
 		    /*%%%*/
 			$$ = NEW_ITER($3,$4);
-			nd_set_line($$, $<num>2);
+			nd_set_line($$, nd_line($<node>2));
 		    /*%
 			$$ = dispatch2(do_block, escape_Qundef($3), $4);
 		    %*/
-			dyna_pop();
+			dyna_pop($<node>2);
 		    }
 		;
 
@@ -3604,41 +3596,33 @@ method_call	: operation paren_args
 
 brace_block	: '{'
 		    {
-			dyna_push();
-		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*%
-                    %*/
+			$<node>$ = dyna_push(0);
 		    }
 		  opt_block_param
 		  compstmt '}'
 		    {
 		    /*%%%*/
 			$$ = NEW_ITER($3,$4);
-			nd_set_line($$, $<num>2);
+			nd_set_line($$, nd_line($<node>2));
 		    /*%
 			$$ = dispatch2(brace_block, escape_Qundef($3), $4);
 		    %*/
-			dyna_pop();
+			dyna_pop($<node>2);
 		    }
 		| keyword_do
 		    {
-			dyna_push();
-		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*%
-                    %*/
+			$<node>$ = dyna_push(0);
 		    }
 		  opt_block_param
 		  compstmt keyword_end
 		    {
 		    /*%%%*/
 			$$ = NEW_ITER($3,$4);
-			nd_set_line($$, $<num>2);
+			nd_set_line($$, nd_line($<node>2));
 		    /*%
 			$$ = dispatch2(do_block, escape_Qundef($3), $4);
 		    %*/
-			dyna_pop();
+			dyna_pop($<node>2);
 		    }
 		;
 
@@ -8876,18 +8860,23 @@ local_id_gen(struct parser_params *parser, ID id)
     }
 }
 
-static void
-dyna_push_gen(struct parser_params *parser)
+static NODE *
+dyna_push_gen(struct parser_params *parser, VALUE x)
 {
     lvtbl->args = vtable_alloc(lvtbl->args);
     lvtbl->vars = vtable_alloc(lvtbl->vars);
+    return node_newnode(parser, NODE_ZSUPER, (VALUE)lvtbl->args, (VALUE)lvtbl->vars, x);
 }
 
 static void
-dyna_pop_gen(struct parser_params *parser)
+dyna_pop_gen(struct parser_params *parser, NODE *dv)
 {
     struct vtable *tmp;
 
+    while (lvtbl->args != (struct vtable *)dv->u1.value) {
+	local_pop();
+    }
+    rb_gc_force_recycle((VALUE)dv);
     tmp = lvtbl->args;
     lvtbl->args = lvtbl->args->prev;
     vtable_free(tmp);
