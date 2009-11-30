@@ -8865,7 +8865,7 @@ dyna_push_gen(struct parser_params *parser, VALUE x)
 {
     lvtbl->args = vtable_alloc(lvtbl->args);
     lvtbl->vars = vtable_alloc(lvtbl->vars);
-    return node_newnode(parser, NODE_ZSUPER, (VALUE)lvtbl->args, (VALUE)lvtbl->vars, x);
+    return rb_node_newnode(NODE_ZSUPER, (VALUE)lvtbl->args, (VALUE)lvtbl->vars, x);
 }
 
 static void
