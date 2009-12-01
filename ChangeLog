@@ -1,3 +1,7 @@
+Tue Dec  1 18:01:43 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/digest/test_digest_extend.rb: added tests for digest framework.
+
 Tue Dec  1 12:01:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (dyna_push_gen, dyna_pop_gen): no needs to save both of
