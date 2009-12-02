@@ -1,3 +1,8 @@
+Wed Dec  2 23:51:28 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c: initialize @hostname of SSLSocket to avoid
+	  warning at SSLSocket#connect.
+
 Tue Dec  1 18:01:43 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/digest/test_digest_extend.rb: added tests for digest framework.

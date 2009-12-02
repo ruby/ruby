@@ -963,6 +963,9 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     ossl_ssl_set_ctx(self, ctx);
     ossl_ssl_set_sync_close(self, Qfalse);
     ossl_sslctx_setup(ctx);
+
+    rb_iv_set(self, "@hostname", Qnil);
+
     rb_call_super(0, 0);
 
     return self;
