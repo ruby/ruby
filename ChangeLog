@@ -1,3 +1,8 @@
+Wed Dec  2 11:21:10 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* time.c (time_asctime): workaround for MSVCRT's bug.
+	  backported from trunk (r18871).  ref [ruby-core:26992]
+
 Tue Dec  1 18:00:12 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/digest/test_digest_extend.rb: added tests for digest framework.

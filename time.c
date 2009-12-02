@@ -1242,6 +1242,10 @@ time_asctime(time)
     }
     s = asctime(&tobj->tm);
     if (s[24] == '\n') s[24] = '\0';
+#if (defined(_MSC_VER) && defined(_DLL)) || defined(__MSVCRT__)
+    /* workaround for MSVCRT's bug */
+    if (s[8] == '0') s[8] = ' ';
+#endif
 
     return rb_str_new2(s);
 }
