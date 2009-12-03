@@ -1,3 +1,11 @@
+Thu Dec 3 20:27:27 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/trans/gb18030-tbl.rb: Fix omission of C1 region in code table
+	  (from Tatsuya Mizuno)
+
+	* test/ruby/test_transcode.rb: Added test for converting full range of
+	  Unicode codepoints from/to GB18030 (from Tatsuya Mizuno)
+
 Wed Dec  2 23:51:28 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c: initialize @hostname of SSLSocket to avoid
