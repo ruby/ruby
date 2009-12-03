@@ -17,7 +17,7 @@ static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *a
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
 static inline VALUE vm_backtrace(rb_thread_t *th, int lev);
 static int vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *arg);
-static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex);
+static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref);
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
@@ -1161,16 +1161,18 @@ yield_under(VALUE under, VALUE self, VALUE values)
 {
     rb_thread_t *th = GET_THREAD();
     rb_block_t block, *blockptr;
-    NODE *cref = vm_cref_push(th, under, NOEX_PUBLIC);
+    NODE *cref;
 
     if ((blockptr = GC_GUARDED_PTR_REF(th->cfp->lfp[0])) != 0) {
 	block = *blockptr;
 	block.self = self;
 	th->cfp->lfp[0] = GC_GUARDED_PTR(&block);
     }
+    cref = vm_cref_push(th, under, NOEX_PUBLIC, &block);
+    cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL;
 
     if (values == Qundef) {
-	return vm_yield_with_cref(th, 0, 0, cref);
+	return vm_yield_with_cref(th, 1, &self, cref);
     }
     else {
 	return vm_yield_with_cref(th, RARRAY_LENINT(values), RARRAY_PTR(values), cref);
@@ -1181,7 +1183,7 @@ yield_under(VALUE under, VALUE self, VALUE values)
 static VALUE
 eval_under(VALUE under, VALUE self, VALUE src, const char *file, int line)
 {
-    NODE *cref = vm_cref_push(GET_THREAD(), under, NOEX_PUBLIC);
+    NODE *cref = vm_cref_push(GET_THREAD(), under, NOEX_PUBLIC, NULL);
 
     if (rb_safe_level() >= 4) {
 	StringValue(src);

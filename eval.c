@@ -274,7 +274,8 @@ rb_mod_nesting(void)
 
     while (cref && cref->nd_next) {
 	VALUE klass = cref->nd_clss;
-	if (!NIL_P(klass)) {
+	if (!(cref->flags & NODE_FL_CREF_PUSHED_BY_EVAL) &&
+	    !NIL_P(klass)) {
 	    rb_ary_push(ary, klass);
 	}
 	cref = cref->nd_next;

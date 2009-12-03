@@ -343,6 +343,9 @@ putspecialobject
       case VM_SPECIAL_OBJECT_CBASE:
 	val = vm_get_cbase(GET_ISEQ(), GET_LFP(), GET_DFP());
 	break;
+      case VM_SPECIAL_OBJECT_CONST_BASE:
+	val = vm_get_const_base(GET_ISEQ(), GET_LFP(), GET_DFP());
+	break;
       default:
 	rb_bug("putspecialobject insn: unknown value_type");
     }
@@ -944,7 +947,7 @@ defineclass
 	rb_bug("unknown defineclass type: %d", (int)define_type);
     }
 
-    COPY_CREF(class_iseq->cref_stack, vm_cref_push(th, klass, NOEX_PUBLIC));
+    COPY_CREF(class_iseq->cref_stack, vm_cref_push(th, klass, NOEX_PUBLIC, NULL));
 
     /* enter scope */
     vm_push_frame(th, class_iseq,

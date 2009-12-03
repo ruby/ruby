@@ -1066,14 +1066,17 @@ vm_get_cref(const rb_iseq_t *iseq, const VALUE *lfp, const VALUE *dfp)
 }
 
 static NODE *
-vm_cref_push(rb_thread_t *th, VALUE klass, int noex)
+vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr)
 {
     rb_control_frame_t *cfp = vm_get_ruby_level_caller_cfp(th, th->cfp);
     NODE *cref = NEW_BLOCK(klass);
     cref->nd_file = 0;
     cref->nd_visi = noex;
 
-    if (cfp) {
+    if (blockptr) {
+	cref->nd_next = vm_get_cref(blockptr->iseq, blockptr->lfp, blockptr->dfp);
+    }
+    else if (cfp) {
 	cref->nd_next = vm_get_cref(cfp->iseq, cfp->lfp, cfp->dfp);
     }
 
@@ -1088,6 +1091,23 @@ vm_get_cbase(const rb_iseq_t *iseq, const VALUE *lfp, const VALUE *dfp)
 
     while (cref) {
 	if ((klass = cref->nd_clss) != 0) {
+	    break;
+	}
+	cref = cref->nd_next;
+    }
+
+    return klass;
+}
+
+static inline VALUE
+vm_get_const_base(const rb_iseq_t *iseq, const VALUE *lfp, const VALUE *dfp)
+{
+    NODE *cref = vm_get_cref(iseq, lfp, dfp);
+    VALUE klass = Qundef;
+
+    while (cref) {
+	if (!(cref->flags & NODE_FL_CREF_PUSHED_BY_EVAL) &&
+	    (klass = cref->nd_clss) != 0) {
 	    break;
 	}
 	cref = cref->nd_next;
@@ -1117,12 +1137,16 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 
     if (orig_klass == Qnil) {
 	/* in current lexical scope */
-	const NODE *root_cref = vm_get_cref(iseq, th->cfp->lfp, th->cfp->dfp);
-	const NODE *cref = root_cref;
+	const NODE *cref = vm_get_cref(iseq, th->cfp->lfp, th->cfp->dfp);
+	const NODE *root_cref = NULL;
 	VALUE klass = orig_klass;
 
 	while (cref && cref->nd_next) {
-	    klass = cref->nd_clss;
+	    if (!(cref->flags & NODE_FL_CREF_PUSHED_BY_EVAL)) {
+		klass = cref->nd_clss;
+		if (root_cref == NULL)
+		    root_cref = cref;
+	    }
 	    cref = cref->nd_next;
 
 	    if (!NIL_P(klass)) {
@@ -1149,8 +1173,10 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 	}
 
 	/* search self */
-	klass = root_cref->nd_clss;
-	if (NIL_P(klass)) {
+	if (root_cref && !NIL_P(root_cref->nd_clss)) {
+	    klass = root_cref->nd_clss;
+	}
+	else {
 	    klass = CLASS_OF(th->cfp->self);
 	}
 
@@ -1178,7 +1204,8 @@ vm_get_cvar_base(NODE *cref)
     VALUE klass;
 
     while (cref && cref->nd_next &&
-	   (NIL_P(cref->nd_clss) || FL_TEST(cref->nd_clss, FL_SINGLETON))) {
+	   (NIL_P(cref->nd_clss) || FL_TEST(cref->nd_clss, FL_SINGLETON) ||
+	    (cref->flags & NODE_FL_CREF_PUSHED_BY_EVAL))) {
 	cref = cref->nd_next;
 
 	if (!cref->nd_next) {
