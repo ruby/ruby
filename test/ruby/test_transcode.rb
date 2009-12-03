@@ -1578,7 +1578,13 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_gb18030
-    # test from GBK
+    # overall roundtrip test
+    all_gb18030 = (0x0..0xD7FF).to_a.pack 'U*' #追加
+    all_gb18030 << (0xE000..0xFFFF).to_a.pack("U*") #追加
+
+    assert_equal(all_gb18030, all_gb18030.encode("gb18030").encode("UTF-8")) #追加
+
+    # tests from GBK
     check_both_ways("\u4E02", "\x81\x40", 'GB18030') #
     check_both_ways("\u4E8A", "\x81\x7E", 'GB18030') #
     check_both_ways("\u4E90", "\x81\x80", 'GB18030') #
@@ -1691,7 +1697,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\xC7\xE0\xC9\xBD\xD1\xA7\xD4\xBA\xB4\xF3\xD1\xA7", 'GB18030') # 青山学院大学
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\xC9\xF1\xC1\xD6\xC1\x78\xB2\xA9", 'GB18030') # 神林義
 
-	# new tests for GB18030
+    # new tests for GB18030
     check_both_ways("\u9FA6", "\x82\x35\x8F\x33", 'GB18030') # 龦
     check_both_ways("\uD7FF", "\x83\x36\xC7\x38", 'GB18030') # No name ()
 
