@@ -1,3 +1,8 @@
+Thu Dec  3 22:20:51 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/stringio/test_stringio.rb: imported tests from trunk. it has 2
+	  failures which can be fixed by backporting r17739 from trunk.
+
 Wed Dec  2 17:32:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (proc_invoke): unbound block created by define_method
