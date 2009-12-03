@@ -1,3 +1,7 @@
+Thu Dec  3 22:42:09 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/stringio/test_stringio.rb: use 1.8 methods for easier backport.
+
 Thu Dec  3 22:20:51 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/stringio/test_stringio.rb: imported tests from trunk. it has 2

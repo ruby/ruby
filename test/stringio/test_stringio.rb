@@ -295,17 +295,17 @@ class TestStringIO < Test::Unit::TestCase
     f = StringIO.new("1234")
     a = []
     f.each_byte {|c| a << c }
-    assert_equal(%w(1 2 3 4).map {|c| c.ord }, a)
+    assert_equal(%w(1 2 3 4).map {|c| c[0] }, a)
   ensure
     f.close unless f.closed?
   end
 
   def test_getbyte
     f = StringIO.new("1234")
-    assert_equal("1".ord, f.getbyte)
-    assert_equal("2".ord, f.getbyte)
-    assert_equal("3".ord, f.getbyte)
-    assert_equal("4".ord, f.getbyte)
+    assert_equal(?1, f.getbyte)
+    assert_equal(?2, f.getbyte)
+    assert_equal(?3, f.getbyte)
+    assert_equal(?4, f.getbyte)
     assert_equal(nil, f.getbyte)
   ensure
     f.close unless f.closed?
@@ -338,7 +338,7 @@ class TestStringIO < Test::Unit::TestCase
     s = "1234"
     f = StringIO.new(s, "r")
     assert_equal(?1, f.getc)
-    f.ungetc("y".ord)
+    f.ungetc(?y)
     assert_equal(?y, f.getc)
     assert_equal(?2, f.getc)
   ensure
