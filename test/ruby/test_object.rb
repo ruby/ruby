@@ -416,12 +416,20 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  class InstanceExec
+    INSTANCE_EXEC = 123
+  end
+
   def test_instance_exec
     x = 1.instance_exec(42) {|a| self + a }
     assert_equal(43, x)
 
     x = "foo".instance_exec("bar") {|a| self + a }
     assert_equal("foobar", x)
+
+    assert_raise(NameError) do
+      InstanceExec.new.instance_exec { INSTANCE_EXEC }
+    end
   end
 
   def test_extend

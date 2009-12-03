@@ -524,8 +524,9 @@ typedef struct {
 #define VM_CALL_SUPER_BIT          (0x01 << 7)
 #define VM_CALL_OPT_SEND_BIT       (0x01 << 8)
 
-#define VM_SPECIAL_OBJECT_VMCORE   0x01
-#define VM_SPECIAL_OBJECT_CBASE    0x02
+#define VM_SPECIAL_OBJECT_VMCORE       0x01
+#define VM_SPECIAL_OBJECT_CBASE        0x02
+#define VM_SPECIAL_OBJECT_CONST_BASE  0x03
 
 #define VM_FRAME_MAGIC_METHOD 0x11
 #define VM_FRAME_MAGIC_BLOCK  0x21

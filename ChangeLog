@@ -1,3 +1,22 @@
+Fri Dec  4 03:10:38 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* compile.c (compile_cpath, iseq_compile_each): reverted
+	  constant/class variable lookup in instance_eval etc. to the
+	  behavior of 1.8.
+
+	* eval.c (rb_mod_nesting): ditto.
+
+	* insns.def (putspecialobject, defineclass): ditto.
+
+	* node.h (NODE_FL_CREF_PUSHED_BY_EVAL): ditto.
+
+	* vm_core.h (VM_SPECIAL_OBJECT_CONST_BASE): ditto.
+
+	* vm_eval.c (yield_under, eval_under): ditto.
+
+	* vm_insnhelper.c (vm_cref_push, vm_get_const_base,
+	  vm_get_ev_const, vm_get_cvar_base): ditto.
+
 Thu Dec 3 20:27:27 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/trans/gb18030-tbl.rb: Fix omission of C1 region in code table
