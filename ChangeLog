@@ -1,3 +1,8 @@
+Fri Dec  4 13:10:23 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/stringio/stringio.c (ungetc): RDoc updated.  trunk allows
+	  pushing back behind the beginning of the pseudo stream.
+
 Fri Dec  4 03:10:38 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* compile.c (compile_cpath, iseq_compile_each): reverted

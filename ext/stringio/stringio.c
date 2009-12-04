@@ -696,10 +696,9 @@ strio_extend(struct StringIO *ptr, long pos, long len)
  *   strio.ungetc(string)   -> nil
  *
  * Pushes back one character (passed as a parameter) onto *strio*
- * such that a subsequent buffered read will return it.  Pushing back 
- * behind the beginning of the buffer string is not possible.  Nothing
- * will be done if such an attempt is made.
- * In other case, there is no limitation for multiple pushbacks.
+ * such that a subsequent buffered read will return it.  There is no
+ * limitation for multiple pushbacks including pushing back behind the
+ * beginning of the buffer string.
  */
 static VALUE
 strio_ungetc(VALUE self, VALUE c)
