@@ -2902,7 +2902,7 @@ primary		: literal
 			NODE *body = remove_begin($5);
 			reduce_nodes(&body);
 			$$ = NEW_DEFN($2, $4, body, NOEX_PRIVATE);
-			fixpos($$, $4);
+			nd_set_line($$, $<num>1);
 		    /*%
 			$$ = dispatch3(def, $2, $4, $5);
 		    %*/
@@ -2924,7 +2924,7 @@ primary		: literal
 			NODE *body = remove_begin($8);
 			reduce_nodes(&body);
 			$$ = NEW_DEFS($2, $5, $7, body);
-			fixpos($$, $2);
+			nd_set_line($$, $<num>1);
 		    /*%
 			$$ = dispatch5(defs, $2, $3, $5, $7, $8);
 		    %*/
@@ -3034,6 +3034,10 @@ k_module	: keyword_module
 k_def		: keyword_def
 		    {
 			token_info_push("def");
+		    /*%%%*/
+			$<num>$ = ruby_sourceline;
+		    /*%
+		    %*/
 		    }
 		;
 

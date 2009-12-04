@@ -746,14 +746,15 @@ class TestProc < Test::Unit::TestCase
     assert(x.to_s.tainted?)
   end
 
-  def source_location_test
-    __LINE__
+  @@line_of_source_location_test = __LINE__ + 1
+  def source_location_test a=1,
+    b=2
   end
 
   def test_source_location
     file, lineno = method(:source_location_test).source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(source_location_test - 1, lineno)
+    assert_equal(@@line_of_source_location_test, lineno, 'Bug #2427')
   end
 
   def test_splat_without_respond_to
