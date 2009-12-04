@@ -1472,6 +1472,7 @@ marshal_load(argc, argv)
     arg->symbols = st_init_numtable();
     arg->data    = st_init_numtable();
     arg->proc = 0;
+    arg->taint = taint;
 
     major = r_byte(arg);
     minor = r_byte(arg);

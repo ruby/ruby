@@ -99,4 +99,13 @@ class TestMarshal < Test::Unit::TestCase
     GC.start
     assert(true, '[ruby-dev:39425]')
   end
+
+  def test_taint
+    x = Object.new
+    x.taint
+    s = Marshal.dump(x)
+    assert_equal(true, s.tainted?)
+    y = Marshal.load(s)
+    assert_equal(true, y.tainted?)
+  end
 end
