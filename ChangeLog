@@ -3,6 +3,11 @@ Fri Dec  4 16:50:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* parse.y (k_def): adjust the location of method definition to the
 	  line of def.  [Bug #2427]
 
+Fri Dec  4 19:05:28 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* insns.def (defined): should respect #respond_to_missing? as
+	  #respond_to? does.
+
 Fri Dec  4 15:50:18 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_eval.c (yield_under): does not yield self, and passes blockptr

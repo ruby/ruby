@@ -799,6 +799,8 @@ defined
 		}
 	    }
 	}
+	if (RTEST(rb_funcall(v, rb_intern("respond_to_missing?"), 2, obj, Qfalse)))
+	    expr_type = "method";
 	break;
       }
       case DEFINED_YIELD:
