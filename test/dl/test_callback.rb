@@ -34,20 +34,22 @@ module DL
         called_with = dlunwrap(str)
       end
       func = CFunc.new(addr, TYPE_VOID, 'test')
+      f = Function.new(func, [TYPE_VOIDP])
 
-      func.call([dlwrap('foo')])
+      f.call(dlwrap('foo'))
       assert_equal 'foo', called_with
     end
 
     def test_call_callback
       called = false
 
-      addr = set_callback(TYPE_VOID, 0) do
+      addr = set_callback(TYPE_VOID, 1) do |foo|
         called = true
       end
 
       func = CFunc.new(addr, TYPE_VOID, 'test')
-      func.call([])
+      f = Function.new(func, [TYPE_VOIDP])
+      f.call(nil)
 
       assert called, 'function should be called'
     end
