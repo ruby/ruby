@@ -3,6 +3,11 @@ require_relative '../ruby/envutil'
 
 module DL
   class TestCPtr < TestBase
+    def test_cptr_to_int
+      null = DL::NULL
+      assert_equal(null.to_i, null.to_int)
+    end
+
     def test_malloc_free_func_int
       free = CFunc.new(DL::RUBY_FREE, TYPE_VOID, 'free')
 
