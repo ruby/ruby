@@ -626,6 +626,7 @@ Init_dlptr(void)
     rb_define_method(rb_cDLCPtr, "free=", rb_dlptr_free_set, 1);
     rb_define_method(rb_cDLCPtr, "free",  rb_dlptr_free_get, 0);
     rb_define_method(rb_cDLCPtr, "to_i",  rb_dlptr_to_i, 0);
+    rb_define_method(rb_cDLCPtr, "to_int",  rb_dlptr_to_i, 0);
     rb_define_method(rb_cDLCPtr, "to_value",  rb_dlptr_to_value, 0);
     rb_define_method(rb_cDLCPtr, "ptr",   rb_dlptr_ptr, 0);
     rb_define_method(rb_cDLCPtr, "+@", rb_dlptr_ptr, 0);
