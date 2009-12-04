@@ -116,7 +116,7 @@ assert_equal %q{1}, %q{
     Const
   }
 }
-assert_equal %q{C}, %q{
+assert_equal %q{top}, %q{
   Const = :top
   class C
     Const = :C
