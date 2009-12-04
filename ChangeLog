@@ -3,6 +3,13 @@ Fri Dec  4 15:50:18 2009  Shugo Maeda  <shugo@ruby-lang.org>
 	* vm_eval.c (yield_under): does not yield self, and passes blockptr
 	  instead of &block to vm_cref_push().  [ruby-dev:39833]
 
+Fri Dec  4 15:15:43 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (num_exact): should not accept strings as operands, even
+	  though they respond to #to_r.  ideally, strict rational
+	  conversion should be done by a method like #to_rational, not #to_r.
+	  [ruby-core:23729]
+
 Fri Dec  4 13:10:23 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/stringio/stringio.c (ungetc): RDoc updated.  trunk allows
