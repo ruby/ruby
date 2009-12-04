@@ -787,19 +787,19 @@ defined
 	}
 	break;
       case DEFINED_METHOD:{
-	  VALUE klass = CLASS_OF(v);
-	  const rb_method_entry_t *me = rb_method_entry(klass, SYM2ID(obj));
+	VALUE klass = CLASS_OF(v);
+	const rb_method_entry_t *me = rb_method_entry(klass, SYM2ID(obj));
 
-	  if (me) {
-	      if (!(me->flag & NOEX_PRIVATE)) {
-		  if (!((me->flag & NOEX_PROTECTED) &&
-			!rb_obj_is_kind_of(GET_SELF(),
-					   rb_class_real(klass)))) {
-		      expr_type = "method";
-		  }
-	      }
-	  }
-	  break;
+	if (me) {
+	    if (!(me->flag & NOEX_PRIVATE)) {
+		if (!((me->flag & NOEX_PROTECTED) &&
+		      !rb_obj_is_kind_of(GET_SELF(),
+					 rb_class_real(klass)))) {
+		    expr_type = "method";
+		}
+	    }
+	}
+	break;
       }
       case DEFINED_YIELD:
 	if (GET_BLOCK_PTR()) {
@@ -807,27 +807,27 @@ defined
 	}
 	break;
       case DEFINED_ZSUPER:{
-	  rb_iseq_t *ip = GET_ISEQ();
-	  while (ip) {
-	      if (ip->defined_method_id) {
-		  break;
-	      }
-	      ip = ip->parent_iseq;
-	  }
-	  if (ip) {
-	      VALUE klass = vm_search_normal_superclass(ip->klass, GET_SELF());
-	      if (rb_method_boundp(klass, ip->defined_method_id, 0)) {
-		  expr_type = "super";
-	      }
-	  }
-	  break;
+	rb_iseq_t *ip = GET_ISEQ();
+	while (ip) {
+	    if (ip->defined_method_id) {
+		break;
+	    }
+	    ip = ip->parent_iseq;
+	}
+	if (ip) {
+	    VALUE klass = vm_search_normal_superclass(ip->klass, GET_SELF());
+	    if (rb_method_boundp(klass, ip->defined_method_id, 0)) {
+		expr_type = "super";
+	    }
+	}
+	break;
       }
       case DEFINED_REF:{
-	  val = vm_getspecial(th, GET_LFP(), Qfalse, FIX2INT(obj));
-	  if (val != Qnil) {
-	      expr_type = "global-variable";
-	  }
-	  break;
+	val = vm_getspecial(th, GET_LFP(), Qfalse, FIX2INT(obj));
+	if (val != Qnil) {
+	    expr_type = "global-variable";
+	}
+	break;
       }
       default:
 	rb_bug("unimplemented defined? type (VM)");
