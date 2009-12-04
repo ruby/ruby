@@ -214,19 +214,22 @@ num_exact(VALUE v)
         v = rb_convert_type(v, T_RATIONAL, "Rational", "to_r");
         break;
 
+      case T_STRING:
       case T_NIL:
         goto typeerror;
 
       default: {
         VALUE tmp;
-        if (!NIL_P(tmp = rb_check_convert_type(v, T_RATIONAL, "Rational", "to_r")))
+        if (!NIL_P(tmp = rb_check_convert_type(v, T_RATIONAL, "Rational", "to_r"))) {
+	    if (rb_respond_to(v, rb_intern("to_str"))) goto typeerror;
             v = tmp;
+	}
         else if (!NIL_P(tmp = rb_check_to_integer(v, "to_int")))
             v = tmp;
         else {
           typeerror:
             rb_raise(rb_eTypeError, "can't convert %s into an exact number",
-                                 rb_obj_classname(v));
+		                    NIL_P(v) ? "nil" : rb_obj_classname(v));
         }
         break;
       }
