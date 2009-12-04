@@ -327,7 +327,7 @@ class TestStringIO < Test::Unit::TestCase
     s = "1234"
     f = StringIO.new(s, "r")
     assert_nothing_raised { f.ungetc("x") }
-    assert_equal("x", f.getc) # bug?
+    assert_equal("x", f.getc) # bug? -> it's a feature from 1.9.
     assert_equal("1", f.getc)
 
     s = "1234"
