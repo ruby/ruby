@@ -1,3 +1,18 @@
+Fri Oct 16 12:03:31 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/csv.rb (CSV#raw_encoding): returns ASCII-8BIT when the io
+	  doesn't have encoding.
+
+Fri Oct 16 03:15:52 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/csv.rb (CSV#read_to_char): set encoding and verify data
+	  which read from io before encode it to @encoding.
+
+	* lib/csv.rb (CSV#raw_encoding): add to get @io's encoding.
+
+	* lib/csv.rb (CSV#read_io): add to read string and set @io's
+	  encoding.
+
 Mon Sep 28 22:33:11 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (aix_loaderror): needs format string.
