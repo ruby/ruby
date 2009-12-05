@@ -3648,6 +3648,20 @@ rb_w32_stati64(const char *path, struct stati64 *st)
     return ret;
 }
 
+int
+rb_w32_access(const char *path, int mode)
+{
+    struct stati64 stat;
+    if (rb_w32_stati64(path, &stat) != 0)
+	return -1;
+    mode <<= 6;
+    if ((stat.st_mode & mode) != mode) {
+	errno = EACCES;
+	return -1;
+    }
+    return 0;
+}
+
 static int
 rb_chsize(HANDLE h, off_t size)
 {

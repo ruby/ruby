@@ -1,3 +1,11 @@
+Fri Sep 25 16:01:45 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c, include/ruby/win32.h (rb_w32_access): new function to
+	  replace MSVCRT's access().
+	  [ruby-core:25761]
+
+	* file.c (eaccess): workaround for recent MSVCRT is no longer needed.
+
 Mon Sep 28 19:36:20 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/wini32.c (LK_ERR): with overlapped I/O, LockFileEx() returns
