@@ -1142,12 +1142,13 @@ struct obj_ivar_tag {
 };
 
 static int
-obj_ivar_i(ID key, VALUE index, struct obj_ivar_tag *data)
+obj_ivar_i(st_data_t key, st_data_t index, st_data_t arg)
 {
+    struct obj_ivar_tag *data = (struct obj_ivar_tag *)arg;
     if ((long)index < ROBJECT_NUMIV(data->obj)) {
-        VALUE val = ROBJECT_IVPTR(data->obj)[index];
+        VALUE val = ROBJECT_IVPTR(data->obj)[(long)index];
         if (val != Qundef) {
-            return (data->func)(key, val, data->arg);
+            return (data->func)((ID)key, val, data->arg);
         }
     }
     return ST_CONTINUE;
@@ -1170,7 +1171,8 @@ obj_ivar_each(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
     st_foreach_safe(tbl, obj_ivar_i, (st_data_t)&data);
 }
 
-void rb_ivar_foreach(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
+void
+rb_ivar_foreach(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
 {
     switch (TYPE(obj)) {
       case T_OBJECT:
