@@ -4074,7 +4074,7 @@ rb_w32_open(const char *file, int oflag, ...)
     SECURITY_ATTRIBUTES sec;
     HANDLE h;
 
-    if ((oflag & O_TEXT) || !(oflag & ~O_BINARY)) {
+    if ((oflag & O_TEXT) || !(oflag & O_BINARY)) {
 	va_list arg;
 	int pmode;
 	va_start(arg, oflag);
