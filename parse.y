@@ -9577,6 +9577,16 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
       mbstr:;
     }
   new_id:
+    if (!(global_symbols.last_id << (ID_SCOPE_SHIFT+RUBY_SPECIAL_SHIFT))) {
+	if (len > 20) {
+	    rb_raise(rb_eRuntimeError, "symbol table overflow (symbol %.20s...)",
+		     name);
+	}
+	else {
+	    rb_raise(rb_eRuntimeError, "symbol table overflow (symbol %.*s)",
+		     (int)len, name);
+	}
+    }
     id |= ++global_symbols.last_id << ID_SCOPE_SHIFT;
   id_register:
     return register_symid(id, name, len, enc);

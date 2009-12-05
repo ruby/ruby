@@ -6379,25 +6379,10 @@ VALUE
 rb_str_intern(VALUE s)
 {
     VALUE str = RB_GC_GUARD(s);
-    VALUE sym;
-    ID id, id2;
+    ID id;
 
     id = rb_intern_str(str);
-    sym = ID2SYM(id);
-    id2 = SYM2ID(sym);
-    if (id != id2) {
-	const char *name = rb_id2name(id2);
-
-	if (name) {
-	    rb_raise(rb_eRuntimeError, "symbol table overflow (%s given for %s)",
-		     name, RSTRING_PTR(str));
-	}
-	else {
-	    rb_raise(rb_eRuntimeError, "symbol table overflow (symbol %s)",
-		     RSTRING_PTR(str));
-	}
-    }
-    return sym;
+    return ID2SYM(id);
 }
 
 
