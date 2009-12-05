@@ -122,28 +122,28 @@ module IRB
       end
 
       if load_file
-	eval %[
+	line = __LINE__; eval %[
 	  def #{cmd_name}(*opts, &b)
 	    require "#{load_file}"
 	    arity = ExtendCommand::#{cmd_class}.instance_method(:execute).arity
-	    args = (1..arity.abs).map {|i| "arg" + i.to_s }
+	    args = (1..(arity < 0 ? ~arity : arity)).map {|i| "arg" + i.to_s }
 	    args << "*opts" if arity < 0
 	    args << "&block"
 	    args = args.join(", ")
-	    eval %[
+	    line = __LINE__; eval %[
 	      def #{cmd_name}(\#{args})
 		ExtendCommand::#{cmd_class}.execute(irb_context, \#{args})
 	      end
-	    ]
+	    ], nil, __FILE__, line
 	    send :#{cmd_name}, *opts, &b
 	  end
-	]
+	], nil, __FILE__, line
       else
-	eval %[
+	line = __LINE__; eval %[
 	  def #{cmd_name}(*opts, &b)
 	    ExtendCommand::#{cmd_class}.execute(irb_context, *opts, &b)
 	  end
-	]
+	], nil, __FILE__, line
       end
 
       for ali, flag in aliases
@@ -160,7 +160,7 @@ module IRB
 	  (override == OVERRIDE_PRIVATE_ONLY) && !respond_to?(to) or
 	  (override == NO_OVERRIDE) &&  !respond_to?(to, true)
 	target = self
-	(class<<self;self;end).instance_eval{
+	(class << self; self; end).instance_eval{
 	  if target.respond_to?(to, true) &&
 	      !target.respond_to?(EXCB.irb_original_method_name(to), true)
 	    alias_method(EXCB.irb_original_method_name(to), to)
@@ -177,7 +177,7 @@ module IRB
     end
 
     def self.extend_object(obj)
-      unless (class<<obj;ancestors;end).include?(EXCB)
+      unless (class << obj; ancestors; end).include?(EXCB)
 	super
 	for ali, com, flg in @ALIASES
 	  obj.install_alias_method(ali, com, flg)
@@ -207,7 +207,7 @@ module IRB
     end
 
     def self.def_extend_command(cmd_name, load_file, *aliases)
-      Context.module_eval %[
+      line = __LINE__; Context.module_eval %[
         def #{cmd_name}(*opts, &b)
 	  Context.module_eval {remove_method(:#{cmd_name})}
 	  require "#{load_file}"
@@ -216,7 +216,7 @@ module IRB
 	for ali in aliases
 	  alias_method ali, cmd_name
 	end
-      ]
+      ], __FILE__, line
     end
 
     CE.install_extend_commands
