@@ -251,7 +251,7 @@ GetCurrentThreadHandle(void)
 	    i = 0;							\
 	else {								\
 	    DWORD err = GetLastError();					\
-	    if (err == ERROR_LOCK_VIOLATION)				\
+	    if (err == ERROR_LOCK_VIOLATION || err == ERROR_IO_PENDING)	\
 		errno = EWOULDBLOCK;					\
 	    else if (err == ERROR_NOT_LOCKED)				\
 		i = 0;							\
