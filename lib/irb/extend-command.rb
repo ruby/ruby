@@ -126,8 +126,12 @@ module IRB
 	  def #{cmd_name}(*opts, &b)
 	    require "#{load_file}"
 	    arity = ExtendCommand::#{cmd_class}.instance_method(:execute).arity
-	    args = (1..arity).map {|i| "arg" + i.to_s }
-	    args << "*opts" if arity < 0
+            args = []
+	    if arity < 0
+	      args << "*opts"
+	      arity = -arity - 1
+	    end
+	    args.unshift *(1..arity).map {|i| "arg" + i.to_s }
 	    args << "&block"
 	    args = args.join(", ")
 	    eval <<-"EOS2", binding, __FILE__, __LINE__+1

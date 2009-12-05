@@ -1,3 +1,9 @@
+Sat Dec  5 14:29:49 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/irb/extend-command.rb (IRB::ExtendCommandBundle::def_extend_command):
+	  extension commands with optional parameters have been broken because of 
+	  a spec change of UnboundMethod#arity.
+
 Sat Dec  5 14:24:10 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/irb/extend-command.rb (IRB::ExtendCommandBundle::def_extend_command):
