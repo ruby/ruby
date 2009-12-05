@@ -1,3 +1,8 @@
+Sun Dec  6 00:35:16 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
+
+	* symbian/setup (config.h): EXECUTABLE_EXTS moved from
+	  dln.c:dln_find_1().
+
 Sat Dec  5 15:35:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object): dump instance variables when using
