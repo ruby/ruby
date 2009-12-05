@@ -1,3 +1,7 @@
+Tue Oct 20 15:07:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (mlhs_basic): fixed handling splat in middle of mlhs.  a
+	  patch from Andy Keep in [ruby-core:26163]
 Thu Oct 15 16:57:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_intern3): check symbol table overflow.

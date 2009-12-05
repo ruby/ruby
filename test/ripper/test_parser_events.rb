@@ -216,6 +216,46 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
     assert_equal("heredoc1\nheredoc2\n", heredoc, bug1921)
   end
 
+  def test_massign
+    thru_massign = false
+    parse("a, b = 1, 2", :on_massign) {thru_massign = true}
+    assert_equal true, thru_massign
+  end
+
+  def test_mlhs_add
+    thru_mlhs_add = false
+    parse("a, b = 1, 2", :on_mlhs_add) {thru_mlhs_add = true}
+    assert_equal true, thru_mlhs_add
+  end
+
+  def test_mlhs_add_star
+    bug2232 = '[ruby-core:26163]'
+
+    thru_mlhs_add_star = false
+    tree = parse("a, *b = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
+    assert_equal true, thru_mlhs_add_star
+    assert_match /mlhs_add_star\(mlhs_add\(mlhs_new\(\),a\),b\)/, tree
+    thru_mlhs_add_star = false
+    tree = parse("a, *b, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
+    assert_equal true, thru_mlhs_add_star
+    assert_match /mlhs_add\(mlhs_add_star\(mlhs_add\(mlhs_new\(\),a\),b\),mlhs_add\(mlhs_new\(\),c\)\)/, tree, bug2232
+  end
+
+  def test_mlhs_new
+    thru_mlhs_new = false
+    parse("a, b = 1, 2", :on_mlhs_new) {thru_mlhs_new = true}
+    assert_equal true, thru_mlhs_new
+  end
+
+  def test_mlhs_paren
+    thru_mlhs_paren = false
+    parse("a, b = 1, 2", :on_mlhs_paren) {thru_mlhs_paren = true}
+    assert_equal false, thru_mlhs_paren
+    thru_mlhs_paren = false
+    parse("(a, b) = 1, 2", :on_mlhs_paren) {thru_mlhs_paren = true}
+    assert_equal true, thru_mlhs_paren
+  end
+
 =begin
   def test_brace_block
     assert_equal true, $thru__brace_block
@@ -333,28 +373,8 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
     assert_equal true, $thru__iter_block
   end
 
-  def test_massign
-    assert_equal true, $thru__massign
-  end
-
   def test_method_add_arg
     assert_equal true, $thru__method_add_arg
-  end
-
-  def test_mlhs_add
-    assert_equal true, $thru__mlhs_add
-  end
-
-  def test_mlhs_add_star
-    assert_equal true, $thru__mlhs_add_star
-  end
-
-  def test_mlhs_new
-    assert_equal true, $thru__mlhs_new
-  end
-
-  def test_mlhs_paren
-    assert_equal true, $thru__mlhs_paren
   end
 
   def test_module
