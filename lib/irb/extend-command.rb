@@ -122,28 +122,28 @@ module IRB
       end
 
       if load_file
-	eval %[
+	eval <<-"EOS", binding, __FILE__, __LINE__+1
 	  def #{cmd_name}(*opts, &b)
 	    require "#{load_file}"
 	    arity = ExtendCommand::#{cmd_class}.instance_method(:execute).arity
-	    args = (1..arity.abs).map {|i| "arg" + i.to_s }
+	    args = (1..arity).map {|i| "arg" + i.to_s }
 	    args << "*opts" if arity < 0
 	    args << "&block"
 	    args = args.join(", ")
-	    eval %[
+	    eval <<-"EOS2", binding, __FILE__, __LINE__+1
 	      def #{cmd_name}(\#{args})
 		ExtendCommand::#{cmd_class}.execute(irb_context, \#{args})
 	      end
-	    ]
+	    EOS2
 	    send :#{cmd_name}, *opts, &b
 	  end
-	]
+	EOS
       else
-	eval %[
+	eval <<-"EOS", binding, __FILE__, __LINE__+1
 	  def #{cmd_name}(*opts, &b)
 	    ExtendCommand::#{cmd_class}.execute(irb_context, *opts, &b)
 	  end
-	]
+	EOS
       end
 
       for ali, flag in aliases
@@ -207,7 +207,7 @@ module IRB
     end
 
     def self.def_extend_command(cmd_name, load_file, *aliases)
-      Context.module_eval %[
+      Context.module_eval <<-"EOS", __FILE__, __LINE__+1
         def #{cmd_name}(*opts, &b)
 	  Context.module_eval {remove_method(:#{cmd_name})}
 	  require "#{load_file}"
@@ -216,7 +216,7 @@ module IRB
 	for ali in aliases
 	  alias_method ali, cmd_name
 	end
-      ]
+      EOS
     end
 
     CE.install_extend_commands
@@ -228,13 +228,13 @@ module IRB
       extend_method = extend_method.to_s
 
       alias_name = new_alias_name(base_method)
-      module_eval %[
+      module_eval <<-"EOS", __FILE__, __LINE__+1
         alias_method alias_name, base_method
         def #{base_method}(*opts)
 	  send :#{extend_method}, *opts
 	  send :#{alias_name}, *opts
 	end
-      ]
+      EOS
     end
 
     def def_post_proc(base_method, extend_method)
@@ -242,13 +242,13 @@ module IRB
       extend_method = extend_method.to_s
 
       alias_name = new_alias_name(base_method)
-      module_eval %[
+      module_eval <<-"EOS", __FLIE__, __LINE__+1
         alias_method alias_name, base_method
         def #{base_method}(*opts)
 	  send :#{alias_name}, *opts
 	  send :#{extend_method}, *opts
 	end
-      ]
+      EOS
     end
 
     # return #{prefix}#{name}#{postfix}<num>

@@ -1,3 +1,17 @@
+Sat Dec  5 14:24:10 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/irb/extend-command.rb (IRB::ExtendCommandBundle::def_extend_command):
+	  gives eval a source location for readability of backtrace.
+
+	* lib/irb/extend-command.rb (IRB::ContextExtender::def_extend_command):
+	  ditto
+
+	* lib/irb/extend-command.rb (IRB::MethodExtender::def_pre_proc):
+	  ditto
+
+	* lib/irb/extend-command.rb (IRB::MethodExtender::def_post_proc):
+	  ditto
+
 Tue Jul 21 21:37:19 2009  Keiju Ishitsuka  <keiju@emperor2.pendome>
 
 	* lib/irb/cmd/help.rb: fixed irb's "help" command. [ruby-core:22310].
