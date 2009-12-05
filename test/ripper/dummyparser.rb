@@ -58,7 +58,7 @@ class DummyParser < Ripper
     class << self; self; end.class_eval do
       define_method(name) do |*a, &b|
         result = super(*a, &b)
-        yield
+        yield(*a)
         result
       end
     end

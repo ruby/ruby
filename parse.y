@@ -4785,21 +4785,42 @@ ripper_yylval_id(ID x)
 # define yylval_id() yylval.id
 #endif
 
-#ifdef RIPPER
+#ifndef RIPPER
+#define ripper_flush(p) (void)(p)
+#else
 #define ripper_flush(p) (p->tokp = p->parser_lex_p)
 
 #define yylval_rval *(TYPE(yylval.val) == T_NODE ? &yylval.node->nd_rval : &yylval.val)
 
+static int
+ripper_has_scan_event(struct parser_params *parser)
+{
+
+    if (lex_p < parser->tokp) rb_raise(rb_eRuntimeError, "lex_p < tokp");
+    return lex_p > parser->tokp;
+}
+
+static VALUE
+ripper_scan_event_val(struct parser_params *parser, int t)
+{
+    VALUE str = STR_NEW(parser->tokp, lex_p - parser->tokp);
+    VALUE rval = ripper_dispatch1(parser, ripper_token2eventid(t), str);
+    ripper_flush(parser);
+    return rval;
+}
+
 static void
 ripper_dispatch_scan_event(struct parser_params *parser, int t)
 {
-    VALUE str;
+    if (!ripper_has_scan_event(parser)) return;
+    yylval_rval = ripper_scan_event_val(parser, t);
+}
 
-    if (lex_p < parser->tokp) rb_raise(rb_eRuntimeError, "lex_p < tokp");
-    if (lex_p == parser->tokp) return;
-    str = STR_NEW(parser->tokp, lex_p - parser->tokp);
-    yylval_rval = ripper_dispatch1(parser, ripper_token2eventid(t), str);
-    ripper_flush(parser);
+static void
+ripper_dispatch_ignored_scan_event(struct parser_params *parser, int t)
+{
+    if (!ripper_has_scan_event(parser)) return;
+    (void)ripper_scan_event_val(parser, t);
 }
 
 static void
@@ -5289,9 +5310,7 @@ parser_nextc(struct parser_params *parser)
 	    parser->line_count++;
 	    lex_pbeg = lex_p = RSTRING_PTR(v);
 	    lex_pend = lex_p + RSTRING_LEN(v);
-#ifdef RIPPER
 	    ripper_flush(parser);
-#endif
 	    lex_lastline = v;
 	}
     }
@@ -5946,9 +5965,7 @@ parser_heredoc_identifier(struct parser_params *parser)
 				  len,				/* nd_nth */
 				  lex_lastline);		/* nd_orig */
     nd_set_line(lex_strterm, ruby_sourceline);
-#ifdef RIPPER
     ripper_flush(parser);
-#endif
     return term == '`' ? tXSTRING_BEG : tSTRING_BEG;
 }
 
@@ -5957,12 +5974,6 @@ parser_heredoc_restore(struct parser_params *parser, NODE *here)
 {
     VALUE line;
 
-#ifdef RIPPER
-    if (!NIL_P(parser->delayed))
-	ripper_dispatch_delayed_token(parser, tSTRING_CONTENT);
-    lex_goto_eol(parser);
-    ripper_dispatch_scan_event(parser, tHEREDOC_END);
-#endif
     line = here->nd_orig;
     lex_lastline = line;
     lex_pbeg = RSTRING_PTR(line);
@@ -5972,9 +5983,7 @@ parser_heredoc_restore(struct parser_params *parser, NODE *here)
     ruby_sourceline = nd_line(here);
     dispose_string(here->nd_lit);
     rb_gc_force_recycle((VALUE)here);
-#ifdef RIPPER
     ripper_flush(parser);
-#endif
 }
 
 static int
@@ -6000,6 +6009,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
     const char *eos, *p, *pend;
     long len;
     VALUE str = 0;
+    rb_encoding *enc = parser->enc;
 
     eos = RSTRING_PTR(here->nd_lit);
     len = RSTRING_LEN(here->nd_lit) - 1;
@@ -6008,6 +6018,20 @@ parser_here_document(struct parser_params *parser, NODE *here)
     if ((c = nextc()) == -1) {
       error:
 	compile_error(PARSER_ARG "can't find string \"%s\" anywhere before EOF", eos);
+#ifdef RIPPER
+	if (NIL_P(parser->delayed)) {
+	    ripper_dispatch_scan_event(parser, tSTRING_CONTENT);
+	}
+	else {
+	    if (str ||
+		((len = lex_p - parser->tokp) > 0 &&
+		 (str = STR_NEW3(parser->tokp, len, enc, func), 1))) {
+		rb_str_append(parser->delayed, str);
+	    }
+	    ripper_dispatch_delayed_token(parser, tSTRING_CONTENT);
+	}
+	lex_goto_eol(parser);
+#endif
       restore:
 	heredoc_restore(lex_strterm);
 	lex_strterm = 0;
@@ -6047,7 +6071,6 @@ parser_here_document(struct parser_params *parser, NODE *here)
     }
     else {
 	/*	int mb = ENC_CODERANGE_7BIT, *mbp = &mb;*/
-	rb_encoding *enc = parser->enc;
 	newtok();
 	if (c == '#') {
 	    switch (c = nextc()) {
@@ -6076,6 +6099,12 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	} while (!whole_match_p(eos, len, indent));
 	str = STR_NEW3(tok(), toklen(), enc, func);
     }
+#ifdef RIPPER
+    if (!NIL_P(parser->delayed))
+	ripper_dispatch_delayed_token(parser, tSTRING_CONTENT);
+    lex_goto_eol(parser);
+    ripper_dispatch_ignored_scan_event(parser, tHEREDOC_END);
+#endif
     heredoc_restore(lex_strterm);
     lex_strterm = NEW_STRTERM(-1, 0, 0);
     set_yylval_str(str);

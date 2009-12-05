@@ -202,6 +202,20 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_bodystmt
   end
 
+  def test_heredoc
+    bug1921 = '[ruby-core:24855]'
+    thru_heredoc_beg = false
+    tree = parse("<<EOS\nheredoc\nEOS\n", :on_heredoc_beg) {thru_heredoc_beg = true}
+    assert_equal true, thru_heredoc_beg
+    assert_match(/string_content\(\),heredoc\n/, tree, bug1921)
+    heredoc = nil
+    parse("<<EOS\nheredoc1\nheredoc2\nEOS\n", :on_string_add) {|n, s| heredoc = s}
+    assert_equal("heredoc1\nheredoc2\n", heredoc, bug1921)
+    heredoc = nil
+    parse("<<-EOS\nheredoc1\nheredoc2\n\tEOS\n", :on_string_add) {|n, s| heredoc = s}
+    assert_equal("heredoc1\nheredoc2\n", heredoc, bug1921)
+  end
+
 =begin
   def test_brace_block
     assert_equal true, $thru__brace_block
