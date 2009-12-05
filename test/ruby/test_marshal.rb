@@ -310,4 +310,24 @@ class TestMarshal < Test::Unit::TestCase
     Marshal.dump(Object.new, w)
     assert_not_empty(w, bug2390)
   end
+
+  class C5
+    def marshal_dump
+      "foo"
+    end
+    def marshal_load(foo)
+      @foo = foo
+    end
+    def initialize(x)
+      @x = x
+    end
+  end
+  def test_marshal_dump
+    bug1744 = '[ruby-core:24211]'
+    c = C5.new("bar")
+    s = Marshal.dump(c)
+    d = Marshal.load(s)
+    assert_equal("foo", d.instance_variable_get(:@foo), bug1744)
+    assert_equal("bar", d.instance_variable_get(:@x), bug1744)
+  end
 end

@@ -643,14 +643,23 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 	if (rb_respond_to(obj, s_mdump)) {
 	    volatile VALUE v;
+            int hasiv2 = 0;
 
             st_add_direct(arg->data, obj, arg->data->num_entries);
 
 	    v = rb_funcall(obj, s_mdump, 0, 0);
 	    check_dump_arg(arg, s_mdump);
+	    if (!hasiv && (hasiv2 = rb_ivar_count(obj) > 0)) {
+		w_byte(TYPE_IVAR, arg);
+	    }
 	    w_class(TYPE_USRMARSHAL, obj, arg, FALSE);
 	    w_object(v, arg, limit);
-	    if (hasiv) w_ivar(obj, 0, &c_arg);
+	    if (hasiv) {
+		w_ivar(obj, ivtbl, &c_arg);
+	    }
+	    else if (hasiv2) {
+		w_objivar(obj, &c_arg);
+	    }
 	    return;
 	}
 	if (rb_respond_to(obj, s_dump)) {

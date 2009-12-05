@@ -1197,6 +1197,44 @@ rb_ivar_foreach(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
     }
 }
 
+st_index_t
+rb_ivar_count(VALUE obj)
+{
+    st_table *tbl;
+    switch (TYPE(obj)) {
+      case T_OBJECT:
+	if ((tbl = ROBJECT_IV_INDEX_TBL(obj)) != 0) {
+	    st_index_t i, num = tbl->num_entries, count = 0;
+	    const VALUE *const ivptr = ROBJECT_IVPTR(obj);
+	    for (i = count = 0; i < num; ++i) {
+		if (ivptr[i] != Qundef) {
+		    count++;
+		}
+	    }
+	    return count;
+        }
+	break;
+      case T_CLASS:
+      case T_MODULE:
+	if ((tbl = RCLASS_IV_TBL(obj)) != 0) {
+	    return tbl->num_entries;
+	}
+	break;
+      default:
+	if (!generic_iv_tbl) break;
+	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj)) {
+	    st_data_t data;
+
+	    if (st_lookup(generic_iv_tbl, (st_data_t)obj, &data) &&
+		(tbl = (st_table *)data) != 0) {
+		return tbl->num_entries;
+	    }
+	}
+	break;
+    }
+    return 0;
+}
+
 static int
 ivar_i(ID key, VALUE val, VALUE ary)
 {
