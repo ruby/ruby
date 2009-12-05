@@ -558,13 +558,13 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
   def test_local_variables
     cmd = 'command(w,[regexp_literal(xstring_add(xstring_new(),25 # ),/)])'
     div = 'binary(ref(w),/,25)'
-    var = 'params(["w"])'
+    var = '[w]'
     bug1939 = '[ruby-core:24923]'
 
     assert_equal("[#{cmd}]", parse('w /25 # /'), bug1939)
     assert_equal("[assign(var_field(w),1),#{div}]", parse("w = 1; w /25 # /"), bug1939)
-    assert_equal("[fcall(p,[],&brace_block(block_var(#{var}),[#{div}]))]", parse("p{|w|w /25 # /\n}"), bug1939)
-    assert_equal("[def(p,paren(#{var}),bodystmt([#{div}]))]", parse("def p(w)\nw /25 # /\nend"), bug1939)
+    assert_equal("[fcall(p,[],&block([w],[#{div}]))]", parse("p{|w|w /25 # /\n}"), bug1939)
+    assert_equal("[def(p,[w],bodystmt([#{div}]))]", parse("def p(w)\nw /25 # /\nend"), bug1939)
   end
 end
 
