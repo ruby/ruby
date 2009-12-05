@@ -1,3 +1,8 @@
+Fri Oct  2 15:34:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (ruby_suppress_tracing): get rid of clobbering by
+	  longjmp.
+
 Fri Oct 16 12:03:31 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/csv.rb (CSV#raw_encoding): returns ASCII-8BIT when the io
