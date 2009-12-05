@@ -1506,7 +1506,6 @@ EOT
         assert_equal("a", f.getc)
         assert_equal("\n", f.getc)
         f.binmode
-        assert_equal("\n", f.getc)
         assert_equal("b", f.getc)
         assert_equal("\r", f.getc)
         assert_equal("\n", f.getc)
@@ -1526,7 +1525,6 @@ EOT
         assert_equal("a", f.getc)
         assert_equal("\n", f.getc)
         f.binmode
-        assert_equal("\n", f.getc)
         assert_equal("b", f.getc)
         assert_equal("\r", f.getc)
         assert_equal("\n", f.getc)
