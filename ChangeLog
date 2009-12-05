@@ -1,3 +1,10 @@
+Sat Dec  5 15:35:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object): dump instance variables when using
+	  marshal_dump.   [ruby-core:24211]
+
+	* variable.c (rb_ivar_count): added.
+
 Sat Dec  5 13:19:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: default ac_cv_prog_CC to CC.
