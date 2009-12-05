@@ -1,3 +1,7 @@
+Tue Jul 21 21:37:19 2009  Keiju Ishitsuka  <keiju@emperor2.pendome>
+
+	* lib/irb/cmd/help.rb: fixed irb's "help" command. [ruby-core:22310].
+
 Thu Jul 23 14:35:02 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_{open,wopen}): fixed typos. these conditions
