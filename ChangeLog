@@ -1,3 +1,7 @@
+Sat Dec  5 13:19:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: default ac_cv_prog_CC to CC.
+
 Fri Dec  4 21:51:30 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (marshal_load): should set taintness.  [ruby-dev:39723]
