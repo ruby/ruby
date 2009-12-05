@@ -1,3 +1,7 @@
+Sat Dec  5 13:19:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: default ac_cv_prog_CC to CC.
+
 Sat Dec  5 10:18:26 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/irb/extend-command.rb (def_extend_command): fixed argument
