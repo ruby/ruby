@@ -1164,7 +1164,7 @@ static char *array[] =
 	"(%%h)                                should be same as (%%b)  %h",
 	"(%%j)                            day of the year (001..366)  %j",
 	"(%%k)               hour, 24-hour clock, blank pad ( 0..23)  %k",
-	"(%%l)               hour, 12-hour clock, blank pad ( 0..12)  %l",
+	"(%%l)               hour, 12-hour clock, blank pad ( 1..12)  %l",
 	"(%%m)                                        month (01..12)  %m",
 	"(%%p)              locale's AM or PM based on 12-hour clock  %p",
 	"(%%r)                   time, 12-hour (same as %%I:%%M:%%S %%p)  %r",
