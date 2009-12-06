@@ -39,9 +39,13 @@ module Find
     while file = paths.shift
       catch(:prune) do
 	yield file.dup.taint
-        next unless File.exist? file
+        begin
+          s = File.lstat(file)
+        rescue SystemCallError
+          next
+        end
 	begin
-	  if File.lstat(file).directory? then
+	  if s.directory? then
 	    d = Dir.open(file)
 	    begin
 	      for f in d
