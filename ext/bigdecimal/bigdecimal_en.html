@@ -1,4 +1,3 @@
-<!-- saved from url=(0022)http://internet.e-mail -->
 <HTML>
 <HEAD>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html">
@@ -43,7 +42,7 @@ For the details about Ruby see:<BR>
 NOTE:<BR>
  This software is provided "AS IS" and without any express or
  implied warranties,including,without limitation,the implied
- warranties of merchantibility and fitness for a particular
+ warranties of merchantability and fitness for a particular
  purpose. For the details,see COPYING and README included in this
  distribution.
 <BR>
@@ -115,7 +114,7 @@ s: Initial value string. Spaces will be ignored. Any unrecognizable character fo
 representing initial value terminates the string.<BR>
 n: Maximum number of significant digits of a. n must be a Fixnum object.
 If n is omitted or is equal to 0,then the maximum number of significant digits of a is determined from the length of s.
-Actual number of digits handled in computations are usually gretaer than n.<BR>
+Actual number of digits handled in computations are usually greater than n.<BR>
 n is useful when performing divisions like
 <CODE><PRE>
 BigDecimal("1")    / BigDecimal("3")    # => 0.3333333333 33E0
@@ -141,11 +140,11 @@ f = BigDecimal::mode(BigDecimal::EXCEPTION_ZERODIVIDE,flag)<BR>
 f = BigDecimal::mode(BigDecimal::EXCEPTION_ALL,flag)<BR>
 </BLOCKQUOTE>
 EXCEPTION_NaN controls the execution when computation results to NaN.<BR>
-EXCEPTION_INFINITY controls the execution when computation results to Infinity(Å}Infinity).<BR>
+EXCEPTION_INFINITY controls the execution when computation results to Infinity.<BR>
 EXCEPTION_UNDERFLOW controls the execution when computation underflows.<BR>
 EXCEPTION_OVERFLOW controls the execution when computation overflows.<BR>
-EXCEPTION_ZERODIVIDE controls the execution when zero-division occures.<BR>
-EXCEPTION_ALL controls the execution for any exception defined occures.<BR>
+EXCEPTION_ZERODIVIDE controls the execution when zero-division occurs.<BR>
+EXCEPTION_ALL controls the execution when any defined exception occurs.<BR>
 If the flag is true,then the relating exception is thrown.<BR>
 No exception is thrown when the flag is false(default) and computation 
 continues with the result:<BR>
@@ -181,7 +180,7 @@ where flag must be one of:
 </TABLE>
 New rounding mode is returned. If nil is specified for the second argument,then current setting is returned.<BR>
 The digit location for rounding operation can not be specified by this mode method,
-use truncate/round/ceil/floor/add/sub/mult/div mthods for each instance instead.
+use truncate/round/ceil/floor/add/sub/mult/div methods for each instance instead.
 </BLOCKQUOTE>
 
 <LI><B>limit[(n)]</B></LI><BLOCKQUOTE>
@@ -321,7 +320,7 @@ If n<0,then the n-th digit counted from the decimal point in integer part is pro
 </BLOCKQUOTE>
 <LI><B>round[(n[,b])]</B></LI><BLOCKQUOTE>
 c = a.round<BR>
-round a to the nearest 1(default)ÅD<BR>
+round a to the nearest 1(default)√ÖD<BR>
 <CODE><PRE>
  c = BigDecimal("1.23456").round  #  ==> 1
  c = BigDecimal("-1.23456").round #  ==> -1
@@ -346,7 +345,7 @@ c = BigDecimal::new("1.23356").round(3,BigDecimal::ROUND_HALF_EVEN)   #  ==> 1.2
 </BLOCKQUOTE>
 <LI><B>truncate[(n)]</B></LI><BLOCKQUOTE>
 c = a.truncate<BR>
-truncate a to the nearest 1ÅD<BR>
+truncate a to the nearest 1√ÖD<BR>
 As shown in the following example,an optional integer argument (n) specifying the position 
 of the target digit can be given.<BR>
 If n>0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction part digits is less than or equal to n).<BR>
@@ -409,7 +408,7 @@ means a = 0.xxxxxxx*10**n.
 
 <LI><B>precs</B></LI><BLOCKQUOTE>
 n,m = a.precs <BR>
-prec returns number of significant digits (n) and maximum number of 
+precs returns number of significant digits (n) and maximum number of 
 significant digits (m) of a.
 </BLOCKQUOTE>
 
@@ -439,11 +438,11 @@ a.nan? returns True when a is NaN.
 
 </BLOCKQUOTE>
 <LI><B>infinite?</B></LI><BLOCKQUOTE>
-a.infinite? returns 1 when a is +Åá,-1 when a is -Åá, nil otherwise.
+a.infinite? returns 1 when a is Infinity, -1 when a is -Infinity, nil otherwise.
 
 </BLOCKQUOTE>
 <LI><B>finite?</B></LI><BLOCKQUOTE>
-a.finite? returns true when a is neither Åá nor NaN.
+a.finite? returns true when a is neither Infinity nor NaN.
 </BLOCKQUOTE>
 
 <LI><B>zero?</B></LI><BLOCKQUOTE>
@@ -526,9 +525,9 @@ same as ==,used in case statement.
 <DT> 1.Both A and B are BigDecimal objects</DT>
 <DD> A op B is normally performed.</DD>
 <DT> 2.A is the BigDecimal object but B is other than BigDecimal object</DT>
-<DD> Operation is performed,after B is translated to correcponding BigDecimal object(because BigDecimal supports coerce method).</DD>
+<DD> Operation is performed,after B is translated to corresponding BigDecimal object(because BigDecimal supports coerce method).</DD>
 <DT> 3.A is not the BigDecimal object but B is BigDecimal object</DT>
-<DD>If A has coerce mthod,then B will translate A to corresponding 
+<DD>If A has coerce method,then B will translate A to corresponding 
 BigDecimal object and the operation is performed,otherwise an error occures.</DD>
 </DL>
 
@@ -573,7 +572,7 @@ Zero has two different variations as +0.0 and -0.0.
 But,still, +0.0==-0.0 is true.
 <BR><BR>
 Computation results including Infinity,NaN,+0.0 or -0.0 become complicated.
-Run following program and comfirm the results.
+Run following program and confirm the results.
 Send me any incorrect result if you find.
 
 <CODE><PRE>
@@ -603,12 +602,9 @@ where 'x' is any digit representing mantissa(kept in the array frac[]),
 BASE is base value(=10000 in 32 bit integer system),
 and n is the exponent value.<BR>
 Larger BASE value enables smaller size of the array frac[],and increases computation speed.
-The value of BASE is defined ind VpInit(). In 32 bit integer system,this value is 
-10000. In 64 bit integer system,the value becomes larger.
-BigDecimal has not yet been compiled and tested on 64 bit integer system.
-It will be very nice if anyone try to run BigDecimal on 64 bit system and
- inform me the results.
-When BASE is 10000,an element of the array frac[] can have vale of from 0 to 9999.
+The value of BASE is defined ind VpInit(). In 32 bit integer system, this value is 
+10000. In 64 bit integer system, the value is 1000000000.
+When BASE is 10000,an element of the array frac[] can have value of from 0 to 9999.
 (up to 4 digits).<BR>
 The structure Real is defined in bigdecimal.h as:<BR>
 <CODE><PRE>
@@ -626,7 +622,7 @@ The structure Real is defined in bigdecimal.h as:<BR>
                             /*   -3 : -Infinity         */
      unsigned short flag;   /* Control flag             */
      int      exponent;     /* Exponent value(0.xxxx*BASE**exponent) */
-     unsigned long frac[1]; /* An araay holding mantissa(Variable)   */
+     unsigned long frac[1]; /* An array holding mantissa(Variable)   */
   } Real;
 </CODE></PRE>
 The decimal value 1234.56784321 is represented as(BASE=10000):<BR>
@@ -668,7 +664,7 @@ For example, 0.1 can not exactly be represented in binary.<BR>
 where b1=0,b2=0,b3=0,b4=1...<BR>
 bn(n=1,2,3,...) is infinite series of digit with value of 0 or 1,
 and rounding operation is necessary but where we should round the series ?
-Of cource,exact "0.1" is printed if the rouding operation is properly done,
+Of course, exact "0.1" is printed if the rounding operation is properly done,
 <DT>Significant digit we can have is automatically determined
 <DD>In binary representation,0.1 can not be represented in finite series of digit.
 
@@ -678,12 +674,12 @@ structure.
 </DL>
 
 <H3>Disadvantage of decimal representation</H3>
-Because most computers have no internal decimal representaion.
+Because most computers have no internal decimal representation.
 Once you use BigDecimal,you need to keep using it without
 considering computation cost if exact computation is required.
 
 <H4>Which is the first input?</H4>
-Because most people uses decimal notatin for numeric data representation,
+Because most people uses decimal notation for numeric data representation,
 BigDecimal can handle numeric data without loss of translation error.
 <hr>
 
@@ -701,11 +697,11 @@ significant digits of both side of the operator. For / ,resulting number of sign
 maximum significant digits of both side of the operator.<BR>
 1.2 For + and -,resulting number of significant digits is determined so that
  no round operation is needed. <br>
-For example, c has more than 100 siginificant digits if c is computed as:<BR>
+For example, c has more than 100 significant digits if c is computed as:<BR>
 c = 0.1+0.1*10**(-100)<br>
 <BR>
 As +,-,and * are always exact(no round operation is performed unless BigDecimal.limit is specified),
-which means more momories are required to keep computation results.
+which means more memory is required to keep computation results.
 But,the division such as c=1.0/3.0 will always be rounded.<BR>
 
 <H3>2. add,sub,mult,div</H3>
@@ -729,7 +725,7 @@ decimal point.
 
 <H3>4. Example</H3>
 Following example compute the ratio of the circumference of a circle to 
-its dirmeter(pi=3.14159265358979....) using J.Machin's formula.
+its diameter(pi=3.14159265358979....) using J.Machin's formula.
 <BR><BR>
 <CODE><PRE>
 #!/usr/local/bin/ruby
