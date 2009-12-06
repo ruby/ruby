@@ -61,7 +61,6 @@ class TestBigDecimal < Test::Unit::TestCase
       x = BigDecimal.new("0.1")
       100.times do
         x *= x
-        break if x == false
       end
     end
   end
@@ -71,7 +70,6 @@ class TestBigDecimal < Test::Unit::TestCase
       x = BigDecimal.new("10")
       100.times do
         x *= x
-        break if x == false
       end
     end
   end
