@@ -59,7 +59,7 @@ module Find
 	      d.close
 	    end
 	  end
-       rescue Errno::ENOENT, Errno::EACCES
+        rescue Errno::ENOENT, Errno::EACCES
 	end
       end
     end
