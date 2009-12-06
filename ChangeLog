@@ -1,3 +1,8 @@
+Mon Dec  7 07:01:19 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* object.c (rb_Float): Allow results of to_f to be NaN
+	  [ruby-core:26733]
+
 Mon Dec  7 06:43:20 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* array.c (rb_ary_sample): Fix infinite loop bug [ruby-core:27075]
