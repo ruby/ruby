@@ -1,3 +1,7 @@
+Mon Dec  7 06:43:20 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* array.c (rb_ary_sample): Fix infinite loop bug [ruby-core:27075]
+
 Sat Dec  5 13:19:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: default ac_cv_prog_CC to CC.

@@ -3367,8 +3367,8 @@ rb_ary_sample(argc, argv, ary)
 	return RARRAY_PTR(ary)[i];
     }
     rb_scan_args(argc, argv, "1", &nv);
-    if (len == 0) return rb_ary_new2(0);
     n = NUM2INT(nv);
+    if (n >= len) return rb_ary_shuffle(ary);
     result = rb_ary_new2(n);
     for (i=0; i<n; i++) {
       retry:
