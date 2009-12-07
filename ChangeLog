@@ -1,3 +1,8 @@
+Tue Dec  8 03:50:24 2009  Tanaka Akira  <akr@fsij.org>
+
+	* file.c (rb_f_test): use string form in unknown command error
+	  message.
+
 Mon Dec  7 14:11:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object): reverted r26007.  [ruby-dev:39845]
