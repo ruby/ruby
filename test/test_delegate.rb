@@ -51,4 +51,20 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal(:m, SimpleDelegator.new(Foo.new).m)
     assert_equal(:m, Bar.new(Foo.new).m)
   end
+
+  class IV < DelegateClass(Integer)
+    attr_accessor :var
+
+    def initialize
+      @var = 1
+    end
+  end
+
+  def test_marshal
+    bug1744 = '[ruby-core:24211]'
+    c = IV.new
+    assert_equal(1, c.var)
+    d = Marshal.load(Marshal.dump(c))
+    assert_equal(1, d.var, bug1744)
+  end
 end

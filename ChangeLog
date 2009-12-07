@@ -1,3 +1,9 @@
+Mon Dec  7 14:11:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object): reverted r26007.  [ruby-dev:39845]
+
+	* test/test_delegate.rb (test_marshal): moved from test_marshal.rb.
+
 Mon Dec  7 13:05:59 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* string.c (rb_str_justify): CVE-2009-4124.
