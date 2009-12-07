@@ -3,6 +3,18 @@ require 'dl/func'
 
 module DL
   class TestFunc < TestBase
+    def test_name
+      f = Function.new(CFunc.new(@libc['strcpy'], TYPE_VOIDP, 'strcpy'),
+                       [TYPE_VOIDP, TYPE_VOIDP])
+      assert_equal 'strcpy', f.name
+    end
+
+    def test_to_i
+      cfunc = CFunc.new(@libc['strcpy'], TYPE_VOIDP, 'strcpy')
+      f = Function.new(cfunc, [TYPE_VOIDP, TYPE_VOIDP])
+      assert_equal cfunc.to_i, f.to_i
+    end
+
     def test_strcpy()
       f = Function.new(CFunc.new(@libc['strcpy'], TYPE_VOIDP, 'strcpy'),
                        [TYPE_VOIDP, TYPE_VOIDP])

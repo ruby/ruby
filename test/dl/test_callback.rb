@@ -7,6 +7,17 @@ module DL
   class TestCallback < TestBase
     include DL
 
+    def test_remove_callback_failed
+      assert_equal(false, remove_callback(0, TYPE_VOIDP))
+    end
+
+    def test_remove_callback
+      addr = set_callback(TYPE_VOIDP, 1) do |str|
+        str
+      end
+      assert remove_callback(addr, TYPE_VOIDP), 'callback removed'
+    end
+
     def test_callback_return_value
       addr = set_callback(TYPE_VOIDP, 1) do |str|
         str
