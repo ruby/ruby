@@ -1,3 +1,10 @@
+Mon Dec  7 13:05:59 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* string.c (rb_str_justify): CVE-2009-4124.
+	  Fixes a bug reported by 
+	  Emmanouel Kellinis <Emmanouel.Kellinis AT kpmg.co.uk>, KPMG London;
+	  Patch by nobu.
+
 Sun Dec  6 23:50:46 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* strftime.c: %l should be 1..12 instead of 0..12 [ruby-core:27072]
