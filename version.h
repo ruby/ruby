@@ -6,8 +6,8 @@
 
 #define RUBY_RELEASE_YEAR 2009
 #define RUBY_RELEASE_MONTH 12
-#define RUBY_RELEASE_DAY 5
-#define RUBY_RELEASE_DATE "2009-12-05"
+#define RUBY_RELEASE_DAY 7
+#define RUBY_RELEASE_DATE "2009-12-07"
 
 #ifdef RUBY_EXTERN
 RUBY_EXTERN const char ruby_version[];
