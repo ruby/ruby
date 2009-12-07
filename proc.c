@@ -1170,16 +1170,15 @@ rb_obj_public_method(VALUE obj, VALUE vid)
  *       def do_e() print "!\n";     end
  *       def do_v() print "Dave";    end
  *       Dispatcher = {
- *        ?a => instance_method(:do_a),
- *        ?d => instance_method(:do_d),
- *        ?e => instance_method(:do_e),
- *        ?v => instance_method(:do_v)
+ *         "a" => instance_method(:do_a),
+ *         "d" => instance_method(:do_d),
+ *         "e" => instance_method(:do_e),
+ *         "v" => instance_method(:do_v)
  *       }
  *       def interpret(string)
- *         string.each_byte {|b| Dispatcher[b].bind(self).call }
+ *         string.each_char {|b| Dispatcher[b].bind(self).call }
  *       end
  *     end
- *
  *
  *     interpreter = Interpreter.new
  *     interpreter.interpret('dave')
