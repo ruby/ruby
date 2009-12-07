@@ -323,11 +323,10 @@ class TestMarshal < Test::Unit::TestCase
     end
   end
   def test_marshal_dump
-    bug1744 = '[ruby-core:24211]'
     c = C5.new("bar")
     s = Marshal.dump(c)
     d = Marshal.load(s)
-    assert_equal("foo", d.instance_variable_get(:@foo), bug1744)
-    assert_equal("bar", d.instance_variable_get(:@x), bug1744)
+    assert_equal("foo", d.instance_variable_get(:@foo))
+    assert_equal(false, d.instance_variable_defined?(:@x))
   end
 end
