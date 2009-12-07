@@ -329,4 +329,26 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal("foo", d.instance_variable_get(:@foo))
     assert_equal(false, d.instance_variable_defined?(:@x))
   end
+
+  class C6
+    def initialize
+      @stdin = STDIN
+    end
+    attr_reader :stdin
+    def marshal_dump
+      1
+    end
+    def marshal_load(x)
+      @stdin = STDIN
+    end
+  end
+  def test_marshal_dump_extra_iv
+    o = C6.new
+    m = nil
+    assert_nothing_raised("[ruby-dev:21475] [ruby-dev:39845]") {
+      m = Marshal.dump(o)
+    }
+    o2 = Marshal.load(m)
+    assert_equal(STDIN, o.stdin)
+  end
 end
