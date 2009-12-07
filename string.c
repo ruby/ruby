@@ -6473,7 +6473,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
     VALUE res;
     char *p;
     const char *f = " ";
-    long n, llen, rlen;
+    long n, size, llen, rlen, llen2 = 0, rlen2 = 0;
     volatile VALUE pad;
     int singlebyte = 1, cr;
 
@@ -6497,44 +6497,49 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
     llen = (jflag == 'l') ? 0 : ((jflag == 'r') ? n : n/2);
     rlen = n - llen;
     cr = ENC_CODERANGE(str);
-    res = rb_str_new5(str, 0, RSTRING_LEN(str)+n*flen/fclen+2);
+    if (flen > 1) {
+       llen2 = str_offset(f, f + flen, llen % fclen, enc, singlebyte);
+       rlen2 = str_offset(f, f + flen, rlen % fclen, enc, singlebyte);
+    }
+    size = RSTRING_LEN(str);
+    if ((len = llen / fclen + rlen / fclen) >= LONG_MAX / flen ||
+       (len *= flen) >= LONG_MAX - llen2 - rlen2 ||
+       (len += llen2 + rlen2) >= LONG_MAX - size) {
+       rb_raise(rb_eArgError, "argument too big");
+    }
+    len += size;
+    res = rb_str_new5(str, 0, len);
     p = RSTRING_PTR(res);
-    while (llen) {
-	if (flen <= 1) {
-	    *p++ = *f;
-	    llen--;
-	}
-	else if (llen > fclen) {
+    if (flen <= 1) {
+       memset(p, *f, llen);
+       p += llen;
+    }
+    else {
+       while (llen > fclen) {
 	    memcpy(p,f,flen);
 	    p += flen;
 	    llen -= fclen;
 	}
-	else {
-	    char *fp = str_nth(f, f+flen, llen, enc, singlebyte);
-	    n = fp - f;
-	    memcpy(p,f,n);
-	    p+=n;
-	    break;
+       if (llen > 0) {
+           memcpy(p, f, llen2);
+           p += llen2;
 	}
     }
-    memcpy(p, RSTRING_PTR(str), RSTRING_LEN(str));
-    p+=RSTRING_LEN(str);
-    while (rlen) {
-	if (flen <= 1) {
-	    *p++ = *f;
-	    rlen--;
-	}
-	else if (rlen > fclen) {
+    memcpy(p, RSTRING_PTR(str), size);
+    p += size;
+    if (flen <= 1) {
+       memset(p, *f, rlen);
+       p += rlen;
+    }
+    else {
+       while (rlen > fclen) {
 	    memcpy(p,f,flen);
 	    p += flen;
 	    rlen -= fclen;
 	}
-	else {
-	    char *fp = str_nth(f, f+flen, rlen, enc, singlebyte);
-	    n = fp - f;
-	    memcpy(p,f,n);
-	    p+=n;
-	    break;
+       if (rlen > 0) {
+           memcpy(p, f, rlen2);
+           p += rlen2;
 	}
     }
     *p = '\0';
