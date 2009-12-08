@@ -904,7 +904,7 @@ flo_eq(VALUE x, VALUE y)
 
     switch (TYPE(y)) {
       case T_FIXNUM:
-	b = FIX2LONG(y);
+	b = (double)FIX2LONG(y);
 	break;
       case T_BIGNUM:
 	b = rb_big2dbl(y);
