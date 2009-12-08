@@ -166,7 +166,7 @@ class Gem::Version
   def prerelease?
     parts.any? { |part| part.alpha? }
   end
-  
+
   ##
   # The release for this version (e.g. 1.2.0.a -> 1.2.0)
   # Non-prerelease versions return themselves

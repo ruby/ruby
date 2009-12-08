@@ -41,7 +41,7 @@ require 'rake/packagetask'
 #
 #   require 'rubygems'
 #   require 'rubygems/package_task'
-#   
+#
 #   spec = Gem::Specification.new do |s|
 #     s.platform = Gem::Platform::RUBY
 #     s.summary = "Ruby based make-like utility."
@@ -56,7 +56,7 @@ require 'rake/packagetask'
 #   and dependencies are specified in standard Ruby syntax.
 #     EOF
 #   end
-#   
+#
 #   Gem::PackageTask.new(spec) do |pkg|
 #     pkg.need_zip = true
 #     pkg.need_tar = true

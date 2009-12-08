@@ -43,6 +43,8 @@ Gem a-1
 
 Gem a-2
 
+Gem a-3.a
+
 Gem a_evil-9
 
 Gem b-2
@@ -99,6 +101,8 @@ Gem pl-1-x86-linux
 Gem a-1
 
 Gem a-2
+
+Gem a-3.a
 
 Gem a_evil-9
 

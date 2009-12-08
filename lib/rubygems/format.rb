@@ -29,7 +29,7 @@ class Gem::Format
   end
 
   ##
-  # Reads the named gem file and returns a Format object, representing 
+  # Reads the named gem file and returns a Format object, representing
   # the data from the gem file
   #
   # file_path:: [String] Path to the gem file

@@ -15,7 +15,7 @@ begin
    Gem.activate('test-unit')
 rescue Gem::LoadError
    # Ignore - use the test-unit library that's part of the standard library
-end   
+end
 
 ##
 # Validator performs various gem file and gem database validation
