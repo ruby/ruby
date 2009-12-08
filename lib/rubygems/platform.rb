@@ -103,7 +103,7 @@ class Gem::Platform
   def to_s
     to_a.compact.join '-'
   end
-  
+
   def empty?
     to_s.empty?
   end

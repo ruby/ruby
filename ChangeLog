@@ -1,4 +1,6 @@
-Tue Dec  8 16:16:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Dec  8 16:19:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems: update to 1.3.5.
 
 	* lib/rubygems/defaults.rb (Gem::default_dir): removed a clause
 	  doing nothing.

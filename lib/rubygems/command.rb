@@ -49,7 +49,7 @@ class Gem::Command
   def self.build_args
     @build_args ||= []
   end
-  
+
   def self.build_args=(value)
     @build_args = value
   end
@@ -197,7 +197,7 @@ class Gem::Command
   #   def usage
   #     "#{program_name} FILE [FILE ...]"
   #   end
-  #   
+  #
   #   def arguments
   #     "FILE          name of file to find"
   #   end

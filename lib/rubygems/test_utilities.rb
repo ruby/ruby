@@ -11,9 +11,9 @@ require 'rubygems/remote_fetcher'
 #   @fetcher = Gem::FakeFetcher.new
 #   @fetcher.data['http://gems.example.com/yaml'] = source_index.to_yaml
 #   Gem::RemoteFetcher.fetcher = @fetcher
-#   
+#
 #   # invoke RubyGems code
-#   
+#
 #   paths = @fetcher.paths
 #   assert_equal 'http://gems.example.com/yaml', paths.shift
 #   assert paths.empty?, paths.join(', ')

@@ -88,6 +88,8 @@ By default, this RubyGems will install gem as:
   end
 
   def execute
+    @verbose = Gem.configuration.really_verbose
+
     install_destdir = options[:destdir]
 
     unless install_destdir.empty? then
@@ -113,21 +115,29 @@ By default, this RubyGems will install gem as:
 
     remove_source_caches install_destdir
 
+    say "RubyGems #{Gem::VERSION} installed"
+
     install_rdoc
 
     say
-    say "-" * 78
-    say
-
-    release_notes = File.join Dir.pwd, 'doc', 'release_notes',
-                              "rel_#{Gem::RubyGemsVersion.gsub '.', '_'}.rdoc"
-
-    if File.exist? release_notes then
-      say File.read(release_notes)
-    else
-      say "Oh-no! Unable to find release notes!"
-      say "Looked in: #{release_notes}" if Gem.configuration.really_verbose
+    if @verbose then
+      say "-" * 78
+      say
     end
+
+    release_notes = File.join Dir.pwd, 'History.txt'
+
+    release_notes = if File.exist? release_notes then
+                      open release_notes do |io|
+                        text = io.gets '==='
+                        text << io.gets('===')
+                        text[0...-3]
+                      end
+                    else
+                      "Oh-no! Unable to find release notes!"
+                    end
+
+    say release_notes
 
     say
     say "-" * 78
@@ -145,7 +155,7 @@ By default, this RubyGems will install gem as:
   end
 
   def install_executables(bin_dir)
-    say "Installing gem executable"
+    say "Installing gem executable" if @verbose
 
     @bin_file_names = []
 
@@ -203,7 +213,7 @@ TEXT
   end
 
   def install_lib(lib_dir)
-    say "Installing RubyGems"
+    say "Installing RubyGems" if @verbose
 
     Dir.chdir 'lib' do
       lib_files = Dir[File.join('**', '*rb')]
@@ -226,23 +236,23 @@ TEXT
     if File.writable? gem_doc_dir and
        (not File.exist? rubygems_doc_dir or
         File.writable? rubygems_doc_dir) then
-      say "Removing old RubyGems RDoc and ri"
+      say "Removing old RubyGems RDoc and ri" if @verbose
       Dir[File.join(Gem.dir, 'doc', 'rubygems-[0-9]*')].each do |dir|
         rm_rf dir
       end
 
       if options[:ri] then
         ri_dir = File.join rubygems_doc_dir, 'ri'
-        say "Installing #{rubygems_name} ri into #{ri_dir}"
+        say "Installing #{rubygems_name} ri into #{ri_dir}" if @verbose
         run_rdoc '--ri', '--op', ri_dir
       end
 
       if options[:rdoc] then
         rdoc_dir = File.join rubygems_doc_dir, 'rdoc'
-        say "Installing #{rubygems_name} rdoc into #{rdoc_dir}"
+        say "Installing #{rubygems_name} rdoc into #{rdoc_dir}" if @verbose
         run_rdoc '--op', rdoc_dir
       end
-    else
+    elsif @verbose then
       say "Skipping RDoc generation, #{gem_doc_dir} not writable"
       say "Set the GEM_HOME environment variable if you want RDoc generated"
     end
@@ -327,7 +337,7 @@ abort "#{deprecation_message}"
       system_cache_file = File.join(install_destdir,
                                     Gem::SourceInfoCache.system_cache_file)
 
-      say "Removing old source_cache files"
+      say "Removing old source_cache files" if Gem.configuration.really_verbose
       rm_f user_cache_file if File.writable? File.dirname(user_cache_file)
       rm_f system_cache_file if File.writable? File.dirname(system_cache_file)
     end

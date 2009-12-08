@@ -5,12 +5,13 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/rubygems_version'
 require 'rubygems/defaults'
 require 'thread'
 require 'etc'
 
 module Gem
+
+  RubyGemsVersion = VERSION = '1.3.5'
 
   ##
   # Raised when RubyGems is unable to load or activate a gem.  Contains the
@@ -381,7 +382,7 @@ module Gem
       raise Gem::Exception, msg
     end
 
-    File.join(spec.full_gem_path, spec.bindir, exec_name).sub(/.*\s.*/m, '"\&"')
+    File.join(spec.full_gem_path, spec.bindir, exec_name)
   end
 
   ##

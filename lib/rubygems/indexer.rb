@@ -141,7 +141,7 @@ class Gem::Indexer
                                     "Complete"
 
     Gem.time 'Generated YAML quick index gemspecs' do
-      index.each do |original_name, spec|
+      index.released_gems.each do |original_name, spec|
         spec_file_name = "#{original_name}.gemspec.rz"
         yaml_name = File.join @quick_dir, spec_file_name
 
@@ -221,7 +221,7 @@ class Gem::Indexer
     files = []
 
     Gem.time 'Generated Marshal quick index gemspecs' do
-      (index.gems.merge(index.prerelease_gems)).each do |original_name, spec|
+      index.gems.each do |original_name, spec|
         spec_file_name = "#{original_name}.gemspec.rz"
         marshal_name = File.join @quick_marshal_dir, spec_file_name
 
@@ -275,7 +275,7 @@ class Gem::Indexer
   # Builds indicies for RubyGems 1.2 and newer. Handles full, latest, prerelease
 
   def build_modern_indicies(index)
-    build_modern_index(index.sort, @specs_index, 'specs')
+    build_modern_index(index.released_specs.sort, @specs_index, 'specs')
     build_modern_index(index.latest_specs.sort,
                        @latest_specs_index,
                        'latest specs')
@@ -534,7 +534,7 @@ class Gem::Indexer
     FileUtils.rm_rf @directory
   end
 
-   ##
+  ##
   # Zlib::GzipWriter wrapper that gzips +filename+ on disk.
 
   def gzip(filename)
@@ -654,8 +654,8 @@ class Gem::Indexer
     files = build_marshal_gemspecs index
 
     Gem.time 'Updated indexes' do
-      update_specs_index index, @dest_specs_index, @specs_index
-      update_specs_index index, @dest_latest_specs_index, @latest_specs_index
+      update_specs_index index.released_gems, @dest_specs_index, @specs_index
+      update_specs_index index.released_gems, @dest_latest_specs_index, @latest_specs_index
       update_specs_index(index.prerelease_gems, @dest_prerelease_specs_index,
                          @prerelease_specs_index)
     end

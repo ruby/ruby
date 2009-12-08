@@ -22,7 +22,7 @@ class Gem::SpecFetcher
   attr_reader :latest_specs # :nodoc:
 
   ##
-  # Cache of all spces
+  # Cache of all released specs
 
   attr_reader :specs # :nodoc:
 
@@ -61,8 +61,9 @@ class Gem::SpecFetcher
 
   ##
   # Fetch specs matching +dependency+.  If +all+ is true, all matching
-  # versions are returned.  If +matching_platform+ is false, all platforms are
-  # returned. If +prerelease+ is true, prerelease versions are included.
+  # (released) versions are returned.  If +matching_platform+ is
+  # false, all platforms are returned. If +prerelease+ is true,
+  # prerelease versions are included.
 
   def fetch(dependency, all = false, matching_platform = true, prerelease = false)
     specs_and_sources = find_matching dependency, all, matching_platform, prerelease
@@ -112,9 +113,9 @@ class Gem::SpecFetcher
   end
 
   ##
-  # Find spec names that match +dependency+.  If +all+ is true, all matching
-  # versions are returned.  If +matching_platform+ is false, gems for all
-  # platforms are returned.
+  # Find spec names that match +dependency+.  If +all+ is true, all
+  # matching released versions are returned.  If +matching_platform+
+  # is false, gems for all platforms are returned.
 
   def find_matching(dependency, all = false, matching_platform = true, prerelease = false)
     found = {}
@@ -161,7 +162,7 @@ class Gem::SpecFetcher
 
   ##
   # Returns a list of gems available for each source in Gem::sources.  If
-  # +all+ is true, all versions are returned instead of only latest
+  # +all+ is true, all released versions are returned instead of only latest
   # versions. If +prerelease+ is true, include prerelease versions.
 
   def list(all = false, prerelease = false)
@@ -183,7 +184,7 @@ class Gem::SpecFetcher
     cache = { :latest => @latest_specs,
       :prerelease => @prerelease_specs,
       :all => @specs }[type]
-    
+
     Gem.sources.each do |source_uri|
       source_uri = URI.parse source_uri
 
@@ -192,6 +193,12 @@ class Gem::SpecFetcher
       end
 
       list[source_uri] = cache[source_uri]
+    end
+
+    if type == :all
+      list.values.map do |gems|
+        gems.reject! { |g| g[1].prerelease? }
+      end
     end
 
     list

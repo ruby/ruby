@@ -199,7 +199,7 @@ class TestGemVersion < RubyGemTestCase
     refute Gem::Version.new('2.9').prerelease?
     refute Gem::Version.new('22.1.50.0').prerelease?
   end
-  
+
   def test_release
     assert_equal Gem::Version.new('1.2.0'), Gem::Version.new('1.2.0.a').release
     assert_equal Gem::Version.new('1.1'),   Gem::Version.new('1.1.rc10').release
@@ -219,7 +219,7 @@ class TestGemVersion < RubyGemTestCase
     assert_adequate(  "1.4.5", "~> 1.4.4")
     assert_inadequate("1.5",   "~> 1.4.4")
     assert_inadequate("2.0",   "~> 1.4.4")
-    
+
     assert_inadequate("1.1.pre", "~> 1.0.0")
     assert_adequate(  "1.1.pre", "~> 1.1")
     assert_inadequate("2.0.a",   "~> 1.0")

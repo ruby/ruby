@@ -45,6 +45,8 @@ class TestGemSpecFetcher < RubyGemTestCase
       util_zip(Marshal.dump(@a2))
     @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a_pre.full_name}.gemspec.rz"] =
       util_zip(Marshal.dump(@a_pre))
+    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a3a.full_name}.gemspec.rz"] =
+      util_zip(Marshal.dump(@a3a))
 
     dep = Gem::Dependency.new 'a', 1
     specs_and_sources = @sf.fetch dep, true
@@ -273,7 +275,12 @@ RubyGems will revert to legacy indexes degrading performance.
 
     assert_equal [@uri], specs.keys
 
-    assert_equal @specs, specs[@uri].sort
+    assert_equal([["a", Gem::Version.new("1"), "ruby"],
+                  ["a", Gem::Version.new("2"), "ruby"],
+                  ["a_evil", Gem::Version.new("9"), "ruby"],
+                  ["c", Gem::Version.new("1.2"), "ruby"],
+                  ["pl", Gem::Version.new("1"), "i386-linux"]],
+                 specs[@uri].sort)
   end
 
   def test_list_cache
@@ -307,7 +314,12 @@ RubyGems will revert to legacy indexes degrading performance.
 
     specs = @sf.list true
 
-    assert_equal [@specs], specs.values, 'specs file not loaded'
+    assert_equal([[["a", Gem::Version.new("1"), "ruby"],
+                   ["a", Gem::Version.new("2"), "ruby"],
+                   ["a_evil", Gem::Version.new("9"), "ruby"],
+                   ["c", Gem::Version.new("1.2"), "ruby"],
+                   ["pl", Gem::Version.new("1"), "i386-linux"]]],
+                 specs.values, 'specs file not loaded')
   end
 
   def test_list_prerelease
@@ -320,8 +332,10 @@ RubyGems will revert to legacy indexes degrading performance.
     specs = @sf.load_specs @uri, 'specs'
 
     expected = [
+      ['a',      Gem::Version.new('1.a'),     Gem::Platform::RUBY],
       ['a',      Gem::Version.new(1),     Gem::Platform::RUBY],
       ['a',      Gem::Version.new(2),     Gem::Platform::RUBY],
+      ['a',      Gem::Version.new('3.a'),     Gem::Platform::RUBY],
       ['a_evil', Gem::Version.new(9),     Gem::Platform::RUBY],
       ['c',      Gem::Version.new('1.2'), Gem::Platform::RUBY],
       ['pl',     Gem::Version.new(1),     'i386-linux'],
