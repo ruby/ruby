@@ -3,10 +3,11 @@ begin
   require 'find'
   require 'test/unit'
   ripper_test = true
+  module TestRipper; end
 rescue LoadError
 end
 
-class TestRipper_Generic < Test::Unit::TestCase
+class TestRipper::Generic < Test::Unit::TestCase
   SRCDIR = File.dirname(File.dirname(File.dirname(File.expand_path(__FILE__))))
 
   class Parser < Ripper

@@ -179,7 +179,7 @@ class DummyParser < Ripper
   end
 
   def on_assoclist_from_args(a)
-    Node.new('assocs', *a.list)
+    Node.new('assocs', *a)
   end
 
   (Ripper::PARSER_EVENTS.map(&:to_s) - instance_methods(false).map {|n|n.to_s.sub(/^on_/, '')}).each do |event|

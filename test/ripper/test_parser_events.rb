@@ -3,13 +3,13 @@ begin
   require_relative '../ruby/envutil'
   require 'test/unit'
   ripper_test = true
+  module TestRipper; end
 rescue LoadError
 end
 
-class TestRipper_ParserEvents < Test::Unit::TestCase
+class TestRipper::ParserEvents < Test::Unit::TestCase
 
   # should be enabled
-=begin
   def test_event_coverage
     dispatched = Ripper::PARSER_EVENTS.map {|event,*| event }
     dispatched.each do |e|
@@ -17,7 +17,6 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
                    "event not tested: #{e.inspect}"
     end
   end
-=end
 
   def parse(str, nm = nil, &bl)
     dp = DummyParser.new(str)
@@ -89,6 +88,33 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
     assert_equal '[fcall(m,[1,2,*ref(a),&ref(b)])]', parse('m(1,2,*a,&b)')
   end
 
+  def test_args_add
+    thru_args_add = false
+    parse('m(a)', :on_args_add) {thru_args_add = true}
+    assert_equal true, thru_args_add
+  end
+
+  def test_args_add_block
+    thru_args_add_block = false
+    parse('m(&b)', :on_args_add_block) {thru_args_add_block = true}
+    assert_equal true, thru_args_add_block
+  end
+
+  def test_args_add_star
+    thru_args_add_star = false
+    parse('m(*a)', :on_args_add_star) {thru_args_add_star = true}
+    assert_equal true, thru_args_add_star
+    thru_args_add_star = false
+    parse('m(*a, &b)', :on_args_add_star) {thru_args_add_star = true}
+    assert_equal true, thru_args_add_star
+  end
+
+  def test_args_new
+    thru_args_new = false
+    parse('m()', :on_args_new) {thru_args_new = true}
+    assert_equal true, thru_args_new
+  end
+
   def test_arg_paren
     # FIXME
   end
@@ -98,10 +124,22 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
     assert_equal '[aref(ref(v),[1,2])]', parse('v[1,2]')
   end
 
+  def test_assoclist_from_args
+    thru_assoclist_from_args = false
+    parse('{a=>b}', :on_assoclist_from_args) {thru_assoclist_from_args = true}
+    assert_equal true, thru_assoclist_from_args
+  end
+
   def test_assocs
     assert_equal '[fcall(m,[assocs(assoc(1,2))])]', parse('m(1=>2)')
     assert_equal '[fcall(m,[assocs(assoc(1,2),assoc(3,4))])]', parse('m(1=>2,3=>4)')
     assert_equal '[fcall(m,[3,assocs(assoc(1,2))])]', parse('m(3,1=>2)')
+  end
+
+  def test_assoc_new
+    thru_assoc_new = false
+    parse('{a=>b}', :on_assoc_new) {thru_assoc_new = true}
+    assert_equal true, thru_assoc_new
   end
 
   def test_aref_field
@@ -149,6 +187,21 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_assign_error
   end
 
+  def test_bare_assoc_hash
+    thru_bare_assoc_hash = false
+    parse('x[a=>b]', :on_bare_assoc_hash) {thru_bare_assoc_hash = true}
+    assert_equal true, thru_bare_assoc_hash
+    thru_bare_assoc_hash = false
+    parse('x[1, a=>b]', :on_bare_assoc_hash) {thru_bare_assoc_hash = true}
+    assert_equal true, thru_bare_assoc_hash
+    thru_bare_assoc_hash = false
+    parse('x(a=>b)', :on_bare_assoc_hash) {thru_bare_assoc_hash = true}
+    assert_equal true, thru_bare_assoc_hash
+    thru_bare_assoc_hash = false
+    parse('x(1, a=>b)', :on_bare_assoc_hash) {thru_bare_assoc_hash = true}
+    assert_equal true, thru_bare_assoc_hash
+  end
+
   def test_begin
     thru_begin = false
     parse('begin end', :on_begin) {thru_begin = true}
@@ -162,6 +215,41 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
       parse("a #{op} b", :on_binary) {thru_binary = true}
       assert_equal true, thru_binary
     end
+  end
+
+  def test_blockarg
+    thru_blockarg = false
+    parse("def a(&b) end", :on_blockarg) {thru_blockarg = true}
+    assert_equal true, thru_blockarg
+    thru_blockarg = false
+    parse("def a(x, &b) end", :on_blockarg) {thru_blockarg = true}
+    assert_equal true, thru_blockarg
+
+    thru_blockarg = false
+    parse("proc{|&b|}", :on_blockarg) {thru_blockarg = true}
+    assert_equal true, thru_blockarg
+    thru_blockarg = false
+    parse("proc{|x, &b|}", :on_blockarg) {thru_blockarg = true}
+    assert_equal true, thru_blockarg
+    thru_blockarg = false
+    parse("proc{|&b;y|}", :on_blockarg) {thru_blockarg = true}
+    assert_equal true, thru_blockarg
+    thru_blockarg = false
+    parse("proc{|&b,x;y|}", :on_blockarg) {thru_blockarg = true}
+    assert_equal true, thru_blockarg
+
+    thru_blockarg = false
+    parse("proc do |&b| end", :on_blockarg) {thru_blockarg = true}
+    assert_equal true, thru_blockarg
+    thru_blockarg = false
+    parse("proc do |&b, x| end", :on_blockarg) {thru_blockarg = true}
+    assert_equal true, thru_blockarg
+    thru_blockarg = false
+    parse("proc do |&b;y| end", :on_blockarg) {thru_blockarg = true}
+    assert_equal true, thru_blockarg
+    thru_blockarg = false
+    parse("proc do |&b, x;y| end", :on_blockarg) {thru_blockarg = true}
+    assert_equal true, thru_blockarg
   end
 
   def test_block_var
@@ -198,6 +286,14 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_block_var
   end
 
+  def test_block_var_add_block
+    # not used
+  end
+
+  def test_block_var_add_star
+    # not used
+  end
+
   def test_bodystmt
     thru_bodystmt = false
     parse("class X\nend", :on_bodystmt) {thru_bodystmt = true}
@@ -220,6 +316,22 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
     }
     assert_equal true, thru_call
     assert_equal "[call(ref(foo),.,call,[])]", tree
+  end
+
+  def test_excessed_comma
+    thru_excessed_comma = false
+    parse("proc{|x,|}", :on_excessed_comma) {thru_excessed_comma = true}
+    assert_equal true, thru_excessed_comma
+    thru_excessed_comma = false
+    parse("proc{|x,y,|}", :on_excessed_comma) {thru_excessed_comma = true}
+    assert_equal true, thru_excessed_comma
+
+    thru_excessed_comma = false
+    parse("proc do |x,| end", :on_excessed_comma) {thru_excessed_comma = true}
+    assert_equal true, thru_excessed_comma
+    thru_excessed_comma = false
+    parse("proc do |x,y,| end", :on_excessed_comma) {thru_excessed_comma = true}
+    assert_equal true, thru_excessed_comma
   end
 
   def test_heredoc
@@ -276,335 +388,679 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_mlhs_paren
   end
 
-=begin
   def test_brace_block
-    assert_equal true, $thru__brace_block
+    thru_brace_block = false
+    parse('proc {}', :on_brace_block) {thru_brace_block = true}
+    assert_equal true, thru_brace_block
   end
 
   def test_break
-    assert_equal true, $thru__break
+    thru_break = false
+    parse('proc {break}', :on_break) {thru_break = true}
+    assert_equal true, thru_break
   end
 
   def test_case
-    assert_equal true, $thru__case
+    thru_case = false
+    parse('case foo when true; end', :on_case) {thru_case = true}
+    assert_equal true, thru_case
   end
 
   def test_class
-    assert_equal true, $thru__class
+    thru_class = false
+    parse('class Foo; end', :on_class) {thru_class = true}
+    assert_equal true, thru_class
   end
 
   def test_class_name_error
-    assert_equal true, $thru__class_name_error
+    thru_class_name_error = false
+    parse('class foo; end', :on_class_name_error) {thru_class_name_error = true}
+    assert_equal true, thru_class_name_error
   end
 
   def test_command
-    assert_equal true, $thru__command
+    thru_command = false
+    parse('foo a b', :on_command) {thru_command = true}
+    assert_equal true, thru_command
   end
 
   def test_command_call
-    assert_equal true, $thru__command_call
+    thru_command_call = false
+    parse('foo.bar a, b', :on_command_call) {thru_command_call = true}
+    assert_equal true, thru_command_call
   end
 
   def test_const_ref
-    assert_equal true, $thru__const_ref
+    thru_const_ref = false
+    parse('class A;end', :on_const_ref) {thru_const_ref = true}
+    assert_equal true, thru_const_ref
+    thru_const_ref = false
+    parse('module A;end', :on_const_ref) {thru_const_ref = true}
+    assert_equal true, thru_const_ref
   end
 
-  def test_constpath_field
-    assert_equal true, $thru__constpath_field
+  def test_const_path_field
+    thru_const_path_field = false
+    parse('foo::X = 1', :on_const_path_field) {thru_const_path_field = true}
+    assert_equal true, thru_const_path_field
   end
 
-  def test_constpath_ref
-    assert_equal true, $thru__constpath_ref
+  def test_const_path_ref
+    thru_const_path_ref = false
+    parse('foo::X', :on_const_path_ref) {thru_const_path_ref = true}
+    assert_equal true, thru_const_path_ref
   end
 
   def test_def
-    assert_equal true, $thru__def
+    thru_def = false
+    parse('def foo; end', :on_def) {
+      thru_def = true
+    }
+    assert_equal true, thru_def
   end
 
   def test_defined
-    assert_equal true, $thru__defined
+    thru_defined = false
+    parse('defined?(x)', :on_defined) {thru_defined = true}
+    assert_equal true, thru_defined
   end
 
   def test_defs
-    assert_equal true, $thru__defs
+    thru_defs = false
+    parse('def foo.bar; end', :on_defs) {thru_defs = true}
+    assert_equal true, thru_defs
   end
 
   def test_do_block
-    assert_equal true, $thru__do_block
+    thru_do_block = false
+    parse('proc do end', :on_do_block) {thru_do_block = true}
+    assert_equal true, thru_do_block
   end
 
   def test_dot2
-    assert_equal true, $thru__dot2
+    thru_dot2 = false
+    parse('a..b', :on_dot2) {thru_dot2 = true}
+    assert_equal true, thru_dot2
   end
 
   def test_dot3
-    assert_equal true, $thru__dot3
+    thru_dot3 = false
+    parse('a...b', :on_dot3) {thru_dot3 = true}
+    assert_equal true, thru_dot3
   end
 
   def test_dyna_symbol
-    assert_equal true, $thru__dyna_symbol
+    thru_dyna_symbol = false
+    parse(':"#{foo}"', :on_dyna_symbol) {thru_dyna_symbol = true}
+    assert_equal true, thru_dyna_symbol
   end
 
   def test_else
-    assert_equal true, $thru__else
+    thru_else = false
+    parse('if foo; bar else zot end', :on_else) {thru_else = true}
+    assert_equal true, thru_else
   end
 
   def test_elsif
-    assert_equal true, $thru__elsif
+    thru_elsif = false
+    parse('if foo; bar elsif qux; zot end', :on_elsif) {thru_elsif = true}
+    assert_equal true, thru_elsif
   end
 
   def test_ensure
-    assert_equal true, $thru__ensure
+    thru_ensure = false
+    parse('begin foo ensure bar end', :on_ensure) {thru_ensure = true}
+    assert_equal true, thru_ensure
   end
 
   def test_fcall
-    assert_equal true, $thru__fcall
+    thru_fcall = false
+    parse('foo()', :on_fcall) {thru_fcall = true}
+    assert_equal true, thru_fcall
   end
 
   def test_field
-    assert_equal true, $thru__field
+    thru_field = false
+    parse('foo.x = 1', :on_field) {thru_field = true}
+    assert_equal true, thru_field
   end
 
   def test_for
-    assert_equal true, $thru__for
+    thru_for = false
+    parse('for i in foo; end', :on_for) {thru_for = true}
+    assert_equal true, thru_for
   end
 
   def test_hash
-    assert_equal true, $thru__hash
+    thru_hash = false
+    parse('{1=>2}', :on_hash) {thru_hash = true}
+    assert_equal true, thru_hash
+    thru_hash = false
+    parse('{a: 2}', :on_hash) {thru_hash = true}
+    assert_equal true, thru_hash
   end
 
   def test_if
-    assert_equal true, $thru__if
+    thru_if = false
+    parse('if false; end', :on_if) {thru_if = true}
+    assert_equal true, thru_if
   end
 
   def test_if_mod
-    assert_equal true, $thru__if_mod
+    thru_if_mod = false
+    parse('nil if nil', :on_if_mod) {thru_if_mod = true}
+    assert_equal true, thru_if_mod
   end
 
   def test_ifop
-    assert_equal true, $thru__ifop
+    thru_ifop = false
+    parse('a ? b : c', :on_ifop) {thru_ifop = true}
+    assert_equal true, thru_ifop
   end
 
-  def test_iter_block
-    assert_equal true, $thru__iter_block
+  def test_lambda
+    thru_lambda = false
+    parse('->{}', :on_lambda) {thru_lambda = true}
+    assert_equal true, thru_lambda
+  end
+
+  def test_magic_comment
+    thru_magic_comment = false
+    parse('# -*- foo:bar -*-', :on_magic_comment) {thru_magic_comment = true}
+    assert_equal true, thru_magic_comment
+  end
+
+  def test_method_add_block
+    thru_method_add_block = false
+    parse('a {}', :on_method_add_block) {thru_method_add_block = true}
+    assert_equal true, thru_method_add_block
+    thru_method_add_block = false
+    parse('a do end', :on_method_add_block) {thru_method_add_block = true}
+    assert_equal true, thru_method_add_block
   end
 
   def test_method_add_arg
-    assert_equal true, $thru__method_add_arg
+    thru_method_add_arg = false
+    parse('a()', :on_method_add_arg) {thru_method_add_arg = true}
+    assert_equal true, thru_method_add_arg
+    thru_method_add_arg = false
+    parse('a {}', :on_method_add_arg) {thru_method_add_arg = true}
+    assert_equal true, thru_method_add_arg
+    thru_method_add_arg = false
+    parse('a.b(1)', :on_method_add_arg) {thru_method_add_arg = true}
+    assert_equal true, thru_method_add_arg
+    thru_method_add_arg = false
+    parse('a::b(1)', :on_method_add_arg) {thru_method_add_arg = true}
+    assert_equal true, thru_method_add_arg
   end
 
   def test_module
-    assert_equal true, $thru__module
+    thru_module = false
+    parse('module A; end', :on_module) {thru_module = true}
+    assert_equal true, thru_module
   end
 
   def test_mrhs_add
-    assert_equal true, $thru__mrhs_add
+    thru_mrhs_add = false
+    parse('a = a, b', :on_mrhs_add) {thru_mrhs_add = true}
+    assert_equal true, thru_mrhs_add
   end
 
   def test_mrhs_add_star
-    assert_equal true, $thru__mrhs_add_star
+    thru_mrhs_add_star = false
+    parse('a = a, *b', :on_mrhs_add_star) {thru_mrhs_add_star = true}
+    assert_equal true, thru_mrhs_add_star
   end
 
   def test_mrhs_new
-    assert_equal true, $thru__mrhs_new
+    thru_mrhs_new = false
+    parse('a = *a', :on_mrhs_new) {thru_mrhs_new = true}
+    assert_equal true, thru_mrhs_new
   end
 
-  def test_mrhs_new_from_arglist
-    assert_equal true, $thru__mrhs_new_from_arglist
+  def test_mrhs_new_from_args
+    thru_mrhs_new_from_args = false
+    parse('a = a, b', :on_mrhs_new_from_args) {thru_mrhs_new_from_args = true}
+    assert_equal true, thru_mrhs_new_from_args
   end
 
   def test_next
-    assert_equal true, $thru__next
+    thru_next = false
+    parse('a {next}', :on_next) {thru_next = true}
+    assert_equal true, thru_next
   end
 
   def test_opassign
-    assert_equal true, $thru__opassign
+    thru_opassign = false
+    parse('a += b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    thru_opassign = false
+    parse('a -= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    thru_opassign = false
+    parse('a *= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    thru_opassign = false
+    parse('a /= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    thru_opassign = false
+    parse('a %= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    thru_opassign = false
+    parse('a **= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    thru_opassign = false
+    parse('a &= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    thru_opassign = false
+    parse('a |= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    thru_opassign = false
+    parse('a <<= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    thru_opassign = false
+    parse('a >>= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    thru_opassign = false
+    parse('a &&= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    thru_opassign = false
+    parse('a ||= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
   end
 
   def test_param_error
-    assert_equal true, $thru__param_error
+    thru_param_error = false
+    parse('def foo(A) end', :on_param_error) {thru_param_error = true}
+    assert_equal true, thru_param_error
+    thru_param_error = false
+    parse('def foo($a) end', :on_param_error) {thru_param_error = true}
+    assert_equal true, thru_param_error
+    thru_param_error = false
+    parse('def foo(@a) end', :on_param_error) {thru_param_error = true}
+    assert_equal true, thru_param_error
+    thru_param_error = false
+    parse('def foo(@@a) end', :on_param_error) {thru_param_error = true}
+    assert_equal true, thru_param_error
   end
 
   def test_params
-    assert_equal true, $thru__params
+    thru_params = false
+    parse('a {||}', :on_params) {thru_params = true}
+    assert_equal true, thru_params
+    thru_params = false
+    parse('a {|x|}', :on_params) {thru_params = true}
+    assert_equal true, thru_params
+    thru_params = false
+    parse('a {|*x|}', :on_params) {thru_params = true}
+    assert_equal true, thru_params
   end
 
   def test_paren
-    assert_equal true, $thru__paren
+    thru_paren = false
+    parse('()', :on_paren) {thru_paren = true}
+    assert_equal true, thru_paren
   end
 
   def test_parse_error
-    assert_equal true, $thru__parse_error
+    thru_parse_error = false
+    parse('<>', :on_parse_error) {thru_parse_error = true}
+    assert_equal true, thru_parse_error
   end
 
   def test_qwords_add
-    assert_equal true, $thru__qwords_add
+    thru_qwords_add = false
+    parse('%w[a]', :on_qwords_add) {thru_qwords_add = true}
+    assert_equal true, thru_qwords_add
   end
 
   def test_qwords_new
-    assert_equal true, $thru__qwords_new
+    thru_qwords_new = false
+    parse('%w[]', :on_qwords_new) {thru_qwords_new = true}
+    assert_equal true, thru_qwords_new
   end
 
   def test_redo
-    assert_equal true, $thru__redo
+    thru_redo = false
+    parse('redo', :on_redo) {thru_redo = true}
+    assert_equal true, thru_redo
   end
 
   def test_regexp_literal
-    assert_equal true, $thru__regexp_literal
+    thru_regexp_literal = false
+    parse('//', :on_regexp_literal) {thru_regexp_literal = true}
+    assert_equal true, thru_regexp_literal
   end
 
   def test_rescue
-    assert_equal true, $thru__rescue
+    thru_rescue = false
+    parse('begin; rescue; end', :on_rescue) {thru_rescue = true}
+    assert_equal true, thru_rescue
   end
 
   def test_rescue_mod
-    assert_equal true, $thru__rescue_mod
+    thru_rescue_mod = false
+    parse('nil rescue nil', :on_rescue_mod) {thru_rescue_mod = true}
+    assert_equal true, thru_rescue_mod
   end
 
-  def test_restparam
-    assert_equal true, $thru__restparam
+  def test_rest_param
+    thru_rest_param = false
+    parse('def a(*) end', :on_rest_param) {thru_rest_param = true}
+    assert_equal true, thru_rest_param
+    thru_rest_param = false
+    parse('def a(*x) end', :on_rest_param) {thru_rest_param = true}
+    assert_equal true, thru_rest_param
   end
 
   def test_retry
-    assert_equal true, $thru__retry
+    thru_retry = false
+    parse('retry', :on_retry) {thru_retry = true}
+    assert_equal true, thru_retry
   end
 
   def test_return
-    assert_equal true, $thru__return
+    thru_return = false
+    parse('return a', :on_return) {thru_return = true}
+    assert_equal true, thru_return
   end
 
   def test_return0
-    assert_equal true, $thru__return0
+    thru_return0 = false
+    parse('return', :on_return0) {thru_return0 = true}
+    assert_equal true, thru_return0
   end
 
   def test_sclass
-    assert_equal true, $thru__sclass
-  end
-
-  def test_space
-    assert_equal true, $thru__space
+    thru_sclass = false
+    parse('class << a; end', :on_sclass) {thru_sclass = true}
+    assert_equal true, thru_sclass
   end
 
   def test_string_add
-    assert_equal true, $thru__string_add
+    thru_string_add = false
+    parse('"aa"', :on_string_add) {thru_string_add = true}
+    assert_equal true, thru_string_add
   end
 
   def test_string_concat
-    assert_equal true, $thru__string_concat
+    thru_string_concat = false
+    parse('"a" "b"', :on_string_concat) {thru_string_concat = true}
+    assert_equal true, thru_string_concat
   end
 
   def test_string_content
-    assert_equal true, $thru__string_content
+    thru_string_content = false
+    parse('""', :on_string_content) {thru_string_content = true}
+    assert_equal true, thru_string_content
+    thru_string_content = false
+    parse('"a"', :on_string_content) {thru_string_content = true}
+    assert_equal true, thru_string_content
+    thru_string_content = false
+    parse('%[a]', :on_string_content) {thru_string_content = true}
+    assert_equal true, thru_string_content
+    thru_string_content = false
+    parse('\'a\'', :on_string_content) {thru_string_content = true}
+    assert_equal true, thru_string_content
+    thru_string_content = false
+    parse('%<a>', :on_string_content) {thru_string_content = true}
+    assert_equal true, thru_string_content
+    thru_string_content = false
+    parse('%!a!', :on_string_content) {thru_string_content = true}
+    assert_equal true, thru_string_content
+    thru_string_content = false
+    parse('%q!a!', :on_string_content) {thru_string_content = true}
+    assert_equal true, thru_string_content
+    thru_string_content = false
+    parse('%Q!a!', :on_string_content) {thru_string_content = true}
+    assert_equal true, thru_string_content
   end
 
   def test_string_dvar
-    assert_equal true, $thru__string_dvar
+    thru_string_dvar = false
+    parse('"#$a"', :on_string_dvar) {thru_string_dvar = true}
+    assert_equal true, thru_string_dvar
+    thru_string_dvar = false
+    parse('\'#$a\'', :on_string_dvar) {thru_string_dvar = true}
+    assert_equal false, thru_string_dvar
+    thru_string_dvar = false
+    parse('"#@a"', :on_string_dvar) {thru_string_dvar = true}
+    assert_equal true, thru_string_dvar
+    thru_string_dvar = false
+    parse('\'#@a\'', :on_string_dvar) {thru_string_dvar = true}
+    assert_equal false, thru_string_dvar
+    thru_string_dvar = false
+    parse('"#@@a"', :on_string_dvar) {thru_string_dvar = true}
+    assert_equal true, thru_string_dvar
+    thru_string_dvar = false
+    parse('\'#@@a\'', :on_string_dvar) {thru_string_dvar = true}
+    assert_equal false, thru_string_dvar
+    thru_string_dvar = false
+    parse('"#$1"', :on_string_dvar) {thru_string_dvar = true}
+    assert_equal true, thru_string_dvar
+    thru_string_dvar = false
+    parse('\'#$1\'', :on_string_dvar) {thru_string_dvar = true}
+    assert_equal false, thru_string_dvar
   end
 
   def test_string_embexpr
-    assert_equal true, $thru__string_embexpr
+    thru_string_embexpr = false
+    parse('"#{}"', :on_string_embexpr) {thru_string_embexpr = true}
+    assert_equal true, thru_string_embexpr
+    thru_string_embexpr = false
+    parse('\'#{}\'', :on_string_embexpr) {thru_string_embexpr = true}
+    assert_equal false, thru_string_embexpr
   end
 
   def test_string_literal
-    assert_equal true, $thru__string_literal
+    thru_string_literal = false
+    parse('""', :on_string_literal) {thru_string_literal = true}
+    assert_equal true, thru_string_literal
   end
 
   def test_super
-    assert_equal true, $thru__super
+    thru_super = false
+    parse('super()', :on_super) {thru_super = true}
+    assert_equal true, thru_super
   end
 
   def test_symbol
-    assert_equal true, $thru__symbol
+    thru_symbol = false
+    parse(':a', :on_symbol) {thru_symbol = true}
+    assert_equal true, thru_symbol
+    thru_symbol = false
+    parse(':$a', :on_symbol) {thru_symbol = true}
+    assert_equal true, thru_symbol
+    thru_symbol = false
+    parse(':@a', :on_symbol) {thru_symbol = true}
+    assert_equal true, thru_symbol
+    thru_symbol = false
+    parse(':@@a', :on_symbol) {thru_symbol = true}
+    assert_equal true, thru_symbol
+    thru_symbol = false
+    parse(':==', :on_symbol) {thru_symbol = true}
+    assert_equal true, thru_symbol
   end
 
   def test_symbol_literal
-    assert_equal true, $thru__symbol_literal
+    thru_symbol_literal = false
+    parse(':a', :on_symbol_literal) {thru_symbol_literal = true}
+    assert_equal true, thru_symbol_literal
   end
 
-  def test_topconst_field
-    assert_equal true, $thru__topconst_field
+  def test_top_const_field
+    thru_top_const_field = false
+    parse('::A=1', :on_top_const_field) {thru_top_const_field = true}
+    assert_equal true, thru_top_const_field
   end
 
-  def test_topconst_ref
-    assert_equal true, $thru__topconst_ref
+  def test_top_const_ref
+    thru_top_const_ref = false
+    parse('::A', :on_top_const_ref) {thru_top_const_ref = true}
+    assert_equal true, thru_top_const_ref
   end
 
   def test_unary
-    assert_equal true, $thru__unary
+    thru_unary = false
+    parse('not a 1, 2', :on_unary) {thru_unary = true}
+    assert_equal true, thru_unary
+    thru_unary = false
+    parse('not (a)', :on_unary) {thru_unary = true}
+    assert_equal true, thru_unary
+    thru_unary = false
+    parse('!a', :on_unary) {thru_unary = true}
+    assert_equal true, thru_unary
+    thru_unary = false
+    parse('-10', :on_unary) {thru_unary = true}
+    assert_equal true, thru_unary
+    thru_unary = false
+    parse('-10*2', :on_unary) {thru_unary = true}
+    assert_equal true, thru_unary
+    thru_unary = false
+    parse('-10.1', :on_unary) {thru_unary = true}
+    assert_equal true, thru_unary
+    thru_unary = false
+    parse('-10.1*2', :on_unary) {thru_unary = true}
+    assert_equal true, thru_unary
+    thru_unary = false
+    parse('-a', :on_unary) {thru_unary = true}
+    assert_equal true, thru_unary
+    thru_unary = false
+    parse('+a', :on_unary) {thru_unary = true}
+    assert_equal true, thru_unary
+    thru_unary = false
+    parse('~a', :on_unary) {thru_unary = true}
+    assert_equal true, thru_unary
+    thru_unary = false
+    parse('not()', :on_unary) {thru_unary = true}
+    assert_equal true, thru_unary
   end
 
   def test_undef
-    assert_equal true, $thru__undef
+    thru_undef = false
+    parse('undef a', :on_undef) {thru_undef = true}
+    assert_equal true, thru_undef
+    thru_undef = false
+    parse('undef <=>', :on_undef) {thru_undef = true}
+    assert_equal true, thru_undef
+    thru_undef = false
+    parse('undef a, b', :on_undef) {thru_undef = true}
+    assert_equal true, thru_undef
   end
 
   def test_unless
-    assert_equal true, $thru__unless
+    thru_unless = false
+    parse('unless a; end', :on_unless) {thru_unless = true}
+    assert_equal true, thru_unless
   end
 
   def test_unless_mod
-    assert_equal true, $thru__unless_mod
+    thru_unless_mod = false
+    parse('nil unless a', :on_unless_mod) {thru_unless_mod = true}
+    assert_equal true, thru_unless_mod
+  end
+
+  def test_until
+    thru_until = false
+    parse('until a; end', :on_until) {thru_until = true}
+    assert_equal true, thru_until
   end
 
   def test_until_mod
-    assert_equal true, $thru__until_mod
+    thru_until_mod = false
+    parse('nil until a', :on_until_mod) {thru_until_mod = true}
+    assert_equal true, thru_until_mod
   end
 
   def test_var_field
-    assert_equal true, $thru__var_field
+    thru_var_field = false
+    parse('a = 1', :on_var_field) {thru_var_field = true}
+    assert_equal true, thru_var_field
+    thru_var_field = false
+    parse('a += 1', :on_var_field) {thru_var_field = true}
+    assert_equal true, thru_var_field
   end
 
   def test_when
-    assert_equal true, $thru__when
+    thru_when = false
+    parse('case a when b; end', :on_when) {thru_when = true}
+    assert_equal true, thru_when
+    thru_when = false
+    parse('case when a; end', :on_when) {thru_when = true}
+    assert_equal true, thru_when
   end
 
   def test_while
-    assert_equal true, $thru__while
+    thru_while = false
+    parse('while a; end', :on_while) {thru_while = true}
+    assert_equal true, thru_while
   end
 
   def test_while_mod
-    assert_equal true, $thru__while_mod
+    thru_while_mod = false
+    parse('nil while a', :on_while_mod) {thru_while_mod = true}
+    assert_equal true, thru_while_mod
   end
 
   def test_word_add
-    assert_equal true, $thru__word_add
+    thru_word_add = false
+    parse('%W[a]', :on_word_add) {thru_word_add = true}
+    assert_equal true, thru_word_add
   end
 
   def test_word_new
-    assert_equal true, $thru__word_new
+    thru_word_new = false
+    parse('%W[a]', :on_word_new) {thru_word_new = true}
+    assert_equal true, thru_word_new
   end
 
   def test_words_add
-    assert_equal true, $thru__words_add
+    thru_words_add = false
+    parse('%W[a]', :on_words_add) {thru_words_add = true}
+    assert_equal true, thru_words_add
   end
 
   def test_words_new
-    assert_equal true, $thru__words_new
+    thru_words_new = false
+    parse('%W[]', :on_words_new) {thru_words_new = true}
+    assert_equal true, thru_words_new
   end
 
   def test_xstring_add
-    assert_equal true, $thru__xstring_add
+    thru_xstring_add = false
+    parse('`x`', :on_xstring_add) {thru_xstring_add = true}
+    assert_equal true, thru_xstring_add
   end
 
   def test_xstring_literal
-    assert_equal true, $thru__xstring_literal
+    thru_xstring_literal = false
+    parse('``', :on_xstring_literal) {thru_xstring_literal = true}
+    assert_equal true, thru_xstring_literal
   end
 
   def test_xstring_new
-    assert_equal true, $thru__xstring_new
+    thru_xstring_new = false
+    parse('``', :on_xstring_new) {thru_xstring_new = true}
+    assert_equal true, thru_xstring_new
   end
 
   def test_yield
-    assert_equal true, $thru__yield
+    thru_yield = false
+    parse('yield a', :on_yield) {thru_yield = true}
+    assert_equal true, thru_yield
   end
 
   def test_yield0
-    assert_equal true, $thru__yield0
+    thru_yield0 = false
+    parse('yield', :on_yield0) {thru_yield0 = true}
+    assert_equal true, thru_yield0
   end
 
   def test_zsuper
-    assert_equal true, $thru__zsuper
+    thru_zsuper = false
+    parse('super', :on_zsuper) {thru_zsuper = true}
+    assert_equal true, thru_zsuper
   end
-=end
 
   def test_local_variables
     cmd = 'command(w,[regexp_literal(xstring_add(xstring_new(),25 # ),/)])'

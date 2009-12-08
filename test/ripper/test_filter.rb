@@ -2,10 +2,11 @@ begin
   require 'ripper'
   require 'test/unit'
   ripper_test = true
+  module TestRipper; end
 rescue LoadError
 end
 
-class TestRipper_Filter < Test::Unit::TestCase
+class TestRipper::Filter < Test::Unit::TestCase
 
   class Filter < Ripper::Filter
     def on_default(event, token, data)

@@ -5,10 +5,11 @@ begin
   require 'ripper'
   require 'test/unit'
   ripper_test = true
+  module TestRipper; end
 rescue LoadError
 end
 
-class TestRipper_ScannerEvents < Test::Unit::TestCase
+class TestRipper::ScannerEvents < Test::Unit::TestCase
 
   def test_event_coverage
     dispatched = Ripper::SCANNER_EVENTS.map {|event,_| event }
