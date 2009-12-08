@@ -1,3 +1,8 @@
+Tue Dec  8 16:16:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/defaults.rb (Gem::default_dir): removed a clause
+	  doing nothing.
+
 Tue Dec  8 03:50:24 2009  Tanaka Akira  <akr@fsij.org>
 
 	* file.c (rb_f_test): use string form in unknown command error
