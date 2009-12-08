@@ -5,7 +5,7 @@
 
 echo> ~tmp~.mak ####
 echo>> ~tmp~.mak conf = %0
-echo>> ~tmp~.mak $(conf:\=/): nul
+echo>> ~tmp~.mak $(conf): nul
 echo>> ~tmp~.mak 	@del ~setup~.mak
 echo>> ~tmp~.mak 	@-$(MAKE) -l$(MAKEFLAGS) -f $(@D)/setup.mak \
 if exist pathlist.tmp del pathlist.tmp
@@ -30,9 +30,15 @@ if "%1" == "--disable-win95" goto :disable-win95
 if "%1" == "--extout" goto :extout
 if "%1" == "--path" goto :path
 if "%1" == "--with-baseruby" goto :baseruby
+if "%1" == "--with-ntver" goto :ntver
+echo %1| findstr "^--with-.*-dir$" > nul
+if not errorlevel 1 goto :withdir
+echo %1| findstr "^--with-.*-include$" > nul
+if not errorlevel 1 goto :withdir
+echo %1| findstr "^--with-.*-lib$" > nul
+if not errorlevel 1 goto :withdir
 if "%1" == "-h" goto :help
 if "%1" == "--help" goto :help
-if "%1" == "--with-ntver" goto :ntver
   echo>>confargs.tmp %1 \
   shift
 goto :loop
@@ -128,6 +134,11 @@ goto :loop
 goto :loop
 :baseruby
   echo>> ~tmp~.mak 	"BASERUBY=%2" \
+  echo>>confargs.tmp %1=%2 \
+  shift
+  shift
+goto :loop
+:withdir
   echo>>confargs.tmp %1=%2 \
   shift
   shift
