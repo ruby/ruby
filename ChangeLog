@@ -1,3 +1,14 @@
+Tue Dec  8 23:41:34 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/configure.bat: now recognize --with-*-{dir,include,lib} options
+	  and pass them to mkmf.
+
+	* win32/configure.bat: general conversion from ``/'' to ``\'' of
+	  configure_args is not necessary any longer.
+
+	* win32/setup.mak: BASERUBY is used as command, so always need to
+	  convert ``/'' to ``\'' within it.
+
 Tue Dec  8 23:39:52 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (flo_eq): supress a warning on VC++ for x64.
