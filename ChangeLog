@@ -1,3 +1,7 @@
+Thu Dec 10 01:12:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (dyna_pop_gen): pop dvars.  [ruby-dev:39861]
+
 Thu Dec 10 00:46:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* node.c (dump_node): fixed for long members.
