@@ -71,6 +71,8 @@ enum dump_flag_bits {
     dump_usage,
     dump_yydebug,
     dump_syntax,
+    dump_parsetree,
+    dump_parsetree_with_comment,
     dump_insns,
     dump_flag_count
 };
@@ -645,9 +647,11 @@ dump_option(const char *str, int len, void *arg)
     SET_WHEN_DUMP(usage);
     SET_WHEN_DUMP(yydebug);
     SET_WHEN_DUMP(syntax);
+    SET_WHEN_DUMP(parsetree);
+    SET_WHEN_DUMP(parsetree_with_comment);
     SET_WHEN_DUMP(insns);
     rb_warn("don't know how to dump `%.*s',", len, str);
-    rb_warn("but only [version, copyright, usage, yydebug, syntax, insns].");
+    rb_warn("but only [version, copyright, usage, yydebug, syntax, parsetree, parsetree_with_comment, insns].");
 }
 
 static void
@@ -1431,6 +1435,12 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	rb_define_global_function("gsub", rb_f_gsub, -1);
 	rb_define_global_function("chop", rb_f_chop, 0);
 	rb_define_global_function("chomp", rb_f_chomp, -1);
+    }
+
+    if (opt->dump & DUMP_BIT(parsetree) || opt->dump & DUMP_BIT(parsetree_with_comment)) {
+	rb_io_write(rb_stdout, rb_parser_dump_tree(tree, opt->dump & DUMP_BIT(parsetree_with_comment)));
+	rb_io_flush(rb_stdout);
+	return Qtrue;
     }
 
     PREPARE_PARSE_MAIN({

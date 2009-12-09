@@ -47,6 +47,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		io.$(OBJEXT) \
 		marshal.$(OBJEXT) \
 		math.$(OBJEXT) \
+		node.$(OBJEXT) \
 		numeric.$(OBJEXT) \
 		object.$(OBJEXT) \
 		pack.$(OBJEXT) \
@@ -559,6 +560,8 @@ main.$(OBJEXT): {$(VPATH)}main.c $(RUBY_H_INCLUDES) {$(VPATH)}debug.h \
 marshal.$(OBJEXT): {$(VPATH)}marshal.c $(RUBY_H_INCLUDES) {$(VPATH)}io.h \
   $(ENCODING_H_INCLUDES) {$(VPATH)}util.h
 math.$(OBJEXT): {$(VPATH)}math.c $(RUBY_H_INCLUDES)
+node.$(OBJEXT): {$(VPATH)}node.c $(RUBY_H_INCLUDES) \
+  $(VM_CORE_H_INCLUDES)
 numeric.$(OBJEXT): {$(VPATH)}numeric.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}util.h $(ENCODING_H_INCLUDES)
 object.$(OBJEXT): {$(VPATH)}object.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h
