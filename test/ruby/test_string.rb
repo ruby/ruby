@@ -320,9 +320,12 @@ class TestString < Test::Unit::TestCase
 
   end
 
+  Bug2463 = '[ruby-dev:39856]'
   def test_center
     assert_equal(S("hello"),       S("hello").center(4))
     assert_equal(S("   hello   "), S("hello").center(11))
+    assert_equal(S("ababaababa"), S("").center(10, "ab"), Bug2463)
+    assert_equal(S("ababaababab"), S("").center(11, "ab"), Bug2463)
   end
 
   def test_chomp
@@ -779,6 +782,8 @@ class TestString < Test::Unit::TestCase
   def test_ljust
     assert_equal(S("hello"),       S("hello").ljust(4))
     assert_equal(S("hello      "), S("hello").ljust(11))
+    assert_equal(S("ababababab"), S("").ljust(10, "ab"), Bug2463)
+    assert_equal(S("abababababa"), S("").ljust(11, "ab"), Bug2463)
   end
 
   def test_next
@@ -917,6 +922,8 @@ class TestString < Test::Unit::TestCase
   def test_rjust
     assert_equal(S("hello"), S("hello").rjust(4))
     assert_equal(S("      hello"), S("hello").rjust(11))
+    assert_equal(S("ababababab"), S("").rjust(10, "ab"), Bug2463)
+    assert_equal(S("abababababa"), S("").rjust(11, "ab"), Bug2463)
   end
 
   def test_scan
