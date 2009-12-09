@@ -6635,7 +6635,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
        p += llen;
     }
     else {
-       while (llen > fclen) {
+       while (llen >= fclen) {
 	    memcpy(p,f,flen);
 	    p += flen;
 	    llen -= fclen;
@@ -6652,7 +6652,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
        p += rlen;
     }
     else {
-       while (rlen > fclen) {
+       while (rlen >= fclen) {
 	    memcpy(p,f,flen);
 	    p += flen;
 	    rlen -= fclen;
