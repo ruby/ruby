@@ -1,3 +1,12 @@
+Wed Dec  9 22:57:04 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* node.c: node management added.  Currently, only pretty-dumper is
+	  implemented.  [ruby-dev:39853]
+	
+	* ruby.c: --dump=parsetree and --dump=parsetree_with_comment options
+	  added.  This is just for debug or research purpose.  Note that the
+	  compatibility of these options are not supported at all.
+
 Wed Dec  9 09:50:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_justify): fixed the case a fill size is a
