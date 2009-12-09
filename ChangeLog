@@ -1,3 +1,7 @@
+Thu Dec 10 00:46:43 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* node.c (dump_node): fixed for long members.
+
 Wed Dec  9 22:57:04 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* node.c: node management added.  Currently, only pretty-dumper is
