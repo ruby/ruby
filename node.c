@@ -18,6 +18,7 @@
 #define A_INDENT add_indent(buf, indent)
 #define A_ID(id) add_id(buf, id)
 #define A_INT(val) rb_str_catf(buf, "%d", (val));
+#define A_LONG(val) rb_str_catf(buf, "%ld", (val));
 #define A_LIT(lit) AR(rb_inspect(lit))
 #define A_NODE_HEADER(node) \
     rb_str_catf(buf, "@ %s (line: %d)", ruby_node_name(nd_type(node)), nd_line(node))
@@ -44,6 +45,7 @@
 #define F_ID(name, ann)		    SIMPLE_FIELD(#name, #name " (" ann ")", A_ID(node->name))
 #define F_GENTRY(name, ann)	    SIMPLE_FIELD(#name, #name " (" ann ")", A_ID((node->name)->id))
 #define F_INT(name, ann)	    SIMPLE_FIELD(#name, #name " (" ann ")", A_INT(node->name))
+#define F_LONG(name, ann)	    SIMPLE_FIELD(#name, #name " (" ann ")", A_LONG(node->name))
 #define F_LIT(name, ann)	    SIMPLE_FIELD(#name, #name " (" ann ")", A_LIT(node->name))
 #define F_MSG(name, ann, desc)	    SIMPLE_FIELD(#name, #name " (" ann ")", A(desc))
 
@@ -148,9 +150,9 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("until statement");
 	ANN("format: until [nd_cond]; [nd_body]; end");
 	ANN("example: until x == 1; foo; end");
-	loop:
+      loop:
 	F_CUSTOM1(nd_state, "begin-end-while?", {
-	   A_INT(node->nd_state);
+	   A_INT((int)node->nd_state);
 	   A((node->nd_state == 1) ? " (while-end)" : " (begin-end-while)");
 	});
 	F_NODE(nd_cond, "condition");
@@ -422,7 +424,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("format: [ [nd_head], [nd_next].. ] (length: [nd_alen])");
 	ANN("example: return 1, 2, 3");
 	ary:
-	F_INT(nd_alen, "length");
+	F_LONG(nd_alen, "length");
 	F_NODE(nd_head, "element");
 	LAST_NODE;
 	F_NODE(nd_next, "next element");
@@ -489,7 +491,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("nth special variable reference");
 	ANN("format: $[nd_nth]");
 	ANN("example: $1, $2, ..");
-	F_CUSTOM1(nd_nth, "variable", { A("$"); A_INT(node->nd_nth); });
+	F_CUSTOM1(nd_nth, "variable", { A("$"); A_LONG(node->nd_nth); });
 	break;
 
       case NODE_BACK_REF:
@@ -853,7 +855,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 		D_NODE_HEADER(node);
 		ANN("method parameters (cont'd)");
 		F_ID(nd_pid, "first post argument");
-		F_INT(nd_plen, "post argument length");
+		F_LONG(nd_plen, "post argument length");
 		LAST_NODE;
 		F_CUSTOM2(nd_next, "aux info 3", {
 		    node = node->nd_next;
@@ -877,7 +879,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("method parameters");
 	ANN("format: def method_name(.., [nd_opt=some], *[nd_rest], [nd_pid], .., &[nd_body])");
 	ANN("example: def foo(a, b, opt1=1, opt2=2, *rest, y, z, &blk); end");
-	F_INT(nd_frml, "argc");
+	F_LONG(nd_frml, "argc");
 	F_NODE(nd_next, "aux info 1");
 	LAST_NODE;
 	F_NODE(nd_opt, "optional arguments");
