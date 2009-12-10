@@ -200,7 +200,7 @@ class TestM17N < Test::Unit::TestCase
     assert_equal('"\xF8\x80\x80\x80 "', u("\xf8\x80\x80\x80 ").inspect)
     assert_equal('"\xFC\x80\x80\x80\x80 "', u("\xfc\x80\x80\x80\x80 ").inspect)
 
-
+    assert_equal('"\x{81308130}"', "\x81\x30\x81\x30".force_encoding('GB18030').inspect)
     assert_equal("\"\\xA1\\x{8FA1A1}\"", e("\xa1\x8f\xa1\xa1").inspect)
 
     assert_equal('"\x81."', s("\x81.").inspect)

@@ -4048,7 +4048,7 @@ rb_str_inspect(VALUE str)
 {
     rb_encoding *enc = STR_ENC_GET(str);
     const char *p, *pend, *prev;
-#define CHAR_ESC_LEN 12 /* sizeof(\x{ hex of 32bit unsigned int }) */
+#define CHAR_ESC_LEN 13 /* sizeof(\x{ hex of 32bit unsigned int } \0) */
     char buf[CHAR_ESC_LEN + 1];
     VALUE result = rb_str_buf_new(0);
     rb_encoding *resenc = rb_default_internal_encoding();

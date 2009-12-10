@@ -1,3 +1,7 @@
+Thu Dec 10 09:15:00 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_inspect): CHAR_ESC_LEN should be 13.
+
 Thu Dec 10 01:12:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (dyna_pop_gen): pop dvars.  [ruby-dev:39861]
