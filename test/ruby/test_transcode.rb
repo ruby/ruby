@@ -1579,10 +1579,10 @@ class TestTranscode < Test::Unit::TestCase
 
   def test_gb18030
     # overall roundtrip test
-    all_gb18030 = (0x0..0xD7FF).to_a.pack 'U*' #追加
-    all_gb18030 << (0xE000..0xFFFF).to_a.pack("U*") #追加
+    all_unicode = (0x0..0xD7FF).to_a.pack 'U*' #追加
+    all_unicode << (0xE000..0xFFFF).to_a.pack("U*") #追加
 
-    assert_equal(all_gb18030, all_gb18030.encode("gb18030").encode("UTF-8")) #追加
+    assert_equal(all_unicode, all_unicode.encode("gb18030").encode("UTF-8")) #追加
 
     # tests from GBK
     check_both_ways("\u4E02", "\x81\x40", 'GB18030') #
