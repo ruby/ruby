@@ -41,7 +41,7 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def setup
-    @proxies = %w[http_proxy ftp_proxy no_proxy]
+    @proxies = %w[http_proxy HTTP_PROXY ftp_proxy FTP_PROXY no_proxy]
     @old_proxies = @proxies.map {|k| ENV[k] }
     @proxies.each {|k| ENV[k] = nil }
   end
