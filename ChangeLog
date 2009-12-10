@@ -1,3 +1,8 @@
+Thu Dec 10 15:49:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (native_mutex_reinitialize_atfork): release and
+	  re-acquire the lock at re-initialization.
+
 Thu Dec 10 12:56:02 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (enc_replicate): add Encoding#replicate(name).

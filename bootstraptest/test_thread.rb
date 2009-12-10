@@ -434,4 +434,8 @@ assert_finish 3, %q{
     Process.waitpid(pid)
   rescue NotImplementedError
   end
-}, '[ruby-core:26361]'
+}, '[ruby-core:23572]'
+
+assert_equal 'ok', %q{
+  Process.waitpid2(fork {sleep 1})[1].success? ? 'ok' : 'ng'
+}
