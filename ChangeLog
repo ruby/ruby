@@ -1,3 +1,13 @@
+Thu Dec 10 12:56:02 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (enc_replicate): add Encoding#replicate(name).
+
+	* encoding.c (enc_replicate_with_index): renamed from old
+	  enc_replicate.
+
+	* encoding.c (rb_enc_from_encoding_index): split from
+	  rb_enc_from_encoding.
+
 Thu Dec 10 09:15:00 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_inspect): CHAR_ESC_LEN should be 13.
