@@ -21,6 +21,7 @@
 #   ruby -run -e touch -- [OPTION] FILE
 #   ruby -run -e wait_writable -- [OPTION] FILE
 #   ruby -run -e mkmf -- [OPTION] EXTNAME [OPTION]
+#   ruby -run -e httpd -- [OPTION] DocumentRoot
 #   ruby -run -e help [COMMAND]
 
 require "fileutils"
@@ -43,7 +44,7 @@ def setup(options = "", *long_options)
     end
     long_options.each do |s|
       opt_name = s[/\A(?:--)?([^\s=]+)/, 1].intern
-      o.on(s.sub(/\A(?!--)/, '--')) do |val|
+      o.on(s.gsub(/([a-z])([A-Z])/){$1+"-"+$2.downcase}.sub(/\A(?!--)/, '--')) do |val|
         opt_hash[opt_name] = val
       end
     end
@@ -279,6 +280,42 @@ def mkmf
     opt = options[:c] and opt.split(/:/).each {|n| have_const(*n.split(/,/))}
     $configure_args["--vendor"] = true if options[:vendor]
     create_makefile(*argv)
+  end
+end
+
+##
+# Run WEBrick HTTP server.
+#
+#   ruby -run -e httpd -- [OPTION] DocumentRoot
+#
+#   --bind-address=ADDR         address to bind
+#   --port=NUM                  listening port number
+#   --max-clients=MAX           max number of simultaneous clients
+#   --temp-dir=DIR              temporary directory
+#   --do-not-reverse-lookup     disable reverse lookup
+#   --request-timeout=SECOND    request timeout in seconds
+#   --http-version=VERSION      HTTP version
+#   -v                          verbose
+#
+
+def httpd
+  setup("", "BindAddress=ADDR", "Port=PORT", "MaxClients=NUM", "TempDir=DIR",
+        "DoNotReverseLookup", "RequestTimeout=SECOND", "HTTPVersion=VERSION") do
+    |argv, options|
+    require 'webrick'
+    opt = options[:RequestTimeout] and options[:RequestTimeout] = opt.to_i
+    unless argv.empty?
+      options[:DocumentRoot] = argv.shift
+    end
+    s = WEBrick::HTTPServer.new(options)
+    shut = proc {s.shutdown}
+    Signal.trap("TERM", shut)
+    Signal.trap("QUIT", shut)
+    if STDIN.tty?
+      Signal.trap("HUP", shut)
+      Signal.trap("INT", shut)
+    end
+    s.start
   end
 end
 
