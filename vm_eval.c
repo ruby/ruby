@@ -1172,12 +1172,7 @@ yield_under(VALUE under, VALUE self, VALUE values)
     cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL;
 
     if (values == Qundef) {
-#if 0
-	/* The behavior of Ruby 1.8  */
 	return vm_yield_with_cref(th, 1, &self, cref);
-#else
-	return vm_yield_with_cref(th, 0, 0, cref);
-#endif
     }
     else {
 	return vm_yield_with_cref(th, RARRAY_LENINT(values), RARRAY_PTR(values), cref);

@@ -1,3 +1,7 @@
+Thu Dec 10 17:22:36 2009  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_eval.c (yield_under): yields self the same as 1.8.
+
 Thu Dec 10 15:49:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (native_mutex_reinitialize_atfork): release and
