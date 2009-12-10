@@ -1,3 +1,13 @@
+Thu Dec 10 20:55:55 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode_data.h, transcode.c, tool/transcode-tblgen.rb: Added
+	  support for new transcoding instruction FUNsio (with Tatsuya Mizuno)
+	
+	* enc/trans/gb18030.trans: Significantly reduced GB18030 conversion
+	  table footprint using FUNsio and differences (with Tatsuya Mizuno)
+
+	* test/ruby/test_transcode.rb: Minor name fix (from Tatsuya Mizuno)
+
 Thu Dec 10 17:22:36 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_eval.c (yield_under): yields self the same as 1.8.

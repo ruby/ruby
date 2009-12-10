@@ -36,6 +36,7 @@
 #define FUNso	(PType 0x0F)	/* function from start to output */
 #define STR1	(PType 0x11)	/* string 4 <= len <= 259 bytes: 1byte length + content */
 #define GB4bt	(PType 0x12)	/* GB18030 four bytes payload */
+#define FUNsio  (PType 0x13)    /* function from start and info to output */
 
 #define STR1_LENGTH(byte_addr) (unsigned int)(*(byte_addr) + 4)
 #define STR1_BYTEINDEX(w) ((w) >> 6)
@@ -47,6 +48,7 @@
 #define o3(b1,b2,b3)	(PType(((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|(((unsigned int)(unsigned char)(b3))<<24)|THREEbt)&0xffffffffU))
 #define o4(b0,b1,b2,b3)	(PType(((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|(((unsigned char)(b3))<<24)|((((unsigned char)(b0))&0x07)<<5)|FOURbt)&0xffffffffU))
 #define g4(b0,b1,b2,b3) (PType(((((unsigned char)(b0))<<8)|(((unsigned char)(b2))<<16)|((((unsigned char)(b1))&0x0f)<<24)|((((unsigned int)(unsigned char)(b3))&0x0f)<<28)|GB4bt)&0xffffffffU))
+#define funsio(diff)	(PType((((unsigned int)(diff))<<8)|FUNsio))
 
 #define getBT1(a)	((unsigned char)((a)>> 8))
 #define getBT2(a)	((unsigned char)((a)>>16))
@@ -98,6 +100,7 @@ struct rb_transcoder {
     ssize_t (*finish_func)(void*, unsigned char*, size_t); /* -> output */
     ssize_t (*resetsize_func)(void*); /* -> len */
     ssize_t (*resetstate_func)(void*, unsigned char*, size_t); /* -> output */
+    ssize_t (*func_sio)(void*, const unsigned char*, size_t, VALUE, unsigned char*, size_t); /* start -> output */
 };
 
 void rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib);

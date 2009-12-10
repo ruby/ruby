@@ -505,6 +505,8 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
       case 30: goto resume_label30;
       case 31: goto resume_label31;
       case 32: goto resume_label32;
+      case 33: goto resume_label33;
+      case 34: goto resume_label34;
     }
 
     while (1) {
@@ -644,6 +646,30 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                     writebuf_off = 0;
                     while (writebuf_off < writebuf_len) {
                         SUSPEND_OBUF(22);
+                        *out_p++ = TRANSCODING_WRITEBUF(tc)[writebuf_off++];
+                    }
+                }
+                break;
+            }
+      case FUNsio:
+            {
+                const unsigned char *char_start;
+                size_t char_len;
+                SUSPEND_OBUF(33);
+                if (tr->max_output <= out_stop - out_p) {
+                    char_start = transcode_char_start(tc, *in_pos, inchar_start, in_p, &char_len);
+                    out_p += tr->func_sio(TRANSCODING_STATE(tc),
+                        char_start, (size_t)char_len, next_info,
+                        out_p, out_stop - out_p);
+                }
+                else {
+                    char_start = transcode_char_start(tc, *in_pos, inchar_start, in_p, &char_len);
+                    writebuf_len = tr->func_sio(TRANSCODING_STATE(tc),
+                        char_start, (size_t)char_len, next_info,
+                        TRANSCODING_WRITEBUF(tc), TRANSCODING_WRITEBUF_SIZE(tc));
+                    writebuf_off = 0;
+                    while (writebuf_off < writebuf_len) {
+                        SUSPEND_OBUF(34);
                         *out_p++ = TRANSCODING_WRITEBUF(tc)[writebuf_off++];
                     }
                 }
