@@ -313,6 +313,15 @@ rb_enc_replicate(const char *name, rb_encoding *encoding)
     return idx;
 }
 
+/*
+ * call-seq:
+ *   enc.replicate(name) => encoding
+ *
+ * Returns a replicated encoding of _enc whose name is _name_.
+ * The new encoding should have the same byte structure of _enc_.
+ * If _name_ is used by another encoding, raise ArgumentError.
+ *
+ */
 static VALUE
 enc_replicate(VALUE encoding, VALUE name)
 {
