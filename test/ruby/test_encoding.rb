@@ -51,6 +51,11 @@ class TestEncoding < Test::Unit::TestCase
     end
   end
 
+  def test_replicate
+    assert(Encoding::UTF_8.replicate('UTF-8-ANOTHER'))
+    assert(Encoding::ISO_2022_JP.replicate('ISO-2022-JP-ANOTHER'))
+  end
+
   def test_dummy_p
     assert_equal(true, Encoding::ISO_2022_JP.dummy?)
     assert_equal(false, Encoding::UTF_8.dummy?)
