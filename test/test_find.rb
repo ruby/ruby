@@ -89,4 +89,17 @@ class TestFind < Test::Unit::TestCase
     }
   end
 
+  class TestInclude < Test::Unit::TestCase
+    include Find
+
+    def test_functional_call
+      Dir.mktmpdir {|d|
+        File.open("#{d}/a", "w")
+        a = []
+        find(d) {|f| a << f }
+        assert_equal([d, "#{d}/a"], a)
+      }
+    end
+  end
+
 end
