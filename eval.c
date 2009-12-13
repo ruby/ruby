@@ -2772,7 +2772,11 @@ call_trace_func(event, node, self, id, klass)
     tracing = 0;
     ruby_current_node = node_save;
     SET_CURRENT_SOURCE();
-    if (state) JUMP_TAG(state);
+    if (state) {
+	trace_func = 0;
+	rb_remove_event_hook(call_trace_func);
+	JUMP_TAG(state);
+    }
 }
 
 static VALUE
