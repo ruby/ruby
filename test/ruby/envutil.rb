@@ -83,7 +83,7 @@ module EnvUtil
       in_c.close
       out_c.close if capture_stdout
       err_c.close if capture_stderr
-      in_p.write stdin_data
+      in_p.write stdin_data.to_str
       in_p.close
       th_stdout = Thread.new { out_p.read } if capture_stdout
       th_stderr = Thread.new { err_p.read } if capture_stderr

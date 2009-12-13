@@ -399,7 +399,7 @@ class TestObject < Test::Unit::TestCase
   def test_superclass_method
     bug2312 = '[ruby-dev:39581]'
     assert_in_out_err(["-e", "module Enumerable;undef min;end; (1..2).min{}"],
-                      [], [], /no superclass method/, bug2312)
+                      "", [], /no superclass method/, bug2312)
   end
 
   def test_specific_eval_with_wrong_arguments
