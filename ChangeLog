@@ -1,3 +1,11 @@
+Mon Dec 14 02:27:32 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* hash.c (rb_hash): always return a fixnum value because a return
+	  value of rb_hash may be used as a hash value itself and bignums have
+	  no unique VALUE.
+
+	* test/ruby/test_hash.rb: add a test for above.
+
 Mon Dec 14 00:42:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_inspect): get rid of adding garbage to shor

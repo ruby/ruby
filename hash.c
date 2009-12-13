@@ -81,7 +81,19 @@ VALUE
 rb_hash(obj)
     VALUE obj;
 {
-    return rb_funcall(obj, id_hash, 0);
+    VALUE hval = rb_funcall(obj, id_hash, 0);
+  retry:
+    switch (TYPE(hval)) {
+      case T_FIXNUM:
+	return hval;
+
+      case T_BIGNUM:
+	return LONG2FIX(((long*)(RBIGNUM_DIGITS(hval)))[0]);
+
+      default:
+	hval = rb_to_int(hval);
+	goto retry;
+    }
 }
 
 static int
@@ -102,10 +114,7 @@ rb_any_hash(a)
 	break;
 
       default:
-	hval = rb_funcall(a, id_hash, 0);
-	if (!FIXNUM_P(hval)) {
-	    hval = rb_funcall(hval, '%', 1, INT2FIX(536870923));
-	}
+        hval = rb_hash(a);
 	hnum = (int)FIX2LONG(hval);
     }
     hnum <<= 1;

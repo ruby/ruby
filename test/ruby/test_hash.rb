@@ -638,4 +638,15 @@ class TestHash < Test::Unit::TestCase
   def test_hash_hash
     assert_equal({0=>2,11=>1}.hash, {11=>1,0=>2}.hash)
   end
+
+  def test_hash_bignum_hash
+    x = 2<<(32-3)-1
+    assert_equal({x=>1}.hash, {x=>1}.hash)
+    x = 2<<(64-3)-1
+    assert_equal({x=>1}.hash, {x=>1}.hash)
+
+    o = Object.new
+    def o.hash; 2<<100; end
+    assert_equal({x=>1}.hash, {x=>1}.hash)
+  end
 end
