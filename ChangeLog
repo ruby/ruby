@@ -1,3 +1,7 @@
+Sun Dec 13 23:48:25 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/find.rb (Find.find): sort directory entries.  [ruby-dev:39847]
+
 Sun Dec 13 20:55:30 2009  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (invoke_ruby): call to_str for stdin_data to
