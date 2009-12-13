@@ -85,12 +85,10 @@ static ID s_dump_data, s_load_data, s_alloc, s_call;
 static ID s_getc, s_read, s_write, s_binmode;
 
 struct dump_arg {
-    VALUE obj;
     VALUE str, dest;
     st_table *symbols;
     st_table *data;
     int taint;
-    VALUE wrapper;
 };
 
 struct dump_call_arg {
@@ -104,20 +102,30 @@ check_dump_arg(arg, sym)
     struct dump_arg *arg;
     ID sym;
 {
-    if (!DATA_PTR(arg->wrapper)) {
+    if (!arg->symbols) {
         rb_raise(rb_eRuntimeError, "Marshal.dump reentered at %s",
 		 rb_id2name(sym));
     }
 }
+
+static void clear_dump_arg _((struct dump_arg *arg));
 
 static void
 mark_dump_arg(ptr)
     void *ptr;
 {
     struct dump_arg *p = ptr;
-    if (!ptr)
+    if (!p->symbols)
         return;
     rb_mark_set(p->data);
+}
+
+static void
+free_dump_arg(ptr)
+    void *ptr;
+{
+    clear_dump_arg(ptr);
+    xfree(ptr);
 }
 
 static VALUE
@@ -699,32 +707,17 @@ w_object(obj, arg, limit)
     }
 }
 
-static VALUE
-dump(arg)
-    struct dump_call_arg *arg;
-{
-    w_object(arg->obj, arg->arg, arg->limit);
-    if (arg->arg->dest) {
-	rb_io_write(arg->arg->dest, arg->arg->str);
-	rb_str_resize(arg->arg->str, 0);
-    }
-    return 0;
-}
-
-static VALUE
-dump_ensure(arg)
+static void
+clear_dump_arg(arg)
     struct dump_arg *arg;
 {
-    if (!DATA_PTR(arg->wrapper)) return 0;
+    if (!arg->symbols) return;
     st_free_table(arg->symbols);
+    arg->symbols = 0;
     st_free_table(arg->data);
-    DATA_PTR(arg->wrapper) = 0;
-    arg->wrapper = 0;
     if (arg->taint) {
 	OBJ_TAINT(arg->str);
     }
-
-    return 0;
 }
 
 /*
@@ -760,8 +753,8 @@ marshal_dump(argc, argv)
 {
     VALUE obj, port, a1, a2;
     int limit = -1;
-    struct dump_arg arg;
-    struct dump_call_arg c_arg;
+    struct dump_arg *arg;
+    VALUE wrapper;
 
     port = Qnil;
     rb_scan_args(argc, argv, "12", &obj, &a1, &a2);
@@ -775,37 +768,40 @@ marshal_dump(argc, argv)
 	else if (NIL_P(a1)) goto type_error;
 	else port = a1;
     }
-    arg.dest = 0;
-    arg.symbols = st_init_numtable();
-    arg.data    = st_init_numtable();
-    arg.taint   = Qfalse;
-    arg.str = rb_str_buf_new(0);
-    RBASIC(arg.str)->klass = 0;
-    arg.wrapper = Data_Wrap_Struct(rb_cData, mark_dump_arg, 0, &arg);
+    wrapper = Data_Make_Struct(rb_cData, struct dump_arg, mark_dump_arg, free_dump_arg, arg);
+    arg->dest = 0;
+    arg->symbols = st_init_numtable();
+    arg->data    = st_init_numtable();
+    arg->taint   = Qfalse;
+    arg->str = rb_str_buf_new(0);
+    RBASIC(arg->str)->klass = 0;
     if (!NIL_P(port)) {
 	if (!rb_respond_to(port, s_write)) {
 	  type_error:
 	    rb_raise(rb_eTypeError, "instance of IO needed");
 	}
-	arg.dest = port;
+	arg->dest = port;
 	if (rb_respond_to(port, s_binmode)) {
 	    rb_funcall2(port, s_binmode, 0, 0);
-	    check_dump_arg(&arg, s_binmode);
+	    check_dump_arg(arg, s_binmode);
 	}
     }
     else {
-	port = arg.str;
+	port = arg->str;
     }
 
-    c_arg.obj   = obj;
-    c_arg.arg   = &arg;
-    c_arg.limit = limit;
+    w_byte(MARSHAL_MAJOR, arg);
+    w_byte(MARSHAL_MINOR, arg);
 
-    w_byte(MARSHAL_MAJOR, &arg);
-    w_byte(MARSHAL_MINOR, &arg);
+    w_object(obj, arg, limit);
+    if (arg->dest) {
+	rb_io_write(arg->dest, arg->str);
+	rb_str_resize(arg->str, 0);
+    }
 
-    rb_ensure(dump, (VALUE)&c_arg, dump_ensure, (VALUE)&arg);
-    RBASIC(arg.str)->klass = rb_cString;
+    RBASIC(arg->str)->klass = rb_cString;
+    clear_dump_arg(arg);
+    RB_GC_GUARD(wrapper);
 
     return port;
 }
@@ -817,7 +813,6 @@ struct load_arg {
     st_table *data;
     VALUE proc;
     int taint;
-    VALUE wrapper;
 };
 
 static void
@@ -825,20 +820,29 @@ check_load_arg(arg, sym)
     struct load_arg *arg;
     ID sym;
 {
-    if (!DATA_PTR(arg->wrapper)) {
+    if (!arg->symbols) {
         rb_raise(rb_eRuntimeError, "Marshal.load reentered at %s",
 		 rb_id2name(sym));
     }
 }
+
+static void clear_load_arg _((struct load_arg *arg));
 
 static void
 mark_load_arg(ptr)
     void *ptr;
 {
     struct load_arg *p = ptr;
-    if (!ptr)
+    if (!p->symbols)
         return;
     rb_mark_tbl(p->data);
+}
+
+static void
+free_load_arg(void *ptr)
+{
+    clear_load_arg(ptr);
+    xfree(ptr);
 }
 
 static VALUE r_object _((struct load_arg *arg));
@@ -1415,23 +1419,14 @@ r_object(arg)
     return r_object0(arg, arg->proc, 0, Qnil);
 }
 
-static VALUE
-load(arg)
+static void
+clear_load_arg(arg)
     struct load_arg *arg;
 {
-    return r_object(arg);
-}
-
-static VALUE
-load_ensure(arg)
-    struct load_arg *arg;
-{
-    if (!DATA_PTR(arg->wrapper)) return 0;
+    if (!arg->symbols) return;
     st_free_table(arg->symbols);
+    arg->symbols = 0;
     st_free_table(arg->data);
-    DATA_PTR(arg->wrapper) = 0;
-    arg->wrapper = 0;
-    return 0;
 }
 
 /*
@@ -1451,35 +1446,37 @@ marshal_load(argc, argv)
     VALUE *argv;
 {
     VALUE port, proc;
-    int major, minor;
-    VALUE v;
-    struct load_arg arg;
+    int major, minor, taint = Qfalse;
+    VALUE v, wrapper;
+    struct load_arg *arg;
 
     rb_scan_args(argc, argv, "11", &port, &proc);
     v = rb_check_string_type(port);
     if (!NIL_P(v)) {
-	arg.taint = OBJ_TAINTED(port); /* original taintedness */
+	taint = OBJ_TAINTED(port); /* original taintedness */
 	port = v;
     }
     else if (rb_respond_to(port, s_getc) && rb_respond_to(port, s_read)) {
 	if (rb_respond_to(port, s_binmode)) {
 	    rb_funcall2(port, s_binmode, 0, 0);
 	}
-	arg.taint = Qtrue;
+	taint = Qtrue;
     }
     else {
 	rb_raise(rb_eTypeError, "instance of IO needed");
     }
-    arg.src = port;
-    arg.offset = 0;
-    arg.symbols = st_init_numtable();
-    arg.data    = st_init_numtable();
-    arg.proc = 0;
-    arg.wrapper = Data_Wrap_Struct(rb_cData, mark_load_arg, 0, &arg);
+    wrapper = Data_Make_Struct(rb_cData, struct load_arg, mark_load_arg, free_load_arg, arg);
+    arg->src = port;
+    arg->offset = 0;
+    arg->symbols = st_init_numtable();
+    arg->data    = st_init_numtable();
+    arg->proc = 0;
+    arg->taint = taint;
 
-    major = r_byte(&arg);
-    minor = r_byte(&arg);
+    major = r_byte(arg);
+    minor = r_byte(arg);
     if (major != MARSHAL_MAJOR || minor > MARSHAL_MINOR) {
+	clear_load_arg(arg);
 	rb_raise(rb_eTypeError, "incompatible marshal file format (can't be read)\n\
 \tformat version %d.%d required; %d.%d given",
 		 MARSHAL_MAJOR, MARSHAL_MINOR, major, minor);
@@ -1490,8 +1487,10 @@ marshal_load(argc, argv)
 		MARSHAL_MAJOR, MARSHAL_MINOR, major, minor);
     }
 
-    if (!NIL_P(proc)) arg.proc = proc;
-    v = rb_ensure(load, (VALUE)&arg, load_ensure, (VALUE)&arg);
+    if (!NIL_P(proc)) arg->proc = proc;
+    v = r_object(arg);
+    clear_load_arg(arg);
+    RB_GC_GUARD(wrapper);
 
     return v;
 }

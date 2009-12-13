@@ -1,3 +1,13 @@
+Sun Dec 13 23:54:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (marshal_load): should set taintness.  [ruby-dev:39723]
+
+Sun Dec 13 23:54:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (struct {dump,load}_arg): manage with dfree, instead
+	  of using local variable which may be moved by context switch.
+	  [ruby-dev:39425]
+
 Wed Nov 25 17:42:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_fwrite): adjust stdio file position after direct write on
