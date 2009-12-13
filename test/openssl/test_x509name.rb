@@ -6,6 +6,8 @@ require "test/unit"
 
 if defined?(OpenSSL)
 
+require 'digest/md5'
+
 class OpenSSL::TestX509Name < Test::Unit::TestCase
   OpenSSL::ASN1::ObjectId.register(
     "1.2.840.113549.1.9.1", "emailAddress", "emailAddress")
@@ -260,6 +262,20 @@ class OpenSSL::TestX509Name < Test::Unit::TestCase
     assert_equal(OpenSSL::ASN1::UTF8STRING, ary[2][2])
     assert_equal(OpenSSL::ASN1::IA5STRING, ary[3][2])
     assert_equal(OpenSSL::ASN1::PRINTABLESTRING, ary[4][2])
+  end
+
+  def test_hash
+    dn = "/DC=org/DC=ruby-lang/CN=www.ruby-lang.org"
+    name = OpenSSL::X509::Name.parse(dn)
+    d = Digest::MD5.digest(name.to_der)
+    expected = (d[0] & 0xff) | (d[1] & 0xff) << 8 | (d[2] & 0xff) << 16 | (d[3] & 0xff) << 24
+    assert_equal(expected, name.hash)
+    #
+    dn = "/DC=org/DC=ruby-lang/CN=baz.ruby-lang.org"
+    name = OpenSSL::X509::Name.parse(dn)
+    d = Digest::MD5.digest(name.to_der)
+    expected = (d[0] & 0xff) | (d[1] & 0xff) << 8 | (d[2] & 0xff) << 16 | (d[3] & 0xff) << 24
+    assert_equal(expected, name.hash)
   end
 end
 

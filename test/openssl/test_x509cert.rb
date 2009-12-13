@@ -157,18 +157,79 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
     cert.not_after = Time.now 
     assert_equal(false, cert.verify(@dsa512))
 
-    assert_raises(OpenSSL::X509::CertificateError){
+    assert_raise(OpenSSL::X509::CertificateError){
       cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
                         nil, nil, OpenSSL::Digest::DSS1.new) 
     }
-    assert_raises(OpenSSL::X509::CertificateError){
+    assert_raise(OpenSSL::X509::CertificateError){
       cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
                         nil, nil, OpenSSL::Digest::MD5.new) 
     }
-    assert_raises(OpenSSL::X509::CertificateError){
+    assert_raise(OpenSSL::X509::CertificateError){
       cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
                         nil, nil, OpenSSL::Digest::SHA1.new) 
     }
+  end
+
+  def test_check_private_key
+    cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
+                      nil, nil, OpenSSL::Digest::SHA1.new)
+    assert_equal(true, cert.check_private_key(@rsa2048))
+  end
+
+  def test_to_text
+    cert_pem = <<END
+-----BEGIN CERTIFICATE-----
+MIIC8zCCAdugAwIBAgIBATANBgkqhkiG9w0BAQQFADA9MRMwEQYKCZImiZPyLGQB
+GRYDb3JnMRkwFwYKCZImiZPyLGQBGRYJcnVieS1sYW5nMQswCQYDVQQDDAJDQTAe
+Fw0wOTA1MjMxNTAzNDNaFw0wOTA1MjMxNjAzNDNaMD0xEzARBgoJkiaJk/IsZAEZ
+FgNvcmcxGTAXBgoJkiaJk/IsZAEZFglydWJ5LWxhbmcxCzAJBgNVBAMMAkNBMIIB
+IjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuV9ht9J7k4NBs38jOXvvTKY9
+gW8nLICSno5EETR1cuF7i4pNs9I1QJGAFAX0BEO4KbzXmuOvfCpD3CU+Slp1enen
+fzq/t/e/1IRW0wkJUJUFQign4CtrkJL+P07yx18UjyPlBXb81ApEmAB5mrJVSrWm
+qbjs07JbuS4QQGGXLc+Su96DkYKmSNVjBiLxVVSpyZfAY3hD37d60uG+X8xdW5v6
+8JkRFIhdGlb6JL8fllf/A/blNwdJOhVr9mESHhwGjwfSeTDPfd8ZLE027E5lyAVX
+9KZYcU00mOX+fdxOSnGqS/8JDRh0EPHDL15RcJjV2J6vZjPb0rOYGDoMcH+94wID
+AQABMA0GCSqGSIb3DQEBBAUAA4IBAQB8UTw1agA9wdXxHMUACduYu6oNL7pdF0dr
+w7a4QPJyj62h4+Umxvp13q0PBw0E+mSjhXMcqUhDLjrmMcvvNGhuh5Sdjbe3GI/M
+3lCC9OwYYIzzul7omvGC3JEIGfzzdNnPPCPKEWp5X9f0MKLMR79qOf+sjHTjN2BY
+SY3YGsEFxyTXDdqrlaYaOtTAdi/C+g1WxR8fkPLefymVwIFwvyc9/bnp7iBn7Hcw
+mbxtLPbtQ9mURT0GHewZRTGJ1aiTq9Ag3xXME2FPF04eFRd3mclOQZNXKQ+LDxYf
+k0X5FeZvsWf4srFxoVxlcDdJtHh91ZRpDDJYGQlsUm9CPTnO+e4E
+-----END CERTIFICATE-----
+END
+
+    cert = OpenSSL::X509::Certificate.new(cert_pem)
+
+    cert_text = <<END
+  [0]         Version: 3
+         SerialNumber: 1
+             IssuerDN: DC=org,DC=ruby-lang,CN=CA
+           Start Date: Sat May 23 17:03:43 CEST 2009
+           Final Date: Sat May 23 18:03:43 CEST 2009
+            SubjectDN: DC=org,DC=ruby-lang,CN=CA
+           Public Key: RSA Public Key
+            modulus: b95f61b7d27b938341b37f23397bef4ca63d816f272c80929e8e4411347572e17b8b8a4db3d2354091801405f40443b829bcd79ae3af7c2a43dc253e4a5a757a77a77f3abfb7f7bfd48456d30909509505422827e02b6b9092fe3f4ef2c75f148f23e50576fcd40a449800799ab2554ab5a6a9b8ecd3b25bb92e104061972dcf92bbde839182a648d5630622f15554a9c997c0637843dfb77ad2e1be5fcc5d5b9bfaf0991114885d1a56fa24bf1f9657ff03f6e53707493a156bf661121e1c068f07d27930cf7ddf192c4d36ec4e65c80557f4a658714d3498e5fe7ddc4e4a71aa4bff090d187410f1c32f5e517098d5d89eaf6633dbd2b398183a0c707fbde3
+    public exponent: 10001
+
+  Signature Algorithm: MD5withRSA
+            Signature: 7c513c356a003dc1d5f11cc50009db98bbaa0d2f
+                       ba5d17476bc3b6b840f2728fada1e3e526c6fa75
+                       dead0f070d04fa64a385731ca948432e3ae631cb
+                       ef34686e87949d8db7b7188fccde5082f4ec1860
+                       8cf3ba5ee89af182dc910819fcf374d9cf3c23ca
+                       116a795fd7f430a2cc47bf6a39ffac8c74e33760
+                       58498dd81ac105c724d70ddaab95a61a3ad4c076
+                       2fc2fa0d56c51f1f90f2de7f2995c08170bf273d
+                       fdb9e9ee2067ec773099bc6d2cf6ed43d994453d
+                       061dec19453189d5a893abd020df15cc13614f17
+                       4e1e15177799c94e419357290f8b0f161f9345f9
+                       15e66fb167f8b2b171a15c65703749b4787dd594
+                       690c325819096c526f423d39cef9ee04
+END
+    assert_not_nil(cert.to_text)
+    # This is commented out because it doesn't take timezone into consideration; FIXME
+    #assert_equal(cert_text, cert.to_text)
   end
 end
 

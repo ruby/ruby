@@ -28,6 +28,7 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
       ["keyUsage","Non Repudiation, Digital Signature, Key Encipherment",true],
       ["authorityKeyIdentifier","keyid:always",false],
       ["extendedKeyUsage","clientAuth, emailProtection, codeSigning",false],
+      ["nsCertType","client,email",false],
     ]
     @ee1_cert = issue_cert(ee1, @rsa1024, 2, Time.now, Time.now+1800, ee_exts,
                            @ca_cert, @rsa2048, OpenSSL::Digest::SHA1.new)

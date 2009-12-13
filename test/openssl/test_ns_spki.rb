@@ -22,6 +22,16 @@ class OpenSSL::TestNSSPI < Test::Unit::TestCase
 
   def teardown
   end
+def pr(obj, ind=0)
+  if obj.respond_to?(:value)
+    puts((" "*ind) + obj.class.to_s + ":")
+    pr(obj.value,(ind+1))
+  elsif obj.respond_to?(:each) && !(String===obj)
+    obj.each {|v| pr(v,ind+1) }
+  else
+    puts((" "*ind) + obj.inspect)
+  end
+end
 
   def test_build_data
     key1 = OpenSSL::TestUtils::TEST_KEY_RSA1024

@@ -135,6 +135,43 @@ class OpenSSL::TestX509Request < Test::Unit::TestCase
     assert_raise(OpenSSL::X509::RequestError){
       issue_csr(0, @dn, @dsa512, OpenSSL::Digest::MD5.new) }
   end
+
+  def test_create_from_pem
+    req = <<END
+-----BEGIN CERTIFICATE REQUEST-----
+MIIBVTCBvwIBADAWMRQwEgYDVQQDDAsxOTIuMTY4LjAuNDCBnzANBgkqhkiG9w0B
+AQEFAAOBjQAwgYkCgYEA0oTTzFLydOTVtBpNdYl4S0356AysVkHlqD/tNEMxQT0l
+dXdNoDKb/3TfM5WMciNxBb8rImJ51vEIf6WaWvPbaawcmhNWA9JmhMIeFCdeXyu/
+XEjiiEOL4MkWf6qfsu6VoPr2YSnR0iiWLgWcnRPuy84+PE1XPPl1qGDA0apWJ9kC
+AwEAAaAAMA0GCSqGSIb3DQEBBAUAA4GBAKdlyDzVrXRLkPdukQUTTy6uwhv35SKL
+FfiKDrHtnFYd7VbynQ1sRre5CknuRrm+E7aEJEwpz6MS+6nqmQ6JwGcm/hlZM/m7
+DVD201pI3p6LIxaRyXE20RYTp0Jj6jv+tNFd0wjVlzgStmcplNo8hu6Dtp1gKETW
+qL7M4i48FXHn
+-----END CERTIFICATE REQUEST-----
+END
+    req = OpenSSL::X509::Request.new(req)
+
+    assert_equal(0, req.version)
+    assert_equal(OpenSSL::X509::Name.parse("/CN=192.168.0.4").to_der, req.subject.to_der)
+  end
+
+  def test_create_to_pem
+    req_s = <<END
+-----BEGIN CERTIFICATE REQUEST-----
+MIIBVTCBvwIBADAWMRQwEgYDVQQDDAsxOTIuMTY4LjAuNDCBnzANBgkqhkiG9w0B
+AQEFAAOBjQAwgYkCgYEA0oTTzFLydOTVtBpNdYl4S0356AysVkHlqD/tNEMxQT0l
+dXdNoDKb/3TfM5WMciNxBb8rImJ51vEIf6WaWvPbaawcmhNWA9JmhMIeFCdeXyu/
+XEjiiEOL4MkWf6qfsu6VoPr2YSnR0iiWLgWcnRPuy84+PE1XPPl1qGDA0apWJ9kC
+AwEAAaAAMA0GCSqGSIb3DQEBBAUAA4GBAKdlyDzVrXRLkPdukQUTTy6uwhv35SKL
+FfiKDrHtnFYd7VbynQ1sRre5CknuRrm+E7aEJEwpz6MS+6nqmQ6JwGcm/hlZM/m7
+DVD201pI3p6LIxaRyXE20RYTp0Jj6jv+tNFd0wjVlzgStmcplNo8hu6Dtp1gKETW
+qL7M4i48FXHn
+-----END CERTIFICATE REQUEST-----
+END
+    req = OpenSSL::X509::Request.new(req_s)
+
+    assert_equal(req_s, req.to_pem)
+  end
 end
 
 end

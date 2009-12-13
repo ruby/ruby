@@ -1,3 +1,7 @@
+Sun Dec 13 23:07:05 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/openssl/*: added some tests from jruby-openssl.
+
 Mon Dec  7 07:05:05 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/bigdecimal.rb: fix comparison operators [ruby-core:26646]
