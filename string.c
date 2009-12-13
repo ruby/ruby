@@ -2641,8 +2641,8 @@ rb_str_inspect(str)
     p = RSTRING(str)->ptr; pend = p + RSTRING(str)->len;
     while (p < pend) {
 	char c = *p++;
-	if (ismbchar(c) && p < pend) {
-	    int len = mbclen(c);
+	int len;
+	if (ismbchar(c) && p + (len = mbclen(c)) <= pend) {
 	    rb_str_buf_cat(result, p - 1, len);
 	    p += len - 1;
 	}

@@ -1,3 +1,8 @@
+Mon Dec 14 00:42:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_inspect): get rid of adding garbage to shor
+	  UTF-8 string.  [ruby-dev:39550]
+
 Sun Dec 13 23:54:22 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (marshal_load): should set taintness.  [ruby-dev:39723]
