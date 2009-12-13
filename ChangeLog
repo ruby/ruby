@@ -1,8 +1,12 @@
+Sun Dec 13 20:26:57 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ruby.c (rb_parser_dump_tree): add prototype.
+
 Thu Dec 10 20:55:55 2009  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* transcode_data.h, transcode.c, tool/transcode-tblgen.rb: Added
 	  support for new transcoding instruction FUNsio (with Tatsuya Mizuno)
-	
+
 	* enc/trans/gb18030.trans: Significantly reduced GB18030 conversion
 	  table footprint using FUNsio and differences (with Tatsuya Mizuno)
 
@@ -43,7 +47,7 @@ Wed Dec  9 22:57:04 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* node.c: node management added.  Currently, only pretty-dumper is
 	  implemented.  [ruby-dev:39853]
-	
+
 	* ruby.c: --dump=parsetree and --dump=parsetree_with_comment options
 	  added.  This is just for debug or research purpose.  Note that the
 	  compatibility of these options are not supported at all.
@@ -89,7 +93,7 @@ Mon Dec  7 14:11:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Dec  7 13:05:59 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* string.c (rb_str_justify): CVE-2009-4124.
-	  Fixes a bug reported by 
+	  Fixes a bug reported by
 	  Emmanouel Kellinis <Emmanouel.Kellinis AT kpmg.co.uk>, KPMG London;
 	  Patch by nobu.
 
