@@ -3148,7 +3148,7 @@ lock_interrupt(void *ptr)
 
 /*
  * call-seq:
- *    mutex.lock  => true or false
+ *    mutex.lock  => self
  *
  * Attempts to grab the lock and waits if it isn't available.
  * Raises +ThreadError+ if +mutex+ was locked by the current thread.
