@@ -1,3 +1,9 @@
+Mon Dec 14 12:06:39 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (rb_digest_instance_method_unimpl): Do not
+	  call rb_inspect() on an object that does not implement necessary
+	  methods; reported by NaHi.
+
 Mon Dec 14 11:47:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_method_missing): adjusted format and argument number.
