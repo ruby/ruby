@@ -8872,7 +8872,8 @@ proc_invoke(proc, args, self, klass)
     _block = *data;
     _block.block_obj = bvar;
     if (self != Qundef) _block.frame.self = self;
-    if (klass) _block.frame.last_class = klass;
+    _block.frame.last_class = klass;
+    if (!klass) _block.frame.last_func = 0;
     _block.frame.argc = RARRAY(tmp)->len;
     _block.frame.flags = ruby_frame->flags;
     if (_block.frame.argc && DMETHOD_P()) {
