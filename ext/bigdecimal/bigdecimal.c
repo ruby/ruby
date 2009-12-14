@@ -734,15 +734,21 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
     Real *a, *b;
     GUARD_OBJ(a,GetVpValue(self,1));
     b = GetVpValue(r,0);
-    if(!b) return rb_num_coerce_cmp(self,r);
+    if(!b) {
+	switch(op)
+	{
+	case '*': return rb_num_coerce_cmp(self,r); /* any op */
+	case '=': return RTEST(rb_num_coerce_cmp(self,r)) ? Qtrue : Qfalse;
+	default: return rb_num_coerce_relop(self,r);
+	}
+    }
     SAVE(b);
     e = VpComp(a, b);
-    if(e==999) return Qnil;
+    if(e==999) return (op == '*') ? Qnil : Qfalse;
     switch(op)
     {
     case '*': return   INT2FIX(e); /* any op */
     case '=': if(e==0) return Qtrue ; return Qfalse;
-    case '!': if(e!=0) return Qtrue ; return Qfalse;
     case 'G': if(e>=0) return Qtrue ; return Qfalse;
     case '>': if(e> 0) return Qtrue ; return Qfalse;
     case 'L': if(e<=0) return Qtrue ; return Qfalse;

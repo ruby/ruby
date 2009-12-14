@@ -1,3 +1,7 @@
+Mon Dec 14 12:53:56 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/bigdecimal.rb: fix comparison operators [ruby-core:26646]
+
 Mon Dec 14 12:40:10 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* object.c (rb_Float): Allow results of to_f to be NaN
