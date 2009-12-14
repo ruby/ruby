@@ -24,6 +24,34 @@ class TestFind < Test::Unit::TestCase
     }
   end
 
+  def test_relative
+    Dir.mktmpdir {|d|
+      File.open("#{d}/a", "w")
+      Dir.mkdir("#{d}/b")
+      File.open("#{d}/b/a", "w")
+      File.open("#{d}/b/b", "w")
+      Dir.mkdir("#{d}/c")
+      a = []
+      Dir.chdir(d) {
+        Find.find(".") {|f| a << f }
+      }
+      assert_equal([".", "./a", "./b", "./b/a", "./b/b", "./c"], a)
+    }
+  end
+
+  def test_dont_follow_symlink
+    Dir.mktmpdir {|d|
+      File.open("#{d}/a", "w")
+      Dir.mkdir("#{d}/b")
+      File.open("#{d}/b/a", "w")
+      File.open("#{d}/b/b", "w")
+      File.symlink("#{d}/b", "#{d}/c")
+      a = []
+      Find.find(d) {|f| a << f }
+      assert_equal([d, "#{d}/a", "#{d}/b", "#{d}/b/a", "#{d}/b/b", "#{d}/c"], a)
+    }
+  end
+
   def test_prune
     Dir.mktmpdir {|d|
       File.open("#{d}/a", "w")
@@ -86,6 +114,30 @@ class TestFind < Test::Unit::TestCase
       ensure
         File.chmod(0700, dir)
       end
+    }
+  end
+
+  def test_dangling_symlink
+    Dir.mktmpdir {|d|
+      File.symlink("foo", "#{d}/bar")
+      a = []
+      Find.find(d) {|f| a << f }
+      assert_equal([d, "#{d}/bar"], a)
+      assert_raise(Errno::ENOENT) { File.stat("#{d}/bar") }
+    }
+  end
+
+  def test_enumerator
+    Dir.mktmpdir {|d|
+      File.open("#{d}/a", "w")
+      Dir.mkdir("#{d}/b")
+      File.open("#{d}/b/a", "w")
+      File.open("#{d}/b/b", "w")
+      Dir.mkdir("#{d}/c")
+      e = Find.find(d)
+      a = []
+      e.each {|f| a << f }
+      assert_equal([d, "#{d}/a", "#{d}/b", "#{d}/b/a", "#{d}/b/b", "#{d}/c"], a)
     }
   end
 
