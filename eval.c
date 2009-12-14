@@ -5699,7 +5699,7 @@ rb_method_missing(argc, argv, obj)
 	exc = rb_eNameError;
     }
     else if (last_call_status & CSTAT_SUPER) {
-	format = "super: no superclass method `%s'";
+	format = "super: no superclass method `%s' for %s";
     }
     if (!format) {
 	format = "undefined method `%s' for %s";
@@ -6145,13 +6145,14 @@ rb_call(klass, recv, mid, argc, argv, scope, self)
     ent = cache + EXPR1(klass, mid);
     if (ent->mid == mid && ent->klass == klass) {
 	if (!ent->method)
-	    return method_missing(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
+	    goto nomethod;
 	klass = ent->origin;
 	id    = ent->mid0;
 	noex  = ent->noex;
 	body  = ent->method;
     }
     else if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
+      nomethod:
 	if (scope == 3) {
 	    return method_missing(recv, mid, argc, argv, CSTAT_SUPER);
 	}
