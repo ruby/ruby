@@ -1,3 +1,8 @@
+Mon Dec 14 11:31:58 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi.rb: fix command-line option of
+	  non-interactive terminal. [ruby-core:23016]
+
 Mon Dec 14 03:36:20 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* eval.c (method_inspect, method_name, mnew): Bug fix when

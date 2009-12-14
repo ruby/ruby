@@ -1089,7 +1089,12 @@ class CGI
             %|(offline mode: enter name=value pairs on standard input)\n|
           )
         end
-        readlines.join(' ').gsub(/\n/n, '')
+        array = readlines rescue nil
+        if not array.nil?
+          array.join(' ').gsub(/\n/n, '')
+        else
+          ""
+        end
       end.gsub(/\\=/n, '%3D').gsub(/\\&/n, '%26')
 
       words = Shellwords.shellwords(string)
