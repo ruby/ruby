@@ -1,3 +1,7 @@
+Mon Dec 14 22:33:21 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/find.rb (Find.find): rescue only ENOENT and EACCES for lstat.
+
 Mon Dec 14 21:49:30 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/find.rb (Find.find): narrow rescue region.

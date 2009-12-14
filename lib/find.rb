@@ -41,7 +41,7 @@ module Find
 	yield file.dup.taint
         begin
           s = File.lstat(file)
-        rescue SystemCallError
+        rescue Errno::ENOENT, Errno::EACCES
           next
         end
         if s.directory? then
