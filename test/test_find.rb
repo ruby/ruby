@@ -127,6 +127,15 @@ class TestFind < Test::Unit::TestCase
     }
   end
 
+  def test_dangling_symlink_stat_error
+    Dir.mktmpdir {|d|
+      File.symlink("foo", "#{d}/bar")
+      assert_raise(Errno::ENOENT) {
+        Find.find(d) {|f| File.stat(f) }
+      }
+    }
+  end
+
   def test_enumerator
     Dir.mktmpdir {|d|
       File.open("#{d}/a", "w")

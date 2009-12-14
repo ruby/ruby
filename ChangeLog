@@ -1,3 +1,7 @@
+Mon Dec 14 21:49:30 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/find.rb (Find.find): narrow rescue region.
+
 Mon Dec 14 09:20:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/find.rb (Find.find): removed already unnecessary code.

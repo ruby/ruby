@@ -44,18 +44,19 @@ module Find
         rescue SystemCallError
           next
         end
-	begin
-	  if s.directory? then
+        if s.directory? then
+          begin
             fs = Dir.entries(file)
-            fs.sort!
-            fs.reverse_each {|f|
-              next if f == "." or f == ".."
-              f = File.join(file, f)
-              paths.unshift f.untaint
-            }
-	  end
-        rescue Errno::ENOENT, Errno::EACCES
-	end
+          rescue Errno::ENOENT, Errno::EACCES
+            next
+          end
+          fs.sort!
+          fs.reverse_each {|f|
+            next if f == "." or f == ".."
+            f = File.join(file, f)
+            paths.unshift f.untaint
+          }
+        end
       end
     end
   end
