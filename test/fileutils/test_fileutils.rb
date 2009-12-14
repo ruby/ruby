@@ -452,7 +452,7 @@ class TestFileUtils
 
     # [ruby-dev:39345]
     touch 'tmp/[rmtmp]'
-    rm_f 'tmp/[rmtmp]'
+    FileUtils.rm_f 'tmp/[rmtmp]'
     assert_file_not_exist 'tmp/[rmtmp]'
   end
 
