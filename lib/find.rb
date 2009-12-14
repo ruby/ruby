@@ -50,13 +50,7 @@ module Find
             fs.sort!
             fs.reverse_each {|f|
               next if f == "." or f == ".."
-              if File::ALT_SEPARATOR and file =~ /^(?:[\/\\]|[A-Za-z]:[\/\\]?)$/ then
-                f = file + f
-              elsif file == "/" then
-                f = "/" + f
-              else
-                f = File.join(file, f)
-              end
+              f = File.join(file, f)
               paths.unshift f.untaint
             }
 	  end

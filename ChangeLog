@@ -1,3 +1,7 @@
+Mon Dec 14 09:20:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/find.rb (Find.find): removed already unnecessary code.
+
 Sun Dec 13 23:48:25 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/find.rb (Find.find): sort directory entries.  [ruby-dev:39847]
