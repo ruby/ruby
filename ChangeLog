@@ -1,3 +1,8 @@
+Mon Dec 14 11:40:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (ruby_setenv): get rid of crash in Solaris 8 and 10.
+	  [ruby-core:26668]
+
 Mon Dec 14 11:31:58 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi.rb: fix command-line option of

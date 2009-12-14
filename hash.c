@@ -1947,7 +1947,19 @@ rb_env_path_tainted()
     return path_tainted;
 }
 
-#if !defined(_WIN32) && !(defined(HAVE_SETENV) && defined(HAVE_UNSETENV))
+#if defined(_WIN32) || (defined(HAVE_SETENV) && defined(HAVE_UNSETENV))
+#elif defined __sun__
+static int
+in_origenv(str)
+    const char *str;
+{
+    char **env;
+    for (env = origenviron; *env; ++env) {
+	if (*env == str) return 1;
+    }
+    return 0;
+}
+#else
 static int
 envix(nam)
     const char *nam;
@@ -2002,6 +2014,21 @@ ruby_setenv(name, value)
 	setenv(name,value,1);
     else
 	unsetenv(name);
+#elif defined __sun__
+    size_t len = strlen(name);
+    char **env_ptr, *str;
+    for (env_ptr = GET_ENVIRON(environ); (str = *env_ptr) != 0; ++env_ptr) {
+	if (!strncmp(str, name, len) && str[len] == '=') {
+	    if (!in_origenv(str)) free(str);
+	    while ((env_ptr[0] = env_ptr[1]) != 0) env_ptr++;
+	    break;
+	}
+    }
+    if (value) {
+	str = malloc(len += strlen(value) + 2);
+	snprintf(str, len, "%s=%s", name, value);
+	putenv(str);
+    }
 #else  /* WIN32 */
     size_t len;
     int i=envix(name);		        /* where does it go? */
