@@ -1,3 +1,8 @@
+Mon Dec 14 13:09:01 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBPATHFLAG): use numbered specifier if RPATHFLAG
+	  is set.  [ruby-talk:322136]
+
 Mon Dec 14 12:53:56 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/bigdecimal.rb: fix comparison operators [ruby-core:26646]
