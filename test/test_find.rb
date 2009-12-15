@@ -13,10 +13,10 @@ class TestFind < Test::Unit::TestCase
 
   def test_rec
     Dir.mktmpdir {|d|
-      File.open("#{d}/a", "w")
+      File.open("#{d}/a", "w"){}
       Dir.mkdir("#{d}/b")
-      File.open("#{d}/b/a", "w")
-      File.open("#{d}/b/b", "w")
+      File.open("#{d}/b/a", "w"){}
+      File.open("#{d}/b/b", "w"){}
       Dir.mkdir("#{d}/c")
       a = []
       Find.find(d) {|f| a << f }
@@ -26,10 +26,10 @@ class TestFind < Test::Unit::TestCase
 
   def test_relative
     Dir.mktmpdir {|d|
-      File.open("#{d}/a", "w")
+      File.open("#{d}/a", "w"){}
       Dir.mkdir("#{d}/b")
-      File.open("#{d}/b/a", "w")
-      File.open("#{d}/b/b", "w")
+      File.open("#{d}/b/a", "w"){}
+      File.open("#{d}/b/b", "w"){}
       Dir.mkdir("#{d}/c")
       a = []
       Dir.chdir(d) {
@@ -41,11 +41,15 @@ class TestFind < Test::Unit::TestCase
 
   def test_dont_follow_symlink
     Dir.mktmpdir {|d|
-      File.open("#{d}/a", "w")
+      File.open("#{d}/a", "w"){}
       Dir.mkdir("#{d}/b")
-      File.open("#{d}/b/a", "w")
-      File.open("#{d}/b/b", "w")
-      File.symlink("#{d}/b", "#{d}/c")
+      File.open("#{d}/b/a", "w"){}
+      File.open("#{d}/b/b", "w"){}
+      begin
+        File.symlink("#{d}/b", "#{d}/c")
+      rescue NotImplementedError
+        skip "symlink is not supported."
+      end
       a = []
       Find.find(d) {|f| a << f }
       assert_equal([d, "#{d}/a", "#{d}/b", "#{d}/b/a", "#{d}/b/b", "#{d}/c"], a)
@@ -54,10 +58,10 @@ class TestFind < Test::Unit::TestCase
 
   def test_prune
     Dir.mktmpdir {|d|
-      File.open("#{d}/a", "w")
+      File.open("#{d}/a", "w"){}
       Dir.mkdir("#{d}/b")
-      File.open("#{d}/b/a", "w")
-      File.open("#{d}/b/b", "w")
+      File.open("#{d}/b/a", "w"){}
+      File.open("#{d}/b/b", "w"){}
       Dir.mkdir("#{d}/c")
       a = []
       Find.find(d) {|f|
@@ -70,7 +74,7 @@ class TestFind < Test::Unit::TestCase
 
   def test_countup3
     Dir.mktmpdir {|d|
-      1.upto(3) {|n| File.open("#{d}/#{n}", "w") }
+      1.upto(3) {|n| File.open("#{d}/#{n}", "w"){} }
       a = []
       Find.find(d) {|f| a << f }
       assert_equal([d, "#{d}/1", "#{d}/2", "#{d}/3"], a)
@@ -79,7 +83,7 @@ class TestFind < Test::Unit::TestCase
 
   def test_countdown3
     Dir.mktmpdir {|d|
-      3.downto(1) {|n| File.open("#{d}/#{n}", "w") }
+      3.downto(1) {|n| File.open("#{d}/#{n}", "w"){} }
       a = []
       Find.find(d) {|f| a << f }
       assert_equal([d, "#{d}/1", "#{d}/2", "#{d}/3"], a)
@@ -89,7 +93,7 @@ class TestFind < Test::Unit::TestCase
   def test_unreadable_dir
     Dir.mktmpdir {|d|
       Dir.mkdir(dir = "#{d}/dir")
-      File.open(file = "#{dir}/foo", "w")
+      File.open(file = "#{dir}/foo", "w"){}
       begin
         File.chmod(0300, dir)
         a = []
@@ -104,7 +108,7 @@ class TestFind < Test::Unit::TestCase
   def test_unsearchable_dir
     Dir.mktmpdir {|d|
       Dir.mkdir(dir = "#{d}/dir")
-      File.open(file = "#{dir}/foo", "w")
+      File.open(file = "#{dir}/foo", "w"){}
       begin
         File.chmod(0600, dir)
         a = []
@@ -119,7 +123,11 @@ class TestFind < Test::Unit::TestCase
 
   def test_dangling_symlink
     Dir.mktmpdir {|d|
-      File.symlink("foo", "#{d}/bar")
+      begin
+        File.symlink("foo", "#{d}/bar")
+      rescue NotImplementedError
+        skip "symlink is not supported."
+      end
       a = []
       Find.find(d) {|f| a << f }
       assert_equal([d, "#{d}/bar"], a)
@@ -129,7 +137,11 @@ class TestFind < Test::Unit::TestCase
 
   def test_dangling_symlink_stat_error
     Dir.mktmpdir {|d|
-      File.symlink("foo", "#{d}/bar")
+      begin
+        File.symlink("foo", "#{d}/bar")
+      rescue NotImplementedError
+        skip "symlink is not supported."
+      end
       assert_raise(Errno::ENOENT) {
         Find.find(d) {|f| File.stat(f) }
       }
@@ -138,10 +150,10 @@ class TestFind < Test::Unit::TestCase
 
   def test_enumerator
     Dir.mktmpdir {|d|
-      File.open("#{d}/a", "w")
+      File.open("#{d}/a", "w"){}
       Dir.mkdir("#{d}/b")
-      File.open("#{d}/b/a", "w")
-      File.open("#{d}/b/b", "w")
+      File.open("#{d}/b/a", "w"){}
+      File.open("#{d}/b/b", "w"){}
       Dir.mkdir("#{d}/c")
       e = Find.find(d)
       a = []
@@ -155,7 +167,7 @@ class TestFind < Test::Unit::TestCase
 
     def test_functional_call
       Dir.mktmpdir {|d|
-        File.open("#{d}/a", "w")
+        File.open("#{d}/a", "w"){}
         a = []
         find(d) {|f| a << f }
         assert_equal([d, "#{d}/a"], a)
