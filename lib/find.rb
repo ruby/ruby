@@ -47,7 +47,7 @@ module Find
         if s.directory? then
           begin
             fs = Dir.entries(file)
-          rescue Errno::ENOENT, Errno::EACCES
+          rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR
             next
           end
           fs.sort!
