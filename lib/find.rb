@@ -41,13 +41,13 @@ module Find
 	yield file.dup.taint
         begin
           s = File.lstat(file)
-        rescue Errno::ENOENT, Errno::EACCES
+        rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG
           next
         end
         if s.directory? then
           begin
             fs = Dir.entries(file)
-          rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR
+          rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG
             next
           end
           fs.sort!
