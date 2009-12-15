@@ -148,6 +148,52 @@ class TestFind < Test::Unit::TestCase
     }
   end
 
+  def test_change_dir_to_file
+    Dir.mktmpdir {|d|
+      Dir.mkdir(dir_1 = "#{d}/d1")
+      File.open(file_a = "#{dir_1}/a", "w"){}
+      File.open(file_b = "#{dir_1}/b", "w"){}
+      File.open(file_c = "#{dir_1}/c", "w"){}
+      Dir.mkdir(dir_d = "#{dir_1}/d")
+      File.open(file_de = "#{dir_d}/e", "w"){}
+      dir_2 = "#{d}/d2"
+      a = []
+      Find.find(d) {|f|
+        a << f
+        if f == file_b
+          File.rename(dir_1, dir_2)
+          File.open(dir_1, "w") {}
+        end
+      }
+      assert_equal([d, dir_1, file_a, file_b, file_c, dir_d], a)
+    }
+  end
+
+  def test_change_dir_to_symlink_loop
+    Dir.mktmpdir {|d|
+      Dir.mkdir(dir_1 = "#{d}/d1")
+      File.open(file_a = "#{dir_1}/a", "w"){}
+      File.open(file_b = "#{dir_1}/b", "w"){}
+      File.open(file_c = "#{dir_1}/c", "w"){}
+      Dir.mkdir(dir_d = "#{dir_1}/d")
+      File.open(file_de = "#{dir_d}/e", "w"){}
+      dir_2 = "#{d}/d2"
+      a = []
+      Find.find(d) {|f|
+        a << f
+        if f == file_b
+          File.rename(dir_1, dir_2)
+          begin
+            File.symlink("d1", dir_1)
+          rescue NotImplementedError
+            skip "symlink is not supported."
+          end
+        end
+      }
+      assert_equal([d, dir_1, file_a, file_b, file_c, dir_d], a)
+    }
+  end
+
   def test_enumerator
     Dir.mktmpdir {|d|
       File.open("#{d}/a", "w"){}
