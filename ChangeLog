@@ -1,6 +1,11 @@
+Wed Dec 16 00:53:14 2009  Tanaka Akira  <akr@fsij.org>
+
+	* lib/find.rb (Find.find): rescue more exceptions which is possible to
+	  occur by other process change the directory tree.
+
 Tue Dec 15 09:06:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* lib/find.rb (Find.find):  get rid of race condition.
+	* lib/find.rb (Find.find): get rid of race condition.
 
 Mon Dec 14 22:33:21 2009  Tanaka Akira  <akr@fsij.org>
 
