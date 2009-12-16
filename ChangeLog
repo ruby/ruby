@@ -1,3 +1,8 @@
+Wed Dec 16 11:18:30 2009  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in(MINIRUBY): use "$BASERUBY" as a default ruby executable
+	  name.
+
 Wed Dec 16 00:53:14 2009  Tanaka Akira  <akr@fsij.org>
 
 	* lib/find.rb (Find.find): rescue more exceptions which is possible to
