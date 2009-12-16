@@ -1,3 +1,7 @@
+Wed Dec 16 19:49:47 2009  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* instruby.rb (with_destdir): revert. [ruby-dev:39885]
+
 Mon Dec 14 13:28:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit.run=, Test::Unit.run?): fixed rdoc.

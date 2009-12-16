@@ -359,7 +359,7 @@ install?(:local, :arch, :lib) do
   if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
     win32libdir = File.join(archlibdir, "win32")
     makedirs win32libdir
-    install File.join(srcdir, "win32", "win32.h"), win32libdir, :mode => $data_mode
+    install "win32/win32.h", win32libdir, :mode => $data_mode
   end
 end
 
