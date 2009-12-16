@@ -1,3 +1,7 @@
+Wed Dec 16 20:28:46 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/envutil.rb: fix a typo in assert message.
+
 Wed Dec 16 16:57:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/un.rb (httpd): try to convert port number to integer.
