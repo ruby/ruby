@@ -1066,11 +1066,13 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
 	}
     }
     if (p) {
-	shell = p;
-	while (*p) {
-	    if ((unsigned char)*p == '/')
-		*p = '\\';
-	    p = CharNext(p);
+	char *tmp = ALLOCA_N(char, strlen(p) + 1);
+	strcpy(tmp, p);
+	shell = tmp;
+	while (*tmp) {
+	    if ((unsigned char)*tmp == '/')
+		*tmp = '\\';
+	    tmp = CharNext(tmp);
 	}
     }
 
