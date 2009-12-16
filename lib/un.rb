@@ -304,6 +304,7 @@ def httpd
     |argv, options|
     require 'webrick'
     opt = options[:RequestTimeout] and options[:RequestTimeout] = opt.to_i
+    opt = options[:Port] and (options[:Port] = Integer(opt)) rescue nil
     unless argv.empty?
       options[:DocumentRoot] = argv.shift
     end

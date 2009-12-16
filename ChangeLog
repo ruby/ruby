@@ -1,3 +1,7 @@
+Wed Dec 16 16:57:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/un.rb (httpd): try to convert port number to integer.
+
 Wed Dec 16 15:05:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/un.rb (wait_writable): wait until target files can be
