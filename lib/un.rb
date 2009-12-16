@@ -1,11 +1,11 @@
-# 
+#
 # = un.rb
-# 
+#
 # Copyright (c) 2003 WATANABE Hirofumi <eban@ruby-lang.org>
-# 
+#
 # This program is free software.
 # You can distribute/modify this program under the same terms of Ruby.
-# 
+#
 # == Utilities to replace common UNIX commands in Makefiles etc
 #
 # == SYNOPSIS
@@ -19,8 +19,10 @@
 #   ruby -run -e install -- [OPTION] SOURCE DEST
 #   ruby -run -e chmod -- [OPTION] OCTAL-MODE FILE
 #   ruby -run -e touch -- [OPTION] FILE
-#   ruby -run -e help [COMMAND]
+#   ruby -run -e wait_writable -- [OPTION] FILE
 #   ruby -run -e mkmf -- [OPTION] EXTNAME [OPTION]
+#   ruby -run -e httpd -- [OPTION] DocumentRoot
+#   ruby -run -e help [COMMAND]
 
 require "fileutils"
 require "optparse"
@@ -42,7 +44,7 @@ def setup(options = "", *long_options)
     end
     long_options.each do |s|
       opt_name = s[/\A(?:--)?([^\s=]+)/, 1].intern
-      o.on(s.sub(/\A(?!--)/, '--')) do |val|
+      o.on(s.gsub(/([a-z])([A-Z])/){$1+"-"+$2.downcase}.sub(/\A(?!--)/, '--')) do |val|
         opt_hash[opt_name] = val
       end
     end
@@ -157,11 +159,13 @@ end
 #
 #   ruby -run -e rmdir -- [OPTION] DIR
 #
+#   -p		remove DIRECTORY and its ancestors.
 #   -v		verbose
 #
 
 def rmdir
-  setup do |argv, options|
+  setup("p") do |argv, options|
+    options[:parents] = true if options.delete :p
     FileUtils.rmdir argv, options
   end
 end
@@ -217,6 +221,37 @@ def touch
 end
 
 ##
+# Wait until the file becomes writable.
+#
+#   ruby -run -e wait_writable -- [OPTION] FILE
+#
+#   -n RETRY	count to retry
+#   -w SEC	each wait time in seconds
+#   -v		verbose
+#
+
+def wait_writable
+  setup("n:w:v") do |argv, options|
+    verbose = options[:verbose]
+    n = options[:n] and n = Integer(n)
+    wait = (wait = options[:w]) ? Float(wait) : 0.2
+    argv.each do |file|
+      begin
+        open(file, "r+b")
+      rescue Errno::ENOENT
+        break
+      rescue Errno::EACCES => e
+        raise if n and (n -= 1) <= 0
+        puts e
+        STDOUT.flush
+        sleep wait
+        retry
+      end
+    end
+  end
+end
+
+##
 # Create makefile using mkmf.
 #
 #   ruby -run -e mkmf -- [OPTION] EXTNAME [OPTION]
@@ -245,6 +280,42 @@ def mkmf
     opt = options[:c] and opt.split(/:/).each {|n| have_const(*n.split(/,/))}
     $configure_args["--vendor"] = true if options[:vendor]
     create_makefile(*argv)
+  end
+end
+
+##
+# Run WEBrick HTTP server.
+#
+#   ruby -run -e httpd -- [OPTION] DocumentRoot
+#
+#   --bind-address=ADDR         address to bind
+#   --port=NUM                  listening port number
+#   --max-clients=MAX           max number of simultaneous clients
+#   --temp-dir=DIR              temporary directory
+#   --do-not-reverse-lookup     disable reverse lookup
+#   --request-timeout=SECOND    request timeout in seconds
+#   --http-version=VERSION      HTTP version
+#   -v                          verbose
+#
+
+def httpd
+  setup("", "BindAddress=ADDR", "Port=PORT", "MaxClients=NUM", "TempDir=DIR",
+        "DoNotReverseLookup", "RequestTimeout=SECOND", "HTTPVersion=VERSION") do
+    |argv, options|
+    require 'webrick'
+    opt = options[:RequestTimeout] and options[:RequestTimeout] = opt.to_i
+    unless argv.empty?
+      options[:DocumentRoot] = argv.shift
+    end
+    s = WEBrick::HTTPServer.new(options)
+    shut = proc {s.shutdown}
+    Signal.trap("TERM", shut)
+    Signal.trap("QUIT", shut)
+    if STDIN.tty?
+      Signal.trap("HUP", shut)
+      Signal.trap("INT", shut)
+    end
+    s.start
   end
 end
 

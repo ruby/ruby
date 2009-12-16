@@ -1,3 +1,14 @@
+Wed Dec 16 15:05:42 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/un.rb (wait_writable): wait until target files can be
+	  written actually.
+
+	* lib/un.rb (mkmf): new command to create makefile.
+
+	* lib/un.rb (rmdir): added -p option.
+
+	* lib/un.rb (httpd): easy WEBrick HTTP server.
+
 Tue Dec 15 11:48:41 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* string.c (rb_str_inspect): wrong result of UTF-8 inspect because of
