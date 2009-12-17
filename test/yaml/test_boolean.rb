@@ -29,7 +29,7 @@ module YAML
     ###
     # YAML spec says "n" and "N" may be used as false, but Syck treats them
     # as literal strings
-    def test_y
+    def test_n
       assert_equal "n", YAML.load("--- n")
       assert_equal "N", YAML.load("--- N")
     end
