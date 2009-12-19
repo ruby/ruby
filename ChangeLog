@@ -1,3 +1,8 @@
+Sat Dec 19 09:29:22 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/set.rb: Add checks that passed argument is Enumerable.
+	  [ruby-core:23844]
+
 Wed Dec 16 20:28:46 2009  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/envutil.rb: fix a typo in assert message.
