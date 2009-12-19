@@ -1,3 +1,8 @@
+Sat Dec 19 14:57:17 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/webrick/config.rb (WEBrick::Config): typo fixed.  a patch
+	  from Sho Hashimoto in [ruby-dev:39835].
+
 Sat Dec 19 11:06:48 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb (each2,collect2,map2): Fix enumerator
