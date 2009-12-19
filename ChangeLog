@@ -1,3 +1,8 @@
+Sat Dec 19 11:06:48 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb (each2,collect2,map2): Fix enumerator
+	  [ruby-core:27225]
+
 Sat Dec 19 09:58:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (check_funcall): reset method_missing_reason before
