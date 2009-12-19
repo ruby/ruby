@@ -15,7 +15,7 @@ if defined?(Gem) then
     def gem(gem_name, *version_requirements)
       Gem.push_gem_version_on_load_path(gem_name, *version_requirements)
     end
-
+    private :gem
   end
 
   module Gem

@@ -1,3 +1,8 @@
+Sat Dec 19 14:59:30 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gem_prelude.rb (Kernel#gem): should make gem private.  a patch
+	  from Sho Hashimoto in [ruby-dev:39838].
+
 Sat Dec 19 14:57:17 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/webrick/config.rb (WEBrick::Config): typo fixed.  a patch
