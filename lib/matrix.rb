@@ -1147,7 +1147,7 @@ class Vector
   #
   def each2(v) # :yield: e1, e2
     Vector.Raise ErrDimensionMismatch if size != v.size
-    return to_enum(:each2) unless block_given?
+    return to_enum(:each2, v) unless block_given?
     size.times do |i|
       yield @elements[i], v[i]
     end
@@ -1159,7 +1159,7 @@ class Vector
   #
   def collect2(v) # :yield: e1, e2
     Vector.Raise ErrDimensionMismatch if size != v.size
-    return to_enum(:collect2) unless block_given?
+    return to_enum(:collect2, v) unless block_given?
     (0 ... size).collect do |i|
       yield @elements[i], v[i]
     end
@@ -1290,7 +1290,7 @@ class Vector
   # Like Vector#collect2, but returns a Vector instead of an Array.
   #
   def map2(v, &block) # :yield: e1, e2
-    return to_enum(:map2) unless block_given?
+    return to_enum(:map2, v) unless block_given?
     els = collect2(v, &block)
     Vector.elements(els, false)
   end
