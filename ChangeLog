@@ -1,3 +1,9 @@
+Sat Dec 19 09:58:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (check_funcall): reset method_missing_reason before
+	  trying the call.  based on a patch from Yehuda Katz in
+	  [ruby-core:27219].
+
 Sat Dec 19 09:29:22 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/set.rb: Add checks that passed argument is Enumerable.
