@@ -322,6 +322,16 @@ class TestObject < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       c.new.method_missing
     end
+
+    bug2494 = '[ruby-core:27219]'
+    c = Class.new do
+      def method_missing(meth, *args)
+        super
+      end
+    end
+    b = c.new
+    foo rescue nil
+    assert_nothing_raised(bug2494) {[b].flatten}
   end
 
   def test_respond_to_missing

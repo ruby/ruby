@@ -275,6 +275,7 @@ check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
 	else {
 	    struct rescue_funcall_args args;
 
+	    th->method_missing_reason = 0;
 	    args.recv = recv;
 	    args.sym = ID2SYM(mid);
 	    args.argc = argc;
