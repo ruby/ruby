@@ -1,3 +1,7 @@
+Sat Dec 19 09:31:25 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/set.rb (initialize): Add check that argument is enumerable
+
 Wed Dec 16 16:57:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/un.rb (httpd): try to convert port number to integer.

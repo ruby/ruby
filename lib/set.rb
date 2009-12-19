@@ -71,6 +71,7 @@ class Set
     enum.nil? and return
 
     if block
+      enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
       enum.each { |o| add(block[o]) }
     else
       merge(enum)
