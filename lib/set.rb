@@ -70,6 +70,7 @@ class Set
     enum.nil? and return
 
     if block
+      enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
       enum.each { |o| add(block[o]) }
     else
       merge(enum)
@@ -122,6 +123,7 @@ class Set
     if enum.class == self.class
       @hash.replace(enum.instance_eval { @hash })
     else
+      enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
       clear
       enum.each { |o| add(o) }
     end
@@ -279,6 +281,7 @@ class Set
     if enum.instance_of?(self.class)
       @hash.update(enum.instance_variable_get(:@hash))
     else
+      enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
       enum.each { |o| add(o) }
     end
 
@@ -288,6 +291,7 @@ class Set
   # Deletes every element that appears in the given enumerable object
   # and returns self.
   def subtract(enum)
+    enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     enum.each { |o| delete(o) }
     self
   end
@@ -310,6 +314,7 @@ class Set
   # Returns a new set containing elements common to the set and the
   # given enumerable object.
   def &(enum)
+    enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     n = self.class.new
     enum.each { |o| n.add(o) if include?(o) }
     n
@@ -637,6 +642,7 @@ end
 # 	end
 #
 # 	def replace(enum)
+# 	  enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
 # 	  clear
 # 	  enum.each { |o| add(o) }
 #
@@ -644,6 +650,7 @@ end
 # 	end
 #
 # 	def merge(enum)
+# 	  enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
 # 	  enum.each { |o| add(o) }
 #
 # 	  self
@@ -711,10 +718,10 @@ class TC_Set < Test::Unit::TestCase
       Set.new([1,2])
       Set.new('a'..'c')
     }
-    assert_raises(NoMethodError) {
+    assert_raises(ArgumentError) {
       Set.new(false)
     }
-    assert_raises(NoMethodError) {
+    assert_raises(ArgumentError) {
       Set.new(1)
     }
     assert_raises(ArgumentError) {
