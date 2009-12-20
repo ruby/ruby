@@ -1,3 +1,7 @@
+Mon Dec 21 02:45:46 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_eval.c (rb_iterate): remove SEGV (retry).
+
 Sun Dec 20 23:18:23 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_eval.c (rb_iterate): remove SEGV (use the original patch).
