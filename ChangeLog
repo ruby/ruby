@@ -1,3 +1,8 @@
+Mon Dec 21 08:15:31 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* object.c: Object#initialize accepts any number of arguments
+	  [ruby-core:27080]
+
 Sun Dec 20 23:43:46 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/net/http.rb (HTTPGenericRequest#send_request_with_body_stream):
