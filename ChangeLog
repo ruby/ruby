@@ -1,3 +1,8 @@
+Sun Dec 20 23:18:23 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_eval.c (rb_iterate): remove SEGV (use the original patch).
+	  [ruby-dev:39874]
+
 Sun Dec 20 21:26:05 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_eval.c (rb_iterate): pass current block when the argument bl_proc
