@@ -1,3 +1,8 @@
+Mon Dec 21 08:04:34 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* object.c: BasicObject#initialize accepts any number of arguments
+	  [ruby-core:27080]
+
 Mon Dec 21 02:45:46 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_eval.c (rb_iterate): remove SEGV (retry).
