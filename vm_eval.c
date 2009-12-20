@@ -832,7 +832,7 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 	    rb_block_t *blockptr;
 	    if (bl_proc) {
 		blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(th->cfp);
-		blockptr->iseq = (void *)NEW_IFUNC(bl_proc, data2);
+		blockptr->iseq = (void *)node;
 		blockptr->proc = 0;
 	    }
 	    else {
