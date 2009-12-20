@@ -1,3 +1,12 @@
+Sun Dec 20 23:43:46 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/net/http.rb (HTTPGenericRequest#send_request_with_body_stream):
+	  increased encoding chunk size for POST request with body_stream
+	  (1K -> 16K). patched by Brian Candler. #1284.
+
+	* test/net/http/test_post_io.rb: added for the patch. It's good if a
+	  patch comes with a test.
+
 Sat Dec 19 09:31:25 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/set.rb (initialize): Add check that argument is enumerable
