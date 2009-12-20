@@ -1,3 +1,14 @@
+Sun Dec 20 21:26:05 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_eval.c (rb_iterate): pass current block when the argument bl_proc
+	  is NULL.  This behavior can be used to make enumerator faster
+	  [ruby-dev:39874]
+
+	* enumerator.c (enumerator_each): pass current block directly instead
+	  of trampoline block (enumerator_each_i).
+
+	* io.c (argf_each_line, argf_each_byte, argf_each_char): ditto.
+
 Sat Dec 19 14:59:30 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gem_prelude.rb (Kernel#gem): should make gem private.  a patch

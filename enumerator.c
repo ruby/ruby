@@ -330,12 +330,6 @@ enumerator_allocate(VALUE klass)
 }
 
 static VALUE
-enumerator_each_i(VALUE v, VALUE enum_obj, int argc, VALUE *argv)
-{
-    return rb_yield_values2(argc, argv);
-}
-
-static VALUE
 enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
 {
     struct enumerator *ptr;
@@ -473,7 +467,7 @@ static VALUE
 enumerator_each(VALUE obj)
 {
     if (!rb_block_given_p()) return obj;
-    return enumerator_block_call(obj, enumerator_each_i, obj);
+    return enumerator_block_call(obj, 0, obj);
 }
 
 static VALUE
