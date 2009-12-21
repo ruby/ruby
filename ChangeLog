@@ -1,3 +1,8 @@
+Mon Dec 21 15:20:42 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/openssl/{common.pem,max.pem}: added fixture certificates.
+	  needed for new tests added on Sun Dec 13 23:07:05 2009.
+
 Mon Dec 21 08:15:31 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* object.c: Object#initialize accepts any number of arguments
