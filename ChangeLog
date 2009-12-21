@@ -51,7 +51,6 @@ Mon Dec 14 11:47:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_call): fixed for super in cached method.
 	  [ruby-dev:39757]
-n
 
 Mon Dec 14 11:40:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -68,11 +67,6 @@ Mon Dec 14 03:36:20 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 	* eval.c (method_inspect, method_name, mnew): Bug fix when
 	  method created from an alias.
 	  Based on a patch by Peter Vanbroekhoven [ruby-core:22040]
-
-Mon Dec 14 03:21:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* eval.c (call_trace_func): remove the trace hook if any exception
-	  raised.  [ruby-list:46515]
 
 Mon Dec 14 02:27:32 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
