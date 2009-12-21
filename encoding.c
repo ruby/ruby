@@ -1505,6 +1505,7 @@ Init_Encoding(void)
 
     rb_cEncoding = rb_define_class("Encoding", rb_cObject);
     rb_undef_alloc_func(rb_cEncoding);
+    rb_undef_method(CLASS_OF(rb_cEncoding), "new");
     rb_define_method(rb_cEncoding, "to_s", enc_name, 0);
     rb_define_method(rb_cEncoding, "inspect", enc_inspect, 0);
     rb_define_method(rb_cEncoding, "name", enc_name, 0);
