@@ -1944,6 +1944,7 @@ Init_VM(void)
     /* ::VM */
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
     rb_undef_alloc_func(rb_cRubyVM);
+    rb_undef_method(CLASS_OF(rb_cRubyVM), "new");
 
     /* ::VM::FrozenCore */
     fcore = rb_class_new(rb_cBasicObject);
@@ -1962,6 +1963,7 @@ Init_VM(void)
     /* ::VM::Env */
     rb_cEnv = rb_define_class_under(rb_cRubyVM, "Env", rb_cObject);
     rb_undef_alloc_func(rb_cEnv);
+    rb_undef_method(CLASS_OF(rb_cEnv), "new");
 
     /* ::Thread */
     rb_cThread = rb_define_class("Thread", rb_cObject);
