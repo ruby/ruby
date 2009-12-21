@@ -935,7 +935,7 @@ strio_getline(argc, argv, ptr)
 	s = p;
 	while ((p = memchr(p, '\n', e - p)) && (p != e)) {
 	    if (*++p == '\n') {
-		e = p;
+		e = p + 1;
 		break;
 	    }
 	}

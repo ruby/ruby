@@ -56,6 +56,18 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("abc\n\n", StringIO.new("abc\n\ndef\n").gets(""))
   end
 
+  def test_gets_paragraph
+    assert_equal("abc\n\n", StringIO.new("abc\n\ndef\n").gets(""))
+    assert_equal("abc\n\n", StringIO.new("\nabc\n\ndef\n").gets(""))
+    assert_equal("abc", StringIO.new("abc").gets(""))
+    assert_equal("abc\n", StringIO.new("abc\n").gets(""))
+    assert_equal(nil, StringIO.new("").gets(""))
+    assert_equal("def\n", StringIO.new("\n\ndef\n").gets(""))
+    s = StringIO.new("\n\nabc\n\n\n\ndef\n")
+    assert_equal("abc\n\n", s.gets(""))
+    assert_equal("def\n", s.gets(""))
+  end
+
   def test_readlines
     assert_equal([], StringIO.new("").readlines)
     assert_equal(["\n"], StringIO.new("\n").readlines)

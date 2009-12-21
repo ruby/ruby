@@ -1,3 +1,8 @@
+Mon Dec 21 15:27:48 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_getline): fix for "" as separator.
+	  [ruby-dev:34591] (Backport r17739 by Yusuke Endoh from trunk).
+
 Mon Dec 21 15:20:42 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/openssl/{common.pem,max.pem}: added fixture certificates.
