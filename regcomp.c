@@ -4792,7 +4792,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
 	  copy_node_opt_info(opt, &nopt);
 	  if (nopt.exb.len > 0) {
 	    if (nopt.exb.reach_end) {
-	      for (i = 2; i < qn->lower &&
+	      for (i = 2; i <= qn->lower &&
 		          ! is_full_opt_exact_info(&opt->exb); i++) {
 		concat_opt_exact_info(&opt->exb, &nopt.exb, env->enc);
 	      }

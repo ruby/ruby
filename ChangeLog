@@ -1,3 +1,8 @@
+Mon Dec 21 17:51:44 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c (optimize_node_left): include equal on the condition of for-loop.
+	  This bug also affects original Oniguruma. [ruby-core:27247]
+
 Mon Dec 21 10:03:33 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c (print_enc_string): follow enclen's change.
