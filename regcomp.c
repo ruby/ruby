@@ -5046,7 +5046,7 @@ static void print_enc_string(FILE* fp, OnigEncoding enc,
 	fputc((int )code, fp);
       }
 
-      p += enclen(enc, p);
+      p += enclen(enc, p, end);
     }
   }
   else {
@@ -5885,7 +5885,7 @@ p_len_string(FILE* f, LengthType len, int mb_len, UChar* s)
 }
 
 extern void
-onig_print_compiled_byte_code(FILE* f, UChar* bp, UChar** nextp,
+onig_print_compiled_byte_code(FILE* f, UChar* bp, UChar* bpend, UChar** nextp,
                               OnigEncoding enc)
 {
   int i, n, arg_type;
@@ -5984,7 +5984,7 @@ onig_print_compiled_byte_code(FILE* f, UChar* bp, UChar** nextp,
       break;
 
     case OP_EXACT1_IC:
-      len = enclen(enc, bp);
+      len = enclen(enc, bp, bpend);
       p_string(f, len, bp);
       bp += len;
       break;
@@ -6146,7 +6146,7 @@ print_compiled_byte_code_list(FILE* f, regex_t* reg)
       else
 	fputs(" ", f);
     }
-    onig_print_compiled_byte_code(f, bp, &bp, reg->enc);
+    onig_print_compiled_byte_code(f, bp, end, &bp, reg->enc);
   }
 
   fprintf(f, "\n");
