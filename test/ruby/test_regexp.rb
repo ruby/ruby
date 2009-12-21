@@ -10,6 +10,10 @@ class TestRegexp < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def test_ruby_core_27247
+    assert_match(/(a){2}z/, "aaz")
+  end
+
   def test_ruby_dev_24643
     assert_nothing_raised("[ruby-dev:24643]") {
       /(?:(?:[a]*[a])?b)*a*$/ =~ "aabaaca"
