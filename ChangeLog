@@ -1,3 +1,7 @@
+Mon Dec 21 16:09:09 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (LD_SHARED1): typo.
+
 Wed Dec 16 20:17:40 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (CreateChild): allocate temporary buffer and use it
