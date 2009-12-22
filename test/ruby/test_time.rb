@@ -351,6 +351,22 @@ class TestTime < Test::Unit::TestCase
     assert_equal(T2000 + 1, T2000.succ)
   end
 
+  def test_plus_type
+    t0 = Time.utc(2000,1,1)
+    n0 = t0.to_i
+    n1 = n0+1
+    t1 = Time.at(n1)
+    assert_equal(t1, t0 + 1)
+    assert_equal(t1, t0 + 1.0)
+    assert_equal(t1, t0 + Rational(1,1))
+    assert_equal(t1, t0 + SimpleDelegator.new(1))
+    assert_equal(t1, t0 + SimpleDelegator.new(1.0))
+    assert_equal(t1, t0 + SimpleDelegator.new(Rational(1,1)))
+    assert_raise(TypeError) { t0 + nil }
+    assert_raise(TypeError) { t0 + "1" }
+    assert_raise(TypeError) { t0 + SimpleDelegator.new("1") }
+  end
+
   def test_readers
     assert_equal(0, T2000.sec)
     assert_equal(0, T2000.min)
