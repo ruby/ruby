@@ -1,3 +1,8 @@
+Tue Dec 22 10:59:56 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/net/http/test_post_io.rb: parse chunked stream to avoid client
+	  side connection error raised.
+
 Mon Dec 21 15:27:48 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_getline): fix for "" as separator.
