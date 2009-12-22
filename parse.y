@@ -3489,7 +3489,7 @@ heredoc_restore(here)
 
 static int
 whole_match_p(eos, len, indent)
-    char *eos;
+    const char *eos;
     int len, indent;
 {
     char *p = lex_pbeg;
@@ -3654,7 +3654,7 @@ yylex()
 	  case EXPR_FNAME:
 	  case EXPR_DOT:
 	  case EXPR_CLASS:
-          case EXPR_VALUE:
+	  case EXPR_VALUE:
 	    goto retry;
 	  default:
 	    break;
@@ -4129,7 +4129,7 @@ yylex()
 		if (c >= '0' && c <= '7') {
 		    /* octal */
 		  octal_number:
-	            do {
+		    do {
 			if (c == '_') {
 			    if (nondigit) break;
 			    nondigit = c;
@@ -4736,7 +4736,7 @@ yylex()
 		lex_state == EXPR_DOT ||
 		lex_state == EXPR_ARG ||
 		lex_state == EXPR_CLASS ||
-                lex_state == EXPR_VALUE ||
+		lex_state == EXPR_VALUE ||
 		lex_state == EXPR_CMDARG) {
 		if (cmd_state) {
 		    lex_state = EXPR_CMDARG;
@@ -6057,10 +6057,10 @@ top_local_setup()
 		rb_mem_clear(ruby_scope->local_vars+i, len-i);
 	    }
 	    if (ruby_scope->local_tbl && ruby_scope->local_vars[-1] == 0) {
-               if (!(ruby_scope->flags & SCOPE_CLONE))
-                   xfree(ruby_scope->local_tbl);
+		if (!(ruby_scope->flags & SCOPE_CLONE))
+		    xfree(ruby_scope->local_tbl);
 	    }
-            ruby_scope->local_vars[-1] = 0; /* no reference needed */
+	    ruby_scope->local_vars[-1] = 0; /* no reference needed */
 	    ruby_scope->local_tbl = local_tbl();
 	}
     }
@@ -6416,7 +6416,7 @@ rb_intern(name)
 	}
 	else if (ISUPPER(name[0])) {
 	    id = ID_CONST;
-        }
+	}
 	else {
 	    id = ID_LOCAL;
 	}
