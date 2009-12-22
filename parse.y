@@ -814,7 +814,7 @@ mlhs_basic	: mlhs_head
 		| mlhs_head tSTAR ',' mlhs_post
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN($1, NEW_POSTARG(-1, $4));
+			$$ = NEW_MASGN($1, NEW_POSTARG((NODE *)-1, $4));
 		    /*%
 			$$ = mlhs_add_star($1, Qnil);
 		    %*/
@@ -846,7 +846,7 @@ mlhs_basic	: mlhs_head
 		| tSTAR ',' mlhs_post
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN(0, NEW_POSTARG(-1, $3));
+			$$ = NEW_MASGN(0, NEW_POSTARG((NODE *)-1, $3));
 		    /*%
 			$$ = mlhs_add_star(mlhs_new(), Qnil);
 		    %*/
