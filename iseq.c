@@ -1015,7 +1015,7 @@ iseq_s_disasm(VALUE klass, VALUE body)
     if ((iseq = rb_method_get_iseq(body)) != 0) {
 	ret = rb_iseq_disasm(iseq->self);
     }
-    else {
+    else if (rb_obj_is_proc(body)) {
 	rb_proc_t *proc;
 	VALUE iseqval;
 	GetProcPtr(body, proc);

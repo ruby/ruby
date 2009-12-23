@@ -82,6 +82,7 @@ class TestMethod < Test::Unit::TestCase
     o = Object.new
     def o.foo; end
     assert_nothing_raised { RubyVM::InstructionSequence.disasm(o.method(:foo)) }
+    assert_nothing_raised { RubyVM::InstructionSequence.disasm("x".method(:upcase)) }
   end
 
   def test_new
