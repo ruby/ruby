@@ -2,15 +2,16 @@ require 'test/unit'
 require 'drb/drb'
 require 'drb/extservm'
 require 'timeout'
+require 'shellwords'
 require_relative '../ruby/envutil'
 
 class DRbService
   @@manager = DRb::ExtServManager.new
-  @@ruby = EnvUtil.rubybin
+  @@ruby = Shellwords.escape(EnvUtil.rubybin)
   @@ruby += " -d" if $DEBUG
   def self.add_service_command(nm)
     dir = File.dirname(File.expand_path(__FILE__))
-    DRb::ExtServManager.command[nm] = "\"#{@@ruby}\" \"#{dir}/#{nm}\""
+    DRb::ExtServManager.command[nm] = "#{@@ruby} \"#{dir}/#{nm}\""
   end
 
   %w(ut_drb.rb ut_array.rb ut_port.rb ut_large.rb ut_safe1.rb ut_eval.rb).each do |nm|
