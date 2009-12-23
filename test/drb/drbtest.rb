@@ -2,6 +2,7 @@ require 'test/unit'
 require 'drb/drb'
 require 'drb/extservm'
 require 'timeout'
+require 'shellwords'
 begin
   loadpath = $:.dup
   $:.replace($: | [File.expand_path("../ruby", File.dirname(__FILE__))])
@@ -12,11 +13,11 @@ end
 
 class DRbService
   @@manager = DRb::ExtServManager.new
-  @@ruby = EnvUtil.rubybin
+  @@ruby = Shellwords.escape(EnvUtil.rubybin)
   @@ruby += " -d" if $DEBUG
   def self.add_service_command(nm)
     dir = File.dirname(File.expand_path(__FILE__))
-    DRb::ExtServManager.command[nm] = "\"#{@@ruby}\" \"#{dir}/#{nm}\""
+    DRb::ExtServManager.command[nm] = "#{@@ruby} \"#{dir}/#{nm}\""
   end
 
   %w(ut_drb.rb ut_array.rb ut_port.rb ut_large.rb ut_safe1.rb ut_eval.rb).each do |nm|
@@ -98,7 +99,7 @@ module DRbCore
     assert_equal(6, @there.sample(onecky, 1, 2))
     ary = @there.to_a
     assert_kind_of(DRb::DRbObject, ary)
-    
+
     assert(@there.respond_to?(:to_a, true))
     assert(@there.respond_to?(:eval, true))
     assert(! @there.respond_to?(:eval, false))
