@@ -1280,7 +1280,8 @@ class TestArray < Test::Unit::TestCase
   def test_splat
     a = [2,3]
     assert_equal([1,2,3], [1, *a])
+    bug2401 = '[ruby-dev:39771]'
     a = [2,3]
-    assert_equal([2,3], [*a])
+    assert_equal([2,3], [*a], bug2401)
   end
 end

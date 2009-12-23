@@ -1455,7 +1455,7 @@ args		: arg_value
 		| tSTAR arg_value
 		    {
 		    /*%%%*/
-			$$ = splat_array($2);
+			if (!($$ = splat_array($2))) $$ = NEW_SPLAT($2);
 		    /*%
 			$$ = arg_add_star(arg_new(), $2);
 		    %*/
@@ -1569,14 +1569,15 @@ primary		: literal
 		    {
 			$$ = NEW_COLON3($2);
 		    }
-		| tLBRACK aref_args ']'
+		| tLBRACK {$<num>$ = ruby_sourceline;} aref_args ']'
 		    {
-		        if ($2 == 0) {
+		        if ($3 == 0) {
 			    $$ = NEW_ZARRAY(); /* zero length array*/
 			}
 			else {
-			    $$ = $2;
+			    $$ = $3;
 			}
+			nd_set_line($$, $<num>2);
 		    }
 		| tLBRACE assoc_list '}'
 		    {
@@ -5312,6 +5313,7 @@ static NODE *
 splat_array(node)
     NODE* node;
 {
+    if (nd_type(node) == NODE_NEWLINE) node = node->nd_next;
     if (nd_type(node) == NODE_SPLAT) node = node->nd_head;
     if (nd_type(node) == NODE_ARRAY) return node;
     return 0;

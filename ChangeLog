@@ -1,3 +1,8 @@
+Wed Dec 23 20:48:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (args): splat other than direct array literal.
+	  [ruby-dev:39771]
+
 Wed Dec 23 17:23:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_load): initialize orig_func.   [ruby-core:27296]
