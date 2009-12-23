@@ -124,7 +124,7 @@ class CGICoreTest < Test::Unit::TestCase
     $stdin = StringIO.new
     $stdin << query_str
     $stdin.rewind
-    if RUBY_VERSION>="1.9.0"
+    if defined?(::Encoding)
       hash={}
       cgi = CGI.new(:accept_charset=>"UTF-8"){|key,val|hash[key]=val}
       ## cgi[]
@@ -251,7 +251,7 @@ class CGICoreTest < Test::Unit::TestCase
                "Content-Length: 22\r\n" +
                "\r\n" +
                euc_str
-    if RUBY_VERSION>="1.9"
+    if defined?(::Encoding)
       actual.force_encoding("ASCII-8BIT")
       expected.force_encoding("ASCII-8BIT")
     end

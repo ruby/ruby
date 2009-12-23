@@ -9,7 +9,7 @@ class CGICookieTest < Test::Unit::TestCase
   def setup
     ENV['REQUEST_METHOD'] = 'GET'
     @str1="\xE3\x82\x86\xE3\x82\x93\xE3\x82\x86\xE3\x82\x93"
-    @str1.force_encoding("UTF-8") if RUBY_VERSION>="1.9"
+    @str1.force_encoding("UTF-8") if defined?(::Encoding)
   end
 
   def teardown
@@ -34,7 +34,7 @@ class CGICookieTest < Test::Unit::TestCase
   def test_cgi_cookie_new_complex
     t = Time.gm(2030, 12, 31, 23, 59, 59)
     value = ['val1', '&<>"', "\xA5\xE0\xA5\xB9\xA5\xAB"]
-    value[2].force_encoding("EUC-JP") if RUBY_VERSION>="1.9"
+    value[2].force_encoding("EUC-JP") if defined?(::Encoding)
     cookie = CGI::Cookie.new('name'=>'name1',
                              'value'=>value,
                              'path'=>'/cgi-bin/myapp/',

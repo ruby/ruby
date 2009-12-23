@@ -27,7 +27,7 @@ class CGISessionTest < Test::Unit::TestCase
     }
     value1="value1"
     value2="\x8F\xBC\x8D]"
-    value2.force_encoding("SJIS") if RUBY_VERSION>="1.9"
+    value2.force_encoding("SJIS") if defined?(::Encoding)
     ENV.update(@environ)
     cgi = CGI.new
     session = CGI::Session.new(cgi,"tmpdir"=>@session_dir)
@@ -65,7 +65,7 @@ class CGISessionTest < Test::Unit::TestCase
     }
     value1="value1"
     value2="\x8F\xBC\x8D]"
-    value2.force_encoding("SJIS") if RUBY_VERSION>="1.9"
+    value2.force_encoding("SJIS") if defined?(::Encoding)
     ENV.update(@environ)
     cgi = CGI.new
     session = CGI::Session.new(cgi,"tmpdir"=>@session_dir,"database_manager"=>CGI::Session::PStore)
@@ -102,7 +102,7 @@ class CGISessionTest < Test::Unit::TestCase
     }
     value1="value1"
     value2="\x8F\xBC\x8D]"
-    value2.force_encoding("SJIS") if RUBY_VERSION>="1.9"
+    value2.force_encoding("SJIS") if defined?(::Encoding)
     ENV.update(@environ)
     cgi = CGI.new
     session = CGI::Session.new(cgi,"tmpdir"=>@session_dir,"session_id"=>"foo")
@@ -142,7 +142,7 @@ class CGISessionTest < Test::Unit::TestCase
     }
     value1="value1"
     value2="\x8F\xBC\x8D]"
-    value2.force_encoding("SJIS") if RUBY_VERSION>="1.9"
+    value2.force_encoding("SJIS") if defined?(::Encoding)
     ENV.update(@environ)
     cgi = CGI.new
     session = CGI::Session.new(cgi,"tmpdir"=>@session_dir,"session_key"=>"bar")
