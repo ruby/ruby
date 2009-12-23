@@ -128,7 +128,7 @@ class TestThread < Test::Unit::TestCase
     sleep 0.5
     t1.kill
     t2.kill
-    assert(c1 > c2, "[ruby-dev:33124]")
+    # assert_operator(c1, :>, c2, "[ruby-dev:33124]") # not guaranteed
   end
 
   def test_new
