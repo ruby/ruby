@@ -362,15 +362,6 @@ class TestThread < Test::Unit::TestCase
 
     m.unlock
   end
-
-  def test_recursive_error
-    o = Object.new
-    def o.inspect
-      Thread.current[:__recursive_key__][:inspect] = nil
-      super
-    end
-    assert_raise(TypeError) { [o].inspect }
-  end
 end
 
 class TestThreadGroup < Test::Unit::TestCase
@@ -428,15 +419,5 @@ class TestThreadGroup < Test::Unit::TestCase
     c = Class.new(Thread)
     c.class_eval { def initialize; end }
     assert_raise(ThreadError) { c.new.start }
-  end
-
-  def test_backtrace
-    Thread.new{
-      assert_equal(Array, Thread.main.backtrace.class)
-    }.join
-
-    t = Thread.new{}
-    t.join
-    assert_equal(nil, t.backtrace)
   end
 end
