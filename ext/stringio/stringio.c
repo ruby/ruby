@@ -269,6 +269,8 @@ strio_init(argc, argv, ptr)
 	break;
     }
     ptr->string = string;
+    ptr->pos = 0;
+    ptr->lineno = 0;
 }
 
 static VALUE

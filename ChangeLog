@@ -1,3 +1,7 @@
+Thu Dec 24 17:50:35 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/stringio/stringio.c (strio_init): rewind when reopened.
+
 Thu Dec 24 17:06:13 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (run_final): runs finalizers with the object terminated.
