@@ -347,7 +347,7 @@ end
 
 EXEEXT = CONFIG['EXEEXT']
 if CROSS_COMPILING
-  $ruby = CONFIG['MINIRUBY']
+  $ruby = $mflags.defined?("MINIRUBY") || CONFIG['MINIRUBY']
 elsif sep = config_string('BUILD_FILE_SEPARATOR')
   $ruby = "$(topdir:/=#{sep})#{sep}miniruby" + EXEEXT
 else

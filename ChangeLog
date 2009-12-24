@@ -1,3 +1,27 @@
+Thu Dec 24 17:56:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: MINIRUBY is given via make-flag.
+
+Thu Dec 24 17:56:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (EXTMK_ARGS): needs MINIRUBY for cross-compile.
+	  [ruby-core:20131]
+
+Thu Dec 24 17:56:32 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (EXTMK_ARGS): shouldn't use ``\"'' because cmd.exe eat
+	  ''\'' in such quotes.
+
+Thu Dec 24 17:56:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (EXTMK_ARGS): needs MINIRUBY for cross-compile.
+	  [ruby-core:20131]
+
+Thu Dec 24 17:56:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb (patchlevel): config.status may not contain
+	  PATCHLEVEL even if other version numbers exist.
+
 Thu Dec 24 17:50:35 2009  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/stringio/stringio.c (strio_init): rewind when reopened.
