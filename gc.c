@@ -1241,7 +1241,7 @@ void
 rb_gc_force_recycle(p)
     VALUE p;
 {
-    add_freelist(p);
+    add_freelist(RANY(p));
 }
 
 static inline void
@@ -1949,6 +1949,7 @@ run_final(obj)
     VALUE args[3], table, objid;
 
     objid = rb_obj_id(obj);	/* make obj into id */
+    RBASIC(obj)->klass = 0;
     rb_thread_critical = Qtrue;
     if (BUILTIN_TYPE(obj) == T_DEFERRED && RDATA(obj)->dfree) {
 	(*RDATA(obj)->dfree)(DATA_PTR(obj));
@@ -1984,21 +1985,6 @@ rb_gc_finalize_deferred()
     }
 }
 
-static int
-chain_finalized_object(st_data_t key, st_data_t val, st_data_t arg)
-{
-    RVALUE *p = (RVALUE *)key, **final_list = (RVALUE **)arg;
-    if ((p->as.basic.flags & (FL_FINALIZE|FL_MARK)) == FL_FINALIZE) {
-	if (BUILTIN_TYPE(p) != T_DEFERRED) {
-	    p->as.free.flags = FL_MARK | T_DEFERRED; /* remain marked */
-	    RDATA(p)->dfree = 0;
-	}
-	p->as.free.next = *final_list;
-	*final_list = p;
-    }
-    return ST_CONTINUE;
-}
-
 void
 rb_gc_call_finalizer_at_exit()
 {
@@ -2007,14 +1993,23 @@ rb_gc_call_finalizer_at_exit()
 
     /* run finalizers */
     if (need_call_final && finalizer_table) {
-	do {
-	    p = deferred_final_list;
-	    deferred_final_list = 0;
-	    finalize_list(p);
-	    mark_tbl(finalizer_table, 0);
-	    st_foreach(finalizer_table, chain_finalized_object,
-		       (st_data_t)&deferred_final_list);
-	} while (deferred_final_list);
+	p = deferred_final_list;
+	deferred_final_list = 0;
+	finalize_list(p);
+	for (i = 0; i < heaps_used; i++) {
+	    p = heaps[i].slot; pend = p + heaps[i].limit;
+	    while (p < pend) {
+		if (FL_TEST(p, FL_FINALIZE)) {
+		    FL_UNSET(p, FL_FINALIZE);
+		    run_final((VALUE)p);
+		}
+		p++;
+	    }
+	}
+	if (finalizer_table) {
+	    st_free_table(finalizer_table);
+	    finalizer_table = 0;
+	}
     }
     /* run data object's finalizers */
     for (i = 0; i < heaps_used; i++) {
