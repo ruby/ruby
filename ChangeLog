@@ -1,3 +1,8 @@
+Thu Dec 24 10:31:50 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/object.c (rb_obj_cmp): Default <=> operator returns 0 if
+	  objects are == [ruby-core:24063]
+
 Wed Dec 23 09:12:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/cgi/test_cgi_multipart.rb (CGIMultipartTest#_prepare):
