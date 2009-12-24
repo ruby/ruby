@@ -1,3 +1,8 @@
+Thu Dec 24 12:08:00 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+  * lib/delegate.rb (marshal_dump/load): dump & load instance variables
+    by default [ruby-core:24211]
+
 Wed Dec 23 20:48:52 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (args): splat other than direct array literal.
