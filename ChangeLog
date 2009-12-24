@@ -1,3 +1,7 @@
+Thu Dec 24 18:04:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: default ac_cv_prog_CC to CC.
+
 Thu Dec 24 17:56:32 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: MINIRUBY is given via make-flag.
