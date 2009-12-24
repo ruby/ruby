@@ -1,3 +1,8 @@
+Thu Dec 24 16:32:30 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/uri/generic.rb (eql?): Check the class of the compared object.
+	  Based on a patch by Peter McLain [ruby-core:27019]
+
 Thu Dec 24 15:20:03 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regexec.c (match_at): follow enclen's change.

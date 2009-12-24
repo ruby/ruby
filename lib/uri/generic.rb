@@ -1066,6 +1066,7 @@ module URI
     end
 
     def eql?(oth)
+      self.class == oth.class &&
       parser == oth.parser &&
       self.component_ary.eql?(oth.component_ary)
     end
