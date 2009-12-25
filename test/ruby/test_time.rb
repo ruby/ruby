@@ -365,6 +365,10 @@ class TestTime < Test::Unit::TestCase
     assert_raise(TypeError) { t0 + nil }
     assert_raise(TypeError) { t0 + "1" }
     assert_raise(TypeError) { t0 + SimpleDelegator.new("1") }
+    assert_equal(0.5, (t0 + 1.5).subsec)
+    assert_equal(Rational(1,3), (t0 + Rational(4,3)).subsec)
+    assert_equal(0.5, (t0 + SimpleDelegator.new(1.5)).subsec)
+    assert_equal(Rational(1,3), (t0 + SimpleDelegator.new(Rational(4,3))).subsec)
   end
 
   def test_readers
