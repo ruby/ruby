@@ -424,18 +424,18 @@ install?(:local, :comm, :bin, :'bin-comm') do
     open_for_install(cmd, $script_mode) do
       case $cmdtype
       when "bat"
-        "#{<<EOH}#{shebang}#{body}#{<<EOF}".gsub(/$/, "\r")
-@echo off
-@if not "%~d0" == "~d0" goto WinNT
-#{ruby_bin} -x "#{cmd}" %1 %2 %3 %4 %5 %6 %7 %8 %9
-@goto endofruby
-:WinNT
-"%~dp0#{ruby_install_name}" -x "%~f0" %*
-@goto endofruby
-EOH
-__END__
-:endofruby
-EOF
+        [<<-"EOH".gsub(/^\s+/, ''), shebang, body, <<-"EOF".gsub(/^\s+/, '')].join.gsub(/$/, "\r")
+          @echo off
+          @if not "%~d0" == "~d0" goto WinNT
+          #{ruby_bin} -x "#{cmd}" %1 %2 %3 %4 %5 %6 %7 %8 %9
+          @goto endofruby
+          :WinNT
+          "%~dp0#{ruby_install_name}" -x "%~f0" %*
+          @goto endofruby
+        EOH
+          __END__
+          :endofruby
+        EOF
       when "cmd"
         "#{<<"/EOH"}#{shebang}#{body}"
 @"%~dp0#{ruby_install_name}" -x "%~f0" %*
