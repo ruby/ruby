@@ -509,6 +509,10 @@ static VALUE folemethod_size_opt_params(VALUE self);
 static VALUE ole_method_params(ITypeInfo *pTypeInfo, UINT method_index);
 static VALUE folemethod_params(VALUE self);
 static VALUE folemethod_inspect(VALUE self);
+static VALUE foleparam_s_allocate(VALUE klass);
+static VALUE oleparam_ole_param_from_index(VALUE self, ITypeInfo *pTypeInfo, UINT method_index, int param_index);
+static VALUE oleparam_ole_param(VALUE self, VALUE olemethod, int n);
+static VALUE foleparam_initialize(VALUE self, VALUE olemethod, VALUE n);
 static VALUE foleparam_name(VALUE self);
 static VALUE ole_param_ole_type(ITypeInfo *pTypeInfo, UINT method_index, UINT index);
 static VALUE foleparam_ole_type(VALUE self);
@@ -2489,7 +2493,7 @@ ole_const_load(ITypeLib *pTypeLib, VALUE klass, VALUE self)
                     continue;
                 pName = ole_wc2mb(bstr);
                 val = ole_variant2val(V_UNION1(pVarDesc, lpvarValue));
-                *pName = toupper(*pName);
+                *pName = toupper((int)*pName);
                 id = rb_intern(pName);
                 if (rb_is_const_id(id)) {
                     rb_define_const(klass, pName, val);
@@ -7159,6 +7163,74 @@ folemethod_inspect(VALUE self)
  *   <code>WIN32OLE_PARAM</code> objects represent param information of 
  *   the OLE method.
  */
+static VALUE foleparam_s_allocate(VALUE klass)
+{
+    struct oleparamdata *pparam;
+    VALUE obj;
+    obj = Data_Make_Struct(klass, 
+                           struct oleparamdata,
+                           0, oleparam_free, pparam);
+    pparam->pTypeInfo = NULL;
+    pparam->method_index = 0;
+    pparam->index = 0;
+    return obj;
+}
+
+static VALUE 
+oleparam_ole_param_from_index(VALUE self, ITypeInfo *pTypeInfo, UINT method_index, int param_index)
+{
+    FUNCDESC *pFuncDesc;
+    HRESULT hr;
+    BSTR *bstrs;
+    UINT len;
+    struct oleparamdata *pparam;
+    hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
+    if (FAILED(hr)) 
+        ole_raise(hr, rb_eRuntimeError, "fail to ITypeInfo::GetFuncDesc");
+
+    len = 0;
+    bstrs = ALLOCA_N(BSTR, pFuncDesc->cParams + 1);
+    hr = pTypeInfo->lpVtbl->GetNames(pTypeInfo, pFuncDesc->memid, 
+                                     bstrs, pFuncDesc->cParams + 1,
+                                     &len);
+    if (FAILED(hr)) {
+        pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
+        ole_raise(hr, rb_eRuntimeError, "fail to ITypeInfo::GetNames");
+    }
+    SysFreeString(bstrs[0]);
+    if (param_index < 1 || len <= (UINT)param_index)
+    {
+        pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
+        rb_raise(rb_eIndexError, "index of param must be in 1..%d", len);
+    }
+
+    Data_Get_Struct(self, struct oleparamdata, pparam);
+    pparam->pTypeInfo = pTypeInfo;
+    OLE_ADDREF(pTypeInfo);
+    pparam->method_index = method_index;
+    pparam->index = param_index - 1;
+    rb_ivar_set(self, rb_intern("name"), WC2VSTR(bstrs[param_index]));
+
+    pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
+    return self;
+}
+
+static VALUE oleparam_ole_param(VALUE self, VALUE olemethod, int n)
+{
+    struct olemethoddata *pmethod;
+    Data_Get_Struct(olemethod, struct olemethoddata, pmethod);
+    return oleparam_ole_param_from_index(self, pmethod->pTypeInfo, pmethod->index, n);
+}
+
+static VALUE foleparam_initialize(VALUE self, VALUE olemethod, VALUE n)
+{
+    int idx;
+    if (!rb_obj_is_kind_of(olemethod, cWIN32OLE_METHOD)) {
+        rb_raise(rb_eTypeError, "1st parameter must be WIN32OLE_METHOD object");
+    }
+    idx = FIX2INT(n);
+    return oleparam_ole_param(self, olemethod, idx);
+}
 
 /*
  *  call-seq:
@@ -9127,6 +9199,8 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_METHOD, "inspect", folemethod_inspect, 0);
 
     cWIN32OLE_PARAM = rb_define_class("WIN32OLE_PARAM", rb_cObject);
+    rb_define_alloc_func(cWIN32OLE_PARAM, foleparam_s_allocate);
+    rb_define_method(cWIN32OLE_PARAM, "initialize", foleparam_initialize, 2);
     rb_define_method(cWIN32OLE_PARAM, "name", foleparam_name, 0);
     rb_define_method(cWIN32OLE_PARAM, "ole_type", foleparam_ole_type, 0);
     rb_define_method(cWIN32OLE_PARAM, "ole_type_detail", foleparam_ole_type_detail, 0);

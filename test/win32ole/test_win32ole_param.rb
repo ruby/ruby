@@ -33,8 +33,23 @@ if defined?(WIN32OLE_PARAM)
       assert_raise(ArgumentError) {
         WIN32OLE_PARAM.new("hoge")
       }
+      ole_type = WIN32OLE_TYPE.new("Microsoft Scripting Runtime", "FileSystemObject")
+      m_copyfile = WIN32OLE_METHOD.new(ole_type, "CopyFile")
+      assert_raise(IndexError) {
+        WIN32OLE_PARAM.new(m_copyfile, 4);
+      }
+      assert_raise(IndexError) {
+        WIN32OLE_PARAM.new(m_copyfile, 0);
+      }
+      assert_raise(IndexError) {
+        WIN32OLE_PARAM.new(m_copyfile, 0);
+      }
+      param = WIN32OLE_PARAM.new(m_copyfile, 3)
+      assert_equal("OverWriteFiles", param.name)
+      assert_equal(WIN32OLE_PARAM, param.class)
+      assert_equal(true, param.default)
+      assert_equal("#<WIN32OLE_PARAM:OverWriteFiles=true>", param.inspect)
     end
-
 
     def test_name
       assert_equal('URL', @param_url.name)

@@ -1,3 +1,11 @@
+Sun Dec 27 10:45:00 2009  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (foleparam_initialize): add foleparam_initialize
+	  to check argument of WIN32OLE_PARAM.new
+
+	* test/win32ole/test_win32ole_param.rb (test_s_new): add some assertion
+	  to test WIN32OLE_PARAM.new
+
 Sun Dec 27 09:41:54 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* tool/rbinstall.rb (install?(:local, :comm, :bin, :'bin-comm')):
