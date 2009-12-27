@@ -1,3 +1,7 @@
+Sun Dec 27 09:13:55 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* sample/occur2.rb: have been broken. fixed for Ruby 1.9 feature.
+
 Thu Dec 24 16:32:30 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/uri/generic.rb (eql?): Check the class of the compared object.
