@@ -2,7 +2,7 @@
 # usege: ruby occur2.rb file..
 freq = {}
 while gets()
-  for word in split(/\W+/)
+  for word in $_.split(/\W+/)
     begin
       freq[word] += 1
     rescue NameError
