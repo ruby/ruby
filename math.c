@@ -67,6 +67,17 @@ infinity_check(VALUE arg, double res, const char *msg)
  *  Computes the arc tangent given <i>y</i> and <i>x</i>. Returns
  *  -PI..PI.
  *
+ *    Math.atan2(-0.0, -1.0) #=> -3.141592653589793
+ *    Math.atan2(-1.0, -1.0) #=> -2.356194490192345
+ *    Math.atan2(-1.0, 0.0)  #=> -1.5707963267948966
+ *    Math.atan2(-1.0, 1.0)  #=> -0.7853981633974483
+ *    Math.atan2(-0.0, 1.0)  #=> -0.0
+ *    Math.atan2(0.0, 1.0)   #=> 0.0
+ *    Math.atan2(1.0, 1.0)   #=> 0.7853981633974483
+ *    Math.atan2(1.0, 0.0)   #=> 1.5707963267948966
+ *    Math.atan2(1.0, -1.0)  #=> 2.356194490192345
+ *    Math.atan2(0.0, -1.0)  #=> 3.141592653589793
+ *
  */
 
 static VALUE
