@@ -956,26 +956,24 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
     memset(&aStartupInfo, 0, sizeof (STARTUPINFO));
     memset(&aProcessInformation, 0, sizeof (PROCESS_INFORMATION));
     aStartupInfo.cb = sizeof (STARTUPINFO);
-    if (hInput || hOutput || hError) {
-	aStartupInfo.dwFlags = STARTF_USESTDHANDLES;
-	if (hInput) {
-	    aStartupInfo.hStdInput  = hInput;
-	}
-	else {
-	    aStartupInfo.hStdInput  = GetStdHandle(STD_INPUT_HANDLE);
-	}
-	if (hOutput) {
-	    aStartupInfo.hStdOutput = hOutput;
-	}
-	else {
-	    aStartupInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-	}
-	if (hError) {
-	    aStartupInfo.hStdError = hError;
-	}
-	else {
-	    aStartupInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
-	}
+    aStartupInfo.dwFlags = STARTF_USESTDHANDLES;
+    if (hInput) {
+	aStartupInfo.hStdInput  = hInput;
+    }
+    else {
+	aStartupInfo.hStdInput  = GetStdHandle(STD_INPUT_HANDLE);
+    }
+    if (hOutput) {
+	aStartupInfo.hStdOutput = hOutput;
+    }
+    else {
+	aStartupInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    }
+    if (hError) {
+	aStartupInfo.hStdError = hError;
+    }
+    else {
+	aStartupInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
     }
 
     dwCreationFlags = (NORMAL_PRIORITY_CLASS);
