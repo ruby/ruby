@@ -1,3 +1,9 @@
+Mon Dec 28 22:33:58 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (CreateChild): force to inherit standard I/O handles.
+	  this change fixes [ruby-core:27273], but other side effects might
+	  exist.
+
 Mon Dec 28 22:00:10 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_marshal.rb: added tests for taintness/untrustness
