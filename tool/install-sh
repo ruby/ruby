@@ -4,12 +4,12 @@
 # See autoconf.info for more detail.
 
 cat <<EOF >&2
-Ruby tries to use a BSD-compatible install(1) if possible. However Ruby 
-has its own install(1) alternative.
+Ruby uses a BSD-compatible install(1) if possible. If not, Ruby 
+provides its own install(1) alternative.
 
-This script is necessary just for using AC_PROG_INSTALL in configure.in, 
-however, it will not executed. So this script just fails.
-Please report a bug of Ruby to http://redmine.ruby-lang.org if you meet
+This script a place holder for AC_PROG_INSTALL in configure.in.
+
+Please report a bug in Ruby to http://redmine.ruby-lang.org if you see
 this message.
 
 Thank you.

@@ -1,3 +1,8 @@
+Mon Dec 28 17:19:37 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* tool/install-sh: correction by Hiro Asari.
+	  https://gist.github.com/264558/58ad1cae45cde49600bbb39286af2aae23e639d5
+
 Mon Dec 28 13:18:52 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* tool/install-sh: wrote the intention. [ruby-dev:39928]
