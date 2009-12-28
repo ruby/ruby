@@ -193,6 +193,70 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(true, y.untrusted?)
   end
 
+  def test_taint_and_untrust_each_object
+    x = Object.new
+    obj = [[x]]
+
+    # clean object causes crean stream
+    assert_equal(false, obj.tainted?)
+    assert_equal(false, obj.untrusted?)
+    assert_equal(false, obj.first.tainted?)
+    assert_equal(false, obj.first.untrusted?)
+    assert_equal(false, obj.first.first.tainted?)
+    assert_equal(false, obj.first.first.untrusted?)
+    s = Marshal.dump(obj)
+    assert_equal(false, s.tainted?)
+    assert_equal(false, s.untrusted?)
+
+    # tainted/untrusted object causes tainted/untrusted stream
+    x.taint
+    x.untrust
+    assert_equal(false, obj.tainted?)
+    assert_equal(false, obj.untrusted?)
+    assert_equal(false, obj.first.tainted?)
+    assert_equal(false, obj.first.untrusted?)
+    assert_equal(true, obj.first.first.tainted?)
+    assert_equal(true, obj.first.first.untrusted?)
+    t = Marshal.dump(obj)
+    assert_equal(true, t.tainted?)
+    assert_equal(true, t.untrusted?)
+
+    # clean stream causes clean objects
+    assert_equal(false, s.tainted?)
+    assert_equal(false, s.untrusted?)
+    y = Marshal.load(s)
+    assert_equal(false, y.tainted?)
+    assert_equal(false, y.untrusted?)
+    assert_equal(false, y.first.tainted?)
+    assert_equal(false, y.first.untrusted?)
+    assert_equal(false, y.first.first.tainted?)
+    assert_equal(false, y.first.first.untrusted?)
+
+    # tainted/untrusted stream causes tainted/untrusted objects
+    assert_equal(true, t.tainted?)
+    assert_equal(true, t.untrusted?)
+    y = Marshal.load(t)
+    assert_equal(true, y.tainted?)
+    assert_equal(true, y.untrusted?)
+    assert_equal(true, y.first.tainted?)
+    assert_equal(true, y.first.untrusted?)
+    assert_equal(true, y.first.first.tainted?)
+    assert_equal(true, y.first.first.untrusted?)
+
+    # same tests by different senario
+    s.taint
+    s.untrust
+    assert_equal(true, s.tainted?)
+    assert_equal(true, s.untrusted?)
+    y = Marshal.load(s)
+    assert_equal(true, y.tainted?)
+    assert_equal(true, y.untrusted?)
+    assert_equal(true, y.first.tainted?)
+    assert_equal(true, y.first.untrusted?)
+    assert_equal(true, y.first.first.tainted?)
+    assert_equal(true, y.first.first.untrusted?)
+  end
+
   def test_symbol
     [:ruby, :"\u{7d05}\u{7389}"].each do |sym|
       assert_equal(sym, Marshal.load(Marshal.dump(sym)), '[ruby-core:24788]')

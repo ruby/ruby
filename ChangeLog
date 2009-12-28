@@ -1,3 +1,8 @@
+Mon Dec 28 22:00:10 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/ruby/test_marshal.rb: added tests for taintness/untrustness
+	  propagation.
+
 Mon Dec 28 18:13:26 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* sample/occur2.rb: reimplemented in modern style. [ruby-dev:39927].
