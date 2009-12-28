@@ -108,4 +108,46 @@ class TestMarshal < Test::Unit::TestCase
     y = Marshal.load(s)
     assert_equal(true, y.tainted?)
   end
+
+  def test_taint_each_object
+    x = Object.new
+    obj = [[x]]
+
+    # clean object causes crean stream
+    assert_equal(false, obj.tainted?)
+    assert_equal(false, obj.first.tainted?)
+    assert_equal(false, obj.first.first.tainted?)
+    s = Marshal.dump(obj)
+    assert_equal(false, s.tainted?)
+
+    # tainted object causes tainted stream
+    x.taint
+    assert_equal(false, obj.tainted?)
+    assert_equal(false, obj.first.tainted?)
+    assert_equal(true, obj.first.first.tainted?)
+    t = Marshal.dump(obj)
+    assert_equal(true, t.tainted?)
+
+    # clean stream causes clean objects
+    assert_equal(false, s.tainted?)
+    y = Marshal.load(s)
+    assert_equal(false, y.tainted?)
+    assert_equal(false, y.first.tainted?)
+    assert_equal(false, y.first.first.tainted?)
+
+    # tainted stream causes tainted objects
+    assert_equal(true, t.tainted?)
+    y = Marshal.load(t)
+    assert_equal(true, y.tainted?)
+    assert_equal(true, y.first.tainted?)
+    assert_equal(true, y.first.first.tainted?)
+
+    # same tests by different senario
+    s.taint
+    assert_equal(true, s.tainted?)
+    y = Marshal.load(s)
+    assert_equal(true, y.tainted?)
+    assert_equal(true, y.first.tainted?)
+    assert_equal(true, y.first.first.tainted?)
+  end
 end
