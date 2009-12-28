@@ -1,3 +1,7 @@
+Mon Dec 28 13:18:52 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* tool/install-sh: wrote the intention. [ruby-dev:39928]
+
 Sun Dec 27 10:45:00 2009  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (foleparam_initialize): add foleparam_initialize
