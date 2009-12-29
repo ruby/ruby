@@ -82,4 +82,14 @@ EOF
   ensure
     REXML::Document.entity_expansion_limit = 10000
   end
+
+  def test_xml_declaration_standalone
+    bug2539 = '[ruby-core:27345]'
+    doc = REXML::Document.new('<?xml version="1.0" standalone="no" ?>')
+    assert_equal('no', doc.stand_alone?, bug2539)
+    doc = REXML::Document.new('<?xml version="1.0" standalone= "no" ?>')
+    assert_equal('no', doc.stand_alone?, bug2539)
+    doc = REXML::Document.new('<?xml version="1.0" standalone=  "no" ?>')
+    assert_equal('no', doc.stand_alone?, bug2539)
+  end
 end

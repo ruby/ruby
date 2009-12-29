@@ -66,7 +66,7 @@ module REXML
 
       VERSION = /\bversion\s*=\s*["'](.*?)['"]/um
       ENCODING = /\bencoding\s*=\s*["'](.*?)['"]/um
-      STANDALONE = /\bstandalone\s*=\s["'](.*?)['"]/um
+      STANDALONE = /\bstandalone\s*=\s*["'](.*?)['"]/um
 
       ENTITY_START = /^\s*<!ENTITY/
       IDENTITY = /^([!\*\w\-]+)(\s+#{NCNAME_STR})?(\s+["'](.*?)['"])?(\s+['"](.*?)["'])?/u
